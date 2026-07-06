@@ -42,9 +42,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace o2::analysis::femto
-{
-namespace pairhistmanager
+namespace o2::analysis::femto::pairhistmanager
 {
 // enum for pair histograms
 enum PairHist {
@@ -1354,7 +1352,5 @@ class PairHistManager
   std::unordered_set<int64_t> mParticles1PerEvent = {};
   std::unordered_set<int64_t> mParticles2PerEvent = {};
 };
-
-}; // namespace pairhistmanager
-}; // namespace o2::analysis::femto
+}; // namespace o2::analysis::femto::pairhistmanager
 #endif // PWGCF_FEMTO_CORE_PAIRHISTMANAGER_H_

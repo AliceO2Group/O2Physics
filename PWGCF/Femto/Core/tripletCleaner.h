@@ -18,11 +18,8 @@
 
 #include "PWGCF/Femto/Core/pairCleaner.h"
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::tripletcleaner
 {
-namespace tripletcleaner
-{
-
 class TrackTrackTrackTripletCleaner : public paircleaner::BasePairCleaner
 {
  public:
@@ -142,7 +139,6 @@ class TrackTrackCascadeTripletCleaner : public paircleaner::BasePairCleaner
   }
 };
 
-} // namespace tripletcleaner
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::tripletcleaner
 
 #endif // PWGCF_FEMTO_CORE_TRIPLETCLEANER_H_

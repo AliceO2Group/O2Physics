@@ -24,11 +24,8 @@
 #include <map>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::closetripletrejection
 {
-namespace closetripletrejection
-{
-
 constexpr const char PrefixCtrTrackTrackTrack[] = "CtrTrackTrackTrack";
 using ConfCtrTrackTrackTrack = closepairrejection::ConfCpr<PrefixCtrTrackTrackTrack>;
 
@@ -223,6 +220,5 @@ class CloseTripletRejectionTrackTrackCascade
   closepairrejection::ClosePairRejectionTrackCascade<prefixTrack2Bachelor, prefixTrack2V0Daughter> mCtrTrack2Cascade;
 };
 
-} // namespace closetripletrejection
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::closetripletrejection
 #endif // PWGCF_FEMTO_CORE_CLOSETRIPLETREJECTION_H_

@@ -29,11 +29,8 @@
 #include <string_view>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::colhistmanager
 {
-namespace colhistmanager
-{
-
 enum ColHist {
   kPosZ,
   kMult,
@@ -345,6 +342,5 @@ class CollisionHistManager
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   bool mPlot2d = false;
 };
-} // namespace colhistmanager
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::colhistmanager
 #endif // PWGCF_FEMTO_CORE_COLLISIONHISTMANAGER_H_

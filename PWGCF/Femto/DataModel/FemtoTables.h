@@ -33,8 +33,8 @@ namespace o2::aod
 {
 namespace femtocollisions
 {
-DECLARE_SOA_COLUMN(Mask, mask, femtodatatypes::CollisionMaskType);                //! Bitmask for collision selections
-DECLARE_SOA_COLUMN(CollisionTag, collisionTag, femtodatatypes::CollisionTagType); //! Bitmask for collision selections
+DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::CollisionMaskType);                //! Bitmask for collision selections
+DECLARE_SOA_COLUMN(CollisionTag, collisionTag, o2::analysis::femto::datatypes::CollisionTagType); //! Bitmask for collision selections
 
 DECLARE_SOA_COLUMN(PosX, posX, float);             //! x coordinate of vertex
 DECLARE_SOA_COLUMN(PosY, posY, float);             //! y coordinate of vertex
@@ -146,7 +146,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, //! theta
 namespace femtotracks
 {
 // columns for track selections
-DECLARE_SOA_COLUMN(Mask, mask, femtodatatypes::TrackMaskType); //! Bitmask for track selections
+DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::TrackMaskType); //! Bitmask for track selections
 
 // columns for DCA
 DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);                                                                        //! Dca in XY plane
@@ -331,11 +331,11 @@ using FTrackPids = soa::Join<FElectronPids, FPionPids, FKaonPids, FProtonPids, F
 namespace femtotwotrackresonances
 {
 // columns for resonance bit masks
-// DECLARE_SOA_COLUMN(Mask, mask, femtodatatypes::TwoTrackResonanceMaskType); //! Bitmask for resonance selections
-DECLARE_SOA_COLUMN(MaskPosDau, maskPosDau, femtodatatypes::TrackMaskType); //! Bitmask for positive daughter
-DECLARE_SOA_COLUMN(PosDauHasHighMomentum, posDauHasHighMomentum, bool);    //! switch for pid threshold
-DECLARE_SOA_COLUMN(MaskNegDau, maskNegDau, femtodatatypes::TrackMaskType); //! Bitmask for negative daughter
-DECLARE_SOA_COLUMN(NegDauHasHighMomentum, negDauHasHighMomentum, bool);    //! switch for pid threshold
+// DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::TwoTrackResonanceMaskType); //! Bitmask for resonance selections
+DECLARE_SOA_COLUMN(MaskPosDau, maskPosDau, o2::analysis::femto::datatypes::TrackMaskType); //! Bitmask for positive daughter
+DECLARE_SOA_COLUMN(PosDauHasHighMomentum, posDauHasHighMomentum, bool);                    //! switch for pid threshold
+DECLARE_SOA_COLUMN(MaskNegDau, maskNegDau, o2::analysis::femto::datatypes::TrackMaskType); //! Bitmask for negative daughter
+DECLARE_SOA_COLUMN(NegDauHasHighMomentum, negDauHasHighMomentum, bool);                    //! switch for pid threshold
 
 // id columns for resonance daughter tracks
 DECLARE_SOA_INDEX_COLUMN_FULL(PosDau, posDau, int32_t, FTracks, "_PosDau"); //! index column for positive daughter track
@@ -414,7 +414,7 @@ using FRho0Masks = FRho0Masks_001;
 namespace femtov0s
 {
 // columns for bit masks
-DECLARE_SOA_COLUMN(Mask, mask, femtodatatypes::V0MaskType); //! Bitmask for v0 selections
+DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::V0MaskType); //! Bitmask for v0 selections
 
 // columns for debug information
 DECLARE_SOA_COLUMN(MassAnti, massAnti, float);             //! mass of particle using antiparticle hypothesis (for Lambda/AntiLambda extra table)
@@ -515,7 +515,7 @@ using FK0shortExtras = FK0shortExtras_001;
 namespace femtokinks
 {
 // columns for bit masks
-DECLARE_SOA_COLUMN(Mask, mask, femtodatatypes::KinkMaskType); //! Bitmask for kink selections
+DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::KinkMaskType); //! Bitmask for kink selections
 
 // columns for debug information
 DECLARE_SOA_COLUMN(KinkAngle, kinkAngle, float);     //! Kink angle between mother and charged daughter at decay vertex
@@ -616,7 +616,7 @@ using FSigmaPlusExtras = FSigmaPlusExtras_001;
 namespace femtocascades
 {
 // columns for cascade bit masks
-DECLARE_SOA_COLUMN(Mask, mask, femtodatatypes::CascadeMaskType); //! Bitmask for cascade selections
+DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::CascadeMaskType); //! Bitmask for cascade selections
 
 // columns for cascad debug information
 DECLARE_SOA_COLUMN(MassXi, massXi, float);                         //! Mass of xi
@@ -722,9 +722,9 @@ using FMcCol = FMcCols_001::iterator;
 
 namespace femtomcparticle
 {
-DECLARE_SOA_COLUMN(Origin, origin, femtodatatypes::McOriginType); //! Multiplicity of the event as given by the generator in |eta|<0.8
-DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);                        //! Multiplicity of the event as given by the generator in |eta|<0.8
-DECLARE_SOA_INDEX_COLUMN(FMcCol, fMcCol);                         //!
+DECLARE_SOA_COLUMN(Origin, origin, o2::analysis::femto::datatypes::McOriginType); //! Multiplicity of the event as given by the generator in |eta|<0.8
+DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);                                        //! Multiplicity of the event as given by the generator in |eta|<0.8
+DECLARE_SOA_INDEX_COLUMN(FMcCol, fMcCol);                                         //!
 } // namespace femtomcparticle
 
 // table for basic track information

@@ -36,9 +36,7 @@
 #include <string_view>
 #include <vector>
 
-namespace o2::analysis::femto
-{
-namespace v0histmanager
+namespace o2::analysis::femto::v0histmanager
 {
 // enum for track histograms
 enum V0Hist {
@@ -697,6 +695,5 @@ class V0HistManager
   trackhistmanager::TrackHistManager<posDauPrefix> mPosDauManager;
   trackhistmanager::TrackHistManager<negDauPrefix> mNegDauManager;
 };
-}; // namespace v0histmanager
-}; // namespace o2::analysis::femto
+}; // namespace o2::analysis::femto::v0histmanager
 #endif // PWGCF_FEMTO_CORE_V0HISTMANAGER_H_

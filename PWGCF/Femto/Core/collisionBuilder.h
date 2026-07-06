@@ -41,11 +41,8 @@
 #include <unordered_map>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::collisionbuilder
 {
-namespace collisionbuilder
-{
-
 // configurables for collision selection
 struct ConfCollisionFilters : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CollisionFilter");
@@ -112,7 +109,7 @@ struct ConfCollisionSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> centMax{"centMax", 100.f, "Maximum centrality (multiplicity percentile)"};
   o2::framework::Configurable<int> magFieldMin{"magFieldMin", -5, "Minimum magnetic field strength (kG)"};
   o2::framework::Configurable<int> magFieldMax{"magFieldMax", 5, "Maximum magnetic field strength (kG)"};
-  o2::framework::Configurable<aod::femtodatatypes::CollisionMaskType> collisionMask{"collisionMask", 0x0, "Bitmask for collision"};
+  o2::framework::Configurable<datatypes::CollisionMaskType> collisionMask{"collisionMask", 0x0, "Bitmask for collision"};
 };
 
 /// enum for all collision selections
@@ -167,7 +164,7 @@ const std::unordered_map<CollisionSels, std::string> collisionSelectionNames = {
 };
 
 template <const char* HistName>
-class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::CollisionMaskType, kCollisionSelsMax>
+class CollisionSelection : public BaseSelection<float, o2::analysis::femto::datatypes::CollisionMaskType, kCollisionSelsMax>
 {
  public:
   CollisionSelection() = default;
@@ -652,7 +649,6 @@ class CollisionBuilderDerivedToDerived
   }
 };
 
-} // namespace collisionbuilder
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::collisionbuilder
 ;
 #endif // PWGCF_FEMTO_CORE_COLLISIONBUILDER_H_

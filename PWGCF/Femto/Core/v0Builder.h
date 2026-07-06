@@ -37,11 +37,8 @@
 #include <unordered_map>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::v0builder
 {
-namespace v0builder
-{
-
 // filters applied in the producer task
 struct ConfV0Filters : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("V0Filters");
@@ -106,7 +103,7 @@ struct ConfK0shortBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                   \
   o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Lambda"};             \
   o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Lambda"};             \
-  o2::framework::Configurable<o2::aod::femtodatatypes::V0MaskType> mask{"mask", 0, "Bitmask for v0 selection"};
+  o2::framework::Configurable<o2::analysis::femto::datatypes::V0MaskType> mask{"mask", 0, "Bitmask for v0 selection"};
 
 // base selection for analysis task for lambdas
 template <const char* Prefix>
@@ -181,7 +178,7 @@ const std::unordered_map<V0Sels, std::string> v0SelectionNames = {
 /// \class FemtoDreamTrackCuts
 /// \brief Cut class to contain and execute all cuts applied to tracks
 template <modes::V0 v0Type, const char* HistName>
-class V0Selection : public BaseSelection<float, o2::aod::femtodatatypes::V0MaskType, kV0SelsMax>
+class V0Selection : public BaseSelection<float, o2::analysis::femto::datatypes::V0MaskType, kV0SelsMax>
 {
  public:
   V0Selection() = default;
@@ -653,6 +650,5 @@ class V0BuilderDerivedToDerived
   int mLimitK0short = 0;
 };
 
-} // namespace v0builder
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::v0builder
 #endif // PWGCF_FEMTO_CORE_V0BUILDER_H_

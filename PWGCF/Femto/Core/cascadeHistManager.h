@@ -36,9 +36,7 @@
 #include <string_view>
 #include <vector>
 
-namespace o2::analysis::femto
-{
-namespace cascadehistmanager
+namespace o2::analysis::femto::cascadehistmanager
 {
 // enum for track histograms
 enum CascadeHist {
@@ -687,6 +685,5 @@ class CascadeHistManager
   trackhistmanager::TrackHistManager<posDauPrefix> mPosDauManager;
   trackhistmanager::TrackHistManager<negDauPrefix> mNegDauManager;
 };
-}; // namespace cascadehistmanager
-}; // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::cascadehistmanager
 #endif // PWGCF_FEMTO_CORE_CASCADEHISTMANAGER_H_

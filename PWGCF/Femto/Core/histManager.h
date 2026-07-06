@@ -21,11 +21,8 @@
 #include <string>
 #include <string_view>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::histmanager
 {
-namespace histmanager
-{
-
 // plot level for secondaries during mc processing
 enum SecondaryPlotLevel {
   kSecondaryPlotLevel1 = 1,
@@ -80,6 +77,5 @@ constexpr const char* getHistDesc(EnumType variable, const ArrayType& array)
 
   return it != array.end() ? it->histdesc.data() : "";
 }
-} // namespace histmanager
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::histmanager
 #endif // PWGCF_FEMTO_CORE_HISTMANAGER_H_

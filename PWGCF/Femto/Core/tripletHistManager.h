@@ -37,9 +37,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace o2::analysis::femto
-{
-namespace triplethistmanager
+namespace o2::analysis::femto::triplethistmanager
 {
 // enum for pair histograms
 enum TripletHist {
@@ -695,7 +693,5 @@ class TripletHistManager
   std::unordered_set<int64_t> mParticles2PerEvent = {};
   std::unordered_set<int64_t> mParticles3PerEvent = {};
 };
-
-} // namespace triplethistmanager
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::triplethistmanager
 #endif // PWGCF_FEMTO_CORE_TRIPLETHISTMANAGER_H_

@@ -40,9 +40,9 @@
     (o2::aod::femtobase::stored::phi < selection.phiMax) &&                                                                                                                          \
     ifnode(TRACK_MOMENTUM(selection.chargeAbs, o2::aod::femtobase::stored::signedPt, o2::aod::femtobase::stored::eta) <= selection.pidThres,                                         \
            ncheckbit(o2::aod::femtotracks::mask, selection.maskLowMomentum) &&                                                                                                       \
-             (o2::aod::femtotracks::mask & selection.rejectionMaskLowMomentum) == static_cast<o2::aod::femtodatatypes::TrackMaskType>(0),                                            \
+             (o2::aod::femtotracks::mask & selection.rejectionMaskLowMomentum) == static_cast<o2::analysis::femto::datatypes::TrackMaskType>(0),                                            \
            ncheckbit(o2::aod::femtotracks::mask, selection.maskHighMomentum) &&                                                                                                      \
-             (o2::aod::femtotracks::mask & selection.rejectionMaskHighMomentum) == static_cast<o2::aod::femtodatatypes::TrackMaskType>(0))
+             (o2::aod::femtotracks::mask & selection.rejectionMaskHighMomentum) == static_cast<o2::analysis::femto::datatypes::TrackMaskType>(0))
 
 // track partition with optional mass cut
 #define MAKE_TRACK_PARTITION_WITH_MASS(selection)             \

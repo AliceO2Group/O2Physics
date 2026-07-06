@@ -43,11 +43,8 @@
 #include <random>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::pairbuilder
 {
-namespace pairbuilder
-{
-
 const int64_t nLimitPartitionIdenticalParticles = 2;
 const int64_t nLimitPartitionParticles = 1;
 
@@ -1431,7 +1428,6 @@ class PairMcParticleMcParticleBuilder
   std::uniform_int_distribution<> mDist;
 };
 
-} // namespace pairbuilder
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::pairbuilder
 
 #endif // PWGCF_FEMTO_CORE_PAIRBUILDER_H_

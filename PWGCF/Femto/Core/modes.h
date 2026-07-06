@@ -21,9 +21,7 @@
 #include <cstdint>
 #include <type_traits>
 
-namespace o2::analysis::femto
-{
-namespace modes
+namespace o2::analysis::femto::modes
 {
 
 #define BIT(n) (1ULL << (n))
@@ -75,19 +73,19 @@ enum class System : uint32_t {
   kPbPb_Run2 = kPbPb | kRun2,
 };
 
-enum class MomentumType : o2::aod::femtodatatypes::MomentumType {
+enum class MomentumType : o2::analysis::femto::datatypes::MomentumType {
   kPt = 0,    // transverse momentum
   kPAtPv = 1, // momentum at primary vertex
   kPTpc = 2,  // momentum at inner wall of tpc
 };
 
-enum class TransverseMassType : o2::aod::femtodatatypes::TransverseMassType {
+enum class TransverseMassType : o2::analysis::femto::datatypes::TransverseMassType {
   kAveragePdgMass = 0,
   kReducedPdgMass = 1,
   kMt4Vector = 2
 };
 
-enum class Particle : o2::aod::femtodatatypes::ParticleType {
+enum class Particle : o2::analysis::femto::datatypes::ParticleType {
   mcParticle = 0,
   kTrack = 1,
   kTwoTrackResonance = 2,
@@ -96,7 +94,7 @@ enum class Particle : o2::aod::femtodatatypes::ParticleType {
   kCascade = 5,
 };
 
-enum class McOrigin : o2::aod::femtodatatypes::McOriginType {
+enum class McOrigin : o2::analysis::femto::datatypes::McOriginType {
   kNoMcParticle = 0,       // no associated mc particle normally indicated a wrongly reconstruced partilce
   kFromWrongCollision = 1, // partilce originates from the wrong collision or a collision which was wrongly reconstructed (like a split vertex)
   kPhysicalPrimary = 2,    // primary particle
@@ -128,7 +126,7 @@ constexpr const char* mcOriginToString(McOrigin origin)
   }
 }
 
-enum class Track : o2::aod::femtodatatypes::TrackType {
+enum class Track : o2::analysis::femto::datatypes::TrackType {
   kTrack,
   kV0Daughter,
   kCascadeBachelor,
@@ -136,30 +134,29 @@ enum class Track : o2::aod::femtodatatypes::TrackType {
   kKinkDaughter
 };
 
-enum class V0 : o2::aod::femtodatatypes::V0Type {
+enum class V0 : o2::analysis::femto::datatypes::V0Type {
   kLambda,
   kAntiLambda,
   kK0short
 };
 
-enum class Kink : o2::aod::femtodatatypes::KinkType {
+enum class Kink : o2::analysis::femto::datatypes::KinkType {
   kSigma,
   kSigmaPlus
 };
 
-enum class Cascade : o2::aod::femtodatatypes::CascadeType {
+enum class Cascade : o2::analysis::femto::datatypes::CascadeType {
   kXi,
   kOmega
 };
 
 // enum of supported resonances
-enum class TwoTrackResonance : o2::aod::femtodatatypes::TwoTrackResonanceType {
+enum class TwoTrackResonance : o2::analysis::femto::datatypes::TwoTrackResonanceType {
   kRho0,
   kPhi,
   kKstar0,
   kKstar0Bar
 };
 
-}; // namespace modes
-}; // namespace o2::analysis::femto
+}; // namespace o2::analysis::femto::modes
 #endif // PWGCF_FEMTO_CORE_MODES_H_

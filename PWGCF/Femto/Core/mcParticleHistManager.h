@@ -34,11 +34,8 @@
 #include <string_view>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::mcparticlehistmanager
 {
-namespace mcparticlehistmanager
-{
-
 // enum for mc particle histograms
 enum McParticleHist {
   // kinemtics
@@ -311,6 +308,5 @@ class McParticleHistManager
   int mPlotNSecondaries = 0;
   std::array<int, MaxSecondary> mPdgCodesSecondaryMother = {0};
 };
-} // namespace mcparticlehistmanager
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::mcparticlehistmanager
 #endif // PWGCF_FEMTO_CORE_MCPARTICLEHISTMANAGER_H_

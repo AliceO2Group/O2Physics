@@ -37,11 +37,8 @@
 #include <unordered_map>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::cascadebuilder
 {
-namespace cascadebuilder
-{
-
 struct ConfCascadeFilters : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CascadeFilters");
   o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};
@@ -102,7 +99,7 @@ struct ConfOmegaBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                                 \
   o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Cascade"};                          \
   o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Cascade"};                          \
-  o2::framework::Configurable<o2::aod::femtodatatypes::CascadeMaskType> mask{"mask", 0x0, "Bitmask for cascade selection"};
+  o2::framework::Configurable<o2::analysis::femto::datatypes::CascadeMaskType> mask{"mask", 0x0, "Bitmask for cascade selection"};
 
 struct ConfXiSelection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("XiSelection");
@@ -171,7 +168,7 @@ const std::unordered_map<CascadeSels, std::string> cascadeSelectionNames = {
 /// \class FemtoDreamTrackCuts
 /// \brief Cut class to contain and execute all cuts applied to tracks
 template <modes::Cascade cascadeType, const char* HistName>
-class CascadeSelection : public BaseSelection<float, o2::aod::femtodatatypes::CascadeMaskType, kCascadeSelsMax>
+class CascadeSelection : public BaseSelection<float, o2::analysis::femto::datatypes::CascadeMaskType, kCascadeSelsMax>
 {
  public:
   CascadeSelection() = default;
@@ -536,6 +533,5 @@ class CascadeBuilder
   bool mProduceOmegaExtras = false;
 };
 
-} // namespace cascadebuilder
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::cascadebuilder
 #endif // PWGCF_FEMTO_CORE_CASCADEBUILDER_H_

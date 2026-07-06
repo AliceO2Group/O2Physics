@@ -39,11 +39,8 @@
 #include <random>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::tripletbuilder
 {
-namespace tripletbuilder
-{
-
 const int64_t nLimitPartitionIdenticalParticles123 = 3;
 const int64_t nLimitPartitionIdenticalParticles12 = 2;
 const int64_t nLimitPartitionParticles = 1;
@@ -904,7 +901,6 @@ class TripletTrackTrackCascadeBuilder
   std::uniform_int_distribution<> mDist;
 };
 
-} // namespace tripletbuilder
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::tripletbuilder
 
 #endif // PWGCF_FEMTO_CORE_TRIPLETBUILDER_H_

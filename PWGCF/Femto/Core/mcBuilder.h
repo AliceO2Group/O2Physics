@@ -34,11 +34,8 @@
 #include <unordered_map>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::mcbuilder
 {
-namespace mcbuilder
-{
-
 struct ConfMc : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("MonteCarlo");
   o2::framework::Configurable<bool> passThrough{"passThrough", false, "Passthrough all MC collisions and particles"};
@@ -392,7 +389,7 @@ class McBuilder
 
     mcProducts.producedMcParticles(
       mcColId,
-      static_cast<aod::femtodatatypes::McOriginType>(origin),
+      static_cast<datatypes::McOriginType>(origin),
       mcParticle.pdgCode(),
       mcParticle.pt() * utils::signum(mcParticle.pdgCode()),
       mcParticle.eta(),
@@ -414,7 +411,7 @@ class McBuilder
       } else {
         auto motherOrigin = this->getOrigin(motherParticle);
         mcProducts.producedMothers(
-          static_cast<aod::femtodatatypes::McOriginType>(motherOrigin),
+          static_cast<datatypes::McOriginType>(motherOrigin),
           motherParticle.pdgCode(),
           motherParticle.pt() * utils::signum(motherParticle.pdgCode()),
           motherParticle.eta(),
@@ -542,26 +539,26 @@ class McBuilder
           if (id >= 0 && id < mcParticles.size()) {
             nextIndex = id;
             break;
-          }
+          } // namespace o2::analysis::femto::mcbuilder
         }
-      }
-      if (nextIndex < 0 || nextIndex >= mcParticles.size())
-        break;
-      const auto& mother = mcParticles.iteratorAt(nextIndex);
-      int pdgAbs = std::abs(mother.pdgCode());
-      int status = std::abs(o2::mcgenstatus::getGenStatusCode(mother.statusCode()));
-      bool isParton = (pdgAbs <= PDG_t::kTop || pdgAbs == PDG_t::kGluon);
-      const int isBeamParticleLowerLimit = 11;
-      const int isBeamParticleUpperLimit = 19;
-      bool isBeam = (status >= isBeamParticleLowerLimit && status <= isBeamParticleUpperLimit);
-      if (isBeam)
-        return lastPartonIndex;
-      if (isParton)
-        lastPartonIndex = nextIndex;
+        if (nextIndex < 0 || nextIndex >= mcParticles.size())
+          break;
+        const auto& mother = mcParticles.iteratorAt(nextIndex);
+        int pdgAbs = std::abs(mother.pdgCode());
+        int status = std::abs(o2::mcgenstatus::getGenStatusCode(mother.statusCode()));
+        bool isParton = (pdgAbs <= PDG_t::kTop || pdgAbs == PDG_t::kGluon);
+        const int isBeamParticleLowerLimit = 11;
+        const int isBeamParticleUpperLimit = 19;
+        bool isBeam = (status >= isBeamParticleLowerLimit && status <= isBeamParticleUpperLimit);
+        if (isBeam)
+          return lastPartonIndex;
+        if (isParton)
+          lastPartonIndex = nextIndex;
 
-      currentIndex = nextIndex;
+        currentIndex = nextIndex;
+      }
+      return -1;
     }
-    return -1;
   }
 
   bool mPassThrough = false;
@@ -588,9 +585,6 @@ class McBuilder
   std::unordered_map<int64_t, int64_t> mMcMotherMap;
   std::unordered_map<int64_t, int64_t> mMcPartonicMotherMap;
 };
-
-} // namespace mcbuilder
-//
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::mcbuilder
 
 #endif // PWGCF_FEMTO_CORE_MCBUILDER_H_

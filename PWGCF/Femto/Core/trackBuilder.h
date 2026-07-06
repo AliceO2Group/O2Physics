@@ -35,11 +35,8 @@
 #include <unordered_map>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::trackbuilder
 {
-namespace trackbuilder
-{
-
 struct ConfTrackFilters : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("TrackFilters");
   // kinematic cuts for filtering tracks
@@ -147,11 +144,11 @@ struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> massMin{"massMin", 0.f, "Minimum TOF mass (only used if enabled)"};
   o2::framework::Configurable<float> massMax{"massMax", 99.f, "Maximum TOF mass (only used if enabled)"};
   // track selection masks
-  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> maskLowMomentum{"maskLowMomentum", 1ul, "Bitmask for selections below momentum threshold"};
-  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> maskHighMomentum{"maskHighMomentum", 2ul, "Bitmask for selections above momentum threshold"};
+  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> maskLowMomentum{"maskLowMomentum", 1ul, "Bitmask for selections below momentum threshold"};
+  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> maskHighMomentum{"maskHighMomentum", 2ul, "Bitmask for selections above momentum threshold"};
   // track rejection masks
-  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> rejectionMaskLowMomentum{"rejectionMaskLowMomentum", 0ul, "Bitmask for rejections below momentum threshold"};
-  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> rejectionMaskHighMomentum{"rejectionMaskHighMomentum", 0ul, "Bitmask for rejections above momentum threshold"};
+  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> rejectionMaskLowMomentum{"rejectionMaskLowMomentum", 0ul, "Bitmask for rejections below momentum threshold"};
+  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> rejectionMaskHighMomentum{"rejectionMaskHighMomentum", 0ul, "Bitmask for rejections above momentum threshold"};
   // momentum threshold for PID usage
   o2::framework::Configurable<float> pidThres{"pidThres", 1.2f, "Momentum threshold for using TPCTOF/TOF pid for tracks with large momentum (GeV/c)"};
 };
@@ -291,7 +288,7 @@ const std::unordered_map<TrackSels, std::string> trackSelectionNames = {
 /// \class FemtoDreamTrackCuts
 /// \brief Cut class to contain and execute all cuts applied to tracks
 template <const char* HistName>
-class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::TrackMaskType, kTrackSelsMax>
+class TrackSelection : public BaseSelection<float, o2::analysis::femto::datatypes::TrackMaskType, kTrackSelsMax>
 {
  public:
   TrackSelection() = default;
@@ -604,7 +601,7 @@ class TrackBuilder
       if constexpr (type == modes::Track::kTrack) {
         trackProducts.producedTrackMasks(mTrackSelection.getBitmask());
       } else {
-        trackProducts.producedTrackMasks(static_cast<o2::aod::femtodatatypes::TrackMaskType>(0u));
+        trackProducts.producedTrackMasks(static_cast<o2::analysis::femto::datatypes::TrackMaskType>(0u));
       }
     }
     if (mProduceTrackMass) {
@@ -845,11 +842,10 @@ class TrackBuilderDerivedToDerived
     auto result = utils::getIndex(daughter.globalIndex(), indexMap);
     if (result) {
       return result.value();
-    } else {
-      this->fillTrack(daughter, trackProducts, collisionProducts);
-      int64_t idx = trackProducts.producedTracks.lastIndex();
-      return idx;
     }
+    this->fillTrack(daughter, trackProducts, collisionProducts);
+    int64_t idx = trackProducts.producedTracks.lastIndex();
+    return idx;
   }
 
  private:
@@ -858,9 +854,6 @@ class TrackBuilderDerivedToDerived
 
   std::unordered_map<int64_t, int64_t> indexMap; // for mapping tracks to daughers of lambdas, cascades and resonances ...
 };
-
-} // namespace trackbuilder
-//
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::trackbuilder
 
 #endif // PWGCF_FEMTO_CORE_TRACKBUILDER_H_

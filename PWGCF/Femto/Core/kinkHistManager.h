@@ -37,9 +37,7 @@
 #include <string_view>
 #include <vector>
 
-namespace o2::analysis::femto
-{
-namespace kinkhistmanager
+namespace o2::analysis::femto::kinkhistmanager
 {
 // enum for kink histograms
 enum KinkHist {
@@ -625,6 +623,5 @@ class KinkHistManager
   int mPlotNSecondaries = 0;
   std::array<int, MaxSecondary> mPdgCodesSecondaryMother = {0};
 };
-}; // namespace kinkhistmanager
-}; // namespace o2::analysis::femto
+}; // namespace o2::analysis::femto::kinkhistmanager
 #endif // PWGCF_FEMTO_CORE_KINKHISTMANAGER_H_

@@ -35,38 +35,35 @@
 #include <string>
 #include <vector>
 
-using namespace o2::aod;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
 using namespace o2::analysis::femto;
 
 struct FemtoTwotrackresonanceQa {
 
   // setup tables
-  using FemtoCollisions = o2::soa::Join<FCols, FColMasks, FColPos, FColSphericities, FColMults>;
+  using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks, o2::aod::FColPos, o2::aod::FColSphericities, o2::aod::FColMults>;
   using FemtoCollision = FemtoCollisions::iterator;
 
   using FilteredFemtoCollisions = o2::soa::Filtered<FemtoCollisions>;
   using FilteredFemtoCollision = FilteredFemtoCollisions::iterator;
 
-  using FemtoPhis = o2::soa::Join<FPhis, FPhiMasks>;
-  using FemtoRho0s = o2::soa::Join<FRho0s, FRho0Masks>;
-  using FemtoKstar0s = o2::soa::Join<FKstar0s, FKstar0Masks>;
-  using FemtoTracks = o2::soa::Join<FTracks, FTrackMass, FTrackDcas, FTrackExtras, FTrackPids>;
+  using FemtoPhis = o2::soa::Join<o2::aod::FPhis, o2::aod::FPhiMasks>;
+  using FemtoRho0s = o2::soa::Join<o2::aod::FRho0s, o2::aod::FRho0Masks>;
+  using FemtoKstar0s = o2::soa::Join<o2::aod::FKstar0s, o2::aod::FKstar0Masks>;
+  using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMass, o2::aod::FTrackDcas, o2::aod::FTrackExtras, o2::aod::FTrackPids>;
 
-  SliceCache cache;
+  o2::framework::SliceCache cache;
 
   // setup for collisions
   collisionbuilder::ConfCollisionSelection collisionSelection;
-  Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
+  o2::framework::expressions::Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
   colhistmanager::CollisionHistManager colHistManager;
   colhistmanager::ConfCollisionBinning confCollisionBinning;
   colhistmanager::ConfCollisionQaBinning confCollisionQaBinning;
 
   // setup for phis
   twotrackresonancebuilder::ConfPhiSelection confPhiSelection;
-  Partition<FemtoPhis> phiPartition = MAKE_RESONANCE_0_PARTITON(confPhiSelection);
-  Preslice<FemtoPhis> perColPhis = femtobase::stored::fColId;
+  o2::framework::Partition<FemtoPhis> phiPartition = MAKE_RESONANCE_0_PARTITON(confPhiSelection);
+  o2::framework::Preslice<FemtoPhis> perColPhis = o2::aod::femtobase::stored::fColId;
 
   twotrackresonancehistmanager::ConfPhiBinning confPhiBinning;
   twotrackresonancehistmanager::TwoTrackResonanceHistManager<
@@ -78,8 +75,8 @@ struct FemtoTwotrackresonanceQa {
 
   // setup for rho0s
   twotrackresonancebuilder::ConfRho0Selection confRho0Selection;
-  Partition<FemtoRho0s> rho0Partition = MAKE_RESONANCE_0_PARTITON(confRho0Selection);
-  Preslice<FemtoRho0s> perColRhos = femtobase::stored::fColId;
+  o2::framework::Partition<FemtoRho0s> rho0Partition = MAKE_RESONANCE_0_PARTITON(confRho0Selection);
+  o2::framework::Preslice<FemtoRho0s> perColRhos = o2::aod::femtobase::stored::fColId;
 
   twotrackresonancehistmanager::ConfRho0Binning confRho0Binning;
   twotrackresonancehistmanager::TwoTrackResonanceHistManager<
@@ -91,8 +88,8 @@ struct FemtoTwotrackresonanceQa {
 
   //  setup for kstar0s
   twotrackresonancebuilder::ConfKstar0Selection confKstar0Selection;
-  Partition<FemtoKstar0s> kstar0Partition = MAKE_RESONANCE_1_PARTITON(confKstar0Selection);
-  Preslice<FemtoKstar0s> perColKstars = femtobase::stored::fColId;
+  o2::framework::Partition<FemtoKstar0s> kstar0Partition = MAKE_RESONANCE_1_PARTITON(confKstar0Selection);
+  o2::framework::Preslice<FemtoKstar0s> perColKstars = o2::aod::femtobase::stored::fColId;
 
   twotrackresonancehistmanager::ConfKstar0Binning confKstar0Binning;
   twotrackresonancehistmanager::TwoTrackResonanceHistManager<
@@ -108,9 +105,9 @@ struct FemtoTwotrackresonanceQa {
   trackhistmanager::ConfResonanceNegDauBinning confNegDaughterBinning;
   trackhistmanager::ConfResonanceNegDauQaBinning confNegDaughterQaBinning;
 
-  HistogramRegistry hRegistry{"ResonanceQA", {}, OutputObjHandlingPolicy::AnalysisObject};
+  o2::framework::HistogramRegistry hRegistry{"ResonanceQA", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
 
-  void init(InitContext&)
+  void init(o2::framework::InitContext&)
   {
     // create a map for histogram specs
     auto colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
@@ -140,7 +137,7 @@ struct FemtoTwotrackresonanceQa {
 
   void processPhis(FilteredFemtoCollision const& col, FemtoPhis const& /*phis*/, FemtoTracks const& tracks)
   {
-    auto phiSlice = phiPartition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
+    auto phiSlice = phiPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (phiSlice.size() == 0) {
       return;
     }
@@ -153,7 +150,7 @@ struct FemtoTwotrackresonanceQa {
 
   void processRho0s(FilteredFemtoCollision const& col, FemtoRho0s const& /*rho0s*/, FemtoTracks const& tracks)
   {
-    auto rho0Slice = rho0Partition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
+    auto rho0Slice = rho0Partition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (rho0Slice.size() == 0) {
       return;
     }
@@ -166,7 +163,7 @@ struct FemtoTwotrackresonanceQa {
 
   void processKstar0s(FilteredFemtoCollision const& col, FemtoKstar0s const& /*kstar0s*/, FemtoTracks const& tracks)
   {
-    auto kstar0Slice = kstar0Partition->sliceByCached(femtobase::stored::fColId, col.globalIndex(), cache);
+    auto kstar0Slice = kstar0Partition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
     if (kstar0Slice.size() == 0) {
       return;
     }
@@ -178,9 +175,9 @@ struct FemtoTwotrackresonanceQa {
   PROCESS_SWITCH(FemtoTwotrackresonanceQa, processKstar0s, "Process Kstar0s", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{
+  o2::framework::WorkflowSpec workflow{
     adaptAnalysisTask<FemtoTwotrackresonanceQa>(cfgc),
   };
   return workflow;

@@ -38,9 +38,7 @@
 #include <string>
 #include <vector>
 
-namespace o2::analysis::femto
-{
-namespace closepairrejection
+namespace o2::analysis::femto::closepairrejection
 {
 // enum for track histograms
 enum CprHist {
@@ -566,11 +564,7 @@ class ClosePairRejectionTrackCascade
     }
   }
 
-  bool
-    isClosePair() const
-  {
-    return mCtrBachelor.isClosePair();
-  }
+  bool isClosePair() const { return mCtrBachelor.isClosePair(); }
 
   void fill(float kstar)
   {
@@ -639,6 +633,5 @@ class ClosePairRejectionMcParticleMcParticle
   CloseTrackRejection<prefix> mCtr;
 };
 
-}; // namespace closepairrejection
-}; // namespace o2::analysis::femto
+}; // namespace o2::analysis::femto::closepairrejection
 #endif // PWGCF_FEMTO_CORE_CLOSEPAIRREJECTION_H_

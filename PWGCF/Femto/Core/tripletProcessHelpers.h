@@ -24,11 +24,8 @@
 
 #include <cstdint>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::tripletprocesshelpers
 {
-namespace tripletprocesshelpers
-{
-
 enum TripletOrder : uint8_t {
   kOrder123, // no swap
   kOrder213, // swap 1&2: for the case that particle 1 & 2 are the same species, particle 3 is something else
@@ -639,7 +636,6 @@ void processMixedEvent(T1 const& Collisions,
   }
 }
 
-} // namespace tripletprocesshelpers
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::tripletprocesshelpers
 
 #endif // PWGCF_FEMTO_CORE_TRIPLETPROCESSHELPERS_H_

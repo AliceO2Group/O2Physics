@@ -35,11 +35,8 @@
 #include <string_view>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::trackhistmanager
 {
-namespace trackhistmanager
-{
-
 // enum for track histograms
 enum TrackHist {
   // kinemtics
@@ -1038,7 +1035,5 @@ class TrackHistManager
   std::array<int, MaxSecondary> mPdgCodesSecondaryMother = {0};
   modes::MomentumType mMomentumType = modes::MomentumType::kPAtPv;
 };
-}; // namespace trackhistmanager
-// aespace trackhistmanager
-}; // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::trackhistmanager
 #endif // PWGCF_FEMTO_CORE_TRACKHISTMANAGER_H_

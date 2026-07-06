@@ -21,11 +21,8 @@
 #include <string>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::particlecleaner
 {
-namespace particlecleaner
-{
-
 template <const char* Prefix>
 struct ConfParticleCleaner : o2::framework::ConfigurableGroup {
   std::string prefix = std::string(Prefix);
@@ -249,7 +246,6 @@ class ParticleCleaner
   std::vector<int> mRejectedPartonicMotherPdgCodes{};
 };
 
-} // namespace particlecleaner
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::particlecleaner
 
 #endif // PWGCF_FEMTO_CORE_PARTICLECLEANER_H_

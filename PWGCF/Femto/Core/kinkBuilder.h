@@ -41,11 +41,8 @@
 #include <unordered_map>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::kinkbuilder
 {
-namespace kinkbuilder
-{
-
 // filters applied in the producer task
 struct ConfKinkFilters : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("KinkFilters");
@@ -104,7 +101,7 @@ struct ConfSigmaPlusBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                \
   o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Sigma"};           \
   o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Sigma"};           \
-  o2::framework::Configurable<o2::aod::femtodatatypes::KinkMaskType> mask{"mask", 0x0, "Bitmask for kink selection"};
+  o2::framework::Configurable<o2::analysis::femto::datatypes::KinkMaskType> mask{"mask", 0x0, "Bitmask for kink selection"};
 
 // base selection for analysis task for sigmas
 template <const char* Prefix>
@@ -178,7 +175,7 @@ const std::unordered_map<KinkSeles, std::string> kinkSelectionNames = {
 /// \class KinkCuts
 /// \brief Cut class to contain and execute all cuts applied to kinks
 template <modes::Kink kinkType, const char* HistName>
-class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkMaskType, kKinkSelsMax>
+class KinkSelection : public BaseSelection<float, o2::analysis::femto::datatypes::KinkMaskType, kKinkSelsMax>
 {
  public:
   KinkSelection() = default;
@@ -668,7 +665,5 @@ class KinkBuilderDerivedToDerived
   int mLimitSigma = 0;
   int mLimitSigmaPlus = 0;
 };
-
-} // namespace kinkbuilder
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::kinkbuilder
 #endif // PWGCF_FEMTO_CORE_KINKBUILDER_H_

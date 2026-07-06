@@ -35,9 +35,7 @@
 #include <string_view>
 #include <vector>
 
-namespace o2::analysis::femto
-{
-namespace twotrackresonancehistmanager
+namespace o2::analysis::femto::twotrackresonancehistmanager
 {
 // enum for track histograms
 enum TwoTrackResonanceHist {
@@ -295,6 +293,5 @@ class TwoTrackResonanceHistManager
   trackhistmanager::TrackHistManager<negDauPrefix> mNegDauManager;
   int mPdgCode = 0;
 };
-}; // namespace twotrackresonancehistmanager
-}; // namespace o2::analysis::femto
+}; // namespace o2::analysis::femto::twotrackresonancehistmanager
 #endif // PWGCF_FEMTO_CORE_TWOTRACKRESONANCEHISTMANAGER_H_

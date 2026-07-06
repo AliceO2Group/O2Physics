@@ -25,11 +25,8 @@
 #include <cstdint>
 #include <optional>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::pairprocesshelpers
 {
-namespace pairprocesshelpers
-{
-
 enum PairOrder : uint8_t {
   kOrder12,
   kOrder21
@@ -724,7 +721,6 @@ void processMixedEvent(T1 const& Collisions,
   }
 }
 
-} // namespace pairprocesshelpers
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::pairprocesshelpers
 
 #endif // PWGCF_FEMTO_CORE_PAIRPROCESSHELPERS_H_
