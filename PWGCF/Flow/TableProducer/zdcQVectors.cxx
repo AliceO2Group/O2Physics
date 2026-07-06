@@ -99,6 +99,8 @@ bool isSelected = true;
 std::vector<float> cents; // centrality estimaters
 uint64_t timestamp = 0;
 double rsTimestamp = 0;
+int totalTowers = 10;
+int totalTowersPerSide = 5;
 
 } // namespace o2::analysis::qvectortask
 
@@ -275,8 +277,6 @@ struct ZdcQVectors {
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_MultCut + 1, "Mult & MultPV");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_isSelectedZDC + 1, "isSelected");
 
-    int totalTowers = 10;
-    int totalTowersPerSide = 5;
     for (int tower = 0; tower < totalTowers; tower++) {
       namesEcal[tower] = TString::Format("hZN%s_mean_t%i_cent", sides[(tower < totalTowersPerSide) ? 0 : 1], tower % 5);
     }
@@ -395,7 +395,6 @@ struct ZdcQVectors {
 
       if (cfgFillCutAnalysis) {
         // Tower mean energies vs. centrality used for tower gain equalisation
-        int totalTowers = 10;
         for (int tower = 0; tower < totalTowers; tower++) {
           registry.add<TProfile2D>(Form("CutAnalysis/%s", namesEcal[tower].Data()), Form("%s", namesEcal[tower].Data()), kTProfile2D, {axisCent, {nEventSelections + 5, 0, nEventSelections + 5}});
         }
@@ -915,7 +914,7 @@ struct ZdcQVectors {
     uint16_t eventSelectionFlags = eventSelected(collision, foundBC.zdc(), isEventSelected, tracks.size());
 
     // ALWAYS use these event selections
-    if (cent < EvSel.cfgCentMin || cent > EvSel.cfgCentMax || !collision.sel8() || std::abs(collision.posZ()) > cfgVtxZ) {
+    if (cent < EvSel.cfgCentMin || cent > EvSel.cfgCentMax || std::abs(collision.posZ()) > cfgVtxZ || !collision.sel8()) {
       // event not selected
       isSelected = false;
       spTableZDC(runnumber, cents, v, foundBC.timestamp(), 0, 0, 0, 0, isSelected, eventSelectionFlags);
@@ -957,20 +956,17 @@ struct ZdcQVectors {
       registry.get<TProfile>(HIST("vmean/hvertex_vz"))->Fill(Form("%d", runnumber), v[2]);
 
       // Fill to get mean energy per tower in 1% centrality bins
-      if (isZNAhit) {
-        registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t0_cent"))->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNA(), 1);
-        registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t1_cent"))->Fill(Form("%d", runnumber), cent, eZN[0], 1);
-        registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t2_cent"))->Fill(Form("%d", runnumber), cent, eZN[1], 1);
-        registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t3_cent"))->Fill(Form("%d", runnumber), cent, eZN[2], 1);
-        registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t4_cent"))->Fill(Form("%d", runnumber), cent, eZN[3], 1);
-      }
-      if (isZNChit) {
-        registry.get<TProfile2D>(HIST("Energy/hZNC_mean_t0_cent"))->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNC(), 1);
-        registry.get<TProfile2D>(HIST("Energy/hZNC_mean_t1_cent"))->Fill(Form("%d", runnumber), cent, eZN[4], 1);
-        registry.get<TProfile2D>(HIST("Energy/hZNC_mean_t2_cent"))->Fill(Form("%d", runnumber), cent, eZN[5], 1);
-        registry.get<TProfile2D>(HIST("Energy/hZNC_mean_t3_cent"))->Fill(Form("%d", runnumber), cent, eZN[6], 1);
-        registry.get<TProfile2D>(HIST("Energy/hZNC_mean_t4_cent"))->Fill(Form("%d", runnumber), cent, eZN[7], 1);
-      }
+
+      registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t0_cent"))->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNA(), 1);
+      registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t1_cent"))->Fill(Form("%d", runnumber), cent, eZN[0], 1);
+      registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t2_cent"))->Fill(Form("%d", runnumber), cent, eZN[1], 1);
+      registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t3_cent"))->Fill(Form("%d", runnumber), cent, eZN[2], 1);
+      registry.get<TProfile2D>(HIST("Energy/hZNA_mean_t4_cent"))->Fill(Form("%d", runnumber), cent, eZN[3], 1);
+      registry.get<TProfile2D>(HIST("Energy/hZNC_mean_t0_cent"))->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNC(), 1);
+      registry.get<TProfile2D>(HIST("Energy/hZNC_mean_t1_cent"))->Fill(Form("%d", runnumber), cent, eZN[4], 1);
+      registry.get<TProfile2D>(HIST("Energy/hZNC_mean_t2_cent"))->Fill(Form("%d", runnumber), cent, eZN[5], 1);
+      registry.get<TProfile2D>(HIST("Energy/hZNC_mean_t3_cent"))->Fill(Form("%d", runnumber), cent, eZN[6], 1);
+      registry.get<TProfile2D>(HIST("Energy/hZNC_mean_t4_cent"))->Fill(Form("%d", runnumber), cent, eZN[7], 1);
     }
 
     // Now start gain equalisation!
