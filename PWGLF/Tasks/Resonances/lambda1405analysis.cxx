@@ -46,11 +46,13 @@
 
 #include <TF1.h>
 #include <TH2.h>
-#include <TH3.h>
 #include <THnSparse.h>
+#include <TPDGCode.h>
+#include <TString.h>
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -81,23 +83,23 @@ struct lambda1405candidate {
   float phi = -1;                                           // Phi of the Lambda(1405) candidate
   float eta = -1;                                           // Eta of the Lambda(1405) candidate
 
-  bool isSigmaPlus = false;   // True if compatible with Sigma+
-  bool isSigmaMinus = false;  // True if compatible with Sigma-
-  float sigmaMinusMass = -1;  // Invariant mass of the Sigma- candidate
-  float sigmaPlusMass = -1;   // Invariant mass of the Sigma+ candidate
-  float xiMinusMass = -1;     // Invariant mass of the Xi- candidate
-  int sigmaSign = 0;          // Sign of the Sigma candidate: 1 for matter, -1 for antimatter
-  float sigmaPt = -1;         // pT of the Sigma daughter
-  float sigmaAlphaAP = -1;    // Alpha of the Sigma
-  float sigmaQtAP = -1;       // qT of the Sigma
-  float sigmaRadius = -1;     // Radius of the Sigma decay vertex
-  float dcaSigmaToPv = -1;    // DCA of the Sigma candidate to the primary vertex
-  float kinkPt = -1;          // pT of the kink daughter
-  float kinkPiNSigTpc = -1;   // Number of sigmas for the pion candidate from Sigma kink in Tpc
-  float kinkPiNSigTof = -1;   // Number of sigmas for the pion candidate from Sigma kink in Tof
-  float kinkPrNSigTpc = -1;   // Number of sigmas for the proton candidate from Sigma kink in Tpc
-  float kinkPrNSigTof = -1;   // Number of sigmas for the proton candidate from Sigma kink in Tof
-  float kinkDcaDauToPv = -1;  // DCA of the kink daughter to the primary vertex
+  bool isSigmaPlus = false;  // True if compatible with Sigma+
+  bool isSigmaMinus = false; // True if compatible with Sigma-
+  float sigmaMinusMass = -1; // Invariant mass of the Sigma- candidate
+  float sigmaPlusMass = -1;  // Invariant mass of the Sigma+ candidate
+  float xiMinusMass = -1;    // Invariant mass of the Xi- candidate
+  int sigmaSign = 0;         // Sign of the Sigma candidate: 1 for matter, -1 for antimatter
+  float sigmaPt = -1;        // pT of the Sigma daughter
+  float sigmaAlphaAP = -1;   // Alpha of the Sigma
+  float sigmaQtAP = -1;      // qT of the Sigma
+  float sigmaRadius = -1;    // Radius of the Sigma decay vertex
+  float dcaSigmaToPv = -1;   // DCA of the Sigma candidate to the primary vertex
+  float kinkPt = -1;         // pT of the kink daughter
+  float kinkPiNSigTpc = -1;  // Number of sigmas for the pion candidate from Sigma kink in Tpc
+  float kinkPiNSigTof = -1;  // Number of sigmas for the pion candidate from Sigma kink in Tof
+  float kinkPrNSigTpc = -1;  // Number of sigmas for the proton candidate from Sigma kink in Tpc
+  float kinkPrNSigTof = -1;  // Number of sigmas for the proton candidate from Sigma kink in Tof
+  float kinkDcaDauToPv = -1; // DCA of the kink daughter to the primary vertex
 
   float bachPiPt = -1;      // pT of the pion daughter
   float bachPiNSigTpc = -1; // Number of sigmas for the pion candidate
@@ -1011,7 +1013,7 @@ struct lambda1405analysis {
       if (!selectPiBach(piTrack, primaryVertex, lambda1405Cand.centMult)) {
         continue;
       }
-      rSelections.fill(HIST("hSelectionsL1405"), 2);  // Bach Pi selection
+      rSelections.fill(HIST("hSelectionsL1405"), 2); // Bach Pi selection
 
       auto piMom = std::array{piTrack.px(), piTrack.py(), piTrack.pz()};
       float invMass{-1.f};
@@ -1337,7 +1339,7 @@ struct lambda1405analysis {
           auto labelBachPi = trackLabelsMC.rawIteratorAt(lambda1405Cand.bachPiId);
           if (!labelBachPi.has_mcParticle()) {
             rSelections.fill(HIST("hRecoNotMatchedCounter"), 3); // Bach pion not matched
-            continue; // Skip if no valid MC association
+            continue;                                            // Skip if no valid MC association
           }
 
           auto genBachPi = labelBachPi.template mcParticle_as<aod::McParticles>();
