@@ -503,7 +503,7 @@ struct lambda1405analysis {
     if (isSigmaMinus) {
       rSelections.fill(HIST("hRecalcSigmaMinusMom"), 0); // All
     } else {
-      rSelections.fill(HIST("hRecalcSigmaMinusMom"), 0); // All
+      rSelections.fill(HIST("hRecalcSigmaPlusMom"), 0); // All
     }
     // Sigma- -> n + pi-  (charged daughter = pion, neutral daughter = neutron)
     // Sigma+ -> p + pi0  (charged daughter = proton, neutral daughter = pi0)
@@ -519,7 +519,7 @@ struct lambda1405analysis {
     if (isSigmaMinus) {
       rSelections.fill(HIST("hRecalcSigmaMinusMom"), 1); // Non-zero momentum
     } else {
-      rSelections.fill(HIST("hRecalcSigmaMinusMom"), 1); // Non-zero momentum
+      rSelections.fill(HIST("hRecalcSigmaPlusMom"), 1); // Non-zero momentum
     }
 
     double versorX = sigmaPx / pMother;
@@ -539,7 +539,7 @@ struct lambda1405analysis {
     if (isSigmaMinus) {
       rSelections.fill(HIST("hRecalcSigmaMinusMom"), 2); // Non-zero A
     } else {
-      rSelections.fill(HIST("hRecalcSigmaMinusMom"), 2); // Non-zero A
+      rSelections.fill(HIST("hRecalcSigmaPlusMom"), 2); // Non-zero A
     }
 
     double D = B * B - 4.0 * A * C;
@@ -550,7 +550,7 @@ struct lambda1405analysis {
     if (isSigmaMinus) {
       rSelections.fill(HIST("hRecalcSigmaMinusMom"), 3); // Positive D
     } else {
-      rSelections.fill(HIST("hRecalcSigmaMinusMom"), 3); // Positive D
+      rSelections.fill(HIST("hRecalcSigmaPlusMom"), 3); // Positive D
     }
 
     double sqrtD = std::sqrt(D);
@@ -563,7 +563,7 @@ struct lambda1405analysis {
     if (isSigmaMinus) {
       rSelections.fill(HIST("hRecalcSigmaMinusMom"), 4); // Real solutions
     } else {
-      rSelections.fill(HIST("hRecalcSigmaMinusMom"), 4); // Real solutions
+      rSelections.fill(HIST("hRecalcSigmaPlusMom"), 4); // Real solutions
     }
 
     success = true;
@@ -1056,11 +1056,6 @@ struct lambda1405analysis {
       }
       if (piTrack.pt() < funcMinBachPiPtVsL1405Pt.Eval(lambda1405Cand.pt()) ||
           piTrack.pt() > funcMaxBachPiPtVsL1405Pt.Eval(lambda1405Cand.pt())) {
-        continue;
-      }
-      rSelections.fill(HIST("hSelectionsL1405"), 4); // Pt correlations
-
-      if (lambda1405Cand.pt() < cutMinPtL1405) {
         continue;
       }
       rSelections.fill(HIST("hSelectionsL1405"), 4); // Pt correlations
