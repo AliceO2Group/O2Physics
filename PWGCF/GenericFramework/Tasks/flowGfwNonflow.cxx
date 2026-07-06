@@ -52,6 +52,8 @@
 #include <TString.h>
 
 #include <array>
+#include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -543,7 +545,7 @@ struct FlowGfwNonflow {
       if (correctionsConfig.mEfficiency == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram from %s", cfgCorrections.cfgEfficiencyPath.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgCorrections.cfgEfficiencyPath.value.c_str(), (void*)correctionsConfig.mEfficiency);
+      LOGF(info, "Loaded efficiency histogram from %s", cfgCorrections.cfgEfficiencyPath.value.c_str());
     }
     correctionsConfig.correctionsLoaded = true;
   }
