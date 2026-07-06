@@ -500,7 +500,7 @@ struct Kstarpbpb {
       if (!selectionTrack(track1)) {
         continue;
       }
-      bool track1kaon = false;
+
       auto track1ID = track1.globalIndex();
       if (!isTOFOnly && !strategySelectionPID(track1, 0, strategyPID)) {
         continue;
@@ -508,7 +508,6 @@ struct Kstarpbpb {
       if (isTOFOnly && !selectionPID2(track1, 0)) {
         continue;
       }
-      track1kaon = true;
 
       if (useWeight) {
         if (track1.pt() < cfgMaxTrackPt &&
@@ -522,7 +521,7 @@ struct Kstarpbpb {
         if (!selectionTrack(track2)) {
           continue;
         }
-        bool track2pion = false;
+
         auto track2ID = track2.globalIndex();
         if (!isTOFOnly && !strategySelectionPID(track2, 1, strategyPID)) {
           continue;
@@ -530,13 +529,11 @@ struct Kstarpbpb {
         if (isTOFOnly && !selectionPID2(track2, 1)) {
           continue;
         }
-        track2pion = true;
+
         if (track2ID == track1ID) {
           continue;
         }
-        if (!track1kaon || !track2pion) {
-          continue;
-        }
+
         if (additionalQAplots) {
           histos.fill(HIST("QAafter/TPC_Nsigma_allka"), track1.pt(), track1.tpcNSigmaKa(), centrality);
           histos.fill(HIST("QAafter/TOF_Nsigma_allka"), track1.pt(), track1.tofNSigmaKa(), centrality);
