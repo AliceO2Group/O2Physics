@@ -261,14 +261,14 @@ struct HadNucleiFemto {
   SameKindPair<CollisionsFull, TrackCandidates, BinningType> mPair{binningPolicy, settingNoMixedEvents, -1, &cache};
   // Pair<CollisionsFull, TrackCandidates, o2::aod::DataHypCandsWColl, BinningType> hyperPair{binningPolicy, settingNoMixedEvents, -1, &cache};
 
-  std::array<float, 6> mBBparamsNucleus;
+  std::array<float, 6> mBBparamsNucleus{};
   std::vector<bool> mGoodCollisions;
   std::vector<SVCand> mTrackPairs;
   std::vector<SVCand> mTrackHypPairs;
   o2::vertexing::DCAFitterN<2> mFitter;
 
-  int mRunNumber;
-  float mDbz;
+  int mRunNumber{0};
+  float mDbz{0.f};
   Service<o2::ccdb::BasicCCDBManager> mCcdb;
   Zorro mZorro;
   OutputObj<ZorroSummary> mZorroSummary{"zorroSummary"};
