@@ -37,7 +37,7 @@
 
 namespace o2::analysis::femto::twotrackresonancebuilder
 {
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfTwoTrackResonanceFilters : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   o2::framework::Configurable<float> ptMin{"ptMin", 0.2f, "Minimum pT"};
@@ -57,16 +57,17 @@ using ConfRhoFilters = ConfTwoTrackResonanceFilters<PrefixRhoFilters>;
 using ConfPhiFilters = ConfTwoTrackResonanceFilters<PrefixPhiFilters>;
 using ConfKstarFilters = ConfTwoTrackResonanceFilters<PrefixKstarFilters>;
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TWOTRACKRESONANCE_DEFAULT_SELECTION(defaultPdgCode, defaultMassMin, defaultMassMax)                                                                                 \
-  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", defaultPdgCode, "Resonance PDG code. Set sign to minus 1 for antiparticle"};                                    \
+  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", (defaultPdgCode), "Resonance PDG code. Set sign to minus 1 for antiparticle"};                                    \
   o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                                                                     \
   o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT"};                                                                                                     \
   o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};                                                                                                \
   o2::framework::Configurable<float> etaMax{"etaMax", 0.9f, "Maximum eta"};                                                                                                 \
   o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                                                                                  \
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                                                                     \
-  o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Resonance"};                                                            \
-  o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Resonance"};                                                            \
+  o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass for Resonance"};                                                            \
+  o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass for Resonance"};                                                            \
   o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> posDauMaskBelowThres{"posDauMaskBelowThres", 0x10u, "Bitmask for positive daughter below threshold"}; \
   o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> posDauMaskAboveThres{"posDauMaskAboveThres", 0x8u, "Bitmask for positive daughter above threshold"};  \
   o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> negDauMaskBelowThres{"negDauMaskBelowThres", 0x2u, "Bitmask for negative daughter below threshold"};  \
@@ -201,7 +202,7 @@ class TwoTrackResonanceBuilder
     mMass = vecResonance.M();
   }
 
-  bool checkFilters() const
+  [[nodiscard]] bool checkFilters() const
   {
     return ((mMass > mMassMin && mMass < mMassMax) &&
             (mPt > mPtMin && mPt < mPtMax) &&

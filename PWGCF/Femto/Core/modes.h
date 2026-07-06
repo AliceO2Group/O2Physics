@@ -24,7 +24,12 @@
 namespace o2::analysis::femto::modes
 {
 
-#define BIT(n) (1ULL << (n))
+template <typename Enum>
+constexpr std::underlying_type_t<Enum> bit(uint64_t n)
+{
+  using U = std::underlying_type_t<Enum>;
+  return static_cast<U>(U{1} << n);
+}
 
 // check if flag is set
 template <typename T>
@@ -43,11 +48,11 @@ constexpr bool isEqual(T lhs, T rhs)
 }
 
 enum class Mode : uint32_t {
-  kReco = BIT(0),
-  kQa = BIT(1),
-  kMc = BIT(2),
-  kSe = BIT(3),
-  kMe = BIT(4),
+  kReco = bit<Mode>(0),
+  kQa = bit<Mode>(1),
+  kMc = bit<Mode>(2),
+  kSe = bit<Mode>(3),
+  kMe = bit<Mode>(4),
   kReco_Qa = kReco | kQa,
   kReco_Mc = kReco | kMc,
   kReco_Qa_Mc = kReco | kQa | kMc,
@@ -60,11 +65,11 @@ enum class Mode : uint32_t {
 };
 
 enum class System : uint32_t {
-  kPP = BIT(0),
-  kPbPb = BIT(1),
-  kMC = BIT(2),
-  kRun3 = BIT(3),
-  kRun2 = BIT(4),
+  kPP = bit<System>(0),
+  kPbPb = bit<System>(1),
+  kMC = bit<System>(2),
+  kRun3 = bit<System>(3),
+  kRun2 = bit<System>(4),
   kPP_Run3 = kPP | kRun3,
   kPP_Run3_MC = kPP | kRun3 | kMC,
   kPP_Run2 = kPP | kRun2,

@@ -181,7 +181,7 @@ struct FemtoTripletTrackTrackCascade {
 
   void init(o2::framework::InitContext&)
   {
-    if ((doprocessXiSameEvent + doprocessXiSameEventMc) > 1 || (doprocessXiMixedEvent + doprocessXiMixedEventMc) > 1 || (doprocessOmegaSameEvent + doprocessOmegaSameEventMc) > 1 || (doprocessOmegaMixedEvent + doprocessOmegaMixedEventMc) > 1) {
+    if ((static_cast<int>(doprocessXiSameEvent) + static_cast<int>(doprocessXiSameEventMc)) > 1 || (static_cast<int>(doprocessXiMixedEvent) + static_cast<int>(doprocessXiMixedEventMc)) > 1 || (static_cast<int>(doprocessOmegaSameEvent) + static_cast<int>(doprocessOmegaSameEventMc)) > 1 || (static_cast<int>(doprocessOmegaMixedEvent) + static_cast<int>(doprocessOmegaMixedEventMc)) > 1) {
       LOG(fatal) << "More than 1 same or mixed event process function is activated. Breaking...";
     }
     bool processData = doprocessXiSameEvent || doprocessXiMixedEvent || doprocessOmegaSameEvent || doprocessOmegaMixedEvent;
@@ -302,10 +302,10 @@ struct FemtoTripletTrackTrackCascade {
   PROCESS_SWITCH(FemtoTripletTrackTrackCascade, processOmegaMixedEventMc, "Enable processing mixed event processing for tracks and omegas with mc information", false);
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoTripletTrackTrackCascade>(cfgc),
+    adaptAnalysisTask<FemtoTripletTrackTrackCascade>(context),
   };
   return workflow;
 }

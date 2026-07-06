@@ -163,12 +163,12 @@ const std::unordered_map<CollisionSels, std::string> collisionSelectionNames = {
 
 };
 
-template <const char* HistName>
+template <auto& HistName>
 class CollisionSelection : public BaseSelection<float, o2::analysis::femto::datatypes::CollisionMaskType, kCollisionSelsMax>
 {
  public:
   CollisionSelection() = default;
-  ~CollisionSelection() = default;
+  ~CollisionSelection() override = default;
 
   template <typename T1, typename T2>
   void configure(o2::framework::HistogramRegistry* registry, T1 const& filter, T2 const& config)
@@ -216,9 +216,9 @@ class CollisionSelection : public BaseSelection<float, o2::analysis::femto::data
       this->addSelection(kIsGoodItsLayersAll, collisionSelectionNames.at(kIsGoodItsLayersAll), config.isGoodItsLayersAll.value);
     }
 
-    const bool isMinimalCut = mPassThrough ? false : true;
-    const bool isOptionalCut = mPassThrough ? false : true;
-    const bool skipMostPermissiveBit = mPassThrough ? false : true;
+    const bool isMinimalCut = !mPassThrough;
+    const bool isOptionalCut = !mPassThrough;
+    const bool skipMostPermissiveBit = !mPassThrough;
 
     this->addSelection(kOccupancyMin, collisionSelectionNames.at(kOccupancyMin), config.occupancyMin.value, limits::kLowerLimit, skipMostPermissiveBit, isMinimalCut, false);
     this->addSelection(kOccupancyMax, collisionSelectionNames.at(kOccupancyMax), config.occupancyMax.value, limits::kUpperLimit, skipMostPermissiveBit, isMinimalCut, false);
@@ -248,7 +248,7 @@ class CollisionSelection : public BaseSelection<float, o2::analysis::femto::data
     mSphericity = computeSphericity(tracks);
   }
 
-  float getSphericity() const { return mSphericity; }
+  [[nodiscard]] float getSphericity() const { return mSphericity; }
 
   template <modes::System system, typename T>
   void setCentrality(const T& col)
@@ -260,7 +260,7 @@ class CollisionSelection : public BaseSelection<float, o2::analysis::femto::data
       mCentrality = col.centFT0C();
     }
   }
-  float getCentrality() const { return mCentrality; }
+  [[nodiscard]] float getCentrality() const { return mCentrality; }
 
   template <modes::System system, typename T>
   void setMultiplicity(const T& col)
@@ -273,7 +273,7 @@ class CollisionSelection : public BaseSelection<float, o2::analysis::femto::data
       mMultiplicity = col.multNTracksPV();
     }
   }
-  float getMultiplicity() const { return mMultiplicity; }
+  [[nodiscard]] float getMultiplicity() const { return mMultiplicity; }
 
   template <typename T>
   bool checkFilters(T const& col) const
@@ -331,7 +331,7 @@ class CollisionSelection : public BaseSelection<float, o2::analysis::femto::data
     this->assembleBitmask<HistName>();
   };
 
-  bool passThroughAllCollisions() const { return mPassThrough; }
+  [[nodiscard]] bool passThroughAllCollisions() const { return mPassThrough; }
 
  protected:
   template <typename T>
@@ -408,7 +408,7 @@ struct ConfCollisionTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceQns{"produceQns", -1, "Produce Qn (-1: auto; 0 off; 1 on)"};
 };
 
-template <const char* HistName>
+template <auto& HistName>
 class CollisionBuilder
 {
  public:

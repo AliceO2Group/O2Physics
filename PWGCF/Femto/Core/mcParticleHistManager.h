@@ -70,7 +70,7 @@ enum McParticleHist {
 
 constexpr std::size_t MaxSecondary = 3;
 
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfMcParticleBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};
@@ -142,12 +142,12 @@ auto makeMcParticleHistSpecMap(const T& confBinning)
   };
 }
 
-constexpr char PrefixMcParticle1[] = "McParticle1/";
-constexpr char PrefixMcParticle2[] = "McParticle2/";
+inline constexpr char PrefixMcParticle1[] = "McParticle1/";
+inline constexpr char PrefixMcParticle2[] = "McParticle2/";
 
 constexpr std::string_view McDir = "MC/";
 
-template <const char* prefix>
+template <auto& prefix>
 class McParticleHistManager
 {
  public:

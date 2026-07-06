@@ -117,7 +117,7 @@ struct FemtoTripletTrackTrackTrack {
 
   void init(o2::framework::InitContext&)
   {
-    if ((doprocessSameEvent + doprocessSameEventMc) > 1 || (doprocessMixedEvent + doprocessMixedEventMc) > 1) {
+    if ((static_cast<int>(doprocessSameEvent) + static_cast<int>(doprocessSameEventMc)) > 1 || (static_cast<int>(doprocessMixedEvent) + static_cast<int>(doprocessMixedEventMc)) > 1) {
       LOG(fatal) << "More than 1 same or mixed event process function is activated. Breaking...";
     }
     bool processData = doprocessSameEvent || doprocessMixedEvent;
@@ -184,10 +184,10 @@ struct FemtoTripletTrackTrackTrack {
   PROCESS_SWITCH(FemtoTripletTrackTrackTrack, processMixedEventMc, "Enable processing mixed event processing", false);
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoTripletTrackTrackTrack>(cfgc),
+    adaptAnalysisTask<FemtoTripletTrackTrackTrack>(context),
   };
   return workflow;
 }

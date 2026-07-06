@@ -120,7 +120,7 @@ struct FemtoKinkQa {
 
   void init(o2::framework::InitContext&)
   {
-    if ((doprocessSigma + doprocessSigmaMc + doprocessSigmaPlus + doprocessSigmaPlusMc) > 1) {
+    if ((static_cast<int>(doprocessSigma) + static_cast<int>(doprocessSigmaMc) + static_cast<int>(doprocessSigmaPlus) + static_cast<int>(doprocessSigmaPlusMc)) > 1) {
       LOG(fatal) << "Only one process can be activated";
     }
 
@@ -221,10 +221,10 @@ struct FemtoKinkQa {
   PROCESS_SWITCH(FemtoKinkQa, processSigmaPlusMc, "Process sigmas", false);
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoKinkQa>(cfgc),
+    adaptAnalysisTask<FemtoKinkQa>(context),
   };
   return workflow;
 }

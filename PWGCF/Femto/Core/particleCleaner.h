@@ -23,7 +23,7 @@
 
 namespace o2::analysis::femto::particlecleaner
 {
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfParticleCleaner : o2::framework::ConfigurableGroup {
   std::string prefix = std::string(Prefix);
   o2::framework::Configurable<bool> activate{"activate", false, "Activate particle cleaner"};
@@ -119,12 +119,9 @@ class ParticleCleaner
     // No MC particle at all → no mother/partonic-mother info is reachable either,
     // since that lookup now goes through the mc particle row.
     if (!particle.has_fMcParticle()) {
-      if (mRejectParticleWithoutMcParticle || !mRequiredPdgCodes.empty() ||
-          mRejectParticleWithoutMcMother || !mRequiredMotherPdgCodes.empty() ||
-          mRejectParticleWithoutMcPartonicMother || !mRequiredPartonicMotherPdgCodes.empty()) {
-        return false;
-      }
-      return true;
+      return !mRejectParticleWithoutMcParticle && mRequiredPdgCodes.empty() &&
+          !mRejectParticleWithoutMcMother && mRequiredMotherPdgCodes.empty() &&
+          !mRejectParticleWithoutMcPartonicMother && mRequiredPartonicMotherPdgCodes.empty();
     }
 
     auto mcParticle = particle.template fMcParticle_as<T2>();
@@ -238,12 +235,12 @@ class ParticleCleaner
   bool mRejectParticleWithoutMcParticle = true;
   bool mRejectParticleWithoutMcMother = true;
   bool mRejectParticleWithoutMcPartonicMother = true;
-  std::vector<int> mRequiredPdgCodes{};
-  std::vector<int> mRejectedPdgCodes{};
-  std::vector<int> mRequiredMotherPdgCodes{};
-  std::vector<int> mRejectedMotherPdgCodes{};
-  std::vector<int> mRequiredPartonicMotherPdgCodes{};
-  std::vector<int> mRejectedPartonicMotherPdgCodes{};
+  std::vector<int> mRequiredPdgCodes;
+  std::vector<int> mRejectedPdgCodes;
+  std::vector<int> mRequiredMotherPdgCodes;
+  std::vector<int> mRejectedMotherPdgCodes;
+  std::vector<int> mRequiredPartonicMotherPdgCodes;
+  std::vector<int> mRejectedPartonicMotherPdgCodes;
 };
 
 } // namespace o2::analysis::femto::particlecleaner

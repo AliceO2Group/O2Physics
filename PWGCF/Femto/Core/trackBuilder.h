@@ -127,7 +127,7 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
 };
 
 // define the template structure for TrackSelection
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   std::string prefix = Prefix; // Unique prefix based on the template argument
   // configuration parameters
@@ -287,12 +287,12 @@ const std::unordered_map<TrackSels, std::string> trackSelectionNames = {
 
 /// \class FemtoDreamTrackCuts
 /// \brief Cut class to contain and execute all cuts applied to tracks
-template <const char* HistName>
+template <auto& HistName>
 class TrackSelection : public BaseSelection<float, o2::analysis::femto::datatypes::TrackMaskType, kTrackSelsMax>
 {
  public:
   TrackSelection() = default;
-  ~TrackSelection() = default;
+  ~TrackSelection() override = default;
 
   template <typename T1, typename T2>
   void configure(o2::framework::HistogramRegistry* registry, T1& config, T2& filter)
@@ -309,9 +309,9 @@ class TrackSelection : public BaseSelection<float, o2::analysis::femto::datatype
     mPassThrough = config.passThrough.value;
 
     // if pass through mode is activated, each cut is neutral (i.e. neither minimal nor optional and we do store all bits, so the most permissive bit is not skipped for minimal selections)
-    const bool isMinimalCut = mPassThrough ? false : true;
-    const bool isOptionalCut = mPassThrough ? false : true;
-    const bool skipMostPermissiveBit = mPassThrough ? false : true;
+    const bool isMinimalCut = !mPassThrough;
+    const bool isOptionalCut = !mPassThrough;
+    const bool skipMostPermissiveBit = !mPassThrough;
 
     // add selections for track quality
     this->addSelection(kTPCnClsMin, trackSelectionNames.at(kTPCnClsMin), config.tpcClustersMin.value, limits::kLowerLimit, skipMostPermissiveBit, isMinimalCut, false);
@@ -471,11 +471,7 @@ class TrackSelection : public BaseSelection<float, o2::analysis::femto::datatype
     this->assembleBitmask<HistName>();
   }
 
-  bool
-    passThroughAllTracks() const
-  {
-    return mPassThrough;
-  }
+  [[nodiscard]] bool passThroughAllTracks() const { return mPassThrough; }
 
  protected:
   float mElectronTofThres = 99.f;
@@ -527,7 +523,7 @@ struct ConfTrackTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceHeliumPids{"produceHeliumPids", -1, "Produce HeliumPids (-1: auto; 0 off; 1 on)"};
 };
 
-template <const char* HistName>
+template <auto& HistName>
 class TrackBuilder
 {
  public:

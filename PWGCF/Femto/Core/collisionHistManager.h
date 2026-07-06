@@ -89,31 +89,34 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
     {kTrueMultVsMult, o2::framework::HistType::kTH2F, "hTrueMultVsMult", "True multiplicity vs multiplicity; Multiplicity_{True}; Multiplicity"},
   }};
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define COL_HIST_ANALYSIS_MAP(conf) \
-  {kPosZ, {conf.vtxZ}},             \
-    {kMult, {conf.mult}},           \
-    {kCent, {conf.cent}},           \
-    {kMagField, {conf.magField}},
+  {kPosZ, {(conf).vtxZ}},             \
+    {kMult, {(conf).mult}},           \
+    {kCent, {(conf).cent}},           \
+    {kMagField, {(conf).magField}},
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define COL_HIST_QA_MAP(confAnalysis, confQa)                    \
-  {kPosX, {confQa.vtxXY}},                                       \
-    {kPosY, {confQa.vtxXY}},                                     \
-    {kPos, {confQa.vtx}},                                        \
-    {kSphericity, {confQa.sphericity}},                          \
-    {kOccupancy, {confQa.occupancy}},                            \
-    {kPoszVsMult, {confAnalysis.vtxZ, confAnalysis.mult}},       \
-    {kPoszVsCent, {confAnalysis.vtxZ, confAnalysis.cent}},       \
-    {kCentVsMult, {confAnalysis.cent, confAnalysis.mult}},       \
-    {kMultVsSphericity, {confAnalysis.mult, confQa.sphericity}}, \
-    {kCentVsSphericity, {confBinningAnalysis.cent, confQa.sphericity}},
+  {kPosX, {(confQa).vtxXY}},                                       \
+    {kPosY, {(confQa).vtxXY}},                                     \
+    {kPos, {(confQa).vtx}},                                        \
+    {kSphericity, {(confQa).sphericity}},                          \
+    {kOccupancy, {(confQa).occupancy}},                            \
+    {kPoszVsMult, {(confAnalysis).vtxZ, (confAnalysis).mult}},       \
+    {kPoszVsCent, {(confAnalysis).vtxZ, (confAnalysis).cent}},       \
+    {kCentVsMult, {(confAnalysis).cent, (confAnalysis).mult}},       \
+    {kMultVsSphericity, {(confAnalysis).mult, (confQa).sphericity}}, \
+    {kCentVsSphericity, {confBinningAnalysis.cent, (confQa).sphericity}},
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define COL_HIST_MC_MAP(conf)                  \
-  {kTruePosZ, {conf.vtxZ}},                    \
-    {kTrueCent, {conf.cent}},                  \
-    {kTrueMult, {conf.mult}},                  \
-    {kTruePosZVsPosZ, {conf.vtxZ, conf.vtxZ}}, \
-    {kTrueCentVsCent, {conf.cent, conf.cent}}, \
-    {kTrueMultVsMult, {conf.mult, conf.mult}},
+  {kTruePosZ, {(conf).vtxZ}},                    \
+    {kTrueCent, {(conf).cent}},                  \
+    {kTrueMult, {(conf).mult}},                  \
+    {kTruePosZVsPosZ, {(conf).vtxZ, (conf).vtxZ}}, \
+    {kTrueCentVsCent, {(conf).cent, (conf).cent}}, \
+    {kTrueMultVsMult, {(conf).mult, (conf).mult}},
 
 template <typename T>
 auto makeColHistSpecMap(const T& confBinningAnalysis)

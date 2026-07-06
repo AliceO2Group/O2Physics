@@ -88,7 +88,7 @@ enum CascadeHist {
 
 constexpr std::size_t MaxSecondary = 3;
 
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfCascadeBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};
@@ -104,7 +104,7 @@ using ConfXiBinning = ConfCascadeBinning<PrefixXiBinning>;
 constexpr const char PrefixOmegaBinning[] = "OmegaBinning";
 using ConfOmegaBinning = ConfCascadeBinning<PrefixOmegaBinning>;
 
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfCascadeQaBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   o2::framework::Configurable<bool> plot2d{"plot2d", true, "Enable 2d Qa histograms"};
@@ -170,50 +170,55 @@ constexpr std::array<histmanager::HistInfo<CascadeHist>, kCascadeHistLast> HistT
    {kSecondaryOther, o2::framework::HistType::kTH2F, "hFromSecondaryOther", "Particles from every other secondary decay; p_{T} (GeV/#it{c}); cos(#alpha)"}},
 };
 
+
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CASCADE_HIST_ANALYSIS_MAP(conf) \
-  {kPt, {conf.pt}},                     \
-    {kEta, {conf.eta}},                 \
-    {kPhi, {conf.phi}},                 \
-    {kMass, {conf.mass}},               \
-    {kSign, {conf.sign}},               \
-    {kPtVsMass, {conf.pt, conf.mass}},
+  {kPt, {(conf).pt}},                     \
+    {kEta, {(conf).eta}},                 \
+    {kPhi, {(conf).phi}},                 \
+    {kMass, {(conf).mass}},               \
+    {kSign, {(conf).sign}},               \
+    {kPtVsMass, {(conf).pt, (conf).mass}},
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CASCADE_HIST_MC_MAP(conf)          \
-  {kTruePtVsPt, {conf.pt, conf.pt}},       \
-    {kTrueEtaVsEta, {conf.eta, conf.eta}}, \
-    {kTruePhiVsPhi, {conf.phi, conf.phi}}, \
-    {kPdg, {conf.pdgCodes}},               \
-    {kPdgMother, {conf.pdgCodes}},         \
-    {kPdgPartonicMother, {conf.pdgCodes}},
+  {kTruePtVsPt, {(conf).pt, (conf).pt}},       \
+    {kTrueEtaVsEta, {(conf).eta, (conf).eta}}, \
+    {kTruePhiVsPhi, {(conf).phi, (conf).phi}}, \
+    {kPdg, {(conf).pdgCodes}},               \
+    {kPdgMother, {(conf).pdgCodes}},         \
+    {kPdgPartonicMother, {(conf).pdgCodes}},
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CASCADE_HIST_QA_MAP(confAnalysis, confQa)          \
-  {kCosPa, {confQa.cosPa}},                                \
-    {kDecayDauDca, {confQa.dauDcaAtDecay}},                \
-    {kTransRadius, {confQa.transRadius}},                  \
-    {kLambdaCosPa, {confQa.lambdaCosPa}},                  \
-    {kLambdaDauDca, {confQa.lambdaDauDca}},                \
-    {kLambdaTransRadius, {confQa.lambdaTransRadius}},      \
-    {kLambdaDcaToPv, {confQa.lambdaDcaToPv}},              \
-    {kPtVsEta, {confAnalysis.pt, confAnalysis.eta}},       \
-    {kPtVsPhi, {confAnalysis.pt, confAnalysis.phi}},       \
-    {kPhiVsEta, {confAnalysis.phi, confAnalysis.eta}},     \
-    {kPtVsCosPa, {confAnalysis.pt, confQa.cosPa}},         \
-    {kMassXi, {confQa.massXi}},                            \
-    {kMassOmega, {confQa.massOmega}},                      \
-    {kPtVsMassXi, {confAnalysis.pt, confQa.massXi}},       \
-    {kPtVsMassOmega, {confAnalysis.pt, confQa.massOmega}}, \
-    {kMassXiVsMassOmega, {confQa.massXi, confQa.massOmega}},
+  {kCosPa, {(confQa).cosPa}},                                \
+    {kDecayDauDca, {(confQa).dauDcaAtDecay}},                \
+    {kTransRadius, {(confQa).transRadius}},                  \
+    {kLambdaCosPa, {(confQa).lambdaCosPa}},                  \
+    {kLambdaDauDca, {(confQa).lambdaDauDca}},                \
+    {kLambdaTransRadius, {(confQa).lambdaTransRadius}},      \
+    {kLambdaDcaToPv, {(confQa).lambdaDcaToPv}},              \
+    {kPtVsEta, {(confAnalysis).pt, (confAnalysis).eta}},       \
+    {kPtVsPhi, {(confAnalysis).pt, (confAnalysis).phi}},       \
+    {kPhiVsEta, {(confAnalysis).phi, (confAnalysis).eta}},     \
+    {kPtVsCosPa, {(confAnalysis).pt, (confQa).cosPa}},         \
+    {kMassXi, {(confQa).massXi}},                            \
+    {kMassOmega, {(confQa).massOmega}},                      \
+    {kPtVsMassXi, {(confAnalysis).pt, (confQa).massXi}},       \
+    {kPtVsMassOmega, {(confAnalysis).pt, (confQa).massOmega}}, \
+    {kMassXiVsMassOmega, {(confQa).massXi, (confQa).massOmega}},
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CASCADE_HIST_MC_QA_MAP(confAnalysis, confQa)        \
-  {kNoMcParticle, {confAnalysis.pt, confQa.cosPa}},         \
-    {kPrimary, {confAnalysis.pt, confQa.cosPa}},            \
-    {kFromWrongCollision, {confAnalysis.pt, confQa.cosPa}}, \
-    {kFromMaterial, {confAnalysis.pt, confQa.cosPa}},       \
-    {kMissidentified, {confAnalysis.pt, confQa.cosPa}},     \
-    {kSecondary1, {confAnalysis.pt, confQa.cosPa}},         \
-    {kSecondary2, {confAnalysis.pt, confQa.cosPa}},         \
-    {kSecondary3, {confAnalysis.pt, confQa.cosPa}},         \
-    {kSecondaryOther, {confAnalysis.pt, confQa.cosPa}},
+  {kNoMcParticle, {(confAnalysis).pt, (confQa).cosPa}},         \
+    {kPrimary, {(confAnalysis).pt, (confQa).cosPa}},            \
+    {kFromWrongCollision, {(confAnalysis).pt, (confQa).cosPa}}, \
+    {kFromMaterial, {(confAnalysis).pt, (confQa).cosPa}},       \
+    {kMissidentified, {(confAnalysis).pt, (confQa).cosPa}},     \
+    {kSecondary1, {(confAnalysis).pt, (confQa).cosPa}},         \
+    {kSecondary2, {(confAnalysis).pt, (confQa).cosPa}},         \
+    {kSecondary3, {(confAnalysis).pt, (confQa).cosPa}},         \
+    {kSecondaryOther, {(confAnalysis).pt, (confQa).cosPa}},
 
 template <typename T>
 auto makeCascadeHistSpecMap(const T& confBinningAnalysis)
@@ -253,6 +258,7 @@ std::map<CascadeHist, std::vector<o2::framework::AxisSpec>> makeCascadeMcQaHistS
 #undef CASCADE_HIST_QA_MAP
 #undef CASCADE_HIST_MC_QA_MAP
 
+
 constexpr char PrefixXiQa[] = "XiQA/";
 constexpr char PrefixXi[] = "Xi/";
 constexpr char PrefixOmegaQa[] = "OmegaQa/";
@@ -267,10 +273,10 @@ constexpr std::string_view McDir = "MC/";
 /// \class FemtoDreamEventHisto
 /// \brief Class for histogramming event properties
 // template <femtomodes::Mode mode>
-template <const char* cascadePrefix,
-          const char* bachelorPrefix,
-          const char* posDauPrefix,
-          const char* negDauPrefix,
+template <auto& cascadePrefix,
+          auto& bachelorPrefix,
+          auto& posDauPrefix,
+          auto& negDauPrefix,
           modes::Cascade cascade>
 class CascadeHistManager
 {

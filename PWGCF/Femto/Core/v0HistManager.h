@@ -93,24 +93,26 @@ enum V0Hist {
 
 constexpr std::size_t MaxSecondary = 3;
 
-#define V0_DEFAULT_BINNING(defaultMassMin, defaultMassMax)                                         \
-  o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};                                   \
-  o2::framework::ConfigurableAxis eta{"eta", {{300, -1.5, 1.5}}, "Eta"};                           \
-  o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"}; \
-  o2::framework::ConfigurableAxis mass{"mass", {{200, defaultMassMin, defaultMassMax}}, "Mass"};   \
-  o2::framework::ConfigurableAxis sign{"sign", {{3, -1.5, 1.5}}, "Sign"};                          \
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define V0_DEFAULT_BINNING(defaultMassMin, defaultMassMax)                                           \
+  o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};                                     \
+  o2::framework::ConfigurableAxis eta{"eta", {{300, -1.5, 1.5}}, "Eta"};                             \
+  o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"};   \
+  o2::framework::ConfigurableAxis mass{"mass", {{200, (defaultMassMin), (defaultMassMax)}}, "Mass"}; \
+  o2::framework::ConfigurableAxis sign{"sign", {{3, -1.5, 1.5}}, "Sign"};                            \
   o2::framework::ConfigurableAxis pdgCodes{"pdgCodes", {{8001, -4000.5, 4000.5}}, "MC ONLY: PDG codes of reconstructed V0s"};
 
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfLambdaBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   V0_DEFAULT_BINNING(1.0, 1.2)
 };
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfK0shortBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   V0_DEFAULT_BINNING(0.475, 0.515)
 };
+
 #undef V0_DEFAULT_BINNING
 
 constexpr const char PrefixLambdaBinning1[] = "LambdaBinning1";
@@ -118,7 +120,7 @@ using ConfLambdaBinning1 = ConfLambdaBinning<PrefixLambdaBinning1>;
 constexpr const char PrefixK0shortBinning1[] = "K0shortBinning1";
 using ConfK0shortBinning1 = ConfK0shortBinning<PrefixK0shortBinning1>;
 
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfV0QaBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   o2::framework::Configurable<bool> plot2d{"plot2d", true, "Generate various 2D QA plots"};
@@ -186,54 +188,58 @@ constexpr std::array<histmanager::HistInfo<V0Hist>, kV0HistLast> HistTable = {
    {kSecondaryOther, o2::framework::HistType::kTH2F, "hFromSecondaryOther", "Particles from every other secondary decay; p_{T} (GeV/#it{c}); cos(#alpha)"}},
 };
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define V0_HIST_ANALYSIS_MAP(conf) \
-  {kPt, {conf.pt}},                \
-    {kEta, {conf.eta}},            \
-    {kPhi, {conf.phi}},            \
-    {kMass, {conf.mass}},          \
-    {kSign, {conf.sign}},          \
-    {kPtVsMass, {conf.pt, conf.mass}},
+  {kPt, {(conf).pt}},              \
+    {kEta, {(conf).eta}},          \
+    {kPhi, {(conf).phi}},          \
+    {kMass, {(conf).mass}},        \
+    {kSign, {(conf).sign}},        \
+    {kPtVsMass, {(conf).pt, (conf).mass}},
 
-#define V0_HIST_MC_MAP(conf)               \
-  {kTruePtVsPt, {conf.pt, conf.pt}},       \
-    {kTrueEtaVsEta, {conf.eta, conf.eta}}, \
-    {kTruePhiVsPhi, {conf.phi, conf.phi}}, \
-    {kPdg, {conf.pdgCodes}},               \
-    {kPdgMother, {conf.pdgCodes}},         \
-    {kPdgPartonicMother, {conf.pdgCodes}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define V0_HIST_MC_MAP(conf)                   \
+  {kTruePtVsPt, {(conf).pt, (conf).pt}},       \
+    {kTrueEtaVsEta, {(conf).eta, (conf).eta}}, \
+    {kTruePhiVsPhi, {(conf).phi, (conf).phi}}, \
+    {kPdg, {(conf).pdgCodes}},                 \
+    {kPdgMother, {(conf).pdgCodes}},           \
+    {kPdgPartonicMother, {(conf).pdgCodes}},
 
-#define V0_HIST_QA_MAP(confAnalysis, confQa)                                   \
-  {kCosPa, {confQa.cosPa}},                                                    \
-    {kDecayDauDca, {confQa.dauDcaAtDecay}},                                    \
-    {kDecayVtxX, {confQa.decayVertex}},                                        \
-    {kDecayVtxY, {confQa.decayVertex}},                                        \
-    {kDecayVtxZ, {confQa.decayVertex}},                                        \
-    {kDecayVtx, {confQa.decayVertex}},                                         \
-    {kTransRadius, {confQa.transRadius}},                                      \
-    {kPtVsEta, {confAnalysis.pt, confAnalysis.eta}},                           \
-    {kPtVsPhi, {confAnalysis.pt, confAnalysis.phi}},                           \
-    {kPhiVsEta, {confAnalysis.phi, confAnalysis.eta}},                         \
-    {kPtVsCosPa, {confAnalysis.pt, confQa.cosPa}},                             \
-    {kMassLambda, {confQa.massLambda}},                                        \
-    {kMassAntiLambda, {confQa.massAntiLambda}},                                \
-    {kMassK0short, {confQa.massK0short}},                                      \
-    {kPtVsLambdaMass, {confAnalysis.pt, confQa.massLambda}},                   \
-    {kPtVsAntiLambdaMass, {confAnalysis.pt, confQa.massAntiLambda}},           \
-    {kPtVsK0shortMass, {confAnalysis.pt, confQa.massK0short}},                 \
-    {kLambdaMassVsAntiLambdaMass, {confQa.massLambda, confQa.massAntiLambda}}, \
-    {kK0shortMassVsLambdaMass, {confQa.massK0short, confQa.massLambda}},       \
-    {kK0shortMassVsAntiLambdaMass, {confQa.massK0short, confQa.massAntiLambda}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define V0_HIST_QA_MAP(confAnalysis, confQa)                                       \
+  {kCosPa, {(confQa).cosPa}},                                                      \
+    {kDecayDauDca, {(confQa).dauDcaAtDecay}},                                      \
+    {kDecayVtxX, {(confQa).decayVertex}},                                          \
+    {kDecayVtxY, {(confQa).decayVertex}},                                          \
+    {kDecayVtxZ, {(confQa).decayVertex}},                                          \
+    {kDecayVtx, {(confQa).decayVertex}},                                           \
+    {kTransRadius, {(confQa).transRadius}},                                        \
+    {kPtVsEta, {(confAnalysis).pt, (confAnalysis).eta}},                           \
+    {kPtVsPhi, {(confAnalysis).pt, (confAnalysis).phi}},                           \
+    {kPhiVsEta, {(confAnalysis).phi, (confAnalysis).eta}},                         \
+    {kPtVsCosPa, {(confAnalysis).pt, (confQa).cosPa}},                             \
+    {kMassLambda, {(confQa).massLambda}},                                          \
+    {kMassAntiLambda, {(confQa).massAntiLambda}},                                  \
+    {kMassK0short, {(confQa).massK0short}},                                        \
+    {kPtVsLambdaMass, {(confAnalysis).pt, (confQa).massLambda}},                   \
+    {kPtVsAntiLambdaMass, {(confAnalysis).pt, (confQa).massAntiLambda}},           \
+    {kPtVsK0shortMass, {(confAnalysis).pt, (confQa).massK0short}},                 \
+    {kLambdaMassVsAntiLambdaMass, {(confQa).massLambda, (confQa).massAntiLambda}}, \
+    {kK0shortMassVsLambdaMass, {(confQa).massK0short, (confQa).massLambda}},       \
+    {kK0shortMassVsAntiLambdaMass, {(confQa).massK0short, (confQa).massAntiLambda}},
 
-#define V0_HIST_MC_QA_MAP(confAnalysis, confQa)             \
-  {kNoMcParticle, {confAnalysis.pt, confQa.cosPa}},         \
-    {kPrimary, {confAnalysis.pt, confQa.cosPa}},            \
-    {kFromWrongCollision, {confAnalysis.pt, confQa.cosPa}}, \
-    {kFromMaterial, {confAnalysis.pt, confQa.cosPa}},       \
-    {kMissidentified, {confAnalysis.pt, confQa.cosPa}},     \
-    {kSecondary1, {confAnalysis.pt, confQa.cosPa}},         \
-    {kSecondary2, {confAnalysis.pt, confQa.cosPa}},         \
-    {kSecondary3, {confAnalysis.pt, confQa.cosPa}},         \
-    {kSecondaryOther, {confAnalysis.pt, confQa.cosPa}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define V0_HIST_MC_QA_MAP(confAnalysis, confQa)                 \
+  {kNoMcParticle, {(confAnalysis).pt, (confQa).cosPa}},         \
+    {kPrimary, {(confAnalysis).pt, (confQa).cosPa}},            \
+    {kFromWrongCollision, {(confAnalysis).pt, (confQa).cosPa}}, \
+    {kFromMaterial, {(confAnalysis).pt, (confQa).cosPa}},       \
+    {kMissidentified, {(confAnalysis).pt, (confQa).cosPa}},     \
+    {kSecondary1, {(confAnalysis).pt, (confQa).cosPa}},         \
+    {kSecondary2, {(confAnalysis).pt, (confQa).cosPa}},         \
+    {kSecondary3, {(confAnalysis).pt, (confQa).cosPa}},         \
+    {kSecondaryOther, {(confAnalysis).pt, (confQa).cosPa}},
 
 template <typename T>
 auto makeV0HistSpecMap(const T& confBinningAnalysis)
@@ -289,9 +295,9 @@ constexpr std::string_view McDir = "MC/";
 /// \class FemtoDreamEventHisto
 /// \brief Class for histogramming event properties
 // template <femtomodes::Mode mode>
-template <const char* v0Prefix,
-          const char* posDauPrefix,
-          const char* negDauPrefix,
+template <auto& v0Prefix,
+          auto& posDauPrefix,
+          auto& negDauPrefix,
           modes::V0 v0>
 class V0HistManager
 {
@@ -561,7 +567,8 @@ class V0HistManager
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsCosPa, HistTable)), v0candidate.pt(), v0candidate.cosPa());
 
       if constexpr (modes::isEqual(v0, modes::V0::kLambda) || modes::isEqual(v0, modes::V0::kAntiLambda)) {
-        float massLambda, massAntiLambda;
+        float massLambda = 0;
+        float massAntiLambda = 0;
         if (v0candidate.sign() > 0) {
           massLambda = v0candidate.mass();
           massAntiLambda = v0candidate.massAnti();

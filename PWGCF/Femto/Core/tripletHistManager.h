@@ -169,32 +169,34 @@ constexpr std::array<histmanager::HistInfo<TripletHist>, kTripletHistogramLast>
       {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2VsVtz3VsMult3VsCent3, o2::framework::HistType::kTHnSparseF, "hVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2VsVtz3VsMult3VsCent3", "Mixing bins; V_{z,1} (cm); mult_{1}; cent_{1} (%); V_{z,2} (cm); mult_{2}; cent_{2} (%); V_{z,3} (cm); mult_{3}; cent_{3} (%);"},
     }};
 
-#define TRIPLET_HIST_ANALYSIS_MAP(conf, confMixing)                                                                             \
-  {kQ3, {conf.q3}},                                                                                                             \
-    {kMt, {conf.mt}},                                                                                                           \
-    {kPt1VsQ3, {conf.pt1, conf.q3}},                                                                                            \
-    {kPt2VsQ3, {conf.pt2, conf.q3}},                                                                                            \
-    {kPt3VsQ3, {conf.pt3, conf.q3}},                                                                                            \
-    {kQ3VsMt, {conf.q3, conf.mt}},                                                                                              \
-    {kQ3VsMult, {conf.q3, conf.multiplicity}},                                                                                  \
-    {kQ3VsCent, {conf.q3, conf.centrality}},                                                                                    \
-    {kPt1VsPt2VsPt3, {conf.pt1, conf.pt2, conf.pt3}},                                                                           \
-    {kQ3VsPt1VsPt2VsPt3, {conf.q3, conf.pt1, conf.pt2, conf.pt3}},                                                              \
-    {kQ3VsMtVsMult, {conf.q3, conf.mt, conf.multiplicity}},                                                                     \
-    {kQ3VsMtVsMultVsCent, {conf.q3, conf.mt, conf.multiplicity, conf.centrality}},                                              \
-    {kQ3VsMtVsPt1VsPt2VsPt3VsMult, {conf.q3, conf.mt, conf.pt1, conf.pt2, conf.pt3, conf.multiplicity}},                        \
-    {kQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent, {conf.q3, conf.mt, conf.pt1, conf.pt2, conf.pt3, conf.multiplicity, conf.centrality}}, \
-    {kSeNpart1VsNpart2VsNpart3, {confMixing.particleBinning, confMixing.particleBinning, confMixing.particleBinning}},          \
-    {kMeMixingWindowRaw, {confMixing.particleBinning}},                                                                         \
-    {kMeMixingWindowEffective, {confMixing.particleBinning}},                                                                   \
-    {kMeNpart1VsNpart2VsNpart3, {confMixing.particleBinning, confMixing.particleBinning, confMixing.particleBinning}},          \
-    {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2VsVtz3VsMult3VsCent3, {confMixing.vtxBins, confMixing.multBins, confMixing.centBins, confMixing.vtxBins, confMixing.multBins, confMixing.centBins, confMixing.vtxBins, confMixing.multBins, confMixing.centBins}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define TRIPLET_HIST_ANALYSIS_MAP(conf, confMixing)                                                                                           \
+  {kQ3, {(conf).q3}},                                                                                                                         \
+    {kMt, {(conf).mt}},                                                                                                                       \
+    {kPt1VsQ3, {(conf).pt1, (conf).q3}},                                                                                                      \
+    {kPt2VsQ3, {(conf).pt2, (conf).q3}},                                                                                                      \
+    {kPt3VsQ3, {(conf).pt3, (conf).q3}},                                                                                                      \
+    {kQ3VsMt, {(conf).q3, (conf).mt}},                                                                                                        \
+    {kQ3VsMult, {(conf).q3, (conf).multiplicity}},                                                                                            \
+    {kQ3VsCent, {(conf).q3, (conf).centrality}},                                                                                              \
+    {kPt1VsPt2VsPt3, {(conf).pt1, (conf).pt2, (conf).pt3}},                                                                                   \
+    {kQ3VsPt1VsPt2VsPt3, {(conf).q3, (conf).pt1, (conf).pt2, (conf).pt3}},                                                                    \
+    {kQ3VsMtVsMult, {(conf).q3, (conf).mt, (conf).multiplicity}},                                                                             \
+    {kQ3VsMtVsMultVsCent, {(conf).q3, (conf).mt, (conf).multiplicity, (conf).centrality}},                                                    \
+    {kQ3VsMtVsPt1VsPt2VsPt3VsMult, {(conf).q3, (conf).mt, (conf).pt1, (conf).pt2, (conf).pt3, (conf).multiplicity}},                          \
+    {kQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent, {(conf).q3, (conf).mt, (conf).pt1, (conf).pt2, (conf).pt3, (conf).multiplicity, (conf).centrality}}, \
+    {kSeNpart1VsNpart2VsNpart3, {(confMixing).particleBinning, (confMixing).particleBinning, (confMixing).particleBinning}},                  \
+    {kMeMixingWindowRaw, {(confMixing).particleBinning}},                                                                                     \
+    {kMeMixingWindowEffective, {(confMixing).particleBinning}},                                                                               \
+    {kMeNpart1VsNpart2VsNpart3, {(confMixing).particleBinning, (confMixing).particleBinning, (confMixing).particleBinning}},                  \
+    {kMeVtz1VsMult1VsCent1VsVtz2VsMult2VsCent2VsVtz3VsMult3VsCent3, {(confMixing).vtxBins, (confMixing).multBins, (confMixing).centBins, (confMixing).vtxBins, (confMixing).multBins, (confMixing).centBins, (confMixing).vtxBins, (confMixing).multBins, (confMixing).centBins}},
 
-#define TRIPLET_HIST_MC_MAP(conf)                              \
-  {kTrueQ3VsQ3, {conf.q3, conf.q3}},                           \
-    {kTrueMtVsMt, {conf.mt, conf.mt}},                         \
-    {kTrueMultVsMult, {conf.multiplicity, conf.multiplicity}}, \
-    {kTrueCentVsCent, {conf.centrality, conf.centrality}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define TRIPLET_HIST_MC_MAP(conf)                                  \
+  {kTrueQ3VsQ3, {(conf).q3, (conf).q3}},                           \
+    {kTrueMtVsMt, {(conf).mt, (conf).mt}},                         \
+    {kTrueMultVsMult, {(conf).multiplicity, (conf).multiplicity}}, \
+    {kTrueCentVsCent, {(conf).centrality, (conf).centrality}},
 
 template <typename T1, typename T2>
 auto makeTripletHistSpecMap(T1 const& confPairBinning, T2 const& confMixing)
@@ -227,7 +229,7 @@ constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
 constexpr std::string_view McDir = "MC/";
 
-template <const char* prefix,
+template <auto& prefix,
           modes::Particle particleType1,
           modes::Particle particleType2,
           modes::Particle particleType3>
@@ -646,9 +648,9 @@ class TripletHistManager
   int mAbsCharge1 = 1;
   int mAbsCharge2 = 1;
   int mAbsCharge3 = 1;
-  ROOT::Math::PtEtaPhiMVector mParticle1{};
-  ROOT::Math::PtEtaPhiMVector mParticle2{};
-  ROOT::Math::PtEtaPhiMVector mParticle3{};
+  ROOT::Math::PtEtaPhiMVector mParticle1;
+  ROOT::Math::PtEtaPhiMVector mParticle2;
+  ROOT::Math::PtEtaPhiMVector mParticle3;
   float mMass1 = 0.f;
   float mMass2 = 0.f;
   float mMass3 = 0.f;
@@ -658,9 +660,9 @@ class TripletHistManager
   float mCent = 0.f;
 
   // mc
-  ROOT::Math::PtEtaPhiMVector mTrueParticle1{};
-  ROOT::Math::PtEtaPhiMVector mTrueParticle2{};
-  ROOT::Math::PtEtaPhiMVector mTrueParticle3{};
+  ROOT::Math::PtEtaPhiMVector mTrueParticle1;
+  ROOT::Math::PtEtaPhiMVector mTrueParticle2;
+  ROOT::Math::PtEtaPhiMVector mTrueParticle3;
   float mTrueQ3 = 0.f;
   float mTrueMt = 0.f;
   float mTrueMult = 0.f;
@@ -689,9 +691,9 @@ class TripletHistManager
   bool mPairCorrelationQa = false;
   bool mEventMixingQa = false;
 
-  std::unordered_set<int64_t> mParticles1PerEvent = {};
-  std::unordered_set<int64_t> mParticles2PerEvent = {};
-  std::unordered_set<int64_t> mParticles3PerEvent = {};
+  std::unordered_set<int64_t> mParticles1PerEvent;
+  std::unordered_set<int64_t> mParticles2PerEvent;
+  std::unordered_set<int64_t> mParticles3PerEvent;
 };
 } // namespace o2::analysis::femto::triplethistmanager
 #endif // PWGCF_FEMTO_CORE_TRIPLETHISTMANAGER_H_

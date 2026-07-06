@@ -116,7 +116,7 @@ struct FemtoTwotrackresonanceQa {
     auto posDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confPosDaughterBinning, confPosDaughterQaBinning);
     auto negDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confNegDaughterBinning, confNegDaughterQaBinning);
 
-    if ((doprocessPhis + doprocessRho0s + doprocessKstar0s) > 1) {
+    if ((static_cast<int>(doprocessPhis) + static_cast<int>(doprocessRho0s) + static_cast<int>(doprocessKstar0s)) > 1) {
       LOG(fatal) << "Only one process can be activated";
     }
 
@@ -175,10 +175,10 @@ struct FemtoTwotrackresonanceQa {
   PROCESS_SWITCH(FemtoTwotrackresonanceQa, processKstar0s, "Process Kstar0s", false);
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoTwotrackresonanceQa>(cfgc),
+    adaptAnalysisTask<FemtoTwotrackresonanceQa>(context),
   };
   return workflow;
 }

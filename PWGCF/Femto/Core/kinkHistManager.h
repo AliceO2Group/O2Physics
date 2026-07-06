@@ -86,24 +86,26 @@ enum KinkHist {
 
 constexpr std::size_t MaxSecondary = 3;
 
-#define KINK_DEFAULT_BINNING(defaultMassMin, defaultMassMax)                                       \
-  o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};                                   \
-  o2::framework::ConfigurableAxis eta{"eta", {{300, -1.5, 1.5}}, "Eta"};                           \
-  o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"}; \
-  o2::framework::ConfigurableAxis mass{"mass", {{200, defaultMassMin, defaultMassMax}}, "Mass"};   \
-  o2::framework::ConfigurableAxis sign{"sign", {{3, -1.5, 1.5}}, "Sign"};                          \
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define KINK_DEFAULT_BINNING(defaultMassMin, defaultMassMax)                                         \
+  o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};                                     \
+  o2::framework::ConfigurableAxis eta{"eta", {{300, -1.5, 1.5}}, "Eta"};                             \
+  o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"};   \
+  o2::framework::ConfigurableAxis mass{"mass", {{200, (defaultMassMin), (defaultMassMax)}}, "Mass"}; \
+  o2::framework::ConfigurableAxis sign{"sign", {{3, -1.5, 1.5}}, "Sign"};                            \
   o2::framework::ConfigurableAxis pdgCodes{"pdgCodes", {{8001, -4000.5, 4000.5}}, "PDG codes of selected V0s"};
 
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfSigmaBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   KINK_DEFAULT_BINNING(1.1, 1.3)
 };
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfSigmaPlusBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   KINK_DEFAULT_BINNING(1.1, 1.3)
 };
+
 #undef KINK_DEFAULT_BINNING
 
 constexpr const char PrefixSigmaBinning1[] = "SigmaBinning1";
@@ -112,7 +114,7 @@ using ConfSigmaBinning1 = ConfSigmaBinning<PrefixSigmaBinning1>;
 constexpr const char PrefixSigmaPlusBinning1[] = "SigmaPlusBinning1";
 using ConfSigmaPlusBinning1 = ConfSigmaPlusBinning<PrefixSigmaPlusBinning1>;
 
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfKinkQaBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   o2::framework::Configurable<bool> plot2d{"plot2d", true, "Enable 2d QA h histograms"};
@@ -169,46 +171,50 @@ constexpr std::array<histmanager::HistInfo<KinkHist>, kKinkHistLast> HistTable =
    {kSecondary3, o2::framework::HistType::kTH2F, "hFromSecondary3", "Particles from seconary decay; p_{T} (GeV/#it{c}); kink angle"},
    {kSecondaryOther, o2::framework::HistType::kTH2F, "hFromSecondaryOther", "Particles from every other seconary decay; p_{T} (GeV/#it{c}); kink angle"}}};
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define KINK_HIST_ANALYSIS_MAP(conf) \
-  {kPt, {conf.pt}},                  \
-    {kEta, {conf.eta}},              \
-    {kPhi, {conf.phi}},              \
-    {kMass, {conf.mass}},            \
-    {kSign, {conf.sign}},
+  {kPt, {(conf).pt}},                \
+    {kEta, {(conf).eta}},            \
+    {kPhi, {(conf).phi}},            \
+    {kMass, {(conf).mass}},          \
+    {kSign, {(conf).sign}},
 
-#define KINK_HIST_MC_MAP(conf)     \
-  {kTruePt, {conf.pt}},            \
-    {kTrueEta, {conf.eta}},        \
-    {kTruePhi, {conf.phi}},        \
-    {kPdg, {conf.pdgCodes}},       \
-    {kPdgMother, {conf.pdgCodes}}, \
-    {kPdgPartonicMother, {conf.pdgCodes}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define KINK_HIST_MC_MAP(conf)       \
+  {kTruePt, {(conf).pt}},            \
+    {kTrueEta, {(conf).eta}},        \
+    {kTruePhi, {(conf).phi}},        \
+    {kPdg, {(conf).pdgCodes}},       \
+    {kPdgMother, {(conf).pdgCodes}}, \
+    {kPdgPartonicMother, {(conf).pdgCodes}},
 
-#define KINK_HIST_QA_MAP(confAnalysis, confQa)             \
-  {kKinkAngle, {confQa.kinkAngle}},                        \
-    {kDcaMothToPV, {confQa.dcaMothToPV}},                  \
-    {kDcaDaugToPV, {confQa.dcaDaugToPV}},                  \
-    {kDecayVtxX, {confQa.decayVertex}},                    \
-    {kDecayVtxY, {confQa.decayVertex}},                    \
-    {kDecayVtxZ, {confQa.decayVertex}},                    \
-    {kDecayVtx, {confQa.decayVertex}},                     \
-    {kTransRadius, {confQa.transRadius}},                  \
-    {kPtVsEta, {confAnalysis.pt, confAnalysis.eta}},       \
-    {kPtVsPhi, {confAnalysis.pt, confAnalysis.phi}},       \
-    {kPhiVsEta, {confAnalysis.phi, confAnalysis.eta}},     \
-    {kPtVsKinkAngle, {confAnalysis.pt, confQa.kinkAngle}}, \
-    {kPtVsDecayRadius, {confAnalysis.pt, confQa.transRadius}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define KINK_HIST_QA_MAP(confAnalysis, confQa)                 \
+  {kKinkAngle, {(confQa).kinkAngle}},                        \
+    {kDcaMothToPV, {(confQa).dcaMothToPV}},                  \
+    {kDcaDaugToPV, {(confQa).dcaDaugToPV}},                  \
+    {kDecayVtxX, {(confQa).decayVertex}},                    \
+    {kDecayVtxY, {(confQa).decayVertex}},                    \
+    {kDecayVtxZ, {(confQa).decayVertex}},                    \
+    {kDecayVtx, {(confQa).decayVertex}},                     \
+    {kTransRadius, {(confQa).transRadius}},                  \
+    {kPtVsEta, {(confAnalysis).pt, (confAnalysis).eta}},       \
+    {kPtVsPhi, {(confAnalysis).pt, (confAnalysis).phi}},       \
+    {kPhiVsEta, {(confAnalysis).phi, (confAnalysis).eta}},     \
+    {kPtVsKinkAngle, {(confAnalysis).pt, (confQa).kinkAngle}}, \
+    {kPtVsDecayRadius, {(confAnalysis).pt, (confQa).transRadius}},
 
-#define KINK_HIST_MC_QA_MAP(confAnalysis, confQa)               \
-  {kNoMcParticle, {confAnalysis.pt, confQa.kinkAngle}},         \
-    {kPrimary, {confAnalysis.pt, confQa.kinkAngle}},            \
-    {kFromWrongCollision, {confAnalysis.pt, confQa.kinkAngle}}, \
-    {kFromMaterial, {confAnalysis.pt, confQa.kinkAngle}},       \
-    {kMissidentified, {confAnalysis.pt, confQa.kinkAngle}},     \
-    {kSecondary1, {confAnalysis.pt, confQa.kinkAngle}},         \
-    {kSecondary2, {confAnalysis.pt, confQa.kinkAngle}},         \
-    {kSecondary3, {confAnalysis.pt, confQa.kinkAngle}},         \
-    {kSecondaryOther, {confAnalysis.pt, confQa.kinkAngle}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define KINK_HIST_MC_QA_MAP(confAnalysis, confQa)                   \
+  {kNoMcParticle, {(confAnalysis).pt, (confQa).kinkAngle}},         \
+    {kPrimary, {(confAnalysis).pt, (confQa).kinkAngle}},            \
+    {kFromWrongCollision, {(confAnalysis).pt, (confQa).kinkAngle}}, \
+    {kFromMaterial, {(confAnalysis).pt, (confQa).kinkAngle}},       \
+    {kMissidentified, {(confAnalysis).pt, (confQa).kinkAngle}},     \
+    {kSecondary1, {(confAnalysis).pt, (confQa).kinkAngle}},         \
+    {kSecondary2, {(confAnalysis).pt, (confQa).kinkAngle}},         \
+    {kSecondary3, {(confAnalysis).pt, (confQa).kinkAngle}},         \
+    {kSecondaryOther, {(confAnalysis).pt, (confQa).kinkAngle}},
 
 template <typename T>
 auto makeKinkHistSpecMap(const T& confBinningAnalysis)
@@ -261,8 +267,8 @@ constexpr std::string_view McDir = "MC/";
 
 constexpr int AbsChargeDaughters = 1;
 
-template <const char* kinkPrefix,
-          const char* chaDauPrefix,
+template <auto& kinkPrefix,
+          auto& chaDauPrefix,
           modes::Kink kink>
 class KinkHistManager
 {
