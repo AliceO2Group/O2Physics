@@ -416,15 +416,15 @@ struct spvector {
 
   int currentRunNumber = -999;
   int lastRunNumber = -999;
-  TH2D* gainprofile;
-  TProfile* gainprofilevxy;
+  TH2D* gainprofile = nullptr;
+  TProfile* gainprofilevxy = nullptr;
   std::array<THnF*, 6> hrecentereSpA;     // Array of 6 histograms
   std::array<TH2F*, 6> hrecenterecentSpA; // Array of 5 histograms
   std::array<TH2F*, 6> hrecenterevxSpA;   // Array of 5 histograms
   std::array<TH2F*, 6> hrecenterevySpA;   // Array of 5 histograms
   std::array<TH2F*, 6> hrecenterevzSpA;   // Array of 5 histograms
-  TProfile3D* shiftprofileA;
-  TProfile3D* shiftprofileC;
+  TProfile3D* shiftprofileA = nullptr;
+  TProfile3D* shiftprofileC = nullptr;
   TH2F* hrecentereTimeSp1 = nullptr;
   TH2F* hrecentereTimeSp2 = nullptr;
   TH2F* hrecentereTimeSp3 = nullptr;
@@ -696,7 +696,8 @@ struct spvector {
     // Store first timestamp of run to calculate relative time
     static std::unordered_map<int, uint64_t> runStartTime;
     if (runStartTime.find(currentRunNumber) == runStartTime.end()) {
-      runStartTime[currentRunNumber] = timestampzdc;
+      // runStartTime[currentRunNumber] = timestampzdc;
+      runStartTime.try_emplace(currentRunNumber, timestampzdc);
     }
 
     double timeMin = (timestampzdc - runStartTime[currentRunNumber]) / 60000.0; // ms -> minutes
