@@ -241,7 +241,7 @@ const std::unordered_map<TrackSels, std::string> trackSelectionNames = {
   {kTPCcRowsMin, "Min. number of crossed TPC rows"},
   {kTPCnClsOvercRowsMin, "Min. fraction of TPC clusters over TPC crossed rows"},
   {kTPCsClsMax, "Max. number of shared TPC clusters"},
-  {kTPCsClsMax, "Max. number of shared TPC clusters"},
+  // NOTE: removed duplicate {kTPCsClsMax, ...} entry that was here (harmless but dead duplicate key).
   {kTPCsClsFracMax, "Max. fractions of shared TPC clusters"},
   {kITSnClsMin, "Min. number of ITS clusters"},
   {kITSnClsIbMin, "Min. number of ITS clusters in the inner barrel"},
@@ -588,15 +588,18 @@ class TrackBuilder
   }
 
   template <modes::Track type, typename T1, typename T2, typename T3>
-  void fillTrack(T1 const& track, T2& trackProducts, T3& collisionProducts)
+  bool fillTrack(T1 const& track, T2& trackProducts, T3& collisionProducts)
   {
-    if (mProduceTracks) {
-      trackProducts.producedTracks(collisionProducts.producedCollision.lastIndex(),
-                                   track.pt() * track.sign(),
-                                   track.eta(),
-                                   track.phi());
-      indexMap.emplace(track.globalIndex(), trackProducts.producedTracks.lastIndex());
+    if (!mProduceTracks) {
+      return false;
     }
+
+    trackProducts.producedTracks(collisionProducts.producedCollision.lastIndex(),
+                                 track.pt() * track.sign(),
+                                 track.eta(),
+                                 track.phi());
+    indexMap.emplace(track.globalIndex(), trackProducts.producedTracks.lastIndex());
+
     if (mProduceTrackMasks) {
       if constexpr (type == modes::Track::kTrack) {
         trackProducts.producedTrackMasks(mTrackSelection.getBitmask());
@@ -672,6 +675,7 @@ class TrackBuilder
       }
       trackProducts.producedHeliumPids(itsHe, track.tpcNSigmaHe(), track.tofNSigmaHe());
     }
+    return true;
   }
 
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
@@ -681,6 +685,7 @@ class TrackBuilder
       return;
     }
     for (const auto& trackWithItsPid : tracksWithItsPid) {
+      // NOTE: passThrough is intentionally not wired in here yet for the MC path (to be added later).
       if (!mTrackSelection.checkFilters(trackWithItsPid)) {
         continue;
       }
@@ -696,13 +701,16 @@ class TrackBuilder
   }
 
   template <modes::System system, modes::Track trackType, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-  void fillMcTrack(T1 const& col, T2& collisionProducts, T3 const& mcCols, T4 const& track, T5 const& trackWithItsPid, T6& trackProducts, T7 const& mcParticles, T8& mcBuilder, T9& mcProducts)
+  bool fillMcTrack(T1 const& col, T2& collisionProducts, T3 const& mcCols, T4 const& track, T5 const& trackWithItsPid, T6& trackProducts, T7 const& mcParticles, T8& mcBuilder, T9& mcProducts)
   {
+    // NOTE: return value added, mirroring fillTrack(), so getDaughterIndex can detect
+    // whether a row was actually added before trusting lastIndex().
     if (!mProduceTracks) {
-      return;
+      return false;
     }
     this->template fillTrack<trackType>(trackWithItsPid, trackProducts, collisionProducts);
     mcBuilder.template fillMcTrackWithLabel<system>(col, mcCols, track, mcParticles, mcProducts);
+    return true;
   }
 
   template <modes::Track type, typename T1, typename T2, typename T3>
@@ -711,11 +719,13 @@ class TrackBuilder
     auto result = utils::getIndex(daughter.globalIndex(), indexMap);
     if (result) {
       return result.value();
-    } else {
-      this->fillTrack<type>(daughter, trackProducts, collisionProducts);
-      int64_t idx = trackProducts.producedTracks.lastIndex();
-      return idx;
     }
+    if (!this->template fillTrack<type>(daughter, trackProducts, collisionProducts)) {
+      LOG(fatal) << "Trying to register a daughter track, but FTracks table is disabled. "
+                 << "Enable TrackTables.produceTracks when V0/Cascade/Kink tables that need daughter indices are enabled.";
+    }
+    // daughter is last track which was added added
+    return trackProducts.producedTracks.lastIndex();
   }
 
   template <modes::System system, modes::Track type, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
@@ -725,11 +735,13 @@ class TrackBuilder
     if (result) {
       // daugher already in track table
       return result.value();
-    } else {
-      this->fillMcTrack<system, type>(col, collisionProducts, mcCols, daughter, daughter, trackProducts, mcParticles, mcBuilder, mcProducts);
-      // daughter is last track which was added added
-      return trackProducts.producedTracks.lastIndex();
     }
+    if (!this->template fillMcTrack<system, type>(col, collisionProducts, mcCols, daughter, daughter, trackProducts, mcParticles, mcBuilder, mcProducts)) {
+      LOG(fatal) << "Trying to register a MC daughter track, but FTracks table is disabled. "
+                 << "Enable TrackTables.produceTracks when V0/Cascade/Kink tables that need daughter indices are enabled.";
+    }
+    // daughter is last track which was added added
+    return trackProducts.producedTracks.lastIndex();
   }
 
   template <typename T>

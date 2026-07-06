@@ -53,12 +53,14 @@ struct ConfV0Filters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};
   o2::framework::Configurable<float> massMinLambda{"massMinLambda", 1.f, "Minimum mass for Lambda hypothesis"};
   o2::framework::Configurable<float> massMaxLambda{"massMaxLambda", 1.2f, "Maximum mass for Lambda hypothesis"};
-  o2::framework::Configurable<float> massMinK0short{"massMinK0short", 0.45f, "Minimum mass for K0Short hypothesis"};
-  o2::framework::Configurable<float> massMaxK0short{"massMaxK0short", 0.53f, "Maximum mass for K0Short hypothesis"};
-  o2::framework::Configurable<float> rejectMassMinLambda{"rejectMassMinLambda", 1.11f, "Minimum mass to rejection K0short hypothesis for Lambda candidates"};
-  o2::framework::Configurable<float> rejectMassMaxLambda{"rejectMassMaxLambda", 1.12f, "Maximum mass to rejection K0short hypothesis for Lambda candidates"};
+  o2::framework::Configurable<bool> rejectHypothesisK0short{"rejectK0short", true, "Rejection of K0short hypothesis for Lambda candidates"};
   o2::framework::Configurable<float> rejectMassMinK0short{"rejectMassMinK0short", 0.48f, "Minimum mass to rejection K0short hypothesis for Lambda candidates"};
   o2::framework::Configurable<float> rejectMassMaxK0short{"rejectMassMaxK0short", 0.5f, "Maximum mass to rejection K0short hypothesis for Lambda candidates"};
+  o2::framework::Configurable<float> massMinK0short{"massMinK0short", 0.45f, "Minimum mass for K0Short hypothesis"};
+  o2::framework::Configurable<float> massMaxK0short{"massMaxK0short", 0.53f, "Maximum mass for K0Short hypothesis"};
+  o2::framework::Configurable<bool> rejectHypothesisLambda{"rejectLambda", true, "Rejection of Lambda hypothesis for K0short candidates"};
+  o2::framework::Configurable<float> rejectMassMinLambda{"rejectMassMinLambda", 1.11f, "Minimum mass to rejection K0short hypothesis for Lambda candidates"};
+  o2::framework::Configurable<float> rejectMassMaxLambda{"rejectMassMaxLambda", 1.12f, "Maximum mass to rejection K0short hypothesis for Lambda candidates"};
 };
 
 // selections bits for all v0s
@@ -206,6 +208,7 @@ class V0Selection : public BaseSelection<float, o2::aod::femtodatatypes::V0MaskT
     if constexpr (modes::isEqual(v0Type, modes::V0::kLambda) || modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
       mMassLambdaLowerLimit = filter.massMinLambda.value;
       mMassLambdaUpperLimit = filter.massMaxLambda.value;
+      mRejectK0shortHypothesis = filter.rejectHypothesisK0short.value;
       mMassK0shortLowerLimit = filter.rejectMassMinK0short.value;
       mMassK0shortUpperLimit = filter.rejectMassMaxK0short.value;
 
@@ -222,6 +225,7 @@ class V0Selection : public BaseSelection<float, o2::aod::femtodatatypes::V0MaskT
     if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
       mMassK0shortLowerLimit = filter.massMinK0short.value;
       mMassK0shortUpperLimit = filter.massMaxK0short.value;
+      mRejectLambdaHypothesis = filter.rejectHypothesisLambda.value;
       mMassLambdaLowerLimit = filter.rejectMassMinLambda.value;
       mMassLambdaUpperLimit = filter.rejectMassMaxLambda.value;
       this->addSelection(kPosDaughTpcPion, v0SelectionNames.at(kPosDaughTpcPion), config.posDauTpcPion.value, limits::kAbsUpperLimit, skipMostPermissiveBit, isMinimalCut, false);
@@ -233,7 +237,7 @@ class V0Selection : public BaseSelection<float, o2::aod::femtodatatypes::V0MaskT
     this->addSelection(kTransRadMin, v0SelectionNames.at(kTransRadMin), config.transRadMin.value, limits::kLowerLimit, skipMostPermissiveBit, isMinimalCut, false);
     this->addSelection(kTransRadMax, v0SelectionNames.at(kTransRadMax), config.transRadMax.value, limits::kUpperLimit, skipMostPermissiveBit, isMinimalCut, false);
     this->addSelection(kDauAbsEtaMax, v0SelectionNames.at(kDauAbsEtaMax), config.dauAbsEtaMax.value, limits::kAbsUpperLimit, skipMostPermissiveBit, isMinimalCut, false);
-    this->addSelection(kDauDcaMin, v0SelectionNames.at(kDauDcaMin), config.dauDcaMin.value, limits::kAbsLowerFunctionLimit, skipMostPermissiveBit, isMinimalCut, false);
+    this->addSelection(kDauDcaMin, v0SelectionNames.at(kDauDcaMin), config.dauDcaMin.value, limits::kAbsLowerLimit, skipMostPermissiveBit, isMinimalCut, false);
     this->addSelection(kDauTpcClsMin, v0SelectionNames.at(kDauTpcClsMin), config.dauTpcClustersMin.value, limits::kLowerLimit, skipMostPermissiveBit, isMinimalCut, false);
 
     this->setupContainers<HistName>(registry);
@@ -290,19 +294,19 @@ class V0Selection : public BaseSelection<float, o2::aod::femtodatatypes::V0MaskT
     }
     // now check mass hypothesis
     if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
-      return (v0.mLambda() > mMassLambdaLowerLimit && v0.mLambda() < mMassLambdaUpperLimit) &&   // inside Λ
-             (v0.mK0Short() < mMassK0shortLowerLimit || v0.mK0Short() > mMassK0shortUpperLimit); // outside K0s
+      return (v0.mLambda() > mMassLambdaLowerLimit && v0.mLambda() < mMassLambdaUpperLimit) &&                                  // inside Λ
+             (!mRejectK0shortHypothesis || (v0.mK0Short() < mMassK0shortLowerLimit || v0.mK0Short() > mMassK0shortUpperLimit)); // outside K0s
     }
 
     if constexpr (modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
-      return (v0.mAntiLambda() > mMassLambdaLowerLimit && v0.mAntiLambda() < mMassLambdaUpperLimit) && // inside Λbar
-             (v0.mK0Short() < mMassK0shortLowerLimit || v0.mK0Short() > mMassK0shortUpperLimit);       // outside K0s
+      return (v0.mAntiLambda() > mMassLambdaLowerLimit && v0.mAntiLambda() < mMassLambdaUpperLimit) &&                          // inside Λbar
+             (!mRejectK0shortHypothesis || (v0.mK0Short() < mMassK0shortLowerLimit || v0.mK0Short() > mMassK0shortUpperLimit)); // outside K0s
     }
 
     if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
-      return (v0.mK0Short() > mMassK0shortLowerLimit && v0.mK0Short() < mMassK0shortUpperLimit) &&   // inside K0s
-             (v0.mLambda() < mMassLambdaLowerLimit || v0.mLambda() > mMassLambdaUpperLimit) &&       // outside Λ
-             (v0.mAntiLambda() < mMassLambdaLowerLimit || v0.mAntiLambda() > mMassLambdaUpperLimit); // outside Λbar
+      return (v0.mK0Short() > mMassK0shortLowerLimit && v0.mK0Short() < mMassK0shortUpperLimit) &&                                 // inside K0s
+             (!mRejectLambdaHypothesis || (v0.mLambda() < mMassLambdaLowerLimit || v0.mLambda() > mMassLambdaUpperLimit)) &&       // outside Λ
+             (!mRejectLambdaHypothesis || (v0.mAntiLambda() < mMassLambdaLowerLimit || v0.mAntiLambda() > mMassLambdaUpperLimit)); // outside Λbar
     }
     return false;
   }
@@ -312,9 +316,11 @@ class V0Selection : public BaseSelection<float, o2::aod::femtodatatypes::V0MaskT
  protected:
   float mMassK0shortLowerLimit = 0.483f;
   float mMassK0shortUpperLimit = 0.503f;
+  bool mRejectK0shortHypothesis = false;
 
   float mMassLambdaLowerLimit = 1.105f;
   float mMassLambdaUpperLimit = 1.125f;
+  bool mRejectLambdaHypothesis = false;
 
   bool mPassThrough = false;
 

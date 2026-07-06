@@ -136,7 +136,7 @@ constexpr std::array<histmanager::HistInfo<CascadeHist>, kCascadeHistLast> HistT
    {kEta, o2::framework::HistType::kTH1F, "hEta", "Pseudorapdity; #eta; Entries"},
    {kPhi, o2::framework::HistType::kTH1F, "hPhi", "Azimuthal angle; #varphi; Entries"},
    {kMass, o2::framework::HistType::kTH1F, "hMass", "Invariant Mass; m_{Inv} (GeV/#it{c}^{2}); Entries"},
-   {kSign, o2::framework::HistType::kTH1F, "hSign", "Sign (-1 -> antiparticle, 0 -> self conjugate, +1 -> particle); sign; Entries"},
+   {kSign, o2::framework::HistType::kTH1F, "hSign", "Sign (-1 -> particle, 0 -> self conjugate, +1 -> antiparticle); sign; Entries"},
    {kPtVsMass, o2::framework::HistType::kTH2F, "hPtVsMass", "Transverse momentum vs invariant mass; p_{T} (GeV/#it{c}); m_{Inv} (GeV/#it{c}^{2})"},
    {kMassXi, o2::framework::HistType::kTH1F, "hMassXi", "Mass #Xi; m_{#Lambda#pi} (GeV/#it{c}^{2}); Entries"},
    {kMassOmega, o2::framework::HistType::kTH1F, "hMassOmega", "mass #Omega; m_{#LambdaK} (GeV/#it{c}^{2}); Entries"},

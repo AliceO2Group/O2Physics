@@ -63,6 +63,7 @@ struct ConfCascadeFilters : o2::framework::ConfigurableGroup {
 };
 
 #define CASCADE_DEFAULT_BITS                                                                                                                               \
+  o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all Cascades are passed through. Bits for all selections are stored."};    \
   o2::framework::Configurable<std::vector<float>> cascadeCpaMin{"cascadeCpaMin", {0.95f}, "Minimum cosine of pointing angle"};                             \
   o2::framework::Configurable<std::vector<float>> cascadeTransRadMin{"cascadeTransRadMin", {0.9f}, "Minimum transverse radius (cm)"};                      \
   o2::framework::Configurable<std::vector<float>> cascadeDcaDauMax{"cascadeDcaDauMax", {0.25f}, "Maximum DCA between the daughters at decay vertex (cm)"}; \
@@ -179,19 +180,27 @@ class CascadeSelection : public BaseSelection<float, o2::aod::femtodatatypes::Ca
   template <typename T1, typename T2>
   void configure(o2::framework::HistogramRegistry* registry, T1 const& config, T2 const& filter)
   {
+    // check for pass through mode
+    mPassThrough = config.passThrough.value;
+
+    // if pass through mode is activated, each cut is neutral (i.e. neither minimal nor optional and we do
+    // store all bits, so the most permissive bit is not skipped for minimal selections)
+    const bool isMinimalCut = mPassThrough ? false : true;
+    const bool skipMostPermissiveBit = mPassThrough ? false : true;
+
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
       mXiMassLowerLimit = filter.massXiMin.value;
       mXiMassUpperLimit = filter.massXiMax.value;
       mOmegaMassLowerLimit = filter.rejectMassOmegaMin.value;
       mOmegaMassUpperLimit = filter.rejectMassOmegaMax.value;
-      this->addSelection(kBachelorTpcPion, cascadeSelectionNames.at(kBachelorTpcPion), config.bachelorTpcPion.value, limits::kAbsUpperLimit, true, true, false);
+      this->addSelection(kBachelorTpcPion, cascadeSelectionNames.at(kBachelorTpcPion), config.bachelorTpcPion.value, limits::kAbsUpperLimit, skipMostPermissiveBit, isMinimalCut, false);
     }
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
       mOmegaMassLowerLimit = filter.massOmegaMin.value;
       mOmegaMassUpperLimit = filter.massOmegaMax.value;
       mXiMassLowerLimit = filter.rejectMassXiMin.value;
       mXiMassUpperLimit = filter.rejectMassXiMax.value;
-      this->addSelection(kBachelorTpcKaon, cascadeSelectionNames.at(kBachelorTpcKaon), config.bachelorTpcKaon.value, limits::kAbsUpperLimit, true, true, false);
+      this->addSelection(kBachelorTpcKaon, cascadeSelectionNames.at(kBachelorTpcKaon), config.bachelorTpcKaon.value, limits::kAbsUpperLimit, skipMostPermissiveBit, isMinimalCut, false);
     }
 
     mPtMin = filter.ptMin.value;
@@ -203,19 +212,19 @@ class CascadeSelection : public BaseSelection<float, o2::aod::femtodatatypes::Ca
     mLambdaMassMin = filter.massLambdaMin.value;
     mLambdaMassMax = filter.massLambdaMax.value;
 
-    this->addSelection(kPosDauTpc, cascadeSelectionNames.at(kPosDauTpc), config.posDauTpc.value, limits::kAbsUpperLimit, true, true, false);
-    this->addSelection(kNegDauTpc, cascadeSelectionNames.at(kNegDauTpc), config.negDauTpc.value, limits::kAbsUpperLimit, true, true, false);
+    this->addSelection(kPosDauTpc, cascadeSelectionNames.at(kPosDauTpc), config.posDauTpc.value, limits::kAbsUpperLimit, skipMostPermissiveBit, isMinimalCut, false);
+    this->addSelection(kNegDauTpc, cascadeSelectionNames.at(kNegDauTpc), config.negDauTpc.value, limits::kAbsUpperLimit, skipMostPermissiveBit, isMinimalCut, false);
 
-    this->addSelection(kCascadeCpaMin, cascadeSelectionNames.at(kCascadeCpaMin), config.cascadeCpaMin.value, limits::kLowerLimit, true, true, false);
-    this->addSelection(kCascadeTransRadMin, cascadeSelectionNames.at(kCascadeTransRadMin), config.cascadeTransRadMin.value, limits::kLowerLimit, true, true, false);
-    this->addSelection(kCascadeDcaDaughMax, cascadeSelectionNames.at(kCascadeDcaDaughMax), config.cascadeDcaDauMax.value, limits::kAbsUpperLimit, true, true, false);
-    this->addSelection(kLambdaCpaMin, cascadeSelectionNames.at(kLambdaCpaMin), config.lambdaCpaMin.value, limits::kLowerLimit, true, true, false);
-    this->addSelection(kLambdaTransRadMin, cascadeSelectionNames.at(kLambdaTransRadMin), config.lambdaTransRadMin.value, limits::kLowerLimit, true, true, false);
-    this->addSelection(kLambdaDcaDauMax, cascadeSelectionNames.at(kLambdaDcaDauMax), config.lambdaDcaDauMax.value, limits::kAbsUpperLimit, true, true, false);
-    this->addSelection(kLambdaDcaToPvMin, cascadeSelectionNames.at(kLambdaDcaToPvMin), config.lambdaDcaToPvMin.value, limits::kLowerLimit, true, true, false);
-    this->addSelection(kDauAbsEtaMax, cascadeSelectionNames.at(kDauAbsEtaMax), config.dauAbsEtaMax.value, limits::kAbsUpperLimit, true, true, false);
-    this->addSelection(kDauDcaMin, cascadeSelectionNames.at(kDauDcaMin), config.dauDcaMin.value, limits::kAbsLowerLimit, true, true, false);
-    this->addSelection(kDauTpcClsMin, cascadeSelectionNames.at(kDauTpcClsMin), config.dauTpcClustersMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kCascadeCpaMin, cascadeSelectionNames.at(kCascadeCpaMin), config.cascadeCpaMin.value, limits::kLowerLimit, skipMostPermissiveBit, isMinimalCut, false);
+    this->addSelection(kCascadeTransRadMin, cascadeSelectionNames.at(kCascadeTransRadMin), config.cascadeTransRadMin.value, limits::kLowerLimit, skipMostPermissiveBit, isMinimalCut, false);
+    this->addSelection(kCascadeDcaDaughMax, cascadeSelectionNames.at(kCascadeDcaDaughMax), config.cascadeDcaDauMax.value, limits::kAbsUpperLimit, skipMostPermissiveBit, isMinimalCut, false);
+    this->addSelection(kLambdaCpaMin, cascadeSelectionNames.at(kLambdaCpaMin), config.lambdaCpaMin.value, limits::kLowerLimit, skipMostPermissiveBit, isMinimalCut, false);
+    this->addSelection(kLambdaTransRadMin, cascadeSelectionNames.at(kLambdaTransRadMin), config.lambdaTransRadMin.value, limits::kLowerLimit, skipMostPermissiveBit, isMinimalCut, false);
+    this->addSelection(kLambdaDcaDauMax, cascadeSelectionNames.at(kLambdaDcaDauMax), config.lambdaDcaDauMax.value, limits::kAbsUpperLimit, skipMostPermissiveBit, isMinimalCut, false);
+    this->addSelection(kLambdaDcaToPvMin, cascadeSelectionNames.at(kLambdaDcaToPvMin), config.lambdaDcaToPvMin.value, limits::kLowerLimit, skipMostPermissiveBit, isMinimalCut, false);
+    this->addSelection(kDauAbsEtaMax, cascadeSelectionNames.at(kDauAbsEtaMax), config.dauAbsEtaMax.value, limits::kAbsUpperLimit, skipMostPermissiveBit, isMinimalCut, false);
+    this->addSelection(kDauDcaMin, cascadeSelectionNames.at(kDauDcaMin), config.dauDcaMin.value, limits::kAbsLowerLimit, skipMostPermissiveBit, isMinimalCut, false);
+    this->addSelection(kDauTpcClsMin, cascadeSelectionNames.at(kDauTpcClsMin), config.dauTpcClustersMin.value, limits::kLowerLimit, skipMostPermissiveBit, isMinimalCut, false);
 
     this->setupContainers<HistName>(registry);
   };
@@ -307,12 +316,16 @@ class CascadeSelection : public BaseSelection<float, o2::aod::femtodatatypes::Ca
     return false; // should never happen
   }
 
+  bool passThroughAllCascades() const { return mPassThrough; }
+
  protected:
   float mXiMassLowerLimit = 0.f;
   float mXiMassUpperLimit = 999.f;
 
   float mOmegaMassLowerLimit = 0.f;
   float mOmegaMassUpperLimit = 999.f;
+
+  bool mPassThrough = false;
 
   // kinematic filters
   float mPtMin = 0.f;
@@ -390,11 +403,11 @@ class CascadeBuilder
     int64_t posDaughterIndex = 0;
     int64_t negDaughterIndex = 0;
     for (const auto& cascade : cascades) {
-      if (!mCascadeSelection.checkFilters(cascade)) {
+      if (!mCascadeSelection.passThroughAllCascades() && !mCascadeSelection.checkFilters(cascade)) {
         continue;
       }
       mCascadeSelection.applySelections(cascade, tracks, col);
-      if (!mCascadeSelection.passesAllRequiredSelections()) {
+      if (!mCascadeSelection.passThroughAllCascades() && !mCascadeSelection.passesAllRequiredSelections()) {
         continue;
       }
 
@@ -424,11 +437,11 @@ class CascadeBuilder
     int64_t posDaughterIndex = 0;
     int64_t negDaughterIndex = 0;
     for (const auto& cascade : cascades) {
-      if (!mCascadeSelection.checkFilters(cascade)) {
+      if (!mCascadeSelection.passThroughAllCascades() && !mCascadeSelection.checkFilters(cascade)) {
         continue;
       }
       mCascadeSelection.applySelections(cascade, tracks, col);
-      if (!mCascadeSelection.passesAllRequiredSelections()) {
+      if (!mCascadeSelection.passThroughAllCascades() && !mCascadeSelection.passesAllRequiredSelections()) {
         continue;
       }
 
@@ -438,19 +451,17 @@ class CascadeBuilder
       bachelorIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCascadeBachelor>(col, collisionProducts, mcCols, bachelor, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       auto posDaughter = cascade.template posTrack_as<T8>();
-      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCascadeBachelor>(col, collisionProducts, mcCols, posDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionProducts, mcCols, posDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       auto negDaughter = cascade.template negTrack_as<T8>();
-      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCascadeBachelor>(col, collisionProducts, mcCols, negDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionProducts, mcCols, negDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       fillCascade(collisionProducts, cascadeProducts, cascade, col, bachelorIndex, posDaughterIndex, negDaughterIndex);
       if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
         mcBuilder.template fillMcXiWithLabel<system>(col, mcCols, cascade, mcParticles, mcProducts);
-        ;
       }
       if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
         mcBuilder.template fillMcOmegaWithLabel<system>(col, mcCols, cascade, mcParticles, mcProducts);
-        ;
       }
     }
   }
@@ -481,7 +492,7 @@ class CascadeBuilder
           cascade.v0cosPA(col.posX(), col.posY(), col.posZ()),
           cascade.dcaV0daughters(),
           cascade.v0radius(),
-          cascade.dcav0topv(col.posY(), col.posY(), col.posZ()));
+          cascade.dcav0topv(col.posX(), col.posY(), col.posZ()));
       }
     }
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
@@ -507,7 +518,7 @@ class CascadeBuilder
           cascade.v0cosPA(col.posX(), col.posY(), col.posZ()),
           cascade.dcaV0daughters(),
           cascade.v0radius(),
-          cascade.dcav0topv(col.posY(), col.posY(), col.posZ()));
+          cascade.dcav0topv(col.posX(), col.posY(), col.posZ()));
       }
     }
   }
