@@ -1025,14 +1025,14 @@ struct HfHelper {
     }
 
     // d0 of K*0 daughters
-    if (std::abs(candB0.impactParameter2()) < cuts->get(binPt, "d0 K*0") ||
-        std::abs(candB0.impactParameter3()) < cuts->get(binPt, "d0 K*0")) {
+    if (std::abs(candB0.impactParameter2()) < cuts->get(binPt, "d0 K*0 daughters") ||
+        std::abs(candB0.impactParameter3()) < cuts->get(binPt, "d0 K*0 daughters")) {
       return false;
     }
 
     // d0 of J/Psi
-    if (std::abs(candB0.impactParameter0()) < cuts->get(binPt, "d0 J/Psi") ||
-        std::abs(candB0.impactParameter1()) < cuts->get(binPt, "d0 J/Psi")) {
+    if (std::abs(candB0.impactParameter0()) < cuts->get(binPt, "d0 J/Psi daughters") ||
+        std::abs(candB0.impactParameter1()) < cuts->get(binPt, "d0 J/Psi daughters")) {
       return false;
     }
 
