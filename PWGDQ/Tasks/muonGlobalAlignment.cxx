@@ -15,7 +15,6 @@
 //
 
 #include "PWGDQ/Core/VarManager.h"
-// #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"

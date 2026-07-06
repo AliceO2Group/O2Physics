@@ -29,7 +29,6 @@
 #include <CommonConstants/PhysicsConstants.h>
 #include <CommonUtils/ConfigurableParam.h>
 #include <DCAFitter/DCAFitterN.h>
-// #include <DataFormatsCalibration/MeanVertexObject.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>
 #include <DetectorsBase/MatLayerCylSet.h>
