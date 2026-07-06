@@ -1769,14 +1769,17 @@ struct HadNucleiFemto {
 
         if (passTrackNu && useDeuteronNucleus()) {
           const float tpcNSigmaDe = settingUseBBcomputeDeNsigma ? computeNSigmaDe(track) : track.tpcNSigmaDe();
-          if (track.hasTOF() && track.tpcInnerParam() > settingCutPinMinTOFITSDe) {
+          const float absTPCInnerParam = std::abs(track.tpcInnerParam());
+          if (absTPCInnerParam > settingCutPinMinTOFITSDe) {
             mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselection"), track.sign() * track.pt(), tpcNSigmaDe);
             mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselecComp"), track.sign() * track.pt(), track.tpcNSigmaDe());
-            const float tofNSigmaDe = track.tofNSigmaDe();
-            const float combNsigmaDe = std::sqrt(tofNSigmaDe * tofNSigmaDe + tpcNSigmaDe * tpcNSigmaDe);
-            mQaRegistry.fill(HIST("purity/h2NsigmaNuTOF_preselection"), track.sign() * track.pt(), tofNSigmaDe);
-            mQaRegistry.fill(HIST("purity/h2NsigmaNuComb_preselection"), track.sign() * track.pt(), combNsigmaDe);
-          } else if (track.tpcInnerParam() <= settingCutPinMinTOFITSDe) {
+            if (track.hasTOF()) {
+              const float tofNSigmaDe = track.tofNSigmaDe();
+              const float combNsigmaDe = std::sqrt(tofNSigmaDe * tofNSigmaDe + tpcNSigmaDe * tpcNSigmaDe);
+              mQaRegistry.fill(HIST("purity/h2NsigmaNuTOF_preselection"), track.sign() * track.pt(), tofNSigmaDe);
+              mQaRegistry.fill(HIST("purity/h2NsigmaNuComb_preselection"), track.sign() * track.pt(), combNsigmaDe);
+            }
+          } else {
             o2::aod::ITSResponse itsResponse;
             const float itsNSigmaDe = itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track.itsClusterSizes(), track.p(), track.eta());
             mQaRegistry.fill(HIST("purity/h2NSigmaNuITS_preselection"), track.sign() * track.pt(), itsNSigmaDe);
