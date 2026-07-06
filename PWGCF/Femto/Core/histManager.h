@@ -37,7 +37,8 @@ struct HistInfo {
                      std::string_view n,
                      std::string_view d)
     : hist(h), histtype(t), histname(n), histdesc(d)
-  {}
+  {
+  }
 
   Hist hist{};
   o2::framework::HistType histtype{o2::framework::kUndefinedHist};

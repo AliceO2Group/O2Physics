@@ -120,8 +120,8 @@ class ParticleCleaner
     // since that lookup now goes through the mc particle row.
     if (!particle.has_fMcParticle()) {
       return !mRejectParticleWithoutMcParticle && mRequiredPdgCodes.empty() &&
-          !mRejectParticleWithoutMcMother && mRequiredMotherPdgCodes.empty() &&
-          !mRejectParticleWithoutMcPartonicMother && mRequiredPartonicMotherPdgCodes.empty();
+             !mRejectParticleWithoutMcMother && mRequiredMotherPdgCodes.empty() &&
+             !mRejectParticleWithoutMcPartonicMother && mRequiredPartonicMotherPdgCodes.empty();
     }
 
     auto mcParticle = particle.template fMcParticle_as<T2>();

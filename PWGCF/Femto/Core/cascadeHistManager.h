@@ -170,46 +170,45 @@ constexpr std::array<histmanager::HistInfo<CascadeHist>, kCascadeHistLast> HistT
    {kSecondaryOther, o2::framework::HistType::kTH2F, "hFromSecondaryOther", "Particles from every other secondary decay; p_{T} (GeV/#it{c}); cos(#alpha)"}},
 };
 
-
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CASCADE_HIST_ANALYSIS_MAP(conf) \
-  {kPt, {(conf).pt}},                     \
-    {kEta, {(conf).eta}},                 \
-    {kPhi, {(conf).phi}},                 \
-    {kMass, {(conf).mass}},               \
-    {kSign, {(conf).sign}},               \
+  {kPt, {(conf).pt}},                   \
+    {kEta, {(conf).eta}},               \
+    {kPhi, {(conf).phi}},               \
+    {kMass, {(conf).mass}},             \
+    {kSign, {(conf).sign}},             \
     {kPtVsMass, {(conf).pt, (conf).mass}},
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CASCADE_HIST_MC_MAP(conf)          \
+#define CASCADE_HIST_MC_MAP(conf)              \
   {kTruePtVsPt, {(conf).pt, (conf).pt}},       \
     {kTrueEtaVsEta, {(conf).eta, (conf).eta}}, \
     {kTruePhiVsPhi, {(conf).phi, (conf).phi}}, \
-    {kPdg, {(conf).pdgCodes}},               \
-    {kPdgMother, {(conf).pdgCodes}},         \
+    {kPdg, {(conf).pdgCodes}},                 \
+    {kPdgMother, {(conf).pdgCodes}},           \
     {kPdgPartonicMother, {(conf).pdgCodes}},
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CASCADE_HIST_QA_MAP(confAnalysis, confQa)          \
-  {kCosPa, {(confQa).cosPa}},                                \
-    {kDecayDauDca, {(confQa).dauDcaAtDecay}},                \
-    {kTransRadius, {(confQa).transRadius}},                  \
-    {kLambdaCosPa, {(confQa).lambdaCosPa}},                  \
-    {kLambdaDauDca, {(confQa).lambdaDauDca}},                \
-    {kLambdaTransRadius, {(confQa).lambdaTransRadius}},      \
-    {kLambdaDcaToPv, {(confQa).lambdaDcaToPv}},              \
+#define CASCADE_HIST_QA_MAP(confAnalysis, confQa)              \
+  {kCosPa, {(confQa).cosPa}},                                  \
+    {kDecayDauDca, {(confQa).dauDcaAtDecay}},                  \
+    {kTransRadius, {(confQa).transRadius}},                    \
+    {kLambdaCosPa, {(confQa).lambdaCosPa}},                    \
+    {kLambdaDauDca, {(confQa).lambdaDauDca}},                  \
+    {kLambdaTransRadius, {(confQa).lambdaTransRadius}},        \
+    {kLambdaDcaToPv, {(confQa).lambdaDcaToPv}},                \
     {kPtVsEta, {(confAnalysis).pt, (confAnalysis).eta}},       \
     {kPtVsPhi, {(confAnalysis).pt, (confAnalysis).phi}},       \
     {kPhiVsEta, {(confAnalysis).phi, (confAnalysis).eta}},     \
     {kPtVsCosPa, {(confAnalysis).pt, (confQa).cosPa}},         \
-    {kMassXi, {(confQa).massXi}},                            \
-    {kMassOmega, {(confQa).massOmega}},                      \
+    {kMassXi, {(confQa).massXi}},                              \
+    {kMassOmega, {(confQa).massOmega}},                        \
     {kPtVsMassXi, {(confAnalysis).pt, (confQa).massXi}},       \
     {kPtVsMassOmega, {(confAnalysis).pt, (confQa).massOmega}}, \
     {kMassXiVsMassOmega, {(confQa).massXi, (confQa).massOmega}},
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CASCADE_HIST_MC_QA_MAP(confAnalysis, confQa)        \
+#define CASCADE_HIST_MC_QA_MAP(confAnalysis, confQa)            \
   {kNoMcParticle, {(confAnalysis).pt, (confQa).cosPa}},         \
     {kPrimary, {(confAnalysis).pt, (confQa).cosPa}},            \
     {kFromWrongCollision, {(confAnalysis).pt, (confQa).cosPa}}, \
@@ -257,7 +256,6 @@ std::map<CascadeHist, std::vector<o2::framework::AxisSpec>> makeCascadeMcQaHistS
 #undef CASCADE_HIST_MC_MAP
 #undef CASCADE_HIST_QA_MAP
 #undef CASCADE_HIST_MC_QA_MAP
-
 
 constexpr char PrefixXiQa[] = "XiQA/";
 constexpr char PrefixXi[] = "Xi/";
