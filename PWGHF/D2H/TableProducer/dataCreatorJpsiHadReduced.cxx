@@ -153,10 +153,10 @@ struct HfDataCreatorJpsiHadReduced {
   Configurable<double> ptTrackMin{"ptTrackMin", 0.5, "minimum bachelor track pT threshold (GeV/c)"};
   Configurable<double> absEtaTrackMax{"absEtaTrackMax", 0.8, "maximum bachelor track absolute eta threshold"};
   Configurable<std::vector<double>> binsPtTrack{"binsPtTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for bachelor track DCA XY pT-dependent cut"};
-  Configurable<LabeledArray<double>> cutsTrackDCA{"cutsTrackDCA", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for bachelor track"};
+  Configurable<LabeledArray<double>> cutsTrackDCA{"cutsTrackDCA", {&hf_cuts_single_track::CutsTrack[0][0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for bachelor track"};
   // topological/kinematic cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_jpsi_to_mu_mu::vecBinsPt}, "J/Psi pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_jpsi_to_mu_mu::Cuts[0], hf_cuts_jpsi_to_mu_mu::NBinsPt, hf_cuts_jpsi_to_mu_mu::NCutVars, hf_cuts_jpsi_to_mu_mu::labelsPt, hf_cuts_jpsi_to_mu_mu::labelsCutVar}, "J/Psi candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {&hf_cuts_jpsi_to_mu_mu::Cuts[0][0], hf_cuts_jpsi_to_mu_mu::NBinsPt, hf_cuts_jpsi_to_mu_mu::NCutVars, hf_cuts_jpsi_to_mu_mu::labelsPt, hf_cuts_jpsi_to_mu_mu::labelsCutVar}, "J/Psi candidate selection per pT bin"};
   Configurable<double> invMassWindowJpsiHad{"invMassWindowJpsiHad", 0.3, "invariant-mass window for Jpsi-Had pair preselections (GeV/c2)"};
   Configurable<double> deltaMPhiMax{"deltaMPhiMax", 0.02, "invariant-mass window for phi preselections (GeV/c2) (only for Bs->J/PsiPhi)"};
   Configurable<double> deltaMK0StarMax{"deltaMK0StarMax", 0.15, "invariant-mass window for K*0 preselections (GeV/c2) (only for B0->J/PsiK0*)"};
@@ -206,14 +206,14 @@ struct HfDataCreatorJpsiHadReduced {
     selectorElectron.setRangePtTpc(selectionsPid.ptPidTpcMin, selectionsPid.ptPidTpcMax);
     selectorElectron.setRangeNSigmaTpc(selectionsPid.nSigmaTpcElMinForVeto, selectionsPid.nSigmaTpcElMaxForVeto);
 
-    std::array<int, 6> doProcess = {doprocessJpsiKData, doprocessJpsiKMc, doprocessJpsiK0StarData, doprocessJpsiK0StarMc, doprocessJpsiPhiData, doprocessJpsiPhiMc};
+    std::array<bool, 6> doProcess = {doprocessJpsiKData, doprocessJpsiKMc, doprocessJpsiK0StarData, doprocessJpsiK0StarMc, doprocessJpsiPhiData, doprocessJpsiPhiMc};
     if (std::accumulate(doProcess.begin(), doProcess.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function can be enabled at a time, please fix your configuration!");
     }
 
     // Set up the histogram registry
     constexpr int NumBinsSelections = 2 + aod::SelectionStep::RecoPID;
-    std::string labels[NumBinsSelections];
+    std::array<std::string, NumBinsSelections> labels;
     labels[0] = "No selection";
     labels[1 + aod::SelectionStep::RecoSkims] = "Skims selection";
     labels[1 + aod::SelectionStep::RecoTopol] = "Skims & Topological selections";
@@ -225,7 +225,7 @@ struct HfDataCreatorJpsiHadReduced {
     }
 
     constexpr int NumBinsEvents = NEvent;
-    std::string labelsEvents[NumBinsEvents];
+    std::array<std::string, NumBinsEvents> labelsEvents;
     labelsEvents[Event::Processed] = "processed";
     labelsEvents[Event::NoCharmHadPiSelected] = "without CharmHad-Pi pairs";
     labelsEvents[Event::CharmHadPiSelected] = "with CharmHad-Pi pairs";
@@ -419,10 +419,7 @@ struct HfDataCreatorJpsiHadReduced {
 
     pidElectron = selectorElectron.statusTpc(track, track.tpcNSigmaEl());
 
-    if (pidElectron == TrackSelectorPID::Accepted) {
-      return false;
-    }
-    return true;
+    return pidElectron != TrackSelectorPID::Accepted;
   }
 
   /// B meson preselections
@@ -895,7 +892,7 @@ struct HfDataCreatorJpsiHadReduced {
 
           // fill Kaon tracks table
           // if information on track already stored, go to next track
-          if (!selectedTracksBach.count(trackBach.globalIndex())) {
+          if (!selectedTracksBach.contains(trackBach.globalIndex())) {
             hfTrackLfDau0(trackBach.globalIndex(), indexHfReducedCollision,
                           trackParCovBach.getX(), trackParCovBach.getAlpha(),
                           trackParCovBach.getY(), trackParCovBach.getZ(), trackParCovBach.getSnp(),
@@ -1004,7 +1001,7 @@ struct HfDataCreatorJpsiHadReduced {
             const auto& negDauTrackParCov = trackBach.sign() > 0 ? trackBach2ParCov : trackParCovBach;
 
             // if information on track already stored, go to next track
-            if (!selectedTracksBach.count(posDauTrack.globalIndex())) {
+            if (!selectedTracksBach.contains(posDauTrack.globalIndex())) {
               hfTrackLfDau0(posDauTrack.globalIndex(), indexHfReducedCollision,
                             posDauTrackParCov.getX(), posDauTrackParCov.getAlpha(),
                             posDauTrackParCov.getY(), posDauTrackParCov.getZ(), posDauTrackParCov.getSnp(),
@@ -1028,7 +1025,7 @@ struct HfDataCreatorJpsiHadReduced {
 
             // fill daughter tracks table
             // if information on track already stored, go to next track
-            if (!selectedTracksBach2.count(negDauTrack.globalIndex())) {
+            if (!selectedTracksBach2.contains(negDauTrack.globalIndex())) {
               hfTrackLfDau1(negDauTrack.globalIndex(), indexHfReducedCollision,
                             negDauTrackParCov.getX(), negDauTrackParCov.getAlpha(),
                             negDauTrackParCov.getY(), negDauTrackParCov.getZ(), negDauTrackParCov.getSnp(),
@@ -1136,7 +1133,7 @@ struct HfDataCreatorJpsiHadReduced {
             const auto& negDauTrackParCov = trackBach.sign() > 0 ? trackBach2ParCov : trackParCovBach;
 
             // if information on track already stored, go to next track
-            if (!selectedTracksBach.count(posDauTrack.globalIndex())) {
+            if (!selectedTracksBach.contains(posDauTrack.globalIndex())) {
               hfTrackLfDau0(posDauTrack.globalIndex(), indexHfReducedCollision,
                             posDauTrackParCov.getX(), posDauTrackParCov.getAlpha(),
                             posDauTrackParCov.getY(), posDauTrackParCov.getZ(), posDauTrackParCov.getSnp(),
@@ -1160,7 +1157,7 @@ struct HfDataCreatorJpsiHadReduced {
 
             // fill daughter tracks table
             // if information on track already stored, go to next track
-            if (!selectedTracksBach2.count(negDauTrack.globalIndex())) {
+            if (!selectedTracksBach2.contains(negDauTrack.globalIndex())) {
               hfTrackLfDau1(negDauTrack.globalIndex(), indexHfReducedCollision,
                             negDauTrackParCov.getX(), negDauTrackParCov.getAlpha(),
                             negDauTrackParCov.getY(), negDauTrackParCov.getZ(), negDauTrackParCov.getSnp(),
