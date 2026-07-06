@@ -230,14 +230,14 @@ struct HfDataCreatorJpsiHadReduced {
     labelsEvents[Event::NoCharmHadPiSelected] = "without CharmHad-Pi pairs";
     labelsEvents[Event::CharmHadPiSelected] = "with CharmHad-Pi pairs";
     static const AxisSpec axisEvents = {NumBinsEvents, 0.5, NumBinsEvents + 0.5, ""};
-    registry.add("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
+    registry.add("hEvents", "Events;;entries", HistType::kTH1D, {axisEvents});
     for (int iBin = 0; iBin < NumBinsEvents; iBin++) {
       registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labelsEvents[iBin].data());
     }
 
-    registry.add("hMassJpsi", "J/Psi mass;#it{M}_{#mu#mu} (GeV/#it{c}^{2});Counts", {HistType::kTH1F, {{600, 2.8, 3.4, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtJpsi", "J/Psi #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1F, {{(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hCpaJpsi", "J/Psi cos#theta_{p};J/Psi cos#theta_{p};Counts", {HistType::kTH1F, {{200, -1., 1, "J/Psi cos#theta_{p}"}}});
+    registry.add("hMassJpsi", "J/Psi mass;#it{M}_{#mu#mu} (GeV/#it{c}^{2});Counts", {HistType::kTH1D, {{600, 2.8, 3.4, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hPtJpsi", "J/Psi #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1D, {{(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCpaJpsi", "J/Psi cos#theta_{p};J/Psi cos#theta_{p};Counts", {HistType::kTH1D, {{200, -1., 1, "J/Psi cos#theta_{p}"}}});
     std::shared_ptr<TH1> hFitCandidatesJpsi = registry.add<TH1>("hFitCandidatesJpsi", "Jpsi candidate counter", {HistType::kTH1D, {axisCands}});
     std::shared_ptr<TH1> hFitCandidatesBPlus = registry.add<TH1>("hFitCandidatesBPlus", "hFitCandidatesBPlus candidate counter", {HistType::kTH1D, {axisCands}});
     std::shared_ptr<TH1> hFitCandidatesB0 = registry.add<TH1>("hFitCandidatesB0", "hFitCandidatesB0 candidate counter", {HistType::kTH1D, {axisCands}});
@@ -247,18 +247,18 @@ struct HfDataCreatorJpsiHadReduced {
     setLabelHistoCands(hFitCandidatesB0);
     setLabelHistoCands(hFitCandidatesBS);
     if (doprocessJpsiKData || doprocessJpsiKMc) {
-      registry.add("hPtKaon", "Kaon #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1F, {{100, 0., 10.}}});
-      registry.add("hMassJpsiKaon", "J/Psi Kaon mass;#it{M}_{J/#PsiK} (GeV/#it{c}^{2});Counts", {HistType::kTH1F, {{800, 4.9, 5.7}}});
+      registry.add("hPtKaon", "Kaon #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1D, {{100, 0., 10.}}});
+      registry.add("hMassJpsiKaon", "J/Psi Kaon mass;#it{M}_{J/#PsiK} (GeV/#it{c}^{2});Counts", {HistType::kTH1D, {{800, 4.9, 5.7}}});
     } else if (doprocessJpsiK0StarData || doprocessJpsiK0StarMc) {
-      registry.add("hPtK0Star", "K*0 #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1F, {{100, 0., 10.}}});
-      registry.add("hMassK0Star", "K*0 mass;#it{M}_{#piK} (GeV/#it{c}^{2});Counts", {HistType::kTH1F, {{200, 0.9, 1.2}}});
-      registry.add("hMassJpsiK0Star", "J/Psi K*0 mass;#it{M}_{J/#PsiK*0} (GeV/#it{c}^{2});Counts", {HistType::kTH1F, {{800, 4.9, 5.7}}});
+      registry.add("hPtK0Star", "K*0 #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1D, {{100, 0., 10.}}});
+      registry.add("hMassK0Star", "K*0 mass;#it{M}_{#piK} (GeV/#it{c}^{2});Counts", {HistType::kTH1D, {{400, 0.6, 1.2}}});
+      registry.add("hMassJpsiK0Star", "J/Psi K*0 mass;#it{M}_{J/#PsiK*0} (GeV/#it{c}^{2});Counts", {HistType::kTH1D, {{800, 4.9, 5.7}}});
       std::shared_ptr<TH1> hFitCandidatesK0Star = registry.add<TH1>("hFitCandidatesK0Star", "K*0 candidate counter", {HistType::kTH1D, {axisCands}});
       setLabelHistoCands(hFitCandidatesK0Star);
     } else if (doprocessJpsiPhiData || doprocessJpsiPhiMc) {
-      registry.add("hPtPhi", "Phi #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1F, {{100, 0., 10.}}});
-      registry.add("hMassPhi", "Phi mass;#it{M}_{KK} (GeV/#it{c}^{2});Counts", {HistType::kTH1F, {{200, 0.9, 1.2}}});
-      registry.add("hMassJpsiPhi", "J/Psi Phi mass;#it{M}_{J/#Psi#phi} (GeV/#it{c}^{2});Counts", {HistType::kTH1F, {{800, 4.9, 5.7}}});
+      registry.add("hPtPhi", "Phi #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", {HistType::kTH1D, {{100, 0., 10.}}});
+      registry.add("hMassPhi", "Phi mass;#it{M}_{KK} (GeV/#it{c}^{2});Counts", {HistType::kTH1D, {{400, 0.9, 1.2}}});
+      registry.add("hMassJpsiPhi", "J/Psi Phi mass;#it{M}_{J/#Psi#phi} (GeV/#it{c}^{2});Counts", {HistType::kTH1D, {{800, 4.9, 5.7}}});
       std::shared_ptr<TH1> hFitCandidatesPhi = registry.add<TH1>("hFitCandidatesPhi", "Phi candidate counter", {HistType::kTH1D, {axisCands}});
       setLabelHistoCands(hFitCandidatesPhi);
     }
@@ -997,52 +997,57 @@ struct HfDataCreatorJpsiHadReduced {
             }
             registry.fill(HIST("hMassJpsiK0Star"), std::sqrt(invMass2JpsiHad));
 
-            // fill daughter tracks table
+            // fill daughter tracks table (positive daughter as Dau0, negative daughter as Dau1)
+            const auto& posDauTrack = trackBach.sign() > 0 ? trackBach : trackBach2;
+            const auto& negDauTrack = trackBach.sign() > 0 ? trackBach2 : trackBach;
+            const auto& posDauTrackParCov = trackBach.sign() > 0 ? trackParCovBach : trackBach2ParCov;
+            const auto& negDauTrackParCov = trackBach.sign() > 0 ? trackBach2ParCov : trackParCovBach;
+
             // if information on track already stored, go to next track
-            if (!selectedTracksBach.count(trackBach.globalIndex())) {
-              hfTrackLfDau0(trackBach.globalIndex(), indexHfReducedCollision,
-                            trackParCovBach.getX(), trackParCovBach.getAlpha(),
-                            trackParCovBach.getY(), trackParCovBach.getZ(), trackParCovBach.getSnp(),
-                            trackParCovBach.getTgl(), trackParCovBach.getQ2Pt(),
-                            trackBach.itsNCls(), trackBach.tpcNClsCrossedRows(), trackBach.tpcChi2NCl(), trackBach.itsChi2NCl(),
-                            trackBach.hasTPC(), trackBach.hasTOF(),
-                            trackBach.tpcNSigmaPi(), trackBach.tofNSigmaPi(),
-                            trackBach.tpcNSigmaKa(), trackBach.tofNSigmaKa(),
-                            trackBach.tpcNSigmaPr(), trackBach.tofNSigmaPr());
-              hfTrackCovLfDau0(trackParCovBach.getSigmaY2(), trackParCovBach.getSigmaZY(), trackParCovBach.getSigmaZ2(),
-                               trackParCovBach.getSigmaSnpY(), trackParCovBach.getSigmaSnpZ(),
-                               trackParCovBach.getSigmaSnp2(), trackParCovBach.getSigmaTglY(), trackParCovBach.getSigmaTglZ(),
-                               trackParCovBach.getSigmaTglSnp(), trackParCovBach.getSigmaTgl2(),
-                               trackParCovBach.getSigma1PtY(), trackParCovBach.getSigma1PtZ(), trackParCovBach.getSigma1PtSnp(),
-                               trackParCovBach.getSigma1PtTgl(), trackParCovBach.getSigma1Pt2());
+            if (!selectedTracksBach.count(posDauTrack.globalIndex())) {
+              hfTrackLfDau0(posDauTrack.globalIndex(), indexHfReducedCollision,
+                            posDauTrackParCov.getX(), posDauTrackParCov.getAlpha(),
+                            posDauTrackParCov.getY(), posDauTrackParCov.getZ(), posDauTrackParCov.getSnp(),
+                            posDauTrackParCov.getTgl(), posDauTrackParCov.getQ2Pt(),
+                            posDauTrack.itsNCls(), posDauTrack.tpcNClsCrossedRows(), posDauTrack.tpcChi2NCl(), posDauTrack.itsChi2NCl(),
+                            posDauTrack.hasTPC(), posDauTrack.hasTOF(),
+                            posDauTrack.tpcNSigmaPi(), posDauTrack.tofNSigmaPi(),
+                            posDauTrack.tpcNSigmaKa(), posDauTrack.tofNSigmaKa(),
+                            posDauTrack.tpcNSigmaPr(), posDauTrack.tofNSigmaPr());
+              hfTrackCovLfDau0(posDauTrackParCov.getSigmaY2(), posDauTrackParCov.getSigmaZY(), posDauTrackParCov.getSigmaZ2(),
+                               posDauTrackParCov.getSigmaSnpY(), posDauTrackParCov.getSigmaSnpZ(),
+                               posDauTrackParCov.getSigmaSnp2(), posDauTrackParCov.getSigmaTglY(), posDauTrackParCov.getSigmaTglZ(),
+                               posDauTrackParCov.getSigmaTglSnp(), posDauTrackParCov.getSigmaTgl2(),
+                               posDauTrackParCov.getSigma1PtY(), posDauTrackParCov.getSigma1PtZ(), posDauTrackParCov.getSigma1PtSnp(),
+                               posDauTrackParCov.getSigma1PtTgl(), posDauTrackParCov.getSigma1Pt2());
               // add trackBach.globalIndex() to a list
               // to keep memory of the pions filled in the table and avoid refilling them if they are paired to another Jpsi candidate
               // and keep track of their index in hfTrackLfDau0 for McRec purposes
-              selectedTracksBach[trackBach.globalIndex()] = hfTrackLfDau0.lastIndex();
+              selectedTracksBach[posDauTrack.globalIndex()] = hfTrackLfDau0.lastIndex();
             }
 
             // fill daughter tracks table
             // if information on track already stored, go to next track
-            if (!selectedTracksBach2.count(trackBach2.globalIndex())) {
-              hfTrackLfDau1(trackBach2.globalIndex(), indexHfReducedCollision,
-                            trackBach2ParCov.getX(), trackBach2ParCov.getAlpha(),
-                            trackBach2ParCov.getY(), trackBach2ParCov.getZ(), trackBach2ParCov.getSnp(),
-                            trackBach2ParCov.getTgl(), trackBach2ParCov.getQ2Pt(),
-                            trackBach2.itsNCls(), trackBach2.tpcNClsCrossedRows(), trackBach2.tpcChi2NCl(), trackBach2.itsChi2NCl(),
-                            trackBach2.hasTPC(), trackBach2.hasTOF(),
-                            trackBach2.tpcNSigmaPi(), trackBach2.tofNSigmaPi(),
-                            trackBach2.tpcNSigmaKa(), trackBach2.tofNSigmaKa(),
-                            trackBach2.tpcNSigmaPr(), trackBach2.tofNSigmaPr());
-              hfTrackCovLfDau1(trackBach2ParCov.getSigmaY2(), trackBach2ParCov.getSigmaZY(), trackBach2ParCov.getSigmaZ2(),
-                               trackBach2ParCov.getSigmaSnpY(), trackBach2ParCov.getSigmaSnpZ(),
-                               trackBach2ParCov.getSigmaSnp2(), trackBach2ParCov.getSigmaTglY(), trackBach2ParCov.getSigmaTglZ(),
-                               trackBach2ParCov.getSigmaTglSnp(), trackBach2ParCov.getSigmaTgl2(),
-                               trackBach2ParCov.getSigma1PtY(), trackBach2ParCov.getSigma1PtZ(), trackBach2ParCov.getSigma1PtSnp(),
-                               trackBach2ParCov.getSigma1PtTgl(), trackBach2ParCov.getSigma1Pt2());
-              // add trackBach2.globalIndex() to a list
+            if (!selectedTracksBach2.count(negDauTrack.globalIndex())) {
+              hfTrackLfDau1(negDauTrack.globalIndex(), indexHfReducedCollision,
+                            negDauTrackParCov.getX(), negDauTrackParCov.getAlpha(),
+                            negDauTrackParCov.getY(), negDauTrackParCov.getZ(), negDauTrackParCov.getSnp(),
+                            negDauTrackParCov.getTgl(), negDauTrackParCov.getQ2Pt(),
+                            negDauTrack.itsNCls(), negDauTrack.tpcNClsCrossedRows(), negDauTrack.tpcChi2NCl(), negDauTrack.itsChi2NCl(),
+                            negDauTrack.hasTPC(), negDauTrack.hasTOF(),
+                            negDauTrack.tpcNSigmaPi(), negDauTrack.tofNSigmaPi(),
+                            negDauTrack.tpcNSigmaKa(), negDauTrack.tofNSigmaKa(),
+                            negDauTrack.tpcNSigmaPr(), negDauTrack.tofNSigmaPr());
+              hfTrackCovLfDau1(negDauTrackParCov.getSigmaY2(), negDauTrackParCov.getSigmaZY(), negDauTrackParCov.getSigmaZ2(),
+                               negDauTrackParCov.getSigmaSnpY(), negDauTrackParCov.getSigmaSnpZ(),
+                               negDauTrackParCov.getSigmaSnp2(), negDauTrackParCov.getSigmaTglY(), negDauTrackParCov.getSigmaTglZ(),
+                               negDauTrackParCov.getSigmaTglSnp(), negDauTrackParCov.getSigmaTgl2(),
+                               negDauTrackParCov.getSigma1PtY(), negDauTrackParCov.getSigma1PtZ(), negDauTrackParCov.getSigma1PtSnp(),
+                               negDauTrackParCov.getSigma1PtTgl(), negDauTrackParCov.getSigma1Pt2());
+              // add negDauTrack.globalIndex() to a list
               // to keep memory of the pions filled in the table and avoid refilling them if they are paired to another Jpsi candidate
               // and keep track of their index in hfTrackLfDau1 for McRec purposes
-              selectedTracksBach2[trackBach2.globalIndex()] = hfTrackLfDau1.lastIndex();
+              selectedTracksBach2[negDauTrack.globalIndex()] = hfTrackLfDau1.lastIndex();
             }
 
             if constexpr (DoMc) {
@@ -1051,8 +1056,8 @@ struct HfDataCreatorJpsiHadReduced {
               for (const auto& track : jPsiDauTracks) {
                 beautyHadDauTracks.push_back(track);
               }
-              beautyHadDauTracks.push_back(trackBach);
-              beautyHadDauTracks.push_back(trackBach2);
+              beautyHadDauTracks.push_back(posDauTrack);
+              beautyHadDauTracks.push_back(negDauTrack);
               fillMcRecoInfo<DecayChannel::B0ToJpsiK0Star>(collision, particlesMc, beautyHadDauTracks, indexHfCandJpsi, std::array<std::map<int64_t, int64_t>, 2>{selectedTracksBach, selectedTracksBach2}, indexCollisionMaxNumContrib);
             }
             fillHfCandJpsi = true;
@@ -1124,52 +1129,57 @@ struct HfDataCreatorJpsiHadReduced {
             }
             registry.fill(HIST("hMassJpsiPhi"), std::sqrt(invMass2JpsiHad));
 
-            // fill daughter tracks table
+            // fill daughter tracks table (positive daughter as Dau0, negative daughter as Dau1)
+            const auto& posDauTrack = trackBach.sign() > 0 ? trackBach : trackBach2;
+            const auto& negDauTrack = trackBach.sign() > 0 ? trackBach2 : trackBach;
+            const auto& posDauTrackParCov = trackBach.sign() > 0 ? trackParCovBach : trackBach2ParCov;
+            const auto& negDauTrackParCov = trackBach.sign() > 0 ? trackBach2ParCov : trackParCovBach;
+
             // if information on track already stored, go to next track
-            if (!selectedTracksBach.count(trackBach.globalIndex())) {
-              hfTrackLfDau0(trackBach.globalIndex(), indexHfReducedCollision,
-                            trackParCovBach.getX(), trackParCovBach.getAlpha(),
-                            trackParCovBach.getY(), trackParCovBach.getZ(), trackParCovBach.getSnp(),
-                            trackParCovBach.getTgl(), trackParCovBach.getQ2Pt(),
-                            trackBach.itsNCls(), trackBach.tpcNClsCrossedRows(), trackBach.tpcChi2NCl(), trackBach.itsChi2NCl(),
-                            trackBach.hasTPC(), trackBach.hasTOF(),
-                            trackBach.tpcNSigmaPi(), trackBach.tofNSigmaPi(),
-                            trackBach.tpcNSigmaKa(), trackBach.tofNSigmaKa(),
-                            trackBach.tpcNSigmaPr(), trackBach.tofNSigmaPr());
-              hfTrackCovLfDau0(trackParCovBach.getSigmaY2(), trackParCovBach.getSigmaZY(), trackParCovBach.getSigmaZ2(),
-                               trackParCovBach.getSigmaSnpY(), trackParCovBach.getSigmaSnpZ(),
-                               trackParCovBach.getSigmaSnp2(), trackParCovBach.getSigmaTglY(), trackParCovBach.getSigmaTglZ(),
-                               trackParCovBach.getSigmaTglSnp(), trackParCovBach.getSigmaTgl2(),
-                               trackParCovBach.getSigma1PtY(), trackParCovBach.getSigma1PtZ(), trackParCovBach.getSigma1PtSnp(),
-                               trackParCovBach.getSigma1PtTgl(), trackParCovBach.getSigma1Pt2());
-              // add trackBach.globalIndex() to a list
+            if (!selectedTracksBach.count(posDauTrack.globalIndex())) {
+              hfTrackLfDau0(posDauTrack.globalIndex(), indexHfReducedCollision,
+                            posDauTrackParCov.getX(), posDauTrackParCov.getAlpha(),
+                            posDauTrackParCov.getY(), posDauTrackParCov.getZ(), posDauTrackParCov.getSnp(),
+                            posDauTrackParCov.getTgl(), posDauTrackParCov.getQ2Pt(),
+                            posDauTrack.itsNCls(), posDauTrack.tpcNClsCrossedRows(), posDauTrack.tpcChi2NCl(), posDauTrack.itsChi2NCl(),
+                            posDauTrack.hasTPC(), posDauTrack.hasTOF(),
+                            posDauTrack.tpcNSigmaPi(), posDauTrack.tofNSigmaPi(),
+                            posDauTrack.tpcNSigmaKa(), posDauTrack.tofNSigmaKa(),
+                            posDauTrack.tpcNSigmaPr(), posDauTrack.tofNSigmaPr());
+              hfTrackCovLfDau0(posDauTrackParCov.getSigmaY2(), posDauTrackParCov.getSigmaZY(), posDauTrackParCov.getSigmaZ2(),
+                               posDauTrackParCov.getSigmaSnpY(), posDauTrackParCov.getSigmaSnpZ(),
+                               posDauTrackParCov.getSigmaSnp2(), posDauTrackParCov.getSigmaTglY(), posDauTrackParCov.getSigmaTglZ(),
+                               posDauTrackParCov.getSigmaTglSnp(), posDauTrackParCov.getSigmaTgl2(),
+                               posDauTrackParCov.getSigma1PtY(), posDauTrackParCov.getSigma1PtZ(), posDauTrackParCov.getSigma1PtSnp(),
+                               posDauTrackParCov.getSigma1PtTgl(), posDauTrackParCov.getSigma1Pt2());
+              // add posDauTrack.globalIndex() to a list
               // to keep memory of the pions filled in the table and avoid refilling them if they are paired to another Jpsi candidate
               // and keep track of their index in hfTrackLfDau0 for McRec purposes
-              selectedTracksBach[trackBach.globalIndex()] = hfTrackLfDau0.lastIndex();
+              selectedTracksBach[posDauTrack.globalIndex()] = hfTrackLfDau0.lastIndex();
             }
 
             // fill daughter tracks table
             // if information on track already stored, go to next track
-            if (!selectedTracksBach2.count(trackBach2.globalIndex())) {
-              hfTrackLfDau1(trackBach2.globalIndex(), indexHfReducedCollision,
-                            trackBach2ParCov.getX(), trackBach2ParCov.getAlpha(),
-                            trackBach2ParCov.getY(), trackBach2ParCov.getZ(), trackBach2ParCov.getSnp(),
-                            trackBach2ParCov.getTgl(), trackBach2ParCov.getQ2Pt(),
-                            trackBach2.itsNCls(), trackBach2.tpcNClsCrossedRows(), trackBach2.tpcChi2NCl(), trackBach2.itsChi2NCl(),
-                            trackBach2.hasTPC(), trackBach2.hasTOF(),
-                            trackBach2.tpcNSigmaPi(), trackBach2.tofNSigmaPi(),
-                            trackBach2.tpcNSigmaKa(), trackBach2.tofNSigmaKa(),
-                            trackBach2.tpcNSigmaPr(), trackBach2.tofNSigmaPr());
-              hfTrackCovLfDau1(trackBach2ParCov.getSigmaY2(), trackBach2ParCov.getSigmaZY(), trackBach2ParCov.getSigmaZ2(),
-                               trackBach2ParCov.getSigmaSnpY(), trackBach2ParCov.getSigmaSnpZ(),
-                               trackBach2ParCov.getSigmaSnp2(), trackBach2ParCov.getSigmaTglY(), trackBach2ParCov.getSigmaTglZ(),
-                               trackBach2ParCov.getSigmaTglSnp(), trackBach2ParCov.getSigmaTgl2(),
-                               trackBach2ParCov.getSigma1PtY(), trackBach2ParCov.getSigma1PtZ(), trackBach2ParCov.getSigma1PtSnp(),
-                               trackBach2ParCov.getSigma1PtTgl(), trackBach2ParCov.getSigma1Pt2());
-              // add trackBach2.globalIndex() to a list
+            if (!selectedTracksBach2.count(negDauTrack.globalIndex())) {
+              hfTrackLfDau1(negDauTrack.globalIndex(), indexHfReducedCollision,
+                            negDauTrackParCov.getX(), negDauTrackParCov.getAlpha(),
+                            negDauTrackParCov.getY(), negDauTrackParCov.getZ(), negDauTrackParCov.getSnp(),
+                            negDauTrackParCov.getTgl(), negDauTrackParCov.getQ2Pt(),
+                            negDauTrack.itsNCls(), negDauTrack.tpcNClsCrossedRows(), negDauTrack.tpcChi2NCl(), negDauTrack.itsChi2NCl(),
+                            negDauTrack.hasTPC(), negDauTrack.hasTOF(),
+                            negDauTrack.tpcNSigmaPi(), negDauTrack.tofNSigmaPi(),
+                            negDauTrack.tpcNSigmaKa(), negDauTrack.tofNSigmaKa(),
+                            negDauTrack.tpcNSigmaPr(), negDauTrack.tofNSigmaPr());
+              hfTrackCovLfDau1(negDauTrackParCov.getSigmaY2(), negDauTrackParCov.getSigmaZY(), negDauTrackParCov.getSigmaZ2(),
+                               negDauTrackParCov.getSigmaSnpY(), negDauTrackParCov.getSigmaSnpZ(),
+                               negDauTrackParCov.getSigmaSnp2(), negDauTrackParCov.getSigmaTglY(), negDauTrackParCov.getSigmaTglZ(),
+                               negDauTrackParCov.getSigmaTglSnp(), negDauTrackParCov.getSigmaTgl2(),
+                               negDauTrackParCov.getSigma1PtY(), negDauTrackParCov.getSigma1PtZ(), negDauTrackParCov.getSigma1PtSnp(),
+                               negDauTrackParCov.getSigma1PtTgl(), negDauTrackParCov.getSigma1Pt2());
+              // add negDauTrack.globalIndex() to a list
               // to keep memory of the pions filled in the table and avoid refilling them if they are paired to another Jpsi candidate
               // and keep track of their index in hfTrackLfDau1 for McRec purposes
-              selectedTracksBach2[trackBach2.globalIndex()] = hfTrackLfDau1.lastIndex();
+              selectedTracksBach2[negDauTrack.globalIndex()] = hfTrackLfDau1.lastIndex();
             }
 
             if constexpr (DoMc) {
@@ -1178,8 +1188,8 @@ struct HfDataCreatorJpsiHadReduced {
               for (const auto& track : jPsiDauTracks) {
                 beautyHadDauTracks.push_back(track);
               }
-              beautyHadDauTracks.push_back(trackBach);
-              beautyHadDauTracks.push_back(trackBach2);
+              beautyHadDauTracks.push_back(posDauTrack);
+              beautyHadDauTracks.push_back(negDauTrack);
               fillMcRecoInfo<DecayChannel::BsToJpsiPhi>(collision, particlesMc, beautyHadDauTracks, indexHfCandJpsi, std::array<std::map<int64_t, int64_t>, 2>{selectedTracksBach, selectedTracksBach2}, indexCollisionMaxNumContrib);
             }
             fillHfCandJpsi = true;
