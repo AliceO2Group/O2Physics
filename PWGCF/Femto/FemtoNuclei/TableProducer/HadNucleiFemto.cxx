@@ -57,7 +57,6 @@
 #include <Math/GenVector/Boost.h>
 #include <Math/GenVector/LorentzVector.h>
 #include <Math/GenVector/PxPyPzM4D.h>
-#include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 #include <TPDGCode.h>
 #include <TString.h>
@@ -94,6 +93,7 @@ constexpr int He3TPCNClsFoundMin = 110;
 constexpr float He3TPCChi2NClMin = 0.5f;
 constexpr float He3TPCNSigmaMax = 3.0f;
 constexpr float He3ITSNSigmaMin = -1.5f;
+using PairLorentzVector = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<double>>;
 
 enum Selections {
   kNoCuts = 0,
@@ -1096,31 +1096,31 @@ struct HadNucleiFemto {
 
   float computePairKstar(const std::array<float, 3>& momHad, const float massHad, const std::array<float, 3>& momNu, const float massNu) const
   {
-    const ROOT::Math::PxPyPzMVector vecHad(momHad[0], momHad[1], momHad[2], massHad);
-    const ROOT::Math::PxPyPzMVector vecNu(momNu[0], momNu[1], momNu[2], massNu);
-    const ROOT::Math::PxPyPzMVector trackSum = vecHad + vecNu;
+    const PairLorentzVector vecHad(momHad[0], momHad[1], momHad[2], massHad);
+    const PairLorentzVector vecNu(momNu[0], momNu[1], momNu[2], massNu);
+    const PairLorentzVector trackSum = vecHad + vecNu;
 
     const float beta = trackSum.Beta();
     const float betax = beta * std::cos(trackSum.Phi()) * std::sin(trackSum.Theta());
     const float betay = beta * std::sin(trackSum.Phi()) * std::sin(trackSum.Theta());
     const float betaz = beta * std::cos(trackSum.Theta());
 
-    ROOT::Math::PxPyPzMVector partHadCMS(vecHad);
-    ROOT::Math::PxPyPzMVector partNuCMS(vecNu);
+    PairLorentzVector partHadCMS(vecHad);
+    PairLorentzVector partNuCMS(vecNu);
 
     const ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-betax, -betay, -betaz);
     partHadCMS = boostPRF(partHadCMS);
     partNuCMS = boostPRF(partNuCMS);
 
-    const ROOT::Math::PxPyPzMVector trackRelK = partHadCMS - partNuCMS;
+    const PairLorentzVector trackRelK = partHadCMS - partNuCMS;
     return 0.5f * trackRelK.P();
   }
 
   float computePairMT(const std::array<float, 3>& momHad, const float massHad, const std::array<float, 3>& momNu, const float massNu) const
   {
-    const ROOT::Math::PxPyPzMVector vecHad(momHad[0], momHad[1], momHad[2], massHad);
-    const ROOT::Math::PxPyPzMVector vecNu(momNu[0], momNu[1], momNu[2], massNu);
-    const ROOT::Math::PxPyPzMVector trackSum = vecHad + vecNu;
+    const PairLorentzVector vecHad(momHad[0], momHad[1], momHad[2], massHad);
+    const PairLorentzVector vecNu(momNu[0], momNu[1], momNu[2], massNu);
+    const PairLorentzVector trackSum = vecHad + vecNu;
     const float kT = 0.5f * trackSum.Pt();
     return std::sqrt(kT * kT + std::pow(0.5f * (massHad + massNu), 2.f));
   }
@@ -1769,9 +1769,9 @@ struct HadNucleiFemto {
 
         if (passTrackNu && useDeuteronNucleus()) {
           const float tpcNSigmaDe = settingUseBBcomputeDeNsigma ? computeNSigmaDe(track) : track.tpcNSigmaDe();
-          mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselection"), track.sign() * track.pt(), tpcNSigmaDe);
-          mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselecComp"), track.sign() * track.pt(), track.tpcNSigmaDe());
           if (track.hasTOF() && track.tpcInnerParam() > settingCutPinMinTOFITSDe) {
+            mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselection"), track.sign() * track.pt(), tpcNSigmaDe);
+            mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselecComp"), track.sign() * track.pt(), track.tpcNSigmaDe());
             const float tofNSigmaDe = track.tofNSigmaDe();
             const float combNsigmaDe = std::sqrt(tofNSigmaDe * tofNSigmaDe + tpcNSigmaDe * tpcNSigmaDe);
             mQaRegistry.fill(HIST("purity/h2NsigmaNuTOF_preselection"), track.sign() * track.pt(), tofNSigmaDe);
@@ -1780,6 +1780,10 @@ struct HadNucleiFemto {
             o2::aod::ITSResponse itsResponse;
             const float itsNSigmaDe = itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track.itsClusterSizes(), track.p(), track.eta());
             mQaRegistry.fill(HIST("purity/h2NSigmaNuITS_preselection"), track.sign() * track.pt(), itsNSigmaDe);
+            if (std::abs(itsNSigmaDe) <= settingCutNsigmaITSDe) {
+              mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselection"), track.sign() * track.pt(), tpcNSigmaDe);
+              mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselecComp"), track.sign() * track.pt(), track.tpcNSigmaDe());
+            }
           }
         } else if (passTrackNu && useHelium3Nucleus()) {
           const float tpcNSigmaHe3 = computeNSigmaHe3(track);
