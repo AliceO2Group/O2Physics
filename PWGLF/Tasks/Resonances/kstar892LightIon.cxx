@@ -161,6 +161,10 @@ struct Kstar892LightIon {
     Configurable<float> lowPtCutPid{"lowPtCutPid", 0.5, "Low pT cut for PID"};
     Configurable<float> highPtCutPid{"highPtCutPid", 6.0, "High pT cut for PID"};
 
+    Configurable<float> lowPtPid{"lowPtPid", 2.5, "Low pT cut for PID"};
+    Configurable<float> midPtPid{"midPtPid", 1.5, "Mid pT cut for PID"};
+    Configurable<float> highPtPid{"highPtPid", 2.5, "High pT cut for PID"};
+
     Configurable<bool> selHasFT0MC{"selHasFT0MC", true, "Has FT0?"};
     Configurable<bool> isZvtxPosSelMC{"isZvtxPosSelMC", true, "Zvtx position selection for MC events?"};
     Configurable<bool> selTVXMC{"selTVXMC", true, "apply TVX selection in MC?"};
@@ -834,20 +838,56 @@ struct Kstar892LightIon {
         return passTPC(candidate, pid);
       }
 
-      case PIDStrategy::ThreePtDependent: // Apply pT-dependent TPC and TOF cuts using three pT regions
+        /* case PIDStrategy::ThreePtDependent: // Apply pT-dependent TPC and TOF cuts using three pT regions
+        {
+          const int region = (candidate.pt() < selectionConfig.lowPtCutPid) ? 0 : (candidate.pt() < selectionConfig.highPtCutPid) ? 1
+                                                                                                                                  : 2;
+
+          const float regionTPCCut = (pid == PIDParticle::kPion) ? TPCPiCuts3Pt[region] : TPCKaCuts3Pt[region];
+
+          const float regionTOFCut = (pid == PIDParticle::kPion) ? TOFPiCuts3Pt[region] : TOFKaCuts3Pt[region];
+
+          if (candidate.hasTOF()) {
+            return (std::abs(tpcSigma(candidate, pid)) < regionTPCCut) && (std::abs(tofSigma(candidate, pid)) < regionTOFCut) && (candidate.beta() > selectionConfig.cfgTOFBetaCut);
+          }
+
+          return (std::abs(tpcSigma(candidate, pid)) < regionTPCCut);
+        } */
+
+      case PIDStrategy::ThreePtDependent: // Apply region-dependent PID cuts using one PID cut per pT region. In the middle pT region TOF is mandatory.
       {
-        const int region = (candidate.pt() < selectionConfig.lowPtCutPid) ? 0 : (candidate.pt() < selectionConfig.highPtCutPid) ? 1
-                                                                                                                                : 2;
+        const float pidCut = (candidate.pt() < selectionConfig.lowPtCutPid) ? selectionConfig.lowPtPid : (candidate.pt() < selectionConfig.highPtCutPid) ? selectionConfig.midPtPid
+                                                                                                                                                         : selectionConfig.highPtPid;
 
-        const float regionTPCCut = (pid == PIDParticle::kPion) ? TPCPiCuts3Pt[region] : TPCKaCuts3Pt[region];
+        // Low-pT region
+        if (candidate.pt() < selectionConfig.lowPtCutPid) {
+          if (candidate.hasTOF()) {
+            if (!candidate.hasTOF() || candidate.beta() <= selectionConfig.cfgTOFBetaCut)
+              return false;
 
-        const float regionTOFCut = (pid == PIDParticle::kPion) ? TOFPiCuts3Pt[region] : TOFKaCuts3Pt[region];
+            return combinedNSigma2(candidate, pid) < pidCut * pidCut;
+          }
 
-        if (candidate.hasTOF()) {
-          return (std::abs(tpcSigma(candidate, pid)) < regionTPCCut) && (std::abs(tofSigma(candidate, pid)) < regionTOFCut) && (candidate.beta() > selectionConfig.cfgTOFBetaCut);
+          return std::abs(tpcSigma(candidate, pid)) < pidCut;
         }
 
-        return (std::abs(tpcSigma(candidate, pid)) < regionTPCCut);
+        // Mid-pT region (TOF mandatory)
+        if (candidate.pt() < selectionConfig.highPtCutPid) {
+          if (!candidate.hasTOF() || candidate.beta() <= selectionConfig.cfgTOFBetaCut)
+            return false;
+
+          return combinedNSigma2(candidate, pid) < pidCut * pidCut;
+        }
+
+        // High-pT region
+        if (candidate.hasTOF()) {
+          if (!candidate.hasTOF() || candidate.beta() <= selectionConfig.cfgTOFBetaCut)
+            return false;
+
+          return combinedNSigma2(candidate, pid) < pidCut * pidCut;
+        }
+
+        return std::abs(tpcSigma(candidate, pid)) < pidCut;
       }
 
       case PIDStrategy::PIDCompare: // Apply independent TPC/TOF cuts below lowPtCutPid, within lowPtCutPid and highPtCutPid, require TOF and accept the track only if its combined nsigma is smaller than that of the alternate PID hypothesis and above highPtCutPid if TOF is available, accept if the track passes combined cut and if TOF is not available, check if it passes TPC cut
