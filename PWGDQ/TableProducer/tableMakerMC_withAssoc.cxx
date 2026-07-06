@@ -946,12 +946,12 @@ struct TableMakerMC {
         VarManager::FillTrackMC(mcTracks, mctrack);
 
         mcflags = 0;
-        int i = 0; // runs over the MC signals
+        int isig = 0; // runs over the MC signals
         int j = 0; // runs over the track cuts
         // check all the specified signals and fill histograms for MC truth matched tracks
         for (const auto& sig : fMCSignals) {
           if (sig->CheckSignal(true, mctrack)) {
-            mcflags |= (static_cast<uint16_t>(1) << i);
+            mcflags |= (static_cast<uint16_t>(1) << isig);
             // If detailed QA is on, fill histograms for each MC signal and track cut combination
             if (fDoDetailedQA) {
               j = 0;
@@ -963,7 +963,7 @@ struct TableMakerMC {
               }
             }
           }
-          i++;
+          isig++;
         }
 
         // if the MC truth particle corresponding to this reconstructed track is not already written,
@@ -1193,12 +1193,12 @@ struct TableMakerMC {
           VarManager::FillTrackMC(mcTracks, mctrack);
 
           mcflags = 0;
-          int i = 0; // runs over the MC signals
+          int isig = 0; // runs over the MC signals
           int j = 0; // runs over the track cuts
           // check all the specified signals and fill histograms for MC truth matched tracks
           for (const auto& sig : fMCSignals) {
             if (sig->CheckSignal(true, mctrack)) {
-              mcflags |= (static_cast<uint16_t>(1) << i);
+              mcflags |= (static_cast<uint16_t>(1) << isig);
               if (fDoDetailedQA) {
                 j = 0;
                 for (const auto& cut : fMuonCuts) {
@@ -1209,7 +1209,7 @@ struct TableMakerMC {
                 }
               } // end if do detailed QA
             }
-            i++;
+            isig++;
           } // end loop over MC signals
 
           // if the MC truth particle corresponding to this reconstructed muon is not already written,
@@ -1552,8 +1552,8 @@ struct TableMakerMC {
     for (auto label = eventLabels.begin(); label != eventLabels.end(); label++, ib++) {
       histEvents->GetXaxis()->SetBinLabel(ib, (*label).Data());
     }
-    for (int ib = 1; ib <= o2::aod::evsel::kNsel; ib++) {
-      histEvents->GetYaxis()->SetBinLabel(ib, o2::aod::evsel::selectionLabels[ib - 1]);
+    for (int iy = 1; iy <= o2::aod::evsel::kNsel; iy++) {
+      histEvents->GetYaxis()->SetBinLabel(iy, o2::aod::evsel::selectionLabels[iy - 1]);
     }
     histEvents->GetYaxis()->SetBinLabel(o2::aod::evsel::kNsel + 1, "Total");
     fStatsList->Add(histEvents);
@@ -1565,8 +1565,8 @@ struct TableMakerMC {
       histTracks->GetXaxis()->SetBinLabel(ib, (*cut)->GetName());
     }
     constexpr std::array<const char*, 5> v0TagNames = {"Photon conversion", "K^{0}_{s}", "#Lambda", "#bar{#Lambda}", "#Omega"};
-    for (int ib = 0; ib < 5; ib++) {
-      histTracks->GetXaxis()->SetBinLabel(fTrackCuts.size() + 1 + ib, v0TagNames[ib]);
+    for (int iv0 = 0; iv0 < 5; iv0++) {
+      histTracks->GetXaxis()->SetBinLabel(fTrackCuts.size() + 1 + iv0, v0TagNames[iv0]);
     }
     fStatsList->Add(histTracks);
     TH1I* histMuons = new TH1I("MuonStats", "Muon statistics", fMuonCuts.size(), -0.5, fMuonCuts.size() - 0.5);

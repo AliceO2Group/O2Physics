@@ -671,8 +671,8 @@ struct TableMaker {
     for (auto label = eventLabels.begin(); label != eventLabels.end(); label++, ib++) {
       histEvents->GetXaxis()->SetBinLabel(ib, (*label).Data());
     }
-    for (int ib = 1; ib <= o2::aod::evsel::kNsel; ib++) {
-      histEvents->GetYaxis()->SetBinLabel(ib, o2::aod::evsel::selectionLabels[ib - 1]);
+    for (int iy = 1; iy <= o2::aod::evsel::kNsel; iy++) {
+      histEvents->GetYaxis()->SetBinLabel(iy, o2::aod::evsel::selectionLabels[iy - 1]);
     }
     histEvents->GetYaxis()->SetBinLabel(o2::aod::evsel::kNsel + 1, "Total");
     fStatsList->AddAt(histEvents, kStatsEvent);
@@ -717,7 +717,7 @@ struct TableMaker {
   }
 
   template <typename TEvents, typename TTracks, typename TBCs>
-  void computeOccupancyEstimators(TEvents const& collisions, Partition<TTracks> const& tracksPos, Partition<TTracks> const& tracksNeg, Preslice<TTracks>& preslice, TBCs const&)
+  void computeOccupancyEstimators(TEvents const& collisions, Partition<TTracks> const& tracksPosPart, Partition<TTracks> const& tracksNegPart, Preslice<TTracks>& presliceTracks, TBCs const&)
   {
 
     // clear the occupancy maps for this time frame
@@ -765,8 +765,8 @@ struct TableMaker {
       }
 
       // make a slice for this collision and get the number of tracks
-      auto thisCollTrackPos = tracksPos.sliceBy(preslice, collision.globalIndex());
-      auto thisCollTrackNeg = tracksNeg.sliceBy(preslice, collision.globalIndex());
+      auto thisCollTrackPos = tracksPosPart.sliceBy(presliceTracks, collision.globalIndex());
+      auto thisCollTrackNeg = tracksNegPart.sliceBy(presliceTracks, collision.globalIndex());
       collMultPos[collision.globalIndex()] = thisCollTrackPos.size();
       collMultNeg[collision.globalIndex()] = thisCollTrackNeg.size();
     }
@@ -908,7 +908,7 @@ struct TableMaker {
   }
 
   template <typename TEvents, typename TTracks>
-  void computeCollMergingTag(TEvents const& collisions, TTracks const& tracks, Preslice<TTracks>& preslice)
+  void computeCollMergingTag(TEvents const& collisions, TTracks const& tracks, Preslice<TTracks>& presliceTracks)
   {
     // This function uses the standard track-collision association to compute quantities related to collision merging
     // clear the maps for this time frame
@@ -941,7 +941,7 @@ struct TableMaker {
 
     for (const auto& collision : collisions) {
       // make a slice for this collision and compute the DCAz based event quantities
-      auto thisCollTracks = tracks.sliceBy(preslice, collision.globalIndex());
+      auto thisCollTracks = tracks.sliceBy(presliceTracks, collision.globalIndex());
       VarManager::FillEventTracks(thisCollTracks); // fill the VarManager arrays with the information of the tracks associated to this collision, needed for the cuts and histograms
       // add the computed variables to the maps with the collision index as key
       fCollMergingTag.bimodalityCoeffDCAz[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzBimodalityCoefficient];
