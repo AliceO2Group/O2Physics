@@ -17,13 +17,13 @@
 #include "PWGLF/DataModel/LFLambda1405Table.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
-#include "Common/Core/trackUtilities.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
@@ -103,9 +103,9 @@ struct lambda1405candidate {
   int sigmaId = 0;          // Id of the Sigma candidate in MC
   int bachPiId = 0;         // Id of the pion candidate in MC
 
-  float centMult = -1;    // Centrality of the collision
-  float pvContrib = -1;   // Number of contributors to the primary vertex
-  float occ = -1;         // Occupancy of the collision
+  float centMult = -1;  // Centrality of the collision
+  float pvContrib = -1; // Number of contributors to the primary vertex
+  float occ = -1;       // Occupancy of the collision
 
   float scalarProd = -1; // Scalar product for flow analysis
 };
@@ -862,8 +862,8 @@ struct lambda1405analysis {
         return;
       }
       if (success) {
-        float sigmaPOriginal = std::sqrt(sigmaCand.pxMoth() * sigmaCand.pxMoth() + 
-                                         sigmaCand.pyMoth() * sigmaCand.pyMoth() + 
+        float sigmaPOriginal = std::sqrt(sigmaCand.pxMoth() * sigmaCand.pxMoth() +
+                                         sigmaCand.pyMoth() * sigmaCand.pyMoth() +
                                          sigmaCand.pzMoth() * sigmaCand.pzMoth());
         if (sigmaPRecalc > 0.f && sigmaPOriginal > 0.f) {
           float scale = sigmaPRecalc / sigmaPOriginal;
@@ -980,8 +980,8 @@ struct lambda1405analysis {
 
     // Collision properties
     lambda1405Cand.pvContrib = collision.numContrib();
-    lambda1405Cand.centMult  = getCentMult(collision);
-    lambda1405Cand.occ       = collision.ft0cOccupancyInTimeRange();
+    lambda1405Cand.centMult = getCentMult(collision);
+    lambda1405Cand.occ = collision.ft0cOccupancyInTimeRange();
 
     fillHistosSigma(lambda1405Cand, sigmaCand, kinkDauTrack);
 
@@ -1133,15 +1133,15 @@ struct lambda1405analysis {
             }
           }
           if (fillOutputTree) {
-          outputDataTable(lambda1405Cand.px, lambda1405Cand.py, lambda1405Cand.pz,
-                          lambda1405Cand.massL1405, lambda1405Cand.massXi1530,
-                          lambda1405Cand.sigmaMinusMass, lambda1405Cand.sigmaPlusMass, lambda1405Cand.xiMinusMass,
-                          lambda1405Cand.sigmaPt, lambda1405Cand.sigmaAlphaAP, lambda1405Cand.sigmaQtAP, lambda1405Cand.sigmaRadius,
-                          lambda1405Cand.kinkPt,
-                          lambda1405Cand.kinkPiNSigTpc, lambda1405Cand.kinkPiNSigTof,
-                          lambda1405Cand.kinkPrNSigTpc, lambda1405Cand.kinkPrNSigTof,
-                          lambda1405Cand.kinkDcaDauToPv,
-                          lambda1405Cand.bachPiNSigTpc, lambda1405Cand.bachPiNSigTof);
+            outputDataTable(lambda1405Cand.px, lambda1405Cand.py, lambda1405Cand.pz,
+                            lambda1405Cand.massL1405, lambda1405Cand.massXi1530,
+                            lambda1405Cand.sigmaMinusMass, lambda1405Cand.sigmaPlusMass, lambda1405Cand.xiMinusMass,
+                            lambda1405Cand.sigmaPt, lambda1405Cand.sigmaAlphaAP, lambda1405Cand.sigmaQtAP, lambda1405Cand.sigmaRadius,
+                            lambda1405Cand.kinkPt,
+                            lambda1405Cand.kinkPiNSigTpc, lambda1405Cand.kinkPiNSigTof,
+                            lambda1405Cand.kinkPrNSigTpc, lambda1405Cand.kinkPrNSigTof,
+                            lambda1405Cand.kinkDcaDauToPv,
+                            lambda1405Cand.bachPiNSigTpc, lambda1405Cand.bachPiNSigTof);
           } else {
             outputDataFlowTable(ptCand, lambda1405Cand.massL1405,
                                 lambda1405Cand.sigmaPt,
@@ -1311,9 +1311,9 @@ struct lambda1405analysis {
         auto genSigma = labelSigma.template mcParticle_as<aod::McParticles>();
         auto genKinkDaug = labelKinkDaug.template mcParticle_as<aod::McParticles>();
 
-        bool isSigmaMinusKink    = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaMinus, PDG_t::kPiPlus, particlesMC);
-        bool isSigmaPlusToPiKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaPlus,  PDG_t::kPiPlus, particlesMC);
-        bool isSigmaPlusToPrKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaPlus,  PDG_t::kProton, particlesMC);
+        bool isSigmaMinusKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaMinus, PDG_t::kPiPlus, particlesMC);
+        bool isSigmaPlusToPiKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaPlus, PDG_t::kPiPlus, particlesMC);
+        bool isSigmaPlusToPrKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaPlus, PDG_t::kProton, particlesMC);
 
         if (!isSigmaMinusKink && !isSigmaPlusToPiKink && !isSigmaPlusToPrKink) {
           LOG(info) << "Candidate is not a valid Sigma kink decay, skipping ...";
@@ -1327,7 +1327,7 @@ struct lambda1405analysis {
           LOG(info) << "Filling h2DeltaGenRecoPtSigmaPlus with: " << sigmaCand.ptMoth() - genSigma.pt() << ", " << sigmaCand.ptMoth();
           rSigmaPlus.fill(HIST("h2DeltaGenRecoPtSigmaPlus"), sigmaCand.ptMoth() - genSigma.pt(), sigmaCand.ptMoth());
         }
-        
+
         std::vector<lambda1405candidate> selectedCandidates;
         LOG(info) << "Constructing Lambda(1405) candidates from Sigma candidate with global index: " << sigmaCand.globalIndex();
         constructCollCandidates(collision, sigmaCand, tracksPerCol, selectedCandidates);
