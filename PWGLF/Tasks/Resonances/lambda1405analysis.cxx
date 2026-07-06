@@ -45,9 +45,9 @@
 #include <ReconstructionDataFormats/Vertex.h>
 
 #include <TF1.h>
-#include <THnSparse.h>
 #include <TH2.h>
 #include <TH3.h>
+#include <THnSparse.h>
 
 #include <array>
 #include <cmath>
@@ -106,9 +106,9 @@ struct lambda1405candidate {
   int sigmaId = 0;          // Id of the Sigma candidate in MC
   int bachPiId = 0;         // Id of the pion candidate in MC
 
-  float centMult = -1;    // Centrality of the collision
-  float pvContrib = -1;   // Number of contributors to the primary vertex
-  float occupancy = -1;   // Occupancy of the collision
+  float centMult = -1;  // Centrality of the collision
+  float pvContrib = -1; // Number of contributors to the primary vertex
+  float occupancy = -1; // Occupancy of the collision
 
   float scalarProd = -1; // Scalar product for flow analysis
 };

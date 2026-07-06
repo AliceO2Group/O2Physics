@@ -50,7 +50,7 @@ DECLARE_SOA_COLUMN(NSigmaTOFPiDau, nSigmaTOFPiDau, float);   //! Number of sigma
 
 // Event properties
 DECLARE_SOA_COLUMN(Centrality, centrality, float); //! Centrality of the candidate
-DECLARE_SOA_COLUMN(Occupancy, occupancy, float); //! Occupancy of the candidate
+DECLARE_SOA_COLUMN(Occupancy, occupancy, float);   //! Occupancy of the candidate
 
 // Flow columns
 DECLARE_SOA_COLUMN(ScalarProd, scalarProd, float); //! Scalar product of the candidate
