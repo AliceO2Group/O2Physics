@@ -117,7 +117,6 @@ struct Kstarpbpb {
   ConfigurableAxis configrapAxis{"configrapAxis", {VARIABLE_WIDTH, -0.8, -0.4, 0.4, 0.8}, "Rapidity"};
   Configurable<float> confFakeKaonCut{"confFakeKaonCut", 0.1, "Cut based on track from momentum difference"};
   ConfigurableAxis configThnAxisV2{"configThnAxisV2", {400, -16, 16}, "V2"};
-  Configurable<bool> ispTdepPID{"ispTdepPID", true, "pT dependent PID"};
   Configurable<bool> isNoTOF{"isNoTOF", true, "isNoTOF"};
   Configurable<bool> pdgcheck{"pdgcheck", true, "pdgcheck"};
   Configurable<int> strategyPID{"strategyPID", 2, "PID strategy"};
@@ -307,32 +306,6 @@ struct Kstarpbpb {
   static constexpr float TPCOnlyPt = 0.5f;
   static constexpr int Strategy = 2;
   template <typename T>
-  bool selectionPIDNew(const T& candidate, int PID)
-  {
-    if (PID == 0) {
-      if (candidate.pt() < TPCOnlyPt && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
-        return true;
-      }
-      if (candidate.pt() >= TPCOnlyPt && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC && candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < nsigmaCutTOF && candidate.beta() > cfgCutTOFBeta) {
-        return true;
-      }
-      if (candidate.pt() >= TPCOnlyPt && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC && !candidate.hasTOF()) {
-        return true;
-      }
-    } else if (PID == 1) {
-      if (candidate.pt() < TPCOnlyPt && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
-        return true;
-      }
-      if (candidate.pt() >= TPCOnlyPt && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC && candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < nsigmaCutTOF && candidate.beta() > cfgCutTOFBeta) {
-        return true;
-      }
-      if (candidate.pt() >= TPCOnlyPt && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC && !candidate.hasTOF()) {
-        return true;
-      }
-    }
-    return false;
-  }
-  template <typename T>
   bool selectionPID2(const T& candidate, int PID)
   {
     if (PID == 0) {
@@ -348,33 +321,6 @@ struct Kstarpbpb {
     return false;
   }
   template <typename T>
-  bool selectionPID(const T& candidate, int PID)
-  {
-    if (PID == 0) {
-      if (!isNoTOF && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
-        return true;
-      }
-      if (!isNoTOF && candidate.hasTOF() && ((candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) + (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa())) < (nsigmaCutCombined * nsigmaCutCombined)) {
-        return true;
-      }
-      if (isNoTOF && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
-        return true;
-      }
-    } else if (PID == 1) {
-      if (!isNoTOF && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
-        return true;
-      }
-      if (!isNoTOF && candidate.hasTOF() && ((candidate.tofNSigmaPi() * candidate.tofNSigmaPi()) + (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi())) < (nsigmaCutCombined * nsigmaCutCombined)) {
-        return true;
-      }
-      if (isNoTOF && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  template <typename T>
   bool strategySelectionPID(const T& candidate, int PID, int strategy)
   {
     if (PID == 0) {
@@ -389,13 +335,13 @@ struct Kstarpbpb {
           return true;
         }
       } else if (strategy == 1) {
-        if (candidate.pt() < TPCOnlyPt && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+        if (!isNoTOF && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
           return true;
         }
-        if (candidate.pt() >= TPCOnlyPt && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC && candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < nsigmaCutTOF && candidate.beta() > cfgCutTOFBeta) {
+        if (!isNoTOF && candidate.hasTOF() && ((candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) + (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa())) < (nsigmaCutCombined * nsigmaCutCombined)) {
           return true;
         }
-        if (!useGlobalTrack && !candidate.hasTPC()) {
+        if (isNoTOF && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
           return true;
         }
       } else if (strategy == Strategy) {
@@ -422,13 +368,13 @@ struct Kstarpbpb {
           return true;
         }
       } else if (strategy == 1) {
-        if (candidate.pt() < TPCOnlyPt && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
+        if (!isNoTOF && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
           return true;
         }
-        if (candidate.pt() >= TPCOnlyPt && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC && candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < nsigmaCutTOF && candidate.beta() > cfgCutTOFBeta) {
+        if (!isNoTOF && candidate.hasTOF() && ((candidate.tofNSigmaPi() * candidate.tofNSigmaPi()) + (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi())) < (nsigmaCutCombined * nsigmaCutCombined)) {
           return true;
         }
-        if (!useGlobalTrack && !candidate.hasTPC()) {
+        if (isNoTOF && std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
           return true;
         }
       } else if (strategy == Strategy) {
@@ -554,7 +500,7 @@ struct Kstarpbpb {
       if (!selectionTrack(track1)) {
         continue;
       }
-      bool track1kaon = false;
+
       auto track1ID = track1.globalIndex();
       if (!isTOFOnly && !strategySelectionPID(track1, 0, strategyPID)) {
         continue;
@@ -562,7 +508,6 @@ struct Kstarpbpb {
       if (isTOFOnly && !selectionPID2(track1, 0)) {
         continue;
       }
-      track1kaon = true;
 
       if (useWeight) {
         if (track1.pt() < cfgMaxTrackPt &&
@@ -576,7 +521,7 @@ struct Kstarpbpb {
         if (!selectionTrack(track2)) {
           continue;
         }
-        bool track2pion = false;
+
         auto track2ID = track2.globalIndex();
         if (!isTOFOnly && !strategySelectionPID(track2, 1, strategyPID)) {
           continue;
@@ -584,13 +529,11 @@ struct Kstarpbpb {
         if (isTOFOnly && !selectionPID2(track2, 1)) {
           continue;
         }
-        track2pion = true;
+
         if (track2ID == track1ID) {
           continue;
         }
-        if (!track1kaon || !track2pion) {
-          continue;
-        }
+
         if (additionalQAplots) {
           histos.fill(HIST("QAafter/TPC_Nsigma_allka"), track1.pt(), track1.tpcNSigmaKa(), centrality);
           histos.fill(HIST("QAafter/TOF_Nsigma_allka"), track1.pt(), track1.tofNSigmaKa(), centrality);
@@ -787,16 +730,10 @@ struct Kstarpbpb {
         if (!selectionTrack(track1) || !selectionTrack(track2)) {
           continue;
         }
-        if (ispTdepPID && !isTOFOnly && !(selectionPIDNew(track1, 0))) {
+        if (!isTOFOnly && !strategySelectionPID(track1, 0, strategyPID)) {
           continue;
         }
-        if (ispTdepPID && !isTOFOnly && !(selectionPIDNew(track2, 1))) {
-          continue;
-        }
-        if (!ispTdepPID && !isTOFOnly && !(selectionPID(track1, 0))) {
-          continue;
-        }
-        if (!ispTdepPID && !isTOFOnly && !(selectionPID(track2, 1))) {
+        if (!isTOFOnly && !strategySelectionPID(track2, 1, strategyPID)) {
           continue;
         }
         if (isTOFOnly && !selectionPID2(track1, 0)) {
@@ -915,10 +852,10 @@ struct Kstarpbpb {
         if (!selectionTrack(track1)) {
           continue;
         }
-        if (ispTdepPID && !(selectionPIDNew(track1, 0))) {
+        if (!isTOFOnly && !strategySelectionPID(track1, 0, strategyPID)) {
           continue;
         }
-        if (!ispTdepPID && !(selectionPID(track1, 0))) {
+        if (isTOFOnly && !selectionPID2(track1, 0)) {
           continue;
         }
         if (!track1.has_mcParticle()) {
@@ -933,10 +870,10 @@ struct Kstarpbpb {
           if (!selectionTrack(track2)) {
             continue;
           }
-          if (ispTdepPID && !(selectionPIDNew(track2, 1))) {
+          if (!isTOFOnly && !strategySelectionPID(track2, 1, strategyPID)) {
             continue;
           }
-          if (!ispTdepPID && !(selectionPID(track2, 1))) {
+          if (isTOFOnly && !selectionPID2(track2, 1)) {
             continue;
           }
           if (!track2.has_mcParticle()) {
@@ -972,10 +909,10 @@ struct Kstarpbpb {
               if (pdgcheck && std::abs(mothertrack1.pdgCode()) != o2::constants::physics::kK0Star892) {
                 continue;
               }
-              if (ispTdepPID && !(selectionPIDNew(track1, 0) || selectionPIDNew(track2, 1))) {
+              if (!isTOFOnly && !(strategySelectionPID(track1, 0, strategyPID) || strategySelectionPID(track2, 1, strategyPID))) {
                 continue;
               }
-              if (!ispTdepPID && !(selectionPID(track1, 0) || selectionPID(track2, 1))) {
+              if (isTOFOnly && !(selectionPID2(track1, 0) || selectionPID2(track2, 1))) {
                 continue;
               }
               if (avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
@@ -1174,10 +1111,7 @@ struct Kstarpbpb {
             continue;
           }
           // PID check
-          if (ispTdepPID && !isTOFOnly && (!strategySelectionPID(track1, 0, strategyPID) || !strategySelectionPID(track2, 1, strategyPID))) {
-            continue;
-          }
-          if (!ispTdepPID && !isTOFOnly && (!selectionPID(track1, 0) || !selectionPID(track2, 1))) {
+          if (!isTOFOnly && (!strategySelectionPID(track1, 0, strategyPID) || !strategySelectionPID(track2, 1, strategyPID))) {
             continue;
           }
           if (isTOFOnly && (!selectionPID2(track1, 0) || !selectionPID2(track2, 1))) {
