@@ -31,7 +31,6 @@
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 
-#include "PID/PIDTOFParamService.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/LHCConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -52,6 +51,7 @@
 #include <Framework/runDataProcessing.h>
 #include <GPU/GPUROOTCartesianFwd.h>
 #include <MathUtils/Primitive2D.h>
+#include <PID/PIDTOFParamService.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/TrackLTIntegral.h>
