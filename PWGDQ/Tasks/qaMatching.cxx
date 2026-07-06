@@ -2014,8 +2014,8 @@ struct QaMatching {
 
       int64_t deltaBc = bcMft - bcMch;
       double deltaBcNS = o2::constants::lhc::LHCBunchSpacingNS * deltaBc;
-      double deltaTrackTime = mftTrackInfo.time - mftTrackInfo.time + deltaBcNS;
-      double trackTimeResTot = mftTrackInfo.timeRes + mftTrackInfo.timeRes;
+      double deltaTrackTime = mftTrackInfo.time - mchTrackInfo.time + deltaBcNS;
+      double trackTimeResTot = mftTrackInfo.timeRes + mchTrackInfo.timeRes;
 
       if (std::fabs(deltaTrackTime) > trackTimeResTot) {
         continue;
