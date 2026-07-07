@@ -1854,7 +1854,7 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
       values[kMuonRAtAbsorberEnd] = std::sqrt(xAbs * xAbs + yAbs * yAbs);
     }
 
-    SMatrix55 cov = propmuon.getCovariances();
+    const SMatrix55& cov = propmuon.getCovariances();
     values[kMuonCXX] = cov(0, 0);
     values[kMuonCXY] = cov(1, 0);
     values[kMuonCYY] = cov(1, 1);
