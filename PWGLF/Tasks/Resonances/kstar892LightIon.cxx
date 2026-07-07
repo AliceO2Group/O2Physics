@@ -52,7 +52,9 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -119,7 +121,7 @@ struct Kstar892LightIon {
     Configurable<float> cfgITSChi2NCl{"cfgITSChi2NCl", 36.0, "ITS Chi2/NCl"};
     Configurable<float> cfgTPCChi2NClMax{"cfgTPCChi2NClMax", 4.0, "TPC Chi2/NCl"};
     Configurable<float> cfgTPCChi2NClMin{"cfgTPCChi2NClMin", 0.0, "TPC Chi2/NCl"};
-    Configurable<bool> isUseITSTPCRefit{"isUseITSTPCRefit", false, "Require ITS Refit"};
+    // Configurable<bool> isUseITSTPCRefit{"isUseITSTPCRefit", false, "Require ITS Refit"};
     Configurable<bool> isApplyPtDepDCAxyCut{"isApplyPtDepDCAxyCut", false, "Apply pT dependent DCAxy cut"};
     Configurable<bool> isGoldenChi2{"isGoldenChi2", false, "Apply golden chi2 cut"};
     Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
@@ -249,11 +251,11 @@ struct Kstar892LightIon {
   // 0 : pT < lowPtCutPid
   // 1 : lowPtCutPid <= pT < highPtCutPID
   // 2 : pT >= highPtCutPID
-  static constexpr std::array<float, 3> TPCPiCuts3Pt{3.0f, 1.5f, 2.0f};
-  static constexpr std::array<float, 3> TOFPiCuts3Pt{3.0f, 2.0f, 3.0f};
+  // static constexpr std::array<float, 3> TPCPiCuts3Pt{3.0f, 1.5f, 2.0f};
+  // static constexpr std::array<float, 3> TOFPiCuts3Pt{3.0f, 2.0f, 3.0f};
 
-  static constexpr std::array<float, 3> TPCKaCuts3Pt{2.0f, 1.5f, 2.0f};
-  static constexpr std::array<float, 3> TOFKaCuts3Pt{3.0f, 2.0f, 3.0f};
+  // static constexpr std::array<float, 3> TPCKaCuts3Pt{2.0f, 1.5f, 2.0f};
+  // static constexpr std::array<float, 3> TOFKaCuts3Pt{3.0f, 2.0f, 3.0f};
 
   TRandom* rn = new TRandom();
 
@@ -658,8 +660,8 @@ struct Kstar892LightIon {
         return false;
       if (selectionConfig.isPVContributor && !candidate.isPVContributor())
         return false;
-      if (selectionConfig.isUseITSTPCRefit && (!(o2::aod::track::ITSrefit) || !(o2::aod::track::TPCrefit)))
-        return false;
+      // if (selectionConfig.isUseITSTPCRefit && (!(o2::aod::track::ITSrefit) || !(o2::aod::track::TPCrefit)))
+      //   return false;
     } else if (!selectionConfig.isGlobalTracks) {
       if (std::abs(candidate.pt()) < selectionConfig.cfgCutPT)
         return false;
@@ -692,18 +694,14 @@ struct Kstar892LightIon {
   template <typename T1, typename T2>
   bool selectionPair(const T1& candidate1, const T2& candidate2)
   {
-    double pt1, pt2, pz1, pz2, p1, p2, angle;
-    pt1 = candidate1.pt();
-    pt2 = candidate2.pt();
-    pz1 = candidate1.pz();
-    pz2 = candidate2.pz();
-    p1 = candidate1.p();
-    p2 = candidate2.p();
-    angle = std::acos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
-    if (selectionConfig.isApplyDeepAngle && angle < selectionConfig.cfgDeepAngle) {
-      return false;
-    }
-    return true;
+    double pt1 = candidate1.pt();
+    double pt2 = candidate2.pt();
+    double pz1 = candidate1.pz();
+    double pz2 = candidate2.pz();
+    double p1 = candidate1.p();
+    double p2 = candidate2.p();
+    double angle = std::acos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
+    return !(selectionConfig.isApplyDeepAngle && angle < selectionConfig.cfgDeepAngle);
   }
 
   template <typename T>
@@ -896,7 +894,9 @@ struct Kstar892LightIon {
           if (candidate.hasTOF())
             return passTPC(candidate, pid) && passTOF(candidate, pid);
           return passTPC(candidate, pid);
-        } else if (candidate.pt() < selectionConfig.highPtCutPid) {
+        }
+
+        if (candidate.pt() < selectionConfig.highPtCutPid) {
           if (!candidate.hasTOF() || candidate.beta() <= selectionConfig.cfgTOFBetaCut)
             return false;
 
@@ -909,12 +909,12 @@ struct Kstar892LightIon {
           const PIDParticle otherPID = (pid == PIDParticle::kPion) ? PIDParticle::kKaon : PIDParticle::kPion;
 
           return sigmaComb2 < combinedNSigma2(candidate, otherPID);
-        } else {
-          if (candidate.hasTOF())
-            return passCombined(candidate, pid);
-
-          return passTPC(candidate, pid);
         }
+
+        if (candidate.hasTOF())
+          return passCombined(candidate, pid);
+
+        return passTPC(candidate, pid);
       }
 
       default:
@@ -977,39 +977,40 @@ struct Kstar892LightIon {
   }
 
   //*********Varibles declaration***************
-  float centrality{-1.0}, theta2;
   ROOT::Math::PxPyPzMVector daughter1, daughter2, daughterRot, genDaughter1, genDaughter2, mother, motherRot, genMother;
 
-  double genMass, recMass, recPt, genPt;
+  float centrality = -1.0f, theta2 = 0.0f;
+  double genMass = 0.0, recMass = 0.0, recPt = 0.0, genPt = 0.0;
+
   bool isMix = false;
 
   template <typename T1, typename T2>
-  void fillInvMass(const T1& daughter1, const T1& daughter2, const T1& mother, float centrality, bool isMix, const T2& track1, const T2& track2)
+  void fillInvMass(const T1& argDaughter1, const T1& argDaughter2, const T1& argMother, float argCentrality, bool argIsMix, const T2& track1, const T2& track2)
   {
     if (track1.sign() * track2.sign() < 0) {
-      if (!isMix) {
-        if (mother.Rapidity() > selectionConfig.motherRapidityMin && mother.Rapidity() < selectionConfig.motherRapidityMax) {
-          hInvMass.fill(HIST("h3KstarInvMassUnlikeSign"), centrality, mother.Pt(), mother.M());
+      if (!argIsMix) {
+        if (argMother.Rapidity() > selectionConfig.motherRapidityMin && argMother.Rapidity() < selectionConfig.motherRapidityMax) {
+          hInvMass.fill(HIST("h3KstarInvMassUnlikeSign"), argCentrality, argMother.Pt(), argMother.M());
         }
         for (int i = 0; i < cRotations; i++) {
           theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / rotationalCut, o2::constants::math::PI + o2::constants::math::PI / rotationalCut);
 
-          daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
-          motherRot = daughterRot + daughter2;
+          daughterRot = ROOT::Math::PxPyPzMVector(argDaughter1.Px() * std::cos(theta2) - argDaughter1.Py() * std::sin(theta2), argDaughter1.Px() * std::sin(theta2) + argDaughter1.Py() * std::cos(theta2), argDaughter1.Pz(), argDaughter1.M());
+          motherRot = daughterRot + argDaughter2;
 
           if (calcRotational && (motherRot.Rapidity() > selectionConfig.motherRapidityMin && motherRot.Rapidity() < selectionConfig.motherRapidityMax))
-            hInvMass.fill(HIST("h3KstarInvMassRotated"), centrality, motherRot.Pt(), motherRot.M());
+            hInvMass.fill(HIST("h3KstarInvMassRotated"), argCentrality, motherRot.Pt(), motherRot.M());
         }
-      } else if (isMix && (mother.Rapidity() > selectionConfig.motherRapidityMin && mother.Rapidity() < selectionConfig.motherRapidityMax)) {
-        hInvMass.fill(HIST("h3KstarInvMassMixed"), centrality, mother.Pt(), mother.M());
+      } else if (argMother.Rapidity() > selectionConfig.motherRapidityMin && argMother.Rapidity() < selectionConfig.motherRapidityMax) {
+        hInvMass.fill(HIST("h3KstarInvMassMixed"), argCentrality, argMother.Pt(), argMother.M());
       }
     } else {
-      if (!isMix) {
-        if (calcLikeSign && (mother.Rapidity() > selectionConfig.motherRapidityMin && mother.Rapidity() < selectionConfig.motherRapidityMax)) {
+      if (!argIsMix) {
+        if (calcLikeSign && (argMother.Rapidity() > selectionConfig.motherRapidityMin && argMother.Rapidity() < selectionConfig.motherRapidityMax)) {
           if (track1.sign() > 0 && track2.sign() > 0) {
-            hInvMass.fill(HIST("h3KstarInvMasslikeSignPP"), centrality, mother.Pt(), mother.M());
+            hInvMass.fill(HIST("h3KstarInvMasslikeSignPP"), argCentrality, argMother.Pt(), argMother.M());
           } else if (track1.sign() < 0 && track2.sign() < 0) {
-            hInvMass.fill(HIST("h3KstarInvMasslikeSignMM"), centrality, mother.Pt(), mother.M());
+            hInvMass.fill(HIST("h3KstarInvMasslikeSignMM"), argCentrality, argMother.Pt(), argMother.M());
           }
         }
       }
@@ -1048,16 +1049,14 @@ struct Kstar892LightIon {
 
     centrality = -1;
 
-    if (selectCentEstimator == kFT0M) {
-      centrality = collision.centFT0M();
-    } else if (selectCentEstimator == kFT0A) {
+    if (selectCentEstimator == kFT0A) {
       centrality = collision.centFT0A();
     } else if (selectCentEstimator == kFT0C) {
       centrality = collision.centFT0C();
     } else if (selectCentEstimator == kFV0A) {
       centrality = collision.centFV0A();
     } else {
-      centrality = collision.centFT0M(); // default
+      centrality = collision.centFT0M(); // default includes kFT0M
     }
 
     /* else if (selectCentEstimator == 4) {
@@ -1219,16 +1218,14 @@ struct Kstar892LightIon {
 
     centrality = -1;
 
-    if (selectCentEstimator == kFT0M) {
-      centrality = collision.centFT0M();
-    } else if (selectCentEstimator == kFT0A) {
+    if (selectCentEstimator == kFT0A) {
       centrality = collision.centFT0A();
     } else if (selectCentEstimator == kFT0C) {
       centrality = collision.centFT0C();
     } else if (selectCentEstimator == kFV0A) {
       centrality = collision.centFV0A();
     } else {
-      centrality = collision.centFT0M(); // default
+      centrality = collision.centFT0M(); // default includes kFT0M
     }
 
     // Fill the event counter
@@ -1390,7 +1387,7 @@ struct Kstar892LightIon {
   void processME(EventCandidatesMix const&, TrackCandidates const&)
   {
     // Map estimator to pair and centrality accessor
-    auto runMixing = [&](auto& pair, auto centralityGetter) {
+    auto runMixing = [&](const auto& pair, auto centralityGetter) {
       for (const auto& [c1, tracks1, c2, tracks2] : pair) {
 
         if (!selectionEvent(c1, false) || !selectionEvent(c2, false)) { // don't fill event cut histogram
@@ -1530,7 +1527,7 @@ struct Kstar892LightIon {
       return;
     }
 
-    if (selectionConfig.isApplyMCGenTVX && !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0)) {
+    if (selectionConfig.isApplyMCGenTVX && (mcCollision.multMCFT0C() <= 0 || mcCollision.multMCFT0A() <= 0)) {
       return;
     }
 
@@ -1621,7 +1618,7 @@ struct Kstar892LightIon {
         }
 
         int pdgDau = kCurrentDaughter.pdgCode();
-        int charge = (pdgDau > 0) - (pdgDau < 0);
+        int charge = static_cast<int>(pdgDau > 0) - static_cast<int>(pdgDau < 0);
 
         if (charge > 0)
           hasPos = true;
@@ -1650,16 +1647,14 @@ struct Kstar892LightIon {
 
     centrality = collision.centFT0M();
 
-    if (selectCentEstimator == kFT0M) {
-      centrality = collision.centFT0M();
-    } else if (selectCentEstimator == kFT0A) {
+    if (selectCentEstimator == kFT0A) {
       centrality = collision.centFT0A();
     } else if (selectCentEstimator == kFT0C) {
       centrality = collision.centFT0C();
     } else if (selectCentEstimator == kFV0A) {
       centrality = collision.centFV0A();
     } else {
-      centrality = collision.centFT0M(); // default
+      centrality = collision.centFT0M(); // default includes kFT0M
     }
 
     hMC.fill(HIST("Rec/hAllRecCollisions"), centrality);
@@ -1745,7 +1740,7 @@ struct Kstar892LightIon {
         }
       }
 
-      if (!(track1PDG == PDG_t::kPiPlus && track2PDG == PDG_t::kKPlus) && !(track1PDG == PDG_t::kKPlus && track2PDG == PDG_t::kPiPlus)) {
+      if ((track1PDG != PDG_t::kPiPlus || track2PDG != PDG_t::kKPlus) && (track1PDG != PDG_t::kKPlus || track2PDG != PDG_t::kPiPlus)) {
         continue;
       }
 
@@ -1919,7 +1914,7 @@ struct Kstar892LightIon {
       return;
     }
 
-    if (selectionConfig.isApplyMCGenTVX && !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0)) {
+    if (selectionConfig.isApplyMCGenTVX && (mcCollision.multMCFT0C() <= 0 || mcCollision.multMCFT0A() <= 0)) {
       return;
     }
 
@@ -1981,7 +1976,7 @@ struct Kstar892LightIon {
       return;
     }
 
-    if (selectionConfig.isApplyMCGenTVX && !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0)) {
+    if (selectionConfig.isApplyMCGenTVX && (mcCollision.multMCFT0C() <= 0 || mcCollision.multMCFT0A() <= 0)) {
       return;
     }
 
@@ -2048,7 +2043,7 @@ struct Kstar892LightIon {
       return;
     }
 
-    if (selectionConfig.isApplyMCGenTVX && !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0)) {
+    if (selectionConfig.isApplyMCGenTVX && (mcCollision.multMCFT0C() <= 0 || mcCollision.multMCFT0A() <= 0)) {
       return;
     }
 
@@ -2064,7 +2059,7 @@ struct Kstar892LightIon {
     hMC.fill(HIST("AllLoss/hMultEta05Gen"), mult05);
     hMC.fill(HIST("AllLoss/hMultEta08Gen"), mult08);
     bool isSelectedEvent = false;
-    float centrality = -1.f;
+    centrality = -1.f;
 
     for (auto const& collision : recCollisions) {
 
@@ -2127,16 +2122,14 @@ struct Kstar892LightIon {
       return;
     }
 
-    if (selectCentEstimator == kFT0M) {
-      centrality = collision.centFT0M();
-    } else if (selectCentEstimator == kFT0A) {
+    if (selectCentEstimator == kFT0A) {
       centrality = collision.centFT0A();
     } else if (selectCentEstimator == kFT0C) {
       centrality = collision.centFT0C();
     } else if (selectCentEstimator == kFV0A) {
       centrality = collision.centFV0A();
     } else {
-      centrality = collision.centFT0M(); // default
+      centrality = collision.centFT0M(); // default includes kFT0M
     }
 
     if (!selectionEvent(collision, false)) {
@@ -2574,27 +2567,27 @@ struct Kstar892LightIon {
           if (a1.first != a2.first)
             continue;
 
-          int pdg = a1.second;
+          int ancestorPdg = a1.second;
 
-          if (pdg == o2::constants::physics::kK1_1270Plus)
+          if (ancestorPdg == o2::constants::physics::kK1_1270Plus)
             fromK11270 = true;
 
-          if (pdg == kK11400Plus)
+          if (ancestorPdg == kK11400Plus)
             fromK11400 = true;
 
-          if (pdg == kKStar1680Plus)
+          if (ancestorPdg == kKStar1680Plus)
             fromKstar1680 = true;
 
-          if (pdg == kK21770Plus)
+          if (ancestorPdg == kK21770Plus)
             fromK21770 = true;
 
-          if (pdg == kK21820Plus)
+          if (ancestorPdg == kK21820Plus)
             fromK21820 = true;
 
-          if (pdg == kKstar14100)
+          if (ancestorPdg == kKstar14100)
             fromKstar1410 = true;
 
-          if (pdg == kKstar14300)
+          if (ancestorPdg == kKstar14300)
             fromKstar01430 = true;
         }
       }
@@ -2702,8 +2695,8 @@ struct Kstar892LightIon {
           mother.Rapidity() > selectionConfig.motherRapidityMax)
         continue;
 
-      const float recMass = mother.M();
-      const float recPt = mother.Pt();
+      recMass = mother.M();
+      recPt = mother.Pt();
 
       const auto mcKa = track1.mcParticle();
       const auto mcPi = track2.mcParticle();
@@ -2754,16 +2747,14 @@ struct Kstar892LightIon {
 
     centrality = collision.centFT0M();
 
-    if (selectCentEstimator == kFT0M) {
-      centrality = collision.centFT0M();
-    } else if (selectCentEstimator == kFT0A) {
+    if (selectCentEstimator == kFT0A) {
       centrality = collision.centFT0A();
     } else if (selectCentEstimator == kFT0C) {
       centrality = collision.centFT0C();
     } else if (selectCentEstimator == kFV0A) {
       centrality = collision.centFV0A();
     } else {
-      centrality = collision.centFT0M(); // default
+      centrality = collision.centFT0M(); // default includes kFT0M
     }
 
     if (!selectionEvent(collision, true)) { // fill MC event cut histogram
@@ -2803,16 +2794,16 @@ struct Kstar892LightIon {
       int track1PDG = std::abs(mctrack1.pdgCode());
       int track2PDG = std::abs(mctrack2.pdgCode());
 
-      if (!(track1PDG == PDG_t::kPiPlus && track2PDG == PDG_t::kKPlus) && !(track1PDG == PDG_t::kKPlus && track2PDG == PDG_t::kPiPlus)) {
+      if ((track1PDG != PDG_t::kPiPlus || track2PDG != PDG_t::kKPlus) && (track1PDG != PDG_t::kKPlus || track2PDG != PDG_t::kPiPlus)) {
         continue;
       }
 
       ROOT::Math::PxPyPzMVector kVec;
       ROOT::Math::PxPyPzMVector piVec;
 
-      double phiK, phiPi;
-      double etaK, etaPi;
-      double ptK, ptPi;
+      double phiK = 0.0, phiPi = 0.0;
+      double etaK = 0.0, etaPi = 0.0;
+      double ptK = 0.0, ptPi = 0.0;
 
       if (track1PDG == PDG_t::kKPlus) {
 
@@ -3014,7 +3005,7 @@ struct Kstar892LightIon {
     // Only events with at least one charged particle in the FT0A and FT0C acceptances
     //---------------------------
     if (selectionConfig.selTVXMC) {
-      if (!(nChFT0A > ZeroInt && nChFT0C > ZeroInt)) {
+      if (nChFT0A <= ZeroInt || nChFT0C <= ZeroInt) {
         hMC.fill(HIST("MCCheck/NchMCcentVsTVX"), nChMC, 0.5);
         return;
       }
