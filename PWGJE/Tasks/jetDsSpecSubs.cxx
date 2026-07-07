@@ -13,24 +13,18 @@
 /// \brief Ds-tagged jet analysis with substructure histogram outputs
 /// \author Monalisa Melo <monalisa.melo@cern.ch>, Universidade de São Paulo
 
-#include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/DataModel/JetSubstructure.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/ConfigContext.h>
 #include <Framework/Configurable.h>
-#include <Framework/DataProcessorSpec.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -99,6 +93,7 @@ struct JetDsSpecSubs {
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
 
+  static constexpr float epsilon = 1.e-6f;
   // Filters
   // Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
   // Filter collisionFilter = nabs(aod::jcollision::posZ) < vertexZCut;
@@ -228,9 +223,9 @@ struct JetDsSpecSubs {
       const float dr = jetutilities::deltaR(jet, trk);
       sum += std::pow(trk.pt(), kappa) * std::pow(dr, alpha);
     }
-    const float jetR = jet.r() / 100.f;
+    const float jetRadius = jet.r() / 100.f;
 
-    const float denom = std::pow(jet.pt(), kappa) * std::pow(jetR, alpha);
+    const float denom = std::pow(jet.pt(), kappa) * std::pow(jetRadius, alpha);
     if (denom <= 0.f) {
       return -1.f;
     }
@@ -310,6 +305,10 @@ struct JetDsSpecSubs {
     registry.fill(HIST("h_collision_counter_data"), 3.0);
 
     for (const auto& jet : jets) {
+      const float jetRadius = jet.r() / 100.f;
+      if (std::abs(jetRadius - jetR.value) > epsilon) {
+        continue;
+      }
       registry.fill(HIST("h_dsjet_counter_data"), 0.5); // DsChargedJets entries
 
       registry.fill(HIST("h_jet_pt_data"), jet.pt());
@@ -399,8 +398,7 @@ struct JetDsSpecSubs {
                                    DsMCPJets const& mcpjets,
                                    DsCandidatesMCD const& /*mcdCandidates*/,
                                    DsCandidatesMCP const& /*mcpCandidates*/,
-                                   aod::JetTracks const& tracks,
-                                   aod::JetParticles const& particles)
+                                   aod::JetTracks const& tracks)
   {
     for (const auto& mccollision : mccollisions) {
       // Count all generated MC collisions
@@ -413,7 +411,7 @@ struct JetDsSpecSubs {
       // MC collisions passing z_cut selection
       registry.fill(HIST("McEffCol"), getValFromBin(BinMCColCntr::ZCut));
 
-      // Detector level
+      // Reconstructed collisions associated to this mccollision
       const auto collisionsPerMCCollision = collisions.sliceBy(collisionsPerMCCollisionPreslice, mccollision.globalIndex());
       for (const auto& collision : collisionsPerMCCollision) {
 
@@ -431,7 +429,10 @@ struct JetDsSpecSubs {
         // Detector-level Ds-tagged jets associated with the current reconstructed collision
         const auto dsmcdJetsPerCollision = mcdjets.sliceBy(jetmcdpreslice, collision.globalIndex());
         for (const auto& mcdjet : dsmcdJetsPerCollision) {
-
+          const float mcdjetRadius = mcdjet.r() / 100.f;
+          if (std::abs(mcdjetRadius - jetR.value) > epsilon) {
+            continue;
+          }
           // Detector-level jet found in a matched collision
           registry.fill(HIST("McEffJet"), getValFromBin(BinMCJetCntr::DetectorLevelJetInMCCollision));
 
@@ -486,6 +487,10 @@ struct JetDsSpecSubs {
       // Particle level
       const auto dsmcpJetsPerMCCollision = mcpjets.sliceBy(jetmcppreslice, mccollision.globalIndex());
       for (const auto& mcpjet : dsmcpJetsPerMCCollision) {
+        const float mcpjetRadius = mcpjet.r() / 100.f;
+        if (std::abs(mcpjetRadius - jetR.value) > epsilon) {
+          continue;
+        }
 
         registry.fill(HIST("McEffJet"), getValFromBin(BinMCJetCntr::ParticleLevelJetInMCCollision));
 
@@ -536,8 +541,7 @@ struct JetDsSpecSubs {
                                      DsMCPJets const& mcpjets,
                                      DsCandidatesMCD const& mcdDscand,
                                      DsCandidatesMCP const& mcpDscand,
-                                     aod::JetTracks const& jettracks,
-                                     aod::JetParticles const& particles)
+                                     aod::JetTracks const& jettracks)
   {
     analyseMonteCarloEfficiency<Preslice<DsMCDJets>,
                                 Preslice<DsMCPJets>,
@@ -552,8 +556,7 @@ struct JetDsSpecSubs {
                                                  mcpjets,
                                                  mcdDscand,
                                                  mcpDscand,
-                                                 jettracks,
-                                                 particles);
+                                                 jettracks);
   }
   PROCESS_SWITCH(JetDsSpecSubs, processMonteCarloEfficiencyDs, "Non-matched and matched MC Ds and jets", false);
 };

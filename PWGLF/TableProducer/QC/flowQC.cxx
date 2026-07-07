@@ -40,6 +40,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 
 #include <TH2.h>
 #include <TMath.h>
@@ -47,8 +48,6 @@
 #include <TString.h>
 
 #include <fmt/format.h>
-
-#include <GPUROOTCartesianFwd.h>
 
 #include <array>
 #include <cmath>

@@ -35,11 +35,8 @@
 #include <unordered_map>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::trackbuilder
 {
-namespace trackbuilder
-{
-
 struct ConfTrackFilters : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("TrackFilters");
   // kinematic cuts for filtering tracks
@@ -130,7 +127,7 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
 };
 
 // define the template structure for TrackSelection
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   std::string prefix = Prefix; // Unique prefix based on the template argument
   // configuration parameters
@@ -145,13 +142,13 @@ struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};
   o2::framework::Configurable<float> massMin{"massMin", 0.f, "Minimum TOF mass (only used if enabled)"};
-  o2::framework::Configurable<float> massMax{"massMax", 2.f, "Maximum TOF mass (only used if enabled)"};
+  o2::framework::Configurable<float> massMax{"massMax", 99.f, "Maximum TOF mass (only used if enabled)"};
   // track selection masks
-  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> maskLowMomentum{"maskLowMomentum", 1ul, "Bitmask for selections below momentum threshold"};
-  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> maskHighMomentum{"maskHighMomentum", 2ul, "Bitmask for selections above momentum threshold"};
+  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> maskLowMomentum{"maskLowMomentum", 1ul, "Bitmask for selections below momentum threshold"};
+  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> maskHighMomentum{"maskHighMomentum", 2ul, "Bitmask for selections above momentum threshold"};
   // track rejection masks
-  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> rejectionMaskLowMomentum{"rejectionMaskLowMomentum", 0ul, "Bitmask for rejections below momentum threshold"};
-  o2::framework::Configurable<o2::aod::femtodatatypes::TrackMaskType> rejectionMaskHighMomentum{"rejectionMaskHighMomentum", 0ul, "Bitmask for rejections above momentum threshold"};
+  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> rejectionMaskLowMomentum{"rejectionMaskLowMomentum", 0ul, "Bitmask for rejections below momentum threshold"};
+  o2::framework::Configurable<o2::analysis::femto::datatypes::TrackMaskType> rejectionMaskHighMomentum{"rejectionMaskHighMomentum", 0ul, "Bitmask for rejections above momentum threshold"};
   // momentum threshold for PID usage
   o2::framework::Configurable<float> pidThres{"pidThres", 1.2f, "Momentum threshold for using TPCTOF/TOF pid for tracks with large momentum (GeV/c)"};
 };
@@ -241,7 +238,7 @@ const std::unordered_map<TrackSels, std::string> trackSelectionNames = {
   {kTPCcRowsMin, "Min. number of crossed TPC rows"},
   {kTPCnClsOvercRowsMin, "Min. fraction of TPC clusters over TPC crossed rows"},
   {kTPCsClsMax, "Max. number of shared TPC clusters"},
-  {kTPCsClsMax, "Max. number of shared TPC clusters"},
+  // NOTE: removed duplicate {kTPCsClsMax, ...} entry that was here (harmless but dead duplicate key).
   {kTPCsClsFracMax, "Max. fractions of shared TPC clusters"},
   {kITSnClsMin, "Min. number of ITS clusters"},
   {kITSnClsIbMin, "Min. number of ITS clusters in the inner barrel"},
@@ -290,12 +287,12 @@ const std::unordered_map<TrackSels, std::string> trackSelectionNames = {
 
 /// \class FemtoDreamTrackCuts
 /// \brief Cut class to contain and execute all cuts applied to tracks
-template <const char* HistName>
-class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::TrackMaskType, kTrackSelsMax>
+template <auto& HistName>
+class TrackSelection : public BaseSelection<float, o2::analysis::femto::datatypes::TrackMaskType, kTrackSelsMax>
 {
  public:
   TrackSelection() = default;
-  ~TrackSelection() = default;
+  ~TrackSelection() override = default;
 
   template <typename T1, typename T2>
   void configure(o2::framework::HistogramRegistry* registry, T1& config, T2& filter)
@@ -312,9 +309,9 @@ class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::Trac
     mPassThrough = config.passThrough.value;
 
     // if pass through mode is activated, each cut is neutral (i.e. neither minimal nor optional and we do store all bits, so the most permissive bit is not skipped for minimal selections)
-    const bool isMinimalCut = mPassThrough ? false : true;
-    const bool isOptionalCut = mPassThrough ? false : true;
-    const bool skipMostPermissiveBit = mPassThrough ? false : true;
+    const bool isMinimalCut = !mPassThrough;
+    const bool isOptionalCut = !mPassThrough;
+    const bool skipMostPermissiveBit = !mPassThrough;
 
     // add selections for track quality
     this->addSelection(kTPCnClsMin, trackSelectionNames.at(kTPCnClsMin), config.tpcClustersMin.value, limits::kLowerLimit, skipMostPermissiveBit, isMinimalCut, false);
@@ -474,11 +471,7 @@ class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::Trac
     this->assembleBitmask<HistName>();
   }
 
-  bool
-    passThroughAllTracks() const
-  {
-    return mPassThrough;
-  }
+  [[nodiscard]] bool passThroughAllTracks() const { return mPassThrough; }
 
  protected:
   float mElectronTofThres = 99.f;
@@ -530,7 +523,7 @@ struct ConfTrackTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceHeliumPids{"produceHeliumPids", -1, "Produce HeliumPids (-1: auto; 0 off; 1 on)"};
 };
 
-template <const char* HistName>
+template <auto& HistName>
 class TrackBuilder
 {
  public:
@@ -588,20 +581,23 @@ class TrackBuilder
   }
 
   template <modes::Track type, typename T1, typename T2, typename T3>
-  void fillTrack(T1 const& track, T2& trackProducts, T3& collisionProducts)
+  bool fillTrack(T1 const& track, T2& trackProducts, T3& collisionProducts)
   {
-    if (mProduceTracks) {
-      trackProducts.producedTracks(collisionProducts.producedCollision.lastIndex(),
-                                   track.pt() * track.sign(),
-                                   track.eta(),
-                                   track.phi());
-      indexMap.emplace(track.globalIndex(), trackProducts.producedTracks.lastIndex());
+    if (!mProduceTracks) {
+      return false;
     }
+
+    trackProducts.producedTracks(collisionProducts.producedCollision.lastIndex(),
+                                 track.pt() * track.sign(),
+                                 track.eta(),
+                                 track.phi());
+    indexMap.emplace(track.globalIndex(), trackProducts.producedTracks.lastIndex());
+
     if (mProduceTrackMasks) {
       if constexpr (type == modes::Track::kTrack) {
         trackProducts.producedTrackMasks(mTrackSelection.getBitmask());
       } else {
-        trackProducts.producedTrackMasks(static_cast<o2::aod::femtodatatypes::TrackMaskType>(0u));
+        trackProducts.producedTrackMasks(static_cast<o2::analysis::femto::datatypes::TrackMaskType>(0u));
       }
     }
     if (mProduceTrackMass) {
@@ -672,6 +668,7 @@ class TrackBuilder
       }
       trackProducts.producedHeliumPids(itsHe, track.tpcNSigmaHe(), track.tofNSigmaHe());
     }
+    return true;
   }
 
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
@@ -681,6 +678,7 @@ class TrackBuilder
       return;
     }
     for (const auto& trackWithItsPid : tracksWithItsPid) {
+      // NOTE: passThrough is intentionally not wired in here yet for the MC path (to be added later).
       if (!mTrackSelection.checkFilters(trackWithItsPid)) {
         continue;
       }
@@ -696,13 +694,16 @@ class TrackBuilder
   }
 
   template <modes::System system, modes::Track trackType, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-  void fillMcTrack(T1 const& col, T2& collisionProducts, T3 const& mcCols, T4 const& track, T5 const& trackWithItsPid, T6& trackProducts, T7 const& mcParticles, T8& mcBuilder, T9& mcProducts)
+  bool fillMcTrack(T1 const& col, T2& collisionProducts, T3 const& mcCols, T4 const& track, T5 const& trackWithItsPid, T6& trackProducts, T7 const& mcParticles, T8& mcBuilder, T9& mcProducts)
   {
+    // NOTE: return value added, mirroring fillTrack(), so getDaughterIndex can detect
+    // whether a row was actually added before trusting lastIndex().
     if (!mProduceTracks) {
-      return;
+      return false;
     }
     this->template fillTrack<trackType>(trackWithItsPid, trackProducts, collisionProducts);
     mcBuilder.template fillMcTrackWithLabel<system>(col, mcCols, track, mcParticles, mcProducts);
+    return true;
   }
 
   template <modes::Track type, typename T1, typename T2, typename T3>
@@ -711,11 +712,13 @@ class TrackBuilder
     auto result = utils::getIndex(daughter.globalIndex(), indexMap);
     if (result) {
       return result.value();
-    } else {
-      this->fillTrack<type>(daughter, trackProducts, collisionProducts);
-      int64_t idx = trackProducts.producedTracks.lastIndex();
-      return idx;
     }
+    if (!this->template fillTrack<type>(daughter, trackProducts, collisionProducts)) {
+      LOG(fatal) << "Trying to register a daughter track, but FTracks table is disabled. "
+                 << "Enable TrackTables.produceTracks when V0/Cascade/Kink tables that need daughter indices are enabled.";
+    }
+    // daughter is last track which was added added
+    return trackProducts.producedTracks.lastIndex();
   }
 
   template <modes::System system, modes::Track type, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
@@ -725,11 +728,13 @@ class TrackBuilder
     if (result) {
       // daugher already in track table
       return result.value();
-    } else {
-      this->fillMcTrack<system, type>(col, collisionProducts, mcCols, daughter, daughter, trackProducts, mcParticles, mcBuilder, mcProducts);
-      // daughter is last track which was added added
-      return trackProducts.producedTracks.lastIndex();
     }
+    if (!this->template fillMcTrack<system, type>(col, collisionProducts, mcCols, daughter, daughter, trackProducts, mcParticles, mcBuilder, mcProducts)) {
+      LOG(fatal) << "Trying to register a MC daughter track, but FTracks table is disabled. "
+                 << "Enable TrackTables.produceTracks when V0/Cascade/Kink tables that need daughter indices are enabled.";
+    }
+    // daughter is last track which was added added
+    return trackProducts.producedTracks.lastIndex();
   }
 
   template <typename T>
@@ -833,11 +838,10 @@ class TrackBuilderDerivedToDerived
     auto result = utils::getIndex(daughter.globalIndex(), indexMap);
     if (result) {
       return result.value();
-    } else {
-      this->fillTrack(daughter, trackProducts, collisionProducts);
-      int64_t idx = trackProducts.producedTracks.lastIndex();
-      return idx;
     }
+    this->fillTrack(daughter, trackProducts, collisionProducts);
+    int64_t idx = trackProducts.producedTracks.lastIndex();
+    return idx;
   }
 
  private:
@@ -846,9 +850,6 @@ class TrackBuilderDerivedToDerived
 
   std::unordered_map<int64_t, int64_t> indexMap; // for mapping tracks to daughers of lambdas, cascades and resonances ...
 };
-
-} // namespace trackbuilder
-//
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::trackbuilder
 
 #endif // PWGCF_FEMTO_CORE_TRACKBUILDER_H_

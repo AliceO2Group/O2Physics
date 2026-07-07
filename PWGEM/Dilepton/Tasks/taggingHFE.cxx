@@ -45,6 +45,7 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <PID/PIDTOFParamService.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/PID.h>
@@ -53,8 +54,6 @@
 
 #include <TH1.h>
 #include <TMath.h>
-
-#include <GPUROOTCartesianFwd.h>
 
 #include <array>
 #include <cmath>
@@ -1730,7 +1729,7 @@ struct taggingHFE {
             continue;
           }
 
-          auto eKpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(fitter_eK, collision, pos, kaon, o2::track::PID::Electron, kaon.pidForTracking());
+          auto eKpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(fitter_eK, collision, pos, kaon, o2::track::PID::Electron, kaon.pidForTracking(), o2::constants::physics::MassElectron);
           if (!eKpair.isOK) {
             continue;
           }
@@ -1790,7 +1789,7 @@ struct taggingHFE {
             continue;
           }
 
-          auto eKpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(fitter_eK, collision, pos, kaon, o2::track::PID::Electron, kaon.pidForTracking());
+          auto eKpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(fitter_eK, collision, pos, kaon, o2::track::PID::Electron, kaon.pidForTracking(), o2::constants::physics::MassElectron);
           if (!eKpair.isOK) {
             continue;
           }
@@ -1857,7 +1856,7 @@ struct taggingHFE {
           o2::dataformats::DCA impactParameterV0;
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackV0, 2.f, matCorr, &impactParameterV0); // trackV0 is TrackParCov object
 
-          auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, pos, v0, o2::track::PID::Electron, o2::track::PID::K0);
+          auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, pos, v0, o2::track::PID::Electron, o2::track::PID::K0, o2::constants::physics::MassElectron);
 
           if (!eV0pair.isOK) {
             continue;
@@ -1934,7 +1933,7 @@ struct taggingHFE {
           o2::dataformats::DCA impactParameterV0;
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackV0, 2.f, matCorr, &impactParameterV0); // trackV0 is TrackParCov object
 
-          auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, pos, v0, o2::track::PID::Electron, o2::track::PID::Lambda);
+          auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, pos, v0, o2::track::PID::Electron, o2::track::PID::Lambda, o2::constants::physics::MassElectron);
 
           if (!eV0pair.isOK) {
             continue;
@@ -1994,7 +1993,7 @@ struct taggingHFE {
           o2::dataformats::DCA impactParameterCasc;
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackCasc, 2.f, matCorr, &impactParameterCasc); // trackCasc is TrackParCov object
 
-          auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, pos, cascade, o2::track::PID::Electron, o2::track::PID::XiMinus);
+          auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, pos, cascade, o2::track::PID::Electron, o2::track::PID::XiMinus, o2::constants::physics::MassElectron);
 
           if (!eCpair.isOK) {
             continue;
@@ -2060,7 +2059,7 @@ struct taggingHFE {
           o2::dataformats::DCA impactParameterCasc;
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackCasc, 2.f, matCorr, &impactParameterCasc); // trackCasc is TrackParCov object
 
-          auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, pos, cascade, o2::track::PID::Electron, o2::track::PID::OmegaMinus);
+          auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, pos, cascade, o2::track::PID::Electron, o2::track::PID::OmegaMinus, o2::constants::physics::MassElectron);
 
           if (!eCpair.isOK) {
             continue;
@@ -2154,7 +2153,7 @@ struct taggingHFE {
             continue;
           }
 
-          auto eKpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(fitter_eK, collision, ele, kaon, o2::track::PID::Electron, kaon.pidForTracking());
+          auto eKpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(fitter_eK, collision, ele, kaon, o2::track::PID::Electron, kaon.pidForTracking(), o2::constants::physics::MassElectron);
           if (!eKpair.isOK) {
             continue;
           }
@@ -2215,7 +2214,7 @@ struct taggingHFE {
             continue;
           }
 
-          auto eKpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(fitter_eK, collision, ele, kaon, o2::track::PID::Electron, kaon.pidForTracking());
+          auto eKpair = o2::aod::pwgem::dilepton::utils::makePairLeptonTrack(fitter_eK, collision, ele, kaon, o2::track::PID::Electron, kaon.pidForTracking(), o2::constants::physics::MassElectron);
           if (!eKpair.isOK) {
             continue;
           }
@@ -2282,7 +2281,7 @@ struct taggingHFE {
           o2::dataformats::DCA impactParameterV0;
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackV0, 2.f, matCorr, &impactParameterV0); // trackV0 is TrackParCov object
 
-          auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, ele, v0, o2::track::PID::Electron, o2::track::PID::K0);
+          auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, ele, v0, o2::track::PID::Electron, o2::track::PID::K0, o2::constants::physics::MassElectron);
 
           if (!eV0pair.isOK) {
             continue;
@@ -2358,7 +2357,7 @@ struct taggingHFE {
           o2::dataformats::DCA impactParameterV0;
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackV0, 2.f, matCorr, &impactParameterV0); // trackV0 is TrackParCov object
 
-          auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, ele, v0, o2::track::PID::Electron, o2::track::PID::Lambda);
+          auto eV0pair = o2::aod::pwgem::dilepton::utils::makePairLeptonV0(fitter_eV0, collision, ele, v0, o2::track::PID::Electron, o2::track::PID::Lambda, o2::constants::physics::MassElectron);
 
           if (!eV0pair.isOK) {
             continue;
@@ -2418,7 +2417,7 @@ struct taggingHFE {
           o2::dataformats::DCA impactParameterCasc;
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackCasc, 2.f, matCorr, &impactParameterCasc); // trackCasc is TrackParCov object
 
-          auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, ele, cascade, o2::track::PID::Electron, o2::track::PID::XiMinus);
+          auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, ele, cascade, o2::track::PID::Electron, o2::track::PID::XiMinus, o2::constants::physics::MassElectron);
 
           if (!eCpair.isOK) {
             continue;
@@ -2484,7 +2483,7 @@ struct taggingHFE {
           o2::dataformats::DCA impactParameterCasc;
           o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackCasc, 2.f, matCorr, &impactParameterCasc); // trackCasc is TrackParCov object
 
-          auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, ele, cascade, o2::track::PID::Electron, o2::track::PID::OmegaMinus);
+          auto eCpair = o2::aod::pwgem::dilepton::utils::makePairLeptonCascade(fitter_eCascade, collision, ele, cascade, o2::track::PID::Electron, o2::track::PID::OmegaMinus, o2::constants::physics::MassElectron);
 
           if (!eCpair.isOK) {
             continue;

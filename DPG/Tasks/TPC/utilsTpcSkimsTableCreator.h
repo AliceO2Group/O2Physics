@@ -22,13 +22,20 @@
 
 #include "tpcSkimsTableCreator.h"
 
+#include "Common/Core/CollisionTypeHelper.h"
 #include "Common/DataModel/OccupancyTables.h"
 
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Logger.h>
 
 #include <TRandom3.h>
 
 #include <cmath>
+#include <cstdint>
+#include <string>
 
 namespace o2::dpg_tpcskimstablecreator
 {
@@ -109,6 +116,27 @@ double tpcSignalGeneric(const TrkType& track)
     return track.tpcSignalCorrected();
   } else {
     return track.tpcSignal();
+  }
+}
+
+/// Determine interaction rate source and sqrtSNN from CCDB
+void evaluateIrSourceAndSqrtSnn(const o2::framework::Service<o2::ccdb::BasicCCDBManager>& ccdb, const std::string& ccdbPathGrpLhcIf, const uint64_t timestamp, std::string& irSource, float& sqrtSNN)
+{
+  o2::parameters::GRPLHCIFData* genRunParams = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(ccdbPathGrpLhcIf, timestamp);
+  if (genRunParams != nullptr) {
+    const auto collSys = CollisionSystemType::getCollisionTypeFromGrp(genRunParams);
+    if (collSys == CollisionSystemType::kCollSyspp) {
+      irSource = "T0VTX";
+    } else {
+      irSource = "ZNC hadronic";
+    }
+    sqrtSNN = genRunParams->getSqrtS();
+    LOG(info) << "irSource determined from General Run Parameters: " << irSource;
+    LOG(info) << "sqrtSNN determined from General Run Parameters: " << sqrtSNN << " GeV";
+  } else {
+    irSource = "";
+    sqrtSNN = 5360.f;
+    LOG(warning) << "No General Run Parameters object found. irSource will remain undefined, sqrtSNN defaulted to 5360 GeV";
   }
 }
 

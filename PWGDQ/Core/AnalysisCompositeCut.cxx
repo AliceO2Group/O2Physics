@@ -13,17 +13,13 @@
 
 #include "AnalysisCut.h"
 
-#include <Rtypes.h>
-
 #include <vector>
 
-ClassImp(AnalysisCompositeCut)
-
-  //____________________________________________________________________________
-  AnalysisCompositeCut::AnalysisCompositeCut(bool useAND) : AnalysisCut(),
-                                                            fOptionUseAND(useAND),
-                                                            fCutList(),
-                                                            fCompositeCutList()
+//____________________________________________________________________________
+AnalysisCompositeCut::AnalysisCompositeCut(bool useAND) : AnalysisCut(),
+                                                          fOptionUseAND(useAND),
+                                                          fCutList(),
+                                                          fCompositeCutList()
 {
   //
   // default constructor

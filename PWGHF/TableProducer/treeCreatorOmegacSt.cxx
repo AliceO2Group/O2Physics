@@ -366,6 +366,9 @@ struct HfTreeCreatorOmegacSt {
   {
     mapMcPartToGenTable.clear();
     for (const auto& mcParticle : mcParticles) {
+      origin = 0;
+      idxBhadMothers.clear();
+      decayChannel = -1;
       const bool isOmegaC = std::abs(mcParticle.pdgCode()) == constants::physics::Pdg::kOmegaC0;
       const bool isXiC = std::abs(mcParticle.pdgCode()) == constants::physics::Pdg::kXiC0;
       if (!isOmegaC && !isXiC) {
@@ -397,7 +400,6 @@ struct HfTreeCreatorOmegacSt {
         continue;
       }
 
-      int decayChannel = -1;
       const int pdgCasc = std::abs(mcParticles.iteratorAt(idxCascDaughter).pdgCode());
 
       if (isOmegaC) {
@@ -716,6 +718,11 @@ struct HfTreeCreatorOmegacSt {
 
                     //--- do the MC Rec match
                     if (mcParticles) {
+                      isMatched = false;
+                      origin = 0;
+                      idxBhadMothers.clear();
+                      indexRecCharmBaryon = -1;
+                      indexRec = -1;
                       auto arrayDaughters = std::array{
                         trackId.template track_as<TracksExtMc>(), // bachelor <- charm baryon
                         casc.bachelor_as<TracksExtMc>(),          // bachelor <- cascade

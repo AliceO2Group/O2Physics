@@ -34,8 +34,6 @@
 
 #include <sys/types.h>
 
-#include <Rtypes.h>
-
 #include <algorithm>
 #include <cmath>
 #include <concepts>
@@ -168,7 +166,7 @@ class V0PhotonCut : public TNamed
 {
  public:
   V0PhotonCut() = default;
-  V0PhotonCut(const char* name, const char* title) : TNamed(name, title) {}
+  V0PhotonCut(const char* name, const char* title) : name(name), title(title) {}
   ~V0PhotonCut() override { delete mEmMlResponse; };
 
   enum class V0PhotonCuts : int {
@@ -215,6 +213,9 @@ class V0PhotonCut : public TNamed
     kDistance3D = 1,
     kRadAndAngle = 2
   };
+
+  const std::string getName() const { return name; }
+  const std::string getTitle() const { return title; }
 
   /// \brief add histograms to registry
   /// \param fRegistry pointer to histogram registry
@@ -1155,6 +1156,8 @@ class V0PhotonCut : public TNamed
   void setDoQA(bool flag = false);
 
  private:
+  std::string name;
+  std::string title;
   static const std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement;
   static const std::pair<int8_t, std::set<uint8_t>> its_ob_Requirement;
   static const std::pair<int8_t, std::set<uint8_t>> its_ob_Requirement_ITSTPC;
@@ -1238,8 +1241,6 @@ class V0PhotonCut : public TNamed
   bool mDoQA{false};             ///< flag to decide if QA should be done or not
   mutable uint nAccV0PerColl{0}; ///< running number of accepted v0 photons per collision used for QA
   mutable int currentCollID{-1}; ///< running collision ID of v0 photon used for QA
-
-  ClassDef(V0PhotonCut, 5);
 };
 
 #endif // PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_

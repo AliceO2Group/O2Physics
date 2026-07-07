@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -38,9 +38,7 @@
 #include <string>
 #include <vector>
 
-namespace o2::analysis::femto
-{
-namespace closepairrejection
+namespace o2::analysis::femto::closepairrejection
 {
 // enum for track histograms
 enum CprHist {
@@ -61,7 +59,7 @@ enum CprHist {
 };
 
 // template configurable group for Cpr
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfCpr : o2::framework::ConfigurableGroup {
   std::string prefix = std::string(Prefix);
   o2::framework::Configurable<bool> cutAverage{"cutAverage", true, "Apply CPR if the average deta-dphistar is below the configured values"};
@@ -80,6 +78,7 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis binningCorrelationPhi{"binningCorrelationPhi", {{720, 0, o2::constants::math::TwoPI}}, "Phi binning for correlation plot"};
   o2::framework::ConfigurableAxis binningCorrelationEta{"binningCorrelationEta", {{160, -0.8, 0.8}}, "Eta binning for correlation plot"};
   o2::framework::Configurable<int> seed{"seed", -1, "Seed to randomize particle 1 and particle 2. Set to negative value to deactivate. Set to 0 to generate unique seed in time."};
+  o2::framework::Configurable<float> magField{"magField", 5, "MC ONLY: In case of pure MC processing (no reconstruction), set magnetic field in kG"};
 };
 
 constexpr const char PrefixCprTrackTrack[] = "CprTrackTrack";
@@ -126,6 +125,8 @@ constexpr char PrefixTrackCascadeBachelorSe[] = "CPR_TrackCascadeBachelor/SE/";
 constexpr char PrefixTrackCascadeBachelorMe[] = "CPR_TrackCascadeBachelor/ME/";
 constexpr char PrefixTrackKinkSe[] = "CPR_TrackKink/SE/";
 constexpr char PrefixTrackKinkMe[] = "CPR_TrackKink/ME/";
+constexpr char PrefixMcParticleMcParticleSe[] = "CPR_McParticleMcParticle/SE/";
+constexpr char PrefixMcParticleMcParticleMe[] = "CPR_McParticleMcParticle/ME/";
 
 // must be in sync with enum TrackVariables
 // the enum gives the correct index in the array
@@ -162,7 +163,7 @@ auto makeCprHistSpecMap(const T& confCpr)
   };
 };
 
-template <const char* prefix>
+template <auto& prefix>
 class CloseTrackRejection
 {
  public:
@@ -202,7 +203,7 @@ class CloseTrackRejection
     mPlotAngularCorrelation = confCpr.plotAngularCorrelation.value;
 
     if (confCpr.seed.value >= 0) {
-      uint64_t randomSeed;
+      uint64_t randomSeed = 0;
       mRandomizeTracks = true;
       if (confCpr.seed.value == 0) {
         randomSeed = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
@@ -343,7 +344,7 @@ class CloseTrackRejection
     }
   }
 
-  bool isClosePair() const
+  [[nodiscard]] bool isClosePair() const
   {
     if (!mIsActivated) {
       return false;
@@ -368,7 +369,7 @@ class CloseTrackRejection
     return isCloseAverage || isCloseAnyRadius;
   }
 
-  bool isActivated() const { return mIsActivated; }
+  [[nodiscard]] bool isActivated() const { return mIsActivated; }
 
  private:
   std::optional<float> phistar(float magfield, float radius, float signedPt, float phi)
@@ -418,7 +419,7 @@ class CloseTrackRejection
   std::uniform_int_distribution<int> mSwapDist{0, 1};
 };
 
-template <const char* prefix>
+template <auto& prefix>
 class ClosePairRejectionTrackTrack
 {
  public:
@@ -434,18 +435,18 @@ class ClosePairRejectionTrackTrack
 
   void setMagField(float magField) { mCtr.setMagField(magField); }
   template <typename T1, typename T2, typename T3>
-  void setPair(T1 const& track1, T2 const& track2, T3 const& /*tracks*/)
+  void setPair(T1 const& track1, T2 const& track2, T3 const& /*tracks*/) // pass track table for compatibility with other classes
   {
     mCtr.compute(track1, track2);
   }
-  bool isClosePair() const { return mCtr.isClosePair(); }
+  [[nodiscard]] bool isClosePair() const { return mCtr.isClosePair(); }
   void fill(float kstar) { mCtr.fill(kstar); }
 
  private:
   CloseTrackRejection<prefix> mCtr;
 };
 
-template <const char* prefixPosDaus, const char* prefixNegDaus>
+template <auto& prefixPosDaus, auto& prefixNegDaus>
 class ClosePairRejectionV0V0
 {
  public:
@@ -478,7 +479,7 @@ class ClosePairRejectionV0V0
     mCtrNeg.compute(negDau1, negDau2);
   }
 
-  bool isClosePair() const { return mCtrPos.isClosePair() || mCtrNeg.isClosePair(); }
+  [[nodiscard]] bool isClosePair() const { return mCtrPos.isClosePair() || mCtrNeg.isClosePair(); }
 
   void fill(float kstar)
   {
@@ -491,7 +492,7 @@ class ClosePairRejectionV0V0
   CloseTrackRejection<prefixNegDaus> mCtrNeg;
 };
 
-template <const char* prefixTrackV0>
+template <auto& prefixTrackV0>
 class ClosePairRejectionTrackV0 // can also be used for any particle type that has pos/neg daughters, like resonances
 {
  public:
@@ -518,7 +519,7 @@ class ClosePairRejectionTrackV0 // can also be used for any particle type that h
     }
   }
 
-  bool isClosePair() const { return mCtr.isClosePair(); }
+  [[nodiscard]] bool isClosePair() const { return mCtr.isClosePair(); }
 
   void fill(float kstar) { mCtr.fill(kstar); }
 
@@ -526,7 +527,7 @@ class ClosePairRejectionTrackV0 // can also be used for any particle type that h
   CloseTrackRejection<prefixTrackV0> mCtr;
 };
 
-template <const char* prefixBachelor, const char* prefixV0Daughter>
+template <auto& prefixBachelor, auto& prefixV0Daughter>
 class ClosePairRejectionTrackCascade
 {
  public:
@@ -563,11 +564,7 @@ class ClosePairRejectionTrackCascade
     }
   }
 
-  bool
-    isClosePair() const
-  {
-    return mCtrBachelor.isClosePair();
-  }
+  [[nodiscard]] bool isClosePair() const { return mCtrBachelor.isClosePair(); }
 
   void fill(float kstar)
   {
@@ -580,7 +577,7 @@ class ClosePairRejectionTrackCascade
   CloseTrackRejection<prefixV0Daughter> mCtrV0Daughter;
 };
 
-template <const char* prefix>
+template <auto& prefix>
 class ClosePairRejectionTrackKink
 {
  public:
@@ -605,13 +602,36 @@ class ClosePairRejectionTrackKink
     mCtr.compute(track, daughter);
   }
 
-  bool isClosePair() const { return mCtr.isClosePair(); }
+  [[nodiscard]] bool isClosePair() const { return mCtr.isClosePair(); }
   void fill(float kstar) { mCtr.fill(kstar); }
 
  private:
   CloseTrackRejection<prefix> mCtr;
 };
 
-}; // namespace closepairrejection
-}; // namespace o2::analysis::femto
+template <auto& prefix>
+class ClosePairRejectionMcParticleMcParticle
+{
+ public:
+  template <typename T>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<CprHist, std::vector<o2::framework::AxisSpec>> const& specs,
+            T const& confCpr)
+  {
+    mCtr.init(registry, specs, confCpr, 1, 1);
+    mCtr.setMagField(confCpr.magField.value);
+  }
+  template <typename T1, typename T2>
+  void setPair(T1 const& mcParticle1, T2 const& mcParticle2)
+  {
+    mCtr.compute(mcParticle1, mcParticle2);
+  }
+  [[nodiscard]] bool isClosePair() const { return mCtr.isClosePair(); }
+  void fill(float kstar) { mCtr.fill(kstar); }
+
+ private:
+  CloseTrackRejection<prefix> mCtr;
+};
+
+}; // namespace o2::analysis::femto::closepairrejection
 #endif // PWGCF_FEMTO_CORE_CLOSEPAIRREJECTION_H_

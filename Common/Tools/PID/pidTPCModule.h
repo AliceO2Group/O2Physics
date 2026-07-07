@@ -553,14 +553,14 @@ class pidTPCModule
         track_properties[counter_track_props + 1] = trk.tgl();
         track_properties[counter_track_props + 2] = trk.signed1Pt();
         track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[j];
-        track_properties[counter_track_props + 4] = trk.has_collision() ? mults[trk.collisionId()] / 11000. : 1.;
+        track_properties[counter_track_props + 4] = (trk.has_collision() && mults.size() > 0) ? mults[trk.collisionId()] / 11000. : 1.;
         track_properties[counter_track_props + 5] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
         if (input_dimensions == ExpectedInputDimensionsNNV2 && networkVersion == NetworkVersionV2) {
-          track_properties[counter_track_props + 6] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
+          track_properties[counter_track_props + 6] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
         }
         if (input_dimensions == ExpectedInputDimensionsNNV3 && networkVersion == NetworkVersionV3) {
-          track_properties[counter_track_props + 6] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
-          if (trk.has_collision()) {
+          track_properties[counter_track_props + 6] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
+          if (trk.has_collision() && mults.size() > 0) {
             if (collsys == CollisionSystemType::kCollSyspp) {
               track_properties[counter_track_props + 7] = hadronicRateForCollision[trk.collisionId()] / 1500.;
             } else {
@@ -577,8 +577,8 @@ class pidTPCModule
         }
 
         if (input_dimensions == ExpectedInputDimensionsNNV4 && networkVersion == NetworkVersionV4) {
-          track_properties[counter_track_props + 6] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
-          if (trk.has_collision()) {
+          track_properties[counter_track_props + 6] = (trk.has_collision() && mults.size() > 0) ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
+          if (trk.has_collision() && mults.size() > 0) {
             if (collsys == CollisionSystemType::kCollSyspp) {
               track_properties[counter_track_props + 7] = hadronicRateForCollision[trk.collisionId()] / 1500.;
             } else {
@@ -706,7 +706,7 @@ class pidTPCModule
     // faster counting
     for (const auto& track : tracks) {
       if (track.hasTPC()) {
-        if (track.collisionId() > -1) {
+        if (track.has_collision() && cols.size() > 0) {
           pidmults[track.collisionId()]++;
         }
         totalTPCtracks++;
@@ -792,7 +792,7 @@ class pidTPCModule
       float tpcSignalToEvaluatePID = trk.tpcSignal();
 
       int64_t multTPC = 0;
-      if (trk.has_collision()) {
+      if (trk.has_collision() && cols.size() > 0) {
         multTPC = pidmults[trk.collisionId()];
       }
 
@@ -812,7 +812,7 @@ class pidTPCModule
 
         double hadronicRate;
         int occupancy;
-        if (trk.has_collision()) {
+        if (trk.has_collision() && cols.size() > 0) {
           auto collision = cols.iteratorAt(trk.collisionId());
           hadronicRate = hadronicRateForCollision[trk.collisionId()];
           occupancy = collision.trackOccupancyInTimeRange();
@@ -873,7 +873,7 @@ class pidTPCModule
         }
       }
 
-      const auto& bc = trk.has_collision() ? cols.rawIteratorAt(trk.collisionId()).template bc_as<aod::BCsWithTimestamps>() : bcs.begin();
+      const auto& bc = trk.has_collision() && cols.size() > 0 ? cols.rawIteratorAt(trk.collisionId()).template bc_as<aod::BCsWithTimestamps>() : bcs.begin();
       if (useCCDBParam && pidTPCopts.ccdbTimestamp.value == 0 && !ccdb->isCachedObjectValid(pidTPCopts.ccdbPath.value, bc.timestamp())) { // Updating parametrisation only if the initial timestamp is 0
         if (pidTPCopts.recoPass.value == "") {
           LOGP(info, "Retrieving latest TPC response object for timestamp {}:", bc.timestamp());

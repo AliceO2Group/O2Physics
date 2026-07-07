@@ -826,6 +826,9 @@ DECLARE_SOA_COLUMN(PairDCAxyz, pairDCAxyz, float);                              
 DECLARE_SOA_COLUMN(PairDCAxy, pairDCAxy, float);                                         //! Pair DCAxy to PV from KFParticle
 DECLARE_SOA_COLUMN(DeviationPairKF, deviationPairKF, float);                             //! Pair chi2 deviation to PV from KFParticle
 DECLARE_SOA_COLUMN(DeviationxyPairKF, deviationxyPairKF, float);                         //! Pair chi2 deviation to PV in XY from KFParticle
+DECLARE_SOA_COLUMN(BdtBackground, bdtBackground, float);                                 //! BDT output score for the background class
+DECLARE_SOA_COLUMN(BdtPrompt, bdtPrompt, float);                                         //! BDT output score for the prompt class
+DECLARE_SOA_COLUMN(BdtNonprompt, bdtNonprompt, float);                                   //! BDT output score for the nonprompt class
 // DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon2); //!
 DECLARE_SOA_COLUMN(CosThetaHE, costhetaHE, float);             //! Cosine in the helicity frame
 DECLARE_SOA_COLUMN(PhiHE, phiHe, float);                       //! Phi in the helicity frame
@@ -936,6 +939,12 @@ DECLARE_SOA_TABLE_STAGED(DielectronsAll, "RTDIELECTRONALL", //!
                          reducedpair::Lz,
                          reducedpair::Lxy);
 
+DECLARE_SOA_TABLE_STAGED(DielectronsMls, "RTDIELECTRONML", //!
+                         reducedpair::CentFT0C,
+                         reducedpair::BdtBackground,
+                         reducedpair::BdtPrompt,
+                         reducedpair::BdtNonprompt);
+
 DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
                   evsel::Selection, reducedpair::EventSelection,
@@ -1010,6 +1019,7 @@ using DimuonExtra = DimuonsExtra::iterator;
 using DileptonFlow = DileptonsFlow::iterator;
 using DileptonInfo = DileptonsInfo::iterator;
 using DielectronAll = DielectronsAll::iterator;
+using DielectronMl = DielectronsMls::iterator;
 using DimuonAll = DimuonsAll::iterator;
 using DileptonMiniTree = DileptonsMiniTree::iterator;
 using DileptonMiniTreeGen = DileptonsMiniTreeGen::iterator;

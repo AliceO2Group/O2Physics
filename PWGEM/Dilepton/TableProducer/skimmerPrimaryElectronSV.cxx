@@ -14,7 +14,6 @@
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Utils/ElectronModule.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -22,9 +21,6 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
-#include <DCAFitter/DCAFitterN.h>
-#include <DCAFitter/FwdDCAFitterN.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>
 #include <DetectorsBase/MatLayerCylSet.h>
@@ -39,31 +35,26 @@
 #include <Framework/runDataProcessing.h>
 #include <PID/PIDTOFParamService.h>
 
-#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
-
 #include <cmath>
-#include <cstdint>
 #include <string>
 #include <vector>
 
 #include <math.h>
 
 struct skimmerPrimaryElectronSV {
-
-  // using MyBCs = o2::soa::Join<o2::aod::BCsWithTimestamps, o2::aod::BcSels>;
-  using MyBCs = o2::soa::Join<o2::aod::BCs, o2::aod::Timestamps>;
+  using MyBCs = o2::soa::Join<o2::aod::BCsWithTimestamps, o2::aod::BcSels>;
   using MyCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::EMEvSels>;
   using MyCollisionsWithSWT = o2::soa::Join<MyCollisions, o2::aod::EMSWTriggerBitsTMP>;
 
-  using MyTracks = o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::TracksCovIU,
+  using MyTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksCov, // use covariance matrix updated by propagationService.
                                  o2::aod::pidTPCFullEl, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr,
                                  o2::aod::pidTOFFullEl, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr, o2::aod::pidTOFbeta, o2::aod::TOFSignal, o2::aod::TOFEvTime>;
   using MyTrack = MyTracks::iterator;
   using MyTracksMC = o2::soa::Join<MyTracks, o2::aod::McTrackLabels, o2::aod::mcTPCTuneOnData>;
   using MyTrackMC = MyTracksMC::iterator;
 
-  using MyV0s = o2::soa::Join<o2::aod::V0Datas, o2::aod::V0Covs>;
-  using MyCascades = o2::soa::Join<o2::aod::CascDatas, o2::aod::CascCovs>;
+  // using MyV0s = o2::soa::Join<o2::aod::V0Datas, o2::aod::V0Covs>;
+  // using MyCascades = o2::soa::Join<o2::aod::CascDatas, o2::aod::CascCovs>;
 
   struct : o2::framework::ConfigurableGroup {
     o2::framework::Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -73,19 +64,18 @@ struct skimmerPrimaryElectronSV {
     o2::framework::Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
   } ccdbConfig;
 
-  o2::framework::Configurable<bool> doSCTwithTracks{"doSCTwithTracks", true, "flag to tag electrons with tracks"};
-  o2::framework::Configurable<bool> doSCTwithV0s{"doSCTwithV0s", false, "flag to tag electrons with v0s"};
-  o2::framework::Configurable<bool> doSCTwithCascades{"doSCTwithCascades", false, "flag to tag electrons with cascades"};
+  o2::framework::Configurable<bool> doSCTwithTracks{"doSCTwithTracks", false, "flag to tag electrons with tracks"};
+  // o2::framework::Configurable<bool> doSCTwithV0s{"doSCTwithV0s", false, "flag to tag electrons with v0s"};
+  // o2::framework::Configurable<bool> doSCTwithCascades{"doSCTwithCascades", false, "flag to tag electrons with cascades"};
 
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::ccdb::CcdbApi ccdbApi;
   o2::framework::Service<o2::pid::tof::TOFResponse> mTOFResponse;
 
   o2::framework::SliceCache cache;
-  o2::framework::Preslice<o2::aod::TracksIU> perCol_track = o2::aod::track::collisionId;
+  o2::framework::Preslice<o2::aod::Tracks> perCol_track = o2::aod::track::collisionId;
   o2::framework::Preslice<o2::aod::TrackAssoc> trackIndicesPerCollision = o2::aod::track_association::collisionId;
-  o2::framework::Preslice<o2::aod::V0Datas> perCol_v0 = o2::aod::v0data::collisionId;
-  o2::framework::Preslice<o2::aod::CascDatas> perCol_casc = o2::aod::cascdata::collisionId;
+  // o2::framework::Preslice<o2::aod::V0Datas> perCol_v0 = o2::aod::v0data::collisionId;
+  // o2::framework::Preslice<o2::aod::CascDatas> perCol_casc = o2::aod::cascdata::collisionId;
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -97,18 +87,14 @@ struct skimmerPrimaryElectronSV {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
-    // ccdbApi.init(ccdbConfig.ccdburl);
-    // mTOFResponse->initSetup(ccdb, initContext);
 
     LOGF(info, "initializing electronModule");
-    electronModule.init(cfgEelectronCut, cfgEelectronPFCut, cfgHadronCut, cfgV0Cut, cfgCascadeCut, cfgDFeT, cfgDFeV0, cfgDFeC, initContext, ccdb, mTOFResponse, ccdbConfig.ccdburl.value);
-    // electronModule.setTOFResponse(mTOFResponse);
+    electronModule.init(cfgEelectronCut, cfgEelectronPFCut, cfgHadronCut, /*cfgV0Cut, cfgCascadeCut,*/ cfgDFeT, /*cfgDFeV0, cfgDFeC,*/ initContext, ccdb, mTOFResponse, ccdbConfig.ccdburl.value);
     electronModule.addHistograms(mRegistry);
-    // electronModule.doPFB(doPF.value);
 
     electronModule.doSCTwithTracks(doSCTwithTracks.value);
-    electronModule.doSCTwithV0s(doSCTwithV0s.value);
-    electronModule.doSCTwithCascades(doSCTwithCascades.value);
+    // electronModule.doSCTwithV0s(doSCTwithV0s.value);
+    // electronModule.doSCTwithCascades(doSCTwithCascades.value);
   }
 
   o2::pwgem::dilepton::utils::ElectronModule electronModule;
@@ -116,11 +102,11 @@ struct skimmerPrimaryElectronSV {
   o2::pwgem::dilepton::utils::electronCut cfgEelectronCut;
   o2::pwgem::dilepton::utils::electronPFCut cfgEelectronPFCut;
   o2::pwgem::dilepton::utils::hadronCut cfgHadronCut;
-  o2::pwgem::dilepton::utils::v0Cut cfgV0Cut;
-  o2::pwgem::dilepton::utils::cascadeCut cfgCascadeCut;
+  // o2::pwgem::dilepton::utils::v0Cut cfgV0Cut;
+  // o2::pwgem::dilepton::utils::cascadeCut cfgCascadeCut;
   o2::pwgem::dilepton::utils::cfgDFeT cfgDFeT;
-  o2::pwgem::dilepton::utils::cfgDFeV0 cfgDFeV0;
-  o2::pwgem::dilepton::utils::cfgDFeC cfgDFeC;
+  // o2::pwgem::dilepton::utils::cfgDFeV0 cfgDFeV0;
+  // o2::pwgem::dilepton::utils::cfgDFeC cfgDFeC;
 
   o2::framework::HistogramRegistry mRegistry{"output", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject, false, false};
   // ---------- for data ----------
@@ -174,78 +160,78 @@ struct skimmerPrimaryElectronSV {
     mRunNumber = bc.runNumber();
   }
 
-  //! type of V0. 0: built solely for cascades (does not pass standard V0 cut), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1.
-  o2::framework::expressions::Filter v0Filter = o2::aod::v0data::v0Type == uint8_t(1) && o2::aod::v0data::v0cosPA > cfgV0Cut.cfg_min_cospa&& o2::aod::v0data::dcaV0daughters<cfgV0Cut.cfg_max_dca2legs && nabs(o2::aod::v0data::dcanegtopv)> cfgV0Cut.cfg_min_dcaxy&& nabs(o2::aod::v0data::dcanegtopv) > cfgV0Cut.cfg_min_dcaxy;
-  using filteredMyV0s = o2::soa::Filtered<MyV0s>;
+  // //! type of V0. 0: built solely for cascades (does not pass standard V0 cut), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1.
+  // o2::framework::expressions::Filter v0Filter = o2::aod::v0data::v0Type == uint8_t(1) && o2::aod::v0data::v0cosPA > cfgV0Cut.cfg_min_cospa&& o2::aod::v0data::dcaV0daughters<cfgV0Cut.cfg_max_dca2legs && nabs(o2::aod::v0data::dcanegtopv)> cfgV0Cut.cfg_min_dcaxy&& nabs(o2::aod::v0data::dcanegtopv) > cfgV0Cut.cfg_min_dcaxy;
+  // using filteredMyV0s = o2::soa::Filtered<MyV0s>;
 
-  o2::framework::expressions::Filter cascadeFilter = nabs(o2::aod::cascdata::dcanegtopv) > cfgCascadeCut.cfg_min_dcaxy_v0leg&& nabs(o2::aod::cascdata::dcanegtopv) > cfgCascadeCut.cfg_min_dcaxy_v0leg&& nabs(o2::aod::cascdata::dcabachtopv) > cfgCascadeCut.cfg_min_dcaxy_bachelor&& o2::aod::cascdata::dcacascdaughters < cfgCascadeCut.cfg_max_dcadau&& o2::aod::cascdata::dcaV0daughters < cfgCascadeCut.cfg_max_dcadau_v0;
-  using filteredMyCascades = o2::soa::Filtered<MyCascades>;
+  // o2::framework::expressions::Filter cascadeFilter = nabs(o2::aod::cascdata::dcanegtopv) > cfgCascadeCut.cfg_min_dcaxy_v0leg&& nabs(o2::aod::cascdata::dcanegtopv) > cfgCascadeCut.cfg_min_dcaxy_v0leg&& nabs(o2::aod::cascdata::dcabachtopv) > cfgCascadeCut.cfg_min_dcaxy_bachelor&& o2::aod::cascdata::dcacascdaughters < cfgCascadeCut.cfg_max_dcadau&& o2::aod::cascdata::dcaV0daughters < cfgCascadeCut.cfg_max_dcadau_v0;
+  // using filteredMyCascades = o2::soa::Filtered<MyCascades>;
 
-  void processRec_SA(MyCollisions const& collisions, MyBCs const& bcs, MyTracks const& tracks, filteredMyV0s const& v0s, filteredMyCascades const& cascades)
+  void processRec_SA(MyCollisions const& collisions, MyBCs const& bcs, MyTracks const& tracks /*, filteredMyV0s const& v0s, filteredMyCascades const& cascades*/)
   {
     if (bcs.size() == 0) {
       return;
     }
     auto bc = bcs.begin();
     initCCDB(bc);
-    electronModule.processWithoutTTCA<false, false>(bcs, collisions, tracks, v0s, cascades, nullptr, products, mRegistry);
+    electronModule.processWithoutTTCA<false, false>(bcs, collisions, tracks, /*v0s, cascades,*/ nullptr, products, mRegistry);
   }
   PROCESS_SWITCH(skimmerPrimaryElectronSV, processRec_SA, "process reconstructed info only", true); // standalone
 
-  void processRec_TTCA(MyCollisions const& collisions, MyBCs const& bcs, MyTracks const& tracks, o2::aod::TrackAssoc const& trackIndices, filteredMyV0s const& v0s, filteredMyCascades const& cascades)
+  void processRec_TTCA(MyCollisions const& collisions, MyBCs const& bcs, MyTracks const& tracks, o2::aod::TrackAssoc const& trackIndices /*, filteredMyV0s const& v0s, filteredMyCascades const& cascades*/)
   {
     if (bcs.size() == 0) {
       return;
     }
     auto bc = bcs.begin();
     initCCDB(bc);
-    electronModule.processWithTTCA<false, false>(bcs, collisions, tracks, v0s, cascades, trackIndices, nullptr, products, mRegistry, cache, perCol_track, trackIndicesPerCollision, perCol_v0, perCol_casc);
+    electronModule.processWithTTCA<false, false>(bcs, collisions, tracks, /*v0s, cascades,*/ trackIndices, nullptr, products, mRegistry, cache, perCol_track, trackIndicesPerCollision /*, perCol_v0, perCol_casc*/);
   }
   PROCESS_SWITCH(skimmerPrimaryElectronSV, processRec_TTCA, "process reconstructed info only", false); // with TTCA
 
-  void processRec_SA_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs, MyTracks const& tracks, filteredMyV0s const& v0s, filteredMyCascades const& cascades)
+  void processRec_SA_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs, MyTracks const& tracks /*, filteredMyV0s const& v0s, filteredMyCascades const& cascades*/)
   {
     if (bcs.size() == 0) {
       return;
     }
     auto bc = bcs.begin();
     initCCDB(bc);
-    electronModule.processWithoutTTCA<false, true>(bcs, collisions, tracks, v0s, cascades, nullptr, products, mRegistry);
+    electronModule.processWithoutTTCA<false, true>(bcs, collisions, tracks, /*v0s, cascades,*/ nullptr, products, mRegistry);
   }
   PROCESS_SWITCH(skimmerPrimaryElectronSV, processRec_SA_SWT, "process reconstructed info only", false); // standalone with swt
 
-  void processRec_TTCA_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs, MyTracks const& tracks, o2::aod::TrackAssoc const& trackIndices, filteredMyV0s const& v0s, filteredMyCascades const& cascades)
+  void processRec_TTCA_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs, MyTracks const& tracks, o2::aod::TrackAssoc const& trackIndices /*, filteredMyV0s const& v0s, filteredMyCascades const& cascades*/)
   {
     if (bcs.size() == 0) {
       return;
     }
     auto bc = bcs.begin();
     initCCDB(bc);
-    electronModule.processWithTTCA<false, true>(bcs, collisions, tracks, v0s, cascades, trackIndices, nullptr, products, mRegistry, cache, perCol_track, trackIndicesPerCollision, perCol_v0, perCol_casc);
+    electronModule.processWithTTCA<false, true>(bcs, collisions, tracks, /*v0s, cascades,*/ trackIndices, nullptr, products, mRegistry, cache, perCol_track, trackIndicesPerCollision /*, perCol_v0, perCol_casc*/);
   }
   PROCESS_SWITCH(skimmerPrimaryElectronSV, processRec_TTCA_SWT, "process reconstructed info only", false); // with TTCA with swt
 
   // ---------- for MC ----------
 
-  void processMC_SA(o2::soa::Join<MyCollisions, o2::aod::McCollisionLabels> const& collisions, MyBCs const& bcs, MyTracksMC const& tracks, filteredMyV0s const& v0s, filteredMyCascades const& cascades, o2::aod::McParticles const& mcParticles)
+  void processMC_SA(o2::soa::Join<MyCollisions, o2::aod::McCollisionLabels> const& collisions, MyBCs const& bcs, MyTracksMC const& tracks, /*filteredMyV0s const& v0s, filteredMyCascades const& cascades,*/ o2::aod::McParticles const& mcParticles)
   {
     if (bcs.size() == 0) {
       return;
     }
     auto bc = bcs.begin();
     initCCDB(bc);
-    electronModule.processWithoutTTCA<true, false>(bcs, collisions, tracks, v0s, cascades, mcParticles, products, mRegistry);
+    electronModule.processWithoutTTCA<true, false>(bcs, collisions, tracks, /*v0s, cascades,*/ mcParticles, products, mRegistry);
   }
   PROCESS_SWITCH(skimmerPrimaryElectronSV, processMC_SA, "process reconstructed and MC info ", false); // without TTCA in MC
 
-  void processMC_TTCA(o2::soa::Join<MyCollisions, o2::aod::McCollisionLabels> const& collisions, MyBCs const& bcs, MyTracksMC const& tracks, o2::aod::TrackAssoc const& trackIndices, filteredMyV0s const& v0s, filteredMyCascades const& cascades, o2::aod::McParticles const& mcParticles)
+  void processMC_TTCA(o2::soa::Join<MyCollisions, o2::aod::McCollisionLabels> const& collisions, MyBCs const& bcs, MyTracksMC const& tracks, o2::aod::TrackAssoc const& trackIndices, /*filteredMyV0s const& v0s, filteredMyCascades const& cascades,*/ o2::aod::McParticles const& mcParticles)
   {
     if (bcs.size() == 0) {
       return;
     }
     auto bc = bcs.begin();
     initCCDB(bc);
-    electronModule.processWithTTCA<true, false>(bcs, collisions, tracks, v0s, cascades, trackIndices, mcParticles, products, mRegistry, cache, perCol_track, trackIndicesPerCollision, perCol_v0, perCol_casc);
+    electronModule.processWithTTCA<true, false>(bcs, collisions, tracks, /*v0s, cascades,*/ trackIndices, mcParticles, products, mRegistry, cache, perCol_track, trackIndicesPerCollision /*, perCol_v0, perCol_casc*/);
   }
   PROCESS_SWITCH(skimmerPrimaryElectronSV, processMC_TTCA, "process reconstructed info only", false); // with TTCA in MC
 };

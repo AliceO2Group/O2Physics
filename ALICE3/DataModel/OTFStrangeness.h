@@ -37,6 +37,8 @@ DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, Tracks, "_Pos");         
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, Tracks, "_Neg");             //!
 DECLARE_SOA_INDEX_COLUMN_FULL(BachTrack, bachTrack, int, Tracks, "_Bach");          //!
 
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
+
 // topo vars
 DECLARE_SOA_COLUMN(DcaV0Daughters, dcaV0Daughters, float);
 DECLARE_SOA_COLUMN(DcaCascadeDaughters, dcaCascadeDaughters, float);
@@ -69,6 +71,9 @@ DECLARE_SOA_TABLE(UpgradeCascades, "AOD", "UPGRADECASCADES",
                   otfcascade::FoundClusters);
 
 using UpgradeCascade = UpgradeCascades::iterator;
+
+DECLARE_SOA_TABLE(A3CascadeMcLabels, "AOD", "A3CASCADEMCLABELS",
+                  o2::soa::Index<>, otfcascade::McParticleId);
 
 namespace otfv0
 {

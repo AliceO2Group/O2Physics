@@ -8,15 +8,19 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+// Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
+//   Configurable workflow for running several DQ or other PWG analyses
 
-#pragma link off all globals;
-#pragma link off all classes;
-#pragma link off all functions;
+#include "PWGDQ/Tasks/tableReader_withAssoc.cxx"
 
-#pragma link C++ class VarManager + ;
-#pragma link C++ class HistogramManager + ;
-#pragma link C++ class MixingHandler + ;
-#pragma link C++ class AnalysisCut + ;
-#pragma link C++ class AnalysisCompositeCut + ;
-#pragma link C++ class MCProng + ;
-#pragma link C++ class MCSignal + ;
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{
+    adaptAnalysisTask<AnalysisEventSelection>(cfgc),
+    adaptAnalysisTask<AnalysisMuonSelection>(cfgc),
+    adaptAnalysisTask<AnalysisSameEventPairing>(cfgc)};
+}

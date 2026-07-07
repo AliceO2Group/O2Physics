@@ -24,21 +24,19 @@
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
-#include <TNamed.h>
-
-#include <Rtypes.h>
 
 #include <algorithm>
 #include <cstdint>
 #include <functional>
 #include <set>
+#include <string>
 #include <utility>
 
-class DalitzEECut : public TNamed
+class DalitzEECut
 {
  public:
   DalitzEECut() = default;
-  DalitzEECut(const char* name, const char* title) : TNamed(name, title) {}
+  DalitzEECut(const char* name, const char* title) : name(name), title(title) {}
 
   enum class DalitzEECuts : int {
     // pair cut
@@ -70,6 +68,9 @@ class DalitzEECut : public TNamed
     kTOFif = 0,
     kTPConly = 1,
   };
+
+  const std::string getName() const { return name; }
+  const std::string getTitle() const { return title; }
 
   template <o2::soa::is_iterator TTrack1, o2::soa::is_iterator TTrack2>
   bool IsSelected(TTrack1 const& t1, TTrack2 const& t2, float bz) const
@@ -311,6 +312,8 @@ class DalitzEECut : public TNamed
   bool IsPhotonConversionSelected() const { return mSelectPC; }
 
  private:
+  std::string name;
+  std::string title;
   static const std::pair<int8_t, std::set<uint8_t>> its_ib_any_Requirement;
   static const std::pair<int8_t, std::set<uint8_t>> its_ib_1st_Requirement;
   // pair cuts
@@ -353,8 +356,6 @@ class DalitzEECut : public TNamed
   float mMinTPCNsigmaEl{-1e+10}, mMaxTPCNsigmaEl{+1e+10};
   float mMinTPCNsigmaPi{0}, mMaxTPCNsigmaPi{0};
   float mMinTOFNsigmaEl{-1e+10}, mMaxTOFNsigmaEl{+1e+10};
-
-  ClassDef(DalitzEECut, 2);
 };
 
 #endif // PWGEM_PHOTONMESON_CORE_DALITZEECUT_H_

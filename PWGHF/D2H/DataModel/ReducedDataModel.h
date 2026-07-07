@@ -327,8 +327,9 @@ DECLARE_SOA_TABLE(HfRedBach0Bases, "AOD", "HFREDBACH0BASE", //! Table with track
                   hf_track_pid_reduced::TPCTOFNSigmaPr<pidtpc::TPCNSigmaPr, pidtof::TOFNSigmaPr>,
                   aod::track::Px<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Py<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
-                  aod::track::Pz<aod::track::Signed1Pt, track::Tgl>,
-                  aod::track::PVector<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha, aod::track::Tgl>);
+                  aod::track::Pz<aod::track::Signed1Pt, aod::track::Tgl>,
+                  aod::track::PVector<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha, aod::track::Tgl>,
+                  aod::track::Sign<aod::track::Signed1Pt>);
 
 DECLARE_SOA_TABLE(HfRedBach0Cov, "AOD", "HFREDBACH0COV", //! Table with track covariance information for reduced workflow
                   soa::Index<>,
@@ -359,8 +360,9 @@ DECLARE_SOA_TABLE(HfRedBach1Bases, "AOD", "HFREDBACH1BASE", //! Table with track
                   hf_track_pid_reduced::TPCTOFNSigmaPr<pidtpc::TPCNSigmaPr, pidtof::TOFNSigmaPr>,
                   aod::track::Px<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Py<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
-                  aod::track::Pz<aod::track::Signed1Pt, track::Tgl>,
-                  aod::track::PVector<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha, aod::track::Tgl>);
+                  aod::track::Pz<aod::track::Signed1Pt, aod::track::Tgl>,
+                  aod::track::PVector<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha, aod::track::Tgl>,
+                  aod::track::Sign<aod::track::Signed1Pt>);
 
 DECLARE_SOA_TABLE(HfRedBach1Cov, "AOD", "HFREDBACH1COV", //! Table with track covariance information for reduced workflow
                   soa::Index<>,
@@ -755,8 +757,8 @@ DECLARE_SOA_INDEX_COLUMN_FULL(ProngD0, prongD0, int, HfRed2Prongs, "_0");       
 DECLARE_SOA_INDEX_COLUMN_FULL(ProngBachPi, prongBachPi, int, HfRedTrackBases, "_1");   //! ProngBachPi index
 DECLARE_SOA_INDEX_COLUMN_FULL(ProngSoftPi, prongSoftPi, int, HfRedSoftPiBases, "_2");  //! ProngSoftPi index
 DECLARE_SOA_INDEX_COLUMN_FULL(Jpsi, jpsi, int, HfRedJpsis, "_0");                      //! J/Psi index
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong0K0Star, prong0K0Star, int, HfRedBach0Bases, "_0"); //! J/Psi index
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong1K0Star, prong1K0Star, int, HfRedBach1Bases, "_0"); //! J/Psi index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0K0Star, prong0K0Star, int, HfRedBach0Bases, "_0"); //! K*0 index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1K0Star, prong1K0Star, int, HfRedBach1Bases, "_0"); //! K*0 index
 DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);                         //! Bkg ML score of the D daughter
 DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);                   //! Prompt ML score of the D daughter
 DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float);             //! Nonprompt ML score of the D daughter
@@ -768,6 +770,9 @@ DECLARE_SOA_TABLE(HfRedB0Prongs, "AOD", "HFREDB0PRONG", //! Table with B0 daught
 DECLARE_SOA_TABLE(HfRedB0ProngDStars, "AOD", "HFREDB0PRONGDST", //! Table with B0 daughter indices
                   hf_cand_b0_reduced::ProngD0Id, hf_cand_b0_reduced::ProngBachPiId, hf_cand_b0_reduced::ProngSoftPiId);
 
+DECLARE_SOA_TABLE(HfRedB02JpsiDaus, "AOD", "HFREDB02JPSIDAU",
+                  hf_cand_b0_reduced::JpsiId, hf_cand_b0_reduced::Prong0K0StarId, hf_cand_b0_reduced::Prong1K0StarId);
+
 DECLARE_SOA_TABLE(HfRedB0DpMls, "AOD", "HFREDB0DPML", //! Table with ML scores for the D+ daughter
                   hf_cand_b0_reduced::Prong0MlScoreBkg,
                   hf_cand_b0_reduced::Prong0MlScorePrompt,
@@ -776,6 +781,7 @@ DECLARE_SOA_TABLE(HfRedB0DpMls, "AOD", "HFREDB0DPML", //! Table with ML scores f
 
 using HfRedCandB0 = soa::Join<HfCandB0Ext, HfRedB0Prongs>;
 using HfRedCandB0DStar = soa::Join<HfCandB0DStExt, HfRedB0ProngDStars>;
+using HfRedCandB0ToJpsiK0Star = soa::Join<HfCandB0JPExt, HfRedB02JpsiDaus>;
 
 namespace hf_cand_bplus_reduced
 {

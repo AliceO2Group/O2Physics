@@ -17,6 +17,7 @@
 #include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
+#include "ALICE3/DataModel/prefilterDilepton.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -38,8 +39,6 @@
 #include <THnSparse.h>
 #include <TMath.h>
 
-#include <cstdint>
-#include <cstdlib>
 #include <vector>
 
 using namespace o2;
@@ -48,33 +47,17 @@ using namespace o2::soa;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct Alice3Dilepton {
-  enum HFllType {
-    kUndef = -1,
-    kCe_Ce = 0,        // ULS
-    kBe_Be = 1,        // ULS
-    kBCe_BCe = 2,      // ULS
-    kBCe_Be_SameB = 3, // ULS
-    kBCe_Be_DiffB = 4, // LS
-  };
-  enum PairType {
-    kULS = 0,
-    kLSpp = 1,
-    kLSnn = 2,
-  };
-
-  SliceCache cache_mc;
-  SliceCache cache_rec;
+struct Alice3Lepton {
 
   Service<o2::framework::O2DatabasePDG> inspdg;
 
   Configurable<int> pdg{"pdg", 11, "pdg code for analysis. dielectron:11, dimuon:13"};
-  Configurable<bool> requireHFEid{"requireHFEid", true, "Require HFE identification for both leptons"};
-  Configurable<float> ptMin{"pt-min", 0.f, "Lower limit in pT"};
-  Configurable<float> ptMax{"pt-max", 5.f, "Upper limit in pT"};
-  Configurable<float> etaMin{"eta-min", -5.f, "Lower limit in eta"};
-  Configurable<float> etaMax{"eta-max", 5.f, "Upper limit in eta"};
-  Configurable<bool> useGen{"use-gen", false, "Use generated (true) or smeared/reconstructed (false) values for fiducial cuts"};
+  Configurable<bool> requireHFE{"requireHFE", false, "Require HFE"};
+  Configurable<float> ptMin{"ptMin", 0.f, "Lower limit in pT"};
+  Configurable<float> ptMax{"ptMax", 5.f, "Upper limit in pT"};
+  Configurable<float> etaMin{"etaMin", -5.f, "Lower limit in eta"};
+  Configurable<float> etaMax{"etaMax", 5.f, "Upper limit in eta"};
+  Configurable<bool> useGen{"useGen", false, "Use generated (true) or smeared/reconstructed (false) values for fiducial cuts"};
   Configurable<bool> selectReconstructed{"selectReconstructed", true, "Select only reconstructed tracks (true) or ghosts (false)"};
   Configurable<float> nSigmaEleCutOuterTOF{"nSigmaEleCutOuterTOF", 3., "Electron inclusion in outer TOF"};
   Configurable<float> nSigmaEleCutInnerTOF{"nSigmaEleCutInnerTOF", 3., "Electron inclusion in inner TOF"};
@@ -83,6 +66,8 @@ struct Alice3Dilepton {
   Configurable<float> nSigmaElectronRich{"nSigmaElectronRich", 3., "Electron inclusion RICH"};
   Configurable<float> nSigmaPionRich{"nSigmaPionRich", 3., "Pion exclusion RICH"};
   Configurable<int> otfConfig{"otfConfig", 0, "OTF configuration flag"};
+  Configurable<float> minFITPart{"minFITPart", 0.f, "Minimum number of charged particles in the FIT acceptance"};
+  Configurable<float> maxFITPart{"maxFITPart", 0.f, "Maximum number of charged particles in the FIT acceptance"};
 
   HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -116,16 +101,6 @@ struct Alice3Dilepton {
       registry.add("Generated/Particle/prodVz", "Particle Prod. Vertex Z", kTH1F, {axisProdz});
       registry.add("Generated/Particle/ParticlesPerEvent", "Particles per event", kTH1F, {{100, 0, 100}});
       registry.add("Generated/Particle/ParticlesFit", "Charged Particles in Fit acceptance per event", kTH1F, {{15000, 0, 15000}});
-
-      registry.add("Generated/Pair/ULS/Tried", "Pair tries", kTH1F, {{10, -0.5, 9.5}});
-      registry.add("Generated/Pair/ULS/Mass", "Pair Mass", kTH1F, {axisM});
-      registry.add("Generated/Pair/ULS/Pt", "Pair Pt", kTH1F, {axisPt});
-      registry.add("Generated/Pair/ULS/Eta", "Pair Eta", kTH1F, {axisEta});
-      registry.add("Generated/Pair/ULS/Phi", "Pair Phi", kTH1F, {axisPhi});
-      registry.add("Generated/Pair/ULS/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
-
-      registry.addClone("Generated/Pair/ULS/", "Generated/Pair/LSpp/");
-      registry.addClone("Generated/Pair/ULS/", "Generated/Pair/LSnn/");
     }
 
     if (doprocessRec) {
@@ -143,7 +118,264 @@ struct Alice3Dilepton {
       registry.add("Reconstructed/Track/outerTOFTrackLength", "Track length outer TOF", kTH1F, {axisTrackLengthOuterTOF});
 
       registry.addClone("Reconstructed/Track/", "Reconstructed/TrackPID/");
+      registry.addClone("Reconstructed/Track/", "Reconstructed/TrackPIDPre/");
+    }
+  }
 
+  template <typename TTrack>
+  bool IsInAcceptance(TTrack const& track)
+  {
+    if (track.pt() < ptMin || ptMax < track.pt()) {
+      return false;
+    }
+    if (track.eta() < etaMin || etaMax < track.eta()) {
+      return false;
+    }
+    return true;
+  }
+
+  // Functions for pid
+  template <typename TTrack>
+  bool electronIDTOF(TTrack const& track)
+  {
+    bool isElectron = false;
+    bool isEleOuterTOF = std::abs(track.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF;
+    bool isNotPionOuterTOF = std::abs(track.nSigmaPionOuterTOF()) > nSigmaPionCutOuterTOF;
+    isEleOuterTOF = isEleOuterTOF && isNotPionOuterTOF;
+    bool isEleInnerTOF = std::abs(track.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF;
+    bool isNotPionInnerTOF = std::abs(track.nSigmaPionInnerTOF()) > nSigmaPionCutInnerTOF;
+    isEleInnerTOF = isEleInnerTOF && isNotPionInnerTOF;
+    isElectron = (isEleOuterTOF || isEleInnerTOF);
+    return isElectron;
+  }
+
+  template <typename TTrack>
+  bool electronIDRICH(TTrack const& track)
+  {
+    bool isElectron = false;
+    bool isEleRICH = std::abs(track.nSigmaElectronRich()) < nSigmaElectronRich;
+    bool isNotPionRICH = std::abs(track.nSigmaPionRich()) > nSigmaPionRich;
+    isElectron = isEleRICH && isNotPionRICH;
+    return isElectron;
+  }
+
+  Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
+
+  void processGen(o2::aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles)
+  {
+    for (const auto& mccollision : mccollisions) {
+      registry.fill(HIST("Generated/Event/VtxX"), mccollision.posX());
+      registry.fill(HIST("Generated/Event/VtxY"), mccollision.posY());
+      registry.fill(HIST("Generated/Event/VtxZ"), mccollision.posZ());
+
+      auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, mccollision.globalIndex());
+      int nParticlesInEvent = 0;
+      int nParticlesFIT = 0;
+      // Calculate the number of particles in the FIT acceptance
+      for (const auto& mcParticle : mcParticles_per_coll) {
+        if (mcParticle.isPhysicalPrimary()) {
+          if ((2.2 < mcParticle.eta() && mcParticle.eta() < 5.0) || (-3.4 < mcParticle.eta() && mcParticle.eta() < -2.3)) {
+            auto pdgParticle = inspdg->GetParticle(mcParticle.pdgCode());
+            if (pdgParticle) {
+              float charge = pdgParticle->Charge() / 3.f; // Charge in units of |e|
+              if (std::abs(charge) >= 1.) {
+                nParticlesFIT++;
+              }
+            }
+          }
+          nParticlesInEvent++;
+        }
+      }
+      if (nParticlesFIT > minFITPart && nParticlesFIT < maxFITPart) {
+        for (const auto& mcParticle : mcParticles_per_coll) {
+          if (std::abs(mcParticle.pdgCode()) != pdg) {
+            continue;
+          }
+          if (!mcParticle.isPhysicalPrimary()) {
+            continue;
+          }
+          if (!IsInAcceptance(mcParticle)) {
+            continue;
+          }
+          registry.fill(HIST("Generated/Particle/Pt"), mcParticle.pt());
+          registry.fill(HIST("Generated/Particle/Eta"), mcParticle.eta());
+          registry.fill(HIST("Generated/Particle/Phi"), mcParticle.phi());
+          registry.fill(HIST("Generated/Particle/Eta_Pt"), mcParticle.pt(), mcParticle.eta());
+
+          registry.fill(HIST("Generated/Particle/prodVx"), mcParticle.vx());
+          registry.fill(HIST("Generated/Particle/prodVy"), mcParticle.vy());
+          registry.fill(HIST("Generated/Particle/prodVz"), mcParticle.vz());
+        } // end of mc particle loop
+        registry.fill(HIST("Generated/Particle/ParticlesPerEvent"), nParticlesInEvent);
+        registry.fill(HIST("Generated/Particle/ParticlesFit"), nParticlesFIT);
+      }
+    } // end of mc collision loop
+  } // end of processGen
+
+  using MyTracksMC = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::McTrackLabels, aod::UpgradeTofs, aod::UpgradeTofMCs, aod::UpgradeRichs, aod::TracksAlice3, aod::DiTrackPrefilter>;
+  using Alice3Collision = soa::Join<aod::Collisions, aod::OTFLUTConfigId, aod::DiEventCentCuts>;
+
+  Filter trackFilter = o2::aod::track_alice3::isReconstructed == selectReconstructed;
+
+  using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
+  Filter configFilter = (aod::upgrade_collision::lutConfigId == otfConfig);
+  Filter CollisionFilter = o2::aod::dileptonanalysisflags::isEventCentSelected == 1;
+  using MyFilteredAlice3Collision = soa::Filtered<Alice3Collision>;
+  Preslice<MyFilteredTracksMC> perCollision = aod::track::collisionId;
+
+  void processRec(MyFilteredAlice3Collision const& collisions,
+                  MyFilteredTracksMC const& tracks,
+                  const o2::aod::McCollisions&,
+                  const aod::McParticles& /*mcParticles*/)
+  {
+    for (const auto& collision : collisions) {
+      registry.fill(HIST("Reconstructed/Event/VtxX"), collision.posX());
+      registry.fill(HIST("Reconstructed/Event/VtxY"), collision.posY());
+      registry.fill(HIST("Reconstructed/Event/VtxZ"), collision.posZ());
+
+      auto tracks_coll = tracks.sliceBy(perCollision, collision.globalIndex());
+      for (const auto& track : tracks_coll) {
+        if (!track.has_mcParticle()) {
+          continue;
+        }
+        const auto mcParticle = track.mcParticle_as<aod::McParticles>();
+        if (std::abs(mcParticle.pdgCode()) != pdg) {
+          continue;
+        }
+        if (!mcParticle.isPhysicalPrimary()) {
+          continue;
+        }
+        if (useGen) {
+          if (!IsInAcceptance(mcParticle)) {
+            continue;
+          }
+        } else {
+          if (!IsInAcceptance(track)) {
+            continue;
+          }
+        }
+        if (std::abs(mcParticle.pdgCode()) != pdg) {
+          continue;
+        }
+        if (!mcParticle.isPhysicalPrimary()) {
+          continue;
+        }
+        registry.fill(HIST("Reconstructed/Track/SigmaOTofvspt"), track.pt(), track.nSigmaElectronOuterTOF());
+        registry.fill(HIST("Reconstructed/Track/SigmaITofvspt"), track.pt(), track.nSigmaElectronInnerTOF());
+        registry.fill(HIST("Reconstructed/Track/SigmaRichvspt"), track.pt(), track.nSigmaElectronRich());
+        registry.fill(HIST("Reconstructed/Track/outerTOFTrackLength"), track.outerTOFTrackLength());
+        registry.fill(HIST("Reconstructed/Track/Pt"), track.pt());
+        registry.fill(HIST("Reconstructed/Track/Eta"), track.eta());
+        registry.fill(HIST("Reconstructed/Track/Phi"), track.phi());
+        registry.fill(HIST("Reconstructed/Track/Eta_Pt"), track.pt(), track.eta());
+        // implement pid
+
+        bool isElectronTOF = electronIDTOF(track);
+        bool isElectronRICH = electronIDRICH(track);
+
+        if (isElectronTOF || isElectronRICH) {
+          registry.fill(HIST("Reconstructed/TrackPID/SigmaOTofvspt"), track.pt(), track.nSigmaElectronOuterTOF());
+          registry.fill(HIST("Reconstructed/TrackPID/SigmaITofvspt"), track.pt(), track.nSigmaElectronInnerTOF());
+          registry.fill(HIST("Reconstructed/TrackPID/SigmaRichvspt"), track.pt(), track.nSigmaElectronRich());
+          registry.fill(HIST("Reconstructed/TrackPID/outerTOFTrackLength"), track.outerTOFTrackLength());
+          registry.fill(HIST("Reconstructed/TrackPID/Pt"), track.pt());
+          registry.fill(HIST("Reconstructed/TrackPID/Eta"), track.eta());
+          registry.fill(HIST("Reconstructed/TrackPID/Phi"), track.phi());
+          registry.fill(HIST("Reconstructed/TrackPID/Eta_Pt"), track.pt(), track.eta());
+
+          if (track.isTrackPrefilter() == 0) {
+            registry.fill(HIST("Reconstructed/TrackPIDPre/SigmaOTofvspt"), track.pt(), track.nSigmaElectronOuterTOF());
+            registry.fill(HIST("Reconstructed/TrackPIDPre/SigmaITofvspt"), track.pt(), track.nSigmaElectronInnerTOF());
+            registry.fill(HIST("Reconstructed/TrackPIDPre/SigmaRichvspt"), track.pt(), track.nSigmaElectronRich());
+            registry.fill(HIST("Reconstructed/TrackPIDPre/outerTOFTrackLength"), track.outerTOFTrackLength());
+            registry.fill(HIST("Reconstructed/TrackPIDPre/Pt"), track.pt());
+            registry.fill(HIST("Reconstructed/TrackPIDPre/Eta"), track.eta());
+            registry.fill(HIST("Reconstructed/TrackPIDPre/Phi"), track.phi());
+            registry.fill(HIST("Reconstructed/TrackPIDPre/Eta_Pt"), track.pt(), track.eta());
+          }
+        }
+      } // end of track loop
+    } // end of collision loop
+  } // end of processRec
+
+  void processDummy(Alice3Collision const&)
+  {
+  }
+
+  PROCESS_SWITCH(Alice3Lepton, processGen, "Run for generated particle", false);
+  PROCESS_SWITCH(Alice3Lepton, processRec, "Run for reconstructed track", false);
+  PROCESS_SWITCH(Alice3Lepton, processDummy, "Dummy run", true);
+};
+
+struct Alice3Dilepton {
+  enum HFllType {
+    kUndef = -1,
+    kCe_Ce = 0,        // ULS
+    kBe_Be = 1,        // ULS
+    kBCe_BCe = 2,      // ULS
+    kBCe_Be_SameB = 3, // ULS
+    kBCe_Be_DiffB = 4, // LS
+  };
+  enum PairType {
+    kULS = 0,
+    kLSpp = 1,
+    kLSnn = 2,
+  };
+
+  SliceCache cache_mc;
+  SliceCache cache_rec;
+
+  Configurable<int> pdg{"pdg", 11, "pdg code for analysis. dielectron:11, dimuon:13"};
+  Configurable<bool> requireHFEid{"requireHFEid", true, "Require HFE identification for both leptons"};
+  Configurable<float> ptMin{"ptMin", 0.f, "Lower limit in pT"};
+  Configurable<float> ptMax{"ptMax", 5.f, "Upper limit in pT"};
+  Configurable<float> etaMin{"etaMin", -5.f, "Lower limit in eta"};
+  Configurable<float> etaMax{"etaMax", 5.f, "Upper limit in eta"};
+  Configurable<bool> useGen{"useGen", false, "Use generated (true) or smeared/reconstructed (false) values for fiducial cuts"};
+  Configurable<bool> selectReconstructed{"selectReconstructed", true, "Select only reconstructed tracks (true) or ghosts (false)"};
+  Configurable<float> nSigmaEleCutOuterTOF{"nSigmaEleCutOuterTOF", 3., "Electron inclusion in outer TOF"};
+  Configurable<float> nSigmaEleCutInnerTOF{"nSigmaEleCutInnerTOF", 3., "Electron inclusion in inner TOF"};
+  Configurable<float> nSigmaPionCutOuterTOF{"nSigmaPionCutOuterTOF", 3., "Pion exclusion in outer TOF"};
+  Configurable<float> nSigmaPionCutInnerTOF{"nSigmaPionCutInnerTOF", 3., "Pion exclusion in inner TOF"};
+  Configurable<float> nSigmaElectronRich{"nSigmaElectronRich", 3., "Electron inclusion RICH"};
+  Configurable<float> nSigmaPionRich{"nSigmaPionRich", 3., "Pion exclusion RICH"};
+  Configurable<int> otfConfig{"otfConfig", 0, "OTF configuration flag"};
+  Configurable<bool> cfg_apply_prefilter{"cfg_apply_prefilter", false, "flag to apply prefilter"};
+
+  HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  void init(InitContext&)
+  {
+    const AxisSpec axisVz{100, -20, 20, "Vtx_{z}"};
+
+    const AxisSpec axisM{500, 0, 5, "#it{m}_{ll} (GeV/#it{c}^{2})"};
+    const AxisSpec axisPt{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisSigmaEl{200, -10, 10, "n#sigma_{El}"};
+    const AxisSpec axisEta{1000, -5, 5, "#it{#eta}"};
+    const AxisSpec axisDCAxy{1000, 0, 20, "DCA_{xy,ll} (#sigma)"};
+    const AxisSpec axisPhi{360, 0, TMath::TwoPi(), "#it{#varphi} (rad.)"};
+
+    if (doprocessRecAll) {
+      registry.add("Reconstructed/Event/VtxZ", "Vertex Z", kTH1F, {axisVz});
+      registry.add("Reconstructed/Track/Pt", "Track Pt", kTH1F, {axisPt});
+      registry.add("Reconstructed/Track/SigmaOTofvspt", "Track #sigma oTOF", kTH2F, {axisPt, axisSigmaEl});
+      registry.add("Reconstructed/Track/SigmaITofvspt", "Track #sigma iTOF", kTH2F, {axisPt, axisSigmaEl});
+      registry.add("Reconstructed/Track/SigmaRichvspt", "Track #sigma RICH", kTH2F, {axisPt, axisSigmaEl});
+    }
+
+    if (doprocessGen) {
+      registry.add("Generated/Pair/ULS/Tried", "Pair tries", kTH1F, {{10, -0.5, 9.5}});
+      registry.add("Generated/Pair/ULS/Mass", "Pair Mass", kTH1F, {axisM});
+      registry.add("Generated/Pair/ULS/Pt", "Pair Pt", kTH1F, {axisPt});
+      registry.add("Generated/Pair/ULS/Eta", "Pair Eta", kTH1F, {axisEta});
+      registry.add("Generated/Pair/ULS/Phi", "Pair Phi", kTH1F, {axisPhi});
+      registry.add("Generated/Pair/ULS/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
+
+      registry.addClone("Generated/Pair/ULS/", "Generated/Pair/LSpp/");
+      registry.addClone("Generated/Pair/ULS/", "Generated/Pair/LSnn/");
+    }
+
+    if (doprocessRec || doprocessRecAll) {
       registry.add("Reconstructed/Pair/ULS/Mass", "Pair Mass", kTH1F, {axisM});
       registry.add("Reconstructed/Pair/ULS/Pt", "Pair Pt", kTH1F, {axisPt});
       registry.add("Reconstructed/Pair/ULS/Eta", "Pair Eta", kTH1F, {axisEta});
@@ -152,15 +384,6 @@ struct Alice3Dilepton {
 
       registry.addClone("Reconstructed/Pair/ULS/", "Reconstructed/Pair/LSpp/");
       registry.addClone("Reconstructed/Pair/ULS/", "Reconstructed/Pair/LSnn/");
-
-      registry.add("ReconstructedFiltered/Pair/ULS/Mass", "Pair Mass", kTH1F, {axisM});
-      registry.add("ReconstructedFiltered/Pair/ULS/Pt", "Pair Pt", kTH1F, {axisPt});
-      registry.add("ReconstructedFiltered/Pair/ULS/Eta", "Pair Eta", kTH1F, {axisEta});
-      registry.add("ReconstructedFiltered/Pair/ULS/Phi", "Pair Phi", kTH1F, {axisPhi});
-      registry.add("ReconstructedFiltered/Pair/ULS/Mass_Pt", "Pair Mass vs. Pt", kTH2F, {axisM, axisPt}, true);
-
-      registry.addClone("ReconstructedFiltered/Pair/ULS/", "ReconstructedFiltered/Pair/LSpp/");
-      registry.addClone("ReconstructedFiltered/Pair/ULS/", "ReconstructedFiltered/Pair/LSnn/");
 
       HistogramConfigSpec hs_rec{HistType::kTHnSparseF, {axisM, axisPt, axisDCAxy}, 3};
       registry.add("Reconstructed/Pair/ULS/hs_rec", "", hs_rec);
@@ -192,8 +415,6 @@ struct Alice3Dilepton {
     if (!p2.has_mothers())
       return -1;
 
-    // LOGF(info,"original motherid1 = %d , motherid2 = %d", p1.mothersIds()[0], p2.mothersIds()[0]);
-
     int motherid1 = p1.mothersIds()[0];
     auto mother1 = mcparticles.iteratorAt(motherid1);
     int mother1_pdg = mother1.pdgCode();
@@ -201,8 +422,6 @@ struct Alice3Dilepton {
     int motherid2 = p2.mothersIds()[0];
     auto mother2 = mcparticles.iteratorAt(motherid2);
     int mother2_pdg = mother2.pdgCode();
-
-    // LOGF(info,"motherid1 = %d , motherid2 = %d", motherid1, motherid2);
 
     if (motherid1 != motherid2)
       return -1;
@@ -222,7 +441,6 @@ struct Alice3Dilepton {
       return -1;
     }
 
-    // LOGF(info, "%d is found.", mother1_pdg);
     return motherid1;
   }
 
@@ -330,58 +548,53 @@ struct Alice3Dilepton {
     const float dcaXY_t2 = t2.dcaXY();
     const float dcaXY_res_t1 = sqrt(t1.cYY());
     const float dcaXY_res_t2 = sqrt(t2.cYY());
+    float dcaXYinSigma_t1 = dcaXY_t1 / dcaXY_res_t1;
+    float dcaXYinSigma_t2 = dcaXY_t2 / dcaXY_res_t2;
 
-    pair_dca_xy = sqrt((dcaXY_t2 * dcaXY_t2 / dcaXY_res_t2 + dcaXY_t1 * dcaXY_t1 / dcaXY_res_t1) / 2.);
+    pair_dca_xy = sqrt((dcaXYinSigma_t1 * dcaXYinSigma_t1 + dcaXYinSigma_t2 * dcaXYinSigma_t2) / 2.);
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon); // reconstructed pt/eta/phi
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
     return v12;
   }
 
-  template <PairType pairtype, typename TTracks, typename TMCTracks>
-  void FillPairRecWithPrefilter(TTracks const& tracks1, TTracks const& tracks2, TMCTracks const& /*mcParticles*/)
+  template <PairType pairtype, typename TTracks>
+  void FillPairRecAll(TTracks const& tracks1, TTracks const& tracks2)
   {
-    std::vector<uint64_t> prefilteredTracks;
     if constexpr (pairtype == PairType::kULS) {
       for (auto& [t1, t2] : combinations(soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        if (!t1.has_mcParticle() || !t2.has_mcParticle()) {
-          continue;
-        }
-
         float pair_dca_xy = 999.f;
         ROOT::Math::PtEtaPhiMVector v12 = buildPairDCA(t1, t2, pair_dca_xy);
-        // prefilter for low-mass pairs
-        if (v12.M() > 0.10) {
-          continue;
-        }
-        // prefilter small opening angle pairs
-        if (std::cos(t1.phi() - t2.phi()) < 0.99) {
-          continue;
-        }
-        prefilteredTracks.push_back(t1.globalIndex());
-        prefilteredTracks.push_back(t2.globalIndex());
 
+        registry.fill(HIST("Reconstructed/Pair/ULS/Mass"), v12.M());
+        registry.fill(HIST("Reconstructed/Pair/ULS/Pt"), v12.Pt());
+        registry.fill(HIST("Reconstructed/Pair/ULS/Eta"), v12.Eta());
+        registry.fill(HIST("Reconstructed/Pair/ULS/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
+        registry.fill(HIST("Reconstructed/Pair/ULS/Mass_Pt"), v12.M(), v12.Pt());
+        registry.fill(HIST("Reconstructed/Pair/ULS/hs_rec"), v12.M(), v12.Pt(), pair_dca_xy);
       } // end of unlike-sign pair loop
 
-      for (auto& [t1, t2] : combinations(soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        // Skipping tracks that are in the prefiltered list
-        if (std::find(prefilteredTracks.begin(), prefilteredTracks.end(), t1.globalIndex()) != prefilteredTracks.end()) {
-          continue;
-        }
-        if (std::find(prefilteredTracks.begin(), prefilteredTracks.end(), t2.globalIndex()) != prefilteredTracks.end()) {
-          continue;
-        }
-
+    } else if constexpr (pairtype == PairType::kLSpp || pairtype == PairType::kLSnn) {
+      for (auto& [t1, t2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
         float pair_dca_xy = 999.f;
         ROOT::Math::PtEtaPhiMVector v12 = buildPairDCA(t1, t2, pair_dca_xy);
 
-        registry.fill(HIST("ReconstructedFiltered/Pair/ULS/Mass"), v12.M());
-        registry.fill(HIST("ReconstructedFiltered/Pair/ULS/Pt"), v12.Pt());
-        registry.fill(HIST("ReconstructedFiltered/Pair/ULS/Eta"), v12.Eta());
-        registry.fill(HIST("ReconstructedFiltered/Pair/ULS/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
-        registry.fill(HIST("ReconstructedFiltered/Pair/ULS/Mass_Pt"), v12.M(), v12.Pt());
-        registry.fill(HIST("ReconstructedFiltered/Pair/ULS/hs_rec"), v12.M(), v12.Pt(), pair_dca_xy);
-      }
+        if constexpr (pairtype == PairType::kLSpp) {
+          registry.fill(HIST("Reconstructed/Pair/LSpp/Mass"), v12.M());
+          registry.fill(HIST("Reconstructed/Pair/LSpp/Pt"), v12.Pt());
+          registry.fill(HIST("Reconstructed/Pair/LSpp/Eta"), v12.Eta());
+          registry.fill(HIST("Reconstructed/Pair/LSpp/Mass_Pt"), v12.M(), v12.Pt());
+          registry.fill(HIST("Reconstructed/Pair/LSpp/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
+          registry.fill(HIST("Reconstructed/Pair/LSpp/hs_rec"), v12.M(), v12.Pt(), pair_dca_xy);
+        } else if constexpr (pairtype == PairType::kLSnn) {
+          registry.fill(HIST("Reconstructed/Pair/LSnn/Mass"), v12.M());
+          registry.fill(HIST("Reconstructed/Pair/LSnn/Pt"), v12.Pt());
+          registry.fill(HIST("Reconstructed/Pair/LSnn/Eta"), v12.Eta());
+          registry.fill(HIST("Reconstructed/Pair/LSnn/Mass_Pt"), v12.M(), v12.Pt());
+          registry.fill(HIST("Reconstructed/Pair/LSnn/Phi"), v12.Phi() < 0.f ? v12.Phi() + TMath::TwoPi() : v12.Phi());
+          registry.fill(HIST("Reconstructed/Pair/LSnn/hs_rec"), v12.M(), v12.Pt(), pair_dca_xy);
+        }
+      } // end of like-sign pair loop
     }
   }
 
@@ -410,7 +623,6 @@ struct Alice3Dilepton {
         if (motherid < 0 && hfee_type == HFllType::kUndef) {
           continue;
         }
-        // auto mother = mcparticles.iteratorAt(motherid);
 
         float pair_dca_xy = 999.f;
         ROOT::Math::PtEtaPhiMVector v12 = buildPairDCA(t1, t2, pair_dca_xy);
@@ -445,7 +657,6 @@ struct Alice3Dilepton {
         if (motherid < 0 && hfee_type == HFllType::kUndef) {
           continue;
         }
-        // auto mother = mcparticles.iteratorAt(motherid);
 
         float pair_dca_xy = 999.f;
         ROOT::Math::PtEtaPhiMVector v12 = buildPairDCA(t1, t2, pair_dca_xy);
@@ -497,7 +708,6 @@ struct Alice3Dilepton {
           continue;
         }
         registry.fill(HIST("Generated/Pair/ULS/Tried"), 4);
-        // auto mother = mcparticles.iteratorAt(motherid);
 
         ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
         ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), std::abs(pdg) == 11 ? o2::constants::physics::MassElectron : o2::constants::physics::MassMuon);
@@ -579,81 +789,12 @@ struct Alice3Dilepton {
     }
   }
 
-  // Functions for pid
-  template <typename TTrack>
-  bool electronIDTOF(TTrack const& track)
-  {
-    bool isElectron = false;
-    bool isEleOuterTOF = std::abs(track.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF;
-    bool isNotPionOuterTOF = std::abs(track.nSigmaPionOuterTOF()) > nSigmaPionCutOuterTOF;
-    isEleOuterTOF = isEleOuterTOF && isNotPionOuterTOF;
-    bool isEleInnerTOF = std::abs(track.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF;
-    bool isNotPionInnerTOF = std::abs(track.nSigmaPionInnerTOF()) > nSigmaPionCutInnerTOF;
-    isEleInnerTOF = isEleInnerTOF && isNotPionInnerTOF;
-    isElectron = (isEleOuterTOF || isEleInnerTOF);
-    return isElectron;
-  }
-
-  template <typename TTrack>
-  bool electronIDRICH(TTrack const& track)
-  {
-    bool isElectron = false;
-    bool isEleRICH = std::abs(track.nSigmaElectronRich()) < nSigmaElectronRich;
-    bool isNotPionRICH = std::abs(track.nSigmaPionRich()) > nSigmaPionRich;
-    isElectron = isEleRICH && isNotPionRICH;
-    return isElectron;
-  }
-
-  Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
   Partition<aod::McParticles> pos_mcParticles = o2::aod::mcparticle::pdgCode == -pdg; //-11 or -13
   Partition<aod::McParticles> neg_mcParticles = o2::aod::mcparticle::pdgCode == pdg;  // 11 or 13
 
   void processGen(o2::aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles)
   {
     for (const auto& mccollision : mccollisions) {
-      registry.fill(HIST("Generated/Event/VtxX"), mccollision.posX());
-      registry.fill(HIST("Generated/Event/VtxY"), mccollision.posY());
-      registry.fill(HIST("Generated/Event/VtxZ"), mccollision.posZ());
-
-      auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, mccollision.globalIndex());
-      int nParticlesInEvent = 0;
-      int nParticlesFIT = 0;
-      for (const auto& mcParticle : mcParticles_per_coll) {
-        if (mcParticle.isPhysicalPrimary()) {
-          if ((2.2 < mcParticle.eta() && mcParticle.eta() < 5.0) || (-3.4 < mcParticle.eta() && mcParticle.eta() < -2.3)) {
-            auto pdgParticle = inspdg->GetParticle(mcParticle.pdgCode());
-            if (pdgParticle) {
-              float charge = pdgParticle->Charge() / 3.f; // Charge in units of |e|
-              if (std::abs(charge) >= 1.) {
-                nParticlesFIT++;
-              }
-            }
-          }
-        }
-        if (std::abs(mcParticle.pdgCode()) != pdg) {
-          continue;
-        }
-        if (!mcParticle.isPhysicalPrimary()) {
-          continue;
-        }
-        if (!IsInAcceptance(mcParticle)) {
-          continue;
-        }
-        nParticlesInEvent++;
-
-        registry.fill(HIST("Generated/Particle/Pt"), mcParticle.pt());
-        registry.fill(HIST("Generated/Particle/Eta"), mcParticle.eta());
-        registry.fill(HIST("Generated/Particle/Phi"), mcParticle.phi());
-        registry.fill(HIST("Generated/Particle/Eta_Pt"), mcParticle.pt(), mcParticle.eta());
-
-        registry.fill(HIST("Generated/Particle/prodVx"), mcParticle.vx());
-        registry.fill(HIST("Generated/Particle/prodVy"), mcParticle.vy());
-        registry.fill(HIST("Generated/Particle/prodVz"), mcParticle.vz());
-
-      } // end of mc particle loop
-      registry.fill(HIST("Generated/Particle/ParticlesPerEvent"), nParticlesInEvent);
-      registry.fill(HIST("Generated/Particle/ParticlesFit"), nParticlesFIT);
-
       auto neg_mcParticles_coll = neg_mcParticles->sliceByCached(o2::aod::mcparticle::mcCollisionId, mccollision.globalIndex(), cache_mc);
       auto pos_mcParticles_coll = pos_mcParticles->sliceByCached(o2::aod::mcparticle::mcCollisionId, mccollision.globalIndex(), cache_mc);
 
@@ -664,84 +805,28 @@ struct Alice3Dilepton {
     } // end of mc collision loop
   } // end of processGen
 
-  using MyTracksMC = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::McTrackLabels, aod::UpgradeTofs, aod::UpgradeTofMCs, aod::UpgradeRichs, aod::TracksAlice3>;
-  using Alice3Collision = soa::Join<aod::Collisions, aod::OTFLUTConfigId>;
+  using MyTracksMC = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::McTrackLabels, aod::UpgradeTofs, aod::UpgradeTofMCs, aod::UpgradeRichs, aod::TracksAlice3, aod::DiTrackPrefilter>;
+  using Alice3Collision = soa::Join<aod::Collisions, aod::OTFLUTConfigId, aod::DiEventCentCuts>;
 
-  // Filter trackFilter = etaMin < o2::aod::track::eta &&
-  //                      o2::aod::track::eta < etaMax &&
-  //                      ptMin < o2::aod::track::pt &&
-  //                      o2::aod::track::pt < ptMax &&
-  //                      o2::aod::track_alice3::isReconstructed == selectReconstructed;
-  Filter trackFilter = o2::aod::track_alice3::isReconstructed == selectReconstructed;
+  Filter trackFilter = etaMin < o2::aod::track::eta && o2::aod::track::eta < etaMax && ptMin < o2::aod::track::pt && o2::aod::track::pt < ptMax && o2::aod::track_alice3::isReconstructed == selectReconstructed;
+  // Filter trackFilter = o2::aod::track_alice3::isReconstructed == selectReconstructed;
+  Filter pidFilter_electron = (nabs(o2::aod::upgrade_rich::nSigmaElectronRich) < nSigmaElectronRich && nSigmaPionRich < nabs(o2::aod::upgrade_rich::nSigmaPionRich)) || (nabs(o2::aod::upgrade_tof::nSigmaElectronOuterTOF) < nSigmaEleCutOuterTOF && nSigmaPionCutOuterTOF < nabs(o2::aod::upgrade_tof::nSigmaPionOuterTOF)) || (nabs(o2::aod::upgrade_tof::nSigmaElectronInnerTOF) < nSigmaEleCutInnerTOF && nSigmaPionCutInnerTOF < nabs(o2::aod::upgrade_tof::nSigmaPionInnerTOF));
+  Filter prefilter_electron = ifnode(cfg_apply_prefilter.node(), o2::aod::dileptonanalysisflags::isTrackPrefilter == 0, o2::aod::dileptonanalysisflags::isTrackPrefilter == 0 || o2::aod::dileptonanalysisflags::isTrackPrefilter == 1);
+
   using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
   Filter configFilter = (aod::upgrade_collision::lutConfigId == otfConfig);
+  Filter CollisionFilter = o2::aod::dileptonanalysisflags::isEventCentSelected == 1;
   using MyFilteredAlice3Collision = soa::Filtered<Alice3Collision>;
   Preslice<MyFilteredTracksMC> perCollision = aod::track::collisionId;
   Partition<MyFilteredTracksMC> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracksMC> negTracks = o2::aod::track::signed1Pt < 0.f;
 
   void processRec(MyFilteredAlice3Collision const& collisions,
-                  MyFilteredTracksMC const& tracks,
+                  MyFilteredTracksMC const& /*tracks*/,
                   const o2::aod::McCollisions&,
                   const aod::McParticles& mcParticles)
   {
     for (const auto& collision : collisions) {
-      registry.fill(HIST("Reconstructed/Event/VtxX"), collision.posX());
-      registry.fill(HIST("Reconstructed/Event/VtxY"), collision.posY());
-      registry.fill(HIST("Reconstructed/Event/VtxZ"), collision.posZ());
-
-      auto tracks_coll = tracks.sliceBy(perCollision, collision.globalIndex());
-      for (const auto& track : tracks_coll) {
-        if (!track.has_mcParticle()) {
-          continue;
-        }
-        const auto mcParticle = track.mcParticle_as<aod::McParticles>();
-        if (std::abs(mcParticle.pdgCode()) != pdg) {
-          continue;
-        }
-        if (!mcParticle.isPhysicalPrimary()) {
-          continue;
-        }
-        if (useGen) {
-          if (!IsInAcceptance(mcParticle)) {
-            continue;
-          }
-        } else {
-          if (!IsInAcceptance(track)) {
-            continue;
-          }
-        }
-        if (std::abs(mcParticle.pdgCode()) != pdg) {
-          continue;
-        }
-        if (!mcParticle.isPhysicalPrimary()) {
-          continue;
-        }
-        registry.fill(HIST("Reconstructed/Track/SigmaOTofvspt"), track.pt(), track.nSigmaElectronOuterTOF());
-        registry.fill(HIST("Reconstructed/Track/SigmaITofvspt"), track.pt(), track.nSigmaElectronInnerTOF());
-        registry.fill(HIST("Reconstructed/Track/SigmaRichvspt"), track.pt(), track.nSigmaElectronRich());
-        registry.fill(HIST("Reconstructed/Track/outerTOFTrackLength"), track.outerTOFTrackLength());
-        registry.fill(HIST("Reconstructed/Track/Pt"), track.pt());
-        registry.fill(HIST("Reconstructed/Track/Eta"), track.eta());
-        registry.fill(HIST("Reconstructed/Track/Phi"), track.phi());
-        registry.fill(HIST("Reconstructed/Track/Eta_Pt"), track.pt(), track.eta());
-        // implement pid
-
-        bool isElectronTOF = electronIDTOF(track);
-        bool isElectronRICH = electronIDRICH(track);
-
-        if (isElectronTOF || isElectronRICH) {
-          registry.fill(HIST("Reconstructed/TrackPID/SigmaOTofvspt"), track.pt(), track.nSigmaElectronOuterTOF());
-          registry.fill(HIST("Reconstructed/TrackPID/SigmaITofvspt"), track.pt(), track.nSigmaElectronInnerTOF());
-          registry.fill(HIST("Reconstructed/TrackPID/SigmaRichvspt"), track.pt(), track.nSigmaElectronRich());
-          registry.fill(HIST("Reconstructed/TrackPID/outerTOFTrackLength"), track.outerTOFTrackLength());
-          registry.fill(HIST("Reconstructed/TrackPID/Pt"), track.pt());
-          registry.fill(HIST("Reconstructed/TrackPID/Eta"), track.eta());
-          registry.fill(HIST("Reconstructed/TrackPID/Phi"), track.phi());
-          registry.fill(HIST("Reconstructed/TrackPID/Eta_Pt"), track.pt(), track.eta());
-        }
-      } // end of track loop
-      // How is PID selection applied to tracks?
       auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache_rec);
       auto posTracks_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache_rec);
 
@@ -752,11 +837,42 @@ struct Alice3Dilepton {
     } // end of collision loop
   } // end of processRec
 
-  PROCESS_SWITCH(Alice3Dilepton, processGen, "Run for generated particle", true);
+  void processRecAll(MyFilteredAlice3Collision const& collisions,
+                     MyFilteredTracksMC const& tracks)
+  {
+
+    for (const auto& track : tracks) {
+      registry.fill(HIST("Reconstructed/Track/Pt"), track.pt());
+      registry.fill(HIST("Reconstructed/Track/SigmaOTofvspt"), track.pt(), track.nSigmaElectronOuterTOF());
+      registry.fill(HIST("Reconstructed/Track/SigmaITofvspt"), track.pt(), track.nSigmaElectronInnerTOF());
+      registry.fill(HIST("Reconstructed/Track/SigmaRichvspt"), track.pt(), track.nSigmaElectronRich());
+    }
+
+    for (const auto& collision : collisions) {
+      registry.fill(HIST("Reconstructed/Event/VtxZ"), collision.posZ());
+      auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache_rec);
+      auto posTracks_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache_rec);
+
+      FillPairRecAll<PairType::kULS>(negTracks_coll, posTracks_coll);
+      FillPairRecAll<PairType::kLSpp>(posTracks_coll, posTracks_coll);
+      FillPairRecAll<PairType::kLSnn>(negTracks_coll, negTracks_coll);
+
+    } // end of collision loop
+  } // end of processRec
+
+  void processDummy(Alice3Collision const&)
+  {
+  }
+
+  PROCESS_SWITCH(Alice3Dilepton, processGen, "Run for generated particle", false);
   PROCESS_SWITCH(Alice3Dilepton, processRec, "Run for reconstructed track", false);
+  PROCESS_SWITCH(Alice3Dilepton, processRecAll, "Run for reconstructed track", false);
+  PROCESS_SWITCH(Alice3Dilepton, processDummy, "Run dummy", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<Alice3Dilepton>(cfgc, TaskName{"alice3-dilepton"})};
+  return WorkflowSpec{
+    adaptAnalysisTask<Alice3Lepton>(cfgc),
+    adaptAnalysisTask<Alice3Dilepton>(cfgc)};
 }

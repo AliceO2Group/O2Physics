@@ -53,10 +53,11 @@
 #include <Framework/Logger.h>
 #include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 
 #include <TH1.h>
 
-#include <GPUROOTCartesianFwd.h>
+#include <sys/types.h>
 
 #include <cmath>
 #include <cstddef>
@@ -199,7 +200,12 @@ struct EmcalCorrectionTask {
   int runNumber{0};
 
   static constexpr float TrackNotOnEMCal = -900.f;
-  static constexpr int kMaxMatchesPerCluster = 20; // Maximum number of tracks to match per cluster
+  static constexpr int MaxMatchesPerCluster = 20; // Maximum number of tracks to match per cluster
+
+  static constexpr uint MaxClusterPerDFPerClusterizer = 200'000;            // memory footprint: 13 MB per clusterizer
+  static constexpr uint MaxAmbClusterPerDFPerClusterizer = 300'000;         // memory footprint: 19.5 MB per clusterizer
+  static constexpr uint MaxCellsPerClusterPerDFPerClusterizer = 300'000;    // memory footprint: 4.8 MB per clusterizer
+  static constexpr uint MaxCellsPerAmbClusterPerDFPerClusterizer = 450'000; // memory footprint: 7.2 MB per clusterizer
 
   // cluster size
   size_t nCluster = 0;
@@ -414,6 +420,10 @@ struct EmcalCorrectionTask {
   void processFull(BcEvSels const& bcs, CollEventSels const& collisions, MyGlobTracks const& tracks, FilteredCells const& cells)
   {
     LOG(debug) << "Starting process full.";
+    clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
 
     int previousCollisionId = 0; // Collision ID of the last unique BC. Needed to skip unordered collisions to ensure ordered collisionIds in the cluster table
     int nBCsProcessed = 0;
@@ -569,6 +579,11 @@ struct EmcalCorrectionTask {
   void processWithSecondaries(BcEvSels const& bcs, CollEventSels const& collisions, MyGlobTracks const& tracks, FilteredCells const& cells, EMV0Legs const& v0legs)
   {
     LOG(debug) << "Starting process full.";
+
+    clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
 
     int previousCollisionId = 0; // Collision ID of the last unique BC. Needed to skip unordered collisions to ensure ordered collisionIds in the cluster table
     int nBCsProcessed = 0;
@@ -729,6 +744,13 @@ struct EmcalCorrectionTask {
   void processMCFull(BcEvSels const& bcs, CollEventSels const& collisions, MyGlobTracks const& tracks, FilteredMcCells const& cells, aod::StoredMcParticles_001 const&)
   {
     LOG(debug) << "Starting processMCFull.";
+
+    clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    mcclusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    mcclustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
 
     int previousCollisionId = 0; // Collision ID of the last unique BC. Needed to skip unordered collisions to ensure ordered collisionIds in the cluster table
     int nBCsProcessed = 0;
@@ -917,6 +939,13 @@ struct EmcalCorrectionTask {
   void processMCWithSecondaries(BcEvSels const& bcs, CollEventSels const& collisions, MyGlobTracks const& tracks, FilteredMcCells const& cells, aod::StoredMcParticles_001 const&, EMV0Legs const& v0legs)
   {
     LOG(debug) << "Starting processMCWithSecondaries.";
+
+    clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    mcclusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    mcclustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
 
     int previousCollisionId = 0; // Collision ID of the last unique BC. Needed to skip unordered collisions to ensure ordered collisionIds in the cluster table
     int nBCsProcessed = 0;
@@ -1107,6 +1136,12 @@ struct EmcalCorrectionTask {
   void processStandalone(BcEvSels const& bcs, aod::Collisions const& collisions, FilteredCells const& cells)
   {
     LOG(debug) << "Starting process standalone.";
+
+    clusters.reserve(MaxClusterPerDFPerClusterizer * mClusterizers.size());
+    clustersAmbiguous.reserve(MaxAmbClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercells.reserve(MaxCellsPerClusterPerDFPerClusterizer * mClusterizers.size());
+    clustercellsambiguous.reserve(MaxCellsPerAmbClusterPerDFPerClusterizer * mClusterizers.size());
+
     int previousCollisionId = 0; // Collision ID of the last unique BC. Needed to skip unordered collisions to ensure ordered collisionIds in the cluster table
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
@@ -1270,16 +1305,6 @@ struct EmcalCorrectionTask {
   template <typename Collision>
   void fillClusterTable(Collision const& col, math_utils::Point3D<float> const& vertexPos, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, MatchResult* indexMapPair = nullptr, const std::vector<int64_t>* trackGlobalIndex = nullptr, MatchResult* indexMapPairSecondaries = nullptr, const std::vector<int64_t>* secondariesGlobalIndex = nullptr)
   {
-    // average number of cells per cluster, only used the reseve a reasonable amount for the clustercells table
-    // const size_t nAvgNcells = 3;
-    // we found a collision, put the clusters into the none ambiguous table
-    clusters.reserve(nCluster + mAnalysisClusters.size());
-    if (!mClusterLabels.empty()) {
-      mcclusters.reserve(nCluster + mClusterLabels.size());
-    }
-    // Since reserve triggers a fatal when its too small, it is not save for cells to use it unless we use a really large buffer...
-    // clustercells.reserve(mAnalysisClusters.size() * nAvgNcells);
-
     // get the clusterType once
     const auto clusterType = static_cast<int>(mClusterDefinitions[iClusterizer]);
 
@@ -1368,14 +1393,7 @@ struct EmcalCorrectionTask {
   template <typename BC>
   void fillAmbigousClusterTable(BC const& bc, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, bool hasCollision)
   {
-    // average number of cells per cluster, only used the reseve a reasonable amount for the clustercells table
-    // const size_t nAvgNcells = 3;
     int cellindex = -1;
-    clustersAmbiguous.reserve(mAnalysisClusters.size() + nClusterAmb);
-    if (mClusterLabels.size() > 0) {
-      mcclustersAmbiguous.reserve(mClusterLabels.size() + nClusterAmb);
-    }
-    // clustercellsambiguous.reserve(mAnalysisClusters.size() * nAvgNcells);
     unsigned int iCluster = 0;
     float energy = 0.f;
     for (const auto& cluster : mAnalysisClusters) {
@@ -1433,7 +1451,7 @@ struct EmcalCorrectionTask {
     trackGlobalIndex.reserve(nTracksInCol);
     fillTrackInfo<decltype(groupedTracks)>(groupedTracks, trackPhi, trackEta, trackGlobalIndex);
 
-    indexMapPair = matchTracksToCluster(mClusterPhi, mClusterEta, trackPhi, trackEta, maxMatchingDistance, kMaxMatchesPerCluster);
+    indexMapPair = matchTracksToCluster(mClusterPhi, mClusterEta, trackPhi, trackEta, maxMatchingDistance, MaxMatchesPerCluster);
   }
 
   template <typename Collision>
@@ -1469,7 +1487,7 @@ struct EmcalCorrectionTask {
       trackEta.emplace_back(trackEtaEmcal);
       trackGlobalIndex.emplace_back(track.globalIndex());
     }
-    indexMapPair = matchTracksToCluster(mClusterPhi, mClusterEta, trackPhi, trackEta, maxMatchingDistance, kMaxMatchesPerCluster);
+    indexMapPair = matchTracksToCluster(mClusterPhi, mClusterEta, trackPhi, trackEta, maxMatchingDistance, MaxMatchesPerCluster);
   }
 
   template <typename Tracks>

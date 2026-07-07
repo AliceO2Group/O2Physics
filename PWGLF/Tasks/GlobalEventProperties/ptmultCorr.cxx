@@ -16,19 +16,17 @@
 /// \since October 01, 2025
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
-#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -37,11 +35,9 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
-#include <TH2.h>
 #include <TPDGCode.h>
 
 #include <algorithm>
-#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -54,12 +50,13 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::track;
 using namespace o2::aod::evsel;
+using namespace o2::aod::rctsel;
 
 using ColDataTablePbPb = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults, aod::CentFT0Cs>;
 using ColDataTablepp = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults>;
 using ColMCRecTablePbPb = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults, aod::CentFT0Cs>>;
 using ColMCRecTablepp = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults>>;
-using ColMCTrueTable = soa::Join<aod::McCollisions, aod::MultMCExtras, aod::McCollsExtra>;
+using ColMCTrueTable = soa::Join<aod::McCollisions, aod::MultMCExtras>;
 using TrackDataTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 using TrackMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>;
 using TrackMCTrueTable = aod::McParticles;
@@ -121,20 +118,18 @@ AxisSpec axisPhi{{0, o2::constants::math::PIQuarter, o2::constants::math::PIHalf
 AxisSpec axisPhi2{629, 0, o2::constants::math::TwoPI, "#phi"};
 AxisSpec axisCent{100, 0, 100, "#Cent"};
 AxisSpec axisDeltaPt{50, -1.0, +1.0, "#Delta(pT)"};
-AxisSpec axisDCAxy{100, -3.0, 3.0, "DCA_{xy} (cm)", "DCAxyAxis"}; // range ±3 cm for TPC-only case
+AxisSpec axisDCAxy{600, -3.0, 3.0, "DCA_{xy} (cm)", "DCAxyAxis"}; // range ±3 cm for TPC-only case
 AxisSpec axisGenPtVary = {kGenpTend - 1, +kGenpTbegin + 0.5, +kGenpTend - 0.5, "", "GenpTVaryAxis"};
 // axisGenTrkType auto-expands: kGenTrkTypeend is now 8, giving 6 bins (kGenAll … kGenAllCharged)
 AxisSpec axisGenTrkType = {kGenTrkTypeend - 1, +kGenTrkTypebegin + 0.5, +kGenTrkTypeend - 0.5, "", "GenTrackTypeAxis"};
 AxisSpec axisRecTrkType = {kRecTrkTypeend - 1, +kRecTrkTypebegin + 0.5, +kRecTrkTypeend - 0.5, "", "RecTrackTypeAxis"};
 AxisSpec axisTrackType = {kTrackTypeend - 1, +kTrackTypebegin + 0.5, +kTrackTypeend - 0.5, "", "TrackTypeAxis"};
 auto static constexpr KminCharge = 3.f;
-auto static constexpr KminPtCut = 0.1f;
 
 struct PtmultCorr {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Service<o2::framework::O2DatabasePDG> pdg;
-  Service<ccdb::BasicCCDBManager> ccdb;
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
   Configurable<float> etaRange{"etaRange", 0.8f, "Eta range to consider"};
   Configurable<float> vtxRange{"vtxRange", 10.0f, "Vertex Z range to consider"};
@@ -146,64 +141,49 @@ struct PtmultCorr {
   Configurable<float> extraphicut3{"extraphicut3", 0.03f, "Extra Phi cut 3"};
   Configurable<float> extraphicut4{"extraphicut4", 6.253f, "Extra Phi cut 4"};
 
-  // Track quality cuts (matching piKpRAA analysis)
-  Configurable<uint8_t> cfgMinNClusITS{"cfgMinNClusITS", 7, "Minimum ITS clusters"};
   Configurable<int16_t> cfgMinNCrossedRows{"cfgMinNCrossedRows", 70, "Minimum TPC crossed rows"};
-  Configurable<int16_t> cfgMinNcls{"cfgMinNcls", 130, "Minimum TPC clusters (applied only if cfgApplyNclSel is true)"};
-  Configurable<bool> cfgApplyNclSel{"cfgApplyNclSel", true, "Enable minimum TPC cluster selection"};
   Configurable<bool> cfgUseNclsPID{"cfgUseNclsPID", false, "Use NclsPID instead of NclsFound for the Ncls cut"};
   Configurable<float> cfgMinChi2ClsTPC{"cfgMinChi2ClsTPC", 0.5f, "Minimum TPC chi2/cls"};
   Configurable<float> cfgMaxChi2ClsTPC{"cfgMaxChi2ClsTPC", 4.0f, "Maximum TPC chi2/cls"};
   Configurable<float> cfgMaxChi2ClsITS{"cfgMaxChi2ClsITS", 36.0f, "Maximum ITS chi2/cls"};
-  Configurable<float> cfgNSigmaDCAxy{"cfgNSigmaDCAxy", 1.0f, "nSigma scaling for DCAxy cut"};
-  Configurable<float> cfgNSigmaDCAz{"cfgNSigmaDCAz", 1.0f, "nSigma scaling for DCAz cut"};
-
-  // CCDB paths for pT-dependent DCA cuts
-  Configurable<std::string> pathDCAxy{"pathDCAxy", "", "CCDB path for DCAxy parametrisation (leave empty to skip)"};
-  Configurable<std::string> pathDCAz{"pathDCAz", "", "CCDB path for DCAz parametrisation (leave empty to skip)"};
-  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable CCDB timestamp"};
+  Configurable<float> cfgDCAz{"cfgDCAz", 0.04, "DCAz cut in cm"};
 
   ConfigurableAxis ptHistBin{"ptHistBin", {200, 0., 20.}, ""};
   ConfigurableAxis centralityBinning{"centralityBinning", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, ""};
   ConfigurableAxis binsImpactPar{"binsImpactPar", {VARIABLE_WIDTH, 0.0, 3.00065, 4.28798, 6.14552, 7.6196, 8.90942, 10.0897, 11.2002, 12.2709, 13.3167, 14.4173, 23.2518}, "Binning of the impact parameter axis"};
 
-  // DCA cache (loaded from CCDB)
-  struct ConfigDCA {
-    TH1F* hDCAxy = nullptr;
-    TH1F* hDCAz = nullptr;
-    bool loaded = false;
-  } cfgDCA;
+  Configurable<bool> isSameBunchPileup{"isSameBunchPileup", false, "Enable SameBunchPileup cut"};
+  Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", false, "Enable GoodZvtxFT0vsPV cut"};
+  Configurable<bool> applyExtraPhiCut{"applyExtraPhiCut", false, "Enable extra phi cut"};
+  Configurable<bool> isNoCollInTimeRangeStandard{"isNoCollInTimeRangeStandard", false, "Enable NoCollInTimeRangeStandard cut"};
+  Configurable<bool> isNoCollInTimeRangeStrict{"isNoCollInTimeRangeStrict", false, "use isNoCollInTimeRangeStrict?"};
 
-  Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", false, "Enable SameBunchPileup cut"};
-  Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", false, "Enable GoodZvtxFT0vsPV cut"};
-  Configurable<bool> isApplyExtraPhiCut{"isApplyExtraPhiCut", false, "Enable extra phi cut"};
-  Configurable<bool> isApplyNoCollInTimeRangeStandard{"isApplyNoCollInTimeRangeStandard", true, "Enable NoCollInTimeRangeStandard cut"};
-  Configurable<bool> isApplyNoCollInRofStandard{"isApplyNoCollInRofStandard", false, "Enable NoCollInRofStandard cut"};
-  Configurable<bool> isApplyNoHighMultCollInPrevRof{"isApplyNoHighMultCollInPrevRof", false, "Enable NoHighMultCollInPrevRof cut"};
-  Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "Enable FT0CbasedOccupancy cut"};
-  Configurable<bool> isApplyInelgt0{"isApplyInelgt0", false, "Enable INEL > 0 condition"};
-  Configurable<bool> isApplyOccuCut{"isApplyOccuCut", false, "Enable occupancy selection"};
+  Configurable<bool> selHasBC{"selHasBC", true, "Require has_foundBC"};
+  Configurable<bool> selHasFT0{"selHasFT0", true, "Require has_foundFT0"};
 
-  // Secondary estimation related configurables
-  Configurable<bool> isApplyDCACuts{"isApplyDCACuts", false, "Enable DCA cuts (set to false for secondary estimation)"};
-  Configurable<bool> isApplyITSCuts{"isApplyITSCuts", false, "Enable ITS cuts (set to false for secondary estimation)"};
-  Configurable<bool> isApplyChi2Cuts{"isApplyChi2Cuts", false, "Enable χ² cuts (set to false for secondary estimation)"};
+  Configurable<bool> isNoCollInRofStandard{"isNoCollInRofStandard", false, "Enable NoCollInRofStandard cut"};
+  Configurable<bool> isNoCollInRofStrict{"isNoCollInRofStrict", false, "use isNoCollInRofStrict?"};
+
+  Configurable<bool> isNoHighMultCollInPrevRof{"isNoHighMultCollInPrevRof", false, "use isNoHighMultCollInPrevRof?"};
+  Configurable<bool> isNoCollInTimeRangeNarrow{"isNoCollInTimeRangeNarrow", false, "use isNoCollInTimeRangeNarrow?"};
+
+  Configurable<bool> applyFT0CbasedOccupancy{"applyFT0CbasedOccupancy", false, "Enable FT0CbasedOccupancy cut"};
+  Configurable<bool> applyInelgt0{"applyInelgt0", true, "Enable INEL > 0 condition"};
+  Configurable<bool> applyOccuCut{"applyOccuCut", true, "Enable occupancy selection"};
+
+  Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "RCT selection flag"};
+  Configurable<bool> rctCheckZDC{"rctCheckZDC", false, "Check ZDC in RCT"};
+  Configurable<bool> rctTreatLimitedAcceptanceAsBad{"rctTreatLimitedAcceptanceAsBad", false, "Treat limited acceptance as bad"};
+  Configurable<bool> requireGoodRct{"requireGoodRct", true, "Apply RCT selection"};
+
+  // RCT checker instance
+  RCTFlagsChecker rctChecker;
 
   void init(InitContext const&)
   {
-    // Load DCA parametrisations from CCDB (matching piKpRAA)
-    if (!pathDCAxy.value.empty()) {
-      cfgDCA.hDCAxy = ccdb->getForTimeStamp<TH1F>(pathDCAxy, ccdbNoLaterThan);
-      if (cfgDCA.hDCAxy == nullptr)
-        LOGF(fatal, "Could not load DCAxy histogram from %s", pathDCAxy.value.c_str());
+    if (requireGoodRct) {
+      rctChecker.init(rctLabel.value, rctCheckZDC.value, rctTreatLimitedAcceptanceAsBad.value);
     }
-    if (!pathDCAz.value.empty()) {
-      cfgDCA.hDCAz = ccdb->getForTimeStamp<TH1F>(pathDCAz, ccdbNoLaterThan);
-      if (cfgDCA.hDCAz == nullptr)
-        LOGF(fatal, "Could not load DCAz histogram from %s", pathDCAz.value.c_str());
-    }
-    if (cfgDCA.hDCAxy && cfgDCA.hDCAz)
-      cfgDCA.loaded = true;
     AxisSpec centAxis = {centralityBinning, "Centrality", "CentralityAxis"};
     AxisSpec axisPt = {ptHistBin, "pT", "pTAxis"};
     AxisSpec impactParAxis = {binsImpactPar, "Impact Parameter"};
@@ -211,7 +191,6 @@ struct PtmultCorr {
     histos.add("EventHist", "EventHist", kTH1D, {axisEvent}, false);
     histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ}, false);
     histos.add("CentPercentileHist", "CentPercentileHist", kTH1D, {axisCent}, false);
-    histos.add("CentPercentileMCRecHist", "CentPercentileMCRecHist", kTH1D, {axisCent}, false);
     histos.add("PhiVsEtaHistNoCut", "PhiVsEtaHistNoCut", kTH2D, {axisPhi2, axisEta}, false);
     histos.add("PhiVsEtaHistWithCut", "PhiVsEtaHistWithCut", kTH2D, {axisPhi2, axisEta}, false);
 
@@ -265,20 +244,60 @@ struct PtmultCorr {
       histos.add("hImpactParameterGen", "Impact parameter of generated MC events", kTH1F, {impactParAxis});
       histos.add("hImpactParameterRec", "Impact parameter of selected MC events", kTH1F, {impactParAxis});
       histos.add("hImpactParvsCentrRec", "Impact parameter of selected MC events vs centrality", kTH2F, {axisCent, impactParAxis});
+
+      // CO map: centrality vs generated Nch (for N_rec_at_least_once events)
+      histos.add("hNchVsCent_WithRecoEvt", "hNchVsCent_WithRecoEvt",
+                 kTH2F, {axisCent, {500, 0, 500, "Gen N_{ch} |#eta|<0.8"}});
+
+      // Event loss denominator: Nch distribution of all generated events
+      histos.add("hNchMC_AllGen", "hNchMC_AllGen",
+                 kTH1F, {{500, 0, 500, "Gen N_{ch} |#eta|<0.8"}});
+
+      // Event loss numerator: Nch distribution of N_rec_at_least_once events
+      histos.add("hNchMC_WithRecoEvt", "hNchMC_WithRecoEvt",
+                 kTH1F, {{500, 0, 500, "Gen N_{ch} |#eta|<0.8"}});
+
+      // Event splitting: centrality distributions
+      histos.add("hCent_WRecoEvtWSelCri", "N_rec_at_least_once (with sel)", kTH1F, {axisCent});
+      histos.add("hCent_AllRecoEvt", "N_rec (with sel)", kTH1F, {axisCent});
+
+      // Signal loss: pT vs Nch (2D), for all gen events and N_rec_at_least_once
+      histos.add("hPtVsNchMC_AllGen", "hPtVsNchMC_AllGen",
+                 kTH2F, {{axisPt}, {500, 0, 500, "Gen N_{ch} |#eta|<0.8"}});
+      histos.add("hPtVsNchMC_WithRecoEvt", "hPtVsNchMC_WithRecoEvt",
+                 kTH2F, {{axisPt}, {500, 0, 500, "Gen N_{ch} |#eta|<0.8"}});
     }
 
+    if (doprocessEvtLossSigLossMCpp) {
+      histos.add("hNch_AllRecoEvt",
+                 "All reco collisions passing partial cuts (event split denom pp)",
+                 kTH1F, {{500, 0, 500, "N_{ch}  |#eta|<0.8"}});
+      histos.add("hNch_WRecoEvtWSelCri",
+                 "Best reco collision passing full selection (event split num pp)",
+                 kTH1F, {{500, 0, 500, "N_{ch}  |#eta|<0.8"}});
+    }
+    if (doprocessDatapp || doprocessDataPbPb) {
+      histos.add("RCTSel", "All=1 | RCT passed=2", kTH1F, {{2, 0.5, 2.5}});
+      auto hrct = histos.get<TH1>(HIST("RCTSel"));
+      hrct->GetXaxis()->SetBinLabel(1, "All");
+      hrct->GetXaxis()->SetBinLabel(2, "RCT passed");
+    }
     auto hstat = histos.get<TH1>(HIST("EventHist"));
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "All events");
-    x->SetBinLabel(2, "sel8");
-    x->SetBinLabel(3, "kNoSameBunchPileup"); // reject collisions in case of pileup with another collision in the same foundBC
-    x->SetBinLabel(4, "kIsGoodZvtxFT0vsPV"); // small difference between z-vertex from PV and from FT0
-    x->SetBinLabel(5, "ApplyNoCollInTimeRangeStandard");
-    x->SetBinLabel(6, "ApplyNoCollInRofStandard");
-    x->SetBinLabel(7, "ApplyNoHighMultCollInPrevRof");
-    x->SetBinLabel(8, "INEL > 0");
-    x->SetBinLabel(9, "|vz|<10");
-    x->SetBinLabel(10, "Occupancy<500");
+    x->SetBinLabel(2, "has_foundBC");
+    x->SetBinLabel(3, "has_foundFT0");
+    x->SetBinLabel(4, "kIsTriggerTVX");
+    x->SetBinLabel(5, "kNoITSROFrameBorder");
+    x->SetBinLabel(6, "kNoTimeFrameBorder");
+    x->SetBinLabel(7, "|vz|<vtxRange");
+    x->SetBinLabel(8, "kIsGoodZvtxFT0vsPV");
+    x->SetBinLabel(9, "kNoSameBunchPileup");
+    x->SetBinLabel(10, "kNoCollInTimeRangeStrict");
+    x->SetBinLabel(11, "kNoCollInRofStrict");
+    x->SetBinLabel(12, "kNoHighMultCollInPrevRof");
+    x->SetBinLabel(13, "INEL>0");
+    x->SetBinLabel(14, "Occupancy");
   }
 
   template <typename CheckCol>
@@ -286,51 +305,74 @@ struct PtmultCorr {
   {
     histos.fill(HIST("EventHist"), 1);
 
-    if (!col.sel8()) {
+    if (selHasBC && !col.has_foundBC())
       return false;
-    }
-    histos.fill(HIST("EventHist"), 2);
+    if (selHasFT0 && !col.has_foundFT0())
+      return false;
 
-    if (isApplySameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    // TVX trigger (replaces sel8 as primary trigger requirement)
+    if (!col.selection_bit(o2::aod::evsel::kIsTriggerTVX))
       return false;
-    }
-    histos.fill(HIST("EventHist"), 3);
-
-    if (isApplyGoodZvtxFT0vsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-      return false;
-    }
     histos.fill(HIST("EventHist"), 4);
 
-    if (isApplyNoCollInTimeRangeStandard && !col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    // ITS ROF border
+    if (!col.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
       return false;
-    }
     histos.fill(HIST("EventHist"), 5);
 
-    if (isApplyNoCollInRofStandard && !col.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+    // Time frame border
+    if (!col.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
       return false;
-    }
     histos.fill(HIST("EventHist"), 6);
 
-    if (isApplyNoHighMultCollInPrevRof && !col.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+    // vtxZ
+    if (std::abs(col.posZ()) > vtxRange)
       return false;
-    }
     histos.fill(HIST("EventHist"), 7);
 
-    if (isApplyInelgt0 && !col.isInelGt0()) {
+    // Good ZvtxFT0vsPV
+    if (isGoodZvtxFT0vsPV &&
+        !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
       return false;
-    }
     histos.fill(HIST("EventHist"), 8);
 
-    if (std::abs(col.posZ()) >= vtxRange) {
+    // No same bunch pileup
+    if (isSameBunchPileup &&
+        !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
       return false;
-    }
     histos.fill(HIST("EventHist"), 9);
 
-    auto occu = isApplyFT0CbasedOccupancy ? col.ft0cOccupancyInTimeRange() : col.trackOccupancyInTimeRange();
-    if (isApplyOccuCut && occu > occuRange) {
+    // Time range isolation — Strict (replaces Standard)
+    if (isNoCollInTimeRangeStrict &&
+        !col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict))
       return false;
-    }
     histos.fill(HIST("EventHist"), 10);
+
+    // ROF isolation — Strict (replaces Standard)
+    if (isNoCollInRofStrict &&
+        !col.selection_bit(o2::aod::evsel::kNoCollInRofStrict))
+      return false;
+    histos.fill(HIST("EventHist"), 11);
+
+    // No high mult collision in previous ROF
+    if (isNoHighMultCollInPrevRof &&
+        !col.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof))
+      return false;
+    histos.fill(HIST("EventHist"), 12);
+
+    // INEL > 0
+    if (applyInelgt0 && !col.isInelGt0())
+      return false;
+    histos.fill(HIST("EventHist"), 13);
+
+    // Occupancy
+    auto occu = applyFT0CbasedOccupancy
+                  ? col.ft0cOccupancyInTimeRange()
+                  : col.trackOccupancyInTimeRange();
+    if (applyOccuCut && occu > occuRange)
+      return false;
+    histos.fill(HIST("EventHist"), 14);
+
     return true;
   }
 
@@ -347,61 +389,33 @@ struct PtmultCorr {
       return false;
     }
 
+    // ITS inner-barrel hit: must fire layer 0 or layer 1
+    if (!(track.itsClusterMap() & 0x01) && !(track.itsClusterMap() & 0x02)) {
+      return false;
+    }
+
+    // ITS chi2 cut (also part of ITS cuts)
+    if (track.itsChi2NCl() > cfgMaxChi2ClsITS) {
+      return false;
+    }
+
     if (track.hasTPC()) {
-      // ---- Global (ITS+TPC) tracks:
 
-      // ITS cuts: can be disabled for secondary estimation
-      if (isApplyITSCuts) {
-        // ITS inner-barrel hit: must fire layer 0 or layer 1
-        if (!(track.itsClusterMap() & 0x01) && !(track.itsClusterMap() & 0x02)) {
-          return false;
-        }
-        if (track.itsNCls() < cfgMinNClusITS) {
-          return false;
-        }
-        // ITS chi2 cut (also part of ITS cuts)
-        if (track.itsChi2NCl() > cfgMaxChi2ClsITS) {
-          return false;
-        }
-      }
-
-      // TPC quality cuts (always applied)
       if (track.tpcNClsCrossedRows() < cfgMinNCrossedRows) {
         return false;
       }
-      // optional minimum TPC clusters (found or PID, matching piKpRAA applyNclSel)
-      if (cfgApplyNclSel) {
-        const int16_t ncl = cfgUseNclsPID ? track.tpcNClsPID() : track.tpcNClsFound();
-        if (ncl < cfgMinNcls) {
-          return false;
-        }
-      }
 
-      // --- χ² cuts (can be disabled for secondary estimation) ---
-      if (isApplyChi2Cuts) {
-        if (track.tpcChi2NCl() < cfgMinChi2ClsTPC || track.tpcChi2NCl() > cfgMaxChi2ClsTPC) {
-          return false;
-        }
-      }
-
-      // pT-dependent DCA cuts (can be disabled for secondary estimation)
-      if (isApplyDCACuts && cfgDCA.loaded) {
-        const float pt = track.pt();
-        const double dcaXYcut = cfgNSigmaDCAxy * (cfgDCA.hDCAxy->GetBinContent(1) +
-                                                  cfgDCA.hDCAxy->GetBinContent(2) /
-                                                    std::pow(std::abs(pt), cfgDCA.hDCAxy->GetBinContent(3)));
-        const double dcaZcut = cfgNSigmaDCAz * (cfgDCA.hDCAz->GetBinContent(1) +
-                                                cfgDCA.hDCAz->GetBinContent(2) /
-                                                  std::pow(std::abs(pt), cfgDCA.hDCAz->GetBinContent(3)));
-        if (std::abs(track.dcaZ()) > dcaZcut || std::abs(track.dcaXY()) > dcaXYcut) {
-          return false;
-        }
+      if (track.tpcChi2NCl() < cfgMinChi2ClsTPC || track.tpcChi2NCl() > cfgMaxChi2ClsTPC) {
+        return false;
       }
     }
 
+    if (std::abs(track.dcaZ()) > cfgDCAz)
+      return false;
+
     // --- optional phi cut (applied to all track types) ---
     histos.fill(HIST("PhiVsEtaHistNoCut"), track.phi(), track.eta());
-    if (isApplyExtraPhiCut && ((track.phi() > extraphicut1 && track.phi() < extraphicut2) || track.phi() <= extraphicut3 || track.phi() >= extraphicut4)) {
+    if (applyExtraPhiCut && ((track.phi() > extraphicut1 && track.phi() < extraphicut2) || track.phi() <= extraphicut3 || track.phi() >= extraphicut4)) {
       return false;
     }
     histos.fill(HIST("PhiVsEtaHistWithCut"), track.phi(), track.eta());
@@ -417,7 +431,7 @@ struct PtmultCorr {
     if (!track.isPhysicalPrimary()) {
       return false;
     }
-    if (!track.producedByGenerator()) {
+    if (track.pt() < cfgPtCutMin || track.pt() > cfgPtCutMax) {
       return false;
     }
     auto pdgTrack = pdg->GetParticle(track.pdgCode());
@@ -430,7 +444,7 @@ struct PtmultCorr {
     if (std::abs(track.eta()) >= etaRange) {
       return false;
     }
-    if (isApplyExtraPhiCut && ((track.phi() > extraphicut1 && track.phi() < extraphicut2) || track.phi() <= extraphicut3 || track.phi() >= extraphicut4)) {
+    if (applyExtraPhiCut && ((track.phi() > extraphicut1 && track.phi() < extraphicut2) || track.phi() <= extraphicut3 || track.phi() >= extraphicut4)) {
       return false;
     }
     return true;
@@ -445,7 +459,7 @@ struct PtmultCorr {
   template <typename CheckGenTrack>
   bool isGenChargedTrackSelected(CheckGenTrack const& track)
   {
-    if (!track.producedByGenerator()) {
+    if (track.pt() < cfgPtCutMin || track.pt() > cfgPtCutMax) {
       return false;
     }
     auto pdgTrack = pdg->GetParticle(track.pdgCode());
@@ -458,7 +472,7 @@ struct PtmultCorr {
     if (std::abs(track.eta()) >= etaRange) {
       return false;
     }
-    if (isApplyExtraPhiCut && ((track.phi() > extraphicut1 && track.phi() < extraphicut2) || track.phi() <= extraphicut3 || track.phi() >= extraphicut4)) {
+    if (applyExtraPhiCut && ((track.phi() > extraphicut1 && track.phi() < extraphicut2) || track.phi() <= extraphicut3 || track.phi() >= extraphicut4)) {
       return false;
     }
     return true;
@@ -466,6 +480,12 @@ struct PtmultCorr {
 
   void processDataPbPb(ColDataTablePbPb::iterator const& cols, TrackDataTable const& tracks)
   {
+    if (requireGoodRct) {
+      histos.fill(HIST("RCTSel"), 1); // all events
+      if (!rctChecker(cols))
+        return;
+      histos.fill(HIST("RCTSel"), 2); // passed RCT
+    }
     if (!isEventSelected(cols)) {
       return;
     }
@@ -488,6 +508,12 @@ struct PtmultCorr {
 
   void processDatapp(ColDataTablepp::iterator const& cols, TrackDataTable const& tracks)
   {
+    if (requireGoodRct) {
+      histos.fill(HIST("RCTSel"), 1); // all events
+      if (!rctChecker(cols))
+        return;
+      histos.fill(HIST("RCTSel"), 2); // passed RCT
+    }
     if (!isEventSelected(cols)) {
       return;
     }
@@ -508,15 +534,25 @@ struct PtmultCorr {
 
   void processMCeffPbPb(ColMCTrueTable::iterator const& mcCollision, ColMCRecTablePbPb const& RecCols, TrackMCTrueTable const& GenParticles, TrackMCRecTable const& RecTracks)
   {
-    auto gencent = -999;
+    float gencent = -999.f;
     bool atLeastOne = false;
+    int bestCollisionIndex = -1;
+    int biggestNContribs = -1;
     for (const auto& RecCol : RecCols) {
+      if (biggestNContribs < RecCol.numContrib()) {
+        biggestNContribs = RecCol.numContrib();
+        bestCollisionIndex = RecCol.globalIndex();
+      }
+    }
+    for (const auto& RecCol : RecCols) {
+
       if (!isEventSelected(RecCol)) {
         continue;
       }
-      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
+
+      if (RecCol.globalIndex() != bestCollisionIndex)
         continue;
-      }
+
       atLeastOne = true;
       gencent = RecCol.centFT0C();
     }
@@ -556,7 +592,7 @@ struct PtmultCorr {
       histos.fill(HIST("hPbPbGenMCdndpt"), mcCollision.posZ(), gencent, particle.pt(), particle.phi());
       if (atLeastOne) {
         histos.fill(HIST("hPbPbGenMCAssoRecdndpt"), mcCollision.posZ(), gencent, particle.pt(), particle.phi(), static_cast<double>(kGenAll), kNoGenpTVar);
-        if (particle.pt() < KminPtCut) {
+        if (particle.pt() < cfgPtCutMin) {
           histos.fill(HIST("hPbPbGenMCAssoRecdndpt"), mcCollision.posZ(), gencent, particle.pt(), particle.phi(), static_cast<double>(kGenAll), kGenpTup, -10.0 * particle.pt() + 2);
           histos.fill(HIST("hPbPbGenMCAssoRecdndpt"), mcCollision.posZ(), gencent, particle.pt(), particle.phi(), static_cast<double>(kGenAll), kGenpTdown, 5.0 * particle.pt() + 0.5);
         } else {
@@ -583,12 +619,14 @@ struct PtmultCorr {
     } // track (mcgen) loop
 
     for (const auto& RecCol : RecCols) {
+
       if (!isEventSelected(RecCol)) {
         continue;
       }
-      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
+
+      if (RecCol.globalIndex() != bestCollisionIndex)
         continue;
-      }
+
       histos.fill(HIST("hPbPbRecMCvtxz"), RecCol.posZ());
       histos.fill(HIST("hPbPbRecMCcent"), RecCol.centFT0C());
       histos.fill(HIST("hPbPbRecMCvtxzcent"), RecCol.posZ(), RecCol.centFT0C());
@@ -652,13 +690,23 @@ struct PtmultCorr {
   void processMCeffpp(ColMCTrueTable::iterator const& mcCollision, ColMCRecTablepp const& RecCols, TrackMCTrueTable const& GenParticles, TrackMCRecTable const& RecTracks)
   {
     bool atLeastOne = false;
+    int bestCollisionIndex = -1;
+    int biggestNContribs = -1;
     for (const auto& RecCol : RecCols) {
+      if (biggestNContribs < RecCol.numContrib()) {
+        biggestNContribs = RecCol.numContrib();
+        bestCollisionIndex = RecCol.globalIndex();
+      }
+    }
+    for (const auto& RecCol : RecCols) {
+
       if (!isEventSelected(RecCol)) {
         continue;
       }
-      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
+
+      if (RecCol.globalIndex() != bestCollisionIndex)
         continue;
-      }
+
       atLeastOne = true;
     }
     histos.fill(HIST("hppGenMCvtxz"), mcCollision.posZ());
@@ -695,7 +743,7 @@ struct PtmultCorr {
       histos.fill(HIST("hppGenMCdndpt"), mcCollision.posZ(), particle.pt(), particle.phi());
       if (atLeastOne) {
         histos.fill(HIST("hppGenMCAssoRecdndpt"), mcCollision.posZ(), particle.pt(), particle.phi(), static_cast<double>(kGenAll), kNoGenpTVar);
-        if (particle.pt() < KminPtCut) {
+        if (particle.pt() < cfgPtCutMin) {
           histos.fill(HIST("hppGenMCAssoRecdndpt"), mcCollision.posZ(), particle.pt(), particle.phi(), static_cast<double>(kGenAll), kGenpTup, -10.0 * particle.pt() + 2);
           histos.fill(HIST("hppGenMCAssoRecdndpt"), mcCollision.posZ(), particle.pt(), particle.phi(), static_cast<double>(kGenAll), kGenpTdown, 5.0 * particle.pt() + 0.5);
         } else {
@@ -722,12 +770,14 @@ struct PtmultCorr {
     } // track (mcgen) loop
 
     for (const auto& RecCol : RecCols) {
+
       if (!isEventSelected(RecCol)) {
         continue;
       }
-      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
+
+      if (RecCol.globalIndex() != bestCollisionIndex)
         continue;
-      }
+
       histos.fill(HIST("hppRecMCvtxz"), RecCol.posZ());
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
       std::vector<int> mclabels;
@@ -784,37 +834,87 @@ struct PtmultCorr {
     } // collision loop
   }
 
-  void processEvtLossSigLossMCpp(ColMCTrueTable::iterator const& mcCollision, ColMCRecTablepp const& RecCols, TrackMCTrueTable const& GenParticles)
+  void processEvtLossSigLossMCpp(ColMCTrueTable::iterator const& /*mcCollision*/, ColMCRecTablepp const& RecCols, TrackMCTrueTable const& GenParticles)
   {
-    if (isApplyInelgt0 && !mcCollision.isInelGt0()) {
-      return;
+
+    // ── Count generated Nch in |eta| < etaRange for event loss ──────────────
+    int nChMC = 0;
+    for (const auto& particle : GenParticles) {
+      if (!particle.isPhysicalPrimary())
+        continue;
+      auto pdgParticle = pdg->GetParticle(particle.pdgCode());
+      if (!pdgParticle)
+        continue;
+      if (std::abs(pdgParticle->Charge()) < KminCharge)
+        continue;
+      if (std::abs(particle.eta()) < etaRange)
+        nChMC++;
     }
-    if (std::abs(mcCollision.posZ()) >= vtxRange) {
-      return;
-    }
-    bool atLeastOne = false;
+
     for (const auto& RecCol : RecCols) {
-      if (!isEventSelected(RecCol)) {
+      if (!RecCol.has_foundBC())
         continue;
-      }
-      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
+      if (!RecCol.has_foundFT0())
         continue;
-      }
-      atLeastOne = true;
+      if (!RecCol.selection_bit(o2::aod::evsel::kIsTriggerTVX))
+        continue;
+      if (!RecCol.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
+        continue;
+      if (!RecCol.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
+        continue;
+      if (std::fabs(RecCol.posZ()) > vtxRange)
+        continue;
+      if (isGoodZvtxFT0vsPV &&
+          !RecCol.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+        continue;
+      if (isSameBunchPileup &&
+          !RecCol.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+        continue;
+
+      histos.fill(HIST("hNch_AllRecoEvt"), nChMC); // denominator for event splitting
     }
-    // All generated events
+
+    // ── Find best collision, apply full selection ────────────────────────────
+    // isEventSelected() first, bestCollisionIndex filter second
+    // matches processMCeffpp cut order
+    bool atLeastOne = false;
+    int bestCollisionIndex = -1;
+    int biggestNContribs = -1;
+    for (const auto& RecCol : RecCols) {
+      if (biggestNContribs < RecCol.numContrib()) {
+        biggestNContribs = RecCol.numContrib();
+        bestCollisionIndex = RecCol.globalIndex();
+      }
+    }
+    for (const auto& RecCol : RecCols) {
+      if (!isEventSelected(RecCol))
+        continue;
+
+      if (RecCol.globalIndex() != bestCollisionIndex)
+        continue;
+      atLeastOne = true;
+      histos.fill(HIST("hNch_WRecoEvtWSelCri"), nChMC); // numerator for event splitting
+    }
+
+    // ── Event loss histograms ────────────────────────────────────────────────
     histos.fill(HIST("MCEventHist"), 1);
+    histos.fill(HIST("hNchMC_AllGen"), nChMC); // denominator for event loss
+
     if (atLeastOne) {
       histos.fill(HIST("MCEventHist"), 2);
+      histos.fill(HIST("hNchMC_WithRecoEvt"), nChMC); // numerator for event loss
     }
+
+    // ── Signal loss particle loop ────────────────────────────────────────────
     for (const auto& particle : GenParticles) {
-      if (!isGenTrackSelected(particle)) {
+      if (!isGenTrackSelected(particle))
         continue;
-      }
-      // All generated particles
+
+      histos.fill(HIST("hPtVsNchMC_AllGen"), particle.pt(), nChMC); // denominator: all generated events
       histos.fill(HIST("hgenptBeforeEvtSel"), particle.pt());
+
       if (atLeastOne) {
-        // All generated particles with at least one reconstructed collision (signal loss estimation)
+        histos.fill(HIST("hPtVsNchMC_WithRecoEvt"), particle.pt(), nChMC); // numerator: ≥1 reco collision passing selection
         histos.fill(HIST("hgenptAfterEvtSel"), particle.pt());
       }
     }
@@ -822,40 +922,92 @@ struct PtmultCorr {
 
   void processEvtLossSigLossMCPbPb(ColMCTrueTable::iterator const& mcCollision, ColMCRecTablePbPb const& RecCols, TrackMCTrueTable const& GenParticles)
   {
-    if (isApplyInelgt0 && !mcCollision.isInelGt0()) {
-      return;
+    // ── Count generated Nch in |eta| < etaRange for event loss ──────────────
+    int nChMC = 0;
+    for (const auto& particle : GenParticles) {
+      if (!particle.isPhysicalPrimary())
+        continue;
+      auto pdgParticle = pdg->GetParticle(particle.pdgCode());
+      if (!pdgParticle)
+        continue;
+      if (std::abs(pdgParticle->Charge()) < KminCharge)
+        continue;
+      if (std::abs(particle.eta()) < etaRange)
+        nChMC++;
     }
-    if (std::abs(mcCollision.posZ()) >= vtxRange) {
-      return;
-    }
-    bool atLeastOne = false;
-    auto centrality = -999.;
+
+    // ── Event splitting denominator ──────────────────────────────────────────
+
     for (const auto& RecCol : RecCols) {
-      if (!isEventSelected(RecCol)) {
+      if (!RecCol.has_foundBC())
         continue;
-      }
-      if (RecCol.globalIndex() != mcCollision.bestCollisionIndex()) {
+      if (!RecCol.has_foundFT0())
         continue;
-      }
-      centrality = RecCol.centFT0C();
-      atLeastOne = true;
+      if (!RecCol.selection_bit(o2::aod::evsel::kIsTriggerTVX))
+        continue;
+      if (!RecCol.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
+        continue;
+      if (!RecCol.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
+        continue;
+      if (std::fabs(RecCol.posZ()) > vtxRange)
+        continue;
+      if (isGoodZvtxFT0vsPV &&
+          !RecCol.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+        continue;
+      if (isSameBunchPileup &&
+          !RecCol.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+        continue;
+
+      histos.fill(HIST("hCent_AllRecoEvt"), RecCol.centFT0C()); // denominator for event splitting
     }
-    // All generated events
+
+    // ── Find best collision, apply full selection ────────────────────────────
+    // isEventSelected() first, bestCollisionIndex filter second
+    // matches processMCeffPbPb cut order
+    bool atLeastOne = false;
+    int bestCollisionIndex = -1;
+    int biggestNContribs = -1;
+    for (const auto& RecCol : RecCols) {
+      if (biggestNContribs < RecCol.numContrib()) {
+        biggestNContribs = RecCol.numContrib();
+        bestCollisionIndex = RecCol.globalIndex();
+      }
+    }
+    auto centrality = -999.f;
+    for (const auto& RecCol : RecCols) {
+      if (!isEventSelected(RecCol))
+        continue;
+
+      if (RecCol.globalIndex() != bestCollisionIndex)
+        continue;
+      atLeastOne = true;
+      centrality = RecCol.centFT0C();
+      histos.fill(HIST("hCent_WRecoEvtWSelCri"), RecCol.centFT0C()); // numerator for event splitting
+    }
+
+    // ── Event loss histograms ────────────────────────────────────────────────
     histos.fill(HIST("MCEventHist"), 1);
     histos.fill(HIST("hImpactParameterGen"), mcCollision.impactParameter());
+    histos.fill(HIST("hNchMC_AllGen"), nChMC); // denominator for event loss
+
     if (atLeastOne) {
       histos.fill(HIST("MCEventHist"), 2);
       histos.fill(HIST("hImpactParameterRec"), mcCollision.impactParameter());
       histos.fill(HIST("hImpactParvsCentrRec"), centrality, mcCollision.impactParameter());
+      histos.fill(HIST("hNchMC_WithRecoEvt"), nChMC);                 // numerator for event loss
+      histos.fill(HIST("hNchVsCent_WithRecoEvt"), centrality, nChMC); // CO map
     }
+
+    // ── Signal loss particle loop ────────────────────────────────────────────
     for (const auto& particle : GenParticles) {
-      if (!isGenTrackSelected(particle)) {
+      if (!isGenTrackSelected(particle))
         continue;
-      }
-      // All generated particles
+
+      histos.fill(HIST("hPtVsNchMC_AllGen"), particle.pt(), nChMC); // denominator: all generated events
       histos.fill(HIST("hgenptBeforeEvtSelPbPb"), particle.pt(), mcCollision.impactParameter());
+
       if (atLeastOne) {
-        // All generated particles with at least one reconstructed collision (signal loss estimation)
+        histos.fill(HIST("hPtVsNchMC_WithRecoEvt"), particle.pt(), nChMC); // numerator: ≥1 reco collision passing selection
         histos.fill(HIST("hgenptAfterEvtSelPbPb"), particle.pt(), mcCollision.impactParameter());
       }
     }

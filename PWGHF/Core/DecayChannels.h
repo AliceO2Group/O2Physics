@@ -92,8 +92,10 @@ enum DecayChannelMain : HfDecayChannel {
   XicToPKPi = 21,  // p K− π+
   XicToPKK = 22,   // p K− K+
   XicToSPiPi = 23, // Σ+ π− π+
+  // cd+
+  CDeuteronToDeKPi = 24, // de K− π+
   //
-  NChannelsMain = XicToSPiPi // last channel
+  NChannelsMain = CDeuteronToDeKPi // last channel
 };
 /// @brief 3-prong candidates: resonant channels
 enum DecayChannelResonant : HfDecayChannel {
@@ -131,8 +133,11 @@ enum DecayChannelResonant : HfDecayChannel {
   // Ξc+
   XicToPKstar0 = 27, // p anti-K*0(892)
   XicToPPhi = 28,    // p φ
-  //
-  NChannelsResonant = XicToPPhi // last channel
+  // cd+
+  CDeuteronToDeKstar0 = 30,
+  CDeuteronToNeDeltaplusK = 31,
+  CDeuteronToNeL1520Pi = 32,
+  NChannelsResonant = CDeuteronToNeL1520Pi // last channel
 };
 } // namespace hf_cand_3prong
 

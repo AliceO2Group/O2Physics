@@ -96,7 +96,7 @@ struct FemtoProducerDerivedToDerived {
     v0Builder.init(confV0Builder);
     kinkBuilder.init(confKinkBuilder);
 
-    if ((doprocessTracks + doprocessTracksLambdas + doprocessTracksK0shorts + doprocessTracksSigma + doprocessTracksSigmaPlus) > 1) {
+    if ((static_cast<int>(doprocessTracks) + static_cast<int>(doprocessTracksLambdas) + static_cast<int>(doprocessTracksK0shorts) + static_cast<int>(doprocessTracksSigma) + static_cast<int>(doprocessTracksSigmaPlus)) > 1) {
       LOG(fatal) << "Only one proccess function can be activated";
     }
   }
@@ -167,8 +167,8 @@ struct FemtoProducerDerivedToDerived {
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlus, "Process sigmaPlus and tracks", false);
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
-  o2::framework::WorkflowSpec workflow{adaptAnalysisTask<FemtoProducerDerivedToDerived>(cfgc)};
+  o2::framework::WorkflowSpec workflow{adaptAnalysisTask<FemtoProducerDerivedToDerived>(context)};
   return workflow;
 }

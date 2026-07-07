@@ -18,7 +18,6 @@
 #include <Framework/DataTypes.h>
 #include <Framework/Logger.h>
 
-#include <algorithm>
 #include <cstdint>
 #include <functional>
 #include <set>
@@ -27,12 +26,11 @@
 
 bool TrackSelection::FulfillsITSHitRequirements(uint8_t itsClusterMap) const
 {
-  constexpr uint8_t bit = 1;
-  for (auto& itsRequirement : mRequiredITSHits) {
-    auto hits = std::count_if(itsRequirement.second.begin(), itsRequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (bit << requiredLayer); });
-    if ((itsRequirement.first == -1) && (hits > 0)) {
+  for (const auto& [minHits, layerMask] : mRequiredITSHits) {
+    int hits = __builtin_popcount(itsClusterMap & layerMask);
+    if ((minHits == -1) && (hits > 0)) {
       return false; // no hits were required in specified layers
-    } else if (hits < itsRequirement.first) {
+    } else if (hits < minHits) {
       return false; // not enough hits found in specified layers
     }
   }
@@ -128,12 +126,20 @@ void TrackSelection::SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut)
 void TrackSelection::SetRequireHitsInITSLayers(int8_t minNRequiredHits, std::set<uint8_t> requiredLayers)
 {
   // layer 0 corresponds to the the innermost ITS layer
-  mRequiredITSHits.push_back(std::make_pair(minNRequiredHits, requiredLayers));
+  uint8_t mask = 0;
+  for (const auto& layer : requiredLayers) {
+    mask |= (1u << layer);
+  }
+  mRequiredITSHits.push_back(std::make_pair(minNRequiredHits, mask));
   LOG(info) << "Track selection, set require hits in ITS layers: " << static_cast<int>(minNRequiredHits);
 }
 void TrackSelection::SetRequireNoHitsInITSLayers(std::set<uint8_t> excludedLayers)
 {
-  mRequiredITSHits.push_back(std::make_pair(-1, excludedLayers));
+  uint8_t mask = 0;
+  for (const auto& layer : excludedLayers) {
+    mask |= (1u << layer);
+  }
+  mRequiredITSHits.push_back(std::make_pair(-1, mask));
   LOG(info) << "Track selection, set require no hits in ITS layers";
 }
 

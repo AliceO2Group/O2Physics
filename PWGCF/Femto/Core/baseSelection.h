@@ -257,7 +257,7 @@ class BaseSelection
 
   /// \brief Check whether all required and optional cuts are passed.
   /// \return True if all minimal cuts pass and, if optional cuts are present, at least one of them passes.
-  bool passesAllRequiredSelections() const
+  [[nodiscard]] bool passesAllRequiredSelections() const
   {
     if (mHasMinimalSelection && !mHasOptionalSelection) {
       return mPassesMinimalSelections;
@@ -275,14 +275,14 @@ class BaseSelection
   /// \brief Check whether the optional selection for a specific observable is passed.
   /// \param observableIndex Index of the observable.
   /// \return True if at least one optional selection for this observable is fulfilled.
-  bool passesOptionalSelection(int observableIndex) const
+  [[nodiscard]] bool passesOptionalSelection(int observableIndex) const
   {
     return mSelectionContainers.at(observableIndex).passesAsOptionalCut();
   }
 
   /// \brief Assemble the global selection bitmask from all individual observable selections.
   /// \tparam HistName Name of the histogram used to track selection statistics.
-  template <const char* HistName>
+  template <auto& HistName>
   void assembleBitmask()
   {
     mHistRegistry->fill(HIST(HistName), mNSelection);
@@ -391,7 +391,7 @@ class BaseSelection
   /// \brief Initialize histograms and set bitmask offsets for all configured observables.
   /// \tparam HistName Name of the histogram to create in the registry.
   /// \param registry Pointer to the histogram registry.
-  template <const char* HistName>
+  template <auto& HistName>
   void setupContainers(o2::framework::HistogramRegistry* registry)
   {
     mHistRegistry = registry;
