@@ -1500,19 +1500,19 @@ class VarManager : public TObject
   {
     fgCalibs[calib] = obj;
     // Check whether all the needed objects for TPC postcalibration are available
-    if (fgCalibs.find(kTPCElectronMean) != fgCalibs.end() && fgCalibs.find(kTPCElectronSigma) != fgCalibs.end()) {
+    if (fgCalibs.contains(kTPCElectronMean) && fgCalibs.contains(kTPCElectronSigma)) {
       fgRunTPCPostCalibration[0] = true;
       fgUsedVars[kTPCnSigmaEl_Corr] = true;
     }
-    if (fgCalibs.find(kTPCPionMean) != fgCalibs.end() && fgCalibs.find(kTPCPionSigma) != fgCalibs.end()) {
+    if (fgCalibs.contains(kTPCPionMean) && fgCalibs.contains(kTPCPionSigma)) {
       fgRunTPCPostCalibration[1] = true;
       fgUsedVars[kTPCnSigmaPi_Corr] = true;
     }
-    if (fgCalibs.find(kTPCKaonMean) != fgCalibs.end() && fgCalibs.find(kTPCKaonSigma) != fgCalibs.end()) {
+    if (fgCalibs.contains(kTPCKaonMean) && fgCalibs.contains(kTPCKaonSigma)) {
       fgRunTPCPostCalibration[2] = true;
       fgUsedVars[kTPCnSigmaKa_Corr] = true;
     }
-    if (fgCalibs.find(kTPCProtonMean) != fgCalibs.end() && fgCalibs.find(kTPCProtonSigma) != fgCalibs.end()) {
+    if (fgCalibs.contains(kTPCProtonMean) && fgCalibs.contains(kTPCProtonSigma)) {
       fgRunTPCPostCalibration[3] = true;
       fgUsedVars[kTPCnSigmaPr_Corr] = true;
     }
