@@ -1657,9 +1657,9 @@ KFPTrack VarManager::createKFPTrackFromTrack(const T& track)
                                      track.cSnpSnp(), track.cTglY(), track.cTglZ(), track.cTglSnp(), track.cTglTgl(),
                                      track.c1PtY(), track.c1PtZ(), track.c1PtSnp(), track.c1PtTgl(), track.c1Pt21Pt2()};
   o2::track::TrackParametrizationWithError trackparCov{track.x(), track.alpha(), std::move(trackpars), std::move(trackcovs)};
-  std::array<float, 3> trkpos_par;
-  std::array<float, 3> trkmom_par;
-  std::array<float, 21> trk_cov;
+  std::array<float, 3> trkpos_par{};
+  std::array<float, 3> trkmom_par{};
+  std::array<float, 21> trk_cov{};
   trackparCov.getXYZGlo(trkpos_par);
   trackparCov.getPxPyPzGlo(trkmom_par);
   trackparCov.getCovXYZPxPyPzGlo(trk_cov);
@@ -1683,7 +1683,7 @@ KFPTrack VarManager::createKFPFwdTrackFromFwdTrack(const T& muon)
 {
   o2::track::TrackParCovFwd trackparCov = FwdToTrackPar(muon, muon);
 
-  std::array<float, 21> trk_cov;
+  std::array<float, 21> trk_cov{};
   trackparCov.getCovXYZPxPyPzGlo(trk_cov);
   double trkpar_KF[6] = {trackparCov.getX(), trackparCov.getY(), trackparCov.getZ(),
                          trackparCov.getPx(), trackparCov.getPy(), trackparCov.getPz()};
@@ -5558,7 +5558,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
     Vec3D secondaryVertex;
 
     if constexpr (eventHasVtxCov) {
-      std::array<float, 6> covMatrixPCA;
+      std::array<float, 6> covMatrixPCA{};
       o2::dataformats::DCA impactParameter0;
       o2::dataformats::DCA impactParameter1;
 
@@ -6722,7 +6722,7 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
       return;
     } else {
       Vec3D secondaryVertex;
-      std::array<float, 6> covMatrixPCA;
+      std::array<float, 6> covMatrixPCA{};
       secondaryVertex = fgFitterFourProngBarrel.getPCACandidate();
       covMatrixPCA = fgFitterFourProngBarrel.calcPCACovMatrixFlat();
 
