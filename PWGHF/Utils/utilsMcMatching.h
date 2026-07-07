@@ -160,9 +160,9 @@ static const std::unordered_map<DecayChannelMain, const std::vector<int>> daught
   {DecayChannelMain::CDeuteronToDeKPi, {+o2::constants::physics::Pdg::kDeuteron, +PDG_t::kKMinus, +PDG_t::kPiPlus}}};
 
 /// resonances in c-deuteron decay are not stored in the particle stack for c-deuteron, but tagged with specific status codes
-static const std::array<int, 2> statusCodeCDeuteronToDeKstar0{-85, -95};
-static const std::array<int, 2> statusCodeCDeuteronToNeDeltaplusK{-86, -96};
-static const std::array<int, 2> statusCodeCDeuteronToNeL1520Pi{-87, -97};
+static constexpr std::array<int, 2> statusCodeCDeuteronToDeKstar0{-85, -95};
+static constexpr std::array<int, 2> statusCodeCDeuteronToNeDeltaplusK{-86, -96};
+static constexpr std::array<int, 2> statusCodeCDeuteronToNeL1520Pi{-87, -97};
 
 /// Returns a map of the possible final states for a specific 3-prong particle specie
 /// \param pdgMother PDG code of the mother particle
