@@ -34,3 +34,8 @@ o2physics_add_dpl_workflow(collisionselextras-converter-v003
   SOURCES UDCollisionSelExtrasV003Converter.cxx
   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
   COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(fit-bits-converter
+  SOURCES UDFITbitConverter.cxx
+  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+  COMPONENT_NAME Analysis)	

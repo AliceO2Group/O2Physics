@@ -436,7 +436,7 @@ DECLARE_SOA_TABLE(UDCollisionFITBits_000, "AOD", "UDCOLLFITBITS",
                   udcollfitbits::Thr2W3  /// 2 MIP thresholds for FT0C ch 97 - 112 & FV0 0 - 47
 );
 
-DECLARE_SOA_TABLE_VERSIONED(UDCollisionFITBits_001, "AOD", "UDCOLLFITBITS", 1
+DECLARE_SOA_TABLE_VERSIONED(UDCollisionFITBits_001, "AOD", "UDCOLLFITBITS", 1,
 														o2::soa::Index<>,
 														udcollfitbits::UDCollisionId, /// Link to the UDCOLLISION table  <---- EXTRA
 														udcollfitbits::Thr1W0,        /// 1 MIP thresholds for FT0A ch 0 - ch 63
