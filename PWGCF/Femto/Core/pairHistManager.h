@@ -385,8 +385,8 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
     {kTrueMinvVsMinv, {(conf).massInv, (conf).massInv}},           \
     {kTrueMultVsMult, {(conf).multiplicity, (conf).multiplicity}}, \
     {kTrueCentVsCent, {(conf).centrality, (conf).centrality}},     \
-    {kTrueQoutVsQout, {conf.qout, conf.qout}},                 \
-    {kTrueQsideVsQside, {conf.qside, conf.qside}},             \
+    {kTrueQoutVsQout, {conf.qout, conf.qout}},                     \
+    {kTrueQsideVsQside, {conf.qside, conf.qside}},                 \
     {kTrueQlongVsQlong, {conf.qlong, conf.qlong}},
 
 // pure mc-truth pair (no reco counterpart) — reuses the same analysis binning,
