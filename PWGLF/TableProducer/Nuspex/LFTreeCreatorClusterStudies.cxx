@@ -14,6 +14,7 @@
 //
 // Author: Giorgio Alberto Lucia
 
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGLF/DataModel/LFClusterStudiesTable.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -216,6 +217,7 @@ struct LfTreeCreatorClusterStudies {
   Configurable<float> cascsetting_massWindowXi{"cascsetting_massWindowXi", 0.01f, "Mass window for the Xi"};
   Configurable<float> cascsetting_nsigmatpc{"cascsetting_nsigmaTPC", 3.f, "Number of sigmas for the TPC PID"};
 
+  Configurable<bool> electronsetting_fromPhotonConversion{"electronsetting_fromPhotonConversion", false, "Flag to indicate if the electron is from photon conversion"};
   Configurable<float> electronsetting_conversion_rmin{"electron_conversion_rmin", 1.76f, "Minimum radius for the photon conversion (cm)"};
   Configurable<float> electronsetting_conversion_rmax{"electron_conversion_rmax", 19.77f, "Maximum radius for the photon conversion (cm)"};
   Configurable<float> electronsetting_maxDcaxy{"electronsetting_maxDcaxy", 0.1f, "Maximum value for the DCAxy"};
@@ -227,6 +229,16 @@ struct LfTreeCreatorClusterStudies {
   Configurable<float> electronsetting_maxNsigmatpcPr{"electronsetting_maxNsigmaTPCPr", 2.f, "Maximum number for the number of sigmas for p rejection for the TPC PID for electrons"};
   Configurable<float> electronsetting_maxNsigmatofEl{"electronsetting_maxNsigmaTOFEl", 4.f, "Minimum value for the number of sigmas for the TPC PID for electrons"};
   Configurable<float> electronsetting_minPt{"electronsetting_minPt", 0.f, "Minimum pT accepted for electrons"};
+  Configurable<float> electronsetting_dcaV0daughters{"electronsetting_dcaV0daughters", 1.f, "DCA between the V0 daughters"};
+  Configurable<float> electronsetting_dcaMinV0DaughterToPv{"electronsetting_dcaMinV0DaughterToPv", 0.06f, "DCA of the daughters to the primary vertex"};
+  Configurable<float> electronsetting_radiusV0{"electronsetting_radiusV0", 0.5f, "Maximum radius of the V0 accepted"};
+  Configurable<float> electronsetting_cosPA{"electronsetting_cosPA", 0.98f, "Cosine of the pointing angle of the V0"};
+  Configurable<float> electronsetting_maxMassPi0{"electronsetting_maxMassPi0", o2::constants::physics::MassPi0, "Maximum mass for the Pi0"};
+  Configurable<float> electronsetting_minMassPi0{"electronsetting_minMassPi0", 0.08f, "Minimum mass for the Pi0"};
+  Configurable<float> electronsetting_maxPhiv{"electronsetting_maxPhiv", 1.5708f, "Maximum value for the Phiv"};
+  Configurable<float> electronsetting_minPhiv{"electronsetting_minPhiv", 0.f, "Minimum value for the Phiv"};
+  Configurable<float> electronsetting_maxMassPhoton{"electronsetting_maxMassPhoton", 0.f, "Maximum mass for the Photon"};
+  Configurable<float> electronsetting_minMassPhoton{"electronsetting_minMassPhoton", 0.005f, "Minimum mass for the Photon"};
 
   Configurable<int> desetting_nClsIts{"desetting_nClsIts", 6, "Minimum number of ITS clusters"};
   Configurable<float> desetting_nsigmatpc{"desetting_nsigmaCutTPC", 2.f, "Number of sigmas for the TPC PID"};
@@ -338,6 +350,24 @@ struct LfTreeCreatorClusterStudies {
     if (v0.v0radius() < v0setting_radiusV0)
       return false;
     if (std::abs(v0.v0cosPA()) < v0setting_cosPA)
+      return false;
+
+    return true;
+  }
+
+  bool qualitySelectionPhotons(aod::V0Datas::iterator const& v0)
+  {
+    if (std::abs(v0.dcapostopv()) < electronsetting_dcaMinV0DaughterToPv)
+      return false;
+    if (std::abs(v0.dcanegtopv()) < electronsetting_dcaMinV0DaughterToPv)
+      return false;
+    if (std::abs(v0.dcaV0daughters()) > electronsetting_dcaV0daughters)
+      return false;
+    if (v0.v0radius() < electronsetting_radiusV0)
+      return false;
+    if (std::abs(v0.v0cosPA()) < electronsetting_cosPA)
+      return false;
+    if (v0.qtarm() > lambdasetting_qtAPcut)
       return false;
 
     return true;
@@ -673,7 +703,7 @@ struct LfTreeCreatorClusterStudies {
         std::abs(track.tpcNSigmaPr()) < electronsetting_maxNsigmatpcPr)
       return false;
 
-    if (electronsetting_maxNsigmatofEl != 0 &&
+    if (electronsetting_maxNsigmatofEl > 1e-7 &&
         std::abs(track.tofNSigmaEl()) < electronsetting_maxNsigmatofEl)
       return false;
 
@@ -816,9 +846,6 @@ struct LfTreeCreatorClusterStudies {
     const float massV0 = fillHistogramsV0(v0, posTrack, negTrack, v0Bitmask);
     candidatePos.massMother = massV0;
     candidateNeg.massMother = massV0;
-
-    if (!setting_fillV0)
-      return;
 
     if constexpr (isMC) { // MC
       if (!posTrack.has_mcParticle() || !negTrack.has_mcParticle())
@@ -1011,7 +1038,7 @@ struct LfTreeCreatorClusterStudies {
   }
 
   template <const bool isMC = false, typename Track>
-  void fillElectronTable(const Track& posTrack, const Track& negTrack)
+  void fillElectronTableFromPi0Dalitz(const Track& posTrack, const Track& negTrack)
   {
     m_hAnalysis.fill(HIST("e_selections"), ESelections::kENoCut);
     if (!qualityTrackSelection(posTrack) || !qualityTrackSelection(negTrack)) {
@@ -1033,9 +1060,13 @@ struct LfTreeCreatorClusterStudies {
                                                              std::array<float, 3>{posTrack.px(), posTrack.py(), posTrack.pz()},
                                                              std::array<float, 3>{negTrack.px(), negTrack.py(), negTrack.pz()}},
                                                            std::array<float, 2>{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron}));
+    float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(posTrack.px(), posTrack.py(), posTrack.pz(), negTrack.px(), negTrack.py(), negTrack.pz(), posTrack.sign(), negTrack.sign(), m_d_bz);
 
     m_hAnalysis.fill(HIST("massPi0WithBkg"), invariantMass);
-    if (invariantMass > o2::constants::physics::MassPi0) {
+    if (invariantMass > electronsetting_maxMassPi0 || invariantMass < electronsetting_minMassPi0) {
+      return;
+    }
+    if (phiv > electronsetting_maxPhiv || phiv < electronsetting_minPhiv) {
       return;
     }
     m_hAnalysis.fill(HIST("e_selections"), ESelections::kEPi0);
@@ -1043,7 +1074,6 @@ struct LfTreeCreatorClusterStudies {
     fillHistogramsParticle<PartID::el, isMC>(posTrack);
     fillHistogramsParticle<PartID::el, isMC>(negTrack);
 
-    // float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), m_d_bz);
     // float opangle = o2::aod::pwgem::dilepton::utils::pairutil::getOpeningAngle(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz());
 
     m_ClusterStudiesTable(
@@ -1098,6 +1128,81 @@ struct LfTreeCreatorClusterStudies {
     }
   }
 
+  template <const bool isMC = false, typename Tracks>
+  void fillElectronTableFromPhotonConversion(const std::array<float, 3>& /*pv*/, const aod::V0Datas::iterator& v0, const Tracks&)
+  {
+
+    m_hAnalysis.fill(HIST("v0_selections"), V0Selections::kV0NoCut);
+
+    const auto& posTrack = v0.template posTrack_as<Tracks>();
+    const auto& negTrack = v0.template negTrack_as<Tracks>();
+
+    if (!qualityTrackSelection(posTrack) || !qualityTrackSelection(negTrack))
+      return;
+    m_hAnalysis.fill(HIST("v0_selections"), V0Selections::kV0DaughterQuality);
+
+    if (!qualitySelectionPhotons(v0))
+      return;
+    m_hAnalysis.fill(HIST("v0_selections"), V0Selections::kV0Topology);
+
+    std::array<float, 3> momPos{v0.pxpos(), v0.pypos(), v0.pzpos()},
+      momNeg{v0.pxneg(), v0.pyneg(), v0.pzneg()};
+
+    m_hAnalysis.fill(HIST("armenteros_plot_before_selections"), v0.alpha(), v0.qtarm());
+
+    Candidate candidatePos(std::hypot(momPos[0], momPos[1], momPos[2]) * posTrack.sign(),
+                           RecoDecay::eta(momPos), RecoDecay::phi(momPos), posTrack.itsClusterSizes(),
+                           0, posTrack.tpcInnerParam() * posTrack.sign(), posTrack.pidForTracking(),
+                           -999.f, -999.f, -999.f, v0.v0cosPA(), -999.f, 0);
+    Candidate candidateNeg(std::hypot(momNeg[0], momNeg[1], momNeg[2]) * negTrack.sign(),
+                           RecoDecay::eta(momNeg), RecoDecay::phi(momNeg), negTrack.itsClusterSizes(),
+                           0, negTrack.tpcInnerParam() * negTrack.sign(), negTrack.pidForTracking(),
+                           -999.f, -999.f, -999.f, v0.v0cosPA(), -999.f, 0);
+
+    float invariantMass = std::sqrt(RecoDecay::m2<2>(std::array<std::array<float, 3>, 2>{
+                                                       std::array<float, 3>{posTrack.px(), posTrack.py(), posTrack.pz()},
+                                                       std::array<float, 3>{negTrack.px(), negTrack.py(), negTrack.pz()}},
+                                                     std::array<float, 2>{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron}));
+
+    if (invariantMass > electronsetting_maxMassPhoton || invariantMass < electronsetting_minMassPhoton) {
+      return;
+    }
+
+    if (!electronPidSelection(posTrack) || !electronPidSelection(negTrack))
+      return;
+    m_hAnalysis.fill(HIST("v0_selections"), V0Selections::kV0PID);
+
+    m_hAnalysis.fill(HIST("armenteros_plot_gamma"), v0.alpha(), v0.qtarm());
+    m_hAnalysis.fill(HIST("photon_radiusV0"), v0.v0radius());
+    candidatePos.massMother = invariantMass;
+    candidateNeg.massMother = invariantMass;
+
+    if constexpr (isMC) { // MC
+      if (!posTrack.has_mcParticle() || !negTrack.has_mcParticle())
+        return;
+
+      const auto& posMcParticle = posTrack.mcParticle();
+      const auto& negMcParticle = negTrack.mcParticle();
+
+      candidatePos.pdgCode = posMcParticle.pdgCode();
+      candidateNeg.pdgCode = negMcParticle.pdgCode();
+
+      if (candidatePos.pdgCode != PDG_t::kElectron || candidateNeg.pdgCode != PDG_t::kElectron)
+        return;
+      if (!posMcParticle.has_mothers() || !negMcParticle.has_mothers())
+        return;
+    }
+
+    fillHistogramsParticle<PartID::el, isMC>(posTrack);
+    fillHistogramsParticle<PartID::el, isMC>(negTrack);
+
+    fillTable<isMC>(candidatePos);
+    fillTable<isMC>(candidateNeg);
+
+    m_hAnalysis.fill(HIST("isPositive"), true);
+    m_hAnalysis.fill(HIST("isPositive"), false);
+  }
+
   // =========================================================================================================
 
   void processDataV0Casc(CollisionsCustom::iterator const& collision /*s*/, TracksFullIU const& tracks, aod::V0Datas const& v0s, aod::CascDatas const& cascades, aod::BCsWithTimestamps const&)
@@ -1122,9 +1227,27 @@ struct LfTreeCreatorClusterStudies {
   }
   PROCESS_SWITCH(LfTreeCreatorClusterStudies, processDataV0Casc, "process Data V0 and cascade", false);
 
+  void processDataElectronsFromPhotonConversion(CollisionsCustom::iterator const& collision /*s*/, TracksFullIU const& tracks, aod::V0Datas const& v0s, aod::BCsWithTimestamps const&)
+  {
+    if (!collisionSelection(collision)) {
+      return;
+    }
+
+    const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
+
+    m_hAnalysis.fill(HIST("zVtx"), collision.posZ());
+    std::array<float, 3> PV = {collision.posX(), collision.posY(), collision.posZ()};
+
+    for (const auto& v0 : v0s) {
+      fillElectronTableFromPhotonConversion</*isMC*/ false>(PV, v0, tracks);
+    }
+  }
+  PROCESS_SWITCH(LfTreeCreatorClusterStudies, processDataElectronsFromPhotonConversion, "process Data Electrons from Photon Conversion", false);
+
   Partition<TracksFullIU> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<TracksFullIU> negTracks = o2::aod::track::signed1Pt < 0.f;
-  void processDataElectrons(CollisionsCustom::iterator const& collision, TracksFullIU const& /*tracks*/, aod::BCsWithTimestamps const&)
+  void processDataElectronsFromDalitz(CollisionsCustom::iterator const& collision, TracksFullIU const& /*tracks*/, aod::BCsWithTimestamps const&)
   {
     if (!collisionSelection(collision)) {
       return;
@@ -1139,10 +1262,10 @@ struct LfTreeCreatorClusterStudies {
     const auto& negTracks_thisCollision = negTracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), m_cache);
 
     for (const auto& [posTrack, negTrack] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posTracks_thisCollision, negTracks_thisCollision))) {
-      fillElectronTable(posTrack, negTrack);
+      fillElectronTableFromPi0Dalitz(posTrack, negTrack);
     }
   }
-  PROCESS_SWITCH(LfTreeCreatorClusterStudies, processDataElectrons, "process Data Electrons", false);
+  PROCESS_SWITCH(LfTreeCreatorClusterStudies, processDataElectronsFromDalitz, "process Data Electrons from Dalitz", false);
 
   void processDataNuclei(CollisionsCustom::iterator const& collision, TracksFullIU const& tracks, aod::BCsWithTimestamps const&)
   {
@@ -1212,9 +1335,30 @@ struct LfTreeCreatorClusterStudies {
   }
   PROCESS_SWITCH(LfTreeCreatorClusterStudies, processMcV0Casc, "process Mc V0 and cascade", false);
 
+  void processMcElectronsFromPhotonConversion(CollisionsCustomMc::iterator const& collision /*s*/, TracksFullIUMc const& tracks, aod::V0Datas const& v0s, aod::BCsWithTimestamps const&, aod::McParticles const&, aod::McCollisions const&)
+  {
+    if (!collision.has_mcCollision()) {
+      return;
+    }
+    if (!collisionSelection(collision)) {
+      return;
+    }
+
+    const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
+
+    m_hAnalysis.fill(HIST("zVtx"), collision.posZ());
+    std::array<float, 3> PV = {collision.posX(), collision.posY(), collision.posZ()};
+
+    for (const auto& v0 : v0s) {
+      fillElectronTableFromPhotonConversion</*isMC*/ true>(PV, v0, tracks);
+    }
+  }
+  PROCESS_SWITCH(LfTreeCreatorClusterStudies, processMcElectronsFromPhotonConversion, "process Mc Electrons from Photon Conversion", false);
+
   Partition<TracksFullIUMc> posTracksMc = o2::aod::track::signed1Pt > 0.f;
   Partition<TracksFullIUMc> negTracksMc = o2::aod::track::signed1Pt < 0.f;
-  void processMcElectrons(CollisionsCustomMc::iterator const& collision, TracksFullIUMc const& /*tracks*/, aod::BCsWithTimestamps const&, aod::McParticles const&, aod::McCollisions const&)
+  void processMcElectronsFromDalitz(CollisionsCustomMc::iterator const& collision, TracksFullIUMc const& /*tracks*/, aod::BCsWithTimestamps const&, aod::McParticles const&, aod::McCollisions const&)
   {
     if (!collision.has_mcCollision()) {
       return;
@@ -1234,10 +1378,10 @@ struct LfTreeCreatorClusterStudies {
       if (!posTrack.has_mcParticle() || !negTrack.has_mcParticle())
         continue;
 
-      fillElectronTable</*isMC*/ true>(posTrack, negTrack);
+      fillElectronTableFromPi0Dalitz</*isMC*/ true>(posTrack, negTrack);
     }
   }
-  PROCESS_SWITCH(LfTreeCreatorClusterStudies, processMcElectrons, "process Mc Electrons", false);
+  PROCESS_SWITCH(LfTreeCreatorClusterStudies, processMcElectronsFromDalitz, "process Mc Electrons from Dalitz", false);
 
   void processMcNuclei(CollisionsCustomMc::iterator const& collision, TracksFullIUMc const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const&, aod::McCollisions const&)
   {
