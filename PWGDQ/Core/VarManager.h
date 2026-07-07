@@ -1746,7 +1746,7 @@ o2::dataformats::VertexBase VarManager::RecalculatePrimaryVertex(T const& track0
 
   o2::math_utils::Point3D<float> vtxXYZ(kVtx.Parameter(0), kVtx.Parameter(1), kVtx.Parameter(2));
   std::array<float, 6> vtxCov{kVtx.Covariance(0), kVtx.Covariance(1), kVtx.Covariance(2), kVtx.Covariance(3), kVtx.Covariance(4), kVtx.Covariance(5)};
-  o2::dataformats::VertexBase primaryVertexRec = {std::move(vtxXYZ), std::move(vtxCov)};
+  o2::dataformats::VertexBase primaryVertexRec = {vtxXYZ, vtxCov};
   return primaryVertexRec;
 }
 
@@ -4857,7 +4857,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       // This modifies track momenta!
       o2::math_utils::Point3D<float> vtxXYZ(collision.posX(), collision.posY(), collision.posZ());
       std::array<float, 6> vtxCov{collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()};
-      o2::dataformats::VertexBase primaryVertex = {std::move(vtxXYZ), std::move(vtxCov)};
+      o2::dataformats::VertexBase primaryVertex = {vtxXYZ, vtxCov};
       // auto primaryVertex = getPrimaryVertex(collision);
       auto covMatrixPV = primaryVertex.getCov();
 
@@ -5317,7 +5317,7 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
 
       o2::math_utils::Point3D<float> vtxXYZ(collision.posX(), collision.posY(), collision.posZ());
       std::array<float, 6> vtxCov{collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()};
-      o2::dataformats::VertexBase primaryVertex = {std::move(vtxXYZ), std::move(vtxCov)};
+      o2::dataformats::VertexBase primaryVertex = {vtxXYZ, vtxCov};
       auto covMatrixPV = primaryVertex.getCov();
 
       if (fgUsedVars[kVertexingChi2PCA]) {
@@ -5564,7 +5564,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
 
       o2::math_utils::Point3D<float> vtxXYZ(collision.posX(), collision.posY(), collision.posZ());
       std::array<float, 6> vtxCov{collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()};
-      o2::dataformats::VertexBase primaryVertex = {std::move(vtxXYZ), std::move(vtxCov)};
+      o2::dataformats::VertexBase primaryVertex = {vtxXYZ, vtxCov};
       auto covMatrixPV = primaryVertex.getCov();
 
       if constexpr ((candidateType == kBtoJpsiEEK || candidateType == kDstarToD0KPiPi) && trackHasCov) {
@@ -6728,7 +6728,7 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
 
       o2::math_utils::Point3D<float> vtxXYZ(collision.posX(), collision.posY(), collision.posZ());
       std::array<float, 6> vtxCov{collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()};
-      o2::dataformats::VertexBase primaryVertex = {std::move(vtxXYZ), std::move(vtxCov)};
+      o2::dataformats::VertexBase primaryVertex = {vtxXYZ, vtxCov};
       auto covMatrixPV = primaryVertex.getCov();
 
       double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
