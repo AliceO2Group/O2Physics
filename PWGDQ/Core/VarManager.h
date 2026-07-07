@@ -193,7 +193,6 @@ class VarManager : public TObject
     kMuonIsPropagated = 7  // whether the muon was propagated already
   };
 
- public:
   enum Variables {
     kNothing = -1,
     // Run wise variables
@@ -1556,7 +1555,6 @@ class VarManager : public TObject
     fgEOR = eor;
   }
 
- public:
   VarManager();
   ~VarManager() override;
 
