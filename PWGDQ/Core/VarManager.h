@@ -4458,6 +4458,26 @@ void VarManager::FillPairMEAcrossTFs(T const& t1, T const& t2, float* values)
   values[kEta] = v12.Eta();
   values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
   values[kRap] = -v12.Rapidity();
+
+  if (fgUsedVars[kCosThetaStarRandom] || fgUsedVars[kCosThetaStarFT0C]) {
+    ROOT::Math::Boost boostv12{v12.BoostToCM()};
+    ROOT::Math::XYZVectorF v_CM{(boostv12(v1).Vect()).Unit()};
+
+    if (fgUsedVars[kCosThetaStarRandom]) {
+      // Randomize the event plane angle to check the unpolarized contribution
+      ROOT::Math::XYZVector zaxisRandom = ROOT::Math::XYZVector(TMath::Cos(values[kRandomPsi2]), TMath::Sin(values[kRandomPsi2]), 0).Unit();
+      values[kCosThetaStarRandom] = v_CM.Dot(zaxisRandom);
+      values[kCos2ThetaStarRandom] = values[kCosThetaStarRandom] * values[kCosThetaStarRandom];
+    }
+
+    if (fgUsedVars[kCosThetaStarFT0C]) {
+      // event plane angle from FT0C
+      ROOT::Math::XYZVector zaxisFT0C = ROOT::Math::XYZVector(TMath::Cos(values[kPsi2C]), TMath::Sin(values[kPsi2C]), 0).Unit();
+      values[kCosThetaStarFT0C] = v_CM.Dot(zaxisFT0C);
+      values[kAbsCosThetaStarFT0C] = std::abs(values[kCosThetaStarFT0C]);
+      values[kCos2ThetaStarFT0C] = values[kCosThetaStarFT0C] * values[kCosThetaStarFT0C];
+    }
+  }
 }
 
 template <int pairType, typename T1, typename T2>
