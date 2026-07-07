@@ -2810,10 +2810,10 @@ void VarManager::FillTwoMixEventsCumulants(T const& h_v22ev1, T const& h_v24ev1,
     values = fgValues;
   }
 
-  int idx_v22ev1;
-  int idx_v24ev1;
-  int idx_v22ev2;
-  int idx_v24ev2;
+  int idx_v22ev1 = 0;
+  int idx_v24ev1 = 0;
+  int idx_v22ev2 = 0;
+  int idx_v24ev2 = 0;
 
   if (values[kTwoEvCentFT0C1] >= 0.) {
     if (t1.sign() < 0) {
@@ -3563,12 +3563,9 @@ template <int pairType, typename T, typename T1>
 void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* values, float Translow, float Transhigh, float Accweight)
 {
   // energy correlators
-  float MassHadron;
+  float MassHadron = o2::constants::physics::MassPionCharged;
   if constexpr (pairType == kJpsiHadronMass) {
     MassHadron = TMath::Sqrt(t1.e() * t1.e() - t1.p() * t1.p());
-  }
-  if constexpr (pairType == kJpsiPionMass) {
-    MassHadron = o2::constants::physics::MassPionCharged;
   }
   ROOT::Math::PtEtaPhiMVector v1(track.pt(), track.eta(), track.phi(), o2::constants::physics::MassJPsi);
   float deltaphi = RecoDecay::constrainAngle(track.phi() - t1.phi(), -o2::constants::math::PIHalf);
@@ -5246,13 +5243,10 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
     values = fgValues;
   }
 
-  float m1, m2, m3;
+  float m1 = o2::constants::physics::MassKaonCharged;
+  float m2 = o2::constants::physics::MassPionCharged;
+  float m3 = o2::constants::physics::MassPionCharged;
 
-  if (tripletType == kTripleCandidateToKPiPi) {
-    m1 = o2::constants::physics::MassKaonCharged;
-    m2 = o2::constants::physics::MassPionCharged;
-    m3 = o2::constants::physics::MassPionCharged;
-  }
   if (tripletType == kTripleCandidateToPKPi) {
     m1 = o2::constants::physics::MassProton;
     m2 = o2::constants::physics::MassKaonCharged;
@@ -5472,8 +5466,9 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
     values = fgValues;
   }
 
-  float mtrack;
-  float mlepton1, mlepton2;
+  float mtrack = o2::constants::physics::MassMuon;
+  float mlepton1 = o2::constants::physics::MassMuon;
+  float mlepton2 = o2::constants::physics::MassMuon;
 
   int procCode = 0;
   int procCodeJpsi = 0;
@@ -5481,9 +5476,6 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
   values[kUsedKF] = fgUsedKF;
   if (!fgUsedKF) {
     if constexpr ((candidateType == kBcToThreeMuons) && muonHasCov) {
-      mlepton1 = o2::constants::physics::MassMuon;
-      mlepton2 = o2::constants::physics::MassMuon;
-      mtrack = o2::constants::physics::MassMuon;
 
       o2::track::TrackParCovFwd pars1 = FwdToTrackPar(lepton1, lepton1);
       o2::track::TrackParCovFwd pars2 = FwdToTrackPar(lepton2, lepton2);
@@ -6482,12 +6474,9 @@ void VarManager::FillEnergyCorrelatorsUnfoldingTriple(T1 const& lepton1, T2 cons
       dileptonmass = dilepton.mass();
     }
 
-    float MassHadron;
+    float MassHadron = o2::constants::physics::MassPionCharged;
     if constexpr (pairType == kJpsiHadronMass) {
       MassHadron = TMath::Sqrt(t1.e() * t1.e() - t1.p() * t1.p());
-    }
-    if constexpr (pairType == kJpsiPionMass) {
-      MassHadron = o2::constants::physics::MassPionCharged;
     }
     ROOT::Math::PtEtaPhiMVector v1_gen(track.pt(), track.eta(), track.phi(), o2::constants::physics::MassJPsi);
     ROOT::Math::PtEtaPhiMVector v2_gen(t1.pt(), t1.eta(), t1.phi(), MassHadron);
@@ -6667,15 +6656,10 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
     values = fgValues;
   }
 
-  float mtrack1, mtrack2;
-  float mlepton1, mlepton2;
-
-  if constexpr (candidateType == kXtoJpsiPiPi || candidateType == kPsi2StoJpsiPiPi) {
-    mlepton1 = o2::constants::physics::MassElectron;
-    mlepton2 = o2::constants::physics::MassElectron;
-    mtrack1 = o2::constants::physics::MassPionCharged;
-    mtrack2 = o2::constants::physics::MassPionCharged;
-  }
+  float mlepton1 = o2::constants::physics::MassElectron;
+  float mlepton2 = o2::constants::physics::MassElectron;
+  float mtrack1 = o2::constants::physics::MassPionCharged;
+  float mtrack2 = o2::constants::physics::MassPionCharged;
 
   ROOT::Math::PtEtaPhiMVector v1(lepton1.pt(), lepton1.eta(), lepton1.phi(), mlepton1);
   ROOT::Math::PtEtaPhiMVector v2(lepton2.pt(), lepton2.eta(), lepton2.phi(), mlepton2);
