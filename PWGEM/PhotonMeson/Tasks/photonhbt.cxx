@@ -302,6 +302,13 @@ struct Photonhbt {
     Configurable<float> cfgMaxAsymmetry{"cfgMaxAsymmetry", -1.f, "max |p_{T, 1} - p_{T, 2}|/(p_{T, 1} + p_{T, 2}) asymmetry cut"};
   } ggpaircuts;
 
+  struct : ConfigurableGroup {
+    std::string prefix = "pairsep_group";
+    Configurable<bool> cfgDoPairSepQA{"cfgDoPairSepQA", true, "fill SE/ME same-sign leg separation histograms"};
+    Configurable<float> cfgUSigEta{"cfgUSigEta", 0.02f, "eta scale defining u (axis units only, NOT a cut)"};
+    Configurable<float> cfgUSigPhi{"cfgUSigPhi", 0.05f, "phi scale defining u (axis units only, NOT a cut)"};
+  } pairsep;
+
   EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
     std::string prefix = "eventcut_group";
@@ -588,6 +595,24 @@ struct Photonhbt {
     return o;
   }
 
+  struct PairSep {
+    float dEtaPP{0}, dPhiPP{0}, dEtaNN{0}, dPhiNN{0};
+    float u{999.f};
+  };
+  PairSep computePairSep(float etaP1, float phiP1, float etaN1, float phiN1,
+                         float etaP2, float phiP2, float etaN2, float phiN2) const
+  {
+    PairSep s;
+    s.dEtaPP = etaP1 - etaP2;
+    s.dPhiPP = RecoDecay::constrainAngle(phiP1 - phiP2, -o2::constants::math::PI);
+    s.dEtaNN = etaN1 - etaN2;
+    s.dPhiNN = RecoDecay::constrainAngle(phiN1 - phiN2, -o2::constants::math::PI);
+    const float sE = pairsep.cfgUSigEta.value, sP = pairsep.cfgUSigPhi.value;
+    s.u = std::min(std::hypot(s.dEtaPP / sE, s.dPhiPP / sP),
+                   std::hypot(s.dEtaNN / sE, s.dPhiNN / sP));
+    return s;
+  }
+
   struct TruthGamma {
     int id = -1, posId = -1, negId = -1;
     float eta = 0.f, phi = 0.f, pt = 0.f;
@@ -642,6 +667,19 @@ struct Photonhbt {
     fRegistry.fill(HIST(base) + HIST("hQinvVsCent"), cent, obs.qinv);
     fRegistry.fill(HIST(base) + HIST("hQinvVsOccupancy"), occupancy, obs.qinv);
     fRegistry.fill(HIST(base) + HIST("hSparseDeltaRDeltaZQinv"), obs.deltaR, obs.deltaZ, obs.qinv);
+  }
+
+  static constexpr std::string_view pairsep_types[2] = {"PairSep/same/", "PairSep/mix/"};
+  template <int ev_id>
+  inline void fillPairSep(PairSep const& s, PairQAObservables const& obs)
+  {
+    if (!pairsep.cfgDoPairSepQA.value || obs.qinv >= 0.5f)
+      return;
+    fRegistry.fill(HIST(pairsep_types[ev_id]) + HIST("hDEtaDPhiKt_PP"), s.dEtaPP, s.dPhiPP, obs.kt);
+    fRegistry.fill(HIST(pairsep_types[ev_id]) + HIST("hDEtaDPhiKt_NN"), s.dEtaNN, s.dPhiNN, obs.kt);
+    fRegistry.fill(HIST(pairsep_types[ev_id]) + HIST("hU_Qinv_Kt"), s.u, obs.qinv, obs.kt);
+    fRegistry.fill(HIST(pairsep_types[ev_id]) + HIST("hU_Qinv_dE"), s.u, obs.qinv,
+                   std::fabs(obs.v1.E() - obs.v2.E()));
   }
 
   template <int ev_id>
@@ -793,6 +831,17 @@ struct Photonhbt {
     addLegPairMCHistograms();
 
     fRegistry.addClone("Pair/same/", "Pair/mix/");
+
+    for (const std::string sm : {"PairSep/same/", "PairSep/mix/"}) {
+      fRegistry.add((sm + "hDEtaDPhiKt_PP").c_str(), "e^{+}e^{+};#Delta#eta;#Delta#phi (rad);k_{T} (GeV/c)",
+                    kTHnSparseF, {{160, -0.4f, 0.4f}, {160, -0.4f, 0.4f}, axisKt}, true);
+      fRegistry.add((sm + "hDEtaDPhiKt_NN").c_str(), "e^{-}e^{-};#Delta#eta;#Delta#phi (rad);k_{T} (GeV/c)",
+                    kTHnSparseF, {{160, -0.4f, 0.4f}, {160, -0.4f, 0.4f}, axisKt}, true);
+      fRegistry.add((sm + "hU_Qinv_Kt").c_str(), ";u;q_{inv} (GeV/c);k_{T} (GeV/c)",
+                    kTHnSparseF, {{100, 0.f, 10.f}, {50, 0.f, 0.5f}, axisKt}, true);
+      fRegistry.add((sm + "hU_Qinv_dE").c_str(), ";u;q_{inv} (GeV/c);#DeltaE (GeV)",
+                    kTHnSparseF, {{50, 0.f, 10.f}, {50, 0.f, 0.5f}, {40, 0.f, 2.f}}, true);
+    }
 
     fRegistry.add("Pair/same/EtaTopology/hSparse_DEtaDPhi_kT_sameSideV0_sameSideLegs",
                   "both V0 same #eta-side, all legs same side;"
@@ -1812,6 +1861,9 @@ struct Photonhbt {
           continue;
         idsAfterDR.insert(g1.globalIndex());
         idsAfterDR.insert(g2.globalIndex());
+        fillPairSep<0>(computePairSep(pos1.eta(), pos1.phi(), ele1.eta(), ele1.phi(),
+                                      pos2.eta(), pos2.phi(), ele2.eta(), ele2.phi()),
+                       obs);
         if (doQA)
           fillPairQAStep<0, 1>(obs, centForQA, occupancy);
         if (!passRZCut(obs.deltaR, obs.deltaZ))
@@ -1903,6 +1955,9 @@ struct Photonhbt {
             fRegistry.fill(HIST("Pair/mix/hDeltaRCosOA"), obs.drOverCosOA);
             if (obs.drOverCosOA < ggpaircuts.cfgMinDRCosOA)
               continue;
+            fillPairSep<1>(computePairSep(g1.legEta(0), g1.legPhi(0), g1.legEta(1), g1.legPhi(1),
+                                          g2.legEta(0), g2.legPhi(0), g2.legEta(1), g2.legPhi(1)),
+                           obs);
             if (doQA)
               fillPairQAStep<1, 1>(obs, centForQA, occupancy);
             if (!passRZCut(obs.deltaR, obs.deltaZ))
