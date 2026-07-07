@@ -1534,7 +1534,7 @@ class VarManager : public TObject
   {
     auto obj = fgCalibs.find(calib);
     if (obj == fgCalibs.end()) {
-      return 0x0;
+      return nullptr;
     }
     return obj->second;
   }
