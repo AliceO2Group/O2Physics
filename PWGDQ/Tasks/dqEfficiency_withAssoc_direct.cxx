@@ -1166,6 +1166,7 @@ struct AnalysisSameEventPairing {
     Configurable<std::string> genSignalsJSON{"cfgMCGenSignalsJSON", "", "Additional list of MC signals (generated) via JSON"};
     Configurable<std::string> recSignals{"cfgMCRecSignals", "", "Comma separated list of MC signals (reconstructed)"};
     Configurable<std::string> recSignalsJSON{"cfgMCRecSignalsJSON", "", "Comma separated list of MC signals (reconstructed) via JSON"};
+    Configurable<std::string> finalStateSignals{"cfgBarrelMCFinalStateSignals", "eFromJpsi", "Comma separated list of MC signals (final state particles)"};
     Configurable<bool> skimSignalOnly{"cfgSkimSignalOnly", false, "Configurable to select only matched candidates"};
     Configurable<std::string> MCgenAcc{"cfgMCGenAccCuts", "", "Comma separated list of MC generated particles acceptance cuts, !!! Use only if you know what you are doing, otherwise leave empty"};
   } fConfigMC;
@@ -1195,7 +1196,7 @@ struct AnalysisSameEventPairing {
   std::map<int, std::vector<TString>> fMuonHistNamesMCmatched;
   std::vector<MCSignal*> fRecMCSignals;
   std::vector<MCSignal*> fGenMCSignals;
-  MCSignal* fEFromJpsiSignal = nullptr;
+  std::vector<MCSignal*> fFinalStateMCSignals;
 
   std::vector<AnalysisCompositeCut> fPairCuts;
   std::vector<AnalysisCut*> fMCGenAccCuts;
@@ -1272,9 +1273,6 @@ struct AnalysisSameEventPairing {
         fRecMCSignals.push_back(mcIt);
       }
     }
-    // get the fEFromJpsiSignal from the library
-    fEFromJpsiSignal = o2::aod::dqmcsignals::GetMCSignal("eFromJpsi");
-
     // get the barrel track selection cuts
     string tempCuts;
     getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", tempCuts, false);
@@ -1487,7 +1485,7 @@ struct AnalysisSameEventPairing {
     TString addMCSignalsGenStr = fConfigMC.genSignalsJSON.value;
     if (addMCSignalsGenStr != "") {
       std::vector<MCSignal*> addMCSignals = dqmcsignals::GetMCSignalsFromJSON(addMCSignalsGenStr.Data());
-      for (auto& mcIt : addMCSignals) {
+      for (auto const& mcIt : addMCSignals) {
         if (mcIt->GetNProngs() > 2) { // NOTE: only 2 prong signals
           continue;
         }
@@ -1495,7 +1493,17 @@ struct AnalysisSameEventPairing {
       }
     }
 
-    for (auto& sig : fGenMCSignals) {
+    // define final state MC signals
+    TString sigFinalStateNamesStr = fConfigMC.finalStateSignals.value;
+    std::unique_ptr<TObjArray> objFinalStateSigArray(sigFinalStateNamesStr.Tokenize(","));
+    for (int isig = 0; isig < objFinalStateSigArray->GetEntries(); isig++) {
+      MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objFinalStateSigArray->At(isig)->GetName());
+      if (sig) {
+        fFinalStateMCSignals.push_back(sig);
+      }
+    }
+
+    for (auto const& sig : fGenMCSignals) {
       if (sig->GetNProngs() == 1) {
         histNames += Form("MCTruthGen_%s;", sig->GetName()); // TODO: Add these names to a std::vector to avoid using Form in the process function
         histNames += Form("MCTruthGenSel_%s;", sig->GetName());
@@ -1508,7 +1516,7 @@ struct AnalysisSameEventPairing {
       }
       // for these pair level signals, also add histograms for each MCgenAcc cut if specified
       if (fUseMCGenAccCut) {
-        for (auto& cut : fMCGenAccCuts) {
+        for (auto const& cut : fMCGenAccCuts) {
           histNames += Form("MCTruthGenPairSel_%s_%s;", sig->GetName(), cut->GetName()); // after event selection and MCgenAcc cut
           if (fConfigOptions.fConfigPseudoQA.value) {
             histNames += Form("MCTruthGenPseudoPolPairSel_%s_%s;", sig->GetName(), cut->GetName());
@@ -2063,8 +2071,8 @@ struct AnalysisSameEventPairing {
     int isig = 0;
 
     // Loop over all MC single particles to fill generator level histograms, disregarding of whether they belong to selected reconstructed events or not
-    for (auto& mctrack : mcTracks) {
-      for (auto& sig : fGenMCSignals) {
+    for (auto const& mctrack : mcTracks) {
+      for (auto const& sig : fGenMCSignals) {
         if (sig->CheckSignal(true, mctrack)) {
           VarManager::FillTrackMC(mcTracks, mctrack);
           // if (fUseMCGenAccCut && !fMCGenAccCut.IsSelected(VarManager::fgValues)) {
@@ -2076,11 +2084,11 @@ struct AnalysisSameEventPairing {
     }
     // cout << "Filled single MC particle generator histograms." << endl;
 
-    // make a vector of global indices of mc particles which fulfill the eFromJpsi signal definition (to speed up the two mc particle combinatorics)
-    std::vector<uint64_t> eFromJpsiMcParticleIndices;
+    // make a vector of global indices of mc particles which fulfill the selected track-level signal definition (to speed up the two mc particle combinatorics)
+    std::vector<uint64_t> FinalStateMcParticleIndices;
 
     // Now loop over reconstructed events to select only MC particles belonging to the same MC collision as the reconstructed event
-    for (auto& event : events) {
+    for (auto const& event : events) {
       if (!event.isEventSelected_bit(0)) {
         continue;
       }
@@ -2088,7 +2096,7 @@ struct AnalysisSameEventPairing {
         continue;
       }
 
-      eFromJpsiMcParticleIndices.clear();
+      FinalStateMcParticleIndices.clear();
 
       auto mcCollisionGlobalIndex = event.mcCollisionId();
       auto mcEvent = mcEvents.rawIteratorAt(mcCollisionGlobalIndex);
@@ -2100,12 +2108,12 @@ struct AnalysisSameEventPairing {
       auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, mcCollisionGlobalIndex);
       groupedMCTracks.bindInternalIndicesTo(&mcTracks);
 
-      for (auto& track : groupedMCTracks) {
+      for (auto const& track : groupedMCTracks) {
 
         auto track_raw = mcTracks.rawIteratorAt(track.globalIndex());
         mcDecision = 0;
         isig = 0;
-        for (auto& sig : fGenMCSignals) {
+        for (auto const& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, track_raw)) {
             // check that the mc track belongs to the same mc collision as the reconstructed event
             if (track.mcCollisionId() != mcCollisionGlobalIndex) {
@@ -2127,27 +2135,30 @@ struct AnalysisSameEventPairing {
           }
           isig++;
         }
-        if (fEFromJpsiSignal->CheckSignal(true, track_raw)) {
-          eFromJpsiMcParticleIndices.push_back(track.globalIndex());
+        for (auto const& sig : fFinalStateMCSignals) {
+          if (sig->CheckSignal(true, track_raw)) {
+            FinalStateMcParticleIndices.push_back(track.globalIndex());
+            break; // if one of the final state signals is matched, no need to check the others
+          }
         }
         // cout << "Filled single MC particle generator histograms for reconstructed event." << endl;
       }
 
       if (fHasTwoProngGenMCsignals) {
         // loop over combinations of the selected mc particles to fill generator level pair histograms
-        for (auto& t1 : eFromJpsiMcParticleIndices) {
+        for (auto const& t1 : FinalStateMcParticleIndices) {
           auto t1_raw = mcTracks.rawIteratorAt(t1);
-          for (auto& t2 : eFromJpsiMcParticleIndices) {
+          for (auto const& t2 : FinalStateMcParticleIndices) {
             if (t2 <= t1) {
               continue; // avoid double counting and self-pairing
             }
-            // for (auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
+            // for (auto const& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
             // cout << "Processing pair of mcTracks with globalIndices = " << t1.globalIndex() << ", " << t2.globalIndex() << endl;
             auto t2_raw = mcTracks.rawIteratorAt(t2);
 
             mcDecision = 0;
             isig = 0;
-            for (auto& sig : fGenMCSignals) {
+            for (auto const& sig : fGenMCSignals) {
               if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required here
                 continue;
               }
@@ -2172,7 +2183,7 @@ struct AnalysisSameEventPairing {
                   fHistMan->FillHistClass(Form("MCTruthGenPseudoPolPairSel_%s", sig->GetName()), VarManager::fgValues);
                 }
                 if (fUseMCGenAccCut) {
-                  for (auto& cut : fMCGenAccCuts) {
+                  for (auto const& cut : fMCGenAccCuts) {
                     if (cut->IsSelected(VarManager::fgValues)) {
                       fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s_%s", sig->GetName(), cut->GetName()), VarManager::fgValues);
                       if (fConfigOptions.fConfigPseudoQA.value) {
@@ -2362,7 +2373,7 @@ struct AnalysisDileptonTrack {
     TString addMCSignalsStr = fConfigMCOptions.fConfigMCRecSignalsJSON.value;
     if (addMCSignalsStr != "") {
       std::vector<MCSignal*> addMCSignals = dqmcsignals::GetMCSignalsFromJSON(addMCSignalsStr.Data());
-      for (auto& mcIt : addMCSignals) {
+      for (auto const& mcIt : addMCSignals) {
         if (mcIt->GetNProngs() != 3) {
           LOG(fatal) << "Signal at reconstructed level requested (" << mcIt->GetName() << ") " << "does not have 3 prongs! Fix it";
         }
@@ -2402,7 +2413,7 @@ struct AnalysisDileptonTrack {
     addMCSignalsStr = fConfigMCOptions.fConfigMCGenSignalsJSON.value;
     if (addMCSignalsStr != "") {
       std::vector<MCSignal*> addMCSignals = dqmcsignals::GetMCSignalsFromJSON(addMCSignalsStr.Data());
-      for (auto& mcIt : addMCSignals) {
+      for (auto const& mcIt : addMCSignals) {
         if (mcIt->GetNProngs() == 1) {
           fGenMCSignals.push_back(mcIt);
         }
@@ -2569,7 +2580,7 @@ struct AnalysisDileptonTrack {
           }
 
           DefineHistograms(fHistMan, Form("DileptonTrack_%s_%s", pairLegCutName.Data(), fTrackCutNames[iCutTrack].Data()), fConfigOptions.fConfigHistogramSubgroups.value.data());
-          for (auto& sig : fRecMCSignals) {
+          for (auto const& sig : fRecMCSignals) {
             DefineHistograms(fHistMan, Form("DileptonTrackMCMatched_%s_%s_%s", pairLegCutName.Data(), fTrackCutNames[iCutTrack].Data(), sig->GetName()), fConfigOptions.fConfigHistogramSubgroups.value.data());
           }
 
@@ -2578,7 +2589,7 @@ struct AnalysisDileptonTrack {
             for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
               DefineHistograms(fHistMan, Form("DileptonsSelected_%s_%s", pairLegCutName.Data(), fCommonPairCutNames[iCommonCut].Data()), "barrel,vertexing");
               DefineHistograms(fHistMan, Form("DileptonTrack_%s_%s_%s", pairLegCutName.Data(), fCommonPairCutNames[iCommonCut].Data(), fTrackCutNames[iCutTrack].Data()), fConfigOptions.fConfigHistogramSubgroups.value.data());
-              for (auto& sig : fRecMCSignals) {
+              for (auto const& sig : fRecMCSignals) {
                 DefineHistograms(fHistMan, Form("DileptonTrackMCMatched_%s_%s_%s_%s", pairLegCutName.Data(), fCommonPairCutNames[iCommonCut].Data(), fTrackCutNames[iCutTrack].Data(), sig->GetName()), fConfigOptions.fConfigHistogramSubgroups.value.data());
               }
             }
@@ -2589,7 +2600,7 @@ struct AnalysisDileptonTrack {
             for (int iPairCut = 0; iPairCut < fNPairCuts; ++iPairCut) {
               DefineHistograms(fHistMan, Form("DileptonsSelected_%s_%s", pairLegCutName.Data(), fPairCutNames[iPairCut].Data()), "barrel,vertexing");
               DefineHistograms(fHistMan, Form("DileptonTrack_%s_%s_%s", pairLegCutName.Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iCutTrack].Data()), fConfigOptions.fConfigHistogramSubgroups.value.data());
-              for (auto& sig : fRecMCSignals) {
+              for (auto const& sig : fRecMCSignals) {
                 DefineHistograms(fHistMan, Form("DileptonTrackMCMatched_%s_%s_%s_%s", pairLegCutName.Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iCutTrack].Data(), sig->GetName()), fConfigOptions.fConfigHistogramSubgroups.value.data());
               }
 
@@ -2598,7 +2609,7 @@ struct AnalysisDileptonTrack {
                 for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
                   DefineHistograms(fHistMan, Form("DileptonsSelected_%s_%s_%s", pairLegCutName.Data(), fCommonPairCutNames[iCommonCut].Data(), fPairCutNames[iPairCut].Data()), "barrel,vertexing");
                   DefineHistograms(fHistMan, Form("DileptonTrack_%s_%s_%s_%s", pairLegCutName.Data(), fCommonPairCutNames[iCommonCut].Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iCutTrack].Data()), fConfigOptions.fConfigHistogramSubgroups.value.data());
-                  for (auto& sig : fRecMCSignals) {
+                  for (auto const& sig : fRecMCSignals) {
                     DefineHistograms(fHistMan, Form("DileptonTrack_%s_%s_%s_%s_%s", pairLegCutName.Data(), fCommonPairCutNames[iCommonCut].Data(), fPairCutNames[iPairCut].Data(), fTrackCutNames[iCutTrack].Data(), sig->GetName()), fConfigOptions.fConfigHistogramSubgroups.value.data());
                   }
                 }
@@ -2610,11 +2621,11 @@ struct AnalysisDileptonTrack {
     } // end if (isBarrel || isBarrelAsymmetric || isMuon)
 
     if (isMCGen) {
-      for (auto& sig : fGenMCSignals) {
+      for (auto const& sig : fGenMCSignals) {
         DefineHistograms(fHistMan, Form("MCTruthGen_%s", sig->GetName()), "");
         DefineHistograms(fHistMan, Form("MCTruthGenSel_%s", sig->GetName()), "");
       }
-      for (auto& sig : fRecMCSignals) {
+      for (auto const& sig : fRecMCSignals) {
         DefineHistograms(fHistMan, Form("MCTruthGenSelBR_%s", sig->GetName()), "");
         DefineHistograms(fHistMan, Form("MCTruthGenSelBRAccepted_%s", sig->GetName()), "");
       }
@@ -3009,8 +3020,8 @@ struct AnalysisDileptonTrack {
   {
     cout << "AnalysisDileptonTrack::processMCGen() called" << endl;
     // first loop over MC particles to fill generator level histograms for one prong MC signals (e.g. the B meson)
-    for (auto& mctrack : mcTracks) {
-      for (auto& sig : fGenMCSignals) {
+    for (auto const& mctrack : mcTracks) {
+      for (auto const& sig : fGenMCSignals) {
         if (sig->CheckSignal(true, mctrack)) {
           VarManager::FillTrackMC(mcTracks, mctrack);
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig->GetName()), VarManager::fgValues);
@@ -3023,7 +3034,7 @@ struct AnalysisDileptonTrack {
     std::vector<uint64_t> mcParticleListDileptonLegs;
     std::vector<uint64_t> mcParticleListHadron;
 
-    for (auto& event : events) {
+    for (auto const& event : events) {
       if (!event.isEventSelected_bit(0)) {
         continue;
       }
@@ -3035,9 +3046,9 @@ struct AnalysisDileptonTrack {
 
       auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.mcCollisionId());
       groupedMCTracks.bindInternalIndicesTo(&mcTracks);
-      for (auto& track : groupedMCTracks) {
+      for (auto const& track : groupedMCTracks) {
         auto track_raw = mcTracks.rawIteratorAt(track.globalIndex());
-        for (auto& sig : fGenMCSignals) {
+        for (auto const& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, track_raw)) {
             VarManager::FillTrackMC(mcTracks, track);
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);
@@ -3053,21 +3064,21 @@ struct AnalysisDileptonTrack {
 
       // construct all possible triplets of MC tracks in this MC collision to fill generator level histograms
       // for three prong MC signals (e.g. B -> J/psi + K)
-      for (auto& t1 : mcParticleListDileptonLegs) {
+      for (auto const& t1 : mcParticleListDileptonLegs) {
         auto t1_raw = mcTracks.rawIteratorAt(t1);
-        for (auto& t2 : mcParticleListDileptonLegs) {
+        for (auto const& t2 : mcParticleListDileptonLegs) {
           if (t2 <= t1) {
             continue; // avoid double counting and self-pairing
           }
           auto t2_raw = mcTracks.rawIteratorAt(t2);
 
-          for (auto& t3 : mcParticleListHadron) {
+          for (auto const& t3 : mcParticleListHadron) {
             if (t3 == t1 || t3 == t2) {
               continue; // avoid self-pairing
             }
             auto t3_raw = mcTracks.rawIteratorAt(t3);
 
-            for (auto& sig : fRecMCSignals) {
+            for (auto const& sig : fRecMCSignals) {
 
               if (sig->CheckSignal(true, t1_raw, t2_raw, t3_raw)) {
                 VarManager::FillTripleMC<VarManager::kBtoJpsiEEK>(t1_raw, t2_raw, t3_raw, VarManager::fgValues); // nb! hardcoded for jpsiK
