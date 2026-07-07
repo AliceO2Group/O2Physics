@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskCharmHadronsTrackFemtoDream.cxx
+/// \file taskCharmHadronsV0FemtoDream.cxx
 /// \brief Tasks that reads the V0 and CharmHadrons tables used for the pairing and builds pairs
 /// \author Biao Zhang, Heidelberg University, biao.zhang@cern.ch
 
