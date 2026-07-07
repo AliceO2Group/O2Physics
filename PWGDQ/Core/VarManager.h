@@ -822,6 +822,14 @@ class VarManager : public TObject
     kCos2DeltaPhiPP_TPC,
     kCos2DeltaPhiPP_FT0A,
     kCos2DeltaPhiPP_FT0C,
+    kDeltaPhiRP_Random,
+    kDeltaPhiRP_MC,
+    kCos2DeltaPhiRP_Random,
+    kCos2DeltaPhiRP_MC,
+    kDeltaPhiPP_Random,
+    kDeltaPhiPP_MC,
+    kCos2DeltaPhiPP_Random,
+    kCos2DeltaPhiPP_MC,
     kNullA2,
     kInfA2,
     kSel1, // if track1 is used in TPC Q vector calculation
@@ -4631,6 +4639,23 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
     // truth event plane angle
     ROOT::Math::XYZVector zaxisTrue = ROOT::Math::XYZVector(TMath::Cos(values[kMCEventPlaneAngle]), TMath::Sin(values[kMCEventPlaneAngle]), 0).Unit();
     values[kMCCosThetaStar] = v_CM.Dot(zaxisTrue);
+  }
+
+  if (fgUsedVars[kCos2DeltaPhiRP_Random] || fgUsedVars[kCos2DeltaPhiPP_Random] || fgUsedVars[kCos2DeltaPhiRP_MC] || fgUsedVars[kCos2DeltaPhiPP_MC]) {
+    ROOT::Math::Boost boostv12{v12.BoostToCM()};
+    ROOT::Math::PtEtaPhiMVector v_daughter = boostv12(t1.pdgCode() > 0 ? v1 : v2);
+
+    // reaction plane
+    float phi = v_daughter.Phi() > TMath::Pi() ? v_daughter.Phi() - 2. * TMath::Pi() : v_daughter.Phi();
+    values[kDeltaPhiRP_Random] = phi - values[kRandomPsi2];
+    values[kDeltaPhiRP_Random] = values[kDeltaPhiRP_Random] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_Random] : values[kDeltaPhiRP_Random];
+    values[kDeltaPhiRP_MC] = phi - values[kMCEventPlaneAngle];
+    values[kDeltaPhiRP_MC] = values[kDeltaPhiRP_MC] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_MC] : values[kDeltaPhiRP_MC];
+    // fold delta phi into [-pi/2, pi/2]
+    values[kDeltaPhiRP_Random] = values[kDeltaPhiRP_Random] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiRP_Random] : values[kDeltaPhiRP_Random];
+    values[kDeltaPhiRP_MC] = values[kDeltaPhiRP_MC] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiRP_MC] : values[kDeltaPhiRP_MC];
+    values[kCos2DeltaPhiRP_Random] = TMath::Cos(2. * (phi - values[kRandomPsi2]));
+    values[kCos2DeltaPhiRP_MC] = TMath::Cos(2. * (phi - values[kMCEventPlaneAngle]));
   }
 }
 
