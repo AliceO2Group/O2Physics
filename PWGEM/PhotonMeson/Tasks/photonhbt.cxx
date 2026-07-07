@@ -673,7 +673,7 @@ struct Photonhbt {
   template <int ev_id>
   inline void fillPairSep(PairSep const& s, PairQAObservables const& obs)
   {
-    if (!pairsep.cfgDoPairSepQA.value || obs.qinv >= 0.5f)
+    if (!pairsep.cfgDoPairSepQA.value || obs.qinv >= cfgMaxQinvForMCQA.value)
       return;
     fRegistry.fill(HIST(pairsep_types[ev_id]) + HIST("hDEtaDPhiKt_PP"), s.dEtaPP, s.dPhiPP, obs.kt);
     fRegistry.fill(HIST(pairsep_types[ev_id]) + HIST("hDEtaDPhiKt_NN"), s.dEtaNN, s.dPhiNN, obs.kt);
@@ -832,7 +832,8 @@ struct Photonhbt {
 
     fRegistry.addClone("Pair/same/", "Pair/mix/");
 
-    for (const std::string sm : {"PairSep/same/", "PairSep/mix/"}) {
+    const std::array<std::string, 2> pairSepDirs = {"PairSep/same/", "PairSep/mix/"};
+    for (const auto& sm : pairSepDirs) {
       fRegistry.add((sm + "hDEtaDPhiKt_PP").c_str(), "e^{+}e^{+};#Delta#eta;#Delta#phi (rad);k_{T} (GeV/c)",
                     kTHnSparseF, {{160, -0.4f, 0.4f}, {160, -0.4f, 0.4f}, axisKt}, true);
       fRegistry.add((sm + "hDEtaDPhiKt_NN").c_str(), "e^{-}e^{-};#Delta#eta;#Delta#phi (rad);k_{T} (GeV/c)",
