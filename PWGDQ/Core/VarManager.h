@@ -1535,9 +1535,8 @@ class VarManager : public TObject
     auto obj = fgCalibs.find(calib);
     if (obj == fgCalibs.end()) {
       return 0x0;
-    } else {
-      return obj->second;
     }
+    return obj->second;
   }
   static void SetTPCInterSectorBoundary(float boundarySize)
   {
@@ -6720,56 +6719,56 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
       values[kVertexingTauxyProjected] = -999.;
       values[kVertexingTauxyzProjected] = -999.;
       return;
-    } else {
-      Vec3D secondaryVertex;
-      std::array<float, 6> covMatrixPCA{};
-      secondaryVertex = fgFitterFourProngBarrel.getPCACandidate();
-      covMatrixPCA = fgFitterFourProngBarrel.calcPCACovMatrixFlat();
-
-      o2::math_utils::Point3D<float> vtxXYZ(collision.posX(), collision.posY(), collision.posZ());
-      std::array<float, 6> vtxCov{collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()};
-      o2::dataformats::VertexBase primaryVertex = {vtxXYZ, vtxCov};
-      auto covMatrixPV = primaryVertex.getCov();
-
-      double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
-      double theta = std::atan2(secondaryVertex[2] - collision.posZ(),
-                                std::sqrt((secondaryVertex[0] - collision.posX()) * (secondaryVertex[0] - collision.posX()) +
-                                          (secondaryVertex[1] - collision.posY()) * (secondaryVertex[1] - collision.posY())));
-
-      values[kVertexingLxy] = (collision.posX() - secondaryVertex[0]) * (collision.posX() - secondaryVertex[0]) +
-                              (collision.posY() - secondaryVertex[1]) * (collision.posY() - secondaryVertex[1]);
-      values[kVertexingLz] = (collision.posZ() - secondaryVertex[2]) * (collision.posZ() - secondaryVertex[2]);
-      values[kVertexingLxyz] = values[kVertexingLxy] + values[kVertexingLz];
-      values[kVertexingLxy] = std::sqrt(values[kVertexingLxy]);
-      values[kVertexingLz] = std::sqrt(values[kVertexingLz]);
-      values[kVertexingLxyz] = std::sqrt(values[kVertexingLxyz]);
-
-      values[kVertexingLxyzErr] = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
-      values[kVertexingLxyErr] = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
-      values[kVertexingLzErr] = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, 0, theta) + getRotatedCovMatrixXX(covMatrixPCA, 0, theta));
-
-      values[kVertexingTauz] = (collision.posZ() - secondaryVertex[2]) * v1234.M() / (TMath::Abs(v1234.Pz()) * o2::constants::physics::LightSpeedCm2NS);
-      values[kVertexingTauxy] = values[kVertexingLxy] * v1234.M() / (v1234.Pt() * o2::constants::physics::LightSpeedCm2NS);
-
-      values[kVertexingTauzErr] = values[kVertexingLzErr] * v1234.M() / (TMath::Abs(v1234.Pz()) * o2::constants::physics::LightSpeedCm2NS);
-      values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v1234.M() / (v1234.Pt() * o2::constants::physics::LightSpeedCm2NS);
-
-      values[kCosPointingAngle] = ((secondaryVertex[0] - collision.posX()) * v1234.Px() +
-                                   (secondaryVertex[1] - collision.posY()) * v1234.Py() +
-                                   (secondaryVertex[2] - collision.posZ()) * v1234.Pz()) /
-                                  (v1234.P() * values[VarManager::kVertexingLxyz]);
-      // // run 2 definitions: Decay length projected onto the momentum vector of the candidate
-      values[kVertexingLzProjected] = (secondaryVertex[2] - collision.posZ()) * v1234.Pz();
-      values[kVertexingLzProjected] = values[kVertexingLzProjected] / TMath::Sqrt(v1234.Pz() * v1234.Pz());
-      values[kVertexingLxyProjected] = ((secondaryVertex[0] - collision.posX()) * v1234.Px()) + ((secondaryVertex[1] - collision.posY()) * v1234.Py());
-      values[kVertexingLxyProjected] = values[kVertexingLxyProjected] / TMath::Sqrt((v1234.Px() * v1234.Px()) + (v1234.Py() * v1234.Py()));
-      values[kVertexingLxyzProjected] = ((secondaryVertex[0] - collision.posX()) * v1234.Px()) + ((secondaryVertex[1] - collision.posY()) * v1234.Py()) + ((secondaryVertex[2] - collision.posZ()) * v1234.Pz());
-      values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((v1234.Px() * v1234.Px()) + (v1234.Py() * v1234.Py()) + (v1234.Pz() * v1234.Pz()));
-
-      values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v1234.M() / TMath::Abs(v1234.Pz());
-      values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * v1234.M() / (v1234.Pt());
-      values[kVertexingTauxyzProjected] = values[kVertexingLxyzProjected] * v1234.M() / (v1234.P());
     }
+
+    Vec3D secondaryVertex;
+    std::array<float, 6> covMatrixPCA{};
+    secondaryVertex = fgFitterFourProngBarrel.getPCACandidate();
+    covMatrixPCA = fgFitterFourProngBarrel.calcPCACovMatrixFlat();
+
+    o2::math_utils::Point3D<float> vtxXYZ(collision.posX(), collision.posY(), collision.posZ());
+    std::array<float, 6> vtxCov{collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()};
+    o2::dataformats::VertexBase primaryVertex = {vtxXYZ, vtxCov};
+    auto covMatrixPV = primaryVertex.getCov();
+
+    double phi = std::atan2(secondaryVertex[1] - collision.posY(), secondaryVertex[0] - collision.posX());
+    double theta = std::atan2(secondaryVertex[2] - collision.posZ(),
+                              std::sqrt((secondaryVertex[0] - collision.posX()) * (secondaryVertex[0] - collision.posX()) +
+                                        (secondaryVertex[1] - collision.posY()) * (secondaryVertex[1] - collision.posY())));
+
+    values[kVertexingLxy] = (collision.posX() - secondaryVertex[0]) * (collision.posX() - secondaryVertex[0]) +
+                            (collision.posY() - secondaryVertex[1]) * (collision.posY() - secondaryVertex[1]);
+    values[kVertexingLz] = (collision.posZ() - secondaryVertex[2]) * (collision.posZ() - secondaryVertex[2]);
+    values[kVertexingLxyz] = values[kVertexingLxy] + values[kVertexingLz];
+    values[kVertexingLxy] = std::sqrt(values[kVertexingLxy]);
+    values[kVertexingLz] = std::sqrt(values[kVertexingLz]);
+    values[kVertexingLxyz] = std::sqrt(values[kVertexingLxyz]);
+
+    values[kVertexingLxyzErr] = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
+    values[kVertexingLxyErr] = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
+    values[kVertexingLzErr] = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, 0, theta) + getRotatedCovMatrixXX(covMatrixPCA, 0, theta));
+
+    values[kVertexingTauz] = (collision.posZ() - secondaryVertex[2]) * v1234.M() / (TMath::Abs(v1234.Pz()) * o2::constants::physics::LightSpeedCm2NS);
+    values[kVertexingTauxy] = values[kVertexingLxy] * v1234.M() / (v1234.Pt() * o2::constants::physics::LightSpeedCm2NS);
+
+    values[kVertexingTauzErr] = values[kVertexingLzErr] * v1234.M() / (TMath::Abs(v1234.Pz()) * o2::constants::physics::LightSpeedCm2NS);
+    values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v1234.M() / (v1234.Pt() * o2::constants::physics::LightSpeedCm2NS);
+
+    values[kCosPointingAngle] = ((secondaryVertex[0] - collision.posX()) * v1234.Px() +
+                                 (secondaryVertex[1] - collision.posY()) * v1234.Py() +
+                                 (secondaryVertex[2] - collision.posZ()) * v1234.Pz()) /
+                                (v1234.P() * values[VarManager::kVertexingLxyz]);
+    // // run 2 definitions: Decay length projected onto the momentum vector of the candidate
+    values[kVertexingLzProjected] = (secondaryVertex[2] - collision.posZ()) * v1234.Pz();
+    values[kVertexingLzProjected] = values[kVertexingLzProjected] / TMath::Sqrt(v1234.Pz() * v1234.Pz());
+    values[kVertexingLxyProjected] = ((secondaryVertex[0] - collision.posX()) * v1234.Px()) + ((secondaryVertex[1] - collision.posY()) * v1234.Py());
+    values[kVertexingLxyProjected] = values[kVertexingLxyProjected] / TMath::Sqrt((v1234.Px() * v1234.Px()) + (v1234.Py() * v1234.Py()));
+    values[kVertexingLxyzProjected] = ((secondaryVertex[0] - collision.posX()) * v1234.Px()) + ((secondaryVertex[1] - collision.posY()) * v1234.Py()) + ((secondaryVertex[2] - collision.posZ()) * v1234.Pz());
+    values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((v1234.Px() * v1234.Px()) + (v1234.Py() * v1234.Py()) + (v1234.Pz() * v1234.Pz()));
+
+    values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v1234.M() / TMath::Abs(v1234.Pz());
+    values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * v1234.M() / (v1234.Pt());
+    values[kVertexingTauxyzProjected] = values[kVertexingLxyzProjected] * v1234.M() / (v1234.P());
   } else if (fgUsedKF) {
     KFParticle lepton1KF; // lepton1
     KFParticle lepton2KF; // lepton2
