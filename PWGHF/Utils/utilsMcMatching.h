@@ -160,9 +160,9 @@ static const std::unordered_map<DecayChannelMain, const std::vector<int>> daught
   {DecayChannelMain::CDeuteronToDeKPi, {+o2::constants::physics::Pdg::kDeuteron, +PDG_t::kKMinus, +PDG_t::kPiPlus}}};
 
 /// resonances in c-deuteron decay are not stored in the particle stack for c-deuteron, but tagged with specific status codes
-static const std::array<int, 2> StatusCodeCDeuteronToDeKstar0{-85, -95};
-static const std::array<int, 2> StatusCodeCDeuteronToNeDeltaplusK{-86, -96};
-static const std::array<int, 2> StatusCodeCDeuteronToNeL1520Pi{-87, -97};
+static const std::array<int, 2> statusCodeCDeuteronToDeKstar0{-85, -95};
+static const std::array<int, 2> statusCodeCDeuteronToNeDeltaplusK{-86, -96};
+static const std::array<int, 2> statusCodeCDeuteronToNeL1520Pi{-87, -97};
 
 /// Returns a map of the possible final states for a specific 3-prong particle specie
 /// \param pdgMother PDG code of the mother particle
@@ -339,13 +339,13 @@ template <typename Part>
 inline int getResonantDecayCDeuteron(Part const& particle)
 {
   auto statusCode = particle.getGenStatusCode();
-  if (statusCode == o2::hf_decay::hf_cand_3prong::StatusCodeCDeuteronToDeKstar0[0] || statusCode == o2::hf_decay::hf_cand_3prong::StatusCodeCDeuteronToDeKstar0[1]) {
+  if (statusCode == o2::hf_decay::hf_cand_3prong::statusCodeCDeuteronToDeKstar0[0] || statusCode == o2::hf_decay::hf_cand_3prong::statusCodeCDeuteronToDeKstar0[1]) {
     return o2::hf_decay::hf_cand_3prong::DecayChannelResonant::CDeuteronToDeKstar0;
   }
-  if (statusCode == o2::hf_decay::hf_cand_3prong::StatusCodeCDeuteronToNeDeltaplusK[0] || statusCode == o2::hf_decay::hf_cand_3prong::StatusCodeCDeuteronToNeDeltaplusK[1]) {
+  if (statusCode == o2::hf_decay::hf_cand_3prong::statusCodeCDeuteronToNeDeltaplusK[0] || statusCode == o2::hf_decay::hf_cand_3prong::statusCodeCDeuteronToNeDeltaplusK[1]) {
     return o2::hf_decay::hf_cand_3prong::DecayChannelResonant::CDeuteronToNeDeltaplusK;
   }
-  if (statusCode == o2::hf_decay::hf_cand_3prong::StatusCodeCDeuteronToNeL1520Pi[0] || statusCode == o2::hf_decay::hf_cand_3prong::StatusCodeCDeuteronToNeL1520Pi[1]) {
+  if (statusCode == o2::hf_decay::hf_cand_3prong::statusCodeCDeuteronToNeL1520Pi[0] || statusCode == o2::hf_decay::hf_cand_3prong::statusCodeCDeuteronToNeL1520Pi[1]) {
     return o2::hf_decay::hf_cand_3prong::DecayChannelResonant::CDeuteronToNeL1520Pi;
   }
   return 0;

@@ -1359,7 +1359,7 @@ struct HfCandidateCreator3ProngExpressions {
         rowMcMatchRec(flagChannelMain, origin, swapping, flagChannelResonant, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracks, nInteractionsWithMaterial);
       } else {
         if (std::abs(flagChannelMain) == DecayChannelMain::CDeuteronToDeKPi) {
-          origin == RecoDecay::OriginType::Prompt;
+          origin = RecoDecay::OriginType::Prompt;
         }
         rowMcMatchRec(flagChannelMain, origin, swapping, flagChannelResonant, -1.f, 0, nKinkedTracks, nInteractionsWithMaterial);
       }
