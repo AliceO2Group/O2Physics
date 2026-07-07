@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskCharmHadronsTrackFemtoDream.cxx
+/// \file taskCharmHadronsV0FemtoDream.cxx
 /// \brief Tasks that reads the V0 and CharmHadrons tables used for the pairing and builds pairs
 /// \author Biao Zhang, Heidelberg University, biao.zhang@cern.ch
 
@@ -177,8 +177,8 @@ struct HfTaskCharmHadronsV0FemtoDream {
   using FilteredMcCollisions = soa::Filtered<soa::Join<aod::FDCollisions, FDColMasks, aod::FDMCCollLabels>>;
   using FilteredMcColision = FilteredMcCollisions::iterator;
 
-  using FilteredFDMcParts = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex, aod::FDExtParticles, aod::FDMCLabels, aod::FDExtMCLabels, aod::FDTrkTimeStamp>>;
-  using FilteredFDMcPart = FilteredFDMcParts::iterator;
+  using FDMcV0Particles = soa::Join<aod::FDParticles, aod::FDParticlesIndex, aod::FDExtParticles, aod::FDMCLabels, aod::FDExtMCLabels, aod::FDTrkTimeStamp>;
+  using FDMcV0Particle = FDMcV0Particles::iterator;
 
   using FDV0Particles = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDParticlesIndex, aod::FDTrkTimeStamp>;
   using FDV0Particle = FDV0Particles::iterator;
@@ -189,7 +189,7 @@ struct HfTaskCharmHadronsV0FemtoDream {
   Filter hfMcSelFilter = (nabs(aod::fdhf::flagMc) == charmSel.charmHadMcSel);
 
   Preslice<FDV0Particles> perCol = aod::femtodreamparticle::fdCollisionId;
-  Preslice<FilteredFDMcParts> perColMc = aod::femtodreamparticle::fdCollisionId;
+  Preslice<FDMcV0Particles> perColMc = aod::femtodreamparticle::fdCollisionId;
   Preslice<FilteredCharmCand3Prongs> perHf3ProngByCol = aod::femtodreamparticle::fdCollisionId;
   Preslice<FilteredCharmCand2Prongs> perHf2ProngByCol = aod::femtodreamparticle::fdCollisionId;
   Preslice<FilteredCharmCandDstars> perHfDstarByCol = aod::femtodreamparticle::fdCollisionId;
@@ -206,16 +206,16 @@ struct HfTaskCharmHadronsV0FemtoDream {
                                              (aod::femtodreamparticle::mAntiLambda > v0Sel.invMassAntiV0Min) &&
                                              (aod::femtodreamparticle::mAntiLambda < v0Sel.invMassAntiV0Max);
 
-  Partition<FilteredFDMcParts> partitionMcLambda = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
-                                                   ((aod::femtodreamparticle::cut & v0Sel.cutBit) == v0Sel.cutBit) &&
-                                                   (aod::femtodreamparticle::pt > v0Sel.ptV0Min) &&
-                                                   (aod::femtodreamparticle::pt < v0Sel.ptV0Max) &&
-                                                   (aod::femtodreamparticle::eta > v0Sel.etaV0Min) &&
-                                                   (aod::femtodreamparticle::eta < v0Sel.etaV0Max) &&
-                                                   (aod::femtodreamparticle::mLambda > v0Sel.invMassV0Min) &&
-                                                   (aod::femtodreamparticle::mLambda < v0Sel.invMassV0Max) &&
-                                                   (aod::femtodreamparticle::mAntiLambda > v0Sel.invMassAntiV0Min) &&
-                                                   (aod::femtodreamparticle::mAntiLambda < v0Sel.invMassAntiV0Max);
+  Partition<FDMcV0Particles> partitionMcLambda = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
+                                                 ((aod::femtodreamparticle::cut & v0Sel.cutBit) == v0Sel.cutBit) &&
+                                                 (aod::femtodreamparticle::pt > v0Sel.ptV0Min) &&
+                                                 (aod::femtodreamparticle::pt < v0Sel.ptV0Max) &&
+                                                 (aod::femtodreamparticle::eta > v0Sel.etaV0Min) &&
+                                                 (aod::femtodreamparticle::eta < v0Sel.etaV0Max) &&
+                                                 (aod::femtodreamparticle::mLambda > v0Sel.invMassV0Min) &&
+                                                 (aod::femtodreamparticle::mLambda < v0Sel.invMassV0Max) &&
+                                                 (aod::femtodreamparticle::mAntiLambda > v0Sel.invMassAntiV0Min) &&
+                                                 (aod::femtodreamparticle::mAntiLambda < v0Sel.invMassAntiV0Max);
 
   /// Partitions for particle K0Short
   Partition<FDV0Particles> partitionK0Short = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0K0Short)) &&
@@ -229,16 +229,16 @@ struct HfTaskCharmHadronsV0FemtoDream {
                                               (aod::femtodreamparticle::mAntiLambda > v0Sel.invMassAntiV0Min) &&
                                               (aod::femtodreamparticle::mAntiLambda < v0Sel.invMassAntiV0Max);
 
-  Partition<FilteredFDMcParts> partitionMcK0Short = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0K0Short)) &&
-                                                    ((aod::femtodreamparticle::cut & v0Sel.cutBit) == v0Sel.cutBit) &&
-                                                    (aod::femtodreamparticle::pt > v0Sel.ptV0Min) &&
-                                                    (aod::femtodreamparticle::pt < v0Sel.ptV0Max) &&
-                                                    (aod::femtodreamparticle::eta > v0Sel.etaV0Min) &&
-                                                    (aod::femtodreamparticle::eta < v0Sel.etaV0Max) &&
-                                                    (aod::femtodreamparticle::mLambda > v0Sel.invMassV0Min) &&
-                                                    (aod::femtodreamparticle::mLambda < v0Sel.invMassV0Max) &&
-                                                    (aod::femtodreamparticle::mAntiLambda > v0Sel.invMassAntiV0Min) &&
-                                                    (aod::femtodreamparticle::mAntiLambda < v0Sel.invMassAntiV0Max);
+  Partition<FDMcV0Particles> partitionMcK0Short = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0K0Short)) &&
+                                                  ((aod::femtodreamparticle::cut & v0Sel.cutBit) == v0Sel.cutBit) &&
+                                                  (aod::femtodreamparticle::pt > v0Sel.ptV0Min) &&
+                                                  (aod::femtodreamparticle::pt < v0Sel.ptV0Max) &&
+                                                  (aod::femtodreamparticle::eta > v0Sel.etaV0Min) &&
+                                                  (aod::femtodreamparticle::eta < v0Sel.etaV0Max) &&
+                                                  (aod::femtodreamparticle::mLambda > v0Sel.invMassV0Min) &&
+                                                  (aod::femtodreamparticle::mLambda < v0Sel.invMassV0Max) &&
+                                                  (aod::femtodreamparticle::mAntiLambda > v0Sel.invMassAntiV0Min) &&
+                                                  (aod::femtodreamparticle::mAntiLambda < v0Sel.invMassAntiV0Max);
 
   /// Partition for particle 2
   Partition<FilteredCharmCand3Prongs> partitionCharmHadron3Prong = aod::fdhf::bdtBkg < charmSel.charmHadBkgBDTmax && aod::fdhf::bdtFD < charmSel.charmHadFdBDTmax && aod::fdhf::bdtFD > charmSel.charmHadFdBDTmin&& aod::fdhf::bdtPrompt<charmSel.charmHadPromptBDTmax && aod::fdhf::bdtPrompt> charmSel.charmHadPromptBDTmin;
@@ -930,7 +930,7 @@ struct HfTaskCharmHadronsV0FemtoDream {
   PROCESS_SWITCH(HfTaskCharmHadronsV0FemtoDream, processDataDstarV0, "Enable processing DstarToD0Pi and V0 correlation", false);
 
   void processMcDplusV0(FilteredMcCollisions const& cols,
-                        FilteredFDMcParts const& parts,
+                        FDMcV0Particles const& parts,
                         o2::aod::FDMCParticles const&,
                         o2::aod::FDExtMCParticles const&,
                         FilteredCharmMcCand3Prongs const&)
