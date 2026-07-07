@@ -338,7 +338,7 @@ inline void flipPdgSign(const int pdgMother, const int pdgToFlip, std::array<int
 template <typename Part>
 inline int getResonantDecayCDeuteron(Part const& particle)
 {
-  auto statusCode = std::abs(particle.getGenStatusCode());
+  auto statusCode = particle.getGenStatusCode();
   if (statusCode == o2::hf_decay::hf_cand_3prong::StatusCodeCDeuteronToDeKstar0[0] || statusCode == o2::hf_decay::hf_cand_3prong::StatusCodeCDeuteronToDeKstar0[1]) {
     return o2::hf_decay::hf_cand_3prong::DecayChannelResonant::CDeuteronToDeKstar0;
   }
