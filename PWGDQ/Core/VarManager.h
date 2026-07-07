@@ -6098,23 +6098,23 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   values[kV2EP] = std::isnan(V2EP) || std::isinf(V2EP) ? 0. : V2EP;
   values[kWV2EP] = std::isnan(V2EP) || std::isinf(V2EP) ? 0. : 1.0;
 
-  if (std::isnan(VarManager::fgValues[VarManager::kU2Q2]) == true) {
+  if (std::isnan(VarManager::fgValues[VarManager::kU2Q2])) {
     values[kU2Q2] = -999.;
     values[kR2SP_AB] = -999.;
     values[kR2SP_AC] = -999.;
     values[kR2SP_BC] = -999.;
   }
-  if (std::isnan(VarManager::fgValues[VarManager::kU3Q3]) == true) {
+  if (std::isnan(VarManager::fgValues[VarManager::kU3Q3])) {
     values[kU3Q3] = -999.;
     values[kR3SP] = -999.;
   }
-  if (std::isnan(VarManager::fgValues[VarManager::kCos2DeltaPhi]) == true) {
+  if (std::isnan(VarManager::fgValues[VarManager::kCos2DeltaPhi])) {
     values[kCos2DeltaPhi] = -999.;
     values[kR2EP_AB] = -999.;
     values[kR2EP_AC] = -999.;
     values[kR2EP_BC] = -999.;
   }
-  if (std::isnan(VarManager::fgValues[VarManager::kCos3DeltaPhi]) == true) {
+  if (std::isnan(VarManager::fgValues[VarManager::kCos3DeltaPhi])) {
     values[kCos3DeltaPhi] = -999.;
     values[kR3EP] = -999.;
   }
