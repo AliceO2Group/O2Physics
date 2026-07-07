@@ -80,8 +80,6 @@ struct Xi1820Analysis {
   Configurable<float> cKaonEtaMax{"cKaonEtaMax", 0.8, "Maximum kaon |eta|"};
   Configurable<float> cKaonDCAxyMax{"cKaonDCAxyMax", 0.1, "Maximum kaon DCAxy to PV"};
   Configurable<float> cKaonDCAzMax{"cKaonDCAzMax", 0.2, "Maximum kaon DCAz to PV"};
-  Configurable<bool> cKaonTPCRefit{"cKaonTPCRefit", true, "Require TPC refit for kaon"};
-  Configurable<bool> cKaonITSRefit{"cKaonITSRefit", true, "Require ITS refit for kaon"};
   Configurable<int> cKaonTPCNClusMin{"cKaonTPCNClusMin", 70, "Minimum TPC clusters for kaon"};
   Configurable<int> cKaonITSNClusMin{"cKaonITSNClusMin", 2, "Minimum ITS clusters for kaon"};
 
@@ -154,7 +152,7 @@ struct Xi1820Analysis {
     Configurable<bool> cfgRotKaon{"cfgRotKaon", true, "Rotate Kaon"};
     Configurable<int> cfgNrotBkg{"cfgNrotBkg", 10, "Number of rotated copies (background) per each original candidate"};
 
-    Configurable<bool> cfgPhiCheck{"cfgPhiCheck", true, "Check phi distribution of candidates"};
+    Configurable<bool> cfgPhiCheck{"cfgPhiCheck", false, "Check phi distribution of candidates"};
     Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "Require PV contributor tracks"};
     Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Require primary tracks flags (just for check)"};
 
@@ -192,6 +190,7 @@ struct Xi1820Analysis {
 
     if (doprocessDataWithTracks || doprocessDataWithMicroTracks || doprocessMCWithTracks || doprocessK0sLambda || doprocessMCK0sLambda) {
       // Lambda QA histograms
+      histos.add("QAbefore/lambdaDCAtoPV", "Lambda DCA to PV before cuts", kTH2F, {ptAxisQA, dcaAxis});
       histos.add("QAbefore/lambdaMass", "Lambda mass before cuts", kTH1F, {lambdaMassAxis});
       histos.add("QAbefore/lambdaMassAnti", "Anti-Lambda mass before cuts", kTH1F, {lambdaMassAxis});
       histos.add("QAbefore/lambdaPt", "Lambda pT before cuts", kTH1F, {ptAxisQA});
@@ -210,6 +209,7 @@ struct Xi1820Analysis {
       histos.add("QAbefore/lambdaNCrossedRowsNeg", "Lambda negative daughter crossed rows before cuts", kTH2F, {ptAxisQA, {160, 0, 160, "TPC crossed rows"}});
       histos.add("QAbefore/lambdaArmenterosPodolanski", "Lambda candidate Armenteros-Podolanski before cuts", kTH3F, {armenterosAlphaAxis, armenterosQtAxis, ptAxisQA});
 
+      histos.add("QAafter/lambdaDCAtoPV", "Lambda DCA to PV after cuts", kTH2F, {ptAxisQA, dcaAxis});
       histos.add("QAafter/lambdaMass", "Lambda mass after cuts", kTH1F, {lambdaMassAxis});
       histos.add("QAafter/lambdaMassAnti", "Anti-Lambda mass after cuts", kTH1F, {lambdaMassAxis});
       histos.add("QAafter/lambdaPt", "Lambda pT after cuts", kTH1F, {ptAxisQA});
@@ -314,6 +314,7 @@ struct Xi1820Analysis {
 
     // K0s QA histograms
     if (doprocessK0sLambda || doprocessMCK0sLambda) {
+      histos.add("QAbefore/k0sDCAtoPV", "K0s DCA to PV before cuts", kTH2F, {ptAxisQA, dcaAxis});
       histos.add("QAbefore/k0sMass", "K0s mass before cuts", kTH1F, {{100, 0.4, 0.6, "K^{0}_{S} mass (GeV/#it{c}^{2})"}});
       histos.add("QAbefore/k0sPt", "K0s pT before cuts", kTH1F, {ptAxisQA});
       histos.add("QAbefore/k0sEta", "K0s eta before cuts", kTH1F, {{100, -2.0, 2.0, "#eta"}});
@@ -325,9 +326,9 @@ struct Xi1820Analysis {
       histos.add("QAbefore/k0sDauTPCNsigmaNegPi", "K0s daughter pion TPC NSigma before cuts", kTH2F, {ptAxisQA, nsigmaAxis});
       histos.add("QAbefore/k0sNCrossedRowsPos", "K0s positive daughter crossed rows before cuts", kTH2F, {ptAxisQA, {160, 0, 160, "TPC crossed rows"}});
       histos.add("QAbefore/k0sNCrossedRowsNeg", "K0s negative daughter crossed rows before cuts", kTH2F, {ptAxisQA, {160, 0, 160, "TPC crossed rows"}});
-
       histos.add("QAbefore/k0sArmenterosPodolanski", "K0s candidate Armenteros-Podolanski before cuts", kTH3F, {armenterosAlphaAxis, armenterosQtAxis, ptAxisQA});
 
+      histos.add("QAafter/k0sDCAtoPV", "K0s DCA to PV after cuts", kTH2F, {ptAxisQA, dcaAxis});
       histos.add("QAafter/k0sMass", "K0s mass after cuts", kTH1F, {{100, 0.4, 0.6, "K^{0}_{S} mass (GeV/#it{c}^{2})"}});
       histos.add("QAafter/k0sPt", "K0s pT after cuts", kTH1F, {ptAxisQA});
       histos.add("QAafter/k0sEta", "K0s eta after cuts", kTH1F, {{100, -2.0, 2.0, "#eta"}});
@@ -410,6 +411,26 @@ struct Xi1820Analysis {
       histos.add("MC/hMCTruthMassPtK0sAntiLambda", "MC Truth Mass vs pT K^{0}_{S}#bar{#Lambda}", kTH2F, {invMassAxis, ptAxis});
     }
   }
+  template <typename V0Type>
+  static std::array<int, 2> v0DaughterIds(const V0Type& v0)
+  {
+    auto indices = v0.indices();
+    return {indices[0], indices[1]};
+  }
+
+  template <std::size_t N, std::size_t M>
+  static bool sharesAnyDaughterId(const std::array<int, N>& first, const std::array<int, M>& second)
+  {
+    for (const auto& firstId : first) {
+      for (const auto& secondId : second) {
+        if (firstId == secondId) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
 
   // Lambda/Anti-Lambda selection
   template <typename CollisionType, typename V0Type>
@@ -823,6 +844,7 @@ struct Xi1820Analysis {
       for (const auto& v0 : v0s) {
         // Lambda QA before cuts
         if constexpr (!IsMix) {
+          histos.fill(HIST("QAbefore/lambdaDCAtoPV"), v0.pt(), v0.dcav0topv());
           histos.fill(HIST("QAbefore/lambdaMass"), v0.mLambda());
           histos.fill(HIST("QAbefore/lambdaMassAnti"), v0.mAntiLambda());
           histos.fill(HIST("QAbefore/lambdaPt"), v0.pt());
@@ -871,6 +893,7 @@ struct Xi1820Analysis {
             histos.fill(HIST("QAafter/lambdaAntiDaughterTPCNSigmaPosPi"), v0.pt(), v0.daughterTPCNSigmaPosPi());
             histos.fill(HIST("QAafter/lambdaAntiDaughterTPCNSigmaNegPr"), v0.pt(), v0.daughterTPCNSigmaNegPr());
           }
+          histos.fill(HIST("QAafter/lambdaDCAtoPV"), v0.pt(), v0.dcav0topv());
           histos.fill(HIST("QAafter/lambdaPt"), v0.pt());
           histos.fill(HIST("QAafter/lambdaEta"), v0.eta());
           histos.fill(HIST("QAafter/lambdaCosPA"), v0.pt(), v0.v0CosPA());
@@ -1093,6 +1116,7 @@ struct Xi1820Analysis {
     for (const auto& k0s : k0sCands) {
       // K0s QA before cuts
       if constexpr (!IsMix) {
+        histos.fill(HIST("QAbefore/k0sDCAtoPV"), k0s.pt(), k0s.dcav0topv());
         histos.fill(HIST("QAbefore/k0sMass"), k0s.mK0Short());
         histos.fill(HIST("QAbefore/k0sPt"), k0s.pt());
         histos.fill(HIST("QAbefore/k0sEta"), k0s.eta());
@@ -1121,6 +1145,7 @@ struct Xi1820Analysis {
       if constexpr (!IsMix) {
         nKaonsAfterCuts++;
         // K0s QA after cuts
+        histos.fill(HIST("QAafter/k0sDCAtoPV"), k0s.pt(), k0s.dcav0topv());
         histos.fill(HIST("QAafter/k0sMass"), k0s.mK0Short());
         histos.fill(HIST("QAafter/k0sPt"), k0s.pt());
         histos.fill(HIST("QAafter/k0sEta"), k0s.eta());
@@ -1150,6 +1175,10 @@ struct Xi1820Analysis {
         if constexpr (!IsMix) {
           if (indexLambda == indexK0s) // Avoid self-combination
             continue;
+          if (sharesAnyDaughterId(v0DaughterIds(k0s), v0DaughterIds(lambda))) {
+            continue;
+          }
+          histos.fill(HIST("QAbefore/lambdaDCAtoPV"), lambda.pt(), lambda.dcav0topv());
           histos.fill(HIST("QAbefore/lambdaMass"), lambda.mLambda());
           histos.fill(HIST("QAbefore/lambdaMassAnti"), lambda.mAntiLambda());
           histos.fill(HIST("QAbefore/lambdaPt"), lambda.pt());
@@ -1198,6 +1227,7 @@ struct Xi1820Analysis {
             histos.fill(HIST("QAafter/lambdaAntiDaughterTPCNSigmaPosPi"), lambda.pt(), lambda.daughterTPCNSigmaPosPi());
             histos.fill(HIST("QAafter/lambdaAntiDaughterTPCNSigmaNegPr"), lambda.pt(), lambda.daughterTPCNSigmaNegPr());
           }
+          histos.fill(HIST("QAafter/lambdaDCAtoPV"), lambda.pt(), lambda.dcav0topv());
           histos.fill(HIST("QAafter/lambdaPt"), lambda.pt());
           histos.fill(HIST("QAafter/lambdaEta"), lambda.eta());
           histos.fill(HIST("QAafter/lambdaCosPA"), lambda.pt(), lambda.v0CosPA());
