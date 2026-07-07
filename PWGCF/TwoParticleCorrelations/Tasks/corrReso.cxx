@@ -86,6 +86,7 @@ struct CorrReso {
   O2_DEFINE_CONFIGURABLE(cfgMaxMultForCorrelations, int, 20, "maximum multiplicity for correlations")
   O2_DEFINE_CONFIGURABLE(cfgRefMultiplicity, bool, false, "Use multiplicity of reference tracks for multiplicity correlation cut instead of Nch")
   Configurable<std::vector<int>> cfgRunRemoveList{"cfgRunRemoveList", std::vector<int>{-1}, "excluded run numbers"};
+  O2_DEFINE_CONFIGURABLE(cfgEvSelRCTflags, std::string, "", "keep empty to disable, usage: 'CentralBarrelTracking (CBT)', 'CBT_hadronPID' ")
 
   struct : ConfigurableGroup{
              O2_DEFINE_CONFIGURABLE(cfgPtCutMin, float, 0.2f, "minimum accepted track pT")
@@ -173,7 +174,6 @@ struct CorrReso {
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEtaTpcFt0a{"axisDeltaEtaTpcFt0a", {32, -5.8, -2.6}, "delta eta axis, -5.8~-2.6 for TPC-FT0A,"};
   ConfigurableAxis axisDeltaEtaTpcFt0c{"axisDeltaEtaTpcFt0c", {32, 1.2, 4.2}, "delta eta axis, 1.2~4.2 for TPC-FT0C"};
-  ConfigurableAxis axisDeltaEtaFt0aFt0c{"axisDeltaEtaFt0aFt0c", {32, -1.5, 3.0}, "delta eta axis"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 10}, "pt trigger axis for histograms"};
   ConfigurableAxis axisVtxMix{"axisVtxMix", {VARIABLE_WIDTH, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "vertex axis for mixed event histograms"};
   ConfigurableAxis axisMultMix{"axisMultMix", {VARIABLE_WIDTH, 0, 10, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260}, "multiplicity / centrality axis for mixed event histograms"};
@@ -219,8 +219,6 @@ struct CorrReso {
   OutputObj<CorrelationContainer> mixedTpcFt0a{"mixedEvent_TPC_FT0A"};
   OutputObj<CorrelationContainer> sameTpcFt0c{"sameEvent_TPC_FT0C"};
   OutputObj<CorrelationContainer> mixedTpcFt0c{"mixedEvent_TPC_FT0C"};
-  OutputObj<CorrelationContainer> sameFt0aFt0c{"sameEvent_FT0A_FT0C"};
-  OutputObj<CorrelationContainer> mixedFt0aFt0c{"mixedEvent_FT0A_FT0C"};
 
   HistogramRegistry registry{"registry"};
 
@@ -399,7 +397,7 @@ struct CorrReso {
         registry.get<TH1>(HIST("hLambdaCount"))->GetXaxis()->SetBinLabel(10, "Daughter track selection");
       }
     }
-    if (doprocessSameFt0aFt0c || doprocessSameTpcFt0a || doprocessSameTpcFt0c) {
+    if (doprocessSameTpcFt0a || doprocessSameTpcFt0c) {
       registry.add("hEventCountRct", "Number of Event;; Count", {HistType::kTH1D, {{2, 0, 2}}});
       registry.get<TH1>(HIST("hEventCountRct"))->GetXaxis()->SetBinLabel(1, "rct fail");
       registry.get<TH1>(HIST("hEventCountRct"))->GetXaxis()->SetBinLabel(2, "rct pass");
@@ -420,7 +418,7 @@ struct CorrReso {
       registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(kUseT0AV0ACut + 1, "T0AV0A cut");
     }
 
-    if ((doprocessSameFt0aFt0c || doprocessSameTpcFt0a || doprocessSameTpcFt0c) && cfgQaCheck) {
+    if ((doprocessSameTpcFt0a || doprocessSameTpcFt0c) && cfgQaCheck) {
       registry.add("hPassedEventSelection", "Number of Event;; Count", {HistType::kTH1D, {{12, -0.5, 11.5}}});
       registry.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(kFilteredEvents + 1, "Filtered events");
       registry.get<TH1>(HIST("hPassedEventSelection"))->GetXaxis()->SetBinLabel(kAfterSel8 + 1, "After sel8");
@@ -469,7 +467,7 @@ struct CorrReso {
       cfgFuncParas.fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
     }
 
-    if (doprocessSameTpcFt0a || doprocessSameTpcFt0c || doprocessSameFt0aFt0c) {
+    if (doprocessSameTpcFt0a || doprocessSameTpcFt0c) {
       registry.add("Phi", "Phi", {HistType::kTH1D, {axisPhi}});
       registry.add("Eta", "Eta", {HistType::kTH1D, {axisEta}});
       registry.add("EtaCorrected", "EtaCorrected", {HistType::kTH1D, {axisEta}});
@@ -500,11 +498,6 @@ struct CorrReso {
       registry.add("Assoc_amp_mixed_TPC_FT0C", "", {HistType::kTH2D, {axisChannelFt0aAxis, axisAmplitudeFt0a}});
       registry.add("Trig_hist_TPC_FT0C", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger, axisInvMass}}});
     }
-    if (doprocessSameFt0aFt0c) {
-      registry.add("deltaEta_deltaPhi_same_FT0A_FT0C", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaFt0aFt0c}}); // check to see the delta eta and delta phi distribution
-      registry.add("deltaEta_deltaPhi_mixed_FT0A_FT0C", "", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEtaFt0aFt0c}});
-      registry.add("Trig_hist_FT0A_FT0C", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
-    }
 
     registry.add("eventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
 
@@ -526,13 +519,6 @@ struct CorrReso {
                                              {axisDeltaPhi, "#Delta#varphi (rad)"},
                                              {axisDeltaEtaTpcFt0c, "#Delta#eta"}};
 
-    std::vector<AxisSpec> corrAxisFt0aFt0c = {{axisSample, "Sample"},
-                                              {axisVertex, "z-vtx (cm)"},
-                                              {axisPtTrigger, "p_{T} (GeV/c)"},
-                                              {axisNch, "N_{ch}"},
-                                              {axisDeltaPhi, "#Delta#varphi (rad)"},
-                                              {axisDeltaEtaFt0aFt0c, "#Delta#eta"}};
-
     std::vector<AxisSpec> effAxis = {
       {axisEtaEfficiency, "#eta"},
       {axisPtEfficiency, "p_{T} (GeV/c)"},
@@ -548,9 +534,9 @@ struct CorrReso {
       sameTpcFt0c.setObject(new CorrelationContainer("sameEvent_TPC_FT0C", "sameEvent_TPC_FT0C", corrAxisTpcFt0c, effAxis, userAxis));
       mixedTpcFt0c.setObject(new CorrelationContainer("mixedEvent_TPC_FT0C", "mixedEvent_TPC_FT0C", corrAxisTpcFt0c, effAxis, userAxis));
     }
-    if (doprocessSameFt0aFt0c) {
-      sameFt0aFt0c.setObject(new CorrelationContainer("sameEvent_FT0A_FT0C", "sameEvent_FT0A_FT0C", corrAxisFt0aFt0c, effAxis, userAxis));
-      mixedFt0aFt0c.setObject(new CorrelationContainer("mixedEvent_FT0A_FT0C", "mixedEvent_FT0A_FT0C", corrAxisFt0aFt0c, effAxis, userAxis));
+
+    if (!cfgEvSelRCTflags.value.empty()) {
+      rctChecker.init(cfgEvSelRCTflags.value.c_str()); // override initialzation
     }
 
     LOGF(info, "End of init");
@@ -1299,52 +1285,6 @@ struct CorrReso {
     }
   }
 
-  template <CorrelationContainer::CFStep step, typename TFT0s>
-  void fillCorrelationsFT0AFT0C(TFT0s const& ft0Col1, TFT0s const& ft0Col2, float posZ, int system, int multiplicity, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
-  {
-    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
-
-    float triggerWeight = 1.0f;
-    std::size_t channelASize = ft0Col1.channelA().size();
-    std::size_t channelCSize = ft0Col2.channelC().size();
-    // loop over all tracks
-    for (std::size_t iChA = 0; iChA < channelASize; iChA++) {
-
-      int chanelAid = 0;
-      float amplA = 0.;
-      getChannel(ft0Col1, iChA, chanelAid, amplA, kFT0A, system);
-      auto phiA = getPhiFT0(chanelAid, kFT0A);
-      auto etaA = getEtaFT0(chanelAid, kFT0A);
-
-      if (system == SameEvent) {
-        registry.fill(HIST("Trig_hist_FT0A_FT0C"), fSampleIndex, posZ, 0.5, eventWeight * amplA);
-      }
-
-      for (std::size_t iChC = 0; iChC < channelCSize; iChC++) {
-        int chanelCid = 0;
-        float amplC = 0.;
-        getChannel(ft0Col2, iChC, chanelCid, amplC, kFT0C, system);
-        auto phiC = getPhiFT0(chanelCid, kFT0C);
-        auto etaC = getEtaFT0(chanelCid, kFT0C);
-        float deltaPhi = RecoDecay::constrainAngle(phiA - phiC, -PIHalf);
-        float deltaEta = etaA - etaC;
-
-        // fill the right sparse and histograms
-        if (system == SameEvent) {
-          if (cfgQaCheck) {
-            registry.fill(HIST("deltaEta_deltaPhi_same_FT0A_FT0C"), deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
-          }
-          sameFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, multiplicity, deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
-        } else if (system == MixedEvent) {
-          if (cfgQaCheck) {
-            registry.fill(HIST("deltaEta_deltaPhi_mixed_FT0A_FT0C"), deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
-          }
-          mixedFt0aFt0c->getPairHist()->Fill(step, fSampleIndex, posZ, 0.5, multiplicity, deltaPhi, deltaEta, amplA * amplC * eventWeight * triggerWeight);
-        }
-      }
-    }
-  }
-
   bool isGoodRun(int runNumber)
   {
     for (const auto& ExcludedRun : cfgRunRemoveList.value) {
@@ -1463,7 +1403,7 @@ struct CorrReso {
       int currentRunNumber = bc.runNumber();
       if (!cfgRunRemoveList.value.empty()) {
         if (!isGoodRun(currentRunNumber)) // Rejects runs if bad run number
-          return;
+          continue;
       }
 
       loadAlignParam(bc.timestamp());
@@ -1477,7 +1417,7 @@ struct CorrReso {
       }
 
       if (multiplicity > cfgMaxMultForCorrelations || multiplicity < cfgMinMultForCorrelations) {
-        return;
+        continue;
       }
 
       const auto& ft0 = collision2.foundFT0();
@@ -1583,7 +1523,7 @@ struct CorrReso {
       int currentRunNumber = bc.runNumber();
       if (!cfgRunRemoveList.value.empty()) {
         if (!isGoodRun(currentRunNumber)) // Rejects runs if bad run number
-          return;
+          continue;
       }
       loadAlignParam(bc.timestamp());
       loadCorrection(bc.timestamp());
@@ -1597,137 +1537,13 @@ struct CorrReso {
       }
 
       if (multiplicity > cfgMaxMultForCorrelations || multiplicity < cfgMinMultForCorrelations) {
-        return;
+        continue;
       }
 
       fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(v0s1, ft0, collision1.posZ(), collision1.posY(), collision1.posX(), MixedEvent, kFT0C, eventWeight);
     }
   }
   PROCESS_SWITCH(CorrReso, processMixedTpcFt0c, "Process mixed events for TPC-FT0C correlation", false);
-
-  void processSameFt0aFt0c(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&)
-  {
-    registry.fill(HIST("hEventCount"), kFilteredEvents);
-
-    if (cfgQaCheck) {
-      eventSelectedIndividually(collision);
-    }
-
-    if (!collision.sel8())
-      return;
-
-    registry.fill(HIST("hEventCount"), kAfterSel8);
-
-    if (!eventRct(collision, true))
-      return;
-
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    int currentRunNumber = bc.runNumber();
-    if (!cfgRunRemoveList.value.empty()) {
-      if (!isGoodRun(currentRunNumber)) // Rejects runs if bad run number
-        return;
-    }
-
-    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), true))
-      return;
-
-    if (!collision.has_foundFT0())
-      return;
-
-    loadAlignParam(bc.timestamp());
-    loadGain(bc);
-    loadCorrection(bc.timestamp());
-    float eventWeight = 1.0f;
-
-    const auto& ft0 = collision.foundFT0();
-
-    fillYield(collision, tracks);
-
-    registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
-
-    double multiplicity = tracks.size();
-
-    if (cfgQaCheck)
-      registry.fill(HIST("Nch"), multiplicity);
-
-    if (cfgStrictTrackCounter) {
-      trackCounter(tracks, multiplicity);
-    }
-
-    if (cfgQaCheck) {
-      registry.fill(HIST("Nch_corrected"), multiplicity);
-    }
-
-    if (multiplicity > cfgMaxMultForCorrelations || multiplicity < cfgMinMultForCorrelations) {
-      return;
-    }
-
-    fillCorrelationsFT0AFT0C<CorrelationContainer::kCFStepReconstructed>(ft0, ft0, collision.posZ(), SameEvent, multiplicity, eventWeight);
-  }
-  PROCESS_SWITCH(CorrReso, processSameFt0aFt0c, "Process same event for FT0A-FT0C correlation", true);
-
-  void processMixedFt0aFt0c(FilteredCollisions const& collisions, FilteredTracks const& tracks, aod::FT0s const&, aod::BCsWithTimestamps const&)
-  {
-
-    auto getTracksSize = [&tracks, this](FilteredCollisions::iterator const& collision) {
-      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
-      auto mult = associatedTracks.size();
-      return mult;
-    };
-
-    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
-
-    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxMix, axisMultMix}, true};
-
-    auto tracksTuple = std::make_tuple(tracks, tracks);
-    Pair<FilteredCollisions, FilteredTracks, FilteredTracks, MixedBinning> pairs{binningOnVtxAndMult, cfgMinMixEventNum, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
-    for (auto it = pairs.begin(); it != pairs.end(); it++) {
-      auto& [collision1, tracks1, collision2, tracks2] = *it;
-
-      // should have the same event to TPC-FT0A/C correlations
-      if (!collision1.sel8() || !collision2.sel8())
-        continue;
-
-      if (!eventRct(collision1, false) || !eventRct(collision2, false))
-        continue;
-
-      if (cfgUseAdditionalEventCut && !eventSelected(collision1, tracks1.size(), false))
-        continue;
-      if (cfgUseAdditionalEventCut && !eventSelected(collision2, tracks2.size(), false))
-        continue;
-
-      if (!(collision1.has_foundFT0() && collision2.has_foundFT0()))
-        continue;
-
-      auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
-      int currentRunNumber = bc.runNumber();
-      if (!cfgRunRemoveList.value.empty()) {
-        if (!isGoodRun(currentRunNumber)) // Rejects runs if bad run number
-          return;
-      }
-      loadAlignParam(bc.timestamp());
-      loadCorrection(bc.timestamp());
-      float eventWeight = 1.0f;
-
-      const auto& ft0Col1 = collision1.foundFT0();
-      const auto& ft0Col2 = collision2.foundFT0();
-
-      double multiplicity = tracks1.size();
-
-      if (cfgStrictTrackCounter) {
-        trackCounter(tracks1, multiplicity);
-      }
-
-      if (multiplicity > cfgMaxMultForCorrelations || multiplicity < cfgMinMultForCorrelations) {
-        return;
-      }
-
-      registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
-
-      fillCorrelationsFT0AFT0C<CorrelationContainer::kCFStepReconstructed>(ft0Col1, ft0Col2, collision1.posZ(), MixedEvent, multiplicity, eventWeight);
-    }
-  }
-  PROCESS_SWITCH(CorrReso, processMixedFt0aFt0c, "Process mixed events for FT0A-FT0C correlation", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

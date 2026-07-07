@@ -84,6 +84,7 @@ struct CorrFit {
   O2_DEFINE_CONFIGURABLE(cfgMaxMultForCorrelations, int, 20, "maximum multiplicity for correlations")
   O2_DEFINE_CONFIGURABLE(cfgRefMultiplicity, bool, false, "Use multiplicity of reference tracks for multiplicity correlation cut instead of Nch")
   Configurable<std::vector<int>> cfgRunRemoveList{"cfgRunRemoveList", std::vector<int>{-1}, "excluded run numbers"};
+  O2_DEFINE_CONFIGURABLE(cfgEvSelRCTflags, std::string, "", "keep empty to disable, usage: 'CentralBarrelTracking (CBT)', 'CBT_hadronPID' ")
 
   struct : ConfigurableGroup{
              O2_DEFINE_CONFIGURABLE(cfgPtCutMin, float, 0.2f, "minimum accepted track pT")
@@ -500,6 +501,10 @@ struct CorrFit {
     if (doprocessSameTPC) {
       sameTPC.setObject(new CorrelationContainer("sameEvent_TPC", "sameEvent_TPC", corrAxisTPC, effAxis, userAxis));
       mixedTPC.setObject(new CorrelationContainer("mixedEvent_TPC", "mixedEvent_TPC", corrAxisTPC, effAxis, userAxis));
+    }
+
+    if (!cfgEvSelRCTflags.value.empty()) {
+      rctChecker.init(cfgEvSelRCTflags.value.c_str()); // override initialzation
     }
 
     LOGF(info, "End of init");
@@ -1193,14 +1198,12 @@ struct CorrFit {
         if (system == SameEvent) {
           if (corType == kFT0A) {
             if (cfgQaCheck) {
-              registry.fill(HIST("Nch"), multiplicity);
               registry.fill(HIST("Assoc_amp_same_TPC_FT0A"), chanelid, ampl);
               registry.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0A"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             }
             sameTpcFt0a->getPairHist()->Fill(step, fSampleIndex, posZ, track1.pt(), multiplicity, deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
           } else if (corType == kFT0C) {
             if (cfgQaCheck) {
-              registry.fill(HIST("Nch"), multiplicity);
               registry.fill(HIST("Assoc_amp_same_TPC_FT0C"), chanelid, ampl);
               registry.fill(HIST("deltaEta_deltaPhi_same_TPC_FT0C"), deltaPhi, deltaEta, ampl * eventWeight * triggerWeight);
             }
@@ -1230,9 +1233,6 @@ struct CorrFit {
   {
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
-    if (cfgQaCheck) {
-      registry.fill(HIST("Nch"), multiplicity);
-    }
     float triggerWeight = 1.0f;
     std::size_t channelASize = ft0Col1.channelA().size();
     std::size_t channelCSize = ft0Col2.channelC().size();
@@ -1417,6 +1417,10 @@ struct CorrFit {
 
     double multiplicity = tracks.size();
 
+    if (cfgQaCheck) {
+      registry.fill(HIST("Nch"), multiplicity);
+    }
+
     if (cfgStrictTrackCounter) {
       trackCounter(tracks, multiplicity);
     }
@@ -1472,7 +1476,7 @@ struct CorrFit {
       int currentRunNumber = bc.runNumber();
       if (!cfgRunRemoveList.value.empty()) {
         if (!isGoodRun(currentRunNumber)) // Rejects runs if bad run number
-          return;
+          continue;
       }
 
       loadAlignParam(bc.timestamp());
@@ -1486,7 +1490,7 @@ struct CorrFit {
       }
 
       if (multiplicity > cfgMaxMultForCorrelations || multiplicity < cfgMinMultForCorrelations) {
-        return;
+        continue;
       }
 
       const auto& ft0 = collision2.foundFT0();
@@ -1530,6 +1534,10 @@ struct CorrFit {
     const auto& ft0 = collision.foundFT0();
 
     double multiplicity = tracks.size();
+
+    if (cfgQaCheck) {
+      registry.fill(HIST("Nch"), multiplicity);
+    }
 
     if (cfgStrictTrackCounter) {
       trackCounter(tracks, multiplicity);
@@ -1584,7 +1592,7 @@ struct CorrFit {
       int currentRunNumber = bc.runNumber();
       if (!cfgRunRemoveList.value.empty()) {
         if (!isGoodRun(currentRunNumber)) // Rejects runs if bad run number
-          return;
+          continue;
       }
       loadAlignParam(bc.timestamp());
       loadCorrection(bc.timestamp());
@@ -1598,7 +1606,7 @@ struct CorrFit {
       }
 
       if (multiplicity > cfgMaxMultForCorrelations || multiplicity < cfgMinMultForCorrelations) {
-        return;
+        continue;
       }
 
       fillCorrelationsTPCFT0<CorrelationContainer::kCFStepReconstructed>(tracks1, ft0, collision1.posZ(), MixedEvent, multiplicity, kFT0C, eventWeight);
@@ -1644,6 +1652,10 @@ struct CorrFit {
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
 
     double multiplicity = tracks.size();
+
+    if (cfgQaCheck) {
+      registry.fill(HIST("Nch"), multiplicity);
+    }
 
     if (cfgStrictTrackCounter) {
       trackCounter(tracks, multiplicity);
@@ -1698,7 +1710,7 @@ struct CorrFit {
       int currentRunNumber = bc.runNumber();
       if (!cfgRunRemoveList.value.empty()) {
         if (!isGoodRun(currentRunNumber)) // Rejects runs if bad run number
-          return;
+          continue;
       }
       loadAlignParam(bc.timestamp());
       loadCorrection(bc.timestamp());
@@ -1714,7 +1726,7 @@ struct CorrFit {
       }
 
       if (multiplicity > cfgMaxMultForCorrelations || multiplicity < cfgMinMultForCorrelations) {
-        return;
+        continue;
       }
 
       registry.fill(HIST("eventcount"), MixedEvent); // fill the mixed event in the 3 bin
@@ -1752,6 +1764,10 @@ struct CorrFit {
     fillYield(collision, tracks);
 
     double multiplicity = tracks.size();
+
+    if (cfgQaCheck) {
+      registry.fill(HIST("Nch"), multiplicity);
+    }
 
     if (cfgStrictTrackCounter) {
       trackCounter(tracks, multiplicity);
@@ -1804,7 +1820,7 @@ struct CorrFit {
       int currentRunNumber = bc.runNumber();
       if (!cfgRunRemoveList.value.empty()) {
         if (!isGoodRun(currentRunNumber)) // Rejects runs if bad run number
-          return;
+          continue;
       }
 
       loadCorrection(bc.timestamp());
@@ -1816,7 +1832,7 @@ struct CorrFit {
       }
 
       if (multiplicity > cfgMaxMultForCorrelations || multiplicity < cfgMinMultForCorrelations) {
-        return;
+        continue;
       }
 
       fillCorrelations<CorrelationContainer::kCFStepReconstructed>(tracks1, tracks2, collision1.posZ(), MixedEvent, multiplicity, getMagneticField(collision1.bc_as<aod::BCsWithTimestamps>().timestamp()));
