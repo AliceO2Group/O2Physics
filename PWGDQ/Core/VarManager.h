@@ -1661,15 +1661,12 @@ KFPTrack VarManager::createKFPTrackFromTrack(const T& track)
   trackparCov.getXYZGlo(trkpos_par);
   trackparCov.getPxPyPzGlo(trkmom_par);
   trackparCov.getCovXYZPxPyPzGlo(trk_cov);
-  float trkpar_KF[6] = {trkpos_par[0], trkpos_par[1], trkpos_par[2],
-                        trkmom_par[0], trkmom_par[1], trkmom_par[2]};
-  float trkcov_KF[21];
-  for (int i = 0; i < 21; i++) {
-    trkcov_KF[i] = trk_cov[i];
-  }
+  std::array<float, 6> trkpar_KF = {trkpos_par[0], trkpos_par[1], trkpos_par[2],
+                                    trkmom_par[0], trkmom_par[1], trkmom_par[2]};
+  std::array<float, 21> trkcov_KF = trk_cov;
   KFPTrack kfpTrack;
-  kfpTrack.SetParameters(trkpar_KF);
-  kfpTrack.SetCovarianceMatrix(trkcov_KF);
+  kfpTrack.SetParameters(trkpar_KF.data());
+  kfpTrack.SetCovarianceMatrix(trkcov_KF.data());
   kfpTrack.SetCharge(track.sign());
   kfpTrack.SetNDF(track.tpcNClsFound() - 5);
   kfpTrack.SetChi2(track.tpcChi2NCl() * track.tpcNClsFound());
@@ -1683,15 +1680,12 @@ KFPTrack VarManager::createKFPFwdTrackFromFwdTrack(const T& muon)
 
   std::array<float, 21> trk_cov{};
   trackparCov.getCovXYZPxPyPzGlo(trk_cov);
-  double trkpar_KF[6] = {trackparCov.getX(), trackparCov.getY(), trackparCov.getZ(),
-                         trackparCov.getPx(), trackparCov.getPy(), trackparCov.getPz()};
-  float trkcov_KF[21];
-  for (int i = 0; i < 21; i++) {
-    trkcov_KF[i] = trk_cov[i];
-  }
+  std::array<double, 6> trkpar_KF = {trackparCov.getX(), trackparCov.getY(), trackparCov.getZ(),
+                                     trackparCov.getPx(), trackparCov.getPy(), trackparCov.getPz()};
+  std::array<float, 21> trkcov_KF = trk_cov;
   KFPTrack kfpTrack;
-  kfpTrack.SetParameters(trkpar_KF);
-  kfpTrack.SetCovarianceMatrix(trkcov_KF);
+  kfpTrack.SetParameters(trkpar_KF.data());
+  kfpTrack.SetCovarianceMatrix(trkcov_KF.data());
   kfpTrack.SetCharge(muon.sign());
   kfpTrack.SetNDF(muon.nClusters() - 5);
   kfpTrack.SetChi2(muon.chi2());
@@ -3487,7 +3481,7 @@ void VarManager::FillTrackCollisionMC(T1 const& track, T2 const& MotherTrack, C 
   }
 
   // Extract the collision primary vertex position using constexpr, since the collision type may be CollisionMC or ReducedMCEvent
-  double collPos[3] = {0.0, 0.0, 0.0};
+  std::array<double, 3> collPos = {0.0, 0.0, 0.0};
   if constexpr (fillMap & ObjTypes::CollisionMC) {
     collPos[0] = collision.posX();
     collPos[1] = collision.posY();
@@ -5109,9 +5103,9 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
           auto geoMan2 = o2::base::GeometryManager::meanMaterialBudget(t2.x(), t2.y(), t2.z(), KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY(), KFGeoTwoProng.GetZ());
           auto x2x01 = static_cast<float>(geoMan1.meanX2X0);
           auto x2x02 = static_cast<float>(geoMan2.meanX2X0);
-          float B[3];
-          float xyz[3] = {0, 0, 0};
-          KFGeoTwoProng.GetFieldValue(xyz, B);
+          std::array<float, 3> B{};
+          std::array<float, 3> xyz = {0.f, 0.f, 0.f};
+          KFGeoTwoProng.GetFieldValue(xyz.data(), B.data());
           // TODO: find better soluton to handle cases where KF outputs negative variances
           /*float covXX = 0.1;
           float covYY = 0.1;
@@ -5963,8 +5957,8 @@ void VarManager::FillSpectatorPlane(C const& collision, float* values)
   values[kTimeZPC] = collision.timeZPC();
 
   constexpr float beamEne = 5.36 * 0.5;
-  constexpr float x[4] = {-1.75, 1.75, -1.75, 1.75};
-  constexpr float y[4] = {-1.75, -1.75, 1.75, 1.75};
+  constexpr std::array<float, 4> x = {-1.75f, 1.75f, -1.75f, 1.75f};
+  constexpr std::array<float, 4> y = {-1.75f, -1.75f, 1.75f, 1.75f};
   // constexpr float intcalibZNA[4] = {0.7997028, 0.8453715, 0.7879917, 0.7695486};
   // constexpr float intcalibZNC[4] = {0.7631577, 0.8408003, 0.7083920, 0.7731769};
   // constexpr float alpha = 0.395; // WARNING: Run 2 coorection, to be checked
