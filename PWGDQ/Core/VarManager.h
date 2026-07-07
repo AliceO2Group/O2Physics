@@ -179,10 +179,10 @@ class VarManager : public TObject
 
   enum BarrelTrackFilteringBits {
     kIsConversionLeg = 0,     // electron from conversions
-    kIsK0sLeg,                // pion from K0s
-    kIsLambdaLeg,             // proton or pion from Lambda
-    kIsALambdaLeg,            // proton or pion from anti-Lambda
-    kIsOmegaLeg,              // kaon from Omega baryon decay
+    kIsK0sLeg = 1,                // pion from K0s
+    kIsLambdaLeg = 2,             // proton or pion from Lambda
+    kIsALambdaLeg = 3,            // proton or pion from anti-Lambda
+    kIsOmegaLeg = 4,              // kaon from Omega baryon decay
     kDalitzBits = 5,          // first bit for Dalitz tagged tracks
     kBarrelUserCutsBits = 13, // first bit for user track cuts
     kIsTPCPostcalibrated = 63 // tracks were postcalibrated for the TPC PID
@@ -193,6 +193,7 @@ class VarManager : public TObject
     kMuonIsPropagated = 7  // whether the muon was propagated already
   };
 
+  // NOLINTNEXTLINE(readability-enum-initial-value)
   enum Variables {
     kNothing = -1,
     // Run wise variables
