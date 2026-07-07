@@ -431,7 +431,6 @@ struct Xi1820Analysis {
     return false;
   }
 
-
   // Lambda/Anti-Lambda selection
   template <typename CollisionType, typename V0Type>
   bool v0Cut(const CollisionType& collision, const V0Type& v0, bool isLambda)
