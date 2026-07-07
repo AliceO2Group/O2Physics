@@ -1215,7 +1215,7 @@ class VarManager : public TObject
     }
     SetVariableDependencies();
   }
-  static void SetUseVars(const std::vector<int> usedVars)
+  static void SetUseVars(const std::vector<int>& usedVars)
   {
     for (auto& var : usedVars) {
       fgUsedVars[var] = true;
@@ -1448,7 +1448,7 @@ class VarManager : public TObject
   template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
   static void FillPairVertexing(C const& collision, T const& t1, T const& t2, bool propToSV = false, float* values = nullptr);
   template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
-  static void FillPairVertexingRecomputePV(C const& /*collision*/, T const& t1, T const& t2, o2::dataformats::VertexBase pvRefitted, float* values = nullptr);
+  static void FillPairVertexingRecomputePV(C const& /*collision*/, T const& t1, T const& t2, const o2::dataformats::VertexBase& pvRefitted, float* values = nullptr);
   template <uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
   static void FillTripletVertexing(C const& collision, T const& t1, T const& t2, T const& t3, PairCandidateType tripletType, float* values = nullptr);
   template <int candidateType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T1>
@@ -1598,7 +1598,7 @@ class VarManager : public TObject
   template <int pairType, typename T1, typename T2>
   static float calculatePhiV(const T1& t1, const T2& t2);
   template <typename T1, typename T2>
-  static float LorentzTransformJpsihadroncosChi(TString Option, const T1& v1, const T2& v2);
+  static float LorentzTransformJpsihadroncosChi(const TString& Option, const T1& v1, const T2& v2);
 
   static o2::vertexing::DCAFitterN<2> fgFitterTwoProngBarrel;
   static o2::vertexing::DCAFitterN<3> fgFitterThreeProngBarrel;
@@ -5168,7 +5168,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
 }
 
 template <int pairType, uint32_t collFillMap, uint32_t fillMap, typename C, typename T>
-void VarManager::FillPairVertexingRecomputePV(C const& /*collision*/, T const& t1, T const& t2, o2::dataformats::VertexBase pvRefitted, float* values)
+void VarManager::FillPairVertexingRecomputePV(C const& /*collision*/, T const& t1, T const& t2, const o2::dataformats::VertexBase& pvRefitted, float* values)
 {
   // recompute decay lenght variables using updated primary vertex
 
@@ -7070,7 +7070,7 @@ void VarManager::FillBdtScore(T1 const& bdtScore, float* values)
 }
 //__________________________________________________________________
 template <typename T1, typename T2>
-float VarManager::LorentzTransformJpsihadroncosChi(TString Option, T1 const& v1, T2 const& v2)
+float VarManager::LorentzTransformJpsihadroncosChi(const TString& Option, T1 const& v1, T2 const& v2)
 {
   float value = -999.0f;
   auto beta_v1 = v1.BoostToCM();
