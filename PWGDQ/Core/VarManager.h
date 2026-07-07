@@ -2143,8 +2143,8 @@ void VarManager::FillEvent(T const& event, float* values)
       values[kIsDoubleGap] = (event.tag_bit(56 + kDoubleGap) > 0);
       values[kIsSingleGapA] = (event.tag_bit(56 + kSingleGapA) > 0);
       values[kIsSingleGapC] = (event.tag_bit(56 + kSingleGapC) > 0);
-      values[kIsSingleGap] = values[kIsSingleGapA] || values[kIsSingleGapC];
-      values[kIsNoGap] = !values[kIsDoubleGap] && !values[kIsSingleGap];
+      values[kIsSingleGap] = (values[kIsSingleGapA] != 0.f || values[kIsSingleGapC] != 0.f);
+      values[kIsNoGap] = (values[kIsDoubleGap] == 0.f && values[kIsSingleGap] == 0.f);
     }
     if (fgUsedVars[kIsITSUPCMode]) {
       values[kIsITSUPCMode] = (event.tag_bit(56 + kITSUPCMode) > 0);
@@ -2553,8 +2553,8 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kIsDoubleGap] = (event.eventFilter() & (static_cast<uint64_t>(1) << kDoubleGap)) > 0;
     values[kIsSingleGapA] = (event.eventFilter() & (static_cast<uint64_t>(1) << kSingleGapA)) > 0;
     values[kIsSingleGapC] = (event.eventFilter() & (static_cast<uint64_t>(1) << kSingleGapC)) > 0;
-    values[kIsSingleGap] = values[kIsSingleGapA] || values[kIsSingleGapC];
-    values[kIsNoGap] = !values[kIsDoubleGap] && !values[kIsSingleGap];
+    values[kIsSingleGap] = (values[kIsSingleGapA] != 0.f || values[kIsSingleGapC] != 0.f);
+    values[kIsNoGap] = (values[kIsDoubleGap] == 0.f && values[kIsSingleGap] == 0.f);
     values[kIsITSUPCMode] = (event.eventFilter() & (static_cast<uint64_t>(1) << kITSUPCMode)) > 0;
   }
 
@@ -3536,7 +3536,7 @@ void VarManager::FillTrackCollisionMC(T1 const& track, const std::array<double, 
   }
 
   float m = o2::constants::physics::MassJPsi;
-  if (massHyp) {
+  if (massHyp != 0.f) {
     m = massHyp;
 }
 
@@ -5617,7 +5617,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
                                                 (v123.P() * values[VarManager::kVertexingLxyz]);
       }
       // run 2 definitions: Lxy projected onto the momentum vector of the candidate
-      if (fgUsedVars[kVertexingLxyProjected] || fgUsedVars[kVertexingLxyzProjected] || values[kVertexingTauxyProjected]) {
+      if (fgUsedVars[kVertexingLxyProjected] || fgUsedVars[kVertexingLxyzProjected] || fgUsedVars[kVertexingTauxyProjected]) {
         values[kVertexingLzProjected] = (secondaryVertex[2] - collision.posZ()) * v123.Pz();
         values[kVertexingLzProjected] = values[kVertexingLzProjected] / TMath::Sqrt(v123.Pz() * v123.Pz());
         values[kVertexingLxyProjected] = ((secondaryVertex[0] - collision.posX()) * v123.Px()) + ((secondaryVertex[1] - collision.posY()) * v123.Py());
@@ -6025,7 +6025,7 @@ void VarManager::FillSpectatorPlane(C const& collision, float* values)
     values[kQ1ZNACXX] = values[kQ1ZNACYY] = values[kQ1ZNACYX] = values[kQ1ZNACXY] = 999.;
   }
 
-  if (znaCommon != 0 && sumZNA != 0 && zncCommon != 0 && sumZNC) {
+  if (znaCommon != 0 && sumZNA != 0 && zncCommon != 0 && sumZNC != 0) {
     values[KIntercalibZNA] = znaCommon - sumZNA;
     values[KIntercalibZNC] = zncCommon - sumZNC;
   }
