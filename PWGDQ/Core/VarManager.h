@@ -5484,11 +5484,11 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
       procCode = VarManager::fgFitterThreeProngFwd.process(pars1, pars2, pars3);
       procCodeJpsi = VarManager::fgFitterTwoProngFwd.process(pars1, pars2);
     } else if constexpr ((candidateType == kBtoJpsiEEK || candidateType == kDstarToD0KPiPi) && trackHasCov) {
-      if constexpr ((candidateType == kBtoJpsiEEK) && trackHasCov) {
+      if constexpr (candidateType == kBtoJpsiEEK) {
         mlepton1 = o2::constants::physics::MassElectron;
         mlepton2 = o2::constants::physics::MassElectron;
         mtrack = o2::constants::physics::MassKaonCharged;
-      } else if constexpr ((candidateType == kDstarToD0KPiPi) && trackHasCov) {
+      } else if constexpr (candidateType == kDstarToD0KPiPi) {
         mlepton1 = o2::constants::physics::MassKaonCharged;
         mlepton2 = o2::constants::physics::MassPionCharged;
         mtrack = o2::constants::physics::MassPionCharged;
