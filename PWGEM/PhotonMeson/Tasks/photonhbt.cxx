@@ -302,8 +302,6 @@ struct Photonhbt {
     Configurable<float> cfgMaxAsymmetry{"cfgMaxAsymmetry", -1.f, "max |p_{T, 1} - p_{T, 2}|/(p_{T, 1} + p_{T, 2}) asymmetry cut"};
   } ggpaircuts;
 
-
-
   EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
     std::string prefix = "eventcut_group";
@@ -601,19 +599,19 @@ struct Photonhbt {
   };
 
   struct PhotonWithLegs {
-  float fPt{0}, fEta{0}, fPhi{0};
-  float fVx{0}, fVy{0}, fVz{0};
-  std::array<float, 2> fLegPt{}, fLegEta{}, fLegPhi{}; // [0] = e+, [1] = e-
-  float pt() const { return fPt; }
-  float eta() const { return fEta; }
-  float phi() const { return fPhi; }
-  float vx() const { return fVx; }
-  float vy() const { return fVy; }
-  float vz() const { return fVz; }
-  float legEta(int i) const { return fLegEta[i]; }
-  float legPhi(int i) const { return fLegPhi[i]; }
-  float legPt(int i) const { return fLegPt[i]; }
-};
+    float fPt{0}, fEta{0}, fPhi{0};
+    float fVx{0}, fVy{0}, fVz{0};
+    std::array<float, 2> fLegPt{}, fLegEta{}, fLegPhi{}; // [0] = e+, [1] = e-
+    float pt() const { return fPt; }
+    float eta() const { return fEta; }
+    float phi() const { return fPhi; }
+    float vx() const { return fVx; }
+    float vy() const { return fVy; }
+    float vz() const { return fVz; }
+    float legEta(int i) const { return fLegEta[i]; }
+    float legPhi(int i) const { return fLegPhi[i]; }
+    float legPt(int i) const { return fLegPt[i]; }
+  };
 
   std::map<std::tuple<int, int, int, int>, std::deque<std::vector<TruthGamma>>> truthGammaPool;
 
@@ -1842,23 +1840,23 @@ struct Photonhbt {
                               pos1.eta(), ele1.eta(),
                               pos2.eta(), ele2.eta()),
           obs.deta, obs.dphi, obs.kt);
-    auto addToPool = [&](auto const& g, auto const& pos, auto const& ele) {
-  if (usedPhotonIdsPerCol.insert(g.globalIndex()).second) {
-    PhotonWithLegs p;
-    p.fPt = g.pt();
-    p.fEta = g.eta();
-    p.fPhi = g.phi();
-    p.fVx = g.vx();
-    p.fVy = g.vy();
-    p.fVz = g.vz();
-    p.fLegPt = {static_cast<float>(pos.pt()), static_cast<float>(ele.pt())};
-    p.fLegEta = {static_cast<float>(pos.eta()), static_cast<float>(ele.eta())};
-    p.fLegPhi = {static_cast<float>(pos.phi()), static_cast<float>(ele.phi())};
-    emh1->AddTrackToEventPool(keyDFCollision, p);
-  }
-};
-addToPool(g1, pos1, ele1);
-addToPool(g2, pos2, ele2);
+        auto addToPool = [&](auto const& g, auto const& pos, auto const& ele) {
+          if (usedPhotonIdsPerCol.insert(g.globalIndex()).second) {
+            PhotonWithLegs p;
+            p.fPt = g.pt();
+            p.fEta = g.eta();
+            p.fPhi = g.phi();
+            p.fVx = g.vx();
+            p.fVy = g.vy();
+            p.fVz = g.vz();
+            p.fLegPt = {static_cast<float>(pos.pt()), static_cast<float>(ele.pt())};
+            p.fLegEta = {static_cast<float>(pos.eta()), static_cast<float>(ele.eta())};
+            p.fLegPhi = {static_cast<float>(pos.phi()), static_cast<float>(ele.phi())};
+            emh1->AddTrackToEventPool(keyDFCollision, p);
+          }
+        };
+        addToPool(g1, pos1, ele1);
+        addToPool(g2, pos2, ele2);
       }
       if (qaflags.doSinglePhotonQa) {
         for (const auto& g : photons1Coll) {
@@ -2077,23 +2075,23 @@ addToPool(g2, pos2, ele2);
           }
         }
 
-     auto addToPool = [&](auto const& g, auto const& pos, auto const& ele) {
-  if (usedPhotonIdsPerCol.insert(g.globalIndex()).second) {
-    PhotonWithLegs p;
-    p.fPt = g.pt();
-    p.fEta = g.eta();
-    p.fPhi = g.phi();
-    p.fVx = g.vx();
-    p.fVy = g.vy();
-    p.fVz = g.vz();
-    p.fLegPt = {static_cast<float>(pos.pt()), static_cast<float>(ele.pt())};
-    p.fLegEta = {static_cast<float>(pos.eta()), static_cast<float>(ele.eta())};
-    p.fLegPhi = {static_cast<float>(pos.phi()), static_cast<float>(ele.phi())};
-    emh1->AddTrackToEventPool(keyDFCollision, p);
-  }
-};
-addToPool(g1, pos1, ele1);
-addToPool(g2, pos2, ele2);
+        auto addToPool = [&](auto const& g, auto const& pos, auto const& ele) {
+          if (usedPhotonIdsPerCol.insert(g.globalIndex()).second) {
+            PhotonWithLegs p;
+            p.fPt = g.pt();
+            p.fEta = g.eta();
+            p.fPhi = g.phi();
+            p.fVx = g.vx();
+            p.fVy = g.vy();
+            p.fVz = g.vz();
+            p.fLegPt = {static_cast<float>(pos.pt()), static_cast<float>(ele.pt())};
+            p.fLegEta = {static_cast<float>(pos.eta()), static_cast<float>(ele.eta())};
+            p.fLegPhi = {static_cast<float>(pos.phi()), static_cast<float>(ele.phi())};
+            emh1->AddTrackToEventPool(keyDFCollision, p);
+          }
+        };
+        addToPool(g1, pos1, ele1);
+        addToPool(g2, pos2, ele2);
       }
       if (qaflags.doSinglePhotonQa) {
         for (const auto& g : photonsColl) {
@@ -2276,10 +2274,10 @@ addToPool(g2, pos2, ele2);
             continue;
           }
           const auto d = emmcParticles.iteratorAt(dId);
-          if (d.pdgCode() == kElectron) {
+          if (d.pdgCode() == kPositron) {
             posId = dId;
             rTrue = std::sqrt(d.vx() * d.vx() + d.vy() * d.vy());
-          } else if (d.pdgCode() == kPositron) {
+          } else if (d.pdgCode() == kElectron) {
             negId = dId;
           }
         }
@@ -2537,8 +2535,8 @@ addToPool(g2, pos2, ele2);
             poolBin.pop_front();
         }
       } // end cfgDoTruthMix
-    } // end collision loop
-  } // end runTruthEfficiency
+    }   // end collision loop
+  }     // end runTruthEfficiency
 
   using MyEMH = o2::aod::pwgem::dilepton::utils::EventMixingHandler<
     std::tuple<int, int, int, int>, std::pair<int, int>, PhotonWithLegs>;
