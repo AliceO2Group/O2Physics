@@ -218,7 +218,8 @@ struct HeavyionMultiplicity {
   Configurable<bool> selectCollidingBCs{"selectCollidingBCs", true, "BC analysis: select colliding BCs"};
   Configurable<bool> selectTVX{"selectTVX", true, "BC analysis: select TVX"};
   Configurable<bool> selectFV0OrA{"selectFV0OrA", true, "BC analysis: select FV0OrA"};
-
+  Configurable<bool> isApplyDCAstandardcuts{"isApplyDCAstandardcuts",true, "Apply DCA standard run 2 cuts"};
+  
   void init(InitContext const&)
   {
     AxisSpec axisMult = {multHistBin, "Mult", "MultAxis"};
@@ -539,18 +540,15 @@ struct HeavyionMultiplicity {
                                                   ncheckbit(aod::track::trackCutFlag, TrackSelectionIts) &&
                                                   ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
                                                          ncheckbit(aod::track::trackCutFlag, TrackSelectionTpc), true) &&
-                                                  ifnode(dcaZ.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDcaxyOnly),
-                                                         ncheckbit(aod::track::trackCutFlag, TrackSelectionDca));
+    ifnode(isApplyDCAstandardcuts.node() /*&& (dcaZ.node() > 0.f)*/, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDcaxyOnly), true);
 
 
-  void processDCAvsptData(CollisionDataTable::iterator const& cols, TrackDataTable const& tracks) {
+  void processDCAvsptData(CollisionDataTable::iterator const& cols, FilTrackDataTable const& tracks) {
      if (!isEventSelected(cols)) {
       return;
     }
 
     for (const auto& track : tracks) {
-      if(!track.hasITS())
-	continue;
       
       if (!isTrackSelected(track)) 
         continue;
@@ -562,7 +560,7 @@ struct HeavyionMultiplicity {
     
   }
 
-  void processDCAvsptMC(soa::Join<CollisionMCTrueTable, aod::McCollsExtra>::iterator const& mcCollision, CollisionMCRecTable const& RecCols, TrackMCTrueTable const&, TrackMCRecTable const& RecTracks) {
+  void processDCAvsptMC(soa::Join<CollisionMCTrueTable, aod::McCollsExtra>::iterator const& mcCollision, CollisionMCRecTable const& RecCols, TrackMCTrueTable const&, FilTrackMCRecTable const& RecTracks) {
 
     for (const auto& RecCol : RecCols) {
       if (!isEventSelected(RecCol)) {
@@ -575,8 +573,6 @@ struct HeavyionMultiplicity {
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
 
       for (const auto& Rectrack : recTracksPart) {
-	if(!Rectrack.hasITS())
-	  continue;
 
 	if (!isTrackSelected(Rectrack))
           continue;
