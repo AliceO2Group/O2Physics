@@ -450,6 +450,7 @@ struct centralityStudy {
       reportSuccess(hCentralityNTPV, "NTPV");
       reportSuccess(hCentralityNGlo, "NGlobals");
       reportSuccess(hCentralityMFT, "MFT");
+      LOGF(info, "Centrality calibration loading done.");
     }
 
     if (!studies.doRunByRunHistograms) {
@@ -559,9 +560,9 @@ struct centralityStudy {
   void configureCentrality(const TCollision& collision)
   {
     if (ccdbSettings.fetchCentralityCalibration) {
-      LOGF(info, "Centrality calibration loading done.");
       auto getCent = [](TH1* hist, float mult) -> float {
-        return hist ? hist->GetBinContent(mult) : 0.0;
+        static constexpr float CentralityNotFound = 105.f;
+        return hist ? hist->GetBinContent(mult) : CentralityNotFound;
       };
 
       centFV0A = getCent(hCentralityFV0A, collision.multFV0A());
@@ -598,7 +599,6 @@ struct centralityStudy {
         centMFT = collision.centMFT();
       }
     }
-    }
   }
 
   template <typename TCollision>
@@ -606,6 +606,8 @@ struct centralityStudy {
   // process this collisions
   {
     initRun(collision);
+    configureCentrality(collision);
+
     histos.fill(HIST("hCollisionSelection"), 0); // all collisions
     if (studies.doRunByRunHistograms) {
       getHist(TH1, histPath + "hCollisionSelection")->Fill(0);
