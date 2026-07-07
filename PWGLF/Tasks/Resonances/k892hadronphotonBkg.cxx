@@ -91,6 +91,7 @@ struct k892hadronphotonBkg {
     Configurable<int> nBkgRot{"nBkgRot", 3, "Rotations per pair (rotational bkg)"};
     Configurable<int> rotationalCut{"rotationalCut", 10, "theta band: [pi - pi/cut, pi + pi/cut]"};
     Configurable<float> rotationalFactor{"rotationalFactor", 1.f, "Factor to scale the angle of rotation (rotationalFactor * PI)"};
+    Configurable<bool> rotGamma{"rotGamma", false, "Flag to rotate the photon direction"};
   } kstarBkgConfig;
 
   ConfigurableAxis axisVertexMixBkg{"axisVertexMixBkg", {VARIABLE_WIDTH, -10.f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "z-vertex bins for mixing"};
@@ -591,15 +592,24 @@ struct k892hadronphotonBkg {
         ROOT::Math::PtEtaPhiMVector pGamma(photon.pt(),
                                            photon.eta(),
                                            photon.phi(),
-                                           0.0);
+                                           o2::constants::physics::MassGamma);
+
+        ROOT::Math::PtEtaPhiMVector pKShort(kshort.pt(),
+                                            kshort.eta(),
+                                            kshort.phi(),
+                                            o2::constants::physics::MassK0Short);
 
         for (int irot = 0; irot < kstarBkgConfig.nBkgRot; ++irot) {
           float theta = rotRng.Uniform(kstarBkgConfig.rotationalFactor * o2::constants::math::PI - o2::constants::math::PI / kstarBkgConfig.rotationalCut,
                                        kstarBkgConfig.rotationalFactor * o2::constants::math::PI + o2::constants::math::PI / kstarBkgConfig.rotationalCut);
 
           ROOT::Math::PtEtaPhiMVector kRot(kshort.pt(), kshort.eta(), kshort.phi() + theta, o2::constants::physics::MassK0Short);
+          ROOT::Math::PtEtaPhiMVector gRot(photon.pt(), photon.eta(), photon.phi() + theta, o2::constants::physics::MassGamma);
 
           auto kstar = pGamma + kRot;
+          if (kstarBkgConfig.rotGamma) {
+            kstar = gRot + pKShort;
+          }
 
           float rapidity = RecoDecay::y(std::array{static_cast<float>(kstar.Px()),
                                                    static_cast<float>(kstar.Py()),
@@ -610,6 +620,10 @@ struct k892hadronphotonBkg {
 
           // Opening angle between photon and rotated K0s (QA only, not used as a cut)
           double cosOA = pGamma.Vect().Dot(kRot.Vect()) / (pGamma.P() * kRot.P());
+          if (kstarBkgConfig.rotGamma) {
+            cosOA = gRot.Vect().Dot(pKShort.Vect()) / (gRot.P() * pKShort.P());
+          }
+
           double openAngle = std::acos(cosOA);
 
           histos.fill(HIST("KStarBkg/h2dRotKStarMassVsPt"), kstar.M(), kstar.Pt());
@@ -674,8 +688,7 @@ struct k892hadronphotonBkg {
       return;
 
     // Build the mixing binning locally: a struct member initialized from a
-    // ConfigurableAxis captures the default bins at task construction time (before
-    // the framework applies JSON overrides), silently ignoring user configuration.
+    // ConfigurableAxis captures the default bins at task construction time
     BkgBinningType bkgColBinning{{axisVertexMixBkg, axisCentralityMixBkg}, true};
 
     for (const auto& [coll1, coll2] : selfCombinations(bkgColBinning, kstarBkgConfig.nMix, -1,

@@ -348,6 +348,8 @@ struct k892hadronphoton {
         histos.add(histodir + "/KStar/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisKStarMass});
         histos.add(histodir + "/KStar/h3dOPAngleVsMass", "h3dOPAngleVsMass", kTH3D, {{140, 0.0f, +7.0f}, axisPt, axisKStarMass});
         histos.add(histodir + "/KStar/h2dOPAngleVsPt", "h2dOPAngleVsPt", kTH2D, {{140, 0.0f, +7.0f}, axisPt});
+        histos.add(histodir + "/KStar/h2dOPAnglePhotonVsPt", "h2dOPAnglePhotonVsPt", kTH2D, {{140, 0.0f, +7.0f}, axisPt});
+        histos.add(histodir + "/KStar/h2dOPAngleKShortVsPt", "h2dOPAngleKShortVsPt", kTH2D, {{140, 0.0f, +7.0f}, axisPt});
 
         if (doprocessMonteCarlo) {
 
@@ -379,10 +381,72 @@ struct k892hadronphoton {
           histos.add(histodir + "/MC/KStar/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisKStarMass});
           histos.add(histodir + "/MC/KStar/h3dMCProcess", "h3dMCProcess", kTH3D, {{50, -0.5f, 49.5f}, axisPt, axisKStarMass});
           histos.add(histodir + "/MC/KStar/h2dOPAngleVsPt", "h2dOPAngleVsPt", kTH2D, {{140, 0.0f, +7.0f}, axisPt});
+          histos.add(histodir + "/MC/KStar/h2dOPAngleKShortVsPt", "h2dOPAngleKShortVsPt", kTH2D, {{140, 0.0f, +7.0f}, axisPt});
+          histos.add(histodir + "/MC/KStar/h2dOPAnglePhotonVsPt", "h2dOPAnglePhotonVsPt", kTH2D, {{140, 0.0f, +7.0f}, axisPt});
           histos.add(histodir + "/MC/KStar/h2dRadiusVspT", "h2dRadiusVspT", kTH2D, {axisV0PairRadius, axisPt});
           histos.add(histodir + "/MC/KStar/hDCAPairDauVsPt", "hDCAPairDauVsPt", kTH2D, {axisDCAdau, axisPt});
 
+          // K*(892)0 -> pi K candidates
+          histos.add(histodir + "/PionKaon/Photon/hTrackCode", "hTrackCode", kTH1D, {{11, 0.5f, 11.5f}});
+          histos.add(histodir + "/PionKaon/Photon/hV0Type", "hV0Type", kTH1D, {{8, 0.5f, 8.5f}});
+          histos.add(histodir + "/PionKaon/Photon/hDCANegToPV", "hDCANegToPV", kTH1D, {axisDCAtoPV});
+          histos.add(histodir + "/PionKaon/Photon/hDCAPosToPV", "hDCAPosToPV", kTH1D, {axisDCAtoPV});
+          histos.add(histodir + "/PionKaon/Photon/hDCADau", "hDCADau", kTH1D, {axisDCAdau});
+          histos.add(histodir + "/PionKaon/Photon/hPosTPCCR", "hPosTPCCR", kTH1D, {axisTPCrows});
+          histos.add(histodir + "/PionKaon/Photon/hNegTPCCR", "hNegTPCCR", kTH1D, {axisTPCrows});
+          histos.add(histodir + "/PionKaon/Photon/hPosTPCNSigmaEl", "hPosTPCNSigmaEl", kTH1D, {axisTPCNSigma});
+          histos.add(histodir + "/PionKaon/Photon/hNegTPCNSigmaEl", "hNegTPCNSigmaEl", kTH1D, {axisTPCNSigma});
+          histos.add(histodir + "/PionKaon/Photon/hpT", "hpT", kTH1D, {axisPt});
+          histos.add(histodir + "/PionKaon/Photon/hY", "hY", kTH1D, {axisRapidity});
+          histos.add(histodir + "/PionKaon/Photon/hPosEta", "hPosEta", kTH1D, {axisRapidity});
+          histos.add(histodir + "/PionKaon/Photon/hNegEta", "hNegEta", kTH1D, {axisRapidity});
+          histos.add(histodir + "/PionKaon/Photon/hRadius", "hRadius", kTH1D, {axisV0Radius});
+          histos.add(histodir + "/PionKaon/Photon/hZ", "hZ", kTH1D, {axisZ});
+          histos.add(histodir + "/PionKaon/Photon/h2dRZCut", "h2dRZCut", kTH2D, {axisZ, axisV0Radius});
+          histos.add(histodir + "/PionKaon/Photon/h2dRZPlane", "h2dRZPlane", kTH2D, {axisZ, axisV0Radius});
+          histos.add(histodir + "/PionKaon/Photon/hCosPA", "hCosPA", kTH1D, {axisCosPA});
+          histos.add(histodir + "/PionKaon/Photon/hPsiPair", "hPsiPair", kTH1D, {axisPsiPair});
+          histos.add(histodir + "/PionKaon/Photon/hPhi", "hPhi", kTH1D, {axisPhi});
+          histos.add(histodir + "/PionKaon/Photon/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisPhotonMass});
+          histos.add(histodir + "/PionKaon/Photon/hMass", "hMass", kTH1D, {axisPhotonMass});
+
+          histos.add(histodir + "/PionKaon/h2dArmenteros", "h2dArmenteros", kTH2D, {axisAPAlpha, axisAPQt});
+
+          histos.add(histodir + "/PionKaon/KShort/hTrackCode", "hTrackCode", kTH1D, {{11, 0.5f, 11.5f}});
+          histos.add(histodir + "/PionKaon/KShort/hRadius", "hRadius", kTH1D, {axisV0Radius});
+          histos.add(histodir + "/PionKaon/KShort/hDCADau", "hDCADau", kTH1D, {axisDCAdau});
+          histos.add(histodir + "/PionKaon/KShort/hCosPA", "hCosPA", kTH1D, {axisCosPA});
+          histos.add(histodir + "/PionKaon/KShort/hY", "hY", kTH1D, {axisRapidity});
+          histos.add(histodir + "/PionKaon/KShort/hPosEta", "hPosEta", kTH1D, {axisRapidity});
+          histos.add(histodir + "/PionKaon/KShort/hNegEta", "hNegEta", kTH1D, {axisRapidity});
+          histos.add(histodir + "/PionKaon/KShort/hPosTPCCR", "hPosTPCCR", kTH1D, {axisTPCrows});
+          histos.add(histodir + "/PionKaon/KShort/hNegTPCCR", "hNegTPCCR", kTH1D, {axisTPCrows});
+          histos.add(histodir + "/PionKaon/KShort/hPosITSCls", "hPosITSCls", kTH1D, {axisNCls});
+          histos.add(histodir + "/PionKaon/KShort/hNegITSCls", "hNegITSCls", kTH1D, {axisNCls});
+          histos.add(histodir + "/PionKaon/KShort/hPosChi2PerNc", "hPosChi2PerNc", kTH1D, {axisChi2PerNcl});
+          histos.add(histodir + "/PionKaon/KShort/hNegChi2PerNc", "hNegChi2PerNc", kTH1D, {axisChi2PerNcl});
+          histos.add(histodir + "/PionKaon/KShort/hLifeTime", "hLifeTime", kTH1D, {axisLifetime});
+          histos.add(histodir + "/PionKaon/KShort/h2dTPCvsTOFNSigma_KShortPi", "h2dTPCvsTOFNSigma_KShortPi", kTH2D, {axisTPCNSigma, axisTOFNSigma});
+          histos.add(histodir + "/PionKaon/KShort/hKShortDCANegToPV", "hKShortDCANegToPV", kTH1D, {axisDCAtoPV});
+          histos.add(histodir + "/PionKaon/KShort/hKShortDCAPosToPV", "hKShortDCAPosToPV", kTH1D, {axisDCAtoPV});
+          histos.add(histodir + "/PionKaon/KShort/hKShortpT", "hKShortpT", kTH1D, {axisPt});
+          histos.add(histodir + "/PionKaon/KShort/hKShortMass", "hKShortMass", kTH1D, {axisKShortMass});
+          histos.add(histodir + "/PionKaon/KShort/h3dKShortMass", "h3dKShortMass", kTH3D, {axisCentrality, axisPt, axisKShortMass});
+
+          histos.add(histodir + "/PionKaon/KStar/hMass", "hMass", kTH1D, {axisKStarMass});
+          histos.add(histodir + "/PionKaon/KStar/hPt", "hPt", kTH1D, {axisPt});
+          histos.add(histodir + "/PionKaon/KStar/hY", "hY", kTH1D, {axisRapidity});
+          histos.add(histodir + "/PionKaon/KStar/hRadius", "hRadius", kTH1D, {axisV0PairRadius});
+          histos.add(histodir + "/PionKaon/KStar/h2dRadiusVspT", "h2dRadiusVspT", kTH2D, {axisV0PairRadius, axisPt});
+          histos.add(histodir + "/PionKaon/KStar/hDCAPairDau", "hDCAPairDau", kTH1D, {axisDCAdau});
+          histos.add(histodir + "/PionKaon/KStar/hDCAPairDauVsPt", "hDCAPairDauVsPt", kTH2D, {axisDCAdau, axisPt});
+          histos.add(histodir + "/PionKaon/KStar/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisKStarMass});
+          histos.add(histodir + "/PionKaon/KStar/h3dOPAngleVsMass", "h3dOPAngleVsMass", kTH3D, {{140, 0.0f, +7.0f}, axisPt, axisKStarMass});
+          histos.add(histodir + "/PionKaon/KStar/h2dOPAngleVsPt", "h2dOPAngleVsPt", kTH2D, {{140, 0.0f, +7.0f}, axisPt});
+          histos.add(histodir + "/PionKaon/KStar/h2dOPAngleKShortVsPt", "h2dOPAngleKShortVsPt", kTH2D, {{140, 0.0f, +7.0f}, axisPt});
+          histos.add(histodir + "/PionKaon/KStar/h2dOPAnglePhotonVsPt", "h2dOPAnglePhotonVsPt", kTH2D, {{140, 0.0f, +7.0f}, axisPt});
           // 1/pT Resolution:
+
           if (fillResoQAhistos) {
             histos.add(histodir + "/MC/Reso/h2dKShortPtResolution", "h2dKShortPtResolution", kTH2D, {axisInvPt, axisDeltaPt});
             histos.add(histodir + "/MC/Reso/h2dGammaPtResolution", "h2dGammaPtResolution", kTH2D, {axisInvPt, axisDeltaPt});
@@ -399,10 +463,12 @@ struct k892hadronphoton {
             histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassKStar_PhotonEta", "h2dPtVsMassKStar_PhotonEta", kTH2D, {axisPt, axisKStarMass});
             histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassKStar_KShortKCharged", "h2dPtVsMassKStar_KShortKCharged", kTH2D, {axisPt, axisKStarMass});
             histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassKStar_KStarPionKaon", "h2dPtVsMassKStar_KStarPionKaon", kTH2D, {axisPt, axisKStarMass});
+            histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassKStar_PionKaon", "h2dPtVsMassKStar_PionKaon", kTH2D, {axisPt, axisKStarMass});
             histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassKStar_TrueGammaFakeKShort", "h2dPtVsMassKStar_TrueGammaFakeKShort", kTH2D, {axisPt, axisKStarMass});
             histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassKStar_FakeGammaTrueKShort", "h2dPtVsMassKStar_FakeGammaTrueKShort", kTH2D, {axisPt, axisKStarMass});
             histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassKStar_FakeDaughters", "h2dPtVsMassKStar_FakeDaughters", kTH2D, {axisPt, axisKStarMass});
             histos.add(histodir + "/MC/BkgStudy/h2dTrueDaughtersMatrix", "h2dTrueDaughtersMatrix", kTHnSparseD, {{10001, -5000.5f, +5000.5f}, {10001, -5000.5f, +5000.5f}});
+            histos.add(histodir + "/MC/BkgStudy/h2dPionKaonMother", "h2dPionKaonMother", kTHnSparseD, {{10001, -5000.5f, +5000.5f}, {10001, -5000.5f, +5000.5f}});
             histos.add(histodir + "/MC/BkgStudy/h2dTrueDaughtersMatrixGrandMother", "h2dTrueDaughtersMatrixGrandMother", kTHnSparseD, {{10001, -5000.5f, +5000.5f}, {10001, -5000.5f, +5000.5f}});
           }
         }
@@ -818,6 +884,7 @@ struct k892hadronphoton {
     float kstarMass = kstar.kstarMass();
 
     histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_All"), kstarpT, kstarMass);
+    // coming from the same kstar (coupled), but via a different decay channel (K* -> K0 pi0 -> K0s gamma)
 
     //_______________________________________
     // Real Gamma x Real KShort - but not direct decays from the same kstar!
@@ -829,6 +896,11 @@ struct k892hadronphoton {
       // coming from the same kstar (coupled), but via a different decay channel (K* -> K0 pi0 -> K0s gamma)
       if (std::abs(kshortPDGCodeGrandMother) == o2::constants::physics::Pdg::kK0Star892 && std::abs(photonPDGCodeGrandMother) == o2::constants::physics::Pdg::kK0Star892 && (photonGlobalIndexGrandMother == kshortGlobalIndexGrandMother)) // K*(892)0
         histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_KStarPionKaon"), kstarpT, kstarMass);
+
+      if ((photonGlobalIndexGrandMother == kshortGlobalIndexGrandMother)) {
+        histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_PionKaon"), kstarpT, kstarMass);
+        histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPionKaonMother"), kshortPDGCodeGrandMother, photonPDGCodeGrandMother);
+      }
 
       // Break down of different photon / kshort sources
       if (std::abs(photonPDGCodeGrandMother) == o2::constants::physics::Pdg::kOmega) // omega(782)
@@ -939,6 +1011,8 @@ struct k892hadronphoton {
     histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h3dMass"), centrality, kstar.pt(), kstar.kstarMass());
     histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h3dOPAngleVsMass"), kstar.opAngle(), kstar.pt(), kstar.kstarMass());
     histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h2dOPAngleVsPt"), kstar.opAngle(), kstar.pt());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h2dOPAngleKShortVsPt"), kstar.opAngleKShortKStar(), kstar.pt());
+    histos.fill(HIST(MainDir[mode]) + HIST("/KStar/h2dOPAnglePhotonVsPt"), kstar.opAnglePhotonKStar(), kstar.pt());
 
     //_______________________________________
     // MC specific
@@ -996,6 +1070,74 @@ struct k892hadronphoton {
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/KStar/h2dOPAngleVsPt"), kstar.opAngle(), kstar.pt());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/KStar/h2dRadiusVspT"), kstar.radius(), kstar.pt());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/KStar/hDCAPairDauVsPt"), kstar.dcadaughters(), kstar.pt());
+
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/KStar/h2dOPAngleKShortVsPt"), kstar.opAngleKShortKStar(), kstar.pt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/KStar/h2dOPAnglePhotonVsPt"), kstar.opAnglePhotonKStar(), kstar.pt());
+        }
+
+        if ((kstar.kshortPDGCode() == PDG_t::kK0Short) && (kstar.photonPDGCode() == PDG_t::kGamma) && (std::abs(kstar.kshortPDGCodeGrandMother()) == o2::constants::physics::Pdg::kK0Star892 && std::abs(kstar.photonPDGCodeGrandMother()) == o2::constants::physics::Pdg::kK0Star892 && (kstar.photonGlobalIndexGrandMother() == kstar.kshortGlobalIndexGrandMother()))) { // K*(892)0
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/hTrackCode"), gammaTrkCode);
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/hV0Type"), kstar.photonV0Type());
+
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/hDCANegToPV"), kstar.photonDCANegPV());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/hDCAPosToPV"), kstar.photonDCAPosPV());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/hDCADau"), kstar.photonDCADau());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/hPosTPCCR"), kstar.photonPosTPCCrossedRows());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/hNegTPCCR"), kstar.photonNegTPCCrossedRows());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/hPosTPCNSigmaEl"), kstar.photonPosTPCNSigmaEl());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/hNegTPCNSigmaEl"), kstar.photonNegTPCNSigmaEl());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/hpT"), kstar.photonPt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/hY"), kstar.photonY());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/hPosEta"), kstar.photonPosEta());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/hNegEta"), kstar.photonNegEta());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/hRadius"), kstar.photonRadius());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/hZ"), kstar.photonZconv());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/h2dRZCut"), kstar.photonRadius(), photonRZLineCut);
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/h2dRZPlane"), kstar.photonZconv(), kstar.photonRadius());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/hCosPA"), kstar.photonCosPA());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/hPsiPair"), kstar.photonPsiPair());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/hPhi"), kstar.photonPhi());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/h3dMass"), centrality, kstar.photonPt(), kstar.photonMass());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/Photon/hMass"), kstar.photonMass());
+
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/hTrackCode"), kshortTrkCode);
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/hRadius"), kstar.kshortRadius());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/hDCADau"), kstar.kshortDCADau());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/hCosPA"), kstar.kshortCosPA());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/hY"), kstar.kshortY());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/hPosEta"), kstar.kshortPosEta());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/hNegEta"), kstar.kshortNegEta());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/hPosTPCCR"), kstar.kshortPosTPCCrossedRows());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/hNegTPCCR"), kstar.kshortNegTPCCrossedRows());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/hPosITSCls"), kstar.kshortPosITSCls());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/hNegITSCls"), kstar.kshortNegITSCls());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/hPosChi2PerNc"), kstar.kshortPosChi2PerNcl());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/hNegChi2PerNc"), kstar.kshortNegChi2PerNcl());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/hLifeTime"), kstar.kshortLifeTime());
+
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/h2dArmenteros"), kstar.photonAlpha(), kstar.photonQt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/h2dArmenteros"), kstar.kshortAlpha(), kstar.kshortQt());
+
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/h2dTPCvsTOFNSigma_KShortPi"), kstar.kshortPosPiTPCNSigma(), kstar.kshortPiTOFNSigma());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/h2dTPCvsTOFNSigma_KShortPi"), kstar.kshortNegPiTPCNSigma(), kstar.kshortPiTOFNSigma());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/hKShortDCANegToPV"), kstar.kshortDCANegPV());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/hKShortDCAPosToPV"), kstar.kshortDCAPosPV());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/hKShortpT"), kstar.kshortPt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/hKShortMass"), kstar.kshortMass());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KShort/h3dKShortMass"), centrality, kstar.kshortPt(), kstar.kshortMass());
+
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KStar/hMass"), kstar.kstarMass());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KStar/hPt"), kstar.pt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KStar/hY"), kstar.kstarY());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KStar/hRadius"), kstar.radius());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KStar/h2dRadiusVspT"), kstar.radius(), kstar.pt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KStar/hDCAPairDau"), kstar.dcadaughters());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KStar/hDCAPairDauVsPt"), kstar.dcadaughters(), kstar.pt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KStar/h3dMass"), centrality, kstar.pt(), kstar.kstarMass());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KStar/h3dOPAngleVsMass"), kstar.opAngle(), kstar.pt(), kstar.kstarMass());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KStar/h2dOPAngleVsPt"), kstar.opAngle(), kstar.pt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KStar/h2dOPAngleKShortVsPt"), kstar.opAngleKShortKStar(), kstar.pt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/PionKaon/KStar/h2dOPAnglePhotonVsPt"), kstar.opAnglePhotonKStar(), kstar.pt());
         }
 
         // For background studies:
