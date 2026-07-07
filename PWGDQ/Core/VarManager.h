@@ -1879,9 +1879,9 @@ void VarManager::FillGlobalMuonRefit(T1 const& muontrack, T2 const& mfttrack, co
   }
   if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0) {
     o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muontrack, collision);
-    double px = propmuon.getP() * sin(M_PI / 2 - atan(mfttrack.tgl())) * cos(mfttrack.phi());
-    double py = propmuon.getP() * sin(M_PI / 2 - atan(mfttrack.tgl())) * sin(mfttrack.phi());
-    double pz = propmuon.getP() * cos(M_PI / 2 - atan(mfttrack.tgl()));
+    double px = propmuon.getP() * sin(o2::constants::math::PIHalf - atan(mfttrack.tgl())) * cos(mfttrack.phi());
+    double py = propmuon.getP() * sin(o2::constants::math::PIHalf - atan(mfttrack.tgl())) * sin(mfttrack.phi());
+    double pz = propmuon.getP() * cos(o2::constants::math::PIHalf - atan(mfttrack.tgl()));
     double pt = std::sqrt(std::pow(px, 2) + std::pow(py, 2));
     auto mftprop = o2::aod::fwdtrackutils::getTrackParCovFwdShift(mfttrack, fgzShiftFwd);
     values[kX] = mftprop.getX();
@@ -3688,7 +3688,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   values[kPt] = v12.Pt();
   values[kEta] = v12.Eta();
   // values[kPhi] = v12.Phi();
-  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
+  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + o2::constants::math::TwoPI;
   values[kRap] = -v12.Rapidity();
   double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
   double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
@@ -3999,7 +3999,7 @@ void VarManager::FillPairRotation(T1 const& t1, T2 const& t2, float* values)
   values[kPt] = v12.Pt();
   values[kEta] = v12.Eta();
   // values[kPhi] = v12.Phi();
-  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
+  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + o2::constants::math::TwoPI;
   values[kRap] = -v12.Rapidity();
   double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
   double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
@@ -4228,7 +4228,7 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   values[kPt] = v12.Pt();
   values[kEta] = v12.Eta();
   // values[kPhi] = v12.Phi();
-  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
+  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + o2::constants::math::TwoPI;
   values[kRap] = -v12.Rapidity();
 
   // Per-track quantities so ME histograms can use kPt1/kPt2/kEta1/kEta2/kPhi1/kPhi2 just like SE FillPair does.
@@ -4460,7 +4460,7 @@ void VarManager::FillPairMEAcrossTFs(T const& t1, T const& t2, float* values)
   values[kMass] = v12.M();
   values[kPt] = v12.Pt();
   values[kEta] = v12.Eta();
-  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
+  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + o2::constants::math::TwoPI;
   values[kRap] = -v12.Rapidity();
 
   if (fgUsedVars[kCosThetaStarRandom] || fgUsedVars[kCosThetaStarFT0C]) {
@@ -5154,7 +5154,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     values[kPt] = v12.Pt();
     values[kEta] = v12.Eta();
     // values[kPhi] = v12.Phi();
-    values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
+    values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + o2::constants::math::TwoPI;
   } else {
     values[kPt1] = t1.pt();
     values[kEta1] = t1.eta();
@@ -6363,18 +6363,18 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
 
   if (fgUsedVars[kDeltaPhi]) {
     double delta = dilepton.phi() - hadron.phi();
-    if (delta > 3.0 / 2.0 * M_PI) {
-      delta -= 2.0 * M_PI;
+    if (delta > 1.5f * o2::constants::math::PI) {
+      delta -= o2::constants::math::TwoPI;
     }
-    if (delta < -0.5 * M_PI) {
-      delta += 2.0 * M_PI;
+    if (delta < -o2::constants::math::PIHalf) {
+      delta += o2::constants::math::TwoPI;
     }
     values[kDeltaPhi] = delta;
   }
   if (fgUsedVars[kDeltaPhiSym]) {
     double delta = std::abs(dilepton.phi() - hadron.phi());
-    if (delta > M_PI) {
-      delta = 2 * M_PI - delta;
+    if (delta > o2::constants::math::PI) {
+      delta = o2::constants::math::TwoPI - delta;
     }
     values[kDeltaPhiSym] = delta;
   }
@@ -7410,7 +7410,7 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
   values[kPt] = v12.Pt();
   values[kEta] = v12.Eta();
   // values[kPhi] = v12.Phi();
-  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
+  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + o2::constants::math::TwoPI;
   values[kRap] = -v12.Rapidity();
   double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
   double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
