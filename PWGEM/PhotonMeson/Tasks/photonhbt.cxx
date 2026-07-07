@@ -302,7 +302,7 @@ struct Photonhbt {
     Configurable<float> cfgMaxAsymmetry{"cfgMaxAsymmetry", -1.f, "max |p_{T, 1} - p_{T, 2}|/(p_{T, 1} + p_{T, 2}) asymmetry cut"};
   } ggpaircuts;
 
-  
+
 
   EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -983,14 +983,6 @@ struct Photonhbt {
         fRegistryPairMC.fill(HIST(mcDir) + HIST("CF_2D"), std::fabs(qout_lcms), std::fabs(qinv), kt, weight);
     } else {
       fRegistryPairMC.fill(HIST(mcDir) + HIST("CF_1D"), hbtanalysis.cfgUseLCMS ? qabs_lcms : qinv, kt, weight);
-    }
-    float deta_pair = v1.Eta() - v2.Eta();
-    float dphi_pair = v1.Phi() - v2.Phi();
-    dphi_pair = RecoDecay::constrainAngle(dphi_pair, -o2::constants::math::PI);
-    if constexpr (ev_id == 0) {
-      fRegistry.fill(HIST("Pair/same/hSparse_DEtaDPhi_qinv_kT"), deta_pair, dphi_pair, qinv, kt, weight);
-    } else {
-      fRegistry.fill(HIST("Pair/mix/hSparse_DEtaDPhi_qinv_kT"), deta_pair, dphi_pair, qinv, kt, weight);
     }
   }
 
