@@ -205,7 +205,7 @@ struct CorrReso {
   // FT0 geometry
   o2::ft0::Geometry ft0Det;
   static constexpr uint64_t Ft0IndexA = 96;
-  std::vector<o2::detectors::AlignParam>* offsetFT0;
+  std::vector<o2::detectors::AlignParam>* offsetFT0 = nullptr;
   std::vector<float> cstFT0RelGain{};
 
   // Corrections
@@ -944,7 +944,7 @@ struct CorrReso {
       if (mEfficiency == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), static_cast<void*>(mEfficiency));
     }
     if (cfgEfficiencyNch.value.empty() == false) {
       if (cfgLocalEfficiencyNch) {
@@ -957,14 +957,14 @@ struct CorrReso {
       if (!mEfficiencyNch) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiencyNch.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiencyNch.value.c_str(), (void*)mEfficiencyNch);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiencyNch.value.c_str(), static_cast<void*>(mEfficiencyNch));
     }
     if (cfgCentralityWeight.value.empty() == false) {
       mCentralityWeight = ccdb->getForTimeStamp<TH1D>(cfgCentralityWeight, timestamp);
       if (mCentralityWeight == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgCentralityWeight.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgCentralityWeight.value.c_str(), (void*)mCentralityWeight);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgCentralityWeight.value.c_str(), static_cast<void*>(mCentralityWeight));
     }
     correctionsLoaded = true;
   }
