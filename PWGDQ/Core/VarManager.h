@@ -84,7 +84,7 @@
 #include <utility>
 #include <vector>
 
-#include <math.h>
+#include <cmath>
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
