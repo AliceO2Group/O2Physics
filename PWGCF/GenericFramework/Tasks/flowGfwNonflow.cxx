@@ -12,6 +12,7 @@
 /// \file flowGfwNonflow.cxx
 /// \brief Task to analyse scaled non-flow subtraction of flow cumulants
 /// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch
+/// \since 06/07/2026
 
 #include "PWGCF/GenericFramework/Core/FlowContainer.h"
 #include "PWGCF/GenericFramework/Core/FlowPtContainer.h"
@@ -46,15 +47,27 @@
 #include <TH3.h>
 #include <TNamed.h>
 #include <TObjArray.h>
-#include <TPDGCode.h>
 #include <TProfile.h>
 #include <TRandom3.h>
 #include <TString.h>
 
+#include <algorithm>
 #include <array>
+#include <chrono>
+#include <cmath>
+#include <complex>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <iomanip>
+#include <ios>
 #include <map>
 #include <memory>
+#include <sstream>
 #include <string>
+#include <string_view>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -739,7 +752,7 @@ struct FlowGfwNonflow {
 
     for (uint l_ind = 0; l_ind < corrconfigs.size(); ++l_ind) {
       if (!corrconfigs.at(l_ind).pTDif) {
-        auto dnx = fGFW->Calculate(corrconfigs.at(l_ind), 0, kTRUE).real();
+        auto dnx = fGFW->Calculate(corrconfigs.at(l_ind), 0, true).real();
         if (dnx == 0) {
           continue;
         }
@@ -749,7 +762,7 @@ struct FlowGfwNonflow {
         histName += head;
         const int m = corrOrder - '0';
         recipNHistograms.at(histName)->Fill(centmult, 1. / std::pow(multiplicity, m - 1), dnx);
-        auto val = fGFW->Calculate(corrconfigs.at(l_ind), 0, kFALSE).real() / dnx;
+        auto val = fGFW->Calculate(corrconfigs.at(l_ind), 0, false).real() / dnx;
         if (std::abs(val) < 1) {
           fFC->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
           fFCpt->fillVnPtProfiles(centmult, val, dnx, rndm, gfwMemberCache.configs.GetpTCorrMasks()[l_ind]);
@@ -757,11 +770,11 @@ struct FlowGfwNonflow {
         continue;
       }
       for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
-        auto dnx = fGFW->Calculate(corrconfigs.at(l_ind), i - 1, kTRUE).real();
+        auto dnx = fGFW->Calculate(corrconfigs.at(l_ind), i - 1, true).real();
         if (dnx == 0) {
           continue;
         }
-        auto val = fGFW->Calculate(corrconfigs.at(l_ind), i - 1, kFALSE).real() / dnx;
+        auto val = fGFW->Calculate(corrconfigs.at(l_ind), i - 1, false).real() / dnx;
         if (std::abs(val) < 1) {
           fFC->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val, cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
         }
