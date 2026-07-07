@@ -34,6 +34,7 @@
 
 #include <TF1.h>
 #include <TH2.h>
+#include <TH3.h>
 #include <THn.h>
 #include <TMath.h>
 #include <TMathBase.h>

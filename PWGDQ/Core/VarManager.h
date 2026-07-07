@@ -44,6 +44,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/DataTypes.h>
 #include <Framework/Logger.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <GlobalTracking/MatchGlobalFwd.h>
 #include <MCHTracking/TrackExtrap.h>
 #include <ReconstructionDataFormats/DCA.h>
@@ -60,7 +61,6 @@
 #include <Math/Vector3Dfwd.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
-#include <TH3.h>
 #include <TMath.h>
 #include <TMathBase.h>
 #include <TObject.h>
@@ -71,7 +71,6 @@
 #include <KFPVertex.h>
 #include <KFParticle.h>
 
-#include <GPUROOTCartesianFwd.h>
 #include <Rtypes.h>
 #include <RtypesCore.h>
 

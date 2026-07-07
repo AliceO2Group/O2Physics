@@ -18,7 +18,6 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
-#include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -31,7 +30,6 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
-#include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsCommonDataFormats/AlignParam.h>
 #include <FT0Base/Geometry.h>
 #include <Framework/AnalysisDataModel.h>
@@ -52,8 +50,6 @@
 #include <TFile.h>
 #include <TH3.h>
 #include <TRandom3.h>
-
-#include <RtypesCore.h>
 
 #include <array>
 #include <chrono>

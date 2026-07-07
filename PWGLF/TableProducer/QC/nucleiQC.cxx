@@ -41,6 +41,7 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/StaticFor.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 
@@ -51,9 +52,6 @@
 
 #include <fmt/format.h>
 
-#include <GPUROOTCartesianFwd.h>
-
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
