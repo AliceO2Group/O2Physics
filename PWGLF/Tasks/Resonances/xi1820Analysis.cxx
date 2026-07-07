@@ -199,6 +199,7 @@ struct Xi1820Analysis {
       histos.add("QAbefore/lambdaCosPA", "Lambda CosPA before cuts", kTH2F, {ptAxisQA, cosPAAxis});
       histos.add("QAbefore/lambdaRadius", "Lambda radius before cuts", kTH2F, {ptAxisQA, radiusAxis});
       histos.add("QAbefore/lambdaDauDCA", "Lambda daughter DCA before cuts", kTH2F, {ptAxisQA, dcaAxis});
+      histos.add("QAbefore/lambdaDCAtoPV", "Lambda DCA to PV before cuts", kTH2F, {ptAxisQA, dcaAxis});
       histos.add("QAbefore/lambdaProperLifetime", "Lambda proper lifetime before cuts", kTH2F, {ptAxisQA, lifetimeAxis});
       histos.add("QAbefore/lambdaDauPosDCA", "Lambda positive daughter DCA before cuts", kTH2F, {ptAxisQA, dcaAxis});
       histos.add("QAbefore/lambdaDauNegDCA", "Lambda negative daughter DCA before cuts", kTH2F, {ptAxisQA, dcaAxis});
@@ -217,6 +218,7 @@ struct Xi1820Analysis {
       histos.add("QAafter/lambdaCosPA", "Lambda CosPA after cuts", kTH2F, {ptAxisQA, cosPAAxis});
       histos.add("QAafter/lambdaRadius", "Lambda radius after cuts", kTH2F, {ptAxisQA, radiusAxis});
       histos.add("QAafter/lambdaDauDCA", "Lambda daughter DCA after cuts", kTH2F, {ptAxisQA, dcaAxis});
+      histos.add("QAafter/lambdaDCAtoPV", "Lambda DCA to PV after cuts", kTH2F, {ptAxisQA, dcaAxis});
       histos.add("QAafter/lambdaProperLifetime", "Lambda proper lifetime after cuts", kTH2F, {ptAxisQA, lifetimeAxis});
       histos.add("QAafter/lambdaDauPosDCA", "Lambda positive daughter DCA after cuts", kTH2F, {ptAxisQA, dcaAxis});
       histos.add("QAafter/lambdaDauNegDCA", "Lambda negative daughter DCA after cuts", kTH2F, {ptAxisQA, dcaAxis});
@@ -320,6 +322,7 @@ struct Xi1820Analysis {
       histos.add("QAbefore/k0sCosPA", "K0s CosPA before cuts", kTH2F, {ptAxisQA, cosPAAxis});
       histos.add("QAbefore/k0sRadius", "K0s radius before cuts", kTH2F, {ptAxisQA, radiusAxis});
       histos.add("QAbefore/k0sDauDCA", "K0s daughter DCA before cuts", kTH2F, {ptAxisQA, dcaAxis});
+      histos.add("QAbefore/k0sDCAtoPV", "K0s DCA to PV before cuts", kTH2F, {ptAxisQA, dcaAxis});
       histos.add("QAbefore/k0sProperLifetime", "K0s proper lifetime before cuts", kTH2F, {ptAxisQA, lifetimeAxis});
       histos.add("QAbefore/k0sDauTPCNsigmaPosPi", "K0s daughter pion TPC NSigma before cuts", kTH2F, {ptAxisQA, nsigmaAxis});
       histos.add("QAbefore/k0sDauTPCNsigmaNegPi", "K0s daughter pion TPC NSigma before cuts", kTH2F, {ptAxisQA, nsigmaAxis});
@@ -334,6 +337,7 @@ struct Xi1820Analysis {
       histos.add("QAafter/k0sCosPA", "K0s CosPA after cuts", kTH2F, {ptAxisQA, cosPAAxis});
       histos.add("QAafter/k0sRadius", "K0s radius after cuts", kTH2F, {ptAxisQA, radiusAxis});
       histos.add("QAafter/k0sDauDCA", "K0s daughter DCA after cuts", kTH2F, {ptAxisQA, dcaAxis});
+      histos.add("QAafter/k0sDCAtoPV", "K0s DCA to PV after cuts", kTH2F, {ptAxisQA, dcaAxis});
       histos.add("QAafter/k0sProperLifetime", "K0s proper lifetime after cuts", kTH2F, {ptAxisQA, lifetimeAxis});
       histos.add("QAafter/k0sDauTPCNsigmaPosPi", "K0s daughter pion TPC NSigma after cuts", kTH2F, {ptAxisQA, nsigmaAxis});
       histos.add("QAafter/k0sDauTPCNsigmaNegPi", "K0s daughter pion TPC NSigma after cuts", kTH2F, {ptAxisQA, nsigmaAxis});
@@ -436,6 +440,10 @@ struct Xi1820Analysis {
     // Radius cuts
     float radius = v0.transRadius();
     if (radius < cV0RadiusMin || radius > cV0RadiusMax)
+      return false;
+
+    // DCA to PV
+    if (std::abs(v0.dcav0topv()) > additionalConfig.cMaxDcaToPVV0)
       return false;
 
     // Proper lifetime cut
@@ -829,6 +837,7 @@ struct Xi1820Analysis {
           histos.fill(HIST("QAbefore/lambdaEta"), v0.eta());
           histos.fill(HIST("QAbefore/lambdaCosPA"), v0.pt(), v0.v0CosPA());
           histos.fill(HIST("QAbefore/lambdaRadius"), v0.pt(), v0.transRadius());
+          histos.fill(HIST("QAbefore/lambdaDCAtoPV"), v0.pt(), v0.dcav0topv());
           histos.fill(HIST("QAbefore/lambdaDauDCA"), v0.pt(), v0.daughDCA());
           histos.fill(HIST("QAbefore/lambdaDauPosDCA"), v0.pt(), std::abs(v0.dcapostopv()));
           histos.fill(HIST("QAbefore/lambdaDauNegDCA"), v0.pt(), std::abs(v0.dcanegtopv()));
@@ -889,6 +898,8 @@ struct Xi1820Analysis {
           auto properLifetime = (l / (p + kSmallMomentumDenominator)) * MassLambda;
           histos.fill(HIST("QAafter/lambdaProperLifetime"), v0.pt(), properLifetime);
           histos.fill(HIST("QAafter/lambdaArmenterosPodolanski"), v0.alpha(), v0.qtarm(), v0.pt());
+          histos.fill(HIST("QAafter/lambdaDCAtoPV"), v0.pt(), v0.dcav0topv());
+
         }
 
         pKaon = ROOT::Math::PxPyPzEVector(ROOT::Math::PtEtaPhiMVector(kaon.pt(), kaon.eta(), kaon.phi(), MassKaonCharged));
@@ -1098,6 +1109,7 @@ struct Xi1820Analysis {
         histos.fill(HIST("QAbefore/k0sEta"), k0s.eta());
         histos.fill(HIST("QAbefore/k0sCosPA"), k0s.pt(), k0s.v0CosPA());
         histos.fill(HIST("QAbefore/k0sRadius"), k0s.pt(), k0s.transRadius());
+        histos.fill(HIST("QAbefore/k0sDCAtoPV"), k0s.pt(), k0s.dcav0topv());
         histos.fill(HIST("QAbefore/k0sDauDCA"), k0s.pt(), k0s.daughDCA());
         histos.fill(HIST("QAbefore/k0sDauTPCNsigmaPosPi"), k0s.pt(), k0s.daughterTPCNSigmaPosPi());
         histos.fill(HIST("QAbefore/k0sDauTPCNsigmaNegPi"), k0s.pt(), k0s.daughterTPCNSigmaNegPi());
@@ -1140,6 +1152,7 @@ struct Xi1820Analysis {
         auto k0sProperLifetime = (l / (p + 1e-10)) * MassK0Short;
         histos.fill(HIST("QAafter/k0sProperLifetime"), k0s.pt(), k0sProperLifetime);
         histos.fill(HIST("QAafter/k0sArmenterosPodolanski"), k0s.alpha(), k0s.qtarm(), k0s.pt());
+        histos.fill(HIST("QAafter/k0sDCAtoPV"), k0s.pt(), k0s.dcav0topv());
       }
 
       // Loop over V0s for Lambda
@@ -1156,6 +1169,7 @@ struct Xi1820Analysis {
           histos.fill(HIST("QAbefore/lambdaEta"), lambda.eta());
           histos.fill(HIST("QAbefore/lambdaCosPA"), lambda.pt(), lambda.v0CosPA());
           histos.fill(HIST("QAbefore/lambdaRadius"), lambda.pt(), lambda.transRadius());
+          histos.fill(HIST("QAbefore/lambdaDCAtoPV"), lambda.pt(), lambda.dcav0topv());
           histos.fill(HIST("QAbefore/lambdaDauDCA"), lambda.pt(), lambda.daughDCA());
           histos.fill(HIST("QAbefore/lambdaDauPosDCA"), lambda.pt(), std::abs(lambda.dcapostopv()));
           histos.fill(HIST("QAbefore/lambdaDauNegDCA"), lambda.pt(), std::abs(lambda.dcanegtopv()));
@@ -1216,6 +1230,7 @@ struct Xi1820Analysis {
           auto properLifetime = (l / (p + kSmallMomentumDenominator)) * MassLambda;
           histos.fill(HIST("QAafter/lambdaProperLifetime"), lambda.pt(), properLifetime);
           histos.fill(HIST("QAafter/lambdaArmenterosPodolanski"), lambda.alpha(), lambda.qtarm(), lambda.pt());
+          histos.fill(HIST("QAafter/lambdaDCAtoPV"), lambda.pt(), lambda.dcav0topv());
         }
 
         // 4-vectors
