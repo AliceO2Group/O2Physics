@@ -51,7 +51,6 @@
 #include <TRandom3.h>
 #include <TString.h>
 
-#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>
@@ -59,14 +58,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <iomanip>
-#include <ios>
 #include <map>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <string_view>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -750,7 +745,7 @@ struct FlowGfwNonflow {
     fFCpt->fillCMProfiles(centmult, rndm);
     fFCpt->fillCMSubeventProfiles(centmult, rndm);
 
-    for (uint l_ind = 0; l_ind < corrconfigs.size(); ++l_ind) {
+    for (std::size_t l_ind = 0; l_ind < corrconfigs.size(); ++l_ind) {
       if (!corrconfigs.at(l_ind).pTDif) {
         auto dnx = fGFW->Calculate(corrconfigs.at(l_ind), 0, true).real();
         if (dnx == 0) {
