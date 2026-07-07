@@ -117,9 +117,9 @@ struct DerivedDataCreatorD0Calibration {
     std::string prefix = "ml";
   } cfgMl;
 
-  using TracksWCovExtraPid = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
-  using TracksWCovExtraTmoPid = soa::Join<aod::Tracks, aod::TrackToTmo, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
-  using TracksWCovExtraTmoPidAndQa = soa::Join<aod::Tracks, aod::TrackToTmo, aod::TrackToTracksQA, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+  using TracksWCovExtraPid = soa::Join<aod::Tracks, aod::TracksDCA, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+  using TracksWCovExtraTmoPid = soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackToTmo, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+  using TracksWCovExtraTmoPidAndQa = soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackToTmo, aod::TrackToTracksQA, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using CollisionsWEvSel = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
   using TrackMeanOccs = soa::Join<aod::TmoTrackIds, aod::TmoPrim, aod::TmoT0V0, aod::TmoRT0V0Prim, aod::TwmoPrim, aod::TwmoT0V0, aod::TwmoRT0V0Prim>;
 
@@ -233,8 +233,10 @@ struct DerivedDataCreatorD0Calibration {
           continue;
         }
         auto trackParCovPos = getTrackParCov(trackPos);
-        o2::dataformats::DCA dcaPos;
-        trackParCovPos.propagateToDCA(primaryVertex, bz, &dcaPos);
+        o2::dataformats::DCA dcaPos(trackPos.dcaXY(), trackPos.dcaZ(), trackPos.cYY(), trackPos.cZY(), trackPos.cZZ());
+        if (trackPos.collisionId() != collision.globalIndex()) {
+          trackParCovPos.propagateToDCA(primaryVertex, bz, &dcaPos);
+        }
         if (!isSelectedTrackDca(cfgTrackCuts.binsPt, cfgTrackCuts.limitsDca, trackParCovPos.getPt(), dcaPos.getY(), dcaPos.getZ())) {
           continue;
         }
@@ -269,8 +271,10 @@ struct DerivedDataCreatorD0Calibration {
             continue;
           }
           auto trackParCovNeg = getTrackParCov(trackNeg);
-          o2::dataformats::DCA dcaNeg;
-          trackParCovNeg.propagateToDCA(primaryVertex, bz, &dcaNeg);
+          o2::dataformats::DCA dcaNeg(trackNeg.dcaXY(), trackNeg.dcaZ(), trackNeg.cYY(), trackNeg.cZY(), trackNeg.cZZ());
+          if (trackNeg.collisionId() != collision.globalIndex()) {
+            trackParCovNeg.propagateToDCA(primaryVertex, bz, &dcaNeg);
+          }
           if (!isSelectedTrackDca(cfgTrackCuts.binsPt, cfgTrackCuts.limitsDca, trackParCovNeg.getPt(), dcaNeg.getY(), dcaNeg.getZ())) {
             continue;
           }
