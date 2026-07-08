@@ -1046,6 +1046,21 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         }
       }
     }
+    if (subGroupStr.Contains("emcal")) {
+      hm->AddHistogram(histClass, "EMCalEnergy", "EMCal cluster energy", false, 500, 0.0, 50.0, VarManager::kEMCalEnergy);
+      hm->AddHistogram(histClass, "EMCalCoreEnergy", "EMCal cluster core energy", false, 500, 0.0, 50.0, VarManager::kEMCalCoreEnergy);
+      hm->AddHistogram(histClass, "EMCalEta_Phi", "EMCal cluster #eta vs #varphi", false, 100, -1.0, 1.0, VarManager::kEMCalEta, 180, 0.0, TMath::TwoPi(), VarManager::kEMCalPhi);
+      hm->AddHistogram(histClass, "EMCalM02", "EMCal cluster M02", false, 200, 0.0, 2.0, VarManager::kEMCalM02);
+      hm->AddHistogram(histClass, "EMCalM20", "EMCal cluster M20", false, 200, 0.0, 2.0, VarManager::kEMCalM20);
+      hm->AddHistogram(histClass, "EMCalNCells", "EMCal cluster no. cells", false, 50, -0.5, 49.5, VarManager::kEMCalNCells);
+      hm->AddHistogram(histClass, "EMCalTime", "EMCal cluster time", false, 400, -100.0, 100.0, VarManager::kEMCalTime);
+      hm->AddHistogram(histClass, "EMCalEnergy_Time", "EMCal cluster energy vs time", false, 100, 0.0, 50.0, VarManager::kEMCalEnergy, 200, -100.0, 100.0, VarManager::kEMCalTime);
+      if (subGroupStr.Contains("emcalmatch")) {
+        hm->AddHistogram(histClass, "EMCalEoverP", "EMCal E/p", false, 300, 0.0, 3.0, VarManager::kEMCalEoverP);
+        hm->AddHistogram(histClass, "Pt_EMCalEoverP", "p_{T} vs EMCal E/p", false, 200, 0.0, 20.0, VarManager::kPt, 300, 0.0, 3.0, VarManager::kEMCalEoverP);
+        hm->AddHistogram(histClass, "EMCalMatchDeltaEta_DeltaPhi", "EMCal matching #Delta#eta vs #Delta#varphi", false, 100, -0.1, 0.1, VarManager::kEMCalMatchDeltaEta, 100, -0.1, 0.1, VarManager::kEMCalMatchDeltaPhi);
+      }
+    }
     if (subGroupStr.Contains("muon")) {
       if (!subGroupStr.Contains("ambiguity")) {
         hm->AddHistogram(histClass, "MuonNClusters", "", false, 100, 0.0, 10.0, VarManager::kMuonNClusters);
