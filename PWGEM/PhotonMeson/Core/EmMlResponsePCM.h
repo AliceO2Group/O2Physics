@@ -52,6 +52,11 @@
 namespace o2::analysis
 {
 
+enum NClassesML {
+  kTwo = 2,
+  kThree
+};
+
 enum class InputFeaturesPCM : uint8_t {
   v0PhotonCandidatefVx,
   v0PhotonCandidatefVy,
