@@ -23,6 +23,7 @@
 #include <Framework/Logger.h>
 
 #include <cstdint>
+#include <optional>
 
 namespace o2::analysis::femto::tripletprocesshelpers
 {
