@@ -27,5 +27,5 @@ o2physics_add_dpl_workflow(pid-tpc-qa-mc
 
 o2physics_add_dpl_workflow(tree-creator-pid-tpc-qa
     SOURCES treeCreatorPidTpcQa.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)

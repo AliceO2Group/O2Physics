@@ -14,18 +14,20 @@
 /// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>
 /// \brief  Creates trees with PID QA variables along with variables used for NN training
 
+#ifndef DPG_TASKS_AOTTRACK_PID_TPC_TREECREATORPIDTPCQA_H_
+#define DPG_TASKS_AOTTRACK_PID_TPC_TREECREATORPIDTPCQA_H_
+
 #include "DPG/Tasks/TPC/tpcSkimsTableCreator.h"
 
 #include <Framework/ASoA.h>
-
-#ifndef DPG_TASKS_AOTTRACK_PID_TPC_TREECREATORPIDTPCQA_H_
-#define DPG_TASKS_AOTTRACK_PID_TPC_TREECREATORPIDTPCQA_H_
+#include <Framework/AnalysisDataModel.h>
 
 namespace o2::aod
 {
 DECLARE_SOA_TABLE(QaPidTpc, "AOD", "QAPIDTPC",
                   tpcskims::PidIndex,
                   tpcskims::Ft0Occ,
+                  tpcskims::HadronicRate,
                   tpcskims::NormMultTPC,
                   tpcskims::NormNClustersTPC,
                   o2::aod::track::Phi,
@@ -33,31 +35,5 @@ DECLARE_SOA_TABLE(QaPidTpc, "AOD", "QAPIDTPC",
                   o2::aod::track::TPCInnerParam,
                   o2::aod::track::Y)
 } // namespace o2::aod
-
-namespace o2::dpg_pidtpcqa
-{
-enum {
-  TrackSelectionNoCut = 0,
-  TrackSelectionGlobalTrack,
-  TrackSelectionTrackWoPtEta,
-  TrackSelectionGlobalTrackWoDCA,
-  TrackSelectionQualityTracks,
-  TrackSelectionInAcceptanceTracks
-};
-
-enum {
-  EventSelectionNo = 0,
-  EventSelectionRun2,
-  EventSelectionRun3
-};
-
-/// Event selection
-template <typename CollisionType>
-bool isEventSelected(const CollisionType& collision, const int applyEvSel)
-{
-  return ((applyEvSel == EventSelectionRun2 && !collision.sel7()) || (applyEvSel == EventSelectionRun3 && !collision.sel8()));
-}
-
-}; // namespace o2::dpg_pidtpcqa
 
 #endif // DPG_TASKS_AOTTRACK_PID_TPC_TREECREATORPIDTPCQA_H_

@@ -17,13 +17,16 @@
 
 #include "treeCreatorPidTpcQa.h"
 
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "DPG/Tasks/TPC/tpcSkimsTableCreator.h"
+#include "DPG/Tasks/TPC/utilsTpcSkimsTableCreator.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -35,11 +38,12 @@
 #include <ReconstructionDataFormats/PID.h>
 
 #include <cmath>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::track;
-using namespace o2::dpg_pidtpcqa;
+using namespace o2::dpg_tpcskimstablecreator;
 
 struct treeCreatorPidTpcQa {
   Produces<o2::aod::QaPidTpc> rowPidTpcQa;
@@ -52,6 +56,12 @@ struct treeCreatorPidTpcQa {
   Configurable<int16_t> cutMinTPCNcls{"cutMinTPCNcls", 0, "Minimum number or TPC Clusters for tracks"};
   Configurable<float> cutRapidity{"cutRapidity", 0.5, "Rapidity cut. Set negative value to switch this cut off"};
   Configurable<float> nClNorm{"nClNorm", 152., "Number of cluster normalization. Run 2: 159, Run 3 152"};
+  // Configurable for the path of CCDB General Run Parameters LHC Interface information
+  Configurable<std::string> ccdbPathGrpLhcIf{"ccdbPathGrpLhcIf", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
+
+  ctpRateFetcher mRateFetcher{};
 
   using CollisionsExtra = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
@@ -59,25 +69,6 @@ struct treeCreatorPidTpcQa {
   Preslice<TrackCandidates> perCollisionTracks = aod::track::collisionId;
 
   int mEnabledParticles{0};
-
-  // Track selection
-  template <typename TrackType>
-  bool isTrackSelected(const TrackType& track)
-  {
-    bool isSelected{false};
-    isSelected |= trackSelection == TrackSelectionNoCut;
-    isSelected |= (trackSelection == TrackSelectionGlobalTrack) && track.isGlobalTrack();
-    isSelected |= (trackSelection == TrackSelectionTrackWoPtEta) && track.isGlobalTrackWoPtEta();
-    isSelected |= (trackSelection == TrackSelectionGlobalTrackWoDCA) && track.isGlobalTrackWoDCA();
-    isSelected |= (trackSelection == TrackSelectionQualityTracks) && track.isQualityTrack();
-    isSelected |= (trackSelection == TrackSelectionInAcceptanceTracks) && track.isInAcceptanceTrack();
-    isSelected &= (!requireGlobalTrack || track.isGlobalTrack());
-    isSelected &= (!requireIts || track.hasITS());
-    isSelected &= track.hasTPC();
-    isSelected &= (track.tpcNClsFound() >= cutMinTPCNcls);
-
-    return isSelected;
-  }
 
   template <o2::track::PID::ID Id>
   bool initPerParticle()
@@ -125,6 +116,10 @@ struct treeCreatorPidTpcQa {
     static_for<0, PID::Alpha>([&](auto Id) {
       mEnabledParticles += static_cast<int>(initPerParticle<Id>());
     });
+
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setFatalWhenNull(false);
   }
 
   template <o2::track::PID::ID Id, typename TrackType>
@@ -133,20 +128,35 @@ struct treeCreatorPidTpcQa {
   {
     rowPidTpcQa.reserve(tracks.size() * mEnabledParticles);
 
+    std::string irSource{};
+    float sqrtSNN{}; // placeholder to satisfy evaluateIrSourceAndSqrtSnn's signature
+    bool isFirstCollision{true};
     for (const auto& collision : collisions) {
       if (!isEventSelected(collision, applyEvSel) || ((cutVtxZ > 0.f) && std::abs(collision.posZ()) > cutVtxZ)) {
         continue;
       }
 
+      const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      if (isFirstCollision) {
+        evaluateIrSourceAndSqrtSnn(ccdb, ccdbPathGrpLhcIf, bc.timestamp(), irSource, sqrtSNN);
+      }
+      isFirstCollision = false;
       const float ft0Occ = collision.ft0cOccupancyInTimeRange();
-      const float multTPC = collision.multTPC() / dpg_tpcskimstablecreator::MultiplicityNorm;
+      const float multTPC = collision.multTPC() / MultiplicityNorm;
+      const auto hadronicRate = !irSource.empty() ? mRateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * OneToKilo : 0.;
 
       const auto tracksFromCollision = tracks.sliceBy(perCollisionTracks, static_cast<int>(collision.globalIndex()));
 
       for (const auto& track : tracksFromCollision) {
-        if (!isTrackSelected(track)) {
+        bool isGoodTrack = isTrackSelected(track, trackSelection);
+        isGoodTrack &= (!requireGlobalTrack || track.isGlobalTrack());
+        isGoodTrack &= (!requireIts || track.hasITS());
+        isGoodTrack &= track.hasTPC();
+        isGoodTrack &= (track.tpcNClsFound() >= cutMinTPCNcls);
+        if (!isGoodTrack) {
           continue;
         }
+
         const float rapidity = track.rapidity(PID::getMass(Id));
         if (cutRapidity > 0.f && std::fabs(rapidity) > cutRapidity) {
           continue;
@@ -157,15 +167,16 @@ struct treeCreatorPidTpcQa {
         const float tgl = track.tgl();
         const float tpcInnerParam = track.tpcInnerParam();
 
-        rowPidTpcQa(Id, ft0Occ, multTPC, nClNormalized, phi, tgl, tpcInnerParam, rapidity);
-      } // tracks
+        rowPidTpcQa(Id, ft0Occ, hadronicRate, multTPC, nClNormalized, phi, tgl, tpcInnerParam, rapidity);
+      } // tracksFromCollision
     } // collisions
   }
 
   // QA of nsigma only tables
 #define MAKE_PROCESS_FUNCTION(PidTableTPC, ParticleId)                            \
   void process##ParticleId(CollisionsExtra const& collisions,                     \
-                           soa::Join<TrackCandidates, PidTableTPC> const& tracks) \
+                           soa::Join<TrackCandidates, PidTableTPC> const& tracks, \
+                           aod::BCsWithTimestamps const&)                         \
   {                                                                               \
     processSingleParticle<PID::ParticleId>(collisions, tracks);                   \
   }                                                                               \
@@ -185,7 +196,8 @@ struct treeCreatorPidTpcQa {
 // QA of full tables
 #define MAKE_PROCESS_FUNCTION(PidTableTPC, ParticleId)                                \
   void processFull##ParticleId(CollisionsExtra const& collisions,                     \
-                               soa::Join<TrackCandidates, PidTableTPC> const& tracks) \
+                               soa::Join<TrackCandidates, PidTableTPC> const& tracks, \
+                               aod::BCsWithTimestamps const&)                         \
   {                                                                                   \
     processSingleParticle<PID::ParticleId>(collisions, tracks);                       \
   }                                                                                   \
@@ -205,7 +217,8 @@ struct treeCreatorPidTpcQa {
   // QA of full tables with TOF information
 #define MAKE_PROCESS_FUNCTION(PidTableTPC, PidTableTOF, ParticleId)                                       \
   void processFullWithTOF##ParticleId(CollisionsExtra const& collisions,                                  \
-                                      soa::Join<TrackCandidates, PidTableTPC, PidTableTOF> const& tracks) \
+                                      soa::Join<TrackCandidates, PidTableTPC, PidTableTOF> const& tracks, \
+                                      aod::BCsWithTimestamps const&)                                      \
   {                                                                                                       \
     processSingleParticle<PID::ParticleId>(collisions, tracks);                                           \
   }                                                                                                       \
