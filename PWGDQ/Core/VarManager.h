@@ -5841,7 +5841,7 @@ void VarManager::FillSpectatorPlane(C const& collision, float* values)
   values[kTimeZPA] = collision.timeZPA();
   values[kTimeZPC] = collision.timeZPC();
 
-  constexpr float beamEne = 5.36 * 0.5;
+  // constexpr float beamEne = 5.36 * 0.5;
   constexpr std::array<float, 4> x = {-1.75f, 1.75f, -1.75f, 1.75f};
   constexpr std::array<float, 4> y = {-1.75f, -1.75f, 1.75f, 1.75f};
   // constexpr float intcalibZNA[4] = {0.7997028, 0.8453715, 0.7879917, 0.7695486};
