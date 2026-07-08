@@ -193,7 +193,7 @@ struct lambdajetpolarizationions {
     Configurable<bool> requireINEL0{"requireINEL0", true, "require INEL>0 event selection"}; // Only truly useful in pp
     Configurable<bool> requireINEL1{"requireINEL1", false, "require INEL>1 event selection"};
 
-    Configurable<float> maxZVtxPosition{"maxZVtxPosition", 10., "max Z vtx position"};
+    Configurable<float> maxZVtxPosition{"maxZVtxPosition", 10., "max Z vtx position [cm]"};
 
     Configurable<bool> useEvtSelInDenomEff{"useEvtSelInDenomEff", false, "Consider event selections in the recoed <-> gen collision association for the denominator (or numerator) of the acc. x eff. (or signal loss)?"};
     Configurable<bool> applyZVtxSelOnMCPV{"applyZVtxSelOnMCPV", true, "Apply Z-vtx cut on the PV of the generated collision?"}; // I see no reason as to not do this by default
@@ -320,7 +320,7 @@ struct lambdajetpolarizationions {
 
     // topological variable QA axes
     ConfigurableAxis axisDCAtoPV{"axisDCAtoPV", {20, 0.0f, 1.0f}, "DCA (cm)"};
-    ConfigurableAxis axisDCAdau{"axisDCAdau", {20, 0.0f, 2.0f}, "DCA (cm)"};
+    ConfigurableAxis axisDCAdau{"axisDCAdau", {20, 0.0f, 1.2f}, "DCA (cm)"}; // This should follow v0Selections.dcav0dau's default
     ConfigurableAxis axisPointingAngle{"axisPointingAngle", {20, 0.0f, 2.0f}, "pointing angle (rad)"};
     ConfigurableAxis axisV0Radius{"axisV0Radius", {20, 0.0f, 60.0f}, "V0 2D radius (cm)"};
     ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {200, -10.0f, 10.0f}, "N sigma TPC"};
