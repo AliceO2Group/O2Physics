@@ -1871,9 +1871,9 @@ void VarManager::FillGlobalMuonRefit(T1 const& muontrack, T2 const& mfttrack, co
   }
   if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0) {
     o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muontrack, collision);
-    double px = propmuon.getP() * sin(o2::constants::math::PIHalf - atan(mfttrack.tgl())) * cos(mfttrack.phi());
-    double py = propmuon.getP() * sin(o2::constants::math::PIHalf - atan(mfttrack.tgl())) * sin(mfttrack.phi());
-    double pz = propmuon.getP() * cos(o2::constants::math::PIHalf - atan(mfttrack.tgl()));
+    double px = propmuon.getP() * std::sin(o2::constants::math::PIHalf - std::atan(mfttrack.tgl())) * std::cos(mfttrack.phi());
+    double py = propmuon.getP() * std::sin(o2::constants::math::PIHalf - std::atan(mfttrack.tgl())) * std::sin(mfttrack.phi());
+    double pz = propmuon.getP() * std::cos(o2::constants::math::PIHalf - std::atan(mfttrack.tgl()));
     double pt = std::sqrt(std::pow(px, 2) + std::pow(py, 2));
     auto mftprop = o2::aod::fwdtrackutils::getTrackParCovFwdShift(mfttrack, fgzShiftFwd);
     values[kX] = mftprop.getX();
@@ -4992,15 +4992,15 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
         values[kVertexingLxyErr] = (KFPV.GetCovariance(0) + KFGeoTwoProng.GetCovariance(0)) * dxPair2PV * dxPair2PV + (KFPV.GetCovariance(2) + KFGeoTwoProng.GetCovariance(2)) * dyPair2PV * dyPair2PV + 2 * ((KFPV.GetCovariance(1) + KFGeoTwoProng.GetCovariance(1)) * dxPair2PV * dyPair2PV);
         values[kVertexingLzErr] = (KFPV.GetCovariance(5) + KFGeoTwoProng.GetCovariance(5)) * dzPair2PV * dzPair2PV;
         values[kVertexingLxyzErr] = (KFPV.GetCovariance(0) + KFGeoTwoProng.GetCovariance(0)) * dxPair2PV * dxPair2PV + (KFPV.GetCovariance(2) + KFGeoTwoProng.GetCovariance(2)) * dyPair2PV * dyPair2PV + (KFPV.GetCovariance(5) + KFGeoTwoProng.GetCovariance(5)) * dzPair2PV * dzPair2PV + 2 * ((KFPV.GetCovariance(1) + KFGeoTwoProng.GetCovariance(1)) * dxPair2PV * dyPair2PV + (KFPV.GetCovariance(3) + KFGeoTwoProng.GetCovariance(3)) * dxPair2PV * dzPair2PV + (KFPV.GetCovariance(4) + KFGeoTwoProng.GetCovariance(4)) * dyPair2PV * dzPair2PV);
-        if (fabs(values[kVertexingLxy]) < 1.e-8f) {
+        if (std::fabs(values[kVertexingLxy]) < 1.e-8f) {
           values[kVertexingLxy] = 1.e-8f;
         }
         values[kVertexingLxyErr] = values[kVertexingLxyErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyErr]) / values[kVertexingLxy];
-        if (fabs(values[kVertexingLz]) < 1.e-8f) {
+        if (std::fabs(values[kVertexingLz]) < 1.e-8f) {
           values[kVertexingLz] = 1.e-8f;
         }
         values[kVertexingLzErr] = values[kVertexingLzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLzErr]) / values[kVertexingLz];
-        if (fabs(values[kVertexingLxyz]) < 1.e-8f) {
+        if (std::fabs(values[kVertexingLxyz]) < 1.e-8f) {
           values[kVertexingLxyz] = 1.e-8f;
         }
         values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
@@ -5409,15 +5409,15 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
       values[kVertexingLxyErr] = (KFPV.GetCovariance(0) + KFGeoThreeProng.GetCovariance(0)) * dxTriplet2PV * dxTriplet2PV + (KFPV.GetCovariance(2) + KFGeoThreeProng.GetCovariance(2)) * dyTriplet2PV * dyTriplet2PV + 2 * ((KFPV.GetCovariance(1) + KFGeoThreeProng.GetCovariance(1)) * dxTriplet2PV * dyTriplet2PV);
       values[kVertexingLzErr] = (KFPV.GetCovariance(5) + KFGeoThreeProng.GetCovariance(5)) * dzTriplet2PV * dzTriplet2PV;
       values[kVertexingLxyzErr] = (KFPV.GetCovariance(0) + KFGeoThreeProng.GetCovariance(0)) * dxTriplet2PV * dxTriplet2PV + (KFPV.GetCovariance(2) + KFGeoThreeProng.GetCovariance(2)) * dyTriplet2PV * dyTriplet2PV + (KFPV.GetCovariance(5) + KFGeoThreeProng.GetCovariance(5)) * dzTriplet2PV * dzTriplet2PV + 2 * ((KFPV.GetCovariance(1) + KFGeoThreeProng.GetCovariance(1)) * dxTriplet2PV * dyTriplet2PV + (KFPV.GetCovariance(3) + KFGeoThreeProng.GetCovariance(3)) * dxTriplet2PV * dzTriplet2PV + (KFPV.GetCovariance(4) + KFGeoThreeProng.GetCovariance(4)) * dyTriplet2PV * dzTriplet2PV);
-      if (fabs(values[kVertexingLxy]) < 1.e-8f) {
+      if (std::fabs(values[kVertexingLxy]) < 1.e-8f) {
         values[kVertexingLxy] = 1.e-8f;
       }
       values[kVertexingLxyErr] = values[kVertexingLxyErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyErr]) / values[kVertexingLxy];
-      if (fabs(values[kVertexingLz]) < 1.e-8f) {
+      if (std::fabs(values[kVertexingLz]) < 1.e-8f) {
         values[kVertexingLz] = 1.e-8f;
       }
       values[kVertexingLzErr] = values[kVertexingLzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLzErr]) / values[kVertexingLz];
-      if (fabs(values[kVertexingLxyz]) < 1.e-8f) {
+      if (std::fabs(values[kVertexingLxyz]) < 1.e-8f) {
         values[kVertexingLxyz] = 1.e-8f;
       }
       values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
@@ -5669,15 +5669,15 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
           values[kVertexingLxyErr] = (KFPV.GetCovariance(0) + KFGeoThreeProng.GetCovariance(0)) * dxTriplet3PV * dxTriplet3PV + (KFPV.GetCovariance(2) + KFGeoThreeProng.GetCovariance(2)) * dyTriplet3PV * dyTriplet3PV + 2 * ((KFPV.GetCovariance(1) + KFGeoThreeProng.GetCovariance(1)) * dxTriplet3PV * dyTriplet3PV);
           values[kVertexingLzErr] = (KFPV.GetCovariance(5) + KFGeoThreeProng.GetCovariance(5)) * dzTriplet3PV * dzTriplet3PV;
           values[kVertexingLxyzErr] = (KFPV.GetCovariance(0) + KFGeoThreeProng.GetCovariance(0)) * dxTriplet3PV * dxTriplet3PV + (KFPV.GetCovariance(2) + KFGeoThreeProng.GetCovariance(2)) * dyTriplet3PV * dyTriplet3PV + (KFPV.GetCovariance(5) + KFGeoThreeProng.GetCovariance(5)) * dzTriplet3PV * dzTriplet3PV + 2 * ((KFPV.GetCovariance(1) + KFGeoThreeProng.GetCovariance(1)) * dxTriplet3PV * dyTriplet3PV + (KFPV.GetCovariance(3) + KFGeoThreeProng.GetCovariance(3)) * dxTriplet3PV * dzTriplet3PV + (KFPV.GetCovariance(4) + KFGeoThreeProng.GetCovariance(4)) * dyTriplet3PV * dzTriplet3PV);
-          if (fabs(values[kVertexingLxy]) < 1.e-8f) {
+          if (std::fabs(values[kVertexingLxy]) < 1.e-8f) {
             values[kVertexingLxy] = 1.e-8f;
           }
           values[kVertexingLxyErr] = values[kVertexingLxyErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyErr]) / values[kVertexingLxy];
-          if (fabs(values[kVertexingLz]) < 1.e-8f) {
+          if (std::fabs(values[kVertexingLz]) < 1.e-8f) {
             values[kVertexingLz] = 1.e-8f;
           }
           values[kVertexingLzErr] = values[kVertexingLzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLzErr]) / values[kVertexingLz];
-          if (fabs(values[kVertexingLxyz]) < 1.e-8f) {
+          if (std::fabs(values[kVertexingLxyz]) < 1.e-8f) {
             values[kVertexingLxyz] = 1.e-8f;
           }
           values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
@@ -5778,7 +5778,7 @@ void VarManager::FillQVectorFromGFW(C const& /*collision*/, A const& compA11, A 
   values[kM11REF] = S21A - S12A;
   values[kM1111REF] = S41A - 6. * S12A * S21A + 8. * S13A * S11A + 3. * S22A - 6. * S14A;
   values[kCORR2REF] = (norm(compA21) - S12A) / values[kM11REF];
-  values[kCORR4REF] = (pow(norm(compA21), 2) + norm(compA42) - 2. * (compA42 * conj(compA21) * conj(compA21)).real() + 8. * (compA23 * conj(compA21)).real() - 4. * S12A * norm(compA21) - 6. * S14A + 2. * S22A) / values[kM1111REF];
+  values[kCORR4REF] = (std::pow(norm(compA21), 2) + norm(compA42) - 2. * (compA42 * conj(compA21) * conj(compA21)).real() + 8. * (compA23 * conj(compA21)).real() - 4. * S12A * norm(compA21) - 6. * S14A + 2. * S22A) / values[kM1111REF];
   values[kCORR2REF] = std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kCORR2REF];
   values[kM11REF] = std::isnan(values[kM11REF]) || std::isinf(values[kM11REF]) || std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kM11REF];
   values[kCORR4REF] = std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) || std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kCORR4REF];
@@ -6350,7 +6350,7 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
     ROOT::Math::PtEtaPhiMVector v12_Qvect = v1 - v2;
     double Pinv = v12.M();
     double Q1 = (dilepton.mass() * dilepton.mass() - hadronMass * hadronMass) / Pinv;
-    values[kDileptonHadronKstar] = sqrt(Q1 * Q1 - v12_Qvect.M2()) / 2.0;
+    values[kDileptonHadronKstar] = std::sqrt(Q1 * Q1 - v12_Qvect.M2()) / 2.0;
   }
 
   if (fgUsedVars[kDeltaPhi]) {
@@ -6626,7 +6626,7 @@ void VarManager::FillDileptonTrackTrack(T1 const& dilepton, T2 const& hadron1, T
     values[kQ] = v123.M() - defaultDileptonMass - v23.M();
     values[kDeltaR1] = ROOT::Math::VectorUtil::DeltaR(v1, v2);
     values[kDeltaR2] = ROOT::Math::VectorUtil::DeltaR(v1, v3);
-    values[kDeltaR] = sqrt(pow(values[kDeltaR1], 2) + pow(values[kDeltaR2], 2));
+    values[kDeltaR] = std::sqrt(std::pow(values[kDeltaR1], 2) + std::pow(values[kDeltaR2], 2));
     values[kRap] = v123.Rapidity();
   }
 }
@@ -6850,15 +6850,15 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
     values[kVertexingLzErr] = (KFPV.GetCovariance(5) + KFGeoFourProng.GetCovariance(5)) * dzQuadlet2PV * dzQuadlet2PV;
     values[kVertexingLxyzErr] = (KFPV.GetCovariance(0) + KFGeoFourProng.GetCovariance(0)) * dxQuadlet2PV * dxQuadlet2PV + (KFPV.GetCovariance(2) + KFGeoFourProng.GetCovariance(2)) * dyQuadlet2PV * dyQuadlet2PV + (KFPV.GetCovariance(5) + KFGeoFourProng.GetCovariance(5)) * dzQuadlet2PV * dzQuadlet2PV + 2 * ((KFPV.GetCovariance(1) + KFGeoFourProng.GetCovariance(1)) * dxQuadlet2PV * dyQuadlet2PV + (KFPV.GetCovariance(3) + KFGeoFourProng.GetCovariance(3)) * dxQuadlet2PV * dzQuadlet2PV + (KFPV.GetCovariance(4) + KFGeoFourProng.GetCovariance(4)) * dyQuadlet2PV * dzQuadlet2PV);
 
-    if (fabs(values[kVertexingLxy]) < 1.e-8f) {
+    if (std::fabs(values[kVertexingLxy]) < 1.e-8f) {
       values[kVertexingLxy] = 1.e-8f;
     }
     values[kVertexingLxyErr] = values[kVertexingLxyErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyErr]) / values[kVertexingLxy];
-    if (fabs(values[kVertexingLz]) < 1.e-8f) {
+    if (std::fabs(values[kVertexingLz]) < 1.e-8f) {
       values[kVertexingLz] = 1.e-8f;
     }
     values[kVertexingLzErr] = values[kVertexingLzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLzErr]) / values[kVertexingLz];
-    if (fabs(values[kVertexingLxyz]) < 1.e-8f) {
+    if (std::fabs(values[kVertexingLxyz]) < 1.e-8f) {
       values[kVertexingLxyz] = 1.e-8f;
     }
     values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
@@ -6920,7 +6920,7 @@ void VarManager::FillQuadMC(T1 const& dilepton, T2 const& track1, T2 const& trac
   values[kQ] = v123.M() - defaultDileptonMass - v23.M();
   values[kDeltaR1] = ROOT::Math::VectorUtil::DeltaR(v1, v2);
   values[kDeltaR2] = ROOT::Math::VectorUtil::DeltaR(v1, v3);
-  values[kDeltaR] = sqrt(pow(values[kDeltaR1], 2) + pow(values[kDeltaR2], 2));
+  values[kDeltaR] = std::sqrt(std::pow(values[kDeltaR1], 2) + std::pow(values[kDeltaR2], 2));
   values[kDitrackMass] = v23.M();
   values[kDitrackPt] = v23.Pt();
 }
