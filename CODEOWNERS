@@ -49,7 +49,7 @@
 /PWGCF/TwoParticleCorrelations @alibuild @Luzhiyongg @jaelpark @wenyaCern @victor-gonzalez @shouqiye @lauraser
 /PWGCF/Tutorial @alibuild @ariedel-cern @victor-gonzalez @shouqiye @lauraser
 
-/PWGDQ @alibuild @iarsene @mcoquet642 @lucamicheletti93 @XiaozhiBai
+/PWGDQ @alibuild @iarsene @mcoquet642 @XiaozhiBai @mguilbau
 /PWGEM @alibuild @feisenhu @dsekihat @jokonig @hscheid
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @feisenhu @hscheid @jokonig
 /PWGEM/PhotonMeson @alibuild @mhemmer-cern @dsekihat @jokonig @hscheid @amaringarcia
@@ -80,7 +80,7 @@
 /Tools/PIDML @alibuild @saganatt
 /Tools/ML @alibuild @fcatalan92 @fmazzasc
 /Tutorials/PWGCF @alibuild @jgrosseo @victor-gonzalez @zchochul
-/Tutorials/PWGDQ @alibuild @iarsene @mcoquet @lucamicheletti93
+/Tutorials/PWGDQ @alibuild @iarsene @mcoquet642 @XiaozhiBai @mguilbau
 /Tutorials/PWGEM @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
 /Tutorials/PWGHF @alibuild @vkucera @fcolamar @fgrosa @gluparel @xinyepeng
 /Tutorials/PWGJE @alibuild @lhavener @maoyx @nzardosh @raymondEhlers @mfasDa @fjonasALICE
