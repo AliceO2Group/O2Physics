@@ -396,8 +396,8 @@ struct Photonhbt {
   std::vector<float> occBinEdges;
 
   using MyEMH = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, PhotonWithLegs>;
-  MyEMH* emh1 = nullptr;
-  MyEMH* emh2 = nullptr;
+  std::shared_ptr<MyEMH> emh1;
+  std::shared_ptr<MyEMH> emh2;
   std::unordered_set<int> usedPhotonIdsPerCol;
   std::map<std::pair<int, int>, uint64_t> mapMixedEventIdToGlobalBC;
   std::map<std::tuple<int, int, int, int>, std::deque<std::vector<TruthGamma>>> truthGammaPool;
@@ -433,8 +433,8 @@ struct Photonhbt {
     parseBins(mixing.confCentBins, centBinEdges);
     parseBins(mixing.confEPBinsBins, epBinEgdes);
     parseBins(mixing.confOccupancyBins, occBinEdges);
-    emh1 = new MyEMH(mixing.ndepth);
-    emh2 = new MyEMH(mixing.ndepth);
+    emh1 = std::make_shared<MyEMH>(mixing.ndepth);
+    emh2 = std::make_shared<MyEMH>(mixing.ndepth);
     DefineEMEventCut();
     DefinePCMCut();
     addhistograms();
@@ -443,16 +443,7 @@ struct Photonhbt {
     dist01 = std::uniform_int_distribution<int>(0, 1);
   }
 
-  ~Photonhbt()
-  {
-    delete emh1;
-    emh1 = nullptr;
-    delete emh2;
-    emh2 = nullptr;
-    mapMixedEventIdToGlobalBC.clear();
-    usedPhotonIdsPerCol.clear();
-    truthGammaPool.clear();
-  }
+  Photonhbt& operator=(const Photonhbt&) = delete;
 
   template <typename TCollision>
   void initCCDB(TCollision const& collision)
