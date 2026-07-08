@@ -441,6 +441,10 @@ struct Xi1820Analysis {
     if (v0.pt() < cMinPtcut)
       return false;
 
+    // DCA to PV
+    if (std::abs(v0.dcav0topv()) > additionalConfig.cMaxDcaToPVV0)
+      return false;
+
     // Topological cuts
     if (v0.v0CosPA() < cV0MinCosPA)
       return false;
