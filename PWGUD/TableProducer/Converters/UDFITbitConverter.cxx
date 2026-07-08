@@ -23,8 +23,7 @@
 ///
 /// \author Sandor Lokos <sandor.lokos@cern.ch>
 
-#include "PWGUD/DataModel/UDTables.h"
-
+#include <PWGUD/DataModel/UDTables.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>

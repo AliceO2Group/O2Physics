@@ -342,7 +342,7 @@ struct UpcTestFITBitMapping {
     const float ft0AmpA = collision.totalFT0AmplitudeA();
     const float ft0AmpC = collision.totalFT0AmplitudeC();
     const float fv0AmpA = collision.totalFV0AmplitudeA();
-		
+
 		registry.fill(HIST("mult/hPnFT0A_raw"), ft0AmpA);
     registry.fill(HIST("mult/hPnFT0C_raw"), ft0AmpC);
     registry.fill(HIST("mult/hPnFV0A_raw"), fv0AmpA);
@@ -350,7 +350,7 @@ struct UpcTestFITBitMapping {
     registry.fill(HIST("qaBeforeCuts/hFT0AAmplitudeVsTime"), ft0TimeA, ft0AmpA);
     registry.fill(HIST("qaBeforeCuts/hFT0CAmplitudeVsTime"), ft0TimeC, ft0AmpC);
     registry.fill(HIST("qaBeforeCuts/hZNEnergy"), collision.energyCommonZNA(), collision.energyCommonZNC());
-		
+
     /* Checking collision level cuts */
     if (!collisionPassesCuts(collision)) {
       return;

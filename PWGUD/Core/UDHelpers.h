@@ -24,7 +24,7 @@
 
 #include <CommonConstants/LHCConstants.h>
 #include <DataFormatsFIT/Triggers.h>
-#include "DataFormatsFT0/Digit.h"
+#include <DataFormatsFT0/Digit.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/Logger.h>
 #include <Framework/SliceCache.h>
@@ -544,12 +544,12 @@ bool FITveto(T const& bc, DGCutparHolder const& diffCuts)
 
 inline void setBit(uint64_t w[4], int bit, bool val)
 {
-	if (!val) {
-		return;
-	}
-	const int word = bit >> 6;
-	const int offs = bit & 63;
-	w[word] |= (static_cast<uint64_t>(1) << offs);
+  if (!val) {
+    return;
+  }
+  const int word = bit >> 6;
+  const int offs = bit & 63;
+  w[word] |= (static_cast<uint64_t>(1) << offs);
 }
 
 template <typename TFT0, typename TFV0A>
