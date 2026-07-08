@@ -638,7 +638,7 @@ struct Photonhbt {
   void addSinglePhotonQAHistograms()
   {
     static constexpr std::array<const char*, 2> kStepDirs = {"Before/", "AfterPairCuts/"};
-    for (const auto* step : kStepDirs) {
+    for (const auto& step : kStepDirs) {
       addSinglePhotonQAHistogramsForStep(std::string("SinglePhoton/") + step);
     }
   }
@@ -647,7 +647,7 @@ struct Photonhbt {
   void addPairQAHistograms()
   {
     static constexpr std::array<const char*, 2> kStepDirs = {"Before/", "AfterPairCuts/"};
-    for (const auto* step : kStepDirs) {
+    for (const auto& step : kStepDirs) {
       addQAHistogramsForStep(std::string("Pair/same/QA/") + step);
     }
 
