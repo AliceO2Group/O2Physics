@@ -377,6 +377,23 @@ struct FemtoProducer {
   }
   PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesRun3pp, "Provide Tracks, V0s and Cascades for Run3", false);
 
+  void processTracksV0sCascadesRun3PbPb(rawinputs::Run3PbPbCollisions::iterator const& col,
+                                        o2::aod::BCsWithTimestamps const& bcs,
+                                        rawinputs::Run3FullPidTracks const& tracks,
+                                        rawinputs::Run3Vzeros const& v0s,
+                                        rawinputs::Run3Cascades const& cascades)
+  {
+    if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracks)) {
+      return;
+    }
+    auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
+    processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
+    processV0s<modes::System::kPbPb_Run3>(col, tracks, v0s);
+    processCascades<modes::System::kPbPb_Run3>(col, tracks, cascades);
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksV0sCascadesRun3PbPb, "Provide Tracks, V0s and Cascades for Run3", false);
+
   // process tracks, v0s, cascades and kinks
   void processTracksV0sCascadesKinksRun3pp(rawinputs::Run3PpCollisions::iterator const& col,
                                            o2::aod::BCsWithTimestamps const& bcs,
