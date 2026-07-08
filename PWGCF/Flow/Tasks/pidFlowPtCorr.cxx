@@ -147,6 +147,7 @@ struct PidFlowPtCorr {
     O2_DEFINE_CONFIGURABLE(cfgOutPutPtSpectra, bool, false, "output pt spectra for data, MC and RECO");
     O2_DEFINE_CONFIGURABLE(cfgCheck2MethodDiff, bool, false, "check difference between v2' && v2''");
     O2_DEFINE_CONFIGURABLE(cfgClosureTest, int, 0, "choose (val) percent particle from charged to pass Pion PID selection");
+    O2_DEFINE_CONFIGURABLE(cfgOutPutMC1D, bool, true, "Fill MC graphs, note that if the processMCgen is open,this MUST be open");
 
     O2_DEFINE_CONFIGURABLE(cfgProcessQAOutput, bool, false, "QA plots for processQA");
   } switchsOpts;
@@ -460,6 +461,18 @@ struct PidFlowPtCorr {
       registry.add("correction/hPtCentMcRecPr", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
       registry.add("correction/hPtCentMcGenPr", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
     } // cfgoutputMC
+
+    if (switchsOpts.cfgOutPutMC1D.value) {
+      registry.add("correction1D/hPtMCRec1D", "", {HistType::kTH1D, {cfgaxisPt}});
+      registry.add("correction1D/hPtMCRec1DPi", "", {HistType::kTH1D, {cfgaxisPt}});
+      registry.add("correction1D/hPtMCRec1DKa", "", {HistType::kTH1D, {cfgaxisPt}});
+      registry.add("correction1D/hPtMCRec1DPr", "", {HistType::kTH1D, {cfgaxisPt}});
+
+      registry.add("correction1D/hPtMCGen1D", "", {HistType::kTH1D, {cfgaxisPt}});
+      registry.add("correction1D/hPtMCGen1DPi", "", {HistType::kTH1D, {cfgaxisPt}});
+      registry.add("correction1D/hPtMCGen1DKa", "", {HistType::kTH1D, {cfgaxisPt}});
+      registry.add("correction1D/hPtMCGen1DPr", "", {HistType::kTH1D, {cfgaxisPt}});
+    }
 
     if (switchsOpts.cfgOutPutPtSpectra.value) {
       registry.add("ptSpectra/hPtCentData", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
@@ -2722,6 +2735,80 @@ struct PidFlowPtCorr {
     // end cut && init
   }
   PROCESS_SWITCH(PidFlowPtCorr, processSim, "function used to do pt eff, NOTE (OutPutMc, processReco, processSim) should be open", true);
+
+  void processReco1D(FilteredCollisionsWithMCLabel::iterator const& collision,
+                     aod::BCsWithTimestamps const&,
+                     FilteredTracksWithMCLabel const& tracks,
+                     aod::McParticles const&,
+                     aod::McCollisions const&)
+  {
+    if (!collision.sel8())
+      return;
+    if (tracks.size() < 1)
+      return;
+
+    for (const auto& track : tracks) {
+
+      if (!trackSelectedGlobal(track))
+        continue;
+      if (!track.hasITS())
+        continue;
+      if (!track.hasTPC())
+        continue;
+      if (!trackSelected4ITS(track))
+        continue;
+      if (!trackSelected4TPC(track))
+        continue;
+
+      if (track.has_mcParticle()) {
+        auto mcParticle = track.mcParticle();
+
+        if (isStable(mcParticle.pdgCode())) {
+          registry.fill(HIST("correction1D/hPtMCRec1D"), track.pt());
+
+          switch (std::abs(mcParticle.pdgCode())) {
+            case PDG_t::kPiPlus:
+              registry.fill(HIST("correction1D/hPtMCRec1DPi"), track.pt());
+              break;
+            case PDG_t::kKPlus:
+              registry.fill(HIST("correction1D/hPtMCRec1DKa"), track.pt());
+              break;
+            case PDG_t::kProton:
+              registry.fill(HIST("correction1D/hPtMCRec1DPr"), track.pt());
+              break;
+          } // switch PDGCODE
+        } // stable
+      } // track.has_mcparticle
+    } // end track loop
+  }
+  PROCESS_SWITCH(PidFlowPtCorr, processReco1D, "process reconstructed information", true);
+
+  void processSim1D(FilteredMcCollisions::iterator const&,
+                    aod::BCsWithTimestamps const&,
+                    soa::SmallGroups<soa::Join<aod::McCollisionLabels, AodCollisions>> const& collisions,
+                    FilteredMcParticles const& mcParticles,
+                    FilteredTracksWithMCLabel const&)
+  {
+    if (collisions.size() > -1) {
+      for (const auto& mcParticle : mcParticles) {
+        if (mcParticle.isPhysicalPrimary() && isStable(mcParticle.pdgCode())) {
+          registry.fill(HIST("correction1D/hPtMCGen1D"), mcParticle.pt());
+          switch (std::abs(mcParticle.pdgCode())) {
+            case PDG_t::kPiPlus:
+              registry.fill(HIST("correction1D/hPtMCGen1DPi"), mcParticle.pt());
+              break;
+            case PDG_t::kKPlus:
+              registry.fill(HIST("correction1D/hPtMCGen1DKa"), mcParticle.pt());
+              break;
+            case PDG_t::kProton:
+              registry.fill(HIST("correction1D/hPtMCGen1DPr"), mcParticle.pt());
+              break;
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(PidFlowPtCorr, processSim1D, "process pure simulation information", true);
 
   // main function
 };
