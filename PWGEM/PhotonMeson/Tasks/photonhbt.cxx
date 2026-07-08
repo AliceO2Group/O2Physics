@@ -372,6 +372,7 @@ struct Photonhbt {
     usedPhotonIdsPerCol.clear();
     truthGammaPool.clear();
   }
+  Photonhbt(const Photonhbt&) = delete;
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   HistogramRegistry fRegistryPairQA{"outputPairQA", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
