@@ -44,7 +44,7 @@ struct UpcTestFITBitMapping {
 
   constexpr int nChFT0A = 96;
   constexpr int nChFT0C = 112;
-	constexpr int nChFV0A = 48;
+  constexpr int nChFV0A = 48;
 
   constexpr int kFT0AOffset = 0;
   constexpr int kFT0COffset = 96;
@@ -70,8 +70,8 @@ struct UpcTestFITBitMapping {
 
   Configurable<int> useFV0AVeto{"useFV0AVeto", true, "Apply FV0-A total amplitude veto"};
   Configurable<float> cutFV0AmpAVeto{"cutFV0AmpAVeto", 50., "Maximum allowed FV0-A total amplitude for veto"};
-	
-	Configurable<float> cutZvertex{"cutZvertex", 10., "z-vertex cut"};
+
+  Configurable<float> cutZvertex{"cutZvertex", 10., "z-vertex cut"};
 
   struct OffsetXYZ {
     double x{0.}, y{0.}, z{0.};

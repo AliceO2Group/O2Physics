@@ -563,7 +563,7 @@ inline void buildFT0FV0Words(TFT0 const& ft0, TFV0A const& fv0a,
 
   constexpr int nChFT0A = 96;
   constexpr int nChFT0C = 112;
-	constexpr int nChFV0A = 48;
+  constexpr int nChFV0A = 48;
 
   constexpr int kFT0AOffset = 0;
   constexpr int kFT0COffset = 96;
