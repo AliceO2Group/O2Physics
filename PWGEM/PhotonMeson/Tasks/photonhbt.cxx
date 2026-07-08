@@ -14,7 +14,6 @@
 /// \author Daiki Sekihata, daiki.sekihata@cern.ch
 ///         Stefanie Mrozinski, stefanie.mrozinski@cern.ch
 
-#include "PWGEM/Dilepton/Utils/EMTrack.h"
 #include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
@@ -39,9 +38,9 @@
 #include <MathUtils/Utils.h>
 
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector3D.h>
+#include <Math/Vector3D.h> // IWYU pragma: keep
 #include <Math/Vector3Dfwd.h>
-#include <Math/Vector4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep
 #include <Math/Vector4Dfwd.h>
 #include <TPDGCode.h>
 #include <TString.h>
@@ -55,8 +54,8 @@
 #include <functional>
 #include <initializer_list>
 #include <map>
-#include <random>
 #include <memory>
+#include <random>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -91,7 +90,7 @@ using MyMCV0Leg = MyMCV0Legs::iterator;
 
 static constexpr float kMinMagnitude = 1e-12f;
 static constexpr float kMinCosine = 1e-12f;
-static constexpr float kMinSigma = 1e-9;
+static constexpr float kMinSigma = 1e-9f;
 
 struct Photonhbt {
 
@@ -141,15 +140,15 @@ struct Photonhbt {
     float fPt{0}, fEta{0}, fPhi{0};
     float fVx{0}, fVy{0}, fVz{0};
     std::array<float, 2> fLegPt{}, fLegEta{}, fLegPhi{}; // [0] = e+, [1] = e-
-    float pt() const { return fPt; }
-    float eta() const { return fEta; }
-    float phi() const { return fPhi; }
-    float vx() const { return fVx; }
-    float vy() const { return fVy; }
-    float vz() const { return fVz; }
-    float legEta(int i) const { return fLegEta[i]; }
-    float legPhi(int i) const { return fLegPhi[i]; }
-    float legPt(int i) const { return fLegPt[i]; }
+    [[nodiscard]] float pt() const { return fPt; }
+    [[nodiscard]] float eta() const { return fEta; }
+    [[nodiscard]] float phi() const { return fPhi; }
+    [[nodiscard]] float vx() const { return fVx; }
+    [[nodiscard]] float vy() const { return fVy; }
+    [[nodiscard]] float vz() const { return fVz; }
+    [[nodiscard]] float legEta(int i) const { return fLegEta[i]; }
+    [[nodiscard]] float legPhi(int i) const { return fLegPhi[i]; }
+    [[nodiscard]] float legPt(int i) const { return fLegPt[i]; }
   };
 
   struct PhotonMCInfo {
@@ -379,8 +378,8 @@ struct Photonhbt {
   HistogramRegistry fRegistryPairMC{"pairMC", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   HistogramRegistry fRegistryTruthMC{"truthMC", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  static constexpr std::string_view event_pair_types[2] = {"same/", "mix/"};
-  static constexpr std::string_view pairsep_types[2] = {"PairSep/same/", "PairSep/mix/"};
+  static constexpr std::array<std::string_view, 2> event_pair_types = {"same/", "mix/"};
+  static constexpr std::array<std::string_view, 2> pairsep_types = {"PairSep/same/", "PairSep/mix/"};
 
   EMPhotonEventCut fEMEventCut;
   V0PhotonCut fV0PhotonCut;
@@ -443,8 +442,6 @@ struct Photonhbt {
     engine = std::mt19937(seedGen());
     dist01 = std::uniform_int_distribution<int>(0, 1);
   }
-
-  Photonhbt& operator=(const Photonhbt&) = delete;
 
   template <typename TCollision>
   void initCCDB(TCollision const& collision)
@@ -570,7 +567,9 @@ struct Photonhbt {
 
     if (isMC) {
       addPairMCHistograms();
-      addLegPairMCHistograms(); // leg observables per truth type
+      if (qaflags.doLegPairQA) {
+        addLegPairMCHistograms();
+      }
       addTruthMCHistograms();
     }
   }
@@ -578,7 +577,8 @@ struct Photonhbt {
   // ─── Event histograms (fRegistry) ─────────────────────────────────────────
   void addEventHistograms()
   {
-    static constexpr std::string_view det[6] = {"FT0M", "FT0A", "FT0C", "BTot", "BPos", "BNeg"};
+    static constexpr std::array<std::string_view, 6> det = {"FT0M", "FT0A", "FT0C", "BTot", "BPos", "BNeg"};
+
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
     fRegistry.add("Event/before/hEP2_CentFT0C_forMix",
                   Form("2nd harmonics EP for mix;centrality FT0C (%%);#Psi_{2}^{%s} (rad.)", det[mixing.cfgEP2EstimatorForMix].data()),
@@ -784,7 +784,7 @@ struct Photonhbt {
                            kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
     }
 
-    auto addStageHistos = [&](const char* suffix, const char* title, auto... axes) {
+    auto addStageHistos = [&](const char* suffix, const char* title, auto const&... axes) {
       for (const auto& stage : {"truthConverted", "all4LegsThisColl",
                                 "bothPhotonsBuilt", "bothPhotonsSelected"}) {
         const std::string name = std::string("MC/TruthAO2D/") + suffix + std::string("_") + stage;
@@ -792,7 +792,7 @@ struct Photonhbt {
         fRegistryTruthMC.add(name.c_str(), ttl.c_str(), kTHnSparseD, {axes...}, true);
       }
     };
-    auto addStageHistos2D = [&](const char* suffix, const char* title, auto ax1, auto ax2) {
+    auto addStageHistos2D = [&](const char* suffix, const char* title, auto const& ax1, auto const& ax2) {
       for (const auto& stage : {"truthConverted", "all4LegsThisColl",
                                 "bothPhotonsBuilt", "bothPhotonsSelected"}) {
         const std::string name = std::string("MC/TruthAO2D/") + suffix + std::string("_") + stage;
@@ -971,9 +971,9 @@ struct Photonhbt {
       edges = std::vector<float>(cfg.value.begin(), cfg.value.end());
       edges.erase(edges.begin());
     } else {
-      const int n = static_cast<int>(cfg.value[0]);
-      const float xmin = static_cast<float>(cfg.value[1]);
-      const float xmax = static_cast<float>(cfg.value[2]);
+      const auto n = static_cast<int>(cfg.value[0]);
+      const auto xmin = static_cast<float>(cfg.value[1]);
+      const auto xmax = static_cast<float>(cfg.value[2]);
       edges.resize(n + 1);
       for (int i = 0; i <= n; ++i)
         edges[i] = xmin + (xmax - xmin) / n * i;
@@ -1135,8 +1135,8 @@ struct Photonhbt {
 
   template <int ev_id, typename TCollision>
   void fillPairHistogram(TCollision const& /*collision*/,
-                         ROOT::Math::PtEtaPhiMVector v1,
-                         ROOT::Math::PtEtaPhiMVector v2,
+                         ROOT::Math::PtEtaPhiMVector const& v1,
+                         ROOT::Math::PtEtaPhiMVector const& v2,
                          float weight = 1.f)
   {
     float rndm = std::pow(-1, dist01(engine) % 2);
@@ -1177,8 +1177,8 @@ struct Photonhbt {
 
   template <int ev_id, PairTruthType TruthT, typename TCollision>
   void fillPairHistogramMC(TCollision const& /*collision*/,
-                           ROOT::Math::PtEtaPhiMVector v1,
-                           ROOT::Math::PtEtaPhiMVector v2,
+                           ROOT::Math::PtEtaPhiMVector const& v1,
+                           ROOT::Math::PtEtaPhiMVector const& v2,
                            float weight = 1.f)
   {
     float rndm = std::pow(-1, dist01(engine) % 2);
@@ -1412,8 +1412,8 @@ struct Photonhbt {
 
   template <typename TCollision>
   void fillPairHistogramNoLabel(TCollision const& /*collision*/,
-                                ROOT::Math::PtEtaPhiMVector v1,
-                                ROOT::Math::PtEtaPhiMVector v2)
+                                ROOT::Math::PtEtaPhiMVector const& v1,
+                                ROOT::Math::PtEtaPhiMVector const& v2)
   {
     float rndm = std::pow(-1, dist01(engine) % 2);
     auto k12 = 0.5 * (v1 + v2);
@@ -1470,7 +1470,7 @@ struct Photonhbt {
       o.valid = false;
       return o;
     }
-    float cosPA = static_cast<float>(cp1.Dot(cp2) / (mag1 * mag2));
+    auto cosPA = static_cast<float>(cp1.Dot(cp2) / (mag1 * mag2));
     cosPA = std::clamp(cosPA, -1.f, 1.f);
     o.opa = std::acos(cosPA);
     o2::math_utils::bringTo02Pi(o.opa);
@@ -1590,7 +1590,7 @@ struct Photonhbt {
     for (const auto& collision : collisions) {
       initCCDB(collision);
       int ndiphoton = 0;
-      const float cent[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      const std::array<float, 3> cent = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (cent[mixing.cfgCentEstimator] < centralitySelection.cfgCentMin || centralitySelection.cfgCentMax < cent[mixing.cfgCentEstimator])
         continue;
       const std::array<float, 7> epArr = {collision.ep2ft0m(), collision.ep2ft0a(), collision.ep2ft0c(),
@@ -1693,7 +1693,7 @@ struct Photonhbt {
       if (qaflags.doSinglePhotonQa) {
         for (const auto& g : photons1Coll) {
           if (cut1.template IsSelected<decltype(g), TSubInfos1>(g)) {
-            if (idsAfterPairCuts.count(g.globalIndex())) {
+            if (idsAfterPairCuts.contains(g.globalIndex())) {
               fillSinglePhotonQAStep<1>(g);
             }
           }
@@ -1772,7 +1772,7 @@ struct Photonhbt {
     for (const auto& collision : collisions) {
       initCCDB(collision);
       int ndiphoton = 0;
-      const float cent[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      const std::array<float, 3> cent = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (cent[mixing.cfgCentEstimator] < centralitySelection.cfgCentMin || centralitySelection.cfgCentMax < cent[mixing.cfgCentEstimator])
         continue;
       const std::array<float, 7> epArr = {collision.ep2ft0m(), collision.ep2ft0a(), collision.ep2ft0c(),
@@ -1928,7 +1928,7 @@ struct Photonhbt {
       if (qaflags.doSinglePhotonQa) {
         for (const auto& g : photonsColl) {
           if (cut.template IsSelected<decltype(g), TLegs>(g)) {
-            if (idsAfterPairCuts.count(g.globalIndex())) {
+            if (idsAfterPairCuts.contains(g.globalIndex())) {
               fillSinglePhotonQAStep<1>(g);
             }
           }
@@ -2019,7 +2019,7 @@ struct Photonhbt {
     for (const auto& collision : collisions) {
       if (!fEMEventCut.IsSelected(collision))
         continue;
-      const float cent[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      const std::array<float, 3> cent = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (cent[mixing.cfgCentEstimator] < centralitySelection.cfgCentMin ||
           centralitySelection.cfgCentMax < cent[mixing.cfgCentEstimator])
         continue;
@@ -2156,15 +2156,15 @@ struct Photonhbt {
         for (const auto& tg : trueGammas) {
           const auto it = gammaRecoMap.find(tg.id);
           if (it != gammaRecoMap.end() && it->second.hasV0 &&
-              (mcIdsWithAnyV0Leg.count(tg.posId) == 0 || mcIdsWithAnyV0Leg.count(tg.negId) == 0))
+              (mcIdsWithAnyV0Leg.contains(tg.posId) == 0 || mcIdsWithAnyV0Leg.count(tg.negId) == 0))
             ++nBad;
         }
         fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hStageConsistency"), static_cast<float>(nBad));
       }
 
       for (const auto& tg : trueGammas) {
-        const bool posFound = legIdsThisCollision.count(tg.posId) > 0;
-        const bool negFound = legIdsThisCollision.count(tg.negId) > 0;
+        const bool posFound = legIdsThisCollision.contains(tg.posId) > 0;
+        const bool negFound = legIdsThisCollision.contains(tg.negId) > 0;
         const bool bothFound = posFound && negFound;
 
         for (const auto& [legId, legFound] :
@@ -2223,8 +2223,8 @@ struct Photonhbt {
           const bool g2Sel = (it2 != gammaRecoMap.end()) && it2->second.passesCut;
 
           const bool pairAll4LegsThisColl =
-            legIdsThisCollision.count(g1.posId) > 0 && legIdsThisCollision.count(g1.negId) > 0 &&
-            legIdsThisCollision.count(g2.posId) > 0 && legIdsThisCollision.count(g2.negId) > 0;
+            legIdsThisCollision.contains(g1.posId) > 0 && legIdsThisCollision.contains(g1.negId) > 0 &&
+            legIdsThisCollision.contains(g2.posId) > 0 && legIdsThisCollision.contains(g2.negId) > 0;
 
           fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hSparse_DEtaDPhi_qinv_truthConverted"), deta, dphi, qinv_true);
           fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hSparse_DEtaDPhi_kT_truthConverted"), deta, dphi, kt);
@@ -2280,19 +2280,19 @@ struct Photonhbt {
           }
 
           const int nLegsThisColl =
-            (legIdsThisCollision.count(g1.posId) > 0 ? 1 : 0) +
-            (legIdsThisCollision.count(g1.negId) > 0 ? 1 : 0) +
-            (legIdsThisCollision.count(g2.posId) > 0 ? 1 : 0) +
-            (legIdsThisCollision.count(g2.negId) > 0 ? 1 : 0);
+            (legIdsThisCollision.contains(g1.posId) > 0 ? 1 : 0) +
+            (legIdsThisCollision.contains(g1.negId) > 0 ? 1 : 0) +
+            (legIdsThisCollision.contains(g2.posId) > 0 ? 1 : 0) +
+            (legIdsThisCollision.contains(g2.negId) > 0 ? 1 : 0);
           fRegistryTruthMC.fill(HIST("MC/LegDiag/hNLegsPair_vs_kT"), kt, static_cast<float>(nLegsThisColl));
 
           for (const auto& [tgRef, legId] :
                std::initializer_list<std::pair<std::reference_wrapper<const TruthGamma>, int>>{
                  {std::cref(g1), g1.posId}, {std::cref(g1), g1.negId}, {std::cref(g2), g2.posId}, {std::cref(g2), g2.negId}}) {
-            if (legId < 0 || legIdsThisCollision.count(legId) > 0)
+            if (legId < 0 || legIdsThisCollision.contains(legId) > 0)
               continue;
             const auto& tg_parent = tgRef.get();
-            const float legPtTrue = static_cast<float>(emmcParticles.iteratorAt(legId).pt());
+            const auto legPtTrue = static_cast<float>(emmcParticles.iteratorAt(legId).pt());
             fRegistryTruthMC.fill(HIST("MC/LegDiag/hMissingLegPt_vs_kT"), kt, legPtTrue);
             if (tg_parent.rTrue >= 0.f)
               fRegistryTruthMC.fill(HIST("MC/LegDiag/hMissingLegRconv_vs_kT"), kt, tg_parent.rTrue);
@@ -2335,7 +2335,7 @@ struct Photonhbt {
                                       binOf(epBinEgdes, ep2),
                                       binOf(occBinEdges, occupancy));
 
-        if (truthGammaPool.count(keyBin)) {
+        if (truthGammaPool.contains(keyBin)) {
           for (const auto& poolEvent : truthGammaPool[keyBin]) {
             for (const auto& g1 : trueGammas) {
               for (const auto& g2 : poolEvent) {
