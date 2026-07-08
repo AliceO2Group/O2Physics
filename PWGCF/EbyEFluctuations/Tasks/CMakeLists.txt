@@ -88,3 +88,8 @@ o2physics_add_dpl_workflow(strongly-intensive-corr
   		    SOURCES stronglyIntensiveCorr.cxx
   		    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(multandpt-fluctuations
+                    SOURCES MultandPtFluctuations.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                    COMPONENT_NAME Analysis)
