@@ -42,6 +42,14 @@ struct UpcTestFITBitMapping {
 
   SGSelector sgSelector;
 
+  constexpr int nChFT0A = 96;
+  constexpr int nChFT0C = 112;
+	constexpr int nChFV0A = 48;
+
+  constexpr int kFT0AOffset = 0;
+  constexpr int kFT0COffset = 96;
+  constexpr int kFV0Offset = 208;
+
   Configurable<int> whichThr{"whichThr", 1, "Use 1=Thr1 bits or 2=Thr2 bits"};
   Configurable<int> maxEvents{"maxEvents", -1, "Process at most this many collisions (-1 = all)"};
   Configurable<int> debugPrintEvery{"debugPrintEvery", 1000, "Print every N events (-1 disables)"};
@@ -62,6 +70,8 @@ struct UpcTestFITBitMapping {
 
   Configurable<int> useFV0AVeto{"useFV0AVeto", true, "Apply FV0-A total amplitude veto"};
   Configurable<float> cutFV0AmpAVeto{"cutFV0AmpAVeto", 50., "Maximum allowed FV0-A total amplitude for veto"};
+	
+	Configurable<float> cutZvertex{"cutZvertex", 10., "z-vertex cut"};
 
   struct OffsetXYZ {
     double x{0.}, y{0.}, z{0.};
@@ -83,13 +93,13 @@ struct UpcTestFITBitMapping {
      {"debug/hFT0AChannelOccupancy", "FT0A fired channel occupancy;FT0A channel;counts", {HistType::kTH1F, {{97, -0.5, 96.5}}}},
      {"debug/hFT0CChannelOccupancy", "FT0C fired channel occupancy;FT0C channel;counts", {HistType::kTH1F, {{112, 95.5, 207.5}}}},
 
-     {"map/hPhiA", "FT0A #varphi;#varphi;counts", {HistType::kTH1F, {{9, 0, 2 * M_PI}}}},
+     {"map/hPhiA", "FT0A #varphi;#varphi;counts", {HistType::kTH1F, {{9, 0, 2 * o2::constants::math::PI}}}},
      {"map/hEtaA", "FT0A #eta;#eta;counts", {HistType::kTH1F, {{7, 3.4, 4.8}}}},
-     {"map/hEtaPhiA", "FT0A #eta vs #varphi;#eta;#varphi", {HistType::kTH2F, {{7, 3.4, 4.8}, {9, 0, 2 * M_PI}}}},
+     {"map/hEtaPhiA", "FT0A #eta vs #varphi;#eta;#varphi", {HistType::kTH2F, {{7, 3.4, 4.8}, {9, 0, 2 * o2::constants::math::PI}}}},
 
-     {"map/hPhiC", "FT0C #varphi;#varphi;counts", {HistType::kTH1F, {{9, 0, 2 * M_PI}}}},
+     {"map/hPhiC", "FT0C #varphi;#varphi;counts", {HistType::kTH1F, {{9, 0, 2 * o2::constants::math::PI}}}},
      {"map/hEtaC", "FT0C #eta;#eta;counts", {HistType::kTH1F, {{5, -3.1, -2.1}}}},
-     {"map/hEtaPhiC", "FT0C #eta vs #varphi;#eta;#varphi", {HistType::kTH2F, {{5, -3.1, -2.1}, {9, 0, 2 * M_PI}}}},
+     {"map/hEtaPhiC", "FT0C #eta vs #varphi;#eta;#varphi", {HistType::kTH2F, {{5, -3.1, -2.1}, {9, 0, 2 * o2::constants::math::PI}}}},
 
      {"mult/hPnFT0A", "P(n): FT0A fired-channel multiplicity;N_{fired}^{FT0A};events", {HistType::kTH1F, {{97, -0.5, 96.5}}}},
      {"mult/hPnFT0C", "P(n): FT0C fired-channel multiplicity;N_{fired}^{FT0C};events", {HistType::kTH1F, {{50, -0.5, 49.5}}}},
@@ -178,7 +188,7 @@ struct UpcTestFITBitMapping {
     registry.fill(HIST("debug/hEventCounter"), 7.);
 
     /* z-vertex cut */
-    if (std::abs(collision.posZ()) > 10.0) {
+    if (std::abs(collision.posZ()) > cutZvertex) {
       return false;
     }
     registry.fill(HIST("debug/hEventCounter"), 8.);
@@ -214,10 +224,10 @@ struct UpcTestFITBitMapping {
       const float tA = collision.timeFT0A();
       const float tC = collision.timeFT0C();
 
-      if (abs(tA) > cutFT0TimeA) {
+      if (std::abs(tA) > cutFT0TimeA) {
         return false;
       }
-      if (abs(tC) > cutFT0TimeC) {
+      if (std::abs(tC) > cutFT0TimeC) {
         return false;
       }
       registry.fill(HIST("debug/hEventCounter"), 12.);
@@ -350,12 +360,12 @@ struct UpcTestFITBitMapping {
            collision.globalIndex(), fitBits.size(), nFT0A, nFT0C, nFV0A);
     }
     if (collision.globalIndex() < 5) {
-      for (int bit = 96; bit < 208; ++bit) {
+      for (int bit = kFT0COffset; bit < nChFT0C + kFT0COffset; ++bit) {
         if (udhelpers::testBit(w1, bit)) {
-          LOGF(info, "ANALYSIS sees one fired bit %d", bit);
+          LOGF(info, "ANALYSIS sees one fired bit %d in FT0C", bit);
         }
         if (udhelpers::testBit(w2, bit)) {
-          LOGF(info, "ANALYSIS sees two fired bits %d", bit);
+          LOGF(info, "ANALYSIS sees two fired bits %d in FT0C", bit);
         }
       }
     }

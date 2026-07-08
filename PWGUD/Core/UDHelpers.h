@@ -561,6 +561,10 @@ inline void buildFT0FV0Words(TFT0 const& ft0, TFV0A const& fv0a,
   thr1[0] = thr1[1] = thr1[2] = thr1[3] = 0ull;
   thr2[0] = thr2[1] = thr2[2] = thr2[3] = 0ull;
 
+  constexpr int nChFT0A = 96;
+  constexpr int nChFT0C = 112;
+	constexpr int nChFV0A = 48;
+
   constexpr int kFT0AOffset = 0;
   constexpr int kFT0COffset = 96;
   constexpr int kFV0Offset = 208;
@@ -573,7 +577,7 @@ inline void buildFT0FV0Words(TFT0 const& ft0, TFV0A const& fv0a,
     const auto a = ampsA[i];
     const int c = chanA[i];
 
-    if (c < 0 || c >= 96) {
+    if (c < 0 || c >= nChFT0A) {
       continue;
     }
 
@@ -589,7 +593,7 @@ inline void buildFT0FV0Words(TFT0 const& ft0, TFV0A const& fv0a,
     const auto a = ampsC[i];
     const int c = chanC[i]; // physical FT0C channel id
 
-    if (c < 0 || c >= 112) {
+    if (c < 0 || c >= nChFT0C) {
       continue;
     }
 
@@ -605,7 +609,7 @@ inline void buildFT0FV0Words(TFT0 const& ft0, TFV0A const& fv0a,
     const auto a = ampsV[i];
     const int c = chanV[i];
 
-    if (c < 0 || c >= 48) {
+    if (c < 0 || c >= nChFV0A) {
       continue;
     }
 
