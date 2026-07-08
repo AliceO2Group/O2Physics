@@ -9,16 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// This is a task that reads kstar tables (from sigma0builder) to perform analysis.
-//  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-//  k892hadronphoton analysis task
-//  *+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
-//
-//    Comments, questions, complaints, suggestions?
-//    Please write to:
-//    oussama.benchikhi@cern.ch
-//    gianni.shigeru.setoue.liveraro@cern.ch
-//
+
+/// \file k892hadronphoton.cxx
+/// \brief This is a task that reads kstar tables (from sigma0builder) to perform analysis.
+/// \author Gianni Shigeru Setoue Liveraro
+/// \author Oussama Benchikhi
 
 #include "PWGLF/DataModel/LFSigmaTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -42,7 +37,6 @@
 
 #include <TH1.h>
 #include <TH2.h>
-#include <TMath.h>
 #include <TPDGCode.h>
 #include <TString.h>
 
@@ -897,7 +891,7 @@ struct k892hadronphoton {
       if (std::abs(kshortPDGCodeGrandMother) == o2::constants::physics::Pdg::kK0Star892 && std::abs(photonPDGCodeGrandMother) == o2::constants::physics::Pdg::kK0Star892 && (photonGlobalIndexGrandMother == kshortGlobalIndexGrandMother)) // K*(892)0
         histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_KStarPionKaon"), kstarpT, kstarMass);
 
-      if ((photonGlobalIndexGrandMother == kshortGlobalIndexGrandMother)) {
+      if (photonGlobalIndexGrandMother == kshortGlobalIndexGrandMother) {
         histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_PionKaon"), kstarpT, kstarMass);
         histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPionKaonMother"), kshortPDGCodeGrandMother, photonPDGCodeGrandMother);
       }
@@ -943,7 +937,7 @@ struct k892hadronphoton {
     int gammaTrkCode = retrieveV0TrackCode<true>(kstar);
     int kshortTrkCode = retrieveV0TrackCode<false>(kstar);
 
-    float photonRZLineCut = TMath::Abs(kstar.photonZconv()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-photonSelections.photonMaxDauEta))) - photonSelections.photonLineCutZ0;
+    float photonRZLineCut = std::abs(kstar.photonZconv()) * std::tan(2 * std::atan(std::exp(-photonSelections.photonMaxDauEta))) - photonSelections.photonLineCutZ0;
     float centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
     //_______________________________________
     // Photon
@@ -1028,11 +1022,11 @@ struct k892hadronphoton {
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/hPosTPCNSigmaEl"), kstar.photonPosTPCNSigmaEl());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/hNegTPCNSigmaEl"), kstar.photonNegTPCNSigmaEl());
 
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dPAVsPt"), TMath::ACos(kstar.photonCosPA()), kstar.photonmcpt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dPAVsPt"), std::acos(kstar.photonCosPA()), kstar.photonmcpt());
 
           if (!kstar.photonIsCorrectlyAssoc()) {
             histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/hPt_BadCollAssig"), kstar.photonmcpt());
-            histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dPAVsPt_BadCollAssig"), TMath::ACos(kstar.photonCosPA()), kstar.photonmcpt());
+            histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dPAVsPt_BadCollAssig"), std::acos(kstar.photonCosPA()), kstar.photonmcpt());
           }
         }
 
@@ -1191,11 +1185,11 @@ struct k892hadronphoton {
       return false;
 
     fillSelHistos<1>(cand, PDG_t::kGamma);
-    if ((TMath::Abs(cand.photonDCAPosPV()) < photonSelections.photonMinDCADauToPv) || (TMath::Abs(cand.photonDCANegPV()) < photonSelections.photonMinDCADauToPv))
+    if ((std::abs(cand.photonDCAPosPV()) < photonSelections.photonMinDCADauToPv) || (std::abs(cand.photonDCANegPV()) < photonSelections.photonMinDCADauToPv))
       return false;
 
     fillSelHistos<2>(cand, PDG_t::kGamma);
-    if (TMath::Abs(cand.photonDCADau()) > photonSelections.photonMaxDCAV0Dau)
+    if (std::abs(cand.photonDCADau()) > photonSelections.photonMaxDCAV0Dau)
       return false;
 
     fillSelHistos<3>(cand, PDG_t::kGamma);
@@ -1214,7 +1208,7 @@ struct k892hadronphoton {
       return false;
 
     fillSelHistos<6>(cand, PDG_t::kGamma);
-    if ((TMath::Abs(cand.photonY()) > photonSelections.photonMaxRap) || (TMath::Abs(cand.photonPosEta()) > photonSelections.photonMaxDauEta) || (TMath::Abs(cand.photonNegEta()) > photonSelections.photonMaxDauEta))
+    if ((std::abs(cand.photonY()) > photonSelections.photonMaxRap) || (std::abs(cand.photonPosEta()) > photonSelections.photonMaxDauEta) || (std::abs(cand.photonNegEta()) > photonSelections.photonMaxDauEta))
       return false;
 
     fillSelHistos<7>(cand, PDG_t::kGamma);
@@ -1222,15 +1216,15 @@ struct k892hadronphoton {
       return false;
 
     fillSelHistos<8>(cand, PDG_t::kGamma);
-    float photonRZLineCut = TMath::Abs(cand.photonZconv()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-photonSelections.photonMaxDauEta))) - photonSelections.photonLineCutZ0;
-    if ((TMath::Abs(cand.photonRadius()) < photonRZLineCut) || (TMath::Abs(cand.photonZconv()) > photonSelections.photonMaxZ))
+    float photonRZLineCut = std::abs(cand.photonZconv()) * std::tan(2 * std::atan(std::exp(-photonSelections.photonMaxDauEta))) - photonSelections.photonLineCutZ0;
+    if ((std::abs(cand.photonRadius()) < photonRZLineCut) || (std::abs(cand.photonZconv()) > photonSelections.photonMaxZ))
       return false;
 
     fillSelHistos<9>(cand, PDG_t::kGamma);
     if (cand.photonQt() > photonSelections.photonMaxQt)
       return false;
 
-    if (TMath::Abs(cand.photonAlpha()) > photonSelections.photonMaxAlpha)
+    if (std::abs(cand.photonAlpha()) > photonSelections.photonMaxAlpha)
       return false;
 
     fillSelHistos<10>(cand, PDG_t::kGamma);
@@ -1238,7 +1232,7 @@ struct k892hadronphoton {
       return false;
 
     fillSelHistos<11>(cand, PDG_t::kGamma);
-    if (TMath::Abs(cand.photonPsiPair()) > photonSelections.photonPsiPairMax)
+    if (std::abs(cand.photonPsiPair()) > photonSelections.photonPsiPairMax)
       return false;
 
     fillSelHistos<12>(cand, PDG_t::kGamma);
@@ -1246,7 +1240,7 @@ struct k892hadronphoton {
       return false;
 
     fillSelHistos<13>(cand, PDG_t::kGamma);
-    if (TMath::Abs(cand.photonMass()) > photonSelections.photonMaxMass)
+    if (std::abs(cand.photonMass()) > photonSelections.photonMaxMass)
       return false;
 
     fillSelHistos<14>(cand, PDG_t::kGamma);
@@ -1262,14 +1256,14 @@ struct k892hadronphoton {
       return false;
 
     fillSelHistos<1>(cand, PDG_t::kK0Short);
-    if (TMath::Abs(cand.kshortDCADau()) > kshortSelections.kshortMaxDCAV0Dau)
+    if (std::abs(cand.kshortDCADau()) > kshortSelections.kshortMaxDCAV0Dau)
       return false;
 
     fillSelHistos<2>(cand, PDG_t::kK0Short);
     if ((cand.kshortQt() < kshortSelections.kshortMinQt) || (cand.kshortQt() > kshortSelections.kshortMaxQt))
       return false;
 
-    if ((TMath::Abs(cand.kshortAlpha()) < kshortSelections.kshortMinAlpha) || (TMath::Abs(cand.kshortAlpha()) > kshortSelections.kshortMaxAlpha))
+    if ((std::abs(cand.kshortAlpha()) < kshortSelections.kshortMinAlpha) || (std::abs(cand.kshortAlpha()) > kshortSelections.kshortMaxAlpha))
       return false;
 
     fillSelHistos<3>(cand, PDG_t::kK0Short);
@@ -1277,7 +1271,7 @@ struct k892hadronphoton {
       return false;
 
     fillSelHistos<4>(cand, PDG_t::kK0Short);
-    if ((TMath::Abs(cand.kshortY()) > kshortSelections.kshortMaxRap) || (TMath::Abs(cand.kshortPosEta()) > kshortSelections.kshortMaxDauEta) || (TMath::Abs(cand.kshortNegEta()) > kshortSelections.kshortMaxDauEta))
+    if ((std::abs(cand.kshortY()) > kshortSelections.kshortMaxRap) || (std::abs(cand.kshortPosEta()) > kshortSelections.kshortMaxDauEta) || (std::abs(cand.kshortNegEta()) > kshortSelections.kshortMaxDauEta))
       return false;
 
     fillSelHistos<5>(cand, PDG_t::kK0Short);
@@ -1302,24 +1296,24 @@ struct k892hadronphoton {
     fillSelHistos<8>(cand, PDG_t::kK0Short);
 
     // TPC Selection
-    if (kshortSelections.fselKShortTPCPID && (TMath::Abs(cand.kshortPosPiTPCNSigma()) > kshortSelections.kshortMaxTPCNSigmas))
+    if (kshortSelections.fselKShortTPCPID && (std::abs(cand.kshortPosPiTPCNSigma()) > kshortSelections.kshortMaxTPCNSigmas))
       return false;
-    if (kshortSelections.fselKShortTPCPID && (TMath::Abs(cand.kshortNegPiTPCNSigma()) > kshortSelections.kshortMaxTPCNSigmas))
+    if (kshortSelections.fselKShortTPCPID && (std::abs(cand.kshortNegPiTPCNSigma()) > kshortSelections.kshortMaxTPCNSigmas))
       return false;
 
     // // TOF Selection
-    // if (kshortSelections.fselKShortTOFPID && (TMath::Abs(cand.kshortPiTOFNSigma()) > kshortSelections.kshortPiMaxTOFNSigmas))
+    // if (kshortSelections.fselKShortTOFPID && (std::abs(cand.kshortPiTOFNSigma()) > kshortSelections.kshortPiMaxTOFNSigmas))
     //   return false;
-    // if (kshortSelections.fselKShortTOFPID && (TMath::Abs(cand.lambdaPiTOFNSigma()) > kshortSelections.kshortPiMaxTOFNSigmas))
+    // if (kshortSelections.fselKShortTOFPID && (std::abs(cand.lambdaPiTOFNSigma()) > kshortSelections.kshortPiMaxTOFNSigmas))
     //   return false;
     // DCA Selection
     fillSelHistos<9>(cand, PDG_t::kK0Short);
-    if ((TMath::Abs(cand.kshortDCAPosPV()) < kshortSelections.kshortMinDCAPosToPv) || (TMath::Abs(cand.kshortDCANegPV()) < kshortSelections.kshortMinDCANegToPv))
+    if ((std::abs(cand.kshortDCAPosPV()) < kshortSelections.kshortMinDCAPosToPv) || (std::abs(cand.kshortDCANegPV()) < kshortSelections.kshortMinDCANegToPv))
       return false;
 
     // Mass Selection
     fillSelHistos<10>(cand, PDG_t::kK0Short);
-    if (TMath::Abs(cand.kshortMass() - o2::constants::physics::MassK0Short) > kshortSelections.kshortWindow)
+    if (std::abs(cand.kshortMass() - o2::constants::physics::MassK0Short) > kshortSelections.kshortWindow)
       return false;
 
     fillSelHistos<11>(cand, PDG_t::kK0Short);
@@ -1342,10 +1336,10 @@ struct k892hadronphoton {
     // KStar specific selections
     // Rapidity
     if constexpr (requires { cand.kstarMCY(); }) { // MC
-      if (TMath::Abs(cand.kstarMCY()) > kstarSelections.kstarMaxRap)
+      if (std::abs(cand.kstarMCY()) > kstarSelections.kstarMaxRap)
         return false;
     } else { // Real data
-      if (TMath::Abs(cand.kstarY()) > kstarSelections.kstarMaxRap)
+      if (std::abs(cand.kstarY()) > kstarSelections.kstarMaxRap)
         return false;
     }
 

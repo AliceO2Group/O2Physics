@@ -430,11 +430,11 @@ struct k892hadronphotonBkg {
         return false;
 
       histos.fill(HIST("PhotonSel/hSelectionStatistics"), 5.);
-      if ((TMath::Abs(gamma.dcapostopv()) < photonSelections.photonMinDCADauToPv) || (TMath::Abs(gamma.dcanegtopv()) < photonSelections.photonMinDCADauToPv))
+      if ((std::abs(gamma.dcapostopv()) < photonSelections.photonMinDCADauToPv) || (std::abs(gamma.dcanegtopv()) < photonSelections.photonMinDCADauToPv))
         return false;
 
       histos.fill(HIST("PhotonSel/hSelectionStatistics"), 6.);
-      if (TMath::Abs(gamma.dcaV0daughters()) > photonSelections.photonMaxDCAV0Dau)
+      if (std::abs(gamma.dcaV0daughters()) > photonSelections.photonMaxDCAV0Dau)
         return false;
 
       histos.fill(HIST("PhotonSel/hSelectionStatistics"), 7.);
@@ -459,7 +459,7 @@ struct k892hadronphotonBkg {
         return false;
 
       histos.fill(HIST("PhotonSel/hSelectionStatistics"), 12.);
-      if (TMath::Abs(gamma.alpha()) > photonSelections.photonMaxAlpha)
+      if (std::abs(gamma.alpha()) > photonSelections.photonMaxAlpha)
         return false;
 
       auto posTrackGamma = gamma.template posTrackExtra_as<dauTracks>();
@@ -498,7 +498,7 @@ struct k892hadronphotonBkg {
     } else {
       // KShort basic selection criteria:
       histos.fill(HIST("KShortSel/hSelectionStatistics"), 1.);
-      if ((TMath::Abs(kshort.mK0Short() - o2::constants::physics::MassK0Short) > kshortSelections.kshortWindow) && kshortSelections.kshortWindow > 0)
+      if ((std::abs(kshort.mK0Short() - o2::constants::physics::MassK0Short) > kshortSelections.kshortWindow) && kshortSelections.kshortWindow > 0)
         return false;
 
       histos.fill(HIST("KShortSel/hSelectionStatistics"), 2.);
@@ -514,7 +514,7 @@ struct k892hadronphotonBkg {
         return false;
 
       histos.fill(HIST("KShortSel/hSelectionStatistics"), 5.);
-      if ((TMath::Abs(kshort.dcapostopv()) < kshortSelections.kshortMinDCAPosToPv) || (TMath::Abs(kshort.dcanegtopv()) < kshortSelections.kshortMinDCANegToPv))
+      if ((std::abs(kshort.dcapostopv()) < kshortSelections.kshortMinDCAPosToPv) || (std::abs(kshort.dcanegtopv()) < kshortSelections.kshortMinDCANegToPv))
         return false;
 
       histos.fill(HIST("KShortSel/hSelectionStatistics"), 6.);
@@ -526,11 +526,11 @@ struct k892hadronphotonBkg {
         return false;
 
       histos.fill(HIST("KShortSel/hSelectionStatistics"), 8.);
-      if (TMath::Abs(kshort.dcaV0daughters()) > kshortSelections.kshortMaxDCAV0Dau)
+      if (std::abs(kshort.dcaV0daughters()) > kshortSelections.kshortMaxDCAV0Dau)
         return false;
 
       histos.fill(HIST("KShortSel/hSelectionStatistics"), 9.);
-      if (kshort.qtarm() < kshortSelections.kshortArmenterosCoefficient * TMath::Abs(kshort.alpha()))
+      if (kshort.qtarm() < kshortSelections.kshortArmenterosCoefficient * std::abs(kshort.alpha()))
         return false;
 
       histos.fill(HIST("KShortSel/hSelectionStatistics"), 10.);
@@ -561,8 +561,8 @@ struct k892hadronphotonBkg {
 
       histos.fill(HIST("KShortSel/hSelectionStatistics"), 14.);
       // TPC PID selection on the K0S pion daughters (same convention as posTrackKShort.tpcNSigmaPi())
-      if (((TMath::Abs(posTrackKShort.tpcNSigmaPi()) > kshortSelections.kshortMaxTPCNSigmas) ||
-           (TMath::Abs(negTrackKShort.tpcNSigmaPi()) > kshortSelections.kshortMaxTPCNSigmas)))
+      if (((std::abs(posTrackKShort.tpcNSigmaPi()) > kshortSelections.kshortMaxTPCNSigmas) ||
+           (std::abs(negTrackKShort.tpcNSigmaPi()) > kshortSelections.kshortMaxTPCNSigmas)))
         return false;
 
       histos.fill(HIST("KShortSel/hSelectionStatistics"), 15.);
