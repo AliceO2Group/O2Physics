@@ -77,7 +77,6 @@ using namespace o2::framework::expressions;
 struct PidFlowPtCorr {
   // configurable
   double minVal4Float = 1e-3;
-  static constexpr std::size_t NSpecies{3};
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
@@ -284,8 +283,7 @@ struct PidFlowPtCorr {
   std::vector<float> cfgMultPVCutPara;
   std::vector<float> cfgNSigma;
   std::vector<int> runNumbers;
-  std::map<int, std::vector<std::shared_ptr<TH1>>> th1sList;
-  std::map<int, std::vector<std::shared_ptr<TH3>>> th3sList;
+
   enum MyParticleType {
     kCharged = 0,
     kPion,
@@ -330,18 +328,10 @@ struct PidFlowPtCorr {
   // Declare the pt, mult and phi Axis;
 
   std::vector<TF1*> funcEff;
-  TH1D* hFindPtBin;
-  TF1* funcV2;
-  TF1* funcV3;
-  TF1* funcV4;
-
-  // hists for debug
-  struct {
-    std::shared_ptr<TH1> hPtEffWeight = 0;
-    std::shared_ptr<TH2> hPtCentEffWeight = 0;
-    std::shared_ptr<THnSparse> hRunNumberPhiEtaVertexWeight = 0;
-  } debugHist;
-  // end hist for debug
+  TH1D* hFindPtBin = nullptr;
+  TF1* funcV2 = nullptr;
+  TF1* funcV3 = nullptr;
+  TF1* funcV4 = nullptr;
 
   // hists for QA runbyrun
   struct qaHist {
@@ -1396,7 +1386,7 @@ struct PidFlowPtCorr {
 
     // load NUA
     if (cfgAcceptance.size() == static_cast<uint64_t>(nspecies)) {
-      for (int i = 0; i <= nspecies - 1; i++) {
+      for (int i = 0; i < nspecies; i++) {
         mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance[i], timestamp));
       }
       if (mAcceptance.size() == static_cast<uint64_t>(nspecies))
@@ -1425,7 +1415,7 @@ struct PidFlowPtCorr {
     std::vector<std::string> effPath = correctionPathOpts.cfgEfficiencyPath.value;
 
     if (effPath.size() == static_cast<uint64_t>(nspecies)) {
-      for (int i = 0; i <= nspecies - 1; i++) {
+      for (int i = 0; i < nspecies; i++) {
         mEfficiency.push_back(ccdb->getForTimeStamp<TH2>(effPath[i], timestamp));
       }
       if (mEfficiency.size() == static_cast<uint64_t>(nspecies))
