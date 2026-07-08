@@ -56,6 +56,7 @@
 #include <initializer_list>
 #include <map>
 #include <random>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <tuple>
