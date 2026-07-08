@@ -24,7 +24,8 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 #include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -120,6 +121,7 @@ enum {
   kRecTrkTypeend
 };
 
+
 static constexpr TrackSelectionFlags::flagtype TrackSelectionIts =
   TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
   TrackSelectionFlags::kITSHits;
@@ -159,7 +161,7 @@ struct HeavyionMultiplicity {
 
   Configurable<float> etaRange{"etaRange", 1.0f, "Eta range to consider"};
   Configurable<float> vtxRange{"vtxRange", 10.0f, "Vertex Z range to consider"};
-  Configurable<float> dcaZ{"dcaZ", 0.2f, "Custom DCA Z cut (ignored if negative)"};
+  Configurable<float> dcaZ{"dcaZ", 0.2f, "Custom DCA Z cut"};
   Configurable<float> v0radiusK0SCut{"v0radiusK0SCut", 1.2f, "K0S RadiusCut"};
   Configurable<float> dcapostopvK0SCut{"dcapostopvK0SCut", 0.05f, "K0S dcapostopvCut"};
   Configurable<float> dcanegtopvK0SCut{"dcanegtopvK0SCut", 0.05f, "K0S dcanegtopvCut"};
@@ -219,9 +221,16 @@ struct HeavyionMultiplicity {
   Configurable<bool> selectTVX{"selectTVX", true, "BC analysis: select TVX"};
   Configurable<bool> selectFV0OrA{"selectFV0OrA", true, "BC analysis: select FV0OrA"};
   Configurable<bool> isApplyDCAstandardcuts{"isApplyDCAstandardcuts",true, "Apply DCA standard run 2 cuts"};
+  Configurable<bool> isApplyDCAcustomcuts{"isApplyDCAcustomcuts", false, "Apply DCA custom cuts"};
+  Configurable<float> cDcazP0 {"cDcazP0",  1.0f,"dca parameter"};
+  Configurable<float> cDcazP1 {"cDcazP1",  1.0f,"dca parameter"};
+  Configurable<float> cDcazP2 {"cDcazP2",  1.0f,"dca parameter"};
+  Configurable<float> cDcaxyP0{"cDcaxyP0",1.0f,"dca parameter"};
+  Configurable<float> cDcaxyP1{"cDcaxyP1",1.0f,"dca parameter"};
+  Configurable<float> cDcaxyP2{"cDcaxyP2",1.0f,"dca parameter"};
   
   void init(InitContext const&)
-  {
+  {      
     AxisSpec axisMult = {multHistBin, "Mult", "MultAxis"};
     AxisSpec axisPV = {pvHistBin, "PV", "PVAxis"};
     AxisSpec axisFv0aMult = {fv0aMultHistBin, "fv0a", "FV0AMultAxis"};
@@ -498,6 +507,12 @@ struct HeavyionMultiplicity {
   template <typename CheckTrack>
   bool isTrackSelected(CheckTrack const& track)
   {
+    if(isApplyDCAcustomcuts) {
+      if(std::abs(track.dcaXY()) > cDcaxyP0 + cDcaxyP1 / pow(track.pt(), cDcaxyP2))
+	return false;
+      if(std::abs(track.dcaZ()) > cDcazP0 + cDcazP1 / pow(track.pt(), cDcazP2))
+	return false;
+    }
     if (std::abs(track.eta()) >= etaRange) {
       return false;
     }
@@ -540,7 +555,7 @@ struct HeavyionMultiplicity {
                                                   ncheckbit(aod::track::trackCutFlag, TrackSelectionIts) &&
                                                   ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
                                                          ncheckbit(aod::track::trackCutFlag, TrackSelectionTpc), true) &&
-    ifnode(isApplyDCAstandardcuts.node() /*&& (dcaZ.node() > 0.f)*/, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDcaxyOnly), true);
+    ifnode(isApplyDCAstandardcuts.node(), nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDcaxyOnly), true);
 
 
   void processDCAvsptData(CollisionDataTable::iterator const& cols, FilTrackDataTable const& tracks) {
@@ -586,7 +601,7 @@ struct HeavyionMultiplicity {
 
 	auto mcpart = Rectrack.mcParticle();
 	
-	if (mcpart.isPhysicalPrimary()) {
+	if (!isGenTrackSelected(mcpart)) {
 	  histos.fill(HIST("hdcaxyvsptMCprimary"), Rectrack.dcaXY(), Rectrack.pt());  
 	  histos.fill(HIST("hdcazvsptMCprimary"), Rectrack.dcaZ(), Rectrack.pt());    
 	}
