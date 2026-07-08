@@ -3020,7 +3020,7 @@ struct QaMatching {
 
     int debugCounter{0};
     fillQaMatchingAodEventForCollision(collisionInfo, collision, collisionInfo.reducedEventId, debugCounter);
-    fillQaMatchingMchTracksForCollision(collisionInfo, collision, muonTracks, taggedMuons, collisionInfo.reducedEventId);
+    fillQaMatchingMchTracksForCollision(collisionInfo, collision, muonTracks, taggedMuons, collisionInfo.reducedEventId, collisionInfo.reducedMchTrackIds);
 
     registry.get<TH1>(HIST("tracksMultiplicityMFT"))->Fill(collisionInfo.mftTracks.size());
     registry.get<TH1>(HIST("tracksMultiplicityMCH"))->Fill(collisionInfo.mchTracks.size());
@@ -3234,21 +3234,18 @@ struct QaMatching {
                                            TCOLLISION const& collision,
                                            TMUON const& muonTracks,
                                            const std::vector<int64_t>& taggedMuons,
-                                           int32_t reducedEventId)
+                                           int32_t reducedEventId,
+                                           const std::map<int64_t, int64_t>& reducedMchTrackIds)
   {
-    std::vector<int64_t> mchIds;
-    for (const auto& mchTrack : collisionInfo.mchTracks) {
-      if (std::find(mchIds.begin(), mchIds.end(), mchTrack.first) == mchIds.end()) {
-        mchIds.emplace_back(mchTrack.first);
-      }
+    std::vector<std::pair<int64_t, int64_t>> orderedMchIds;
+    orderedMchIds.reserve(reducedMchTrackIds.size());
+    for (const auto& [mchIndex, reducedMchTrackId] : reducedMchTrackIds) {
+      orderedMchIds.emplace_back(reducedMchTrackId, mchIndex);
     }
-    for (const auto& candidate : collisionInfo.matchingCandidates) {
-      if (std::find(mchIds.begin(), mchIds.end(), candidate.first) == mchIds.end()) {
-        mchIds.emplace_back(candidate.first);
-      }
-    }
+    std::sort(orderedMchIds.begin(), orderedMchIds.end());
 
-    for (const auto& mchIndex : mchIds) {
+    for (const auto& [reducedMchTrackId, mchIndex] : orderedMchIds) {
+      (void)reducedMchTrackId;
       auto const& mchTrack = muonTracks.rawIteratorAt(mchIndex);
       int mftMchMatchAttempts = 0;
       if (const auto& mchTrackInfoIt = collisionInfo.mchTracks.find(mchIndex); mchTrackInfoIt != collisionInfo.mchTracks.end()) {
