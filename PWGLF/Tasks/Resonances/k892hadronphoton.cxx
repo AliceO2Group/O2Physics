@@ -66,7 +66,7 @@ static const std::vector<std::string> kshortSels = {"NoSel", "V0Radius", "DCADau
 static const std::vector<std::string> DirList = {"BeforeSel", "AfterSel"};
 
 struct k892hadronphoton {
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   ctpRateFetcher rateFetcher;
 
   //__________________________________________________
@@ -225,18 +225,18 @@ struct k892hadronphoton {
   ConfigurableAxis axisCosPA{"axisCosPA", {200, 0.5f, 1.0f}, "Cosine of pointing angle"};
   ConfigurableAxis axisPA{"axisPA", {100, 0.0f, 1}, "Pointing angle"};
   ConfigurableAxis axisPsiPair{"axisPsiPair", {250, -5.0f, 5.0f}, "Psipair for photons"};
-  ConfigurableAxis axisPhi{"axisPhi", {200, 0, 2 * o2::constants::math::PI}, "Phi for photons"};
+  ConfigurableAxis axisPhi{"axisPhi", {200, 0, o2::constants::math::TwoPI}, "Phi for photons"};
   ConfigurableAxis axisZ{"axisZ", {120, -120.0f, 120.0f}, "V0 Z position (cm)"};
 
   ConfigurableAxis axisCandSel{"axisCandSel", {20, 0.5f, +20.5f}, "Candidate Selection"};
 
   // ML
-  ConfigurableAxis mlProb{"mlOutput", {100, 0.0f, 1.0f}, ""};
+  ConfigurableAxis mlProb{"mlProb", {100, 0.0f, 1.0f}, ""};
 
   void init(InitContext const&)
   {
     LOGF(info, "Initializing now: cross-checking correctness...");
-    if (doprocessRealData + doprocessMonteCarlo > 1) {
+    if (doprocessRealData && doprocessMonteCarlo) {
       LOGF(fatal, "You have enabled more than one process function. Please check your configuration! Aborting now.");
     }
 
@@ -736,7 +736,6 @@ struct k892hadronphoton {
         histos.fill(HIST("Gen/hGenEventCentrality"), centrality);
       }
     }
-    return;
   }
 
   // ______________________________________________________
@@ -795,30 +794,38 @@ struct k892hadronphoton {
     }
   }
 
-  //__________________________________________
+  // per-daughter detector code (bit 0: TPC, bit 1: ITS tracker)
+  enum DauTrackCode : uint8_t {
+    DauTPCOnly = 1,        // hasTPC only
+    DauITSTrackerOnly = 2, // hasITSTracker only, no TPC
+    DauITSTPC = 3          // hasTPC | hasITSTracker
+  };
+
   template <bool isGamma, typename TKStarObject>
   int retrieveV0TrackCode(TKStarObject const& kstar)
   {
 
     int trkCode = 10; // 1: TPC-only, 2: TPC+Something, 3: ITS-Only, 4: ITS+TPC + Something, 10: anything else
+    auto photonPosTrackCode = kstar.photonPosTrackCode();
+    auto photonNegTrackCode = kstar.photonNegTrackCode();
 
     if (isGamma) {
-      if (kstar.photonPosTrackCode() == 1 && kstar.photonNegTrackCode() == 1)
+      if (photonPosTrackCode == DauTPCOnly && photonNegTrackCode == DauTPCOnly)
         trkCode = 1;
-      if ((kstar.photonPosTrackCode() != 1 && kstar.photonNegTrackCode() == 1) || (kstar.photonPosTrackCode() == 1 && kstar.photonNegTrackCode() != 1))
+      if ((photonPosTrackCode != DauTPCOnly && photonNegTrackCode == DauTPCOnly) || (photonPosTrackCode == DauTPCOnly && photonNegTrackCode != DauTPCOnly))
         trkCode = 2;
-      if (kstar.photonPosTrackCode() == 3 && kstar.photonNegTrackCode() == 3)
+      if (photonPosTrackCode == DauITSTPC && photonNegTrackCode == DauITSTPC)
         trkCode = 3;
-      if (kstar.photonPosTrackCode() == 2 || kstar.photonNegTrackCode() == 2)
+      if (photonPosTrackCode == DauITSTrackerOnly || photonNegTrackCode == DauITSTrackerOnly)
         trkCode = 4;
     } else {
-      if (kstar.kshortPosTrackCode() == 1 && kstar.kshortNegTrackCode() == 1)
+      if (photonPosTrackCode == DauTPCOnly && photonNegTrackCode == DauTPCOnly)
         trkCode = 1;
-      if ((kstar.kshortPosTrackCode() != 1 && kstar.kshortNegTrackCode() == 1) || (kstar.kshortPosTrackCode() == 1 && kstar.kshortNegTrackCode() != 1))
+      if ((photonPosTrackCode != DauTPCOnly && photonNegTrackCode == DauTPCOnly) || (photonPosTrackCode == DauTPCOnly && photonNegTrackCode != DauTPCOnly))
         trkCode = 2;
-      if (kstar.kshortPosTrackCode() == 3 && kstar.kshortNegTrackCode() == 3)
+      if (photonPosTrackCode == DauITSTPC && photonNegTrackCode == DauITSTPC)
         trkCode = 3;
-      if (kstar.kshortPosTrackCode() == 2 || kstar.kshortNegTrackCode() == 2)
+      if (photonPosTrackCode == DauITSTrackerOnly || photonNegTrackCode == DauITSTrackerOnly)
         trkCode = 4;
     }
 
@@ -829,7 +836,7 @@ struct k892hadronphoton {
   void getResolution(TKStarObject const& kstar)
   {
     // Check whether it is before or after selections
-    static constexpr std::string_view MainDir[] = {"BeforeSel", "AfterSel"};
+    static constexpr std::array<std::string_view, 2> MainDir = {"BeforeSel", "AfterSel"};
 
     //_______________________________________
     // Gamma MC association
@@ -863,7 +870,7 @@ struct k892hadronphoton {
   void runBkgAnalysis(TKStarObject const& kstar)
   {
     // Check whether it is before or after selections
-    static constexpr std::string_view MainDir[] = {"BeforeSel", "AfterSel"};
+    static constexpr std::array<std::string_view, 2> MainDir = {"BeforeSel", "AfterSel"};
 
     bool fIsKStar = kstar.isKStar();
     int photonPDGCode = kstar.photonPDGCode();
@@ -931,7 +938,7 @@ struct k892hadronphoton {
   {
 
     // Check whether it is before or after selections
-    static constexpr std::string_view MainDir[] = {"BeforeSel", "AfterSel"};
+    static constexpr std::array<std::string_view, 2> MainDir = {"BeforeSel", "AfterSel"};
 
     // Get V0trackCode
     int gammaTrkCode = retrieveV0TrackCode<true>(kstar);
@@ -1150,14 +1157,14 @@ struct k892hadronphoton {
   void fillSelHistos(TKStarObject const& kstar, int PDGRequired)
   {
 
-    static constexpr std::string_view photonSelsLocal[] = {"NoSel", "V0Type", "DCADauToPV",
-                                                           "DCADau", "DauTPCCR", "TPCNSigmaEl", "V0pT",
-                                                           "Y", "V0Radius", "RZCut", "Armenteros", "CosPA",
-                                                           "PsiPair", "Phi", "Mass"};
+    static constexpr std::array<std::string_view, 15> photonSelsLocal = {"NoSel", "V0Type", "DCADauToPV",
+                                                                         "DCADau", "DauTPCCR", "TPCNSigmaEl", "V0pT",
+                                                                         "Y", "V0Radius", "RZCut", "Armenteros", "CosPA",
+                                                                         "PsiPair", "Phi", "Mass"};
 
-    static constexpr std::string_view kshortSelsLocal[] = {"NoSel", "V0Radius", "DCADau", "Armenteros",
-                                                           "CosPA", "Y", "TPCCR", "DauITSCls", "Lifetime",
-                                                           "TPCTOFPID", "DCADauToPV", "Mass"};
+    static constexpr std::array<std::string_view, 12> kshortSelsLocal = {"NoSel", "V0Radius", "DCADau", "Armenteros",
+                                                                         "CosPA", "Y", "TPCCR", "DauITSCls", "Lifetime",
+                                                                         "TPCTOFPID", "DCADauToPV", "Mass"};
 
     if (std::abs(PDGRequired) == PDG_t::kGamma) {
       if constexpr (selection_index >= 0 && selection_index < static_cast<int>(std::size(photonSelsLocal))) {

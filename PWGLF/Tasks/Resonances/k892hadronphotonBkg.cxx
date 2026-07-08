@@ -63,7 +63,7 @@ static const std::vector<std::string> kshortSels = {"No Sel", "Mass", "Y", "Neg 
                                                     "CosPA", "TPCCR", "ITSNCls", "Lifetime", "TPC NSigma"};
 
 struct k892hadronphotonBkg {
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   ctpRateFetcher rateFetcher;
   TRandom3 rotRng{12345}; // struct member; fixed seed for reproducibility across grid jobs
 
@@ -494,79 +494,78 @@ struct k892hadronphotonBkg {
     if (useMLScores) {
       // if (kshort.k0ShortBDTScore() <= kshortSelections.kshortMLThreshold)
       return false;
-
-    } else {
-      // KShort basic selection criteria:
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 1.);
-      if ((std::abs(kshort.mK0Short() - o2::constants::physics::MassK0Short) > kshortSelections.kshortWindow) && kshortSelections.kshortWindow > 0)
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 2.);
-      if ((kshort.yK0Short() < kshortSelections.kshortMinRapidity) || (kshort.yK0Short() > kshortSelections.kshortMaxRapidity))
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 3.);
-      if ((kshort.negativeeta() < kshortSelections.kshortDauEtaMin) || (kshort.negativeeta() > kshortSelections.kshortDauEtaMax))
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 4.);
-      if ((kshort.positiveeta() < kshortSelections.kshortDauEtaMin) || (kshort.positiveeta() > kshortSelections.kshortDauEtaMax))
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 5.);
-      if ((std::abs(kshort.dcapostopv()) < kshortSelections.kshortMinDCAPosToPv) || (std::abs(kshort.dcanegtopv()) < kshortSelections.kshortMinDCANegToPv))
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 6.);
-      if ((kshort.v0radius() < kshortSelections.kshortMinv0radius) || (kshort.v0radius() > kshortSelections.kshortMaxv0radius))
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 7.);
-      if ((kshort.z() < kshortSelections.kshortMinZ) || (kshort.z() > kshortSelections.kshortMaxZ))
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 8.);
-      if (std::abs(kshort.dcaV0daughters()) > kshortSelections.kshortMaxDCAV0Dau)
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 9.);
-      if (kshort.qtarm() < kshortSelections.kshortArmenterosCoefficient * std::abs(kshort.alpha()))
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 10.);
-      if (kshort.v0cosPA() < kshortSelections.kshortMinv0cospa)
-        return false;
-
-      auto posTrackKShort = kshort.template posTrackExtra_as<dauTracks>();
-      auto negTrackKShort = kshort.template negTrackExtra_as<dauTracks>();
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 11.);
-      if ((posTrackKShort.tpcCrossedRows() < kshortSelections.kshortMinTPCCrossedRows) || (negTrackKShort.tpcCrossedRows() < kshortSelections.kshortMinTPCCrossedRows))
-        return false;
-
-      // MinITSCls
-      bool posIsFromAfterburner = posTrackKShort.itsChi2PerNcl() < 0;
-      bool negIsFromAfterburner = negTrackKShort.itsChi2PerNcl() < 0;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 12.);
-      if (posTrackKShort.itsNCls() < kshortSelections.kshortMinITSclusters && (!kshortSelections.kshortRejectPosITSafterburner || posIsFromAfterburner))
-        return false;
-      if (negTrackKShort.itsNCls() < kshortSelections.kshortMinITSclusters && (!kshortSelections.kshortRejectNegITSafterburner || negIsFromAfterburner))
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 13.);
-      float fKShortLifeTime = kshort.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
-      if (fKShortLifeTime > kshortSelections.kshortMaxLifeTime)
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 14.);
-      // TPC PID selection on the K0S pion daughters (same convention as posTrackKShort.tpcNSigmaPi())
-      if (((std::abs(posTrackKShort.tpcNSigmaPi()) > kshortSelections.kshortMaxTPCNSigmas) ||
-           (std::abs(negTrackKShort.tpcNSigmaPi()) > kshortSelections.kshortMaxTPCNSigmas)))
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 15.);
     }
+
+    // KShort basic selection criteria:
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 1.);
+    if ((std::abs(kshort.mK0Short() - o2::constants::physics::MassK0Short) > kshortSelections.kshortWindow) && kshortSelections.kshortWindow > 0)
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 2.);
+    if ((kshort.yK0Short() < kshortSelections.kshortMinRapidity) || (kshort.yK0Short() > kshortSelections.kshortMaxRapidity))
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 3.);
+    if ((kshort.negativeeta() < kshortSelections.kshortDauEtaMin) || (kshort.negativeeta() > kshortSelections.kshortDauEtaMax))
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 4.);
+    if ((kshort.positiveeta() < kshortSelections.kshortDauEtaMin) || (kshort.positiveeta() > kshortSelections.kshortDauEtaMax))
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 5.);
+    if ((std::abs(kshort.dcapostopv()) < kshortSelections.kshortMinDCAPosToPv) || (std::abs(kshort.dcanegtopv()) < kshortSelections.kshortMinDCANegToPv))
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 6.);
+    if ((kshort.v0radius() < kshortSelections.kshortMinv0radius) || (kshort.v0radius() > kshortSelections.kshortMaxv0radius))
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 7.);
+    if ((kshort.z() < kshortSelections.kshortMinZ) || (kshort.z() > kshortSelections.kshortMaxZ))
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 8.);
+    if (std::abs(kshort.dcaV0daughters()) > kshortSelections.kshortMaxDCAV0Dau)
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 9.);
+    if (kshort.qtarm() < kshortSelections.kshortArmenterosCoefficient * std::abs(kshort.alpha()))
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 10.);
+    if (kshort.v0cosPA() < kshortSelections.kshortMinv0cospa)
+      return false;
+
+    auto posTrackKShort = kshort.template posTrackExtra_as<dauTracks>();
+    auto negTrackKShort = kshort.template negTrackExtra_as<dauTracks>();
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 11.);
+    if ((posTrackKShort.tpcCrossedRows() < kshortSelections.kshortMinTPCCrossedRows) || (negTrackKShort.tpcCrossedRows() < kshortSelections.kshortMinTPCCrossedRows))
+      return false;
+
+    // MinITSCls
+    bool posIsFromAfterburner = posTrackKShort.itsChi2PerNcl() < 0;
+    bool negIsFromAfterburner = negTrackKShort.itsChi2PerNcl() < 0;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 12.);
+    if (posTrackKShort.itsNCls() < kshortSelections.kshortMinITSclusters && (!kshortSelections.kshortRejectPosITSafterburner || posIsFromAfterburner))
+      return false;
+    if (negTrackKShort.itsNCls() < kshortSelections.kshortMinITSclusters && (!kshortSelections.kshortRejectNegITSafterburner || negIsFromAfterburner))
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 13.);
+    float fKShortLifeTime = kshort.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
+    if (fKShortLifeTime > kshortSelections.kshortMaxLifeTime)
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 14.);
+    // TPC PID selection on the K0S pion daughters (same convention as posTrackKShort.tpcNSigmaPi())
+    if (((std::abs(posTrackKShort.tpcNSigmaPi()) > kshortSelections.kshortMaxTPCNSigmas) ||
+         (std::abs(negTrackKShort.tpcNSigmaPi()) > kshortSelections.kshortMaxTPCNSigmas)))
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 15.);
     return true;
   }
 
