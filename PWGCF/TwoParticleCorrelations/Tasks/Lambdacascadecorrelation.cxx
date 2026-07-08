@@ -1652,7 +1652,7 @@ struct LambdaCascadeProducer {
         LOGF(warning, "[CCDB] Efficiency histogram '%s' not found; using effCorrFact=1.0", effName);
         effCorrFact = 1.f;
       } else {
-        auto* histEff = static_cast<TH1F*>(objEff->Clone());
+        auto* histEff = dynamic_cast<TH1*>(objEff->Clone());
         if (histEff->GetDimension() == TwoDimCorr) {
           histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtCent);
           effCorrFact = histEff->GetBinContent(histEff->FindBin(cent, v0.pt()));
@@ -1678,7 +1678,7 @@ struct LambdaCascadeProducer {
         LOGF(warning, "[CCDB] Primary-fraction histogram '%s' not found; using primFrac=1.0", pfName);
         primFrac = 1.f;
       } else {
-        auto* histPrm = static_cast<TH1F*>(objPrm->Clone());
+        auto* histPrm = dynamic_cast<TH1*>(objPrm->Clone());
         if (histPrm->GetDimension() == TwoDimCorr) {
           histos.fill(HIST("Tracks/h1f_tracks_info"), kPFCorrPtCent);
           primFrac = histPrm->GetBinContent(histPrm->FindBin(cent, v0.pt()));
@@ -3461,7 +3461,7 @@ struct Lambdacascadecorrelation {
     if (!hPairs || !hSinglesTrig || !hSinglesAssoc || nEvents <= 0)
       return nullptr;
 
-    auto* hR2 = static_cast<TH2*>(hPairs->Clone(Form("%s_R2", hPairs->GetName())));
+    auto* hR2 = dynamic_cast<TH2*>(hPairs->Clone(Form("%s_R2", hPairs->GetName())));
     hR2->Reset();
 
     double nS1 = hSinglesTrig->Integral();
