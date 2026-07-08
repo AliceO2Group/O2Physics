@@ -35,14 +35,16 @@
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER from OBJECT
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CHECK_AND_FILL_VEC_PCM_FULL(OBJECT, FEATURE, GETTER) \
   case static_cast<uint8_t>(InputFeaturesPCM::FEATURE): {    \
-    inputFeatures.emplace_back(OBJECT.GETTER());             \
+    inputFeatures.emplace_back((OBJECT).GETTER());           \
     break;                                                   \
   }
 
 // Specific case of CHECK_AND_FILL_VEC_PCM_FULL(OBJECT, FEATURE, GETTER)
 // where OBJECT is named candidate and FEATURE = GETTER
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CHECK_AND_FILL_VEC_PCM(GETTER)                   \
   case static_cast<uint8_t>(InputFeaturesPCM::GETTER): { \
     inputFeatures.emplace_back(candidate.GETTER());      \
