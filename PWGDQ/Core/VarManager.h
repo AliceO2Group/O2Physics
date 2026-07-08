@@ -1984,7 +1984,7 @@ void VarManager::FillEvent(T const& event, float* values)
       values[kIsNoTFBorder] = event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder);
     }
     if (fgUsedVars[kIsTriggerZNAZNC]) {
-      values[kIsTriggerZNAZNC] = event.selection_bit(o2::aod::evsel::kIsBBZNA) && event.selection_bit(o2::aod::evsel::kIsBBZNC);
+      values[kIsTriggerZNAZNC] = static_cast<float>(event.selection_bit(o2::aod::evsel::kIsBBZNA) && event.selection_bit(o2::aod::evsel::kIsBBZNC));
     }
     if (fgUsedVars[kIsNoSameBunch]) {
       values[kIsNoSameBunch] = event.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
@@ -1999,7 +1999,7 @@ void VarManager::FillEvent(T const& event, float* values)
       values[kIsVertexTOFmatched] = event.selection_bit(o2::aod::evsel::kIsVertexTOFmatched);
     }
     if (fgUsedVars[kIsSel8]) {
-      values[kIsSel8] = event.selection_bit(o2::aod::evsel::kIsTriggerTVX) && event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) && event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder);
+      values[kIsSel8] = static_cast<float>(event.selection_bit(o2::aod::evsel::kIsTriggerTVX) && event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) && event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder));
     }
     if (fgUsedVars[kIsGoodITSLayer3]) {
       values[kIsGoodITSLayer3] = event.selection_bit(o2::aod::evsel::kIsGoodITSLayer3);
@@ -2011,37 +2011,37 @@ void VarManager::FillEvent(T const& event, float* values)
       values[kIsGoodITSLayersAll] = event.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
     }
     if (fgUsedVars[kIsINT7]) {
-      values[kIsINT7] = (event.alias_bit(kINT7) > 0);
+      values[kIsINT7] = static_cast<float>(event.alias_bit(kINT7) > 0);
     }
     if (fgUsedVars[kIsEMC7]) {
-      values[kIsEMC7] = (event.alias_bit(kEMC7) > 0);
+      values[kIsEMC7] = static_cast<float>(event.alias_bit(kEMC7) > 0);
     }
     if (fgUsedVars[kIsINT7inMUON]) {
-      values[kIsINT7inMUON] = (event.alias_bit(kINT7inMUON) > 0);
+      values[kIsINT7inMUON] = static_cast<float>(event.alias_bit(kINT7inMUON) > 0);
     }
     if (fgUsedVars[kIsMuonSingleLowPt7]) {
-      values[kIsMuonSingleLowPt7] = (event.alias_bit(kMuonSingleLowPt7) > 0);
+      values[kIsMuonSingleLowPt7] = static_cast<float>(event.alias_bit(kMuonSingleLowPt7) > 0);
     }
     if (fgUsedVars[kIsMuonSingleHighPt7]) {
-      values[kIsMuonSingleHighPt7] = (event.alias_bit(kMuonSingleHighPt7) > 0);
+      values[kIsMuonSingleHighPt7] = static_cast<float>(event.alias_bit(kMuonSingleHighPt7) > 0);
     }
     if (fgUsedVars[kIsMuonUnlikeLowPt7]) {
-      values[kIsMuonUnlikeLowPt7] = (event.alias_bit(kMuonUnlikeLowPt7) > 0);
+      values[kIsMuonUnlikeLowPt7] = static_cast<float>(event.alias_bit(kMuonUnlikeLowPt7) > 0);
     }
     if (fgUsedVars[kIsMuonLikeLowPt7]) {
-      values[kIsMuonLikeLowPt7] = (event.alias_bit(kMuonLikeLowPt7) > 0);
+      values[kIsMuonLikeLowPt7] = static_cast<float>(event.alias_bit(kMuonLikeLowPt7) > 0);
     }
     if (fgUsedVars[kIsCUP8]) {
-      values[kIsCUP8] = (event.alias_bit(kCUP8) > 0);
+      values[kIsCUP8] = static_cast<float>(event.alias_bit(kCUP8) > 0);
     }
     if (fgUsedVars[kIsCUP9]) {
-      values[kIsCUP9] = (event.alias_bit(kCUP9) > 0);
+      values[kIsCUP9] = static_cast<float>(event.alias_bit(kCUP9) > 0);
     }
     if (fgUsedVars[kIsMUP10]) {
-      values[kIsMUP10] = (event.alias_bit(kMUP10) > 0);
+      values[kIsMUP10] = static_cast<float>(event.alias_bit(kMUP10) > 0);
     }
     if (fgUsedVars[kIsMUP11]) {
-      values[kIsMUP11] = (event.alias_bit(kMUP11) > 0);
+      values[kIsMUP11] = static_cast<float>(event.alias_bit(kMUP11) > 0);
     }
     values[kVtxX] = event.posX();
     values[kVtxY] = event.posY();
@@ -2122,14 +2122,14 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kVtxZ] = event.posZ();
     values[kVtxNcontrib] = event.numContrib();
     if (fgUsedVars[kIsDoubleGap] || fgUsedVars[kIsSingleGap] || fgUsedVars[kIsSingleGapA] || fgUsedVars[kIsSingleGapC] || fgUsedVars[kIsNoGap]) {
-      values[kIsDoubleGap] = (event.tag_bit(56 + kDoubleGap) > 0);
-      values[kIsSingleGapA] = (event.tag_bit(56 + kSingleGapA) > 0);
-      values[kIsSingleGapC] = (event.tag_bit(56 + kSingleGapC) > 0);
-      values[kIsSingleGap] = (values[kIsSingleGapA] != 0.f || values[kIsSingleGapC] != 0.f);
-      values[kIsNoGap] = (values[kIsDoubleGap] == 0.f && values[kIsSingleGap] == 0.f);
+      values[kIsDoubleGap] = static_cast<float>(event.tag_bit(56 + kDoubleGap) > 0);
+      values[kIsSingleGapA] = static_cast<float>(event.tag_bit(56 + kSingleGapA) > 0);
+      values[kIsSingleGapC] = static_cast<float>(event.tag_bit(56 + kSingleGapC) > 0);
+      values[kIsSingleGap] = static_cast<float>(values[kIsSingleGapA] != 0.f || values[kIsSingleGapC] != 0.f);
+      values[kIsNoGap] = static_cast<float>(values[kIsDoubleGap] == 0.f && values[kIsSingleGap] == 0.f);
     }
     if (fgUsedVars[kIsITSUPCMode]) {
-      values[kIsITSUPCMode] = (event.tag_bit(56 + kITSUPCMode) > 0);
+      values[kIsITSUPCMode] = static_cast<float>(event.tag_bit(56 + kITSUPCMode) > 0);
     }
     values[kCollisionTime] = event.collisionTime();
     values[kCollisionTimeRes] = event.collisionTimeRes();
@@ -2147,34 +2147,34 @@ void VarManager::FillEvent(T const& event, float* values)
       values[kIsNoITSROFBorderRecomputed] = bcInITSROF > fgITSROFBorderMarginLow && bcInITSROF < fgITSROFlength - fgITSROFBorderMarginHigh ? 1.0 : 0.0;
     }
     if (fgUsedVars[kIsNoITSROFBorder]) {
-      values[kIsNoITSROFBorder] = (event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) > 0);
+      values[kIsNoITSROFBorder] = static_cast<float>(event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) > 0);
     }
     if (fgUsedVars[kIsTVXTriggered]) {
-      values[kIsTVXTriggered] = (event.selection_bit(o2::aod::evsel::kIsTriggerTVX) > 0);
+      values[kIsTVXTriggered] = static_cast<float>(event.selection_bit(o2::aod::evsel::kIsTriggerTVX) > 0);
     }
     if (fgUsedVars[kIsNoTFBorder]) {
-      values[kIsNoTFBorder] = (event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) > 0);
+      values[kIsNoTFBorder] = static_cast<float>(event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) > 0);
     }
     if (fgUsedVars[kNoCollInTimeRangeStandard]) {
-      values[kNoCollInTimeRangeStandard] = (event.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) > 0);
+      values[kNoCollInTimeRangeStandard] = static_cast<float>(event.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) > 0);
     }
     if (fgUsedVars[kIsNoSameBunch]) {
-      values[kIsNoSameBunch] = (event.selection_bit(o2::aod::evsel::kNoSameBunchPileup) > 0);
+      values[kIsNoSameBunch] = static_cast<float>(event.selection_bit(o2::aod::evsel::kNoSameBunchPileup) > 0);
     }
     if (fgUsedVars[kIsTriggerZNAZNC]) {
-      values[kIsTriggerZNAZNC] = event.selection_bit(o2::aod::evsel::kIsBBZNA) && event.selection_bit(o2::aod::evsel::kIsBBZNC);
+      values[kIsTriggerZNAZNC] = static_cast<float>(event.selection_bit(o2::aod::evsel::kIsBBZNA) && event.selection_bit(o2::aod::evsel::kIsBBZNC));
     }
     if (fgUsedVars[kIsGoodZvtxFT0vsPV]) {
-      values[kIsGoodZvtxFT0vsPV] = (event.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) > 0);
+      values[kIsGoodZvtxFT0vsPV] = static_cast<float>(event.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) > 0);
     }
     if (fgUsedVars[kIsVertexITSTPC]) {
-      values[kIsVertexITSTPC] = (event.selection_bit(o2::aod::evsel::kIsVertexITSTPC) > 0);
+      values[kIsVertexITSTPC] = static_cast<float>(event.selection_bit(o2::aod::evsel::kIsVertexITSTPC) > 0);
     }
     if (fgUsedVars[kIsVertexTOFmatched]) {
-      values[kIsVertexTOFmatched] = (event.selection_bit(o2::aod::evsel::kIsVertexTOFmatched) > 0);
+      values[kIsVertexTOFmatched] = static_cast<float>(event.selection_bit(o2::aod::evsel::kIsVertexTOFmatched) > 0);
     }
     if (fgUsedVars[kIsSel8]) {
-      values[kIsSel8] = event.selection_bit(o2::aod::evsel::kIsTriggerTVX) && event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
+      values[kIsSel8] = static_cast<float>(event.selection_bit(o2::aod::evsel::kIsTriggerTVX) && event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder));
     }
     if (fgUsedVars[kIsGoodITSLayer3]) {
       values[kIsGoodITSLayer3] = event.selection_bit(o2::aod::evsel::kIsGoodITSLayer3);
@@ -2186,37 +2186,37 @@ void VarManager::FillEvent(T const& event, float* values)
       values[kIsGoodITSLayersAll] = event.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
     }
     if (fgUsedVars[kIsINT7]) {
-      values[kIsINT7] = (event.alias_bit(kINT7) > 0);
+      values[kIsINT7] = static_cast<float>(event.alias_bit(kINT7) > 0);
     }
     if (fgUsedVars[kIsEMC7]) {
-      values[kIsEMC7] = (event.alias_bit(kEMC7) > 0);
+      values[kIsEMC7] = static_cast<float>(event.alias_bit(kEMC7) > 0);
     }
     if (fgUsedVars[kIsINT7inMUON]) {
-      values[kIsINT7inMUON] = (event.alias_bit(kINT7inMUON) > 0);
+      values[kIsINT7inMUON] = static_cast<float>(event.alias_bit(kINT7inMUON) > 0);
     }
     if (fgUsedVars[kIsMuonSingleLowPt7]) {
-      values[kIsMuonSingleLowPt7] = (event.alias_bit(kMuonSingleLowPt7) > 0);
+      values[kIsMuonSingleLowPt7] = static_cast<float>(event.alias_bit(kMuonSingleLowPt7) > 0);
     }
     if (fgUsedVars[kIsMuonSingleHighPt7]) {
-      values[kIsMuonSingleHighPt7] = (event.alias_bit(kMuonSingleHighPt7) > 0);
+      values[kIsMuonSingleHighPt7] = static_cast<float>(event.alias_bit(kMuonSingleHighPt7) > 0);
     }
     if (fgUsedVars[kIsMuonUnlikeLowPt7]) {
-      values[kIsMuonUnlikeLowPt7] = (event.alias_bit(kMuonUnlikeLowPt7) > 0);
+      values[kIsMuonUnlikeLowPt7] = static_cast<float>(event.alias_bit(kMuonUnlikeLowPt7) > 0);
     }
     if (fgUsedVars[kIsMuonLikeLowPt7]) {
-      values[kIsMuonLikeLowPt7] = (event.alias_bit(kMuonLikeLowPt7) > 0);
+      values[kIsMuonLikeLowPt7] = static_cast<float>(event.alias_bit(kMuonLikeLowPt7) > 0);
     }
     if (fgUsedVars[kIsCUP8]) {
-      values[kIsCUP8] = (event.alias_bit(kCUP8) > 0);
+      values[kIsCUP8] = static_cast<float>(event.alias_bit(kCUP8) > 0);
     }
     if (fgUsedVars[kIsCUP9]) {
-      values[kIsCUP9] = (event.alias_bit(kCUP9) > 0);
+      values[kIsCUP9] = static_cast<float>(event.alias_bit(kCUP9) > 0);
     }
     if (fgUsedVars[kIsMUP10]) {
-      values[kIsMUP10] = (event.alias_bit(kMUP10) > 0);
+      values[kIsMUP10] = static_cast<float>(event.alias_bit(kMUP10) > 0);
     }
     if (fgUsedVars[kIsMUP11]) {
-      values[kIsMUP11] = (event.alias_bit(kMUP11) > 0);
+      values[kIsMUP11] = static_cast<float>(event.alias_bit(kMUP11) > 0);
     }
   }
 
@@ -2532,12 +2532,12 @@ void VarManager::FillEvent(T const& event, float* values)
   }
 
   if constexpr ((fillMap & EventFilter) > 0 || (fillMap & RapidityGapFilter) > 0) {
-    values[kIsDoubleGap] = (event.eventFilter() & (static_cast<uint64_t>(1) << kDoubleGap)) > 0;
-    values[kIsSingleGapA] = (event.eventFilter() & (static_cast<uint64_t>(1) << kSingleGapA)) > 0;
-    values[kIsSingleGapC] = (event.eventFilter() & (static_cast<uint64_t>(1) << kSingleGapC)) > 0;
-    values[kIsSingleGap] = (values[kIsSingleGapA] != 0.f || values[kIsSingleGapC] != 0.f);
-    values[kIsNoGap] = (values[kIsDoubleGap] == 0.f && values[kIsSingleGap] == 0.f);
-    values[kIsITSUPCMode] = (event.eventFilter() & (static_cast<uint64_t>(1) << kITSUPCMode)) > 0;
+    values[kIsDoubleGap] = static_cast<float>((event.eventFilter() & (static_cast<uint64_t>(1) << kDoubleGap)) > 0);
+    values[kIsSingleGapA] = static_cast<float>((event.eventFilter() & (static_cast<uint64_t>(1) << kSingleGapA)) > 0);
+    values[kIsSingleGapC] = static_cast<float>((event.eventFilter() & (static_cast<uint64_t>(1) << kSingleGapC)) > 0);
+    values[kIsSingleGap] = static_cast<float>(values[kIsSingleGapA] != 0.f || values[kIsSingleGapC] != 0.f);
+    values[kIsNoGap] = static_cast<float>(values[kIsDoubleGap] == 0.f && values[kIsSingleGap] == 0.f);
+    values[kIsITSUPCMode] = static_cast<float>((event.eventFilter() & (static_cast<uint64_t>(1) << kITSUPCMode)) > 0);
   }
 
   if constexpr ((fillMap & ReducedZdc) > 0) {
@@ -2963,7 +2963,7 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kIsLegFromAntiLambda] = track.filteringFlags_bit(VarManager::kIsALambdaLeg);
       values[kIsLegFromOmega] = track.filteringFlags_bit(VarManager::kIsOmegaLeg);
 
-      values[kIsProtonFromLambdaAndAntiLambda] = static_cast<bool>((values[kIsLegFromLambda] * track.sign() > 0) || (values[kIsLegFromAntiLambda] * (-track.sign()) > 0));
+      values[kIsProtonFromLambdaAndAntiLambda] = static_cast<float>((values[kIsLegFromLambda] * track.sign() > 0) || (values[kIsLegFromAntiLambda] * (-track.sign()) > 0));
 
       for (int i = 0; i < 8; i++) {
         values[kIsDalitzLeg + i] = track.filteringFlags_bit(VarManager::kDalitzBits + i);
@@ -3000,44 +3000,44 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kPin] = track.tpcInnerParam();
     values[kSignedPin] = track.tpcInnerParam() * track.sign();
     if (fgUsedVars[kIsITSrefit]) {
-      values[kIsITSrefit] = (track.flags() & o2::aod::track::ITSrefit) > 0; // NOTE: This is just for Run-2
+      values[kIsITSrefit] = static_cast<float>((track.flags() & o2::aod::track::ITSrefit) > 0); // NOTE: This is just for Run-2
     }
     if (fgUsedVars[kTrackTimeResIsRange]) {
-      values[kTrackTimeResIsRange] = (track.flags() & o2::aod::track::TrackTimeResIsRange) > 0; // NOTE: This is NOT for Run-2
+      values[kTrackTimeResIsRange] = static_cast<float>((track.flags() & o2::aod::track::TrackTimeResIsRange) > 0); // NOTE: This is NOT for Run-2
     }
     if (fgUsedVars[kIsTPCrefit]) {
-      values[kIsTPCrefit] = (track.flags() & o2::aod::track::TPCrefit) > 0; // NOTE: This is just for Run-2
+      values[kIsTPCrefit] = static_cast<float>((track.flags() & o2::aod::track::TPCrefit) > 0); // NOTE: This is just for Run-2
     }
     if (fgUsedVars[kPVContributor]) {
-      values[kPVContributor] = (track.flags() & o2::aod::track::PVContributor) > 0; // NOTE: This is NOT for Run-2
+      values[kPVContributor] = static_cast<float>((track.flags() & o2::aod::track::PVContributor) > 0); // NOTE: This is NOT for Run-2
     }
     if (fgUsedVars[kIsGoldenChi2]) {
-      values[kIsGoldenChi2] = (track.flags() & o2::aod::track::GoldenChi2) > 0; // NOTE: This is just for Run-2
+      values[kIsGoldenChi2] = static_cast<float>((track.flags() & o2::aod::track::GoldenChi2) > 0); // NOTE: This is just for Run-2
     }
     if (fgUsedVars[kOrphanTrack]) {
-      values[kOrphanTrack] = (track.flags() & o2::aod::track::OrphanTrack) > 0; // NOTE: This is NOT for Run-2
+      values[kOrphanTrack] = static_cast<float>((track.flags() & o2::aod::track::OrphanTrack) > 0); // NOTE: This is NOT for Run-2
     }
     if (fgUsedVars[kIsSPDfirst]) {
-      values[kIsSPDfirst] = (track.itsClusterMap() & uint8_t(1)) > 0;
+      values[kIsSPDfirst] = static_cast<float>((track.itsClusterMap() & uint8_t(1)) > 0);
     }
     if (fgUsedVars[kIsSPDboth]) {
-      values[kIsSPDboth] = (track.itsClusterMap() & uint8_t(3)) > 0;
+      values[kIsSPDboth] = static_cast<float>((track.itsClusterMap() & uint8_t(3)) > 0);
     }
     if (fgUsedVars[kIsSPDany]) {
-      values[kIsSPDany] = (track.itsClusterMap() & uint8_t(1)) || (track.itsClusterMap() & uint8_t(2));
+      values[kIsSPDany] = static_cast<float>((track.itsClusterMap() & uint8_t(1)) || (track.itsClusterMap() & uint8_t(2)));
     }
     if (fgUsedVars[kITSClusterMap]) {
       values[kITSClusterMap] = track.itsClusterMap();
     }
 
     if (fgUsedVars[kIsITSibFirst]) {
-      values[kIsITSibFirst] = (track.itsClusterMap() & uint8_t(1)) > 0;
+      values[kIsITSibFirst] = static_cast<float>((track.itsClusterMap() & uint8_t(1)) > 0);
     }
     if (fgUsedVars[kIsITSibAny]) {
-      values[kIsITSibAny] = (track.itsClusterMap() & (1 << uint8_t(0))) > 0 || (track.itsClusterMap() & (1 << uint8_t(1))) > 0 || (track.itsClusterMap() & (1 << uint8_t(2))) > 0;
+      values[kIsITSibAny] = static_cast<float>((track.itsClusterMap() & (1 << uint8_t(0))) > 0 || (track.itsClusterMap() & (1 << uint8_t(1))) > 0 || (track.itsClusterMap() & (1 << uint8_t(2))) > 0);
     }
     if (fgUsedVars[kIsITSibAll]) {
-      values[kIsITSibAll] = (track.itsClusterMap() & (1 << uint8_t(0))) > 0 && (track.itsClusterMap() & (1 << uint8_t(1))) > 0 && (track.itsClusterMap() & (1 << uint8_t(2))) > 0;
+      values[kIsITSibAll] = static_cast<float>((track.itsClusterMap() & (1 << uint8_t(0))) > 0 && (track.itsClusterMap() & (1 << uint8_t(1))) > 0 && (track.itsClusterMap() & (1 << uint8_t(2))) > 0);
     }
 
     values[kTrackTime] = track.trackTime();
@@ -3146,18 +3146,18 @@ void VarManager::FillTrack(T const& track, float* values)
   // Quantities based on the dalitz selections
   if constexpr ((fillMap & DalitzBits) > 0) {
     for (int i = 0; i < 8; i++) {
-      values[kIsDalitzLeg + i] = static_cast<bool>(track.dalitzBits() & (uint8_t(1) << i));
+      values[kIsDalitzLeg + i] = static_cast<float>(track.dalitzBits() & (uint8_t(1) << i));
     }
   }
 
   // Quantities based on the V0 selections
   if constexpr ((fillMap & TrackV0Bits) > 0) {
-    values[kIsLegFromGamma] = static_cast<bool>(track.pidbit() & (uint8_t(1) << VarManager::kIsConversionLeg));
-    values[kIsLegFromK0S] = static_cast<bool>(track.pidbit() & (uint8_t(1) << VarManager::kIsK0sLeg));
-    values[kIsLegFromLambda] = static_cast<bool>(track.pidbit() & (uint8_t(1) << VarManager::kIsLambdaLeg));
-    values[kIsLegFromAntiLambda] = static_cast<bool>(track.pidbit() & (uint8_t(1) << VarManager::kIsALambdaLeg));
-    values[kIsLegFromOmega] = static_cast<bool>(track.pidbit() & (uint8_t(1) << VarManager::kIsOmegaLeg));
-    values[kIsProtonFromLambdaAndAntiLambda] = static_cast<bool>((values[kIsLegFromLambda] * track.sign() > 0) || (values[kIsLegFromAntiLambda] * (-track.sign()) > 0));
+    values[kIsLegFromGamma] = static_cast<float>(track.pidbit() & (uint8_t(1) << VarManager::kIsConversionLeg));
+    values[kIsLegFromK0S] = static_cast<float>(track.pidbit() & (uint8_t(1) << VarManager::kIsK0sLeg));
+    values[kIsLegFromLambda] = static_cast<float>(track.pidbit() & (uint8_t(1) << VarManager::kIsLambdaLeg));
+    values[kIsLegFromAntiLambda] = static_cast<float>(track.pidbit() & (uint8_t(1) << VarManager::kIsALambdaLeg));
+    values[kIsLegFromOmega] = static_cast<float>(track.pidbit() & (uint8_t(1) << VarManager::kIsOmegaLeg));
+    values[kIsProtonFromLambdaAndAntiLambda] = static_cast<float>((values[kIsLegFromLambda] * track.sign() > 0) || (values[kIsLegFromAntiLambda] * (-track.sign()) > 0));
   }
 
   // Quantities based on the barrel PID tables
@@ -4675,7 +4675,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
   ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
   ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-  values[kUsedKF] = fgUsedKF;
+  values[kUsedKF] = static_cast<float>(fgUsedKF);
   if (!fgUsedKF) {
     int procCode = 0;
 
@@ -5134,7 +5134,7 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
   ROOT::Math::PtEtaPhiMVector v3(t3.pt(), t3.eta(), t3.phi(), m3);
   ROOT::Math::PtEtaPhiMVector v123 = v1 + v2 + v3;
 
-  values[kUsedKF] = fgUsedKF;
+  values[kUsedKF] = static_cast<float>(fgUsedKF);
   if (!fgUsedKF) {
     int procCode = 0;
 
@@ -5350,7 +5350,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
   int procCode = 0;
   int procCodeJpsi = 0;
 
-  values[kUsedKF] = fgUsedKF;
+  values[kUsedKF] = static_cast<float>(fgUsedKF);
   if (!fgUsedKF) {
     if constexpr ((candidateType == kBcToThreeMuons) && muonHasCov) {
 
@@ -5874,9 +5874,9 @@ void VarManager::FillSpectatorPlane(C const& collision, float* values)
   }
 
   if (denZNC != 0.) {
-    float nSpecnC = zncCommon / beamEne;                  // WARNING: Run 2 coorection, to be checked
-    float cZNC = 1.89358 - 0.71262 / (nSpecnC + 0.71789); // WARNING: Run 2 coorection, to be checked
-    cZNC = 1.;
+    // float nSpecnC = zncCommon / beamEne;                  // WARNING: Run 2 correction, to be checked
+    // float cZNC = 1.89358 - 0.71262 / (nSpecnC + 0.71789); // WARNING: Run 2 correction, to be checked
+    float cZNC = 1.;
     values[kQ1ZNCX] = cZNC * numXZNC / denZNC;
     values[kQ1ZNCY] = cZNC * numYZNC / denZNC;
   } else {
@@ -5884,9 +5884,9 @@ void VarManager::FillSpectatorPlane(C const& collision, float* values)
   }
 
   if (denZNA != 0.) {
-    float nSpecnA = znaCommon / beamEne;                  // WARNING: Run 2 coorection, to be checked
-    float cZNA = 1.89358 - 0.71262 / (nSpecnA + 0.71789); // WARNING: Run 2 coorection, to be checked
-    cZNA = 1.;
+    // float nSpecnA = znaCommon / beamEne;                  // WARNING: Run 2 correction, to be checked
+    // float cZNA = 1.89358 - 0.71262 / (nSpecnA + 0.71789); // WARNING: Run 2 correction, to be checked
+    float cZNA = 1.;
     values[kQ1ZNAX] = cZNA * numXZNA / denZNA;
     values[kQ1ZNAY] = cZNA * numYZNA / denZNA;
   } else {
@@ -6053,8 +6053,8 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     Q2X0A = nNorm > 0 ? Q2X0A / nNorm : NAN;
     Q2Y0A = nNorm > 0 ? Q2Y0A / nNorm : NAN;
 
-    float Psi2A = getEventPlane(2, Q2X0A, Q2Y0A);
-    values[kPsi2A] = Psi2A;
+    float Psi2ATPC = getEventPlane(2, Q2X0A, Q2Y0A);
+    values[kPsi2A] = Psi2ATPC;
 
     // pT ~ 0.2, non-relativistic
     // ROOT::Math::PtEtaPhiMVector v_daughter = t1.sign() > 0 ? v1 - v2 : v2 - v1;
@@ -6068,7 +6068,7 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     ROOT::Math::XYZVectorF yAxis_RF = zAxis_RF.Cross(zAxis).Unit();
     ROOT::Math::XYZVectorF xAxis_RF = yAxis_RF.Cross(zAxis_RF).Unit();
     ROOT::Math::XYZVectorF daughterVec_RF{(v_daughter.Vect()).Unit()};
-    ROOT::Math::XYZVectorF b_TPC_RF = ROOT::Math::XYZVectorF(std::cos(Psi2A), std::sin(Psi2A), 0.f);
+    ROOT::Math::XYZVectorF b_TPC_RF = ROOT::Math::XYZVectorF(std::cos(Psi2ATPC), std::sin(Psi2ATPC), 0.f);
     ROOT::Math::XYZVectorF b_FT0A_RF = ROOT::Math::XYZVectorF(std::cos(Psi2B), std::sin(Psi2B), 0.f);
     ROOT::Math::XYZVectorF b_FT0C_RF = ROOT::Math::XYZVectorF(std::cos(Psi2C), std::sin(Psi2C), 0.f);
     float cosPhi = yAxis_RF.Dot(zAxis_RF.Cross(daughterVec_RF));
@@ -6093,7 +6093,7 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kDeltaPhiPP_TPC] = values[kDeltaPhiPP_TPC] > o2::constants::math::PIHalf ? o2::constants::math::PI - values[kDeltaPhiPP_TPC] : values[kDeltaPhiPP_TPC];
     values[kDeltaPhiPP_FT0A] = values[kDeltaPhiPP_FT0A] > o2::constants::math::PIHalf ? o2::constants::math::PI - values[kDeltaPhiPP_FT0A] : values[kDeltaPhiPP_FT0A];
     values[kDeltaPhiPP_FT0C] = values[kDeltaPhiPP_FT0C] > o2::constants::math::PIHalf ? o2::constants::math::PI - values[kDeltaPhiPP_FT0C] : values[kDeltaPhiPP_FT0C];
-    values[kCos2DeltaPhiPP_TPC] = TMath::Cos(2. * (phi_PP - Psi2A));
+    values[kCos2DeltaPhiPP_TPC] = TMath::Cos(2. * (phi_PP - Psi2ATPC));
     values[kCos2DeltaPhiPP_FT0A] = TMath::Cos(2. * (phi_PP - Psi2B));
     values[kCos2DeltaPhiPP_FT0C] = TMath::Cos(2. * (phi_PP - Psi2C));
 
@@ -6106,7 +6106,7 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
 
     // reaction plane
     float phi = v_daughter.Phi() > o2::constants::math::PI ? o2::constants::math::TwoPI - v_daughter.Phi() : v_daughter.Phi();
-    values[kDeltaPhiRP_TPC] = phi > Psi2A ? phi - Psi2A : Psi2A - phi;
+    values[kDeltaPhiRP_TPC] = phi > Psi2ATPC ? phi - Psi2ATPC : Psi2ATPC - phi;
     values[kDeltaPhiRP_TPC] = values[kDeltaPhiRP_TPC] > o2::constants::math::PI ? o2::constants::math::TwoPI - values[kDeltaPhiRP_TPC] : values[kDeltaPhiRP_TPC];
     values[kDeltaPhiRP_FT0A] = phi > Psi2B ? phi - Psi2B : Psi2B - phi;
     values[kDeltaPhiRP_FT0A] = values[kDeltaPhiRP_FT0A] > o2::constants::math::PI ? o2::constants::math::TwoPI - values[kDeltaPhiRP_FT0A] : values[kDeltaPhiRP_FT0A];
@@ -6116,7 +6116,7 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kDeltaPhiRP_TPC] = values[kDeltaPhiRP_TPC] > o2::constants::math::PIHalf ? o2::constants::math::PI - values[kDeltaPhiRP_TPC] : values[kDeltaPhiRP_TPC];
     values[kDeltaPhiRP_FT0A] = values[kDeltaPhiRP_FT0A] > o2::constants::math::PIHalf ? o2::constants::math::PI - values[kDeltaPhiRP_FT0A] : values[kDeltaPhiRP_FT0A];
     values[kDeltaPhiRP_FT0C] = values[kDeltaPhiRP_FT0C] > o2::constants::math::PIHalf ? o2::constants::math::PI - values[kDeltaPhiRP_FT0C] : values[kDeltaPhiRP_FT0C];
-    values[kCos2DeltaPhiRP_TPC] = TMath::Cos(2. * (phi - Psi2A));
+    values[kCos2DeltaPhiRP_TPC] = TMath::Cos(2. * (phi - Psi2ATPC));
     values[kCos2DeltaPhiRP_FT0A] = TMath::Cos(2. * (phi - Psi2B));
     values[kCos2DeltaPhiRP_FT0C] = TMath::Cos(2. * (phi - Psi2C));
 
@@ -6540,7 +6540,7 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
   int procCodeDilepton = 0;
   int procCodeDileptonTrackTrack = 0;
 
-  values[kUsedKF] = fgUsedKF;
+  values[kUsedKF] = static_cast<float>(fgUsedKF);
   if (!fgUsedKF) {
     // create covariance matrix
     std::array<float, 5> lepton1pars = {lepton1.y(), lepton1.z(), lepton1.snp(), lepton1.tgl(), lepton1.signed1Pt()};
@@ -6640,7 +6640,7 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
     values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v1234.M() / TMath::Abs(v1234.Pz());
     values[kVertexingTauxyProjected] = values[kVertexingLxyProjected] * v1234.M() / (v1234.Pt());
     values[kVertexingTauxyzProjected] = values[kVertexingLxyzProjected] * v1234.M() / (v1234.P());
-  } else if (fgUsedKF) {
+  } else {
     KFParticle lepton1KF; // lepton1
     KFParticle lepton2KF; // lepton2
     KFParticle KFGeoTwoLeptons;
@@ -7121,7 +7121,7 @@ void VarManager::FillTrackAlice3(T const& track, float* values)
     values[kCharge] = track.sign();
 
     if (fgUsedVars[kPVContributor]) {
-      values[kPVContributor] = (track.flags() & o2::aod::track::PVContributor) > 0;
+      values[kPVContributor] = static_cast<float>((track.flags() & o2::aod::track::PVContributor) > 0);
     }
 
     if (fgUsedVars[kITSClusterMap]) {
