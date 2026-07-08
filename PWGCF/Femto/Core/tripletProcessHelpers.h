@@ -23,6 +23,7 @@
 #include <Framework/Logger.h>
 
 #include <cstdint>
+#include <optional>
 
 namespace o2::analysis::femto::tripletprocesshelpers
 {
@@ -459,20 +460,34 @@ void processMixedEvent(T1 const& Collisions,
                        T10& CtrManager,
                        T11& TcManager)
 {
-  int64_t lastCollisionIndex = -1;
+  int64_t lastCollisionIndex1 = -1;
+  int64_t lastCollisionIndex2 = -1;
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
 
+  // collision1 stays fixed across the outer mixing window, and collision2 stays fixed across each inner sub-window (it only advances once collision3 wraps
+  // back to its start Both slices are therefore materialized once per window/sub-window and reused, instead of being re-sliced, i.e. a fresh arrow Slice + selection copy
+  std::optional<decltype(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, 0, cache))> sliceParticle1;
+  std::optional<decltype(Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, 0, cache))> sliceParticle2;
+
   for (auto const& [collision1, collision2, collision3] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions, Collisions)) {
 
-    // --- new window ---
-    if (collision1.globalIndex() != lastCollisionIndex) {
-      if (lastCollisionIndex != -1) {
+    // outer window
+    if (collision1.globalIndex() != lastCollisionIndex1) {
+      if (lastCollisionIndex1 != -1) {
         TripletHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
       }
       windowSizeRaw = 0;
       windowSizeEffective = 0;
-      lastCollisionIndex = collision1.globalIndex();
+      lastCollisionIndex1 = collision1.globalIndex();
+      lastCollisionIndex2 = -1; // force sliceParticle2 to refresh below
+      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+    }
+
+    // inner sub-window
+    if (collision2.globalIndex() != lastCollisionIndex2) {
+      lastCollisionIndex2 = collision2.globalIndex();
+      sliceParticle2.emplace(Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache));
     }
 
     ++windowSizeRaw;
@@ -486,13 +501,11 @@ void processMixedEvent(T1 const& Collisions,
 
     CtrManager.setMagField(collision1.magField());
 
-    auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache);
-    auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache);
     auto sliceParticle3 = Partition3->sliceByCached(o2::aod::femtobase::stored::fColId, collision3.globalIndex(), cache);
 
     TripletHistManager.resetTrackedParticlesPerEvent();
 
-    if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0 || sliceParticle3.size() == 0) {
+    if (sliceParticle1->size() == 0 || sliceParticle2->size() == 0 || sliceParticle3.size() == 0) {
       TripletHistManager.fillMixingQaMePerEvent();
       continue;
     }
@@ -500,7 +513,7 @@ void processMixedEvent(T1 const& Collisions,
     bool hasValidTriplet = false;
     TripletHistManager.fillMixingQaMe(collision1, collision2, collision3);
 
-    for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2, sliceParticle3))) {
+    for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(*sliceParticle1, *sliceParticle2, sliceParticle3))) {
       // pair cleaning
       if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable)) {
         continue;
@@ -528,7 +541,7 @@ void processMixedEvent(T1 const& Collisions,
     TripletHistManager.fillMixingQaMePerEvent();
   }
 
-  // --- final window ---
+  // final window
   if (windowSizeRaw > 0) {
     TripletHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
   }
@@ -563,19 +576,34 @@ void processMixedEvent(T1 const& Collisions,
                        T12& CtrManager,
                        T13& TcManager)
 {
-  int64_t lastCollisionIndex = -1;
+  int64_t lastCollisionIndex1 = -1;
+  int64_t lastCollisionIndex2 = -1;
   int windowSizeRaw = 0;
   int windowSizeEffective = 0;
 
+  // collision1 stays fixed across the outer mixing window, and collision2 stays fixed across each inner sub-window (it only advances once collision3 wraps
+  // back to its start Both slices are therefore materialized once per window/sub-window and reused, instead of being re-sliced, i.e. a fresh arrow Slice + selection copy
+  std::optional<decltype(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, 0, cache))> sliceParticle1;
+  std::optional<decltype(Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, 0, cache))> sliceParticle2;
+
   for (auto const& [collision1, collision2, collision3] : o2::soa::selfCombinations(policy, depth, -1, Collisions, Collisions, Collisions)) {
 
-    if (collision1.globalIndex() != lastCollisionIndex) {
-      if (lastCollisionIndex != -1) {
+    // outer window
+    if (collision1.globalIndex() != lastCollisionIndex1) {
+      if (lastCollisionIndex1 != -1) {
         TripletHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
       }
       windowSizeRaw = 0;
       windowSizeEffective = 0;
-      lastCollisionIndex = collision1.globalIndex();
+      lastCollisionIndex1 = collision1.globalIndex();
+      lastCollisionIndex2 = -1; // force sliceParticle2 to refresh below
+      sliceParticle1.emplace(Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache));
+    }
+
+    // inner sub-window
+    if (collision2.globalIndex() != lastCollisionIndex2) {
+      lastCollisionIndex2 = collision2.globalIndex();
+      sliceParticle2.emplace(Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache));
     }
 
     ++windowSizeRaw;
@@ -589,13 +617,11 @@ void processMixedEvent(T1 const& Collisions,
 
     CtrManager.setMagField(collision1.magField());
 
-    auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache);
-    auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache);
     auto sliceParticle3 = Partition3->sliceByCached(o2::aod::femtobase::stored::fColId, collision3.globalIndex(), cache);
 
     TripletHistManager.resetTrackedParticlesPerEvent();
 
-    if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0 || sliceParticle3.size() == 0) {
+    if (sliceParticle1->size() == 0 || sliceParticle2->size() == 0 || sliceParticle3.size() == 0) {
       TripletHistManager.fillMixingQaMePerEvent();
       continue;
     }
@@ -603,7 +629,7 @@ void processMixedEvent(T1 const& Collisions,
     bool hasValidTriplet = false;
     TripletHistManager.fillMixingQaMe(collision1, collision2, collision3);
 
-    for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(sliceParticle1, sliceParticle2, sliceParticle3))) {
+    for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(*sliceParticle1, *sliceParticle2, sliceParticle3))) {
       // pair cleaning
       if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable)) {
         continue;
@@ -631,6 +657,7 @@ void processMixedEvent(T1 const& Collisions,
     TripletHistManager.fillMixingQaMePerEvent();
   }
 
+  // --- final window ---
   if (windowSizeRaw > 0) {
     TripletHistManager.fillMixingQaMePerMixingBin(windowSizeRaw, windowSizeEffective);
   }
