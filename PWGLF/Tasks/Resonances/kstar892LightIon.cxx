@@ -48,7 +48,7 @@
 #include <TString.h>
 
 #include <algorithm>
-#include <array>
+// #include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -845,7 +845,7 @@ struct Kstar892LightIon {
           case PIDMode::TOF: // Apply only TOF cut
             return passTOF(candidate, pid);
 
-          case PIDMode::TOFVeto: // Require TOF hit; apply both TPC and TOF cuts. Tracks without TOF are rejected.
+          case PIDMode::TOFVeto: // Require TOF hit; apply both TPC and TOF cuts separately. Tracks without TOF are rejected.
             return passTPC(candidate, pid) && passTOF(candidate, pid);
 
           case PIDMode::TOFHIT: // Apply only TOF cut that has tof hits, apply TPC cut for the rest
@@ -908,43 +908,56 @@ struct Kstar892LightIon {
           return (std::abs(tpcSigma(candidate, pid)) < regionTPCCut);
         } */
 
-      case PIDStrategy::ThreePtDependent: // Apply region-dependent PID cuts using one PID cut per pT region. In the middle pT region TOF is mandatory.
+      case PIDStrategy::ThreePtDependent: // Apply region-dependent PID cuts using one PID cut per pT region. The middle pT region supports two TOF modes.
       {
         const float pidCut = (candidate.pt() < selectionConfig.lowPtCutPid) ? selectionConfig.lowPtPid : (candidate.pt() < selectionConfig.highPtCutPid) ? selectionConfig.midPtPid
                                                                                                                                                          : selectionConfig.highPtPid;
 
         // Low-pT region
         if (candidate.pt() < selectionConfig.lowPtCutPid) {
-          if (candidate.hasTOF()) {
-            if (!candidate.hasTOF() || candidate.beta() <= selectionConfig.cfgTOFBetaCut) {
-              return false;
-            }
-
-            return combinedNSigma2(candidate, pid) < pidCut * pidCut;
+          if (!candidate.hasTOF()) {
+            return std::abs(tpcSigma(candidate, pid)) < pidCut;
           }
-
-          return std::abs(tpcSigma(candidate, pid)) < pidCut;
-        }
-
-        // Mid-pT region (TOF mandatory)
-        if (candidate.pt() < selectionConfig.highPtCutPid) {
-          if (!candidate.hasTOF() || candidate.beta() <= selectionConfig.cfgTOFBetaCut) {
+          if (candidate.beta() <= selectionConfig.cfgTOFBetaCut) {
             return false;
           }
-
           return combinedNSigma2(candidate, pid) < pidCut * pidCut;
+        }
+
+        // Mid-pT region
+        if (candidate.pt() < selectionConfig.highPtCutPid) {
+          switch (mode) {
+            case PIDMode::TOFVeto: // Mid-pT region (TOF mandatory with combined cut)
+              if (!candidate.hasTOF() || candidate.beta() <= selectionConfig.cfgTOFBetaCut) {
+                return false;
+              }
+              return combinedNSigma2(candidate, pid) < pidCut * pidCut;
+
+            case PIDMode::Combined: // Mid-pT region (If TOF available use combined cut, otherwise use TPC cut)
+              if (!candidate.hasTOF()) {
+                return std::abs(tpcSigma(candidate, pid)) < pidCut;
+              }
+              if (candidate.beta() <= selectionConfig.cfgTOFBetaCut) {
+                return false;
+              }
+
+              return combinedNSigma2(candidate, pid) < pidCut * pidCut;
+
+            default:
+              LOGF(fatal, "ThreePtDependent supports only Combined and TOFVeto modes.");
+              return false;
+          }
         }
 
         // High-pT region
-        if (candidate.hasTOF()) {
-          if (!candidate.hasTOF() || candidate.beta() <= selectionConfig.cfgTOFBetaCut) {
-            return false;
-          }
-
-          return combinedNSigma2(candidate, pid) < pidCut * pidCut;
+        if (!candidate.hasTOF()) {
+          return std::abs(tpcSigma(candidate, pid)) < pidCut;
+        }
+        if (candidate.beta() <= selectionConfig.cfgTOFBetaCut) {
+          return false;
         }
 
-        return std::abs(tpcSigma(candidate, pid)) < pidCut;
+        return combinedNSigma2(candidate, pid) < pidCut * pidCut;
       }
 
       case PIDStrategy::PIDCompare: // Apply independent TPC/TOF cuts below lowPtCutPid, within lowPtCutPid and highPtCutPid, require TOF and accept the track only if its combined nsigma is smaller than that of the alternate PID hypothesis and above highPtCutPid if TOF is available, accept if the track passes combined cut and if TOF is not available, check if it passes TPC cut
