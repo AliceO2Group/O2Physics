@@ -414,7 +414,7 @@ struct Xi1820Analysis {
   template <typename V0Type>
   static std::array<int, 2> v0DaughterIds(const V0Type& v0)
   {
-    auto indices = v0.indices();
+    const auto& indices = v0.indices();
     return {indices[0], indices[1]};
   }
 
@@ -630,12 +630,12 @@ struct Xi1820Analysis {
         }
 
         return true;
-      } else {
-        // Standard PID
-        bool tpcPass = std::abs(tpcNSigma) < cKaonTPCNSigmaMax;
-        bool tofPass = track.hasTOF() ? std::abs(tofNSigma) < cKaonTOFNSigmaMax : true;
-        return tpcPass && tofPass;
       }
+
+      // Standard PID
+      bool tpcPass = std::abs(tpcNSigma) < cKaonTPCNSigmaMax;
+      bool tofPass = track.hasTOF() ? std::abs(tofNSigma) < cKaonTOFNSigmaMax : true;
+      return tpcPass && tofPass;
     } else {
       // For ResoTracks - direct access
       float tpcNSigma = track.tpcNSigmaKa();
@@ -675,12 +675,12 @@ struct Xi1820Analysis {
         }
 
         return true;
-      } else {
-        // Standard PID
-        bool tpcPass = std::abs(tpcNSigma) < cKaonTPCNSigmaMax;
-        bool tofPass = track.hasTOF() ? std::abs(tofNSigma) < cKaonTOFNSigmaMax : true;
-        return tpcPass && tofPass;
       }
+
+      // Standard PID
+      bool tpcPass = std::abs(tpcNSigma) < cKaonTPCNSigmaMax;
+      bool tofPass = track.hasTOF() ? std::abs(tofNSigma) < cKaonTOFNSigmaMax : true;
+      return tpcPass && tofPass;
     }
   }
 
