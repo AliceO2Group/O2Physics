@@ -164,7 +164,7 @@ T compatibleBCs(B const& bc, uint64_t const& meanBC, int const& deltaBC, T const
   }
 
   // create bc slice
-  auto bcslice = bcs.rawSlice(minBCId, maxBCId - minBCId + 1);
+  auto bcslice = bcs.rawSlice(minBCId, maxBCId);
   bcs.copyIndexBindings(bcslice);
   LOGF(debug, "  size of slice %d", bcslice.size());
   return bcslice;
