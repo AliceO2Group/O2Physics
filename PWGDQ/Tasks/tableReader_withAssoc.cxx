@@ -247,6 +247,8 @@ using MyBarrelTracksWithAmbiguities = soa::Join<aod::ReducedTracks, aod::Reduced
 using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID>;
 using MyBarrelTracksWithCovWithAmbiguities = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelAmbiguities>;
 using MyBarrelTracksWithCovWithAmbiguitiesWithColl = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelAmbiguities, aod::ReducedTracksBarrelInfo>;
+using MyBarrelTracksWithEMCal = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelEMCal>;
+using MyBarrelTracksWithCovWithEMCal = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelEMCal>;
 using MyDielectronCandidates = soa::Join<aod::Dielectrons, aod::DielectronsExtra, aod::DielectronsAll>;
 using MyDitrackCandidates = soa::Join<aod::Ditracks, aod::DitracksExtra>;
 using MyDimuonCandidates = soa::Join<aod::Dimuons, aod::DimuonsExtra>;
@@ -274,6 +276,8 @@ constexpr static uint32_t gkEventFillMapWithQvectorCentr = VarManager::ObjTypes:
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID;
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
 constexpr static uint32_t gkTrackFillMapWithCovWithColl = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID | VarManager::ObjTypes::ReducedTrackCollInfo;
+constexpr static uint32_t gkTrackFillMapWithEMCal = gkTrackFillMap | VarManager::ObjTypes::TrackEMCal;
+constexpr static uint32_t gkTrackFillMapWithCovWithEMCal = gkTrackFillMapWithCov | VarManager::ObjTypes::TrackEMCal;
 
 // constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra | VarManager::ObjTypes::ReducedMuonCov;
@@ -797,6 +801,14 @@ struct AnalysisTrackSelection {
       if (fPropTrack) {
         VarManager::FillTrackCollision<TTrackFillMap>(track, event);
       }
+      // fill the quantities of the matched EMCal cluster (e.g. E/p);
+      //   tracks without a matched cluster keep the sentinel values set by ResetValues
+      if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackEMCal)) {
+        if (track.has_matchedEMCalCluster()) {
+          auto cluster = track.template matchedEMCalCluster_as<aod::ReducedEMCals>();
+          VarManager::FillTrackEMCal(cluster, track.p(), track.emcalMatchDeltaEta(), track.emcalMatchDeltaPhi());
+        }
+      }
       if (fConfigQA) {
         fHistMan->FillHistClass("TrackBarrel_BeforeCuts", dqtablereader_helpers::varValues());
       }
@@ -892,6 +904,14 @@ struct AnalysisTrackSelection {
   {
     runTrackSelection<gkEventFillMapWithCov, gkTrackFillMapWithCov>(assocs, events, tracks);
   }
+  void processSkimmedWithEMCal(ReducedTracksAssoc const& assocs, MyEventsSelected const& events, MyBarrelTracksWithEMCal const& tracks, aod::ReducedEMCals const& /*emcals*/)
+  {
+    runTrackSelection<gkEventFillMap, gkTrackFillMapWithEMCal>(assocs, events, tracks);
+  }
+  void processSkimmedWithCovWithEMCal(ReducedTracksAssoc const& assocs, MyEventsVtxCovSelected const& events, MyBarrelTracksWithCovWithEMCal const& tracks, aod::ReducedEMCals const& /*emcals*/)
+  {
+    runTrackSelection<gkEventFillMapWithCov, gkTrackFillMapWithCovWithEMCal>(assocs, events, tracks);
+  }
   void processDummy(MyEventsBasic const&)
   {
     // do nothing
@@ -900,6 +920,8 @@ struct AnalysisTrackSelection {
   PROCESS_SWITCH(AnalysisTrackSelection, processSkimmed, "Run barrel track selection on DQ skimmed track associations", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processSkimmedWithMultExtra, "Run barrel track selection on DQ skimmed track associations, with extra multiplicity tables", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processSkimmedWithCov, "Run barrel track selection on DQ skimmed tracks w/ cov matrix associations", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processSkimmedWithEMCal, "Run barrel track selection on DQ skimmed track associations, with EMCal matching info", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processSkimmedWithCovWithEMCal, "Run barrel track selection on DQ skimmed tracks w/ cov matrix associations, with EMCal matching info", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processDummy, "Dummy function", true);
 };
 

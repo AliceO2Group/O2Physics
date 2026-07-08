@@ -504,11 +504,11 @@ struct TableMaker {
     // Check whether we have to define barrel or muon histograms
     bool enableBarrelHistos = (context.mOptions.get<bool>("processPP") || context.mOptions.get<bool>("processPPWithFilter") || context.mOptions.get<bool>("processPPWithFilterBarrelOnly") || context.mOptions.get<bool>("processPPBarrelOnly") ||
                                context.mOptions.get<bool>("processPbPb") || context.mOptions.get<bool>("processPbPbBarrelOnly") || context.mOptions.get<bool>("processPbPbBarrelOnlyWithV0Bits") || context.mOptions.get<bool>("processPbPbBarrelOnlyWithV0BitsNoTOF")) ||
-                              context.mOptions.get<bool>("processPbPbWithFilterBarrelOnly") || context.mOptions.get<bool>("processPPBarrelOnlyWithV0s") || context.mOptions.get<bool>("processPbPbBarrelOnlyNoTOF") || context.mOptions.get<bool>("processPPBarrelOnlyWithEMCal");
+                              context.mOptions.get<bool>("processPbPbWithFilterBarrelOnly") || context.mOptions.get<bool>("processPPBarrelOnlyWithV0s") || context.mOptions.get<bool>("processPbPbBarrelOnlyNoTOF") || context.mOptions.get<bool>("processPPBarrelOnlyWithEMCal") || context.mOptions.get<bool>("processPPWithEMCal");
 
-    bool enableEMCalHistos = context.mOptions.get<bool>("processPPBarrelOnlyWithEMCal");
+    bool enableEMCalHistos = (context.mOptions.get<bool>("processPPBarrelOnlyWithEMCal") || context.mOptions.get<bool>("processPPWithEMCal"));
 
-    bool enableMuonHistos = (context.mOptions.get<bool>("processPP") || context.mOptions.get<bool>("processPPWithFilter") || context.mOptions.get<bool>("processPPWithFilterMuonOnly") || context.mOptions.get<bool>("processPPWithFilterMuonMFT") || context.mOptions.get<bool>("processPPMuonOnly") || context.mOptions.get<bool>("processPPRealignedMuonOnly") || context.mOptions.get<bool>("processPPMuonMFT") || context.mOptions.get<bool>("processPPMuonMFTWithMultsExtra") ||
+    bool enableMuonHistos = (context.mOptions.get<bool>("processPP") || context.mOptions.get<bool>("processPPWithEMCal") || context.mOptions.get<bool>("processPPWithFilter") || context.mOptions.get<bool>("processPPWithFilterMuonOnly") || context.mOptions.get<bool>("processPPWithFilterMuonMFT") || context.mOptions.get<bool>("processPPMuonOnly") || context.mOptions.get<bool>("processPPRealignedMuonOnly") || context.mOptions.get<bool>("processPPMuonMFT") || context.mOptions.get<bool>("processPPMuonMFTWithMultsExtra") ||
                              context.mOptions.get<bool>("processPbPb") || context.mOptions.get<bool>("processPbPbMuonOnly") || context.mOptions.get<bool>("processPbPbWithFilterMuonOnly") || context.mOptions.get<bool>("processPbPbStreamMuonOnly") || context.mOptions.get<bool>("processPbPbRealignedMuonOnly") || context.mOptions.get<bool>("processPbPbMuonMFT"));
 
     if (enableBarrelHistos) {
@@ -1999,6 +1999,17 @@ struct TableMaker {
     fullSkimming<gkEventFillMapWithMultsExtra, gkTrackFillMapWithCov, gkMuonFillMapWithCov, 0u>(collisions, bcs, nullptr, tracksBarrel, muons, nullptr, trackAssocs, fwdTrackAssocs, nullptr, nullptr, nullptr, nullptr, nullptr);
   }
 
+  // produce the full (barrel + muon) DQ skimmed data model with EMCal clusters, typically for pp (e.g. for e-mu correlations with EMCal electron ID);
+  //   requires the emcal-correction-task upstream in the workflow (for the EMCALClusters and EMCALMatchedTracks tables)
+  void processPPWithEMCal(MyEventsWithMultsExtra const& collisions, MyBCs const& bcs,
+                          MyBarrelTracksWithCov const& tracksBarrel,
+                          MyMuonsWithCov const& muons,
+                          aod::EMCALClusters const& emcalClusters, aod::EMCALMatchedTracks const& emcalMatchedTracks,
+                          TrackAssoc const& trackAssocs, FwdTrackAssoc const& fwdTrackAssocs)
+  {
+    fullSkimming<gkEventFillMapWithMultsExtra, gkTrackFillMapWithCovWithEMCal, gkMuonFillMapWithCov, 0u>(collisions, bcs, nullptr, tracksBarrel, muons, nullptr, trackAssocs, fwdTrackAssocs, nullptr, nullptr, nullptr, nullptr, nullptr, &emcalClusters, &emcalMatchedTracks);
+  }
+
   // produce the barrel-only DQ skimmed data model typically for pp/p-Pb or UPC Pb-Pb (no centrality), subscribe to the DQ event filter (filter-pp or filter-PbPb)
   void processPPWithFilterBarrelOnly(MyEventsWithMultsAndFilter const& collisions, MyBCs const& bcs, aod::Zdcs const& zdcs,
                                      MyBarrelTracksWithCov const& tracksBarrel,
@@ -2196,6 +2207,7 @@ struct TableMaker {
   }
 
   PROCESS_SWITCH(TableMaker, processPP, "Build full DQ skimmed data model for pp/p-Pb w/o event filtering (use Zorro)", false);
+  PROCESS_SWITCH(TableMaker, processPPWithEMCal, "Build full DQ skimmed data model for pp/p-Pb w/o event filtering, with EMCal clusters", false);
   PROCESS_SWITCH(TableMaker, processPPWithFilter, "Build full DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb, w/ event filtering", false);
   PROCESS_SWITCH(TableMaker, processPPWithFilterBarrelOnly, "Build barrel only DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb, w/ event filtering", false);
   PROCESS_SWITCH(TableMaker, processPPWithFilterMuonOnly, "Build muon only DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb, w/ event filtering", false);
