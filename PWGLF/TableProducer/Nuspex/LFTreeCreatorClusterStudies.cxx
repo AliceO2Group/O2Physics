@@ -1123,7 +1123,7 @@ struct LfTreeCreatorClusterStudies {
           m_hAnalysis.fill(HIST("massPi0Mc"), std::sqrt((posMcParticle.e() + negMcParticle.e()) * (posMcParticle.e() + negMcParticle.e()) -
                                                         (posMcParticle.px() + negMcParticle.px()) * (posMcParticle.px() + posMcParticle.px()) -
                                                         (posMcParticle.py() + negMcParticle.py()) * (posMcParticle.py() + posMcParticle.py()) -
-                                                        (posMcParticle.pz() + negMcParticle.pz()) * (posMcParticle.pz() + posMcParticle.pz()));
+                                                        (posMcParticle.pz() + negMcParticle.pz()) * (posMcParticle.pz() + posMcParticle.pz())));
           break;
         }
       }
