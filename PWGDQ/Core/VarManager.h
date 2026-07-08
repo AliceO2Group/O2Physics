@@ -1215,7 +1215,7 @@ class VarManager : public TObject
   }
   static void SetUseVars(const std::vector<int>& usedVars)
   {
-    for (auto& var : usedVars) {
+    for (auto const& var : usedVars) {
       fgUsedVars[var] = true;
     }
   }
@@ -2711,7 +2711,7 @@ void VarManager::FillEventTracks(T const& tracks, float* values)
   int counter2mm = 0;
   int counter5mm = 0;
   int counter10mm = 0;
-  for (auto& d : dcazValues) {
+  for (auto const& d : dcazValues) {
     double absD = std::abs(d);
     if (absD > 0.01) {
       counter100um++;
@@ -2866,8 +2866,8 @@ void VarManager::FillTwoMixEvents(T1 const& ev1, T1 const& ev2, T2 const& /*trac
   /*
    uint32_t Track1Filter = 0;
    uint32_t Track2Filter = 0;
-    for (auto& track1 : tracks1) { Track1Filter = uint32_t(track1.isMuonSelected());}
-    for (auto& track2 : tracks2) { Track2Filter = uint32_t(track2.isMuonSelected());}
+    for (auto const& track1 : tracks1) { Track1Filter = uint32_t(track1.isMuonSelected());}
+    for (auto const& track2 : tracks2) { Track2Filter = uint32_t(track2.isMuonSelected());}
    */
   if constexpr ((fillMap & CollisionCent) > 0 || (fillMap & ReducedEventExtended) > 0) {
     values[kTwoEvCentFT0C1] = ev1.centFT0C();
@@ -3459,7 +3459,7 @@ void VarManager::FillTrackCollisionMC(T1 const& track, T2 const& MotherTrack, C 
 
   float m = o2::constants::physics::MassBPlus;
   float pdgLifetime = 1.638e-12; // s
-  if (std::abs(MotherTrack.pdgCode()) == 511) {
+  if (std::abs(MotherTrack.pdgCode()) == o2::constants::physics::Pdg::kB0) {
     m = o2::constants::physics::MassB0;
     pdgLifetime = 1.517e-12; // s
   }
@@ -6464,16 +6464,16 @@ void VarManager::FillDileptonTrackTrack(T1 const& dilepton, T2 const& hadron1, T
     values = fgValues;
   }
 
-  double defaultDileptonMass = 3.096;
+  double defaultDileptonMass = o2::constants::physics::MassJPsi;
   double hadronMass1 = o2::constants::physics::MassPionCharged;
   double hadronMass2 = o2::constants::physics::MassPionCharged;
   if (candidateType == kXtoJpsiPiPi) {
-    defaultDileptonMass = 3.096;
+    defaultDileptonMass = o2::constants::physics::MassJPsi;
     hadronMass1 = o2::constants::physics::MassPionCharged;
     hadronMass2 = o2::constants::physics::MassPionCharged;
   }
   if (candidateType == kChictoJpsiEE) {
-    defaultDileptonMass = 3.096;
+    defaultDileptonMass = o2::constants::physics::MassJPsi;
     hadronMass1 = o2::constants::physics::MassElectron;
     hadronMass2 = o2::constants::physics::MassElectron;
   }
@@ -6778,11 +6778,11 @@ void VarManager::FillQuadMC(T1 const& dilepton, T2 const& track1, T2 const& trac
     values = fgValues;
   }
 
-  double defaultDileptonMass = 3.096;
+  double defaultDileptonMass = o2::constants::physics::MassJPsi;
   double hadronMass1 = o2::constants::physics::MassPionCharged;
   double hadronMass2 = o2::constants::physics::MassPionCharged;
   if (candidateType == kXtoJpsiPiPi) {
-    defaultDileptonMass = 3.096;
+    defaultDileptonMass = o2::constants::physics::MassJPsi;
     hadronMass1 = o2::constants::physics::MassPionCharged;
     hadronMass2 = o2::constants::physics::MassPionCharged;
   }
