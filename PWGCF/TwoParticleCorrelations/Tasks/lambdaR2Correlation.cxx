@@ -350,6 +350,9 @@ struct LambdaTableProducer {
   Configurable<double> cKshortRejMassWindow{"cKshortRejMassWindow", 0.01, "Reject K0Short Candidates"};
   Configurable<float> cArmPodSel{"cArmPodSel", 0.2, "Armentros-Podolanski Selection"};
 
+  // DCA
+  Configurable<int> cWeakDecayProcess{"cWeakDecayProcess", 4, "Weak decay process tag for DCA analysis"};
+
   // V0s acceptance
   Configurable<float> cLambdaMassWindow{"cLambdaMassWindow", 0.007, "Lambda Mass Window"};
   Configurable<float> cLambdaMinPt{"cLambdaMinPt", 0.7, "Minimum Lambda pT"};
@@ -927,7 +930,7 @@ struct LambdaTableProducer {
       if (mcpart.isPhysicalPrimary()) {
         histos.fill(HIST(SubDir[part]) + HIST("DCA/h2f_Prm_Dca_vs_pT"), track.pt(), dca);
       } else {
-        if (mcpart.getProcess() == 4) { // Weak decay
+        if (mcpart.getProcess() == cWeakDecayProcess) { // Weak decay
           histos.fill(HIST(SubDir[part]) + HIST("DCA/h2f_Scd_Dca_vs_pT"), track.pt(), dca);
         } else { // Material
           histos.fill(HIST(SubDir[part]) + HIST("DCA/h2f_Mat_Dca_vs_pT"), track.pt(), dca);
