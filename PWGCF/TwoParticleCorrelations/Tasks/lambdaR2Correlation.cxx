@@ -389,7 +389,8 @@ struct LambdaTableProducer {
 
   // Initialize Global Variables
   float cent = 0., mult = 0.;
-  TList *ccdbObjRecoEff, *ccdbObjMatchEff;
+  TList *ccdbObjRecoEff = nullptr;
+  TList *ccdbObjMatchEff = nullptr;
   static constexpr std::string_view SubDir[] = {"QA/Lambda/", "QA/AntiLambda/", "QA/KaonPlus/", "QA/KaonMinus/"};
 
   void init(InitContext const&)
@@ -851,14 +852,6 @@ struct LambdaTableProducer {
     // Daugthers
     auto postrack = v0.template posTrack_as<T>();
     auto negtrack = v0.template negTrack_as<T>();
-
-    // Mass
-    float mass = 0.;
-    if constexpr (part == kLambda) {
-      mass = v0.mLambda();
-    } else {
-      mass = v0.mAntiLambda();
-    }
 
     // Decay length
     float ctau = v0.distovertotmom(col.posX(), col.posY(), col.posZ()) * MassLambda0;
