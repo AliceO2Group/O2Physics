@@ -100,7 +100,7 @@ struct ConfOmegaBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                                                 \
   o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                                              \
   o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                                               \
-  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum eta"};                                                                \
+  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                                                \
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                                   \
   o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass for Cascade"};                          \
   o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass for Cascade"};                          \
