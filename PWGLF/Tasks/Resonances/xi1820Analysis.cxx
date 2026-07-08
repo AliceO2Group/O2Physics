@@ -940,17 +940,17 @@ struct Xi1820Analysis {
             continue;
           if constexpr (!IsMix) {
             histos.fill(HIST("xi1820/kplus_lambda/hInvMassKplusLambda"), pRes.M());
-            if (!(additionalConfig.cfgDelCheck))
+            if (!(additionalConfig.cfgDelCheck)) {
               histos.fill(HIST("xi1820/kplus_lambda/hMassPtCentKplusLambda"), pRes.M(), pRes.Pt(), cent);
-            else {
+            } else {
               auto pCandDel = deltaR(pLambda, pKaon);
               histos.fill(HIST("xi1820/kplus_lambda/hMassPtCentDelKplusLambda"), pRes.M(), pRes.Pt(), cent, pCandDel);
             }
           } else {
             histos.fill(HIST("xi1820/kplus_lambda/hInvMassKplusLambda_Mix"), pRes.M());
-            if (!(additionalConfig.cfgDelCheck))
+            if (!(additionalConfig.cfgDelCheck)) {
               histos.fill(HIST("xi1820/kplus_lambda/hMassPtCentKplusLambda_Mix"), pRes.M(), pRes.Pt(), cent);
-            else {
+            } else {
               auto pCandDel = deltaR(pLambda, pKaon);
               histos.fill(HIST("xi1820/kplus_lambda/hMassPtCentDelKplusLambda_Mix"), pRes.M(), pRes.Pt(), cent, pCandDel);
             }
@@ -966,9 +966,9 @@ struct Xi1820Analysis {
             continue;
           if constexpr (!IsMix) {
             histos.fill(HIST("xi1820/kplus_antilambda/hInvMassKplusAntiLambda"), pRes.M());
-            if (!(additionalConfig.cfgDelCheck))
+            if (!(additionalConfig.cfgDelCheck)) {
               histos.fill(HIST("xi1820/kplus_antilambda/hMassPtCentKplusAntiLambda"), pRes.M(), pRes.Pt(), cent);
-            else {
+            } else {
               auto pCandDel = deltaR(pLambda, pKaon);
               histos.fill(HIST("xi1820/kplus_antilambda/hMassPtCentDelKplusAntiLambda"), pRes.M(), pRes.Pt(), cent, pCandDel);
             }
@@ -989,9 +989,9 @@ struct Xi1820Analysis {
                   lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
                   lResonanceRot = pKaon + lDaughterRot;
                 }
-                if (!(additionalConfig.cfgDelCheck))
+                if (!(additionalConfig.cfgDelCheck)) {
                   histos.fill(HIST("xi1820/kplus_antilambda/hMassPtCentKplusAntiLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent);
-                else {
+                } else {
                   auto pRotDel = additionalConfig.cfgRotKaon ? deltaR(lDaughterRot, pLambda) : deltaR(lDaughterRot, pKaon);
                   histos.fill(HIST("xi1820/kplus_antilambda/hMassPtCentDelKplusAntiLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent, pRotDel);
                 }
@@ -1015,9 +1015,9 @@ struct Xi1820Analysis {
             }
           } else {
             histos.fill(HIST("xi1820/kplus_antilambda/hInvMassKplusAntiLambda_Mix"), pRes.M());
-            if (!(additionalConfig.cfgDelCheck))
+            if (!(additionalConfig.cfgDelCheck)) {
               histos.fill(HIST("xi1820/kplus_antilambda/hMassPtCentKplusAntiLambda_Mix"), pRes.M(), pRes.Pt(), cent);
-            else {
+            } else {
               auto pCandDel = deltaR(pLambda, pKaon);
               histos.fill(HIST("xi1820/kplus_antilambda/hMassPtCentDelKplusAntiLambda_Mix"), pRes.M(), pRes.Pt(), cent, pCandDel);
             }
@@ -1033,9 +1033,9 @@ struct Xi1820Analysis {
             continue;
           if constexpr (!IsMix) {
             histos.fill(HIST("xi1820/kminus_lambda/hInvMassKminusLambda"), pRes.M());
-            if (!(additionalConfig.cfgDelCheck))
+            if (!(additionalConfig.cfgDelCheck)) {
               histos.fill(HIST("xi1820/kminus_lambda/hMassPtCentKminusLambda"), pRes.M(), pRes.Pt(), cent);
-            else {
+            } else {
               auto pCandDel = deltaR(pLambda, pKaon);
               histos.fill(HIST("xi1820/kminus_lambda/hMassPtCentDelKminusLambda"), pRes.M(), pRes.Pt(), cent, pCandDel);
             }
@@ -1057,9 +1057,9 @@ struct Xi1820Analysis {
                   lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
                   lResonanceRot = pKaon + lDaughterRot;
                 }
-                if (!(additionalConfig.cfgDelCheck))
+                if (!(additionalConfig.cfgDelCheck)) {
                   histos.fill(HIST("xi1820/kminus_lambda/hMassPtCentKminusLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent);
-                else {
+                } else {
                   auto pCandDel = additionalConfig.cfgRotKaon ? deltaR(lDaughterRot, pLambda) : deltaR(lDaughterRot, pKaon);
                   histos.fill(HIST("xi1820/kminus_lambda/hMassPtCentDelKminusLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent, pCandDel);
                 }
@@ -1082,9 +1082,9 @@ struct Xi1820Analysis {
             }
           } else {
             histos.fill(HIST("xi1820/kminus_lambda/hInvMassKminusLambda_Mix"), pRes.M());
-            if (!(additionalConfig.cfgDelCheck))
+            if (!(additionalConfig.cfgDelCheck)) {
               histos.fill(HIST("xi1820/kminus_lambda/hMassPtCentKminusLambda_Mix"), pRes.M(), pRes.Pt(), cent);
-            else {
+            } else {
               auto pCandDel = deltaR(pLambda, pKaon);
               histos.fill(HIST("xi1820/kminus_lambda/hMassPtCentDelKminusLambda_Mix"), pRes.M(), pRes.Pt(), cent, pCandDel);
             }
@@ -1100,17 +1100,17 @@ struct Xi1820Analysis {
             continue;
           if constexpr (!IsMix) {
             histos.fill(HIST("xi1820/kminus_antilambda/hInvMassKminusAntiLambda"), pRes.M());
-            if (!(additionalConfig.cfgDelCheck))
+            if (!(additionalConfig.cfgDelCheck)) {
               histos.fill(HIST("xi1820/kminus_antilambda/hMassPtCentKminusAntiLambda"), pRes.M(), pRes.Pt(), cent);
-            else {
+            } else {
               auto pCandDel = deltaR(pLambda, pKaon);
               histos.fill(HIST("xi1820/kminus_antilambda/hMassPtCentDelKminusAntiLambda"), pRes.M(), pRes.Pt(), cent, pCandDel);
             }
           } else {
             histos.fill(HIST("xi1820/kminus_antilambda/hInvMassKminusAntiLambda_Mix"), pRes.M());
-            if (!(additionalConfig.cfgDelCheck))
+            if (!(additionalConfig.cfgDelCheck)) {
               histos.fill(HIST("xi1820/kminus_antilambda/hMassPtCentKminusAntiLambda_Mix"), pRes.M(), pRes.Pt(), cent);
-            else {
+            } else {
               auto pCandDel = deltaR(pLambda, pKaon);
               histos.fill(HIST("xi1820/kminus_antilambda/hMassPtCentDelKminusAntiLambda_Mix"), pRes.M(), pRes.Pt(), cent, pCandDel);
             }
@@ -1295,9 +1295,9 @@ struct Xi1820Analysis {
             continue;
           if constexpr (!IsMix) {
             histos.fill(HIST("xi1820/k0s_lambda/hInvMassK0sLambda"), pRes.M());
-            if (!(additionalConfig.cfgDelCheck))
+            if (!(additionalConfig.cfgDelCheck)) {
               histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentK0sLambda"), pRes.M(), pRes.Pt(), cent);
-            else {
+            } else {
               auto pCandDel = deltaR(pLambda, pK0s);
               histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentDelK0sLambda"), pRes.M(), pRes.Pt(), cent, pCandDel);
             }
@@ -1311,9 +1311,9 @@ struct Xi1820Analysis {
                 auto p3 = rot * lDaughterRot.Vect();
                 lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
                 lResonanceRot = lDaughterRot + pLambda;
-                if (!(additionalConfig.cfgDelCheck))
+                if (!(additionalConfig.cfgDelCheck)) {
                   histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentK0sLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent);
-                else {
+                } else {
                   auto lRotDel = deltaR(lDaughterRot, pLambda);
                   histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentDelK0sLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent, lRotDel);
                 }
@@ -1336,9 +1336,9 @@ struct Xi1820Analysis {
             }
           } else {
             histos.fill(HIST("xi1820/k0s_lambda/hInvMassK0sLambda_Mix"), pRes.M());
-            if (!(additionalConfig.cfgDelCheck))
+            if (!(additionalConfig.cfgDelCheck)) {
               histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentK0sLambda_Mix"), pRes.M(), pRes.Pt(), cent);
-            else {
+            } else {
               auto pCandDel = deltaR(pLambda, pK0s);
               histos.fill(HIST("xi1820/k0s_lambda/hMassPtCentDelK0sLambda_Mix"), pRes.M(), pRes.Pt(), cent, pCandDel);
             }
@@ -1353,9 +1353,9 @@ struct Xi1820Analysis {
             continue;
           if constexpr (!IsMix) {
             histos.fill(HIST("xi1820/k0s_antilambda/hInvMassK0sAntiLambda"), pRes.M());
-            if (!(additionalConfig.cfgDelCheck))
+            if (!(additionalConfig.cfgDelCheck)) {
               histos.fill(HIST("xi1820/k0s_antilambda/hMassPtCentK0sAntiLambda"), pRes.M(), pRes.Pt(), cent);
-            else {
+            } else {
               auto pCandDel = deltaR(pLambda, pK0s);
               histos.fill(HIST("xi1820/k0s_antilambda/hMassPtCentDelK0sAntiLambda"), pRes.M(), pRes.Pt(), cent, pCandDel);
             }
@@ -1369,9 +1369,9 @@ struct Xi1820Analysis {
                 auto p3 = rot * lDaughterRot.Vect();
                 lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
                 lResonanceRot = lDaughterRot + pLambda;
-                if (!(additionalConfig.cfgDelCheck))
+                if (!(additionalConfig.cfgDelCheck)) {
                   histos.fill(HIST("xi1820/k0s_antilambda/hMassPtCentK0sAntiLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent);
-                else {
+                } else {
                   auto lRotDel = deltaR(lDaughterRot, pLambda);
                   histos.fill(HIST("xi1820/k0s_antilambda/hMassPtCentDelK0sAntiLambda_Rot"), lResonanceRot.M(), lResonanceRot.Pt(), cent, lRotDel);
                 }
@@ -1394,9 +1394,9 @@ struct Xi1820Analysis {
             }
           } else {
             histos.fill(HIST("xi1820/k0s_antilambda/hInvMassK0sAntiLambda_Mix"), pRes.M());
-            if (!(additionalConfig.cfgDelCheck))
+            if (!(additionalConfig.cfgDelCheck)) {
               histos.fill(HIST("xi1820/k0s_antilambda/hMassPtCentK0sAntiLambda_Mix"), pRes.M(), pRes.Pt(), cent);
-            else {
+            } else {
               auto pCandDel = deltaR(pLambda, pK0s);
               histos.fill(HIST("xi1820/k0s_antilambda/hMassPtCentDelK0sAntiLambda_Mix"), pRes.M(), pRes.Pt(), cent, pCandDel);
             }
