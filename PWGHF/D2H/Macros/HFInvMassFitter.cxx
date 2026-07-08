@@ -283,8 +283,9 @@ void HFInvMassFitter::doFit()
     }
     mSgnPdf = new RooAddPdf("mSgnPdf", "signal fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));
     // create reflection template and fit to reflection
+    RooAbsPdf* reflPdf{nullptr};
     if (mHistoTemplateRefl != nullptr) {
-      RooAbsPdf* reflPdf = createReflectionFitFunction(mWorkspace); // create reflection pdf
+      reflPdf = createReflectionFitFunction(mWorkspace); // create reflection pdf
       RooDataHist reflHistogram("reflHistogram", "refl for fit", *mass, Import(*mHistoTemplateRefl));
       mReflFrame = mass->frame();
       mReflOnlyFrame = mass->frame(Title(Form("%s", mHistoTemplateRefl->GetTitle())));
@@ -303,44 +304,33 @@ void HFInvMassFitter::doFit()
       mRooNRefl->setConstant(true);
       setReflFuncFixed(); // fix reflection pdf parameter
       mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal + reflection fit function", RooArgList(*bkgPdf, *sgnPdf, *reflPdf), RooArgList(*mRooNBkg, *mRooNSgn, *mRooNRefl));
-      if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
-        mTotalPdf->chi2FitTo(dataHistogram);
-      } else {
-        mTotalPdf->fitTo(dataHistogram);
-      }
-      mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"));
+    } else {
+      mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal pdf", RooArgList(*bkgPdf, *sgnPdf), RooArgList(*mRooNBkg, *mRooNSgn));
+    }
+    if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
+      mTotalPdf->chi2FitTo(dataHistogram);
+    } else {
+      mTotalPdf->fitTo(dataHistogram);
+    }
+    std::cout << "mRooNBkg->getVal() = " << mRooNBkg->getVal() << "\n";
+    std::cout << "mRooNSgn->getVal() = " << mRooNSgn->getVal() << "\n";
+    plotBkg(mTotalPdf);
+    mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
+    if (mHistoTemplateRefl != nullptr) {
       mReflPdf = new RooAddPdf("mReflPdf", "reflection fit function", RooArgList(*reflPdf), RooArgList(*mRooNRefl));
       RooAddPdf const reflBkgPdf("reflBkgPdf", "reflBkgPdf", RooArgList(*bkgPdf, *reflPdf), RooArgList(*mRooNBkg, *mRooNRefl));
       reflBkgPdf.plotOn(mInvMassFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineStyle(7), LineColor(kRed + 1), Name("ReflBkg_c"));
-      plotBkg(mTotalPdf);                                                   // plot bkg pdf in total pdf
-      plotRefl(mTotalPdf);                                                  // plot reflection in total pdf
-      mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / NDF
-
-      // plot residual distribution
-      mResidualHist = mInvMassFrame->residHist("data_c", "ReflBkg_c");
-      mResidualFrame = mass->frame(Title("Residual Distribution"));
-      mResidualFrame->addPlotable(mResidualHist, "p");
-      mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
+      plotRefl(mTotalPdf); // plot reflection in total pdf
     } else {
-      mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal pdf", RooArgList(*bkgPdf, *sgnPdf), RooArgList(*mRooNBkg, *mRooNSgn));
-      if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
-        mTotalPdf->chi2FitTo(dataHistogram);
-      } else {
-        mTotalPdf->fitTo(dataHistogram);
-      }
-      std::cout << "mRooNBkg->getVal() = " << mRooNBkg->getVal() << "\n";
-      std::cout << "mRooNSgn->getVal() = " << mRooNSgn->getVal() << "\n";
-      plotBkg(mTotalPdf);
-      mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
       mSgnPdf->plotOn(mInvMassFrame, Normalization(1.0, RooAbsReal::RelativeExpected), DrawOption("F"), FillColor(TColor::GetColorTransparent(kBlue, 0.2)), VLines());
-      mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / DNF
-
-      // plot residual distribution
-      mResidualFrame = mass->frame(Title("Residual Distribution"));
-      mResidualHist = mInvMassFrame->residHist("data_c", "Bkg_c");
-      mResidualFrame->addPlotable(mResidualHist, "P");
-      mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
     }
+    mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / NDF
+    // plot residual distribution
+    mResidualFrame = mass->frame(Title("Residual Distribution"));
+    mResidualHist = mInvMassFrame->residHist("data_c", mHistoTemplateRefl ? "ReflBkg_c" : "Bkg_c");
+    mResidualFrame->addPlotable(mResidualHist, "P");
+    mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
+
     mass->setRange("bkgForSignificance", mRooMeanSgn->getVal() - mNSigmaForSgn * mRooSecSigmaSgn->getVal(), mRooMeanSgn->getVal() + mNSigmaForSgn * mRooSecSigmaSgn->getVal());
     bkgIntegral = mBkgPdf->createIntegral(*mass, NormSet(*mass), Range("bkgForSignificance"));
     mIntegralBkg = bkgIntegral->getValV();
