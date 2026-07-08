@@ -1597,7 +1597,7 @@ class VarManager : public TObject
   static o2::globaltracking::MatchGlobalFwd mMatching;
 
   static std::map<CalibObjects, TObject*> fgCalibs; // map of calibration histograms
-  static bool fgRunTPCPostCalibration[4];           // 0-electron, 1-pion, 2-kaon, 3-proton
+  static std::array<bool, 4> fgRunTPCPostCalibration; // 0-electron, 1-pion, 2-kaon, 3-proton
   static int fgCalibrationType;                     // 0 - no calibration, 1 - calibration vs (TPCncls,pIN,eta) typically for pp, 2 - calibration vs (eta,nPV,nLong,tLong) typically for PbPb
   static bool fgUseInterpolatedCalibration;         // use interpolated calibration histograms (default: true)
 
