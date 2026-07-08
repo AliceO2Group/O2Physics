@@ -84,8 +84,6 @@
 #include <utility>
 #include <vector>
 
-#include <cmath>
-
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
 using Vec3D = ROOT::Math::SVector<double, 3>;
@@ -179,10 +177,10 @@ class VarManager : public TObject
 
   enum BarrelTrackFilteringBits {
     kIsConversionLeg = 0,     // electron from conversions
-    kIsK0sLeg = 1,                // pion from K0s
-    kIsLambdaLeg = 2,             // proton or pion from Lambda
-    kIsALambdaLeg = 3,            // proton or pion from anti-Lambda
-    kIsOmegaLeg = 4,              // kaon from Omega baryon decay
+    kIsK0sLeg = 1,            // pion from K0s
+    kIsLambdaLeg = 2,         // proton or pion from Lambda
+    kIsALambdaLeg = 3,        // proton or pion from anti-Lambda
+    kIsOmegaLeg = 4,          // kaon from Omega baryon decay
     kDalitzBits = 5,          // first bit for Dalitz tagged tracks
     kBarrelUserCutsBits = 13, // first bit for user track cuts
     kIsTPCPostcalibrated = 63 // tracks were postcalibrated for the TPC PID
@@ -3530,7 +3528,7 @@ void VarManager::FillTrackCollisionMC(T1 const& track, const std::array<double, 
   float m = o2::constants::physics::MassJPsi;
   if (massHyp != 0.f) {
     m = massHyp;
-}
+  }
 
   // displaced vertex is computed with decay product (track) and vertex collPos
   values[kMCVertexingLxy] = (collPos[0] - track.vx()) * (collPos[0] - track.vx()) +
@@ -3725,10 +3723,10 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       double arg = scalar / Ptot12;
       if (arg > 1.) {
         arg = 1.;
-}
+      }
       if (arg < -1) {
         arg = -1;
-}
+      }
       values[kOpeningAngle] = TMath::ACos(arg);
     }
   }
@@ -3755,7 +3753,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVectorF xaxis_HE{(yaxis_HE.Cross(zaxis_HE)).Unit()};
       if (fgUsedVars[kCosThetaHE]) {
         values[kCosThetaHE] = zaxis_HE.Dot(v_CM);
-}
+      }
       if (fgUsedVars[kPhiHE]) {
         values[kPhiHE] = TMath::ATan2(yaxis_HE.Dot(v_CM), xaxis_HE.Dot(v_CM));
         if (values[kPhiHE] < 0) {
@@ -3787,7 +3785,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
       if (fgUsedVars[kCosThetaCS]) {
         values[kCosThetaCS] = zaxis_CS.Dot(v_CM);
-}
+      }
       if (fgUsedVars[kPhiCS]) {
         values[kPhiCS] = TMath::ATan2(yaxis_CS.Dot(v_CM), xaxis_CS.Dot(v_CM));
         if (values[kPhiCS] < 0) {
@@ -3851,7 +3849,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVectorF zaxis_RM(randomCostheta, std::sqrt(1 - randomCostheta * randomCostheta) * std::cos(randomPhi), std::sqrt(1 - randomCostheta * randomCostheta) * std::sin(randomPhi));
       if (fgUsedVars[kCosThetaRM]) {
         values[kCosThetaRM] = zaxis_RM.Dot(v_CM);
-}
+      }
     }
   }
 
@@ -3981,7 +3979,7 @@ void VarManager::FillPairRotation(T1 const& t1, T2 const& t2, float* values)
 
   if (rotationphi2 > 2. * TMath::Pi()) {
     rotationphi2 -= 2. * TMath::Pi();
-}
+  }
 
   values[kCharge] = t1.sign() + t2.sign();
   values[kCharge1] = t1.sign();
@@ -4270,7 +4268,7 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVectorF xaxis_HE{(yaxis_HE.Cross(zaxis_HE)).Unit()};
       if (fgUsedVars[kCosThetaHE]) {
         values[kCosThetaHE] = zaxis_HE.Dot(v_CM);
-}
+      }
       if (fgUsedVars[kPhiHE]) {
         values[kPhiHE] = TMath::ATan2(yaxis_HE.Dot(v_CM), xaxis_HE.Dot(v_CM));
         if (values[kPhiHE] < 0) {
@@ -4302,7 +4300,7 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
       if (fgUsedVars[kCosThetaCS]) {
         values[kCosThetaCS] = zaxis_CS.Dot(v_CM);
-}
+      }
       if (fgUsedVars[kPhiCS]) {
         values[kPhiCS] = TMath::ATan2(yaxis_CS.Dot(v_CM), xaxis_CS.Dot(v_CM));
         if (values[kPhiCS] < 0) {
@@ -4366,7 +4364,7 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVectorF zaxis_RM(randomCostheta, std::sqrt(1 - randomCostheta * randomCostheta) * std::cos(randomPhi), std::sqrt(1 - randomCostheta * randomCostheta) * std::sin(randomPhi));
       if (fgUsedVars[kCosThetaRM]) {
         values[kCosThetaRM] = zaxis_RM.Dot(v_CM);
-}
+      }
     }
   }
 
@@ -4544,7 +4542,7 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVectorF xaxis_HE{(yaxis_HE.Cross(zaxis_HE)).Unit()};
       if (fgUsedVars[kMCCosThetaHE]) {
         values[kMCCosThetaHE] = zaxis_HE.Dot(v_CM);
-}
+      }
       if (fgUsedVars[kMCPhiHE]) {
         values[kMCPhiHE] = TMath::ATan2(yaxis_HE.Dot(v_CM), xaxis_HE.Dot(v_CM));
         if (values[kMCPhiHE] < 0) {
@@ -4576,7 +4574,7 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
       if (fgUsedVars[kMCCosThetaCS]) {
         values[kMCCosThetaCS] = zaxis_CS.Dot(v_CM);
-}
+      }
       if (fgUsedVars[kMCPhiCS]) {
         values[kMCPhiCS] = TMath::ATan2(yaxis_CS.Dot(v_CM), xaxis_CS.Dot(v_CM));
         if (values[kMCPhiCS] < 0) {
@@ -4640,7 +4638,7 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVectorF zaxis_RM(randomCostheta, std::sqrt(1 - randomCostheta * randomCostheta) * std::cos(randomPhi), std::sqrt(1 - randomCostheta * randomCostheta) * std::sin(randomPhi));
       if (fgUsedVars[kMCCosThetaRM]) {
         values[kMCCosThetaRM] = zaxis_RM.Dot(v_CM);
-}
+      }
     }
   }
 
@@ -4866,7 +4864,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
         v12 = v1 + v2;
         if (fgPVrecalKF) {
           primaryVertexNew = RecalculatePrimaryVertex(t1, t2, collision);
-}
+        }
 
       } else if constexpr (pairType == kDecayToMuMu && muonHasCov) {
         // Get pca candidate from forward DCA fitter
@@ -4933,7 +4931,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingTauxyProjectedNs] = values[kVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
       if (fgPVrecalKF) {
         values[kVertexingTauxyProjectedPoleJPsiMassRecalculatePV] = values[kVertexingLxyProjectedRecalculatePV] * o2::constants::physics::MassJPsi / (v12.Pt());
-}
+      }
       values[kVertexingTauzProjected] = values[kVertexingLzProjected] * v12.M() / TMath::Abs(v12.Pz());
       values[kVertexingTauxyzProjected] = values[kVertexingLxyzProjected] * v12.M() / (v12.P());
     }
@@ -4977,7 +4975,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
         values[kKFMass] = mass;
       } else {
         values[kKFMass] = -999.;
-}
+      }
     }
 
     if constexpr (eventHasVtxCov) {
@@ -4996,15 +4994,15 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
         values[kVertexingLxyzErr] = (KFPV.GetCovariance(0) + KFGeoTwoProng.GetCovariance(0)) * dxPair2PV * dxPair2PV + (KFPV.GetCovariance(2) + KFGeoTwoProng.GetCovariance(2)) * dyPair2PV * dyPair2PV + (KFPV.GetCovariance(5) + KFGeoTwoProng.GetCovariance(5)) * dzPair2PV * dzPair2PV + 2 * ((KFPV.GetCovariance(1) + KFGeoTwoProng.GetCovariance(1)) * dxPair2PV * dyPair2PV + (KFPV.GetCovariance(3) + KFGeoTwoProng.GetCovariance(3)) * dxPair2PV * dzPair2PV + (KFPV.GetCovariance(4) + KFGeoTwoProng.GetCovariance(4)) * dyPair2PV * dzPair2PV);
         if (fabs(values[kVertexingLxy]) < 1.e-8f) {
           values[kVertexingLxy] = 1.e-8f;
-}
+        }
         values[kVertexingLxyErr] = values[kVertexingLxyErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyErr]) / values[kVertexingLxy];
         if (fabs(values[kVertexingLz]) < 1.e-8f) {
           values[kVertexingLz] = 1.e-8f;
-}
+        }
         values[kVertexingLzErr] = values[kVertexingLzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLzErr]) / values[kVertexingLz];
         if (fabs(values[kVertexingLxyz]) < 1.e-8f) {
           values[kVertexingLxyz] = 1.e-8f;
-}
+        }
         values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
         values[kVertexingTauxy] = KFGeoTwoProng.GetPseudoProperDecayTime(KFPV, KFGeoTwoProng.GetMass()) / (o2::constants::physics::LightSpeedCm2NS);
         values[kVertexingTauz] = -1 * dzPair2PV * KFGeoTwoProng.GetMass() / (TMath::Abs(KFGeoTwoProng.GetPz()) * o2::constants::physics::LightSpeedCm2NS);
@@ -5038,10 +5036,10 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
 
       if (fgUsedVars[kKFChi2OverNDFGeo]) {
         values[kKFChi2OverNDFGeo] = KFGeoTwoProng.GetChi2() / KFGeoTwoProng.GetNDF();
-}
+      }
       if (fgUsedVars[kKFCosPA]) {
         values[kKFCosPA] = calculateCosPA(KFGeoTwoProng, KFPV);
-}
+      }
 
       // in principle, they should be in FillTrack
       if (fgUsedVars[kKFTrack0DCAxyz] || fgUsedVars[kKFTrack1DCAxyz]) {
@@ -5054,10 +5052,10 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       }
       if (fgUsedVars[kKFDCAxyzBetweenProngs]) {
         values[kKFDCAxyzBetweenProngs] = trk0KF.GetDistanceFromParticle(trk1KF);
-}
+      }
       if (fgUsedVars[kKFDCAxyBetweenProngs]) {
         values[kKFDCAxyBetweenProngs] = trk0KF.GetDistanceFromParticleXY(trk1KF);
-}
+      }
 
       if (fgUsedVars[kKFTracksDCAxyzMax]) {
         values[kKFTracksDCAxyzMax] = values[kKFTrack0DCAxyz] > values[kKFTrack1DCAxyz] ? values[kKFTrack0DCAxyz] : values[kKFTrack1DCAxyz];
@@ -5092,7 +5090,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
           values[kKFMassGeoTop] = mass;
         } else {
           values[kKFMassGeoTop] = -999.;
-}
+        }
       }
       if (propToSV) {
         if constexpr ((pairType == kDecayToMuMu) && muonHasCov) {
@@ -5190,7 +5188,7 @@ void VarManager::FillPairVertexingRecomputePV(C const& /*collision*/, T const& t
 
   if (fgFitterTwoProngBarrel.getNCandidates() == 0) {
     return;
-}
+  }
   Vec3D secondaryVertex;
 
   if (!fgUsedKF) { // to be updated when seconday vertex is computed with KF
@@ -5393,7 +5391,7 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
         values[kKFMass] = mass;
       } else {
         values[kKFMass] = -999.;
-}
+      }
     }
 
     if constexpr (eventHasVtxCov) {
@@ -5413,15 +5411,15 @@ void VarManager::FillTripletVertexing(C const& collision, T const& t1, T const& 
       values[kVertexingLxyzErr] = (KFPV.GetCovariance(0) + KFGeoThreeProng.GetCovariance(0)) * dxTriplet2PV * dxTriplet2PV + (KFPV.GetCovariance(2) + KFGeoThreeProng.GetCovariance(2)) * dyTriplet2PV * dyTriplet2PV + (KFPV.GetCovariance(5) + KFGeoThreeProng.GetCovariance(5)) * dzTriplet2PV * dzTriplet2PV + 2 * ((KFPV.GetCovariance(1) + KFGeoThreeProng.GetCovariance(1)) * dxTriplet2PV * dyTriplet2PV + (KFPV.GetCovariance(3) + KFGeoThreeProng.GetCovariance(3)) * dxTriplet2PV * dzTriplet2PV + (KFPV.GetCovariance(4) + KFGeoThreeProng.GetCovariance(4)) * dyTriplet2PV * dzTriplet2PV);
       if (fabs(values[kVertexingLxy]) < 1.e-8f) {
         values[kVertexingLxy] = 1.e-8f;
-}
+      }
       values[kVertexingLxyErr] = values[kVertexingLxyErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyErr]) / values[kVertexingLxy];
       if (fabs(values[kVertexingLz]) < 1.e-8f) {
         values[kVertexingLz] = 1.e-8f;
-}
+      }
       values[kVertexingLzErr] = values[kVertexingLzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLzErr]) / values[kVertexingLz];
       if (fabs(values[kVertexingLxyz]) < 1.e-8f) {
         values[kVertexingLxyz] = 1.e-8f;
-}
+      }
       values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
 
       values[kVertexingTauxy] = KFGeoThreeProng.GetPseudoProperDecayTime(KFPV, KFGeoThreeProng.GetMass()) / (o2::constants::physics::LightSpeedCm2NS);
@@ -5647,7 +5645,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
       // Quantities between 3rd prong and candidate
       if (fgUsedVars[kKFDCAxyzBetweenProngs]) {
         values[kKFDCAxyzBetweenProngs] = KFGeoTwoLeptons.GetDistanceFromParticle(hadronKF);
-}
+      }
 
       KFGeoThreeProng.SetConstructMethod(2);
       KFGeoThreeProng.AddDaughter(KFGeoTwoLeptons);
@@ -5655,7 +5653,7 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
 
       if (fgUsedVars[kKFMass]) {
         values[kKFMass] = KFGeoThreeProng.GetMass();
-}
+      }
 
       if constexpr (eventHasVtxCov) {
         KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
@@ -5673,30 +5671,30 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
           values[kVertexingLxyzErr] = (KFPV.GetCovariance(0) + KFGeoThreeProng.GetCovariance(0)) * dxTriplet3PV * dxTriplet3PV + (KFPV.GetCovariance(2) + KFGeoThreeProng.GetCovariance(2)) * dyTriplet3PV * dyTriplet3PV + (KFPV.GetCovariance(5) + KFGeoThreeProng.GetCovariance(5)) * dzTriplet3PV * dzTriplet3PV + 2 * ((KFPV.GetCovariance(1) + KFGeoThreeProng.GetCovariance(1)) * dxTriplet3PV * dyTriplet3PV + (KFPV.GetCovariance(3) + KFGeoThreeProng.GetCovariance(3)) * dxTriplet3PV * dzTriplet3PV + (KFPV.GetCovariance(4) + KFGeoThreeProng.GetCovariance(4)) * dyTriplet3PV * dzTriplet3PV);
           if (fabs(values[kVertexingLxy]) < 1.e-8f) {
             values[kVertexingLxy] = 1.e-8f;
-}
+          }
           values[kVertexingLxyErr] = values[kVertexingLxyErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyErr]) / values[kVertexingLxy];
           if (fabs(values[kVertexingLz]) < 1.e-8f) {
             values[kVertexingLz] = 1.e-8f;
-}
+          }
           values[kVertexingLzErr] = values[kVertexingLzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLzErr]) / values[kVertexingLz];
           if (fabs(values[kVertexingLxyz]) < 1.e-8f) {
             values[kVertexingLxyz] = 1.e-8f;
-}
+          }
           values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
 
           if (fgUsedVars[kVertexingTauxy]) {
             values[kVertexingTauxy] = KFGeoThreeProng.GetPseudoProperDecayTime(KFPV, KFGeoThreeProng.GetMass()) / (o2::constants::physics::LightSpeedCm2NS);
-}
+          }
           if (fgUsedVars[kVertexingTauxyErr]) {
             values[kVertexingTauxyErr] = values[kVertexingLxyErr] * KFGeoThreeProng.GetMass() / (KFGeoThreeProng.GetPt() * o2::constants::physics::LightSpeedCm2NS);
-}
+          }
 
           if (fgUsedVars[kCosPointingAngle]) {
             values[VarManager::kCosPointingAngle] = (dxTriplet3PV * KFGeoThreeProng.GetPx() +
                                                      dyTriplet3PV * KFGeoThreeProng.GetPy() +
                                                      dzTriplet3PV * KFGeoThreeProng.GetPz()) /
                                                     (KFGeoThreeProng.GetP() * values[VarManager::kVertexingLxyz]);
-}
+          }
         } // end calculate vertex variables
 
         // As defined in Run 2 (projected onto momentum)
@@ -6834,7 +6832,7 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
         values[kKFMass] = mass;
       } else {
         values[kKFMass] = -999.;
-}
+      }
     }
 
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
@@ -6854,15 +6852,15 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
 
     if (fabs(values[kVertexingLxy]) < 1.e-8f) {
       values[kVertexingLxy] = 1.e-8f;
-}
+    }
     values[kVertexingLxyErr] = values[kVertexingLxyErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyErr]) / values[kVertexingLxy];
     if (fabs(values[kVertexingLz]) < 1.e-8f) {
       values[kVertexingLz] = 1.e-8f;
-}
+    }
     values[kVertexingLzErr] = values[kVertexingLzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLzErr]) / values[kVertexingLz];
     if (fabs(values[kVertexingLxyz]) < 1.e-8f) {
       values[kVertexingLxyz] = 1.e-8f;
-}
+    }
     values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
 
     values[kVertexingTauxy] = KFGeoFourProng.GetPseudoProperDecayTime(KFPV, KFGeoFourProng.GetMass()) / (o2::constants::physics::LightSpeedCm2NS);
@@ -7447,10 +7445,10 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
       double arg = scalar / Ptot12;
       if (arg > 1.) {
         arg = 1.;
-}
+      }
       if (arg < -1) {
         arg = -1;
-}
+      }
       values[kOpeningAngle] = TMath::ACos(arg);
     }
   }
@@ -7477,7 +7475,7 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVectorF xaxis_HE{(yaxis_HE.Cross(zaxis_HE)).Unit()};
       if (fgUsedVars[kCosThetaHE]) {
         values[kCosThetaHE] = zaxis_HE.Dot(v_CM);
-}
+      }
       if (fgUsedVars[kPhiHE]) {
         values[kPhiHE] = TMath::ATan2(yaxis_HE.Dot(v_CM), xaxis_HE.Dot(v_CM));
         if (values[kPhiHE] < 0) {
@@ -7509,7 +7507,7 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
       if (fgUsedVars[kCosThetaCS]) {
         values[kCosThetaCS] = zaxis_CS.Dot(v_CM);
-}
+      }
       if (fgUsedVars[kPhiCS]) {
         values[kPhiCS] = TMath::ATan2(yaxis_CS.Dot(v_CM), xaxis_CS.Dot(v_CM));
         if (values[kPhiCS] < 0) {
@@ -7573,7 +7571,7 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
       ROOT::Math::XYZVectorF zaxis_RM(randomCostheta, std::sqrt(1 - randomCostheta * randomCostheta) * std::cos(randomPhi), std::sqrt(1 - randomCostheta * randomCostheta) * std::sin(randomPhi));
       if (fgUsedVars[kCosThetaRM]) {
         values[kCosThetaRM] = zaxis_RM.Dot(v_CM);
-}
+      }
     }
   }
 
