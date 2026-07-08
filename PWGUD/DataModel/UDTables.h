@@ -424,28 +424,28 @@ DECLARE_SOA_COLUMN(Thr2W3, thr2W3, uint64_t); /// 2 MIP thresholds for FT0C ch 9
 } // namespace udcollfitbits
 
 DECLARE_SOA_TABLE(UDCollisionFITBits_000, "AOD", "UDCOLLFITBITS",
-									o2::soa::Index<>,
-									udcollfitbits::Thr1W0, /// 1 MIP thresholds for FT0A ch 0 - ch 63
-									udcollfitbits::Thr1W1, /// 1 MIP thresholds for FT0A ch 63 - ch 96 & FT0C ch 0 - ch 31
-									udcollfitbits::Thr1W2, /// 1 MIP thresholds for FT0C ch 32 - ch 96
-									udcollfitbits::Thr1W3, /// 1 MIP thresholds for FT0C ch 97 - 112 & FV0 0 - 47
-									udcollfitbits::Thr2W0, /// 2 MIP thresholds for FT0A ch 0 - ch 63
-									udcollfitbits::Thr2W1, /// 2 MIP thresholds for FT0A ch 63 - ch 96 & FT0C ch 0 - ch 31
-									udcollfitbits::Thr2W2, /// 2 MIP thresholds for FT0C ch 32 - ch 96
-									udcollfitbits::Thr2W3  /// 2 MIP thresholds for FT0C ch 97 - 112 & FV0 0 - 47
+                  o2::soa::Index<>,
+                  udcollfitbits::Thr1W0, /// 1 MIP thresholds for FT0A ch 0 - ch 63
+                  udcollfitbits::Thr1W1, /// 1 MIP thresholds for FT0A ch 63 - ch 96 & FT0C ch 0 - ch 31
+                  udcollfitbits::Thr1W2, /// 1 MIP thresholds for FT0C ch 32 - ch 96
+                  udcollfitbits::Thr1W3, /// 1 MIP thresholds for FT0C ch 97 - 112 & FV0 0 - 47
+                  udcollfitbits::Thr2W0, /// 2 MIP thresholds for FT0A ch 0 - ch 63
+                  udcollfitbits::Thr2W1, /// 2 MIP thresholds for FT0A ch 63 - ch 96 & FT0C ch 0 - ch 31
+                  udcollfitbits::Thr2W2, /// 2 MIP thresholds for FT0C ch 32 - ch 96
+                  udcollfitbits::Thr2W3  /// 2 MIP thresholds for FT0C ch 97 - 112 & FV0 0 - 47
 );
 
 DECLARE_SOA_TABLE_VERSIONED(UDCollisionFITBits_001, "AOD", "UDCOLLFITBITS", 1,
-														o2::soa::Index<>,
-														udcollfitbits::UDCollisionId, /// Link to the UDCOLLISION table  <---- EXTRA
-														udcollfitbits::Thr1W0,        /// 1 MIP thresholds for FT0A ch 0 - ch 63
-														udcollfitbits::Thr1W1,        /// 1 MIP thresholds for FT0A ch 63 - ch 96 & FT0C ch 0 - ch 31
-														udcollfitbits::Thr1W2,        /// 1 MIP thresholds for FT0C ch 32 - ch 96
-														udcollfitbits::Thr1W3,        /// 1 MIP thresholds for FT0C ch 97 - 112 & FV0 0 - 47
-														udcollfitbits::Thr2W0,        /// 2 MIP thresholds for FT0A ch 0 - ch 63
-														udcollfitbits::Thr2W1,        /// 2 MIP thresholds for FT0A ch 63 - ch 96 & FT0C ch 0 - ch 31
-														udcollfitbits::Thr2W2,        /// 2 MIP thresholds for FT0C ch 32 - ch 96
-														udcollfitbits::Thr2W3         /// 2 MIP thresholds for FT0C ch 97 - 112 & FV0 0 - 47
+                            o2::soa::Index<>,
+                            udcollfitbits::UDCollisionId, /// Link to the UDCOLLISION table  <---- EXTRA
+                            udcollfitbits::Thr1W0,        /// 1 MIP thresholds for FT0A ch 0 - ch 63
+                            udcollfitbits::Thr1W1,        /// 1 MIP thresholds for FT0A ch 63 - ch 96 & FT0C ch 0 - ch 31
+                            udcollfitbits::Thr1W2,        /// 1 MIP thresholds for FT0C ch 32 - ch 96
+                            udcollfitbits::Thr1W3,        /// 1 MIP thresholds for FT0C ch 97 - 112 & FV0 0 - 47
+                            udcollfitbits::Thr2W0,        /// 2 MIP thresholds for FT0A ch 0 - ch 63
+                            udcollfitbits::Thr2W1,        /// 2 MIP thresholds for FT0A ch 63 - ch 96 & FT0C ch 0 - ch 31
+                            udcollfitbits::Thr2W2,        /// 2 MIP thresholds for FT0C ch 32 - ch 96
+                            udcollfitbits::Thr2W3         /// 2 MIP thresholds for FT0C ch 97 - 112 & FV0 0 - 47
 );
 
 using UDCollisionFITBits = UDCollisionFITBits_001;
