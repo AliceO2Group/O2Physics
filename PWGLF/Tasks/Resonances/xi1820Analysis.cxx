@@ -16,6 +16,7 @@
 
 #include "PWGLF/DataModel/LFResonanceTables.h"
 
+#include <Common/Core/RecoDecay.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
@@ -56,10 +57,10 @@ struct Xi1820Analysis {
   using ResoMCCols = soa::Join<aod::ResoCollisions, aod::ResoMCCollisions>;
 
   // Constants
-  static constexpr float kSmallMomentumDenominator = 1e-10f; // Small value to avoid division by zero
-  static constexpr int kPdgChagedXi1820 = 123314;            // o2-linter: disable=pdg/explicit-code (Xi(1820) PDG code not available in PDG_t or o2::constants::physics::Pdg)
-  static constexpr int kPdgXi1820Zero = 123324;              // o2-linter: disable=pdg/explicit-code (Xi(1820) PDG code not available in PDG_t or o2::constants::physics::Pdg)
-  static constexpr int kExpectedDaughters = 2;               // Expected number of daughters for two-body decay
+  static constexpr float SmallMomentumDenominator = 1e-10f; // Small value to avoid division by zero
+  static constexpr int PdgChargedXi1820 = 123314;            // o2-linter: disable=pdg/explicit-code (Xi(1820) PDG code not available in PDG_t or o2::constants::physics::Pdg)
+  static constexpr int PdgXi1820Zero = 123324;               // o2-linter: disable=pdg/explicit-code (Xi(1820) PDG code not available in PDG_t or o2::constants::physics::Pdg)
+  static constexpr int ExpectedDaughters = 2;                // Expected number of daughters for two-body decay
 
   // Axes
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 8.0, 10.0}, "pT"};
@@ -148,8 +149,8 @@ struct Xi1820Analysis {
     ConfigurableAxis multNTracksAxis{"multNTracksAxis", {500, 0, 500}, "N_{tracks}"};
 
     Configurable<bool> cfgFillRotBkg{"cfgFillRotBkg", true, "Fill rotated background"};
-    Configurable<float> cfgMinRot{"cfgMinRot", 5.0 * constants::math::PI / 6.0, "Minimum of rotation"};
-    Configurable<float> cfgMaxRot{"cfgMaxRot", 7.0 * constants::math::PI / 6.0, "Maximum of rotation"};
+    Configurable<float> cfgMinRot{"cfgMinRot", o2::constants::math::PIHalf + o2::constants::math::PIThird, "Minimum of rotation"};
+    Configurable<float> cfgMaxRot{"cfgMaxRot", o2::constants::math::TwoPI - o2::constants::math::PIHalf - o2::constants::math::PIThird, "Maximum of rotation"};
     Configurable<bool> cfgRotKaon{"cfgRotKaon", true, "Rotate Kaon"};
     Configurable<int> cfgNrotBkg{"cfgNrotBkg", 10, "Number of rotated copies (background) per each original candidate"};
 
@@ -436,14 +437,7 @@ struct Xi1820Analysis {
   template <typename FirstVectorType, typename SecondVectorType>
   static float deltaPhi(const FirstVectorType& first, const SecondVectorType& second)
   {
-    auto dPhi = first.Phi() - second.Phi();
-    while (dPhi > constants::math::PI) {
-      dPhi -= 2.0 * constants::math::PI;
-    }
-    while (dPhi <= -constants::math::PI) {
-      dPhi += 2.0 * constants::math::PI;
-    }
-    return dPhi;
+    return RecoDecay::constrainAngle(first.Phi() - second.Phi(), -constants::math::PI);
   }
 
   // Lambda/Anti-Lambda selection
@@ -483,7 +477,7 @@ struct Xi1820Analysis {
     float dz = v0.decayVtxZ() - collision.posZ();
     float l = std::sqrt(dx * dx + dy * dy + dz * dz);
     float p = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
-    auto properLifetime = (l / (p + kSmallMomentumDenominator)) * MassLambda;
+    auto properLifetime = (l / (p + SmallMomentumDenominator)) * MassLambda;
     if (properLifetime > cV0ProperLifetimeMax)
       return false;
 
@@ -559,7 +553,7 @@ struct Xi1820Analysis {
     float dz = v0.decayVtxZ() - collision.posZ();
     float l = std::sqrt(dx * dx + dy * dy + dz * dz);
     float p = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
-    auto properLifetime = (l / (p + kSmallMomentumDenominator)) * MassK0Short;
+    auto properLifetime = (l / (p + SmallMomentumDenominator)) * MassK0Short;
     if (properLifetime > cK0sProperLifetimeMax)
       return false;
 
@@ -885,7 +879,7 @@ struct Xi1820Analysis {
           float dz = v0.decayVtxZ() - collision.posZ();
           float l = std::sqrt(dx * dx + dy * dy + dz * dz);
           float p = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
-          auto properLifetime = (l / (p + kSmallMomentumDenominator)) * MassLambda;
+          auto properLifetime = (l / (p + SmallMomentumDenominator)) * MassLambda;
           histos.fill(HIST("QAbefore/lambdaProperLifetime"), v0.pt(), properLifetime);
           histos.fill(HIST("QAbefore/lambdaArmenterosPodolanski"), v0.alpha(), v0.qtarm(), v0.pt());
         }
@@ -927,7 +921,7 @@ struct Xi1820Analysis {
           float dz = v0.decayVtxZ() - collision.posZ();
           float l = std::sqrt(dx * dx + dy * dy + dz * dz);
           float p = std::sqrt(v0.px() * v0.px() + v0.py() * v0.py() + v0.pz() * v0.pz());
-          auto properLifetime = (l / (p + kSmallMomentumDenominator)) * MassLambda;
+          auto properLifetime = (l / (p + SmallMomentumDenominator)) * MassLambda;
           histos.fill(HIST("QAafter/lambdaProperLifetime"), v0.pt(), properLifetime);
           histos.fill(HIST("QAafter/lambdaArmenterosPodolanski"), v0.alpha(), v0.qtarm(), v0.pt());
         }
@@ -1002,7 +996,7 @@ struct Xi1820Analysis {
             }
 
             if constexpr (IsMC) { // Calculate Acceptance x efficiency for "the particle" channel
-              if (std::abs(v0.motherPDG()) != kPdgChagedXi1820)
+              if (std::abs(v0.motherPDG()) != PdgChargedXi1820)
                 continue;
               if (kaon.pdgCode() != PDG_t::kKPlus || v0.pdgCode() != PDG_t::kLambda0Bar)
                 continue;
@@ -1069,7 +1063,7 @@ struct Xi1820Analysis {
               }
             }
             if constexpr (IsMC) { // Calculate Acceptance x efficiency for "the particle" channel
-              if (std::abs(v0.motherPDG()) != kPdgChagedXi1820)
+              if (std::abs(v0.motherPDG()) != PdgChargedXi1820)
                 continue;
               if (kaon.pdgCode() != PDG_t::kKMinus || v0.pdgCode() != PDG_t::kLambda0)
                 continue;
@@ -1239,7 +1233,7 @@ struct Xi1820Analysis {
           float dz = lambda.decayVtxZ() - collision.posZ();
           float l = std::sqrt(dx * dx + dy * dy + dz * dz);
           float p = std::sqrt(lambda.px() * lambda.px() + lambda.py() * lambda.py() + lambda.pz() * lambda.pz());
-          auto properLifetime = (l / (p + kSmallMomentumDenominator)) * MassLambda;
+          auto properLifetime = (l / (p + SmallMomentumDenominator)) * MassLambda;
           histos.fill(HIST("QAbefore/lambdaProperLifetime"), lambda.pt(), properLifetime);
           histos.fill(HIST("QAbefore/lambdaArmenterosPodolanski"), lambda.alpha(), lambda.qtarm(), lambda.pt());
         }
@@ -1281,7 +1275,7 @@ struct Xi1820Analysis {
           float dz = lambda.decayVtxZ() - collision.posZ();
           float l = std::sqrt(dx * dx + dy * dy + dz * dz);
           float p = std::sqrt(lambda.px() * lambda.px() + lambda.py() * lambda.py() + lambda.pz() * lambda.pz());
-          auto properLifetime = (l / (p + kSmallMomentumDenominator)) * MassLambda;
+          auto properLifetime = (l / (p + SmallMomentumDenominator)) * MassLambda;
           histos.fill(HIST("QAafter/lambdaProperLifetime"), lambda.pt(), properLifetime);
           histos.fill(HIST("QAafter/lambdaArmenterosPodolanski"), lambda.alpha(), lambda.qtarm(), lambda.pt());
         }
@@ -1324,7 +1318,7 @@ struct Xi1820Analysis {
             }
 
             if constexpr (IsMC) { // Calculate Acceptance x efficiency
-              if (std::abs(lambda.motherPDG()) != kPdgXi1820Zero)
+              if (std::abs(lambda.motherPDG()) != PdgXi1820Zero)
                 continue;
               if (std::abs(k0s.pdgCode()) != PDG_t::kK0Short || lambda.pdgCode() != PDG_t::kLambda0)
                 continue;
@@ -1382,7 +1376,7 @@ struct Xi1820Analysis {
             }
 
             if constexpr (IsMC) { // Calculate Acceptance x efficiency
-              if (std::abs(lambda.motherPDG()) != kPdgXi1820Zero)
+              if (std::abs(lambda.motherPDG()) != PdgXi1820Zero)
                 continue;
               if (std::abs(k0s.pdgCode()) != PDG_t::kK0Short || lambda.pdgCode() != PDG_t::kLambda0Bar)
                 continue;
@@ -1548,7 +1542,7 @@ struct Xi1820Analysis {
     histos.fill(HIST("multQA/h2MultCentMC"), inCent, multiplicity);
     for (const auto& part : resoParents) { // loop over all pre-filtered Gen particle on selected events
       auto pdgMother = part.pdgCode();
-      if (std::abs(pdgMother) != kPdgChagedXi1820 && std::abs(pdgMother) != kPdgXi1820Zero)
+      if (std::abs(pdgMother) != PdgChargedXi1820 && std::abs(pdgMother) != PdgXi1820Zero)
         continue;
       if (std::abs(part.y()) >= additionalConfig.cfgRapidityCut)
         continue; // skip if rapidity of the particle is outside of cut
@@ -1556,7 +1550,7 @@ struct Xi1820Analysis {
       auto daughter1PDG = part.daughterPDG1();
       auto daughter2PDG = part.daughterPDG2();
 
-      if (std::abs(pdgMother) == kPdgChagedXi1820) { // Explicity check for the safety.
+      if (std::abs(pdgMother) == PdgChargedXi1820) { // Explicity check for the safety.
         // K- + Anti-Lambda,  K+ + Anti-Lambda
         if ((daughter1PDG == PDG_t::kKMinus && daughter2PDG == PDG_t::kLambda0) ||
             (daughter1PDG == PDG_t::kLambda0 && daughter2PDG == PDG_t::kKMinus)) {
@@ -1591,7 +1585,7 @@ struct Xi1820Analysis {
 
       // Xi(1820)0: PDG 123314
       // Check if it's Xi(1820) or similar resonance
-      if (std::abs(pdg) != kPdgChagedXi1820 && std::abs(pdg) != kPdgXi1820Zero)
+      if (std::abs(pdg) != PdgChargedXi1820 && std::abs(pdg) != PdgXi1820Zero)
         continue;
 
       // Fill generated level histograms
@@ -1605,7 +1599,7 @@ struct Xi1820Analysis {
 
       // Get daughters
       auto daughters = mcParticle.daughters_as<aod::McParticles>();
-      if (daughters.size() != kExpectedDaughters)
+      if (daughters.size() != ExpectedDaughters)
         continue;
 
       int daughter1PDG = 0, daughter2PDG = 0;
