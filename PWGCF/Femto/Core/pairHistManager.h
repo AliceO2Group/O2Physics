@@ -125,6 +125,9 @@ enum PairHist {
   kTrueKstarVsMtVsPt1VsPt2,
   kTrueKstarVsMtVsPt1VsPt2VsMult,
   kTrueKstarVsMtVsPt1VsPt2VsMultVsCent,
+  kTrueQoutVsQout,
+  kTrueQsideVsQside,
+  kTrueQlongVsQlong,
 
   // mixing qa
   kSeNpart1VsNpart2,                         // number of unique particles 1 vs unique number of particles 2 in each same event
@@ -315,6 +318,9 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kQside, o2::framework::HistType::kTH1F, "hQside", "q_{side} in LCMS; q_{side} (GeV/#it{c}); Entries"},
       {kQlong, o2::framework::HistType::kTH1F, "hQlong", "q_{long} in LCMS; q_{long} (GeV/#it{c}); Entries"},
       {kQoutQsideQlong, o2::framework::HistType::kTH3F, "hQoutQsideQlong", "Bertsch-Pratt 3D; q_{out} (GeV/#it{c}); q_{side} (GeV/#it{c}); q_{long} (GeV/#it{c})"},
+      {kTrueQoutVsQout, o2::framework::HistType::kTH2F, "hTrueQoutVsQout", "q_{out,True} vs q_{out}; q_{out,True} (GeV/#it{c}); q_{out} (GeV/#it{c})"},
+      {kTrueQsideVsQside, o2::framework::HistType::kTH2F, "hTrueQsideVsQside", "q_{side,True} vs q_{side}; q_{side,True} (GeV/#it{c}); q_{side} (GeV/#it{c})"},
+      {kTrueQlongVsQlong, o2::framework::HistType::kTH2F, "hTrueQlongVsQlong", "q_{long,True} vs q_{long}; q_{long,True} (GeV/#it{c}); q_{long} (GeV/#it{c})"},
     }};
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -378,7 +384,10 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
     {kTrueMtVsMt, {(conf).mt, (conf).mt}},                         \
     {kTrueMinvVsMinv, {(conf).massInv, (conf).massInv}},           \
     {kTrueMultVsMult, {(conf).multiplicity, (conf).multiplicity}}, \
-    {kTrueCentVsCent, {(conf).centrality, (conf).centrality}},
+    {kTrueCentVsCent, {(conf).centrality, (conf).centrality}},     \
+    {kTrueQoutVsQout, {(conf).qout, (conf).qout}},                 \
+    {kTrueQsideVsQside, {(conf).qside, (conf).qside}},             \
+    {kTrueQlongVsQlong, {(conf).qlong, (conf).qlong}},
 
 // pure mc-truth pair (no reco counterpart) — reuses the same analysis binning,
 // since there is no separate "true" axis (conf)iguration: the truth value IS the
@@ -682,6 +691,11 @@ class PairHistManager
     mTrueMt = getMt(mTrueParticle1, mTrueParticle2);
     mTrueMinv = getMinv(mTrueParticle1, mTrueParticle2);
     mTrueKstar = getKstar(mTrueParticle1, mTrueParticle2);
+
+    if (mPlotBertschPratt) {
+      std::tie(mTrueQout, mTrueQside, mTrueQlong) =
+        computeBertschPrattLCMS(mTrueParticle1, mTrueParticle2);
+    }
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
@@ -939,6 +953,12 @@ class PairHistManager
     mHistogramRegistry->add(mcDir + getHistNameV2(kTrueMinvVsMinv, HistTable), getHistDesc(kTrueMinvVsMinv, HistTable), getHistType(kTrueMinvVsMinv, HistTable), {Specs.at(kTrueMinvVsMinv)});
     mHistogramRegistry->add(mcDir + getHistNameV2(kTrueMultVsMult, HistTable), getHistDesc(kTrueMultVsMult, HistTable), getHistType(kTrueMultVsMult, HistTable), {Specs.at(kTrueMultVsMult)});
     mHistogramRegistry->add(mcDir + getHistNameV2(kTrueCentVsCent, HistTable), getHistDesc(kTrueCentVsCent, HistTable), getHistType(kTrueCentVsCent, HistTable), {Specs.at(kTrueCentVsCent)});
+
+    if (mPlotBertschPratt) {
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueQoutVsQout, HistTable), getHistDesc(kTrueQoutVsQout, HistTable), getHistType(kTrueQoutVsQout, HistTable), {Specs.at(kTrueQoutVsQout)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueQsideVsQside, HistTable), getHistDesc(kTrueQsideVsQside, HistTable), getHistType(kTrueQsideVsQside, HistTable), {Specs.at(kTrueQsideVsQside)});
+      mHistogramRegistry->add(mcDir + getHistNameV2(kTrueQlongVsQlong, HistTable), getHistDesc(kTrueQlongVsQlong, HistTable), getHistType(kTrueQlongVsQlong, HistTable), {Specs.at(kTrueQlongVsQlong)});
+    }
   }
 
   // pure mc-truth pair (no reco counterpart, kMc without kReco) — reuses the
@@ -1114,6 +1134,11 @@ class PairHistManager
     if (mHasMcCol) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueMultVsMult, HistTable)), mTrueMult, mMult);
       mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueCentVsCent, HistTable)), mTrueCent, mCent);
+    }
+    if (mHasMcPair && mPlotBertschPratt) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueQoutVsQout, HistTable)), mTrueQout, mQout);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueQsideVsQside, HistTable)), mTrueQside, mQside);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kTrueQlongVsQlong, HistTable)), mTrueQlong, mQlong);
     }
   }
 
