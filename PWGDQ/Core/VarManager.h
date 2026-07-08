@@ -1357,15 +1357,7 @@ class VarManager : public TObject
 
   static float getDeltaPsiInRange(float psi1, float psi2, float harmonic)
   {
-    float deltaPsi = psi1 - psi2;
-    if (std::abs(deltaPsi) > o2::constants::math::PI / harmonic) {
-      if (deltaPsi > 0.) {
-        deltaPsi -= o2::constants::math::TwoPI / harmonic;
-      } else {
-        deltaPsi += o2::constants::math::TwoPI / harmonic;
-      }
-    }
-    return deltaPsi;
+    return RecoDecay::constrainAngle(psi1 - psi2, -o2::constants::math::PI / harmonic, static_cast<unsigned int>(harmonic));
   }
   template <typename T, typename T1>
   static o2::dataformats::VertexBase RecalculatePrimaryVertex(T const& track0, T const& track1, const T1& collision);
@@ -2946,23 +2938,17 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kPhi] = track.phi();
     values[kCharge] = track.sign();
     if (fgUsedVars[kPhiTPCOuter]) {
-      values[kPhiTPCOuter] = track.phi() - (track.sign() > 0 ? 1.0 : -1.0) * (TMath::PiOver2() - TMath::ACos(0.22 * fgMagField / track.pt()));
-      if (values[kPhiTPCOuter] > TMath::TwoPi()) {
-        values[kPhiTPCOuter] -= TMath::TwoPi();
-      }
-      if (values[kPhiTPCOuter] < 0.0) {
-        values[kPhiTPCOuter] += TMath::TwoPi();
-      }
+      values[kPhiTPCOuter] = RecoDecay::constrainAngle(track.phi() - (track.sign() > 0 ? 1.0 : -1.0) * (o2::constants::math::PIHalf - TMath::ACos(0.22 * fgMagField / track.pt())));
     }
     if (fgUsedVars[kTrackIsInsideTPCModule]) {
-      float localSectorPhi = values[kPhiTPCOuter] - TMath::Floor(18.0 * values[kPhiTPCOuter] / TMath::TwoPi()) * (TMath::TwoPi() / 18.0);
+      float localSectorPhi = values[kPhiTPCOuter] - TMath::Floor(18.0 * values[kPhiTPCOuter] / o2::constants::math::TwoPI) * (o2::constants::math::TwoPI / 18.0);
       float edge = fgTPCInterSectorBoundary / 2.0 / 246.6; // minimal inter-sector boundary as angle
       float curvature = 3.0 * 3.33 * track.pt() / fgMagField * (1.0 - TMath::Sin(TMath::ACos(0.22 * fgMagField / track.pt())));
       if (curvature / 2.466 > edge) {
         edge = curvature / 2.466;
       }
       double min = edge;
-      double max = TMath::TwoPi() / 18.0 - edge;
+      double max = o2::constants::math::TwoPI / 18.0 - edge;
       values[kTrackIsInsideTPCModule] = (localSectorPhi > min && localSectorPhi < max ? 1.0 : 0.0);
     }
 
@@ -3590,7 +3576,7 @@ void VarManager::FillEnergyCorrelatorsMC(T const& track, T1 const& t1, float* va
   float randomPhi_away = -o2::constants::math::PIHalf;
 
   float deltaphitrans = RecoDecay::constrainAngle(track.phi() - t1.phi(), -o2::constants::math::PI);
-  if ((deltaphitrans > -Transhigh * TMath::Pi() && deltaphitrans < -Translow * TMath::Pi()) || (deltaphitrans > Translow * TMath::Pi() && deltaphitrans < Transhigh * TMath::Pi())) {
+  if ((deltaphitrans > -Transhigh * o2::constants::math::PI && deltaphitrans < -Translow * o2::constants::math::PI) || (deltaphitrans > Translow * o2::constants::math::PI && deltaphitrans < Transhigh * o2::constants::math::PI)) {
     randomPhi_trans = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
     randomPhi_toward = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
     randomPhi_away = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
@@ -3680,7 +3666,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   values[kPt] = v12.Pt();
   values[kEta] = v12.Eta();
   // values[kPhi] = v12.Phi();
-  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + o2::constants::math::TwoPI;
+  values[kPhi] = RecoDecay::constrainAngle(v12.Phi());
   values[kRap] = -v12.Rapidity();
   double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
   double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
@@ -3694,14 +3680,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   values[kPhi2] = t2.phi();
 
   if (fgUsedVars[kDeltaPhiPair2]) {
-    double phipair2 = v1.Phi() - v2.Phi();
-    if (phipair2 > 3 * TMath::Pi() / 2) {
-      values[kDeltaPhiPair2] = phipair2 - 2 * TMath::Pi();
-    } else if (phipair2 < -TMath::Pi() / 2) {
-      values[kDeltaPhiPair2] = phipair2 + 2 * TMath::Pi();
-    } else {
-      values[kDeltaPhiPair2] = phipair2;
-    }
+    values[kDeltaPhiPair2] = RecoDecay::constrainAngle(v1.Phi() - v2.Phi(), -o2::constants::math::PIHalf);
   }
 
   if (fgUsedVars[kDeltaEtaPair2]) {
@@ -3755,23 +3734,14 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
         values[kCosThetaHE] = zaxis_HE.Dot(v_CM);
       }
       if (fgUsedVars[kPhiHE]) {
-        values[kPhiHE] = TMath::ATan2(yaxis_HE.Dot(v_CM), xaxis_HE.Dot(v_CM));
-        if (values[kPhiHE] < 0) {
-          values[kPhiHE] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
-        }
+        values[kPhiHE] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_HE.Dot(v_CM), xaxis_HE.Dot(v_CM)));
       }
       if (fgUsedVars[kPhiTildeHE]) {
         if (fgUsedVars[kCosThetaHE] && fgUsedVars[kPhiHE]) {
           if (values[kCosThetaHE] > 0) {
-            values[kPhiTildeHE] = values[kPhiHE] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
-            if (values[kPhiTildeHE] < 0) {
-              values[kPhiTildeHE] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kPhiTildeHE] = RecoDecay::constrainAngle(values[kPhiHE] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
           } else {
-            values[kPhiTildeHE] = values[kPhiHE] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
-            if (values[kPhiTildeHE] < 0) {
-              values[kPhiTildeHE] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kPhiTildeHE] = RecoDecay::constrainAngle(values[kPhiHE] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
           values[kPhiTildeHE] = -999; // not computable
@@ -3787,23 +3757,14 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
         values[kCosThetaCS] = zaxis_CS.Dot(v_CM);
       }
       if (fgUsedVars[kPhiCS]) {
-        values[kPhiCS] = TMath::ATan2(yaxis_CS.Dot(v_CM), xaxis_CS.Dot(v_CM));
-        if (values[kPhiCS] < 0) {
-          values[kPhiCS] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
-        }
+        values[kPhiCS] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_CS.Dot(v_CM), xaxis_CS.Dot(v_CM)));
       }
       if (fgUsedVars[kPhiTildeCS]) {
         if (fgUsedVars[kCosThetaCS] && fgUsedVars[kPhiCS]) {
           if (values[kCosThetaCS] > 0) {
-            values[kPhiTildeCS] = values[kPhiCS] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
-            if (values[kPhiTildeCS] < 0) {
-              values[kPhiTildeCS] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kPhiTildeCS] = RecoDecay::constrainAngle(values[kPhiCS] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
           } else {
-            values[kPhiTildeCS] = values[kPhiCS] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
-            if (values[kPhiTildeCS] < 0) {
-              values[kPhiTildeCS] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kPhiTildeCS] = RecoDecay::constrainAngle(values[kPhiCS] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
           values[kPhiTildeCS] = -999; // not computable
@@ -3819,23 +3780,14 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
         values[kCosThetaPP] = zaxis_PP.Dot(v_CM) / std::sqrt(zaxis_PP.Mag2());
       }
       if (fgUsedVars[kPhiPP]) {
-        values[kPhiPP] = TMath::ATan2(yaxis_PP.Dot(v_CM), xaxis_PP.Dot(v_CM));
-        if (values[kPhiPP] < 0) {
-          values[kPhiPP] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
-        }
+        values[kPhiPP] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_PP.Dot(v_CM), xaxis_PP.Dot(v_CM)));
       }
       if (fgUsedVars[kPhiTildePP]) {
         if (fgUsedVars[kCosThetaPP] && fgUsedVars[kPhiPP]) {
           if (values[kCosThetaPP] > 0) {
-            values[kPhiTildePP] = values[kPhiPP] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
-            if (values[kPhiTildePP] < 0) {
-              values[kPhiTildePP] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kPhiTildePP] = RecoDecay::constrainAngle(values[kPhiPP] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
           } else {
-            values[kPhiTildePP] = values[kPhiPP] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
-            if (values[kPhiTildePP] < 0) {
-              values[kPhiTildePP] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kPhiTildePP] = RecoDecay::constrainAngle(values[kPhiPP] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
           values[kPhiTildePP] = -999; // not computable
@@ -3845,7 +3797,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
 
     if (useRM) {
       double randomCostheta = gRandom->Uniform(-1., 1.);
-      double randomPhi = gRandom->Uniform(0., 2. * TMath::Pi());
+      double randomPhi = gRandom->Uniform(0., o2::constants::math::TwoPI);
       ROOT::Math::XYZVectorF zaxis_RM(randomCostheta, std::sqrt(1 - randomCostheta * randomCostheta) * std::cos(randomPhi), std::sqrt(1 - randomCostheta * randomCostheta) * std::sin(randomPhi));
       if (fgUsedVars[kCosThetaRM]) {
         values[kCosThetaRM] = zaxis_RM.Dot(v_CM);
@@ -3974,12 +3926,8 @@ void VarManager::FillPairRotation(T1 const& t1, T2 const& t2, float* values)
     m2 = o2::constants::physics::MassMuon;
   }
 
-  double dphi = gRandom->Uniform(0., 2. * TMath::Pi());
-  double rotationphi2 = t2.phi() + dphi;
-
-  if (rotationphi2 > 2. * TMath::Pi()) {
-    rotationphi2 -= 2. * TMath::Pi();
-  }
+  double dphi = gRandom->Uniform(0., o2::constants::math::TwoPI);
+  double rotationphi2 = RecoDecay::constrainAngle(t2.phi() + dphi);
 
   values[kCharge] = t1.sign() + t2.sign();
   values[kCharge1] = t1.sign();
@@ -3991,7 +3939,7 @@ void VarManager::FillPairRotation(T1 const& t1, T2 const& t2, float* values)
   values[kPt] = v12.Pt();
   values[kEta] = v12.Eta();
   // values[kPhi] = v12.Phi();
-  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + o2::constants::math::TwoPI;
+  values[kPhi] = RecoDecay::constrainAngle(v12.Phi());
   values[kRap] = -v12.Rapidity();
   double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
   double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
@@ -4220,7 +4168,7 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   values[kPt] = v12.Pt();
   values[kEta] = v12.Eta();
   // values[kPhi] = v12.Phi();
-  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + o2::constants::math::TwoPI;
+  values[kPhi] = RecoDecay::constrainAngle(v12.Phi());
   values[kRap] = -v12.Rapidity();
 
   // Per-track quantities so ME histograms can use kPt1/kPt2/kEta1/kEta2/kPhi1/kPhi2 just like SE FillPair does.
@@ -4232,14 +4180,7 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   values[kPhi2] = t2.phi();
 
   if (fgUsedVars[kDeltaPhiPair2]) {
-    double phipair2ME = v1.Phi() - v2.Phi();
-    if (phipair2ME > 3 * TMath::Pi() / 2) {
-      values[kDeltaPhiPair2] = phipair2ME - 2 * TMath::Pi();
-    } else if (phipair2ME < -TMath::Pi() / 2) {
-      values[kDeltaPhiPair2] = phipair2ME + 2 * TMath::Pi();
-    } else {
-      values[kDeltaPhiPair2] = phipair2ME;
-    }
+    values[kDeltaPhiPair2] = RecoDecay::constrainAngle(v1.Phi() - v2.Phi(), -o2::constants::math::PIHalf);
   }
 
   if (fgUsedVars[kDeltaEtaPair2]) {
@@ -4270,23 +4211,14 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
         values[kCosThetaHE] = zaxis_HE.Dot(v_CM);
       }
       if (fgUsedVars[kPhiHE]) {
-        values[kPhiHE] = TMath::ATan2(yaxis_HE.Dot(v_CM), xaxis_HE.Dot(v_CM));
-        if (values[kPhiHE] < 0) {
-          values[kPhiHE] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
-        }
+        values[kPhiHE] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_HE.Dot(v_CM), xaxis_HE.Dot(v_CM)));
       }
       if (fgUsedVars[kPhiTildeHE]) {
         if (fgUsedVars[kCosThetaHE] && fgUsedVars[kPhiHE]) {
           if (values[kCosThetaHE] > 0) {
-            values[kPhiTildeHE] = values[kPhiHE] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
-            if (values[kPhiTildeHE] < 0) {
-              values[kPhiTildeHE] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kPhiTildeHE] = RecoDecay::constrainAngle(values[kPhiHE] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
           } else {
-            values[kPhiTildeHE] = values[kPhiHE] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
-            if (values[kPhiTildeHE] < 0) {
-              values[kPhiTildeHE] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kPhiTildeHE] = RecoDecay::constrainAngle(values[kPhiHE] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
           values[kPhiTildeHE] = -999; // not computable
@@ -4302,23 +4234,14 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
         values[kCosThetaCS] = zaxis_CS.Dot(v_CM);
       }
       if (fgUsedVars[kPhiCS]) {
-        values[kPhiCS] = TMath::ATan2(yaxis_CS.Dot(v_CM), xaxis_CS.Dot(v_CM));
-        if (values[kPhiCS] < 0) {
-          values[kPhiCS] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
-        }
+        values[kPhiCS] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_CS.Dot(v_CM), xaxis_CS.Dot(v_CM)));
       }
       if (fgUsedVars[kPhiTildeCS]) {
         if (fgUsedVars[kCosThetaCS] && fgUsedVars[kPhiCS]) {
           if (values[kCosThetaCS] > 0) {
-            values[kPhiTildeCS] = values[kPhiCS] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
-            if (values[kPhiTildeCS] < 0) {
-              values[kPhiTildeCS] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kPhiTildeCS] = RecoDecay::constrainAngle(values[kPhiCS] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
           } else {
-            values[kPhiTildeCS] = values[kPhiCS] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
-            if (values[kPhiTildeCS] < 0) {
-              values[kPhiTildeCS] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kPhiTildeCS] = RecoDecay::constrainAngle(values[kPhiCS] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
           values[kPhiTildeCS] = -999; // not computable
@@ -4334,23 +4257,14 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
         values[kCosThetaPP] = zaxis_PP.Dot(v_CM) / std::sqrt(zaxis_PP.Mag2());
       }
       if (fgUsedVars[kPhiPP]) {
-        values[kPhiPP] = TMath::ATan2(yaxis_PP.Dot(v_CM), xaxis_PP.Dot(v_CM));
-        if (values[kPhiPP] < 0) {
-          values[kPhiPP] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
-        }
+        values[kPhiPP] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_PP.Dot(v_CM), xaxis_PP.Dot(v_CM)));
       }
       if (fgUsedVars[kPhiTildePP]) {
         if (fgUsedVars[kCosThetaPP] && fgUsedVars[kPhiPP]) {
           if (values[kCosThetaPP] > 0) {
-            values[kPhiTildePP] = values[kPhiPP] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
-            if (values[kPhiTildePP] < 0) {
-              values[kPhiTildePP] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kPhiTildePP] = RecoDecay::constrainAngle(values[kPhiPP] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
           } else {
-            values[kPhiTildePP] = values[kPhiPP] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
-            if (values[kPhiTildePP] < 0) {
-              values[kPhiTildePP] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kPhiTildePP] = RecoDecay::constrainAngle(values[kPhiPP] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
           values[kPhiTildePP] = -999; // not computable
@@ -4360,7 +4274,7 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
 
     if (useRM) {
       double randomCostheta = gRandom->Uniform(-1., 1.);
-      double randomPhi = gRandom->Uniform(0., 2. * TMath::Pi());
+      double randomPhi = gRandom->Uniform(0., o2::constants::math::TwoPI);
       ROOT::Math::XYZVectorF zaxis_RM(randomCostheta, std::sqrt(1 - randomCostheta * randomCostheta) * std::cos(randomPhi), std::sqrt(1 - randomCostheta * randomCostheta) * std::sin(randomPhi));
       if (fgUsedVars[kCosThetaRM]) {
         values[kCosThetaRM] = zaxis_RM.Dot(v_CM);
@@ -4452,7 +4366,7 @@ void VarManager::FillPairMEAcrossTFs(T const& t1, T const& t2, float* values)
   values[kMass] = v12.M();
   values[kPt] = v12.Pt();
   values[kEta] = v12.Eta();
-  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + o2::constants::math::TwoPI;
+  values[kPhi] = RecoDecay::constrainAngle(v12.Phi());
   values[kRap] = -v12.Rapidity();
 
   if (fgUsedVars[kCosThetaStarRandom] || fgUsedVars[kCosThetaStarFT0C]) {
@@ -4544,23 +4458,14 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
         values[kMCCosThetaHE] = zaxis_HE.Dot(v_CM);
       }
       if (fgUsedVars[kMCPhiHE]) {
-        values[kMCPhiHE] = TMath::ATan2(yaxis_HE.Dot(v_CM), xaxis_HE.Dot(v_CM));
-        if (values[kMCPhiHE] < 0) {
-          values[kMCPhiHE] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
-        }
+        values[kMCPhiHE] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_HE.Dot(v_CM), xaxis_HE.Dot(v_CM)));
       }
       if (fgUsedVars[kMCPhiTildeHE]) {
         if (fgUsedVars[kMCCosThetaHE] && fgUsedVars[kMCPhiHE]) {
           if (values[kMCCosThetaHE] > 0) {
-            values[kMCPhiTildeHE] = values[kMCPhiHE] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
-            if (values[kMCPhiTildeHE] < 0) {
-              values[kMCPhiTildeHE] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kMCPhiTildeHE] = RecoDecay::constrainAngle(values[kMCPhiHE] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
           } else {
-            values[kMCPhiTildeHE] = values[kMCPhiHE] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
-            if (values[kMCPhiTildeHE] < 0) {
-              values[kMCPhiTildeHE] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kMCPhiTildeHE] = RecoDecay::constrainAngle(values[kMCPhiHE] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
           values[kMCPhiTildeHE] = -999; // not computable
@@ -4576,23 +4481,14 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
         values[kMCCosThetaCS] = zaxis_CS.Dot(v_CM);
       }
       if (fgUsedVars[kMCPhiCS]) {
-        values[kMCPhiCS] = TMath::ATan2(yaxis_CS.Dot(v_CM), xaxis_CS.Dot(v_CM));
-        if (values[kMCPhiCS] < 0) {
-          values[kMCPhiCS] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
-        }
+        values[kMCPhiCS] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_CS.Dot(v_CM), xaxis_CS.Dot(v_CM)));
       }
       if (fgUsedVars[kMCPhiTildeCS]) {
         if (fgUsedVars[kMCCosThetaCS] && fgUsedVars[kMCPhiCS]) {
           if (values[kMCCosThetaCS] > 0) {
-            values[kMCPhiTildeCS] = values[kMCPhiCS] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
-            if (values[kMCPhiTildeCS] < 0) {
-              values[kMCPhiTildeCS] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kMCPhiTildeCS] = RecoDecay::constrainAngle(values[kMCPhiCS] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
           } else {
-            values[kMCPhiTildeCS] = values[kMCPhiCS] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
-            if (values[kMCPhiTildeCS] < 0) {
-              values[kMCPhiTildeCS] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kMCPhiTildeCS] = RecoDecay::constrainAngle(values[kMCPhiCS] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
           values[kMCPhiTildeCS] = -999; // not computable
@@ -4608,23 +4504,14 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
         values[kMCCosThetaPP] = zaxis_PP.Dot(v_CM);
       }
       if (fgUsedVars[kMCPhiPP]) {
-        values[kMCPhiPP] = TMath::ATan2(yaxis_PP.Dot(v_CM), xaxis_PP.Dot(v_CM));
-        if (values[kMCPhiPP] < 0) {
-          values[kMCPhiPP] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
-        }
+        values[kMCPhiPP] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_PP.Dot(v_CM), xaxis_PP.Dot(v_CM)));
       }
       if (fgUsedVars[kMCPhiTildePP]) {
         if (fgUsedVars[kMCCosThetaPP] && fgUsedVars[kMCPhiPP]) {
           if (values[kMCCosThetaPP] > 0) {
-            values[kMCPhiTildePP] = values[kMCPhiPP] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
-            if (values[kMCPhiTildePP] < 0) {
-              values[kMCPhiTildePP] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kMCPhiTildePP] = RecoDecay::constrainAngle(values[kMCPhiPP] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
           } else {
-            values[kMCPhiTildePP] = values[kMCPhiPP] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
-            if (values[kMCPhiTildePP] < 0) {
-              values[kMCPhiTildePP] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kMCPhiTildePP] = RecoDecay::constrainAngle(values[kMCPhiPP] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
           values[kMCPhiTildePP] = -999; // not computable
@@ -4634,7 +4521,7 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
 
     if (useRM) {
       double randomCostheta = gRandom->Uniform(-1., 1.);
-      double randomPhi = gRandom->Uniform(0., 2. * TMath::Pi());
+      double randomPhi = gRandom->Uniform(0., o2::constants::math::TwoPI);
       ROOT::Math::XYZVectorF zaxis_RM(randomCostheta, std::sqrt(1 - randomCostheta * randomCostheta) * std::cos(randomPhi), std::sqrt(1 - randomCostheta * randomCostheta) * std::sin(randomPhi));
       if (fgUsedVars[kMCCosThetaRM]) {
         values[kMCCosThetaRM] = zaxis_RM.Dot(v_CM);
@@ -4665,14 +4552,14 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
     ROOT::Math::PtEtaPhiMVector v_daughter = boostv12(t1.pdgCode() > 0 ? v1 : v2);
 
     // reaction plane
-    float phi = v_daughter.Phi() > TMath::Pi() ? v_daughter.Phi() - 2. * TMath::Pi() : v_daughter.Phi();
+    float phi = RecoDecay::constrainAngle(v_daughter.Phi(), -o2::constants::math::PI);
     values[kDeltaPhiRP_Random] = phi - values[kRandomPsi2];
-    values[kDeltaPhiRP_Random] = values[kDeltaPhiRP_Random] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_Random] : values[kDeltaPhiRP_Random];
+    values[kDeltaPhiRP_Random] = values[kDeltaPhiRP_Random] > o2::constants::math::PI ? o2::constants::math::TwoPI - values[kDeltaPhiRP_Random] : values[kDeltaPhiRP_Random];
     values[kDeltaPhiRP_MC] = phi - values[kMCEventPlaneAngle];
-    values[kDeltaPhiRP_MC] = values[kDeltaPhiRP_MC] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_MC] : values[kDeltaPhiRP_MC];
+    values[kDeltaPhiRP_MC] = values[kDeltaPhiRP_MC] > o2::constants::math::PI ? o2::constants::math::TwoPI - values[kDeltaPhiRP_MC] : values[kDeltaPhiRP_MC];
     // fold delta phi into [-pi/2, pi/2]
-    values[kDeltaPhiRP_Random] = values[kDeltaPhiRP_Random] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiRP_Random] : values[kDeltaPhiRP_Random];
-    values[kDeltaPhiRP_MC] = values[kDeltaPhiRP_MC] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiRP_MC] : values[kDeltaPhiRP_MC];
+    values[kDeltaPhiRP_Random] = values[kDeltaPhiRP_Random] > o2::constants::math::PIHalf ? o2::constants::math::PI - values[kDeltaPhiRP_Random] : values[kDeltaPhiRP_Random];
+    values[kDeltaPhiRP_MC] = values[kDeltaPhiRP_MC] > o2::constants::math::PIHalf ? o2::constants::math::PI - values[kDeltaPhiRP_MC] : values[kDeltaPhiRP_MC];
     values[kCos2DeltaPhiRP_Random] = TMath::Cos(2. * (phi - values[kRandomPsi2]));
     values[kCos2DeltaPhiRP_MC] = TMath::Cos(2. * (phi - values[kMCEventPlaneAngle]));
   }
@@ -5146,7 +5033,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
     values[kPt] = v12.Pt();
     values[kEta] = v12.Eta();
     // values[kPhi] = v12.Phi();
-    values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + o2::constants::math::TwoPI;
+    values[kPhi] = RecoDecay::constrainAngle(v12.Phi());
   } else {
     values[kPt1] = t1.pt();
     values[kEta1] = t1.eta();
@@ -6197,15 +6084,15 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     float sinPsi2CPP = b_FT0C_RF.Dot(yAxis_RF.Cross(daughterVec_RF));
     float Psi2CPP = sinPsi2CPP > 0 ? TMath::ACos(cosPsi2CPP) : -1. * TMath::ACos(cosPsi2CPP);
     values[kDeltaPhiPP_TPC] = phi_PP > Psi2APP ? phi_PP - Psi2APP : Psi2APP - phi_PP;
-    values[kDeltaPhiPP_TPC] = values[kDeltaPhiPP_TPC] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiPP_TPC] : values[kDeltaPhiPP_TPC];
+    values[kDeltaPhiPP_TPC] = values[kDeltaPhiPP_TPC] > o2::constants::math::PI ? o2::constants::math::TwoPI - values[kDeltaPhiPP_TPC] : values[kDeltaPhiPP_TPC];
     values[kDeltaPhiPP_FT0A] = phi_PP > Psi2BPP ? phi_PP - Psi2BPP : Psi2BPP - phi_PP;
-    values[kDeltaPhiPP_FT0A] = values[kDeltaPhiPP_FT0A] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiPP_FT0A] : values[kDeltaPhiPP_FT0A];
+    values[kDeltaPhiPP_FT0A] = values[kDeltaPhiPP_FT0A] > o2::constants::math::PI ? o2::constants::math::TwoPI - values[kDeltaPhiPP_FT0A] : values[kDeltaPhiPP_FT0A];
     values[kDeltaPhiPP_FT0C] = phi_PP > Psi2CPP ? phi_PP - Psi2CPP : Psi2CPP - phi_PP;
-    values[kDeltaPhiPP_FT0C] = values[kDeltaPhiPP_FT0C] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiPP_FT0C] : values[kDeltaPhiPP_FT0C];
+    values[kDeltaPhiPP_FT0C] = values[kDeltaPhiPP_FT0C] > o2::constants::math::PI ? o2::constants::math::TwoPI - values[kDeltaPhiPP_FT0C] : values[kDeltaPhiPP_FT0C];
     // fold delta phi to [0, pi/2]
-    values[kDeltaPhiPP_TPC] = values[kDeltaPhiPP_TPC] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiPP_TPC] : values[kDeltaPhiPP_TPC];
-    values[kDeltaPhiPP_FT0A] = values[kDeltaPhiPP_FT0A] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiPP_FT0A] : values[kDeltaPhiPP_FT0A];
-    values[kDeltaPhiPP_FT0C] = values[kDeltaPhiPP_FT0C] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiPP_FT0C] : values[kDeltaPhiPP_FT0C];
+    values[kDeltaPhiPP_TPC] = values[kDeltaPhiPP_TPC] > o2::constants::math::PIHalf ? o2::constants::math::PI - values[kDeltaPhiPP_TPC] : values[kDeltaPhiPP_TPC];
+    values[kDeltaPhiPP_FT0A] = values[kDeltaPhiPP_FT0A] > o2::constants::math::PIHalf ? o2::constants::math::PI - values[kDeltaPhiPP_FT0A] : values[kDeltaPhiPP_FT0A];
+    values[kDeltaPhiPP_FT0C] = values[kDeltaPhiPP_FT0C] > o2::constants::math::PIHalf ? o2::constants::math::PI - values[kDeltaPhiPP_FT0C] : values[kDeltaPhiPP_FT0C];
     values[kCos2DeltaPhiPP_TPC] = TMath::Cos(2. * (phi_PP - Psi2A));
     values[kCos2DeltaPhiPP_FT0A] = TMath::Cos(2. * (phi_PP - Psi2B));
     values[kCos2DeltaPhiPP_FT0C] = TMath::Cos(2. * (phi_PP - Psi2C));
@@ -6218,17 +6105,17 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kA2EP_PP_FT0C] = std::isnan(A2PP_FT0C) || std::isinf(A2PP_FT0C) ? -999. : A2PP_FT0C;
 
     // reaction plane
-    float phi = v_daughter.Phi() > TMath::Pi() ? 2. * TMath::Pi() - v_daughter.Phi() : v_daughter.Phi();
+    float phi = v_daughter.Phi() > o2::constants::math::PI ? o2::constants::math::TwoPI - v_daughter.Phi() : v_daughter.Phi();
     values[kDeltaPhiRP_TPC] = phi > Psi2A ? phi - Psi2A : Psi2A - phi;
-    values[kDeltaPhiRP_TPC] = values[kDeltaPhiRP_TPC] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_TPC] : values[kDeltaPhiRP_TPC];
+    values[kDeltaPhiRP_TPC] = values[kDeltaPhiRP_TPC] > o2::constants::math::PI ? o2::constants::math::TwoPI - values[kDeltaPhiRP_TPC] : values[kDeltaPhiRP_TPC];
     values[kDeltaPhiRP_FT0A] = phi > Psi2B ? phi - Psi2B : Psi2B - phi;
-    values[kDeltaPhiRP_FT0A] = values[kDeltaPhiRP_FT0A] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_FT0A] : values[kDeltaPhiRP_FT0A];
+    values[kDeltaPhiRP_FT0A] = values[kDeltaPhiRP_FT0A] > o2::constants::math::PI ? o2::constants::math::TwoPI - values[kDeltaPhiRP_FT0A] : values[kDeltaPhiRP_FT0A];
     values[kDeltaPhiRP_FT0C] = phi > Psi2C ? phi - Psi2C : Psi2C - phi;
-    values[kDeltaPhiRP_FT0C] = values[kDeltaPhiRP_FT0C] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_FT0C] : values[kDeltaPhiRP_FT0C];
+    values[kDeltaPhiRP_FT0C] = values[kDeltaPhiRP_FT0C] > o2::constants::math::PI ? o2::constants::math::TwoPI - values[kDeltaPhiRP_FT0C] : values[kDeltaPhiRP_FT0C];
     // fold delta phi to [0, pi/2]
-    values[kDeltaPhiRP_TPC] = values[kDeltaPhiRP_TPC] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiRP_TPC] : values[kDeltaPhiRP_TPC];
-    values[kDeltaPhiRP_FT0A] = values[kDeltaPhiRP_FT0A] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiRP_FT0A] : values[kDeltaPhiRP_FT0A];
-    values[kDeltaPhiRP_FT0C] = values[kDeltaPhiRP_FT0C] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiRP_FT0C] : values[kDeltaPhiRP_FT0C];
+    values[kDeltaPhiRP_TPC] = values[kDeltaPhiRP_TPC] > o2::constants::math::PIHalf ? o2::constants::math::PI - values[kDeltaPhiRP_TPC] : values[kDeltaPhiRP_TPC];
+    values[kDeltaPhiRP_FT0A] = values[kDeltaPhiRP_FT0A] > o2::constants::math::PIHalf ? o2::constants::math::PI - values[kDeltaPhiRP_FT0A] : values[kDeltaPhiRP_FT0A];
+    values[kDeltaPhiRP_FT0C] = values[kDeltaPhiRP_FT0C] > o2::constants::math::PIHalf ? o2::constants::math::PI - values[kDeltaPhiRP_FT0C] : values[kDeltaPhiRP_FT0C];
     values[kCos2DeltaPhiRP_TPC] = TMath::Cos(2. * (phi - Psi2A));
     values[kCos2DeltaPhiRP_FT0A] = TMath::Cos(2. * (phi - Psi2B));
     values[kCos2DeltaPhiRP_FT0C] = TMath::Cos(2. * (phi - Psi2C));
@@ -6354,14 +6241,7 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
   }
 
   if (fgUsedVars[kDeltaPhi]) {
-    double delta = dilepton.phi() - hadron.phi();
-    if (delta > 1.5f * o2::constants::math::PI) {
-      delta -= o2::constants::math::TwoPI;
-    }
-    if (delta < -o2::constants::math::PIHalf) {
-      delta += o2::constants::math::TwoPI;
-    }
-    values[kDeltaPhi] = delta;
+    values[kDeltaPhi] = RecoDecay::constrainAngle(dilepton.phi() - hadron.phi(), -o2::constants::math::PIHalf);
   }
   if (fgUsedVars[kDeltaPhiSym]) {
     double delta = std::abs(dilepton.phi() - hadron.phi());
@@ -6423,7 +6303,7 @@ void VarManager::FillEnergyCorrelatorTriple(T1 const& lepton1, T2 const& lepton2
     float randomPhi_toward = -o2::constants::math::PIHalf;
     float randomPhi_away = -o2::constants::math::PIHalf;
 
-    if ((deltaphi > -Transhigh * TMath::Pi() && deltaphi < -Translow * TMath::Pi()) || (deltaphi > Translow * TMath::Pi() && deltaphi < Transhigh * TMath::Pi())) {
+    if ((deltaphi > -Transhigh * o2::constants::math::PI && deltaphi < -Translow * o2::constants::math::PI) || (deltaphi > Translow * o2::constants::math::PI && deltaphi < Transhigh * o2::constants::math::PI)) {
       randomPhi_trans = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
       randomPhi_toward = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
       randomPhi_away = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
@@ -6487,7 +6367,7 @@ void VarManager::FillEnergyCorrelatorsUnfoldingTriple(T1 const& lepton1, T2 cons
     values[kMCCosChi_randomPhi_trans_gen] = -999.9f;
     float deltaphi_rec = RecoDecay::constrainAngle(dilepton.phi() - hadron.phi(), -o2::constants::math::PIHalf);
 
-    if ((deltaphi_rec > -Transhigh * TMath::Pi() && deltaphi_rec < -Translow * TMath::Pi()) || (deltaphi_rec > Translow * TMath::Pi() && deltaphi_rec < Transhigh * TMath::Pi())) {
+    if ((deltaphi_rec > -Transhigh * o2::constants::math::PI && deltaphi_rec < -Translow * o2::constants::math::PI) || (deltaphi_rec > Translow * o2::constants::math::PI && deltaphi_rec < Transhigh * o2::constants::math::PI)) {
       float randomPhi_trans_rec = gRandom->Uniform(-o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf);
       ROOT::Math::PtEtaPhiMVector v2_randomPhi_trans_rec(v2_rec.pt(), v2_rec.eta(), randomPhi_trans_rec, o2::constants::physics::MassPionCharged);
       values[kMCCosChi_randomPhi_trans_rec] = LorentzTransformJpsihadroncosChi("coschi", v1_rec, v2_randomPhi_trans_rec);
@@ -7402,7 +7282,7 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
   values[kPt] = v12.Pt();
   values[kEta] = v12.Eta();
   // values[kPhi] = v12.Phi();
-  values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + o2::constants::math::TwoPI;
+  values[kPhi] = RecoDecay::constrainAngle(v12.Phi());
   values[kRap] = -v12.Rapidity();
   double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
   double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
@@ -7416,14 +7296,7 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
   values[kPhi2] = t2.phi();
 
   if (fgUsedVars[kDeltaPhiPair2]) {
-    double phipair2 = v1.Phi() - v2.Phi();
-    if (phipair2 > 3 * TMath::Pi() / 2) {
-      values[kDeltaPhiPair2] = phipair2 - 2 * TMath::Pi();
-    } else if (phipair2 < -TMath::Pi() / 2) {
-      values[kDeltaPhiPair2] = phipair2 + 2 * TMath::Pi();
-    } else {
-      values[kDeltaPhiPair2] = phipair2;
-    }
+    values[kDeltaPhiPair2] = RecoDecay::constrainAngle(v1.Phi() - v2.Phi(), -o2::constants::math::PIHalf);
   }
 
   if (fgUsedVars[kDeltaEtaPair2]) {
@@ -7477,23 +7350,14 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
         values[kCosThetaHE] = zaxis_HE.Dot(v_CM);
       }
       if (fgUsedVars[kPhiHE]) {
-        values[kPhiHE] = TMath::ATan2(yaxis_HE.Dot(v_CM), xaxis_HE.Dot(v_CM));
-        if (values[kPhiHE] < 0) {
-          values[kPhiHE] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
-        }
+        values[kPhiHE] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_HE.Dot(v_CM), xaxis_HE.Dot(v_CM)));
       }
       if (fgUsedVars[kPhiTildeHE]) {
         if (fgUsedVars[kCosThetaHE] && fgUsedVars[kPhiHE]) {
           if (values[kCosThetaHE] > 0) {
-            values[kPhiTildeHE] = values[kPhiHE] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
-            if (values[kPhiTildeHE] < 0) {
-              values[kPhiTildeHE] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kPhiTildeHE] = RecoDecay::constrainAngle(values[kPhiHE] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
           } else {
-            values[kPhiTildeHE] = values[kPhiHE] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
-            if (values[kPhiTildeHE] < 0) {
-              values[kPhiTildeHE] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kPhiTildeHE] = RecoDecay::constrainAngle(values[kPhiHE] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
           values[kPhiTildeHE] = -999; // not computable
@@ -7509,23 +7373,14 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
         values[kCosThetaCS] = zaxis_CS.Dot(v_CM);
       }
       if (fgUsedVars[kPhiCS]) {
-        values[kPhiCS] = TMath::ATan2(yaxis_CS.Dot(v_CM), xaxis_CS.Dot(v_CM));
-        if (values[kPhiCS] < 0) {
-          values[kPhiCS] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
-        }
+        values[kPhiCS] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_CS.Dot(v_CM), xaxis_CS.Dot(v_CM)));
       }
       if (fgUsedVars[kPhiTildeCS]) {
         if (fgUsedVars[kCosThetaCS] && fgUsedVars[kPhiCS]) {
           if (values[kCosThetaCS] > 0) {
-            values[kPhiTildeCS] = values[kPhiCS] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
-            if (values[kPhiTildeCS] < 0) {
-              values[kPhiTildeCS] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kPhiTildeCS] = RecoDecay::constrainAngle(values[kPhiCS] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
           } else {
-            values[kPhiTildeCS] = values[kPhiCS] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
-            if (values[kPhiTildeCS] < 0) {
-              values[kPhiTildeCS] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kPhiTildeCS] = RecoDecay::constrainAngle(values[kPhiCS] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
           values[kPhiTildeCS] = -999; // not computable
@@ -7541,23 +7396,14 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
         values[kCosThetaPP] = zaxis_PP.Dot(v_CM) / std::sqrt(zaxis_PP.Mag2());
       }
       if (fgUsedVars[kPhiPP]) {
-        values[kPhiPP] = TMath::ATan2(yaxis_PP.Dot(v_CM), xaxis_PP.Dot(v_CM));
-        if (values[kPhiPP] < 0) {
-          values[kPhiPP] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
-        }
+        values[kPhiPP] = RecoDecay::constrainAngle(TMath::ATan2(yaxis_PP.Dot(v_CM), xaxis_PP.Dot(v_CM)));
       }
       if (fgUsedVars[kPhiTildePP]) {
         if (fgUsedVars[kCosThetaPP] && fgUsedVars[kPhiPP]) {
           if (values[kCosThetaPP] > 0) {
-            values[kPhiTildePP] = values[kPhiPP] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
-            if (values[kPhiTildePP] < 0) {
-              values[kPhiTildePP] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kPhiTildePP] = RecoDecay::constrainAngle(values[kPhiPP] - o2::constants::math::PIQuarter); // phi_tilde = phi - pi/4
           } else {
-            values[kPhiTildePP] = values[kPhiPP] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
-            if (values[kPhiTildePP] < 0) {
-              values[kPhiTildePP] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
-            }
+            values[kPhiTildePP] = RecoDecay::constrainAngle(values[kPhiPP] - 3. * o2::constants::math::PIQuarter); // phi_tilde = phi - 3pi/4
           }
         } else {
           values[kPhiTildePP] = -999; // not computable
@@ -7567,7 +7413,7 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
 
     if (useRM) {
       double randomCostheta = gRandom->Uniform(-1., 1.);
-      double randomPhi = gRandom->Uniform(0., 2. * TMath::Pi());
+      double randomPhi = gRandom->Uniform(0., o2::constants::math::TwoPI);
       ROOT::Math::XYZVectorF zaxis_RM(randomCostheta, std::sqrt(1 - randomCostheta * randomCostheta) * std::cos(randomPhi), std::sqrt(1 - randomCostheta * randomCostheta) * std::sin(randomPhi));
       if (fgUsedVars[kCosThetaRM]) {
         values[kCosThetaRM] = zaxis_RM.Dot(v_CM);
