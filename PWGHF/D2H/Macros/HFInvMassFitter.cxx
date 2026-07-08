@@ -326,7 +326,7 @@ void HFInvMassFitter::doFit()
     }
     mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / NDF
     // plot residual distribution
-    mResidualFrame = mass->frame(Title("Residual Distribution"));
+    mResidualFrame = mass->frame(Title(Form("%s", mHistoInvMass->GetTitle())));
     mResidualHist = mInvMassFrame->residHist("data_c", mHistoTemplateRefl ? "ReflBkg_c" : "Bkg_c");
     mResidualFrame->addPlotable(mResidualHist, "P");
     mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
