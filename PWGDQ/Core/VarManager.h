@@ -6765,7 +6765,9 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
     values[kVertexingTauxyProjectedNs] = values[kVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
     values[kVertexingTauzProjected] = values[kVertexingLzProjected] * KFGeoFourProng.GetMass() / TMath::Abs(KFGeoFourProng.GetPz());
     values[kKFChi2OverNDFGeo] = KFGeoFourProng.GetChi2() / KFGeoFourProng.GetNDF();
-  } else {
+  }
+  else
+  {
     return;
   }
 }
