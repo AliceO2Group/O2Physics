@@ -1355,9 +1355,9 @@ class VarManager : public TObject
     return (1.0 / harm) * TMath::ATan2(qnya, qnxa);
   };
 
-  static float getDeltaPsiInRange(float psi1, float psi2, float harmonic)
+  static float getDeltaPsiInRange(float psi1, float psi2, unsigned int harmonic)
   {
-    return RecoDecay::constrainAngle(psi1 - psi2, -o2::constants::math::PI / harmonic, static_cast<unsigned int>(harmonic));
+    return RecoDecay::constrainAngle(psi1 - psi2, -o2::constants::math::PI / harmonic, harmonic);
   }
   template <typename T, typename T1>
   static o2::dataformats::VertexBase RecalculatePrimaryVertex(T const& track0, T const& track1, const T1& collision);
