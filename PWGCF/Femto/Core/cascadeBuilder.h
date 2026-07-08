@@ -47,16 +47,19 @@ struct ConfCascadeFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};
   o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};
+  o2::framework::Configurable<float> massLambdaMin{"massLambdaMin", 1.0f, "Minimum mass of Lambda daughters in cascade decay"};
+  o2::framework::Configurable<float> massLambdaMax{"massLambdaMax", 1.2f, "Maximum mass of Lambda daughters in cascade decay"};
   o2::framework::Configurable<float> massXiMin{"massXiMin", 1.2f, "Minimum Xi mass"};
   o2::framework::Configurable<float> massXiMax{"massXiMax", 1.4f, "Maximum Xi mass"};
-  o2::framework::Configurable<float> rejectMassXiMin{"rejectMassXiMin", 1.317f, "Reject Minimum Xi mass for Omega hypothesis"};
-  o2::framework::Configurable<float> rejectMassXiMax{"rejectMassXiMax", 1.325f, "Rejection Maximum Xi mass for Omega hypothesis"};
-  o2::framework::Configurable<float> massOmegaMin{"massOmegaMin", 1.5f, "Minimum Omega mass"};
-  o2::framework::Configurable<float> massOmegaMax{"massOmegaMax", 1.9f, "Maximum Omega mass"};
+  o2::framework::Configurable<bool> rejectHypothesisOmega{"rejectHypothesisOmega", false, "Rejection of Omega hypothesis for Xi candidates"};
   o2::framework::Configurable<float> rejectMassOmegaMin{"rejectMassOmegaMin", 1.668f, "Reject minimum Omega mass for Xi hypothesis"};
   o2::framework::Configurable<float> rejectMassOmegaMax{"rejectMassOmegaMax", 1.676f, "Reject maximum Omega mass for Xi hypothesis"};
-  o2::framework::Configurable<float> massLambdaMin{"massLambdaMin", 1.0f, "Minimum Lambda mass"};
-  o2::framework::Configurable<float> massLambdaMax{"massLambdaMax", 1.2f, "Maximum Lambda mass"};
+
+  o2::framework::Configurable<float> massOmegaMin{"massOmegaMin", 1.5f, "Minimum Omega mass"};
+  o2::framework::Configurable<float> massOmegaMax{"massOmegaMax", 1.9f, "Maximum Omega mass"};
+  o2::framework::Configurable<bool> rejectHypothesisXi{"rejectHypothesisXi", false, "Rejection of Xi hypothesis for Omega candidates"};
+  o2::framework::Configurable<float> rejectMassXiMin{"rejectMassXiMin", 1.317f, "Reject Minimum Xi mass for Omega hypothesis"};
+  o2::framework::Configurable<float> rejectMassXiMax{"rejectMassXiMax", 1.325f, "Reject Maximum Xi mass for Omega hypothesis"};
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -192,6 +195,7 @@ class CascadeSelection : public BaseSelection<float, o2::analysis::femto::dataty
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
       mXiMassLowerLimit = filter.massXiMin.value;
       mXiMassUpperLimit = filter.massXiMax.value;
+      mRejectOmegaHypothesis = filter.rejectHypothesisOmega.value;
       mOmegaMassLowerLimit = filter.rejectMassOmegaMin.value;
       mOmegaMassUpperLimit = filter.rejectMassOmegaMax.value;
       this->addSelection(kBachelorTpcPion, cascadeSelectionNames.at(kBachelorTpcPion), config.bachelorTpcPion.value, limits::kAbsUpperLimit, skipMostPermissiveBit, isMinimalCut, false);
@@ -199,6 +203,7 @@ class CascadeSelection : public BaseSelection<float, o2::analysis::femto::dataty
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
       mOmegaMassLowerLimit = filter.massOmegaMin.value;
       mOmegaMassUpperLimit = filter.massOmegaMax.value;
+      mRejectXiHypothesis = filter.rejectHypothesisXi.value;
       mXiMassLowerLimit = filter.rejectMassXiMin.value;
       mXiMassUpperLimit = filter.rejectMassXiMax.value;
       this->addSelection(kBachelorTpcKaon, cascadeSelectionNames.at(kBachelorTpcKaon), config.bachelorTpcKaon.value, limits::kAbsUpperLimit, skipMostPermissiveBit, isMinimalCut, false);
@@ -305,13 +310,13 @@ class CascadeSelection : public BaseSelection<float, o2::analysis::femto::dataty
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
       // Xi candidate must be inside Xi window and outside Omega
       return (cascade.mXi() > mXiMassLowerLimit && cascade.mXi() < mXiMassUpperLimit) &&
-             (cascade.mOmega() < mOmegaMassLowerLimit || cascade.mOmega() > mOmegaMassUpperLimit);
+             (!mRejectOmegaHypothesis || (cascade.mOmega() < mOmegaMassLowerLimit || cascade.mOmega() > mOmegaMassUpperLimit));
     }
 
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
       // Omega candidate must be inside Omega window and outside Xi
       return (cascade.mOmega() > mOmegaMassLowerLimit && cascade.mOmega() < mOmegaMassUpperLimit) &&
-             (cascade.mXi() < mXiMassLowerLimit || cascade.mXi() > mXiMassUpperLimit);
+             (!mRejectXiHypothesis || (cascade.mXi() < mXiMassLowerLimit || cascade.mXi() > mXiMassUpperLimit));
     }
 
     return false; // should never happen
@@ -320,11 +325,13 @@ class CascadeSelection : public BaseSelection<float, o2::analysis::femto::dataty
   [[nodiscard]] bool passThroughAllCascades() const { return mPassThrough; }
 
  protected:
-  float mXiMassLowerLimit = 0.f;
-  float mXiMassUpperLimit = 999.f;
-
+  bool mRejectOmegaHypothesis = false;
   float mOmegaMassLowerLimit = 0.f;
   float mOmegaMassUpperLimit = 999.f;
+
+  bool mRejectXiHypothesis = false;
+  float mXiMassLowerLimit = 0.f;
+  float mXiMassUpperLimit = 999.f;
 
   bool mPassThrough = false;
 
