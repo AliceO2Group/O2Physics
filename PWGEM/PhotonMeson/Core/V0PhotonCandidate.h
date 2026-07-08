@@ -38,7 +38,7 @@ struct V0PhotonCandidate {
   V0PhotonCandidate() = default;
   // Set method for photonconversionbuilder
   template <class TTrack>
-  void setPhotonCandidate(const KFParticle& v0DecayVtx, const KFParticle& v0PV, const TTrack& pos, const KFParticle& posDecayVtx, const TTrack& ele, const KFParticle& eleDecayVtx, const auto& collision, float cospa, float cospaRZ, float cospaXY, float psipair, float phiv, CentType centType, auto posdcaXY, auto eledcaXY, auto posdcaZ, auto eledcaZ)
+  void setPhotonCandidate(const KFParticle& v0DecayVtx, const KFParticle& v0PV, const TTrack& pos, const KFParticle& posDecayVtx, const TTrack& ele, const KFParticle& eleDecayVtx, const auto& collision, float cospa_, float cospaRZ_, float cospaXY_, float psipair_, float phiv_, CentType centType_, auto posdcaXY_, auto eledcaXY_, auto posdcaZ_, auto eledcaZ_)
   {
     conversionPointx = v0DecayVtx.GetX();
     conversionPointy = v0DecayVtx.GetY();
@@ -82,28 +82,28 @@ struct V0PhotonCandidate {
 
     float v0mom = RecoDecay::sqrtSumOfSquares(v0DecayVtx.GetPx(), v0DecayVtx.GetPy(), v0DecayVtx.GetPz());
     float length = RecoDecay::sqrtSumOfSquares(v0DecayVtx.GetX() - collision.posX(), v0DecayVtx.GetY() - collision.posY(), v0DecayVtx.GetZ() - collision.posZ());
-    float dcaXV0ToPV = (v0DecayVtx.GetX() - v0DecayVtx.GetPx() * cospa * length / v0mom) - collision.posX();
-    float dcaYV0ToPV = (v0DecayVtx.GetY() - v0DecayVtx.GetPy() * cospa * length / v0mom) - collision.posY();
+    float dcaXV0ToPV = (v0DecayVtx.GetX() - v0DecayVtx.GetPx() * cospa_ * length / v0mom) - collision.posX();
+    float dcaYV0ToPV = (v0DecayVtx.GetY() - v0DecayVtx.GetPy() * cospa_ * length / v0mom) - collision.posY();
     float tmpSign = (dcaXV0ToPV * dcaYV0ToPV > 0.f) ? +1.f : -1.f;
 
     dcaXYV0ToPV = RecoDecay::sqrtSumOfSquares(dcaXV0ToPV, dcaYV0ToPV) * tmpSign;
-    dcaZV0ToPV = (v0DecayVtx.GetZ() - v0DecayVtx.GetPz() * cospa * length / v0mom) - collision.posZ();
+    dcaZV0ToPV = (v0DecayVtx.GetZ() - v0DecayVtx.GetPz() * cospa_ * length / v0mom) - collision.posZ();
 
     alpha = v0_alpha(posPx, posPy, posPz, elePx, elePy, elePz);
     qt = v0_qt(posPx, posPy, posPz, elePx, elePy, elePz);
 
-    this->cospa = cospa;
-    this->cospaRZ = cospaRZ;
-    this->cospaXY = cospaXY;
-    this->psipair = psipair;
-    this->phiv = phiv;
-    this->centType = centType;
-    this->posdcaXY = posdcaXY;
-    this->eledcaXY = eledcaXY;
-    this->posdcaZ = posdcaZ;
-    this->eledcaZ = eledcaZ;
+    cospa = cospa_;
+    cospaRZ = cospaRZ_;
+    cospaXY = cospaXY_;
+    psipair = psipair_;
+    phiv = phiv_;
+    centType = centType_;
+    posdcaXY = posdcaXY_;
+    eledcaXY = eledcaXY_;
+    posdcaZ = posdcaZ_;
+    eledcaZ = eledcaZ_;
 
-    switch (centType) {
+    switch (centType_) {
       case CentType::CentFT0A:
         cent = collision.centFT0A();
         break;
@@ -117,7 +117,7 @@ struct V0PhotonCandidate {
   }
 
   // Set-Method for V0PhotonCut
-  void setPhoton(const auto& v0, const auto& pos, const auto& ele, float cent, CentType centType)
+  void setPhoton(const auto& v0, const auto& pos, const auto& ele, float cent_, CentType centType_)
   {
     conversionPointx = v0.vx();
     conversionPointy = v0.vy();
@@ -174,8 +174,8 @@ struct V0PhotonCandidate {
       psipair = v0.psipair();
       phiv = v0.phiv();
     }
-    this->cent = cent;
-    this->centType = centType;
+    cent = cent_;
+    centType = centType_;
   }
 
   // Getter functions
