@@ -121,7 +121,6 @@ static float getDeltaPhi(float phi1, float phi2)
   return dphi;
 };
 
-
 struct GlobalMuonMatching {
 
   static constexpr int GlobalTrackTypeMax = 2;
@@ -1290,8 +1289,8 @@ struct GlobalMuonMatching {
 
   template <class EVT, class BC, class TMUON>
   void prepareEventMixingMatchingCandidates(EVT const& collisions,
-                                 BC const& bcs,
-                                 TMUON const& muonTracks)
+                                            BC const& bcs,
+                                            TMUON const& muonTracks)
   {
     LOGF(info, "Filling mixed matching candidate tables");
 
