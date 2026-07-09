@@ -17,6 +17,7 @@
 #include "PWGDQ/Core/VarManager.h"
 
 #include "Common/Core/fwdtrackUtilities.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FwdTrackReAlignTables.h"
 #include "Tools/ML/MlResponse.h"
@@ -109,17 +110,8 @@ constexpr std::array<int, 11> SNDetElemCh = {0, 4, 8, 12, 16, 34, 52, 78, 104, 1
 // compute minimum difference between azimuthal angles
 static float getDeltaPhi(float phi1, float phi2)
 {
-  float dphi = phi1 - phi2;
-  static constexpr float pi = TMath::Pi();
-  static constexpr float twopi = pi * 2.f;
-  if (dphi > pi) {
-    dphi -= twopi;
-  }
-  if (dphi < -pi) {
-    dphi += twopi;
-  }
-  return dphi;
-};
+  return RecoDecay::constrainAngle(phi1 - phi2, -o2::constants::math::PI);
+}
 
 struct GlobalMuonMatching {
 
@@ -220,7 +212,7 @@ struct GlobalMuonMatching {
   struct : ConfigurableGroup {
     Configurable<int> cfgMixingDepth{"cfgMixingDepth", -1, "Maximum number of mixed candidate groups per MCH track (-1: no limit)"};
     Configurable<int64_t> cfgMinDeltaBc{"cfgMinDeltaBc", 3564, "Minimum DeltaBc between mixed collisions"};
-    Configurable<float> cfgMaxDeltaPhi{"cfgMaxDeltaPhi", static_cast<float>(TMath::Pi() / 10), "Maximum DelptaPhi between mixed MCH tracks (rad)"};
+    Configurable<float> cfgMaxDeltaPhi{"cfgMaxDeltaPhi", static_cast<float>(o2::constants::math::PI / 10), "Maximum DelptaPhi between mixed MCH tracks (rad)"};
     Configurable<float> cfgMaxDeltaR{"cfgMaxDeltaR", 10.f, "Maximum DeltaR between mixed MCH tracks"};
     Configurable<float> cfgMaxDeltaAttempts{"cfgMaxDeltaAttempts", 0.1f, "Maximum relative difference in match attempts"};
     Configurable<float> cfgMaxDeltaZ{"cfgMaxDeltaZ", 1.f, "Maximum deltaZ between mixed collisions"};
