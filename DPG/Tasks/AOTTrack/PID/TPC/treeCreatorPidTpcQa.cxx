@@ -38,6 +38,7 @@
 #include <ReconstructionDataFormats/PID.h>
 
 #include <cmath>
+#include <cstdint>
 #include <string>
 
 using namespace o2;
@@ -122,7 +123,7 @@ struct treeCreatorPidTpcQa {
     ccdb->setFatalWhenNull(false);
   }
 
-  template <o2::track::PID::ID Id, typename TrackType>
+  template <o2::track::PID::ID Id, bool IsFullTable, bool IsTofTable, typename TrackType>
   void processSingleParticle(CollisionsExtra const& collisions,
                              TrackType const& tracks)
   {
@@ -162,12 +163,30 @@ struct treeCreatorPidTpcQa {
           continue;
         }
 
-        const int nClNormalized = std::sqrt(nClNorm / track.tpcNClsFound());
+        const float nClNormalized = std::sqrt(nClNorm / track.tpcNClsFound());
         const float phi = track.phi();
         const float tgl = track.tgl();
         const float tpcInnerParam = track.tpcInnerParam();
+        const int16_t trackSign = track.sign();
+        const float nSigmaTpc = o2::aod::pidutils::tpcNSigma<Id>(track);
 
-        rowPidTpcQa(Id, ft0Occ, hadronicRate, multTPC, nClNormalized, phi, tgl, tpcInnerParam, rapidity);
+        float dedxDiff{UndefValueFloat};
+        float dedxExpected{UndefValueFloat};
+        float expSigma{UndefValueFloat};
+
+        if constexpr (IsFullTable) {
+          dedxDiff = o2::aod::pidutils::tpcExpSignalDiff<Id>(track);
+          dedxExpected = track.tpcSignal() - dedxDiff;
+          expSigma = o2::aod::pidutils::tpcExpSigma<Id>(track);
+        }
+
+        float nSigmaTof{UndefValueFloat};
+
+        if constexpr (IsTofTable) {
+          nSigmaTof = o2::aod::pidutils::tofNSigma<Id>(track);
+        }
+
+        rowPidTpcQa(Id, ft0Occ, hadronicRate, multTPC, nClNormalized, phi, tgl, tpcInnerParam, rapidity, trackSign, nSigmaTpc, dedxExpected, dedxDiff, expSigma, nSigmaTof);
       } // tracksFromCollision
     } // collisions
   }
@@ -178,7 +197,7 @@ struct treeCreatorPidTpcQa {
                            soa::Join<TrackCandidates, PidTableTPC> const& tracks, \
                            aod::BCsWithTimestamps const&)                         \
   {                                                                               \
-    processSingleParticle<PID::ParticleId>(collisions, tracks);                   \
+    processSingleParticle<PID::ParticleId, false, false>(collisions, tracks);     \
   }                                                                               \
   PROCESS_SWITCH(treeCreatorPidTpcQa, process##ParticleId, Form("Process for the %s hypothesis for TPC NSigma QA", #ParticleId), false);
 
@@ -199,7 +218,7 @@ struct treeCreatorPidTpcQa {
                                soa::Join<TrackCandidates, PidTableTPC> const& tracks, \
                                aod::BCsWithTimestamps const&)                         \
   {                                                                                   \
-    processSingleParticle<PID::ParticleId>(collisions, tracks);                       \
+    processSingleParticle<PID::ParticleId, true, false>(collisions, tracks);          \
   }                                                                                   \
   PROCESS_SWITCH(treeCreatorPidTpcQa, processFull##ParticleId, Form("Process for the %s hypothesis for full TPC PID QA", #ParticleId), false);
 
@@ -220,7 +239,7 @@ struct treeCreatorPidTpcQa {
                                       soa::Join<TrackCandidates, PidTableTPC, PidTableTOF> const& tracks, \
                                       aod::BCsWithTimestamps const&)                                      \
   {                                                                                                       \
-    processSingleParticle<PID::ParticleId>(collisions, tracks);                                           \
+    processSingleParticle<PID::ParticleId, true, true>(collisions, tracks);                               \
   }                                                                                                       \
   PROCESS_SWITCH(treeCreatorPidTpcQa, processFullWithTOF##ParticleId, Form("Process for the %s hypothesis for full TPC PID QA with the TOF info added", #ParticleId), false);
 

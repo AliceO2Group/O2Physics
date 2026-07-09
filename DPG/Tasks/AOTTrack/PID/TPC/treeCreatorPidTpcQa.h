@@ -22,8 +22,20 @@
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 
+#include <cstdint>
+
 namespace o2::aod
 {
+namespace dpg_tpcpidqa
+{
+DECLARE_SOA_COLUMN(Sign, sign, int16_t);
+DECLARE_SOA_COLUMN(NSigmaTpc, nSigmaTpc, float);
+DECLARE_SOA_COLUMN(DedxExpected, dedxTpc, float);
+DECLARE_SOA_COLUMN(DedxDiff, dedxDiff, float);
+DECLARE_SOA_COLUMN(ExpSigma, expSigma, float);
+DECLARE_SOA_COLUMN(NSigmaTof, nSigmaTof, float);
+} // namespace dpg_tpcpidqa
+
 DECLARE_SOA_TABLE(QaPidTpc, "AOD", "QAPIDTPC",
                   tpcskims::PidIndex,
                   tpcskims::Ft0Occ,
@@ -33,7 +45,13 @@ DECLARE_SOA_TABLE(QaPidTpc, "AOD", "QAPIDTPC",
                   o2::aod::track::Phi,
                   o2::aod::track::Tgl,
                   o2::aod::track::TPCInnerParam,
-                  o2::aod::track::Y)
+                  o2::aod::track::Y,
+                  dpg_tpcpidqa::Sign,
+                  dpg_tpcpidqa::NSigmaTpc,
+                  dpg_tpcpidqa::DedxExpected,
+                  dpg_tpcpidqa::DedxDiff,
+                  dpg_tpcpidqa::ExpSigma,
+                  dpg_tpcpidqa::NSigmaTof)
 } // namespace o2::aod
 
 #endif // DPG_TASKS_AOTTRACK_PID_TPC_TREECREATORPIDTPCQA_H_
