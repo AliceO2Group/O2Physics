@@ -48,11 +48,10 @@ ClassImp(DihadronContainer);
 DihadronContainer::DihadronContainer() : TNamed(),
                                          mCorrHist(nullptr)
 {
-    // Default constructor
+  // Default constructor
 }
 
-
-DihadronContainer::DihadronContainer(const char* name, const char* objTitle, 
+DihadronContainer::DihadronContainer(const char* name, const char* objTitle,
                                      const std::vector<o2::framework::AxisSpec>& correlationAxis,
                                      const uint8_t nStep) : TNamed(name, objTitle),
                                                             mCorrHist(nullptr),
@@ -73,7 +72,6 @@ DihadronContainer::DihadronContainer(const char* name, const char* objTitle,
   LOGF(info, "DihadronContainer with %ld bins in the correlation histogram (approx. %ld-%ld MB of memory)", bins, bins * 4 / 1024 / 1024, bins * 8 / 1024 / 1024);
 
   mCorrHist = HistFactory::createHist<StepTHnF>({"mCorrHist", "d^{2}N_{ch}/d#varphid#eta", {HistType::kStepTHnF, pairAxis, nStep}}).release();
-
 }
 
 //_____________________________________________________________________________
@@ -133,7 +131,6 @@ void DihadronContainer::deepCopy(DihadronContainer* from)
     target->RebinnedAdd(source);
   }
 }
-
 
 //____________________________________________________________________
 Long64_t DihadronContainer::Merge(TCollection* list)
@@ -196,7 +193,6 @@ void DihadronContainer::Reset()
   for (Int_t step = 0; step < mCorrHist->getNSteps(); step++) {
     mCorrHist->getTHn(step)->Reset();
   }
-
 }
 
 THnBase* DihadronContainer::changeToThn(THnBase* sparse)
@@ -205,6 +201,5 @@ THnBase* DihadronContainer::changeToThn(THnBase* sparse)
 
   return THn::CreateHn(Form("%s_thn", sparse->GetName()), sparse->GetTitle(), sparse);
 }
-
 
 ClassImp(DihadronContainer);
