@@ -269,7 +269,6 @@ struct femtoDreamTripletTaskTrackTrackCascade {
       const auto& childrenBac = bachChild.childrenIds();
       auto posID = childrenPos[0];
       auto negID = childrenNeg[1];
-      auto bacID = childrenBac[2];
       ThreeBodyQARegistry.fill(HIST("TripletTaskQA/hTestPairCleaner"), posID, negID);
       if (!((posChild.cut() & ChildPos_CutBit) == ChildPos_CutBit &&
             (posChild.pidcut() & ChildPos_TPCBit) == ChildPos_TPCBit &&
