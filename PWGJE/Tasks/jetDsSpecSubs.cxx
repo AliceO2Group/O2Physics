@@ -31,6 +31,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
+#include <THnSparse.h>
 #include <TVector3.h>
 
 #include <cmath>
