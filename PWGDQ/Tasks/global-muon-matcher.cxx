@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file global-muon-matcher.cxx
+/// \file global-muon-matcher.cxx // o2-linter: disable=name/file-cpp,name/workflow-file
 /// \brief Task for analysis MFT-MCH muon matching
 /// \author Andrea Ferrero
 ///
@@ -1238,7 +1238,7 @@ struct GlobalMuonMatching {
       }
 
       // set the number of match attempts for this track
-      for (auto& mchTrackInfo : mMchTrackInfos) {
+      for (auto& mchTrackInfo : mMchTrackInfos) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
         const auto& mchTrack = muonTracks.rawIteratorAt(mchTrackInfo.first);
         mchTrackInfo.second.nMatchAttempts = getMftMchMatchAttempts(collisions, bcs, mchTrack, mftTracks);
       }
@@ -1264,7 +1264,7 @@ struct GlobalMuonMatching {
       }
 
       // set the number of match attempts for this track
-      for (auto& mchTrackInfo : mMchTrackInfos) {
+      for (auto& mchTrackInfo : mMchTrackInfos) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
         mchTrackInfo.second.nMatchAttempts = mchTrackInfo.second.matchingCandidates.size();
       }
     }
@@ -1293,7 +1293,7 @@ struct GlobalMuonMatching {
     const float maxDeltaAttemptsRel = configEventMixing.cfgMaxDeltaAttempts.value;
     const float maxDeltaZ = configEventMixing.cfgMaxDeltaZ.value;
 
-    for (auto& [mchIndex1, mchTrackInfo1] : mMchTrackInfos) {
+    for (auto& [mchIndex1, mchTrackInfo1] : mMchTrackInfos) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
       const auto& mchTrack1 = muonTracks.rawIteratorAt(mchIndex1);
 
       if (!mchTrack1.has_collision()) {
@@ -1358,7 +1358,7 @@ struct GlobalMuonMatching {
         // add the candidates of MCH track #2 to the list of mixed candidates of track #1
         mchTrackInfo1.mixedMatchingCandidates.push_back(mchTrackInfo2.matchingCandidates);
         // update the muon track index of the mixed candidates to the index of track #1
-        for (auto& candidate : mchTrackInfo1.mixedMatchingCandidates.back()) {
+        for (auto& candidate : mchTrackInfo1.mixedMatchingCandidates.back()) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
           candidate.muonTrackId = mchIndex1;
         }
       }
