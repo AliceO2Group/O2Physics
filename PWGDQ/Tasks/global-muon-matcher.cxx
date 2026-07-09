@@ -80,9 +80,9 @@ namespace o2::aod
 {
 namespace globalmuonmatching
 {
-DECLARE_SOA_COLUMN(IsTagged, isTagged, bool);                                               //! Whether the MCH(-MID) track passes tagging cuts
-DECLARE_SOA_COLUMN(MatchRanking, matchRanking, int32_t);                                    //! Match candidate ranking (-1 for base MCH entries)
-DECLARE_SOA_COLUMN(MixedGroupIndex, mixedGroupIndex, int32_t);                              //! Mixed-event group index (-1 for same-event candidates)
+DECLARE_SOA_COLUMN(IsTagged, isTagged, bool);                  //! Whether the MCH(-MID) track passes tagging cuts
+DECLARE_SOA_COLUMN(MatchRanking, matchRanking, int32_t);       //! Match candidate ranking (-1 for base MCH entries)
+DECLARE_SOA_COLUMN(MixedGroupIndex, mixedGroupIndex, int32_t); //! Mixed-event group index (-1 for same-event candidates)
 } // namespace globalmuonmatching
 
 DECLARE_SOA_TABLE(GmmCandFwdTrkExtras, "AOD", "GMMCANDEXTRA", //! Extra info joinable to FwdTracksReAlign
