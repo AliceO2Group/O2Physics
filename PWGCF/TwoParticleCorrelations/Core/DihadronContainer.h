@@ -24,6 +24,7 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
+#include <cstdint>
 #include <vector>
 
 class TH1;
@@ -43,7 +44,7 @@ class DihadronContainer : public TNamed
 {
  public:
   DihadronContainer();
-  DihadronContainer(const char* name, const char* objTitle, const std::vector<o2::framework::AxisSpec>& corrAxis, const uint8_t nStep = 1);
+  DihadronContainer(const char* name, const char* objTitle, const std::vector<o2::framework::AxisSpec>& correlationAxis, const uint8_t nStep = 1);
   virtual ~DihadronContainer();
 
   StepTHn* getCorrHist() { return mCorrHist; }

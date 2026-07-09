@@ -16,19 +16,14 @@
 
 #include "PWGCF/TwoParticleCorrelations/Core/DihadronContainer.h"
 
-#include <CommonConstants/MathConstants.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
 #include <Framework/StepTHn.h>
 
-#include <TCanvas.h>
 #include <TCollection.h>
-#include <TF1.h>
 #include <THn.h>
 #include <TIterator.h>
 #include <TList.h>
-#include <TMath.h>
-#include <TMathBase.h>
 #include <TNamed.h>
 #include <TObject.h>
 #include <TString.h>
@@ -36,17 +31,16 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
+#include <cstdint>
 #include <cstring>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::constants::math;
 
 ClassImp(DihadronContainer);
 
-DihadronContainer::DihadronContainer() : TNamed(),
-                                         mCorrHist(nullptr)
+DihadronContainer::DihadronContainer() : mCorrHist(nullptr), nCorrStep(1)
 {
   // Default constructor
 }
@@ -62,16 +56,15 @@ DihadronContainer::DihadronContainer(const char* name, const char* objTitle,
     return;
   }
 
-  std::vector<o2::framework::AxisSpec> pairAxis(correlationAxis);
-  long bins = 1;
+  int64_t bins = 1;
   LOGF(info, "Creating DihadronContainer:");
-  for (uint iAxis = 0; iAxis < pairAxis.size(); iAxis++) {
-    LOGF(info, "pairAxis[%d].getNbins() = %d", iAxis, pairAxis[iAxis].getNbins());
-    bins *= pairAxis[iAxis].getNbins();
+  for (uint iAxis = 0; iAxis < correlationAxis.size(); iAxis++) {
+    LOGF(info, "correlationAxis[%d].getNbins() = %d", iAxis, correlationAxis[iAxis].getNbins());
+    bins *= correlationAxis[iAxis].getNbins();
   }
   LOGF(info, "DihadronContainer with %ld bins in the correlation histogram (approx. %ld-%ld MB of memory)", bins, bins * 4 / 1024 / 1024, bins * 8 / 1024 / 1024);
 
-  mCorrHist = HistFactory::createHist<StepTHnF>({"mCorrHist", "d^{2}N_{ch}/d#varphid#eta", {HistType::kStepTHnF, pairAxis, nStep}}).release();
+  mCorrHist = HistFactory::createHist<StepTHnF>({"mCorrHist", "d^{2}N_{ch}/d#varphid#eta", {HistType::kStepTHnF, correlationAxis, nStep}}).release();
 }
 
 //_____________________________________________________________________________
@@ -80,7 +73,7 @@ DihadronContainer::DihadronContainer(const DihadronContainer& c) : TNamed(c),
                                                                    nCorrStep(1)
 {
   // DihadronContainer copy constructor
-  ((DihadronContainer&)c).Copy(*this);
+  static_cast<const DihadronContainer&>(c).Copy(*this);
 }
 
 //____________________________________________________________________
@@ -98,7 +91,7 @@ DihadronContainer& DihadronContainer::operator=(const DihadronContainer& c)
 {
   // assigment operator
   if (this != &c) {
-    ((DihadronContainer&)c).Copy(*this);
+    static_cast<const DihadronContainer&>(c).Copy(*this);
   }
   return *this;
 }
@@ -107,7 +100,7 @@ DihadronContainer& DihadronContainer::operator=(const DihadronContainer& c)
 void DihadronContainer::Copy(TObject& c) const
 {
   // copy function
-  DihadronContainer& target = (DihadronContainer&)c;
+  auto target = dynamic_cast<DihadronContainer&>(c);
 
   if (mCorrHist) {
     target.mCorrHist = dynamic_cast<StepTHn*>(mCorrHist->Clone());
@@ -151,7 +144,7 @@ Long64_t DihadronContainer::Merge(TCollection* list)
 
   // collections of objects
   const UInt_t kMaxLists = 1;
-  TList** lists = new TList*[kMaxLists];
+  auto lists = new TList*[kMaxLists];
 
   for (UInt_t i = 0; i < kMaxLists; i++) {
     lists[i] = new TList;
@@ -160,7 +153,7 @@ Long64_t DihadronContainer::Merge(TCollection* list)
   Int_t count = 0;
   while ((obj = iter->Next())) {
 
-    DihadronContainer* entry = dynamic_cast<DihadronContainer*>(obj);
+    auto entry = dynamic_cast<DihadronContainer*>(obj);
     if (entry == nullptr) {
       continue;
     }
