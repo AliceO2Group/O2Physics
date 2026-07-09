@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file global-muon-matcher.cxx // o2-linter: disable=name/file-cpp,name/workflow-file
+/// \file global-muon-matcher.cxx // o2-linter: disable=name/file-cpp,name/workflow-file (legacy workflow executable name)
 /// \brief Task for analysis MFT-MCH muon matching
 /// \author Andrea Ferrero
 ///
@@ -1271,7 +1271,7 @@ struct GlobalMuonMatching {
 
     std::vector<int64_t> taggedMuons;
     getTaggedMuons(collisions, muonTracks, taggedMuons);
-    for (int64_t mchTrackIndex : taggedMuons) {
+    for (const auto& mchTrackIndex : taggedMuons) {
       auto it = mMchTrackInfos.find(mchTrackIndex);
       if (it != mMchTrackInfos.end()) {
         it->second.isTagged = true;
