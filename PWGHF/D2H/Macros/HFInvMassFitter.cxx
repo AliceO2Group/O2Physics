@@ -618,6 +618,7 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, const std::vector<std::string>& 
   mInvMassFrame->GetXaxis()->SetTitleOffset(1.2);
   mInvMassFrame->GetYaxis()->SetTitleOffset(1.8);
   gPad->SetLeftMargin(0.15);
+  gPad->SetRightMargin(0.02);
   mInvMassFrame->GetYaxis()->SetTitle(Form("%s", mHistoInvMass->GetYaxis()->GetTitle()));
   mInvMassFrame->GetXaxis()->SetTitle(Form("%s", mHistoInvMass->GetXaxis()->GetTitle()));
   mInvMassFrame->Draw();
@@ -637,7 +638,7 @@ void HFInvMassFitter::drawResidual(TVirtualPad* pad)
     return;
   }
   pad->cd();
-  mResidualFrame->GetYaxis()->SetTitle("");
+  mResidualFrame->GetYaxis()->SetTitle(mHistoInvMass->GetYaxis()->GetTitle());
   auto* textInfo = new TPaveText(0.12, 0.65, 0.47, .89, "NDC");
   textInfo->SetBorderSize(0);
   textInfo->SetFillStyle(0);
@@ -650,6 +651,9 @@ void HFInvMassFitter::drawResidual(TVirtualPad* pad)
     textInfo->AddText(Form("#sigma_{2} = %.3f #pm %.3f", mRooSecSigmaSgn->getVal(), mRooSecSigmaSgn->getError()));
   }
   mResidualFrame->addObject(textInfo);
+  gPad->SetLeftMargin(0.15);
+  gPad->SetRightMargin(0.02);
+  mResidualFrame->GetYaxis()->SetTitleOffset(1.8);
   mResidualFrame->Draw();
   highlightPeakRegion(mResidualFrame);
   std::cout << "drawResidual() finish\n";
@@ -674,6 +678,8 @@ void HFInvMassFitter::drawRatio(TVirtualPad* pad)
   line->SetLineStyle(2);
   line->SetLineWidth(2);
   mRatioFrame->addObject(line);
+  gPad->SetLeftMargin(0.15);
+  gPad->SetRightMargin(0.02);
   mRatioFrame->Draw();
   highlightPeakRegion(mRatioFrame);
   std::cout << "drawRatio() finish\n";
