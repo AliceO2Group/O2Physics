@@ -35,7 +35,6 @@
 #include <Framework/Configurable.h>
 #include <Framework/DeviceSpec.h>
 #include <Framework/RunningWorkflowInfo.h>
-#include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 
 #include <TFile.h>
