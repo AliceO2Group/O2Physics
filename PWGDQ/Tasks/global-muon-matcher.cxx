@@ -286,7 +286,7 @@ struct GlobalMuonMatching {
 
     [[nodiscard]] o2::track::TrackParCovFwd asTrackParCovFwd() const
     {
-      return o2::track::TrackParCovFwd(static_cast<const o2::track::TrackParCovFwd&>(*this));
+      return {static_cast<const o2::track::TrackParCovFwd&>(*this)};
     }
 
    private:
@@ -1506,7 +1506,7 @@ struct GlobalMuonMatching {
         continue;
       }
 
-      auto processGroup = [&](const std::vector<MatchingCandidate>& candidatesGroup, int32_t mixedGroupIndex) {
+      auto processGroup = [&, mchIndex](const std::vector<MatchingCandidate>& candidatesGroup, int32_t mixedGroupIndex) {
         std::vector<MatchingCandidate> groupResults;
         groupResults.reserve(candidatesGroup.size());
 
@@ -1595,7 +1595,7 @@ struct GlobalMuonMatching {
         continue;
       }
 
-      auto processGroup = [&](const std::vector<MatchingCandidate>& candidatesGroup, int32_t mixedGroupIndex) {
+      auto processGroup = [&, mchIndex](const std::vector<MatchingCandidate>& candidatesGroup, int32_t mixedGroupIndex) {
         std::vector<MatchingCandidate> groupResults;
         groupResults.reserve(candidatesGroup.size());
 
