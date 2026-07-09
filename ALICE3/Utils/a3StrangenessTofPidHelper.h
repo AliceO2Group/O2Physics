@@ -14,8 +14,8 @@
 /// \author Jesper Karlsson Gumprecht <jesper.gumprecht@cern.ch>
 ///
 
-#ifndef ALICE3_UTILS_UTILSSTRANGENESSTOFPID_H_
-#define ALICE3_UTILS_UTILSSTRANGENESSTOFPID_H_
+#ifndef ALICE3_UTILS_A3STRANGNESSTOFPIDHELPER_H_
+#define ALICE3_UTILS_A3STRANGNESSTOFPIDHELPER_H_
 
 #include "ALICE3/Core/TrackUtilities.h"
 
@@ -383,4 +383,4 @@ class StrangenessTofPid<Topology::Cascade> : public StrangenessTofPidBase
 };
 
 } // namespace o2::upgrade::stratofpid
-#endif // ALICE3_UTILS_UTILSSTRANGENESSTOFPID_H_
+#endif // ALICE3_UTILS_A3STRANGNESSTOFPIDHELPER_H_
