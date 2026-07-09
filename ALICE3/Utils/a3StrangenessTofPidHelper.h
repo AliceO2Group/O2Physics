@@ -190,7 +190,7 @@ class StrangenessTofPidBase
     return track.propagateTo(targetX, mMagneticField);
   }
 
- [[nodiscard]] float calculateArrivalTime(const o2::track::TrackParCov& track, const std::array<float, 3> vtx, const float radius, const float mass) const
+  [[nodiscard]] float calculateArrivalTime(const o2::track::TrackParCov& track, const std::array<float, 3> vtx, const float radius, const float mass) const
   {
     o2::track::TrackParCov propagatedTrack(track);
     if (!propagateTrackToOriginalRadius(propagatedTrack, vtx)) {
@@ -342,7 +342,7 @@ class StrangenessTofPid<Topology::Cascade> : public StrangenessTofPidBase
     const float cascExpectedTime = calculateArrivalTime(mCascTrack, vtx, std::hypot(vtxCascade[0], vtxCascade[1]), CandidateInfo<TCand>::CascMass);
     const float bachExpectedTimeInner = cascExpectedTime + calculateArrivalTime(mBachTrack, vtxCascade, mInnerRadius, CandidateInfo<TCand>::BachMass);
     const float bachExpectedTimeOuter = cascExpectedTime + calculateArrivalTime(mBachTrack, vtxCascade, mOuterRadius, CandidateInfo<TCand>::BachMass);
-  
+
     if (!mMeasuredTimeSmeared) {
       mBachMeasuredTimeInner = smear(mBachTrackTime + calculateArrivalTime(mBachTrack, vtxCascade, mInnerRadius, mTrueBachCandMass), mInnerResolution);
       mBachMeasuredTimeOuter = smear(mBachTrackTime + calculateArrivalTime(mBachTrack, vtxCascade, mOuterRadius, mTrueBachCandMass), mOuterResolution);
