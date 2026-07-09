@@ -18,14 +18,15 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
+
 #include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -121,7 +122,6 @@ enum {
   kRecTrkTypeend
 };
 
-
 static constexpr TrackSelectionFlags::flagtype TrackSelectionIts =
   TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
   TrackSelectionFlags::kITSHits;
@@ -129,8 +129,7 @@ static constexpr TrackSelectionFlags::flagtype TrackSelectionTpc =
   TrackSelectionFlags::kTPCNCls |
   TrackSelectionFlags::kTPCCrossedRowsOverNCls |
   TrackSelectionFlags::kTPCChi2NDF;
-static constexpr TrackSelectionFlags::flagtype TrackSelectionDca =
-  TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
+// static constexpr TrackSelectionFlags::flagtype TrackSelectionDca =  TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
 static constexpr TrackSelectionFlags::flagtype TrackSelectionDcaxyOnly =
   TrackSelectionFlags::kDCAxy;
 
@@ -194,7 +193,7 @@ struct HeavyionMultiplicity {
   ConfigurableAxis binsImpactPar{"binsImpactPar", {VARIABLE_WIDTH, 0.0, 3.00065, 4.28798, 6.14552, 7.6196, 8.90942, 10.0897, 11.2002, 12.2709, 13.3167, 14.4173, 23.2518}, "Binning of the impact parameter axis"};
   ConfigurableAxis binsMult{"binsMult", {500, 0.0f, +500.0f}, ""};
   ConfigurableAxis binsDCA{"binsDCA", {500, -10.0f, 10.0f}, ""};
-  
+
   Configurable<bool> isApplyTFcut{"isApplyTFcut", true, "Enable TimeFrameBorder cut"};
   Configurable<bool> isApplyITSROcut{"isApplyITSROcut", true, "Enable ITS ReadOutFrameBorder cut"};
   Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
@@ -220,17 +219,17 @@ struct HeavyionMultiplicity {
   Configurable<bool> selectCollidingBCs{"selectCollidingBCs", true, "BC analysis: select colliding BCs"};
   Configurable<bool> selectTVX{"selectTVX", true, "BC analysis: select TVX"};
   Configurable<bool> selectFV0OrA{"selectFV0OrA", true, "BC analysis: select FV0OrA"};
-  Configurable<bool> isApplyDCAstandardcuts{"isApplyDCAstandardcuts",true, "Apply DCA standard run 2 cuts"};
+  Configurable<bool> isApplyDCAstandardcuts{"isApplyDCAstandardcuts", true, "Apply DCA standard run 2 cuts"};
   Configurable<bool> isApplyDCAcustomcuts{"isApplyDCAcustomcuts", false, "Apply DCA custom cuts"};
-  Configurable<float> cDcazP0 {"cDcazP0",  1.0f,"dca parameter"};
-  Configurable<float> cDcazP1 {"cDcazP1",  1.0f,"dca parameter"};
-  Configurable<float> cDcazP2 {"cDcazP2",  1.0f,"dca parameter"};
-  Configurable<float> cDcaxyP0{"cDcaxyP0",1.0f,"dca parameter"};
-  Configurable<float> cDcaxyP1{"cDcaxyP1",1.0f,"dca parameter"};
-  Configurable<float> cDcaxyP2{"cDcaxyP2",1.0f,"dca parameter"};
-  
+  Configurable<float> cDcazP0{"cDcazP0", 1.0f, "dcaz parameter0"};
+  Configurable<float> cDcazP1{"cDcazP1", 1.0f, "dcaz parameter1"};
+  Configurable<float> cDcazP2{"cDcazP2", 1.0f, "dcaz parameter2"};
+  Configurable<float> cDcaxyP0{"cDcaxyP0", 1.0f, "dcaxy parameter0"};
+  Configurable<float> cDcaxyP1{"cDcaxyP1", 1.0f, "dcaxy parameter1"};
+  Configurable<float> cDcaxyP2{"cDcaxyP2", 1.0f, "dcaxy parameter2"};
+
   void init(InitContext const&)
-  {      
+  {
     AxisSpec axisMult = {multHistBin, "Mult", "MultAxis"};
     AxisSpec axisPV = {pvHistBin, "PV", "PVAxis"};
     AxisSpec axisFv0aMult = {fv0aMultHistBin, "fv0a", "FV0AMultAxis"};
@@ -260,19 +259,18 @@ struct HeavyionMultiplicity {
     x->SetBinLabel(9, "ApplyNoHighMultCollInPrevRof");
     x->SetBinLabel(10, "INEL > 0");
 
-
-    if(doprocessDCAvsptData) {
+    if (doprocessDCAvsptData) {
       histos.add("hdcaxyvspt", "dca to pv in the xy plane", kTH2D, {dcaAxis, axisPt}, false);
-      histos.add("hdcazvspt" , "dca to pv in the z axis", kTH2D, {dcaAxis, axisPt}, false);
+      histos.add("hdcazvspt", "dca to pv in the z axis", kTH2D, {dcaAxis, axisPt}, false);
     }
 
-    if(doprocessDCAvsptMC) {
+    if (doprocessDCAvsptMC) {
       histos.add("hdcaxyvsptMC", "dca to pv in the xy plane MC", kTH2D, {dcaAxis, axisPt}, false);
       histos.add("hdcazvsptMC", "dca to pv in the z axis MC", kTH2D, {dcaAxis, axisPt}, false);
       histos.add("hdcaxyvsptMCprimary", "dca to pv in the xy plane MC primary particles", kTH2D, {dcaAxis, axisPt}, false);
       histos.add("hdcazvsptMCprimary", "dca to pv in the z axis MC primary particles", kTH2D, {dcaAxis, axisPt}, false);
     }
-    
+
     if (doprocessData) {
       histos.add("hdcaxy", "dca to pv in the xy plane", kTH1D, {dcaAxis}, false);
       histos.add("hdcaz", "dca to pv in the z axis", kTH1D, {dcaAxis}, false);
@@ -507,11 +505,11 @@ struct HeavyionMultiplicity {
   template <typename CheckTrack>
   bool isTrackSelected(CheckTrack const& track)
   {
-    if(isApplyDCAcustomcuts) {
-      if(std::abs(track.dcaXY()) > cDcaxyP0 + cDcaxyP1 / pow(track.pt(), cDcaxyP2))
-	return false;
-      if(std::abs(track.dcaZ()) > cDcazP0 + cDcazP1 / pow(track.pt(), cDcazP2))
-	return false;
+    if (isApplyDCAcustomcuts) {
+      if (std::abs(track.dcaXY()) > cDcaxyP0 + cDcaxyP1 / pow(track.pt(), cDcaxyP2))
+        return false;
+      if (std::abs(track.dcaZ()) > cDcazP0 + cDcazP1 / pow(track.pt(), cDcazP2))
+        return false;
     }
     if (std::abs(track.eta()) >= etaRange) {
       return false;
@@ -547,35 +545,30 @@ struct HeavyionMultiplicity {
     return true;
   }
 
-
-
-
-  
   expressions::Filter trackSelectionProperMixed = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
                                                   ncheckbit(aod::track::trackCutFlag, TrackSelectionIts) &&
                                                   ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
                                                          ncheckbit(aod::track::trackCutFlag, TrackSelectionTpc), true) &&
-    ifnode(isApplyDCAstandardcuts.node(), nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDcaxyOnly), true);
+                                                  ifnode(isApplyDCAstandardcuts.node(), nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, TrackSelectionDcaxyOnly), true);
 
-
-  void processDCAvsptData(CollisionDataTable::iterator const& cols, FilTrackDataTable const& tracks) {
-     if (!isEventSelected(cols)) {
+  void processDCAvsptData(CollisionDataTable::iterator const& cols, FilTrackDataTable const& tracks)
+  {
+    if (!isEventSelected(cols)) {
       return;
     }
 
     for (const auto& track : tracks) {
-      
-      if (!isTrackSelected(track)) 
+
+      if (!isTrackSelected(track))
         continue;
 
-      histos.fill(HIST("hdcaxyvspt"), track.dcaXY(), track.pt()); 
-      histos.fill(HIST("hdcazvspt"), track.dcaZ(), track.pt());   
-      
+      histos.fill(HIST("hdcaxyvspt"), track.dcaXY(), track.pt());
+      histos.fill(HIST("hdcazvspt"), track.dcaZ(), track.pt());
     }
-    
   }
 
-  void processDCAvsptMC(soa::Join<CollisionMCTrueTable, aod::McCollsExtra>::iterator const& mcCollision, CollisionMCRecTable const& RecCols, TrackMCTrueTable const&, FilTrackMCRecTable const& RecTracks) {
+  void processDCAvsptMC(soa::Join<CollisionMCTrueTable, aod::McCollsExtra>::iterator const& mcCollision, CollisionMCRecTable const& RecCols, TrackMCTrueTable const&, FilTrackMCRecTable const& RecTracks)
+  {
 
     for (const auto& RecCol : RecCols) {
       if (!isEventSelected(RecCol)) {
@@ -589,30 +582,25 @@ struct HeavyionMultiplicity {
 
       for (const auto& Rectrack : recTracksPart) {
 
-	if (!isTrackSelected(Rectrack))
+        if (!isTrackSelected(Rectrack))
           continue;
-        
+
         if (!Rectrack.has_mcParticle())
-	  continue;
-      
+          continue;
 
-	histos.fill(HIST("hdcaxyvsptMC"), Rectrack.dcaXY(), Rectrack.pt());
-	histos.fill(HIST("hdcazvsptMC"), Rectrack.dcaZ(), Rectrack.pt());   
+        histos.fill(HIST("hdcaxyvsptMC"), Rectrack.dcaXY(), Rectrack.pt());
+        histos.fill(HIST("hdcazvsptMC"), Rectrack.dcaZ(), Rectrack.pt());
 
-	auto mcpart = Rectrack.mcParticle();
-	
-	if (!isGenTrackSelected(mcpart)) {
-	  histos.fill(HIST("hdcaxyvsptMCprimary"), Rectrack.dcaXY(), Rectrack.pt());  
-	  histos.fill(HIST("hdcazvsptMCprimary"), Rectrack.dcaZ(), Rectrack.pt());    
-	}
+        auto mcpart = Rectrack.mcParticle();
+
+        if (!isGenTrackSelected(mcpart)) {
+          histos.fill(HIST("hdcaxyvsptMCprimary"), Rectrack.dcaXY(), Rectrack.pt());
+          histos.fill(HIST("hdcazvsptMCprimary"), Rectrack.dcaZ(), Rectrack.pt());
+        }
       }
-    }    
+    }
   }
 
-
-
-
-  
   void processData(CollisionDataTable::iterator const& cols, FilTrackDataTable const& tracks)
   {
     if (!isEventSelected(cols)) {
@@ -1120,7 +1108,7 @@ struct HeavyionMultiplicity {
     histos.fill(HIST("BcCentFT0CHist"), multbc.centFT0C());
     histos.fill(HIST("BcCentFT0MHist"), multbc.centFT0M());
   }
-  
+
   PROCESS_SWITCH(HeavyionMultiplicity, processDCAvsptData, "process DCA data", false);
   PROCESS_SWITCH(HeavyionMultiplicity, processDCAvsptMC, "process DCA MC", false);
   PROCESS_SWITCH(HeavyionMultiplicity, processData, "process data CentFT0C", false);
