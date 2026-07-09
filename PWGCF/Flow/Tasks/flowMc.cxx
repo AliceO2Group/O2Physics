@@ -218,6 +218,7 @@ struct FlowMc {
     // pT histograms
     histos.add<TH1>("hImpactParameter", "hImpactParameter", HistType::kTH1D, {axisB});
     histos.add<TH2>("hNchVsImpactParameter", "hNchVsImpactParameter", HistType::kTH2D, {axisB, axisNch});
+    histos.add<TH2>("hNchRecoVsNchGen", "hNchRecoVsNchGen", HistType::kTH2D, {axisNch, axisNch});
     histos.add<TH1>("hEventPlaneAngle", "hEventPlaneAngle", HistType::kTH1D, {axisPhi});
     histos.add<TH2>("hPtVsPhiGenerated", "hPtVsPhiGenerated", HistType::kTH2D, {axisPhi, axisPt});
     histos.add<TH2>("hPtVsPhiGlobal", "hPtVsPhiGlobal", HistType::kTH2D, {axisPhi, axisPt});
@@ -549,6 +550,7 @@ struct FlowMc {
 
     int64_t nCh = 0;
     int64_t nChGlobal = 0;
+    int64_t nChGen = 0;
     float centrality = 0;
     float lRandom = fRndm->Rndm();
     float weff = 1.;
@@ -606,6 +608,7 @@ struct FlowMc {
           continue;
         if (std::fabs(mcParticle.eta()) > cfgCutEta) // main acceptance
           continue;
+        nChGen++;
         if (mcParticle.has_tracks()) {
           auto const& tracks = mcParticle.tracks_as<FilteredTracks>();
           for (auto const& track : tracks) {
@@ -632,6 +635,7 @@ struct FlowMc {
           }
         }
       }
+      histos.fill(HIST("hNchRecoVsNchGen"), nChGlobal, nChGen);
       if (cfgTrackDensityCorrUse && cfgFlowCumulantEnabled) {
         psi2Est = std::atan2(q2y, q2x) / 2.;
         psi3Est = std::atan2(q3y, q3x) / 3.;
