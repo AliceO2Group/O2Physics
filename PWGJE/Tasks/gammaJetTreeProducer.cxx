@@ -309,7 +309,7 @@ struct GammaJetTreeProducer {
           trackSourceIndex.push_back(originalIndex);
         }
       }
-      if (trackEta.size() > 0) {
+      if (!trackEta.empty()) {
         delete trackTree;
         trackTree = new TKDTree<int, float>(trackEta.size(), 2, 1);
         trackTree->SetData(0, trackEta.data());
@@ -358,7 +358,7 @@ struct GammaJetTreeProducer {
           mcParticleSourceIndex.push_back(originalIndex);
         }
       }
-      if (mcParticleEta.size() > 0) {
+      if (!mcParticleEta.empty()) {
         delete mcParticleTree;
         mcParticleTree = new TKDTree<int, float>(mcParticleEta.size(), 2, 1);
         mcParticleTree->SetData(0, mcParticleEta.data());
@@ -924,7 +924,7 @@ struct GammaJetTreeProducer {
   /// \brief Gets the origin bitmap for a cluster
   /// \param cluster The cluster to check
   /// \param mcParticles The MC particles collection
-  /// \return A a pari containing the bitmap of the origin of the particle, as well as the MC index of the associated MC gen particle
+  /// \return A pair containing the bitmap of the origin of the particle, as well as the MC index of the associated MC gen particle
   template <typename T, typename U>
   std::pair<uint16_t, int> getClusterOrigin(const T& cluster, U const& mcParticles)
   {
@@ -1244,43 +1244,43 @@ struct GammaJetTreeProducer {
       auto [origin, mcIndex] = getClusterOrigin(mcCluster, mcParticles);
       float leadingEnergyFraction = mcCluster.amplitudeA()[0] / mcCluster.energy();
       // Fill MC origin QA histograms
-      if ((origin & (1 << static_cast<uint16_t>(gjanalysis::ClusterOrigin::kPhoton))) != 0) {
+      if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ClusterOrigin::kPhoton))) {
         mHistograms.fill(HIST("clusterMC_E_Photon"), mcCluster.energy());
         mHistograms.fill(HIST("clusterMC_m02_Photon"), mcCluster.m02());
       }
-      if ((origin & (1 << static_cast<uint16_t>(gjanalysis::ClusterOrigin::kPromptPhoton))) != 0) {
+      if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ClusterOrigin::kPromptPhoton))) {
         mHistograms.fill(HIST("clusterMC_E_PromptPhoton"), mcCluster.energy());
         mHistograms.fill(HIST("clusterMC_m02_PromptPhoton"), mcCluster.m02());
       }
-      if ((origin & (1 << static_cast<uint16_t>(gjanalysis::ClusterOrigin::kDirectPromptPhoton))) != 0) {
+      if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ClusterOrigin::kDirectPromptPhoton))) {
         mHistograms.fill(HIST("clusterMC_E_DirectPromptPhoton"), mcCluster.energy());
         mHistograms.fill(HIST("clusterMC_m02_DirectPromptPhoton"), mcCluster.m02());
       }
-      if ((origin & (1 << static_cast<uint16_t>(gjanalysis::ClusterOrigin::kFragmentationPhoton))) != 0) {
+      if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ClusterOrigin::kFragmentationPhoton))) {
         mHistograms.fill(HIST("clusterMC_E_FragmentationPhoton"), mcCluster.energy());
         mHistograms.fill(HIST("clusterMC_m02_FragmentationPhoton"), mcCluster.m02());
       }
-      if ((origin & (1 << static_cast<uint16_t>(gjanalysis::ClusterOrigin::kDecayPhoton))) != 0) {
+      if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ClusterOrigin::kDecayPhoton))) {
         mHistograms.fill(HIST("clusterMC_E_DecayPhoton"), mcCluster.energy());
         mHistograms.fill(HIST("clusterMC_m02_DecayPhoton"), mcCluster.m02());
       }
-      if ((origin & (1 << static_cast<uint16_t>(gjanalysis::ClusterOrigin::kDecayPhotonPi0))) != 0) {
+      if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ClusterOrigin::kDecayPhotonPi0))) {
         mHistograms.fill(HIST("clusterMC_E_DecayPhotonPi0"), mcCluster.energy());
         mHistograms.fill(HIST("clusterMC_m02_DecayPhotonPi0"), mcCluster.m02());
       }
-      if ((origin & (1 << static_cast<uint16_t>(gjanalysis::ClusterOrigin::kDecayPhotonEta))) != 0) {
+      if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ClusterOrigin::kDecayPhotonEta))) {
         mHistograms.fill(HIST("clusterMC_E_DecayPhotonEta"), mcCluster.energy());
         mHistograms.fill(HIST("clusterMC_m02_DecayPhotonEta"), mcCluster.m02());
       }
-      if ((origin & (1 << static_cast<uint16_t>(gjanalysis::ClusterOrigin::kMergedPi0))) != 0) {
+      if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ClusterOrigin::kMergedPi0))) {
         mHistograms.fill(HIST("clusterMC_E_MergedPi0"), mcCluster.energy());
         mHistograms.fill(HIST("clusterMC_m02_MergedPi0"), mcCluster.m02());
       }
-      if ((origin & (1 << static_cast<uint16_t>(gjanalysis::ClusterOrigin::kMergedEta))) != 0) {
+      if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ClusterOrigin::kMergedEta))) {
         mHistograms.fill(HIST("clusterMC_E_MergedEta"), mcCluster.energy());
         mHistograms.fill(HIST("clusterMC_m02_MergedEta"), mcCluster.m02());
       }
-      if ((origin & (1 << static_cast<uint16_t>(gjanalysis::ClusterOrigin::kConvertedPhoton))) != 0) {
+      if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ClusterOrigin::kConvertedPhoton))) {
         mHistograms.fill(HIST("clusterMC_E_ConvertedPhoton"), mcCluster.energy());
         mHistograms.fill(HIST("clusterMC_m02_ConvertedPhoton"), mcCluster.m02());
       }
@@ -1357,7 +1357,7 @@ struct GammaJetTreeProducer {
     fastjet::ClusterSequenceArea clusterSeq(jetReclusterer.findJets(jetConstituents, jetReclustered));
     jetReclustered = sorted_by_pt(jetReclustered);
 
-    if (jetReclustered.size() == 0) {
+    if (jetReclustered.empty()) {
       return;
     }
 
@@ -1412,7 +1412,7 @@ struct GammaJetTreeProducer {
     fastjet::ClusterSequenceArea clusterSeq(jetReclusterer.findJets(jetConstituents, jetReclustered));
     jetReclustered = sorted_by_pt(jetReclustered);
 
-    if (jetReclustered.size() == 0) {
+    if (jetReclustered.empty()) {
       return;
     }
 
@@ -1525,28 +1525,28 @@ struct GammaJetTreeProducer {
       mHistograms.fill(HIST("mcGenTrigger_Eta"), particle.eta());
       mHistograms.fill(HIST("mcGenTrigger_Phi"), particle.phi());
       mHistograms.fill(HIST("mcGenTrigger_Pt"), particle.pt());
-      if ((origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kPromptPhoton))) != 0) {
+      if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ParticleOrigin::kPromptPhoton))) {
         mHistograms.fill(HIST("mcGenTrigger_E_PromptPhoton"), particle.energy());
       }
-      if ((origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDirectPromptPhoton))) != 0) {
+      if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDirectPromptPhoton))) {
         mHistograms.fill(HIST("mcGenTrigger_E_DirectPromptPhoton"), particle.energy());
       }
-      if ((origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kFragmentationPhoton))) != 0) {
+      if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ParticleOrigin::kFragmentationPhoton))) {
         mHistograms.fill(HIST("mcGenTrigger_E_FragmentationPhoton"), particle.energy());
       }
-      if ((origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDecayPhoton))) != 0) {
+      if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDecayPhoton))) {
         mHistograms.fill(HIST("mcGenTrigger_E_DecayPhoton"), particle.energy());
       }
-      if ((origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDecayPhotonPi0))) != 0) {
+      if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDecayPhotonPi0))) {
         mHistograms.fill(HIST("mcGenTrigger_E_DecayPhotonPi0"), particle.energy());
       }
-      if ((origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDecayPhotonEta))) != 0) {
+      if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDecayPhotonEta))) {
         mHistograms.fill(HIST("mcGenTrigger_E_DecayPhotonEta"), particle.energy());
       }
-      if ((origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDecayPhotonOther))) != 0) {
+      if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ParticleOrigin::kDecayPhotonOther))) {
         mHistograms.fill(HIST("mcGenTrigger_E_DecayPhotonOther"), particle.energy());
       }
-      if ((origin & (1 << static_cast<uint16_t>(gjanalysis::ParticleOrigin::kPi0))) != 0) {
+      if (TESTBIT(origin, static_cast<uint16_t>(gjanalysis::ParticleOrigin::kPi0))) {
         mHistograms.fill(HIST("mcGenTrigger_E_Pi0"), particle.energy());
       }
     }
