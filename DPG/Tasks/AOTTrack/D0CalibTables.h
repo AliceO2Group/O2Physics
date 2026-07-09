@@ -338,10 +338,10 @@ DECLARE_SOA_COLUMN(TpcNumSigmaPi, tpcNumSigmaPi, int8_t);                   //! 
 DECLARE_SOA_COLUMN(TpcNumSigmaKa, tpcNumSigmaKa, int8_t);                   //! compressed NsigmaTPC for kaons
 DECLARE_SOA_COLUMN(TofNumSigmaPi, tofNumSigmaPi, int8_t);                   //! compressed NsigmaTOF for pions
 DECLARE_SOA_COLUMN(TofNumSigmaKa, tofNumSigmaKa, int8_t);                   //! compressed NsigmaTOF for kaons
-DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, uint8_t);                        //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, uint8_t);                        //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(TRDChi2, trdChi2, uint8_t);                              //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
-DECLARE_SOA_COLUMN(TOFChi2, tofChi2, uint8_t);                              //! compressed NsigmaTOF for kaons // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, uint8_t);                        // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(TPCChi2NCl, tpcChi2NCl, uint8_t);                        // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(TRDChi2, trdChi2, uint8_t);                              // o2-linter: disable=name/o2-column
+DECLARE_SOA_COLUMN(TOFChi2, tofChi2, uint8_t);                              // o2-linter: disable=name/o2-column
 DECLARE_SOA_COLUMN(CmoPrimUnfm80, cmoPrimUnfm80, uint8_t);
 DECLARE_SOA_COLUMN(CmoFV0AUnfm80, cmoFV0AUnfm80, uint8_t);
 DECLARE_SOA_COLUMN(CmoFT0AUnfm80, cmoFT0AUnfm80, uint8_t);
