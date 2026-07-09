@@ -41,31 +41,29 @@ class StepTHn;
 
 class DihadronContainer : public TNamed
 {
-    public:
-        DihadronContainer();
-        DihadronContainer(const char* name, const char* objTitle, const std::vector<o2::framework::AxisSpec>& corrAxis, const uint8_t nStep = 1);
-        virtual ~DihadronContainer();
+ public:
+  DihadronContainer();
+  DihadronContainer(const char* name, const char* objTitle, const std::vector<o2::framework::AxisSpec>& corrAxis, const uint8_t nStep = 1);
+  virtual ~DihadronContainer();
 
-        StepTHn* getCorrHist() { return mCorrHist; }
-        void setCorrHist(StepTHn* hist) { mCorrHist = hist; }
-        void printCorrHist();
+  StepTHn* getCorrHist() { return mCorrHist; }
+  void setCorrHist(StepTHn* hist) { mCorrHist = hist; }
+  void printCorrHist();
 
-        DihadronContainer(const DihadronContainer& c);
-        DihadronContainer& operator=(const DihadronContainer& corr);
-        virtual void Copy(TObject& c) const; // NOLINT: Making this override breaks compilation for unknown reason
-        void deepCopy(DihadronContainer* from);
+  DihadronContainer(const DihadronContainer& c);
+  DihadronContainer& operator=(const DihadronContainer& corr);
+  virtual void Copy(TObject& c) const; // NOLINT: Making this override breaks compilation for unknown reason
+  void deepCopy(DihadronContainer* from);
 
-        virtual Long64_t Merge(TCollection* list);
-        void Reset();
-        THnBase* changeToThn(THnBase* sparse);
+  virtual Long64_t Merge(TCollection* list);
+  void Reset();
+  THnBase* changeToThn(THnBase* sparse);
 
-    protected:
-        StepTHn* mCorrHist;            // container for n-dimension correlations
-        uint8_t nCorrStep;
+ protected:
+  StepTHn* mCorrHist; // container for n-dimension correlations
+  uint8_t nCorrStep;
 
-    ClassDef(DihadronContainer, 2) // underlying event histogram container
+  ClassDef(DihadronContainer, 2) // underlying event histogram container
 };
-
-
 
 #endif // PWGCF_TWOPARTICLECORRELATIONS_CORE_DIHADRONCONTAINER_H_
