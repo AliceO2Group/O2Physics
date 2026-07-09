@@ -43,6 +43,7 @@ struct ConfMc : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("MonteCarlo");
   o2::framework::Configurable<bool> passThrough{"passThrough", false, "Passthrough all MC collisions and particles"};
   o2::framework::Configurable<bool> findLastPartonicMother{"findLastPartonicMother", true, "If true, the partonic mother will be the first parton directly after the initial collision. If false, the partonic mother will be the last parton before hadronization"};
+  o2::framework::Configurable<float> etaAcceptanceMcOnly{"etaAcceptanceMcOnly", 0.8, "For MC ONLY processing. |eta| acceptance for estimating primary track multiplicity"};
 };
 
 struct McBuilderProducts : o2::framework::ProducesGroup {
@@ -152,6 +153,7 @@ class McBuilder
       return;
     }
     mPassThrough = config.passThrough.value;
+    mEtaAcceptanceMcOnly = config.etaAcceptanceMcOnly.value;
     mFindLastPartonicMother = config.findLastPartonicMother.value;
     LOG(info) << "Initialization done...";
   }
@@ -192,6 +194,28 @@ class McBuilder
     if constexpr (modes::isFlagSet(system, modes::System::kPbPb)) {
       centrality = mcCol.centFT0C();
       multiplicity = mcCol.multMCNParticlesEta08();
+    }
+
+    mcProducts.producedMcCollisions(
+      mcCol.posZ(),
+      multiplicity,
+      centrality);
+    mCollisionMap.emplace(mcCol.globalIndex(), mcProducts.producedMcCollisions.lastIndex());
+  }
+
+  // for mc only
+  template <typename T1, typename T2, typename T3>
+  void fillMcCollision(T1 const& mcCol, T2 const& mcParticles, T3& mcProducts)
+  {
+    float centrality = 0;   // no centrality estimator for mc only, so set to 0
+    float multiplicity = 0; // no multiplicity estimator for mc only
+
+    // define multiplicity ourselves by counting primary particles for |eta|,0.8
+    // this is similar to how define it in data
+    for (auto const& mcParticle : mcParticles) {
+      if (mcParticle.isPhysicalPrimary() && (std::fabs(mcParticle.eta()) < mEtaAcceptanceMcOnly)) {
+        multiplicity += 1;
+      }
     }
 
     mcProducts.producedMcCollisions(
@@ -590,6 +614,8 @@ class McBuilder
   bool mProduceXiLabels = false;
   bool mProduceOmegaLabels = false;
   bool mProduceMcMotherLabels = false;
+
+  float mEtaAcceptanceMcOnly = 0.8;
 
   std::unordered_map<int64_t, int64_t> mCollisionMap;
 

@@ -546,7 +546,7 @@ struct FemtoProducer {
   {
     mcBuilder.reset(mcParticles);
     for (const auto& mcCol : mcCols) {
-      mcBuilder.fillMcCollision<modes::System::kMC>(mcCol, mcProducts);
+      mcBuilder.fillMcCollision(mcCol, mcParticles, mcProducts);
       auto particlesThisCollision = mcParticles.sliceBy(perMcCollision, mcCol.globalIndex());
       for (const auto& mcParticle : particlesThisCollision) {
         mcBuilder.fillMcParticle<modes::System::kMC>(mcParticle, mcParticles, mcCol, mcProducts);
