@@ -45,7 +45,7 @@ class DihadronContainer : public TNamed
  public:
   DihadronContainer();
   DihadronContainer(const char* name, const char* objTitle, const std::vector<o2::framework::AxisSpec>& correlationAxis, const uint8_t nStep = 1);
-  virtual ~DihadronContainer();
+  virtual ~DihadronContainer(); // NOLINT(modernize-use-override)
 
   StepTHn* getCorrHist() { return mCorrHist; }
   void setCorrHist(StepTHn* hist) { mCorrHist = hist; }

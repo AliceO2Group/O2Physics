@@ -58,7 +58,7 @@ DihadronContainer::DihadronContainer(const char* name, const char* objTitle,
 
   int64_t bins = 1;
   LOGF(info, "Creating DihadronContainer:");
-  for (uint iAxis = 0; iAxis < correlationAxis.size(); iAxis++) {
+  for (UInt_t iAxis = 0; iAxis < correlationAxis.size(); iAxis++) {
     LOGF(info, "correlationAxis[%d].getNbins() = %d", iAxis, correlationAxis[iAxis].getNbins());
     bins *= correlationAxis[iAxis].getNbins();
   }
@@ -70,10 +70,13 @@ DihadronContainer::DihadronContainer(const char* name, const char* objTitle,
 //_____________________________________________________________________________
 DihadronContainer::DihadronContainer(const DihadronContainer& c) : TNamed(c),
                                                                    mCorrHist(nullptr),
-                                                                   nCorrStep(1)
+                                                                   nCorrStep(c.nCorrStep)
 {
   // DihadronContainer copy constructor
-  static_cast<const DihadronContainer&>(c).Copy(*this);
+  if(c.mCorrHist)
+    mCorrHist = dynamic_cast<StepTHn*>(c.mCorrHist->Clone());
+  else
+    mCorrHist = nullptr;
 }
 
 //____________________________________________________________________
@@ -91,7 +94,7 @@ DihadronContainer& DihadronContainer::operator=(const DihadronContainer& c)
 {
   // assigment operator
   if (this != &c) {
-    static_cast<const DihadronContainer&>(c).Copy(*this);
+    c.Copy(*this);
   }
   return *this;
 }
