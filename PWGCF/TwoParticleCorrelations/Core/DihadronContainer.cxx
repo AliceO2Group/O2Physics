@@ -73,7 +73,7 @@ DihadronContainer::DihadronContainer(const DihadronContainer& c) : TNamed(c),
                                                                    nCorrStep(c.nCorrStep)
 {
   // DihadronContainer copy constructor
-  if(c.mCorrHist)
+  if (c.mCorrHist)
     mCorrHist = dynamic_cast<StepTHn*>(c.mCorrHist->Clone());
   else
     mCorrHist = nullptr;
