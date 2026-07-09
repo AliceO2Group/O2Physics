@@ -1346,7 +1346,7 @@ struct PidFlowPtCorr {
   template <char... chars>
   void fillProfilevnpt(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent, const double& ptSum, const double& nch, const double& meanPt = 0)
   {
-    double dnx, val;
+    double dnx = 0.0, val = 0.0;
     dnx = fGFW->Calculate(corrconf, 0, true).real();
     if (dnx == 0) {
       return;
@@ -1355,13 +1355,12 @@ struct PidFlowPtCorr {
     if (std::fabs(val) < 1) {
       registry.fill(tarName, cent, val * (ptSum / nch - meanPt), dnx * nch);
     }
-    return;
   }
 
   template <char... chars>
   void fillProfilePOIvnpt(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent, const double& ptSum, const double& nch)
   {
-    double dnx, val;
+    double dnx = 0.0, val = 0.0;
     dnx = fGFW->Calculate(corrconf, 0, true).real();
     if (dnx == 0) {
       return;
@@ -1371,7 +1370,6 @@ struct PidFlowPtCorr {
     if (std::fabs(val) < 1) {
       registry.fill(tarName, cent, ptSum / nch, val, dnx);
     }
-    return;
   }
 
   // fill fgfw helper
@@ -1578,16 +1576,20 @@ struct PidFlowPtCorr {
   bool particleSelected(mcParticle& particle)
   {
     // eta
-    if (std::fabs(particle.eta()) > trkQualityOpts.cfgCutEta.value)
+    if (std::fabs(particle.eta()) > trkQualityOpts.cfgCutEta.value) {
       return false;
+    }
     // pt
-    if (particle.pt() < trkQualityOpts.cfgCutPtMin.value)
+    if (particle.pt() < trkQualityOpts.cfgCutPtMin.value) {
       return false;
-    if (particle.pt() > trkQualityOpts.cfgCutPtMax.value)
+    }
+    if (particle.pt() > trkQualityOpts.cfgCutPtMax.value) {
       return false;
+    }
     // stable particle
-    if (!isStable(particle.pdgCode()))
+    if (!isStable(particle.pdgCode())) {
       return false;
+    }
 
     return true;
   }
@@ -1800,15 +1802,18 @@ struct PidFlowPtCorr {
     auto multNTracksPV = collision.multNTracksPV();
     auto occupancy = collision.trackOccupancyInTimeRange();
 
-    if (std::fabs(vtxz) > cfgCutVertex)
+    if (std::fabs(vtxz) > cfgCutVertex) {
       return false;
+    }
 
     registry.fill(HIST("hNTracksPVvsCentrality"), multNTracksPV, centrality);
     if (evtSeleOpts.cfgDoMultPVCut.value) {
-      if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+      if (multNTracksPV < fMultPVCutLow->Eval(centrality)) {
         return false;
-      if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+      }
+      if (multNTracksPV > fMultPVCutHigh->Eval(centrality)) {
         return false;
+      }
     }
     fillEventCountHelper(funcName, 9.5);
 
@@ -1820,8 +1825,9 @@ struct PidFlowPtCorr {
     // V0A T0A 5 sigma cut
     if (evtSeleOpts.cfgDoV0AT0Acut.value) {
       int nsigma = 5;
-      if (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > nsigma * fT0AV0ASigma->Eval(collision.multFT0A()))
+      if (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > nsigma * fT0AV0ASigma->Eval(collision.multFT0A())) {
         return 0;
+      }
     }
     fillEventCountHelper(funcName, 11.5);
 
