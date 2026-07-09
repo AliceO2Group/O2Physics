@@ -19,6 +19,7 @@
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
@@ -39,10 +40,11 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
-#include <MathUtils/Utils.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
+
+#include <sys/types.h>
 
 #include <cmath>
 #include <cstddef>

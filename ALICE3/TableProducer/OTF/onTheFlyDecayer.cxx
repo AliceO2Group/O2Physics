@@ -30,6 +30,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
+#include <Framework/StringHelpers.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/Track.h>
 
@@ -165,7 +166,7 @@ struct OnTheFlyDecayer {
         daughter.setCollisionId(particle.collisionId());
         daughter.setBitOn(o2::upgrade::DecayerBits::IsAlive);
         daughter.setBitOff(o2::upgrade::DecayerBits::IsPrimary);
-        daughter.setProductionTime(trackTimeNS);
+        daughter.setProductionTime(particle.vt() + trackTimeNS);
         allParticles.push_back(daughter);
       }
       ndau += decayStack.size();

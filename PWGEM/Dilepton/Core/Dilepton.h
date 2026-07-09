@@ -20,6 +20,7 @@
 #include "PWGEM/Dilepton/Core/DielectronCut.h"
 #include "PWGEM/Dilepton/Core/DimuonCut.h"
 #include "PWGEM/Dilepton/Core/EMEventCut.h"
+#include "PWGEM/Dilepton/DataModel/EvSelFlags.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Utils/EMFwdTrack.h"
 #include "PWGEM/Dilepton/Utils/EMTrack.h"
@@ -1271,11 +1272,8 @@ struct Dilepton {
                                                                    ifnode((dielectroncuts.cfg_prefilter_bits.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_140MeV))) > static_cast<uint16_t>(0), (o2::aod::emprimaryelectron::pfb & static_cast<uint8_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBit::kElFromPi0_140MeV))) <= static_cast<uint8_t>(0), true),
                                                                  o2::aod::emprimaryelectron::pfb >= static_cast<uint8_t>(0));
 
-  // o2::framework::Partition<FilteredMyElectrons> positive_electrons = o2::aod::emprimaryelectron::sign > int8_t(0);
-  // o2::framework::Partition<FilteredMyElectrons> negative_electrons = o2::aod::emprimaryelectron::sign < int8_t(0);
-  using TElectronType = std::tuple_element_t<0, std::tuple<Types...>>;
-  o2::framework::Partition<TElectronType> positive_electrons = o2::aod::emprimaryelectron::sign > int8_t(0);
-  o2::framework::Partition<TElectronType> negative_electrons = o2::aod::emprimaryelectron::sign < int8_t(0);
+  o2::framework::Partition<FilteredMyElectrons> positive_electrons = o2::aod::emprimaryelectron::sign > int8_t(0);
+  o2::framework::Partition<FilteredMyElectrons> negative_electrons = o2::aod::emprimaryelectron::sign < int8_t(0);
 
   // o2::framework::Preslice<MyMuons> perCollision_muon = o2::aod::emprimarymuon::emeventId;
   o2::framework::Preslice<o2::aod::EMPrimaryMuonEMEventIds> perCollision_muon = o2::aod::emprimarymuon::emeventId;

@@ -40,6 +40,7 @@
 
 #include <RtypesCore.h>
 
+#include <cmath>
 #include <cstring>
 #include <string>
 #include <unordered_map>

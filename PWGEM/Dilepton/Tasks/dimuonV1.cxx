@@ -17,20 +17,13 @@
 #include "PWGEM/Dilepton/Core/DimuonCut.h"
 #include "PWGEM/Dilepton/Core/EMEventCut.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
-#include "PWGEM/Dilepton/Utils/EMFwdTrack.h"
-#include "PWGEM/Dilepton/Utils/EMTrack.h"
-#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/Dilepton/Utils/EventHistograms.h"
-#include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
-#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
-#include <CommonConstants/LHCConstants.h>
-#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
@@ -38,6 +31,7 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -45,25 +39,18 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
-#include <MathUtils/Utils.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
-#include <TString.h>
-
-#include <sys/types.h>
 
 #include <algorithm>
 #include <array>
-#include <chrono>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <random>
 #include <string>
 #include <string_view>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -494,21 +481,23 @@ struct dimuonV1 {
 
   using MyMuons = o2::soa::Join<o2::aod::EMPrimaryMuons, o2::aod::EMPrimaryMuonEMEventIds, o2::aod::EMAmbiguousMuonSelfIds>;
   using MyMuon = MyMuons::iterator;
-  using FilteredMyMuons = o2::soa::Filtered<MyMuons>;
-  using FilteredMyMuon = FilteredMyMuons::iterator;
 
-  using MyEMH_muon = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMFwdTrack>;
+  // using MyEMH_muon = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMFwdTrack>;
 
   o2::framework::expressions::Filter collisionFilter_centrality = (eventcuts.cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < eventcuts.cfgCentMax);
   o2::framework::expressions::Filter collisionFilter_numContrib = eventcuts.cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < eventcuts.cfgNumContribMax;
   o2::framework::expressions::Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   o2::framework::expressions::Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = o2::soa::Filtered<MyCollisions>;
+  using FilteredMyCollision = FilteredMyCollisions::iterator;
 
   o2::framework::SliceCache cache;
   o2::framework::Preslice<o2::aod::EMPrimaryMuonEMEventIds> perCollision_muon = o2::aod::emprimarymuon::emeventId;
+
   o2::framework::expressions::Filter trackFilter_muon = o2::aod::fwdtrack::trackType == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) && dimuoncuts.cfg_min_pt_track < o2::aod::fwdtrack::pt && o2::aod::fwdtrack::pt < dimuoncuts.cfg_max_pt_track && dimuoncuts.cfg_min_eta_track < o2::aod::fwdtrack::eta && o2::aod::fwdtrack::eta < dimuoncuts.cfg_max_eta_track;
   o2::framework::expressions::Filter ttcaFilter_muon = ifnode(dimuoncuts.enableTTCA.node(), true, o2::aod::emprimarymuon::isAssociatedToMPC == true);
+  using FilteredMyMuons = o2::soa::Filtered<MyMuons>;
+  using FilteredMyMuon = FilteredMyMuons::iterator;
 
   o2::framework::Partition<FilteredMyMuons> positive_muons = o2::aod::emprimarymuon::sign > int8_t(0);
   o2::framework::Partition<FilteredMyMuons> negative_muons = o2::aod::emprimarymuon::sign < int8_t(0);

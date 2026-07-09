@@ -53,10 +53,11 @@
 #include <Framework/Logger.h>
 #include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 
 #include <TH1.h>
 
-#include <GPUROOTCartesianFwd.h>
+#include <sys/types.h>
 
 #include <cmath>
 #include <cstddef>

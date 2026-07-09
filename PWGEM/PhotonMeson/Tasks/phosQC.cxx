@@ -30,11 +30,11 @@
 #include <Framework/runDataProcessing.h>
 
 #include <THashList.h>
-#include <TString.h>
 
 #include <cstdlib>
 #include <ranges>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace o2;

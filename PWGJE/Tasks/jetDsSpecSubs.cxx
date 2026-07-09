@@ -13,24 +13,16 @@
 /// \brief Ds-tagged jet analysis with substructure histogram outputs
 /// \author Monalisa Melo <monalisa.melo@cern.ch>, Universidade de São Paulo
 
-#include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/DataModel/JetSubstructure.h"
-
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/ConfigContext.h>
 #include <Framework/Configurable.h>
-#include <Framework/DataProcessorSpec.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>

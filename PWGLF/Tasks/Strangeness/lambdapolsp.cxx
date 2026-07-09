@@ -39,14 +39,16 @@
 #include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector3Dfwd.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TF1.h>
 #include <THn.h>
+#include <THnSparse.h>
 #include <TMath.h>
 #include <TProfile2D.h>
 #include <TRandom3.h>
+
+#include <RtypesCore.h>
 
 #include <chrono>
 #include <cmath>

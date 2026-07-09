@@ -228,17 +228,17 @@ class SelectionContainer
 
   /// \brief Get comments attached to the selection thresholds.
   /// \return Vector of comment strings.
-  std::string getComment(int selectionIndex) const
+  [[nodiscard]] std::string getComment(int selectionIndex) const
   {
     if (mComments.empty()) {
-      return std::string("");
+      return std::string{""};
     }
     return mComments.at(selectionIndex);
   }
 
   /// \brief Get the name of this selection.
   /// \return Selection name string.
-  std::string const& getSelectionName() const { return mSelectionName; }
+  [[nodiscard]] std::string const& getSelectionName() const { return mSelectionName; }
 
   /// \brief Update threshold values by re-evaluating the internal TF1 functions at a given point.
   /// \param value Input value at which to evaluate the functions.
@@ -354,10 +354,9 @@ class SelectionContainer
   {
     if (!mSkipMostPermissiveBit) {
       return mBitmask;
-    } else {
-      // remove the first (most permissive) bit since it corresponds to the minimal selection and is always true
-      return mBitmask >> 1;
     }
+    // remove the first (most permissive) bit since it corresponds to the minimal selection and is always true
+    return mBitmask >> 1;
   }
 
   /// \brief Manually set the internal bitmask.
@@ -374,7 +373,7 @@ class SelectionContainer
 
   /// \brief Check whether the mandatory (minimal) cut condition is fulfilled.
   /// \return True if the minimal selection passes or if this container is not marked as a minimal cut.
-  bool passesAsMinimalCut() const
+  [[nodiscard]] bool passesAsMinimalCut() const
   {
     if (mIsMinimalCut) {
       // if any bit is set the loosest threshold passed; since thresholds are ordered,
@@ -387,7 +386,7 @@ class SelectionContainer
 
   /// \brief Check whether any optional cut is fulfilled.
   /// \return True if at least one optional threshold is passed, false if this container is not marked as optional.
-  bool passesAsOptionalCut() const
+  [[nodiscard]] bool passesAsOptionalCut() const
   {
     if (mIsOptionalCut) {
       // if any bit is set the loosest threshold passed
@@ -411,12 +410,12 @@ class SelectionContainer
   ///        For function-based selections, mSelectionValues is always populated (initialised at the midpoint),
   ///        so this check is safe for both static and function-based containers.
   /// \return True if no thresholds are configured.
-  bool isEmpty() const { return mSelectionValues.empty(); }
+  [[nodiscard]] bool isEmpty() const { return mSelectionValues.empty(); }
 
   /// \brief Get the number of bits this container contributes to the global bitmask.
   ///        If the most permissive bit is skipped, the contribution is reduced by one.
   /// \return Number of bits to add to the global bitmask offset.
-  int getShift() const
+  [[nodiscard]] int getShift() const
   {
     if (mSelectionValues.empty()) {
       return 0;
@@ -433,16 +432,16 @@ class SelectionContainer
 
   /// \brief Get the bit offset of this container within the global bitmask.
   /// \return Bit offset.
-  int getOffset() const { return mOffset; }
+  [[nodiscard]] int getOffset() const { return mOffset; }
 
   /// \brief Get the total number of configured selection thresholds.
   /// \return Number of thresholds.
-  std::size_t getNSelections() const { return mSelectionValues.size(); }
+  [[nodiscard]] std::size_t getNSelections() const { return mSelectionValues.size(); }
 
   /// \brief Build a histogram bin label string encoding the full configuration of a single threshold.
   /// \param selectionIndex Index of the threshold within this container.
   /// \return Encoded label string.
-  std::string getBinLabel(int selectionIndex) const
+  [[nodiscard]] std::string getBinLabel(int selectionIndex) const
   {
     std::ostringstream oss;
     std::string sectionDelimiter = ":::";
@@ -477,10 +476,10 @@ class SelectionContainer
     return oss.str();
   }
 
-  std::string getValueAsString(int selectionIndex) const
+  [[nodiscard]] std::string getValueAsString(int selectionIndex) const
   {
     if (this->isEmpty()) {
-      return std::string("No value configured");
+      return std::string{"No value configured"};
     }
     if (!mSelectionFunctions.empty()) {
       return std::string(mSelectionFunctions.at(selectionIndex).GetExpFormula().Data());
@@ -497,7 +496,7 @@ class SelectionContainer
   ///        Calling this for the skipped most-permissive threshold is a fatal error.
   /// \param selectionIndex Index of the threshold within this container.
   /// \return Global bit position.
-  int getBitPosition(int selectionIndex) const
+  [[nodiscard]] int getBitPosition(int selectionIndex) const
   {
     if (selectionIndex == 0 && mSkipMostPermissiveBit) {
       LOG(fatal) << "Trying to accessed the bit position of a skipped selection. Breaking...";
@@ -505,14 +504,13 @@ class SelectionContainer
     }
     if (mSkipMostPermissiveBit) {
       return mOffset + selectionIndex - 1;
-    } else {
-      return mOffset + selectionIndex;
     }
+    return mOffset + selectionIndex;
   }
 
   /// \brief Get the string representation of the configured limit type.
   /// \return Human-readable limit type name.
-  std::string getLimitTypeAsString() const { return limits::limitTypeAsStrings.at(mLimitType); }
+  [[nodiscard]] std::string getLimitTypeAsString() const { return limits::limitTypeAsStrings.at(mLimitType); }
 
   /// \brief Get the configured static threshold values.
   /// \return Const reference to the vector of threshold values.
@@ -520,19 +518,19 @@ class SelectionContainer
 
   /// \brief Get the configured TF1 threshold functions.
   /// \return Const reference to the vector of TF1 functions.
-  std::vector<TF1> const& getSelectionFunction() const { return mSelectionFunctions; }
+  [[nodiscard]] std::vector<TF1> const& getSelectionFunction() const { return mSelectionFunctions; }
 
   /// \brief Check whether this container is marked as a mandatory (minimal) cut.
   /// \return True if this is a minimal cut.
-  bool isMinimalCut() const { return mIsMinimalCut; }
+  [[nodiscard]] bool isMinimalCut() const { return mIsMinimalCut; }
 
   /// \brief Check whether this container is marked as an optional cut.
   /// \return True if this is an optional cut.
-  bool isOptionalCut() const { return mIsOptionalCut; }
+  [[nodiscard]] bool isOptionalCut() const { return mIsOptionalCut; }
 
   /// \brief Check whether the most permissive threshold bit is skipped when assembling the bitmask.
   /// \return True if the most permissive bit is skipped.
-  bool skipMostPermissiveBit() const { return mSkipMostPermissiveBit; }
+  [[nodiscard]] [[nodiscard]] bool skipMostPermissiveBit() const { return mSkipMostPermissiveBit; }
 
  private:
   /// \brief Sort static threshold values from most permissive to most restrictive based on the limit type.
@@ -600,15 +598,15 @@ class SelectionContainer
     }
   }
 
-  std::string mSelectionName = "";
+  std::string mSelectionName;
   std::vector<T> mSelectionValues = {};                      ///< Threshold values, sorted from most permissive to most restrictive
-  std::vector<TF1> mSelectionFunctions = {};                 ///< TF1 threshold functions (empty for static selections)
+  std::vector<TF1> mSelectionFunctions;                      ///< TF1 threshold functions (empty for static selections)
   std::vector<std::pair<T, T>> mSelectionRanges = {};        ///< Lower and upper bounds for kRange selections, one pair per threshold
   limits::LimitType mLimitType = limits::kLimitTypeLast;     ///< Comparison type applied during evaluation
   bool mSkipMostPermissiveBit = false;                       ///< If true, the most permissive threshold does not occupy a bit in the global bitmask
   bool mIsMinimalCut = false;                                ///< If true, this selection is mandatory; failing it rejects the candidate
   bool mIsOptionalCut = false;                               ///< If true, this selection is optional; passing it accepts the candidate
-  std::vector<std::string> mComments = {};                   ///< Optional comments per threshold, in the same order as mSelectionValues
+  std::vector<std::string> mComments;                        ///< Optional comments per threshold, in the same order as mSelectionValues
   std::bitset<sizeof(BitmaskType) * CHAR_BIT> mBitmask = {}; ///< Bitmask indicating which thresholds were passed during the last evaluation
   int mOffset = 0;                                           ///< Bit offset of this container within the global bitmask
 };

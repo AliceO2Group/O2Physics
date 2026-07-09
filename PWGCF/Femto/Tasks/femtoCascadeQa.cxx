@@ -124,7 +124,7 @@ struct FemtoCascadeQa {
 
   void init(o2::framework::InitContext&)
   {
-    if ((doprocessXi + doprocessXiMc + doprocessOmega + doprocessOmegaMc) > 1) {
+    if ((static_cast<int>(doprocessXi) + static_cast<int>(doprocessXiMc) + static_cast<int>(doprocessOmega) + static_cast<int>(doprocessOmegaMc)) > 1) {
       LOG(fatal) << "Only one process can be activated";
     }
     bool processData = doprocessXi || doprocessOmega;
@@ -230,10 +230,10 @@ struct FemtoCascadeQa {
   PROCESS_SWITCH(FemtoCascadeQa, processOmegaMc, "Process Omegas with MC information", false);
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoCascadeQa>(cfgc),
+    adaptAnalysisTask<FemtoCascadeQa>(context),
   };
   return workflow;
 }

@@ -38,6 +38,7 @@
 #include <Framework/DataTypes.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <GlobalTracking/MatchGlobalFwd.h>
 #include <MCHBase/TrackerParam.h>
 #include <MCHGeometryTransformer/Transformations.h>

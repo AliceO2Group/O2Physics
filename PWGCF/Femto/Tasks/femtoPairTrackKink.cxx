@@ -256,10 +256,10 @@ struct FemtoPairTrackKink {
   PROCESS_SWITCH(FemtoPairTrackKink, processSigmaPlusMixedEventMc, "Enable processing mixed event processing for tracks and sigma plus with MC information", false);
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoPairTrackKink>(cfgc),
+    adaptAnalysisTask<FemtoPairTrackKink>(context),
   };
   return workflow;
 }

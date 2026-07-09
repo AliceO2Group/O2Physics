@@ -52,6 +52,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <MathUtils/BetheBlochAleph.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/PID.h>
@@ -72,7 +73,6 @@
 
 #include <fmt/format.h>
 
-#include <GPUROOTCartesianFwd.h>
 #include <Rtypes.h>
 
 #include <algorithm>

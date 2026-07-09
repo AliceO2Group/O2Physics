@@ -170,6 +170,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
   /// Particle part
   ConfigurableAxis confTempFitVarBins{"confTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis confTempFitVarpTBins{"confTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
+  ConfigurableAxis confTOFnSigmaBins{"confTOFnSigmaBins", {200, -4.975, 5.025}, "Binning of the TOF Nsigma vs. pT vs. centrality plot"};
 
   /// Correlation part
   ConfigurableAxis confMultBins{"confMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity or centrality"}; // \todo to be obtained from the hash task
@@ -356,6 +357,27 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
     return false;
   }
 
+  template <typename PartType>
+  float whichTOFNSigma(int PDGcode, PartType part)
+  {
+    switch (PDGcode) {
+      case 2212:  // Proton+
+      case -2212: // Proton-
+        return trackCuts.getNsigmaTOF(part, o2::track::PID::Proton);
+      case 211:  // Pion+
+      case -211: // Pion-
+      case 111:  // Pion 0
+        return trackCuts.getNsigmaTOF(part, o2::track::PID::Pion);
+      case 321:  // Kaon+
+      case -321: // Kaon-
+      case 130:  // Kaon 0 LONG
+      case 310:  // Kaon 0 SHORT
+        return trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon);
+      default:
+        return 0;
+    }
+  }
+
   void init(InitContext&)
   {
     colBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M>{{confVtxBins, confMultBins}, true};
@@ -365,6 +387,8 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
     trackHistoPartOne.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarBins, twotracksconfigs.confIsMC, trackonefilter.confPDGCodePartOne, true);
 
     trackHistoPartTwo.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarBins, twotracksconfigs.confIsMC, tracktwofilter.confPDGCodePartTwo, true);
+    qaRegistry.add("Tracks_one/nSigmaTOF", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}; Centrality", kTH3F, {confTempFitVarpTBins, confTOFnSigmaBins, confMultBins});
+    qaRegistry.add("Tracks_two/nSigmaTOF", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}; Centrality", kTH3F, {confTempFitVarpTBins, confTOFnSigmaBins, confMultBins});
 
     if (confFillDebug) {
       sphericityRegistry.add("sphericity", ";Sphericity;Entries", kTH1F, {{150, 0.0, 3, "Sphericity"}});
@@ -481,6 +505,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
           continue;
         }
         trackHistoPartOne.fillQA<isMC, true>(part);
+        qaRegistry.fill(HIST("Tracks_one/nSigmaTOF"), part.pt(), whichTOFNSigma(trackonefilter.confPDGCodePartOne, part), multCol);
       }
     }
 
@@ -490,6 +515,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
           continue;
         }
         trackHistoPartTwo.fillQA<isMC, true>(part);
+        qaRegistry.fill(HIST("Tracks_two/nSigmaTOF"), part.pt(), whichTOFNSigma(tracktwofilter.confPDGCodePartTwo, part), multCol);
       }
     }
 
