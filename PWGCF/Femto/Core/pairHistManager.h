@@ -16,6 +16,7 @@
 #ifndef PWGCF_FEMTO_CORE_PAIRHISTMANAGER_H_
 #define PWGCF_FEMTO_CORE_PAIRHISTMANAGER_H_
 
+#include "PWGCF/Femto/Core/femtoSpherHarMath.h"
 #include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/histManager.h"
 #include "PWGCF/Femto/Core/modes.h"
@@ -30,12 +31,16 @@
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
+#include <TH1.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <complex>
+#include <cstddef>
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -209,6 +214,12 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis qout{"qout", {{300, -1.5f, 1.5f}}, "q_{out} (GeV/c) in LCMS"};
   o2::framework::ConfigurableAxis qside{"qside", {{300, -1.5f, 1.5f}}, "q_{side} (GeV/c) in LCMS"};
   o2::framework::ConfigurableAxis qlong{"qlong", {{300, -1.5f, 1.5f}}, "q_{long} (GeV/c) in LCMS"};
+  o2::framework::Configurable<bool> plotSH{"plotSH", false, "(Reco) Enable spherical-harmonics decomposition of the pair momentum-difference vector"};
+  o2::framework::Configurable<int> shLMax{"shLMax", 2, "Maximum l for SH decomposition (0..5). FemtoUniverse hard-codes 1."};
+  o2::framework::Configurable<int> shFrame{"shFrame", 1, "SH reference frame/variable: 0=LCMS non-identical (k*), 1=LCMS identical (qinv, FemtoUniverse default), 2=PRF (q_PRF, matches FemtoUniverse isIdenPRF=true)"};
+  o2::framework::ConfigurableAxis shKstar{"shKstar", {{60, 0.0f, 0.3f}}, "k*/qinv binning for SH histograms"};
+  o2::framework::ConfigurableAxis shCentBins{"shCentBins", {o2::framework::VARIABLE_WIDTH, 0.0f, 200.0f}, "SH: multiplicity/centrality bin edges (like FemtoUniverse confMultKstarBins)"};
+  o2::framework::ConfigurableAxis shKtBins{"shKtBins", {o2::framework::VARIABLE_WIDTH, 0.1f, 0.2f, 0.3f, 0.4f}, "SH: kT bin edges (like FemtoUniverse confKtKstarBins)"};
 };
 
 struct ConfPairCuts : o2::framework::ConfigurableGroup {
@@ -528,6 +539,17 @@ class PairHistManager
     mPlotDeltaEtaDeltaPhi = ConfPairBinning.plotDeltaEtaDeltaPhi.value;
     mPlotBertschPratt = ConfPairBinning.plotBertschPratt.value;
 
+    mPlotSH = ConfPairBinning.plotSH.value;
+    mShLMax = ConfPairBinning.shLMax.value;
+    mShFrame = ConfPairBinning.shFrame.value;
+    if (mPlotSH) {
+      mShKstarSpec = {ConfPairBinning.shKstar, "k* (GeV/#it{c})"};
+      mYlm.initializeYlms();
+      // copy bin edges, stripping the leading VARIABLE_WIDTH (0) marker
+      mShCentEdges.assign(ConfPairBinning.shCentBins.value.begin() + 1, ConfPairBinning.shCentBins.value.end());
+      mShKtEdges.assign(ConfPairBinning.shKtBins.value.begin() + 1, ConfPairBinning.shKtBins.value.end());
+    }
+
     // transverse mass type
     mMtType = static_cast<modes::TransverseMassType>(ConfPairBinning.transverseMassType.value);
 
@@ -635,6 +657,10 @@ class PairHistManager
 
     if (mPlotBertschPratt) {
       std::tie(mQout, mQside, mQlong) = computeBertschPrattLCMS(mParticle1, mParticle2);
+    }
+
+    if (mPlotSH) {
+      std::tie(mShKv, mShOut, mShSide, mShLong) = computeShKinematics(mParticle1, mParticle2);
     }
 
     if (mPlotDeltaEtaDeltaPhi) {
@@ -941,6 +967,65 @@ class PairHistManager
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQlong, HistTable), getHistDesc(kQlong, HistTable), getHistType(kQlong, HistTable), {Specs.at(kQlong)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQoutQsideQlong, HistTable), getHistDesc(kQoutQsideQlong, HistTable), getHistType(kQoutQsideQlong, HistTable), {Specs.at(kQoutQsideQlong)});
     }
+    if (mPlotSH) {
+      const int nJM = (mShLMax + 1) * (mShLMax + 1);
+      const int nCent = static_cast<int>(mShCentEdges.size()) - 1; // n edges -> n - 1 bins
+      const int nKt = static_cast<int>(mShKtEdges.size()) - 1;
+      mShYlmBuffer.assign(nJM, {});
+
+      mShReal.resize(nCent);
+      mShImag.resize(nCent);
+      for (int iCent = 0; iCent < nCent; ++iCent) {
+        mShReal[iCent].resize(nKt);
+        mShImag[iCent].resize(nKt);
+        // folder name: mult_{low}_{high}
+        const std::string centFolder = "mult_" + std::to_string(static_cast<int>(mShCentEdges[iCent])) +
+                                       "_" + std::to_string(static_cast<int>(mShCentEdges[iCent + 1]));
+        for (int iKt = 0; iKt < nKt; ++iKt) {
+          mShReal[iCent][iKt].resize(nJM);
+          mShImag[iCent][iKt].resize(nJM);
+          // folder name: kT_{low*100}_{high*100}
+          std::string ktFolder = "kT_";
+          ktFolder += std::to_string(static_cast<int>(mShKtEdges[iKt] * 100.0));
+          ktFolder += "_";
+          ktFolder += std::to_string(static_cast<int>(mShKtEdges[iKt + 1] * 100.0));
+          std::string dir = std::string(prefix) + std::string(AnalysisDir) + "SH/";
+          dir += centFolder;
+          dir += "/";
+          dir += ktFolder;
+          dir += "/";
+
+          int ihist = 0;
+          for (int l = 0; l <= mShLMax; ++l) {
+            for (int m = -l; m <= l; ++m) {
+              std::string lm = std::to_string(l);
+              lm += (m < 0) ? std::to_string(l - m) : std::to_string(m);
+              std::string nameRe = dir;
+              nameRe += "ReYlm";
+              nameRe += lm;
+              std::string nameIm = dir;
+              nameIm += "ImYlm";
+              nameIm += lm;
+              // shared "Y_{l}^{m}" suffix for both titles
+              std::string ylmLabel = "Y_{";
+              ylmLabel += std::to_string(l);
+              ylmLabel += "}^{";
+              ylmLabel += std::to_string(m);
+              ylmLabel += "}";
+              std::string titleRe = "Re ";
+              titleRe += ylmLabel;
+              titleRe += "; k* (GeV/#it{c}); Re[A_{l}^{m}]";
+              std::string titleIm = "Im ";
+              titleIm += ylmLabel;
+              titleIm += "; k* (GeV/#it{c}); Im[A_{l}^{m}]";
+              mShReal[iCent][iKt][ihist] = mHistogramRegistry->add<TH1>(nameRe.c_str(), titleRe.c_str(), o2::framework::kTH1D, {mShKstarSpec});
+              mShImag[iCent][iKt][ihist] = mHistogramRegistry->add<TH1>(nameIm.c_str(), titleIm.c_str(), o2::framework::kTH1D, {mShKstarSpec});
+              ++ihist;
+            }
+          }
+        }
+      }
+    }
   }
 
   // reco-vs-truth correlation histograms (kReco and kMc both set)
@@ -1120,6 +1205,17 @@ class PairHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQlong, HistTable)), mQlong);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQoutQsideQlong, HistTable)), mQout, mQside, mQlong);
     }
+    if (mPlotSH) {
+      const int iCent = findShBin(mMult, mShCentEdges);
+      const int iKt = findShBin(mKt, mShKtEdges);
+      if (iCent >= 0 && iKt >= 0) {
+        mYlm.doYlmUpToL(mShLMax, mShOut, mShSide, mShLong, mShYlmBuffer.data());
+        for (std::size_t i = 0; i < mShYlmBuffer.size(); ++i) {
+          mShReal[iCent][iKt][i]->Fill(mShKv, std::real(mShYlmBuffer[i]));
+          mShImag[iCent][iKt][i]->Fill(mShKv, -std::imag(mShYlmBuffer[i]));
+        }
+      }
+    }
   }
 
   // reco-vs-truth correlation fill (kReco and kMc both set)
@@ -1283,6 +1379,97 @@ class PairHistManager
     return {qOut, qSide, qLong};
   }
 
+  // Return the bin index for value given ascending bin edges, or -1 if out of range.
+  // edges = {e0, e1, ..., eN} defines N bins [e0,e1), [e1,e2), ..., [e_{N-1},eN).
+  static int findShBin(double value, std::vector<double> const& edges)
+  {
+    static constexpr std::size_t MinEdgesForOneBin = 2;
+    if (edges.size() < MinEdgesForOneBin || value < edges.front() || value >= edges.back()) {
+      return -1;
+    }
+    for (std::size_t i = 0; i < edges.size() - 1; ++i) {
+      if (value >= edges[i] && value < edges[i + 1]) {
+        return static_cast<int>(i);
+      }
+    }
+    return -1;
+  }
+
+  // Kinematics feeding the spherical-harmonics decomposition, ported 1:1 from
+  // FemtoUniverseMath::newpairfunc so results are numerically comparable.
+  // Returns {kv, out, side, long}, selected by mShFrame:
+  //   ShFrameLcmsNonIdentical: {kstar,  fDKOut,  fDKSide,  fDKLong}   (LCMS components of particle 1)
+  //   ShFrameLcmsIdentical:    {qinv,   outLCMS, sideLCMS, longLCMS}  (LCMS q-differences)
+  //   ShFramePrf:              {|qPRF|, outPRF,  sidePRF,  longPRF}   (matches FemtoUniverse isIdenPRF=true)
+  std::tuple<float, float, float, float> computeShKinematics(ROOT::Math::PtEtaPhiMVector const& part1,
+                                                             ROOT::Math::PtEtaPhiMVector const& part2)
+  {
+    const ROOT::Math::PxPyPzEVector p1(part1);
+    const ROOT::Math::PxPyPzEVector p2(part2);
+    const ROOT::Math::PxPyPzEVector sum = p1 + p2;
+
+    const double tPx = sum.Px();
+    const double tPy = sum.Py();
+    const double tPz = sum.Pz();
+    const double tE = sum.E();
+    const double tPtSq = tPx * tPx + tPy * tPy;
+    const double tMtSq = tE * tE - tPz * tPz;
+
+    static constexpr double MinTransverseMomentum = 1e-9;
+    if (tPtSq < MinTransverseMomentum || tMtSq < MinTransverseMomentum) {
+      return {0.f, 0.f, 0.f, 0.f};
+    }
+    const double tPt = std::sqrt(tPtSq);
+    const double tMt = std::sqrt(tMtSq);
+    const double tM = std::sqrt(std::max(0.0, tMtSq - tPtSq));
+
+    const double beta = tPz / tE;
+    const double gamma = tE / tMt;
+
+    // LCMS components of particle 1 (fDKOut/Side/Long in newpairfunc)
+    const double e1 = p1.E();
+    const double fDKOut = (p1.Px() * tPx + p1.Py() * tPy) / tPt;
+    const double fDKSide = (-p1.Px() * tPy + p1.Py() * tPx) / tPt;
+    const double fDKLong = gamma * (p1.Pz() - beta * e1);
+    const double fDE = gamma * (e1 - beta * p1.Pz());
+
+    // LCMS components of particle 2
+    const double e2 = p2.E();
+    const double px2 = (p2.Px() * tPx + p2.Py() * tPy) / tPt;
+    const double py2 = (p2.Py() * tPx - p2.Px() * tPy) / tPt;
+    const double pz2 = gamma * (p2.Pz() - beta * e2);
+
+    const double outLCMS = fDKOut - px2;
+    const double sideLCMS = fDKSide - py2;
+    const double longLCMS = fDKLong - pz2;
+
+    if (mShFrame == ShFrameLcmsIdentical) {
+      // LCMS identical: Ylm <- LCMS q-differences, axis <- qinv
+      const double qinv = std::sqrt(outLCMS * outLCMS + sideLCMS * sideLCMS + longLCMS * longLCMS);
+      return {static_cast<float>(qinv),
+              static_cast<float>(outLCMS), static_cast<float>(sideLCMS), static_cast<float>(longLCMS)};
+    }
+    if (mShFrame == ShFramePrf) {
+      // PRF: Ylm <- PRF q-differences, axis <- |q_PRF| (matches FemtoUniverse isIdenPRF=true)
+      const double pE2LCMS = gamma * (e2 - beta * p2.Pz());
+      const double betaOut = tPt / tMt;
+      const double gammaOut = tMt / tM;
+      const double outPRF = gammaOut * (outLCMS - betaOut * (fDE - pE2LCMS));
+      const double sidePRF = sideLCMS;
+      const double longPRF = longLCMS;
+      const double qPRF = std::sqrt(outPRF * outPRF + sidePRF * sidePRF + longPRF * longPRF);
+      return {static_cast<float>(qPRF),
+              static_cast<float>(outPRF), static_cast<float>(sidePRF), static_cast<float>(longPRF)};
+    }
+    // LCMS non-identical (default): Ylm <- LCMS components of particle 1, axis <- k*
+    const double betaOut = tPt / tMt;
+    const double gammaOut = tMt / tM;
+    const double fKOut = gammaOut * (fDKOut - betaOut * fDE);
+    const double kstar = std::sqrt(fKOut * fKOut + fDKSide * fDKSide + fDKLong * fDKLong);
+    return {static_cast<float>(kstar),
+            static_cast<float>(fDKOut), static_cast<float>(fDKSide), static_cast<float>(fDKLong)};
+  }
+
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
   bool mUsePdgMass = true;
   double mPdgMass1 = 0.;
@@ -1373,6 +1560,31 @@ class PairHistManager
 
   float mDeltaEta = 0.f;
   float mDeltaPhi = 0.f;
+
+  // Spherical harmonics
+  bool mPlotSH = false;
+  int mShLMax = 1;
+  int mShFrame = 0;
+  static constexpr int ShFrameLcmsNonIdentical = 0;
+  static constexpr int ShFrameLcmsIdentical = 1;
+  static constexpr int ShFramePrf = 2;
+
+  o2::framework::AxisSpec mShKstarSpec{{60, 0.0f, 0.3f}, "k* (GeV/#it{c})"}; // set in init()
+
+  // kinematics computed in setPair(): axis value + 3 components feeding Ylm
+  float mShKv = 0.f; // kstar (non-identical) or qinv (identical)
+  float mShOut = 0.f;
+  float mShSide = 0.f;
+  float mShLong = 0.f;
+
+  // SH histograms binned in [iCent][iKt][ihist]; ihist = l*(l+1)+m
+  std::vector<std::vector<std::vector<std::shared_ptr<TH1>>>> mShReal;
+  std::vector<std::vector<std::vector<std::shared_ptr<TH1>>>> mShImag;
+  std::vector<std::complex<double>> mShYlmBuffer; // reused, allocated once
+  std::vector<double> mShCentEdges;
+  std::vector<double> mShKtEdges;
+
+  o2::analysis::femto::SpherHarMath mYlm{};
 
   // qa
   bool mPairCorrelationQa = false;
