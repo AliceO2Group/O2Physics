@@ -9,9 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-///
+/// \file GammaJetAnalysisTree.h
 /// \brief Table definitions for gamma-jet analyses
-///
 /// \author Florian Jonas <florian.jonas@cern.ch>
 
 #ifndef PWGJE_DATAMODEL_GAMMAJETANALYSISTREE_H_
@@ -106,8 +105,8 @@ namespace gjgammamcinfo
 {
 DECLARE_SOA_COLUMN(Origin, origin, uint16_t);
 DECLARE_SOA_COLUMN(LeadingEnergyFraction, leadingEnergyFraction, float); // fraction of energy from the leading MC particle
-// further information about the particle that produced this cluster, one could also linnk to mcgen particle table 
-// but for now this is easier as the MCgen table is filtered and I do not want to deal with ensuring the filered table exists and 
+// further information about the particle that produced this cluster, one could also linnk to mcgen particle table
+// but for now this is easier as the MCgen table is filtered and I do not want to deal with ensuring the filered table exists and
 // does not filter out a mother
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
@@ -195,7 +194,6 @@ DECLARE_SOA_COLUMN(PtSubLeading, ptSubLeading, std::vector<float>); //! pt of su
 DECLARE_SOA_COLUMN(Theta, theta, std::vector<float>);               //! opening angle theta at each splitting
 } // namespace gjmcjetsubstructure
 DECLARE_SOA_TABLE(GjMCJetSubstructures, "AOD", "GJMCJETSUBSTR", gjgamma::GjEventId, gjmcjetsubstructure::EnergyMother, gjmcjetsubstructure::PtLeading, gjmcjetsubstructure::PtSubLeading, gjmcjetsubstructure::Theta)
-
 
 } // namespace o2::aod
 
