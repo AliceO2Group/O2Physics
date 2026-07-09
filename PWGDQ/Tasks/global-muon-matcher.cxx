@@ -60,6 +60,7 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <functional>
@@ -288,7 +289,10 @@ struct GlobalMuonMatching {
     void setRemovable() { removable = true; }
     [[nodiscard]] bool isRemovable() const { return removable; }
 
-    [[nodiscard]] o2::track::TrackParCovFwd asTrackParCovFwd() const { return *this; }
+    [[nodiscard]] o2::track::TrackParCovFwd asTrackParCovFwd() const
+    {
+      return o2::track::TrackParCovFwd(static_cast<const o2::track::TrackParCovFwd&>(*this));
+    }
 
    private:
     int nClusters{-1};
@@ -957,7 +961,7 @@ struct GlobalMuonMatching {
     using o2::aod::fwdtrack::ForwardTrackTypeEnum;
     using o2::aod::fwdtrackutils::propagationPoint;
 
-    constexpr uint8_t CandidateTrackType = static_cast<uint8_t>(ForwardTrackTypeEnum::GlobalForwardTrack);
+    constexpr auto CandidateTrackType = static_cast<uint8_t>(ForwardTrackTypeEnum::GlobalForwardTrack);
 
     auto propmuonAtMft = fwdToMch(mchPar);
     o2::mch::TrackExtrap::extrapToVertex(propmuonAtMft,
@@ -971,7 +975,7 @@ struct GlobalMuonMatching {
 
     const auto nClusters = static_cast<int8_t>(std::min(127, mchPar.getNClusters() + mftPar.getNClusters()));
 
-    const float chi2 = static_cast<float>(mchTrack.chi2());
+    const auto chi2 = static_cast<float>(mchTrack.chi2());
     const int32_t collisionId = mchTrack.collisionId();
     bool hasBcSlice = false;
     std::array<int32_t, 2> bcSlice{};
@@ -1547,14 +1551,16 @@ struct GlobalMuonMatching {
         }
 
         const int maxCandidates = configMatching.cfgMaxCandidatesPerMchTrack.value;
-        const size_t nToStore = (maxCandidates >= 0)
-                                  ? std::min(groupResults.size(), static_cast<size_t>(maxCandidates))
-                                  : groupResults.size();
 
         auto& storedCandidates = newMatchingCandidates[mchIndex];
-        for (size_t i = 0; i < nToStore; ++i) {
-          groupResults[i].mixedGroupIndex = useMixedMatchingCandidates ? mixedGroupIndex : -1;
-          storedCandidates.push_back(std::move(groupResults[i]));
+        size_t nStoredThisGroup = 0;
+        for (auto& result : groupResults) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
+          if (maxCandidates >= 0 && nStoredThisGroup >= static_cast<size_t>(maxCandidates)) {
+            break;
+          }
+          result.mixedGroupIndex = useMixedMatchingCandidates ? mixedGroupIndex : -1;
+          storedCandidates.push_back(result);
+          ++nStoredThisGroup;
         }
       };
 
@@ -1638,14 +1644,16 @@ struct GlobalMuonMatching {
         }
 
         const int maxCandidates = configMatching.cfgMaxCandidatesPerMchTrack.value;
-        const size_t nToStore = (maxCandidates >= 0)
-                                  ? std::min(groupResults.size(), static_cast<size_t>(maxCandidates))
-                                  : groupResults.size();
 
         auto& storedCandidates = newMatchingCandidates[mchIndex];
-        for (size_t i = 0; i < nToStore; ++i) {
-          groupResults[i].mixedGroupIndex = useMixedMatchingCandidates ? mixedGroupIndex : -1;
-          storedCandidates.push_back(std::move(groupResults[i]));
+        size_t nStoredThisGroup = 0;
+        for (auto& result : groupResults) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
+          if (maxCandidates >= 0 && nStoredThisGroup >= static_cast<size_t>(maxCandidates)) {
+            break;
+          }
+          result.mixedGroupIndex = useMixedMatchingCandidates ? mixedGroupIndex : -1;
+          storedCandidates.push_back(result);
+          ++nStoredThisGroup;
         }
       };
 
