@@ -177,6 +177,7 @@ struct HadNucleiFemto {
   Produces<aod::HadronNucleiMult> mOutputMultiplicityTable;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"species"};
     // Particle species configuration
     Configurable<int> settingNuPDGCode{"settingNuPDGCode", static_cast<int>(DeuteronPDG), "Nucleus - PDG code"};
@@ -184,6 +185,7 @@ struct HadNucleiFemto {
   } species;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"eventMixing"};
     // Event selection and mixing configuration
     Configurable<float> settingCutVertex{"settingCutVertex", 10.0f, "Accepted z-vertex range"};
@@ -193,6 +195,7 @@ struct HadNucleiFemto {
   } eventMixing;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"trackCut"};
     // Common track-quality cuts
     Configurable<float> settingCutEta{"settingCutEta", 0.8f, "Eta cut on daughter track"};
@@ -203,6 +206,7 @@ struct HadNucleiFemto {
   } trackCut;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"hadronPid"};
     // Hadron purity and PID cuts
     Configurable<float> settingCutPinMinTOFHad{"settingCutPinMinTOFHad", 0.5f, "Minimum Pin to apply the TOF cut on hadrons"};
@@ -228,6 +232,7 @@ struct HadNucleiFemto {
   } hadronPid;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"deuteronPid"};
     // Deuteron purity and PID cuts
     Configurable<float> settingCutPinMinDe{"settingCutPinMinDe", 0.0f, "Minimum Pin for De"};
@@ -243,6 +248,7 @@ struct HadNucleiFemto {
   } deuteronPid;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"CPR"};
     // Close pair rejection controls
     Configurable<bool> settingEnableClosePairRejection{"settingEnableClosePairRejection", false, "Enable close pair rejection for nucleus-hadron track pairs"};
@@ -253,6 +259,7 @@ struct HadNucleiFemto {
   } CPR;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"hypertriton"};
     // Hypertriton-specific cuts
     Configurable<float> settingCutTPCChi2He{"settingCutTPCChi2He", 0.0f, "Minimum tpcChi2He for Hyper He3"};
@@ -260,6 +267,7 @@ struct HadNucleiFemto {
   } hypertriton;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"output"};
     // Output and QA controls
     Configurable<bool> settingFillTable{"settingFillTable", false, "Enable table filling"};
@@ -270,12 +278,14 @@ struct HadNucleiFemto {
   } output;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"zorro"};
     // Zorro
     Configurable<bool> settingSkimmedProcessing{"settingSkimmedProcessing", false, "Skimmed dataset processing"};
   } zorro;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"ccdb"};
     // CCDB options
     Configurable<double> settingDbz{"settingDbz", -999, "bz field, -999 is automatic"};
@@ -288,6 +298,7 @@ struct HadNucleiFemto {
   } ccdb;
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"pidCalibration"};
     // PID calibration and material correction controls
     Configurable<LabeledArray<double>> settingBetheBlochParams{"settingBetheBlochParams", {BetheBlochDefault.data(), 2, 6, betheBlochParticleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for the selected nucleus"};
