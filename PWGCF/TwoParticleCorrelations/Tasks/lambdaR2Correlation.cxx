@@ -101,8 +101,8 @@ DECLARE_SOA_COLUMN(Pz, pz, float);
 DECLARE_SOA_COLUMN(Mass, mass, float);
 DECLARE_SOA_COLUMN(PosTrackId, posTrackId, int64_t);
 DECLARE_SOA_COLUMN(NegTrackId, negTrackId, int64_t);
-DECLARE_SOA_COLUMN(PosTrackKin, posTrackKin, float[3]);
-DECLARE_SOA_COLUMN(NegTrackKin, negTrackKin, float[3]);
+DECLARE_SOA_COLUMN(PosTrackKin, posTrackKin, std::vector<float>);
+DECLARE_SOA_COLUMN(NegTrackKin, negTrackKin, std::vector<float>);
 DECLARE_SOA_COLUMN(PartType, partType, int8_t);
 DECLARE_SOA_COLUMN(CorrFact, corrFact, float);
 } // namespace lambdatrack
@@ -376,7 +376,7 @@ struct LambdaTableProducer {
   Configurable<int64_t> nolaterthan{"nolaterthan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   // Initialize CCDB Service
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::parameters::GRPMagField* grpo = nullptr;
 
   // Histogram Registry.
@@ -390,7 +390,7 @@ struct LambdaTableProducer {
   float cent = 0., mult = 0.;
   TList* ccdbObjRecoEff = nullptr;
   TList* ccdbObjMatchEff = nullptr;
-  static constexpr std::string_view SubDir[] = {"QA/Lambda/", "QA/AntiLambda/", "QA/KaonPlus/", "QA/KaonMinus/"};
+  static constexpr auto SubDir = std::array{"QA/Lambda/", "QA/AntiLambda/", "QA/KaonPlus/", "QA/KaonMinus/"};
 
   void init(InitContext const&)
   {
@@ -790,7 +790,7 @@ struct LambdaTableProducer {
 
     // Get Efficiency Factor
     if (cGetEffFact) {
-      TObject* objEff = reinterpret_cast<TObject*>(ccdbObjRecoEff->FindObject(Form("%s", vCorrFactStrings[cCorrFactHist][part].c_str())));
+      auto* objEff = ccdbObjRecoEff->FindObject(Form("%s", vCorrFactStrings[cCorrFactHist][part].c_str()));
       // check object
       if (!objEff) {
         LOGF(fatal, "Reco efficiency object not found !");
@@ -813,13 +813,13 @@ struct LambdaTableProducer {
 
     // Get Matching Efficiency Correction
     if (cGetMatchEff) {
-      TObject* objITSTPCMatchEff = reinterpret_cast<TObject*>(ccdbObjMatchEff->FindObject("hITSTPCMatchingEfficiency"));
-      TObject* objITSTPCTOFMatchEff = reinterpret_cast<TObject*>(ccdbObjMatchEff->FindObject("hITSTPCTOFMatchingEfficiency"));
+      auto* objITSTPCMatchEff = ccdbObjMatchEff->FindObject("hITSTPCMatchingEfficiency");
+      auto* objITSTPCTOFMatchEff = ccdbObjMatchEff->FindObject("hITSTPCTOFMatchingEfficiency");
       if (!objITSTPCMatchEff || !objITSTPCTOFMatchEff) {
         LOGF(fatal, "Matching efficiency object not found !");
       } else {
-        TH1F* histITSTPCMatchEff = reinterpret_cast<TH1F*>(objITSTPCMatchEff->Clone());
-        TH1F* histITSTPCTOFMatchEff = reinterpret_cast<TH1F*>(objITSTPCTOFMatchEff->Clone());
+        TH1F* histITSTPCMatchEff = static_cast<TH1F*>(objITSTPCMatchEff->Clone());
+        TH1F* histITSTPCTOFMatchEff = static_cast<TH1F*>(objITSTPCTOFMatchEff->Clone());
         // Lambda / Anti-Lambda
         if constexpr (part == kLambda || part == kAntiLambda) {
           auto posTrack = v.template posTrack_as<T>();
@@ -1012,12 +1012,12 @@ struct LambdaTableProducer {
       }
 
       // Daughter kinematics
-      std::array<float, 3> posTrackKin = {postrack.pt(), postrack.eta(), postrack.phi()};
-      std::array<float, 3> negTrackKin = {negtrack.pt(), negtrack.eta(), negtrack.phi()};
+      std::vector<float> posTrackKin = {postrack.pt(), postrack.eta(), postrack.phi()};
+      std::vector<float> negTrackKin = {negtrack.pt(), negtrack.eta(), negtrack.phi()};
 
       // Fill Lambda/AntiLambda Table
       lambdaTrackTable(lambdaCollisionTable.lastIndex(), v0.pt(), v0.eta(), v0.phi(), v0.yLambda(), v0.px(), v0.py(), v0.pz(), lambdaMass,
-                       v0.template posTrack_as<T>().index(), v0.template negTrack_as<T>().index(), posTrackKin.data(), negTrackKin.data(),
+                       v0.template posTrack_as<T>().index(), v0.template negTrack_as<T>().index(), posTrackKin, negTrackKin,
                        (int8_t)partType, lambdaCorrFact);
     }
 
@@ -1327,12 +1327,8 @@ struct LambdaTracksExtProducer {
         }
       }
 
-      // Accept/Reject
-      if (cAcceptAllLambda) { // Accept all lambda
-        trueLambdaFlag = true;
-      } else if (cRejAllLambdaShaDau && !lambdaSharingDauFlag) { // Reject all lambda sharing daughter
-        trueLambdaFlag = true;
-      }
+      // Accept / Reject
+      trueLambdaFlag = cAcceptAllLambda || (cRejAllLambdaShaDau && !lambdaSharingDauFlag);
 
       // Multiplicity of selected lambda
       if (trueLambdaFlag) {
@@ -1401,11 +1397,7 @@ struct LambdaTracksExtProducer {
       }
 
       // Accept / Reject
-      if (cAcceptAllKaon) {
-        trueKaonFlag = true;
-      } else if (cRejAllKaonShaLaDau && !kaonSharingLambdaDauFlag) {
-        trueKaonFlag = true;
-      }
+      trueKaonFlag = cAcceptAllKaon || (cRejAllKaonShaLaDau && !kaonSharingLambdaDauFlag);
 
       // Multiplicity of selected kaons
       if (trueKaonFlag) {
@@ -1572,16 +1564,14 @@ struct LambdaR2Correlation {
   // Rap-Phi Bin Index
   int getRapPhiBin(float const& rap, float const& phi)
   {
-    int rapbin = static_cast<int>((rap - kminrap) / rapbinwidth);
-    int phibin = static_cast<int>(phi / phibinwidth);
+    const auto rapbin = static_cast<int>((rap - kminrap) / rapbinwidth);
+    const auto phibin = static_cast<int>(phi / phibinwidth);
 
-    int rapphibin = -99;
     if (rapbin >= 0 && phibin >= 0 && rapbin < nrapbins && phibin < nphibins) {
-      rapphibin = rapbin * nphibins + phibin;
-      return rapphibin;
+      return rapbin * nphibins + phibin;
     }
 
-    return rapphibin;
+    return -99;
   }
 
   template <typename A>
@@ -1623,8 +1613,6 @@ struct LambdaR2Correlation {
       retFlag = checkClosePair(trackKin, lambdaPosTrackKin, 1, 1) || checkClosePair(trackKin, lambdaNegTrackKin, 1, -1);
     } else if (track.partType() == kKaonMinus) {
       retFlag = checkClosePair(trackKin, lambdaPosTrackKin, -1, 1) || checkClosePair(trackKin, lambdaNegTrackKin, -1, -1);
-    } else {
-      return false;
     }
 
     // Fill QA
@@ -1654,14 +1642,14 @@ struct LambdaR2Correlation {
   template <ParticlePairType part_pair, RecGenType rec_gen, typename T1, typename T2>
   void fillPairHistos(T1& p1, T2& p2)
   {
-    static constexpr std::string_view SubDirRecGen[] = {"Reco/", "McGen/"};
-    static constexpr std::string_view SubDirHist[] = {"LaP_LaM", "LaP_LaP", "LaM_LaM", "LaP_KaP", "LaP_KaM", "LaM_KaP", "LaM_KaM", "KaP_KaM", "KaP_KaP", "KaM_KaM"};
+    static constexpr auto SubDirRecGen = std::array{"Reco/", "McGen/"};
+    static constexpr auto SubDirHist = std::array{"LaP_LaM", "LaP_LaP", "LaM_LaM", "LaP_KaP", "LaP_KaM", "LaM_KaP", "LaM_KaM", "KaP_KaM", "KaP_KaP", "KaM_KaM"};
 
-    int rapbin1 = static_cast<int>((p1.rap() - kminrap) / rapbinwidth);
-    int rapbin2 = static_cast<int>((p2.rap() - kminrap) / rapbinwidth);
+    const auto rapbin1 = static_cast<int>((p1.rap() - kminrap) / rapbinwidth);
+    const auto rapbin2 = static_cast<int>((p2.rap() - kminrap) / rapbinwidth);
 
-    int phibin1 = static_cast<int>(p1.phi() / phibinwidth);
-    int phibin2 = static_cast<int>(p2.phi() / phibinwidth);
+    const auto phibin1 = static_cast<int>(p1.phi() / phibinwidth);
+    const auto phibin2 = static_cast<int>(p2.phi() / phibinwidth);
 
     float corfac = p1.corrFact() * p2.corrFact();
 
@@ -1677,8 +1665,8 @@ struct LambdaR2Correlation {
   template <ParticleType part, RecGenType rec_gen, typename T>
   void analyzeSingles(T const& tracks)
   {
-    static constexpr std::string_view SubDirRecGen[] = {"Reco/", "McGen/"};
-    static constexpr std::string_view SubDirHist[] = {"LaP", "LaM", "KaP", "KaM"};
+    static constexpr auto SubDirRecGen = std::array{"Reco/", "McGen/"};
+    static constexpr auto SubDirHist = std::array{"LaP", "LaM", "KaP", "KaM"};
 
     for (auto const& track : tracks) {
       // Efficiency Plots
