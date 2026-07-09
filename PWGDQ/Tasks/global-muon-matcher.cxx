@@ -83,17 +83,12 @@ namespace globalmuonmatching
 DECLARE_SOA_COLUMN(IsTagged, isTagged, bool);                                               //! Whether the MCH(-MID) track passes tagging cuts
 DECLARE_SOA_COLUMN(MatchRanking, matchRanking, int32_t);                                    //! Match candidate ranking (-1 for base MCH entries)
 DECLARE_SOA_COLUMN(MixedGroupIndex, mixedGroupIndex, int32_t);                              //! Mixed-event group index (-1 for same-event candidates)
-DECLARE_SOA_INDEX_COLUMN_FULL(FwdTrackRealign, fwdTrackRealign, int, FwdTracksReAlign, ""); //! Index of ambiguous FwdTracksReAlign entry
-DECLARE_SOA_SLICE_INDEX_COLUMN_FULL(Bc, bc, int32_t, BCs, "");                              //! BC index slice compatible with the track time window
 } // namespace globalmuonmatching
 
 DECLARE_SOA_TABLE(GmmCandFwdTrkExtras, "AOD", "GMMCANDEXTRA", //! Extra info joinable to FwdTracksReAlign
                   globalmuonmatching::IsTagged,
                   globalmuonmatching::MatchRanking,
                   globalmuonmatching::MixedGroupIndex);
-
-DECLARE_SOA_TABLE(AmbiguousFwdTracksReAlign, "AOD", "AMBIGFWDREALIGN", //! FwdTracksReAlign entries without a unique collision association
-                  o2::soa::Index<>, globalmuonmatching::FwdTrackRealignId, globalmuonmatching::BcIdSlice);
 } // namespace o2::aod
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
@@ -307,7 +302,7 @@ struct GlobalMuonMatching {
   Produces<o2::aod::StoredFwdTracksReAlign> gmCandidateFwdTracks;
   Produces<o2::aod::StoredFwdTrksCovReAlign> gmCandidateFwdTracksCov;
   Produces<o2::aod::GmmCandFwdTrkExtras> gmCandidateFwdTrackExtras;
-  Produces<o2::aod::AmbiguousFwdTracksReAlign> gmAmbiguousFwdTracksReAlign;
+  Produces<o2::aod::AmbiguousFwdTrksReAlign> gmAmbiguousFwdTracksReAlign;
 
   int32_t mGmmCandFwdTrackRowIndex{0};
   std::unordered_map<int64_t, std::array<int32_t, 2>> mAmbBcSliceByFwdTrackId;
