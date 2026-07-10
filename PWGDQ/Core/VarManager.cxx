@@ -33,6 +33,7 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
