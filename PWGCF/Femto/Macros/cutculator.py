@@ -15,8 +15,7 @@
 @brief  CutCulator (Compute bitmask for selecting particles in the Femto Framework)
 @author Anton Riedel <anton.riedel@cern.ch>, Technical University of Munich
 """
-
-import ROOT
+import ROOT  # pylint: disable=import-error
 import argparse
 
 VALUE_DELIM = "___"

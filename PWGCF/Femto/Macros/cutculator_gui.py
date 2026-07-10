@@ -22,7 +22,7 @@ import argparse
 from typing import Any, Dict, List
 
 try:
-    import ROOT
+    import ROOT  # pylint: disable=import-error
 
     ROOT.gROOT.SetBatch(True)
 except ImportError:
@@ -639,9 +639,7 @@ class CutCulatorApp(tk.Tk):
         # the alignment: both row types share one widget recipe for their
         # leading column instead of trying to match a native Checkbutton's
         # unmeasurable indicator box.
-        check_lbl = tk.Label(
-            row, text="[ ]", font=FONT_BODY, bg=BG_CARD, fg=FG_DIM, width=CHECK_COL_WIDTH, anchor="w"
-        )
+        check_lbl = tk.Label(row, text="[ ]", font=FONT_BODY, bg=BG_CARD, fg=FG_DIM, width=CHECK_COL_WIDTH, anchor="w")
         check_lbl.pack(side="left")
         self._check_labels[(sel_name, idx)] = check_lbl
 
