@@ -598,7 +598,7 @@ struct Alice3strangenessFinder {
             continue; // combined tracks should be reasonanly close
           }
 
-          if (cascCand.eta > presel.cascMaxEta) {
+          if (std::abs(cascCand.eta) > presel.cascMaxEta) {
             continue; // candidate outside of acceptance
           }
 
