@@ -756,7 +756,10 @@ struct FlowGfwNonflow {
         std::string histName = "inverseN";
         histName += head;
         const int m = corrOrder - '0';
-        recipNHistograms.at(histName)->Fill(centmult, 1. / std::pow(multiplicity, m - 1), dnx);
+        double multPower = std::pow(multiplicity, m - 1);
+        if (multPower != 0) {
+          recipNHistograms.at(histName)->Fill(centmult, 1. / multPower, dnx);
+        }
         auto val = fGFW->Calculate(corrconfigs.at(l_ind), 0, false).real() / dnx;
         if (std::abs(val) < 1) {
           fFC->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
