@@ -54,8 +54,6 @@
 #include <utility>
 #include <vector>
 
-#include <math.h>
-
 struct dimuonV1 {
 
   // // Configurables
@@ -76,6 +74,7 @@ struct dimuonV1 {
   o2::framework::ConfigurableAxis ConfPtllBins{"ConfPtllBins", {10, 0, 10}, "pTll bins for output histograms"};
   o2::framework::ConfigurableAxis ConfYllBins{"ConfYllBins", {3, -4.0, -2.5}, "yll bins for output histograms"};
   o2::framework::ConfigurableAxis ConfUQBins{"ConfUQBins", {400, -1, 1}, "uQ bins for output histograms"};
+  o2::framework::ConfigurableAxis ConfCentBins{"ConfCentBins", {20, 10, 30}, "centrality bins for output histograms"};
   o2::framework::Configurable<int> cfgNrotation{"cfgNrotation", 1, "number of rotation bkg"};
   o2::framework::Configurable<int> cfgRandomSeed{"cfgRandomSeed", 1, "randam seed for rotation bkg"};
   o2::framework::Configurable<float> cfgRotationMin{"cfgRotationMin", -M_PI / 4, "min. rotation angle for rotation bkg"};
@@ -228,8 +227,9 @@ struct dimuonV1 {
     const o2::framework::AxisSpec axis_uxQxp{ConfUQBins, "u_{x}Q_{x}^{p}"};
     const o2::framework::AxisSpec axis_uyQyt{ConfUQBins, "u_{y}Q_{y}^{t}"};
     const o2::framework::AxisSpec axis_uyQyp{ConfUQBins, "u_{y}Q_{y}^{p}"};
+    const o2::framework::AxisSpec axis_centrality{ConfCentBins, "centrality (%)"};
 
-    fRegistry.add("Pair/same/uls/hs", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_uxQxt, axis_uxQxp, axis_uyQyt, axis_uyQyp}, true);
+    fRegistry.add("Pair/same/uls/hs", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_uxQxt, axis_uxQxp, axis_uyQyt, axis_uyQyp, axis_centrality}, true);
     fRegistry.add("Pair/same/uls/hsRotBkg", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y}, true);
 
     // fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
@@ -292,7 +292,7 @@ struct dimuonV1 {
   }
 
   template <int ev_id, typename TCollision, typename TTrack1, typename TTrack2, typename TCut>
-  bool fillPairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, TCut const& cut)
+  bool fillPairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, const float centrality)
   {
     if (!cut.template IsSelectedTrack<false>(t1) || !cut.template IsSelectedTrack<false>(t2)) {
       return false;
@@ -321,7 +321,7 @@ struct dimuonV1 {
     float uyQyp = std::sin(1.f * phi) * collision.qyZDCA();
 
     if (t1.sign() * t2.sign() < 0) { // ULS
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), uxQxt, uxQxp, uyQyt, uyQyp, weight);
+      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), uxQxt, uxQxp, uyQyt, uyQyp, centrality, weight);
 
       for (int i = 0; i < cfgNrotation; i++) {
         float dphi = distDPhi(engine);
@@ -391,14 +391,14 @@ struct dimuonV1 {
       auto negTracks_per_coll = negTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
 
       for (const auto& [pos, neg] : combinations(o2::soa::CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
-        fillPairInfo<0>(collision, pos, neg, cut);
+        fillPairInfo<0>(collision, pos, neg, cut, centrality);
       }
 
       // for (const auto& [pos1, pos2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
-      //   fillPairInfo<0>(collision, pos1, pos2, cut);
+      //   fillPairInfo<0>(collision, pos1, pos2, cut, centrality);
       // }
       // for (const auto& [neg1, neg2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
-      //   fillPairInfo<0>(collision, neg1, neg2, cut);
+      //   fillPairInfo<0>(collision, neg1, neg2, cut, centrality);
       // }
 
     } // end of collision loop
