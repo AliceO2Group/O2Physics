@@ -795,7 +795,7 @@ struct LambdaTableProducer {
       if (!objEff) {
         LOGF(fatal, "Reco efficiency object not found !");
       } else {
-        TH1F* histEff = reinterpret_cast<TH1F*>(objEff->Clone());
+        TH1F* histEff = dynamic_cast<TH1F*>(objEff->Clone());
         if (histEff->GetDimension() == TwoDimCorr) {
           histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtCent);
           effCorrFact = histEff->GetBinContent(histEff->FindBin(cent, v.pt()));
@@ -818,8 +818,8 @@ struct LambdaTableProducer {
       if (!objITSTPCMatchEff || !objITSTPCTOFMatchEff) {
         LOGF(fatal, "Matching efficiency object not found !");
       } else {
-        TH1F* histITSTPCMatchEff = static_cast<TH1F*>(objITSTPCMatchEff->Clone());
-        TH1F* histITSTPCTOFMatchEff = static_cast<TH1F*>(objITSTPCTOFMatchEff->Clone());
+        TH1F* histITSTPCMatchEff = dynamic_cast<TH1F*>(objITSTPCMatchEff->Clone());
+        TH1F* histITSTPCTOFMatchEff = dynamic_cast<TH1F*>(objITSTPCTOFMatchEff->Clone());
         // Lambda / Anti-Lambda
         if constexpr (part == kLambda || part == kAntiLambda) {
           auto posTrack = v.template posTrack_as<T>();
@@ -1561,19 +1561,6 @@ struct LambdaR2Correlation {
     }
   }
 
-  // Rap-Phi Bin Index
-  int getRapPhiBin(float const& rap, float const& phi)
-  {
-    const auto rapbin = static_cast<int>((rap - kminrap) / rapbinwidth);
-    const auto phibin = static_cast<int>(phi / phibinwidth);
-
-    if (rapbin >= 0 && phibin >= 0 && rapbin < nrapbins && phibin < nphibins) {
-      return rapbin * nphibins + phibin;
-    }
-
-    return -99;
-  }
-
   template <typename A>
   bool checkClosePair(A const& v1, A const& v2, int const& charge1, int const& charge2)
   {
@@ -1590,12 +1577,8 @@ struct LambdaR2Correlation {
     // DEta
     float deta = v1[1] - v2[1];
 
-    // Check close-pair
-    if (std::abs(deta) < cDEtaCut && std::abs(dphistar) < cDPhiStarCut) {
-      return true;
-    }
-
-    return false;
+    // Return
+    return (std::abs(deta) < cDEtaCut && std::abs(dphistar) < cDPhiStarCut);
   }
 
   template <typename T, typename V>
