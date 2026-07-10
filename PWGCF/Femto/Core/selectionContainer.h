@@ -70,6 +70,15 @@ inline const std::unordered_map<LimitType, std::string> limitTypeAsStrings = {
 
 }; // namespace limits
 
+namespace selectioncontainer
+{
+
+// strings for selection/filter histogram
+constexpr std::string_view SectionDelimiter = ":::";
+constexpr std::string_view RangeDelimiter = ";";
+constexpr std::string_view ValueDelimiter = "___";
+constexpr std::string_view NoValue = "X";
+
 /// \class SelectionContainer
 /// \brief Stores and evaluates multiple selection thresholds for a single observable.
 ///
@@ -444,9 +453,6 @@ class SelectionContainer
   [[nodiscard]] std::string getBinLabel(int selectionIndex) const
   {
     std::ostringstream oss;
-    std::string sectionDelimiter = ":::";
-    std::string valueDelimiter = "___";
-    std::string noValue = "X";
 
     // Determine value string
     std::string valueStr;
@@ -455,7 +461,7 @@ class SelectionContainer
       // Print actual lower;upper interval
       const auto& range = mSelectionRanges.at(selectionIndex);
       std::ostringstream rangeStream;
-      rangeStream << range.first << ";" << range.second;
+      rangeStream << range.first << RangeDelimiter << range.second;
       valueStr = rangeStream.str();
     } else if (mSelectionFunctions.empty()) {
       valueStr = std::to_string(mSelectionValues.at(selectionIndex));
@@ -463,16 +469,16 @@ class SelectionContainer
       valueStr = mSelectionFunctions.at(selectionIndex).GetExpFormula().Data();
     }
 
-    oss << "SelectionName" << valueDelimiter << mSelectionName << sectionDelimiter
-        << "LimitType" << valueDelimiter << getLimitTypeAsString() << sectionDelimiter
-        << "MinimalCut" << valueDelimiter << (mIsMinimalCut ? "1" : "0") << sectionDelimiter
-        << "SkipMostPermissiveBit" << valueDelimiter << (mSkipMostPermissiveBit ? "1" : "0") << sectionDelimiter
-        << "OptionalCut" << valueDelimiter << (mIsOptionalCut ? "1" : "0") << sectionDelimiter
-        << "Shift" << valueDelimiter << getShift() << sectionDelimiter
-        << "Offset" << valueDelimiter << mOffset << sectionDelimiter
-        << "Value" << valueDelimiter << valueStr << sectionDelimiter
-        << "BitPosition" << valueDelimiter << (mSkipMostPermissiveBit ? (selectionIndex == 0 ? noValue : std::to_string(mOffset + selectionIndex - 1)) : std::to_string(mOffset + selectionIndex)) << sectionDelimiter
-        << "Comment" << valueDelimiter << (mComments.empty() ? noValue : mComments.at(selectionIndex));
+    oss << "SelectionName" << ValueDelimiter << mSelectionName << SectionDelimiter
+        << "LimitType" << ValueDelimiter << getLimitTypeAsString() << SectionDelimiter
+        << "MinimalCut" << ValueDelimiter << (mIsMinimalCut ? "1" : "0") << SectionDelimiter
+        << "SkipMostPermissiveBit" << ValueDelimiter << (mSkipMostPermissiveBit ? "1" : "0") << SectionDelimiter
+        << "OptionalCut" << ValueDelimiter << (mIsOptionalCut ? "1" : "0") << SectionDelimiter
+        << "Shift" << ValueDelimiter << getShift() << SectionDelimiter
+        << "Offset" << ValueDelimiter << mOffset << SectionDelimiter
+        << "Value" << ValueDelimiter << valueStr << SectionDelimiter
+        << "BitPosition" << ValueDelimiter << (mSkipMostPermissiveBit ? (selectionIndex == 0 ? NoValue : std::to_string(mOffset + selectionIndex - 1)) : std::to_string(mOffset + selectionIndex)) << SectionDelimiter
+        << "Comment" << ValueDelimiter << (mComments.empty() ? NoValue : mComments.at(selectionIndex));
     return oss.str();
   }
 
@@ -610,6 +616,7 @@ class SelectionContainer
   std::bitset<sizeof(BitmaskType) * CHAR_BIT> mBitmask = {}; ///< Bitmask indicating which thresholds were passed during the last evaluation
   int mOffset = 0;                                           ///< Bit offset of this container within the global bitmask
 };
+}; // namespace selectioncontainer
 
 } // namespace o2::analysis::femto
 
