@@ -275,7 +275,6 @@ struct DeuteronInTriggeredEvents {
   Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", false, "If true, divide tpcInnerParam by the electric charge"};
 
   struct : o2::framework::ConfigurableGroup {
-    std::string prefix{"cfgTrackCut"};
     Configurable<LabeledArray<double>> dcaMax{"dcaMax", {nuclei::DCAcutDefault[0], 5, 2, nuclei::names, nuclei::nDCAConfigName}, "Max DCAxy and DCAz for light nuclei"};
     Configurable<float> etaMax{"etaMax", 0.8f, "Max Eta for tracks"};
     Configurable<int> itsNClusMin{"itsNClusMin", 5, "Minimum number of ITS clusters"};
@@ -362,7 +361,7 @@ struct DeuteronInTriggeredEvents {
     if (!particle.has_daughters())
       return -1.f;
 
-    float mothVtx[3]{particle.vx(), particle.vy(), particle.vz()};
+    const float mothVtx[3]{particle.vx(), particle.vy(), particle.vz()};
     float dauVtx[3]{0.f, 0.f, 0.f};
     auto daughters = particle.daughters_as<aod::McParticles>();
     for (const auto& dau : daughters) {
