@@ -92,7 +92,7 @@ using MyMCElectron = MyMCElectrons::iterator;
 using FilteredMyMCElectrons = o2::soa::Filtered<MyMCElectrons>;
 using FilteredMyMCElectron = FilteredMyMCElectrons::iterator;
 
-using MyMCMuons = o2::soa::Join<o2::aod::EMPrimaryMuons, o2::aod::EMPrimaryMuonEMEventIds, o2::aod::EMAmbiguousMuonSelfIds, o2::aod::EMGlobalMuonSelfIds, o2::aod::EMPrimaryMuonsPrefilterBitDerived, o2::aod::EMPrimaryMuonMCLabels, o2::aod::EMMFTMCLabels>;
+using MyMCMuons = o2::soa::Join<o2::aod::EMPrimaryMuons, o2::aod::EMPrimaryMuonEMEventIds, o2::aod::EMAmbiguousMuonSelfIds, o2::aod::EMGlobalMuonSelfIds, o2::aod::EMPrimaryMuonMCLabels, o2::aod::EMMFTMCLabels>;
 using MyMCMuon = MyMCMuons::iterator;
 using FilteredMyMCMuons = o2::soa::Filtered<MyMCMuons>;
 using FilteredMyMCMuon = FilteredMyMCMuons::iterator;
@@ -2550,10 +2550,6 @@ struct DileptonMC {
   o2::framework::Preslice<MyMCMuons> perCollision_muon = o2::aod::emprimarymuon::emeventId;
   o2::framework::expressions::Filter trackFilter_muon = o2::aod::fwdtrack::trackType == dimuoncuts.cfg_track_type;
   o2::framework::expressions::Filter ttcaFilter_muon = ifnode(dimuoncuts.enableTTCA.node(), true, o2::aod::emprimarymuon::isAssociatedToMPC == true);
-  o2::framework::expressions::Filter prefilter_derived_muon = ifnode(dimuoncuts.cfg_apply_cuts_from_prefilter_derived.node() && dimuoncuts.cfg_prefilter_bits_derived.node() >= static_cast<uint16_t>(1),
-                                                                     ifnode((dimuoncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS))) > static_cast<uint16_t>(0), (o2::aod::emprimarymuon::pfbderived & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS))) <= static_cast<uint16_t>(0), true) &&
-                                                                       ifnode((dimuoncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS))) > static_cast<uint16_t>(0), (o2::aod::emprimarymuon::pfbderived & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS))) <= static_cast<uint16_t>(0), true),
-                                                                     o2::aod::emprimarymuon::pfbderived >= static_cast<uint16_t>(0));
 
   o2::framework::expressions::Filter collisionFilter_centrality = (eventcuts.cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < eventcuts.cfgCentMax);
   o2::framework::expressions::Filter collisionFilter_numContrib = eventcuts.cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < eventcuts.cfgNumContribMax;

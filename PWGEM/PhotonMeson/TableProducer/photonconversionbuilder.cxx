@@ -82,7 +82,7 @@ using namespace o2::pwgem::photonmeson;
 using std::array;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
-using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
+// using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 
 using MyTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullEl, aod::pidTPCFullPi>;
@@ -889,11 +889,11 @@ struct PhotonConversionBuilder {
         continue;
       }
 
-      if constexpr (isTriggerAnalysis) {
-        if (collision.swtaliastmp_raw() == 0) {
-          continue;
-        }
-      }
+      // if constexpr (isTriggerAnalysis) {
+      //   if (collision.triggerMask_raw() == 0) {
+      //     continue;
+      //   }
+      // }
 
       nv0_map[collision.globalIndex()] = 0;
 
@@ -1013,11 +1013,11 @@ struct PhotonConversionBuilder {
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processRec, "process reconstructed info for data", true);
 
-  void processRec_SWT(MyCollisionsWithSWT const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
-  {
-    build<false, true, false>(collisions, v0s, tracks, bcs);
-  }
-  PROCESS_SWITCH(PhotonConversionBuilder, processRec_SWT, "process reconstructed info for data", false);
+  // void processRec_SWT(MyCollisionsWithSWT const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  // {
+  //   build<false, true, false>(collisions, v0s, tracks, bcs);
+  // }
+  // PROCESS_SWITCH(PhotonConversionBuilder, processRec_SWT, "process reconstructed info for data", false);
 
   void processMC(MyCollisionsMC const& collisions, FilteredV0s const& v0s, MyTracksIUMC const& tracks, aod::BCsWithTimestamps const& bcs)
   {
@@ -1031,11 +1031,11 @@ struct PhotonConversionBuilder {
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processRec_OnlyIfDielectron, "process reconstructed info for data", false);
 
-  void processRec_SWT_OnlyIfDielectron(soa::Join<MyCollisionsWithSWT, aod::EMEventsNee> const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
-  {
-    build<false, true, true>(collisions, v0s, tracks, bcs);
-  }
-  PROCESS_SWITCH(PhotonConversionBuilder, processRec_SWT_OnlyIfDielectron, "process reconstructed info for data", false);
+  // void processRec_SWT_OnlyIfDielectron(soa::Join<MyCollisionsWithSWT, aod::EMEventsNee> const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  // {
+  //   build<false, true, true>(collisions, v0s, tracks, bcs);
+  // }
+  // PROCESS_SWITCH(PhotonConversionBuilder, processRec_SWT_OnlyIfDielectron, "process reconstructed info for data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& context)
