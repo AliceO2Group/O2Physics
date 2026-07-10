@@ -19,6 +19,7 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import argparse
+from typing import Any, Dict, List
 
 try:
     import ROOT
@@ -167,8 +168,8 @@ class CutCulatorApp(tk.Tk):
         self._tdir_path = tdir
         self._root_file = None
         self._hist = None
-        self._groups = {}  # SelectionName → list[bin_dict]
-        self._filter_bins = []  # list[bin_dict], used when the histogram is a filter histogram
+        self._groups: Dict[str, List[Dict[str, Any]]] = {}  # SelectionName → list[bin_dict]
+        self._filter_bins: List[Dict[str, Any]] = []  # list[bin_dict], used when the histogram is a filter histogram
         self._is_filter_hist = False
         self._vars = {}  # (SelectionName, idx) → BooleanVar
         self._check_labels = {}  # (SelectionName, idx) → Label (custom checkbox glyph)
@@ -407,6 +408,11 @@ class CutCulatorApp(tk.Tk):
         self._is_filter_hist = is_filter
 
         if is_filter:
+            # load_bins_from_hist returns a flat list of bin dicts when is_filter
+            # is True; the assert lets the type checker narrow `parsed` from the
+            # dict|list union it infers from the function's two return shapes,
+            # instead of leaving self._groups statically ambiguous.
+            assert isinstance(parsed, list)
             self._filter_bins = parsed
             self._groups = {}
             self._build_legend_filter()
@@ -414,6 +420,9 @@ class CutCulatorApp(tk.Tk):
             self._set_bitmask_bar_visible(False)
             self._set_summary_visible(False)
         else:
+            # load_bins_from_hist returns a dict of SelectionName -> bins when
+            # is_filter is False; same narrowing purpose as above.
+            assert isinstance(parsed, dict)
             self._groups = parsed
             self._filter_bins = []
             self._build_legend_selection()
@@ -627,7 +636,9 @@ class CutCulatorApp(tk.Tk):
         # the alignment: both row types share one widget recipe for their
         # leading column instead of trying to match a native Checkbutton's
         # unmeasurable indicator box.
-        check_lbl = tk.Label(row, text="[ ]", font=FONT_BODY, bg=BG_CARD, fg=FG_DIM, width=CHECK_COL_WIDTH, anchor="w")
+        check_lbl = tk.Label(
+            row, text="[ ]", font=FONT_BODY, bg=BG_CARD, fg=FG_DIM, width=CHECK_COL_WIDTH, anchor="w"
+        )
         check_lbl.pack(side="left")
         self._check_labels[(sel_name, idx)] = check_lbl
 
