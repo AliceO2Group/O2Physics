@@ -99,7 +99,7 @@ struct EmcalQC {
 
   struct : ConfigurableGroup {
     std::string prefix = "axis_group";
-    ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0., 20.}, "pT axis for photon candidates"};
+    ConfigurableAxis thnConfigAxisE{"thnConfigAxisE", {100, 0., 20.}, "pT axis for photon candidates"};
   } axisGroup;
 
   void defineEMEventCut()
@@ -151,7 +151,7 @@ struct EmcalQC {
     defineEMCCut();
     defineEMEventCut();
 
-    const AxisSpec thnAxisPt{axisGroup.thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec thnAxisE{axisGroup.thnConfigAxisE, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thAxisdEta{200, -0.06, 0.06, "#Delta#eta"};
     const AxisSpec thAxisdPhi{200, -0.06, 0.06, "#Delta#varphi (rad)"};
 
@@ -167,10 +167,10 @@ struct EmcalQC {
     o2::aod::pwgem::photonmeson::utils::clusterhistogram::addClusterHistograms(&fRegistry, cfgDo2DQA);
 
     if (doprocessQCTM) {
-      fRegistry.add("Cluster/hDeltaEtaPhiAllPrimTracks", "#Delta#eta #Delta#varphi distribution of all matched prim. tracks", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
-      fRegistry.add("Cluster/hDeltaEtaPhiClosestPrimTracks", "#Delta#eta #Delta#varphi distribution of the Closest matched prim. track", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
-      fRegistry.add("Cluster/hDeltaEtaPhiAllSecTracks", "#Delta#eta #Delta#varphi distribution of all matched sec. tracks", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
-      fRegistry.add("Cluster/hDeltaEtaPhiClosestSecTracks", "#Delta#eta #Delta#varphi distribution of the Closest matched sec. track", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiAllPrimTracks", "#Delta#eta #Delta#varphi distribution of all matched prim. tracks", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisE}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiClosestPrimTracks", "#Delta#eta #Delta#varphi distribution of the Closest matched prim. track", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisE}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiAllSecTracks", "#Delta#eta #Delta#varphi distribution of all matched sec. tracks", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisE}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiClosestSecTracks", "#Delta#eta #Delta#varphi distribution of the Closest matched sec. track", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisE}, false);
     }
   }
 
@@ -293,17 +293,17 @@ struct EmcalQC {
       }
       if (primTracksPerCluster.size() > 0) {
         const auto closestPrimTrack = primTracksPerCluster.begin();
-        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiClosestPrimTracks"), closestPrimTrack.deltaEta(), closestPrimTrack.deltaPhi(), cluster.pt());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiClosestPrimTracks"), closestPrimTrack.deltaEta(), closestPrimTrack.deltaPhi(), cluster.e());
       }
       for (const auto& matchedPrimTrack : primTracksPerCluster) {
-        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiAllPrimTracks"), matchedPrimTrack.deltaEta(), matchedPrimTrack.deltaPhi(), cluster.pt());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiAllPrimTracks"), matchedPrimTrack.deltaEta(), matchedPrimTrack.deltaPhi(), cluster.e());
       }
       if (secTracksPerCluster.size() > 0) {
         const auto closestSecTrack = secTracksPerCluster.begin();
-        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiClosestSecTracks"), closestSecTrack.deltaEta(), closestSecTrack.deltaPhi(), cluster.pt());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiClosestSecTracks"), closestSecTrack.deltaEta(), closestSecTrack.deltaPhi(), cluster.e());
       }
       for (const auto& matchedSecTrack : secTracksPerCluster) {
-        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiAllSecTracks"), matchedSecTrack.deltaEta(), matchedSecTrack.deltaPhi(), cluster.pt());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiAllSecTracks"), matchedSecTrack.deltaEta(), matchedSecTrack.deltaPhi(), cluster.e());
       }
 
       if (!fEMCCut.IsSelectedEMCal(EMCPhotonCut::EMCPhotonCuts::kTM, cluster, primTracksPerCluster)) { // Check whether cluster passes this cluster requirement, if not, fill why in the next row
