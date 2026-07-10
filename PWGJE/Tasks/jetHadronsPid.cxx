@@ -431,9 +431,9 @@ struct JetHadronsPid {
     double const buffer = 999.0;
     double pt = track.pt();
 
-    double dPi;
-    double dKa;
-    double dPr;
+    double dPi = 0;
+    double dKa = 0;
+    double dPr = 0;
 
     if (pt < cfg.ptThreshold) {
       dPi = std::abs(track.tpcNSigmaPi());
@@ -455,37 +455,43 @@ struct JetHadronsPid {
     bool isKaMatch = (dKa <= cfg.nSigmaCut);
     bool isPrMatch = (dPr <= cfg.nSigmaCut);
 
-    PidResult res{false, false, false};
+    PidResult res{.isPion = false, .isKaon = false, .isProton = false};
 
     if (cfg.pidMethod == ClosestMatch) {
-      if (isPiMatch && dPi < dKa && dPi < dPr)
+      if (isPiMatch && dPi < dKa && dPi < dPr) {
         res.isPion = true;
-      else if (isKaMatch && dKa < dPi && dKa < dPr)
+      } else if (isKaMatch && dKa < dPi && dKa < dPr) {
         res.isKaon = true;
-      else if (isPrMatch && dPr < dPi && dPr < dKa)
+      } else if (isPrMatch && dPr < dPi && dPr < dKa) {
         res.isProton = true;
+      }
     } else if (cfg.pidMethod == ExclusiveMatch) {
-      if (isPiMatch && !isKaMatch && !isPrMatch)
+      if (isPiMatch && !isKaMatch && !isPrMatch) {
         res.isPion = true;
-      else if (isKaMatch && !isPiMatch && !isPrMatch)
+      } else if (isKaMatch && !isPiMatch && !isPrMatch) {
         res.isKaon = true;
-      else if (isPrMatch && !isPiMatch && !isKaMatch)
+      } else if (isPrMatch && !isPiMatch && !isKaMatch) {
         res.isProton = true;
+      }
     } else if (cfg.pidMethod == RejectionBased) {
-      if (isPiMatch && dKa > cfg.rejectionSigma && dPr > cfg.rejectionSigma)
+      if (isPiMatch && dKa > cfg.rejectionSigma && dPr > cfg.rejectionSigma) {
         res.isPion = true;
-      else if (isKaMatch && dPi > cfg.rejectionSigma && dPr > cfg.rejectionSigma)
+      } else if (isKaMatch && dPi > cfg.rejectionSigma && dPr > cfg.rejectionSigma) {
         res.isKaon = true;
-      else if (isPrMatch && dPi > cfg.rejectionSigma && dKa > cfg.rejectionSigma)
+      } else if (isPrMatch && dPi > cfg.rejectionSigma && dKa > cfg.rejectionSigma) {
         res.isProton = true;
+      }
     }
 
-    if (res.isPion && (pt < cfg.minPtPion || pt > cfg.maxPtPion))
+    if (res.isPion && (pt < cfg.minPtPion || pt > cfg.maxPtPion)) {
       res.isPion = false;
-    if (res.isKaon && (pt < cfg.minPtKaon || pt > cfg.maxPtKaon))
+    }
+    if (res.isKaon && (pt < cfg.minPtKaon || pt > cfg.maxPtKaon)) {
       res.isKaon = false;
-    if (res.isProton && (pt < cfg.minPtProton || pt > cfg.maxPtProton))
+    }
+    if (res.isProton && (pt < cfg.minPtProton || pt > cfg.maxPtProton)) {
       res.isProton = false;
+    }
 
     return res;
   }
@@ -493,49 +499,67 @@ struct JetHadronsPid {
   template <typename TrackType>
   bool passedTrackSelection(const TrackType& track)
   {
-    if (requirePvContributor && !(track.isPVContributor()))
+    if (requirePvContributor && !(track.isPVContributor())) {
       return false;
-    if (!track.hasITS() || !track.hasTPC())
+    }
+    if (!track.hasITS() || !track.hasTPC()) {
       return false;
-    if ((!hasITSLayerHit(track, 1)) && (!hasITSLayerHit(track, 2)) && (!hasITSLayerHit(track, 3)))
+    }
+    if ((!hasITSLayerHit(track, 1)) && (!hasITSLayerHit(track, 2)) && (!hasITSLayerHit(track, 3))) {
       return false;
-    if (track.itsNCls() < minItsNclusters)
+    }
+    if (track.itsNCls() < minItsNclusters) {
       return false;
-    if (track.tpcNClsCrossedRows() < minTpcNcrossedRows)
+    }
+    if (track.tpcNClsCrossedRows() < minTpcNcrossedRows) {
       return false;
-    if (track.tpcChi2NCl() < minChiSquareTpc || track.tpcChi2NCl() > maxChiSquareTpc)
+    }
+    if (track.tpcChi2NCl() < minChiSquareTpc || track.tpcChi2NCl() > maxChiSquareTpc) {
       return false;
-    if (track.itsChi2NCl() > maxChiSquareIts)
+    }
+    if (track.itsChi2NCl() > maxChiSquareIts) {
       return false;
-    if (track.eta() < minEta || track.eta() > maxEta)
+    }
+    if (track.eta() < minEta || track.eta() > maxEta) {
       return false;
-    if (track.pt() < minPt || track.pt() > maxPt)
+    }
+    if (track.pt() < minPt || track.pt() > maxPt) {
       return false;
-    if (std::abs(track.dcaXY()) > maxDcaxy || std::abs(track.dcaZ()) > maxDcaz)
+    }
+    if (std::abs(track.dcaXY()) > maxDcaxy || std::abs(track.dcaZ()) > maxDcaz) {
       return false;
+    }
     return true;
   }
 
   void processPureTracks(StandardEvents::iterator const& collision, HadronTracks const& globalTracks)
   {
-    if (!collision.sel8() || std::abs(collision.posZ()) > zVtx)
+    if (!collision.sel8() || std::abs(collision.posZ()) > zVtx) {
       return;
-    if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
+    }
+    if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return;
-    if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
+    }
+    if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return;
-    if (requireVtxITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
+    }
+    if (requireVtxITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
       return;
-    if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+    }
+    if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return;
-    if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+    }
+    if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return;
-    if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))
+    }
+    if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
       return;
+    }
 
     for (auto const& track : globalTracks) {
-      if (!passedTrackSelection(track))
+      if (!passedTrackSelection(track)) {
         continue;
+      }
 
       double pt = track.pt();
       double eta = track.eta();
@@ -547,8 +571,9 @@ struct JetHadronsPid {
 
       if (pid.isPion) {
         registryData.fill(HIST("data/pure/pions/pion_pure_tpc"), pt, track.tpcNSigmaPi());
-        if (track.hasTOF())
+        if (track.hasTOF()) {
           registryData.fill(HIST("data/pure/pions/pion_pure_tof"), pt, track.tofNSigmaPi());
+        }
         registryData.fill(HIST("data/pure/pions/pion_pure_pt"), pt);
         registryData.fill(HIST("data/pure/pions/pion_pure_eta"), eta);
         registryData.fill(HIST("data/pure/pions/pion_pure_dcaxy"), dcaxy);
@@ -556,16 +581,18 @@ struct JetHadronsPid {
 
         if (charge > 0) {
           registryData.fill(HIST("data/pure/pions/pos/pion_pure_pos_tpc"), pt, track.tpcNSigmaPi());
-          if (track.hasTOF())
+          if (track.hasTOF()) {
             registryData.fill(HIST("data/pure/pions/pos/pion_pure_pos_tof"), pt, track.tofNSigmaPi());
+          }
           registryData.fill(HIST("data/pure/pions/pos/pion_pure_pos_pt"), pt);
           registryData.fill(HIST("data/pure/pions/pos/pion_pure_pos_eta"), eta);
           registryData.fill(HIST("data/pure/pions/pos/pion_pure_pos_dcaxy"), dcaxy);
           registryData.fill(HIST("data/pure/pions/pos/pion_pure_pos_dcaz"), dcaz);
         } else {
           registryData.fill(HIST("data/pure/pions/neg/pion_pure_neg_tpc"), pt, track.tpcNSigmaPi());
-          if (track.hasTOF())
+          if (track.hasTOF()) {
             registryData.fill(HIST("data/pure/pions/neg/pion_pure_neg_tof"), pt, track.tofNSigmaPi());
+          }
           registryData.fill(HIST("data/pure/pions/neg/pion_pure_neg_pt"), pt);
           registryData.fill(HIST("data/pure/pions/neg/pion_pure_neg_eta"), eta);
           registryData.fill(HIST("data/pure/pions/neg/pion_pure_neg_dcaxy"), dcaxy);
@@ -575,8 +602,9 @@ struct JetHadronsPid {
 
       if (pid.isKaon) {
         registryData.fill(HIST("data/pure/kaons/kaon_pure_tpc"), pt, track.tpcNSigmaKa());
-        if (track.hasTOF())
+        if (track.hasTOF()) {
           registryData.fill(HIST("data/pure/kaons/kaon_pure_tof"), pt, track.tofNSigmaKa());
+        }
         registryData.fill(HIST("data/pure/kaons/kaon_pure_pt"), pt);
         registryData.fill(HIST("data/pure/kaons/kaon_pure_eta"), eta);
         registryData.fill(HIST("data/pure/kaons/kaon_pure_dcaxy"), dcaxy);
@@ -584,16 +612,18 @@ struct JetHadronsPid {
 
         if (charge > 0) {
           registryData.fill(HIST("data/pure/kaons/pos/kaon_pure_pos_tpc"), pt, track.tpcNSigmaKa());
-          if (track.hasTOF())
+          if (track.hasTOF()) {
             registryData.fill(HIST("data/pure/kaons/pos/kaon_pure_pos_tof"), pt, track.tofNSigmaKa());
+          }
           registryData.fill(HIST("data/pure/kaons/pos/kaon_pure_pos_pt"), pt);
           registryData.fill(HIST("data/pure/kaons/pos/kaon_pure_pos_eta"), eta);
           registryData.fill(HIST("data/pure/kaons/pos/kaon_pure_pos_dcaxy"), dcaxy);
           registryData.fill(HIST("data/pure/kaons/pos/kaon_pure_pos_dcaz"), dcaz);
         } else {
           registryData.fill(HIST("data/pure/kaons/neg/kaon_pure_neg_tpc"), pt, track.tpcNSigmaKa());
-          if (track.hasTOF())
+          if (track.hasTOF()) {
             registryData.fill(HIST("data/pure/kaons/neg/kaon_pure_neg_tof"), pt, track.tofNSigmaKa());
+          }
           registryData.fill(HIST("data/pure/kaons/neg/kaon_pure_neg_pt"), pt);
           registryData.fill(HIST("data/pure/kaons/neg/kaon_pure_neg_eta"), eta);
           registryData.fill(HIST("data/pure/kaons/neg/kaon_pure_neg_dcaxy"), dcaxy);
@@ -603,8 +633,9 @@ struct JetHadronsPid {
 
       if (pid.isProton) {
         registryData.fill(HIST("data/pure/protons/proton_pure_tpc"), pt, track.tpcNSigmaPr());
-        if (track.hasTOF())
+        if (track.hasTOF()) {
           registryData.fill(HIST("data/pure/protons/proton_pure_tof"), pt, track.tofNSigmaPr());
+        }
         registryData.fill(HIST("data/pure/protons/proton_pure_pt"), pt);
         registryData.fill(HIST("data/pure/protons/proton_pure_eta"), eta);
         registryData.fill(HIST("data/pure/protons/proton_pure_dcaxy"), dcaxy);
@@ -612,16 +643,18 @@ struct JetHadronsPid {
 
         if (charge > 0) {
           registryData.fill(HIST("data/pure/protons/pos/proton_pure_pos_tpc"), pt, track.tpcNSigmaPr());
-          if (track.hasTOF())
+          if (track.hasTOF()) {
             registryData.fill(HIST("data/pure/protons/pos/proton_pure_pos_tof"), pt, track.tofNSigmaPr());
+          }
           registryData.fill(HIST("data/pure/protons/pos/proton_pure_pos_pt"), pt);
           registryData.fill(HIST("data/pure/protons/pos/proton_pure_pos_eta"), eta);
           registryData.fill(HIST("data/pure/protons/pos/proton_pure_pos_dcaxy"), dcaxy);
           registryData.fill(HIST("data/pure/protons/pos/proton_pure_pos_dcaz"), dcaz);
         } else {
           registryData.fill(HIST("data/pure/protons/neg/proton_pure_neg_tpc"), pt, track.tpcNSigmaPr());
-          if (track.hasTOF())
+          if (track.hasTOF()) {
             registryData.fill(HIST("data/pure/protons/neg/proton_pure_neg_tof"), pt, track.tofNSigmaPr());
+          }
           registryData.fill(HIST("data/pure/protons/neg/proton_pure_neg_pt"), pt);
           registryData.fill(HIST("data/pure/protons/neg/proton_pure_neg_eta"), eta);
           registryData.fill(HIST("data/pure/protons/neg/proton_pure_neg_dcaxy"), dcaxy);
@@ -644,8 +677,9 @@ struct JetHadronsPid {
     }
 
     float zVertex = collision.posZ();
-    if (std::abs(zVertex) > zVtx)
+    if (std::abs(zVertex) > zVtx) {
       return;
+    }
 
     registryData.fill(HIST("data/n_events"), 1);
     registryData.fill(HIST("data/z_vtx"), zVertex);
@@ -656,26 +690,32 @@ struct JetHadronsPid {
 
     for (auto const& jet : jets) {
 
-      if (!isppRefAnalysis && ((std::abs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge)))
+      if (!isppRefAnalysis && ((std::abs(jet.eta()) + rJet) > (maxEta - deltaEtaEdge))) {
         continue;
-      if (isppRefAnalysis && std::abs(jet.eta()) > cfgEtaJetMax)
+      }
+      if (isppRefAnalysis && std::abs(jet.eta()) > cfgEtaJetMax) {
         continue;
+      }
 
       double ptSub = jet.pt() - (centralRho * jet.area());
-      if (ptSub < 0)
+      if (ptSub < 0) {
         ptSub = 0.0;
+      }
 
       registryData.fill(HIST("data/jets/jet_pt_subtracted"), ptSub);
       registryData.fill(HIST("data/jets/jet_pt_raw_vs_sub"), jet.pt(), ptSub);
 
-      if (isppRefAnalysis && (jet.pt() < minJetPt || jet.pt() > maxJetPt))
+      if (isppRefAnalysis && (jet.pt() < minJetPt || jet.pt() > maxJetPt)) {
         continue;
-      if (!isppRefAnalysis && (ptSub < minJetPt || ptSub > maxJetPt))
+      }
+      if (!isppRefAnalysis && (ptSub < minJetPt || ptSub > maxJetPt)) {
         continue;
+      }
 
       double normalizedJetArea = jet.area() / (PI * rJet * rJet);
-      if (applyAreaCut && normalizedJetArea < minNormalizedJetArea)
+      if (applyAreaCut && normalizedJetArea < minNormalizedJetArea) {
         continue;
+      }
 
       registryData.fill(HIST("data/jets/jet_eta"), jet.eta());
       registryData.fill(HIST("data/jets/jet_phi"), jet.phi());
@@ -687,8 +727,9 @@ struct JetHadronsPid {
       TVector3 ueAxis1(0, 0, 0), ueAxis2(0, 0, 0);
       getPerpendicularDirections(jetAxis, ueAxis1, ueAxis2);
 
-      if (ueAxis1.Mag() < magnitudeThreshold || ueAxis2.Mag() < magnitudeThreshold)
+      if (ueAxis1.Mag() < magnitudeThreshold || ueAxis2.Mag() < magnitudeThreshold) {
         continue;
+      }
 
       int constituentCount = 0;
       std::set<int> tracksInJetsSet;
@@ -699,8 +740,9 @@ struct JetHadronsPid {
         auto track = jtrack.track_as<HadronTracks>();
         tracksInJetsSet.insert(track.index());
 
-        if (!passedTrackSelection(track))
+        if (!passedTrackSelection(track)) {
           continue;
+        }
 
         double pt = track.pt();
         double eta = track.eta();
@@ -712,8 +754,9 @@ struct JetHadronsPid {
 
         if (pid.isPion) {
           registryData.fill(HIST("data/jets/pions/pion_jet_tpc"), pt, track.tpcNSigmaPi());
-          if (track.hasTOF())
+          if (track.hasTOF()) {
             registryData.fill(HIST("data/jets/pions/pion_jet_tof"), pt, track.tofNSigmaPi());
+          }
           registryData.fill(HIST("data/jets/pions/pion_jet_pt"), pt);
           registryData.fill(HIST("data/jets/pions/pion_jet_eta"), eta);
           registryData.fill(HIST("data/jets/pions/pion_jet_dcaxy"), dcaxy);
@@ -721,16 +764,18 @@ struct JetHadronsPid {
 
           if (charge > 0) {
             registryData.fill(HIST("data/jets/pions/pos/pion_jet_pos_tpc"), pt, track.tpcNSigmaPi());
-            if (track.hasTOF())
+            if (track.hasTOF()) {
               registryData.fill(HIST("data/jets/pions/pos/pion_jet_pos_tof"), pt, track.tofNSigmaPi());
+            }
             registryData.fill(HIST("data/jets/pions/pos/pion_jet_pos_pt"), pt);
             registryData.fill(HIST("data/jets/pions/pos/pion_jet_pos_eta"), eta);
             registryData.fill(HIST("data/jets/pions/pos/pion_jet_pos_dcaxy"), dcaxy);
             registryData.fill(HIST("data/jets/pions/pos/pion_jet_pos_dcaz"), dcaz);
           } else {
             registryData.fill(HIST("data/jets/pions/neg/pion_jet_neg_tpc"), pt, track.tpcNSigmaPi());
-            if (track.hasTOF())
+            if (track.hasTOF()) {
               registryData.fill(HIST("data/jets/pions/neg/pion_jet_neg_tof"), pt, track.tofNSigmaPi());
+            }
             registryData.fill(HIST("data/jets/pions/neg/pion_jet_neg_pt"), pt);
             registryData.fill(HIST("data/jets/pions/neg/pion_jet_neg_eta"), eta);
             registryData.fill(HIST("data/jets/pions/neg/pion_jet_neg_dcaxy"), dcaxy);
@@ -740,8 +785,9 @@ struct JetHadronsPid {
 
         if (pid.isKaon) {
           registryData.fill(HIST("data/jets/kaons/kaon_jet_tpc"), pt, track.tpcNSigmaKa());
-          if (track.hasTOF())
+          if (track.hasTOF()) {
             registryData.fill(HIST("data/jets/kaons/kaon_jet_tof"), pt, track.tofNSigmaKa());
+          }
           registryData.fill(HIST("data/jets/kaons/kaon_jet_pt"), pt);
           registryData.fill(HIST("data/jets/kaons/kaon_jet_eta"), eta);
           registryData.fill(HIST("data/jets/kaons/kaon_jet_dcaxy"), dcaxy);
@@ -749,16 +795,18 @@ struct JetHadronsPid {
 
           if (charge > 0) {
             registryData.fill(HIST("data/jets/kaons/pos/kaon_jet_pos_tpc"), pt, track.tpcNSigmaKa());
-            if (track.hasTOF())
+            if (track.hasTOF()) {
               registryData.fill(HIST("data/jets/kaons/pos/kaon_jet_pos_tof"), pt, track.tofNSigmaKa());
+            }
             registryData.fill(HIST("data/jets/kaons/pos/kaon_jet_pos_pt"), pt);
             registryData.fill(HIST("data/jets/kaons/pos/kaon_jet_pos_eta"), eta);
             registryData.fill(HIST("data/jets/kaons/pos/kaon_jet_pos_dcaxy"), dcaxy);
             registryData.fill(HIST("data/jets/kaons/pos/kaon_jet_pos_dcaz"), dcaz);
           } else {
             registryData.fill(HIST("data/jets/kaons/neg/kaon_jet_neg_tpc"), pt, track.tpcNSigmaKa());
-            if (track.hasTOF())
+            if (track.hasTOF()) {
               registryData.fill(HIST("data/jets/kaons/neg/kaon_jet_neg_tof"), pt, track.tofNSigmaKa());
+            }
             registryData.fill(HIST("data/jets/kaons/neg/kaon_jet_neg_pt"), pt);
             registryData.fill(HIST("data/jets/kaons/neg/kaon_jet_neg_eta"), eta);
             registryData.fill(HIST("data/jets/kaons/neg/kaon_jet_neg_dcaxy"), dcaxy);
@@ -768,8 +816,9 @@ struct JetHadronsPid {
 
         if (pid.isProton) {
           registryData.fill(HIST("data/jets/protons/proton_jet_tpc"), pt, track.tpcNSigmaPr());
-          if (track.hasTOF())
+          if (track.hasTOF()) {
             registryData.fill(HIST("data/jets/protons/proton_jet_tof"), pt, track.tofNSigmaPr());
+          }
           registryData.fill(HIST("data/jets/protons/proton_jet_pt"), pt);
           registryData.fill(HIST("data/jets/protons/proton_jet_eta"), eta);
           registryData.fill(HIST("data/jets/protons/proton_jet_dcaxy"), dcaxy);
@@ -777,16 +826,18 @@ struct JetHadronsPid {
 
           if (charge > 0) {
             registryData.fill(HIST("data/jets/protons/pos/proton_jet_pos_tpc"), pt, track.tpcNSigmaPr());
-            if (track.hasTOF())
+            if (track.hasTOF()) {
               registryData.fill(HIST("data/jets/protons/pos/proton_jet_pos_tof"), pt, track.tofNSigmaPr());
+            }
             registryData.fill(HIST("data/jets/protons/pos/proton_jet_pos_pt"), pt);
             registryData.fill(HIST("data/jets/protons/pos/proton_jet_pos_eta"), eta);
             registryData.fill(HIST("data/jets/protons/pos/proton_jet_pos_dcaxy"), dcaxy);
             registryData.fill(HIST("data/jets/protons/pos/proton_jet_pos_dcaz"), dcaz);
           } else {
             registryData.fill(HIST("data/jets/protons/neg/proton_jet_neg_tpc"), pt, track.tpcNSigmaPr());
-            if (track.hasTOF())
+            if (track.hasTOF()) {
               registryData.fill(HIST("data/jets/protons/neg/proton_jet_neg_tof"), pt, track.tofNSigmaPr());
+            }
             registryData.fill(HIST("data/jets/protons/neg/proton_jet_neg_pt"), pt);
             registryData.fill(HIST("data/jets/protons/neg/proton_jet_neg_eta"), eta);
             registryData.fill(HIST("data/jets/protons/neg/proton_jet_neg_dcaxy"), dcaxy);
@@ -800,13 +851,15 @@ struct JetHadronsPid {
 
       for (auto const& track : collTracks) {
 
-        if (tracksInJetsSet.find(track.index()) == tracksInJetsSet.end()) {
-          if (passedTrackSelection(track))
+        if (!tracksInJetsSet.contains(track.index())) {
+          if (passedTrackSelection(track)) {
             nTracksOut++;
+          }
         }
 
-        if (!passedTrackSelection(track))
+        if (!passedTrackSelection(track)) {
           continue;
+        }
 
         double deltaEtaUe1 = track.eta() - ueAxis1.Eta();
         double deltaPhiUe1 = RecoDecay::constrainAngle(track.phi() - ueAxis1.Phi(), -PI);
@@ -816,8 +869,9 @@ struct JetHadronsPid {
         double deltaPhiUe2 = RecoDecay::constrainAngle(track.phi() - ueAxis2.Phi(), -PI);
         double deltaRUe2 = std::hypot(deltaEtaUe2, deltaPhiUe2);
 
-        if (deltaRUe1 > rJet && deltaRUe2 > rJet)
+        if (deltaRUe1 > rJet && deltaRUe2 > rJet) {
           continue;
+        }
 
         double pt = track.pt();
         double eta = track.eta();
@@ -829,8 +883,9 @@ struct JetHadronsPid {
 
         if (pid.isPion) {
           registryData.fill(HIST("data/ue/pions/pion_ue_tpc"), pt, track.tpcNSigmaPi());
-          if (track.hasTOF())
+          if (track.hasTOF()) {
             registryData.fill(HIST("data/ue/pions/pion_ue_tof"), pt, track.tofNSigmaPi());
+          }
 
           registryData.fill(HIST("data/ue/pions/pion_ue_pt"), pt);
           registryData.fill(HIST("data/ue/pions/pion_ue_eta"), eta);
@@ -839,16 +894,18 @@ struct JetHadronsPid {
 
           if (charge > 0) {
             registryData.fill(HIST("data/ue/pions/pos/pion_ue_pos_tpc"), pt, track.tpcNSigmaPi());
-            if (track.hasTOF())
+            if (track.hasTOF()) {
               registryData.fill(HIST("data/ue/pions/pos/pion_ue_pos_tof"), pt, track.tofNSigmaPi());
+            }
             registryData.fill(HIST("data/ue/pions/pos/pion_ue_pos_pt"), pt);
             registryData.fill(HIST("data/ue/pions/pos/pion_ue_pos_eta"), eta);
             registryData.fill(HIST("data/ue/pions/pos/pion_ue_pos_dcaxy"), dcaxy);
             registryData.fill(HIST("data/ue/pions/pos/pion_ue_pos_dcaz"), dcaz);
           } else {
             registryData.fill(HIST("data/ue/pions/neg/pion_ue_neg_tpc"), pt, track.tpcNSigmaPi());
-            if (track.hasTOF())
+            if (track.hasTOF()) {
               registryData.fill(HIST("data/ue/pions/neg/pion_ue_neg_tof"), pt, track.tofNSigmaPi());
+            }
             registryData.fill(HIST("data/ue/pions/neg/pion_ue_neg_pt"), pt);
             registryData.fill(HIST("data/ue/pions/neg/pion_ue_neg_eta"), eta);
             registryData.fill(HIST("data/ue/pions/neg/pion_ue_neg_dcaxy"), dcaxy);
@@ -858,8 +915,9 @@ struct JetHadronsPid {
 
         if (pid.isKaon) {
           registryData.fill(HIST("data/ue/kaons/kaon_ue_tpc"), pt, track.tpcNSigmaKa());
-          if (track.hasTOF())
+          if (track.hasTOF()) {
             registryData.fill(HIST("data/ue/kaons/kaon_ue_tof"), pt, track.tofNSigmaKa());
+          }
 
           registryData.fill(HIST("data/ue/kaons/kaon_ue_pt"), pt);
           registryData.fill(HIST("data/ue/kaons/kaon_ue_eta"), eta);
@@ -868,16 +926,18 @@ struct JetHadronsPid {
 
           if (charge > 0) {
             registryData.fill(HIST("data/ue/kaons/pos/kaon_ue_pos_tpc"), pt, track.tpcNSigmaKa());
-            if (track.hasTOF())
+            if (track.hasTOF()) {
               registryData.fill(HIST("data/ue/kaons/pos/kaon_ue_pos_tof"), pt, track.tofNSigmaKa());
+            }
             registryData.fill(HIST("data/ue/kaons/pos/kaon_ue_pos_pt"), pt);
             registryData.fill(HIST("data/ue/kaons/pos/kaon_ue_pos_eta"), eta);
             registryData.fill(HIST("data/ue/kaons/pos/kaon_ue_pos_dcaxy"), dcaxy);
             registryData.fill(HIST("data/ue/kaons/pos/kaon_ue_pos_dcaz"), dcaz);
           } else {
             registryData.fill(HIST("data/ue/kaons/neg/kaon_ue_neg_tpc"), pt, track.tpcNSigmaKa());
-            if (track.hasTOF())
+            if (track.hasTOF()) {
               registryData.fill(HIST("data/ue/kaons/neg/kaon_ue_neg_tof"), pt, track.tofNSigmaKa());
+            }
             registryData.fill(HIST("data/ue/kaons/neg/kaon_ue_neg_pt"), pt);
             registryData.fill(HIST("data/ue/kaons/neg/kaon_ue_neg_eta"), eta);
             registryData.fill(HIST("data/ue/kaons/neg/kaon_ue_neg_dcaxy"), dcaxy);
@@ -887,8 +947,9 @@ struct JetHadronsPid {
 
         if (pid.isProton) {
           registryData.fill(HIST("data/ue/protons/proton_ue_tpc"), pt, track.tpcNSigmaPr());
-          if (track.hasTOF())
+          if (track.hasTOF()) {
             registryData.fill(HIST("data/ue/protons/proton_ue_tof"), pt, track.tofNSigmaPr());
+          }
 
           registryData.fill(HIST("data/ue/protons/proton_ue_pt"), pt);
           registryData.fill(HIST("data/ue/protons/proton_ue_eta"), eta);
@@ -897,16 +958,18 @@ struct JetHadronsPid {
 
           if (charge > 0) {
             registryData.fill(HIST("data/ue/protons/pos/proton_ue_pos_tpc"), pt, track.tpcNSigmaPr());
-            if (track.hasTOF())
+            if (track.hasTOF()) {
               registryData.fill(HIST("data/ue/protons/pos/proton_ue_pos_tof"), pt, track.tofNSigmaPr());
+            }
             registryData.fill(HIST("data/ue/protons/pos/proton_ue_pos_pt"), pt);
             registryData.fill(HIST("data/ue/protons/pos/proton_ue_pos_eta"), eta);
             registryData.fill(HIST("data/ue/protons/pos/proton_ue_pos_dcaxy"), dcaxy);
             registryData.fill(HIST("data/ue/protons/pos/proton_ue_pos_dcaz"), dcaz);
           } else {
             registryData.fill(HIST("data/ue/protons/neg/proton_ue_neg_tpc"), pt, track.tpcNSigmaPr());
-            if (track.hasTOF())
+            if (track.hasTOF()) {
               registryData.fill(HIST("data/ue/protons/neg/proton_ue_neg_tof"), pt, track.tofNSigmaPr());
+            }
             registryData.fill(HIST("data/ue/protons/neg/proton_ue_neg_pt"), pt);
             registryData.fill(HIST("data/ue/protons/neg/proton_ue_neg_eta"), eta);
             registryData.fill(HIST("data/ue/protons/neg/proton_ue_neg_dcaxy"), dcaxy);
@@ -921,32 +984,41 @@ struct JetHadronsPid {
 
   void processMC(StandardEvents::iterator const& collision, HadronTracksMC const& tracks, aod::McParticles const&)
   {
-    if (!collision.sel8() || std::abs(collision.posZ()) > zVtx)
+    if (!collision.sel8() || std::abs(collision.posZ()) > zVtx) {
       return;
-    if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
+    }
+    if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return;
-    if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
+    }
+    if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return;
-    if (requireVtxITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
+    }
+    if (requireVtxITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
       return;
-    if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+    }
+    if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return;
-    if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+    }
+    if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return;
-    if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))
+    }
+    if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
       return;
+    }
 
     registryData.fill(HIST("mc/n_events"), 1);
 
     for (auto const& track : tracks) {
 
-      if (!passedTrackSelection(track))
+      if (!passedTrackSelection(track)) {
         continue;
+      }
 
       double pt = track.pt();
 
-      if (!track.has_mcParticle())
+      if (!track.has_mcParticle()) {
         continue;
+      }
       auto const& trueParticle = track.mcParticle();
 
       int pdg = std::abs(trueParticle.pdgCode());
@@ -970,17 +1042,19 @@ struct JetHadronsPid {
         if (isPrimary) {
           if (pdg == PDG_t::kPiPlus) {
             registryData.fill(HIST("mc/reconstruction/pions/mc_rec_pion_pt"), pt);
-            if (charge > 0)
+            if (charge > 0) {
               registryData.fill(HIST("mc/reconstruction/pions/pos/mc_rec_pion_pos_pt"), pt);
-            else
+            } else {
               registryData.fill(HIST("mc/reconstruction/pions/neg/mc_rec_pion_neg_pt"), pt);
+            }
           }
         } else {
           registryData.fill(HIST("mc/reconstruction/pions/mc_sec_pion_pt"), pt);
-          if (charge > 0)
+          if (charge > 0) {
             registryData.fill(HIST("mc/reconstruction/pions/pos/mc_sec_pion_pos_pt"), pt);
-          else
+          } else {
             registryData.fill(HIST("mc/reconstruction/pions/neg/mc_sec_pion_neg_pt"), pt);
+          }
         }
       }
 
@@ -999,17 +1073,19 @@ struct JetHadronsPid {
         if (isPrimary) {
           if (pdg == PDG_t::kKPlus) {
             registryData.fill(HIST("mc/reconstruction/kaons/mc_rec_kaon_pt"), pt);
-            if (charge > 0)
+            if (charge > 0) {
               registryData.fill(HIST("mc/reconstruction/kaons/pos/mc_rec_kaon_pos_pt"), pt);
-            else
+            } else {
               registryData.fill(HIST("mc/reconstruction/kaons/neg/mc_rec_kaon_neg_pt"), pt);
+            }
           }
         } else {
           registryData.fill(HIST("mc/reconstruction/kaons/mc_sec_kaon_pt"), pt);
-          if (charge > 0)
+          if (charge > 0) {
             registryData.fill(HIST("mc/reconstruction/kaons/pos/mc_sec_kaon_pos_pt"), pt);
-          else
+          } else {
             registryData.fill(HIST("mc/reconstruction/kaons/neg/mc_sec_kaon_neg_pt"), pt);
+          }
         }
       }
 
@@ -1028,17 +1104,19 @@ struct JetHadronsPid {
         if (isPrimary) {
           if (pdg == PDG_t::kProton) {
             registryData.fill(HIST("mc/reconstruction/protons/mc_rec_proton_pt"), pt);
-            if (charge > 0)
+            if (charge > 0) {
               registryData.fill(HIST("mc/reconstruction/protons/pos/mc_rec_proton_pos_pt"), pt);
-            else
+            } else {
               registryData.fill(HIST("mc/reconstruction/protons/neg/mc_rec_proton_neg_pt"), pt);
+            }
           }
         } else {
           registryData.fill(HIST("mc/reconstruction/protons/mc_sec_proton_pt"), pt);
-          if (charge > 0)
+          if (charge > 0) {
             registryData.fill(HIST("mc/reconstruction/protons/pos/mc_sec_proton_pos_pt"), pt);
-          else
+          } else {
             registryData.fill(HIST("mc/reconstruction/protons/neg/mc_sec_proton_neg_pt"), pt);
+          }
         }
       }
     }
@@ -1048,16 +1126,19 @@ struct JetHadronsPid {
   void processMCTruth(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
   {
 
-    if (std::abs(mcCollision.posZ()) > zVtx)
+    if (std::abs(mcCollision.posZ()) > zVtx) {
       return;
+    }
 
     for (auto const& mcpart : mcParticles) {
 
-      if (!mcpart.isPhysicalPrimary())
+      if (!mcpart.isPhysicalPrimary()) {
         continue;
+      }
 
-      if (mcpart.eta() < minEta || mcpart.eta() > maxEta)
+      if (mcpart.eta() < minEta || mcpart.eta() > maxEta) {
         continue;
+      }
 
       int originalPdg = mcpart.pdgCode();
       int pdg = std::abs(originalPdg);
@@ -1066,26 +1147,29 @@ struct JetHadronsPid {
       if (pdg == PDG_t::kPiPlus) {
         if (pt >= cfg.minPtPion && pt <= cfg.maxPtPion) {
           registryData.fill(HIST("mc/truth/pions/mc_gen_pion_pt"), pt);
-          if (originalPdg > 0)
+          if (originalPdg > 0) {
             registryData.fill(HIST("mc/truth/pions/pos/mc_gen_pion_pos_pt"), pt);
-          else
+          } else {
             registryData.fill(HIST("mc/truth/pions/neg/mc_gen_pion_neg_pt"), pt);
+          }
         }
       } else if (pdg == PDG_t::kKPlus) {
         if (pt >= cfg.minPtKaon && pt <= cfg.maxPtKaon) {
           registryData.fill(HIST("mc/truth/kaons/mc_gen_kaon_pt"), pt);
-          if (originalPdg > 0)
+          if (originalPdg > 0) {
             registryData.fill(HIST("mc/truth/kaons/pos/mc_gen_kaon_pos_pt"), pt);
-          else
+          } else {
             registryData.fill(HIST("mc/truth/kaons/neg/mc_gen_kaon_neg_pt"), pt);
+          }
         }
       } else if (pdg == PDG_t::kProton) {
         if (pt >= cfg.minPtProton && pt <= cfg.maxPtProton) {
           registryData.fill(HIST("mc/truth/protons/mc_gen_proton_pt"), pt);
-          if (originalPdg > 0)
+          if (originalPdg > 0) {
             registryData.fill(HIST("mc/truth/protons/pos/mc_gen_proton_pos_pt"), pt);
-          else
+          } else {
             registryData.fill(HIST("mc/truth/protons/neg/mc_gen_proton_neg_pt"), pt);
+          }
         }
       }
     }
