@@ -1059,11 +1059,6 @@ class strangenessBuilderHelper
       return false;
     }
 
-    // Calculate V0 mass before mass constraint
-    float MLambda, SigmaLambda;
-    KFV0.GetMass(MLambda, SigmaLambda);
-    cascade.kfMLambda = MLambda;
-
     if (kfUseV0MassConstraint) {
       KFV0.SetNonlinearMassConstraint(o2::constants::physics::MassLambda);
     }
@@ -1122,18 +1117,9 @@ class strangenessBuilderHelper
       cascade = {};
       return false;
     }
-
-    // Calculate masses a priori before potentially applying mass constraint --> this is the invariant mass of the decay products, not the mass-constrained value
-    float MXi, SigmaXi, MOmega, SigmaOmega;
-    KFXi.GetMass(MXi, SigmaXi);
-    KFOmega.GetMass(MOmega, SigmaOmega);
-    cascade.massXi = MXi;
-    cascade.massOmega = MOmega;
-
     if (kfUseCascadeMassConstraint) {
       // set mass constraint if requested
       // WARNING: this is only adequate for decay chains, i.e. XiC -> Xi or OmegaC -> Omega
-      // WARNING: be aware of the fact that if enabled, the stored particle momentum and covariance matrix will be mass-constrained while the stored mass will be the invariant mass of the decay products (i.e. not mass-constrained)
       KFXi.SetNonlinearMassConstraint(o2::constants::physics::MassXiMinus);
       KFOmega.SetNonlinearMassConstraint(o2::constants::physics::MassOmegaMinus);
     }
@@ -1228,6 +1214,15 @@ class strangenessBuilderHelper
       return false;
     }
     cascade.pointingAngle = TMath::ACos(cosPA);
+
+    // Calculate masses a priori
+    float MLambda, SigmaLambda, MXi, SigmaXi, MOmega, SigmaOmega;
+    KFV0.GetMass(MLambda, SigmaLambda);
+    KFXi.GetMass(MXi, SigmaXi);
+    KFOmega.GetMass(MOmega, SigmaOmega);
+    cascade.kfMLambda = MLambda;
+    cascade.massXi = MXi;
+    cascade.massOmega = MOmega;
 
     // KF Cascade covariance matrix
     std::array<float, 21> covCascKF;
