@@ -116,9 +116,9 @@ struct skimmerPrimaryElectronFromDalitzEE {
 
   void init(InitContext&)
   {
-    if (doprocessRec && doprocessRec_SWT) {
-      LOGF(fatal, "Cannot enable doprocessRec and doprocessRec_SWT at the same time. Please choose one.");
-    }
+    // if (doprocessRec && doprocessRec_SWT) {
+    //   LOGF(fatal, "Cannot enable doprocessRec and doprocessRec_SWT at the same time. Please choose one.");
+    // }
 
     mRunNumber = 0;
     d_bz = 0;
@@ -535,55 +535,55 @@ struct skimmerPrimaryElectronFromDalitzEE {
   }
   PROCESS_SWITCH(skimmerPrimaryElectronFromDalitzEE, processRec, "process reconstructed info only", true); // standalone
 
-  void processRec_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const& tracks, aod::V0PhotonsKF const& v0photons)
-  {
-    stored_trackIds.reserve(tracks.size());
+  // void processRec_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracks const& tracks, aod::V0PhotonsKF const& v0photons)
+  // {
+  //   stored_trackIds.reserve(tracks.size());
 
-    for (const auto& collision : collisions) {
-      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-      if (!collision.isSelected()) {
-        continue;
-      }
+  //   for (const auto& collision : collisions) {
+  //     auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+  //     initCCDB(bc);
+  //     if (!collision.isSelected()) {
+  //       continue;
+  //     }
 
-      if (collision.swtaliastmp_raw() == 0) {
-        continue;
-      }
+  //     if (collision.triggerMask_raw() == 0) {
+  //       continue;
+  //     }
 
-      const auto& v0photons_per_coll = v0photons.sliceBy(perCol_pcm, collision.globalIndex());
-      const auto& posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
-      const auto& negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
-      acceptedPosTrackIds_per_collision.reserve(posTracks_per_coll.size());
-      acceptedNegTrackIds_per_collision.reserve(negTracks_per_coll.size());
+  //     const auto& v0photons_per_coll = v0photons.sliceBy(perCol_pcm, collision.globalIndex());
+  //     const auto& posTracks_per_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+  //     const auto& negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
+  //     acceptedPosTrackIds_per_collision.reserve(posTracks_per_coll.size());
+  //     acceptedNegTrackIds_per_collision.reserve(negTracks_per_coll.size());
 
-      fillPairInfo<false, 0>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
-      if (fillLS) {
-        fillPairInfo<false, 1>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
-        fillPairInfo<false, 2>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
-      }
+  //     fillPairInfo<false, 0>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
+  //     if (fillLS) {
+  //       fillPairInfo<false, 1>(collision, posTracks_per_coll, posTracks_per_coll); // LS++
+  //       fillPairInfo<false, 2>(collision, negTracks_per_coll, negTracks_per_coll); // LS--
+  //     }
 
-      if ((v0photons_per_coll.size() >= 1 && acceptedPosTrackIds_per_collision.size() >= 1 && acceptedNegTrackIds_per_collision.size() >= 1) || (acceptedPosTrackIds_per_collision.size() >= 2 && acceptedNegTrackIds_per_collision.size() >= 2)) {
-        // LOGF(info, "v0photons_per_coll.size() = %d, acceptedPosTrackIds_per_collision.size() = %d, acceptedNegTrackIds_per_collision.size() = %d", v0photons_per_coll.size(), acceptedPosTrackIds_per_collision.size(), acceptedNegTrackIds_per_collision.size());
-        for (const auto& posId : acceptedPosTrackIds_per_collision) {
-          const auto& pos = tracks.rawIteratorAt(posId);
-          fillTrackTable<false>(collision, pos);
-        }
-        for (const auto& eleId : acceptedNegTrackIds_per_collision) {
-          const auto& ele = tracks.rawIteratorAt(eleId);
-          fillTrackTable<false>(collision, ele);
-        }
-      }
+  //     if ((v0photons_per_coll.size() >= 1 && acceptedPosTrackIds_per_collision.size() >= 1 && acceptedNegTrackIds_per_collision.size() >= 1) || (acceptedPosTrackIds_per_collision.size() >= 2 && acceptedNegTrackIds_per_collision.size() >= 2)) {
+  //       // LOGF(info, "v0photons_per_coll.size() = %d, acceptedPosTrackIds_per_collision.size() = %d, acceptedNegTrackIds_per_collision.size() = %d", v0photons_per_coll.size(), acceptedPosTrackIds_per_collision.size(), acceptedNegTrackIds_per_collision.size());
+  //       for (const auto& posId : acceptedPosTrackIds_per_collision) {
+  //         const auto& pos = tracks.rawIteratorAt(posId);
+  //         fillTrackTable<false>(collision, pos);
+  //       }
+  //       for (const auto& eleId : acceptedNegTrackIds_per_collision) {
+  //         const auto& ele = tracks.rawIteratorAt(eleId);
+  //         fillTrackTable<false>(collision, ele);
+  //       }
+  //     }
 
-      acceptedPosTrackIds_per_collision.clear();
-      acceptedPosTrackIds_per_collision.shrink_to_fit();
-      acceptedNegTrackIds_per_collision.clear();
-      acceptedNegTrackIds_per_collision.shrink_to_fit();
-    } // end of collision loop
+  //     acceptedPosTrackIds_per_collision.clear();
+  //     acceptedPosTrackIds_per_collision.shrink_to_fit();
+  //     acceptedNegTrackIds_per_collision.clear();
+  //     acceptedNegTrackIds_per_collision.shrink_to_fit();
+  //   } // end of collision loop
 
-    stored_trackIds.clear();
-    stored_trackIds.shrink_to_fit();
-  }
-  PROCESS_SWITCH(skimmerPrimaryElectronFromDalitzEE, processRec_SWT, "process reconstructed info with CEFP", false); // with cefp
+  //   stored_trackIds.clear();
+  //   stored_trackIds.shrink_to_fit();
+  // }
+  // PROCESS_SWITCH(skimmerPrimaryElectronFromDalitzEE, processRec_SWT, "process reconstructed info with CEFP", false); // with cefp
 
   using MyFilteredTracksMC = soa::Filtered<MyTracksMC>;
   Partition<MyFilteredTracksMC> posTracksMC = o2::aod::track::signed1Pt > 0.f;

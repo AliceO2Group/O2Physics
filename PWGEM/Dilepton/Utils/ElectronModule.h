@@ -1353,8 +1353,7 @@ class ElectronModule
     if (bcs.size() == 0) {
       return;
     }
-    auto bc = bcs.begin();
-    initCCDB(bc);
+    initCCDB(bcs.begin());
 
     calculateTOFNSigmaWithReassociation<true>(collisions, bcs, tracks, trackIndices, cache, perColTrack, trackIndicesPerCollision);
 
@@ -1373,7 +1372,7 @@ class ElectronModule
       }
 
       if constexpr (isTriggerAnalysis) {
-        if (collision.swtaliastmp_raw() == 0) {
+        if (collision.triggerMask_raw() == 0) {
           continue;
         }
       }
@@ -2112,7 +2111,7 @@ class ElectronModule
     //   }
 
     //   if constexpr (isTriggerAnalysis) {
-    //     if (collision.swtaliastmp_raw() == 0) {
+    //     if (collision.triggerMask_raw() == 0) {
     //       continue;
     //     }
     //   }

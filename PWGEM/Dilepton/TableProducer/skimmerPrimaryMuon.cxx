@@ -966,7 +966,7 @@ struct skimmerPrimaryMuon {
         continue;
       }
 
-      if (collision.swtaliastmp_raw() == 0) {
+      if (collision.triggerMask_raw() == 0) {
         continue;
       }
 
@@ -1058,7 +1058,7 @@ struct skimmerPrimaryMuon {
       if (!collision.isSelected()) {
         continue;
       }
-      if (collision.swtaliastmp_raw() == 0) {
+      if (collision.triggerMask_raw() == 0) {
         continue;
       }
 
@@ -1155,7 +1155,7 @@ struct skimmerPrimaryMuon {
   //     if (!collision.isSelected()) {
   //       continue;
   //     }
-  //     if (collision.swtaliastmp_raw() == 0) {
+  //     if (collision.triggerMask_raw() == 0) {
   //       continue;
   //     }
 
