@@ -192,6 +192,11 @@ class VarManager : public TObject
     kMuonIsPropagated = 7  // whether the muon was propagated already
   };
 
+  enum EMCalClusterFilteringBits {
+    kEMCalClusterIsMatched = 0,   // cluster has at least one matched track (from EMCALMatchedTracks)
+    kEMCalClusterUserCutsBits = 1 // first bit for the user EMCal cluster selections
+  };
+
   // NOLINTNEXTLINE(readability-enum-initial-value)
   enum Variables {
     kNothing = -1,

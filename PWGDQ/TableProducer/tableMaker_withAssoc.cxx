@@ -1518,11 +1518,11 @@ struct TableMaker {
         }
 
         // apply the cluster selections and fill the filtering tag and the stats histogram
-        auto clusterFilteringTag = static_cast<uint64_t>(0);
+        auto clusterTempFilterMap = static_cast<uint32_t>(0);
         int i = 0;
         for (auto cut = fEMCalCuts.begin(); cut != fEMCalCuts.end(); cut++, i++) {
           if ((*cut)->IsSelected(dqtablemaker_helpers::varValues())) {
-            clusterFilteringTag |= (static_cast<uint64_t>(1) << i);
+            clusterTempFilterMap |= (static_cast<uint32_t>(1) << i);
             if (fConfigHistOutput.fConfigQA) {
               fHistMan->FillHistClass(Form("EMCalClusters_%s", (*cut)->GetName()), dqtablemaker_helpers::varValues());
             }
@@ -1530,10 +1530,18 @@ struct TableMaker {
           }
         }
         // if cluster selections are specified, write only the clusters which fulfill at least one of them
-        if (!fEMCalCuts.empty() && clusterFilteringTag == 0) {
+        if (!fEMCalCuts.empty() && clusterTempFilterMap == 0) {
           continue;
         }
         (dynamic_cast<TH1D*>(fStatsList->At(kStatsEMCal)))->Fill(static_cast<float>(fEMCalCuts.size()));
+        auto clusterFilteringTag = (static_cast<uint64_t>(clusterTempFilterMap) << VarManager::kEMCalClusterUserCutsBits);
+
+        // flag the clusters which have at least one matched track, such that a clean
+        //   "EMCal only" cluster sample (e.g. for photons) can be selected on the skimmed data
+        auto clusterMatches = matchedTracks.sliceBy(emcalMatchedTracksPerCluster, cluster.globalIndex());
+        if (clusterMatches.size() > 0) {
+          clusterFilteringTag |= (static_cast<uint64_t>(1) << VarManager::kEMCalClusterIsMatched);
+        }
 
         outTables.emcal(skimIdx, clusterFilteringTag,
                         cluster.energy(), cluster.coreEnergy(), cluster.rawEnergy(),
@@ -1544,7 +1552,6 @@ struct TableMaker {
         fEmcalIndexMap[cluster.globalIndex()] = outTables.emcal.lastIndex();
 
         // record the track matches of this cluster; for each track keep only the closest cluster
-        auto clusterMatches = matchedTracks.sliceBy(emcalMatchedTracksPerCluster, cluster.globalIndex());
         for (const auto& match : clusterMatches) {
           float deltaEta = match.deltaEta();
           float deltaPhi = match.deltaPhi();
