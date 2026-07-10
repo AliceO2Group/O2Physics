@@ -1594,7 +1594,7 @@ struct CorrFit {
       double multiplicity = tracks1.size();
 
       if (cfgStrictTrackCounter) {
-        trackCounter(tracks, multiplicity);
+        trackCounter(tracks1, multiplicity);
       }
 
       if (multiplicity > cfgMaxMultForCorrelations || multiplicity < cfgMinMultForCorrelations) {
