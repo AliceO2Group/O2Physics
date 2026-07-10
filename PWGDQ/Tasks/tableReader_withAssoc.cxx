@@ -1738,7 +1738,6 @@ struct AnalysisSameEventPairing {
             Form("PairsEleMuSEMM_%s_%s", trackCutName.Data(), muonCutName.Data())};
           histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
           int index = iTrack * fNCutsMuon + iMuon;
-          fTrackMuonHistNames[index] = names;
 
           if (fEnableBarrelMuonMixingHistos) {
             names.push_back(Form("PairsEleMuMEPM_%s_%s", trackCutName.Data(), muonCutName.Data()));
@@ -1746,6 +1745,7 @@ struct AnalysisSameEventPairing {
             names.push_back(Form("PairsEleMuMEMM_%s_%s", trackCutName.Data(), muonCutName.Data()));
             histNames += Form("%s;%s;%s;", names[3].Data(), names[4].Data(), names[5].Data());
           }
+          fTrackMuonHistNames[index] = names;
 
           if (!cutNamesStr.IsNull()) {
             std::unique_ptr<TObjArray> objArrayPair(cutNamesStr.Tokenize(","));
