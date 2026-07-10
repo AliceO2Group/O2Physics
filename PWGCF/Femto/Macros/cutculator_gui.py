@@ -409,10 +409,12 @@ class CutCulatorApp(tk.Tk):
 
         if is_filter:
             # load_bins_from_hist returns a flat list of bin dicts when is_filter
-            # is True; the assert lets the type checker narrow `parsed` from the
-            # dict|list union it infers from the function's two return shapes,
-            # instead of leaving self._groups statically ambiguous.
-            assert isinstance(parsed, list)
+            # is True. This check narrows `parsed` from the dict|list union the
+            # type checker infers from the function's two return shapes (same
+            # purpose an assert would serve, but unlike assert this is never
+            # stripped out under python -O, so it stays a real runtime guard).
+            if not isinstance(parsed, list):
+                raise TypeError("load_bins_from_hist() must return a list of bin dicts when is_filter is True")
             self._filter_bins = parsed
             self._groups = {}
             self._build_legend_filter()
@@ -422,7 +424,8 @@ class CutCulatorApp(tk.Tk):
         else:
             # load_bins_from_hist returns a dict of SelectionName -> bins when
             # is_filter is False; same narrowing purpose as above.
-            assert isinstance(parsed, dict)
+            if not isinstance(parsed, dict):
+                raise TypeError("load_bins_from_hist() must return a dict of bins when is_filter is False")
             self._groups = parsed
             self._filter_bins = []
             self._build_legend_selection()
