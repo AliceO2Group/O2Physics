@@ -115,7 +115,7 @@ struct JetHadronsPid {
   Preslice<HadronTracks> tracksPerCollision = aod::track::collisionId;
 
   struct : ConfigurableGroup {
-    Configurable<int> idMethod{"idMethod", 0, "Variable for choosing pid method"};
+    Configurable<int> pidMethod{"pidMethod", 0, "Variable for choosing pid method"};
     Configurable<float> rejectionSigma{"rejectionSigma", 3.0, "Rejection sigma for tof and tpc pid"};
     Configurable<float> ptThreshold{"ptThreshold", 0.8, "Threshold for pt for different pid methods"};
     Configurable<float> nSigmaCut{"nSigmaCut", 2.0, "Acceptence cut for pid methods"};
@@ -416,13 +416,17 @@ struct JetHadronsPid {
     return TESTBIT(track.itsClusterMap(), layer - 1);
   }
 
-  struct pidResult {
+  struct PidResult {
     bool isPion, isKaon, isProton;
   };
 
   template <typename TrackType>
-  pidResult getPid(const TrackType& track)
+  PidResult getPid(const TrackType& track)
   {
+
+    constexpr int ClosestMatch = 0;
+    constexpr int ExclusiveMatch = 1;
+    constexpr int RejectionBased = 2;
 
     double const buffer = 999.0;
     double pt = track.pt();
@@ -451,23 +455,23 @@ struct JetHadronsPid {
     bool isKaMatch = (dKa <= cfg.nSigmaCut);
     bool isPrMatch = (dPr <= cfg.nSigmaCut);
 
-    pidResult res{false, false, false};
+    PidResult res{false, false, false};
 
-    if (cfg.idMethod == 0) {
+    if (cfg.pidMethod == ClosestMatch) {
       if (isPiMatch && dPi < dKa && dPi < dPr)
         res.isPion = true;
       else if (isKaMatch && dKa < dPi && dKa < dPr)
         res.isKaon = true;
       else if (isPrMatch && dPr < dPi && dPr < dKa)
         res.isProton = true;
-    } else if (cfg.idMethod == 1) {
+    } else if (cfg.pidMethod == ExclusiveMatch) {
       if (isPiMatch && !isKaMatch && !isPrMatch)
         res.isPion = true;
       else if (isKaMatch && !isPiMatch && !isPrMatch)
         res.isKaon = true;
       else if (isPrMatch && !isPiMatch && !isKaMatch)
         res.isProton = true;
-    } else if (cfg.idMethod == 2) {
+    } else if (cfg.pidMethod == RejectionBased) {
       if (isPiMatch && dKa > cfg.rejectionSigma && dPr > cfg.rejectionSigma)
         res.isPion = true;
       else if (isKaMatch && dPi > cfg.rejectionSigma && dPr > cfg.rejectionSigma)
@@ -539,7 +543,7 @@ struct JetHadronsPid {
       double dcaz = track.dcaZ();
       int charge = track.sign();
 
-      pidResult pid = getPid(track);
+      PidResult pid = getPid(track);
 
       if (pid.isPion) {
         registryData.fill(HIST("data/pure/pions/pion_pure_tpc"), pt, track.tpcNSigmaPi());
@@ -704,7 +708,7 @@ struct JetHadronsPid {
         double dcaz = track.dcaZ();
         int charge = track.sign();
 
-        pidResult pid = getPid(track);
+        PidResult pid = getPid(track);
 
         if (pid.isPion) {
           registryData.fill(HIST("data/jets/pions/pion_jet_tpc"), pt, track.tpcNSigmaPi());
@@ -821,7 +825,7 @@ struct JetHadronsPid {
         double dcaz = track.dcaZ();
         int charge = track.sign();
 
-        pidResult pid = getPid(track);
+        PidResult pid = getPid(track);
 
         if (pid.isPion) {
           registryData.fill(HIST("data/ue/pions/pion_ue_tpc"), pt, track.tpcNSigmaPi());
@@ -949,7 +953,7 @@ struct JetHadronsPid {
       bool isPrimary = trueParticle.isPhysicalPrimary();
       int charge = track.sign();
 
-      pidResult pid = getPid(track);
+      PidResult pid = getPid(track);
 
       if (pid.isPion) {
         registryData.fill(HIST("mc/reconstruction/pions/rec_pion_all"), pt);
