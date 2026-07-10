@@ -37,7 +37,6 @@
 #include <Framework/DeviceSpec.h>
 #include <Framework/Logger.h>
 #include <Framework/RunningWorkflowInfo.h>
-#include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 
 #include <TFile.h>
