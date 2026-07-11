@@ -1514,8 +1514,10 @@ struct LambdaR2Correlation {
     histos.add("Event/Reco/h2f_Mult_vs_Centrality", "N_{ch} vs FT0M(%)", kTProfile, {axisCent});
 
     // Two track cut
-    histos.add("QA/TwoTrackCut/h2d_n2_detadphi", "#rho_{2}", kTH2D, {axisDEta, axisDPhi});
-    histos.add("QA/FemtoCut/h2d_n2_detadphi", "#rho_{2}", kTH2D, {axisDEta, axisDPhi});
+    histos.add("QA/TwoTrackCut/Before/h2d_n2_detadphi", "#rho_{2}", kTH2D, {axisDEta, axisDPhi});
+    histos.add("QA/TwoTrackCut/After/h2d_n2_detadphi", "#rho_{2}", kTH2D, {axisDEta, axisDPhi});
+    histos.add("QA/FemtoCut/Before/h2d_n2_detadphi", "#rho_{2}", kTH2D, {axisDEta, axisDPhi});
+    histos.add("QA/FemtoCut/After/h2d_n2_detadphi", "#rho_{2}", kTH2D, {axisDEta, axisDPhi});
 
     // Efficiency Histograms
     // Single Particle Efficiencies
