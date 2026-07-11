@@ -38,7 +38,7 @@ using namespace o2::aod;
 using namespace o2::framework::expressions;
 
 
-struct myExampleTask {
+struct MultandptFluctuations {
 
   // ------ Histogram binning
 
@@ -267,7 +267,7 @@ struct myExampleTask {
     WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     {
       return WorkflowSpec{
-      adaptAnalysisTask<myExampleTask>(cfgc)
+      adaptAnalysisTask<MultandptFluctuations>(cfgc)
   };
 }
 
