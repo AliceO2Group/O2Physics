@@ -49,15 +49,13 @@ struct MultandptFluctuations {
 
 
   // ------ Event Cuts
-  
   Configurable<float> vtxZcut{"vertexZcut", 10.0f, "Vertex Z"};
   Configurable<bool> cfgNoSameBunchPileup{"cfgNoSameBunchPileup", true, "kNoSameBunchPileup"};
   Configurable<bool> cfgEvSelUseGoodZvtxFT0vsPV{"cfgEvSelUseGoodZvtxFT0vsPV",true, "Good Zvtx FT0 vs PV"};
   Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Good ITS Layers"};
 
- 
-  // ----- Centrality estimator
 
+  // ----- Centrality estimator
   Configurable<bool> cFT0M{"cFT0M", false, "FT0M centrality"}; // for pp
   Configurable<bool> cFT0C{"cFT0C", true,  "Use FT0C centrality"};
 
@@ -77,16 +75,13 @@ struct MultandptFluctuations {
   Configurable<bool> requireITS{"requireITS",true, "Require ITS hit"};
   Configurable<bool> requireTPC{"requireTPC", true, "Require TPC hit"};
   Configurable<bool> requireInnerITS{"requireInnerITS", true,"At least one hit in ITS layers 0,1,2"};
-  
 
 
   //----- Histogram Registry
-
   HistogramRegistry histos{
     "histos", {}, OutputObjHandlingPolicy::AnalysisObject
   };
 
-  
   void init(InitContext const&)
   {
     const AxisSpec axisEta{30, -1.5, +1.5, "#eta"};
@@ -98,34 +93,25 @@ struct MultandptFluctuations {
     const AxisSpec axisNch{500, 0, 500, "Nch"};
     const AxisSpec axisCent{ nCentBins, 0.0, 100.0, "Centrality (%)"}; // ------------- centrality bins
 
-  
+
     histos.add("QA/BeforeCut/VtxZ", "Vertex Z", kTH1F, {axisVtxz});
     histos.add("QA/AfterCut/VtxZ",  "Vertex Z", kTH1F, {axisVtxz});
-
     histos.add("QA/BeforeCut/Cent", "Centrality", kTH1F, {axisCent});
     histos.add("QA/AfterCut/Cent",  "Centrality", kTH1F, {axisCent});
-
     histos.add("QA/BeforeCut/Eta",   "Eta",   kTH1F, {axisEta});
     histos.add("QA/AfterCut/Eta",    "Eta",   kTH1F, {axisEta});
-
     histos.add("QA/BeforeCut/Pt",    "Pt",    kTH1F, {axisPt});
     histos.add("QA/AfterCut/Pt",     "Pt",    kTH1F, {axisPt});
-
     histos.add("QA/BeforeCut/Phi",   "Phi",   kTH1F, {axisPhi});
     histos.add("QA/AfterCut/Phi",    "Phi",   kTH1F, {axisPhi});
-
     histos.add("QA/BeforeCut/DcaXY", "DCAxy", kTH1F, {axisdcaXY});
     histos.add("QA/AfterCut/DcaXY",  "DCAxy", kTH1F, {axisdcaXY});
-
     histos.add("QA/BeforeCut/DcaZ",  "DCAz",  kTH1F, {axisdcaZ});
-    histos.add("QA/AfterCut/DcaZ",   "DCAz",  kTH1F, {axisdcaZ}); 
-    
+    histos.add("QA/AfterCut/DcaZ",   "DCAz",  kTH1F, {axisdcaZ});
     histos.add("hNch" , "Nch" , kTH1F, {axisNch});
     histos.add("h2_DcaZ", "DCA_{Z}", kTH2D, {{axisPt}, {axisdcaZ}});
     histos.add("h2_DcaXY", "DCA_{XY}", kTH2D, {{axisPt}, {axisdcaXY}});
-
     histos.add("hEventCounter", "Number of events vs centrality", kTH1F, {axisCent});
-
     histos.add("p_a"  , "<A> vs centrality"    , kTProfile, {axisCent});
     histos.add("p_b"  , "<B> vs centrality"    , kTProfile, {axisCent});
     histos.add("p_a2" , "<A^{2}> vs centrality", kTProfile, {axisCent});
@@ -135,12 +121,10 @@ struct MultandptFluctuations {
 
   }
 
- //---------- Filters 
-
+ //---------- Filters
   Filter ptFilter =(aod::track::pt > ptMinCut) && (aod::track::pt < ptMaxCut);
   Filter etaFilter =nabs(aod::track::eta) < etaCut;
   Filter posZFilter = nabs(aod::collision::posZ) < vtxZcut;
- 
 
   using myColsData = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms,aod::CentFT0Cs>;
   using myTracksData = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>;
@@ -152,8 +136,7 @@ struct MultandptFluctuations {
 
     float cent = -1.0f;
 
-    if (cFT0M) { 
-        cent = col.centFT0M();
+    if (cFT0M) { cent = col.centFT0M();
     }
 
     if (cFT0C) {
@@ -166,13 +149,13 @@ struct MultandptFluctuations {
     }
 
     histos.fill(HIST("QA/BeforeCut/Cent"), cent);
-    
+
     if (!col.sel8()) return;
-    
+
     if (std::abs(col.posZ()) > vtxZcut) return;
 
     if (cfgNoSameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) return;
-  
+
     if (cfgEvSelUseGoodZvtxFT0vsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) return;
 
     if (cfgUseGoodITSLayerAllCut && !col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))  return;
@@ -181,10 +164,10 @@ struct MultandptFluctuations {
 
     histos.fill(HIST("QA/AfterCut/VtxZ"), col.posZ());
     histos.fill(HIST("QA/AfterCut/Cent"), cent);
-    
+
     double A = 0.0;
-    double B = 0.0;  
- 
+    double B = 0.0;
+
    // if (!track.isGlobalTrack()) continue;
    for (auto& track : tracks) {
 
@@ -195,7 +178,7 @@ struct MultandptFluctuations {
     histos.fill(HIST("QA/BeforeCut/DcaZ"), track.dcaZ());
 
     // Track quality cuts
-    
+
     if (requireITS && !track.hasITS()) continue;
     if (requireTPC && !track.hasTPC()) continue;
 
@@ -222,7 +205,7 @@ struct MultandptFluctuations {
       continue;
     }
   }
-      
+
 
     /*  if (eta >= 0.6 && eta < 0.8)
         nf++;
@@ -239,10 +222,10 @@ struct MultandptFluctuations {
 
     histos.fill(HIST("h2_DcaZ"), track.pt(),track.dcaZ());
     histos.fill(HIST("h2_DcaXY"), track.pt(),track.dcaXY());
-    
+
         A++;			//A-nch, B =pt
 	B += track.pt();
-     
+
     }
     //  LOG(info) << "Nch = " << nch;
   /*    histos.fill(HIST("hNch"),nch);
