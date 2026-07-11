@@ -670,7 +670,7 @@ struct FlowCumulantsUpc {
     }
     registry.fill(HIST("hEventCount"), 1.5);
 
-    //zdc time cut
+    // zdc time cut
     int neutronClass = -1;
     bool xnxn = false, onon = false, xnon = false, onxn = false;
     float energyCommonZNA = collision.energyCommonZNA(), energyCommonZNC = collision.energyCommonZNC();
@@ -705,15 +705,15 @@ struct FlowCumulantsUpc {
       neutronClass = 3;
       registry.fill(HIST("neutronClass"), 1, 1);
     }
-    if(cfgZdcTime) {
+    if (cfgZdcTime) {
       // reject 0n0n and XnXn
-      if(neutronClass == 0 || neutronClass == 3) {
+      if (neutronClass == 0 || neutronClass == 3) {
         return;
       }
       // if A or C gap is requested, keep corresponding neutron class
-      if(cfgGapSideA || cfgGapSideC) {
-        if((cfgGapSideA && neutronClass == 1) ||
-          (cfgGapSideC && neutronClass == 2)) {
+      if (cfgGapSideA || cfgGapSideC) {
+        if ((cfgGapSideA && neutronClass == 1) ||
+            (cfgGapSideC && neutronClass == 2)) {
           // accepted
         } else {
           return;
@@ -755,20 +755,20 @@ struct FlowCumulantsUpc {
     }
     registry.fill(HIST("hEventCount"), 5.5);
     if (!collision.vtxITSTPC()) {
-			return;
+      return;
     }
     registry.fill(HIST("hEventCount"), 6.5);
     if (!collision.sbp()) {
-			return;
-		}
+      return;
+    }
     registry.fill(HIST("hEventCount"), 7.5);
     if (!collision.itsROFb()) {
-			return;
-		}
+      return;
+    }
     registry.fill(HIST("hEventCount"), 8.5);
     if (!collision.tfb()) {
-			return;
-		}
+      return;
+    }
     registry.fill(HIST("hEventCount"), 9.5);
 
     if (cfgRctFlagEnabled) {
@@ -871,7 +871,7 @@ struct FlowCumulantsUpc {
       }
     }
     registry.fill(HIST("hEventCount"), 11.5);
-    if(collision.hadronicRate() > cfgIRMaxCut){
+    if (collision.hadronicRate() > cfgIRMaxCut) {
       return;
     }
     registry.fill(HIST("interactionRate"), collision.hadronicRate());
@@ -879,7 +879,7 @@ struct FlowCumulantsUpc {
 
     // Filling Flow Container
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
-        fillFC(corrconfigs.at(l_ind), independent, lRandom);
+      fillFC(corrconfigs.at(l_ind), independent, lRandom);
     }
   }
   PROCESS_SWITCH(FlowCumulantsUpc, processData, "processData", true);
