@@ -1566,7 +1566,7 @@ struct LambdaR2Correlation {
   {
     // DPhiStar average over different TPC radius
     float dphistar = 0., n = 0.;
-    for (auto radius : tpcRadii) {
+    for (auto const& radius : tpcRadii) {
       float arg1 = 0.15 * magField * radius / v1[0];
       float arg2 = 0.15 * magField * radius / v2[0];
       if (std::abs(arg1) < 1.0 && std::abs(arg2) < 1.0) {
