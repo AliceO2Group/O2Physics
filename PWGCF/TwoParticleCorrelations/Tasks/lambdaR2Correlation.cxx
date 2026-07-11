@@ -1569,7 +1569,7 @@ struct LambdaR2Correlation {
     float arg1 = 0.15 * magField * charge1 * cTpcRadii / v1[0];
     float arg2 = 0.15 * magField * charge2 * cTpcRadii / v2[0];
     if (std::abs(arg1) < 1.0 && std::abs(arg2) < 1.0) {
-      dphistar = v1[2] - v2[2] + std::asin(arg1) - std::asin(arg2);
+      dphistar = v1[2] - v2[2] - std::asin(arg1) + std::asin(arg2);
     } else {
       dphistar = 99.;
     }
@@ -1616,10 +1616,10 @@ struct LambdaR2Correlation {
 
     if (qinv < cFemtoCut) {
       histos.fill(HIST("QA/FemtoCut/h2d_n2_detadphi"), p1.eta() - p2.eta(), RecoDecay::constrainAngle(p1.phi() - p2.phi(), -PIHalf));
-      return false;
+      return true;
     }
 
-    return true;
+    return false;
   }
 
   template <ParticlePairType part_pair, RecGenType rec_gen, typename T1, typename T2>
