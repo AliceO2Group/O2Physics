@@ -169,7 +169,7 @@ struct MultandptFluctuations {
     double B = 0.0;
 
    // if (!track.isGlobalTrack()) continue;
-   for (auto& track : tracks) {
+   for (const auto& track : tracks) {
 
     histos.fill(HIST("QA/BeforeCut/Eta"), track.eta());
     histos.fill(HIST("QA/BeforeCut/Pt"), track.pt());
@@ -206,14 +206,7 @@ struct MultandptFluctuations {
     }
   }
 
-
-    /*  if (eta >= 0.6 && eta < 0.8)
-        nf++;
-      else if (eta > -0.8 && eta <= -0.6)Sigma_pTN_OO_NeNe.C
-        nb++;*/
-
     // After cuts QA
-
     histos.fill(HIST("QA/AfterCut/Eta"), track.eta());
     histos.fill(HIST("QA/AfterCut/Pt"), track.pt());
     histos.fill(HIST("QA/AfterCut/Phi"), track.phi());
@@ -223,29 +216,19 @@ struct MultandptFluctuations {
     histos.fill(HIST("h2_DcaZ"), track.pt(),track.dcaZ());
     histos.fill(HIST("h2_DcaXY"), track.pt(),track.dcaXY());
 
-        A++;			//A-nch, B =pt
-	B += track.pt();
+    A++;			//A-nch, B =pt
+    B += track.pt();
 
     }
-    //  LOG(info) << "Nch = " << nch;
-  /*    histos.fill(HIST("hNch"),nch);
-      eventNch(col, nch);*/
-
-
-      // ---- Fill TProfiles (once per event)
-      histos.fill(HIST("p_a"), cent, A);
-      histos.fill(HIST("p_b"), cent, B);
-
-      histos.fill(HIST("p_a2"),cent, A * A);
-      histos.fill(HIST("p_b2"), cent, B * B);
-
-      histos.fill(HIST("p_ab"), cent, A * B);
-      histos.fill(HIST("p_asumb"), cent, A + B);
-
-
+	// ---- Fill TProfiles (once per event)
+	histos.fill(HIST("p_a"), cent, A);
+	histos.fill(HIST("p_b"), cent, B);
+	histos.fill(HIST("p_a2"),cent, A * A);
+	histos.fill(HIST("p_b2"), cent, B * B);
+ 	histos.fill(HIST("p_ab"), cent, A * B);
+	histos.fill(HIST("p_asumb"), cent, A + B);
   }
 };
-
 
     WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     {
@@ -253,7 +236,3 @@ struct MultandptFluctuations {
       adaptAnalysisTask<MultandptFluctuations>(cfgc)
   };
 }
-
-
-
-
