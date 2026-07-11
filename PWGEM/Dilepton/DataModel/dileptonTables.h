@@ -1174,9 +1174,9 @@ DECLARE_SOA_TABLE(EMPrimaryMuonsPrefilterBitDerived, "AOD", "PRMMUPFBDERIVED", e
 // iterators
 using EMPrimaryMuonPrefilterBitDerived = EMPrimaryMuonsPrefilterBitDerived::iterator;
 
-DECLARE_SOA_TABLE(EMPrimaryMuonsMatchMC, "AOD", "EMMUONMATCHMC", emprimarymuon::IsCorrectMatchMFTMCH); // To be joined with EMPrimaryMuons table at analysis level. only for MC.
-// iterators
-using EMPrimaryMuonMatchMC = EMPrimaryMuonsMatchMC::iterator;
+// DECLARE_SOA_TABLE(EMPrimaryMuonsMatchMC, "AOD", "EMMUONMATCHMC", emprimarymuon::IsCorrectMatchMFTMCH); // To be joined with EMPrimaryMuons table at analysis level. only for MC.
+// // iterators
+// using EMPrimaryMuonMatchMC = EMPrimaryMuonsMatchMC::iterator;
 
 namespace oldemprimarytrack
 {
