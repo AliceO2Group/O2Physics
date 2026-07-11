@@ -147,7 +147,7 @@ struct FlowCumulantsUpc {
   GFW* fGFWMC = new GFW();
   std::vector<GFW::CorrConfig> corrconfigs;
   std::vector<GFW::CorrConfig> corrconfigsmc;
-  TAxis* fPtAxis;
+  TAxis* fPtAxis = nullptr;
   TRandom3* fRndm = new TRandom3(0);
   TRandom3* fRndmMc = new TRandom3(0);
   int lastRunNumber = -1;
@@ -543,9 +543,9 @@ struct FlowCumulantsUpc {
     if (cfgAcceptance.value.empty() == false) {
       mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance, timestamp);
       if (mAcceptance) {
-        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
+        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), static_cast<void*>(mAcceptance));
       } else {
-        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
+        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), static_cast<void*>(mAcceptance));
       }
     }
     if (cfgEfficiency.value.empty() == false) {
@@ -553,7 +553,7 @@ struct FlowCumulantsUpc {
       if (mEfficiency == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), static_cast<void*>(mEfficiency));
     }
     correctionsLoaded = true;
   }
@@ -672,7 +672,6 @@ struct FlowCumulantsUpc {
 
     // zdc time cut
     int neutronClass = -1;
-    bool xnxn = false, onon = false, xnon = false, onxn = false;
     float energyCommonZNA = collision.energyCommonZNA(), energyCommonZNC = collision.energyCommonZNC();
     float timeZNA = collision.timeZNA(), timeZNC = collision.timeZNC();
     if (std::isinf(energyCommonZNA))
@@ -686,34 +685,29 @@ struct FlowCumulantsUpc {
     registry.fill(HIST("ZDCEnergy"), energyCommonZNC, energyCommonZNA);
     registry.fill(HIST("ZDCTime"), timeZNC, timeZNA);
     if (std::abs(timeZNA) > cfgZdcTimeCut && std::abs(timeZNC) > cfgZdcTimeCut) {
-      onon = true;
       neutronClass = 0;
       registry.fill(HIST("neutronClass"), 0, 0);
     }
     if (std::abs(timeZNA) <= cfgZdcTimeCut && std::abs(timeZNC) > cfgZdcTimeCut) {
-      xnon = true;
       neutronClass = 1;
       registry.fill(HIST("neutronClass"), 0, 1);
     }
     if (std::abs(timeZNA) > cfgZdcTimeCut && std::abs(timeZNC) <= cfgZdcTimeCut) {
-      onxn = true;
       neutronClass = 2;
       registry.fill(HIST("neutronClass"), 1, 0);
     }
     if (std::abs(timeZNA) <= cfgZdcTimeCut && std::abs(timeZNC) <= cfgZdcTimeCut) {
-      xnxn = true;
       neutronClass = 3;
       registry.fill(HIST("neutronClass"), 1, 1);
     }
     if (cfgZdcTime) {
       // reject 0n0n and XnXn
-      if (neutronClass == 0 || neutronClass == 3) {
+      if (neutronClass == 0 || neutronClass == 3) { // o2-linter: disable=magic-number
         return;
       }
       // if A or C gap is requested, keep corresponding neutron class
       if (cfgGapSideA || cfgGapSideC) {
-        if ((cfgGapSideA && neutronClass == 1) ||
-            (cfgGapSideC && neutronClass == 2)) {
+        if ((cfgGapSideA && neutronClass == 1) || (cfgGapSideC && neutronClass == 2)) { // o2-linter: disable=magic-number
           // accepted
         } else {
           return;
@@ -836,8 +830,6 @@ struct FlowCumulantsUpc {
         registry.fill(HIST("hDCAxy"), track.dcaXY(), track.pt());
         nTracksRaw += 1.;
         nTracksCorrected += weff;
-      }
-      if (withinPtRef) {
         fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 1);
       }
       if (withinPtPOI) {
@@ -942,8 +934,6 @@ struct FlowCumulantsUpc {
         registry.fill(HIST("hEtaMC"), eta);
         registry.fill(HIST("hPtRefMC"), pt);
         nTracksCorrected += weff;
-      }
-      if (withinPtRef) {
         fGFWMC->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 1);
       }
       if (withinPtPOI) {

@@ -314,7 +314,7 @@ struct FlowCorrelationsUpc {
       if (mEfficiency == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), static_cast<void*>(mEfficiency));
     }
     correctionsLoaded = true;
   }
@@ -385,10 +385,10 @@ struct FlowCorrelationsUpc {
       if (!trackSelected(track1))
         continue;
 
-      auto momentum = std::array<double, 3>{track1.px(), track1.py(), track1.pz()};
-      double pt1 = RecoDecay::pt(momentum);
-      double phi1 = RecoDecay::phi(momentum);
-      double eta1 = RecoDecay::eta(momentum);
+      auto momentum1 = std::array<double, 3>{track1.px(), track1.py(), track1.pz()};
+      double pt1 = RecoDecay::pt(momentum1);
+      double phi1 = RecoDecay::phi(momentum1);
+      double eta1 = RecoDecay::eta(momentum1);
 
       // 计算track1的权重
       float weff1 = 1., wacc1 = 1.;
@@ -407,10 +407,10 @@ struct FlowCorrelationsUpc {
         if (system == MixedEvent && cfgUsePtOrderInMixEvent && pt1 <= track2.pt())
           continue;
 
-        auto momentum = std::array<double, 3>{track2.px(), track2.py(), track2.pz()};
-        double pt2 = RecoDecay::pt(momentum);
-        double phi2 = RecoDecay::phi(momentum);
-        double eta2 = RecoDecay::eta(momentum);
+        auto momentum2 = std::array<double, 3>{track2.px(), track2.py(), track2.pz()};
+        double pt2 = RecoDecay::pt(momentum2);
+        double phi2 = RecoDecay::phi(momentum2);
+        double eta2 = RecoDecay::eta(momentum2);
 
         float weff2 = 1., wacc2 = 1.;
         if (mEfficiency) {
