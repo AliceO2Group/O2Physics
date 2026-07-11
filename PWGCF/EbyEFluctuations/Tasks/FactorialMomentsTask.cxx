@@ -170,18 +170,17 @@ struct FactorialMomentsTask {
   const double dcaxyMaxTrackPar0 = 0.0105;
   const double dcaxyMaxTrackPar1 = 0.035;
   const double dcaxyMaxTrackPar2 = 1.1;
-  const double dcazMaxTrack = 2.0;
   static const int nBins = 52;
   double kMinCharge = 1e-6;
   static const int nfqOrder = 6;
   int countSamples = 0;
   int testc1 = 0, testc2 = 0, testc3 = 0;
-  std::array<int, nBins> binningM;
+  std::array<int, nBins> binningM{};
   std::array<int, 5> countTracks{0, 0, 0, 0, 0};
-  std::array<std::array<std::array<double, nBins>, 5>, 6> fqEvent;
-  std::array<std::array<std::array<double, nBins>, 5>, 6> fqEventSampled;
-  std::array<std::array<double, nBins>, 5> binConEvent;
-  std::array<std::array<std::array<double, nBins>, 5>, 6> binConEventSampled;
+  std::array<std::array<std::array<double, nBins>, 5>, 6> fqEvent{};
+  std::array<std::array<std::array<double, nBins>, 5>, 6> fqEventSampled{};
+  std::array<std::array<double, nBins>, 5> binConEvent{};
+  std::array<std::array<std::array<double, nBins>, 5>, 6> binConEventSampled{};
   std::array<std::array<std::array<int, nBins>, 5>, nfqOrder> nSubsamples{};
   std::vector<std::shared_ptr<TH2>> mHistArrReset;
   std::vector<std::shared_ptr<TH1>> mHistArrQA;
@@ -191,9 +190,7 @@ struct FactorialMomentsTask {
   std::vector<std::shared_ptr<TH1>> mFqBinFinalSampled;
   std::vector<std::shared_ptr<TH1>> mBinConFinalSampled;
   std::vector<std::shared_ptr<TH1>> mFqError;
-  // max number of bins restricted to 5
-  static constexpr std::array<std::string_view, 5>
-    mbinNames{"bin1/", "bin2/", "bin3/", "bin4/", "bin5/"};
+
   void init(o2::framework::InitContext&)
   {
     // NOTE: check to make number of pt and the vector consistent
