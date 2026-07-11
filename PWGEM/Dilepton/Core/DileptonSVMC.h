@@ -115,6 +115,9 @@ struct DileptonSVMC {
   o2::framework::Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   o2::framework::Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  o2::framework::Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  o2::framework::Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  o2::framework::Configurable<int> matCorrType{"matCorrType", 1, "0: none, 1: TGeo, 2: LUT, else: none"};
 
   o2::framework::Configurable<int> cfgEventGeneratorType{"cfgEventGeneratorType", -1, "if positive, select event generator type. i.e. gap or signal"};
   o2::framework::Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
@@ -683,6 +686,36 @@ struct DileptonSVMC {
     mFwdDCAFitter.setMinParamChange(fdfGroup.minParamChange);
     mFwdDCAFitter.setMinRelChi2Change(fdfGroup.minRelChi2Change);
     mFwdDCAFitter.setUseAbsDCA(fdfGroup.useAbsDCA);
+
+    if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
+      switch (matCorrType.value) {
+        case static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::MatCorrType::kNone):
+          mFwdDCAFitter.setTGeoMat(false);
+          break;
+        case static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::MatCorrType::kTGeo):
+          LOGF(info, "TGeo correction requested, loading geometry");
+          if (!o2::base::GeometryManager::isGeometryLoaded()) {
+            ccdb->get<TGeoManager>(geoPath);
+          }
+          // matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
+          mFwdDCAFitter.setTGeoMat(true);
+          break;
+        case static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::MatCorrType::kLUT): {
+          LOGF(info, "LUT correction requested, loading LUT");
+          o2::base::MatLayerCylSet* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+          // matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+          mFwdDCAFitter.setTGeoMat(false);
+          mFwdDCAFitter.setMatLUT(lut);
+          break;
+        }
+        default:
+          LOGF(info, "no correction requested, loading LUT by default!");
+          // lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+          // matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+          mFwdDCAFitter.setTGeoMat(false);
+          break;
+      }
+    }
   }
 
   template <typename TCollision>
