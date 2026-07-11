@@ -702,12 +702,12 @@ struct FlowCumulantsUpc {
     }
     if (cfgZdcTime) {
       // reject 0n0n and XnXn
-      if (neutronClass == 0 || neutronClass == 3) { // o2-linter: disable=magic-number
+      if (neutronClass == 0 || neutronClass == 3) { // o2-linter: disable=magic-number (ZDC time cut)
         return;
       }
       // if A or C gap is requested, keep corresponding neutron class
       if (cfgGapSideA || cfgGapSideC) {
-        if ((cfgGapSideA && neutronClass == 1) || (cfgGapSideC && neutronClass == 2)) { // o2-linter: disable=magic-number
+        if ((cfgGapSideA && neutronClass == 1) || (cfgGapSideC && neutronClass == 2)) { // o2-linter: disable=magic-number (ZDC time cut)
           // accepted
         } else {
           return;
