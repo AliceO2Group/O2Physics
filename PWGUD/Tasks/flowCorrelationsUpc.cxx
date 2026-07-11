@@ -233,20 +233,20 @@ struct FlowCorrelationsUpc {
       return false;
     }
     if (!collision.vtxITSTPC()) {
-			return false;
-		}
+      return false;
+    }
 
     if (!collision.sbp()) {
-			return false;
-		}
+      return false;
+    }
 
     if (!collision.itsROFb()) {
-			return false;
-		}
+      return false;
+    }
 
     if (!collision.tfb()) {
-			return false;
-		}
+      return false;
+    }
 
     if (collision.hadronicRate() > cfgIRMaxCut) {
       return false;
@@ -466,7 +466,7 @@ struct FlowCorrelationsUpc {
     auto currentRunNumber = collision.runNumber();
     auto runDuration = ccdb->getRunDuration(currentRunNumber);
 
-    if(!eventSelected(collision))
+    if (!eventSelected(collision))
       return;
 
     loadCorrections(runDuration.first);
@@ -532,7 +532,7 @@ struct FlowCorrelationsUpc {
           tracks2.size() < cfgMinMult || tracks2.size() > cfgMaxMult) {
         continue;
       }
-      if(!eventSelected(collision1) || !eventSelected(collision2))
+      if (!eventSelected(collision1) || !eventSelected(collision2))
         continue;
 
       auto runDuration1 = ccdb->getRunDuration(collision1.runNumber());
