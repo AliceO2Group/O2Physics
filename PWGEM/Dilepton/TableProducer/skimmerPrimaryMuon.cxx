@@ -356,8 +356,8 @@ struct skimmerPrimaryMuon {
           return false;
         }
         // auto mcParticle_MFTMCHMID = fwdtrack.template mcParticle_as<aod::McParticles>(); // this is identical to mcParticle_MCHMID
-        auto mcParticle_MCHMID = mchtrack.template mcParticle_as<aod::McParticles>(); // this is identical to mcParticle_MFTMCHMID
-        auto mcParticle_MFT = mfttrack.template mcParticle_as<aod::McParticles>();
+        // auto mcParticle_MCHMID = mchtrack.template mcParticle_as<aod::McParticles>(); // this is identical to mcParticle_MFTMCHMID
+        // auto mcParticle_MFT = mfttrack.template mcParticle_as<aod::McParticles>();
       }
 
       nClustersMFT = mfttrack.nClusters();
