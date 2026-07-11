@@ -1454,9 +1454,8 @@ struct LambdaR2Correlation {
 
   // Lambda Kaon two-track cuts
   Configurable<bool> cApplyTwoTrackCut{"cApplyTwoTrackCut", false, "Flag for two track cut"};
-  Configurable<float> cTpcRadii{"cTpcRadii", 0.80, "TPC Radius for DPhiStar"};
-  Configurable<float> cDEtaCut{"cDEtaCut", 0.01, "DEta cut"};
-  Configurable<float> cDPhiStarCut{"cDPhiStarCut", 0.01, "DPhiStar cut"};
+  Configurable<float> cDEtaCut{"cDEtaCut", 0.02, "DEta cut"};
+  Configurable<float> cDPhiStarCut{"cDPhiStarCut", 0.02, "DPhiStar cut"};
 
   // Centrality Axis
   ConfigurableAxis cCentBins{"cCentBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f}, "Variable Mult-Bins"};
@@ -1476,6 +1475,7 @@ struct LambdaR2Correlation {
   float q = 0., e = 0., qinv = 0.;
   float cent = 0.;
   float magField = 0.;
+  std::array<float, 9> tpcRadii = {0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4};
 
   void init(InitContext const&)
   {
@@ -1562,17 +1562,26 @@ struct LambdaR2Correlation {
   }
 
   template <typename A>
-  bool checkClosePair(A const& v1, A const& v2, int const& charge1, int const& charge2)
+  bool checkClosePair(A const& v1, A const& v2, int charge1, int charge2)
   {
-    // DPhiStar
-    float dphistar = 0.;
-    float arg1 = 0.15 * magField * charge1 * cTpcRadii / v1[0];
-    float arg2 = 0.15 * magField * charge2 * cTpcRadii / v2[0];
-    if (std::abs(arg1) < 1.0 && std::abs(arg2) < 1.0) {
-      dphistar = v1[2] - v2[2] - std::asin(arg1) + std::asin(arg2);
-    } else {
-      dphistar = 99.;
+    // DPhiStar average over different TPC radius
+    float dphistar = 0., n = 0.;
+    for (auto radius : tpcRadii) {
+      float arg1 = 0.15 * magField * radius / v1[0];
+      float arg2 = 0.15 * magField * radius / v2[0];
+      if (std::abs(arg1) < 1.0 && std::abs(arg2) < 1.0) {
+        dphistar += v1[2] - v2[2] - (charge1 * std::abs(std::asin(arg1))) + (charge2 * std::abs(std::asin(arg2)));
+        ++n;
+      }
     }
+
+    // Inf check
+    if (n == 0) {
+      return false;
+    }
+
+    // DPhiStar
+    dphistar = RecoDecay::constrainAngle(dphistar / n, -PIHalf);
 
     // DEta
     float deta = v1[1] - v2[1];
@@ -1584,6 +1593,9 @@ struct LambdaR2Correlation {
   template <typename T, typename V>
   bool isClosePair(V const& lambda, T const& track)
   {
+    // Before
+    histos.fill(HIST("QA/TwoTrackCut/Before/h2d_n2_detadphi"), track.eta() - lambda.eta(), RecoDecay::constrainAngle(track.phi() - lambda.phi(), -PIHalf));
+
     // Close pair flag
     bool retFlag = false;
 
@@ -1599,27 +1611,33 @@ struct LambdaR2Correlation {
     }
 
     // Fill QA
-    if (retFlag) {
-      histos.fill(HIST("QA/TwoTrackCut/h2d_n2_detadphi"), track.eta() - lambda.eta(), RecoDecay::constrainAngle(track.phi() - lambda.phi(), -PIHalf));
+    if (!retFlag) { // Pair accept
+      histos.fill(HIST("QA/TwoTrackCut/After/h2d_n2_detadphi"), track.eta() - lambda.eta(), RecoDecay::constrainAngle(track.phi() - lambda.phi(), -PIHalf));
     }
 
+    // Pair reject
     return retFlag;
   }
 
   template <typename T, typename V>
   bool isCloseQinv(V const& p1, T const& p2)
   {
+    // Before
+    histos.fill(HIST("QA/FemtoCut/Before/h2d_n2_detadphi"), p1.eta() - p2.eta(), RecoDecay::constrainAngle(p1.phi() - p2.phi(), -PIHalf));
+
     // Calculate qinv
     q = RecoDecay::p((p1.px() - p2.px()), (p1.py() - p2.py()), (p1.pz() - p2.pz()));
     e = RecoDecay::e(p1.px(), p1.py(), p1.pz(), MassLambda0) - RecoDecay::e(p2.px(), p2.py(), p2.pz(), MassKaonCharged);
     qinv = std::sqrt(-RecoDecay::m2(q, e));
 
-    if (qinv < cFemtoCut) {
-      histos.fill(HIST("QA/FemtoCut/h2d_n2_detadphi"), p1.eta() - p2.eta(), RecoDecay::constrainAngle(p1.phi() - p2.phi(), -PIHalf));
-      return true;
+    // Pair accept
+    if (qinv > cFemtoCut) {
+      histos.fill(HIST("QA/FemtoCut/After/h2d_n2_detadphi"), p1.eta() - p2.eta(), RecoDecay::constrainAngle(p1.phi() - p2.phi(), -PIHalf));
+      return false;
     }
 
-    return false;
+    // Pair reject
+    return true;
   }
 
   template <ParticlePairType part_pair, RecGenType rec_gen, typename T1, typename T2>
@@ -1634,12 +1652,12 @@ struct LambdaR2Correlation {
     const auto phibin1 = static_cast<int>(p1.phi() / phibinwidth);
     const auto phibin2 = static_cast<int>(p2.phi() / phibinwidth);
 
-    float corfac = p1.corrFact() * p2.corrFact();
+    const float corfac = p1.corrFact() * p2.corrFact();
 
     if (rapbin1 >= 0 && rapbin2 >= 0 && phibin1 >= 0 && phibin2 >= 0 && rapbin1 < nrapbins && rapbin2 < nrapbins && phibin1 < nphibins && phibin2 < nphibins) {
 
-      int rapphix = rapbin1 * nphibins + phibin1;
-      int rapphiy = rapbin2 * nphibins + phibin2;
+      const int rapphix = rapbin1 * nphibins + phibin1;
+      const int rapphiy = rapbin2 * nphibins + phibin2;
 
       histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("h3f_n2_rapphi_") + HIST(SubDirHist[part_pair]), cent, rapphix + 0.5, rapphiy + 0.5, corfac);
     }
