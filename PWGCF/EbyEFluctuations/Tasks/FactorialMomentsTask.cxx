@@ -182,7 +182,7 @@ struct FactorialMomentsTask {
   std::array<std::array<std::array<double, nBins>, 5>, 6> fqEventSampled;
   std::array<std::array<double, nBins>, 5> binConEvent;
   std::array<std::array<std::array<double, nBins>, 5>, 6> binConEventSampled;
-  std::array<std::array<std::array<double, nBins>, 5>, 6> errorFq = {{{{{0, 0, 0, 0, 0}}}}};
+  std::array<std::array<std::array<int, nBins>, 5>, nfqOrder> nSubsamples{};
   std::vector<std::shared_ptr<TH2>> mHistArrReset;
   std::vector<std::shared_ptr<TH1>> mHistArrQA;
   std::vector<std::shared_ptr<TH3>> mHistArrEff;
@@ -307,23 +307,28 @@ struct FactorialMomentsTask {
         }
         binConEvent[iPt][iM] = binContent / (std::pow(binningM[iM], 2));
         for (int iq = 0; iq < nfqOrder; ++iq) {
-          if (sumfqBin[iq] > 0) {
-            fqEvent[iq][iPt][iM] = sumfqBin[iq] / (std::pow(binningM[iM], 2));
-            fqEventSampled[iq][iPt][iM] += fqEvent[iq][iPt][iM];
-          }
+          // Always accumulate raw fq numerator and binCon unconditionally so
+          // both sums run over exactly the same set of events.
+          fqEvent[iq][iPt][iM] = sumfqBin[iq] / (std::pow(binningM[iM], 2));
+          fqEventSampled[iq][iPt][iM] += fqEvent[iq][iPt][iM];
           binConEventSampled[iq][iPt][iM] += binConEvent[iPt][iM];
           mFqBinFinal[iPt * 6 + iq]->Fill(iM, fqEvent[iq][iPt][iM]);
           mBinConFinal[iPt * 6 + iq]->Fill(iM, binConEvent[iPt][iM]);
           if (compSample) {
-            mBinConFinalSampled[iPt * 6 + iq]->Fill(iM, binConEventSampled[iq][iPt][iM] / samplesize);
+            const double avM = binConEventSampled[iq][iPt][iM] / samplesize;
+            mBinConFinalSampled[iPt * 6 + iq]->Fill(iM, avM);
+            const double den = std::pow(avM, iq + 2);
+            const double fqM = ((fqEventSampled[iq][iPt][iM]) / samplesize);
 
-            double tmp = (fqEventSampled[iq][iPt][iM] / (samplesize)) / (std::pow(binConEventSampled[iq][iPt][iM] / (samplesize), (iq + 2)));
+            const double tmp = (den > 0.) ? fqM / den : 0.;
             mFqBinFinalSampled[iPt * 6 + iq]->Fill(iM, tmp);
-            tmpFqErr[iq][iPt][iM]->Fill(tmp);
-            errorFq[iq][iPt][iM] += std::pow(fqEventSampled[iq][iPt][iM] / (samplesize), 2);
-            mFqError[iPt * 6 + iq]->SetBinContent(iM + 1, 0);
-            mFqError[iPt * 6 + iq]->Fill(iM, tmpFqErr[iq][iPt][iM]->GetStdDev());
 
+            tmpFqErr[iq][iPt][iM]->Fill(tmp);
+            ++nSubsamples[iq][iPt][iM];
+            const double stdErr = (nSubsamples[iq][iPt][iM] > 1)
+                                    ? tmpFqErr[iq][iPt][iM]->GetStdDev() / std::sqrt(static_cast<double>(nSubsamples[iq][iPt][iM]))
+                                    : 0.;
+            mFqError[iPt * 6 + iq]->SetBinContent(iM + 1, stdErr);
             fqEventSampled[iq][iPt][iM] = 0;
             binConEventSampled[iq][iPt][iM] = 0;
           }
