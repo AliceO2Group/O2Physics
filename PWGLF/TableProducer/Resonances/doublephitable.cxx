@@ -17,6 +17,8 @@
 #include "PWGLF/DataModel/ReducedDoublePhiTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/Zorro.h"
+#include "Common/Core/ZorroSummary.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -55,11 +57,27 @@ struct doublephitable {
   Produces<aod::RedPhiEvents> redPhiEvents;
   Produces<aod::PhiTracks> phiTrack;
 
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::ccdb::CcdbApi ccdbApi;
+
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+
+  /// Event selection
+  struct : ConfigurableGroup {
+    std::string prefix = std::string("EventSel");
+    Configurable<bool> ConfEvtSelectZvtx{"ConfEvtSelectZvtx", true, "Event selection includes max. z-Vertex"};
+    Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
+    Configurable<bool> ConfEvtSel8{"ConfEvtSel8", true, "Event selection sel8"};
+  } EventSel;
+
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   // Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 0.0f, "Accepted maximum Centrality"};
   // Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 100.0f, "Accepted minimum Centrality"};
   // track
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "ccdb-url"};
+  Configurable<bool> useTrigger{"useTrigger", true, "use Trigger"};
   Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "use Global track"};
   Configurable<float> cfgCutTOFBeta{"cfgCutTOFBeta", 0.0, "cut TOF beta"};
   Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0, "cut on Charge"};
@@ -67,7 +85,7 @@ struct doublephitable {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
-  Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
+  Configurable<float> nsigmaCutTPC{"nsigmacutTPC", -2.0, "Value of the TPC Nsigma cut"};
   Configurable<float> nsigmaCutTOF{"nsigmaCutTOF", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
@@ -77,12 +95,13 @@ struct doublephitable {
   ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0.0, 10.}, "#it{p}_{T} (GeV/#it{c})"};
   Configurable<float> minPhiMass{"minPhiMass", 1.01, "Minimum phi mass"};
   Configurable<float> maxPhiMass{"maxPhiMass", 1.03, "Maximum phi mass"};
+  Configurable<float> nsigmaCutTPCPreSel{"nsigmacutTPCPreSel", 3.0, "Value of the TPC Nsigma cut Pre selection"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   // Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
-  Filter PIDcutFilter = nabs(aod::pidtpc::tpcNSigmaKa) < nsigmaCutTPC;
+  Filter PIDcutFilter = nabs(aod::pidtpc::tpcNSigmaKa) < nsigmaCutTPCPreSel;
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCFullKa, aod::pidTOFFullKa>>;
@@ -91,6 +110,7 @@ struct doublephitable {
   Partition<TrackCandidates> posTracks = aod::track::signed1Pt > cfgCutCharge;
   Partition<TrackCandidates> negTracks = aod::track::signed1Pt < cfgCutCharge;
 
+  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", ";; Number of events", 4, 0.0f, 4.0f)};
   // Histogram
   HistogramRegistry qaRegistry{"QAHistos", {
                                              {"hEventstat", "hEventstat", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
@@ -102,10 +122,34 @@ struct doublephitable {
 
   double massKa = o2::constants::physics::MassKPlus;
 
+  void init(o2::framework::InitContext&)
+  {
+    ccdb->setURL(url.value);
+    ccdbApi.init(url);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    zorroSummary.setObject(zorro.getZorroSummary());
+    hProcessedEvents->GetXaxis()->SetBinLabel(1, "All Trigger events");
+    hProcessedEvents->GetXaxis()->SetBinLabel(2, "Events with Double Phi Trigger");
+    hProcessedEvents->GetXaxis()->SetBinLabel(3, "Events eith trigger and Evsel");
+    hProcessedEvents->GetXaxis()->SetBinLabel(4, "Final Event");
+  }
+  template <typename T>
+  bool isSelectedEvent(T const& col)
+  {
+    if (EventSel.ConfEvtSelectZvtx && std::abs(col.posZ()) > EventSel.ConfEvtZvtx) {
+      return false;
+    }
+    if (EventSel.ConfEvtSel8 && !col.sel8()) {
+      return false;
+    }
+    return true;
+  }
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (useGlobalTrack && !(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
+    if (useGlobalTrack && !(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsCrossedRows() > cfgTPCcluster)) {
       return false;
     }
     return true;
@@ -113,40 +157,29 @@ struct doublephitable {
   template <typename T>
   bool selectionPID(const T& candidate)
   {
-    if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+    if (candidate.pt() < 0.5 && candidate.tpcNSigmaKa() > nsigmaCutTPC && candidate.tpcNSigmaKa() < 3.0) {
       return true;
     }
-    if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaKa()) < nsigmaCutTOF) {
-      return true;
+    if (candidate.pt() >= 0.5) {
+      if (!candidate.hasTOF() && candidate.tpcNSigmaKa() > nsigmaCutTPC && candidate.tpcNSigmaKa() < 2.0) {
+        return true;
+      }
+      if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Sqrt(candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < nsigmaCutTOF) {
+        return true;
+      }
     }
     return false;
   }
-  // deep angle cut on pair to remove photon conversion
-  template <typename T1, typename T2>
-  bool selectionPair(const T1& candidate1, const T2& candidate2)
-  {
-    double pt1, pt2, pz1, pz2, p1, p2, angle;
-    pt1 = candidate1.pt();
-    pt2 = candidate2.pt();
-    pz1 = candidate1.pz();
-    pz2 = candidate2.pz();
-    p1 = candidate1.p();
-    p2 = candidate2.p();
-    angle = TMath::ACos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
-    if (isDeepAngle && angle < cfgDeepAngle) {
-      return false;
-    }
-    return true;
-  }
 
+  int currentRunNumber = -999;
+  int lastRunNumber = -999;
   ROOT::Math::PxPyPzMVector KaonPlus, KaonMinus, PhiMesonMother, PhiVectorDummy, Phid1dummy, Phid2dummy;
   void processPhiReducedTable(EventCandidates::iterator const& collision, TrackCandidates const&, aod::BCsWithTimestamps const&)
   {
     o2::aod::ITSResponse itsResponse;
     bool keepEventDoublePhi = false;
     int numberPhi = 0;
-    auto currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+
     std::vector<int64_t> Phid1Index = {};
     std::vector<int64_t> Phid2Index = {};
 
@@ -167,7 +200,25 @@ struct doublephitable {
     int Npostrack = 0;
     int Nnegtrack = 0;
     float centrality = collision.centFT0M();
-    if (collision.sel8() && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    hProcessedEvents->Fill(0.5);
+    bool zorroSelected = false;
+    if (currentRunNumber != lastRunNumber) {
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fTriggerEventDoublePhi");
+      zorro.populateHistRegistry(qaRegistry, bc.runNumber());
+      lastRunNumber = currentRunNumber;
+    }
+    if (useTrigger) {
+      zorroSelected = zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
+    } else {
+      zorroSelected = true;
+    }
+    if (zorroSelected) {
+      hProcessedEvents->Fill(1.5);
+    }
+    if (zorroSelected && isSelectedEvent(collision)) {
+      hProcessedEvents->Fill(2.5);
       auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       for (auto track1 : posThisColl) {
@@ -179,7 +230,7 @@ struct doublephitable {
         if (!selectionPID(track1)) {
           continue;
         }
-        if (!(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) < 3.0)) {
+        if (track1.pt() > 0.4 && track1.pt() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) > -2.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) < 3.0)) {
           continue;
         }
         Npostrack = Npostrack + 1;
@@ -188,7 +239,12 @@ struct doublephitable {
           qaRegistry.fill(HIST("hNsigmaPtkaonTOF"), track1.tofNSigmaKa(), track1.pt());
         }
         auto track1ID = track1.globalIndex();
+
         for (auto track2 : negThisColl) {
+          auto track2ID = track2.globalIndex();
+          if (track2ID == track1ID) {
+            continue;
+          }
           // track selection
           if (!selectionTrack(track2)) {
             continue;
@@ -197,18 +253,11 @@ struct doublephitable {
           if (!selectionPID(track2)) {
             continue;
           }
+          if (track2.pt() > 0.4 && track2.pt() < 1.0 && !(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) > -2.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) < 3.0)) {
+            continue;
+          }
           if (Npostrack == 1) {
             Nnegtrack = Nnegtrack + 1;
-          }
-          auto track2ID = track2.globalIndex();
-          if (track2ID == track1ID) {
-            continue;
-          }
-          if (!(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) < 3.0)) {
-            continue;
-          }
-          if (!selectionPair(track1, track2)) {
-            continue;
           }
           KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
           KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
@@ -252,11 +301,12 @@ struct doublephitable {
         }
       }
     } // select collision
-    if (numberPhi > 1 && Npostrack > 1 && Nnegtrack > 1) {
+    if (numberPhi > 1 && zorroSelected && Nnegtrack > 1 && Npostrack > 1) {
       keepEventDoublePhi = true;
+      hProcessedEvents->Fill(3.5);
     }
     qaRegistry.fill(HIST("hEventstat"), 0.5);
-    if (keepEventDoublePhi && numberPhi > 1 && Npostrack > 1 && Nnegtrack > 1 && (phiresonance.size() == phiresonanced1.size()) && (phiresonance.size() == phiresonanced2.size())) {
+    if (keepEventDoublePhi && numberPhi > 1 && (phiresonance.size() == phiresonanced1.size()) && (phiresonance.size() == phiresonanced2.size())) {
       qaRegistry.fill(HIST("hEventstat"), 1.5);
       /////////// Fill collision table///////////////
       redPhiEvents(bc.globalBC(), currentRunNumber, bc.timestamp(), collision.posZ(), collision.numContrib(), Npostrack, Nnegtrack, centrality);

@@ -64,14 +64,16 @@ struct doublephimeson {
   Configurable<float> minExoticPt{"minExoticPt", 6.0, "Minimum Exotic Pt"};
   Configurable<float> minExoticMass{"minExoticMass", 2.0, "Minimum Exotic mass"};
   Configurable<float> maxExoticMass{"maxExoticMass", 3.6, "Maximum Exotic mass"};
-  Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selection"};
+  Configurable<bool> additionalEvsel{"additionalEvsel", true, "Additional event selection"};
   Configurable<bool> isDeep{"isDeep", true, "Store deep angle"};
   Configurable<float> cutMinNsigmaTPC{"cutMinNsigmaTPC", -2.5, "nsigma cut TPC"};
   Configurable<float> cutNsigmaTPC{"cutNsigmaTPC", 3.0, "nsigma cut TPC"};
   Configurable<float> cutNsigmaTOF{"cutNsigmaTOF", 3.0, "nsigma cut TOF"};
   Configurable<float> momTOFCut{"momTOFCut", 1.8, "minimum pT cut for madnatory TOF"};
   Configurable<float> maxKaonPt{"maxKaonPt", 100.0, "maximum kaon pt cut"};
-
+  Configurable<float> cfgCrossPhiLow{"cfgCrossPhiLow", 1.01, "Lower edge of phi mass window for cross-pairing (ghost) veto"};
+  Configurable<float> cfgCrossPhiHigh{"cfgCrossPhiHigh", 1.03, "Upper edge of phi mass window for cross-pairing (ghost) veto"};
+  Configurable<bool> useParametrized{"useParametrized", false, "Use pT dependent mass peak and width"};
   // ------------------------------------------------------------
   // pT-dependent phi mass peak and width from single-phi BW fits
   //
@@ -1543,7 +1545,7 @@ struct doublephimeson {
     }
   }
   PROCESS_SWITCH(doublephimeson, processopti4, "Process Optimized same event", true);
-
+  double dMNominal = 100.0;
   void processopti5(aod::RedPhiEvents::iterator const& collision, aod::PhiTracks const& phitracks)
   {
     if (additionalEvsel && (collision.numPos() < 2 || collision.numNeg() < 2)) {
@@ -1710,29 +1712,23 @@ struct doublephimeson {
           // LOGF(info,"track share",t1.phid1Index(),t1.phid2Index(),t2.phid1Index(),t2.phid2Index());
           continue;
         }
-        // const double dMNominal = deltaMPhiNominal(phi1.M(), phi2.M());
         const double mCross12 = (k1p + k2m).M(); // K+ from phi1 + K- from phi2
         const double mCross21 = (k2p + k1m).M(); // K+ from phi2 + K- from phi1
-        const double dMCross = deltaMPhiNominal(mCross12, mCross21);
-        // Reject this candidate only if the crossed assignment is more phi-like
-        if (dMCross > 1.01 && dMCross < 1.03) {
-          // ++nBestPairingRejected;
-          /*
+
+        const bool cross12IsPhiLike = (mCross12 > cfgCrossPhiLow && mCross12 < cfgCrossPhiHigh);
+        const bool cross21IsPhiLike = (mCross21 > cfgCrossPhiLow && mCross21 < cfgCrossPhiHigh);
+
+        if (cross12IsPhiLike || cross21IsPhiLike) {
           LOGF(info,
-               "Best-pairing rejected: dMNominal = %.6f, dMCross = %.6f, "
-               "mPhi1 = %.6f, mPhi2 = %.6f, mCross12 = %.6f, mCross21 = %.6f",
-               dMNominal,
-               dMCross,
+               "Best-pairing rejected: mPhi1 = %3.4f, mPhi2 = %3.4f, mCross12 = %3.4f, mCross21 = %3.4f",
                phi1.M(),
                phi2.M(),
                mCross12,
                mCross21,
                pair.Pt(),
                pair.M());
-          */
           continue;
         }
-
         histos.fill(HIST("hPhiMass"), phi1.M(), phi2.M(), pair.Pt());
         histos.fill(HIST("hPhiMassNormalized"), getNormalizedMPhi(phi1.M(), phi1.Pt()), getNormalizedMPhi(phi2.M(), phi2.Pt()), pair.Pt());
 
@@ -1767,7 +1763,11 @@ struct doublephimeson {
       const double pairPt = pair.Pt();
       const double dRphi = deltaR(p1.Phi(), p1.Eta(), p2.Phi(), p2.Eta());
       const double minDR = minDRV[i];
-      const double dMNominal = getDeltaMPhi(p1.M(), p1.Pt(), p2.M(), p2.Pt());
+      if (!useParametrized) {
+        dMNominal = deltaMPhiNominal(p1.M(), p2.M());
+      } else {
+        dMNominal = getDeltaMPhi(p1.M(), p1.Pt(), p2.M(), p2.Pt());
+      }
       const double dMNominalNsigma = getNormalizedDeltaMPhi(p1.M(), p1.Pt(), p2.M(), p2.Pt());
       const double denom = std::abs(pairPt - p1.Pt());
 
