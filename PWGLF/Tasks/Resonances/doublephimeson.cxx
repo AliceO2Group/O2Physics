@@ -181,7 +181,7 @@ struct doublephimeson {
     histos.add("hDeltaRkaonplus", "hDeltaRkaonplus", kTH1F, {{800, 0.0, 8.0}});
     histos.add("hDeltaRkaonminus", "hDeltaRkaonminus", kTH1F, {{800, 0.0, 8.0}});
     histos.add("hPtCorrelation", "hPtCorrelation", kTH2F, {{400, 0.0, 40.0}, {5000, 0.0, 100.0}});
-    histos.add("hPtCent", "hPtCent", kTH2F, {{100, 0.0, 100.0}, {100, 0.0, 100.0}});
+    histos.add("hMassCent", "hMassCent", kTH3F, {{40, 1.0, 1.04f}, {40, 1.0, 1.04f}, {100, 0.0, 100.0}});
     const AxisSpec thnAxisdeltapt{configThnAxisDeltaPt, "Delta pt"};
     const AxisSpec thnAxisdaughterpt{configThnAxisDaughterPt, "Daughter pt"};
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
@@ -1781,7 +1781,7 @@ struct doublephimeson {
       }
       if (pairPt > minExoticPt) {
         histos.fill(HIST("hPtCorrelation"), pairPt, ptcorr);
-        histos.fill(HIST("hPtCent"), pairPt, collision.centrality());
+        histos.fill(HIST("hMassCent"), p1.M(), p2.M(), collision.centrality());
         histos.fill(HIST("SEMassUnlike_AllVars"),
                     M,
                     pairPt,
