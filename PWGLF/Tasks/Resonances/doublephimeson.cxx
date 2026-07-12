@@ -2215,25 +2215,25 @@ struct doublephimeson {
           if (dM > maxDeltaMPhi)
             continue;
 
-          TLorentzVector pair = phi1 + phi2;
-          if (pair.M() < minExoticMass || pair.M() > maxExoticMass)
+          TLorentzVector pairPhiPhi = phi1 + phi2;
+          if (pairPhiPhi.M() < minExoticMass || pairPhiPhi.M() > maxExoticMass)
             continue;
 
           const double minDR = minKaonDeltaR(c1.kplus, c2.kplus, c1.kminus, c2.kminus);
           const double dR = deltaR(phi1.Phi(), phi1.Eta(), phi2.Phi(), phi2.Eta());
 
           // same definition as SE
-          const double ptcorr = (pair.Pt() - phi1.Pt() != 0.)
-                                  ? phi1.Pt() / (pair.Pt() - phi1.Pt())
+          const double ptcorr = (pairPhiPhi.Pt() - phi1.Pt() != 0.)
+                                  ? phi1.Pt() / (pairPhiPhi.Pt() - phi1.Pt())
                                   : 0.;
 
           histos.fill(HIST("MEMassUnlike"),
-                      pair.M(),  // M(phi-phi)
-                      minDR,     // min ΔR among all kaon pairs
-                      pair.Pt(), // pT(phi-phi)
-                      dR,        // ΔR(phi1, phi2)
-                      dM,        // Δm(phi)
-                      ptcorr);   // pT correlation
+                      pairPhiPhi.M(),  // M(phi-phi)
+                      minDR,           // min ΔR among all kaon pairs
+                      pairPhiPhi.Pt(), // pT(phi-phi)
+                      dR,              // ΔR(phi1, phi2)
+                      dM,              // Δm(phi)
+                      ptcorr);         // pT correlation
 
           // --- NEW: compute z and A from phi candidates (no cuts) ---
           const double pt1 = phi1.Pt();
@@ -2244,7 +2244,7 @@ struct doublephimeson {
           const double z = pt1 / ptsum;
           const double A = std::abs(pt1 - pt2) / ptsum;
           // --- Fill NEW THnSparse (no cuts) ---
-          histos.fill(HIST("MEMassUnlike_DeltaRZA"), pair.M(), pair.Pt(), pair.Pt() * dR, z, A, dM);
+          histos.fill(HIST("MEMassUnlike_DeltaRZA"), pairPhiPhi.M(), pairPhiPhi.Pt(), pairPhiPhi.Pt() * dR, z, A, dM);
         }
       }
     }
