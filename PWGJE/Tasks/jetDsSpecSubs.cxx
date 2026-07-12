@@ -94,7 +94,6 @@ struct JetDsSpecSubs {
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
 
-  static constexpr float epsilon = 1.e-6f;
   // Filters
   Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
   // Filter collisionFilter = nabs(aod::jcollision::posZ) < vertexZCut;
