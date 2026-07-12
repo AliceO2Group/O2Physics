@@ -591,7 +591,7 @@ struct HeavyionMultiplicity {
 
         auto mcpart = Rectrack.mcParticle();
 
-        if (!isGenTrackSelected(mcpart)) {
+        if (isGenTrackSelected(mcpart)) {
           histos.fill(HIST("hdcaxyvsptMCprimary"), Rectrack.dcaXY(), Rectrack.pt());
           histos.fill(HIST("hdcazvsptMCprimary"), Rectrack.dcaZ(), Rectrack.pt());
         }
