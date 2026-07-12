@@ -195,7 +195,7 @@ struct HfCorrelatorLcScHadronsSelection {
   }
 
   template <typename TCollision>
-  bool eventSelV0(TCollision collision)
+  bool eventSelV0(TCollision const& collision)
   {
     if (!collision.sel8()) {
       return 0;
@@ -530,6 +530,8 @@ struct HfCorrelatorLcScHadrons {
     registry.add("hV0LambdaMcRec", "McRec V0 Lambda candidates;inv. mass (p #pi) (GeV/#it{c}^{2});GeV/#it{c};GeV/#it{c}", {HistType::kTH3F, {{axisMassV0}, {axisPtV0}, {axisPtHadron}}});
     registry.add("hV0LambdaReflMcRec", "McRec V0 Lambda reflected candidates;inv. mass (p #pi) (GeV/#it{c}^{2});GeV/#it{c};GeV/#it{c}", {HistType::kTH3F, {{axisMassV0}, {axisPtV0}, {axisPtHadron}}});
     registry.add("hV0LambdaPiKRejMcRec", "McRec V0 Lambda candidates with #pi K rejection;inv. mass (p #pi) (GeV/#it{c}^{2});GeV/#it{c};GeV/#it{c}", {HistType::kTH3F, {{axisMassV0}, {axisPtV0}, {axisPtHadron}}});
+    registry.add("hV0PrimLambdaMcRec", "McRec V0 Lambda candidates;inv. mass (p #pi) (GeV/#it{c}^{2});GeV/#it{c};GeV/#it{c}", {HistType::kTH3F, {{axisMassV0}, {axisPtV0}, {axisPtHadron}}});
+    registry.add("hV0PrimLambdaReflMcRec", "McRec V0 Lambda reflected candidates;inv. mass (p #pi) (GeV/#it{c}^{2});GeV/#it{c};GeV/#it{c}", {HistType::kTH3F, {{axisMassV0}, {axisPtV0}, {axisPtHadron}}});
     registry.add("hV0LambdaReflPiKRejMcRec", "McRec V0 Lambda reflected candidates with #pi K rejection;inv. mass (p #pi) (GeV/#it{c}^{2});GeV/#it{c};GeV/#it{c}", {HistType::kTH3F, {{axisMassV0}, {axisPtV0}, {axisPtHadron}}});
     registry.add("hV0PtPrimLambdaMcGen", "Mcgen V0 Lambda candidates;GeV/#it{c}", {HistType::kTH1F, {{axisPtV0}}});
 
@@ -595,7 +597,7 @@ struct HfCorrelatorLcScHadrons {
   }
 
   template <typename Tracktype, typename V0Type>
-  bool isSelectedV0Daughter(Tracktype const& track, V0Type v0, int pid)
+  bool isSelectedV0Daughter(Tracktype const& track, V0Type const& v0, int pid)
   {
     if (std::abs(track.eta()) > cfgCharmCand.etaTrackMax) {
       return false;
@@ -1151,8 +1153,9 @@ struct HfCorrelatorLcScHadrons {
     entryLcHadronInvMass(massCandHadron, ptCombined);
     entryPairCandCharge(signCand);
     if constexpr (LambdaPart == 0) {
-      if (trkPidFill)
+      if (trkPidFill) {
         entryCandHadronPairTrkPID(assoc.tpcNSigmaPr(), assoc.tpcNSigmaKa(), assoc.tpcNSigmaPi(), assoc.tofNSigmaPr(), assoc.tofNSigmaKa(), assoc.tofNSigmaPi());
+      }
     }
     if constexpr (IsMcRec) {
       if (assoc.has_mcParticle()) {
@@ -1851,8 +1854,8 @@ struct HfCorrelatorLcScHadrons {
         if (cfgCharmCand.pidTrkApplied && (std::abs(particleAssoc.pdgCode()) != kProton)) {
           continue; // proton PID
         }
-        int8_t const chargeLc = pdg->GetParticle(candidate.pdgCode())->Charge();        // Retrieve charge
-        int8_t const chargeAssoc = pdg->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
+        int8_t const chargeLc = static_cast<int8_t>(pdg->GetParticle(candidate.pdgCode())->Charge());        // Retrieve charge
+        int8_t const chargeAssoc = static_cast<int8_t>(pdg->GetParticle(particleAssoc.pdgCode())->Charge()); // Retrieve charge
         float cent = 100.0;                                                             // will be updated later
 
         int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
