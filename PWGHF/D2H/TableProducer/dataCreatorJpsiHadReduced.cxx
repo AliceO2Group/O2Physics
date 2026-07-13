@@ -1043,7 +1043,7 @@ struct HfDataCreatorJpsiHadReduced {
       registry.fill(HIST("hSelectionsJpsi"), 2 + aod::SelectionStep::RecoPID, candidate.pt());
 
       int const indexHfCandJpsi = hfJpsi.lastIndex() + 1;
-      float const invMassJpsi = HfHelper::invMassJpsiToMuMu(candidate);
+      float invMassJpsi = HfHelper::invMassJpsiToMuMu(candidate);
       registry.fill(HIST("hMassJpsi"), invMassJpsi);
       registry.fill(HIST("hPtJpsi"), candidate.pt());
       registry.fill(HIST("hCpaJpsi"), candidate.cpa());
@@ -1410,7 +1410,6 @@ struct HfDataCreatorJpsiHadReduced {
         }
       } // kaon loop
       if (fillHfCandJpsi) { // fill Jpsi table only once per Jpsi candidate
-        double invMassJpsi{0.};
         invMassJpsi = HfHelper::invMassJpsiToMuMu(candidate);
         hfJpsi(trackPos.globalIndex(), trackNeg.globalIndex(),
                indexHfReducedCollision,
