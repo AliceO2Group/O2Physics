@@ -2764,7 +2764,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
       int* nBins = nullptr;
       double* xmin = nullptr;
       double* xmax = nullptr;
-      TArrayD* binLimits = nullptr;
+      std::vector<TArrayD> binLimitsVec;
       if (isConstantBinning) {
         nBins = new int[nDimensions];
         xmin = new double[nDimensions];
@@ -2786,24 +2786,24 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
         }
       } else {
         iDim = 0;
-        binLimits = new TArrayD[nDimensions];
+        binLimitsVec.resize(nDimensions);
         for (const auto& v : hist.FindMember("binLimits")->value.GetArray()) {
           auto* lims = new double[v.GetArray().Size()];
           int iElem = 0;
           for (const auto& lim : v.GetArray()) {
             lims[iElem++] = lim.GetDouble();
           }
-          binLimits[iDim++] = TArrayD(v.GetArray().Size(), lims);
+          binLimitsVec[iDim++] = TArrayD(v.GetArray().Size(), lims);
           delete[] lims;
         }
       }
 
-      TString* axLabels = nullptr;
+      std::vector<TString> axLabelsVec;
       if (hist.HasMember("axLabels")) {
-        axLabels = new TString[hist.FindMember("axLabels")->value.GetArray().Size()];
+        axLabelsVec.resize(hist.FindMember("axLabels")->value.GetArray().Size());
         iDim = 0;
         for (const auto& v : hist.FindMember("axLabels")->value.GetArray()) {
-          axLabels[iDim++] = v.GetString();
+          axLabelsVec[iDim++] = v.GetString();
         }
       }
 
@@ -2813,11 +2813,13 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
 
       if (isConstantBinning) {
         for (const auto& histClass : histClasses) {
-          hm->AddHistogram(histClass, histName, title, nDimensions, vars, nBins, xmin, xmax, axLabels, varW, useSparse, isDouble);
+          hm->AddHistogram(histClass, histName, title, nDimensions, vars, nBins, xmin, xmax,
+                           axLabelsVec.empty() ? nullptr : axLabelsVec.data(), varW, useSparse, isDouble);
         }
       } else {
         for (const auto& histClass : histClasses) {
-          hm->AddHistogram(histClass, histName, title, nDimensions, vars, binLimits, axLabels, varW, useSparse, isDouble);
+          hm->AddHistogram(histClass, histName, title, nDimensions, vars, binLimitsVec.data(),
+                           axLabelsVec.empty() ? nullptr : axLabelsVec.data(), varW, useSparse, isDouble);
         }
       }
 
@@ -2826,10 +2828,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
         delete[] nBins;
         delete[] xmin;
         delete[] xmax;
-      } else {
-        delete[] binLimits;
       }
-      delete[] axLabels;
 
     } else { // TH1, TH2 or TH3
 
