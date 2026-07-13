@@ -210,7 +210,7 @@ struct CorrFit {
   o2::ft0::Geometry ft0Det;
   static constexpr uint64_t Ft0IndexA = 96;
   std::vector<o2::detectors::AlignParam>* offsetFT0 = nullptr;
-  std::vector<float> cstFT0RelGain{};
+  std::vector<float> cstFT0RelGain;
 
   // Corrections
   TH3D* mEfficiency = nullptr;
@@ -993,7 +993,7 @@ struct CorrFit {
   }
 
   template <typename TTracks>
-  void trackCounter(const TTracks& tracks, double& multiplicity) // function to count the number of tracks in the event and fill the histogram
+  void trackCounter(const TTracks& tracks, int& multiplicity) // function to count the number of tracks in the event and fill the histogram
   {
     double nTracksCorrected = 0;
     float weightNch = 1.0f;
@@ -1155,7 +1155,7 @@ struct CorrFit {
   void fillCorrelationsTPCFT0(const TTracks& tracks1, TFT0s const& ft0, float posZ, int system, int multiplicity, int corType, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
 
-    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+    int fSampleIndex = static_cast<int>(gRandom->Uniform(0.0, cfgSampleSize));
 
     float triggerWeight = 1.0f;
     // loop over all tracks
@@ -1239,7 +1239,7 @@ struct CorrFit {
   template <CorrelationContainer::CFStep step, typename TFT0s>
   void fillCorrelationsFT0AFT0C(TFT0s const& ft0Col1, TFT0s const& ft0Col2, float posZ, int system, int multiplicity, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
-    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+    int fSampleIndex = static_cast<int>(gRandom->Uniform(0.0, cfgSampleSize));
 
     float triggerWeight = 1.0f;
     std::size_t channelASize = ft0Col1.channelA().size();
@@ -1286,7 +1286,7 @@ struct CorrFit {
   void fillCorrelations(const TTracks& tracks1, const TTracksAssoc& tracks2, float posZ, int system, int multiplicity, int magneticField) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
 
-    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+    int fSampleIndex = static_cast<int>(gRandom->Uniform(0.0, cfgSampleSize));
 
     float triggerWeight = 1.0f;
 
@@ -1343,8 +1343,12 @@ struct CorrFit {
 
           bool bIsBelow = false;
 
+          constexpr double loopIncrement = 0.01;
+          const int nLoops = static_cast<int>((cfgRadiusHigh - cfgRadiusLow) / loopIncrement);
+
           if (std::abs(dPhiStarLow) < kLimit || std::abs(dPhiStarHigh) < kLimit || dPhiStarLow * dPhiStarHigh < 0) {
-            for (double rad(cfgRadiusLow); rad < cfgRadiusHigh; rad += 0.01) {
+            for (int i = 0; i < nLoops; i++) {
+              double rad = cfgRadiusLow + i * loopIncrement;
               double dPhiStar = getDPhiStar(track1, track2, rad, magneticField);
               if (std::abs(dPhiStar) < kLimit) {
                 bIsBelow = true;
@@ -1423,7 +1427,7 @@ struct CorrFit {
 
     fillYield(collision, tracks);
 
-    double multiplicity = tracks.size();
+    int multiplicity = tracks.size();
 
     if (cfgQaCheck) {
       registry.fill(HIST("Nch"), multiplicity);
@@ -1491,7 +1495,7 @@ struct CorrFit {
       loadCorrection(bc.timestamp());
       float eventWeight = 1.0f;
 
-      double multiplicity = tracks1.size();
+      int multiplicity = tracks1.size();
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
@@ -1541,7 +1545,7 @@ struct CorrFit {
 
     const auto& ft0 = collision.foundFT0();
 
-    double multiplicity = tracks.size();
+    int multiplicity = tracks.size();
 
     if (cfgQaCheck) {
       registry.fill(HIST("Nch"), multiplicity);
@@ -1607,7 +1611,7 @@ struct CorrFit {
       float eventWeight = 1.0f;
 
       const auto& ft0 = collision2.foundFT0();
-      double multiplicity = tracks1.size();
+      int multiplicity = tracks1.size();
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
@@ -1659,7 +1663,7 @@ struct CorrFit {
 
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
 
-    double multiplicity = tracks.size();
+    int multiplicity = tracks.size();
 
     if (cfgQaCheck) {
       registry.fill(HIST("Nch"), multiplicity);
@@ -1727,7 +1731,7 @@ struct CorrFit {
       const auto& ft0Col1 = collision1.foundFT0();
       const auto& ft0Col2 = collision2.foundFT0();
 
-      double multiplicity = tracks1.size();
+      int multiplicity = tracks1.size();
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
@@ -1771,7 +1775,7 @@ struct CorrFit {
 
     fillYield(collision, tracks);
 
-    double multiplicity = tracks.size();
+    int multiplicity = tracks.size();
 
     if (cfgQaCheck) {
       registry.fill(HIST("Nch"), multiplicity);
@@ -1833,7 +1837,7 @@ struct CorrFit {
 
       loadCorrection(bc.timestamp());
 
-      double multiplicity = tracks1.size();
+      int multiplicity = tracks1.size();
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);

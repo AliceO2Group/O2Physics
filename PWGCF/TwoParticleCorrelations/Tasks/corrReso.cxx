@@ -206,7 +206,7 @@ struct CorrReso {
   o2::ft0::Geometry ft0Det;
   static constexpr uint64_t Ft0IndexA = 96;
   std::vector<o2::detectors::AlignParam>* offsetFT0 = nullptr;
-  std::vector<float> cstFT0RelGain{};
+  std::vector<float> cstFT0RelGain;
 
   // Corrections
   TH3D* mEfficiency = nullptr;
@@ -1023,7 +1023,7 @@ struct CorrReso {
   }
 
   template <typename TTracks>
-  void trackCounter(const TTracks& tracks, double& multiplicity) // function to count the number of tracks in the event and fill the histogram
+  void trackCounter(const TTracks& tracks, int& multiplicity) // function to count the number of tracks in the event and fill the histogram
   {
     double nTracksCorrected = 0;
     float weightNch = 1.0f;
@@ -1220,7 +1220,7 @@ struct CorrReso {
   template <CorrelationContainer::CFStep step, typename TV0Tracks, typename TFT0s>
   void fillCorrelationsTPCFT0(const TV0Tracks& tracks1, TFT0s const& ft0, float posZ, float posY, float posX, int system, int corType, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
-    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+    int fSampleIndex = static_cast<int>(gRandom->Uniform(0.0, cfgSampleSize));
 
     float triggerWeight = 1.0f;
     // loop over all tracks
@@ -1358,7 +1358,7 @@ struct CorrReso {
 
     fillYield(collision, tracks);
 
-    double multiplicity = tracks.size();
+    int multiplicity = tracks.size();
 
     if (cfgQaCheck)
       registry.fill(HIST("Nch"), multiplicity);
@@ -1427,7 +1427,7 @@ struct CorrReso {
       loadCorrection(bc.timestamp());
       float eventWeight = 1.0f;
 
-      double multiplicity = tracks1.size();
+      int multiplicity = tracks1.size();
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
@@ -1480,7 +1480,7 @@ struct CorrReso {
 
     const auto& ft0 = collision.foundFT0();
 
-    double multiplicity = tracks.size();
+    int multiplicity = tracks.size();
 
     if (cfgQaCheck)
       registry.fill(HIST("Nch"), multiplicity);
@@ -1547,7 +1547,7 @@ struct CorrReso {
       float eventWeight = 1.0f;
 
       const auto& ft0 = collision2.foundFT0();
-      double multiplicity = tracks1.size();
+      int multiplicity = tracks1.size();
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
