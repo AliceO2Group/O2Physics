@@ -50,7 +50,7 @@ struct HmpidTableProducer {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  const AxisSpec axisEvtCounter{1, 0, +1, ""};
+  AxisSpec axisEvtCounter{1, 0, +1, ""};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   struct : ConfigurableGroup {
@@ -68,8 +68,8 @@ struct HmpidTableProducer {
   Configurable<bool> requireTOF{"requireTOF", true, "Require TOF track"};
 
   // Absorbers position
-  Configurable<float> absorberEdgeRich2{"absorberEdgeRich2", 435.5f, "Raggio esterno (bordo) del target Al davanti a rich2 [cm]"};
-  Configurable<float> absorberEdgeRich4{"absorberEdgeRich4", 435.0f, "Raggio esterno (bordo) del target Al davanti a rich4 [cm]"};
+  Configurable<float> absorberEdgeRich2{"absorberEdgeRich2", 435.5f, "Raggio esterno (bordo) del target Al davanti a Rich2 [cm]"};
+  Configurable<float> absorberEdgeRich4{"absorberEdgeRich4", 435.0f, "Raggio esterno (bordo) del target Al davanti a Rich4 [cm]"};
 
   using CollisionCandidates = o2::soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As>;
 
@@ -90,9 +90,9 @@ struct HmpidTableProducer {
 
   std::unordered_set<uint32_t> mCollisionsWithHmpid;
 
-  const int rich2 = 2, rich4 = 4;
-  const float kRich2AbsorberThickness = 4.0f;
-  const float kRich4AbsorberThickness = 8.0f;
+  static constexpr int Rich2 = 2, Rich4 = 4;
+  static constexpr float Rich2AbsorberThickness = 4.0f;
+  static constexpr float Rich4AbsorberThickness = 8.0f;
 
   void init(o2::framework::InitContext&)
   {
@@ -252,13 +252,16 @@ struct HmpidTableProducer {
   }
 
   int getHmpidChamber(
-    std::array<double, 3> xIn,
-    std::array<double, 3> pIn,
+    const std::array<double, 3>& xIn,
+    const std::array<double, 3>& pIn,
     double bz,
     int charge)
   {
-    auto x = xIn;
-    auto p = pIn;
+    std::array<double, 3> x{};
+    std::array<double, 3> p{};
+
+    x = xIn;
+    p = pIn;
 
     auto* param = o2::hmpid::Param::instance();
 
@@ -274,21 +277,21 @@ struct HmpidTableProducer {
       param->norm(ch, nPc.data());
 
       // Intersection track - radiator plane
-      std::array<double, 3> xRad, pAtRad;
+      std::array<double, 3> xRad{}, pAtRad{};
 
       if (!intersectHelixPlane(bz, charge, x, p, pRad, nRad, xRad, pAtRad))
         continue;
 
       // Intersection track - PC plane
-      std::array<double, 3> xPc, pAtPc;
+      std::array<double, 3> xPc{}, pAtPc{};
 
       if (!intersectHelixPlane(bz, charge, xRad, pAtRad, pPc, nPc, xPc, pAtPc))
         continue;
 
-      double theta, phi;
+      double theta = 0., phi = 0.;
       param->mars2LorsVec(ch, pAtRad.data(), theta, phi);
 
-      double xL, yL;
+      double xL = 0., yL = 0.;
       param->mars2Lors(ch, xPc.data(), xL, yL);
 
       // Use isInside to check Chamber intersected
@@ -367,7 +370,7 @@ struct HmpidTableProducer {
       int16_t charge = globalTrack.sign();
 
       auto prop = o2::base::Propagator::Instance();
-      double bz = static_cast<double>(prop->getNominalBz());
+      auto bz = static_cast<double>(prop->getNominalBz());
 
       int chamberM1 = getHmpidChamber(x, p, bz, charge);
 
@@ -407,9 +410,8 @@ struct HmpidTableProducer {
         continue;
 
       float hmpidPhotsCharge2[o2::aod::kDimPhotonsCharge];
-      for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) // begin for - copy photon charges
+      for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++)
         hmpidPhotsCharge2[i] = t.hmpidPhotsCharge()[i];
-      // end for - copy photon charges
 
       // fill hmpid table
       hmpidAnalysis(
@@ -444,11 +446,11 @@ struct HmpidTableProducer {
               auto daughter = mcParticles.rawIteratorAt(idx);
               double r = std::hypot(daughter.vx(), daughter.vy());
 
-              if (chamberM3 == rich2 && r >= absorberEdgeRich2 - kRich2AbsorberThickness && r <= absorberEdgeRich2) {
+              if (chamberM3 == Rich2 && r >= absorberEdgeRich2 - Rich2AbsorberThickness && r <= absorberEdgeRich2) {
                 interactionInAbsorber = true;
                 break;
               }
-              if (chamberM3 == rich4 && r >= absorberEdgeRich4 - kRich4AbsorberThickness && r <= absorberEdgeRich4) {
+              if (chamberM3 == Rich4 && r >= absorberEdgeRich4 - Rich4AbsorberThickness && r <= absorberEdgeRich4) {
                 interactionInAbsorber = true;
                 break;
               }
