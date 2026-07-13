@@ -4447,7 +4447,7 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
       float Psi2A = t1.sign() > 0 ? Psi2A1 : Psi2A2;
       float Psi2B = t1.sign() > 0 ? Psi2B1 : Psi2B2;
       float Psi2C = t1.sign() > 0 ? Psi2C1 : Psi2C2;
-      
+
       // reaction plane
       float phi = v_daughter.Phi() > TMath::Pi() ? 2. * TMath::Pi() - v_daughter.Phi() : v_daughter.Phi();
       values[kDeltaPhiRP_TPC] = phi > Psi2A ? phi - Psi2A : Psi2A - phi;
