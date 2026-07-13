@@ -4453,7 +4453,7 @@ void VarManager::FillPairMEAcrossTFs(T const& t1, T const& t2, float* values)
       values[kCos2ThetaStarFT0C] = values[kCosThetaStarFT0C] * values[kCosThetaStarFT0C];
     }
   }
-  
+
   bool useCoherentJpsiA2 = fgUsedVars[kA2EP_RP_TPC] || fgUsedVars[kA2EP_RP_FT0A] || fgUsedVars[kA2EP_RP_FT0C];
   if (useCoherentJpsiA2) {
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
