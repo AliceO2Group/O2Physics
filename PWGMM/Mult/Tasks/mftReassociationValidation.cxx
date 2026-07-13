@@ -46,6 +46,7 @@
 #include <THn.h>
 #include <TString.h>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>
@@ -118,6 +119,7 @@ enum SpecificTrackSelectionStep {
   AfterPtCut,
   AfterDcaXYCut,
   AfterDcaZCut,
+  AfterChi2OverNdfCut,
   IsCATrack,
   IsLTFTrack,
   HasMcParticle,
@@ -313,6 +315,7 @@ struct MftReassociationValidation {
     Configurable<float> etaMftTrackMin{"etaMftTrackMin", -3.36f, "Minimum value for the eta of MFT tracks when used in cut function"};
     Configurable<float> etaMftTrackMaxFilter{"etaMftTrackMaxFilter", -2.0f, "Maximum value for the eta of MFT tracks when used in filter"};
     Configurable<float> etaMftTrackMinFilter{"etaMftTrackMinFilter", -3.9f, "Minimum value for the eta of MFT tracks when used in filter"};
+    Configurable<float> maxChi2OverNdf{"maxChi2OverNdf", 1000.f, "maximum chi2/ndf for MFT tracks"};
     Configurable<float> mftMaxDCAxy{"mftMaxDCAxy", 2.0f, "Cut on dcaXY for MFT tracks"};
     Configurable<float> mftMaxDCAz{"mftMaxDCAz", 2.0f, "Cut on dcaZ for MFT tracks"};
     Configurable<int> nClustersMftTrack{"nClustersMftTrack", 5, "Minimum number of clusters for the reconstruction of MFT tracks"};
@@ -321,6 +324,7 @@ struct MftReassociationValidation {
     Configurable<bool> useMftPtCut{"useMftPtCut", false, "if true, use the Mft pt function cut"};
     Configurable<bool> useOnlyCATracks{"useOnlyCATracks", false, "if true, use strictly MFT tracks reconstructed with CA algo."};
     Configurable<bool> useOnlyLTFTracks{"useOnlyLTFTracks", false, "if true, use strictly MFT tracks reconstructed with LTF algo."};
+    Configurable<bool> useMftChi2OverNdfCut{"useMftChi2OverNdfCut", false, "use mft track chi2/ndf cut"};
   } configMft;
 
   float mZShift = 0;                                     // z-vertex shift
@@ -331,8 +335,8 @@ struct MftReassociationValidation {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
   o2::parameters::GRPMagField* grpmag = nullptr;
-  RCTFlagsChecker rctChecker;
-  RCTFlagsChecker correlationAnalysisRctChecker{kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kMFTBad};
+  RCTFlagsChecker rctChecker{kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kMFTBad};
+  RCTFlagsChecker correlationAnalysisRctChecker{kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kMFTBad, kITSLimAccMCRepr, kMFTLimAccMCRepr, kTPCLimAccMCRepr};
   std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hZVtxDiffAmbiguousTracks2D;
   std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hZVtxDiffNonAmbiguousTracks2D;
   std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hZVtxDiffNotMatchedTracks2D;
@@ -705,7 +709,7 @@ struct MftReassociationValidation {
 
     registry.add(Form("MC/%s%shCollPosX", WhatReassociationMethod[ReassociationMethod].data(), WhatMcStatus[McStatus].data()), "", {HistType::kTH1D, {configAxis.axisPosX}});
     registry.add(Form("MC/%s%shCollPosY", WhatReassociationMethod[ReassociationMethod].data(), WhatMcStatus[McStatus].data()), "", {HistType::kTH1D, {configAxis.axisPosX}});
-    registry.add(Form("MC/%s%shCollPosZ", WhatReassociationMethod[ReassociationMethod].data(), WhatMcStatus[McStatus].data()), "", {HistType::kTH1D, {configAxis.axisVertex}});
+    registry.add(Form("MC/%s%shCollPosZ", WhatReassociationMethod[ReassociationMethod].data(), WhatMcStatus[McStatus].data()), "", {HistType::kTH1D, {configAxis.axisPosZ}});
     registry.add(Form("MC/%s%shCollMultiplicity", WhatReassociationMethod[ReassociationMethod].data(), WhatMcStatus[McStatus].data()), "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
     registry.add(Form("MC/%s%shCollNumContrib", WhatReassociationMethod[ReassociationMethod].data(), WhatMcStatus[McStatus].data()), "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
   }
@@ -720,8 +724,8 @@ struct MftReassociationValidation {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    rctChecker.init(configCollision.setRCTFlagCheckerLabel, configCollision.requireZDCCheck, configCollision.requireRCTFlagCheckerLimitAcceptanceAsBad, true);
-    correlationAnalysisRctChecker.init({kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kMFTBad});
+    rctChecker.init({kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kMFTBad});
+    correlationAnalysisRctChecker.init({kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kMFTBad, kITSLimAccMCRepr, kMFTLimAccMCRepr, kTPCLimAccMCRepr});
 
     //  =========================
     //      Event histograms
@@ -767,6 +771,7 @@ struct MftReassociationValidation {
     labelsTrackSelection[SpecificTrackSelectionStep::AfterPtCut] = "after pt cut";
     labelsTrackSelection[SpecificTrackSelectionStep::AfterDcaXYCut] = "after DCA XY cut";
     labelsTrackSelection[SpecificTrackSelectionStep::AfterDcaZCut] = "after DCA Z cut";
+    labelsTrackSelection[SpecificTrackSelectionStep::AfterChi2OverNdfCut] = "after chi2/ndf cut";
     labelsTrackSelection[SpecificTrackSelectionStep::IsCATrack] = "is CA track";
     labelsTrackSelection[SpecificTrackSelectionStep::IsLTFTrack] = "is LTF track";
     labelsTrackSelection[SpecificTrackSelectionStep::HasMcParticle] = "has MC particle";
@@ -1110,6 +1115,16 @@ struct MftReassociationValidation {
       return false;
     }
     registry.fill(HIST("MC/") + HIST(WhatReassociationMethod[ReassociationMethod]) + HIST("hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::AfterDcaZCut);
+
+    if (configMft.useMftChi2OverNdfCut) {
+      float ndfMftTrack = std::max(2.0f * mftTrack.nClusters() - 5.0f, 1.0f);
+      float mftChi2OverNdf = mftTrack.chi2() / ndfMftTrack;
+      if (mftChi2OverNdf > configMft.maxChi2OverNdf) {
+        return false;
+      }
+    }
+    registry.fill(HIST("MC/") + HIST(WhatReassociationMethod[ReassociationMethod]) + HIST("hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::AfterChi2OverNdfCut);
+
     // cut on the track algorithm of MFT tracks
     if (mftTrack.isCA()) {
       if (fillHistograms) {
@@ -1181,7 +1196,11 @@ struct MftReassociationValidation {
                    aod::BCsWithTimestamps const&)
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    loadZVertexShiftCorrection(bc);
+    auto loopCounter = 0;
+    if (loopCounter == 0) {
+      loadZVertexShiftCorrection(bc);
+      loopCounter++;
+    }
 
     if (!(isAcceptedCollision<TwoDimensional>(collision, true))) {
       return;
@@ -1257,7 +1276,11 @@ struct MftReassociationValidation {
                                aod::BCsWithTimestamps const& /*bcs*/)
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    loadZVertexShiftCorrection(bc);
+    auto loopCounter = 0;
+    if (loopCounter == 0) {
+      loadZVertexShiftCorrection(bc);
+      loopCounter++;
+    }
 
     registry.fill(HIST("MC/2D/hMonteCarloEventCounter"), MonteCarloEventSelectionStep::AllMonteCarloEvents);
     registry.fill(HIST("MC/2D/hPreciseEventCounter"), SpecificEventSelectionStep::AllEventsPrecise);
@@ -1640,7 +1663,11 @@ struct MftReassociationValidation {
                                aod::BCsWithTimestamps const& /*bcs*/)
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    loadZVertexShiftCorrection(bc);
+    auto loopCounter = 0;
+    if (loopCounter == 0) {
+      loadZVertexShiftCorrection(bc);
+      loopCounter++;
+    }
 
     registry.fill(HIST("MC/3D/hMonteCarloEventCounter"), MonteCarloEventSelectionStep::AllMonteCarloEvents);
     registry.fill(HIST("MC/3D/hPreciseEventCounter"), SpecificEventSelectionStep::AllEventsPrecise);
