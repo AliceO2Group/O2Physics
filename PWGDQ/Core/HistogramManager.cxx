@@ -61,9 +61,9 @@ HistogramManager::HistogramManager() : TNamed("", ""),
 
 //_______________________________________________________________________________
 HistogramManager::HistogramManager(const char* name, const char* title, const int maxNVars) : TNamed(name, title),
-                                                                                              fMainList(),
+                                                                                              fMainList(new THashList),
                                                                                               fNVars(maxNVars),
-                                                                                              fUsedVars(),
+                                                                                              fUsedVars(new bool[maxNVars]),
                                                                                               
                                                                                               fUseDefaultVariableNames(kFALSE),
                                                                                               fBinsAllocated(0),
@@ -73,10 +73,10 @@ HistogramManager::HistogramManager(const char* name, const char* title, const in
   //
   // Constructor
   //
-  fMainList = new THashList;
+  
   fMainList->SetOwner(kTRUE);
   fMainList->SetName(name);
-  fUsedVars = new bool[maxNVars];
+  
   for (int i = 0; i < maxNVars; ++i) {
     fUsedVars[i] = false;
   }
