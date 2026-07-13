@@ -541,8 +541,9 @@ struct FlowZdcTask {
           histos.fill(HIST("ZPCVsFT0M"), (aT0A + aT0C) / 100., zpC);
           histos.fill(HIST("ZPCVsNch"), glbTracks, zpC);
         }
-        if (((tZNA >= minTdcZn) && (tZNA <= maxTdcZn)) && ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn)))
+        if (((tZNA >= minTdcZn) && (tZNA <= maxTdcZn)) && ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn))) {
           histos.fill(HIST("ZNVsZEM"), sumZEMs, sumZNs);
+        } 
         if (((tZNA >= minTdcZn) && (tZNA <= maxTdcZn)) && ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn))) {
           histos.fill(HIST("ZNAVsZNC"), znC, znA);
           histos.fill(HIST("CommonZNAVsZNC"), commonSumZnc, commonSumZna);
@@ -649,16 +650,21 @@ struct FlowZdcTask {
             histos.fill(HIST("ampZpc"), zpC);
             histos.fill(HIST("commonZpc"), commonSumZpc);
           }
-          if (((tZNC >= minTdcZn) && (tZNC <= maxTdcZn)) && ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn)))
+          if (((tZNC >= minTdcZn) && (tZNC <= maxTdcZn)) && ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn))) {
             histos.fill(HIST("ZnVsZem"), sumZEMs, znC + znA);
-          if (((tZNC >= minTdcZn) && (tZNC <= maxTdcZn)) && ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn)))
+          }  
+          if (((tZNC >= minTdcZn) && (tZNC <= maxTdcZn)) && ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn))) {
             histos.fill(HIST("ZnaVsZnc"), znA, znC);
-          if (((tZPC >= minTdcZp) && (tZPC <= maxTdcZp)) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp)))
+          }  
+          if (((tZPC >= minTdcZp) && (tZPC <= maxTdcZp)) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp))){
             histos.fill(HIST("ZpaVsZpc"), zpA, zpC);
-          if ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp)))
+          }  
+          if ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp))) {
             histos.fill(HIST("ZnaVsZpa"), znA, zpA);
-          if ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp)))
+          }  
+          if ((tZNC >= minTdcZn) && (tZNC <= maxTdcZn) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp))) {
             histos.fill(HIST("ZncVsZpc"), znC, zpC);
+          }  
         } else {
           histos.fill(HIST("ampZna"), znA);
           histos.fill(HIST("ampZnc"), znC);
