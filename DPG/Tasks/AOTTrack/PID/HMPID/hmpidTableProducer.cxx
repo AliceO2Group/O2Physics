@@ -252,11 +252,14 @@ struct HmpidTableProducer {
   }
 
   int getHmpidChamber(
-    std::array<double, 3> x,
-    std::array<double, 3> p,
+    std::array<double, 3> xIn,
+    std::array<double, 3> pIn,
     double bz,
     int charge)
   {
+    auto x = xIn;
+    auto p = pIn;
+
     auto* param = o2::hmpid::Param::instance();
 
     for (int ch = o2::hmpid::Param::kMinCh; ch <= o2::hmpid::Param::kMaxCh; ++ch) {
