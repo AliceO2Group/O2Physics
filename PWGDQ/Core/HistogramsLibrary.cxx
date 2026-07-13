@@ -2794,6 +2794,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
             lims[iElem++] = lim.GetDouble();
           }
           binLimits[iDim++] = TArrayD(v.GetArray().Size(), lims);
+          delete[] lims;
         }
       }
 
@@ -2819,6 +2820,16 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
           hm->AddHistogram(histClass, histName, title, nDimensions, vars, binLimits, axLabels, varW, useSparse, isDouble);
         }
       }
+
+      delete[] vars;
+      if (isConstantBinning) {
+        delete[] nBins;
+        delete[] xmin;
+        delete[] xmax;
+      } else {
+        delete[] binLimits;
+      }
+      delete[] axLabels;
 
     } else { // TH1, TH2 or TH3
 
@@ -2921,13 +2932,10 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
                            VarManager::fgVarNamesMap[varT], VarManager::fgVarNamesMap[varW], isdouble, isFillLabelx);
         }
       } else {
-        int xBinsSize = xbinsVec.size();
-        if (xBinsSize != (nXbins + 1)) {
+        if (static_cast<int>(xbinsVec.size()) != (nXbins + 1)) {
           LOG(fatal) << "Histogram not properly defined in the JSON file. Wrong x binning for histogram";
           continue;
         }
-        auto* xbins = new double[xbinsVec.size()];
-        std::copy(xbinsVec.begin(), xbinsVec.end(), xbins);
 
         double* ybins = nullptr;
         if (isTH2 || isTH3) {
@@ -2935,22 +2943,20 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
             LOG(fatal) << "Histogram not properly defined in the JSON file. Wrong y binning for histogram";
             continue;
           }
-          ybins = new double[ybinsVec.size()];
-          std::copy(ybinsVec.begin(), ybinsVec.end(), ybins);
+          ybins = ybinsVec.data();
         }
 
         double* zbins = nullptr;
         if (isTH3) {
-          if (static_cast<float>(zbinsVec.size()) != (nZbins + 1)) {
+          if (static_cast<int>(zbinsVec.size()) != (nZbins + 1)) {
             LOG(fatal) << "Histogram not properly defined in the JSON file. Wrong z binning for histogram";
             continue;
           }
-          zbins = new double[zbinsVec.size()];
-          std::copy(zbinsVec.begin(), zbinsVec.end(), zbins);
+          zbins = zbinsVec.data();
         }
         for (auto histClass : histClasses) {
           hm->AddHistogram(histClass, histName, title, isProfile,
-                           nXbins, xbins, VarManager::fgVarNamesMap[varX],
+                           nXbins, xbinsVec.data(), VarManager::fgVarNamesMap[varX],
                            nYbins, ybins, VarManager::fgVarNamesMap[varY],
                            nZbins, zbins, VarManager::fgVarNamesMap[varZ],
                            xLabels, yLabels, zLabels,
