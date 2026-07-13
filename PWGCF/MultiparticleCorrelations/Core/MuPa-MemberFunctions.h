@@ -1976,7 +1976,7 @@ void initializeFixedLengthBins(EnAsFunctionOf afo)
   } // switch(afo)
 
   // From this point onward, the code is the same for any afo variable:
-  long unsigned int lFixedLengthBinsExpected = 3; // In this array, I expect three entries: nBins, min, max
+  unsigned long int lFixedLengthBinsExpected = 3; // In this array, I expect three entries: nBins, min, max
   if (lFixedLengthBins.size() != lFixedLengthBinsExpected) {
     LOGF(fatal, "in function \033[1;31m%s at line %d => The array cfFixedLength_bins must have have 3 entries: {nBins, min, max} \n \033[0m", __FUNCTION__, __LINE__);
   }
@@ -2044,7 +2044,7 @@ void initializeVariableLengthBins(EnAsFunctionOf afo)
   } // switch(afo)
 
   // From this point onward, the code is the same for any afo variable:
-  long unsigned int lVariableLengthBinsMinExpected = 2; // In this array, I should have at least 2 entries, otherwise, it's pointless...
+  unsigned long int lVariableLengthBinsMinExpected = 2; // In this array, I should have at least 2 entries, otherwise, it's pointless...
   if (lVariableLengthBins.size() < lVariableLengthBinsMinExpected) {
     LOGF(fatal, "in function \033[1;31m%s at line %d => The array cfVariableLength_bins must have at least 2 entries \n \033[0m", __FUNCTION__, __LINE__);
   }
