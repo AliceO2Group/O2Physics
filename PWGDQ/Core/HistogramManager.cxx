@@ -139,7 +139,7 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   // TODO: replace the cout warning messages with LOG (same for all the other functions)
 
   // get the list to which the histogram should be added
-  auto* hList = reinterpret_cast<TList*>(fMainList->FindObject(histClass));
+  auto* hList = dynamic_cast<TList*>(fMainList->FindObject(histClass));
   if (!hList) {
     LOG(warn) << "HistogramManager::AddHistogram(): Histogram list " << histClass << " not found!";
     LOG(warn) << "         Histogram not created";
@@ -229,7 +229,9 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
         // if requested, build the profile using the profile widths instead of stat errors
         // TODO: make this option more transparent to the user ?
         if (titleStr.Contains("--s--")) {
-          (reinterpret_cast<TProfile*>(h))->BuildOptions(0., 0., "s");
+          if (auto* profile = dynamic_cast<TProfile*>(h)) {
+            profile->BuildOptions(0., 0., "s");
+          }
         }
       } else {
         if (!isdouble) {
@@ -276,14 +278,18 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
           fBinsAllocated += (nXbins + 2) * (nYbins + 2) * (nZbins + 2);
           h->Sumw2();
           if (titleStr.Contains("--s--")) {
-            (reinterpret_cast<TProfile3D*>(h))->BuildOptions(0., 0., "s");
+            if (auto* profile = dynamic_cast<TProfile3D*>(h)) {
+              profile->BuildOptions(0., 0., "s");
+            }
           }
         } else { // TProfile2D
           h = new TProfile2D(hname, (arr->At(0) ? arr->At(0)->GetName() : ""), nXbins, xmin, xmax, nYbins, ymin, ymax);
           fBinsAllocated += (nXbins + 2) * (nYbins + 2);
           h->Sumw2();
           if (titleStr.Contains("--s--")) {
-            (reinterpret_cast<TProfile2D*>(h))->BuildOptions(0., 0., "s");
+            if (auto* profile = dynamic_cast<TProfile2D*>(h)) {
+              profile->BuildOptions(0., 0., "s");
+            }
           }
         }
       } else { // TH3F
@@ -348,7 +354,7 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   //
 
   // get the list to which the histogram should be added
-  auto* hList = reinterpret_cast<TList*>(fMainList->FindObject(histClass));
+  auto* hList = dynamic_cast<TList*>(fMainList->FindObject(histClass));
   if (!hList) {
     LOG(warn) << "HistogramManager::AddHistogram(): Histogram list " << histClass << " not found!";
     LOG(warn) << "         Histogram not created";
@@ -435,7 +441,9 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
         fBinsAllocated += nXbins + 2;
         h->Sumw2();
         if (titleStr.Contains("--s--")) {
-          (reinterpret_cast<TProfile*>(h))->BuildOptions(0., 0., "s");
+          if (auto* profile = dynamic_cast<TProfile*>(h)) {
+            profile->BuildOptions(0., 0., "s");
+          }
         }
       } else {
         if (!isdouble) {
@@ -482,14 +490,18 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
           fBinsAllocated += (nXbins + 2) * (nYbins + 2) * (nZbins + 2);
           h->Sumw2();
           if (titleStr.Contains("--s--")) {
-            (reinterpret_cast<TProfile3D*>(h))->BuildOptions(0., 0., "s");
+            if (auto* profile = dynamic_cast<TProfile3D*>(h)) {
+              profile->BuildOptions(0., 0., "s");
+            }
           }
         } else {
           h = new TProfile2D(hname, (arr->At(0) ? arr->At(0)->GetName() : ""), nXbins, xbins, nYbins, ybins);
           fBinsAllocated += (nXbins + 2) * (nYbins + 2);
           h->Sumw2();
           if (titleStr.Contains("--s--")) {
-            (reinterpret_cast<TProfile2D*>(h))->BuildOptions(0., 0., "s");
+            if (auto* profile = dynamic_cast<TProfile2D*>(h)) {
+              profile->BuildOptions(0., 0., "s");
+            }
           }
         }
       } else {
@@ -551,7 +563,7 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   //
 
   // get the list to which the histogram should be added
-  auto* hList = reinterpret_cast<TList*>(fMainList->FindObject(histClass));
+  auto* hList = dynamic_cast<TList*>(fMainList->FindObject(histClass));
   if (!hList) {
     LOG(warn) << "HistogramManager::AddHistogram(): Histogram list " << histClass << " not found!";
     LOG(warn) << "         Histogram not created";
@@ -626,15 +638,19 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   }
   if (!isdouble) {
     if (useSparse) {
-      hList->Add(reinterpret_cast<THnSparseF*>(h));
-    } else {
-      hList->Add(reinterpret_cast<THnF*>(h));
+      if (auto* hn = dynamic_cast<THnSparseF*>(h)) {
+        hList->Add(hn);
+      }
+    } else if (auto* hn = dynamic_cast<THnF*>(h)) {
+      hList->Add(hn);
     }
   } else {
     if (useSparse) {
-      hList->Add(reinterpret_cast<THnSparseD*>(h));
-    } else {
-      hList->Add(reinterpret_cast<THnD*>(h));
+      if (auto* hn = dynamic_cast<THnSparseD*>(h)) {
+        hList->Add(hn);
+      }
+    } else if (auto* hn = dynamic_cast<THnD*>(h)) {
+      hList->Add(hn);
     }
   }
 
@@ -651,7 +667,7 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   //
 
   // get the list to which the histogram should be added
-  auto* hList = reinterpret_cast<TList*>(fMainList->FindObject(histClass));
+  auto* hList = dynamic_cast<TList*>(fMainList->FindObject(histClass));
   if (!hList) {
     LOG(warn) << "HistogramManager::AddHistogram(): Histogram list " << histClass << " not found!";
     LOG(warn) << "         Histogram not created";
@@ -733,15 +749,19 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   }
   if (!isdouble) {
     if (useSparse) {
-      hList->Add(reinterpret_cast<THnSparseF*>(h));
-    } else {
-      hList->Add(reinterpret_cast<THnF*>(h));
+      if (auto* hn = dynamic_cast<THnSparseF*>(h)) {
+        hList->Add(hn);
+      }
+    } else if (auto* hn = dynamic_cast<THnF*>(h)) {
+      hList->Add(hn);
     }
   } else {
     if (useSparse) {
-      hList->Add(reinterpret_cast<THnSparseD*>(h));
-    } else {
-      hList->Add(reinterpret_cast<THnD*>(h));
+      if (auto* hn = dynamic_cast<THnSparseD*>(h)) {
+        hList->Add(hn);
+      }
+    } else if (auto* hn = dynamic_cast<THnD*>(h)) {
+      hList->Add(hn);
     }
   }
   fBinsAllocated += bins;
@@ -755,7 +775,7 @@ void HistogramManager::FillHistClass(const char* className, Float_t* values)
   //
 
   // get the needed histogram list
-  auto* hList = reinterpret_cast<TList*>(fMainList->FindObject(className));
+  auto* hList = dynamic_cast<TList*>(fMainList->FindObject(className));
   if (!hList) {
     // TODO: add some meaningfull error message
     /*LOG(warn) << "HistogramManager::FillHistClass(): Histogram list " << className << " not found!";
@@ -788,8 +808,10 @@ void HistogramManager::FillHistClass(const char* className, Float_t* values)
     isTHn = ((*varIter)[1] > 0);
     if (isTHn) {
       dimension = (*varIter)[1];
+    } else if (auto* h1 = dynamic_cast<TH1*>(h)) {
+      dimension = h1->GetDimension();
     } else {
-      dimension = (reinterpret_cast<TH1*>(h))->GetDimension();
+      continue;
     }
 
     // get the various variable indices
@@ -810,70 +832,94 @@ void HistogramManager::FillHistClass(const char* className, Float_t* values)
       switch (dimension) {
         case 1:
           if (isProfile) {
+            auto* profile = dynamic_cast<TProfile*>(h);
+            if (!profile) {
+              break;
+            }
             if (varW > kNothing) {
               if (isFillLabelx) {
-                (reinterpret_cast<TProfile*>(h))->Fill(Form("%d", static_cast<int>(values[varX])), values[varY], values[varW]);
+                profile->Fill(Form("%d", static_cast<int>(values[varX])), values[varY], values[varW]);
               } else {
-                (reinterpret_cast<TProfile*>(h))->Fill(values[varX], values[varY], values[varW]);
+                profile->Fill(values[varX], values[varY], values[varW]);
               }
             } else {
               if (isFillLabelx) {
-                (reinterpret_cast<TProfile*>(h))->Fill(Form("%d", static_cast<int>(values[varX])), values[varY]);
+                profile->Fill(Form("%d", static_cast<int>(values[varX])), values[varY]);
               } else {
-                (reinterpret_cast<TProfile*>(h))->Fill(values[varX], values[varY]);
+                profile->Fill(values[varX], values[varY]);
               }
             }
           } else {
+            auto* h1 = dynamic_cast<TH1*>(h);
+            if (!h1) {
+              break;
+            }
             if (varW > kNothing) {
               if (isFillLabelx) {
-                (reinterpret_cast<TH1*>(h))->Fill(Form("%d", static_cast<int>(values[varX])), values[varW]);
+                h1->Fill(Form("%d", static_cast<int>(values[varX])), values[varW]);
               } else {
-                (reinterpret_cast<TH1*>(h))->Fill(values[varX], values[varW]);
+                h1->Fill(values[varX], values[varW]);
               }
             } else {
               if (isFillLabelx) {
-                (reinterpret_cast<TH1*>(h))->Fill(Form("%d", static_cast<int>(values[varX])), 1.);
+                h1->Fill(Form("%d", static_cast<int>(values[varX])), 1.);
               } else {
-                (reinterpret_cast<TH1*>(h))->Fill(values[varX]);
+                h1->Fill(values[varX]);
               }
             }
           }
           break;
         case 2:
           if (isProfile) {
+            auto* profile = dynamic_cast<TProfile2D*>(h);
+            if (!profile) {
+              break;
+            }
             if (varW > kNothing) {
-              (reinterpret_cast<TProfile2D*>(h))->Fill(values[varX], values[varY], values[varZ], values[varW]);
+              profile->Fill(values[varX], values[varY], values[varZ], values[varW]);
             } else {
-              (reinterpret_cast<TProfile2D*>(h))->Fill(values[varX], values[varY], values[varZ]);
+              profile->Fill(values[varX], values[varY], values[varZ]);
             }
           } else {
+            auto* h2 = dynamic_cast<TH2*>(h);
+            if (!h2) {
+              break;
+            }
             if (varW > kNothing) {
               if (isFillLabelx) {
-                (reinterpret_cast<TH2*>(h))->Fill(Form("%d", static_cast<int>(values[varX])), values[varY], values[varW]);
+                h2->Fill(Form("%d", static_cast<int>(values[varX])), values[varY], values[varW]);
               } else {
-                (reinterpret_cast<TH2*>(h))->Fill(values[varX], values[varY], values[varW]);
+                h2->Fill(values[varX], values[varY], values[varW]);
               }
             } else {
               if (isFillLabelx) {
-                (reinterpret_cast<TH2*>(h))->Fill(Form("%d", static_cast<int>(values[varX])), values[varY], 1.);
+                h2->Fill(Form("%d", static_cast<int>(values[varX])), values[varY], 1.);
               } else {
-                (reinterpret_cast<TH2*>(h))->Fill(values[varX], values[varY]);
+                h2->Fill(values[varX], values[varY]);
               }
             }
           }
           break;
         case 3:
           if (isProfile) {
+            auto* profile = dynamic_cast<TProfile3D*>(h);
+            if (!profile) {
+              break;
+            }
             if (varW > kNothing) {
-              (reinterpret_cast<TProfile3D*>(h))->Fill(values[varX], values[varY], values[varZ], values[varT], values[varW]);
+              profile->Fill(values[varX], values[varY], values[varZ], values[varT], values[varW]);
             } else {
-              (reinterpret_cast<TProfile3D*>(h))->Fill(values[varX], values[varY], values[varZ], values[varT]);
+              profile->Fill(values[varX], values[varY], values[varZ], values[varT]);
             }
           } else {
+            auto* h3 = dynamic_cast<TH3*>(h);
+            if (!h3) {
+              break;
+            }
             if (varW > kNothing) {
-              (reinterpret_cast<TH3*>(h))->Fill(values[varX], values[varY], values[varZ], values[varW]);
+              h3->Fill(values[varX], values[varY], values[varZ], values[varW]);
             } else {
-              (reinterpret_cast<TH3*>(h))->Fill(values[varX], values[varY], values[varZ]);
+              h3->Fill(values[varX], values[varY], values[varZ]);
             }
           }
           break;
@@ -885,15 +931,19 @@ void HistogramManager::FillHistClass(const char* className, Float_t* values)
     } else {
       if (varW > kNothing) {
         if (isSparse) {
-          (reinterpret_cast<THnSparse*>(h))->Fill(fillValues, values[varW]);
-        } else {
-          (reinterpret_cast<THn*>(h))->Fill(fillValues, values[varW]);
+          if (auto* hn = dynamic_cast<THnSparse*>(h)) {
+            hn->Fill(fillValues, values[varW]);
+          }
+        } else if (auto* hn = dynamic_cast<THn*>(h)) {
+          hn->Fill(fillValues, values[varW]);
         }
       } else {
         if (isSparse) {
-          (reinterpret_cast<THnSparse*>(h))->Fill(fillValues);
-        } else {
-          (reinterpret_cast<THn*>(h))->Fill(fillValues);
+          if (auto* hn = dynamic_cast<THnSparse*>(h)) {
+            hn->Fill(fillValues);
+          }
+        } else if (auto* hn = dynamic_cast<THn*>(h)) {
+          hn->Fill(fillValues);
         }
       }
     } // end else
@@ -925,7 +975,10 @@ void HistogramManager::Print(Option_t*) const
   cout << "###################################################################" << endl;
   cout << "HistogramManager:: " << fMainList->GetName() << endl;
   for (int i = 0; i < fMainList->GetEntries(); ++i) {
-    auto* list = reinterpret_cast<TList*>(fMainList->At(i));
+    auto* list = dynamic_cast<TList*>(fMainList->At(i));
+    if (!list) {
+      continue;
+    }
     cout << "************** List " << list->GetName() << endl;
     for (int j = 0; j < list->GetEntries(); ++j) {
       TObject* obj = list->At(j);
