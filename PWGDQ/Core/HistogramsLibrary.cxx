@@ -1351,11 +1351,11 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
           4.0, 5.0, 6.5, 8.0, 10.0, 12.0, 15.0, 20.0,
           30.0, 40.0, 60.0, 80.0, 100.0};
 
-        std::array<double, 501> massBins{};
+        std::array<double, 501> alice3MassBins{};
         for (int i = 0; i < 501; i++) {
-          massBins[i] = 0.01 * (i);
+          alice3MassBins[i] = 0.01 * (i);
         }
-        hm->AddHistogram(histClass, "Mass_PtLong", "", false, 500, massBins.data(), VarManager::kMass, 20, pTBins.data(), VarManager::kPt);
+        hm->AddHistogram(histClass, "Mass_PtLong", "", false, 500, alice3MassBins.data(), VarManager::kMass, 20, pTBins.data(), VarManager::kPt);
       }
       if (subGroupStr.Contains("dielectron-polarization-he-pbpb")) {
         std::array<int, 5> varsHEpbpb = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaHE, VarManager::kPhiHE};
@@ -2769,7 +2769,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
         nBins = new int[nDimensions];
         xmin = new double[nDimensions];
         xmax = new double[nDimensions];
-        int iDim = 0;
+        iDim = 0;
         for (auto& v : hist.FindMember("nBins")->value.GetArray()) {
           nBins[iDim++] = v.GetInt();
           LOG(debug) << "nBins " << iDim << ": " << nBins[iDim - 1];
@@ -2785,7 +2785,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
           LOG(debug) << "xmax " << iDim << ": " << xmax[iDim - 1];
         }
       } else {
-        int iDim = 0;
+        iDim = 0;
         binLimits = new TArrayD[nDimensions];
         for (auto& v : hist.FindMember("binLimits")->value.GetArray()) {
           auto* lims = new double[v.GetArray().Size()];
@@ -2801,7 +2801,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
       TString* axLabels = nullptr;
       if (hist.HasMember("axLabels")) {
         axLabels = new TString[hist.FindMember("axLabels")->value.GetArray().Size()];
-        int iDim = 0;
+        iDim = 0;
         for (auto& v : hist.FindMember("axLabels")->value.GetArray()) {
           axLabels[iDim++] = v.GetString();
         }
