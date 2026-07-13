@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file MuPa-DataMembers.h
-/// \brief ... TBI 20250425
+/// \brief Task to calculate multiparticle correlations and related observables
 /// \author Ante.Bilandzic@cern.ch
 
 #ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_
