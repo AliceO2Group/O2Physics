@@ -64,7 +64,7 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT
 
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension>;
 
-struct qVectorsTable {
+struct QVectorsTable {
   enum Detectors {
     kFT0C = 0,
     kFT0A = 1,
@@ -91,15 +91,11 @@ struct qVectorsTable {
 
   // Configurables.
   struct : ConfigurableGroup {
-    Configurable<std::string> cfgURL{"cfgURL",
-                                     "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-    Configurable<int64_t> nolaterthan{"ccdb-no-later-than",
-                                      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
-                                      "Latest acceptable timestamp of creation for the object"};
+    Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
+    Configurable<int64_t> ccdbNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
 
-  Configurable<int> cfgCentEsti{"cfgCentEsti",
-                                2, "Centrality estimator (Run3): 0 = FT0M, 1 = FT0A, 2 = FT0C, 3 = FV0A"};
+  Configurable<int> cfgCentEsti{"cfgCentEsti", 2, "Centrality estimator (Run3): 0 = FT0M, 1 = FT0A, 2 = FT0C, 3 = FV0A"};
 
   Configurable<float> cfgMinPtOnTPC{"cfgMinPtOnTPC", 0.15, "minimum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
   Configurable<float> cfgMaxPtOnTPC{"cfgMaxPtOnTPC", 5., "maximum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
@@ -164,15 +160,15 @@ struct qVectorsTable {
   Produces<aod::EseQvecTPCallVecs> eseQVectorTPCAllVec;
   Produces<aod::EseQvecPercs> eseQVectorPerc;
 
-  std::vector<float> FT0RelGainConst{};
-  std::vector<float> FV0RelGainConst{};
+  std::vector<float> ft0RelGainConst{};
+  std::vector<float> fv0RelGainConst{};
 
   // Enable access to the CCDB for the offset and correction constants and save them
   // in dedicated variables.
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // geometry instances for V0 and T0
-  o2::fv0::Geometry* fv0geom;
+  o2::fv0::Geometry* fv0geom{nullptr};
   o2::ft0::Geometry ft0geom;
 
   // Variables for other classes.
@@ -182,7 +178,9 @@ struct qVectorsTable {
 
   const float minAmplitude = 1.0e-8f;
   int runNumber{-1};
-  float cent;
+  float cent{-999.f};
+  const int nShiftIndex = 10;
+  const float trackEtaMin = 0.1;
 
   std::vector<TH3F*> corrsQvecSp{};
   std::vector<TH3F*> corrsQvecEse{};
@@ -244,7 +242,7 @@ struct qVectorsTable {
     ccdb->setURL(cfgCcdbParam.cfgURL);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-    ccdb->setCreatedNotAfter(cfgCcdbParam.nolaterthan.value);
+    ccdb->setCreatedNotAfter(cfgCcdbParam.ccdbNoLaterThan.value);
     ccdb->setFatalWhenNull(false);
 
     AxisSpec axisPt = {40, 0.0, 4.0};
@@ -267,10 +265,10 @@ struct qVectorsTable {
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
-    FT0RelGainConst.clear();
-    FV0RelGainConst.clear();
-    FT0RelGainConst = {};
-    FV0RelGainConst = {};
+    ft0RelGainConst.clear();
+    fv0RelGainConst.clear();
+    ft0RelGainConst = {};
+    fv0RelGainConst = {};
 
     std::string fullPath;
 
@@ -369,25 +367,25 @@ struct qVectorsTable {
     fullPath = cfgGainEqPath;
     fullPath += "/FT0";
     const int nPixelsFT0 = 208;
-    const auto objft0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
+    auto const* objft0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
     if (!objft0Gain || cfgCorrLevel == 0) {
       for (auto i{0u}; i < nPixelsFT0; i++) {
-        FT0RelGainConst.push_back(1.);
+        ft0RelGainConst.push_back(1.);
       }
     } else {
-      FT0RelGainConst = *(objft0Gain);
+      ft0RelGainConst = *(objft0Gain);
     }
 
     fullPath = cfgGainEqPath;
     fullPath += "/FV0";
     const int nChannelsFV0 = 48;
-    const auto objfv0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
+    auto const* objfv0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
     if (!objfv0Gain || cfgCorrLevel == 0) {
       for (auto i{0u}; i < nChannelsFV0; i++) {
-        FV0RelGainConst.push_back(1.);
+        fv0RelGainConst.push_back(1.);
       }
     } else {
-      FV0RelGainConst = *(objfv0Gain);
+      fv0RelGainConst = *(objfv0Gain);
     }
   }
 
@@ -419,13 +417,13 @@ struct qVectorsTable {
   /// Function to get corrections from CCDB eithr using the timestamp or the runnumber
   /// \param fullPath is the path to correction in CCDB
   /// \param timestamp is the collision timestamp
-  /// \param runNumber is the collision run number
+  /// \param runNb is the collision run number
   /// \return CCDB correction
   template <typename CorrectionType>
-  CorrectionType* getForTsOrRun(std::string const& fullPath, int64_t timestamp, int runNumber)
+  CorrectionType* getForTsOrRun(std::string const& fullPath, int64_t timestamp, int runNb)
   {
     if (useCorrectionForRun) {
-      return ccdb->getForRun<CorrectionType>(fullPath, runNumber);
+      return ccdb->getForRun<CorrectionType>(fullPath, runNb);
     } else {
       return ccdb->getForTimeStamp<CorrectionType>(fullPath, timestamp);
     }
@@ -470,31 +468,31 @@ struct qVectorsTable {
   }
 
   /// Function to calculate the un-normalized q-vectors
-  /// \param cent is the collision centrality
+  /// \param centrality is the collision centrality
   /// \param qVecRe is the vector with the real part of the q-vector for each detector and correction step
   /// \param qVecIm is the vector with the imaginary part of the q-vector for each detector and correction step
   /// \param histsCorrs is the vector with the histograms with the correction constants for each detector and correction step
   /// \param nMode is the modulation of interest
-  void correctQVec(float cent, std::vector<float>& qVecRe, std::vector<float>& qVecIm, TH3F* histsCorrs, std::vector<TProfile3D*>& shiftProfile, int nMode)
+  void correctQVec(float centrality, std::vector<float>& qVecRe, std::vector<float>& qVecIm, TH3F* histsCorrs, std::vector<TProfile3D*>& shiftProfile, int nMode)
   {
     int nCorrections = static_cast<int>(kNCorrections);
-    if (cent < cfgMaxCentrality) {
+    if (centrality < cfgMaxCentrality) {
       for (auto i{0u}; i < kTPCAll + 1; i++) {
         int idxDet = i * kNCorrections;
         helperEP.DoRecenter(qVecRe[idxDet + kRecenter], qVecIm[idxDet + kRecenter],
-                            histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
+                            histsCorrs->GetBinContent(static_cast<int>(centrality) + 1, 1, i + 1), histsCorrs->GetBinContent(static_cast<int>(centrality) + 1, 2, i + 1));
 
         helperEP.DoRecenter(qVecRe[idxDet + kTwist], qVecIm[idxDet + kTwist],
-                            histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
+                            histsCorrs->GetBinContent(static_cast<int>(centrality) + 1, 1, i + 1), histsCorrs->GetBinContent(static_cast<int>(centrality) + 1, 2, i + 1));
         helperEP.DoTwist(qVecRe[idxDet + kTwist], qVecIm[idxDet + kTwist],
-                         histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 3, i + 1), histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 4, i + 1));
+                         histsCorrs->GetBinContent(static_cast<int>(centrality) + 1, 3, i + 1), histsCorrs->GetBinContent(static_cast<int>(centrality) + 1, 4, i + 1));
 
         helperEP.DoRecenter(qVecRe[idxDet + kRescale], qVecIm[idxDet + kRescale],
-                            histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 1, i + 1), histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 2, i + 1));
+                            histsCorrs->GetBinContent(static_cast<int>(centrality) + 1, 1, i + 1), histsCorrs->GetBinContent(static_cast<int>(centrality) + 1, 2, i + 1));
         helperEP.DoTwist(qVecRe[idxDet + kRescale], qVecIm[idxDet + kRescale],
-                         histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 3, i + 1), histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 4, i + 1));
+                         histsCorrs->GetBinContent(static_cast<int>(centrality) + 1, 3, i + 1), histsCorrs->GetBinContent(static_cast<int>(centrality) + 1, 4, i + 1));
         helperEP.DoRescale(qVecRe[idxDet + kRescale], qVecIm[idxDet + kRescale],
-                           histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 5, i + 1), histsCorrs->GetBinContent(static_cast<int>(cent) + 1, 6, i + 1));
+                           histsCorrs->GetBinContent(static_cast<int>(centrality) + 1, 5, i + 1), histsCorrs->GetBinContent(static_cast<int>(centrality) + 1, 6, i + 1));
       }
       if (cfgShiftCorr) {
         auto deltaPsiFT0C = 0.0;
@@ -513,21 +511,21 @@ struct qVectorsTable {
         auto psiDefTPCNeg = std::atan2(qVecIm[kTPCNeg * nCorrections + kRescale], qVecRe[kTPCNeg * nCorrections + kRescale]) / static_cast<float>(nMode);
         auto psiDefTPCAll = std::atan2(qVecIm[kTPCAll * nCorrections + kRescale], qVecRe[kTPCAll * nCorrections + kRescale]) / static_cast<float>(nMode);
 
-        for (int iShift = 1; iShift <= 10; iShift++) {
-          auto coeffShiftXFT0C = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(cent, 2 * kFT0C, iShift - 0.5));
-          auto coeffShiftYFT0C = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(cent, 2 * kFT0C + 1, iShift - 0.5));
-          auto coeffShiftXFT0A = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(cent, 2 * kFT0A, iShift - 0.5));
-          auto coeffShiftYFT0A = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(cent, 2 * kFT0A + 1, iShift - 0.5));
-          auto coeffShiftXFT0M = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(cent, 2 * kFT0M, iShift - 0.5));
-          auto coeffShiftYFT0M = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(cent, 2 * kFT0M + 1, iShift - 0.5));
-          auto coeffShiftXFV0A = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(cent, 2 * kFV0A, iShift - 0.5));
-          auto coeffShiftYFV0A = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(cent, 2 * kFV0A + 1, iShift - 0.5));
-          auto coeffShiftXTPCPos = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(cent, 2 * kTPCPos, iShift - 0.5));
-          auto coeffShiftYTPCPos = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(cent, 2 * kTPCPos + 1, iShift - 0.5));
-          auto coeffShiftXTPCNeg = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(cent, 2 * kTPCNeg, iShift - 0.5));
-          auto coeffShiftYTPCNeg = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(cent, 2 * kTPCNeg + 1, iShift - 0.5));
-          auto coeffShiftXTPCAll = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(cent, 2 * kTPCAll, iShift - 0.5));
-          auto coeffShiftYTPCAll = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(cent, 2 * kTPCAll + 1, iShift - 0.5));
+        for (int iShift = 1; iShift <= nShiftIndex; iShift++) {
+          auto coeffShiftXFT0C = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(centrality, 2 * kFT0C, iShift - 0.5));
+          auto coeffShiftYFT0C = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(centrality, 2 * kFT0C + 1, iShift - 0.5));
+          auto coeffShiftXFT0A = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(centrality, 2 * kFT0A, iShift - 0.5));
+          auto coeffShiftYFT0A = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(centrality, 2 * kFT0A + 1, iShift - 0.5));
+          auto coeffShiftXFT0M = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(centrality, 2 * kFT0M, iShift - 0.5));
+          auto coeffShiftYFT0M = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(centrality, 2 * kFT0M + 1, iShift - 0.5));
+          auto coeffShiftXFV0A = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(centrality, 2 * kFV0A, iShift - 0.5));
+          auto coeffShiftYFV0A = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(centrality, 2 * kFV0A + 1, iShift - 0.5));
+          auto coeffShiftXTPCPos = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(centrality, 2 * kTPCPos, iShift - 0.5));
+          auto coeffShiftYTPCPos = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(centrality, 2 * kTPCPos + 1, iShift - 0.5));
+          auto coeffShiftXTPCNeg = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(centrality, 2 * kTPCNeg, iShift - 0.5));
+          auto coeffShiftYTPCNeg = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(centrality, 2 * kTPCNeg + 1, iShift - 0.5));
+          auto coeffShiftXTPCAll = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(centrality, 2 * kTPCAll, iShift - 0.5));
+          auto coeffShiftYTPCAll = shiftProfile.at(nMode - 2)->GetBinContent(shiftProfile.at(nMode - 2)->FindBin(centrality, 2 * kTPCAll + 1, iShift - 0.5));
 
           deltaPsiFT0C += ((2. / (1.0 * iShift)) * (-coeffShiftXFT0C * std::cos(iShift * static_cast<float>(nMode) * psiDefFT0C) + coeffShiftYFT0C * std::sin(iShift * static_cast<float>(nMode) * psiDefFT0C))) / static_cast<float>(nMode);
           deltaPsiFT0A += ((2. / (1.0 * iShift)) * (-coeffShiftXFT0A * std::cos(iShift * static_cast<float>(nMode) * psiDefFT0A) + coeffShiftYFT0A * std::sin(iShift * static_cast<float>(nMode) * psiDefFT0A))) / static_cast<float>(nMode);
@@ -613,13 +611,13 @@ struct qVectorsTable {
       if (useDetector["QvectorFT0As"]) {
         for (std::size_t iChA = 0; iChA < ft0.channelA().size(); iChA++) {
           float ampl = ft0.amplitudeA()[iChA];
-          int FT0AchId = ft0.channelA()[iChA];
+          int ft0AchId = ft0.channelA()[iChA];
 
-          histosQA.fill(HIST("FT0Amp"), ampl, FT0AchId);
-          histosQA.fill(HIST("FT0AmpCor"), ampl / FT0RelGainConst[FT0AchId], FT0AchId);
+          histosQA.fill(HIST("FT0Amp"), ampl, ft0AchId);
+          histosQA.fill(HIST("FT0AmpCor"), ampl / ft0RelGainConst[ft0AchId], ft0AchId);
 
-          helperEP.SumQvectors(0, FT0AchId, ampl / FT0RelGainConst[FT0AchId], nMode, qVecDet, sumAmplFT0A, ft0geom, fv0geom);
-          helperEP.SumQvectors(0, FT0AchId, ampl / FT0RelGainConst[FT0AchId], nMode, qVecFT0M, sumAmplFT0M, ft0geom, fv0geom);
+          helperEP.SumQvectors(0, ft0AchId, ampl / ft0RelGainConst[ft0AchId], nMode, qVecDet, sumAmplFT0A, ft0geom, fv0geom);
+          helperEP.SumQvectors(0, ft0AchId, ampl / ft0RelGainConst[ft0AchId], nMode, qVecFT0M, sumAmplFT0M, ft0geom, fv0geom);
         }
         if (sumAmplFT0A > minAmplitude) {
           qVectFT0A[0] = qVecDet.Re();
@@ -631,13 +629,13 @@ struct qVectorsTable {
         qVecDet = TComplex(0., 0.);
         for (std::size_t iChC = 0; iChC < ft0.channelC().size(); iChC++) {
           float ampl = ft0.amplitudeC()[iChC];
-          int FT0CchId = ft0.channelC()[iChC] + 96;
+          int ft0CchId = ft0.channelC()[iChC] + 96;
 
-          histosQA.fill(HIST("FT0Amp"), ampl, FT0CchId);
-          histosQA.fill(HIST("FT0AmpCor"), ampl / FT0RelGainConst[FT0CchId], FT0CchId);
+          histosQA.fill(HIST("FT0Amp"), ampl, ft0CchId);
+          histosQA.fill(HIST("FT0AmpCor"), ampl / ft0RelGainConst[ft0CchId], ft0CchId);
 
-          helperEP.SumQvectors(0, FT0CchId, ampl / FT0RelGainConst[FT0CchId], nMode, qVecDet, sumAmplFT0C, ft0geom, fv0geom);
-          helperEP.SumQvectors(0, FT0CchId, ampl / FT0RelGainConst[FT0CchId], nMode, qVecFT0M, sumAmplFT0M, ft0geom, fv0geom);
+          helperEP.SumQvectors(0, ft0CchId, ampl / ft0RelGainConst[ft0CchId], nMode, qVecDet, sumAmplFT0C, ft0geom, fv0geom);
+          helperEP.SumQvectors(0, ft0CchId, ampl / ft0RelGainConst[ft0CchId], nMode, qVecFT0M, sumAmplFT0M, ft0geom, fv0geom);
         }
 
         if (sumAmplFT0C > minAmplitude) {
@@ -657,11 +655,11 @@ struct qVectorsTable {
 
         for (std::size_t iCh = 0; iCh < fv0.channel().size(); iCh++) {
           float ampl = fv0.amplitude()[iCh];
-          int FV0AchId = fv0.channel()[iCh];
-          histosQA.fill(HIST("FV0Amp"), ampl, FV0AchId);
-          histosQA.fill(HIST("FV0AmpCor"), ampl / FV0RelGainConst[FV0AchId], FV0AchId);
+          int fv0AchId = fv0.channel()[iCh];
+          histosQA.fill(HIST("FV0Amp"), ampl, fv0AchId);
+          histosQA.fill(HIST("FV0AmpCor"), ampl / fv0RelGainConst[fv0AchId], fv0AchId);
 
-          helperEP.SumQvectors(1, FV0AchId, ampl / FV0RelGainConst[FV0AchId], nMode, qVecDet, sumAmplFV0A, ft0geom, fv0geom);
+          helperEP.SumQvectors(1, fv0AchId, ampl / fv0RelGainConst[fv0AchId], nMode, qVecDet, sumAmplFV0A, ft0geom, fv0geom);
         }
 
         if (sumAmplFV0A > minAmplitude) {
@@ -690,7 +688,7 @@ struct qVectorsTable {
       qVectTPCAll[1] += trk.pt() * std::sin(trk.phi() * nMode);
       trkTPCAllLabel.push_back(trk.globalIndex());
       nTrkTPCAll++;
-      if (std::abs(trk.eta()) < 0.1) {
+      if (std::abs(trk.eta()) < trackEtaMin) {
         continue;
       }
       if (trk.eta() > 0 && (useDetector["QvectorTPCposs"] || useDetector["QvectorBPoss"])) {
@@ -920,5 +918,5 @@ struct qVectorsTable {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<qVectorsTable>(cfgc)};
+    adaptAnalysisTask<QVectorsTable>(cfgc)};
 }
