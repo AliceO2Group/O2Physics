@@ -108,8 +108,8 @@ class HistogramManager : public TNamed
   // various
   bool fUseDefaultVariableNames; //! toggle the usage of default variable names and units
   uint64_t fBinsAllocated;       //! number of allocated bins
-  TString* fVariableNames;       //! variable names
-  TString* fVariableUnits;       //! variable units
+  std::vector<TString> fVariableNames; //! variable names
+  std::vector<TString> fVariableUnits; //! variable units
 
   void MakeAxisLabels(TAxis* ax, const char* labels);
 

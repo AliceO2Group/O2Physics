@@ -30,6 +30,7 @@
 #include <iostream>
 #include <list>
 #include <memory>
+#include <span>
 #include <vector>
 using namespace std;
 
@@ -49,11 +50,8 @@ HistogramManager::HistogramManager() : TNamed("", ""),
                                        fMainList(nullptr),
                                        fNVars(0),
                                        fUsedVars(nullptr),
-                                       
                                        fUseDefaultVariableNames(false),
-                                       fBinsAllocated(0),
-                                       fVariableNames(nullptr),
-                                       fVariableUnits(nullptr)
+                                       fBinsAllocated(0)
 {
   //
   // Constructor
@@ -67,9 +65,7 @@ HistogramManager::HistogramManager(const char* name, const char* title, const in
                                                                                               fUsedVars(new bool[maxNVars]),
                                                                                               
                                                                                               fUseDefaultVariableNames(kFALSE),
-                                                                                              fBinsAllocated(0),
-                                                                                              fVariableNames(),
-                                                                                              fVariableUnits()
+                                                                                              fBinsAllocated(0)
 {
   //
   // Constructor
@@ -81,8 +77,8 @@ HistogramManager::HistogramManager(const char* name, const char* title, const in
   for (int i = 0; i < maxNVars; ++i) {
     fUsedVars[i] = false;
   }
-  fVariableNames = new TString[maxNVars];
-  fVariableUnits = new TString[maxNVars];
+  fVariableNames.resize(maxNVars);
+  fVariableUnits.resize(maxNVars);
 }
 
 //_______________________________________________________________________________
@@ -101,9 +97,11 @@ void HistogramManager::SetDefaultVarNames(TString* vars, TString* units)
   //
   // Set default variable names
   //
+  std::span<TString> varNames{vars, fNVars};
+  std::span<TString> varUnits{units, fNVars};
   for (int i = 0; i < fNVars; ++i) {
-    fVariableNames[i] = vars[i];
-    fVariableUnits[i] = units[i];
+    fVariableNames[i] = varNames[i];
+    fVariableUnits[i] = varUnits[i];
   }
 };
 
@@ -630,6 +628,11 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   }
   h->Sumw2();
 
+  std::span<TString> axisLabels{};
+  if (axLabels) {
+    axisLabels = std::span<TString>{axLabels, nDimensions};
+  }
+
   // configure the THn histogram and count the allocated bins
   for (int idim = 0; idim < nDimensions; ++idim) {
     nbins *= (nBins[idim] + 2);
@@ -641,8 +644,8 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
     if (arr->At(1 + idim)) {
       axis->SetTitle(arr->At(1 + idim)->GetName());
     }
-    if (axLabels && !axLabels[idim].IsNull()) {
-      MakeAxisLabels(axis, axLabels[idim].Data());
+    if (!axisLabels.empty() && !axisLabels[idim].IsNull()) {
+      MakeAxisLabels(axis, axisLabels[idim].Data());
     }
 
     fUsedVars[vars[idim]] = kTRUE;
@@ -714,10 +717,13 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   auto* xmin = new double[nDimensions];
   auto* xmax = new double[nDimensions];
   int* nBins = new int[nDimensions];
+  std::span<const TArrayD> limits{binLimits, nDimensions};
   for (int idim = 0; idim < nDimensions; ++idim) {
-    nBins[idim] = binLimits[idim].GetSize() - 1;
-    xmin[idim] = binLimits[idim][0];
-    xmax[idim] = binLimits[idim][nBins[idim]];
+    const TArrayD& dimLimits = limits[idim];
+    const double* dimBins = dimLimits.GetArray();
+    nBins[idim] = dimLimits.GetSize() - 1;
+    xmin[idim] = dimBins[0];
+    xmax[idim] = dimBins[nBins[idim]];
   }
 
   // initialize the THn with equal spaced bins
@@ -738,9 +744,14 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   // rebin the axes according to the user requested binning
   for (int idim = 0; idim < nDimensions; ++idim) {
     TAxis* axis = h->GetAxis(idim);
-    axis->Set(nBins[idim], binLimits[idim].GetArray());
+    axis->Set(nBins[idim], limits[idim].GetArray());
   }
   h->Sumw2();
+
+  std::span<TString> axisLabels{};
+  if (axLabels) {
+    axisLabels = std::span<TString>{axLabels, nDimensions};
+  }
 
   uint32_t bins = 1;
   for (int idim = 0; idim < nDimensions; ++idim) {
@@ -753,8 +764,8 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
     if (arr->At(1 + idim)) {
       axis->SetTitle(arr->At(1 + idim)->GetName());
     }
-    if (axLabels && !axLabels[idim].IsNull()) {
-      MakeAxisLabels(axis, axLabels[idim].Data());
+    if (!axisLabels.empty() && !axisLabels[idim].IsNull()) {
+      MakeAxisLabels(axis, axisLabels[idim].Data());
     }
     fUsedVars[vars[idim]] = kTRUE;
   }
