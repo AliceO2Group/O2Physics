@@ -769,8 +769,8 @@ void HistogramManager::FillHistClass(const char* className, Float_t* values)
   TIter next(hList);
 
   TObject* h = nullptr;
-  bool isProfile;
-  bool isTHn;
+  bool isProfile = false;
+  bool isTHn = false;
   int dimension = 0;
   bool isSparse = kFALSE;
   bool isFillLabelx = kFALSE;
