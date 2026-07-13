@@ -2072,9 +2072,6 @@ void castStringIntoArray(int afo)
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
-  }
-
-  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m Casting a string %s into TArrayD .... \033[0m", res.fResultsProVariableLengthBinsString[afo].Data());
   }
 
@@ -3728,6 +3725,7 @@ void bookQAHistograms()
 
   if (tc.fVerbose) {
     startFunction(__FUNCTION__);
+    LOGF(info, "\033[1;33m%s: !!!! WARNING !!!! With too many 2D histograms with double precision, the code will crash in terminate (\"... shmem: could not create a message of size ...\") . Locally, you can circumvent this while testing by calling Bailout() explicitly. !!!! WARNING !!!! \033[0m", __FUNCTION__);
   }
 
   // *) Print the warning message, because with too many 2D histograms with double precision, the code crashes in terminate, due to:
@@ -3738,10 +3736,6 @@ void bookQAHistograms()
   // [1450742:multiparticle-correlations-a-b]: *** Program crashed (Aborted)
   // [1450742:multiparticle-correlations-a-b]: Backtrace by DPL:
   //
-
-  if (tc.fVerbose) {
-    LOGF(info, "\033[1;33m%s: !!!! WARNING !!!! With too many 2D histograms with double precision, the code will crash in terminate (\"... shmem: could not create a message of size ...\") . Locally, you can circumvent this while testing by calling Bailout() explicitly. !!!! WARNING !!!! \033[0m", __FUNCTION__);
-  }
 
   // a) Book the profile holding flags:
   qa.fQAHistogramsPro = new TProfile("fQAHistogramsPro", "flags for QA histograms", 7, 0., 7.);
@@ -9860,7 +9854,7 @@ bool eventCuts(T1 const& collision, T2 const& tracks, EnCutModus cutModus)
 
 //============================================================
 
-bool eventCut(int rs, int eventCut, EnCutModus cutModus)
+bool eventCut(int rs, int iEventCut, EnCutModus cutModus)
 {
   // Helper function to reduce code bloat in eventCuts(). It's meant to be used only in eventCuts().
   // It can be used also in exceptional cases outside of eventCuts(), like for eMultiplicity, but use with care.
@@ -9873,35 +9867,31 @@ bool eventCut(int rs, int eventCut, EnCutModus cutModus)
   if (!(0 == rs || 1 == rs)) {
     LOGF(fatal, "\033[1;31m%s at line %d : 'rs' must be generic Rec or Sim index, rs = %d \033[0m", __FUNCTION__, __LINE__, rs);
   }
-  if (eventCut >= eEventCuts_N) {
-    LOGF(fatal, "\033[1;31m%s at line %d : eventCut >= eEventCuts_N, eventCut = %d , eEventCuts_N = %d \033[0m", __FUNCTION__, __LINE__, eventCut, static_cast<int>(eEventCuts_N));
+  if (iEventCut >= eEventCuts_N) {
+    LOGF(fatal, "\033[1;31m%s at line %d : iEventCut >= eEventCuts_N, iEventCut = %d , eEventCuts_N = %d \033[0m", __FUNCTION__, __LINE__, iEventCut, static_cast<int>(eEventCuts_N));
   }
 
   // *) Do the thing:
   switch (cutModus) {
     case eCut: {
       if (tc.fVerboseEventCut) {
-        LOGF(info, "\033[1;31mEvent didn't survive the cut: %s\033[0m", ec.fEventCutName[eventCut].Data());
+        LOGF(info, "\033[1;31mEvent didn't survive the cut: %s\033[0m", ec.fEventCutName[iEventCut].Data());
       }
       return false;
-      break;
     }
     case eCutCounterBinning: {
-      ec.fEventCutCounterMap[rs]->Add(ec.fEventCutCounterBinNumber[rs], eventCut);
-      ec.fEventCutCounterMapInverse[rs]->Add(eventCut, ec.fEventCutCounterBinNumber[rs]);
+      ec.fEventCutCounterMap[rs]->Add(ec.fEventCutCounterBinNumber[rs], iEventCut);
+      ec.fEventCutCounterMapInverse[rs]->Add(iEventCut, ec.fEventCutCounterBinNumber[rs]);
       ec.fEventCutCounterBinNumber[rs]++; // yes
       return true;
-      break;
     }
     case eCutCounterAbsolute: {
-      ec.fEventCutCounterHist[rs][eAbsolute]->Fill(ec.fEventCutCounterMapInverse[rs]->GetValue(eventCut));
+      ec.fEventCutCounterHist[rs][eAbsolute]->Fill(ec.fEventCutCounterMapInverse[rs]->GetValue(iEventCut));
       return true; // yes, so that I can proceed with another cut in eventCuts
-      break;
     }
     case eCutCounterSequential: {
-      ec.fEventCutCounterHist[rs][eSequential]->Fill(ec.fEventCutCounterMapInverse[rs]->GetValue(eventCut));
+      ec.fEventCutCounterHist[rs][eSequential]->Fill(ec.fEventCutCounterMapInverse[rs]->GetValue(iEventCut));
       return false; // yes, so that I bail out from eventCuts
-      break;
     }
     default: {
       LOGF(fatal, "\033[1;31m%s at line %d : This cutModus = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(cutModus));
@@ -9911,7 +9901,7 @@ bool eventCut(int rs, int eventCut, EnCutModus cutModus)
 
   return false; // obsolete, but it suppresses the warning...
 
-} // bool eventCut(int rs, int eventCut, EnCutModus cutModus)
+} // bool eventCut(int rs, int iEventCut, EnCutModus cutModus)
 
 //============================================================
 
@@ -10675,7 +10665,7 @@ bool centralityCorrelationCut()
     LOGF(info, "\033[1;33m%s at line %d : ec.fsEventCuts[eCentralityCorrelationsCut] = %s \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityCorrelationsCut].Data());
   }
 
-  bool alright = true; // this local variable holds the return value for this function
+  bool bAlright = true; // this local variable holds the return value for this function
 
   // Algorithm: I extract e.g. from "CentFT0C_CentFT0M" that the first estimator is "CentFT0C" and second "CentFT0M", and for each estimator I fetch the corresponding centrality percentile:
   if (!ec.fsEventCuts[eCentralityCorrelationsCut].Contains("_")) {
@@ -10698,17 +10688,17 @@ bool centralityCorrelationCut()
   delete oa; // yes
 
   // Okay, do the thing:
-  // *) "Relative" <=> |(firstEstimator-secondEstimator)/(firstEstimator+secondEstimator)| > treshold => reject the event => alright = false
-  // *) "Absolute" <=> |firstEstimator-secondEstimator| > treshold => reject the event => alright = false
+  // *) "Relative" <=> |(firstEstimator-secondEstimator)/(firstEstimator+secondEstimator)| > treshold => reject the event => bAlright = false
+  // *) "Absolute" <=> |firstEstimator-secondEstimator| > treshold => reject the event => bAlright = false
   // *) ...
   if (ec.fCentralityValues[0] > 0. && ec.fCentralityValues[1] > 0.) {
     if (ec.fCentralityCorrelationsCutVersion.EqualTo("Relative")) {
       if (std::abs((ec.fCentralityValues[0] - ec.fCentralityValues[1]) / (ec.fCentralityValues[0] + ec.fCentralityValues[1])) > ec.fCentralityCorrelationsCutTreshold) {
-        alright = false;
+        bAlright = false;
       }
     } else if (ec.fCentralityCorrelationsCutVersion.EqualTo("Absolute")) {
       if (std::abs((ec.fCentralityValues[0] - ec.fCentralityValues[1])) > ec.fCentralityCorrelationsCutTreshold) {
-        alright = false;
+        bAlright = false;
       }
     } else {
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
@@ -10716,11 +10706,11 @@ bool centralityCorrelationCut()
   } // if(ec.fCentralityValues[0] > 0. && ec.fCentralityValues[1] > 0.)
 
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;33m%s at line %d : %f, %f, %f, %d \033[0m", __FUNCTION__, __LINE__, ec.fCentralityValues[0], ec.fCentralityValues[1], ec.fCentralityCorrelationsCutTreshold, static_cast<int>(alright));
+    LOGF(info, "\033[1;33m%s at line %d : %f, %f, %f, %d \033[0m", __FUNCTION__, __LINE__, ec.fCentralityValues[0], ec.fCentralityValues[1], ec.fCentralityCorrelationsCutTreshold, static_cast<int>(bAlright));
     exitFunction(__FUNCTION__);
   }
 
-  return alright;
+  return bAlright;
 
 } // bool centralityCorrelationCut()
 
@@ -11485,7 +11475,7 @@ bool particleCuts(T const& track, EnCutModus cutModus)
 
 //============================================================
 
-bool particleCut(int rs, int particleCut, EnCutModus cutModus)
+bool particleCut(int rs, int iParticleCut, EnCutModus cutModus)
 {
   // Helper function to reduce code bloat in particleCuts(). It's meant to be used only in particleCuts().
 
@@ -11494,27 +11484,23 @@ bool particleCut(int rs, int particleCut, EnCutModus cutModus)
   switch (cutModus) {
     case eCut: {
       if (tc.fVerboseForEachParticle) {
-        LOGF(info, "\033[1;31mParticle didn't pass the cut: %s\033[0m", pc.fParticleCutName[particleCut].Data());
+        LOGF(info, "\033[1;31mParticle didn't pass the cut: %s\033[0m", pc.fParticleCutName[iParticleCut].Data());
       }
       return false;
-      break;
     }
     case eCutCounterBinning: {
-      pc.fParticleCutCounterMap[rs]->Add(pc.fParticleCutCounterBinNumber[rs], particleCut);
-      pc.fParticleCutCounterMapInverse[rs]->Add(particleCut, pc.fParticleCutCounterBinNumber[rs]);
+      pc.fParticleCutCounterMap[rs]->Add(pc.fParticleCutCounterBinNumber[rs], iParticleCut);
+      pc.fParticleCutCounterMapInverse[rs]->Add(iParticleCut, pc.fParticleCutCounterBinNumber[rs]);
       pc.fParticleCutCounterBinNumber[rs]++; // yes
       return true;
-      break;
     }
     case eCutCounterAbsolute: {
-      pc.fParticleCutCounterHist[rs][eAbsolute]->Fill(pc.fParticleCutCounterMapInverse[rs]->GetValue(particleCut));
+      pc.fParticleCutCounterHist[rs][eAbsolute]->Fill(pc.fParticleCutCounterMapInverse[rs]->GetValue(iParticleCut));
       return true; // yes, so that I can proceed with another cut in particleCuts
-      break;
     }
     case eCutCounterSequential: {
-      pc.fParticleCutCounterHist[rs][eSequential]->Fill(pc.fParticleCutCounterMapInverse[rs]->GetValue(particleCut));
+      pc.fParticleCutCounterHist[rs][eSequential]->Fill(pc.fParticleCutCounterMapInverse[rs]->GetValue(iParticleCut));
       return false; // yes, so that I bail out from particleCuts
-      break;
     }
     default: {
       LOGF(fatal, "\033[1;31m%s at line %d : This cutModus = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(cutModus));
@@ -11524,7 +11510,7 @@ bool particleCut(int rs, int particleCut, EnCutModus cutModus)
 
   return false; // obsolete, but it suppresses the warning...
 
-} // bool particleCut(int rs, int particleCut, EnCutModus cutModus)
+} // bool particleCut(int rs, int iParticleCut, EnCutModus cutModus)
 
 //============================================================
 
@@ -13467,10 +13453,6 @@ void calculateKineEtaSeparationsNdim(EnqvectorKine kineVarChoice, int Ndim)
 {
   // Calculate analytically N-dimensional kine eta separations from differential q-vectors.
 
-  if (tc.fVerbose) {
-    startFunction(__FUNCTION__);
-  }
-
   // This is a replacement for the legacy function CalculateKineEtaSeparations(...), which is as of 20250620 deemed obsolete.
   // Remember that here I changed design, and pass enum EnqvectorKine as an argument, not any longer enum EnAsFunctionOf.
 
@@ -13626,7 +13608,7 @@ void fillNestedLoopsContainers(const int& particleIndex)
 
   // *) Fill container for weights:
   if (nl.ftaNestedLoops[1]) {
-    // TBI 20240501 there is a bit of efficiency loss here, because I access weight() again here.
+    // TBI 20240501 there is a bit of efficiency loss here, because I access particleWeight() again here.
     // But it doesn't matter really, in any case I evaluate nested loops only for small M during debugging.
     // Otherwise, just promote weights to data members, and initialize them only once for a given particle.
     double wPhi = 1.;
@@ -13651,15 +13633,15 @@ void fillNestedLoopsContainers(const int& particleIndex)
     }
 
     if (pw.fUseWeights[wPHI]) { // TBI 20260216 obsolete, remove eventually
-      wPhi = weight(pbyp.fPhi, wPHI);
+      wPhi = particleWeight(pbyp.fPhi, wPHI);
     }
 
     if (pw.fUseWeights[wPT]) { // TBI 20260216 obsolete, remove eventually
-      wPt = weight(pbyp.fPt, wPT);
+      wPt = particleWeight(pbyp.fPt, wPT);
     }
 
     if (pw.fUseWeights[wETA]) { // TBI 20260216 obsolete, remove eventually
-      wEta = weight(pbyp.fEta, wETA);
+      wEta = particleWeight(pbyp.fEta, wETA);
     }
 
     nl.ftaNestedLoops[1]->AddAt(wPhi * wPt * wEta * wCharge, particleIndex); // remember that the 2nd argument here must start from 0
@@ -14674,7 +14656,7 @@ TH1D* getHistogramWithWeights(const char* filePath, const char* runNumber, const
 
   if (bFileIsInAliEn) {
     // d) Handle the AliEn case:
-    TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
+    const TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
     if (!alien) {
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
@@ -14778,7 +14760,7 @@ TH1D* getHistogramWithWeights(const char* filePath, const char* runNumber, const
   } // else {
 
   // g) The final touch on histogram with weights:
-  TString histName = "";
+  TString histName;
   if (-1 == bin) {
     // Integrated weights:
     if (!(TString(variable).EqualTo("phi") || TString(variable).EqualTo("pt") || TString(variable).EqualTo("eta"))) {
@@ -14964,7 +14946,7 @@ THnSparseF* getSparseHistogramWithWeights(const char* filePath, const char* runN
 
   if (bFileIsInAliEn) {
     // d) Handle the AliEn case:
-    TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
+    const TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
     if (!alien) {
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
@@ -15067,7 +15049,7 @@ THnSparseF* getSparseHistogramWithWeights(const char* filePath, const char* runN
   } // else {
 
   // g) The final touch on sparse histogram with weights:
-  TString sparseHistName = "";
+  TString sparseHistName;
   if (TString(whichDimensions).EqualTo("")) {
     sparseHistName = TString::Format("%s_multiparticle-correlations-a-b", whichCategory);
   } else if (TString(whichDimensions).BeginsWith("_")) { // TBI 20250215 alternativelly, I can remove leading "_" before calling this function
@@ -15224,7 +15206,7 @@ TH1D* getHistogramWithCentralityWeights(const char* filePath, const char* runNum
 
   if (bFileIsInAliEn) {
     // d) Handle the AliEn case:
-    TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
+    const TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
     if (!alien) {
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
@@ -15326,7 +15308,7 @@ TH1D* getHistogramWithCentralityWeights(const char* filePath, const char* runNum
   } // else {
 
   // g) The final touch on histogram with centrality weights:
-  TString histName = "";
+  TString histName;
 
   // fetch histogram directly from this list:
   // Remark: histName must be formated as e.g. "FT0C_multiparticle-correlations-a-b" for default analysis, or "FT0C_multiparticle-correlations-a-b_someCut"
@@ -15715,7 +15697,7 @@ TObjArray* getObjArrayWithLabels(const char* filePath)
   TFile* oaFile = NULL; // file holding TObjArray with all labels
   if (bFileIsInAliEn) {
     // c) Handle the AliEn case:
-    TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
+    const TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
     if (!alien) {
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
@@ -15874,7 +15856,7 @@ void getHistogramWithCustomNUA(const char* filePath, EnNUAPDF variable)
 
   if (bFileIsInAliEn) {
     // d) Handle the AliEn case:
-    TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
+    const TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
     if (!alien) {
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
@@ -16115,7 +16097,7 @@ TObject* getObjectFromList(TList* list, const char* objectName) // Last update: 
 
 //============================================================
 
-double weight(const double& value, EnWeights whichWeight) // value, integrated [phi,pt,eta] weight
+double particleWeight(const double& value, EnWeights whichWeight) // value, integrated [phi,pt,eta] weight
 {
   // Determine particle weight.
 
@@ -16144,7 +16126,7 @@ double weight(const double& value, EnWeights whichWeight) // value, integrated [
 
   return weight;
 
-} // weight(const double &value, EnWeights whichWeight) // value, integrated [phi,pt,eta] weight
+} // particleWeight(const double &value, EnWeights whichWeight) // value, integrated [phi,pt,eta] weight
 
 //============================================================
 
@@ -18521,7 +18503,7 @@ void fillQvector(const double& dPhi, const double& dPt, const double& dEta)
   double wToPowerP = 1.; // weight raised to power p
 
   if (pw.fUseWeights[wPHI]) {
-    wPhi = weight(dPhi, wPHI);
+    wPhi = particleWeight(dPhi, wPHI);
     if (!(wPhi > 0.)) {
       LOGF(error, "\033[1;33m%s wPhi is not positive\033[0m", __FUNCTION__);
       LOGF(fatal, "dPhi = %f\nwPhi = %f", dPhi, wPhi);
@@ -18529,7 +18511,7 @@ void fillQvector(const double& dPhi, const double& dPt, const double& dEta)
   } // if(pw.fUseWeights[wPHI])
 
   if (pw.fUseWeights[wPT]) {
-    wPt = weight(dPt, wPT); // corresponding pt weight
+    wPt = particleWeight(dPt, wPT); // corresponding pt weight
     if (!(wPt > 0.)) {
       LOGF(error, "\033[1;33m%s wPt is not positive\033[0m", __FUNCTION__);
       LOGF(fatal, "dPt = %f\nwPt = %f", dPt, wPt);
@@ -18537,7 +18519,7 @@ void fillQvector(const double& dPhi, const double& dPt, const double& dEta)
   } // if(pw.fUseWeights[wPT])
 
   if (pw.fUseWeights[wETA]) {
-    wEta = weight(dEta, wETA); // corresponding eta weight
+    wEta = particleWeight(dEta, wETA); // corresponding eta weight
     if (!(wEta > 0.)) {
       LOGF(error, "\033[1;33m%s wEta is not positive\033[0m", __FUNCTION__);
       LOGF(fatal, "dEta = %f\nwEta = %f", dEta, wEta);
@@ -18844,7 +18826,7 @@ void fillqvector(const double& dPhi, const double& kineVarValue, EnqvectorKine k
   double wToPowerP = 1.;     // weight raised to power p
   double kineVarWeight = 1.; // e.g. this can be integrated pT or eta weight
   if (pw.fUseWeights[afoWeight]) {
-    kineVarWeight = weight(kineVarValue, afoWeight); // corresponding e.g. pt or eta weight
+    kineVarWeight = particleWeight(kineVarValue, afoWeight); // corresponding e.g. pt or eta weight
     if (!(kineVarWeight > 0.)) {
       LOGF(fatal, "\033[1;31m%s at line %d : kineVarWeight is not positive \033[0m", __FUNCTION__, __LINE__);
       // TBI 20240212 or could I just skip this particle?
@@ -20013,14 +19995,11 @@ void steer(T1 const& collision, T2 const& bcs, T3 const& tracks)
 
   if (tc.fVerbose) {
     startFunction(__FUNCTION__);
+    // *) Print environment:
+    printEnvironment();
   }
 
   // memStatus: ~50K (without differential q-vectors and eta separations)
-
-  // *) Print environment:
-  if (tc.fVerbose) {
-    printEnvironment();
-  }
 
   // *) Dry run:
   if (tc.fDryRun) {
@@ -20159,12 +20138,9 @@ void steer(T1 const& collision, T2 const& bcs, T3 const& tracks)
     tc.fTimer[eGlobal]->Continue(); // yes
   }
 
-  // *) Print environment:
   if (tc.fVerbose) {
+    // *) Print environment:
     printEnvironment();
-  }
-
-  if (tc.fVerbose) {
     exitFunction(__FUNCTION__);
   }
 
