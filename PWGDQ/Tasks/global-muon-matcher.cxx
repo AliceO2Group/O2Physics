@@ -1506,7 +1506,7 @@ struct GlobalMuonMatching {
         continue;
       }
 
-      auto processGroup = [&, mchIndex](const std::vector<MatchingCandidate>& candidatesGroup, int32_t mixedGroupIndex) {
+      auto processGroup = [&](const std::vector<MatchingCandidate>& candidatesGroup, int32_t mixedGroupIndex, int64_t mchTrackIndex) {
         std::vector<MatchingCandidate> groupResults;
         groupResults.reserve(candidatesGroup.size());
 
@@ -1547,7 +1547,7 @@ struct GlobalMuonMatching {
 
         const int maxCandidates = configMatching.cfgMaxCandidatesPerMchTrack.value;
 
-        auto& storedCandidates = newMatchingCandidates[mchIndex];
+        auto& storedCandidates = newMatchingCandidates[mchTrackIndex];
         size_t nStoredThisGroup = 0;
         for (auto& result : groupResults) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
           if (maxCandidates >= 0 && nStoredThisGroup >= static_cast<size_t>(maxCandidates)) {
@@ -1562,11 +1562,11 @@ struct GlobalMuonMatching {
       if (useMixedMatchingCandidates) {
         int32_t groupIdx = 0;
         for (const auto& candidatesGroup : mchTrackInfo.mixedMatchingCandidates) {
-          processGroup(candidatesGroup, groupIdx);
+          processGroup(candidatesGroup, groupIdx, mchIndex);
           groupIdx += 1;
         }
       } else {
-        processGroup(mchTrackInfo.matchingCandidates, -1);
+        processGroup(mchTrackInfo.matchingCandidates, -1, mchIndex);
       }
     }
   }
@@ -1595,7 +1595,7 @@ struct GlobalMuonMatching {
         continue;
       }
 
-      auto processGroup = [&, mchIndex](const std::vector<MatchingCandidate>& candidatesGroup, int32_t mixedGroupIndex) {
+      auto processGroup = [&](const std::vector<MatchingCandidate>& candidatesGroup, int32_t mixedGroupIndex, int64_t mchTrackIndex) {
         std::vector<MatchingCandidate> groupResults;
         groupResults.reserve(candidatesGroup.size());
 
@@ -1640,7 +1640,7 @@ struct GlobalMuonMatching {
 
         const int maxCandidates = configMatching.cfgMaxCandidatesPerMchTrack.value;
 
-        auto& storedCandidates = newMatchingCandidates[mchIndex];
+        auto& storedCandidates = newMatchingCandidates[mchTrackIndex];
         size_t nStoredThisGroup = 0;
         for (auto& result : groupResults) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
           if (maxCandidates >= 0 && nStoredThisGroup >= static_cast<size_t>(maxCandidates)) {
@@ -1655,11 +1655,11 @@ struct GlobalMuonMatching {
       if (useMixedMatchingCandidates) {
         int32_t groupIdx = 0;
         for (const auto& candidatesGroup : mchTrackInfo.mixedMatchingCandidates) {
-          processGroup(candidatesGroup, groupIdx);
+          processGroup(candidatesGroup, groupIdx, mchIndex);
           groupIdx += 1;
         }
       } else {
-        processGroup(mchTrackInfo.matchingCandidates, -1);
+        processGroup(mchTrackInfo.matchingCandidates, -1, mchIndex);
       }
     }
   }
