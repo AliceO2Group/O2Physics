@@ -306,6 +306,10 @@ struct qVectorsTable {
         fullPath += "/v2";
         modeCorrQvecSp = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
       }
+      if (!modeCorrQvecSp) {
+        LOGF(info, "Could not get the correction histograms for Q-vectors for mode %d. Setting to no correction.", ind);
+        modeCorrQvecSp = new TH3F("modeCorrQvecSp", "modeCorrQvecSp", 1, 0, 1, 1, 0, 1, 1, 0, 1);
+      }
       corrsQvecSp.push_back(modeCorrQvecSp);
     }
 
@@ -322,6 +326,10 @@ struct qVectorsTable {
           fullPath += "/eseq2";
           modeCorrQvecEse = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
         }
+        if (!modeCorrQvecEse) {
+          LOGF(info, "Could not get the correction histograms for Q-vectors for mode %d. Setting to no correction.", ind);
+          modeCorrQvecEse = new TH3F("modeCorrQvecEse", "modeCorrQvecEse", 1, 0, 1, 1, 0, 1, 1, 0, 1);
+        }
         corrsQvecEse.push_back(modeCorrQvecEse);
       }
     }
@@ -334,6 +342,10 @@ struct qVectorsTable {
         fullPath += "/v";
         fullPath += std::to_string(ind);
         auto objshift = getForTsOrRun<TProfile3D>(fullPath, timestamp, runnumber);
+        if (!objshift) {
+          LOGF(info, "Could not get the shift profile for Q-vectors for mode %d. Setting to no shift correction.", ind);
+          objshift = new TProfile3D("shiftProfileSp", "shiftProfileSp", 1, 0, 1, 1, 0, 1, 1, 0, 1);
+        }
         shiftProfileSp.push_back(objshift);
       }
 
@@ -345,6 +357,10 @@ struct qVectorsTable {
           fullPath += "/eseq";
           fullPath += std::to_string(ind);
           auto objshift = getForTsOrRun<TProfile3D>(fullPath, timestamp, runnumber);
+          if (!objshift) {
+            LOGF(info, "Could not get the shift profile for Q-vectors for mode %d. Setting to no shift correction.", ind);
+            objshift = new TProfile3D("shiftProfileEse", "shiftProfileEse", 1, 0, 1, 1, 0, 1, 1, 0, 1);
+          }
           shiftProfileEse.push_back(objshift);
         }
       }
