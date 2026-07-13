@@ -485,7 +485,7 @@ struct Photonhbt {
       return;
     }
     auto grpmag = ccdb->getForRun<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", mRunNumber);
-    mBzT = 0.1f * static_cast<float>(grpmag->getNominalL3Field()); 
+    mBzT = 0.1f * static_cast<float>(grpmag->getNominalL3Field());
     LOGF(info, "photonhbt: run %d, Bz = %.2f T", mRunNumber, mBzT);
   }
 
@@ -1160,7 +1160,7 @@ struct Photonhbt {
         sumDp += RecoDecay::constrainAngle(p1 - p2, -o2::constants::math::PI);
         ++n;
       }
-      if (n == 0) { 
+      if (n == 0) {
         dPhiOut = 999.f;
         return 999.f;
       }
@@ -1169,7 +1169,7 @@ struct Photonhbt {
     };
     const float uPP = uSameSign(0, s.dEtaPP, s.dPhiPP);
     const float uNN = uSameSign(1, s.dEtaNN, s.dPhiNN);
-    s.u = std::min(uPP, uNN); 
+    s.u = std::min(uPP, uNN);
     return s;
   }
 
@@ -1195,7 +1195,7 @@ struct Photonhbt {
       for (const float& r : kPhiStarRadiiM) {
         if ((g1.rTrue >= 0.f && r * kCmPerM < g1.rTrue) ||
             (g2.rTrue >= 0.f && r * kCmPerM < g2.rTrue))
-          continue; 
+          continue;
         const float p1 = legPhiStar(g1.legPhiTrue[i], g1.legPtTrue[i], q, mBzT, r);
         const float p2 = legPhiStar(g2.legPhiTrue[i], g2.legPtTrue[i], q, mBzT, r);
         if (p1 < -100.f || p2 < -100.f) // o2-linter: disable=magic-number (skip if non-sensical value is chosen)
@@ -2512,8 +2512,8 @@ struct Photonhbt {
             poolBin.pop_front();
         }
       } // end cfgDoTruthMix
-    } // end collision loop
-  } // end runTruthEfficiency
+    }   // end collision loop
+  }     // end runTruthEfficiency
 
   /*************************************************/
   // PROCESS FUNCTIONS
