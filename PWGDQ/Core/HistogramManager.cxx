@@ -48,7 +48,7 @@ HistogramManager::HistogramManager() : TNamed("", ""),
                                        fMainList(nullptr),
                                        fNVars(0),
                                        fUsedVars(nullptr),
-                                       fVariablesMap(),
+                                       
                                        fUseDefaultVariableNames(false),
                                        fBinsAllocated(0),
                                        fVariableNames(nullptr),
@@ -64,7 +64,7 @@ HistogramManager::HistogramManager(const char* name, const char* title, const in
                                                                                               fMainList(),
                                                                                               fNVars(maxNVars),
                                                                                               fUsedVars(),
-                                                                                              fVariablesMap(),
+                                                                                              
                                                                                               fUseDefaultVariableNames(kFALSE),
                                                                                               fBinsAllocated(0),
                                                                                               fVariableNames(),
