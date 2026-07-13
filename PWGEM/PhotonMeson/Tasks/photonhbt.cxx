@@ -480,12 +480,12 @@ struct Photonhbt {
     if (mRunNumber == collision.runNumber())
       return;
     mRunNumber = collision.runNumber();
-    if (cfgBzOverrideT.value > -100.f) {
+    if (cfgBzOverrideT.value > -100.f) { // o2-linter: disable=magic-number (number in case B-field is overridden in case not fetched from CCDB)
       mBzT = cfgBzOverrideT.value;
       return;
     }
     auto grpmag = ccdb->getForRun<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", mRunNumber);
-    mBzT = 0.1f * static_cast<float>(grpmag->getNominalL3Field()); // kG -> T
+    mBzT = 0.1f * static_cast<float>(grpmag->getNominalL3Field()); 
     LOGF(info, "photonhbt: run %d, Bz = %.2f T", mRunNumber, mBzT);
   }
 
@@ -1155,7 +1155,7 @@ struct Photonhbt {
       int n = 0;
       for (size_t ir = 0; ir < kPhiStarRadiiM.size(); ++ir) {
         const float p1 = a.fLegPhiStar[i][ir], p2 = b.fLegPhiStar[i][ir];
-        if (p1 < -100.f || p2 < -100.f)
+        if (p1 < -100.f || p2 < -100.f) // o2-linter: disable=magic-number (skip if non-sensical value is chosen)
           continue;
         sumDp += RecoDecay::constrainAngle(p1 - p2, -o2::constants::math::PI);
         ++n;
@@ -1192,13 +1192,13 @@ struct Photonhbt {
       const int q = (i == 0) ? +1 : -1;
       float sumDp = 0.f;
       int n = 0;
-      for (const float r : kPhiStarRadiiM) {
+      for (const float& r : kPhiStarRadiiM) {
         if ((g1.rTrue >= 0.f && r * kCmPerM < g1.rTrue) ||
             (g2.rTrue >= 0.f && r * kCmPerM < g2.rTrue))
           continue; 
         const float p1 = legPhiStar(g1.legPhiTrue[i], g1.legPtTrue[i], q, mBzT, r);
         const float p2 = legPhiStar(g2.legPhiTrue[i], g2.legPtTrue[i], q, mBzT, r);
-        if (p1 < -100.f || p2 < -100.f)
+        if (p1 < -100.f || p2 < -100.f) // o2-linter: disable=magic-number (skip if non-sensical value is chosen)
           continue;
         sumDp += RecoDecay::constrainAngle(p1 - p2, -o2::constants::math::PI);
         ++n;
