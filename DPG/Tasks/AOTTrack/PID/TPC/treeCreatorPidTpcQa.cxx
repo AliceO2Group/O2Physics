@@ -162,12 +162,14 @@ struct treeCreatorPidTpcQa {
         if (cutRapidity > 0.f && std::fabs(rapidity) > cutRapidity) {
           continue;
         }
+        const float momentum = track.p();
 
         const float nClNormalized = std::sqrt(nClNorm / track.tpcNClsFound());
+        const float nclPID = static_cast<float>(track.tpcNClsPID());
         const float phi = track.phi();
         const float tgl = track.tgl();
         const float tpcInnerParam = track.tpcInnerParam();
-        const int16_t trackSign = track.sign();
+        const float signed1Pt = track.signed1Pt();
         const float nSigmaTpc = o2::aod::pidutils::tpcNSigma<Id>(track);
 
         float dedxDiff{UndefValueFloat};
@@ -186,7 +188,7 @@ struct treeCreatorPidTpcQa {
           nSigmaTof = o2::aod::pidutils::tofNSigma<Id>(track);
         }
 
-        rowPidTpcQa(Id, ft0Occ, hadronicRate, multTPC, nClNormalized, phi, tgl, tpcInnerParam, rapidity, trackSign, nSigmaTpc, dedxExpected, dedxDiff, expSigma, nSigmaTof);
+        rowPidTpcQa(Id, ft0Occ, hadronicRate, multTPC, nClNormalized, nclPID, phi, tgl, tpcInnerParam, rapidity, momentum, signed1Pt, nSigmaTpc, dedxExpected, dedxDiff, expSigma, nSigmaTof);
       } // tracksFromCollision
     } // collisions
   }

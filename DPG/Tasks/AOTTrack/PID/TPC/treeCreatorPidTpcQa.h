@@ -22,13 +22,10 @@
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 
-#include <cstdint>
-
 namespace o2::aod
 {
 namespace dpg_tpcpidqa
 {
-DECLARE_SOA_COLUMN(Sign, sign, int16_t);
 DECLARE_SOA_COLUMN(NSigmaTpc, nSigmaTpc, float);
 DECLARE_SOA_COLUMN(DedxExpected, dedxTpc, float);
 DECLARE_SOA_COLUMN(DedxDiff, dedxDiff, float);
@@ -42,11 +39,13 @@ DECLARE_SOA_TABLE(QaPidTpc, "AOD", "QAPIDTPC",
                   tpcskims::HadronicRate,
                   tpcskims::NormMultTPC,
                   tpcskims::NormNClustersTPC,
+                  tpcskims::NormNClustersTPCPID,
                   o2::aod::track::Phi,
                   o2::aod::track::Tgl,
                   o2::aod::track::TPCInnerParam,
                   o2::aod::track::Y,
-                  dpg_tpcpidqa::Sign,
+                  o2::aod::track::P,
+                  o2::aod::track::Signed1Pt,
                   dpg_tpcpidqa::NSigmaTpc,
                   dpg_tpcpidqa::DedxExpected,
                   dpg_tpcpidqa::DedxDiff,
