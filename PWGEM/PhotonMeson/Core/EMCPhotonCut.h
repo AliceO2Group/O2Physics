@@ -130,8 +130,8 @@ class EMCPhotonCut
     kSecondary,
   };
 
-  std::string getName() const { return name; }
-  std::string getTitle() const { return title; }
+  const std::string& getName() const { return name; }
+  const std::string& getTitle() const { return title; }
 
   static std::array<std::string, static_cast<std::size_t>(EMCPhotonCut::EMCPhotonCuts::kNCuts)> mCutNames;
 
