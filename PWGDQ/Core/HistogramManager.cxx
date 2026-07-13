@@ -338,6 +338,11 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
       h->SetDirectory(nullptr);
       hList->Add(h);
       break;
+
+    default:
+      LOG(warn) << "HistogramManager::AddHistogram(): Unsupported dimension " << dimension
+                << " for histogram " << hname;
+      return;
   } // end switch
 }
 
@@ -550,6 +555,11 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
       }
       hList->Add(h);
       break;
+
+    default:
+      LOG(warn) << "HistogramManager::AddHistogram(): Unsupported dimension " << dimension
+                << " for histogram " << hname;
+      return;
   } // end switch(dimension)
 }
 
