@@ -374,7 +374,7 @@ struct FlowZdcTask {
     }
     histos.fill(HIST("hEventCounter"), EvCutLabel::VtxZ);
     if (isApplyRadialCut) {
-      if (std::fabs(col.posX()) > posXcut || std::fabs(col.posY()) > posYcut) 
+      if (std::fabs(col.posX()) > posXcut || std::fabs(col.posY()) > posYcut)
         return false;
     }
 
@@ -656,7 +656,7 @@ struct FlowZdcTask {
           if (((tZNC >= minTdcZn) && (tZNC <= maxTdcZn)) && ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn))) {
             histos.fill(HIST("ZnaVsZnc"), znA, znC);
           }
-          if (((tZPC >= minTdcZp) && (tZPC <= maxTdcZp)) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp))){
+          if (((tZPC >= minTdcZp) && (tZPC <= maxTdcZp)) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp))) {
             histos.fill(HIST("ZpaVsZpc"), zpA, zpC);
           }
           if ((tZNA >= minTdcZn) && (tZNA <= maxTdcZn) && ((tZPA >= minTdcZp) && (tZPA <= maxTdcZp))) {
