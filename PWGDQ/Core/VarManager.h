@@ -482,6 +482,14 @@ class VarManager : public TObject
     kQ2X0A2,
     kQ2Y0A1,
     kQ2Y0A2,
+    kQ2X0B1,
+    kQ2X0B2,
+    kQ2Y0B1,
+    kQ2Y0B2,
+    kQ2X0C1,
+    kQ2X0C2,
+    kQ2Y0C1,
+    kQ2Y0C2,
     kU2Q2Ev1,
     kU2Q2Ev2,
     kCos2DeltaPhiEv1,
@@ -2898,6 +2906,16 @@ void VarManager::FillTwoMixEvents(T1 const& ev1, T1 const& ev2, T2 const& /*trac
     values[kQ2X0A2] = ev2.q2x0a();
     values[kQ2Y0A1] = ev1.q2y0a();
     values[kQ2Y0A2] = ev2.q2y0a();
+
+    values[kQ2X0B1] = ev1.q2x0b();
+    values[kQ2X0B2] = ev2.q2x0b();
+    values[kQ2Y0B1] = ev1.q2y0b();
+    values[kQ2Y0B2] = ev2.q2y0b();
+
+    values[kQ2X0C1] = ev1.q2x0c();
+    values[kQ2X0C2] = ev2.q2x0c();
+    values[kQ2Y0C1] = ev1.q2y0c();
+    values[kQ2Y0C2] = ev2.q2y0c();
   }
   if constexpr ((fillMap & CollisionQvect) > 0) {
     // Tobe used for the calculation of u1q1 and u2q2
@@ -2905,6 +2923,16 @@ void VarManager::FillTwoMixEvents(T1 const& ev1, T1 const& ev2, T2 const& /*trac
     values[kQ2X0A2] = (ev2.qvecBPosRe() * ev2.nTrkBPos() + ev2.qvecBNegRe() * ev2.nTrkBNeg()) / (ev2.nTrkBPos() + ev2.nTrkBNeg());
     values[kQ2Y0A1] = (ev1.qvecBPosIm() * ev1.nTrkBPos() + ev1.qvecBNegIm() * ev1.nTrkBNeg()) / (ev1.nTrkBPos() + ev1.nTrkBNeg());
     values[kQ2Y0A2] = (ev2.qvecBPosIm() * ev2.nTrkBPos() + ev2.qvecBNegIm() * ev2.nTrkBNeg()) / (ev2.nTrkBPos() + ev2.nTrkBNeg());
+
+    values[kQ2X0B1] = ev1.qvecFT0ARe();
+    values[kQ2X0B2] = ev2.qvecFT0ARe();
+    values[kQ2Y0B1] = ev1.qvecFT0AIm();
+    values[kQ2Y0B2] = ev2.qvecFT0AIm();
+
+    values[kQ2X0C1] = ev1.qvecFT0CRe();
+    values[kQ2X0C2] = ev2.qvecFT0CRe();
+    values[kQ2Y0C1] = ev1.qvecFT0CIm();
+    values[kQ2Y0C2] = ev2.qvecFT0CIm();
   }
 }
 
@@ -4377,6 +4405,10 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     // Compute the scalar product UQ for two muon from different event using Q-vector from A, for second and third harmonic
     float Psi2A1 = getEventPlane(2, values[kQ2X0A1], values[kQ2Y0A1]);
     float Psi2A2 = getEventPlane(2, values[kQ2X0A2], values[kQ2Y0A2]);
+    float Psi2B1 = getEventPlane(2, values[kQ2X0B1], values[kQ2Y0B1]);
+    float Psi2B2 = getEventPlane(2, values[kQ2X0B2], values[kQ2Y0B2]);
+    float Psi2C1 = getEventPlane(2, values[kQ2X0C1], values[kQ2Y0C1]);
+    float Psi2C2 = getEventPlane(2, values[kQ2X0C2], values[kQ2Y0C2]);
     values[kCos2DeltaPhi] = TMath::Cos(2 * (v12.Phi() - Psi2A1)); // WARNING: using the first event EP
     values[kCos2DeltaPhiEv1] = TMath::Cos(2 * (v1.Phi() - Psi2A1));
     values[kCos2DeltaPhiEv2] = TMath::Cos(2 * (v2.Phi() - Psi2A2));
@@ -4406,6 +4438,39 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     values[kWV22ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : 1.0;
     values[kV24ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : V24ME;
     values[kWV24ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : 1.0;
+
+    // coherent Jpsi A2
+    bool useCoherentJpsiA2 = fgUsedVars[kA2EP_RP_TPC] || fgUsedVars[kA2EP_RP_FT0A] || fgUsedVars[kA2EP_RP_FT0C];
+    if (useCoherentJpsiA2) {
+      ROOT::Math::Boost boostv12{v12.BoostToCM()};
+      ROOT::Math::PtEtaPhiMVector v_daughter = boostv12(t1.sign() > 0 ? v1 : v2);
+      float Psi2A = t1.sign() > 0 ? Psi2A1 : Psi2A2;
+      float Psi2B = t1.sign() > 0 ? Psi2B1 : Psi2B2;
+      float Psi2C = t1.sign() > 0 ? Psi2C1 : Psi2C2;
+      
+      // reaction plane
+      float phi = v_daughter.Phi() > TMath::Pi() ? 2. * TMath::Pi() - v_daughter.Phi() : v_daughter.Phi();
+      values[kDeltaPhiRP_TPC] = phi > Psi2A ? phi - Psi2A : Psi2A - phi;
+      values[kDeltaPhiRP_TPC] = values[kDeltaPhiRP_TPC] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_TPC] : values[kDeltaPhiRP_TPC];
+      values[kDeltaPhiRP_FT0A] = phi > Psi2B ? phi - Psi2B : Psi2B - phi;
+      values[kDeltaPhiRP_FT0A] = values[kDeltaPhiRP_FT0A] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_FT0A] : values[kDeltaPhiRP_FT0A];
+      values[kDeltaPhiRP_FT0C] = phi > Psi2C ? phi - Psi2C : Psi2C - phi;
+      values[kDeltaPhiRP_FT0C] = values[kDeltaPhiRP_FT0C] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_FT0C] : values[kDeltaPhiRP_FT0C];
+      // fold delta phi to [0, pi/2]
+      values[kDeltaPhiRP_TPC] = values[kDeltaPhiRP_TPC] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiRP_TPC] : values[kDeltaPhiRP_TPC];
+      values[kDeltaPhiRP_FT0A] = values[kDeltaPhiRP_FT0A] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiRP_FT0A] : values[kDeltaPhiRP_FT0A];
+      values[kDeltaPhiRP_FT0C] = values[kDeltaPhiRP_FT0C] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiRP_FT0C] : values[kDeltaPhiRP_FT0C];
+      values[kCos2DeltaPhiRP_TPC] = TMath::Cos(2. * (phi - Psi2A));
+      values[kCos2DeltaPhiRP_FT0A] = TMath::Cos(2. * (phi - Psi2B));
+      values[kCos2DeltaPhiRP_FT0C] = TMath::Cos(2. * (phi - Psi2C));
+
+      float A2RP_TPC = values[kCos2DeltaPhiRP_TPC] / values[kR2EP];
+      float A2RP_FT0A = values[kCos2DeltaPhiRP_FT0A] / values[kR2EP];
+      float A2RP_FT0C = values[kCos2DeltaPhiRP_FT0C] / values[kR2EP];
+      values[kA2EP_RP_TPC] = std::isnan(A2RP_TPC) || std::isinf(A2RP_TPC) ? -999. : A2RP_TPC;
+      values[kA2EP_RP_FT0A] = std::isnan(A2RP_FT0A) || std::isinf(A2RP_FT0A) ? -999. : A2RP_FT0A;
+      values[kA2EP_RP_FT0C] = std::isnan(A2RP_FT0C) || std::isinf(A2RP_FT0C) ? -999. : A2RP_FT0C;
+    }
 
     if constexpr ((fillMap & ReducedEventQvectorExtra) > 0) {
       std::complex<double> Q21(values[kQ2X0A] * values[kS11A], values[kQ2Y0A] * values[kS11A]);
@@ -4458,6 +4523,38 @@ void VarManager::FillPairMEAcrossTFs(T const& t1, T const& t2, float* values)
   values[kEta] = v12.Eta();
   values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
   values[kRap] = -v12.Rapidity();
+
+  bool useCoherentJpsiA2 = fgUsedVars[kA2EP_RP_TPC] || fgUsedVars[kA2EP_RP_FT0A] || fgUsedVars[kA2EP_RP_FT0C];
+  if (useCoherentJpsiA2) {
+    ROOT::Math::Boost boostv12{v12.BoostToCM()};
+    ROOT::Math::PtEtaPhiMVector v_daughter = boostv12(v1);
+    float Psi2A = values[kPsi2A];
+    float Psi2B = values[kPsi2B];
+    float Psi2C = values[kPsi2C];
+
+    // reaction plane
+    float phi = v_daughter.Phi() > TMath::Pi() ? 2. * TMath::Pi() - v_daughter.Phi() : v_daughter.Phi();
+    values[kDeltaPhiRP_TPC] = phi > Psi2A ? phi - Psi2A : Psi2A - phi;
+    values[kDeltaPhiRP_TPC] = values[kDeltaPhiRP_TPC] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_TPC] : values[kDeltaPhiRP_TPC];
+    values[kDeltaPhiRP_FT0A] = phi > Psi2B ? phi - Psi2B : Psi2B - phi;
+    values[kDeltaPhiRP_FT0A] = values[kDeltaPhiRP_FT0A] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_FT0A] : values[kDeltaPhiRP_FT0A];
+    values[kDeltaPhiRP_FT0C] = phi > Psi2C ? phi - Psi2C : Psi2C - phi;
+    values[kDeltaPhiRP_FT0C] = values[kDeltaPhiRP_FT0C] > TMath::Pi() ? 2. * TMath::Pi() - values[kDeltaPhiRP_FT0C] : values[kDeltaPhiRP_FT0C];
+    // fold delta phi to [0, pi/2]
+    values[kDeltaPhiRP_TPC] = values[kDeltaPhiRP_TPC] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiRP_TPC] : values[kDeltaPhiRP_TPC];
+    values[kDeltaPhiRP_FT0A] = values[kDeltaPhiRP_FT0A] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiRP_FT0A] : values[kDeltaPhiRP_FT0A];
+    values[kDeltaPhiRP_FT0C] = values[kDeltaPhiRP_FT0C] > TMath::Pi() / 2. ? TMath::Pi() - values[kDeltaPhiRP_FT0C] : values[kDeltaPhiRP_FT0C];
+    values[kCos2DeltaPhiRP_TPC] = TMath::Cos(2. * (phi - Psi2A));
+    values[kCos2DeltaPhiRP_FT0A] = TMath::Cos(2. * (phi - Psi2B));
+    values[kCos2DeltaPhiRP_FT0C] = TMath::Cos(2. * (phi - Psi2C));
+
+    float A2RP_TPC = values[kCos2DeltaPhiRP_TPC] / values[kR2EP];
+    float A2RP_FT0A = values[kCos2DeltaPhiRP_FT0A] / values[kR2EP];
+    float A2RP_FT0C = values[kCos2DeltaPhiRP_FT0C] / values[kR2EP];
+    values[kA2EP_RP_TPC] = std::isnan(A2RP_TPC) || std::isinf(A2RP_TPC) ? -999. : A2RP_TPC;
+    values[kA2EP_RP_FT0A] = std::isnan(A2RP_FT0A) || std::isinf(A2RP_FT0A) ? -999. : A2RP_FT0A;
+    values[kA2EP_RP_FT0C] = std::isnan(A2RP_FT0C) || std::isinf(A2RP_FT0C) ? -999. : A2RP_FT0C;
+  }
 }
 
 template <int pairType, typename T1, typename T2>

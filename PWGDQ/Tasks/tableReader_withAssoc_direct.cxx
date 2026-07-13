@@ -1691,7 +1691,7 @@ struct AnalysisSameEventPairing {
 
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::CollisionQvectCentr) > 0);
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0);
-    constexpr bool fillFlowReso = eventHasQvector;
+    // constexpr bool fillFlowReso = eventHasQvector;
 
     for (auto& event : events) {
       if (!event.isEventSelected_bit(0))
@@ -1708,7 +1708,7 @@ struct AnalysisSameEventPairing {
       if (groupedAssocs.size() == 0)
         continue;
 
-      if (fillFlowReso) {
+      if (fConfigOptions.useFlowReso) {
         if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
           LOGF(fatal, "Flow resolution histograms are not available, cannot fill flow variables!");
         }
