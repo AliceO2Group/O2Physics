@@ -1416,7 +1416,6 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<int, 5> bins_DeltaPhi = {50, 20, 20, 9, 10};
         std::array<double, 5> minBins_DeltaPhi = {2.0, 0.0, -1., 0.0, 0};
         std::array<double, 5> maxBins_DeltaPhi = {4.0, 2.0, 1.0, 90.0, 3.14};
-        TString labels[5] = {"kMass", "kPt", "kRapidity", "kCentFT0C", "kA2EP"};
         if (subGroupStr.Contains("tpc")) {
           std::array<int, 5> varA2_TPC_PP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_PP_TPC};
           std::array<int, 5> varA2_TPC_RP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_RP_TPC};
