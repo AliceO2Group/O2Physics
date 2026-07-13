@@ -299,8 +299,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       std::array<int, 3> bins = {500, 500, 18};
       std::array<double, 3> minBins = {-10, -10, 0};
       std::array<double, 3> maxBins = {10, 10, 90};
-      hm->AddHistogram(histClass, "Q1ZNAX_Q1ZNAY_CentFT0C", "", 3, varZNA.data(), bins.data(), minBins.data(), maxBins.data(), 0, -1, kTRUE);
-      hm->AddHistogram(histClass, "Q1ZNCX_Q1ZNCY_CentFT0C", "", 3, varZNC.data(), bins.data(), minBins.data(), maxBins.data(), 0, -1, kTRUE);
+      hm->AddHistogram(histClass, "Q1ZNAX_Q1ZNAY_CentFT0C", "", 3, varZNA.data(), bins.data(), minBins.data(), maxBins.data(), nullptr, -1, kTRUE);
+      hm->AddHistogram(histClass, "Q1ZNCX_Q1ZNCY_CentFT0C", "", 3, varZNC.data(), bins.data(), minBins.data(), maxBins.data(), nullptr, -1, kTRUE);
 
       hm->AddHistogram(histClass, "IntercalibZNA_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -50.0, 50.0, VarManager::KIntercalibZNA);
       hm->AddHistogram(histClass, "IntercalibZNC_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -50.0, 50.0, VarManager::KIntercalibZNC);
@@ -1204,8 +1204,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<int, 4> bins = {20, 20, 20, 20};
         std::array<double, 4> xmin = {0., -1., 0., 0.};
         std::array<double, 4> xmax = {20., 1., 2. * o2::constants::math::PI, 2. * o2::constants::math::PI};
-        hm->AddHistogram(histClass, "Pt_cosThetaHE_phiHE_phiTildeHE", "", 4, varspTHE.data(), bins.data(), xmin.data(), xmax.data(), 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Pt_cosThetaCS_phiCS_phiTildeCS", "", 4, varspTCS.data(), bins.data(), xmin.data(), xmax.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Pt_cosThetaHE_phiHE_phiTildeHE", "", 4, varspTHE.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
+        hm->AddHistogram(histClass, "Pt_cosThetaCS_phiCS_phiTildeCS", "", 4, varspTCS.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("pbpb")) {
         hm->AddHistogram(histClass, "CosThetaStarRandom", "", false, 100, -1.0, 1.0, VarManager::kCosThetaStarRandom);
@@ -1265,9 +1265,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     std::array<int, 4> bins = {50, 20, 20, 1000};
     std::array<double, 4> xmin = {2., 0., -1., -0.5};
     std::array<double, 4> xmax = {4., 20., 1., 0.5};
-    hm->AddHistogram(histClass, "Mass_Pt_cosThetaHE_Tauxy", "", 4, varspTHE.data(), bins.data(), xmin.data(), xmax.data(), 0, -1, kFALSE);
-    hm->AddHistogram(histClass, "Mass_Pt_cosThetaCS_Tauxy", "", 4, varspTCS.data(), bins.data(), xmin.data(), xmax.data(), 0, -1, kFALSE);
-    hm->AddHistogram(histClass, "Mass_Pt_cosThetaRM_Tauxy", "", 4, varspTRM.data(), bins.data(), xmin.data(), xmax.data(), 0, -1, kFALSE);
+    hm->AddHistogram(histClass, "Mass_Pt_cosThetaHE_Tauxy", "", 4, varspTHE.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
+    hm->AddHistogram(histClass, "Mass_Pt_cosThetaCS_Tauxy", "", 4, varspTCS.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
+    hm->AddHistogram(histClass, "Mass_Pt_cosThetaRM_Tauxy", "", 4, varspTRM.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
   }
   if (groupStr.CompareTo("pair") == 0) {
     if (subGroupStr.Contains("cepf")) {
@@ -1362,7 +1362,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<int, 5> binspT = {100, 30, 10, 10, 10};
         std::array<double, 5> xminpT = {2., 0., 0, -1., 0.0};
         std::array<double, 5> xmaxpT = {4.5, 3., 100, 1., 6.28};
-        hm->AddHistogram(histClass, "Dielectron_Mass_Pt_Cent_cosThetaHE", "", 5, varsHEpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Dielectron_Mass_Pt_Cent_cosThetaHE", "", 5, varsHEpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
 
       if (subGroupStr.Contains("dielectron-polarization-cs-pbpb")) {
@@ -1370,7 +1370,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<int, 5> binspT = {100, 30, 10, 10, 10};
         std::array<double, 5> xminpT = {2.0, 0., 0, -1., 0.0};
         std::array<double, 5> xmaxpT = {4.5, 3., 100, 1., 6.28};
-        hm->AddHistogram(histClass, "Dielectron_Mass_Pt_Cent_cosThetaCS", "", 5, varsCSpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Dielectron_Mass_Pt_Cent_cosThetaCS", "", 5, varsCSpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("polarization")) {
         if (subGroupStr.Contains("helicity")) {
@@ -1422,30 +1422,30 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
           std::array<int, 5> varA2_TPC_RP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_RP_TPC};
           std::array<int, 5> varDeltaPhi_TPC_PP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhiPP_TPC};
           std::array<int, 5> varDeltaPhi_TPC_RP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhiRP_TPC};
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2PP_TPC", "", 5, varA2_TPC_PP.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), 0, -1, kTRUE);
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2RP_TPC", "", 5, varA2_TPC_RP.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), 0, -1, kTRUE);
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiPP_TPC", "", 5, varDeltaPhi_TPC_PP.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), 0, -1, kTRUE);
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiRP_TPC", "", 5, varDeltaPhi_TPC_RP.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), 0, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2PP_TPC", "", 5, varA2_TPC_PP.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), nullptr, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2RP_TPC", "", 5, varA2_TPC_RP.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), nullptr, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiPP_TPC", "", 5, varDeltaPhi_TPC_PP.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), nullptr, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiRP_TPC", "", 5, varDeltaPhi_TPC_RP.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), nullptr, -1, kTRUE);
         }
         if (subGroupStr.Contains("ft0c")) {
           std::array<int, 5> varA2_FT0C_PP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_PP_FT0C};
           std::array<int, 5> varA2_FT0C_RP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_RP_FT0C};
           std::array<int, 5> varDeltaPhi_FT0C_PP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhiPP_FT0C};
           std::array<int, 5> varDeltaPhi_FT0C_RP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhiRP_FT0C};
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2PP_FT0C", "", 5, varA2_FT0C_PP.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), 0, -1, kTRUE);
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2RP_FT0C", "", 5, varA2_FT0C_RP.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), 0, -1, kTRUE);
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiPP_FT0C", "", 5, varDeltaPhi_FT0C_PP.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), 0, -1, kTRUE);
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiRP_FT0C", "", 5, varDeltaPhi_FT0C_RP.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), 0, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2PP_FT0C", "", 5, varA2_FT0C_PP.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), nullptr, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2RP_FT0C", "", 5, varA2_FT0C_RP.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), nullptr, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiPP_FT0C", "", 5, varDeltaPhi_FT0C_PP.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), nullptr, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiRP_FT0C", "", 5, varDeltaPhi_FT0C_RP.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), nullptr, -1, kTRUE);
         }
         if (subGroupStr.Contains("ft0a")) {
           std::array<int, 5> varA2_FT0A_PP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_PP_FT0A};
           std::array<int, 5> varA2_FT0A_RP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_RP_FT0A};
           std::array<int, 5> varDeltaPhi_FT0A_PP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhiPP_FT0A};
           std::array<int, 5> varDeltaPhi_FT0A_RP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhiRP_FT0A};
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2PP_FT0A", "", 5, varA2_FT0A_PP.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), 0, -1, kTRUE);
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2RP_FT0A", "", 5, varA2_FT0A_RP.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), 0, -1, kTRUE);
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiPP_FT0A", "", 5, varDeltaPhi_FT0A_PP.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), 0, -1, kTRUE);
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiRP_FT0A", "", 5, varDeltaPhi_FT0A_RP.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), 0, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2PP_FT0A", "", 5, varA2_FT0A_PP.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), nullptr, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2RP_FT0A", "", 5, varA2_FT0A_RP.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), nullptr, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiPP_FT0A", "", 5, varDeltaPhi_FT0A_PP.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), nullptr, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiRP_FT0A", "", 5, varDeltaPhi_FT0A_RP.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), nullptr, -1, kTRUE);
         }
       }
       if (subGroupStr.Contains("upsilon")) {
@@ -1484,7 +1484,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<int, 4> binspT = {50, 10, 20, 1000};
         std::array<double, 4> xminpT = {2., 0., -1., -0.5};
         std::array<double, 4> xmaxpT = {4., 20., 1., 0.5};
-        hm->AddHistogram(histClass, "Tauxy_Mass_Pt_CosthetaHE", "", 4, varspTHE.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Tauxy_Mass_Pt_CosthetaHE", "", 4, varspTHE.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
 
       if (subGroupStr.Contains("tauxy-midy-pol-rand")) {
@@ -1493,7 +1493,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<int, 4> binspT = {50, 10, 20, 1000};
         std::array<double, 4> xminpT = {2., 0., -1., -0.5};
         std::array<double, 4> xmaxpT = {4., 20., 1., 0.5};
-        hm->AddHistogram(histClass, "Tauxy_Mass_Pt_CosthetaRand", "", 4, varspTRand.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Tauxy_Mass_Pt_CosthetaRand", "", 4, varspTRand.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
 
       if (subGroupStr.Contains("tauxy-midy-pol-cs")) {
@@ -1502,7 +1502,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<int, 4> binspT = {50, 10, 20, 1000};
         std::array<double, 4> xminpT = {2., 0., -1., -0.5};
         std::array<double, 4> xmaxpT = {4., 20., 1., 0.5};
-        hm->AddHistogram(histClass, "Tauxy_Mass_Pt_CosthetaCS", "", 4, varspTCS.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Tauxy_Mass_Pt_CosthetaCS", "", 4, varspTCS.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
 
       if (subGroupStr.Contains("kalman-filter")) {
@@ -1597,14 +1597,14 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<int, 3> binsKine = {250, 120, 60};
         std::array<double, 3> xminKine = {0.0, 0.0, 2.5};
         std::array<double, 3> xmaxKine = {5.0, 30.0, 4.0};
-        hm->AddHistogram(histClass, "Mass_Pt_Rapidity", "", 3, varsKine.data(), binsKine.data(), xminKine.data(), xmaxKine.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_Pt_Rapidity", "", 3, varsKine.data(), binsKine.data(), xminKine.data(), xmaxKine.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-high-mass-multi-diff")) {
         std::array<int, 3> varsKine = {VarManager::kMass, VarManager::kPt, VarManager::kRap};
         std::array<int, 3> binsKine = {250, 120, 60};
         std::array<double, 3> xminKine = {7.0, 0.0, 2.5};
         std::array<double, 3> xmaxKine = {12.0, 30.0, 4.0};
-        hm->AddHistogram(histClass, "Mass_Pt_Rapidity", "", 3, varsKine.data(), binsKine.data(), xminKine.data(), xmaxKine.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_Pt_Rapidity", "", 3, varsKine.data(), binsKine.data(), xminKine.data(), xmaxKine.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-centr")) {
         hm->AddHistogram(histClass, "Mass_CentFT0C", "", false, 750, 0.0, 15.0, VarManager::kMass, 100, 0., 100., VarManager::kCentFT0C);
@@ -1696,21 +1696,21 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<int, 4> binspT = {100, 40, 20, 20};
         std::array<double, 4> xminpT = {1., 0., -1., -3.14};
         std::array<double, 4> xmaxpT = {5., 20., 1., +3.14};
-        hm->AddHistogram(histClass, "Mass_Pt_cosThetaHE_phiHE", "", 4, varspTHE.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_Pt_cosThetaHE_phiHE", "", 4, varspTHE.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-cs")) {
         std::array<int, 4> varspTCS = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaCS, VarManager::kPhiCS};
         std::array<int, 4> binspT = {100, 40, 20, 20};
         std::array<double, 4> xminpT = {1., 0., -1., -3.14};
         std::array<double, 4> xmaxpT = {5., 20., 1., +3.14};
-        hm->AddHistogram(histClass, "Mass_Pt_cosThetaCS_phiCS", "", 4, varspTCS.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_Pt_cosThetaCS_phiCS", "", 4, varspTCS.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-pp")) {
         std::array<int, 4> varspTPP = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaPP, VarManager::kPhiPP};
         std::array<int, 4> binspT = {100, 40, 20, 20};
         std::array<double, 4> xminpT = {1., 0., -1., -3.14};
         std::array<double, 4> xmaxpT = {5., 20., 1., +3.14};
-        hm->AddHistogram(histClass, "Mass_Pt_cosThetaPP_phiPP", "", 4, varspTPP.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_Pt_cosThetaPP_phiPP", "", 4, varspTPP.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-lowmass-pp")) {
         std::array<int, 4> varspTPP = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaPP, VarManager::kPhiPP};
@@ -1721,22 +1721,22 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<double, 4> xmaxpT = {1.5, 20., 1., +3.14};
         std::array<double, 4> xminy = {0.2, 2.5, -1., -3.14};
         std::array<double, 4> xmaxy = {1.5, 4.0, 1., +3.14};
-        hm->AddHistogram(histClass, "Mass_Pt_cosThetaPP_phiPP", "", 4, varspTPP.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Mass_y_cosThetaPP_phiPP", "", 4, varsrapPP.data(), binsy.data(), xminy.data(), xmaxy.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_Pt_cosThetaPP_phiPP", "", 4, varspTPP.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_y_cosThetaPP_phiPP", "", 4, varsrapPP.data(), binsy.data(), xminy.data(), xmaxy.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("upsilon-polarization-he")) {
         std::array<int, 4> varspTHE = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaHE, VarManager::kPhiHE};
         std::array<int, 4> binspT = {100, 20, 20, 20};
         std::array<double, 4> xminpT = {1., 0., -1., 0.};
         std::array<double, 4> xmaxpT = {15., 20., 1., 2. * o2::constants::math::PI};
-        hm->AddHistogram(histClass, "Mass_Pt_cosThetaHE_phiHE", "", 4, varspTHE.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_Pt_cosThetaHE_phiHE", "", 4, varspTHE.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("upsilon-polarization-cs")) {
         std::array<int, 4> varspTCS = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaCS, VarManager::kPhiCS};
         std::array<int, 4> binspT = {100, 20, 20, 20};
         std::array<double, 4> xminpT = {1., 0., -1., 0.};
         std::array<double, 4> xmaxpT = {15., 20., 1., 2. * o2::constants::math::PI};
-        hm->AddHistogram(histClass, "Mass_Pt_cosThetaCS_phiCS", "", 4, varspTCS.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_Pt_cosThetaCS_phiCS", "", 4, varspTCS.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-vp")) {
         std::array<int, 4> varspTVP = {VarManager::kMass, VarManager::kPt, VarManager::kCosPhiVP, VarManager::kPhiVP};
@@ -1747,71 +1747,71 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<double, 4> xmaxpT = {5., 20., 1., +3.14};
         std::array<double, 4> xminy = {1., 2.5, -1., 0.};
         std::array<double, 4> xmaxy = {5., 4.0, 1., +3.14};
-        hm->AddHistogram(histClass, "Mass_Pt_phiVP", "", 4, varspTVP.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Mass_y_phiVP", "", 4, varsrapVP.data(), binsy.data(), xminy.data(), xmaxy.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_Pt_phiVP", "", 4, varspTVP.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_y_phiVP", "", 4, varsrapVP.data(), binsy.data(), xminy.data(), xmaxy.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-rap")) {
         std::array<int, 4> vars = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kRap};
         std::array<int, 4> binspT = {300, 200, 10, 6};
         std::array<double, 4> xminpT = {2., 0., 0, 2.5};
         std::array<double, 4> xmaxpT = {8., 20., 100, 4.0};
-        hm->AddHistogram(histClass, "Mass_Pt_Cent_Rap", "", 4, vars.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_Pt_Cent_Rap", "", 4, vars.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-he-pbpb")) {
         std::array<int, 5> varsHEpbpb = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaHE, VarManager::kPhiHE};
         std::array<int, 5> binspT = {150, 30, 10, 10, 10};
         std::array<double, 5> xminpT = {2., 0., 0, -1., -3.14};
         std::array<double, 5> xmaxpT = {5., 3., 100, 1., 3.14};
-        hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaHE", "", 5, varsHEpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaHE", "", 5, varsHEpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-lowmass-he-pbpb")) {
         std::array<int, 5> varsHEpbpb = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaHE, VarManager::kPhiHE};
         std::array<int, 5> binspT = {200, 30, 10, 10, 10};
         std::array<double, 5> xminpT = {0.2, 0., 0, -1., -3.14};
         std::array<double, 5> xmaxpT = {1.2, 3., 100, 1., 3.14};
-        hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaHE_lowmass", "", 5, varsHEpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaHE_lowmass", "", 5, varsHEpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-cs-pbpb")) {
         std::array<int, 5> varsCSpbpb = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaCS, VarManager::kPhiCS};
         std::array<int, 5> binspT = {150, 30, 10, 10, 10};
         std::array<double, 5> xminpT = {2., 0., 0, -1., -3.14};
         std::array<double, 5> xmaxpT = {5., 3., 100, 1., 3.14};
-        hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaCS", "", 5, varsCSpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaCS", "", 5, varsCSpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-lowmass-cs-pbpb")) {
         std::array<int, 5> varsCSpbpb = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaCS, VarManager::kPhiCS};
         std::array<int, 5> binspT = {200, 30, 10, 10, 10};
         std::array<double, 5> xminpT = {0.2, 0., 0, -1., -3.14};
         std::array<double, 5> xmaxpT = {1.2, 3., 100, 1., 3.14};
-        hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaCS_lowmass", "", 5, varsCSpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaCS_lowmass", "", 5, varsCSpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-vp-pbpb")) {
         std::array<int, 5> varsVPpbpb = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosPhiVP, VarManager::kPhiVP};
         std::array<int, 5> binspT = {150, 30, 10, 24, 24};
         std::array<double, 5> xminpT = {2., 0., 0, -1., 0.};
         std::array<double, 5> xmaxpT = {5., 3., 100, 1., 3.14};
-        hm->AddHistogram(histClass, "Mass_Pt_Cent_phiVP", "", 5, varsVPpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_Pt_Cent_phiVP", "", 5, varsVPpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-lowmass-vp-pbpb")) {
         std::array<int, 5> varsVPpbpb = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosPhiVP, VarManager::kPhiVP};
         std::array<int, 5> binspT = {200, 30, 10, 24, 24};
         std::array<double, 5> xminpT = {0.2, 0., 0, -1., 0.};
         std::array<double, 5> xmaxpT = {1.2, 3., 100, 1., 3.14};
-        hm->AddHistogram(histClass, "Mass_Pt_Cent_phiVP_lowmass", "", 5, varsVPpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_Pt_Cent_phiVP_lowmass", "", 5, varsVPpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-rap-polarization-he-pbpb")) {
         std::array<int, 5> varsHEpbpb = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaHE, VarManager::kRap};
         std::array<int, 5> binspT = {150, 30, 10, 10, 6};
         std::array<double, 5> xminpT = {2., 0., 0, -1., 2.5};
         std::array<double, 5> xmaxpT = {5., 3., 100, 1., 4.0};
-        hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaHE_Rap", "", 5, varsHEpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaHE_Rap", "", 5, varsHEpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-rap-polarization-cs-pbpb")) {
         std::array<int, 5> varsCSpbpb = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaCS, VarManager::kRap};
         std::array<int, 5> binspT = {150, 30, 10, 10, 6};
         std::array<double, 5> xminpT = {2., 0., 0, -1., 2.5};
         std::array<double, 5> xmaxpT = {5., 3., 100, 1., 4.0};
-        hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaCS_Rap", "", 5, varsCSpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaCS_Rap", "", 5, varsCSpbpb.data(), binspT.data(), xminpT.data(), xmaxpT.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-midmult-polarization-he")) {
         std::array<int, 4> varsITSTPCMulHE = {VarManager::kMass, VarManager::kMultNTracksITSTPC, VarManager::kCosThetaHE, VarManager::kPhiHE};
@@ -1819,8 +1819,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<int, 4> binsMul = {100, 20, 20, 20};
         std::array<double, 4> xminMul = {1., 0., -1., -3.14};
         std::array<double, 4> xmaxMul = {5., 120., 1., +3.14};
-        hm->AddHistogram(histClass, "Mass_ITSTPCMult_cosThetaHE_phiHE", "", 4, varsITSTPCMulHE.data(), binsMul.data(), xminMul.data(), xmaxMul.data(), 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Mass_ITSMult_cosThetaHE_phiHE", "", 4, varsITSMulHE.data(), binsMul.data(), xminMul.data(), xmaxMul.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_ITSTPCMult_cosThetaHE_phiHE", "", 4, varsITSTPCMulHE.data(), binsMul.data(), xminMul.data(), xmaxMul.data(), nullptr, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_ITSMult_cosThetaHE_phiHE", "", 4, varsITSMulHE.data(), binsMul.data(), xminMul.data(), xmaxMul.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-midmult-polarization-cs")) {
         std::array<int, 4> varsITSTPCMulCS = {VarManager::kMass, VarManager::kMultNTracksITSTPC, VarManager::kCosThetaCS, VarManager::kPhiCS};
@@ -1828,8 +1828,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<int, 4> binsMul = {100, 20, 20, 20};
         std::array<double, 4> xminMul = {1., 0., -1., -3.14};
         std::array<double, 4> xmaxMul = {5., 120., 1., +3.14};
-        hm->AddHistogram(histClass, "Mass_ITSTPCMult_cosThetaCS_phiCS", "", 4, varsITSTPCMulCS.data(), binsMul.data(), xminMul.data(), xmaxMul.data(), 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Mass_ITSMult_cosThetaCS_phiCS", "", 4, varsITSMulCS.data(), binsMul.data(), xminMul.data(), xmaxMul.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_ITSTPCMult_cosThetaCS_phiCS", "", 4, varsITSTPCMulCS.data(), binsMul.data(), xminMul.data(), xmaxMul.data(), nullptr, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_ITSMult_cosThetaCS_phiCS", "", 4, varsITSMulCS.data(), binsMul.data(), xminMul.data(), xmaxMul.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-fwdmult-polarization-he")) {
         std::array<int, 4> varsFT0AMulHE = {VarManager::kMass, VarManager::kMultFT0A, VarManager::kCosThetaHE, VarManager::kPhiHE};
@@ -1837,8 +1837,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<int, 4> binsMul = {100, 20, 20, 20};
         std::array<double, 4> xminMul = {1., 0., -1., -3.14};
         std::array<double, 4> xmaxMul = {5., 3000., 1., +3.14};
-        hm->AddHistogram(histClass, "Mass_FT0AMult_cosThetaHE_phiHE", "", 4, varsFT0AMulHE.data(), binsMul.data(), xminMul.data(), xmaxMul.data(), 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Mass_FV0AMult_cosThetaHE_phiHE", "", 4, varsFV0AMulHE.data(), binsMul.data(), xminMul.data(), xmaxMul.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_FT0AMult_cosThetaHE_phiHE", "", 4, varsFT0AMulHE.data(), binsMul.data(), xminMul.data(), xmaxMul.data(), nullptr, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_FV0AMult_cosThetaHE_phiHE", "", 4, varsFV0AMulHE.data(), binsMul.data(), xminMul.data(), xmaxMul.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-fwdmult-polarization-cs")) {
         std::array<int, 4> varsFT0AMulCS = {VarManager::kMass, VarManager::kMultFT0A, VarManager::kCosThetaCS, VarManager::kPhiCS};
@@ -1846,8 +1846,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<int, 4> binsMul = {100, 20, 20, 20};
         std::array<double, 4> xminMul = {1., 0., -1., -3.14};
         std::array<double, 4> xmaxMul = {5., 3000., 1., +3.14};
-        hm->AddHistogram(histClass, "Mass_FT0AMult_cosThetaCS_phiCS", "", 4, varsFT0AMulCS.data(), binsMul.data(), xminMul.data(), xmaxMul.data(), 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Mass_FV0AMult_cosThetaCS_phiCS", "", 4, varsFV0AMulCS.data(), binsMul.data(), xminMul.data(), xmaxMul.data(), 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_FT0AMult_cosThetaCS_phiCS", "", 4, varsFT0AMulCS.data(), binsMul.data(), xminMul.data(), xmaxMul.data(), nullptr, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_FV0AMult_cosThetaCS_phiCS", "", 4, varsFV0AMulCS.data(), binsMul.data(), xminMul.data(), xmaxMul.data(), nullptr, -1, kFALSE);
       }
       if (subGroupStr.Contains("vertexing-forward")) {
         hm->AddHistogram(histClass, "Lxyz", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyz);
@@ -1885,8 +1885,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<int, 6> bins = {250, 60, 6, 18, 200, 40};
         std::array<double, 6> minBins = {0.0, 0.0, 2.5, 0.0, -10.0, -2.0};
         std::array<double, 6> maxBins = {5.0, 30.0, 4.0, 90.0, 10.0, 2.0};
-        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V2POS", "", 6, varV2POS.data(), bins.data(), minBins.data(), maxBins.data(), 0, -1, kTRUE);
-        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V2NEG", "", 6, varV2NEG.data(), bins.data(), minBins.data(), maxBins.data(), 0, -1, kTRUE);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V2POS", "", 6, varV2POS.data(), bins.data(), minBins.data(), maxBins.data(), nullptr, -1, kTRUE);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V2NEG", "", 6, varV2NEG.data(), bins.data(), minBins.data(), maxBins.data(), nullptr, -1, kTRUE);
       }
       if (subGroupStr.Contains("flow-dimuon-high-mass")) {
         std::array<int, 6> varV2 = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kU2Q2, VarManager::kCos2DeltaPhi};
@@ -1894,7 +1894,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<int, 6> bins = {50, 30, 6, 18, 200, 40};
         std::array<double, 6> minBins = {7.0, 0.0, 2.5, 0.0, -10.0, -2.0};
         std::array<double, 6> maxBins = {12.0, 30.0, 4.0, 90.0, 10.0, 2.0};
-        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V2", "", 6, varV2.data(), bins.data(), minBins.data(), maxBins.data(), 0, -1, kTRUE);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V2", "", 6, varV2.data(), bins.data(), minBins.data(), maxBins.data(), nullptr, -1, kTRUE);
       }
       if (subGroupStr.Contains("flow-dimuon")) {
         std::array<int, 6> varV2 = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kU2Q2, VarManager::kCos2DeltaPhi};
@@ -1903,7 +1903,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<int, 6> bins = {250, 60, 6, 18, 200, 40};
         std::array<double, 6> minBins = {0.0, 0.0, 2.5, 0.0, -10.0, -2.0};
         std::array<double, 6> maxBins = {5.0, 30.0, 4.0, 90.0, 10.0, 2.0};
-        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V2", "", 6, varV2.data(), bins.data(), minBins.data(), maxBins.data(), 0, -1, kTRUE);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V2", "", 6, varV2.data(), bins.data(), minBins.data(), maxBins.data(), nullptr, -1, kTRUE);
         // hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V3", "", 6, varV3.data(), bins.data(), minBins.data(), maxBins.data(), 0, -1, kTRUE); // removed temporarily
       }
       if (subGroupStr.Contains("flow-ccdb")) {
@@ -1948,7 +1948,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_M01M0111overMp", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kM01M0111overMp);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_M11M0111overMp", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kM11M0111overMp);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_M11M01REFoverMp", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kM11M01overMp);
-        hm->AddHistogram(histClass, "Mass_Pt_Rapidity_CentFT0C", "", 4, var.data(), bins.data(), minBins.data(), maxBins.data(), 0, -1, kTRUE);
+        hm->AddHistogram(histClass, "Mass_Pt_Rapidity_CentFT0C", "", 4, var.data(), bins.data(), minBins.data(), maxBins.data(), nullptr, -1, kTRUE);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr2REF", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR2REFbydimuons, VarManager::kM11REFoverMp);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr4REF", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR4REFbydimuons, VarManager::kM1111REFoverMp);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr2POI", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR2POI, VarManager::kM01POIoverMp);
@@ -1963,7 +1963,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<int, 4> bins = {250, 60, 6, 18};
         std::array<double, 4> minBins = {0.0, 0.0, 2.5, 0.0};
         std::array<double, 4> maxBins = {5.0, 30.0, 4.0, 90.0};
-        hm->AddHistogram(histClass, "Mass_Pt_Rapidity_CentFT0C", "", 4, var.data(), bins.data(), minBins.data(), maxBins.data(), 0, -1, kTRUE);
+        hm->AddHistogram(histClass, "Mass_Pt_Rapidity_CentFT0C", "", 4, var.data(), bins.data(), minBins.data(), maxBins.data(), nullptr, -1, kTRUE);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr2REF", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR2REFbydimuons, VarManager::kM11REFoverMp);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr4REF", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR4REFbydimuons, VarManager::kM1111REFoverMp);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr2POI", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 18, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kCORR2POI, VarManager::kM01POIoverMp);
@@ -1986,7 +1986,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<int, 4> bins = {250, 60, 6, 18};
         std::array<double, 4> minBins = {0.0, 0.0, 2.5, 0.0};
         std::array<double, 4> maxBins = {5.0, 30.0, 4.0, 90.0};
-        hm->AddHistogram(histClass, "Mass_Pt_Rapidity_CentFT0C", "", 4, var.data(), bins.data(), minBins.data(), maxBins.data(), 0, -1, kTRUE);
+        hm->AddHistogram(histClass, "Mass_Pt_Rapidity_CentFT0C", "", 4, var.data(), bins.data(), minBins.data(), maxBins.data(), nullptr, -1, kTRUE);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr2REFminus", "", true, 60, 0.0, 30.0, VarManager::kPt2, 18, 0.0, 90.0, VarManager::kCentFT0C, 0, 0.0, 1.0, VarManager::kCORR2REFbydimuons, "", "", "", VarManager::kNothing, VarManager::kM11REFoverMpminus);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr4REFminus", "", true, 60, 0.0, 30.0, VarManager::kPt2, 18, 0.0, 90.0, VarManager::kCentFT0C, 0, 0.0, 1.0, VarManager::kCORR4REFbydimuons, "", "", "", VarManager::kNothing, VarManager::kM1111REFoverMpminus);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_Corr2REFplus", "", true, 60, 0.0, 30.0, VarManager::kPt1, 18, 0.0, 90.0, VarManager::kCentFT0C, 0, 0.0, 1.0, VarManager::kCORR2REFbydimuons, "", "", "", VarManager::kNothing, VarManager::kM11REFoverMpplus);
@@ -2025,7 +2025,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<int, 6> bins = {125, 60, 6, 18, 200, 40};
         std::array<double, 6> minBins = {0.0, 0.0, 2.5, 0.0, -10.0, -2.0};
         std::array<double, 6> maxBins = {5.0, 30.0, 4.0, 90.0, 10.0, 2.0};
-        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_R2", "", 6, varV2.data(), bins.data(), minBins.data(), maxBins.data(), 0, -1, kTRUE);
+        hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_R2", "", 6, varV2.data(), bins.data(), minBins.data(), maxBins.data(), nullptr, -1, kTRUE);
         // hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_R3", "", 6, varV3.data(), bins.data(), minBins.data(), maxBins.data(), 0, -1, kTRUE); // removed temporarily
       }
       if (subGroupStr.Contains("z-boson")) {
