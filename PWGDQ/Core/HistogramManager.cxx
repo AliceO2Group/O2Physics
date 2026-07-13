@@ -97,8 +97,8 @@ void HistogramManager::SetDefaultVarNames(TString* vars, TString* units)
   //
   // Set default variable names
   //
-  std::span<TString> varNames{vars, fNVars};
-  std::span<TString> varUnits{units, fNVars};
+  std::span<TString> varNames{vars, static_cast<std::size_t>(fNVars)};
+  std::span<TString> varUnits{units, static_cast<std::size_t>(fNVars)};
   for (int i = 0; i < fNVars; ++i) {
     fVariableNames[i] = varNames[i];
     fVariableUnits[i] = varUnits[i];
@@ -630,7 +630,7 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
 
   std::span<TString> axisLabels{};
   if (axLabels) {
-    axisLabels = std::span<TString>{axLabels, nDimensions};
+    axisLabels = std::span<TString>{axLabels, static_cast<std::size_t>(nDimensions)};
   }
 
   // configure the THn histogram and count the allocated bins
@@ -717,7 +717,7 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   auto* xmin = new double[nDimensions];
   auto* xmax = new double[nDimensions];
   int* nBins = new int[nDimensions];
-  std::span<const TArrayD> limits{binLimits, nDimensions};
+  std::span<const TArrayD> limits{binLimits, static_cast<std::size_t>(nDimensions)};
   for (int idim = 0; idim < nDimensions; ++idim) {
     const TArrayD& dimLimits = limits[idim];
     const double* dimBins = dimLimits.GetArray();
@@ -750,7 +750,7 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
 
   std::span<TString> axisLabels{};
   if (axLabels) {
-    axisLabels = std::span<TString>{axLabels, nDimensions};
+    axisLabels = std::span<TString>{axLabels, static_cast<std::size_t>(nDimensions)};
   }
 
   uint32_t bins = 1;
