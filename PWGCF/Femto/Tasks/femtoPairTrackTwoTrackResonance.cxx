@@ -151,7 +151,7 @@ struct FemtoPairTrackTwoTrackResonance {
   void init(o2::framework::InitContext&)
   {
 
-    if (((doprocessPhiSameEvent || doprocessPhiMixedEvent) + (doprocessKstar0SameEvent || doprocessKstar0MixedEvent)) + (doprocessRho0SameEvent || doprocessRho0MixedEvent) > 1) {
+    if ((static_cast<int>(doprocessPhiSameEvent || doprocessPhiMixedEvent) + static_cast<int>(doprocessKstar0SameEvent || doprocessKstar0MixedEvent)) + static_cast<int>(doprocessRho0SameEvent || doprocessRho0MixedEvent) > 1) {
       LOG(fatal) << "Can only process SE/ME for phi-tracks, rho-tracks or k0*-tracks";
     }
 
@@ -227,10 +227,10 @@ struct FemtoPairTrackTwoTrackResonance {
   PROCESS_SWITCH(FemtoPairTrackTwoTrackResonance, processRho0MixedEvent, "Enable processing mixed event processing for tracks and rho0s", false);
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoPairTrackTwoTrackResonance>(cfgc),
+    adaptAnalysisTask<FemtoPairTrackTwoTrackResonance>(context),
   };
   return workflow;
 }

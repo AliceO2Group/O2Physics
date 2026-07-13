@@ -33,6 +33,7 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -69,7 +70,7 @@ o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
 o2::vertexing::FwdDCAFitterN<3> VarManager::fgFitterThreeProngFwd;
 o2::globaltracking::MatchGlobalFwd VarManager::mMatching;
 std::map<VarManager::CalibObjects, TObject*> VarManager::fgCalibs;
-bool VarManager::fgRunTPCPostCalibration[4] = {false, false, false, false};
+std::array<bool, 4> VarManager::fgRunTPCPostCalibration = {false, false, false, false};
 int VarManager::fgCalibrationType = 0;                // 0 - no calibration, 1 - calibration vs (TPCncls,pIN,eta) typically for pp, 2 - calibration vs (eta,nPV,nLong,tLong) typically for PbPb
 bool VarManager::fgUseInterpolatedCalibration = true; // use interpolated calibration histograms (default: true)
 int VarManager::fgEfficiencyType = 0;                 // type of efficiency to be applied, default is no efficiency

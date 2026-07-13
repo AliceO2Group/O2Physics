@@ -28,6 +28,7 @@
 #include <Math/SMatrix.h>
 
 #include <array>
+#include <concepts>
 #include <cstdint>
 #include <type_traits>
 #include <vector>

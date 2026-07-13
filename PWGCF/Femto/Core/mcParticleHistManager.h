@@ -34,11 +34,8 @@
 #include <string_view>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::mcparticlehistmanager
 {
-namespace mcparticlehistmanager
-{
-
 // enum for mc particle histograms
 enum McParticleHist {
   // kinemtics
@@ -73,7 +70,7 @@ enum McParticleHist {
 
 constexpr std::size_t MaxSecondary = 3;
 
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfMcParticleBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};
@@ -145,12 +142,12 @@ auto makeMcParticleHistSpecMap(const T& confBinning)
   };
 }
 
-constexpr char PrefixMcParticle1[] = "McParticle1/";
-constexpr char PrefixMcParticle2[] = "McParticle2/";
+inline constexpr char PrefixMcParticle1[] = "McParticle1/";
+inline constexpr char PrefixMcParticle2[] = "McParticle2/";
 
 constexpr std::string_view McDir = "MC/";
 
-template <const char* prefix>
+template <auto& prefix>
 class McParticleHistManager
 {
  public:
@@ -311,6 +308,5 @@ class McParticleHistManager
   int mPlotNSecondaries = 0;
   std::array<int, MaxSecondary> mPdgCodesSecondaryMother = {0};
 };
-} // namespace mcparticlehistmanager
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::mcparticlehistmanager
 #endif // PWGCF_FEMTO_CORE_MCPARTICLEHISTMANAGER_H_

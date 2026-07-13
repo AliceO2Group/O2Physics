@@ -243,12 +243,12 @@ struct FemtoPairV0TwoTrackResonance {
   {
 
     // all pair combinations share the same histogram prefixes, so only one combination can be processed per workflow instance
-    if ((doprocessLambdaPhiSameEvent || doprocessLambdaPhiMixedEvent) +
-          (doprocessLambdaKstar0SameEvent || doprocessLambdaKstar0MixedEvent) +
-          (doprocessLambdaRho0SameEvent || doprocessLambdaRho0MixedEvent) +
-          (doprocessK0shortPhiSameEvent || doprocessK0shortPhiMixedEvent) +
-          (doprocessK0shortKstar0SameEvent || doprocessK0shortKstar0MixedEvent) +
-          (doprocessK0shortRho0SameEvent || doprocessK0shortRho0MixedEvent) >
+    if (static_cast<int>(doprocessLambdaPhiSameEvent || doprocessLambdaPhiMixedEvent) +
+          static_cast<int>(doprocessLambdaKstar0SameEvent || doprocessLambdaKstar0MixedEvent) +
+          static_cast<int>(doprocessLambdaRho0SameEvent || doprocessLambdaRho0MixedEvent) +
+          static_cast<int>(doprocessK0shortPhiSameEvent || doprocessK0shortPhiMixedEvent) +
+          static_cast<int>(doprocessK0shortKstar0SameEvent || doprocessK0shortKstar0MixedEvent) +
+          static_cast<int>(doprocessK0shortRho0SameEvent || doprocessK0shortRho0MixedEvent) >
         1) {
       LOG(fatal) << "Can only process one v0-resonance combination (lambda/k0short x phi/kstar0/rho0)";
     }
@@ -395,10 +395,10 @@ struct FemtoPairV0TwoTrackResonance {
   PROCESS_SWITCH(FemtoPairV0TwoTrackResonance, processK0shortRho0MixedEvent, "Enable processing mixed event processing for k0shorts and rho0s", false);
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoPairV0TwoTrackResonance>(cfgc),
+    adaptAnalysisTask<FemtoPairV0TwoTrackResonance>(context),
   };
   return workflow;
 }

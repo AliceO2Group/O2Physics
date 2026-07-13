@@ -17,20 +17,13 @@
 #include "PWGEM/Dilepton/Core/DimuonCut.h"
 #include "PWGEM/Dilepton/Core/EMEventCut.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
-#include "PWGEM/Dilepton/Utils/EMFwdTrack.h"
-#include "PWGEM/Dilepton/Utils/EMTrack.h"
-#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/Dilepton/Utils/EventHistograms.h"
-#include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
-#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
-#include <CommonConstants/LHCConstants.h>
-#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
@@ -38,6 +31,7 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -45,29 +39,20 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
-#include <MathUtils/Utils.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
-#include <TString.h>
-
-#include <sys/types.h>
 
 #include <algorithm>
 #include <array>
-#include <chrono>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <random>
 #include <string>
 #include <string_view>
-#include <tuple>
 #include <utility>
 #include <vector>
-
-#include <math.h>
 
 struct dimuonV1 {
 
@@ -88,7 +73,8 @@ struct dimuonV1 {
 
   o2::framework::ConfigurableAxis ConfPtllBins{"ConfPtllBins", {10, 0, 10}, "pTll bins for output histograms"};
   o2::framework::ConfigurableAxis ConfYllBins{"ConfYllBins", {3, -4.0, -2.5}, "yll bins for output histograms"};
-  o2::framework::ConfigurableAxis ConfUQBins{"ConfUQBins", {200, -1, 1}, "uQ bins for output histograms"};
+  o2::framework::ConfigurableAxis ConfUQBins{"ConfUQBins", {400, -1, 1}, "uQ bins for output histograms"};
+  o2::framework::ConfigurableAxis ConfCentBins{"ConfCentBins", {20, 10, 30}, "centrality bins for output histograms"};
   o2::framework::Configurable<int> cfgNrotation{"cfgNrotation", 1, "number of rotation bkg"};
   o2::framework::Configurable<int> cfgRandomSeed{"cfgRandomSeed", 1, "randam seed for rotation bkg"};
   o2::framework::Configurable<float> cfgRotationMin{"cfgRotationMin", -M_PI / 4, "min. rotation angle for rotation bkg"};
@@ -147,7 +133,7 @@ struct dimuonV1 {
     o2::framework::Configurable<float> cfg_min_deta{"cfg_min_deta", 0.02, "min deta between 2 muons (elliptic cut)"};
     o2::framework::Configurable<float> cfg_min_dphi{"cfg_min_dphi", 0.02, "min dphi between 2 muons (elliptic cut)"};
 
-    o2::framework::Configurable<uint8_t> cfg_track_type{"cfg_track_type", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
+    // o2::framework::Configurable<uint8_t> cfg_track_type{"cfg_track_type", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
     o2::framework::Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.8, "min pT for single track"};
     o2::framework::Configurable<float> cfg_max_pt_track{"cfg_max_pt_track", 1e+10, "max pT for single track"};
     o2::framework::Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -4.0, "min eta for single track"};
@@ -222,10 +208,15 @@ struct dimuonV1 {
     // event info
     o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<-1>(&fRegistry);
 
-    fRegistry.add("Event/before/ZDC/hQxtQxp", "Q_{x}^{t} #upoint Q_{x}^{p} vs. centrality;centrality FT0C (%);Q_{x}^{t} #upoint Q_{x}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {2000, -1, +1}}, false);
-    fRegistry.add("Event/before/ZDC/hQytQyp", "Q_{y}^{t} #upoint Q_{y}^{p} vs. centrality;centrality FT0C (%);Q_{y}^{t} #upoint Q_{y}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {2000, -1, +1}}, false);
-    fRegistry.add("Event/before/ZDC/hQxtQyp", "Q_{x}^{t} #upoint Q_{y}^{p} vs. centrality;centrality FT0C (%);Q_{x}^{t} #upoint Q_{y}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {2000, -1, +1}}, false);
-    fRegistry.add("Event/before/ZDC/hQytQxp", "Q_{y}^{t} #upoint Q_{x}^{p} vs. centrality;centrality FT0C (%);Q_{y}^{t} #upoint Q_{x}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {2000, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQxt", "Q_{x}^{t} vs. centrality;centrality FT0C (%);Q_{x}^{t}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {200, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQyt", "Q_{y}^{t} vs. centrality;centrality FT0C (%);Q_{y}^{t}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {200, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQxp", "Q_{x}^{p} vs. centrality;centrality FT0C (%);Q_{x}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {200, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQyp", "Q_{y}^{p} vs. centrality;centrality FT0C (%);Q_{y}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {200, -1, +1}}, false);
+
+    fRegistry.add("Event/before/ZDC/hQxtQxp", "Q_{x}^{t} #upoint Q_{x}^{p} vs. centrality;centrality FT0C (%);Q_{x}^{t} #upoint Q_{x}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {1000, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQytQyp", "Q_{y}^{t} #upoint Q_{y}^{p} vs. centrality;centrality FT0C (%);Q_{y}^{t} #upoint Q_{y}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {1000, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQxtQyp", "Q_{x}^{t} #upoint Q_{y}^{p} vs. centrality;centrality FT0C (%);Q_{x}^{t} #upoint Q_{y}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {1000, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQytQxp", "Q_{y}^{t} #upoint Q_{x}^{p} vs. centrality;centrality FT0C (%);Q_{y}^{t} #upoint Q_{x}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {1000, -1, +1}}, false);
     fRegistry.addClone("Event/before/ZDC/", "Event/after/ZDC/");
 
     // pair info
@@ -236,8 +227,9 @@ struct dimuonV1 {
     const o2::framework::AxisSpec axis_uxQxp{ConfUQBins, "u_{x}Q_{x}^{p}"};
     const o2::framework::AxisSpec axis_uyQyt{ConfUQBins, "u_{y}Q_{y}^{t}"};
     const o2::framework::AxisSpec axis_uyQyp{ConfUQBins, "u_{y}Q_{y}^{p}"};
+    const o2::framework::AxisSpec axis_centrality{ConfCentBins, "centrality (%)"};
 
-    fRegistry.add("Pair/same/uls/hs", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_uxQxt, axis_uxQxp, axis_uyQyt, axis_uyQyp}, true);
+    fRegistry.add("Pair/same/uls/hs", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_uxQxt, axis_uxQxp, axis_uyQyt, axis_uyQyp, axis_centrality}, true);
     fRegistry.add("Pair/same/uls/hsRotBkg", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y}, true);
 
     // fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
@@ -279,7 +271,8 @@ struct dimuonV1 {
     fDimuonCut.SetMindEtadPhi(dimuoncuts.cfg_apply_detadphi, dimuoncuts.cfg_min_deta, dimuoncuts.cfg_min_dphi);
 
     // for track
-    fDimuonCut.SetTrackType(dimuoncuts.cfg_track_type);
+    // fDimuonCut.SetTrackType(dimuoncuts.cfg_track_type);
+    fDimuonCut.SetTrackType(3);
     fDimuonCut.SetTrackPtRange(dimuoncuts.cfg_min_pt_track, dimuoncuts.cfg_max_pt_track);
     fDimuonCut.SetTrackEtaRange(dimuoncuts.cfg_min_eta_track, dimuoncuts.cfg_max_eta_track);
     fDimuonCut.SetTrackPhiRange(dimuoncuts.cfg_min_phi_track, dimuoncuts.cfg_max_phi_track);
@@ -299,7 +292,7 @@ struct dimuonV1 {
   }
 
   template <int ev_id, typename TCollision, typename TTrack1, typename TTrack2, typename TCut>
-  bool fillPairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, TCut const& cut)
+  bool fillPairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, const float centrality)
   {
     if (!cut.template IsSelectedTrack<false>(t1) || !cut.template IsSelectedTrack<false>(t2)) {
       return false;
@@ -328,7 +321,7 @@ struct dimuonV1 {
     float uyQyp = std::sin(1.f * phi) * collision.qyZDCA();
 
     if (t1.sign() * t2.sign() < 0) { // ULS
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), uxQxt, uxQxp, uyQyt, uyQyp, weight);
+      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), uxQxt, uxQxp, uyQyt, uyQyp, centrality, weight);
 
       for (int i = 0; i < cfgNrotation; i++) {
         float dphi = distDPhi(engine);
@@ -362,6 +355,11 @@ struct dimuonV1 {
       float QytQxp = collision.qxZDCA() * collision.qyZDCC();
       float QxtQyp = collision.qxZDCC() * collision.qyZDCA();
 
+      fRegistry.fill(HIST("Event/before/ZDC/hQxt"), centrality, collision.qxZDCC());
+      fRegistry.fill(HIST("Event/before/ZDC/hQyt"), centrality, collision.qyZDCC());
+      fRegistry.fill(HIST("Event/before/ZDC/hQxp"), centrality, collision.qxZDCA());
+      fRegistry.fill(HIST("Event/before/ZDC/hQyp"), centrality, collision.qyZDCA());
+
       fRegistry.fill(HIST("Event/before/ZDC/hQxtQxp"), centrality, QxtQxp);
       fRegistry.fill(HIST("Event/before/ZDC/hQytQyp"), centrality, QytQyp);
       fRegistry.fill(HIST("Event/before/ZDC/hQxtQyp"), centrality, QxtQyp);
@@ -379,6 +377,11 @@ struct dimuonV1 {
       fRegistry.fill(HIST("Event/before/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev);  // accepted
 
+      fRegistry.fill(HIST("Event/after/ZDC/hQxt"), centrality, collision.qxZDCC());
+      fRegistry.fill(HIST("Event/after/ZDC/hQyt"), centrality, collision.qyZDCC());
+      fRegistry.fill(HIST("Event/after/ZDC/hQxp"), centrality, collision.qxZDCA());
+      fRegistry.fill(HIST("Event/after/ZDC/hQyp"), centrality, collision.qyZDCA());
+
       fRegistry.fill(HIST("Event/after/ZDC/hQxtQxp"), centrality, QxtQxp);
       fRegistry.fill(HIST("Event/after/ZDC/hQytQyp"), centrality, QytQyp);
       fRegistry.fill(HIST("Event/after/ZDC/hQxtQyp"), centrality, QxtQyp);
@@ -388,14 +391,14 @@ struct dimuonV1 {
       auto negTracks_per_coll = negTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
 
       for (const auto& [pos, neg] : combinations(o2::soa::CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
-        fillPairInfo<0>(collision, pos, neg, cut);
+        fillPairInfo<0>(collision, pos, neg, cut, centrality);
       }
 
       // for (const auto& [pos1, pos2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
-      //   fillPairInfo<0>(collision, pos1, pos2, cut);
+      //   fillPairInfo<0>(collision, pos1, pos2, cut, centrality);
       // }
       // for (const auto& [neg1, neg2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
-      //   fillPairInfo<0>(collision, neg1, neg2, cut);
+      //   fillPairInfo<0>(collision, neg1, neg2, cut, centrality);
       // }
 
     } // end of collision loop
@@ -478,21 +481,23 @@ struct dimuonV1 {
 
   using MyMuons = o2::soa::Join<o2::aod::EMPrimaryMuons, o2::aod::EMPrimaryMuonEMEventIds, o2::aod::EMAmbiguousMuonSelfIds>;
   using MyMuon = MyMuons::iterator;
-  using FilteredMyMuons = o2::soa::Filtered<MyMuons>;
-  using FilteredMyMuon = FilteredMyMuons::iterator;
 
-  using MyEMH_muon = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMFwdTrack>;
+  // using MyEMH_muon = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMFwdTrack>;
 
   o2::framework::expressions::Filter collisionFilter_centrality = (eventcuts.cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < eventcuts.cfgCentMax);
   o2::framework::expressions::Filter collisionFilter_numContrib = eventcuts.cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < eventcuts.cfgNumContribMax;
   o2::framework::expressions::Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   o2::framework::expressions::Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = o2::soa::Filtered<MyCollisions>;
+  using FilteredMyCollision = FilteredMyCollisions::iterator;
 
   o2::framework::SliceCache cache;
   o2::framework::Preslice<o2::aod::EMPrimaryMuonEMEventIds> perCollision_muon = o2::aod::emprimarymuon::emeventId;
+
   o2::framework::expressions::Filter trackFilter_muon = o2::aod::fwdtrack::trackType == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) && dimuoncuts.cfg_min_pt_track < o2::aod::fwdtrack::pt && o2::aod::fwdtrack::pt < dimuoncuts.cfg_max_pt_track && dimuoncuts.cfg_min_eta_track < o2::aod::fwdtrack::eta && o2::aod::fwdtrack::eta < dimuoncuts.cfg_max_eta_track;
   o2::framework::expressions::Filter ttcaFilter_muon = ifnode(dimuoncuts.enableTTCA.node(), true, o2::aod::emprimarymuon::isAssociatedToMPC == true);
+  using FilteredMyMuons = o2::soa::Filtered<MyMuons>;
+  using FilteredMyMuon = FilteredMyMuons::iterator;
 
   o2::framework::Partition<FilteredMyMuons> positive_muons = o2::aod::emprimarymuon::sign > int8_t(0);
   o2::framework::Partition<FilteredMyMuons> negative_muons = o2::aod::emprimarymuon::sign < int8_t(0);

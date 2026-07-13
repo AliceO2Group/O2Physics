@@ -42,8 +42,10 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TH3.h>
 #include <TRandom.h>
 
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <string>

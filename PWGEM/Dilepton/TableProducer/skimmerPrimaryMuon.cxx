@@ -43,6 +43,7 @@
 #include <TGeoGlobalMagField.h>
 #include <TH1.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <map>
@@ -77,7 +78,6 @@ struct skimmerPrimaryMuon {
 
   Produces<aod::EMPrimaryMuons> emprimarymuons;
   Produces<aod::EMPrimaryMuonsCov> emprimarymuonscov;
-  Produces<aod::EMPrimaryMuonsMatchMC> emprimarymuonsmatchmc;
 
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -324,7 +324,6 @@ struct skimmerPrimaryMuon {
 
     float deta = 999.f;
     float dphi = 999.f;
-    bool isCorrectMatchMFTMCH = true; // by default, it is true. it is evaluated for global muons in MC.
 
     float xMFT = 0.f, yMFT = 0.f;
 
@@ -357,9 +356,8 @@ struct skimmerPrimaryMuon {
           return false;
         }
         // auto mcParticle_MFTMCHMID = fwdtrack.template mcParticle_as<aod::McParticles>(); // this is identical to mcParticle_MCHMID
-        auto mcParticle_MCHMID = mchtrack.template mcParticle_as<aod::McParticles>(); // this is identical to mcParticle_MFTMCHMID
-        auto mcParticle_MFT = mfttrack.template mcParticle_as<aod::McParticles>();
-        isCorrectMatchMFTMCH = static_cast<bool>(mcParticle_MCHMID.globalIndex() == mcParticle_MFT.globalIndex());
+        // auto mcParticle_MCHMID = mchtrack.template mcParticle_as<aod::McParticles>(); // this is identical to mcParticle_MFTMCHMID
+        // auto mcParticle_MFT = mfttrack.template mcParticle_as<aod::McParticles>();
       }
 
       nClustersMFT = mfttrack.nClusters();
@@ -498,8 +496,6 @@ struct skimmerPrimaryMuon {
       // <X,PHI>       <Y,PHI>         <PHI,PHI>     <TANL,PHI>      <INVQPT,PHI>
       // <X,TANL>      <Y,TANL>       <PHI,TANL>     <TANL,TANL>     <INVQPT,TANL>
       // <X,INVQPT>   <Y,INVQPT>     <PHI,INVQPT>   <TANL,INVQPT>   <INVQPT,INVQPT>
-
-      emprimarymuonsmatchmc(isCorrectMatchMFTMCH);
 
       if (fillQAHistograms) {
         fRegistry.fill(HIST("hMuonType"), fwdtrack.trackType());
@@ -965,7 +961,7 @@ struct skimmerPrimaryMuon {
         continue;
       }
 
-      if (collision.swtaliastmp_raw() == 0) {
+      if (collision.triggerMask_raw() == 0) {
         continue;
       }
 
@@ -1057,7 +1053,7 @@ struct skimmerPrimaryMuon {
       if (!collision.isSelected()) {
         continue;
       }
-      if (collision.swtaliastmp_raw() == 0) {
+      if (collision.triggerMask_raw() == 0) {
         continue;
       }
 
@@ -1154,7 +1150,7 @@ struct skimmerPrimaryMuon {
   //     if (!collision.isSelected()) {
   //       continue;
   //     }
-  //     if (collision.swtaliastmp_raw() == 0) {
+  //     if (collision.triggerMask_raw() == 0) {
   //       continue;
   //     }
 

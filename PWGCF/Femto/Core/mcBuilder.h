@@ -34,15 +34,16 @@
 #include <unordered_map>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::mcbuilder
 {
-namespace mcbuilder
-{
+
+constexpr int ProducedByDecay = 4;
 
 struct ConfMc : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("MonteCarlo");
   o2::framework::Configurable<bool> passThrough{"passThrough", false, "Passthrough all MC collisions and particles"};
   o2::framework::Configurable<bool> findLastPartonicMother{"findLastPartonicMother", true, "If true, the partonic mother will be the first parton directly after the initial collision. If false, the partonic mother will be the last parton before hadronization"};
+  o2::framework::Configurable<float> etaAcceptanceMcOnly{"etaAcceptanceMcOnly", 0.8, "For MC ONLY processing. |eta| acceptance for estimating primary track multiplicity"};
 };
 
 struct McBuilderProducts : o2::framework::ProducesGroup {
@@ -92,7 +93,7 @@ struct ConfMcCollisionFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> centMax{"centMax", 100.f, "Maximum centrality (multiplicity percentile)"};
 };
 
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfMcParticleSelection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string(Prefix);
   // kinematic cuts for filtering tracks
@@ -152,6 +153,7 @@ class McBuilder
       return;
     }
     mPassThrough = config.passThrough.value;
+    mEtaAcceptanceMcOnly = config.etaAcceptanceMcOnly.value;
     mFindLastPartonicMother = config.findLastPartonicMother.value;
     LOG(info) << "Initialization done...";
   }
@@ -192,6 +194,28 @@ class McBuilder
     if constexpr (modes::isFlagSet(system, modes::System::kPbPb)) {
       centrality = mcCol.centFT0C();
       multiplicity = mcCol.multMCNParticlesEta08();
+    }
+
+    mcProducts.producedMcCollisions(
+      mcCol.posZ(),
+      multiplicity,
+      centrality);
+    mCollisionMap.emplace(mcCol.globalIndex(), mcProducts.producedMcCollisions.lastIndex());
+  }
+
+  // for mc only
+  template <typename T1, typename T2, typename T3>
+  void fillMcCollision(T1 const& mcCol, T2 const& mcParticles, T3& mcProducts)
+  {
+    float centrality = 0;   // no centrality estimator for mc only, so set to 0
+    float multiplicity = 0; // no multiplicity estimator for mc only
+
+    // define multiplicity ourselves by counting primary particles for |eta|,0.8
+    // this is similar to how define it in data
+    for (auto const& mcParticle : mcParticles) {
+      if (mcParticle.isPhysicalPrimary() && (std::fabs(mcParticle.eta()) < mEtaAcceptanceMcOnly)) {
+        multiplicity += 1;
+      }
     }
 
     mcProducts.producedMcCollisions(
@@ -309,34 +333,35 @@ class McBuilder
   {
     // whether a particle is misidentified or not can only be checked by qa/pair task later so it is not set here
 
-    // constants
-    const int producedByDecay = 4;
     // check if reconstructed collision has a generated collision
-    if (col.has_mcCollision()) {
-      // now check  collision ids, if they do not match, then the track belongs to another collision
-      if (col.mcCollisionId() != mcParticle.mcCollisionId()) {
-        return modes::McOrigin::kFromWrongCollision;
-      }
-      if (mcParticle.isPhysicalPrimary()) {
-        return modes::McOrigin::kPhysicalPrimary;
-      } else if (mcParticle.has_mothers() && mcParticle.getProcess() == producedByDecay) {
-        return modes::McOrigin::kFromSecondaryDecay;
-      } else {
-        // not a primary and not from a decay, we label as material
-        return modes::McOrigin::kFromMaterial;
-      }
+    if (!col.has_mcCollision()) {
+      return modes::McOrigin::kFromWrongCollision;
     }
-    return modes::McOrigin::kFromWrongCollision;
+
+    // now check collision ids, if they do not match, then the track belongs to another collision
+    if (col.mcCollisionId() != mcParticle.mcCollisionId()) {
+      return modes::McOrigin::kFromWrongCollision;
+    }
+
+    if (mcParticle.isPhysicalPrimary()) {
+      return modes::McOrigin::kPhysicalPrimary;
+    }
+
+    if (mcParticle.has_mothers() && mcParticle.getProcess() == ProducedByDecay) {
+      return modes::McOrigin::kFromSecondaryDecay;
+    }
+
+    // not a primary and not from a decay and not from a wrong collision, we label as material
+    return modes::McOrigin::kFromMaterial;
   }
 
   template <typename T1>
   modes::McOrigin getOrigin(T1 const& mcParticle)
   {
-    const int producedByDecay = 4;
     if (mcParticle.isPhysicalPrimary()) {
       return modes::McOrigin::kPhysicalPrimary;
     }
-    if (mcParticle.has_mothers() && mcParticle.getProcess() == producedByDecay) {
+    if (mcParticle.has_mothers() && mcParticle.getProcess() == ProducedByDecay) {
       return modes::McOrigin::kFromSecondaryDecay;
     }
     return modes::McOrigin::kFromMaterial;
@@ -392,7 +417,7 @@ class McBuilder
 
     mcProducts.producedMcParticles(
       mcColId,
-      static_cast<aod::femtodatatypes::McOriginType>(origin),
+      static_cast<datatypes::McOriginType>(origin),
       mcParticle.pdgCode(),
       mcParticle.pt() * utils::signum(mcParticle.pdgCode()),
       mcParticle.eta(),
@@ -414,7 +439,7 @@ class McBuilder
       } else {
         auto motherOrigin = this->getOrigin(motherParticle);
         mcProducts.producedMothers(
-          static_cast<aod::femtodatatypes::McOriginType>(motherOrigin),
+          static_cast<datatypes::McOriginType>(motherOrigin),
           motherParticle.pdgCode(),
           motherParticle.pt() * utils::signum(motherParticle.pdgCode()),
           motherParticle.eta(),
@@ -496,18 +521,21 @@ class McBuilder
       // keep for now, might be needed later
       // && ((80 < std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) < 90) || (100 < std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) && std::abs(o2::mcgenstatus::getGenStatusCode(p.statusCode())) < 110))) {
       // Pythia: mother range
-      for (int i = motherIds[0]; i <= motherIds[1]; i++)
+      for (int i = motherIds[0]; i <= motherIds[1]; i++) {
         allMotherIds.push_back(i);
+      }
     } else {
       // Otherwise just use them as given
-      for (const int& id : motherIds)
+      for (const int& id : motherIds) {
         allMotherIds.push_back(id);
+      }
     }
     // Loop over all mothers
     for (const int& i : allMotherIds) {
 
-      if (i < 0 || i >= mcParticles.size())
+      if (i < 0 || i >= mcParticles.size()) {
         continue;
+      }
       const auto& mother = mcParticles.iteratorAt(i);
       int pdgAbs = std::abs(mother.pdgCode());
       // Is it a parton? (quark or gluon)
@@ -516,8 +544,9 @@ class McBuilder
       }
       // Recurse upward
       int64_t found = this->findFirstPartonicMother(mother, mcParticles);
-      if (found != -1)
+      if (found != -1) {
         return found;
+      }
     }
     // No partonic ancestor found
     return -1;
@@ -530,8 +559,9 @@ class McBuilder
     int64_t currentIndex = mcParticle.globalIndex();
     while (currentIndex >= 0 && currentIndex < mcParticles.size()) {
       const auto& current = mcParticles.iteratorAt(currentIndex);
-      if (!current.has_mothers())
+      if (!current.has_mothers()) {
         break;
+      }
       auto motherIds = current.mothersIds();
       int nextIndex = -1;
       const int defaultMotherSize = 2;
@@ -545,8 +575,10 @@ class McBuilder
           }
         }
       }
-      if (nextIndex < 0 || nextIndex >= mcParticles.size())
+
+      if (nextIndex < 0 || nextIndex >= mcParticles.size()) {
         break;
+      }
       const auto& mother = mcParticles.iteratorAt(nextIndex);
       int pdgAbs = std::abs(mother.pdgCode());
       int status = std::abs(o2::mcgenstatus::getGenStatusCode(mother.statusCode()));
@@ -554,11 +586,12 @@ class McBuilder
       const int isBeamParticleLowerLimit = 11;
       const int isBeamParticleUpperLimit = 19;
       bool isBeam = (status >= isBeamParticleLowerLimit && status <= isBeamParticleUpperLimit);
-      if (isBeam)
+      if (isBeam) {
         return lastPartonIndex;
-      if (isParton)
+      }
+      if (isParton) {
         lastPartonIndex = nextIndex;
-
+      }
       currentIndex = nextIndex;
     }
     return -1;
@@ -582,15 +615,14 @@ class McBuilder
   bool mProduceOmegaLabels = false;
   bool mProduceMcMotherLabels = false;
 
+  float mEtaAcceptanceMcOnly = 0.8;
+
   std::unordered_map<int64_t, int64_t> mCollisionMap;
 
   std::unordered_map<int64_t, int64_t> mMcParticleMap;
   std::unordered_map<int64_t, int64_t> mMcMotherMap;
   std::unordered_map<int64_t, int64_t> mMcPartonicMotherMap;
 };
-
-} // namespace mcbuilder
-//
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::mcbuilder
 
 #endif // PWGCF_FEMTO_CORE_MCBUILDER_H_

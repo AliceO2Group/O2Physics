@@ -50,7 +50,6 @@
 #include <TF1.h>
 #include <TH1.h>
 #include <TH2.h>
-#include <TH3.h>
 #include <THashList.h>
 #include <TList.h>
 #include <TMath.h>
@@ -1410,8 +1409,8 @@ struct AnalysisSameEventPairing {
   std::vector<TString> fMuonCuts;
   std::map<std::pair<uint32_t, uint32_t>, uint32_t> fAmbiguousPairs;
 
-  uint32_t fTrackFilterMask = 0; // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
-  uint32_t fMuonFilterMask = 0;  // mask for the muon cuts required in this task to be applied on the muon cuts produced upstream
+  uint32_t fTrackFilterMask = 0;   // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
+  uint32_t fMuonFilterMask = 0;    // mask for the muon cuts required in this task to be applied on the muon cuts produced upstream
   uint32_t fQvectorFilterMask = 0; // mask for the track cuts applied in TPC Q-vector calculation, used to remove auto-correlation in flow analysis
   int fNCutsBarrel = 0;
   int fNCutsMuon = 0;
@@ -1739,7 +1738,6 @@ struct AnalysisSameEventPairing {
             Form("PairsEleMuSEMM_%s_%s", trackCutName.Data(), muonCutName.Data())};
           histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
           int index = iTrack * fNCutsMuon + iMuon;
-          fTrackMuonHistNames[index] = names;
 
           if (fEnableBarrelMuonMixingHistos) {
             names.push_back(Form("PairsEleMuMEPM_%s_%s", trackCutName.Data(), muonCutName.Data()));
@@ -1747,6 +1745,7 @@ struct AnalysisSameEventPairing {
             names.push_back(Form("PairsEleMuMEMM_%s_%s", trackCutName.Data(), muonCutName.Data()));
             histNames += Form("%s;%s;%s;", names[3].Data(), names[4].Data(), names[5].Data());
           }
+          fTrackMuonHistNames[index] = names;
 
           if (!cutNamesStr.IsNull()) {
             std::unique_ptr<TObjArray> objArrayPair(cutNamesStr.Tokenize(","));

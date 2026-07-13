@@ -88,6 +88,7 @@ struct Alice3strangenessFinder {
   ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.22f, 1.42f}, "Xi mass axis"};
   ConfigurableAxis axisOmegaMass{"axisOmegaMass", {200, 1.57f, 1.77f}, "Omega mass axis"};
 
+  ConfigurableAxis axisDCA{"axisDCA", {200, 0, 200}, "DCA axis"};
   ConfigurableAxis axisEta{"axisEta", {80, -4.f, 4.f}, "Eta axis"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.025f, 0.05f, 0.075f, 0.1f, 0.125f, 0.15f, 0.175f, 0.2f, 0.225f, 0.25f, 0.275f, 0.3f, 0.325f, 0.35f, 0.375f, 0.4f, 0.425f, 0.45f, 0.475f, 0.5f, 0.525f, 0.55f, 0.575f, 0.6f, 0.625f, 0.65f, 0.675f, 0.7f, 0.725f, 0.75f, 0.775f, 0.8f, 0.82f, 0.85f, 0.875f, 0.9f, 0.925f, 0.95f, 0.975f, 1.0f, 1.05f, 1.1f}, "pt axis for QA histograms"};
 
@@ -129,6 +130,7 @@ struct Alice3strangenessFinder {
 
     Configurable<float> v0MaxDauDCA{"v0MaxDauDCA", 0.005f, "DCA between v0 daughters (cm)"};
     Configurable<float> cascMaxDauDCA{"cascMaxDauDCA", 0.005f, "DCA between cascade daughters (cm)"};
+    Configurable<float> cascMaxEta{"cascMaxEta", 2.5f, "DCA between cascade daughters (cm)"};
   } presel;
 
   // Operation
@@ -143,6 +145,7 @@ struct Alice3strangenessFinder {
 
   o2::vertexing::DCAFitterN<2> fitter;
   Service<o2::framework::O2DatabasePDG> pdgDB;
+  static constexpr float ToMicrons = 1e+4;
 
   // partitions for v0/casc dau tracks
   Partition<Alice3TracksACTS> positiveSecondaryTracksACTS =
@@ -177,6 +180,7 @@ struct Alice3strangenessFinder {
 
   struct Candidate {
     int index{-1};
+
     // decay properties
     float dcaDau{};
     float eta{};
@@ -239,6 +243,7 @@ struct Alice3strangenessFinder {
     histos.add("hPtPosDauAfterV0Finding", "", kTH2D, {axisPt, axisPt});
     histos.add("hPtNegDauAfterV0Finding", "", kTH2D, {axisPt, axisPt});
     histos.add("hEventCounter", "", kTH1D, {{1, 0, 2}}); // counting processed events
+
     auto hV0Counter = histos.add<TH1>("hV0Counter", "hV0Counter", kTH1D, {{4, 0, 4}});
     hV0Counter->GetXaxis()->SetBinLabel(1, "K0S");
     hV0Counter->GetXaxis()->SetBinLabel(2, "Lambda");
@@ -247,9 +252,6 @@ struct Alice3strangenessFinder {
 
     histos.add("hRadiusVsHitsNeg", "", kTH2D, {{400, 0, 400}, {12, 0.5, 12.5}}); // radius vs hist for MC studies
     histos.add("hRadiusVsHitsPos", "", kTH2D, {{400, 0, 400}, {12, 0.5, 12.5}}); // radius vs hist for MC studies
-
-    histos.add("hXiMass", "", kTH1D, {axisXiMass});
-    histos.add("hOmegaMass", "", kTH1D, {axisOmegaMass});
 
     auto hV0Building = histos.add<TH1>("hV0Building", "hV0Building", kTH1D, {{10, 0.5, 10.5}});
     hV0Building->GetXaxis()->SetBinLabel(1, "Pair");
@@ -270,6 +272,12 @@ struct Alice3strangenessFinder {
       histos.add("Generated/hGeneratedAntiXi", "hGeneratedAntiXi", kTH2D, {{axisPt}, {axisEta}});
       histos.add("Generated/hGeneratedOmega", "hGeneratedOmega", kTH2D, {{axisPt}, {axisEta}});
       histos.add("Generated/hGeneratedAntiOmega", "hGeneratedAntiOmega", kTH2D, {{axisPt}, {axisEta}});
+    }
+
+    if (buildCascade) {
+      histos.add("CascadeBuilding/hDcaBetweenDaus", "hDcaBetweenDaus", kTH1D, {{axisDCA}});
+      histos.add("CascadeBuilding/hXiMass", "", kTH1D, {axisXiMass});
+      histos.add("CascadeBuilding/hOmegaMass", "", kTH1D, {axisOmegaMass});
     }
 
     histos.print();
@@ -585,6 +593,19 @@ struct Alice3strangenessFinder {
             continue; // failed at building candidate
           }
 
+          // Apply preselections
+          if (cascCand.dcaDau > presel.cascMaxDauDCA) {
+            continue; // combined tracks should be reasonanly close
+          }
+
+          if (std::abs(cascCand.eta) > presel.cascMaxEta) {
+            continue; // candidate outside of acceptance
+          }
+
+          if (std::hypot(v0Cand.posSV[0], v0Cand.posSV[1]) < std::hypot(cascCand.posSV[0], cascCand.posSV[1])) {
+            continue; // causality
+          }
+
           const float massXi = RecoDecay::m(std::array{std::array{cascCand.pDau0[0], cascCand.pDau0[1], cascCand.pDau0[2]},
                                                        std::array{cascCand.pDau1[0], cascCand.pDau1[1], cascCand.pDau1[2]}},
                                             std::array{o2::constants::physics::MassLambda, o2::constants::physics::MassPionCharged});
@@ -606,8 +627,9 @@ struct Alice3strangenessFinder {
                                                              vtx[0], vtx[1], vtx[2]);
 
           histos.fill(HIST("hCascadeBuilding"), 4.0);
-          histos.fill(HIST("hXiMass"), massXi);
-          histos.fill(HIST("hOmegaMass"), massOm);
+          histos.fill(HIST("CascadeBuilding/hDcaBetweenDaus"), cascCand.dcaDau * ToMicrons);
+          histos.fill(HIST("CascadeBuilding/hXiMass"), massXi);
+          histos.fill(HIST("CascadeBuilding/hOmegaMass"), massOm);
 
           tableA3CascadeMcLabels(cascCand.index);
           tableCascIndices(0, // cascade index, dummy value

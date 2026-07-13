@@ -15,7 +15,7 @@
 /// \author Daiki Sekihata <daiki.sekihata@cern.ch>, Tokyo
 
 #ifndef HomogeneousField
-#define HomogeneousField // needed for KFParticle::SetField(magneticField);
+#define HomogeneousField // o2-linter: disable=name/macro (name coming from KFParticle, not us, needed for KFParticle::SetField)
 #endif
 
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
@@ -82,7 +82,7 @@ using namespace o2::pwgem::photonmeson;
 using std::array;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
-using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
+// using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 
 using MyTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullEl, aod::pidTPCFullPi>;
@@ -184,11 +184,11 @@ struct PhotonConversionBuilder {
   V0PhotonCandidate v0photoncandidate;
   o2::ccdb::CcdbApi ccdbApi;
 
-  int mRunNumber;
-  float d_bz;
-  float maxSnp;  // max sine phi for propagation
-  float maxStep; // max step size (cm) for propagation
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  int mRunNumber{};
+  float d_bz{};
+  float maxSnp{};  // max sine phi for propagation
+  float maxStep{}; // max step size (cm) for propagation
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   o2::aod::common::TPCVDriftManager mVDriftMgr;
@@ -264,7 +264,7 @@ struct PhotonConversionBuilder {
         int binsNCent = static_cast<int>(binsCentPCMMl->size()) - 1;
         int binsN = binsNPt * binsNCent;
         if (binsN * static_cast<int>(cutDirPCMMl->size()) != static_cast<int>(cutsPCMMlFlat->size())) {
-          LOG(fatal) << "Mismatch in number of bins and cuts provided for 2D ML application: binsN * cutDirPCMMl: " << int(binsN) * int(cutDirPCMMl->size()) << " bins vs. cutsPCMMlFlat: " << cutsPCMMlFlat->size() << " cuts";
+          LOG(fatal) << "Mismatch in number of bins and cuts provided for 2D ML application: binsN * cutDirPCMMl: " << binsN * static_cast<int>(cutDirPCMMl->size()) << " bins vs. cutsPCMMlFlat: " << cutsPCMMlFlat->size() << " cuts";
         }
         if (binsN != static_cast<int>(onnxFileNames->size())) {
           LOG(fatal) << "Mismatch in number of bins and ONNX files provided for 2D ML application: binsN " << binsN << " bins vs. onnxFileNames: " << onnxFileNames->size() << " ONNX files";
@@ -308,12 +308,12 @@ struct PhotonConversionBuilder {
       }
       emMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       emMlResponse.init();
-      if (nClassesPCMMl == 2) {
+      if (nClassesPCMMl == o2::analysis::NClassesML::kTwo) {
         registry.add("V0/hBDTBackgroundScoreBeforeCutVsPt", "BDT background score before cut vs pT; pT (GeV/c); BDT background score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
         registry.add("V0/hBDTBackgroundScoreAfterCutVsPt", "BDT background score after cut vs pT; pT (GeV/c); BDT background score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
         registry.add("V0/hBDTSignalScoreBeforeCutVsPt", "BDT signal score before cut vs pT; pT (GeV/c); BDT signal score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
         registry.add("V0/hBDTSignalScoreAfterCutVsPt", "BDT signal score after cut vs pT; pT (GeV/c); BDT signal score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
-      } else if (nClassesPCMMl == 3) {
+      } else if (nClassesPCMMl == o2::analysis::NClassesML::kThree) {
         registry.add("V0/hBDTBackgroundScoreBeforeCutVsPt", "BDT background score before cut vs pT; pT (GeV/c); BDT background score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
         registry.add("V0/hBDTBackgroundScoreAfterCutVsPt", "BDT background score after cut vs pT; pT (GeV/c); BDT background score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
         registry.add("V0/hBDTPrimaryPhotonScoreBeforeCutVsPt", "BDT primary photon score before cut vs pT; pT (GeV/c); BDT primary photon score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
@@ -452,7 +452,7 @@ struct PhotonConversionBuilder {
     return true;
   }
 
-  float cospaXY_KF(KFParticle kfp, KFParticle PV)
+  float cospaXY_KF(const KFParticle& kfp, const KFParticle& PV)
   {
     float lx = kfp.GetX() - PV.GetX(); // flight length X
     float ly = kfp.GetY() - PV.GetY(); // flight length Y
@@ -462,13 +462,14 @@ struct PhotonConversionBuilder {
     float cospaXY = RecoDecay::dotProd(std::array{lx, ly}, std::array{px, py}) / (RecoDecay::sqrtSumOfSquares(lx, ly) * RecoDecay::sqrtSumOfSquares(px, py));
     if (cospaXY < -1.f) {
       return -1.f;
-    } else if (cospaXY > 1.f) {
+    }
+    if (cospaXY > 1.f) {
       return 1.f;
     }
     return cospaXY;
   }
 
-  float cospaRZ_KF(KFParticle kfp, KFParticle PV)
+  float cospaRZ_KF(const KFParticle& kfp, const KFParticle& PV)
   {
     float lx = kfp.GetX() - PV.GetX();              // flight length X
     float ly = kfp.GetY() - PV.GetY();              // flight length Y
@@ -481,7 +482,8 @@ struct PhotonConversionBuilder {
     float cospaRZ = RecoDecay::dotProd(std::array{lt, lz}, std::array{pt, pz}) / (RecoDecay::sqrtSumOfSquares(lt, lz) * RecoDecay::sqrtSumOfSquares(pt, pz));
     if (cospaRZ < -1.f) {
       return -1.f;
-    } else if (cospaRZ > 1.f) {
+    }
+    if (cospaRZ > 1.f) {
       return 1.f;
     }
     return cospaRZ;
@@ -545,7 +547,7 @@ struct PhotonConversionBuilder {
     // }
 
     // Calculate DCA with respect to the collision associated to the v0, not individual tracks
-    std::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo{};
 
     auto pTrack = getTrackParCov(pos);
     if (moveTPCTracks && isTPConlyTrack(pos) && !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, pos, pTrack)) {
@@ -573,8 +575,8 @@ struct PhotonConversionBuilder {
       return;
     }
 
-    float xyz[3] = {0.f, 0.f, 0.f};
-    Vtx_recalculationParCov(o2::base::Propagator::Instance(), pTrack, nTrack, xyz, matCorr);
+    std::array<float, 3> xyz = {0.f, 0.f, 0.f};
+    Vtx_recalculationParCov(o2::base::Propagator::Instance(), pTrack, nTrack, xyz.data(), matCorr);
     float rxy_tmp = RecoDecay::sqrtSumOfSquares(xyz[0], xyz[1]);
     if (rxy_tmp > maxX + margin_r_tpc) {
       return;
@@ -586,12 +588,12 @@ struct PhotonConversionBuilder {
     float phiv = 999.f;
     float psipair = 999.f;
     float baseR = std::hypot(xyz[0], xyz[1]);
-    float offsetsR[3] = {propV0LegsRadius, 30.f, 10.f};
+    std::array<float, 3> offsetsR = {propV0LegsRadius, 30.f, 10.f};
     bool pPropagatedSuccess = false;
     bool nPropagatedSuccess = false;
     auto pTrackProp = pTrack;
     auto nTrackProp = nTrack;
-    for (float offsetR : offsetsR) {
+    for (const float& offsetR : offsetsR) {
       pTrackProp = pTrack;
       pTrackProp.setPID(o2::track::PID::Electron);
       nTrackProp = nTrack;
@@ -606,9 +608,8 @@ struct PhotonConversionBuilder {
         phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(kfp_track_posProp.GetPx(), kfp_track_posProp.GetPy(), kfp_track_posProp.GetPz(), kfp_track_eleProp.GetPx(), kfp_track_eleProp.GetPy(), kfp_track_eleProp.GetPz(), pos.sign(), ele.sign(), d_bz);
         psipair = o2::aod::pwgem::dilepton::utils::pairutil::getPsiPair(kfp_track_posProp.GetPx(), kfp_track_posProp.GetPy(), kfp_track_posProp.GetPz(), kfp_track_eleProp.GetPx(), kfp_track_eleProp.GetPy(), kfp_track_eleProp.GetPz());
         break;
-      } else {
-        LOG(debug) << "Propagation to offset" << offsetR << " cm failed for " << (pPropagatedSuccess ? "negative" : "positive") << " track. Trying smaller offset.";
       }
+      LOG(debug) << "Propagation to offset" << offsetR << " cm failed for " << (pPropagatedSuccess ? "negative" : "positive") << " track. Trying smaller offset.";
     }
     if (phiv == 999.f || psipair == 999.f) {
       LOG(debug) << "Propagation failed for all radii (" << propV0LegsRadius << ", 30, 10 cm). Using default values for phiv and psipair (999.f).";
@@ -618,11 +619,11 @@ struct PhotonConversionBuilder {
     KFPTrack kfp_track_ele = createKFPTrackFromTrackParCov(nTrack, ele.sign(), ele.tpcNClsFound(), ele.tpcChi2NCl());
     KFParticle kfp_pos(kfp_track_pos, kPositron);
     KFParticle kfp_ele(kfp_track_ele, kElectron);
-    const KFParticle* GammaDaughters[2] = {&kfp_pos, &kfp_ele};
+    std::array<const KFParticle*, 2> GammaDaughters{&kfp_pos, &kfp_ele};
 
     KFParticle gammaKF;
     gammaKF.SetConstructMethod(2);
-    gammaKF.Construct(GammaDaughters, 2);
+    gammaKF.Construct(GammaDaughters.data(), 2);
     if (kfMassConstrain > -0.1) {
       gammaKF.SetNonlinearMassConstraint(kfMassConstrain);
     }
@@ -631,7 +632,7 @@ struct PhotonConversionBuilder {
 
     // Transport the gamma to the recalculated decay vertex
     KFParticle gammaKF_DecayVtx = gammaKF; // with respect to (0,0,0)
-    gammaKF_DecayVtx.TransportToPoint(xyz);
+    gammaKF_DecayVtx.TransportToPoint(xyz.data());
 
     float cospa_kf = cpaFromKF(gammaKF_DecayVtx, KFPV);
     if (!ele.hasITS() && !pos.hasITS()) {
@@ -719,15 +720,15 @@ struct PhotonConversionBuilder {
       return;
     }
 
-    KFParticle kfp_pos_DecayVtx = kfp_pos;  // Don't set Primary Vertex
-    KFParticle kfp_ele_DecayVtx = kfp_ele;  // Don't set Primary Vertex
-    kfp_pos_DecayVtx.TransportToPoint(xyz); // Don't set Primary Vertex
-    kfp_ele_DecayVtx.TransportToPoint(xyz); // Don't set Primary Vertex
+    KFParticle kfp_pos_DecayVtx = kfp_pos;         // Don't set Primary Vertex
+    KFParticle kfp_ele_DecayVtx = kfp_ele;         // Don't set Primary Vertex
+    kfp_pos_DecayVtx.TransportToPoint(xyz.data()); // Don't set Primary Vertex
+    kfp_ele_DecayVtx.TransportToPoint(xyz.data()); // Don't set Primary Vertex
 
     float cospaXYKF = cospaXY_KF(gammaKF_DecayVtx, KFPV);
     float cospaRZKF = cospaRZ_KF(gammaKF_DecayVtx, KFPV);
-    CentType centType = static_cast<CentType>(centTypePCMMl.value);
-    v0photoncandidate.setPhotonCandidate(gammaKF_DecayVtx, gammaKF_PV, pos, kfp_pos_DecayVtx, ele, kfp_ele_DecayVtx, collision, cospaXYKF, cospaRZKF, cospaXYKF, psipair, phiv, centType, posdcaXY, posdcaZ, eledcaXY, eledcaZ);
+    auto centType = static_cast<CentType>(centTypePCMMl.value);
+    v0photoncandidate.setPhotonCandidate(gammaKF_DecayVtx, gammaKF_PV, pos, kfp_pos_DecayVtx, ele, kfp_ele_DecayVtx, collision, cospaXYKF, cospaRZKF, cospaXYKF, psipair, phiv, centType, posdcaXY, eledcaXY, posdcaZ, eledcaZ);
 
     if (!ele.hasITS() && !pos.hasITS()) { // V0s with TPConly-TPConly
       if (max_r_itsmft_ss < rxy && rxy < maxX + margin_r_tpc) {
@@ -782,10 +783,10 @@ struct PhotonConversionBuilder {
         isSelectedML = emMlResponse.isSelectedMl(mlInputFeatures, v0photoncandidate.getPt(), outputML);
       }
       if (filltable) {
-        if (nClassesPCMMl == 2) {
+        if (nClassesPCMMl == o2::analysis::NClassesML::kTwo) {
           registry.fill(HIST("V0/hBDTBackgroundScoreBeforeCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
           registry.fill(HIST("V0/hBDTSignalScoreBeforeCutVsPt"), v0photoncandidate.getPt(), outputML[1]);
-        } else if (nClassesPCMMl == 3) {
+        } else if (nClassesPCMMl == o2::analysis::NClassesML::kThree) {
           registry.fill(HIST("V0/hBDTPrimaryPhotonScoreBeforeCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
           registry.fill(HIST("V0/hBDTSecondaryPhotonScoreBeforeCutVsPt"), v0photoncandidate.getPt(), outputML[1]);
           registry.fill(HIST("V0/hBDTBackgroundScoreBeforeCutVsPt"), v0photoncandidate.getPt(), outputML[2]);
@@ -797,10 +798,10 @@ struct PhotonConversionBuilder {
         return;
       }
       if (filltable) {
-        if (nClassesPCMMl == 2) {
+        if (nClassesPCMMl == o2::analysis::NClassesML::kTwo) {
           registry.fill(HIST("V0/hBDTBackgroundScoreAfterCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
           registry.fill(HIST("V0/hBDTSignalScoreAfterCutVsPt"), v0photoncandidate.getPt(), outputML[1]);
-        } else if (nClassesPCMMl == 3) {
+        } else if (nClassesPCMMl == o2::analysis::NClassesML::kThree) {
           registry.fill(HIST("V0/hBDTPrimaryPhotonScoreAfterCutVsPt"), v0photoncandidate.getPt(), outputML[0]);
           registry.fill(HIST("V0/hBDTSecondaryPhotonScoreAfterCutVsPt"), v0photoncandidate.getPt(), outputML[1]);
           registry.fill(HIST("V0/hBDTBackgroundScoreAfterCutVsPt"), v0photoncandidate.getPt(), outputML[2]);
@@ -888,11 +889,11 @@ struct PhotonConversionBuilder {
         continue;
       }
 
-      if constexpr (isTriggerAnalysis) {
-        if (collision.swtaliastmp_raw() == 0) {
-          continue;
-        }
-      }
+      // if constexpr (isTriggerAnalysis) {
+      //   if (collision.triggerMask_raw() == 0) {
+      //     continue;
+      //   }
+      // }
 
       nv0_map[collision.globalIndex()] = 0;
 
@@ -1004,41 +1005,41 @@ struct PhotonConversionBuilder {
 
   //! type of V0. 0: built solely for cascades (does not pass standard V0 cuts), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1 or 3.
   Filter v0Filter = o2::aod::v0::v0Type > (uint8_t)0;
-  using filteredV0s = soa::Filtered<aod::V0s>;
+  using FilteredV0s = soa::Filtered<aod::V0s>;
 
-  void processRec(MyCollisions const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processRec(MyCollisions const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     build<false, false, false>(collisions, v0s, tracks, bcs);
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processRec, "process reconstructed info for data", true);
 
-  void processRec_SWT(MyCollisionsWithSWT const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
-  {
-    build<false, true, false>(collisions, v0s, tracks, bcs);
-  }
-  PROCESS_SWITCH(PhotonConversionBuilder, processRec_SWT, "process reconstructed info for data", false);
+  // void processRec_SWT(MyCollisionsWithSWT const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  // {
+  //   build<false, true, false>(collisions, v0s, tracks, bcs);
+  // }
+  // PROCESS_SWITCH(PhotonConversionBuilder, processRec_SWT, "process reconstructed info for data", false);
 
-  void processMC(MyCollisionsMC const& collisions, filteredV0s const& v0s, MyTracksIUMC const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processMC(MyCollisionsMC const& collisions, FilteredV0s const& v0s, MyTracksIUMC const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     build<true, false, false>(collisions, v0s, tracks, bcs);
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processMC, "process reconstructed info for MC", false);
 
-  void processRec_OnlyIfDielectron(soa::Join<MyCollisions, aod::EMEventsNee> const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processRec_OnlyIfDielectron(soa::Join<MyCollisions, aod::EMEventsNee> const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     build<false, false, true>(collisions, v0s, tracks, bcs);
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processRec_OnlyIfDielectron, "process reconstructed info for data", false);
 
-  void processRec_SWT_OnlyIfDielectron(soa::Join<MyCollisionsWithSWT, aod::EMEventsNee> const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
-  {
-    build<false, true, true>(collisions, v0s, tracks, bcs);
-  }
-  PROCESS_SWITCH(PhotonConversionBuilder, processRec_SWT_OnlyIfDielectron, "process reconstructed info for data", false);
+  // void processRec_SWT_OnlyIfDielectron(soa::Join<MyCollisionsWithSWT, aod::EMEventsNee> const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  // {
+  //   build<false, true, true>(collisions, v0s, tracks, bcs);
+  // }
+  // PROCESS_SWITCH(PhotonConversionBuilder, processRec_SWT_OnlyIfDielectron, "process reconstructed info for data", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<PhotonConversionBuilder>(cfgc, TaskName{"photon-conversion-builder"})};
+    adaptAnalysisTask<PhotonConversionBuilder>(context, TaskName{"photon-conversion-builder"})};
 }

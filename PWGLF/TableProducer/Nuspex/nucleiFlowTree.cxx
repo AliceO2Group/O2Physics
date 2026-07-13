@@ -48,6 +48,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <MathUtils/BetheBlochAleph.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
@@ -57,7 +58,6 @@
 #include <TH1.h>
 #include <TRandom3.h>
 
-#include <GPUROOTCartesianFwd.h>
 #include <Rtypes.h>
 
 #include <algorithm>

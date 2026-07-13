@@ -39,26 +39,23 @@
 #include <random>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::tripletbuilder
 {
-namespace tripletbuilder
-{
-
 const int64_t nLimitPartitionIdenticalParticles123 = 3;
 const int64_t nLimitPartitionIdenticalParticles12 = 2;
 const int64_t nLimitPartitionParticles = 1;
 
-template <const char* prefixTrack1,
-          const char* prefixTrack2,
-          const char* prefixTrack3,
-          const char* prefixSe,
-          const char* prefixMe,
-          const char* prefixCtrSeTrack1Track2,
-          const char* prefixCtrSeTrack2Track3,
-          const char* prefixCtrSeTrack1Track3,
-          const char* prefixCtrMeTrack1Track2,
-          const char* prefixCtrMeTrack2Track3,
-          const char* prefixCtrMeTrack1Track3>
+template <auto& prefixTrack1,
+          auto& prefixTrack2,
+          auto& prefixTrack3,
+          auto& prefixSe,
+          auto& prefixMe,
+          auto& prefixCtrSeTrack1Track2,
+          auto& prefixCtrSeTrack2Track3,
+          auto& prefixCtrSeTrack1Track3,
+          auto& prefixCtrMeTrack1Track2,
+          auto& prefixCtrMeTrack2Track3,
+          auto& prefixCtrMeTrack1Track3>
 class TripletTrackTrackTrackBuilder
 {
  public:
@@ -371,19 +368,19 @@ class TripletTrackTrackTrackBuilder
 };
 
 template <modes::V0 v0Type,
-          const char* prefixTrack1,
-          const char* prefixTrack2,
-          const char* prefixV0,
-          const char* prefixPosDau,
-          const char* prefixNegDau,
-          const char* prefixSe,
-          const char* prefixMe,
-          const char* prefixCtrSeTrack1Track2,
-          const char* prefixCtrSeTrack1V0,
-          const char* prefixCtrSeTrack2V0,
-          const char* prefixCtrMeTrack1Track2,
-          const char* prefixCtrMeTrack1V0,
-          const char* prefixCtrMeTrack2V0>
+          auto& prefixTrack1,
+          auto& prefixTrack2,
+          auto& prefixV0,
+          auto& prefixPosDau,
+          auto& prefixNegDau,
+          auto& prefixSe,
+          auto& prefixMe,
+          auto& prefixCtrSeTrack1Track2,
+          auto& prefixCtrSeTrack1V0,
+          auto& prefixCtrSeTrack2V0,
+          auto& prefixCtrMeTrack1Track2,
+          auto& prefixCtrMeTrack1V0,
+          auto& prefixCtrMeTrack2V0>
 class TripletTrackTrackV0Builder
 {
  public:
@@ -628,24 +625,24 @@ class TripletTrackTrackV0Builder
 };
 
 template <modes::Cascade cascadeType,
-          const char* prefixTrack1,
-          const char* prefixTrack2,
-          const char* prefixCascade,
-          const char* prefixBachelor,
-          const char* prefixPosDau,
-          const char* prefixNegDau,
-          const char* prefixSe,
-          const char* prefixMe,
-          const char* prefixCtrTrack1Track2Se,
-          const char* prefixCprBachelorTrack1Se,
-          const char* prefixCprBachelorTrack2Se,
-          const char* prefixCprV0DaughterTrack1Se,
-          const char* prefixCprV0DaughterTrack2Se,
-          const char* prefixCtrTrack1Track2Me,
-          const char* prefixCprBachelorTrack1Me,
-          const char* prefixCprBachelorTrack2Me,
-          const char* prefixCprV0DaughterTrack1Me,
-          const char* prefixCprV0DaughterTrack2Me>
+          auto& prefixTrack1,
+          auto& prefixTrack2,
+          auto& prefixCascade,
+          auto& prefixBachelor,
+          auto& prefixPosDau,
+          auto& prefixNegDau,
+          auto& prefixSe,
+          auto& prefixMe,
+          auto& prefixCtrTrack1Track2Se,
+          auto& prefixCprBachelorTrack1Se,
+          auto& prefixCprBachelorTrack2Se,
+          auto& prefixCprV0DaughterTrack1Se,
+          auto& prefixCprV0DaughterTrack2Se,
+          auto& prefixCtrTrack1Track2Me,
+          auto& prefixCprBachelorTrack1Me,
+          auto& prefixCprBachelorTrack2Me,
+          auto& prefixCprV0DaughterTrack1Me,
+          auto& prefixCprV0DaughterTrack2Me>
 class TripletTrackTrackCascadeBuilder
 {
  public:
@@ -904,7 +901,6 @@ class TripletTrackTrackCascadeBuilder
   std::uniform_int_distribution<> mDist;
 };
 
-} // namespace tripletbuilder
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::tripletbuilder
 
 #endif // PWGCF_FEMTO_CORE_TRIPLETBUILDER_H_

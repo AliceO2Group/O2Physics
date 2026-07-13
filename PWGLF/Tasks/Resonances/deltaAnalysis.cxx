@@ -36,9 +36,6 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <THnSparse.h>
-#include <TMath.h>
-
 #include <algorithm>
 #include <array>
 #include <cmath>

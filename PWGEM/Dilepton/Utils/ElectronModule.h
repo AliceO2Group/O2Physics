@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file ElectronModule.h
 /// \brief write relevant information about primary electrons.
 /// \author daiki.sekihata@cern.ch
 
@@ -20,39 +21,22 @@
 #include "PWGEM/Dilepton/Utils/MlResponseSCT.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 #include "PWGEM/Dilepton/Utils/SemiCharmTag.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TableHelper.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/ML/MlResponse.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
-#include <DataFormatsCalibration/MeanVertexObject.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
-#include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
-#include <Framework/AnalysisTask.h>
 #include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
-#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/OutputObjHeader.h>
-#include <Framework/runDataProcessing.h>
-#include <MathUtils/Utils.h>
+#include <Framework/Logger.h>
 #include <PID/PIDTOFParamService.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/PID.h>
@@ -1353,8 +1337,7 @@ class ElectronModule
     if (bcs.size() == 0) {
       return;
     }
-    auto bc = bcs.begin();
-    initCCDB(bc);
+    initCCDB(bcs.begin());
 
     calculateTOFNSigmaWithReassociation<true>(collisions, bcs, tracks, trackIndices, cache, perColTrack, trackIndicesPerCollision);
 
@@ -1373,7 +1356,7 @@ class ElectronModule
       }
 
       if constexpr (isTriggerAnalysis) {
-        if (collision.swtaliastmp_raw() == 0) {
+        if (collision.triggerMask_raw() == 0) {
           continue;
         }
       }
@@ -2112,7 +2095,7 @@ class ElectronModule
     //   }
 
     //   if constexpr (isTriggerAnalysis) {
-    //     if (collision.swtaliastmp_raw() == 0) {
+    //     if (collision.triggerMask_raw() == 0) {
     //       continue;
     //     }
     //   }

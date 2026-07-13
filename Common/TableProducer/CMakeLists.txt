@@ -34,11 +34,6 @@ o2physics_add_dpl_workflow(event-selection-service-run2
                                           O2::DataFormatsITSMFT
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(multiplicity-table
-                    SOURCES multiplicityTable.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(multcenttable
                     SOURCES multCentTable.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -46,16 +41,6 @@ o2physics_add_dpl_workflow(multcenttable
 
 o2physics_add_dpl_workflow(multiplicity-extra-table
                     SOURCES multiplicityExtraTable.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(centrality-table
-                    SOURCES centralityTable.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(timestamp
-                    SOURCES timestamp.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -68,12 +53,6 @@ o2physics_add_dpl_workflow(ft0-corrected-table
                     SOURCES ft0CorrectedTable.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                 COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(track-propagation
-                    SOURCES trackPropagation.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 
 o2physics_add_dpl_workflow(propagationservice
                     SOURCES propagationService.cxx

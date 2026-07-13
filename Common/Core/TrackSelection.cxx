@@ -18,7 +18,6 @@
 #include <Framework/DataTypes.h>
 #include <Framework/Logger.h>
 
-#include <algorithm>
 #include <cstdint>
 #include <functional>
 #include <set>

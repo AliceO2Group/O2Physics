@@ -31,6 +31,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <MCHAlign/Aligner.h>
 #include <MCHBase/TrackerParam.h>
 #include <MCHGeometryTransformer/Transformations.h>
@@ -45,7 +46,6 @@
 #include <TObjArray.h>
 #include <TString.h>
 
-#include <GPUROOTCartesianFwd.h>
 #include <RtypesCore.h>
 
 #include <cmath>

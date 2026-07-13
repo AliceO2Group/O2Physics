@@ -38,7 +38,7 @@ struct V0PhotonCandidate {
   V0PhotonCandidate() = default;
   // Set method for photonconversionbuilder
   template <class TTrack>
-  void setPhotonCandidate(const KFParticle& v0DecayVtx, const KFParticle& v0PV, const TTrack& pos, const KFParticle& posDecayVtx, const TTrack& ele, const KFParticle& eleDecayVtx, const auto& collision, float cospa, float cospaRZ, float cospaXY, float psipair, float phiv, CentType centType, auto posdcaXY, auto eledcaXY, auto posdcaZ, auto eledcaZ)
+  void setPhotonCandidate(const KFParticle& v0DecayVtx, const KFParticle& v0PV, const TTrack& pos, const KFParticle& posDecayVtx, const TTrack& ele, const KFParticle& eleDecayVtx, const auto& collision, float cospa_, float cospaRZ_, float cospaXY_, float psipair_, float phiv_, CentType centType_, auto posdcaXY_, auto eledcaXY_, auto posdcaZ_, auto eledcaZ_)
   {
     conversionPointx = v0DecayVtx.GetX();
     conversionPointy = v0DecayVtx.GetY();
@@ -82,28 +82,28 @@ struct V0PhotonCandidate {
 
     float v0mom = RecoDecay::sqrtSumOfSquares(v0DecayVtx.GetPx(), v0DecayVtx.GetPy(), v0DecayVtx.GetPz());
     float length = RecoDecay::sqrtSumOfSquares(v0DecayVtx.GetX() - collision.posX(), v0DecayVtx.GetY() - collision.posY(), v0DecayVtx.GetZ() - collision.posZ());
-    float dcaXV0ToPV = (v0DecayVtx.GetX() - v0DecayVtx.GetPx() * cospa * length / v0mom) - collision.posX();
-    float dcaYV0ToPV = (v0DecayVtx.GetY() - v0DecayVtx.GetPy() * cospa * length / v0mom) - collision.posY();
+    float dcaXV0ToPV = (v0DecayVtx.GetX() - v0DecayVtx.GetPx() * cospa_ * length / v0mom) - collision.posX();
+    float dcaYV0ToPV = (v0DecayVtx.GetY() - v0DecayVtx.GetPy() * cospa_ * length / v0mom) - collision.posY();
     float tmpSign = (dcaXV0ToPV * dcaYV0ToPV > 0.f) ? +1.f : -1.f;
 
     dcaXYV0ToPV = RecoDecay::sqrtSumOfSquares(dcaXV0ToPV, dcaYV0ToPV) * tmpSign;
-    dcaZV0ToPV = (v0DecayVtx.GetZ() - v0DecayVtx.GetPz() * cospa * length / v0mom) - collision.posZ();
+    dcaZV0ToPV = (v0DecayVtx.GetZ() - v0DecayVtx.GetPz() * cospa_ * length / v0mom) - collision.posZ();
 
     alpha = v0_alpha(posPx, posPy, posPz, elePx, elePy, elePz);
     qt = v0_qt(posPx, posPy, posPz, elePx, elePy, elePz);
 
-    this->cospa = cospa;
-    this->cospaRZ = cospaRZ;
-    this->cospaXY = cospaXY;
-    this->psipair = psipair;
-    this->phiv = phiv;
-    this->centType = centType;
-    this->posdcaXY = posdcaXY;
-    this->eledcaXY = eledcaXY;
-    this->posdcaZ = posdcaZ;
-    this->eledcaZ = eledcaZ;
+    cospa = cospa_;
+    cospaRZ = cospaRZ_;
+    cospaXY = cospaXY_;
+    psipair = psipair_;
+    phiv = phiv_;
+    centType = centType_;
+    posdcaXY = posdcaXY_;
+    eledcaXY = eledcaXY_;
+    posdcaZ = posdcaZ_;
+    eledcaZ = eledcaZ_;
 
-    switch (centType) {
+    switch (centType_) {
       case CentType::CentFT0A:
         cent = collision.centFT0A();
         break;
@@ -117,7 +117,7 @@ struct V0PhotonCandidate {
   }
 
   // Set-Method for V0PhotonCut
-  void setPhoton(const auto& v0, const auto& pos, const auto& ele, float cent, CentType centType)
+  void setPhoton(const auto& v0, const auto& pos, const auto& ele, float cent_, CentType centType_)
   {
     conversionPointx = v0.vx();
     conversionPointy = v0.vy();
@@ -174,60 +174,60 @@ struct V0PhotonCandidate {
       psipair = v0.psipair();
       phiv = v0.phiv();
     }
-    this->cent = cent;
-    this->centType = centType;
+    cent = cent_;
+    centType = centType_;
   }
 
   // Getter functions
-  float getPosPt() const { return posPT; }
-  float getElePt() const { return elePT; }
-  float getChi2NDF() const { return chi2ndf; }
-  float getDcaXYToPV() const { return dcaXYV0ToPV; }
-  float getDcaZToPV() const { return dcaZV0ToPV; }
-  float getAlpha() const { return alpha; }
-  float getQt() const { return qt; }
-  float getPhiV() const { return phiv; }
-  float getPsiPair() const { return psipair; }
-  float getCosPA() const { return cospa; }
-  float getCosPARZ() const { return cospaRZ; }
-  float getCosPAXY() const { return cospaXY; }
-  float getEta() const { return eta; }
-  float getPosEta() const { return posEta; }
-  float getEleEta() const { return eleEta; }
-  float getConversionPointX() const { return conversionPointx; }
-  float getConversionPointY() const { return conversionPointy; }
-  float getConversionPointZ() const { return conversionPointz; }
-  float getPx() const { return px; }
-  float getPy() const { return py; }
-  float getPz() const { return pz; }
-  float getPt() const { return pT; }
-  float getPosPx() const { return posPx; }
-  float getPosPy() const { return posPy; }
-  float getPosPz() const { return posPz; }
-  float getElePx() const { return elePx; }
-  float getElePy() const { return elePy; }
-  float getElePz() const { return elePz; }
-  float getPosDcaXY() const { return posdcaXY; }
-  float getPosDcaZ() const { return posdcaZ; }
-  float getEleDcaXY() const { return eledcaXY; }
-  float getEleDcaZ() const { return eledcaZ; }
-  float getPosTPCNClsShared() const { return posTPCNClsShared; }
-  float getPosTPCNClsFindable() const { return posTPCNClsFindable; }
-  float getPosTPCNClsFindableMinusShared() const { return posTPCNClsFindableMinusShared; }
-  float getPosTPCNClsFindableMinusCrossedRows() const { return posTPCNClsFindableMinusCrossedRows; }
-  float getPosTPCChi2NCl() const { return posTPCChi2NCl; }
-  float getPosTPCSignal() const { return posTPCSignal; }
-  float getPosITSClusterSizes() const { return posITSClusterSizes; }
-  float getEleTPCNClsShared() const { return eleTPCNClsShared; }
-  float getEleTPCNClsFindable() const { return eleTPCNClsFindable; }
-  float getEleTPCNClsFindableMinusShared() const { return eleTPCNClsFindableMinusShared; }
-  float getEleTPCNClsFindableMinusCrossedRows() const { return eleTPCNClsFindableMinusCrossedRows; }
-  float getEleTPCChi2NCl() const { return eleTPCChi2NCl; }
-  float getEleTPCSignal() const { return eleTPCSignal; }
-  float getEleITSClusterSizes() const { return eleITSClusterSizes; }
-  float getCent() const { return cent; }
-  float getPCA() const { return pca; }
-  CentType getCentType() const { return centType; }
+  [[nodiscard]] float getPosPt() const { return posPT; }
+  [[nodiscard]] float getElePt() const { return elePT; }
+  [[nodiscard]] float getChi2NDF() const { return chi2ndf; }
+  [[nodiscard]] float getDcaXYToPV() const { return dcaXYV0ToPV; }
+  [[nodiscard]] float getDcaZToPV() const { return dcaZV0ToPV; }
+  [[nodiscard]] float getAlpha() const { return alpha; }
+  [[nodiscard]] float getQt() const { return qt; }
+  [[nodiscard]] float getPhiV() const { return phiv; }
+  [[nodiscard]] float getPsiPair() const { return psipair; }
+  [[nodiscard]] float getCosPA() const { return cospa; }
+  [[nodiscard]] float getCosPARZ() const { return cospaRZ; }
+  [[nodiscard]] float getCosPAXY() const { return cospaXY; }
+  [[nodiscard]] float getEta() const { return eta; }
+  [[nodiscard]] float getPosEta() const { return posEta; }
+  [[nodiscard]] float getEleEta() const { return eleEta; }
+  [[nodiscard]] float getConversionPointX() const { return conversionPointx; }
+  [[nodiscard]] float getConversionPointY() const { return conversionPointy; }
+  [[nodiscard]] float getConversionPointZ() const { return conversionPointz; }
+  [[nodiscard]] float getPx() const { return px; }
+  [[nodiscard]] float getPy() const { return py; }
+  [[nodiscard]] float getPz() const { return pz; }
+  [[nodiscard]] float getPt() const { return pT; }
+  [[nodiscard]] float getPosPx() const { return posPx; }
+  [[nodiscard]] float getPosPy() const { return posPy; }
+  [[nodiscard]] float getPosPz() const { return posPz; }
+  [[nodiscard]] float getElePx() const { return elePx; }
+  [[nodiscard]] float getElePy() const { return elePy; }
+  [[nodiscard]] float getElePz() const { return elePz; }
+  [[nodiscard]] float getPosDcaXY() const { return posdcaXY; }
+  [[nodiscard]] float getPosDcaZ() const { return posdcaZ; }
+  [[nodiscard]] float getEleDcaXY() const { return eledcaXY; }
+  [[nodiscard]] float getEleDcaZ() const { return eledcaZ; }
+  [[nodiscard]] float getPosTPCNClsShared() const { return posTPCNClsShared; }
+  [[nodiscard]] float getPosTPCNClsFindable() const { return posTPCNClsFindable; }
+  [[nodiscard]] float getPosTPCNClsFindableMinusShared() const { return posTPCNClsFindableMinusShared; }
+  [[nodiscard]] float getPosTPCNClsFindableMinusCrossedRows() const { return posTPCNClsFindableMinusCrossedRows; }
+  [[nodiscard]] float getPosTPCChi2NCl() const { return posTPCChi2NCl; }
+  [[nodiscard]] float getPosTPCSignal() const { return posTPCSignal; }
+  [[nodiscard]] float getPosITSClusterSizes() const { return posITSClusterSizes; }
+  [[nodiscard]] float getEleTPCNClsShared() const { return eleTPCNClsShared; }
+  [[nodiscard]] float getEleTPCNClsFindable() const { return eleTPCNClsFindable; }
+  [[nodiscard]] float getEleTPCNClsFindableMinusShared() const { return eleTPCNClsFindableMinusShared; }
+  [[nodiscard]] float getEleTPCNClsFindableMinusCrossedRows() const { return eleTPCNClsFindableMinusCrossedRows; }
+  [[nodiscard]] float getEleTPCChi2NCl() const { return eleTPCChi2NCl; }
+  [[nodiscard]] float getEleTPCSignal() const { return eleTPCSignal; }
+  [[nodiscard]] float getEleITSClusterSizes() const { return eleITSClusterSizes; }
+  [[nodiscard]] float getCent() const { return cent; }
+  [[nodiscard]] float getPCA() const { return pca; }
+  [[nodiscard]] CentType getCentType() const { return centType; }
 
  private:
   float conversionPointx{0.f};

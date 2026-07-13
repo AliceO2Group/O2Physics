@@ -20,6 +20,7 @@
 #include "PWGEM/Dilepton/Core/DielectronCut.h"
 #include "PWGEM/Dilepton/Core/DimuonCut.h"
 #include "PWGEM/Dilepton/Core/EMEventCut.h"
+#include "PWGEM/Dilepton/DataModel/EvSelFlags.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/Dilepton/Utils/EventHistograms.h"
@@ -54,6 +55,8 @@
 #include <TH1.h>
 #include <TString.h>
 
+#include <sys/types.h>
+
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -66,6 +69,9 @@
 
 using MyCollisions = o2::soa::Join<o2::aod::EMEvents, o2::aod::EMEventsMult, o2::aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
+
+using MyCollisionsSWT = o2::soa::Join<o2::aod::EMEvents, o2::aod::EMEventsMult, o2::aod::EMEventsCent, o2::aod::EMEventsQvec2, o2::aod::EMEventsQvec3, o2::aod::EMSWTriggerBits>;
+using MyCollisionSWT = MyCollisionsSWT::iterator;
 
 using MyElectrons = o2::soa::Join<o2::aod::EMPrimaryElectrons, o2::aod::EMPrimaryElectronEMEventIds, o2::aod::EMAmbiguousElectronSelfIds, o2::aod::EMPrimaryElectronsPrefilterBit, o2::aod::EMPrimaryElectronsPrefilterBitDerived>;
 using MyElectron = MyElectrons::iterator;
@@ -724,26 +730,31 @@ struct SingleTrackQC {
       }
 
       if constexpr (isTriggerAnalysis) {
-        if (!zorro.isSelected(collision.globalBC(), zorroGroup.bcMarginForSoftwareTrigger)) { // triggered event
+        int emswtId = o2::aod::pwgem::dilepton::swt::aliasLabels.at(zorroGroup.cfg_swt_name.value);
+        if (!collision.triggerMask_bit(emswtId)) {
           continue;
         }
 
-        auto swt_bitset = zorro.getLastResult();         // this has to be called after zorro::isSelected
-        auto TOIcounter = zorro.getTOIcounters()[0];     // this has to be called after zorro::isSelected
-        auto ATcounter = zorro.getATcounters()[mToIidx]; // this has to be called after zorro::isSelected
+        // if (!zorro.isSelected(collision.globalBC(), zorroGroup.bcMarginForSoftwareTrigger)) { // triggered event
+        //   continue;
+        // }
 
-        if (swt_bitset.test(mToIidx)) {
-          while (ATcounter > mATCounter) {
-            mATCounter++;
-            fRegistry.fill(HIST("Event/trigger/hAnalysedTrigger"), collision.runNumber());
-          }
+        // auto swt_bitset = zorro.getLastResult();         // this has to be called after zorro::isSelected
+        // auto TOIcounter = zorro.getTOIcounters()[0];     // this has to be called after zorro::isSelected
+        // auto ATcounter = zorro.getATcounters()[mToIidx]; // this has to be called after zorro::isSelected
 
-          while (TOIcounter > mTOICounter) {
-            fRegistry.fill(HIST("Event/trigger/hAnalysedToI"), collision.runNumber());
-            mTOICounter++; // always incremented by 1 in zorro!!
-          }
-          // LOGF(info, "collision.globalIndex() = %d, collision.globalBC() = %llu, mTOICounter = %d, mATcounter = %d", collision.globalIndex(), collision.globalBC(), mTOICounter, mATCounter);
-        }
+        // if (swt_bitset.test(mToIidx)) {
+        //   while (ATcounter > mATCounter) {
+        //     mATCounter++;
+        //     fRegistry.fill(HIST("Event/trigger/hAnalysedTrigger"), collision.runNumber());
+        //   }
+
+        //   while (TOIcounter > mTOICounter) {
+        //     fRegistry.fill(HIST("Event/trigger/hAnalysedToI"), collision.runNumber());
+        //     mTOICounter++; // always incremented by 1 in zorro!!
+        //   }
+        //   // LOGF(info, "collision.globalIndex() = %d, collision.globalBC() = %llu, mTOICounter = %d, mATcounter = %d", collision.globalIndex(), collision.globalBC(), mTOICounter, mATCounter);
+        // }
       }
 
       o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, -1>(&fRegistry, collision);
@@ -899,16 +910,13 @@ struct SingleTrackQC {
   o2::framework::Preslice<MyMuons> perCollision_muon = o2::aod::emprimarymuon::emeventId;
   o2::framework::expressions::Filter trackFilter_muon = o2::aod::fwdtrack::trackType == dimuoncuts.cfg_track_type && dimuoncuts.cfg_min_pt_track < o2::aod::fwdtrack::pt && o2::aod::fwdtrack::pt < dimuoncuts.cfg_max_pt_track && dimuoncuts.cfg_min_eta_track < o2::aod::fwdtrack::eta && o2::aod::fwdtrack::eta < dimuoncuts.cfg_max_eta_track && dimuoncuts.cfg_min_phi_track < o2::aod::fwdtrack::phi && o2::aod::fwdtrack::phi < dimuoncuts.cfg_max_phi_track;
   o2::framework::expressions::Filter ttcaFilter_muon = ifnode(dimuoncuts.enableTTCA.node(), true, o2::aod::emprimarymuon::isAssociatedToMPC == true);
-  o2::framework::expressions::Filter prefilter_derived_muon = ifnode(dimuoncuts.cfg_apply_cuts_from_prefilter_derived.node() && dimuoncuts.cfg_prefilter_bits_derived.node() >= static_cast<uint16_t>(1),
-                                                                     ifnode((dimuoncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS))) > static_cast<uint16_t>(0), (o2::aod::emprimarymuon::pfbderived & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS))) <= static_cast<uint16_t>(0), true) &&
-                                                                       ifnode((dimuoncuts.cfg_prefilter_bits_derived.node() & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS))) > static_cast<uint16_t>(0), (o2::aod::emprimarymuon::pfbderived & static_cast<uint16_t>(1 << int(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS))) <= static_cast<uint16_t>(0), true),
-                                                                     o2::aod::emprimarymuon::pfbderived >= static_cast<uint16_t>(0));
 
   o2::framework::expressions::Filter collisionFilter_centrality = (eventcuts.cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < eventcuts.cfgCentMax);
   o2::framework::expressions::Filter collisionFilter_numContrib = eventcuts.cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < eventcuts.cfgNumContribMax;
   o2::framework::expressions::Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   o2::framework::expressions::Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = o2::soa::Filtered<MyCollisions>;
+  using FilteredMyCollisionsSWT = o2::soa::Filtered<MyCollisionsSWT>;
 
   void processQC(FilteredMyCollisions const& collisions, Types const&... args)
   {
@@ -931,7 +939,7 @@ struct SingleTrackQC {
   }
   PROCESS_SWITCH(SingleTrackQC, processQC, "run single track QC", true);
 
-  void processQC_TriggeredData(FilteredMyCollisions const& collisions, Types const&... args)
+  void processQC_TriggeredData(FilteredMyCollisionsSWT const& collisions, Types const&... args, o2::aod::EMSWTriggerATCounters const& countersAT, o2::aod::EMSWTriggerATOICounters const& countersATOI)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       auto electrons = std::get<0>(std::tie(args...));
@@ -949,6 +957,19 @@ struct SingleTrackQC {
     }
     map_weight.clear();
     map_best_match_globalmuon.clear();
+
+    // for nomalization
+    int emswtId = o2::aod::pwgem::dilepton::swt::aliasLabels.at(zorroGroup.cfg_swt_name.value);
+    for (const auto& counter : countersAT) {
+      if (counter.isAT_bit(emswtId)) {
+        fRegistry.fill(HIST("Event/trigger/hAnalysedTrigger"), mRunNumber);
+      }
+    }
+    for (const auto& counter : countersATOI) {
+      if (counter.isAToI_bit(emswtId)) {
+        fRegistry.fill(HIST("Event/trigger/hAnalysedToI"), mRunNumber);
+      }
+    }
   }
   PROCESS_SWITCH(SingleTrackQC, processQC_TriggeredData, "run single track QC on triggered data", false);
 

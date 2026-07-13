@@ -44,25 +44,25 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
-// using MyMults = soa::Join<aod::Mults, /*aod::MultsGlobal,*/ aod::FT0MultZeqs, aod::PVMultZeqs/*, aod::GlobalMultZeqs*/>;
-using MyCents = soa::Join<aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs, aod::CentNGlobals>; // centrality table has dependency on multiplicity table.
-using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorFV0AVecs, aod::QvectorBPosVecs, aod::QvectorBNegVecs, aod::QvectorBTotVecs>;
-
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::EMEoIs, aod::Mults>;
-using MyCollisions_Cent = soa::Join<MyCollisions, MyCents>;
-using MyCollisions_Cent_Qvec = soa::Join<MyCollisions, MyCents, MyQvectors>;
-using MyCollisions_Cent_ZDC = soa::Join<MyCollisions, MyCents, o2::aod::SPCalibrationTables>;
-
-using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
-using MyCollisionsWithSWT_Cent = soa::Join<MyCollisionsWithSWT, MyCents>;
-using MyCollisionsWithSWT_Cent_Qvec = soa::Join<MyCollisionsWithSWT, MyCents, MyQvectors>;
-
-using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
-using MyCollisionsMC_Cent = soa::Join<MyCollisionsMC, MyCents>;
-using MyCollisionsMC_Cent_Qvec = soa::Join<MyCollisionsMC, MyCents, MyQvectors>;
-
 struct CreateEMEventDilepton {
+  using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
+  // using MyMults = soa::Join<aod::Mults, /*aod::MultsGlobal,*/ aod::FT0MultZeqs, aod::PVMultZeqs/*, aod::GlobalMultZeqs*/>;
+  using MyCents = soa::Join<aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs, aod::CentNGlobals>; // centrality table has dependency on multiplicity table.
+  using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorFV0AVecs, aod::QvectorBPosVecs, aod::QvectorBNegVecs, aod::QvectorBTotVecs>;
+
+  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::EMEoIs, aod::Mults>;
+  using MyCollisions_Cent = soa::Join<MyCollisions, MyCents>;
+  using MyCollisions_Cent_Qvec = soa::Join<MyCollisions, MyCents, MyQvectors>;
+  using MyCollisions_Cent_ZDC = soa::Join<MyCollisions, MyCents, o2::aod::SPCalibrationTables>;
+
+  using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
+  using MyCollisionsWithSWT_Cent = soa::Join<MyCollisionsWithSWT, MyCents>;
+  using MyCollisionsWithSWT_Cent_Qvec = soa::Join<MyCollisionsWithSWT, MyCents, MyQvectors>;
+
+  using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
+  using MyCollisionsMC_Cent = soa::Join<MyCollisionsMC, MyCents>;
+  using MyCollisionsMC_Cent_Qvec = soa::Join<MyCollisionsMC, MyCents, MyQvectors>;
+
   Produces<o2::aod::EMBCs_001> embc;
   Produces<o2::aod::EMEvents> event;
   Produces<o2::aod::EMEventsXY> eventXY;
@@ -74,6 +74,11 @@ struct CreateEMEventDilepton {
   Produces<o2::aod::EMEventsQvec3> event_qvec3;
   Produces<o2::aod::EMEventsZDC> event_zdc;
   Produces<o2::aod::EMEventNormInfos> event_norm_info;
+
+  Produces<o2::aod::EMSWTriggerBits> emswtbit;
+  // Produces<o2::aod::EMSWTriggerInfos> emswtinfo;
+  Produces<o2::aod::EMSWTriggerATCounters> emswtATcounter;
+  Produces<o2::aod::EMSWTriggerATOICounters> emswtATOIcounter;
 
   enum class EMEventType : int {
     kEvent = 0,
@@ -106,7 +111,6 @@ struct CreateEMEventDilepton {
 
   ~CreateEMEventDilepton() {}
 
-  int mRunNumber{0};
   // Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   template <bool isMC, bool isTriggerAnalysis, EMEventType eventtype, typename TCollisions, typename TBCs>
@@ -115,7 +119,6 @@ struct CreateEMEventDilepton {
     for (const auto& bc : bcs) {
       if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
         embc(o2::aod::emevsel::reduceSelectionBit(bc), bc.rct_raw()); // TVX is fired.
-        // embc(bc.selection_raw(), bc.rct_raw()); // TVX is fired.
       }
     } // end of bc loop
 
@@ -161,8 +164,10 @@ struct CreateEMEventDilepton {
       }
 
       if constexpr (isTriggerAnalysis) {
-        if (collision.swtaliastmp_raw() == 0) {
+        if (collision.triggerMask_raw() == 0) {
           continue;
+        } else {
+          emswtbit(collision.triggerMask_raw());
         }
       }
 
@@ -264,21 +269,42 @@ struct CreateEMEventDilepton {
 
   //---------- for data with swt ----------
 
-  void processEvent_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs)
+  void processEvent_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs, o2::aod::EMSWTriggerATCountersTMP const& emswtATcounterstmp, o2::aod::EMSWTriggerATOICountersTMP const& emswtATOIcounterstmp)
   {
     skimEvent<false, true, EMEventType::kEvent>(collisions, bcs);
+
+    for (const auto& counter : emswtATcounterstmp) {
+      emswtATcounter(counter.isAT_raw());
+    }
+    for (const auto& counter : emswtATOIcounterstmp) {
+      emswtATOIcounter(counter.isAToI_raw());
+    }
   }
   PROCESS_SWITCH(CreateEMEventDilepton, processEvent_SWT, "process event info", false);
 
-  void processEvent_SWT_Cent(MyCollisionsWithSWT_Cent const& collisions, MyBCs const& bcs)
+  void processEvent_SWT_Cent(MyCollisionsWithSWT_Cent const& collisions, MyBCs const& bcs, o2::aod::EMSWTriggerATCountersTMP const& emswtATcounterstmp, o2::aod::EMSWTriggerATOICountersTMP const& emswtATOIcounterstmp)
   {
     skimEvent<false, true, EMEventType::kEvent_Cent>(collisions, bcs);
+
+    for (const auto& counter : emswtATcounterstmp) {
+      emswtATcounter(counter.isAT_raw());
+    }
+    for (const auto& counter : emswtATOIcounterstmp) {
+      emswtATOIcounter(counter.isAToI_raw());
+    }
   }
   PROCESS_SWITCH(CreateEMEventDilepton, processEvent_SWT_Cent, "process event info", false);
 
-  void processEvent_SWT_Cent_Qvec(MyCollisionsWithSWT_Cent_Qvec const& collisions, MyBCs const& bcs)
+  void processEvent_SWT_Cent_Qvec(MyCollisionsWithSWT_Cent_Qvec const& collisions, MyBCs const& bcs, o2::aod::EMSWTriggerATCountersTMP const& emswtATcounterstmp, o2::aod::EMSWTriggerATOICountersTMP const& emswtATOIcounterstmp)
   {
     skimEvent<false, true, EMEventType::kEvent_Cent_Qvec>(collisions, bcs);
+
+    for (const auto& counter : emswtATcounterstmp) {
+      emswtATcounter(counter.isAT_raw());
+    }
+    for (const auto& counter : emswtATOIcounterstmp) {
+      emswtATOIcounter(counter.isAToI_raw());
+    }
   }
   PROCESS_SWITCH(CreateEMEventDilepton, processEvent_SWT_Cent_Qvec, "process event info", false);
 
@@ -326,12 +352,15 @@ struct AssociateDileptonToEMEvent {
       // LOGF(info, "collision.collisionId() = %d , nl = %d", collision.collisionId(), nl);
       for (int il = 0; il < nl; il++) {
         eventIds(collision.globalIndex());
+        mCounter++;
       } // end of photon loop
     } // end of collision loop
   }
 
   // This struct is for both data and MC.
   // Note that reconstructed collisions without mc collisions are already rejected in CreateEMEventDilepton in MC.
+
+  int mCounter{0};
 
   void processElectron(aod::EMEvents const& collisions, aod::EMPrimaryElectrons const& tracks)
   {
@@ -340,7 +369,11 @@ struct AssociateDileptonToEMEvent {
 
   void processFwdMuon(aod::EMEvents const& collisions, aod::EMPrimaryMuons const& tracks)
   {
+    mCounter = 0;
     fillEventId(collisions, tracks, prmmueventid, perCollision_mu);
+    if (mCounter != tracks.size()) {
+      LOGF(fatal, "different table size is detected. mCounter = %d, muons.size() = %d", mCounter, tracks.size()); // this should never happen.
+    }
   }
 
   void processChargedTrack(aod::EMEvents const& collisions, soa::Join<aod::EMPrimaryTracks, aod::EMPrimaryTrackEMEventIdsTMP> const& tracks)

@@ -16,7 +16,6 @@
 /// \date 2025-04-10
 
 #include "PWGCF/Femto/FemtoNuclei/DataModel/HadronNucleiTables.h"
-#include "PWGCF/FemtoWorld/Core/FemtoWorldMath.h"
 #include "PWGLF/DataModel/LFHypernucleiTables.h"
 #include "PWGLF/Utils/svPoolCreator.h"
 
@@ -55,7 +54,10 @@
 #include <MathUtils/Primitive2D.h>
 #include <ReconstructionDataFormats/PID.h>
 
-#include <THn.h>
+#include <Math/GenVector/Boost.h>
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PxPyPzM4D.h>
+#include <TH1.h>
 #include <TPDGCode.h>
 #include <TString.h>
 
@@ -79,12 +81,11 @@ using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCo
 
 namespace
 {
-constexpr double betheBlochDefault[2][6]{
-  {-136.71, 0.441, 0.2269, 1.347, 0.8035, 0.09},
-  {-321.34, 0.6539, 1.591, 0.8225, 2.363, 0.09}};
-static const std::vector<std::string> betheBlochParticleNames{"De", "He3"};
-static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
-static constexpr std::array<float, 9> tmpRadiiTPC{{85.f, 105.f, 125.f, 145.f, 165.f, 185.f, 205.f, 225.f, 245.f}};
+constexpr std::array<double, 12> BetheBlochDefault{-136.71, 0.441, 0.2269, 1.347, 0.8035, 0.09,
+                                                   -321.34, 0.6539, 1.591, 0.8225, 2.363, 0.09};
+const std::vector<std::string> betheBlochParticleNames{"De", "He3"};
+const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
+constexpr std::array<float, 9> tmpRadiiTPC{{85.f, 105.f, 125.f, 145.f, 165.f, 185.f, 205.f, 225.f, 245.f}};
 constexpr int DeuteronPDG = o2::constants::physics::Pdg::kDeuteron;
 constexpr int He3PDG = o2::constants::physics::Pdg::kHelium3;
 constexpr float He3RigidityMin = 0.8f;
@@ -92,6 +93,7 @@ constexpr int He3TPCNClsFoundMin = 110;
 constexpr float He3TPCChi2NClMin = 0.5f;
 constexpr float He3TPCNSigmaMax = 3.0f;
 constexpr float He3ITSNSigmaMin = -1.5f;
+using PairLorentzVector = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<double>>;
 
 enum Selections {
   kNoCuts = 0,
@@ -100,18 +102,16 @@ enum Selections {
   kAll
 };
 
-float MassHad = 0;
-
 } // namespace
 
 struct HadNucandidate {
 
-  float recoPtNu() const { return signNu * std::hypot(momNu[0], momNu[1]); }
-  float recoPhiNu() const { return std::atan2(momNu[1], momNu[0]); }
-  float recoEtaNu() const { return std::asinh(momNu[2] / std::abs(recoPtNu())); }
-  float recoPtHad() const { return signHad * std::hypot(momHad[0], momHad[1]); }
-  float recoPhiHad() const { return std::atan2(momHad[1], momHad[0]); }
-  float recoEtaHad() const { return std::asinh(momHad[2] / std::abs(recoPtHad())); }
+  [[nodiscard]] float recoPtNu() const { return signNu * std::hypot(momNu[0], momNu[1]); }
+  [[nodiscard]] float recoPhiNu() const { return std::atan2(momNu[1], momNu[0]); }
+  [[nodiscard]] float recoEtaNu() const { return std::asinh(momNu[2] / std::abs(recoPtNu())); }
+  [[nodiscard]] float recoPtHad() const { return signHad * std::hypot(momHad[0], momHad[1]); }
+  [[nodiscard]] float recoPhiHad() const { return std::atan2(momHad[1], momHad[0]); }
+  [[nodiscard]] float recoEtaHad() const { return std::asinh(momHad[2] / std::abs(recoPtHad())); }
 
   std::array<float, 3> momNu = {99.f, 99.f, 99.f};
   std::array<float, 3> momHad = {99.f, 99.f, 99.f};
@@ -176,78 +176,135 @@ struct HadNucleiFemto {
   Produces<aod::HadronHyperTable> mOutputHyperDataTable;
   Produces<aod::HadronNucleiMult> mOutputMultiplicityTable;
 
-  // Particle species configuration
-  Configurable<int> settingNuPDGCode{"settingNuPDGCode", static_cast<int>(DeuteronPDG), "Nucleus - PDG code"};
-  Configurable<int> settingHadPDGCode{"settingHadPDGCode", 211, "Hadron - PDG code"};
-  // Event selection and mixing configuration
-  Configurable<float> settingCutVertex{"settingCutVertex", 10.0f, "Accepted z-vertex range"};
-  Configurable<int> settingNoMixedEvents{"settingNoMixedEvents", 5, "Number of mixed events per event"};
-  Configurable<bool> settingEnableBkgUS{"settingEnableBkgUS", false, "Enable US background"};
-  Configurable<bool> settingSaveUSandLS{"settingSaveUSandLS", true, "Save All Pairs"};
-  // Common track-quality cuts
-  Configurable<float> settingCutEta{"settingCutEta", 0.8f, "Eta cut on daughter track"};
-  Configurable<float> settingCutNCls{"settingCutNCls", 5.0f, "Minimum ITS Ncluster for tracks"};
-  Configurable<float> settingCutChi2tpcLow{"settingCutChi2tpcLow", 0.5f, "Low cut on TPC chi2"};
-  Configurable<float> settingCutChi2tpcHigh{"settingCutChi2tpcHigh", 4.f, "High cut on TPC chi2"};
-  Configurable<float> settingCutChi2NClITS{"settingCutChi2NClITS", 36.f, "Maximum ITS Chi2 for tracks"};
-  // Hadron purity and PID cuts
-  Configurable<float> settingCutPinMinTOFHad{"settingCutPinMinTOFHad", 0.5f, "Minimum Pin to apply the TOF cut on hadrons"};
-  Configurable<float> settingCutNsigmaTPCHad{"settingCutNsigmaTPCHad", 3.0f, "Value of the TPC Nsigma cut on Had"};
-  Configurable<float> settingCutNsigmaTOFHad{"settingCutNsigmaTOFHad", 3.0f, "Value of the hsdron TOF Nsigma cut"};
-  Configurable<float> settingCutNsigTPCPrMin{"settingCutNsigTPCPrMin", 3.0f, "Minimum TPC Pr Nsigma cut for rejection"};
-  Configurable<float> settingCutNsigTPCPiMin{"settingCutNsigTPCPiMin", 3.0f, "Minimum TPC Pi Nsigma cut for rejection"};
-  Configurable<float> settingCutNsigTOFPrMin{"settingCutNsigTOFPrMin", 3.0f, "Minimum TOF Pr Nsigma cut for rejection"};
-  Configurable<float> settingCutNsigTOFPiMin{"settingCutNsigTOFPiMin", 3.0f, "Minimum TOF Pi Nsigma cut for rejection"};
-  Configurable<float> settingHadptMin{"settingHadptMin", 0.14f, "Minimum pT for the reference pion track cuts"};
-  Configurable<float> settingHadptMax{"settingHadptMax", 2.5f, "Maximum pT for the reference pion track cuts"};
-  Configurable<int> settingPionITSInnerBarrelMin{"settingPionITSInnerBarrelMin", 3, "Minimum ITS inner barrel clusters for the reference pion track cuts"};
-  Configurable<int> settingPionITSNClsMin{"settingPionITSNClsMin", 7, "Minimum ITS clusters for the reference pion track cuts"};
-  Configurable<int> settingPionTPCNClsFoundMin{"settingPionTPCNClsFoundMin", 80, "Minimum found TPC clusters for the reference pion track cuts"};
-  Configurable<int> settingPionTPCCrossedRowsMin{"settingPionTPCCrossedRowsMin", 90, "Minimum crossed TPC rows for the reference pion track cuts"};
-  Configurable<float> settingPionDCAxyOffset{"settingPionDCAxyOffset", 0.004f, "DCAxy offset for the reference pion track cuts"};
-  Configurable<float> settingPionDCAxyPtCoeff{"settingPionDCAxyPtCoeff", 0.013f, "DCAxy 1/pT coefficient for the reference pion track cuts"};
-  Configurable<float> settingPionDCAzOffset{"settingPionDCAzOffset", 0.004f, "DCAz offset for the reference pion track cuts"};
-  Configurable<float> settingPionDCAzPtCoeff{"settingPionDCAzPtCoeff", 0.013f, "DCAz 1/pT coefficient for the reference pion track cuts"};
-  Configurable<float> settingPionMomCombMin{"settingPionMomCombMin", 0.5f, "Minimum momentum to use combined TPC+TOF PID for reference pions"};
-  Configurable<float> settingPionTPCNsigMax{"settingPionTPCNsigMax", 3.0f, "Maximum TPC n-sigma for reference pions below the TOF threshold"};
-  Configurable<float> settingPionCombNsigMax{"settingPionCombNsigMax", 3.0f, "Maximum combined TPC+TOF n-sigma for reference pions"};
-  // Deuteron purity and PID cuts
-  Configurable<float> settingCutPinMinDe{"settingCutPinMinDe", 0.0f, "Minimum Pin for De"};
-  Configurable<float> settingCutClSizeItsDe{"settingCutClSizeItsDe", 4.0f, "Minimum ITS cluster size for De"};
-  Configurable<float> settingCutDeptMin{"settingCutDeptMin", 0.6f, "Minimum PT cut on De"};
-  Configurable<float> settingCutDeptMax{"settingCutDeptMax", 1.6f, "Maximum PT cut on De"};
-  Configurable<float> settingCutPinMinTOFITSDe{"settingCutPinMinTOFITSDe", 1.2f, "Minimum p to apply the TOF ITS cut on De"};
-  Configurable<float> settingCutNsigmaTPCDe{"settingCutNsigmaTPCDe", 2.5f, "Value of the TPC Nsigma cut on De"};
-  Configurable<float> settingCutNsigmaITSDe{"settingCutNsigmaITSDe", 2.5f, "Value of the ITD Nsigma cut on De"};
-  Configurable<float> settingCutNsigmaTOFTPCDe{"settingCutNsigmaTOFTPCDe", 2.5f, "Value of the De TOF TPC combNsigma cut"};
-  Configurable<bool> settingReqSingleNsig{"settingReqSingleNsig", false, "If true, also require individual TPC and TOF n-sigma cuts in branches using combined TPC+TOF PID"};
-  Configurable<bool> settingUseProtonMassForKstarMt{"settingUseProtonMassForKstarMt", false, "If true, use proton mass instead of deuteron mass for kstar and mT"};
-  Configurable<bool> settingEnableClosePairRejection{"settingEnableClosePairRejection", false, "Enable close pair rejection for nucleus-hadron track pairs"};
-  Configurable<float> settingClosePairDeltaPhiMax{"settingClosePairDeltaPhiMax", 0.01f, "Maximum delta phi star for close pair rejection"};
-  Configurable<float> settingClosePairDeltaEtaMax{"settingClosePairDeltaEtaMax", 0.01f, "Maximum delta eta for close pair rejection"};
-  Configurable<int> settingClosePairRadiusMode{"settingClosePairRadiusMode", 1, "Close pair rejection mode: 0 = PV, 1 = average phi star, 2 = specific TPC radius"};
-  Configurable<float> settingClosePairSpecificRadius{"settingClosePairSpecificRadius", 85.f, "TPC radius in cm used when close pair rejection mode is 2"};
-  // Hypertriton-specific cuts
-  Configurable<float> settingCutTPCChi2He{"settingCutTPCChi2He", 0.0f, "Minimum tpcChi2He for Hyper He3"};
-  Configurable<float> settingCutAverClsSizeHe{"settingCutAverClsSizeHe", 0.0f, "Minimum averClusSizeHe for Hyper He3"};
-  // Output and QA controls
-  Configurable<bool> settingFillTable{"settingFillTable", false, "Enable table filling"};
-  Configurable<bool> settingFillMultiplicity{"settingFillMultiplicity", false, "Fill multiplicity table"};
-  Configurable<bool> settingUseBBcomputeDeNsigma{"settingUseBBcomputeDeNsigma", false, "Use BB params to compute De TPC Nsigma"};
-  // Zorro
-  Configurable<bool> settingSkimmedProcessing{"settingSkimmedProcessing", false, "Skimmed dataset processing"};
-  // CCDB options
-  Configurable<double> settingDbz{"settingDbz", -999, "bz field, -999 is automatic"};
-  Configurable<std::string> settingCcdburl{"settingCcdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> settingGrpPath{"settingGrpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> settingGrpmagPath{"settingGrpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<std::string> settingLutPath{"settingLutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-  Configurable<std::string> settingGeoPath{"settingGeoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  Configurable<std::string> settingPidPath{"settingPidPath", "", "Path to the PID response object"};
+  struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
+    std::string prefix{"species"};
+    // Particle species configuration
+    Configurable<int> settingNuPDGCode{"settingNuPDGCode", static_cast<int>(DeuteronPDG), "Nucleus - PDG code"};
+    Configurable<int> settingHadPDGCode{"settingHadPDGCode", 211, "Hadron - PDG code"};
+  } species;
 
-  Configurable<LabeledArray<double>> settingBetheBlochParams{"settingBetheBlochParams", {betheBlochDefault[0], 2, 6, betheBlochParticleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for the selected nucleus"};
-  Configurable<bool> settingCompensatePIDinTracking{"settingCompensatePIDinTracking", false, "If true, divide tpcInnerParam by the electric charge"};
-  Configurable<int> settingMaterialCorrection{"settingMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Material correction type"};
+  struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
+    std::string prefix{"eventMixing"};
+    // Event selection and mixing configuration
+    Configurable<float> settingCutVertex{"settingCutVertex", 10.0f, "Accepted z-vertex range"};
+    Configurable<int> settingNoMixedEvents{"settingNoMixedEvents", 5, "Number of mixed events per event"};
+    Configurable<bool> settingEnableBkgUS{"settingEnableBkgUS", false, "Enable US background"};
+    Configurable<bool> settingSaveUSandLS{"settingSaveUSandLS", true, "Save All Pairs"};
+  } eventMixing;
+
+  struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
+    std::string prefix{"trackCut"};
+    // Common track-quality cuts
+    Configurable<float> settingCutEta{"settingCutEta", 0.8f, "Eta cut on daughter track"};
+    Configurable<float> settingCutNCls{"settingCutNCls", 5.0f, "Minimum ITS Ncluster for tracks"};
+    Configurable<float> settingCutChi2tpcLow{"settingCutChi2tpcLow", 0.5f, "Low cut on TPC chi2"};
+    Configurable<float> settingCutChi2tpcHigh{"settingCutChi2tpcHigh", 4.f, "High cut on TPC chi2"};
+    Configurable<float> settingCutChi2NClITS{"settingCutChi2NClITS", 36.f, "Maximum ITS Chi2 for tracks"};
+  } trackCut;
+
+  struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
+    std::string prefix{"hadronPid"};
+    // Hadron purity and PID cuts
+    Configurable<float> settingCutPinMinTOFHad{"settingCutPinMinTOFHad", 0.5f, "Minimum Pin to apply the TOF cut on hadrons"};
+    Configurable<float> settingCutNsigmaTPCHad{"settingCutNsigmaTPCHad", 3.0f, "Value of the TPC Nsigma cut on Had"};
+    Configurable<float> settingCutNsigmaTOFHad{"settingCutNsigmaTOFHad", 3.0f, "Value of the hsdron TOF Nsigma cut"};
+    Configurable<float> settingCutNsigTPCPrMin{"settingCutNsigTPCPrMin", 3.0f, "Minimum TPC Pr Nsigma cut for rejection"};
+    Configurable<float> settingCutNsigTPCPiMin{"settingCutNsigTPCPiMin", 3.0f, "Minimum TPC Pi Nsigma cut for rejection"};
+    Configurable<float> settingCutNsigTOFPrMin{"settingCutNsigTOFPrMin", 3.0f, "Minimum TOF Pr Nsigma cut for rejection"};
+    Configurable<float> settingCutNsigTOFPiMin{"settingCutNsigTOFPiMin", 3.0f, "Minimum TOF Pi Nsigma cut for rejection"};
+    Configurable<float> settingHadptMin{"settingHadptMin", 0.14f, "Minimum pT for the reference pion track cuts"};
+    Configurable<float> settingHadptMax{"settingHadptMax", 2.5f, "Maximum pT for the reference pion track cuts"};
+    Configurable<int> settingPionITSInnerBarrelMin{"settingPionITSInnerBarrelMin", 3, "Minimum ITS inner barrel clusters for the reference pion track cuts"};
+    Configurable<int> settingPionITSNClsMin{"settingPionITSNClsMin", 7, "Minimum ITS clusters for the reference pion track cuts"};
+    Configurable<int> settingPionTPCNClsFoundMin{"settingPionTPCNClsFoundMin", 80, "Minimum found TPC clusters for the reference pion track cuts"};
+    Configurable<int> settingPionTPCCrossedRowsMin{"settingPionTPCCrossedRowsMin", 90, "Minimum crossed TPC rows for the reference pion track cuts"};
+    Configurable<float> settingPionDCAxyOffset{"settingPionDCAxyOffset", 0.004f, "DCAxy offset for the reference pion track cuts"};
+    Configurable<float> settingPionDCAxyPtCoeff{"settingPionDCAxyPtCoeff", 0.013f, "DCAxy 1/pT coefficient for the reference pion track cuts"};
+    Configurable<float> settingPionDCAzOffset{"settingPionDCAzOffset", 0.004f, "DCAz offset for the reference pion track cuts"};
+    Configurable<float> settingPionDCAzPtCoeff{"settingPionDCAzPtCoeff", 0.013f, "DCAz 1/pT coefficient for the reference pion track cuts"};
+    Configurable<float> settingPionMomCombMin{"settingPionMomCombMin", 0.5f, "Minimum momentum to use combined TPC+TOF PID for reference pions"};
+    Configurable<float> settingPionTPCNsigMax{"settingPionTPCNsigMax", 3.0f, "Maximum TPC n-sigma for reference pions below the TOF threshold"};
+    Configurable<float> settingPionCombNsigMax{"settingPionCombNsigMax", 3.0f, "Maximum combined TPC+TOF n-sigma for reference pions"};
+  } hadronPid;
+
+  struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
+    std::string prefix{"deuteronPid"};
+    // Deuteron purity and PID cuts
+    Configurable<float> settingCutPinMinDe{"settingCutPinMinDe", 0.0f, "Minimum Pin for De"};
+    Configurable<float> settingCutClSizeItsDe{"settingCutClSizeItsDe", 4.0f, "Minimum ITS cluster size for De"};
+    Configurable<float> settingCutDeptMin{"settingCutDeptMin", 0.6f, "Minimum PT cut on De"};
+    Configurable<float> settingCutDeptMax{"settingCutDeptMax", 1.6f, "Maximum PT cut on De"};
+    Configurable<float> settingCutPinMinTOFITSDe{"settingCutPinMinTOFITSDe", 1.2f, "Minimum p to apply the TOF ITS cut on De"};
+    Configurable<float> settingCutNsigmaTPCDe{"settingCutNsigmaTPCDe", 2.5f, "Value of the TPC Nsigma cut on De"};
+    Configurable<float> settingCutNsigmaITSDe{"settingCutNsigmaITSDe", 2.5f, "Value of the ITD Nsigma cut on De"};
+    Configurable<float> settingCutNsigmaTOFTPCDe{"settingCutNsigmaTOFTPCDe", 2.5f, "Value of the De TOF TPC combNsigma cut"};
+    Configurable<bool> settingReqSingleNsig{"settingReqSingleNsig", false, "If true, also require individual TPC and TOF n-sigma cuts in branches using combined TPC+TOF PID"};
+    Configurable<bool> settingUseProtonMassForKstarMt{"settingUseProtonMassForKstarMt", false, "If true, use proton mass instead of deuteron mass for kstar and mT"};
+  } deuteronPid;
+
+  struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
+    std::string prefix{"CPR"};
+    // Close pair rejection controls
+    Configurable<bool> settingEnableClosePairRejection{"settingEnableClosePairRejection", false, "Enable close pair rejection for nucleus-hadron track pairs"};
+    Configurable<float> settingClosePairDeltaPhiMax{"settingClosePairDeltaPhiMax", 0.01f, "Maximum delta phi star for close pair rejection"};
+    Configurable<float> settingClosePairDeltaEtaMax{"settingClosePairDeltaEtaMax", 0.01f, "Maximum delta eta for close pair rejection"};
+    Configurable<int> settingClosePairRadiusMode{"settingClosePairRadiusMode", 1, "Close pair rejection mode: 0 = PV, 1 = average phi star, 2 = specific TPC radius"};
+    Configurable<float> settingClosePairSpecificRadius{"settingClosePairSpecificRadius", 85.f, "TPC radius in cm used when close pair rejection mode is 2"};
+  } CPR;
+
+  struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
+    std::string prefix{"hypertriton"};
+    // Hypertriton-specific cuts
+    Configurable<float> settingCutTPCChi2He{"settingCutTPCChi2He", 0.0f, "Minimum tpcChi2He for Hyper He3"};
+    Configurable<float> settingCutAverClsSizeHe{"settingCutAverClsSizeHe", 0.0f, "Minimum averClusSizeHe for Hyper He3"};
+  } hypertriton;
+
+  struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
+    std::string prefix{"output"};
+    // Output and QA controls
+    Configurable<bool> settingFillTable{"settingFillTable", false, "Enable table filling"};
+    Configurable<bool> settingFillTableLowKstarOnly{"settingFillTableLowKstarOnly", false, "If true, fill the output table only for pion-deuteron pairs below the kstar threshold"};
+    Configurable<float> settingFillTablePiDeKstarMax{"settingFillTablePiDeKstarMax", 0.1f, "Maximum kstar for pion-deuteron pairs written to the output table"};
+    Configurable<bool> settingFillMultiplicity{"settingFillMultiplicity", false, "Fill multiplicity table"};
+    Configurable<bool> settingUseBBcomputeDeNsigma{"settingUseBBcomputeDeNsigma", false, "Use BB params to compute De TPC Nsigma"};
+  } output;
+
+  struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
+    std::string prefix{"zorro"};
+    // Zorro
+    Configurable<bool> settingSkimmedProcessing{"settingSkimmedProcessing", false, "Skimmed dataset processing"};
+  } zorro;
+
+  struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
+    std::string prefix{"ccdb"};
+    // CCDB options
+    Configurable<double> settingDbz{"settingDbz", -999, "bz field, -999 is automatic"};
+    Configurable<std::string> settingCcdburl{"settingCcdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::string> settingGrpPath{"settingGrpPath", "GLO/GRP/GRP", "Path of the grp file"};
+    Configurable<std::string> settingGrpmagPath{"settingGrpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+    Configurable<std::string> settingLutPath{"settingLutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+    Configurable<std::string> settingGeoPath{"settingGeoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+    Configurable<std::string> settingPidPath{"settingPidPath", "", "Path to the PID response object"};
+  } ccdb;
+
+  struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
+    std::string prefix{"pidCalibration"};
+    // PID calibration and material correction controls
+    Configurable<LabeledArray<double>> settingBetheBlochParams{"settingBetheBlochParams", {BetheBlochDefault.data(), 2, 6, betheBlochParticleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for the selected nucleus"};
+    Configurable<bool> settingCompensatePIDinTracking{"settingCompensatePIDinTracking", false, "If true, divide tpcInnerParam by the electric charge"};
+    Configurable<int> settingMaterialCorrection{"settingMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Material correction type"};
+  } pidCalibration;
 
   Preslice<TrackCandidates> mPerCol = aod::track::collisionId;
   PresliceUnsorted<o2::aod::DataHypCandsWColl> hypPerCol = o2::aod::hyperrec::collisionId;
@@ -258,18 +315,19 @@ struct HadNucleiFemto {
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   BinningType binningPolicy{{axisVertex, axisCentrality}, true};
   SliceCache cache;
-  SameKindPair<CollisionsFull, TrackCandidates, BinningType> mPair{binningPolicy, settingNoMixedEvents, -1, &cache};
-  // Pair<CollisionsFull, TrackCandidates, o2::aod::DataHypCandsWColl, BinningType> hyperPair{binningPolicy, settingNoMixedEvents, -1, &cache};
+  SameKindPair<CollisionsFull, TrackCandidates, BinningType> mPair{binningPolicy, eventMixing.settingNoMixedEvents, -1, &cache};
+  // Pair<CollisionsFull, TrackCandidates, o2::aod::DataHypCandsWColl, BinningType> hyperPair{binningPolicy, eventMixing.settingNoMixedEvents, -1, &cache};
 
-  std::array<float, 6> mBBparamsNucleus;
+  std::array<float, 6> mBBparamsNucleus{};
+  float mMassHad{0.f};
   std::vector<bool> mGoodCollisions;
   std::vector<SVCand> mTrackPairs;
   std::vector<SVCand> mTrackHypPairs;
   o2::vertexing::DCAFitterN<2> mFitter;
 
-  int mRunNumber;
-  float mDbz;
-  Service<o2::ccdb::BasicCCDBManager> mCcdb;
+  int mRunNumber{0};
+  float mDbz{0.f};
+  Service<o2::ccdb::BasicCCDBManager> mCcdb{};
   Zorro mZorro;
   OutputObj<ZorroSummary> mZorroSummary{"zorroSummary"};
 
@@ -290,8 +348,8 @@ struct HadNucleiFemto {
      {"hdcaxyNu", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hdcazNu", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hNClsNuITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
-     {"hNuPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-     {"hSingleNuPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
+     {"hNuPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{280, -7.0f, 7.0f}}}},
+     {"hSingleNuPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{280, -7.0f, 7.0f}}}},
      {"hNuPin", "#it{p} distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
      {"hSingleNuPin", "#it{p} distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
      {"hNuEta", "eta distribution; #eta(Nu)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
@@ -300,8 +358,8 @@ struct HadNucleiFemto {
      {"hdcaxyHad", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hdcazHad", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hNClsHadITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
-     {"hHadPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{160, -4.0f, 4.0f}}}},
-     {"hSingleHadPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
+     {"hHadPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{280, -7.0f, 7.0f}}}},
+     {"hSingleHadPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{280, -7.0f, 7.0f}}}},
      {"hHadPin", "P distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{120, -4.0f, 4.0f}}}},
      {"hHadEta", "eta distribution; #eta(had)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hHadPhi", "phi distribution; phi(had)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
@@ -314,22 +372,22 @@ struct HadNucleiFemto {
      {"h2dEdx", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
 
      // Nucleus PID
-     {"h2NsigmaNuTPC", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {200, -5.0f, 5.0f}}}},
-     {"h2NsigmaNuComb", "NsigmaNu TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(Nu)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {100, 0.0f, 5.0f}}}},
-     {"h2NsigmaNuTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-     {"h2NsigmaNuTPC_preselecComp", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-     {"h2NSigmaNuITS_preselection", "NsigmaNu ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} Nu", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
-     {"h2NSigmaNuITS", "NsigmaNu ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} Nu", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {120, -3.0f, 3.0f}}}},
-     {"h2NsigmaNuTOF", "NsigmaNu TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(Nu)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-     {"h2NsigmaNuTOF_preselection", "NsigmaNu TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     {"h2NsigmaNuTPC", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2NsigmaNuComb", "NsigmaNu TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {100, 0.0f, 5.0f}}}},
+     {"h2NsigmaNuTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
+     {"h2NsigmaNuTPC_preselecComp", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
+     {"h2NSigmaNuITS_preselection", "NsigmaNu ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} Nu", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {120, -3.0f, 3.0f}}}},
+     {"h2NSigmaNuITS", "NsigmaNu ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} Nu", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {120, -3.0f, 3.0f}}}},
+     {"h2NsigmaNuTOF", "NsigmaNu TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2NsigmaNuTOF_preselection", "NsigmaNu TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
 
      // Hadron PID
-     {"h2NsigmaHadComb", "NsigmaHad TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(had)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {100, 0.0f, 5.0f}}}},
-     {"h2NsigmaHadTPC", "NsigmaHad TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-     {"h2NsigmaHadTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-     {"h2NsigmaHadTOF", "NsigmaHad TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-     {"h2NsigmaHadTOF_preselection", "NsigmaHad TOF distribution; #iit{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-     {"h2NsigmaHadComb_preselection", "NsigmaHad TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(had)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, 0.0f, 5.0f}}}},
+     {"h2NsigmaHadComb", "NsigmaHad TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(had)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {100, 0.0f, 5.0f}}}},
+     {"h2NsigmaHadTPC", "NsigmaHad TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2NsigmaHadTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
+     {"h2NsigmaHadTOF", "NsigmaHad TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2NsigmaHadTOF_preselection", "NsigmaHad TOF distribution; #iit{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
+     {"h2NsigmaHadComb_preselection", "NsigmaHad TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(had)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {100, 0.0f, 5.0f}}}},
      {"h2NsigmaHadPrTPC", "NsigmaHad TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
      {"h2NsigmaHadPiTPC", "NsigmaHad TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(pi)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
      {"h2NsigmaHadKaTPC", "NsigmaHad TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(K)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
@@ -338,17 +396,17 @@ struct HadNucleiFemto {
      {"h2NsigmaHadKaTOF", "NsigmaHad TOF distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(K)", {HistType::kTH1F, {{200, -5.0f, 5.0f}}}},
 
      // Purity
-     {"purity/h2NsigmaNuTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-     {"purity/h2NsigmaNuTPC_preselecComp", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-     {"purity/h2NSigmaNuITS_preselection", "NsigmaNu ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} Nu", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
-     {"purity/h2NsigmaNuTOF_preselection", "NsigmaNu TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-     {"purity/h2NsigmaNuComb_preselection", "NsigmaNu TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, 0.0f, 5.0f}}}},
-     {"purity/h2NsigmaHadTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-     {"purity/h2NsigmaHadTOF_preselection", "NsigmaHad TOF distribution; #iit{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-     {"purity/h2NsigmaHadComb_preselection", "NsigmaHad TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(had)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, 0.0f, 5.0f}}}},
+     {"purity/h2NsigmaNuTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
+     {"purity/h2NsigmaNuTPC_preselecComp", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
+     {"purity/h2NSigmaNuITS_preselection", "NsigmaNu ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} Nu", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {120, -3.0f, 3.0f}}}},
+     {"purity/h2NsigmaNuTOF_preselection", "NsigmaNu TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
+     {"purity/h2NsigmaNuComb_preselection", "NsigmaNu TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {100, 0.0f, 5.0f}}}},
+     {"purity/h2NsigmaHadTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
+     {"purity/h2NsigmaHadTOF_preselection", "NsigmaHad TOF distribution; #iit{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {400, -10.0f, 10.0f}}}},
+     {"purity/h2NsigmaHadComb_preselection", "NsigmaHad TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(had)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {100, 0.0f, 5.0f}}}},
 
      // Hypertriton
-     {"hHe3TPCnsigma", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(He3)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {200, -5.0f, 5.0f}}}},
+     {"hHe3TPCnsigma", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(He3)", {HistType::kTH2F, {{280, -7.0f, 7.0f}, {200, -5.0f, 5.0f}}}},
      {"hHe3P", "Pin distribution; p (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
      {"hHe3P_preselected", "Pin distribution_preselected; p (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
 
@@ -378,7 +436,7 @@ struct HadNucleiFemto {
     mZorroSummary.setObject(mZorro.getZorroSummary());
     mRunNumber = 0;
 
-    mCcdb->setURL(settingCcdburl);
+    mCcdb->setURL(ccdb.settingCcdburl);
     mCcdb->setCaching(true);
     mCcdb->setLocalObjectValidityChecking();
     mCcdb->setFatalWhenNull(false);
@@ -390,15 +448,15 @@ struct HadNucleiFemto {
     mFitter.setMaxDZIni(1e9);
     mFitter.setMaxChi2(1e9);
     mFitter.setUseAbsDCA(true);
-    int mat{static_cast<int>(settingMaterialCorrection)};
+    int mat{static_cast<int>(pidCalibration.settingMaterialCorrection)};
     mFitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
 
     const int numParticles = 5;
     const char* betheBlochLabel = nucleusBetheBlochLabel();
     for (int i = 0; i < numParticles; i++) {
-      mBBparamsNucleus[i] = settingBetheBlochParams->get(betheBlochLabel, Form("p%i", i));
+      mBBparamsNucleus[i] = pidCalibration.settingBetheBlochParams->get(betheBlochLabel, Form("p%i", i));
     }
-    mBBparamsNucleus[5] = settingBetheBlochParams->get(betheBlochLabel, "resolution");
+    mBBparamsNucleus[5] = pidCalibration.settingBetheBlochParams->get(betheBlochLabel, "resolution");
 
     std::vector<std::string> selectionLabels = {"All", "Track selection", "PID"};
     for (int i = 0; i < Selections::kAll; i++) {
@@ -417,36 +475,36 @@ struct HadNucleiFemto {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-    if (settingSkimmedProcessing) {
+    if (zorro.settingSkimmedProcessing) {
       mZorro.initCCDB(mCcdb.service, bc.runNumber(), bc.timestamp(), useHelium3Nucleus() ? "fHe" : "fDe");
       mZorro.populateHistRegistry(mQaRegistry, bc.runNumber());
     }
     mRunNumber = bc.runNumber();
     const float defaultBzValue = -999.0f;
     auto run3GrpTimestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = mCcdb->getForTimeStamp<o2::parameters::GRPObject>(settingGrpPath, run3GrpTimestamp);
-    o2::parameters::GRPMagField* grpmag = 0x0;
+    auto* grpo = mCcdb->getForTimeStamp<o2::parameters::GRPObject>(ccdb.settingGrpPath, run3GrpTimestamp);
+    o2::parameters::GRPMagField* grpmag = nullptr;
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
-      if (settingDbz < defaultBzValue) {
+      if (ccdb.settingDbz < defaultBzValue) {
         // Fetch magnetic field from ccdb for current collision
         mDbz = grpo->getNominalL3Field();
         LOG(info) << "Retrieved GRP for timestamp " << run3GrpTimestamp << " with magnetic field of " << mDbz << " kZG";
       } else {
-        mDbz = settingDbz;
+        mDbz = ccdb.settingDbz;
       }
     } else {
-      grpmag = mCcdb->getForTimeStamp<o2::parameters::GRPMagField>(settingGrpmagPath, run3GrpTimestamp);
+      grpmag = mCcdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdb.settingGrpmagPath, run3GrpTimestamp);
       if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << settingGrpmagPath << " of object GRPMagField and " << settingGrpPath << " of object GRPObject for timestamp " << run3GrpTimestamp;
+        LOG(fatal) << "Got nullptr from CCDB for path " << ccdb.settingGrpmagPath << " of object GRPMagField and " << ccdb.settingGrpPath << " of object GRPObject for timestamp " << run3GrpTimestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
-      if (settingDbz < defaultBzValue) {
+      if (ccdb.settingDbz < defaultBzValue) {
         // Fetch magnetic field from ccdb for current collision
         mDbz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
         LOG(info) << "Retrieved GRP for timestamp " << run3GrpTimestamp << " with magnetic field of " << mDbz << " kZG";
       } else {
-        mDbz = settingDbz;
+        mDbz = ccdb.settingDbz;
       }
     }
   }
@@ -459,17 +517,17 @@ struct HadNucleiFemto {
     mQaRegistry.fill(HIST("hEvents"), 0);
 
     if constexpr (isMC) {
-      if (/*!collision.sel8() ||*/ std::abs(collision.posZ()) > settingCutVertex) {
+      if (/*!collision.sel8() ||*/ std::abs(collision.posZ()) > eventMixing.settingCutVertex) {
         return false;
       }
     } else {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
-      if (!collision.sel8() || std::abs(collision.posZ()) > settingCutVertex) {
+      if (!collision.sel8() || std::abs(collision.posZ()) > eventMixing.settingCutVertex) {
         return false;
       }
-      if (settingSkimmedProcessing) {
+      if (zorro.settingSkimmedProcessing) {
         bool zorroSelected = mZorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
         if (zorroSelected) {
           mQaRegistry.fill(HIST("hEvents"), 2);
@@ -486,41 +544,37 @@ struct HadNucleiFemto {
   template <typename Ttrack>
   bool selectTrack(const Ttrack& candidate)
   {
-    if (std::abs(candidate.eta()) > settingCutEta) {
+    if (std::abs(candidate.eta()) > trackCut.settingCutEta) {
       return false;
     }
     const int minTPCNClsFound = 90;
     const int minTPCNClsCrossedRows = 70;
     const float crossedRowsToFindableRatio = 0.83f;
-    if (candidate.itsNCls() < settingCutNCls ||
-        candidate.tpcNClsFound() < minTPCNClsFound ||
-        candidate.tpcNClsCrossedRows() < minTPCNClsCrossedRows ||
-        candidate.tpcNClsCrossedRows() < crossedRowsToFindableRatio * candidate.tpcNClsFindable() ||
-        candidate.tpcChi2NCl() > settingCutChi2tpcHigh ||
-        candidate.tpcChi2NCl() < settingCutChi2tpcLow ||
-        candidate.itsChi2NCl() > settingCutChi2NClITS) {
-      return false;
-    }
-
-    return true;
+    return !(candidate.itsNCls() < trackCut.settingCutNCls ||
+             candidate.tpcNClsFound() < minTPCNClsFound ||
+             candidate.tpcNClsCrossedRows() < minTPCNClsCrossedRows ||
+             candidate.tpcNClsCrossedRows() < crossedRowsToFindableRatio * candidate.tpcNClsFindable() ||
+             candidate.tpcChi2NCl() > trackCut.settingCutChi2tpcHigh ||
+             candidate.tpcChi2NCl() < trackCut.settingCutChi2tpcLow ||
+             candidate.itsChi2NCl() > trackCut.settingCutChi2NClITS);
   }
 
   template <typename Ttrack>
   bool selectTrackPion(const Ttrack& candidate)
   {
-    if (std::abs(candidate.eta()) > settingCutEta) {
+    if (std::abs(candidate.eta()) > trackCut.settingCutEta) {
       return false;
     }
 
     const float absPt = std::abs(candidate.pt());
-    if (absPt < settingHadptMin || absPt > settingHadptMax) {
+    if (absPt < hadronPid.settingHadptMin || absPt > hadronPid.settingHadptMax) {
       return false;
     }
 
-    if (candidate.itsNClsInnerBarrel() < settingPionITSInnerBarrelMin ||
-        candidate.itsNCls() < settingPionITSNClsMin ||
-        candidate.tpcNClsFound() < settingPionTPCNClsFoundMin ||
-        candidate.tpcNClsCrossedRows() < settingPionTPCCrossedRowsMin) {
+    if (candidate.itsNClsInnerBarrel() < hadronPid.settingPionITSInnerBarrelMin ||
+        candidate.itsNCls() < hadronPid.settingPionITSNClsMin ||
+        candidate.tpcNClsFound() < hadronPid.settingPionTPCNClsFoundMin ||
+        candidate.tpcNClsCrossedRows() < hadronPid.settingPionTPCCrossedRowsMin) {
       return false;
     }
 
@@ -528,22 +582,18 @@ struct HadNucleiFemto {
       return false;
     }
 
-    const float pionDCAxyMax = settingPionDCAxyOffset + settingPionDCAxyPtCoeff / absPt;
-    const float pionDCAzMax = settingPionDCAzOffset + settingPionDCAzPtCoeff / absPt;
-    if (std::abs(candidate.dcaXY()) > pionDCAxyMax || std::abs(candidate.dcaZ()) > pionDCAzMax) {
-      return false;
-    }
-
-    return true;
+    const float pionDCAxyMax = hadronPid.settingPionDCAxyOffset + hadronPid.settingPionDCAxyPtCoeff / absPt;
+    const float pionDCAzMax = hadronPid.settingPionDCAzOffset + hadronPid.settingPionDCAzPtCoeff / absPt;
+    return !(std::abs(candidate.dcaXY()) > pionDCAxyMax || std::abs(candidate.dcaZ()) > pionDCAzMax);
   }
 
   template <typename Ttrack>
   bool selectTrackHadron(const Ttrack& candidate)
   {
-    if (settingHadPDGCode.value == static_cast<int>(PDG_t::kProton)) {
+    if (species.settingHadPDGCode.value == static_cast<int>(PDG_t::kProton)) {
       return selectTrackProton(candidate);
     }
-    if (settingHadPDGCode.value == static_cast<int>(PDG_t::kPiPlus)) {
+    if (species.settingHadPDGCode.value == static_cast<int>(PDG_t::kPiPlus)) {
       return selectTrackPion(candidate);
     }
     return selectTrack(candidate);
@@ -572,17 +622,13 @@ struct HadNucleiFemto {
     }
 
     const float prDCAxyMax = 105.e-3f + 30.5e-3f / std::pow(absPt, 1.1f);
-    if (std::abs(candidate.dcaXY()) >= prDCAxyMax || std::abs(candidate.dcaZ()) >= protonDCAzMax) {
-      return false;
-    }
-
-    return true;
+    return !(std::abs(candidate.dcaXY()) >= prDCAxyMax || std::abs(candidate.dcaZ()) >= protonDCAzMax);
   }
 
   template <typename Ttrack>
   bool selectTrackDe(const Ttrack& candidate)
   {
-    if (std::abs(candidate.eta()) > settingCutEta) {
+    if (std::abs(candidate.eta()) > trackCut.settingCutEta) {
       return false;
     }
 
@@ -594,27 +640,23 @@ struct HadNucleiFemto {
     constexpr int minITSNClsInnerBarrel = 1;
     const float tpcCrossedRowsOverFound = candidate.tpcNClsFound() > 0 ? static_cast<float>(candidate.tpcNClsCrossedRows()) / candidate.tpcNClsFound() : 0.f;
 
-    if (candidate.tpcNClsFound() < minTPCNClsFound ||
-        candidate.tpcNClsCrossedRows() < minTPCNClsCrossedRows ||
-        tpcCrossedRowsOverFound < minTPCCrossedRowsOverFound ||
-        candidate.tpcNClsShared() > maxTPCNClsShared ||
-        candidate.tpcFractionSharedCls() > maxSharedTPCFraction ||
-        candidate.itsNCls() < settingCutNCls ||
-        candidate.itsNClsInnerBarrel() < minITSNClsInnerBarrel) {
-      return false;
-    }
-
-    return true;
+    return !(candidate.tpcNClsFound() < minTPCNClsFound ||
+             candidate.tpcNClsCrossedRows() < minTPCNClsCrossedRows ||
+             tpcCrossedRowsOverFound < minTPCCrossedRowsOverFound ||
+             candidate.tpcNClsShared() > maxTPCNClsShared ||
+             candidate.tpcFractionSharedCls() > maxSharedTPCFraction ||
+             candidate.itsNCls() < trackCut.settingCutNCls ||
+             candidate.itsNClsInnerBarrel() < minITSNClsInnerBarrel);
   }
 
   bool useDeuteronNucleus() const
   {
-    return settingNuPDGCode.value == DeuteronPDG;
+    return species.settingNuPDGCode.value == DeuteronPDG;
   }
 
   bool useHelium3Nucleus() const
   {
-    return settingNuPDGCode.value == He3PDG;
+    return species.settingNuPDGCode.value == He3PDG;
   }
 
   const char* nucleusBetheBlochLabel() const
@@ -638,23 +680,19 @@ struct HadNucleiFemto {
   template <typename Ttrack>
   bool selectTrackHe3(const Ttrack& candidate)
   {
-    if (std::abs(candidate.eta()) > settingCutEta) {
+    if (std::abs(candidate.eta()) > trackCut.settingCutEta) {
       return false;
     }
 
     constexpr int minTPCNClsCrossedRows = 70;
     constexpr float crossedRowsToFindableRatio = 0.8f;
-    if (candidate.itsNCls() < settingCutNCls ||
-        candidate.tpcNClsFound() < He3TPCNClsFoundMin ||
-        candidate.tpcNClsCrossedRows() < minTPCNClsCrossedRows ||
-        candidate.tpcNClsCrossedRows() < crossedRowsToFindableRatio * candidate.tpcNClsFindable() ||
-        candidate.tpcChi2NCl() > settingCutChi2tpcHigh ||
-        candidate.tpcChi2NCl() < He3TPCChi2NClMin ||
-        candidate.itsChi2NCl() > settingCutChi2NClITS) {
-      return false;
-    }
-
-    return true;
+    return !(candidate.itsNCls() < trackCut.settingCutNCls ||
+             candidate.tpcNClsFound() < He3TPCNClsFoundMin ||
+             candidate.tpcNClsCrossedRows() < minTPCNClsCrossedRows ||
+             candidate.tpcNClsCrossedRows() < crossedRowsToFindableRatio * candidate.tpcNClsFindable() ||
+             candidate.tpcChi2NCl() > trackCut.settingCutChi2tpcHigh ||
+             candidate.tpcChi2NCl() < He3TPCChi2NClMin ||
+             candidate.itsChi2NCl() > trackCut.settingCutChi2NClITS);
   }
 
   template <typename Ttrack>
@@ -680,6 +718,19 @@ struct HadNucleiFemto {
     mQaRegistry.fill(HIST("hNuPairFlow"), step);
   }
 
+  bool isPionDeuteronPair() const
+  {
+    return species.settingHadPDGCode.value == static_cast<int>(PDG_t::kPiPlus) && useDeuteronNucleus();
+  }
+
+  bool shouldFillOutputTable(const HadNucandidate& hadNucand) const
+  {
+    if (!output.settingFillTableLowKstarOnly.value || !isPionDeuteronPair()) {
+      return true;
+    }
+    return hadNucand.kstar < output.settingFillTablePiDeKstarMax.value;
+  }
+
   template <typename Ttrack>
   float phiAtSpecificRadiiTPC(const Ttrack& track, float radius) const
   {
@@ -700,14 +751,14 @@ struct HadNucleiFemto {
   }
 
   template <typename Ttrack1, typename Ttrack2>
-  float averagePhiStar(const Ttrack1& track1, const Ttrack2& track2) const
+  float averagePhiStar(const Ttrack1& firstTrack, const Ttrack2& secondTrack) const
   {
     constexpr float invalidPhiStar = 999.f;
     float dPhiAvg = 0.f;
     int meaningfulEntries = 0;
     for (const auto& radius : tmpRadiiTPC) {
-      const float phi1 = phiAtSpecificRadiiTPC(track1, radius);
-      const float phi2 = phiAtSpecificRadiiTPC(track2, radius);
+      const float phi1 = phiAtSpecificRadiiTPC(firstTrack, radius);
+      const float phi2 = phiAtSpecificRadiiTPC(secondTrack, radius);
       if (phi1 == invalidPhiStar || phi2 == invalidPhiStar) {
         continue;
       }
@@ -721,27 +772,27 @@ struct HadNucleiFemto {
   }
 
   template <typename Ttrack1, typename Ttrack2>
-  bool isClosePair(const Ttrack1& track1, const Ttrack2& track2)
+  bool isClosePair(const Ttrack1& firstTrack, const Ttrack2& secondTrack)
   {
     constexpr int closePairRadiusModePv = 0;
     constexpr int closePairRadiusModeSpecificTpc = 2;
     constexpr float invalidPhiStar = 999.f;
-    if (!settingEnableClosePairRejection.value) {
+    if (!CPR.settingEnableClosePairRejection.value) {
       return false;
     }
-    if (track1.sign() != track2.sign()) {
+    if (firstTrack.sign() != secondTrack.sign()) {
       return false;
     }
 
-    const float deta = track1.eta() - track2.eta();
-    const float dphiAtPV = wrapDeltaPhi(track1.phi() - track2.phi());
-    const float dphiAtSpecificRadius = wrapDeltaPhi(phiAtSpecificRadiiTPC(track1, settingClosePairSpecificRadius.value) - phiAtSpecificRadiiTPC(track2, settingClosePairSpecificRadius.value));
-    const float dphiAvg = averagePhiStar(track1, track2);
+    const float deta = firstTrack.eta() - secondTrack.eta();
+    const float dphiAtPV = wrapDeltaPhi(firstTrack.phi() - secondTrack.phi());
+    const float dphiAtSpecificRadius = wrapDeltaPhi(phiAtSpecificRadiiTPC(firstTrack, CPR.settingClosePairSpecificRadius.value) - phiAtSpecificRadiiTPC(secondTrack, CPR.settingClosePairSpecificRadius.value));
+    const float dphiAvg = averagePhiStar(firstTrack, secondTrack);
 
     float dphiToCut = dphiAvg;
-    if (settingClosePairRadiusMode.value == closePairRadiusModePv) {
+    if (CPR.settingClosePairRadiusMode.value == closePairRadiusModePv) {
       dphiToCut = dphiAtPV;
-    } else if (settingClosePairRadiusMode.value == closePairRadiusModeSpecificTpc) {
+    } else if (CPR.settingClosePairRadiusMode.value == closePairRadiusModeSpecificTpc) {
       dphiToCut = dphiAtSpecificRadius;
     }
 
@@ -750,8 +801,8 @@ struct HadNucleiFemto {
     }
 
     mQaRegistry.fill(HIST("h2CPRBefore"), deta, dphiToCut);
-    const bool isRejected = std::pow(dphiToCut, 2.f) / std::pow(settingClosePairDeltaPhiMax.value, 2.f) +
-                              std::pow(deta, 2.f) / std::pow(settingClosePairDeltaEtaMax.value, 2.f) <
+    const bool isRejected = std::pow(dphiToCut, 2.f) / std::pow(CPR.settingClosePairDeltaPhiMax.value, 2.f) +
+                              std::pow(deta, 2.f) / std::pow(CPR.settingClosePairDeltaEtaMax.value, 2.f) <
                             1.f;
     if (!isRejected) {
       mQaRegistry.fill(HIST("h2CPRAfter"), deta, dphiToCut);
@@ -796,7 +847,7 @@ struct HadNucleiFemto {
     if (combNsigma > protonCombNsigmaMax) {
       return false;
     }
-    if (settingReqSingleNsig.value &&
+    if (deuteronPid.settingReqSingleNsig.value &&
         (std::abs(tpcNSigmaPr) > protonCombNsigmaMax || std::abs(tofNSigmaPr) > protonCombNsigmaMax)) {
       return false;
     }
@@ -814,42 +865,48 @@ struct HadNucleiFemto {
     auto tpcNSigmaKa = candidate.tpcNSigmaKa();
     float DeDCAxyMin = 0.004 + (0.013 / candidate.pt());
     float DeDCAzMin = 0.004 + (0.013 / candidate.pt());
-    if (std::abs(candidate.dcaXY()) > DeDCAxyMin || std::abs(candidate.dcaZ()) > DeDCAzMin)
+    if (std::abs(candidate.dcaXY()) > DeDCAxyMin || std::abs(candidate.dcaZ()) > DeDCAzMin) {
       return false;
+    }
 
     mQaRegistry.fill(HIST("h2NsigmaHadTPC_preselection"), candidate.tpcInnerParam(), tpcNSigmaKa);
-    if (std::abs(candidate.pt()) < settingHadptMin || std::abs(candidate.pt()) > settingHadptMax)
+    if (std::abs(candidate.pt()) < hadronPid.settingHadptMin || std::abs(candidate.pt()) > hadronPid.settingHadptMax) {
       return false;
+    }
 
     // reject protons and pions
-    if (std::abs(candidate.tpcNSigmaPr()) < settingCutNsigTPCPrMin || std::abs(candidate.tpcNSigmaPi()) < settingCutNsigTPCPiMin)
+    if (std::abs(candidate.tpcNSigmaPr()) < hadronPid.settingCutNsigTPCPrMin || std::abs(candidate.tpcNSigmaPi()) < hadronPid.settingCutNsigTPCPiMin) {
       return false;
+    }
     mQaRegistry.fill(HIST("h2NsigmaHadPrTPC"), candidate.tpcNSigmaPr());
     mQaRegistry.fill(HIST("h2NsigmaHadPiTPC"), candidate.tpcNSigmaPi());
-    if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPr()) < settingCutNsigTOFPrMin)
+    if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPr()) < hadronPid.settingCutNsigTOFPrMin) {
       return false;
-    if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < settingCutNsigTOFPiMin)
+    }
+    if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < hadronPid.settingCutNsigTOFPiMin) {
       return false;
+    }
     mQaRegistry.fill(HIST("h2NsigmaHadPrTOF"), candidate.tofNSigmaPr());
     mQaRegistry.fill(HIST("h2NsigmaHadPiTOF"), candidate.tofNSigmaPi());
     // rejection end
 
-    if (candidate.hasTOF() && candidate.tpcInnerParam() >= settingCutPinMinTOFHad) {
+    if (candidate.hasTOF() && candidate.tpcInnerParam() >= hadronPid.settingCutPinMinTOFHad) {
       auto tofNSigmaKa = candidate.tofNSigmaKa();
 
       mQaRegistry.fill(HIST("h2NsigmaHadTOF_preselection"), candidate.pt(), tofNSigmaKa);
-      if (std::abs(tofNSigmaKa) > settingCutNsigmaTOFHad) {
+      if (std::abs(tofNSigmaKa) > hadronPid.settingCutNsigmaTOFHad) {
         return false;
       }
-      if (std::abs(tpcNSigmaKa) > settingCutNsigmaTPCHad) {
+      if (std::abs(tpcNSigmaKa) > hadronPid.settingCutNsigmaTPCHad) {
         return false;
       }
       mQaRegistry.fill(HIST("h2NsigmaHadTPC"), candidate.sign() * candidate.pt(), tpcNSigmaKa);
       mQaRegistry.fill(HIST("h2NsigmaHadTOF"), candidate.sign() * candidate.pt(), tofNSigmaKa);
       mQaRegistry.fill(HIST("h2dEdxHadcandidates"), candidate.sign() * candidate.tpcInnerParam(), candidate.tpcSignal());
       return true;
-    } else if (candidate.tpcInnerParam() < settingCutPinMinTOFHad) {
-      if (std::abs(tpcNSigmaKa) > settingCutNsigmaTPCHad) {
+    }
+    if (candidate.tpcInnerParam() < hadronPid.settingCutPinMinTOFHad) {
+      if (std::abs(tpcNSigmaKa) > hadronPid.settingCutNsigmaTPCHad) {
         return false;
       }
       mQaRegistry.fill(HIST("h2NsigmaHadTPC"), candidate.sign() * candidate.pt(), tpcNSigmaKa);
@@ -866,8 +923,8 @@ struct HadNucleiFemto {
     const float absP = std::abs(candidate.p());
     mQaRegistry.fill(HIST("h2NsigmaHadTPC_preselection"), candidate.sign() * candidate.tpcInnerParam(), tpcNSigmaPi);
 
-    if (absP <= settingPionMomCombMin) {
-      if (std::abs(tpcNSigmaPi) > settingPionTPCNsigMax) {
+    if (absP <= hadronPid.settingPionMomCombMin) {
+      if (std::abs(tpcNSigmaPi) > hadronPid.settingPionTPCNsigMax) {
         return false;
       }
       mQaRegistry.fill(HIST("h2NsigmaHadTPC"), candidate.sign() * candidate.pt(), tpcNSigmaPi);
@@ -883,11 +940,11 @@ struct HadNucleiFemto {
     const float combNsigma = std::sqrt(tofNSigmaPi * tofNSigmaPi + tpcNSigmaPi * tpcNSigmaPi);
     mQaRegistry.fill(HIST("h2NsigmaHadTOF_preselection"), candidate.sign() * candidate.pt(), tofNSigmaPi);
     mQaRegistry.fill(HIST("h2NsigmaHadComb_preselection"), candidate.sign() * candidate.pt(), combNsigma);
-    if (combNsigma > settingPionCombNsigMax) {
+    if (combNsigma > hadronPid.settingPionCombNsigMax) {
       return false;
     }
-    if (settingReqSingleNsig.value &&
-        (std::abs(tpcNSigmaPi) > settingPionCombNsigMax || std::abs(tofNSigmaPi) > settingPionCombNsigMax)) {
+    if (deuteronPid.settingReqSingleNsig.value &&
+        (std::abs(tpcNSigmaPi) > hadronPid.settingPionCombNsigMax || std::abs(tofNSigmaPi) > hadronPid.settingPionCombNsigMax)) {
       return false;
     }
 
@@ -902,15 +959,15 @@ struct HadNucleiFemto {
   bool selectionPIDHadron(const Ttrack& candidate)
   {
     bool PID = false;
-    if (settingHadPDGCode == PDG_t::kPiPlus) {
+    if (species.settingHadPDGCode == PDG_t::kPiPlus) {
       PID = selectionPIDPion(candidate);
-      MassHad = o2::constants::physics::MassPiPlus;
-    } else if (settingHadPDGCode == PDG_t::kKPlus) {
+      mMassHad = o2::constants::physics::MassPiPlus;
+    } else if (species.settingHadPDGCode == PDG_t::kKPlus) {
       PID = selectionPIDKaon(candidate);
-      MassHad = o2::constants::physics::MassKPlus;
-    } else if (settingHadPDGCode == PDG_t::kProton) {
+      mMassHad = o2::constants::physics::MassKPlus;
+    } else if (species.settingHadPDGCode == PDG_t::kProton) {
       PID = selectionPIDProton(candidate);
-      MassHad = o2::constants::physics::MassProton;
+      mMassHad = o2::constants::physics::MassProton;
     } else {
       LOG(info) << "invalid PDG code";
     }
@@ -920,13 +977,13 @@ struct HadNucleiFemto {
   template <typename Ttrack>
   float getHadronTPCNSigma(const Ttrack& candidate) const
   {
-    if (settingHadPDGCode.value == static_cast<int>(PDG_t::kPiPlus)) {
+    if (species.settingHadPDGCode.value == static_cast<int>(PDG_t::kPiPlus)) {
       return candidate.tpcNSigmaPi();
     }
-    if (settingHadPDGCode.value == static_cast<int>(PDG_t::kKPlus)) {
+    if (species.settingHadPDGCode.value == static_cast<int>(PDG_t::kKPlus)) {
       return candidate.tpcNSigmaKa();
     }
-    if (settingHadPDGCode.value == static_cast<int>(PDG_t::kProton)) {
+    if (species.settingHadPDGCode.value == static_cast<int>(PDG_t::kProton)) {
       return candidate.tpcNSigmaPr();
     }
     return -10.f;
@@ -944,7 +1001,7 @@ struct HadNucleiFemto {
   float correctedTPCInnerParamHe3(const Ttrack& candidate) const
   {
     const bool heliumPID = candidate.pidForTracking() == o2::track::PID::Helium3 || candidate.pidForTracking() == o2::track::PID::Alpha;
-    return (heliumPID && settingCompensatePIDinTracking.value) ? candidate.tpcInnerParam() / 2.f : candidate.tpcInnerParam();
+    return (heliumPID && pidCalibration.settingCompensatePIDinTracking.value) ? candidate.tpcInnerParam() / 2.f : candidate.tpcInnerParam();
   }
 
   template <typename Ttrack>
@@ -962,11 +1019,11 @@ struct HadNucleiFemto {
     float tpcInnerParam = candidate.tpcInnerParam();
     mQaRegistry.fill(HIST("h2dEdx"), candidate.sign() * tpcInnerParam, candidate.tpcSignal());
 
-    if (std::abs(tpcInnerParam) < settingCutPinMinDe) {
+    if (std::abs(tpcInnerParam) < deuteronPid.settingCutPinMinDe) {
       return false;
     }
-    float tpcNSigmaDe;
-    if (settingUseBBcomputeDeNsigma) {
+    float tpcNSigmaDe = 0.f;
+    if (output.settingUseBBcomputeDeNsigma) {
       tpcNSigmaDe = computeNSigmaDe(candidate);
     } else {
       tpcNSigmaDe = candidate.tpcNSigmaDe();
@@ -974,26 +1031,28 @@ struct HadNucleiFemto {
 
     mQaRegistry.fill(HIST("h2NsigmaNuTPC_preselection"), candidate.sign() * candidate.pt(), tpcNSigmaDe);
     mQaRegistry.fill(HIST("h2NsigmaNuTPC_preselecComp"), candidate.sign() * candidate.pt(), candidate.tpcNSigmaDe());
-    if (std::abs(candidate.pt()) < settingCutDeptMin || std::abs(candidate.pt()) > settingCutDeptMax)
+    if (std::abs(candidate.pt()) < deuteronPid.settingCutDeptMin || std::abs(candidate.pt()) > deuteronPid.settingCutDeptMax) {
       return false;
+    }
     const float absPt = std::abs(candidate.pt());
     if (absPt <= 0.f) {
       return false;
     }
     const float deDCAxyMax = 0.004f + 0.013f / absPt;
     const float deDCAzMax = 0.004f + 0.013f / absPt;
-    if (std::abs(candidate.dcaXY()) > deDCAxyMax || std::abs(candidate.dcaZ()) > deDCAzMax)
+    if (std::abs(candidate.dcaXY()) > deDCAxyMax || std::abs(candidate.dcaZ()) > deDCAzMax) {
       return false;
+    }
 
-    if (candidate.hasTOF() && candidate.tpcInnerParam() > settingCutPinMinTOFITSDe) {
+    if (candidate.hasTOF() && candidate.tpcInnerParam() > deuteronPid.settingCutPinMinTOFITSDe) {
       auto tofNSigmaDe = candidate.tofNSigmaDe();
       auto combNsigma = std::sqrt(tofNSigmaDe * tofNSigmaDe + tpcNSigmaDe * tpcNSigmaDe);
       mQaRegistry.fill(HIST("h2NsigmaNuTOF_preselection"), candidate.sign() * candidate.pt(), tofNSigmaDe);
-      if (combNsigma > settingCutNsigmaTOFTPCDe) {
+      if (combNsigma > deuteronPid.settingCutNsigmaTOFTPCDe) {
         return false;
       }
-      if (settingReqSingleNsig.value &&
-          (std::abs(tpcNSigmaDe) > settingCutNsigmaTOFTPCDe || std::abs(tofNSigmaDe) > settingCutNsigmaTOFTPCDe)) {
+      if (deuteronPid.settingReqSingleNsig.value &&
+          (std::abs(tpcNSigmaDe) > deuteronPid.settingCutNsigmaTOFTPCDe || std::abs(tofNSigmaDe) > deuteronPid.settingCutNsigmaTOFTPCDe)) {
         return false;
       }
       mQaRegistry.fill(HIST("h2dEdxNucandidates"), candidate.sign() * tpcInnerParam, candidate.tpcSignal());
@@ -1001,14 +1060,15 @@ struct HadNucleiFemto {
       mQaRegistry.fill(HIST("h2NsigmaNuTPC"), candidate.sign() * candidate.pt(), tpcNSigmaDe);
       mQaRegistry.fill(HIST("h2NsigmaNuTOF"), candidate.sign() * candidate.pt(), tofNSigmaDe);
       return true;
-    } else if (candidate.tpcInnerParam() <= settingCutPinMinTOFITSDe) {
-      if (std::abs(tpcNSigmaDe) > settingCutNsigmaTPCDe) {
+    }
+    if (candidate.tpcInnerParam() <= deuteronPid.settingCutPinMinTOFITSDe) {
+      if (std::abs(tpcNSigmaDe) > deuteronPid.settingCutNsigmaTPCDe) {
         return false;
       }
       o2::aod::ITSResponse itsResponse;
       auto itsnSigmaDe = itsResponse.nSigmaITS<o2::track::PID::Deuteron>(candidate.itsClusterSizes(), candidate.p(), candidate.eta());
       mQaRegistry.fill(HIST("h2NSigmaNuITS_preselection"), candidate.sign() * candidate.pt(), itsnSigmaDe);
-      if (std::abs(itsnSigmaDe) > settingCutNsigmaITSDe) {
+      if (std::abs(itsnSigmaDe) > deuteronPid.settingCutNsigmaITSDe) {
         return false;
       }
       mQaRegistry.fill(HIST("h2NsigmaNuTPC"), candidate.sign() * candidate.pt(), tpcNSigmaDe);
@@ -1077,7 +1137,7 @@ struct HadNucleiFemto {
     const int nlayerITS = 7;
 
     for (int layer = 0; layer < nlayerITS; layer++) {
-      if ((itsClusterSizes >> (layer * 4)) & 0xf) {
+      if (((itsClusterSizes >> (layer * 4)) & 0xf) != 0u) {
         nclusters++;
         average += (itsClusterSizes >> (layer * 4)) & 0xf;
       }
@@ -1092,10 +1152,10 @@ struct HadNucleiFemto {
   {
     mQaRegistry.fill(HIST("hHe3P_preselected"), V0Hyper.tpcMomHe());
     float averClusSizeHe = averageClusterSizeCosl(V0Hyper.itsClusterSizesHe(), V0Hyper.etaHe3());
-    if (averClusSizeHe <= settingCutAverClsSizeHe) {
+    if (averClusSizeHe <= hypertriton.settingCutAverClsSizeHe) {
       return false;
     }
-    if (V0Hyper.tpcChi2He() <= settingCutTPCChi2He) {
+    if (V0Hyper.tpcChi2He() <= hypertriton.settingCutTPCChi2He) {
       return false;
     }
     mQaRegistry.fill(HIST("hHe3P"), V0Hyper.tpcMomHe());
@@ -1106,31 +1166,31 @@ struct HadNucleiFemto {
 
   float computePairKstar(const std::array<float, 3>& momHad, const float massHad, const std::array<float, 3>& momNu, const float massNu) const
   {
-    const ROOT::Math::PxPyPzMVector vecHad(momHad[0], momHad[1], momHad[2], massHad);
-    const ROOT::Math::PxPyPzMVector vecNu(momNu[0], momNu[1], momNu[2], massNu);
-    const ROOT::Math::PxPyPzMVector trackSum = vecHad + vecNu;
+    const PairLorentzVector vecHad(momHad[0], momHad[1], momHad[2], massHad);
+    const PairLorentzVector vecNu(momNu[0], momNu[1], momNu[2], massNu);
+    const PairLorentzVector trackSum = vecHad + vecNu;
 
     const float beta = trackSum.Beta();
     const float betax = beta * std::cos(trackSum.Phi()) * std::sin(trackSum.Theta());
     const float betay = beta * std::sin(trackSum.Phi()) * std::sin(trackSum.Theta());
     const float betaz = beta * std::cos(trackSum.Theta());
 
-    ROOT::Math::PxPyPzMVector partHadCMS(vecHad);
-    ROOT::Math::PxPyPzMVector partNuCMS(vecNu);
+    PairLorentzVector partHadCMS(vecHad);
+    PairLorentzVector partNuCMS(vecNu);
 
     const ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-betax, -betay, -betaz);
     partHadCMS = boostPRF(partHadCMS);
     partNuCMS = boostPRF(partNuCMS);
 
-    const ROOT::Math::PxPyPzMVector trackRelK = partHadCMS - partNuCMS;
+    const PairLorentzVector trackRelK = partHadCMS - partNuCMS;
     return 0.5f * trackRelK.P();
   }
 
   float computePairMT(const std::array<float, 3>& momHad, const float massHad, const std::array<float, 3>& momNu, const float massNu) const
   {
-    const ROOT::Math::PxPyPzMVector vecHad(momHad[0], momHad[1], momHad[2], massHad);
-    const ROOT::Math::PxPyPzMVector vecNu(momNu[0], momNu[1], momNu[2], massNu);
-    const ROOT::Math::PxPyPzMVector trackSum = vecHad + vecNu;
+    const PairLorentzVector vecHad(momHad[0], momHad[1], momHad[2], massHad);
+    const PairLorentzVector vecNu(momNu[0], momNu[1], momNu[2], massNu);
+    const PairLorentzVector trackSum = vecHad + vecNu;
     const float kT = 0.5f * trackSum.Pt();
     return std::sqrt(kT * kT + std::pow(0.5f * (massHad + massNu), 2.f));
   }
@@ -1192,7 +1252,7 @@ struct HadNucleiFemto {
     }
     hadNucand.momHad = std::array{trackHad.px(), trackHad.py(), trackHad.pz()};
     float invMass = 0;
-    invMass = RecoDecay::m(std::array<std::array<float, 3>, 2>{hadNucand.momNu, hadNucand.momHad}, std::array<float, 2>{nucleusMass(), MassHad});
+    invMass = RecoDecay::m(std::array<std::array<float, 3>, 2>{hadNucand.momNu, hadNucand.momHad}, std::array<float, 2>{nucleusMass(), mMassHad});
 
     hadNucand.signNu = trackDe.sign();
     hadNucand.signHad = trackHad.sign();
@@ -1252,9 +1312,9 @@ struct HadNucleiFemto {
       hadNucand.massTOFHad = trackHad.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
     }
 
-    const float massLightNucleusForKstarMt = useHelium3Nucleus() ? static_cast<float>(o2::constants::physics::MassHelium3) : (settingUseProtonMassForKstarMt ? static_cast<float>(o2::constants::physics::MassProton) : static_cast<float>(o2::constants::physics::MassDeuteron));
-    hadNucand.kstar = computePairKstar(hadNucand.momHad, MassHad, hadNucand.momNu, massLightNucleusForKstarMt);
-    hadNucand.mT = computePairMT(hadNucand.momHad, MassHad, hadNucand.momNu, massLightNucleusForKstarMt);
+    const float massLightNucleusForKstarMt = useHelium3Nucleus() ? static_cast<float>(o2::constants::physics::MassHelium3) : (deuteronPid.settingUseProtonMassForKstarMt ? static_cast<float>(o2::constants::physics::MassProton) : static_cast<float>(o2::constants::physics::MassDeuteron));
+    hadNucand.kstar = computePairKstar(hadNucand.momHad, mMassHad, hadNucand.momNu, massLightNucleusForKstarMt);
+    hadNucand.mT = computePairMT(hadNucand.momHad, mMassHad, hadNucand.momNu, massLightNucleusForKstarMt);
 
     return true;
   }
@@ -1286,7 +1346,7 @@ struct HadNucleiFemto {
     hadHypercand.momHad = std::array{trackHad.px(), trackHad.py(), trackHad.pz()};
 
     float invMass = 0;
-    invMass = RecoDecay::m(std::array<std::array<float, 3>, 2>{hadHypercand.momNu, hadHypercand.momHad}, std::array<float, 2>{static_cast<float>(o2::constants::physics::MassHelium3), MassHad});
+    invMass = RecoDecay::m(std::array<std::array<float, 3>, 2>{hadHypercand.momNu, hadHypercand.momHad}, std::array<float, 2>{static_cast<float>(o2::constants::physics::MassHelium3), mMassHad});
 
     hadHypercand.signHad = trackHad.sign();
     if (V0Hyper.isMatter()) {
@@ -1356,11 +1416,11 @@ struct HadNucleiFemto {
           continue;
         }
 
-        if (!settingSaveUSandLS) {
-          if (!settingEnableBkgUS && (track0.sign() * track1.sign() < 0)) {
+        if (!eventMixing.settingSaveUSandLS) {
+          if (!eventMixing.settingEnableBkgUS && (track0.sign() * track1.sign() < 0)) {
             continue;
           }
-          if (settingEnableBkgUS && (track0.sign() * track1.sign() > 0)) {
+          if (eventMixing.settingEnableBkgUS && (track0.sign() * track1.sign() > 0)) {
             continue;
           }
         }
@@ -1487,7 +1547,7 @@ struct HadNucleiFemto {
       hadNucand.itsClSizeHad,
       hadNucand.sharedClustersNu,
       hadNucand.sharedClustersHad);
-    if (settingFillMultiplicity) {
+    if (output.settingFillMultiplicity) {
       mOutputMultiplicityTable(
         collision.globalIndex(),
         collision.posZ(),
@@ -1526,7 +1586,7 @@ struct HadNucleiFemto {
       hadNucand.trackIDHad,
       hadNucand.isBkgUS,
       hadNucand.isBkgEM);
-    if (settingFillMultiplicity) {
+    if (output.settingFillMultiplicity) {
       mOutputMultiplicityTable(
         collision.globalIndex(),
         collision.posZ(),
@@ -1602,7 +1662,7 @@ struct HadNucleiFemto {
       fillKstar(hadNucand, collision);
       fillHistograms(hadNucand);
 
-      if (settingFillTable) {
+      if (output.settingFillTable && shouldFillOutputTable(hadNucand)) {
         fillTable(hadNucand, collision);
       }
     }
@@ -1632,7 +1692,7 @@ struct HadNucleiFemto {
 
       auto collision = collisions.rawIteratorAt(hadNucand.collisionID);
 
-      if (settingFillTable) {
+      if (output.settingFillTable) {
         fillTableHyper(hadNucand, collision);
       }
     }
@@ -1660,7 +1720,7 @@ struct HadNucleiFemto {
 
       pairTracksSameEvent(trackTableThisCollision, collision.centFT0C());
 
-      if (mTrackPairs.size() == 0) {
+      if (mTrackPairs.empty()) {
         continue;
       }
 
@@ -1692,7 +1752,7 @@ struct HadNucleiFemto {
 
       pairTracksSameEventHyper(trackTableThisCollision, hypdTableThisCollision);
 
-      if (mTrackHypPairs.size() == 0) {
+      if (mTrackHypPairs.empty()) {
         continue;
       }
 
@@ -1747,25 +1807,25 @@ struct HadNucleiFemto {
           fillNucleusTrackSelection(Selections::kTrackCuts);
         }
 
-        if (passTrackHad && settingHadPDGCode == PDG_t::kPiPlus) {
+        if (passTrackHad && species.settingHadPDGCode == PDG_t::kPiPlus) {
           const float tpcNSigmaHad = track.tpcNSigmaPi();
           mQaRegistry.fill(HIST("purity/h2NsigmaHadTPC_preselection"), track.sign() * track.pt(), tpcNSigmaHad);
-          if (track.hasTOF() && std::abs(track.p()) > settingPionMomCombMin) {
+          if (track.hasTOF() && std::abs(track.p()) > hadronPid.settingPionMomCombMin) {
             const float tofNSigmaHad = track.tofNSigmaPi();
             const float combNsigmaHad = std::sqrt(tofNSigmaHad * tofNSigmaHad + tpcNSigmaHad * tpcNSigmaHad);
             mQaRegistry.fill(HIST("purity/h2NsigmaHadTOF_preselection"), track.sign() * track.pt(), tofNSigmaHad);
             mQaRegistry.fill(HIST("purity/h2NsigmaHadComb_preselection"), track.sign() * track.pt(), combNsigmaHad);
           }
-        } else if (passTrackHad && settingHadPDGCode == PDG_t::kKPlus) {
+        } else if (passTrackHad && species.settingHadPDGCode == PDG_t::kKPlus) {
           const float tpcNSigmaHad = track.tpcNSigmaKa();
           mQaRegistry.fill(HIST("purity/h2NsigmaHadTPC_preselection"), track.sign() * track.pt(), tpcNSigmaHad);
-          if (track.hasTOF() && track.tpcInnerParam() >= settingCutPinMinTOFHad) {
+          if (track.hasTOF() && track.tpcInnerParam() >= hadronPid.settingCutPinMinTOFHad) {
             const float tofNSigmaHad = track.tofNSigmaKa();
             const float combNsigmaHad = std::sqrt(tofNSigmaHad * tofNSigmaHad + tpcNSigmaHad * tpcNSigmaHad);
             mQaRegistry.fill(HIST("purity/h2NsigmaHadTOF_preselection"), track.sign() * track.pt(), tofNSigmaHad);
             mQaRegistry.fill(HIST("purity/h2NsigmaHadComb_preselection"), track.sign() * track.pt(), combNsigmaHad);
           }
-        } else if (passTrackHad && settingHadPDGCode == PDG_t::kProton) {
+        } else if (passTrackHad && species.settingHadPDGCode == PDG_t::kProton) {
           constexpr float protonPCombMin = 0.75f;
           const float tpcNSigmaHad = track.tpcNSigmaPr();
           mQaRegistry.fill(HIST("purity/h2NsigmaHadTPC_preselection"), track.sign() * track.pt(), tpcNSigmaHad);
@@ -1778,18 +1838,25 @@ struct HadNucleiFemto {
         }
 
         if (passTrackNu && useDeuteronNucleus()) {
-          const float tpcNSigmaDe = settingUseBBcomputeDeNsigma ? computeNSigmaDe(track) : track.tpcNSigmaDe();
-          mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselection"), track.sign() * track.pt(), tpcNSigmaDe);
-          mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselecComp"), track.sign() * track.pt(), track.tpcNSigmaDe());
-          if (track.hasTOF() && track.tpcInnerParam() > settingCutPinMinTOFITSDe) {
-            const float tofNSigmaDe = track.tofNSigmaDe();
-            const float combNsigmaDe = std::sqrt(tofNSigmaDe * tofNSigmaDe + tpcNSigmaDe * tpcNSigmaDe);
-            mQaRegistry.fill(HIST("purity/h2NsigmaNuTOF_preselection"), track.sign() * track.pt(), tofNSigmaDe);
-            mQaRegistry.fill(HIST("purity/h2NsigmaNuComb_preselection"), track.sign() * track.pt(), combNsigmaDe);
-          } else if (track.tpcInnerParam() <= settingCutPinMinTOFITSDe) {
+          const float tpcNSigmaDe = output.settingUseBBcomputeDeNsigma ? computeNSigmaDe(track) : track.tpcNSigmaDe();
+          const float absTPCInnerParam = std::abs(track.tpcInnerParam());
+          if (absTPCInnerParam > deuteronPid.settingCutPinMinTOFITSDe) {
+            mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselection"), track.sign() * track.pt(), tpcNSigmaDe);
+            mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselecComp"), track.sign() * track.pt(), track.tpcNSigmaDe());
+            if (track.hasTOF()) {
+              const float tofNSigmaDe = track.tofNSigmaDe();
+              const float combNsigmaDe = std::sqrt(tofNSigmaDe * tofNSigmaDe + tpcNSigmaDe * tpcNSigmaDe);
+              mQaRegistry.fill(HIST("purity/h2NsigmaNuTOF_preselection"), track.sign() * track.pt(), tofNSigmaDe);
+              mQaRegistry.fill(HIST("purity/h2NsigmaNuComb_preselection"), track.sign() * track.pt(), combNsigmaDe);
+            }
+          } else {
             o2::aod::ITSResponse itsResponse;
             const float itsNSigmaDe = itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track.itsClusterSizes(), track.p(), track.eta());
             mQaRegistry.fill(HIST("purity/h2NSigmaNuITS_preselection"), track.sign() * track.pt(), itsNSigmaDe);
+            if (std::abs(itsNSigmaDe) <= deuteronPid.settingCutNsigmaITSDe) {
+              mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselection"), track.sign() * track.pt(), tpcNSigmaDe);
+              mQaRegistry.fill(HIST("purity/h2NsigmaNuTPC_preselecComp"), track.sign() * track.pt(), track.tpcNSigmaDe());
+            }
           }
         } else if (passTrackNu && useHelium3Nucleus()) {
           const float tpcNSigmaHe3 = computeNSigmaHe3(track);
