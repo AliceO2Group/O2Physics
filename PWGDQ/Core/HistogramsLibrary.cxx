@@ -2102,8 +2102,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         // binning for phiv:
         // steps of size pi/100
         std::array<double, 101> phiv_bins{};
-        for (int i = 0; i <= 100; i++)
+        for (int i = 0; i <= 100; i++) {
           phiv_bins[i] = o2::constants::math::PI / 100. * i;
+}
         int nbins_phiv = static_cast<int>(phiv_bins.size()) - 1;
 
         // 3D histo
