@@ -207,9 +207,9 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
       fBinsAllocated += nXbins + 2;
       // TODO: possibly make the call of Sumw2() optional for all histograms
       h->Sumw2();
-      if (fVariableNames[varX][0]) {
+      if (fVariableNames[varX][0] != 0) {
         h->GetXaxis()->SetTitle(Form("%s %s", fVariableNames[varX].Data(),
-                                     (fVariableUnits[varX][0] ? Form("(%s)", fVariableUnits[varX].Data()) : "")));
+                                     ((fVariableUnits[varX][0] != 0) ? Form("(%s)", fVariableUnits[varX].Data()) : "")));
       }
       if (arr->At(1)) {
         h->GetXaxis()->SetTitle(arr->At(1)->GetName());
@@ -240,9 +240,9 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
         fBinsAllocated += (nXbins + 2) * (nYbins + 2);
         h->Sumw2();
       }
-      if (fVariableNames[varX][0]) {
+      if (fVariableNames[varX][0] != 0) {
         h->GetXaxis()->SetTitle(Form("%s %s", fVariableNames[varX].Data(),
-                                     (fVariableUnits[varX][0] ? Form("(%s)", fVariableUnits[varX].Data()) : "")));
+                                     ((fVariableUnits[varX][0] != 0) ? Form("(%s)", fVariableUnits[varX].Data()) : "")));
       }
       if (arr->At(1)) {
         h->GetXaxis()->SetTitle(arr->At(1)->GetName());
@@ -251,13 +251,13 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
         MakeAxisLabels(h->GetXaxis(), xLabels);
       }
 
-      if (fVariableNames[varY][0]) {
+      if (fVariableNames[varY][0] != 0) {
         h->GetYaxis()->SetTitle(Form("%s %s", fVariableNames[varY].Data(),
-                                     (fVariableUnits[varY][0] ? Form("(%s)", fVariableUnits[varY].Data()) : "")));
+                                     ((fVariableUnits[varY][0] != 0) ? Form("(%s)", fVariableUnits[varY].Data()) : "")));
       }
-      if (fVariableNames[varY][0] && isProfile) {
+      if ((fVariableNames[varY][0] != 0) && isProfile) {
         h->GetYaxis()->SetTitle(Form("<%s> %s", fVariableNames[varY].Data(),
-                                     (fVariableUnits[varY][0] ? Form("(%s)", fVariableUnits[varY].Data()) : "")));
+                                     ((fVariableUnits[varY][0] != 0) ? Form("(%s)", fVariableUnits[varY].Data()) : "")));
       }
       if (arr->At(2)) {
         h->GetYaxis()->SetTitle(arr->At(2)->GetName());
@@ -295,9 +295,9 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
         fBinsAllocated += (nXbins + 2) * (nYbins + 2) * (nZbins + 2);
         h->Sumw2();
       }
-      if (fVariableNames[varX][0]) {
+      if (fVariableNames[varX][0] != 0) {
         h->GetXaxis()->SetTitle(Form("%s %s", fVariableNames[varX].Data(),
-                                     (fVariableUnits[varX][0] ? Form("(%s)", fVariableUnits[varX].Data()) : "")));
+                                     ((fVariableUnits[varX][0] != 0) ? Form("(%s)", fVariableUnits[varX].Data()) : "")));
       }
       if (arr->At(1)) {
         h->GetXaxis()->SetTitle(arr->At(1)->GetName());
@@ -305,9 +305,9 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
       if (xLabels[0] != '\0') {
         MakeAxisLabels(h->GetXaxis(), xLabels);
       }
-      if (fVariableNames[varY][0]) {
+      if (fVariableNames[varY][0] != 0) {
         h->GetYaxis()->SetTitle(Form("%s %s", fVariableNames[varY].Data(),
-                                     (fVariableUnits[varY][0] ? Form("(%s)", fVariableUnits[varY].Data()) : "")));
+                                     ((fVariableUnits[varY][0] != 0) ? Form("(%s)", fVariableUnits[varY].Data()) : "")));
       }
       if (arr->At(2)) {
         h->GetYaxis()->SetTitle(arr->At(2)->GetName());
@@ -315,13 +315,13 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
       if (yLabels[0] != '\0') {
         MakeAxisLabels(h->GetYaxis(), yLabels);
       }
-      if (fVariableNames[varZ][0]) {
+      if (fVariableNames[varZ][0] != 0) {
         h->GetZaxis()->SetTitle(Form("%s %s", fVariableNames[varZ].Data(),
-                                     (fVariableUnits[varZ][0] ? Form("(%s)", fVariableUnits[varZ].Data()) : "")));
+                                     ((fVariableUnits[varZ][0] != 0) ? Form("(%s)", fVariableUnits[varZ].Data()) : "")));
       }
-      if (fVariableNames[varZ][0] && isProfile && varT < 0) { // for TProfile2D
+      if ((fVariableNames[varZ][0] != 0) && isProfile && varT < 0) { // for TProfile2D
         h->GetZaxis()->SetTitle(Form("<%s> %s", fVariableNames[varZ].Data(),
-                                     (fVariableUnits[varZ][0] ? Form("(%s)", fVariableUnits[varZ].Data()) : "")));
+                                     ((fVariableUnits[varZ][0] != 0) ? Form("(%s)", fVariableUnits[varZ].Data()) : "")));
       }
       if (arr->At(3)) {
         h->GetZaxis()->SetTitle(arr->At(3)->GetName());
@@ -415,9 +415,9 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
       }
       fBinsAllocated += nXbins + 2;
       h->Sumw2();
-      if (fVariableNames[varX][0]) {
+      if (fVariableNames[varX][0] != 0) {
         h->GetXaxis()->SetTitle(Form("%s %s", fVariableNames[varX].Data(),
-                                     (fVariableUnits[varX][0] ? Form("(%s)", fVariableUnits[varX].Data()) : "")));
+                                     ((fVariableUnits[varX][0] != 0) ? Form("(%s)", fVariableUnits[varX].Data()) : "")));
       }
       if (arr->At(1)) {
         h->GetXaxis()->SetTitle(arr->At(1)->GetName());
@@ -446,9 +446,9 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
         fBinsAllocated += (nXbins + 2) * (nYbins + 2);
         h->Sumw2();
       }
-      if (fVariableNames[varX][0]) {
+      if (fVariableNames[varX][0] != 0) {
         h->GetXaxis()->SetTitle(Form("%s %s", fVariableNames[varX].Data(),
-                                     (fVariableUnits[varX][0] ? Form("(%s)", fVariableUnits[varX].Data()) : "")));
+                                     ((fVariableUnits[varX][0] != 0) ? Form("(%s)", fVariableUnits[varX].Data()) : "")));
       }
       if (arr->At(1)) {
         h->GetXaxis()->SetTitle(arr->At(1)->GetName());
@@ -456,13 +456,13 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
       if (xLabels[0] != '\0') {
         MakeAxisLabels(h->GetXaxis(), xLabels);
       }
-      if (fVariableNames[varY][0]) {
+      if (fVariableNames[varY][0] != 0) {
         h->GetYaxis()->SetTitle(Form("%s %s", fVariableNames[varY].Data(),
-                                     (fVariableUnits[varY][0] ? Form("(%s)", fVariableUnits[varY].Data()) : "")));
+                                     ((fVariableUnits[varY][0] != 0) ? Form("(%s)", fVariableUnits[varY].Data()) : "")));
       }
-      if (fVariableNames[varY][0] && isProfile) {
+      if ((fVariableNames[varY][0] != 0) && isProfile) {
         h->GetYaxis()->SetTitle(Form("<%s> %s", fVariableNames[varY].Data(),
-                                     (fVariableUnits[varY][0] ? Form("(%s)", fVariableUnits[varY].Data()) : "")));
+                                     ((fVariableUnits[varY][0] != 0) ? Form("(%s)", fVariableUnits[varY].Data()) : "")));
       }
 
       if (arr->At(2)) {
@@ -501,9 +501,9 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
         fBinsAllocated += (nXbins + 2) * (nYbins + 2) * (nZbins + 2);
         h->Sumw2();
       }
-      if (fVariableNames[varX][0]) {
+      if (fVariableNames[varX][0] != 0) {
         h->GetXaxis()->SetTitle(Form("%s %s", fVariableNames[varX].Data(),
-                                     (fVariableUnits[varX][0] ? Form("(%s)", fVariableUnits[varX].Data()) : "")));
+                                     ((fVariableUnits[varX][0] != 0) ? Form("(%s)", fVariableUnits[varX].Data()) : "")));
       }
       if (arr->At(1)) {
         h->GetXaxis()->SetTitle(arr->At(1)->GetName());
@@ -511,9 +511,9 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
       if (xLabels[0] != '\0') {
         MakeAxisLabels(h->GetXaxis(), xLabels);
       }
-      if (fVariableNames[varY][0]) {
+      if (fVariableNames[varY][0] != 0) {
         h->GetYaxis()->SetTitle(Form("%s %s", fVariableNames[varY].Data(),
-                                     (fVariableUnits[varY][0] ? Form("(%s)", fVariableUnits[varY].Data()) : "")));
+                                     ((fVariableUnits[varY][0] != 0) ? Form("(%s)", fVariableUnits[varY].Data()) : "")));
       }
       if (arr->At(2)) {
         h->GetYaxis()->SetTitle(arr->At(2)->GetName());
@@ -521,13 +521,13 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
       if (yLabels[0] != '\0') {
         MakeAxisLabels(h->GetYaxis(), yLabels);
       }
-      if (fVariableNames[varZ][0]) {
+      if (fVariableNames[varZ][0] != 0) {
         h->GetZaxis()->SetTitle(Form("%s %s", fVariableNames[varZ].Data(),
-                                     (fVariableUnits[varZ][0] ? Form("(%s)", fVariableUnits[varZ].Data()) : "")));
+                                     ((fVariableUnits[varZ][0] != 0) ? Form("(%s)", fVariableUnits[varZ].Data()) : "")));
       }
-      if (fVariableNames[varZ][0] && isProfile && varT < 0) { // TProfile2D
+      if ((fVariableNames[varZ][0] != 0) && isProfile && varT < 0) { // TProfile2D
         h->GetZaxis()->SetTitle(Form("<%s> %s", fVariableNames[varZ].Data(),
-                                     (fVariableUnits[varZ][0] ? Form("(%s)", fVariableUnits[varZ].Data()) : "")));
+                                     ((fVariableUnits[varZ][0] != 0) ? Form("(%s)", fVariableUnits[varZ].Data()) : "")));
       }
 
       if (arr->At(3)) {
@@ -611,9 +611,9 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   for (int idim = 0; idim < nDimensions; ++idim) {
     nbins *= (nBins[idim] + 2);
     TAxis* axis = h->GetAxis(idim);
-    if (fVariableNames[vars[idim]][0]) {
+    if (fVariableNames[vars[idim]][0] != 0) {
       axis->SetTitle(Form("%s %s", fVariableNames[vars[idim]].Data(),
-                          (fVariableUnits[vars[idim]][0] ? Form("(%s)", fVariableUnits[vars[idim]].Data()) : "")));
+                          ((fVariableUnits[vars[idim]][0] != 0) ? Form("(%s)", fVariableUnits[vars[idim]].Data()) : "")));
     }
     if (arr->At(1 + idim)) {
       axis->SetTitle(arr->At(1 + idim)->GetName());
@@ -719,9 +719,9 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   for (int idim = 0; idim < nDimensions; ++idim) {
     bins *= (nBins[idim] + 2);
     TAxis* axis = h->GetAxis(idim);
-    if (fVariableNames[vars[idim]][0]) {
+    if (fVariableNames[vars[idim]][0] != 0) {
       axis->SetTitle(Form("%s %s", fVariableNames[vars[idim]].Data(),
-                          (fVariableUnits[vars[idim]][0] ? Form("(%s)", fVariableUnits[vars[idim]].Data()) : "")));
+                          ((fVariableUnits[vars[idim]][0] != 0) ? Form("(%s)", fVariableUnits[vars[idim]].Data()) : "")));
     }
     if (arr->At(1 + idim)) {
       axis->SetTitle(arr->At(1 + idim)->GetName());
