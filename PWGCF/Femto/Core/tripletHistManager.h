@@ -44,6 +44,10 @@ enum TripletHist {
   // standard 1D
   kQ3,
   kMt, // averate mt of all pairs in the triplet
+  // kstar betweeen single particles
+  kKstar12,
+  kKstar13,
+  kKstar23,
   // standard 2D
   kPt1VsQ3,
   kPt2VsQ3,
@@ -106,6 +110,7 @@ struct ConfTripletBinning : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("TripletBinning");
   o2::framework::Configurable<bool> plot1D{"plot1D", true, "Enable 1D histograms"};
   o2::framework::Configurable<bool> plot2D{"plot2D", true, "Enable 2D histograms"};
+  o2::framework::Configurable<bool> plotKstar{"plotKstar", false, "Enable kstar histograms"};
   o2::framework::Configurable<bool> plotPt1VsPt2VsPt3{"plotPt1VsPt2VsPt3", false, "Enable 3D histogram (Pt1 vs Pt2 vs Pt3)"};
   o2::framework::Configurable<bool> plotQ3VsPt1VsPt2VsPt3{"plotQ3VsPt1VsPt2VsPt3", false, "Enable 4D histogram (Q3 vs Pt1 vs Pt2 vs Pt3)"};
   o2::framework::Configurable<bool> plotQ3VsMtVsMult{"plotQ3VsMtVsMult", false, "Enable 3D histogram (Q3 vs Mt vs Mult)"};
@@ -113,6 +118,7 @@ struct ConfTripletBinning : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> plotQ3VsMtVsPt1VsPt2VsPt3VsMult{"plotQ3VsMtVsPt1VsPt2VsPt3VsMult", false, "Enable 6D histogram (Q3 vs Mt Vs Pt1 vs Pt2 vs Pt3 vs Mult)"};
   o2::framework::Configurable<bool> plotQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent{"plotQ3VsMtVsPt1VsPt2VsPt3VsMultVsCent", false, "Enable 7D histogram (Q3 vs Mt Vs Pt1 vs Pt2 vs Pt3 vs Mult vs Cent)"};
   o2::framework::ConfigurableAxis q3{"q3", {{600, 0, 6}}, "q3"};
+  o2::framework::ConfigurableAxis kstar{"kstar", {{600, 0, 6}}, "kstar (between pairs of particles)"};
   o2::framework::ConfigurableAxis mt{"mt", {{500, 0.8, 5.8}}, "mt"};
   o2::framework::ConfigurableAxis multiplicity{"multiplicity", {{50, 0, 200}}, "multiplicity"};
   o2::framework::ConfigurableAxis centrality{"centrality", {{10, 0, 100}}, "centrality (mult. percentile)"};
@@ -142,6 +148,9 @@ constexpr std::array<histmanager::HistInfo<TripletHist>, kTripletHistogramLast>
       // 1D
       {kQ3, o2::framework::HistType::kTH1F, "hQ3", "Q_{3}; Q_{3} (GeV/#it{c}); Entries"},
       {kMt, o2::framework::HistType::kTH1F, "hMt", "transverse mass; m_{T} (GeV/#it{c}^{2}); Entries"},
+      {kKstar12, o2::framework::HistType::kTH1F, "hKstar12", "k* between particle 1 and particle 2; k* (GeV/#it{c}); Entries"},
+      {kKstar13, o2::framework::HistType::kTH1F, "hKstar13", "k* between particle 1 and particle 3; k* (GeV/#it{c}); Entries"},
+      {kKstar23, o2::framework::HistType::kTH1F, "hKstar23", "k* between particle 2 and particle 3; k* (GeV/#it{c}); Entries"},
       // 2D
       {kPt1VsQ3, o2::framework::HistType::kTH2F, "hPt1VsQ3", "p_{T,1} vs Q_{3}; p_{T,1} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
       {kPt2VsQ3, o2::framework::HistType::kTH2F, "hPt2VsQ3", "p_{T,2} vs Q_{3}; p_{T,2} (GeV/#it{c}); Q_{3} (GeV/#it{c})"},
@@ -173,6 +182,9 @@ constexpr std::array<histmanager::HistInfo<TripletHist>, kTripletHistogramLast>
 #define TRIPLET_HIST_ANALYSIS_MAP(conf, confMixing)                                                                                           \
   {kQ3, {(conf).q3}},                                                                                                                         \
     {kMt, {(conf).mt}},                                                                                                                       \
+    {kKstar12, {(conf).kstar}},                                                                                                               \
+    {kKstar13, {(conf).kstar}},                                                                                                               \
+    {kKstar23, {(conf).kstar}},                                                                                                               \
     {kPt1VsQ3, {(conf).pt1, (conf).q3}},                                                                                                      \
     {kPt2VsQ3, {(conf).pt2, (conf).q3}},                                                                                                      \
     {kPt3VsQ3, {(conf).pt3, (conf).q3}},                                                                                                      \
@@ -261,6 +273,7 @@ class TripletHistManager
     mMtMin = ConfTripletCuts.mtMin.value;
     mMtMax = ConfTripletCuts.mtMax.value;
 
+    mPlotKstar = ConfTripletBinning.plotKstar.value;
     mPlotPt1VsPt2VsPt3 = ConfTripletBinning.plotPt1VsPt2VsPt3.value;
     mPlotQ3VsPt1VsPt2VsPt3 = ConfTripletBinning.plotQ3VsPt1VsPt2VsPt3.value;
     mPlotQ3VsMtVsMult = ConfTripletBinning.plotQ3VsMtVsMult.value;
@@ -313,6 +326,10 @@ class TripletHistManager
     mMt = getMt(mParticle1, mParticle2, mParticle3);
     // set Q3
     mQ3 = getQ3(mParticle1, mParticle2, mParticle3);
+
+    mKstar12 = getKstar(mParticle1, mParticle2);
+    mKstar13 = getKstar(mParticle1, mParticle3);
+    mKstar23 = getKstar(mParticle2, mParticle3);
 
     // if one of the particles has a mass getter, we cache the value for the filling later
     if constexpr (utils::HasMass<T1>) {
@@ -495,6 +512,24 @@ class TripletHistManager
     return static_cast<float>(std::sqrt(-q));
   }
 
+  float getKstar(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
+  {
+    // Use Cartesian 4-vectors: addition/M2() become pure arithmetic
+    const ROOT::Math::PxPyPzEVector p1(part1);
+    const ROOT::Math::PxPyPzEVector p2(part2);
+
+    // Mandelstam s = (p1 + p2)^2
+    const double s = (p1 + p2).M2();
+    const double m1sq = p1.M2();
+    const double m2sq = p2.M2();
+
+    // Källen function λ(s, m1^2, m2^2) = (s - m1^2 - m2^2)² - 4*m1^2*m2^2
+    const double kallen = (s - m1sq - m2sq) * (s - m1sq - m2sq) - 4.0 * m1sq * m2sq;
+
+    // k* = 0.5 * sqrt(λ/s)
+    return static_cast<float>(0.5 * std::sqrt(std::max(0.0, kallen) / s));
+  }
+
   void initAnalysis(std::map<TripletHist, std::vector<o2::framework::AxisSpec>> const& Specs)
   {
     std::string analysisDir = std::string(prefix) + std::string(AnalysisDir);
@@ -510,6 +545,12 @@ class TripletHistManager
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQ3VsMult, HistTable), getHistDesc(kQ3VsMult, HistTable), getHistType(kQ3VsMult, HistTable), {Specs.at(kQ3VsMult)});
       mHistogramRegistry->add(analysisDir + getHistNameV2(kQ3VsCent, HistTable), getHistDesc(kQ3VsCent, HistTable), getHistType(kQ3VsCent, HistTable), {Specs.at(kQ3VsCent)});
       // TODO: implement histograms differential im mass of the particles
+    }
+
+    if (mPlotKstar) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstar12, HistTable), getHistDesc(kKstar12, HistTable), getHistType(kKstar12, HistTable), {Specs.at(kKstar12)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstar13, HistTable), getHistDesc(kKstar13, HistTable), getHistType(kKstar13, HistTable), {Specs.at(kKstar13)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstar23, HistTable), getHistDesc(kKstar23, HistTable), getHistType(kKstar23, HistTable), {Specs.at(kKstar23)});
     }
 
     if (mPlotPt1VsPt2VsPt3) {
@@ -575,6 +616,12 @@ class TripletHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQ3VsMt, HistTable)), mQ3, mMt);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQ3VsMult, HistTable)), mQ3, mMult);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQ3VsCent, HistTable)), mQ3, mCent);
+    }
+
+    if (mPlotKstar) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstar12, HistTable)), mKstar12);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstar13, HistTable)), mKstar13);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstar23, HistTable)), mKstar23);
     }
 
     if (mPlotPt1VsPt2VsPt3) {
@@ -658,6 +705,9 @@ class TripletHistManager
   float mMt = 0.f;
   float mMult = 0.f;
   float mCent = 0.f;
+  float mKstar12 = 0.f;
+  float mKstar13 = 0.f;
+  float mKstar23 = 0.f;
 
   // mc
   ROOT::Math::PtEtaPhiMVector mTrueParticle1;
@@ -680,6 +730,7 @@ class TripletHistManager
   bool mPlot1d = true;
   bool mPlot2d = true;
 
+  bool mPlotKstar = false;
   bool mPlotPt1VsPt2VsPt3 = false;
   bool mPlotQ3VsPt1VsPt2VsPt3 = false;
   bool mPlotQ3VsMtVsMult = false;
