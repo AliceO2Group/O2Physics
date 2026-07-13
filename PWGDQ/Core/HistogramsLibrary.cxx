@@ -2103,7 +2103,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<double, 101> phiv_bins{};
         for (int i = 0; i <= 100; i++) {
           phiv_bins[i] = o2::constants::math::PI / 100. * i;
-}
+        }
         int nbins_phiv = static_cast<int>(phiv_bins.size()) - 1;
 
         // 3D histo
@@ -2602,11 +2602,11 @@ bool o2::aod::dqhistograms::ValidateJSONHistogram(T hist)
       if (!hist->HasMember("nBins")) {
         LOG(fatal) << "Missing nBins field for histogram";
         return false;
-      }         if (!hist->FindMember("nBins")->value.IsArray()) {
-          LOG(fatal) << "nBins field should be an array";
-          return false;
-        }
-     
+      }
+      if (!hist->FindMember("nBins")->value.IsArray()) {
+        LOG(fatal) << "nBins field should be an array";
+        return false;
+      }
     }
     if (hist->HasMember("axLabels") && !hist->FindMember("axLabels")->value.IsArray()) {
       LOG(fatal) << "axLabels field should be an array of strings";

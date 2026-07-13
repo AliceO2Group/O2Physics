@@ -63,17 +63,17 @@ HistogramManager::HistogramManager(const char* name, const char* title, const in
                                                                                               fMainList(new THashList),
                                                                                               fNVars(maxNVars),
                                                                                               fUsedVars(new bool[maxNVars]),
-                                                                                              
+
                                                                                               fUseDefaultVariableNames(kFALSE),
                                                                                               fBinsAllocated(0)
 {
   //
   // Constructor
   //
-  
+
   fMainList->SetOwner(kTRUE);
   fMainList->SetName(name);
-  
+
   for (int i = 0; i < maxNVars; ++i) {
     fUsedVars[i] = false;
   }
