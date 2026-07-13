@@ -2603,12 +2603,11 @@ bool o2::aod::dqhistograms::ValidateJSONHistogram(T hist)
       if (!hist->HasMember("nBins")) {
         LOG(fatal) << "Missing nBins field for histogram";
         return false;
-      } else {
-        if (!hist->FindMember("nBins")->value.IsArray()) {
+      }         if (!hist->FindMember("nBins")->value.IsArray()) {
           LOG(fatal) << "nBins field should be an array";
           return false;
         }
-      }
+     
     }
     if (hist->HasMember("axLabels") && !hist->FindMember("axLabels")->value.IsArray()) {
       LOG(fatal) << "axLabels field should be an array of strings";
