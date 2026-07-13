@@ -14,12 +14,22 @@
 #include <Framework/Logger.h>
 
 #include <TArrayD.h>
+#include <TClass.h>
 #include <TCollection.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
+#include <THashList.h>
+#include <THn.h>
 #include <THnBase.h>
+#include <THnSparse.h>
+#include <TIterator.h>
 #include <TNamed.h>
+#include <TObjArray.h>
+#include <TObject.h>
+#include <TProfile.h>
+#include <TProfile2D.h>
+#include <TProfile3D.h>
 #include <TString.h>
 
 #include <Rtypes.h>
@@ -31,17 +41,6 @@
 #include <memory>
 #include <span>
 #include <vector>
-
-#include <TClass.h>
-#include <THashList.h>
-#include <THn.h>
-#include <THnSparse.h>
-#include <TIterator.h>
-#include <TObjArray.h>
-#include <TObject.h>
-#include <TProfile.h>
-#include <TProfile2D.h>
-#include <TProfile3D.h>
 
 //_______________________________________________________________________________
 HistogramManager::HistogramManager() : TNamed("", ""),
