@@ -2789,7 +2789,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
         int iDim = 0;
         binLimits = new TArrayD[nDimensions];
         for (auto& v : hist.FindMember("binLimits")->value.GetArray()) {
-          double* lims = new double[v.GetArray().Size()];
+          auto* lims = new double[v.GetArray().Size()];
           int iElem = 0;
           for (auto& lim : v.GetArray()) {
             lims[iElem++] = lim.GetDouble();
@@ -2927,7 +2927,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
           LOG(fatal) << "Histogram not properly defined in the JSON file. Wrong x binning for histogram";
           continue;
         }
-        double* xbins = new double[xbinsVec.size()];
+        auto* xbins = new double[xbinsVec.size()];
         std::copy(xbinsVec.begin(), xbinsVec.end(), xbins);
 
         double* ybins = nullptr;
