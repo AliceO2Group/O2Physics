@@ -89,7 +89,7 @@ struct V0PtInvMassPlots {
 
   // Configurable for histograms
   Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
-  Configurable<int> nBinsArmenteros{"nBinsArmenteros", 500, "N bins in Armenteros histos"};
+  Configurable<int> nBinsArmenteros{"nBinsArmenteros", 600, "N bins in Armenteros histos"};
 
   // Configurables for Cuts
   Configurable<float> cutZVertex{"cutZVertex", 10.0f, "Accepted z-vertex range (cm)"};
@@ -99,6 +99,7 @@ struct V0PtInvMassPlots {
   Configurable<float> compv0masscut{"compv0masscut", 0.01, "CompetitiveV0masscut (GeV)"};
   Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
   Configurable<float> etagen{"etagen", 0.8, "Eta Generated"};
+  Configurable<float> etagenstrict{"etagenstrict", 0.5, "Strict Eta Generated"};
   Configurable<float> rapidityCut{"rapidityCut", 0.5, "V0 Rapidity Window"};
   Configurable<float> itsMinHits{"itsMinHits", 1.0, "Minimum Hits of Daughter Tracks in the ITS"};
 
@@ -381,7 +382,8 @@ struct V0PtInvMassPlots {
     // NCh Analysis
     rNchAnalysis.add("hNchCentralityGenerated", "hNchCentralityGenerated", {HistType::kTH2D, {centAxis, nchAxis}});                                       // Nch vs Centrality Generated
     rNchAnalysis.add("hNchCentralityGeneratedAfterEventSelection", "hNchCentralityGeneratedAfterEventSelection", {HistType::kTH2D, {centAxis, nchAxis}}); // Nch vs Centrality Generated After Event Selection
-    rNchAnalysis.add("hNchCentrality", "hNchCentrality", {HistType::kTH2D, {centAxis, nchAxis}});                                                         // Nch vs Centrality
+    rNchAnalysis.add("hNchCentrality", "hNchCentrality", {HistType::kTH2D, {centAxis, nchAxis}});  
+    rNchAnalysis.add("hNchCentralityEtaHalf", "hNchCentralityEtaHalf", {HistType::kTH2D, {centAxis, nchAxis}}); // Nch vs Centrality EtaHalfCut
   }
 
   // Event selection function
@@ -432,21 +434,17 @@ struct V0PtInvMassPlots {
   {
     rMCCorrections.fill(HIST("hGenPartcles"), 0.5, mcCollision.centFT0M());
     rMCCorrections.get<TH2>(HIST("hGenPartcles"))->GetXaxis()->SetBinLabel(1, "All Gen Particles");
-    if (!particle.isPhysicalPrimary()) { // Daughters Pseudorapidity Cut
+    if (!particle.isPhysicalPrimary()) {
       return false;
     }
     rMCCorrections.fill(HIST("hGenPartcles"), 1.5, mcCollision.centFT0M());
     rMCCorrections.get<TH2>(HIST("hGenPartcles"))->GetXaxis()->SetBinLabel(2, "Physical Primary");
+
     if (!particle.producedByGenerator()) {
       return false;
     }
     rMCCorrections.fill(HIST("hGenPartcles"), 2.5, mcCollision.centFT0M());
     rMCCorrections.get<TH2>(HIST("hGenPartcles"))->GetXaxis()->SetBinLabel(3, "Produced by Generator");
-    if (std::abs(particle.eta()) > etagen) { // Eta cut
-      return false;
-    }
-    rMCCorrections.fill(HIST("hGenPartcles"), 3.5, mcCollision.centFT0M());
-    rMCCorrections.get<TH2>(HIST("hGenPartcles"))->GetXaxis()->SetBinLabel(4, "Eta Cut");
     auto pdgParticle = pdgDB->GetParticle(particle.pdgCode());
     if (pdgParticle == nullptr) {
       return false;
@@ -454,8 +452,21 @@ struct V0PtInvMassPlots {
     if (std::abs(pdgParticle->Charge()) < 3) {
       return false;
     }
-    rMCCorrections.fill(HIST("hGenPartcles"), 4.5, mcCollision.centFT0M());
+    rMCCorrections.fill(HIST("hGenPartcles"), 3.5, mcCollision.centFT0M());
     rMCCorrections.get<TH2>(HIST("hGenPartcles"))->GetXaxis()->SetBinLabel(4, "Charge Cut");
+
+    // Standard eta cut
+    if (std::abs(particle.eta()) > etagen) {
+      return false;
+    }
+    rMCCorrections.fill(HIST("hGenPartcles"), 4.5, mcCollision.centFT0M());
+    rMCCorrections.get<TH2>(HIST("hGenPartcles"))->GetXaxis()->SetBinLabel(5, "Eta Cut");
+    // Stricter eta cut
+    if (std::abs(particle.eta()) > etagenstrict) {
+      return false;
+    }
+    rMCCorrections.fill(HIST("hGenPartcles"), 5.5, mcCollision.centFT0M());
+    rMCCorrections.get<TH2>(HIST("hGenPartcles"))->GetXaxis()->SetBinLabel(6, "Strict Eta Cut");
     return true;
   }
 
@@ -601,7 +612,7 @@ struct V0PtInvMassPlots {
     rPtAnalysis.fill(HIST("hNLambda"), 4.5, collision.centFT0M());
     rPtAnalysis.get<TH2>(HIST("hNLambda"))->GetXaxis()->SetBinLabel(5, "Max_ct");
     rPtAnalysis.fill(HIST("hMassLambdavsCuts"), 4.5, v0.mLambda());
-    if (doLambdaArmenterosCut && v0.qtarm() < (lambdaparamArmenterosCut * std::abs(v0.alpha()))) { // Lambda Armenteros Cut
+    if (doLambdaArmenterosCut && (v0.alpha() <= 0 || v0.qtarm() > lambdaparamArmenterosCut * v0.alpha())) { // Lambda Armenteros Cut      
       return false;
     }
     rPtAnalysis.fill(HIST("hNLambda"), 5.5, collision.centFT0M());
@@ -683,7 +694,7 @@ struct V0PtInvMassPlots {
     rPtAnalysis.fill(HIST("hNAntiLambda"), 4.5, collision.centFT0M());
     rPtAnalysis.get<TH2>(HIST("hNAntiLambda"))->GetXaxis()->SetBinLabel(5, "Max_ct");
     rPtAnalysis.fill(HIST("hMassAntiLambdavsCuts"), 4.5, v0.mAntiLambda());
-    if (doAntilambdaArmenterosCut && (v0.qtarm() < (antilambdaparamArmenterosCut * std::abs(v0.alpha())))) { // AntiLambda Armenteros Cut
+    if (doAntilambdaArmenterosCut && (v0.alpha() > 0 || v0.qtarm() > antilambdaparamArmenterosCut * std::abs(v0.alpha()))) { // AntiLambda Armenteros Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNAntiLambda"), 5.5, collision.centFT0M());
@@ -782,12 +793,12 @@ struct V0PtInvMassPlots {
       isINELgt0 = true;
       rMCCorrections.fill(HIST("hNEvents_Corrections"), 1.5, mcCollision.centFT0M()); // Event Efficiency Denominator
     }
-    int NParticlesPerCollision = 0; // Counter for the number of particles per collision for the Nch analysis
+    int nParticlesPerCollision = 0; // Counter for the number of particles per collision for the Nch analysis
     // Particles (of interest) Generated Pt Spectrum and Signal Loss Denominator Loop
     for (const auto& mcParticle : mcParticles) {
-      if (std::abs(mcParticle.y()) < rapidityCut) {
-        if (mcParticle.isPhysicalPrimary()) {
-          if (isINELgt0) {
+      if (isINELgt0) {
+        if (std::abs(mcParticle.y()) < rapidityCut) {
+          if (mcParticle.isPhysicalPrimary()) {
             rMCCorrections.fill(HIST("GenParticleRapidity"), mcParticle.y());
             if (mcParticle.pdgCode() == kK0Short) // K0sh matched
             {
@@ -829,14 +840,15 @@ struct V0PtInvMassPlots {
             {
               rMCCorrections.fill(HIST("hPhiGeneratedPtSpectrum"), mcParticle.pt(), mcCollision.centFT0M());
             }
-            if (acceptGeneratedParticle(mcParticle, mcCollision)) {
-              NParticlesPerCollision++;
-            }
           }
+        }
+        if (acceptGeneratedParticle(mcParticle, mcCollision)) 
+        {
+          nParticlesPerCollision++;
         }
       }
     } // End of MCParticle Loop
-    rNchAnalysis.fill(HIST("hNchCentralityGenerated"), mcCollision.centFT0M(), NParticlesPerCollision);
+    rNchAnalysis.fill(HIST("hNchCentralityGenerated"), mcCollision.centFT0M(), nParticlesPerCollision);
 
     // Signal Loss Numenator Loop
 
@@ -850,7 +862,7 @@ struct V0PtInvMassPlots {
       rMCCorrections.fill(HIST("hNEvents_Corrections"), 3.5, mcCollision.centFT0M()); // Event Split Numerator
       recoCollINEL++;
       if (collision.isInelGt0()) {                                                      // Check if the reconstructed collision fulfills the INEL>0 requirement
-        rMCCorrections.fill(HIST("hNEvents_Corrections"), 4.5, mcCollision.centFT0M()); // Event Split Denominator??????????????
+        rMCCorrections.fill(HIST("hNEvents_Corrections"), 4.5, mcCollision.centFT0M()); // Event Split Denominator
         recoCollINELgt0++;
       }
     }
@@ -860,19 +872,18 @@ struct V0PtInvMassPlots {
       return;
     }
     if (recoCollINELgt0 > 0) {
-      rMCCorrections.fill(HIST("hNEvents_Corrections"), 5.5, mcCollision.centFT0M()); // Event Efficiency Numerator and Event Split Denominator??????????
+      rMCCorrections.fill(HIST("hNEvents_Corrections"), 5.5, mcCollision.centFT0M()); // Event Efficiency Numerator and Event Split Denominator
     }
 
     // Singnal Loss Numerator Loop
-    for (auto& mcParticle : mcParticles) {
+    for (const auto& mcParticle : mcParticles) {
       if (!mcParticle.isPhysicalPrimary()) {
         continue;
       }
-      if (std::abs(mcParticle.y()) > 0.5f) {
+      if (std::abs(mcParticle.y()) > rapidityCut) {
         continue;
       }
       if (recoCollINELgt0 > 0) {
-        rMCCorrections.fill(HIST("hNEvents_Corrections"), 6.5, mcCollision.centFT0M());
         if (mcParticle.pdgCode() == kK0Short) // K0sh matched
         {
           rMCCorrections.fill(HIST("hK0shGeneratedRecoPtSpectrum"), mcParticle.pt(), mcCollision.centFT0M());
@@ -957,6 +968,7 @@ struct V0PtInvMassPlots {
     }
     rPtAnalysis.fill(HIST("hNRecEvents"), 0.5, mcCollision.centFT0M());                               // Event Split Numenator
     rNchAnalysis.fill(HIST("hNchCentrality"), mcCollision.centFT0M(), collision.multNTracksGlobal()); // Nch vs Centrality
+    rNchAnalysis.fill(HIST("hNchCentralityEtaHalf"), mcCollision.centFT0M(), collision.multNGlobalTracksPVetaHalf()); // Nch vs Centrality EtaHalfCut
     for (const auto& v0 : V0s) {
       // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
       const auto& posDaughterTrack = v0.template posTrack_as<DaughterTracks>();
@@ -1115,6 +1127,7 @@ struct V0PtInvMassPlots {
     }
     rPtAnalysis.fill(HIST("hNRecEvents"), 0.5, collision.centFT0M());                               // Number of recorded events
     rNchAnalysis.fill(HIST("hNchCentrality"), collision.centFT0M(), collision.multNTracksGlobal()); // Nch vs Centrality
+    rNchAnalysis.fill(HIST("hNchCentralityEtaHalf"), collision.centFT0M(), collision.multNGlobalTracksPVetaHalf()); // Nch vs Centrality EtaHalfCut
     for (const auto& v0 : V0s) {
       // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
       const auto& posDaughterTrack = v0.template posTrack_as<DaughterTracks>();
