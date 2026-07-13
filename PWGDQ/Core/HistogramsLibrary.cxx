@@ -2661,7 +2661,7 @@ bool o2::aod::dqhistograms::ValidateJSONHistogram(T hist)
 
   if (!isTHn) {
     TString varX = hist->FindMember("varX")->value.GetString();
-    if (VarManager::fgVarNamesMap.find(varX) == VarManager::fgVarNamesMap.end()) {
+    if (!VarManager::fgVarNamesMap.contains(varX)) {
       LOG(fatal) << "Bad varX variable (" << hist->FindMember("varX")->value.GetString() << ") specified for histogram";
       return false;
     }
