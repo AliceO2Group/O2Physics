@@ -784,8 +784,8 @@ void HistogramManager::FillHistClass(const char* className, Float_t* values)
   for (auto varIter = varList.begin(); varIter != varList.end(); varIter++) {
     h = next(); // get the histogram
     // decode information from the vector of indices
-    isProfile = ((*varIter)[0] == 1 ? true : false);
-    isTHn = ((*varIter)[1] > 0 ? true : false);
+    isProfile = ((*varIter)[0] == 1);
+    isTHn = ((*varIter)[1] > 0);
     if (isTHn) {
       dimension = (*varIter)[1];
     } else {
@@ -803,7 +803,7 @@ void HistogramManager::FillHistClass(const char* className, Float_t* values)
       varY = (*varIter)[4];
       varZ = (*varIter)[5];
       varT = (*varIter)[6];
-      isFillLabelx = ((*varIter)[7] == 1 ? true : false);
+      isFillLabelx = ((*varIter)[7] == 1);
     }
 
     if (!isTHn) {
