@@ -14,4 +14,5 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
+// o2-linter: disable=name/workflow-file (not a workflow file)
 #include "strangenessBuilderHelper.h" // IWYU pragma: keep
