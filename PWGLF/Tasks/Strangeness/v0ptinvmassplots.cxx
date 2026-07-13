@@ -382,7 +382,7 @@ struct V0PtInvMassPlots {
     // NCh Analysis
     rNchAnalysis.add("hNchCentralityGenerated", "hNchCentralityGenerated", {HistType::kTH2D, {centAxis, nchAxis}});                                       // Nch vs Centrality Generated
     rNchAnalysis.add("hNchCentralityGeneratedAfterEventSelection", "hNchCentralityGeneratedAfterEventSelection", {HistType::kTH2D, {centAxis, nchAxis}}); // Nch vs Centrality Generated After Event Selection
-    rNchAnalysis.add("hNchCentrality", "hNchCentrality", {HistType::kTH2D, {centAxis, nchAxis}});  
+    rNchAnalysis.add("hNchCentrality", "hNchCentrality", {HistType::kTH2D, {centAxis, nchAxis}});
     rNchAnalysis.add("hNchCentralityEtaHalf", "hNchCentralityEtaHalf", {HistType::kTH2D, {centAxis, nchAxis}}); // Nch vs Centrality EtaHalfCut
   }
 
@@ -612,7 +612,7 @@ struct V0PtInvMassPlots {
     rPtAnalysis.fill(HIST("hNLambda"), 4.5, collision.centFT0M());
     rPtAnalysis.get<TH2>(HIST("hNLambda"))->GetXaxis()->SetBinLabel(5, "Max_ct");
     rPtAnalysis.fill(HIST("hMassLambdavsCuts"), 4.5, v0.mLambda());
-    if (doLambdaArmenterosCut && (v0.alpha() <= 0 || v0.qtarm() > lambdaparamArmenterosCut * v0.alpha())) { // Lambda Armenteros Cut      
+    if (doLambdaArmenterosCut && (v0.alpha() <= 0 || v0.qtarm() > lambdaparamArmenterosCut * v0.alpha())) { // Lambda Armenteros Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNLambda"), 5.5, collision.centFT0M());
@@ -842,8 +842,7 @@ struct V0PtInvMassPlots {
             }
           }
         }
-        if (acceptGeneratedParticle(mcParticle, mcCollision)) 
-        {
+        if (acceptGeneratedParticle(mcParticle, mcCollision)) {
           nParticlesPerCollision++;
         }
       }
@@ -966,8 +965,8 @@ struct V0PtInvMassPlots {
     if (!acceptEvent(collision)) { // Event Selection
       return;
     }
-    rPtAnalysis.fill(HIST("hNRecEvents"), 0.5, mcCollision.centFT0M());                               // Event Split Numenator
-    rNchAnalysis.fill(HIST("hNchCentrality"), mcCollision.centFT0M(), collision.multNTracksGlobal()); // Nch vs Centrality
+    rPtAnalysis.fill(HIST("hNRecEvents"), 0.5, mcCollision.centFT0M());                                               // Event Split Numenator
+    rNchAnalysis.fill(HIST("hNchCentrality"), mcCollision.centFT0M(), collision.multNTracksGlobal());                 // Nch vs Centrality
     rNchAnalysis.fill(HIST("hNchCentralityEtaHalf"), mcCollision.centFT0M(), collision.multNGlobalTracksPVetaHalf()); // Nch vs Centrality EtaHalfCut
     for (const auto& v0 : V0s) {
       // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
@@ -1125,8 +1124,8 @@ struct V0PtInvMassPlots {
     if (!acceptEvent(collision)) { // Event Selection
       return;
     }
-    rPtAnalysis.fill(HIST("hNRecEvents"), 0.5, collision.centFT0M());                               // Number of recorded events
-    rNchAnalysis.fill(HIST("hNchCentrality"), collision.centFT0M(), collision.multNTracksGlobal()); // Nch vs Centrality
+    rPtAnalysis.fill(HIST("hNRecEvents"), 0.5, collision.centFT0M());                                               // Number of recorded events
+    rNchAnalysis.fill(HIST("hNchCentrality"), collision.centFT0M(), collision.multNTracksGlobal());                 // Nch vs Centrality
     rNchAnalysis.fill(HIST("hNchCentralityEtaHalf"), collision.centFT0M(), collision.multNGlobalTracksPVetaHalf()); // Nch vs Centrality EtaHalfCut
     for (const auto& v0 : V0s) {
       // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
