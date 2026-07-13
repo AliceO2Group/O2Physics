@@ -103,6 +103,7 @@ DECLARE_SOA_COLUMN(McVy, mcVy, float);
 DECLARE_SOA_COLUMN(McVz, mcVz, float);
 DECLARE_SOA_COLUMN(IsPhysPrimary, isPhysPrimary, bool);
 DECLARE_SOA_COLUMN(ProcessCode, processCode, int);
+DECLARE_SOA_COLUMN(HasInteractedInAbsorber, hasInteractedInAbsorber, bool);
 
 } // namespace hmpid_mc
 
@@ -112,7 +113,8 @@ DECLARE_SOA_TABLE(HmpidAnalysisMC, "AOD", "HMPIDANALYSISMC",
                   hmpid_mc::McVy,
                   hmpid_mc::McVz,
                   hmpid_mc::IsPhysPrimary,
-                  hmpid_mc::ProcessCode);
+                  hmpid_mc::ProcessCode,
+                  hmpid_mc::HasInteractedInAbsorber);
 
 } // namespace o2::aod
 

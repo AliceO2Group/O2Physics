@@ -24,13 +24,8 @@
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TGeoManager.h>
@@ -72,6 +67,10 @@ struct HmpidTableProducer {
   Configurable<bool> requireTPC{"requireTPC", true, "Require TPC track"};
   Configurable<bool> requireTOF{"requireTOF", true, "Require TOF track"};
 
+  // Absorbers position
+  Configurable<float> absorberEdgeRich2{"absorberEdgeRich2", 435.5f, "Raggio esterno (bordo) del target Al davanti a rich2 [cm]"};
+  Configurable<float> absorberEdgeRich4{"absorberEdgeRich4", 435.0f, "Raggio esterno (bordo) del target Al davanti a rich4 [cm]"};
+
   using CollisionCandidates = o2::soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As>;
 
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra,
@@ -90,6 +89,10 @@ struct HmpidTableProducer {
                                       aod::McTrackLabels>;
 
   std::unordered_set<uint32_t> mCollisionsWithHmpid;
+
+  const int rich2 = 2, rich4 = 4;
+  const float kRich2AbsorberThickness = 4.0f;
+  const float kRich4AbsorberThickness = 8.0f;
 
   void init(o2::framework::InitContext&)
   {
@@ -305,14 +308,15 @@ struct HmpidTableProducer {
   }
   PROCESS_SWITCH(HmpidTableProducer, processEvent, "Process event level", true);
 
-  template <bool isMC, typename TTrackTable>
+  template <bool isMC, typename TTrackTable, typename TMcParticles = int>
   void runHmpidAnalysis(
     aod::HMPIDs const& hmpids,
     TTrackTable const&,
     CollisionCandidates const&,
-    aod::BCsWithTimestamps const&)
+    aod::BCsWithTimestamps const&,
+    TMcParticles const& mcParticles = 0)
   {
-    for (auto const& t : hmpids) {
+    for (auto const& t : hmpids) { // begin loop over hmpids
 
       const auto& globalTrack = t.template track_as<TTrackTable>();
 
@@ -366,17 +370,17 @@ struct HmpidTableProducer {
 
       histos.fill(HIST("hChamberM1"), chamberM1);
 
-      if (!isCorrupt) {
+      if (!isCorrupt) { // begin if(!isCorrupt) - fill M1vsM2
         histos.fill(HIST("hChamberM1vsM2"), chamberM2, chamberM1);
-      }
+      } // end if(!isCorrupt) - fill M1vsM2
 
       // --- M3: hybrid ---
       int chamberM3 = -1;
-      if (!isCorrupt) {
+      if (!isCorrupt) { // begin if/else - M3 assignment
         chamberM3 = chamberM2;
       } else {
         chamberM3 = chamberM1;
-      }
+      } // end if/else - M3 assignment
 
       // Legend:
       // bin 0 = clusSize > 0,  chamber found   (M2 ok)
@@ -400,8 +404,9 @@ struct HmpidTableProducer {
         continue;
 
       float hmpidPhotsCharge2[o2::aod::kDimPhotonsCharge];
-      for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++)
+      for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) // begin for - copy photon charges
         hmpidPhotsCharge2[i] = t.hmpidPhotsCharge()[i];
+      // end for - copy photon charges
 
       // fill hmpid table
       hmpidAnalysis(
@@ -427,14 +432,35 @@ struct HmpidTableProducer {
       if constexpr (isMC) {
         if (globalTrack.has_mcParticle()) {
           const auto& mc = globalTrack.mcParticle();
-          hmpidAnalysisMC(mc.pdgCode(), mc.vx(), mc.vy(), mc.vz(), mc.isPhysicalPrimary(), mc.getProcess());
-        } else {
-          hmpidAnalysisMC(-1, 0.f, 0.f, 0.f, false, -100);
-        }
-      }
 
-    } // end HMPID loop
-  }
+          bool interactionInAbsorber = false;
+
+          if (mc.has_daughters()) {
+            auto dIds = mc.daughtersIds();
+            for (int32_t idx = dIds.front(); idx <= dIds.back(); ++idx) {
+              auto daughter = mcParticles.rawIteratorAt(idx);
+              double r = std::hypot(daughter.vx(), daughter.vy());
+
+              if (chamberM3 == rich2 && r >= absorberEdgeRich2 - kRich2AbsorberThickness && r <= absorberEdgeRich2) {
+                interactionInAbsorber = true;
+                break;
+              }
+              if (chamberM3 == rich4 && r >= absorberEdgeRich4 - kRich4AbsorberThickness && r <= absorberEdgeRich4) {
+                interactionInAbsorber = true;
+                break;
+              }
+            } // end loop daughters
+          } // end if has_daughters
+
+          hmpidAnalysisMC(mc.pdgCode(), mc.vx(), mc.vy(), mc.vz(),
+                          mc.isPhysicalPrimary(), mc.getProcess(), interactionInAbsorber);
+        } else {
+          hmpidAnalysisMC(-1, 0.f, 0.f, 0.f, false, -100, false);
+        }
+      } // end if constexpr (isMC)
+
+    } // end for - loop over hmpids
+  } // end runHmpidAnalysis
 
   // process real data
   void processHmpid(aod::HMPIDs const& hmpids,
@@ -452,9 +478,9 @@ struct HmpidTableProducer {
                       TrackCandidatesMC const& tracks,
                       CollisionCandidates const& cols,
                       aod::BCsWithTimestamps const& bcs,
-                      aod::McParticles const&)
+                      aod::McParticles const& mcParticles)
   {
-    runHmpidAnalysis<true>(hmpids, tracks, cols, bcs);
+    runHmpidAnalysis<true>(hmpids, tracks, cols, bcs, mcParticles);
   }
   PROCESS_SWITCH(HmpidTableProducer, processHmpidMC, "Process HMPID MC entries", true);
 };
