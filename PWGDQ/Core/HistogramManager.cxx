@@ -27,12 +27,10 @@
 
 #include <array>
 #include <cstdint>
-#include <iostream>
 #include <list>
 #include <memory>
 #include <span>
 #include <vector>
-using namespace std;
 
 #include <TClass.h>
 #include <THashList.h>
@@ -790,7 +788,7 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
 }
 
 //__________________________________________________________________
-void HistogramManager::FillHistClass(const char* className, Float_t* values)
+void HistogramManager::FillHistClass(const char* className, float* values)
 {
   //
   //  fill a class of histograms
@@ -994,17 +992,17 @@ void HistogramManager::Print(Option_t*) const
   //
   // Print the defined histograms
   //
-  cout << "###################################################################" << endl;
-  cout << "HistogramManager:: " << fMainList->GetName() << endl;
+  LOG(info) << "###################################################################";
+  LOG(info) << "HistogramManager:: " << fMainList->GetName();
   for (int i = 0; i < fMainList->GetEntries(); ++i) {
-    auto* list = dynamic_cast<TList*>(fMainList->At(i));
-    if (!list) {
+    auto* histList = dynamic_cast<TList*>(fMainList->At(i));
+    if (!histList) {
       continue;
     }
-    cout << "************** List " << list->GetName() << endl;
-    for (int j = 0; j < list->GetEntries(); ++j) {
-      TObject* obj = list->At(j);
-      cout << obj->GetName() << ": " << obj->IsA()->GetName() << endl;
+    LOG(info) << "************** List " << histList->GetName();
+    for (int j = 0; j < histList->GetEntries(); ++j) {
+      TObject* obj = histList->At(j);
+      LOG(info) << obj->GetName() << ": " << obj->IsA()->GetName();
     }
   }
 }
