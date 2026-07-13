@@ -816,9 +816,9 @@ class MultModule
         mults.multFT0AZeq = 0.0f;
       }
       if (mults.multFT0AOuter > -1.0f && std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
-        mults.multFT0AOuter = hVtxZFT0A->Interpolate(0.0) * mults.multFT0AOuter / hVtxZFT0A->Interpolate(collision.posZ());
+        mults.multFT0AOuterZeq = hVtxZFT0A->Interpolate(0.0) * mults.multFT0AOuter / hVtxZFT0A->Interpolate(collision.posZ());
       } else {
-        mults.multFT0AOuter = 0.0f;
+        mults.multFT0AOuterZeq = 0.0f;
       }
       if (mults.multFT0C > -1.0f && std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
         mults.multFT0CZeq = hVtxZFT0C->Interpolate(0.0) * mults.multFT0C / hVtxZFT0C->Interpolate(collision.posZ());
