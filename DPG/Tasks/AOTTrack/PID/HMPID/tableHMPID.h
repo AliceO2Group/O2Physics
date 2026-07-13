@@ -15,6 +15,8 @@
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 
+#include <array>
+
 namespace o2::aod
 {
 
@@ -33,7 +35,7 @@ DECLARE_SOA_COLUMN(NPhotons, nPhotons, float);
 DECLARE_SOA_COLUMN(ChargeMip, chargeMip, float);
 DECLARE_SOA_COLUMN(ClusterSize, clusterSize, float);
 DECLARE_SOA_COLUMN(Chamber, chamber, float);
-DECLARE_SOA_COLUMN(PhotonsCharge, photonsCharge, float[kDimPhotonsCharge]);
+DECLARE_SOA_COLUMN(PhotonsCharge, photonsCharge, (std::array<float, kDimPhotonsCharge>));
 DECLARE_SOA_COLUMN(EtaTrack, etaTrack, float);
 DECLARE_SOA_COLUMN(PhiTrack, phiTrack, float);
 DECLARE_SOA_COLUMN(Px, px, float);
