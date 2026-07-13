@@ -9,6 +9,6 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(Core)
-add_subdirectory(TableProducer)
-add_subdirectory(Tasks)
+o2physics_add_library(HfDataCreationCharmReso
+  SOURCES DataCreationCharmReso.cxx
+  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle)
