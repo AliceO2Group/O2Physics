@@ -609,8 +609,10 @@ struct FlowGenericFramework {
     AxisSpec v0aAxis = {1800, 0, 180000, "N_{ch} (V0A)"};
     AxisSpec multpvAxis = {3500, 0, 3500, "N_{ch} (PV)"};
     AxisSpec occAxis = {500, 0, 5000, "occupancy"};
-    AxisSpec multAxis = (doprocessOnTheFly && !cfgUseNch) ? bAxis : (cfgUseNch) ? nchAxis
-                                                                                : centAxis;
+    AxisSpec multAxis = (doprocessOnTheFly) ? bAxis : centAxis;
+    if (cfgUseNch) {
+      multAxis = nchAxis;
+    }
     AxisSpec dcaZAXis = {200, -2, 2, "DCA_{z} (cm)"};
     AxisSpec dcaXYAXis = {200, -1, 1, "DCA_{xy} (cm)"};
     AxisSpec singleCount = {1, 0, 1};
@@ -1087,7 +1089,7 @@ struct FlowGenericFramework {
         if (cfg.mEfficiency == nullptr) {
           LOGF(fatal, "Could not load efficiency histogram from %s", cfgEfficiency.cfgEfficiencyPath.value.c_str());
         }
-        LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.cfgEfficiencyPath.value.c_str(), (void*)cfg.mEfficiency);
+        LOGF(info, "Loaded efficiency histogram from %s", cfgEfficiency.cfgEfficiencyPath.value.c_str());
       } else {
         std::vector<std::string> species = {"ch", "pi", "ka", "pr", "k0", "lambda"};
         for (const auto& sp : species) {
