@@ -374,8 +374,9 @@ struct FlowZdcTask {
     }
     histos.fill(HIST("hEventCounter"), EvCutLabel::VtxZ);
     if (isApplyRadialCut) {
-      if (std::fabs(col.posX()) > posXcut && (std::fabs(col.posY()) > posYcut))
+      if (std::fabs(col.posX()) > posXcut || std::fabs(col.posY()) > posYcut) {
         return false;
+      }
     }
 
     return true;
