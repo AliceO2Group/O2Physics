@@ -89,6 +89,7 @@ struct CreateEMEventDilepton {
 
   // // CCDB options
   // Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<bool> applyMBtoNormTable{"applyMBtoNormTable", false, "flag to apply MB to norm information"}; // this is to reduce derived data size.
 
   HistogramRegistry registry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   void init(o2::framework::InitContext&)
@@ -132,6 +133,10 @@ struct CreateEMEventDilepton {
 
       // auto bc = collision.template foundBC_as<TBCs>();
       auto bc = collision.template bc_as<TBCs>(); // use this for Zorro
+
+      if (applyMBtoNormTable && !collision.isSelected()) { // minimal cut for MB
+        continue;
+      }
 
       if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
         int8_t posZint8 = static_cast<int8_t>(collision.posZ() * 2.f);
