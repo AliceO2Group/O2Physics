@@ -26,11 +26,16 @@
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 
 #include <Math/Vector4D.h>
+#include <TH1F.h>
+#include <TH2F.h>
+#include <THnSparse.h>
+#include <TMath.h>
 #include <TPDGCode.h>
 
 #include <vector>
@@ -201,9 +206,6 @@ struct Alice3Lepton {
         }
       }
       if (std::abs(mcParticle.pdgCode()) != pdg) {
-        continue;
-      }
-      if (!mcParticle.isPhysicalPrimary()) {
         continue;
       }
       if constexpr (isWithSmearing) {
@@ -751,10 +753,9 @@ struct Alice3Dilepton {
           continue;
         }
 
-        int motherid = -1;
         int hfee_type = IsHFLS(mct1, mct2, mcParticles);
 
-        if (motherid < 0 && hfee_type == HFllType::kUndef) {
+        if (hfee_type == HFllType::kUndef) {
           continue;
         }
 

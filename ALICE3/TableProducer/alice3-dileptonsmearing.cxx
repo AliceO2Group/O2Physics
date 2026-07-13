@@ -17,7 +17,6 @@
 
 #include "ALICE3/DataModel/prefilterDilepton.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/ASoA.h>
@@ -34,10 +33,9 @@
 #include <TH2.h>
 #include <TMath.h>
 #include <TPDGCode.h>
-#include <TRandom3.h>
+#include <TRandom.h>
 #include <TString.h>
 
-#include <array>
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
@@ -75,13 +73,11 @@ struct alice3dileptonsmearer {
     Configurable<float> cfgMinPt{"cfgMinPt", -1, "if ptgen is smaller than this threshold, this value is used as input for ptgen."};
   } electron_filenames;
 
-  TRandom3* rnd;
   MomentumSmearer smearer_Electron;
   Service<ccdb::BasicCCDBManager> ccdb;
 
   void init(InitContext&)
   {
-    rnd = new TRandom3();
     if (cfgCcdbTimestamp < 0) {
       LOG(fatal) << "Don't use time stamp = -1";
     }
@@ -143,7 +139,7 @@ struct alice3dileptonsmearer {
           // get the efficiency
           float efficiency = smearer_Electron.getEfficiency(ptgen, etagen, phigen);
           // Generate a random double between 0 and 1
-          double myRandom = rnd->Uniform(0, 1);
+          double myRandom = gRandom->Uniform(0, 1);
           // Select
           if (myRandom < efficiency) {
             selected = true;
