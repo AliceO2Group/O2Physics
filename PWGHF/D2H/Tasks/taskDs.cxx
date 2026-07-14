@@ -632,13 +632,13 @@ struct HfTaskDs {
     if (finalState == FinalState::KKPi) {
       mass = HfHelper::invMassDsToKKPi(candidate);
       massKaKa = HfHelper::massKKPairDsToKKPi(candidate);
-      massKaFirstPi = massKFirstPiPairDsToKKPi(candidate);
-      massKaSecondPi = massKSecondPiPairDsToKKPi(candidate);
+      massKaFirstPi = HfHelper::massKFirstPiPairDsToKKPi(candidate);
+      massKaSecondPi = HfHelper::massKSecondPiPairDsToKKPi(candidate);
     } else {
       mass = HfHelper::invMassDsToPiKK(candidate);
       massKaKa = HfHelper::massKKPairDsToPiKK(candidate);
-      massKaFirstPi = massKFirstPiPairDsToPiKK(candidate);
-      massKaSecondPi = massKSecondPiPairDsToPiKK(candidate);
+      massKaFirstPi = HfHelper::massKFirstPiPairDsToPiKK(candidate);
+      massKaSecondPi = HfHelper::massKSecondPiPairDsToPiKK(candidate);
     }
     auto pt = candidate.pt();
 
