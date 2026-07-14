@@ -109,7 +109,7 @@ using namespace std;
 #include "PWGCF/MultiparticleCorrelations/Core/MuPa-GlobalConstants.h"
 
 // *) Main task:
-struct multiparticleCorrelationsAb // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
+struct MultiparticleCorrelationsAb // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
 {
 
   // *) CCDB:
