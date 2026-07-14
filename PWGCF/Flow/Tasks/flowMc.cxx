@@ -69,8 +69,8 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::rctsel;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) \
-using ConfigTmp_##NAME = TYPE; \
-Configurable<ConfigTmp_##NAME> NAME{#NAME, (DEFAULT), HELP};
+  using ConfigTmp_##NAME = TYPE;                          \
+  Configurable<ConfigTmp_##NAME> NAME{#NAME, (DEFAULT), HELP};
 
 struct FlowMc {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -385,8 +385,7 @@ struct FlowMc {
       mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgFlowAcceptance, timestamp);
       if (mAcceptance) {
         LOGF(info, "Loaded acceptance weights from %s (%p)", cfgFlowAcceptance.value.c_str(), static_cast<void*>(mAcceptance));
-      }
-      else {
+      } else {
         LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgFlowAcceptance.value.c_str(), static_cast<void*>(mAcceptance));
       }
     }
@@ -405,8 +404,7 @@ struct FlowMc {
     float eff = 1.;
     if (mEfficiency) {
       eff = mEfficiency->GetBinContent(mEfficiency->FindBin(pt));
-    }
-    else {
+    } else {
       eff = 1.0;
     }
     if (eff == 0) {
@@ -415,8 +413,7 @@ struct FlowMc {
     weight_nue = 1. / eff;
     if (mAcceptance) {
       weight_nua = mAcceptance->getNUA(phi, eta, vtxz);
-    }
-    else {
+    } else {
       weight_nua = 1;
     }
     return true;
@@ -434,8 +431,7 @@ struct FlowMc {
       if (std::fabs(val) < 1) {
         if (isMCTruth) {
           fFCTrue->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
-        }
-        else {
+        } else {
           fFCReco->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
         }
       }
@@ -450,8 +446,7 @@ struct FlowMc {
       if (std::fabs(val) < 1) {
         if (isMCTruth) {
           fFCTrue->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
-        }
-        else {
+        } else {
           fFCReco->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
         }
       }
@@ -467,8 +462,7 @@ struct FlowMc {
       mCentVsIPTruth = ccdb->getForTimeStamp<TH1D>(cfgCentVsIPTruth, timestamp);
       if (mCentVsIPTruth) {
         LOGF(info, "Loaded CentVsIPTruth weights from %s (%p)", cfgCentVsIPTruth.value.c_str(), static_cast<void*>(mCentVsIPTruth));
-      }
-      else {
+      } else {
         LOGF(fatal, "Failed to load CentVsIPTruth weights from %s", cfgCentVsIPTruth.value.c_str());
       }
 
