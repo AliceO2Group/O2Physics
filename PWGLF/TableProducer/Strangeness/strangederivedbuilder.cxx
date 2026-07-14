@@ -279,7 +279,7 @@ struct strangederivedbuilder {
   }
 
   template <typename VType>
-  void getCfg(o2::framework::InitContext& initContext, const std::string name, VType& v, const std::string task)
+  void getCfg(o2::framework::InitContext& initContext, const std::string& name, VType& v, const std::string& task)
   {
     if (!o2::common::core::getTaskOptionValue(initContext, task, name, v, inheritEvtSelFromTaskVerbose)) {
       LOG(fatal) << "Could not get " << name << " from " << task << " task";
