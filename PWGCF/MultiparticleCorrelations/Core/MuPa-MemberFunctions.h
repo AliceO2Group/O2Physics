@@ -1821,9 +1821,9 @@ void defaultBinning()
   ph.fParticleHistogramsBins[edcaZ][1] = -10.;
   ph.fParticleHistogramsBins[edcaZ][2] = 10.;
 
-  ph.fParticleHistogramsBins[ePDG][0] = 2000;
-  ph.fParticleHistogramsBins[ePDG][1] = -1000.;
-  ph.fParticleHistogramsBins[ePDG][2] = 1000.;
+  ph.fParticleHistogramsBins[ePDG][0] = 2000;   // o2-linter: disable=pdg/explicit-code
+  ph.fParticleHistogramsBins[ePDG][1] = -1000.; // o2-linter: disable=pdg/explicit-code
+  ph.fParticleHistogramsBins[ePDG][2] = 1000.;  // o2-linter: disable=pdg/explicit-code
 
   // c) Default binning for particle histograms 2D:
   //    At the moment, for fixed binning, I just re-use the binning of corresponding 1D histograms.
@@ -8276,7 +8276,8 @@ void bookTheRest()
 
   // b) Book TDatabasePDG:
   if (tc.fUseDatabasePDG) {
-    tc.fDatabasePDG = new TDatabasePDG(); // there is a standard memory blow-up here
+    // Remark: there is a standard memory blow-up here TBI 20260714 switch eventualy to o2::framework::O2DatabasePDG when lazy initialization is provided
+    tc.fDatabasePDG = new TDatabasePDG(); // o2-linter: disable=pdg/database
   }
 
   if (tc.fVerbose) {

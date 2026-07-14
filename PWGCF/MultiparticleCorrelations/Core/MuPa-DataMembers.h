@@ -86,7 +86,8 @@ struct TaskConfiguration {
                                                               //                                              || es.fCalculateEtaSeparationsAsFunctionOf[AFO_PT]
   bool fCalculate2DAsFunctionOf[eAsFunctionOf2D_N] = {false}; //! See example above for 1D case + enum for 2D details
   bool fCalculate3DAsFunctionOf[eAsFunctionOf3D_N] = {false}; //! See example above for 1D case + enum for 3D details
-  TDatabasePDG* fDatabasePDG = NULL;                          // booked only when MC info is available. There is a standard memory blow-up when booked, therefore I need to request also fUseDatabasePDG = true
+  TDatabasePDG* fDatabasePDG = NULL;                          // o2-linter: disable=pdg/database
+                                                              // booked only when MC info is available. There is a standard memory blow-up when booked, therefore I need to request also fUseDatabasePDG = true
                                                               // TBI 20250625 replace eventually with the service O2DatabasePDG, when memory consumption problem is resolved
   bool fUseSetBinLabel = false;                               // until SetBinLabel(...) large memory consumption is resolved, do not use hist->SetBinLabel(...), see ROOT Forum
                                                               // See also local executable PostprocessLabels.C

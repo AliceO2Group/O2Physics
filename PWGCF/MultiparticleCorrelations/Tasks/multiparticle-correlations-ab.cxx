@@ -79,7 +79,8 @@ using TracksRecQA = TracksRec;    // if I would need additional tables for QA, j
 
 // *) ROOT include headers and namespaces:
 #include <TComplex.h>
-#include <TDatabasePDG.h>
+// TBI 20260714 switch eventualy to o2::framework::O2DatabasePDG when lazy initialization is provided
+#include <TDatabasePDG.h> // o2-linter: disable=pdg/database
 #include <TExMap.h>
 #include <TF1.h>
 #include <TF3.h>
