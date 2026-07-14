@@ -1225,6 +1225,7 @@ bool alright(TString s)
   TObjArray* oa = s.Tokenize("-");
   if (!oa) {
     LOGF(fatal, "\033[1;31m%s at line %d : oa is NULL , s = %s\033[0m", __FUNCTION__, __LINE__, s.Data());
+    exit(__LINE__); // TBI 20260714 temporarily here to silent MegaLinter
   }
   int nEntriesExpected = 2; // string format is "[01]-someName", with "-" serving as IFS
   int nEntries = oa->GetEntries();
@@ -1434,6 +1435,7 @@ void defaultBooking()
     TObjArray* oa = TString(lBookParticleSparseHistograms[name]).Tokenize("-");
     if (!oa) {
       LOGF(fatal, "\033[1;31m%s at line %d : name = %s\033[0m", __FUNCTION__, __LINE__, TString(lBookParticleSparseHistograms[name]).Data());
+      exit(__LINE__); // TBI 20260714 temporarily here to silent MegaLinter
     }
     if (!ph.fParticleSparseHistogramsName[name].EndsWith(oa->At(1)->GetName())) {
       LOGF(fatal, "\033[1;31m%s at line %d : Wrong content or ordering of contents in configurable cfBookParticleSparseHistograms => name = %d, lBookParticleSparseHistograms[name] = \"%s\", ph.fParticleSparseHistogramsName[name] = \"%s\" \n Check if you are using an up to date tag. \033[0m", __FUNCTION__, __LINE__, name, TString(lBookParticleSparseHistograms[name]).Data(), ph.fParticleSparseHistogramsName[name].Data());
@@ -2078,6 +2080,7 @@ void castStringIntoArray(int afo)
   TObjArray* oa = res.fResultsProVariableLengthBinsString[afo].Tokenize(",");
   if (!oa) {
     LOGF(fatal, "in function \033[1;31m%s at line %d \n fResultsProVariableLengthBinsString[afo] = %s\033[0m", __FUNCTION__, __LINE__, res.fResultsProVariableLengthBinsString[afo].Data());
+    exit(__LINE__); // TBI 20260714 temporarily here to silent MegaLinter
   }
   int nEntries = oa->GetEntries();
   res.fResultsProVariableLengthBins[afo] = new TArrayF(nEntries);
@@ -5880,53 +5883,53 @@ void bookQvectorHistograms()
     // here I am calculating for each dimensions how many entries I need in a given analysis
 
     if (es.fCalculateEtaSeparations) {
-      int dim1 = 2; // -eta or eta
-      int dim2 = eqvectorKine_N;
-      // int dim3 = number of kine bins => I calculated this one dynamically for each qVectorKine, see the loop below
+      int esDim1 = 2; // -eta or eta
+      int esDim2 = eqvectorKine_N;
+      // int esDim3 = number of kine bins => I calculated this one dynamically for each qVectorKine, see the loop below
       // numberOfKineBins();              // here I calculate and fill qv.fNumberOfKineBins[ ... ] => I did it already above for qv.fqvector
-      int dim4 = gMaxHarmonic;
-      int dim5 = gMaxNumberEtaSeparations;
-      qv.fqabVector.resize(dim1);
-      qv.fmab.resize(dim1);
+      int esDim4 = gMaxHarmonic;
+      int esDim5 = gMaxNumberEtaSeparations;
+      qv.fqabVector.resize(esDim1);
+      qv.fmab.resize(esDim1);
 
-      for (int i = 0; i < dim1; ++i) { // here I am looping over -eta or eta
-        qv.fqabVector[i].resize(dim2);
-        qv.fmab[i].resize(dim2);
+      for (int i = 0; i < esDim1; ++i) { // here I am looping over -eta or eta
+        qv.fqabVector[i].resize(esDim2);
+        qv.fmab[i].resize(esDim2);
 
-        for (int j = 0; j < dim2; ++j) { // here I am looping over entries in enum EnqvectorKine
+        for (int j = 0; j < esDim2; ++j) { // here I am looping over entries in enum EnqvectorKine
 
           if (qv.fCalculateqvectorsKineEtaSeparations[j]) {
             qv.fqabVector[i][j].resize(qv.fNumberOfKineBins[j]); // yes, qv.fNumberOfKineBins[j] => for each qvectorkine I calculate and dynamically allocate only necessary bins
             qv.fmab[i][j].resize(qv.fNumberOfKineBins[j]);
           } else {
-            // calculus for this kine variable is not needed, I am ironing out this dimension
+            // calculus for this kine variable is not needed, I am ironing out this esDimension
             qv.fqabVector[i][j].resize(0);
             qv.fmab[i][j].resize(0);
           }
 
           for (int k = 0; k < qv.fNumberOfKineBins[j]; ++k) {
             if (qv.fCalculateqvectorsKineEtaSeparations[j]) {
-              qv.fqabVector[i][j][k].resize(dim4);
-              qv.fmab[i][j][k].resize(dim5); // yes, directly dim5, because this one doesn't depend on harmonics
+              qv.fqabVector[i][j][k].resize(esDim4);
+              qv.fmab[i][j][k].resize(esDim5); // yes, directly esDim5, because this one doesn't depend on harmonics
             } else {
               // calculus for this kine variable is not needed, I am ironing out this dimension
               // I have already in the previous loop ironed out for qv.fCalculateqvectorsKineEtaSeparations[j] = false, so no need to do it here again
               // TBI 20250620 validate what happens here
             }
 
-            for (int l = 0; l < dim4; ++l) { // loop over harmonics
+            for (int l = 0; l < esDim4; ++l) { // loop over harmonics
               if (qv.fCalculateqvectorsKineEtaSeparations[j] && !es.fEtaSeparationsSkipHarmonics[l]) {
-                qv.fqabVector[i][j][k][l].resize(dim5);
+                qv.fqabVector[i][j][k][l].resize(esDim5);
                 // no need to resize qv.fmab here, because this one doesn't depend on harmonics
               } else {
                 // calculus for this kine variable is not needed, I am ironing out this dimension
                 // I have already in the previous loop ironed out for  qv.fCalculateqvectorsKineEtaSeparations[j] = false, so no need to do it here again
                 // TBI 20250620 validate what happens here
               }
-            } // for (int l = 0; l < dim4; ++l)
+            } // for (int l = 0; l < esDim4; ++l)
           } // for (int k = 0; k < qv.fNumberOfKineBins[j]; ++k)
-        } // for (int j = 0; j < dim2; ++j)
-      } // for (int i = 0; i < dim1; ++i)
+        } // for (int j = 0; j < esDim2; ++j)
+      } // for (int i = 0; i < esDim1; ++i)
     } // if(es.fCalculateEtaSeparations)
   } // if(qv.fCalculateqvectorsKineAny)
 
@@ -7343,20 +7346,20 @@ void internalValidation()
         // pt dependence: for pt < fV2vsPtCutOff v2 increases linearly, for pt >= fV2vsPtCutOff v2 = fV2vsPtMax, see Eq. (32) in arXiv:1312.3572
         // eta dependence is defined as 0.4 - (1/4) eta^2, so that v2(eta) = 0.24 at eta = +-0.8, and v2(eta) = 0.40 at eta = 0 (keep in sync with details above)
         // to increase significance, I multiply by factor of 2 the sampled v2(pt,eta)
-        float v2 = 0.; // this is the actual v2(pt,eta) for the current particle
-        pbyp.fPt < fV2vsPtCutOff ? v2 = 2. * (pbyp.fPt * fV2vsPtMax / fV2vsPtCutOff) * (0.4 - (1. / 4.) * pbyp.fEta * pbyp.fEta) : v2 = 2. * fV2vsPtMax * (0.4 - (1. / 4.) * pbyp.fEta * pbyp.fEta);
+        float v2Diff = 0.; // this is the actual v2(pt,eta) or even more differentially v2(pt,eta,charge) for the current particle
+        pbyp.fPt < fV2vsPtCutOff ? v2Diff = 2. * (pbyp.fPt * fV2vsPtMax / fV2vsPtCutOff) * (0.4 - (1. / 4.) * pbyp.fEta * pbyp.fEta) : v2Diff = 2. * fV2vsPtMax * (0.4 - (1. / 4.) * pbyp.fEta * pbyp.fEta);
         float v2MinAllowed = 0.;
         float v2MaxAllowed = 0.5;
-        if (v2 < v2MinAllowed || v2 > v2MaxAllowed) {
-          LOGF(fatal, "\033[1;31m%s at line %d : v2 = %f\033[0m", __FUNCTION__, __LINE__, v2);
+        if (v2Diff < v2MinAllowed || v2Diff > v2MaxAllowed) {
+          LOGF(fatal, "\033[1;31m%s at line %d : v2Diff = %f\033[0m", __FUNCTION__, __LINE__, v2Diff);
         }
         if (iv.fHarmonicsOptionInternalValidation->EqualTo("ptEtaDependent")) {
-          fPhiPDF->SetParameter(2, v2); // set v2(pt,eta) for this particle
+          fPhiPDF->SetParameter(2, v2Diff); // set v2(pt,eta) for this particle
         } else if (iv.fHarmonicsOptionInternalValidation->EqualTo("ptEtaChargeDependent")) {
           if (pbyp.fCharge > 0.) {
-            v2 *= 0.75; // trim down by 25% only v2 of positive particles in this toy model
+            v2Diff *= 0.75; // trim down by 25% only v2 of positive particles in this toy model
           }
-          fPhiPDF->SetParameter(2, v2); // set v2(pt,eta,charge) for this particle
+          fPhiPDF->SetParameter(2, v2Diff); // set v2(pt,eta,charge) for this particle
         }
       }
 
@@ -14227,7 +14230,7 @@ TComplex twelve(int n1, int n2, int n3, int n4, int n5, int n6, int n7, int n8, 
 
 //============================================================
 
-TComplex recursion(int n, int* harmonic, int mult = 1, int skip = 0)
+TComplex recursion(int n, int* harmonic, int mult = 1, int iSkip = 0)
 {
   // Calculate multi-particle correlators by using recursion (an improved faster version) originally developed by
   // Kristjan Gulbrandsen (gulbrand@nbi.dk).
@@ -14237,7 +14240,7 @@ TComplex recursion(int n, int* harmonic, int mult = 1, int skip = 0)
   if (nm1 == 0)
     return c;
   c *= recursion(nm1, harmonic);
-  if (nm1 == skip)
+  if (nm1 == iSkip)
     return c;
 
   int multp1 = mult + 1;
@@ -14248,7 +14251,7 @@ TComplex recursion(int n, int* harmonic, int mult = 1, int skip = 0)
   harmonic[nm2] = hhold + harmonic[nm1];
   TComplex c2(recursion(nm1, harmonic, multp1, nm2));
   int counter2 = n - 3;
-  while (counter2 >= skip) {
+  while (counter2 >= iSkip) {
     harmonic[nm2] = harmonic[counter1];
     harmonic[counter1] = hhold;
     ++counter1;
@@ -14265,7 +14268,7 @@ TComplex recursion(int n, int* harmonic, int mult = 1, int skip = 0)
     return c - c2;
   return c - static_cast<double>(mult) * c2;
 
-} // TComplex recursion(int n, int* harmonic, int mult = 1, int skip = 0)
+} // TComplex recursion(int n, int* harmonic, int mult = 1, int iSkip = 0)
 
 //============================================================
 
@@ -14302,6 +14305,10 @@ void setWeightsHist(TH1D* const hist, EnWeights whichWeight)
   }
 
   // Finally:
+  if (!hist) {
+    LOGF(fatal, "in function \033[1;31m%s at line %d \n hist is NULL \033[0m", __FUNCTION__, __LINE__);
+    exit(__LINE__); // TBI 20260714 temporarily here to silent MegaLinter
+  }
   hist->SetDirectory(0);
   pw.fWeightsHist[whichWeight] = reinterpret_cast<TH1D*>(hist);
 
@@ -14347,6 +14354,10 @@ void setDiffWeightsHist(TH1D* const hist, EnDiffWeights whichDiffWeight, int bin
   }
 
   // Finally:
+  if (!hist) {
+    LOGF(fatal, "in function \033[1;31m%s at line %d \n hist is NULL \033[0m", __FUNCTION__, __LINE__);
+    exit(__LINE__); // TBI 20260714 temporarily here to silent MegaLinter
+  }
   hist->SetDirectory(0);
   pw.fDiffWeightsHist[whichDiffWeight][bin] = reinterpret_cast<TH1D*>(hist);
 
@@ -14540,6 +14551,10 @@ void setCentralityWeightsHist(TH1D* const hist)
   }
 
   // Finally:
+  if (!hist) {
+    LOGF(fatal, "in function \033[1;31m%s at line %d \n hist is NULL \033[0m", __FUNCTION__, __LINE__);
+    exit(__LINE__); // TBI 20260714 temporarily here to silent MegaLinter
+  }
   hist->SetDirectory(0);
   cw.fCentralityWeightsHist = reinterpret_cast<TH1D*>(hist);
 
@@ -14579,11 +14594,7 @@ TH1D* getWeightsHist(EnWeights whichWeight)
     startFunction(__FUNCTION__);
   }
 
-  // ...
-
-  if (tc.fVerbose) {
-    exitFunction(__FUNCTION__);
-  }
+  // TBI 20260714 To silent MegaLinter, i removed exitFunction(__FUNCTION__); => only if I add some more code here, bring it back
 
   // Finally:
   return pw.fWeightsHist[whichWeight];
@@ -14784,6 +14795,7 @@ TH1D* getHistogramWithWeights(const char* filePath, const char* runNumber, const
     if (!hist) {
       listWithRuns->ls();
       LOGF(fatal, "\033[1;31m%s at line %d : couldn't fetch hist with name = %s\033[0m", __FUNCTION__, __LINE__, histName.Data());
+      exit(__LINE__); // TBI 20260714 temporarily here to silent MegaLinter
     }
     hist->SetDirectory(0);
     hist->SetTitle(Form("%s, %s", filePath, runNumber)); // I have to do it here, because only here I have "filePath" av
@@ -14810,6 +14822,7 @@ TH1D* getHistogramWithWeights(const char* filePath, const char* runNumber, const
     if (!hist) {
       listWithRuns->ls();
       LOGF(fatal, "\033[1;31m%s at line %d : couldn't fetch hist with name = %s\033[0m", __FUNCTION__, __LINE__, histName.Data());
+      exit(__LINE__); // TBI 20260714 temporarily here to silent MegaLinter
     }
 
     // *) insanity check for differential weights => check if boundaries of current bin are the same as bin boundaries for which these weights were calculated.
@@ -14819,6 +14832,7 @@ TH1D* getHistogramWithWeights(const char* filePath, const char* runNumber, const
     TObjArray* oa = TString(hist->GetTitle()).Tokenize(" ");
     if (!oa) {
       LOGF(fatal, "in function \033[1;31m%s at line %d \n hist->GetTitle() = %s\033[0m", __FUNCTION__, __LINE__, hist->GetTitle());
+      exit(__LINE__); // TBI 20260714 temporarily here to silent MegaLinter
     }
     int nEntries = oa->GetEntries();
 
@@ -15087,6 +15101,7 @@ THnSparseF* getSparseHistogramWithWeights(const char* filePath, const char* runN
     LOGF(info, "\033[1;33m%s at line %d : runNumber = \"%s\"\033[0m", __FUNCTION__, __LINE__, runNumber);
     listWithRuns->ls();
     LOGF(fatal, "\033[1;31m%s at line %d : couldn't fetch sparse histogram with name = %s from this list\033[0m", __FUNCTION__, __LINE__, sparseHistName.Data());
+    exit(__LINE__); // TBI 20260714 temporarily here to silent MegaLinter
   }
 
   sparseHist->SetTitle(Form("%s, %s", filePath, runNumber)); // I have to do it here, because only here I have "filePath" available
@@ -15345,6 +15360,7 @@ TH1D* getHistogramWithCentralityWeights(const char* filePath, const char* runNum
   if (!hist) {
     listWithRuns->ls();
     LOGF(fatal, "\033[1;31m%s at line %d : couldn't fetch hist with name = %s\033[0m", __FUNCTION__, __LINE__, histName.Data());
+    exit(__LINE__); // TBI 20260714 temporarily here to silent MegaLinter
   }
   hist->SetDirectory(0);
   hist->SetTitle(Form("%s, %s", filePath, runNumber)); // I have to do it here, because only here I have "filePath" av
@@ -16390,7 +16406,7 @@ void getParticleWeights()
   if (pw.fUseWeights[wPHI]) {
     TH1D* phiWeights = getHistogramWithWeights(pw.fFileWithWeights.Data(), tc.fRunNumber.Data(), "phi");
     if (!phiWeights) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d, phiWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data());
+      LOGF(fatal, "in function \033[1;31m%s at line %d, phiWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data()); // oll
     }
     setWeightsHist(phiWeights, wPHI);
   }
@@ -16435,7 +16451,7 @@ void getParticleWeights()
       // *) okay, this pt bin is within pt phase-space window, defined by pt cut:
       phiptWeights = getHistogramWithWeights(pw.fFileWithWeights.Data(), tc.fRunNumber.Data(), "phipt", b);
       if (!phiptWeights) {
-        LOGF(fatal, "\033[1;31m%s at line %d : phiptWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data());
+        LOGF(fatal, "\033[1;31m%s at line %d : phiptWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data()); // oll
       }
 
       // *) okay, just use this histogram with weights:
@@ -16647,7 +16663,7 @@ void getCentralityWeights()
   if (cw.fUseCentralityWeights) {
     TH1D* centralityWeights = getHistogramWithCentralityWeights(cw.fFileWithCentralityWeights.Data(), tc.fRunNumber.Data());
     if (!centralityWeights) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d : centralityWeights is NULL. Check the external file %s with centrality weights\033[0m", __FUNCTION__, __LINE__, cw.fFileWithCentralityWeights.Data());
+      LOGF(fatal, "in function \033[1;31m%s at line %d : centralityWeights is NULL. Check the external file %s with centrality weights\033[0m", __FUNCTION__, __LINE__, cw.fFileWithCentralityWeights.Data()); // oll
     }
     setCentralityWeightsHist(centralityWeights);
   }
