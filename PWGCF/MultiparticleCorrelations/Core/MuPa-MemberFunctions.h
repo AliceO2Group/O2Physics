@@ -1978,7 +1978,7 @@ void initializeFixedLengthBins(EnAsFunctionOf afo)
   } // switch(afo)
 
   // From this point onward, the code is the same for any afo variable:
-  unsigned long int lFixedLengthBinsExpected = 3; // In this array, I expect three entries: nBins, min, max
+  uint8_t lFixedLengthBinsExpected = 3; // In this array, I expect three entries: nBins, min, max + TBI 20260714 I use uint8_t as a type to silent MegaLinter
   if (lFixedLengthBins.size() != lFixedLengthBinsExpected) {
     LOGF(fatal, "in function \033[1;31m%s at line %d => The array cfFixedLength_bins must have have 3 entries: {nBins, min, max} \n \033[0m", __FUNCTION__, __LINE__);
   }
@@ -2046,7 +2046,7 @@ void initializeVariableLengthBins(EnAsFunctionOf afo)
   } // switch(afo)
 
   // From this point onward, the code is the same for any afo variable:
-  unsigned long int lVariableLengthBinsMinExpected = 2; // In this array, I should have at least 2 entries, otherwise, it's pointless...
+  uint8_t lVariableLengthBinsMinExpected = 2; // In this array, I should have at least 2 entries, otherwise, it's pointless... + TBI 20260714 I use uint8_t as a type to silent MegaLinter
   if (lVariableLengthBins.size() < lVariableLengthBinsMinExpected) {
     LOGF(fatal, "in function \033[1;31m%s at line %d => The array cfVariableLength_bins must have at least 2 entries \n \033[0m", __FUNCTION__, __LINE__);
   }
@@ -5902,7 +5902,7 @@ void bookQvectorHistograms()
             qv.fqabVector[i][j].resize(qv.fNumberOfKineBins[j]); // yes, qv.fNumberOfKineBins[j] => for each qvectorkine I calculate and dynamically allocate only necessary bins
             qv.fmab[i][j].resize(qv.fNumberOfKineBins[j]);
           } else {
-            // calculus for this kine variable is not needed, I am ironing out this esDimension
+            // calculus for this kine variable is not needed, I am ironing out this dimension
             qv.fqabVector[i][j].resize(0);
             qv.fmab[i][j].resize(0);
           }
@@ -14502,7 +14502,7 @@ void insanitizeDiffWeightsSparse(THnSparseF* const sparse)
         LOGF(fatal, "\033[1;31m%s at line %d : axis %d (Charge) of sparse %s has upper boundary %f, while upper cut on that variable is %f. This means that for some particles I won't be able to fetch weights from this sparse. \033[0m", __FUNCTION__, __LINE__, d, sparse->GetName(), sparse->GetAxis(d)->GetBinUpEdge(sparse->GetAxis(d)->GetNbins()), pc.fdParticleCuts[eCharge][eMax]);
       }
 
-    } else if (!axisTitle.find("Centrality")) { // I have to use here find() instead, because title also contains centrality estimator name, e.g. "Centality (FT0C)"
+    } else if (!(axisTitle.starts_with("Centrality") || axisTitle.find("Centrality"))) { // I have to use here find() instead, because title also contains centrality estimator name, e.g. "Centality (FT0C)". I added starts_with() per MegaLinter suggestion
 
       // check lower boundary:
       if ((ec.fdEventCuts[eCentrality][eMin] < sparse->GetAxis(d)->GetBinLowEdge(1)) && (std::abs(sparse->GetAxis(d)->GetBinLowEdge(1) - ec.fdEventCuts[eCentrality][eMin]) > tc.fFloatingPointPrecision)) {
@@ -16406,7 +16406,8 @@ void getParticleWeights()
   if (pw.fUseWeights[wPHI]) {
     TH1D* phiWeights = getHistogramWithWeights(pw.fFileWithWeights.Data(), tc.fRunNumber.Data(), "phi");
     if (!phiWeights) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d, phiWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data()); // oll
+      LOGF(fatal, "in function \033[1;31m%s at line %d, phiWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data());
+      exit(__LINE__); // TBI 20260714 temporarily here to silent MegaLinter
     }
     setWeightsHist(phiWeights, wPHI);
   }
@@ -16451,7 +16452,8 @@ void getParticleWeights()
       // *) okay, this pt bin is within pt phase-space window, defined by pt cut:
       phiptWeights = getHistogramWithWeights(pw.fFileWithWeights.Data(), tc.fRunNumber.Data(), "phipt", b);
       if (!phiptWeights) {
-        LOGF(fatal, "\033[1;31m%s at line %d : phiptWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data()); // oll
+        LOGF(fatal, "\033[1;31m%s at line %d : phiptWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data());
+        exit(__LINE__); // TBI 20260714 temporarily here to silent MegaLinter
       }
 
       // *) okay, just use this histogram with weights:
@@ -16663,7 +16665,8 @@ void getCentralityWeights()
   if (cw.fUseCentralityWeights) {
     TH1D* centralityWeights = getHistogramWithCentralityWeights(cw.fFileWithCentralityWeights.Data(), tc.fRunNumber.Data());
     if (!centralityWeights) {
-      LOGF(fatal, "in function \033[1;31m%s at line %d : centralityWeights is NULL. Check the external file %s with centrality weights\033[0m", __FUNCTION__, __LINE__, cw.fFileWithCentralityWeights.Data()); // oll
+      LOGF(fatal, "in function \033[1;31m%s at line %d : centralityWeights is NULL. Check the external file %s with centrality weights\033[0m", __FUNCTION__, __LINE__, cw.fFileWithCentralityWeights.Data());
+      exit(__LINE__); // TBI 20260714 temporarily here to silent MegaLinter
     }
     setCentralityWeightsHist(centralityWeights);
   }
