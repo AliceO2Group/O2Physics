@@ -239,7 +239,7 @@ struct lambdaTwoPartPolarization {
       if (std::abs(candidate.dcanegtopv()) < cfgDCAPiToPVMin) {
         return false;
       }
-    } else if (!LambdaTag) {
+    } else if (LambdaTag == 0) {
       if (std::abs(candidate.dcapostopv()) < cfgDCAPiToPVMin) {
         return false;
       }
