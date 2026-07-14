@@ -14,6 +14,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -108,6 +109,11 @@ struct lambdaTwoPartPolarization {
   Configurable<float> cfgDaughPrPt{"cfgDaughPrPt", 0.5, "minimum daughter proton pt"};
   Configurable<float> cfgDaughPiPt{"cfgDaughPiPt", 0.2, "minimum daughter pion pt"};
 
+  Configurable<float> cfgTrackPtMin{"cfgTrackPtMin", 0.2, "minimum primary track pT selection"};
+  Configurable<float> cfgTrackPtMax{"cfgTrackPtMax", 3., "minimum primary track pT selection"};
+  Configurable<float> cfgTrackEtaMax{"cfgTrackEtaMax", 0.8, "maximum primary track Eta selection"};
+  Configurable<float> cfgMinTPCClustersTrack{"cfgMinTPCClustersTrack", 70, "minimum primary tpc track ncluster selection"};
+
   Configurable<float> cfgHypMassWindow{"cfgHypMassWindow", 0.005, "single lambda mass selection"};
 
   Configurable<bool> cfgEffCor{"cfgEffCor", false, "flag to apply efficiency correction"};
@@ -166,6 +172,10 @@ struct lambdaTwoPartPolarization {
     histos.add("Ana/SignalCos2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, cosSigAxis}});
     histos.add("Ana/Acceptance", "", {HistType::kTHnSparseF, {ptAxis, centAxis, RapAxis, cosAccAxis}});
 
+    histos.add("AnaHL/SignalSin2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, cosSigAxis}});
+    histos.add("AnaHL/SignalCos2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, cosSigAxis}});
+    histos.add("AnaHL/Ref", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis}});
+
     fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
     fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
     fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
@@ -218,7 +228,7 @@ struct lambdaTwoPartPolarization {
   } // event selection
 
   template <typename TCollision, typename V0>
-  bool SelectionV0(TCollision const& collision, V0 const& candidate, int LambdaTag)
+  bool selectionV0(TCollision const& collision, V0 const& candidate, int LambdaTag)
   {
     if (candidate.v0radius() < cfgv0radiusMin)
       return false;
@@ -270,6 +280,107 @@ struct lambdaTwoPartPolarization {
     return true;
   }
 
+  template <typename Track>
+  bool selectTrack(Track const& track)
+  {
+    if (!track.isGlobalTrack()) {
+      return false;
+    }
+    if (track.pt() < cfgTrackPtMin || track.pt() > cfgTrackPtMax) {
+      return false;
+    }
+    if (std::abs(track.eta()) > cfgTrackEtaMax) {
+      return false;
+    }
+    if (track.tpcNClsFound() < cfgMinTPCClustersTrack) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename Trk1, typename Trk2>
+  void FillHistogramsRef(Trk1 const& trks1, Trk2 const& trks2)
+  {
+    for (auto& trk1 : trks1) {
+      if (!selectTrack(trk1)) {
+        continue;
+      }
+      for (auto& trk2 : trks2) {
+        if (!selectTrack(trk2)) {
+          continue;
+        }
+
+        if (trk1.globalIndex() >= trk2.globalIndex()) {
+          continue;
+        }
+
+        histos.fill(HIST("AnaHL/Ref"), trk1.pt(), trk2.pt(), trk1.eta() - trk2.eta(), RecoDecay::constrainAngle(trk1.phi() - trk2.phi(), -constants::math::PI * 0.5), centrality);
+      }
+    }
+  }
+
+  template <typename C, typename V0, typename Trk>
+  void FillHistogramsLH(C const& c1, V0 const& v0s, Trk const& trks)
+  {
+    for (auto& trk : trks) {
+      if (!selectTrack(trk)) {
+        continue;
+      }
+
+      for (auto& v01 : v0s) {
+        auto postrack_v01 = v01.template posTrack_as<TrackCandidates>();
+        auto negtrack_v01 = v01.template negTrack_as<TrackCandidates>();
+
+        int LambdaTag = 0;
+        int aLambdaTag = 0;
+
+        if (isSelectedV0Daughter(postrack_v01, 0) && isSelectedV0Daughter(negtrack_v01, 1)) {
+          LambdaTag = 1;
+        }
+        if (isSelectedV0Daughter(negtrack_v01, 0) && isSelectedV0Daughter(postrack_v01, 1)) {
+          aLambdaTag = 1;
+        }
+
+        if (postrack_v01.globalIndex() == trk.globalIndex() || negtrack_v01.globalIndex() == trk.globalIndex()) {
+          continue;
+        }
+
+        if (LambdaTag == aLambdaTag)
+          continue;
+
+        if (!selectionV0(c1, v01, LambdaTag))
+          continue;
+
+        if (LambdaTag) {
+          ProtonVec1 = ROOT::Math::PxPyPzMVector(v01.pxpos(), v01.pypos(), v01.pzpos(), massPr);
+          PionVec1 = ROOT::Math::PxPyPzMVector(v01.pxneg(), v01.pyneg(), v01.pzneg(), massPi);
+          V01Tag = 0;
+        }
+        if (aLambdaTag) {
+          ProtonVec1 = ROOT::Math::PxPyPzMVector(v01.pxneg(), v01.pyneg(), v01.pzneg(), massPr);
+          PionVec1 = ROOT::Math::PxPyPzMVector(v01.pxpos(), v01.pypos(), v01.pzpos(), massPi);
+          V01Tag = 1;
+        }
+
+        LambdaVec1 = ProtonVec1 + PionVec1;
+        LambdaVec1.SetM(massLambda);
+
+        ROOT::Math::Boost boost1{LambdaVec1.BoostToCM()};
+        ProtonBoostedVec1 = boost1(ProtonVec1);
+
+        costhetastar1 = ProtonBoostedVec1.Pz() / ProtonBoostedVec1.P(); 
+        dphi = RecoDecay::constrainAngle(v01.phi() - trk.phi(), -constants::math::PI * 0.5);
+
+        weight = 1.0;
+        weight *= cfgEffCor ? 1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v01.pt()), EffMap->GetYaxis()->FindBin(centrality)) : 1.;
+        weight *= cfgAccCor ? 1.0 / AccMap->GetBinContent(AccMap->GetXaxis()->FindBin(v01.pt()), AccMap->GetYaxis()->FindBin(v01.yLambda())) : 1.;
+
+        histos.fill(HIST("AnaHL/SignalSin2"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, costhetastar1 * std::sin(2.0 * dphi) * weight);
+        histos.fill(HIST("AnaHL/SignalCos2"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, costhetastar1 * std::cos(2.0 * dphi) * weight);
+      }
+    }
+  }
+
   template <typename C1, typename C2, typename V01, typename V02>
   void FillHistograms(C1 const& c1, C2 const& c2, V01 const& V01s, V02 const& V02s)
   {
@@ -290,7 +401,7 @@ struct lambdaTwoPartPolarization {
       if (LambdaTag == aLambdaTag)
         continue;
 
-      if (!SelectionV0(c1, v01, LambdaTag))
+      if (!selectionV0(c1, v01, LambdaTag))
         continue;
 
       if (LambdaTag) {
@@ -332,7 +443,7 @@ struct lambdaTwoPartPolarization {
         if (LambdaTag == aLambdaTag)
           continue;
 
-        if (!SelectionV0(c2, v02, LambdaTag))
+        if (!selectionV0(c2, v02, LambdaTag))
           continue;
 
         if (doprocessDataSame) {
@@ -368,16 +479,43 @@ struct lambdaTwoPartPolarization {
           weight *= -1.0;
         }
 
-        dphi = TVector2::Phi_0_2pi(v01.phi() - v02.phi());
-        if (dphi > constants::math::PI * 1.5) {
-          dphi -= constants::math::PI * 2.0;
-        }
+        dphi = RecoDecay::constrainAngle(v01.phi() - v02.phi(), -constants::math::PI * 0.5);
 
         histos.fill(HIST("Ana/Signal"), v01.pt(), v02.pt(), v01.yLambda() - v02.yLambda(), dphi, centrality, costhetastar1 * costhetastar2 * weight);
         histos.fill(HIST("Ana/SignalCos2"), v01.pt(), v02.pt(), v01.yLambda() - v02.yLambda(), dphi, centrality, costhetastar1 * costhetastar2 * std::cos(2.0 * dphi) * weight);
       }
     }
   }
+
+  void processDataSameHadron(EventCandidates::iterator const& collision,
+                       TrackCandidates const& tracks, aod::V0Datas const& V0s,
+                       aod::BCsWithTimestamps const&)
+  {
+    if (cfgCentEst == 1) {
+      centrality = collision.centFT0C();
+    } else if (cfgCentEst == 2) {
+      centrality = collision.centFT0M();
+    }
+    if (!eventSelected(collision) && cfgEvtSel) {
+      return;
+    }
+
+    histos.fill(HIST("QA/CentDist"), centrality, 1.0);
+    histos.fill(HIST("QA/PVzDist"), collision.posZ(), 1.0);
+
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    if (cfgEffCor) {
+      EffMap = ccdb->getForTimeStamp<TProfile2D>(cfgEffCorPath.value, bc.timestamp());
+    }
+    if (cfgAccCor) {
+      AccMap = ccdb->getForTimeStamp<TProfile2D>(cfgAccCorPath.value, bc.timestamp());
+    }
+
+//    FillHistograms(collision, collision, V0s, V0s);
+    FillHistogramsRef(tracks, tracks);
+    FillHistogramsLH(collision, V0s, tracks);
+  }
+  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataSameHadron, "Process event for same data with hadrons", true);
 
   void processDataSame(EventCandidates::iterator const& collision,
                        TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s,
