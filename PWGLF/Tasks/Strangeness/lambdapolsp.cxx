@@ -1860,7 +1860,7 @@ struct lambdapolsp {
   {
     TRandom3 randGen(0);
 
-    for (auto& [collision1, collision2] : selfCombinations(colBinning, meGrp.nMix, -1, collisions, collisions)) {
+    for (const auto& [collision1, collision2] : selfCombinations(colBinning, meGrp.nMix, -1, collisions, collisions)) {
 
       if (collision1.index() == collision2.index()) {
         continue;
@@ -1995,7 +1995,7 @@ struct lambdapolsp {
   {
     TRandom3 randGen(0);
 
-    for (auto& [collision1, collision2] : selfCombinations(colBinning, meGrp.nMix, -1, collisions, collisions)) {
+    for (const auto& [collision1, collision2] : selfCombinations(colBinning, meGrp.nMix, -1, collisions, collisions)) {
 
       if (collision1.index() == collision2.index()) {
         continue;
