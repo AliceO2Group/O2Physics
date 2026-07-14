@@ -68,7 +68,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::rctsel;
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) \
+using ConfigTmp_##NAME = TYPE; \
+Configurable<ConfigTmp_##NAME> NAME{#NAME, (DEFAULT), HELP};
 
 struct FlowMc {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -84,10 +86,10 @@ struct FlowMc {
   O2_DEFINE_CONFIGURABLE(cfgCutPtRefMax, float, 3.0f, "Maximal pT for ref tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMax, float, 10.0f, "Maximal pT for poi tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 50.0f, "minimum TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum ITS clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, int, 50, "minimum TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutITSclu, int, 5, "minimum ITS clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5f, "max chi2 per TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutTPCcrossedrows, float, 70.0f, "minimum TPC crossed rows")
+  O2_DEFINE_CONFIGURABLE(cfgCutTPCcrossedrows, int, 70, "minimum TPC crossed rows")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 0.2f, "DCAxy cut for tracks")
   O2_DEFINE_CONFIGURABLE(cfgDCAxyNSigma, float, 7, "Cut on number of sigma deviations from expected DCA in the transverse direction");
   O2_DEFINE_CONFIGURABLE(cfgDCAxyFunction, std::string, "(0.0015+0.005/(x^1.1))", "Functional form of pt-dependent DCAxy cut");
@@ -177,7 +179,7 @@ struct FlowMc {
   };
 
   // Connect to ccdb
-  Service<ccdb::BasicCCDBManager> ccdb;
+  Service<ccdb::BasicCCDBManager> ccdb{};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
@@ -271,7 +273,7 @@ struct FlowMc {
 
     o2::framework::AxisSpec axis = axisPt;
     int nPtBins = axis.binEdges.size() - 1;
-    double* ptBins = &(axis.binEdges)[0];
+    double* ptBins = axis.binEdges.data();
     fPtAxis = new TAxis(nPtBins, ptBins);
 
     if (cfgOutputNUAWeights) {
@@ -280,13 +282,15 @@ struct FlowMc {
     }
 
     if (cfgFlowCumulantEnabled) {
-      TObjArray* oba = new TObjArray();
+      auto oba = new TObjArray();
       oba->Add(new TNamed("ChFull22", "ChFull22"));
-      for (auto i = 0; i < fPtAxis->GetNbins(); i++)
+      for (auto i = 0; i < fPtAxis->GetNbins(); i++) {
         oba->Add(new TNamed(Form("ChFull22_pt_%i", i + 1), "ChFull22_pTDiff"));
+      }
       oba->Add(new TNamed("Ch10Gap22", "Ch10Gap22"));
-      for (auto i = 0; i < fPtAxis->GetNbins(); i++)
+      for (auto i = 0; i < fPtAxis->GetNbins(); i++) {
         oba->Add(new TNamed(Form("Ch10Gap22_pt_%i", i + 1), "Ch10Gap22_pTDiff"));
+      }
       fFCTrue->SetName("FlowContainerTrue");
       fFCTrue->SetXAxis(fPtAxis);
       fFCTrue->Initialize(oba, axisCentrality, cfgFlowCumulantNbootstrap);
@@ -339,8 +343,9 @@ struct FlowMc {
     }
     myTrackSel.SetMinNClustersTPC(cfgCutTPCclu);
     myTrackSel.SetMinNCrossedRowsTPC(cfgCutTPCcrossedrows);
-    if (cfgEnableITSCuts)
+    if (cfgEnableITSCuts) {
       myTrackSel.SetMinNClustersITS(cfgCutITSclu);
+    }
     if (!cfgCutDCAzPtDepEnabled) {
       myTrackSel.SetMaxDcaZ(cfgCutDCAz);
     } else {
@@ -350,7 +355,7 @@ struct FlowMc {
     }
     if (cfgTrackDensityCorrUse) {
       std::vector<double> pTEffBins = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0};
-      hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, &pTEffBins[0]);
+      hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, pTEffBins.data());
       funcEff.resize(pTEffBins.size() - 1);
       // LHC24g3 Eff
       std::vector<double> f1p0 = cfgTrackDensityP0;
@@ -367,22 +372,25 @@ struct FlowMc {
       funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
     }
     if (!cfgEvSelRCTflags.value.empty()) {
-      rctChecker.init(cfgEvSelRCTflags.value.c_str()); // override initialzation
+      rctChecker.init(cfgEvSelRCTflags.value); // override initialzation
     }
   }
 
   void loadCorrections(uint64_t timestamp)
   {
-    if (correctionsLoaded)
+    if (correctionsLoaded) {
       return;
-    if (cfgFlowAcceptance.value.empty() == false) {
-      mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgFlowAcceptance, timestamp);
-      if (mAcceptance)
-        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgFlowAcceptance.value.c_str(), static_cast<void*>(mAcceptance));
-      else
-        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgFlowAcceptance.value.c_str(), static_cast<void*>(mAcceptance));
     }
-    if (cfgFlowEfficiency.value.empty() == false) {
+    if (!cfgFlowAcceptance.value.empty()) {
+      mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgFlowAcceptance, timestamp);
+      if (mAcceptance) {
+        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgFlowAcceptance.value.c_str(), static_cast<void*>(mAcceptance));
+      }
+      else {
+        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgFlowAcceptance.value.c_str(), static_cast<void*>(mAcceptance));
+      }
+    }
+    if (!cfgFlowEfficiency.value.empty()) {
       mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgFlowEfficiency, timestamp);
       if (mEfficiency == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgFlowEfficiency.value.c_str());
@@ -395,60 +403,74 @@ struct FlowMc {
   bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, float phi, float eta, float pt, float vtxz)
   {
     float eff = 1.;
-    if (mEfficiency)
+    if (mEfficiency) {
       eff = mEfficiency->GetBinContent(mEfficiency->FindBin(pt));
-    else
+    }
+    else {
       eff = 1.0;
-    if (eff == 0)
+    }
+    if (eff == 0) {
       return false;
+    }
     weight_nue = 1. / eff;
-    if (mAcceptance)
+    if (mAcceptance) {
       weight_nua = mAcceptance->getNUA(phi, eta, vtxz);
-    else
+    }
+    else {
       weight_nua = 1;
+    }
     return true;
   }
 
   void fillFC(GFW* fGFW, bool isMCTruth, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
   {
-    double dnx, val = 0;
+    double dnx = 0, val = 0;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
     if (!corrconf.pTDif) {
-      if (dnx == 0)
+      if (dnx == 0) {
         return;
+      }
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
       if (std::fabs(val) < 1) {
-        if (isMCTruth)
+        if (isMCTruth) {
           fFCTrue->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
-        else
+        }
+        else {
           fFCReco->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
+        }
       }
       return;
     }
     for (auto i = 1; i <= fPtAxis->GetNbins(); i++) {
       dnx = fGFW->Calculate(corrconf, i - 1, kTRUE).real();
-      if (dnx == 0)
+      if (dnx == 0) {
         continue;
+      }
       val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
       if (std::fabs(val) < 1) {
-        if (isMCTruth)
+        if (isMCTruth) {
           fFCTrue->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
-        else
+        }
+        else {
           fFCReco->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
+        }
       }
     }
   }
 
   void loadCentVsIPTruth(uint64_t timestamp)
   {
-    if (centVsIPTruthLoaded)
+    if (centVsIPTruthLoaded) {
       return;
-    if (cfgCentVsIPTruth.value.empty() == false) {
+    }
+    if (!cfgCentVsIPTruth.value.empty()) {
       mCentVsIPTruth = ccdb->getForTimeStamp<TH1D>(cfgCentVsIPTruth, timestamp);
-      if (mCentVsIPTruth)
+      if (mCentVsIPTruth) {
         LOGF(info, "Loaded CentVsIPTruth weights from %s (%p)", cfgCentVsIPTruth.value.c_str(), static_cast<void*>(mCentVsIPTruth));
-      else
+      }
+      else {
         LOGF(fatal, "Failed to load CentVsIPTruth weights from %s", cfgCentVsIPTruth.value.c_str());
+      }
 
       centVsIPTruthLoaded = true;
     } else {
@@ -462,7 +484,7 @@ struct FlowMc {
       return;
     }
     mRunNumber = bc.runNumber();
-    if (gHadronicRate.find(mRunNumber) == gHadronicRate.end()) {
+    if (!gHadronicRate.contains(mRunNumber)) {
       auto runDuration = ccdb->getRunDuration(mRunNumber);
       mSOR = runDuration.first;
       mMinSeconds = std::floor(mSOR * 1.e-3);                /// round tsSOR to the highest integer lower than tsSOR
@@ -474,7 +496,7 @@ struct FlowMc {
   }
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision)
+  bool eventSelected(const TCollision& collision)
   {
     if (std::fabs(collision.posZ()) > cfgCutVertex) {
       return 0;
@@ -484,11 +506,13 @@ struct FlowMc {
     }
     if (cfgOccupancyEnabled) {
       auto occupancy = collision.trackOccupancyInTimeRange();
-      if (occupancy < cfgOccupancyMin || occupancy > cfgOccupancyMax)
+      if (occupancy < cfgOccupancyMin || occupancy > cfgOccupancyMax) {
         return 0;
+      }
     }
-    if (!cfgEvSelRCTflags.value.empty() && !rctChecker(*collision))
+    if (!cfgEvSelRCTflags.value.empty() && !rctChecker(*collision)) {
       return 0;
+    }
     if (cfgRecoEvkNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       // rejects collisions which are associated with the same "found-by-T0" bunch crossing
       // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
@@ -497,12 +521,15 @@ struct FlowMc {
     if (cfgRecoEvkIsGoodITSLayers) {
       // from Jan 9 2025 AOT meeting
       // cut time intervals with dead ITS staves
-      if (cfgRecoEvkIsGoodITSLayersFlag == kITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+      if (cfgRecoEvkIsGoodITSLayersFlag == kITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         return 0;
-      if (cfgRecoEvkIsGoodITSLayersFlag == kITSLayer0123 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123))
+      }
+      if (cfgRecoEvkIsGoodITSLayersFlag == kITSLayer0123 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)) {
         return 0;
-      if (cfgRecoEvkIsGoodITSLayersFlag == kITSLayer3 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3))
+      }
+      if (cfgRecoEvkIsGoodITSLayersFlag == kITSLayer3 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3)) {
         return 0;
+      }
     }
     if (cfgRecoEvSelkIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
@@ -531,7 +558,7 @@ struct FlowMc {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track)
+  bool trackSelected(const TTrack& track)
   {
     if (cfgCutDCAzPtDepEnabled && (std::fabs(track.dcaZ()) > fPtDepDCAz->Eval(track.pt()))) {
       return false;
