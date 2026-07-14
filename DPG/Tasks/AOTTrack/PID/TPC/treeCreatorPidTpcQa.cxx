@@ -46,6 +46,17 @@ using namespace o2::framework;
 using namespace o2::track;
 using namespace o2::dpg_tpcskimstablecreator;
 
+#define PARTICLE_LIST(MACRO_ARG) \
+  MACRO_ARG(El, Electron)        \
+  MACRO_ARG(Mu, Muon)            \
+  MACRO_ARG(Pi, Pion)            \
+  MACRO_ARG(Ka, Kaon)            \
+  MACRO_ARG(Pr, Proton)          \
+  MACRO_ARG(De, Deuteron)        \
+  MACRO_ARG(Tr, Triton)          \
+  MACRO_ARG(He, Helium3)         \
+  MACRO_ARG(Al, Alpha)
+
 struct treeCreatorPidTpcQa {
   Produces<o2::aod::QaPidTpc> rowPidTpcQa;
 
@@ -59,6 +70,14 @@ struct treeCreatorPidTpcQa {
   Configurable<float> nClNorm{"nClNorm", 152., "Number of cluster normalization. Run 2: 159, Run 3 152"};
   // Configurable for the path of CCDB General Run Parameters LHC Interface information
   Configurable<std::string> ccdbPathGrpLhcIf{"ccdbPathGrpLhcIf", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
+
+#define DECLARE_PARTICLE_WISE_CONFIGURABLES(ParticleNameShort, ParticleNameLong)                                                                                              \
+  Configurable<float> cutTpcInnerParameterMin##ParticleNameLong{"cutTpcInnerParameterMin" #ParticleNameLong, -1., "Lower-value cut on tpcInnerParam for " #ParticleNameLong}; \
+  Configurable<float> cutTpcInnerParameterMax##ParticleNameLong{"cutTpcInnerParameterMax" #ParticleNameLong, -1., "Upper-value cut on tpcInnerParam for " #ParticleNameLong}; \
+  Configurable<float> cutNSigmaTpcAbs##ParticleNameLong{"cutNSigmaTpcAbs" #ParticleNameLong, -1., "Cut on absolute value of nSigmaTpc for " #ParticleNameLong};
+
+  PARTICLE_LIST(DECLARE_PARTICLE_WISE_CONFIGURABLES)
+#undef DECLARE_PARTICLE_WISE_CONFIGURABLES
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
@@ -78,32 +97,24 @@ struct treeCreatorPidTpcQa {
     int enabledProcesses{0};
 
     switch (Id) {
-#define PARTICLE_CASE(ParticleId)                                                                    \
-  case PID::ParticleId:                                                                              \
-    if (!doprocess##ParticleId && !doprocessFull##ParticleId && !doprocessFullWithTOF##ParticleId) { \
-      return false;                                                                                  \
-    }                                                                                                \
-    if (doprocess##ParticleId) {                                                                     \
-      ++enabledProcesses;                                                                            \
-    }                                                                                                \
-    if (doprocessFull##ParticleId) {                                                                 \
-      ++enabledProcesses;                                                                            \
-    }                                                                                                \
-    if (doprocessFullWithTOF##ParticleId) {                                                          \
-      ++enabledProcesses;                                                                            \
-    }                                                                                                \
-    LOG(info) << "Enabled TPC QA for " << #ParticleId;                                               \
+#define PARTICLE_CASE(ParticleNameShort, ParticleNameLong)                                                             \
+  case PID::ParticleNameLong:                                                                                          \
+    if (!doprocess##ParticleNameLong && !doprocessFull##ParticleNameLong && !doprocessFullWithTOF##ParticleNameLong) { \
+      return false;                                                                                                    \
+    }                                                                                                                  \
+    if (doprocess##ParticleNameLong) {                                                                                 \
+      ++enabledProcesses;                                                                                              \
+    }                                                                                                                  \
+    if (doprocessFull##ParticleNameLong) {                                                                             \
+      ++enabledProcesses;                                                                                              \
+    }                                                                                                                  \
+    if (doprocessFullWithTOF##ParticleNameLong) {                                                                      \
+      ++enabledProcesses;                                                                                              \
+    }                                                                                                                  \
+    LOG(info) << "Enabled TPC QA for " << #ParticleNameLong;                                                           \
     break;
 
-      PARTICLE_CASE(Electron);
-      PARTICLE_CASE(Muon);
-      PARTICLE_CASE(Pion);
-      PARTICLE_CASE(Kaon);
-      PARTICLE_CASE(Proton);
-      PARTICLE_CASE(Deuteron);
-      PARTICLE_CASE(Triton);
-      PARTICLE_CASE(Helium3);
-      PARTICLE_CASE(Alpha);
+      PARTICLE_LIST(PARTICLE_CASE)
 #undef PARTICLE_CASE
     }
     if (enabledProcesses != 1) {
@@ -194,66 +205,42 @@ struct treeCreatorPidTpcQa {
   }
 
   // QA of nsigma only tables
-#define MAKE_PROCESS_FUNCTION(PidTableTPC, ParticleId)                            \
-  void process##ParticleId(CollisionsExtra const& collisions,                     \
-                           soa::Join<TrackCandidates, PidTableTPC> const& tracks, \
-                           aod::BCsWithTimestamps const&)                         \
-  {                                                                               \
-    processSingleParticle<PID::ParticleId, false, false>(collisions, tracks);     \
-  }                                                                               \
-  PROCESS_SWITCH(treeCreatorPidTpcQa, process##ParticleId, Form("Process for the %s hypothesis for TPC NSigma QA", #ParticleId), false);
+#define MAKE_PROCESS_FUNCTION(ParticleNameShort, ParticleNameLong)                                         \
+  void process##ParticleNameLong(CollisionsExtra const& collisions,                                        \
+                                 soa::Join<TrackCandidates, aod::pidTPC##ParticleNameShort> const& tracks, \
+                                 aod::BCsWithTimestamps const&)                                            \
+  {                                                                                                        \
+    processSingleParticle<PID::ParticleNameLong, false, false>(collisions, tracks);                        \
+  }                                                                                                        \
+  PROCESS_SWITCH(treeCreatorPidTpcQa, process##ParticleNameLong, Form("Process for the %s hypothesis for TPC NSigma QA ", #ParticleNameLong), false);
 
-  MAKE_PROCESS_FUNCTION(aod::pidTPCEl, Electron);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCMu, Muon);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCPi, Pion);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCKa, Kaon);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCPr, Proton);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCDe, Deuteron);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCTr, Triton);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCHe, Helium3);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCAl, Alpha);
+  PARTICLE_LIST(MAKE_PROCESS_FUNCTION)
 #undef MAKE_PROCESS_FUNCTION
 
 // QA of full tables
-#define MAKE_PROCESS_FUNCTION(PidTableTPC, ParticleId)                                \
-  void processFull##ParticleId(CollisionsExtra const& collisions,                     \
-                               soa::Join<TrackCandidates, PidTableTPC> const& tracks, \
-                               aod::BCsWithTimestamps const&)                         \
-  {                                                                                   \
-    processSingleParticle<PID::ParticleId, true, false>(collisions, tracks);          \
-  }                                                                                   \
-  PROCESS_SWITCH(treeCreatorPidTpcQa, processFull##ParticleId, Form("Process for the %s hypothesis for full TPC PID QA", #ParticleId), false);
+#define MAKE_PROCESS_FUNCTION(ParticleNameShort, ParticleNameLong)                                                 \
+  void processFull##ParticleNameLong(CollisionsExtra const& collisions,                                            \
+                                     soa::Join<TrackCandidates, aod::pidTPCFull##ParticleNameShort> const& tracks, \
+                                     aod::BCsWithTimestamps const&)                                                \
+  {                                                                                                                \
+    processSingleParticle<PID::ParticleNameLong, true, false>(collisions, tracks);                                 \
+  }                                                                                                                \
+  PROCESS_SWITCH(treeCreatorPidTpcQa, processFull##ParticleNameLong, Form("Process for the %s hypothesis for full TPC PID QA ", #ParticleNameLong), false);
 
-  MAKE_PROCESS_FUNCTION(aod::pidTPCFullEl, Electron);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCFullMu, Muon);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCFullPi, Pion);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCFullKa, Kaon);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCFullPr, Proton);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCFullDe, Deuteron);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCFullTr, Triton);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCFullHe, Helium3);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCFullAl, Alpha);
+  PARTICLE_LIST(MAKE_PROCESS_FUNCTION)
 #undef MAKE_PROCESS_FUNCTION
 
   // QA of full tables with TOF information
-#define MAKE_PROCESS_FUNCTION(PidTableTPC, PidTableTOF, ParticleId)                                       \
-  void processFullWithTOF##ParticleId(CollisionsExtra const& collisions,                                  \
-                                      soa::Join<TrackCandidates, PidTableTPC, PidTableTOF> const& tracks, \
-                                      aod::BCsWithTimestamps const&)                                      \
-  {                                                                                                       \
-    processSingleParticle<PID::ParticleId, true, true>(collisions, tracks);                               \
-  }                                                                                                       \
-  PROCESS_SWITCH(treeCreatorPidTpcQa, processFullWithTOF##ParticleId, Form("Process for the %s hypothesis for full TPC PID QA with the TOF info added", #ParticleId), false);
+#define MAKE_PROCESS_FUNCTION(ParticleNameShort, ParticleNameLong)                                                                                            \
+  void processFullWithTOF##ParticleNameLong(CollisionsExtra const& collisions,                                                                                \
+                                            soa::Join<TrackCandidates, aod::pidTPCFull##ParticleNameShort, aod::pidTOFFull##ParticleNameShort> const& tracks, \
+                                            aod::BCsWithTimestamps const&)                                                                                    \
+  {                                                                                                                                                           \
+    processSingleParticle<PID::ParticleNameLong, true, true>(collisions, tracks);                                                                             \
+  }                                                                                                                                                           \
+  PROCESS_SWITCH(treeCreatorPidTpcQa, processFullWithTOF##ParticleNameLong, Form("Process for the %s hypothesis for full TPC PID QA with the TOF info added ", #ParticleNameLong), false);
 
-  MAKE_PROCESS_FUNCTION(aod::pidTPCFullEl, aod::pidTOFFullEl, Electron);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCFullMu, aod::pidTOFFullMu, Muon);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCFullPi, aod::pidTOFFullPi, Pion);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCFullKa, aod::pidTOFFullKa, Kaon);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCFullPr, aod::pidTOFFullPr, Proton);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCFullDe, aod::pidTOFFullDe, Deuteron);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCFullTr, aod::pidTOFFullTr, Triton);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCFullHe, aod::pidTOFFullHe, Helium3);
-  MAKE_PROCESS_FUNCTION(aod::pidTPCFullAl, aod::pidTOFFullAl, Alpha);
+  PARTICLE_LIST(MAKE_PROCESS_FUNCTION)
 #undef MAKE_PROCESS_FUNCTION
 };
 
@@ -261,3 +248,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<treeCreatorPidTpcQa>(cfgc)};
 }
+#undef PARTICLE_LIST
