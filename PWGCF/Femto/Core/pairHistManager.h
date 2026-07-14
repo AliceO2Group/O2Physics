@@ -32,6 +32,7 @@
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TH1.h>
+#include <TH3.h>
 
 #include <algorithm>
 #include <array>
@@ -220,6 +221,7 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis shKstar{"shKstar", {{60, 0.0f, 0.3f}}, "k*/qinv binning for SH histograms"};
   o2::framework::ConfigurableAxis shCentBins{"shCentBins", {o2::framework::VARIABLE_WIDTH, 0.0f, 200.0f}, "SH: multiplicity/centrality bin edges (like FemtoUniverse confMultKstarBins)"};
   o2::framework::ConfigurableAxis shKtBins{"shKtBins", {o2::framework::VARIABLE_WIDTH, 0.1f, 0.2f, 0.3f, 0.4f}, "SH: kT bin edges (like FemtoUniverse confKtKstarBins)"};
+  o2::framework::Configurable<bool> shPlot1D{"shPlot1D", false, "(SH) Also fill 1D qinv/k* numerator/denominator (h1D) per (mult,kT) bin"};
 };
 
 struct ConfPairCuts : o2::framework::ConfigurableGroup {
@@ -542,6 +544,7 @@ class PairHistManager
     mPlotSH = ConfPairBinning.plotSH.value;
     mShLMax = ConfPairBinning.shLMax.value;
     mShFrame = ConfPairBinning.shFrame.value;
+    mShPlot1D = ConfPairBinning.shPlot1D.value;
     if (mPlotSH) {
       mShKstarSpec = {ConfPairBinning.shKstar, "k* (GeV/#it{c})"};
       mYlm.initializeYlms();
@@ -975,9 +978,15 @@ class PairHistManager
 
       mShReal.resize(nCent);
       mShImag.resize(nCent);
+      mShCov.resize(nCent);
+      mSh1D.resize(nCent);
+      mShBinCount.resize(nCent);
       for (int iCent = 0; iCent < nCent; ++iCent) {
         mShReal[iCent].resize(nKt);
         mShImag[iCent].resize(nKt);
+        mShCov[iCent].resize(nKt);
+        mSh1D[iCent].resize(nKt);
+        mShBinCount[iCent].resize(nKt);
         // folder name: mult_{low}_{high}
         const std::string centFolder = "mult_" + std::to_string(static_cast<int>(mShCentEdges[iCent])) +
                                        "_" + std::to_string(static_cast<int>(mShCentEdges[iCent + 1]));
@@ -1020,8 +1029,29 @@ class PairHistManager
               titleIm += "; k* (GeV/#it{c}); Im[A_{l}^{m}]";
               mShReal[iCent][iKt][ihist] = mHistogramRegistry->add<TH1>(nameRe.c_str(), titleRe.c_str(), o2::framework::kTH1D, {mShKstarSpec});
               mShImag[iCent][iKt][ihist] = mHistogramRegistry->add<TH1>(nameIm.c_str(), titleIm.c_str(), o2::framework::kTH1D, {mShKstarSpec});
+              mShReal[iCent][iKt][ihist]->Sumw2();
+              mShImag[iCent][iKt][ihist]->Sumw2();
               ++ihist;
             }
+          }
+
+          // SH covariance TH3D
+          const int nAxisLM = 2 * nJM;
+          const o2::framework::AxisSpec covLmAxis{nAxisLM, -0.5, static_cast<double>(nAxisLM) - 0.5, "l,m #times (re,im)"};
+          std::string nameCov = dir;
+          nameCov += "Cov";
+          mShCov[iCent][iKt] = mHistogramRegistry->add<TH3>(nameCov.c_str(), "SH covariance; k* (GeV/#it{c}); l,m; l,m", o2::framework::kTH3D, {mShKstarSpec, covLmAxis, covLmAxis});
+          mShCov[iCent][iKt]->Sumw2();
+
+          std::string nameBinCount = dir;
+          nameBinCount += "BinCount";
+          mShBinCount[iCent][iKt] = mHistogramRegistry->add<TH1>(nameBinCount.c_str(), "SH bin occupancy; k* (GeV/#it{c}); Entries", o2::framework::kTH1D, {mShKstarSpec});
+
+          if (mShPlot1D) {
+            std::string name1D = dir;
+            name1D += "h1D";
+            mSh1D[iCent][iKt] = mHistogramRegistry->add<TH1>(name1D.c_str(), "1D distribution; k* (GeV/#it{c}); Entries", o2::framework::kTH1D, {mShKstarSpec});
+            mSh1D[iCent][iKt]->Sumw2();
           }
         }
       }
@@ -1213,6 +1243,24 @@ class PairHistManager
         for (std::size_t i = 0; i < mShYlmBuffer.size(); ++i) {
           mShReal[iCent][iKt][i]->Fill(mShKv, std::real(mShYlmBuffer[i]));
           mShImag[iCent][iKt][i]->Fill(mShKv, -std::imag(mShYlmBuffer[i]));
+        }
+        // covariance: outer product of the (re, -im) Ylm vector packed on 2*nJM axes
+        // (each Ylm contributes two consecutive axis bins: even = real, odd = -imag)
+        static constexpr int ComponentsPerLM = 2;
+        const int nAxisLM = ComponentsPerLM * static_cast<int>(mShYlmBuffer.size());
+        for (int iz = 0; iz < nAxisLM; ++iz) {
+          const double vz = (iz % ComponentsPerLM == 0) ? std::real(mShYlmBuffer[iz / ComponentsPerLM]) : -std::imag(mShYlmBuffer[iz / ComponentsPerLM]);
+          for (int ip = 0; ip < nAxisLM; ++ip) {
+            const double vp = (ip % ComponentsPerLM == 0) ? std::real(mShYlmBuffer[ip / ComponentsPerLM]) : -std::imag(mShYlmBuffer[ip / ComponentsPerLM]);
+            mShCov[iCent][iKt]->Fill(mShKv, static_cast<double>(iz), static_cast<double>(ip), vz * vp);
+          }
+        }
+
+        mShBinCount[iCent][iKt]->Fill(mShKv, 1.0);
+        if (mShPlot1D) {
+          // FemtoUniverse h1D = f3d[0]: qinv (=2k*) for identical-LCMS, else k*.
+          const float sh1DValue = (mShFrame == ShFrameLcmsIdentical) ? (2.0f * mKstar) : mKstar;
+          mSh1D[iCent][iKt]->Fill(sh1DValue);
         }
       }
     }
@@ -1580,6 +1628,11 @@ class PairHistManager
   // SH histograms binned in [iCent][iKt][ihist]; ihist = l*(l+1)+m
   std::vector<std::vector<std::vector<std::shared_ptr<TH1>>>> mShReal;
   std::vector<std::vector<std::vector<std::shared_ptr<TH1>>>> mShImag;
+  // SH covariance matrix per [iCent][iKt]; TH3d: k* on X, 2*nJM (l,m x re/im)
+  std::vector<std::vector<std::shared_ptr<TH3>>> mShCov;
+  bool mShPlot1D = false;
+  std::vector<std::vector<std::shared_ptr<TH1>>> mSh1D;
+  std::vector<std::vector<std::shared_ptr<TH1>>> mShBinCount;
   std::vector<std::complex<double>> mShYlmBuffer; // reused, allocated once
   std::vector<double> mShCentEdges;
   std::vector<double> mShKtEdges;
