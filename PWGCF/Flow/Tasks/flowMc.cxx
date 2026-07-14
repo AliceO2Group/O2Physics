@@ -165,10 +165,10 @@ struct FlowMc {
   bool correctionsLoaded = false;
 
   std::vector<TF1*> funcEff;
-  TH1D* hFindPtBin;
-  TF1* funcV2;
-  TF1* funcV3;
-  TF1* funcV4;
+  TH1D* hFindPtBin = nullptr;
+  TF1* funcV2 = nullptr;
+  TF1* funcV3 = nullptr;
+  TF1* funcV4 = nullptr;
   enum GoodITSLayersFlag {
     kITSLayersAll,
     kITSLayer0123,
@@ -185,7 +185,7 @@ struct FlowMc {
   OutputObj<FlowContainer> fFCReco{FlowContainer("FlowContainerReco")};
   GFW* fGFWTrue = new GFW();
   GFW* fGFWReco = new GFW();
-  TAxis* fPtAxis;
+  TAxis* fPtAxis = nullptr;
   std::vector<GFW::CorrConfig> corrconfigsTruth;
   std::vector<GFW::CorrConfig> corrconfigsReco;
   TRandom3* fRndm = new TRandom3(0);
@@ -195,7 +195,7 @@ struct FlowMc {
   double mMinSeconds{-1.};
   std::unordered_map<int, TH2*> gHadronicRate;
   ctpRateFetcher mRateFetcher;
-  TH2* gCurrentHadronicRate;
+  TH2* gCurrentHadronicRate = nullptr;
   RCTFlagsChecker rctChecker{"CBT"};
 
   void init(InitContext&)
@@ -218,7 +218,7 @@ struct FlowMc {
     // pT histograms
     histos.add<TH1>("hImpactParameter", "hImpactParameter", HistType::kTH1D, {axisB});
     histos.add<TH2>("hNchVsImpactParameter", "hNchVsImpactParameter", HistType::kTH2D, {axisB, axisNch});
-    histos.add<TH2>("hNchRecoVsNchGen", "hNchRecoVsNchGen", HistType::kTH2D, {axisNch, axisNch});
+    histos.add<TH2>("hNchRecoVsNchGen", "hNchRecoVsNchGen; Recoconstucted Nch; Genenerated Nch", HistType::kTH2D, {axisNch, axisNch});
     histos.add<TH1>("hEventPlaneAngle", "hEventPlaneAngle", HistType::kTH1D, {axisPhi});
     histos.add<TH2>("hPtVsPhiGenerated", "hPtVsPhiGenerated", HistType::kTH2D, {axisPhi, axisPt});
     histos.add<TH2>("hPtVsPhiGlobal", "hPtVsPhiGlobal", HistType::kTH2D, {axisPhi, axisPt});
@@ -411,7 +411,7 @@ struct FlowMc {
 
   void fillFC(GFW* fGFW, bool isMCTruth, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
   {
-    double dnx, val;
+    double dnx, val = 0;
     dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
     if (!corrconf.pTDif) {
       if (dnx == 0)
@@ -437,7 +437,6 @@ struct FlowMc {
           fFCReco->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
       }
     }
-    return;
   }
 
   void loadCentVsIPTruth(uint64_t timestamp)
@@ -635,7 +634,10 @@ struct FlowMc {
           }
         }
       }
-      histos.fill(HIST("hNchRecoVsNchGen"), nChGlobal, nChGen);
+      if (nChGlobal > 0 && nChGen > 0) {
+        // fill only when Nch is not zero
+        histos.fill(HIST("hNchRecoVsNchGen"), nChGlobal, nChGen);
+      }
       if (cfgTrackDensityCorrUse && cfgFlowCumulantEnabled) {
         psi2Est = std::atan2(q2y, q2x) / 2.;
         psi3Est = std::atan2(q3y, q3x) / 3.;
