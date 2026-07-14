@@ -616,7 +616,7 @@ struct HfTaskDs {
     auto pt = candidate.pt();
 
     hfCandDsMinis(mass, pt, evaluateCentralityCand<Coll>(candidate));
-    hfCandDsMassMinis(mass, massKaKa, massKaFirstPi, massKaSecondPi);
+    hfCandDsMassMinis(massKaKa, massKaFirstPi, massKaSecondPi);
     if (miniTrees.extendWithDecayLength) {
       hfCandDsDlMinis(candidate.decayLength(), candidate.decayLengthXY(), candidate.decayLengthNormalised(), candidate.decayLengthXYNormalised());
     }
@@ -643,7 +643,7 @@ struct HfTaskDs {
     auto pt = candidate.pt();
 
     hfCandDsMinis(mass, pt, evaluateCentralityCand<Coll>(candidate));
-    hfCandDsMassMinis(mass, massKaKa, massKaFirstPi, massKaSecondPi);
+    hfCandDsMassMinis(massKaKa, massKaFirstPi, massKaSecondPi);
     if (miniTrees.extendWithDecayLength) {
       hfCandDsDlMinis(candidate.decayLength(), candidate.decayLengthXY(), candidate.decayLengthNormalised(), candidate.decayLengthXYNormalised());
     }
