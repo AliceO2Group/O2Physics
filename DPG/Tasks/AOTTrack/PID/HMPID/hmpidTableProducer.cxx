@@ -415,7 +415,7 @@ struct HmpidTableProducer {
       if (chamberM3 < 0)
         continue;
 
-      std::array<float, o2::aod::kDimPhotonsCharge> hmpidPhotsCharge2{};
+      std::vector<float> hmpidPhotsCharge2(o2::aod::kDimPhotonsCharge, 0.f);
 
       for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
         hmpidPhotsCharge2[i] = t.hmpidPhotsCharge()[i];
