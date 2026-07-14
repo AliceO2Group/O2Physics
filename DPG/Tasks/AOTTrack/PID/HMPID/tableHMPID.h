@@ -24,6 +24,8 @@ inline constexpr int kDimPhotonsCharge = 10;
 
 namespace variables_table
 {
+using PhotonsChargeArray = std::array<float, kDimPhotonsCharge>;
+
 DECLARE_SOA_COLUMN(ChAngle, chAngle, float);
 DECLARE_SOA_COLUMN(MomentumHmpid, momentumHmpid, float);
 DECLARE_SOA_COLUMN(MomentumTrack, momentumTrack, float);
@@ -35,7 +37,7 @@ DECLARE_SOA_COLUMN(NPhotons, nPhotons, float);
 DECLARE_SOA_COLUMN(ChargeMip, chargeMip, float);
 DECLARE_SOA_COLUMN(ClusterSize, clusterSize, float);
 DECLARE_SOA_COLUMN(Chamber, chamber, float);
-DECLARE_SOA_COLUMN(PhotonsCharge, photonsCharge, (std::array<float, kDimPhotonsCharge>));
+DECLARE_SOA_COLUMN(PhotonsCharge, photonsCharge, PhotonsChargeArray);
 DECLARE_SOA_COLUMN(EtaTrack, etaTrack, float);
 DECLARE_SOA_COLUMN(PhiTrack, phiTrack, float);
 DECLARE_SOA_COLUMN(Px, px, float);
