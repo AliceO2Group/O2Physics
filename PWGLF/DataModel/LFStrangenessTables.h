@@ -44,6 +44,16 @@ DECLARE_SOA_COLUMN(DataframeID, dataframeID, uint64_t); //! Data frame ID (what 
 DECLARE_SOA_TABLE(StraOrigins, "AOD", "STRAORIGIN", //! Table which contains the IDs of all dataframes merged into this dataframe
                   o2::soa::Index<>, straorigin::DataframeID);
 
+// for keeping track of the number of selected collisions
+namespace straselections
+{
+DECLARE_SOA_COLUMN(TotalNbrOfCollisions, totalNbrOfCollisions, int); //! total number of analysed collisions
+DECLARE_SOA_COLUMN(TotalNbrOfSelCollisions, totalNbrOfSelCollisions, int); //! total number of selected collisions
+} // namespace straselections
+
+DECLARE_SOA_TABLE(StraSelections, "AOD", "STRASELECTIONS", //! keep track of the number of analysed collisions in this DF
+                  o2::soa::Index<>, straselections::TotalNbrOfCollisions, straselections::TotalNbrOfSelCollisions);
+
 namespace stracollision
 {
 DECLARE_SOA_DYNAMIC_COLUMN(IsUPC, isUPC, //! check whether this is a UPC or hadronic collision
@@ -410,8 +420,10 @@ DECLARE_SOA_TABLE(StraMCCollMults_000, "AOD", "STRAMCCOLLMULTS", //! MC collisio
                   mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, o2::soa::Marker<2>);
 DECLARE_SOA_TABLE_VERSIONED(StraMCCollMults_001, "AOD", "STRAMCCOLLMULTS", 1, //! MC collision multiplicities
                             mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, stramccollision::TotalMultMCParticles);
+DECLARE_SOA_TABLE_VERSIONED(StraMCCollMults_002, "AOD", "STRAMCCOLLMULTS", 2, //! MC collision multiplicities
+                            mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCFV0A, mult::MultMCFDDA, mult::MultMCFDDC, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, stramccollision::TotalMultMCParticles);
 
-using StraMCCollMults = StraMCCollMults_001;
+using StraMCCollMults = StraMCCollMults_002;
 
 namespace dautrack
 {
