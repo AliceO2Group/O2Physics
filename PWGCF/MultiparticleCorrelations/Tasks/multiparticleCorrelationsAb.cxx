@@ -243,7 +243,7 @@ struct MultiparticleCorrelationsAb // this name is used in lower-case format to 
     // *) Steer all analysis steps:
     steer<eRec>(collision, bcs, tracks);
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec, "process only reconstructed data", true); // yes, keep always one process switch "true", so that I have default running version
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processRec, "process only reconstructed data", true); // yes, keep always one process switch "true", so that I have default running version
 
   // -------------------------------------------
 
@@ -252,7 +252,7 @@ struct MultiparticleCorrelationsAb // this name is used in lower-case format to 
   {
     steer<eRecAndSim>(collision, bcs, tracks);
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRecSim, "process both reconstructed and corresponding MC truth simulated data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processRecSim, "process both reconstructed and corresponding MC truth simulated data", false);
 
   // -------------------------------------------
 
@@ -261,7 +261,7 @@ struct MultiparticleCorrelationsAb // this name is used in lower-case format to 
   {
     //    steer<eSim>(collision, bcs, tracks); // TBI 20240517 not ready yet, but I do not really need this one urgently, since RecSim is working, and I need that one for efficiencies...
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processSim, "process only simulated data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processSim, "process only simulated data", false);
 
   // -------------------------------------------
 
@@ -270,7 +270,7 @@ struct MultiparticleCorrelationsAb // this name is used in lower-case format to 
   {
     steer<eRec_Run2>(collision, bcs, tracks);
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRecRun2, "process only converted reconstructed Run 2 data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processRecRun2, "process only converted reconstructed Run 2 data", false);
 
   // -------------------------------------------
 
@@ -279,7 +279,7 @@ struct MultiparticleCorrelationsAb // this name is used in lower-case format to 
   {
     steer<eRecAndSim_Run2>(collision, bcs, tracks);
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRecSimRun2, "process both converted reconstructed and simulated Run 2 data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processRecSimRun2, "process both converted reconstructed and simulated Run 2 data", false);
 
   // -------------------------------------------
 
@@ -288,7 +288,7 @@ struct MultiparticleCorrelationsAb // this name is used in lower-case format to 
   {
     // steer<eSim_Run2>(collision, tracks); // TBI 20240517 not ready yet, but I do not really need this one urgently, since RecSim_Run2 is working, and I need that one for efficiencies...
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processSimRun2, "process only converted simulated Run 2 data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processSimRun2, "process only converted simulated Run 2 data", false);
 
   // -------------------------------------------
 
@@ -297,7 +297,7 @@ struct MultiparticleCorrelationsAb // this name is used in lower-case format to 
   {
     steer<eRec_Run1>(collision, bcs, tracks);
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRecRun1, "process only converted reconstructed Run 1 data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processRecRun1, "process only converted reconstructed Run 1 data", false);
 
   // -------------------------------------------
 
@@ -306,7 +306,7 @@ struct MultiparticleCorrelationsAb // this name is used in lower-case format to 
   {
     // steer<eRecAndSim_Run1>(collision, bcs, tracks); // TBI 20240517 not ready yet, but for benchmarking in any case I need only "Rec"
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRecSimRun1, "process both converted reconstructed and simulated Run 1 data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processRecSimRun1, "process both converted reconstructed and simulated Run 1 data", false);
 
   // -------------------------------------------
 
@@ -315,7 +315,7 @@ struct MultiparticleCorrelationsAb // this name is used in lower-case format to 
   {
     // steer<eSim_Run1>(collision, tracks); // TBI 20240517 not ready yet, but for benchmarking in any case I need only "Rec"
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processSimRun1, "process only converted simulated Run 1 data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processSimRun1, "process only converted simulated Run 1 data", false);
 
   // -------------------------------------------
 
@@ -326,7 +326,7 @@ struct MultiparticleCorrelationsAb // this name is used in lower-case format to 
   {
     steer<eTest>(collision, bcs, tracks);
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processTest, "test processing", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processTest, "test processing", false);
 
   // -------------------------------------------
 
@@ -339,7 +339,7 @@ struct MultiparticleCorrelationsAb // this name is used in lower-case format to 
     // *) FT0s => bc.foundFT0().sumAmpC(), etc.
     steer<eQA>(collision, bcs, tracks);
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processQA, "QA processing", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processQA, "QA processing", false);
 
   // -------------------------------------------
 
@@ -380,7 +380,7 @@ struct MultiparticleCorrelationsAb // this name is used in lower-case format to 
 
   } // void processHepMChi( ... )
 
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processHepMChi, "HepMCHeavyIons processing", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processHepMChi, "HepMCHeavyIons processing", false);
 
   // -------------------------------------------
 
@@ -388,7 +388,7 @@ struct MultiparticleCorrelationsAb // this name is used in lower-case format to 
 
   // -------------------------------------------
 
-}; // struct MultiparticleCorrelationsAB
+}; // struct MultiparticleCorrelationsAb
 
 // -------------------------------------------
 
@@ -396,6 +396,6 @@ struct MultiparticleCorrelationsAb // this name is used in lower-case format to 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<MultiparticleCorrelationsAB>(cfgc),
+    adaptAnalysisTask<MultiparticleCorrelationsAb>(cfgc),
   };
 } // WorkflowSpec...
