@@ -11224,7 +11224,7 @@ bool particleCuts(T const& track, EnCutModus cutModus)
             // Yes, I have to check the 2nd condition, because e.g. for PDG code 1000010020 (deuteron), GetParticle(...) returns NULL
             charge = tc.fDatabasePDG->GetParticle(track.pdgCode())->Charge() / 3.; // yes, divided by 3. Fundamental unit of charge is associated with quarks
             if (tc.fVerboseForEachParticle) {
-              LOGF(info, "\033[1;33m%s at line %d: !!!! WARNING !!!! There is a large memory blow-up when using TDatabasePDG !!!! WARNING !!!! \033[0m", __FUNCTION__, __LINE__);
+              LOGF(info, "\033[1;33m%s at line %d: !!!! WARNING !!!! There is a large memory blow-up when using PDG database !!!! WARNING !!!! \033[0m", __FUNCTION__, __LINE__);
             }
           }
           if (cutModus == eCutCounterBinning) {
@@ -14051,7 +14051,7 @@ void comparisonNestedLoopsVsCorrelations()
 
 //============================================================
 
-TComplex Q(int n, int wp)
+TComplex Q(int n, int wp) // o2-linter: disable=name/function-variable (This is deeply entrenched, in all analytic expressions below, I call this function under this name)
 {
   // Using the fact that Q{-n,p} = Q{n,p}^*.
 
