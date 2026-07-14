@@ -53,13 +53,13 @@ namespace o2::aod
 
 namespace dqanalysisflags
 {
-DECLARE_SOA_BITMAP_COLUMN(IsEventSelected, isEventSelected, 8);                      //! Event decision
-DECLARE_SOA_BITMAP_COLUMN(IsMuonSelected, isMuonSelected, 32);                       //! Muon track decisions (joinable to ReducedMuonsAssoc)
-}
+DECLARE_SOA_BITMAP_COLUMN(IsEventSelected, isEventSelected, 8); //! Event decision
+DECLARE_SOA_BITMAP_COLUMN(IsMuonSelected, isMuonSelected, 32);  //! Muon track decisions (joinable to ReducedMuonsAssoc)
+} // namespace dqanalysisflags
 
-DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTSA", dqanalysisflags::IsEventSelected);                                                            //!  joinable to ReducedEvents
-DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTSA", dqanalysisflags::IsMuonSelected);                                                       //!  joinable to ReducedMuonsAssoc
-} 
+DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTSA", dqanalysisflags::IsEventSelected);      //!  joinable to ReducedEvents
+DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTSA", dqanalysisflags::IsMuonSelected); //!  joinable to ReducedMuonsAssoc
+} // namespace o2::aod
 
 // Declarations of various short names
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
@@ -97,7 +97,7 @@ struct DqJPsiMuonCorrelations {
   // Configurables for histograms
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f, 20.0f}, "p_{T} (GeV/c)"};
   ConfigurableAxis axisInvMass{"axisInvMass", {80, 1.0f, 5.0f}, "Invariant Mass (GeV/c^{2})"};
-  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {10, -constants::math::PI/2.0f, 3.0f*constants::math::PI/2.0f}, "#Delta#phi (rad)"};
+  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {10, -constants::math::PI / 2.0f, 3.0f * constants::math::PI / 2.0f}, "#Delta#phi (rad)"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {10, -2.0f, 2.0f}, "#Delta#eta"};
 
   // Configurable for acceptance efficiency correction
@@ -115,7 +115,7 @@ struct DqJPsiMuonCorrelations {
   // Define the filter for the dileptons
   Filter dileptonFilter = aod::reducedpair::sign == 0;
 
-  constexpr static uint32_t fgDimuonsFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::Pair;   // fill map
+  constexpr static uint32_t fgDimuonsFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::Pair; // fill map
 
   // use two values array to avoid mixing up the quantities
   float* fValuesDilepton;
@@ -130,9 +130,9 @@ struct DqJPsiMuonCorrelations {
     ccdb->setCreatedNotAfter(nolaterthan.value);
 
     // Assert correct size of the efficiency correction vector
-    if (axisPt.value.size()-2 != fConfigBinEffJPsi.value.size() || axisPt.value.size()-2 != fConfigBinEffMuon.value.size()) {
+    if (axisPt.value.size() - 2 != fConfigBinEffJPsi.value.size() || axisPt.value.size() - 2 != fConfigBinEffMuon.value.size()) {
       LOGF(fatal, "Configurables axisPt: %zu must have one more value than fConfigBinEffJPsi: %zu and fConfigBinEffMuon: %zu (excluding 'VARIABLE_WIDTH' entry)",
-          axisPt.value.size()-1, fConfigBinEffJPsi.value.size(), fConfigBinEffMuon.value.size());
+           axisPt.value.size() - 1, fConfigBinEffJPsi.value.size(), fConfigBinEffMuon.value.size());
     }
 
     // Set up varmanager variable names
@@ -188,7 +188,7 @@ struct DqJPsiMuonCorrelations {
             (dilepton.pt1() < axisPt.value[1] || dilepton.pt1() > axisPt.value.back()) ||
             (dilepton.eta2() < fConfigMuonEtaMin || dilepton.eta2() > fConfigMuonEtaMax) ||
             (dilepton.pt2() < axisPt.value[1] || dilepton.pt2() > axisPt.value.back())) {
-           continue;
+          continue;
         }
 
         // Fill invariant mass vs pT histogram for the dileptons and for trigger counting
@@ -198,7 +198,7 @@ struct DqJPsiMuonCorrelations {
         registry.fill(HIST("h2dTriggersPtInvVsInvMassRegion"), dilepton.mass(), dilepton.pt(), w_dilepton);
 
         for (auto& assoc : assocs) {
-          // Check selection bit 
+          // Check selection bit
           if (!assoc.isMuonSelected_bit(0)) {
             continue;
           }
@@ -220,9 +220,9 @@ struct DqJPsiMuonCorrelations {
           // Compute deltaEta and deltaPhi between the dilepton and the associated muon
           float deltaEta = dilepton.eta() - track.eta();
           float deltaPhi = dilepton.phi() - track.phi();
-          if (deltaPhi < -constants::math::PI/2.0f) {
+          if (deltaPhi < -constants::math::PI / 2.0f) {
             deltaPhi += 2.0f * constants::math::PI;
-          } else if (deltaPhi > constants::math::PI*3.0f/2.0f) {
+          } else if (deltaPhi > constants::math::PI * 3.0f / 2.0f) {
             deltaPhi -= 2.0f * constants::math::PI;
           }
 
@@ -259,20 +259,22 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<DqJPsiMuonCorrelations>(cfgc)};
 }
 
-double getRapidity(const double pT, const double eta) {
-    double mJPsi = 3.096916; // J/Psi mass in GeV/c^2
-    return log((sqrt(pow(mJPsi, 2) + (pow(pT, 2) * pow(cosh(eta), 2))) + pT * sinh(eta)) / (sqrt(pow(mJPsi, 2) + pow(pT, 2))));
+double getRapidity(const double pT, const double eta)
+{
+  double mJPsi = 3.096916; // J/Psi mass in GeV/c^2
+  return log((sqrt(pow(mJPsi, 2) + (pow(pT, 2) * pow(cosh(eta), 2))) + pT * sinh(eta)) / (sqrt(pow(mJPsi, 2) + pow(pT, 2))));
 }
 
-double getWeight(const double pT, const std::vector<double>& pT_bins, const std::vector<double>& efficiency, const double eta_min, const double eta_max) {
+double getWeight(const double pT, const std::vector<double>& pT_bins, const std::vector<double>& efficiency, const double eta_min, const double eta_max)
+{
 
-    int eff_bin = -1;
-    for (size_t b = 0; b < pT_bins.size() - 1; ++b) {
-        // Shift pT index by one to account for the VARIABLE_WIDTH entry in the axis configuration
-        if (pT >= pT_bins[b + 1] && pT < pT_bins[b + 2]) {
-            eff_bin = b;
-            break;
-        }
+  int eff_bin = -1;
+  for (size_t b = 0; b < pT_bins.size() - 1; ++b) {
+    // Shift pT index by one to account for the VARIABLE_WIDTH entry in the axis configuration
+    if (pT >= pT_bins[b + 1] && pT < pT_bins[b + 2]) {
+      eff_bin = b;
+      break;
     }
-    return 1.0 / (efficiency[eff_bin] * (getRapidity(pT, eta_max) - getRapidity(pT, eta_min)));
+  }
+  return 1.0 / (efficiency[eff_bin] * (getRapidity(pT, eta_max) - getRapidity(pT, eta_min)));
 }
