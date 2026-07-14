@@ -8277,7 +8277,7 @@ void bookTheRest()
   // b) Book TDatabasePDG:
   if (tc.fUseDatabasePDG) {
     // Remark: there is a standard memory blow-up here TBI 20260714 switch eventualy to o2::framework::O2DatabasePDG when lazy initialization is provided
-    tc.fDatabasePDG = new TDatabasePDG(); // o2-linter: disable=pdg/database
+    tc.fDatabasePDG = new TDatabasePDG(); // o2-linter: disable=pdg/database (using until o2::framework::O2DatabasePDG lazy initialization is provided)
   }
 
   if (tc.fVerbose) {
