@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file multiparticle-correlations-ab.cxx
+/// \file multiparticleCorrelationsAb.cxx
 /// \brief Task to calculate multiparticle correlations and related observables
 /// \author Ante.Bilandzic@cern.ch
 
@@ -109,7 +109,7 @@ using namespace std;
 #include "PWGCF/MultiparticleCorrelations/Core/MuPa-GlobalConstants.h"
 
 // *) Main task:
-struct MultiparticleCorrelationsAB // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
+struct multiparticleCorrelationsAb // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
 {
 
   // *) CCDB:
