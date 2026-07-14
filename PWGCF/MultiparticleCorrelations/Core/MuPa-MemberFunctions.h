@@ -14502,7 +14502,7 @@ void insanitizeDiffWeightsSparse(THnSparseF* const sparse)
         LOGF(fatal, "\033[1;31m%s at line %d : axis %d (Charge) of sparse %s has upper boundary %f, while upper cut on that variable is %f. This means that for some particles I won't be able to fetch weights from this sparse. \033[0m", __FUNCTION__, __LINE__, d, sparse->GetName(), sparse->GetAxis(d)->GetBinUpEdge(sparse->GetAxis(d)->GetNbins()), pc.fdParticleCuts[eCharge][eMax]);
       }
 
-    } else if (!(axisTitle.starts_with("Centrality") || axisTitle.find("Centrality"))) { // I have to use here find() instead, because title also contains centrality estimator name, e.g. "Centality (FT0C)". I added starts_with() per MegaLinter suggestion
+    } else if (!axisTitle.starts_with("Centrality")) { // I have to use here axisTitle.starts_with("Centrality"), because title also contains centrality estimator name, e.g. "Centality (FT0C)". If I ever reformat the axis title, see if I need to use instead axisTitle.find("Centrality")
 
       // check lower boundary:
       if ((ec.fdEventCuts[eCentrality][eMin] < sparse->GetAxis(d)->GetBinLowEdge(1)) && (std::abs(sparse->GetAxis(d)->GetBinLowEdge(1) - ec.fdEventCuts[eCentrality][eMin]) > tc.fFloatingPointPrecision)) {
