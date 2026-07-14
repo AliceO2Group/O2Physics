@@ -46,9 +46,7 @@ class HistogramManager : public TNamed
 
   void SetMainHistogramList(THashList* list)
   {
-    if (fMainList) {
-      delete fMainList;
-    }
+    delete fMainList;
     fMainList = list;
   }
 
@@ -91,11 +89,11 @@ class HistogramManager : public TNamed
 
   void SetUseDefaultVariableNames(bool flag) { fUseDefaultVariableNames = flag; }
   void SetDefaultVarNames(TString* vars, TString* units);
-  const bool* GetUsedVars() const { return fUsedVars; }
+  [[nodiscard]] const bool* GetUsedVars() const { return fUsedVars; }
 
   THashList* GetMainHistogramList() { return fMainList; } // get a histogram list
 
-  uint64_t GetAllocatedBins() const { return fBinsAllocated; }
+  [[nodiscard]] uint64_t GetAllocatedBins() const { return fBinsAllocated; }
   void Print(Option_t*) const override;
 
  private:

@@ -36,6 +36,7 @@
 #include <RtypesCore.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <list>
 #include <memory>
