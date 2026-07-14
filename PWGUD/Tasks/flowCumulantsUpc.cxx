@@ -173,8 +173,8 @@ struct FlowCumulantsUpc {
     // Event QA
     registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{13, 0, 13}}});
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "after ZDC timing");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "after gapside");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "after gapside");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "after ZDC timing");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "after Vz");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(5, "after occupancy");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(6, "after load corr");
