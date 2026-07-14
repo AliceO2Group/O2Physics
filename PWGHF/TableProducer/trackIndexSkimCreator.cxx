@@ -83,6 +83,7 @@
 #include <cstdlib>
 #include <iterator> // std::distance
 #include <numeric>
+#include <optional>
 #include <string>  // std::string
 #include <utility> // std::forward
 #include <vector>  // std::vector
@@ -1693,6 +1694,9 @@ struct HfTrackIndexSkimCreator {
       const std::vector<double> ptBinsMl{0., 1.e10};
       const std::vector<int> cutDirMl{o2::cuts_ml::CutDirection::CutGreater, o2::cuts_ml::CutDirection::CutSmaller, o2::cuts_ml::CutDirection::CutSmaller};
       const std::array<LabeledArray<double>, kN3ProngDecaysUsedMlForHfFilters> thresholdMlScore3Prongs{config.thresholdMlScoreDplusToPiKPi, config.thresholdMlScoreLcToPiKP, config.thresholdMlScoreDsToPiKK, config.thresholdMlScoreXicToPiKP};
+      const std::vector<std::string> inputFeatures2Prongs = {"ptProng0", "dcaXyProng0", "dcaZProng0", "ptProng1", "dcaXyProng1", "dcaZProng1"};
+      const std::vector<std::string> inputFeatures3Prongs = {"ptProng0", "dcaXyProng0", "dcaZProng0", "ptProng1", "dcaXyProng1", "dcaZProng1", "ptProng2", "dcaXyProng2", "dcaZProng2"};
+      const std::vector<std::string> inputFeatures3ProngsWithPid = {"ptProng0", "dcaXyProng0", "dcaZProng0", "ptProng1", "dcaXyProng1", "dcaZProng1", "ptProng2", "dcaXyProng2", "dcaZProng2", "tpcNSigmaPrProng0", "tpcNSigmaPrProng2", "tpcNSigmaPiProng0", "tpcNSigmaPiProng2", "tpcNSigmaKaProng1"};
 
       // initialise 2-prong ML response
       hfMlResponse2Prongs.configure(ptBinsMl, config.thresholdMlScoreD0ToKPi, cutDirMl, 3);
@@ -1702,6 +1706,7 @@ struct HfTrackIndexSkimCreator {
       } else {
         hfMlResponse2Prongs.setModelPathsLocal(onnxFileNames2Prongs);
       }
+      hfMlResponse2Prongs.cacheInputFeaturesIndices(inputFeatures2Prongs);
       hfMlResponse2Prongs.init();
 
       // initialise 3-prong ML responses
@@ -1716,6 +1721,11 @@ struct HfTrackIndexSkimCreator {
           hfMlResponse3Prongs[iDecay3P].setModelPathsCCDB(onnxFileNames3Prongs[iDecay3P], ccdbApi, mlModelPathCcdb3Prongs[iDecay3P], config.timestampCcdbForHfFilters);
         } else {
           hfMlResponse3Prongs[iDecay3P].setModelPathsLocal(onnxFileNames3Prongs[iDecay3P]);
+        }
+        if ((doprocess2And3ProngsWithPvRefitWithPidForHfFiltersBdt || doprocess2And3ProngsNoPvRefitWithPidForHfFiltersBdt) && iDecay3P == aod::hf_cand_3prong::DecayType::LcToPKPi) {
+          hfMlResponse3Prongs[iDecay3P].cacheInputFeaturesIndices(inputFeatures3ProngsWithPid);
+        } else {
+          hfMlResponse3Prongs[iDecay3P].cacheInputFeaturesIndices(inputFeatures3Prongs);
         }
         hfMlResponse3Prongs[iDecay3P].init();
       }
@@ -2391,6 +2401,9 @@ struct HfTrackIndexSkimCreator {
 
       // first loop over positive tracks
       const auto groupedTrackIndicesPos1 = positiveFor2And3Prongs->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      const auto groupedTrackIndicesNeg1 = negativeFor2And3Prongs->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+      std::optional<decltype(positiveSoftPions->sliceByCached(aod::track::collisionId, 0, cache))> groupedTrackIndicesSoftPionsPos;
+      std::optional<decltype(negativeSoftPions->sliceByCached(aod::track::collisionId, 0, cache))> groupedTrackIndicesSoftPionsNeg;
       int lastFilledD0 = -1; // index to be filled in table for D* mesons
       for (auto trackIndexPos1 = groupedTrackIndicesPos1.begin(); trackIndexPos1 != groupedTrackIndicesPos1.end(); ++trackIndexPos1) {
         const auto trackPos1 = trackIndexPos1.template track_as<TTracks>();
@@ -2409,7 +2422,6 @@ struct HfTrackIndexSkimCreator {
         }
 
         // first loop over negative tracks
-        const auto groupedTrackIndicesNeg1 = negativeFor2And3Prongs->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
         for (auto trackIndexNeg1 = groupedTrackIndicesNeg1.begin(); trackIndexNeg1 != groupedTrackIndicesNeg1.end(); ++trackIndexNeg1) {
           const auto trackNeg1 = trackIndexNeg1.template track_as<TTracks>();
 
@@ -3189,8 +3201,10 @@ struct HfTrackIndexSkimCreator {
                                                                                                                                                                                                                         // if D* enabled and pt of the D0 is larger than the minimum of the D* one within 20% (D* and D0 momenta are very similar, always within 20% according to PYTHIA8)
             // second loop over positive tracks
             if (TESTBIT(whichHypo2Prong[kN2ProngDecays], 0) && (!config.applyKaonPidIn3Prongs || TESTBIT(trackIndexNeg1.isIdentifiedPid(), ChannelKaonPid))) { // only for D0 candidates; moreover if kaon PID enabled, apply to the negative track
-              auto groupedTrackIndicesSoftPionsPos = positiveSoftPions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-              for (auto trackIndexPos2 = groupedTrackIndicesSoftPionsPos.begin(); trackIndexPos2 != groupedTrackIndicesSoftPionsPos.end(); ++trackIndexPos2) {
+              if (!groupedTrackIndicesSoftPionsPos) {
+                groupedTrackIndicesSoftPionsPos.emplace(positiveSoftPions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache));
+              }
+              for (auto trackIndexPos2 = groupedTrackIndicesSoftPionsPos->begin(); trackIndexPos2 != groupedTrackIndicesSoftPionsPos->end(); ++trackIndexPos2) {
                 if (trackIndexPos2 == trackIndexPos1) {
                   continue;
                 }
@@ -3226,8 +3240,10 @@ struct HfTrackIndexSkimCreator {
 
             // second loop over negative tracks
             if (TESTBIT(whichHypo2Prong[kN2ProngDecays], 1) && (!config.applyKaonPidIn3Prongs || TESTBIT(trackIndexPos1.isIdentifiedPid(), ChannelKaonPid))) { // only for D0bar candidates; moreover if kaon PID enabled, apply to the positive track
-              auto groupedTrackIndicesSoftPionsNeg = negativeSoftPions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-              for (auto trackIndexNeg2 = groupedTrackIndicesSoftPionsNeg.begin(); trackIndexNeg2 != groupedTrackIndicesSoftPionsNeg.end(); ++trackIndexNeg2) {
+              if (!groupedTrackIndicesSoftPionsNeg) {
+                groupedTrackIndicesSoftPionsNeg.emplace(negativeSoftPions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache));
+              }
+              for (auto trackIndexNeg2 = groupedTrackIndicesSoftPionsNeg->begin(); trackIndexNeg2 != groupedTrackIndicesSoftPionsNeg->end(); ++trackIndexNeg2) {
                 if (trackIndexNeg1 == trackIndexNeg2) {
                   continue;
                 }
@@ -3299,7 +3315,7 @@ struct HfTrackIndexSkimCreator {
     SelectedCollisions const& collisions,
     aod::BCsWithTimestamps const& bcWithTimeStamps,
     FilteredTrackAssocSel const& trackIndices,
-    aod::TracksWCovDcaExtra const& tracks)
+    aod::TracksWCovDca const& tracks)
   {
     run2And3Prongs<false, false>(collisions, bcWithTimeStamps, trackIndices, tracks);
   }
@@ -3453,7 +3469,7 @@ struct HfTrackIndexSkimCreatorCascades {
   void processCascades(SelectedCollisions const& collisions,
                        soa::Join<aod::V0Datas, aod::V0Covs> const& v0s,
                        FilteredTrackAssocSel const& trackIndices,
-                       aod::TracksWCovDcaExtra const&,
+                       aod::TracksWCovDca const&,
                        aod::BCsWithTimestamps const&)
   {
     // set the magnetic field from CCDB
@@ -3472,7 +3488,7 @@ struct HfTrackIndexSkimCreatorCascades {
       // fist we loop over the bachelor candidate
       for (const auto& bachIdx : groupedBachTrackIndices) {
 
-        const auto bach = bachIdx.track_as<aod::TracksWCovDcaExtra>();
+        const auto bach = bachIdx.track_as<aod::TracksWCovDca>();
         std::array pVecBach{bach.pVector()};
         auto trackBach = getTrackParCov(bach);
         if (thisCollId != bach.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
@@ -3484,8 +3500,8 @@ struct HfTrackIndexSkimCreatorCascades {
         // now we loop over the V0s
         for (const auto& v0 : groupedV0s) {
           // selections on the V0 daughters
-          const auto& trackV0DaughPos = v0.posTrack_as<aod::TracksWCovDcaExtra>(); // only used for indices and track cuts (TPC clusters, TPC refit)
-          const auto& trackV0DaughNeg = v0.negTrack_as<aod::TracksWCovDcaExtra>(); // only used for indices and track cuts (TPC clusters, TPC refit)
+          const auto& trackV0DaughPos = v0.posTrack_as<aod::TracksWCovDca>(); // only the global index is read here; track-quality cuts are applied upstream in tag-sel-tracks
+          const auto& trackV0DaughNeg = v0.negTrack_as<aod::TracksWCovDca>(); // only the global index is read here; track-quality cuts are applied upstream in tag-sel-tracks
 
           // check not to take the same track twice (as bachelor and V0 daughter)
           if (trackV0DaughPos.globalIndex() == bach.globalIndex() || trackV0DaughNeg.globalIndex() == bach.globalIndex()) {
@@ -3938,6 +3954,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
       // cascade loop
       const auto thisCollId = collision.globalIndex();
       const auto groupedCascades = cascades.sliceBy(cascadesPerCollision, thisCollId);
+      const auto groupedBachTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
       for (const auto& casc : groupedCascades) {
 
@@ -3995,7 +4012,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
         trackParCovCascOmega.setPID(o2::track::PID::OmegaMinus);
 
         //--------------combining cascade and pion tracks--------------
-        const auto groupedBachTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
         for (auto trackIdCharmBachelor1 = groupedBachTrackIndices.begin(); trackIdCharmBachelor1 != groupedBachTrackIndices.end(); ++trackIdCharmBachelor1) {
 
           hfFlag = 0;
@@ -4131,6 +4147,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
               continue;
             }
 
+            const auto pVecCharmBachelor1 = trackCharmBachelor1.pVector();
+
             // second loop over tracks
             for (auto trackIdCharmBachelor2 = trackIdCharmBachelor1 + 1; trackIdCharmBachelor2 != groupedBachTrackIndices.end(); ++trackIdCharmBachelor2) {
 
@@ -4154,7 +4172,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
                 continue;
               }
 
-              if (!isPreselectedCandidateXic(pVecCasc, trackCharmBachelor1.pVector(), trackCharmBachelor2.pVector())) {
+              if (!isPreselectedCandidateXic(pVecCasc, pVecCharmBachelor1, trackCharmBachelor2.pVector())) {
                 continue;
               }
 

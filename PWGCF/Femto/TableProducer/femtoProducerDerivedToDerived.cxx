@@ -96,7 +96,7 @@ struct FemtoProducerDerivedToDerived {
     v0Builder.init(confV0Builder);
     kinkBuilder.init(confKinkBuilder);
 
-    if ((doprocessTracks + doprocessTracksLambdas + doprocessTracksK0shorts + doprocessTracksSigma + doprocessTracksSigmaPlus) > 1) {
+    if ((static_cast<int>(doprocessTracks) + static_cast<int>(doprocessTracksLambdas) + static_cast<int>(doprocessTracksK0shorts) + static_cast<int>(doprocessTracksSigma) + static_cast<int>(doprocessTracksSigmaPlus)) > 1) {
       LOG(fatal) << "Only one proccess function can be activated";
     }
   }
@@ -122,6 +122,16 @@ struct FemtoProducerDerivedToDerived {
     v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksLambdas, "Process lambdas and tracks", false);
+
+  void processLambdas(FilteredCollision const& col, Tracks const& tracks, Lambdas const& lambdas)
+  {
+    if (v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache)) {
+      return;
+    }
+    collisionBuilder.processCollision(col, collisionBuilderProducts);
+    v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
+  }
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processLambdas, "Process lambdas", false);
 
   void processTracksK0shorts(FilteredCollision const& col, Tracks const& tracks, K0shorts const& k0shorts)
   {
@@ -157,8 +167,8 @@ struct FemtoProducerDerivedToDerived {
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksSigmaPlus, "Process sigmaPlus and tracks", false);
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
-  o2::framework::WorkflowSpec workflow{adaptAnalysisTask<FemtoProducerDerivedToDerived>(cfgc)};
+  o2::framework::WorkflowSpec workflow{adaptAnalysisTask<FemtoProducerDerivedToDerived>(context)};
   return workflow;
 }

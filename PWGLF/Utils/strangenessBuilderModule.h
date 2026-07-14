@@ -21,11 +21,16 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TPCVDriftManager.h"
 
+#include <CommonConstants/PhysicsConstants.h>
+#include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
+#include <Framework/DataSpecUtils.h>
 #include <Framework/DeviceSpec.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -37,6 +42,7 @@
 
 #include <TH1.h>
 #include <TMCProcess.h>
+#include <TMath.h>
 #include <TPDGCode.h>
 #include <TString.h>
 
@@ -44,6 +50,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <numeric>
 #include <string>
 #include <vector>
 
@@ -2444,7 +2451,7 @@ class BuilderModule
                     thisCascInfo.xyz[2] = dau.vz();
                     thisCascInfo.mcParticleBachelor = dau.globalIndex();
                   }
-                  if (std::abs(dau.pdgCode()) == PDG_t::kProton) {
+                  if (std::abs(dau.pdgCode()) == PDG_t::kLambda0) {
                     thisCascInfo.pdgCodeV0 = dau.pdgCode();
 
                     for (const auto& v0Dau : dau.template daughters_as<aod::McParticles>()) {

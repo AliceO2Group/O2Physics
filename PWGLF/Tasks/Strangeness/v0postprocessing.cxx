@@ -267,7 +267,7 @@ struct v0postprocessing {
       return false;
     registry.fill(HIST("QA/hK0sSelection"), 1.5);
 
-    if (candidate.v0radius() < radius && candidate.v0radius() > maxradius)
+    if (candidate.v0radius() < radius || candidate.v0radius() > maxradius)
       return false;
     registry.fill(HIST("QA/hK0sSelection"), 2.5);
 
@@ -330,7 +330,7 @@ struct v0postprocessing {
 
   void process(aod::MyV0Candidates const& myv0s)
   {
-    for (auto& candidate : myv0s) {
+    for (const auto& candidate : myv0s) {
 
       if (doQA) {
         registry.fill(HIST("QA/hK0sSelection"), 0.5);

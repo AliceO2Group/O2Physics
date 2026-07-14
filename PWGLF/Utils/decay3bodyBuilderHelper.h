@@ -16,21 +16,21 @@
 #define HomogeneousField
 #endif
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
+#include <DetectorsBase/Propagator.h>
 #include <DetectorsVertexing/SVertexHypothesis.h>
 #include <Framework/Logger.h>
 #include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/Vertex.h>
 
-#include <KFPTrack.h>
-#include <KFPVertex.h>
 #include <KFParticle.h>
-#include <KFParticleBase.h>
 #include <KFVertex.h>
 
 #include <array>

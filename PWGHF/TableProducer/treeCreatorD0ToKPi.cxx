@@ -423,12 +423,14 @@ struct HfTreeCreatorD0ToKPi {
 
     // Filling candidate properties
     if (fillCandidateLiteTable) {
-      rowCandidateLite.reserve(candidates.size());
+      // Account for candidates passing both D0 and D0bar
+      // selection, which will be stored twice in the lite table
+      rowCandidateLite.reserve(candidates.size() * 2);
     } else {
-      rowCandidateFull.reserve(candidates.size());
+      rowCandidateFull.reserve(candidates.size() * 2);
     }
     if constexpr (ApplyMl) {
-      rowCandidateMl.reserve(candidates.size());
+      rowCandidateMl.reserve(candidates.size() * 2);
     }
     for (const auto& candidate : candidates) {
       if (downSampleBkgFactor < 1.) {
@@ -511,12 +513,12 @@ struct HfTreeCreatorD0ToKPi {
 
     // Filling candidate properties
     if (fillCandidateLiteTable) {
-      rowCandidateLite.reserve(candidates.size());
+      rowCandidateLite.reserve(candidates.size() * 2);
     } else {
-      rowCandidateFull.reserve(candidates.size());
+      rowCandidateFull.reserve(candidates.size() * 2);
     }
     if constexpr (ApplyMl) {
-      rowCandidateMl.reserve(candidates.size());
+      rowCandidateMl.reserve(candidates.size() * 2);
     }
     for (const auto& candidate : candidates) {
       if constexpr (OnlyBkg) {

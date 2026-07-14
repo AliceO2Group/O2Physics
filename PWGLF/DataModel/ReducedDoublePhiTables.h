@@ -27,6 +27,7 @@ namespace redphievent
 {
 DECLARE_SOA_COLUMN(NumPos, numPos, int); //! Number of positive Kaon
 DECLARE_SOA_COLUMN(NumNeg, numNeg, int); //! Number of negative Kaon
+DECLARE_SOA_COLUMN(Centrality, centrality, float); //! Number of negative Kaon
 } // namespace redphievent
 DECLARE_SOA_TABLE(RedPhiEvents, "AOD", "REDPHIEVENT",
                   o2::soa::Index<>,
@@ -36,7 +37,8 @@ DECLARE_SOA_TABLE(RedPhiEvents, "AOD", "REDPHIEVENT",
                   collision::PosZ,
                   collision::NumContrib,
                   redphievent::NumPos,
-                  redphievent::NumNeg);
+                  redphievent::NumNeg,
+                  redphievent::Centrality);
 using RedPhiEvent = RedPhiEvents::iterator;
 
 namespace phitrack

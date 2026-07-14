@@ -41,11 +41,8 @@
 #include <unordered_map>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::kinkbuilder
 {
-namespace kinkbuilder
-{
-
 // filters applied in the producer task
 struct ConfKinkFilters : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("KinkFilters");
@@ -62,17 +59,19 @@ struct ConfKinkFilters : o2::framework::ConfigurableGroup {
 };
 
 // selections bits for all kinks
-#define KINK_DEFAULT_BITS                                                                                                                     \
-  o2::framework::Configurable<std::vector<float>> kinkTopoDcaMax{"kinkTopoDcaMax", {2.0f}, "Maximum kink topological DCA"};                   \
-  o2::framework::Configurable<std::vector<float>> transRadMin{"transRadMin", {20.f}, "Minimum transverse radius (cm)"};                       \
-  o2::framework::Configurable<std::vector<float>> transRadMax{"transRadMax", {100.f}, "Maximum transverse radius (cm)"};                      \
-  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {1.0f}, "Maximum absolute pseudorapidity for daughter track"}; \
-  o2::framework::Configurable<std::vector<float>> dauDcaPvMin{"dauDcaPvMin", {0.1f}, "Minimum DCA of daughter from primary vertex (cm)"};     \
-  o2::framework::Configurable<std::vector<float>> mothDcaPvMax{"mothDcaPvMax", {1.0f}, "Maximum DCA of mother from primary vertex (cm)"};     \
-  o2::framework::Configurable<std::vector<float>> alphaAPMin{"alphaAPMin", {-1.0f}, "Minimum Alpha_AP for Sigma candidates"};                 \
-  o2::framework::Configurable<std::vector<float>> alphaAPMax{"alphaAPMax", {0.0f}, "Maximum Alpha_AP for Sigma candidates"};                  \
-  o2::framework::Configurable<std::vector<float>> qtAPMin{"qtAPMin", {0.15f}, "Minimum qT_AP for Sigma candidates"};                          \
-  o2::framework::Configurable<std::vector<float>> qtAPMax{"qtAPMax", {0.2f}, "Maximum qT_AP for Sigma candidates"};                           \
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define KINK_DEFAULT_BITS                                                                                                                            \
+  o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all Kinks are passed through. Bits for all selections are stored."}; \
+  o2::framework::Configurable<std::vector<float>> kinkTopoDcaMax{"kinkTopoDcaMax", {2.0f}, "Maximum kink topological DCA"};                          \
+  o2::framework::Configurable<std::vector<float>> transRadMin{"transRadMin", {20.f}, "Minimum transverse radius (cm)"};                              \
+  o2::framework::Configurable<std::vector<float>> transRadMax{"transRadMax", {100.f}, "Maximum transverse radius (cm)"};                             \
+  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {1.0f}, "Maximum absolute pseudorapidity for daughter track"};        \
+  o2::framework::Configurable<std::vector<float>> dauDcaPvMin{"dauDcaPvMin", {0.1f}, "Minimum DCA of daughter from primary vertex (cm)"};            \
+  o2::framework::Configurable<std::vector<float>> mothDcaPvMax{"mothDcaPvMax", {1.0f}, "Maximum DCA of mother from primary vertex (cm)"};            \
+  o2::framework::Configurable<std::vector<float>> alphaAPMin{"alphaAPMin", {-1.0f}, "Minimum Alpha_AP for Sigma candidates"};                        \
+  o2::framework::Configurable<std::vector<float>> alphaAPMax{"alphaAPMax", {0.0f}, "Maximum Alpha_AP for Sigma candidates"};                         \
+  o2::framework::Configurable<std::vector<float>> qtAPMin{"qtAPMin", {0.15f}, "Minimum qT_AP for Sigma candidates"};                                 \
+  o2::framework::Configurable<std::vector<float>> qtAPMax{"qtAPMax", {0.2f}, "Maximum qT_AP for Sigma candidates"};                                  \
   o2::framework::Configurable<std::vector<float>> cosPointingAngleMin{"cosPointingAngleMin", {0.0f}, "Minimum cosine of pointing angle"};
 
 // derived selection bits for sigma
@@ -94,20 +93,21 @@ struct ConfSigmaPlusBits : o2::framework::ConfigurableGroup {
 #undef KINK_DEFAULT_BITS
 
 // base selection for analysis task for kinks
-#define KINK_DEFAULT_SELECTIONS(defaultMassMin, defaultMassMax, defaultPdgCode)                                        \
-  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", defaultPdgCode, "PDG code. Select antipartilce via sign"}; \
-  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                \
-  o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                              \
-  o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                           \
-  o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                            \
-  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                             \
-  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                \
-  o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Sigma"};           \
-  o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Sigma"};           \
-  o2::framework::Configurable<o2::aod::femtodatatypes::KinkMaskType> mask{"mask", 0x0, "Bitmask for kink selection"};
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define KINK_DEFAULT_SELECTIONS(defaultMassMin, defaultMassMax, defaultPdgCode)                                          \
+  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", (defaultPdgCode), "PDG code. Select antipartilce via sign"}; \
+  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                  \
+  o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                                \
+  o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                             \
+  o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                              \
+  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                               \
+  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                  \
+  o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass for Sigma"};           \
+  o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass for Sigma"};           \
+  o2::framework::Configurable<o2::analysis::femto::datatypes::KinkMaskType> mask{"mask", 0x0, "Bitmask for kink selection"};
 
 // base selection for analysis task for sigmas
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfSigmaSelection : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   KINK_DEFAULT_SELECTIONS(1.1, 1.3, 3112)
@@ -115,7 +115,7 @@ struct ConfSigmaSelection : o2::framework::ConfigurableGroup {
 };
 
 // base selection for analysis task for sigma plus
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfSigmaPlusSelection : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   KINK_DEFAULT_SELECTIONS(1.1, 1.3, 3222)
@@ -175,18 +175,45 @@ const std::unordered_map<KinkSeles, std::string> kinkSelectionNames = {
   {kQtAPMax, "qtAPMax"},
   {kCosPointingAngleMin, "cosPointingAngleMin"}};
 
+/// enum for all kink pre-filters (evaluated in checkFilters, before the selection bitmask)
+enum KinkFilters {
+  kPtMin,
+  kPtMax,
+  kEtaMin,
+  kEtaMax,
+  kPhiMin,
+  kPhiMax,
+  kMassMin,
+  kMassMax,
+  kKinkFiltersMax
+};
+
+constexpr char SigmaFilterHistName[] = "hSigmaFilters";
+constexpr char SigmaPlusFilterHistName[] = "hSigmaPlusFilters";
+const std::unordered_map<KinkFilters, std::string> kinkFilterNames = {
+  {kPtMin, "ptMin"},
+  {kPtMax, "ptMax"},
+  {kEtaMin, "etaMin"},
+  {kEtaMax, "etaMax"},
+  {kPhiMin, "phiMin"},
+  {kPhiMax, "phiMax"},
+  {kMassMin, "massMin"},
+  {kMassMax, "massMax"}};
+
 /// \class KinkCuts
 /// \brief Cut class to contain and execute all cuts applied to kinks
-template <modes::Kink kinkType, const char* HistName>
-class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkMaskType, kKinkSelsMax>
+template <modes::Kink kinkType, auto& SelectionHistName, auto& FilterHistName>
+class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::femto::datatypes::KinkMaskType, kKinkSelsMax>
 {
  public:
   KinkSelection() = default;
-  ~KinkSelection() = default;
+  ~KinkSelection() override = default;
 
   template <typename T1, typename T2>
   void configure(o2::framework::HistogramRegistry* registry, T1& config, T2& filter)
   {
+    this->init(config.passThrough.value);
+
     mPtMin = filter.ptMin.value;
     mPtMax = filter.ptMax.value;
     mEtaMin = filter.etaMin.value;
@@ -221,7 +248,36 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
     this->addSelection(kQtAPMax, kinkSelectionNames.at(kQtAPMax), config.qtAPMax.value, limits::kUpperLimit, true, true, false);
     this->addSelection(kCosPointingAngleMin, kinkSelectionNames.at(kCosPointingAngleMin), config.cosPointingAngleMin.value, limits::kLowerLimit, true, true, false);
 
-    this->setupContainers<HistName>(registry);
+    this->setupSelectionHistogram<SelectionHistName>(registry);
+
+    if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
+      this->template setupFilterHistogram<FilterHistName>(
+        registry,
+        {
+          {kinkFilterNames.at(kPtMin), mPtMin},
+          {kinkFilterNames.at(kPtMax), mPtMax},
+          {kinkFilterNames.at(kEtaMin), mEtaMin},
+          {kinkFilterNames.at(kEtaMax), mEtaMax},
+          {kinkFilterNames.at(kPhiMin), mPhiMin},
+          {kinkFilterNames.at(kPhiMax), mPhiMax},
+          {kinkFilterNames.at(kMassMin), mMassSigmaLowerLimit},
+          {kinkFilterNames.at(kMassMax), mMassSigmaUpperLimit},
+        });
+    }
+    if constexpr (modes::isEqual(kinkType, modes::Kink::kSigmaPlus)) {
+      this->template setupFilterHistogram<FilterHistName>(
+        registry,
+        {
+          {kinkFilterNames.at(kPtMin), mPtMin},
+          {kinkFilterNames.at(kPtMax), mPtMax},
+          {kinkFilterNames.at(kEtaMin), mEtaMin},
+          {kinkFilterNames.at(kEtaMax), mEtaMax},
+          {kinkFilterNames.at(kPhiMin), mPhiMin},
+          {kinkFilterNames.at(kPhiMax), mPhiMax},
+          {kinkFilterNames.at(kMassMin), mMassSigmaPlusLowerLimit},
+          {kinkFilterNames.at(kMassMax), mMassSigmaPlusUpperLimit},
+        });
+    }
   };
 
   template <typename T1, typename T2, typename T3>
@@ -242,7 +298,7 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
     float dp = lQlP;
     float p2V0 = kinkMomP * kinkMomP;
     float p2A = kinkDauP * kinkDauP;
-    mQtAp = std::sqrt(std::max(0.f, p2A - dp * dp / p2V0));
+    mQtAp = (p2V0 > 0.f) ? std::sqrt(std::max(0.f, p2A - dp * dp / p2V0)) : 0.f;
 
     std::array<float, 3> vMother = {kinkCand.xDecVtx() - col.posX(), kinkCand.yDecVtx() - col.posY(), kinkCand.zDecVtx() - col.posZ()};
     float vMotherNorm = std::sqrt(std::inner_product(vMother.begin(), vMother.end(), vMother.begin(), 0.f));
@@ -300,7 +356,7 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
       }
     }
 
-    this->assembleBitmask<HistName>();
+    this->assembleBitmask<SelectionHistName>();
   };
 
   template <typename T>
@@ -320,32 +376,69 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
   template <typename T>
   bool checkFilters(const T& kinkCand) const
   {
-    const bool kinematicOk = ((mKinkMotherPt > mPtMin && mKinkMotherPt < mPtMax) &&
-                              (mKinkMotherEta > mEtaMin && mKinkMotherEta < mEtaMax) &&
-                              (mKinkMotherPhi > mPhiMin && mKinkMotherPhi < mPhiMax));
-    if (!kinematicOk) {
-      return false;
-    }
+    bool pass = true;
+    bool p = false;
+
+    p = mKinkMotherPt > mPtMin;
+    this->template fillFilter<FilterHistName>(kPtMin, p);
+    pass &= p;
+
+    p = mKinkMotherPt < mPtMax;
+    this->template fillFilter<FilterHistName>(kPtMax, p);
+    pass &= p;
+
+    p = mKinkMotherEta > mEtaMin;
+    this->template fillFilter<FilterHistName>(kEtaMin, p);
+    pass &= p;
+
+    p = mKinkMotherEta < mEtaMax;
+    this->template fillFilter<FilterHistName>(kEtaMax, p);
+    pass &= p;
+
+    p = mKinkMotherPhi > mPhiMin;
+    this->template fillFilter<FilterHistName>(kPhiMin, p);
+    pass &= p;
+
+    p = mKinkMotherPhi < mPhiMax;
+    this->template fillFilter<FilterHistName>(kPhiMax, p);
+    pass &= p;
 
     if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
       float sigmaMass = kinkCand.mSigmaMinus();
-      return (sigmaMass > mMassSigmaLowerLimit && sigmaMass < mMassSigmaUpperLimit);
+
+      p = sigmaMass > mMassSigmaLowerLimit;
+      this->template fillFilter<FilterHistName>(kMassMin, p);
+      pass &= p;
+
+      p = sigmaMass < mMassSigmaUpperLimit;
+      this->template fillFilter<FilterHistName>(kMassMax, p);
+      pass &= p;
     }
 
     if constexpr (modes::isEqual(kinkType, modes::Kink::kSigmaPlus)) {
       float sigmaMass = kinkCand.mSigmaPlus();
-      return (sigmaMass > mMassSigmaPlusLowerLimit && sigmaMass < mMassSigmaPlusUpperLimit);
+
+      p = sigmaMass > mMassSigmaPlusLowerLimit;
+      this->template fillFilter<FilterHistName>(kMassMin, p);
+      pass &= p;
+
+      p = sigmaMass < mMassSigmaPlusUpperLimit;
+      this->template fillFilter<FilterHistName>(kMassMax, p);
+      pass &= p;
     }
-    return false;
+
+    this->template fillFilterSummary<FilterHistName>(pass);
+
+    return this->isPassThrough() || pass;
   }
 
-  float getKinkMotherPt() const { return mKinkMotherPt; }
-  float getKinkMotherEta() const { return mKinkMotherEta; }
-  float getKinkMotherPhi() const { return mKinkMotherPhi; }
-  float getKinkTransRadius() const { return mTransRadius; }
-  float getKinkAngle() const { return mKinkAngle; }
+  [[nodiscard]] float getKinkMotherPt() const { return mKinkMotherPt; }
+  [[nodiscard]] float getKinkMotherEta() const { return mKinkMotherEta; }
+  [[nodiscard]] float getKinkMotherPhi() const { return mKinkMotherPhi; }
+  [[nodiscard]] float getKinkTransRadius() const { return mTransRadius; }
+  [[nodiscard]] float getKinkAngle() const { return mKinkAngle; }
 
- public:
+ private:
   float mMassSigmaLowerLimit = 1.15f;
   float mMassSigmaUpperLimit = 1.25f;
   float mMassSigmaPlusLowerLimit = 1.15f;
@@ -394,7 +487,7 @@ struct ConfKinkTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceSigmaPlusExtras{"produceSigmaPlusExtras", -1, "Produce SigmaPlusExtras (-1: auto; 0 off; 1 on)"};
 };
 
-template <modes::Kink kinkType, char const* HistName>
+template <modes::Kink kinkType, auto& SelectionHistName, auto& FilterHistName>
 class KinkBuilder
 {
  public:
@@ -562,7 +655,7 @@ class KinkBuilder
   bool fillAnyTable() { return mFillAnyTable; }
 
  private:
-  KinkSelection<kinkType, HistName> mKinkSelection;
+  KinkSelection<kinkType, SelectionHistName, FilterHistName> mKinkSelection;
   bool mFillAnyTable = false;
   bool mProduceSigmas = false;
   bool mProduceSigmaMasks = false;
@@ -606,20 +699,14 @@ class KinkBuilderDerivedToDerived
   bool collisionHasTooFewSigma(T1 const& col, T2 const& /*sigmaTable*/, T3& partitionSigma, T4& cache)
   {
     auto sigmaSlice = partitionSigma->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    if (sigmaSlice.size() >= mLimitSigma) {
-      return false;
-    }
-    return true;
+    return sigmaSlice.size() < mLimitSigma;
   }
 
   template <typename T1, typename T2, typename T3, typename T4>
   bool collisionHasTooFewSigmaPlus(T1 const& col, T2 const& /*sigmaPlusTable*/, T3& partitionSigmaPlus, T4& cache)
   {
     auto sigmaPlusSlice = partitionSigmaPlus->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    if (sigmaPlusSlice.size() >= mLimitSigmaPlus) {
-      return false;
-    }
-    return true;
+    return sigmaPlusSlice.size() < mLimitSigmaPlus;
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
@@ -668,7 +755,5 @@ class KinkBuilderDerivedToDerived
   int mLimitSigma = 0;
   int mLimitSigmaPlus = 0;
 };
-
-} // namespace kinkbuilder
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::kinkbuilder
 #endif // PWGCF_FEMTO_CORE_KINKBUILDER_H_

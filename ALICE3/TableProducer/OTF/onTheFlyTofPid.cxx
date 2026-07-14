@@ -307,9 +307,11 @@ struct OnTheFlyTofPid {
    public:
     ~TOFLayerEfficiency()
     {
-      hHitMap->SaveAs(Form("/tmp/%s.png", hHitMap->GetName()));
-      hHitMapInPixel->SaveAs(Form("/tmp/%s.png", hHitMapInPixel->GetName()));
-      hHitMapInPixelBefore->SaveAs(Form("/tmp/%s.png", hHitMapInPixelBefore->GetName()));
+      if (0) {
+        hHitMap->SaveAs(Form("/tmp/%s.png", hHitMap->GetName()));
+        hHitMapInPixel->SaveAs(Form("/tmp/%s.png", hHitMapInPixel->GetName()));
+        hHitMapInPixelBefore->SaveAs(Form("/tmp/%s.png", hHitMapInPixelBefore->GetName()));
+      }
 
       delete axisZ;
       delete axisRPhi;

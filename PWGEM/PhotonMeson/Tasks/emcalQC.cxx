@@ -97,6 +97,12 @@ struct EmcalQC {
     Configurable<bool> emcUseSecondaryTM{"emcUseSecondaryTM", false, "flag to use EMCal secondary track matching cut or not"};
   } emccuts;
 
+  struct : ConfigurableGroup {
+    std::string prefix = "axis_group";
+    ConfigurableAxis thnConfigAxisE{"thnConfigAxisE", {100, 0., 20.}, "energy axis for photon candidates"};
+    ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0., 20.}, "pT axis for matched tracks"};
+  } axisGroup;
+
   void defineEMEventCut()
   {
     fEMEventCut = EMPhotonEventCut("fEMEventCut", "fEMEventCut");
@@ -146,6 +152,11 @@ struct EmcalQC {
     defineEMCCut();
     defineEMEventCut();
 
+    const AxisSpec thnAxisE{axisGroup.thnConfigAxisE, "#it{E}} (GeV)"};
+    const AxisSpec thnAxisPt{axisGroup.thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec thAxisdEta{200, -0.06, 0.06, "#Delta#eta"};
+    const AxisSpec thAxisdPhi{200, -0.06, 0.06, "#Delta#varphi (rad)"};
+
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
     auto hEMCCollisionCounter = fRegistry.add<TH1>("Event/hEMCCollisionCounter", "Number of collisions after event cuts", HistType::kTH1D, {{7, 0.5, 7.5}}, false);
     hEMCCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
@@ -156,6 +167,18 @@ struct EmcalQC {
     hEMCCollisionCounter->GetXaxis()->SetBinLabel(6, "+unique");      // TVX with z < 10cm and Sel8 and good z xertex and unique (only collision in the BC)
     hEMCCollisionCounter->GetXaxis()->SetBinLabel(7, "+EMC readout"); // TVX with z < 10cm and Sel8 and good z xertex and unique (only collision in the BC) and kTVXinEMC
     o2::aod::pwgem::photonmeson::utils::clusterhistogram::addClusterHistograms(&fRegistry, cfgDo2DQA);
+
+    if (doprocessQCTM) {
+      fRegistry.add("Cluster/hDeltaEtaPhiAllPrimTracks", "#Delta#eta #Delta#varphi distribution of all matched prim. tracks", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisE}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiClosestPrimTracks", "#Delta#eta #Delta#varphi distribution of the Closest matched prim. track", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisE}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiAllSecTracks", "#Delta#eta #Delta#varphi distribution of all matched sec. tracks", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisE}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiClosestSecTracks", "#Delta#eta #Delta#varphi distribution of the Closest matched sec. track", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisE}, false);
+
+      fRegistry.add("Cluster/hDeltaEtaPhiAllPrimTracksTrackPt", "#Delta#eta #Delta#varphi distribution of all matched prim. tracks", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiClosestPrimTracksTrackPt", "#Delta#eta #Delta#varphi distribution of the Closest matched prim. track", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiAllSecTracksTrackPt", "#Delta#eta #Delta#varphi distribution of all matched sec. tracks", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiClosestSecTracksTrackPt", "#Delta#eta #Delta#varphi distribution of the Closest matched sec. track", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
+    }
   }
 
   bool isEventGood(MyCollision const& collision)
@@ -189,7 +212,7 @@ struct EmcalQC {
     if (!fEMEventCut.IsSelected(collision)) {
       return false;
     }
-    if (!(eventcuts.cfgOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgOccupancyMax)) {
+    if (!(eventcuts.cfgOccupancyMin <= collision.trackOccupancyInTimeRange()) || !(collision.trackOccupancyInTimeRange() < eventcuts.cfgOccupancyMax)) {
       return false;
     }
 
@@ -216,11 +239,11 @@ struct EmcalQC {
 
       // Define two boleans to see, whether the cluster "survives" the EMC cluster cuts to later check, whether the cuts in this task align with the ones in EMCPhotonCut.h:
       bool survivesIsSelectedEMCalCuts = true; // Survives "manual" cuts listed in this task
-      bool survivesIsSelectedCuts = false;
+      bool survivesIsSelectedCuts = true;
 
       survivesIsSelectedCuts = fEMCCut.IsSelected(cluster);
       for (int icut = 0; icut < static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts); icut++) { // Loop through different cut observables
-        EMCPhotonCut::EMCPhotonCuts specificcut = static_cast<EMCPhotonCut::EMCPhotonCuts>(icut);
+        auto specificcut = static_cast<EMCPhotonCut::EMCPhotonCuts>(icut);
         if (!fEMCCut.IsSelectedEMCal(specificcut, cluster)) { // Check whether cluster passes this cluster requirement, if not, fill why in the next row
           fRegistry.fill(HIST("Cluster/hClusterQualityCuts"), icut + 1, cluster.e(), collision.weight());
           survivesIsSelectedEMCalCuts = false;
@@ -240,12 +263,10 @@ struct EmcalQC {
       }
     }
     fRegistry.fill(HIST("Cluster/after/hNgamma"), ngAfter, collision.weight());
-
-    return;
   }
 
   template <o2::soa::is_table TClusters, o2::soa::is_table TMatchedTracks, o2::soa::is_table TMatchedSecondaries>
-  void doClusterQA(MyCollision const& collision, TClusters const& clusters, TMatchedTracks const& primTracks, TMatchedSecondaries const& secTracks)
+  void doClusterQAWithTM(MyCollision const& collision, TClusters const& clusters, TMatchedTracks const& primTracks, TMatchedSecondaries const& secTracks)
   {
     fRegistry.fill(HIST("Cluster/before/hNgamma"), clusters.size(), collision.weight());
     int ngAfter = 0;
@@ -263,11 +284,11 @@ struct EmcalQC {
 
       // Define two boleans to see, whether the cluster "survives" the EMC cluster cuts to later check, whether the cuts in this task align with the ones in EMCPhotonCut.h:
       bool survivesIsSelectedEMCalCuts = true; // Survives "manual" cuts listed in this task
-      bool survivesIsSelectedCuts = false;
+      bool survivesIsSelectedCuts = true;
 
       survivesIsSelectedCuts = fEMCCut.IsSelected(cluster, primTracksPerCluster, secTracksPerCluster);
       for (int icut = 0; icut < static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts); icut++) { // Loop through different cut observables
-        EMCPhotonCut::EMCPhotonCuts specificcut = static_cast<EMCPhotonCut::EMCPhotonCuts>(icut);
+        auto specificcut = static_cast<EMCPhotonCut::EMCPhotonCuts>(icut);
         if (specificcut == EMCPhotonCut::EMCPhotonCuts::kTM || specificcut == EMCPhotonCut::EMCPhotonCuts::kSecondaryTM) {
           // will do track matching cuts extra later or never depending on chosen process function
           continue;
@@ -276,6 +297,24 @@ struct EmcalQC {
           fRegistry.fill(HIST("Cluster/hClusterQualityCuts"), icut + 1, cluster.e(), collision.weight());
           survivesIsSelectedEMCalCuts = false;
         }
+      }
+      if (primTracksPerCluster.size() > 0) {
+        const auto closestPrimTrack = primTracksPerCluster.begin();
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiClosestPrimTracks"), closestPrimTrack.deltaEta(), closestPrimTrack.deltaPhi(), cluster.e());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiClosestPrimTracksTrackPt"), closestPrimTrack.deltaEta(), closestPrimTrack.deltaPhi(), closestPrimTrack.trackPt());
+      }
+      for (const auto& matchedPrimTrack : primTracksPerCluster) {
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiAllPrimTracks"), matchedPrimTrack.deltaEta(), matchedPrimTrack.deltaPhi(), cluster.e());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiAllPrimTracksTrackPt"), matchedPrimTrack.deltaEta(), matchedPrimTrack.deltaPhi(), matchedPrimTrack.trackPt());
+      }
+      if (secTracksPerCluster.size() > 0) {
+        const auto closestSecTrack = secTracksPerCluster.begin();
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiClosestSecTracks"), closestSecTrack.deltaEta(), closestSecTrack.deltaPhi(), cluster.e());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiClosestSecTracksTrackPt"), closestSecTrack.deltaEta(), closestSecTrack.deltaPhi(), closestSecTrack.trackPt());
+      }
+      for (const auto& matchedSecTrack : secTracksPerCluster) {
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiAllSecTracks"), matchedSecTrack.deltaEta(), matchedSecTrack.deltaPhi(), cluster.e());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiAllSecTracksTrackPt"), matchedSecTrack.deltaEta(), matchedSecTrack.deltaPhi(), matchedSecTrack.trackPt());
       }
 
       if (!fEMCCut.IsSelectedEMCal(EMCPhotonCut::EMCPhotonCuts::kTM, cluster, primTracksPerCluster)) { // Check whether cluster passes this cluster requirement, if not, fill why in the next row
@@ -300,8 +339,6 @@ struct EmcalQC {
       }
     }
     fRegistry.fill(HIST("Cluster/after/hNgamma"), ngAfter, collision.weight());
-
-    return;
   }
 
   void processQC(MyCollisions const& collisions, EMCalPhotons const& clusters)
@@ -327,7 +364,7 @@ struct EmcalQC {
       }
 
       auto clustersPerColl = clusters.sliceBy(perCollisionEMC, collision.collisionId());
-      doClusterQA(collision, clustersPerColl, matchedPrims, matchedSeconds);
+      doClusterQAWithTM(collision, clustersPerColl, matchedPrims, matchedSeconds);
 
     } // end of collision loop
   } // end of process
@@ -339,7 +376,7 @@ struct EmcalQC {
   PROCESS_SWITCH(EmcalQC, processDummy, "Dummy function", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<EmcalQC>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<EmcalQC>(context)};
 }

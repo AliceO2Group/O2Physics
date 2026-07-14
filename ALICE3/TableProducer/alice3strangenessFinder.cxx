@@ -74,32 +74,23 @@ struct Alice3strangenessFinder {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Produces<aod::V0CandidateIndices> v0CandidateIndices; // contains V0 candidate indices
-  Produces<aod::V0CandidateCores> v0CandidateCores;     // contains V0 candidate core information
-  Produces<aod::StoredCascCores> tableCascadeCores;
-  Produces<aod::CascIndices> tableCascadeIndices;
+  Produces<aod::V0CandidateIndices> v0CandidateIndices;    // contains V0 candidate indices
+  Produces<aod::V0CandidateCores> v0CandidateCores;        // contains V0 candidate core information
+  Produces<aod::StoredCascCores> tableStoredCascCores;     // contains stored cascade core information
+  Produces<aod::A3CascadeMcLabels> tableA3CascadeMcLabels; // contains cascade core MC labels
+  Produces<aod::CascIndices> tableCascIndices;             // contains cascade indices
 
   Configurable<bool> buildCascade{"buildCascade", false, "build cascade candidates"};
-
   Configurable<float> nSigmaTOF{"nSigmaTOF", 5.0f, "Nsigma for TOF PID (if enabled)"};
-  Configurable<float> dcaXYconstant{"dcaXYconstant", -1.0f, "[0] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> dcaXYpTdep{"dcaXYpTdep", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
 
   ConfigurableAxis axisK0Mass{"axisK0Mass", {200, 0.4f, 0.6f}, "K0 mass axis"};
   ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, "Lambda mass axis"};
   ConfigurableAxis axisXiMass{"axisXiMass", {200, 1.22f, 1.42f}, "Xi mass axis"};
-  ConfigurableAxis axisMassOmega{"axisMassOmega", {200, 1.57f, 1.77f}, "Omega mass axis"};
+  ConfigurableAxis axisOmegaMass{"axisOmegaMass", {200, 1.57f, 1.77f}, "Omega mass axis"};
 
+  ConfigurableAxis axisDCA{"axisDCA", {200, 0, 200}, "DCA axis"};
   ConfigurableAxis axisEta{"axisEta", {80, -4.f, 4.f}, "Eta axis"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.025f, 0.05f, 0.075f, 0.1f, 0.125f, 0.15f, 0.175f, 0.2f, 0.225f, 0.25f, 0.275f, 0.3f, 0.325f, 0.35f, 0.375f, 0.4f, 0.425f, 0.45f, 0.475f, 0.5f, 0.525f, 0.55f, 0.575f, 0.6f, 0.625f, 0.65f, 0.675f, 0.7f, 0.725f, 0.75f, 0.775f, 0.8f, 0.82f, 0.85f, 0.875f, 0.9f, 0.925f, 0.95f, 0.975f, 1.0f, 1.05f, 1.1f}, "pt axis for QA histograms"};
-
-  Configurable<float> bachMinConstDCAxy{"bachMinConstDCAxy", -1.0f, "[0] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> bachMinPtDepDCAxy{"bachMinPtDepDCAxy", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> bachMinConstDCAz{"bachMinConstDCAz", -1.0f, "[0] in |DCAz| > [0]+[1]/pT"};
-  Configurable<float> bachMinPtDepDCAz{"bachMinPtDepDCAz", 0.0, "[1] in |DCAz| > [0]+[1]/pT"};
-
-  Configurable<float> v0MaxDauDCA{"v0MaxDauDCA", 0.005f, "DCA between v0 daughters (cm)"};
-  Configurable<float> cascMaxDauDCA{"cascMaxDauDCA", 0.005f, "DCA between cascade daughters (cm)"};
 
   // DCA Fitter
   struct : ConfigurableGroup {
@@ -123,7 +114,24 @@ struct Alice3strangenessFinder {
     Configurable<int> maxIter{"maxIter", 30, "maximum number of iterations for vertex fitter"};
   } cfgFitter;
 
-  Configurable<float> acceptedLambdaMassWindow{"acceptedLambdaMassWindow", 0.2f, "accepted Lambda mass window around PDG mass"};
+  // Pre-selections
+  struct : ConfigurableGroup {
+    std::string prefix = "presel";
+    Configurable<float> acceptedLambdaMassWindow{"acceptedLambdaMassWindow", 0.2f, "accepted Lambda mass window around PDG mass"};
+
+    Configurable<float> posMinConstDCAxy{"posMinConstDCAxy", -1.0f, "[0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> posMinPtDepDCAxy{"posMinPtDepDCAxy", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
+
+    Configurable<float> negMinConstDCAxy{"negMinConstDCAxy", -1.0f, "[0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> negMinPtDepDCAxy{"negMinPtDepDCAxy", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
+
+    Configurable<float> bachMinConstDCAxy{"bachMinConstDCAxy", -1.0f, "[0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> bachMinPtDepDCAxy{"bachMinPtDepDCAxy", 0.0, "[1] in |DCAxy| > [0]+[1]/pT"};
+
+    Configurable<float> v0MaxDauDCA{"v0MaxDauDCA", 0.005f, "DCA between v0 daughters (cm)"};
+    Configurable<float> cascMaxDauDCA{"cascMaxDauDCA", 0.005f, "DCA between cascade daughters (cm)"};
+    Configurable<float> cascMaxEta{"cascMaxEta", 2.5f, "DCA between cascade daughters (cm)"};
+  } presel;
 
   // Operation
   Configurable<float> magneticField{"magneticField", 20.0f, "Magnetic field (in kilogauss)"};
@@ -136,24 +144,23 @@ struct Alice3strangenessFinder {
   Configurable<bool> useOriginalTrackParams{"useOriginalTrackParams", false, "use original track parameters instead of the ones propagated to PCA (effective only if skipFitter is false) and for MC truth info"};
 
   o2::vertexing::DCAFitterN<2> fitter;
-  o2::vertexing::DCAFitterN<3> fitter3;
-
   Service<o2::framework::O2DatabasePDG> pdgDB;
+  static constexpr float ToMicrons = 1e+4;
 
   // partitions for v0/casc dau tracks
   Partition<Alice3TracksACTS> positiveSecondaryTracksACTS =
-    aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > dcaXYconstant + dcaXYpTdep* nabs(aod::track::signed1Pt);
+    aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > presel.posMinConstDCAxy + presel.posMinPtDepDCAxy* nabs(aod::track::signed1Pt);
   Partition<Alice3TracksACTS> negativeSecondaryTracksACTS =
-    aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > dcaXYconstant + dcaXYpTdep* nabs(aod::track::signed1Pt);
+    aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > presel.negMinConstDCAxy + presel.negMinPtDepDCAxy* nabs(aod::track::signed1Pt);
   Partition<Alice3TracksACTS> bachelorTracksACTS =
-    nabs(aod::track::dcaXY) > bachMinConstDCAxy + bachMinPtDepDCAxy* nabs(aod::track::signed1Pt) && nabs(aod::track::dcaZ) > bachMinConstDCAz + bachMinPtDepDCAz* nabs(aod::track::signed1Pt);
+    nabs(aod::track::dcaXY) > presel.bachMinConstDCAxy + presel.bachMinPtDepDCAxy* nabs(aod::track::signed1Pt);
 
   Partition<Alice3TracksOTF> positiveSecondaryTracksOTF =
-    aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > dcaXYconstant + dcaXYpTdep* nabs(aod::track::signed1Pt);
+    aod::track::signed1Pt > 0.0f && nabs(aod::track::dcaXY) > presel.posMinConstDCAxy + presel.posMinPtDepDCAxy* nabs(aod::track::signed1Pt);
   Partition<Alice3TracksOTF> negativeSecondaryTracksOTF =
-    aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > dcaXYconstant + dcaXYpTdep* nabs(aod::track::signed1Pt);
+    aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > presel.negMinConstDCAxy + presel.negMinPtDepDCAxy* nabs(aod::track::signed1Pt);
   Partition<Alice3TracksOTF> bachelorTracksOTF =
-    nabs(aod::track::dcaXY) > bachMinConstDCAxy + bachMinPtDepDCAxy* nabs(aod::track::signed1Pt) && nabs(aod::track::dcaZ) > bachMinConstDCAz + bachMinPtDepDCAz* nabs(aod::track::signed1Pt);
+    nabs(aod::track::dcaXY) > presel.bachMinConstDCAxy + presel.bachMinPtDepDCAxy* nabs(aod::track::signed1Pt);
 
   Partition<Alice3MCParticles> positiveMCParticles = aod::mcparticle_alice3::charge > 0.0f;
   Partition<Alice3MCParticles> negativeMCParticles = aod::mcparticle_alice3::charge < 0.0f;
@@ -172,6 +179,8 @@ struct Alice3strangenessFinder {
   // Partition<Alice3TracksWPid> secondaryAntiProtons = nabs(aod::upgrade_tof::nSigmaProtonInnerTOF) < nSigmaTOF && nabs(aod::upgrade_tof::nSigmaProtonOuterTOF) < nSigmaTOF && aod::track::signed1Pt < 0.0f && nabs(aod::track::dcaXY) > dcaXYconstant + dcaXYpTdep* nabs(aod::track::signed1Pt);
 
   struct Candidate {
+    int index{-1};
+
     // decay properties
     float dcaDau{};
     float eta{};
@@ -202,7 +211,12 @@ struct Alice3strangenessFinder {
     fitter.setMaxIter(cfgFitter.maxIter);
     fitter.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrNONE);
 
-    histos.add("hFitterQA", "", kTH1D, {{10, 0, 10}}); // For QA reasons, counting found candidates at different stages
+    auto hFitterQA = histos.add<TH1>("hFitterQA", "hFitterQA", kTH1D, {{10, 0, 10}});
+    hFitterQA->GetXaxis()->SetBinLabel(1, "All");         // all fitter attempts
+    hFitterQA->GetXaxis()->SetBinLabel(2, "Processed");   // attempts that made the fitter.process() call
+    hFitterQA->GetXaxis()->SetBinLabel(3, "Found cands"); // nCand == 0
+    hFitterQA->GetXaxis()->SetBinLabel(4, "Done");        // checks isPropagateTracksToVertexDone()
+
     auto hFitterStatusCode = histos.add<TH1>("hFitterStatusCode", "hFitterStatusCode", kTH1D, {{15, -0.5, 14.5}});
     hFitterStatusCode->GetXaxis()->SetBinLabel(1, "None"); // no status set (should not be possible!)
 
@@ -229,6 +243,7 @@ struct Alice3strangenessFinder {
     histos.add("hPtPosDauAfterV0Finding", "", kTH2D, {axisPt, axisPt});
     histos.add("hPtNegDauAfterV0Finding", "", kTH2D, {axisPt, axisPt});
     histos.add("hEventCounter", "", kTH1D, {{1, 0, 2}}); // counting processed events
+
     auto hV0Counter = histos.add<TH1>("hV0Counter", "hV0Counter", kTH1D, {{4, 0, 4}});
     hV0Counter->GetXaxis()->SetBinLabel(1, "K0S");
     hV0Counter->GetXaxis()->SetBinLabel(2, "Lambda");
@@ -246,16 +261,23 @@ struct Alice3strangenessFinder {
     auto hCascadeBuilding = histos.add<TH1>("hCascadeBuilding", "hCascadeBuilding", kTH1D, {{10, 0.5, 10.5}});
     hCascadeBuilding->GetXaxis()->SetBinLabel(1, "Attempts");
     hCascadeBuilding->GetXaxis()->SetBinLabel(2, "La mass window");
-    hCascadeBuilding->GetXaxis()->SetBinLabel(3, "DCA Fitter");
+    hCascadeBuilding->GetXaxis()->SetBinLabel(3, "Mc check");
+    hCascadeBuilding->GetXaxis()->SetBinLabel(4, "DCA Fitter");
 
     if (doprocessGenerated) {
-      histos.add("hGeneratedK0s", "hGeneratedK0s", kTH2D, {{axisPt}, {axisEta}});
-      histos.add("hGeneratedLambda", "hGeneratedLambda", kTH2D, {{axisPt}, {axisEta}});
-      histos.add("hGeneratedAntiLambda", "hGeneratedAntiLambda", kTH2D, {{axisPt}, {axisEta}});
-      histos.add("hGeneratedXi", "hGeneratedXi", kTH2D, {{axisPt}, {axisEta}});
-      histos.add("hGeneratedAntiXi", "hGeneratedAntiXi", kTH2D, {{axisPt}, {axisEta}});
-      histos.add("hGeneratedOmega", "hGeneratedOmega", kTH2D, {{axisPt}, {axisEta}});
-      histos.add("hGeneratedAntiOmega", "hGeneratedAntiOmega", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("Generated/hGeneratedK0s", "hGeneratedK0s", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("Generated/hGeneratedLambda", "hGeneratedLambda", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("Generated/hGeneratedAntiLambda", "hGeneratedAntiLambda", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("Generated/hGeneratedXi", "hGeneratedXi", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("Generated/hGeneratedAntiXi", "hGeneratedAntiXi", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("Generated/hGeneratedOmega", "hGeneratedOmega", kTH2D, {{axisPt}, {axisEta}});
+      histos.add("Generated/hGeneratedAntiOmega", "hGeneratedAntiOmega", kTH2D, {{axisPt}, {axisEta}});
+    }
+
+    if (buildCascade) {
+      histos.add("CascadeBuilding/hDcaBetweenDaus", "hDcaBetweenDaus", kTH1D, {{axisDCA}});
+      histos.add("CascadeBuilding/hXiMass", "", kTH1D, {axisXiMass});
+      histos.add("CascadeBuilding/hOmegaMass", "", kTH1D, {axisOmegaMass});
     }
 
     histos.print();
@@ -288,6 +310,29 @@ struct Alice3strangenessFinder {
   }
 
   template <typename TTrackType>
+  bool checkSameMotherExtra(TTrackType const& track1, TTrackType const& track2)
+  {
+    bool returnValue = false;
+    if (track1.has_mcParticle() && track2.has_mcParticle()) {
+      auto mcParticle1 = track1.template mcParticle_as<aod::McParticles>();
+      auto mcParticle2 = track2.template mcParticle_as<aod::McParticles>();
+      if (mcParticle1.has_mothers() && mcParticle2.has_mothers()) {
+        for (const auto& mcParticleMother1 : mcParticle1.template mothers_as<aod::McParticles>()) {
+          if (mcParticleMother1.has_mothers()) {
+            for (const auto& mcParticleGrandMother1 : mcParticleMother1.template mothers_as<aod::McParticles>()) {
+              for (const auto& mcParticleMother2 : mcParticle2.template mothers_as<aod::McParticles>()) {
+                if (mcParticleGrandMother1.globalIndex() == mcParticleMother2.globalIndex()) {
+                  returnValue = true;
+                }
+              }
+            }
+          }
+        }
+      }
+    } // end association check
+    return returnValue;
+  }
+  template <typename TTrackType>
   bool buildDecayCandidateTwoBody(TTrackType const& t0, TTrackType const& t1, std::array<float, 3> vtx, Candidate& thisCandidate)
   {
 
@@ -295,7 +340,6 @@ struct Alice3strangenessFinder {
     histos.fill(HIST("hPtPosDau"), t0.getPt());
 
     if (!skipFitter) {
-
       histos.fill(HIST("hFitterQA"), 0.5);
       //}-{}-{}-{}-{}-{}-{}-{}-{}-{}
       // Move close to minima
@@ -396,25 +440,25 @@ struct Alice3strangenessFinder {
   void processGenerated(aod::McParticles const&)
   {
     for (const auto& mcParticle : trueK0s) {
-      histos.fill(HIST("hGeneratedK0s"), mcParticle.pt(), mcParticle.eta());
+      histos.fill(HIST("Generated/hGeneratedK0s"), mcParticle.pt(), mcParticle.eta());
     }
     for (const auto& mcParticle : trueLambda) {
-      histos.fill(HIST("hGeneratedLambda"), mcParticle.pt(), mcParticle.eta());
+      histos.fill(HIST("Generated/hGeneratedLambda"), mcParticle.pt(), mcParticle.eta());
     }
     for (const auto& mcParticle : trueAntiLambda) {
-      histos.fill(HIST("hGeneratedAntiLambda"), mcParticle.pt(), mcParticle.eta());
+      histos.fill(HIST("Generated/hGeneratedAntiLambda"), mcParticle.pt(), mcParticle.eta());
     }
     for (const auto& mcParticle : trueXi) {
-      histos.fill(HIST("hGeneratedXi"), mcParticle.pt(), mcParticle.eta());
+      histos.fill(HIST("Generated/hGeneratedXi"), mcParticle.pt(), mcParticle.eta());
     }
     for (const auto& mcParticle : trueAntiXi) {
-      histos.fill(HIST("hGeneratedAntiXi"), mcParticle.pt(), mcParticle.eta());
+      histos.fill(HIST("Generated/hGeneratedAntiXi"), mcParticle.pt(), mcParticle.eta());
     }
     for (const auto& mcParticle : trueOmega) {
-      histos.fill(HIST("hGeneratedOmega"), mcParticle.pt(), mcParticle.eta());
+      histos.fill(HIST("Generated/hGeneratedOmega"), mcParticle.pt(), mcParticle.eta());
     }
     for (const auto& mcParticle : trueAntiOmega) {
-      histos.fill(HIST("hGeneratedAntiOmega"), mcParticle.pt(), mcParticle.eta());
+      histos.fill(HIST("Generated/hGeneratedAntiOmega"), mcParticle.pt(), mcParticle.eta());
     }
   }
 
@@ -430,7 +474,6 @@ struct Alice3strangenessFinder {
       }
 
       o2::track::TrackParCov pos = getTrackParCov(posTrack);
-
       for (auto const& negTrack : negTracksGrouped) {
         if (!negTrack.isReconstructed()) {
           continue; // no ghost tracks
@@ -441,33 +484,35 @@ struct Alice3strangenessFinder {
           continue; // keep only if same mother
         }
 
-        // ACTS: pdg code attached to track
-        if constexpr (requires { posTrack.pdgCode(); }) {
-          if ((posTrack.pdgCode() != kPiPlus && negTrack.pdgCode() != kPiMinus) && isK0Gun) {
-            continue;
-          }
-          if ((posTrack.pdgCode() != kProton && negTrack.pdgCode() != kPiMinus) && isLambdaGun) {
-            continue;
+        if (isK0Gun || isLambdaGun) {
+          // ACTS: pdg code attached to track
+          if constexpr (requires { posTrack.pdgCode(); }) {
+            if ((posTrack.pdgCode() != kPiPlus && negTrack.pdgCode() != kPiMinus) && isK0Gun) {
+              continue;
+            }
+            if ((posTrack.pdgCode() != kProton && negTrack.pdgCode() != kPiMinus) && isLambdaGun) {
+              continue;
+            }
+          } else {
+            // OTF: pdg code from mcParticle table
+            if (!posTrack.has_mcParticle() && !negTrack.has_mcParticle()) {
+              continue;
+            }
+            auto mcParticlePos = posTrack.template mcParticle_as<aod::McParticles>();
+            auto mcParticleNeg = negTrack.template mcParticle_as<aod::McParticles>();
+            if ((mcParticlePos.pdgCode() != kPiPlus && mcParticleNeg.pdgCode() != kPiMinus) && isK0Gun) {
+              continue;
+            }
+            if ((mcParticlePos.pdgCode() != kProton && mcParticleNeg.pdgCode() != kPiMinus) && isLambdaGun) {
+              continue;
+            }
           }
         }
 
-        // OTF: pdg code from mcParticle table
-        if (!posTrack.has_mcParticle() && !negTrack.has_mcParticle()) {
-          continue;
-        }
-        auto mcParticlePos = posTrack.template mcParticle_as<aod::McParticles>();
-        auto mcParticleNeg = negTrack.template mcParticle_as<aod::McParticles>();
-        if ((mcParticlePos.pdgCode() != kPiPlus && mcParticleNeg.pdgCode() != kPiMinus) && isK0Gun) {
-          continue;
-        }
-        if ((mcParticlePos.pdgCode() != kProton && mcParticleNeg.pdgCode() != kPiMinus) && isLambdaGun) {
-          continue;
-        }
-
+        Candidate v0Cand;
         histos.fill(HIST("hV0Building"), 2.0);
         o2::track::TrackParCov neg = getTrackParCov(negTrack);
-        Candidate v0cand;
-        if (!buildDecayCandidateTwoBody(pos, neg, vtx, v0cand)) {
+        if (!buildDecayCandidateTwoBody(pos, neg, vtx, v0Cand)) {
           continue; // failed at building candidate
         }
 
@@ -490,27 +535,26 @@ struct Alice3strangenessFinder {
                            negTrack.globalIndex(),
                            -1);
 
-        v0CandidateCores(v0cand.posSV[0], v0cand.posSV[1], v0cand.posSV[2],
-                         v0cand.pDau0[0], v0cand.pDau0[1], v0cand.pDau0[2],
-                         v0cand.pDau1[0], v0cand.pDau1[1], v0cand.pDau1[2],
-                         v0cand.dcaDau, posTrack.dcaXY(), negTrack.dcaXY(),
-                         v0cand.cosPA, v0cand.dcaToPV);
+        v0CandidateCores(v0Cand.posSV[0], v0Cand.posSV[1], v0Cand.posSV[2],
+                         v0Cand.pDau0[0], v0Cand.pDau0[1], v0Cand.pDau0[2],
+                         v0Cand.pDau1[0], v0Cand.pDau1[1], v0Cand.pDau1[2],
+                         v0Cand.dcaDau, posTrack.dcaXY(), negTrack.dcaXY(),
+                         v0Cand.cosPA, v0Cand.dcaToPV);
 
-        o2::track::TrackParCov v0(v0cand.posSV, v0cand.p, v0cand.parentTrackCovMatrix, 0);
-        const float lambdaMassHypothesis = RecoDecay::m(std::array{std::array{v0cand.pDau0[0], v0cand.pDau0[1], v0cand.pDau0[2]},
-                                                                   std::array{v0cand.pDau1[0], v0cand.pDau1[1], v0cand.pDau1[2]}},
+        const float lambdaMassHypothesis = RecoDecay::m(std::array{std::array{v0Cand.pDau0[0], v0Cand.pDau0[1], v0Cand.pDau0[2]},
+                                                                   std::array{v0Cand.pDau1[0], v0Cand.pDau1[1], v0Cand.pDau1[2]}},
                                                         std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
 
-        const float antiLambdaMassHypothesis = RecoDecay::m(std::array{std::array{v0cand.pDau0[0], v0cand.pDau0[1], v0cand.pDau0[2]},
-                                                                       std::array{v0cand.pDau1[0], v0cand.pDau1[1], v0cand.pDau1[2]}},
+        const float antiLambdaMassHypothesis = RecoDecay::m(std::array{std::array{v0Cand.pDau0[0], v0Cand.pDau0[1], v0Cand.pDau0[2]},
+                                                                       std::array{v0Cand.pDau1[0], v0Cand.pDau1[1], v0Cand.pDau1[2]}},
                                                             std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
 
         if (!buildCascade) {
           continue; // not building cascades, so skip the rest
         }
 
-        const bool inLambdaMassWindow = std::abs(lambdaMassHypothesis - o2::constants::physics::MassLambda0) < acceptedLambdaMassWindow;
-        const bool inAntiLambdaMassWindow = std::abs(antiLambdaMassHypothesis - o2::constants::physics::MassLambda0) < acceptedLambdaMassWindow;
+        const bool inLambdaMassWindow = std::abs(lambdaMassHypothesis - o2::constants::physics::MassLambda0) < presel.acceptedLambdaMassWindow;
+        const bool inAntiLambdaMassWindow = std::abs(antiLambdaMassHypothesis - o2::constants::physics::MassLambda0) < presel.acceptedLambdaMassWindow;
         if (!inLambdaMassWindow && !inAntiLambdaMassWindow) {
           continue; // Likely not a lambda, should not be considered for cascade building
         }
@@ -530,15 +574,37 @@ struct Alice3strangenessFinder {
           }
 
           histos.fill(HIST("hCascadeBuilding"), 2.0);
-
-          // TODO mc same mother check
-
           Candidate cascCand;
+          if (mcSameMotherCheck) {
+            if ((!checkSameMotherExtra(posTrack, bachTrack) || !checkSameMotherExtra(negTrack, bachTrack))) {
+              continue;
+            }
+
+            if (bachTrack.has_mcParticle()) {
+              auto bachParticle = bachTrack.template mcParticle_as<aod::McParticles>();
+              cascCand.index = bachParticle.mothersIds().front();
+            }
+          }
+
+          histos.fill(HIST("hCascadeBuilding"), 3.0);
           o2::track::TrackParCov bach = getTrackParCov(bachTrack);
+          o2::track::TrackParCov v0(v0Cand.posSV, v0Cand.p, v0Cand.parentTrackCovMatrix, 0);
           if (!buildDecayCandidateTwoBody(v0, bach, vtx, cascCand)) {
             continue; // failed at building candidate
           }
-          histos.fill(HIST("hCascadeBuilding"), 3.0);
+
+          // Apply preselections
+          if (cascCand.dcaDau > presel.cascMaxDauDCA) {
+            continue; // combined tracks should be reasonanly close
+          }
+
+          if (std::abs(cascCand.eta) > presel.cascMaxEta) {
+            continue; // candidate outside of acceptance
+          }
+
+          if (std::hypot(v0Cand.posSV[0], v0Cand.posSV[1]) < std::hypot(cascCand.posSV[0], cascCand.posSV[1])) {
+            continue; // causality
+          }
 
           const float massXi = RecoDecay::m(std::array{std::array{cascCand.pDau0[0], cascCand.pDau0[1], cascCand.pDau0[2]},
                                                        std::array{cascCand.pDau1[0], cascCand.pDau1[1], cascCand.pDau1[2]}},
@@ -560,22 +626,29 @@ struct Alice3strangenessFinder {
                                                              bachTrack.px(), bachTrack.py(), bachTrack.pz(),
                                                              vtx[0], vtx[1], vtx[2]);
 
-          tableCascadeIndices(0, // cascade index, dummy value
-                              posTrack.globalIndex(),
-                              negTrack.globalIndex(),
-                              bachTrack.globalIndex(),
-                              collision.globalIndex());
+          histos.fill(HIST("hCascadeBuilding"), 4.0);
+          histos.fill(HIST("CascadeBuilding/hDcaBetweenDaus"), cascCand.dcaDau * ToMicrons);
+          histos.fill(HIST("CascadeBuilding/hXiMass"), massXi);
+          histos.fill(HIST("CascadeBuilding/hOmegaMass"), massOm);
 
-          tableCascadeCores(bachTrack.sign(), massXi, massOm,
-                            cascCand.posSV[0], cascCand.posSV[1], cascCand.posSV[2],
-                            v0cand.posSV[0], v0cand.posSV[1], v0cand.posSV[2],
-                            v0cand.pDau0[0], v0cand.pDau0[1], v0cand.pDau0[2],
-                            v0cand.pDau1[0], v0cand.pDau1[1], v0cand.pDau1[2],
-                            cascCand.pDau1[0], cascCand.pDau1[1], cascCand.pDau1[2],
-                            cascCand.p[0], cascCand.p[1], cascCand.p[2],
-                            v0cand.dcaDau, cascCand.dcaDau,
-                            dcaPosToPV, dcaNegToPV, dcaBachToPV,
-                            cascCand.dcaToPV, cascCand.dcaToPV);
+          tableA3CascadeMcLabels(cascCand.index);
+          tableCascIndices(0, // cascade index, dummy value
+                           posTrack.globalIndex(),
+                           negTrack.globalIndex(),
+                           bachTrack.globalIndex(),
+                           collision.globalIndex());
+
+          tableStoredCascCores(bachTrack.sign(), massXi, massOm,
+                               cascCand.posSV[0], cascCand.posSV[1], cascCand.posSV[2],
+                               v0Cand.posSV[0], v0Cand.posSV[1], v0Cand.posSV[2],
+                               v0Cand.pDau0[0], v0Cand.pDau0[1], v0Cand.pDau0[2],
+                               v0Cand.pDau1[0], v0Cand.pDau1[1], v0Cand.pDau1[2],
+                               cascCand.pDau1[0], cascCand.pDau1[1], cascCand.pDau1[2],
+                               cascCand.p[0], cascCand.p[1], cascCand.p[2],
+                               v0Cand.dcaDau, cascCand.dcaDau,
+                               dcaPosToPV, dcaNegToPV, dcaBachToPV,
+                               cascCand.dcaToPV, cascCand.dcaToPV); // FIXME
+
         } // end bachTrack
       } // end negTrack
     } // end posTrack

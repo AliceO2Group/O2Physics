@@ -576,7 +576,7 @@ struct HfCorrelatorDplusHadrons {
         assocTrackSelInfo(indexHfcReducedCollision, track.tpcNClsCrossedRows(), track.itsClusterMap(), track.itsNCls(), track.dcaXY(), track.dcaZ());
       }
 
-      collReduced(collision.multFT0M(), collision.numContrib(), collision.posZ());
+      collReduced(collision.multFT0M(), 0.f, collision.numContrib(), collision.posZ());
     }
   }
   PROCESS_SWITCH(HfCorrelatorDplusHadrons, processDerivedDataDplus, "Process derived data D+", false);

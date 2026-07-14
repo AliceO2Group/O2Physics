@@ -213,6 +213,7 @@ struct hyperRecoTask {
   Configurable<float> nTPCCrossedRowsMinHe{"nTPCCrossedRowsMinHe", 70, "helium minimum crossed rows"};
   Configurable<float> nTPCCrossedRowsMinPi{"nTPCCrossedRowsMinPi", -1., "pion minimum crossed rows"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
+  Configurable<bool> useLikeSignPairs{"useLikeSignPairs", false, "If true, reconstruct like-sign pairs for background estimation. Does not work with processDataTracked"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
   Configurable<bool> isEventUsedForEPCalibration{"isEventUsedForEPCalibration", 1, "Event is used for EP calibration"};
 
@@ -768,7 +769,7 @@ struct hyperRecoTask {
 
       svCreator.appendTrackCand(track, collisions, pdgHypo, ambiguousTracks, bcs);
     }
-    auto& svPool = svCreator.getSVCandPool(collisions);
+    auto& svPool = svCreator.getSVCandPool(collisions, useLikeSignPairs);
     LOG(debug) << "SV pool size: " << svPool.size();
 
     for (const auto& svCand : svPool) {
