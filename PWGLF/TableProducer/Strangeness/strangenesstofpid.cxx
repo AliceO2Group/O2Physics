@@ -1784,7 +1784,6 @@ struct strangenesstofpid {
         v0TofInfo v0tof = calculateTofInfoV0(collisions, V0.collisionId(), V0, pTof, nTof);
 
         if (doNSigmas) {
-          LOG(info) << collisionV0.bcId()  << " " << collisionV0.globalIndex() << " " << collisionV0.posX() << " " << collisionV0.posY() << " " << collisionV0.posZ() << " ; TOF K0s pos: " << v0tof.nSigmaPositiveK0ShortPi << " = " << v0tof.deltaTimePositiveK0ShortPi << " - " << hMeanPosK0Pi->Interpolate(V0.p()) << " / " << hSigmaPosK0Pi->Interpolate(V0.p()) << " ; TOF K0s neg: " << v0tof.nSigmaNegativeK0ShortPi << " = " << v0tof.deltaTimeNegativeK0ShortPi << " - " << hMeanNegK0Pi->Interpolate(V0.p()) << " / " << hSigmaNegK0Pi->Interpolate(V0.p()) << " ; " << pTof.tofSignal  << " - " <<  pTof.tofEvTime << " - " << v0tof.timeK0Short << " + " << v0tof.timePositivePi;
           v0tofnsigmas(
             v0tof.nSigmaPositiveLambdaPr, v0tof.nSigmaNegativeLambdaPi,
             v0tof.nSigmaNegativeLambdaPr, v0tof.nSigmaPositiveLambdaPi,
@@ -1993,24 +1992,19 @@ struct strangenesstofpid {
         pTof.tpcNSigmaPr = pTra.tpcNSigmaPr();
         if (tofIndices[V0.posTrackExtraId()] >= 0 && collision.eventTime() > -1e+5) {
           auto pTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[V0.posTrackExtraId()]);
+          // extract BC for BC time shift
+          const int64_t deltaBc = pTofExt.globalBC() - collision.globalBC();
+          const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS * deltaBc * 1000.0f;
+          histos.fill(HIST("hV0PositiveBCShift"), deltaTimeBc);
+          deltaTimeBcPos = deltaTimeBc;
 
-          // if (pTofExt.straCollisionId() >= 0) {
-            // extract BC for BC time shift
-            // auto collisionTrack = collisions.rawIteratorAt(pTofExt.straCollisionId());
-            const int64_t deltaBc = pTofExt.globalBC() - collision.globalBC();
-            const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS * deltaBc * 1000.0f;
-            histos.fill(HIST("hV0PositiveBCShift"), deltaTimeBc);
-            deltaTimeBcPos = deltaTimeBc;
-
-            // assign variables
-            // pTof.collisionId = pTofExt.straCollisionId();
-            pTof.tofExpMom = pTofExt.tofExpMom();
-            pTof.tofEvTime = reassociateTracks.value ? collision.eventTime() : pTofExt.tofEvTime();
-            pTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTimeErr() : pTofExt.tofEvTimeErr();
-            // pTof.tofEvTimeErr = pTofExt.tofEvTimeErr();
-            pTof.tofSignal = pTofExt.tofSignal() + (doBCshift.value ? deltaTimeBc : 0.0f);
-            pTof.length = pTofExt.length();
-          // }
+          // assign variables
+          pTof.tofExpMom = pTofExt.tofExpMom();
+          pTof.tofEvTime = reassociateTracks.value ? collision.eventTime() : pTofExt.tofEvTime();
+          pTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTimeErr() : pTofExt.tofEvTimeErr();
+          // pTof.tofEvTimeErr = pTofExt.tofEvTimeErr();
+          pTof.tofSignal = pTofExt.tofSignal() + (doBCshift.value ? deltaTimeBc : 0.0f);
+          pTof.length = pTofExt.length();
         }
 
         nTof.hasITS = nTra.hasITS();
@@ -2020,24 +2014,19 @@ struct strangenesstofpid {
         nTof.tpcNSigmaPr = nTra.tpcNSigmaPr();
         if (tofIndices[V0.negTrackExtraId()] >= 0 && collision.eventTime() > -1e+5) {
           auto nTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[V0.negTrackExtraId()]);
+          // extract BC for BC time shift
+          const int64_t deltaBc = nTofExt.globalBC() - collision.globalBC();
+          const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS * deltaBc * 1000.0f;
+          histos.fill(HIST("hV0NegativeBCShift"), deltaTimeBc);
+          deltaTimeBcNeg = deltaTimeBc;
 
-          // if (nTofExt.straCollisionId() >= 0) {
-            // extract BC for BC time shift
-            // auto collisionTrack = collisions.rawIteratorAt(nTofExt.straCollisionId());
-            const int64_t deltaBc = nTofExt.globalBC() - collision.globalBC();
-            const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS * deltaBc * 1000.0f;
-            histos.fill(HIST("hV0NegativeBCShift"), deltaTimeBc);
-            deltaTimeBcNeg = deltaTimeBc;
-
-            // assign variables
-            // nTof.collisionId = nTofExt.straCollisionId();
-            nTof.tofExpMom = nTofExt.tofExpMom();
-            nTof.tofEvTime = reassociateTracks.value ? collision.eventTime() : nTofExt.tofEvTime();
-            nTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTimeErr() : nTofExt.tofEvTimeErr();
-            // nTof.tofEvTimeErr = nTofExt.tofEvTimeErr();
-            nTof.tofSignal = nTofExt.tofSignal() + (doBCshift.value ? deltaTimeBc : 0.0f);
-            nTof.length = nTofExt.length();
-          // }
+          // assign variables
+          nTof.tofExpMom = nTofExt.tofExpMom();
+          nTof.tofEvTime = reassociateTracks.value ? collision.eventTime() : nTofExt.tofEvTime();
+          nTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTimeErr() : nTofExt.tofEvTimeErr();
+          // nTof.tofEvTimeErr = nTofExt.tofEvTimeErr();
+          nTof.tofSignal = nTofExt.tofSignal() + (doBCshift.value ? deltaTimeBc : 0.0f);
+          nTof.length = nTofExt.length();
         }
         if (pTof.hasTOF) {
           histos.fill(HIST("hTOFSignalPositive"), pTof.tofSignal);
@@ -2052,7 +2041,6 @@ struct strangenesstofpid {
         v0TofInfo v0tof = calculateTofInfoV0(collisions, V0.straCollisionId(), V0, pTof, nTof);
 
         if (doNSigmas) {
-          LOG(info) << collision.eventTime()  << " " << collision.globalIndex() << " " << collision.posX() << " " << collision.posY() << " " << collision.posZ() << " ; TOF K0s pos: " << v0tof.nSigmaPositiveK0ShortPi << " = " << v0tof.deltaTimePositiveK0ShortPi << " - " << hMeanPosK0Pi->Interpolate(V0.p()) << " / " << hSigmaPosK0Pi->Interpolate(V0.p()) << " ; TOF K0s neg: " << v0tof.nSigmaNegativeK0ShortPi << " = " << v0tof.deltaTimeNegativeK0ShortPi << " - " << hMeanNegK0Pi->Interpolate(V0.p()) << " / " << hSigmaNegK0Pi->Interpolate(V0.p()) << " ; " << pTof.tofSignal  << " ( " << (pTof.collisionId >= 0 ? (dauTrackTOFPIDs.rawIteratorAt(tofIndices[V0.posTrackExtraId()]).tofSignal()) : 0 ) << " + " << deltaTimeBcPos << " " << pTof.collisionId << " " << (pTof.collisionId >= 0 ? collisions.rawIteratorAt(pTof.collisionId).globalBC() : -1 ) << " - " << collision.globalBC()<< " " << V0.posTrackExtraId() << " ) " << " - " <<  pTof.tofEvTime << " - " << v0tof.timeK0Short << " + " << v0tof.timePositivePi;
           v0tofnsigmas(
             v0tof.nSigmaPositiveLambdaPr, v0tof.nSigmaNegativeLambdaPi,
             v0tof.nSigmaNegativeLambdaPr, v0tof.nSigmaPositiveLambdaPi,
@@ -2091,23 +2079,18 @@ struct strangenesstofpid {
         pTof.tpcNSigmaPr = pTra.tpcNSigmaPr();
         if (tofIndices[cascade.posTrackExtraId()] >= 0 && collision.eventTime() > -1e+5) {
           auto pTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[cascade.posTrackExtraId()]);
-
-          // if (pTofExt.straCollisionId() >= 0) {
-            // extract BC for BC time shift
-            // auto collisionTrack = collisions.rawIteratorAt(pTofExt.straCollisionId());
-            const int64_t deltaBc = pTofExt.globalBC() - collision.globalBC();
-            const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS * deltaBc * 1000.0f;
-            histos.fill(HIST("hCascadePositiveBCShift"), deltaTimeBc);
-            histos.fill(HIST("h2dTOFSignalCascadePositive"), pTof.tofSignal, deltaTimeBc);
-
-            // pTof.collisionId = pTofExt.straCollisionId();
-            pTof.tofExpMom = pTofExt.tofExpMom();
-            pTof.tofEvTime = reassociateTracks.value ? collision.eventTime() : pTofExt.tofEvTime();
-            pTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTimeErr() : pTofExt.tofEvTimeErr();
-            // pTof.tofEvTimeErr = pTofExt.tofEvTimeErr();
-            pTof.tofSignal = pTofExt.tofSignal() + (doBCshift.value ? deltaTimeBc : 0.0f);
-            pTof.length = pTofExt.length();
-          // }
+          // extract BC for BC time shift
+          const int64_t deltaBc = pTofExt.globalBC() - collision.globalBC();
+          const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS * deltaBc * 1000.0f;
+          histos.fill(HIST("hCascadePositiveBCShift"), deltaTimeBc);
+          histos.fill(HIST("h2dTOFSignalCascadePositive"), pTof.tofSignal, deltaTimeBc);
+          
+          pTof.tofExpMom = pTofExt.tofExpMom();
+          pTof.tofEvTime = reassociateTracks.value ? collision.eventTime() : pTofExt.tofEvTime();
+          pTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTimeErr() : pTofExt.tofEvTimeErr();
+          // pTof.tofEvTimeErr = pTofExt.tofEvTimeErr();
+          pTof.tofSignal = pTofExt.tofSignal() + (doBCshift.value ? deltaTimeBc : 0.0f);
+          pTof.length = pTofExt.length();
         }
 
         nTof.hasITS = nTra.hasITS();
@@ -2117,23 +2100,18 @@ struct strangenesstofpid {
         nTof.tpcNSigmaPr = nTra.tpcNSigmaPr();
         if (tofIndices[cascade.negTrackExtraId()] >= 0 && collision.eventTime() > -1e+5) {
           auto nTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[cascade.negTrackExtraId()]);
+          // extract BC for BC time shift
+          const int64_t deltaBc = nTofExt.globalBC() - collision.globalBC();
+          const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS * deltaBc * 1000.0f;
+          histos.fill(HIST("hCascadeNegativeBCShift"), deltaTimeBc);
+          histos.fill(HIST("h2dTOFSignalCascadeNegative"), nTof.tofSignal, deltaTimeBc);
 
-          // if (nTofExt.straCollisionId() >= 0) {
-            // extract BC for BC time shift
-            // auto collisionTrack = collisions.rawIteratorAt(nTofExt.straCollisionId());
-            const int64_t deltaBc = nTofExt.globalBC() - collision.globalBC();
-            const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS * deltaBc * 1000.0f;
-            histos.fill(HIST("hCascadeNegativeBCShift"), deltaTimeBc);
-            histos.fill(HIST("h2dTOFSignalCascadeNegative"), nTof.tofSignal, deltaTimeBc);
-
-            // nTof.collisionId = nTofExt.straCollisionId();
-            nTof.tofExpMom = nTofExt.tofExpMom();
-            nTof.tofEvTime = reassociateTracks.value ? collision.eventTime() : nTofExt.tofEvTime();
-            nTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTime() : nTofExt.tofEvTimeErr();
-            // nTof.tofEvTimeErr = nTofExt.tofEvTimeErr();
-            nTof.tofSignal = nTofExt.tofSignal() + (doBCshift.value ? deltaTimeBc : 0.0f);
-            nTof.length = nTofExt.length();
-          // }
+          nTof.tofExpMom = nTofExt.tofExpMom();
+          nTof.tofEvTime = reassociateTracks.value ? collision.eventTime() : nTofExt.tofEvTime();
+          nTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTime() : nTofExt.tofEvTimeErr();
+          // nTof.tofEvTimeErr = nTofExt.tofEvTimeErr();
+          nTof.tofSignal = nTofExt.tofSignal() + (doBCshift.value ? deltaTimeBc : 0.0f);
+          nTof.length = nTofExt.length();
         }
 
         bTof.hasITS = bTra.hasITS();
@@ -2143,23 +2121,18 @@ struct strangenesstofpid {
         bTof.tpcNSigmaKa = bTra.tpcNSigmaKa();
         if (tofIndices[cascade.bachTrackExtraId()] >= 0 && collision.eventTime() > -1e+5) {
           auto bTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[cascade.bachTrackExtraId()]);
+          // extract BC for BC time shift
+          const int64_t deltaBc = bTofExt.globalBC() - collision.globalBC();
+          const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS * deltaBc * 1000.0f;
+          histos.fill(HIST("hCascadeBachelorBCShift"), deltaTimeBc);
+          histos.fill(HIST("h2dTOFSignalCascadeBachelor"), bTof.tofSignal, deltaTimeBc);
 
-          // if (bTofExt.straCollisionId() >= 0) {
-            // extract BC for BC time shift
-            // auto collisionTrack = collisions.rawIteratorAt(bTofExt.straCollisionId());
-            const int64_t deltaBc = bTofExt.globalBC() - collision.globalBC();
-            const double deltaTimeBc = o2::constants::lhc::LHCBunchSpacingNS * deltaBc * 1000.0f;
-            histos.fill(HIST("hCascadeBachelorBCShift"), deltaTimeBc);
-            histos.fill(HIST("h2dTOFSignalCascadeBachelor"), bTof.tofSignal, deltaTimeBc);
-
-            // bTof.collisionId = bTofExt.straCollisionId();
-            bTof.tofExpMom = bTofExt.tofExpMom();
-            bTof.tofEvTime = reassociateTracks.value ? collision.eventTime() : bTofExt.tofEvTime();
-            bTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTimeErr() : bTofExt.tofEvTimeErr();
-            // bTof.tofEvTimeErr = bTofExt.tofEvTimeErr();
-            bTof.tofSignal = bTofExt.tofSignal() + (doBCshift.value ? deltaTimeBc : 0.0f);
-            bTof.length = bTofExt.length();
-          // }
+          bTof.tofExpMom = bTofExt.tofExpMom();
+          bTof.tofEvTime = reassociateTracks.value ? collision.eventTime() : bTofExt.tofEvTime();
+          bTof.tofEvTimeErr = reassociateTracks.value ? collision.eventTimeErr() : bTofExt.tofEvTimeErr();
+          // bTof.tofEvTimeErr = bTofExt.tofEvTimeErr();
+          bTof.tofSignal = bTofExt.tofSignal() + (doBCshift.value ? deltaTimeBc : 0.0f);
+          bTof.length = bTofExt.length();
         }
 
         cascTofInfo casctof = calculateTofInfoCascade(collisions, cascade.straCollisionId(), cascade, pTof, nTof, bTof);
