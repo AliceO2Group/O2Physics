@@ -420,10 +420,8 @@ DECLARE_SOA_TABLE(StraMCCollMults_000, "AOD", "STRAMCCOLLMULTS", //! MC collisio
                   mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, o2::soa::Marker<2>);
 DECLARE_SOA_TABLE_VERSIONED(StraMCCollMults_001, "AOD", "STRAMCCOLLMULTS", 1, //! MC collision multiplicities
                             mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, stramccollision::TotalMultMCParticles);
-DECLARE_SOA_TABLE_VERSIONED(StraMCCollMults_002, "AOD", "STRAMCCOLLMULTS", 2, //! MC collision multiplicities
-                            mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCFV0A, mult::MultMCFDDA, mult::MultMCFDDC, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, stramccollision::TotalMultMCParticles);
 
-using StraMCCollMults = StraMCCollMults_002;
+using StraMCCollMults = StraMCCollMults_001;
 
 namespace dautrack
 {
