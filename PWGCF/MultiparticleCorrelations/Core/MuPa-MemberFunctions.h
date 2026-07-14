@@ -1821,9 +1821,9 @@ void defaultBinning()
   ph.fParticleHistogramsBins[edcaZ][1] = -10.;
   ph.fParticleHistogramsBins[edcaZ][2] = 10.;
 
-  ph.fParticleHistogramsBins[ePDG][0] = 2000;   // o2-linter: disable=pdg/explicit-code
-  ph.fParticleHistogramsBins[ePDG][1] = -1000.; // o2-linter: disable=pdg/explicit-code
-  ph.fParticleHistogramsBins[ePDG][2] = 1000.;  // o2-linter: disable=pdg/explicit-code
+  ph.fParticleHistogramsBins[ePDG][0] = 2000;   // o2-linter: disable=pdg/explicit-code (false positive, only array indices are hardwired here)
+  ph.fParticleHistogramsBins[ePDG][1] = -1000.; // o2-linter: disable=pdg/explicit-code (false positive, only array indices are hardwired here)
+  ph.fParticleHistogramsBins[ePDG][2] = 1000.;  // o2-linter: disable=pdg/explicit-code (false positive, only array indices are hardwired here)
 
   // c) Default binning for particle histograms 2D:
   //    At the moment, for fixed binning, I just re-use the binning of corresponding 1D histograms.
