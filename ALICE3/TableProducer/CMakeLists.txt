@@ -66,6 +66,11 @@ o2physics_add_dpl_workflow(alice3-dq-table-maker
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCCDB O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(alice3-dileptonsmearing
+                    SOURCES alice3-dileptonsmearing.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCCDB O2Physics::PWGEMDileptonCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(alice3strangenessfinder
                     SOURCES alice3strangenessFinder.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::ALICE3Core
