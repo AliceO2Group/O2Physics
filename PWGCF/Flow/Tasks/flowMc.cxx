@@ -378,16 +378,16 @@ struct FlowMc {
     if (cfgFlowAcceptance.value.empty() == false) {
       mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgFlowAcceptance, timestamp);
       if (mAcceptance)
-        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgFlowAcceptance.value.c_str(), (void*)mAcceptance);
+        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgFlowAcceptance.value.c_str(), static_cast<void*>(mAcceptance));
       else
-        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgFlowAcceptance.value.c_str(), (void*)mAcceptance);
+        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgFlowAcceptance.value.c_str(), static_cast<void*>(mAcceptance));
     }
     if (cfgFlowEfficiency.value.empty() == false) {
       mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgFlowEfficiency, timestamp);
       if (mEfficiency == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgFlowEfficiency.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgFlowEfficiency.value.c_str(), (void*)mEfficiency);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgFlowEfficiency.value.c_str(), static_cast<void*>(mEfficiency));
     }
     correctionsLoaded = true;
   }
@@ -446,7 +446,7 @@ struct FlowMc {
     if (cfgCentVsIPTruth.value.empty() == false) {
       mCentVsIPTruth = ccdb->getForTimeStamp<TH1D>(cfgCentVsIPTruth, timestamp);
       if (mCentVsIPTruth)
-        LOGF(info, "Loaded CentVsIPTruth weights from %s (%p)", cfgCentVsIPTruth.value.c_str(), (void*)mCentVsIPTruth);
+        LOGF(info, "Loaded CentVsIPTruth weights from %s (%p)", cfgCentVsIPTruth.value.c_str(), static_cast<void*>(mCentVsIPTruth));
       else
         LOGF(fatal, "Failed to load CentVsIPTruth weights from %s", cfgCentVsIPTruth.value.c_str());
 
@@ -800,7 +800,7 @@ struct FlowMc {
             histos.fill(HIST("hPtNchGlobalK0"), mcParticle.pt(), nChGlobal);
           if (pdgCode == PDG_t::kLambda0)
             histos.fill(HIST("hPtNchGlobalLambda"), mcParticle.pt(), nChGlobal);
-          if (!cfgRequireTOF || (cfgRequireTOF && validTOFTrack)) {
+          if (!cfgRequireTOF || validTOFTrack) {
             if (mcParticle.has_mothers()) {
               for (const auto& m : mcParticle.template mothers_as<FilteredMcParticles>()) {
                 if (!m.isPhysicalPrimary())
