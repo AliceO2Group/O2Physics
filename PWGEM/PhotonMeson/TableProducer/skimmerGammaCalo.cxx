@@ -351,8 +351,8 @@ struct SkimmerGammaCalo {
   PROCESS_SWITCH(SkimmerGammaCalo, processDummy, "Dummy function", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<SkimmerGammaCalo>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<SkimmerGammaCalo>(context)};
   return workflow;
 }
