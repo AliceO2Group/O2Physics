@@ -238,7 +238,8 @@ using MyEventsVtxCovZdcFitSelected = soa::Join<aod::ReducedEvents, aod::ReducedE
 using MyEventsVtxCovZdcFitSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedZdcs, aod::ReducedFITs, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector>;
 using MyEventsHashSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector>;
-using MyEventsQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsMergingTable>;
+using MyEventsQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
+using MyEventsQvectorCentrMerge = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsMergingTable>;
 using MyEventsQvectorCentrSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::EventCuts>;
 using MyEventsHashSelectedQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 
@@ -349,7 +350,7 @@ struct AnalysisEventSelection {
   void init(o2::framework::InitContext& context)
   {
 
-    bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedBasic") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraNoQvector") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdcFit") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr");
+    bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedBasic") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraNoQvector") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdcFit") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr") || context.mOptions.get<bool>("processSkimmedWithQvectorCentrMerge");
     bool isDummyEnabled = context.mOptions.get<bool>("processDummy");
 
     if (isDummyEnabled) {
@@ -615,6 +616,11 @@ struct AnalysisEventSelection {
     runEventSelection<gkEventFillMapWithQvectorCentr>(events);
     publishSelections<gkEventFillMapWithQvectorCentr>(events);
   }
+  void processSkimmedWithQvectorCentrMerge(MyEventsQvectorCentrMerge const& events)
+  {
+    runEventSelection<gkEventFillMapWithQvectorCentr>(events);
+    publishSelections<gkEventFillMapWithQvectorCentr>(events);
+  }
   void processFillEvents(MyEventsBasic const& events) // Used to forward the event table from tablemaker, typical use for now is jet analysis.
   {
     for (auto const& event : events) {
@@ -641,6 +647,7 @@ struct AnalysisEventSelection {
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraZdc, "Run event selection on DQ skimmed events, with mult extra and ZDC", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraZdcFit, "Run event selection on DQ skimmed events, with mult extra, ZDC and FIT", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithQvectorCentr, "Run event selection on DQ skimmed events, with Q-vector", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithQvectorCentrMerge, "Run event selection on DQ skimmed events, with Q-vector and ReducedEventsMergingTable", false);
   PROCESS_SWITCH(AnalysisEventSelection, processFillEvents, "Fill storedReducedEvents table for use in JE framework", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", true);
 };
