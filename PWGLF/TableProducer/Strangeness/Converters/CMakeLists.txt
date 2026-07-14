@@ -139,11 +139,6 @@ o2physics_add_dpl_workflow(stramccollisionconverter
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(stramccollisionconverter2
-                    SOURCES stramccollisionconverter2.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(strastampsconverter
                     SOURCES strastampsconverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -161,11 +156,6 @@ o2physics_add_dpl_workflow(stracentconverter2
 
 o2physics_add_dpl_workflow(stramccollmultconverter
                     SOURCES stramccollmultconverter.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(stramccollmultconverter2
-                    SOURCES stramccollmultconverter2.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
