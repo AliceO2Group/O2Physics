@@ -25,6 +25,8 @@
 #include "PWGLF/DataModel/SPCalibrationTables.h"
 #include "PWGUD/DataModel/UDTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
@@ -33,8 +35,6 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/CCDB/RCTSelectionFlags.h"
 
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -195,15 +195,15 @@ struct strangederivedbuilder {
   Configurable<std::string> inheritEvtSelFromTask{"inheritEvtSelFromTask", "propagation-service", "Inherit event selection parameters from which task?"};
   Configurable<std::string> inheritEvtSelFromTaskCfgGroup{"inheritEvtSelFromTaskCfgGroup", "eventSelectOpts", "What is the configurable group prefix? If none, put nothing"};
   Configurable<bool> inheritEvtSelFromTaskVerbose{"inheritEvtSelFromTaskVerbose", false, "Enable verbose mode on the getTaskOption utility"};
-  bool fillOnlySelectedCollisions = false; // Fill only tables for selected collisions?
-  bool requireTriggerTVX = false; // require FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level  (Run 3 only)
-  bool rejectITSROFBorder = false; // reject events at ITS ROF border (Run 3 only)
-  bool rejectTFBorder = false; // reject events at TF border (Run 3 only)
-  bool rejectSameBunchPileup = false; // reject collisions in case of pileup with another collision in the same foundBC (Run 3 only)
-  float maxZVtxPosition = 10.; // max Z vtx position (cm)
-  bool cfgApplyRCTrequirement = false; // Apply RCT requirement?
-  std::string cfgRCTLabel = ""; // Which detector condition requirements? (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)
-  bool cfgCheckZDC = false; // Include ZDC flags in the bit selection (for Pb-Pb only)
+  bool fillOnlySelectedCollisions = false;     // Fill only tables for selected collisions?
+  bool requireTriggerTVX = false;              // require FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level  (Run 3 only)
+  bool rejectITSROFBorder = false;             // reject events at ITS ROF border (Run 3 only)
+  bool rejectTFBorder = false;                 // reject events at TF border (Run 3 only)
+  bool rejectSameBunchPileup = false;          // reject collisions in case of pileup with another collision in the same foundBC (Run 3 only)
+  float maxZVtxPosition = 10.;                 // max Z vtx position (cm)
+  bool cfgApplyRCTrequirement = false;         // Apply RCT requirement?
+  std::string cfgRCTLabel = "";                // Which detector condition requirements? (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)
+  bool cfgCheckZDC = false;                    // Include ZDC flags in the bit selection (for Pb-Pb only)
   bool cfgTreatLimitedAcceptanceAsBad = false; // reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance
 
   o2::aod::rctsel::RCTFlagsChecker rctFlagsChecker;
@@ -461,7 +461,6 @@ struct strangederivedbuilder {
       eventSelectOptsPrefix += ".";
     }
 
-
     getCfg(initContext, eventSelectOptsPrefix + "fillOnlySelectedCollisions", fillOnlySelectedCollisions, inheritEvtSelFromTask);
     getCfg(initContext, eventSelectOptsPrefix + "requireTriggerTVX", requireTriggerTVX, inheritEvtSelFromTask);
     getCfg(initContext, eventSelectOptsPrefix + "rejectITSROFBorder", rejectITSROFBorder, inheritEvtSelFromTask);
@@ -481,8 +480,8 @@ struct strangederivedbuilder {
     LOG(info) << "Reject same bunch pile-up..........: " << (rejectSameBunchPileup ? "yes" : "no");
     LOG(info) << "Apply RCT requirement..............: " << (cfgApplyRCTrequirement ? "yes" : "no");
     LOG(info) << "RCT requirement....................: " << cfgRCTLabel;
-    LOG(info) << "Check ZDC in RCT requirement.......: " << (cfgCheckZDC? "yes" : "no");
-    LOG(info) << "Treat limited acceptance as bad....: " << (cfgCheckZDC? "yes" : "no");
+    LOG(info) << "Check ZDC in RCT requirement.......: " << (cfgCheckZDC ? "yes" : "no");
+    LOG(info) << "Treat limited acceptance as bad....: " << (cfgCheckZDC ? "yes" : "no");
     LOG(info) << "=================================================================";
 
     // setup map for fast checking if enabled
@@ -552,7 +551,7 @@ struct strangederivedbuilder {
     KFCascadeCollIndices.clear();
     TraCascadeCollIndices.clear();
 
-    TrackCollIndices.resize(Tracks.size(), 0);                 // index -1: no collision
+    TrackCollIndices.resize(Tracks.size(), 0);            // index -1: no collision
     V0CollIndices.resize(V0s.size(), -1);                 // index -1: no collision
     CascadeCollIndices.resize(Cascades.size(), -1);       // index -1: no collision
     KFCascadeCollIndices.resize(KFCascades.size(), -1);   // index -1: no collision

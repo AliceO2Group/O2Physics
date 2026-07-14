@@ -671,7 +671,7 @@ struct derivedlambdakzeroanalysis {
     // Initialise the RCTFlagsChecker
     rctFlagsChecker.init(rctConfigurations.cfgRCTLabel.value, rctConfigurations.cfgCheckZDC, rctConfigurations.cfgTreatLimitedAcceptanceAsBad);
 
-    // 
+    //
     if (doprocessAnalysedCollisions) {
       histos.add("hEventPreSelection", "hEventPreSelection", kTH1D, {{2, -0.5f, +1.5f}});
       histos.get<TH1>(HIST("hEventPreSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");

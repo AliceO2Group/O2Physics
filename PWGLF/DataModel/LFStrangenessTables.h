@@ -47,7 +47,7 @@ DECLARE_SOA_TABLE(StraOrigins, "AOD", "STRAORIGIN", //! Table which contains the
 // for keeping track of the number of selected collisions
 namespace straselections
 {
-DECLARE_SOA_COLUMN(TotalNbrOfCollisions, totalNbrOfCollisions, int); //! total number of analysed collisions
+DECLARE_SOA_COLUMN(TotalNbrOfCollisions, totalNbrOfCollisions, int);       //! total number of analysed collisions
 DECLARE_SOA_COLUMN(TotalNbrOfSelCollisions, totalNbrOfSelCollisions, int); //! total number of selected collisions
 } // namespace straselections
 
