@@ -159,6 +159,11 @@ o2physics_add_dpl_workflow(stramccollmultconverter
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(stramccollisionconverter2
+                    SOURCES stramccollisionconverter2.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(zdcneutronsconverter
                     SOURCES zdcneutronsconverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
