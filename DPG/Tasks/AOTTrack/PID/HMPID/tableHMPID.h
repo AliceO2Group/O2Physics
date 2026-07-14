@@ -24,7 +24,7 @@ inline constexpr int kDimPhotonsCharge = 10;
 
 namespace variables_table
 {
-using PhotonsChargeArray = std::array<float, kDimPhotonsCharge>;
+using PhotonsChargeArray = o2::soa::Array<float, kDimPhotonsCharge>;
 
 DECLARE_SOA_COLUMN(ChAngle, chAngle, float);
 DECLARE_SOA_COLUMN(MomentumHmpid, momentumHmpid, float);
