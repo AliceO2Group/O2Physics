@@ -74,7 +74,7 @@ struct lambdaTwoPartPolarization {
                                       std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
                                       "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
-  Service<o2::ccdb::BasicCCDBManager> ccdb = nullptr;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::ccdb::CcdbApi ccdbApi;
 
   Configurable<float> cfgCentSel{"cfgCentSel", 100., "Centrality selection"};
