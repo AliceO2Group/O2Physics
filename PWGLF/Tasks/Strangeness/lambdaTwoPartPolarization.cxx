@@ -42,7 +42,6 @@
 #include <Math/Vector4Dfwd.h>
 #include <TF1.h>
 #include <TProfile2D.h>
-#include <TVector2.h>
 
 #include <array>
 #include <chrono>
@@ -75,7 +74,7 @@ struct lambdaTwoPartPolarization {
                                       std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
                                       "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb = nullptr;
   o2::ccdb::CcdbApi ccdbApi;
 
   Configurable<float> cfgCentSel{"cfgCentSel", 100., "Centrality selection"};
@@ -140,9 +139,9 @@ struct lambdaTwoPartPolarization {
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
 
-  float centrality;
-  float dphi;
-  float weight;
+  float centrality = 1.;
+  float dphi = 1.;
+  float weight = 1.;
 
   TProfile2D* EffMap = nullptr;
   TProfile2D* AccMap = nullptr;
@@ -194,13 +193,13 @@ struct lambdaTwoPartPolarization {
 
   ROOT::Math::PxPyPzMVector ProtonVec1, PionVec1, LambdaVec1, ProtonBoostedVec1, PionBoostedVec1;
   ROOT::Math::PxPyPzMVector ProtonVec2, PionVec2, LambdaVec2, ProtonBoostedVec2, PionBoostedVec2;
-  int V01Tag;
-  int V02Tag;
-  double costhetastar1;
-  double costhetastar2;
+  int V01Tag = 1;
+  int V02Tag = 1;
+  double costhetastar1 = 0.0;
+  double costhetastar2 = 0.0;
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision)
+  bool eventSelected(TCollision const& collision)
   {
     if (!collision.sel8()) {
       return 0;
@@ -230,31 +229,42 @@ struct lambdaTwoPartPolarization {
   template <typename TCollision, typename V0>
   bool selectionV0(TCollision const& collision, V0 const& candidate, int LambdaTag)
   {
-    if (candidate.v0radius() < cfgv0radiusMin)
+    if (candidate.v0radius() < cfgv0radiusMin) {
       return false;
-    if (LambdaTag) {
-      if (std::abs(candidate.dcapostopv()) < cfgDCAPrToPVMin)
-        return false;
-      if (std::abs(candidate.dcanegtopv()) < cfgDCAPiToPVMin)
-        return false;
-    } else if (!LambdaTag) {
-      if (std::abs(candidate.dcapostopv()) < cfgDCAPiToPVMin)
-        return false;
-      if (std::abs(candidate.dcanegtopv()) < cfgDCAPrToPVMin)
-        return false;
     }
-    if (candidate.v0cosPA() < cfgv0CosPA)
+    if (LambdaTag) {
+      if (std::abs(candidate.dcapostopv()) < cfgDCAPrToPVMin) {
+        return false;
+      }
+      if (std::abs(candidate.dcanegtopv()) < cfgDCAPiToPVMin) {
+        return false;
+      }
+    } else if (!LambdaTag) {
+      if (std::abs(candidate.dcapostopv()) < cfgDCAPiToPVMin) {
+        return false;
+      }
+      if (std::abs(candidate.dcanegtopv()) < cfgDCAPrToPVMin) {
+        return false;
+      }
+    }
+    if (candidate.v0cosPA() < cfgv0CosPA) {
       return false;
-    if (std::abs(candidate.dcaV0daughters()) > cfgDCAV0Dau)
+    }
+    if (std::abs(candidate.dcaV0daughters()) > cfgDCAV0Dau) {
       return false;
-    if (candidate.pt() < cfgV0PtMin)
+    }
+    if (candidate.pt() < cfgV0PtMin) {
       return false;
-    if (candidate.yLambda() < cfgV0EtaMin)
+    }
+    if (candidate.yLambda() < cfgV0EtaMin) {
       return false;
-    if (candidate.yLambda() > cfgV0EtaMax)
+    }
+    if (candidate.yLambda() > cfgV0EtaMax) {
       return false;
-    if (candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda > cfgV0LifeTime)
+    }
+    if (candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda > cfgV0LifeTime) {
       return false;
+    }
 
     return true;
   }
@@ -262,20 +272,27 @@ struct lambdaTwoPartPolarization {
   template <typename T>
   bool isSelectedV0Daughter(T const& track, int pid) // pid 0: proton, pid 1: pion
   {
-    if (track.tpcNClsFound() < cfgDaughTPCnclsMin)
+    if (track.tpcNClsFound() < cfgDaughTPCnclsMin) {
       return false;
-    if (pid == 0 && std::abs(track.tpcNSigmaPr()) > cfgDaughPIDCutsTPCPr)
+    }
+    if (pid == 0 && std::abs(track.tpcNSigmaPr()) > cfgDaughPIDCutsTPCPr) {
       return false;
-    if (pid == 1 && std::abs(track.tpcNSigmaPi()) > cfgDaughPIDCutsTPCPi)
+    }
+    if (pid == 1 && std::abs(track.tpcNSigmaPi()) > cfgDaughPIDCutsTPCPi) {
       return false;
-    if (track.eta() > cfgDaughEtaMax)
+    }
+    if (track.eta() > cfgDaughEtaMax) {
       return false;
-    if (track.eta() < cfgDaughEtaMin)
+    }
+    if (track.eta() < cfgDaughEtaMin) {
       return false;
-    if (pid == 0 && track.pt() < cfgDaughPrPt)
+    }
+    if (pid == 0 && track.pt() < cfgDaughPrPt) {
       return false;
-    if (pid == 1 && track.pt() < cfgDaughPiPt)
+    }
+    if (pid == 1 && track.pt() < cfgDaughPiPt) {
       return false;
+    }
 
     return true;
   }
@@ -345,11 +362,13 @@ struct lambdaTwoPartPolarization {
           continue;
         }
 
-        if (LambdaTag == aLambdaTag)
+        if (LambdaTag == aLambdaTag) {
           continue;
+        }
 
-        if (!selectionV0(c1, v01, LambdaTag))
+        if (!selectionV0(c1, v01, LambdaTag)) {
           continue;
+        }
 
         if (LambdaTag) {
           ProtonVec1 = ROOT::Math::PxPyPzMVector(v01.pxpos(), v01.pypos(), v01.pzpos(), massPr);
@@ -398,11 +417,13 @@ struct lambdaTwoPartPolarization {
         aLambdaTag = 1;
       }
 
-      if (LambdaTag == aLambdaTag)
+      if (LambdaTag == aLambdaTag) {
         continue;
+      }
 
-      if (!selectionV0(c1, v01, LambdaTag))
+      if (!selectionV0(c1, v01, LambdaTag)) {
         continue;
+      }
 
       if (LambdaTag) {
         ProtonVec1 = ROOT::Math::PxPyPzMVector(v01.pxpos(), v01.pypos(), v01.pzpos(), massPr);
@@ -425,8 +446,9 @@ struct lambdaTwoPartPolarization {
       histos.fill(HIST("Ana/Acceptance"), v01.pt(), centrality, v01.yLambda(), costhetastar1 * costhetastar1);
 
       for (auto& v02 : V02s) {
-        if (v01.v0Id() <= v02.v0Id() && doprocessDataSame)
+        if (v01.v0Id() <= v02.v0Id() && doprocessDataSame) {
           continue;
+        }
         auto postrack_v02 = v02.template posTrack_as<TrackCandidates>();
         auto negtrack_v02 = v02.template negTrack_as<TrackCandidates>();
 
@@ -440,15 +462,18 @@ struct lambdaTwoPartPolarization {
           aLambdaTag = 1;
         }
 
-        if (LambdaTag == aLambdaTag)
+        if (LambdaTag == aLambdaTag) {
           continue;
+        }
 
-        if (!selectionV0(c2, v02, LambdaTag))
+        if (!selectionV0(c2, v02, LambdaTag)) {
           continue;
+        }
 
         if (doprocessDataSame) {
-          if (postrack_v01.globalIndex() == postrack_v02.globalIndex() || postrack_v01.globalIndex() == negtrack_v02.globalIndex() || negtrack_v01.globalIndex() == postrack_v02.globalIndex() || negtrack_v01.globalIndex() == negtrack_v02.globalIndex())
+          if (postrack_v01.globalIndex() == postrack_v02.globalIndex() || postrack_v01.globalIndex() == negtrack_v02.globalIndex() || negtrack_v01.globalIndex() == postrack_v02.globalIndex() || negtrack_v01.globalIndex() == negtrack_v02.globalIndex()) {
             continue; // no shared decay products
+          }
         }
 
         if (LambdaTag) {
@@ -556,18 +581,21 @@ struct lambdaTwoPartPolarization {
   {
     for (auto& [c1, c2] : selfCombinations(colBinningT0C, cfgNoMixedEvents, -1, collisions, collisions)) {
 
-      if (c1.index() == c2.index())
+      if (c1.index() == c2.index()) {
         continue;
+      }
 
       centrality = c1.centFT0C();
       if (cfgAccCor) {
         auto bc = c1.bc_as<aod::BCsWithTimestamps>();
         AccMap = ccdb->getForTimeStamp<TProfile2D>(cfgAccCorPath.value, bc.timestamp());
       }
-      if (!eventSelected(c1))
+      if (!eventSelected(c1)) {
         continue;
-      if (!eventSelected(c2))
+      }
+      if (!eventSelected(c2)) {
         continue;
+      }
 
       auto tracks1 = V0s.sliceBy(tracksPerCollisionV0, c1.globalIndex());
       auto tracks2 = V0s.sliceBy(tracksPerCollisionV0, c2.globalIndex());
@@ -585,18 +613,21 @@ struct lambdaTwoPartPolarization {
   {
     for (auto& [c1, c2] : selfCombinations(colBinningT0M, cfgNoMixedEvents, -1, collisions, collisions)) {
 
-      if (c1.index() == c2.index())
+      if (c1.index() == c2.index()) {
         continue;
+      }
 
       centrality = c1.centFT0M();
       if (cfgAccCor) {
         auto bc = c1.bc_as<aod::BCsWithTimestamps>();
         AccMap = ccdb->getForTimeStamp<TProfile2D>(cfgAccCorPath.value, bc.timestamp());
       }
-      if (!eventSelected(c1))
+      if (!eventSelected(c1)) {
         continue;
-      if (!eventSelected(c2))
+      }
+      if (!eventSelected(c2)) {
         continue;
+      }
 
       auto tracks1 = V0s.sliceBy(tracksPerCollisionV0, c1.globalIndex());
       auto tracks2 = V0s.sliceBy(tracksPerCollisionV0, c2.globalIndex());
