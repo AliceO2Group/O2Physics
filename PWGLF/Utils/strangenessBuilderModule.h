@@ -19,6 +19,8 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h" // IWYU pragma: keep
 #include "PWGLF/Utils/strangenessBuilderHelper.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/TPCVDriftManager.h"
 
 #include <Framework/AnalysisDataModel.h>
@@ -32,8 +34,6 @@
 #include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/TrackParametrization.h>
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/CCDB/RCTSelectionFlags.h"
 
 #include <TH1.h>
 #include <TMCProcess.h>
@@ -216,19 +216,19 @@ enum preselectParticleIndex { kGamma = 0,
                               kXiPlus,
                               kOmegaMinus,
                               kOmegaPlus,
-                              nPartTypes};
+                              nPartTypes };
 
 enum V0PreSelection : uint8_t { selGamma = 0,
                                 selK0Short,
                                 selLambda,
                                 selAntiLambda,
-                                nSelV0Types};
+                                nSelV0Types };
 
 enum CascPreSelection : uint8_t { selXiMinus = 0,
                                   selXiPlus,
                                   selOmegaMinus,
                                   selOmegaPlus,
-                                  nSelCascTypes};
+                                  nSelCascTypes };
 
 static constexpr float defaultK0MassWindowParameters[1][4] = {{2.81882e-03, 1.14057e-03, 1.72138e-03, 5.00262e-01}};
 static constexpr float defaultLambdaWindowParameters[1][4] = {{1.17518e-03, 1.24099e-04, 5.47937e-03, 3.08009e-01}};
@@ -396,10 +396,10 @@ struct cascadeConfigurables : o2::framework::ConfigurableGroup {
 struct preSelectOpts : o2::framework::ConfigurableGroup {
   std::string prefix = "preSelectOpts";
   o2::framework::Configurable<o2::framework::LabeledArray<int>> preselectedSpecies{"preselectedSpecies",
-                                                                              {defaultPreselectParameters[0], nPreselectParticles, nPreselectParameters, preselectParticleNames, parameterNames},
-                                                                              "Preselect this species with compatible TPC PID and mass info: 0/1 is false/true"};                                          
+                                                                                   {defaultPreselectParameters[0], nPreselectParticles, nPreselectParameters, preselectParticleNames, parameterNames},
+                                                                                   "Preselect this species with compatible TPC PID and mass info: 0/1 is false/true"};
 
-  std::vector<int> mEnabledPreselectedSpecies; // Vector of enabled preselected particle species                                                                              
+  std::vector<int> mEnabledPreselectedSpecies; // Vector of enabled preselected particle species
   // lifetime preselection options
   // apply lifetime cuts to V0 and cascade candidates
   // unit of measurement: centimeters
