@@ -136,7 +136,8 @@ enum class Track : o2::analysis::femto::datatypes::TrackType {
   kV0Daughter,
   kCascadeBachelor,
   kResonanceDaughter,
-  kKinkDaughter
+  kKinkDaughter,
+  kCharmDaughter
 };
 
 enum class V0 : o2::analysis::femto::datatypes::V0Type {
@@ -161,6 +162,13 @@ enum class TwoTrackResonance : o2::analysis::femto::datatypes::TwoTrackResonance
   kPhi,
   kKstar0,
   kKstar0Bar
+};
+
+enum class CharmHadron : o2::analysis::femto::datatypes::CharmHadronType {
+  kD0,
+  kD0Bar,
+  kDplus,
+  kLc
 };
 
 }; // namespace o2::analysis::femto::modes

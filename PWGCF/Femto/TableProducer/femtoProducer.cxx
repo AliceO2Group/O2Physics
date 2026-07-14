@@ -14,12 +14,15 @@
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
 #include "PWGCF/Femto/Core/cascadeBuilder.h"
+#include "PWGCF/Femto/Core/charmHadronBuilder.h"
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/kinkBuilder.h"
 #include "PWGCF/Femto/Core/mcBuilder.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
 #include "PWGCF/Femto/Core/v0Builder.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGLF/DataModel/LFKinkDecayTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
@@ -69,6 +72,8 @@ using Run3McRecoTracks = soa::Join<Run3FullPidTracks, o2::aod::McTrackLabels>;
 using Run3Vzeros = o2::aod::V0Datas;
 using Run3RecoVzeros = o2::soa::Join<o2::aod::V0Datas, o2::aod::McV0Labels>;
 
+using Run3D0Candidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>;
+
 using Run3Cascades = o2::aod::CascDatas;
 using Run3RecoCascades = o2::soa::Join<Run3Cascades, o2::aod::McCascLabels>;
 
@@ -109,6 +114,13 @@ struct FemtoProducer {
   v0builder::ConfLambdaBits confLambdaBits;
   v0builder::V0Builder<modes::V0::kLambda, v0builder::LambdaSelHistName, v0builder::LambdaFilterHistName> lambdaBuilder;
   v0builder::V0Builder<modes::V0::kAntiLambda, v0builder::AntilambdaSelHistName, v0builder::AntiLambdaFilterHistName> antilambdaBuilder;
+
+  // charm hadron builder 
+  charmhadronbuilder::CharmHadronBuilderProducts charmHadronBuilderProducts;
+  charmhadronbuilder::ConfD0Filters confD0Filters;
+  charmhadronbuilder::ConfD0Bits confD0Bits;
+  charmhadronbuilder::ConfD0Tables confD0Tables;
+  charmhadronbuilder::CharmHadronBuilder<modes::CharmHadron::kD0, charmhadronbuilder::D0SelHistName, charmhadronbuilder::D0FilterHistName> d0Builder;
 
   // cascade builder
   cascadebuilder::CascadeBuilderProducts cascadeBuilderProducts;
@@ -192,6 +204,9 @@ struct FemtoProducer {
     lambdaBuilder.init(&hRegistry, confLambdaBits, confV0Filters, confV0Tables, context, trackBuilder);
     antilambdaBuilder.init(&hRegistry, confLambdaBits, confV0Filters, confV0Tables, context, trackBuilder);
 
+    // configure d0 builder 
+    d0Builder.init(&hRegistry, confD0Bits, confD0Filters, confD0Tables, context);
+
     // configure kink builder
     sigmaBuilder.init(&hRegistry, confSigmaBits, confKinkFilters, confKinkTables, context, trackBuilder);
     sigmaPlusBuilder.init(&hRegistry, confSigmaPlusBits, confKinkFilters, confKinkTables, context, trackBuilder);
@@ -258,6 +273,13 @@ struct FemtoProducer {
     lambdaBuilder.fillMcV0s<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
     antilambdaBuilder.fillMcV0s<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
     k0shortBuilder.fillMcV0s<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, v0builderProducts, v0s, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
+  }
+
+  // processing D0s
+  template <modes::System system, typename T1, typename T2, typename T3>
+  void processD0s(T1 const& col, T2 const& tracks, T3 const& candidates) 
+  {
+    d0Builder.fillD0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, trackBuilder);
   }
 
   // processing kinks
@@ -347,6 +369,33 @@ struct FemtoProducer {
     processV0s<modes::System::kPbPb_Run3>(col, tracks, v0s);
   };
   PROCESS_SWITCH(FemtoProducer, processTracksV0sRun3PbPb, "Process tracks and v0s in PbPB collisions", false);
+
+  // process tracks and D0s
+  void processTracksD0sRun3pp(rawinputs::Run3PpCollisions::iterator const& col,
+                            o2::aod::BCsWithTimestamps const& bcs,
+                            rawinputs::Run3FullPidTracks const& tracks,
+                            rawinputs::Run3D0Candidates const& candidates)
+  {
+    if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracks)) return;
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
+    processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
+    processD0s<modes::System::kPP_Run3>(col, tracks, candidates);
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksD0sRun3pp, "Process tracks and D0s", false);
+
+  void processTracksD0sRun3PbPb(rawinputs::Run3PbPbCollisions::iterator const& col,
+                          o2::aod::BCsWithTimestamps const& bcs,
+                          rawinputs::Run3FullPidTracks const& tracks,
+                          rawinputs::Run3D0Candidates const& candidates)
+  {
+    if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracks)) return;
+      auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                              o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
+    processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
+    processD0s<modes::System::kPbPb_Run3>(col, tracks, candidates);
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksD0sRun3PbPb, "Process tracks and D0s", false);
 
   // process tracks and kinks
   void processTracksKinksRun3pp(rawinputs::Run3PpCollisions::iterator const& col,
