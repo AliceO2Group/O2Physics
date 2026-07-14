@@ -25,6 +25,8 @@
 #include <CommonDataFormat/TimeStamp.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
+//#include <DataFormatsITSMFT/DPLAlpideParam.h>
+#include <ITSMFTBase/DPLAlpideParam.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -180,10 +182,13 @@ struct UpcVmRof {
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternA;
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternB;
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternC;
+  std::vector<int> bcbIdx;
+  int nbcB = 0;
 
-  // constants related to ITS ROFs
-  static constexpr int RofPerOrbit = 6; // valid for pO, OO and PbPb in Run 3
-  static constexpr int RofShift = 64;   // bc shift of ITS. Valid for pO, OO and PbPb in Run 3
+  // variables to store ITS ROF info
+  int rofPerOrbit = -1; // number of rofs per orbit
+  int rofLength = -1; // number of bcs per ROF
+  int rofShift = -1;   // bc shift of ITS. 
 
   // variables to store run info
   int runNumberBc = 0;     // run number used to process BCs
@@ -192,7 +197,6 @@ struct UpcVmRof {
   int64_t orbitsPerTF = 0; // number of orbits per TF
   int64_t bcSOR = 0;       // first bc of the first orbit
   int64_t nBCsPerTF = 0;   // duration of TF in bcs
-  int64_t nBCsPerROF = 0;  //  number of bcs per ROF
   int64_t currentTF = -1;  // current time frame being looked at
   int64_t nTF = 0;         // number of time frames in run
 
@@ -216,16 +220,40 @@ struct UpcVmRof {
   Configurable<float> maxTrkDcaZ{"maxTrkDcaZ", 2.0, "max DCA in z of track to vtx (cm)"};
   Configurable<int> tfPerBin{"tfPerBin", 10000, "timeframes per bin 1e4 means some 28 s"};
 
+
+  
+  //--------------------------------------------------------------------------------
+  // get ITS ROF info
+  // code from https://github.com/AliceO2Group/O2Physics/blob/master/Common/Tools/EventSelectionModule.h#L779-L780
+  void getRofInfo()
+  {
+    auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", sor);
+    rofShift = alppar->roFrameBiasInBC;
+    rofLength = alppar->roFrameLengthInBC;
+    rofPerOrbit = static_cast<int>(o2::constants::lhc::LHCMaxBunches/rofLength);
+  }
+
   //--------------------------------------------------------------------------------
   // get filling scheme
   void getFillingScheme()
   {
+    // get the info
     auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", sor);
     beamPatternA = grplhcif->getBunchFilling().getBeamPattern(0);
     beamPatternC = grplhcif->getBunchFilling().getBeamPattern(1);
     bcPatternA = beamPatternA & ~beamPatternC;
     bcPatternB = beamPatternA & beamPatternC;
     bcPatternC = ~beamPatternA & beamPatternC;
+    // define internal indices to access the correct bin in histogram
+    bcbIdx.clear();
+    nbcB = 0;
+    for (int i = 0; i < o2::constants::lhc::LHCMaxBunches; i++) {
+      bcbIdx.push_back(-1);
+      if (bcPatternB.test(i)) {
+	bcbIdx[i]=nbcB;
+	nbcB++;
+      }
+    }
   } // end getFillingScheme()
 
   //--------------------------------------------------------------------------------
@@ -254,7 +282,6 @@ struct UpcVmRof {
     auto orbitSOR = runInfo.orbitSOR;
     auto orbitEOR = runInfo.orbitEOR;
     orbitsPerTF = runInfo.orbitsPerTF;
-    nBCsPerROF = o2::constants::lhc::LHCMaxBunches / RofPerOrbit;
     bcSOR = orbitSOR * o2::constants::lhc::LHCMaxBunches;        // first bc of the first orbit
     nBCsPerTF = orbitsPerTF * o2::constants::lhc::LHCMaxBunches; // duration of TF in bcs
     nTF = std::ceil((orbitEOR - orbitSOR) / orbitsPerTF);
@@ -278,12 +305,13 @@ struct UpcVmRof {
   // compute ROF for this BC
   int getRof(int64_t thisBC)
   {
-    int64_t bctmp = thisBC - RofShift;
+    int64_t bctmp = thisBC - rofShift;
     if (bctmp < 0)
-      bctmp = o2::constants::lhc::LHCMaxBunches - RofShift - 1;
-    return static_cast<int>(bctmp / nBCsPerROF);
+      bctmp = o2::constants::lhc::LHCMaxBunches - rofShift - 1;
+    return static_cast<int>(bctmp / rofLength);
   }
 
+  
   //--------------------------------------------------------------------------------
   // check flags for a bc
   bool checkBcFlags(const auto& bc, int run)
@@ -339,15 +367,24 @@ struct UpcVmRof {
     bcTH1Pointers[Form("bc/%d/bcPatternC_H", run)] = bcTH1Registry.add<TH1>(Form("bc/%d/bcPatternC_H", run), "Pattern of bc-C; bcID;",
                                                                             {HistType::kTH1D, {{o2::constants::lhc::LHCMaxBunches, -0.5, static_cast<double>(o2::constants::lhc::LHCMaxBunches) - 0.5}}});
 
-    // trigger info
+    // bc sel and tf info
+    int nBinsTF = static_cast<int>(nTF/tfPerBin)+1;
+    int lastTFinHisto = (nBinsTF*tfPerBin)-1; // first TF is zero
     bcTH1Pointers[Form("bc/%d/bcSel_H", run)] = bcTH1Registry.add<TH1>(Form("bc/%d/bcSel_H", run), "bc selection counter; selID; Counter",
                                                                        {HistType::kTH1D, {{4, -0.5, 3.5}}});
     bcTH1Pointers[Form("bc/%d/tf_H", run)] = bcTH1Registry.add<TH1>(Form("bc/%d/tf_H", run), "analysed time frames;TF;Counts",
-                                                                    {HistType::kTH1D, {{static_cast<int>(nTF / tfPerBin), -0.5, static_cast<double>(nTF) - 0.5}}});
+                                                                    {HistType::kTH1D, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}}});
+    // trigger info per rof
     bcTH2Pointers[Form("bc/%d/ft0Vtx_H", run)] = bcTH2Registry.add<TH2>(Form("bc/%d/ft0Vtx_H", run), "ft0Vtx triggers; TF; ROF; Counter",
-                                                                        {HistType::kTH2F, {{static_cast<int>(nTF / tfPerBin), -0.5, static_cast<double>(nTF) - 0.5}, {RofPerOrbit, -0.5, RofPerOrbit - 0.5}}});
+                                                                        {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {rofPerOrbit, -0.5, rofPerOrbit - 0.5}}});
     bcTH2Pointers[Form("bc/%d/ft0VtxCe_H", run)] = bcTH2Registry.add<TH2>(Form("bc/%d/ft0VtxCe_H", run), "ft0VtxCe triggers; TF; ROF; Counter",
-                                                                          {HistType::kTH2F, {{static_cast<int>(nTF / tfPerBin), -0.5, static_cast<double>(nTF) - 0.5}, {RofPerOrbit, -0.5, RofPerOrbit - 0.5}}});
+                                                                          {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {rofPerOrbit, -0.5, rofPerOrbit - 0.5}}});
+    // trigger info per bcb
+    bcTH2Pointers[Form("bc/%d/ft0Vtx_bcb_H", run)] = bcTH2Registry.add<TH2>(Form("bc/%d/ft0Vtx_bcb_H", run), "ft0Vtx triggers; TF; bc-B idx; Counter",
+									    {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {nbcB, -0.5, nbcB - 0.5}}});
+    bcTH2Pointers[Form("bc/%d/ft0VtxCe_bcb_H", run)] = bcTH2Registry.add<TH2>(Form("bc/%d/ft0VtxCe_bcb_H", run), "ft0Vtx triggers; TF; bc-B idx; Counter",
+									    {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {nbcB, -0.5, nbcB - 0.5}}});
+
 
   } // addBcHistos
 
@@ -415,11 +452,12 @@ struct UpcVmRof {
     if (runNumberBc != bcAt0.runNumber()) { // new run
       runNumberBc = bcAt0.runNumber();
       getRunInfo(runNumberBc);
-      addBcHistos(runNumberBc);
       getFillingScheme();
+      getRofInfo();
+      addBcHistos(runNumberBc);
       fillBcPatternHistos(runNumberBc);
     }
-
+    
     //--------------------------------------------------------------------------------
     for (const auto& bc : bcs) {
       // get info for this bc
@@ -448,8 +486,11 @@ struct UpcVmRof {
       bool ft0ceTrg = mask[Ft0CeIdx];
       if (ft0vtxTrg) {
         bcTH2Pointers[Form("bc/%d/ft0Vtx_H", runNumberBc)]->Fill(thisTF, thisROF);
-        if (ft0ceTrg)
+	bcTH2Pointers[Form("bc/%d/ft0Vtx_bcb_H", runNumberBc)]->Fill(thisTF, bcbIdx[thisBC]);
+        if (ft0ceTrg) {
           bcTH2Pointers[Form("bc/%d/ft0VtxCe_H", runNumberBc)]->Fill(thisTF, thisROF);
+	  bcTH2Pointers[Form("bc/%d/ft0VtxCe_bcb_H", runNumberBc)]->Fill(thisTF, bcbIdx[thisBC]);
+	}
       }
     } // loop over bcs
 
@@ -700,7 +741,7 @@ struct UpcVmRof {
   } // end processCol
   PROCESS_SWITCH(UpcVmRof, processCols, "get collisions and track information", true);
 
-}; // end of struct UpcVmRof
+  }; // end of struct UpcVmRof
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
