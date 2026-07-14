@@ -27,6 +27,12 @@
 #include <array>
 #include <cmath>
 
+namespace o2::upgrade::pid
+{
+static constexpr float NoPidSignal = -999.f;
+static constexpr float NoPidSignalThreshold = -990.f;
+} // namespace o2::upgrade::pid
+
 namespace o2::aod
 {
 namespace otfcascade
@@ -36,6 +42,8 @@ DECLARE_SOA_INDEX_COLUMN_FULL(CascadeTrack, cascadeTrack, int, Tracks, "_Cascade
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, Tracks, "_Pos");             //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, Tracks, "_Neg");             //!
 DECLARE_SOA_INDEX_COLUMN_FULL(BachTrack, bachTrack, int, Tracks, "_Bach");          //!
+
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
 
 // topo vars
 DECLARE_SOA_COLUMN(DcaV0Daughters, dcaV0Daughters, float);
@@ -69,6 +77,224 @@ DECLARE_SOA_TABLE(UpgradeCascades, "AOD", "UPGRADECASCADES",
                   otfcascade::FoundClusters);
 
 using UpgradeCascade = UpgradeCascades::iterator;
+
+DECLARE_SOA_TABLE(A3CascadeMcLabels, "AOD", "A3CASCADEMCLABELS",
+                  o2::soa::Index<>, otfcascade::McParticleId);
+
+namespace casc_pid
+{
+
+// Xi
+DECLARE_SOA_COLUMN(NSigmaInnerTofXiBachPi, nSigmaInnerTofXiBachPi, float);
+DECLARE_SOA_COLUMN(NSigmaInnerTofXiPosPr, nSigmaInnerTofXiPosPr, float);
+DECLARE_SOA_COLUMN(NSigmaInnerTofXiPosPi, nSigmaInnerTofXiPosPi, float);
+DECLARE_SOA_COLUMN(NSigmaInnerTofXiNegPr, nSigmaInnerTofXiNegPr, float);
+DECLARE_SOA_COLUMN(NSigmaInnerTofXiNegPi, nSigmaInnerTofXiNegPi, float);
+DECLARE_SOA_DYNAMIC_COLUMN(HasInnerTofXiBachPi, hasInnerTofXiBachPi,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasInnerTofXiPosPr, hasInnerTofXiPosPr,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasInnerTofXiPosPi, hasInnerTofXiPosPi,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasInnerTofXiNegPr, hasInnerTofXiNegPr,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasInnerTofXiNegPi, hasInnerTofXiNegPi,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+
+DECLARE_SOA_COLUMN(NSigmaOuterTofXiBachPi, nSigmaOuterTofXiBachPi, float);
+DECLARE_SOA_COLUMN(NSigmaOuterTofXiPosPr, nSigmaOuterTofXiPosPr, float);
+DECLARE_SOA_COLUMN(NSigmaOuterTofXiPosPi, nSigmaOuterTofXiPosPi, float);
+DECLARE_SOA_COLUMN(NSigmaOuterTofXiNegPr, nSigmaOuterTofXiNegPr, float);
+DECLARE_SOA_COLUMN(NSigmaOuterTofXiNegPi, nSigmaOuterTofXiNegPi, float);
+DECLARE_SOA_DYNAMIC_COLUMN(HasOuterTofXiBachPi, hasOuterTofXiBachPi,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasOuterTofXiPosPr, hasOuterTofXiPosPr,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasOuterTofXiPosPi, hasOuterTofXiPosPi,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasOuterTofXiNegPr, hasOuterTofXiNegPr,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasOuterTofXiNegPi, hasOuterTofXiNegPi,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+
+DECLARE_SOA_COLUMN(ExpectedInnerTofXiBachPi, expectedInnerTofXiBachPi, float);
+DECLARE_SOA_COLUMN(ExpectedInnerTofXiPosPr, expectedInnerTofXiPosPr, float);
+DECLARE_SOA_COLUMN(ExpectedInnerTofXiPosPi, expectedInnerTofXiPosPi, float);
+DECLARE_SOA_COLUMN(ExpectedInnerTofXiNegPr, expectedInnerTofXiNegPr, float);
+DECLARE_SOA_COLUMN(ExpectedInnerTofXiNegPi, expectedInnerTofXiNegPi, float);
+
+DECLARE_SOA_COLUMN(ExpectedOuterTofXiBachPi, expectedOuterTofXiBachPi, float);
+DECLARE_SOA_COLUMN(ExpectedOuterTofXiPosPr, expectedOuterTofXiPosPr, float);
+DECLARE_SOA_COLUMN(ExpectedOuterTofXiPosPi, expectedOuterTofXiPosPi, float);
+DECLARE_SOA_COLUMN(ExpectedOuterTofXiNegPr, expectedOuterTofXiNegPr, float);
+DECLARE_SOA_COLUMN(ExpectedOuterTofXiNegPi, expectedOuterTofXiNegPi, float);
+
+DECLARE_SOA_COLUMN(MeasuredInnerTofXiBachPi, measuredInnerTofXiBachPi, float);
+DECLARE_SOA_COLUMN(MeasuredInnerTofXiPosPr, measuredInnerTofXiPosPr, float);
+DECLARE_SOA_COLUMN(MeasuredInnerTofXiPosPi, measuredInnerTofXiPosPi, float);
+DECLARE_SOA_COLUMN(MeasuredInnerTofXiNegPr, measuredInnerTofXiNegPr, float);
+DECLARE_SOA_COLUMN(MeasuredInnerTofXiNegPi, measuredInnerTofXiNegPi, float);
+
+DECLARE_SOA_COLUMN(MeasuredOuterTofXiBachPi, measuredOuterTofXiBachPi, float);
+DECLARE_SOA_COLUMN(MeasuredOuterTofXiPosPr, measuredOuterTofXiPosPr, float);
+DECLARE_SOA_COLUMN(MeasuredOuterTofXiPosPi, measuredOuterTofXiPosPi, float);
+DECLARE_SOA_COLUMN(MeasuredOuterTofXiNegPr, measuredOuterTofXiNegPr, float);
+DECLARE_SOA_COLUMN(MeasuredOuterTofXiNegPi, measuredOuterTofXiNegPi, float);
+
+// Omega
+DECLARE_SOA_COLUMN(NSigmaInnerTofOmegaBachKa, nSigmaInnerTofOmegaBachKa, float);
+DECLARE_SOA_COLUMN(NSigmaInnerTofOmegaPosPr, nSigmaInnerTofOmegaPosPr, float);
+DECLARE_SOA_COLUMN(NSigmaInnerTofOmegaPosPi, nSigmaInnerTofOmegaPosPi, float);
+DECLARE_SOA_COLUMN(NSigmaInnerTofOmegaNegPr, nSigmaInnerTofOmegaNegPr, float);
+DECLARE_SOA_COLUMN(NSigmaInnerTofOmegaNegPi, nSigmaInnerTofOmegaNegPi, float);
+DECLARE_SOA_DYNAMIC_COLUMN(HasInnerTofOmegaBachKa, hasInnerTofOmegaBachKa,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasInnerTofOmegaPosPr, hasInnerTofOmegaPosPr,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasInnerTofOmegaPosPi, hasInnerTofOmegaPosPi,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasInnerTofOmegaNegPr, hasInnerTofOmegaNegPr,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasInnerTofOmegaNegPi, hasInnerTofOmegaNegPi,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+
+DECLARE_SOA_COLUMN(NSigmaOuterTofOmegaBachKa, nSigmaOuterTofOmegaBachKa, float);
+DECLARE_SOA_COLUMN(NSigmaOuterTofOmegaPosPr, nSigmaOuterTofOmegaPosPr, float);
+DECLARE_SOA_COLUMN(NSigmaOuterTofOmegaPosPi, nSigmaOuterTofOmegaPosPi, float);
+DECLARE_SOA_COLUMN(NSigmaOuterTofOmegaNegPr, nSigmaOuterTofOmegaNegPr, float);
+DECLARE_SOA_COLUMN(NSigmaOuterTofOmegaNegPi, nSigmaOuterTofOmegaNegPi, float);
+DECLARE_SOA_DYNAMIC_COLUMN(HasOuterTofOmegaBachKa, hasOuterTofOmegaBachKa,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasOuterTofOmegaPosPr, hasOuterTofOmegaPosPr,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasOuterTofOmegaPosPi, hasOuterTofOmegaPosPi,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasOuterTofOmegaNegPr, hasOuterTofOmegaNegPr,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasOuterTofOmegaNegPi, hasOuterTofOmegaNegPi,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+
+DECLARE_SOA_COLUMN(ExpectedInnerTofOmegaBachKa, expectedInnerTofOmegaBachKa, float);
+DECLARE_SOA_COLUMN(ExpectedInnerTofOmegaPosPr, expectedInnerTofOmegaPosPr, float);
+DECLARE_SOA_COLUMN(ExpectedInnerTofOmegaPosPi, expectedInnerTofOmegaPosPi, float);
+DECLARE_SOA_COLUMN(ExpectedInnerTofOmegaNegPr, expectedInnerTofOmegaNegPr, float);
+DECLARE_SOA_COLUMN(ExpectedInnerTofOmegaNegPi, expectedInnerTofOmegaNegPi, float);
+
+DECLARE_SOA_COLUMN(ExpectedOuterTofOmegaBachKa, expectedOuterTofOmegaBachKa, float);
+DECLARE_SOA_COLUMN(ExpectedOuterTofOmegaPosPr, expectedOuterTofOmegaPosPr, float);
+DECLARE_SOA_COLUMN(ExpectedOuterTofOmegaPosPi, expectedOuterTofOmegaPosPi, float);
+DECLARE_SOA_COLUMN(ExpectedOuterTofOmegaNegPr, expectedOuterTofOmegaNegPr, float);
+DECLARE_SOA_COLUMN(ExpectedOuterTofOmegaNegPi, expectedOuterTofOmegaNegPi, float);
+
+DECLARE_SOA_COLUMN(MeasuredInnerTofOmegaBachKa, measuredInnerTofOmegaBachKa, float);
+DECLARE_SOA_COLUMN(MeasuredInnerTofOmegaPosPr, measuredInnerTofOmegaPosPr, float);
+DECLARE_SOA_COLUMN(MeasuredInnerTofOmegaPosPi, measuredInnerTofOmegaPosPi, float);
+DECLARE_SOA_COLUMN(MeasuredInnerTofOmegaNegPr, measuredInnerTofOmegaNegPr, float);
+DECLARE_SOA_COLUMN(MeasuredInnerTofOmegaNegPi, measuredInnerTofOmegaNegPi, float);
+
+DECLARE_SOA_COLUMN(MeasuredOuterTofOmegaBachKa, measuredOuterTofOmegaBachKa, float);
+DECLARE_SOA_COLUMN(MeasuredOuterTofOmegaPosPr, measuredOuterTofOmegaPosPr, float);
+DECLARE_SOA_COLUMN(MeasuredOuterTofOmegaPosPi, measuredOuterTofOmegaPosPi, float);
+DECLARE_SOA_COLUMN(MeasuredOuterTofOmegaNegPr, measuredOuterTofOmegaNegPr, float);
+DECLARE_SOA_COLUMN(MeasuredOuterTofOmegaNegPi, measuredOuterTofOmegaNegPi, float);
+
+} // namespace casc_pid
+
+DECLARE_SOA_TABLE(A3XiInnerTofPid, "AOD", "A3XIITOFPID",
+                  casc_pid::NSigmaInnerTofXiBachPi,
+                  casc_pid::NSigmaInnerTofXiPosPr,
+                  casc_pid::NSigmaInnerTofXiPosPi,
+                  casc_pid::NSigmaInnerTofXiNegPr,
+                  casc_pid::NSigmaInnerTofXiNegPi,
+                  casc_pid::HasInnerTofXiBachPi<casc_pid::NSigmaInnerTofXiBachPi>,
+                  casc_pid::HasInnerTofXiPosPr<casc_pid::NSigmaInnerTofXiPosPr>,
+                  casc_pid::HasInnerTofXiPosPi<casc_pid::NSigmaInnerTofXiPosPi>,
+                  casc_pid::HasInnerTofXiNegPr<casc_pid::NSigmaInnerTofXiNegPr>,
+                  casc_pid::HasInnerTofXiNegPi<casc_pid::NSigmaInnerTofXiNegPi>);
+
+DECLARE_SOA_TABLE(A3XiOuterTofPid, "AOD", "A3XIOTOFPID",
+                  casc_pid::NSigmaOuterTofXiBachPi,
+                  casc_pid::NSigmaOuterTofXiPosPr,
+                  casc_pid::NSigmaOuterTofXiPosPi,
+                  casc_pid::NSigmaOuterTofXiNegPr,
+                  casc_pid::NSigmaOuterTofXiNegPi,
+                  casc_pid::HasOuterTofXiBachPi<casc_pid::NSigmaOuterTofXiBachPi>,
+                  casc_pid::HasOuterTofXiPosPr<casc_pid::NSigmaOuterTofXiPosPr>,
+                  casc_pid::HasOuterTofXiPosPi<casc_pid::NSigmaOuterTofXiPosPi>,
+                  casc_pid::HasOuterTofXiNegPr<casc_pid::NSigmaOuterTofXiNegPr>,
+                  casc_pid::HasOuterTofXiNegPi<casc_pid::NSigmaOuterTofXiNegPi>);
+
+DECLARE_SOA_TABLE(A3OmegaInnerTofPid, "AOD", "A3OMITOFPID",
+                  casc_pid::NSigmaInnerTofOmegaBachKa,
+                  casc_pid::NSigmaInnerTofOmegaPosPr,
+                  casc_pid::NSigmaInnerTofOmegaPosPi,
+                  casc_pid::NSigmaInnerTofOmegaNegPr,
+                  casc_pid::NSigmaInnerTofOmegaNegPi,
+                  casc_pid::HasInnerTofOmegaBachKa<casc_pid::NSigmaInnerTofOmegaBachKa>,
+                  casc_pid::HasInnerTofOmegaPosPr<casc_pid::NSigmaInnerTofOmegaPosPr>,
+                  casc_pid::HasInnerTofOmegaPosPi<casc_pid::NSigmaInnerTofOmegaPosPi>,
+                  casc_pid::HasInnerTofOmegaNegPr<casc_pid::NSigmaInnerTofOmegaNegPr>,
+                  casc_pid::HasInnerTofOmegaNegPi<casc_pid::NSigmaInnerTofOmegaNegPi>);
+
+DECLARE_SOA_TABLE(A3OmegaOuterTofPid, "AOD", "A3OMOTOFPID",
+                  casc_pid::NSigmaOuterTofOmegaBachKa,
+                  casc_pid::NSigmaOuterTofOmegaPosPr,
+                  casc_pid::NSigmaOuterTofOmegaPosPi,
+                  casc_pid::NSigmaOuterTofOmegaNegPr,
+                  casc_pid::NSigmaOuterTofOmegaNegPi,
+                  casc_pid::HasOuterTofOmegaBachKa<casc_pid::NSigmaOuterTofOmegaBachKa>,
+                  casc_pid::HasOuterTofOmegaPosPr<casc_pid::NSigmaOuterTofOmegaPosPr>,
+                  casc_pid::HasOuterTofOmegaPosPi<casc_pid::NSigmaOuterTofOmegaPosPi>,
+                  casc_pid::HasOuterTofOmegaNegPr<casc_pid::NSigmaOuterTofOmegaNegPr>,
+                  casc_pid::HasOuterTofOmegaNegPi<casc_pid::NSigmaOuterTofOmegaNegPi>);
+
+DECLARE_SOA_TABLE(A3XiExpectedInnerTimes, "AOD", "A3XIITIMES",
+                  casc_pid::ExpectedInnerTofXiBachPi,
+                  casc_pid::ExpectedInnerTofXiPosPr,
+                  casc_pid::ExpectedInnerTofXiPosPi,
+                  casc_pid::ExpectedInnerTofXiNegPr,
+                  casc_pid::ExpectedInnerTofXiNegPi,
+                  casc_pid::MeasuredInnerTofXiBachPi,
+                  casc_pid::MeasuredInnerTofXiPosPr,
+                  casc_pid::MeasuredInnerTofXiPosPi,
+                  casc_pid::MeasuredInnerTofXiNegPr,
+                  casc_pid::MeasuredInnerTofXiNegPi);
+
+DECLARE_SOA_TABLE(A3XiExpectedOuterTimes, "AOD", "A3XIOTIMES",
+                  casc_pid::ExpectedOuterTofXiBachPi,
+                  casc_pid::ExpectedOuterTofXiPosPr,
+                  casc_pid::ExpectedOuterTofXiPosPi,
+                  casc_pid::ExpectedOuterTofXiNegPr,
+                  casc_pid::ExpectedOuterTofXiNegPi,
+                  casc_pid::MeasuredOuterTofXiBachPi,
+                  casc_pid::MeasuredOuterTofXiPosPr,
+                  casc_pid::MeasuredOuterTofXiPosPi,
+                  casc_pid::MeasuredOuterTofXiNegPr,
+                  casc_pid::MeasuredOuterTofXiNegPi);
+
+DECLARE_SOA_TABLE(A3OmegaExpectedInnerTimes, "AOD", "A3OMITIMES",
+                  casc_pid::ExpectedInnerTofOmegaBachKa,
+                  casc_pid::ExpectedInnerTofOmegaPosPr,
+                  casc_pid::ExpectedInnerTofOmegaPosPi,
+                  casc_pid::ExpectedInnerTofOmegaNegPr,
+                  casc_pid::ExpectedInnerTofOmegaNegPi,
+                  casc_pid::MeasuredInnerTofOmegaBachKa,
+                  casc_pid::MeasuredInnerTofOmegaPosPr,
+                  casc_pid::MeasuredInnerTofOmegaPosPi,
+                  casc_pid::MeasuredInnerTofOmegaNegPr,
+                  casc_pid::MeasuredInnerTofOmegaNegPi);
+
+DECLARE_SOA_TABLE(A3OmegaExpectedOuterTimes, "AOD", "A3OMOTIMES",
+                  casc_pid::ExpectedOuterTofOmegaBachKa,
+                  casc_pid::ExpectedOuterTofOmegaPosPr,
+                  casc_pid::ExpectedOuterTofOmegaPosPi,
+                  casc_pid::ExpectedOuterTofOmegaNegPr,
+                  casc_pid::ExpectedOuterTofOmegaNegPi,
+                  casc_pid::MeasuredOuterTofOmegaBachKa,
+                  casc_pid::MeasuredOuterTofOmegaPosPr,
+                  casc_pid::MeasuredOuterTofOmegaPosPi,
+                  casc_pid::MeasuredOuterTofOmegaNegPr,
+                  casc_pid::MeasuredOuterTofOmegaNegPi);
 
 namespace otfv0
 {

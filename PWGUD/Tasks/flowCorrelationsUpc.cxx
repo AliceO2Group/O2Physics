@@ -11,11 +11,11 @@
 
 /// \file flowCorrelationsUpc.cxx
 /// \brief Provides a sparse with usefull two particle correlation info
-/// \author Yongxi Du (yongxi.du@cern.ch), Mingrui Zhao (mingrui.zhao@cern.ch, mingrui.zhao@mail.labz0.org)
-/// copied from Thor Jensen (thor.kjaersgaard.jensen@cern.ch) and Debojit Sarkar (debojit.sarkar@cern.ch)
+/// \author Yongxi Du (yongxi.du@cern.ch), Mingrui Zhao (mingrui.zhao@cern.ch, mingrui.zhao@mail.labz0.org), Zhiyong Lu (zhiyong.lu@cern.ch)
 
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/GenericFramework/Core/GFWWeights.h"
+#include "PWGCF/TwoParticleCorrelations/Core/DihadronContainer.h"
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/DataModel/UDTruegapsideTables.h"
@@ -51,18 +51,6 @@
 #include <utility>
 #include <vector>
 
-// namespace o2::aod
-// {
-// namespace flowcorrupc
-// {
-// DECLARE_SOA_COLUMN(Multiplicity, multiplicity, int);
-// DECLARE_SOA_COLUMN(Truegapside, truegapside, int);
-// } // namespace flowcorrupc
-// DECLARE_SOA_TABLE(Multiplicity, "AOD", "MULTIPLICITY",
-//                   flowcorrupc::Multiplicity);
-// DECLARE_SOA_TABLE(Truegapside, "AOD", "TRUEGAPSIDE", flowcorrupc::Truegapside);
-// } // namespace o2::aod
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -70,58 +58,6 @@ using namespace o2::constants::math;
 
 // define the filtered collisions and tracks
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
-
-// struct CalcNchUpc {
-//   O2_DEFINE_CONFIGURABLE(cfgZVtxCut, float, 10.0f, "Accepted z-vertex range")
-//   O2_DEFINE_CONFIGURABLE(cfgPtCutMin, float, 0.1f, "minimum accepted track pT")
-//   O2_DEFINE_CONFIGURABLE(cfgEtaCut, float, 0.9f, "Eta cut")
-//   O2_DEFINE_CONFIGURABLE(cfgMinMixEventNum, int, 5, "Minimum number of events to mix")
-
-//   // Added UPC Cuts
-//   SGSelector sgSelector;
-//   Configurable<float> cfgCutFV0{"cfgCutFV0", 50., "FV0A threshold"};
-//   Configurable<float> cfgCutFT0A{"cfgCutFT0A", 150., "FT0A threshold"};
-//   Configurable<float> cfgCutFT0C{"cfgCutFT0C", 50., "FT0C threshold"};
-//   Configurable<float> cfgCutZDC{"cfgCutZDC", 10., "ZDC threshold"};
-
-//   // Filter trackFilter = (nabs(aod::track::eta) < cfgEtaCut) && (aod::track::pt > cfgPtCutMin) && (aod::track::pt < cfgPtCutMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
-
-//   using UdTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
-//   using UdTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
-//   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDCollisionSelExtras>;
-
-//   Produces<aod::Multiplicity> multiplicityNch;
-//   Produces<aod::Truegapside> truegapside;
-
-//   HistogramRegistry registry{"registry"};
-
-//   void init(InitContext&)
-//   {
-//     AxisSpec axisNch = {100, 0, 100};
-//     AxisSpec axisVrtx = {10, -10, 10};
-//     // AxisSpec axisgap = {12, -6, 6};
-//     // std::vector<AxisSpec> trueGapBins = {-2, -1, 0, 1, 2, 3};
-//     // AxisSpec axisgap = {trueGapBins, "true gap side"};
-
-//     std::vector<double> binEdges = {-1.5, -0.5, 0.5, 1.5, 2.5, 3.5};
-//     AxisSpec axisgap = {binEdges, "true gap side"};
-//     registry.add("truegap", "truegap", {HistType::kTH1D, {axisgap}});
-
-//     registry.add("Ncharge", "N_{charge}", {HistType::kTH1D, {axisNch}});
-//     registry.add("zVtx_all", "zVtx_all", {HistType::kTH1D, {axisVrtx}});
-//     registry.add("Nch_vs_zVtx", "Nch vs zVtx", {HistType::kTH2D, {axisVrtx, axisNch}});
-//     // registry.add("truegap", "truegap", {HistType::kTH1D, {axisgap}});
-//   }
-
-//   void process(UDCollisionsFull::iterator const& collision, UdTracksFull const& tracks)
-//   {
-//     multiplicityNch(tracks.size());
-//     truegapside(sgSelector.trueGap(collision, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC));
-//     // LOG(info) << "truegapside=" <<  sgSelector.trueGap(collision, cfgCutFV0, cfgCutFT0A, cfgCutFT0C, cfgCutZDC);
-//     registry.fill(HIST("Ncharge"), tracks.size());
-//     registry.fill(HIST("zVtx_all"), collision.posZ());
-//   }
-// };
 
 struct FlowCorrelationsUpc {
   O2_DEFINE_CONFIGURABLE(cfgZVtxCut, float, 10.0f, "Accepted z-vertex range")
@@ -140,7 +76,7 @@ struct FlowCorrelationsUpc {
   O2_DEFINE_CONFIGURABLE(cfgRadiusHigh, float, 2.5, "High radius for merging cut")
   O2_DEFINE_CONFIGURABLE(cfgDcaxy, bool, true, "choose dcaxy")
   O2_DEFINE_CONFIGURABLE(cfgDcaz, bool, false, "choose dcaz")
-  O2_DEFINE_CONFIGURABLE(cfgDcazCut, float, 10.0, "dcaz cut")
+  O2_DEFINE_CONFIGURABLE(cfgDcazCut, float, 2.0, "dcaz cut")
   O2_DEFINE_CONFIGURABLE(cfgMaxTPCChi2NCl, int, 4, "tpcchi2")
   O2_DEFINE_CONFIGURABLE(cfgGapSide, int, 1, "choose one side 0:A; 1:C")
   O2_DEFINE_CONFIGURABLE(cfgGapSideMerge, bool, true, "merge A and C side")
@@ -148,9 +84,14 @@ struct FlowCorrelationsUpc {
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 50.0f, "minimum number of found TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum number of ITS clusters")
   O2_DEFINE_CONFIGURABLE(cfgGlobalTrack, bool, true, "require TPC+ITS track")
-  O2_DEFINE_CONFIGURABLE(cfgUseNchCorrected, bool, true, "use corrected Nch for X axis")
+  O2_DEFINE_CONFIGURABLE(cfgUseNchEffCorrected, bool, false, "use corrected Nch for X axis by efficiency correction")
+  O2_DEFINE_CONFIGURABLE(cfgUseNchRoughMCCorrected, bool, false, "use corrected Nch for X axis by Nch Reco vs True")
+  O2_DEFINE_CONFIGURABLE(cfgNchRoughMCFunction, std::string, "1.1*x + 0.3", "Function for Nch Reco vs True");
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgUseEventWeights, bool, false, "Use event weights for mixed event")
+  O2_DEFINE_CONFIGURABLE(cfgRctFlagEnabled, bool, false, "use run condition table flag")
+  O2_DEFINE_CONFIGURABLE(cfgRctFlagIndex, int, 1, "1: isCBTOk; 2:isCBTZdcOk; 3: isCBTHadronOk; 4:isCBTHadronZdcOk ")
+  O2_DEFINE_CONFIGURABLE(cfgIRMaxCut, double, 50, "maximum interaction rate for UPC events")
 
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
@@ -160,27 +101,19 @@ struct FlowCorrelationsUpc {
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -2, 2}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt associated axis for histograms"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 80, 100}, "multiplicity / centrality axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50}, "multiplicity / centrality axis for histograms"};
   ConfigurableAxis vtxMix{"vtxMix", {VARIABLE_WIDTH, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "vertex axis for mixed event histograms"};
   ConfigurableAxis multMix{"multMix", {VARIABLE_WIDTH, 0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 80, 100}, "multiplicity / centrality axis for mixed event histograms"};
-
-  ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
-  ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
-  ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
   ConfigurableAxis axisSample{"axisSample", {cfgSampleSize, 0, cfgSampleSize}, "sample axis for histograms"};
 
   // Added UPC Cuts
   SGSelector sgSelector;
-  Configurable<float> cfgCutFV0{"cfgCutFV0", 50., "FV0A threshold"};
-  Configurable<float> cfgCutFT0A{"cfgCutFT0A", 150., "FT0A threshold"};
-  Configurable<float> cfgCutFT0C{"cfgCutFT0C", 50., "FT0C threshold"};
-  Configurable<float> cfgCutZDC{"cfgCutZDC", 10., "ZDC threshold"};
   ConfigurableAxis axisIndependent{"axisIndependent", {VARIABLE_WIDTH, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60}, "X axis for histograms"};
-  ConfigurableAxis axisNch{"axisNch", {300, 0, 300}, "N_{ch}"};
 
   // Corrections
   TH3D* mEfficiency = nullptr;
   bool correctionsLoaded = false;
+  TF1* fnchRoughMCFunc = nullptr;
 
   // make the filters and cuts.
   Filter trackFilter = (aod::udtrack::isPVContributor == true);
@@ -194,22 +127,20 @@ struct FlowCorrelationsUpc {
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
+  // global variables
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
-
-  TAxis* fPtAxis = nullptr;
-  int lastRunNumber = -1;
-  std::vector<int> runNumbers; // map of TH3 histograms for all runs
   std::vector<float> efficiencyCache;
+  enum EventType {
+    SameEvent = 1,
+    MixedEvent = 3
+  };
 
-  using UdTracks = soa::Filtered<soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>>;
   using UdTracksFull = soa::Filtered<soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>>;
-
   using UDCollisionsFull = soa::Filtered<soa::Join<aod::UDCollisions, aod::Truegapside, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::Truegapside, aod::UDCollisionSelExtras>>;
 
   // Define the outputs
-  OutputObj<CorrelationContainer> same{Form("sameEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
-  OutputObj<CorrelationContainer> mixed{Form("mixedEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
-
+  OutputObj<DihadronContainer> sameDihadron{"sameEvent"};
+  OutputObj<DihadronContainer> mixedDihadron{"mixedEvent"};
   HistogramRegistry registry{"registry"};
 
   void init(InitContext&)
@@ -231,21 +162,16 @@ struct FlowCorrelationsUpc {
     registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisIndependent, axisPtTrigger}}});
 
     registry.add("eventcont", "bin", {HistType::kTH1F, {{10, 0, 10, "bin"}}});                                     // histogram to see how many events are in the same and mixed event
-    registry.add("deltaEta_deltaPhi_same", "deltaeta-deltaphi", {HistType::kTH2D, {axisDeltaEta, axisDeltaPhi}});  // histogram to check the delta eta and delta phi distribution
-    registry.add("deltaEta_deltaPhi_mixed", "deltaeta-deltaphi", {HistType::kTH2D, {axisDeltaEta, axisDeltaPhi}}); // histogram to check the delta eta and delta phi distribution
+    registry.get<TH1>(HIST("eventcont"))->GetXaxis()->SetBinLabel(4, "same");
+    registry.get<TH1>(HIST("eventcont"))->GetXaxis()->SetBinLabel(5, "mix pair");
+    registry.add("deltaPhi_deltaEta_same", "deltaphi-deltaeta", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});  // histogram to check the delta eta and delta phi distribution
+    registry.add("deltaPhi_deltaEta_mixed", "deltaphi-deltaeta", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}}); // histogram to check the delta eta and delta phi distribution
     registry.add("Nch_raw_vs_independent", "Raw vs Independent", {HistType::kTH2D, {axisMultiplicity, axisIndependent}});
+    registry.add("interactionRate", "kHz", {HistType::kTH1F, {{50, 0, 50, "kHz"}}});
 
-    // if (doprocessSim) {
-    //   registry.add("eventCounterMC", "Number of MC Events;; Count", {HistType::kTH1D, {{5, 0, 5}}});
-    //   registry.add("hVtxZMC", "Vexter Z distribution (MC)", {HistType::kTH1D, {axisVertex}});
-    //   registry.add("hMultMC", "Multiplicity distribution (MC)", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
-    //   registry.add("numberOfTracksMC", "Number of MC tracks;; Count", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
-    // }
-
-    o2::framework::AxisSpec axis = axisPtTrigger;
-    int nPtBins = axis.binEdges.size() - 1;
-    double* ptBins = &(axis.binEdges)[0];
-    fPtAxis = new TAxis(nPtBins, ptBins);
+    if (cfgUseNchRoughMCCorrected) {
+      fnchRoughMCFunc = new TF1("fnchRoughMCFunc", cfgNchRoughMCFunction->c_str(), 0, 100);
+    }
 
     std::vector<AxisSpec> corrAxis = {{axisSample, "Sample"},
                                       {axisVertex, "z-vtx (cm)"},
@@ -254,20 +180,11 @@ struct FlowCorrelationsUpc {
                                       {axisPtAssoc, "p_{T} (GeV/c)"},
                                       {axisDeltaPhi, "#Delta#varphi (rad)"},
                                       {axisDeltaEta, "#Delta#eta"}};
-    std::vector<AxisSpec> effAxis = {
-      {axisVertexEfficiency, "z-vtx (cm)"},
-      {axisPtEfficiency, "p_{T} (GeV/c)"},
-      {axisEtaEfficiency, "#eta"},
-    };
-    std::vector<AxisSpec> userAxis;
 
-    same.setObject(new CorrelationContainer(Form("sameEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("sameEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
-    mixed.setObject(new CorrelationContainer(Form("mixedEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("mixedEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
+    sameDihadron.setObject(new DihadronContainer("sameEvent", "sameEvent", corrAxis));
+    mixedDihadron.setObject(new DihadronContainer("mixedEvent", "mixedEvent", corrAxis));
+    LOGF(info, "End of init");
   }
-  enum EventType {
-    SameEvent = 1,
-    MixedEvent = 3
-  };
 
   template <typename TTrack>
   float getDPhiStar(TTrack const& track1, TTrack const& track2, float radius, int runnum, float phi1, float phi2)
@@ -292,12 +209,68 @@ struct FlowCorrelationsUpc {
     return dPhiStar;
   }
 
+  template <typename C>
+  bool isGoodRctFlag(const C& collision)
+  {
+    switch (cfgRctFlagIndex) {
+      case 1:
+        return sgSelector.isCBTOk(collision);
+      case 2:
+        return sgSelector.isCBTZdcOk(collision);
+      case 3:
+        return sgSelector.isCBTHadronOk(collision);
+      case 4:
+        return sgSelector.isCBTHadronZdcOk(collision);
+      default:
+        return true;
+    }
+  }
+
+  template <typename C>
+  bool eventSelected(const C& collision)
+  {
+    if (cfgIfVertex && std::abs(collision.posZ()) > cfgZVtxCut) {
+      return false;
+    }
+    if (!collision.vtxITSTPC()) {
+      return false;
+    }
+
+    if (!collision.sbp()) {
+      return false;
+    }
+
+    if (!collision.itsROFb()) {
+      return false;
+    }
+
+    if (!collision.tfb()) {
+      return false;
+    }
+
+    if (collision.hadronicRate() > cfgIRMaxCut) {
+      return false;
+    }
+
+    if (cfgRctFlagEnabled) {
+      if (!isGoodRctFlag(collision)) // check RCT flags
+        return false;
+    }
+
+    return true;
+  }
+
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
     // registry.fill(HIST("hTrackCount"), 0.5);
+    auto momentum = std::array<double, 3>{track.px(), track.py(), track.pz()};
+    double eta = RecoDecay::eta(momentum);
     // UPC selection
     if (track.pt() < cfgPtCutMin || track.pt() > cfgPtCutMax) {
+      return false;
+    }
+    if (std::fabs(eta) > cfgEtaCut) {
       return false;
     }
     if (cfgGlobalTrack && !(track.hasITS() && track.hasTPC())) {
@@ -341,7 +314,7 @@ struct FlowCorrelationsUpc {
       if (mEfficiency == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), static_cast<void*>(mEfficiency));
     }
     correctionsLoaded = true;
   }
@@ -388,7 +361,7 @@ struct FlowCorrelationsUpc {
     }
   }
 
-  template <CorrelationContainer::CFStep step, typename TTracks>
+  template <typename TTracks>
   void fillCorrelations(TTracks tracks1, TTracks tracks2, float posZ, int system, int runnum, float vtxz, float eventWeight, double independent) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
 
@@ -412,10 +385,10 @@ struct FlowCorrelationsUpc {
       if (!trackSelected(track1))
         continue;
 
-      auto momentum = std::array<double, 3>{track1.px(), track1.py(), track1.pz()};
-      double pt1 = RecoDecay::pt(momentum);
-      double phi1 = RecoDecay::phi(momentum);
-      double eta1 = RecoDecay::eta(momentum);
+      auto momentum1 = std::array<double, 3>{track1.px(), track1.py(), track1.pz()};
+      double pt1 = RecoDecay::pt(momentum1);
+      double phi1 = RecoDecay::phi(momentum1);
+      double eta1 = RecoDecay::eta(momentum1);
 
       // 计算track1的权重
       float weff1 = 1., wacc1 = 1.;
@@ -434,10 +407,10 @@ struct FlowCorrelationsUpc {
         if (system == MixedEvent && cfgUsePtOrderInMixEvent && pt1 <= track2.pt())
           continue;
 
-        auto momentum = std::array<double, 3>{track2.px(), track2.py(), track2.pz()};
-        double pt2 = RecoDecay::pt(momentum);
-        double phi2 = RecoDecay::phi(momentum);
-        double eta2 = RecoDecay::eta(momentum);
+        auto momentum2 = std::array<double, 3>{track2.px(), track2.py(), track2.pz()};
+        double pt2 = RecoDecay::pt(momentum2);
+        double phi2 = RecoDecay::phi(momentum2);
+        double eta2 = RecoDecay::eta(momentum2);
 
         float weff2 = 1., wacc2 = 1.;
         if (mEfficiency) {
@@ -473,11 +446,11 @@ struct FlowCorrelationsUpc {
 
         // fill the right sparse and histograms with weights
         if (system == SameEvent) {
-          same->getPairHist()->Fill(step, fSampleIndex, posZ, independent, pt1, pt2, deltaPhi, deltaEta, weight);
-          registry.fill(HIST("deltaEta_deltaPhi_same"), deltaPhi, deltaEta, weight);
+          sameDihadron->getCorrHist()->Fill(0, fSampleIndex, posZ, independent, pt1, pt2, deltaPhi, deltaEta, weight);
+          registry.fill(HIST("deltaPhi_deltaEta_same"), deltaPhi, deltaEta, weight);
         } else if (system == MixedEvent) {
-          mixed->getPairHist()->Fill(step, fSampleIndex, posZ, independent, pt1, pt2, deltaPhi, deltaEta, weight);
-          registry.fill(HIST("deltaEta_deltaPhi_mixed"), deltaPhi, deltaEta, weight);
+          mixedDihadron->getCorrHist()->Fill(0, fSampleIndex, posZ, independent, pt1, pt2, deltaPhi, deltaEta, weight);
+          registry.fill(HIST("deltaPhi_deltaEta_mixed"), deltaPhi, deltaEta, weight);
         }
       }
     }
@@ -485,7 +458,6 @@ struct FlowCorrelationsUpc {
 
   void processSame(UDCollisionsFull::iterator const& collision, UdTracksFull const& tracks)
   {
-    // LOG(info) << "Event passed filter: truegapside=" << collision.truegapside();
     if (tracks.size() < cfgMinMult || tracks.size() > cfgMaxMult) {
       return;
     }
@@ -493,6 +465,9 @@ struct FlowCorrelationsUpc {
     float vtxz = collision.posZ();
     auto currentRunNumber = collision.runNumber();
     auto runDuration = ccdb->getRunDuration(currentRunNumber);
+
+    if (!eventSelected(collision))
+      return;
 
     loadCorrections(runDuration.first);
 
@@ -512,7 +487,7 @@ struct FlowCorrelationsUpc {
 
       nTracksRaw += 1.;
 
-      if (cfgUseNchCorrected) {
+      if (cfgUseNchEffCorrected) {
         float weff = 1.;
         if (getEfficiencyCorrection(weff, eta, pt, vtxz)) {
           nTracksCorrected += weff;
@@ -520,25 +495,23 @@ struct FlowCorrelationsUpc {
       }
     }
     registry.fill(HIST("Nch_raw_vs_independent"), nTracksRaw, nTracksCorrected);
+    registry.fill(HIST("interactionRate"), collision.hadronicRate());
 
     double independent = nTracksRaw;
-    if (cfgUseNchCorrected) {
+    if (cfgUseNchEffCorrected) {
       independent = nTracksCorrected;
+    } else if (cfgUseNchRoughMCCorrected) {
+      independent = fnchRoughMCFunc->Eval(nTracksRaw);
     }
 
     fillYield(collision, tracks, vtxz);
 
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(
-      tracks, tracks, collision.posZ(), SameEvent,
-      currentRunNumber, vtxz, 1.0f, independent);
+    fillCorrelations(tracks, tracks, collision.posZ(), SameEvent, currentRunNumber, vtxz, 1.0f, independent);
   }
   PROCESS_SWITCH(FlowCorrelationsUpc, processSame, "Process same event", true);
 
-  // event mixing
-
   SliceCache cache;
   // using MixedBinning = ColumnBinningPolicy<aod::collision::PosZ, aod::flowcorrupc::Multiplicity>;
-
   // the process for filling the mixed events
   void processMixed(UDCollisionsFull const& collisions, UdTracksFull const& tracks)
   {
@@ -559,6 +532,8 @@ struct FlowCorrelationsUpc {
           tracks2.size() < cfgMinMult || tracks2.size() > cfgMaxMult) {
         continue;
       }
+      if (!eventSelected(collision1) || !eventSelected(collision2))
+        continue;
 
       auto runDuration1 = ccdb->getRunDuration(collision1.runNumber());
       loadCorrections(runDuration1.first);
@@ -578,7 +553,7 @@ struct FlowCorrelationsUpc {
 
         nTracksRaw += 1.;
 
-        if (cfgUseNchCorrected) {
+        if (cfgUseNchEffCorrected) {
           float weff = 1.;
           if (getEfficiencyCorrection(weff, eta, pt, collision1.posZ())) {
             nTracksCorrected += weff;
@@ -587,8 +562,10 @@ struct FlowCorrelationsUpc {
       }
 
       double independent = nTracksRaw;
-      if (cfgUseNchCorrected) {
+      if (cfgUseNchEffCorrected) {
         independent = nTracksCorrected;
+      } else if (cfgUseNchRoughMCCorrected) {
+        independent = fnchRoughMCFunc->Eval(nTracksRaw);
       }
 
       float eventWeight = 1.0f;
@@ -596,9 +573,7 @@ struct FlowCorrelationsUpc {
         eventWeight = 1.0f / it.currentWindowNeighbours();
       }
 
-      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(
-        tracks1, tracks2, collision1.posZ(), MixedEvent,
-        collision1.runNumber(), collision1.posZ(), eventWeight, independent);
+      fillCorrelations(tracks1, tracks2, collision1.posZ(), MixedEvent, collision1.runNumber(), collision1.posZ(), eventWeight, independent);
     }
   }
   PROCESS_SWITCH(FlowCorrelationsUpc, processMixed, "Process mixed events", true);
@@ -607,7 +582,6 @@ struct FlowCorrelationsUpc {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    // adaptAnalysisTask<CalcNchUpc>(cfgc),
     adaptAnalysisTask<FlowCorrelationsUpc>(cfgc),
   };
 }

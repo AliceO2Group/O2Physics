@@ -31,9 +31,9 @@ o2physics_add_dpl_workflow(skimmer-primary-electron
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(skimmer-primary-electron-sct
-                    SOURCES skimmerPrimaryElectronSCT.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::MLCore
+o2physics_add_dpl_workflow(skimmer-primary-electron-sv
+                    SOURCES skimmerPrimaryElectronSV.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(skimmer-primary-electron-qc
@@ -86,16 +86,6 @@ o2physics_add_dpl_workflow(filter-eoi
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(dielectron-producer
-                    SOURCES dielectronProducer.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(dimuon-producer
-                    SOURCES dimuonProducer.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(qvector-dummy-otf
                     SOURCES qVectorDummyOTF.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
@@ -109,6 +99,11 @@ o2physics_add_dpl_workflow(qvector2-dummy-otf
 o2physics_add_dpl_workflow(qvector3-dummy-otf
                     SOURCES qVector3DummyOTF.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(prefilter-dielectron
+                    SOURCES prefilterDielectron.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(prefilter-dimuon

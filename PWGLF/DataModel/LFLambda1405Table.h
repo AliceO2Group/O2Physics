@@ -48,9 +48,12 @@ DECLARE_SOA_COLUMN(DCAKinkDauToPV, dcaKinkDauToPV, float);   //! DCA of the kink
 DECLARE_SOA_COLUMN(NSigmaTPCPiDau, nSigmaTPCPiDau, float);   //! Number of sigmas for the lambda1405 pion daughter in TPC
 DECLARE_SOA_COLUMN(NSigmaTOFPiDau, nSigmaTOFPiDau, float);   //! Number of sigmas for the lambda1405 pion daughter in TOF
 
+// Event properties
+DECLARE_SOA_COLUMN(Centrality, centrality, float); //! Centrality of the candidate
+DECLARE_SOA_COLUMN(Occupancy, occupancy, float);   //! Occupancy of the candidate
+
 // Flow columns
 DECLARE_SOA_COLUMN(ScalarProd, scalarProd, float); //! Scalar product of the candidate
-DECLARE_SOA_COLUMN(Centrality, centrality, float); //! Centrality of the candidate
 
 // MC Columns
 DECLARE_SOA_COLUMN(PtMC, ptMC, float);                   //! pT of the candidate in MC
@@ -70,12 +73,14 @@ DECLARE_SOA_TABLE(Lambda1405Cands, "AOD", "LAMBDA1405",
                   lambda1405::NSigmaTPCPiKink, lambda1405::NSigmaTOFPiKink,
                   lambda1405::NSigmaTPCPrKink, lambda1405::NSigmaTOFPrKink,
                   lambda1405::DCAKinkDauToPV,
-                  lambda1405::NSigmaTPCPiDau, lambda1405::NSigmaTOFPiDau);
+                  lambda1405::NSigmaTPCPiDau, lambda1405::NSigmaTOFPiDau,
+                  lambda1405::Centrality, lambda1405::Occupancy);
 
 DECLARE_SOA_TABLE(Lambda1405Flow, "AOD", "LAMBDA1405FLOW",
                   o2::soa::Index<>,
-                  lambda1405::Pt,
-                  lambda1405::Mass, lambda1405::SigmaMinusMass, lambda1405::SigmaPlusMass,
+                  lambda1405::Pt, lambda1405::Mass,
+                  lambda1405::PtSigma,
+                  lambda1405::SigmaMinusMass, lambda1405::SigmaPlusMass,
                   lambda1405::AlphaAPSigma, lambda1405::QtAPSigma,
                   lambda1405::NSigmaTPCPiKink, lambda1405::NSigmaTOFPiKink,
                   lambda1405::NSigmaTPCPrKink, lambda1405::NSigmaTOFPrKink,
@@ -94,7 +99,8 @@ DECLARE_SOA_TABLE(Lambda1405CandsMC, "AOD", "MCLAMBDA1405",
                   lambda1405::NSigmaTPCPrKink, lambda1405::NSigmaTOFPrKink,
                   lambda1405::DCAKinkDauToPV,
                   lambda1405::NSigmaTPCPiDau, lambda1405::NSigmaTOFPiDau,
-                  lambda1405::PtMC, lambda1405::MassMC, lambda1405::SigmaPdgCode, lambda1405::KinkDauPdgCode);
+                  lambda1405::PtMC, lambda1405::MassMC, lambda1405::SigmaPdgCode, lambda1405::KinkDauPdgCode,
+                  lambda1405::Centrality, lambda1405::Occupancy);
 
 } // namespace o2::aod
 

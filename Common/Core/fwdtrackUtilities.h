@@ -18,7 +18,6 @@
 #ifndef COMMON_CORE_FWDTRACKUTILITIES_H_
 #define COMMON_CORE_FWDTRACKUTILITIES_H_
 
-#include <Framework/AnalysisDataModel.h>
 #include <Framework/DataTypes.h>
 #include <GlobalTracking/MatchGlobalFwd.h>
 #include <MCHTracking/TrackExtrap.h>
@@ -29,6 +28,7 @@
 #include <Math/SMatrix.h>
 
 #include <array>
+#include <concepts>
 #include <cstdint>
 #include <type_traits>
 #include <vector>
@@ -48,6 +48,16 @@ using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double
 using SMatrix55Std = ROOT::Math::SMatrix<double, 5>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
 
+template <typename T>
+concept is_fwd_track = requires(T t) {
+  { t.rAtAbsorberEnd() } -> std::same_as<float>;
+};
+
+template <typename T>
+concept is_fwd_cov = requires(T t) {
+  { t.sigmaX() } -> std::same_as<float>;
+};
+
 /// Produce TrackParCovFwds for MFT and FwdTracks, w/ or w/o cov, with z shift
 template <typename TFwdTrack, typename... TCovariance>
 o2::track::TrackParCovFwd getTrackParCovFwdShift(TFwdTrack const& track, float zshift, TCovariance const&... covOpt)
@@ -55,7 +65,7 @@ o2::track::TrackParCovFwd getTrackParCovFwdShift(TFwdTrack const& track, float z
   double chi2 = track.chi2();
   if constexpr (sizeof...(covOpt) == 0) {
     // No covariance passed
-    if constexpr (std::is_same_v<std::decay_t<TFwdTrack>, aod::FwdTracks::iterator>) {
+    if constexpr (is_fwd_track<TFwdTrack>) {
       if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
         chi2 = track.chi2() * (2.f * track.nClusters() - 5.f);
       }
@@ -63,7 +73,7 @@ o2::track::TrackParCovFwd getTrackParCovFwdShift(TFwdTrack const& track, float z
   } else {
     // Covariance passed
     using TCov = std::decay_t<decltype((covOpt, ...))>;
-    if constexpr (std::is_same_v<TCov, aod::FwdTracksCov::iterator>) {
+    if constexpr (is_fwd_cov<TCov>) {
       if (track.trackType() == o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) {
         chi2 = track.chi2() * (2.f * track.nClusters() - 5.f);
       }

@@ -22,7 +22,7 @@ o2physics_add_dpl_workflow(f1protonreducedtable
 
 o2physics_add_dpl_workflow(doublephitable
     SOURCES doublephitable.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(filterf1proton
@@ -52,6 +52,11 @@ o2physics_add_dpl_workflow(heptaquarktable
 
 o2physics_add_dpl_workflow(cksspinalignment
     SOURCES cksspinalignment.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(phiflow
+    SOURCES phiflow.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 

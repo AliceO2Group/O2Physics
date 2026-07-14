@@ -27,6 +27,8 @@
 ///
 /// \author Alberto Calivà <alberto.caliva@cern.ch>
 
+#include "PWGLF/DataModel/mcCentrality.h"
+
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -36,7 +38,6 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/Logger.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
@@ -49,8 +50,9 @@
 #include <TPDGCode.h>
 #include <TTree.h>
 
+#include <RtypesCore.h>
+
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -62,6 +64,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 using namespace o2::constants::math;
+
+constexpr double massHypertriton = 2.99116;
+
+using GenCollisionsMc = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
 // Lightweight particle container
 struct ReducedParticle {
@@ -83,9 +89,12 @@ struct CoalescenceTreeProducer {
 
   // Configurable analysis parameters
   Configurable<float> zVtxMax{"zVtxMax", 10.f, "Maximum |z vertex| in cm"};
+  Configurable<float> multMin{"multMin", 0.f, "Lower edge of the multiplicity/centrality interval (%)"};
+  Configurable<float> multMax{"multMax", 90.f, "Upper edge of the multiplicity/centrality interval (%)"};
   Configurable<float> etaMax{"etaMax", 1.5f, "Maximum |eta| for generated particles"};
-  Configurable<float> pRhoMax{"pRhoMax", 1.0f, "Maximum Jacobi p_rho in GeV/c"};
-  Configurable<float> pLambdaMax{"pLambdaMax", 1.0f, "Maximum Jacobi p_lambda in GeV/c"};
+  Configurable<float> pRhoMax{"pRhoMax", 0.5f, "Maximum Jacobi p_rho in GeV/c"};
+  Configurable<float> pLambdaMax{"pLambdaMax", 0.5f, "Maximum Jacobi p_lambda in GeV/c"};
+  Configurable<float> yMax{"yMax", 0.5f, "Maximum rapidity"};
 
   // Output tree storing bound-state candidates
   OutputObj<TTree> treeBoundState{"treeBoundState", OutputObjHandlingPolicy::AnalysisObject};
@@ -109,8 +118,17 @@ struct CoalescenceTreeProducer {
     registry.add("eventCounter", "event Counter", HistType::kTH1F, {{5, 0, 5, "counter"}});
     registry.get<TH1>(HIST("eventCounter"))->GetXaxis()->SetBinLabel(1, "Before z-vertex cut");
     registry.get<TH1>(HIST("eventCounter"))->GetXaxis()->SetBinLabel(2, "After z-vertex cut");
-    registry.get<TH1>(HIST("eventCounter"))->GetXaxis()->SetBinLabel(3, "After non-empty constituent lists");
-    registry.get<TH1>(HIST("eventCounter"))->GetXaxis()->SetBinLabel(4, "After non-empty candidate lists");
+    registry.get<TH1>(HIST("eventCounter"))->GetXaxis()->SetBinLabel(3, "After multiplicity selection");
+    registry.get<TH1>(HIST("eventCounter"))->GetXaxis()->SetBinLabel(4, "After non-empty constituent lists");
+    registry.get<TH1>(HIST("eventCounter"))->GetXaxis()->SetBinLabel(5, "After non-empty candidate lists");
+
+    // Multiplicity distribution
+    registry.add("multDistribution", "multiplicity distribution", HistType::kTH1F, {{200, 0, 100, "Multiplicity (%)"}});
+
+    // pt distributions of constituents (to be used for re-weighting)
+    registry.add("ptProtons", "ptProtons", HistType::kTH1F, {{200, 0, 10, "p_{T} (GeV/c)"}});
+    registry.add("ptNeutrons", "ptNeutrons", HistType::kTH1F, {{200, 0, 10, "p_{T} (GeV/c)"}});
+    registry.add("ptLambdas", "ptLambdas", HistType::kTH1F, {{200, 0, 10, "p_{T} (GeV/c)"}});
 
     // Output tree for bound-state candidates
     treeBoundState.setObject(new TTree("BoundStateTree", "Tree for coalescence"));
@@ -173,7 +191,7 @@ struct CoalescenceTreeProducer {
 
   // Apply a momentum-space skim using Jacobi momenta in the candidate rest frame
   template <typename ReducedPart>
-  bool passThreeBodySkim(const ReducedPart& b1, const ReducedPart& b2, const ReducedPart& b3)
+  bool passThreeBodySkim(const ReducedPart& b1, const ReducedPart& b2, const ReducedPart& b3, double massBoundState)
   {
     // Constituent masses from PDG codes
     double m1 = massFromPdg(b1.pdgPart);
@@ -189,10 +207,15 @@ struct CoalescenceTreeProducer {
     auto p4B3 = ROOT::Math::PxPyPzMVector{b3.pxPart, b3.pyPart, b3.pzPart, m3};
 
     // Candidate four-momentum
-    auto candidate = p4B1 + p4B2 + p4B3;
+    ROOT::Math::PxPyPzMVector p4Candidate(p4B1.Px() + p4B2.Px() + p4B3.Px(), p4B1.Py() + p4B2.Py() + p4B3.Py(), p4B1.Pz() + p4B2.Pz() + p4B3.Pz(), massBoundState);
+
+    // Apply rapidity selection
+    if (std::abs(p4Candidate.Rapidity()) > yMax) {
+      return false;
+    }
 
     // Boost to the candidate rest frame
-    auto betaCandidate = candidate.BoostToCM();
+    auto betaCandidate = p4Candidate.BoostToCM();
     ROOT::Math::Boost boostToRest(betaCandidate);
 
     // Constituent momenta in the candidate rest frame
@@ -223,7 +246,7 @@ struct CoalescenceTreeProducer {
   Preslice<aod::McParticles> mcParticlesPerMcCollision = o2::aod::mcparticle::mcCollisionId;
 
   // Process Hypertriton
-  void processHypertriton(aod::McCollisions const& collisions, aod::McParticles const& mcParticles)
+  void processHypertriton(GenCollisionsMc const& collisions, aod::McParticles const& mcParticles)
   {
     // Loop over MC collisions
     for (const auto& collision : collisions) {
@@ -238,7 +261,16 @@ struct CoalescenceTreeProducer {
       // Event counter after z-vertex cut
       registry.fill(HIST("eventCounter"), 1.5);
 
-      // To be implemented: maybe add INEL>0 selection
+      // Multiplicity Distribution
+      const float multiplicityPerc = collision.centFT0M();
+      registry.fill(HIST("multDistribution"), multiplicityPerc);
+
+      // Multiplicity selection
+      if (multiplicityPerc < multMin || multiplicityPerc > multMax)
+        continue;
+
+      // Event counter multiplicity selection
+      registry.fill(HIST("eventCounter"), 2.5);
 
       // Get particles in this MC collision
       const auto mcParticlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, collision.globalIndex());
@@ -276,6 +308,21 @@ struct CoalescenceTreeProducer {
         if (std::abs(particle.pdgCode()) == PDG_t::kLambda0) {
           lambdas.push_back({particle.globalIndex(), particle.pdgCode(), particle.vx(), particle.vy(), particle.vz(), particle.vt(), particle.px(), particle.py(), particle.pz()});
         }
+
+        // Rapidity selection
+        if (std::abs(particle.y()) > yMax)
+          continue;
+
+        // Pt distributions of constituents
+        if (std::abs(particle.pdgCode()) == PDG_t::kProton) {
+          registry.fill(HIST("ptProtons"), particle.pt());
+        }
+        if (std::abs(particle.pdgCode()) == PDG_t::kNeutron) {
+          registry.fill(HIST("ptNeutrons"), particle.pt());
+        }
+        if (std::abs(particle.pdgCode()) == PDG_t::kLambda0) {
+          registry.fill(HIST("ptLambdas"), particle.pt());
+        }
       } // end of loop over MC particles
 
       // Reject events that do not contain at least one proton, one neutron, and one lambda
@@ -283,7 +330,7 @@ struct CoalescenceTreeProducer {
         continue;
 
       // Event counter: events containing all three constituent species
-      registry.fill(HIST("eventCounter"), 2.5);
+      registry.fill(HIST("eventCounter"), 3.5);
 
       // Count matter and antimatter candidates in the event
       Long64_t nCandidatesMatter(0);
@@ -298,7 +345,7 @@ struct CoalescenceTreeProducer {
             // Skip mixed-sign combinations
             if (!isMatter && !isAntimatter)
               continue;
-            const bool passSkim = passThreeBodySkim(proton, neutron, lambda);
+            const bool passSkim = passThreeBodySkim(proton, neutron, lambda, massHypertriton);
 
             if (isMatter && passSkim)
               nCandidatesMatter++;
@@ -313,7 +360,7 @@ struct CoalescenceTreeProducer {
         continue;
 
       // Event counter: number of events with at least one candidate
-      registry.fill(HIST("eventCounter"), 3.5);
+      registry.fill(HIST("eventCounter"), 4.5);
 
       // Store number of candidates per event
       nMatterCandidatesPerEvent = nCandidatesMatter;
@@ -332,7 +379,7 @@ struct CoalescenceTreeProducer {
               continue;
 
             // Apply momentum-space selection
-            const bool passSkim = passThreeBodySkim(proton, neutron, lambda);
+            const bool passSkim = passThreeBodySkim(proton, neutron, lambda, massHypertriton);
             if (!passSkim)
               continue;
 

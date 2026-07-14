@@ -227,6 +227,7 @@ DECLARE_SOA_COLUMN(PiNsigmTOF, piNsigmTOF, float);                         //! A
 DECLARE_SOA_COLUMN(MCandHadron, mCandHadron, float);                       //! Invariant mass of Lc/Sc+Hadron combined system
 DECLARE_SOA_COLUMN(PtCombined, ptCombined, float);                         //! Transverse momentum of combined Lc+Hadron system
 DECLARE_SOA_COLUMN(MV0, mV0, float);                                       //! Invariant mass of V0
+DECLARE_SOA_COLUMN(MV0Ref, mV0Ref, float);                                 //! Invariant mass of reflected V0
 } // namespace hf_correlation_lc_hadron
 
 DECLARE_SOA_TABLE(PtLcFromScHPair, "AOD", "PTLCSCHPAIR", //! Sc-->Lc pT for paired Sc-proton
@@ -259,9 +260,9 @@ DECLARE_SOA_TABLE(CandHadronInvMass, "AOD", "CANDHIMASS", //! Lc-Hadron mass
                   aod::hf_correlation_lc_hadron::MCandHadron,
                   aod::hf_correlation_lc_hadron::PtCombined);
 DECLARE_SOA_TABLE(PairedV0InvMass, "AOD", "PAIRV0IMASS", //! invarient mass of v0 which paired with  charm candidates
-                  aod::hf_correlation_lc_hadron::MV0);
+                  aod::hf_correlation_lc_hadron::MV0, aod::hf_correlation_lc_hadron::MV0Ref);
 DECLARE_SOA_TABLE(V0InvMass, "AOD", "V0IMASS", //! invarient mass of v0
-                  aod::hf_correlation_lc_hadron::MV0);
+                  aod::hf_correlation_lc_hadron::MV0, aod::hf_correlation_lc_hadron::MV0Ref);
 
 DECLARE_SOA_TABLE(LcHadronRecoInfo, "AOD", "LCHRECOINFO", //! Lc-Hadrons pairs Reconstructed Informations
                   aod::hf_correlation_lc_hadron::MLc,
@@ -315,6 +316,7 @@ DECLARE_SOA_TABLE(CandCharge, "AOD", "CANDCHARGE",
 // definition of columns and tables for Ds-Hadron correlation pairs
 namespace hf_correlation_ds_hadron
 {
+DECLARE_SOA_COLUMN(Centrality, centrality, float);                         //! Centrality of Collision
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                             //! DeltaPhi between Ds and Hadrons
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                             //! DeltaEta between Ds and Hadrons
 DECLARE_SOA_COLUMN(SignedPtD, signedPtD, float);                           //! Transverse momentum of Ds
@@ -340,7 +342,8 @@ DECLARE_SOA_TABLE(DsHadronPair, "AOD", "DSHPAIR", //! Ds-Hadrons pairs Informati
                   aod::hf_correlation_ds_hadron::SignedPtD,
                   aod::hf_correlation_ds_hadron::SignedPtHadron,
                   aod::hf_correlation_ds_hadron::PoolBin,
-                  aod::hf_correlation_ds_hadron::NumPvContrib);
+                  aod::hf_correlation_ds_hadron::NumPvContrib,
+                  aod::hf_correlation_ds_hadron::Centrality);
 
 DECLARE_SOA_TABLE(DsHadronRecoInfo, "AOD", "DSHRECOINFO", //! Ds-Hadrons pairs Reconstructed Information
                   aod::hf_correlation_ds_hadron::MD,
@@ -361,7 +364,8 @@ DECLARE_SOA_TABLE(DsCandRecoInfo, "AOD", "DSCANDRECOINFO", //! Ds candidates Rec
                   aod::hf_correlation_ds_hadron::SignedPtD,
                   aod::hf_correlation_ds_hadron::MlScorePrompt,
                   aod::hf_correlation_ds_hadron::MlScoreBkg,
-                  aod::hf_correlation_ds_hadron::NumPvContrib);
+                  aod::hf_correlation_ds_hadron::NumPvContrib,
+                  aod::hf_correlation_ds_hadron::Centrality);
 
 DECLARE_SOA_TABLE(DsCandGenInfo, "AOD", "DSCANDGENOINFO", //! Ds candidates Generated Information
                   aod::hf_correlation_ds_hadron::IsPrompt);

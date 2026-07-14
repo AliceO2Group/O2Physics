@@ -18,7 +18,6 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
@@ -63,6 +62,31 @@ using namespace o2::constants::math;
 
 namespace o2::aod
 {
+namespace colspcalib
+{
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
+DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);
+DECLARE_SOA_COLUMN(Cent, cent, float);
+DECLARE_SOA_COLUMN(Vx, vx, float);
+DECLARE_SOA_COLUMN(Vy, vy, float);
+DECLARE_SOA_COLUMN(Vz, vz, float);
+DECLARE_SOA_COLUMN(ZnaEnergyCommon, znaEnergyCommon, float);
+DECLARE_SOA_COLUMN(ZncEnergyCommon, zncEnergyCommon, float);
+DECLARE_SOA_COLUMN(ZnaEnergy, znaEnergy, float[4]);
+DECLARE_SOA_COLUMN(ZncEnergy, zncEnergy, float[4]);
+} // namespace colspcalib
+DECLARE_SOA_TABLE(ColSpCalib, "AOD", "COLSPCALIB", o2::soa::Index<>,
+                  colspcalib::RunNumber,
+                  colspcalib::Timestamp,
+                  colspcalib::Cent,
+                  colspcalib::Vx,
+                  colspcalib::Vy,
+                  colspcalib::Vz,
+                  colspcalib::ZnaEnergyCommon,
+                  colspcalib::ZncEnergyCommon,
+                  colspcalib::ZnaEnergy,
+                  colspcalib::ZncEnergy);
+
 namespace colspext
 {
 DECLARE_SOA_COLUMN(SelColFlag, selColFlag, bool);
@@ -71,7 +95,7 @@ DECLARE_SOA_COLUMN(Ya, ya, float);
 DECLARE_SOA_COLUMN(Xc, xc, float);
 DECLARE_SOA_COLUMN(Yc, yc, float);
 } // namespace colspext
-DECLARE_SOA_TABLE(ColSPExt, "AOD", "COLSPEXT", o2::soa::Index<>,
+DECLARE_SOA_TABLE(ColSPExt, "AOD", "COLSPSEXT", o2::soa::Index<>,
                   colspext::SelColFlag,
                   colspext::Xa,
                   colspext::Ya,
@@ -137,6 +161,130 @@ enum V0Type {
   kAntiLambda
 };
 
+struct SpCalibTableProducer {
+  // Table producer
+  Produces<aod::ColSpCalib> colSpCalibTable;
+
+  // Configurables
+  // Collisions
+  Configurable<float> cMinZVtx{"cMinZVtx", -10.0, "Min VtxZ cut"};
+  Configurable<float> cMaxZVtx{"cMaxZVtx", 10.0, "Max VtxZ cut"};
+  Configurable<float> cMinCent{"cMinCent", 0., "Minumum Centrality"};
+  Configurable<float> cMaxCent{"cMaxCent", 100.0, "Maximum Centrality"};
+  Configurable<bool> cSel8Trig{"cSel8Trig", true, "Sel8 (T0A + T0C) Selection Run3"};
+  Configurable<bool> cPileupReject{"cPileupReject", true, "Pileup rejection"};
+  Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", true, "z-vtx time diff selection"};
+  Configurable<bool> cIsGoodITSLayers{"cIsGoodITSLayers", true, "Good ITS Layers All"};
+  Configurable<float> cMinOccupancy{"cMinOccupancy", 0, "Minimum FT0C Occupancy"};
+  Configurable<float> cMaxOccupancy{"cMaxOccupancy", 1e6, "Maximum FT0C Occupancy"};
+
+  // Histogram Registry.
+  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  // Run number
+  uint64_t runNum = 0, timestamp = 0;
+  float mult = 0., cent = 0., posX = 0., posY = 0., posZ = 0.;
+
+  void init(InitContext const&)
+  {
+    // Histogram collision
+    histos.add("hCent", "Centrality", kTH1F, {{100, 0., 100., "FT0C%"}});
+    histos.add("hVz", "V_{z}", kTH1F, {{100, -10., 10., "V_{z}(cm)"}});
+  }
+
+  template <typename C>
+  bool selCollision(C const& col)
+  {
+    if (col.posZ() <= cMinZVtx || col.posZ() >= cMaxZVtx) { // VtxZ selection
+      return false;
+    }
+
+    if (cSel8Trig && !col.sel8()) { // Sel8 selection
+      return false;
+    }
+
+    cent = col.centFT0C();
+    if (cent <= cMinCent || cent >= cMaxCent) { // Centrality selection
+      return false;
+    }
+
+    if (col.ft0cOccupancyInTimeRange() < cMinOccupancy || col.ft0cOccupancyInTimeRange() > cMaxOccupancy) { // Occupancy cut
+      return false;
+    }
+
+    if (cPileupReject && !col.selection_bit(aod::evsel::kNoSameBunchPileup)) { // Pile-up rejection
+      return false;
+    }
+
+    if (cZVtxTimeDiff && !col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) { // ZvtxFT0 vs PV
+      return false;
+    }
+
+    if (cIsGoodITSLayers && !col.selection_bit(aod::evsel::kIsGoodITSLayersAll)) { // All ITS layer active
+      return false;
+    }
+
+    // Set Multiplicity
+    mult = col.multTPC();
+
+    return true;
+  }
+
+  template <typename B, typename C>
+  void analyzeCollision(B const& bc, C const& collision)
+  {
+    // Check zdc
+    if (!bc.has_zdc()) {
+      return;
+    }
+
+    // Event selection
+    if (!selCollision(collision)) {
+      return;
+    }
+    posX = collision.posX();
+    posY = collision.posY();
+    posZ = collision.posZ();
+
+    auto zdc = bc.zdc();
+    auto znaEnergy = zdc.energySectorZNA();
+    auto zncEnergy = zdc.energySectorZNC();
+    auto znaEnergyCommon = zdc.energyCommonZNA();
+    auto zncEnergyCommon = zdc.energyCommonZNC();
+
+    // check energy deposits
+    if (znaEnergyCommon <= 0 || zncEnergyCommon <= 0 || znaEnergy[0] <= 0 || znaEnergy[1] <= 0 || znaEnergy[2] <= 0 || znaEnergy[3] <= 0 || zncEnergy[0] <= 0 || zncEnergy[1] <= 0 || zncEnergy[2] <= 0 || zncEnergy[3] <= 0) {
+      return;
+    }
+
+    // Fill collision table
+    histos.fill(HIST("hCent"), cent);
+    histos.fill(HIST("hVz"), posZ);
+    colSpCalibTable(runNum, timestamp, cent, posX, posY, posZ, znaEnergyCommon, zncEnergyCommon, znaEnergy.data(), zncEnergy.data());
+
+    // Done
+    return;
+  }
+
+  using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
+  using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::TPCMults, aod::PVMults, aod::MultsGlobal, aod::MultsExtra>;
+
+  void processDummy(CollisionsRun3::iterator const&) {}
+
+  PROCESS_SWITCH(SpCalibTableProducer, processDummy, "Dummy process", true);
+
+  void processFEP(CollisionsRun3::iterator const& collision, BCsRun3 const&, aod::Zdcs const&)
+  {
+    // Get bunch crossing
+    auto bc = collision.template foundBC_as<BCsRun3>();
+    runNum = collision.template foundBC_as<BCsRun3>().runNumber();
+    timestamp = collision.template foundBC_as<BCsRun3>().timestamp();
+    analyzeCollision(bc, collision);
+  }
+
+  PROCESS_SWITCH(SpCalibTableProducer, processFEP, "Flow Event Plane Table Producer", false);
+};
+
 struct SpectatorPlaneTableProducer {
   // Table producer
   Produces<aod::ColSPExt> colSPExtTable;
@@ -149,35 +297,31 @@ struct SpectatorPlaneTableProducer {
   Configurable<float> cMinCent{"cMinCent", 0., "Minumum Centrality"};
   Configurable<float> cMaxCent{"cMaxCent", 100.0, "Maximum Centrality"};
   Configurable<bool> cSel8Trig{"cSel8Trig", true, "Sel8 (T0A + T0C) Selection Run3"};
-  Configurable<bool> cTriggerTvxSel{"cTriggerTvxSel", false, "Trigger Time and Vertex Selection"};
-  Configurable<bool> cTFBorder{"cTFBorder", false, "Timeframe Border Selection"};
-  Configurable<bool> cNoItsROBorder{"cNoItsROBorder", false, "No ITSRO Border Cut"};
-  Configurable<bool> cItsTpcVtx{"cItsTpcVtx", false, "ITS+TPC Vertex Selection"};
   Configurable<bool> cPileupReject{"cPileupReject", true, "Pileup rejection"};
-  Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", false, "z-vtx time diff selection"};
+  Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", true, "z-vtx time diff selection"};
   Configurable<bool> cIsGoodITSLayers{"cIsGoodITSLayers", true, "Good ITS Layers All"};
   Configurable<float> cMinOccupancy{"cMinOccupancy", 0, "Minimum FT0C Occupancy"};
   Configurable<float> cMaxOccupancy{"cMaxOccupancy", 1e6, "Maximum FT0C Occupancy"};
 
-  // Gain calibration
-  Configurable<bool> cDoGainCalib{"cDoGainCalib", false, "Gain Calib Flag"};
-  Configurable<bool> cUseAlphaZDC{"cUseAlphaZDC", true, "Use Alpha ZDC"};
-
   // Coarse binning factor
-  Configurable<int> cAxisCBF{"cAxisCBF", 5, "Coarse Bin Factor"};
+  Configurable<int> cAxisCBF{"cAxisCBF", 10, "Coarse Bin Factor"};
 
   // Cent Vx Vy Vz Bins
-  Configurable<int> cAxisCentBins{"cAxisCentBins", 20, "NBins Centrality"};
-  Configurable<int> cAxisVxyBins{"cAxisVxyBins", 20, "NBins Vx Vy"};
-  Configurable<int> cAxisVzBins{"cAxisVzBins", 20, "NBins Vz"};
-  Configurable<float> cAxisVxMin{"cAxisVxMin", -0.06, "Vx Min"};
-  Configurable<float> cAxisVxMax{"cAxisVxMax", -0.02, "Vx Max"};
+  Configurable<int> cAxisCentBins{"cAxisCentBins", 50, "NBins Centrality"};
+  Configurable<int> cAxisVxyBins{"cAxisVxyBins", 50, "NBins Vx Vy"};
+  Configurable<int> cAxisVzBins{"cAxisVzBins", 50, "NBins Vz"};
+  Configurable<float> cAxisVxMin{"cAxisVxMin", -0.01, "Vx Min"};
+  Configurable<float> cAxisVxMax{"cAxisVxMax", 0.01, "Vx Max"};
   Configurable<float> cAxisVyMin{"cAxisVyMin", -0.01, "Vy Min"};
-  Configurable<float> cAxisVyMax{"cAxisVyMax", 0.006, "Vy Max"};
+  Configurable<float> cAxisVyMax{"cAxisVyMax", 0.01, "Vy Max"};
+  Configurable<bool> cRecentVxVy{"cRecentVxVy", true, "Vx / Vy recentering"};
 
   // Corrections
-  Configurable<bool> cApplyRecentCorr{"cApplyRecentCorr", false, "Apply recentering"};
-  Configurable<std::vector<int>> cCorrFlagVector{"cCorrFlagVector", {0, 0, 0, 0, 0, 0}, "Correction Flag"};
+  Configurable<bool> cLoadCorrection{"cLoadCorrection", true, "Load corrections"};
+  Configurable<bool> cDoGainCalib{"cDoGainCalib", true, "Gain Calib Flag"};
+  Configurable<bool> cUseAlphaZDC{"cUseAlphaZDC", true, "Use Alpha ZDC"};
+  Configurable<bool> cApplyRecentCorr{"cApplyRecentCorr", true, "Apply recentering"};
+  Configurable<std::vector<int>> cCorrFlagVector{"cCorrFlagVector", {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "Correction Flag"};
 
   // CCDB
   Configurable<std::string> cCcdbUrl{"cCcdbUrl", "http://ccdb-test.cern.ch:8080", "url of ccdb"};
@@ -228,9 +372,11 @@ struct SpectatorPlaneTableProducer {
 
   // Container for histograms
   struct CorrectionHistContainer {
+    TProfile* hVx;
+    TProfile* hVy;
     std::array<TH2F*, 2> hGainCalib;
-    std::array<std::array<std::array<THnSparseF*, 1>, 4>, 6> vCoarseCorrHist;
-    std::array<std::array<std::array<TProfile*, 4>, 4>, 6> vFineCorrHist;
+    std::array<std::array<std::array<THnSparseF*, 1>, 4>, 14> vCoarseCorrHist;
+    std::array<std::array<std::array<TProfile*, 4>, 4>, 14> vFineCorrHist;
   } CorrectionHistContainer;
 
   // Run number
@@ -275,6 +421,10 @@ struct SpectatorPlaneTableProducer {
     histos.add("Event/hVx", "V_{x}", kTH1F, {axisVx});
     histos.add("Event/hVy", "V_{y}", kTH1F, {axisVy});
     histos.add("Event/hVz", "V_{z}", kTH1F, {axisVz});
+
+    // Vx / Vy Recent
+    histos.add("Event/hVxVsCent", "<Vx> Vs Cent", kTProfile, {axisCent});
+    histos.add("Event/hVyVsCent", "<Vy> Vs Cent", kTProfile, {axisCent});
 
     // Gain calib
     histos.add("QA/GainCalib/hZNASignal", "ZNA Signal", kTH2F, {{4, 0, 4}, {axisZDCEnergy}});
@@ -324,6 +474,7 @@ struct SpectatorPlaneTableProducer {
     histos.add("DF/hQaQc", "X^{A}_{1}X^{C}_{1} + Y^{A}_{1}Y^{C}_{1}", kTProfile, {axisCent});
   }
 
+  // Select collsion
   template <typename C>
   bool selCollision(C const& col)
   {
@@ -344,22 +495,6 @@ struct SpectatorPlaneTableProducer {
       return false;
     }
 
-    if (cTriggerTvxSel && !col.selection_bit(aod::evsel::kIsTriggerTVX)) { // Time and Vertex trigger
-      return false;
-    }
-
-    if (cTFBorder && !col.selection_bit(aod::evsel::kNoTimeFrameBorder)) { // Time frame border
-      return false;
-    }
-
-    if (cNoItsROBorder && !col.selection_bit(aod::evsel::kNoITSROFrameBorder)) { // ITS Readout frame border
-      return false;
-    }
-
-    if (cItsTpcVtx && !col.selection_bit(aod::evsel::kIsVertexITSTPC)) { // ITS+TPC Vertex
-      return false;
-    }
-
     if (cPileupReject && !col.selection_bit(aod::evsel::kNoSameBunchPileup)) { // Pile-up rejection
       return false;
     }
@@ -373,7 +508,7 @@ struct SpectatorPlaneTableProducer {
     }
 
     // Set Multiplicity
-    mult = col.multNTracksHasTPC();
+    mult = col.multTPC();
 
     return true;
   }
@@ -381,6 +516,14 @@ struct SpectatorPlaneTableProducer {
   // Load Gain Calibrations and ZDC Q-Vector Recentering Corrections
   void loadCorrections()
   {
+    // Load Vx / Vy recentering
+    if (cRecentVxVy) {
+      std::string ccdbPath = static_cast<std::string>(cCcdbPath) + "/VxVyRecent" + "/Run" + std::to_string(cRunNum);
+      auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, nolaterthan.value);
+      CorrectionHistContainer.hVx = reinterpret_cast<TProfile*>(ccdbObj->FindObject("hVx"));
+      CorrectionHistContainer.hVy = reinterpret_cast<TProfile*>(ccdbObj->FindObject("hVy"));
+    }
+
     // Load ZDC gain calibration
     if (cDoGainCalib) {
       std::string ccdbPath = static_cast<std::string>(cCcdbPath) + "/GainCalib" + "/Run" + std::to_string(cRunNum);
@@ -444,8 +587,8 @@ struct SpectatorPlaneTableProducer {
   {
     float vA = 0., vC = 0.;
     for (int i = 0; i < static_cast<int>(eA.size()); ++i) {
-      vA = CorrectionHistContainer.hGainCalib[0]->GetBinContent(CorrectionHistContainer.hGainCalib[0]->FindBin(i + 0.5, vz + 0.00001));
-      vC = CorrectionHistContainer.hGainCalib[1]->GetBinContent(CorrectionHistContainer.hGainCalib[1]->FindBin(i + 0.5, vz + 0.00001));
+      vA = CorrectionHistContainer.hGainCalib[0]->GetBinContent(CorrectionHistContainer.hGainCalib[0]->FindBin(i + 0.5, vz));
+      vC = CorrectionHistContainer.hGainCalib[1]->GetBinContent(CorrectionHistContainer.hGainCalib[1]->FindBin(i + 0.5, vz));
       eA[i] *= vA;
       eC[i] *= vC;
     }
@@ -459,10 +602,10 @@ struct SpectatorPlaneTableProducer {
       int cntrx = 0;
       for (auto const& v : CorrectionHistContainer.vCoarseCorrHist[itr]) {
         for (auto const& h : v) {
-          binarray[kCent] = h->GetAxis(kCent)->FindBin(vCollParam[kCent] + 0.0001);
-          binarray[kVx] = h->GetAxis(kVx)->FindBin(vCollParam[kVx] + 0.0001);
-          binarray[kVy] = h->GetAxis(kVy)->FindBin(vCollParam[kVy] + 0.0001);
-          binarray[kVz] = h->GetAxis(kVz)->FindBin(vCollParam[kVz] + 0.0001);
+          binarray[kCent] = h->GetAxis(kCent)->FindBin(vCollParam[kCent]);
+          binarray[kVx] = h->GetAxis(kVx)->FindBin(vCollParam[kVx]);
+          binarray[kVy] = h->GetAxis(kVy)->FindBin(vCollParam[kVy]);
+          binarray[kVz] = h->GetAxis(kVz)->FindBin(vCollParam[kVz]);
           vAvgOutput[cntrx] += h->GetBinContent(h->GetBin(binarray));
         }
         ++cntrx;
@@ -472,7 +615,7 @@ struct SpectatorPlaneTableProducer {
       for (auto const& v : CorrectionHistContainer.vFineCorrHist[itr]) {
         int cntry = 0;
         for (auto const& h : v) {
-          vAvgOutput[cntrx] += h->GetBinContent(h->GetXaxis()->FindBin(vCollParam[cntry] + 0.0001));
+          vAvgOutput[cntrx] += h->GetBinContent(h->GetXaxis()->FindBin(vCollParam[cntry]));
           ++cntry;
         }
         ++cntrx;
@@ -482,7 +625,7 @@ struct SpectatorPlaneTableProducer {
     return vAvgOutput;
   }
 
-  void applyCorrection(std::array<float, 4> const& inputParam, std::array<float, 4>& outputParam)
+  void applyCorrection(const std::array<float, 4>& inputParam, std::array<float, 4>& outputParam)
   {
     std::vector<int> vCorrFlags = static_cast<std::vector<int>>(cCorrFlagVector);
     int nitr = vCorrFlags.size();
@@ -505,7 +648,7 @@ struct SpectatorPlaneTableProducer {
       // Get averages
       std::vector<float> vAvg = getAvgCorrFactors(i, corrType, inputParam);
 
-      // Apply correction
+      // Apply recentering
       outputParam[kXa] -= vAvg[kXa];
       outputParam[kYa] -= vAvg[kYa];
       outputParam[kXc] -= vAvg[kXc];
@@ -544,6 +687,11 @@ struct SpectatorPlaneTableProducer {
   template <typename C, typename B>
   bool analyzeCollision(B const& bc, C const& collision, std::array<float, 4>& vSP)
   {
+    // Check ZDC
+    if (!bc.has_zdc()) {
+      return false;
+    }
+
     // Event selection
     if (!selCollision(collision)) {
       return false;
@@ -553,34 +701,40 @@ struct SpectatorPlaneTableProducer {
     posZ = collision.posZ();
     std::array<float, 4> vCollParam = {cent, posX, posY, posZ};
 
-    // Fill event QA
-    histos.fill(HIST("Event/hCent"), cent);
-    histos.fill(HIST("Event/hVx"), posX);
-    histos.fill(HIST("Event/hVy"), posY);
-    histos.fill(HIST("Event/hVz"), posZ);
-
-    // check zdc
-    if (!bc.has_zdc()) {
-      return false;
-    }
-
+    // Zdc information
     auto zdc = bc.zdc();
     auto znaEnergy = zdc.energySectorZNA();
     auto zncEnergy = zdc.energySectorZNC();
     auto znaEnergyCommon = zdc.energyCommonZNA();
     auto zncEnergyCommon = zdc.energyCommonZNC();
 
-    // check energy deposits
+    // Check energy deposits
     if (znaEnergyCommon <= 0 || zncEnergyCommon <= 0 || znaEnergy[0] <= 0 || znaEnergy[1] <= 0 || znaEnergy[2] <= 0 || znaEnergy[3] <= 0 || zncEnergy[0] <= 0 || zncEnergy[1] <= 0 || zncEnergy[2] <= 0 || zncEnergy[3] <= 0) {
       return false;
     }
 
+    // Selected Collision with required ZDC
+    // Fill avg Vx / Vy
+    histos.fill(HIST("Event/hVxVsCent"), cent, posX);
+    histos.fill(HIST("Event/hVyVsCent"), cent, posY);
+
+    // Apply Vx / Vy recentering
+    if (cRecentVxVy) {
+      vCollParam[kVx] -= CorrectionHistContainer.hVx->GetBinContent(CorrectionHistContainer.hVx->FindBin(cent));
+      vCollParam[kVy] -= CorrectionHistContainer.hVy->GetBinContent(CorrectionHistContainer.hVy->FindBin(cent));
+    }
+
+    // Apply Vx / Vy selection [-10., 10.] mm
+    if (std::abs(vCollParam[kVx]) >= cAxisVxMax || std::abs(vCollParam[kVy]) >= cAxisVyMax) {
+      return false;
+    }
+
     // Fill gain calib histograms
+    histos.fill(HIST("QA/hZNAEnergyCommon"), vCollParam[kVz], znaEnergyCommon);
+    histos.fill(HIST("QA/hZNCEnergyCommon"), vCollParam[kVz], zncEnergyCommon);
     for (int iCh = 0; iCh < kXYAC; ++iCh) {
       histos.fill(HIST("QA/hZNASignal"), iCh + 0.5, vCollParam[kVz], znaEnergy[iCh]);
       histos.fill(HIST("QA/hZNCSignal"), iCh + 0.5, vCollParam[kVz], zncEnergy[iCh]);
-      histos.fill(HIST("QA/hZNAEnergyCommon"), vCollParam[kVz], znaEnergyCommon);
-      histos.fill(HIST("QA/hZNCEnergyCommon"), vCollParam[kVz], zncEnergyCommon);
     }
 
     // Do gain calibration
@@ -593,6 +747,12 @@ struct SpectatorPlaneTableProducer {
       histos.fill(HIST("QA/GainCalib/hZNASignal"), iCh + 0.5, znaEnergy[iCh]);
       histos.fill(HIST("QA/GainCalib/hZNCSignal"), iCh + 0.5, zncEnergy[iCh]);
     }
+
+    // Fill event QA
+    histos.fill(HIST("Event/hCent"), vCollParam[kCent]);
+    histos.fill(HIST("Event/hVx"), vCollParam[kVx]);
+    histos.fill(HIST("Event/hVy"), vCollParam[kVy]);
+    histos.fill(HIST("Event/hVz"), vCollParam[kVz]);
 
     auto alphaZDC = 0.395;
     const double x[4] = {-1.75, 1.75, -1.75, 1.75};
@@ -703,8 +863,12 @@ struct SpectatorPlaneTableProducer {
   }
 
   using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
-  using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::MultsExtra>;
-  using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::TOFSignal, aod::pidTPCEl, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPr, aod::pidTOFPr, aod::TrackCompColls>;
+  using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::TPCMults, aod::PVMults, aod::MultsGlobal, aod::MultsExtra>;
+  using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::TOFSignal, aod::pidTPCEl, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPr, aod::pidTOFPr>;
+
+  void processDummy(CollisionsRun3::iterator const&) {}
+
+  PROCESS_SWITCH(SpectatorPlaneTableProducer, processDummy, "Dummy process", true);
 
   void processSpectatorPlane(CollisionsRun3::iterator const& collision, BCsRun3 const&, aod::Zdcs const&)
   {
@@ -712,7 +876,7 @@ struct SpectatorPlaneTableProducer {
     auto bc = collision.template foundBC_as<BCsRun3>();
     cRunNum = collision.template foundBC_as<BCsRun3>().runNumber();
 
-    if (lRunNum != cRunNum) {
+    if (cLoadCorrection && lRunNum != cRunNum) {
       loadCorrections();
     }
 
@@ -746,7 +910,7 @@ struct SpectatorPlaneTableProducer {
     colSPExtTable(colSPExtFlag, vSP[kXa], vSP[kYa], vSP[kXc], vSP[kYc]);
   }
 
-  PROCESS_SWITCH(SpectatorPlaneTableProducer, processSpectatorPlane, "Spectator Plane Process", true);
+  PROCESS_SWITCH(SpectatorPlaneTableProducer, processSpectatorPlane, "Spectator Plane Process", false);
 
   void processIdHadrons(Tracks const& tracks)
   {
@@ -764,7 +928,8 @@ struct SpectatorPlaneTableProducer {
 
 struct FlowEventPlane {
   // Tracks
-  Configurable<int> cNEtaBins{"cNEtaBins", 5, "# of eta bins"};
+  Configurable<int> cEtaBins{"cEtaBins", 5, "# of eta bins"};
+  Configurable<float> cEtaCut{"cEtaCut", 0.8, "Rapidity cut"};
 
   // Pi,Ka,Pr
   Configurable<float> cMinPtPi{"cMinPtPi", 0.2, "Pion min pT"};
@@ -772,10 +937,7 @@ struct FlowEventPlane {
   Configurable<float> cMinPtPr{"cMinPtPr", 0.5, "Proton min pT"};
 
   // Resonance
-  Configurable<int> cNRapBins{"cNRapBins", 5, "# of y bins"};
   Configurable<int> cPhiInvMassBins{"cPhiInvMassBins", 500, "# of Phi mass bins"};
-  Configurable<int> cKStarInvMassBins{"cKStarInvMassBins", 200, "# of Phi mass bins"};
-  Configurable<float> cResRapCut{"cResRapCut", 0.5, "Resonance rapidity cut"};
 
   // V0
   // Tracks
@@ -788,15 +950,13 @@ struct FlowEventPlane {
   Configurable<float> cMinDcaProtonToPV{"cMinDcaProtonToPV", 0.01, "Minimum Proton DCAr to PV"};
   Configurable<float> cMinDcaPionToPV{"cMinDcaPionToPV", 0.1, "Minimum Pion DCAr to PV"};
   Configurable<float> cDcaV0Dau{"cDcaV0Dau", 1., "DCA between V0 daughters"};
-  Configurable<float> cDcaV0ToPv{"cDcaV0ToPv", 0.1, "DCA V0 to PV"};
   Configurable<float> cMinV0Radius{"cMinV0Radius", 0.5, "Minimum V0 radius from PV"};
   Configurable<float> cK0ShortCTau{"cK0ShortCTau", 20.0, "Decay length cut K0Short"};
   Configurable<float> cLambdaCTau{"cLambdaCTau", 30.0, "Decay length cut Lambda"};
-  Configurable<float> cK0ShortCosPA{"cK0ShortCosPA", 0.998, "K0Short CosPA"};
-  Configurable<float> cLambdaCosPA{"cLambdaCosPA", 0.998, "Lambda CosPA"};
+  Configurable<float> cK0ShortCosPA{"cK0ShortCosPA", 0.97, "K0Short CosPA"};
+  Configurable<float> cLambdaCosPA{"cLambdaCosPA", 0.98, "Lambda CosPA"};
   Configurable<float> cK0SMassRej{"cK0SMassRej", 0.01, "Reject K0Short Candidates"};
   Configurable<float> cArmPodSel{"cArmPodSel", 0.2, "Armentros-Podolanski Selection for K0S"};
-  Configurable<float> cV0RapCut{"cV0RapCut", 0.8, "V0 rap cut"};
   Configurable<float> cK0SMinPt{"cK0SMinPt", 0.4, "K0S Min pT"};
   Configurable<float> cK0SMaxPt{"cK0SMaxPt", 6.0, "K0S Max pT"};
   Configurable<float> cLambdaMinPt{"cLambdaMinPt", 0.6, "Lambda Min pT"};
@@ -810,8 +970,6 @@ struct FlowEventPlane {
   std::array<float, 4> vSP = {0., 0., 0., 0.};
   std::map<ResoType, std::array<float, 2>> mResoDauMass = {{kPhi0, {MassKaonCharged, MassKaonCharged}}, {kKStar, {MassPionCharged, MassKaonCharged}}};
   std::map<ResoType, float> mResoMass = {{kPhi0, MassPhi}, {kKStar, MassKaonCharged}};
-  std::map<V0Type, float> mV0Ctau = {{kK0S, cK0ShortCTau}, {kLambda, cLambdaCTau}, {kAntiLambda, cLambdaCTau}};
-  std::map<V0Type, float> mV0CosPA = {{kK0S, cK0ShortCosPA}, {kLambda, cLambdaCosPA}, {kAntiLambda, cLambdaCosPA}};
 
   void init(InitContext const&)
   {
@@ -822,14 +980,13 @@ struct FlowEventPlane {
     const AxisSpec axisV1{400, -4, 4, "v_{1}"};
 
     const AxisSpec axisTrackPt{100, 0., 10., "p_{T} (GeV/#it{c})"};
-    const AxisSpec axisTrackEta{cNEtaBins, -0.8, 0.8, "#eta"};
+    const AxisSpec axisTrackEta{cEtaBins, -0.8, 0.8, "#eta"};
     const AxisSpec axisTrackDcaXY{60, -0.15, 0.15, "DCA_{XY}"};
     const AxisSpec axisTrackDcaZ{230, -1.15, 1.15, "DCA_{XY}"};
     const AxisSpec axisTrackdEdx{360, 20, 200, "#frac{dE}{dx}"};
     const AxisSpec axisTrackNSigma{161, -4.025, 4.025, {"n#sigma"}};
 
     const AxisSpec axisPhiInvMass{cPhiInvMassBins, 0.99, 1.12, "M_{KK} (GeV/#it{c}^{2}"};
-    const AxisSpec axisKStarInvMass{cKStarInvMassBins, 0.8, 1.2, "M_{#piK} (GeV/#it{c}^{2}"};
     const AxisSpec axisMomPID(80, 0, 4, "p_{T} (GeV/#it{c})");
     const AxisSpec axisNsigma(401, -10.025, 10.025, {"n#sigma"});
     const AxisSpec axisdEdx(360, 20, 200, "#frac{dE}{dx}");
@@ -881,12 +1038,6 @@ struct FlowEventPlane {
       histos.add("Reso/Phi/Sig/hQuC", "hPhiQuC", kTProfile3D, {axisCent, axisTrackEta, axisPhiInvMass});
       histos.add("Reso/Phi/Bkg/hQuA", "hPhiQuA", kTProfile3D, {axisCent, axisTrackEta, axisPhiInvMass});
       histos.add("Reso/Phi/Bkg/hQuC", "hPhiQuC", kTProfile3D, {axisCent, axisTrackEta, axisPhiInvMass});
-      histos.add("Reso/KStar/hSigCentEtaInvMass", "hUSCentEtaInvMass", kTH3F, {axisCent, axisTrackEta, axisKStarInvMass});
-      histos.add("Reso/KStar/hBkgCentEtaInvMass", "hLSCentEtaInvMass", kTH3F, {axisCent, axisTrackEta, axisKStarInvMass});
-      histos.add("Reso/KStar/Sig/hQuA", "hKStarQuA", kTProfile3D, {axisCent, axisTrackEta, axisKStarInvMass});
-      histos.add("Reso/KStar/Sig/hQuC", "hKStarQuC", kTProfile3D, {axisCent, axisTrackEta, axisKStarInvMass});
-      histos.add("Reso/KStar/Bkg/hQuA", "hKStarQuA", kTProfile3D, {axisCent, axisTrackEta, axisKStarInvMass});
-      histos.add("Reso/KStar/Bkg/hQuC", "hKStarQuC", kTProfile3D, {axisCent, axisTrackEta, axisKStarInvMass});
     }
 
     // Lambda
@@ -906,12 +1057,12 @@ struct FlowEventPlane {
       histos.add("V0/Lambda/QA/hPosNsigPiVsP", "TPC n#sigma Pos Prong", kTH2F, {axisMomPID, axisNsigma});
       histos.add("V0/Lambda/QA/hNegNsigPiVsP", "TPC n#sigma Neg Prong", kTH2F, {axisMomPID, axisNsigma});
       histos.addClone("V0/Lambda/", "V0/K0Short/");
-      histos.add("V0/Lambda/hMassVsRap", "hMassVsRap", kTH3F, {axisCent, axisLambdaInvMass, axisTrackEta});
+      histos.add("V0/Lambda/hMassVsRap", "hMassVsRap", kTH3F, {axisCent, axisTrackEta, axisLambdaInvMass});
       histos.add("V0/Lambda/Flow/hQuA", "hQuA", kTProfile3D, {axisCent, axisTrackEta, axisLambdaInvMass});
       histos.add("V0/Lambda/Flow/hQuC", "hQuC", kTProfile3D, {axisCent, axisTrackEta, axisLambdaInvMass});
       histos.addClone("V0/Lambda/", "V0/AntiLambda/");
       histos.addClone("V0/Lambda/", "V0/LambdaAntiLambda/");
-      histos.add("V0/K0Short/hMassVsRap", "hMassVsRap", kTH3F, {axisCent, axisK0ShortInvMass, axisTrackEta});
+      histos.add("V0/K0Short/hMassVsRap", "hMassVsRap", kTH3F, {axisCent, axisTrackEta, axisK0ShortInvMass});
       histos.add("V0/K0Short/Flow/hQuA", "hQuA", kTProfile3D, {axisCent, axisTrackEta, axisK0ShortInvMass});
       histos.add("V0/K0Short/Flow/hQuC", "hQuC", kTProfile3D, {axisCent, axisTrackEta, axisK0ShortInvMass});
     }
@@ -1086,7 +1237,7 @@ struct FlowEventPlane {
 
       // Apply pseudo-rapidity acceptance
       std::array<float, 3> v = {track1.px() + track2.px(), track1.py() + track2.py(), track1.pz() + track2.pz()};
-      if (std::abs(RecoDecay::eta(v)) >= cResRapCut) {
+      if (std::abs(RecoDecay::eta(v)) >= cEtaCut) {
         continue;
       }
 
@@ -1128,8 +1279,8 @@ struct FlowEventPlane {
   }
 
   using CollisionsRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::MultsExtra, aod::ColSPExt>;
-  using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::TOFSignal, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPr, aod::pidTOFPr, aod::TrackCompColls, aod::TracksId>;
-  using TracksV0s = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::TrackCompColls>;
+  using Tracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::TOFSignal, aod::pidTOFbeta, aod::pidTPCEl, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCPr, aod::pidTOFPr, aod::TracksId>;
+  using TracksV0s = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr>;
 
   // Partitions
   SliceCache cache;
@@ -1138,7 +1289,7 @@ struct FlowEventPlane {
   Partition<Tracks> kaonTrackPartition = (aod::tracksid::isCharged == true) && (aod::tracksid::isKaon == true);
   Partition<Tracks> protonTrackPartition = (aod::tracksid::isCharged == true) && (aod::tracksid::isProton == true);
 
-  void processDummy(CollisionsRun3::iterator const&) {}
+  void processDummy(aod::Collisions const&) {}
 
   PROCESS_SWITCH(FlowEventPlane, processDummy, "Dummy process", true);
 
@@ -1201,12 +1352,10 @@ struct FlowEventPlane {
     }
 
     // Track partitions
-    auto pionTracks = pionTrackPartition->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto kaonTracks = kaonTrackPartition->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
     // Resonance flow
     getResoFlow<kPhi0>(kaonTracks, kaonTracks, vSP);
-    getResoFlow<kKStar>(pionTracks, kaonTracks, vSP);
   }
   PROCESS_SWITCH(FlowEventPlane, processResoFlow, "Resonance flow process", false);
 
@@ -1219,7 +1368,7 @@ struct FlowEventPlane {
     // Loop over v0s
     for (auto const& v0 : V0s) {
       // Topological and kinematic selections
-      if (std::abs(v0.eta()) >= cV0RapCut || v0.dcaV0daughters() >= cDcaV0Dau || v0.dcav0topv() >= cDcaV0ToPv || v0.v0radius() <= cMinV0Radius || v0.v0Type() != cV0TypeSelection) {
+      if (std::abs(v0.eta()) >= cEtaCut || v0.dcaV0daughters() >= cDcaV0Dau || v0.v0radius() <= cMinV0Radius || v0.v0Type() != cV0TypeSelection) {
         continue;
       }
 
@@ -1236,31 +1385,31 @@ struct FlowEventPlane {
       float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassLambda0;
 
       // K0Short
-      if (selV0DauTracks<kK0S>(v0, postrack, negtrack) && v0.v0cosPA() > mV0CosPA.at(kK0S) && ctauK0Short < mV0Ctau.at(kK0S) && v0.qtarm() >= cArmPodSel * std::abs(v0.alpha()) && v0.pt() >= cK0SMinPt && v0.pt() < cK0SMaxPt) {
+      if (selV0DauTracks<kK0S>(v0, postrack, negtrack) && v0.v0cosPA() > cK0ShortCosPA && ctauK0Short < cK0ShortCTau && v0.qtarm() >= cArmPodSel * std::abs(v0.alpha()) && v0.pt() >= cK0SMinPt && v0.pt() < cK0SMaxPt) {
         fillV0QAHist<kK0S>(collision, v0, tracks);
-        histos.fill(HIST("V0/K0Short/hMassVsRap"), cent, v0.mK0Short(), v0.eta());
+        histos.fill(HIST("V0/K0Short/hMassVsRap"), cent, v0.eta(), v0.mK0Short());
         histos.fill(HIST("V0/K0Short/Flow/hQuA"), cent, v0.eta(), v0.mK0Short(), v1a);
         histos.fill(HIST("V0/K0Short/Flow/hQuC"), cent, v0.eta(), v0.mK0Short(), v1c);
       }
 
       // Lambda
-      if (selV0DauTracks<kLambda>(v0, postrack, negtrack) && v0.v0cosPA() > mV0CosPA.at(kLambda) && ctauLambda < mV0Ctau.at(kLambda) && std::abs(v0.mK0Short() - MassK0Short) >= cK0SMassRej && v0.pt() >= cLambdaMinPt && v0.pt() < cLambdaMaxPt) {
+      if (selV0DauTracks<kLambda>(v0, postrack, negtrack) && v0.v0cosPA() > cLambdaCosPA && ctauLambda < cLambdaCTau && std::abs(v0.mK0Short() - MassK0Short) >= cK0SMassRej && v0.qtarm() < cArmPodSel * std::abs(v0.alpha()) && v0.alpha() > 0 && v0.pt() >= cLambdaMinPt && v0.pt() < cLambdaMaxPt) {
         fillV0QAHist<kLambda>(collision, v0, tracks);
-        histos.fill(HIST("V0/Lambda/hMassVsRap"), cent, v0.mLambda(), v0.eta());
+        histos.fill(HIST("V0/Lambda/hMassVsRap"), cent, v0.eta(), v0.mLambda());
         histos.fill(HIST("V0/Lambda/Flow/hQuA"), cent, v0.eta(), v0.mLambda(), v1a);
         histos.fill(HIST("V0/Lambda/Flow/hQuC"), cent, v0.eta(), v0.mLambda(), v1c);
-        histos.fill(HIST("V0/LambdaAntiLambda/hMassVsRap"), cent, v0.mLambda(), v0.eta());
+        histos.fill(HIST("V0/LambdaAntiLambda/hMassVsRap"), cent, v0.eta(), v0.mLambda());
         histos.fill(HIST("V0/LambdaAntiLambda/Flow/hQuA"), cent, v0.eta(), v0.mLambda(), v1a);
         histos.fill(HIST("V0/LambdaAntiLambda/Flow/hQuC"), cent, v0.eta(), v0.mLambda(), v1c);
       }
 
       // AntiLambda
-      if (selV0DauTracks<kAntiLambda>(v0, postrack, negtrack) && v0.v0cosPA() > mV0CosPA.at(kAntiLambda) && ctauLambda < mV0Ctau.at(kAntiLambda) && std::abs(v0.mK0Short() - MassK0Short) >= cK0SMassRej && v0.pt() >= cLambdaMinPt && v0.pt() < cLambdaMaxPt) {
+      if (selV0DauTracks<kAntiLambda>(v0, postrack, negtrack) && v0.v0cosPA() > cLambdaCosPA && ctauLambda < cLambdaCTau && std::abs(v0.mK0Short() - MassK0Short) >= cK0SMassRej && v0.qtarm() < cArmPodSel * std::abs(v0.alpha()) && v0.alpha() < 0 && v0.pt() >= cLambdaMinPt && v0.pt() < cLambdaMaxPt) {
         fillV0QAHist<kAntiLambda>(collision, v0, tracks);
-        histos.fill(HIST("V0/AntiLambda/hMassVsRap"), cent, v0.mAntiLambda(), v0.eta());
+        histos.fill(HIST("V0/AntiLambda/hMassVsRap"), cent, v0.eta(), v0.mAntiLambda());
         histos.fill(HIST("V0/AntiLambda/Flow/hQuA"), cent, v0.eta(), v0.mAntiLambda(), v1a);
         histos.fill(HIST("V0/AntiLambda/Flow/hQuC"), cent, v0.eta(), v0.mAntiLambda(), v1c);
-        histos.fill(HIST("V0/LambdaAntiLambda/hMassVsRap"), cent, v0.mAntiLambda(), v0.eta());
+        histos.fill(HIST("V0/LambdaAntiLambda/hMassVsRap"), cent, v0.eta(), v0.mAntiLambda());
         histos.fill(HIST("V0/LambdaAntiLambda/Flow/hQuA"), cent, v0.eta(), v0.mAntiLambda(), v1a);
         histos.fill(HIST("V0/LambdaAntiLambda/Flow/hQuC"), cent, v0.eta(), v0.mAntiLambda(), v1c);
       }
@@ -1272,6 +1421,7 @@ struct FlowEventPlane {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
+    adaptAnalysisTask<SpCalibTableProducer>(cfgc),
     adaptAnalysisTask<SpectatorPlaneTableProducer>(cfgc),
     adaptAnalysisTask<FlowEventPlane>(cfgc)};
 }

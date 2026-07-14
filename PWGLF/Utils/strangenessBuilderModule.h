@@ -19,11 +19,16 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h" // IWYU pragma: keep
 #include "PWGLF/Utils/strangenessBuilderHelper.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TPCVDriftManager.h"
 
+#include <CommonConstants/PhysicsConstants.h>
+#include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
+#include <Framework/DataSpecUtils.h>
 #include <Framework/DeviceSpec.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -35,6 +40,7 @@
 
 #include <TH1.h>
 #include <TMCProcess.h>
+#include <TMath.h>
 #include <TPDGCode.h>
 #include <TString.h>
 
@@ -42,6 +48,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <numeric>
 #include <string>
 #include <vector>
 
@@ -182,15 +189,51 @@ enum tableIndex { kV0Indices = 0,
                   kCascFoundTags,
                   nTables };
 
+// statics necessary for the configurables in this namespace
+static constexpr int nPreselectParameters = 1;
+static const std::vector<std::string> preselectParticleNames{
+  "Photon",
+  "K0s",
+  "Lambda",
+  "AntiLambda",
+  "XiMinus",
+  "XiPlus",
+  "OmegaMinus",
+  "OmegaPlus"};
+
+static constexpr int nPreselectParticles = 8;
+static const int defaultPreselectParameters[nPreselectParticles][nPreselectParameters]{
+  {0},
+  {0},
+  {0},
+  {0},
+  {0},
+  {0},
+  {0},
+  {0}};
+
+// table index : match order above
+enum preselectParticleIndex { kGamma = 0,
+                              kK0Short,
+                              kLambda,
+                              kAntiLambda,
+                              kXiMinus,
+                              kXiPlus,
+                              kOmegaMinus,
+                              kOmegaPlus,
+                              nPartTypes };
+
 enum V0PreSelection : uint8_t { selGamma = 0,
                                 selK0Short,
                                 selLambda,
-                                selAntiLambda };
+                                selAntiLambda,
+                                nSelV0Types };
 
 enum CascPreSelection : uint8_t { selXiMinus = 0,
                                   selXiPlus,
                                   selOmegaMinus,
-                                  selOmegaPlus };
+                                  selOmegaPlus,
+                                  nSelCascTypes };
 
 static constexpr float defaultK0MassWindowParameters[1][4] = {{2.81882e-03, 1.14057e-03, 1.72138e-03, 5.00262e-01}};
 static constexpr float defaultLambdaWindowParameters[1][4] = {{1.17518e-03, 1.24099e-04, 5.47937e-03, 3.08009e-01}};
@@ -357,9 +400,11 @@ struct cascadeConfigurables : o2::framework::ConfigurableGroup {
 // preselection options
 struct preSelectOpts : o2::framework::ConfigurableGroup {
   std::string prefix = "preSelectOpts";
-  o2::framework::Configurable<bool> preselectOnlyDesiredV0s{"preselectOnlyDesiredV0s", false, "preselect only V0s with compatible TPC PID and mass info"};
-  o2::framework::Configurable<bool> preselectOnlyDesiredCascades{"preselectOnlyDesiredCascades", false, "preselect only Cascades with compatible TPC PID and mass info"};
+  o2::framework::Configurable<o2::framework::LabeledArray<int>> preselectedSpecies{"preselectedSpecies",
+                                                                                   {defaultPreselectParameters[0], nPreselectParticles, nPreselectParameters, preselectParticleNames, parameterNames},
+                                                                                   "Preselect this species with compatible TPC PID and mass info: 0/1 is false/true"};
 
+  std::vector<int> mEnabledPreselectedSpecies; // Vector of enabled preselected particle species
   // lifetime preselection options
   // apply lifetime cuts to V0 and cascade candidates
   // unit of measurement: centimeters
@@ -546,6 +591,7 @@ class BuilderModule
       if (f == 1) {
         baseOpts.mEnabledTables[i] = 1;
         listOfRequestors[i] = "manual enabling";
+        nEnabledTables++;
       }
       if (f == -1) {
         // autodetect this table in other devices
@@ -559,6 +605,8 @@ class BuilderModule
                 tableNameWithVersion += Form("_%03d", version);
               }
               if (input.matcher.binding == tableNameWithVersion) {
+                if (device.name == "strangenesstofpid")
+                  continue;
                 LOGF(info, "Device %s has subscribed to %s (version %i)", device.name, tableNames[i], version);
                 listOfRequestors[i].Append(Form("%s ", device.name.c_str()));
                 baseOpts.mEnabledTables[i] = 1;
@@ -586,7 +634,16 @@ class BuilderModule
       hDeduplicationStatistics->GetXaxis()->SetBinLabel(2, "Deduplicated V0s");
     }
 
-    if (preSelectOpts.preselectOnlyDesiredV0s.value == true) {
+    preSelectOpts.mEnabledPreselectedSpecies.resize(nPreselectParticles, 0);
+    LOGF(info, "Checking if preselections on V0s and cascades are required");
+    for (int i = 0; i < nPreselectParticles; i++) {
+      if (preSelectOpts.preselectedSpecies->get(preselectParticleNames[i].c_str(), "enable")) {
+        preSelectOpts.mEnabledPreselectedSpecies[i] = 1;
+        LOGF(info, " ---> Preselection of %s enabled", preselectParticleNames[i]);
+      }
+    }
+
+    if (preSelectOpts.mEnabledPreselectedSpecies[kGamma] || preSelectOpts.mEnabledPreselectedSpecies[kK0Short] || preSelectOpts.mEnabledPreselectedSpecies[kLambda] || preSelectOpts.mEnabledPreselectedSpecies[kAntiLambda]) {
       auto hPreselectionV0s = histos.template add<TH1>("hPreselectionV0s", "hPreselectionV0s", o2::framework::HistType::kTH1D, {{16, -0.5f, 15.5f}});
       hPreselectionV0s->GetXaxis()->SetBinLabel(1, "Not preselected");
       hPreselectionV0s->GetXaxis()->SetBinLabel(2, "#gamma");
@@ -606,7 +663,7 @@ class BuilderModule
       hPreselectionV0s->GetXaxis()->SetBinLabel(16, "#gamma, K^{0}_{S}, #Lambda, #bar{#Lambda}");
     }
 
-    if (preSelectOpts.preselectOnlyDesiredCascades.value == true) {
+    if (preSelectOpts.mEnabledPreselectedSpecies[kXiMinus] || preSelectOpts.mEnabledPreselectedSpecies[kXiPlus] || preSelectOpts.mEnabledPreselectedSpecies[kOmegaMinus] || preSelectOpts.mEnabledPreselectedSpecies[kOmegaPlus]) {
       auto hPreselectionCascades = histos.template add<TH1>("hPreselectionCascades", "hPreselectionCascades", o2::framework::HistType::kTH1D, {{16, -0.5f, 15.5f}});
       hPreselectionCascades->GetXaxis()->SetBinLabel(1, "Not preselected");
       hPreselectionCascades->GetXaxis()->SetBinLabel(2, "#Xi^{-}");
@@ -1419,65 +1476,102 @@ class BuilderModule
         }
       }
 
+      std::vector<int> preSelectedPIDV0s;
+      if (preSelectOpts.mEnabledPreselectedSpecies[kGamma] || preSelectOpts.mEnabledPreselectedSpecies[kK0Short] || preSelectOpts.mEnabledPreselectedSpecies[kLambda] || preSelectOpts.mEnabledPreselectedSpecies[kAntiLambda]) {
+        if constexpr (requires { posTrack.tpcNSigmaEl(); }) { // check PID for each particle species and mark which one passes the check
+          preSelectedPIDV0s.resize(nSelV0Types, 0);
+          if ( // photon PID selection
+            preSelectOpts.mEnabledPreselectedSpecies[kGamma] &&
+            std::abs(posTrack.tpcNSigmaEl()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaEl()) < preSelectOpts.maxTPCpidNsigma) {
+            preSelectedPIDV0s[kGamma] = 1;
+          }
+
+          if ( // K0Short PID selection
+            preSelectOpts.mEnabledPreselectedSpecies[kK0Short] &&
+            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma) {
+            preSelectedPIDV0s[kK0Short] = 1;
+          }
+
+          if ( // Lambda PID selection
+            preSelectOpts.mEnabledPreselectedSpecies[kLambda] &&
+            std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma) {
+            preSelectedPIDV0s[kLambda] = 1;
+          }
+
+          if ( // antiLambda PID, mass, lifetime selection
+            preSelectOpts.mEnabledPreselectedSpecies[kAntiLambda] &&
+            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma) {
+            preSelectedPIDV0s[kAntiLambda] = 1;
+          }
+
+          // if particle species pass the PID selections, move onto the next candidates
+          if (!preSelectedPIDV0s[kGamma] && !preSelectedPIDV0s[kK0Short] && !preSelectedPIDV0s[kLambda] && !preSelectedPIDV0s[kAntiLambda]) {
+            histos.fill(HIST("hPreselectionV0s"), 0);
+            products.v0dataLink(-1, -1);
+            continue;
+          }
+        } else { // if no PID information is available, do not cut on it and mark all PID checks as true
+          preSelectedPIDV0s.resize(nSelV0Types, 1);
+        }
+      }
+
       if (!straHelper.buildV0Candidate(v0.collisionId, pvX, pvY, pvZ, posTrack, negTrack, posTrackPar, negTrackPar, v0.isCollinearV0, baseOpts.mEnabledTables[kV0Covs], v0BuilderOpts.generatePhotonCandidates)) {
         products.v0dataLink(-1, -1);
         continue;
       }
-      if constexpr (requires { posTrack.tpcNSigmaEl(); }) {
-        if (preSelectOpts.preselectOnlyDesiredV0s) {
-          float lPt = RecoDecay::sqrtSumOfSquares(
-            straHelper.v0.positiveMomentum[0] + straHelper.v0.negativeMomentum[0],
-            straHelper.v0.positiveMomentum[1] + straHelper.v0.negativeMomentum[1]);
+      if (preSelectOpts.mEnabledPreselectedSpecies[kGamma] || preSelectOpts.mEnabledPreselectedSpecies[kK0Short] || preSelectOpts.mEnabledPreselectedSpecies[kLambda] || preSelectOpts.mEnabledPreselectedSpecies[kAntiLambda]) {
+        float lPt = RecoDecay::sqrtSumOfSquares(
+          straHelper.v0.positiveMomentum[0] + straHelper.v0.negativeMomentum[0],
+          straHelper.v0.positiveMomentum[1] + straHelper.v0.negativeMomentum[1]);
 
-          float lPtot = RecoDecay::sqrtSumOfSquares(
-            straHelper.v0.positiveMomentum[0] + straHelper.v0.negativeMomentum[0],
-            straHelper.v0.positiveMomentum[1] + straHelper.v0.negativeMomentum[1],
-            straHelper.v0.positiveMomentum[2] + straHelper.v0.negativeMomentum[2]);
+        float lPtot = RecoDecay::sqrtSumOfSquares(
+          straHelper.v0.positiveMomentum[0] + straHelper.v0.negativeMomentum[0],
+          straHelper.v0.positiveMomentum[1] + straHelper.v0.negativeMomentum[1],
+          straHelper.v0.positiveMomentum[2] + straHelper.v0.negativeMomentum[2]);
 
-          float lLengthTraveled = RecoDecay::sqrtSumOfSquares(
-            straHelper.v0.position[0] - pvX,
-            straHelper.v0.position[1] - pvY,
-            straHelper.v0.position[2] - pvZ);
+        float lLengthTraveled = RecoDecay::sqrtSumOfSquares(
+          straHelper.v0.position[0] - pvX,
+          straHelper.v0.position[1] - pvY,
+          straHelper.v0.position[2] - pvZ);
 
-          uint8_t maskV0Preselection = 0;
+        uint8_t maskV0Preselection = 0;
 
-          if ( // photon PID, mass, lifetime selection
-            std::abs(posTrack.tpcNSigmaEl()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(negTrack.tpcNSigmaEl()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(straHelper.v0.massGamma) < preSelectOpts.massCutPhoton) {
-            BITSET(maskV0Preselection, selGamma);
-          }
+        if ( // photon PID, mass, lifetime selection
+          preSelectOpts.mEnabledPreselectedSpecies[kGamma] && preSelectedPIDV0s[kGamma] &&
+          std::abs(straHelper.v0.massGamma) < preSelectOpts.massCutPhoton) {
+          BITSET(maskV0Preselection, selGamma);
+        }
 
-          if ( // K0Short PID, mass, lifetime selection
-            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            o2::constants::physics::MassKaonNeutral * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutK0S") &&
-            std::abs(straHelper.v0.massK0Short - o2::constants::physics::MassKaonNeutral) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaK0Short(lPt) + preSelectOpts.massWindowSafetyMargin) {
-            BITSET(maskV0Preselection, selK0Short);
-          }
+        if ( // K0Short PID, mass, lifetime selection
+          preSelectOpts.mEnabledPreselectedSpecies[kK0Short] && preSelectedPIDV0s[kK0Short] &&
+          o2::constants::physics::MassKaonNeutral * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutK0S") &&
+          std::abs(straHelper.v0.massK0Short - o2::constants::physics::MassKaonNeutral) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaK0Short(lPt) + preSelectOpts.massWindowSafetyMargin) {
+          BITSET(maskV0Preselection, selK0Short);
+        }
 
-          if ( // Lambda PID, mass, lifetime selection
-            std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            o2::constants::physics::MassLambda * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
-            std::abs(straHelper.v0.massLambda - o2::constants::physics::MassLambda) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaLambda(lPt) + preSelectOpts.massWindowSafetyMargin) {
-            BITSET(maskV0Preselection, selLambda);
-          }
+        if ( // Lambda PID, mass, lifetime selection
+          preSelectOpts.mEnabledPreselectedSpecies[kLambda] && preSelectedPIDV0s[kLambda] &&
+          o2::constants::physics::MassLambda * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
+          std::abs(straHelper.v0.massLambda - o2::constants::physics::MassLambda) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaLambda(lPt) + preSelectOpts.massWindowSafetyMargin) {
+          BITSET(maskV0Preselection, selLambda);
+        }
 
-          if ( // antiLambda PID, mass, lifetime selection
-            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
-            o2::constants::physics::MassLambda * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
-            std::abs(straHelper.v0.massAntiLambda - o2::constants::physics::MassLambda) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaLambda(lPt) + preSelectOpts.massWindowSafetyMargin) {
-            BITSET(maskV0Preselection, selAntiLambda);
-          }
+        if ( // antiLambda PID, mass, lifetime selection
+          preSelectOpts.mEnabledPreselectedSpecies[kAntiLambda] && preSelectedPIDV0s[kAntiLambda] &&
+          o2::constants::physics::MassLambda * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
+          std::abs(straHelper.v0.massAntiLambda - o2::constants::physics::MassLambda) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaLambda(lPt) + preSelectOpts.massWindowSafetyMargin) {
+          BITSET(maskV0Preselection, selAntiLambda);
+        }
 
-          histos.fill(HIST("hPreselectionV0s"), maskV0Preselection);
+        histos.fill(HIST("hPreselectionV0s"), maskV0Preselection);
 
-          if (maskV0Preselection == 0) {
-            products.v0dataLink(-1, -1);
-            continue;
-          }
+        if (maskV0Preselection == 0) {
+          products.v0dataLink(-1, -1);
+          continue;
         }
       }
       if (v0Map[iv0] == -1 && baseOpts.useV0BufferForCascades) {
@@ -1919,6 +2013,55 @@ class BuilderModule
       auto const& posTrack = tracks.rawIteratorAt(cascade.posTrackId);
       auto const& negTrack = tracks.rawIteratorAt(cascade.negTrackId);
       auto const& bachTrack = tracks.rawIteratorAt(cascade.bachTrackId);
+
+      std::vector<int> preSelectedPIDCascades;
+      if (preSelectOpts.mEnabledPreselectedSpecies[kXiMinus] || preSelectOpts.mEnabledPreselectedSpecies[kXiPlus] || preSelectOpts.mEnabledPreselectedSpecies[kOmegaMinus] || preSelectOpts.mEnabledPreselectedSpecies[kOmegaPlus]) {
+        if constexpr (requires { posTrack.tpcNSigmaEl(); }) { // check PID for each particle species and mark which one passes the check
+          preSelectedPIDCascades.resize(nPartTypes, 0);
+          if ( // XiMinus PID selection
+            preSelectOpts.mEnabledPreselectedSpecies[kXiMinus] &&
+            std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(bachTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma) {
+            preSelectedPIDCascades[kXiMinus] = 1;
+          }
+
+          if ( // XiPlus PID selection
+            preSelectOpts.mEnabledPreselectedSpecies[kXiPlus] &&
+            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(bachTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma) {
+            preSelectedPIDCascades[kXiPlus] = 1;
+          }
+
+          if ( // OmegaMinus PID selection
+            preSelectOpts.mEnabledPreselectedSpecies[kOmegaMinus] &&
+            std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(bachTrack.tpcNSigmaKa()) < preSelectOpts.maxTPCpidNsigma) {
+            preSelectedPIDCascades[kOmegaMinus] = 1;
+          }
+
+          if ( // OmegaPlus PID selection
+            preSelectOpts.mEnabledPreselectedSpecies[kOmegaPlus] &&
+            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
+            std::abs(bachTrack.tpcNSigmaKa()) < preSelectOpts.maxTPCpidNsigma) {
+            preSelectedPIDCascades[kOmegaPlus] = 1;
+          }
+
+          // if particle species pass the PID selections, move onto the next candidates
+          if (!preSelectedPIDCascades[kXiMinus] && !preSelectedPIDCascades[kXiPlus] && !preSelectedPIDCascades[kOmegaMinus] && !preSelectedPIDCascades[kOmegaPlus]) {
+            histos.fill(HIST("hPreselectionCascades"), 0);
+            products.cascdataLink(-1);
+            interlinks.cascadeToCascCores.push_back(-1);
+            continue;
+          }
+        } else { // if no PID information is available, do not cut on it and mark all PID checks as true
+          preSelectedPIDCascades.resize(nPartTypes, 1);
+        }
+      }
+
       if (baseOpts.useV0BufferForCascades) {
         // this processing path uses a buffer of V0s so that no
         // additional minimization step is redone. It consumes less
@@ -1962,85 +2105,71 @@ class BuilderModule
       }
       nCascades++;
 
-      if constexpr (requires { posTrack.tpcNSigmaEl(); }) {
-        if (preSelectOpts.preselectOnlyDesiredCascades) {
-          float lPt = RecoDecay::sqrtSumOfSquares(
-            straHelper.cascade.bachelorMomentum[0] + straHelper.cascade.positiveMomentum[0] + straHelper.cascade.negativeMomentum[0],
-            straHelper.cascade.bachelorMomentum[1] + straHelper.cascade.positiveMomentum[1] + straHelper.cascade.negativeMomentum[1]);
+      if (preSelectOpts.mEnabledPreselectedSpecies[kXiMinus] || preSelectOpts.mEnabledPreselectedSpecies[kXiPlus] || preSelectOpts.mEnabledPreselectedSpecies[kOmegaMinus] || preSelectOpts.mEnabledPreselectedSpecies[kOmegaPlus]) {
+        float lPt = RecoDecay::sqrtSumOfSquares(
+          straHelper.cascade.bachelorMomentum[0] + straHelper.cascade.positiveMomentum[0] + straHelper.cascade.negativeMomentum[0],
+          straHelper.cascade.bachelorMomentum[1] + straHelper.cascade.positiveMomentum[1] + straHelper.cascade.negativeMomentum[1]);
 
-          float lPtot = RecoDecay::sqrtSumOfSquares(
-            straHelper.cascade.bachelorMomentum[0] + straHelper.cascade.positiveMomentum[0] + straHelper.cascade.negativeMomentum[0],
-            straHelper.cascade.bachelorMomentum[1] + straHelper.cascade.positiveMomentum[1] + straHelper.cascade.negativeMomentum[1],
-            straHelper.cascade.bachelorMomentum[2] + straHelper.cascade.positiveMomentum[2] + straHelper.cascade.negativeMomentum[2]);
+        float lPtot = RecoDecay::sqrtSumOfSquares(
+          straHelper.cascade.bachelorMomentum[0] + straHelper.cascade.positiveMomentum[0] + straHelper.cascade.negativeMomentum[0],
+          straHelper.cascade.bachelorMomentum[1] + straHelper.cascade.positiveMomentum[1] + straHelper.cascade.negativeMomentum[1],
+          straHelper.cascade.bachelorMomentum[2] + straHelper.cascade.positiveMomentum[2] + straHelper.cascade.negativeMomentum[2]);
 
-          float lV0Ptot = RecoDecay::sqrtSumOfSquares(
-            straHelper.cascade.positiveMomentum[0] + straHelper.cascade.negativeMomentum[0],
-            straHelper.cascade.positiveMomentum[1] + straHelper.cascade.negativeMomentum[1],
-            straHelper.cascade.positiveMomentum[2] + straHelper.cascade.negativeMomentum[2]);
+        float lV0Ptot = RecoDecay::sqrtSumOfSquares(
+          straHelper.cascade.positiveMomentum[0] + straHelper.cascade.negativeMomentum[0],
+          straHelper.cascade.positiveMomentum[1] + straHelper.cascade.negativeMomentum[1],
+          straHelper.cascade.positiveMomentum[2] + straHelper.cascade.negativeMomentum[2]);
 
-          float lLengthTraveled = RecoDecay::sqrtSumOfSquares(
-            straHelper.cascade.cascadePosition[0] - pvX,
-            straHelper.cascade.cascadePosition[1] - pvY,
-            straHelper.cascade.cascadePosition[2] - pvZ);
+        float lLengthTraveled = RecoDecay::sqrtSumOfSquares(
+          straHelper.cascade.cascadePosition[0] - pvX,
+          straHelper.cascade.cascadePosition[1] - pvY,
+          straHelper.cascade.cascadePosition[2] - pvZ);
 
-          float lV0LengthTraveled = RecoDecay::sqrtSumOfSquares(
-            straHelper.cascade.v0Position[0] - straHelper.cascade.cascadePosition[0],
-            straHelper.cascade.v0Position[1] - straHelper.cascade.cascadePosition[1],
-            straHelper.cascade.v0Position[2] - straHelper.cascade.cascadePosition[2]);
+        float lV0LengthTraveled = RecoDecay::sqrtSumOfSquares(
+          straHelper.cascade.v0Position[0] - straHelper.cascade.cascadePosition[0],
+          straHelper.cascade.v0Position[1] - straHelper.cascade.cascadePosition[1],
+          straHelper.cascade.v0Position[2] - straHelper.cascade.cascadePosition[2]);
 
-          uint8_t maskCascadePreselection = 0;
+        uint8_t maskCascadePreselection = 0;
 
-          if ( // XiMinus PID and mass selection
-            straHelper.cascade.charge < 0 &&
-            std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(bachTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
-            o2::constants::physics::MassXiMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutXi") &&
-            std::abs(straHelper.cascade.massXi - o2::constants::physics::MassXiMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaXi(lPt) + preSelectOpts.massWindowSafetyMargin) {
-            BITSET(maskCascadePreselection, selXiMinus);
-          }
+        if ( // XiMinus PID and mass selection
+          preSelectOpts.mEnabledPreselectedSpecies[kXiMinus] && straHelper.cascade.charge < 0 && preSelectedPIDCascades[kXiMinus] &&
+          o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
+          o2::constants::physics::MassXiMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutXi") &&
+          std::abs(straHelper.cascade.massXi - o2::constants::physics::MassXiMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaXi(lPt) + preSelectOpts.massWindowSafetyMargin) {
+          BITSET(maskCascadePreselection, selXiMinus);
+        }
 
-          if ( // XiPlus PID and mass selection
-            straHelper.cascade.charge > 0 &&
-            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(bachTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
-            o2::constants::physics::MassXiMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutXi") &&
-            std::abs(straHelper.cascade.massXi - o2::constants::physics::MassXiMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaXi(lPt) + preSelectOpts.massWindowSafetyMargin) {
-            BITSET(maskCascadePreselection, selXiPlus);
-          }
+        if ( // XiPlus PID and mass selection
+          preSelectOpts.mEnabledPreselectedSpecies[kXiPlus] && straHelper.cascade.charge > 0 && preSelectedPIDCascades[kXiPlus] &&
+          o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
+          o2::constants::physics::MassXiMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutXi") &&
+          std::abs(straHelper.cascade.massXi - o2::constants::physics::MassXiMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaXi(lPt) + preSelectOpts.massWindowSafetyMargin) {
+          BITSET(maskCascadePreselection, selXiPlus);
+        }
 
-          if ( // OmegaMinus PID and mass selection
-            straHelper.cascade.charge < 0 &&
-            std::abs(posTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(negTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(bachTrack.tpcNSigmaKa()) < preSelectOpts.maxTPCpidNsigma &&
-            o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
-            o2::constants::physics::MassOmegaMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutOmega") &&
-            std::abs(straHelper.cascade.massOmega - o2::constants::physics::MassOmegaMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaOmega(lPt) + preSelectOpts.massWindowSafetyMargin) {
-            BITSET(maskCascadePreselection, selOmegaMinus);
-          }
+        if ( // OmegaMinus PID and mass selection
+          preSelectOpts.mEnabledPreselectedSpecies[kOmegaMinus] && straHelper.cascade.charge < 0 && preSelectedPIDCascades[kOmegaMinus] &&
+          o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
+          o2::constants::physics::MassOmegaMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutOmega") &&
+          std::abs(straHelper.cascade.massOmega - o2::constants::physics::MassOmegaMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaOmega(lPt) + preSelectOpts.massWindowSafetyMargin) {
+          BITSET(maskCascadePreselection, selOmegaMinus);
+        }
 
-          if ( // OmegaPlus PID and mass selection
-            straHelper.cascade.charge > 0 &&
-            std::abs(posTrack.tpcNSigmaPi()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(negTrack.tpcNSigmaPr()) < preSelectOpts.maxTPCpidNsigma &&
-            std::abs(bachTrack.tpcNSigmaKa()) < preSelectOpts.maxTPCpidNsigma &&
-            o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
-            o2::constants::physics::MassOmegaMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutOmega") &&
-            std::abs(straHelper.cascade.massOmega - o2::constants::physics::MassOmegaMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaOmega(lPt) + preSelectOpts.massWindowSafetyMargin) {
-            BITSET(maskCascadePreselection, selOmegaPlus);
-          }
+        if ( // OmegaPlus PID and mass selection
+          preSelectOpts.mEnabledPreselectedSpecies[kOmegaPlus] && straHelper.cascade.charge > 0 && preSelectedPIDCascades[kOmegaPlus] &&
+          o2::constants::physics::MassLambda * lV0LengthTraveled / (lV0Ptot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutLambda") &&
+          o2::constants::physics::MassOmegaMinus * lLengthTraveled / (lPtot + 1e-13) < preSelectOpts.lifetimeCut->get("lifetimeCutOmega") &&
+          std::abs(straHelper.cascade.massOmega - o2::constants::physics::MassOmegaMinus) < preSelectOpts.massWindownumberOfSigmas * getMassSigmaOmega(lPt) + preSelectOpts.massWindowSafetyMargin) {
+          BITSET(maskCascadePreselection, selOmegaPlus);
+        }
 
-          histos.fill(HIST("hPreselectionCascades"), maskCascadePreselection);
+        histos.fill(HIST("hPreselectionCascades"), maskCascadePreselection);
 
-          if (maskCascadePreselection == 0) {
-            products.cascdataLink(-1);
-            interlinks.cascadeToCascCores.push_back(-1);
-            continue;
-          }
+        if (maskCascadePreselection == 0) {
+          products.cascdataLink(-1);
+          interlinks.cascadeToCascCores.push_back(-1);
+          continue;
         }
       }
 
@@ -2256,7 +2385,7 @@ class BuilderModule
                     thisCascInfo.xyz[2] = dau.vz();
                     thisCascInfo.mcParticleBachelor = dau.globalIndex();
                   }
-                  if (std::abs(dau.pdgCode()) == PDG_t::kProton) {
+                  if (std::abs(dau.pdgCode()) == PDG_t::kLambda0) {
                     thisCascInfo.pdgCodeV0 = dau.pdgCode();
 
                     for (const auto& v0Dau : dau.template daughters_as<aod::McParticles>()) {

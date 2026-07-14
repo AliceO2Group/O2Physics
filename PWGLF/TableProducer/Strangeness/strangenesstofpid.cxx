@@ -49,7 +49,10 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/PID.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <MathUtils/Primitive2D.h>
+#include <PID/PIDTOFParamService.h>
+#include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/TrackLTIntegral.h>
 
@@ -58,14 +61,11 @@
 #include <TMath.h>
 #include <TMathBase.h>
 
-#include <GPUROOTCartesianFwd.h>
-
 #include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
-#include <iterator>
-#include <map>
+#include <numeric>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -1705,7 +1705,7 @@ struct strangenesstofpid {
         collisionEventTime[collision.globalIndex()] /= static_cast<double>(collisionNtracks[collision.globalIndex()]);
         collisionEventTimeErr[collision.globalIndex()] /= static_cast<double>(collisionNtracks[collision.globalIndex()]);
       } else {
-        collisionEventTime[collision.globalIndex()] = -1e+6; // undefined
+        collisionEventTime[collision.globalIndex()] = -1e+6;    // undefined
         collisionEventTimeErr[collision.globalIndex()] = -1e+6; // undefined
       }
       histos.fill(HIST("hCollisionTimes"), collisionEventTime[collision.globalIndex()]);
@@ -1967,7 +1967,11 @@ struct strangenesstofpid {
     if (isNewTOFFormat) {
       // re-index
       for (const auto& dauTrackTOFPID : dauTrackTOFPIDs) {
-        tofIndices[dauTrackTOFPID.dauTrackExtraId()] = dauTrackTOFPID.globalIndex();
+        if (dauTrackTOFPID.dauTrackExtraId() >= 0) {
+          tofIndices[dauTrackTOFPID.dauTrackExtraId()] = dauTrackTOFPID.globalIndex();
+        } else {
+          LOGF(warning, "dauTrackTOFPID points to no entry in the DauTrackExtras table (dauTrackExtraId = %i)! This could be intentional (for example, using converters) but please be careful.", dauTrackTOFPID.dauTrackExtraId());
+        }
       }
     } else {
       // they are actually joinable

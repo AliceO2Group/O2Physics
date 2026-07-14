@@ -23,7 +23,7 @@ jobs:
     steps:
       # Git Checkout
       - name: Checkout Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           # Checkout the HEAD of the PR instead of the merge commit.
           ref: ${{ github.event.pull_request.head.sha }}
@@ -32,13 +32,14 @@ jobs:
           fetch-depth: 0
           # So we can use secrets.ALIBUILD_GITHUB_TOKEN to push later.
           persist-credentials: false
+          allow-unsafe-pr-checkout: true # needed for pull_request_target
 
       # MegaLinter
       - name: MegaLinter
         id: ml
         # You can override MegaLinter flavor used to have faster performances
         # More info at https://megalinter.io/flavors/
-        uses: oxsecurity/megalinter@v9.5.0
+        uses: oxsecurity/megalinter@v9.6.0
         env:
           # All available variables are described in documentation:
           # https://megalinter.io/configuration/

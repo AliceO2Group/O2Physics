@@ -41,11 +41,8 @@
 #include <unordered_map>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::collisionbuilder
 {
-namespace collisionbuilder
-{
-
 // configurables for collision selection
 struct ConfCollisionFilters : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CollisionFilter");
@@ -77,7 +74,7 @@ struct ConfCollisionBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> noHighMultCollInPrevRof{"noHighMultCollInPrevRof", 0, "veto an event if FT0C amplitude in previous ITS ROF is above threshold (-1: stored in bitmaks; 0 off; 1 on)"};
   o2::framework::Configurable<int> isGoodItsLayer3{"isGoodItsLayer3", 0, "number of inactive chips on ITS layer 3 is below maximum allowed value (-1: stored in bitmaks; 0 off; 1 on)"};
   o2::framework::Configurable<int> isGoodItsLayer0123{"isGoodItsLayer0123", 0, "numbers of inactive chips on ITS layers 0-3 are below maximum allowed values (-1: stored in bitmaks; 0 off; 1 on)"};
-  o2::framework::Configurable<int> isGoodItsLayersAll{"isGoodItsLayersAll", 0, "numbers of inactive chips on all ITS layers are below maximum allowed values (-1: stored in bitmaks; 0 off; 1 on)"};
+  o2::framework::Configurable<int> isGoodItsLayerAll{"isGoodItsLayerAll", 0, "numbers of inactive chips on all ITS layers are below maximum allowed values (-1: stored in bitmaks; 0 off; 1 on)"};
   o2::framework::Configurable<std::vector<float>> occupancyMin{"occupancyMin", {}, "Minimum occpancy"};
   o2::framework::Configurable<std::vector<float>> occupancyMax{"occupancyMax", {}, "Maximum occpancy"};
   o2::framework::Configurable<std::vector<float>> sphericityMin{"sphericityMin", {}, "Minimum sphericity"};
@@ -112,7 +109,7 @@ struct ConfCollisionSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> centMax{"centMax", 100.f, "Maximum centrality (multiplicity percentile)"};
   o2::framework::Configurable<int> magFieldMin{"magFieldMin", -5, "Minimum magnetic field strength (kG)"};
   o2::framework::Configurable<int> magFieldMax{"magFieldMax", 5, "Maximum magnetic field strength (kG)"};
-  o2::framework::Configurable<aod::femtodatatypes::CollisionMaskType> collisionMask{"collisionMask", 0x0, "Bitmask for collision"};
+  o2::framework::Configurable<datatypes::CollisionMaskType> collisionMask{"collisionMask", 0x0, "Bitmask for collision"};
 };
 
 /// enum for all collision selections
@@ -130,7 +127,7 @@ enum CollisionSels {
   kNoHighMultCollInPrevRof,   ///< veto an event if FT0C amplitude in previous ITS ROF is above threshold
   kIsGoodItsLayer3,           ///< number of inactive chips on ITS layer 3 is below maximum allowed value
   kIsGoodItsLayer0123,        ///< numbers of inactive chips on ITS layers 0-3 are below maximum allowed values
-  kIsGoodItsLayersAll,        ///< numbers of inactive chips on all ITS layers are below maximum allowed values
+  kIsGoodItsLayerAll,         ///< numbers of inactive chips on all ITS layers are below maximum allowed values
   kOccupancyMin,              ///< Min. occupancy
   kOccupancyMax,              ///< Max. occupancy
   kSphericityMin,             ///< Min. sphericity
@@ -156,26 +153,62 @@ const std::unordered_map<CollisionSels, std::string> collisionSelectionNames = {
   {kNoHighMultCollInPrevRof, "No high mult collsions in previous ROF"},
   {kIsGoodItsLayer3, "Is good ITS layer 3"},
   {kIsGoodItsLayer0123, "Is good ITS layer 0-3"},
-  {kIsGoodItsLayersAll, "Is good ITS layer all"},
+  {kIsGoodItsLayerAll, "Is good ITS layer all"},
   {kOccupancyMin, "Minimum Occupancy"},
   {kOccupancyMax, "Maximum Occupancy"},
   {kSphericityMin, "Minimum Sphericity"},
   {kSphericityMax, "Maximum Sphericity"},
+  {kTriggers, "Triggers"}};
 
-  {kTriggers, "Triggers"}
-
+/// enum for all collision pre-filters (evaluated in checkFilters, before the selection bitmask)
+enum CollisionFilters {
+  kFilterVtxZMin,
+  kFilterVtxZMax,
+  kFilterMultMin,
+  kFilterMultMax,
+  kFilterCentMin,
+  kFilterCentMax,
+  kFilterMagFieldMin,
+  kFilterMagFieldMax,
+  kFilterSphericityMin,
+  kFilterSphericityMax,
+  kFilterRctFlags,
+  kFilterCollisionFiltersMax
 };
 
-template <const char* HistName>
-class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::CollisionMaskType, kCollisionSelsMax>
+constexpr char CollisionFilterHistName[] = "hCollisionFilters";
+const std::unordered_map<CollisionFilters, std::string> collisionFilterNames = {
+  {kFilterVtxZMin, "vtxZMin"},
+  {kFilterVtxZMax, "vtxZMax"},
+  {kFilterMultMin, "multMin"},
+  {kFilterMultMax, "multMax"},
+  {kFilterCentMin, "centMin"},
+  {kFilterCentMax, "centMax"},
+  {kFilterMagFieldMin, "magFieldMin"},
+  {kFilterMagFieldMax, "magFieldMax"},
+  {kFilterSphericityMin, "sphericityMin"},
+  {kFilterSphericityMax, "sphericityMax"},
+  {kFilterRctFlags, "rctFlagsOkFilter"}};
+
+template <auto& SelectionHistName, auto& FilterHistName>
+class CollisionSelection : public baseselection::BaseSelection<float, o2::analysis::femto::datatypes::CollisionMaskType, kCollisionSelsMax>
 {
  public:
   CollisionSelection() = default;
-  ~CollisionSelection() = default;
+  ~CollisionSelection() override = default;
 
-  template <typename T1, typename T2>
-  void configure(o2::framework::HistogramRegistry* registry, T1 const& filter, T2 const& config)
+  /// \brief Configure the collision selection: kinematic/quality filters, RCT flag checker,
+  ///        trigger (Zorro) setup, and the selection bitmask.
+  /// \param registry Histogram registry.
+  /// \param filter ConfCollisionFilters (kinematic/quality pre-filter bounds).
+  /// \param config ConfCollisionBits (selection bits + trigger list).
+  /// \param confRct ConfCollisionRctFlags (RCT flag checker configuration).
+  /// \param confCcdb ConfCcdb (needed for the trigger CCDB path).
+  template <typename T1, typename T2, typename T3, typename T4>
+  void configure(o2::framework::HistogramRegistry* registry, T1 const& filter, T2 const& config, T3 const& confRct, T4 const& confCcdb)
   {
+    this->init(config.passThrough.value);
+
     // filters
     mVtxZMin = filter.vtxZMin.value;
     mVtxZMax = filter.vtxZMax.value;
@@ -188,52 +221,86 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
     mSphericityMin = filter.sphericityMin.value;
     mSphericityMax = filter.sphericityMax.value;
 
-    // if pass through mode is activated, each cut is neutral (i.e. neither minimal nor optional and we do store all bits, so the most permissive bit is not skipped for minimal selections)
-    mPassThrough = config.passThrough.value;
-
-    if (mPassThrough) {
-      this->addSelection(kSel8, collisionSelectionNames.at(kSel8), 2);
-      this->addSelection(kNoSameBunchPileUp, collisionSelectionNames.at(kNoSameBunchPileUp), 2);
-      this->addSelection(kIsGoodZvtxFt0VsPv, collisionSelectionNames.at(kIsGoodZvtxFt0VsPv), 2);
-      this->addSelection(kNoCollInTimeRangeNarrow, collisionSelectionNames.at(kNoCollInTimeRangeNarrow), 2);
-      this->addSelection(kNoCollInTimeRangeStrict, collisionSelectionNames.at(kNoCollInTimeRangeStrict), 2);
-      this->addSelection(kNoCollInTimeRangeStandard, collisionSelectionNames.at(kNoCollInTimeRangeStandard), 2);
-      this->addSelection(kNoCollInRofStrict, collisionSelectionNames.at(kNoCollInRofStrict), 2);
-      this->addSelection(kNoCollInRofStandard, collisionSelectionNames.at(kNoCollInRofStandard), 2);
-      this->addSelection(kNoHighMultCollInPrevRof, collisionSelectionNames.at(kNoHighMultCollInPrevRof), 2);
-      this->addSelection(kIsGoodItsLayer3, collisionSelectionNames.at(kIsGoodItsLayer3), 2);
-      this->addSelection(kIsGoodItsLayer0123, collisionSelectionNames.at(kIsGoodItsLayer0123), 2);
-      this->addSelection(kIsGoodItsLayersAll, collisionSelectionNames.at(kIsGoodItsLayersAll), 2);
-    } else {
-      this->addSelection(kSel8, collisionSelectionNames.at(kSel8), config.sel8.value);
-      this->addSelection(kNoSameBunchPileUp, collisionSelectionNames.at(kNoSameBunchPileUp), config.noSameBunchPileup.value);
-      this->addSelection(kIsGoodZvtxFt0VsPv, collisionSelectionNames.at(kIsGoodZvtxFt0VsPv), config.isGoodZvtxFt0VsPv.value);
-      this->addSelection(kNoCollInTimeRangeNarrow, collisionSelectionNames.at(kNoCollInTimeRangeNarrow), config.noCollInTimeRangeNarrow.value);
-      this->addSelection(kNoCollInTimeRangeStrict, collisionSelectionNames.at(kNoCollInTimeRangeStrict), config.noCollInTimeRangeStrict.value);
-      this->addSelection(kNoCollInTimeRangeStandard, collisionSelectionNames.at(kNoCollInTimeRangeStandard), config.noCollInTimeRangeStandard.value);
-      this->addSelection(kNoCollInRofStrict, collisionSelectionNames.at(kNoCollInRofStrict), config.noCollInRofStrict.value);
-      this->addSelection(kNoCollInRofStandard, collisionSelectionNames.at(kNoCollInRofStandard), config.noCollInRofStandard.value);
-      this->addSelection(kNoHighMultCollInPrevRof, collisionSelectionNames.at(kNoHighMultCollInPrevRof), config.noHighMultCollInPrevRof.value);
-      this->addSelection(kIsGoodItsLayer3, collisionSelectionNames.at(kIsGoodItsLayer3), config.isGoodItsLayer3.value);
-      this->addSelection(kIsGoodItsLayer0123, collisionSelectionNames.at(kIsGoodItsLayer0123), config.isGoodItsLayer0123.value);
-      this->addSelection(kIsGoodItsLayersAll, collisionSelectionNames.at(kIsGoodItsLayersAll), config.isGoodItsLayersAll.value);
+    // RCT flag checker
+    mUseRctFlags = confRct.useRctFlags.value;
+    if (mUseRctFlags) {
+      LOG(info) << "Init RCT flag checker with label: " << confRct.label.value << "; use ZDC: " << confRct.useZdc.value << "; Limited acceptance is bad: " << confRct.treatLimitedAcceptanceAsBad.value;
+      mRctFlagsChecker.init(confRct.label.value, confRct.useZdc.value, confRct.treatLimitedAcceptanceAsBad.value);
     }
 
-    const bool isMinimalCut = mPassThrough ? false : true;
-    const bool isOptionalCut = mPassThrough ? false : true;
-    const bool skipMostPermissiveBit = mPassThrough ? false : true;
+    // trigger (Zorro) setup
+    if (!config.triggers.value.empty()) {
+      mUseTrigger = true;
+      for (size_t i = 0; i < config.triggers.value.size(); ++i) {
+        mTriggerNames += config.triggers.value[i];
+        if (i != config.triggers.value.size() - 1) {
+          mTriggerNames += ",";
+        }
+      }
+      mZorro.setBaseCCDBPath(confCcdb.triggerPath.value);
+    }
 
-    this->addSelection(kOccupancyMin, collisionSelectionNames.at(kOccupancyMin), config.occupancyMin.value, limits::kLowerLimit, skipMostPermissiveBit, isMinimalCut, false);
-    this->addSelection(kOccupancyMax, collisionSelectionNames.at(kOccupancyMax), config.occupancyMax.value, limits::kUpperLimit, skipMostPermissiveBit, isMinimalCut, false);
-    this->addSelection(kSphericityMin, collisionSelectionNames.at(kSphericityMin), config.sphericityMin.value, limits::kLowerLimit, skipMostPermissiveBit, isMinimalCut, false);
-    this->addSelection(kSphericityMax, collisionSelectionNames.at(kSphericityMax), config.sphericityMax.value, limits::kUpperLimit, skipMostPermissiveBit, isMinimalCut, false);
+    this->addSelection(kSel8, collisionSelectionNames.at(kSel8), config.sel8.value);
+    this->addSelection(kNoSameBunchPileUp, collisionSelectionNames.at(kNoSameBunchPileUp), config.noSameBunchPileup.value);
+    this->addSelection(kIsVertexItsTpc, collisionSelectionNames.at(kIsVertexItsTpc), config.isVertexItsTpc.value);
+    this->addSelection(kIsGoodZvtxFt0VsPv, collisionSelectionNames.at(kIsGoodZvtxFt0VsPv), config.isGoodZvtxFt0VsPv.value);
+    this->addSelection(kNoCollInTimeRangeNarrow, collisionSelectionNames.at(kNoCollInTimeRangeNarrow), config.noCollInTimeRangeNarrow.value);
+    this->addSelection(kNoCollInTimeRangeStrict, collisionSelectionNames.at(kNoCollInTimeRangeStrict), config.noCollInTimeRangeStrict.value);
+    this->addSelection(kNoCollInTimeRangeStandard, collisionSelectionNames.at(kNoCollInTimeRangeStandard), config.noCollInTimeRangeStandard.value);
+    this->addSelection(kNoCollInRofStrict, collisionSelectionNames.at(kNoCollInRofStrict), config.noCollInRofStrict.value);
+    this->addSelection(kNoCollInRofStandard, collisionSelectionNames.at(kNoCollInRofStandard), config.noCollInRofStandard.value);
+    this->addSelection(kNoHighMultCollInPrevRof, collisionSelectionNames.at(kNoHighMultCollInPrevRof), config.noHighMultCollInPrevRof.value);
+    this->addSelection(kIsGoodItsLayer3, collisionSelectionNames.at(kIsGoodItsLayer3), config.isGoodItsLayer3.value);
+    this->addSelection(kIsGoodItsLayer0123, collisionSelectionNames.at(kIsGoodItsLayer0123), config.isGoodItsLayer0123.value);
+    this->addSelection(kIsGoodItsLayerAll, collisionSelectionNames.at(kIsGoodItsLayerAll), config.isGoodItsLayerAll.value);
+    this->addSelection(kOccupancyMin, collisionSelectionNames.at(kOccupancyMin), config.occupancyMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kOccupancyMax, collisionSelectionNames.at(kOccupancyMax), config.occupancyMax.value, limits::kUpperLimit, true, true, false);
+    this->addSelection(kSphericityMin, collisionSelectionNames.at(kSphericityMin), config.sphericityMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kSphericityMax, collisionSelectionNames.at(kSphericityMax), config.sphericityMax.value, limits::kUpperLimit, true, true, false);
 
     std::vector<float> triggerValues(config.triggers.value.size(), 1.f);
-    this->addSelection(kTriggers, collisionSelectionNames.at(kTriggers), triggerValues, limits::kEqualArray, false, false, isOptionalCut);
+    this->addSelection(kTriggers, collisionSelectionNames.at(kTriggers), triggerValues, limits::kEqualArray, false, false, true);
     this->addComments(kTriggers, config.triggers.value);
 
-    this->setupContainers<HistName>(registry);
+    this->setupSelectionHistogram<SelectionHistName>(registry);
+    this->template setupFilterHistogram<FilterHistName>(
+      registry,
+      {
+        {collisionFilterNames.at(kFilterVtxZMin), mVtxZMin},
+        {collisionFilterNames.at(kFilterVtxZMax), mVtxZMax},
+        {collisionFilterNames.at(kFilterMultMin), mMultMin},
+        {collisionFilterNames.at(kFilterMultMax), mMultMax},
+        {collisionFilterNames.at(kFilterCentMin), mCentMin},
+        {collisionFilterNames.at(kFilterCentMax), mCentMax},
+        {collisionFilterNames.at(kFilterMagFieldMin), mMagFieldMin},
+        {collisionFilterNames.at(kFilterMagFieldMax), mMagFieldMax},
+        {collisionFilterNames.at(kFilterSphericityMin), mSphericityMin},
+        {collisionFilterNames.at(kFilterSphericityMax), mSphericityMax},
+        {collisionFilterNames.at(kFilterRctFlags), mUseRctFlags ? 1.f : 0.f},
+      });
   };
+
+  /// \brief Initialize the Zorro trigger machinery for a new run. No-op if no triggers configured.
+  template <typename T1, typename T2>
+  void initTrigger(int runNumber, uint64_t timestamp, T1& ccdb, T2& histRegistry)
+  {
+    if (!mUseTrigger) {
+      return;
+    }
+    LOG(info) << "Init Zorro with Run Number: " << runNumber << "; timestamp: " << timestamp << "; Trigger Names: " << mTriggerNames;
+    mZorro.initCCDB(ccdb.service, runNumber, timestamp, mTriggerNames);
+    mZorro.populateHistRegistry(histRegistry, runNumber);
+  }
+
+  /// \brief Fetch trigger-of-interest decisions for the given global BC. Empty if no triggers configured.
+  template <typename T>
+  std::vector<bool> getTriggerDecisions(T globalBC)
+  {
+    if (!mUseTrigger) {
+      return {};
+    }
+    return mZorro.getTriggerOfInterestResults(globalBC);
+  }
 
   void setMagneticField(int MagField)
   {
@@ -251,7 +318,7 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
     mSphericity = computeSphericity(tracks);
   }
 
-  float getSphericity() const { return mSphericity; }
+  [[nodiscard]] float getSphericity() const { return mSphericity; }
 
   template <modes::System system, typename T>
   void setCentrality(const T& col)
@@ -263,7 +330,7 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
       mCentrality = col.centFT0C();
     }
   }
-  float getCentrality() const { return mCentrality; }
+  [[nodiscard]] float getCentrality() const { return mCentrality; }
 
   template <modes::System system, typename T>
   void setMultiplicity(const T& col)
@@ -276,27 +343,63 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
       mMultiplicity = col.multNTracksPV();
     }
   }
-  float getMultiplicity() const { return mMultiplicity; }
+  [[nodiscard]] float getMultiplicity() const { return mMultiplicity; }
 
+  /// \brief Evaluate all pre-filters (kinematics, quality, RCT flags) for a collision candidate,
+  ///        filling one filter-histogram bin per bound plus the "All analyzed"/"All passed" summary bins.
   template <typename T>
   bool checkFilters(T const& col) const
   {
-    if (col.posZ() < mVtxZMin || col.posZ() > mVtxZMax) {
-      return false;
-    }
-    if (mMultiplicity < mMultMin || mMultiplicity > mMultMax) {
-      return false;
-    }
-    if (mCentrality < mCentMin || mCentrality > mCentMax) {
-      return false;
-    }
-    if (mMagField < mMagFieldMin || mMagField > mMagFieldMax) {
-      return false;
-    }
-    if (mSphericity < mSphericityMin || mSphericity > mSphericityMax) {
-      return false;
-    }
-    return true;
+    bool pass = true;
+    bool p = false;
+
+    p = col.posZ() >= mVtxZMin;
+    this->template fillFilter<FilterHistName>(kFilterVtxZMin, p);
+    pass &= p;
+
+    p = col.posZ() <= mVtxZMax;
+    this->template fillFilter<FilterHistName>(kFilterVtxZMax, p);
+    pass &= p;
+
+    p = mMultiplicity >= mMultMin;
+    this->template fillFilter<FilterHistName>(kFilterMultMin, p);
+    pass &= p;
+
+    p = mMultiplicity <= mMultMax;
+    this->template fillFilter<FilterHistName>(kFilterMultMax, p);
+    pass &= p;
+
+    p = mCentrality >= mCentMin;
+    this->template fillFilter<FilterHistName>(kFilterCentMin, p);
+    pass &= p;
+
+    p = mCentrality <= mCentMax;
+    this->template fillFilter<FilterHistName>(kFilterCentMax, p);
+    pass &= p;
+
+    p = mMagField >= mMagFieldMin;
+    this->template fillFilter<FilterHistName>(kFilterMagFieldMin, p);
+    pass &= p;
+
+    p = mMagField <= mMagFieldMax;
+    this->template fillFilter<FilterHistName>(kFilterMagFieldMax, p);
+    pass &= p;
+
+    p = mSphericity >= mSphericityMin;
+    this->template fillFilter<FilterHistName>(kFilterSphericityMin, p);
+    pass &= p;
+
+    p = mSphericity <= mSphericityMax;
+    this->template fillFilter<FilterHistName>(kFilterSphericityMax, p);
+    pass &= p;
+
+    p = !mUseRctFlags || mRctFlagsChecker(col);
+    this->template fillFilter<FilterHistName>(kFilterRctFlags, p);
+    pass &= p;
+
+    this->template fillFilterSummary<FilterHistName>(pass);
+
+    return this->isPassThrough() || pass;
   }
 
   template <typename T>
@@ -317,7 +420,7 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
     this->evaluateObservable(kNoHighMultCollInPrevRof, static_cast<float>(col.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)));
     this->evaluateObservable(kIsGoodItsLayer3, static_cast<float>(col.selection_bit(o2::aod::evsel::kIsGoodITSLayer3)));
     this->evaluateObservable(kIsGoodItsLayer0123, static_cast<float>(col.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)));
-    this->evaluateObservable(kIsGoodItsLayersAll, static_cast<float>(col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)));
+    this->evaluateObservable(kIsGoodItsLayerAll, static_cast<float>(col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)));
 
     this->evaluateObservable(kOccupancyMin, col.trackOccupancyInTimeRange());
     this->evaluateObservable(kOccupancyMax, col.trackOccupancyInTimeRange());
@@ -331,10 +434,8 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
       this->evaluateObservable(kTriggers, trigger);
     }
 
-    this->assembleBitmask<HistName>();
+    this->assembleBitmask<SelectionHistName>();
   };
-
-  bool passThroughAllCollisions() const { return mPassThrough; }
 
  protected:
   template <typename T>
@@ -387,7 +488,14 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
   float mCentrality = 0.f;
   float mMultiplicity = 0.f;
 
-  bool mPassThrough = false;
+  // RCT flags
+  mutable aod::rctsel::RCTFlagsChecker mRctFlagsChecker;
+  bool mUseRctFlags = false;
+
+  // trigger (Zorro)
+  Zorro mZorro;
+  bool mUseTrigger = false;
+  std::string mTriggerNames = std::string("");
 };
 
 struct CollisionBuilderProducts : o2::framework::ProducesGroup {
@@ -411,7 +519,7 @@ struct ConfCollisionTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceQns{"produceQns", -1, "Produce Qn (-1: auto; 0 off; 1 on)"};
 };
 
-template <const char* HistName>
+template <auto& SelectionHistName, auto& FilterHistName>
 class CollisionBuilder
 {
  public:
@@ -426,22 +534,6 @@ class CollisionBuilder
     mMagFieldForced = confCcdb.magFieldForced.value;
     mGrpPath = confCcdb.grpPath.value;
     mSubGeneratorId = confFilter.subGeneratorId.value;
-
-    if (!confBits.triggers.value.empty()) {
-      mUseTrigger = true;
-      for (size_t i = 0; i < confBits.triggers.value.size(); ++i) {
-        mTriggerNames += confBits.triggers.value[i];
-        if (i != confBits.triggers.value.size() - 1) {
-          mTriggerNames += ",";
-        }
-      }
-      mZorro.setBaseCCDBPath(confCcdb.triggerPath.value);
-    }
-    if (confRct.useRctFlags.value) {
-      mUseRctFlags = true;
-      LOG(info) << "Init RCT flag checker with label: " << confRct.label.value << "; use ZDC: " << confRct.useZdc.value << "; Limimted acceptance is bad: " << confRct.treatLimitedAcceptanceAsBad.value;
-      mRctFlagsChecker.init(confRct.label.value, confRct.useZdc.value, confRct.treatLimitedAcceptanceAsBad.value);
-    }
 
     mProducedCollisions = utils::enableTable("FCols_001", confTable.produceCollisions.value, initContext);
     mProducedCollisionMasks = utils::enableTable("FColMasks_001", confTable.produceCollisionMasks.value, initContext);
@@ -458,7 +550,7 @@ class CollisionBuilder
       return;
     }
 
-    mCollisionSelection.configure(registry, confFilter, confBits);
+    mCollisionSelection.configure(registry, confFilter, confBits, confRct, confCcdb);
     mCollisionSelection.printSelections(colSelsName);
     LOG(info) << "Initialization done...";
   }
@@ -481,11 +573,7 @@ class CollisionBuilder
         mMagField = mMagFieldForced;
       }
 
-      if (mUseTrigger) {
-        LOG(info) << "Init Zorro with Run Number: " << mRunNumber << "; timestamp: " << bc.timestamp() << "; Trigger Names: " << mTriggerNames;
-        mZorro.initCCDB(ccdb.service, mRunNumber, bc.timestamp(), mTriggerNames);
-        mZorro.populateHistRegistry(histRegistry, mRunNumber);
-      }
+      mCollisionSelection.initTrigger(mRunNumber, bc.timestamp(), ccdb, histRegistry);
     }
 
     mCollisionSelection.setMagneticField(mMagField);
@@ -493,10 +581,7 @@ class CollisionBuilder
     mCollisionSelection.template setMultiplicity<system>(col);
     mCollisionSelection.template setCentrality<system>(col);
 
-    std::vector<bool> triggerDecisions = {};
-    if (mUseTrigger) {
-      triggerDecisions = mZorro.getTriggerOfInterestResults(bc.globalBC());
-    }
+    std::vector<bool> triggerDecisions = mCollisionSelection.getTriggerDecisions(bc.globalBC());
 
     mCollisionSelection.applySelections(col, triggerDecisions);
   }
@@ -504,18 +589,6 @@ class CollisionBuilder
   template <typename T1>
   bool checkCollision(T1 const& col)
   {
-
-    if (mCollisionSelection.passThroughAllCollisions()) {
-      return true;
-    }
-
-    // check RCT flags first
-    if (mUseRctFlags) {
-      if (!mRctFlagsChecker(col)) {
-        return false;
-      }
-    }
-    // make other checks
     return mCollisionSelection.checkFilters(col) &&
            mCollisionSelection.passesAllRequiredSelections();
   }
@@ -533,11 +606,6 @@ class CollisionBuilder
       }
     }
 
-    // check RCT flags first
-    if (mUseRctFlags && !mRctFlagsChecker(col)) {
-      return false;
-    }
-    // make other checks
     return mCollisionSelection.checkFilters(col) &&
            mCollisionSelection.passesAllRequiredSelections();
   }
@@ -608,17 +676,12 @@ class CollisionBuilder
   void reset() { mCollisionAlreadyFilled = false; }
 
  private:
-  CollisionSelection<HistName> mCollisionSelection;
+  CollisionSelection<SelectionHistName, FilterHistName> mCollisionSelection;
   bool mCollisionAlreadyFilled = false;
-  Zorro mZorro;
-  bool mUseTrigger = false;
   int mRunNumber = -1;
   std::string mGrpPath = std::string("");
   int mMagFieldForced = 0;
   int mMagField = 0;
-  aod::rctsel::RCTFlagsChecker mRctFlagsChecker;
-  bool mUseRctFlags = false;
-  std::string mTriggerNames = std::string("");
   int mSubGeneratorId = -1;
   bool mFillAnyTable = false;
   bool mProducedCollisions = false;
@@ -652,7 +715,5 @@ class CollisionBuilderDerivedToDerived
   }
 };
 
-} // namespace collisionbuilder
-} // namespace o2::analysis::femto
-;
+} // namespace o2::analysis::femto::collisionbuilder
 #endif // PWGCF_FEMTO_CORE_COLLISIONBUILDER_H_

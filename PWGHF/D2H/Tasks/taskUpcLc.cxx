@@ -161,7 +161,8 @@ struct HfTaskUpcLc {
     registry.add("Data/hUpcGapAfterSelection", "UPC gap type after selection;Gap side;Counts", {HistType::kTH1F, {{7, -1.5, 5.5}}});
     registry.add("Data/hUpcMulti", "Multiplicity of UPC events;Multiplicity;Counts", {HistType::kTH1F, {{200, -0.5, 199.5}}});
     registry.add("Data/hUpcVtz", "Vertex Z position of UPC events;Vz (cm);Counts", {HistType::kTH1F, {{200, -10., 10.}}});
-    registry.add("Data/eta_vs_Multi", "Eta vs Multiplicity;Eta;Multiplicity", {HistType::kTH2F, {{20, -1., 1.}, {200, -0.5, 199.5}}});
+    registry.add("Data/eta_vs_Multi_A", "Eta vs Multiplicity of Gap A Events;Eta;Multiplicity", {HistType::kTH2F, {{20, -1., 1.}, {200, -0.5, 199.5}}});
+    registry.add("Data/eta_vs_Multi_C", "Eta vs Multiplicity of Gap C Events;Eta;Multiplicity", {HistType::kTH2F, {{20, -1., 1.}, {200, -0.5, 199.5}}});
     hfEvSel.addHistograms(registry);
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
@@ -279,7 +280,12 @@ struct HfTaskUpcLc {
         const auto eta = candidate.eta();
 
         double outputBkg(-1);
-        registry.fill(HIST("Data/eta_vs_Multi"), eta, multNTracksPV);
+        if (gapA0nXn) {
+          registry.fill(HIST("Data/eta_vs_Multi_A"), eta, multNTracksPV);
+        }
+        if (gapCXn0n) {
+          registry.fill(HIST("Data/eta_vs_Multi_C"), eta, multNTracksPV);
+        }
 
         auto fillTHnData = [&](bool isPKPi) {
           const auto massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);

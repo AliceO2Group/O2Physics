@@ -120,6 +120,7 @@ struct FlowGfwV02 {
   O2_DEFINE_CONFIGURABLE(cfgGetNsigmaQA, bool, true, "Get QA histograms for selection of pions, kaons, and protons")
   O2_DEFINE_CONFIGURABLE(cfgGetdEdx, bool, true, "Get dEdx histograms for pions, kaons, and protons")
   O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFlowWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting");
+  O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFracWeights, bool, false, "Enable or disable the use of multiplicity-based event weighting for pT fraction");
   O2_DEFINE_CONFIGURABLE(cfgNormalizeByCharged, bool, true, "Enable or disable the normalization by charged particles");
   O2_DEFINE_CONFIGURABLE(cfgConsistentEventFlag, int, 15, "Flag for consistent event selection");
   O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, true, "Use additional event cut on mult correlations");
@@ -804,17 +805,6 @@ struct FlowGfwV02 {
     return PidCharged;
   }
 
-  GFW::CorrConfig getRelevantCorrName(const int& pidInd)
-  {
-    if (pidInd == PidPions)
-      return fGFW->GetCorrelatorConfig("piP {2} refN {-2}", "PiGap22", kFALSE);
-    if (pidInd == PidKaons)
-      return fGFW->GetCorrelatorConfig("kaP {2} refN {-2}", "KaGap22", kFALSE);
-    if (pidInd == PidProtons)
-      return fGFW->GetCorrelatorConfig("prP {2} refN {-2}", "PrGap22", kFALSE);
-    return fGFW->GetCorrelatorConfig("refP {2} refN {-2}", "ChGap22", kFALSE);
-  }
-
   template <DataType dt>
   void fillOutputContainers(const float& centmult, const double& rndm, const int& /*run*/ = 0)
   {
@@ -834,9 +824,6 @@ struct FlowGfwV02 {
       // Fill pt profiles for different particles
       int pidInd = getPIDIndex(corrconfigs.at(l_ind).Head.c_str());
 
-      // Find the corresponding non-pT-differential correlation configuration
-      GFW::CorrConfig corrName = getRelevantCorrName(pidInd); // May be used later for QA
-
       auto dnx = fGFW->Calculate(corrconfigs.at(0), 0, kTRUE).real();
       if (dnx == 0)
         continue;
@@ -846,6 +833,9 @@ struct FlowGfwV02 {
         if (corrconfigs.at(l_ind).Head.find("nch") != std::string::npos) {
           ebyeWeight = 1.0;
           val = 1.0;
+        }
+        if (cfgUseMultiplicityFracWeights && pidStates.hPtMid[PidCharged]->Integral() > 0) {
+          ebyeWeight *= pidStates.hPtMid[PidCharged]->Integral();
         }
         double ptFraction = 0;
         int normIndex = (cfgNormalizeByCharged) ? PidCharged : pidInd; // Configured to normalize by charged particles or the selected particle

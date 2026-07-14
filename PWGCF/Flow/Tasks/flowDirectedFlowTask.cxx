@@ -114,11 +114,11 @@ struct flowDirectedFlowTask {
   ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0., 5., 10., 20., 30., 40., 50., 80.}, "Centrality (%)"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.2, 0.5, 1., 1.5, 2., 2.5, 3., 4., 5., 6.5, 8., 10.}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis etaAxis{"etaAxis", {VARIABLE_WIDTH, -0.8, -0.4, -0.2, 0., 0.2, 0.4, 0.8}, "#eta"};
-  ConfigurableAxis massAxis{"massAxis", {100, 1.0, 1.2}, "#it{M} (GeV/#it{c}^{2})"};
-  ConfigurableAxis polAxis{"polAxis", {200, -1.0, 1.0}, "polarization observable"};
-  ConfigurableAxis spAxis{"spAxis", {400, -10.0, 10.0}, "SP observable"};
+  ConfigurableAxis massAxis{"massAxis", {50, 1.09, 1.14}, "#it{M} (GeV/#it{c}^{2})"};
+  ConfigurableAxis polAxis{"polAxis", {200, -3.0, 3.0}, "polarization observable"};
+  ConfigurableAxis spAxis{"spAxis", {200, -3.0, 3.0}, "SP observable"};
   ConfigurableAxis q1Axis{"q1Axis", {VARIABLE_WIDTH, 0., 0.5, 1., 1.5, 2., 3., 5., 10.}, "q_{1}^{ZDC}"};
-  ConfigurableAxis qAxis{"qAxis", {200, -10., 10.}, "Q"};
+  ConfigurableAxis qAxis{"qAxis", {100, -3., 3.}, "Q"};
   ConfigurableAxis resAxis{"resAxis", {200, -1., 1.}, "resolution / correlation"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -126,6 +126,7 @@ struct flowDirectedFlowTask {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   TProfile2D* accprofileL = nullptr;
   TProfile2D* accprofileAL = nullptr;
+
   int currentRunNumber = -999;
   int lastRunNumber = -999;
 
@@ -156,18 +157,21 @@ struct flowDirectedFlowTask {
 
     histos.add("hpResCosAC", "cos(#Psi_{A}-#Psi_{C}) vs centrality", kTH3F, {{centAxis}, {resAxis}, {q1Axis}});
     histos.add("hpDotAC", "Q_{A}#upoint Q_{C} vs centrality", kTH3F, {{centAxis}, {qAxis}, {q1Axis}});
-    histos.add("hpResDotAC", "Q_{A}#upoint Q_{C} vs centrality", kTH3F, {{centAxis}, {qAxis}, {q1Axis}});
-    histos.add("hpQxAQxC", "QxA QxC", kTH2F, {{centAxis}, {resAxis}});
-    histos.add("hpQyAQyC", "QyA QyC", kTH2F, {{centAxis}, {resAxis}});
-    histos.add("hpQxAQyC", "QxA QyC", kTH2F, {{centAxis}, {resAxis}});
-    histos.add("hpQxCQyA", "QxC QyA", kTH2F, {{centAxis}, {resAxis}});
+    histos.add("hpResDotAC", "Q_{A}#upoint Q_{C} vs centrality", kTH3F, {{centAxis}, {resAxis}, {q1Axis}});
+    histos.add("hpQxAQxC", "QxA QxC", kTH3F, {{centAxis}, {qAxis}, {q1Axis}});
+    histos.add("hpQyAQyC", "QyA QyC", kTH3F, {{centAxis}, {qAxis}, {q1Axis}});
+    histos.add("hpQxAQyC", "QxA QyC", kTH3F, {{centAxis}, {qAxis}, {q1Axis}});
+    histos.add("hpQxCQyA", "QxC QyA", kTH3F, {{centAxis}, {qAxis}, {q1Axis}});
 
     std::vector<AxisSpec> axesV1SP = {centAxis, ptAxis, etaAxis, q1Axis, spAxis};
     std::vector<AxisSpec> axesV1EP = {centAxis, ptAxis, etaAxis, q1Axis, polAxis};
 
     histos.add("hV1SPFullQ1", "charged v1 SP numerator u#upoint(QC-QA) vs q1", HistType::kTHnSparseF, axesV1SP, true);
+    histos.add("hV1SPxxFullQ1", "charged v1 SP numerator u#upoint(QC-QA) vs q1 for x", HistType::kTHnSparseF, axesV1SP, true);
+    histos.add("hV1SPyyFullQ1", "charged v1 SP numerator u#upoint(QC-QA) vs q1 for y", HistType::kTHnSparseF, axesV1SP, true);
     histos.add("hV1SPAQ1", "charged v1 SP numerator u#upointQA vs q1", HistType::kTHnSparseF, axesV1SP, true);
     histos.add("hV1SPCQ1", "charged v1 SP numerator u#upointQC vs q1", HistType::kTHnSparseF, axesV1SP, true);
+
     histos.add("hV1EPFullQ1", "charged v1 EP QA cos(phi-PsiZDC) vs q1", HistType::kTHnSparseF, axesV1EP, true);
     histos.add("hV1EPAQ1", "charged v1 EP QA cos(phi-PsiA) vs q1", HistType::kTHnSparseF, axesV1EP, true);
     histos.add("hV1EPCQ1", "charged v1 EP QA cos(phi-PsiC) vs q1", HistType::kTHnSparseF, axesV1EP, true);
@@ -175,18 +179,18 @@ struct flowDirectedFlowTask {
     std::vector<AxisSpec> axesPolSPQ1 = {massAxis, ptAxis, spAxis, centAxis, q1Axis};
 
     histos.add("hSparseLambdaPolSPQ1", "Lambda SP polarization numerator vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
-    histos.add("hSparseLambdaPolSPwgtQ1", "Lambda SP polarization numerator / acceptance vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
+    histos.add("hSparseLambdaPolSPuxQ1", "Lambda SP polarization numerator vs q1 for x", HistType::kTHnSparseF, axesPolSPQ1, true);
+    histos.add("hSparseLambdaPolSPuyQ1", "Lambda SP polarization numerator vs q1 for y", HistType::kTHnSparseF, axesPolSPQ1, true);
+
     histos.add("hSparseLambdaPolSPAQ1", "Lambda SP polarization numerator A vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
     histos.add("hSparseLambdaPolSPCQ1", "Lambda SP polarization numerator C vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
-    histos.add("hSparseLambdaPolSPAwgtQ1", "Lambda SP polarization numerator A / acceptance vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
-    histos.add("hSparseLambdaPolSPCwgtQ1", "Lambda SP polarization numerator C / acceptance vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
 
     histos.add("hSparseAntiLambdaPolSPQ1", "AntiLambda SP polarization numerator vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
-    histos.add("hSparseAntiLambdaPolSPwgtQ1", "AntiLambda SP polarization numerator / acceptance vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
+    histos.add("hSparseAntiLambdaPolSPuxQ1", "AntiLambda SP polarization numerator vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
+    histos.add("hSparseAntiLambdaPolSPuyQ1", "AntiLambda SP polarization numerator vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
+
     histos.add("hSparseAntiLambdaPolSPAQ1", "AntiLambda SP polarization numerator A vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
     histos.add("hSparseAntiLambdaPolSPCQ1", "AntiLambda SP polarization numerator C vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
-    histos.add("hSparseAntiLambdaPolSPAwgtQ1", "AntiLambda SP polarization numerator A / acceptance vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
-    histos.add("hSparseAntiLambdaPolSPCwgtQ1", "AntiLambda SP polarization numerator C / acceptance vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
 
     histos.add("hSparseLambdaPolEPQ1", "Lambda EP QA sin(phi*-PsiZDC) vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
     histos.add("hSparseLambdaPolEPAQ1", "Lambda EP QA sin(phi*-PsiA) vs q1", HistType::kTHnSparseF, axesPolSPQ1, true);
@@ -275,6 +279,8 @@ struct flowDirectedFlowTask {
       q1 = q1C;
     } else if (cfgq1mode == 3) {
       q1 = q1Mean;
+    } else if (cfgq1mode == 4) {
+      q1 = std::sqrt(std::pow(qxA + qxC, 2) + std::pow(qyA + qyC, 2));
     } else {
       q1 = q1Full;
     }
@@ -446,6 +452,9 @@ struct flowDirectedFlowTask {
 
     if (isLambda) {
       histos.fill(HIST("hSparseLambdaPolSPQ1"), mass, v0.pt(), polSP, centrality, q1, wgt);
+      histos.fill(HIST("hSparseLambdaPolSPuyQ1"), mass, v0.pt(), uy * qxFull / accDen, centrality, q1, wgt);
+      histos.fill(HIST("hSparseLambdaPolSPuxQ1"), mass, v0.pt(), ux * qyFull / accDen, centrality, q1, wgt);
+
       histos.fill(HIST("hSparseLambdaPolSPAQ1"), mass, v0.pt(), polSP_A, centrality, q1, wgt);
       histos.fill(HIST("hSparseLambdaPolSPCQ1"), mass, v0.pt(), polSP_C, centrality, q1, wgt);
 
@@ -462,6 +471,9 @@ struct flowDirectedFlowTask {
       histos.fill(HIST("hSparseLambdaAvgUyQ1"), mass, v0.pt(), uy, centrality, q1, wgt);
     } else {
       histos.fill(HIST("hSparseAntiLambdaPolSPQ1"), mass, v0.pt(), polSP, centrality, q1, wgt);
+      histos.fill(HIST("hSparseAntiLambdaPolSPuxQ1"), mass, v0.pt(), uy * qxFull / accDen, centrality, q1, wgt);
+      histos.fill(HIST("hSparseAntiLambdaPolSPuyQ1"), mass, v0.pt(), ux * qyFull / accDen, centrality, q1, wgt);
+
       histos.fill(HIST("hSparseAntiLambdaPolSPAQ1"), mass, v0.pt(), polSP_A, centrality, q1, wgt);
       histos.fill(HIST("hSparseAntiLambdaPolSPCQ1"), mass, v0.pt(), polSP_C, centrality, q1, wgt);
 
@@ -519,10 +531,10 @@ struct flowDirectedFlowTask {
     histos.fill(HIST("hpResCosAC"), centrality, std::cos(psiA - psiC), q1);
     histos.fill(HIST("hpDotAC"), centrality, dotAC, q1);
     histos.fill(HIST("hpResDotAC"), centrality, resDot, q1);
-    histos.fill(HIST("hpQxAQxC"), centrality, qxA * qxC);
-    histos.fill(HIST("hpQyAQyC"), centrality, qyA * qyC);
-    histos.fill(HIST("hpQxAQyC"), centrality, qxA * qyC);
-    histos.fill(HIST("hpQxCQyA"), centrality, qxC * qyA);
+    histos.fill(HIST("hpQxAQxC"), centrality, qxA * qxC, q1);
+    histos.fill(HIST("hpQyAQyC"), centrality, qyA * qyC, q1);
+    histos.fill(HIST("hpQxAQyC"), centrality, qxA * qyC, q1);
+    histos.fill(HIST("hpQxCQyA"), centrality, qxC * qyA, q1);
 
     for (const auto& track : tracks) {
       if (!selectV1Track(track)) {
@@ -538,6 +550,9 @@ struct flowDirectedFlowTask {
       float v1SPC = ux * qxC + uy * qyC;
 
       histos.fill(HIST("hV1SPFullQ1"), centrality, track.pt(), track.eta(), q1, v1SPFull);
+      histos.fill(HIST("hV1SPxxFullQ1"), centrality, track.pt(), track.eta(), q1, ux * qxFull);
+      histos.fill(HIST("hV1SPyyFullQ1"), centrality, track.pt(), track.eta(), q1, uy * qyFull);
+
       histos.fill(HIST("hV1SPAQ1"), centrality, track.pt(), track.eta(), q1, v1SPA);
       histos.fill(HIST("hV1SPCQ1"), centrality, track.pt(), track.eta(), q1, v1SPC);
 
