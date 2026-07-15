@@ -58,6 +58,11 @@ using namespace o2::soa;
 using namespace o2::constants::physics;
 
 struct lambdaTwoPartPolarization {
+  enum centSel {
+    kFT0C = 0,
+    kFT0M
+  };
+
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::MultZeqs, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
   using V0TrackCandidate = aod::V0Datas;
@@ -130,6 +135,7 @@ struct lambdaTwoPartPolarization {
   ConfigurableAxis RapAxis{"RapAxis", {10, -0.5, 0.5}, "Rapidity axis"};
   ConfigurableAxis detaAxis{"dyAxis", {20, -1, 1}, "relative rapidity axis"};
   ConfigurableAxis dphiAxis{"dphiAxis", {20, -constants::math::PI * 0.5, constants::math::PI * 1.5}, "relative azimuth axis"};
+  ConfigurableAxis massAxis{"massAxis", {30, 1.10, 1.1}, "lambda mass axis"};
 
   ConfigurableAxis cosSigAxis{"cosSigAxis", {110, -1.05, 1.05}, "Signal cosine axis"};
   ConfigurableAxis cosAccAxis{"cosAccAxis", {110, -7.05, 7.05}, "Accepatance cosine axis"};
@@ -171,8 +177,10 @@ struct lambdaTwoPartPolarization {
     histos.add("Ana/SignalCos2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, cosSigAxis}});
     histos.add("Ana/Acceptance", "", {HistType::kTHnSparseF, {ptAxis, centAxis, RapAxis, cosAccAxis}});
 
-    histos.add("AnaHL/SignalSin2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, cosSigAxis}});
-    histos.add("AnaHL/SignalCos2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, cosSigAxis}});
+    histos.add("AnaHL/LambdaSignalSin2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
+    histos.add("AnaHL/LambdaSignalCos2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
+    histos.add("AnaHL/ALambdaSignalSin2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
+    histos.add("AnaHL/ALambdaSignalCos2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
     histos.add("AnaHL/Ref", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis}});
 
     fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
@@ -197,6 +205,7 @@ struct lambdaTwoPartPolarization {
   int V02Tag = 1;
   double costhetastar1 = 0.0;
   double costhetastar2 = 0.0;
+  double lambdaRecMass = 1.;
 
   template <typename TCollision>
   bool eventSelected(TCollision const& collision)
@@ -318,11 +327,11 @@ struct lambdaTwoPartPolarization {
   template <typename Trk1, typename Trk2>
   void FillHistogramsRef(Trk1 const& trks1, Trk2 const& trks2)
   {
-    for (auto& trk1 : trks1) {
+    for (const auto& trk1 : trks1) {
       if (!selectTrack(trk1)) {
         continue;
       }
-      for (auto& trk2 : trks2) {
+      for (const auto& trk2 : trks2) {
         if (!selectTrack(trk2)) {
           continue;
         }
@@ -339,12 +348,12 @@ struct lambdaTwoPartPolarization {
   template <typename C, typename V0, typename Trk>
   void FillHistogramsLH(C const& c1, V0 const& v0s, Trk const& trks)
   {
-    for (auto& trk : trks) {
+    for (const auto& trk : trks) {
       if (!selectTrack(trk)) {
         continue;
       }
 
-      for (auto& v01 : v0s) {
+      for (const auto& v01 : v0s) {
         auto postrack_v01 = v01.template posTrack_as<TrackCandidates>();
         auto negtrack_v01 = v01.template negTrack_as<TrackCandidates>();
 
@@ -394,8 +403,14 @@ struct lambdaTwoPartPolarization {
         weight *= cfgEffCor ? 1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v01.pt()), EffMap->GetYaxis()->FindBin(centrality)) : 1.;
         weight *= cfgAccCor ? 1.0 / AccMap->GetBinContent(AccMap->GetXaxis()->FindBin(v01.pt()), AccMap->GetYaxis()->FindBin(v01.yLambda())) : 1.;
 
-        histos.fill(HIST("AnaHL/SignalSin2"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, costhetastar1 * std::sin(2.0 * dphi) * weight);
-        histos.fill(HIST("AnaHL/SignalCos2"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, costhetastar1 * std::cos(2.0 * dphi) * weight);
+        if (LambdaTag) {
+          histos.fill(HIST("AnaHL/LambdaSignalSin2"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, v01.mLambda(), costhetastar1 * std::sin(2.0 * dphi) * weight);
+          histos.fill(HIST("AnaHL/LambdaSignalCos2"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, v01.mLambda(), costhetastar1 * std::cos(2.0 * dphi) * weight);
+        }
+        if (aLambdaTag) {
+          histos.fill(HIST("AnaHL/ALambdaSignalSin2"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, v01.mAntiLambda(), costhetastar1 * std::sin(2.0 * dphi) * weight);
+          histos.fill(HIST("AnaHL/ALambdaSignalCos2"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, v01.mAntiLambda(), costhetastar1 * std::cos(2.0 * dphi) * weight);
+        }
       }
     }
   }
@@ -403,7 +418,7 @@ struct lambdaTwoPartPolarization {
   template <typename C1, typename C2, typename V01, typename V02>
   void FillHistograms(C1 const& c1, C2 const& c2, V01 const& V01s, V02 const& V02s)
   {
-    for (auto& v01 : V01s) {
+    for (const auto& v01 : V01s) {
       auto postrack_v01 = v01.template posTrack_as<TrackCandidates>();
       auto negtrack_v01 = v01.template negTrack_as<TrackCandidates>();
 
@@ -445,7 +460,7 @@ struct lambdaTwoPartPolarization {
 
       histos.fill(HIST("Ana/Acceptance"), v01.pt(), centrality, v01.yLambda(), costhetastar1 * costhetastar1);
 
-      for (auto& v02 : V02s) {
+      for (const auto& v02 : V02s) {
         if (v01.v0Id() <= v02.v0Id() && doprocessDataSame) {
           continue;
         }
@@ -546,9 +561,11 @@ struct lambdaTwoPartPolarization {
                        TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s,
                        aod::BCsWithTimestamps const&)
   {
-    if (cfgCentEst == 1) {
+    if (cfgCentEst == kFT0C) {
       centrality = collision.centFT0C();
-    } else if (cfgCentEst == 2) {
+    } else if (cfgCentEst == kFT0M) {
+      centrality = collision.centFT0M();
+    } else {
       centrality = collision.centFT0M();
     }
     if (!eventSelected(collision) && cfgEvtSel) {
@@ -579,7 +596,7 @@ struct lambdaTwoPartPolarization {
   void processDataMixedT0C(EventCandidates const& collisions,
                            TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
-    for (auto& [c1, c2] : selfCombinations(colBinningT0C, cfgNoMixedEvents, -1, collisions, collisions)) {
+    for (const auto& [c1, c2] : selfCombinations(colBinningT0C, cfgNoMixedEvents, -1, collisions, collisions)) {
 
       if (c1.index() == c2.index()) {
         continue;
@@ -611,7 +628,7 @@ struct lambdaTwoPartPolarization {
   void processDataMixedT0M(EventCandidates const& collisions,
                            TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
-    for (auto& [c1, c2] : selfCombinations(colBinningT0M, cfgNoMixedEvents, -1, collisions, collisions)) {
+    for (const auto& [c1, c2] : selfCombinations(colBinningT0M, cfgNoMixedEvents, -1, collisions, collisions)) {
 
       if (c1.index() == c2.index()) {
         continue;
