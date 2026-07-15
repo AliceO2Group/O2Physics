@@ -1353,7 +1353,7 @@ struct MftReassociationValidation {
         float reassociatedDeltaX = -999.f;
         float reassociatedDeltaY = -999.f;
         float reassociatedDeltaZ = -999.f;
-        auto collision = templatedTrack.collision_as<FilteredCollisionsWSelMultMcLabels>();
+        // auto collision = templatedTrack.collision_as<FilteredCollisionsWSelMultMcLabels>();
         auto xPosTrue = reassociated2dMftTrack.mcParticle().mcCollision().posX();
         auto yPosTrue = reassociated2dMftTrack.mcParticle().mcCollision().posY();
         auto zPosTrue = reassociated2dMftTrack.mcParticle().mcCollision().posZ();
@@ -1740,7 +1740,7 @@ struct MftReassociationValidation {
         float reassociatedDeltaX = -999.f;
         float reassociatedDeltaY = -999.f;
         float reassociatedDeltaZ = -999.f;
-        auto collision = templatedTrack.collision_as<FilteredCollisionsWSelMultMcLabels>();
+        // auto collision = templatedTrack.collision_as<FilteredCollisionsWSelMultMcLabels>();
         auto xPosTrue = reassociated3dMftTrack.mcParticle().mcCollision().posX();
         auto yPosTrue = reassociated3dMftTrack.mcParticle().mcCollision().posY();
         auto zPosTrue = reassociated3dMftTrack.mcParticle().mcCollision().posZ();
