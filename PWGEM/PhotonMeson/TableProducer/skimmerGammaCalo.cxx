@@ -258,7 +258,7 @@ struct SkimmerGammaCalo {
                        convertForStorage<int16_t>(emccluster.m02(), Observable::kM02),
                        convertForStorage<int16_t>(emccluster.time(), Observable::kTime));
 
-      if (vEta.size() > 0) {
+      if (!vEta.empty()) {
         for (size_t iPart = 0; iPart < vEta.size(); ++iPart) {
           tableEmEmcMTracks(tableEmEmcClusters.lastIndex(), vEta[iPart], vPhi[iPart], vP[iPart], vPt[iPart]);
           tableMinMTracks(tableMinClusters.lastIndex(),
@@ -268,7 +268,7 @@ struct SkimmerGammaCalo {
                           convertForStorage<uint16_t>(vPt[iPart], Observable::kEnergy));
         }
       }
-      if (vEtaSecondaries.size() > 0) {
+      if (!vEtaSecondaries.empty()) {
         for (size_t iPart = 0; iPart < vEtaSecondaries.size(); ++iPart) {
           tableEmEmcMSTracks(tableEmEmcClusters.lastIndex(), vEtaSecondaries[iPart], vPhiSecondaries[iPart], vPSecondaries[iPart], vPtSecondaries[iPart]);
           tableMinMSTracks(tableMinClusters.lastIndex(),

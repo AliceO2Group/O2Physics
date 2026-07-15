@@ -510,7 +510,7 @@ struct SkimmerPrimaryElectronFromDalitzEE {
         fillPairInfo<false, 2>(collision, negTracksPerColl, negTracksPerColl); // LS--
       }
 
-      if ((v0photonsPerColl.size() >= 1 && acceptedPosTrackIdsPerCollision.size() >= 1 && acceptedNegTrackIdsPerCollision.size() >= 1) || (acceptedPosTrackIdsPerCollision.size() >= 2 && acceptedNegTrackIdsPerCollision.size() >= 2)) { // o2-linter: disable=magic-number (check to see if we have enough particles that it make sense to fill the tables)
+      if ((v0photonsPerColl.size() >= 1 && !acceptedPosTrackIdsPerCollision.empty() && !acceptedNegTrackIdsPerCollision.empty()) || (acceptedPosTrackIdsPerCollision.size() >= 2 && acceptedNegTrackIdsPerCollision.size() >= 2)) { // o2-linter: disable=magic-number (check to see if we have enough particles that it make sense to fill the tables)
         // LOGF(info, "v0photonsPerColl.size() = %d, acceptedPosTrackIdsPerCollision.size() = %d, acceptedNegTrackIdsPerCollision.size() = %d", v0photonsPerColl.size(), acceptedPosTrackIdsPerCollision.size(), acceptedNegTrackIdsPerCollision.size());
         for (const auto& posId : acceptedPosTrackIdsPerCollision) {
           const auto& pos = tracks.rawIteratorAt(posId);
@@ -612,7 +612,7 @@ struct SkimmerPrimaryElectronFromDalitzEE {
         fillPairInfo<true, 1>(collision, posTracksPerColl, posTracksPerColl); // LS++
         fillPairInfo<true, 2>(collision, negTracksPerColl, negTracksPerColl); // LS--
       }
-      if ((v0photonsPerColl.size() >= 1 && acceptedPosTrackIdsPerCollision.size() >= 1 && acceptedNegTrackIdsPerCollision.size() >= 1) || (acceptedPosTrackIdsPerCollision.size() >= 2 && acceptedNegTrackIdsPerCollision.size() >= 2)) { // o2-linter: disable=magic-number (check to see if we have enough particles that it make sense to fill the tables)
+      if ((v0photonsPerColl.size() >= 1 && !acceptedPosTrackIdsPerCollision.empty() && !acceptedNegTrackIdsPerCollision.empty()) || (acceptedPosTrackIdsPerCollision.size() >= 2 && acceptedNegTrackIdsPerCollision.size() >= 2)) { // o2-linter: disable=magic-number (check to see if we have enough particles that it make sense to fill the tables)
         // LOGF(info, "v0photonsPerColl.size() = %d, acceptedPosTrackIdsPerCollision.size() = %d, acceptedNegTrackIdsPerCollision.size() = %d", v0photonsPerColl.size(), acceptedPosTrackIdsPerCollision.size(), acceptedNegTrackIdsPerCollision.size());
         for (const auto& posId : acceptedPosTrackIdsPerCollision) {
           const auto& pos = tracks.rawIteratorAt(posId);
