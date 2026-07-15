@@ -235,19 +235,19 @@ struct LfLambdaTwoPartPolarization {
   } // event selection
 
   template <typename TCollision, typename V0>
-  bool selectionV0(TCollision const& collision, V0 const& candidate, int LambdaTag)
+  bool selectionV0(TCollision const& collision, V0 const& candidate, int lambdaPid)
   {
     if (candidate.v0radius() < cfgv0radiusMin) {
       return false;
     }
-    if (LambdaTag) {
+    if (lambdaPid == 1) {
       if (std::abs(candidate.dcapostopv()) < cfgDCAPrToPVMin) {
         return false;
       }
       if (std::abs(candidate.dcanegtopv()) < cfgDCAPiToPVMin) {
         return false;
       }
-    } else if (LambdaTag == 0) {
+    } else if (lambdaPid == 0) {
       if (std::abs(candidate.dcapostopv()) < cfgDCAPiToPVMin) {
         return false;
       }
