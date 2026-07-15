@@ -103,8 +103,8 @@ struct ConfK0shortBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                                 \
   o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                                  \
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                     \
-  o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass"};             \
-  o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass"};             \
+  o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass"};                        \
+  o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass"};                        \
   o2::framework::Configurable<datatypes::V0MaskType> mask{"mask", 0, "Bitmask for v0 selection"};
 
 // base selection for analysis task for lambdas
