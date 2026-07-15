@@ -76,6 +76,7 @@ struct PidFlowPtCorr {
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutChi2prTPCcls{"cfgCutChi2prTPCcls", 2.5, "Chi2 per TPC clusters"};
   Configurable<int> cfgDeltaPhiLocDen{"cfgDeltaPhiLocDen", 3, "Number of delta phi for local density, 200 bins in 2 pi"};
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FV0A; 4:NTPV; 5:NGlobal; 6:MFT"};
 
   struct : ConfigurableGroup {
     std::string prefix = "trkQualityOpts";
@@ -233,7 +234,7 @@ struct PidFlowPtCorr {
   // data tracks filter
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksExtra, TracksPID, aod::TracksIU, aod::TracksDCA>>;
   // data collisions filter
-  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::MultsRun3>>;
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::MultsRun3>>;
 
   // MC
   Filter mccollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
@@ -284,6 +285,18 @@ struct PidFlowPtCorr {
     kKaon,
     kProton,
     kNumberOfParticles
+  };
+
+  enum CentEstimators {
+    kCentFT0C = 0,
+    kCentFT0CVariant1,
+    kCentFT0M,
+    kCentFV0A,
+    kCentNTPV,
+    kCentNGlobal,
+    kCentMFT,
+    // Count the total number of enum
+    kCount_CentEstimators
   };
 
   enum OutputTH1Names {
@@ -378,7 +391,8 @@ struct PidFlowPtCorr {
     registry.add("hVtxZ", "", {HistType::kTH1D, {cfgaxisVertex}});
     registry.add("hMult", "", {HistType::kTH1D, {cfgaxisNch}});
     registry.add("hMultTPC", "", {HistType::kTH1D, {cfgaxisNch}});
-    registry.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
+    std::string hCentTitle = "Centrality distribution, Estimator " + std::to_string(cfgCentEstimator);
+    registry.add("hCent", hCentTitle.c_str(), {HistType::kTH1D, {{90, 0, 90}}});
     registry.add("hPt", "", {HistType::kTH1D, {cfgaxisPt}});
     registry.add("hPtCorr", "", {HistType::kTH1D, {cfgaxisPt}});
     registry.add("hPtPi", "", {HistType::kTH1D, {cfgaxisPt}});
@@ -1726,6 +1740,44 @@ struct PidFlowPtCorr {
   }
 
   /**
+   * @brief get centrality from the configured estimator
+   * @note mirrors flowTask.cxx's getCentrality(), allowing this task to
+   *       switch between different Run 3 centrality estimators via
+   *       cfgCentEstimator instead of always using FT0C.
+   */
+  template <typename TCollision>
+  float getCentrality(TCollision const& collision)
+  {
+    float cent;
+    switch (cfgCentEstimator) {
+      case kCentFT0C:
+        cent = collision.centFT0C();
+        break;
+      case kCentFT0CVariant1:
+        cent = collision.centFT0CVariant1();
+        break;
+      case kCentFT0M:
+        cent = collision.centFT0M();
+        break;
+      case kCentFV0A:
+        cent = collision.centFV0A();
+        break;
+      case kCentNTPV:
+        cent = collision.centNTPV();
+        break;
+      case kCentNGlobal:
+        cent = collision.centNGlobal();
+        break;
+      case kCentMFT:
+        cent = collision.centMFT();
+        break;
+      default:
+        cent = collision.centFT0C();
+    }
+    return cent;
+  }
+
+  /**
    * @brief collision selection
    * @note include: 1. TRD triggered
    *                2. collisions close to Time Frame borders
@@ -1867,7 +1919,7 @@ struct PidFlowPtCorr {
       return;
     }
     fGFW->Clear();
-    const auto cent = collision.centFT0C();
+    const auto cent = getCentrality(collision);
     if (!collision.sel8()) {
       return;
     }
@@ -2419,7 +2471,7 @@ struct PidFlowPtCorr {
       return;
     }
     fGFW->Clear();
-    const auto cent = collision.centFT0C();
+    const auto cent = getCentrality(collision);
     if (!collision.sel8()) {
       return;
     }
@@ -2508,7 +2560,7 @@ struct PidFlowPtCorr {
       return;
     }
 
-    const auto cent = collision.centFT0C();
+    const auto cent = getCentrality(collision);
     if (!collision.sel8()) {
       return;
     }
@@ -2595,7 +2647,7 @@ struct PidFlowPtCorr {
       return;
     }
     fGFW->Clear();
-    const auto cent = collision.centFT0C();
+    const auto cent = getCentrality(collision);
     if (!collision.sel8()) {
       return;
     }
@@ -2676,7 +2728,7 @@ struct PidFlowPtCorr {
     }
     registry.fill(HIST("hEventCount/processReco"), 1.5);
 
-    const auto cent = collision.centFT0C();
+    const auto cent = getCentrality(collision);
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int runNumber = bc.runNumber();
     double interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 1.e-3;
@@ -2702,7 +2754,7 @@ struct PidFlowPtCorr {
       if (track.has_mcParticle()) {
         auto mcParticle = track.mcParticle();
         // fill graph
-        if (particleSelected(mcParticle)) {
+        if (particleSelected(mcParticle) && mcParticle.isPhysicalPrimary()) {
           /// @note global track, fill rec hist
           if (track.hasITS() && track.hasTPC() && trackSelected4ITS(track) && trackSelected4TPC(track)) {
             // graph for all particles
@@ -2759,7 +2811,7 @@ struct PidFlowPtCorr {
       auto bc = oneColl.bc_as<aod::BCsWithTimestamps>();
       int runNumber = bc.runNumber();
       double interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 1.e-3;
-      double cent = oneColl.centFT0C();
+      double cent = getCentrality(oneColl);
 
       auto groupedTracks = tracks.sliceBy(perCollision, oneColl.globalIndex());
       if (groupedTracks.size() <= 0) {
