@@ -61,23 +61,38 @@ struct TreeCreatorPidTpcQa {
   Produces<o2::aod::QaPidTpc> rowPidTpcQa;
 
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply event selection: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
-  Configurable<float> cutVtxZ{"cutVtxZ", 10.f, "Cut on vertex Z position [cm]. Set negative value to switch this cut off"};
+  Configurable<float> cutVtxZ{"cutVtxZ", 10.f, "Cut on vertex Z position [cm]"};
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   Configurable<bool> requireGlobalTrack{"requireGlobalTrack", true, "Skip non-global tracks"};
   Configurable<bool> requireIts{"requireIts", true, "Skip tracks without ITS"};
   Configurable<int16_t> cutMinTPCNcls{"cutMinTPCNcls", 0, "Minimum number or TPC Clusters for tracks"};
-  Configurable<float> cutRapidity{"cutRapidity", 0.5, "Rapidity cut. Set negative value to switch this cut off"};
+  Configurable<float> cutRapidity{"cutRapidity", 999.f, "Rapidity cut"};
   Configurable<float> nClNorm{"nClNorm", 152., "Number of cluster normalization. Run 2: 159, Run 3 152"};
   // Configurable for the path of CCDB General Run Parameters LHC Interface information
   Configurable<std::string> ccdbPathGrpLhcIf{"ccdbPathGrpLhcIf", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
 
-#define DECLARE_PARTICLE_WISE_CONFIGURABLES(ParticleNameShort, ParticleNameLong)                                                                                                                                                                        \
-  Configurable<float> cutTpcInnerParameterMin##ParticleNameLong{"cutTpcInnerParameterMin" #ParticleNameLong, -1., "Lower-value cut on tpcInnerParam for " #ParticleNameLong}; /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
-  Configurable<float> cutTpcInnerParameterMax##ParticleNameLong{"cutTpcInnerParameterMax" #ParticleNameLong, -1., "Upper-value cut on tpcInnerParam for " #ParticleNameLong}; /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
-  Configurable<float> cutNSigmaTpcAbs##ParticleNameLong{"cutNSigmaTpcAbs" #ParticleNameLong, -1., "Cut on absolute value of nSigmaTpc for " #ParticleNameLong};               // o2-linter: disable=name/configurable (Configurable defined in macro)
+#define DECLARE_PARTICLE_WISE_CONFIGURABLES(ParticleNameShort, ParticleNameLong)                                                                                                                                                                          \
+  Configurable<float> cutTpcInnerParameterMin##ParticleNameLong{"cutTpcInnerParameterMin" #ParticleNameLong, 0.f, "Lower-value cut on tpcInnerParam for " #ParticleNameLong};   /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutTpcInnerParameterMax##ParticleNameLong{"cutTpcInnerParameterMax" #ParticleNameLong, 999.f, "Upper-value cut on tpcInnerParam for " #ParticleNameLong}; /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutNSigmaTpcAbs##ParticleNameLong{"cutNSigmaTpcAbs" #ParticleNameLong, 999.f, "Cut on absolute value of nSigmaTpc for " #ParticleNameLong};               // o2-linter: disable=name/configurable (Configurable defined in macro)
 
   PARTICLE_LIST(DECLARE_PARTICLE_WISE_CONFIGURABLES)
 #undef DECLARE_PARTICLE_WISE_CONFIGURABLES
+
+#define PACK_CONFIGURABLES_TO_ARRAY(ParticleNameShort, ParticleNameLong) &cutTpcInnerParameterMin##ParticleNameLong,
+  std::array<Configurable<float>*, PID::Alpha + 1> cutTpcInnerParameterMin{
+    PARTICLE_LIST(PACK_CONFIGURABLES_TO_ARRAY)};
+#undef PACK_CONFIGURABLES_TO_ARRAY
+
+#define PACK_CONFIGURABLES_TO_ARRAY(ParticleNameShort, ParticleNameLong) &cutTpcInnerParameterMax##ParticleNameLong,
+  std::array<Configurable<float>*, PID::Alpha + 1> cutTpcInnerParameterMax{
+    PARTICLE_LIST(PACK_CONFIGURABLES_TO_ARRAY)};
+#undef PACK_CONFIGURABLES_TO_ARRAY
+
+#define PACK_CONFIGURABLES_TO_ARRAY(ParticleNameShort, ParticleNameLong) &cutNSigmaTpcAbs##ParticleNameLong,
+  std::array<Configurable<float>*, PID::Alpha + 1> cutNSigmaTpcAbs{
+    PARTICLE_LIST(PACK_CONFIGURABLES_TO_ARRAY)};
+#undef PACK_CONFIGURABLES_TO_ARRAY
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
@@ -144,7 +159,7 @@ struct TreeCreatorPidTpcQa {
     float sqrtSNN{}; // placeholder to satisfy evaluateIrSourceAndSqrtSnn's signature
     bool isFirstCollision{true};
     for (const auto& collision : collisions) {
-      if (!isEventSelected(collision, applyEvSel) || ((cutVtxZ > 0.f) && std::abs(collision.posZ()) > cutVtxZ)) {
+      if (!isEventSelected(collision, applyEvSel) || (std::abs(collision.posZ()) > cutVtxZ)) {
         continue;
       }
 
@@ -165,16 +180,9 @@ struct TreeCreatorPidTpcQa {
         isGoodTrack &= (!requireIts || track.hasITS());
         isGoodTrack &= track.hasTPC();
         isGoodTrack &= (track.tpcNClsFound() >= cutMinTPCNcls);
-        if (!isGoodTrack) {
-          continue;
-        }
 
         const float rapidity = track.rapidity(PID::getMass(Id));
-        if (cutRapidity > 0.f && std::fabs(rapidity) > cutRapidity) {
-          continue;
-        }
         const float momentum = track.p();
-
         const float nClNormalized = std::sqrt(nClNorm / track.tpcNClsFound());
         const float nclPID = static_cast<float>(track.tpcNClsPID());
         const float phi = track.phi();
@@ -182,6 +190,15 @@ struct TreeCreatorPidTpcQa {
         const float tpcInnerParam = track.tpcInnerParam();
         const float signed1Pt = track.signed1Pt();
         const float nSigmaTpc = o2::aod::pidutils::tpcNSigma<Id>(track);
+
+        isGoodTrack &= (std::fabs(rapidity) <= cutRapidity);
+        isGoodTrack &= (tpcInnerParam >= *cutTpcInnerParameterMin.at(Id));
+        isGoodTrack &= (tpcInnerParam <= *cutTpcInnerParameterMax.at(Id));
+        isGoodTrack &= (std::fabs(nSigmaTpc) <= *cutNSigmaTpcAbs.at(Id));
+
+        if (!isGoodTrack) {
+          continue;
+        }
 
         float dedxDiff{UndefValueFloat};
         float dedxExpected{UndefValueFloat};
