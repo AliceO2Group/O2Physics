@@ -25,8 +25,8 @@
 #include <CommonDataFormat/TimeStamp.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
-//#include <DataFormatsITSMFT/DPLAlpideParam.h>
-#include <ITSMFTBase/DPLAlpideParam.h>
+#include <DataFormatsITSMFT/DPLAlpideParam.h>
+//#include <ITSMFTBase/DPLAlpideParam.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -188,7 +188,7 @@ struct UpcVmRof {
   // variables to store ITS ROF info
   int rofPerOrbit = -1; // number of rofs per orbit
   int rofLength = -1; // number of bcs per ROF
-  int rofShift = -1;   // bc shift of ITS. 
+  int rofShift = -1;   // bc shift of ITS.
 
   // variables to store run info
   int runNumberBc = 0;     // run number used to process BCs
@@ -221,7 +221,7 @@ struct UpcVmRof {
   Configurable<int> tfPerBin{"tfPerBin", 10000, "timeframes per bin 1e4 means some 28 s"};
 
 
-  
+
   //--------------------------------------------------------------------------------
   // get ITS ROF info
   // code from https://github.com/AliceO2Group/O2Physics/blob/master/Common/Tools/EventSelectionModule.h#L779-L780
@@ -250,8 +250,8 @@ struct UpcVmRof {
     for (int i = 0; i < o2::constants::lhc::LHCMaxBunches; i++) {
       bcbIdx.push_back(-1);
       if (bcPatternB.test(i)) {
-	bcbIdx[i]=nbcB;
-	nbcB++;
+        bcbIdx[i]=nbcB;
+        nbcB++;
       }
     }
   } // end getFillingScheme()
@@ -311,7 +311,7 @@ struct UpcVmRof {
     return static_cast<int>(bctmp / rofLength);
   }
 
-  
+
   //--------------------------------------------------------------------------------
   // check flags for a bc
   bool checkBcFlags(const auto& bc, int run)
@@ -381,9 +381,9 @@ struct UpcVmRof {
                                                                           {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {rofPerOrbit, -0.5, rofPerOrbit - 0.5}}});
     // trigger info per bcb
     bcTH2Pointers[Form("bc/%d/ft0Vtx_bcb_H", run)] = bcTH2Registry.add<TH2>(Form("bc/%d/ft0Vtx_bcb_H", run), "ft0Vtx triggers; TF; bc-B idx; Counter",
-									    {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {nbcB, -0.5, nbcB - 0.5}}});
+                                                                            {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {nbcB, -0.5, nbcB - 0.5}}});
     bcTH2Pointers[Form("bc/%d/ft0VtxCe_bcb_H", run)] = bcTH2Registry.add<TH2>(Form("bc/%d/ft0VtxCe_bcb_H", run), "ft0Vtx triggers; TF; bc-B idx; Counter",
-									    {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {nbcB, -0.5, nbcB - 0.5}}});
+                                                                            {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {nbcB, -0.5, nbcB - 0.5}}});
 
 
   } // addBcHistos
@@ -457,7 +457,7 @@ struct UpcVmRof {
       addBcHistos(runNumberBc);
       fillBcPatternHistos(runNumberBc);
     }
-    
+
     //--------------------------------------------------------------------------------
     for (const auto& bc : bcs) {
       // get info for this bc
@@ -486,11 +486,11 @@ struct UpcVmRof {
       bool ft0ceTrg = mask[Ft0CeIdx];
       if (ft0vtxTrg) {
         bcTH2Pointers[Form("bc/%d/ft0Vtx_H", runNumberBc)]->Fill(thisTF, thisROF);
-	bcTH2Pointers[Form("bc/%d/ft0Vtx_bcb_H", runNumberBc)]->Fill(thisTF, bcbIdx[thisBC]);
+        bcTH2Pointers[Form("bc/%d/ft0Vtx_bcb_H", runNumberBc)]->Fill(thisTF, bcbIdx[thisBC]);
         if (ft0ceTrg) {
           bcTH2Pointers[Form("bc/%d/ft0VtxCe_H", runNumberBc)]->Fill(thisTF, thisROF);
-	  bcTH2Pointers[Form("bc/%d/ft0VtxCe_bcb_H", runNumberBc)]->Fill(thisTF, bcbIdx[thisBC]);
-	}
+          bcTH2Pointers[Form("bc/%d/ft0VtxCe_bcb_H", runNumberBc)]->Fill(thisTF, bcbIdx[thisBC]);
+        }
       }
     } // loop over bcs
 
@@ -741,7 +741,7 @@ struct UpcVmRof {
   } // end processCol
   PROCESS_SWITCH(UpcVmRof, processCols, "get collisions and track information", true);
 
-  }; // end of struct UpcVmRof
+}; // end of struct UpcVmRof
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
