@@ -1023,7 +1023,7 @@ struct CorrReso {
   }
 
   template <typename TTracks>
-  void trackCounter(const TTracks& tracks, int& multiplicity) // function to count the number of tracks in the event and fill the histogram
+  void trackCounter(const TTracks& tracks, double& multiplicity) // function to count the number of tracks in the event and fill the histogram
   {
     double nTracksCorrected = 0;
     float weightNch = 1.0f;
@@ -1358,7 +1358,7 @@ struct CorrReso {
 
     fillYield(collision, tracks);
 
-    int multiplicity = tracks.size();
+    double multiplicity = static_cast<double>(tracks.size());
 
     if (cfgQaCheck)
       registry.fill(HIST("Nch"), multiplicity);
@@ -1427,7 +1427,7 @@ struct CorrReso {
       loadCorrection(bc.timestamp());
       float eventWeight = 1.0f;
 
-      int multiplicity = tracks1.size();
+      double multiplicity = static_cast<double>(tracks.size());
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
@@ -1480,7 +1480,7 @@ struct CorrReso {
 
     const auto& ft0 = collision.foundFT0();
 
-    int multiplicity = tracks.size();
+    double multiplicity = static_cast<double>(tracks.size());
 
     if (cfgQaCheck)
       registry.fill(HIST("Nch"), multiplicity);
@@ -1547,7 +1547,7 @@ struct CorrReso {
       float eventWeight = 1.0f;
 
       const auto& ft0 = collision2.foundFT0();
-      int multiplicity = tracks1.size();
+      double multiplicity = static_cast<double>(tracks1.size());
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);

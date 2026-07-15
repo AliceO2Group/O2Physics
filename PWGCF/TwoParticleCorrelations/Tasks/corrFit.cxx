@@ -993,7 +993,7 @@ struct CorrFit {
   }
 
   template <typename TTracks>
-  void trackCounter(const TTracks& tracks, int& multiplicity) // function to count the number of tracks in the event and fill the histogram
+  void trackCounter(const TTracks& tracks, double& multiplicity) // function to count the number of tracks in the event and fill the histogram
   {
     double nTracksCorrected = 0;
     float weightNch = 1.0f;
@@ -1152,7 +1152,7 @@ struct CorrFit {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TFT0s>
-  void fillCorrelationsTPCFT0(const TTracks& tracks1, TFT0s const& ft0, float posZ, int system, int multiplicity, int corType, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelationsTPCFT0(const TTracks& tracks1, TFT0s const& ft0, float posZ, int system, double multiplicity, int corType, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
 
     int fSampleIndex = static_cast<int>(gRandom->Uniform(0.0, cfgSampleSize));
@@ -1237,7 +1237,7 @@ struct CorrFit {
   }
 
   template <CorrelationContainer::CFStep step, typename TFT0s>
-  void fillCorrelationsFT0AFT0C(TFT0s const& ft0Col1, TFT0s const& ft0Col2, float posZ, int system, int multiplicity, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelationsFT0AFT0C(TFT0s const& ft0Col1, TFT0s const& ft0Col2, float posZ, int system, double multiplicity, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     int fSampleIndex = static_cast<int>(gRandom->Uniform(0.0, cfgSampleSize));
 
@@ -1283,7 +1283,7 @@ struct CorrFit {
   }
 
   template <CorrelationContainer::CFStep step, typename TTracks, typename TTracksAssoc>
-  void fillCorrelations(const TTracks& tracks1, const TTracksAssoc& tracks2, float posZ, int system, int multiplicity, int magneticField) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelations(const TTracks& tracks1, const TTracksAssoc& tracks2, float posZ, int system, double multiplicity, int magneticField) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
 
     int fSampleIndex = static_cast<int>(gRandom->Uniform(0.0, cfgSampleSize));
@@ -1427,7 +1427,7 @@ struct CorrFit {
 
     fillYield(collision, tracks);
 
-    int multiplicity = tracks.size();
+    double multiplicity = static_cast<double>(tracks.size());
 
     if (cfgQaCheck) {
       registry.fill(HIST("Nch"), multiplicity);
@@ -1495,7 +1495,7 @@ struct CorrFit {
       loadCorrection(bc.timestamp());
       float eventWeight = 1.0f;
 
-      int multiplicity = tracks1.size();
+      double multiplicity = static_cast<double>(tracks.size());
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
@@ -1545,7 +1545,7 @@ struct CorrFit {
 
     const auto& ft0 = collision.foundFT0();
 
-    int multiplicity = tracks.size();
+    double multiplicity = static_cast<double>(tracks.size());
 
     if (cfgQaCheck) {
       registry.fill(HIST("Nch"), multiplicity);
@@ -1611,7 +1611,7 @@ struct CorrFit {
       float eventWeight = 1.0f;
 
       const auto& ft0 = collision2.foundFT0();
-      int multiplicity = tracks1.size();
+      double multiplicity = static_cast<double>(tracks.size());
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
@@ -1663,7 +1663,7 @@ struct CorrFit {
 
     registry.fill(HIST("eventcount"), SameEvent); // because its same event i put it in the 1 bin
 
-    int multiplicity = tracks.size();
+    double multiplicity = static_cast<double>(tracks.size());
 
     if (cfgQaCheck) {
       registry.fill(HIST("Nch"), multiplicity);
@@ -1731,7 +1731,7 @@ struct CorrFit {
       const auto& ft0Col1 = collision1.foundFT0();
       const auto& ft0Col2 = collision2.foundFT0();
 
-      int multiplicity = tracks1.size();
+      double multiplicity = static_cast<double>(tracks.size());
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
@@ -1775,7 +1775,7 @@ struct CorrFit {
 
     fillYield(collision, tracks);
 
-    int multiplicity = tracks.size();
+    double multiplicity = static_cast<double>(tracks.size());
 
     if (cfgQaCheck) {
       registry.fill(HIST("Nch"), multiplicity);
@@ -1837,7 +1837,7 @@ struct CorrFit {
 
       loadCorrection(bc.timestamp());
 
-      int multiplicity = tracks1.size();
+      double multiplicity = static_cast<double>(tracks.size());
 
       if (cfgStrictTrackCounter) {
         trackCounter(tracks1, multiplicity);
