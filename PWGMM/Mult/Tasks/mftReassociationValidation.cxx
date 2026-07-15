@@ -337,6 +337,7 @@ struct MftReassociationValidation {
   o2::parameters::GRPMagField* grpmag = nullptr;
   RCTFlagsChecker rctChecker{kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kMFTBad};
   RCTFlagsChecker correlationAnalysisRctChecker{kFT0Bad, kITSBad, kTPCBadTracking, kTPCBadPID, kMFTBad, kITSLimAccMCRepr, kMFTLimAccMCRepr, kTPCLimAccMCRepr};
+  bool areCorrectionsLoaded = false;
   std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hZVtxDiffAmbiguousTracks2D;
   std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hZVtxDiffNonAmbiguousTracks2D;
   std::array<std::shared_ptr<THnSparse>, MatchedToTrueCollisionStep::NMatchedToTrueCollisionSteps> hZVtxDiffNotMatchedTracks2D;
@@ -1185,10 +1186,9 @@ struct MftReassociationValidation {
                    aod::BCsWithTimestamps const&)
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    auto loopCounter = 0;
-    if (loopCounter == 0) {
+    if (areCorrectionsLoaded == false) {
       loadZVertexShiftCorrection(bc);
-      loopCounter++;
+      areCorrectionsLoaded = true;
     }
 
     if (!(isAcceptedCollision<TwoDimensional>(collision, true))) {
@@ -1265,10 +1265,9 @@ struct MftReassociationValidation {
                                aod::BCsWithTimestamps const& /*bcs*/)
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    auto loopCounter = 0;
-    if (loopCounter == 0) {
+    if (areCorrectionsLoaded == false) {
       loadZVertexShiftCorrection(bc);
-      loopCounter++;
+      areCorrectionsLoaded = true;
     }
 
     registry.fill(HIST("MC/2D/hMonteCarloEventCounter"), MonteCarloEventSelectionStep::AllMonteCarloEvents);
@@ -1653,10 +1652,9 @@ struct MftReassociationValidation {
                                aod::BCsWithTimestamps const& /*bcs*/)
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    auto loopCounter = 0;
-    if (loopCounter == 0) {
+    if (areCorrectionsLoaded == false) {
       loadZVertexShiftCorrection(bc);
-      loopCounter++;
+      areCorrectionsLoaded = true;
     }
 
     registry.fill(HIST("MC/3D/hMonteCarloEventCounter"), MonteCarloEventSelectionStep::AllMonteCarloEvents);
