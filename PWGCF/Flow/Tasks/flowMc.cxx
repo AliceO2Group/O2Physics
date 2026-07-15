@@ -68,9 +68,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::rctsel;
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) \
-  using ConfigTmp_##NAME = TYPE;                          \
-  Configurable<ConfigTmp_##NAME> NAME{#NAME, (DEFAULT), HELP};
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, (DEFAULT), (HELP)}; // NOLINT(bugprone-macro-parentheses)
 
 struct FlowMc {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -581,8 +579,9 @@ struct FlowMc {
       initHadronicRate(bc);
       double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
       double seconds = bc.timestamp() * 1.e-3 - mMinSeconds;
-      if (cfgIRCutEnabled && (hadronicRate < cfgIRMin || hadronicRate > cfgIRMax)) // cut on hadronic rate
+      if (cfgIRCutEnabled && (hadronicRate < cfgIRMin || hadronicRate > cfgIRMax)) { // cut on hadronic rate
         return;
+      }
       gCurrentHadronicRate->Fill(seconds, hadronicRate);
     }
 
@@ -595,8 +594,9 @@ struct FlowMc {
         }
         histos.fill(HIST("RecoEventCounter"), 1.5);
         for (auto const& collision : collisions) {
-          if (!eventSelected(collision))
+          if (!eventSelected(collision)) {
             return;
+          }
         }
         histos.fill(HIST("RecoEventCounter"), 2.5);
       }
@@ -622,12 +622,15 @@ struct FlowMc {
       double q4x = 0, q4y = 0;
       for (auto const& mcParticle : mcParticles) {
         int pdgCode = std::abs(mcParticle.pdgCode());
-        if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton)
+        if (pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton) {
           continue;
-        if (!mcParticle.isPhysicalPrimary())
+        }
+        if (!mcParticle.isPhysicalPrimary()) {
           continue;
-        if (std::fabs(mcParticle.eta()) > cfgCutEta) // main acceptance
+        }
+        if (std::fabs(mcParticle.eta()) > cfgCutEta) { // main acceptance
           continue;
+        }
         nChGen++;
         if (mcParticle.has_tracks()) {
           auto const& tracks = mcParticle.tracks_as<FilteredTracks>();
@@ -675,18 +678,21 @@ struct FlowMc {
         if (cfgK0Lambda0Enabled) {
           extraPDGType = (pdgCode != PDG_t::kK0Short && pdgCode != PDG_t::kLambda0);
         }
-        if (extraPDGType && pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton)
+        if (extraPDGType && pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton) {
           continue;
+        }
 
         bool isPhysicalPrimary = mcParticle.isPhysicalPrimary();
         const int producedByDecay = 4;
         bool isSecondary = (mcParticle.has_mothers() && mcParticle.getProcess() == producedByDecay);
         bool isAcceptedSecondary = (cfgAcceptSecondaries) ? isSecondary : false;
-        if (!isPhysicalPrimary && !isAcceptedSecondary)
+        if (!isPhysicalPrimary && !isAcceptedSecondary) {
           continue;
+        }
 
-        if (std::fabs(mcParticle.eta()) > cfgCutEta) // main acceptance
+        if (std::fabs(mcParticle.eta()) > cfgCutEta) { // main acceptance
           continue;
+        }
 
         float deltaPhi = mcParticle.phi() - mcCollision.eventPlaneAngle();
         deltaPhi = RecoDecay::constrainAngle(deltaPhi);
@@ -695,26 +701,34 @@ struct FlowMc {
         histos.fill(HIST("hPtNchGenerated"), mcParticle.pt(), nChGlobal);
         histos.fill(HIST("hPtMCGen"), mcParticle.pt());
         histos.fill(HIST("hEtaPtVtxzMCGen"), mcParticle.eta(), mcParticle.pt(), vtxz);
-        if (pdgCode == PDG_t::kPiPlus)
+        if (pdgCode == PDG_t::kPiPlus) {
           histos.fill(HIST("hPtNchGeneratedPion"), mcParticle.pt(), nChGlobal);
-        if (pdgCode == PDG_t::kKPlus)
+        }
+        if (pdgCode == PDG_t::kKPlus) {
           histos.fill(HIST("hPtNchGeneratedKaon"), mcParticle.pt(), nChGlobal);
-        if (pdgCode == PDG_t::kProton)
+        }
+        if (pdgCode == PDG_t::kProton) {
           histos.fill(HIST("hPtNchGeneratedProton"), mcParticle.pt(), nChGlobal);
-        if (pdgCode == PDG_t::kK0Short)
+        }
+        if (pdgCode == PDG_t::kK0Short) {
           histos.fill(HIST("hPtNchGeneratedK0"), mcParticle.pt(), nChGlobal);
-        if (pdgCode == PDG_t::kLambda0)
+        }
+        if (pdgCode == PDG_t::kLambda0) {
           histos.fill(HIST("hPtNchGeneratedLambda"), mcParticle.pt(), nChGlobal);
+        }
         if (mcParticle.has_daughters()) {
           for (const auto& d : mcParticle.template daughters_as<FilteredMcParticles>()) {
             if (std::abs(d.pdgCode()) == PDG_t::kPiPlus) {
-              if (pdgCode == PDG_t::kK0Short)
+              if (pdgCode == PDG_t::kK0Short) {
                 histos.fill(HIST("hPtNchGeneratedK0Pions"), d.pt(), nChGlobal);
-              if (pdgCode == PDG_t::kLambda0)
+              }
+              if (pdgCode == PDG_t::kLambda0) {
                 histos.fill(HIST("hPtNchGeneratedLambdaPions"), d.pt(), nChGlobal);
+              }
             }
-            if (pdgCode == PDG_t::kLambda0 && std::abs(d.pdgCode()) == PDG_t::kProton)
+            if (pdgCode == PDG_t::kLambda0 && std::abs(d.pdgCode()) == PDG_t::kProton) {
               histos.fill(HIST("hPtNchGeneratedLambdaProtons"), d.pt(), nChGlobal);
+            }
           }
         }
         nCh++;
@@ -758,10 +772,12 @@ struct FlowMc {
         }
         bool withinPtRef = (cfgCutPtRefMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtRefMax); // within RF pT range
         bool withinPtPOI = (cfgCutPtPOIMin < mcParticle.pt()) && (mcParticle.pt() < cfgCutPtPOIMax); // within POI pT range
-        if (cfgOutputNUAWeights && withinPtRef)
+        if (cfgOutputNUAWeights && withinPtRef) {
           fWeights->fill(mcParticle.phi(), mcParticle.eta(), vtxz, mcParticle.pt(), 0, 0);
-        if (!setCurrentParticleWeights(weff, wacc, mcParticle.phi(), mcParticle.eta(), mcParticle.pt(), vtxz))
+        }
+        if (!setCurrentParticleWeights(weff, wacc, mcParticle.phi(), mcParticle.eta(), mcParticle.pt(), vtxz)) {
           continue;
+        }
         if (cfgTrackDensityCorrUse && cfgFlowCumulantEnabled && withinPtRef) {
           double fphi = v2 * std::cos(2 * (mcParticle.phi() - psi2Est)) + v3 * std::cos(3 * (mcParticle.phi() - psi3Est)) + v4 * std::cos(4 * (mcParticle.phi() - psi4Est));
           fphi = (1 + 2 * fphi);
@@ -777,20 +793,26 @@ struct FlowMc {
         }
 
         if (cfgFlowCumulantEnabled) {
-          if (withinPtRef)
+          if (withinPtRef) {
             fGFWTrue->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 1);
-          if (withinPtPOI)
+          }
+          if (withinPtPOI) {
             fGFWTrue->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 2);
-          if (withinPtPOI && withinPtRef)
+          }
+          if (withinPtPOI && withinPtRef) {
             fGFWTrue->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 4);
+          }
 
           if (validGlobal) {
-            if (withinPtRef)
+            if (withinPtRef) {
               fGFWReco->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 1);
-            if (withinPtPOI)
+            }
+            if (withinPtPOI) {
               fGFWReco->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 2);
-            if (withinPtPOI && withinPtRef)
+            }
+            if (withinPtPOI && withinPtRef) {
               fGFWReco->Fill(mcParticle.eta(), fPtAxis->FindBin(mcParticle.pt()) - 1, mcParticle.phi(), wacc * weff, 4);
+            }
           }
         }
 
@@ -811,21 +833,27 @@ struct FlowMc {
           histos.fill(HIST("hPtNchGlobal"), mcParticle.pt(), nChGlobal);
           histos.fill(HIST("hPtMCGlobal"), mcParticle.pt());
           histos.fill(HIST("hEtaPtVtxzMCGlobal"), mcParticle.eta(), mcParticle.pt(), vtxz);
-          if (pdgCode == PDG_t::kPiPlus)
+          if (pdgCode == PDG_t::kPiPlus) {
             histos.fill(HIST("hPtNchGlobalPion"), mcParticle.pt(), nChGlobal);
-          if (pdgCode == PDG_t::kKPlus)
+          }
+          if (pdgCode == PDG_t::kKPlus) {
             histos.fill(HIST("hPtNchGlobalKaon"), mcParticle.pt(), nChGlobal);
-          if (pdgCode == PDG_t::kProton)
+          }
+          if (pdgCode == PDG_t::kProton) {
             histos.fill(HIST("hPtNchGlobalProton"), mcParticle.pt(), nChGlobal);
-          if (pdgCode == PDG_t::kK0Short)
+          }
+          if (pdgCode == PDG_t::kK0Short) {
             histos.fill(HIST("hPtNchGlobalK0"), mcParticle.pt(), nChGlobal);
-          if (pdgCode == PDG_t::kLambda0)
+          }
+          if (pdgCode == PDG_t::kLambda0) {
             histos.fill(HIST("hPtNchGlobalLambda"), mcParticle.pt(), nChGlobal);
+          }
           if (!cfgRequireTOF || validTOFTrack) {
             if (mcParticle.has_mothers()) {
               for (const auto& m : mcParticle.template mothers_as<FilteredMcParticles>()) {
-                if (!m.isPhysicalPrimary())
+                if (!m.isPhysicalPrimary()) {
                   continue;
+                }
                 if (pdgCode == PDG_t::kPiPlus) {
                   if (m.pdgCode() == PDG_t::kK0Short) {
                     histos.fill(HIST("hPtNchGlobalK0Pions"), mcParticle.pt(), nChGlobal);
