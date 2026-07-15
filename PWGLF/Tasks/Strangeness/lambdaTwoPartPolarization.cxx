@@ -10,6 +10,8 @@
 // or submit itself to any jurisdiction.
 
 /// \author Junlee Kim (jikim1290@gmail.com)
+/// \brief longitudinal polarization from 2PC
+/// \file lambdaTwoPartPolarization.cxx
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
@@ -57,7 +59,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::constants::physics;
 
-struct lambdaTwoPartPolarization {
+struct LfLambdaTwoPartPolarization {
   enum centSel {
     kFT0C = 0,
     kFT0M
@@ -73,17 +75,14 @@ struct lambdaTwoPartPolarization {
     OutputObjHandlingPolicy::AnalysisObject};
 
   struct : ConfigurableGroup {
-    Configurable<std::string> cfgURL{"cfgURL",
-                                     "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-    Configurable<int64_t> nolaterthan{"ccdb-no-later-than",
-                                      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
-                                      "Latest acceptable timestamp of creation for the object"};
+    Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
+    Configurable<int64_t> nolaterthan{"nolaterthan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::ccdb::CcdbApi ccdbApi;
 
   Configurable<float> cfgCentSel{"cfgCentSel", 100., "Centrality selection"};
-  Configurable<int> cfgCentEst{"cfgCentEst", 2, "Centrality estimator, 1: FT0C, 2: FT0M"};
+  Configurable<int> cfgCentEst{"cfgCentEst", 1, "Centrality estimator, 0: FT0C, 1: FT0M"};
 
   Configurable<bool> cfgEvtSel{"cfgEvtSel", true, "event selection flag"};
   Configurable<bool> cfgPVSel{"cfgPVSel", true, "Additional PV selection flag for syst"};
@@ -132,8 +131,8 @@ struct lambdaTwoPartPolarization {
 
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "Transverse momentum bins"};
   ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0, 10, 20, 30, 40, 50, 60, 70, 100}, "Centrality interval"};
-  ConfigurableAxis RapAxis{"RapAxis", {10, -0.5, 0.5}, "Rapidity axis"};
-  ConfigurableAxis detaAxis{"dyAxis", {20, -1, 1}, "relative rapidity axis"};
+  ConfigurableAxis rapAxis{"rapAxis", {10, -0.5, 0.5}, "Rapidity axis"};
+  ConfigurableAxis detaAxis{"detaAxis", {20, -1, 1}, "relative rapidity axis"};
   ConfigurableAxis dphiAxis{"dphiAxis", {20, -constants::math::PI * 0.5, constants::math::PI * 1.5}, "relative azimuth axis"};
   ConfigurableAxis massAxis{"massAxis", {30, 1.10, 1.1}, "lambda mass axis"};
 
@@ -175,7 +174,7 @@ struct lambdaTwoPartPolarization {
 
     histos.add("Ana/Signal", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, cosSigAxis}});
     histos.add("Ana/SignalCos2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, cosSigAxis}});
-    histos.add("Ana/Acceptance", "", {HistType::kTHnSparseF, {ptAxis, centAxis, RapAxis, cosAccAxis}});
+    histos.add("Ana/Acceptance", "", {HistType::kTHnSparseF, {ptAxis, centAxis, rapAxis, cosAccAxis}});
 
     histos.add("AnaHL/LambdaSignalSin2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
     histos.add("AnaHL/LambdaSignalCos2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
@@ -531,9 +530,11 @@ struct lambdaTwoPartPolarization {
                        TrackCandidates const& tracks, aod::V0Datas const& V0s,
                        aod::BCsWithTimestamps const&)
   {
-    if (cfgCentEst == 1) {
+    if (cfgCentEst == kFT0C) {
       centrality = collision.centFT0C();
-    } else if (cfgCentEst == 2) {
+    } else if (cfgCentEst == kFT0M) {
+      centrality = collision.centFT0M();
+    } else {
       centrality = collision.centFT0M();
     }
     if (!eventSelected(collision) && cfgEvtSel) {
@@ -555,7 +556,7 @@ struct lambdaTwoPartPolarization {
     FillHistogramsRef(tracks, tracks);
     FillHistogramsLH(collision, V0s, tracks);
   }
-  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataSameHadron, "Process event for same data with hadrons", true);
+  PROCESS_SWITCH(LfLambdaTwoPartPolarization, processDataSameHadron, "Process event for same data with hadrons", true);
 
   void processDataSame(EventCandidates::iterator const& collision,
                        TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s,
@@ -585,7 +586,7 @@ struct lambdaTwoPartPolarization {
 
     FillHistograms(collision, collision, V0s, V0s);
   }
-  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataSame, "Process event for same data", true);
+  PROCESS_SWITCH(LfLambdaTwoPartPolarization, processDataSame, "Process event for same data", true);
 
   SliceCache cache;
   Preslice<aod::V0Datas> tracksPerCollisionV0 = aod::v0data::collisionId;
@@ -620,7 +621,7 @@ struct lambdaTwoPartPolarization {
       FillHistograms(c1, c2, tracks1, tracks2);
     }
   }
-  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataMixedT0C, "Process event for mixed data in PbPb", false);
+  PROCESS_SWITCH(LfLambdaTwoPartPolarization, processDataMixedT0C, "Process event for mixed data in PbPb", false);
 
   using BinningTypeT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   BinningTypeT0M colBinningT0M{{vertexAxis, centAxis}, true};
@@ -652,11 +653,11 @@ struct lambdaTwoPartPolarization {
       FillHistograms(c1, c2, tracks1, tracks2);
     }
   }
-  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataMixedT0M, "Process event for mixed data in pp", false);
+  PROCESS_SWITCH(LfLambdaTwoPartPolarization, processDataMixedT0M, "Process event for mixed data in pp", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lambdaTwoPartPolarization>(cfgc, TaskName{"lf-lambdaTwoPartPolarization"})};
+    adaptAnalysisTask<LfLambdaTwoPartPolarization>(cfgc, TaskName{"lf-LfLambdaTwoPartPolarization"})};
 }
