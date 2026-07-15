@@ -132,7 +132,7 @@ struct JetDsSpecSubs {
       {"h_ds_jet_mass_data", ";m_{jet}^{ch} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 0., 25.}}}},
       {"h_ds_jet_lambda11_data", ";#lambda_{1}^{1};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
       {"h_ds_jet_lambda12_data", ";#lambda_{2}^{1};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
-      {"hSparse_ds_data", ";m_{D_{S}};#it{p}_{T,D_{S}};#it{p}_{T,jet};z^{D_{S},jet}_{||};#DeltaR_{D_{S},jet}", 
+      {"hSparse_ds_data", ";m_{D_{S}};#it{p}_{T,D_{S}};#it{p}_{T,jet};z^{D_{S},jet}_{||};#DeltaR_{D_{S},jet}",
         {HistType::kTHnSparseF, {{60, 1.7, 2.15}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.0}}}},
 
       // MC general histograms
@@ -146,20 +146,20 @@ struct JetDsSpecSubs {
 
       {"h_ds_pt_mcd", ";#it{p}_{T,D_{S} jet}^{det} (GeV/#it{c});entries", {HistType::kTH1F, {{250, 0., 100.}}}},
       {"h_ds_eta_mcd", ";#eta_{D_{S} jet}^{det};entries", {HistType::kTH1F, {{100, -1., 1.}}}},
-      {"h_ds_phi_mcd", ";#phi_{D_{S} jet}^{det};entries", {HistType::kTH1F, {{80, -1., 7.}}}},      
+      {"h_ds_phi_mcd", ";#phi_{D_{S} jet}^{det};entries", {HistType::kTH1F, {{80, -1., 7.}}}},
       {"h_ds_mass_mcd", ";m_{D_{S}}^{det} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 1.7, 2.15}}}},
 
       {"h_ds_jet_lambda11_mcd", ";#lambda_{1}^{1, det};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
       {"h_ds_jet_lambda12_mcd", ";#lambda_{2}^{1, det};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
 
       // MCD - Sparse 1: mass, p_{T,Ds}, p_{T,jet}, z|| and prompt/non-prompt
-      {"hSparse_ds_mcd1", ";m_{D_{S}}^{rec};#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||, det};Origin(D_{S})", 
+      {"hSparse_ds_mcd1", ";m_{D_{S}}^{rec};#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||, det};Origin(D_{S})",
         {HistType::kTHnSparseF, {{60, 1.7, 2.15}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {2, -0.5, 1.5}}}},
       // MCD - Sparse 2: p_{T,Ds}, p_{T,jet}, and DeltaR
-      {"hSparse_ds_mcd2", ";#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};#DeltaR_{D_{S},jet}^{det}", 
+      {"hSparse_ds_mcd2", ";#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};#DeltaR_{D_{S},jet}^{det}",
         {HistType::kTHnSparseF, {{60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.0}}}},
       // MCD - Sparse 3: p_{T,jet}, z|| and DeltaR
-      {"hSparse_ds_mcd3", ";#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||, det};#DeltaR_{D_{S},jet}^{det}", 
+      {"hSparse_ds_mcd3", ";#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||, det};#DeltaR_{D_{S},jet}^{det}",
         {HistType::kTHnSparseF, {{60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.0}}}},
 
       // MC particle-level histograms
@@ -170,12 +170,12 @@ struct JetDsSpecSubs {
       {"h_ds_pt_mcp", ";#it{p}_{T,D_{S} jet}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{250, 0., 100.}}}},
       {"h_ds_eta_mcp", ";#eta_{D_{S} jet}^{part};entries", {HistType::kTH1F, {{100, -1., 1.}}}},
       {"h_ds_phi_mcp", ";#phi_{D_{S} jet}^{part};entries", {HistType::kTH1F, {{80, -1., 7.}}}},
-      
+
       {"h_ds_jet_lambda11_mcp", ";#lambda_{1}^{1, part};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
       {"h_ds_jet_lambda12_mcp", ";#lambda_{2}^{1, part};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
 
       // MCP - Sparse: p_{T,Ds}, p_{T,jet}, z|| and DeltaR
-      {"hSparse_ds_mcp", ";#it{p}_{T,D_{S}}^{part};#it{p}_{T,jet}^{part};z^{D_{S},jet}_{||, part};#DeltaR_{D_{S},jet}^{part}", 
+      {"hSparse_ds_mcp", ";#it{p}_{T,D_{S}}^{part};#it{p}_{T,jet}^{part};z^{D_{S},jet}_{||, part};#DeltaR_{D_{S},jet}^{part}",
         {HistType::kTHnSparseF, {{60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.0}}}},
     }};
   //========
