@@ -191,7 +191,7 @@ struct femtoDreamTripletTaskTrackTrackCascade {
     // get bit for the collision mask
     std::bitset<8 * sizeof(aod::femtodreamcollision::BitMaskType)> mask;
     int index = 0;
-    auto& workflows = context.services().get<RunningWorkflowInfo const>();
+    const auto& workflows = context.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec const& device : workflows.devices) {
       if (device.name.find("femto-dream-triplet-task-track-track-cascade") != std::string::npos) {
         if (containsNameValuePair(device.options, "ConfCutPart", ConfCutPart.value) &&
@@ -396,7 +396,7 @@ struct femtoDreamTripletTaskTrackTrackCascade {
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
       const auto& magFieldTesla3 = collision3.magField();
-      if ((magFieldTesla1 != magFieldTesla2) || (magFieldTesla2 != magFieldTesla3) || (magFieldTesla1 != magFieldTesla3)) {
+      if ((magFieldTesla1 != magFieldTesla2) || (magFieldTesla2 != magFieldTesla3)) {
         continue;
       }
       doMixedEvent<false>(groupPartsOne, groupPartsTwo, groupPartsThree, parts, magFieldTesla1, multiplicityCol);
