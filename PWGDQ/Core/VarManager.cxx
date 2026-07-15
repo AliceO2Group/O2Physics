@@ -2489,6 +2489,9 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kA2EP_TPC"] = kA2EP_TPC;
   fgVarNamesMap["kA2EP_FT0A"] = kA2EP_FT0A;
   fgVarNamesMap["kA2EP_FT0C"] = kA2EP_FT0C;
+  fgVarNamesMap["kA2EPME_TPC"] = kA2EPME_TPC;
+  fgVarNamesMap["kA2EPME_FT0A"] = kA2EPME_FT0A;
+  fgVarNamesMap["kA2EPME_FT0C"] = kA2EPME_FT0C;
   fgVarNamesMap["kWV2SP"] = kWV2SP;
   fgVarNamesMap["kWV2EP"] = kWV2EP;
   fgVarNamesMap["kU2Q2"] = kU2Q2;
