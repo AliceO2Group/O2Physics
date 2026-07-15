@@ -42,6 +42,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <set>
 #include <vector>
 
 using namespace o2;
@@ -90,6 +91,9 @@ struct FemtoUniverseProducerMCTruthTask {
   // Produces<aod::FdMCParticles> outputPartsMC;
 
   RCTFlagsChecker rctChecker;
+
+  static constexpr int kHadElasticScatt = 20;   // kPHElastic - hadronic elastic scattering
+  static constexpr int kHadInelasticScatt = 23; // kPHInhelastic - hadronic inelastic scattering
 
   // Analysis configs
   Configurable<bool> confIsRun3{"confIsRun3", false, "Running on Run3 or pilot"};
@@ -185,26 +189,25 @@ struct FemtoUniverseProducerMCTruthTask {
     if (col.selection_bit(aod::evsel::kNoSameBunchPileup) && col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && col.selection_bit(aod::evsel::kIsVertexITSTPC)) {
       recoCollCuts.fillQA(col);
       return true;
-    } else {
-      return false;
     }
+    return false;
   }
 
   template <typename ParticleType>
-  int getMotherPDG(ParticleType particle)
+  int getMotherPDG(ParticleType const& particle)
   {
     if (particle.isPhysicalPrimary()) {
       return 0;
-    } else if (particle.has_mothers()) {
-      if (particle.getProcess() == 20 || particle.getProcess() == 23) { // treat particles from hadronic scattering (20, 23) as primary
+    }
+    if (particle.has_mothers()) {
+      if (particle.getProcess() == kHadElasticScatt || particle.getProcess() == kHadInelasticScatt) { // treat particles from hadronic scattering (20, 23) as primary
         return 0;
       }
       auto motherparticlesMC = particle.template mothers_as<aod::McParticles>();
-      auto motherparticleMC = motherparticlesMC.front();
+      const auto& motherparticleMC = motherparticlesMC.front();
       return motherparticleMC.pdgCode();
-    } else {
-      return 999;
     }
+    return 999;
   }
 
   template <typename TrackType>

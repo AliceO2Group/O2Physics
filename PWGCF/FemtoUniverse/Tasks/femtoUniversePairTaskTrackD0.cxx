@@ -316,7 +316,8 @@ struct FemtoUniversePairTaskTrackD0 {
   {
     if (mom <= ConfTrack.minMomPidTpcTofProton) {
       return std::abs(nsigmaTPCPr) < ConfTrack.confNsigmaTPCProton;
-    } else if (mom > ConfTrack.minMomPidTpcTofProton) {
+    }
+    if (mom > ConfTrack.minMomPidTpcTofProton) {
       return std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfTrack.confNsigmaCombinedProton;
     }
     return false;
@@ -337,7 +338,8 @@ struct FemtoUniversePairTaskTrackD0 {
   {
     if (mom <= ConfTrack.minMomPidTpcTofKaon) {
       return std::abs(nsigmaTPCKa) < ConfTrack.confNsigmaTPCKaon;
-    } else if (mom > ConfTrack.minMomPidTpcTofKaon) {
+    }
+    if (mom > ConfTrack.minMomPidTpcTofKaon) {
       return std::hypot(nsigmaTOFKa, nsigmaTPCKa) < ConfTrack.confNsigmaCombinedKaon;
     }
     return false;
@@ -358,7 +360,8 @@ struct FemtoUniversePairTaskTrackD0 {
   {
     if (mom <= ConfTrack.minMomPidTpcTofPion) {
       return std::abs(nsigmaTPCPi) < ConfTrack.confNsigmaTPCPion;
-    } else if (mom > ConfTrack.minMomPidTpcTofPion) {
+    }
+    if (mom > ConfTrack.minMomPidTpcTofPion) {
       return std::hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfTrack.confNsigmaCombinedPion;
     }
     return false;
@@ -784,7 +787,7 @@ struct FemtoUniversePairTaskTrackD0 {
       trackHistoPartD0D0bar.fillQA<isMC, false>(d0candidate);
     }
 
-    float tpcNSigmaPr, tofNSigmaPr, tpcNSigmaPi, tofNSigmaPi, tpcNSigmaKa, tofNSigmaKa = 0.;
+    float tpcNSigmaPr = 0.0f, tofNSigmaPr = 0.0f, tpcNSigmaPi = 0.0f, tofNSigmaPi = 0.0f, tpcNSigmaKa = 0.0f, tofNSigmaKa = 0.0f;
 
     if (!ConfTrack.confIsSame) {
       for (auto const& track : groupPartsTrack) {
