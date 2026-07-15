@@ -27,7 +27,7 @@ namespace o2::aod
 namespace dpg_tpcpidqa
 {
 DECLARE_SOA_COLUMN(NSigmaTpc, nSigmaTpc, float);
-DECLARE_SOA_COLUMN(DedxExpected, dedxTpc, float);
+DECLARE_SOA_COLUMN(DedxExpected, dedxExpected, float);
 DECLARE_SOA_COLUMN(DedxDiff, dedxDiff, float);
 DECLARE_SOA_COLUMN(ExpSigma, expSigma, float);
 DECLARE_SOA_COLUMN(NSigmaTof, nSigmaTof, float);

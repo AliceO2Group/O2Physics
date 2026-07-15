@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file treeCreatorPidTpcQa.cxx
+/// \file TreeCreatorPidTpcQa.cxx
 /// \brief Task to produce table with clean selections for TPC PID calibration
 ///
 /// \author Ana Marin <ana.marin@cern.ch>
@@ -57,7 +57,7 @@ using namespace o2::dpg_tpcskimstablecreator;
   MACRO_ARG(He, Helium3)         \
   MACRO_ARG(Al, Alpha)
 
-struct treeCreatorPidTpcQa {
+struct TreeCreatorPidTpcQa {
   Produces<o2::aod::QaPidTpc> rowPidTpcQa;
 
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply event selection: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
@@ -71,10 +71,10 @@ struct treeCreatorPidTpcQa {
   // Configurable for the path of CCDB General Run Parameters LHC Interface information
   Configurable<std::string> ccdbPathGrpLhcIf{"ccdbPathGrpLhcIf", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
 
-#define DECLARE_PARTICLE_WISE_CONFIGURABLES(ParticleNameShort, ParticleNameLong)                                                                                              \
-  Configurable<float> cutTpcInnerParameterMin##ParticleNameLong{"cutTpcInnerParameterMin" #ParticleNameLong, -1., "Lower-value cut on tpcInnerParam for " #ParticleNameLong}; \
-  Configurable<float> cutTpcInnerParameterMax##ParticleNameLong{"cutTpcInnerParameterMax" #ParticleNameLong, -1., "Upper-value cut on tpcInnerParam for " #ParticleNameLong}; \
-  Configurable<float> cutNSigmaTpcAbs##ParticleNameLong{"cutNSigmaTpcAbs" #ParticleNameLong, -1., "Cut on absolute value of nSigmaTpc for " #ParticleNameLong};
+#define DECLARE_PARTICLE_WISE_CONFIGURABLES(ParticleNameShort, ParticleNameLong)                                                                                                                                                                        \
+  Configurable<float> cutTpcInnerParameterMin##ParticleNameLong{"cutTpcInnerParameterMin" #ParticleNameLong, -1., "Lower-value cut on tpcInnerParam for " #ParticleNameLong}; /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutTpcInnerParameterMax##ParticleNameLong{"cutTpcInnerParameterMax" #ParticleNameLong, -1., "Upper-value cut on tpcInnerParam for " #ParticleNameLong}; /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
+  Configurable<float> cutNSigmaTpcAbs##ParticleNameLong{"cutNSigmaTpcAbs" #ParticleNameLong, -1., "Cut on absolute value of nSigmaTpc for " #ParticleNameLong};               // o2-linter: disable=name/configurable (Configurable defined in macro)
 
   PARTICLE_LIST(DECLARE_PARTICLE_WISE_CONFIGURABLES)
 #undef DECLARE_PARTICLE_WISE_CONFIGURABLES
@@ -212,7 +212,7 @@ struct treeCreatorPidTpcQa {
   {                                                                                                        \
     processSingleParticle<PID::ParticleNameLong, false, false>(collisions, tracks);                        \
   }                                                                                                        \
-  PROCESS_SWITCH(treeCreatorPidTpcQa, process##ParticleNameLong, Form("Process for the %s hypothesis for TPC NSigma QA ", #ParticleNameLong), false);
+  PROCESS_SWITCH(TreeCreatorPidTpcQa, process##ParticleNameLong, Form("Process for the %s hypothesis for TPC NSigma QA", #ParticleNameLong), false);
 
   PARTICLE_LIST(MAKE_PROCESS_FUNCTION)
 #undef MAKE_PROCESS_FUNCTION
@@ -225,7 +225,7 @@ struct treeCreatorPidTpcQa {
   {                                                                                                                \
     processSingleParticle<PID::ParticleNameLong, true, false>(collisions, tracks);                                 \
   }                                                                                                                \
-  PROCESS_SWITCH(treeCreatorPidTpcQa, processFull##ParticleNameLong, Form("Process for the %s hypothesis for full TPC PID QA ", #ParticleNameLong), false);
+  PROCESS_SWITCH(TreeCreatorPidTpcQa, processFull##ParticleNameLong, Form("Process for the %s hypothesis for full TPC PID QA", #ParticleNameLong), false);
 
   PARTICLE_LIST(MAKE_PROCESS_FUNCTION)
 #undef MAKE_PROCESS_FUNCTION
@@ -238,7 +238,7 @@ struct treeCreatorPidTpcQa {
   {                                                                                                                                                           \
     processSingleParticle<PID::ParticleNameLong, true, true>(collisions, tracks);                                                                             \
   }                                                                                                                                                           \
-  PROCESS_SWITCH(treeCreatorPidTpcQa, processFullWithTOF##ParticleNameLong, Form("Process for the %s hypothesis for full TPC PID QA with the TOF info added ", #ParticleNameLong), false);
+  PROCESS_SWITCH(TreeCreatorPidTpcQa, processFullWithTOF##ParticleNameLong, Form("Process for the %s hypothesis for full TPC PID QA with the TOF info added", #ParticleNameLong), false);
 
   PARTICLE_LIST(MAKE_PROCESS_FUNCTION)
 #undef MAKE_PROCESS_FUNCTION
@@ -246,6 +246,6 @@ struct treeCreatorPidTpcQa {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<treeCreatorPidTpcQa>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<TreeCreatorPidTpcQa>(cfgc)};
 }
 #undef PARTICLE_LIST
