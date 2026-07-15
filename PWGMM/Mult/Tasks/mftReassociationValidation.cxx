@@ -1319,10 +1319,6 @@ struct MftReassociationValidation {
 
       auto templatedTrack = reassociated2dMftTrack.template mfttrack_as<FilteredMftTracksWCollsMcLabels>();
 
-      if (reassociated2dMftTrack.compatibleCollIds().size() > 0) {
-        return;
-      }
-
       o2::track::TrackParCovFwd trackPar = o2::aod::fwdtrackutils::getTrackParCovFwdShift(templatedTrack, mZShift);
       std::array<double, 3> dcaInfOrig;
       trackPar.propagateToDCAhelix(bZ, {collision.posX(), collision.posY(), collision.posZ()}, dcaInfOrig);
@@ -1710,10 +1706,6 @@ struct MftReassociationValidation {
       registry.fill(HIST("MC/3D/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::AllTracksPrecise);
 
       auto templatedTrack = reassociated3dMftTrack.template mfttrack_as<FilteredMftTracksWCollsMcLabels>();
-
-      if (reassociated3dMftTrack.compatibleCollIds().size() > 0) {
-        return;
-      }
 
       o2::track::TrackParCovFwd trackPar = o2::aod::fwdtrackutils::getTrackParCovFwdShift(templatedTrack, mZShift);
       std::array<double, 3> dcaInfOrig;
