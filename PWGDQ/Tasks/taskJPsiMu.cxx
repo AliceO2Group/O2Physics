@@ -11,8 +11,6 @@
 /// @author  Kaare Endrup Iversen
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
-#include "PWGDQ/Core/AnalysisCompositeCut.h"
-#include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
@@ -21,22 +19,15 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/StringHelpers.h>
 #include <Framework/runDataProcessing.h>
-
-#include <sys/types.h>
-
-#include <RtypesCore.h>
 
 #include <chrono>
 #include <cmath>
 #include <cstdint>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -269,7 +260,7 @@ double getWeight(const double pT, const std::vector<double>& pT_bins, const std:
 {
 
   int eff_bin = -1;
-  for (size_t b = 0; b < pT_bins.size() - 1; ++b) {
+  for (uint8_t b = 0; b < pT_bins.size() - 1; ++b) {
     // Shift pT index by one to account for the VARIABLE_WIDTH entry in the axis configuration
     if (pT >= pT_bins[b + 1] && pT < pT_bins[b + 2]) {
       eff_bin = b;
