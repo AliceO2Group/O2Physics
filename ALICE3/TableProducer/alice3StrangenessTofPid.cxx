@@ -19,6 +19,7 @@
 #include "ALICE3/DataModel/OTFStrangeness.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "ALICE3/Utils/a3StrangenessTofPidHelper.h"
+#include "Common/Core/TableHelper.h"
 #include "Common/Core/trackUtilities.h"
 
 #include <Framework/AnalysisDataModel.h>
@@ -94,7 +95,6 @@ struct Alice3StrangenessTofPid {
     Configurable<bool> histosAntiXi{"histosAntiXi", true, "Produce histograms for anti xi candidates"};
     Configurable<bool> histosOmega{"histosOmega", true, "Produce histograms for omega candidates"};
     Configurable<bool> histosAntiOmega{"histosAntiOmega", true, "Produce histograms for anti omega candidates"};
-
   } produce;
 
   Configurable<float> magneticField{"magneticField", 20.0f, "Magnetic field (in kilogauss)"};
@@ -105,12 +105,32 @@ struct Alice3StrangenessTofPid {
   static constexpr float NanoToPico = 1e+3;
   static constexpr std::array<float, o2::track::kLabCovMatSize> ParentTrackCovMatrix{};
 
-  void init(InitContext&)
+  struct TimeOfFlight {
+    float iTofResolution{}, iTofRadius{};
+    float oTofResolution{}, oTofRadius{};
+  } tof;
+
+  void init(InitContext& initContext)
   {
-    // Todo: First try and get from tofpid task
-    tofPidCasc.setResolution(cfgTof.innerResolution, cfgTof.outerResolution);
-    tofPidCasc.setRadius(cfgTof.innerRadius, cfgTof.innerResolution);
+    auto tryGetCfgFromTask = [&](const char* targetCfg, float& localVariable, float localCfg) {
+      if (!common::core::getTaskOptionValue(initContext, "on-the-fly-tof-pid", targetCfg, localVariable, false)) {
+        LOG(info) << "Failed to get '" << targetCfg << "' from on-the-fly-tof-pid, using localCfg value " << localCfg;
+        localVariable = localCfg;
+      } else {
+        LOG(info) << "Got '" << targetCfg << "' = " << localVariable << " from on-the-fly-tof-pid";
+      }
+    };
+
+    tryGetCfgFromTask("innerTOFTimeReso", tof.iTofResolution, cfgTof.innerResolution);
+    tryGetCfgFromTask("innerTOFRadius", tof.iTofRadius, cfgTof.innerRadius);
+    tryGetCfgFromTask("outerTOFTimeReso", tof.oTofResolution, cfgTof.outerResolution);
+    tryGetCfgFromTask("outerTOFRadius", tof.oTofRadius, cfgTof.outerRadius);
+
+    tofPidCasc.setResolution(tof.iTofResolution, tof.oTofResolution);
+    tofPidCasc.setRadius(tof.iTofRadius, tof.oTofRadius);
     tofPidCasc.setMagneticField(magneticField);
+
+    // Todo: doProcessV0s
 
     if (doprocessCascades) {
       if (produce.histosXi) {
