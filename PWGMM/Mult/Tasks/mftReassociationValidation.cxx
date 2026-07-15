@@ -1165,17 +1165,6 @@ struct MftReassociationValidation {
         registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatReassociationMethod[ReassociationMethod]) + HIST("hPreciseTrackSelectionCounter"), MftTrackAmbiguityStep::NumberOfAmbiguousTracks);
       }
       return true;
-      if (mftTrack.ambDegree() > 1) {
-        if (fillHistograms) {
-          registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatReassociationMethod[ReassociationMethod]) + HIST("hPreciseTrackSelectionCounter"), MftTrackAmbiguityStep::NumberOfAmbiguousTracks);
-        }
-        return true;
-      }
-
-      if (fillHistograms) {
-        registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatReassociationMethod[ReassociationMethod]) + HIST("hPreciseTrackSelectionCounter"), MftTrackAmbiguityStep::NumberOfNonAmbiguousTracks);
-      }
-      return false;
     }
 
     if (fillHistograms) {
@@ -1329,6 +1318,10 @@ struct MftReassociationValidation {
       registry.fill(HIST("MC/2D/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::AllTracksPrecise);
 
       auto templatedTrack = reassociated2dMftTrack.template mfttrack_as<FilteredMftTracksWCollsMcLabels>();
+
+      if (reassociated2dMftTrack.compatibleCollIds().size() > 0) {
+        return;
+      }
 
       o2::track::TrackParCovFwd trackPar = o2::aod::fwdtrackutils::getTrackParCovFwdShift(templatedTrack, mZShift);
       std::array<double, 3> dcaInfOrig;
@@ -1610,6 +1603,7 @@ struct MftReassociationValidation {
           }
 
         } else { // NON AMBI TRACKS
+
           if (configTask.fillGeneralHistograms) {
             registry.fill(HIST("MC/2D/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::NumberOfNonAmbiguousTracks);
             registry.fill(HIST("MC/2D/hIsNonAmbiguousTrackMatchedToTrueCollision"), MftNonAmbiguousAndMatchedToTrueCollisionStep::IsNonAmbiguous);
@@ -1716,6 +1710,10 @@ struct MftReassociationValidation {
       registry.fill(HIST("MC/3D/hPreciseTrackSelectionCounter"), SpecificTrackSelectionStep::AllTracksPrecise);
 
       auto templatedTrack = reassociated3dMftTrack.template mfttrack_as<FilteredMftTracksWCollsMcLabels>();
+
+      if (reassociated3dMftTrack.compatibleCollIds().size() > 0) {
+        return;
+      }
 
       o2::track::TrackParCovFwd trackPar = o2::aod::fwdtrackutils::getTrackParCovFwdShift(templatedTrack, mZShift);
       std::array<double, 3> dcaInfOrig;
