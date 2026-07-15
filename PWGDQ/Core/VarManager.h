@@ -499,20 +499,20 @@ class VarManager : public TObject
     kV2ME_EP,
     kWV2ME_SP,
     kWV2ME_EP,
-    kTwoR2SP1,       // Scalar product resolution of event1 for ME technique
-    kTwoR2SP2,       // Scalar product resolution of event2 for ME technique
-    kTwoR2EP1,       // Event plane resolution of event2 for ME technique
-    kTwoR2EP2,       // Event plane resolution of event2 for ME technique
-    kDeltaPhiME_TPC,     // Delta phi of VM to TPC event plane for ME technique
-    kDeltaPhiME_FT0C,    // Delta phi of VM to FT0C event plane for ME technique
-    kDeltaPhiME_FT0A,    // Delta phi of VM to FT0A event plane for ME technique
-    kCos2DeltaPhiME_TPC,     // Cos(2*Delta phi) of VM to TPC event plane for ME technique
-    kCos2DeltaPhiME_FT0C,    // Cos(2*Delta phi) of VM to FT0C event plane for ME technique
-    kCos2DeltaPhiME_FT0A,    // Cos(2*Delta phi) of VM to FT0A event plane for ME technique
-    kA2EPME_TPC,     // A2 of VM to TPC event plane for ME technique
-    kA2EPME_FT0C,    // A2 of VM to FT0C event plane for ME technique
-    kA2EPME_FT0A,    // A2 of VM to FT0A event plane for ME technique
-    kNPairsPerEvent, // number of pairs per event in same-event or mixed-event pairing
+    kTwoR2SP1,            // Scalar product resolution of event1 for ME technique
+    kTwoR2SP2,            // Scalar product resolution of event2 for ME technique
+    kTwoR2EP1,            // Event plane resolution of event2 for ME technique
+    kTwoR2EP2,            // Event plane resolution of event2 for ME technique
+    kDeltaPhiME_TPC,      // Delta phi of VM to TPC event plane for ME technique
+    kDeltaPhiME_FT0C,     // Delta phi of VM to FT0C event plane for ME technique
+    kDeltaPhiME_FT0A,     // Delta phi of VM to FT0A event plane for ME technique
+    kCos2DeltaPhiME_TPC,  // Cos(2*Delta phi) of VM to TPC event plane for ME technique
+    kCos2DeltaPhiME_FT0C, // Cos(2*Delta phi) of VM to FT0C event plane for ME technique
+    kCos2DeltaPhiME_FT0A, // Cos(2*Delta phi) of VM to FT0A event plane for ME technique
+    kA2EPME_TPC,          // A2 of VM to TPC event plane for ME technique
+    kA2EPME_FT0C,         // A2 of VM to FT0C event plane for ME technique
+    kA2EPME_FT0A,         // A2 of VM to FT0A event plane for ME technique
+    kNPairsPerEvent,      // number of pairs per event in same-event or mixed-event pairing
     kInteractionRate,
 
     // Variables for event mixing with cumulant
