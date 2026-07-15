@@ -26,7 +26,6 @@
 #include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <DataFormatsITSMFT/DPLAlpideParam.h>
-//#include <ITSMFTBase/DPLAlpideParam.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -166,7 +165,7 @@ struct UpcVmRof {
   Produces<o2::aod::FourTrkTable> fourTrkTable;
 
   // services
-  Service<o2::ccdb::BasicCCDBManager> ccdb; // access to database
+  Service<o2::ccdb::BasicCCDBManager> ccdb{}; // access to database
 
   // histograms
   HistogramRegistry bcTH1Registry{"bcTH1Registry", {}};
@@ -250,7 +249,7 @@ struct UpcVmRof {
     for (int i = 0; i < o2::constants::lhc::LHCMaxBunches; i++) {
       bcbIdx.push_back(-1);
       if (bcPatternB.test(i)) {
-        bcbIdx[i]=nbcB;
+        bcbIdx[i] = nbcB;
         nbcB++;
       }
     }
@@ -712,7 +711,7 @@ struct UpcVmRof {
     } // ZDC info
 
     // fill output table
-    int recoFlag = (col.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) ? 1 : 0;
+    int recoFlag = static_cast<int>((col.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) ? true : false);
     if (selTrks.size() == NTrksTwoBody) {
       colTH1Pointers[Form("col/%d/twoTrkTF_H", runNumberCol)]->Fill(thisTF);
       twoTrkTable(runNumberCol, col.posX(), col.posY(), col.posZ(), col.chi2(), thisBC, thisTF, thisROF, recoFlag,
