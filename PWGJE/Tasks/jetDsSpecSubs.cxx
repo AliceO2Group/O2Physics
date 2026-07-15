@@ -111,7 +111,7 @@ struct JetDsSpecSubs {
     "registry",
     {
       {"h_collisions", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}}},
-      {"h_event_counter_data", ";Selection step;Events", {HistType::kTH1F, {{3,0.5,3.5}}}},
+      {"h_event_counter_data", ";Selection step;Events", {HistType::kTH1F, {{3, 0.5, 3.5}}}},
 
       {"h_track_pt", ";#it{p}_{T,track};entries", {HistType::kTH1F, {{200, 0., 200.}}}},
       {"h_track_eta", ";#eta_{track};entries", {HistType::kTH1F, {{100, -1., 1.}}}},
@@ -132,8 +132,7 @@ struct JetDsSpecSubs {
       {"h_ds_jet_mass_data", ";m_{jet}^{ch} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 0., 25.}}}},
       {"h_ds_jet_lambda11_data", ";#lambda_{1}^{1};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
       {"h_ds_jet_lambda12_data", ";#lambda_{2}^{1};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
-      {"hSparse_ds_data", ";m_{D_{S}};#it{p}_{T,D_{S}};#it{p}_{T,jet};z^{D_{S},jet}_{||};#DeltaR_{D_{S},jet}",
-        {HistType::kTHnSparseF, {{60, 1.7, 2.15}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.0}}}},
+      {"hSparse_ds_data", ";m_{D_{S}};#it{p}_{T,D_{S}};#it{p}_{T,jet};z^{D_{S},jet}_{||};#DeltaR_{D_{S},jet}", {HistType::kTHnSparseF, {{60, 1.7, 2.15}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.0}}}},
 
       // MC general histograms
       {"McEffJet", "N_{jet};", {HistType::kTH1F, {{4, 0., 4.0}}}},
@@ -153,14 +152,11 @@ struct JetDsSpecSubs {
       {"h_ds_jet_lambda12_mcd", ";#lambda_{2}^{1, det};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
 
       // MCD - Sparse 1: mass, p_{T,Ds}, p_{T,jet}, z|| and prompt/non-prompt
-      {"hSparse_ds_mcd1", ";m_{D_{S}}^{rec};#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||, det};Origin(D_{S})",
-        {HistType::kTHnSparseF, {{60, 1.7, 2.15}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {2, -0.5, 1.5}}}},
+      {"hSparse_ds_mcd1", ";m_{D_{S}}^{rec};#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||, det};Origin(D_{S})", {HistType::kTHnSparseF, {{60, 1.7, 2.15}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {2, -0.5, 1.5}}}},
       // MCD - Sparse 2: p_{T,Ds}, p_{T,jet}, and DeltaR
-      {"hSparse_ds_mcd2", ";#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};#DeltaR_{D_{S},jet}^{det}",
-        {HistType::kTHnSparseF, {{60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.0}}}},
+      {"hSparse_ds_mcd2", ";#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};#DeltaR_{D_{S},jet}^{det}", {HistType::kTHnSparseF, {{60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.0}}}},
       // MCD - Sparse 3: p_{T,jet}, z|| and DeltaR
-      {"hSparse_ds_mcd3", ";#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||, det};#DeltaR_{D_{S},jet}^{det}",
-        {HistType::kTHnSparseF, {{60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.0}}}},
+      {"hSparse_ds_mcd3", ";#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||, det};#DeltaR_{D_{S},jet}^{det}", {HistType::kTHnSparseF, {{60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.0}}}},
 
       // MC particle-level histograms
       {"h_jet_pt_mcp", "particle-level jet pT;#it{p}_{T,jet}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
@@ -175,8 +171,7 @@ struct JetDsSpecSubs {
       {"h_ds_jet_lambda12_mcp", ";#lambda_{2}^{1, part};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
 
       // MCP - Sparse: p_{T,Ds}, p_{T,jet}, z|| and DeltaR
-      {"hSparse_ds_mcp", ";#it{p}_{T,D_{S}}^{part};#it{p}_{T,jet}^{part};z^{D_{S},jet}_{||, part};#DeltaR_{D_{S},jet}^{part}",
-        {HistType::kTHnSparseF, {{60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.0}}}},
+      {"hSparse_ds_mcp", ";#it{p}_{T,D_{S}}^{part};#it{p}_{T,jet}^{part};z^{D_{S},jet}_{||, part};#DeltaR_{D_{S},jet}^{part}", {HistType::kTHnSparseF, {{60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.0}}}},
     }};
   //========
   // INIT
@@ -188,9 +183,9 @@ struct JetDsSpecSubs {
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
     auto hEvt = registry.get<TH1>(HIST("h_event_counter_data"));
-    hEvt->GetXaxis()->SetBinLabel(1,"Input collisions");
-    hEvt->GetXaxis()->SetBinLabel(2,"Event selection");
-    hEvt->GetXaxis()->SetBinLabel(3,"|z| < 10 cm");
+    hEvt->GetXaxis()->SetBinLabel(1, "Input collisions");
+    hEvt->GetXaxis()->SetBinLabel(2, "Event selection");
+    hEvt->GetXaxis()->SetBinLabel(3, "|z| < 10 cm");
 
     // Labels
     auto mcCollisionCounter = registry.get<TH1>(HIST("McEffCol"));
@@ -345,7 +340,6 @@ struct JetDsSpecSubs {
 
         registry.fill(HIST("h_ds_jet_distance_data"), deltaR);
 
-
         // Main THnSparse: invariant mass, pT, z, and DeltaR
         registry.fill(HIST("hSparse_ds_data"),
                       dsCandidate.m(),
@@ -356,16 +350,16 @@ struct JetDsSpecSubs {
       }
 
       if (!jet.candidates_as<aod::CandidatesDsData>().empty()) {
-          // Jet mass
-          registry.fill(HIST("h_ds_jet_mass_data"),mjet);
+        // Jet mass
+        registry.fill(HIST("h_ds_jet_mass_data"), mjet);
 
-          // Jet angularity
-          if (lambda11 >= 0.f) {
-            registry.fill(HIST("h_ds_jet_lambda11_data"), lambda11);
-          }
-          if (lambda12 >= 0.f) {
-            registry.fill(HIST("h_ds_jet_lambda12_data"), lambda12);
-          }
+        // Jet angularity
+        if (lambda11 >= 0.f) {
+          registry.fill(HIST("h_ds_jet_lambda11_data"), lambda11);
+        }
+        if (lambda12 >= 0.f) {
+          registry.fill(HIST("h_ds_jet_lambda12_data"), lambda12);
+        }
       }
     }
   }
