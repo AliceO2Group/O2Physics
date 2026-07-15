@@ -1748,7 +1748,7 @@ struct PidFlowPtCorr {
   template <typename TCollision>
   float getCentrality(TCollision const& collision)
   {
-    float cent;
+    float cent = -1;
     switch (cfgCentEstimator) {
       case kCentFT0C:
         cent = collision.centFT0C();
