@@ -847,7 +847,9 @@ class VarManager : public TObject
     kDCATrackProd,
     kDCATrackVtxProd,
     kV2SP,
-    kV2EP,
+    kV2EP, // Psi2A
+    kV2EP_FT0C,
+    kV2EP_FT0A,
     kA2EP_TPC,
     kA2EP_FT0A,
     kA2EP_FT0C,
@@ -6051,6 +6053,7 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   values[kCos2DeltaPhiPOS] = TMath::Cos(2 * (v12.Phi() - Psi2APOS));
   values[kCos2DeltaPhiNEG] = TMath::Cos(2 * (v12.Phi() - Psi2ANEG));
   values[kCos3DeltaPhi] = TMath::Cos(3 * (v12.Phi() - Psi3A));
+  values[kCos2DeltaPhi_FT0C] = TMath::Cos(2 * (v12.Phi() - Psi2C));
   values[kR2EP_AB] = TMath::Cos(2 * (Psi2A - Psi2B));
   values[kR2EP_AC] = TMath::Cos(2 * (Psi2A - Psi2C));
   values[kR2EP_BC] = TMath::Cos(2 * (Psi2B - Psi2C));
@@ -6058,9 +6061,11 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
 
   float V2SP = values[kU2Q2] / values[kR2SP];
   float V2EP = values[kCos2DeltaPhi] / values[kR2EP];
+  float V2EP_FT0C = values[kCos2DeltaPhi_FT0C] / values[kR2EP];
   values[kV2SP] = std::isnan(V2SP) || std::isinf(V2SP) ? 0. : V2SP;
   values[kWV2SP] = std::isnan(V2SP) || std::isinf(V2SP) ? 0. : 1.0;
   values[kV2EP] = std::isnan(V2EP) || std::isinf(V2EP) ? 0. : V2EP;
+  values[kV2EP_FT0C] = std::isnan(V2EP_FT0C) || std::isinf(V2EP_FT0C) ? 0. : V2EP_FT0C;
   values[kWV2EP] = std::isnan(V2EP) || std::isinf(V2EP) ? 0. : 1.0;
 
   if (std::isnan(VarManager::fgValues[VarManager::kU2Q2])) {
