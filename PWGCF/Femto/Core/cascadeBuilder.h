@@ -72,7 +72,7 @@ struct ConfCascadeFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> lambdaTransRadMin{"lambdaTransRadMin", {0.9f}, "Minimum transverse radius (cm)"};                        \
   o2::framework::Configurable<std::vector<float>> lambdaDcaDauMax{"lambdaDcaDauMax", {0.5f}, "Maximum DCA between the daughters at decay vertex (cm)"};    \
   o2::framework::Configurable<std::vector<float>> lambdaDcaToPvMin{"lambdaDcaToPvMin", {0.3f}, "Minimum DCA between the lambda and primary vertex"};       \
-  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.8f}, "Minimum DCA of the daughters from primary vertex (cm)"};           \
+  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.8f}, "Maximum |eta| of all daughters"};                                  \
   o2::framework::Configurable<std::vector<float>> dauDcaMin{"dauDcaMin", {0.05f}, "Minimum DCA of the daughters from primary vertex (cm)"};                \
   o2::framework::Configurable<std::vector<float>> dauTpcClustersMin{"dauTpcClustersMin", {80.f}, "Minimum number of TPC clusters for daughter tracks"};    \
   o2::framework::Configurable<std::vector<float>> posDauTpc{"posDauTpc", {5.f}, "Maximum |nsimga_Pion/Proton| TPC for positive daughter tracks"};          \
@@ -637,6 +637,115 @@ class CascadeBuilder
   bool mProduceOmegas = false;
   bool mProduceOmegaMasks = false;
   bool mProduceOmegaExtras = false;
+};
+
+struct ConfCascadeTablesDerivedToDerived : o2::framework::ConfigurableGroup {
+  std::string prefix = std::string("CascadeTables");
+  o2::framework::Configurable<int> limitXi{"limitXi", 1, "At least this many xi need to be in the collision"};
+  o2::framework::Configurable<int> limitOmega{"limitOmega", 0, "At least this many omega need to be in the collision"};
+};
+
+struct CascadeBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
+  o2::framework::Produces<o2::aod::StoredFXis> producedXis;
+  o2::framework::Produces<o2::aod::StoredFXiMasks> producedXiMasks;
+  o2::framework::Produces<o2::aod::StoredFOmegas> producedOmegas;
+  o2::framework::Produces<o2::aod::StoredFOmegaMasks> producedOmegaMasks;
+};
+
+class CascadeBuilderDerivedToDerived
+{
+ public:
+  CascadeBuilderDerivedToDerived() = default;
+  ~CascadeBuilderDerivedToDerived() = default;
+
+  template <typename T>
+  void init(T& config)
+  {
+    mLimitXi = config.limitXi.value;
+    mLimitOmega = config.limitOmega.value;
+
+    if (mLimitXi == 0 && mLimitOmega == 0) {
+      LOG(fatal) << "Both xi limit and omega limit are 0. Breaking...";
+    }
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  bool collisionHasTooFewXis(T1 const& col, T2 const& /*xiTable*/, T3& partitionXi, T4& cache)
+  {
+    auto xiSlice = partitionXi->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    return xiSlice.size() < mLimitXi;
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  bool collisionHasTooFewOmegas(T1 const& col, T2 const& /*omegaTable*/, T3& partitionOmega, T4& cache)
+  {
+    auto omegaSlice = partitionOmega->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    return omegaSlice.size() < mLimitOmega;
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void processXis(T1 const& col, T2 const& /*xiTable*/, T3 const& oldTrackTable, T4& partitionXi, T5& trackBuilder, T6& cache, T7& newXiTable, T8& newTrackTable, T9& newCollisionTable)
+  {
+    auto xiSlice = partitionXi->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+
+    for (auto const& xi : xiSlice) {
+
+      // auto bachelor = xi.template bachelor_as<T3>();
+      // auto posDaughter = xi.template posDau_as<T3>();
+      // auto negDaughter = xi.template negDau_as<T3>();
+      auto bachelor = oldTrackTable.rawIteratorAt(xi.bachelorId() - oldTrackTable.offset());
+      auto posDaughter = oldTrackTable.rawIteratorAt(xi.posDauId() - oldTrackTable.offset());
+      auto negDaughter = oldTrackTable.rawIteratorAt(xi.negDauId() - oldTrackTable.offset());
+
+      int bachelorIndex = trackBuilder.getDaughterIndex(bachelor, newTrackTable, newCollisionTable);
+      int posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
+      int negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable);
+
+      newXiTable.producedXis(newCollisionTable.producedCollision.lastIndex(),
+                             xi.signedPt(),
+                             xi.eta(),
+                             xi.phi(),
+                             xi.mass(),
+                             bachelorIndex,
+                             posDaughterIndex,
+                             negDaughterIndex);
+      newXiTable.producedXiMasks(xi.mask());
+    }
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void processOmegas(T1 const& col, T2 const& /*omegaTable*/, T3 const& oldTrackTable, T4& partitionOmega, T5& trackBuilder, T6& cache, T7& newOmegaTable, T8& newTrackTable, T9& newCollisionTable)
+  {
+    auto omegaSlice = partitionOmega->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+
+    for (auto const& omega : omegaSlice) {
+
+      // auto bachelor = omega.template bachelor_as<T3>();
+      // auto posDaughter = omega.template posDau_as<T3>();
+      // auto negDaughter = omega.template negDau_as<T3>();
+      auto bachelor = oldTrackTable.rawIteratorAt(omega.bachelorId() - oldTrackTable.offset());
+      auto posDaughter = oldTrackTable.rawIteratorAt(omega.posDauId() - oldTrackTable.offset());
+      auto negDaughter = oldTrackTable.rawIteratorAt(omega.negDauId() - oldTrackTable.offset());
+
+      int bachelorIndex = trackBuilder.getDaughterIndex(bachelor, newTrackTable, newCollisionTable);
+      int posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
+      int negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable);
+
+      newOmegaTable.producedOmegas(newCollisionTable.producedCollision.lastIndex(),
+                                   omega.signedPt(),
+                                   omega.eta(),
+                                   omega.phi(),
+                                   omega.mass(),
+                                   bachelorIndex,
+                                   posDaughterIndex,
+                                   negDaughterIndex);
+      newOmegaTable.producedOmegaMasks(omega.mask());
+    }
+  }
+
+ private:
+  int mLimitXi = 0;
+  int mLimitOmega = 0;
 };
 
 } // namespace o2::analysis::femto::cascadebuilder
