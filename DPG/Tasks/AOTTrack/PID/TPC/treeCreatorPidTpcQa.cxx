@@ -37,6 +37,7 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <string>
@@ -46,16 +47,16 @@ using namespace o2::framework;
 using namespace o2::track;
 using namespace o2::dpg_tpcskimstablecreator;
 
-#define PARTICLE_LIST(MACRO_ARG) \
-  MACRO_ARG(El, Electron)        \
-  MACRO_ARG(Mu, Muon)            \
-  MACRO_ARG(Pi, Pion)            \
-  MACRO_ARG(Ka, Kaon)            \
-  MACRO_ARG(Pr, Proton)          \
-  MACRO_ARG(De, Deuteron)        \
-  MACRO_ARG(Tr, Triton)          \
-  MACRO_ARG(He, Helium3)         \
-  MACRO_ARG(Al, Alpha)
+#define DO_FOR_ALL_PARTICLES(MACRO) \
+  MACRO(El, Electron)               \
+  MACRO(Mu, Muon)                   \
+  MACRO(Pi, Pion)                   \
+  MACRO(Ka, Kaon)                   \
+  MACRO(Pr, Proton)                 \
+  MACRO(De, Deuteron)               \
+  MACRO(Tr, Triton)                 \
+  MACRO(He, Helium3)                \
+  MACRO(Al, Alpha)
 
 struct TreeCreatorPidTpcQa {
   Produces<o2::aod::QaPidTpc> rowPidTpcQa;
@@ -76,22 +77,22 @@ struct TreeCreatorPidTpcQa {
   Configurable<float> cutTpcInnerParameterMax##ParticleNameLong{"cutTpcInnerParameterMax" #ParticleNameLong, 999.f, "Upper-value cut on tpcInnerParam for " #ParticleNameLong}; /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
   Configurable<float> cutNSigmaTpcAbs##ParticleNameLong{"cutNSigmaTpcAbs" #ParticleNameLong, 999.f, "Cut on absolute value of nSigmaTpc for " #ParticleNameLong};               // o2-linter: disable=name/configurable (Configurable defined in macro)
 
-  PARTICLE_LIST(DECLARE_PARTICLE_WISE_CONFIGURABLES)
+  DO_FOR_ALL_PARTICLES(DECLARE_PARTICLE_WISE_CONFIGURABLES)
 #undef DECLARE_PARTICLE_WISE_CONFIGURABLES
 
 #define PACK_CONFIGURABLES_TO_ARRAY(ParticleNameShort, ParticleNameLong) &cutTpcInnerParameterMin##ParticleNameLong,
   std::array<Configurable<float>*, PID::Alpha + 1> cutTpcInnerParameterMin{
-    PARTICLE_LIST(PACK_CONFIGURABLES_TO_ARRAY)};
+    DO_FOR_ALL_PARTICLES(PACK_CONFIGURABLES_TO_ARRAY)};
 #undef PACK_CONFIGURABLES_TO_ARRAY
 
 #define PACK_CONFIGURABLES_TO_ARRAY(ParticleNameShort, ParticleNameLong) &cutTpcInnerParameterMax##ParticleNameLong,
   std::array<Configurable<float>*, PID::Alpha + 1> cutTpcInnerParameterMax{
-    PARTICLE_LIST(PACK_CONFIGURABLES_TO_ARRAY)};
+    DO_FOR_ALL_PARTICLES(PACK_CONFIGURABLES_TO_ARRAY)};
 #undef PACK_CONFIGURABLES_TO_ARRAY
 
 #define PACK_CONFIGURABLES_TO_ARRAY(ParticleNameShort, ParticleNameLong) &cutNSigmaTpcAbs##ParticleNameLong,
   std::array<Configurable<float>*, PID::Alpha + 1> cutNSigmaTpcAbs{
-    PARTICLE_LIST(PACK_CONFIGURABLES_TO_ARRAY)};
+    DO_FOR_ALL_PARTICLES(PACK_CONFIGURABLES_TO_ARRAY)};
 #undef PACK_CONFIGURABLES_TO_ARRAY
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
@@ -112,7 +113,7 @@ struct TreeCreatorPidTpcQa {
     int enabledProcesses{0};
 
     switch (Id) {
-#define PARTICLE_CASE(ParticleNameShort, ParticleNameLong)                                                             \
+#define INIT_PARTICLE(ParticleNameShort, ParticleNameLong)                                                             \
   case PID::ParticleNameLong:                                                                                          \
     if (!doprocess##ParticleNameLong && !doprocessFull##ParticleNameLong && !doprocessFullWithTOF##ParticleNameLong) { \
       return false;                                                                                                    \
@@ -129,8 +130,8 @@ struct TreeCreatorPidTpcQa {
     LOG(info) << "Enabled TPC QA for " << #ParticleNameLong;                                                           \
     break;
 
-      PARTICLE_LIST(PARTICLE_CASE)
-#undef PARTICLE_CASE
+      DO_FOR_ALL_PARTICLES(INIT_PARTICLE)
+#undef INIT_PARTICLE
     }
     if (enabledProcesses != 1) {
       LOG(fatal) << "Cannot enable more than one process function per particle, check and retry!";
@@ -231,7 +232,7 @@ struct TreeCreatorPidTpcQa {
   }                                                                                                        \
   PROCESS_SWITCH(TreeCreatorPidTpcQa, process##ParticleNameLong, Form("Process for the %s hypothesis for TPC NSigma QA", #ParticleNameLong), false);
 
-  PARTICLE_LIST(MAKE_PROCESS_FUNCTION)
+  DO_FOR_ALL_PARTICLES(MAKE_PROCESS_FUNCTION)
 #undef MAKE_PROCESS_FUNCTION
 
 // QA of full tables
@@ -244,7 +245,7 @@ struct TreeCreatorPidTpcQa {
   }                                                                                                                \
   PROCESS_SWITCH(TreeCreatorPidTpcQa, processFull##ParticleNameLong, Form("Process for the %s hypothesis for full TPC PID QA", #ParticleNameLong), false);
 
-  PARTICLE_LIST(MAKE_PROCESS_FUNCTION)
+  DO_FOR_ALL_PARTICLES(MAKE_PROCESS_FUNCTION)
 #undef MAKE_PROCESS_FUNCTION
 
   // QA of full tables with TOF information
@@ -257,7 +258,7 @@ struct TreeCreatorPidTpcQa {
   }                                                                                                                                                           \
   PROCESS_SWITCH(TreeCreatorPidTpcQa, processFullWithTOF##ParticleNameLong, Form("Process for the %s hypothesis for full TPC PID QA with the TOF info added", #ParticleNameLong), false);
 
-  PARTICLE_LIST(MAKE_PROCESS_FUNCTION)
+  DO_FOR_ALL_PARTICLES(MAKE_PROCESS_FUNCTION)
 #undef MAKE_PROCESS_FUNCTION
 };
 
@@ -265,4 +266,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<TreeCreatorPidTpcQa>(cfgc)};
 }
-#undef PARTICLE_LIST
+#undef DO_FOR_ALL_PARTICLES
