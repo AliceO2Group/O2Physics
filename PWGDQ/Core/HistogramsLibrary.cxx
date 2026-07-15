@@ -1418,34 +1418,22 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         std::array<double, 5> maxBins_DeltaPhi = {4.0, 2.0, 1.0, 90.0, 3.14};
         TString labels[5] = {"kMass", "kPt", "kRapidity", "kCentFT0C", "kA2EP"};
         if (subGroupStr.Contains("tpc")) {
-          std::array<int, 5> varA2_TPC_PP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_PP_TPC};
-          std::array<int, 5> varA2_TPC_RP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_RP_TPC};
-          std::array<int, 5> varDeltaPhi_TPC_PP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhiPP_TPC};
-          std::array<int, 5> varDeltaPhi_TPC_RP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhiRP_TPC};
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2PP_TPC", "", 5, varA2_TPC_PP.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), 0, -1, kTRUE);
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2RP_TPC", "", 5, varA2_TPC_RP.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), 0, -1, kTRUE);
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiPP_TPC", "", 5, varDeltaPhi_TPC_PP.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), 0, -1, kTRUE);
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiRP_TPC", "", 5, varDeltaPhi_TPC_RP.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), 0, -1, kTRUE);
+          std::array<int, 5> varA2_TPC = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_TPC};
+          std::array<int, 5> varDeltaPhi_TPC = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhi_TPC};
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2_TPC", "", 5, varA2_TPC.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), 0, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhi_TPC", "", 5, varDeltaPhi_TPC.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), 0, -1, kTRUE);
         }
         if (subGroupStr.Contains("ft0c")) {
-          std::array<int, 5> varA2_FT0C_PP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_PP_FT0C};
-          std::array<int, 5> varA2_FT0C_RP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_RP_FT0C};
-          std::array<int, 5> varDeltaPhi_FT0C_PP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhiPP_FT0C};
-          std::array<int, 5> varDeltaPhi_FT0C_RP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhiRP_FT0C};
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2PP_FT0C", "", 5, varA2_FT0C_PP.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), 0, -1, kTRUE);
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2RP_FT0C", "", 5, varA2_FT0C_RP.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), 0, -1, kTRUE);
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiPP_FT0C", "", 5, varDeltaPhi_FT0C_PP.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), 0, -1, kTRUE);
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiRP_FT0C", "", 5, varDeltaPhi_FT0C_RP.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), 0, -1, kTRUE);
+          std::array<int, 5> varA2_FT0C = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_FT0C};
+          std::array<int, 5> varDeltaPhi_FT0C = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhi_FT0C};
+          hm->AddHistogram(histClass, "Mass_Pt_centFT0C_A2_FT0C", "", 5, varA2_FT0C.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), 0, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centFT0C_DeltaPhi_FT0C", "", 5, varDeltaPhi_FT0C.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), 0, -1, kTRUE);
         }
         if (subGroupStr.Contains("ft0a")) {
-          std::array<int, 5> varA2_FT0A_PP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_PP_FT0A};
-          std::array<int, 5> varA2_FT0A_RP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_RP_FT0A};
-          std::array<int, 5> varDeltaPhi_FT0A_PP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhiPP_FT0A};
-          std::array<int, 5> varDeltaPhi_FT0A_RP = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhiRP_FT0A};
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2PP_FT0A", "", 5, varA2_FT0A_PP.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), 0, -1, kTRUE);
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_A2RP_FT0A", "", 5, varA2_FT0A_RP.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), 0, -1, kTRUE);
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiPP_FT0A", "", 5, varDeltaPhi_FT0A_PP.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), 0, -1, kTRUE);
-          hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_DeltaPhiRP_FT0A", "", 5, varDeltaPhi_FT0A_RP.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), 0, -1, kTRUE);
+          std::array<int, 5> varA2_FT0A = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kA2EP_FT0A};
+          std::array<int, 5> varDeltaPhi_FT0A = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C, VarManager::kDeltaPhi_FT0A};
+          hm->AddHistogram(histClass, "Mass_Pt_centFT0C_A2_FT0A", "", 5, varA2_FT0A.data(), bins_A2.data(), minBins_A2.data(), maxBins_A2.data(), 0, -1, kTRUE);
+          hm->AddHistogram(histClass, "Mass_Pt_centFT0C_DeltaPhi_FT0A", "", 5, varDeltaPhi_FT0A.data(), bins_DeltaPhi.data(), minBins_DeltaPhi.data(), maxBins_DeltaPhi.data(), 0, -1, kTRUE);
         }
       }
       if (subGroupStr.Contains("upsilon")) {
