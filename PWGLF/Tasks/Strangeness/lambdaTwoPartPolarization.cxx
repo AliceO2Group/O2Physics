@@ -658,6 +658,5 @@ struct LfLambdaTwoPartPolarization {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<LfLambdaTwoPartPolarization>(cfgc, TaskName{"lf-LfLambdaTwoPartPolarization"})};
+  return WorkflowSpec{adaptAnalysisTask<LfLambdaTwoPartPolarization>(cfgc)};
 }
