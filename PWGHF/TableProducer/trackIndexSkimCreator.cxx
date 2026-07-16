@@ -1927,7 +1927,7 @@ struct HfTrackIndexSkimCreator {
       // prong pT
       if (config.debug || TESTBIT(isSelected, iDecay3P)) {
         const auto ptProngMin = cut3Prong[iDecay3P].get(binPt, 4u); // 4u == ptProngMinIndex[iDecay3P]
-        const auto pt2ProngMin = ptProngMin*ptProngMin;
+        const auto pt2ProngMin = ptProngMin * ptProngMin;
         if (RecoDecay::pt2(pVecTrack0) < pt2ProngMin || RecoDecay::pt2(pVecTrack1) < pt2ProngMin || RecoDecay::pt2(pVecTrack2) < pt2ProngMin) {
           CLRBIT(isSelected, iDecay3P);
           if (config.debug) {
