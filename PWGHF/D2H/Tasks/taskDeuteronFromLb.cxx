@@ -81,7 +81,7 @@ struct HfTaskDeuteronFromLb {
   float d_bz = 0.f;
   int mCurrentRun = -1;
 
-  framework::Service<ccdb::BasicCCDBManager> ccdb;
+  framework::Service<ccdb::BasicCCDBManager> ccdb{};
 
   using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
   using MCTrackCandidates = o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::McTrackLabels>;
@@ -184,30 +184,39 @@ struct HfTaskDeuteronFromLb {
   template <typename T1>
   bool passedSingleTrackSelection(const T1& track)
   {
-    if (std::abs(track.eta()) > cfgEta)
+    if (std::abs(track.eta()) > cfgEta) {
       return false;
-    if (std::abs(track.dcaXY()) < cfgDCAmin || std::abs(track.dcaXY()) > cfgDCAmax)
+    }
+    if (!track.hasITS()) {
       return false;
-    if (!track.hasITS())
+    }
+    if (!track.hasTPC()) {
       return false;
-    if (!track.hasTPC())
+    }
+    if (!track.hasTOF()) {
       return false;
-    if (!track.hasTOF())
+    }
+    if (track.tpcNClsFound() < cfgTPCNclsFound) {
       return false;
-    if (track.tpcNClsFound() < cfgTPCNclsFound)
+    }
+    if (track.tpcChi2NCl() > cfgTPCChi2Ncl) {
       return false;
-    if (track.tpcChi2NCl() > cfgTPCChi2Ncl)
+    }
+    if (track.itsChi2NCl() > cfgITSChi2Ncl) {
       return false;
-    if (track.itsChi2NCl() > cfgITSChi2Ncl)
+    }
+    if (track.itsNCls() < cfgITScls) {
       return false;
-    if (track.itsNCls() < cfgITScls)
+    }
+    if (track.pt() > cfgMaxPt) {
       return false;
-    if (track.pt() > cfgMaxPt)
+    }
+    if (track.pt() < cfgMinPt) {
       return false;
-    if (track.pt() < cfgMinPt)
+    }
+    if (track.sign() > 0) {
       return false;
-    if (track.sign() > 0)
-      return false;
+    }
 
     return true;
   }
@@ -219,7 +228,7 @@ struct HfTaskDeuteronFromLb {
   {
     for (const auto& collision : collisions) {
       if (mCurrentRun != collision.bc_as<o2::aod::BCsWithTimestamps>().runNumber()) {
-        o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", collision.bc_as<o2::aod::BCsWithTimestamps>().timestamp());
+        auto* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", collision.bc_as<o2::aod::BCsWithTimestamps>().timestamp());
         o2::base::Propagator::initFieldFromGRP(grpo);
         mCurrentRun = collision.bc_as<o2::aod::BCsWithTimestamps>().runNumber();
       }
@@ -252,6 +261,10 @@ struct HfTaskDeuteronFromLb {
         if (track.collisionId() != collision.globalIndex()) {
           auto trackPar = getTrackParCov(track);
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, noMatCorr, &dca);
+        }
+
+        if (std::abs(dca[0]) < cfgDCAmin || std::abs(dca[0]) > cfgDCAmax) {
+          continue;
         }
 
         if (!passedSingleTrackSelection(track)) {
@@ -288,6 +301,9 @@ struct HfTaskDeuteronFromLb {
   void processMC(MCCollisionCandidates::iterator const& collision, MCTrackCandidates const& tracks, o2::aod::McParticles const&)
   {
     for (const auto& track : tracks) {
+      if (std::abs(track.dcaXY()) < cfgDCAmin || std::abs(track.dcaXY()) > cfgDCAmax) {
+        continue;
+      }
       if (!passedSingleTrackSelection(track)) {
         continue;
       }
