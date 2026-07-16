@@ -1833,13 +1833,13 @@ struct HfTrackIndexSkimCreator {
     const double deltaMassMax = cut3Prong[hf_cand_3prong::DecayType::DsToKKPi].get(binPt, 5u);
     if (TESTBIT(whichHypo[hf_cand_3prong::DecayType::DsToKKPi], 0)) {
       const double mass2PhiKKPi = RecoDecay::m2(std::array{pVecTrack0, pVecTrack1}, std::array{arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi][0][0], arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi][0][1]});
-      if (mass2PhiKKPi > (MassPhi + deltaMassMax) * (MassPhi + deltaMassMax) || deltaMassMax < MassPhi && (mass2PhiKKPi < (MassPhi - deltaMassMax) * (MassPhi - deltaMassMax))) {
+      if (mass2PhiKKPi > (MassPhi + deltaMassMax) * (MassPhi + deltaMassMax) || (deltaMassMax < MassPhi && mass2PhiKKPi < (MassPhi - deltaMassMax) * (MassPhi - deltaMassMax))) {
         CLRBIT(whichHypo[hf_cand_3prong::DecayType::DsToKKPi], 0);
       }
     }
     if (TESTBIT(whichHypo[hf_cand_3prong::DecayType::DsToKKPi], 1)) {
       const double mass2PhiPiKK = RecoDecay::m2(std::array{pVecTrack1, pVecTrack2}, std::array{arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi][1][1], arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi][1][2]});
-      if (mass2PhiPiKK > (MassPhi + deltaMassMax) * (MassPhi + deltaMassMax) || (mass2PhiPiKK < (MassPhi - deltaMassMax) * (MassPhi - deltaMassMax) && deltaMassMax < MassPhi)) {
+      if (mass2PhiPiKK > (MassPhi + deltaMassMax) * (MassPhi + deltaMassMax) || (deltaMassMax < MassPhi && mass2PhiPiKK < (MassPhi - deltaMassMax) * (MassPhi - deltaMassMax))) {
         CLRBIT(whichHypo[hf_cand_3prong::DecayType::DsToKKPi], 1);
       }
     }
