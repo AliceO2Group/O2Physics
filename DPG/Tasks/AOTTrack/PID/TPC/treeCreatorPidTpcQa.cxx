@@ -31,6 +31,8 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/StaticFor.h>
@@ -68,9 +70,12 @@ struct TreeCreatorPidTpcQa {
   Configurable<bool> requireIts{"requireIts", true, "Skip tracks without ITS"};
   Configurable<int16_t> cutMinTPCNcls{"cutMinTPCNcls", 0, "Minimum number or TPC Clusters for tracks"};
   Configurable<float> cutRapidity{"cutRapidity", 999.f, "Rapidity cut"};
-  Configurable<float> nClNorm{"nClNorm", 152., "Number of cluster normalization. Run 2: 159, Run 3 152"};
+  Configurable<float> nClNorm{"nClNorm", 152.f, "Number of cluster normalization. Run 2: 159, Run 3 152"};
   // Configurable for the path of CCDB General Run Parameters LHC Interface information
   Configurable<std::string> ccdbPathGrpLhcIf{"ccdbPathGrpLhcIf", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
+  // Configurables for output tables reservation size
+  Configurable<float> reserveRatio{"reserveRatio", 1.f, "Ratio of how many rows expected in the output table to the input Tracks table size"};
+  Configurable<bool> saveReserveQaHisto{"saveReserveQaHisto", true, "Flag to save the DF-wise ratio of output table size to that of input table"};
 
 #define DECLARE_PARTICLE_WISE_CONFIGURABLES(ParticleNameShort, ParticleNameLong)                                                                                                                                                                          \
   Configurable<float> cutTpcInnerParameterMin##ParticleNameLong{"cutTpcInnerParameterMin" #ParticleNameLong, 0.f, "Lower-value cut on tpcInnerParam for " #ParticleNameLong};   /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
@@ -95,6 +100,8 @@ struct TreeCreatorPidTpcQa {
     DO_FOR_ALL_PARTICLES(PACK_CONFIGURABLES_TO_ARRAY)};
 #undef PACK_CONFIGURABLES_TO_ARRAY
 
+  HistogramRegistry registry{"registry", {}};
+
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   ctpRateFetcher mRateFetcher{};
@@ -105,6 +112,7 @@ struct TreeCreatorPidTpcQa {
   Preslice<TrackCandidates> perCollisionTracks = aod::track::collisionId;
 
   int mEnabledParticles{0};
+  int mProcessedParticles{0};
 
   template <o2::track::PID::ID Id>
   bool initPerParticle()
@@ -148,13 +156,19 @@ struct TreeCreatorPidTpcQa {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setFatalWhenNull(false);
+
+    if (saveReserveQaHisto) {
+      registry.add("hOutputRatio", "Table out/in ratio;Table out/in ratio;Entries", {HistType::kTH1F, {{100, 0, reserveRatio}}});
+    }
   }
 
   template <o2::track::PID::ID Id, bool IsFullTable, bool IsTofTable, typename TrackType>
   void processSingleParticle(CollisionsExtra const& collisions,
                              TrackType const& tracks)
   {
-    rowPidTpcQa.reserve(tracks.size() * mEnabledParticles);
+    if (mProcessedParticles == 0) {
+      rowPidTpcQa.reserve(tracks.size() * reserveRatio);
+    }
 
     std::string irSource{};
     float sqrtSNN{}; // placeholder to satisfy evaluateIrSourceAndSqrtSnn's signature
@@ -220,6 +234,13 @@ struct TreeCreatorPidTpcQa {
         rowPidTpcQa(Id, ft0Occ, hadronicRate, multTPC, nClNormalized, nclPID, phi, tgl, tpcInnerParam, rapidity, momentum, signed1Pt, nSigmaTpc, dedxExpected, dedxDiff, expSigma, nSigmaTof);
       } // tracksFromCollision
     } // collisions
+    ++mProcessedParticles;
+    if (mProcessedParticles == mEnabledParticles) {
+      mProcessedParticles = 0;
+      if (saveReserveQaHisto) {
+        registry.fill(HIST("hOutputRatio"), static_cast<double>((rowPidTpcQa.lastIndex() + 1)) / tracks.size());
+      }
+    }
   }
 
   // QA of nsigma only tables
