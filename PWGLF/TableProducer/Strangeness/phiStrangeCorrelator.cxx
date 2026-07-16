@@ -382,7 +382,7 @@ struct K0sReducedCandProducer {
   // Configurables for V0 selection
   struct : ConfigurableGroup {
     Configurable<float> v0SettingCosPA{"v0SettingCosPA", 0.98f, "V0 CosPA"};
-    Configurable<float> v0SettingRadius{"v0SettingRadius", 0.5f, "v0radius"};
+    Configurable<float> v0SettingRadius{"v0SettingRadius", 0.5f, "V0 decay radius"};
     Configurable<float> v0SettingDCAV0Dau{"v0SettingDCAV0Dau", 1.0f, "DCA V0 Daughters"};
     Configurable<float> v0SettingDCAPosToPV{"v0SettingDCAPosToPV", 0.1f, "DCA Pos To PV"};
     Configurable<float> v0SettingDCANegToPV{"v0SettingDCANegToPV", 0.1f, "DCA Neg To PV"};
@@ -410,7 +410,9 @@ struct K0sReducedCandProducer {
   Filter collisionFilter = aod::lf_selection_event::defaultSel == true;
 
   // Defining filters on V0s (cannot filter on dynamic columns)
-  Filter v0PreFilter = (nabs(aod::v0data::dcapostopv) > v0Configs.v0SettingDCAPosToPV && nabs(aod::v0data::dcanegtopv) > v0Configs.v0SettingDCANegToPV && aod::v0data::dcaV0daughters < v0Configs.v0SettingDCAV0Dau);
+  Filter v0PreFilter = (nabs(aod::v0data::dcapostopv) > v0Configs.v0SettingDCAPosToPV &&
+                        nabs(aod::v0data::dcanegtopv) > v0Configs.v0SettingDCANegToPV &&
+                        aod::v0data::dcaV0daughters < v0Configs.v0SettingDCAV0Dau);
 
   // Defining the type of the collisions for data and MC
   using SelCollisions = soa::Join<aod::Collisions, aod::CentFT0Ms, aod::PVMults, aod::PhiStrangeEvtSelDataLike>;
@@ -528,6 +530,177 @@ struct K0sReducedCandProducer {
   }
 
   PROCESS_SWITCH(K0sReducedCandProducer, processMCReco, "Process function to select reduced K0s candidates in MCReco w MC truth", false);
+};
+
+struct XiReducedCandProducer {
+  // Produce the table with the Xi candidates information
+  Produces<aod::XiReducedCandidatesData> xiReducedCandidatesData;
+  Produces<aod::XiReducedCandidatesMcReco> xiReducedCandidatesMcReco;
+
+  HistogramRegistry histos{"xiReducedCandidates", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+
+  // Configurable on multiplicity bins
+  Configurable<std::vector<double>> binsMult{"binsMult", {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0}, "Multiplicity bin limits"};
+
+  // Configurables for tracks selection
+  struct : ConfigurableGroup {
+    Configurable<float> etaMax{"etaMax", 0.8f, "eta max"};
+    Configurable<float> nSigmaCutTPCSecPion{"nSigmaCutTPCSecPion", 4.0f, "Value of the TPC Nsigma cut for secondary Pions"};
+    Configurable<float> nSigmaCutTPCSecProton{"nSigmaCutTPCSecProton", 4.0f, "Value of the TPC Nsigma cut for secondary Protons"};
+
+    Configurable<int> minTPCnClsFound{"minTPCnClsFound", 70, "min number of found TPC clusters"};
+    Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70, "min number of TPC crossed rows"};
+    Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
+  } trackConfigs;
+
+  // Configurables for Cascade selection
+  struct : ConfigurableGroup {
+    Configurable<float> cascSettingV0CosPA{"cascSettingV0CosPA", 0.98f, "V0 CosPA"};
+    Configurable<float> cascSettingCosPA{"cascSettingCosPA", 0.98f, "Cascade CosPA"};
+    Configurable<float> cascSettingV0Radius{"cascSettingV0Radius", 0.5f, "V0 decay radius"};
+    Configurable<float> cascSettingRadius{"cascSettingRadius", 0.5f, "Cascade decay radius"};
+    Configurable<float> cascSettingDCAV0Dau{"cascSettingDCAV0Dau", 1.0f, "DCA V0 Daughters"};
+    Configurable<float> cascSettingDCACascDau{"cascSettingDCACascDau", 1.0f, "DCA Cascade Daughters"};
+    Configurable<float> cascSettingDCAPosToPV{"cascSettingDCAPosToPV", 0.1f, "DCA Pos To PV"};
+    Configurable<float> cascSettingDCANegToPV{"cascSettingDCANegToPV", 0.1f, "DCA Neg To PV"};
+    Configurable<float> cascSettingDCABachToPV{"cascSettingDCABachToPV", 0.1f, "DCA Bach To PV"};
+    Configurable<float> cascSettingMinPt{"cascSettingMinPt", 0.8f, "Cascade min pt"};
+
+    Configurable<float> cfgYAcceptance{"cfgYAcceptance", 0.5f, "Rapidity acceptance"};
+  } cascadeConfigs;
+
+  // Configurables for Xi pT bins
+  Configurable<std::vector<double>> binspTXi{"binspTXi", {0.8, 1.2, 1.6, 2.0, 2.5, 3.0, 4.0, 6.0}, "pT bin limits for Xi"};
+
+  // Constants
+  static constexpr double massXiMinus = o2::constants::physics::MassXiMinus;
+  static constexpr double massXiPlus = o2::constants::physics::MassXiPlusBar;
+
+  // Filter on default selected collisions
+  Filter collisionFilter = aod::lf_selection_event::defaultSel == true;
+
+  // Defining filters on Cascades (cannot filter on dynamic columns)
+  Filter cascadePreFilter = (nabs(aod::cascdata::dcapostopv) > cascadeConfigs.cascSettingDCAPosToPV &&
+                             nabs(aod::cascdata::dcanegtopv) > cascadeConfigs.cascSettingDCANegToPV &&
+                             nabs(aod::cascdata::dcabachtopv) > cascadeConfigs.cascSettingDCABachToPV &&
+                             aod::cascdata::dcaV0daughters < cascadeConfigs.cascSettingDCAV0Dau &&
+                             aod::cascdata::dcacascdaughters < cascadeConfigs.cascSettingDCACascDau);
+
+  // Defining the type of the collisions for data and MC
+  using SelCollisions = soa::Join<aod::Collisions, aod::CentFT0Ms, aod::PVMults, aod::PhiStrangeEvtSelDataLike>;
+  using SimCollisions = soa::Join<SelCollisions, aod::McCollisionLabels>;
+
+  using FilteredSelCollisions = soa::Filtered<SelCollisions>;
+  using FilteredSimCollisions = soa::Filtered<SimCollisions>;
+
+  // Defining the type of the Cascades and corresponding daughter and bachelor tracks for data and MC
+  using FullCascades = soa::Filtered<aod::CascDatas>;
+  using FullMCCascades = soa::Filtered<soa::Join<aod::CascDatas, aod::McCascLabels>>;
+
+  using DauTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullPr>;
+  using DauMCTracks = soa::Join<DauTracks, aod::McTrackLabels>;
+
+  void init(InitContext&)
+  {
+    AxisSpec binnedmultAxis{(std::vector<double>)binsMult, "centFT0M"};
+    AxisSpec binnedpTXiAxis{(std::vector<double>)binspTXi, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec massXiAxis = {200, 1.2f, 1.4f, "#it{M}_{inv} [GeV/#it{c}^{2}]"};
+
+    histos.add("h3XiCandidatesMass", "#Xi candidate invariant mass", kTH3F, {binnedmultAxis, binnedpTXiAxis, massXiAxis});
+  }
+
+  // Single track selection for strangeness sector
+  template <typename T>
+  bool selectionTrackStrangeness(const T& track)
+  {
+    if (!track.hasTPC())
+      return false;
+    if (track.tpcNClsFound() < trackConfigs.minTPCnClsFound)
+      return false;
+    if (track.tpcNClsCrossedRows() < trackConfigs.minNCrossedRowsTPC)
+      return false;
+    if (track.tpcChi2NCl() > trackConfigs.maxChi2TPC)
+      return false;
+
+    if (std::abs(track.eta()) > trackConfigs.etaMax)
+      return false;
+    return true;
+  }
+
+  // Cascade selection
+  template <bool isMC, typename T1, typename T2>
+  bool selectionCascade(const T1& cascade, const T2& collision)
+  {
+    using DauTrackType = std::conditional_t<isMC, DauMCTracks, DauTracks>;
+
+    const auto& posDaughterTrack = cascade.template posTrack_as<DauTrackType>();
+    const auto& negDaughterTrack = cascade.template negTrack_as<DauTrackType>();
+    const auto& bachDaughterTrack = cascade.template bachelor_as<DauTrackType>();
+
+    if (!selectionTrackStrangeness(posDaughterTrack) || !selectionTrackStrangeness(negDaughterTrack) || !selectionTrackStrangeness(bachDaughterTrack))
+      return false;
+
+    if constexpr (!isMC) {
+      if (std::abs(posDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion)
+        return false;
+      if (std::abs(negDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion)
+        return false;
+      if (std::abs(bachDaughterTrack.tpcNSigmaPr()) > trackConfigs.nSigmaCutTPCSecProton)
+        return false;
+    }
+
+    const auto& pvx = collision.posX();
+    const auto& pvy = collision.posY();
+    const auto& pvz = collision.posZ();
+
+    if (cascade.v0cosPA(pvx, pvy, pvz) < cascadeConfigs.cascSettingV0CosPA)
+      return false;
+    if (cascade.cascCosPA(pvx, pvy, pvz) < cascadeConfigs.cascSettingCosPA)
+      return false;
+    if (cascade.v0radius() < cascadeConfigs.cascSettingV0Radius)
+      return false;
+    if (cascade.cascradius() < cascadeConfigs.cascSettingRadius)
+      return false;
+    if (cascade.pt() < cascadeConfigs.cascSettingMinPt)
+      return false;
+
+    if (std::abs(cascade.yXi()) > cascadeConfigs.cfgYAcceptance)
+      return false;
+    return true;
+  }
+
+  void processData(FilteredSelCollisions::iterator const& collision, FullCascades const& cascades, DauTracks const& dauTracks)
+  {
+    for (const auto& cascade : cascades) {
+      // Cut on cascade dynamic columns
+      if (!selectionCascade<false>(cascade, collision))
+        continue;
+
+      histos.fill(HIST("h3XiCandidatesMass"), collision.centFT0M(), cascade.pt(), cascade.mXi());
+
+      xiReducedCandidatesData(collision.globalIndex(), cascade.mXi(), cascade.pt(), cascade.yXi(), cascade.phi());
+    }
+  }
+
+  PROCESS_SWITCH(XiReducedCandProducer, processData, "Process function to select reduced Xi candidates in Data or in McReco (w/o McTruth) analysis", true);
+
+  void processMCReco(FilteredSimCollisions::iterator const& collision, FullMCCascades const& V0s, DauMCTracks const&, aod::McParticles const& mcParticles)
+  {
+    for (const auto& cascade : cascades) {
+      if (!selectionCascade<true>(cascade, collision))
+        continue;
+      if (!cascade.has_mcParticle())
+        continue;
+
+      const auto& cascadeMcParticle = mcParticles.rawIteratorAt(cascade.mcParticleId());
+      if (std::abs(cascadeMcParticle.pdgCode()) != PDG_t::kXiPlusBar || !cascadeMcParticle.isPhysicalPrimary())
+        continue;
+
+      xiReducedCandidatesMcReco(collision.globalIndex(), cascade.mXi(), cascadeMcParticle.pt(), cascadeMcParticle.y(), cascadeMcParticle.phi());
+    }
+  }
+
+  PROCESS_SWITCH(XiReducedCandProducer, processMCReco, "Process function to select reduced Xi candidates in MCReco w MC truth", false);
 };
 
 struct PionTrackProducer {
@@ -1035,6 +1208,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<PhiMesonCandProducer>(cfgc),
                       adaptAnalysisTask<K0sReducedCandProducer>(cfgc),
+                      adaptAnalysisTask<XiReducedCandProducer>(cfgc),
                       adaptAnalysisTask<PionTrackProducer>(cfgc),
                       adaptAnalysisTask<EventSelectionProducer>(cfgc)};
 }
