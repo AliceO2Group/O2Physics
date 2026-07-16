@@ -243,15 +243,17 @@ struct NucleitpcPbPb {
 
   std::vector<PrimParticles> primaryParticles;
   std::vector<float> primVtx, cents;
-  bool collHasCandidate, collPassedEvSel;
-  int mRunNumber, occupancy;
-  float dBz;
-  TRandom3 rand;
-  float proton = 1;
-  float de = 2;
-  float triton = 3;
-  float he3 = 4;
-  float he4 = 5;
+    bool collHasCandidate = false;
+    bool collPassedEvSel = false;
+    int mRunNumber = 0;
+    int occupancy = 0;
+    float dBz = 0.0f;
+    TRandom3 rand;
+    float proton = 1;
+    float de = 2;
+    float triton = 3;
+    float he3 = 4;
+    float he4 = 5;
 
   //----------------------------------------------------------------------------------------------------------------
   void init(InitContext const&)
