@@ -648,8 +648,9 @@ struct JetShapeTask {
 
         float dEta = trkEta - jet.eta;
 
-        if (std::abs(dEta) > maxDistance)
+        if (std::abs(dEta) > maxDistance) {
           continue;
+        }
 
         float dPhi = RecoDecay::constrainAngle(trkPhi - jet.phi);
         float distance = std::sqrt(dEta * dEta + dPhi * dPhi);
@@ -1119,7 +1120,7 @@ struct JetShapeTask {
       }
 
       const auto matchedJets = detJet.matchedJetGeo();
-      if (matchedJets.size() == 0) {
+      if (matchedJets.empty()) {
         continue;
       }
 
