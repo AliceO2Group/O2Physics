@@ -19,6 +19,8 @@
 
 #include <Framework/Logger.h>
 
+#include <array>
+#include <cstddef>
 #include <string>
 
 std::array<std::string, static_cast<std::size_t>(EMCPhotonCut::EMCPhotonCuts::kNCuts)> EMCPhotonCut::mCutNames = {"Definition", "Energy", "NCell", "M02", "Timing", "TrackMatching", "SecTrackMatching", "Exotic"};

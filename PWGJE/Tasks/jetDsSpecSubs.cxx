@@ -178,6 +178,8 @@ struct JetDsSpecSubs {
       {"h_ds_jet_phi_mcp", ";#phi_{D_{S} jet}^{part};entries", {HistType::kTH1F, {{250, -1., 7.}}}},
       {"h_ds_jet_projection_mcp", ";z^{D_{S},jet}_{||, part};entries", {HistType::kTH1F, {{1000, 0., 2.}}}},
       {"h_ds_jet_distance_mcp", ";#DeltaR_{D_{S},jet}^{part};entries", {HistType::kTH1F, {{1000, 0., 1.}}}},
+      {"h_ds_jet_lambda11_mcp", ";#lambda_{1}^{1, part};entries", {HistType::kTH1F, {{200, 0., 1.0}}}},
+      {"h_ds_jet_lambda12_mcp", ";#lambda_{2}^{1, part};entries", {HistType::kTH1F, {{200, 0., 1.0}}}},
       {"hSparse_ds_mcp", ";#it{p}_{T,D_{S}}^{part};#it{p}_{T,jet}^{part};z^{D_{S},jet}_{||, part};#DeltaR_{D_{S},jet}^{part}", {HistType::kTHnSparseF, {{60, 0., 100.}, {60, 0., 100.}, {60, 0., 2.}, {60, 0., 1.0}}}},
     }};
   //========

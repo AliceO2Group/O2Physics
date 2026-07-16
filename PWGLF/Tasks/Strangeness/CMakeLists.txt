@@ -181,7 +181,7 @@ o2physics_add_dpl_workflow(strangenessderivedbinnedinfo
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lambdatwopartpolarization
+o2physics_add_dpl_workflow(lambda-two-part-polarization
     SOURCES lambdaTwoPartPolarization.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
