@@ -1273,7 +1273,6 @@ struct JetShapeTask {
       constexpr int ProducedByDecay = 4; // ROOT TMCProcess::kPDecay
       const bool isPrimary = mcParticle.isPhysicalPrimary();
       const bool isDecay = !isPrimary && mcParticle.getProcess() == ProducedByDecay;
-      const bool isMaterial = !isPrimary && !isDecay;
 
       const float recoPt = track.pt();
       const float mcPt = mcParticle.pt();
