@@ -266,10 +266,10 @@ struct Pi0EtaToGammaGamma {
   std::vector<float> occ_bin_edges;
 
   o2::ccdb::CcdbApi ccdbApi;
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
-  int mRunNumber;
-  float d_bz;
-  o2::emcal::Geometry* emcalGeom;
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  int mRunNumber = -1;
+  float d_bz = 0;
+  o2::emcal::Geometry* emcalGeom = nullptr;
 
   //---------------------------------------------------------------------------
   // In the following are tags defined which help to select the correct preslice and cuts
@@ -435,10 +435,11 @@ struct Pi0EtaToGammaGamma {
     }
 
     auto run3grp_timestamp = collision.timestamp();
-    o2::parameters::GRPObject* grpo = 0x0;
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!skipGRPOquery)
+    o2::parameters::GRPObject* grpo = nullptr;
+    o2::parameters::GRPMagField* grpmag = nullptr;
+    if (!skipGRPOquery) {
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    }
     if (grpo) {
       // Fetch magnetic field from ccdb for current collision
       d_bz = grpo->getNominalL3Field();
@@ -459,9 +460,9 @@ struct Pi0EtaToGammaGamma {
   ~Pi0EtaToGammaGamma()
   {
     delete emh1;
-    emh1 = 0x0;
+    emh1 = nullptr;
     delete emh2;
-    emh2 = 0x0;
+    emh2 = nullptr;
 
     used_photonIds_per_col.clear();
     used_photonIds_per_col.shrink_to_fit();
@@ -522,8 +523,7 @@ struct Pi0EtaToGammaGamma {
     fV0PhotonCut.SetNClassesMl(pcmcuts.cfg_nclasses_ml);
     fV0PhotonCut.SetMlTimestampCCDB(pcmcuts.cfg_timestamp_ccdb);
     fV0PhotonCut.SetCcdbUrl(ccdburl);
-    CentType mCentralityTypeMlEnum;
-    mCentralityTypeMlEnum = static_cast<CentType>(cfgCentEstimator.value);
+    auto mCentralityTypeMlEnum = static_cast<CentType>(cfgCentEstimator.value);
     fV0PhotonCut.SetCentralityTypeMl(mCentralityTypeMlEnum);
     fV0PhotonCut.SetCutDirMl(pcmcuts.cfg_cut_dir_ml);
     fV0PhotonCut.SetMlModelPathsCCDB(pcmcuts.cfg_model_paths_ccdb);
@@ -617,9 +617,7 @@ struct Pi0EtaToGammaGamma {
     int iRowLast = 24;
     if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::EMCAL_HALF) {
       iRowLast /= 2; // 2/3 sm case
-    } else if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::EMCAL_THIRD) {
-      iRowLast /= 3; // 1/3 sm case
-    } else if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::DCAL_EXT) {
+    } else if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::EMCAL_THIRD || emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::DCAL_EXT) {
       iRowLast /= 3; // 1/3 sm case
     }
 
@@ -693,7 +691,6 @@ struct Pi0EtaToGammaGamma {
         fRegistry.fill(HIST("Pair/rotation/hs"), mother2.M(), mother2.Pt(), eventWeight);
       }
     }
-    return;
   }
 
   /// \brief function to run the photon pairing
@@ -732,7 +729,7 @@ struct Pi0EtaToGammaGamma {
         continue;
       }
 
-      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      const std::array<float, 3> centralities = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       fV0PhotonCut.SetCentrality(centralities[cfgCentEstimator]);
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
@@ -770,9 +767,7 @@ struct Pi0EtaToGammaGamma {
       }
 
       int occbin = -1;
-      if (cfgOccupancyEstimator == 0) {
-        occbin = lower_bound(occ_bin_edges.begin(), occ_bin_edges.end(), collision.ft0cOccupancyInTimeRange()) - occ_bin_edges.begin() - 1;
-      } else if (cfgOccupancyEstimator == 1) {
+      if (cfgOccupancyEstimator == 1) {
         occbin = lower_bound(occ_bin_edges.begin(), occ_bin_edges.end(), collision.trackOccupancyInTimeRange()) - occ_bin_edges.begin() - 1;
       } else {
         occbin = lower_bound(occ_bin_edges.begin(), occ_bin_edges.end(), collision.ft0cOccupancyInTimeRange()) - occ_bin_edges.begin() - 1;

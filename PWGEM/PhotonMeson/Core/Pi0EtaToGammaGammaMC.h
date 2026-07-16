@@ -228,16 +228,16 @@ struct Pi0EtaToGammaGammaMC {
     o2::framework::Configurable<float> cfg_min_Ecluster{"cfg_min_Ecluster", 0.3, "Minimum cluster energy for PHOS in GeV"};
   } phoscuts;
 
-  TF1* f1fd_k0s_to_pi0;
+  TF1* f1fd_k0s_to_pi0 = nullptr;
   o2::framework::HistogramRegistry fRegistry{"output", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject, false, false};
   // static constexpr std::string_view event_types[2] = {"before/", "after/"};
   // static constexpr std::string_view event_pair_types[2] = {"same/", "mix/"};
-  static constexpr std::string_view kParnames[2] = {"Pi0/", "Eta/"};
+  static constexpr std::array<std::string_view, 2> kParnames = {"Pi0/", "Eta/"};
 
   o2::ccdb::CcdbApi ccdbApi;
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
-  int mRunNumber;
-  float d_bz;
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  int mRunNumber = 0;
+  float d_bz = 0;
 
   void init(o2::framework::InitContext&)
   {
@@ -291,10 +291,11 @@ struct Pi0EtaToGammaGammaMC {
     }
 
     auto run3grp_timestamp = collision.timestamp();
-    o2::parameters::GRPObject* grpo = 0x0;
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!skipGRPOquery)
+    o2::parameters::GRPObject* grpo = nullptr;
+    o2::parameters::GRPMagField* grpmag = nullptr;
+    if (!skipGRPOquery) {
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    }
     if (grpo) {
       // Fetch magnetic field from ccdb for current collision
       d_bz = grpo->getNominalL3Field();
@@ -315,7 +316,7 @@ struct Pi0EtaToGammaGammaMC {
   ~Pi0EtaToGammaGammaMC()
   {
     delete f1fd_k0s_to_pi0;
-    f1fd_k0s_to_pi0 = 0x0;
+    f1fd_k0s_to_pi0 = nullptr;
   }
 
   void DefineEMEventCut()
@@ -370,8 +371,7 @@ struct Pi0EtaToGammaGammaMC {
     fV0PhotonCut.SetNClassesMl(pcmcuts.cfg_nclasses_ml);
     fV0PhotonCut.SetMlTimestampCCDB(pcmcuts.cfg_timestamp_ccdb);
     fV0PhotonCut.SetCcdbUrl(ccdburl);
-    CentType mCentralityTypeMlEnum;
-    mCentralityTypeMlEnum = static_cast<CentType>(cfgCentEstimator.value);
+    auto mCentralityTypeMlEnum = static_cast<CentType>(cfgCentEstimator.value);
     fV0PhotonCut.SetCentralityTypeMl(mCentralityTypeMlEnum);
     fV0PhotonCut.SetCutDirMl(pcmcuts.cfg_cut_dir_ml);
     fV0PhotonCut.SetMlModelPathsCCDB(pcmcuts.cfg_model_paths_ccdb);
@@ -597,7 +597,7 @@ struct Pi0EtaToGammaGammaMC {
         continue;
       }
 
-      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      const std::array<float, 3> centralities = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       fV0PhotonCut.SetCentrality(centralities[cfgCentEstimator]);
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
@@ -730,10 +730,11 @@ struct Pi0EtaToGammaGammaMC {
           }
 
           if (g1mc.globalIndex() == g2mc.globalIndex()) {
-            if (o2::aod::pwgem::dilepton::utils::mcutil::getMotherPDGCode(g1mc, mcparticles) == PDG_t::kPi0)
+            if (o2::aod::pwgem::dilepton::utils::mcutil::getMotherPDGCode(g1mc, mcparticles) == PDG_t::kPi0) {
               fRegistry.fill(HIST("Pair/Pi0/hs_FromSameGamma"), v12.M(), v12.Pt(), wpair);
-            else if (o2::aod::pwgem::dilepton::utils::mcutil::getMotherPDGCode(g1mc, mcparticles) == o2::constants::physics::Pdg::kEta)
+            } else if (o2::aod::pwgem::dilepton::utils::mcutil::getMotherPDGCode(g1mc, mcparticles) == o2::constants::physics::Pdg::kEta) {
               fRegistry.fill(HIST("Pair/Eta/hs_FromSameGamma"), v12.M(), v12.Pt(), wpair);
+            }
             continue;
           }
 
@@ -951,7 +952,7 @@ struct Pi0EtaToGammaGammaMC {
         continue;
       }
 
-      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      std::array<float, 3> centralities = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
