@@ -99,7 +99,8 @@ struct EmcalQC {
 
   struct : ConfigurableGroup {
     std::string prefix = "axis_group";
-    ConfigurableAxis thnConfigAxisE{"thnConfigAxisE", {100, 0., 20.}, "pT axis for photon candidates"};
+    ConfigurableAxis thnConfigAxisE{"thnConfigAxisE", {100, 0., 20.}, "energy axis for photon candidates"};
+    ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0., 20.}, "pT axis for matched tracks"};
   } axisGroup;
 
   void defineEMEventCut()
@@ -151,7 +152,8 @@ struct EmcalQC {
     defineEMCCut();
     defineEMEventCut();
 
-    const AxisSpec thnAxisE{axisGroup.thnConfigAxisE, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec thnAxisE{axisGroup.thnConfigAxisE, "#it{E}} (GeV)"};
+    const AxisSpec thnAxisPt{axisGroup.thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thAxisdEta{200, -0.06, 0.06, "#Delta#eta"};
     const AxisSpec thAxisdPhi{200, -0.06, 0.06, "#Delta#varphi (rad)"};
 
@@ -171,6 +173,11 @@ struct EmcalQC {
       fRegistry.add("Cluster/hDeltaEtaPhiClosestPrimTracks", "#Delta#eta #Delta#varphi distribution of the Closest matched prim. track", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisE}, false);
       fRegistry.add("Cluster/hDeltaEtaPhiAllSecTracks", "#Delta#eta #Delta#varphi distribution of all matched sec. tracks", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisE}, false);
       fRegistry.add("Cluster/hDeltaEtaPhiClosestSecTracks", "#Delta#eta #Delta#varphi distribution of the Closest matched sec. track", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisE}, false);
+
+      fRegistry.add("Cluster/hDeltaEtaPhiAllPrimTracksTrackPt", "#Delta#eta #Delta#varphi distribution of all matched prim. tracks", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiClosestPrimTracksTrackPt", "#Delta#eta #Delta#varphi distribution of the Closest matched prim. track", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiAllSecTracksTrackPt", "#Delta#eta #Delta#varphi distribution of all matched sec. tracks", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
+      fRegistry.add("Cluster/hDeltaEtaPhiClosestSecTracksTrackPt", "#Delta#eta #Delta#varphi distribution of the Closest matched sec. track", HistType::kTH3D, {thAxisdEta, thAxisdPhi, thnAxisPt}, false);
     }
   }
 
@@ -294,16 +301,20 @@ struct EmcalQC {
       if (primTracksPerCluster.size() > 0) {
         const auto closestPrimTrack = primTracksPerCluster.begin();
         fRegistry.fill(HIST("Cluster/hDeltaEtaPhiClosestPrimTracks"), closestPrimTrack.deltaEta(), closestPrimTrack.deltaPhi(), cluster.e());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiClosestPrimTracksTrackPt"), closestPrimTrack.deltaEta(), closestPrimTrack.deltaPhi(), closestPrimTrack.trackPt());
       }
       for (const auto& matchedPrimTrack : primTracksPerCluster) {
         fRegistry.fill(HIST("Cluster/hDeltaEtaPhiAllPrimTracks"), matchedPrimTrack.deltaEta(), matchedPrimTrack.deltaPhi(), cluster.e());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiAllPrimTracksTrackPt"), matchedPrimTrack.deltaEta(), matchedPrimTrack.deltaPhi(), matchedPrimTrack.trackPt());
       }
       if (secTracksPerCluster.size() > 0) {
         const auto closestSecTrack = secTracksPerCluster.begin();
         fRegistry.fill(HIST("Cluster/hDeltaEtaPhiClosestSecTracks"), closestSecTrack.deltaEta(), closestSecTrack.deltaPhi(), cluster.e());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiClosestSecTracksTrackPt"), closestSecTrack.deltaEta(), closestSecTrack.deltaPhi(), closestSecTrack.trackPt());
       }
       for (const auto& matchedSecTrack : secTracksPerCluster) {
         fRegistry.fill(HIST("Cluster/hDeltaEtaPhiAllSecTracks"), matchedSecTrack.deltaEta(), matchedSecTrack.deltaPhi(), cluster.e());
+        fRegistry.fill(HIST("Cluster/hDeltaEtaPhiAllSecTracksTrackPt"), matchedSecTrack.deltaEta(), matchedSecTrack.deltaPhi(), matchedSecTrack.trackPt());
       }
 
       if (!fEMCCut.IsSelectedEMCal(EMCPhotonCut::EMCPhotonCuts::kTM, cluster, primTracksPerCluster)) { // Check whether cluster passes this cluster requirement, if not, fill why in the next row

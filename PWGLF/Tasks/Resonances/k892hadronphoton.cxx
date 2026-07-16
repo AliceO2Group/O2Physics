@@ -42,6 +42,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <string>
 #include <string_view>

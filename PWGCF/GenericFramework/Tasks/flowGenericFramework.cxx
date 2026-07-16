@@ -200,10 +200,11 @@ struct FlowGenericFramework {
     O2_DEFINE_CONFIGURABLE(cfgGlobalT0ALowSigma, float, -3., "Number of sigma deviations below expected value in global vs T0A correlation");
     O2_DEFINE_CONFIGURABLE(cfgGlobalT0AHighSigma, float, 4, "Number of sigma deviations above expected value in global vs T0A correlation");
   } cfgMultCorrCuts;
+  Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat.front().data(), 6, 3, {"pos_pi", "pos_ka", "pos_pr", "neg_pi", "neg_ka", "neg_pr"}, {"TPC", "TOF", "ITS"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
+  Configurable<LabeledArray<float>> resonanceCuts{"resonanceCuts", {LongArrayFloat.front().data(), 14, 3, {"cos_PAs", "massMin", "massMax", "PosTrackPt", "NegTrackPt", "DCAPosToPVMin", "DCANegToPVMin", "DCAxDaughters", "Lifetime", "RadiusMin", "RadiusMax", "Rapidity", "ArmPodMin", "MassRejection"}, {"K0", "Lambda", "Phi"}}, "Labeled array (float) for various cuts on resonances"};
+  Configurable<LabeledArray<int>> resonanceSwitches{"resonanceSwitches", {LongArrayInt.front().data(), 8, 3, {"UseParticle", "UseCosPA", "NMassBins", "UseDCAxDaughters", "UseProperLifetime", "UseV0Radius", "UseArmPodCut", "UseCompetingMassRejection"}, {"K0", "Lambda", "Phi"}}, "Labeled array (int) for various cuts on resonances"};
+
   struct : ConfigurableGroup {
-    Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat.front().data(), 6, 3, {"pos_pi", "pos_ka", "pos_pr", "neg_pi", "neg_ka", "neg_pr"}, {"TPC", "TOF", "ITS"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
-    Configurable<LabeledArray<float>> resonanceCuts{"resonanceCuts", {LongArrayFloat.front().data(), 14, 3, {"cos_PAs", "massMin", "massMax", "PosTrackPt", "NegTrackPt", "DCAPosToPVMin", "DCANegToPVMin", "DCAxDaughters", "Lifetime", "RadiusMin", "RadiusMax", "Rapidity", "ArmPodMin", "MassRejection"}, {"K0", "Lambda", "Phi"}}, "Labeled array (float) for various cuts on resonances"};
-    Configurable<LabeledArray<int>> resonanceSwitches{"resonanceSwitches", {LongArrayInt.front().data(), 8, 3, {"UseParticle", "UseCosPA", "NMassBins", "UseDCAxDaughters", "UseProperLifetime", "UseV0Radius", "UseArmPodCut", "UseCompetingMassRejection"}, {"K0", "Lambda", "Phi"}}, "Labeled array (int) for various cuts on resonances"};
     O2_DEFINE_CONFIGURABLE(cfgUseLsPhi, bool, true, "Use LikeSign for Phi v2")
     O2_DEFINE_CONFIGURABLE(cfgUseOnlyTPC, bool, true, "Use only TPC PID for daughter selection")
     O2_DEFINE_CONFIGURABLE(cfgFakeKaonCut, float, 0.1f, "Maximum difference in measured momentum and TPC inner ring momentum of particle")
@@ -553,9 +554,9 @@ struct FlowGenericFramework {
     gfwMemberCache.multGlobalV0ACutPars = cfgMultCorrCuts.cfgMultGlobalV0ACutPars;
     gfwMemberCache.multGlobalT0ACutPars = cfgMultCorrCuts.cfgMultGlobalT0ACutPars;
 
-    projectMatrix(cfgPIDCuts.nSigmas->getData(), tpcNsigmaCut, tofNsigmaCut, itsNsigmaCut);
-    readMatrix(cfgPIDCuts.resonanceCuts->getData(), resoCutVals);
-    readMatrix(cfgPIDCuts.resonanceSwitches->getData(), resoSwitchVals);
+    projectMatrix(nSigmas->getData(), tpcNsigmaCut, tofNsigmaCut, itsNsigmaCut);
+    readMatrix(resonanceCuts->getData(), resoCutVals);
+    readMatrix(resonanceSwitches->getData(), resoSwitchVals);
     printResoCuts();
 
     const auto& ptPtGaps = cfgPtPtGaps->getData();
@@ -608,8 +609,10 @@ struct FlowGenericFramework {
     AxisSpec v0aAxis = {1800, 0, 180000, "N_{ch} (V0A)"};
     AxisSpec multpvAxis = {3500, 0, 3500, "N_{ch} (PV)"};
     AxisSpec occAxis = {500, 0, 5000, "occupancy"};
-    AxisSpec multAxis = (doprocessOnTheFly && !cfgUseNch) ? bAxis : (cfgUseNch) ? nchAxis
-                                                                                : centAxis;
+    AxisSpec multAxis = (doprocessOnTheFly) ? bAxis : centAxis;
+    if (cfgUseNch) {
+      multAxis = nchAxis;
+    }
     AxisSpec dcaZAXis = {200, -2, 2, "DCA_{z} (cm)"};
     AxisSpec dcaXYAXis = {200, -1, 1, "DCA_{xy} (cm)"};
     AxisSpec singleCount = {1, 0, 1};
@@ -1000,21 +1003,21 @@ struct FlowGenericFramework {
       nSigmaVals[i][1] = tofNsigmaCut[i]; // TOF
       nSigmaVals[i][2] = itsNsigmaCut[i]; // ITS
     }
-    printTable(cfgPIDCuts.nSigmas.value, nSigmaVals, "nSigma PID Cuts");
+    printTable(nSigmas.value, nSigmaVals, "nSigma PID Cuts");
 
     // ----- Resonance Cuts -----
     std::vector<std::vector<float>> resoCutsVals(resoCutVals.size());
     for (size_t r = 0; r < resoCutVals.size(); ++r) {
       resoCutsVals[r] = std::vector<float>(resoCutVals[r].begin(), resoCutVals[r].end());
     }
-    printTable(cfgPIDCuts.resonanceCuts.value, resoCutsVals, "Resonance Cuts");
+    printTable(resonanceCuts.value, resoCutsVals, "Resonance Cuts");
 
     // ----- Resonance Switches -----
     std::vector<std::vector<float>> resoSwitchValsF(resoSwitchVals.size());
     for (size_t r = 0; r < resoSwitchVals.size(); ++r) {
       resoSwitchValsF[r] = std::vector<float>(resoSwitchVals[r].begin(), resoSwitchVals[r].end());
     }
-    printTable(cfgPIDCuts.resonanceSwitches.value, resoSwitchValsF, "Resonance Switches");
+    printTable(resonanceSwitches.value, resoSwitchValsF, "Resonance Switches");
   }
   enum QAFillTime {
     Before,
@@ -1086,7 +1089,7 @@ struct FlowGenericFramework {
         if (cfg.mEfficiency == nullptr) {
           LOGF(fatal, "Could not load efficiency histogram from %s", cfgEfficiency.cfgEfficiencyPath.value.c_str());
         }
-        LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.cfgEfficiencyPath.value.c_str(), (void*)cfg.mEfficiency);
+        LOGF(info, "Loaded efficiency histogram from %s", cfgEfficiency.cfgEfficiencyPath.value.c_str());
       } else {
         std::vector<std::string> species = {"ch", "pi", "ka", "pr", "k0", "lambda"};
         for (const auto& sp : species) {
@@ -2298,12 +2301,12 @@ struct FlowGenericFramework {
       return selection;
     }
     registryQA.fill(HIST("K0/hK0Count"), FillDaughterPt);
-    if (massK0s < resoCutVals[MassMin][K0] && massK0s > resoCutVals[MassMax][K0]) {
+    if (massK0s < resoCutVals[MassMin][K0] || massK0s > resoCutVals[MassMax][K0]) {
       return selection;
     }
     registryQA.fill(HIST("K0/hK0Count"), FillMassCut);
     // Rapidity correction
-    if (v0.yK0Short() > resoCutVals[Rapidity][K0]) {
+    if (std::abs(v0.yK0Short()) > resoCutVals[Rapidity][K0]) {
       return selection;
     }
     registryQA.fill(HIST("K0/hK0Count"), FillRapidityCut);
@@ -2387,7 +2390,7 @@ struct FlowGenericFramework {
     registryQA.fill(HIST("Lambda/hLambdaCount"), FillMassCut);
 
     // Rapidity correction
-    if (v0.yLambda() > resoCutVals[Rapidity][Lambda]) {
+    if (std::abs(v0.yLambda()) > resoCutVals[Rapidity][Lambda]) {
       return selection;
     }
     registryQA.fill(HIST("Lambda/hLambdaCount"), FillRapidityCut);
@@ -3002,6 +3005,11 @@ struct FlowGenericFramework {
             return;
           }
           fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyMotherRapidity);
+          auto selection = selectK0(collision, v0, tracks);
+          if (!selection.selected) {
+            return;
+          }
+          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencySelection);
           if (!areGeneratedDaughtersWithinEfficiencyEtaAcceptance(posMother)) {
             return;
           }
@@ -3010,12 +3018,8 @@ struct FlowGenericFramework {
             return;
           }
           fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyRecoDaughterEta);
-          auto selection = selectK0(collision, v0, tracks);
-          if (selection.selected) {
-            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencySelection);
-            registry.fill(HIST("Efficiency/efficiencyHist"), posMother.pt(), centrality, EfficiencyK0, EfficiencyReconstructed);
-            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyFilled);
-          }
+          registry.fill(HIST("Efficiency/efficiencyHist"), posMother.pt(), centrality, EfficiencyK0, EfficiencyReconstructed);
+          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyFilled);
           return;
         }
 
@@ -3026,6 +3030,11 @@ struct FlowGenericFramework {
             return;
           }
           fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyMotherRapidity);
+          auto selection = selectLambda(collision, v0, tracks);
+          if (!selection.selected) {
+            return;
+          }
+          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencySelection);
           if (!areGeneratedDaughtersWithinEfficiencyEtaAcceptance(posMother)) {
             return;
           }
@@ -3034,12 +3043,8 @@ struct FlowGenericFramework {
             return;
           }
           fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyRecoDaughterEta);
-          auto selection = selectLambda(collision, v0, tracks);
-          if (selection.selected) {
-            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencySelection);
-            registry.fill(HIST("Efficiency/efficiencyHist"), posMother.pt(), centrality, EfficiencyLambda, EfficiencyReconstructed);
-            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyFilled);
-          }
+          registry.fill(HIST("Efficiency/efficiencyHist"), posMother.pt(), centrality, EfficiencyLambda, EfficiencyReconstructed);
+          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyFilled);
           return;
         }
       }

@@ -282,7 +282,7 @@ struct he3HadronFemto {
     Configurable<float> settingCutNsigmaTOF{"settingCutNsigmaTOF", 3.0f, "Value of the TOF Nsigma cut"};
   } cutSettings;
 
-  Configurable<LabeledArray<int>> settingEventSelections{"settingEventSelections", {nuclei::EvSelDefault[0], 8, 1, nuclei::eventSelectionLabels, nuclei::eventSelectionTitle}, "Event selections"};
+  Configurable<LabeledArray<int>> settingEventSelections{"settingEventSelections", {nuclei::EvSelDefault[0], nuclei::evSel::kNevSels, 1, nuclei::eventSelectionLabels, nuclei::eventSelectionTitle}, "Event selections"};
   Configurable<int> settingNoMixedEvents{"settingNoMixedEvents", 5, "Number of mixed events per event"};
   Configurable<bool> settingEnableBkgUS{"settingEnableBkgUS", false, "Enable US background"};
   Configurable<bool> settingEnableDCAfitter{"settingEnableDCAfitter", false, "Enable DCA fitter"};

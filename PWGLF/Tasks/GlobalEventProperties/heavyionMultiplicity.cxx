@@ -18,8 +18,6 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
@@ -593,7 +591,7 @@ struct HeavyionMultiplicity {
 
         auto mcpart = Rectrack.mcParticle();
 
-        if (!isGenTrackSelected(mcpart)) {
+        if (isGenTrackSelected(mcpart)) {
           histos.fill(HIST("hdcaxyvsptMCprimary"), Rectrack.dcaXY(), Rectrack.pt());
           histos.fill(HIST("hdcazvsptMCprimary"), Rectrack.dcaZ(), Rectrack.pt());
         }

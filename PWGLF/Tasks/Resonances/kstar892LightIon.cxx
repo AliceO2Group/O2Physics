@@ -28,7 +28,6 @@
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
@@ -36,7 +35,6 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
@@ -140,7 +138,7 @@ struct Kstar892LightIon {
     // PID selections
     Configurable<int> pidStrategy{"pidStrategy", 0, "0=Standard, 1=pTDependent, 2=pTDependentTOF, 3=ThreePtDependent, 4=PIDCompare"};
     Configurable<int> pidMode{"pidMode", 0, "0=Combined,1=TPC,2=TOF,3=TOFHIT,4=TOFVeto"};
-    Configurable<int> midStrategy{"midStrategy", -1, "-1=Disabled, 0=Standard, 1=PtDependent, 2=PtDependentCompare"};
+    Configurable<int> misIdStrategy{"misIdStrategy", -1, "-1=Disabled, 0=Standard, 1=PtDependent, 2=PtDependentCompare"};
 
     Configurable<float> nsigmaCutTPCPi{"nsigmaCutTPCPi", 3.0, "TPC Nsigma cut for pions"};
     Configurable<float> nsigmaCutTPCKa{"nsigmaCutTPCKa", 3.0, "TPC Nsigma cut for kaons"};
@@ -149,16 +147,16 @@ struct Kstar892LightIon {
     Configurable<float> nsigmaCutCombinedKa{"nsigmaCutCombinedKa", 3.0, "Combined Nsigma cut for kaon"};
     Configurable<float> nsigmaCutCombinedPi{"nsigmaCutCombinedPi", 3.0, "Combined Nsigma cut for pion"};
 
-    Configurable<float> nsigmaCutTPCMID{"nsigmaCutTPCMID", 1.0, "MID Nsigma cut for pion and kaon in TPC"};
+    Configurable<float> nsigmaCutTpcMisId{"nsigmaCutTpcMisId", 1.0, "MID Nsigma cut for pion and kaon in TPC"};
 
     Configurable<bool> isApplyFakeTrack{"isApplyFakeTrack", false, "Fake track selection"};
     Configurable<float> cfgFakeTrackCutKa{"cfgFakeTrackCutKa", 0.3, "Cut based on momentum difference in global and TPC tracks for kaons"};
     Configurable<float> cfgFakeTrackCutPi{"cfgFakeTrackCutPi", 0.3, "Cut based on momentum difference in global and TPC tracks for pions"};
 
-    Configurable<float> pionMidPtLow{"pionMidPtLow", 1.0, "Low pT cut for pion in MID"};
-    Configurable<float> pionMidPtHigh{"pionMidPtHigh", 2.5, "High pT cut for pion in MID"};
-    Configurable<float> kaonMidPtLow{"kaonMidPtLow", 0.7, "Low pT cut for kaon in MID"};
-    Configurable<float> kaonMidPtHigh{"kaonMidPtHigh", 2.5, "High pT cut for kaon in MID"};
+    Configurable<float> pionMisIdPtLow{"pionMisIdPtLow", 1.0, "Low pT cut for pion in MID"};
+    Configurable<float> pionMisIdPtHigh{"pionMisIdPtHigh", 2.5, "High pT cut for pion in MID"};
+    Configurable<float> kaonMisIdPtLow{"kaonMisIdPtLow", 0.7, "Low pT cut for kaon in MID"};
+    Configurable<float> kaonMisIdPtHigh{"kaonMisIdPtHigh", 2.5, "High pT cut for kaon in MID"};
 
     Configurable<float> lowPtCutPid{"lowPtCutPid", 0.5, "Low pT cut for PID"};
     Configurable<float> highPtCutPid{"highPtCutPid", 6.0, "High pT cut for PID"};
@@ -180,15 +178,10 @@ struct Kstar892LightIon {
 
   // Confugrable for QA histograms
   Configurable<bool> cQAplots{"cQAplots", true, "cQAplots"};
+  Configurable<bool> additionalKin{"additionalKin", false, "Additional kinematics histograms for processMisIdKinematics"};
   Configurable<bool> cQAevents{"cQAevents", true, "centrality dist, Vz, Event Cut hists"};
 
   Configurable<int> selectCentEstimator{"selectCentEstimator", 0, "Select centrality estimator: 0 - FT0M, 1 - FT0A, 2 - FT0C, 3 - FV0A"};
-
-  Configurable<float> nchAcceptance{"nchAcceptance", 0.5, "Eta window to measure Nch MC for Nch vs Cent distribution"};
-
-  Configurable<int> nBinsNch{"nBinsNch", 400, "N bins Nch (|eta|<0.8)"};
-  Configurable<float> minNch{"minNch", 0, "Min Nch (|eta|<0.8)"};
-  Configurable<float> maxNch{"maxNch", 400, "Max Nch (|eta|<0.8)"};
 
   // Configurable for histograms
   ConfigurableAxis binsCentPlot{"binsCentPlot", {110, 0.0, 110}, "Centrality axis"};
@@ -381,9 +374,8 @@ struct Kstar892LightIon {
     // MC histograms
     if (doprocessGen) {
       hMC.add("Gen/hGenNo", "MC Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
-      hMC.add("Gen/hk892GenpT", "pT distribution of True MC K(892)0", kTH2F, {ptAxis, centralityAxis});
-      hMC.add("Gen/hk892GenpT2", "pT distribution of True MC K(892)0", kTH2F, {ptAxis, centralityAxis});
-      hMC.add("Gen/h1genmass", "Invariant mass of generated kstar meson", kTH1F, {invmassAxis});
+      hMC.add("Gen/h3KstarPtCentMassDirect", "pT distribution of generated K*0 with centrality and mass (direct from generator)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Gen/h3KstarPtCentMassRec", "pT distribution of generated K*0 with centrality and mass (reconstructed from daughter tracks)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
       hMC.add("Gen/h1GenCent", "centrality generated", kTH1F, {centralityAxis});
       hMC.add("Gen/hAllGenCollisions", "All generated events", kTH1F, {centralityAxis});
       hMC.add("Gen/hAllGenCollisions1Rec", "All gen events with at least one rec event", kTH1F, {centralityAxis});
@@ -393,11 +385,10 @@ struct Kstar892LightIon {
 
     if (doprocessRec) {
       hMC.add("Rec/hAllRecCollisions", "All reconstructed events", kTH1F, {centralityAxis});
-      hMC.add("Rec/h1KstarRecMass", "Invariant mass of kstar meson", kTH1F, {invmassAxis});
-      hMC.add("Rec/h3KstarRec", "pT of reconstructed kstar meson", kTH3F, {ptAxis, centralityAxis, invmassAxis});
-      hMC.add("Rec/h3KstarGen", "pT of generated kstar meson", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Rec/h3KstarPtCentMassrec", "pT of reconstructed K*0 with centrality and mass (reconstructed from rec daughter tracks)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+      hMC.add("Rec/h3KstarPtCentMassgen", "pT of reconstructed K*0 with centrality and mass (reconstructed from gen daughter tracks)", kTH3F, {ptAxis, centralityAxis, invmassAxis});
       hMC.add("Rec/h1RecCent", "centrality reconstructed", kTH1F, {centralityAxis});
-      hMC.add("Rec/h1KSRecsplit", "KS meson Rec split", kTH1F, {{100, 0.0f, 10.0f}});
+      hMC.add("Rec/h1KSRecsplit", "K*0 Rec split", kTH1F, {{100, 0.0f, 10.0f}});
 
       hMC.add("Rec/hMassShift", "#Delta M = m_{rec} - m_{gen}; #it{p}_{T}_{gen}; #it{p}_{T}_{rec}; #Delta M", kTH3F, {ptAxis, ptAxis, {2000, -0.1, 0.1}});
     }
@@ -507,37 +498,82 @@ struct Kstar892LightIon {
       hMC.add("Kinematics/hOtherMotherPDG", "Common mother PDG of non-K* pairs;PDG Code;M(K#pi) (GeV/c^{2})", kTH2F, {{100000, -50000.0, 50000.0}, invmassAxis});
     }
 
-    if (doprocessMCCheck) {
-      hMC.add("MCCheck/CentVsFoundFT0", "Found(=1.5) NOT Found(=0.5);;Status;", kTH2F, {{{centralityAxis}, {2, 0, 2}}});
-      hMC.add("MCCheck/zPosMC", "Generated Events With at least One Rec. Collision + Sel. criteria;;Entries;", kTH1F, {vertexZAxis});
-      hMC.add("MCCheck/zPos", "With Event Selection;;Entries;", kTH1F, {vertexZAxis});
-      hMC.add("MCCheck/Cent", ";;Entries", kTH1F, {centralityAxis});
-      hMC.add("MCCheck/NchVsCent", "Measured Nch v.s. Centrality (At least Once Rec. Coll. + Sel. criteria);;Nch", kTH2F, {{centralityAxis, {nBinsNch, minNch, maxNch}}});
+    if (doprocessMisIdKinematics) {
+      hMC.add("KinematicsMisId/hRecCent", "centrality reconstructed", kTH1F, {centralityAxis});
 
-      // MC events passing the TVX requirement
-      hMC.add("MCCheck/NchMCcentVsTVX", ";Passed(=1.5) NOT Passed(=0.5);", kTH2F, {{{nBinsNch, minNch, maxNch}, {2, 0, 2}}});
+      hMC.add("KinematicsMisId/hTrueKstar_PtDeltaRMass", "#DeltaR vs M(K#pi);#DeltaR;M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {200, 0.0, 5.0}, invmassAxis});
+      hMC.add("KinematicsMisId/hTrueKstar_PtCentMass", "p_{T} vs Centrality vs M(K#pi);p_{T} (GeV/c);Centrality (%);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, centralityAxis, invmassAxis});
 
-      hMC.add("MCCheck/NumberOfRecoCollisions", "Number of times Gen. Coll.are reconstructed;N;Entries", kTH1F, {{10, -0.5, 9.5}});
+      hMC.add("KinematicsMisId/hOmega_PtDeltaRMass", "#DeltaR vs M(K#pi);#DeltaR;M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {200, 0.0, 5.0}, invmassAxis});
+      hMC.add("KinematicsMisId/hOmega_PtCentMass", "p_{T} vs Centrality vs M(K#pi);p_{T} (GeV/c);Centrality (%);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, centralityAxis, invmassAxis});
 
-      // Needed for the Gen. Nch to Centrality conversion
-      hMC.add("MCCheck/NchMCVsCent", "Generated Nch v.s. Centrality (At least Once Rec. Coll. + Sel. criteria);;Gen. Nch MC (|#eta|<0.8)", kTH2F, {{centralityAxis, {nBinsNch, minNch, maxNch}}});
+      hMC.add("KinematicsMisId/hRho_PtDeltaRMass", "#DeltaR vs M(K#pi);#DeltaR;M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {200, 0.0, 5.0}, invmassAxis});
+      hMC.add("KinematicsMisId/hRho_PtCentMass", "p_{T} vs Centrality vs M(K#pi);p_{T} (GeV/c);Centrality (%);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, centralityAxis, invmassAxis});
 
-      // Needed to measure Event Loss
-      hMC.add("MCCheck/NchMC_WithRecoEvt", "Generated Nch of Evts With at least one Rec. Coll. + Sel. criteria;Gen. Nch MC (|#eta|<0.8);Entries", kTH1F, {{nBinsNch, minNch, maxNch}});
-      hMC.add("MCCheck/NchMC_AllGen", "Generated Nch of All Gen. Evts.;Gen. Nch;Entries", kTH1F, {{nBinsNch, minNch, maxNch}});
+      hMC.add("KinematicsMisId/hEta_PtDeltaRMass", "#DeltaR vs M(K#pi);#DeltaR;M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {200, 0.0, 5.0}, invmassAxis});
+      hMC.add("KinematicsMisId/hEta_PtCentMass", "p_{T} vs Centrality vs M(K#pi);p_{T} (GeV/c);Centrality (%);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, centralityAxis, invmassAxis});
 
-      // Needed to measure Event Splitting
-      hMC.add("MCCheck/Centrality_WRecoEvt", "Generated Events With at least One Rec. Collision And NO Sel. criteria;;Entries", kTH1F, {centralityAxis});
-      hMC.add("MCCheck/Centrality_WRecoEvtWSelCri", "Generated Events With at least One Rec. Collision + Sel. criteria;;Entries", kTH1F, {centralityAxis});
-      hMC.add("MCCheck/Centrality_AllRecoEvt", "Generated Events Irrespective of the number of times it was reconstructed + Evt. Selections;;Entries", kTH1F, {centralityAxis});
+      hMC.add("KinematicsMisId/hEtaP_PtDeltaRMass", "#DeltaR vs M(K#pi);#DeltaR;M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {200, 0.0, 5.0}, invmassAxis});
+      hMC.add("KinematicsMisId/hEtaP_PtCentMass", "p_{T} vs Centrality vs M(K#pi);p_{T} (GeV/c);Centrality (%);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, centralityAxis, invmassAxis});
 
-      hMC.add("MCCheck/PtKstarVsCentMC_WithRecoEvt", "Generated Events With at least One Rec. Collision;;;", kTH2F, {ptAxis, centralityAxis});
+      hMC.add("KinematicsMisId/hPhi_PtDeltaRMass", "#DeltaR vs M(K#pi);#DeltaR;M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {200, 0.0, 5.0}, invmassAxis});
+      hMC.add("KinematicsMisId/hPhi_PtCentMass", "p_{T} vs Centrality vs M(K#pi);p_{T} (GeV/c);Centrality (%);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, centralityAxis, invmassAxis});
 
-      // Needed to calculate the numerator of the Signal Loss correction
-      hMC.add("MCCheck/PtKstarVsNchMC_WithRecoEvt", "Generated Events With at least One Rec. Collision;;Gen. Nch (|#eta|<0.8);", kTH2F, {{ptAxis, {nBinsNch, minNch, maxNch}}});
+      hMC.add("KinematicsMisId/hKstarMisId_PtDeltaRMass", "#DeltaR vs M(K#pi);#DeltaR;M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {200, 0.0, 5.0}, invmassAxis});
+      hMC.add("KinematicsMisId/hKstarMisId_PtCentMass", "p_{T} vs Centrality vs M(K#pi);p_{T} (GeV/c);Centrality (%);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, centralityAxis, invmassAxis});
 
-      // Needed to calculate the denominator of the Signal Loss correction
-      hMC.add("MCCheck/PtKstarVsNchMC_AllGen", "All Generated Events;;Gen. Nch (|#eta|<0.8);", kTH2F, {{ptAxis, {nBinsNch, minNch, maxNch}}});
+      hMC.add("KinematicsMisId/hOtherMisId_PtDeltaRMass", "#DeltaR vs M(K#pi);#DeltaR;M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {200, 0.0, 5.0}, invmassAxis});
+      hMC.add("KinematicsMisId/hOtherMisId_PtCentMass", "p_{T} vs Centrality vs M(K#pi);p_{T} (GeV/c);Centrality (%);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, centralityAxis, invmassAxis});
+
+      if (additionalKin) {
+        hMC.add("KinematicsMisId/hTrueKstar_PtOpenAngleMass", "Opening angle vs M(K#pi);Opening angle (rad);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {180, 0., o2::constants::math::PI}, invmassAxis});
+        hMC.add("KinematicsMisId/hTrueKstar_PtDeltaPhiMass", "#Delta#phi vs M(K#pi);#Delta#phi (rad);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {180, -o2::constants::math::PI, o2::constants::math::PI}, invmassAxis});
+        hMC.add("KinematicsMisId/hTrueKstar_PtDeltaEtaMass", "#Delta#eta vs M(K#pi);#Delta#eta;M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {200, -2.0, 2.0}, invmassAxis});
+        hMC.add("KinematicsMisId/hTrueKstar_PtKaonPtMass", "Kaon p_{T} vs M(K#pi);p_{T}^{K} (GeV/c);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, ptAxis, invmassAxis});
+        hMC.add("KinematicsMisId/hTrueKstar_PtPionPtMass", "Pion p_{T} vs M(K#pi);p_{T}^{#pi} (GeV/c);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, ptAxis, invmassAxis});
+
+        hMC.add("KinematicsMisId/hOmega_PtOpenAngleMass", "Opening angle vs M(K#pi);Opening angle (rad);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {180, 0., o2::constants::math::PI}, invmassAxis});
+        hMC.add("KinematicsMisId/hOmega_PtDeltaPhiMass", "#Delta#phi vs M(K#pi);#Delta#phi (rad);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {180, -o2::constants::math::PI, o2::constants::math::PI}, invmassAxis});
+        hMC.add("KinematicsMisId/hOmega_PtDeltaEtaMass", "#Delta#eta vs M(K#pi);#Delta#eta;M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {200, -2.0, 2.0}, invmassAxis});
+        hMC.add("KinematicsMisId/hOmega_PtKaonPtMass", "Kaon p_{T} vs M(K#pi);p_{T}^{K} (GeV/c);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, ptAxis, invmassAxis});
+        hMC.add("KinematicsMisId/hOmega_PtPionPtMass", "Pion p_{T} vs M(K#pi);p_{T}^{#pi} (GeV/c);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, ptAxis, invmassAxis});
+
+        hMC.add("KinematicsMisId/hRho_PtOpenAngleMass", "Opening angle vs M(K#pi);Opening angle (rad);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {180, 0., o2::constants::math::PI}, invmassAxis});
+        hMC.add("KinematicsMisId/hRho_PtDeltaPhiMass", "#Delta#phi vs M(K#pi);#Delta#phi (rad);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {180, -o2::constants::math::PI, o2::constants::math::PI}, invmassAxis});
+        hMC.add("KinematicsMisId/hRho_PtDeltaEtaMass", "#Delta#eta vs M(K#pi);#Delta#eta;M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {200, -2.0, 2.0}, invmassAxis});
+        hMC.add("KinematicsMisId/hRho_PtKaonPtMass", "Kaon p_{T} vs M(K#pi);p_{T}^{K} (GeV/c);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, ptAxis, invmassAxis});
+        hMC.add("KinematicsMisId/hRho_PtPionPtMass", "Pion p_{T} vs M(K#pi);p_{T}^{#pi} (GeV/c);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, ptAxis, invmassAxis});
+
+        hMC.add("KinematicsMisId/hEta_PtOpenAngleMass", "Opening angle vs M(K#pi);Opening angle (rad);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {180, 0., o2::constants::math::PI}, invmassAxis});
+        hMC.add("KinematicsMisId/hEta_PtDeltaPhiMass", "#Delta#phi vs M(K#pi);#Delta#phi (rad);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {180, -o2::constants::math::PI, o2::constants::math::PI}, invmassAxis});
+        hMC.add("KinematicsMisId/hEta_PtDeltaEtaMass", "#Delta#eta vs M(K#pi);#Delta#eta;M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {200, -2.0, 2.0}, invmassAxis});
+        hMC.add("KinematicsMisId/hEta_PtKaonPtMass", "Kaon p_{T} vs M(K#pi);p_{T}^{K} (GeV/c);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, ptAxis, invmassAxis});
+        hMC.add("KinematicsMisId/hEta_PtPionPtMass", "Pion p_{T} vs M(K#pi);p_{T}^{#pi} (GeV/c);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, ptAxis, invmassAxis});
+
+        hMC.add("KinematicsMisId/hEtaP_PtOpenAngleMass", "Opening angle vs M(K#pi);Opening angle (rad);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {180, 0., o2::constants::math::PI}, invmassAxis});
+        hMC.add("KinematicsMisId/hEtaP_PtDeltaPhiMass", "#Delta#phi vs M(K#pi);#Delta#phi (rad);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {180, -o2::constants::math::PI, o2::constants::math::PI}, invmassAxis});
+        hMC.add("KinematicsMisId/hEtaP_PtDeltaEtaMass", "#Delta#eta vs M(K#pi);#Delta#eta;M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {200, -2.0, 2.0}, invmassAxis});
+        hMC.add("KinematicsMisId/hEtaP_PtKaonPtMass", "Kaon p_{T} vs M(K#pi);p_{T}^{K} (GeV/c);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, ptAxis, invmassAxis});
+        hMC.add("KinematicsMisId/hEtaP_PtPionPtMass", "Pion p_{T} vs M(K#pi);p_{T}^{#pi} (GeV/c);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, ptAxis, invmassAxis});
+
+        hMC.add("KinematicsMisId/hPhi_PtOpenAngleMass", "Opening angle vs M(K#pi);Opening angle (rad);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {180, 0., o2::constants::math::PI}, invmassAxis});
+        hMC.add("KinematicsMisId/hPhi_PtDeltaPhiMass", "#Delta#phi vs M(K#pi);#Delta#phi (rad);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {180, -o2::constants::math::PI, o2::constants::math::PI}, invmassAxis});
+        hMC.add("KinematicsMisId/hPhi_PtDeltaEtaMass", "#Delta#eta vs M(K#pi);#Delta#eta;M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {200, -2.0, 2.0}, invmassAxis});
+        hMC.add("KinematicsMisId/hPhi_PtKaonPtMass", "Kaon p_{T} vs M(K#pi);p_{T}^{K} (GeV/c);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, ptAxis, invmassAxis});
+        hMC.add("KinematicsMisId/hPhi_PtPionPtMass", "Pion p_{T} vs M(K#pi);p_{T}^{#pi} (GeV/c);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, ptAxis, invmassAxis});
+
+        hMC.add("KinematicsMisId/hKstarMisId_PtOpenAngleMass", "Opening angle vs M(K#pi);Opening angle (rad);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {180, 0., o2::constants::math::PI}, invmassAxis});
+        hMC.add("KinematicsMisId/hKstarMisId_PtDeltaPhiMass", "#Delta#phi vs M(K#pi);#Delta#phi (rad);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {180, -o2::constants::math::PI, o2::constants::math::PI}, invmassAxis});
+        hMC.add("KinematicsMisId/hKstarMisId_PtDeltaEtaMass", "#Delta#eta vs M(K#pi);#Delta#eta;M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {200, -2.0, 2.0}, invmassAxis});
+        hMC.add("KinematicsMisId/hKstarMisId_PtKaonPtMass", "Kaon p_{T} vs M(K#pi);p_{T}^{K} (GeV/c);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, ptAxis, invmassAxis});
+        hMC.add("KinematicsMisId/hKstarMisId_PtPionPtMass", "Pion p_{T} vs M(K#pi);p_{T}^{#pi} (GeV/c);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, ptAxis, invmassAxis});
+
+        hMC.add("KinematicsMisId/hOtherMisId_PtOpenAngleMass", "Opening angle vs M(K#pi);Opening angle (rad);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {180, 0., o2::constants::math::PI}, invmassAxis});
+        hMC.add("KinematicsMisId/hOtherMisId_PtDeltaPhiMass", "#Delta#phi vs M(K#pi);#Delta#phi (rad);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {180, -o2::constants::math::PI, o2::constants::math::PI}, invmassAxis});
+        hMC.add("KinematicsMisId/hOtherMisId_PtDeltaEtaMass", "#Delta#eta vs M(K#pi);#Delta#eta;M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, {200, -2.0, 2.0}, invmassAxis});
+        hMC.add("KinematicsMisId/hOtherMisId_PtKaonPtMass", "Kaon p_{T} vs M(K#pi);p_{T}^{K} (GeV/c);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, ptAxis, invmassAxis});
+        hMC.add("KinematicsMisId/hOtherMisId_PtPionPtMass", "Pion p_{T} vs M(K#pi);p_{T}^{#pi} (GeV/c);M(K#pi) (GeV/c^{2})", kTH3F, {ptAxis, ptAxis, invmassAxis});
+      }
     }
   }
 
@@ -744,14 +780,13 @@ struct Kstar892LightIon {
   template <typename T1, typename T2>
   bool selectionPair(const T1& candidate1, const T2& candidate2)
   {
-    double pt1 = candidate1.pt();
-    double pt2 = candidate2.pt();
-    double pz1 = candidate1.pz();
-    double pz2 = candidate2.pz();
-    double p1 = candidate1.p();
-    double p2 = candidate2.p();
-    double angle = std::acos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
-    return !selectionConfig.isApplyDeepAngle || angle >= selectionConfig.cfgDeepAngle;
+    if (!selectionConfig.isApplyDeepAngle) {
+      return true;
+    }
+
+    const double cosAngle = std::clamp(static_cast<double>((candidate1.pt() * candidate2.pt() + candidate1.pz() * candidate2.pz())) / (candidate1.p() * candidate2.p()), -1.0, 1.0);
+    const double cosDeepAngle = std::cos(selectionConfig.cfgDeepAngle);
+    return cosAngle <= cosDeepAngle;
   }
 
   template <typename T>
@@ -808,25 +843,24 @@ struct Kstar892LightIon {
   }
 
   template <typename T>
-  bool passTPC(const T& c, PIDParticle pid)
+  bool passTPC(const T& c, PIDParticle pid, float cut)
   {
-    return std::abs(tpcSigma(c, pid)) < tpcCut(pid);
+    return std::abs(tpcSigma(c, pid)) < cut;
   }
 
   template <typename T>
-  bool passTOF(const T& c, PIDParticle pid)
+  bool passTOF(const T& c, PIDParticle pid, float cut)
   {
-    return c.hasTOF() && std::abs(tofSigma(c, pid)) < tofCut(pid) && c.beta() > selectionConfig.cfgTOFBetaCut;
+    return c.hasTOF() && c.beta() > selectionConfig.cfgTOFBetaCut && std::abs(tofSigma(c, pid)) < cut;
   }
 
   template <typename T>
-  bool passCombined(const T& c, PIDParticle pid)
+  bool passCombined(const T& c, PIDParticle pid, float cut)
   {
     if (!c.hasTOF() || c.beta() <= selectionConfig.cfgTOFBetaCut) {
       return false;
     }
 
-    const float cut = combinedCut(pid);
     return combinedNSigma2(c, pid) < cut * cut;
   }
 
@@ -840,27 +874,27 @@ struct Kstar892LightIon {
       case PIDStrategy::Standard: {
         switch (mode) {
           case PIDMode::TPC: // Apply only TPC cut
-            return passTPC(candidate, pid);
+            return passTPC(candidate, pid, tpcCut(pid));
 
           case PIDMode::TOF: // Apply only TOF cut
-            return passTOF(candidate, pid);
+            return passTOF(candidate, pid, tofCut(pid));
 
           case PIDMode::TOFVeto: // Require TOF hit; apply both TPC and TOF cuts separately. Tracks without TOF are rejected.
-            return passTPC(candidate, pid) && passTOF(candidate, pid);
+            return passTPC(candidate, pid, tpcCut(pid)) && passTOF(candidate, pid, tofCut(pid));
 
           case PIDMode::TOFHIT: // Apply only TOF cut that has tof hits, apply TPC cut for the rest
             if (candidate.hasTOF()) {
-              return passTOF(candidate, pid);
+              return passTOF(candidate, pid, tofCut(pid));
             }
 
-            return passTPC(candidate, pid);
+            return passTPC(candidate, pid, tpcCut(pid));
 
           case PIDMode::Combined: // Apply combined cut if TOF is available, apply TPC cut for the rest
             if (candidate.hasTOF()) {
-              return passCombined(candidate, pid);
+              return passCombined(candidate, pid, combinedCut(pid));
             }
 
-            return passTPC(candidate, pid);
+            return passTPC(candidate, pid, tpcCut(pid));
 
           default:
             LOGF(fatal, "Unknown PID mode!");
@@ -871,10 +905,10 @@ struct Kstar892LightIon {
       case PIDStrategy::PtDependent: // Apply TPC and TOF cut above lowPtCut, apply TPC cut for the rest
       {
         if (candidate.hasTOF() && candidate.pt() >= selectionConfig.lowPtCutPid) {
-          return passTPC(candidate, pid) && passTOF(candidate, pid);
+          return passTPC(candidate, pid, tpcCut(pid)) && passTOF(candidate, pid, tofCut(pid));
         }
 
-        return passTPC(candidate, pid);
+        return passTPC(candidate, pid, tpcCut(pid));
       }
 
       case PIDStrategy::PtDependentTOF: // Apply combined cut (requires TOF) in specific pT window, apply TPC+TOF cut for tracks with TOF hit above lowPtCut, apply TPC cut for the rest.
@@ -882,14 +916,14 @@ struct Kstar892LightIon {
         const bool inPtWindow = (pid == PIDParticle::kPion) ? (candidate.pt() >= pionPidPtLow && candidate.pt() <= pionPidPtHigh) : (candidate.pt() >= kaonPidPtLow && candidate.pt() <= kaonPidPtHigh);
 
         if (inPtWindow) {
-          return passCombined(candidate, pid);
+          return passCombined(candidate, pid, combinedCut(pid));
         }
 
         if (candidate.hasTOF() && candidate.pt() >= selectionConfig.lowPtCutPid) {
-          return passTPC(candidate, pid) && passTOF(candidate, pid);
+          return passTPC(candidate, pid, tpcCut(pid)) && passTOF(candidate, pid, tofCut(pid));
         }
 
-        return passTPC(candidate, pid);
+        return passTPC(candidate, pid, tpcCut(pid));
       }
 
         /* case PIDStrategy::ThreePtDependent: // Apply pT-dependent TPC and TOF cuts using three pT regions
@@ -915,13 +949,12 @@ struct Kstar892LightIon {
 
         // Low-pT region
         if (candidate.pt() < selectionConfig.lowPtCutPid) {
+
           if (!candidate.hasTOF()) {
-            return std::abs(tpcSigma(candidate, pid)) < pidCut;
+            return passTPC(candidate, pid, pidCut);
           }
-          if (candidate.beta() <= selectionConfig.cfgTOFBetaCut) {
-            return false;
-          }
-          return combinedNSigma2(candidate, pid) < pidCut * pidCut;
+
+          return passCombined(candidate, pid, pidCut);
         }
 
         // Mid-pT region
@@ -931,17 +964,14 @@ struct Kstar892LightIon {
               if (!candidate.hasTOF() || candidate.beta() <= selectionConfig.cfgTOFBetaCut) {
                 return false;
               }
-              return combinedNSigma2(candidate, pid) < pidCut * pidCut;
+              return passCombined(candidate, pid, pidCut);
 
             case PIDMode::Combined: // Mid-pT region (If TOF available use combined cut, otherwise use TPC cut)
               if (!candidate.hasTOF()) {
-                return std::abs(tpcSigma(candidate, pid)) < pidCut;
-              }
-              if (candidate.beta() <= selectionConfig.cfgTOFBetaCut) {
-                return false;
+                return passTPC(candidate, pid, pidCut);
               }
 
-              return combinedNSigma2(candidate, pid) < pidCut * pidCut;
+              return passCombined(candidate, pid, pidCut);
 
             default:
               LOGF(fatal, "ThreePtDependent supports only Combined and TOFVeto modes.");
@@ -951,22 +981,19 @@ struct Kstar892LightIon {
 
         // High-pT region
         if (!candidate.hasTOF()) {
-          return std::abs(tpcSigma(candidate, pid)) < pidCut;
-        }
-        if (candidate.beta() <= selectionConfig.cfgTOFBetaCut) {
-          return false;
+          return passTPC(candidate, pid, pidCut);
         }
 
-        return combinedNSigma2(candidate, pid) < pidCut * pidCut;
+        return passCombined(candidate, pid, pidCut);
       }
 
       case PIDStrategy::PIDCompare: // Apply independent TPC/TOF cuts below lowPtCutPid, within lowPtCutPid and highPtCutPid, require TOF and accept the track only if its combined nsigma is smaller than that of the alternate PID hypothesis and above highPtCutPid if TOF is available, accept if the track passes combined cut and if TOF is not available, check if it passes TPC cut
       {
         if (candidate.pt() < selectionConfig.lowPtCutPid) {
           if (candidate.hasTOF()) {
-            return passTPC(candidate, pid) && passTOF(candidate, pid);
+            return passTPC(candidate, pid, tpcCut(pid)) && passTOF(candidate, pid, tofCut(pid));
           }
-          return passTPC(candidate, pid);
+          return passTPC(candidate, pid, tpcCut(pid));
         }
 
         if (candidate.pt() < selectionConfig.highPtCutPid) {
@@ -987,10 +1014,10 @@ struct Kstar892LightIon {
         }
 
         if (candidate.hasTOF()) {
-          return passCombined(candidate, pid);
+          return passCombined(candidate, pid, combinedCut(pid));
         }
 
-        return passTPC(candidate, pid);
+        return passTPC(candidate, pid, tpcCut(pid));
       }
 
       default:
@@ -1002,7 +1029,7 @@ struct Kstar892LightIon {
   template <typename T>
   bool isMisidentified(const T& candidate, PIDParticle pid)
   {
-    const auto strategy = static_cast<MIDStrategy>(selectionConfig.midStrategy.value);
+    const auto strategy = static_cast<MIDStrategy>(selectionConfig.misIdStrategy.value);
     const PIDParticle misPID = (pid == PIDParticle::kPion) ? PIDParticle::kKaon : PIDParticle::kPion;
 
     switch (strategy) {
@@ -1010,20 +1037,20 @@ struct Kstar892LightIon {
         return false;
 
       case MIDStrategy::Standard: // Reject if track also satisfies TPC cut for the opposite hypothesis
-        return std::abs(tpcSigma(candidate, misPID)) < selectionConfig.nsigmaCutTPCMID;
+        return std::abs(tpcSigma(candidate, misPID)) < selectionConfig.nsigmaCutTpcMisId;
 
       case MIDStrategy::PtDependent: // Reject if track is in MID pT window, has no TOF, and passes opposite TPC cut
       {
-        const float lowPt = (pid == PIDParticle::kPion) ? selectionConfig.pionMidPtLow : selectionConfig.kaonMidPtLow;
-        const float highPt = (pid == PIDParticle::kPion) ? selectionConfig.pionMidPtHigh : selectionConfig.kaonMidPtHigh;
+        const float lowPt = (pid == PIDParticle::kPion) ? selectionConfig.pionMisIdPtLow : selectionConfig.kaonMisIdPtLow;
+        const float highPt = (pid == PIDParticle::kPion) ? selectionConfig.pionMisIdPtHigh : selectionConfig.kaonMisIdPtHigh;
 
-        return candidate.pt() >= lowPt && candidate.pt() < highPt && !candidate.hasTOF() && std::abs(tpcSigma(candidate, misPID)) < selectionConfig.nsigmaCutTPCMID;
+        return candidate.pt() >= lowPt && candidate.pt() < highPt && !candidate.hasTOF() && std::abs(tpcSigma(candidate, misPID)) < selectionConfig.nsigmaCutTpcMisId;
       }
 
       case MIDStrategy::PtDependentCompare: // Reject if track is in MID pT window, has no TOF, and looks more like the opposite hypothesis than the signal hypothesis
       {
-        const float lowPt = (pid == PIDParticle::kPion) ? selectionConfig.pionMidPtLow : selectionConfig.kaonMidPtLow;
-        const float highPt = (pid == PIDParticle::kPion) ? selectionConfig.pionMidPtHigh : selectionConfig.kaonMidPtHigh;
+        const float lowPt = (pid == PIDParticle::kPion) ? selectionConfig.pionMisIdPtLow : selectionConfig.kaonMisIdPtLow;
+        const float highPt = (pid == PIDParticle::kPion) ? selectionConfig.pionMisIdPtHigh : selectionConfig.kaonMisIdPtHigh;
 
         return candidate.pt() >= lowPt && candidate.pt() < highPt && !candidate.hasTOF() && std::abs(tpcSigma(candidate, misPID)) < std::abs(tpcSigma(candidate, pid));
       }
@@ -1728,13 +1755,17 @@ struct Kstar892LightIon {
 
         if (std::abs(pdgDau) == PDG_t::kKPlus) {
           passkaon = true;
+          daughter1 = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massKa);
         } else if (std::abs(pdgDau) == PDG_t::kPiPlus) {
+          daughter2 = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massPi);
           passpion = true;
         }
       }
 
       if ((passkaon && passpion) && (hasPos && hasNeg)) {
-        hMC.fill(HIST("Gen/hk892GenpT"), mcParticle.pt(), centrality);
+        mother = daughter1 + daughter2;
+        hMC.fill(HIST("Gen/h3KstarPtCentMassDirect"), mcParticle.pt(), centrality, std::sqrt(mcParticle.e() * mcParticle.e() - mcParticle.p() * mcParticle.p()));
+        hMC.fill(HIST("Gen/h3KstarPtCentMassRec"), mother.Pt(), centrality, mother.M());
       }
     }
   }
@@ -2004,12 +2035,8 @@ struct Kstar892LightIon {
           genPt = mothertrack1.pt();
 
           hMC.fill(HIST("Rec/hMassShift"), genPt, recPt, recMass - genMass);
-
-          hMC.fill(HIST("Rec/h3KstarGen"), genPt, centrality, genMass);
-
-          hMC.fill(HIST("Rec/h1KstarRecMass"), recMass);
-
-          hMC.fill(HIST("Rec/h3KstarRec"), recPt, centrality, recMass);
+          hMC.fill(HIST("Rec/h3KstarPtCentMassgen"), genPt, centrality, genMass);
+          hMC.fill(HIST("Rec/h3KstarPtCentMassrec"), recPt, centrality, recMass);
         }
       }
     }
@@ -3112,230 +3139,193 @@ struct Kstar892LightIon {
   }
   PROCESS_SWITCH(Kstar892LightIon, processRecKinematics, "Process Reconstructed Kinematics", false);
 
-  Service<o2::framework::O2DatabasePDG> pdg{};
-
-  void processMCCheck(aod::McCollisions::iterator const& mccollision, soa::SmallGroups<EventCandidatesMC> const& collisions, aod::McParticles const& mcParticles, TrackCandidatesMC const&)
+  void processMisIdKinematics(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&, EventMCGenerated const&)
   {
-
-    //---------------------------
-    // Only INEL > 0 generated collisions
-    // By counting number of primary charged particles in |eta| < 1
-    //---------------------------
-    int nChMC{0};
-    int nChMCEta08{0};
-    int nChFT0A{0};
-    int nChFT0C{0};
-    static constexpr float MinCharge{3.f};
-    static constexpr float MinFT0A{3.5f};
-    static constexpr float MaxFT0A{4.9f};
-    static constexpr float MinFT0C{-3.3f};
-    static constexpr float MaxFT0C{-2.1f};
-    static constexpr float One{1.0f};
-    static constexpr int ZeroInt{0};
-
-    for (const auto& particle : mcParticles) {
-
-      auto charge{0.};
-      // Get the MC particle
-      const auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-      if (pdgParticle != nullptr) {
-        charge = pdgParticle->Charge();
-      } else {
-        continue;
-      }
-
-      // Is it a charged particle?
-      if (std::abs(charge) < MinCharge) {
-        continue;
-      }
-
-      // Is it a primary particle?
-      if (!particle.isPhysicalPrimary()) {
-        continue;
-      }
-
-      const float eta{particle.eta()};
-
-      // TVX requirement
-      if (eta > MinFT0A && eta < MaxFT0A) {
-        nChFT0A++;
-      }
-
-      if (eta > MinFT0C && eta < MaxFT0C) {
-        nChFT0C++;
-      }
-
-      if (std::abs(eta) < nchAcceptance) {
-        nChMCEta08++;
-      }
-
-      // INEL > 0
-      if (std::abs(eta) > One) {
-        continue;
-      }
-
-      nChMC++;
-    }
-
-    //---------------------------
-    // Only events with at least one charged particle in the FT0A and FT0C acceptances
-    //---------------------------
-    if (selectionConfig.selTVXMC) {
-      if (nChFT0A <= ZeroInt || nChFT0C <= ZeroInt) {
-        hMC.fill(HIST("MCCheck/NchMCcentVsTVX"), nChMC, 0.5);
-        return;
-      }
-      hMC.fill(HIST("MCCheck/NchMCcentVsTVX"), nChMC, 1.5);
-    }
-
-    //---------------------------
-    // Only MC events with |Vtx Z| < 10 cm
-    //---------------------------
-    if (selectionConfig.isZvtxPosSelMC && (std::fabs(mccollision.posZ()) > selectionConfig.cfgVrtxZCut)) {
+    if (!collision.has_mcCollision()) {
       return;
     }
 
-    //---------------------------
-    // Only INEL > 0 generated events
-    //---------------------------
-    if (selectionConfig.selINELgt0MC) {
-      if (!(nChMC > ZeroInt)) {
-        return;
-      }
+    if (!selectionEvent(collision, true)) {
+      return;
     }
 
-    const auto& nRecColls{collisions.size()};
-    hMC.fill(HIST("MCCheck/NumberOfRecoCollisions"), nRecColls);
+    centrality = -1;
+    if (selectCentEstimator == kFT0A) {
+      centrality = collision.centFT0A();
+    } else if (selectCentEstimator == kFT0C) {
+      centrality = collision.centFT0C();
+    } else if (selectCentEstimator == kFV0A) {
+      centrality = collision.centFV0A();
+    } else {
+      centrality = collision.centFT0M();
+    }
 
-    //---------------------------
-    // Only Generated evets with at least one reconstrued collision
-    //---------------------------
-    if (nRecColls > ZeroInt) {
+    hMC.fill(HIST("KinematicsMisId/hRecCent"), centrality);
 
-      // Finds the collisions with the largest number of contributors
-      // in case nRecColls is larger than One
-      int biggestNContribs{-1};
-      int bestCollisionIndex{-1};
-      centrality = -1.f;
-      for (const auto& collision : collisions) {
+    for (const auto& [track1, track2] : combinations(CombinationsFullIndexPolicy(tracks, tracks))) {
 
-        if (selectCentEstimator == kFT0A) {
-          centrality = collision.centFT0A();
-        } else if (selectCentEstimator == kFT0C) {
-          centrality = collision.centFT0C();
-        } else if (selectCentEstimator == kFV0A) {
-          centrality = collision.centFV0A();
-        } else {
-          centrality = collision.centFT0M(); // default includes kFT0M
-        }
-
-        if (selectionConfig.selHasFT0MC && !collision.has_foundFT0()) {
-          continue;
-        }
-
-        if (biggestNContribs < collision.numContrib()) {
-          biggestNContribs = collision.numContrib();
-          bestCollisionIndex = collision.globalIndex();
-        }
-
-        // Needed to calculate denominator of the Event Splitting correction
-        if (selectionEvent(collision, false)) {
-          hMC.fill(HIST("MCCheck/Centrality_AllRecoEvt"), centrality);
-        }
+      if (!selectionTrack(track1) || !selectionTrack(track2)) {
+        continue;
       }
-
-      //---------------------------
-      // Loop over the reconstructed collisions
-      // Only that one with the largest number of contributors is considered
-      //---------------------------
-      centrality = -1.f;
-      for (const auto& collision : collisions) {
-
-        if (selectCentEstimator == kFT0A) {
-          centrality = collision.centFT0A();
-        } else if (selectCentEstimator == kFT0C) {
-          centrality = collision.centFT0C();
-        } else if (selectCentEstimator == kFV0A) {
-          centrality = collision.centFV0A();
-        } else {
-          centrality = collision.centFT0M(); // default includes kFT0M
-        }
-
-        //---------------------------
-        // Reject collisions if has_foundFT0() returns false
-        //---------------------------
-        if (selectionConfig.selHasFT0MC && !collision.has_foundFT0()) {
-          hMC.fill(HIST("MCCheck/CentVsFoundFT0"), centrality, 0.5);
-          continue;
-        }
-        hMC.fill(HIST("MCCheck/CentVsFoundFT0"), centrality, 1.5);
-
-        //---------------------------
-        // Pick the collisions with the largest number of contributors
-        //---------------------------
-        if (bestCollisionIndex != collision.globalIndex()) {
-          continue;
-        }
-
-        //---------------------------
-        // Needed to construct the correlation between MC Nch v.s. centrality
-        //---------------------------
-
-        hMC.fill(HIST("MCCheck/Centrality_WRecoEvt"), centrality);
-        hMC.fill(HIST("MCCheck/zPosMC"), mccollision.posZ());
-
-        //---------------------------
-        // Event selection
-        // for reconstructed collisions
-        //---------------------------
-        if (!selectionEvent(collision, false)) {
-          continue;
-        }
-
-        hMC.fill(HIST("MCCheck/Centrality_WRecoEvtWSelCri"), centrality);
-        hMC.fill(HIST("MCCheck/NchMCVsCent"), centrality, nChMCEta08);
-        hMC.fill(HIST("MCCheck/NchMC_WithRecoEvt"), nChMCEta08); // Numerator of event loss correction
-        hMC.fill(HIST("MCCheck/zPos"), collision.posZ());
-        hMC.fill(HIST("MCCheck/Cent"), centrality);
-
-        //---------------------------
-        // All Generated events with at least one associated reconstructed collision
-        // The Generated events are not subjected to any selection criteria
-        // However, the associated reconstructed collisions pass the selection criteria
-        // This histograms are used for the denominator of the tracking efficiency
-        //---------------------------
-        for (const auto& mcPart : mcParticles) {
-          if ((mcPart.y() < selectionConfig.motherRapidityMin || mcPart.y() > selectionConfig.motherRapidityMax) || std::abs(mcPart.pdgCode()) != o2::constants::physics::kK0Star892) {
-            continue;
-          }
-
-          hMC.fill(HIST("MCCheck/PtKstarVsCentMC_WithRecoEvt"), mcPart.pt(), centrality);
-          hMC.fill(HIST("MCCheck/PtKstarVsNchMC_WithRecoEvt"), mcPart.pt(), nChMCEta08); // Numerator of signal loss
-        } // Loop over generated particles per generated collision
-        // hMC.fill(HIST("MCCheck/NchVsCent"), centrality, nCh);
-      } // Loop over Reco. Collisions: Only the collisions with the largest number of contributors
-    } // If condition: Only simulated evets with at least one reconstrued collision
-
-    //---------------------------
-    // All Generated events irrespective of whether there is an associated reconstructed collision
-    // Consequently, the centrality being a reconstructed quantity, might not always be available
-    // Therefore it is expressed as a function of the generated pT and the generated Nch in ∣eta∣ < 0.8
-    // This is used for the denominator of the signal loss correction
-    //---------------------------
-    for (const auto& mcPart : mcParticles) {
-      if ((mcPart.y() < selectionConfig.motherRapidityMin || mcPart.y() > selectionConfig.motherRapidityMax) || std::abs(mcPart.pdgCode()) != o2::constants::physics::kK0Star892) {
+      if (track1.globalIndex() == track2.globalIndex()) {
+        continue;
+      }
+      if (!selectionPair(track1, track2)) {
         continue;
       }
 
-      hMC.fill(HIST("MCCheck/PtKstarVsNchMC_AllGen"), mcPart.pt(), nChMCEta08);
-    } // Loop over Generated Particles
+      if (!selectionPID(track1, PIDParticle::kKaon)) {
+        continue;
+      }
+      if (!selectionPID(track2, PIDParticle::kPion)) {
+        continue;
+      }
 
-    //---------------------------
-    //  This is used for the denominator of the event loss correction
-    //---------------------------
-    hMC.fill(HIST("MCCheck/NchMC_AllGen"), nChMCEta08);
+      if (isMisidentified(track1, PIDParticle::kKaon)) {
+        continue;
+      }
+      if (isMisidentified(track2, PIDParticle::kPion)) {
+        continue;
+      }
+
+      if (selectionConfig.isApplyFakeTrack && (isFakeTrack(track1, PIDParticle::kKaon) || isFakeTrack(track2, PIDParticle::kPion))) {
+        continue;
+      }
+
+      daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+      daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
+      mother = daughter1 + daughter2;
+
+      double ptK = daughter1.Pt();
+      double ptPi = daughter2.Pt();
+      double ptPair = mother.Pt();
+      double mass = mother.M();
+
+      double cosAngle = (daughter1.Px() * daughter2.Px() + daughter1.Py() * daughter2.Py() + daughter1.Pz() * daughter2.Pz()) / (daughter1.P() * daughter2.P());
+      cosAngle = std::clamp(cosAngle, -1.0, 1.0);
+      double openAngle = std::acos(cosAngle);
+
+      double dPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi(), -o2::constants::math::PI);
+      double dEta = track1.eta() - track2.eta();
+      double dR = std::sqrt(dPhi * dPhi + dEta * dEta);
+
+      const auto mctrack1 = track1.mcParticle();
+      const auto mctrack2 = track2.mcParticle();
+
+      if (!mctrack1.isPhysicalPrimary() || !mctrack2.isPhysicalPrimary()) {
+        continue;
+      }
+
+      int truePdg1 = std::abs(mctrack1.pdgCode());
+      int truePdg2 = std::abs(mctrack2.pdgCode());
+
+      bool isFakeKaon = (truePdg1 != PDG_t::kKPlus);
+      bool isFakePion = (truePdg2 != PDG_t::kPiPlus);
+
+      bool hasCommonMother = false;
+      int commonMotherPDG = initialValue;
+
+      for (const auto& mother1 : mctrack1.mothers_as<aod::McParticles>()) {
+        for (const auto& mother2 : mctrack2.mothers_as<aod::McParticles>()) {
+          if (mother1.pdgCode() == mother2.pdgCode() && mother1.globalIndex() == mother2.globalIndex()) {
+            hasCommonMother = true;
+            commonMotherPDG = std::abs(mother1.pdgCode());
+            break;
+          }
+        }
+        if (hasCommonMother) {
+          break;
+        }
+      }
+
+      if (!isFakeKaon && !isFakePion && hasCommonMother && commonMotherPDG == o2::constants::physics::kK0Star892) { // True Signal (Correct identification and from a K*0)
+        if (additionalKin) {
+          hMC.fill(HIST("KinematicsMisId/hTrueKstar_PtOpenAngleMass"), ptPair, openAngle, mass);
+          hMC.fill(HIST("KinematicsMisId/hTrueKstar_PtDeltaPhiMass"), ptPair, dPhi, mass);
+          hMC.fill(HIST("KinematicsMisId/hTrueKstar_PtDeltaEtaMass"), ptPair, dEta, mass);
+          hMC.fill(HIST("KinematicsMisId/hTrueKstar_PtKaonPtMass"), ptPair, ptK, mass);
+          hMC.fill(HIST("KinematicsMisId/hTrueKstar_PtPionPtMass"), ptPair, ptPi, mass);
+        }
+        hMC.fill(HIST("KinematicsMisId/hTrueKstar_PtDeltaRMass"), ptPair, dR, mass);
+        hMC.fill(HIST("KinematicsMisId/hTrueKstar_PtCentMass"), ptPair, centrality, mass);
+      } else if (isFakeKaon || isFakePion) { // Correct identification but from a different mother
+        if (hasCommonMother) {
+          if (commonMotherPDG == o2::constants::physics::kOmega) { // Omega reflection
+            if (additionalKin) {
+              hMC.fill(HIST("KinematicsMisId/hOmega_PtOpenAngleMass"), ptPair, openAngle, mass);
+              hMC.fill(HIST("KinematicsMisId/hOmega_PtDeltaPhiMass"), ptPair, dPhi, mass);
+              hMC.fill(HIST("KinematicsMisId/hOmega_PtDeltaEtaMass"), ptPair, dEta, mass);
+              hMC.fill(HIST("KinematicsMisId/hOmega_PtKaonPtMass"), ptPair, ptK, mass);
+              hMC.fill(HIST("KinematicsMisId/hOmega_PtPionPtMass"), ptPair, ptPi, mass);
+            }
+            hMC.fill(HIST("KinematicsMisId/hOmega_PtDeltaRMass"), ptPair, dR, mass);
+            hMC.fill(HIST("KinematicsMisId/hOmega_PtCentMass"), ptPair, centrality, mass);
+          } else if (commonMotherPDG == PDG_t::kRho770_0) { // Rho reflection
+            if (additionalKin) {
+              hMC.fill(HIST("KinematicsMisId/hRho_PtOpenAngleMass"), ptPair, openAngle, mass);
+              hMC.fill(HIST("KinematicsMisId/hRho_PtDeltaPhiMass"), ptPair, dPhi, mass);
+              hMC.fill(HIST("KinematicsMisId/hRho_PtDeltaEtaMass"), ptPair, dEta, mass);
+              hMC.fill(HIST("KinematicsMisId/hRho_PtKaonPtMass"), ptPair, ptK, mass);
+              hMC.fill(HIST("KinematicsMisId/hRho_PtPionPtMass"), ptPair, ptPi, mass);
+            }
+            hMC.fill(HIST("KinematicsMisId/hRho_PtDeltaRMass"), ptPair, dR, mass);
+            hMC.fill(HIST("KinematicsMisId/hRho_PtCentMass"), ptPair, centrality, mass);
+          } else if (commonMotherPDG == o2::constants::physics::kEta) { // Eta reflection
+            if (additionalKin) {
+              hMC.fill(HIST("KinematicsMisId/hEta_PtOpenAngleMass"), ptPair, openAngle, mass);
+              hMC.fill(HIST("KinematicsMisId/hEta_PtDeltaPhiMass"), ptPair, dPhi, mass);
+              hMC.fill(HIST("KinematicsMisId/hEta_PtDeltaEtaMass"), ptPair, dEta, mass);
+              hMC.fill(HIST("KinematicsMisId/hEta_PtKaonPtMass"), ptPair, ptK, mass);
+              hMC.fill(HIST("KinematicsMisId/hEta_PtPionPtMass"), ptPair, ptPi, mass);
+            }
+            hMC.fill(HIST("KinematicsMisId/hEta_PtDeltaRMass"), ptPair, dR, mass);
+            hMC.fill(HIST("KinematicsMisId/hEta_PtCentMass"), ptPair, centrality, mass);
+          } else if (commonMotherPDG == o2::constants::physics::kEtaPrime) { // Eta' reflection
+            if (additionalKin) {
+              hMC.fill(HIST("KinematicsMisId/hEtaP_PtOpenAngleMass"), ptPair, openAngle, mass);
+              hMC.fill(HIST("KinematicsMisId/hEtaP_PtDeltaPhiMass"), ptPair, dPhi, mass);
+              hMC.fill(HIST("KinematicsMisId/hEtaP_PtDeltaEtaMass"), ptPair, dEta, mass);
+              hMC.fill(HIST("KinematicsMisId/hEtaP_PtKaonPtMass"), ptPair, ptK, mass);
+              hMC.fill(HIST("KinematicsMisId/hEtaP_PtPionPtMass"), ptPair, ptPi, mass);
+            }
+            hMC.fill(HIST("KinematicsMisId/hEtaP_PtDeltaRMass"), ptPair, dR, mass);
+            hMC.fill(HIST("KinematicsMisId/hEtaP_PtCentMass"), ptPair, centrality, mass);
+          } else if (commonMotherPDG == o2::constants::physics::kPhi) { // Phi reflection
+            if (additionalKin) {
+              hMC.fill(HIST("KinematicsMisId/hPhi_PtOpenAngleMass"), ptPair, openAngle, mass);
+              hMC.fill(HIST("KinematicsMisId/hPhi_PtDeltaPhiMass"), ptPair, dPhi, mass);
+              hMC.fill(HIST("KinematicsMisId/hPhi_PtDeltaEtaMass"), ptPair, dEta, mass);
+              hMC.fill(HIST("KinematicsMisId/hPhi_PtKaonPtMass"), ptPair, ptK, mass);
+              hMC.fill(HIST("KinematicsMisId/hPhi_PtPionPtMass"), ptPair, ptPi, mass);
+            }
+            hMC.fill(HIST("KinematicsMisId/hPhi_PtDeltaRMass"), ptPair, dR, mass);
+            hMC.fill(HIST("KinematicsMisId/hPhi_PtCentMass"), ptPair, centrality, mass);
+          } else if (commonMotherPDG == o2::constants::physics::kK0Star892) { // K*0 self reflection
+            if (additionalKin) {
+              hMC.fill(HIST("KinematicsMisId/hKstarMisId_PtOpenAngleMass"), ptPair, openAngle, mass);
+              hMC.fill(HIST("KinematicsMisId/hKstarMisId_PtDeltaPhiMass"), ptPair, dPhi, mass);
+              hMC.fill(HIST("KinematicsMisId/hKstarMisId_PtDeltaEtaMass"), ptPair, dEta, mass);
+              hMC.fill(HIST("KinematicsMisId/hKstarMisId_PtKaonPtMass"), ptPair, ptK, mass);
+              hMC.fill(HIST("KinematicsMisId/hKstarMisId_PtPionPtMass"), ptPair, ptPi, mass);
+            }
+            hMC.fill(HIST("KinematicsMisId/hKstarMisId_PtDeltaRMass"), ptPair, dR, mass);
+            hMC.fill(HIST("KinematicsMisId/hKstarMisId_PtCentMass"), ptPair, centrality, mass);
+          }
+        } else { // Correct indentification but no common mother
+          if (additionalKin) {
+            hMC.fill(HIST("KinematicsMisId/hOtherMisId_PtOpenAngleMass"), ptPair, openAngle, mass);
+            hMC.fill(HIST("KinematicsMisId/hOtherMisId_PtDeltaPhiMass"), ptPair, dPhi, mass);
+            hMC.fill(HIST("KinematicsMisId/hOtherMisId_PtDeltaEtaMass"), ptPair, dEta, mass);
+            hMC.fill(HIST("KinematicsMisId/hOtherMisId_PtKaonPtMass"), ptPair, ptK, mass);
+            hMC.fill(HIST("KinematicsMisId/hOtherMisId_PtPionPtMass"), ptPair, ptPi, mass);
+          }
+          hMC.fill(HIST("KinematicsMisId/hOtherMisId_PtDeltaRMass"), ptPair, dR, mass);
+          hMC.fill(HIST("KinematicsMisId/hOtherMisId_PtCentMass"), ptPair, centrality, mass);
+        }
+      }
+    }
   }
-  PROCESS_SWITCH(Kstar892LightIon, processMCCheck, "Cross-check MC analysis", false);
+  PROCESS_SWITCH(Kstar892LightIon, processMisIdKinematics, "Process Signal vs Misid Background Kinematics", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

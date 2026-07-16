@@ -250,6 +250,7 @@ using StoredFTrackMasks = StoredFTrackMasks_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackMass_001, "FTRACKMASS", 1, //! track mass
                                    femtobase::stored::Mass);
 using FTrackMass = FTrackMass_001;
+using StoredFTrackMass = StoredFTrackMass_001;
 
 // table for track DCA
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackDcas_001, "FTRACKDCAS", 1, //! track dcas
@@ -653,10 +654,12 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FXis_001, "FXI", 1, //! femto xis
                                    femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FXis = FXis_001;
+using StoredFXis = StoredFXis_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiMasks_001, "FXIMASK", 1, //! xi masks
                                    femtocascades::Mask);
 using FXiMasks = FXiMasks_001;
+using StoredFXiMasks = StoredFXiMasks_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiExtras_001, "FXIEXTRA", 1, //! xi extra information
                                    femtocascades::MassOmega,
@@ -687,10 +690,12 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegas_001, "FOMEGA", 1, //! femto omegas
                                    femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FOmegas = FOmegas_001;
+using StoredFOmegas = StoredFOmegas_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaMasks_001, "FOMEGAMASK", 1, //! omega masks
                                    femtocascades::Mask);
 using FOmegaMasks = FOmegaMasks_001;
+using StoredFOmegaMasks = StoredFOmegaMasks_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaExtras_001, "FOMEGAEXTRA", 1, //! omega extra information
                                    femtocascades::MassXi,

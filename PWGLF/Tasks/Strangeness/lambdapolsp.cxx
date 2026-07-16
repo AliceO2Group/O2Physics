@@ -310,6 +310,31 @@ struct lambdapolsp {
         histos.add("hpQxtvscent", "hpQxtvscent", HistType::kTHnSparseF, {axisGrp.configcentAxis, spAxis}, true);
         histos.add("hpQypvscent", "hpQypvscent", HistType::kTHnSparseF, {axisGrp.configcentAxis, spAxis}, true);
         histos.add("hpQytvscent", "hpQytvscent", HistType::kTHnSparseF, {axisGrp.configcentAxis, spAxis}, true);
+
+        histos.add("hpQxtQxpvscentptetaTrack",
+                   "QxZNAQxZNC track weighted;centrality;p_{T};#eta;Q_{x}^{ZNA}Q_{x}^{ZNC}",
+                   kTHnSparseF,
+                   {axisGrp.configcentAxis, axisGrp.configthnAxispT, axisGrp.configetaAxis, spAxis});
+
+        histos.add("hpQytQypvscentptetaTrack",
+                   "QyZNAQyZNC track weighted;centrality;p_{T};#eta;Q_{y}^{ZNA}Q_{y}^{ZNC}",
+                   kTHnSparseF,
+                   {axisGrp.configcentAxis, axisGrp.configthnAxispT, axisGrp.configetaAxis, spAxis});
+
+        histos.add("hpQxytpvscentptetaTrack",
+                   "QxQx + QyQy track weighted;centrality;p_{T};#eta;Q_{x}Q_{x}+Q_{y}Q_{y}",
+                   kTHnSparseF,
+                   {axisGrp.configcentAxis, axisGrp.configthnAxispT, axisGrp.configetaAxis, spAxis});
+
+        histos.add("hpQxpQytvscentptetaTrack",
+                   "QxZNAQyZNC track weighted;centrality;p_{T};#eta;Q_{x}^{ZNA}Q_{y}^{ZNC}",
+                   kTHnSparseF,
+                   {axisGrp.configcentAxis, axisGrp.configthnAxispT, axisGrp.configetaAxis, spAxis});
+
+        histos.add("hpQxtQypvscentptetaTrack",
+                   "QxZNCQyZNA track weighted;centrality;p_{T};#eta;Q_{x}^{ZNC}Q_{y}^{ZNA}",
+                   kTHnSparseF,
+                   {axisGrp.configcentAxis, axisGrp.configthnAxispT, axisGrp.configetaAxis, spAxis});
       } else {
         histos.add("hpuxQxpvscentpteta", "hpuxQxpvscentpteta", HistType::kTHnSparseF, {axisGrp.configcentAxis, axisGrp.configthnAxispT, axisGrp.configetaAxis, spAxis}, true);
         histos.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", HistType::kTHnSparseF, {axisGrp.configcentAxis, axisGrp.configthnAxispT, axisGrp.configetaAxis, spAxis}, true);
@@ -1176,6 +1201,21 @@ struct lambdapolsp {
           histos.fill(HIST("hpuxyQxypvscentpteta"), centrality, track.pt(), track.eta(), uxyQxyp, wNUA);
           histos.fill(HIST("hpoddv1vscentpteta"), centrality, track.pt(), track.eta(), oddv1, wNUA);
           histos.fill(HIST("hpevenv1vscentpteta"), centrality, track.pt(), track.eta(), evenv1, wNUA);
+
+          histos.fill(HIST("hpQxtQxpvscentptetaTrack"),
+                      centrality, track.pt(), track.eta(), QxtQxp, wNUA);
+
+          histos.fill(HIST("hpQytQypvscentptetaTrack"),
+                      centrality, track.pt(), track.eta(), QytQyp, wNUA);
+
+          histos.fill(HIST("hpQxytpvscentptetaTrack"),
+                      centrality, track.pt(), track.eta(), Qxytp, wNUA);
+
+          histos.fill(HIST("hpQxpQytvscentptetaTrack"),
+                      centrality, track.pt(), track.eta(), QxpQyt, wNUA);
+
+          histos.fill(HIST("hpQxtQypvscentptetaTrack"),
+                      centrality, track.pt(), track.eta(), QxtQyp, wNUA);
           /*
                 histos.fill(HIST("hpv21"), centrality, track.pt(), track.eta(), v21,wNUA);
                 histos.fill(HIST("hpv22"), centrality, track.pt(), track.eta(), v22,wNUA);
@@ -1231,6 +1271,21 @@ struct lambdapolsp {
           histos.fill(HIST("hpuxyQxypvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uxyQxyp, wNUA);
           histos.fill(HIST("hpoddv1vscentpteta"), centrality, track.pt(), track.eta(), oddv1, wNUA);
           histos.fill(HIST("hpevenv1vscentpteta"), centrality, track.pt(), track.eta(), evenv1, wNUA);
+
+          histos.fill(HIST("hpQxtQxpvscentptetaTrack"),
+                      centrality, track.pt(), track.eta(), QxtQxp, wNUA);
+
+          histos.fill(HIST("hpQytQypvscentptetaTrack"),
+                      centrality, track.pt(), track.eta(), QytQyp, wNUA);
+
+          histos.fill(HIST("hpQxytpvscentptetaTrack"),
+                      centrality, track.pt(), track.eta(), Qxytp, wNUA);
+
+          histos.fill(HIST("hpQxpQytvscentptetaTrack"),
+                      centrality, track.pt(), track.eta(), QxpQyt, wNUA);
+
+          histos.fill(HIST("hpQxtQypvscentptetaTrack"),
+                      centrality, track.pt(), track.eta(), QxtQyp, wNUA);
         }
       }
     } else {
@@ -1805,7 +1860,7 @@ struct lambdapolsp {
   {
     TRandom3 randGen(0);
 
-    for (auto& [collision1, collision2] : selfCombinations(colBinning, meGrp.nMix, -1, collisions, collisions)) {
+    for (const auto& [collision1, collision2] : selfCombinations(colBinning, meGrp.nMix, -1, collisions, collisions)) {
 
       if (collision1.index() == collision2.index()) {
         continue;
@@ -1940,7 +1995,7 @@ struct lambdapolsp {
   {
     TRandom3 randGen(0);
 
-    for (auto& [collision1, collision2] : selfCombinations(colBinning, meGrp.nMix, -1, collisions, collisions)) {
+    for (const auto& [collision1, collision2] : selfCombinations(colBinning, meGrp.nMix, -1, collisions, collisions)) {
 
       if (collision1.index() == collision2.index()) {
         continue;
