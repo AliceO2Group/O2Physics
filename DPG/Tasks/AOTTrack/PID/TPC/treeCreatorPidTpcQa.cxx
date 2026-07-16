@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file TreeCreatorPidTpcQa.cxx
-/// \brief Task to produce table with clean selections for TPC PID calibration
+/// \file treeCreatorPidTpcQa.cxx
+/// \brief Creates trees with PID QA variables along with variables used for NN training
 ///
 /// \author Ana Marin <ana.marin@cern.ch>
 /// \author Oleksii Lubynets <oleksii.lubynets@cern.ch>
