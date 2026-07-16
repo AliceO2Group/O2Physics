@@ -71,10 +71,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace constants::math;
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, (DEFAULT), HELP};
 
 static constexpr float PairCutOff = -1.f;
-static constexpr float CfgPairCutDefaults[1][5] = {{PairCutOff, PairCutOff, PairCutOff, PairCutOff, PairCutOff}};
+static constexpr std::array<std::array<float, 5>, 1> CfgPairCutDefaults{{{PairCutOff, PairCutOff, PairCutOff, PairCutOff, PairCutOff}}};
 
 struct Nucleibalance {
   SliceCache cache;
@@ -172,14 +172,17 @@ struct Nucleibalance {
   {
     if (cfgTrigger.value == TriggerNone) {
       return true;
-    } else if (cfgTrigger.value == TriggerSel8) {
+    }
+    if (cfgTrigger.value == TriggerSel8) {
       return collision.sel8();
-    } else if (cfgTrigger.value == TriggerSel8Quality) {
+    }
+    if (cfgTrigger.value == TriggerSel8Quality) {
       return collision.sel8() &&
              collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
              collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
              collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
-    } else if (cfgTrigger.value == TriggerSel8OccQuality) {
+    }
+    if (cfgTrigger.value == TriggerSel8OccQuality) {
       const int occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy < cfgMinOcc.value || occupancy >= cfgMaxOcc.value) {
         return false;
@@ -189,7 +192,8 @@ struct Nucleibalance {
              collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
              collision.selection_bit(aod::evsel::kNoCollInTimeRangeStandard) &&
              collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
-    } else if (cfgTrigger.value == TriggerSel8NoSbpZvtx) {
+    }
+    if (cfgTrigger.value == TriggerSel8NoSbpZvtx) {
       return collision.sel8() &&
              collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
              collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV);
@@ -270,7 +274,7 @@ struct Nucleibalance {
   std::vector<float> efficiencyAssociatedCache;
 
   std::unique_ptr<TFormula> multCutFormula;
-  std::array<uint, 4> multCutFormulaParamIndex;
+  std::array<uint, 4> multCutFormulaParamIndex{};
 
   struct Config {
     bool mPairCuts = false;
@@ -282,7 +286,7 @@ struct Nucleibalance {
   HistogramRegistry registry{"registry"};
   PairCuts mPairCuts;
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   // AO2D-based tracks with PID for pi / K / p / d
   using TracksPID = soa::Join<aod::Tracks,
@@ -394,11 +398,16 @@ struct Nucleibalance {
   }
 
   struct SimpleTrack {
-    float eta;
-    float phi;
-    float pt;
-    int charge;
+    float eta{};
+    float phi{};
+    float pt{};
+    int charge{};
   };
+
+  static SimpleTrack makeSimpleTrack(float eta, float phi, float pt, int charge)
+  {
+    return SimpleTrack{.eta = eta, .phi = phi, .pt = pt, .charge = charge};
+  }
 
   struct MixEventEntry {
     float multiplicity = 0.f;
@@ -424,17 +433,22 @@ struct Nucleibalance {
     registry.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, o2::constants::math::TwoPI, "#varphi"}}});
 
     if (doprocessSameDerivedMultSet) {
-      if (cfgMultCorrelationsMask == 0)
+      if (cfgMultCorrelationsMask.value == 0u) {
         LOGF(fatal, "cfgMultCorrelationsMask can not be 0 when MultSet process functions are in use.");
+      }
       std::vector<AxisSpec> multAxes;
-      if (cfgMultCorrelationsMask & aod::cfmultset::CentFT0C)
+      if ((cfgMultCorrelationsMask.value & aod::cfmultset::CentFT0C) != 0u) {
         multAxes.emplace_back(100, 0, 100, "FT0C centrality");
-      if (cfgMultCorrelationsMask & aod::cfmultset::MultFV0A)
+      }
+      if ((cfgMultCorrelationsMask.value & aod::cfmultset::MultFV0A) != 0u) {
         multAxes.emplace_back(1000, 0, 100000, "V0A multiplicity");
-      if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksPV)
+      }
+      if ((cfgMultCorrelationsMask.value & aod::cfmultset::MultNTracksPV) != 0u) {
         multAxes.emplace_back(100, 0, 1000, "Nch PV");
-      if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksGlobal)
+      }
+      if ((cfgMultCorrelationsMask.value & aod::cfmultset::MultNTracksGlobal) != 0u) {
         multAxes.emplace_back(100, 0, 1000, "Nch Global");
+      }
       registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     }
     registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
@@ -502,8 +516,9 @@ struct Nucleibalance {
     same->setTrackEtaCut(cfgCutEta);
     mixed->setTrackEtaCut(cfgCutEta);
 
-    if (!cfgEfficiencyAssociated.value.empty())
+    if (!cfgEfficiencyAssociated.value.empty()) {
       efficiencyAssociatedCache.reserve(512);
+    }
 
     // o2-ccdb-upload -p Users/jgrosseo/correlations/LHC15o -f /tmp/correction_2011_global.root -k correction
 
@@ -698,10 +713,10 @@ struct Nucleibalance {
     if (cfg.efficiencyLoaded) {
       return;
     }
-    if (cfgEfficiencyTrigger.value.empty() == false) {
+    if (!cfgEfficiencyTrigger.value.empty()) {
       if (cfgLocalEfficiency > 0) {
         TFile* fEfficiencyTrigger = TFile::Open(cfgEfficiencyTrigger.value.c_str(), "READ");
-        cfg.mEfficiencyTrigger = reinterpret_cast<THn*>(fEfficiencyTrigger->Get("ccdb_object"));
+        cfg.mEfficiencyTrigger = dynamic_cast<THn*>(fEfficiencyTrigger->Get("ccdb_object"));
       } else {
         cfg.mEfficiencyTrigger = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyTrigger, timestamp);
       }
@@ -710,10 +725,10 @@ struct Nucleibalance {
       }
       LOGF(info, "Loaded efficiency histogram for trigger particles from %s (%p)", cfgEfficiencyTrigger.value.c_str(), static_cast<void*>(cfg.mEfficiencyTrigger));
     }
-    if (cfgEfficiencyAssociated.value.empty() == false) {
+    if (!cfgEfficiencyAssociated.value.empty()) {
       if (cfgLocalEfficiency > 0) {
         TFile* fEfficiencyAssociated = TFile::Open(cfgEfficiencyAssociated.value.c_str(), "READ");
-        cfg.mEfficiencyAssociated = reinterpret_cast<THn*>(fEfficiencyAssociated->Get("ccdb_object"));
+        cfg.mEfficiencyAssociated = dynamic_cast<THn*>(fEfficiencyAssociated->Get("ccdb_object"));
       } else {
         cfg.mEfficiencyAssociated = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyAssociated, timestamp);
       }
@@ -727,12 +742,12 @@ struct Nucleibalance {
 
   double getEfficiencyCorrection(THn* eff, float eta, float pt, float multiplicity, float posZ)
   {
-    int effVars[4];
+    std::array<int, 4> effVars{};
     effVars[0] = eff->GetAxis(0)->FindBin(eta);
     effVars[1] = eff->GetAxis(1)->FindBin(pt);
     effVars[2] = eff->GetAxis(2)->FindBin(multiplicity);
     effVars[3] = eff->GetAxis(3)->FindBin(posZ);
-    return eff->GetBinContent(effVars);
+    return eff->GetBinContent(effVars.data());
   }
 
   template <typename TTrack>
@@ -863,13 +878,13 @@ struct Nucleibalance {
 
       if (passPIDForSpecies(trk, cfgTriggerSpecies.value)) {
         if (cfgTriggerCharge.value == 0 || trk.sign() == cfgTriggerCharge.value) {
-          triggerTracks.push_back(SimpleTrack{cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()});
+          triggerTracks.push_back(makeSimpleTrack(cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()));
         }
       }
 
       if (passPIDForSpecies(trk, cfgAssociatedSpecies.value)) {
         if (cfgAssociatedCharge.value == 0 || trk.sign() == cfgAssociatedCharge.value) {
-          associatedTracks.push_back(SimpleTrack{cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()});
+          associatedTracks.push_back(makeSimpleTrack(cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()));
         }
       }
     }
@@ -952,7 +967,7 @@ struct Nucleibalance {
       }
 
       // Save for multiplicity / QA (keep charge even if neutral)
-      eventTracks.push_back(SimpleTrack{trk.eta(), trk.phi(), trk.pt(), static_cast<int>(trk.sign())});
+      eventTracks.push_back(makeSimpleTrack(trk.eta(), trk.phi(), trk.pt(), static_cast<int>(trk.sign())));
 
       if (trk.sign() == 0) {
         continue;
@@ -961,14 +976,14 @@ struct Nucleibalance {
       // Trigger selection: PID + charge
       if (passPIDForSpecies(trk, cfgTriggerSpecies.value)) {
         if (cfgTriggerCharge.value == 0 || trk.sign() == cfgTriggerCharge.value) {
-          triggerTracks.push_back(SimpleTrack{trk.eta(), trk.phi(), trk.pt(), trk.sign()});
+          triggerTracks.push_back(makeSimpleTrack(trk.eta(), trk.phi(), trk.pt(), trk.sign()));
         }
       }
 
       // Associated selection: PID + charge
       if (passPIDForSpecies(trk, cfgAssociatedSpecies.value)) {
         if (cfgAssociatedCharge.value == 0 || trk.sign() == cfgAssociatedCharge.value) {
-          associatedTracks.push_back(SimpleTrack{trk.eta(), trk.phi(), trk.pt(), trk.sign()});
+          associatedTracks.push_back(makeSimpleTrack(trk.eta(), trk.phi(), trk.pt(), trk.sign()));
         }
       }
     }
@@ -1108,7 +1123,7 @@ struct Nucleibalance {
         continue;
       }
 
-      eventTracks.push_back(SimpleTrack{trk.eta(), trk.phi(), trk.pt(), static_cast<int>(trk.sign())});
+      eventTracks.push_back(makeSimpleTrack(trk.eta(), trk.phi(), trk.pt(), static_cast<int>(trk.sign())));
 
       if (trk.sign() == 0) {
         continue;
@@ -1116,12 +1131,12 @@ struct Nucleibalance {
 
       if (passPIDForSpecies(trk, cfgTriggerSpecies.value) &&
           (cfgTriggerCharge.value == 0 || trk.sign() == cfgTriggerCharge.value)) {
-        triggerTracks.push_back(SimpleTrack{trk.eta(), trk.phi(), trk.pt(), trk.sign()});
+        triggerTracks.push_back(makeSimpleTrack(trk.eta(), trk.phi(), trk.pt(), trk.sign()));
       }
 
       if (passPIDForSpecies(trk, cfgAssociatedSpecies.value) &&
           (cfgAssociatedCharge.value == 0 || trk.sign() == cfgAssociatedCharge.value)) {
-        associatedTracks.push_back(SimpleTrack{trk.eta(), trk.phi(), trk.pt(), trk.sign()});
+        associatedTracks.push_back(makeSimpleTrack(trk.eta(), trk.phi(), trk.pt(), trk.sign()));
       }
     }
 
@@ -1395,7 +1410,7 @@ struct Nucleibalance {
         }
         if (passPIDForSpecies(trk, cfgTriggerSpecies.value)) {
           if (cfgTriggerCharge.value == 0 || trk.sign() == cfgTriggerCharge.value) {
-            triggerTracks.push_back(SimpleTrack{cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()});
+            triggerTracks.push_back(makeSimpleTrack(cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()));
           }
         }
       }
@@ -1408,7 +1423,7 @@ struct Nucleibalance {
         }
         if (passPIDForSpecies(trk, cfgAssociatedSpecies.value)) {
           if (cfgAssociatedCharge.value == 0 || trk.sign() == cfgAssociatedCharge.value) {
-            associatedTracks.push_back(SimpleTrack{cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()});
+            associatedTracks.push_back(makeSimpleTrack(cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()));
           }
         }
       }
@@ -1468,11 +1483,13 @@ struct Nucleibalance {
       case PdgProton: // proton
       case -PdgProton:
         return 2;
+      default:
+        break;
     }
-    if (std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), pdgCode) != cfgMcTriggerPDGs->end())
+    if (std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), pdgCode) != cfgMcTriggerPDGs->end()) {
       return 4;
-    else
-      return 3;
+    }
+    return 3;
   }
 
   // NOTE SmallGroups includes soa::Filtered always
@@ -1573,11 +1590,13 @@ struct Nucleibalance {
     bool useMCMultiplicity = (cfgCentBinsForMC == 0);
     auto getMultiplicity =
       [&collisions, &useMCMultiplicity, this](auto& col) {
-        if (useMCMultiplicity)
+        if (useMCMultiplicity) {
           return col.multiplicity();
+        }
         auto groupedCollisions = collisions.sliceBy(collisionPerMCCollision, col.globalIndex());
-        if (groupedCollisions.size() == 0)
+        if (groupedCollisions.size() == 0) {
           return -1.0f;
+        }
         return groupedCollisions.begin().multiplicity();
       };
 
@@ -1836,14 +1855,17 @@ struct Lambdastarproxy {
     }
     if (lstarCfgTrigger.value == TriggerNone) {
       return true;
-    } else if (lstarCfgTrigger.value == TriggerSel8) {
+    }
+    if (lstarCfgTrigger.value == TriggerSel8) {
       return collision.sel8();
-    } else if (lstarCfgTrigger.value == TriggerSel8Quality) {
+    }
+    if (lstarCfgTrigger.value == TriggerSel8Quality) {
       return collision.sel8() &&
              collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
              collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
              collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
-    } else if (lstarCfgTrigger.value == TriggerSel8OccQuality) {
+    }
+    if (lstarCfgTrigger.value == TriggerSel8OccQuality) {
       const int occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy < lstarMinOcc.value || occupancy >= lstarMaxOcc.value) {
         return false;
@@ -1853,7 +1875,8 @@ struct Lambdastarproxy {
              collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
              collision.selection_bit(aod::evsel::kNoCollInTimeRangeStandard) &&
              collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
-    } else if (lstarCfgTrigger.value == TriggerSel8NoSbpZvtx) {
+    }
+    if (lstarCfgTrigger.value == TriggerSel8NoSbpZvtx) {
       return collision.sel8() &&
              collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
              collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV);
@@ -2815,7 +2838,7 @@ struct Lambdastarproxy {
       const float pyProxy = ProxyMomentumScale * ptD * std::sin(phiD);
       const float pzProxy = ProxyMomentumScale * ptD * std::sinh(etaD);
 
-      proxyCands.push_back(ProxyCand{pxProxy, pyProxy, pzProxy, static_cast<int>(trkD.sign()), static_cast<int>(trkD.globalIndex())});
+      proxyCands.push_back(ProxyCand{.px = pxProxy, .py = pyProxy, .pz = pzProxy, .charge = static_cast<int>(trkD.sign()), .tid = static_cast<int>(trkD.globalIndex())});
     }
 
     // Proton candidates (for genuine pK #Lambda^{*} reconstruction)
@@ -2875,7 +2898,7 @@ struct Lambdastarproxy {
       const float pyP = ptP * std::sin(phiP);
       const float pzP = ptP * std::sinh(etaP);
 
-      protonCands.push_back(ProtonCand{pxP, pyP, pzP, static_cast<int>(trkP.sign()), static_cast<int>(trkP.globalIndex())});
+      protonCands.push_back(ProtonCand{.px = pxP, .py = pyP, .pz = pzP, .charge = static_cast<int>(trkP.sign()), .tid = static_cast<int>(trkP.globalIndex())});
     }
 
     // Kaon candidates
@@ -2943,7 +2966,7 @@ struct Lambdastarproxy {
       const float pyK = ptK * std::sin(phiK);
       const float pzK = ptK * std::sinh(etaK);
 
-      kaonCands.push_back(KaonCand{pxK, pyK, pzK, static_cast<int>(trkK.sign()), static_cast<int>(trkK.globalIndex())});
+      kaonCands.push_back(KaonCand{.px = pxK, .py = pyK, .pz = pzK, .charge = static_cast<int>(trkK.sign()), .tid = static_cast<int>(trkK.globalIndex())});
     }
 
     if (kaonCands.empty()) {
@@ -3007,8 +3030,9 @@ struct Lambdastarproxy {
     if (hasProxyCandidates) {
       for (auto const& pr : proxyCands) {
         for (auto const& k : kaonCands) {
-          if (pr.tid == k.tid)
+          if (pr.tid == k.tid) {
             continue; // sanity check: should never match, but just in case of bug in candidate-building logic
+          }
           const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton, k.px, k.py, k.pz, MassKaonCharged);
 
           const float pxTot = pr.px + k.px;
