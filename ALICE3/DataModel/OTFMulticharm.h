@@ -53,13 +53,6 @@ DECLARE_SOA_COLUMN(XiccDauDCA, xiccDauDCA, float);
 DECLARE_SOA_COLUMN(XiccDCAxy, xiccDCAxy, float);
 DECLARE_SOA_COLUMN(XiccDCAz, xiccDCAz, float);
 
-DECLARE_SOA_COLUMN(BachDCAxy, bachDCAxy, float);
-DECLARE_SOA_COLUMN(BachDCAz, bachDCAz, float);
-DECLARE_SOA_COLUMN(PosDCAxy, posDCAxy, float);
-DECLARE_SOA_COLUMN(PosDCAz, posDCAz, float);
-DECLARE_SOA_COLUMN(NegDCAxy, negDCAxy, float);
-DECLARE_SOA_COLUMN(NegDCAz, negDCAz, float);
-
 DECLARE_SOA_COLUMN(Pi1cDCAxy, pi1cDCAxy, float);
 DECLARE_SOA_COLUMN(Pi1cDCAz, pi1cDCAz, float);
 DECLARE_SOA_COLUMN(Pi2cDCAxy, pi2cDCAxy, float);
@@ -75,19 +68,9 @@ DECLARE_SOA_COLUMN(XicDistanceFromPV, xicDistanceFromPV, float);
 DECLARE_SOA_COLUMN(XiccProperLength, xiccProperLength, float);
 
 // Daughter info
-DECLARE_SOA_COLUMN(PosPt, posPt, float);
-DECLARE_SOA_COLUMN(PosEta, posEta, float);
-DECLARE_SOA_COLUMN(NegPt, negPt, float);
-DECLARE_SOA_COLUMN(NegEta, negEta, float);
-DECLARE_SOA_COLUMN(BachPt, bachPt, float);
-DECLARE_SOA_COLUMN(BachEta, bachEta, float);
-DECLARE_SOA_COLUMN(BachPhi, bachPhi, float);
 DECLARE_SOA_COLUMN(Pi1cPt, pi1cPt, float);
-DECLARE_SOA_COLUMN(Pi1cEta, pi1cEta, float);
 DECLARE_SOA_COLUMN(Pi2cPt, pi2cPt, float);
-DECLARE_SOA_COLUMN(Pi2cEta, pi2cEta, float);
 DECLARE_SOA_COLUMN(PiccPt, piccPt, float);
-DECLARE_SOA_COLUMN(PiccEta, piccEta, float);
 
 } // namespace otfmulticharm
 
@@ -132,26 +115,6 @@ DECLARE_SOA_TABLE(MCharmCores, "AOD", "MCharmCores",
                   otfmulticharm::Pi2cPt,
                   otfmulticharm::PiccPt,
                   otfmulticharm::LUTConfigId);
-
-DECLARE_SOA_TABLE(MCharmExtra, "AOD", "MCharmExtra",
-                  otfmulticharm::BachPt,
-                  otfmulticharm::BachEta,
-                  otfmulticharm::BachDCAxy,
-                  otfmulticharm::BachDCAz,
-
-                  otfmulticharm::PosPt,
-                  otfmulticharm::PosEta,
-                  otfmulticharm::PosDCAxy,
-                  otfmulticharm::PosDCAz,
-
-                  otfmulticharm::NegPt,
-                  otfmulticharm::NegEta,
-                  otfmulticharm::NegDCAxy,
-                  otfmulticharm::NegDCAz,
-
-                  otfmulticharm::Pi1cEta,
-                  otfmulticharm::Pi2cEta,
-                  otfmulticharm::PiccEta);
 
 } // namespace o2::aod
 

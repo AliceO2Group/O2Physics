@@ -77,8 +77,9 @@ struct Alice3strangenessFinder {
   Produces<aod::V0CandidateIndices> v0CandidateIndices;    // contains V0 candidate indices
   Produces<aod::V0CandidateCores> v0CandidateCores;        // contains V0 candidate core information
   Produces<aod::StoredCascCores> tableStoredCascCores;     // contains stored cascade core information
-  Produces<aod::A3CascadeMcLabels> tableA3CascadeMcLabels; // contains cascade core MC labels
   Produces<aod::CascIndices> tableCascIndices;             // contains cascade indices
+  Produces<aod::CascCovs> tableCascCovs;                   // contains cascade cov matrix
+  Produces<aod::A3CascadeMcLabels> tableA3CascadeMcLabels; // contains cascade core MC labels
 
   Configurable<bool> buildCascade{"buildCascade", false, "build cascade candidates"};
   Configurable<float> nSigmaTOF{"nSigmaTOF", 5.0f, "Nsigma for TOF PID (if enabled)"};
@@ -402,12 +403,12 @@ struct Alice3strangenessFinder {
       thisCandidate.parentTrackCovMatrix[3] = covVtx(2, 0);
       thisCandidate.parentTrackCovMatrix[4] = covVtx(2, 1);
       thisCandidate.parentTrackCovMatrix[5] = covVtx(2, 2);
-      thisCandidate.parentTrackCovMatrix[0] = 0;
-      thisCandidate.parentTrackCovMatrix[1] = 0;
-      thisCandidate.parentTrackCovMatrix[2] = 0;
-      thisCandidate.parentTrackCovMatrix[3] = 0;
-      thisCandidate.parentTrackCovMatrix[4] = 0;
-      thisCandidate.parentTrackCovMatrix[5] = 0;
+      // thisCandidate.parentTrackCovMatrix[0] = 0;
+      // thisCandidate.parentTrackCovMatrix[1] = 0;
+      // thisCandidate.parentTrackCovMatrix[2] = 0;
+      // thisCandidate.parentTrackCovMatrix[3] = 0;
+      // thisCandidate.parentTrackCovMatrix[4] = 0;
+      // thisCandidate.parentTrackCovMatrix[5] = 0;
 
       thisCandidate.eta = RecoDecay::eta(std::array{thisCandidate.p[0], thisCandidate.p[1], thisCandidate.p[2]});
       thisCandidate.cosPA = RecoDecay::cpa(vtx, std::array{thisCandidate.posSV[0], thisCandidate.posSV[1], thisCandidate.posSV[2]},
@@ -631,6 +632,7 @@ struct Alice3strangenessFinder {
           histos.fill(HIST("CascadeBuilding/hXiMass"), massXi);
           histos.fill(HIST("CascadeBuilding/hOmegaMass"), massOm);
 
+          tableCascCovs(cascCand.parentTrackCovMatrix.data());
           tableA3CascadeMcLabels(cascCand.index);
           tableCascIndices(0, // cascade index, dummy value
                            posTrack.globalIndex(),

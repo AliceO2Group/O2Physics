@@ -144,6 +144,7 @@ struct OnTheFlyTracker {
   Produces<aod::UpgradeCascades> tableUpgradeCascades;
   Produces<aod::OTFLUTConfigId> tableOTFLUTConfigId;
   Produces<aod::UpgradeV0s> tableUpgradeV0s;
+  Produces<aod::UpgradeCascadeMcLabels> tableUpgradeCascadeMcLabels;
 
   // optionally produced, empty (to be tuned later)
   Produces<aod::StoredTracksExtra_002> tableStoredTracksExtra; // base table, extend later
@@ -1315,8 +1316,9 @@ struct OnTheFlyTracker {
     } // end cascade kink building
 
     // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
+    double dcaXY{999.f}, dcaZ{999.f};
+    o2::track::TrackParCov trackParametrization(xiTrackParCov);
     if (cascadeDecaySettings.doXiQA) {
-      double dcaXY{-1.}, dcaZ{-1.};
       if (reconstructedCascade) {
         getHist(TH2, histPath + "hRecoXi")->Fill(xiDecayRadius2D, mcParticle.pt());
         getHist(TH1, histPath + "hMassLambda")->Fill(thisCascade.mLambda);
@@ -1325,40 +1327,37 @@ struct OnTheFlyTracker {
         getHist(TH2, histPath + "h2dDeltaPtVsPt")->Fill(thisCascade.pt, (mcParticle.pt() - thisCascade.pt) / thisCascade.pt);
         getHist(TH2, histPath + "h2dDeltaEtaVsPt")->Fill(thisCascade.pt, mcParticle.eta() - thisCascade.eta);
         getHist(TH2, histPath + "hFoundVsFindable")->Fill(thisCascade.findableClusters, thisCascade.foundClusters);
-
-        o2::track::TrackParCov trackParametrization(xiTrackParCov);
-        trackParametrization.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo);
         getHist(TH2, histPath + "h2dDCAxyCascade")->Fill(trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
         getHist(TH2, histPath + "h2dDCAzCascade")->Fill(trackParametrization.getPt(), dcaZ * 1e+4);   // in microns, please
       }
       if (isReco[0]) {
         getHist(TH2, histPath + "hRecoPiFromXi")->Fill(xiDecayRadius2D, cascadeDecayProducts[0].Pt());
-        o2::track::TrackParCov trackParametrizationCascProng0(xiTrackParCov);
-        if (populateTracksDCA && xiTrackParCov.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) { // FIXME: this is not the right trackParametrization, need to propagate the bachelor track
+        o2::track::TrackParCov trackParametrizationBachelor(xiTrackParCov);
+        if (populateTracksDCA && trackParametrizationBachelor.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) {
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
-          getHist(TH2, histPath + "h2dDCAxyCascadeBachelor")->Fill(trackParametrizationCascProng0.getPt(), dcaXY * 1e+4); // in microns, please
-          getHist(TH2, histPath + "h2dDCAzCascadeBachelor")->Fill(trackParametrizationCascProng0.getPt(), dcaZ * 1e+4);   // in microns, please
+          getHist(TH2, histPath + "h2dDCAxyCascadeBachelor")->Fill(trackParametrizationBachelor.getPt(), dcaXY * 1e+4); // in microns, please
+          getHist(TH2, histPath + "h2dDCAzCascadeBachelor")->Fill(trackParametrizationBachelor.getPt(), dcaZ * 1e+4);   // in microns, please
         }
       }
       if (isReco[1]) {
         getHist(TH2, histPath + "hRecoPiFromLa")->Fill(laDecayRadius2D, cascadeDecayProducts[1].Pt());
-        o2::track::TrackParCov trackParametrizationCascProng1(xiTrackParCov);
-        if (populateTracksDCA && xiTrackParCov.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) { // FIXME: this is not the right trackParametrization, need to propagate the negative pion track
+        o2::track::TrackParCov trackParametrizationNegative(xiTrackParCov);
+        if (populateTracksDCA && trackParametrizationNegative.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) {
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
-          getHist(TH2, histPath + "h2dDCAxyCascadeNegative")->Fill(trackParametrizationCascProng1.getPt(), dcaXY * 1e+4); // in microns, please
-          getHist(TH2, histPath + "h2dDCAzCascadeNegative")->Fill(trackParametrizationCascProng1.getPt(), dcaZ * 1e+4);   // in microns, please
+          getHist(TH2, histPath + "h2dDCAxyCascadeNegative")->Fill(trackParametrizationNegative.getPt(), dcaXY * 1e+4); // in microns, please
+          getHist(TH2, histPath + "h2dDCAzCascadeNegative")->Fill(trackParametrizationNegative.getPt(), dcaZ * 1e+4);   // in microns, please
         }
       }
       if (isReco[2]) {
         getHist(TH2, histPath + "hRecoPrFromLa")->Fill(laDecayRadius2D, cascadeDecayProducts[2].Pt());
-        o2::track::TrackParCov trackParametrizationCascProng2(xiTrackParCov);
-        if (populateTracksDCA && xiTrackParCov.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) { // FIXME: this is not the right trackParametrization, need to propagate the positive proton track
+        o2::track::TrackParCov trackParametrizationPositive(xiTrackParCov);
+        if (populateTracksDCA && trackParametrizationPositive.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) {
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
-          getHist(TH2, histPath + "h2dDCAxyCascadePositive")->Fill(trackParametrizationCascProng2.getPt(), dcaXY * 1e+4); // in microns, please
-          getHist(TH2, histPath + "h2dDCAzCascadePositive")->Fill(trackParametrizationCascProng2.getPt(), dcaZ * 1e+4);   // in microns, please
+          getHist(TH2, histPath + "h2dDCAxyCascadePositive")->Fill(trackParametrizationPositive.getPt(), dcaXY * 1e+4); // in microns, please
+          getHist(TH2, histPath + "h2dDCAzCascadePositive")->Fill(trackParametrizationPositive.getPt(), dcaZ * 1e+4);   // in microns, please
         }
       }
     }
@@ -1368,7 +1367,11 @@ struct OnTheFlyTracker {
       return;
     }
 
+    // Make sure the xi variables are stored in dcaXY and dcaZ
+    trackParametrization.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo);
+
     // populate Cascades
+    tableUpgradeCascadeMcLabels(mcParticle.globalIndex());
     tableUpgradeCascades(tableCollisions.lastIndex(),
                          thisCascade.cascadeTrackId,
                          thisCascade.positiveId,
@@ -1382,7 +1385,8 @@ struct OnTheFlyTracker {
                          thisCascade.mLambda,
                          thisCascade.mXi,
                          thisCascade.findableClusters,
-                         thisCascade.foundClusters);
+                         thisCascade.foundClusters,
+                         dcaXY, dcaZ);
   }
 
   /// Function to study V0s and fill the relevant histograms
