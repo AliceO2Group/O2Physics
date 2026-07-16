@@ -931,7 +931,7 @@ struct NucleitpcPbPb {
                   float p = getRigidity(track);
                   float massTOF = p * charge * std::sqrt(1.f / (beta * beta) - 1.f);
                   float massSquareOverChargeSquare = (massTOF * massTOF) / (charge * charge);
-                  
+
                   // Apply He4 rejection if needed (to match data selection)
                   bool skipHe4 = false;
                   if (std::abs(pdg) == particlePdgCodes.at(5)) { // He4
@@ -939,7 +939,7 @@ struct NucleitpcPbPb {
                       skipHe4 = true;
                     }
                   }
-                  
+
                   if (!skipHe4) {
                     if (pdg > 0) {
                       histomc.fill(HIST("hMassVsPtMC"), ptReco, massSquareOverChargeSquare, collision.centFT0C());
