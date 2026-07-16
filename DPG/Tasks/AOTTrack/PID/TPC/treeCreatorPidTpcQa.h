@@ -34,6 +34,7 @@ DECLARE_SOA_COLUMN(NSigmaTof, nSigmaTof, float);
 } // namespace dpg_tpcpidqa
 
 DECLARE_SOA_TABLE(QaPidTpc, "AOD", "QAPIDTPC",
+                  tpcskims::IsGoodRct,
                   tpcskims::PidIndex,
                   tpcskims::Ft0Occ,
                   tpcskims::HadronicRate,

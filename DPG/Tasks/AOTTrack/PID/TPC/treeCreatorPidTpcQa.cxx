@@ -17,6 +17,7 @@
 
 #include "treeCreatorPidTpcQa.h"
 
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -76,6 +77,11 @@ struct TreeCreatorPidTpcQa {
   // Configurables for output tables reservation size
   Configurable<float> reserveRatio{"reserveRatio", 1.f, "Ratio of how many rows expected in the output table to the input Tracks table size"};
   Configurable<bool> saveReserveQaHisto{"saveReserveQaHisto", true, "Flag to save the DF-wise ratio of output table size to that of input table"};
+  // Configurables for run condtion table
+  Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
+  Configurable<bool> checkZdc{"checkZdc", false, "set ZDC flag for PbPb"};
+  Configurable<bool> treatLimitedAcceptanceAsBad{"treatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+  Configurable<bool> requireGoodRct{"requireGoodRct", false, "require good detector flag in run condtion table"};
 
 #define DECLARE_PARTICLE_WISE_CONFIGURABLES(ParticleNameShort, ParticleNameLong)                                                                                                                                                                          \
   Configurable<float> cutTpcInnerParameterMin##ParticleNameLong{"cutTpcInnerParameterMin" #ParticleNameLong, 0.f, "Lower-value cut on tpcInnerParam for " #ParticleNameLong};   /* o2-linter: disable=name/configurable (Configurable defined in macro)*/ \
@@ -105,6 +111,8 @@ struct TreeCreatorPidTpcQa {
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   ctpRateFetcher mRateFetcher{};
+
+  o2::aod::rctsel::RCTFlagsChecker rctChecker{};
 
   using CollisionsExtra = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
@@ -157,6 +165,8 @@ struct TreeCreatorPidTpcQa {
     ccdb->setCaching(true);
     ccdb->setFatalWhenNull(false);
 
+    rctChecker.init(rctLabel, checkZdc, treatLimitedAcceptanceAsBad);
+
     if (saveReserveQaHisto) {
       registry.add("hOutputRatio", "Table out/in ratio;Table out/in ratio;Entries", {HistType::kTH1F, {{100, 0, reserveRatio}}});
     }
@@ -175,6 +185,11 @@ struct TreeCreatorPidTpcQa {
     bool isFirstCollision{true};
     for (const auto& collision : collisions) {
       if (!isEventSelected(collision, applyEvSel) || (std::abs(collision.posZ()) > cutVtxZ)) {
+        continue;
+      }
+
+      const bool isGoodRctEvent = rctChecker.checkTable(collision);
+      if (requireGoodRct && !isGoodRctEvent) {
         continue;
       }
 
@@ -231,7 +246,7 @@ struct TreeCreatorPidTpcQa {
           nSigmaTof = o2::aod::pidutils::tofNSigma<Id>(track);
         }
 
-        rowPidTpcQa(Id, ft0Occ, hadronicRate, multTPC, nClNormalized, nclPID, phi, tgl, tpcInnerParam, rapidity, momentum, signed1Pt, nSigmaTpc, dedxExpected, dedxDiff, expSigma, nSigmaTof);
+        rowPidTpcQa(isGoodRctEvent, Id, ft0Occ, hadronicRate, multTPC, nClNormalized, nclPID, phi, tgl, tpcInnerParam, rapidity, momentum, signed1Pt, nSigmaTpc, dedxExpected, dedxDiff, expSigma, nSigmaTof);
       } // tracksFromCollision
     } // collisions
     ++mProcessedParticles;
