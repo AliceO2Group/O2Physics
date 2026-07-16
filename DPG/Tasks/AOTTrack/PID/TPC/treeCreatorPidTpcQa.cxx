@@ -243,34 +243,23 @@ struct TreeCreatorPidTpcQa {
     }
   }
 
-  // QA of nsigma only tables
-#define MAKE_PROCESS_FUNCTION(ParticleNameShort, ParticleNameLong)                                         \
-  void process##ParticleNameLong(CollisionsExtra const& collisions,                                        \
-                                 soa::Join<TrackCandidates, aod::pidTPC##ParticleNameShort> const& tracks, \
-                                 aod::BCsWithTimestamps const&)                                            \
-  {                                                                                                        \
-    processSingleParticle<PID::ParticleNameLong, false, false>(collisions, tracks);                        \
-  }                                                                                                        \
-  PROCESS_SWITCH(TreeCreatorPidTpcQa, process##ParticleNameLong, Form("Process for the %s hypothesis for TPC NSigma QA", #ParticleNameLong), false);
-
-  DO_FOR_ALL_PARTICLES(MAKE_PROCESS_FUNCTION)
-#undef MAKE_PROCESS_FUNCTION
-
-// QA of full tables
-#define MAKE_PROCESS_FUNCTION(ParticleNameShort, ParticleNameLong)                                                 \
-  void processFull##ParticleNameLong(CollisionsExtra const& collisions,                                            \
-                                     soa::Join<TrackCandidates, aod::pidTPCFull##ParticleNameShort> const& tracks, \
-                                     aod::BCsWithTimestamps const&)                                                \
-  {                                                                                                                \
-    processSingleParticle<PID::ParticleNameLong, true, false>(collisions, tracks);                                 \
-  }                                                                                                                \
-  PROCESS_SWITCH(TreeCreatorPidTpcQa, processFull##ParticleNameLong, Form("Process for the %s hypothesis for full TPC PID QA", #ParticleNameLong), false);
-
-  DO_FOR_ALL_PARTICLES(MAKE_PROCESS_FUNCTION)
-#undef MAKE_PROCESS_FUNCTION
-
-  // QA of full tables with TOF information
-#define MAKE_PROCESS_FUNCTION(ParticleNameShort, ParticleNameLong)                                                                                            \
+#define MAKE_PROCESS_FUNCTIONS(ParticleNameShort, ParticleNameLong)                                                                                           \
+  void process##ParticleNameLong(CollisionsExtra const& collisions,                                                                                           \
+                                 soa::Join<TrackCandidates, aod::pidTPC##ParticleNameShort> const& tracks,                                                    \
+                                 aod::BCsWithTimestamps const&)                                                                                               \
+  {                                                                                                                                                           \
+    processSingleParticle<PID::ParticleNameLong, false, false>(collisions, tracks);                                                                           \
+  }                                                                                                                                                           \
+  PROCESS_SWITCH(TreeCreatorPidTpcQa, process##ParticleNameLong, Form("Process for the %s hypothesis for TPC NSigma QA", #ParticleNameLong), false);          \
+                                                                                                                                                              \
+  void processFull##ParticleNameLong(CollisionsExtra const& collisions,                                                                                       \
+                                     soa::Join<TrackCandidates, aod::pidTPCFull##ParticleNameShort> const& tracks,                                            \
+                                     aod::BCsWithTimestamps const&)                                                                                           \
+  {                                                                                                                                                           \
+    processSingleParticle<PID::ParticleNameLong, true, false>(collisions, tracks);                                                                            \
+  }                                                                                                                                                           \
+  PROCESS_SWITCH(TreeCreatorPidTpcQa, processFull##ParticleNameLong, Form("Process for the %s hypothesis for full TPC PID QA", #ParticleNameLong), false);    \
+                                                                                                                                                              \
   void processFullWithTOF##ParticleNameLong(CollisionsExtra const& collisions,                                                                                \
                                             soa::Join<TrackCandidates, aod::pidTPCFull##ParticleNameShort, aod::pidTOFFull##ParticleNameShort> const& tracks, \
                                             aod::BCsWithTimestamps const&)                                                                                    \
@@ -279,8 +268,8 @@ struct TreeCreatorPidTpcQa {
   }                                                                                                                                                           \
   PROCESS_SWITCH(TreeCreatorPidTpcQa, processFullWithTOF##ParticleNameLong, Form("Process for the %s hypothesis for full TPC PID QA with the TOF info added", #ParticleNameLong), false);
 
-  DO_FOR_ALL_PARTICLES(MAKE_PROCESS_FUNCTION)
-#undef MAKE_PROCESS_FUNCTION
+  DO_FOR_ALL_PARTICLES(MAKE_PROCESS_FUNCTIONS)
+#undef MAKE_PROCESS_FUNCTIONS
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
