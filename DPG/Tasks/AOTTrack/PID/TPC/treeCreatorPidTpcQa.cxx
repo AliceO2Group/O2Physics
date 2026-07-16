@@ -122,13 +122,13 @@ struct TreeCreatorPidTpcQa {
   int mEnabledParticles{0};
   int mProcessedParticles{0};
 
-  template <o2::track::PID::ID Id>
+  template <o2::track::PID::ID ParticleId>
   bool initPerParticle()
   {
-    static_assert(Id >= 0 && Id <= PID::Alpha && "Particle index outside limits");
+    static_assert(ParticleId >= 0 && ParticleId <= PID::Alpha && "Particle index outside limits");
     int enabledProcesses{0};
 
-    switch (Id) {
+    switch (ParticleId) {
 #define INIT_PARTICLE(ParticleNameShort, ParticleNameLong)                                                             \
   case PID::ParticleNameLong:                                                                                          \
     if (!doprocess##ParticleNameLong && !doprocessFull##ParticleNameLong && !doprocessFullWithTOF##ParticleNameLong) { \
@@ -157,8 +157,8 @@ struct TreeCreatorPidTpcQa {
 
   void init(o2::framework::InitContext&)
   {
-    static_for<0, PID::Alpha>([&](auto Id) {
-      mEnabledParticles += static_cast<int>(initPerParticle<Id>());
+    static_for<0, PID::Alpha>([&](auto ParticleId) {
+      mEnabledParticles += static_cast<int>(initPerParticle<ParticleId>());
     });
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -172,7 +172,7 @@ struct TreeCreatorPidTpcQa {
     }
   }
 
-  template <o2::track::PID::ID Id, bool IsFullTable, bool IsTofTable, typename TrackType>
+  template <o2::track::PID::ID ParticleId, bool IsFullTable, bool IsTofTable, typename TrackType>
   void processSingleParticle(CollisionsExtra const& collisions,
                              TrackType const& tracks)
   {
@@ -211,7 +211,7 @@ struct TreeCreatorPidTpcQa {
         isGoodTrack &= track.hasTPC();
         isGoodTrack &= (track.tpcNClsFound() >= cutMinTPCNcls);
 
-        const float rapidity = track.rapidity(PID::getMass(Id));
+        const float rapidity = track.rapidity(PID::getMass(ParticleId));
         const float momentum = track.p();
         const float nClNormalized = std::sqrt(nClNorm / track.tpcNClsFound());
         const float nclPID = static_cast<float>(track.tpcNClsPID());
@@ -219,12 +219,12 @@ struct TreeCreatorPidTpcQa {
         const float tgl = track.tgl();
         const float tpcInnerParam = track.tpcInnerParam();
         const float signed1Pt = track.signed1Pt();
-        const float nSigmaTpc = o2::aod::pidutils::tpcNSigma<Id>(track);
+        const float nSigmaTpc = o2::aod::pidutils::tpcNSigma<ParticleId>(track);
 
         isGoodTrack &= (std::fabs(rapidity) <= cutRapidity);
-        isGoodTrack &= (tpcInnerParam >= *cutTpcInnerParameterMin.at(Id));
-        isGoodTrack &= (tpcInnerParam <= *cutTpcInnerParameterMax.at(Id));
-        isGoodTrack &= (std::fabs(nSigmaTpc) <= *cutNSigmaTpcAbs.at(Id));
+        isGoodTrack &= (tpcInnerParam >= *cutTpcInnerParameterMin.at(ParticleId));
+        isGoodTrack &= (tpcInnerParam <= *cutTpcInnerParameterMax.at(ParticleId));
+        isGoodTrack &= (std::fabs(nSigmaTpc) <= *cutNSigmaTpcAbs.at(ParticleId));
 
         if (!isGoodTrack) {
           continue;
@@ -235,18 +235,18 @@ struct TreeCreatorPidTpcQa {
         float expSigma{UndefValueFloat};
 
         if constexpr (IsFullTable) {
-          dedxDiff = o2::aod::pidutils::tpcExpSignalDiff<Id>(track);
+          dedxDiff = o2::aod::pidutils::tpcExpSignalDiff<ParticleId>(track);
           dedxExpected = track.tpcSignal() - dedxDiff;
-          expSigma = o2::aod::pidutils::tpcExpSigma<Id>(track);
+          expSigma = o2::aod::pidutils::tpcExpSigma<ParticleId>(track);
         }
 
         float nSigmaTof{UndefValueFloat};
 
         if constexpr (IsTofTable) {
-          nSigmaTof = o2::aod::pidutils::tofNSigma<Id>(track);
+          nSigmaTof = o2::aod::pidutils::tofNSigma<ParticleId>(track);
         }
 
-        rowPidTpcQa(isGoodRctEvent, Id, ft0Occ, hadronicRate, multTPC, nClNormalized, nclPID, phi, tgl, tpcInnerParam, rapidity, momentum, signed1Pt, nSigmaTpc, dedxExpected, dedxDiff, expSigma, nSigmaTof);
+        rowPidTpcQa(isGoodRctEvent, ParticleId, ft0Occ, hadronicRate, multTPC, nClNormalized, nclPID, phi, tgl, tpcInnerParam, rapidity, momentum, signed1Pt, nSigmaTpc, dedxExpected, dedxDiff, expSigma, nSigmaTof);
       } // tracksFromCollision
     } // collisions
     ++mProcessedParticles;
