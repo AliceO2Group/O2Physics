@@ -403,12 +403,12 @@ struct Alice3strangenessFinder {
       thisCandidate.parentTrackCovMatrix[3] = covVtx(2, 0);
       thisCandidate.parentTrackCovMatrix[4] = covVtx(2, 1);
       thisCandidate.parentTrackCovMatrix[5] = covVtx(2, 2);
-      // thisCandidate.parentTrackCovMatrix[0] = 0;
-      // thisCandidate.parentTrackCovMatrix[1] = 0;
-      // thisCandidate.parentTrackCovMatrix[2] = 0;
-      // thisCandidate.parentTrackCovMatrix[3] = 0;
-      // thisCandidate.parentTrackCovMatrix[4] = 0;
-      // thisCandidate.parentTrackCovMatrix[5] = 0;
+      thisCandidate.parentTrackCovMatrix[0] = 0;
+      thisCandidate.parentTrackCovMatrix[1] = 0;
+      thisCandidate.parentTrackCovMatrix[2] = 0;
+      thisCandidate.parentTrackCovMatrix[3] = 0;
+      thisCandidate.parentTrackCovMatrix[4] = 0;
+      thisCandidate.parentTrackCovMatrix[5] = 0;
 
       thisCandidate.eta = RecoDecay::eta(std::array{thisCandidate.p[0], thisCandidate.p[1], thisCandidate.p[2]});
       thisCandidate.cosPA = RecoDecay::cpa(vtx, std::array{thisCandidate.posSV[0], thisCandidate.posSV[1], thisCandidate.posSV[2]},
