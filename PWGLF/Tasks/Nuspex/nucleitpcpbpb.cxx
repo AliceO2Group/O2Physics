@@ -337,6 +337,12 @@ struct NucleitpcPbPb {
       histomc.add("histDeltaPtVsPtGen", " delta pt vs pt rec", HistType::kTH2F, {{1000, 0, 10}, {1000, -0.5, 0.5, "p_{T}(reco) - p_{T}(gen);p_{T}(reco)"}});
       histomc.add("histPIDtrack", " delta pt vs pt rec", HistType::kTH2F, {{1000, 0, 10, "p_{T}(reco)"}, {9, -0.5, 8.5, "p_{T}(reco) - p_{T}(gen)"}});
       histomc.add("histPIDtrackanti", " delta pt vs pt rec", HistType::kTH2F, {{1000, 0, 10, "p_{T}(reco)"}, {9, -0.5, 8.5, "p_{T}(reco) - p_{T}(gen)"}});
+
+      // Mass²/z² 3D plots for MC (pT, mass²/z², centrality) - separate for particles and anti-particles
+      histomc.add("hMassVsPtMC", "mass^{2}/z^{2} vs p_{T} (MC Particles);p_{T} (GeV/c);mass^{2}/z^{2};Centrality",
+                  {HistType::kTH3F, {ptAxis, axismassnsigma, axisCent}});
+      histomc.add("hMassVsPtAntiMC", "mass^{2}/z^{2} vs p_{T} (MC Anti-particles);p_{T} (GeV/c);mass^{2}/z^{2};Centrality",
+                  {HistType::kTH3F, {ptAxis, axismassnsigma, axisCent}});
     }
 
     if (doprocessDCA) {
@@ -916,6 +922,34 @@ struct NucleitpcPbPb {
               histos.fill(HIST("dcaZ"), ptReco, track.dcaZ());
               histos.fill(HIST("Tpcsignal"), getRigidity(track) * track.sign(), track.tpcSignal());
 
+              // Fill mass²/z² for MC - separate for particles and anti-particles
+              if (track.hasTOF()) {
+                float beta = o2::pid::tof::Beta::GetBeta(track);
+                const float eps = 1e-6f;
+                if (beta >= eps && beta <= 1.0f - eps) {
+                  float charge = (i == he3 || i == he4) ? 2.f : 1.f;
+                  float p = getRigidity(track);
+                  float massTOF = p * charge * std::sqrt(1.f / (beta * beta) - 1.f);
+                  float massSquareOverChargeSquare = (massTOF * massTOF) / (charge * charge);
+                  
+                  // Apply He4 rejection if needed (to match data selection)
+                  bool skipHe4 = false;
+                  if (std::abs(pdg) == particlePdgCodes.at(5)) { // He4
+                    if (cfghe3massrejreq && (massTOF * massTOF > cfgminmassrejection && massTOF * massTOF < cfgmaxmassrejection)) {
+                      skipHe4 = true;
+                    }
+                  }
+                  
+                  if (!skipHe4) {
+                    if (pdg > 0) {
+                      histomc.fill(HIST("hMassVsPtMC"), ptReco, massSquareOverChargeSquare, collision.centFT0C());
+                    } else {
+                      histomc.fill(HIST("hMassVsPtAntiMC"), ptReco, massSquareOverChargeSquare, collision.centFT0C());
+                    }
+                  }
+                }
+              }
+
               // Delta Pt histograms
               float ptGen = matchedMCParticle.pt();
               float deltaPt = ptReco - ptGen;
@@ -1042,9 +1076,9 @@ struct NucleitpcPbPb {
 
               int param = -1;
               if (i == he3) {
-                param = (-particlePdgCodes.at(4) > 0) ? 0 : 1;
+                param = (pdg > 0) ? 0 : 1;
               } else if (i == he4) {
-                param = (-particlePdgCodes.at(4) > 0) ? 2 : 3;
+                param = (pdg > 0) ? 2 : 3;
               }
 
               if (param >= 0) {
