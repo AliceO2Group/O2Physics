@@ -12,6 +12,7 @@
 
 add_subdirectory(Core)
 # add_subdirectory(DataModel)
+add_subdirectory(ML)
 add_subdirectory(Tasks)
 add_subdirectory(TableProducer)
 add_subdirectory(Macros)

@@ -101,10 +101,10 @@ struct ConfK0shortBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                                   \
   o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                                \
   o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                                 \
-  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum eta"};                                                  \
+  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                                  \
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                     \
-  o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass for Lambda"};             \
-  o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass for Lambda"};             \
+  o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass"};                        \
+  o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass"};                        \
   o2::framework::Configurable<datatypes::V0MaskType> mask{"mask", 0, "Bitmask for v0 selection"};
 
 // base selection for analysis task for lambdas
@@ -206,10 +206,10 @@ const std::unordered_map<V0Filters, std::string> v0FilterNames = {
   {kPhiMax, "phiMax"},
   {kRejectionK0shortMass, "rejectK0short"},
   {kK0shortMassMin, "k0shortMassMin"},
-  {kK0shortMassMax, "k0shortMassMin"},
+  {kK0shortMassMax, "k0shortMassMax"},
   {kRejectionLambdaMass, "rejectLambda"},
   {kLambdaMassMin, "lambdaMassMin"},
-  {kLambdaMassMax, "lambdaMassMin"},
+  {kLambdaMassMax, "lambdaMassMax"},
 };
 
 /// \brief Cut class to contain and execute all cuts applied to v0s

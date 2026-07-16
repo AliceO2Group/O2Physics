@@ -60,8 +60,8 @@ struct FemtoTripletTrackTrackCascade {
   using FemtoOmegas = o2::soa::Join<o2::aod::FOmegas, o2::aod::FOmegaMasks>;
 
   using FemtoTracksWithLabel = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels>;
-  using FemtoXisWithLabel = o2::soa::Join<FemtoXis, o2::aod::FLambdaLabels>;
-  using FemtoOmegasWithLabel = o2::soa::Join<FemtoOmegas, o2::aod::FK0shortLabels>;
+  using FemtoXisWithLabel = o2::soa::Join<FemtoXis, o2::aod::FXiLabels>;
+  using FemtoOmegasWithLabel = o2::soa::Join<FemtoOmegas, o2::aod::FOmegaLabels>;
 
   using FemtoMcParticlesWithLabel = o2::soa::Join<o2::aod::FMcParticles, o2::aod::FMcMotherLabels>;
 
@@ -229,10 +229,10 @@ struct FemtoTripletTrackTrackCascade {
 
       if (processXi) {
         xiHistSpec = cascadehistmanager::makeCascadeHistSpecMap(confXiBinning);
-        tripletTrackTrackXiBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confCtr, confXiSelection, confXiCleaner, confCprBachelor, confCprV0Daughter, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, xiHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, tripletTrackTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, ctrHistSpec);
+        tripletTrackTrackXiBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCtr, confXiSelection, confXiCleaner, confCprBachelor, confCprV0Daughter, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, xiHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, tripletTrackTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, ctrHistSpec);
       } else {
         omegaHistSpec = cascadehistmanager::makeCascadeHistSpecMap(confOmegaBinning);
-        tripletTrackTrackOmegaBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confCtr, confOmegaSelection, confOmegaCleaner, confCprBachelor, confCprV0Daughter, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, omegaHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, tripletTrackTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, ctrHistSpec);
+        tripletTrackTrackOmegaBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCtr, confOmegaSelection, confOmegaCleaner, confCprBachelor, confCprV0Daughter, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, omegaHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, tripletTrackTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, ctrHistSpec);
       }
     } else {
       colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
@@ -244,10 +244,10 @@ struct FemtoTripletTrackTrackCascade {
       tripletTrackTrackCascadeHistSpec = triplethistmanager::makeTripletMcHistSpecMap(confTripletBinning, confMixing);
       if (processXi) {
         xiHistSpec = cascadehistmanager::makeCascadeMcHistSpecMap(confXiBinning);
-        tripletTrackTrackXiBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confCtr, confXiSelection, confXiCleaner, confCprBachelor, confCprV0Daughter, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, xiHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, tripletTrackTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, ctrHistSpec);
+        tripletTrackTrackXiBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCtr, confXiSelection, confXiCleaner, confCprBachelor, confCprV0Daughter, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, xiHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, tripletTrackTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, ctrHistSpec);
       } else {
         omegaHistSpec = cascadehistmanager::makeCascadeMcHistSpecMap(confOmegaBinning);
-        tripletTrackTrackOmegaBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confCtr, confOmegaSelection, confOmegaCleaner, confCprBachelor, confCprV0Daughter, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, omegaHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, tripletTrackTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, ctrHistSpec);
+        tripletTrackTrackOmegaBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCtr, confOmegaSelection, confOmegaCleaner, confCprBachelor, confCprV0Daughter, confMixing, confTripletBinning, confTripletCuts, colHistSpec, trackHistSpec1, trackHistSpec2, omegaHistSpec, bachelorHistSpec, posDauSpec, negDauSpec, tripletTrackTrackCascadeHistSpec, cprHistSpecBachelor, cprHistSpecV0Daughter, ctrHistSpec);
       }
     }
     hRegistry.print();
@@ -271,9 +271,9 @@ struct FemtoTripletTrackTrackCascade {
   }
   PROCESS_SWITCH(FemtoTripletTrackTrackCascade, processXiMixedEvent, "Enable processing mixed event processing for tracks and xis", true);
 
-  void processXiMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& /*xis*/, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& /*mcMothers*/, o2::aod::FMcPartMoths const& /*mcPartonicMothers*/)
+  void processXiMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& /*xis*/, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    tripletTrackTrackXiBuilder.processMixedEvent<modes::Mode::kMe_Reco_Mc>(cols, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, xiWithLabelPartition, mcParticles, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    tripletTrackTrackXiBuilder.processMixedEvent<modes::Mode::kMe_Reco_Mc>(cols, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, xiWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoTripletTrackTrackCascade, processXiMixedEventMc, "Enable processing mixed event processing for tracks and xis with mc information", false);
 
@@ -295,9 +295,9 @@ struct FemtoTripletTrackTrackCascade {
   }
   PROCESS_SWITCH(FemtoTripletTrackTrackCascade, processOmegaMixedEvent, "Enable processing mixed event processing for tracks and omegas", false);
 
-  void processOmegaMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoXisWithLabel const& /*xis*/, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& /*mcMothers*/, o2::aod::FMcPartMoths const& /*mcPartonicMothers*/)
+  void processOmegaMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoOmegasWithLabel const& /*omegas*/, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
-    tripletTrackTrackOmegaBuilder.processMixedEvent<modes::Mode::kMe_Reco_Mc>(cols, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, omegaWithLabelPartition, mcParticles, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
+    tripletTrackTrackOmegaBuilder.processMixedEvent<modes::Mode::kMe_Reco_Mc>(cols, mcCols, tracks, trackWithLabelPartition1, trackWithLabelPartition2, omegaWithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoTripletTrackTrackCascade, processOmegaMixedEventMc, "Enable processing mixed event processing for tracks and omegas with mc information", false);
 };

@@ -47,7 +47,6 @@
 #include <TF1.h>
 #include <TH1.h>
 #include <TH2.h>
-#include <TH3.h>
 #include <THnSparse.h>
 #include <TNamed.h>
 #include <TObjArray.h>
@@ -61,9 +60,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
-#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -72,83 +69,82 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
-
 struct PidFlowPtCorr {
   // configurable
   double minVal4Float = 1e-3;
-  static constexpr std::size_t NSpecies{3};
 
-  O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
-  O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgDeltaPhiLocDen, int, 3, "Number of delta phi for local density, 200 bins in 2 pi")
+  Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
+  Configurable<float> cfgCutChi2prTPCcls{"cfgCutChi2prTPCcls", 2.5, "Chi2 per TPC clusters"};
+  Configurable<int> cfgDeltaPhiLocDen{"cfgDeltaPhiLocDen", 3, "Number of delta phi for local density, 200 bins in 2 pi"};
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FV0A; 4:NTPV; 5:NGlobal; 6:MFT"};
 
   struct : ConfigurableGroup {
     std::string prefix = "trkQualityOpts";
     // track selections
-    O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
-    O2_DEFINE_CONFIGURABLE(cfgRangeEta, float, 0.4f, "Eta range for mean Pt")
-    O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for ref tracks")
-    O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 10.0f, "Maximal pT for ref tracks")
+    Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
+    Configurable<float> cfgRangeEta{"cfgRangeEta", 0.4f, "Eta range for mean Pt"};
+    Configurable<float> cfgCutPtMin{"cfgCutPtMin", 0.2f, "Minimal pT for ref tracks"};
+    Configurable<float> cfgCutPtMax{"cfgCutPtMax", 10.0f, "Maximal pT for ref tracks"};
     // track quality selections for daughter track
-    O2_DEFINE_CONFIGURABLE(cfgITSNCls, int, 5, "check minimum number of ITS clusters")
-    O2_DEFINE_CONFIGURABLE(cfgTPCNCls, int, 50, "check minimum number of TPC hits")
-    O2_DEFINE_CONFIGURABLE(cfgTPCCrossedRows, int, 70, "check minimum number of TPC crossed rows")
-    O2_DEFINE_CONFIGURABLE(cfgITSChi2NDF, double, 2.5, "check ITS Chi2NDF")
-    O2_DEFINE_CONFIGURABLE(cfgCheckGlobalTrack, bool, false, "check global track")
+    Configurable<int> cfgITSNCls{"cfgITSNCls", 5, "check minimum number of ITS clusters"};
+    Configurable<int> cfgTPCNCls{"cfgTPCNCls", 50, "check minimum number of TPC hits"};
+    Configurable<int> cfgTPCCrossedRows{"cfgTPCCrossedRows", 70, "check minimum number of TPC crossed rows"};
+    Configurable<double> cfgITSChi2NDF{"cfgITSChi2NDF", 2.5, "check ITS Chi2NDF"};
+    Configurable<bool> cfgCheckGlobalTrack{"cfgCheckGlobalTrack", false, "check global track"};
   } trkQualityOpts;
 
   struct : ConfigurableGroup {
     std::string prefix = "evtSelOpts";
-    O2_DEFINE_CONFIGURABLE(cfgDoTVXinTRD, bool, false, "check kTVXinTRD")
-    O2_DEFINE_CONFIGURABLE(cfgDoNoTimeFrameBorder, bool, true, "check kNoTimeFrameBorder")
-    O2_DEFINE_CONFIGURABLE(cfgDoNoITSROFrameBorder, bool, true, "check kNoITSROFrameBorder")
-    O2_DEFINE_CONFIGURABLE(cfgDoNoSameBunchPileup, bool, true, "check kNoITSROFrameBorder")
-    O2_DEFINE_CONFIGURABLE(cfgDoIsGoodZvtxFT0vsPV, bool, true, "check kIsGoodZvtxFT0vsPV")
-    O2_DEFINE_CONFIGURABLE(cfgDoNoCollInTimeRangeStandard, bool, true, "check kNoCollInTimeRangeStandard")
-    O2_DEFINE_CONFIGURABLE(cfgDoIsGoodITSLayersAll, bool, true, "check kIsGoodITSLayersAll")
-    O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 3000, "High cut on TPC occupancy")
-    O2_DEFINE_CONFIGURABLE(cfgDoMultPVCut, bool, true, "do multNTracksPV vs cent cut")
-    O2_DEFINE_CONFIGURABLE(cfgMultPVCut, std::vector<float>, (std::vector<float>{3074.43, -106.192, 1.46176, -0.00968364, 2.61923e-05, 182.128, -7.43492, 0.193901, -0.00256715, 1.22594e-05}), "Used MultPVCut function parameter")
-    O2_DEFINE_CONFIGURABLE(cfgDoV0AT0Acut, bool, true, "do V0A-T0A cut")
-    O2_DEFINE_CONFIGURABLE(cfgCutminIR, float, -1, "cut min IR")
-    O2_DEFINE_CONFIGURABLE(cfgCutmaxIR, float, 3000, "cut max IR")
+    Configurable<bool> cfgDoTVXinTRD{"cfgDoTVXinTRD", false, "check kTVXinTRD"};
+    Configurable<bool> cfgDoNoTimeFrameBorder{"cfgDoNoTimeFrameBorder", true, "check kNoTimeFrameBorder"};
+    Configurable<bool> cfgDoNoITSROFrameBorder{"cfgDoNoITSROFrameBorder", true, "check kNoITSROFrameBorder"};
+    Configurable<bool> cfgDoNoSameBunchPileup{"cfgDoNoSameBunchPileup", true, "check kNoITSROFrameBorder"};
+    Configurable<bool> cfgDoIsGoodZvtxFT0vsPV{"cfgDoIsGoodZvtxFT0vsPV", true, "check kIsGoodZvtxFT0vsPV"};
+    Configurable<bool> cfgDoNoCollInTimeRangeStandard{"cfgDoNoCollInTimeRangeStandard", true, "check kNoCollInTimeRangeStandard"};
+    Configurable<bool> cfgDoIsGoodITSLayersAll{"cfgDoIsGoodITSLayersAll", true, "check kIsGoodITSLayersAll"};
+    Configurable<int> cfgCutOccupancyHigh{"cfgCutOccupancyHigh", 3000, "High cut on TPC occupancy"};
+    Configurable<bool> cfgDoMultPVCut{"cfgDoMultPVCut", true, "do multNTracksPV vs cent cut"};
+    Configurable<std::vector<float>> cfgMultPVCut{"cfgMultPVCut", (std::vector<float>{3074.43, -106.192, 1.46176, -0.00968364, 2.61923e-05, 182.128, -7.43492, 0.193901, -0.00256715, 1.22594e-05}), "Used MultPVCut function parameter"};
+    Configurable<bool> cfgDoV0AT0Acut{"cfgDoV0AT0Acut", true, "do V0A-T0A cut"};
+    Configurable<float> cfgCutminIR{"cfgCutminIR", -1, "cut min IR"};
+    Configurable<float> cfgCutmaxIR{"cfgCutmaxIR", 3000, "cut max IR"};
   } evtSeleOpts;
 
   struct : ConfigurableGroup {
     std::string prefix = "dcaCutOpts";
     TF1* fPtDepDCAxy = nullptr;
-    O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
-    O2_DEFINE_CONFIGURABLE(cfgDCAxyNSigma, float, 0, "0: disable; Cut on number of sigma deviations from expected DCA in the transverse direction, nsigma=7 is the same with global track");
-    O2_DEFINE_CONFIGURABLE(cfgDCAxy, std::string, "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut")
+    Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "max DCA to vertex z"};
+    Configurable<float> cfgDCAxyNSigma{"cfgDCAxyNSigma", 0, "0: disable; Cut on number of sigma deviations from expected DCA in the transverse direction, nsigma=7 is the same with global track"};
+    Configurable<std::string> cfgDCAxy{"cfgDCAxy", "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut"};
   } dcaCutOpts;
 
-  O2_DEFINE_CONFIGURABLE(cfgNSigmapid, std::vector<float>, (std::vector<float>{3, 3, 3, 9, 9, 9, 9, 9, 9}), "tpc, tof and its NSigma for Pion Proton Kaon")
+  Configurable<std::vector<float>> cfgNSigmapid{"cfgNSigmapid", (std::vector<float>{3, 3, 3, 9, 9, 9, 9, 9, 9}), "tpc, tof and its NSigma for Pion Proton Kaon"};
 
   struct : ConfigurableGroup {
     std::string prefix = "correctionPathOpts";
-    O2_DEFINE_CONFIGURABLE(cfgAcceptancePath, std::vector<std::string>, (std::vector<std::string>{"Users/f/fcui/NUA/NUAREFPartical", "Users/f/fcui/NUA/NUAK0s", "Users/f/fcui/NUA/NUALambda", "Users/f/fcui/NUA/NUAXi", "Users/f/fcui/NUA/NUAOmega"}), "CCDB path to acceptance object")
+    Configurable<std::vector<std::string>> cfgAcceptancePath{"cfgAcceptancePath", (std::vector<std::string>{"Users/f/fcui/NUA/NUAREFPartical", "Users/f/fcui/NUA/NUAK0s", "Users/f/fcui/NUA/NUALambda", "Users/f/fcui/NUA/NUAXi", "Users/f/fcui/NUA/NUAOmega"}), "CCDB path to acceptance object"};
 
-    O2_DEFINE_CONFIGURABLE(cfgEfficiencyPath, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency object")
+    Configurable<std::vector<std::string>> cfgEfficiencyPath{"cfgEfficiencyPath", (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency object"};
   } correctionPathOpts;
 
-  O2_DEFINE_CONFIGURABLE(cfgRunNumbers, std::vector<int>, (std::vector<int>{544095, 544098, 544116, 544121, 544122, 544123, 544124}), "Preconfigured run numbers")
-  O2_DEFINE_CONFIGURABLE(cfgEtaGap, float, 0.4, "eta gap for cumulant calculation, note that gap is -0.4 ~ 0.4 total 0.8, note that eta range for meanpt calculation needs to be within etagap")
-  O2_DEFINE_CONFIGURABLE(cfgFlowNbootstrap, int, 30, "Number of subsamples for bootstrap")
+  Configurable<std::vector<int>> cfgRunNumbers{"cfgRunNumbers", (std::vector<int>{544095, 544098, 544116, 544121, 544122, 544123, 544124}), "Preconfigured run numbers"};
+  Configurable<float> cfgEtaGap{"cfgEtaGap", 0.4, "eta gap for cumulant calculation, note that gap is -0.4 ~ 0.4 total 0.8, note that eta range for meanpt calculation needs to be within etagap"};
+  Configurable<int> cfgFlowNbootstrap{"cfgFlowNbootstrap", 30, "Number of subsamples for bootstrap"};
 
   // switch
   struct : ConfigurableGroup {
     std::string prefix = "switchsOpts";
-    O2_DEFINE_CONFIGURABLE(cfgDoLocDenCorr, bool, false, "do local density corr");
-    O2_DEFINE_CONFIGURABLE(cfgOutputrunbyrun, bool, false, "OPEN IF USE FUNCTION(fillcorrectiongraph) Fill and output NUA weights run by run");
-    O2_DEFINE_CONFIGURABLE(cfgOutPutMC, bool, false, "Fill MC graphs, note that if the processMCgen is open,this MUST be open");
-    O2_DEFINE_CONFIGURABLE(cfgOutputQA, bool, false, "OPEN IF USE FUNCTION(detectorPidQa) do QA");
-    O2_DEFINE_CONFIGURABLE(cfgDebugMyCode, bool, false, "output some graph for code debug");
-    O2_DEFINE_CONFIGURABLE(cfgOutPutPtSpectra, bool, false, "output pt spectra for data, MC and RECO");
-    O2_DEFINE_CONFIGURABLE(cfgCheck2MethodDiff, bool, false, "check difference between v2' && v2''");
-    O2_DEFINE_CONFIGURABLE(cfgClosureTest, int, 0, "choose (val) percent particle from charged to pass Pion PID selection");
+    Configurable<bool> cfgDoLocDenCorr{"cfgDoLocDenCorr", false, "do local density corr"};
+    Configurable<bool> cfgOutputrunbyrun{"cfgOutputrunbyrun", false, "OPEN IF USE FUNCTION(fillcorrectiongraph) Fill and output NUA weights run by run"};
+    Configurable<bool> cfgOutPutMC{"cfgOutPutMC", false, "Fill MC graphs, note that if the processMCgen is open,this MUST be open"};
+    Configurable<bool> cfgOutputQA{"cfgOutputQA", false, "OPEN IF USE FUNCTION(detectorPidQa) do QA"};
+    Configurable<bool> cfgDebugMyCode{"cfgDebugMyCode", false, "output some graph for code debug"};
+    Configurable<bool> cfgOutPutPtSpectra{"cfgOutPutPtSpectra", false, "output pt spectra for data, MC and RECO"};
+    Configurable<bool> cfgCheck2MethodDiff{"cfgCheck2MethodDiff", false, "check difference between v2' && v2''"};
+    Configurable<int> cfgClosureTest{"cfgClosureTest", 0, "choose (val) percent particle from charged to pass Pion PID selection"};
+    Configurable<bool> cfgOutPutMC1D{"cfgOutPutMC1D", true, "Fill MC graphs, note that if the processMCgen is open,this MUST be open"};
 
-    O2_DEFINE_CONFIGURABLE(cfgProcessQAOutput, bool, false, "QA plots for processQA");
+    Configurable<bool> cfgProcessQAOutput{"cfgProcessQAOutput", false, "QA plots for processQA"};
   } switchsOpts;
 
   /**
@@ -158,21 +154,21 @@ struct PidFlowPtCorr {
   // separate pi and k
   struct : ConfigurableGroup {
     std::string prefix = "pidPtRangeOpts";
-    O2_DEFINE_CONFIGURABLE(cfgPtMin4ITSPiKa, float, 0.2, "pt min for ITS to separate pi and k");
-    O2_DEFINE_CONFIGURABLE(cfgPtMax4ITSPiKa, float, 0.8, "pt max for ITS to separate pi and k");
-    O2_DEFINE_CONFIGURABLE(cfgPtMin4TOFPiKa, float, 0.5, "pt min for TOF to separate pi and k");
-    O2_DEFINE_CONFIGURABLE(cfgPtMax4TOFPiKa, float, 3.0, "pt max for TOF to separate pi and k");
-    O2_DEFINE_CONFIGURABLE(cfgPtMin4TPCPiKa, float, 0.2, "pt min for TPC to separate pi and k");
-    O2_DEFINE_CONFIGURABLE(cfgPtMax4TPCPiKa, float, 0.6, "pt max for TPC to separate pi and k");
+    Configurable<float> cfgPtMin4ITSPiKa{"cfgPtMin4ITSPiKa", 0.2, "pt min for ITS to separate pi and k"};
+    Configurable<float> cfgPtMax4ITSPiKa{"cfgPtMax4ITSPiKa", 0.8, "pt max for ITS to separate pi and k"};
+    Configurable<float> cfgPtMin4TOFPiKa{"cfgPtMin4TOFPiKa", 0.5, "pt min for TOF to separate pi and k"};
+    Configurable<float> cfgPtMax4TOFPiKa{"cfgPtMax4TOFPiKa", 3.0, "pt max for TOF to separate pi and k"};
+    Configurable<float> cfgPtMin4TPCPiKa{"cfgPtMin4TPCPiKa", 0.2, "pt min for TPC to separate pi and k"};
+    Configurable<float> cfgPtMax4TPCPiKa{"cfgPtMax4TPCPiKa", 0.6, "pt max for TPC to separate pi and k"};
     // end separate pi and k
 
     // separate k-p
-    O2_DEFINE_CONFIGURABLE(cfgPtMin4ITSKaPr, float, 0.4, "pt min for ITS to separate k and p");
-    O2_DEFINE_CONFIGURABLE(cfgPtMax4ITSKaPr, float, 1.4, "pt max for ITS to separate k and p");
-    O2_DEFINE_CONFIGURABLE(cfgPtMin4TOFKaPr, float, 0.6, "pt min for TOF to separate k and p");
-    O2_DEFINE_CONFIGURABLE(cfgPtMax4TOFKaPr, float, 3.0, "pt max for TOF to separate k and p");
-    O2_DEFINE_CONFIGURABLE(cfgPtMin4TPCKaPr, float, 0.2, "pt min for TPC to separate k and p");
-    O2_DEFINE_CONFIGURABLE(cfgPtMax4TPCKaPr, float, 1.0, "pt max for TPC to separate k and p");
+    Configurable<float> cfgPtMin4ITSKaPr{"cfgPtMin4ITSKaPr", 0.4, "pt min for ITS to separate k and p"};
+    Configurable<float> cfgPtMax4ITSKaPr{"cfgPtMax4ITSKaPr", 1.4, "pt max for ITS to separate k and p"};
+    Configurable<float> cfgPtMin4TOFKaPr{"cfgPtMin4TOFKaPr", 0.6, "pt min for TOF to separate k and p"};
+    Configurable<float> cfgPtMax4TOFKaPr{"cfgPtMax4TOFKaPr", 3.0, "pt max for TOF to separate k and p"};
+    Configurable<float> cfgPtMin4TPCKaPr{"cfgPtMin4TPCKaPr", 0.2, "pt min for TPC to separate k and p"};
+    Configurable<float> cfgPtMax4TPCKaPr{"cfgPtMax4TPCKaPr", 1.0, "pt max for TPC to separate k and p"};
   } pidPtRangeOpts;
   // end separate k-p
   // end cfg for PID pt range
@@ -180,20 +176,20 @@ struct PidFlowPtCorr {
   struct : ConfigurableGroup {
     std::string prefix = "circleCutOpts";
     // Switch to enable/disable circular cut PID
-    O2_DEFINE_CONFIGURABLE(cfgUseCircleCutPID, bool, true, "Enable circular cut PID method");
+    Configurable<bool> cfgUseCircleCutPID{"cfgUseCircleCutPID", true, "Enable circular cut PID method"};
 
     // TOF pT threshold: above this pt, TOF signal is required
-    O2_DEFINE_CONFIGURABLE(cfgCircleCutTofPtCut, float, 0.5, "TOF pT threshold for requiring TOF signal");
+    Configurable<float> cfgCircleCutTofPtCut{"cfgCircleCutTofPtCut", 0.5, "TOF pT threshold for requiring TOF signal"};
 
     // Circular cut (TPC+TOF) values (radius squared, default = 2^2 = 4)
-    O2_DEFINE_CONFIGURABLE(cfgCircleCutSigmaPi, float, 4.0, "Circular cut radius squared for Pion (TPC+TOF)");
-    O2_DEFINE_CONFIGURABLE(cfgCircleCutSigmaKa, float, 4.0, "Circular cut radius squared for Kaon (TPC+TOF)");
-    O2_DEFINE_CONFIGURABLE(cfgCircleCutSigmaPr, float, 4.0, "Circular cut radius squared for Proton (TPC+TOF)");
+    Configurable<float> cfgCircleCutSigmaPi{"cfgCircleCutSigmaPi", 4.0, "Circular cut radius squared for Pion (TPC+TOF)"};
+    Configurable<float> cfgCircleCutSigmaKa{"cfgCircleCutSigmaKa", 4.0, "Circular cut radius squared for Kaon (TPC+TOF)"};
+    Configurable<float> cfgCircleCutSigmaPr{"cfgCircleCutSigmaPr", 4.0, "Circular cut radius squared for Proton (TPC+TOF)"};
 
     // TPC-only fallback cut values (|nsigma| < cut)
-    O2_DEFINE_CONFIGURABLE(cfgCircleCutTPCPi, float, 2.0, "TPC-only nsigma cut for Pion");
-    O2_DEFINE_CONFIGURABLE(cfgCircleCutTPCKa, float, 2.0, "TPC-only nsigma cut for Kaon");
-    O2_DEFINE_CONFIGURABLE(cfgCircleCutTPCPr, float, 2.0, "TPC-only nsigma cut for Proton");
+    Configurable<float> cfgCircleCutTPCPi{"cfgCircleCutTPCPi", 2.0, "TPC-only nsigma cut for Pion"};
+    Configurable<float> cfgCircleCutTPCKa{"cfgCircleCutTPCKa", 2.0, "TPC-only nsigma cut for Kaon"};
+    Configurable<float> cfgCircleCutTPCPr{"cfgCircleCutTPCPr", 2.0, "TPC-only nsigma cut for Proton"};
   } circleCutOpts;
 
   struct : ConfigurableGroup {
@@ -202,7 +198,7 @@ struct PidFlowPtCorr {
     ConfigurableAxis cfgaxisAbundanceKa{"cfgaxisAbundanceKa", {100, 0, 200}, "axis for Abundance ka"};
     ConfigurableAxis cfgaxisAbundancePr{"cfgaxisAbundancePr", {100, 0, 50}, "axis for Abundance Pr"};
 
-    O2_DEFINE_CONFIGURABLE(cfgOutPutAbundanceDis, bool, false, "out put hists for pid particle Abundance QA");
+    Configurable<bool> cfgOutPutAbundanceDis{"cfgOutPutAbundanceDis", false, "out put hists for pid particle Abundance QA"};
   } particleAbundanceOpts;
 
   ConfigurableAxis cfgaxisVertex{"cfgaxisVertex", {20, -10, 10}, "vertex axis for histograms"};
@@ -238,7 +234,7 @@ struct PidFlowPtCorr {
   // data tracks filter
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksExtra, TracksPID, aod::TracksIU, aod::TracksDCA>>;
   // data collisions filter
-  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::MultsRun3>>;
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs, aod::MultsRun3>>;
 
   // MC
   Filter mccollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
@@ -258,11 +254,10 @@ struct PidFlowPtCorr {
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
   // Connect to ccdb
-  Service<ccdb::BasicCCDBManager> ccdb;
+  Service<ccdb::BasicCCDBManager> ccdb{};
   ctpRateFetcher rateFetcher;
-  O2_DEFINE_CONFIGURABLE(cfgnolaterthan, int64_t, std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object")
-  O2_DEFINE_CONFIGURABLE(cfgurl, std::string, "http://alice-ccdb.cern.ch", "url of the ccdb repository")
-
+  Configurable<int64_t> cfgnolaterthan{"cfgnolaterthan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> cfgurl{"cfgurl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   // Define output
   HistogramRegistry registry{"registry"};
 
@@ -283,14 +278,25 @@ struct PidFlowPtCorr {
   std::vector<float> cfgMultPVCutPara;
   std::vector<float> cfgNSigma;
   std::vector<int> runNumbers;
-  std::map<int, std::vector<std::shared_ptr<TH1>>> th1sList;
-  std::map<int, std::vector<std::shared_ptr<TH3>>> th3sList;
+
   enum MyParticleType {
     kCharged = 0,
     kPion,
     kKaon,
     kProton,
     kNumberOfParticles
+  };
+
+  enum CentEstimators {
+    kCentFT0C = 0,
+    kCentFT0CVariant1,
+    kCentFT0M,
+    kCentFV0A,
+    kCentNTPV,
+    kCentNGlobal,
+    kCentMFT,
+    // Count the total number of enum
+    kCount_CentEstimators
   };
 
   enum OutputTH1Names {
@@ -329,26 +335,18 @@ struct PidFlowPtCorr {
   // Declare the pt, mult and phi Axis;
 
   std::vector<TF1*> funcEff;
-  TH1D* hFindPtBin;
-  TF1* funcV2;
-  TF1* funcV3;
-  TF1* funcV4;
-
-  // hists for debug
-  struct {
-    std::shared_ptr<TH1> hPtEffWeight = 0;
-    std::shared_ptr<TH2> hPtCentEffWeight = 0;
-    std::shared_ptr<THnSparse> hRunNumberPhiEtaVertexWeight = 0;
-  } debugHist;
-  // end hist for debug
+  TH1D* hFindPtBin = nullptr;
+  TF1* funcV2 = nullptr;
+  TF1* funcV3 = nullptr;
+  TF1* funcV4 = nullptr;
 
   // hists for QA runbyrun
   struct qaHist {
-    TH1* hPhiRunByRunBefore = 0;
-    TH1* hPhiRunByRunAfter = 0;
+    TH1* hPhiRunByRunBefore = nullptr;
+    TH1* hPhiRunByRunAfter = nullptr;
 
-    TH2* hITSnclsVsPhi = 0;
-    TH2* hITSChi2VsPhi = 0;
+    TH2* hITSnclsVsPhi = nullptr;
+    TH2* hITSChi2VsPhi = nullptr;
 
     qaHist(TH1* hPhiRunByRunBefore, TH1* hPhiRunByRunAfter, TH2* hITSnclsVsPhi, TH2* hITSChi2VsPhi)
       : hPhiRunByRunBefore(hPhiRunByRunBefore), hPhiRunByRunAfter(hPhiRunByRunAfter), hITSnclsVsPhi(hITSnclsVsPhi), hITSChi2VsPhi(hITSChi2VsPhi)
@@ -374,7 +372,7 @@ struct PidFlowPtCorr {
 
     // Set the pt, mult and phi Axis;
 
-    if (dcaCutOpts.cfgDCAxyNSigma) {
+    if (dcaCutOpts.cfgDCAxyNSigma > 0) {
       dcaCutOpts.fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", dcaCutOpts.cfgDCAxy->c_str()), 0.001, 1000);
       dcaCutOpts.fPtDepDCAxy->SetParameter(0, dcaCutOpts.cfgDCAxyNSigma);
       LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", dcaCutOpts.cfgDCAxy->c_str()));
@@ -393,7 +391,8 @@ struct PidFlowPtCorr {
     registry.add("hVtxZ", "", {HistType::kTH1D, {cfgaxisVertex}});
     registry.add("hMult", "", {HistType::kTH1D, {cfgaxisNch}});
     registry.add("hMultTPC", "", {HistType::kTH1D, {cfgaxisNch}});
-    registry.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
+    std::string hCentTitle = "Centrality distribution, Estimator " + std::to_string(cfgCentEstimator);
+    registry.add("hCent", hCentTitle.c_str(), {HistType::kTH1D, {{90, 0, 90}}});
     registry.add("hPt", "", {HistType::kTH1D, {cfgaxisPt}});
     registry.add("hPtCorr", "", {HistType::kTH1D, {cfgaxisPt}});
     registry.add("hPtPi", "", {HistType::kTH1D, {cfgaxisPt}});
@@ -461,6 +460,18 @@ struct PidFlowPtCorr {
       registry.add("correction/hPtCentMcGenPr", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
     } // cfgoutputMC
 
+    if (switchsOpts.cfgOutPutMC1D.value) {
+      registry.add("correction1D/hPtMCRec1D", "", {HistType::kTH1D, {cfgaxisPt}});
+      registry.add("correction1D/hPtMCRec1DPi", "", {HistType::kTH1D, {cfgaxisPt}});
+      registry.add("correction1D/hPtMCRec1DKa", "", {HistType::kTH1D, {cfgaxisPt}});
+      registry.add("correction1D/hPtMCRec1DPr", "", {HistType::kTH1D, {cfgaxisPt}});
+
+      registry.add("correction1D/hPtMCGen1D", "", {HistType::kTH1D, {cfgaxisPt}});
+      registry.add("correction1D/hPtMCGen1DPi", "", {HistType::kTH1D, {cfgaxisPt}});
+      registry.add("correction1D/hPtMCGen1DKa", "", {HistType::kTH1D, {cfgaxisPt}});
+      registry.add("correction1D/hPtMCGen1DPr", "", {HistType::kTH1D, {cfgaxisPt}});
+    }
+
     if (switchsOpts.cfgOutPutPtSpectra.value) {
       registry.add("ptSpectra/hPtCentData", "", {HistType::kTH2D, {cfgaxisPt, axisMultiplicity}});
       registry.add("ptSpectra/hCentEventCountData", "", {HistType::kTH1D, {axisMultiplicity}});
@@ -527,7 +538,7 @@ struct PidFlowPtCorr {
     // flow container setup
     // cumulant of flow
     // fill TObjArray for charged
-    TObjArray* oba4Ch = new TObjArray();
+    auto* oba4Ch = new TObjArray();
     oba4Ch->Add(new TNamed("c22", "c22"));
     oba4Ch->Add(new TNamed("c32", "c32"));
     oba4Ch->Add(new TNamed("c24", "c24"));
@@ -560,7 +571,7 @@ struct PidFlowPtCorr {
 
     // init fFCPID
     // note that need to add c22pure and c32pure
-    TObjArray* oba4PID = dynamic_cast<TObjArray*>(oba4Ch->Clone());
+    auto* oba4PID = dynamic_cast<TObjArray*>(oba4Ch->Clone());
     oba4PID->Add(new TNamed("c22pure", "c22pure"));
     oba4PID->Add(new TNamed("c32pure", "c32pure"));
     oba4PID->Add(new TNamed("covV2PtPID", "covV2PtPID"));
@@ -739,7 +750,7 @@ struct PidFlowPtCorr {
     fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
 
     std::vector<double> pTEffBins = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0};
-    hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, &pTEffBins[0]);
+    hFindPtBin = new TH1D("hFindPtBin", "hFindPtBin", pTEffBins.size() - 1, pTEffBins.data());
     funcEff.resize(pTEffBins.size() - 1);
 
     std::vector<double> f1p0 = cfgTrackDensityP0;
@@ -979,13 +990,14 @@ struct PidFlowPtCorr {
     // ------------------------------
     if (isPionBool) {
       return MyParticleType::kPion;
-    } else if (isKaonBool) {
-      return MyParticleType::kKaon;
-    } else if (isProtonBool) {
-      return MyParticleType::kProton;
-    } else {
-      return -1;
     }
+    if (isKaonBool) {
+      return MyParticleType::kKaon;
+    }
+    if (isProtonBool) {
+      return MyParticleType::kProton;
+    }
+    return -1;
   }
 
   /**
@@ -1009,12 +1021,13 @@ struct PidFlowPtCorr {
       bool isPr = isProton(track);
       int nCandidates = isPi + isKa + isPr;
       if (nCandidates == 1) {
-        if (isPi)
+        if (isPi) {
           pid = MyParticleType::kPion;
-        else if (isKa)
+        } else if (isKa) {
           pid = MyParticleType::kKaon;
-        else if (isPr)
+        } else if (isPr) {
           pid = MyParticleType::kProton;
+        }
       }
       // else: pid remains -1 (ambiguous or none)
     }
@@ -1030,11 +1043,12 @@ struct PidFlowPtCorr {
     double NpairA = fGFW->Calculate(corrconfA, 0, true).real();
     double NpairB = fGFW->Calculate(corrconfB, 0, true).real();
 
-    if (NpairA == 0 && NpairB == 0)
+    if (NpairA == 0 && NpairB == 0) {
       return 0;
+    }
 
-    double ChC22A = NpairA ? fGFW->Calculate(corrconfA, 0, false).real() / NpairA : 0.;
-    double ChC22B = NpairB ? fGFW->Calculate(corrconfB, 0, false).real() / NpairB : 0.;
+    double ChC22A = NpairA > 0 ? fGFW->Calculate(corrconfA, 0, false).real() / NpairA : 0.;
+    double ChC22B = NpairB > 0 ? fGFW->Calculate(corrconfB, 0, false).real() / NpairB : 0.;
 
     double ChC22 = (ChC22A * NpairA + ChC22B * NpairB) / (NpairA + NpairB);
 
@@ -1087,16 +1101,18 @@ struct PidFlowPtCorr {
    */
   void fillFC4PtC22(const double& cent, const double& ptSum, const double& nch, const double& rndm)
   {
-    double dnx, val;
+    double dnx = 0.0, val = 0.0;
 
     dnx = fGFW->Calculate(corrconfigs.at(0), 0, true).real();
-    if (dnx == 0)
+    if (dnx == 0) {
       return;
+    }
 
     // <2>
     val = fGFW->Calculate(corrconfigs.at(0), 0, false).real() / dnx;
-    if (std::fabs(val) >= 1)
+    if (std::fabs(val) >= 1) {
       return;
+    }
 
     registry.fill(HIST("meanptCentNbs/hCharged"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, val, nch * dnx);
     registry.fill(HIST("meanptCentNbs/hChargedMeanpt"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, ptSum / nch, 1.);
@@ -1116,28 +1132,32 @@ struct PidFlowPtCorr {
   void fillFC4PtC22(const double& cent, const double& rndm, MyParticleType type, const double& pidPtSum, const double& nPid)
   {
     // <2>
-    double dnx, val;
+    double dnx = 0.0, val = 0.0;
 
     dnx = fGFW->Calculate(corrconfigs.at(0), 0, true).real();
-    if (dnx == 0)
+    if (dnx == 0) {
       return;
+    }
 
     // <2>
     val = fGFW->Calculate(corrconfigs.at(0), 0, false).real() / dnx;
-    if (std::fabs(val) >= 1)
+    if (std::fabs(val) >= 1) {
       return;
+    }
 
     double pidc22 = 0;
     double npairPid = 0;
     switch (type) {
       case MyParticleType::kPion:
         pidc22 = getPidC22InOneEvent(corrconfigs.at(5), corrconfigs.at(6));
-        if (pidc22 == 0)
+        if (pidc22 == 0) {
           return;
+        }
 
         npairPid = fGFW->Calculate(corrconfigs.at(5), 0, true).real() + fGFW->Calculate(corrconfigs.at(6), 0, true).real();
-        if (npairPid == 0)
+        if (npairPid == 0) {
           return;
+        }
 
         registry.fill(HIST("meanptCentNbs/hPion"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
         registry.fill(HIST("meanptCentNbs/hChargedPionFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nPid);
@@ -1149,11 +1169,12 @@ struct PidFlowPtCorr {
 
         if (switchsOpts.cfgClosureTest.value != 0) {
           double npair4c22pure = fGFW->Calculate(corrconfigs.at(29), 0, true).real();
-          if (npair4c22pure > minVal4Float)
+          if (npair4c22pure > minVal4Float) {
             registry.fill(HIST("meanptCentNbs/hPionMeanptWeightC22pure"),
                           pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap,
                           pidPtSum / nPid,
                           nPid * npairPid * fGFW->Calculate(corrconfigs.at(29), 0, false).real() / npair4c22pure);
+          }
 
           registry.fill(HIST("meanptCentNbs/hPionMeanptWeightMeanpt"),
                         pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap,
@@ -1170,12 +1191,14 @@ struct PidFlowPtCorr {
 
       case MyParticleType::kKaon:
         pidc22 = getPidC22InOneEvent(corrconfigs.at(7), corrconfigs.at(8));
-        if (pidc22 == 0)
+        if (pidc22 == 0) {
           return;
+        }
 
         npairPid = fGFW->Calculate(corrconfigs.at(7), 0, true).real() + fGFW->Calculate(corrconfigs.at(8), 0, true).real();
-        if (npairPid == 0)
+        if (npairPid == 0) {
           return;
+        }
 
         registry.fill(HIST("meanptCentNbs/hKaon"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
         registry.fill(HIST("meanptCentNbs/hChargedKaonFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nPid);
@@ -1190,12 +1213,14 @@ struct PidFlowPtCorr {
 
       case MyParticleType::kProton:
         pidc22 = getPidC22InOneEvent(corrconfigs.at(9), corrconfigs.at(10));
-        if (pidc22 == 0)
+        if (pidc22 == 0) {
           return;
+        }
 
         npairPid = fGFW->Calculate(corrconfigs.at(9), 0, true).real() + fGFW->Calculate(corrconfigs.at(10), 0, true).real();
-        if (npairPid == 0)
+        if (npairPid == 0) {
           return;
+        }
 
         registry.fill(HIST("meanptCentNbs/hProton"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
         registry.fill(HIST("meanptCentNbs/hChargedProtonFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nPid);
@@ -1217,15 +1242,16 @@ struct PidFlowPtCorr {
 
   bool fillFC(MyParticleType type, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, const char* tarName)
   {
-    double dnx, val;
+    double dnx = 0.0;
     // calculate #sum exp{i * 0 (#phi_{i} - #phi_{j})} == N_{pairs}
     // note that weight is ignored in the formula but not in the calculation, for c24 is similar
     dnx = fGFW->Calculate(corrconf, 0, true).real();
-    if (dnx == 0)
+    if (dnx == 0) {
       return false;
+    }
     if (!corrconf.pTDif) {
       // #sum exp{i * 2 * (#phi_{i} - #phi_{j})} / N_{pairs} == < 2 >
-      val = fGFW->Calculate(corrconf, 0, false).real() / dnx;
+      double val = fGFW->Calculate(corrconf, 0, false).real() / dnx;
       if (std::fabs(val) < 1) {
         // NOTE that dnx is WEIGHT
         switch (type) {
@@ -1264,22 +1290,21 @@ struct PidFlowPtCorr {
   template <char... chars>
   void fillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
   {
-    double dnx, val;
     // calculate #sum exp{i * 0 (#phi_{i} - #phi_{j})} == N_{pairs}
     // note that weight is ignored in the formula but not in the calculation, for c24 is similar
-    dnx = fGFW->Calculate(corrconf, 0, true).real();
-    if (dnx == 0)
+    double dnx = fGFW->Calculate(corrconf, 0, true).real();
+    if (dnx == 0) {
       return;
+    }
     if (!corrconf.pTDif) {
       // #sum exp{i * 2 * (#phi_{i} - #phi_{j})} / N_{pairs} == < 2 >
-      val = fGFW->Calculate(corrconf, 0, false).real() / dnx;
+      double val = fGFW->Calculate(corrconf, 0, false).real() / dnx;
       if (std::fabs(val) < 1) {
         // NOTE that dnx is WEIGHT
         registry.fill(tarName, cent, val, dnx);
         return;
       }
     }
-    return;
   }
 
   void fillFCvnpt(MyParticleType type,
@@ -1291,11 +1316,11 @@ struct PidFlowPtCorr {
                   const char* tarName,
                   bool useWeightOne = false)
   {
-    double dnx, val;
-    dnx = fGFW->Calculate(corrconf, 0, true).real();
-    if (dnx == 0)
+    double dnx = fGFW->Calculate(corrconf, 0, true).real();
+    if (dnx == 0) {
       return;
-    val = fGFW->Calculate(corrconf, 0, false).real() / dnx;
+    }
+    double val = fGFW->Calculate(corrconf, 0, false).real() / dnx;
     if (std::fabs(val) < 1) {
       switch (type) {
         case MyParticleType::kCharged:
@@ -1317,8 +1342,6 @@ struct PidFlowPtCorr {
           break;
       }
     }
-
-    return;
   }
 
   /**
@@ -1337,28 +1360,30 @@ struct PidFlowPtCorr {
   template <char... chars>
   void fillProfilevnpt(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent, const double& ptSum, const double& nch, const double& meanPt = 0)
   {
-    double dnx, val;
+    double dnx = 0.0, val = 0.0;
     dnx = fGFW->Calculate(corrconf, 0, true).real();
-    if (dnx == 0)
+    if (dnx == 0) {
       return;
+    }
     val = fGFW->Calculate(corrconf, 0, false).real() / dnx;
-    if (std::fabs(val) < 1)
+    if (std::fabs(val) < 1) {
       registry.fill(tarName, cent, val * (ptSum / nch - meanPt), dnx * nch);
-    return;
+    }
   }
 
   template <char... chars>
   void fillProfilePOIvnpt(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent, const double& ptSum, const double& nch)
   {
-    double dnx, val;
+    double dnx = 0.0, val = 0.0;
     dnx = fGFW->Calculate(corrconf, 0, true).real();
-    if (dnx == 0)
+    if (dnx == 0) {
       return;
+    }
     val = fGFW->Calculate(corrconf, 0, false).real() / dnx;
 
-    if (std::fabs(val) < 1)
+    if (std::fabs(val) < 1) {
       registry.fill(tarName, cent, ptSum / nch, val, dnx);
-    return;
+    }
   }
 
   // fill fgfw helper
@@ -1373,8 +1398,9 @@ struct PidFlowPtCorr {
    */
   void loadCorrections(uint64_t timestamp)
   {
-    if (correctionsLoaded)
+    if (correctionsLoaded) {
       return;
+    }
     int nspecies = 1;
     int totalSpecies = 4;
     /// @note if put 4 path in cfg then load charged, pi, ka, pr
@@ -1383,23 +1409,25 @@ struct PidFlowPtCorr {
 
     // load NUA
     if (cfgAcceptance.size() == static_cast<uint64_t>(nspecies)) {
-      for (int i = 0; i <= nspecies - 1; i++) {
+      for (int i = 0; i < nspecies; i++) {
         mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance[i], timestamp));
       }
-      if (mAcceptance.size() == static_cast<uint64_t>(nspecies))
+      if (mAcceptance.size() == static_cast<uint64_t>(nspecies)) {
         LOGF(info, "Loaded acceptance weights");
-      else
+      } else {
         LOGF(warning, "Could not load acceptance weights");
+      }
     }
 
     if (cfgAcceptance.size() == static_cast<uint64_t>(totalSpecies)) {
       for (int i = 0; i <= totalSpecies - 1; i++) {
         mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance[i], timestamp));
       }
-      if (mAcceptance.size() == static_cast<uint64_t>(totalSpecies))
+      if (mAcceptance.size() == static_cast<uint64_t>(totalSpecies)) {
         LOGF(info, "Loaded acceptance weights * 4");
-      else
+      } else {
         LOGF(warning, "Could not load acceptance weights * 4");
+      }
     }
 
     // end load NUA
@@ -1412,23 +1440,25 @@ struct PidFlowPtCorr {
     std::vector<std::string> effPath = correctionPathOpts.cfgEfficiencyPath.value;
 
     if (effPath.size() == static_cast<uint64_t>(nspecies)) {
-      for (int i = 0; i <= nspecies - 1; i++) {
+      for (int i = 0; i < nspecies; i++) {
         mEfficiency.push_back(ccdb->getForTimeStamp<TH2>(effPath[i], timestamp));
       }
-      if (mEfficiency.size() == static_cast<uint64_t>(nspecies))
+      if (mEfficiency.size() == static_cast<uint64_t>(nspecies)) {
         LOGF(info, "Loaded PID efficiency histogram");
-      else
+      } else {
         LOGF(warning, "Could not load PID efficiency histogram");
+      }
     }
 
     if (effPath.size() == static_cast<uint64_t>(totalSpecies)) {
       for (int i = 0; i <= totalSpecies - 1; i++) {
         mEfficiency.push_back(ccdb->getForTimeStamp<TH2>(effPath[i], timestamp));
       }
-      if (mEfficiency.size() == static_cast<uint64_t>(totalSpecies))
+      if (mEfficiency.size() == static_cast<uint64_t>(totalSpecies)) {
         LOGF(info, "Loaded PID efficiency histogram * 4");
-      else
+      } else {
         LOGF(warning, "Could not load PID efficiency histogram * 4");
+      }
     }
 
     // End load PID efficiency for ITS + global track
@@ -1450,10 +1480,11 @@ struct PidFlowPtCorr {
   template <typename TrackObject>
   bool setParticleNUAWeight(float& weight_nua, TrackObject& track, float vtxz)
   {
-    if (mAcceptance.size() == static_cast<uint64_t>(1) || mAcceptance.size() == static_cast<uint64_t>(4))
+    if (mAcceptance.size() == static_cast<uint64_t>(1) || mAcceptance.size() == static_cast<uint64_t>(4)) {
       weight_nua = mAcceptance[0]->getNUA(track.phi(), track.eta(), vtxz);
-    else
+    } else {
       weight_nua = 1;
+    }
     return true;
   }
 
@@ -1559,16 +1590,20 @@ struct PidFlowPtCorr {
   bool particleSelected(mcParticle& particle)
   {
     // eta
-    if (std::fabs(particle.eta()) > trkQualityOpts.cfgCutEta.value)
+    if (std::fabs(particle.eta()) > trkQualityOpts.cfgCutEta.value) {
       return false;
+    }
     // pt
-    if (particle.pt() < trkQualityOpts.cfgCutPtMin.value)
+    if (particle.pt() < trkQualityOpts.cfgCutPtMin.value) {
       return false;
-    if (particle.pt() > trkQualityOpts.cfgCutPtMax.value)
+    }
+    if (particle.pt() > trkQualityOpts.cfgCutPtMax.value) {
       return false;
+    }
     // stable particle
-    if (!isStable(particle.pdgCode()))
+    if (!isStable(particle.pdgCode())) {
       return false;
+    }
 
     return true;
   }
@@ -1591,20 +1626,24 @@ struct PidFlowPtCorr {
   {
     // dca xy cut
     // note that z cut is in filter
-    if (dcaCutOpts.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > dcaCutOpts.fPtDepDCAxy->Eval(track.pt())))
+    if (dcaCutOpts.cfgDCAxyNSigma && (std::fabs(track.dcaXY()) > dcaCutOpts.fPtDepDCAxy->Eval(track.pt()))) {
       return false;
+    }
 
     // pt
-    if (!((track.pt() > trkQualityOpts.cfgCutPtMin.value) && (track.pt() < trkQualityOpts.cfgCutPtMax.value)))
+    if (!((track.pt() > trkQualityOpts.cfgCutPtMin.value) && (track.pt() < trkQualityOpts.cfgCutPtMax.value))) {
       return false;
+    }
 
     // eta
-    if (std::fabs(track.eta()) > trkQualityOpts.cfgCutEta.value)
+    if (std::fabs(track.eta()) > trkQualityOpts.cfgCutEta.value) {
       return false;
+    }
 
     // dca z
-    if (std::fabs(track.dcaZ()) > dcaCutOpts.cfgCutDCAz.value)
+    if (std::fabs(track.dcaZ()) > dcaCutOpts.cfgCutDCAz.value) {
       return false;
+    }
 
     return true;
   }
@@ -1623,12 +1662,14 @@ struct PidFlowPtCorr {
   bool trackSelected4ITS(TTrack& track)
   {
     // its ncls cut
-    if (track.itsNCls() <= trkQualityOpts.cfgITSNCls.value)
+    if (track.itsNCls() <= trkQualityOpts.cfgITSNCls.value) {
       return false;
+    }
 
     // its chi2
-    if (track.itsChi2NCl() > trkQualityOpts.cfgITSChi2NDF.value)
+    if (track.itsChi2NCl() > trkQualityOpts.cfgITSChi2NDF.value) {
       return false;
+    }
 
     return true;
   }
@@ -1648,14 +1689,17 @@ struct PidFlowPtCorr {
   bool trackSelected4TPC(TTrack& track)
   {
     // tpc crossedrows cut
-    if (track.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value)
+    if (track.tpcNClsCrossedRows() <= trkQualityOpts.cfgTPCCrossedRows.value) {
       return false;
+    }
     // tpc ncls cut
-    if (track.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value)
+    if (track.tpcNClsFound() <= trkQualityOpts.cfgTPCNCls.value) {
       return false;
+    }
     // tpc chi2
-    if (track.tpcChi2NCl() > cfgCutChi2prTPCcls)
+    if (track.tpcChi2NCl() > cfgCutChi2prTPCcls) {
       return false;
+    }
 
     return true;
   }
@@ -1693,6 +1737,44 @@ struct PidFlowPtCorr {
         // LOGF(warning, "could not find event count graph");
         break;
     }
+  }
+
+  /**
+   * @brief get centrality from the configured estimator
+   * @note mirrors flowTask.cxx's getCentrality(), allowing this task to
+   *       switch between different Run 3 centrality estimators via
+   *       cfgCentEstimator instead of always using FT0C.
+   */
+  template <typename TCollision>
+  float getCentrality(TCollision const& collision)
+  {
+    float cent = -1;
+    switch (cfgCentEstimator) {
+      case kCentFT0C:
+        cent = collision.centFT0C();
+        break;
+      case kCentFT0CVariant1:
+        cent = collision.centFT0CVariant1();
+        break;
+      case kCentFT0M:
+        cent = collision.centFT0M();
+        break;
+      case kCentFV0A:
+        cent = collision.centFV0A();
+        break;
+      case kCentNTPV:
+        cent = collision.centNTPV();
+        break;
+      case kCentNGlobal:
+        cent = collision.centNGlobal();
+        break;
+      case kCentMFT:
+        cent = collision.centMFT();
+        break;
+      default:
+        cent = collision.centFT0C();
+    }
+    return cent;
   }
 
   /**
@@ -1765,42 +1847,50 @@ struct PidFlowPtCorr {
       float zRes = std::sqrt(collision.covZZ());
       double zResMin = 0.25;
       int numContMax = 20;
-      if (zRes > zResMin && collision.numContrib() < numContMax)
+      if (zRes > zResMin && collision.numContrib() < numContMax) {
         vtxz = -999;
+      }
     }
     auto multNTracksPV = collision.multNTracksPV();
     auto occupancy = collision.trackOccupancyInTimeRange();
 
-    if (std::fabs(vtxz) > cfgCutVertex)
+    if (std::fabs(vtxz) > cfgCutVertex) {
       return false;
+    }
 
     registry.fill(HIST("hNTracksPVvsCentrality"), multNTracksPV, centrality);
     if (evtSeleOpts.cfgDoMultPVCut.value) {
-      if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+      if (multNTracksPV < fMultPVCutLow->Eval(centrality)) {
         return false;
-      if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+      }
+      if (multNTracksPV > fMultPVCutHigh->Eval(centrality)) {
         return false;
+      }
     }
     fillEventCountHelper(funcName, 9.5);
 
-    if (occupancy > evtSeleOpts.cfgCutOccupancyHigh.value)
+    if (occupancy > evtSeleOpts.cfgCutOccupancyHigh.value) {
       return 0;
+    }
     fillEventCountHelper(funcName, 10.5);
 
     // V0A T0A 5 sigma cut
     if (evtSeleOpts.cfgDoV0AT0Acut.value) {
       int nsigma = 5;
-      if (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > nsigma * fT0AV0ASigma->Eval(collision.multFT0A()))
+      if (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > nsigma * fT0AV0ASigma->Eval(collision.multFT0A())) {
         return 0;
+      }
     }
     fillEventCountHelper(funcName, 11.5);
 
     registry.fill(HIST("hInteractionRate"), interactionRate);
-    if (interactionRate > 0 && interactionRate < evtSeleOpts.cfgCutminIR.value)
+    if (interactionRate > 0 && interactionRate < evtSeleOpts.cfgCutminIR.value) {
       return false;
+    }
     fillEventCountHelper(funcName, 12.5);
-    if (interactionRate > evtSeleOpts.cfgCutmaxIR.value)
+    if (interactionRate > evtSeleOpts.cfgCutmaxIR.value) {
       return false;
+    }
     fillEventCountHelper(funcName, 13.5);
 
     return true;
@@ -1825,15 +1915,18 @@ struct PidFlowPtCorr {
     // collision cut
     // include : 1.track.size 2.collision.sel8 3. evenSelected
     registry.fill(HIST("hEventCount/processData"), 0.5);
-    if (nTot < 1)
+    if (nTot < 1) {
       return;
+    }
     fGFW->Clear();
-    const auto cent = collision.centFT0C();
-    if (!collision.sel8())
+    const auto cent = getCentrality(collision);
+    if (!collision.sel8()) {
       return;
+    }
     registry.fill(HIST("hEventCount/processData"), 1.5);
-    if (!eventSelected(collision, cent, interactionRate))
+    if (!eventSelected(collision, cent, interactionRate)) {
       return;
+    }
     // end collision cut
 
     // pt spectra
@@ -1917,16 +2010,21 @@ struct PidFlowPtCorr {
       float weff = 1;
 
       // track cut ITS only
-      if (!trackSelectedGlobal(track))
+      if (!trackSelectedGlobal(track)) {
         continue;
-      if (!track.hasITS())
+      }
+      if (!track.hasITS()) {
         continue;
-      if (!trackSelected4ITS(track))
+      }
+      if (!trackSelected4ITS(track)) {
         continue;
-      if (!track.hasTPC())
+      }
+      if (!track.hasTPC()) {
         continue;
-      if (!trackSelected4TPC(track))
+      }
+      if (!trackSelected4TPC(track)) {
         continue;
+      }
 
       // end track cut its only
 
@@ -2014,16 +2112,21 @@ struct PidFlowPtCorr {
       } // cfgDoLocDenCorr
 
       // track cut, global + ITS + TPC
-      if (!trackSelectedGlobal(track))
+      if (!trackSelectedGlobal(track)) {
         continue;
-      if (!track.hasITS())
+      }
+      if (!track.hasITS()) {
         continue;
-      if (!track.hasTPC())
+      }
+      if (!track.hasTPC()) {
         continue;
-      if (!trackSelected4ITS(track))
+      }
+      if (!trackSelected4ITS(track)) {
         continue;
-      if (!trackSelected4TPC(track))
+      }
+      if (!trackSelected4TPC(track)) {
         continue;
+      }
 
       // end track cut
       totalGlobalTrack++;
@@ -2201,14 +2304,17 @@ struct PidFlowPtCorr {
       fillProfilePOIvnpt(corrconfigs.at(10), HIST("pr/c22dmeanpt"), cent, ptSum, nch);
 
       fillFC4PtC22(cent, ptSum, nch, rndm);
-      if (nPionWeighted > 0)
+      if (nPionWeighted > 0) {
         fillFC4PtC22(cent, rndm, MyParticleType::kPion, pionPtSum, nPionWeighted);
+      }
 
-      if (nKaonWeighted > 0)
+      if (nKaonWeighted > 0) {
         fillFC4PtC22(cent, rndm, MyParticleType::kKaon, kaonPtSum, nKaonWeighted);
+      }
 
-      if (nProtonWeighted > 0)
+      if (nProtonWeighted > 0) {
         fillFC4PtC22(cent, rndm, MyParticleType::kProton, protonPtSum, nProtonWeighted);
+      }
 
       if (switchsOpts.cfgOutPutPtSpectra.value) {
         // charged calculation
@@ -2218,20 +2324,23 @@ struct PidFlowPtCorr {
 
         // pi
         double pidChargedC22Pi = getPidC22InOneEvent(corrconfigs.at(5), corrconfigs.at(6));
-        if (pidChargedC22Pi > 0 && chargedC22 > 0)
+        if (pidChargedC22Pi > 0 && chargedC22 > 0) {
           registry.fill(HIST("c22PrimeVsc22/Pi"), pidChargedC22Pi, chargedC22);
+        }
         // end pi
 
         // Ka
         double pidKaonC22 = getPidC22InOneEvent(corrconfigs.at(7), corrconfigs.at(8));
-        if (pidKaonC22 > 0 && chargedC22 > 0)
+        if (pidKaonC22 > 0 && chargedC22 > 0) {
           registry.fill(HIST("c22PrimeVsc22/Ka"), pidKaonC22, chargedC22);
+        }
         // end Ka
 
         // Pr
         double pidProtonC22 = getPidC22InOneEvent(corrconfigs.at(9), corrconfigs.at(10));
-        if (pidProtonC22 > 0 && chargedC22 > 0)
+        if (pidProtonC22 > 0 && chargedC22 > 0) {
           registry.fill(HIST("c22PrimeVsc22/Pr"), pidProtonC22, chargedC22);
+        }
         // end Pr
       }
 
@@ -2358,15 +2467,18 @@ struct PidFlowPtCorr {
     // collision cut
     // include : 1.track.size 2.collision.sel8 3. evenSelected
     registry.fill(HIST("hEventCount/fillCorrectionGraph"), 0.5);
-    if (nTot < 1)
+    if (nTot < 1) {
       return;
+    }
     fGFW->Clear();
-    const auto cent = collision.centFT0C();
-    if (!collision.sel8())
+    const auto cent = getCentrality(collision);
+    if (!collision.sel8()) {
       return;
+    }
     registry.fill(HIST("hEventCount/fillCorrectionGraph"), 1.5);
-    if (!eventSelected(collision, cent, interactionRate, MyFunctionName::funcFillCorrectionGraph))
+    if (!eventSelected(collision, cent, interactionRate, MyFunctionName::funcFillCorrectionGraph)) {
       return;
+    }
     // end collision cut
 
     // loop the vector, find the place to put (phi eta Vz)
@@ -2386,16 +2498,21 @@ struct PidFlowPtCorr {
     // loop all the track
     for (const auto& track : tracks) {
       // track cut
-      if (!trackSelectedGlobal(track))
+      if (!trackSelectedGlobal(track)) {
         continue;
-      if (!track.hasITS())
+      }
+      if (!track.hasITS()) {
         continue;
-      if (!track.hasTPC())
+      }
+      if (!track.hasTPC()) {
         continue;
-      if (!trackSelected4ITS(track))
+      }
+      if (!trackSelected4ITS(track)) {
         continue;
-      if (!trackSelected4TPC(track))
+      }
+      if (!trackSelected4TPC(track)) {
         continue;
+      }
       // end track cut
 
       // fill the THn
@@ -2439,12 +2556,14 @@ struct PidFlowPtCorr {
 
     /// @note collision cut
     // include : 1.track.size 2.collision.sel8 3. evenSelected
-    if (nTot < 1)
+    if (nTot < 1) {
       return;
+    }
 
-    const auto cent = collision.centFT0C();
-    if (!collision.sel8())
+    const auto cent = getCentrality(collision);
+    if (!collision.sel8()) {
       return;
+    }
 
     /// @note event qa
     registry.fill(HIST("hProcessQA/centVsMult"), cent, tracks.size());
@@ -2453,18 +2572,21 @@ struct PidFlowPtCorr {
     // end event qa
 
     // i dont want to fill event count again as it's filled in other 5 function
-    if (!eventSelected(collision, cent, interactionRate, MyFunctionName::funcProcessQA))
+    if (!eventSelected(collision, cent, interactionRate, MyFunctionName::funcProcessQA)) {
       return;
+    }
     // end init && collision cut
 
     /// @note track loop
     for (const auto& track : tracks) {
       /// @note select global track
       // track cut isnt applied, this is track QA function!
-      if (!track.hasITS())
+      if (!track.hasITS()) {
         continue;
-      if (!track.hasTPC())
+      }
+      if (!track.hasTPC()) {
         continue;
+      }
       // end select global track
 
       /// @note fill QA graphs
@@ -2521,15 +2643,18 @@ struct PidFlowPtCorr {
 
     // collision cut
     registry.fill(HIST("hEventCount/detectorPidQA"), 0.5);
-    if (nTot < 1)
+    if (nTot < 1) {
       return;
+    }
     fGFW->Clear();
-    const auto cent = collision.centFT0C();
-    if (!collision.sel8())
+    const auto cent = getCentrality(collision);
+    if (!collision.sel8()) {
       return;
+    }
     registry.fill(HIST("hEventCount/detectorPidQA"), 1.5);
-    if (!eventSelected(collision, cent, interactionRate, MyFunctionName::funcDetectorPidQA))
+    if (!eventSelected(collision, cent, interactionRate, MyFunctionName::funcDetectorPidQA)) {
       return;
+    }
     // loadCorrections(bc.timestamp());
     // end cut and correction
 
@@ -2544,16 +2669,21 @@ struct PidFlowPtCorr {
     // start filling graphs
     for (const auto& track : tracks) {
       // track cut
-      if (!trackSelectedGlobal(track))
+      if (!trackSelectedGlobal(track)) {
         continue;
-      if (!track.hasITS())
+      }
+      if (!track.hasITS()) {
         continue;
-      if (!track.hasTPC())
+      }
+      if (!track.hasTPC()) {
         continue;
-      if (!trackSelected4ITS(track))
+      }
+      if (!trackSelected4ITS(track)) {
         continue;
-      if (!trackSelected4TPC(track))
+      }
+      if (!trackSelected4TPC(track)) {
         continue;
+      }
       // end track cut
 
       // TPC TOF
@@ -2590,19 +2720,22 @@ struct PidFlowPtCorr {
   {
     // init && cut
     registry.fill(HIST("hEventCount/processReco"), 0.5);
-    if (tracks.size() <= 0)
+    if (tracks.size() <= 0) {
       return;
-    if (!collision.sel8())
+    }
+    if (!collision.sel8()) {
       return;
+    }
     registry.fill(HIST("hEventCount/processReco"), 1.5);
 
-    const auto cent = collision.centFT0C();
+    const auto cent = getCentrality(collision);
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int runNumber = bc.runNumber();
     double interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 1.e-3;
 
-    if (!eventSelected(collision, cent, interactionRate, MyFunctionName::funcProcessReco))
+    if (!eventSelected(collision, cent, interactionRate, MyFunctionName::funcProcessReco)) {
       return;
+    }
     // end init && cut
 
     if (switchsOpts.cfgOutPutPtSpectra.value) {
@@ -2612,15 +2745,16 @@ struct PidFlowPtCorr {
     // loop tracks
     for (const auto& track : tracks) {
       // track cut
-      if (!trackSelectedGlobal(track))
+      if (!trackSelectedGlobal(track)) {
         continue;
+      }
       // end track cut
 
       // loop track's matched MC particle
       if (track.has_mcParticle()) {
         auto mcParticle = track.mcParticle();
         // fill graph
-        if (particleSelected(mcParticle)) {
+        if (particleSelected(mcParticle) && mcParticle.isPhysicalPrimary()) {
           /// @note global track, fill rec hist
           if (track.hasITS() && track.hasTPC() && trackSelected4ITS(track) && trackSelected4TPC(track)) {
             // graph for all particles
@@ -2666,29 +2800,33 @@ struct PidFlowPtCorr {
                   FilteredTracksWithMCLabel const& tracks)
   {
     registry.fill(HIST("hEventCount/processSim"), 0.5);
-    if (collisions.size() <= 0)
+    if (collisions.size() <= 0) {
       return;
+    }
 
     // cut && init
     // loop all the collisions reco matched to MC
-    double cent = -1;
+
     for (const auto& oneColl : collisions) {
       auto bc = oneColl.bc_as<aod::BCsWithTimestamps>();
       int runNumber = bc.runNumber();
       double interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), runNumber, "ZNC hadronic") * 1.e-3;
-      cent = oneColl.centFT0C();
+      double cent = getCentrality(oneColl);
 
       auto groupedTracks = tracks.sliceBy(perCollision, oneColl.globalIndex());
-      if (groupedTracks.size() <= 0)
+      if (groupedTracks.size() <= 0) {
         continue;
+      }
 
       // collision cut
-      if (!oneColl.sel8())
+      if (!oneColl.sel8()) {
         continue;
+      }
       registry.fill(HIST("hEventCount/processSim"), 1.5);
 
-      if (!eventSelected(oneColl, cent, interactionRate, MyFunctionName::funcProcessSim))
+      if (!eventSelected(oneColl, cent, interactionRate, MyFunctionName::funcProcessSim)) {
         continue;
+      }
       // end collision cut
 
       if (switchsOpts.cfgOutPutPtSpectra.value) {
@@ -2722,6 +2860,91 @@ struct PidFlowPtCorr {
     // end cut && init
   }
   PROCESS_SWITCH(PidFlowPtCorr, processSim, "function used to do pt eff, NOTE (OutPutMc, processReco, processSim) should be open", true);
+
+  void processReco1D(FilteredCollisionsWithMCLabel::iterator const& collision,
+                     aod::BCsWithTimestamps const&,
+                     FilteredTracksWithMCLabel const& tracks,
+                     aod::McParticles const&,
+                     aod::McCollisions const&)
+  {
+    if (!collision.sel8()) {
+      return;
+    }
+    if (tracks.size() < 1) {
+      return;
+    }
+
+    for (const auto& track : tracks) {
+
+      if (!trackSelectedGlobal(track)) {
+        continue;
+      }
+      if (!track.hasITS()) {
+        continue;
+      }
+      if (!track.hasTPC()) {
+        continue;
+      }
+      if (!trackSelected4ITS(track)) {
+        continue;
+      }
+      if (!trackSelected4TPC(track)) {
+        continue;
+      }
+
+      if (track.has_mcParticle()) {
+        auto mcParticle = track.mcParticle();
+
+        if (isStable(mcParticle.pdgCode())) {
+          registry.fill(HIST("correction1D/hPtMCRec1D"), track.pt());
+
+          switch (std::abs(mcParticle.pdgCode())) {
+            case PDG_t::kPiPlus:
+              registry.fill(HIST("correction1D/hPtMCRec1DPi"), track.pt());
+              break;
+            case PDG_t::kKPlus:
+              registry.fill(HIST("correction1D/hPtMCRec1DKa"), track.pt());
+              break;
+            case PDG_t::kProton:
+              registry.fill(HIST("correction1D/hPtMCRec1DPr"), track.pt());
+              break;
+            default:
+              break;
+          } // switch PDGCODE
+        } // stable
+      } // track.has_mcparticle
+    } // end track loop
+  }
+  PROCESS_SWITCH(PidFlowPtCorr, processReco1D, "process reconstructed information", true);
+
+  void processSim1D(FilteredMcCollisions::iterator const&,
+                    aod::BCsWithTimestamps const&,
+                    soa::SmallGroups<soa::Join<aod::McCollisionLabels, AodCollisions>> const& collisions,
+                    FilteredMcParticles const& mcParticles,
+                    FilteredTracksWithMCLabel const&)
+  {
+    if (collisions.size() > -1) {
+      for (const auto& mcParticle : mcParticles) {
+        if (mcParticle.isPhysicalPrimary() && isStable(mcParticle.pdgCode())) {
+          registry.fill(HIST("correction1D/hPtMCGen1D"), mcParticle.pt());
+          switch (std::abs(mcParticle.pdgCode())) {
+            case PDG_t::kPiPlus:
+              registry.fill(HIST("correction1D/hPtMCGen1DPi"), mcParticle.pt());
+              break;
+            case PDG_t::kKPlus:
+              registry.fill(HIST("correction1D/hPtMCGen1DKa"), mcParticle.pt());
+              break;
+            case PDG_t::kProton:
+              registry.fill(HIST("correction1D/hPtMCGen1DPr"), mcParticle.pt());
+              break;
+            default:
+              break;
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(PidFlowPtCorr, processSim1D, "process pure simulation information", true);
 
   // main function
 };

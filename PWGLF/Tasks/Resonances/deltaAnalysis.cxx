@@ -349,6 +349,52 @@ struct DeltaAnalysis {
       histos.add("QAChecks/hGenPionAntiDeltaPlusPlus", "Gen pion from #bar{#Delta}^{++}", kTH1F, {ptAxis});
       histos.add("QAChecks/hGenPionDeltaZero", "Gen pion from #Delta^{0}", kTH1F, {ptAxis});
       histos.add("QAChecks/hGenPionAntiDeltaZero", "Gen pion from #bar{#Delta}^{0}", kTH1F, {ptAxis});
+
+      // reconstructed-level (pre-truth-matching) invariant mass histograms for MC-reconstructed candidates
+      histos.add("AnalysisMCReco/hDeltaPlusPlusInvMassReco", "#Delta^{++} invariant mass - MC reconstructed (pre-truth-matching)", kTH2F, {ptAxis, massAxis});
+      histos.add("AnalysisMCReco/hAntiDeltaPlusPlusInvMassReco", "#bar{#Delta}^{++} invariant mass - MC reconstructed (pre-truth-matching)", kTH2F, {ptAxis, massAxis});
+      histos.add("AnalysisMCReco/hDeltaZeroInvMassReco", "#Delta^{0} invariant mass - MC reconstructed (pre-truth-matching)", kTH2F, {ptAxis, massAxis});
+      histos.add("AnalysisMCReco/hAntiDeltaZeroInvMassReco", "#bar{#Delta}^{0} invariant mass - MC reconstructed (pre-truth-matching)", kTH2F, {ptAxis, massAxis});
+
+      histos.add("THnSparseMCReco/hDeltaPlusPlusReco", "THnSparse #Delta^{++} MC reconstructed (pre-truth-matching)", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+      histos.add("THnSparseMCReco/hAntiDeltaPlusPlusReco", "THnSparse #bar{#Delta}^{++} MC reconstructed (pre-truth-matching)", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+      histos.add("THnSparseMCReco/hDeltaZeroReco", "THnSparse #Delta^{0} MC reconstructed (pre-truth-matching)", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+      histos.add("THnSparseMCReco/hAntiDeltaZeroReco", "THnSparse #bar{#Delta}^{0} MC reconstructed (pre-truth-matching)", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+
+      // detector QA for reconstructed MC tracks,no truth matching required ──
+      histos.add("QAMC/Proton/dcaXYvsPt", "Proton DCA_{xy} vs p_{T} (MC reco, after cuts)", kTH2F, {ptForPIDAxis, dcaXYaxis});
+      histos.add("QAMC/Proton/dcaZvsPt", "Proton DCA_{z} vs p_{T} (MC reco, after cuts)", kTH2F, {ptForPIDAxis, dcaZaxis});
+      histos.add("QAMC/Proton/tpcNSigmaVsMomentum", "Proton TPC n#sigma vs p (MC reco, after cuts)", kTH2F, {momentumAxis, nSigmaTPCaxis});
+      histos.add("QAMC/Proton/tpcNSigmaVsPt", "Proton TPC n#sigma vs p_{T} (MC reco, after cuts)", kTH2F, {ptForPIDAxis, nSigmaTPCaxis});
+      histos.add("QAMC/Proton/tpcNSigmaVsCentrality", "Proton TPC n#sigma vs centrality (MC reco)", kTH2F, {centAxis, nSigmaTPCaxis});
+      histos.add("QAMC/Proton/tofNSigmaVsMomentum", "Proton TOF n#sigma vs p (MC reco, after cuts)", kTH2F, {momentumAxis, nSigmaTOFaxis});
+      histos.add("QAMC/Proton/tofNSigmaVsPt", "Proton TOF n#sigma vs p_{T} (MC reco, after cuts)", kTH2F, {ptForPIDAxis, nSigmaTOFaxis});
+      histos.add("QAMC/Proton/tofNSigmaVsCentrality", "Proton TOF n#sigma vs centrality (MC reco)", kTH2F, {centAxis, nSigmaTOFaxis});
+      histos.add("QAMC/Proton/tofNSigmaVsTPCNSigma", "Proton TOF vs TPC n#sigma (MC reco, after cuts)", kTH2F, {nSigmaTPCaxis, nSigmaTOFaxis});
+      histos.add("QAMC/Proton/tpcNSigmaPionContamVsPt", "Proton track: TPC n#sigma pion contamination (MC reco)", kTH2F, {ptForPIDAxis, nSigmaTPCaxis});
+      histos.add("QAMC/Proton/tpcNSigmaKaonContamVsPt", "Proton track: TPC n#sigma kaon contamination (MC reco)", kTH2F, {ptForPIDAxis, nSigmaTPCaxis});
+      histos.add("QAMC/Proton/tofNSigmaPionContamVsMomentum", "Proton track: TOF n#sigma pion contamination (MC reco)", kTH2F, {momentumAxis, nSigmaTOFaxis});
+      histos.add("QAMC/Proton/tpcCrossedRowsVsPt", "Proton TPC crossed rows vs p_{T} (MC reco)", kTH2F, {ptForPIDAxis, tpcRowsAxis});
+      histos.add("QAMC/Proton/tpcClustersFoundVsPt", "Proton TPC clusters found vs p_{T} (MC reco)", kTH2F, {ptForPIDAxis, tpcClusAxis});
+      histos.add("QAMC/Proton/dcaXYdist", "Proton DCA_{xy} distribution (MC reco, fine bins)", kTH1F, {dcaXYaxis});
+      histos.add("QAMC/Proton/dcaZdist", "Proton DCA_{z} distribution (MC reco, fine bins)", kTH1F, {dcaZaxis});
+
+      histos.add("QAMC/Pion/dcaXYvsPt", "Pion DCA_{xy} vs p_{T} (MC reco, after cuts)", kTH2F, {ptForPIDAxis, dcaXYaxis});
+      histos.add("QAMC/Pion/dcaZvsPt", "Pion DCA_{z} vs p_{T} (MC reco, after cuts)", kTH2F, {ptForPIDAxis, dcaZaxis});
+      histos.add("QAMC/Pion/tpcNSigmaVsMomentum", "Pion TPC n#sigma vs p (MC reco, after cuts)", kTH2F, {momentumAxis, nSigmaTPCaxis});
+      histos.add("QAMC/Pion/tpcNSigmaVsPt", "Pion TPC n#sigma vs p_{T} (MC reco, after cuts)", kTH2F, {ptForPIDAxis, nSigmaTPCaxis});
+      histos.add("QAMC/Pion/tpcNSigmaVsCentrality", "Pion TPC n#sigma vs centrality (MC reco)", kTH2F, {centAxis, nSigmaTPCaxis});
+      histos.add("QAMC/Pion/tofNSigmaVsMomentum", "Pion TOF n#sigma vs p (MC reco, after cuts)", kTH2F, {momentumAxis, nSigmaTOFaxis});
+      histos.add("QAMC/Pion/tofNSigmaVsPt", "Pion TOF n#sigma vs p_{T} (MC reco, after cuts)", kTH2F, {ptForPIDAxis, nSigmaTOFaxis});
+      histos.add("QAMC/Pion/tofNSigmaVsCentrality", "Pion TOF n#sigma vs centrality (MC reco)", kTH2F, {centAxis, nSigmaTOFaxis});
+      histos.add("QAMC/Pion/tofNSigmaVsTPCNSigma", "Pion TOF vs TPC n#sigma (MC reco, after cuts)", kTH2F, {nSigmaTPCaxis, nSigmaTOFaxis});
+      histos.add("QAMC/Pion/tpcNSigmaProtonContamVsPt", "Pion track: TPC n#sigma proton contamination (MC reco)", kTH2F, {ptForPIDAxis, nSigmaTPCaxis});
+      histos.add("QAMC/Pion/tpcNSigmaKaonContamVsPt", "Pion track: TPC n#sigma kaon contamination (MC reco)", kTH2F, {ptForPIDAxis, nSigmaTPCaxis});
+      histos.add("QAMC/Pion/tofNSigmaProtonContamVsMomentum", "Pion track: TOF n#sigma proton contamination (MC reco)", kTH2F, {momentumAxis, nSigmaTOFaxis});
+      histos.add("QAMC/Pion/tpcCrossedRowsVsPt", "Pion TPC crossed rows vs p_{T} (MC reco)", kTH2F, {ptForPIDAxis, tpcRowsAxis});
+      histos.add("QAMC/Pion/tpcClustersFoundVsPt", "Pion TPC clusters found vs p_{T} (MC reco)", kTH2F, {ptForPIDAxis, tpcClusAxis});
+      histos.add("QAMC/Pion/dcaXYdist", "Pion DCA_{xy} distribution (MC reco, fine bins)", kTH1F, {dcaXYaxis});
+      histos.add("QAMC/Pion/dcaZdist", "Pion DCA_{z} distribution (MC reco, fine bins)", kTH1F, {dcaZaxis});
     }
   } // end init()
 
@@ -647,6 +693,59 @@ struct DeltaAnalysis {
     }
   }
 
+  // detector QA for reconstructed MC tracks, no truth matching required ──
+  template <typename TrackType>
+  void fillQAMCProton(TrackType const& track, float totalMomentum, float centralityPercent)
+  {
+    const float pt = track.pt();
+    const float tpcNSigPr = track.tpcNSigmaPr();
+    histos.fill(HIST("QAMC/Proton/dcaXYvsPt"), pt, track.dcaXY());
+    histos.fill(HIST("QAMC/Proton/dcaZvsPt"), pt, track.dcaZ());
+    histos.fill(HIST("QAMC/Proton/dcaXYdist"), track.dcaXY());
+    histos.fill(HIST("QAMC/Proton/dcaZdist"), track.dcaZ());
+    histos.fill(HIST("QAMC/Proton/tpcNSigmaVsMomentum"), totalMomentum, tpcNSigPr);
+    histos.fill(HIST("QAMC/Proton/tpcNSigmaVsPt"), pt, tpcNSigPr);
+    histos.fill(HIST("QAMC/Proton/tpcNSigmaVsCentrality"), centralityPercent, tpcNSigPr);
+    histos.fill(HIST("QAMC/Proton/tpcNSigmaPionContamVsPt"), pt, track.tpcNSigmaPi());
+    histos.fill(HIST("QAMC/Proton/tpcNSigmaKaonContamVsPt"), pt, track.tpcNSigmaKa());
+    histos.fill(HIST("QAMC/Proton/tpcCrossedRowsVsPt"), pt, track.tpcNClsCrossedRows());
+    histos.fill(HIST("QAMC/Proton/tpcClustersFoundVsPt"), pt, track.tpcNClsFound());
+    if (!useTPCOnlyPID && track.hasTOF()) {
+      const float tofNSigPr = track.tofNSigmaPr();
+      histos.fill(HIST("QAMC/Proton/tofNSigmaVsMomentum"), totalMomentum, tofNSigPr);
+      histos.fill(HIST("QAMC/Proton/tofNSigmaVsPt"), pt, tofNSigPr);
+      histos.fill(HIST("QAMC/Proton/tofNSigmaVsCentrality"), centralityPercent, tofNSigPr);
+      histos.fill(HIST("QAMC/Proton/tofNSigmaVsTPCNSigma"), tpcNSigPr, tofNSigPr);
+      histos.fill(HIST("QAMC/Proton/tofNSigmaPionContamVsMomentum"), totalMomentum, track.tofNSigmaPi());
+    }
+  }
+
+  template <typename TrackType>
+  void fillQAMCPion(TrackType const& track, float totalMomentum, float centralityPercent)
+  {
+    const float pt = track.pt();
+    const float tpcNSigPi = track.tpcNSigmaPi();
+    histos.fill(HIST("QAMC/Pion/dcaXYvsPt"), pt, track.dcaXY());
+    histos.fill(HIST("QAMC/Pion/dcaZvsPt"), pt, track.dcaZ());
+    histos.fill(HIST("QAMC/Pion/dcaXYdist"), track.dcaXY());
+    histos.fill(HIST("QAMC/Pion/dcaZdist"), track.dcaZ());
+    histos.fill(HIST("QAMC/Pion/tpcNSigmaVsMomentum"), totalMomentum, tpcNSigPi);
+    histos.fill(HIST("QAMC/Pion/tpcNSigmaVsPt"), pt, tpcNSigPi);
+    histos.fill(HIST("QAMC/Pion/tpcNSigmaVsCentrality"), centralityPercent, tpcNSigPi);
+    histos.fill(HIST("QAMC/Pion/tpcNSigmaProtonContamVsPt"), pt, track.tpcNSigmaPr());
+    histos.fill(HIST("QAMC/Pion/tpcNSigmaKaonContamVsPt"), pt, track.tpcNSigmaKa());
+    histos.fill(HIST("QAMC/Pion/tpcCrossedRowsVsPt"), pt, track.tpcNClsCrossedRows());
+    histos.fill(HIST("QAMC/Pion/tpcClustersFoundVsPt"), pt, track.tpcNClsFound());
+    if (!useTPCOnlyPID && track.hasTOF()) {
+      const float tofNSigPi = track.tofNSigmaPi();
+      histos.fill(HIST("QAMC/Pion/tofNSigmaVsMomentum"), totalMomentum, tofNSigPi);
+      histos.fill(HIST("QAMC/Pion/tofNSigmaVsPt"), pt, tofNSigPi);
+      histos.fill(HIST("QAMC/Pion/tofNSigmaVsCentrality"), centralityPercent, tofNSigPi);
+      histos.fill(HIST("QAMC/Pion/tofNSigmaVsTPCNSigma"), tpcNSigPi, tofNSigPi);
+      histos.fill(HIST("QAMC/Pion/tofNSigmaProtonContamVsMomentum"), totalMomentum, track.tofNSigmaPr());
+    }
+  }
+
   void fillDeltaHistogramSameEvent(int protonSign, int pionSign, float pairPt, float pairMass, float centrality, float rapidity)
   {
     if (protonSign > 0) {
@@ -706,6 +805,28 @@ struct DeltaAnalysis {
       } else {
         histos.fill(HIST("Analysis/hAntiDeltaZeroInvMassMC"), pairPt, pairMass);
         histos.fill(HIST("THnSparse/hAntiDeltaZeroMC"), pairMass, pairPt, centrality, rapidity);
+      }
+    }
+  }
+
+  // reconstructed-level (pre-truth-matching) invariant mass ──
+  void fillDeltaHistogramMCReco(int protonSign, int pionSign, float pairPt, float pairMass, float centrality, float rapidity)
+  {
+    if (protonSign > 0) {
+      if (pionSign > 0) {
+        histos.fill(HIST("AnalysisMCReco/hDeltaPlusPlusInvMassReco"), pairPt, pairMass);
+        histos.fill(HIST("THnSparseMCReco/hDeltaPlusPlusReco"), pairMass, pairPt, centrality, rapidity);
+      } else {
+        histos.fill(HIST("AnalysisMCReco/hDeltaZeroInvMassReco"), pairPt, pairMass);
+        histos.fill(HIST("THnSparseMCReco/hDeltaZeroReco"), pairMass, pairPt, centrality, rapidity);
+      }
+    } else {
+      if (pionSign < 0) {
+        histos.fill(HIST("AnalysisMCReco/hAntiDeltaPlusPlusInvMassReco"), pairPt, pairMass);
+        histos.fill(HIST("THnSparseMCReco/hAntiDeltaPlusPlusReco"), pairMass, pairPt, centrality, rapidity);
+      } else {
+        histos.fill(HIST("AnalysisMCReco/hAntiDeltaZeroInvMassReco"), pairPt, pairMass);
+        histos.fill(HIST("THnSparseMCReco/hAntiDeltaZeroReco"), pairMass, pairPt, centrality, rapidity);
       }
     }
   }
@@ -1049,6 +1170,17 @@ struct DeltaAnalysis {
         }
       }
 
+      // fill QAMC for every reconstructed MC track passing basic+PID+DCA cuts, irrespective of truth matching.
+      for (auto const& trackForQAMC : perColTracks) {
+        const float momQAMC = RecoDecay::p(trackForQAMC.px(), trackForQAMC.py(), trackForQAMC.pz());
+        if (!passesBasicTrackSelection(trackForQAMC))
+          continue;
+        if (passesProtonPID(trackForQAMC, momQAMC) && passesProtonDCASelection(trackForQAMC))
+          fillQAMCProton(trackForQAMC, momQAMC, centrality);
+        if (passesPionPID(trackForQAMC, momQAMC) && passesPionDCASelection(trackForQAMC))
+          fillQAMCPion(trackForQAMC, momQAMC, centrality);
+      }
+
       for (auto const& [t0, t1] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(perColTracks, perColTracks))) {
         if (t0.globalIndex() == t1.globalIndex())
           continue;
@@ -1060,6 +1192,20 @@ struct DeltaAnalysis {
           continue;
         if (!passesProtonDCASelection(t0) || !passesPionDCASelection(t1))
           continue;
+
+        // reconstructed-level (pre-truth-matching) invariant mass.
+        {
+          const std::array<std::array<float, 3>, 2> momentaReco = {
+            std::array<float, 3>{t0.px(), t0.py(), t0.pz()},
+            std::array<float, 3>{t1.px(), t1.py(), t1.pz()}};
+          const float pairMassReco = RecoDecay::m(momentaReco, std::array{massProton, massPion});
+          const float pairPtReco = RecoDecay::pt(std::array{t0.px() + t1.px(), t0.py() + t1.py()});
+          const float pairYReco = RecoDecay::y(std::array{t0.px() + t1.px(), t0.py() + t1.py(), t0.pz() + t1.pz()}, pairMassReco);
+          if (pairYReco >= cfgMinY && pairYReco <= cfgMaxY) {
+            fillDeltaHistogramMCReco(t0.sign(), t1.sign(), pairPtReco, pairMassReco, centrality, pairYReco);
+          }
+        }
+
         if (!t0.has_mcParticle() || !t1.has_mcParticle())
           continue;
         const auto mcProton = t0.mcParticle();
@@ -1152,6 +1298,5 @@ struct DeltaAnalysis {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  // FIX name/o2-task: TaskName is redundant when it equals the derived device name
   return WorkflowSpec{adaptAnalysisTask<DeltaAnalysis>(cfgc)};
 }

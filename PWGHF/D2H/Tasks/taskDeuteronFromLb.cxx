@@ -66,10 +66,9 @@ struct HfTaskDeuteronFromLb {
   Configurable<float> cfgITScls{"cfgITScls", 2, "Minimum ITS clusters"};
   Configurable<float> cfgMaxPt{"cfgMaxPt", 5.0f, "Maximum pT cut"};
   Configurable<float> cfgMinPt{"cfgMinPt", 0.5f, "Minimum pT cut"};
-  Configurable<float> cfgTPCNsigma{"cfgTPCNsigma", 4.0f, "TPC n sigma for deuteron PID"};
-  Configurable<float> cfgTofNsigmaMin{"cfgTofNsigmaMin", 3.0f, "TOF n sigma min for deuteron PID"};
-  Configurable<float> cfgTofNsigmaMax{"cfgTofNsigmaMax", 4.0f, "TOF n sigma max for deuteron PID"};
-  Configurable<float> ptThresholdPid{"ptThresholdPid", 0.5f, "pT threshold to switch between 4 and 3 sigmas for TOF PID"};
+  Configurable<float> cfgTPCNsigma{"cfgTPCNsigma", 3.0f, "TPC n sigma for deuteron PID"};
+  Configurable<float> cfgTofNsigma{"cfgTofNsigma", 3.0f, "TOF n sigma for deuteron PID"};
+  Configurable<float> ptThresholdPid{"ptThresholdPid", 0.5f, "pT threshold to switch between TPC and TPC+TOF PID"};
   Configurable<float> cfgDCAmin{"cfgDCAmin", 0.05f, "Minimum DCA for deuteron PID"};
   Configurable<float> cfgDCAmax{"cfgDCAmax", 1000.0f, "Maximum DCA for deuteron PID"};
   Configurable<float> rapidityCut{"rapidityCut", 0.5f, "Rapidity cut"};
@@ -260,11 +259,10 @@ struct HfTaskDeuteronFromLb {
         }
 
         const bool isTPCDe = std::abs(track.tpcNSigmaDe()) < cfgTPCNsigma;
-        const bool isTOFDe_min = std::abs(track.tofNSigmaDe()) > cfgTofNsigmaMin;
-        const bool isTOFDe_max = std::abs(track.tofNSigmaDe()) < cfgTofNsigmaMax;
+        const bool isTOFDe = std::abs(track.tofNSigmaDe()) < cfgTofNsigma;
 
         if (track.pt() < ptThresholdPid) {
-          if (isTPCDe && isTOFDe_max) {
+          if (isTPCDe) {
             QAHistos.fill(HIST("Data/ptAntiDeuteron"), track.pt());
             QAHistos.fill(HIST("Data/etaAntideuteron"), track.eta());
             QAHistos.fill(HIST("Data/hDCAxyVsPt"), track.pt(), dca[0]);
@@ -273,7 +271,7 @@ struct HfTaskDeuteronFromLb {
             QAHistos.fill(HIST("Data/hnSigmaTOFVsPt"), track.pt(), track.tofNSigmaDe());
           }
         } else {
-          if (isTPCDe && isTOFDe_min && isTOFDe_max) {
+          if (isTPCDe && isTOFDe) {
             QAHistos.fill(HIST("Data/ptAntiDeuteron"), track.pt());
             QAHistos.fill(HIST("Data/etaAntideuteron"), track.eta());
             QAHistos.fill(HIST("Data/hDCAxyVsPt"), track.pt(), dca[0]);
@@ -285,7 +283,7 @@ struct HfTaskDeuteronFromLb {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskDeuteronFromLb, processData, "processData", false);
+  PROCESS_SWITCH(HfTaskDeuteronFromLb, processData, "processData", true);
 
   void processMC(MCCollisionCandidates::iterator const& collision, MCTrackCandidates const& tracks, o2::aod::McParticles const&)
   {
@@ -423,7 +421,7 @@ struct HfTaskDeuteronFromLb {
     }
   }
 
-  PROCESS_SWITCH(HfTaskDeuteronFromLb, processGen, "processGen", true);
+  PROCESS_SWITCH(HfTaskDeuteronFromLb, processGen, "processGen", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
