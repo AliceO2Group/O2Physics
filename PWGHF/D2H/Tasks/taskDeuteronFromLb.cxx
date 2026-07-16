@@ -78,7 +78,7 @@ struct HfTaskDeuteronFromLb {
   Configurable<int> pdgCodeDaughter{"pdgCodeDaughter", -1000010020, "PDG code of the daughter particle (default: anti-deuteron)"};
 
   int mRunNumber = 0;
-  float d_bz = 0.f;
+  float dBz = 0.f;
   int mCurrentRun = -1;
 
   framework::Service<ccdb::BasicCCDBManager> ccdb{};
@@ -95,7 +95,7 @@ struct HfTaskDeuteronFromLb {
   ConfigurableAxis dcaXyAxis{"dcaXyAxis", {1000, -0.2f, 0.2f}, "DCA xy (cm)"};
   ConfigurableAxis dcaZAxis{"dcaZAxis", {1000, -0.2f, 0.2f}, "DCA z (cm)"};
 
-  HistogramRegistry QAHistos{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry qaHistos{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
@@ -129,38 +129,38 @@ struct HfTaskDeuteronFromLb {
       zorroSummary.setObject(zorro.getZorroSummary());
     }
 
-    QAHistos.add("Data/hDCAxyVsPt", "DCAxy #bar{d} vs p_{T}", {HistType::kTH2D, {ptAxis, dcaXyAxis}});
-    QAHistos.add("Data/hDCAzVsPt", "DCAz #bar{d} vs p_{T}", {HistType::kTH2D, {ptAxis, dcaZAxis}});
-    QAHistos.add("Data/hnSigmaTPCVsPt", "n#sigma TPC vs p_{T} for #bar{d} hypothesis; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {ptAxis, nSigmaAxis}});
-    QAHistos.add("Data/hnSigmaTOFVsPt", "n#sigma TOF vs p_{T} for #bar{d} hypothesis; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {ptAxis, nSigmaAxis}});
-    QAHistos.add("Data/ptAntiDeuteron", "ptAntiDeuteron", {HistType::kTH1F, {ptAxis}});
-    QAHistos.add("Data/etaAntideuteron", "etaAntideuteron", {HistType::kTH1F, {{100, -1.0f, 1.0f, "eta #bar{d}"}}});
-    QAHistos.add("Data/hVtxZ", "Z-Vertex distribution after selection;Z (cm)", HistType::kTH1F, {{100, -50, 50}});
+    qaHistos.add("Data/hDCAxyVsPt", "DCAxy #bar{d} vs p_{T}", {HistType::kTH2D, {ptAxis, dcaXyAxis}});
+    qaHistos.add("Data/hDCAzVsPt", "DCAz #bar{d} vs p_{T}", {HistType::kTH2D, {ptAxis, dcaZAxis}});
+    qaHistos.add("Data/hnSigmaTPCVsPt", "n#sigma TPC vs p_{T} for #bar{d} hypothesis; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2D, {ptAxis, nSigmaAxis}});
+    qaHistos.add("Data/hnSigmaTOFVsPt", "n#sigma TOF vs p_{T} for #bar{d} hypothesis; p_{T} (GeV/c); n#sigma TOF", {HistType::kTH2D, {ptAxis, nSigmaAxis}});
+    qaHistos.add("Data/ptAntiDeuteron", "ptAntiDeuteron", {HistType::kTH1F, {ptAxis}});
+    qaHistos.add("Data/etaAntideuteron", "etaAntideuteron", {HistType::kTH1F, {{100, -1.0f, 1.0f, "eta #bar{d}"}}});
+    qaHistos.add("Data/hVtxZ", "Z-Vertex distribution after selection;Z (cm)", HistType::kTH1F, {{100, -50, 50}});
     // MC generated-level histograms
-    QAHistos.add("MCGen/ptGeneratedBminus", "p_{T} generated B^{-};p_{T} (GeV/c);Counts", HistType::kTH1F, {ptAxis});
-    QAHistos.add("MCGen/ptGeneratedAntiLambdaB", "p_{T} generated #bar{#Lambda}_{b};p_{T} (GeV/c);Counts", HistType::kTH1F, {ptAxis});
+    qaHistos.add("MCGen/ptGeneratedBminus", "p_{T} generated B^{-};p_{T} (GeV/c);Counts", HistType::kTH1F, {ptAxis});
+    qaHistos.add("MCGen/ptGeneratedAntiLambdaB", "p_{T} generated #bar{#Lambda}_{b};p_{T} (GeV/c);Counts", HistType::kTH1F, {ptAxis});
 
-    QAHistos.add("MCGen/ptAntiDeuteronPrimary", "p_{T} #bar{d} primary gen;p_{T} (GeV/c);Counts", HistType::kTH1F, {ptAxis});
-    QAHistos.add("MCGen/ptAntiDeuteronFromBeautyHadron", "p_{T} #bar{d} from beauty gen hadrons;p_{T} (GeV/c);Counts", HistType::kTH1F, {ptAxis});
+    qaHistos.add("MCGen/ptAntiDeuteronPrimary", "p_{T} #bar{d} primary gen;p_{T} (GeV/c);Counts", HistType::kTH1F, {ptAxis});
+    qaHistos.add("MCGen/ptAntiDeuteronFromBeautyHadron", "p_{T} #bar{d} from beauty gen hadrons;p_{T} (GeV/c);Counts", HistType::kTH1F, {ptAxis});
 
-    QAHistos.add("MCGen/hMotherPdgCode", "PDG code of mother, gen level;PDG code;Counts", HistType::kTH1I, {{12000, -6000, 6000}});
-    QAHistos.add("MCGen/ctauBminus", "ctau of B^{-}, gen level;ctau (#mu m);Counts", HistType::kTH1F, {{25, 0., 2000.f}});
-    QAHistos.add("MCGen/ctauAntiLambdaB", "ctau of #bar{#Lambda}_{b}, gen level;ctau (#mu m);Counts", HistType::kTH1F, {{25, 0., 2000.f}});
+    qaHistos.add("MCGen/hMotherPdgCode", "PDG code of mother, gen level;PDG code;Counts", HistType::kTH1I, {{12000, -6000, 6000}});
+    qaHistos.add("MCGen/ctauBminus", "ctau of B^{-}, gen level;ctau (#mu m);Counts", HistType::kTH1F, {{25, 0., 2000.f}});
+    qaHistos.add("MCGen/ctauAntiLambdaB", "ctau of #bar{#Lambda}_{b}, gen level;ctau (#mu m);Counts", HistType::kTH1F, {{25, 0., 2000.f}});
     // MC reco/MC-anchored histograms
-    QAHistos.add("MCReco/ptAntiDeuteronFromBminus",
+    qaHistos.add("MCReco/ptAntiDeuteronFromBminus",
                  "p_{T} #bar{d} from B^{-} reco/MC anchored;p_{T} (GeV/c);Counts",
                  HistType::kTH1F, {ptAxis});
 
-    QAHistos.add("MCReco/ptAntiDeuteronFromAntiLambdaB",
+    qaHistos.add("MCReco/ptAntiDeuteronFromAntiLambdaB",
                  "p_{T} #bar{d} from #bar{#Lambda}_{b} reco/MC anchored;p_{T} (GeV/c);Counts",
                  HistType::kTH1F, {ptAxis});
-    QAHistos.add("MCGen/ptAntiDeuteronFromBminus", "p_{T} #bar{d} from B^{-} gen;p_{T} (GeV/c);Counts", HistType::kTH1F, {ptAxis});
-    QAHistos.add("MCGen/ptAntiDeuteronFromAntiLambdaB", "p_{T} #bar{d} from #bar{#Lambda}_{b} gen;p_{T} (GeV/c);Counts", HistType::kTH1F, {ptAxis});
-    QAHistos.add("MCReco/hDCAxy-Primary", "DCAxy primary reco/MC anchored;DCA xy (cm);Counts", {HistType::kTH1D, {{400, -0.2f, 0.2f, "DCA xy (cm)"}}});
-    QAHistos.add("MCReco/hDCAxy-FromBeautyHadron", "DCAxy from beauty reco/MC anchored;DCA xy (cm);Counts", {HistType::kTH1D, {{400, -0.2f, 0.2f, "DCA xy (cm)"}}});
-    QAHistos.add("MCReco/hMotherPdgCode", "PDG code of mother, reco/MC anchored;PDG code;Counts", HistType::kTH1I, {{12000, -6000, 6000}});
-    QAHistos.add("MCReco/ctauBminus", "ctau of B^{-}, reco/MC anchored;ctau (#mu m);Counts", HistType::kTH1F, {{25, 0., 2000.f}});
-    QAHistos.add("MCReco/ctauAntiLambdaB", "ctau of #bar{#Lambda}_{b}, reco/MC anchored;ctau (#mu m);Counts", HistType::kTH1F, {{25, 0., 2000.f}});
+    qaHistos.add("MCGen/ptAntiDeuteronFromBminus", "p_{T} #bar{d} from B^{-} gen;p_{T} (GeV/c);Counts", HistType::kTH1F, {ptAxis});
+    qaHistos.add("MCGen/ptAntiDeuteronFromAntiLambdaB", "p_{T} #bar{d} from #bar{#Lambda}_{b} gen;p_{T} (GeV/c);Counts", HistType::kTH1F, {ptAxis});
+    qaHistos.add("MCReco/hDCAxy-Primary", "DCAxy primary reco/MC anchored;DCA xy (cm);Counts", {HistType::kTH1D, {{400, -0.2f, 0.2f, "DCA xy (cm)"}}});
+    qaHistos.add("MCReco/hDCAxy-FromBeautyHadron", "DCAxy from beauty reco/MC anchored;DCA xy (cm);Counts", {HistType::kTH1D, {{400, -0.2f, 0.2f, "DCA xy (cm)"}}});
+    qaHistos.add("MCReco/hMotherPdgCode", "PDG code of mother, reco/MC anchored;PDG code;Counts", HistType::kTH1I, {{12000, -6000, 6000}});
+    qaHistos.add("MCReco/ctauBminus", "ctau of B^{-}, reco/MC anchored;ctau (#mu m);Counts", HistType::kTH1F, {{25, 0., 2000.f}});
+    qaHistos.add("MCReco/ctauAntiLambdaB", "ctau of #bar{#Lambda}_{b}, reco/MC anchored;ctau (#mu m);Counts", HistType::kTH1F, {{25, 0., 2000.f}});
 
     hProcessedEvents->GetXaxis()->SetBinLabel(1, "Events processed");
     hProcessedEvents->GetXaxis()->SetBinLabel(2, "ZORRO");
@@ -173,7 +173,7 @@ struct HfTaskDeuteronFromLb {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-    d_bz = 0.f;
+    dBz = 0.f;
 
     if (applySkimming) {
       zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfgSkimming.value);
@@ -250,7 +250,7 @@ struct HfTaskDeuteronFromLb {
         continue;
       }
       hProcessedEvents->Fill(3.5);
-      QAHistos.fill(HIST("Data/hVtxZ"), collision.posZ());
+      qaHistos.fill(HIST("Data/hVtxZ"), collision.posZ());
 
       const auto& trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
 
@@ -276,21 +276,21 @@ struct HfTaskDeuteronFromLb {
 
         if (track.pt() < ptThresholdPid) {
           if (isTPCDe) {
-            QAHistos.fill(HIST("Data/ptAntiDeuteron"), track.pt());
-            QAHistos.fill(HIST("Data/etaAntideuteron"), track.eta());
-            QAHistos.fill(HIST("Data/hDCAxyVsPt"), track.pt(), dca[0]);
-            QAHistos.fill(HIST("Data/hDCAzVsPt"), track.pt(), dca[1]);
-            QAHistos.fill(HIST("Data/hnSigmaTPCVsPt"), track.pt(), track.tpcNSigmaDe());
-            QAHistos.fill(HIST("Data/hnSigmaTOFVsPt"), track.pt(), track.tofNSigmaDe());
+            qaHistos.fill(HIST("Data/ptAntiDeuteron"), track.pt());
+            qaHistos.fill(HIST("Data/etaAntideuteron"), track.eta());
+            qaHistos.fill(HIST("Data/hDCAxyVsPt"), track.pt(), dca[0]);
+            qaHistos.fill(HIST("Data/hDCAzVsPt"), track.pt(), dca[1]);
+            qaHistos.fill(HIST("Data/hnSigmaTPCVsPt"), track.pt(), track.tpcNSigmaDe());
+            qaHistos.fill(HIST("Data/hnSigmaTOFVsPt"), track.pt(), track.tofNSigmaDe());
           }
         } else {
           if (isTPCDe && isTOFDe) {
-            QAHistos.fill(HIST("Data/ptAntiDeuteron"), track.pt());
-            QAHistos.fill(HIST("Data/etaAntideuteron"), track.eta());
-            QAHistos.fill(HIST("Data/hDCAxyVsPt"), track.pt(), dca[0]);
-            QAHistos.fill(HIST("Data/hDCAzVsPt"), track.pt(), dca[1]);
-            QAHistos.fill(HIST("Data/hnSigmaTPCVsPt"), track.pt(), track.tpcNSigmaDe());
-            QAHistos.fill(HIST("Data/hnSigmaTOFVsPt"), track.pt(), track.tofNSigmaDe());
+            qaHistos.fill(HIST("Data/ptAntiDeuteron"), track.pt());
+            qaHistos.fill(HIST("Data/etaAntideuteron"), track.eta());
+            qaHistos.fill(HIST("Data/hDCAxyVsPt"), track.pt(), dca[0]);
+            qaHistos.fill(HIST("Data/hDCAzVsPt"), track.pt(), dca[1]);
+            qaHistos.fill(HIST("Data/hnSigmaTPCVsPt"), track.pt(), track.tpcNSigmaDe());
+            qaHistos.fill(HIST("Data/hnSigmaTOFVsPt"), track.pt(), track.tofNSigmaDe());
           }
         }
       }
@@ -321,7 +321,7 @@ struct HfTaskDeuteronFromLb {
           int motherPdg = 0;
           if (separateAntideuterons) {
             for (const auto& mom : mcParticle.mothers_as<o2::aod::McParticles>()) {
-              QAHistos.fill(HIST("MCReco/hMotherPdgCode"), mom.pdgCode());
+              qaHistos.fill(HIST("MCReco/hMotherPdgCode"), mom.pdgCode());
               if (mom.pdgCode() == pdgCodeBeautyMeson || mom.pdgCode() == pdgCodeBeautyBaryon) {
                 motherPdg = mom.pdgCode();
                 double dx = mcParticle.vx() - collision.posX();
@@ -336,9 +336,9 @@ struct HfTaskDeuteronFromLb {
                   ctauBeauty *= 1.e4;
 
                   if (motherPdg == pdgCodeBeautyMeson) {
-                    QAHistos.fill(HIST("MCReco/ctauBminus"), ctauBeauty);
+                    qaHistos.fill(HIST("MCReco/ctauBminus"), ctauBeauty);
                   } else if (motherPdg == pdgCodeBeautyBaryon) {
-                    QAHistos.fill(HIST("MCReco/ctauAntiLambdaB"), ctauBeauty);
+                    qaHistos.fill(HIST("MCReco/ctauAntiLambdaB"), ctauBeauty);
                   }
                 }
                 break;
@@ -346,14 +346,14 @@ struct HfTaskDeuteronFromLb {
             }
           }
           if (motherPdg == pdgCodeBeautyMeson) {
-            QAHistos.fill(HIST("MCReco/hDCAxy-FromBeautyHadron"), track.dcaXY());
-            QAHistos.fill(HIST("MCReco/ptAntiDeuteronFromBminus"), track.pt());
+            qaHistos.fill(HIST("MCReco/hDCAxy-FromBeautyHadron"), track.dcaXY());
+            qaHistos.fill(HIST("MCReco/ptAntiDeuteronFromBminus"), track.pt());
           } else if (motherPdg == pdgCodeBeautyBaryon) {
-            QAHistos.fill(HIST("MCReco/hDCAxy-FromBeautyHadron"), track.dcaXY());
-            QAHistos.fill(HIST("MCReco/ptAntiDeuteronFromAntiLambdaB"), track.pt());
+            qaHistos.fill(HIST("MCReco/hDCAxy-FromBeautyHadron"), track.dcaXY());
+            qaHistos.fill(HIST("MCReco/ptAntiDeuteronFromAntiLambdaB"), track.pt());
           } else {
-            QAHistos.fill(HIST("MCReco/hDCAxy-Primary"), track.dcaXY());
-            QAHistos.fill(HIST("MCReco/ptAntiDeuteronPrimary"), track.pt());
+            qaHistos.fill(HIST("MCReco/hDCAxy-Primary"), track.dcaXY());
+            qaHistos.fill(HIST("MCReco/ptAntiDeuteronPrimary"), track.pt());
           }
         }
       }
@@ -371,9 +371,9 @@ struct HfTaskDeuteronFromLb {
       if (isSelectedBeautyHadron(mcParticle.pdgCode())) {
         if (std::abs(mcParticle.y()) <= rapidityCut) {
           if (mcParticle.pdgCode() == pdgCodeBeautyMeson) {
-            QAHistos.fill(HIST("MCGen/ptGeneratedBminus"), mcParticle.pt());
+            qaHistos.fill(HIST("MCGen/ptGeneratedBminus"), mcParticle.pt());
           } else if (mcParticle.pdgCode() == pdgCodeBeautyBaryon) {
-            QAHistos.fill(HIST("MCGen/ptGeneratedAntiLambdaB"), mcParticle.pt());
+            qaHistos.fill(HIST("MCGen/ptGeneratedAntiLambdaB"), mcParticle.pt());
           }
         }
 
@@ -392,9 +392,9 @@ struct HfTaskDeuteronFromLb {
               ctauBeauty *= 1.e4; // cm -> micrometers
 
               if (mcParticle.pdgCode() == pdgCodeBeautyMeson) {
-                QAHistos.fill(HIST("MCGen/ctauBminus"), ctauBeauty);
+                qaHistos.fill(HIST("MCGen/ctauBminus"), ctauBeauty);
               } else if (mcParticle.pdgCode() == pdgCodeBeautyBaryon) {
-                QAHistos.fill(HIST("MCGen/ctauAntiLambdaB"), ctauBeauty);
+                qaHistos.fill(HIST("MCGen/ctauAntiLambdaB"), ctauBeauty);
               }
             }
             break;
@@ -412,7 +412,7 @@ struct HfTaskDeuteronFromLb {
         if (mcParticle.has_mothers()) {
           for (const auto& mom : mcParticle.mothers_as<o2::aod::McParticles>()) {
 
-            QAHistos.fill(HIST("MCGen/hMotherPdgCode"), mom.pdgCode());
+            qaHistos.fill(HIST("MCGen/hMotherPdgCode"), mom.pdgCode());
 
             if (mom.pdgCode() == pdgCodeBeautyMeson) {
               motherPdg = mom.pdgCode();
@@ -427,11 +427,11 @@ struct HfTaskDeuteronFromLb {
         }
 
         if (motherPdg == pdgCodeBeautyMeson) {
-          QAHistos.fill(HIST("MCGen/ptAntiDeuteronFromBminus"), mcParticle.pt());
+          qaHistos.fill(HIST("MCGen/ptAntiDeuteronFromBminus"), mcParticle.pt());
         } else if (motherPdg == pdgCodeBeautyBaryon) {
-          QAHistos.fill(HIST("MCGen/ptAntiDeuteronFromAntiLambdaB"), mcParticle.pt());
+          qaHistos.fill(HIST("MCGen/ptAntiDeuteronFromAntiLambdaB"), mcParticle.pt());
         } else if (mcParticle.isPhysicalPrimary()) {
-          QAHistos.fill(HIST("MCGen/ptAntiDeuteronPrimary"), mcParticle.pt());
+          qaHistos.fill(HIST("MCGen/ptAntiDeuteronPrimary"), mcParticle.pt());
         }
       }
     }
