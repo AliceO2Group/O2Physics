@@ -2679,17 +2679,17 @@ struct FemtoUniverseProducerTask {
 
     for (const auto& col : collisions) {
       auto groupedTracks = tracks.sliceBy(perCollisionTracks, col.globalIndex());
-      auto groupedStrageParts = strangeParts.sliceBy(ps, col.globalIndex());
+      auto groupedStrangeParts = strangeParts.sliceBy(ps, col.globalIndex());
       getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
       if constexpr (std::experimental::is_detected<HasBachelor, typename StrangePartType::iterator>::value) {
         const auto colcheck = fillCollisions<true>(col, groupedTracks);
         if (colcheck) {
           mcColIds.insert(col.mcCollisionId());
           fillTracks<true>(groupedTracks);
-          fillCascade<true>(col, groupedStrageParts, groupedTracks);
+          fillCascade<true>(col, groupedStrangeParts, groupedTracks);
         }
       } else {
-        const auto colcheck = fillCollisionsAndTracksAndV0AndPhi<true>(col, groupedTracks, groupedStrageParts);
+        const auto colcheck = fillCollisionsAndTracksAndV0AndPhi<true>(col, groupedTracks, groupedStrangeParts);
         if (colcheck) {
           mcColIds.insert(col.mcCollisionId());
         }
@@ -2703,7 +2703,7 @@ struct FemtoUniverseProducerTask {
     // truth
     for (const auto& mccol : mccols) {
       auto groupedMCParticles = mcParticles.sliceBy(perMCCollision, mccol.globalIndex());
-      if (confCollMCTruthOnlyReco && !mcColIds.contains(mccol.globalIndex())) {
+      if (confCollMCTruthOnlyReco && !mcColIds.contains(mccol.globalIndex())) { /// For strange particle correlation, one can consider all MC truth collisions!
         continue;
       }
       auto groupedCollisions = collisions.sliceBy(recoCollsPerMCColl, mccol.globalIndex());
