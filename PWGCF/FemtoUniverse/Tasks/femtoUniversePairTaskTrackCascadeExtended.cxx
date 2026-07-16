@@ -729,11 +729,6 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       if (!invMCascade(part.mLambda(), part.mAntiLambda(), cascparticleconfigs.confCascType1)) /// mLambda stores Xi mass, mAntiLambda stores Omega mass
         continue;
 
-      if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value)
-        cascQAHistos.fillQA<false, true>(part);
-      else
-        cascQAHistos.fillQA<false, false>(part);
-
       const auto& posChild = parts.iteratorAt(part.globalIndex() - 3 - parts.begin().globalIndex());
       const auto& negChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
       const auto& bachelor = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
@@ -747,6 +742,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         posChildHistos.fillQA<false, true>(posChild);
         negChildHistos.fillQA<false, true>(negChild);
         bachHistos.fillQABase<false, true>(bachelor, HIST("hBachelor"));
+        cascQAHistos.fillQA<false, true>(part);
       } else {
         if ((posChild.pidCut() & (1u << CascChildTable[cascparticleconfigs.confCascType1][0])) == 0 || (negChild.pidCut() & (1u << CascChildTable[cascparticleconfigs.confCascType1][1])) == 0 || (bachelor.pidCut() & (1u << CascChildTable[cascparticleconfigs.confCascType1][2])) == 0)
           continue;
@@ -761,6 +757,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         posChildHistos.fillQA<false, false>(posChild);
         negChildHistos.fillQA<false, false>(negChild);
         bachHistos.fillQABase<false, false>(bachelor, HIST("hBachelor"));
+        cascQAHistos.fillQA<false, false>(part);
       }
     }
 

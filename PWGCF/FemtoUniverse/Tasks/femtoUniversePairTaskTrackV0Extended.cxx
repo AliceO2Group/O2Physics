@@ -534,11 +534,11 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
         if (!isNSigmaCombined(part.p(), tpcNSigmas[ConfTrkSelection.confTrackChoicePartOne], tofNSigmas[ConfTrkSelection.confTrackChoicePartOne], (part.pidCut() & 512u) != 0))
           continue;
-        if (part.sign() > 0) {
+        if (part.mAntiLambda() > 0) {
           qaRegistry.fill(HIST("Tracks_pos/nSigmaTPC"), part.p(), tpcNSigmas[ConfTrkSelection.confTrackChoicePartOne]);
           qaRegistry.fill(HIST("Tracks_pos/nSigmaTOF"), part.p(), tofNSigmas[ConfTrkSelection.confTrackChoicePartOne]);
           trackHistoPartOnePos.fillQA<false, false>(part);
-        } else if (part.sign() < 0) {
+        } else if (part.mAntiLambda() < 0) {
           qaRegistry.fill(HIST("Tracks_neg/nSigmaTPC"), part.p(), tpcNSigmas[ConfTrkSelection.confTrackChoicePartOne]);
           qaRegistry.fill(HIST("Tracks_neg/nSigmaTOF"), part.p(), tofNSigmas[ConfTrkSelection.confTrackChoicePartOne]);
           trackHistoPartOneNeg.fillQA<false, false>(part);
