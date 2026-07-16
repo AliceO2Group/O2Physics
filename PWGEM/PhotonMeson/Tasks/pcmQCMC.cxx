@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file MaterialBudget.cxx
+/// \file pcmQCMC.cxx
 /// \brief This code runs loop over v0 photons for PCM QC in MC.
 /// \author Daiki Sekihata, daiki.sekihata@cern.ch
 
@@ -161,12 +161,12 @@ struct PCMQCMC {
   } pcmcuts;
 
   o2::ccdb::CcdbApi ccdbApi;
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
-  int mRunNumber;
-  float d_bz;
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  int mRunNumber = 0;
+  float d_bz = 0;
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
-  static constexpr std::string_view event_types[2] = {"before/", "after/"};
-  static constexpr std::string_view mcphoton_types[5] = {"primary/", "fromWD/", "fromHS/", "fromPi0Dalitz/", "fromEtaDalitz/"};
+  static constexpr std::array<std::string_view, 2> event_types = {"before/", "after/"};
+  static constexpr std::array<std::string_view, 5> mcphoton_types = {"primary/", "fromWD/", "fromHS/", "fromPi0Dalitz/", "fromEtaDalitz/"};
 
   void init(InitContext&)
   {
@@ -202,10 +202,11 @@ struct PCMQCMC {
     }
 
     auto run3grp_timestamp = collision.timestamp();
-    o2::parameters::GRPObject* grpo = 0x0;
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!skipGRPOquery)
+    o2::parameters::GRPObject* grpo = nullptr;
+    o2::parameters::GRPMagField* grpmag = nullptr;
+    if (!skipGRPOquery) {
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    }
     if (grpo) {
       // Fetch magnetic field from ccdb for current collision
       d_bz = grpo->getNominalL3Field();
@@ -226,6 +227,7 @@ struct PCMQCMC {
   void addhistograms()
   {
     std::vector<double> ptbins;
+    ptbins.reserve(72);
     for (int i = 0; i < 2; i++) {
       ptbins.emplace_back(0.05 * (i - 0) + 0.0); // from 0 to 0.05 GeV/c, every 0.05 GeV/c
     }
@@ -433,8 +435,7 @@ struct PCMQCMC {
     fV0PhotonCut.SetNClassesMl(pcmcuts.cfg_nclasses_ml);
     fV0PhotonCut.SetMlTimestampCCDB(pcmcuts.cfg_timestamp_ccdb);
     fV0PhotonCut.SetCcdbUrl(ccdburl);
-    CentType mCentralityTypeMlEnum;
-    mCentralityTypeMlEnum = static_cast<CentType>(cfgCentEstimator.value);
+    auto mCentralityTypeMlEnum = static_cast<CentType>(cfgCentEstimator.value);
     fV0PhotonCut.SetCentralityTypeMl(mCentralityTypeMlEnum);
     fV0PhotonCut.SetCutDirMl(pcmcuts.cfg_cut_dir_ml);
     fV0PhotonCut.SetMlModelPathsCCDB(pcmcuts.cfg_model_paths_ccdb);
@@ -609,7 +610,7 @@ struct PCMQCMC {
   {
     for (const auto& collision : collisions) {
       initCCDB(collision);
-      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      const std::array<float, 3> centralities = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
@@ -752,7 +753,7 @@ struct PCMQCMC {
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
 
     for (const auto& collision : collisions) {
-      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      const std::array<float, 3> centralities = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
@@ -812,8 +813,8 @@ struct PCMQCMC {
   PROCESS_SWITCH(PCMQCMC, processDummy, "Dummy function", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<PCMQCMC>(cfgc, TaskName{"pcm-qc-mc"})};
+    adaptAnalysisTask<PCMQCMC>(context, TaskName{"pcm-qc-mc"})};
 }
