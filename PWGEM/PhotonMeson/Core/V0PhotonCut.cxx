@@ -77,11 +77,17 @@ void V0PhotonCut::SetMaxMeePsiPairDep(std::function<float(float)> psiDepCut)
   mMaxMeePsiPairDep = psiDepCut;
   LOG(info) << "V0 Photon Cut, set max mee psi pair dep: " << mMaxMeePsiPairDep(0.1);
 }
-void V0PhotonCut::SetRxyRange(float min, float max)
+void V0PhotonCut::SetRxyRange(float min, float max, float midL, float midH)
 {
   mMinRxy = min;
   mMaxRxy = max;
+  mMidRxyLow = midL;
+  mMidRxyHigh = midH;
   LOG(info) << "V0 Photon selection, set Rxy range: " << mMinRxy << " - " << mMaxRxy;
+  if (midL >= 0.f && midH >= 0.f && midH > midL) {
+    LOG(info) << "Rejecting Rxy interval: "
+              << mMidRxyLow << " - " << mMidRxyHigh;
+  }
 }
 void V0PhotonCut::SetMinCosPA(float min)
 {

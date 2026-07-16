@@ -864,6 +864,10 @@ class V0PhotonCut : public TNamed
         if (v0.v0radius() < mMinRxy || mMaxRxy < v0.v0radius()) {
           return false;
         }
+        if (mMidRxyLow > 0.f && mMidRxyHigh > 0.f &&
+            v0.v0radius() >= mMidRxyLow && v0.v0radius() <= mMidRxyHigh) {
+          return false;
+        }
         return true;
       }
 
@@ -1093,7 +1097,7 @@ class V0PhotonCut : public TNamed
   void SetPsiPairRange(float min = -3.15, float max = +3.15);
   void SetPhivPairRange(float min = 0.f, float max = +3.15);
   void SetAPRange(float max_alpha = 0.95, float max_qt = 0.05); // Armenteros Podolanski
-  void SetRxyRange(float min = 0.f, float max = 180.f);
+  void SetRxyRange(float min = 0.f, float max = 180.f, float midL = -1.f, float midH = -1.f);
   void SetMinCosPA(float min = 0.95);
   void SetMaxPCA(float max = 2.f);
   void SetMaxChi2KF(float max = 1e+10);
@@ -1169,6 +1173,7 @@ class V0PhotonCut : public TNamed
   float mMinPsiPair{-3.15}, mMaxPsiPair{+3.15};
   float mMinPhivPair{0.f}, mMaxPhivPair{+3.15};
   float mMinRxy{0.f}, mMaxRxy{180.f};
+  float mMidRxyLow{-1.f}, mMidRxyHigh{-1.f};
   float mMinCosPA{0.95};
   float mMaxPCA{2.f};
   float mMaxChi2KF{1e+10};
