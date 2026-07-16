@@ -29,6 +29,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
@@ -39,6 +40,8 @@
 #include <Framework/StaticFor.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
+
+#include <TString.h>
 
 #include <array>
 #include <cmath>
@@ -214,7 +217,7 @@ struct TreeCreatorPidTpcQa {
         const float rapidity = track.rapidity(PID::getMass(ParticleId));
         const float momentum = track.p();
         const float nClNormalized = std::sqrt(nClNorm / track.tpcNClsFound());
-        const float nclPID = static_cast<float>(track.tpcNClsPID());
+        const auto nclPID = static_cast<float>(track.tpcNClsPID());
         const float phi = track.phi();
         const float tgl = track.tgl();
         const float tpcInnerParam = track.tpcInnerParam();
