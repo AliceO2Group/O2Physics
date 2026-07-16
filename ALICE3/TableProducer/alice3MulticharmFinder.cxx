@@ -195,7 +195,6 @@ struct Alice3MulticharmFinder {
   struct {
     float radius{};
     o2::track::TrackParCov trackParCov;
-    std::array<float, o2::track::kLabCovMatSize> parentTrackCovMatrix{};
   } thisXiCandidate;
 
   struct {
