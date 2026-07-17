@@ -109,8 +109,8 @@ struct DqJPsiMuonCorrelations {
   constexpr static uint32_t fgDimuonsFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::Pair; // fill map
 
   // use two values array to avoid mixing up the quantities
-  float* fValuesDilepton;
-  float* fValuesMuon;
+  std::vector<float> fValuesDilepton;
+  std::vector<float> fValuesMuon;
 
   HistogramRegistry registry{"registry"};
 
@@ -126,9 +126,8 @@ struct DqJPsiMuonCorrelations {
            axisPt.value.size() - 1, fConfigBinEffJPsi.value.size(), fConfigBinEffMuon.value.size());
     }
 
-    // Set up varmanager variable names
-    fValuesDilepton = new float[VarManager::kNVars];
-    fValuesMuon = new float[VarManager::kNVars];
+    fValuesDilepton.resize(VarManager::kNVars, 0.0f);
+    fValuesMuon.resize(VarManager::kNVars, 0.0f);
     VarManager::SetDefaultVarNames();
 
     // Define trigger histograms
@@ -150,11 +149,10 @@ struct DqJPsiMuonCorrelations {
   template <int TCandidateType, uint32_t TEventFillMap, uint32_t TMuonFillMap, typename TEvent, typename TMuonAssocs, typename TMuonTracks, typename TDileptons>
   void runDileptonMuon(TEvent const& event, TMuonAssocs const& assocs, TMuonTracks const& /*tracks*/, TDileptons const& dileptons)
   {
-    // Reset the VarManager values at the beginning of each event
-    VarManager::ResetValues(0, VarManager::kNVars, fValuesMuon);
-    VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton);
-    VarManager::FillEvent<TEventFillMap>(event, fValuesMuon);
-    VarManager::FillEvent<TEventFillMap>(event, fValuesDilepton);
+    VarManager::ResetValues(0, VarManager::kNVars, fValuesMuon.data());
+    VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton.data());
+    VarManager::FillEvent<TEventFillMap>(event, fValuesMuon.data());
+    VarManager::FillEvent<TEventFillMap>(event, fValuesDilepton.data());
 
     if (!event.isEventSelected_bit(0)) {
       return;
@@ -167,7 +165,7 @@ struct DqJPsiMuonCorrelations {
     if (dileptons.size() > 0) {
 
       for (auto& dilepton : dileptons) {
-        VarManager::FillTrack<fgDimuonsFillMap>(dilepton, fValuesDilepton);
+        VarManager::FillTrack<fgDimuonsFillMap>(dilepton, fValuesDilepton.data());
 
         // Dilepton kinematic cuts
         if ((dilepton.eta() < fConfigDileptonEtaMin || dilepton.eta() > fConfigDileptonEtaMax) ||
