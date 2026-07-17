@@ -2361,7 +2361,6 @@ struct FemtoUniverseProducerTask {
   void fillMCTruthParticlesD0(TrackType const& mcParts)
   {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
-    std::vector<int> tmpIDtrack;
 
     for (const auto& particle : mcParts) {
 
