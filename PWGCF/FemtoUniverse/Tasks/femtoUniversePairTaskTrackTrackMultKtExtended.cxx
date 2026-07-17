@@ -84,13 +84,16 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
   } twotracksconfigs;
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
+  using FemtoFullSigmaParticles = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDSigmaParticles>;
   // Filters for selecting particles (both p1 and p2)
   Filter trackAdditionalfilter = (nabs(aod::femtouniverseparticle::eta) < twotracksconfigs.confEtaMax); // example filtering on configurable
   using FilteredFemtoFullParticles = soa::Filtered<FemtoFullParticles>;
+  using FilteredFemtoFullSigmaParticles = soa::Filtered<FemtoFullSigmaParticles>;
   // using FilteredFemtoFullParticles = FemtoFullParticles; //if no filtering is applied uncomment this option
 
   SliceCache cache;
   Preslice<FilteredFemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
+  Preslice<FilteredFemtoFullSigmaParticles> perColSigma = aod::femtouniverseparticle::fdCollisionId;
 
   using FemtoTruthParticles = soa::Filtered<soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>>;
   Preslice<FemtoTruthParticles> perColMCTruth = aod::femtouniverseparticle::fdCollisionId;
@@ -109,10 +112,11 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
   /// Partition for particle 1
   Partition<FilteredFemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.confChargePart1) && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confpLowPart1;
 
+  Partition<FilteredFemtoFullSigmaParticles> partsOneSigma = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.confChargePart1) && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confpLowPart1;
+
   Partition<FemtoRecoParticles> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.confChargePart1) && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confpLowPart1;
 
   Partition<FemtoTruthParticles> partsOneMCTruth = aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack) && aod::femtouniverseparticle::pt < trackonefilter.confPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.confpLowPart1;
-  ;
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 1> trackHistoPartOne;
@@ -128,6 +132,8 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
 
   /// Partition for particle 2
   Partition<FilteredFemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.confChargePart2)) && aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.confpLowPart2;
+
+  Partition<FilteredFemtoFullSigmaParticles> partsTwoSigma = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.confChargePart2)) && aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.confpLowPart2;
 
   Partition<FemtoRecoParticles> partsTwoMC = aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack) && (aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.confChargePart2)) && aod::femtouniverseparticle::pt < tracktwofilter.confPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.confpLowPart2;
 
@@ -336,16 +342,16 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
     switch (PDGcode) {
       case kProton:
       case kProtonBar:
-        return trackCuts.getNsigmaTOF(part, o2::track::PID::Proton);
+        return part.tofFullNSigmaPr();
       case kPiPlus:
       case kPiMinus:
       case kPi0:
-        return trackCuts.getNsigmaTOF(part, o2::track::PID::Pion);
+        return part.tofFullNSigmaPi();
       case kKPlus:
       case kKMinus:
       case kK0Long:
       case kK0Short:
-        return trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon);
+        return part.tofFullNSigmaKa();
       default:
         return 0;
     }
@@ -474,7 +480,6 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
           continue;
         }
         trackHistoPartOne.fillQA<isMC, true>(part);
-        qaRegistry.fill(HIST("Tracks_one/nSigmaTOF"), part.pt(), whichTOFNSigma(trackonefilter.confPDGCodePartOne, part), multCol);
       }
     }
 
@@ -484,7 +489,6 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
           continue;
         }
         trackHistoPartTwo.fillQA<isMC, true>(part);
-        qaRegistry.fill(HIST("Tracks_two/nSigmaTOF"), part.pt(), whichTOFNSigma(tracktwofilter.confPDGCodePartTwo, part), multCol);
       }
     }
 
@@ -625,6 +629,42 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
       }
     }
   }
+
+  /// \param col subscribe to the collision table (Data)
+  /// \param parts subscribe to the femtoUniverseParticleTable
+  void processPurityQA(soa::Filtered<o2::aod::FdCollisions>::iterator const& col,
+                       FilteredFemtoFullSigmaParticles const&)
+  {
+    fillCollision(col);
+    if (confFillDebug) {
+      sphericityRegistry.fill(HIST("sphericity"), col.sphericity());
+    }
+
+    auto thegroupPartsOne = partsOneSigma->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsTwo = partsTwoSigma->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+
+    float const multCol = col.multV0M();
+
+    for (const auto& part : thegroupPartsOne) {
+      if (!isParticleNSigma((int8_t)1, part.p(), part.tpcFullNSigmaPr(), part.tofFullNSigmaPr(), part.tpcFullNSigmaPi(), part.tofFullNSigmaPi(), part.tpcFullNSigmaKa(), part.tofFullNSigmaKa())) {
+        continue;
+      }
+      trackHistoPartOne.fillQA<false, true>(part);
+      qaRegistry.fill(HIST("Tracks_one/nSigmaTOF"), part.pt(), whichTOFNSigma(trackonefilter.confPDGCodePartOne, part), multCol);
+    }
+
+    if (!isPairIdentical) {
+      // fill second
+      for (const auto& part : thegroupPartsTwo) {
+        if (!isParticleNSigma((int8_t)2, part.p(), part.tpcFullNSigmaPr(), part.tofFullNSigmaPr(), part.tpcFullNSigmaPi(), part.tofFullNSigmaPi(), part.tpcFullNSigmaKa(), part.tofFullNSigmaKa())) {
+          continue;
+        }
+        trackHistoPartTwo.fillQA<false, true>(part);
+        qaRegistry.fill(HIST("Tracks_two/nSigmaTOF"), part.pt(), whichTOFNSigma(tracktwofilter.confPDGCodePartTwo, part), multCol);
+      }
+    }
+  }
+  PROCESS_SWITCH(FemtoUniversePairTaskTrackTrackMultKtExtended, processPurityQA, "Enable processing QA for purity estimation", false);
 
   /// process function for to call doSameEvent with Data
   /// \param col subscribe to the collision table (Data)
