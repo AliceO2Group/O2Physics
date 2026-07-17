@@ -176,10 +176,14 @@ struct LfLambdaTwoPartPolarization {
     histos.add("Ana/SignalCos2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, cosSigAxis}});
     histos.add("Ana/Acceptance", "", {HistType::kTHnSparseF, {ptAxis, centAxis, rapAxis, cosAccAxis}});
 
+    histos.add("AnaHL/LambdaSignal", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
+    histos.add("AnaHL/ALambdaSignal", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
+
     histos.add("AnaHL/LambdaSignalSin2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
     histos.add("AnaHL/LambdaSignalCos2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
     histos.add("AnaHL/ALambdaSignalSin2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
     histos.add("AnaHL/ALambdaSignalCos2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
+
     histos.add("AnaHL/Ref", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis}});
 
     fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
@@ -403,10 +407,12 @@ struct LfLambdaTwoPartPolarization {
         weight *= cfgAccCor ? 1.0 / AccMap->GetBinContent(AccMap->GetXaxis()->FindBin(v01.pt()), AccMap->GetYaxis()->FindBin(v01.yLambda())) : 1.;
 
         if (LambdaTag) {
+          histos.fill(HIST("AnaHL/LambdaSignal"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, v01.mLambda(), costhetastar1 * weight);
           histos.fill(HIST("AnaHL/LambdaSignalSin2"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, v01.mLambda(), costhetastar1 * std::sin(2.0 * dphi) * weight);
           histos.fill(HIST("AnaHL/LambdaSignalCos2"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, v01.mLambda(), costhetastar1 * std::cos(2.0 * dphi) * weight);
         }
         if (aLambdaTag) {
+          histos.fill(HIST("AnaHL/ALambdaSignal"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, v01.mAntiLambda(), costhetastar1 * weight);
           histos.fill(HIST("AnaHL/ALambdaSignalSin2"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, v01.mAntiLambda(), costhetastar1 * std::sin(2.0 * dphi) * weight);
           histos.fill(HIST("AnaHL/ALambdaSignalCos2"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, v01.mAntiLambda(), costhetastar1 * std::cos(2.0 * dphi) * weight);
         }
@@ -654,6 +660,43 @@ struct LfLambdaTwoPartPolarization {
     }
   }
   PROCESS_SWITCH(LfLambdaTwoPartPolarization, processDataMixedT0M, "Process event for mixed data in pp", false);
+
+  Preslice<TrackCandidates> tracksPerCollisionPri = aod::track::collisionId;
+
+  void processDataMixedHadronT0M(EventCandidates const& collisions,
+                                 TrackCandidates const& tracks, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
+  {
+    for (const auto& [c1, c2] : selfCombinations(colBinningT0M, cfgNoMixedEvents, -1, collisions, collisions)) {
+
+      if (c1.index() == c2.index()) {
+        continue;
+      }
+
+      centrality = c1.centFT0M();
+      if (cfgAccCor) {
+        auto bc = c1.bc_as<aod::BCsWithTimestamps>();
+        AccMap = ccdb->getForTimeStamp<TProfile2D>(cfgAccCorPath.value, bc.timestamp());
+      }
+      if (!eventSelected(c1)) {
+        continue;
+      }
+      if (!eventSelected(c2)) {
+        continue;
+      }
+
+      auto v01tracks = V0s.sliceBy(tracksPerCollisionV0, c1.globalIndex());
+      auto v02tracks = V0s.sliceBy(tracksPerCollisionV0, c2.globalIndex());
+
+      auto pri1tracks = tracks.sliceBy(tracksPerCollisionPri, c1.globalIndex());
+      auto pri2tracks = tracks.sliceBy(tracksPerCollisionPri, c2.globalIndex());
+
+      FillHistogramsRef(pri1tracks, pri2tracks);
+
+      FillHistogramsLH(c1, v01tracks, pri2tracks);
+      FillHistogramsLH(c2, v02tracks, pri1tracks);
+    }
+  }
+  PROCESS_SWITCH(LfLambdaTwoPartPolarization, processDataMixedHadronT0M, "Process event for mixed data in pp with hadrons", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
