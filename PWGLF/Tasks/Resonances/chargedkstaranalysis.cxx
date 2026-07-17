@@ -857,7 +857,7 @@ struct Chargedkstaranalysis {
     auto phiCS = std::atan2(yAxisCS.Dot(v1CM), xAxisCS.Dot(v1CM));
     phiCS = RecoDecay::constrainAngle(phiCS, 0.0);
 
-    bool doRotation = !doprocessMC || mcCfgs.doBkgMc; 
+    bool doRotation = !doprocessMC || mcCfgs.doBkgMc;
     // if (std::abs(mother.Rapidity()) < config.rapidityMotherData) {
     if (helicityCfgs.activateHelicityFrame) {
       // helicityVec = mother.Vect(); // 3 vector of mother in COM frame
