@@ -1484,8 +1484,8 @@ struct JetSpectraEseTask {
       registry.fill(HIST("eventQA/hRhoPhiCheck"), 0.5);
     if (cfgRhoPhiPvalCriteria && cDF < 0.01) {
       const float noFlow = 0.0f;
-      modulationFit->SetParameter(1, noFlow);
-      modulationFit->SetParameter(3, noFlow);
+      modulationFit->SetParameter(1, noFlow); // o2-linter: disable=magic-number 
+      modulationFit->SetParameter(3, noFlow); // o2-linter: disable=magic-number 
       if constexpr (fillHist)
         registry.fill(HIST("eventQA/hRhoPhiCheck"), 1.5);
     }
