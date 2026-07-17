@@ -1544,9 +1544,9 @@ struct lambda1405analysis {
 
         // Recompute the sigma momentum
         bool success{false};
-        float sigmaPRecalc = recalcSigmaMomReco(success, isSigmaMinusKink,
-                                                sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth(),
-                                                sigmaCand.pxDaug(), sigmaCand.pyDaug(), sigmaCand.pzDaug());
+        float sigmaPRecalc = recalcSigmaMom(success, isSigmaMinusKink,
+                                            sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth(),
+                                            sigmaCand.pxDaug(), sigmaCand.pyDaug(), sigmaCand.pzDaug());
         if (!success && skipSigmasFailedRecompMom) {
           return;
         }
@@ -1561,7 +1561,7 @@ struct lambda1405analysis {
             sigmaMomReco[2] *= scale;
 
             sigmaPt = std::sqrt(sigmaMomReco[0] * sigmaMomReco[0] + sigmaMomReco[1] * sigmaMomReco[1]);
-            if (lambda1405Cand.isSigmaMinus) {
+            if (isSigmaMinusKink) {
               rSigmaMinus.fill(HIST("hDeltaPxRecalcSigmaMinus"), sigmaMomReco[0] - sigmaCand.pxMoth(), sigmaCand.pxMoth());
               rSigmaMinus.fill(HIST("hDeltaPyRecalcSigmaMinus"), sigmaMomReco[1] - sigmaCand.pyMoth(), sigmaCand.pyMoth());
               rSigmaMinus.fill(HIST("hDeltaPzRecalcSigmaMinus"), sigmaMomReco[2] - sigmaCand.pzMoth(), sigmaCand.pzMoth());
@@ -1589,35 +1589,35 @@ struct lambda1405analysis {
           float genSigmaQtAP = qtAP(sigmaMomGen, kinkMomGen);
           if (isSigmaMinusKink) {
             rSigmaMinus.fill(HIST("hSparseGenSigmaMinus"), genMassSigma, genSigma.pt(), genSigmaAlphaAP, genSigmaQtAP, genCentMult, genNumContrib, genOcc);
-          } else if (isSigmaPlusKink) {
+          } else if (isSigmaPlusToPiKink || isSigmaPlusToPrKink) {
             rSigmaPlus.fill(HIST("hSparseGenSigmaPlus"), genMassSigma, genSigma.pt(), genSigmaAlphaAP, genSigmaQtAP, genCentMult, genNumContrib, genOcc);
           }
         }
 
         // Fill table with sigma properties for efficiency studies
         outputSigmaEffMC(
-          sigmaCand.pxMoth, sigmaCand.pxMoth - genSigma.px(),
-          sigmaCand.pyMoth, sigmaCand.pyMoth - genSigma.py(),
-          sigmaCand.pzMoth, sigmaCand.pzMoth - genSigma.pz(),
-          sigmaPt, sigmaPt - genSigma.pz(),
+          sigmaCand.pxMoth(), sigmaCand.pxMoth() - genSigma.px(),
+          sigmaCand.pyMoth(), sigmaCand.pyMoth() - genSigma.py(),
+          sigmaCand.pzMoth(), sigmaCand.pzMoth() - genSigma.pz(),
+          sigmaCand.pt(), sigmaCand.pt() - genSigma.pt(),
           massSigma, massSigma - genMassSigma,
-          sigmaCand.pxMoth - sigmaMomReco[0],
-          sigmaCand.pyMoth - sigmaMomReco[1],
-          sigmaCand.pzMoth - sigmaMomReco[2],
+          sigmaCand.pxMoth() - sigmaMomReco[0],
+          sigmaCand.pyMoth() - sigmaMomReco[1],
+          sigmaCand.pzMoth() - sigmaMomReco[2],
           genSigma.phi(),
           genSigma.eta(),
-          sigmaCand.pxDaug, sigmaCand.pxDaug - genKinkDaug.px(),
-          sigmaCand.pyDaug, sigmaCand.pyDaug - genKinkDaug.py(),
-          sigmaCand.pzDaug, sigmaCand.pzDaug - genKinkDaug.pz(),
-          kinkPt, kinkPt - genKinkDaug.pz(),
+          sigmaCand.pxDaug(), sigmaCand.pxDaug() - genKinkDaug.px(),
+          sigmaCand.pyDaug(), sigmaCand.pyDaug() - genKinkDaug.py(),
+          sigmaCand.pzDaug(), sigmaCand.pzDaug() - genKinkDaug.pz(),
+          kinkPt, kinkPt - genKinkDaug.pt(),
           genKinkDaug.phi(),
           genKinkDaug.eta(),
-          sigmaCand.xDecVtx, sigmaCand.xDecVtx - genKinkDaug.vx,
-          sigmaCand.yDecVtx, sigmaCand.yDecVtx - genKinkDaug.vy,
-          sigmaCand.zDecVtx, sigmaCand.zDecVtx - genKinkDaug.vz,
+          sigmaCand.xDecVtx(), sigmaCand.xDecVtx() - genKinkDaug.vx(),
+          sigmaCand.yDecVtx(), sigmaCand.yDecVtx() - genKinkDaug.vy(),
+          sigmaCand.zDecVtx(), sigmaCand.zDecVtx() - genKinkDaug.vz(),
           recoSigmaAlphaAP, recoSigmaQtAP,
-          recoRecalcPtSigmaQtAP, recoRecalcPtSigmaQtAP,
-          sigmaCand.dcaDaugPv, sigmaCand.dcaMothPv,
+          recoRecalcPtSigmaAlphaAP, recoRecalcPtSigmaQtAP,
+          sigmaCand.dcaDaugPv(), sigmaCand.dcaMothPv(),
           genSigma.pdgCode(), genKinkDaug.pdgCode(),
           centMult, collision.ft0cOccupancyInTimeRange(), collision.numContrib());
       }
