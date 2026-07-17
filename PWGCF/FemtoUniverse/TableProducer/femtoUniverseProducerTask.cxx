@@ -408,13 +408,11 @@ struct FemtoUniverseProducerTask {
     if (mom < ConfPhiSelection.confMomKaonLF) {
       return (std::abs(nsigmaTPCK) < ConfPhiSelection.confNSigmaTPCKaonLF);
     }
-    if (mom >= ConfPhiSelection.confMomKaonLF) { // 0.5-1.5 (now we use TPC and TOF)
-      if (!hasTOF) {
-        return false;
-      }
-      return (std::sqrt(nsigmaTPCK * nsigmaTPCK + nsigmaTOFK * nsigmaTOFK) < ConfPhiSelection.confNSigmaCombKaonLF);
+    // mom >= ConfPhiSelection.confMomKaonLF 0.5-1.5 (now we use TPC and TOF)
+    if (!hasTOF) {
+      return false;
     }
-    return false;
+    return (std::sqrt(nsigmaTPCK * nsigmaTPCK + nsigmaTOFK * nsigmaTOFK) < ConfPhiSelection.confNSigmaCombKaonLF);
   }
 
   bool isKaonRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi)
@@ -902,7 +900,7 @@ struct FemtoUniverseProducerTask {
     }
     if (particle.has_mothers()) {
       int hadronElasticStatter = 20;
-      int hadronInelasticStatter = 20;
+      int hadronInelasticStatter = 23;
       if (particle.getProcess() == hadronElasticStatter || particle.getProcess() == hadronInelasticStatter) { // treat particles from hadronic scattering (20, 23) as primary
         return 0;
       }
