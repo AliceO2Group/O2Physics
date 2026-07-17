@@ -22,13 +22,15 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
-#include "PWGHF/Utils/utilsPid.h"
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/fwdtrackUtilities.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -38,7 +40,6 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsCommonDataFormats/AlignParam.h>
 #include <FT0Base/Geometry.h>
-#include <FV0Base/Geometry.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -57,7 +58,7 @@
 #include <MathUtils/Utils.h>
 
 #include <THn.h>
-#include <TPDGCode.h>
+#include <TRandom.h>
 #include <TString.h>
 
 #include <sys/types.h>
@@ -136,6 +137,7 @@ enum MftTrackSelectionStep {
   Pt,
   DCAxy,
   DCAz,
+  Chi2OverNdf,
   IsLTF,
   IsCA,
   NMftTrackSelectionSteps
@@ -298,11 +300,13 @@ struct HfTaskFlow {
     Configurable<float> etaMftTrackMin{"etaMftTrackMin", -3.36f, "Minimum value for the eta of MFT tracks when used in cut function"};
     Configurable<float> etaMftTrackMaxFilter{"etaMftTrackMaxFilter", -2.0f, "Maximum value for the eta of MFT tracks when used in filter"};
     Configurable<float> etaMftTrackMinFilter{"etaMftTrackMinFilter", -3.9f, "Minimum value for the eta of MFT tracks when used in filter"};
+    Configurable<float> maxChi2OverNdf{"maxChi2OverNdf", 1000.f, "maximum chi2/ndf for MFT tracks"};
     Configurable<float> mftMaxDCAxy{"mftMaxDCAxy", 2.0f, "Cut on dcaXY for MFT tracks"};
     Configurable<float> mftMaxDCAz{"mftMaxDCAz", 2.0f, "Cut on dcaZ for MFT tracks"};
     Configurable<int> nClustersMftTrack{"nClustersMftTrack", 5, "Minimum number of clusters for the reconstruction of MFT tracks"};
     Configurable<float> ptMftTrackMax{"ptMftTrackMax", 10.0f, "max value of MFT tracks pT when used in cut function"};
     Configurable<float> ptMftTrackMin{"ptMftTrackMin", 0.f, "min value of MFT tracks pT when used in cut function"};
+    Configurable<bool> useMftChi2OverNdfCut{"useMftChi2OverNdfCut", false, "use mft track chi2/ndf cut"};
     Configurable<bool> useMftPtCut{"useMftPtCut", false, "if true, use the Mft pt function cut"};
     Configurable<bool> useOnlyCATracks{"useOnlyCATracks", false, "if true, use strictly MFT tracks reconstructed with CA algo."};
     Configurable<bool> useOnlyLTFTracks{"useOnlyLTFTracks", false, "if true, use strictly MFT tracks reconstructed with LTF algo."};
@@ -342,8 +346,10 @@ struct HfTaskFlow {
   using HfCandidatesSelD0 = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
   using HfCandidatesSelLc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
   using FilteredTracksWDcaSel = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra>>;
+  using FilteredTracksWDcaSelWLabels = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra, aod::McTrackLabels>>;
 
   using FilteredMftTracks = soa::Filtered<aod::MFTTracks>;
+  using FilteredMftTracksWCollsMcLabels = soa::Filtered<soa::Join<aod::MFTTracks, aod::McMFTTrackLabels>>;
 
   // =========================
   //      using declarations : MC
@@ -351,6 +357,7 @@ struct HfTaskFlow {
 
   using SmallGroupMcCollisions = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using FilteredMcCollisionsWMult = soa::Filtered<soa::Join<aod::McCollisions, aod::MultMCExtras>>;
+  using FilteredMcCollisionsWMultWCollsExtra = soa::Filtered<soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultMCExtras>>;
   using FilteredMcParticles = soa::Filtered<aod::McParticles>;
 
   // =========================
@@ -498,6 +505,7 @@ struct HfTaskFlow {
     labelsMftTracksSelection[MftTrackSelectionStep::Pt] = "MFT tracks after pT selection";
     labelsMftTracksSelection[MftTrackSelectionStep::DCAxy] = "MFT tracks after DCAxy selection";
     labelsMftTracksSelection[MftTrackSelectionStep::DCAz] = "MFT tracks after DCAz selection";
+    labelsMftTracksSelection[MftTrackSelectionStep::Chi2OverNdf] = "MFT tracks after Chi2OverNdf selection";
     labelsMftTracksSelection[MftTrackSelectionStep::IsLTF] = "Linear Track Finder MFT tracks";
     labelsMftTracksSelection[MftTrackSelectionStep::IsCA] = "Cellular Automaton MFT tracks";
     registry.get<TH1>(HIST("Data/Mft/hMftTracksSelection"))->SetMinimum(0);
@@ -661,8 +669,7 @@ struct HfTaskFlow {
       registry.add("Data/hEfficiencyTrigger", "", {HistType::kTH3D, {{configAxis.axisPtTrigger}, {configAxis.axisEtaTrigger}, {configAxis.axisVertex}}});
       registry.add("Data/hEfficiencyAssociated", "", {HistType::kTH3D, {{configAxis.axisPtAssoc}, {configAxis.axisEtaAssociated}, {configAxis.axisVertex}}});
 
-      registry.add("Data/hMultiplicity_uncorrected", "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
-      registry.add("Data/hMultiplicity_corrected", "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
+      registry.add("Data/hMultiplicity_uncorrected_vs_corrected", "", {HistType::kTH2D, {{configAxis.axisMultiplicity}, {configAxis.axisMultiplicity}}});
 
       if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
         registry.add("Trig_hist_TPC_MFT", "", {HistType::kTHnSparseF, {{configAxis.axisSamples, configAxis.axisVertex, configAxis.axisPtTrigger}}});
@@ -916,6 +923,13 @@ struct HfTaskFlow {
         sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxisVariations, effAxis, {}));
         mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxisVariations, effAxis, {}));
       }
+    }
+
+    if (doprocessTrackEfficiencies) {
+      registry.add("MC/hEfficiencyTrigger", "", {HistType::kTH3D, {{configAxis.axisPtTrigger}, {configAxis.axisEtaTrigger}, {configAxis.axisVertex}}});
+      registry.add("MC/hEfficiencyAssociated", "", {HistType::kTH3D, {{configAxis.axisPtTrigger}, {configAxis.axisEtaAssociated}, {configAxis.axisVertex}}});
+      registry.add("Data/hEfficiencyTrigger", "", {HistType::kTH3D, {{configAxis.axisPtTrigger}, {configAxis.axisEtaTrigger}, {configAxis.axisVertex}}});
+      registry.add("Data/hEfficiencyAssociated", "", {HistType::kTH3D, {{configAxis.axisPtAssoc}, {configAxis.axisEtaAssociated}, {configAxis.axisVertex}}});
     }
 
   } // End of init() function
@@ -1432,6 +1446,17 @@ struct HfTaskFlow {
 
     if (fillHistograms) {
       registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::DCAz);
+    }
+
+    if (configMft.useMftChi2OverNdfCut) {
+      float ndfMftTrack = std::max(2.0f * mftTrack.nClusters() - 5.0f, 1.0f);
+      float mftChi2OverNdf = mftTrack.chi2() / ndfMftTrack;
+      if (mftChi2OverNdf > configMft.maxChi2OverNdf) {
+        return false;
+      }
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::Chi2OverNdf);
     }
 
     // cut on the track algorithm of MFT tracks
@@ -1988,16 +2013,33 @@ struct HfTaskFlow {
 
         if (configTask.doEtaDependentFlow) {
           if (fitType == isFT0A) {
-            registry.fill(HIST("Trig_hist_TPC_FT0A"), sampleIndex, posZ, track1.eta(), triggerWeight); // think about event weight in near future
+            if constexpr (std::is_same_v<FilteredMftTracks, TTracksTrig>) {
+              registry.fill(HIST("Trig_hist_MFT_FT0A"), sampleIndex, posZ, track1.eta(), triggerWeight); // think about event weight in near future
+            } else {
+              registry.fill(HIST("Trig_hist_TPC_FT0A"), sampleIndex, posZ, track1.eta(), triggerWeight); // think about event weight in near future
+            }
           } else {
-            registry.fill(HIST("Trig_hist_TPC_FT0C"), sampleIndex, posZ, track1.eta(), triggerWeight); // think about event weight in near future
+            if constexpr (std::is_same_v<FilteredMftTracks, TTracksTrig>) {
+              registry.fill(HIST("Trig_hist_MFT_FT0C"), sampleIndex, posZ, track1.eta(), triggerWeight); // think about event weight in near future
+            } else {
+              registry.fill(HIST("Trig_hist_TPC_FT0C"), sampleIndex, posZ, track1.eta(), triggerWeight); // think about event weight in near future
+            }
           }
         }
         if (configTask.doVariationContainers) {
           if (fitType == isFT0A) {
-            registry.fill(HIST("Trig_hist_TPC_FT0A"), sampleIndex, posZ, track1.pt(), triggerWeight); // think about event weight in near future
+
+            if constexpr (std::is_same_v<FilteredMftTracks, TTracksTrig>) {
+              registry.fill(HIST("Trig_hist_MFT_FT0A"), sampleIndex, posZ, track1.pt(), triggerWeight); // think about event weight in near future
+            } else {
+              registry.fill(HIST("Trig_hist_TPC_FT0A"), sampleIndex, posZ, track1.pt(), triggerWeight); // think about event weight in near future
+            }
           } else {
-            registry.fill(HIST("Trig_hist_TPC_FT0C"), sampleIndex, posZ, track1.pt(), triggerWeight); // think about event weight in near future
+            if constexpr (std::is_same_v<FilteredMftTracks, TTracksTrig>) {
+              registry.fill(HIST("Trig_hist_MFT_FT0C"), sampleIndex, posZ, track1.pt(), triggerWeight); // think about event weight in near future
+            } else {
+              registry.fill(HIST("Trig_hist_TPC_FT0C"), sampleIndex, posZ, track1.pt(), triggerWeight); // think about event weight in near future
+            }
           }
         }
 
@@ -3019,10 +3061,10 @@ struct HfTaskFlow {
       multiplicity = getMultiplicityEstimator(collision, true);
     }
 
-    registry.fill(HIST("Data/hMultiplicity_uncorrected"), multiplicity);
+    auto uncorrected_multiplicity = multiplicity;
+    registry.fill(HIST("Data/hMultiplicity_uncorrected_vs_corrected"), uncorrected_multiplicity, multiplicity);
     if (configCollision.useMultiplicityFromTracksCorrected) {
       multiplicity = getCorrectedMultiplicity(tracks);
-      registry.fill(HIST("Data/hMultiplicity_corrected"), multiplicity);
     }
 
     if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
@@ -4273,6 +4315,152 @@ struct HfTaskFlow {
     }
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedMcGen, "MC Gen : Process mixed-event correlations", false);
+
+  void processTrackEfficiencies(FilteredMcCollisionsWMultWCollsExtra::iterator const& mcCollision,
+                                SmallGroupMcCollisions const& reconstructedCollisions,
+                                FilteredTracksWDcaSelWLabels const& tpcTracks, FilteredMftTracksWCollsMcLabels const& /*mftTracks*/,
+                                soa::Filtered<soa::Join<aod::BestCollisionsFwd3d, aod::McMFTTrackLabels>> const& reassociated3dMftTracks,
+                                FilteredMcParticles const& mcParticles)
+  {
+    if (std::abs(mcCollision.posZ()) >= configCollision.zVertexMax) {
+      return;
+    }
+
+    // check whether we have a selected reconstructed collision corresponding to the MC collision
+    bool hasReconstructedCollision = false;
+    for (const auto& reconstructedCollision : reconstructedCollisions) {
+      if (!isAcceptedCollision(reconstructedCollision)) {
+        continue;
+      }
+      if (reconstructedCollision.globalIndex() != mcCollision.bestCollisionIndex()) {
+        continue;
+      }
+      // auto groupedTpcTracks = tpcTracks.sliceBy(perColTracks, reconstructedCollision.globalIndex());
+      hasReconstructedCollision = true;
+    }
+
+    // fill histogram for MC Gen TPC particles
+    for (const auto& particle : mcParticles) {
+      auto pdgParticle = pdg->GetParticle(particle.pdgCode());
+      // check MC related properties of the particle
+      if (!particle.isPhysicalPrimary() || !particle.producedByGenerator()) {
+        continue;
+      }
+      // check charge of the particle
+      if (pdgParticle == nullptr || std::abs(pdgParticle->Charge()) == 0) {
+        continue;
+      }
+      // check kinematics of the particle for TPC
+      if (std::abs(particle.eta()) <= configTask.etaMcParticlesTriggerMax &&
+          particle.pt() >= configTask.ptMcParticlesTriggerMin &&
+          particle.pt() <= configTask.ptMcParticlesTriggerMax) {
+        if (hasReconstructedCollision) {
+          registry.fill(HIST("MC/hEfficiencyTrigger"), mcCollision.posZ(), particle.eta(), particle.pt());
+        }
+      }
+      // check kinematics of the particle for MFT
+      if (particle.eta() <= configTask.etaMcParticlesAssocMax &&
+          particle.eta() >= configTask.etaMcParticlesAssocMin &&
+          particle.pt() >= configTask.ptMcParticlesAssocMin &&
+          particle.pt() <= configTask.ptMcParticlesAssocMax) {
+        if (hasReconstructedCollision) {
+          registry.fill(HIST("MC/hEfficiencyAssociated"), mcCollision.posZ(), particle.eta(), particle.pt());
+        }
+      }
+    }
+
+    // // fill histogram for MC Gen TPC particles
+    // for (const auto& tpcParticle : mcParticles) {
+    //   auto pdgTpcParticle = pdg->GetParticle(tpcParticle.pdgCode());
+    //   // check MC related properties of the particle
+    //   if (!tpcParticle.isPhysicalPrimary() || !tpcParticle.producedByGenerator()) {
+    //     continue;
+    //   }
+    //   // check charge of the particle
+    //   if (pdgTpcParticle == nullptr || std::abs(pdgTpcParticle->Charge()) == 0) {
+    //     continue;
+    //   }
+    //   // check kinematics of the particle
+    //   if (std::abs(tpcParticle.eta()) > configTask.etaMcParticlesTriggerMax ||
+    //       tpcParticle.pt() < configTask.ptMcParticlesTriggerMin ||
+    //       tpcParticle.pt() > configTask.ptMcParticlesTriggerMax) {
+    //     continue;
+    //   }
+    //   if (hasReconstructedCollision) {
+    //     registry.fill(HIST("MC/hEfficiencyTrigger"), mcCollision.posZ(), tpcParticle.eta(), tpcParticle.pt());
+    //   }
+    // }
+
+    // // fill histogram for MC Gen MFT particles
+    // for (const auto& mftParticle : mcParticles) {
+    //   auto pdgMftParticle = pdg->GetParticle(mftParticle.pdgCode());
+    //   // check MC related properties of the particle
+    //   if (!mftParticle.isPhysicalPrimary() || !mftParticle.producedByGenerator()) {
+    //     continue;
+    //   }
+    //   // check charge of the particle
+    //   if (pdgMftParticle == nullptr || std::abs(pdgMftParticle->Charge()) == 0) {
+    //     continue;
+    //   }
+    //   // check kinematics of the particle
+    //   if (mftParticle.eta() > configTask.etaMcParticlesAssocMax ||
+    //       mftParticle.eta() < configTask.etaMcParticlesAssocMin ||
+    //       mftParticle.pt() < configTask.ptMcParticlesAssocMin ||
+    //       mftParticle.pt() > configTask.ptMcParticlesAssocMax) {
+    //     continue;
+    //   }
+
+    //   if (hasReconstructedCollision) {
+    //     registry.fill(HIST("MC/hEfficiencyAssociated"), mcCollision.posZ(), mftParticle.eta(), mftParticle.pt());
+    //   }
+    // }
+
+    // fill histogram for reconstructed TPC tracks
+    for (const auto& reconstructedCollision : reconstructedCollisions) {
+      if (!isAcceptedCollision(reconstructedCollision)) {
+        continue;
+      }
+      if (reconstructedCollision.globalIndex() != mcCollision.bestCollisionIndex()) {
+        continue;
+      }
+
+      auto groupedTpcTracks = tpcTracks.sliceBy(perColTracks, reconstructedCollision.globalIndex());
+      for (const auto& tpcTrack : groupedTpcTracks) {
+        if (!isAcceptedCentralTrack(tpcTrack)) {
+          continue;
+        }
+        if (!tpcTrack.has_mcParticle()) {
+          continue;
+        }
+        auto tpcParticle = tpcTrack.template mcParticle_as<FilteredMcParticles>();
+        if (reconstructedCollision.mcCollisionId() != tpcParticle.mcCollisionId()) {
+          continue;
+        }
+        if (tpcParticle.isPhysicalPrimary()) {
+          registry.fill(HIST("Data/hEfficiencyTrigger"), mcCollision.posZ(), tpcParticle.eta(), tpcParticle.pt());
+        }
+      }
+
+      auto groupedreassociated3dMftTracks = reassociated3dMftTracks.sliceBy(perColReassociated3dTracks, reconstructedCollision.globalIndex());
+      for (const auto& reassociated3dMftTrack : reassociated3dMftTracks) {
+        if (!reassociated3dMftTrack.has_mcParticle()) {
+          continue;
+        }
+        auto templatedMftTrack = reassociated3dMftTrack.template mfttrack_as<FilteredMftTracksWCollsMcLabels>();
+        if (!isAcceptedMftTrack(templatedMftTrack, reassociated3dMftTrack.bestDCAXY(), reassociated3dMftTrack.bestDCAZ(), false)) {
+          continue;
+        }
+        auto mftParticle = templatedMftTrack.template mcParticle_as<FilteredMcParticles>();
+        if (reconstructedCollision.mcCollisionId() != mftParticle.mcCollisionId()) {
+          continue;
+        }
+        if (mftParticle.isPhysicalPrimary()) {
+          registry.fill(HIST("Data/hEfficiencyAssociated"), mcCollision.posZ(), mftParticle.eta(), mftParticle.pt());
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(HfTaskFlow, processTrackEfficiencies, "process track efficiencies for TPC and MFT", false);
 
 }; // End of struct
 
