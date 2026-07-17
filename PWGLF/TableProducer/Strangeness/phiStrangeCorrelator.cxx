@@ -700,7 +700,7 @@ struct XiReducedCandProducer {
         continue;
 
       const auto& cascadeMcParticle = mcParticles.rawIteratorAt(cascade.mcParticleId());
-      if (std::abs(cascadeMcParticle.pdgCode()) != PDG_t::kXiPlusBar || !cascadeMcParticle.isPhysicalPrimary())
+      if (std::abs(cascadeMcParticle.pdgCode()) != PDG_t::kXiMinus || !cascadeMcParticle.isPhysicalPrimary())
         continue;
 
       xiReducedCandidatesMcReco(collision.globalIndex(), cascade.mXi(), cascadeMcParticle.pt(), cascadeMcParticle.y(), cascadeMcParticle.phi());
