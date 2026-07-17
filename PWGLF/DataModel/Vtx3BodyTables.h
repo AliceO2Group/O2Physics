@@ -59,6 +59,9 @@ DECLARE_SOA_COLUMN(PzTrackPi, pzTrackPi, float); //! track1 pz at min
 DECLARE_SOA_COLUMN(PxTrackDe, pxTrackDe, float); //! track2 px at min
 DECLARE_SOA_COLUMN(PyTrackDe, pyTrackDe, float); //! track2 py at min
 DECLARE_SOA_COLUMN(PzTrackDe, pzTrackDe, float); //! track2 pz at min
+DECLARE_SOA_COLUMN(XTrackPr, xTrackPr, float);   //! track0 x at IU
+DECLARE_SOA_COLUMN(XTrackPi, xTrackPi, float);   //! track1 x at IU
+DECLARE_SOA_COLUMN(XTrackDe, xTrackDe, float);   //! track2 x at IU
 
 // DCAs to PV
 DECLARE_SOA_COLUMN(DCAXYTrackPrToPV, dcaXYtrackPrToPv, float);         //! DCAXY of proton to PV (computed with KFParticle)
@@ -215,6 +218,7 @@ DECLARE_SOA_TABLE(Vtx3BodyDatas, "AOD", "VTX3BODYDATA", //!
                   vtx3body::PxTrackPr, vtx3body::PyTrackPr, vtx3body::PzTrackPr,
                   vtx3body::PxTrackPi, vtx3body::PyTrackPi, vtx3body::PzTrackPi,
                   vtx3body::PxTrackDe, vtx3body::PyTrackDe, vtx3body::PzTrackDe,
+                  vtx3body::XTrackPr, vtx3body::XTrackPi, vtx3body::XTrackDe,
                   vtx3body::DCAXYTrackPrToPV, vtx3body::DCAXYTrackPiToPV, vtx3body::DCAXYTrackDeToPV,
                   vtx3body::DCATrackPrToPV, vtx3body::DCATrackPiToPV, vtx3body::DCATrackDeToPV,
                   vtx3body::DCAXYTrackPrToPVProp, vtx3body::DCAXYTrackPiToPVProp, vtx3body::DCAXYTrackDeToPVProp,
@@ -266,6 +270,7 @@ DECLARE_SOA_TABLE(McVtx3BodyDatas, "AOD", "MC3BODYDATA", //!
                   vtx3body::PxTrackPr, vtx3body::PyTrackPr, vtx3body::PzTrackPr,
                   vtx3body::PxTrackPi, vtx3body::PyTrackPi, vtx3body::PzTrackPi,
                   vtx3body::PxTrackDe, vtx3body::PyTrackDe, vtx3body::PzTrackDe,
+                  vtx3body::XTrackPr, vtx3body::XTrackPi, vtx3body::XTrackDe,
                   vtx3body::DCAXYTrackPrToPV, vtx3body::DCAXYTrackPiToPV, vtx3body::DCAXYTrackDeToPV,
                   vtx3body::DCATrackPrToPV, vtx3body::DCATrackPiToPV, vtx3body::DCATrackDeToPV,
                   vtx3body::DCAXYTrackPrToPVProp, vtx3body::DCAXYTrackPiToPVProp, vtx3body::DCAXYTrackDeToPVProp,
