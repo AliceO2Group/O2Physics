@@ -641,11 +641,18 @@ struct XiReducedCandProducer {
       return false;
 
     if constexpr (!isMC) {
-      if (std::abs(posDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion)
-        return false;
-      if (std::abs(negDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion)
-        return false;
-      if (std::abs(bachDaughterTrack.tpcNSigmaPr()) > trackConfigs.nSigmaCutTPCSecProton)
+      if (cascade.sign() < 0) {
+        if (std::abs(posDaughterTrack.tpcNSigmaPr()) > trackConfigs.nSigmaCutTPCSecProton)
+          return false;
+        if (std::abs(negDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion)
+          return false;
+      } else if (cascade.sign() > 0) {
+        if (std::abs(posDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion)
+          return false;
+        if (std::abs(negDaughterTrack.tpcNSigmaPr()) > trackConfigs.nSigmaCutTPCSecProton)
+          return false;
+      }
+      if (std::abs(bachDaughterTrack.tpcNSigmaPi()) > trackConfigs.nSigmaCutTPCSecPion)
         return false;
     }
 
