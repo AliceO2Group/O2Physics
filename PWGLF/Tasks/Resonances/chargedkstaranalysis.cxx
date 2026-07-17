@@ -302,7 +302,7 @@ struct Chargedkstaranalysis {
   } kstarCutCfgs;
 
   Configurable<bool> isQaRequired{"isQaRequired", false, "Fill QA plots"};
-  float centrality;
+  float centrality = 0.f;
 
   // PDG code
   int kPDGK0s = kK0Short;
@@ -607,7 +607,7 @@ struct Chargedkstaranalysis {
   std::unordered_map<int64_t, float> centTruthByAllowed;
   std::unordered_set<int64_t> refClassIds;
   std::unordered_map<int64_t, float> refCentByMcId;
-  float lMultiplicity;
+  float lMultiplicity = 0.f;
   template <typename CollisionType>
   float getCentrality(CollisionType const& collision)
   {
