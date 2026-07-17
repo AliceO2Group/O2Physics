@@ -10,8 +10,11 @@
 // or submit itself to any jurisdiction.
 
 /// \file decay3bodyBuilderHelper.cxx
-/// \brief Helper file to provide compilation command for headers.
+/// \brief Helper file providing the compilation command for the decay3bodyBuilderHelper header.
+/// The module implementation is provided in the corresponding header and maintained by Carolina Anna Jauch;
+/// this file only provides the compilation unit.
 ///
+/// \author Carolina Anna Jauch <c.reetz@cern.ch>, Darmstadt GSI
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
 // o2-linter: disable=name/workflow-file (not a workflow file)
