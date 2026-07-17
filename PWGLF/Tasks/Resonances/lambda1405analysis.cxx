@@ -449,7 +449,7 @@ struct lambda1405analysis {
     }
 
     if (doprocessMcSigmasCentSel) {
-      rSigmaPlus.add("hSparseGenSigmaPlus", "THn for generated Sigma plus",    {HistType::kTHnSparseF, {sigmaMassAxis, ptAxis, alphaAxis, qtAxis, sigmaRadiusAxis, centMultAxis, occAxis, pvContribAxis}});
+      rSigmaPlus.add("hSparseGenSigmaPlus", "THn for generated Sigma plus", {HistType::kTHnSparseF, {sigmaMassAxis, ptAxis, alphaAxis, qtAxis, sigmaRadiusAxis, centMultAxis, occAxis, pvContribAxis}});
       rSigmaMinus.add("hSparseGenSigmaMinus", "THn for generated Sigma minus", {HistType::kTHnSparseF, {sigmaMassAxis, ptAxis, alphaAxis, qtAxis, sigmaRadiusAxis, centMultAxis, occAxis, pvContribAxis}});
     }
 
@@ -1578,7 +1578,7 @@ struct lambda1405analysis {
         float recoRecalcPtSigmaAlphaAP = alphaAP(sigmaMomReco, kinkMomReco);
         float recoRecalcPtSigmaQtAP = qtAP(sigmaMomReco, kinkMomReco);
         float massSigma = isSigmaMinusKink ? sigmaCand.mSigmaMinus : sigmaCand.mSigmaPlus;
-        
+
         // Generated properties
         float genMassSigma{-1.f};
         if (isSigmaMinusKink || isSigmaPlusToPiKink || isSigmaPlusToPrKink) {
@@ -1624,7 +1624,6 @@ struct lambda1405analysis {
     }
   }
   PROCESS_SWITCH(lambda1405analysis, processMcSigmasCentSel, "MC processing for sigma efficiency studies", false);
-
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
