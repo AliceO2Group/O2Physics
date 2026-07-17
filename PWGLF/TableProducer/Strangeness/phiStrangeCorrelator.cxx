@@ -655,7 +655,7 @@ struct XiReducedCandProducer {
 
     if (cascade.v0cosPA(pvx, pvy, pvz) < cascadeConfigs.cascSettingV0CosPA)
       return false;
-    if (cascade.cascCosPA(pvx, pvy, pvz) < cascadeConfigs.cascSettingCosPA)
+    if (cascade.casccosPA(pvx, pvy, pvz) < cascadeConfigs.cascSettingCosPA)
       return false;
     if (cascade.v0radius() < cascadeConfigs.cascSettingV0Radius)
       return false;
@@ -669,7 +669,7 @@ struct XiReducedCandProducer {
     return true;
   }
 
-  void processData(FilteredSelCollisions::iterator const& collision, FullCascades const& cascades, DauTracks const& dauTracks)
+  void processData(FilteredSelCollisions::iterator const& collision, FullCascades const& cascades, DauTracks const&)
   {
     for (const auto& cascade : cascades) {
       // Cut on cascade dynamic columns
@@ -684,7 +684,7 @@ struct XiReducedCandProducer {
 
   PROCESS_SWITCH(XiReducedCandProducer, processData, "Process function to select reduced Xi candidates in Data or in McReco (w/o McTruth) analysis", true);
 
-  void processMCReco(FilteredSimCollisions::iterator const& collision, FullMCCascades const& V0s, DauMCTracks const&, aod::McParticles const& mcParticles)
+  void processMCReco(FilteredSimCollisions::iterator const& collision, FullMCCascades const& cascades, DauMCTracks const&, aod::McParticles const& mcParticles)
   {
     for (const auto& cascade : cascades) {
       if (!selectionCascade<true>(cascade, collision))
