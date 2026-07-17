@@ -4335,7 +4335,6 @@ struct HfTaskFlow {
       if (reconstructedCollision.globalIndex() != mcCollision.bestCollisionIndex()) {
         continue;
       }
-      // auto groupedTpcTracks = tpcTracks.sliceBy(perColTracks, reconstructedCollision.globalIndex());
       hasReconstructedCollision = true;
     }
 
@@ -4368,52 +4367,6 @@ struct HfTaskFlow {
         }
       }
     }
-
-    // // fill histogram for MC Gen TPC particles
-    // for (const auto& tpcParticle : mcParticles) {
-    //   auto pdgTpcParticle = pdg->GetParticle(tpcParticle.pdgCode());
-    //   // check MC related properties of the particle
-    //   if (!tpcParticle.isPhysicalPrimary() || !tpcParticle.producedByGenerator()) {
-    //     continue;
-    //   }
-    //   // check charge of the particle
-    //   if (pdgTpcParticle == nullptr || std::abs(pdgTpcParticle->Charge()) == 0) {
-    //     continue;
-    //   }
-    //   // check kinematics of the particle
-    //   if (std::abs(tpcParticle.eta()) > configTask.etaMcParticlesTriggerMax ||
-    //       tpcParticle.pt() < configTask.ptMcParticlesTriggerMin ||
-    //       tpcParticle.pt() > configTask.ptMcParticlesTriggerMax) {
-    //     continue;
-    //   }
-    //   if (hasReconstructedCollision) {
-    //     registry.fill(HIST("MC/hEfficiencyTrigger"), mcCollision.posZ(), tpcParticle.eta(), tpcParticle.pt());
-    //   }
-    // }
-
-    // // fill histogram for MC Gen MFT particles
-    // for (const auto& mftParticle : mcParticles) {
-    //   auto pdgMftParticle = pdg->GetParticle(mftParticle.pdgCode());
-    //   // check MC related properties of the particle
-    //   if (!mftParticle.isPhysicalPrimary() || !mftParticle.producedByGenerator()) {
-    //     continue;
-    //   }
-    //   // check charge of the particle
-    //   if (pdgMftParticle == nullptr || std::abs(pdgMftParticle->Charge()) == 0) {
-    //     continue;
-    //   }
-    //   // check kinematics of the particle
-    //   if (mftParticle.eta() > configTask.etaMcParticlesAssocMax ||
-    //       mftParticle.eta() < configTask.etaMcParticlesAssocMin ||
-    //       mftParticle.pt() < configTask.ptMcParticlesAssocMin ||
-    //       mftParticle.pt() > configTask.ptMcParticlesAssocMax) {
-    //     continue;
-    //   }
-
-    //   if (hasReconstructedCollision) {
-    //     registry.fill(HIST("MC/hEfficiencyAssociated"), mcCollision.posZ(), mftParticle.eta(), mftParticle.pt());
-    //   }
-    // }
 
     // fill histogram for reconstructed TPC tracks
     for (const auto& reconstructedCollision : reconstructedCollisions) {
