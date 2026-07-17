@@ -111,6 +111,7 @@ struct JetSpectraEseTask {
   Configurable<std::vector<float>> cfgOccupancyPtCut{"cfgOccupancyPtCut", {0, 100}, "pT cut"};
 
   Configurable<bool> cfgrhoPhi{"cfgrhoPhi", true, "Flag for rho(phi)"};
+  Configurable<bool> cfgRhoPhiPvalCriteria{"cfgRhoPhiPvalCriteria", true, "Use <rho> instead of rho(phi) when the rho(phi) fit p-value is below 0.01"};
 
   Configurable<int> cfgnTotalSystem{"cfgnTotalSystem", 7, "total qvector number // look in Qvector table for this number"};
   Configurable<int> cfgnCorrLevel{"cfgnCorrLevel", 3, "QVector step: 0 = no corr, 1 = rect, 2 = twist, 3 = full"};
@@ -345,6 +346,7 @@ struct JetSpectraEseTask {
 
       registry.add("eventQA/before/hVtxZ", ";z_{vtx} (cm);entries", {HistType::kTH1F, {{vertexZAxis}}});
       registry.add("eventQA/after/hVtxZ", ";z_{vtx} (cm);entries", {HistType::kTH1F, {{vertexZAxis}}});
+      registry.add("eventQA/hRhoPhiCheck", "event status;event status;entries", {HistType::kTH1F, {{2, 0.0, 2.0}}});
 
       registry.get<TH1>(HIST("eventQA/hEventCounter"))->GetXaxis()->SetBinLabel(kFilteredInputEv, "Input filtered event");
       registry.get<TH1>(HIST("eventQA/hEventCounter"))->GetXaxis()->SetBinLabel(kEventSel, "Event selection");
@@ -1478,6 +1480,14 @@ struct JetSpectraEseTask {
       return nullptr;
 
     auto cDF = 1. - TMath::Gamma(nDF, chi2);
+    if constexpr (fillHist)
+      registry.fill(HIST("eventQA/hRhoPhiCheck"), 0.5);
+    if (cfgRhoPhiPvalCriteria && cDF < 0.01) {
+      modulationFit->SetParameter(1, 0.);
+      modulationFit->SetParameter(3, 0.);
+      if constexpr (fillHist)
+        registry.fill(HIST("eventQA/hRhoPhiCheck"), 1.5);
+    }
 
     if constexpr (fillHist) {
       registry.fill(HIST("eventQA/hPValueCentCDF"), col.centFT0M(), cDF);
