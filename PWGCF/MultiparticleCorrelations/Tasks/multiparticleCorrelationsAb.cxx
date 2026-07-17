@@ -9,11 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file multiparticle-correlations-ab.cxx
-/// \brief ... TBI 20250425
+/// \file multiparticleCorrelationsAb.cxx
+/// \brief Task to calculate multiparticle correlations and related observables
 /// \author Ante.Bilandzic@cern.ch
 
-// O2:
+// *) O2 include headers and namespaces:
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/TriggerAliases.h"
@@ -34,7 +34,7 @@ using namespace o2;
 using namespace o2::framework;
 
 // *) Run 3:
-using BCs_Run3 = soa::Join<aod::BCs, aod::Timestamps>; // TBI 20241126 under testing
+using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps>; // TBI 20241126 under testing
 // Remark 1: I have already timestamp in workflow, due to track-propagation.
 // Remark 2: For consistency with notation below, drop _Run3 and instead use _Run2 and _Run1 TBI 20250401 not sure any longer what I wanted to say here...
 
@@ -55,31 +55,31 @@ using TracksSim = aod::McParticles;
 using TrackSim = aod::McParticles::iterator;
 
 // *) Run 2:
-using EventSelection_Run2 = soa::Join<aod::EvSels, aod::Mults, aod::CentRun2V0Ms, aod::CentRun2SPDTrks>; // TBI 20240517 do not subscribe to CentRun2CL0s and CentRun2CL1s => see enum
-using CollisionRec_Run2 = soa::Join<aod::Collisions, EventSelection_Run2>::iterator;                     // use in json "isRun2MC" : "true" for "event-selection-task"
-using CollisionRecSim_Run2 = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection_Run2>::iterator;
+using EventSelectionRun2 = soa::Join<aod::EvSels, aod::Mults, aod::CentRun2V0Ms, aod::CentRun2SPDTrks>; // TBI 20240517 do not subscribe to CentRun2CL0s and CentRun2CL1s => see enum
+using CollisionRecRun2 = soa::Join<aod::Collisions, EventSelectionRun2>::iterator;                      // use in json "isRun2MC" : "true" for "event-selection-task"
+using CollisionRecSimRun2 = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelectionRun2>::iterator;
 // Remark: For tracks, I can use everything same as in Run 3
 
 // *) Run 1:
 //    TBI 20240205 Since centrality calibration is not available in converted Run 1 data, I cannot treat it for the time being in the same way as converted Run 2.
 //                 Once calibration is available, just use Run 2 above both for Run 2 and Run 1
-using EventSelection_Run1 = soa::Join<aod::EvSels, aod::Mults>; // TBI 20240205 no calibration for centrality in converted LHC10h and LHC11h, at the time of writing
-using CollisionRec_Run1 = soa::Join<aod::Collisions, EventSelection_Run1>::iterator;
-using CollisionRecSim_Run1 = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection_Run1>::iterator;
+using EventSelectionRun1 = soa::Join<aod::EvSels, aod::Mults>; // TBI 20240205 no calibration for centrality in converted LHC10h and LHC11h, at the time of writing
+using CollisionRecRun1 = soa::Join<aod::Collisions, EventSelectionRun1>::iterator;
+using CollisionRecSimRun1 = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelectionRun1>::iterator;
 // Remark: For tracks, I can use everything same as in Run 3
 
 // *) QA:
 //    Remark: This is Run 3 "Rec" + subscription to additional few tables (otherwise unnecessary in my analysis, e.g. some specific detector tables), used only for QA purposes.
 //            Therefore, I start all definitions from what I have defined for Run 3 "Rec", and on top of it join these additional tables for QA.
-using BCs_QA = soa::Join<BCs_Run3, aod::BcSels, aod::Run3MatchedToBCSparse>;
+using BCsQA = soa::Join<BCsRun3, aod::BcSels, aod::Run3MatchedToBCSparse>;
 //             *) BcSels => bc.has_foundFT0(), etc.
 //             *) Run3MatchedToBCSparse => bc.has_zdc(), etc. TBI 20250401 at the moment, I do not use this one
-using Collision_QA = CollisionRec; // if I would need additional tables for QA, just join 'em here with CollisionRec
-using TracksRec_QA = TracksRec;    // if I would need additional tables for QA, just join 'em here with TracksRec
+using CollisionQA = CollisionRec; // if I would need additional tables for QA, just join 'em here with CollisionRec
+using TracksRecQA = TracksRec;    // if I would need additional tables for QA, just join 'em here with TracksRec
 
-// *) ROOT:
+// *) ROOT include headers and namespaces:
 #include <TComplex.h>
-#include <TDatabasePDG.h>
+#include <TDatabasePDG.h> // o2-linter: disable=pdg/database (using until o2::framework::O2DatabasePDG lazy initialization is provided)
 #include <TExMap.h>
 #include <TF1.h>
 #include <TF3.h>
@@ -99,6 +99,7 @@ using TracksRec_QA = TracksRec;    // if I would need additional tables for QA, 
 #include <Riostream.h>
 
 #include <complex>
+
 using namespace std;
 
 // *) Enums:
@@ -108,7 +109,7 @@ using namespace std;
 #include "PWGCF/MultiparticleCorrelations/Core/MuPa-GlobalConstants.h"
 
 // *) Main task:
-struct MultiparticleCorrelationsAB // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
+struct MultiparticleCorrelationsAb // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
 {
 
   // *) CCDB:
@@ -122,12 +123,15 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // Service<o2::framework::O2DatabasePDG> pdg;
 
 // *) Configurables (cuts):
+//    TBI 20260519 this code will eventually be inlined here from a temporary external header, when the major development is over
 #include "PWGCF/MultiparticleCorrelations/Core/MuPa-Configurables.h"
 
 // *) Data members:
+//    TBI 20260519 this code will eventually be inlined here from a temporary external header, when the major development is over
 #include "PWGCF/MultiparticleCorrelations/Core/MuPa-DataMembers.h"
 
 // *) Member functions:
+//    TBI 20260519 this code will eventually be inlined here from a temporary external header, when the major development is over
 #include "PWGCF/MultiparticleCorrelations/Core/MuPa-MemberFunctions.h"
 
   // -------------------------------------------
@@ -148,7 +152,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     bool oldHistAddStatus = TH1::AddDirectoryStatus();
     TH1::AddDirectory(kFALSE);
 
-    // *) Print environment (here I always print it, in Steer(...) only if verbose is set to true):
+    // *) Print environment (here I always print it, in steer(...) only if verbose is set to true):
     printEnvironment();
 
     // *) Default configuration, booking, binning and cuts:
@@ -232,86 +236,86 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // A) Process only reconstructed data:
-  void processRec(CollisionRec const& collision, BCs_Run3 const& bcs, TracksRec const& tracks)
+  void processRec(CollisionRec const& collision, BCsRun3 const& bcs, TracksRec const& tracks)
   {
     // Remark: Do not use here LOGF(fatal, ...) or LOGF(info, ...), because their stdout/stderr is suppressed. Use them in regular member functions instead.
 
     // *) Steer all analysis steps:
-    Steer<eRec>(collision, bcs, tracks);
+    steer<eRec>(collision, bcs, tracks);
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec, "process only reconstructed data", true); // yes, keep always one process switch "true", so that I have default running version
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processRec, "process only reconstructed data", true); // yes, keep always one process switch "true", so that I have default running version
 
   // -------------------------------------------
 
   // B) Process both reconstructed and corresponding MC truth simulated data:
   void processRecSim(CollisionRecSim const& collision, aod::BCs const& bcs, TracksRecSim const& tracks, aod::McParticles const&, aod::McCollisions const&)
   {
-    Steer<eRecAndSim>(collision, bcs, tracks);
+    steer<eRecAndSim>(collision, bcs, tracks);
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRecSim, "process both reconstructed and corresponding MC truth simulated data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processRecSim, "process both reconstructed and corresponding MC truth simulated data", false);
 
   // -------------------------------------------
 
   // C) Process only simulated data:
   void processSim(CollisionSim const& /*collision*/, aod::BCs const& /*bcs*/, TracksSim const& /*tracks*/)
   {
-    //    Steer<eSim>(collision, bcs, tracks); // TBI 20240517 not ready yet, but I do not really need this one urgently, since RecSim is working, and I need that one for efficiencies...
+    //    steer<eSim>(collision, bcs, tracks); // TBI 20240517 not ready yet, but I do not really need this one urgently, since RecSim is working, and I need that one for efficiencies...
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processSim, "process only simulated data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processSim, "process only simulated data", false);
 
   // -------------------------------------------
 
   // D) Process only converted reconstructed Run 2 data:
-  void processRec_Run2(CollisionRec_Run2 const& collision, aod::BCs const& bcs, TracksRec const& tracks)
+  void processRecRun2(CollisionRecRun2 const& collision, aod::BCs const& bcs, TracksRec const& tracks)
   {
-    Steer<eRec_Run2>(collision, bcs, tracks);
+    steer<eRec_Run2>(collision, bcs, tracks);
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec_Run2, "process only converted reconstructed Run 2 data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processRecRun2, "process only converted reconstructed Run 2 data", false);
 
   // -------------------------------------------
 
   // E) Process both converted reconstructed and corresponding MC truth simulated Run 2 data:
-  void processRecSim_Run2(CollisionRecSim_Run2 const& collision, aod::BCs const& bcs, TracksRecSim const& tracks, aod::McParticles const&, aod::McCollisions const&)
+  void processRecSimRun2(CollisionRecSimRun2 const& collision, aod::BCs const& bcs, TracksRecSim const& tracks, aod::McParticles const&, aod::McCollisions const&)
   {
-    Steer<eRecAndSim_Run2>(collision, bcs, tracks);
+    steer<eRecAndSim_Run2>(collision, bcs, tracks);
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRecSim_Run2, "process both converted reconstructed and simulated Run 2 data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processRecSimRun2, "process both converted reconstructed and simulated Run 2 data", false);
 
   // -------------------------------------------
 
   // F) Process only converted simulated Run 2 data:
-  void processSim_Run2(CollisionSim const& /*collision*/) // TBI 20240517 extend this subscription eventually
+  void processSimRun2(CollisionSim const& /*collision*/) // TBI 20240517 extend this subscription eventually
   {
-    // Steer<eSim_Run2>(collision, tracks); // TBI 20240517 not ready yet, but I do not really need this one urgently, since RecSim_Run2 is working, and I need that one for efficiencies...
+    // steer<eSim_Run2>(collision, tracks); // TBI 20240517 not ready yet, but I do not really need this one urgently, since RecSim_Run2 is working, and I need that one for efficiencies...
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processSim_Run2, "process only converted simulated Run 2 data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processSimRun2, "process only converted simulated Run 2 data", false);
 
   // -------------------------------------------
 
   // G) Process only converted reconstructed Run 1 data:
-  void processRec_Run1(CollisionRec_Run1 const& collision, aod::BCs const& bcs, TracksRec const& tracks)
+  void processRecRun1(CollisionRecRun1 const& collision, aod::BCs const& bcs, TracksRec const& tracks)
   {
-    Steer<eRec_Run1>(collision, bcs, tracks);
+    steer<eRec_Run1>(collision, bcs, tracks);
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec_Run1, "process only converted reconstructed Run 1 data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processRecRun1, "process only converted reconstructed Run 1 data", false);
 
   // -------------------------------------------
 
   // H) Process both converted reconstructed and corresponding MC truth simulated Run 1 data;
-  void processRecSim_Run1(CollisionRecSim_Run1 const& /*collision*/, aod::BCs const& /*bcs*/, TracksRecSim const& /*tracks*/, aod::McParticles const&, aod::McCollisions const&)
+  void processRecSimRun1(CollisionRecSimRun1 const& /*collision*/, aod::BCs const& /*bcs*/, TracksRecSim const& /*tracks*/, aod::McParticles const&, aod::McCollisions const&)
   {
-    // Steer<eRecAndSim_Run1>(collision, bcs, tracks); // TBI 20240517 not ready yet, but for benchmarking in any case I need only "Rec"
+    // steer<eRecAndSim_Run1>(collision, bcs, tracks); // TBI 20240517 not ready yet, but for benchmarking in any case I need only "Rec"
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRecSim_Run1, "process both converted reconstructed and simulated Run 1 data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processRecSimRun1, "process both converted reconstructed and simulated Run 1 data", false);
 
   // -------------------------------------------
 
   // I) Process only converted simulated Run 1 data.
-  void processSim_Run1(aod::Collision const&) // TBI 20240424 not ready yet, just a dummy to version to get later "doprocess..." variable.
+  void processSimRun1(aod::Collision const&) // TBI 20240424 not ready yet, just a dummy to version to get later "doprocess..." variable.
   {
-    // Steer<eSim_Run1>(collision, tracks); // TBI 20240517 not ready yet, but for benchmarking in any case I need only "Rec"
+    // steer<eSim_Run1>(collision, tracks); // TBI 20240517 not ready yet, but for benchmarking in any case I need only "Rec"
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processSim_Run1, "process only converted simulated Run 1 data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processSimRun1, "process only converted simulated Run 1 data", false);
 
   // -------------------------------------------
 
@@ -320,32 +324,32 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   //            I have to remove "| o2-analysis-centrality-table $JsonFile \" from workflow (yes, remove, not comment out!)
   void processTest(aod::Collision const& collision, aod::BCs const& bcs, aod::Tracks const& tracks)
   {
-    Steer<eTest>(collision, bcs, tracks);
+    steer<eTest>(collision, bcs, tracks);
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processTest, "test processing", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processTest, "test processing", false);
 
   // -------------------------------------------
 
   // K) Process data with more than necessary subscriptions to the tables, only for QA purposes:
   //    Remark 1: This is basically the main "processRec" switch, merely enhanced with subscription to few more tables (e.g. detector specific), only for QA purposes.
   //    Remark 2: Ideally, i use the same workflow for "processRec" and "processQA", but most likely at some point I will have to establish separate workflow for "processQA"
-  void processQA(Collision_QA const& collision, BCs_QA const& bcs, TracksRec_QA const& tracks, aod::FT0s const&)
+  void processQA(CollisionQA const& collision, BCsQA const& bcs, TracksRecQA const& tracks, aod::FT0s const&)
   {
     // Summary for additional tables subscribed to directly here:
     // *) FT0s => bc.foundFT0().sumAmpC(), etc.
-    Steer<eQA>(collision, bcs, tracks);
+    steer<eQA>(collision, bcs, tracks);
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processQA, "QA processing", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processQA, "QA processing", false);
 
   // -------------------------------------------
 
   // L) Process extra Monte Carlo info the from table HepMCHeavyIons:
-  //    Remark 1: Under testing, merge eventually this process switch with processRecSim, processRecSim_Run2, and processRecSim_Run1 above;
+  //    Remark 1: Under testing, merge eventually this process switch with processRecSim, processRecSimRun2, and processRecSimRun1 above;
   //              This switch does everything the same as processRecSim (so it works only for Run 3 at the moment), except extra info is processed from table HepMCHeavyIons with dedicated function call
-  //              ProcessHepMCHeavyIons(hepMChi). I use this dedicated function, in order not to modify call to Steer(...) by adding the fourth argument.
-  //              TBI 20250429 see if I can circumvent this with templates (i can NOT join HepMCHeavyIons and McParticles), in order to keep call to Steer(...) as simple as it is now
+  //              ProcessHepMCHeavyIons(hepMChi). I use this dedicated function, in order not to modify call to steer(...) by adding the fourth argument.
+  //              TBI 20250429 see if I can circumvent this with templates (i can NOT join HepMCHeavyIons and McParticles), in order to keep call to steer(...) as simple as it is now
   //    Remark 2: In MC LHC24g3 and LHC24e2c, for HepMCHeavyIons only impact parameter is filled;
-  //              As soon as HepMCHeavyIons is correctly filled in MC productions, merge this switch with processRecSim, processRecSim_Run2, and processRecSim_Run1 above.
+  //              As soon as HepMCHeavyIons is correctly filled in MC productions, merge this switch with processRecSim, processRecSimRun2, and processRecSimRun1 above.
   //              Most notably, I will need hep.centrality() (centrality at generated level), and hep.sigmaInelNN()
   void processHepMChi(CollisionRecSim const& collision, aod::BCs const& bcs, TracksRecSim const& tracks, aod::HepMCHeavyIons const& hepMChi, aod::McParticles const&, aod::McCollisions const&)
   {
@@ -367,16 +371,16 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     }
 
     // *) Okay, extract all extra info from HepMCHeavyIons:
-    ProcessHepMCHeavyIons(hep);
+    processHepMCHeavyIons(hep);
 
-    // *) Call the Steer(...)
-    //    TBI 20250429 For the time being, only Run 3 call for Steer(...) is supported. When generalizing to Run 2 and Run 1 process switches, perhaps the better strategy is
-    //                 just to inject ProcessHepMCHeavyIons(hep); , and keep call to Steer(...) as it is now?
-    Steer<eRecAndSim>(collision, bcs, tracks); // TBI 20250429 remember that I have hardwired here eRecAndSim, so this now works only for Run 3
+    // *) Call the steer(...)
+    //    TBI 20250429 For the time being, only Run 3 call for steer(...) is supported. When generalizing to Run 2 and Run 1 process switches, perhaps the better strategy is
+    //                 just to inject ProcessHepMCHeavyIons(hep); , and keep call to steer(...) as it is now?
+    steer<eRecAndSim>(collision, bcs, tracks); // TBI 20250429 remember that I have hardwired here eRecAndSim, so this now works only for Run 3
 
   } // void processHepMChi( ... )
 
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processHepMChi, "HepMCHeavyIons processing", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAb, processHepMChi, "HepMCHeavyIons processing", false);
 
   // -------------------------------------------
 
@@ -384,7 +388,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 
   // -------------------------------------------
 
-}; // struct MultiparticleCorrelationsAB
+}; // struct MultiparticleCorrelationsAb
 
 // -------------------------------------------
 
@@ -392,6 +396,6 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<MultiparticleCorrelationsAB>(cfgc),
+    adaptAnalysisTask<MultiparticleCorrelationsAb>(cfgc),
   };
 } // WorkflowSpec...
