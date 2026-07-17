@@ -71,10 +71,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace constants::math;
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, (DEFAULT), HELP};
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 static constexpr float PairCutOff = -1.f;
-static constexpr std::array<std::array<float, 5>, 1> CfgPairCutDefaults{{{PairCutOff, PairCutOff, PairCutOff, PairCutOff, PairCutOff}}};
+static constexpr float CfgPairCutDefaults[1][5] = {{PairCutOff, PairCutOff, PairCutOff, PairCutOff, PairCutOff}};
 
 struct Nucleibalance {
   SliceCache cache;
@@ -406,7 +406,7 @@ struct Nucleibalance {
 
   static SimpleTrack makeSimpleTrack(float eta, float phi, float pt, int charge)
   {
-    return SimpleTrack{.eta = eta, .phi = phi, .pt = pt, .charge = charge};
+    return SimpleTrack{eta, phi, pt, charge};
   }
 
   struct MixEventEntry {
