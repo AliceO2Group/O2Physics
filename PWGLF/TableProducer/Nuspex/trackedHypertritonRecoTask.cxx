@@ -62,6 +62,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <utility>
 #include <vector>
@@ -640,7 +641,7 @@ struct TrackedHypertritonRecoTask {
   void fillThreeBodyTables()
   {
     const auto& candidate = builder3Body.decay3body;
-    vtx3BodyDatas(candidate.sign,
+    vtx3BodyDatas(static_cast<float>(candidate.sign),
                   candidate.mass, candidate.massV0,
                   candidate.position[0], candidate.position[1], candidate.position[2],
                   candidate.momentum[0], candidate.momentum[1], candidate.momentum[2],
@@ -648,6 +649,7 @@ struct TrackedHypertritonRecoTask {
                   candidate.momProton[0], candidate.momProton[1], candidate.momProton[2],
                   candidate.momPion[0], candidate.momPion[1], candidate.momPion[2],
                   candidate.momDeuteron[0], candidate.momDeuteron[1], candidate.momDeuteron[2],
+                  candidate.xProton, candidate.xPion, candidate.xDeuteron,
                   candidate.trackDCAxyToPV[0], candidate.trackDCAxyToPV[1], candidate.trackDCAxyToPV[2],
                   candidate.trackDCAToPV[0], candidate.trackDCAToPV[1], candidate.trackDCAToPV[2],
                   candidate.trackDCAxyToPVprop[0], candidate.trackDCAxyToPVprop[1], candidate.trackDCAxyToPVprop[2],
@@ -655,16 +657,17 @@ struct TrackedHypertritonRecoTask {
                   candidate.daughterDCAtoSV[0], candidate.daughterDCAtoSV[1], candidate.daughterDCAtoSV[2],
                   candidate.daughterDCAtoSVaverage, candidate.cosPA, candidate.ctau,
                   candidate.tpcNsigma[0], candidate.tpcNsigma[1], candidate.tpcNsigma[2], candidate.tpcNsigma[3],
-                  candidate.tofNsigmaDeuteron,
+                  static_cast<float>(candidate.tofNsigmaDeuteron),
                   candidate.averageITSClSize[0], candidate.averageITSClSize[1], candidate.averageITSClSize[2],
-                  candidate.tpcNCl[0], candidate.tpcNCl[1], candidate.tpcNCl[2], candidate.pidForTrackingDeuteron);
+                  static_cast<int>(candidate.tpcNCl[0]), static_cast<int>(candidate.tpcNCl[1]), static_cast<int>(candidate.tpcNCl[2]),
+                  static_cast<uint32_t>(candidate.pidForTrackingDeuteron));
     vtx3BodyCovs(candidate.covProton, candidate.covPion, candidate.covDeuteron, candidate.covariance);
   }
 
   void fillThreeBodyMCTable(ThreeBodyMCInfo const& info)
   {
     const auto& candidate = builder3Body.decay3body;
-    mcVtx3BodyDatas(candidate.sign,
+    mcVtx3BodyDatas(static_cast<float>(candidate.sign),
                     candidate.mass, candidate.massV0,
                     candidate.position[0], candidate.position[1], candidate.position[2],
                     candidate.momentum[0], candidate.momentum[1], candidate.momentum[2],
@@ -672,6 +675,7 @@ struct TrackedHypertritonRecoTask {
                     candidate.momProton[0], candidate.momProton[1], candidate.momProton[2],
                     candidate.momPion[0], candidate.momPion[1], candidate.momPion[2],
                     candidate.momDeuteron[0], candidate.momDeuteron[1], candidate.momDeuteron[2],
+                    candidate.xProton, candidate.xPion, candidate.xDeuteron,
                     candidate.trackDCAxyToPV[0], candidate.trackDCAxyToPV[1], candidate.trackDCAxyToPV[2],
                     candidate.trackDCAToPV[0], candidate.trackDCAToPV[1], candidate.trackDCAToPV[2],
                     candidate.trackDCAxyToPVprop[0], candidate.trackDCAxyToPVprop[1], candidate.trackDCAxyToPVprop[2],
@@ -679,22 +683,23 @@ struct TrackedHypertritonRecoTask {
                     candidate.daughterDCAtoSV[0], candidate.daughterDCAtoSV[1], candidate.daughterDCAtoSV[2],
                     candidate.daughterDCAtoSVaverage, candidate.cosPA, candidate.ctau,
                     candidate.tpcNsigma[0], candidate.tpcNsigma[1], candidate.tpcNsigma[2], candidate.tpcNsigma[3],
-                    candidate.tofNsigmaDeuteron,
+                    static_cast<float>(candidate.tofNsigmaDeuteron),
                     candidate.averageITSClSize[0], candidate.averageITSClSize[1], candidate.averageITSClSize[2],
-                    candidate.tpcNCl[0], candidate.tpcNCl[1], candidate.tpcNCl[2], candidate.pidForTrackingDeuteron,
+                    static_cast<int>(candidate.tpcNCl[0]), static_cast<int>(candidate.tpcNCl[1]), static_cast<int>(candidate.tpcNCl[2]),
+                    static_cast<uint32_t>(candidate.pidForTrackingDeuteron),
                     info.genMomentum[0], info.genMomentum[1], info.genMomentum[2],
                     info.genDecayVertex[0], info.genDecayVertex[1], info.genDecayVertex[2],
                     info.genCt, info.genPhi, info.genEta, info.genRapidity,
                     info.genMomentumProton, info.genMomentumPion, info.genMomentumDeuteron,
                     info.genPtProton, info.genPtPion, info.genPtDeuteron,
-                    info.isReco, info.motherLabel, info.motherPdgCode,
+                    static_cast<int>(info.isReco), info.motherLabel, info.motherPdgCode,
                     info.protonPdgCode, info.pionPdgCode, info.deuteronPdgCode,
-                    info.isDeuteronPrimary, info.survivedEventSelection);
+                    info.isDeuteronPrimary, static_cast<int>(info.survivedEventSelection));
   }
 
   void fillGeneratedThreeBodyMCTable(ThreeBodyMCInfo const& info)
   {
-    mcVtx3BodyDatas(-1,
+    mcVtx3BodyDatas(-1.f,
                     -1.f, -1.f,       // mass, massV0
                     -1.f, -1.f, -1.f, // position
                     -1.f, -1.f, -1.f, // momentum
@@ -702,6 +707,7 @@ struct TrackedHypertritonRecoTask {
                     -1.f, -1.f, -1.f, // proton momentum
                     -1.f, -1.f, -1.f, // pion momentum
                     -1.f, -1.f, -1.f, // deuteron momentum
+                    -1.f, -1.f, -1.f, // daughter x at inner update
                     -1.f, -1.f, -1.f, // track DCAxy to PV
                     -1.f, -1.f, -1.f, // track DCA to PV
                     -1.f, -1.f, -1.f, // propagated track DCAxy to PV
@@ -711,15 +717,15 @@ struct TrackedHypertritonRecoTask {
                     -1.f, -1.f, -1.f, -1.f,
                     -1.f,
                     -1.f, -1.f, -1.f,
-                    -1, -1, -1, -1,
+                    -1, -1, -1, std::numeric_limits<uint32_t>::max(),
                     info.genMomentum[0], info.genMomentum[1], info.genMomentum[2],
                     info.genDecayVertex[0], info.genDecayVertex[1], info.genDecayVertex[2],
                     info.genCt, info.genPhi, info.genEta, info.genRapidity,
                     info.genMomentumProton, info.genMomentumPion, info.genMomentumDeuteron,
                     info.genPtProton, info.genPtPion, info.genPtDeuteron,
-                    false, info.motherLabel, info.motherPdgCode,
+                    0, info.motherLabel, info.motherPdgCode,
                     info.protonPdgCode, info.pionPdgCode, info.deuteronPdgCode,
-                    info.isDeuteronPrimary, info.survivedEventSelection);
+                    info.isDeuteronPrimary, static_cast<int>(info.survivedEventSelection));
   }
 
   void processData(Collisions const& collisions,
