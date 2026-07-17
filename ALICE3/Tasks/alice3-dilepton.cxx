@@ -129,6 +129,11 @@ struct Alice3Lepton {
       registry.add("Reconstructed/Track/Phi", "Track Phi", kTH1F, {axisPhi});
       registry.add("Reconstructed/Track/Eta_Pt", "Eta vs. Pt", kTH2F, {axisPt, axisEta}, true);
 
+      registry.add("Reconstructed/Track/PtMC", "Track Pt", kTH1F, {axisPt});
+      registry.add("Reconstructed/Track/EtaMC", "Track Eta", kTH1F, {axisEta});
+      registry.add("Reconstructed/Track/PhiMC", "Track Phi", kTH1F, {axisPhi});
+      registry.add("Reconstructed/Track/EtaMC_PtMC", "Eta vs. Pt", kTH2F, {axisPt, axisEta}, true);
+
       registry.addClone("Reconstructed/Track/", "Reconstructed/TrackPID/");
       registry.addClone("Reconstructed/Track/", "Reconstructed/TrackPIDPre/");
     }
@@ -213,6 +218,10 @@ struct Alice3Lepton {
         registry.fill(HIST("Reconstructed/Track/Eta"), track.etaSmeared());
         registry.fill(HIST("Reconstructed/Track/Phi"), track.phiSmeared());
         registry.fill(HIST("Reconstructed/Track/Eta_Pt"), track.ptSmeared(), track.etaSmeared());
+        registry.fill(HIST("Reconstructed/Track/PtMC"), mcParticle.pt());
+        registry.fill(HIST("Reconstructed/Track/EtaMC"), mcParticle.eta());
+        registry.fill(HIST("Reconstructed/Track/PhiMC"), mcParticle.phi());
+        registry.fill(HIST("Reconstructed/Track/EtaMC_PtMC"), mcParticle.pt(), mcParticle.eta());
       } else {
         registry.fill(HIST("Reconstructed/Track/SigmaOTofvspt"), track.pt(), track.nSigmaElectronOuterTOF());
         registry.fill(HIST("Reconstructed/Track/SigmaITofvspt"), track.pt(), track.nSigmaElectronInnerTOF());
@@ -230,12 +239,20 @@ struct Alice3Lepton {
           registry.fill(HIST("Reconstructed/TrackPID/Eta"), track.etaSmeared());
           registry.fill(HIST("Reconstructed/TrackPID/Phi"), track.phiSmeared());
           registry.fill(HIST("Reconstructed/TrackPID/Eta_Pt"), track.ptSmeared(), track.etaSmeared());
+          registry.fill(HIST("Reconstructed/TrackPID/PtMC"), mcParticle.pt());
+          registry.fill(HIST("Reconstructed/TrackPID/EtaMC"), mcParticle.eta());
+          registry.fill(HIST("Reconstructed/TrackPID/PhiMC"), mcParticle.phi());
+          registry.fill(HIST("Reconstructed/TrackPID/EtaMC_PtMC"), mcParticle.pt(), mcParticle.eta());
 
           if (track.isTrackPrefilter() == 0) {
             registry.fill(HIST("Reconstructed/TrackPIDPre/Pt"), track.ptSmeared());
             registry.fill(HIST("Reconstructed/TrackPIDPre/Eta"), track.etaSmeared());
             registry.fill(HIST("Reconstructed/TrackPIDPre/Phi"), track.phiSmeared());
             registry.fill(HIST("Reconstructed/TrackPIDPre/Eta_Pt"), track.ptSmeared(), track.etaSmeared());
+            registry.fill(HIST("Reconstructed/TrackPIDPre/PtMC"), mcParticle.pt());
+            registry.fill(HIST("Reconstructed/TrackPIDPre/EtaMC"), mcParticle.eta());
+            registry.fill(HIST("Reconstructed/TrackPIDPre/PhiMC"), mcParticle.phi());
+            registry.fill(HIST("Reconstructed/TrackPIDPre/EtaMC_PtMC"), mcParticle.pt(), mcParticle.eta());
           }
         }
       } else {
@@ -428,6 +445,11 @@ struct Alice3Dilepton {
       registry.add("Reconstructed/Track/Eta", "Particle Eta", kTH1F, {axisEta});
       registry.add("Reconstructed/Track/Phi", "Particle Phi", kTH1F, {axisPhi});
       registry.add("Reconstructed/Track/Pre", "Particle Pre", kTH1F, {axisPre});
+    }
+    if (doprocessRecAllWithSmearing) {
+      registry.add("Reconstructed/Track/PtMC", "Track Pt", kTH1F, {axisPt});
+      registry.add("Reconstructed/Track/EtaMC", "Particle Eta", kTH1F, {axisEta});
+      registry.add("Reconstructed/Track/PhiMC", "Particle Phi", kTH1F, {axisPhi});
     }
 
     if (doprocessRecAll) {
@@ -989,23 +1011,47 @@ struct Alice3Dilepton {
   } // end of processRec
 
   void processRecAllWithSmearing(MyFilteredAlice3Collision const& collisions,
-                                 MyFilteredTracksWithSmearing const& tracks)
+                                 MyFilteredTracksWithSmearing const& tracks,
+                                 const aod::McParticles&)
   {
-
-    for (const auto& track : tracks) {
-      if (!IsInAcceptance<true>(track)) {
-        continue;
-      }
-      registry.fill(HIST("Reconstructed/Track/Pt"), track.ptSmeared());
-      registry.fill(HIST("Reconstructed/Track/Eta"), track.etaSmeared());
-      registry.fill(HIST("Reconstructed/Track/Phi"), track.phiSmeared());
-      registry.fill(HIST("Reconstructed/Track/Pre"), track.isTrackPrefilter());
-    }
-
     for (const auto& collision : collisions) {
       registry.fill(HIST("Reconstructed/Event/VtxZ"), collision.posZ());
       auto negTracks_coll = negTracksWithSmearing->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache_rec);
       auto posTracks_coll = posTracksWithSmearing->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache_rec);
+
+      for (const auto& track : negTracks_coll) {
+        if (!IsInAcceptance<true>(track)) {
+          continue;
+        }
+        if (!track.has_mcParticle()) {
+          continue;
+        }
+        const auto mcParticle = track.template mcParticle_as<aod::McParticles>();
+        registry.fill(HIST("Reconstructed/Track/PtMC"), mcParticle.pt());
+        registry.fill(HIST("Reconstructed/Track/EtaMC"), mcParticle.eta());
+        registry.fill(HIST("Reconstructed/Track/PhiMC"), mcParticle.phi());
+        registry.fill(HIST("Reconstructed/Track/Pt"), track.ptSmeared());
+        registry.fill(HIST("Reconstructed/Track/Eta"), track.etaSmeared());
+        registry.fill(HIST("Reconstructed/Track/Phi"), track.phiSmeared());
+        registry.fill(HIST("Reconstructed/Track/Pre"), track.isTrackPrefilter());
+      }
+
+      for (const auto& track : posTracks_coll) {
+        if (!IsInAcceptance<true>(track)) {
+          continue;
+        }
+        if (!track.has_mcParticle()) {
+          continue;
+        }
+        const auto mcParticle = track.template mcParticle_as<aod::McParticles>();
+        registry.fill(HIST("Reconstructed/Track/PtMC"), mcParticle.pt());
+        registry.fill(HIST("Reconstructed/Track/EtaMC"), mcParticle.eta());
+        registry.fill(HIST("Reconstructed/Track/PhiMC"), mcParticle.phi());
+        registry.fill(HIST("Reconstructed/Track/Pt"), track.ptSmeared());
+        registry.fill(HIST("Reconstructed/Track/Eta"), track.etaSmeared());
+        registry.fill(HIST("Reconstructed/Track/Phi"), track.phiSmeared());
+        registry.fill(HIST("Reconstructed/Track/Pre"), track.isTrackPrefilter());
+      }
 
       FillPairRecAll<true, PairType::kULS>(negTracks_coll, posTracks_coll);
       FillPairRecAll<true, PairType::kLSpp>(posTracks_coll, posTracks_coll);
