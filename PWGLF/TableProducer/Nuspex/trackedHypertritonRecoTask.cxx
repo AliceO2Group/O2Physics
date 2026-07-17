@@ -41,8 +41,10 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
@@ -51,14 +53,17 @@
 
 #include <TH1.h>
 #include <TH2.h>
+#include <TPDGCode.h>
 
 #include <KFParticle.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -75,12 +80,12 @@ using TracksMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
                            aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe,
                            aod::TOFSignal, aod::TOFEvTime, aod::EvTimeTOFFT0ForTrack, aod::McTrackLabels>;
 
-constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
+constexpr std::array<double, 6> betheBlochDefault{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32};
+constexpr double UseCCDBMagneticFieldThreshold = -990.;
 const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 const std::vector<std::string> particleName{"He3"};
-o2::common::core::MetadataHelper metadataInfo;
 
-enum ZorroTrigger : size_t {
+enum ZorroTrigger : std::size_t {
   kHe = 0,
   kTracked3Body,
   kNZorroTriggers
@@ -88,13 +93,15 @@ enum ZorroTrigger : size_t {
 } // namespace
 
 struct TrackedHypertritonRecoTask {
+  o2::common::core::MetadataHelper metadataInfo{};
+
   Produces<aod::DataHypCands> dataHypCands;
   Produces<aod::MCHypCands> mcHypCands;
   Produces<aod::Vtx3BodyDatas> vtx3BodyDatas;
   Produces<aod::Vtx3BodyCovs> vtx3BodyCovs;
   Produces<aod::McVtx3BodyDatas> mcVtx3BodyDatas;
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
@@ -105,10 +112,14 @@ struct TrackedHypertritonRecoTask {
   Configurable<std::string> zorroCCDBPath{"zorroCCDBPath", "EventFiltering/Zorro/", "Base path of the Zorro CCDB objects"};
   Configurable<int> zorroBCTolerance{"zorroBCTolerance", 100, "Zorro BC matching tolerance"};
 
-  Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "CCDB URL"};
+  Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "CCDB URL"}; // o2-linter: disable=name/configurable (Keep the standard CCDB option name.)
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the magnetic-field object"};
-  Configurable<double> bzInput{"bz", -999., "Magnetic field in kG; values below -990 use CCDB"};
-  Configurable<bool> mcStoreBackground{"mc.storeBackground", true, "Store reconstructed MC candidates not matched to a hypertriton"};
+  Configurable<double> bzInput{"bz", -999., "Magnetic field in kG; values below -990 use CCDB"}; // o2-linter: disable=name/configurable (Keep the established magnetic-field option name.)
+
+  struct : ConfigurableGroup {
+    std::string prefix = "mc";
+    Configurable<bool> storeBackground{"storeBackground", true, "Store reconstructed MC candidates not matched to a hypertriton"};
+  } mc;
 
   struct : ConfigurableGroup {
     std::string prefix = "twoBody";
@@ -127,7 +138,7 @@ struct TrackedHypertritonRecoTask {
     Configurable<float> minDcaPiToPV{"minDcaPiToPV", -1.f, "Minimum absolute pion DCA to PV"};
     Configurable<float> minNSigmaHe{"minNSigmaHe", -1.e10f, "Minimum He TPC n-sigma"};
     Configurable<bool> compensatePIDinTracking{"compensatePIDinTracking", true, "Correct the TPC inner parameter for charge-two PID in tracking"};
-    Configurable<LabeledArray<double>> betheBlochParams{"betheBlochParams", {betheBlochDefault[0], 1, 6, particleName, betheBlochParNames}, "TPC Bethe-Bloch parameters for He3"};
+    Configurable<LabeledArray<double>> betheBlochParams{"betheBlochParams", {betheBlochDefault.data(), 1, 6, particleName, betheBlochParNames}, "TPC Bethe-Bloch parameters for He3"};
   } twoBody;
 
   struct : ConfigurableGroup {
@@ -307,7 +318,7 @@ struct TrackedHypertritonRecoTask {
       LOG(fatal) << "Missing magnetic-field object " << grpmagPath << " for timestamp " << bc.timestamp();
     }
     o2::base::Propagator::initFieldFromGRP(grpmag);
-    bz = bzInput < -990. ? o2::base::Propagator::Instance()->getNominalBz() : bzInput;
+    bz = bzInput < UseCCDBMagneticFieldThreshold ? o2::base::Propagator::Instance()->getNominalBz() : bzInput;
     o2::base::Propagator::Instance()->setNominalBz(bz);
     fitter2Body.setBz(bz);
     builder3Body.fitterV0.setBz(bz);
@@ -525,7 +536,7 @@ struct TrackedHypertritonRecoTask {
   }
 
   template <typename TTrack, typename TCollision, typename TFillCandidate>
-  void buildTwoBody(TTrack const& heTrack, TTrack const& piTrack, TCollision const& collision, float trackedClSize, TFillCandidate&& fillCandidate)
+  void buildTwoBody(TTrack const& heTrack, TTrack const& piTrack, TCollision const& collision, float trackedClSize, TFillCandidate const& fillCandidate)
   {
     auto heTrackCov = getTrackParCov(heTrack);
     auto piTrackCov = getTrackParCov(piTrack);
@@ -544,8 +555,8 @@ struct TrackedHypertritonRecoTask {
     std::array<float, 3> piMomentum{};
     fitter2Body.getTrack(0).getPxPyPzGlo(heMomentum);
     fitter2Body.getTrack(1).getPxPyPzGlo(piMomentum);
-    for (auto& component : heMomentum) {
-      component *= 2.f;
+    for (std::size_t i = 0; i < heMomentum.size(); ++i) {
+      heMomentum[i] *= 2.f;
     }
     std::array<float, 3> momentum{heMomentum[0] + piMomentum[0], heMomentum[1] + piMomentum[1], heMomentum[2] + piMomentum[2]};
     if (twoBody.useSelections && std::hypot(momentum[0], momentum[1]) < twoBody.minPt) {
@@ -587,7 +598,7 @@ struct TrackedHypertritonRecoTask {
       beta = std::clamp(beta, 1.e-4f, 1.f - 1.e-6f);
       tofMass = 2.f * tpcMomentumHe * std::sqrt(1.f / (beta * beta) - 1.f);
     }
-    uint8_t flags = static_cast<uint8_t>((heTrack.pidForTracking() & 0xf) << 4);
+    auto flags = static_cast<uint8_t>((heTrack.pidForTracking() & 0xf) << 4);
     flags |= static_cast<uint8_t>(piTrack.pidForTracking() & 0xf);
 
     fillCandidate(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
@@ -822,7 +833,7 @@ struct TrackedHypertritonRecoTask {
       }
 
       const auto mcInfo = getTwoBodyMCInfo(heTrack, piTrack, collision, mcParticles);
-      if (!mcInfo.isSignal && !mcStoreBackground) {
+      if (!mcInfo.isSignal && !mc.storeBackground) {
         continue;
       }
       buildTwoBody(heTrack, piTrack, collision, trackedV0.itsClsSize(), [&](auto... values) {
@@ -856,7 +867,7 @@ struct TrackedHypertritonRecoTask {
         continue;
       }
       const auto mcInfo = getThreeBodyMCInfo(trackProton, trackPion, trackDeuteron, collision, mcParticles);
-      if (mcInfo.motherLabel < 0 && !mcStoreBackground) {
+      if (mcInfo.motherLabel < 0 && !mc.storeBackground) {
         continue;
       }
       fillThreeBodyMCTable(mcInfo);
@@ -970,6 +981,7 @@ struct TrackedHypertritonRecoTask {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  auto metadataInfo = o2::common::core::MetadataHelper{};
   metadataInfo.initMetadata(cfgc);
-  return WorkflowSpec{adaptAnalysisTask<TrackedHypertritonRecoTask>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<TrackedHypertritonRecoTask>(cfgc, std::move(metadataInfo))};
 }
