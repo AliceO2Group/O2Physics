@@ -890,7 +890,7 @@ struct HfTaskFlow {
     if (doprocessSameMcGen) {
 
       registry.add("MC/hEfficiencyTrigger", "", {HistType::kTH3D, {{configAxis.axisPtTrigger}, {configAxis.axisEtaTrigger}, {configAxis.axisVertex}}});
-      registry.add("MC/hEfficiencyAssociated", "", {HistType::kTH3D, {{configAxis.axisPtTrigger}, {configAxis.axisEtaAssociated}, {configAxis.axisVertex}}});
+      registry.add("MC/hEfficiencyAssociated", "", {HistType::kTH3D, {{configAxis.axisPtAssoc}, {configAxis.axisEtaAssociated}, {configAxis.axisVertex}}});
 
       if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcTpc)) {
         addHistograms<Mc, TpcTpc, ChPartChPart>();
@@ -4355,7 +4355,7 @@ struct HfTaskFlow {
           particle.pt() >= configTask.ptMcParticlesTriggerMin &&
           particle.pt() <= configTask.ptMcParticlesTriggerMax) {
         if (hasReconstructedCollision) {
-          registry.fill(HIST("MC/hEfficiencyTrigger"), mcCollision.posZ(), particle.eta(), particle.pt());
+          registry.fill(HIST("MC/hEfficiencyTrigger"), particle.pt(), particle.eta(), mcCollision.posZ());
         }
       }
       // check kinematics of the particle for MFT
@@ -4364,7 +4364,7 @@ struct HfTaskFlow {
           particle.pt() >= configTask.ptMcParticlesAssocMin &&
           particle.pt() <= configTask.ptMcParticlesAssocMax) {
         if (hasReconstructedCollision) {
-          registry.fill(HIST("MC/hEfficiencyAssociated"), mcCollision.posZ(), particle.eta(), particle.pt());
+          registry.fill(HIST("MC/hEfficiencyAssociated"), particle.pt(), particle.eta(), mcCollision.posZ());
         }
       }
     }
@@ -4437,7 +4437,7 @@ struct HfTaskFlow {
           continue;
         }
         if (tpcParticle.isPhysicalPrimary()) {
-          registry.fill(HIST("Data/hEfficiencyTrigger"), mcCollision.posZ(), tpcParticle.eta(), tpcParticle.pt());
+          registry.fill(HIST("Data/hEfficiencyTrigger"), tpcParticle.pt(), tpcParticle.eta(), mcCollision.posZ());
         }
       }
 
@@ -4455,7 +4455,7 @@ struct HfTaskFlow {
           continue;
         }
         if (mftParticle.isPhysicalPrimary()) {
-          registry.fill(HIST("Data/hEfficiencyAssociated"), mcCollision.posZ(), mftParticle.eta(), mftParticle.pt());
+          registry.fill(HIST("Data/hEfficiencyAssociated"), mftParticle.pt(), mftParticle.eta(), mcCollision.posZ());
         }
       }
     }
