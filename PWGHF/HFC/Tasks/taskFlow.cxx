@@ -439,6 +439,8 @@ struct HfTaskFlow {
     ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {1, -1.0, 1.0}, "eta axis for efficiency histograms"};
     ConfigurableAxis axisEtaAssociated{"axisEtaAssociated", {48, -4, -2}, "eta axis for MFT histograms"};
     ConfigurableAxis axisEtaTrigger{"axisEtaTrigger", {48, -1, 1}, "eta axis for TPC histograms"};
+    ConfigurableAxis axisDcaXY{"axisDcaXY", {100, 0, 2}, "dcaXY axis for MFT histograms"};
+    ConfigurableAxis axisDcaZ{"axisDcaZ", {100, -2, 2}, "dcaZ axis for MFT histograms"};
     ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
     ConfigurableAxis axisDeltaEta{"axisDeltaEta", {48, -2.4, 2.4}, "delta eta axis for histograms"};
     ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity axis for histograms"};
@@ -527,6 +529,8 @@ struct HfTaskFlow {
     registry.add("Data/Mft/hPtMft", "", {HistType::kTH1D, {configAxis.axisPt}});
     registry.add("Data/Mft/hPtVsClustersLTF", "", {HistType::kTH2D, {configAxis.axisPt, configAxis.axisNClusters}});
     registry.add("Data/Mft/hPtVsClustersCA", "", {HistType::kTH2D, {configAxis.axisPt, configAxis.axisNClusters}});
+    registry.add("Data/Mft/hDcaXYMft", "", {HistType::kTH1D, {configAxis.axisDcaXY}});
+    registry.add("Data/Mft/hDcaZMft", "", {HistType::kTH1D, {configAxis.axisDcaZ}});
     registry.add("Data/Mft/hNMftTracks", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
     registry.add("Data/Mft/hNBestCollisionFwd", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
   }
@@ -1445,6 +1449,8 @@ struct HfTaskFlow {
     }
 
     if (fillHistograms) {
+      registry.fill(HIST("Data/Mft/hDcaXYMft"), dcaXY);
+      registry.fill(HIST("Data/Mft/hDcaZMft"), dcaZ);
       registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::DCAz);
     }
 
