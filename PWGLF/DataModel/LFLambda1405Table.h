@@ -64,39 +64,39 @@ DECLARE_SOA_COLUMN(SigmaPdgCode, sigmaPdgCode, int);     //! PDG code of the Sig
 DECLARE_SOA_COLUMN(KinkDauPdgCode, kinkDauPdgCode, int); //! PDG code of the kink daughter
 
 // Sigma efficiency MC columns
-DECLARE_SOA_COLUMN(PxSigma, pxSigma, float);         //! Px of the sigma candidate
-DECLARE_SOA_COLUMN(PySigma, pySigma, float);         //! Py of the sigma candidate
-DECLARE_SOA_COLUMN(PzSigma, pzSigma, float);         //! Pz of the sigma candidate
-DECLARE_SOA_COLUMN(MassSigma, massSigma, float);     //! Mass of the sigma candidate
-DECLARE_SOA_COLUMN(DeltaPxSigma, deltaPxSigma, float);   //! Gen-reco diff of sigma p_x
-DECLARE_SOA_COLUMN(DeltaPySigma, deltaPySigma, float);   //! Gen-reco diff of sigma p_y
-DECLARE_SOA_COLUMN(DeltaPzSigma, deltaPzSigma, float);   //! Gen-reco diff of sigma p_z
-DECLARE_SOA_COLUMN(DeltaPtSigma, deltaPtSigma, float);   //! Gen-reco diff of sigma p_z
-DECLARE_SOA_COLUMN(DeltaRadiusSigma, deltaRadiusSigma, float);   //! Gen-reco diff of sigma radius
-DECLARE_SOA_COLUMN(DeltaMassSigma, deltaMassSigma, float);   //! Gen-reco diff of sigma mass
-DECLARE_SOA_COLUMN(GenPhiSigma, genPhiSigma, float);   //! Gen-reco diff of sigma phi
-DECLARE_SOA_COLUMN(GenEtaSigma, genEtaSigma, float);   //! Gen-reco diff of sigma eta
-DECLARE_SOA_COLUMN(DeltaPxSigmaRecalc, deltaPxSigmaRecalc, float);  //! reco recalc-original diff of sigma p_x
-DECLARE_SOA_COLUMN(DeltaPySigmaRecalc, deltaPySigmaRecalc, float);  //! reco recalc-original diff of sigma p_y
-DECLARE_SOA_COLUMN(DeltaPzSigmaRecalc, deltaPzSigmaRecalc, float);  //! reco recalc-original diff of sigma p_z
-DECLARE_SOA_COLUMN(AlphaAPSigmaRecalc, alphaAPSigmaRecalc, float);  //! Alpha of the Sigma
-DECLARE_SOA_COLUMN(QtAPSigmaRecalc, qtAPSigmaRecalc, float);        //! qT of the Sigma
-DECLARE_SOA_COLUMN(PxKinkDaug, pxKinkDaug, float);   //! Px of the sigma candidate
-DECLARE_SOA_COLUMN(PyKinkDaug, pyKinkDaug, float);   //! Py of the sigma candidate
-DECLARE_SOA_COLUMN(PzKinkDaug, pzKinkDaug, float);   //! Pz of the sigma candidate
-DECLARE_SOA_COLUMN(PtKinkDaug, ptKinkDaug, float);   //! Pt of the sigma candidate
-DECLARE_SOA_COLUMN(DeltaPxKinkDaug, deltaPxKinkDaug, float);   //! Gen-reco diff of kink daughter p_x
-DECLARE_SOA_COLUMN(DeltaPyKinkDaug, deltaPyKinkDaug, float);   //! Gen-reco diff of kink daughter p_y
-DECLARE_SOA_COLUMN(DeltaPzKinkDaug, deltaPzKinkDaug, float);   //! Gen-reco diff of kink daughter p_z
-DECLARE_SOA_COLUMN(DeltaPtKinkDaug, deltaPtKinkDaug, float);   //! Gen-reco diff of kink daughter p_t
-DECLARE_SOA_COLUMN(GenPhiKinkDaug, genPhiKinkDaug, float);   //! Gen-reco diff of kink daughter phi
-DECLARE_SOA_COLUMN(GenEtaKinkDaug, genEtaKinkDaug, float);   //! Gen-reco diff of kink daughter eta
-DECLARE_SOA_COLUMN(XKinkVtx, xKinkVtx, float);   //! X of kink vertex
-DECLARE_SOA_COLUMN(YKinkVtx, yKinkVtx, float);   //! Y of kink vertex
-DECLARE_SOA_COLUMN(ZKinkVtx, zKinkVtx, float);   //! Z of kink vertex
-DECLARE_SOA_COLUMN(DeltaXKinkVtx, deltaXKinkVtx, float);   //! Gen-reco diff of X of kink vertex
-DECLARE_SOA_COLUMN(DeltaYKinkVtx, deltaYKinkVtx, float);   //! Gen-reco diff of Y of kink vertex
-DECLARE_SOA_COLUMN(DeltaZKinkVtx, deltaZKinkVtx, float);   //! Gen-reco diff of Z of kink vertex
+DECLARE_SOA_COLUMN(PxSigma, pxSigma, float);                       //! Px of the sigma candidate
+DECLARE_SOA_COLUMN(PySigma, pySigma, float);                       //! Py of the sigma candidate
+DECLARE_SOA_COLUMN(PzSigma, pzSigma, float);                       //! Pz of the sigma candidate
+DECLARE_SOA_COLUMN(MassSigma, massSigma, float);                   //! Mass of the sigma candidate
+DECLARE_SOA_COLUMN(DeltaPxSigma, deltaPxSigma, float);             //! Gen-reco diff of sigma p_x
+DECLARE_SOA_COLUMN(DeltaPySigma, deltaPySigma, float);             //! Gen-reco diff of sigma p_y
+DECLARE_SOA_COLUMN(DeltaPzSigma, deltaPzSigma, float);             //! Gen-reco diff of sigma p_z
+DECLARE_SOA_COLUMN(DeltaPtSigma, deltaPtSigma, float);             //! Gen-reco diff of sigma p_z
+DECLARE_SOA_COLUMN(DeltaRadiusSigma, deltaRadiusSigma, float);     //! Gen-reco diff of sigma radius
+DECLARE_SOA_COLUMN(DeltaMassSigma, deltaMassSigma, float);         //! Gen-reco diff of sigma mass
+DECLARE_SOA_COLUMN(GenPhiSigma, genPhiSigma, float);               //! Gen-reco diff of sigma phi
+DECLARE_SOA_COLUMN(GenEtaSigma, genEtaSigma, float);               //! Gen-reco diff of sigma eta
+DECLARE_SOA_COLUMN(DeltaPxSigmaRecalc, deltaPxSigmaRecalc, float); //! reco recalc-original diff of sigma p_x
+DECLARE_SOA_COLUMN(DeltaPySigmaRecalc, deltaPySigmaRecalc, float); //! reco recalc-original diff of sigma p_y
+DECLARE_SOA_COLUMN(DeltaPzSigmaRecalc, deltaPzSigmaRecalc, float); //! reco recalc-original diff of sigma p_z
+DECLARE_SOA_COLUMN(AlphaAPSigmaRecalc, alphaAPSigmaRecalc, float); //! Alpha of the Sigma
+DECLARE_SOA_COLUMN(QtAPSigmaRecalc, qtAPSigmaRecalc, float);       //! qT of the Sigma
+DECLARE_SOA_COLUMN(PxKinkDaug, pxKinkDaug, float);                 //! Px of the sigma candidate
+DECLARE_SOA_COLUMN(PyKinkDaug, pyKinkDaug, float);                 //! Py of the sigma candidate
+DECLARE_SOA_COLUMN(PzKinkDaug, pzKinkDaug, float);                 //! Pz of the sigma candidate
+DECLARE_SOA_COLUMN(PtKinkDaug, ptKinkDaug, float);                 //! Pt of the sigma candidate
+DECLARE_SOA_COLUMN(DeltaPxKinkDaug, deltaPxKinkDaug, float);       //! Gen-reco diff of kink daughter p_x
+DECLARE_SOA_COLUMN(DeltaPyKinkDaug, deltaPyKinkDaug, float);       //! Gen-reco diff of kink daughter p_y
+DECLARE_SOA_COLUMN(DeltaPzKinkDaug, deltaPzKinkDaug, float);       //! Gen-reco diff of kink daughter p_z
+DECLARE_SOA_COLUMN(DeltaPtKinkDaug, deltaPtKinkDaug, float);       //! Gen-reco diff of kink daughter p_t
+DECLARE_SOA_COLUMN(GenPhiKinkDaug, genPhiKinkDaug, float);         //! Gen-reco diff of kink daughter phi
+DECLARE_SOA_COLUMN(GenEtaKinkDaug, genEtaKinkDaug, float);         //! Gen-reco diff of kink daughter eta
+DECLARE_SOA_COLUMN(XKinkVtx, xKinkVtx, float);                     //! X of kink vertex
+DECLARE_SOA_COLUMN(YKinkVtx, yKinkVtx, float);                     //! Y of kink vertex
+DECLARE_SOA_COLUMN(ZKinkVtx, zKinkVtx, float);                     //! Z of kink vertex
+DECLARE_SOA_COLUMN(DeltaXKinkVtx, deltaXKinkVtx, float);           //! Gen-reco diff of X of kink vertex
+DECLARE_SOA_COLUMN(DeltaYKinkVtx, deltaYKinkVtx, float);           //! Gen-reco diff of Y of kink vertex
+DECLARE_SOA_COLUMN(DeltaZKinkVtx, deltaZKinkVtx, float);           //! Gen-reco diff of Z of kink vertex
 
 } // namespace lambda1405
 
@@ -158,7 +158,7 @@ DECLARE_SOA_TABLE(Lambda1405SigmaEffMC, "AOD", "MCL1405SIGEFF",
                   lambda1405::PtKinkDaug, lambda1405::DeltaPtKinkDaug,
                   lambda1405::GenPhiKinkDaug,
                   lambda1405::GenEtaKinkDaug,
-                  lambda1405::XKinkVtx, lambda1405::DeltaXKinkVtx, 
+                  lambda1405::XKinkVtx, lambda1405::DeltaXKinkVtx,
                   lambda1405::YKinkVtx, lambda1405::DeltaYKinkVtx,
                   lambda1405::ZKinkVtx, lambda1405::DeltaZKinkVtx,
                   lambda1405::AlphaAPSigma, lambda1405::QtAPSigma,
