@@ -802,7 +802,7 @@ struct TrackedHypertritonRecoTask {
       const float nSigmaNegative = nSigmaHe3(negativeTrack);
       const bool positiveTrackedAsHe = positiveTrack.pidForTracking() == o2::track::PID::Helium3 || positiveTrack.pidForTracking() == o2::track::PID::Alpha;
       const bool negativeTrackedAsHe = negativeTrack.pidForTracking() == o2::track::PID::Helium3 || negativeTrack.pidForTracking() == o2::track::PID::Alpha;
-      const bool positiveIsHe = positiveTrackedAsHe != negativeTrackedAsHe ? positiveTrackedAsHe : nSigmaPositive >= nSigmaNegative;
+      const bool positiveIsHe = positiveTrackedAsHe != negativeTrackedAsHe ? positiveTrackedAsHe : nSigmaPositive > nSigmaNegative;
       const float selectedNSigmaHe = positiveIsHe ? nSigmaPositive : nSigmaNegative;
       if (twoBody.useSelections && selectedNSigmaHe < twoBody.minNSigmaHe) {
         continue;
