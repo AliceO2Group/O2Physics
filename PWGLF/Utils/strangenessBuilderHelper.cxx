@@ -10,8 +10,11 @@
 // or submit itself to any jurisdiction.
 
 /// \file strangenessBuilderHelper.cxx
-/// \brief Helper file to provide compilation command for headers.
+/// \brief Helper file providing the compilation command for the strangenessBuilderHelper header.
+/// The module implementation is provided in the corresponding header and maintained by David Dobrigkeit Chinellato;
+/// this file only provides the compilation unit.
 ///
+/// \author David Dobrigkeit Chinellato <david.dobrigkeit.chinellato@cern.ch>, Austrian Academy of Sciences & MBI
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
 // o2-linter: disable=name/workflow-file (not a workflow file)
