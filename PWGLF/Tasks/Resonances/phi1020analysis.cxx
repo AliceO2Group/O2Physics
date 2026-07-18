@@ -202,12 +202,6 @@ struct Phi1020analysis {
   using MCEventCandidates = soa::Join<EventCandidates, aod::McCollisionLabels>;
   using MCTrackCandidates = soa::Filtered<soa::Join<TrackCandidates, aod::McTrackLabels>>;
 
-  Partition<TrackCandidates> posKaon = aod::track::signed1Pt > static_cast<float>(0);
-  Partition<TrackCandidates> negKaon = aod::track::signed1Pt < static_cast<float>(0);
-
-  Partition<MCTrackCandidates> PosKaon_MC = aod::track::signed1Pt > static_cast<float>(0);
-  Partition<MCTrackCandidates> NegKaon_MC = aod::track::signed1Pt < static_cast<float>(0);
-
   /// Figures
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.12f, 0.14f, 0.16f, 0.18f, 0.2f, 0.25f, 0.3f, 0.35f, 0.4f, 0.45f, 0.5f, 0.55f, 0.6f, 0.65f, 0.7f, 0.75f, 0.8f, 0.85f, 0.9f, 0.95f, 1.0f, 1.1f, 1.2f, 1.25f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.75f, 1.8f, 1.9f, 2.0f, 2.1f, 2.2f, 2.3f, 2.4f, 2.5f, 2.6f, 2.7f, 2.8f, 2.9f, 3.0f, 3.1f, 3.2f, 3.3f, 3.4f, 3.6f, 3.7f, 3.8f, 3.9f, 4.0f, 4.1f, 4.2f, 4.5f, 4.6f, 4.8f, 4.9f, 5.0f, 5.5f, 5.6f, 6.0f, 6.4f, 6.5f, 7.0f, 7.2f, 8.0f, 9.0f, 9.5f, 9.6f, 10.0f, 11.0f, 11.5f, 12.0f, 13.0f, 14.0f, 14.4f, 15.0f, 16.0f, 18.0f, 19.2f, 20.0f}, "Binning of the pT axis"};
   ConfigurableAxis binsEta{"binsEta", {150, -1.5f, 1.5f}, ""};
@@ -636,7 +630,7 @@ struct Phi1020analysis {
 
     LorentzVectorPtEtaPhiMass lDecayDaughter1, lDecayDaughter2, lResonance, ldaughterRot, lResonanceRot;
 
-    for (const auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
+    for (const auto& [trk1, trk2] : combinations(CombinationsUpperIndexPolicy(dTracks1, dTracks2))) {
       // Full index policy is needed to consider all possible combinations
       if (trk1.index() == trk2.index())
         continue; // We need to run (0,1), (1,0) pairs as well. but same id pairs are not needed.
@@ -990,7 +984,7 @@ struct Phi1020analysis {
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       // LOGF(info, "Mixed event collisions: (%d, %d)", collision1.globalIndex(), collision2.globalIndex());
 
-      // for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
+      // for (auto& [t1, t2] : combinations(CombinationsUpperIndexPolicy(tracks1, tracks2))) {
       //  LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d)", t1.index(), t2.index(), collision1.index(), collision2.index());
       //  }
 
