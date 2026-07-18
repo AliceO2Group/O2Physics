@@ -47,6 +47,7 @@
 #include <TPDGCode.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -65,7 +66,7 @@ using namespace o2::framework::expressions;
 using namespace o2::analysis::femto_universe;
 using namespace o2::aod::pidutils;
 
-struct femtoUniversePairTaskTrackCascadeExtended {
+struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-pro-type-member-init)
 
   Service<o2::framework::O2DatabasePDG> pdgMC;
   SliceCache cache;
@@ -223,7 +224,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
   // Table to select cascade daughters
   // Charges: = +--, +--, +-+, +-+
-  static constexpr unsigned int CascChildTable[][3] = {{0, 1, 2}, {0, 1, 1}, {1, 0, 2}, {1, 0, 1}};
+  static constexpr std::array<std::array<unsigned int, 3>, 4> CascChildTable = {{{0, 1, 2}, {0, 1, 1}, {1, 0, 2}, {1, 0, 1}}};
 
   bool invMCascade(float invMassXi, float invMassOmega, int cascType)
   {
@@ -232,63 +233,54 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
   bool isNSigmaTPC(float nsigmaTPCParticle)
   {
-    if (std::abs(nsigmaTPCParticle) < cascparticleconfigs.confNsigmaTPCParticleChild) {
-      return true;
-    } else {
-      return false;
-    }
+    return std::abs(nsigmaTPCParticle) < cascparticleconfigs.confNsigmaTPCParticleChild;
   }
 
   bool isNSigmaTOF(float mom, float nsigmaTOFParticle, float hasTOF)
   {
     // Cut only on daughter and bachelor tracks, that have TOF signal
     if (mom > cascparticleconfigs.confmom && hasTOF == 1) {
-      if (std::abs(nsigmaTOFParticle) < cascparticleconfigs.confNsigmaTOFParticleChild) {
-        return true;
-      } else {
-        return false;
-      }
-    } else {
-      return true;
+      return std::abs(nsigmaTOFParticle) < cascparticleconfigs.confNsigmaTOFParticleChild;
     }
+    return true;
   }
 
   bool isNSigmaCombined(float mom, float nsigmaTPCParticle, float nsigmaTOFParticle, bool hasTOF)
   {
     if (mom <= cascparticleconfigs.confmom) {
-      return (std::abs(nsigmaTPCParticle) < cascparticleconfigs.confNsigmaTPCParticle);
-    } else if (hasTOF == 1) {
-      return (TMath::Hypot(nsigmaTOFParticle, nsigmaTPCParticle) < trackparticleconfigs.confNsigmaCombinedParticle);
-    } else {
-      return false;
+      return std::abs(nsigmaTPCParticle) < cascparticleconfigs.confNsigmaTPCParticle;
     }
+    if (hasTOF) {
+      return TMath::Hypot(nsigmaTOFParticle, nsigmaTPCParticle) < trackparticleconfigs.confNsigmaCombinedParticle;
+    }
+    return false;
   }
 
   template <typename T>
   bool isNSigmaCombinedBitmask(float mom, const T& part)
   {
     if (mom <= cascparticleconfigs.confmom) {
-      return ((part.pidCut() & (1u << trackparticleconfigs.confTrackChoicePartOne)) != 0);
-    } else if ((part.pidCut() & 512u) != 0) {
-      return ((part.pidCut() & (64u << trackparticleconfigs.confTrackChoicePartOne)) != 0);
-    } else {
-      return false;
+      return (part.pidCut() & (1u << trackparticleconfigs.confTrackChoicePartOne)) != 0;
     }
+    if ((part.pidCut() & 512u) != 0) {
+      return (part.pidCut() & (64u << trackparticleconfigs.confTrackChoicePartOne)) != 0;
+    }
+    return false;
   }
 
   template <typename T>
-  bool isParticleTPC(const T& part, int id, float* partSigma = 0)
+  bool isParticleTPC(const T& part, int id, float* partSigma = nullptr)
   {
-    const float tpcNSigmas[3] = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
+    const std::array<float, 3> tpcNSigmas = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
     if (partSigma)
       *partSigma = tpcNSigmas[id];
     return isNSigmaTPC(tpcNSigmas[id]);
   }
 
   template <typename T>
-  bool isParticleTOF(const T& part, int id, float* partSigma = 0)
+  bool isParticleTOF(const T& part, int id, float* partSigma = nullptr)
   {
-    const float tofNSigmas[3] = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
+    const std::array<float, 3> tofNSigmas = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
     if (partSigma)
       *partSigma = tofNSigmas[id];
     return isNSigmaTOF(part.p(), tofNSigmas[id], part.tempFitVar());
@@ -297,8 +289,8 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   template <typename T>
   bool isParticleCombined(const T& part, int id)
   {
-    const float tpcNSigmas[3] = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
-    const float tofNSigmas[3] = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
+    const std::array<float, 3> tpcNSigmas = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
+    const std::array<float, 3> tofNSigmas = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
 
     return isNSigmaCombined(part.p(), tpcNSigmas[id], tofNSigmas[id], (part.pidCut() & 512u) != 0);
   }
@@ -458,7 +450,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       const auto& bachelor = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
 
       if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
-        float posChildTPC, negChildTPC, bachelorTPC, posChildTOF, negChildTOF, bachelorTOF;
+        float posChildTPC = 0., negChildTPC = 0., bachelorTPC = 0., posChildTOF = 0., negChildTOF = 0., bachelorTOF = 0.;
         if (!isParticleTPC(posChild, CascChildTable[cascparticleconfigs.confCascType1][0], &posChildTPC) || !isParticleTPC(negChild, CascChildTable[cascparticleconfigs.confCascType1][1], &negChildTPC) || !isParticleTPC(bachelor, CascChildTable[cascparticleconfigs.confCascType1][2], &bachelorTPC))
           continue;
 
@@ -482,7 +474,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       const auto& bachelorExt = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
 
       if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
-        float posChildTPCExt, negChildTPCExt, bachelorTPCExt, posChildTOFExt, negChildTOFExt, bachelorTOFExt;
+        float posChildTPCExt = 0., negChildTPCExt = 0., bachelorTPCExt = 0., posChildTOFExt = 0., negChildTOFExt = 0., bachelorTOFExt = 0.;
         if (!isParticleTPC(posChildExt, CascChildTable[cascparticleconfigs.confCascType1][0], &posChildTPCExt) || !isParticleTPC(negChildExt, CascChildTable[cascparticleconfigs.confCascType1][1], &negChildTPCExt) || !isParticleTPC(bachelorExt, CascChildTable[cascparticleconfigs.confCascType1][2], &bachelorTPCExt))
           continue;
 
@@ -526,7 +518,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       const auto& bachelor = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
 
       if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
-        float posChildTPC, negChildTPC, bachelorTPC, posChildTOF, negChildTOF, bachelorTOF;
+        float posChildTPC = 0., negChildTPC = 0., bachelorTPC = 0., posChildTOF = 0., negChildTOF = 0., bachelorTOF = 0.;
         if (!isParticleTPC(posChild, CascChildTable[cascparticleconfigs.confCascType1][0], &posChildTPC) || !isParticleTPC(negChild, CascChildTable[cascparticleconfigs.confCascType1][1], &negChildTPC) || !isParticleTPC(bachelor, CascChildTable[cascparticleconfigs.confCascType1][2], &bachelorTPC))
           continue;
 
@@ -544,7 +536,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
   /// track - cascade correlations
   template <class TableType, typename PartitionType, typename MCParticles = std::nullptr_t>
-  void doSameEvent(const FilteredFDCollision& col, const TableType& parts, PartitionType& partsOne, PartitionType& partsTwo, [[maybe_unused]] MCParticles mcParts = nullptr)
+  void doSameEvent(const FilteredFDCollision& col, const TableType& parts, PartitionType& partsOne, PartitionType& partsTwo, [[maybe_unused]] const MCParticles& mcParts = nullptr)
   {
     const auto& magFieldTesla = col.magField();
 
@@ -553,7 +545,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
     eventHisto.fillQA(col);
 
-    const int multCol = confUseCent ? col.multV0M() : col.multNtr();
+    const int multCol = confUseCent ? static_cast<int>(col.multV0M()) : static_cast<int>(col.multNtr());
 
     for (const auto& part : groupPartsTwo) {
       if (!invMCascade(part.mLambda(), part.mAntiLambda(), cascparticleconfigs.confCascType1)) /// mLambda stores Xi mass, mAntiLambda stores Omega mass
@@ -564,7 +556,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       const auto& bachelor = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
       /// Child particles must pass this condition to be selected
       if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
-        float posChildTPC, negChildTPC, bachelorTPC, posChildTOF, negChildTOF, bachelorTOF;
+        float posChildTPC = 0., negChildTPC = 0., bachelorTPC = 0., posChildTOF = 0., negChildTOF = 0., bachelorTOF = 0.;
         if (!isParticleTPC(posChild, CascChildTable[cascparticleconfigs.confCascType1][0], &posChildTPC) || !isParticleTPC(negChild, CascChildTable[cascparticleconfigs.confCascType1][1], &negChildTPC) || !isParticleTPC(bachelor, CascChildTable[cascparticleconfigs.confCascType1][2], &bachelorTPC))
           continue;
 
@@ -723,7 +715,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
     eventHisto.fillQA(col);
 
-    const int multCol = confUseCent ? col.multV0M() : col.multNtr();
+    const int multCol = confUseCent ? static_cast<int>(col.multV0M()) : static_cast<int>(col.multNtr());
 
     for (const auto& part : groupPartsTwo) {
       if (!invMCascade(part.mLambda(), part.mAntiLambda(), cascparticleconfigs.confCascType1)) /// mLambda stores Xi mass, mAntiLambda stores Omega mass
@@ -882,7 +874,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
     eventHisto.fillQA(col);
 
-    const int multCol = confUseCent ? col.multV0M() : col.multNtr();
+    const int multCol = confUseCent ? static_cast<int>(col.multV0M()) : static_cast<int>(col.multNtr());
 
     for (const auto& part : groupPartsOne) {
       if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
@@ -1274,7 +1266,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   // MC truth for track - cascade
   void processSameEventMCgen(const FilteredFDCollision& col, [[maybe_unused]] const aod::FDParticles& parts)
   {
-    const int multCol = confUseCent ? col.multV0M() : col.multNtr();
+    const int multCol = confUseCent ? static_cast<int>(col.multV0M()) : static_cast<int>(col.multNtr());
 
     auto groupPartsOne = partsTrackOneMCgenBasic->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsTwo = partsTwoMCgenBasic->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -1318,7 +1310,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   // MC truth for cascade - cascade
   void processSameEventCascMCgen(const FilteredFDCollision& col, [[maybe_unused]] const aod::FDParticles& parts)
   {
-    const int multCol = confUseCent ? col.multV0M() : col.multNtr();
+    const int multCol = confUseCent ? static_cast<int>(col.multV0M()) : static_cast<int>(col.multNtr());
 
     auto groupPartsTwo = partsTwoMCgenBasic->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
