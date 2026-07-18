@@ -1011,7 +1011,7 @@ struct Alice3Dilepton {
   } // end of processRec
 
   void processRecAllWithSmearing(MyFilteredAlice3Collision const& collisions,
-                                 MyFilteredTracksWithSmearing const& tracks,
+                                 MyFilteredTracksWithSmearing const&,
                                  const aod::McParticles&)
   {
     for (const auto& collision : collisions) {
