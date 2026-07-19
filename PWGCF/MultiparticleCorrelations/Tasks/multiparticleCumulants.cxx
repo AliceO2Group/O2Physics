@@ -364,8 +364,8 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     int h7 = 0;
     int h8 = 0;
     // Book Q-vector components:
-    static constexpr int MaxCorrelator = 4;                  // <<m>>
-    static constexpr int MaxHarmonic = 17;                   // need 4 + 2 + 2 + 4 + 1 at least for SC(4,2)
+    static constexpr int MaxCorrelator = 4; // <<m>>
+    static constexpr int MaxHarmonic = 17;  // need 4 + 2 + 2 + 4 + 1 at least for SC(4,2)
     static constexpr int MaxPower = MaxCorrelator + 1;
     std::array<std::array<TComplex, MaxPower>, MaxHarmonic> fQvectorBefore;
     std::array<std::array<TComplex, MaxPower>, MaxHarmonic> fQvectorAfter;
@@ -586,13 +586,11 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       }
       return TComplex::Conjugate(mcc.fQvectorAfterA[-n][p]);
     }
-    if (egap == 2) {
-      // Q-vector after cut, eta > gap:
-      if (n >= 0) {
-        return mcc.fQvectorAfterB[n][p];
-      }
-      return TComplex::Conjugate(mcc.fQvectorAfterB[-n][p]);
+    // Q-vector after cut, eta > gap:
+    if (n >= 0) {
+      return mcc.fQvectorAfterB[n][p];
     }
+    return TComplex::Conjugate(mcc.fQvectorAfterB[-n][p]);
   }
 
   TComplex mccTwo(int n1, int n2, EnBeforeAfter eba, int egap)
