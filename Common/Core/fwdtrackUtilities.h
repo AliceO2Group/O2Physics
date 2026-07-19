@@ -27,7 +27,9 @@
 #include <Math/MatrixRepresentationsStatic.h>
 #include <Math/SMatrix.h>
 
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <concepts>
 #include <cstdint>
 #include <type_traits>
@@ -241,6 +243,68 @@ o2::dataformats::GlobalFwdTrack refitGlobalMuonCov(TFwdTrack const& muon, TMFTTr
   globalTrack.setCovariances(globalCov);
 
   return globalTrack;
+}
+
+template <typename TFullFwdTrack, typename TCollision>
+float getFwdChi2IP(const TFullFwdTrack& fwdtrack, const TCollision& collision, const float bz, const float zShift)
+{
+  // this function returns imcompatibility of fwdtrack respect to a given PV.
+  // fwdtracks are never PV contributors in ALICE.
+  // chi2IP is defined as chi2^{PV}_{with fwdtrack} - chi2^{PV}_{without fwdtrack}. https://arxiv.org/abs/2604.11574
+  // chi2IP cannot be used to decide the best fwdtrack-to-collision match or MFT-MCH match, because it gives biases toward small muon impact parameter.
+  // chi2IP should be used only after the best fwdtrack-to-collision association and the best MFT-MCH match are defined.
+
+  o2::track::TrackParCovFwd trk = getTrackParCovFwdShift(fwdtrack, zShift, fwdtrack);
+
+  if (std::abs(bz) < 1e-12) {
+    trk.propagateToZlinear(collision.posZ());
+  } else {
+    trk.propagateToZhelix(collision.posZ(), bz);
+  }
+
+  float x = trk.getX();
+  float y = trk.getY();
+  float phi = trk.getPhi();
+  float tgl = trk.getTanl();
+
+  if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(phi) || !std::isfinite(tgl) || std::abs(tgl) < 1e-8) {
+    return -1.f;
+  }
+
+  float dx = x - collision.posX();
+  float dy = y - collision.posY();
+
+  // dx/dz and dy/dz for TrackParFwd.
+  float tx = std::cos(phi) / tgl;
+  float ty = std::sin(phi) / tgl;
+
+  const auto& ct = trk.getCovariances();
+
+  float trkXX = ct(0, 0);
+  float trkXY = ct(0, 1);
+  float trkYY = ct(1, 1);
+
+  float pvXX = collision.covXX() - 2.0 * tx * collision.covXZ() + tx * tx * collision.covZZ();
+  float pvXY = collision.covXY() - ty * collision.covXZ() - tx * collision.covYZ() + tx * ty * collision.covZZ();
+  float pvYY = collision.covYY() - 2.0 * ty * collision.covYZ() + ty * ty * collision.covZZ();
+
+  float sXX = trkXX + pvXX;
+  float sXY = trkXY + pvXY;
+  float sYY = trkYY + pvYY;
+
+  float det = sXX * sYY - sXY * sXY;
+
+  if (!std::isfinite(det) || det <= 0.0) {
+    return -1.f;
+  }
+
+  float chi2 = (sYY * dx * dx - 2.0 * sXY * dx * dy + sXX * dy * dy) / det;
+
+  if (!std::isfinite(chi2) || chi2 < -1e-8) {
+    return -1.f;
+  }
+
+  return std::max(0.f, chi2);
 }
 
 } // namespace fwdtrackutils
