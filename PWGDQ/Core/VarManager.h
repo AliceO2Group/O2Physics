@@ -4352,13 +4352,14 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     values[kWV24ME] = (std::isnan(V22ME) || std::isinf(V22ME) || std::isnan(V24ME) || std::isinf(V24ME)) ? 0. : 1.0;
 
     // coherent Jpsi A2
-    bool useCoherentJpsiA2 = fgUsedVars[kA2EP_TPC] || fgUsedVars[kA2EP_FT0A] || fgUsedVars[kA2EP_FT0C];
+    bool useCoherentJpsiA2 = fgUsedVars[kA2EPME_TPC] || fgUsedVars[kA2EPME_FT0A] || fgUsedVars[kA2EPME_FT0C];
     if (useCoherentJpsiA2) {
       ROOT::Math::Boost boostv12{v12.BoostToCM()};
       ROOT::Math::PtEtaPhiMVector v_daughter = boostv12(t1.sign() > 0 ? v1 : v2);
       float Psi2A = t1.sign() > 0 ? Psi2A1 : Psi2A2;
       float Psi2B = t1.sign() > 0 ? Psi2B1 : Psi2B2;
       float Psi2C = t1.sign() > 0 ? Psi2C1 : Psi2C2;
+      float R2EP = t1.sign() > 0 ? values[kTwoR2EP1] : values[kTwoR2EP2];
 
       // reaction plane
       float phi = RecoDecay::constrainAngle(v_daughter.Phi(), -o2::constants::math::PI);
@@ -4376,9 +4377,9 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
       values[kCos2DeltaPhiME_FT0A] = TMath::Cos(2. * (phi - Psi2B));
       values[kCos2DeltaPhiME_FT0C] = TMath::Cos(2. * (phi - Psi2C));
 
-      float A2_TPC = values[kCos2DeltaPhiME_TPC] / values[kR2EP];
-      float A2_FT0A = values[kCos2DeltaPhiME_FT0A] / values[kR2EP];
-      float A2_FT0C = values[kCos2DeltaPhiME_FT0C] / values[kR2EP];
+      float A2_TPC = values[kCos2DeltaPhiME_TPC] / R2EP;
+      float A2_FT0A = values[kCos2DeltaPhiME_FT0A] / R2EP;
+      float A2_FT0C = values[kCos2DeltaPhiME_FT0C] / R2EP;
       values[kA2EPME_TPC] = std::isnan(A2_TPC) || std::isinf(A2_TPC) ? -999. : A2_TPC;
       values[kA2EPME_FT0A] = std::isnan(A2_FT0A) || std::isinf(A2_FT0A) ? -999. : A2_FT0A;
       values[kA2EPME_FT0C] = std::isnan(A2_FT0C) || std::isinf(A2_FT0C) ? -999. : A2_FT0C;
