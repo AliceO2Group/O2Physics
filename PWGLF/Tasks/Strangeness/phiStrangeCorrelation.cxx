@@ -648,6 +648,76 @@ struct PhiStrangeCorrelation {
     const std::array<std::pair<float, float>, kPhiMassRegions> phiMassRegions = {phiConfigs.rangeMPhiSignal, phiConfigs.rangeMPhiSideband};
 
     if (analysisMode == kMassvsMass) {
+      if constexpr (PartType == kK0S) {
+        if constexpr (IsME) {
+          customFillTHn(HIST("phiK0S/h6PhiK0SDataME"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assoc.m());
+        } else {
+          customFillTHn(HIST("phiK0S/h6PhiK0SData"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assoc.m());
+        }
+      } else if constexpr (PartType == kXi) {
+        if constexpr (IsME) {
+          customFillTHn(HIST("phiXi/h6PhiXiDataME"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assoc.m());
+        } else {
+          customFillTHn(HIST("phiXi/h6PhiXiData"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assoc.m());
+        }
+      } else if constexpr (PartType == kPion) {
+        if constexpr (IsME) {
+          customFillTHn(HIST("phiPi/h6PhiPiTPCDataME"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assoc.nSigmaTPC());
+          customFillTHn(HIST("phiPi/h6PhiPiTOFDataME"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assoc.nSigmaTOF());
+        } else {
+          customFillTHn(HIST("phiPi/h6PhiPiTPCData"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assoc.nSigmaTPC());
+          customFillTHn(HIST("phiPi/h6PhiPiTOFData"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assoc.nSigmaTOF());
+        }
+      }
+    } else if (analysisMode == kDeltaYvsDeltaPhi) {
+      static_for<0, kPhiMassRegions - 1>([&](auto i_idx) {
+        constexpr unsigned int Idx = i_idx.value;
+        const auto& [minMassPhi, maxMassPhi] = phiMassRegions[Idx];
+        if (!phiCand.inMassRegion(minMassPhi, maxMassPhi)) {
+          return;
+        }
+
+        if constexpr (PartType == kK0S) {
+          if constexpr (IsME) {
+            if constexpr (Idx == kSignalRegion)
+              customFillTHn(HIST("phiK0S/h5PhiK0SDataMESignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi()));
+            else
+              customFillTHn(HIST("phiK0S/h5PhiK0SDataMESideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi()));
+          } else {
+            if constexpr (Idx == kSignalRegion)
+              customFillTHn(HIST("phiK0S/h5PhiK0SDataSignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi()));
+            else
+              customFillTHn(HIST("phiK0S/h5PhiK0SDataSideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi()));
+          }
+        } else if constexpr (PartType == kXi) {
+          if constexpr (IsME) {
+            if constexpr (Idx == kSignalRegion)
+              customFillTHn(HIST("phiXi/h5PhiXiDataMESignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi()));
+            else
+              customFillTHn(HIST("phiXi/h5PhiXiDataMESideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi()));
+          } else {
+            if constexpr (Idx == kSignalRegion)
+              customFillTHn(HIST("phiXi/h5PhiXiDataSignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi()));
+            else
+              customFillTHn(HIST("phiXi/h5PhiXiDataSideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi()));
+          }
+        } else if constexpr (PartType == kPion) {
+          if constexpr (IsME) {
+            if constexpr (Idx == kSignalRegion)
+              customFillTHn(HIST("phiPi/h5PhiPiDataMESignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi()));
+            else
+              customFillTHn(HIST("phiPi/h5PhiPiDataMESideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi()));
+          } else {
+            if constexpr (Idx == kSignalRegion)
+              customFillTHn(HIST("phiPi/h5PhiPiDataSignal"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi()));
+            else
+              customFillTHn(HIST("phiPi/h5PhiPiDataSideband"), weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi()));
+          }
+        }
+      });
+    }
+
+    /*if (analysisMode == kMassvsMass) {
       auto fillMass = [&](auto histID, auto assocVal) {
         customFillTHn(histID, weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), phiCand.m(), assocVal);
       };
@@ -721,35 +791,35 @@ struct PhiStrangeCorrelation {
             else
               fillDelta(HIST("phiPi/h5PhiPiDataSideband"));
           }
-        }
-
-        /*if constexpr (PartType == kK0S) {
-          if constexpr (IsME) {
-            auto t = std::make_tuple(HIST("phiK0S/h5PhiK0SDataMESignal"), HIST("phiK0S/h5PhiK0SDataMESideband"));
-            fillDelta(std::get<Idx>(t));
-          } else {
-            auto t = std::make_tuple(HIST("phiK0S/h5PhiK0SDataSignal"), HIST("phiK0S/h5PhiK0SDataSideband"));
-            fillDelta(std::get<Idx>(t));
-          }
-        } else if constexpr (PartType == kXi) {
-          if constexpr (IsME) {
-            auto t = std::make_tuple(HIST("phiXi/h5PhiXiDataMESignal"), HIST("phiXi/h5PhiXiDataMESideband"));
-            fillDelta(std::get<Idx>(t));
-          } else {
-            auto t = std::make_tuple(HIST("phiXi/h5PhiXiDataSignal"), HIST("phiXi/h5PhiXiDataSideband"));
-            fillDelta(std::get<Idx>(t));
-          }
-        } else if constexpr (PartType == kPion) {
-          if constexpr (IsME) {
-            auto t = std::make_tuple(HIST("phiPi/h5PhiPiDataMESignal"), HIST("phiPi/h5PhiPiDataMESideband"));
-            fillDelta(std::get<Idx>(t));
-          } else {
-            auto t = std::make_tuple(HIST("phiPi/h5PhiPiDataSignal"), HIST("phiPi/h5PhiPiDataSideband"));
-            fillDelta(std::get<Idx>(t));
-          }
         }*/
-      });
-    }
+
+    /*if constexpr (PartType == kK0S) {
+      if constexpr (IsME) {
+        auto t = std::make_tuple(HIST("phiK0S/h5PhiK0SDataMESignal"), HIST("phiK0S/h5PhiK0SDataMESideband"));
+        fillDelta(std::get<Idx>(t));
+      } else {
+        auto t = std::make_tuple(HIST("phiK0S/h5PhiK0SDataSignal"), HIST("phiK0S/h5PhiK0SDataSideband"));
+        fillDelta(std::get<Idx>(t));
+      }
+    } else if constexpr (PartType == kXi) {
+      if constexpr (IsME) {
+        auto t = std::make_tuple(HIST("phiXi/h5PhiXiDataMESignal"), HIST("phiXi/h5PhiXiDataMESideband"));
+        fillDelta(std::get<Idx>(t));
+      } else {
+        auto t = std::make_tuple(HIST("phiXi/h5PhiXiDataSignal"), HIST("phiXi/h5PhiXiDataSideband"));
+        fillDelta(std::get<Idx>(t));
+      }
+    } else if constexpr (PartType == kPion) {
+      if constexpr (IsME) {
+        auto t = std::make_tuple(HIST("phiPi/h5PhiPiDataMESignal"), HIST("phiPi/h5PhiPiDataMESideband"));
+        fillDelta(std::get<Idx>(t));
+      } else {
+        auto t = std::make_tuple(HIST("phiPi/h5PhiPiDataSignal"), HIST("phiPi/h5PhiPiDataSideband"));
+        fillDelta(std::get<Idx>(t));
+      }
+    }*/
+    //});
+    //}
   }
 
   template <AssociatedParticleType PartType, bool IsME, typename TPhiCand, typename TAssoc>
