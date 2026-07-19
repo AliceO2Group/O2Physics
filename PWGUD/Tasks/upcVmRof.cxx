@@ -185,9 +185,9 @@ struct UpcVmRof {
   int nbcB = 0;
 
   // variables to store ITS ROF info
-  int rofPerOrbit = -1; // number of rofs per orbit
-  int rofLength = -1; // number of bcs per ROF
-  int rofShift = -1;   // bc shift of ITS.
+  int rofPerOrbit = -1;    // number of rofs per orbit
+  int rofLength = -1;    // number of bcs per ROF
+  int rofShift = -1;    // bc shift of ITS.
 
   // variables to store run info
   int runNumberBc = 0;     // run number used to process BCs
@@ -209,6 +209,10 @@ struct UpcVmRof {
   static constexpr int NTrksTwoBody = 2;
   static constexpr int NTrksFourBody = 4;
 
+  // reconstruction modes
+  static constexpr int stdReco = 0;
+  static constexpr int upcReco = 1;
+  
   // information for selection collisions
   Configurable<float> maxAbsPosZ{"maxAbsPosZ", 10.0, "max |Z| position of vtx"};
   Configurable<float> maxAbsTimeFT0{"maxAbsTimeFT0", 4.0, "max |time| in a FT0 side"};
@@ -229,7 +233,7 @@ struct UpcVmRof {
     auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", sor);
     rofShift = alppar->roFrameBiasInBC;
     rofLength = alppar->roFrameLengthInBC;
-    rofPerOrbit = static_cast<int>(o2::constants::lhc::LHCMaxBunches/rofLength);
+    rofPerOrbit = static_cast<int>(o2::constants::lhc::LHCMaxBunches / rofLength);
   }
 
   //--------------------------------------------------------------------------------
@@ -305,22 +309,24 @@ struct UpcVmRof {
   int getRof(int64_t thisBC)
   {
     int64_t bctmp = thisBC - rofShift;
-    if (bctmp < 0)
+    if (bctmp < 0) {
       bctmp = o2::constants::lhc::LHCMaxBunches - rofShift - 1;
+    }
     return static_cast<int>(bctmp / rofLength);
   }
-
 
   //--------------------------------------------------------------------------------
   // check flags for a bc
   bool checkBcFlags(const auto& bc, int run)
   {
     bcTH1Pointers[Form("bc/%d/bcSel_H", run)]->Fill(0);
-    if (!bc.selection_bit(aod::evsel::kNoTimeFrameBorder))
+    if (!bc.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return false;
+    }
     bcTH1Pointers[Form("bc/%d/bcSel_H", run)]->Fill(1);
-    if (!bc.selection_bit(aod::evsel::kNoITSROFrameBorder))
+    if (!bc.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return false;
+    }
     bcTH1Pointers[Form("bc/%d/bcSel_H", run)]->Fill(2);
     return true;
   } // end checkBcFlags
@@ -330,20 +336,25 @@ struct UpcVmRof {
   bool checkColFlags(const auto& col, int run)
   {
     colTH1Pointers[Form("col/%d/colSel_H", run)]->Fill(0);
-    if (!col.has_foundBC())
+    if (!col.has_foundBC()) {
       return false;
+    }
     colTH1Pointers[Form("col/%d/colSel_H", run)]->Fill(1);
-    if (!col.selection_bit(aod::evsel::kNoTimeFrameBorder))
+    if (!col.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return false;
+    }
     colTH1Pointers[Form("col/%d/colSel_H", run)]->Fill(2);
-    if (!col.selection_bit(aod::evsel::kNoITSROFrameBorder))
+    if (!col.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return false;
+    }
     colTH1Pointers[Form("col/%d/colSel_H", run)]->Fill(3);
-    if (!col.selection_bit(aod::evsel::kIsVertexITSTPC))
+    if (!col.selection_bit(aod::evsel::kIsVertexITSTPC)) {
       return false;
+    }
     colTH1Pointers[Form("col/%d/colSel_H", run)]->Fill(4);
-    if (!col.selection_bit(aod::evsel::kNoSameBunchPileup))
+    if (!col.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
+    }
     colTH1Pointers[Form("col/%d/colSel_H", run)]->Fill(5);
     // missing: add rct flags
     return true;
@@ -367,8 +378,8 @@ struct UpcVmRof {
                                                                             {HistType::kTH1D, {{o2::constants::lhc::LHCMaxBunches, -0.5, static_cast<double>(o2::constants::lhc::LHCMaxBunches) - 0.5}}});
 
     // bc sel and tf info
-    int nBinsTF = static_cast<int>(nTF/tfPerBin)+1;
-    int lastTFinHisto = (nBinsTF*tfPerBin)-1; // first TF is zero
+    int nBinsTF = static_cast<int>(nTF / tfPerBin) + 1;
+    int lastTFinHisto = (nBinsTF * tfPerBin) - 1; // first TF is zero
     bcTH1Pointers[Form("bc/%d/bcSel_H", run)] = bcTH1Registry.add<TH1>(Form("bc/%d/bcSel_H", run), "bc selection counter; selID; Counter",
                                                                        {HistType::kTH1D, {{4, -0.5, 3.5}}});
     bcTH1Pointers[Form("bc/%d/tf_H", run)] = bcTH1Registry.add<TH1>(Form("bc/%d/tf_H", run), "analysed time frames;TF;Counts",
@@ -382,9 +393,7 @@ struct UpcVmRof {
     bcTH2Pointers[Form("bc/%d/ft0Vtx_bcb_H", run)] = bcTH2Registry.add<TH2>(Form("bc/%d/ft0Vtx_bcb_H", run), "ft0Vtx triggers; TF; bc-B idx; Counter",
                                                                             {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {nbcB, -0.5, nbcB - 0.5}}});
     bcTH2Pointers[Form("bc/%d/ft0VtxCe_bcb_H", run)] = bcTH2Registry.add<TH2>(Form("bc/%d/ft0VtxCe_bcb_H", run), "ft0Vtx triggers; TF; bc-B idx; Counter",
-                                                                            {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {nbcB, -0.5, nbcB - 0.5}}});
-
-
+                                                                              {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {nbcB, -0.5, nbcB - 0.5}}});
   } // addBcHistos
 
   //--------------------------------------------------------------------------------
@@ -471,12 +480,14 @@ struct UpcVmRof {
       }
 
       // check that the bc pass the selection
-      if (!checkBcFlags(bc, runNumberBc))
+      if (!checkBcFlags(bc, runNumberBc)) {
         continue;
+      }
 
       // consider only b-bcs
-      if (!bcPatternB.test(thisBC))
+      if (!bcPatternB.test(thisBC)) {
         continue;
+      }
       bcTH1Pointers[Form("bc/%d/bcSel_H", runNumberBc)]->Fill(3);
 
       // get triggers
@@ -517,26 +528,32 @@ struct UpcVmRof {
     int64_t thisROF = getRof(thisBC);
 
     // select collision
-    if (!checkColFlags(col, runNumberCol))
+    if (!checkColFlags(col, runNumberCol)) {
       return;
+    }
 
     // accept only -B bcs
-    if (!bcPatternB.test(thisBC))
+    if (!bcPatternB.test(thisBC)) {
       return;
+    }
     colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(10);
 
     // select on zVtx
-    if (std::abs(col.posZ()) > maxAbsPosZ)
+    if (std::abs(col.posZ()) > maxAbsPosZ) {
       return;
+    }
     colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(11);
 
     // select number of contributors
-    if (!((col.numContrib() == NTrksTwoBody) || (col.numContrib() == NTrksFourBody)))
+    bool isTwoContributors = (col.numContrib() == NTrksTwoBody);
+    bool isFourContributors = (col.numContrib() == NTrksFourBody);
+    if ( !isTwoContributors && !isFourContributors) {
       return;
-    if (col.numContrib() == NTrksTwoBody) {
+    }
+    if (isTwoContributors) {
       colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(16);
     }
-    if (col.numContrib() == NTrksFourBody) {
+    if (isFourContributors) {
       colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(18);
     }
 
@@ -544,14 +561,17 @@ struct UpcVmRof {
     std::vector<decltype(tracks.begin())> selTrks;
     colTH1Pointers[Form("col/%d/trkSel_H", runNumberCol)]->Fill(0);
     for (const auto& track : tracks) {
-      if (!track.isPVContributor())
+      if (!track.isPVContributor()) {
         continue;
+      }
       colTH1Pointers[Form("col/%d/trkSel_H", runNumberCol)]->Fill(1);
-      if (!track.hasITS())
+      if (!track.hasITS()) {
         continue;
+      }
       colTH1Pointers[Form("col/%d/trkSel_H", runNumberCol)]->Fill(2);
-      if (!track.hasTPC())
+      if (!track.hasTPC()) {
         continue;
+      }
       colTH1Pointers[Form("col/%d/trkSel_H", runNumberCol)]->Fill(3);
       colTH1Pointers[Form("col/%d/tpcChi2_H", runNumberCol)]->Fill(track.tpcChi2NCl());
       colTH1Pointers[Form("col/%d/itsChi2_H", runNumberCol)]->Fill(track.itsChi2NCl());
@@ -559,33 +579,40 @@ struct UpcVmRof {
       colTH1Pointers[Form("col/%d/tpcXoF_H", runNumberCol)]->Fill(track.tpcCrossedRowsOverFindableCls());
       colTH1Pointers[Form("col/%d/trkDcaZ_H", runNumberCol)]->Fill(track.dcaZ());
       colTH1Pointers[Form("col/%d/trkDcaXY_H", runNumberCol)]->Fill(track.dcaXY());
-      if (track.tpcChi2NCl() > maxTrkTpcChi2)
+      if (track.tpcChi2NCl() > maxTrkTpcChi2) {
         continue;
+      }
       colTH1Pointers[Form("col/%d/trkSel_H", runNumberCol)]->Fill(4);
-      if (track.itsChi2NCl() > maxTrkItsChi2)
+      if (track.itsChi2NCl() > maxTrkItsChi2) {
         continue;
+      }
       colTH1Pointers[Form("col/%d/trkSel_H", runNumberCol)]->Fill(5);
-      if (track.tpcNClsFindable() < minTrkTpcClusters)
+      if (track.tpcNClsFindable() < minTrkTpcClusters) {
         continue;
+      }
       colTH1Pointers[Form("col/%d/trkSel_H", runNumberCol)]->Fill(6);
-      if (std::abs(track.dcaZ()) > maxTrkDcaZ)
+      if (std::abs(track.dcaZ()) > maxTrkDcaZ) {
         continue;
+      }
       colTH1Pointers[Form("col/%d/trkSel_H", runNumberCol)]->Fill(7);
       float maxTrkDcaXY = 0.0105 + 0.035 / std::pow(track.pt(), 1.1);
-      if (std::abs(track.dcaXY()) > maxTrkDcaXY)
+      if (std::abs(track.dcaXY()) > maxTrkDcaXY) {
         continue;
+      }
       colTH1Pointers[Form("col/%d/trkSel_H", runNumberCol)]->Fill(8);
       selTrks.push_back(track);
     }
-    if (!(((col.numContrib() == NTrksTwoBody) && (selTrks.size() == NTrksTwoBody)) ||
-          ((col.numContrib() == NTrksFourBody) && (selTrks.size() == NTrksFourBody))))
+    bool isTwoBody = isTwoContributors && (selTrks.size() == NTrksTwoBody);
+    bool isFourBody = isFourContributors && (selTrks.size() == NTrksFourBody);    
+    if (!isTwoBody && !isFourBody) {
       return;
-
+    }
+    
     //  selected events
-    if ((col.numContrib() == NTrksTwoBody) && (selTrks.size() == NTrksTwoBody)) {
+    if (isTwoBody) {
       colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(17);
     }
-    if ((col.numContrib() == NTrksFourBody) && (selTrks.size() == NTrksFourBody)) {
+    if (isFourBody) {
       colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(19);
     }
 
@@ -624,10 +651,10 @@ struct UpcVmRof {
     } // FT0 selection
 
     // final number of selected events
-    if ((col.numContrib() == NTrksTwoBody) && (selTrks.size() == NTrksTwoBody)) {
+    if (isTwoBody) {
       colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(20);
     }
-    if ((col.numContrib() == NTrksFourBody) && (selTrks.size() == NTrksFourBody)) {
+    if (isFourBody) {
       colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(21);
     }
 
@@ -711,8 +738,9 @@ struct UpcVmRof {
     } // ZDC info
 
     // fill output table
-    int recoFlag = static_cast<int>((col.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) ? true : false);
-    if (selTrks.size() == NTrksTwoBody) {
+    //  int recoFlag = TESTBIT(col.flags(), dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) ? upcReco : stdReco;
+    const int recoFlag= (col.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) ? upcReco : stdReco;
+    if (isTwoBody) {
       colTH1Pointers[Form("col/%d/twoTrkTF_H", runNumberCol)]->Fill(thisTF);
       twoTrkTable(runNumberCol, col.posX(), col.posY(), col.posZ(), col.chi2(), thisBC, thisTF, thisROF, recoFlag,
                   aFT0A, aFT0C, aFV0A, aFDDA, aFDDC, tFT0A, tFT0C, tFV0A, tFDDA, tFDDC, nFT0A, nFT0C, nFV0A, nFDDA, nFDDC,
@@ -722,7 +750,7 @@ struct UpcVmRof {
                   selTrks[1].pt(), selTrks[1].eta(), selTrks[1].phi(), selTrks[1].sign(),
                   selTrks[1].tpcNSigmaPi(), selTrks[1].tpcNSigmaEl(), selTrks[1].tpcNSigmaKa(), selTrks[1].tpcNSigmaPr());
     }
-    if (selTrks.size() == NTrksFourBody) {
+    if (isFourBody) {
       colTH1Pointers[Form("col/%d/fourTrkTF_H", runNumberCol)]->Fill(thisTF);
       fourTrkTable(runNumberCol, col.posX(), col.posY(), col.posZ(), col.chi2(), thisBC, thisTF, thisROF, recoFlag,
                    aFT0A, aFT0C, aFV0A, aFDDA, aFDDC, tFT0A, tFT0C, tFV0A, tFDDA, tFDDC, nFT0A, nFT0C, nFV0A, nFDDA, nFDDC,
