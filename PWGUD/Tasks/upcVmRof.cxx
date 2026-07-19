@@ -23,9 +23,9 @@
 #include <CommonConstants/LHCConstants.h>
 #include <CommonDataFormat/BunchFilling.h>
 #include <CommonDataFormat/TimeStamp.h>
+#include <DataFormatsITSMFT/DPLAlpideParam.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
-#include <DataFormatsITSMFT/DPLAlpideParam.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -185,8 +185,8 @@ struct UpcVmRof {
   int nbcB = 0;
 
   // variables to store ITS ROF info
-  int rofPerOrbit = -1;    // number of rofs per orbit
-  int rofLength = -1;    // number of bcs per ROF
+  int rofPerOrbit = -1; // number of rofs per orbit
+  int rofLength = -1;   // number of bcs per ROF
   int rofShift = -1;    // bc shift of ITS.
 
   // variables to store run info
@@ -212,7 +212,7 @@ struct UpcVmRof {
   // reconstruction modes
   static constexpr int stdReco = 0;
   static constexpr int upcReco = 1;
-  
+
   // information for selection collisions
   Configurable<float> maxAbsPosZ{"maxAbsPosZ", 10.0, "max |Z| position of vtx"};
   Configurable<float> maxAbsTimeFT0{"maxAbsTimeFT0", 4.0, "max |time| in a FT0 side"};
@@ -222,8 +222,6 @@ struct UpcVmRof {
   Configurable<float> minTrkTpcClusters{"minTrkTpcClusters", 70.0, "minimum number of TPC clusters associated to the track"};
   Configurable<float> maxTrkDcaZ{"maxTrkDcaZ", 2.0, "max DCA in z of track to vtx (cm)"};
   Configurable<int> tfPerBin{"tfPerBin", 10000, "timeframes per bin 1e4 means some 28 s"};
-
-
 
   //--------------------------------------------------------------------------------
   // get ITS ROF info
@@ -547,7 +545,7 @@ struct UpcVmRof {
     // select number of contributors
     bool isTwoContributors = (col.numContrib() == NTrksTwoBody);
     bool isFourContributors = (col.numContrib() == NTrksFourBody);
-    if ( !isTwoContributors && !isFourContributors) {
+    if (!isTwoContributors && !isFourContributors) {
       return;
     }
     if (isTwoContributors) {
@@ -603,11 +601,11 @@ struct UpcVmRof {
       selTrks.push_back(track);
     }
     bool isTwoBody = isTwoContributors && (selTrks.size() == NTrksTwoBody);
-    bool isFourBody = isFourContributors && (selTrks.size() == NTrksFourBody);    
+    bool isFourBody = isFourContributors && (selTrks.size() == NTrksFourBody);
     if (!isTwoBody && !isFourBody) {
       return;
     }
-    
+
     //  selected events
     if (isTwoBody) {
       colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(17);
@@ -738,8 +736,7 @@ struct UpcVmRof {
     } // ZDC info
 
     // fill output table
-    //  int recoFlag = TESTBIT(col.flags(), dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) ? upcReco : stdReco;
-    const int recoFlag= (col.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) ? upcReco : stdReco;
+    const int recoFlag = (col.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) ? upcReco : stdReco;
     if (isTwoBody) {
       colTH1Pointers[Form("col/%d/twoTrkTF_H", runNumberCol)]->Fill(thisTF);
       twoTrkTable(runNumberCol, col.posX(), col.posY(), col.posZ(), col.chi2(), thisBC, thisTF, thisROF, recoFlag,
