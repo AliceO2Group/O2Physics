@@ -80,15 +80,25 @@ enum AssociatedParticleType {
   kAssocPartSize
 };
 
+enum PhiMassRegion {
+  kSignalRegion = 0,
+  kSidebandRegion,
+  kPhiMassRegions
+};
+
 template <AssociatedParticleType PartType>
 constexpr int getPdgCode()
 {
-  if constexpr (PartType == kK0S)
+  if constexpr (PartType == kK0S) {
     return PDG_t::kK0Short;
-  else if constexpr (PartType == kXi)
+  } else if constexpr (PartType == kXi) {
     return PDG_t::kXiMinus;
-  else if constexpr (PartType == kPion)
+  } else if constexpr (PartType == kPion) {
     return PDG_t::kPiPlus;
+  } else {
+    static_assert(PartType == kK0S || PartType == kXi || PartType == kPion, "Unsupported particle type in getPdgCode");
+    return 0;
+  }
 }
 
 using EffMapPtr = std::variant<std::shared_ptr<TH2>, std::shared_ptr<TH3>>;
@@ -96,18 +106,19 @@ using EffMapPtr = std::variant<std::shared_ptr<TH2>, std::shared_ptr<TH3>>;
 struct BoundEfficiencyMap {
   using CoordsTuple = std::tuple<float, float, float>;
 
-  const EffMapPtr& effMap;
+  const EffMapPtr* effMap;
   CoordsTuple coords;
 
-  BoundEfficiencyMap(const EffMapPtr& effMap, float x, float y, float z) : effMap(effMap), coords(x, y, z) {}
-  BoundEfficiencyMap(const EffMapPtr& effMap, const CoordsTuple& coords) : effMap(effMap), coords(coords) {}
+  BoundEfficiencyMap(const EffMapPtr& effMap, float x, float y, float z) : effMap(&effMap), coords(x, y, z) {}
+  BoundEfficiencyMap(const EffMapPtr& effMap, const CoordsTuple& coords) : effMap(&effMap), coords(coords) {}
 
-  std::pair<float, float> getBinEfficiencyAndError() const
+  [[nodiscard]] std::pair<float, float> getBinEfficiencyAndError() const
   {
     return std::visit(
       [this](auto&& mapPtr) -> std::pair<float, float> {
-        if (!mapPtr)
+        if (!mapPtr) {
           return {1.0f, 0.0f};
+        }
 
         const auto& [x, y, z] = coords;
 
@@ -123,15 +134,16 @@ struct BoundEfficiencyMap {
           return {mapPtr->GetBinContent(bin), mapPtr->GetBinError(bin)};
         }
       },
-      effMap);
+      *effMap);
   }
 
-  float interpolateEfficiency() const
+  [[nodiscard]] float interpolateEfficiency() const
   {
     return std::visit(
       [this](auto&& mapPtr) -> float {
-        if (!mapPtr)
+        if (!mapPtr) {
           return 1.0f;
+        }
 
         const auto& [x, y, z] = coords;
 
@@ -143,23 +155,23 @@ struct BoundEfficiencyMap {
           return mapPtr->Interpolate(x, y, z); // Native 3D interpolation
         }
       },
-      effMap);
+      *effMap);
   }
 };
 
 template <AssociatedParticleType PartType, typename TCands>
 struct AssocInput {
-  static constexpr AssociatedParticleType kType = PartType;
-  TCands const& candidates;
+  static constexpr AssociatedParticleType Type = PartType;
+  TCands const* candidates;
 };
 
 template <AssociatedParticleType PartType, typename TCands>
 constexpr auto makeAssocInput(TCands const& cands)
 {
-  return AssocInput<PartType, TCands>{cands};
+  return AssocInput<PartType, TCands>{&cands};
 }
 
-struct PhiStrangenessCorrelation {
+struct PhiStrangeCorrelation {
   HistogramRegistry histos{"phiStrangenessCorrelation", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Configurable for selection type
@@ -216,7 +228,7 @@ struct PhiStrangenessCorrelation {
   Configurable<std::vector<double>> binspTPi{"binspTPi", {0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for Pions"};
   Configurable<std::vector<double>> binspTPiExt{"binspTPiExt", {0.0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for Pions extended for MC Gen"};
 
-  Configurable<std::array<int, kAssocPartSize>> activeCorrelationTypes{"activeCorrelationTypes", {1, 0, 1}, "Enable correlation types: 0 - K0S, 1 - Xi, 2 - Pion"};
+  Configurable<std::array<bool, kAssocPartSize>> activeCorrelationTypes{"activeCorrelationTypes", {true, false, true}, "Enable correlation types: 0 - K0S, 1 - Xi, 2 - Pion"};
 
   // Configurables for delta y selection
   struct : ConfigurableGroup {
@@ -280,12 +292,12 @@ struct PhiStrangenessCorrelation {
   } preslices;
 
   // Necessary service to retrieve efficiency maps from CCDB
-  Service<ccdb::BasicCCDBManager> ccdb;
+  Service<ccdb::BasicCCDBManager> ccdb{};
 
   // std::shared_ptr<TH3> effMapPhi{};
   // std::array<std::shared_ptr<TH3>, kAssocPartSize> effMapsAssoc{};
 
-  EffMapPtr effMapPhi{};
+  EffMapPtr effMapPhi;
   std::array<EffMapPtr, kAssocPartSize> effMapsAssoc{};
 
   // Binning policy and axes for mixed event
@@ -295,18 +307,18 @@ struct PhiStrangenessCorrelation {
   using BinningTypeVertexCent = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   BinningTypeVertexCent binningOnVertexAndCent{{axisVertexMixing, axisCentralityMixing}, true};
 
-  static constexpr std::array<std::string_view, 2> PhiMassRegionLabels{"Signal", "Sideband"};
+  static constexpr std::array<std::string_view, kPhiMassRegions> PhiMassRegionLabels{"Signal", "Sideband"};
   static constexpr std::array<std::string_view, kAssocPartSize> AssocParticleLabels{"K0S", "Xi", "Pi"};
 
   // Light structures to store only the necessary information for the correlation analysis at MCGen level
   struct MiniParticle {
-    float pt;
-    float y;
-    float phi;
+    float pt{};
+    float y{};
+    float phi{};
   };
 
   struct MiniEvent {
-    float multiplicity;
+    float multiplicity{};
     std::vector<MiniParticle> phiParticles;
     std::vector<MiniParticle> k0sParticles;
     std::vector<MiniParticle> xiParticles;
@@ -434,13 +446,15 @@ struct PhiStrangenessCorrelation {
   void loadEfficiencyMaps()
   {
     // Load the Trigger (Phi) map if requested by analysis method
-    if (efficiencyConfigs.applyPhiEfficiency)
+    if (efficiencyConfigs.applyPhiEfficiency) {
       fetchSingleEfficiencyMapFromCCDB(effMapPhi, "Phi");
+    }
 
     // Only load the associated maps that are explicitly enabled
     for (size_t i = 0; i < kAssocPartSize; ++i) {
-      if (activeCorrelationTypes->at(i))
+      if (activeCorrelationTypes->at(i)) {
         fetchSingleEfficiencyMapFromCCDB(effMapsAssoc[i], AssocParticleLabels[i]);
+      }
     }
   }
 
@@ -448,8 +462,9 @@ struct PhiStrangenessCorrelation {
   template <typename... BoundEffMaps>
   std::pair<float, float> computeWeightAndError(const BoundEffMaps&... boundEffMaps)
   {
-    if (!efficiencyConfigs.applyEfficiency)
+    if (!efficiencyConfigs.applyEfficiency) {
       return {1.0f, 0.0f};
+    }
 
     float effTot = 1.0f;
     float relErrSqSum = 0.0f;
@@ -472,8 +487,9 @@ struct PhiStrangenessCorrelation {
 
     (processMap(boundEffMaps), ...); // Fold expression to process all bound efficiency maps
 
-    if (effTot <= 0.0f)
+    if (effTot <= 0.0f) {
       return {1.0f, 0.0f};
+    }
 
     float weight = 1.0f / effTot;
     float weightErr = weight * std::sqrt(relErrSqSum); // Propagate relative error to the weight
@@ -495,8 +511,9 @@ struct PhiStrangenessCorrelation {
 
   int getCentBin(float multiplicity)
   {
-    if (multiplicity < binsMult->front() || multiplicity >= binsMult->back())
+    if (multiplicity < binsMult->front() || multiplicity >= binsMult->back()) {
       return -1;
+    }
 
     auto it = std::upper_bound(binsMult->begin(), binsMult->end(), multiplicity);
     return std::distance(binsMult->begin(), it) - 1;
@@ -505,23 +522,31 @@ struct PhiStrangenessCorrelation {
   template <AssociatedParticleType PartType>
   auto getPreslice()
   {
-    if constexpr (PartType == kK0S)
+    if constexpr (PartType == kK0S) {
       return preslices.k0sMcRecoPerCollision;
-    else if constexpr (PartType == kXi)
+    } else if constexpr (PartType == kXi) {
       return preslices.xiMcRecoPerCollision;
-    else if constexpr (PartType == kPion)
+    } else if constexpr (PartType == kPion) {
       return preslices.pionTrackMcRecoPerCollision;
+    } else {
+      static_assert(PartType == kK0S || PartType == kXi || PartType == kPion, "Unsupported particle type in getPreslice");
+      return preslices.k0sMcRecoPerCollision;
+    }
   }
 
   template <AssociatedParticleType PartType>
   float getMinGenPt() const
   {
-    if constexpr (PartType == kK0S)
+    if constexpr (PartType == kK0S) {
       return minPtMcGenConfigs.v0SettingMinPt.value;
-    else if constexpr (PartType == kXi)
+    } else if constexpr (PartType == kXi) {
       return minPtMcGenConfigs.cascadeSettingMinPt.value;
-    else if constexpr (PartType == kPion)
+    } else if constexpr (PartType == kPion) {
       return minPtMcGenConfigs.cMinPionPtcut.value;
+    } else {
+      static_assert(PartType == kK0S || PartType == kXi || PartType == kPion, "Unsupported particle type in getMinGenPt");
+      return 0.f;
+    }
   }
 
   template <typename THist, typename... Args>
@@ -568,11 +593,11 @@ struct PhiStrangenessCorrelation {
     auto [w, wErr] = weightPair;
 
     // Create an array of floats for the coordinates to pass to GetBin and SetBinContent
-    double coordArray[] = {static_cast<double>(coords)...};
+    std::array<double, sizeof...(Args)> coordArray{static_cast<double>(coords)...};
 
     // Find the bin number.
     // The 'true' flag is mandatory: it allocates the bin in memory if it doesn't exist yet.
-    auto bin = hist->GetBin(coordArray, true);
+    auto bin = hist->GetBin(coordArray.data(), true);
 
     // Retrieve the previous content and the squared error (variance)
     double prevContent = hist->GetBinContent(bin);
@@ -612,15 +637,15 @@ struct PhiStrangenessCorrelation {
   }
 
   template <AssociatedParticleType PartType>
-  bool isGenSpeciesValid(const auto& mcParticle) const
+  bool isGenSpeciesValid(const auto& mcParticle, bool allowBypass) const
   {
-    return mcParticle.isPhysicalPrimary() && (minPtMcGenConfigs.bypassPtCut.value || mcParticle.pt() >= getMinGenPt<PartType>());
+    return mcParticle.isPhysicalPrimary() && (allowBypass || mcParticle.pt() >= getMinGenPt<PartType>());
   }
 
   template <AssociatedParticleType PartType, bool IsME, typename TPhiCand, typename TAssoc>
   void fillPhiAssocCorrelation(TPhiCand const& phiCand, TAssoc const& assoc, float multiplicity, const std::pair<float, float>& weight)
   {
-    const std::array<std::pair<float, float>, 2> phiMassRegions = {phiConfigs.rangeMPhiSignal, phiConfigs.rangeMPhiSideband};
+    const std::array<std::pair<float, float>, kPhiMassRegions> phiMassRegions = {phiConfigs.rangeMPhiSignal, phiConfigs.rangeMPhiSideband};
 
     if (analysisMode == kMassvsMass) {
       auto fillMass = [&](auto histID, auto assocVal) {
@@ -628,15 +653,17 @@ struct PhiStrangenessCorrelation {
       };
 
       if constexpr (PartType == kK0S) {
-        if constexpr (IsME)
+        if constexpr (IsME) {
           fillMass(HIST("phiK0S/h6PhiK0SDataME"), assoc.m());
-        else
+        } else {
           fillMass(HIST("phiK0S/h6PhiK0SData"), assoc.m());
+        }
       } else if constexpr (PartType == kXi) {
-        if constexpr (IsME)
+        if constexpr (IsME) {
           fillMass(HIST("phiXi/h6PhiXiDataME"), assoc.m());
-        else
+        } else {
           fillMass(HIST("phiXi/h6PhiXiData"), assoc.m());
+        }
       } else if constexpr (PartType == kPion) {
         if constexpr (IsME) {
           fillMass(HIST("phiPi/h6PhiPiTPCDataME"), assoc.nSigmaTPC());
@@ -647,17 +674,56 @@ struct PhiStrangenessCorrelation {
         }
       }
     } else if (analysisMode == kDeltaYvsDeltaPhi) {
-      static_for<0, PhiMassRegionLabels.size() - 1>([&](auto i_idx) {
+      static_for<0, kPhiMassRegions - 1>([&](auto i_idx) {
         constexpr unsigned int Idx = i_idx.value;
         const auto& [minMassPhi, maxMassPhi] = phiMassRegions[Idx];
-        if (!phiCand.inMassRegion(minMassPhi, maxMassPhi))
+        if (!phiCand.inMassRegion(minMassPhi, maxMassPhi)) {
           return;
+        }
 
         auto fillDelta = [&](auto histID) {
           customFillTHn(histID, weight, multiplicity, phiCand.pt(), assoc.pt(), phiCand.y() - assoc.y(), getDeltaPhi(phiCand.phi(), assoc.phi()));
         };
 
         if constexpr (PartType == kK0S) {
+          if constexpr (IsME) {
+            if constexpr (Idx == kSignalRegion)
+              fillDelta(HIST("phiK0S/h5PhiK0SDataMESignal"));
+            else
+              fillDelta(HIST("phiK0S/h5PhiK0SDataMESideband"));
+          } else {
+            if constexpr (Idx == kSignalRegion)
+              fillDelta(HIST("phiK0S/h5PhiK0SDataSignal"));
+            else
+              fillDelta(HIST("phiK0S/h5PhiK0SDataSideband"));
+          }
+        } else if constexpr (PartType == kXi) {
+          if constexpr (IsME) {
+            if constexpr (Idx == kSignalRegion)
+              fillDelta(HIST("phiXi/h5PhiXiDataMESignal"));
+            else
+              fillDelta(HIST("phiXi/h5PhiXiDataMESideband"));
+          } else {
+            if constexpr (Idx == kSignalRegion)
+              fillDelta(HIST("phiXi/h5PhiXiDataSignal"));
+            else
+              fillDelta(HIST("phiXi/h5PhiXiDataSideband"));
+          }
+        } else if constexpr (PartType == kPion) {
+          if constexpr (IsME) {
+            if constexpr (Idx == kSignalRegion)
+              fillDelta(HIST("phiPi/h5PhiPiDataMESignal"));
+            else
+              fillDelta(HIST("phiPi/h5PhiPiDataMESideband"));
+          } else {
+            if constexpr (Idx == kSignalRegion)
+              fillDelta(HIST("phiPi/h5PhiPiDataSignal"));
+            else
+              fillDelta(HIST("phiPi/h5PhiPiDataSideband"));
+          }
+        }
+
+        /*if constexpr (PartType == kK0S) {
           if constexpr (IsME) {
             auto t = std::make_tuple(HIST("phiK0S/h5PhiK0SDataMESignal"), HIST("phiK0S/h5PhiK0SDataMESideband"));
             fillDelta(std::get<Idx>(t));
@@ -681,7 +747,7 @@ struct PhiStrangenessCorrelation {
             auto t = std::make_tuple(HIST("phiPi/h5PhiPiDataSignal"), HIST("phiPi/h5PhiPiDataSideband"));
             fillDelta(std::get<Idx>(t));
           }
-        }
+        }*/
       });
     }
   }
@@ -689,8 +755,9 @@ struct PhiStrangenessCorrelation {
   template <AssociatedParticleType PartType, bool IsME, typename TPhiCand, typename TAssoc>
   void processOneAssocPair(TPhiCand const& phiCand, TAssoc const& assoc, float multiplicity)
   {
-    if (!isAssocValid<PartType>(assoc))
+    if (!isAssocValid<PartType>(assoc)) {
       return;
+    }
 
     auto weight = computeAssocWeight<PartType>(multiplicity, phiCand, assoc);
     fillPhiAssocCorrelation<PartType, IsME>(phiCand, assoc, multiplicity, weight);
@@ -699,11 +766,13 @@ struct PhiStrangenessCorrelation {
   template <AssociatedParticleType PartType, typename TPhiCand, typename TAssocCands>
   void processOneAssocSpeciesSE(TPhiCand const& phiCand, TAssocCands const& assocCands, float multiplicity)
   {
-    if (!activeCorrelationTypes->at(PartType))
+    if (!activeCorrelationTypes->at(PartType)) {
       return;
+    }
 
-    for (const auto& assoc : assocCands)
+    for (const auto& assoc : assocCands) {
       processOneAssocPair<PartType, false>(phiCand, assoc, multiplicity);
+    }
   }
 
   template <typename TCollision, typename TPhiCands, typename... TAssocInputs>
@@ -712,14 +781,15 @@ struct PhiStrangenessCorrelation {
     float multiplicity = collision.centFT0M();
 
     for (const auto& phiCand : phiCandidates) {
-      if (efficiencyConfigs.applyEfficiency && efficiencyConfigs.applyPhiEfficiency && phiCand.pt() >= binspTPhi->back())
+      if (efficiencyConfigs.applyEfficiency && efficiencyConfigs.applyPhiEfficiency && phiCand.pt() >= binspTPhi->back()) {
         continue;
+      }
 
       auto weightPhi = computeWeightAndError(BoundEfficiencyMap(effMapPhi, multiplicity, phiCand.pt(), phiCand.y()));
       customFillHist<TH3>(HIST("phi/h3PhiData"), weightPhi, multiplicity, phiCand.pt(), phiCand.m());
 
       // Fold expression: elaborate the correlation for each associated particle type in the parameter pack
-      (processOneAssocSpeciesSE<TAssocInputs::kType>(phiCand, assocInputs.candidates, multiplicity), ...);
+      (processOneAssocSpeciesSE<TAssocInputs::Type>(phiCand, *assocInputs.candidates, multiplicity), ...);
     }
   }
 
@@ -735,7 +805,7 @@ struct PhiStrangenessCorrelation {
                       makeAssocInput<kPion>(pionTracks));
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiAssocSEDataLike, "Process function for Phi-Associated 2D Correlations in Data or MC w/o PDG SE", true);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiAssocSEDataLike, "Process function for Phi-Associated 2D Correlations in Data or MC w/o PDG SE", true);
 
   void processPhiAssocSEMCWithPDG(SimCollisions::iterator const& collision,
                                   aod::PhimesonCandidatesMcReco const& phiCandidates,
@@ -749,7 +819,7 @@ struct PhiStrangenessCorrelation {
                       makeAssocInput<kPion>(pionTracks));
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiAssocSEMCWithPDG, "Process function for Phi-Associated 2D Correlations in MC with PDG SE", true);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiAssocSEMCWithPDG, "Process function for Phi-Associated 2D Correlations in MC with PDG SE", true);
 
   template <AssociatedParticleType PartType, typename TCollisions, typename TPhiCands, typename TAssocCands>
   void processPhiAssocME(TCollisions const& collisions, TPhiCands const& phiCandidates, TAssocCands const& assocCands)
@@ -761,8 +831,9 @@ struct PhiStrangenessCorrelation {
       float multiplicity = c1.centFT0M();
 
       for (const auto& [phiCand, assoc] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(phiCands, assocRed))) {
-        if (efficiencyConfigs.applyEfficiency && efficiencyConfigs.applyPhiEfficiency && phiCand.pt() >= binspTPhi->back())
+        if (efficiencyConfigs.applyEfficiency && efficiencyConfigs.applyPhiEfficiency && phiCand.pt() >= binspTPhi->back()) {
           continue;
+        }
 
         processOneAssocPair<PartType, true>(phiCand, assoc, multiplicity);
       }
@@ -776,7 +847,7 @@ struct PhiStrangenessCorrelation {
     processPhiAssocME<kK0S>(collisions, phiCandidates, k0sReduced);
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiK0SMEDataLike, "Process function for Phi-K0S 2D Correlations in Data or MC w/o PDG ME", true);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiK0SMEDataLike, "Process function for Phi-K0S 2D Correlations in Data or MC w/o PDG ME", true);
 
   void processPhiK0SMEMCWithPDG(SimCollisions const& collisions,
                                 aod::PhimesonCandidatesMcReco const& phiCandidates,
@@ -785,7 +856,7 @@ struct PhiStrangenessCorrelation {
     processPhiAssocME<kK0S>(collisions, phiCandidates, k0sReduced);
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiK0SMEMCWithPDG, "Process function for Phi-K0S 2D Correlations in MC with PDG ME", true);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiK0SMEMCWithPDG, "Process function for Phi-K0S 2D Correlations in MC with PDG ME", true);
 
   void processPhiXiMEDataLike(SelCollisions const& collisions,
                               aod::PhimesonCandidatesData const& phiCandidates,
@@ -794,7 +865,7 @@ struct PhiStrangenessCorrelation {
     processPhiAssocME<kXi>(collisions, phiCandidates, xiReduced);
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiXiMEDataLike, "Process function for Phi-Xi 2D Correlations in Data or MC w/o PDG ME", true);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiXiMEDataLike, "Process function for Phi-Xi 2D Correlations in Data or MC w/o PDG ME", true);
 
   void processPhiXiMEMCWithPDG(SimCollisions const& collisions,
                                aod::PhimesonCandidatesMcReco const& phiCandidates,
@@ -803,7 +874,7 @@ struct PhiStrangenessCorrelation {
     processPhiAssocME<kXi>(collisions, phiCandidates, xiReduced);
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiXiMEMCWithPDG, "Process function for Phi-Xi 2D Correlations in MC with PDG ME", true);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiXiMEMCWithPDG, "Process function for Phi-Xi 2D Correlations in MC with PDG ME", true);
 
   void processPhiPionMEDataLike(SelCollisions const& collisions,
                                 aod::PhimesonCandidatesData const& phiCandidates,
@@ -812,7 +883,7 @@ struct PhiStrangenessCorrelation {
     processPhiAssocME<kPion>(collisions, phiCandidates, pionTracks);
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiPionMEDataLike, "Process function for Phi-Pion 2D Correlations in Data or MC w/o PDG ME", true);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiPionMEDataLike, "Process function for Phi-Pion 2D Correlations in Data or MC w/o PDG ME", true);
 
   void processPhiPionMEMCWithPDG(SimCollisions const& collisions,
                                  aod::PhimesonCandidatesMcReco const& phiCandidates,
@@ -821,7 +892,7 @@ struct PhiStrangenessCorrelation {
     processPhiAssocME<kPion>(collisions, phiCandidates, pionTracks);
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiPionMEMCWithPDG, "Process function for Phi-Pion 2D Correlations in MC with PDG ME", true);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiPionMEMCWithPDG, "Process function for Phi-Pion 2D Correlations in MC with PDG ME", true);
 
   /*template <typename TCollision, typename TPhiCands, typename TK0SCands, typename TXiCands, typename TPionCands>
   void processPhiAssocSE(TCollision const& collision, TPhiCands const& phiCandidates, TK0SCands const& k0sReduced, TXiCands const& xiReduced, TPionCands const& pionTracks)
@@ -929,7 +1000,7 @@ struct PhiStrangenessCorrelation {
         auto xiHistID = std::make_tuple(HIST("phiXi/h5PhiXiDataSignal"), HIST("phiXi/h5PhiXiDataSideband"));
         auto piHistID = std::make_tuple(HIST("phiPi/h5PhiPiDataSignal"), HIST("phiPi/h5PhiPiDataSideband"));
 
-        static_for<0, PhiMassRegionLabels.size() - 1>([&](auto i_idx) {
+        static_for<0, kPhiMassRegions - 1>([&](auto i_idx) {
           constexpr unsigned int Idx = i_idx.value;
 
           const auto& [minMassPhi, maxMassPhi] = phiMassRegions[Idx];
@@ -965,14 +1036,14 @@ struct PhiStrangenessCorrelation {
     processPhiAssocSE(collision, phiCandidates, k0sReduced, xiReduced, pionTracks);
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiAssocSEDataLike, "Process function for Phi-Associated 2D Correlations in Data or MC w/o PDG SE", true);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiAssocSEDataLike, "Process function for Phi-Associated 2D Correlations in Data or MC w/o PDG SE", true);
 
   void processPhiAssocSEMCWithPDG(SimCollisions::iterator const& collision, aod::PhimesonCandidatesMcReco const& phiCandidates, aod::K0sReducedCandidatesMcReco const& k0sReduced, aod::XiReducedCandidatesMcReco const& xiReduced, aod::PionTracksMcReco const& pionTracks)
   {
     processPhiAssocSE(collision, phiCandidates, k0sReduced, xiReduced, pionTracks);
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiAssocSEMCWithPDG, "Process function for Phi-Associated 2D Correlations in MC with PDG SE", true);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiAssocSEMCWithPDG, "Process function for Phi-Associated 2D Correlations in MC with PDG SE", true);
 
   template <typename TCollisions, typename TPhiCands, typename TK0SCands>
   void processPhiK0SME(TCollisions const& collisions, TPhiCands const& phiCandidates, TK0SCands const& k0sReduced)
@@ -1017,7 +1088,7 @@ struct PhiStrangenessCorrelation {
         } else if (analysisMode == kDeltaYvsDeltaPhi) {
           auto k0sHistID = std::make_tuple(HIST("phiK0S/h5PhiK0SDataMESignal"), HIST("phiK0S/h5PhiK0SDataMESideband"));
 
-          static_for<0, PhiMassRegionLabels.size() - 1>([&](auto i_idx) {
+          static_for<0, kPhiMassRegions - 1>([&](auto i_idx) {
             constexpr unsigned int Idx = i_idx.value;
 
             const auto& [minMassPhi, maxMassPhi] = phiMassRegions[Idx];
@@ -1036,21 +1107,21 @@ struct PhiStrangenessCorrelation {
     }
   }
 
-  // PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiK0SME, "Process function for Phi-K0S and Deltay and Deltaphi 2D Correlations in Data ME", false);
+  // PROCESS_SWITCH(PhiStrangeCorrelation, processPhiK0SME, "Process function for Phi-K0S and Deltay and Deltaphi 2D Correlations in Data ME", false);
 
   void processPhiK0SMEDataLike(SelCollisions const& collisions, aod::PhimesonCandidatesData const& phiCandidates, aod::K0sReducedCandidatesData const& k0sReduced)
   {
     processPhiK0SME(collisions, phiCandidates, k0sReduced);
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiK0SMEDataLike, "Process function for Phi-K0S 2D Correlations in Data or MC w/o PDG ME", true);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiK0SMEDataLike, "Process function for Phi-K0S 2D Correlations in Data or MC w/o PDG ME", true);
 
   void processPhiK0SMEMCWithPDG(SimCollisions const& collisions, aod::PhimesonCandidatesMcReco const& phiCandidates, aod::K0sReducedCandidatesMcReco const& k0sReduced)
   {
     processPhiK0SME(collisions, phiCandidates, k0sReduced);
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiK0SMEMCWithPDG, "Process function for Phi-K0S 2D Correlations in MC with PDG ME", true);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiK0SMEMCWithPDG, "Process function for Phi-K0S 2D Correlations in MC with PDG ME", true);
 
   template <typename TCollisions, typename TPhiCands, typename TXiCands>
   void processPhiXiME(TCollisions const& collisions, TPhiCands const& phiCandidates, TXiCands const& xiReduced)
@@ -1095,7 +1166,7 @@ struct PhiStrangenessCorrelation {
         } else if (analysisMode == kDeltaYvsDeltaPhi) {
           auto xiHistID = std::make_tuple(HIST("phiXi/h5PhiXiDataMESignal"), HIST("phiXi/h5PhiXiDataMESideband"));
 
-          static_for<0, PhiMassRegionLabels.size() - 1>([&](auto i_idx) {
+          static_for<0, kPhiMassRegions - 1>([&](auto i_idx) {
             constexpr unsigned int Idx = i_idx.value;
 
             const auto& [minMassPhi, maxMassPhi] = phiMassRegions[Idx];
@@ -1119,14 +1190,14 @@ struct PhiStrangenessCorrelation {
     processPhiXiME(collisions, phiCandidates, xiReduced);
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiXiMEDataLike, "Process function for Phi-Xi 2D Correlations in Data or MC w/o PDG ME", true);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiXiMEDataLike, "Process function for Phi-Xi 2D Correlations in Data or MC w/o PDG ME", true);
 
   void processPhiXiMEMCWithPDG(SimCollisions const& collisions, aod::PhimesonCandidatesMcReco const& phiCandidates, aod::XiReducedCandidatesMcReco const& xiReduced)
   {
     processPhiXiME(collisions, phiCandidates, xiReduced);
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiXiMEMCWithPDG, "Process function for Phi-Xi 2D Correlations in MC with PDG ME", true);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiXiMEMCWithPDG, "Process function for Phi-Xi 2D Correlations in MC with PDG ME", true);
 
   template <typename TCollisions, typename TPhiCands, typename TPionCands>
   void processPhiPionME(TCollisions const& collisions, TPhiCands const& phiCandidates, TPionCands const& pionTracks)
@@ -1176,7 +1247,7 @@ struct PhiStrangenessCorrelation {
         } else if (analysisMode == kDeltaYvsDeltaPhi) {
           auto piHistID = std::make_tuple(HIST("phiPi/h5PhiPiDataMESignal"), HIST("phiPi/h5PhiPiDataMESideband"));
 
-          static_for<0, PhiMassRegionLabels.size() - 1>([&](auto i_idx) {
+          static_for<0, kPhiMassRegions - 1>([&](auto i_idx) {
             constexpr unsigned int Idx = i_idx.value;
 
             const auto& [minMassPhi, maxMassPhi] = phiMassRegions[Idx];
@@ -1195,21 +1266,21 @@ struct PhiStrangenessCorrelation {
     }
   }
 
-  // PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiPionME, "Process function for Phi-Pion Deltay and Deltaphi 2D Correlations in Data ME", false);
+  // PROCESS_SWITCH(PhiStrangeCorrelation, processPhiPionME, "Process function for Phi-Pion Deltay and Deltaphi 2D Correlations in Data ME", false);
 
   void processPhiPionMEDataLike(SelCollisions const& collisions, aod::PhimesonCandidatesData const& phiCandidates, aod::PionTracksData const& pionTracks)
   {
     processPhiPionME(collisions, phiCandidates, pionTracks);
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiPionMEDataLike, "Process function for Phi-Pion 2D Correlations in Data or MC w/o PDG ME", true);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiPionMEDataLike, "Process function for Phi-Pion 2D Correlations in Data or MC w/o PDG ME", true);
 
   void processPhiPionMEMCWithPDG(SimCollisions const& collisions, aod::PhimesonCandidatesMcReco const& phiCandidates, aod::PionTracksMcReco const& pionTracks)
   {
     processPhiPionME(collisions, phiCandidates, pionTracks);
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processPhiPionMEMCWithPDG, "Process function for Phi-Pion 2D Correlations in MC with PDG ME", true);*/
+  PROCESS_SWITCH(PhiStrangeCorrelation, processPhiPionMEMCWithPDG, "Process function for Phi-Pion 2D Correlations in MC with PDG ME", true);*/
 
   void processParticleEfficiency(MCCollisions const& mcCollisions,
                                  SimCollisions const& collisions,
@@ -1243,8 +1314,9 @@ struct PhiStrangenessCorrelation {
     collsGrouped.reserve(mcCollisions.size());
 
     for (const auto& collision : collisions) {
-      if (!collision.has_mcCollision())
+      if (!collision.has_mcCollision()) {
         continue;
+      }
       const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
       collsGrouped[mcCollision.globalIndex()].push_back(collision.globalIndex());
     }
@@ -1277,14 +1349,16 @@ struct PhiStrangenessCorrelation {
           }
 
           auto fillRecoAssocSpecies = [&]<typename TAssocInputs>(TAssocInputs const& assocCands, auto histoKey) {
-            if (!activeCorrelationTypes->at(TAssocInputs::kType))
+            if (!activeCorrelationTypes->at(TAssocInputs::Type)) {
               return;
+            }
 
-            const auto assocThisColl = assocCands.candidates.sliceBy(getPreslice<TAssocInputs::kType>(), collision.globalIndex());
+            const auto assocThisColl = assocCands.candidates->sliceBy(getPreslice<TAssocInputs::Type>(), collision.globalIndex());
 
             for (const auto& assoc : assocThisColl) {
-              if (!isAssocValid<TAssocInputs::kType>(assoc))
+              if (!isAssocValid<TAssocInputs::Type>(assoc)) {
                 continue;
+              }
 
               histos.fill(histoKey, collision.posZ(), mcCollision.centFT0M(), assoc.pt(), assoc.y());
             }
@@ -1348,24 +1422,28 @@ struct PhiStrangenessCorrelation {
 
         auto fillGenHistos = [&](auto h3Key, auto h4Key) {
           histos.fill(h3Key, mcCollision.centFT0M(), mcParticle.pt(), mcParticle.y());
-          if (hasAssoc)
+          if (hasAssoc) {
             histos.fill(h4Key, zVtxRef, mcCollision.centFT0M(), mcParticle.pt(), mcParticle.y());
+          }
         };
 
         auto fillGenAssocSpecies = [&]<AssociatedParticleType PartType>(auto h3Key, auto h4Key) {
-          if (!activeCorrelationTypes->at(PartType) || !isGenSpeciesValid<PartType>(mcParticle))
+          if (!activeCorrelationTypes->at(PartType) || !isGenSpeciesValid<PartType>(mcParticle, false)) {
             return;
+          }
 
           fillGenHistos(h3Key, h4Key);
         };
 
-        if (!inYAcceptance())
+        if (!inYAcceptance()) {
           continue;
+        }
 
         switch (std::abs(mcParticle.pdgCode())) {
           case o2::constants::physics::Pdg::kPhi:
-            if (eventSelectionType == 0 && mcParticle.pt() >= minPtMcGenConfigs.minPhiPt)
+            if (eventSelectionType == 0 && mcParticle.pt() >= minPtMcGenConfigs.minPhiPt) {
               fillGenHistos(HIST("phi/h3PhiMCGen"), HIST("phi/h4PhiMCGenAssocReco"));
+            }
             break;
           /*case PDG_t::kK0Short:
             if (mcParticle.isPhysicalPrimary() && mcParticle.pt() >= minPtMcGenConfigs.v0SettingMinPt)
@@ -1395,7 +1473,7 @@ struct PhiStrangenessCorrelation {
     }
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processParticleEfficiency, "Process function for Efficiency Computation for Particles of Interest", false);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processParticleEfficiency, "Process function for Efficiency Computation for Particles of Interest", false);
 
   /*void processMCGenClosureSE(MCCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
   {
@@ -1450,7 +1528,7 @@ struct PhiStrangenessCorrelation {
     }
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processMCGenClosureSE, "Process function for MC Gen Closure Test in SE", false);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processMCGenClosureSE, "Process function for MC Gen Closure Test in SE", false);
 
   void processMCGenClosureME(MCCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
   {
@@ -1515,7 +1593,7 @@ struct PhiStrangenessCorrelation {
       eventBuffer[multBin].pop_back();
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processMCGenClosureME, "Process function for MC Gen Closure Test in ME", false);*/
+  PROCESS_SWITCH(PhiStrangeCorrelation, processMCGenClosureME, "Process function for MC Gen Closure Test in ME", false);*/
 
   void processMCGenClosure(MCCollisions::iterator const& mcCollision, aod::McParticles const& mcParticles)
   {
@@ -1533,19 +1611,22 @@ struct PhiStrangenessCorrelation {
       };
 
       auto fillPartCollection = [&]<AssociatedParticleType PartType>(auto& collection) {
-        if (!activeCorrelationTypes->at(PartType) || !isGenSpeciesValid<PartType>(mcParticle))
+        if (!activeCorrelationTypes->at(PartType) || !isGenSpeciesValid<PartType>(mcParticle, minPtMcGenConfigs.bypassPtCut.value)) {
           return;
+        }
 
         collection.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
       };
 
-      if (!inYAcceptance())
+      if (!inYAcceptance()) {
         continue;
+      }
 
       switch (std::abs(mcParticle.pdgCode())) {
         case o2::constants::physics::Pdg::kPhi:
-          if (eventSelectionType == 0 && (minPtMcGenConfigs.bypassPtCut || mcParticle.pt() >= minPtMcGenConfigs.minPhiPt))
+          if (eventSelectionType == 0 && (minPtMcGenConfigs.bypassPtCut || mcParticle.pt() >= minPtMcGenConfigs.minPhiPt)) {
             phiParticles.emplace_back(mcParticle.pt(), mcParticle.y(), mcParticle.phi());
+          }
           break;
         /*case PDG_t::kK0Short:
           if (mcParticle.isPhysicalPrimary() && (minPtMcGenConfigs.bypassPtCut || mcParticle.pt() >= minPtMcGenConfigs.v0SettingMinPt))
@@ -1577,23 +1658,26 @@ struct PhiStrangenessCorrelation {
     const bool skipXi = !activeCorrelationTypes->at(kXi) || xiParticles.empty();
     const bool skipPion = !activeCorrelationTypes->at(kPion) || pionParticles.empty();
 
-    if (phiParticles.empty() && skipK0s && skipXi && skipPion)
+    if (phiParticles.empty() && skipK0s && skipXi && skipPion) {
       return;
+    }
 
     int multBin = getCentBin(multiplicity);
-    if (multBin < 0)
+    if (multBin < 0) {
       return;
+    }
 
     // Same Event Correlations
-    std::vector<MiniParticle>* currentAssocParticles[] = {&k0sParticles, &xiParticles, &pionParticles};
+    std::array<std::vector<MiniParticle>*, kAssocPartSize> currentAssocParticles{&k0sParticles, &xiParticles, &pionParticles};
 
     for (const auto& phiParticle : phiParticles) {
       histos.fill(HIST("phi/h3PhiMCClosureGen"), multiplicity, phiParticle.pt, phiParticle.y);
 
       static_for<0, AssocParticleLabels.size() - 1>([&](auto i_idx) {
         constexpr unsigned int Idx = i_idx.value;
-        if (!activeCorrelationTypes->at(Idx))
+        if (!activeCorrelationTypes->at(Idx)) {
           return;
+        }
 
         for (const auto& assocParticle : *(currentAssocParticles[Idx])) {
           histos.fill(HIST("phi") + HIST(AssocParticleLabels[Idx]) + HIST("/h5Phi") + HIST(AssocParticleLabels[Idx]) + HIST("ClosureMCGen"),
@@ -1606,14 +1690,15 @@ struct PhiStrangenessCorrelation {
 
     // Mixed Event Correlations
     for (const auto& pastEvent : eventBuffer[multBin]) {
-      const std::vector<MiniParticle>* pastAssocParticles[] = {&pastEvent.k0sParticles, &pastEvent.xiParticles, &pastEvent.pionParticles};
+      std::array<const std::vector<MiniParticle>*, kAssocPartSize> pastAssocParticles{&pastEvent.k0sParticles, &pastEvent.xiParticles, &pastEvent.pionParticles};
 
       // Loop over past events in the same multiplicity bin and fill histograms with all combinations of current phi particles and past associated particles
       for (const auto& phiParticle : phiParticles) {
         static_for<0, AssocParticleLabels.size() - 1>([&](auto i_idx) {
           constexpr unsigned int Idx = i_idx.value;
-          if (!activeCorrelationTypes->at(Idx))
+          if (!activeCorrelationTypes->at(Idx)) {
             return;
+          }
 
           for (const auto& assocParticle : *(pastAssocParticles[Idx])) {
             histos.fill(HIST("phi") + HIST(AssocParticleLabels[Idx]) + HIST("/h5Phi") + HIST(AssocParticleLabels[Idx]) + HIST("ClosureMCGenME"),
@@ -1633,14 +1718,15 @@ struct PhiStrangenessCorrelation {
     currentEvent.pionParticles = std::move(pionParticles);
 
     eventBuffer[multBin].push_front(std::move(currentEvent));
-    if (eventBuffer[multBin].size() > static_cast<std::size_t>(cfgNoMixedEvents.value))
+    if (eventBuffer[multBin].size() > static_cast<std::size_t>(cfgNoMixedEvents.value)) {
       eventBuffer[multBin].pop_back();
+    }
   }
 
-  PROCESS_SWITCH(PhiStrangenessCorrelation, processMCGenClosure, "Process function for MC Gen Closure Test in SE and ME", false);
+  PROCESS_SWITCH(PhiStrangeCorrelation, processMCGenClosure, "Process function for MC Gen Closure Test in SE and ME", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<PhiStrangenessCorrelation>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<PhiStrangeCorrelation>(cfgc)};
 }
