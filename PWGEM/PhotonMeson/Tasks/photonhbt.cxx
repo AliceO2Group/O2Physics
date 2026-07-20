@@ -2556,7 +2556,7 @@ struct Photonhbt {
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hQinvVsKt_all4LegsThisColl"), kt, qinv_true);
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hDEtaDPhi_all4LegsThisColl"), deta, dphi);
           }
-          if (g1Sel && g2Sel && pairClassSel) {
+          if (g1Sel && g2Sel) {
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hSparse_DEtaDPhi_qinv_bothPhotonsBuilt"), deta, dphi, qinv_true);
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hSparse_DEtaDPhi_kT_bothPhotonsBuilt"), deta, dphi, kt);
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hQinvVsKt_bothPhotonsBuilt"), kt, qinv_true);
