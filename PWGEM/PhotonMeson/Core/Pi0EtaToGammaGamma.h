@@ -836,7 +836,7 @@ struct Pi0EtaToGammaGamma {
               continue;
             }
           }
-          
+
           auto pos1 = g1.template posTrack_as<TLegs>();
           auto ele1 = g1.template negTrack_as<TLegs>();
           ROOT::Math::PtEtaPhiMVector v_gamma(g1.pt(), g1.eta(), g1.phi(), 0.);
