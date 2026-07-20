@@ -125,8 +125,6 @@ enum TrackType {
   kGenCasc,
   kRecoCascDaug,
   kGenCascDaug,
-  kRecoSecondary,
-  kGhostSecondary,
   kNTrackTypes,
 };
 
