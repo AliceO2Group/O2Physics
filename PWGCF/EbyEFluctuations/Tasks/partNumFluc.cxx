@@ -602,6 +602,9 @@ struct PartNumFluc {
     Configurable<std::int32_t> cfgIndexDefinitionCentrality{"cfgIndexDefinitionCentrality", 2, "Centrality definition index"};
     ConfigurableAxis cfgAxisCentrality{"cfgAxisCentrality", {18, 0., 90.}, "Centrality axis in fluctuation calculation"};
     Configurable<std::int32_t> cfgNSubgroups{"cfgNSubgroups", 20, "Number of subgroups in fluctuation calculation"};
+    Configurable<bool> cfgFlagSingleCollisionMc{"cfgFlagSingleCollisionMc", false, "Flag of requiring exactly single collision of MC collision"};
+    Configurable<bool> cfgFlagBestCollisionMc{"cfgFlagBestCollisionMc", true, "Flag of requiring best collision of MC collision"};
+    Configurable<bool> cfgFlagMcCollisionVz{"cfgFlagMcCollisionVz", false, "Flag of using z-vertex position of MC collision"};
   } groupEvent{};
 
   struct : ConfigurableGroup {
@@ -1150,7 +1153,7 @@ struct PartNumFluc {
   double getEfficiency(const bool doUsingMcParticleMomentum)
   {
     const THnBase* const hVzCentralityPtEtaEfficiency{holderCcdb.hVzCentralityPtEtaEfficiency.at(std::abs(holderEvent.runGroupIndex) - 1)[toI(PidStrategyValue)][toI(ParticleSpeciesValue)][toI(ChargeSpeciesValue)]};
-    return hVzCentralityPtEtaEfficiency ? hVzCentralityPtEtaEfficiency->GetBinContent(hVzCentralityPtEtaEfficiency->GetBin(std::array<double, HolderCcdb::NDimensionsEfficiency>{holderEvent.vz, holderEvent.centrality, doUsingMcParticleMomentum ? holderMcParticle.pt : holderTrack.pt, doUsingMcParticleMomentum ? holderMcParticle.eta : holderTrack.eta}.data())) : 0.;
+    return hVzCentralityPtEtaEfficiency ? hVzCentralityPtEtaEfficiency->GetBinContent(hVzCentralityPtEtaEfficiency->GetBin(std::array<double, HolderCcdb::NDimensionsEfficiency>{doprocessMc.value && groupEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz, holderEvent.centrality, doUsingMcParticleMomentum ? holderMcParticle.pt : holderTrack.pt, doUsingMcParticleMomentum ? holderMcParticle.eta : holderTrack.eta}.data())) : 0.;
   }
 
   template <Detector DetectorValue, ParticleSpecies ParticleSpeciesValue>
@@ -1569,7 +1572,7 @@ struct PartNumFluc {
       () {
         if constexpr (DataModeValue == DataMode::McMcParticle) {
           if (isPid<getValue<ParticleSpeciesAll>(ParticleSpeciesValue), ChargeSpeciesValue>()) {
-            hrCalculationYield.fill(C_CS("CalculationYield/hVzCentralityPtMcEtaMc_mc") + C_SV(getName(ParticleSpeciesValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
+            hrCalculationYield.fill(C_CS("CalculationYield/hVzCentralityPtMcEtaMc_mc") + C_SV(getName(ParticleSpeciesValue)) + C_SV(getName(ChargeSpeciesValue)), doprocessMc.value && groupEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
           }
         } else {
           const auto fillByPidStrategy{
@@ -1579,9 +1582,9 @@ struct PartNumFluc {
               if constexpr (DataModeValue == DataMode::McTrack) {
                 if (isPid<getValue<ParticleSpeciesAll>(ParticleSpeciesValue), ChargeSpeciesValue>() && isPid<getValue<PidStrategyAll>(PidStrategyValue), getValue<ParticleSpeciesAll>(ParticleSpeciesValue)>(groupTrack.cfgFlagRejectionOthers.value)) {
                   if (groupTrack.cfgFlagMcParticleMomentum.value) {
-                    hrCalculationYield.fill(C_CS("CalculationYield/hVzCentralityPtMcEtaMc_mc") + C_SV(getName(PidStrategyValue)) + C_SV(getName(ParticleSpeciesValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
+                    hrCalculationYield.fill(C_CS("CalculationYield/hVzCentralityPtMcEtaMc_mc") + C_SV(getName(PidStrategyValue)) + C_SV(getName(ParticleSpeciesValue)) + C_SV(getName(ChargeSpeciesValue)), doprocessMc.value && groupEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz, holderEvent.centrality, holderMcParticle.pt, holderMcParticle.eta);
                   } else {
-                    hrCalculationYield.fill(C_CS("CalculationYield/hVzCentralityPtEta_mc") + C_SV(getName(PidStrategyValue)) + C_SV(getName(ParticleSpeciesValue)) + C_SV(getName(ChargeSpeciesValue)), holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta);
+                    hrCalculationYield.fill(C_CS("CalculationYield/hVzCentralityPtEta_mc") + C_SV(getName(PidStrategyValue)) + C_SV(getName(ParticleSpeciesValue)) + C_SV(getName(ChargeSpeciesValue)), doprocessMc.value && groupEvent.cfgFlagMcCollisionVz.value ? holderMcEvent.vz : holderEvent.vz, holderEvent.centrality, holderTrack.pt, holderTrack.eta);
                   }
                 }
               } else { // DataModeValue == DataMode::RawTrack
@@ -2158,6 +2161,11 @@ struct PartNumFluc {
       return false;
     }
 
+    if (groupEvent.cfgFlagSingleCollisionMc.value && mcCollision.numRecoCollision() != 1) {
+      hrCounter.fill(C_CS("hNMcEvents"), 5.);
+      return false;
+    }
+
     hrCounter.fill(C_CS("hNMcEvents"), 1.);
 
     return true;
@@ -2230,7 +2238,7 @@ struct PartNumFluc {
     }
 
     for (const auto& collision : collisions) {
-      if (collision.globalIndex() != mcCollision.bestCollisionIndex()) {
+      if (groupEvent.cfgFlagBestCollisionMc.value && collision.globalIndex() != mcCollision.bestCollisionIndex()) {
         continue;
       }
 
