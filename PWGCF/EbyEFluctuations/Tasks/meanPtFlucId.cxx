@@ -184,16 +184,16 @@ struct MeanPtFlucId {
   void init(InitContext const&)
   {
 
-    const int Neta = etaBins->size() - 1;
-    const int NptCh = ptBins->size() - 1;
-    const int NptPi = ptBinsPi->size() - 1;
-    const int NptKa = ptBinsKa->size() - 1;
-    const int NptPr = ptBinsPr->size() - 1;
+    const int nEta = etaBins->size() - 1;
+    const int nPtCh = ptBins->size() - 1;
+    const int nPtPi = ptBinsPi->size() - 1;
+    const int nPtKa = ptBinsKa->size() - 1;
+    const int nPtPr = ptBinsPr->size() - 1;
 
-    const AxisSpec axisKCh{Neta * NptCh, 0, static_cast<double>(Neta * NptCh), "k_{ch}"};
-    const AxisSpec axisKPi{Neta * NptPi, 0, static_cast<double>(Neta * NptPi), "k_{#pi}"};
-    const AxisSpec axisKKa{Neta * NptKa, 0, static_cast<double>(Neta * NptKa), "k_{K}"};
-    const AxisSpec axisKPr{Neta * NptPr, 0, static_cast<double>(Neta * NptPr), "k_{p}"};
+    const AxisSpec axisKCh{nEta * nPtCh, 0, static_cast<double>(nEta * nPtCh), "k_{ch}"};
+    const AxisSpec axisKPi{nEta * nPtPi, 0, static_cast<double>(nEta * nPtPi), "k_{#pi}"};
+    const AxisSpec axisKKa{nEta * nPtKa, 0, static_cast<double>(nEta * nPtKa), "k_{K}"};
+    const AxisSpec axisKPr{nEta * nPtPr, 0, static_cast<double>(nEta * nPtPr), "k_{p}"};
 
     const AxisSpec axisCol{3, 1, 4, ""};
     const AxisSpec axisTrack{5, 1, 6, ""};
