@@ -92,7 +92,7 @@ struct FactorialMomentsTask {
   Configurable<int> reduceOutput{"reduceOutput", 0, "Suppress info level output (0 = all output, 1 = per collision, 2 = none)"};
   Filter filterTracks = (nabs(aod::track::eta) < centralEta) && (aod::track::pt >= ptMin);
   Filter filterCollisions = (nabs(aod::collision::posZ) < vertexXYZ.value[2]) && (nabs(aod::collision::posX) < vertexXYZ.value[0]) && (nabs(aod::collision::posY) < vertexXYZ.value[1]);
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
   // Histograms
   HistogramRegistry histos1{
     "histos1",
