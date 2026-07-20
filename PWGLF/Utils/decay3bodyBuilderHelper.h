@@ -60,6 +60,9 @@ struct decay3bodyCandidate {
   std::array<float, 3> posProton = {0.0f, 0.0f, 0.0f};
   std::array<float, 3> posPion = {0.0f, 0.0f, 0.0f};
   std::array<float, 3> posDeuteron = {0.0f, 0.0f, 0.0f};
+  float xProton = 0.0f;
+  float xPion = 0.0f;
+  float xDeuteron = 0.0f;
   std::array<float, 3> trackDCAxyToPV = {0.0f, 0.0f, 0.0f};     // 0 - proton, 1 - pion, 2 - deuteron
   std::array<float, 3> trackDCAToPV = {0.0f, 0.0f, 0.0f};       // 0 - proton, 1 - pion, 2 - deuteron
   std::array<float, 3> trackDCAxyToPVprop = {0.0f, 0.0f, 0.0f}; // 0 - proton, 1 - pion, 2 - deuteron
@@ -211,6 +214,10 @@ class decay3bodyBuilderHelper
     decay3body.protonID = trackProton.globalIndex();
     decay3body.pionID = trackPion.globalIndex();
     decay3body.deuteronID = trackDeuteron.globalIndex();
+
+    decay3body.xProton = trackProton.x();
+    decay3body.xPion = trackPion.x();
+    decay3body.xDeuteron = trackDeuteron.x();
 
     //_______________________________________________________________________
     // track selections

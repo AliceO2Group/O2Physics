@@ -41,7 +41,7 @@ DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                 
 DECLARE_SOA_INDEX_COLUMN_FULL(CascadeTrack, cascadeTrack, int, Tracks, "_Cascade"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, Tracks, "_Pos");             //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, Tracks, "_Neg");             //!
-DECLARE_SOA_INDEX_COLUMN_FULL(BachTrack, bachTrack, int, Tracks, "_Bach");          //!
+DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int, Tracks, "_Bach");            //!
 
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
 
@@ -53,6 +53,8 @@ DECLARE_SOA_COLUMN(CascRadius, cascRadius, float);
 DECLARE_SOA_COLUMN(CascRadiusMC, cascRadiusMC, float);
 DECLARE_SOA_COLUMN(MLambda, mLambda, float);
 DECLARE_SOA_COLUMN(MXi, mXi, float);
+DECLARE_SOA_COLUMN(DCAXYCascToPV, dcaXYCascToPV, float);
+DECLARE_SOA_COLUMN(DCAZCascToPV, dcaZCascToPV, float);
 
 // strangeness tracking
 DECLARE_SOA_COLUMN(FindableClusters, findableClusters, int);
@@ -65,7 +67,7 @@ DECLARE_SOA_TABLE(UpgradeCascades, "AOD", "UPGRADECASCADES",
                   otfcascade::CascadeTrackId,
                   otfcascade::PosTrackId,
                   otfcascade::NegTrackId,
-                  otfcascade::BachTrackId,
+                  otfcascade::BachelorId,
                   otfcascade::DcaV0Daughters,
                   otfcascade::DcaCascadeDaughters,
                   otfcascade::V0Radius,
@@ -74,11 +76,15 @@ DECLARE_SOA_TABLE(UpgradeCascades, "AOD", "UPGRADECASCADES",
                   otfcascade::MLambda,
                   otfcascade::MXi,
                   otfcascade::FindableClusters,
-                  otfcascade::FoundClusters);
+                  otfcascade::FoundClusters,
+                  otfcascade::DCAXYCascToPV,
+                  otfcascade::DCAZCascToPV);
 
 using UpgradeCascade = UpgradeCascades::iterator;
 
 DECLARE_SOA_TABLE(A3CascadeMcLabels, "AOD", "A3CASCADEMCLABELS",
+                  o2::soa::Index<>, otfcascade::McParticleId);
+DECLARE_SOA_TABLE(UpgradeCascadeMcLabels, "AOD", "UPGRADECASCMCLAB",
                   o2::soa::Index<>, otfcascade::McParticleId);
 
 namespace casc_pid

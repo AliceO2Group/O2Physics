@@ -250,6 +250,7 @@ using StoredFTrackMasks = StoredFTrackMasks_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackMass_001, "FTRACKMASS", 1, //! track mass
                                    femtobase::stored::Mass);
 using FTrackMass = FTrackMass_001;
+using StoredFTrackMass = StoredFTrackMass_001;
 
 // table for track DCA
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackDcas_001, "FTRACKDCAS", 1, //! track dcas

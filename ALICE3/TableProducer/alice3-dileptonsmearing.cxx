@@ -154,7 +154,7 @@ struct alice3dileptonsmearer {
         }
       } else {
         // don't apply smearing
-        smearedelectron(ptgen, etagen, phigen, true);
+        smearedelectron(ptgen, etagen, phigen, false);
       }
     } // end of mc track loop
   }

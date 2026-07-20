@@ -328,6 +328,7 @@ struct DileptonSV {
     o2::framework::Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1e+10, "max dca XY for single track in cm"};
     o2::framework::Configurable<float> cfg_min_rabs{"cfg_min_rabs", 17.6, "min Radius at the absorber end"};
     o2::framework::Configurable<float> cfg_max_rabs{"cfg_max_rabs", 89.5, "max Radius at the absorber end"};
+    o2::framework::Configurable<float> cfg_max_diff_chi2_mftmch{"cfg_max_diff_chi2_mftmch", -1.f, "max. diff chi2MatchingMCHMFT between the best and the 2nd best matched candidates"};
     o2::framework::Configurable<bool> enableTTCA{"enableTTCA", true, "Flag to enable or disable TTCA"};
     o2::framework::Configurable<float> cfg_max_relDPt_wrt_matchedMCHMID{"cfg_max_relDPt_wrt_matchedMCHMID", 1e+10f, "max. relative dpt between MFT-MCH-MID and MCH-MID"};
     o2::framework::Configurable<float> cfg_max_DEta_wrt_matchedMCHMID{"cfg_max_DEta_wrt_matchedMCHMID", 1e+10f, "max. deta between MFT-MCH-MID and MCH-MID"};
@@ -352,24 +353,24 @@ struct DileptonSV {
     std::string prefix = "dfGroup";
     o2::framework::Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
     o2::framework::Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
-    o2::framework::Configurable<double> maxR{"maxR", 10.f, "reject PCA's above this radius"};
+    o2::framework::Configurable<double> maxR{"maxR", 20.f, "reject PCA's above this radius"};
     o2::framework::Configurable<double> maxDZIni{"maxDZIni", 4.f, "reject (if > 0) PCA candidate if tracks DZ exceeds threshold"};
     o2::framework::Configurable<double> minParamChange{"minParamChange", 1e-3, "stop iterations if largest change of any X is smaller than this"};
     o2::framework::Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
     o2::framework::Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
-    o2::framework::Configurable<float> maxLog10Chi2PCA{"maxLog10Chi2PCA", 0, "max. log10(chi2PCA) for dilepton pair"};
+    o2::framework::Configurable<float> maxLog10Chi2PCA{"maxLog10Chi2PCA", 10, "max. log10(chi2PCA) for dilepton pair"};
   } dfGroup; // for DCAFitterN
 
   struct : o2::framework::ConfigurableGroup {
     std::string prefix = "fdfGroup";
     o2::framework::Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
     o2::framework::Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
-    o2::framework::Configurable<double> maxR{"maxR", 10.f, "reject PCA's above this radius"};
+    o2::framework::Configurable<double> maxR{"maxR", 20.f, "reject PCA's above this radius"};
     o2::framework::Configurable<double> maxDXIni{"maxDXIni", 4.f, "reject (if > 0) PCA candidate if tracks DZ exceeds threshold"};
     o2::framework::Configurable<double> minParamChange{"minParamChange", 1e-3, "stop iterations if largest change of any X is smaller than this"};
     o2::framework::Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
     o2::framework::Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
-    o2::framework::Configurable<float> maxLog10Chi2PCA{"maxLog10Chi2PCA", 0, "max. log10(chi2PCA) for dilepton pair"};
+    o2::framework::Configurable<float> maxLog10Chi2PCA{"maxLog10Chi2PCA", 10, "max. log10(chi2PCA) for dilepton pair"};
   } fdfGroup; // for FwdDCAFitterN
 
   o2::vertexing::DCAFitterN<2> mDCAFitter;
@@ -537,6 +538,7 @@ struct DileptonSV {
     mDCAFitter.setMinRelChi2Change(dfGroup.minRelChi2Change);
     mDCAFitter.setUseAbsDCA(dfGroup.useAbsDCA);
     mDCAFitter.setWeightedFinalPCA(dfGroup.useWeightedFinalPCA);
+    mDCAFitter.setMaxChi2(std::pow(10, dfGroup.maxLog10Chi2PCA));
 
     mFwdDCAFitter.setPropagateToPCA(fdfGroup.propagateToPCA);
     mFwdDCAFitter.setMaxR(fdfGroup.maxR);
@@ -544,6 +546,7 @@ struct DileptonSV {
     mFwdDCAFitter.setMinParamChange(fdfGroup.minParamChange);
     mFwdDCAFitter.setMinRelChi2Change(fdfGroup.minRelChi2Change);
     mFwdDCAFitter.setUseAbsDCA(fdfGroup.useAbsDCA);
+    mFwdDCAFitter.setMaxChi2(std::pow(10, fdfGroup.maxLog10Chi2PCA));
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       switch (matCorrType.value) {
@@ -909,6 +912,7 @@ struct DileptonSV {
     fDimuonCut.SetChi2(0.f, dimuoncuts.cfg_max_chi2);
     fDimuonCut.SetChi2MFT(0.f, dimuoncuts.cfg_max_chi2mft);
     // fDimuonCut.SetMatchingChi2MCHMFT(0.f, dimuoncuts.cfg_max_matching_chi2_mftmch);
+    fDimuonCut.SetMaxDiffMatchingChi2MCHMFT(dimuoncuts.cfg_max_diff_chi2_mftmch);
     fDimuonCut.SetMaxMatchingChi2MCHMFTPtDep([&](float pt) { return (pt < dimuoncuts.cfg_border_pt_for_chi2mchmft ? dimuoncuts.cfg_max_matching_chi2_mftmch_lowPt : dimuoncuts.cfg_max_matching_chi2_mftmch_highPt); });
     fDimuonCut.SetMatchingChi2MCHMID(0.f, dimuoncuts.cfg_max_matching_chi2_mchmid);
     fDimuonCut.SetDCAxy(0.f, dimuoncuts.cfg_max_dcaxy);

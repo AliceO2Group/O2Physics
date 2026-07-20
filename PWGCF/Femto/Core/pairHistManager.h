@@ -219,6 +219,7 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> shLMax{"shLMax", 2, "Maximum l for SH decomposition (0..5). FemtoUniverse hard-codes 1."};
   o2::framework::Configurable<int> shFrame{"shFrame", 1, "SH reference frame/variable: 0=LCMS non-identical (k*), 1=LCMS identical (qinv, FemtoUniverse default), 2=PRF (q_PRF, matches FemtoUniverse isIdenPRF=true)"};
   o2::framework::ConfigurableAxis shKstar{"shKstar", {{60, 0.0f, 0.3f}}, "k*/qinv binning for SH histograms"};
+  o2::framework::Configurable<bool> shUseCent{"shUseCent", false, "SH: bin by centrality instead of multiplicity"};
   o2::framework::ConfigurableAxis shCentBins{"shCentBins", {o2::framework::VARIABLE_WIDTH, 0.0f, 200.0f}, "SH: multiplicity/centrality bin edges (like FemtoUniverse confMultKstarBins)"};
   o2::framework::ConfigurableAxis shKtBins{"shKtBins", {o2::framework::VARIABLE_WIDTH, 0.1f, 0.2f, 0.3f, 0.4f}, "SH: kT bin edges (like FemtoUniverse confKtKstarBins)"};
   o2::framework::Configurable<bool> shPlot1D{"shPlot1D", false, "(SH) Also fill 1D qinv/k* numerator/denominator (h1D) per (mult,kT) bin"};
@@ -542,6 +543,7 @@ class PairHistManager
     mPlotBertschPratt = ConfPairBinning.plotBertschPratt.value;
 
     mPlotSH = ConfPairBinning.plotSH.value;
+    mShUseCent = ConfPairBinning.shUseCent.value;
     mShLMax = ConfPairBinning.shLMax.value;
     mShFrame = ConfPairBinning.shFrame.value;
     mShPlot1D = ConfPairBinning.shPlot1D.value;
@@ -1236,7 +1238,7 @@ class PairHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQoutQsideQlong, HistTable)), mQout, mQside, mQlong);
     }
     if (mPlotSH) {
-      const int iCent = findShBin(mMult, mShCentEdges);
+      const int iCent = findShBin(mShUseCent ? mCent : mMult, mShCentEdges);
       const int iKt = findShBin(mKt, mShKtEdges);
       if (iCent >= 0 && iKt >= 0) {
         mYlm.doYlmUpToL(mShLMax, mShOut, mShSide, mShLong, mShYlmBuffer.data());
@@ -1611,6 +1613,7 @@ class PairHistManager
 
   // Spherical harmonics
   bool mPlotSH = false;
+  bool mShUseCent = false;
   int mShLMax = 1;
   int mShFrame = 0;
   static constexpr int ShFrameLcmsNonIdentical = 0;

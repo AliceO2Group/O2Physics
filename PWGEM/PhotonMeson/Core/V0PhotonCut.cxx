@@ -74,7 +74,7 @@ void V0PhotonCut::SetAPRange(float max_alpha, float max_qt)
 }
 void V0PhotonCut::SetMaxMeePsiPairDep(std::function<float(float)> psiDepCut)
 {
-  mMaxMeePsiPairDep = psiDepCut;
+  mMaxMeePsiPairDep = std::move(psiDepCut);
   LOG(info) << "V0 Photon Cut, set max mee psi pair dep: " << mMaxMeePsiPairDep(0.1);
 }
 void V0PhotonCut::SetRxyRange(float min, float max, float midL, float midH)
@@ -209,7 +209,7 @@ void V0PhotonCut::SetMaxDcaZ(float maxDcaZ)
 
 void V0PhotonCut::SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut)
 {
-  mMaxDcaXYPtDep = ptDepCut;
+  mMaxDcaXYPtDep = std::move(ptDepCut);
   LOG(info) << "V0 Photon Cut, set max DCA xy pt dep: " << mMaxDcaXYPtDep(1.0);
 }
 
@@ -341,9 +341,9 @@ void V0PhotonCut::SetNClassesMl(int nClasses)
   LOG(info) << "V0 Photon Cut, set number of classes ML: " << mNClassesMl;
 }
 
-void V0PhotonCut::SetNamesInputFeatures(const std::vector<std::string>& featureNames)
+void V0PhotonCut::SetNamesInputFeatures(const std::vector<std::string>& namesInputFeaturesVec)
 {
-  mNamesInputFeatures = featureNames;
+  mNamesInputFeatures = namesInputFeaturesVec;
   mMlInputFeatures.reserve(mNamesInputFeatures.size());
   LOG(info) << "V0 Photon Cut, set ML input feature names with size:" << mNamesInputFeatures.size();
 }
