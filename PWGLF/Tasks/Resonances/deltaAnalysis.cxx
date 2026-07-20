@@ -319,10 +319,11 @@ struct DeltaAnalysis {
       histos.add("THnSparse/hAntiDeltaPlusPlusMC", "THnSparse #bar{#Delta}^{++} MC reconstructed", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
       histos.add("THnSparse/hDeltaZeroMC", "THnSparse #Delta^{0} MC reconstructed", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
       histos.add("THnSparse/hAntiDeltaZeroMC", "THnSparse #bar{#Delta}^{0} MC reconstructed", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
-      histos.add("THnSparse/hDeltaPlusPlusGen", "THnSparse #Delta^{++} generated", kTHnSparseF, {ptAxis, centAxis, rapAxis});
-      histos.add("THnSparse/hAntiDeltaPlusPlusGen", "THnSparse #bar{#Delta}^{++} generated", kTHnSparseF, {ptAxis, centAxis, rapAxis});
-      histos.add("THnSparse/hDeltaZeroGen", "THnSparse #Delta^{0} generated", kTHnSparseF, {ptAxis, centAxis, rapAxis});
-      histos.add("THnSparse/hAntiDeltaZeroGen", "THnSparse #bar{#Delta}^{0} generated", kTHnSparseF, {ptAxis, centAxis, rapAxis});
+      // CHANGED: generated-particle THnSparse now carries mass at axis 0, followed by pt, cent, rap
+      histos.add("THnSparse/hDeltaPlusPlusGen", "THnSparse #Delta^{++} generated", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+      histos.add("THnSparse/hAntiDeltaPlusPlusGen", "THnSparse #bar{#Delta}^{++} generated", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+      histos.add("THnSparse/hDeltaZeroGen", "THnSparse #Delta^{0} generated", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+      histos.add("THnSparse/hAntiDeltaZeroGen", "THnSparse #bar{#Delta}^{0} generated", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
 
       histos.add("Analysis/hDeltaPlusPlusInvMassMC", "#Delta^{++} invariant mass (MC truth-matched)", kTH2F, {ptAxis, massAxis});
       histos.add("Analysis/hAntiDeltaPlusPlusInvMassMC", "#bar{#Delta}^{++} invariant mass (MC truth-matched)", kTH2F, {ptAxis, massAxis});
@@ -1250,44 +1251,57 @@ struct DeltaAnalysis {
       if (mcParticle.y() < cfgMinY || mcParticle.y() > cfgMaxY)
         continue;
       const auto daughters = mcParticle.daughters_as<aod::McParticles>();
+      // CHANGED: daughter loop is now used only for decay-channel validation / QA
+      // (hasPr, hasPi, ptPr, ptPi). It no longer accumulates daughter energy for
+      // the mass calculation.
       bool hasPr = false, hasPi = false;
       float ptPr = -999.f, ptPi = -999.f;
-      double eTotal = 0.;
       for (const auto& d : daughters) {
         if (std::abs(d.pdgCode()) == delta_analysis::PdgProton) {
           hasPr = true;
           ptPr = d.pt();
-          eTotal += d.e();
         } else if (std::abs(d.pdgCode()) == delta_analysis::PdgPion) {
           hasPi = true;
           ptPi = d.pt();
-          eTotal += d.e();
         }
       }
       if (!hasPr || !hasPi)
         continue;
-      const float pSq = mcParticle.p() * mcParticle.p();
-      const float genMass = std::sqrt(std::max(0., eTotal * eTotal - static_cast<double>(pSq)));
+      // CHANGED: genMass is now computed directly from the mother particle's
+      // own four-momentum (E, px, py, pz), instead of being reconstructed
+      // from the sum of daughter energies/momenta. mcParticle.m() is not
+      // available for this particle type, so the mass is built explicitly
+      // from mcParticle.e()/px()/py()/pz(), which are the standard AOD
+      // McParticles accessors. mass2 is clamped to zero before the sqrt to
+      // guard against small negative values from floating-point roundoff.
+      const float eMother = mcParticle.e();
+      const float pxMother = mcParticle.px();
+      const float pyMother = mcParticle.py();
+      const float pzMother = mcParticle.pz();
+      const float mass2 = eMother * eMother - pxMother * pxMother - pyMother * pyMother - pzMother * pzMother;
+      const float genMass = std::sqrt(std::max(0.f, mass2));
       const float genPt = mcParticle.pt();
       const float genY = mcParticle.y();
       if (pdg == delta_analysis::PdgDeltaPlusPlus) {
         histos.fill(HIST("Analysis/hDeltaPlusPlusInvMassGen"), genPt, genMass);
-        histos.fill(HIST("THnSparse/hDeltaPlusPlusGen"), genPt, kGenCentrality, genY);
+        // CHANGED: THnSparse Gen fill now carries genMass as the first argument,
+        // matching the new {massAxis, ptAxis, centAxis, rapAxis} axis order.
+        histos.fill(HIST("THnSparse/hDeltaPlusPlusGen"), genMass, genPt, kGenCentrality, genY);
         histos.fill(HIST("QAChecks/hGenProtonDeltaPlusPlus"), ptPr);
         histos.fill(HIST("QAChecks/hGenPionDeltaPlusPlus"), ptPi);
       } else if (pdg == -delta_analysis::PdgDeltaPlusPlus) {
         histos.fill(HIST("Analysis/hAntiDeltaPlusPlusInvMassGen"), genPt, genMass);
-        histos.fill(HIST("THnSparse/hAntiDeltaPlusPlusGen"), genPt, kGenCentrality, genY);
+        histos.fill(HIST("THnSparse/hAntiDeltaPlusPlusGen"), genMass, genPt, kGenCentrality, genY);
         histos.fill(HIST("QAChecks/hGenProtonAntiDeltaPlusPlus"), ptPr);
         histos.fill(HIST("QAChecks/hGenPionAntiDeltaPlusPlus"), ptPi);
       } else if (pdg == delta_analysis::PdgDeltaZero) {
         histos.fill(HIST("Analysis/hDeltaZeroInvMassGen"), genPt, genMass);
-        histos.fill(HIST("THnSparse/hDeltaZeroGen"), genPt, kGenCentrality, genY);
+        histos.fill(HIST("THnSparse/hDeltaZeroGen"), genMass, genPt, kGenCentrality, genY);
         histos.fill(HIST("QAChecks/hGenProtonDeltaZero"), ptPr);
         histos.fill(HIST("QAChecks/hGenPionDeltaZero"), ptPi);
       } else if (pdg == -delta_analysis::PdgDeltaZero) {
         histos.fill(HIST("Analysis/hAntiDeltaZeroInvMassGen"), genPt, genMass);
-        histos.fill(HIST("THnSparse/hAntiDeltaZeroGen"), genPt, kGenCentrality, genY);
+        histos.fill(HIST("THnSparse/hAntiDeltaZeroGen"), genMass, genPt, kGenCentrality, genY);
         histos.fill(HIST("QAChecks/hGenProtonAntiDeltaZero"), ptPr);
         histos.fill(HIST("QAChecks/hGenPionAntiDeltaZero"), ptPi);
       }
