@@ -446,8 +446,6 @@ struct Photonhbt {
   HistogramRegistry fRegistryPairMC{"pairMC", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   HistogramRegistry fRegistryTruthMC{"truthMC", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  static constexpr std::array<std::string_view, 2> event_pair_types = {"same/", "mix/"};
-
   EMPhotonEventCut fEMEventCut;
   V0PhotonCut fV0PhotonCut;
 
@@ -1400,7 +1398,7 @@ struct Photonhbt {
     float qout_lcms = q3_lcms.Dot(uv_out);
     float qside_lcms = q3_lcms.Dot(uv_side);
     float qlong_lcms = q3_lcms.Dot(uv_long);
-   constexpr auto mcDir = mcDirPrefix<TruthT, ev_id == 1>();
+    constexpr auto mcDir = mcDirPrefix<TruthT, ev_id == 1>();
     if (hbtanalysis.cfgDo3D) {
       fRegistryPairMC.fill(HIST(mcDir) + HIST("CF_3D"),
                            std::fabs(qout_lcms), std::fabs(qside_lcms), std::fabs(qlong_lcms), kt, weight);
