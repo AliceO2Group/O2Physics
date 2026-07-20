@@ -153,8 +153,8 @@ class OTFParticle
   int getMotherIndexStop() const { return mIndicesMother[1]; }
   int getDaughterIndexStart() const { return mIndicesDaughter[0]; }
   int getDaughterIndexStop() const { return mIndicesDaughter[1]; }
-  std::array<int, 2> getMothers() const { return mIndicesMother; }
-  std::array<int, 2> getDaughters() const { return mIndicesDaughter; }
+  const std::array<int, 2>& getMothers() const { return mIndicesMother; }
+  const std::array<int, 2>& getDaughters() const { return mIndicesDaughter; }
   std::span<const int> getMotherSpan() const { return hasMothers() ? std::span<const int>(mIndicesMother.data(), 2) : std::span<const int>(); }
 
   // Checks
@@ -176,7 +176,7 @@ class OTFParticle
   void setBitOn(DecayerBits bit) { mBits.set(static_cast<size_t>(bit), true); }
   void setBitOff(DecayerBits bit) { mBits.set(static_cast<size_t>(bit), false); }
 
-  std::bitset<8> getBits() const { return mBits; }
+  const std::bitset<8>& getBits() const { return mBits; }
   uint8_t getBitsValue() const { return static_cast<uint8_t>(mBits.to_ulong()); }
   void setBits(std::bitset<8> bits) { mBits = bits; }
 
