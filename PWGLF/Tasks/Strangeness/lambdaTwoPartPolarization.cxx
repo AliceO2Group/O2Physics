@@ -176,7 +176,6 @@ struct LfLambdaTwoPartPolarization {
     histos.add("Ana/SignalCos2", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, cosSigAxis}});
     histos.add("Ana/Acceptance", "", {HistType::kTHnSparseF, {ptAxis, centAxis, rapAxis, cosAccAxis}});
 
-
     histos.add("AnaHL/LambdaSignal", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
     histos.add("AnaHL/ALambdaSignal", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, massAxis, cosSigAxis}});
 
@@ -665,7 +664,7 @@ struct LfLambdaTwoPartPolarization {
   Preslice<TrackCandidates> tracksPerCollisionPri = aod::track::collisionId;
 
   void processDataMixedHadronT0M(EventCandidates const& collisions,
-                           TrackCandidates const& tracks, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
+                                 TrackCandidates const& tracks, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
     for (const auto& [c1, c2] : selfCombinations(colBinningT0M, cfgNoMixedEvents, -1, collisions, collisions)) {
 
@@ -698,7 +697,6 @@ struct LfLambdaTwoPartPolarization {
     }
   }
   PROCESS_SWITCH(LfLambdaTwoPartPolarization, processDataMixedHadronT0M, "Process event for mixed data in pp with hadrons", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
