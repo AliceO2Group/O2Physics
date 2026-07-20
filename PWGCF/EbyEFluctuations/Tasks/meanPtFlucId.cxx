@@ -1020,7 +1020,7 @@ struct MeanPtFlucId {
       hist.fill(HIST("QA/Charged/h2_Pt_EtaMC"), etaMC, ptMC);
       hist.fill(HIST("QA/Charged/h3_Pt_EtaMC_centFT0M"), etaMC, ptMC, centFT0M);
 
-      fillChargedQAHistos(track, centFT0M);
+      fillChargedQAHistos(track);
 
       fillBeforePIDQAHistos(track);
 
