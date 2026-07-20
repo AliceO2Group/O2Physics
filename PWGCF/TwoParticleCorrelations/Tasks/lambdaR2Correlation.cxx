@@ -220,7 +220,7 @@ using KaonMcGenTrack = KaonMcGenTracks::iterator;
 } // namespace o2::aod
 
 enum CollisionLabels {
-  kTotColBeforeHasMcCollision = 0,
+  kTotColBeforeHasMcCollision = 1,
   kTotCol,
   kPassSelCol
 };
@@ -536,24 +536,26 @@ struct LambdaTableProducer {
     }
   }
 
+  template <typename T>
+  void GetCorrFactHists(T& vhists, std::vector<std::string> const& strings)
+  {
+    using HistPtr = typename T::value_type;
+    for (size_t i = 0; i < vhists.size(); ++i) {
+      auto* obj = ccdbObjRecoEff->FindObject(strings[i].c_str());
+      if (!obj) {
+        LOGF(fatal, "CCDB object %s not found!", strings[i].c_str());
+        continue;
+      }
+      vhists[i] = dynamic_cast<HistPtr>(obj->Clone());
+      if (!vhists[i]) {
+        LOGF(fatal, "CCDB object %s could not be cast!", strings[i].c_str());
+      }
+    }
+  }
+
   // Load reco efficiency histograms
   void LoadRecoEfficiencyHistograms()
   {
-    auto GetCorrFactHists = [&]<typename T>(T& vhists, std::vector<std::string> const& strings) {
-      using HistPtr = typename T::value_type;
-      for (size_t i = 0; i < vhists.size(); ++i) {
-        auto* obj = ccdbObjRecoEff->FindObject(strings[i].c_str());
-        if (!obj) {
-          LOGF(fatal, "CCDB object %s not found!", strings[i].c_str());
-          continue;
-        }
-        vhists[i] = dynamic_cast<HistPtr>(obj->Clone());
-        if (!vhists[i]) {
-          LOGF(fatal, "CCDB object %s could not be cast!", strings[i].c_str());
-        }
-      }
-    };
-
     if (cCorrFactHist == kEffCorrPtCent) {
       GetCorrFactHists(corrHist.vPtCentCorrHists, vCorrFactStrings[kEffCorrPtCent]);
     } else if (cCorrFactHist == kEffCorrPtRapCent) {
