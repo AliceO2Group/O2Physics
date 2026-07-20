@@ -235,7 +235,7 @@ struct FemtoUniversePairTaskTrackV0Extended { // NOLINT(cppcoreguidelines-pro-ty
   std::unique_ptr<TH1> pEffHistp2;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  TRandom2* randgen;
+  TRandom2* randgen = 0;
 
   bool isNSigmaCombined(float mom, float nsigmaTPCParticle, float nsigmaTOFParticle, bool hasTOF)
   {
