@@ -91,6 +91,9 @@ struct decay3bodyCandidate {
   float covPion[21] = {0.0f};
   float covDeuteron[21] = {0.0f};
   float covariance[21] = {0.0f};
+
+  // strangeness tracking
+  std::array<float, 2> itsTrackDCAToSV;
 };
 
 //_______________________________________________________________________

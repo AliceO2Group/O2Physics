@@ -100,6 +100,7 @@ struct TrackedHypertritonRecoTask {
   Produces<aod::MCHypCands> mcHypCands;
   Produces<aod::Vtx3BodyDatas> vtx3BodyDatas;
   Produces<aod::Vtx3BodyCovs> vtx3BodyCovs;
+  Produces<aod::Vtx3BodyTrackedInfo> vtx3BodyTrackedInfo;
   Produces<aod::McVtx3BodyDatas> mcVtx3BodyDatas;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
@@ -124,7 +125,9 @@ struct TrackedHypertritonRecoTask {
 
   struct : ConfigurableGroup {
     std::string prefix = "twoBody";
+    Configurable<bool> useKFParticle{"useKFParticle", false, "Use KFParticle to build the two-body candidate"};
     Configurable<bool> useSelections{"useSelections", false, "Apply the two-body candidate selections"};
+    Configurable<bool> kfSetTopologicalConstraint{"kfSetTopologicalConstraint", false, "Set topological vertex constraint in case of KFParticle reconstruction"};
     Configurable<float> maxEtaDaughters{"maxEtaDaughters", 1.e10f, "Maximum absolute daughter eta"};
     Configurable<float> minTPCNClsHe{"minTPCNClsHe", -1.f, "Minimum He TPC clusters"};
     Configurable<float> minTPCNClsPi{"minTPCNClsPi", -1.f, "Minimum pion TPC clusters"};
@@ -133,7 +136,7 @@ struct TrackedHypertritonRecoTask {
     Configurable<float> minTPCInnerParamHe{"minTPCInnerParamHe", -1.f, "Minimum He TPC rigidity"};
     Configurable<float> minPt{"minPt", -1.f, "Minimum candidate transverse momentum"};
     Configurable<float> massWindow{"massWindow", 1.e10f, "Half-width of the hypertriton mass window"};
-    Configurable<float> maxDcaDaughters{"maxDcaDaughters", 1.e10f, "Maximum DCA between daughters"};
+    Configurable<float> maxChi2{"maxChi2", 1.e10f, "KFParticle: Maximum SV chi2, DCA fitter: Maximum DCA between daughters"};
     Configurable<float> minCosPA{"minCosPA", -2.f, "Minimum cosine of the pointing angle"};
     Configurable<float> minDcaHeToPV{"minDcaHeToPV", -1.f, "Minimum absolute He DCA to PV"};
     Configurable<float> minDcaPiToPV{"minDcaPiToPV", -1.f, "Minimum absolute pion DCA to PV"};
@@ -179,6 +182,8 @@ struct TrackedHypertritonRecoTask {
     Configurable<float> maxCtau{"maxCtau", 100.f, "Maximum candidate c tau"};
     Configurable<float> minCosPA{"minCosPA", 0.9f, "Minimum candidate cosine of the pointing angle"};
     Configurable<float> maxChi2{"maxChi2", 100.f, "Maximum candidate chi2"};
+    Configurable<float> maxITSDCAxytrackToSV{"maxITSDCAxytrackToSV", 10.0, "Maximum distance of ITS matched track to SV in xy"};
+    Configurable<float> maxITSDCAztrackToSV{"maxITSDCAztrackToSV", 10.0, "Maximum distance of ITS matched track to SV in z"};
   } threeBody;
 
   o2::vertexing::DCAFitterN<2> fitter2Body;
@@ -195,6 +200,22 @@ struct TrackedHypertritonRecoTask {
   std::vector<std::array<bool, kNZorroTriggers>> zorroDecision;
   std::vector<int> recoCollisionForMC;
   std::vector<bool> survivedMCEventSelection;
+
+  struct v0Candidate {
+    // daughter properties
+    std::array<float, 3> momHelium{};
+    std::array<float, 3> momPion{};
+    std::array<float, 3> posHelium{};
+    std::array<float, 3> posPion{};
+    // vertex properties
+    float mass;
+    float chi2;
+    float cosPA;
+    std::array<float, 3> decayVertex{};
+    std::array<float, 3> momentum{};
+  };
+
+  v0Candidate v0;
 
   struct TwoBodyMCInfo {
     float genPt = -1.f;
@@ -536,14 +557,101 @@ struct TrackedHypertritonRecoTask {
     return (track.tpcSignal() - expected) / (expected * bbParamsHe[5]);
   }
 
-  template <typename TTrack, typename TCollision, typename TFillCandidate>
-  void buildTwoBody(TTrack const& heTrack, TTrack const& piTrack, TCollision const& collision, float trackedClSize, TFillCandidate const& fillCandidate)
+  template <typename TCollision, typename TTrack, typename TTrackParCov>
+  void fit2BodyWithKF(TCollision const& collision,
+                      TTrack const& trackHelium,
+                      TTrack const& trackPion,
+                      TTrackParCov const& trackHeliumCov,
+                      TTrackParCov const& trackPionCov)
   {
-    auto heTrackCov = getTrackParCov(heTrack);
-    auto piTrackCov = getTrackParCov(piTrack);
+    // initialise KF primary vertex
+    KFVertex kfpVertex = createKFPVertexFromCollision(collision);
+    KFParticle kfpv(kfpVertex);
+
+    // create KFParticle objects
+    KFParticle kfpHelium, kfpPion;
+    // helium
+    std::array<float, 3> xyz, pxpypz;
+    float xyzpxpypz[6];
+    trackHeliumCov.getPxPyPzGlo(pxpypz);
+    trackHeliumCov.getXYZGlo(xyz);
+    for (int i = 0; i < 3; ++i) {
+      xyzpxpypz[i] = xyz[i];
+      xyzpxpypz[i + 3] = pxpypz[i] * 2;
+    }
+    std::array<float, 21> cv{};
+    trackHeliumCov.getCovXYZPxPyPzGlo(cv);
+    KFParticle kfHelium;
+    kfHelium.Create(xyzpxpypz, cv.data(), trackHelium.sign() * 2, constants::physics::MassHelium3);
+    // pion
+    kfpPion = createKFParticleFromTrackParCov(trackPionCov, trackPion.sign(), constants::physics::MassPionCharged);
+
+    // construct V0 vertex
+    KFParticle KFV0;
+    int nDaughtersV0 = 2;
+    const KFParticle* DaughtersV0[2] = {&kfpHelium, &kfpPion};
+    KFV0.SetConstructMethod(2);
+    try {
+      KFV0.Construct(DaughtersV0, nDaughtersV0);
+    } catch (std::runtime_error& e) {
+      LOG(debug) << "Failed to create V0 vertex." << e.what();
+      return;
+    }
+
+    // topological constraint
+    if (twoBody.kfSetTopologicalConstraint) {
+      KFV0.SetProductionVertex(kfpv);
+      KFV0.TransportToDecayVertex();
+    }
+
+    // get vertex position and momentum
+    v0.decayVertex[0] = KFV0.GetX();
+    v0.decayVertex[1] = KFV0.GetY();
+    v0.decayVertex[2] = KFV0.GetZ();
+    v0.momentum[0] = KFV0.GetPx();
+    v0.momentum[1] = KFV0.GetPy();
+    v0.momentum[2] = KFV0.GetPz();
+
+    // transport all daughter tracks to hypertriton vertex
+    // float position[3];
+    // for (int i; i < 3; i++) {
+    //   position[i] = v0.decayVertex[i];
+    // }
+    kfpHelium.TransportToPoint(v0.decayVertex.data());
+    kfpPion.TransportToPoint(v0.decayVertex.data());
+
+    // daughter positions
+    v0.posHelium[0] = kfpHelium.GetX();
+    v0.posHelium[1] = kfpHelium.GetY();
+    v0.posHelium[2] = kfpHelium.GetZ();
+    v0.posPion[0] = kfpPion.GetX();
+    v0.posPion[1] = kfpPion.GetY();
+    v0.posPion[2] = kfpPion.GetZ();
+
+    // daughter momenta
+    v0.momHelium[0] = kfpHelium.GetPx();
+    v0.momHelium[1] = kfpHelium.GetPy();
+    v0.momHelium[2] = kfpHelium.GetPz();
+    v0.momPion[0] = kfpPion.GetPx();
+    v0.momPion[1] = kfpPion.GetPy();
+    v0.momPion[2] = kfpPion.GetPz();
+
+    // candidate mass
+    float mass, massErr;
+    KFV0.GetMass(mass, massErr);
+    v0.mass = mass;
+
+    // vertex chi2
+    v0.chi2 = KFV0.GetChi2() / KFV0.GetNDF();
+  }
+
+  template <typename TTrackParCov>
+  void fit2bodyWithDCAFitter(TTrackParCov const& trackHeliumCov,
+                             TTrackParCov const& trackPionCov)
+  {
     int nCandidates = 0;
     try {
-      nCandidates = fitter2Body.process(heTrackCov, piTrackCov);
+      nCandidates = fitter2Body.process(trackHeliumCov, trackPionCov);
     } catch (...) {
       LOG(error) << "Exception while fitting a tracked two-body candidate";
       return;
@@ -552,36 +660,57 @@ struct TrackedHypertritonRecoTask {
       return;
     }
 
-    std::array<float, 3> heMomentum{};
-    std::array<float, 3> piMomentum{};
-    fitter2Body.getTrack(0).getPxPyPzGlo(heMomentum);
-    fitter2Body.getTrack(1).getPxPyPzGlo(piMomentum);
-    for (std::size_t i = 0; i < heMomentum.size(); ++i) {
-      heMomentum[i] *= 2.f;
-    }
-    std::array<float, 3> momentum{heMomentum[0] + piMomentum[0], heMomentum[1] + piMomentum[1], heMomentum[2] + piMomentum[2]};
-    if (twoBody.useSelections && std::hypot(momentum[0], momentum[1]) < twoBody.minPt) {
-      return;
+    // get daughter momenta
+    fitter2Body.getTrack(0).getPxPyPzGlo(v0.momHelium);
+    fitter2Body.getTrack(1).getPxPyPzGlo(v0.momPion);
+
+    for (std::size_t i = 0; i < v0.momHelium.size(); ++i) {
+      v0.momHelium[i] *= 2.f;
     }
 
-    const float heMomentum2 = RecoDecay::sumOfSquares(heMomentum[0], heMomentum[1], heMomentum[2]);
-    const float piMomentum2 = RecoDecay::sumOfSquares(piMomentum[0], piMomentum[1], piMomentum[2]);
-    const float candidateMomentum2 = RecoDecay::sumOfSquares(momentum[0], momentum[1], momentum[2]);
+    // compute candidate momentum
+    v0.momentum = {v0.momHelium[0] + v0.momPion[0], v0.momHelium[1] + v0.momPion[1], v0.momHelium[2] + v0.momPion[2]};
+
+    // compute candidate mass
+    const float heMomentum2 = RecoDecay::sumOfSquares(v0.momHelium[0], v0.momHelium[1], v0.momHelium[2]);
+    const float piMomentum2 = RecoDecay::sumOfSquares(v0.momPion[0], v0.momPion[1], v0.momPion[2]);
+    const float candidateMomentum2 = RecoDecay::sumOfSquares(v0.momentum[0], v0.momentum[1], v0.momentum[2]);
     const float heEnergy = std::sqrt(heMomentum2 + constants::physics::MassHelium3 * constants::physics::MassHelium3);
     const float piEnergy = std::sqrt(piMomentum2 + constants::physics::MassPionCharged * constants::physics::MassPionCharged);
-    const float mass = std::sqrt((heEnergy + piEnergy) * (heEnergy + piEnergy) - candidateMomentum2);
-    if (twoBody.useSelections && std::abs(mass - constants::physics::MassHyperTriton) > twoBody.massWindow) {
-      return;
-    }
+    v0.mass = std::sqrt((heEnergy + piEnergy) * (heEnergy + piEnergy) - candidateMomentum2);
 
+    // get SV position
     const auto& secondaryVertex = fitter2Body.getPCACandidate();
+    for (int i = 0; i < 3; i++) {
+      v0.decayVertex[i] = secondaryVertex[i];
+    }
+    v0.chi2 = std::sqrt(fitter2Body.getChi2AtPCACandidate());
+  }
+
+  template <typename TTrack, typename TCollision, typename TFillCandidate>
+  void buildTwoBody(TTrack const& heTrack, TTrack const& piTrack, TCollision const& collision, float trackedClSize, TFillCandidate const& fillCandidate)
+  {
     const std::array<float, 3> primaryVertex{collision.posX(), collision.posY(), collision.posZ()};
-    const std::array<float, 3> decayVertex{static_cast<float>(secondaryVertex[0]), static_cast<float>(secondaryVertex[1]), static_cast<float>(secondaryVertex[2])};
-    const float dcaDaughters = std::sqrt(fitter2Body.getChi2AtPCACandidate());
-    if (twoBody.useSelections && (dcaDaughters > twoBody.maxDcaDaughters || RecoDecay::cpa(primaryVertex, decayVertex, momentum) < twoBody.minCosPA)) {
+
+    auto heTrackCov = getTrackParCov(heTrack);
+    auto piTrackCov = getTrackParCov(piTrack);
+
+    if (twoBody.useKFParticle) {
+      fit2BodyWithKF(collision, heTrack, piTrack, heTrackCov, piTrackCov);
+    } else {
+      fit2bodyWithDCAFitter(heTrackCov, piTrackCov);
+    }
+
+    v0.cosPA = RecoDecay::cpa(primaryVertex, v0.decayVertex, v0.momentum);
+    if (twoBody.useSelections &&
+        (std::hypot(v0.momentum[0], v0.momentum[1]) < twoBody.minPt ||
+         std::abs(v0.mass - constants::physics::MassHyperTriton) > twoBody.massWindow ||
+         v0.chi2 > twoBody.maxChi2 ||
+         v0.cosPA < twoBody.minCosPA)) {
       return;
     }
 
+    // Do propagation with Propagator including material interactions in all cases (KFParticle propagation would not include material)
     std::array<float, 2> dcaInfo{};
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, heTrackCov, 2.f, fitter2Body.getMatCorrType(), &dcaInfo);
     const float dcaHe = dcaInfo[0];
@@ -605,10 +734,10 @@ struct TrackedHypertritonRecoTask {
     fillCandidate(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
                   collision.posX(), collision.posY(), collision.posZ(),
                   runNumber, heTrack.sign() > 0,
-                  std::hypot(heMomentum[0], heMomentum[1]), std::atan2(heMomentum[1], heMomentum[0]), RecoDecay::eta(heMomentum),
-                  std::hypot(piMomentum[0], piMomentum[1]), std::atan2(piMomentum[1], piMomentum[0]), RecoDecay::eta(piMomentum),
-                  secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
-                  dcaDaughters, dcaHe, dcaPi,
+                  std::hypot(v0.momHelium[0], v0.momHelium[1]), std::atan2(v0.momHelium[1], v0.momHelium[0]), RecoDecay::eta(v0.momHelium),
+                  std::hypot(v0.momPion[0], v0.momPion[1]), std::atan2(v0.momPion[1], v0.momPion[0]), RecoDecay::eta(v0.momPion),
+                  v0.decayVertex[0], v0.decayVertex[1], v0.decayVertex[2],
+                  v0.chi2, dcaHe, dcaPi,
                   nSigmaHe3(heTrack), heTrack.tpcNClsFound(), piTrack.tpcNClsFound(),
                   static_cast<int16_t>(heTrack.tpcNClsFindable()) - heTrack.tpcNClsFindableMinusPID(),
                   static_cast<int16_t>(piTrack.tpcNClsFindable()) - piTrack.tpcNClsFindableMinusPID(),
@@ -662,6 +791,7 @@ struct TrackedHypertritonRecoTask {
                   static_cast<int>(candidate.tpcNCl[0]), static_cast<int>(candidate.tpcNCl[1]), static_cast<int>(candidate.tpcNCl[2]),
                   static_cast<uint32_t>(candidate.pidForTrackingDeuteron));
     vtx3BodyCovs(candidate.covProton, candidate.covPion, candidate.covDeuteron, candidate.covariance);
+    vtx3BodyTrackedInfo(candidate.itsTrackDCAToSV[0], candidate.itsTrackDCAToSV[1]);
   }
 
   void fillThreeBodyMCTable(ThreeBodyMCInfo const& info)
@@ -776,12 +906,25 @@ struct TrackedHypertritonRecoTask {
       if (decay3Body.collisionId() < 0 || !goodCollision[decay3Body.collisionId()] || (skimmedProcessing && !zorroDecision[decay3Body.collisionId()][kTracked3Body])) {
         continue;
       }
+
       const auto collision = decay3Body.collision_as<Collisions>();
       const auto trackPositive = decay3Body.track0_as<Tracks>();
       const auto trackNegative = decay3Body.track1_as<Tracks>();
       const auto trackDeuteron = decay3Body.track2_as<Tracks>();
       const auto trackProton = trackDeuteron.sign() > 0 ? trackPositive : trackNegative;
       const auto trackPion = trackDeuteron.sign() > 0 ? trackNegative : trackPositive;
+
+      // get DCA of ITS track to SV
+      const auto itsTrack = tracked3Body.itsTrack_as<Tracks>();
+      auto itsTrackParCov = getTrackParCov(itsTrack);
+      std::array<float, 2> dcaInfoItsTrack{};
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, itsTrackParCov, 2.f, fitter2Body.getMatCorrType(), &dcaInfoItsTrack);
+      builder3Body.decay3body.itsTrackDCAToSV[0] = dcaInfoItsTrack[0];
+      builder3Body.decay3body.itsTrackDCAToSV[1] = dcaInfoItsTrack[1];
+      if (threeBody.useSelections && (builder3Body.decay3body.itsTrackDCAToSV[0] > threeBody.maxITSDCAxytrackToSV || builder3Body.decay3body.itsTrackDCAToSV[1] > threeBody.maxITSDCAztrackToSV)) {
+        continue;
+      }
+
       if (builder3Body.buildDecay3BodyCandidate(collision, trackProton, trackPion, trackDeuteron,
                                                 decay3Body.globalIndex(), deuteronTOFNSigma(collision, trackDeuteron), tracked3Body.itsClsSize(),
                                                 threeBody.useKFParticle, threeBody.setTopologicalConstraint,

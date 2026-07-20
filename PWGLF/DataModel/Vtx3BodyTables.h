@@ -140,6 +140,10 @@ DECLARE_SOA_COLUMN(IsSurvEvSel, isSurvEvSel, int);     //! flag if reco collisio
 DECLARE_SOA_COLUMN(IsReco, isreco, int);               //! flag if candidate was reconstructed
 DECLARE_SOA_COLUMN(MotherLabel, motherLabel, int);     //! label of the mother particle (signal: MC index, bkg: negative value)
 
+// strangeness tracking information
+DECLARE_SOA_COLUMN(ITSTrackDCAXYToSVXY, itsTrackDcaXYToSv, float); //! DCAxy of ITS track to SV
+DECLARE_SOA_COLUMN(ITSTrackDCAZToSVXY, itsTrackDcaZToSv, float);   //! DCAz of ITS track to SV
+
 // Derived expressions
 // Momenta
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! 3 body pT in GeV/c
@@ -257,6 +261,11 @@ DECLARE_SOA_TABLE(Vtx3BodyDatas, "AOD", "VTX3BODYDATA", //!
 DECLARE_SOA_TABLE(Vtx3BodyCovs, "AOD", "VTX3BODYCOV", //!
                   vtx3body::CovProton, vtx3body::CovPion, vtx3body::CovDeuteron,
                   vtx3body::VtxCovMat);
+
+// strangeness tracked extra table
+DECLARE_SOA_TABLE(Vtx3BodyTrackedInfo, "AOD", "VTX3BODYTR", //!
+                  vtx3body::ITSTrackDCAXYToSVXY,
+                  vtx3body::ITSTrackDCAZToSVXY);
 
 // MC candidate table for analysis
 DECLARE_SOA_TABLE(McVtx3BodyDatas, "AOD", "MC3BODYDATA", //!
