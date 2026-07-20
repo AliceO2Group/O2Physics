@@ -15,41 +15,48 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_EMPHOTON_H_
 #define PWGEM_PHOTONMESON_UTILS_EMPHOTON_H_
 
-#include <cmath>
+#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 
-#include <math.h>
+#include <cmath>
 
 namespace o2::aod::pwgem::photonmeson::utils
 {
 class EMPhoton
 {
  public:
-  EMPhoton(float pt, float eta, float phi, float mass)
+  EMPhoton(float pt, float eta, float phi, float mass) : fPt(pt), fEta(eta), fPhi(phi), fMass(mass)
   {
-    fPt = pt;
-    fEta = eta;
-    fPhi = phi;
-    fMass = mass;
   }
 
-  ~EMPhoton() {}
+  ~EMPhoton() = default;
 
-  float pt() const { return fPt; }
-  float eta() const { return fEta; }
-  float phi() const { return fPhi; }
+  [[nodiscard]] float pt() const { return fPt; }
+  [[nodiscard]] float eta() const { return fEta; }
+  [[nodiscard]] float phi() const { return fPhi; }
 
-  float p() const { return fPt * std::cosh(fEta); }
-  float px() const { return fPt * std::cos(fPhi); }
-  float py() const { return fPt * std::sin(fPhi); }
-  float pz() const { return fPt * std::sinh(fEta); }
-  float mass() const { return fMass; }
-  float rapidity() const { return std::log((std::sqrt(std::pow(fMass, 2) + std::pow(fPt * std::cosh(fEta), 2)) + fPt * std::sinh(fEta)) / std::sqrt(std::pow(fMass, 2) + std::pow(fPt, 2))); }
+  [[nodiscard]] float p() const { return fPt * std::cosh(fEta); }
+  [[nodiscard]] float px() const { return fPt * std::cos(fPhi); }
+  [[nodiscard]] float py() const { return fPt * std::sin(fPhi); }
+  [[nodiscard]] float pz() const { return fPt * std::sinh(fEta); }
+  [[nodiscard]] float mass() const { return fMass; }
+  [[nodiscard]] float rapidity() const { return std::log((std::sqrt(std::pow(fMass, 2) + std::pow(fPt * std::cosh(fEta), 2)) + fPt * std::sinh(fEta)) / std::sqrt(std::pow(fMass, 2) + std::pow(fPt, 2))); }
+
+  // optional leg track-composition info for pair-level photon-class selections (PCM only)
+  void setLegCounts(o2::aod::pwgem::photonmeson::utils::pairutil::V0PhotonLegCounts const& c)
+  {
+    fLegCounts = c;
+    fHasLegCounts = true;
+  }
+  [[nodiscard]] o2::aod::pwgem::photonmeson::utils::pairutil::V0PhotonLegCounts const& legCounts() const { return fLegCounts; }
+  [[nodiscard]] bool hasLegCounts() const { return fHasLegCounts; }
 
  protected:
-  float fPt;
-  float fEta;
-  float fPhi;
-  float fMass;
+  float fPt{0.f};
+  float fEta{0.f};
+  float fPhi{0.f};
+  float fMass{0.f};
+  o2::aod::pwgem::photonmeson::utils::pairutil::V0PhotonLegCounts fLegCounts{};
+  bool fHasLegCounts{false};
 };
 
 } // namespace o2::aod::pwgem::photonmeson::utils
