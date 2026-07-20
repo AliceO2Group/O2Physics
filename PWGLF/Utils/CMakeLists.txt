@@ -24,3 +24,15 @@ o2physics_add_library(collisionCutsGroup
 o2physics_target_root_dictionary(collisionCutsGroup
     HEADERS collisionCutsGroup.h
     LINKDEF collisionCutsGroupLinkDef.h)
+
+o2physics_add_library(LfDecay3bodyBuilderHelper
+    SOURCES decay3bodyBuilderHelper.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle)
+
+o2physics_add_library(LfStrangenessBuilderHelper
+    SOURCES strangenessBuilderHelper.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle)
+
+o2physics_add_library(LfStrangenessBuilderModule
+    SOURCES strangenessBuilderModule.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle)

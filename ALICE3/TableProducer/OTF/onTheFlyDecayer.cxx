@@ -164,6 +164,7 @@ struct OnTheFlyDecayer {
       for (auto& daughter : decayStack) {
         daughter.setIndicesMother(particlesInDataframe - indexOffset + i, particlesInDataframe - indexOffset + i);
         daughter.setCollisionId(particle.collisionId());
+        daughter.setBitOn(o2::upgrade::DecayerBits::ProducedByDecayer);
         daughter.setBitOn(o2::upgrade::DecayerBits::IsAlive);
         daughter.setBitOff(o2::upgrade::DecayerBits::IsPrimary);
         daughter.setProductionTime(particle.vt() + trackTimeNS);

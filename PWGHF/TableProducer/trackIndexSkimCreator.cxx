@@ -1833,13 +1833,13 @@ struct HfTrackIndexSkimCreator {
     const double deltaMassMax = cut3Prong[hf_cand_3prong::DecayType::DsToKKPi].get(binPt, 5u);
     if (TESTBIT(whichHypo[hf_cand_3prong::DecayType::DsToKKPi], 0)) {
       const double mass2PhiKKPi = RecoDecay::m2(std::array{pVecTrack0, pVecTrack1}, std::array{arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi][0][0], arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi][0][1]});
-      if (mass2PhiKKPi > (MassPhi + deltaMassMax) * (MassPhi + deltaMassMax) || mass2PhiKKPi < (MassPhi - deltaMassMax) * (MassPhi - deltaMassMax)) {
+      if (mass2PhiKKPi > (MassPhi + deltaMassMax) * (MassPhi + deltaMassMax) || (deltaMassMax < MassPhi && mass2PhiKKPi < (MassPhi - deltaMassMax) * (MassPhi - deltaMassMax))) {
         CLRBIT(whichHypo[hf_cand_3prong::DecayType::DsToKKPi], 0);
       }
     }
     if (TESTBIT(whichHypo[hf_cand_3prong::DecayType::DsToKKPi], 1)) {
       const double mass2PhiPiKK = RecoDecay::m2(std::array{pVecTrack1, pVecTrack2}, std::array{arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi][1][1], arrMass3Prong[hf_cand_3prong::DecayType::DsToKKPi][1][2]});
-      if (mass2PhiPiKK > (MassPhi + deltaMassMax) * (MassPhi + deltaMassMax) || mass2PhiPiKK < (MassPhi - deltaMassMax) * (MassPhi - deltaMassMax)) {
+      if (mass2PhiPiKK > (MassPhi + deltaMassMax) * (MassPhi + deltaMassMax) || (deltaMassMax < MassPhi && mass2PhiPiKK < (MassPhi - deltaMassMax) * (MassPhi - deltaMassMax))) {
         CLRBIT(whichHypo[hf_cand_3prong::DecayType::DsToKKPi], 1);
       }
     }
@@ -1920,6 +1920,18 @@ struct HfTrackIndexSkimCreator {
             if (config.debug) {
               cutStatus[iDecay3P][1] = false;
             }
+          }
+        }
+      }
+
+      // prong pT
+      if (config.debug || TESTBIT(isSelected, iDecay3P)) {
+        const auto ptProngMin = cut3Prong[iDecay3P].get(binPt, 4u); // 4u == ptProngMinIndex[iDecay3P]
+        const auto pt2ProngMin = ptProngMin * ptProngMin;
+        if (RecoDecay::pt2(pVecTrack0) < pt2ProngMin || RecoDecay::pt2(pVecTrack1) < pt2ProngMin || RecoDecay::pt2(pVecTrack2) < pt2ProngMin) {
+          CLRBIT(isSelected, iDecay3P);
+          if (config.debug) {
+            cutStatus[iDecay3P][4] = false;
           }
         }
       }
@@ -2010,7 +2022,7 @@ struct HfTrackIndexSkimCreator {
   /// \param cutStatus is a 2D array with outcome of each selection (filled only in debug mode)
   /// \param isSelected ia s bitmap with selection outcome
   template <typename T1, typename T2, typename T3, typename T4>
-  void applySelection3Prong(const T1& pVecCand, const std::array<float, 3>& ptProngs, const T2& secVtx, const T3& primVtx, T4& cutStatus, auto& isSelected)
+  void applySelection3Prong(const T1& pVecCand, const T2& secVtx, const T3& primVtx, T4& cutStatus, auto& isSelected)
   {
     if (config.debug || isSelected > 0) {
 
@@ -2045,17 +2057,6 @@ struct HfTrackIndexSkimCreator {
             CLRBIT(isSelected, iDecay3P);
             if (config.debug) {
               cutStatus[iDecay3P][3] = false;
-            }
-          }
-        }
-
-        // prong pT
-        if (config.debug || TESTBIT(isSelected, iDecay3P)) {
-          const auto ptProngMin = cut3Prong[iDecay3P].get(binPt, 4u); // 4u == ptProngMinIndex[iDecay3P]
-          if (ptProngs[0] < ptProngMin || ptProngs[1] < ptProngMin || ptProngs[2] < ptProngMin) {
-            CLRBIT(isSelected, iDecay3P);
-            if (config.debug) {
-              cutStatus[iDecay3P][4] = false;
             }
           }
         }
@@ -2807,8 +2808,7 @@ struct HfTrackIndexSkimCreator {
               const auto pVecCandProng3Pos = RecoDecay::pVec(pvec0, pvec1, pvec2);
 
               // 3-prong selections after secondary vertex
-              const std::array ptProngs{trackPos1.pt(), trackNeg1.pt(), trackPos2.pt()};
-              applySelection3Prong(pVecCandProng3Pos, ptProngs, secondaryVertex3, pvRefitCoord3Prong2Pos1Neg, cutStatus3Prong, isSelected3ProngCand);
+              applySelection3Prong(pVecCandProng3Pos, secondaryVertex3, pvRefitCoord3Prong2Pos1Neg, cutStatus3Prong, isSelected3ProngCand);
 
               std::array<std::vector<float>, kN3ProngDecaysUsedMlForHfFilters> mlScores3Prongs;
               if (config.applyMlForHfFilters) {
@@ -3083,8 +3083,7 @@ struct HfTrackIndexSkimCreator {
               const auto pVecCandProng3Neg = RecoDecay::pVec(pvec0, pvec1, pvec2);
 
               // 3-prong selections after secondary vertex
-              const std::array ptProngs{trackPos1.pt(), trackNeg1.pt(), trackNeg2.pt()};
-              applySelection3Prong(pVecCandProng3Neg, ptProngs, secondaryVertex3, pvRefitCoord3Prong1Pos2Neg, cutStatus3Prong, isSelected3ProngCand);
+              applySelection3Prong(pVecCandProng3Neg, secondaryVertex3, pvRefitCoord3Prong1Pos2Neg, cutStatus3Prong, isSelected3ProngCand);
 
               std::array<std::vector<float>, kN3ProngDecaysUsedMlForHfFilters> mlScores3Prongs{};
               if (config.applyMlForHfFilters) {

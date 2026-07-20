@@ -144,6 +144,7 @@ struct OnTheFlyTracker {
   Produces<aod::UpgradeCascades> tableUpgradeCascades;
   Produces<aod::OTFLUTConfigId> tableOTFLUTConfigId;
   Produces<aod::UpgradeV0s> tableUpgradeV0s;
+  Produces<aod::UpgradeCascadeMcLabels> tableUpgradeCascadeMcLabels;
 
   // optionally produced, empty (to be tuned later)
   Produces<aod::StoredTracksExtra_002> tableStoredTracksExtra; // base table, extend later
@@ -584,6 +585,19 @@ struct OnTheFlyTracker {
 
         insertHist(histPath + "h2dBRPtRes", "h2dPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
         insertHist(histPath + "h2dBRPtResAbs", "h2dPtResAbs;Gen p_{T};#Delta p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
+      }
+
+      if (doprocessDecayer) {
+        insertHist(histPath + "h2dPrimaryPtRes", "h2dPrimaryPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
+        insertHist(histPath + "h2dSecondaryPtRes", "h2dSecondaryPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
+        insertHist(histPath + "h2dPrimaryElPtRes", "h2dPrimaryElPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
+        insertHist(histPath + "h2dSecondaryElPtRes", "h2dSecondaryElPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
+        insertHist(histPath + "h2dPrimaryPiPtRes", "h2dPrimaryPiPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
+        insertHist(histPath + "h2dSecondaryPiPtRes", "h2dSecondaryPiPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
+        insertHist(histPath + "h2dPrimaryKaPtRes", "h2dPrimaryKaPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
+        insertHist(histPath + "h2dSecondaryKaPtRes", "h2dSecondaryKaPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
+        insertHist(histPath + "h2dPrimaryPrPtRes", "h2dPrimaryPrPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
+        insertHist(histPath + "h2dSecondaryPrPtRes", "h2dSecondaryPrPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
       }
 
     } // end config loop
@@ -1315,8 +1329,9 @@ struct OnTheFlyTracker {
     } // end cascade kink building
 
     // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
+    double dcaXY{999.f}, dcaZ{999.f};
+    o2::track::TrackParCov trackParametrization(xiTrackParCov);
     if (cascadeDecaySettings.doXiQA) {
-      double dcaXY{-1.}, dcaZ{-1.};
       if (reconstructedCascade) {
         getHist(TH2, histPath + "hRecoXi")->Fill(xiDecayRadius2D, mcParticle.pt());
         getHist(TH1, histPath + "hMassLambda")->Fill(thisCascade.mLambda);
@@ -1325,40 +1340,37 @@ struct OnTheFlyTracker {
         getHist(TH2, histPath + "h2dDeltaPtVsPt")->Fill(thisCascade.pt, (mcParticle.pt() - thisCascade.pt) / thisCascade.pt);
         getHist(TH2, histPath + "h2dDeltaEtaVsPt")->Fill(thisCascade.pt, mcParticle.eta() - thisCascade.eta);
         getHist(TH2, histPath + "hFoundVsFindable")->Fill(thisCascade.findableClusters, thisCascade.foundClusters);
-
-        o2::track::TrackParCov trackParametrization(xiTrackParCov);
-        trackParametrization.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo);
         getHist(TH2, histPath + "h2dDCAxyCascade")->Fill(trackParametrization.getPt(), dcaXY * 1e+4); // in microns, please
         getHist(TH2, histPath + "h2dDCAzCascade")->Fill(trackParametrization.getPt(), dcaZ * 1e+4);   // in microns, please
       }
       if (isReco[0]) {
         getHist(TH2, histPath + "hRecoPiFromXi")->Fill(xiDecayRadius2D, cascadeDecayProducts[0].Pt());
-        o2::track::TrackParCov trackParametrizationCascProng0(xiTrackParCov);
-        if (populateTracksDCA && xiTrackParCov.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) { // FIXME: this is not the right trackParametrization, need to propagate the bachelor track
+        o2::track::TrackParCov trackParametrizationBachelor(xiTrackParCov);
+        if (populateTracksDCA && trackParametrizationBachelor.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) {
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
-          getHist(TH2, histPath + "h2dDCAxyCascadeBachelor")->Fill(trackParametrizationCascProng0.getPt(), dcaXY * 1e+4); // in microns, please
-          getHist(TH2, histPath + "h2dDCAzCascadeBachelor")->Fill(trackParametrizationCascProng0.getPt(), dcaZ * 1e+4);   // in microns, please
+          getHist(TH2, histPath + "h2dDCAxyCascadeBachelor")->Fill(trackParametrizationBachelor.getPt(), dcaXY * 1e+4); // in microns, please
+          getHist(TH2, histPath + "h2dDCAzCascadeBachelor")->Fill(trackParametrizationBachelor.getPt(), dcaZ * 1e+4);   // in microns, please
         }
       }
       if (isReco[1]) {
         getHist(TH2, histPath + "hRecoPiFromLa")->Fill(laDecayRadius2D, cascadeDecayProducts[1].Pt());
-        o2::track::TrackParCov trackParametrizationCascProng1(xiTrackParCov);
-        if (populateTracksDCA && xiTrackParCov.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) { // FIXME: this is not the right trackParametrization, need to propagate the negative pion track
+        o2::track::TrackParCov trackParametrizationNegative(xiTrackParCov);
+        if (populateTracksDCA && trackParametrizationNegative.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) {
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
-          getHist(TH2, histPath + "h2dDCAxyCascadeNegative")->Fill(trackParametrizationCascProng1.getPt(), dcaXY * 1e+4); // in microns, please
-          getHist(TH2, histPath + "h2dDCAzCascadeNegative")->Fill(trackParametrizationCascProng1.getPt(), dcaZ * 1e+4);   // in microns, please
+          getHist(TH2, histPath + "h2dDCAxyCascadeNegative")->Fill(trackParametrizationNegative.getPt(), dcaXY * 1e+4); // in microns, please
+          getHist(TH2, histPath + "h2dDCAzCascadeNegative")->Fill(trackParametrizationNegative.getPt(), dcaZ * 1e+4);   // in microns, please
         }
       }
       if (isReco[2]) {
         getHist(TH2, histPath + "hRecoPrFromLa")->Fill(laDecayRadius2D, cascadeDecayProducts[2].Pt());
-        o2::track::TrackParCov trackParametrizationCascProng2(xiTrackParCov);
-        if (populateTracksDCA && xiTrackParCov.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) { // FIXME: this is not the right trackParametrization, need to propagate the positive proton track
+        o2::track::TrackParCov trackParametrizationPositive(xiTrackParCov);
+        if (populateTracksDCA && trackParametrizationPositive.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo)) {
           dcaXY = dcaInfo.getY();
           dcaZ = dcaInfo.getZ();
-          getHist(TH2, histPath + "h2dDCAxyCascadePositive")->Fill(trackParametrizationCascProng2.getPt(), dcaXY * 1e+4); // in microns, please
-          getHist(TH2, histPath + "h2dDCAzCascadePositive")->Fill(trackParametrizationCascProng2.getPt(), dcaZ * 1e+4);   // in microns, please
+          getHist(TH2, histPath + "h2dDCAxyCascadePositive")->Fill(trackParametrizationPositive.getPt(), dcaXY * 1e+4); // in microns, please
+          getHist(TH2, histPath + "h2dDCAzCascadePositive")->Fill(trackParametrizationPositive.getPt(), dcaZ * 1e+4);   // in microns, please
         }
       }
     }
@@ -1368,7 +1380,11 @@ struct OnTheFlyTracker {
       return;
     }
 
+    // Make sure the xi variables are stored in dcaXY and dcaZ
+    trackParametrization.propagateToDCA(primaryVertex, mMagneticField, &dcaInfo);
+
     // populate Cascades
+    tableUpgradeCascadeMcLabels(mcParticle.globalIndex());
     tableUpgradeCascades(tableCollisions.lastIndex(),
                          thisCascade.cascadeTrackId,
                          thisCascade.positiveId,
@@ -1382,7 +1398,8 @@ struct OnTheFlyTracker {
                          thisCascade.mLambda,
                          thisCascade.mXi,
                          thisCascade.findableClusters,
-                         thisCascade.foundClusters);
+                         thisCascade.foundClusters,
+                         dcaXY, dcaZ);
   }
 
   /// Function to study V0s and fill the relevant histograms
@@ -2039,6 +2056,7 @@ struct OnTheFlyTracker {
       const bool pdgsToBeHandled = longLivedToBeHandled || (enableNucleiSmearing && nucleiToBeHandled);
 
       o2::upgrade::OTFParticle otfParticle(mcParticle);
+      otfParticle.setBits(mcParticle.decayerBits_raw());
       if (otfParticle.hasNaN()) {
         continue;
       }
@@ -2076,17 +2094,16 @@ struct OnTheFlyTracker {
 
       multiplicityCounter++;
       o2::track::TrackParCov trackParCov;
-      const bool isDecayDaughter = (mcParticle.getProcess() == TMCProcess::kPDecay);
       const float time = (eventCollisionTimeNS + gRandom->Gaus(0., timeResolutionNs)) * nsToMus;
 
       bool reconstructed = false;
       int nTrkHits = 0;
-      if (enablePrimarySmearing && otfParticle.checkBit(o2::upgrade::DecayerBits::IsPrimary)) {
+      const bool isSecondary = !otfParticle.isPrimary() && otfParticle.checkBit(o2::upgrade::DecayerBits::ProducedByDecayer) && otfParticle.isAlive();
+      if (enablePrimarySmearing && otfParticle.isPrimary()) {
         o2::upgrade::convertMCParticleToO2Track(mcParticle, trackParCov, pdgDB);
         computeBremsstrahlungLoss(icfg, mcParticle, trackParCov);
         reconstructed = mSmearer[icfg]->smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
-        nTrkHits = fastTrackerSettings.minSiliconHits;
-      } else if (enableSecondarySmearing && !otfParticle.checkBit(o2::upgrade::DecayerBits::IsPrimary) && otfParticle.checkBit(o2::upgrade::DecayerBits::ProducedByDecayer) && otfParticle.checkBit(o2::upgrade::DecayerBits::IsAlive)) {
+      } else if (enableSecondarySmearing && isSecondary) {
         o2::track::TrackParCov perfectTrackParCov;
         o2::upgrade::convertMCParticleToO2Track(mcParticle, perfectTrackParCov, pdgDB);
         computeBremsstrahlungLoss(icfg, mcParticle, perfectTrackParCov);
@@ -2110,21 +2127,52 @@ struct OnTheFlyTracker {
 
       histos.fill(HIST("hNaNBookkeeping"), 0.0f, 1.0f);
       if (enablePrimarySmearing) {
+        const float ptResolution = (trackParCov.getPt() - mcParticle.pt()) / trackParCov.getPt();
         getHist(TH1, histPath + "hPtReconstructed")->Fill(trackParCov.getPt());
-        if (std::abs(mcParticle.pdgCode()) == kElectron)
+        if (otfParticle.isPrimary()) {
+          getHist(TH2, histPath + "h2dPrimaryPtRes")->Fill(trackParCov.getPt(), ptResolution);
+        } else {
+          getHist(TH2, histPath + "h2dSecondaryPtRes")->Fill(trackParCov.getPt(), ptResolution);
+        }
+        if (std::abs(mcParticle.pdgCode()) == kElectron) {
           getHist(TH1, histPath + "hPtReconstructedEl")->Fill(trackParCov.getPt());
-        if (std::abs(mcParticle.pdgCode()) == kPiPlus)
+          if (otfParticle.isPrimary()) {
+            getHist(TH2, histPath + "h2dPrimaryElPtRes")->Fill(trackParCov.getPt(), ptResolution);
+          } else {
+            getHist(TH2, histPath + "h2dSecondaryElPtRes")->Fill(trackParCov.getPt(), ptResolution);
+          }
+        }
+        if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
           getHist(TH1, histPath + "hPtReconstructedPi")->Fill(trackParCov.getPt());
-        if (std::abs(mcParticle.pdgCode()) == kKPlus)
+          if (otfParticle.isPrimary()) {
+            getHist(TH2, histPath + "h2dPrimaryPiPtRes")->Fill(trackParCov.getPt(), ptResolution);
+          } else {
+            getHist(TH2, histPath + "h2dSecondaryPiPtRes")->Fill(trackParCov.getPt(), ptResolution);
+          }
+        }
+        if (std::abs(mcParticle.pdgCode()) == kKPlus) {
           getHist(TH1, histPath + "hPtReconstructedKa")->Fill(trackParCov.getPt());
-        if (std::abs(mcParticle.pdgCode()) == kProton)
+          if (otfParticle.isPrimary()) {
+            getHist(TH2, histPath + "h2dPrimaryKaPtRes")->Fill(trackParCov.getPt(), ptResolution);
+          } else {
+            getHist(TH2, histPath + "h2dSecondaryKaPtRes")->Fill(trackParCov.getPt(), ptResolution);
+          }
+        }
+        if (std::abs(mcParticle.pdgCode()) == kProton) {
           getHist(TH1, histPath + "hPtReconstructedPr")->Fill(trackParCov.getPt());
+          if (otfParticle.isPrimary()) {
+            getHist(TH2, histPath + "h2dPrimaryPrPtRes")->Fill(trackParCov.getPt(), ptResolution);
+          } else {
+            getHist(TH2, histPath + "h2dSecondaryPrPtRes")->Fill(trackParCov.getPt(), ptResolution);
+          }
+        }
       }
 
       if (reconstructed) {
-        tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isDecayDaughter, false, 0, nTrkHits, kRecoPrimary});
+        tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isSecondary, false, 0, nTrkHits, kRecoPrimary});
+        getHist(TH1, histPath + "hPtReconstructedPr")->Fill(trackParCov.getPt());
       } else {
-        ghostTracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isDecayDaughter, false, 0, nTrkHits, kGhostPrimary});
+        ghostTracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isSecondary, false, 0, nTrkHits, kGhostPrimary});
       }
     }
 

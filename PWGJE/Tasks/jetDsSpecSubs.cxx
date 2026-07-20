@@ -111,34 +111,28 @@ struct JetDsSpecSubs {
     "registry",
     {
       {"h_collisions", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}}},
-      {"h_collision_counter_data", ";event counter;entries", {HistType::kTH1F, {{10, 0., 10.}}}},
+      {"h_event_counter_data", ";Selection step;Events", {HistType::kTH1F, {{3, 0.5, 3.5}}}},
 
       {"h_track_pt", ";#it{p}_{T,track};entries", {HistType::kTH1F, {{200, 0., 200.}}}},
       {"h_track_eta", ";#eta_{track};entries", {HistType::kTH1F, {{100, -1., 1.}}}},
       {"h_track_phi", ";#varphi_{track};entries", {HistType::kTH1F, {{80, -1., 7.}}}},
 
       // Data histograms
-      {"h_dsjet_counter_data", ";type;counts", {HistType::kTH1F, {{3, 0., 3.}}}},
-
       {"h_jet_pt_data", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
       {"h_jet_eta_data", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
       {"h_jet_phi_data", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
 
-      {"h_ds_mass_data", ";m_{D_{S}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{1000, 0., 6.}}}},
-      {"h_ds_pt_data", ";#it{p}_{T,D_{S}} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 100.}}}},
-      {"h_ds_eta_data", ";#eta_{D_{S}};entries", {HistType::kTH1F, {{250, -1., 1.}}}},
-      {"h_ds_phi_data", ";#phi_{D_{S}};entries", {HistType::kTH1F, {{250, -1., 7.}}}},
+      {"h_ds_mass_data", ";m_{D_{S}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 1.7, 2.15}}}},
+      {"h_ds_pt_data", ";#it{p}_{T,D_{S}} (GeV/#it{c});entries", {HistType::kTH1F, {{250, 0., 100.}}}},
+      {"h_ds_eta_data", ";#eta_{D_{S}};entries", {HistType::kTH1F, {{100, -1., 1.}}}},
+      {"h_ds_phi_data", ";#phi_{D_{S}};entries", {HistType::kTH1F, {{80, -1., 7.}}}},
 
-      {"h_ds_jet_pt_data", ";#it{p}_{T,D_{S} jet} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 100.}}}},
-      {"h_ds_jet_eta_data", ";#eta_{D_{S} jet};entries", {HistType::kTH1F, {{250, -1., 1.}}}},
-      {"h_ds_jet_phi_data", ";#phi_{D_{S} jet};entries", {HistType::kTH1F, {{250, -1., 7.}}}},
-
-      {"h_ds_jet_projection_data", ";z^{D_{S},jet}_{||};entries", {HistType::kTH1F, {{1000, 0., 2.}}}},
-      {"h_ds_jet_distance_data", ";#DeltaR_{D_{S},jet};entries", {HistType::kTH1F, {{1000, 0., 1.}}}},
-      {"h_ds_jet_mass_data", ";m_{jet}^{ch} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{200, 0., 50.}}}},
-      {"h_ds_jet_lambda11_data", ";#lambda_{1}^{1};entries", {HistType::kTH1F, {{200, 0., 1.0}}}},
-      {"h_ds_jet_lambda12_data", ";#lambda_{2}^{1};entries", {HistType::kTH1F, {{200, 0., 1.0}}}},
-      {"hSparse_ds_data", ";m_{D_{S}};#it{p}_{T,D_{S}};#it{p}_{T,jet};z^{D_{S},jet}_{||};#DeltaR_{D_{S},jet};Origin(D_{S})", {HistType::kTHnSparseF, {{60, 1.7, 2.1}, {60, 0., 100.}, {60, 0., 100.}, {60, 0., 2.}, {60, 0., 1.0}}}},
+      {"h_ds_jet_projection_data", ";z^{D_{S},jet}_{||};entries", {HistType::kTH1F, {{200, 0., 1.2}}}},
+      {"h_ds_jet_distance_data", ";#DeltaR_{D_{S},jet};entries", {HistType::kTH1F, {{200, 0., 1.}}}},
+      {"h_ds_jet_mass_data", ";m_{jet}^{ch} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 0., 25.}}}},
+      {"h_ds_jet_lambda11_data", ";#lambda_{1}^{1};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
+      {"h_ds_jet_lambda12_data", ";#lambda_{2}^{1};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
+      {"hSparse_ds_data", ";m_{D_{S}};#it{p}_{T,D_{S}};#it{p}_{T,jet};z^{D_{S},jet}_{||};#DeltaR_{D_{S},jet}", {HistType::kTHnSparseF, {{60, 1.7, 2.15}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.0}}}},
 
       // MC general histograms
       {"McEffJet", "N_{jet};", {HistType::kTH1F, {{4, 0., 4.0}}}},
@@ -149,36 +143,35 @@ struct JetDsSpecSubs {
       {"h_jet_eta_mcd", "detector-level jet #eta;#eta_{jet}^{det};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
       {"h_jet_phi_mcd", "detector-level jet #phi;#phi_{jet}^{det};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
 
-      {"h_ds_mass_mcd", ";m_{D_{S}}^{rec} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{1000, 0., 6.}}}},
-      {"h_ds_pt_mcd", ";#it{p}_{T,D_{S}}^{det} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 100.}}}},
-      {"h_ds_eta_mcd", ";#eta_{D_{S}}^{det};entries", {HistType::kTH1F, {{250, -1., 1.}}}},
-      {"h_ds_phi_mcd", ";#phi_{D_{S}}^{det};entries", {HistType::kTH1F, {{250, -1., 7.}}}},
+      {"h_ds_pt_mcd", ";#it{p}_{T,D_{S} jet}^{det} (GeV/#it{c});entries", {HistType::kTH1F, {{250, 0., 100.}}}},
+      {"h_ds_eta_mcd", ";#eta_{D_{S} jet}^{det};entries", {HistType::kTH1F, {{100, -1., 1.}}}},
+      {"h_ds_phi_mcd", ";#phi_{D_{S} jet}^{det};entries", {HistType::kTH1F, {{80, -1., 7.}}}},
+      {"h_ds_mass_mcd", ";m_{D_{S}}^{det} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 1.7, 2.15}}}},
 
-      {"h_ds_jet_pt_mcd", ";#it{p}_{T,D_{S} jet}^{det} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 100.}}}},
-      {"h_ds_jet_eta_mcd", ";#eta_{D_{S} jet}^{det};entries", {HistType::kTH1F, {{250, -1., 1.}}}},
-      {"h_ds_jet_phi_mcd", ";#phi_{D_{S} jet}^{det};entries", {HistType::kTH1F, {{250, -1., 7.}}}},
-      {"h_ds_jet_projection_mcd", ";z^{D_{S},jet}_{||, det};entries", {HistType::kTH1F, {{1000, 0., 2.}}}},
-      {"h_ds_jet_distance_mcd", ";#DeltaR_{D_{S},jet}^{det};entries", {HistType::kTH1F, {{1000, 0., 1.}}}},
-      {"h_ds_jet_mass_mcd", ";m_{jet}^{ch, det} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{200, 0., 50.}}}},
-      {"h_ds_jet_lambda11_mcd", ";#lambda_{1}^{1, det};entries", {HistType::kTH1F, {{200, 0., 1.0}}}},
-      {"h_ds_jet_lambda12_mcd", ";#lambda_{2}^{1, det};entries", {HistType::kTH1F, {{200, 0., 1.0}}}},
-      {"hSparse_ds_mcd", ";m_{D_{S}}^{rec};#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||, det};#DeltaR_{D_{S},jet}^{det}", {HistType::kTHnSparseF, {{60, 1.7, 2.1}, {60, 0., 100.}, {60, 0., 100.}, {60, 0., 2.}, {60, 0., 1.0}, {2, -0.5, 1.5}}}},
+      {"h_ds_jet_lambda11_mcd", ";#lambda_{1}^{1, det};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
+      {"h_ds_jet_lambda12_mcd", ";#lambda_{2}^{1, det};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
+
+      // MCD - Sparse 1: mass, p_{T,Ds}, p_{T,jet}, z|| and prompt/non-prompt
+      {"hSparse_ds_mcd1", ";m_{D_{S}}^{rec};#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||, det};Origin(D_{S})", {HistType::kTHnSparseF, {{60, 1.7, 2.15}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {2, -0.5, 1.5}}}},
+      // MCD - Sparse 2: p_{T,Ds}, p_{T,jet}, and DeltaR
+      {"hSparse_ds_mcd2", ";#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};#DeltaR_{D_{S},jet}^{det}", {HistType::kTHnSparseF, {{60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.0}}}},
+      // MCD - Sparse 3: p_{T,jet}, z|| and DeltaR
+      {"hSparse_ds_mcd3", ";#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||, det};#DeltaR_{D_{S},jet}^{det}", {HistType::kTHnSparseF, {{60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.0}}}},
 
       // MC particle-level histograms
       {"h_jet_pt_mcp", "particle-level jet pT;#it{p}_{T,jet}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
       {"h_jet_eta_mcp", "particle-level jet #eta;#eta_{jet}^{part};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
       {"h_jet_phi_mcp", "particle-level jet #phi;#phi_{jet}^{part};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
 
-      {"h_ds_pt_mcp", ";#it{p}_{T,D_{S}}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 100.}}}},
-      {"h_ds_eta_mcp", ";#eta_{D_{S}}^{part};entries", {HistType::kTH1F, {{250, -1., 1.}}}},
-      {"h_ds_phi_mcp", ";#phi_{D_{S}}^{part};entries", {HistType::kTH1F, {{250, -1., 7.}}}},
+      {"h_ds_pt_mcp", ";#it{p}_{T,D_{S} jet}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{250, 0., 100.}}}},
+      {"h_ds_eta_mcp", ";#eta_{D_{S} jet}^{part};entries", {HistType::kTH1F, {{100, -1., 1.}}}},
+      {"h_ds_phi_mcp", ";#phi_{D_{S} jet}^{part};entries", {HistType::kTH1F, {{80, -1., 7.}}}},
 
-      {"h_ds_jet_pt_mcp", ";#it{p}_{T,D_{S} jet}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{1000, 0., 100.}}}},
-      {"h_ds_jet_eta_mcp", ";#eta_{D_{S} jet}^{part};entries", {HistType::kTH1F, {{250, -1., 1.}}}},
-      {"h_ds_jet_phi_mcp", ";#phi_{D_{S} jet}^{part};entries", {HistType::kTH1F, {{250, -1., 7.}}}},
-      {"h_ds_jet_projection_mcp", ";z^{D_{S},jet}_{||, part};entries", {HistType::kTH1F, {{1000, 0., 2.}}}},
-      {"h_ds_jet_distance_mcp", ";#DeltaR_{D_{S},jet}^{part};entries", {HistType::kTH1F, {{1000, 0., 1.}}}},
-      {"hSparse_ds_mcp", ";#it{p}_{T,D_{S}}^{part};#it{p}_{T,jet}^{part};z^{D_{S},jet}_{||, part};#DeltaR_{D_{S},jet}^{part}", {HistType::kTHnSparseF, {{60, 0., 100.}, {60, 0., 100.}, {60, 0., 2.}, {60, 0., 1.0}}}},
+      {"h_ds_jet_lambda11_mcp", ";#lambda_{1}^{1, part};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
+      {"h_ds_jet_lambda12_mcp", ";#lambda_{2}^{1, part};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
+
+      // MCP - Sparse: p_{T,Ds}, p_{T,jet}, z|| and DeltaR
+      {"hSparse_ds_mcp", ";#it{p}_{T,D_{S}}^{part};#it{p}_{T,jet}^{part};z^{D_{S},jet}_{||, part};#DeltaR_{D_{S},jet}^{part}", {HistType::kTHnSparseF, {{60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.0}}}},
     }};
   //========
   // INIT
@@ -189,10 +182,10 @@ struct JetDsSpecSubs {
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
-    auto hData = registry.get<TH1>(HIST("h_dsjet_counter_data"));
-    hData->GetXaxis()->SetBinLabel(1, "Ds-jet entries");
-    hData->GetXaxis()->SetBinLabel(2, "Ds candidates");
-    hData->GetXaxis()->SetBinLabel(3, "Ds jets with >=1 cand.");
+    auto hEvt = registry.get<TH1>(HIST("h_event_counter_data"));
+    hEvt->GetXaxis()->SetBinLabel(1, "Input collisions");
+    hEvt->GetXaxis()->SetBinLabel(2, "Event selection");
+    hEvt->GetXaxis()->SetBinLabel(3, "|z| < 10 cm");
 
     // Labels
     auto mcCollisionCounter = registry.get<TH1>(HIST("McEffCol"));
@@ -207,8 +200,8 @@ struct JetDsSpecSubs {
     jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::DetectorLevelJetWithMatchedCandidate, "particle matched jets");
     jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::ParticleLevelJetWithMatchedCandidate, "detector matched jets");
 
-    auto hSparse_ds_mcd = registry.get<THnSparse>(HIST("hSparse_ds_mcd"));
-    auto* axisOrigin = hSparse_ds_mcd->GetAxis(5);
+    auto hSparse_ds_mcd1 = registry.get<THnSparse>(HIST("hSparse_ds_mcd1"));
+    auto* axisOrigin = hSparse_ds_mcd1->GetAxis(4);
     axisOrigin->SetBinLabel(1, "Prompt");
     axisOrigin->SetBinLabel(2, "Non-prompt");
   }
@@ -300,17 +293,19 @@ struct JetDsSpecSubs {
   void processDataChargedSubstructure(aod::JetCollision const& collision, FilteredDsDataJets const& jets,
                                       aod::CandidatesDsData const&, aod::JetTracks const&)
   {
-    registry.fill(HIST("h_collision_counter_data"), 2.0);
+    registry.fill(HIST("h_event_counter_data"), 1);
 
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) ||
-        !(std::abs(collision.posZ()) < vertexZCut)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
+    registry.fill(HIST("h_event_counter_data"), 2);
 
-    registry.fill(HIST("h_collision_counter_data"), 3.0);
+    if (std::abs(collision.posZ()) >= vertexZCut) {
+      return;
+    }
+    registry.fill(HIST("h_event_counter_data"), 3);
 
     for (const auto& jet : jets) {
-      registry.fill(HIST("h_dsjet_counter_data"), 0.5); // DsChargedJets entries
 
       registry.fill(HIST("h_jet_pt_data"), jet.pt());
       registry.fill(HIST("h_jet_eta_data"), jet.eta());
@@ -325,12 +320,8 @@ struct JetDsSpecSubs {
 
       TVector3 jetVector(jet.px(), jet.py(), jet.pz());
 
-      int nDsInJet = 0;
-
       // Loop over Ds candidates (particle level)
       for (const auto& dsCandidate : jet.candidates_as<aod::CandidatesDsData>()) {
-        ++nDsInJet;
-        registry.fill(HIST("h_dsjet_counter_data"), 1.5); // Ds candidates associated with the jet
 
         TVector3 dsVector(dsCandidate.px(), dsCandidate.py(), dsCandidate.pz());
 
@@ -358,19 +349,11 @@ struct JetDsSpecSubs {
                       deltaR);
       }
 
-      // Jet-level quantities (filled once per jet containing at least one Ds)
-      if (nDsInJet > 0) {
-
-        registry.fill(HIST("h_dsjet_counter_data"), 2.5); // Ds jets with at least one associated candidate
-
-        // Jet properties
-        registry.fill(HIST("h_ds_jet_pt_data"), jet.pt());
-        registry.fill(HIST("h_ds_jet_eta_data"), jet.eta());
-        registry.fill(HIST("h_ds_jet_phi_data"), jet.phi());
-        // Jet Mass
+      if (!jet.candidates_as<aod::CandidatesDsData>().empty()) {
+        // Jet mass
         registry.fill(HIST("h_ds_jet_mass_data"), mjet);
 
-        // Jet substructure observables
+        // Jet angularity
         if (lambda11 >= 0.f) {
           registry.fill(HIST("h_ds_jet_lambda11_data"), lambda11);
         }
@@ -462,19 +445,28 @@ struct JetDsSpecSubs {
           registry.fill(HIST("h_ds_jet_lambda11_mcd"), mcd_lambda11);
           registry.fill(HIST("h_ds_jet_lambda12_mcd"), mcd_lambda12);
           // Detector-level Ds Histgrams
-          registry.fill(HIST("h_ds_jet_pt_mcd"), mcdDscand.pt());
-          registry.fill(HIST("h_ds_jet_mass_mcd"), mcdDscand.m());
-          registry.fill(HIST("h_ds_jet_eta_mcd"), mcdDscand.eta());
-          registry.fill(HIST("h_ds_jet_phi_mcd"), mcdDscand.phi());
+          registry.fill(HIST("h_ds_pt_mcd"), mcdDscand.pt());
+          registry.fill(HIST("h_ds_mass_mcd"), mcdDscand.m());
+          registry.fill(HIST("h_ds_eta_mcd"), mcdDscand.eta());
+          registry.fill(HIST("h_ds_phi_mcd"), mcdDscand.phi());
 
-          // Main THnSparse: invariant mass, pT, z, and DeltaR
-          registry.fill(HIST("hSparse_ds_mcd"),
+          // MCD THnSparse1: invariant mass, p{T,Ds}, pT, z, and origin (prompt/non-prompt)
+          registry.fill(HIST("hSparse_ds_mcd1"),
                         mcdDscand.m(),
                         mcdDscand.pt(),
                         mcdjet.pt(),
                         mcd_zParallel,
-                        mcd_deltaR,
                         origin);
+          // MCD THnSparse2: invariant p{T,Ds}, pT and DeltaR
+          registry.fill(HIST("hSparse_ds_mcd2"),
+                        mcdDscand.pt(),
+                        mcdjet.pt(),
+                        mcd_deltaR);
+          // MCD THnSparse3: invariant pT z and DeltaR
+          registry.fill(HIST("hSparse_ds_mcd3"),
+                        mcdjet.pt(),
+                        mcd_zParallel,
+                        mcd_deltaR);
         }
       }
       // Particle level
@@ -503,13 +495,13 @@ struct JetDsSpecSubs {
         registry.fill(HIST("h_jet_pt_mcp"), mcpjet.pt());
         registry.fill(HIST("h_jet_eta_mcp"), mcpjet.eta());
         registry.fill(HIST("h_jet_phi_mcp"), mcpjet.phi());
-        registry.fill(HIST("h_ds_jet_projection_mcp"), mcp_zParallel);
+
         registry.fill(HIST("h_ds_jet_lambda11_mcp"), mcp_lambda11);
         registry.fill(HIST("h_ds_jet_lambda12_mcp"), mcp_lambda12);
         // Particle-level Ds Histgrams
-        registry.fill(HIST("h_ds_jet_pt_mcp"), mcpDscand.pt());
-        registry.fill(HIST("h_ds_jet_eta_mcp"), mcpDscand.eta());
-        registry.fill(HIST("h_ds_jet_phi_mcp"), mcpDscand.phi());
+        registry.fill(HIST("h_ds_pt_mcp"), mcpDscand.pt());
+        registry.fill(HIST("h_ds_eta_mcp"), mcpDscand.eta());
+        registry.fill(HIST("h_ds_phi_mcp"), mcpDscand.phi());
 
         // Main THnSparse: invariant mass, pT, z, and DeltaR
         registry.fill(HIST("hSparse_ds_mcp"),

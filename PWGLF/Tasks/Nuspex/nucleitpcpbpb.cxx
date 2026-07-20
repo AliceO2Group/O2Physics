@@ -62,7 +62,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
-using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, o2::aod::TracksDCA, aod::TrackSelectionExtension, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCDe, aod::pidTPCTr, aod::pidTPCHe, aod::pidTPCAl, aod::TOFSignal, aod::TOFEvTime>;
+using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, o2::aod::TracksDCA, aod::TrackSelectionExtension, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCDe, aod::pidTPCTr, aod::pidTPCHe, aod::pidTPCAl, aod::TOFSignal, aod::TOFEvTime, aod::pidTOFFullPr>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
 //---------------------------------------------------------------------------------------------------------------------------------
 namespace
@@ -93,24 +93,33 @@ constexpr double kTrackPIDSettings[nParticles][nTrkSettings]{
   {1, 0, 4, 75, 4.0, 0.5, 100, 5.0, 2., 2., 0., 70, 1},
   {1, 0, 4, 70, 4.0, 0.5, 100, 5.0, 2., 2., 0., 70, 1}};
 
-const int nTrkSettings2 = 6;
-static const std::vector<std::string> trackPIDsettingsNames2{"useITSnsigma", "minITSnsigma", "maxITSnsigma", "fillsparsh", "useTPCnsigmaTOF", "maxTPCnsigmaTOF"};
+const int nTrkSettings2 = 7;
+static const std::vector<std::string> trackPIDsettingsNames2{"useITSnsigma", "minITSnsigma", "maxITSnsigma", "fillsparsh", "useTPCnsigmaTOF", "maxTPCnsigmaTOF", "maxTOFnsigma"};
 constexpr double kTrackPIDSettings2[nParticles][nTrkSettings2]{
-  {1, -5, 4, 0, 1, 2},
-  {1, -5, 4, 0, 1, 2},
-  {1, -5, 4, 0, 1, 2},
-  {1, -5, 4, 1, 1, 2},
-  {1, -5, 4, 1, 1, 2},
-  {1, -5, 4, 1, 1, 2}};
+  {1, -5, 4, 0, 1, 2, 2},
+  {1, -5, 4, 0, 1, 2, 2},
+  {1, -5, 4, 0, 1, 2, 2},
+  {1, -5, 4, 1, 1, 2, 2},
+  {1, -5, 4, 1, 1, 2, 2},
+  {1, -5, 4, 1, 1, 2, 2}};
 
 static const int nfittingparticle = 4;
 const int nfittingparameters = 4;
-static const std::vector<std::string> trackcorrectionNames{"correctionneed", "a", "b", "c"};
+static const std::vector<std::string> trackcorrectionNames{"a", "b", "c", "d"};
 constexpr double ktrackcorrection[nfittingparticle][nfittingparameters]{
-  {1, 0.464215, 0.195771, 0.0183111}, // He3
-  {1, 0.464215, 0.195771, 0.0183111}, // anti-He3
-  {1, 0.00765, 0.503791, -1.10517},   // He4
-  {1, 0.00765, 0.503791, -1.10517}};  // anti-He4
+  {0.464215, 0.195771, 0.0183111, 0.0}, // He3
+  {0.464215, 0.195771, 0.0183111, 0.0}, // anti-He3
+  {0.00765, 0.503791, -1.10517, 0.0},   // He4
+  {0.00765, 0.503791, -1.10517, 0.0}};  // anti-He4
+
+// DCA parameters - simple 2x3 array (DCAxy, DCAz) with p0, p1, p2
+static const int nDCAtypes = 2;
+const int nDCAparameters = 3;
+static const std::vector<std::string> dcaNames{"p0", "p1", "p2"};
+static const std::vector<std::string> dcaTypeNames{"DCAxy", "DCAz"};
+constexpr double kDCAcorrection[nDCAtypes][nDCAparameters]{
+  {0.0118, -0.6889, 0.0017}, // DCAxy: p0*exp(p1*pt) + p2
+  {0.1014, 1.7512, 0.0024}}; // DCAz: p0*exp(-p1*pt) + p2
 
 struct PrimParticles {
   TString name;
@@ -157,11 +166,11 @@ struct NucleitpcPbPb {
   Configurable<bool> cfgRapidityRequire{"cfgRapidityRequire", true, "Require Rapidity cut"};
   Configurable<bool> cfgRapidityRequireMC{"cfgRapidityRequireMC", true, "rapidity cut require for generated particles"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.9f, "Eta range for tracks"};
-  Configurable<float> cfgCutRapidity{"cfgCutRapidity", 0.5f, "Rapidity range"};
+  Configurable<float> cfgCutRapiditymin{"cfgCutRapiditymin", -0.5f, "min Rapidity range"};
+  Configurable<float> cfgCutRapiditymax{"cfgCutRapiditymax", 0.5f, "max Rapidity range"};
   Configurable<float> cfgtpcNClsFindable{"cfgtpcNClsFindable", 0.8f, "tpcNClsFindable over crossedRows"};
   Configurable<float> centcut{"centcut", 80.0f, "centrality cut"};
   Configurable<bool> cfgZvertexRequireMC{"cfgZvertexRequireMC", true, "Pos Z cut in MC"};
-  Configurable<bool> cfgdcaxynopt{"cfgdcaxynopt", true, "DCA xy cut without pT dependent"};
 
   // Track Cut Configurables
   Configurable<bool> cfgTPCNClsCrossedRowsRequire{"cfgTPCNClsCrossedRowsRequire", true, "Require TPCNClsCrossedRows Cut"};
@@ -183,13 +192,10 @@ struct NucleitpcPbPb {
 
   // MC Configurables
   Configurable<bool> cfgmccorrectionhe4Require{"cfgmccorrectionhe4Require", true, "MC correction for pp he4 particle"};
-  Configurable<float> correctionsigma{"correctionsigma", 2, "Max sigma value outside which correction is require"};
-  Configurable<float> pTcorrectHe4{"pTcorrectHe4", 2, "Max pT below which correction is require in He4"};
-  Configurable<float> pTcorrectHe3{"pTcorrectHe3", 2, "Max pT value below which correction is require in He3"};
 
-  // DCA Configurables
-  Configurable<bool> cfgUseNewDCAxyCut{"cfgUseNewDCAxyCut", false, "Use new pT-dependent DCAxy sigma cut for He3"};
-  Configurable<bool> cfgUseNewDCAzCut{"cfgUseNewDCAzCut", false, "Use new pT-dependent DCAz sigma cut for He3"};
+  // DCA Configurables - booleans to enable/disable pT-dependent cuts
+  Configurable<bool> cfgUseDCAxyCorrection{"cfgUseDCAxyCorrection", true, "Use pT-dependent DCAxy cut"};
+  Configurable<bool> cfgUseDCAzCorrection{"cfgUseDCAzCorrection", true, "Use pT-dependent DCAz cut"};
 
   Configurable<int> cfgDebug{"cfgDebug", 1, "debug level"};
   Configurable<bool> cfgRigidityCorrection{"cfgRigidityCorrection", false, "apply rigidity correction"};
@@ -201,7 +207,10 @@ struct NucleitpcPbPb {
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {kBetheBlochDefault[0], nParticles, nBetheParams, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<double>> cfgTrackPIDsettings{"cfgTrackPIDsettings", {kTrackPIDSettings[0], nParticles, nTrkSettings, particleNames, trackPIDsettingsNames}, "track selection and PID criteria"};
   Configurable<LabeledArray<double>> cfgTrackPIDsettings2{"cfgTrackPIDsettings2", {kTrackPIDSettings2[0], nParticles, nTrkSettings2, particleNames, trackPIDsettingsNames2}, "track selection and PID criteria"};
-  Configurable<LabeledArray<double>> cfgktrackcorrection{"cfgktrackcorrection", {ktrackcorrection[0], nfittingparticle, nfittingparameters, correctedparticleNames, trackcorrectionNames}, "fitting paramters"};
+  Configurable<LabeledArray<double>> cfgktrackcorrection{"cfgktrackcorrection", {ktrackcorrection[0], nfittingparticle, nfittingparameters, correctedparticleNames, trackcorrectionNames}, "fitting parameters"};
+
+  // DCA correction parameters - simple 2x3 array
+  Configurable<LabeledArray<double>> cfgDCAcorrection{"cfgDCAcorrection", {kDCAcorrection[0], nDCAtypes, nDCAparameters, dcaTypeNames, dcaNames}, "DCA parameters: DCAxy: p0*exp(p1*pt)+p2, DCAz: p0*exp(-p1*pt)+p2"};
 
   o2::track::TrackParametrizationWithError<float> mTrackParCov;
   // Binning configuration
@@ -234,15 +243,18 @@ struct NucleitpcPbPb {
 
   std::vector<PrimParticles> primaryParticles;
   std::vector<float> primVtx, cents;
-  bool collHasCandidate, collPassedEvSel;
-  int mRunNumber, occupancy;
-  float dBz;
+  bool collHasCandidate = false;
+  bool collPassedEvSel = false;
+  int mRunNumber = 0;
+  int occupancy = 0;
+  float dBz = 0.0f;
   TRandom3 rand;
-
+  float proton = 1;
   float de = 2;
   float triton = 3;
   float he3 = 4;
   float he4 = 5;
+
   //----------------------------------------------------------------------------------------------------------------
   void init(InitContext const&)
   {
@@ -258,13 +270,13 @@ struct NucleitpcPbPb {
     }
     // create histograms
     if (doprocessData) {
-      histos.add("histMagField", "histMagField", kTH1F, {axisMagField});
       histos.add("histNev", "histNev", kTH1F, {axisNev});
       histos.add("histVtxZ", "histVtxZ", kTH1F, {axisVtxZ});
       histos.add("histCentFT0C", "histCentFT0C", kTH1F, {axisCent});
       histos.add("histCentFT0M", "histCentFT0M", kTH1F, {axisCent});
       histos.add("histCentFTOC_cut", "histCentFTOC_cut", kTH1F, {axisCent});
       histos.add<THnSparse>("hSpectra", " ", HistType::kTHnSparseF, {ptAxis, nsigmaAxis, {5, -2.5, 2.5}, axisCent});
+      histos.add<THnSparse>("hSpectratof", " ", HistType::kTHnSparseF, {ptAxis, nsigmaAxis, {5, -2.5, 2.5}, axisCent});
       histos.add("DCAxy_vs_pT_data", "DCA_{xy} vs p_{T} for He3 (Data);p_{T} (GeV/c);DCA_{xy} (cm)",
                  {HistType::kTH3F, {ptAxis, axisDCA, axisCent}});
       histos.add("DCAxy_vs_pT_anti_data", "DCA_{xy} vs p_{T} for anti-He3 (Data);p_{T} (GeV/c);DCA_{xy} (cm)",
@@ -325,6 +337,12 @@ struct NucleitpcPbPb {
       histomc.add("histDeltaPtVsPtGen", " delta pt vs pt rec", HistType::kTH2F, {{1000, 0, 10}, {1000, -0.5, 0.5, "p_{T}(reco) - p_{T}(gen);p_{T}(reco)"}});
       histomc.add("histPIDtrack", " delta pt vs pt rec", HistType::kTH2F, {{1000, 0, 10, "p_{T}(reco)"}, {9, -0.5, 8.5, "p_{T}(reco) - p_{T}(gen)"}});
       histomc.add("histPIDtrackanti", " delta pt vs pt rec", HistType::kTH2F, {{1000, 0, 10, "p_{T}(reco)"}, {9, -0.5, 8.5, "p_{T}(reco) - p_{T}(gen)"}});
+
+      // Mass²/z² 3D plots for MC (pT, mass²/z², centrality) - separate for particles and anti-particles
+      histomc.add("hMassVsPtMC", "mass^{2}/z^{2} vs p_{T} (MC Particles);p_{T} (GeV/c);mass^{2}/z^{2};Centrality",
+                  {HistType::kTH3F, {ptAxis, axismassnsigma, axisCent}});
+      histomc.add("hMassVsPtAntiMC", "mass^{2}/z^{2} vs p_{T} (MC Anti-particles);p_{T} (GeV/c);mass^{2}/z^{2};Centrality",
+                  {HistType::kTH3F, {ptAxis, axismassnsigma, axisCent}});
     }
 
     if (doprocessDCA) {
@@ -343,11 +361,18 @@ struct NucleitpcPbPb {
     }
   }
   //----------------------------------------------------------------------------------------------------------------
-  //----------------------------------------------------------------------------------------------------------------
   void processData(CollisionsFull const& collisions,
                    TracksFull const& tracks,
                    aod::BCsWithTimestamps const&)
   {
+    // Get DCA parameters from configurable
+    double dcaXY_p0 = cfgDCAcorrection->get(0U, "p0");
+    double dcaXY_p1 = cfgDCAcorrection->get(0U, "p1");
+    double dcaXY_p2 = cfgDCAcorrection->get(0U, "p2");
+    double dcaZ_p0 = cfgDCAcorrection->get(1U, "p0");
+    double dcaZ_p1 = cfgDCAcorrection->get(1U, "p1");
+    double dcaZ_p2 = cfgDCAcorrection->get(1U, "p2");
+
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -401,29 +426,9 @@ struct NucleitpcPbPb {
           float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
           if ((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && cfgmaxTPCnSigmaRequire)
             continue;
-          if (tpcNsigma < correctionsigma && cfgmccorrectionhe4Require) {
-            double a = 0, b = 0, c = 0;
-
-            int param = -1;
-            if (i == he3) {
-              param = (track.sign() > 0) ? 0 : 1;
-            } else if (i == he4) {
-              param = (track.sign() > 0) ? 2 : 3;
-            }
-            if (param >= 0) {
-              a = cfgktrackcorrection->get(param, "a");
-              b = cfgktrackcorrection->get(param, "b");
-              c = cfgktrackcorrection->get(param, "c");
-            }
-            if (i == he4 && ptMomn < pTcorrectHe4) {
-              ptMomn = ptMomn + a + b * std::exp(c * ptMomn);
-            }
-            if (i == he3 && ptMomn < pTcorrectHe3) {
-              ptMomn = ptMomn - a + b * ptMomn - c * ptMomn * ptMomn;
-            }
-          }
           int sign = (track.sign() > 0) ? 1 : ((track.sign() < 0) ? -1 : 0);
-          if (std::abs(getRapidity(track, i)) > cfgCutRapidity && cfgRapidityRequire)
+          float rapidity = getRapidity(track, i);
+          if ((rapidity < cfgCutRapiditymin || rapidity > cfgCutRapiditymax) && cfgRapidityRequire)
             continue;
           if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls"))
             continue;
@@ -446,33 +451,30 @@ struct NucleitpcPbPb {
             continue;
           if (getMeanItsClsSize(track) < cfgTrackPIDsettings->get(i, "minITSclsSize") && cfgminGetMeanItsClsSizeRequire)
             continue;
-          bool insideDCAxy = false;
-          if (cfgUseNewDCAxyCut) {
-            double sigmaFactor = cfgTrackPIDsettings->get(i, "maxDcaXY");
-            double sigma_base = (0.0118 * std::exp(-0.6889 * ptMomn) + 0.0017);
-            double sigma_new = sigmaFactor * sigma_base;
 
+          // DCAxy cut
+          bool insideDCAxy = false;
+          if (cfgUseDCAxyCorrection) {
+            // Use pT-dependent DCAxy cut
+            double sigmaFactor = cfgTrackPIDsettings->get(i, "maxDcaXY");
+            double sigma_base = dcaXY_p0 * std::exp(dcaXY_p1 * ptMomn) + dcaXY_p2;
+            double sigma_new = sigmaFactor * sigma_base;
             insideDCAxy = (std::abs(track.dcaXY()) <= sigma_new);
           } else {
-            insideDCAxy =
-              cfgdcaxynopt
-                ? (std::abs(track.dcaXY()) <= cfgTrackPIDsettings->get(i, "maxDcaXY"))
-                : (std::abs(track.dcaXY()) <=
-                   (cfgTrackPIDsettings->get(i, "maxDcaXY") *
-                    (0.0105f + 0.0350f / std::pow(ptMomn, 1.1f))));
+            // Use simple DCAxy cut (no pT dependence)
+            insideDCAxy = (std::abs(track.dcaXY()) <= cfgTrackPIDsettings->get(i, "maxDcaXY"));
           }
 
+          // DCAz cut
           bool insideDCAz = false;
-
-          if (cfgUseNewDCAzCut) {
+          if (cfgUseDCAzCorrection) {
+            // Use pT-dependent DCAz cut
             double sigmaFactorZ = cfgTrackPIDsettings->get(i, "maxDcaZ");
-            double p0 = 0.1014;
-            double p1 = 1.7512;
-            double p2 = 0.0024;
-            double sigma_base_z = p0 * std::exp(-p1 * ptMomn) + p2;
+            double sigma_base_z = dcaZ_p0 * std::exp(-dcaZ_p1 * ptMomn) + dcaZ_p2;
             double sigma_new_z = sigmaFactorZ * sigma_base_z;
             insideDCAz = (std::abs(track.dcaZ()) <= sigma_new_z);
           } else {
+            // Use simple DCAz cut (no pT dependence)
             insideDCAz = (std::abs(track.dcaZ()) <= cfgTrackPIDsettings->get(i, "maxDcaZ"));
           }
 
@@ -489,22 +491,26 @@ struct NucleitpcPbPb {
           histos.fill(HIST("Tpcsignal"), getRigidity(track) * track.sign(), track.tpcSignal());
           histos.fill(HIST("dcaXY"), ptMomn, track.dcaXY());
           histos.fill(HIST("dcaZ"), ptMomn, track.dcaZ());
-
-          // Get deuteron TPC nsigma for He4 selection
-          float tpcNsigmaDe = -999;
-          if (i == he4) {
-            tpcNsigmaDe = track.tpcNSigmaDe();
+          float tofnsigma = -999;
+          if (i == proton) {
+            tofnsigma = track.tofNSigmaPr();
           }
-
           if (track.sign() > 0) {
             histos.fill(HIST("DCAxy_vs_pT_data"), ptMomn, track.dcaXY(), collision.centFT0C());
           } else if (track.sign() < 0) {
             histos.fill(HIST("DCAxy_vs_pT_anti_data"), ptMomn, track.dcaXY(), collision.centFT0C());
           }
+          // Get deuteron TPC nsigma for He4 selection
+          float tpcNsigmaDe = -999;
+          tpcNsigmaDe = track.tpcNSigmaDe();
 
           if (i != he4) {
             histos.fill(HIST("hSpectra"), ptMomn, tpcNsigma, sign, collision.centFT0C());
+            if (track.hasTOF() && i == proton) {
+              histos.fill(HIST("hSpectratof"), ptMomn, tofnsigma, sign, collision.centFT0C());
+            }
           } else {
+
             if (!track.hasTOF()) {
               if (std::abs(tpcNsigmaDe) > deuteronsigmarejection) {
                 histos.fill(HIST("hSpectra"), ptMomn, tpcNsigma, sign, collision.centFT0C());
@@ -548,7 +554,11 @@ struct NucleitpcPbPb {
               fillhmass(track, i, collision.centFT0C());
             }
           } else {
-            fillhmass(track, i, collision.centFT0C());
+            if (i == proton && (std::abs(tofnsigma) < cfgTrackPIDsettings2->get(i, "maxTOFnsigma"))) {
+              fillhmassnsigma(track, i, collision.centFT0C());
+            } else {
+              fillhmass(track, i, collision.centFT0C());
+            }
           }
 
           if (cfgRequirebetaplot) {
@@ -579,6 +589,13 @@ struct NucleitpcPbPb {
                  aod::BCsWithTimestamps const&)
 
   {
+    // Get DCA parameters from configurable
+    double dcaXY_p0 = cfgDCAcorrection->get(0U, "p0");
+    double dcaXY_p1 = cfgDCAcorrection->get(0U, "p1");
+    double dcaXY_p2 = cfgDCAcorrection->get(0U, "p2");
+    double dcaZ_p0 = cfgDCAcorrection->get(1U, "p0");
+    double dcaZ_p1 = cfgDCAcorrection->get(1U, "p1");
+    double dcaZ_p2 = cfgDCAcorrection->get(1U, "p2");
 
     mcCollInfos.clear();
     mcCollInfos.resize(mcCollisions.size());
@@ -701,7 +718,8 @@ struct NucleitpcPbPb {
 
         if (std::abs(mcParticle.eta()) > cfgCutEta && cfgetaRequireMC)
           continue;
-        if (std::abs(mcParticle.y()) > cfgCutRapidity && cfgRapidityRequireMC)
+        float rapidity = mcParticle.y();
+        if ((rapidity < cfgCutRapiditymin || rapidity > cfgCutRapiditymax) && cfgRapidityRequireMC)
           continue;
 
         int decayType = 0;
@@ -831,7 +849,8 @@ struct NucleitpcPbPb {
                 }
               }
 
-              if (std::abs(getRapidity(track, i)) > cfgCutRapidity && cfgRapidityRequire)
+              float rapidity = getRapidity(track, i);
+              if ((rapidity < cfgCutRapiditymin || rapidity > cfgCutRapiditymax) && cfgRapidityRequire)
                 continue;
 
               if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls"))
@@ -854,30 +873,29 @@ struct NucleitpcPbPb {
               if (getMeanItsClsSize(track) < cfgTrackPIDsettings->get(i, "minITSclsSize") && cfgminGetMeanItsClsSizeRequire)
                 continue;
 
+              // DCAxy cut
               bool insideDCAxy = false;
-
-              if (cfgUseNewDCAxyCut) {
+              if (cfgUseDCAxyCorrection) {
+                // Use pT-dependent DCAxy cut
                 double sigmaFactor = cfgTrackPIDsettings->get(i, "maxDcaXY");
-                double sigma_base = (0.0118 * std::exp(-0.6889 * ptReco) + 0.0017);
+                double sigma_base = dcaXY_p0 * std::exp(dcaXY_p1 * ptReco) + dcaXY_p2;
                 double sigma_new = sigmaFactor * sigma_base;
                 insideDCAxy = (std::abs(track.dcaXY()) <= sigma_new);
               } else {
-                insideDCAxy = cfgdcaxynopt
-                                ? (std::abs(track.dcaXY()) <= cfgTrackPIDsettings->get(i, "maxDcaXY"))
-                                : (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(ptReco, 1.1f))));
+                // Use simple DCAxy cut (no pT dependence)
+                insideDCAxy = (std::abs(track.dcaXY()) <= cfgTrackPIDsettings->get(i, "maxDcaXY"));
               }
 
+              // DCAz cut
               bool insideDCAz = false;
-
-              if (cfgUseNewDCAzCut) {
+              if (cfgUseDCAzCorrection) {
+                // Use pT-dependent DCAz cut
                 double sigmaFactorZ = cfgTrackPIDsettings->get(i, "maxDcaZ");
-                double p0 = 0.1014;
-                double p1 = 1.7512;
-                double p2 = 0.0024;
-                double sigma_base_z = p0 * std::exp(-p1 * ptReco) + p2;
+                double sigma_base_z = dcaZ_p0 * std::exp(-dcaZ_p1 * ptReco) + dcaZ_p2;
                 double sigma_new_z = sigmaFactorZ * sigma_base_z;
                 insideDCAz = (std::abs(track.dcaZ()) <= sigma_new_z);
               } else {
+                // Use simple DCAz cut (no pT dependence)
                 insideDCAz = (std::abs(track.dcaZ()) <= cfgTrackPIDsettings->get(i, "maxDcaZ"));
               }
 
@@ -903,6 +921,34 @@ struct NucleitpcPbPb {
               histos.fill(HIST("dcaXY"), ptReco, track.dcaXY());
               histos.fill(HIST("dcaZ"), ptReco, track.dcaZ());
               histos.fill(HIST("Tpcsignal"), getRigidity(track) * track.sign(), track.tpcSignal());
+
+              // Fill mass²/z² for MC - separate for particles and anti-particles
+              if (track.hasTOF()) {
+                float beta = o2::pid::tof::Beta::GetBeta(track);
+                const float eps = 1e-6f;
+                if (beta >= eps && beta <= 1.0f - eps) {
+                  float charge = (i == he3 || i == he4) ? 2.f : 1.f;
+                  float p = getRigidity(track);
+                  float massTOF = p * charge * std::sqrt(1.f / (beta * beta) - 1.f);
+                  float massSquareOverChargeSquare = (massTOF * massTOF) / (charge * charge);
+
+                  // Apply He4 rejection if needed (to match data selection)
+                  bool skipHe4 = false;
+                  if (std::abs(pdg) == particlePdgCodes.at(5)) { // He4
+                    if (cfghe3massrejreq && (massTOF * massTOF > cfgminmassrejection && massTOF * massTOF < cfgmaxmassrejection)) {
+                      skipHe4 = true;
+                    }
+                  }
+
+                  if (!skipHe4) {
+                    if (pdg > 0) {
+                      histomc.fill(HIST("hMassVsPtMC"), ptReco, massSquareOverChargeSquare, collision.centFT0C());
+                    } else {
+                      histomc.fill(HIST("hMassVsPtAntiMC"), ptReco, massSquareOverChargeSquare, collision.centFT0C());
+                    }
+                  }
+                }
+              }
 
               // Delta Pt histograms
               float ptGen = matchedMCParticle.pt();
@@ -1030,9 +1076,9 @@ struct NucleitpcPbPb {
 
               int param = -1;
               if (i == he3) {
-                param = (-particlePdgCodes.at(4) > 0) ? 0 : 1;
+                param = (pdg > 0) ? 0 : 1;
               } else if (i == he4) {
-                param = (-particlePdgCodes.at(4) > 0) ? 2 : 3;
+                param = (pdg > 0) ? 2 : 3;
               }
 
               if (param >= 0) {
@@ -1053,7 +1099,8 @@ struct NucleitpcPbPb {
                 }
               }
 
-              if (std::abs(getRapidity(track, i)) > cfgCutRapidity && cfgRapidityRequire)
+              float rapidity = getRapidity(track, i);
+              if ((rapidity < cfgCutRapiditymin || rapidity > cfgCutRapiditymax) && cfgRapidityRequire)
                 continue;
 
               if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls"))
@@ -1180,7 +1227,6 @@ struct NucleitpcPbPb {
   void initCollision(const T& collision)
   {
     collHasCandidate = false;
-    histos.fill(HIST("histMagField"), dBz);
     histos.fill(HIST("histNev"), 0.5);
     collPassedEvSel = collision.sel8() && std::abs(collision.posZ()) < cfgZvertex;
     occupancy = collision.trackOccupancyInTimeRange();

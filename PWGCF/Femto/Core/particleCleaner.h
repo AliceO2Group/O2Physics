@@ -232,9 +232,9 @@ class ParticleCleaner
 
  private:
   bool mActivate = false;
-  bool mRejectParticleWithoutMcParticle = true;
-  bool mRejectParticleWithoutMcMother = true;
-  bool mRejectParticleWithoutMcPartonicMother = true;
+  bool mRejectParticleWithoutMcParticle = false;
+  bool mRejectParticleWithoutMcMother = false;
+  bool mRejectParticleWithoutMcPartonicMother = false;
   std::vector<int> mRequiredPdgCodes;
   std::vector<int> mRejectedPdgCodes;
   std::vector<int> mRequiredMotherPdgCodes;

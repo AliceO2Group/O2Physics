@@ -77,8 +77,9 @@ struct Alice3strangenessFinder {
   Produces<aod::V0CandidateIndices> v0CandidateIndices;    // contains V0 candidate indices
   Produces<aod::V0CandidateCores> v0CandidateCores;        // contains V0 candidate core information
   Produces<aod::StoredCascCores> tableStoredCascCores;     // contains stored cascade core information
-  Produces<aod::A3CascadeMcLabels> tableA3CascadeMcLabels; // contains cascade core MC labels
   Produces<aod::CascIndices> tableCascIndices;             // contains cascade indices
+  Produces<aod::CascCovs> tableCascCovs;                   // contains cascade cov matrix
+  Produces<aod::A3CascadeMcLabels> tableA3CascadeMcLabels; // contains cascade core MC labels
 
   Configurable<bool> buildCascade{"buildCascade", false, "build cascade candidates"};
   Configurable<float> nSigmaTOF{"nSigmaTOF", 5.0f, "Nsigma for TOF PID (if enabled)"};
@@ -631,6 +632,7 @@ struct Alice3strangenessFinder {
           histos.fill(HIST("CascadeBuilding/hXiMass"), massXi);
           histos.fill(HIST("CascadeBuilding/hOmegaMass"), massOm);
 
+          tableCascCovs(cascCand.parentTrackCovMatrix.data());
           tableA3CascadeMcLabels(cascCand.index);
           tableCascIndices(0, // cascade index, dummy value
                            posTrack.globalIndex(),
