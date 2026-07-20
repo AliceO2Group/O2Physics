@@ -804,10 +804,10 @@ struct MeanPtFlucId {
     }
   }
 
-  int getPtBin(double pt, const std::vector<double>& ptBins)
+  int getPtBin(double pt, const std::vector<double>& ptB)
   {
-    for (size_t i = 0; i < ptBins.size() - 1; ++i) {
-      if (pt >= ptBins[i] && pt < ptBins[i + 1]) {
+    for (size_t i = 0; i < ptB.size() - 1; ++i) {
+      if (pt >= ptB[i] && pt < ptB[i + 1]) {
         return i;
       }
     }
