@@ -1267,13 +1267,7 @@ struct DeltaAnalysis {
       }
       if (!hasPr || !hasPi)
         continue;
-      // CHANGED: genMass is now computed directly from the mother particle's
-      // own four-momentum (E, px, py, pz), instead of being reconstructed
-      // from the sum of daughter energies/momenta. mcParticle.m() is not
-      // available for this particle type, so the mass is built explicitly
-      // from mcParticle.e()/px()/py()/pz(), which are the standard AOD
-      // McParticles accessors. mass2 is clamped to zero before the sqrt to
-      // guard against small negative values from floating-point roundoff.
+      // CHANGED: genMass is now computed directly from the mother particle's own four-momentum (E, px, py, pz)
       const float eMother = mcParticle.e();
       const float pxMother = mcParticle.px();
       const float pyMother = mcParticle.py();
