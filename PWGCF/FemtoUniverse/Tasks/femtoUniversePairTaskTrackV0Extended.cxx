@@ -241,11 +241,11 @@ struct FemtoUniversePairTaskTrackV0Extended { // NOLINT(cppcoreguidelines-pro-ty
   {
     if (mom <= confmom) {
       return (std::abs(nsigmaTPCParticle) < confNsigmaTPCParticle);
-    } else if (hasTOF) {
-      return (std::hypot(nsigmaTOFParticle, nsigmaTPCParticle) < confNsigmaCombinedParticle);
-    } else {
-      return false;
     }
+    if (hasTOF) {
+      return (std::hypot(nsigmaTOFParticle, nsigmaTPCParticle) < confNsigmaCombinedParticle);
+    }
+    return false;
   }
 
   template <typename T>
@@ -263,7 +263,7 @@ struct FemtoUniversePairTaskTrackV0Extended { // NOLINT(cppcoreguidelines-pro-ty
   bool invMLambda(float invMassLambda, float invMassAntiLambda, int V0Type)
   {
     if (ConfV0Selection.confSeparateInvMassCheck) {
-      const float pMass = V0Type ? invMassAntiLambda : invMassLambda;
+      const float pMass = (V0Type == 1) ? invMassAntiLambda : invMassLambda;
       if (pMass < ConfV0Selection.confV0InvMassLowLimit || pMass > ConfV0Selection.confV0InvMassUpLimit) {
         return false;
       }
@@ -285,9 +285,8 @@ struct FemtoUniversePairTaskTrackV0Extended { // NOLINT(cppcoreguidelines-pro-ty
     // Cut only on daughter tracks, that have TOF signal
     if (mom > confmom && hasTOF) {
       return std::abs(nsigmaTOFParticle) < confNsigmaTOFParticle;
-    } else {
-      return true;
     }
+    return true;
   }
 
   template <typename T>
