@@ -20,6 +20,7 @@
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
+#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
@@ -74,6 +75,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::dilepton::utils;
+namespace pairutil = o2::aod::pwgem::photonmeson::utils::pairutil;
 
 // ─── Event Information Tables ────────────────────────────────────────────
 
@@ -171,6 +173,8 @@ struct Photonhbt {
     [[nodiscard]] float legEta(int i) const { return fLegEta[i]; }
     [[nodiscard]] float legPhi(int i) const { return fLegPhi[i]; }
     [[nodiscard]] float legPt(int i) const { return fLegPt[i]; }
+    pairutil::V0PhotonLegCounts fLegCounts{};
+    [[nodiscard]] pairutil::V0PhotonLegCounts const& legCounts() const { return fLegCounts; }
   };
 
   struct PhotonMCInfo {
@@ -221,6 +225,39 @@ struct Photonhbt {
     Configurable<bool> cfgDo2D{"cfgDo2D", false, "enable 2D (qout,qinv) projection (requires cfgDo3D)"};
     Configurable<bool> cfgUseLCMS{"cfgUseLCMS", false, "measure 1D relative momentum in LCMS"};
   } hbtanalysis;
+
+  // ----- Photon Leg Classification
+
+  Configurable<bool> cfgDoPhotonClassPairCut{"cfgDoPhotonClassPairCut", false,
+                                             "apply photon-class pair selection A x B (leg track composition)"};
+
+  struct : ConfigurableGroup {
+    std::string prefix = "photonclassA_group";
+    Configurable<int> cfgMinNLegsITSTPC{"cfgMinNLegsITSTPC", 0, "min number of ITS-TPC legs (0-2)"};
+    Configurable<int> cfgMaxNLegsITSTPC{"cfgMaxNLegsITSTPC", 2, "max number of ITS-TPC legs (0-2)"};
+    Configurable<int> cfgMinNLegsITSOnly{"cfgMinNLegsITSOnly", 0, "min number of ITS-only legs (0-2)"};
+    Configurable<int> cfgMaxNLegsITSOnly{"cfgMaxNLegsITSOnly", 2, "max number of ITS-only legs (0-2)"};
+    Configurable<int> cfgMinNLegsTPCOnly{"cfgMinNLegsTPCOnly", 0, "min number of TPC-only legs (0-2)"};
+    Configurable<int> cfgMaxNLegsTPCOnly{"cfgMaxNLegsTPCOnly", 2, "max number of TPC-only legs (0-2)"};
+    Configurable<int> cfgMinNLegsTRD{"cfgMinNLegsTRD", 0, "min number of legs with TRD (0-2)"};
+    Configurable<int> cfgMaxNLegsTRD{"cfgMaxNLegsTRD", 2, "max number of legs with TRD (0-2)"};
+    Configurable<int> cfgMinNLegsTOF{"cfgMinNLegsTOF", 0, "min number of legs with TOF (0-2)"};
+    Configurable<int> cfgMaxNLegsTOF{"cfgMaxNLegsTOF", 2, "max number of legs with TOF (0-2)"};
+  } photonclassA;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "photonclassB_group";
+    Configurable<int> cfgMinNLegsITSTPC{"cfgMinNLegsITSTPC", 0, "min number of ITS-TPC legs (0-2)"};
+    Configurable<int> cfgMaxNLegsITSTPC{"cfgMaxNLegsITSTPC", 2, "max number of ITS-TPC legs (0-2)"};
+    Configurable<int> cfgMinNLegsITSOnly{"cfgMinNLegsITSOnly", 0, "min number of ITS-only legs (0-2)"};
+    Configurable<int> cfgMaxNLegsITSOnly{"cfgMaxNLegsITSOnly", 2, "max number of ITS-only legs (0-2)"};
+    Configurable<int> cfgMinNLegsTPCOnly{"cfgMinNLegsTPCOnly", 0, "min number of TPC-only legs (0-2)"};
+    Configurable<int> cfgMaxNLegsTPCOnly{"cfgMaxNLegsTPCOnly", 2, "max number of TPC-only legs (0-2)"};
+    Configurable<int> cfgMinNLegsTRD{"cfgMinNLegsTRD", 0, "min number of legs with TRD (0-2)"};
+    Configurable<int> cfgMaxNLegsTRD{"cfgMaxNLegsTRD", 2, "max number of legs with TRD (0-2)"};
+    Configurable<int> cfgMinNLegsTOF{"cfgMinNLegsTOF", 0, "min number of legs with TOF (0-2)"};
+    Configurable<int> cfgMaxNLegsTOF{"cfgMaxNLegsTOF", 2, "max number of legs with TOF (0-2)"};
+  } photonclassB;
 
   // ─── Event mixing ─────────────────────────────────────────────────────────────
   struct : ConfigurableGroup {
@@ -419,6 +456,8 @@ struct Photonhbt {
   int mRunNumber{0};
   bool isMC = false;
   int ndf = 0;
+  pairutil::V0PhotonClassSelection mPhotonClassSelA{};
+  pairutil::V0PhotonClassSelection mPhotonClassSelB{};
 
   std::vector<float> ztxBinEdges;
   std::vector<float> centBinEdges;
@@ -467,6 +506,8 @@ struct Photonhbt {
     emh2 = std::make_shared<MyEMH>(mixing.ndepth);
     DefineEMEventCut();
     DefinePCMCut();
+    mPhotonClassSelA = pairutil::buildV0PhotonClassSelection(photonclassA);
+    mPhotonClassSelB = pairutil::buildV0PhotonClassSelection(photonclassB);
     addhistograms();
     std::random_device seedGen;
     engine = std::mt19937(seedGen());
@@ -566,6 +607,15 @@ struct Photonhbt {
       return false;
     }
     return true;
+  }
+
+  [[nodiscard]] inline bool passPhotonClassPairCut(pairutil::V0PhotonLegCounts const& c1,
+                                                   pairutil::V0PhotonLegCounts const& c2) const
+  {
+    if (!cfgDoPhotonClassPairCut.value) {
+      return true;
+    }
+    return pairutil::isPairPhotonClassSelected(c1, c2, mPhotonClassSelA, mPhotonClassSelB);
   }
 
   inline bool passAsymmetryCut(float pt1, float pt2) const
@@ -1142,6 +1192,7 @@ struct Photonhbt {
     p.fLegPt = {static_cast<float>(pos.pt()), static_cast<float>(ele.pt())};
     p.fLegEta = {static_cast<float>(pos.eta()), static_cast<float>(ele.eta())};
     p.fLegPhi = {static_cast<float>(pos.phi()), static_cast<float>(ele.phi())};
+    p.fLegCounts = pairutil::getV0PhotonLegCounts(pos, ele);
     const float rConvCm = std::hypot(p.fVx, p.fVy);
     for (size_t ir = 0; ir < kPhiStarRadiiM.size(); ++ir) {
       if (kPhiStarRadiiM[ir] * kCmPerM < rConvCm) { // leg does not exist below R_conv
@@ -1310,13 +1361,12 @@ struct Photonhbt {
     float qside_lcms = q3_lcms.Dot(uv_side);
     float qlong_lcms = q3_lcms.Dot(uv_long);
     if (hbtanalysis.cfgDo3D) {
-      fRegistryCF.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("CF_3D"), std::fabs(qout_lcms), std::fabs(qside_lcms), std::fabs(qlong_lcms), kt, weight);
+      fRegistryPairMC.fill(HIST("Pair/same/MC/NoLabel/CF_3D"), std::fabs(qout_lcms), std::fabs(qside_lcms), std::fabs(qlong_lcms), kt);
       if (hbtanalysis.cfgDo2D) {
-        fRegistryCF.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("CF_2D"), std::fabs(qout_lcms), std::fabs(qinv), kt, weight);
+        fRegistryPairMC.fill(HIST("Pair/same/MC/NoLabel/CF_2D"), std::fabs(qout_lcms), std::fabs(qinv), kt);
       }
     } else {
-      fRegistryCF.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("CF_1D"),
-                       hbtanalysis.cfgUseLCMS ? qabs_lcms : qinv, kt, weight);
+      fRegistryPairMC.fill(HIST("Pair/same/MC/NoLabel/CF_1D"), hbtanalysis.cfgUseLCMS ? qabs_lcms : qinv, kt);
     }
     float deta_pair = v1.Eta() - v2.Eta();
     float dphi_pair = v1.Phi() - v2.Phi();
@@ -1350,13 +1400,13 @@ struct Photonhbt {
     float qout_lcms = q3_lcms.Dot(uv_out);
     float qside_lcms = q3_lcms.Dot(uv_side);
     float qlong_lcms = q3_lcms.Dot(uv_long);
-    constexpr auto mcDir = mcDirPrefix<TruthT, ev_id == 1>();
+   constexpr auto mcDir = mcDirPrefix<TruthT, ev_id == 1>();
     if (hbtanalysis.cfgDo3D) {
       fRegistryPairMC.fill(HIST(mcDir) + HIST("CF_3D"),
                            std::fabs(qout_lcms), std::fabs(qside_lcms), std::fabs(qlong_lcms), kt, weight);
-    }
-    if (hbtanalysis.cfgDo2D) {
-      fRegistryPairMC.fill(HIST(mcDir) + HIST("CF_2D"), std::fabs(qout_lcms), std::fabs(qinv), kt, weight);
+      if (hbtanalysis.cfgDo2D) {
+        fRegistryPairMC.fill(HIST(mcDir) + HIST("CF_2D"), std::fabs(qout_lcms), std::fabs(qinv), kt, weight);
+      }
     } else {
       fRegistryPairMC.fill(HIST(mcDir) + HIST("CF_1D"), hbtanalysis.cfgUseLCMS ? qabs_lcms : qinv, kt, weight);
     }
@@ -1837,6 +1887,9 @@ struct Photonhbt {
         }
 
         // ─── Pair cuts ────────────────────────────────────────────────────
+        if (!passPhotonClassPairCut(pwl1.legCounts(), pwl2.legCounts())) {
+          continue;
+        }
         if (obs.drOverCosOA < ggpaircuts.cfgMinDRCosOA) {
           continue;
         }
@@ -1922,6 +1975,9 @@ struct Photonhbt {
             }
 
             // ─── Pair cuts ────────────────────────────────────────────────
+            if (!passPhotonClassPairCut(g1.legCounts(), g2.legCounts())) {
+              continue;
+            }
             if (obs.drOverCosOA < ggpaircuts.cfgMinDRCosOA) {
               continue;
             }
@@ -2273,6 +2329,8 @@ struct Photonhbt {
 
       struct PhotonRecoInfo {
         bool hasV0 = false, passesCut = false;
+        bool hasCounts = false;
+        pairutil::V0PhotonLegCounts legCounts{};
       };
       std::unordered_map<int, PhotonRecoInfo> gammaRecoMap;
       gammaRecoMap.reserve(recoPhotonsColl.size());
@@ -2309,6 +2367,10 @@ struct Photonhbt {
         auto& info = gammaRecoMap[gammaId];
         info.hasV0 = true;
         info.passesCut = info.passesCut || passes;
+        if (passes && !info.hasCounts) {
+          info.legCounts = pairutil::getV0PhotonLegCounts(pos, neg);
+          info.hasCounts = true;
+        }
       }
 
       // ─── Build true gamma list ────────────────────────────────────────────────
@@ -2477,6 +2539,7 @@ struct Photonhbt {
           const bool g2Built = (it2 != gammaRecoMap.end()) && it2->second.hasV0;
           const bool g1Sel = (it1 != gammaRecoMap.end()) && it1->second.passesCut;
           const bool g2Sel = (it2 != gammaRecoMap.end()) && it2->second.passesCut;
+          const bool pairClassSel = !cfgDoPhotonClassPairCut.value || (g1Sel && g2Sel && pairutil::isPairPhotonClassSelected(it1->second.legCounts, it2->second.legCounts, mPhotonClassSelA, mPhotonClassSelB));
 
           const bool pairAll4LegsThisColl =
             legIdsThisCollision.contains(g1.posId) > 0 && legIdsThisCollision.contains(g1.negId) > 0 &&
@@ -2493,13 +2556,13 @@ struct Photonhbt {
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hQinvVsKt_all4LegsThisColl"), kt, qinv_true);
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hDEtaDPhi_all4LegsThisColl"), deta, dphi);
           }
-          if (g1Built && g2Built) {
+          if (g1Sel && g2Sel && pairClassSel) {
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hSparse_DEtaDPhi_qinv_bothPhotonsBuilt"), deta, dphi, qinv_true);
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hSparse_DEtaDPhi_kT_bothPhotonsBuilt"), deta, dphi, kt);
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hQinvVsKt_bothPhotonsBuilt"), kt, qinv_true);
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hDEtaDPhi_bothPhotonsBuilt"), deta, dphi);
           }
-          if (g1Sel && g2Sel) {
+          if (g1Sel && g2Sel && pairClassSel) {
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hSparse_DEtaDPhi_qinv_bothPhotonsSelected"), deta, dphi, qinv_true);
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hSparse_DEtaDPhi_kT_bothPhotonsSelected"), deta, dphi, kt);
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hQinvVsKt_bothPhotonsSelected"), kt, qinv_true);
@@ -2508,7 +2571,7 @@ struct Photonhbt {
 
           if (g1.rTrue >= 0.f && g2.rTrue >= 0.f) {
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hRconv1_vs_Rconv2_truthConverted"), g1.rTrue, g2.rTrue);
-            if (g1Sel && g2Sel) {
+            if (g1Sel && g2Sel && pairClassSel) {
               fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hRconv1_vs_Rconv2_bothPhotonsSelected"), g1.rTrue, g2.rTrue);
             }
           }
@@ -2523,7 +2586,7 @@ struct Photonhbt {
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hUtrueVsKt_bothPhotonsBuilt"), kt, ut);
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hUtrueVsQinv_bothPhotonsBuilt"), qinv_true, ut);
           }
-          if (g1Sel && g2Sel) {
+          if (g1Sel && g2Sel && pairClassSel) {
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hUtrueVsKt_bothPhotonsSelected"), kt, ut);
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hUtrueVsQinv_bothPhotonsSelected"), qinv_true, ut);
           }
@@ -2532,7 +2595,7 @@ struct Photonhbt {
                                    : (g1.rTrue >= 0.f ? g1.rTrue : g2.rTrue);
           if (minRconv >= 0.f) {
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hMinRconv_vs_kT_truthConverted"), kt, minRconv);
-            if (g1Sel && g2Sel) {
+            if (g1Sel && g2Sel && pairClassSel) {
               fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hMinRconv_vs_kT_bothPhotonsSelected"), kt, minRconv);
             }
           }
@@ -2544,10 +2607,9 @@ struct Photonhbt {
           if (g1Built && g2Built) {
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hStage_vs_kT"), kt, 2.f);
           }
-          if (g1Sel && g2Sel) {
+          if (g1Sel && g2Sel && pairClassSel) {
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hStage_vs_kT"), kt, 3.f);
           }
-          fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hStage_vs_kT"), kt, 3.f);
 
           const auto itCB = crossBuildMap.find(g1.id);
           if (itCB != crossBuildMap.end() && itCB->second.contains(g2.id)) {
