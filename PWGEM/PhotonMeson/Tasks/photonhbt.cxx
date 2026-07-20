@@ -202,7 +202,7 @@ struct Photonhbt {
   // CONFIGURABLES
   /*************************************************/
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   Configurable<std::string> cfgCcdbUrl{"cfgCcdbUrl", "http://alice-ccdb.cern.ch", "CCDB url"};
   Configurable<float> cfgBzOverrideT{"cfgBzOverrideT", -999.f, "Bz in Tesla; used instead of CCDB if > -100"};
   float mBzT{0.f}; // signed, Tesla

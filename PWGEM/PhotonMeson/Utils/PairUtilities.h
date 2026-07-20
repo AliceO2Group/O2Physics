@@ -19,6 +19,7 @@
 
 #include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
 
 #include <cmath>
 
@@ -37,14 +38,14 @@ namespace o2::aod::pwgem::photonmeson::photonpair
 {
 enum PairType {
   kPCMPCM = 0,
-  kPHOSPHOS = 1,
-  kEMCEMC = 2,
-  kPCMPHOS = 3,
-  kPCMEMC = 4,
-  kPCMDalitzEE = 5,
-  kPCMDalitzMuMu = 6,
-  kPHOSEMC = 7,
-  kEEEE = 8, // dielectron-dielectron
+  kPHOSPHOS,
+  kEMCEMC,
+  kPCMPHOS,
+  kPCMEMC,
+  kPCMDalitzEE,
+  kPCMDalitzMuMu,
+  kPHOSEMC,
+  kEEEE, // dielectron-dielectron
   kNpair,
 };
 

@@ -59,6 +59,7 @@
 #include <TPDGCode.h>
 #include <TString.h>
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
