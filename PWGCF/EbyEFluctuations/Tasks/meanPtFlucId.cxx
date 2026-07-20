@@ -680,7 +680,7 @@ struct MeanPtFlucId {
 
   // Fill Charged particles QA histograms after selection cuts:
   template <typename T>
-  void fillChargedQAHistos(T const& track, float centFT0M)
+  void fillChargedQAHistos(T const& track)
   {
     hist.fill(HIST("QA/Charged/h_Eta"), track.eta());
     hist.fill(HIST("QA/Charged/h_Phi"), track.phi());
