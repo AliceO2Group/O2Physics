@@ -2706,8 +2706,8 @@ struct Photonhbt {
           }
         }
       } // end cfgDoTruthMix
-    }   // end collision loop
-  }     // end runTruthEfficiency
+    } // end collision loop
+  } // end runTruthEfficiency
 
   /*************************************************/
   // PROCESS FUNCTIONS
