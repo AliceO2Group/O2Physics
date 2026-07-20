@@ -2170,7 +2170,7 @@ struct OnTheFlyTracker {
 
       if (reconstructed) {
         tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isSecondary, false, 0, nTrkHits, kRecoPrimary});
-          getHist(TH1, histPath + "hPtReconstructedPr")->Fill(trackParCov.getPt());
+        getHist(TH1, histPath + "hPtReconstructedPr")->Fill(trackParCov.getPt());
       } else {
         ghostTracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isSecondary, false, 0, nTrkHits, kGhostPrimary});
       }
