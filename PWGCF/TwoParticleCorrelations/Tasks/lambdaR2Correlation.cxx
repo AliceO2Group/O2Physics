@@ -42,14 +42,16 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
 #include <TList.h>
 #include <TObject.h>
 #include <TPDGCode.h>
-#include <TString.h>
 
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>
