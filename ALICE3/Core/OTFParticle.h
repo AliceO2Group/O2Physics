@@ -55,7 +55,7 @@ class OTFParticle
     mVt = particle.vt();
     mFlag = particle.flags();
     mStatusCode = particle.statusCode();
-    mIsFromMcParticles = true;
+    setBitOff(DecayerBits::ProducedByDecayer);
     if (particle.has_mothers()) {
       mIndicesMother = {particle.mothersIds().front(), particle.mothersIds().back()};
     }
@@ -72,7 +72,6 @@ class OTFParticle
   }
 
   // Setters
-  void setIsPrimary(const bool isPrimary) { mIsPrimary = isPrimary; }
   void setCollisionId(const int collisionId) { mCollisionId = collisionId; }
   void setPDG(const int pdg) { mPdgCode = pdg; }
   void setIndicesMother(const int start, const int stop) { mIndicesMother = {start, stop}; }
@@ -105,9 +104,9 @@ class OTFParticle
   int pdgCode() const { return mPdgCode; }
   int globalIndex() const { return mGlobalIndex; }
   int collisionId() const { return mCollisionId; }
-  bool isAlive() const { return mIsAlive; }
-  bool isPrimary() const { return mIsPrimary; }
-  bool isFromMcParticles() const { return mIsFromMcParticles; }
+  bool isAlive() const { return checkBit(DecayerBits::IsAlive); }
+  bool isPrimary() const { return checkBit(DecayerBits::IsPrimary); }
+  bool isFromMcParticles() const { return !checkBit(DecayerBits::ProducedByDecayer); }
   float weight() const
   {
     static constexpr float Weight = 1.f;
@@ -186,8 +185,6 @@ class OTFParticle
   int mCollisionId{-1};
   float mVx{}, mVy{}, mVz{}, mVt{};
   float mPx{}, mPy{}, mPz{}, mE{};
-  bool mIsAlive{}, mIsFromMcParticles{false};
-  bool mIsPrimary{};
 
   int mStatusCode{};
   uint8_t mFlag{};
