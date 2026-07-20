@@ -393,8 +393,9 @@ struct LambdaTableProducer {
   void init(InitContext const&)
   {
     // initialize axis specifications
-    const AxisSpec axisCols(5, 0., 5., "");
-    const AxisSpec axisTrks(15, 0., 15., "");
+    const AxisSpec axisCols(5, 0.5, 5.5, "");
+    const AxisSpec axisTrks(15, 0.5, 15.5, "");
+    const AxisSpec axisEffChecks(3, 0, 3, "");
     const AxisSpec axisCent(100, 0, 100, "Centrality(%)");
     const AxisSpec axisVarCent(cCentBins, "FT0C%");
     const AxisSpec axisPVMults(1000, 0, 1000, "N_{PV}");
@@ -437,7 +438,7 @@ struct LambdaTableProducer {
     // QA
     histos.add("Tracks/h1f_lambda_info", "Lambda selection info", kTH1F, {axisTrks});
     histos.add("Tracks/h1f_kaon_info", "Kaon selection info", kTH1F, {axisTrks});
-    histos.add("Tracks/h1f_effcorr_info", "Efficiency correction info", kTH1F, {axisTrks});
+    histos.add("Tracks/h1f_effcorr_info", "Efficiency correction info", kTH1F, {axisEffChecks});
     histos.add("Tracks/h2f_armpod_before_sel", "Armentros-Podolanski Plot", kTH2F, {axisAlpha, axisQtarm});
     histos.add("Tracks/h2f_armpod_after_sel", "Armentros-Podolanski Plot", kTH2F, {axisAlpha, axisQtarm});
 
