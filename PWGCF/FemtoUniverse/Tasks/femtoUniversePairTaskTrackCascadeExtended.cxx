@@ -599,8 +599,8 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
     for (const auto& part : groupPartsOne) {
       if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
         /// PID plot for track particle
-        const float tpcNSigmas[3] = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
-        const float tofNSigmas[3] = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
+        const std::array<float, 3> tpcNSigmas = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
+        const std::array<float, 3> tofNSigmas = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
 
         if (!isNSigmaCombined(part.p(), tpcNSigmas[trackparticleconfigs.confTrackChoicePartOne], tofNSigmas[trackparticleconfigs.confTrackChoicePartOne], (part.pidCut() & 512u) != 0))
           continue;
@@ -879,8 +879,8 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
     for (const auto& part : groupPartsOne) {
       if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
         /// PID plot for the first track particle
-        const float tpcNSigmas[3] = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
-        const float tofNSigmas[3] = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
+        const std::array<float, 3> tpcNSigmas = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
+        const std::array<float, 3> tofNSigmas = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
 
         if (!isNSigmaCombined(part.p(), tpcNSigmas[trackparticleconfigs.confTrackChoicePartOne], tofNSigmas[trackparticleconfigs.confTrackChoicePartOne], (part.pidCut() & 512u) != 0))
           continue;
@@ -910,8 +910,8 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
       for (const auto& part : groupPartsTwo) {
         if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
           /// PID plot for the first track particle
-          const float tpcNSigmas[3] = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
-          const float tofNSigmas[3] = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
+          const std::array<float, 3> tpcNSigmas = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
+          const std::array<float, 3> tofNSigmas = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
 
           if (!isNSigmaCombined(part.p(), tpcNSigmas[trackparticleconfigs.confTrackChoicePartTwo], tofNSigmas[trackparticleconfigs.confTrackChoicePartTwo], (part.pidCut() & 512u) != 0))
             continue;
@@ -1000,13 +1000,13 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
 
   /// track - cascade correlations
   template <class TableType, typename PartitionType, typename MCParticles = std::nullptr_t>
-  void doMixedEvent(const FilteredFDCollisions& cols, const TableType& parts, PartitionType& partsOne, PartitionType& partsTwo, [[maybe_unused]] MCParticles mcParts = nullptr)
+  void doMixedEvent(const FilteredFDCollisions& cols, const TableType& parts, PartitionType& partsOne, PartitionType& partsTwo, [[maybe_unused]] const MCParticles& mcParts = nullptr)
   {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{confVtxBins, confMultBins}, true};
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{confVtxBins, confMultBins}, true};
 
     auto mixedCollProcessFunc = [&](auto& collision1, auto& collision2) -> void {
-      const int multCol = confUseCent ? collision1.multV0M() : collision1.multNtr();
+      const int multCol = confUseCent ? static_cast<int>(collision1.multV0M()) : static_cast<int>(collision1.multNtr());
 
       auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
@@ -1104,7 +1104,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
-      const int multCol = confUseCent ? collision1.multV0M() : collision1.multNtr();
+      const int multCol = confUseCent ? static_cast<int>(collision1.multV0M()) : static_cast<int>(collision1.multNtr());
 
       auto groupPartsOne = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
@@ -1201,7 +1201,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
-      const int multCol = confUseCent ? collision1.multV0M() : collision1.multNtr();
+      const int multCol = confUseCent ? static_cast<int>(collision1.multV0M()) : static_cast<int>(collision1.multNtr());
 
       auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
@@ -1349,7 +1349,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
-      const int multCol = confUseCent ? collision1.multV0M() : collision1.multNtr();
+      const int multCol = confUseCent ? static_cast<int>(collision1.multV0M()) : static_cast<int>(collision1.multNtr());
 
       auto groupPartsOne = partsTrackOneMCgenBasic->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto groupPartsTwo = partsTwoMCgenBasic->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
@@ -1378,7 +1378,7 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{confVtxBins, confMultBins}, true};
 
     for (const auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
-      const int multCol = confUseCent ? collision1.multV0M() : collision1.multNtr();
+      const int multCol = confUseCent ? static_cast<int>(collision1.multV0M()) : static_cast<int>(collision1.multNtr());
 
       auto groupPartsOne = partsTwoMCgenBasic->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto groupPartsTwo = partsTwoMCgenBasic->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
@@ -1432,7 +1432,8 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
       if ((cascparticleconfigs.confCascType1 == 0 && pdgCode == kOmegaMinus) || (cascparticleconfigs.confCascType1 == 1 && pdgCode == kXiMinus)) {
         registryMCgen.fill(HIST("plus/MCgenCasc"), part.pt(), part.eta());
         continue;
-      } else if ((cascparticleconfigs.confCascType1 == 0 && pdgCode == kOmegaPlusBar) || (cascparticleconfigs.confCascType1 == 1 && pdgCode == kXiPlusBar)) {
+      }
+      if ((cascparticleconfigs.confCascType1 == 0 && pdgCode == kOmegaPlusBar) || (cascparticleconfigs.confCascType1 == 1 && pdgCode == kXiPlusBar)) {
         registryMCgen.fill(HIST("minus/MCgenCasc"), part.pt(), part.eta());
         continue;
       }
@@ -1567,8 +1568,8 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
   {
     auto groupPartsOneMC = partsTrackOneFullMc->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     for (const auto& part : groupPartsOneMC) {
-      const float tpcNSigmas[3] = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
-      const float tofNSigmas[3] = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
+      const std::array<float, 3> tpcNSigmas = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
+      const std::array<float, 3> tofNSigmas = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
       if (!isNSigmaCombined(part.p(), tpcNSigmas[trackparticleconfigs.confTrackChoicePartOne], tofNSigmas[trackparticleconfigs.confTrackChoicePartOne], (part.pidCut() & 512u) != 0))
         continue;
       trackQAHistos.fillQA<true, true>(part);
