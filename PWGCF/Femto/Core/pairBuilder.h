@@ -17,6 +17,7 @@
 #define PWGCF_FEMTO_CORE_PAIRBUILDER_H_
 
 #include "PWGCF/Femto/Core/cascadeHistManager.h"
+#include "PWGCF/Femto/Core/charmHadronHistManager.h"
 #include "PWGCF/Femto/Core/closePairRejection.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
 #include "PWGCF/Femto/Core/kinkHistManager.h"
@@ -560,6 +561,140 @@ class PairV0V0Builder
   std::mt19937 mRng;
   std::uniform_int_distribution<> mDist{static_cast<int>(pairprocesshelpers::kOrder12),
                                         static_cast<int>(pairprocesshelpers::kOrder21)};
+};
+
+template <auto& prefixTrack,
+          auto& prefixD0,
+          auto& prefixPosDau,
+          auto& prefixNegDau,
+          auto& prefixSe,
+          auto& prefixMe,
+          auto& prefixCprSe,
+          auto& prefixCprMe,
+          modes::CharmHadron charmHadronType>
+class PairTrackD0Builder
+{
+ public:
+  PairTrackD0Builder() = default;
+  ~PairTrackD0Builder() = default;
+
+  template <modes::Mode modeSe,
+            modes::Mode modeMe,
+            typename T1,
+            typename T2,
+            typename T3,
+            typename T4,
+            typename T5,
+            typename T6,
+            typename T7,
+            typename T8,
+            typename T9,
+            typename T10,
+            typename T11,
+            typename T12,
+            typename T13,
+            typename T14,
+            typename T15,
+            typename T16>
+  void init(o2::framework::HistogramRegistry* registry,
+            T1 const& confCollisionBinning,
+            T2 const& confTrackSelection,
+            T3 const& confTrackCleaner,
+            T4 const& confD0Selection,
+            T5 const& confD0Cleaner,
+            T6 const& confCpr,
+            T7 const& confMixing,
+            T8 const& confPairBinning,
+            T9 const& confPairCuts,
+            std::map<T10, std::vector<o2::framework::AxisSpec>>& colHistSpec,
+            std::map<T11, std::vector<o2::framework::AxisSpec>>& trackHistSpec,
+            std::map<T12, std::vector<o2::framework::AxisSpec>>& d0HistSpec,
+            std::map<T13, std::vector<o2::framework::AxisSpec>>& posDauHistSpec,
+            std::map<T14, std::vector<o2::framework::AxisSpec>>& negDauHistSpec,
+            std::map<T15, std::vector<o2::framework::AxisSpec>>& pairHistSpec,
+            std::map<T16, std::vector<o2::framework::AxisSpec>>& cprHistSpec)
+  {
+    mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
+
+    mTrackHistManager.template init<modeSe>(registry, trackHistSpec, confTrackSelection);
+    mD0HistManager.template init<modeSe>(registry, d0HistSpec, confD0Selection, posDauHistSpec, negDauHistSpec);
+
+    mTrackCleaner.init(confTrackCleaner);
+    mD0Cleaner.init(confD0Cleaner);
+
+    // PDG codes of the D0 prongs depend on the hypothesis (set via confD0Selection.sign):
+    //   D0    -> pi+ K-  => PosDau = pion, NegDau = kaon
+    //   D0bar -> K+ pi-  => PosDau = kaon, NegDau = pion
+    int posDauPdg = 0;
+    int negDauPdg = 0;
+    if (confD0Selection.sign.value > 0) {
+      posDauPdg = PDG_t::kPiPlus;
+      negDauPdg = PDG_t::kKMinus;
+    } else {
+      posDauPdg = PDG_t::kKPlus;
+      negDauPdg = PDG_t::kPiMinus;
+    }
+
+    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerSe.setMass(confTrackSelection.pdgCodeAbs.value, 0, 0, confD0Selection.pdgCodeAbs.value, posDauPdg, negDauPdg);
+    mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, 1);
+    mCprSe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
+
+    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerMe.setMass(confTrackSelection.pdgCodeAbs.value, 0, 0, confD0Selection.pdgCodeAbs.value, posDauPdg, negDauPdg);
+    mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, 1);
+    mCprMe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
+    mPc.template init<modeSe>(confPairCuts);
+
+    // setup mixing
+    mMixingPolicy = static_cast<pairhistmanager::MixingPolicy>(confMixing.policy.value);
+    mMixingDepth = confMixing.depth.value;
+  }
+
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*d0table*/, T5& d0Partition, T6& cache)
+  {
+    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    auto d0Slice = d0Partition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (trackSlice.size() < nLimitPartitionParticles || d0Slice.size() < nLimitPartitionParticles) {
+      return;
+    }
+    mColHistManager.template fill<mode>(col);
+    mCprSe.setMagField(col.magField());
+    pairprocesshelpers::processSameEvent<mode>(trackSlice, d0Slice, trackTable, col, mTrackHistManager, mD0HistManager, mPairHistManagerSe, mCprSe, mPc);
+  }
+
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
+  void processMixedEvent(T1 const& cols, T2& trackTable, T3& trackPartition, T4& d0Partition, T5& cache, T6& binsVtxMult, T7& binsVtxCent, T8& binsVtxMultCent)
+  {
+    switch (mMixingPolicy) {
+      case static_cast<int>(pairhistmanager::kVtxMult):
+        pairprocesshelpers::processMixedEvent<mode>(cols, trackPartition, d0Partition, trackTable, cache, binsVtxMult, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+        break;
+      case static_cast<int>(pairhistmanager::kVtxCent):
+        pairprocesshelpers::processMixedEvent<mode>(cols, trackPartition, d0Partition, trackTable, cache, binsVtxCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+        break;
+      case static_cast<int>(pairhistmanager::kVtxMultCent):
+        pairprocesshelpers::processMixedEvent<mode>(cols, trackPartition, d0Partition, trackTable, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+        break;
+      default:
+        LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+    }
+  }
+
+ private:
+  colhistmanager::CollisionHistManager mColHistManager;
+  trackhistmanager::TrackHistManager<prefixTrack> mTrackHistManager;
+  charmhadronhistmanager::CharmHadronHistManager<prefixD0, prefixPosDau, prefixNegDau, charmHadronType> mD0HistManager;
+  particlecleaner::ParticleCleaner mTrackCleaner;
+  particlecleaner::ParticleCleaner mD0Cleaner;
+  pairhistmanager::PairHistManager<prefixSe, modes::Particle::kTrack, modes::Particle::kV0> mPairHistManagerSe;
+  pairhistmanager::PairHistManager<prefixMe, modes::Particle::kTrack, modes::Particle::kV0> mPairHistManagerMe;
+  closepairrejection::ClosePairRejectionTrackV0<prefixCprSe> mCprSe;
+  closepairrejection::ClosePairRejectionTrackV0<prefixCprMe> mCprMe;
+  paircleaner::TrackV0PairCleaner mPc;
+  pairhistmanager::MixingPolicy mMixingPolicy = pairhistmanager::MixingPolicy::kVtxMult;
+  int mMixingDepth = 5;
 };
 
 template <auto& prefixTrack,
