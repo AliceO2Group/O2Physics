@@ -1131,7 +1131,31 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuons_003, "AOD", "EMPRIMARYMU", 3, //!
                             emprimarymuon::Py<fwdtrack::Pt, fwdtrack::Phi>,
                             emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>);
 
-using EMPrimaryMuons = EMPrimaryMuons_003;
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuons_004, "AOD", "EMPRIMARYMU", 4, //!
+                            o2::soa::Index<>, emprimarymuon::CollisionId,
+                            emprimarymuon::FwdTrackId, emprimarymuon::MFTTrackId, emprimarymuon::MCHTrackId, fwdtrack::TrackType,
+                            fwdtrack::Pt, fwdtrack::Eta, fwdtrack::Phi, emprimarymuon::Sign,
+                            fwdtrack::FwdDcaX, fwdtrack::FwdDcaY, emprimarymuon::CXXatDCA, emprimarymuon::CYYatDCA, emprimarymuon::CXYatDCA,
+                            emprimarymuon::PtMatchedMCHMID, emprimarymuon::EtaMatchedMCHMID, emprimarymuon::PhiMatchedMCHMID,
+
+                            fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
+                            fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT, emprimarymuon::DiffChi2MatchMCHMFT,
+                            fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards,
+                            fwdtrack::MFTClusterSizesAndTrackFlags, emprimarymuon::Chi2MFT, emprimarymuon::IsAssociatedToMPC, emprimarymuon::IsAmbiguous,
+
+                            // dynamic column
+                            emprimarymuon::Signed1Pt<fwdtrack::Pt, emprimarymuon::Sign>,
+                            emprimarymuon::Tgl<fwdtrack::Eta>,
+                            emprimarymuon::NClustersMFT<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            fwdtrack::IsCA<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            emprimarymuon::MFTClusterMap<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            emprimarymuon::P<fwdtrack::Pt, fwdtrack::Eta>,
+                            emprimarymuon::Px<fwdtrack::Pt, fwdtrack::Phi>,
+                            emprimarymuon::Py<fwdtrack::Pt, fwdtrack::Phi>,
+                            emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>);
+
+
+using EMPrimaryMuons = EMPrimaryMuons_004;
 // iterators
 using EMPrimaryMuon = EMPrimaryMuons::iterator;
 
@@ -1152,7 +1176,17 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuonsCov_002, "AOD", "EMPRIMARYMUCOV", 2, /
                             o2::aod::fwdtrack::C1PtPhi,
                             o2::aod::fwdtrack::C1PtTgl,
                             o2::aod::fwdtrack::C1Pt21Pt2);
-using EMPrimaryMuonsCov = EMPrimaryMuonsCov_002;
+
+
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuonsCov_003, "AOD", "EMPRIMARYMUCOV", 3, //! at PV. Signed1Pt, Tgl and Phi are in EMPrimaryMuons table.
+                            fwdtrack::X, fwdtrack::Y, fwdtrack::Z,
+                            o2::aod::fwdtrack::CXX,
+                            o2::aod::fwdtrack::CXY, o2::aod::fwdtrack::CYY,
+                            o2::aod::fwdtrack::CPhiX, o2::aod::fwdtrack::CPhiY, o2::aod::fwdtrack::CPhiPhi,
+                            o2::aod::fwdtrack::CTglX, o2::aod::fwdtrack::CTglY, o2::aod::fwdtrack::CTglPhi, o2::aod::fwdtrack::CTglTgl,
+                            o2::aod::fwdtrack::C1PtX, o2::aod::fwdtrack::C1PtY, o2::aod::fwdtrack::C1PtPhi, o2::aod::fwdtrack::C1PtTgl, o2::aod::fwdtrack::C1Pt21Pt2);
+
+using EMPrimaryMuonsCov = EMPrimaryMuonsCov_003;
 // iterators
 using EMPrimaryMuonCov = EMPrimaryMuonsCov::iterator;
 
