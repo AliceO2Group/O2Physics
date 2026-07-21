@@ -496,6 +496,9 @@ constexpr char PrefixTrackTrackMe[] = "TrackTrack/ME/";
 constexpr char PrefixTrackV0Se[] = "TrackV0/SE/";
 constexpr char PrefixTrackV0Me[] = "TrackV0/ME/";
 
+constexpr char PrefixTrackD0Se[] = "TrackD0/SE/";
+constexpr char PrefixTrackD0Me[] = "TrackD0/ME/";
+
 constexpr char PrefixV0V0Se[] = "V0V0/SE/";
 constexpr char PrefixV0V0Me[] = "V0V0/ME/";
 

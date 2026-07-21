@@ -154,10 +154,17 @@ struct ConfTrackBinning : o2::framework::ConfigurableGroup {
 constexpr const char PrefixTrackBinning1[] = "TrackBinning1";
 constexpr const char PrefixTrackBinning2[] = "TrackBinning2";
 constexpr const char PrefixTrackBinning3[] = "TrackBinning3";
+<<<<<<< HEAD
 constexpr const char PrefixV01PosDauBinning[] = "V01PosDauBinning";
 constexpr const char PrefixV01NegDauBinning[] = "V01NegDauBinning";
 constexpr const char PrefixV02PosDauBinning[] = "V02PosDauBinning";
 constexpr const char PrefixV02NegDauBinning[] = "V02NegDauBinning";
+=======
+constexpr const char PrefixV0PosDauBinning[] = "V0PosDauBinning";
+constexpr const char PrefixV0NegDauBinning[] = "V0NegDauBinning";
+constexpr const char PrefixD0PosDauBinning[] = "D0PosDauBinning";
+constexpr const char PrefixD0NegDauBinning[] = "D0NegDauBinning";
+>>>>>>> ba8868c47 ([PWGCF] Femto: Add D0-hadron correlation task)
 constexpr const char PrefixCascadePosDauBinning[] = "CascadePosDauBinning";
 constexpr const char PrefixCascadeNegDauBinning[] = "CascadeNegDauBinning";
 constexpr const char PrefixCascadeBachelorBinning[] = "CascadeBachelorBinning";
@@ -176,6 +183,8 @@ using ConfV01PosDauBinning = ConfTrackBinning<PrefixV01PosDauBinning>;
 using ConfV01NegDauBinning = ConfTrackBinning<PrefixV01NegDauBinning>;
 using ConfV02PosDauBinning = ConfTrackBinning<PrefixV02PosDauBinning>;
 using ConfV02NegDauBinning = ConfTrackBinning<PrefixV02NegDauBinning>;
+using ConfD0PosDauBinning = ConfTrackBinning<PrefixD0PosDauBinning>;
+using ConfD0NegDauBinning = ConfTrackBinning<PrefixD0NegDauBinning>;
 using ConfCascadePosDauBinning = ConfTrackBinning<PrefixCascadePosDauBinning>;
 using ConfCascadeNegDauBinning = ConfTrackBinning<PrefixCascadeNegDauBinning>;
 using ConfCascadeBachelorBinning = ConfTrackBinning<PrefixCascadeBachelorBinning>;
@@ -519,6 +528,8 @@ constexpr char PrefixResonanceNegDaughterQa[] = "ResonanceNegDauQa/";
 
 constexpr char PrefixV01PosDaughter[] = "V01PosDau/";
 constexpr char PrefixV01NegDaughter[] = "V01NegDau/";
+constexpr char PrefixD01PosDaughter[] = "D01PosDau/";
+constexpr char PrefixD01NegDaughter[] = "D01NegDau/";
 constexpr char PrefixV02PosDaughter[] = "V02PosDau/";
 constexpr char PrefixV02NegDaughter[] = "V02NegDau/";
 constexpr char PrefixV0PosDaughterQa[] = "V0PosDauQa/";
