@@ -358,22 +358,22 @@ void runMassFitter(const std::string& configFileName)
   }
 
   // define output histos
-  auto* hRawYieldsSignal = new TH1D("hRawYieldsSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield", nHistograms, sliceVarLimits.data());
-  auto* hRawYieldsSignalCounted = new TH1D("hRawYieldsSignalCounted", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield via bin count", nHistograms, sliceVarLimits.data());
-  auto* hRawYieldsBkg = new TH1D("hRawYieldsBkg", ";" + sliceVarName + "(" + sliceVarUnit + ");Background (3#sigma)", nHistograms, sliceVarLimits.data());
-  auto* hRawYieldsSgnOverBkg = new TH1D("hRawYieldsSgnOverBkg", ";" + sliceVarName + "(" + sliceVarUnit + ");S/B (3#sigma)", nHistograms, sliceVarLimits.data());
-  auto* hRawYieldsSignificance = new TH1D("hRawYieldsSignificance", ";" + sliceVarName + "(" + sliceVarUnit + ");significance (3#sigma)", nHistograms, sliceVarLimits.data());
-  auto* hRawYieldsChiSquareBkg = new TH1D("hRawYieldsChiSquareBkg", ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nHistograms, sliceVarLimits.data());
-  auto* hRawYieldsChiSquareTotal = new TH1D("hRawYieldsChiSquareTotal", ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nHistograms, sliceVarLimits.data());
-  auto* hReflectionOverSignal = new TH1D("hReflectionOverSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");Refl/Signal", nHistograms, sliceVarLimits.data());
-  auto* hRawYieldsMean = new TH1D("hRawYieldsMean", ";" + sliceVarName + "(" + sliceVarUnit + ");mean (GeV/#it{c}^{2})", nHistograms, sliceVarLimits.data());
-  auto* hRawYieldsSigma = new TH1D("hRawYieldsSigma", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})", nHistograms, sliceVarLimits.data());
-  auto* hRawYieldsSecSigma = new TH1D("hRawYieldsSecSigma", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})", nHistograms, sliceVarLimits.data());
-  auto* hRawYieldsFracDoubleGaus = new TH1D("hRawYieldsFracDoubleGaus", ";" + sliceVarName + "(" + sliceVarUnit + ");fraction of double gaussian", nHistograms, sliceVarLimits.data());
-  auto* hRawYieldsDscbAlphaL = new TH1D("hRawYieldsDscbAlphaL", ";" + sliceVarName + "(" + sliceVarUnit + ");#alpha_{L}", nHistograms, sliceVarLimits.data());
-  auto* hRawYieldsDscbAlphaR = new TH1D("hRawYieldsDscbAlphaR", ";" + sliceVarName + "(" + sliceVarUnit + ");#alpha_{R}", nHistograms, sliceVarLimits.data());
-  auto* hRawYieldsDscbNL = new TH1D("hRawYieldsDscbNL", ";" + sliceVarName + "(" + sliceVarUnit + ");n_{L}", nHistograms, sliceVarLimits.data());
-  auto* hRawYieldsDscbNR = new TH1D("hRawYieldsDscbNR", ";" + sliceVarName + "(" + sliceVarUnit + ");n_{R}", nHistograms, sliceVarLimits.data());
+  auto* hRawYieldsSignal = new TH1D("hRawYieldsSignal", ";" + sliceVarName + " (" + sliceVarUnit + ");raw yield", nHistograms, sliceVarLimits.data());
+  auto* hRawYieldsSignalCounted = new TH1D("hRawYieldsSignalCounted", ";" + sliceVarName + " (" + sliceVarUnit + ");raw yield via bin count", nHistograms, sliceVarLimits.data());
+  auto* hRawYieldsBkg = new TH1D("hRawYieldsBkg", ";" + sliceVarName + " (" + sliceVarUnit + ");Background (3#sigma)", nHistograms, sliceVarLimits.data());
+  auto* hRawYieldsSgnOverBkg = new TH1D("hRawYieldsSgnOverBkg", ";" + sliceVarName + " (" + sliceVarUnit + ");S/B (3#sigma)", nHistograms, sliceVarLimits.data());
+  auto* hRawYieldsSignificance = new TH1D("hRawYieldsSignificance", ";" + sliceVarName + " (" + sliceVarUnit + ");significance (3#sigma)", nHistograms, sliceVarLimits.data());
+  auto* hRawYieldsChiSquareBkg = new TH1D("hRawYieldsChiSquareBkg", ";" + sliceVarName + " (" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nHistograms, sliceVarLimits.data());
+  auto* hRawYieldsChiSquareTotal = new TH1D("hRawYieldsChiSquareTotal", ";" + sliceVarName + " (" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nHistograms, sliceVarLimits.data());
+  auto* hReflectionOverSignal = new TH1D("hReflectionOverSignal", ";" + sliceVarName + " (" + sliceVarUnit + ");Refl/Signal", nHistograms, sliceVarLimits.data());
+  auto* hRawYieldsMean = new TH1D("hRawYieldsMean", ";" + sliceVarName + " (" + sliceVarUnit + ");mean (GeV/#it{c}^{2})", nHistograms, sliceVarLimits.data());
+  auto* hRawYieldsSigma = new TH1D("hRawYieldsSigma", ";" + sliceVarName + " (" + sliceVarUnit + ");width (GeV/#it{c}^{2})", nHistograms, sliceVarLimits.data());
+  auto* hRawYieldsSecSigma = new TH1D("hRawYieldsSecSigma", ";" + sliceVarName + " (" + sliceVarUnit + ");width (GeV/#it{c}^{2})", nHistograms, sliceVarLimits.data());
+  auto* hRawYieldsFracDoubleGaus = new TH1D("hRawYieldsFracDoubleGaus", ";" + sliceVarName + " (" + sliceVarUnit + ");fraction of double gaussian", nHistograms, sliceVarLimits.data());
+  auto* hRawYieldsDscbAlphaL = new TH1D("hRawYieldsDscbAlphaL", ";" + sliceVarName + " (" + sliceVarUnit + ");#alpha_{L}", nHistograms, sliceVarLimits.data());
+  auto* hRawYieldsDscbAlphaR = new TH1D("hRawYieldsDscbAlphaR", ";" + sliceVarName + " (" + sliceVarUnit + ");#alpha_{R}", nHistograms, sliceVarLimits.data());
+  auto* hRawYieldsDscbNL = new TH1D("hRawYieldsDscbNL", ";" + sliceVarName + " (" + sliceVarUnit + ");n_{L}", nHistograms, sliceVarLimits.data());
+  auto* hRawYieldsDscbNR = new TH1D("hRawYieldsDscbNR", ";" + sliceVarName + " (" + sliceVarUnit + ");n_{R}", nHistograms, sliceVarLimits.data());
 
   enum {
     ConfigMassMin = 1,
@@ -390,9 +390,9 @@ void runMassFitter(const std::string& configFileName)
     FitResultCovQual,
     NFitResultsToSave
   };
-  auto* hFitConfig = new TH2F("hfitConfig", "Fit Configurations", NConfigsToSave - 1, 0, NConfigsToSave - 1, nHistograms, sliceVarLimits.data());
+  auto* hFitConfig = new TH2F("hFitConfig", "Fit Configurations", NConfigsToSave - 1, 0, NConfigsToSave - 1, nHistograms, sliceVarLimits.data());
   const char* hFitConfigXLabel[NConfigsToSave - 1] = {"mass min", "mass max", "rebin num", "fix sigma", "bkg func", "sgn func", "rnd seed"};
-  auto* hFitResult = new TH2F("hfitResult", "Fit Result", NFitResultsToSave - 1, 0, NFitResultsToSave - 1, nHistograms, sliceVarLimits.data());
+  auto* hFitResult = new TH2F("hFitResult", "Fit Result", NFitResultsToSave - 1, 0, NFitResultsToSave - 1, nHistograms, sliceVarLimits.data());
   const char* hFitResultXLabel[NConfigsToSave - 1] = {"status", "cov qual"};
   for (int i = 0; i < NConfigsToSave - 1; i++) {
     hFitConfig->GetXaxis()->SetBinLabel(i + 1, hFitConfigXLabel[i]);
@@ -405,6 +405,7 @@ void runMassFitter(const std::string& configFileName)
     h->LabelsDeflate("X");
     h->LabelsDeflate("Y");
     h->LabelsOption("v");
+    h->GetYaxis()->SetTitle(sliceVarName + " (" + sliceVarUnit + ")");
   }
 
   setHistoStyle(hRawYieldsSignal);
