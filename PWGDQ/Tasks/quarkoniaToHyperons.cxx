@@ -2217,13 +2217,13 @@ struct QuarkoniaToHyperons {
           if (hyperonMC.pdgCodeMother() == 441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // EtaC(1S)
             histos.fill(HIST("K0sK0s/h3dInvMassTrueEtaC1S"), centrality, ptmc, invmass);
           }
-          if (hyperonMC.pdgCodeMother() == 443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // J/psi
+          if (hyperonMC.pdgCodeMother() == o2::constants::physics::kJPsi && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // J/psi
             histos.fill(HIST("K0sK0s/h3dInvMassTrueJPsi"), centrality, ptmc, invmass);
           }
           if (hyperonMC.pdgCodeMother() == 10441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC0
             histos.fill(HIST("K0sK0s/h3dInvMassTrueChiC0"), centrality, ptmc, invmass);
           }
-          if (hyperonMC.pdgCodeMother() == 20443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC1
+          if (hyperonMC.pdgCodeMother() == o2::constants::physics::kChiC1 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC1
             histos.fill(HIST("K0sK0s/h3dInvMassTrueChiC1"), centrality, ptmc, invmass);
           }
           if (hyperonMC.pdgCodeMother() == 10443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // hC
@@ -2273,13 +2273,13 @@ struct QuarkoniaToHyperons {
           if (hyperonMC.pdgCodeMother() == 441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // EtaC(1S)
             histos.fill(HIST("LaLaBar/h3dInvMassTrueEtaC1S"), centrality, ptmc, invmass);
           }
-          if (hyperonMC.pdgCodeMother() == 443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // J/psi
+          if (hyperonMC.pdgCodeMother() == o2::constants::physics::kJPsi && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // J/psi
             histos.fill(HIST("LaLaBar/h3dInvMassTrueJPsi"), centrality, ptmc, invmass);
           }
           if (hyperonMC.pdgCodeMother() == 10441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC0
             histos.fill(HIST("LaLaBar/h3dInvMassTrueChiC0"), centrality, ptmc, invmass);
           }
-          if (hyperonMC.pdgCodeMother() == 20443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC1
+          if (hyperonMC.pdgCodeMother() == o2::constants::physics::kChiC1 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC1
             histos.fill(HIST("LaLaBar/h3dInvMassTrueChiC1"), centrality, ptmc, invmass);
           }
           if (hyperonMC.pdgCodeMother() == 10443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // hC
@@ -2329,13 +2329,13 @@ struct QuarkoniaToHyperons {
           if (hyperonMC.pdgCodeMother() == 441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // EtaC(1S)
             histos.fill(HIST("XiXiBar/h3dInvMassTrueEtaC1S"), centrality, ptmc, invmass);
           }
-          if (hyperonMC.pdgCodeMother() == 443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // J/psi
+          if (hyperonMC.pdgCodeMother() == o2::constants::physics::kJPsi && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // J/psi
             histos.fill(HIST("XiXiBar/h3dInvMassTrueJPsi"), centrality, ptmc, invmass);
           }
           if (hyperonMC.pdgCodeMother() == 10441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC0
             histos.fill(HIST("XiXiBar/h3dInvMassTrueChiC0"), centrality, ptmc, invmass);
           }
-          if (hyperonMC.pdgCodeMother() == 20443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC1
+          if (hyperonMC.pdgCodeMother() == o2::constants::physics::kChiC1 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC1
             histos.fill(HIST("XiXiBar/h3dInvMassTrueChiC1"), centrality, ptmc, invmass);
           }
           if (hyperonMC.pdgCodeMother() == 10443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // hC
