@@ -385,15 +385,27 @@ void runMassFitter(const std::string& configFileName)
     ConfigRandomSeed,
     NConfigsToSave
   };
+  enum {
+    FitResultStatus = 1,
+    FitResultCovQual,
+    NFitResultsToSave
+  };
   auto* hFitConfig = new TH2F("hfitConfig", "Fit Configurations", NConfigsToSave - 1, 0, NConfigsToSave - 1, nHistograms, sliceVarLimits.data());
   const char* hFitConfigXLabel[NConfigsToSave - 1] = {"mass min", "mass max", "rebin num", "fix sigma", "bkg func", "sgn func", "rnd seed"};
-  hFitConfig->SetStats(false);
+  auto* hFitResult = new TH2F("hfitResult", "Fit Result", NFitResultsToSave - 1, 0, NFitResultsToSave - 1, nHistograms, sliceVarLimits.data());
+  const char* hFitResultXLabel[NConfigsToSave - 1] = {"status", "cov qual"};
   for (int i = 0; i < NConfigsToSave - 1; i++) {
     hFitConfig->GetXaxis()->SetBinLabel(i + 1, hFitConfigXLabel[i]);
   }
-  hFitConfig->LabelsDeflate("X");
-  hFitConfig->LabelsDeflate("Y");
-  hFitConfig->LabelsOption("v");
+  for (int i = 0; i < NFitResultsToSave - 1; i++) {
+    hFitResult->GetXaxis()->SetBinLabel(i + 1, hFitResultXLabel[i]);
+  }
+  for (const auto& h : {hFitConfig, hFitResult}) {
+    h->SetStats(false);
+    h->LabelsDeflate("X");
+    h->LabelsDeflate("Y");
+    h->LabelsOption("v");
+  }
 
   setHistoStyle(hRawYieldsSignal);
   setHistoStyle(hRawYieldsSignalCounted);
@@ -655,6 +667,9 @@ void runMassFitter(const std::string& configFileName)
     hFitConfig->SetBinContent(ConfigBkgFunc, iSliceVar + 1, bkgFunc[iSliceVar]);
     hFitConfig->SetBinContent(ConfigSgnFunc, iSliceVar + 1, sgnFunc[iSliceVar]);
     hFitConfig->SetBinContent(ConfigRandomSeed, iSliceVar + 1, randomSeed);
+
+    hFitResult->SetBinContent(FitResultStatus, iSliceVar + 1, massFitter->getFitStatus());
+    hFitResult->SetBinContent(FitResultCovQual, iSliceVar + 1, massFitter->getCovQual());
   }
 
   // save output histograms
@@ -694,6 +709,7 @@ void runMassFitter(const std::string& configFileName)
     hRawYieldsDscbNR->Write();
   }
   hFitConfig->Write();
+  hFitResult->Write();
 
   outputFile.Close();
 

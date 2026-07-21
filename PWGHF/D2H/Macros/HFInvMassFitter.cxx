@@ -154,7 +154,9 @@ HFInvMassFitter::HFInvMassFitter(TH1* histoToFit,
                                                    mDrawBgPrefit(false),
                                                    mHighlightPeakRegion(false),
                                                    mRandomSeed(randomSeed),
-                                                   mRandomGen(nullptr)
+                                                   mRandomGen(nullptr),
+                                                   mFitStatus(-999),
+                                                   mCovQual(-999)
 {
   // standard constructor
   mHistoInvMass = histoToFit;
@@ -252,7 +254,9 @@ void HFInvMassFitter::doFit()
     if (mTypeOfSgnPdf == GausSec) { // two peak fit
       sbRanges.append(",SEC");
     }
+    std::cout << "Start prefit of BG sidebands\n";
     mBkgPdf->chi2FitTo(sbHistogram, DataError(RooAbsData::SumW2), Save());
+    std::cout << "Finish prefit of BG sidebands\n";
     std::cout << "mRooNBkg->getVal() = " << mRooNBkg->getVal() << "\n";
 
     // define the frame to evaluate background sidebands chi2 (bg pdf needs to be plotted within sideband ranges)
@@ -307,11 +311,21 @@ void HFInvMassFitter::doFit()
     } else {
       mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal pdf", RooArgList(*bkgPdf, *sgnPdf), RooArgList(*mRooNBkg, *mRooNSgn));
     }
+    std::cout << "Start total fit\n";
+    RooFitResult* fitResult{nullptr};
     if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
-      mTotalPdf->chi2FitTo(dataHistogram);
+      fitResult = mTotalPdf->chi2FitTo(dataHistogram, Save());
     } else {
-      mTotalPdf->fitTo(dataHistogram);
+      fitResult = mTotalPdf->fitTo(dataHistogram, Save());
     }
+    std::cout << "Finish total fit\n";
+    std::cout << "Status  = " << fitResult->status() << "\n";
+    std::cout << "CovQual = " << fitResult->covQual() << "\n";
+    std::cout << "EDM     = " << fitResult->edm() << "\n";
+    std::cout << "minNLL  = " << fitResult->minNll() << "\n";
+    fitResult->Print("v");
+    mFitStatus = fitResult->status();
+    mCovQual = fitResult->covQual();
     std::cout << "mRooNBkg->getVal() = " << mRooNBkg->getVal() << "\n";
     std::cout << "mRooNSgn->getVal() = " << mRooNSgn->getVal() << "\n";
     plotBkg(mTotalPdf);

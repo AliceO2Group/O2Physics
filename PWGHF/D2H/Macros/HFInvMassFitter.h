@@ -161,6 +161,8 @@ class HFInvMassFitter : public TNamed
   [[nodiscard]] double getFracDoubleGaus() const { return mRooFracDoubleGaus->getVal(); }
   [[nodiscard]] double getFracDoubleGausUncertainty() const { return mRooFracDoubleGaus->getError(); }
   [[nodiscard]] double getReflOverSig() const { return mReflPdf != nullptr ? mReflOverSgn : 0.; }
+  [[nodiscard]] int getFitStatus() const { return mFitStatus; }
+  [[nodiscard]] int getCovQual() const { return mCovQual; }
   void calculateSignal(double& signal, double& signalErr) const;
   void countSignal(double& signal, double& signalErr) const;
   void calculateBackground(double& bkg, double& bkgErr) const;
@@ -270,6 +272,8 @@ class HFInvMassFitter : public TNamed
   bool mHighlightPeakRegion;       /// draw vertical lines showing the peak region (usually +- 3 sigma)
   int mRandomSeed;                 /// seed for random engine for fit's initial parameters randomization
   TRandom3* mRandomGen;            /// engine for fit's initial parameters randomization
+  int mFitStatus;                  /// fit result status, see https://root-forum.cern.ch/t/meaning-of-values-returned-by-roofitresult-status/16355/2
+  int mCovQual;                    /// fit result covariance matrix quality, see https://root.cern.ch/doc/v620/Minuit2Minimizer_8cxx_source.html#l01121
 
   ClassDefOverride(HFInvMassFitter, 1);
 };
