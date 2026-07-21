@@ -701,8 +701,8 @@ struct TrackedHypertritonRecoTask {
     auto piTrackCov = getTrackParCov(piTrack);
 
     const bool fitSucceeded = twoBody.useKFParticle
-      ? fit2BodyWithKF(collision, heTrack, piTrack, heTrackCov, piTrackCov)
-      : fit2bodyWithDCAFitter(heTrackCov, piTrackCov);
+                                ? fit2BodyWithKF(collision, heTrack, piTrack, heTrackCov, piTrackCov)
+                                : fit2bodyWithDCAFitter(heTrackCov, piTrackCov);
     if (!fitSucceeded) {
       return;
     }
