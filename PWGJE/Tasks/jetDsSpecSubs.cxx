@@ -441,7 +441,6 @@ struct JetDsSpecSubs {
           registry.fill(HIST("h_jet_pt_mcd"), mcdjet.pt());
           registry.fill(HIST("h_jet_eta_mcd"), mcdjet.eta());
           registry.fill(HIST("h_jet_phi_mcd"), mcdjet.phi());
-          registry.fill(HIST("h_ds_jet_projection_mcd"), mcd_zParallel);
           registry.fill(HIST("h_ds_jet_lambda11_mcd"), mcd_lambda11);
           registry.fill(HIST("h_ds_jet_lambda12_mcd"), mcd_lambda12);
           // Detector-level Ds Histgrams
