@@ -248,9 +248,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 double getRapidity(const double pT, const double eta)
 {
   return std::log(
-    (std::sqrt(std::pow(o2::constants::physics::MassJPsi, 2) + (std::pow(pT, 2) * std::pow(std::cosh(eta), 2))) + pT * std::sinh(eta)) / 
-    (std::sqrt(std::pow(o2::constants::physics::MassJPsi, 2) + std::pow(pT, 2)))
-  );
+    (std::sqrt(std::pow(o2::constants::physics::MassJPsi, 2) + (std::pow(pT, 2) * std::pow(std::cosh(eta), 2))) + pT * std::sinh(eta)) /
+    (std::sqrt(std::pow(o2::constants::physics::MassJPsi, 2) + std::pow(pT, 2))));
 }
 
 double getWeight(const double pT, const std::vector<double>& binsPT, const std::vector<double>& efficiency, const double etaMin, const double etaMax)
