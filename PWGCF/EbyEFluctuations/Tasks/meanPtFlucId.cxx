@@ -85,13 +85,13 @@ struct MeanPtFlucId {
   Configurable<float> cfgP1corr{"cfgP1corr", 0.0001, "p_{1} for corrected N_{TPC} "};
   Configurable<float> cfgP2corr{"cfgP2corr", 0.0001, "p_{2} for corrected N_{TPC} "};
   Configurable<bool> cfgSel8{"cfgSel8", true, "Sel8 trigger"};
-  Configurable<bool> cfgNtpcEventCut{"cfgNtpcEventCut", true, "N_{TPC} Event Cut for reco"};
   Configurable<bool> cfgNoSameBunchPileup{"cfgNoSameBunchPileup", true, "kNoSameBunchPileup"};
   Configurable<bool> cfgIsVertexITSTPC{"cfgIsVertexITSTPC", true, "kIsVertexITSTPC"};
   Configurable<bool> cfgLightIonCuts{"cfgLightIonCuts", false, "Light Ion Cuts"};
   Configurable<bool> cfgIsGoodITSLayersAll{"cfgIsGoodITSLayersAll", true, "kIsGoodITSLayersAll"};
   Configurable<bool> cfgIsGoodZvtxFT0vsPV{"cfgIsGoodZvtxFT0vsPV", true, "kIsGoodZvtxFT0vsPV"};
   Configurable<bool> cfgRejTrk{"cfgRejTrk", true, "Rejected Tracks"};
+  Configurable<bool> cfgNtpcEventCut{"cfgNtpcEventCut", true, "N_{TPC} Event Cut for reco"};
   ConfigurableAxis multTPCBins{"multTPCBins", {150, 0, 150}, "TPC Multiplicity bins"};
   ConfigurableAxis multMCBins{"multMCBins", {300, 0, 300}, "MC Multiplicity bins"};
   ConfigurableAxis multCorrBins{"multCorrBins", {100, 0., 150.}, "Corrected TPC Multiplicity bins"};
@@ -154,7 +154,7 @@ struct MeanPtFlucId {
     Gen_Proton
   };
 
-  static constexpr std::array<std::string_view, 12> Dire = {
+  static constexpr std::array<std::string_view, 12> Dire{
     "QA/after/",
     "QA/Pion/",
     "QA/Kaon/",
@@ -575,11 +575,11 @@ struct MeanPtFlucId {
   template <typename T>
   bool rejectTracks(T const& track)
   {
-    return (((track.tpcNSigmaEl()) > -cfgCutNSig3 &&
-             (track.tpcNSigmaEl()) < cfgCutNSig5) &&
-            (std::fabs(track.tpcNSigmaPi()) > cfgCutNSig3 &&
-             std::fabs(track.tpcNSigmaKa()) > cfgCutNSig3 &&
-             std::fabs(track.tpcNSigmaPr()) > cfgCutNSig3));
+    return ((track.tpcNSigmaEl()) > -cfgCutNSig3 &&
+            (track.tpcNSigmaEl()) < cfgCutNSig5) &&
+           (std::fabs(track.tpcNSigmaPi()) > cfgCutNSig3 &&
+            std::fabs(track.tpcNSigmaKa()) > cfgCutNSig3 &&
+            std::fabs(track.tpcNSigmaPr()) > cfgCutNSig3);
   }
 
   // PID cuts for identified particles
@@ -587,7 +587,6 @@ struct MeanPtFlucId {
   bool identifyParticle(T const& track, PIDType species, PIDType reject1, PIDType reject2, float p, float momThreshold)
   {
     std::vector<float> vTpcNSigma = {-999.f, track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
-
     std::vector<float> vTofNSigma = {-999.f, track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr()};
 
     const int sp = static_cast<int>(species);
@@ -685,7 +684,7 @@ struct MeanPtFlucId {
 
   // Fill Charged particles QA histograms after selection cuts:
   template <typename T>
-  void fillChargedQAHistos(T const& track, float centFT0M)
+  void fillChargedQAHistos(T const& track)
   {
     hist.fill(HIST("QA/Charged/h_Eta"), track.eta());
     hist.fill(HIST("QA/Charged/h_Phi"), track.phi());
@@ -712,32 +711,26 @@ struct MeanPtFlucId {
     hist.fill(HIST("QA/before/h2_pvsm2"), track.mass() * track.mass(), track.p());
 
     hist.fill(HIST("QA/Pion/before/h2_TPCNsigma"), track.p(), track.tpcNSigmaPi());
-    if (!track.hasTOF()) {
+    if (!track.hasTOF())
       hist.fill(HIST("QA/Pion/before/h2_TPCNsigma_nottof"), track.p(), track.tpcNSigmaPi());
-    }
-    if (track.hasTOF()) {
+    if (track.hasTOF())
       hist.fill(HIST("QA/Pion/before/h2_TPCNsigma_tof"), track.p(), track.tpcNSigmaPi());
-    }
     hist.fill(HIST("QA/Pion/before/h2_TOFNsigma"), track.p(), track.tofNSigmaPi());
     hist.fill(HIST("QA/Pion/before/h2_TpcTofNsigma"), track.tpcNSigmaPi(), track.tofNSigmaPi());
 
     hist.fill(HIST("QA/Kaon/before/h2_TPCNsigma"), track.p(), track.tpcNSigmaKa());
-    if (!track.hasTOF()) {
+    if (!track.hasTOF())
       hist.fill(HIST("QA/Kaon/before/h2_TPCNsigma_nottof"), track.p(), track.tpcNSigmaKa());
-    }
-    if (track.hasTOF()) {
+    if (track.hasTOF())
       hist.fill(HIST("QA/Kaon/before/h2_TPCNsigma_tof"), track.p(), track.tpcNSigmaKa());
-    }
     hist.fill(HIST("QA/Kaon/before/h2_TOFNsigma"), track.p(), track.tofNSigmaKa());
     hist.fill(HIST("QA/Kaon/before/h2_TpcTofNsigma"), track.tpcNSigmaKa(), track.tofNSigmaKa());
 
     hist.fill(HIST("QA/Proton/before/h2_TPCNsigma"), track.p(), track.tpcNSigmaPr());
-    if (!track.hasTOF()) {
+    if (!track.hasTOF())
       hist.fill(HIST("QA/Proton/before/h2_TPCNsigma_nottof"), track.p(), track.tpcNSigmaPr());
-    }
-    if (track.hasTOF()) {
+    if (track.hasTOF())
       hist.fill(HIST("QA/Proton/before/h2_TPCNsigma_tof"), track.p(), track.tpcNSigmaPr());
-    }
     hist.fill(HIST("QA/Proton/before/h2_TOFNsigma"), track.p(), track.tofNSigmaPr());
     hist.fill(HIST("QA/Proton/before/h2_TpcTofNsigma"), track.tpcNSigmaPr(), track.tofNSigmaPr());
   }
@@ -815,10 +808,10 @@ struct MeanPtFlucId {
     }
   }
 
-  int getPtBin(double pt, const std::vector<double>& ptBins)
+  int getPtBin(double pt, const std::vector<double>& ptB)
   {
-    for (std::size_t i = 0; i < ptBins.size() - 1; ++i) {
-      if (pt >= ptBins[i] && pt < ptBins[i + 1]) {
+    for (size_t i = 0; i < ptB.size() - 1; ++i) {
+      if (pt >= ptB[i] && pt < ptB[i + 1]) {
         return i;
       }
     }
@@ -827,7 +820,7 @@ struct MeanPtFlucId {
 
   int getEtaBin(double eta)
   {
-    for (std::size_t i = 0; i < etaBins->size() - 1; ++i) {
+    for (size_t i = 0; i < etaBins->size() - 1; ++i) {
       if (eta >= etaBins->at(i) && eta < etaBins->at(i + 1)) {
         return i;
       }
@@ -849,9 +842,8 @@ struct MeanPtFlucId {
       int ipt = getPtBin(trk.pt, ptB);
       int ieta = getEtaBin(trk.eta);
 
-      if (ipt < 0 || ieta < 0) {
+      if (ipt < 0 || ieta < 0)
         continue;
-      }
 
       int k = getK(ipt, ieta);
 
@@ -859,23 +851,21 @@ struct MeanPtFlucId {
       hist.fill(HIST(Dire[Mode]) + HIST("hPt1Matrix"), centFT0M, k, trk.pt);
     }
 
-    for (std::size_t i = 0; i < tracks.size(); ++i) {
+    for (size_t i = 0; i < tracks.size(); ++i) {
       int ipt1 = getPtBin(tracks[i].pt, ptB);
       int ieta1 = getEtaBin(tracks[i].eta);
 
-      if (ipt1 < 0 || ieta1 < 0) {
+      if (ipt1 < 0 || ieta1 < 0)
         continue;
-      }
 
       int k1 = getK(ipt1, ieta1);
 
-      for (std::size_t j = i + 1; j < tracks.size(); ++j) {
+      for (size_t j = i + 1; j < tracks.size(); ++j) {
         int ipt2 = getPtBin(tracks[j].pt, ptB);
         int ieta2 = getEtaBin(tracks[j].eta);
 
-        if (ipt2 < 0 || ieta2 < 0) {
+        if (ipt2 < 0 || ieta2 < 0)
           continue;
-        }
 
         int k2 = getK(ipt2, ieta2);
 
@@ -1033,7 +1023,7 @@ struct MeanPtFlucId {
       hist.fill(HIST("QA/Charged/h2_Pt_EtaMC"), etaMC, ptMC);
       hist.fill(HIST("QA/Charged/h3_Pt_EtaMC_centFT0M"), etaMC, ptMC, centFT0M);
 
-      fillChargedQAHistos(track, centFT0M);
+      fillChargedQAHistos(track);
 
       fillBeforePIDQAHistos(track);
 
@@ -1112,12 +1102,10 @@ struct MeanPtFlucId {
     pionTracksGen.clear();
     kaonTracksGen.clear();
     protonTracksGen.clear();
-
     nSim = 0;
     int nChSim = 0, nPiSim = 0, nKaSim = 0, nPrSim = 0;
     float pt = 0., eta = 0, phi = 0., rap = 0.;
     double q1Ch = 0., q2Ch = 0., q1Pi = 0., q2Pi = 0., q1Ka = 0., q2Ka = 0., q1Pr = 0., q2Pr = 0.;
-    
     for (auto const& mcPart : mcParticles) {
       if (!mcPart.isPhysicalPrimary()) {
         continue;
@@ -1125,13 +1113,11 @@ struct MeanPtFlucId {
 
       auto* particle = pdg->GetParticle(mcPart.pdgCode());
 
-      if (!particle) {
+      if (!particle)
         continue;
-      }
 
-      if (particle->Charge() == 0) {
+      if (particle->Charge() == 0)
         continue;
-      }
 
       pt = mcPart.pt();
       eta = mcPart.eta();
