@@ -638,7 +638,8 @@ class decay3bodyBuilderHelper
     decay3body.mass = mass;
 
     // V0 mass
-    float massV0, massV0Err;
+    float massV0{};
+    float massV0Err{};
     KFV0.GetMass(massV0, massV0Err);
     decay3body.massV0 = massV0;
 
@@ -658,8 +659,6 @@ class decay3bodyBuilderHelper
         decay3body.covDeuteron[i] = kfpDeuteron.GetCovariance(i);
       }
     }
-
-    return;
   }
 
   //_______________________________________________________________________
@@ -873,8 +872,6 @@ class decay3bodyBuilderHelper
         std::abs(dca.getY()) > svertexerselections.maxDCAXY3Body || std::abs(dca.getZ()) > svertexerselections.maxDCAZ3Body) {
       return;
     }
-
-    return;
   }
 
  private:
