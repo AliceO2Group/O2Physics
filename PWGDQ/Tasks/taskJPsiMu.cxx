@@ -73,18 +73,18 @@ double getWeight(const double pT, const std::vector<double>& pT_bins, const std:
 struct DqJPsiMuonCorrelations {
 
   // Configurables for the dilepton signal region
-  Configurable<float> fConfigDileptonLowMass{"cfgDileptonLowMass", 2.8, "Low mass cut for the dileptons used in analysis"};
-  Configurable<float> fConfigDileptonHighMass{"cfgDileptonHighMass", 3.4, "High mass cut for the dileptons used in analysis"};
-  Configurable<float> fConfigBackgroundLowMass{"cfgBackgroundLowMass", 2.5, "Low mass cut for the background used in analysis"};
-  Configurable<float> fConfigBackgroundHighMass{"cfgBackgroundHighMass", 3.7, "High mass cut for the background used in analysis"};
+  Configurable<float> fConfigDileptonLowMass{"fConfigDileptonLowMass", 2.8, "Low mass cut for the dileptons used in analysis"};
+  Configurable<float> fConfigDileptonHighMass{"fConfigDileptonHighMass", 3.4, "High mass cut for the dileptons used in analysis"};
+  Configurable<float> fConfigBackgroundLowMass{"fConfigBackgroundLowMass", 2.5, "Low mass cut for the background used in analysis"};
+  Configurable<float> fConfigBackgroundHighMass{"fConfigBackgroundHighMass", 3.7, "High mass cut for the background used in analysis"};
 
   // Configurables for the dilepton and associated muon cuts
-  Configurable<float> fConfigDileptonPtMin{"cfgDileptonPtMin", 1.0, "Minimum pT cut for the dilepton"};
-  Configurable<float> fConfigDileptonPtMax{"cfgDileptonPtMax", 20.0, "Maximum pT cut for the dilepton"};
-  Configurable<float> fConfigDileptonEtaMin{"cfgDileptonEtaMin", -4.0, "Minimum eta cut for the dileptons"};
-  Configurable<float> fConfigDileptonEtaMax{"cfgDileptonEtaMax", -2.5, "Maximum eta cut for the dileptons"};
-  Configurable<float> fConfigMuonEtaMin{"cfgMuonEtaMin", -4.0, "Minimum eta cut for the associated muons"};
-  Configurable<float> fConfigMuonEtaMax{"cfgMuonEtaMax", -2.5, "Maximum eta cut for the associated muons"};
+  Configurable<float> fConfigDileptonPtMin{"fConfigDileptonPtMin", 1.0, "Minimum pT cut for the dilepton"};
+  Configurable<float> fConfigDileptonPtMax{"fConfigDileptonPtMax", 20.0, "Maximum pT cut for the dilepton"};
+  Configurable<float> fConfigDileptonEtaMin{"fConfigDileptonEtaMin", -4.0, "Minimum eta cut for the dileptons"};
+  Configurable<float> fConfigDileptonEtaMax{"fConfigDileptonEtaMax", -2.5, "Maximum eta cut for the dileptons"};
+  Configurable<float> fConfigMuonEtaMin{"fConfigMuonEtaMin", -4.0, "Minimum eta cut for the associated muons"};
+  Configurable<float> fConfigMuonEtaMax{"fConfigMuonEtaMax", -2.5, "Maximum eta cut for the associated muons"};
 
   // Configurables for histograms
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f, 20.0f}, "p_{T} (GeV/c)"};
@@ -93,13 +93,13 @@ struct DqJPsiMuonCorrelations {
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {10, -2.0f, 2.0f}, "#Delta#eta"};
 
   // Configurable for acceptance efficiency correction
-  Configurable<std::vector<double>> fConfigBinEffJPsi{"cfgBinEffJPsi", std::vector<double>{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}, "acceptance efficiency correction factors for each pT bin"};
-  Configurable<std::vector<double>> fConfigBinEffMuon{"cfgBinEffMuon", std::vector<double>{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}, "acceptance efficiency correction factors for each pT bin"};
+  Configurable<std::vector<double>> fConfigBinEffJPsi{"fConfigBinEffJPsi", std::vector<double>{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}, "acceptance efficiency correction factors for each pT bin"};
+  Configurable<std::vector<double>> fConfigBinEffMuon{"fConfigBinEffMuon", std::vector<double>{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}, "acceptance efficiency correction factors for each pT bin"};
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb{};
-  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
 
   // Define the filter for events
   Filter eventFilter = aod::dqanalysisflags::isEventSelected == 1;
@@ -117,9 +117,9 @@ struct DqJPsiMuonCorrelations {
 
   void init(o2::framework::InitContext&)
   {
-    ccdb->setURL(url.value);
+    ccdb->setURL(ccdbUrl.value);
     ccdb->setCaching(true);
-    ccdb->setCreatedNotAfter(nolaterthan.value);
+    ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
 
     // Assert correct size of the efficiency correction vector
     if (axisPt.value.size() - 2 != fConfigBinEffJPsi.value.size() || axisPt.value.size() - 2 != fConfigBinEffMuon.value.size()) {
