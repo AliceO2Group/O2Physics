@@ -921,6 +921,19 @@ struct NucleitpcPbPb {
               histos.fill(HIST("dcaXY"), ptReco, track.dcaXY());
               histos.fill(HIST("dcaZ"), ptReco, track.dcaZ());
               histos.fill(HIST("Tpcsignal"), getRigidity(track) * track.sign(), track.tpcSignal());
+              // Delta Pt histograms
+              float ptGen = matchedMCParticle.pt();
+              float deltaPt = ptReco - ptGen;
+
+              if (pdg == -particlePdgCodes.at(i)) { // Anti-particle
+                histomc.fill(HIST("histDeltaPtVsPtGenanti"), ptReco, deltaPt);
+                histomc.fill(HIST("histPIDtrackanti"), ptReco, track.pidForTracking());
+              }
+
+              if (pdg == particlePdgCodes.at(i) && decayType == 0) { // Particle
+                histomc.fill(HIST("histDeltaPtVsPtGen"), ptReco, deltaPt);
+                histomc.fill(HIST("histPIDtrack"), ptReco, track.pidForTracking());
+              }
 
               // Fill mass²/z² for MC - separate for particles and anti-particles
               if (track.hasTOF()) {
@@ -940,7 +953,7 @@ struct NucleitpcPbPb {
                     }
                   }
 
-                  if (!skipHe4) {
+                  if (!skipHe4 && decayType == 0) {
                     if (pdg > 0) {
                       histomc.fill(HIST("hMassVsPtMC"), ptReco, massSquareOverChargeSquare, collision.centFT0C());
                     } else {
@@ -948,19 +961,6 @@ struct NucleitpcPbPb {
                     }
                   }
                 }
-              }
-
-              // Delta Pt histograms
-              float ptGen = matchedMCParticle.pt();
-              float deltaPt = ptReco - ptGen;
-
-              if (pdg == -particlePdgCodes.at(i)) { // Anti-particle
-                histomc.fill(HIST("histDeltaPtVsPtGenanti"), ptReco, deltaPt);
-                histomc.fill(HIST("histPIDtrackanti"), ptReco, track.pidForTracking());
-              }
-              if (pdg == particlePdgCodes.at(i)) { // Particle
-                histomc.fill(HIST("histDeltaPtVsPtGen"), ptReco, deltaPt);
-                histomc.fill(HIST("histPIDtrack"), ptReco, track.pidForTracking());
               }
             }
           }
