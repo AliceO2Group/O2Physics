@@ -19,15 +19,15 @@
 
 #include "Common/DataModel/Multiplicity.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/DataTypes.h"
-#include "Framework/Expressions.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
-#include "Framework/runDataProcessing.h"
-#include "MathUtils/Utils.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/DataTypes.h>
+#include <Framework/Expressions.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/Utils.h>
 
 #include <TH1F.h>
 #include <TParameter.h>
@@ -242,7 +242,7 @@ struct AntitritonAnalysis {
   }
 
   template <bool HasMC, typename TrackType>
-  void fillHistSetExtra(HistSet& h, const TrackType& track, int pdg)
+  void fillHistSetExtra(HistSet& h, const TrackType& track)
   {
     h.TPCSignal->Fill(track.tpcInnerParam(), track.tpcSignal());
     h.TOFSignal->Fill(track.p(), track.beta());
@@ -257,7 +257,7 @@ struct AntitritonAnalysis {
   {
     fillHistSet(Set, track, pdg);
     if constexpr (FillExtra) {
-      fillHistSetExtra<false>(Set, track, pdg);
+      fillHistSetExtra<false>(Set, track);
     }
 
     if constexpr (HasMC) {
@@ -265,7 +265,7 @@ struct AntitritonAnalysis {
         mcSet.origin->Fill(track.origin());
         fillHistSet(mcSet, track, pdg);
         if constexpr (FillExtra) {
-          fillHistSetExtra<true>(mcSet, track, pdg);
+          fillHistSetExtra<true>(mcSet, track);
         }
       }
     }
@@ -344,7 +344,7 @@ struct AntitritonAnalysis {
       registry.fill(HIST("MultVsCent"), collision.mult(), collision.multPerc());
       registry.fill(HIST("IRvsOccupancy"), collision.occupancy(), collision.hadronicRate());
     }
-    int cnt = 0;
+
     for (const auto& track : tracks) {
       const auto& coll = track.template singleCollSel_as<ColsType>();
       const int signIdx = (-track.sign() + 1) / 2; // 0: triton, 1: antitriton
