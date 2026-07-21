@@ -633,7 +633,7 @@ struct UpcVmRof {
         if (aFT0A > maxAmpFT0) {
           return;
         }
-	  colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(13);
+        colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(13);
         nFT0A = (bc.foundFT0().amplitudeA()).size();
       } // a side
       // c side
@@ -642,7 +642,7 @@ struct UpcVmRof {
         if (std::abs(tFT0C) > maxAbsTimeFT0) {
           return;
         }
-	colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(14);
+        colTH1Pointers[Form("col/%d/colSel_H", runNumberCol)]->Fill(14);
         aFT0C = bc.foundFT0().sumAmpC();
         if (aFT0C > maxAmpFT0) {
           return;
@@ -744,7 +744,7 @@ struct UpcVmRof {
     } // ZDC info
 
     // fill output table
-    const int recoFlag = ((col.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != stdReco) ? upcReco : stdReco;
+    const int recoFlag = ((col.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != 0) ? upcReco : stdReco;
     if (isTwoBody) {
       colTH1Pointers[Form("col/%d/twoTrkTF_H", runNumberCol)]->Fill(thisTF);
       twoTrkTable(runNumberCol, col.posX(), col.posY(), col.posZ(), col.chi2(), thisBC, thisTF, thisROF, recoFlag,
