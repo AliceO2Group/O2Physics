@@ -252,7 +252,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 double getRapidity(const double pT, const double eta)
 {
   double mJPsi = 3.096916; // J/Psi mass in GeV/c^2
-  return log((sqrt(pow(mJPsi, 2) + (pow(pT, 2) * pow(cosh(eta), 2))) + pT * sinh(eta)) / (sqrt(pow(mJPsi, 2) + pow(pT, 2))));
+  return std::log((std::sqrt(std::pow(mJPsi, 2) + (std::pow(pT, 2) * std::pow(std::cosh(eta), 2))) + pT * std::sinh(eta)) / (std::sqrt(std::pow(mJPsi, 2) + std::pow(pT, 2))));
 }
 
 double getWeight(const double pT, const std::vector<double>& pT_bins, const std::vector<double>& efficiency, const double eta_min, const double eta_max)
