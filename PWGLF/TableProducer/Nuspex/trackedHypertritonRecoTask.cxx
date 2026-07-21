@@ -558,7 +558,7 @@ struct TrackedHypertritonRecoTask {
   }
 
   template <typename TCollision, typename TTrack, typename TTrackParCov>
-  void fit2BodyWithKF(TCollision const& collision,
+  bool fit2BodyWithKF(TCollision const& collision,
                       TTrack const& trackHelium,
                       TTrack const& trackPion,
                       TTrackParCov const& trackHeliumCov,
@@ -591,7 +591,12 @@ struct TrackedHypertritonRecoTask {
     int nDaughtersV0 = 2;
     const KFParticle* DaughtersV0[2] = {&kfpHelium, &kfpPion};
     KFV0.SetConstructMethod(2);
-    KFV0.Construct(DaughtersV0, nDaughtersV0);
+    try {
+      KFV0.Construct(DaughtersV0, nDaughtersV0);
+    } catch (std::runtime_error& e) {
+      LOG(debug) << "Failed to create V0 vertex." << e.what();
+      return false;
+    }
 
     // topological constraint
     if (twoBody.kfSetTopologicalConstraint) {
@@ -639,10 +644,12 @@ struct TrackedHypertritonRecoTask {
 
     // vertex chi2
     v0.chi2 = KFV0.GetChi2() / KFV0.GetNDF();
+
+    return true;
   }
 
   template <typename TTrackParCov>
-  void fit2bodyWithDCAFitter(TTrackParCov const& trackHeliumCov,
+  bool fit2bodyWithDCAFitter(TTrackParCov const& trackHeliumCov,
                              TTrackParCov const& trackPionCov)
   {
     int nCandidates = 0;
@@ -650,10 +657,10 @@ struct TrackedHypertritonRecoTask {
       nCandidates = fitter2Body.process(trackHeliumCov, trackPionCov);
     } catch (...) {
       LOG(error) << "Exception while fitting a tracked two-body candidate";
-      return;
+      return false;
     }
     if (nCandidates == 0) {
-      return;
+      return false;
     }
 
     // get daughter momenta
@@ -681,6 +688,8 @@ struct TrackedHypertritonRecoTask {
       v0.decayVertex[i] = secondaryVertex[i];
     }
     v0.chi2 = std::sqrt(fitter2Body.getChi2AtPCACandidate());
+
+    return true;
   }
 
   template <typename TTrack, typename TCollision, typename TFillCandidate>
@@ -691,10 +700,10 @@ struct TrackedHypertritonRecoTask {
     auto heTrackCov = getTrackParCov(heTrack);
     auto piTrackCov = getTrackParCov(piTrack);
 
-    if (twoBody.useKFParticle) {
-      fit2BodyWithKF(collision, heTrack, piTrack, heTrackCov, piTrackCov);
-    } else {
-      fit2bodyWithDCAFitter(heTrackCov, piTrackCov);
+    if (twoBody.useKFParticle && !fit2BodyWithKF(collision, heTrack, piTrack, heTrackCov, piTrackCov)) {
+      return;
+    } else if (!fit2bodyWithDCAFitter(heTrackCov, piTrackCov)) {
+      return;
     }
 
     v0.cosPA = RecoDecay::cpa(primaryVertex, v0.decayVertex, v0.momentum);
@@ -910,22 +919,22 @@ struct TrackedHypertritonRecoTask {
       const auto trackProton = trackDeuteron.sign() > 0 ? trackPositive : trackNegative;
       const auto trackPion = trackDeuteron.sign() > 0 ? trackNegative : trackPositive;
 
-      // get DCA of ITS track to SV
-      const auto itsTrack = tracked3Body.itsTrack_as<Tracks>();
-      auto itsTrackParCov = getTrackParCov(itsTrack);
-      std::array<float, 2> dcaInfoItsTrack{};
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, itsTrackParCov, 2.f, fitter2Body.getMatCorrType(), &dcaInfoItsTrack);
-      builder3Body.decay3body.itsTrackDCAToSV[0] = dcaInfoItsTrack[0];
-      builder3Body.decay3body.itsTrackDCAToSV[1] = dcaInfoItsTrack[1];
-      if (threeBody.useSelections && (builder3Body.decay3body.itsTrackDCAToSV[0] > threeBody.maxITSDCAxytrackToSV || builder3Body.decay3body.itsTrackDCAToSV[1] > threeBody.maxITSDCAztrackToSV)) {
-        continue;
-      }
-
       if (builder3Body.buildDecay3BodyCandidate(collision, trackProton, trackPion, trackDeuteron,
                                                 decay3Body.globalIndex(), deuteronTOFNSigma(collision, trackDeuteron), tracked3Body.itsClsSize(),
                                                 threeBody.useKFParticle, threeBody.setTopologicalConstraint,
                                                 threeBody.useSelections, threeBody.useChi2Selection, threeBody.useTPCforPion,
                                                 threeBody.acceptTPCOnly, threeBody.askOnlyITSMatch, threeBody.calculateCovariance)) {
+        // get DCA of ITS track to SV
+        const auto itsTrack = tracked3Body.itsTrack_as<Tracks>();
+        auto itsTrackParCov = getTrackParCov(itsTrack);
+        std::array<float, 2> dcaInfoItsTrack{};
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({builder3Body.decay3body.position[0], builder3Body.decay3body.position[1], builder3Body.decay3body.position[2]}, itsTrackParCov, 2.f, fitter2Body.getMatCorrType(), &dcaInfoItsTrack);
+        builder3Body.decay3body.itsTrackDCAToSV[0] = dcaInfoItsTrack[0];
+        builder3Body.decay3body.itsTrackDCAToSV[1] = dcaInfoItsTrack[1];
+        if (threeBody.useSelections && (builder3Body.decay3body.itsTrackDCAToSV[0] > threeBody.maxITSDCAxytrackToSV || builder3Body.decay3body.itsTrackDCAToSV[1] > threeBody.maxITSDCAztrackToSV)) {
+          continue;
+        }
+
         fillThreeBodyTables();
       }
     }
