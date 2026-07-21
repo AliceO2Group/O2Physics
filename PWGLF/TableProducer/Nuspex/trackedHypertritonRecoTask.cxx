@@ -70,6 +70,8 @@
 using namespace o2;
 using namespace o2::framework;
 
+o2::common::core::MetadataHelper metadataInfo{};
+
 namespace
 {
 using Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::EvTimeTOFFT0>;
@@ -94,8 +96,6 @@ enum ZorroTrigger : std::size_t {
 } // namespace
 
 struct TrackedHypertritonRecoTask {
-  o2::common::core::MetadataHelper metadataInfo{};
-
   Produces<aod::DataHypCands> dataHypCands;
   Produces<aod::MCHypCands> mcHypCands;
   Produces<aod::Vtx3BodyDatas> vtx3BodyDatas;
@@ -208,9 +208,9 @@ struct TrackedHypertritonRecoTask {
     std::array<float, 3> posHelium{};
     std::array<float, 3> posPion{};
     // vertex properties
-    float mass;
-    float chi2;
-    float cosPA;
+    float mass{};
+    float chi2{};
+    float cosPA{};
     std::array<float, 3> decayVertex{};
     std::array<float, 3> momentum{};
   };
@@ -565,14 +565,14 @@ struct TrackedHypertritonRecoTask {
                       TTrackParCov const& trackPionCov)
   {
     // initialise KF primary vertex
-    KFVertex kfpVertex = createKFPVertexFromCollision(collision);
-    KFParticle kfpv(kfpVertex);
+    KFParticle kfpv(createKFPVertexFromCollision(collision));
 
     // create KFParticle objects
     KFParticle kfpHelium, kfpPion;
     // helium
-    std::array<float, 3> xyz, pxpypz;
-    float xyzpxpypz[6];
+    std::array<float, 3> xyz{};
+    std::array<float, 3> pxpypz{};
+    std::array<float, 6> xyzpxpypz{};
     trackHeliumCov.getPxPyPzGlo(pxpypz);
     trackHeliumCov.getXYZGlo(xyz);
     for (int i = 0; i < 3; ++i) {
@@ -582,7 +582,7 @@ struct TrackedHypertritonRecoTask {
     std::array<float, 21> cv{};
     trackHeliumCov.getCovXYZPxPyPzGlo(cv);
     KFParticle kfHelium;
-    kfHelium.Create(xyzpxpypz, cv.data(), trackHelium.sign() * 2, constants::physics::MassHelium3);
+    kfHelium.Create(xyzpxpypz.data(), cv.data(), trackHelium.sign() * 2, constants::physics::MassHelium3);
     // pion
     kfpPion = createKFParticleFromTrackParCov(trackPionCov, trackPion.sign(), constants::physics::MassPionCharged);
 
@@ -591,12 +591,7 @@ struct TrackedHypertritonRecoTask {
     int nDaughtersV0 = 2;
     const KFParticle* DaughtersV0[2] = {&kfpHelium, &kfpPion};
     KFV0.SetConstructMethod(2);
-    try {
-      KFV0.Construct(DaughtersV0, nDaughtersV0);
-    } catch (std::runtime_error& e) {
-      LOG(debug) << "Failed to create V0 vertex." << e.what();
-      return;
-    }
+    KFV0.Construct(DaughtersV0, nDaughtersV0);
 
     // topological constraint
     if (twoBody.kfSetTopologicalConstraint) {
@@ -637,7 +632,8 @@ struct TrackedHypertritonRecoTask {
     v0.momPion[2] = kfpPion.GetPz();
 
     // candidate mass
-    float mass, massErr;
+    float mass{};
+    float massErr{};
     KFV0.GetMass(mass, massErr);
     v0.mass = mass;
 
@@ -790,7 +786,7 @@ struct TrackedHypertritonRecoTask {
                   candidate.averageITSClSize[0], candidate.averageITSClSize[1], candidate.averageITSClSize[2],
                   static_cast<int>(candidate.tpcNCl[0]), static_cast<int>(candidate.tpcNCl[1]), static_cast<int>(candidate.tpcNCl[2]),
                   static_cast<uint32_t>(candidate.pidForTrackingDeuteron));
-    vtx3BodyCovs(candidate.covProton, candidate.covPion, candidate.covDeuteron, candidate.covariance);
+    vtx3BodyCovs(candidate.covProton.data(), candidate.covPion.data(), candidate.covDeuteron.data(), candidate.covariance.data());
     vtx3BodyTrackedInfo(candidate.itsTrackDCAToSV[0], candidate.itsTrackDCAToSV[1]);
   }
 
@@ -1130,7 +1126,6 @@ struct TrackedHypertritonRecoTask {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  auto metadataInfo = o2::common::core::MetadataHelper{};
   metadataInfo.initMetadata(cfgc);
-  return WorkflowSpec{adaptAnalysisTask<TrackedHypertritonRecoTask>(cfgc, std::move(metadataInfo))};
+  return WorkflowSpec{adaptAnalysisTask<TrackedHypertritonRecoTask>(cfgc)};
 }
