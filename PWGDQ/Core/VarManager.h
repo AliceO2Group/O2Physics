@@ -7724,7 +7724,9 @@ void VarManager::FillTripletVertexingALICE3(C const& collision, T const& t1, T c
     values = fgValues;
   }
 
-  float m1, m2, m3;
+  float m1 = o2::constants::physics::MassKaonCharged;
+  float m2 = o2::constants::physics::MassPionCharged;
+  float m3 = o2::constants::physics::MassPionCharged;
 
   if (tripletType == kTripleCandidateToKPiPi) {
     m1 = o2::constants::physics::MassKaonCharged;
@@ -7799,7 +7801,7 @@ void VarManager::FillTripletVertexingALICE3(C const& collision, T const& t1, T c
 
     o2::math_utils::Point3D<float> vtxXYZ(collision.posX(), collision.posY(), collision.posZ());
     std::array<float, 6> vtxCov{collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()};
-    o2::dataformats::VertexBase primaryVertex = {std::move(vtxXYZ), std::move(vtxCov)};
+    o2::dataformats::VertexBase primaryVertex = {vtxXYZ, vtxCov};
     auto covMatrixPV = primaryVertex.getCov();
 
     if (fgUsedVars[kVertexingChi2PCA]) {
