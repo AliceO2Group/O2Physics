@@ -209,12 +209,7 @@ struct DqJPsiMuonCorrelations {
 
           // Compute deltaEta and deltaPhi between the dilepton and the associated muon
           float deltaEta = dilepton.eta() - track.eta();
-          float deltaPhi = dilepton.phi() - track.phi();
-          if (deltaPhi < -constants::math::PI / 2.0f) {
-            deltaPhi += 2.0f * constants::math::PI;
-          } else if (deltaPhi > constants::math::PI * 3.0f / 2.0f) {
-            deltaPhi -= 2.0f * constants::math::PI;
-          }
+          float deltaPhi = RecoDecay::constrainAngle(dilepton.phi() - track.phi(), -constants::math::PIHalf);
 
           // Fill signal and background histograms based on the dilepton mass
           double w_muon = getWeight(track.pt(), axisPt.value, fConfigBinEffMuon.value, fConfigMuonEtaMin, fConfigMuonEtaMax);
