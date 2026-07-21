@@ -911,9 +911,9 @@ struct AnalysisSameEventPairing {
             // if there are pair cuts specified, assign hist directories for each barrel cut - pair cut combination
             // NOTE: This could possibly lead to large histogram outputs. It is strongly advised to use pair cuts only
             //   if you know what you are doing.
-            TString cutNamesStr = fConfigCuts.pair.value;
-            if (!cutNamesStr.IsNull()) { // if pair cuts
-              std::unique_ptr<TObjArray> objArrayPair(cutNamesStr.Tokenize(","));
+            TString pairCutNamesStr = fConfigCuts.pair.value;
+            if (!pairCutNamesStr.IsNull()) { // if pair cuts
+              std::unique_ptr<TObjArray> objArrayPair(pairCutNamesStr.Tokenize(","));
               fNPairCuts = objArrayPair->GetEntries();
               for (int iPairCut = 0; iPairCut < fNPairCuts; ++iPairCut) { // loop over pair cuts
                 names = {
@@ -1085,12 +1085,12 @@ struct AnalysisSameEventPairing {
         }
 
         // run MC matching for this pair
-        int isig = 0;
+        int iSigMc = 0;
         mcDecision = 0;
-        for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
+        for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, iSigMc++) {
           if (t1.has_reducedA3MCTrack() && t2.has_reducedA3MCTrack()) {
             if ((*sig)->CheckSignal(true, t1.reducedA3MCTrack(), t2.reducedA3MCTrack())) {
-              mcDecision |= (static_cast<uint32_t>(1) << isig);
+              mcDecision |= (static_cast<uint32_t>(1) << iSigMc);
             }
           }
         } // end loop over MC signals
@@ -1105,7 +1105,7 @@ struct AnalysisSameEventPairing {
         }
 
         VarManager::FillPairVertexingAlice3<VarManager::kDecayToEE, gkEventFillMap, gkTrackFillMap>(event, t1, t2, true);
-        if (!fConfigMC.skimSignalOnly || (fConfigMC.skimSignalOnly && mcDecision > 0)) {
+        if (!fConfigMC.skimSignalOnly || mcDecision > 0) {
           dielectronList(event.globalIndex(), VarManager::fgValues[VarManager::kMass],
                          VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi],
                          t1.sign() + t2.sign(), twoTrackFilter, mcDecision);
@@ -1541,7 +1541,7 @@ struct AnalysisAsymmetricPairing {
   HistogramManager* fHistMan = nullptr;
 
   std::vector<AnalysisCompositeCut*> fPairCuts;
-  int fNPairHistPrefixes;
+  int fNPairHistPrefixes = 0;
 
   std::vector<MCSignal*> fRecMCSignals;
   std::vector<MCSignal*> fGenMCSignals;
@@ -1555,7 +1555,7 @@ struct AnalysisAsymmetricPairing {
   std::map<int, uint32_t> fConstructedLegBFilterMasksMap;
   std::map<int, uint32_t> fConstructedLegCFilterMasksMap;
   // Filter map for common track cuts
-  uint32_t fCommonTrackCutMask;
+  uint32_t fCommonTrackCutMask = 0;
   // Map tracking which common track cut the track cuts correspond to
   std::map<int, uint32_t> fCommonTrackCutFilterMasks;
 
