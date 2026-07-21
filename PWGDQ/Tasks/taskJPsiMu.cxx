@@ -63,12 +63,12 @@ using MyMuonTracks = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra>;
 using MyMuonAssocsSelected = soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts>;
 
 // bit maps used for the Fill functions of the VarManager
-constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
-constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra;
+constexpr static uint32_t GkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
+constexpr static uint32_t GkMuonFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra;
 
 // Declare helper function
 double getRapidity(const double pT, const double eta);
-double getWeight(const double pT, const std::vector<double>& pT_bins, const std::vector<double>& efficiency, const double eta_min, const double eta_max);
+double getWeight(const double pT, const std::vector<double>& binsPT, const std::vector<double>& efficiency, const double etaMin, const double etaMax);
 
 struct DqJPsiMuonCorrelations {
 
@@ -89,7 +89,7 @@ struct DqJPsiMuonCorrelations {
   // Configurables for histograms
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f, 20.0f}, "p_{T} (GeV/c)"};
   ConfigurableAxis axisInvMass{"axisInvMass", {80, 1.0f, 5.0f}, "Invariant Mass (GeV/c^{2})"};
-  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {10, -constants::math::PI / 2.0f, 3.0f * constants::math::PI / 2.0f}, "#Delta#phi (rad)"};
+  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {10, -constants::math::PIHalf, 3.0f * constants::math::PIHalf}, "#Delta#phi (rad)"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {10, -2.0f, 2.0f}, "#Delta#eta"};
 
   // Configurable for acceptance efficiency correction
@@ -107,7 +107,7 @@ struct DqJPsiMuonCorrelations {
   // Define the filter for the dileptons
   Filter dileptonFilter = aod::reducedpair::sign == 0;
 
-  constexpr static uint32_t fgDimuonsFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::Pair; // fill map
+  constexpr static uint32_t FgDimuonsFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::Pair; // fill map
 
   // use two values array to avoid mixing up the quantities
   std::vector<float> fValuesDilepton;
@@ -122,7 +122,8 @@ struct DqJPsiMuonCorrelations {
     ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
 
     // Assert correct size of the efficiency correction vector
-    if (axisPt.value.size() - 2 != fConfigBinEffJPsi.value.size() || axisPt.value.size() - 2 != fConfigBinEffMuon.value.size()) {
+    int nAxisPtBins = axisPt.value.size() - 2;
+    if (nAxisPtBins != fConfigBinEffJPsi.value.size() || nAxisPtBins != fConfigBinEffMuon.value.size()) {
       LOGF(fatal, "Configurables axisPt: %zu must have one more value than fConfigBinEffJPsi: %zu and fConfigBinEffMuon: %zu (excluding 'VARIABLE_WIDTH' entry)",
            axisPt.value.size() - 1, fConfigBinEffJPsi.value.size(), fConfigBinEffMuon.value.size());
     }
@@ -165,8 +166,8 @@ struct DqJPsiMuonCorrelations {
 
     if (dileptons.size() > 0) {
 
-      for (auto& dilepton : dileptons) {
-        VarManager::FillTrack<fgDimuonsFillMap>(dilepton, fValuesDilepton.data());
+      for (const auto& dilepton : dileptons) {
+        VarManager::FillTrack<FgDimuonsFillMap>(dilepton, fValuesDilepton.data());
 
         // Dilepton kinematic cuts
         if ((dilepton.eta() < fConfigDileptonEtaMin || dilepton.eta() > fConfigDileptonEtaMax) ||
@@ -182,12 +183,12 @@ struct DqJPsiMuonCorrelations {
         }
 
         // Fill invariant mass vs pT histogram for the dileptons and for trigger counting
-        double w_dilepton = getWeight(dilepton.pt(), axisPt.value, fConfigBinEffJPsi.value, fConfigDileptonEtaMin, fConfigDileptonEtaMax);
+        double weightDilepton = getWeight(dilepton.pt(), axisPt.value, fConfigBinEffJPsi.value, fConfigDileptonEtaMin, fConfigDileptonEtaMax);
 
-        registry.fill(HIST("h2dDimuonPtInvVsInvMass"), dilepton.mass(), dilepton.pt(), w_dilepton);
-        registry.fill(HIST("h2dTriggersPtInvVsInvMassRegion"), dilepton.mass(), dilepton.pt(), w_dilepton);
+        registry.fill(HIST("h2dDimuonPtInvVsInvMass"), dilepton.mass(), dilepton.pt(), weightDilepton);
+        registry.fill(HIST("h2dTriggersPtInvVsInvMassRegion"), dilepton.mass(), dilepton.pt(), weightDilepton);
 
-        for (auto& assoc : assocs) {
+        for (const auto& assoc : assocs) {
           // Check selection bit
           if (!assoc.isMuonSelected_bit(0)) {
             continue;
@@ -212,14 +213,14 @@ struct DqJPsiMuonCorrelations {
           float deltaPhi = RecoDecay::constrainAngle(dilepton.phi() - track.phi(), -constants::math::PIHalf);
 
           // Fill signal and background histograms based on the dilepton mass
-          double w_muon = getWeight(track.pt(), axisPt.value, fConfigBinEffMuon.value, fConfigMuonEtaMin, fConfigMuonEtaMax);
+          double weightMuon = getWeight(track.pt(), axisPt.value, fConfigBinEffMuon.value, fConfigMuonEtaMin, fConfigMuonEtaMax);
 
           if (dilepton.mass() > fConfigDileptonLowMass && dilepton.mass() < fConfigDileptonHighMass) {
-            registry.fill(HIST("h2dDimuonMuonDeltaEtaVsMuonPtSignal"), deltaEta, track.pt(), w_dilepton * w_muon);
-            registry.fill(HIST("h2dDimuonMuonDeltaPhiVsMuonPtSignal"), deltaPhi, track.pt(), w_dilepton * w_muon);
+            registry.fill(HIST("h2dDimuonMuonDeltaEtaVsMuonPtSignal"), deltaEta, track.pt(), weightDilepton * weightMuon);
+            registry.fill(HIST("h2dDimuonMuonDeltaPhiVsMuonPtSignal"), deltaPhi, track.pt(), weightDilepton * weightMuon);
           } else if (dilepton.mass() > fConfigBackgroundLowMass && dilepton.mass() < fConfigBackgroundHighMass) {
-            registry.fill(HIST("h2dDimuonMuonDeltaEtaVsMuonPtBackground"), deltaEta, track.pt(), w_dilepton * w_muon);
-            registry.fill(HIST("h2dDimuonMuonDeltaPhiVsMuonPtBackground"), deltaPhi, track.pt(), w_dilepton * w_muon);
+            registry.fill(HIST("h2dDimuonMuonDeltaEtaVsMuonPtBackground"), deltaEta, track.pt(), weightDilepton * weightMuon);
+            registry.fill(HIST("h2dDimuonMuonDeltaPhiVsMuonPtBackground"), deltaPhi, track.pt(), weightDilepton * weightMuon);
           }
         }
       }
@@ -228,9 +229,9 @@ struct DqJPsiMuonCorrelations {
 
   void processSkimmedDimuon(MyEventsSelected::iterator const& event, MyMuonAssocsSelected const& muonassocs, MyMuonTracks const& muontracks, soa::Filtered<MyPairCandidatesSelected> const& dileptons)
   {
-    runDileptonMuon<VarManager::kDecayToMuMu, gkEventFillMap, gkMuonFillMap>(event, muonassocs, muontracks, dileptons);
+    runDileptonMuon<VarManager::kDecayToMuMu, GkEventFillMap, GkMuonFillMap>(event, muonassocs, muontracks, dileptons);
   }
-  void processDummy(MyEvents&)
+  void processDummy(MyEvents const&)
   {
   }
 
@@ -246,26 +247,28 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
 double getRapidity(const double pT, const double eta)
 {
-  double mJPsi = 3.096916; // J/Psi mass in GeV/c^2
-  return std::log((std::sqrt(std::pow(mJPsi, 2) + (std::pow(pT, 2) * std::pow(std::cosh(eta), 2))) + pT * std::sinh(eta)) / (std::sqrt(std::pow(mJPsi, 2) + std::pow(pT, 2))));
+  return std::log(
+    (std::sqrt(std::pow(o2::constants::physics::MassJPsi, 2) + (std::pow(pT, 2) * std::pow(std::cosh(eta), 2))) + pT * std::sinh(eta)) / 
+    (std::sqrt(std::pow(o2::constants::physics::MassJPsi, 2) + std::pow(pT, 2)))
+  );
 }
 
-double getWeight(const double pT, const std::vector<double>& pT_bins, const std::vector<double>& efficiency, const double eta_min, const double eta_max)
+double getWeight(const double pT, const std::vector<double>& binsPT, const std::vector<double>& efficiency, const double etaMin, const double etaMax)
 {
 
-  int eff_bin = -1;
-  for (size_t b = 0; b < pT_bins.size() - 1; ++b) {
+  int binEff = -1;
+  for (size_t b = 0; b < binsPT.size() - 1; ++b) {
     // Shift pT index by one to account for the VARIABLE_WIDTH entry in the axis configuration
-    if (pT >= pT_bins[b + 1] && pT < pT_bins[b + 2]) {
-      eff_bin = b;
+    if (pT >= binsPT[b + 1] && pT < binsPT[b + 2]) {
+      binEff = b;
       break;
     }
   }
 
-  if (eff_bin == -1) {
+  if (binEff == -1) {
     LOGF(warn, "pT value %f is outside the defined pT bins", pT);
     return 0.0;
   } else {
-    return 1.0 / (efficiency[eff_bin] * (getRapidity(pT, eta_max) - getRapidity(pT, eta_min)));
+    return 1.0 / (efficiency[binEff] * (getRapidity(pT, etaMax) - getRapidity(pT, etaMin)));
   }
 }
