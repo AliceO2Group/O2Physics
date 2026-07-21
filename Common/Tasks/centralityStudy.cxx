@@ -450,45 +450,7 @@ struct centralityStudy {
       reportSuccess(hCentralityNTPV, "NTPV");
       reportSuccess(hCentralityNGlo, "NGlobals");
       reportSuccess(hCentralityMFT, "MFT");
-
       LOGF(info, "Centrality calibration loading done.");
-      auto getCent = [](TH1* hist, float mult) -> float {
-        return hist ? hist->GetBinContent(mult) : 0.0;
-      };
-
-      centFV0A = getCent(hCentralityFV0A, collision.multFV0A());
-      centFT0A = getCent(hCentralityFT0A, collision.multFT0A());
-      centFT0C = getCent(hCentralityFT0C, collision.multFT0C());
-      centFT0M = getCent(hCentralityFT0M, collision.multFT0A() + collision.multFT0C());
-      centFDDM = getCent(hCentralityFDDM, collision.multFDDA() + collision.multFDDC());
-      centNTPV = getCent(hCentralityNTPV, collision.multNTracksPV());
-      centNGlo = getCent(hCentralityNGlo, collision.multNTracksGlobal());
-      centMFT = getCent(hCentralityMFT, collision.mftNtracks());
-    } else if (doprocessCollisionsWithCentrality) {
-      if constexpr (requires { collision.centFV0A(); }) {
-        centFV0A = collision.centFV0A();
-      }
-      if constexpr (requires { collision.centFT0A(); }) {
-        centFT0A = collision.centFT0A();
-      }
-      if constexpr (requires { collision.centFT0C(); }) {
-        centFT0C = collision.centFT0C();
-      }
-      if constexpr (requires { collision.centFT0M(); }) {
-        centFT0M = collision.centFT0M();
-      }
-      if constexpr (requires { collision.centFDDM(); }) {
-        centFDDM = collision.centFDDM();
-      }
-      if constexpr (requires { collision.centNTPV(); }) {
-        centNTPV = collision.centNTPV();
-      }
-      if constexpr (requires { collision.centNGlobal(); }) {
-        centNGlo = collision.centNGlobal();
-      }
-      if constexpr (requires { collision.centMFT(); }) {
-        centMFT = collision.centMFT();
-      }
     }
 
     if (!studies.doRunByRunHistograms) {
@@ -595,10 +557,57 @@ struct centralityStudy {
   }
 
   template <typename TCollision>
+  void configureCentrality(const TCollision& collision)
+  {
+    if (ccdbSettings.fetchCentralityCalibration) {
+      auto getCent = [](TH1* hist, float mult) -> float {
+        static constexpr float CentralityNotFound = 105.f;
+        return hist ? hist->GetBinContent(mult) : CentralityNotFound;
+      };
+
+      centFV0A = getCent(hCentralityFV0A, collision.multFV0A());
+      centFT0A = getCent(hCentralityFT0A, collision.multFT0A());
+      centFT0C = getCent(hCentralityFT0C, collision.multFT0C());
+      centFT0M = getCent(hCentralityFT0M, collision.multFT0A() + collision.multFT0C());
+      centFDDM = getCent(hCentralityFDDM, collision.multFDDA() + collision.multFDDC());
+      centNTPV = getCent(hCentralityNTPV, collision.multNTracksPV());
+      centNGlo = getCent(hCentralityNGlo, collision.multNTracksGlobal());
+      centMFT = getCent(hCentralityMFT, collision.mftNtracks());
+    } else if (doprocessCollisionsWithCentrality) {
+      if constexpr (requires { collision.centFV0A(); }) {
+        centFV0A = collision.centFV0A();
+      }
+      if constexpr (requires { collision.centFT0A(); }) {
+        centFT0A = collision.centFT0A();
+      }
+      if constexpr (requires { collision.centFT0C(); }) {
+        centFT0C = collision.centFT0C();
+      }
+      if constexpr (requires { collision.centFT0M(); }) {
+        centFT0M = collision.centFT0M();
+      }
+      if constexpr (requires { collision.centFDDM(); }) {
+        centFDDM = collision.centFDDM();
+      }
+      if constexpr (requires { collision.centNTPV(); }) {
+        centNTPV = collision.centNTPV();
+      }
+      if constexpr (requires { collision.centNGlobal(); }) {
+        centNGlo = collision.centNGlobal();
+      }
+      if constexpr (requires { collision.centMFT(); }) {
+        centMFT = collision.centMFT();
+      }
+    }
+  }
+
+  template <typename TCollision>
   void genericProcessCollision(const TCollision& collision)
   // process this collisions
   {
     initRun(collision);
+    configureCentrality(collision);
+
     histos.fill(HIST("hCollisionSelection"), 0); // all collisions
     if (studies.doRunByRunHistograms) {
       getHist(TH1, histPath + "hCollisionSelection")->Fill(0);
