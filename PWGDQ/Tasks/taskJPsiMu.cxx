@@ -27,6 +27,7 @@
 
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -258,7 +259,7 @@ double getWeight(const double pT, const std::vector<double>& pT_bins, const std:
 {
 
   int eff_bin = -1;
-  for (uint8_t b = 0; b < pT_bins.size() - 1; ++b) {
+  for (size_t b = 0; b < pT_bins.size() - 1; ++b) {
     // Shift pT index by one to account for the VARIABLE_WIDTH entry in the axis configuration
     if (pT >= pT_bins[b + 1] && pT < pT_bins[b + 2]) {
       eff_bin = b;
