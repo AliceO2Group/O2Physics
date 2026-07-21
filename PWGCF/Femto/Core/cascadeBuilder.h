@@ -255,10 +255,10 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
 
     this->addSelection(kCascadeCpaMin, cascadeSelectionNames.at(kCascadeCpaMin), config.cascadeCpaMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kCascadeTransRadMin, cascadeSelectionNames.at(kCascadeTransRadMin), config.cascadeTransRadMin.value, limits::kLowerLimit, true, true, false);
-    this->addSelection(kCascadeDcaDaughMax, cascadeSelectionNames.at(kCascadeDcaDaughMax), config.cascadeDcaDauMax.value, limits::kAbsUpperLimit, true, true, false);
+    this->addSelection(kCascadeDcaDaughMax, cascadeSelectionNames.at(kCascadeDcaDaughMax), config.cascadeDcaDauMax.value, limits::kUpperLimit, true, true, false);
     this->addSelection(kLambdaCpaMin, cascadeSelectionNames.at(kLambdaCpaMin), config.lambdaCpaMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kLambdaTransRadMin, cascadeSelectionNames.at(kLambdaTransRadMin), config.lambdaTransRadMin.value, limits::kLowerLimit, true, true, false);
-    this->addSelection(kLambdaDcaDauMax, cascadeSelectionNames.at(kLambdaDcaDauMax), config.lambdaDcaDauMax.value, limits::kAbsUpperLimit, true, true, false);
+    this->addSelection(kLambdaDcaDauMax, cascadeSelectionNames.at(kLambdaDcaDauMax), config.lambdaDcaDauMax.value, limits::kUpperLimit, true, true, false);
     this->addSelection(kLambdaDcaToPvMin, cascadeSelectionNames.at(kLambdaDcaToPvMin), config.lambdaDcaToPvMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kDauAbsEtaMax, cascadeSelectionNames.at(kDauAbsEtaMax), config.dauAbsEtaMax.value, limits::kAbsUpperLimit, true, true, false);
     this->addSelection(kDauDcaMin, cascadeSelectionNames.at(kDauDcaMin), config.dauDcaMin.value, limits::kAbsLowerLimit, true, true, false);
@@ -592,6 +592,7 @@ class CascadeBuilder
           cascade.casccosPA(col.posX(), col.posY(), col.posZ()),
           cascade.dcacascdaughters(),
           cascade.cascradius(),
+          cascade.mLambda(),
           cascade.v0cosPA(col.posX(), col.posY(), col.posZ()),
           cascade.dcaV0daughters(),
           cascade.v0radius(),
@@ -618,6 +619,7 @@ class CascadeBuilder
           cascade.casccosPA(col.posX(), col.posY(), col.posZ()),
           cascade.dcacascdaughters(),
           cascade.cascradius(),
+          cascade.mLambda(),
           cascade.v0cosPA(col.posX(), col.posY(), col.posZ()),
           cascade.dcaV0daughters(),
           cascade.v0radius(),
