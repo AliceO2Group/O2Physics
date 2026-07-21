@@ -1154,7 +1154,6 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuons_004, "AOD", "EMPRIMARYMU", 4, //!
                             emprimarymuon::Py<fwdtrack::Pt, fwdtrack::Phi>,
                             emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>);
 
-
 using EMPrimaryMuons = EMPrimaryMuons_004;
 // iterators
 using EMPrimaryMuon = EMPrimaryMuons::iterator;
@@ -1176,7 +1175,6 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuonsCov_002, "AOD", "EMPRIMARYMUCOV", 2, /
                             o2::aod::fwdtrack::C1PtPhi,
                             o2::aod::fwdtrack::C1PtTgl,
                             o2::aod::fwdtrack::C1Pt21Pt2);
-
 
 DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuonsCov_003, "AOD", "EMPRIMARYMUCOV", 3, //! at PV. Signed1Pt, Tgl and Phi are in EMPrimaryMuons table.
                             fwdtrack::X, fwdtrack::Y, fwdtrack::Z,
