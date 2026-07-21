@@ -19,6 +19,8 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h" // IWYU pragma: keep
 #include "PWGLF/Utils/strangenessBuilderHelper.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TPCVDriftManager.h"
 
@@ -427,12 +429,59 @@ struct preSelectOpts : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> maxTPCpidNsigma{"maxTPCpidNsigma", 5.0, "Maximum TPC PID N sigma (in abs value)"};
 };
 
+// collision preselection options
+struct eventSelectOpts : o2::framework::ConfigurableGroup {
+  std::string prefix = "eventSelectOpts"; // JSON group name
+  o2::framework::Configurable<bool> fillOnlySelectedCollisions{"fillOnlySelectedCollisions", false, "Fill only tables for selected collisions"};
+  o2::framework::Configurable<bool> requireTriggerTVX{"requireTriggerTVX", false, "require FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level  (Run 3 only)"};
+  o2::framework::Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", false, "reject events at ITS ROF border (Run 3 only)"};
+  o2::framework::Configurable<bool> rejectTFBorder{"rejectTFBorder", false, "reject events at TF border (Run 3 only)"};
+  o2::framework::Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", false, "reject collisions in case of pileup with another collision in the same foundBC (Run 3 only)"};
+  o2::framework::Configurable<float> maxZVtxPosition{"maxZVtxPosition", 10., "max Z vtx position"};
+
+  o2::framework::Configurable<bool> cfgApplyRCTrequirement{"cfgApplyRCTrequirement", false, "Apply RCT requirement?"};
+  o2::framework::Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "", "Which detector condition requirements? (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)"};
+  o2::framework::Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "Include ZDC flags in the bit selection (for Pb-Pb only)"};
+  o2::framework::Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+};
+
 class BuilderModule
 {
  public:
   BuilderModule()
   {
     // constructor
+  }
+
+  template <typename TCollision>
+  bool isCollisionAccepted(TCollision collision)
+  // check whether the collision passes our collision selections
+  {
+    if (eventSelectOpts.requireTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+      return false;
+    }
+
+    if (eventSelectOpts.rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      return false;
+    }
+
+    if (eventSelectOpts.rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+
+    if (std::abs(collision.posZ()) > eventSelectOpts.maxZVtxPosition) {
+      return false;
+    }
+
+    if (eventSelectOpts.rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      return false;
+    }
+
+    if (!eventSelectOpts.cfgApplyRCTrequirement && !rctFlagsChecker(collision)) {
+      return false;
+    }
+
+    return true;
   }
 
   // mass windows
@@ -566,9 +615,12 @@ class BuilderModule
   o2::pwglf::strangenessbuilder::v0Configurables v0BuilderOpts;
   o2::pwglf::strangenessbuilder::cascadeConfigurables cascadeBuilderOpts;
   o2::pwglf::strangenessbuilder::preSelectOpts preSelectOpts;
+  o2::pwglf::strangenessbuilder::eventSelectOpts eventSelectOpts;
 
-  template <typename TBaseConfigurables, typename TV0Configurables, typename TCascadeConfigurables, typename TPreSelOpts, typename THistoRegistry, typename TInitContext>
-  void init(TBaseConfigurables const& inputBaseOpts, TV0Configurables const& inputV0BuilderOpts, TCascadeConfigurables const& inputCascadeBuilderOpts, TPreSelOpts const& inputPreSelectOpts, THistoRegistry& histos, TInitContext& context)
+  o2::aod::rctsel::RCTFlagsChecker rctFlagsChecker;
+
+  template <typename TBaseConfigurables, typename TV0Configurables, typename TCascadeConfigurables, typename TPreSelOpts, typename TPreEventSelOpts, typename THistoRegistry, typename TInitContext>
+  void init(TBaseConfigurables const& inputBaseOpts, TV0Configurables const& inputV0BuilderOpts, TCascadeConfigurables const& inputCascadeBuilderOpts, TPreSelOpts const& inputPreSelectOpts, TPreEventSelOpts const& inputEventSelectOpts, THistoRegistry& histos, TInitContext& context)
   {
     // read in configurations from the task where it's used
     // could be grouped even further, but should work
@@ -576,6 +628,7 @@ class BuilderModule
     v0BuilderOpts = inputV0BuilderOpts;
     cascadeBuilderOpts = inputCascadeBuilderOpts;
     preSelectOpts = inputPreSelectOpts;
+    eventSelectOpts = inputEventSelectOpts;
 
     baseOpts.mEnabledTables.resize(nTables, 0);
 
@@ -769,6 +822,11 @@ class BuilderModule
 
     // Set option to refit with material corrections
     straHelper.fitter.setRefitWithMatCorr(baseOpts.refitWithMaterialCorrection.value);
+
+    // Initialise the RCTFlagsChecker
+    if (eventSelectOpts.cfgApplyRCTrequirement) {
+      rctFlagsChecker.init(eventSelectOpts.cfgRCTLabel.value, eventSelectOpts.cfgCheckZDC, eventSelectOpts.cfgTreatLimitedAcceptanceAsBad);
+    }
   }
 
   // for sorting
@@ -1435,6 +1493,9 @@ class BuilderModule
         pvX = collision.posX();
         pvY = collision.posY();
         pvZ = collision.posZ();
+        if (eventSelectOpts.fillOnlySelectedCollisions && !isCollisionAccepted(collision)) {
+          continue;
+        }
         if (v0BuilderOpts.generatePhotonCandidates && v0BuilderOpts.moveTPCOnlyTracks && collision.has_bc()) {
           mVDriftMgr.update(collision.template bc_as<aod::BCsWithTimestamps>().timestamp());
         }
@@ -2009,6 +2070,11 @@ class BuilderModule
         pvX = collision.posX();
         pvY = collision.posY();
         pvZ = collision.posZ();
+        if (eventSelectOpts.fillOnlySelectedCollisions && !isCollisionAccepted(collision)) {
+          products.cascdataLink(-1);
+          interlinks.cascadeToCascCores.push_back(-1);
+          continue;
+        }
       }
       auto const& posTrack = tracks.rawIteratorAt(cascade.posTrackId);
       auto const& negTrack = tracks.rawIteratorAt(cascade.negTrackId);
@@ -2467,6 +2533,11 @@ class BuilderModule
         pvX = collision.posX();
         pvY = collision.posY();
         pvZ = collision.posZ();
+        if (eventSelectOpts.fillOnlySelectedCollisions && !isCollisionAccepted(collision)) {
+          products.kfcascdataLink(-1);
+          interlinks.cascadeToKFCascCores.push_back(-1);
+          continue;
+        }
       }
       auto const& posTrack = tracks.rawIteratorAt(cascade.posTrackId);
       auto const& negTrack = tracks.rawIteratorAt(cascade.negTrackId);
@@ -2566,6 +2637,9 @@ class BuilderModule
         pvX = collision.posX();
         pvY = collision.posY();
         pvZ = collision.posZ();
+        if (eventSelectOpts.fillOnlySelectedCollisions && !isCollisionAccepted(collision)) {
+          continue;
+        }
       }
       auto const& cascade = cascadeTrack.cascade();
       auto const& v0 = cascade.v0();

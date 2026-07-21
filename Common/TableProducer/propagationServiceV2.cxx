@@ -82,6 +82,7 @@ struct propagationServiceV2 {
   o2::pwglf::strangenessbuilder::v0Configurables v0BuilderOpts;
   o2::pwglf::strangenessbuilder::cascadeConfigurables cascadeBuilderOpts;
   o2::pwglf::strangenessbuilder::preSelectOpts preSelectOpts;
+  o2::pwglf::strangenessbuilder::eventSelectOpts eventSelectOpts;
   o2::pwglf::strangenessbuilder::BuilderModule strangenessBuilderModule;
 
   // the track tuner object -> needs to be here as it inherits from ConfigurableGroup (+ has its own copy of ccdbApi)
@@ -106,7 +107,7 @@ struct propagationServiceV2 {
 
     // task-specific
     trackPropagation.init(trackPropagationConfigurables, trackTunerObj, histos, initContext);
-    strangenessBuilderModule.init(baseOpts, v0BuilderOpts, cascadeBuilderOpts, preSelectOpts, histos, initContext);
+    strangenessBuilderModule.init(baseOpts, v0BuilderOpts, cascadeBuilderOpts, preSelectOpts, eventSelectOpts, histos, initContext);
   }
 
   // Load MatLUT once (needs rectifyPtrFromFile, kept manual), set B-field and mean vertex

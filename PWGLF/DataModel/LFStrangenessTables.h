@@ -44,6 +44,16 @@ DECLARE_SOA_COLUMN(DataframeID, dataframeID, uint64_t); //! Data frame ID (what 
 DECLARE_SOA_TABLE(StraOrigins, "AOD", "STRAORIGIN", //! Table which contains the IDs of all dataframes merged into this dataframe
                   o2::soa::Index<>, straorigin::DataframeID);
 
+// for keeping track of the number of selected collisions
+namespace straselections
+{
+DECLARE_SOA_COLUMN(TotalNbrOfCollisions, totalNbrOfCollisions, int);       //! total number of analysed collisions
+DECLARE_SOA_COLUMN(TotalNbrOfSelCollisions, totalNbrOfSelCollisions, int); //! total number of selected collisions
+} // namespace straselections
+
+DECLARE_SOA_TABLE(StraSelections, "AOD", "STRASELECTIONS", //! keep track of the number of analysed collisions in this DF
+                  o2::soa::Index<>, straselections::TotalNbrOfCollisions, straselections::TotalNbrOfSelCollisions);
+
 namespace stracollision
 {
 DECLARE_SOA_DYNAMIC_COLUMN(IsUPC, isUPC, //! check whether this is a UPC or hadronic collision

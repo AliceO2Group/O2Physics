@@ -182,7 +182,17 @@ DECLARE_SOA_TABLE_VERSIONED(DauTrackTOFPIDs_002, "AOD", "DAUTRACKTOFPID", 2, // 
                             dautrack::TOFExpTimeKa<dautrack::Length, dautrack::TOFExpMom>,
                             dautrack::TOFExpTimePr<dautrack::Length, dautrack::TOFExpMom>);
 
-using DauTrackTOFPIDs = DauTrackTOFPIDs_002; // second gen: with collision Id, with TOFExpMom
+DECLARE_SOA_TABLE_VERSIONED(DauTrackTOFPIDs_003, "AOD", "DAUTRACKTOFPID", 3, // raw table (for posterior TOF calculation)
+                            o2::soa::Index<>,
+                            bc::GlobalBC, dautrack::DauTrackExtraId,
+                            dautrack::TOFSignal, dautrack::TOFEvTime, dautrack::TOFEvTimeErr,
+                            dautrack::Length, dautrack::TOFExpMom,
+                            dautrack::TOFExpTimeEl<dautrack::Length, dautrack::TOFExpMom>,
+                            dautrack::TOFExpTimePi<dautrack::Length, dautrack::TOFExpMom>,
+                            dautrack::TOFExpTimeKa<dautrack::Length, dautrack::TOFExpMom>,
+                            dautrack::TOFExpTimePr<dautrack::Length, dautrack::TOFExpMom>);
+
+using DauTrackTOFPIDs = DauTrackTOFPIDs_003; // second gen: with collision Id, with TOFExpMom
 
 namespace v0data
 {
