@@ -24,7 +24,6 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -40,6 +39,8 @@
 #include <TH1.h>
 #include <TPDGCode.h>
 
+#include <array>
+#include <cstddef>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -84,6 +85,7 @@ struct MeanPtFlucId {
   Configurable<float> cfgP1corr{"cfgP1corr", 0.0001, "p_{1} for corrected N_{TPC} "};
   Configurable<float> cfgP2corr{"cfgP2corr", 0.0001, "p_{2} for corrected N_{TPC} "};
   Configurable<bool> cfgSel8{"cfgSel8", true, "Sel8 trigger"};
+  Configurable<bool> cfgNtpcEventCut{"cfgNtpcEventCut", true, "N_{TPC} Event Cut for reco"};
   Configurable<bool> cfgNoSameBunchPileup{"cfgNoSameBunchPileup", true, "kNoSameBunchPileup"};
   Configurable<bool> cfgIsVertexITSTPC{"cfgIsVertexITSTPC", true, "kIsVertexITSTPC"};
   Configurable<bool> cfgLightIonCuts{"cfgLightIonCuts", false, "Light Ion Cuts"};
@@ -105,7 +107,7 @@ struct MeanPtFlucId {
   Configurable<std::vector<double>> ptBinsKa{"ptBinsKa", {0.30, 0.325, 0.35, 0.375, 0.40, 0.425, 0.45, 0.475, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.8, 0.85, 0.90, 0.95, 1.0, 1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4, 1.45, 1.5, 1.55, 1.6, 1.70, 1.80, 1.90, 2.00}, "p_{T} bins for kaons"};
   Configurable<std::vector<double>> ptBinsPr{"ptBinsPr", {0.40, 0.425, 0.45, 0.475, 0.5, 0.525, 0.55, 0.575, 0.60, 0.625, 0.65, 0.675, 0.70, 0.725, 0.75, 0.775, 0.80, 0.825, 0.85, 0.875, 0.90, 0.925, 0.95, 1.0, 1.025, 1.05, 1.075, 1.1, 1.15, 1.2, 1.4, 1.6, 1.8, 2.0}, "p_{T} bins for protons"};
 
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
 
   HistogramRegistry hist{"hist", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -152,7 +154,7 @@ struct MeanPtFlucId {
     Gen_Proton
   };
 
-  static constexpr std::string_view Dire[] = {
+  static constexpr std::array<std::string_view, 12> Dire = {
     "QA/after/",
     "QA/Pion/",
     "QA/Kaon/",
@@ -538,26 +540,33 @@ struct MeanPtFlucId {
   template <typename T>
   bool selTrack(T const& track)
   {
-    if (!track.isGlobalTrack())
+    if (!track.isGlobalTrack()) {
       return false;
+    }
 
-    if (track.pt() < cfgCutPtMin)
+    if (track.pt() < cfgCutPtMin) {
       return false;
+    }
 
-    if (track.pt() >= cfgCutPtMax)
+    if (track.pt() >= cfgCutPtMax) {
       return false;
+    }
 
-    if (track.sign() == 0)
+    if (track.sign() == 0) {
       return false;
+    }
 
-    if (std::fabs(track.dcaZ()) > cfgCutDcaZ)
+    if (std::fabs(track.dcaZ()) > cfgCutDcaZ) {
       return false;
+    }
 
-    if (std::fabs(track.dcaZ()) > (0.0105 + 0.035 / std::pow(track.p(), 1.1)))
+    if (std::fabs(track.dcaZ()) > (0.0105 + 0.035 / std::pow(track.p(), 1.1))) {
       return false;
+    }
 
-    if (std::abs(track.eta()) >= cfgCutEta)
+    if (std::abs(track.eta()) >= cfgCutEta) {
       return false;
+    }
 
     return true;
   }
@@ -566,15 +575,11 @@ struct MeanPtFlucId {
   template <typename T>
   bool rejectTracks(T const& track)
   {
-    if (((track.tpcNSigmaEl()) > -cfgCutNSig3 &&
-         (track.tpcNSigmaEl()) < cfgCutNSig5) &&
-        (std::fabs(track.tpcNSigmaPi()) > cfgCutNSig3 &&
-         std::fabs(track.tpcNSigmaKa()) > cfgCutNSig3 &&
-         std::fabs(track.tpcNSigmaPr()) > cfgCutNSig3)) {
-      return true;
-    }
-
-    return false;
+    return (((track.tpcNSigmaEl()) > -cfgCutNSig3 &&
+             (track.tpcNSigmaEl()) < cfgCutNSig5) &&
+            (std::fabs(track.tpcNSigmaPi()) > cfgCutNSig3 &&
+             std::fabs(track.tpcNSigmaKa()) > cfgCutNSig3 &&
+             std::fabs(track.tpcNSigmaPr()) > cfgCutNSig3));
   }
 
   // PID cuts for identified particles
@@ -680,7 +685,7 @@ struct MeanPtFlucId {
 
   // Fill Charged particles QA histograms after selection cuts:
   template <typename T>
-  void fillChargedQAHistos(T const& track)
+  void fillChargedQAHistos(T const& track, float centFT0M)
   {
     hist.fill(HIST("QA/Charged/h_Eta"), track.eta());
     hist.fill(HIST("QA/Charged/h_Phi"), track.phi());
@@ -707,26 +712,32 @@ struct MeanPtFlucId {
     hist.fill(HIST("QA/before/h2_pvsm2"), track.mass() * track.mass(), track.p());
 
     hist.fill(HIST("QA/Pion/before/h2_TPCNsigma"), track.p(), track.tpcNSigmaPi());
-    if (!track.hasTOF())
+    if (!track.hasTOF()) {
       hist.fill(HIST("QA/Pion/before/h2_TPCNsigma_nottof"), track.p(), track.tpcNSigmaPi());
-    if (track.hasTOF())
+    }
+    if (track.hasTOF()) {
       hist.fill(HIST("QA/Pion/before/h2_TPCNsigma_tof"), track.p(), track.tpcNSigmaPi());
+    }
     hist.fill(HIST("QA/Pion/before/h2_TOFNsigma"), track.p(), track.tofNSigmaPi());
     hist.fill(HIST("QA/Pion/before/h2_TpcTofNsigma"), track.tpcNSigmaPi(), track.tofNSigmaPi());
 
     hist.fill(HIST("QA/Kaon/before/h2_TPCNsigma"), track.p(), track.tpcNSigmaKa());
-    if (!track.hasTOF())
+    if (!track.hasTOF()) {
       hist.fill(HIST("QA/Kaon/before/h2_TPCNsigma_nottof"), track.p(), track.tpcNSigmaKa());
-    if (track.hasTOF())
+    }
+    if (track.hasTOF()) {
       hist.fill(HIST("QA/Kaon/before/h2_TPCNsigma_tof"), track.p(), track.tpcNSigmaKa());
+    }
     hist.fill(HIST("QA/Kaon/before/h2_TOFNsigma"), track.p(), track.tofNSigmaKa());
     hist.fill(HIST("QA/Kaon/before/h2_TpcTofNsigma"), track.tpcNSigmaKa(), track.tofNSigmaKa());
 
     hist.fill(HIST("QA/Proton/before/h2_TPCNsigma"), track.p(), track.tpcNSigmaPr());
-    if (!track.hasTOF())
+    if (!track.hasTOF()) {
       hist.fill(HIST("QA/Proton/before/h2_TPCNsigma_nottof"), track.p(), track.tpcNSigmaPr());
-    if (track.hasTOF())
+    }
+    if (track.hasTOF()) {
       hist.fill(HIST("QA/Proton/before/h2_TPCNsigma_tof"), track.p(), track.tpcNSigmaPr());
+    }
     hist.fill(HIST("QA/Proton/before/h2_TOFNsigma"), track.p(), track.tofNSigmaPr());
     hist.fill(HIST("QA/Proton/before/h2_TpcTofNsigma"), track.tpcNSigmaPr(), track.tofNSigmaPr());
   }
@@ -804,10 +815,10 @@ struct MeanPtFlucId {
     }
   }
 
-  int getPtBin(double pt, const std::vector<double>& ptB)
+  int getPtBin(double pt, const std::vector<double>& ptBins)
   {
-    for (size_t i = 0; i < ptB.size() - 1; ++i) {
-      if (pt >= ptB[i] && pt < ptB[i + 1]) {
+    for (std::size_t i = 0; i < ptBins.size() - 1; ++i) {
+      if (pt >= ptBins[i] && pt < ptBins[i + 1]) {
         return i;
       }
     }
@@ -816,7 +827,7 @@ struct MeanPtFlucId {
 
   int getEtaBin(double eta)
   {
-    for (size_t i = 0; i < etaBins->size() - 1; ++i) {
+    for (std::size_t i = 0; i < etaBins->size() - 1; ++i) {
       if (eta >= etaBins->at(i) && eta < etaBins->at(i + 1)) {
         return i;
       }
@@ -838,8 +849,9 @@ struct MeanPtFlucId {
       int ipt = getPtBin(trk.pt, ptB);
       int ieta = getEtaBin(trk.eta);
 
-      if (ipt < 0 || ieta < 0)
+      if (ipt < 0 || ieta < 0) {
         continue;
+      }
 
       int k = getK(ipt, ieta);
 
@@ -847,21 +859,23 @@ struct MeanPtFlucId {
       hist.fill(HIST(Dire[Mode]) + HIST("hPt1Matrix"), centFT0M, k, trk.pt);
     }
 
-    for (size_t i = 0; i < tracks.size(); ++i) {
+    for (std::size_t i = 0; i < tracks.size(); ++i) {
       int ipt1 = getPtBin(tracks[i].pt, ptB);
       int ieta1 = getEtaBin(tracks[i].eta);
 
-      if (ipt1 < 0 || ieta1 < 0)
+      if (ipt1 < 0 || ieta1 < 0) {
         continue;
+      }
 
       int k1 = getK(ipt1, ieta1);
 
-      for (size_t j = i + 1; j < tracks.size(); ++j) {
+      for (std::size_t j = i + 1; j < tracks.size(); ++j) {
         int ipt2 = getPtBin(tracks[j].pt, ptB);
         int ieta2 = getEtaBin(tracks[j].eta);
 
-        if (ipt2 < 0 || ieta2 < 0)
+        if (ipt2 < 0 || ieta2 < 0) {
           continue;
+        }
 
         int k2 = getK(ipt2, ieta2);
 
@@ -946,10 +960,9 @@ struct MeanPtFlucId {
     }
 
     if constexpr (RecoFlag) {
-      // float lower1 =  cfgP1L1 * nSim + cfgP0L1;
-      float lower2 = cfgP2L * nSim * nSim + cfgP1L * nSim - cfgP0L;
+      float lower = cfgP2L * nSim * nSim + cfgP1L * nSim - cfgP0L;
       float upper = cfgP2U * nSim * nSim + cfgP1U * nSim + cfgP0U;
-      if (nTPC < lower2 || nTPC > upper) {
+      if (cfgNtpcEventCut && (nTPC < lower || nTPC > upper)) {
         return; // Reject event
       }
     }
@@ -1020,7 +1033,7 @@ struct MeanPtFlucId {
       hist.fill(HIST("QA/Charged/h2_Pt_EtaMC"), etaMC, ptMC);
       hist.fill(HIST("QA/Charged/h3_Pt_EtaMC_centFT0M"), etaMC, ptMC, centFT0M);
 
-      fillChargedQAHistos(track);
+      fillChargedQAHistos(track, centFT0M);
 
       fillBeforePIDQAHistos(track);
 
@@ -1099,10 +1112,12 @@ struct MeanPtFlucId {
     pionTracksGen.clear();
     kaonTracksGen.clear();
     protonTracksGen.clear();
+
     nSim = 0;
     int nChSim = 0, nPiSim = 0, nKaSim = 0, nPrSim = 0;
     float pt = 0., eta = 0, phi = 0., rap = 0.;
     double q1Ch = 0., q2Ch = 0., q1Pi = 0., q2Pi = 0., q1Ka = 0., q2Ka = 0., q1Pr = 0., q2Pr = 0.;
+    
     for (auto const& mcPart : mcParticles) {
       if (!mcPart.isPhysicalPrimary()) {
         continue;
@@ -1110,11 +1125,13 @@ struct MeanPtFlucId {
 
       auto* particle = pdg->GetParticle(mcPart.pdgCode());
 
-      if (!particle)
+      if (!particle) {
         continue;
+      }
 
-      if (particle->Charge() == 0)
+      if (particle->Charge() == 0) {
         continue;
+      }
 
       pt = mcPart.pt();
       eta = mcPart.eta();
