@@ -202,7 +202,8 @@ struct doublephitable {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (useGlobalTrack && !(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsCrossedRows() > cfgTPCcluster)) {
+    // if (useGlobalTrack && !(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsCrossedRows() > cfgTPCcluster)) {
+    if (useGlobalTrack && !(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster && candidate.tpcNClsCrossedRows() > cfgTPCcluster)) {
       return false;
     }
     return true;
@@ -272,7 +273,7 @@ struct doublephitable {
         if (!selectionPID(track1)) {
           continue;
         }
-        if (!(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) > -2.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) < 3.0)) {
+        if (!(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) < 3.0)) {
           continue;
         }
         Npostrack = Npostrack + 1;
@@ -294,7 +295,7 @@ struct doublephitable {
           if (!selectionPID(track2)) {
             continue;
           }
-          if (!(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) > -2.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) < 3.0)) {
+          if (!(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) < 3.0)) {
             continue;
           }
           if (Npostrack == 1) {
@@ -442,7 +443,7 @@ struct doublephitable {
   bool selectionITSKaon(const T& candidate, float& nSigmaITS)
   {
     nSigmaITS = o2::aod::ITSResponse::nSigmaITS<o2::track::PID::Kaon>(candidate);
-    if (!(nSigmaITS > -2.0f && nSigmaITS < 3.0f)) {
+    if (!(nSigmaITS > -3.0f && nSigmaITS < 3.0f)) {
       return false;
     }
 
@@ -642,12 +643,6 @@ struct doublephitable {
       }
     }
 
-    const int nPosTrack = static_cast<int>(selectedPos.size());
-    const int nNegTrack = static_cast<int>(selectedNeg.size());
-    if (nPosTrack < 2 || nNegTrack < 2) {
-      return;
-    }
-
     std::vector<PhiCandidateVtx> phiCandidates;
     phiCandidates.reserve(selectedPos.size() * selectedNeg.size());
     for (size_t iPos = 0; iPos < selectedPos.size(); ++iPos) {
@@ -657,7 +652,7 @@ struct doublephitable {
         ROOT::Math::PxPyPzMVector kaonPlus(trackPlus.px(), trackPlus.py(), trackPlus.pz(), massKa);
         ROOT::Math::PxPyPzMVector kaonMinus(trackMinus.px(), trackMinus.py(), trackMinus.pz(), massKa);
         const auto phi = kaonPlus + kaonMinus;
-        if (phi.M() <= minPhiMass || phi.M() >= maxPhiMass) {
+        if (phi.M() < minPhiMass || phi.M() > maxPhiMass) {
           continue;
         }
 
@@ -669,7 +664,11 @@ struct doublephitable {
     if (phiCandidates.size() < 2) {
       return;
     }
-
+    const int nPosTrack = static_cast<int>(selectedPos.size());
+    const int nNegTrack = static_cast<int>(selectedNeg.size());
+    if (nPosTrack < 2 || nNegTrack < 2) {
+      return;
+    }
     const auto primaryVertex = getPrimaryVertex(collision);
     const auto covPV = primaryVertex.getCov();
     std::vector<PhiPhiPairPayload> acceptedPairs;
@@ -682,6 +681,7 @@ struct doublephitable {
         const int64_t id3 = phi2.kPlus.globalIndex();
         const int64_t id4 = phi2.kMinus.globalIndex();
         if (id1 == id2 || id1 == id3 || id1 == id4 || id2 == id3 || id2 == id4 || id3 == id4) {
+          // LOGF(info, "same track: %d %d %d %d", id1, id2, id3, id4);
           continue;
         }
         auto trackPar1 = getTrackParCov(phi1.kPlus);
@@ -700,6 +700,7 @@ struct doublephitable {
         }
 
         if (nFitCandidates == 0) {
+          // LOG(info) << "Four-kaon DCAFitterN failed with an unknown exception";
           continue;
         }
 
