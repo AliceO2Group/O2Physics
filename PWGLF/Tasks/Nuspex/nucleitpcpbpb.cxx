@@ -918,14 +918,16 @@ struct NucleitpcPbPb {
               histomc.fill(HIST("hSpectramc"), particleAnti, collision.centFT0C(), ptReco, ptTOF);
 
               // Basic track histograms
-              histos.fill(HIST("dcaXY"), ptReco, track.dcaXY());
-              histos.fill(HIST("dcaZ"), ptReco, track.dcaZ());
-              histos.fill(HIST("Tpcsignal"), getRigidity(track) * track.sign(), track.tpcSignal());
+              if (decayType == 0) {
+                histos.fill(HIST("dcaXY"), ptReco, track.dcaXY());
+                histos.fill(HIST("dcaZ"), ptReco, track.dcaZ());
+                histos.fill(HIST("Tpcsignal"), getRigidity(track) * track.sign(), track.tpcSignal());
+              }
               // Delta Pt histograms
               float ptGen = matchedMCParticle.pt();
               float deltaPt = ptReco - ptGen;
 
-              if (pdg == -particlePdgCodes.at(i)) { // Anti-particle
+              if (pdg == -particlePdgCodes.at(i) && decayType == 0) { // Anti-particle
                 histomc.fill(HIST("histDeltaPtVsPtGenanti"), ptReco, deltaPt);
                 histomc.fill(HIST("histPIDtrackanti"), ptReco, track.pidForTracking());
               }
