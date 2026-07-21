@@ -266,5 +266,11 @@ double getWeight(const double pT, const std::vector<double>& pT_bins, const std:
       break;
     }
   }
-  return 1.0 / (efficiency[eff_bin] * (getRapidity(pT, eta_max) - getRapidity(pT, eta_min)));
+
+  if (eff_bin == -1) {
+    LOGF(warn, "pT value %f is outside the defined pT bins", pT);
+    return 0.0;
+  } else {
+    return 1.0 / (efficiency[eff_bin] * (getRapidity(pT, eta_max) - getRapidity(pT, eta_min)));
+  }
 }
