@@ -679,8 +679,7 @@ class PairHistManager
     // set kT
     mKt = getKt(mParticle1, mParticle2);
 
-    // set pair pT, i.e. sqrt((px1+px2)^2 + (py1+py2)^2)
-    // since kT is defined as half the transverse momentum of the summed 4-vector, this is just twice kT
+    // set pair pT, since kT is defined as half the transverse momentum of the summed 4-vector, this is just twice kT
     mPtPair = 2.f * mKt;
 
     // set mT
