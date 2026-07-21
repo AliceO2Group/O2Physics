@@ -152,7 +152,6 @@ struct Alice3strangenessFinder {
   Service<o2::framework::O2DatabasePDG> pdgDB{};
   static constexpr float ToMicrons = 1e+4;
   static constexpr int LutConfig = 0; // todo
-  static constexpr int LayerNotFound = -99;
 
   // partitions for v0/casc dau tracks
   Partition<Alice3TracksACTS> positiveSecondaryTracksACTS =
