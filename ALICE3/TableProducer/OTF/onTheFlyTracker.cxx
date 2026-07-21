@@ -2116,7 +2116,7 @@ struct OnTheFlyTracker {
         }
       }
 
-      if (!reconstructed && processUnreconstructedTracks) {
+      if (!reconstructed && !processUnreconstructedTracks) {
         continue; // failed to reconstruct track
       }
 
