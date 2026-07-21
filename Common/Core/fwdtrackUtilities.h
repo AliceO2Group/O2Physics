@@ -101,6 +101,31 @@ o2::track::TrackParCovFwd getTrackParCovFwdShift(TFwdTrack const& track, float z
   return o2::track::TrackParCovFwd(track.z() + zshift, tpars, tcovs, chi2);
 }
 
+inline o2::track::TrackParCovFwd getTrackParCovFwdShiftManual(
+  const double x, const double y, const double phi, const double tgl, const double signed1Pt,
+  const double cXX,
+  const double cXY, const double cYY,
+  const double cPhiX, const double cPhiY, const double cPhiPhi,
+  const double cTglX, const double cTglY, const double cTglPhi, const double cTglTgl,
+  const double c1PtX, const double c1PtY, const double c1PtPhi, const double c1PtTgl, const double c1Pt21Pt2,
+  const float z, const float zshift, const float chi2)
+{
+  SMatrix5 tpars(x, y, phi, tgl, signed1Pt);
+
+  SMatrix55 tcovs;
+  std::vector<double> v1{
+    cXX,
+    cXY, cYY,
+    cPhiX, cPhiY, cPhiPhi,
+    cTglX, cTglY, cTglPhi, cTglTgl,
+    c1PtX, c1PtY, c1PtPhi, c1PtTgl, c1Pt21Pt2};
+  tcovs = SMatrix55(v1.begin(), v1.end());
+  v1.clear();
+  v1.shrink_to_fit();
+
+  return o2::track::TrackParCovFwd(z + zshift, tpars, tcovs, chi2);
+}
+
 template <typename TFwdTrack, typename TFwdTrackCov>
 o2::track::TrackParCovFwd getTrackParCovFwd(TFwdTrack const& track, TFwdTrackCov const& cov)
 {
