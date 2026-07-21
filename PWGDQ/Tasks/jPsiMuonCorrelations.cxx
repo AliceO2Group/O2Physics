@@ -8,8 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// @author  Kaare Endrup Iversen
-// Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
+//
+/// \file jPsiMuonCorrelations.cxx
+/// \brief Task to perform correlations between J/Psi candidates and single muon tracks
+/// \author Kaare Endrup Iversen <kaare.endrup.iversen@cern.ch> Lund University
 //
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
