@@ -1009,11 +1009,26 @@ struct AnalysisSameEventPairing {
     uint32_t mcDecision = static_cast<uint32_t>(0);
     bool isCorrectAssoc_leg1 = false;
     bool isCorrectAssoc_leg2 = false;
-    dielectronList.reserve(1);
-    dielectronsExtraList.reserve(1);
+
+    int64_t reserveSize = 0;
+    for (auto const& event : events) {
+      if (event.isEventSelected_bit(0)) {
+        auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
+        size_t nGood = 0;
+        for (auto const& t : groupedAssocs) {
+          if (t.isBarrelSelected_raw()) {
+            nGood++;
+          }
+        }
+        reserveSize += nGood * (nGood - 1) / 2;
+      }
+    }
+
+    dielectronList.reserve(reserveSize);
+    dielectronsExtraList.reserve(reserveSize);
 
     if (fConfigOptions.flatTables.value) {
-      dielectronAllList.reserve(1);
+      dielectronAllList.reserve(reserveSize);
     }
 
     for (const auto& event : events) {
@@ -1075,10 +1090,8 @@ struct AnalysisSameEventPairing {
         if (fPropTrack) {
           VarManager::FillPairCollision<VarManager::kDecayToEE, gkTrackFillMap>(event, t1, t2);
         }
-        /* TODO: Reimplement Pair vertexing when secondary vertexing is available
-        if constexpr (TTwoProngFitter) {
-          // VarManager::FillPairVertexing<VarManager::kDecayToEE, gkEventFillMap, gkTrackFillMap>(event, t1, t2, fConfigOptions.propToPCA);
-        }*/
+
+        VarManager::FillPairVertexingAlice3<VarManager::kDecayToEE, gkEventFillMap, gkTrackFillMap>(event, t1, t2, true);
         if (!fConfigMC.skimSignalOnly || (fConfigMC.skimSignalOnly && mcDecision > 0)) {
           dielectronList(event.globalIndex(), VarManager::fgValues[VarManager::kMass],
                          VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi],
@@ -1188,7 +1201,6 @@ struct AnalysisSameEventPairing {
 
   void runMCGenWithGrouping(MyEventsVtxCovSelected const& events, ReducedA3MCEvents const& /*mcEvents*/, ReducedA3MCTracks const& mcTracks)
   {
-    [[maybe_unused]] uint32_t mcDecision = 0;
     int isig = 0;
 
     for (const auto& mctrack : mcTracks) {
@@ -1229,11 +1241,9 @@ struct AnalysisSameEventPairing {
           }
         }
         auto track_raw = mcTracks.rawIteratorAt(track.globalIndex());
-        mcDecision = 0;
         isig = 0;
         for (const auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, track_raw)) {
-            mcDecision |= (static_cast<uint32_t>(1) << isig);
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);
             MCTruthTableEffi(VarManager::fgValues[VarManager::kMCPt], VarManager::fgValues[VarManager::kMCEta], VarManager::fgValues[VarManager::kMCY], VarManager::fgValues[VarManager::kMCPhi], VarManager::fgValues[VarManager::kMCVz], VarManager::fgValues[VarManager::kMCVtxZ], VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
           }
@@ -1279,14 +1289,12 @@ struct AnalysisSameEventPairing {
           auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
           auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
           if (t1_raw.reducedA3MCEventId() == t2_raw.reducedA3MCEventId()) {
-            mcDecision = 0;
             isig = 0;
             for (const auto& sig : fGenMCSignals) {
               if (sig->GetNProngs() != TWO_PRONG) { // NOTE: 2-prong signals required here
                 continue;
               }
               if (sig->CheckSignal(true, t1_raw, t2_raw)) {
-                mcDecision |= (static_cast<uint32_t>(1) << isig);
                 VarManager::FillPairMC<VarManager::kDecayToEE>(t1, t2);
                 if (fUseMCGenAccCut) {
                   if (!fMCGenAccCut.IsSelected(VarManager::fgValues)) {
@@ -1315,10 +1323,6 @@ struct AnalysisSameEventPairing {
 
   void processMCGen(soa::Filtered<MyEventsVtxCovSelected> const& events, ReducedA3MCEvents const& /*mcEvents*/, ReducedA3MCTracks const& mcTracks)
   {
-    // Fill Generated histograms taking into account all generated tracks
-    [[maybe_unused]] uint32_t mcDecision = 0;
-    int isig = 0;
-
     for (const auto& mctrack : mcTracks) {
       VarManager::FillTrackMC(mcTracks, mctrack);
       // NOTE: Signals are checked here mostly based on the skimmed MC stack, so depending on the requested signal, the stack could be incomplete.
@@ -1341,25 +1345,18 @@ struct AnalysisSameEventPairing {
       }
       VarManager::FillEventAlice3<gkEventFillMap>(event, VarManager::fgValues);
       VarManager::FillEventAlice3<VarManager::ObjTypes::ReducedEventMC>(event.reducedA3MCEvent(), VarManager::fgValues);
-      // auto groupedMCTracks = mcTracks.sliceBy(perReducedMcGenEvent, event.reducedA3MCEventId());
-      // groupedMCTracks.bindInternalIndicesTo(&mcTracks);
-      // for (const auto& track : groupedMCTracks) {
+
       for (const auto& track : mcTracks) {
         if (track.reducedA3MCEventId() != event.reducedA3MCEventId()) {
           continue;
         }
         VarManager::FillTrackMC(mcTracks, track);
         auto track_raw = mcTracks.rawIteratorAt(track.globalIndex());
-        // auto track_raw = groupedMCTracks.rawIteratorAt(track.globalIndex());
-        mcDecision = 0;
-        isig = 0;
         for (const auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, track_raw)) {
-            mcDecision |= (static_cast<uint32_t>(1) << isig);
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);
             MCTruthTableEffi(VarManager::fgValues[VarManager::kMCPt], VarManager::fgValues[VarManager::kMCEta], VarManager::fgValues[VarManager::kMCY], VarManager::fgValues[VarManager::kMCPhi], VarManager::fgValues[VarManager::kMCVz], VarManager::fgValues[VarManager::kMCVtxZ], VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
           }
-          isig++;
         }
       }
     } // end loop over reconstructed events
@@ -1399,17 +1396,13 @@ struct AnalysisSameEventPairing {
           auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
           auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
           if (t1_raw.reducedA3MCEventId() == t2_raw.reducedA3MCEventId()) {
-            mcDecision = 0;
-            isig = 0;
             for (const auto& sig : fGenMCSignals) {
               if (sig->GetNProngs() != TWO_PRONG) { // NOTE: 2-prong signals required here
                 continue;
               }
               if (sig->CheckSignal(true, t1_raw, t2_raw)) {
-                mcDecision |= (static_cast<uint32_t>(1) << isig);
                 fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s", sig->GetName()), VarManager::fgValues);
               }
-              isig++;
             }
           }
         }
@@ -1419,9 +1412,6 @@ struct AnalysisSameEventPairing {
 
   void processMCGenWithGrouping(soa::Filtered<MyEventsVtxCovSelected> const& events, ReducedA3MCEvents const& /*mcEvents*/, ReducedA3MCTracks const& mcTracks)
   {
-    [[maybe_unused]] uint32_t mcDecision = 0;
-    int isig = 0;
-
     for (const auto& mctrack : mcTracks) {
       VarManager::FillTrackMC(mcTracks, mctrack);
       // NOTE: Signals are checked here mostly based on the skimmed MC stack, so depending on the requested signal, the stack could be incomplete.
@@ -1448,15 +1438,11 @@ struct AnalysisSameEventPairing {
         }
         VarManager::FillTrackMC(mcTracks, track);
         auto track_raw = mcTracks.rawIteratorAt(track.globalIndex());
-        mcDecision = 0;
-        isig = 0;
         for (const auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, track_raw)) {
-            mcDecision |= (static_cast<uint32_t>(1) << isig);
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);
             MCTruthTableEffi(VarManager::fgValues[VarManager::kMCPt], VarManager::fgValues[VarManager::kMCEta], VarManager::fgValues[VarManager::kMCY], VarManager::fgValues[VarManager::kMCPhi], VarManager::fgValues[VarManager::kMCVz], VarManager::fgValues[VarManager::kMCVtxZ], VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
           }
-          isig++;
         }
       }
     } // end loop over reconstructed events
@@ -1491,17 +1477,13 @@ struct AnalysisSameEventPairing {
           auto t1_raw = groupedMCTracks.rawIteratorAt(t1.globalIndex());
           auto t2_raw = groupedMCTracks.rawIteratorAt(t2.globalIndex());
           if (t1_raw.reducedA3MCEventId() == t2_raw.reducedA3MCEventId()) {
-            mcDecision = 0;
-            isig = 0;
             for (const auto& sig : fGenMCSignals) {
               if (sig->GetNProngs() != TWO_PRONG) { // NOTE: 2-prong signals required here
                 continue;
               }
               if (sig->CheckSignal(true, t1_raw, t2_raw)) {
-                mcDecision |= (static_cast<uint32_t>(1) << isig);
                 fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s", sig->GetName()), VarManager::fgValues);
               }
-              isig++;
             }
           }
         }
@@ -2029,10 +2011,7 @@ struct AnalysisAsymmetricPairing {
         } // end loop over MC signals
 
         VarManager::FillPairAlice3<VarManager::kDecayToKPi, gkTrackFillMapWithCov>(t1, t2);
-        /*TODO: Reimplement when secondary vertexing is available
-        if constexpr (TTwoProngFitter) {
-          VarManager::FillPairVertexing<VarManager::kDecayToKPi, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, t1, t2, fConfigPropToPCA);
-        }*/
+        VarManager::FillPairVertexingAlice3<VarManager::kDecayToKPi, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, t1, t2, true);
 
         // Fill histograms
         bool isAmbi = false;
@@ -2180,7 +2159,8 @@ struct AnalysisAsymmetricPairing {
   }
 
   // Function to run same event triplets (e.g. D+->K-pi+pi+)
-  void runThreeProng(MyEventsVtxCovSelected const& events, PresliceUnsorted<MyBarrelAssocs>& preslice, MyBarrelAssocs const& /*assocs*/, MyBarrelTracksWithCovWithAmbiguities const& tracks, ReducedA3MCEvents const& /*mcEvents*/, ReducedA3MCTracks const& /*mcTracks*/, VarManager::PairCandidateType tripletType)
+  template <bool TThreeProngFitter, typename TEvents, typename TTrackAssocs, typename TTracks>
+  void runThreeProng(TEvents const& events, PresliceUnsorted<TTrackAssocs>& preslice, TTrackAssocs const& /*assocs*/, TTracks const& tracks, ReducedA3MCEvents const& /*mcEvents*/, ReducedA3MCTracks const& /*mcTracks*/, VarManager::PairCandidateType tripletType)
   {
     for (const auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
@@ -2206,12 +2186,12 @@ struct AnalysisAsymmetricPairing {
       // Based on triplet type, make suitable combinations of the partitions
       if (tripletType == VarManager::kTripleCandidateToPKPi) {
         for (const auto& [a1, a2, a3] : combinations(soa::CombinationsFullIndexPolicy(groupedLegAAssocs, groupedLegBAssocs, groupedLegCAssocs))) {
-          readTriplet(a1, a2, a3, tracks, event, tripletType);
+          readTriplet<TThreeProngFitter>(a1, a2, a3, tracks, event, tripletType);
         }
       } else if (tripletType == VarManager::kTripleCandidateToKPiPi) {
         for (const auto& a1 : groupedLegAAssocs) {
           for (const auto& [a2, a3] : combinations(groupedLegBAssocs, groupedLegCAssocs)) {
-            readTriplet(a1, a2, a3, tracks, event, tripletType);
+            readTriplet<TThreeProngFitter>(a1, a2, a3, tracks, event, tripletType);
           }
         }
       } else {
@@ -2220,8 +2200,8 @@ struct AnalysisAsymmetricPairing {
     } // end event loop
   }
 
-  // Helper function to process triplet
-  void readTriplet(MyBarrelAssocs::iterator const& a1, MyBarrelAssocs::iterator const& a2, MyBarrelAssocs::iterator const& a3, MyBarrelTracksWithCovWithAmbiguities const& /*tracks*/, MyEventsVtxCovSelected::iterator const& /*event*/, VarManager::PairCandidateType tripletType)
+  template <bool TThreeProngFitter, typename TTrackAssoc, typename TTracks, typename TEvent>
+  void readTriplet(TTrackAssoc const& a1, TTrackAssoc const& a2, TTrackAssoc const& a3, TTracks const& /*tracks*/, TEvent const& event, VarManager::PairCandidateType tripletType)
   {
     uint32_t mcDecision = 0;
 
@@ -2256,9 +2236,9 @@ struct AnalysisAsymmetricPairing {
     // Find common track cuts all candidates pass
     threeTrackCommonFilter |= a1.isBarrelSelected_raw() & a2.isBarrelSelected_raw() & a3.isBarrelSelected_raw() & fCommonTrackCutMask;
 
-    auto t1 = a1.template reducedA3track_as<MyBarrelTracksWithCovWithAmbiguities>();
-    auto t2 = a2.template reducedA3track_as<MyBarrelTracksWithCovWithAmbiguities>();
-    auto t3 = a3.template reducedA3track_as<MyBarrelTracksWithCovWithAmbiguities>();
+    auto t1 = a1.template reducedA3track_as<TTracks>();
+    auto t2 = a2.template reducedA3track_as<TTracks>();
+    auto t3 = a3.template reducedA3track_as<TTracks>();
 
     // Avoid self-pairs
     if (t1 == t2 || t1 == t3 || t2 == t3) {
@@ -2299,10 +2279,9 @@ struct AnalysisAsymmetricPairing {
     } // end loop over MC signals
 
     VarManager::FillTriple(t1, t2, t3, VarManager::fgValues, tripletType);
-    /* TODO: Reimplement when secondary vertexing is available
     if constexpr (TThreeProngFitter) {
-      VarManager::FillTripletVertexing<gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, t1, t2, t3, tripletType);
-    }*/
+      VarManager::FillTripletVertexingALICE3<gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, t1, t2, t3, tripletType);
+    }
 
     // Fill histograms
     bool isAmbi = false;
@@ -2368,7 +2347,15 @@ struct AnalysisAsymmetricPairing {
                                   MyBarrelTracksWithCovWithAmbiguities const& barrelTracks,
                                   ReducedA3MCEvents const& mcEvents, ReducedA3MCTracks const& mcTracks)
   {
-    runThreeProng(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks, VarManager::kTripleCandidateToKPiPi);
+    runThreeProng<true>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks, VarManager::kTripleCandidateToKPiPi);
+  }
+
+  void processProtonKaonPionSkimmed(MyEventsVtxCovSelected const& events,
+                                    MyBarrelAssocs const& barrelAssocs,
+                                    MyBarrelTracksWithCovWithAmbiguities const& barrelTracks,
+                                    ReducedA3MCEvents const& mcEvents, ReducedA3MCTracks const& mcTracks)
+  {
+    runThreeProng<true>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks, VarManager::kTripleCandidateToPKPi);
   }
 
   void processMCGen(ReducedA3MCTracks const& mcTracks)
@@ -2426,6 +2413,7 @@ struct AnalysisAsymmetricPairing {
 
   PROCESS_SWITCH(AnalysisAsymmetricPairing, processKaonPionSkimmed, "Run kaon pion pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisAsymmetricPairing, processKaonPionPionSkimmed, "Run kaon pion pion triplets, with skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisAsymmetricPairing, processProtonKaonPionSkimmed, "Run proton kaon pion triplets, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisAsymmetricPairing, processMCGen, "Loop over MC particle stack and fill generator level histograms", false);
   PROCESS_SWITCH(AnalysisAsymmetricPairing, processMCGenWithEventSelection, "Loop over MC particle stack and fill generator level histograms", false);
   PROCESS_SWITCH(AnalysisAsymmetricPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", true);

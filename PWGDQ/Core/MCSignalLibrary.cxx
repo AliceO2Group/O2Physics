@@ -1717,6 +1717,13 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Lambda_c", {prong}, {-1});
     return signal;
   }
+  if (nameStr == "PrKPiFromLambdaC") {
+    MCProng prongProton(2, {2212, Pdg::kLambdaCPlus}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongKaon(2, {321, Pdg::kLambdaCPlus}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongPion(2, {211, Pdg::kLambdaCPlus}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Proton kaon pion triplet from Lambda_c+/-", {prongProton, prongKaon, prongPion}, {1, 1, 1});
+    return signal;
+  }
 
   //--------------------------------------------------------------------------------
 
