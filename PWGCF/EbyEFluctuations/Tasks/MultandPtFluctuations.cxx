@@ -57,7 +57,6 @@ struct MultandPtFluctuations {
   Configurable<bool> cFT0C{"cFT0C", true, "Use FT0C centrality"};
 
   // ------ Track cuts
-
   Configurable<float> ptMinCut{"ptMinCut", 0.2f, "Minimum pT"};
   Configurable<float> ptMaxCut{"ptMaxCut", 5.0f, "Maximum pT"};
   Configurable<float> etaCut{"etaCut", 0.8f, "Maximum |eta|"};
@@ -73,11 +72,7 @@ struct MultandPtFluctuations {
   Configurable<bool> requireInnerITS{"requireInnerITS", true, "At least one hit in ITS layers 0,1,2"};
 
   //----- Histogram Registry
-  HistogramRegistry histos{
-    "histos",
-    {},
-    OutputObjHandlingPolicy::AnalysisObject};
-
+  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(InitContext const&)
   {
     const AxisSpec axisEta{30, -1.5, +1.5, "#eta"};
@@ -88,7 +83,6 @@ struct MultandPtFluctuations {
     const AxisSpec axisdcaZ{ndcaZ, -3.0, 3.0, "DCAz"};
     const AxisSpec axisNch{500, 0, 500, "Nch"};
     const AxisSpec axisCent{nCentBins, 0.0, 100.0, "Centrality (%)"}; // ------------- centrality bins
-
     histos.add("QA/BeforeCut/VtxZ", "Vertex Z", kTH1F, {axisVtxz});
     histos.add("QA/AfterCut/VtxZ", "Vertex Z", kTH1F, {axisVtxz});
     histos.add("QA/BeforeCut/Cent", "Centrality", kTH1F, {axisCent});
@@ -127,41 +121,31 @@ struct MultandPtFluctuations {
   void process(myColsData::iterator const& col, myFilteredTracksData const& tracks)
   {
     histos.fill(HIST("QA/BeforeCut/VtxZ"), col.posZ());
-
     float cent = -1.0f;
-
     if (cFT0M) {
       cent = col.centFT0M();
     }
-
     if (cFT0C) {
       cent = col.centFT0C();
       // if (!track.isGlobalTrack()) continue;
     }
-
     if (cent < 0) {
       return;
     }
 
     histos.fill(HIST("QA/BeforeCut/Cent"), cent);
-
     if (!col.sel8())
       return;
-
     if (std::abs(col.posZ()) > vtxZcut)
       return;
-
     if (cfgNoSameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
       return;
-
     if (cfgEvSelUseGoodZvtxFT0vsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
       return;
-
     if (cfgUseGoodITSLayerAllCut && !col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
       return;
 
     histos.fill(HIST("hEventCounter"), cent);
-
     histos.fill(HIST("QA/AfterCut/VtxZ"), col.posZ());
     histos.fill(HIST("QA/AfterCut/Cent"), cent);
 
@@ -183,32 +167,24 @@ struct MultandPtFluctuations {
         continue;
       if (requireTPC && !track.hasTPC())
         continue;
-
       if (track.itsNCls() < itsNClsCut)
         continue;
       if (track.tpcNClsCrossedRows() < tpcCrossCut)
         continue;
-
       if (track.tpcCrossedRowsOverFindableCls() < crossedRowsOverFindableCut)
         continue;
-
       if (std::abs(track.dcaZ()) > dcaZCut)
         continue;
       if (std::abs(track.dcaXY()) > dcaXYCut)
         continue;
-
       if (track.tpcChi2NCl() > tpcChiCut)
         continue;
       if (track.itsChi2NCl() > itsChiCut)
         continue;
-
       if (std::abs(track.eta()) > etaCut)
         continue;
-
       if (requireInnerITS) {
-
         auto itsMap = track.itsClusterMap();
-
         if (!(itsMap & (1 << 0)) &&
             !(itsMap & (1 << 1)) &&
             !(itsMap & (1 << 2))) {
@@ -222,10 +198,8 @@ struct MultandPtFluctuations {
       histos.fill(HIST("QA/AfterCut/Phi"), track.phi());
       histos.fill(HIST("QA/AfterCut/DcaXY"), track.dcaXY());
       histos.fill(HIST("QA/AfterCut/DcaZ"), track.dcaZ());
-
       histos.fill(HIST("h2_DcaZ"), track.pt(), track.dcaZ());
       histos.fill(HIST("h2_DcaXY"), track.pt(), track.dcaXY());
-
       a++; // A-nch, B =pt
       b += track.pt();
     }
