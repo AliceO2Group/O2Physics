@@ -21,6 +21,7 @@
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "ALICE3/Core/GeometryContainer.h"
 #include "ALICE3/Core/TrackUtilities.h"
 #include "ALICE3/DataModel/OTFPIDTrk.h"
 #include "ALICE3/DataModel/OTFRICH.h"
@@ -31,6 +32,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <DetectorsBase/Propagator.h>
@@ -60,7 +62,6 @@
 #include <vector>
 
 using namespace o2;
-// using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::constants::physics;
 
@@ -73,6 +74,9 @@ struct Alice3strangenessFinder {
   SliceCache cache;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  o2::fastsim::GeometryContainer geoContainer;
+  std::vector<std::vector<float>> trackingLayers;
 
   Produces<aod::V0CandidateIndices> v0CandidateIndices;    // contains V0 candidate indices
   Produces<aod::V0CandidateCores> v0CandidateCores;        // contains V0 candidate core information
@@ -145,8 +149,10 @@ struct Alice3strangenessFinder {
   Configurable<bool> useOriginalTrackParams{"useOriginalTrackParams", false, "use original track parameters instead of the ones propagated to PCA (effective only if skipFitter is false) and for MC truth info"};
 
   o2::vertexing::DCAFitterN<2> fitter;
-  Service<o2::framework::O2DatabasePDG> pdgDB;
+  Service<o2::framework::O2DatabasePDG> pdgDB{};
   static constexpr float ToMicrons = 1e+4;
+  static constexpr int LutConfig = 0; // todo
+  static constexpr int LayerNotFound = -99;
 
   // partitions for v0/casc dau tracks
   Partition<Alice3TracksACTS> positiveSecondaryTracksACTS =
@@ -194,7 +200,7 @@ struct Alice3strangenessFinder {
     float dcaToPV{};
   };
 
-  void init(InitContext&)
+  void init(InitContext& initContext)
   {
     // Initialization code here
     fitter.setBz(magneticField);
@@ -275,6 +281,30 @@ struct Alice3strangenessFinder {
       histos.add("Generated/hGeneratedAntiOmega", "hGeneratedAntiOmega", kTH2D, {{axisPt}, {axisEta}});
     }
 
+    if (doprocessFindV0CandidateOTF) {
+      ccdb->setURL("http://alice-ccdb.cern.ch");
+      ccdb->setTimestamp(-1);
+      geoContainer.setCcdbManager(ccdb.operator->());
+      geoContainer.init(initContext);
+      const int nGeometries = geoContainer.getNumberOfConfigurations();
+      trackingLayers.resize(nGeometries);
+
+      for (int icfg = 0; icfg < nGeometries; ++icfg) {
+        auto globalConfiguration = geoContainer.getConfigurations(icfg);
+
+        for (const auto& [outerKey, innerMap] : globalConfiguration) {
+          if (outerKey.empty() || outerKey[0] != 'B') {
+            continue;
+          }
+
+          auto it = innerMap.find("r");
+          if (it != innerMap.end()) {
+            trackingLayers[icfg].push_back(std::stof(it->second));
+          }
+        }
+      }
+    }
+
     if (buildCascade) {
       histos.add("CascadeBuilding/hDcaBetweenDaus", "hDcaBetweenDaus", kTH1D, {{axisDCA}});
       histos.add("CascadeBuilding/hXiMass", "", kTH1D, {axisXiMass});
@@ -333,6 +363,20 @@ struct Alice3strangenessFinder {
     } // end association check
     return returnValue;
   }
+
+  template <typename TTrackType>
+  [[nodiscard]] float getFirstLayerHitRadius(const TTrackType& track, const std::vector<float>& layers)
+  {
+    const float trueRadius = std::hypot(track.x(), track.y());
+    for (const float layerRadius : layers) {
+      if (layerRadius >= trueRadius) {
+        return layerRadius;
+      }
+    }
+    static constexpr float OutsideALICE3 = 100.f;
+    return OutsideALICE3;
+  }
+
   template <typename TTrackType>
   bool buildDecayCandidateTwoBody(TTrackType const& t0, TTrackType const& t1, std::array<float, 3> vtx, Candidate& thisCandidate)
   {
@@ -373,8 +417,8 @@ struct Alice3strangenessFinder {
         t0.getPxPyPzGlo(thisCandidate.pDau0);
         t1.getPxPyPzGlo(thisCandidate.pDau1);
       }
-      histos.fill(HIST("hPtNegDauAfterV0Finding"), std::sqrt(thisCandidate.pDau1[0] * thisCandidate.pDau1[0] + thisCandidate.pDau1[1] + thisCandidate.pDau1[1]), t1.getPt());
-      histos.fill(HIST("hPtPosDauAfterV0Finding"), std::sqrt(thisCandidate.pDau0[0] * thisCandidate.pDau0[0] + thisCandidate.pDau0[1] + thisCandidate.pDau0[1]), t0.getPt());
+      histos.fill(HIST("hPtNegDauAfterV0Finding"), std::hypot(thisCandidate.pDau1[0], thisCandidate.pDau1[1]), t1.getPt());
+      histos.fill(HIST("hPtPosDauAfterV0Finding"), std::hypot(thisCandidate.pDau0[0], thisCandidate.pDau0[1]), t0.getPt());
 
       thisCandidate.dcaDau = std::sqrt(fitter.getChi2AtPCACandidate());
       thisCandidate.p[0] = thisCandidate.pDau0[0] + thisCandidate.pDau1[0];
@@ -416,8 +460,6 @@ struct Alice3strangenessFinder {
       thisCandidate.dcaToPV = calculateDCAStraightToPV(thisCandidate.posSV[0], thisCandidate.posSV[1], thisCandidate.posSV[2],
                                                        thisCandidate.p[0], thisCandidate.p[1], thisCandidate.p[2],
                                                        vtx[0], vtx[1], vtx[2]);
-
-      return true;
     } else {
       t0.getPxPyPzGlo(thisCandidate.pDau0);
       t1.getPxPyPzGlo(thisCandidate.pDau1);
@@ -434,8 +476,8 @@ struct Alice3strangenessFinder {
       thisCandidate.dcaToPV = calculateDCAStraightToPV(thisCandidate.posSV[0], thisCandidate.posSV[1], thisCandidate.posSV[2],
                                                        thisCandidate.p[0], thisCandidate.p[1], thisCandidate.p[2],
                                                        vtx[0], vtx[1], vtx[2]);
-      return true;
     }
+    return true;
   }
 
   void processGenerated(aod::McParticles const&)
@@ -603,8 +645,26 @@ struct Alice3strangenessFinder {
             continue; // candidate outside of acceptance
           }
 
-          if (std::hypot(v0Cand.posSV[0], v0Cand.posSV[1]) < std::hypot(cascCand.posSV[0], cascCand.posSV[1])) {
-            continue; // causality
+          const float radiusV0 = std::hypot(v0Cand.posSV[0], v0Cand.posSV[1]);
+          const float radiusCasc = std::hypot(cascCand.posSV[0], cascCand.posSV[1]);
+          const float posCausalityRadius = getFirstLayerHitRadius(posTrack, trackingLayers[LutConfig]);
+          const float negCausalityRadius = getFirstLayerHitRadius(negTrack, trackingLayers[LutConfig]);
+          const float bachCausalityRadius = getFirstLayerHitRadius(bachTrack, trackingLayers[LutConfig]);
+
+          if (posCausalityRadius < radiusV0) {
+            continue; // positive track hit a layer before v0 decayed
+          }
+
+          if (negCausalityRadius < radiusV0) {
+            continue; // negative track hit a layer before v0 decayed
+          }
+
+          if (radiusV0 < radiusCasc) {
+            continue; // v0 decayed before cascade
+          }
+
+          if (bachCausalityRadius < radiusCasc) {
+            continue; // bachelor track hit a layer before v0 decayed
           }
 
           const float massXi = RecoDecay::m(std::array{std::array{cascCand.pDau0[0], cascCand.pDau0[1], cascCand.pDau0[2]},
@@ -685,10 +745,12 @@ struct Alice3strangenessFinder {
           isLambda = (posParticle.pdgCode() == kProton && negParticle.pdgCode() == kPiMinus);
           isAntiLambda = (posParticle.pdgCode() == kPiPlus && negParticle.pdgCode() == kProtonBar);
           if (isK0s || isLambda || isAntiLambda) {
-            if (!isK0s && isK0Gun)
+            if (!isK0s && isK0Gun) {
               continue;
-            if (!isLambda && isLambdaGun)
+            }
+            if (!isLambda && isLambdaGun) {
               continue;
+            }
             Candidate v0cand;
             std::vector<double> v0DecayVertex;
             v0DecayVertex.push_back(negParticle.vx());
@@ -700,8 +762,9 @@ struct Alice3strangenessFinder {
             o2::track::TrackParCov negParCov;
             o2::upgrade::convertTLorentzVectorToO2Track(1, posLorVector, v0DecayVertex, posParCov);
             o2::upgrade::convertTLorentzVectorToO2Track(-1, negLorVector, v0DecayVertex, negParCov);
-            if (!buildDecayCandidateTwoBody(posParCov, negParCov, vtx, v0cand))
+            if (!buildDecayCandidateTwoBody(posParCov, negParCov, vtx, v0cand)) {
               continue;
+            }
             v0CandidateIndices(collision.globalIndex(),
                                posParticle.globalIndex(),
                                negParticle.globalIndex(),
