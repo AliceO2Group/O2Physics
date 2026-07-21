@@ -700,9 +700,10 @@ struct TrackedHypertritonRecoTask {
     auto heTrackCov = getTrackParCov(heTrack);
     auto piTrackCov = getTrackParCov(piTrack);
 
-    if (twoBody.useKFParticle && !fit2BodyWithKF(collision, heTrack, piTrack, heTrackCov, piTrackCov)) {
-      return;
-    } else if (!fit2bodyWithDCAFitter(heTrackCov, piTrackCov)) {
+    const bool fitSucceeded = twoBody.useKFParticle
+      ? fit2BodyWithKF(collision, heTrack, piTrack, heTrackCov, piTrackCov)
+      : fit2bodyWithDCAFitter(heTrackCov, piTrackCov);
+    if (!fitSucceeded) {
       return;
     }
 
@@ -931,7 +932,7 @@ struct TrackedHypertritonRecoTask {
         o2::base::Propagator::Instance()->propagateToDCABxByBz({builder3Body.decay3body.position[0], builder3Body.decay3body.position[1], builder3Body.decay3body.position[2]}, itsTrackParCov, 2.f, fitter2Body.getMatCorrType(), &dcaInfoItsTrack);
         builder3Body.decay3body.itsTrackDCAToSV[0] = dcaInfoItsTrack[0];
         builder3Body.decay3body.itsTrackDCAToSV[1] = dcaInfoItsTrack[1];
-        if (threeBody.useSelections && (builder3Body.decay3body.itsTrackDCAToSV[0] > threeBody.maxITSDCAxytrackToSV || builder3Body.decay3body.itsTrackDCAToSV[1] > threeBody.maxITSDCAztrackToSV)) {
+        if (threeBody.useSelections && (std::abs(builder3Body.decay3body.itsTrackDCAToSV[0]) > threeBody.maxITSDCAxytrackToSV || std::abs(builder3Body.decay3body.itsTrackDCAToSV[1]) > threeBody.maxITSDCAztrackToSV)) {
           continue;
         }
 
