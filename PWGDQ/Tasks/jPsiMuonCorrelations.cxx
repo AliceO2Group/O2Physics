@@ -271,7 +271,6 @@ double getWeight(const double pT, const std::vector<double>& binsPT, const std::
   if (binEff == -1) {
     LOGF(warn, "pT value %f is outside the defined pT bins", pT);
     return 0.0;
-  } else {
-    return 1.0 / (efficiency[binEff] * (getRapidity(pT, etaMax) - getRapidity(pT, etaMin)));
   }
+  return 1.0 / (efficiency[binEff] * (getRapidity(pT, etaMax) - getRapidity(pT, etaMin)));
 }
