@@ -113,9 +113,9 @@ struct TreeCreatorPidTpcQa {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
-  ctpRateFetcher mRateFetcher{};
+  ctpRateFetcher mRateFetcher;
 
-  o2::aod::rctsel::RCTFlagsChecker rctChecker{};
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
 
   using CollisionsExtra = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
