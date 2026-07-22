@@ -119,6 +119,7 @@ struct FemtoUniversePairTaskTrackPhi {
   Configurable<float> ConfTrackPtPIDLimit{"ConfTrackPtPIDLimit", 0.5, "Momentum threshold for change of the PID method (from using TPC to TPC and TOF)."};
   Configurable<float> ConfTrackPtLow{"ConfTrackPtLow", 0.5, "Lower limit of the hadron pT."};
   Configurable<float> ConfTrackPtHigh{"ConfTrackPtHigh", 2.5, "Higher limit of the hadron pT."};
+  Configurable<bool> ConfTrackUseRun3PIDforKaons{"ConfTrackUseRun3PIDforKaons", true, "Use Run3 PID for kaons from Veronika Barbasova's AN (https://alice-notes.web.cern.ch/node/1758). If this is on the other PID methods are ignored for kaons."};
 
   /// Partitions for the track (particle 1)
   Partition<FilteredFemtoFullParticles> partsTrack = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) &&
@@ -247,42 +248,72 @@ struct FemtoUniversePairTaskTrackPhi {
     }
   }
 
-  bool isKaonNSigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
+  bool isKaonNSigma(float mom, bool hasTOF, float nsigmaTPCK, float nsigmaTOFK)
   {
-    if (mom < 0.3) { // 0.0-0.3
-      if (std::abs(nsigmaTPCK) < 3.0) {
-        return true;
-      } else {
-        return false;
-      }
-    } else if (mom < 0.45) { // 0.30 - 0.45
-      if (std::abs(nsigmaTPCK) < 2.0) {
-        return true;
-      } else {
-        return false;
-      }
-    } else if (mom < 0.55) { // 0.45-0.55
-      if (std::abs(nsigmaTPCK) < 1.0) {
-        return true;
-      } else {
-        return false;
-      }
-    } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-      if ((std::abs(nsigmaTOFK) < 3.0) && (std::abs(nsigmaTPCK) < 3.0)) {
-        {
+    if (ConfTrackUseRun3PIDforKaons) {
+      if (mom < 0.5) {
+        if (std::abs(nsigmaTPCK) < 3.0) {
           return true;
+        } else {
+          return false;
+        }
+      } else if (mom >= 0.5) {
+        if (hasTOF) // if TOF is available, use combine nsigma
+        {
+          if (std::hypot(nsigmaTOFK, nsigmaTPCK) < 3.0) {
+            return true;
+          } else {
+            return false;
+          }
+        } else // if TOF is not available, use TPC nsigma only
+        {
+          if (std::abs(nsigmaTPCK) < 3.0) {
+            return true;
+          } else {
+            return false;
+          }
+        }
+      }
+
+      else {
+        return false;
+      }
+    } else {
+      if (mom < 0.3) { // 0.0-0.3
+        if (std::abs(nsigmaTPCK) < 3.0) {
+          return true;
+        } else {
+          return false;
+        }
+      } else if (mom < 0.45) { // 0.30 - 0.45
+        if (std::abs(nsigmaTPCK) < 2.0) {
+          return true;
+        } else {
+          return false;
+        }
+      } else if (mom < 0.55) { // 0.45-0.55
+        if (std::abs(nsigmaTPCK) < 1.0) {
+          return true;
+        } else {
+          return false;
+        }
+      } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
+        if ((std::abs(nsigmaTOFK) < 3.0) && (std::abs(nsigmaTPCK) < 3.0)) {
+          {
+            return true;
+          }
+        } else {
+          return false;
+        }
+      } else if (mom > 1.5) { // 1.5 -
+        if ((std::abs(nsigmaTOFK) < 2.0) && (std::abs(nsigmaTPCK) < 3.0)) {
+          return true;
+        } else {
+          return false;
         }
       } else {
         return false;
       }
-    } else if (mom > 1.5) { // 1.5 -
-      if ((std::abs(nsigmaTOFK) < 2.0) && (std::abs(nsigmaTPCK) < 3.0)) {
-        return true;
-      } else {
-        return false;
-      }
-    } else {
-      return false;
     }
   }
 
@@ -352,6 +383,8 @@ struct FemtoUniversePairTaskTrackPhi {
 
   bool isParticleNSigmaAccepted(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCK, float nsigmaTOFK)
   {
+    bool hasTOF = std::isfinite(nsigmaTOFPr) || std::isfinite(nsigmaTOFPi) || std::isfinite(nsigmaTOFK);
+
     switch (ConfTrackPDGCode) {
       case 2212:  // Proton
       case -2212: // anty Proton
@@ -363,7 +396,7 @@ struct FemtoUniversePairTaskTrackPhi {
         break;
       case 321:  // Kaon+
       case -321: // Kaon-
-        return isKaonNSigma(mom, nsigmaTPCK, nsigmaTOFK);
+        return isKaonNSigma(mom, hasTOF, nsigmaTPCK, nsigmaTOFK);
         break;
       default:
         return false;
