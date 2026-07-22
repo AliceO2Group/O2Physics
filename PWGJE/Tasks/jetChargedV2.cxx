@@ -719,7 +719,6 @@ struct JetChargedV2 {
           occupancyIsGood = true;
         }
 
-        float centrality = -1.0;
         switch (centralityMode) {
           case 1:
             centrality = collision.centFT0M();
@@ -818,7 +817,7 @@ struct JetChargedV2 {
 
   // create h_ptsum_sumpt_fit, with number of Track
   template <typename T, typename U>
-  void getNtrk(T const& tracks, U const& jets, int& nTrk, double& evtnum, double& leadingJetEta)
+  void getNtrk(T const& tracks, U const& jets, int& nTrk, double& evtnumNtrk, double& leadingJetEta)
   {
     if (jets.size() > 0) {
       for (auto const& track : tracks) {
@@ -829,13 +828,13 @@ struct JetChargedV2 {
           nTrk += 1;
         }
       }
-      registry.fill(HIST("h_evtnum_NTrk"), evtnum, nTrk);
+      registry.fill(HIST("h_evtnum_NTrk"), evtnumNtrk, nTrk);
     }
   }
 
   // fill nTrk plot for fit rho(varphi)
   template <typename U, typename J>
-  void fillNtrkCheck(U const& tracks, J const& jets, TH1F* hPtsumSumptFit, double& leadingJetEta)
+  void fillNtrkCheck(U const& tracks, J const& jets, TH1F* hPtsumSumptFitFill, double& leadingJetEta)
   {
     if (jets.size() > 0) {
       double localRhoFitPtMin = 0.2;
@@ -851,7 +850,7 @@ struct JetChargedV2 {
         registry.fill(HIST("h_accept_Track"), 2.5);
         if (jetderiveddatautilities::selectTrack(track, trackSelection) && (std::fabs(track.eta() - leadingJetEta) > selectedJetsRadius) && track.pt() >= localRhoFitPtMin && track.pt() <= localRhoFitPtMax) {
           registry.fill(HIST("h_accept_Track"), 3.5);
-          hPtsumSumptFit->Fill(track.phi(), track.pt());
+          hPtsumSumptFitFill->Fill(track.phi(), track.pt());
         }
       }
     }
@@ -875,7 +874,7 @@ struct JetChargedV2 {
 
   // Run General_Purpose MC MCP
   template <typename U, typename J>
-  void fitFncAreaSubMCP(U const& collision, J const& jets, TH1F* hPtsumSumptFitMCP, bool mcLevelIsParticleLevel, float weight = 1.0)
+  void fitFncAreaSubMCP(U const& collision, J const& jets, TH1F* hPtsumSumptFitMCPFill, bool mcLevelIsParticleLevel, float weight = 1.0)
   {
     float centrality = -1.0;
     switch (centralityMode) {
@@ -931,7 +930,7 @@ struct JetChargedV2 {
       fFitModulationV2v3P->FixParameter(4, ep3);
     }
 
-    hPtsumSumptFitMCP->Fit(fFitModulationV2v3P, "Q", "ep", 0, o2::constants::math::TwoPI);
+    hPtsumSumptFitMCPFill->Fit(fFitModulationV2v3P, "Q", "ep", 0, o2::constants::math::TwoPI);
 
     // double temppara[5];
     std::array<double, 5> temppara{};
@@ -1098,7 +1097,7 @@ struct JetChargedV2 {
   }
 
   template <typename TBase, typename TTag>
-  void fillGeoMatchedCorrHistograms(TBase const& jetMCD, TF1* fFitModulationRM, float tempparaA, double ep2, float rho, bool subtractMCPBackground, float mcrho, float weight = 1.0)
+  void fillGeoMatchedCorrHistograms(TBase const& jetMCD, TF1* fFitModulationRMFill, float tempparaA, double ep2, float rho, bool subtractMCPBackgroundBool, float mcrho, float weight = 1.0)
   {
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
     if (jetMCD.pt() > pTHatMaxMCD * pTHat) {
@@ -1125,12 +1124,12 @@ struct JetChargedV2 {
           int evtPlnAngleA = 7;
           int evtPlnAngleB = 3;
           int evtPlnAngleC = 5;
-          double integralValue = fFitModulationRM->Integral(jetMCD.phi() - selectedJetsRadius, jetMCD.phi() + selectedJetsRadius);
+          double integralValue = fFitModulationRMFill->Integral(jetMCD.phi() - selectedJetsRadius, jetMCD.phi() + selectedJetsRadius);
           double rholocal = rho / (2 * selectedJetsRadius * tempparaA) * integralValue;
           double corrBasejetpt = jetMCD.pt() - (rholocal * jetMCD.area());
           double corrTagjetpt = 0.0;
-          if (subtractMCPBackground) {
-            double integralValueMCP = fFitModulationRM->Integral(jetMCP.phi() - selectedJetsRadius, jetMCP.phi() + selectedJetsRadius);
+          if (subtractMCPBackgroundBool) {
+            double integralValueMCP = fFitModulationRMFill->Integral(jetMCP.phi() - selectedJetsRadius, jetMCP.phi() + selectedJetsRadius);
             double rholocalMCP = mcrho / (2 * selectedJetsRadius * tempparaA) * integralValueMCP;
             corrTagjetpt = jetMCP.pt() - (rholocalMCP * jetMCP.area());
           } else {
