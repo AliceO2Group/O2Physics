@@ -101,6 +101,7 @@ struct FlowSP {
     O2_DEFINE_CONFIGURABLE(cFillQABefore, bool, false, "Fill QA histograms before cuts, only for processData");
     O2_DEFINE_CONFIGURABLE(cFillMeanPT, bool, false, "Fill histograms for mean PX/PT");
     O2_DEFINE_CONFIGURABLE(cFillMeanPTextra, bool, false, "Fill histograms for mean PX/PT extra");
+    O2_DEFINE_CONFIGURABLE(cUseCentAveragePt, bool, false, "Use <pt> in 1% centrality intervals and not cent average");
     O2_DEFINE_CONFIGURABLE(cFillWithMCParticle, bool, false, "Fill histograms with MCParticle instead of Track");
     // Flags to make and fill histograms
     O2_DEFINE_CONFIGURABLE(cFillGeneralV1Histos, bool, true, "Fill histograms for vn analysis");
@@ -1141,23 +1142,21 @@ struct FlowSP {
     if (!cfg.cFillEventQA)
       return;
 
-    static constexpr std::string_view Time[] = {"before", "after"};
-
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentFT0C"), collision.centFT0C(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentNGlobal"), collision.centNGlobal(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentFT0M"), collision.centFT0M(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentFV0A"), collision.centFV0A(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/globalTracks_centT0C"), collision.centFT0C(), tracks.size(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/globalTracks_multT0A"), collision.multFT0A(), tracks.size(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/globalTracks_multV0A"), collision.multFV0A(), tracks.size(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/multV0A_multT0A"), collision.multFT0A(), collision.multFV0A(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/multT0C_centT0C"), collision.centFT0C(), collision.multFT0C(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFT0Cvariant1"), collision.centFT0C(), collision.centFT0CVariant1(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFT0M"), collision.centFT0C(), collision.centFT0M(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFV0A"), collision.centFT0C(), collision.centFV0A(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentNGlobal"), collision.centFT0C(), collision.centNGlobal(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("hCentFT0C"), collision.centFT0C(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("hCentNGlobal"), collision.centNGlobal(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("hCentFT0M"), collision.centFT0M(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("hCentFV0A"), collision.centFV0A(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("globalTracks_centT0C"), collision.centFT0C(), tracks.size(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("globalTracks_multT0A"), collision.multFT0A(), tracks.size(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("globalTracks_multV0A"), collision.multFV0A(), tracks.size(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("multV0A_multT0A"), collision.multFT0A(), collision.multFV0A(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("multT0C_centT0C"), collision.centFT0C(), collision.multFT0C(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("CentFT0C_vs_CentFT0Cvariant1"), collision.centFT0C(), collision.centFT0CVariant1(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("CentFT0C_vs_CentFT0M"), collision.centFT0C(), collision.centFT0M(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("CentFT0C_vs_CentFV0A"), collision.centFT0C(), collision.centFV0A(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("CentFT0C_vs_CentNGlobal"), collision.centFT0C(), collision.centNGlobal(), spm.centWeight);
 
     if (cfg.cFillEventPlaneQA) {
       if constexpr (o2::framework::has_type_v<aod::sptablezdc::Vertex, typename CollisionObject::all_columns>) {
@@ -1259,7 +1258,6 @@ struct FlowSP {
 
     double weight = spm.wacc[ct][par] * spm.weff[ct][par] * spm.centWeight;
 
-    static constexpr std::string_view Time[] = {"before/", "after/"};
     // NOTE: species[kUnidentified] = "" (when nocfg.cTrackSelDo) {
     if (cfg.cTrackSelDoTrackQAvsCent) {
       histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_Eta"), track.pt(), track.eta(), spm.centrality, weight);
@@ -1301,7 +1299,6 @@ struct FlowSP {
   template <FillType ft, ModeType md, typename TrackObject>
   inline void fillMCPtHistos(TrackObject track, int pdgCode)
   {
-    static constexpr std::string_view Time[] = {"before/", "after/"};
     static constexpr std::string_view Mode[] = {"Gen/", "Reco/"};
 
     registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_hadron"), track.pt(), track.eta(), spm.centrality);
@@ -1338,12 +1335,11 @@ struct FlowSP {
   template <FillType ft, ChargeType ct, typename McParticleObject>
   inline void fillPrimaryHistos(McParticleObject mcparticle)
   {
-    static constexpr std::string_view Time[] = {"/before", "/after"};
 
     if (!mcparticle.isPhysicalPrimary()) {
-      registry.fill(HIST("trackMCReco") + HIST(Time[ft]) + HIST("/") + HIST(Charge[ct]) + HIST("hIsPhysicalPrimary"), 0, spm.centrality, mcparticle.pt());
+      registry.fill(HIST("trackMCReco/") + HIST(Time[ft]) + HIST(Charge[ct]) + HIST("hIsPhysicalPrimary"), 0, spm.centrality, mcparticle.pt());
     } else {
-      registry.fill(HIST("trackMCReco") + HIST(Time[ft]) + HIST("/") + HIST(Charge[ct]) + HIST("hIsPhysicalPrimary"), 1, spm.centrality, mcparticle.pt());
+      registry.fill(HIST("trackMCReco/") + HIST(Time[ft]) + HIST(Charge[ct]) + HIST("hIsPhysicalPrimary"), 1, spm.centrality, mcparticle.pt());
     }
   }
 
