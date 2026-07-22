@@ -331,7 +331,7 @@ struct AnalysisTrackSelection {
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (const auto& t : addTrackCuts) {
-        fTrackCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -457,7 +457,7 @@ struct AnalysisTrackSelection {
             // mcDecision |= (static_cast<uint32_t>(1) << isig);
             //  loop over cuts and fill histograms for the cuts that are fulfilled
             for (unsigned int icut = 0; icut < fTrackCuts.size(); icut++) {
-              if (filterMap & (static_cast<uint32_t>(1) << icut)) {
+              if ((filterMap & (static_cast<uint32_t>(1) << icut)) != 0u) {
                 if (isCorrectAssoc) {
                   fHistMan->FillHistClass(fHistNamesMCMatched[icut * 2 * fMCSignals.size() + 2 * isig].Data(), dqefficiency_helpers::varValues());
                 } else {
@@ -473,7 +473,7 @@ struct AnalysisTrackSelection {
       if (fConfigPublishAmbiguity && filterMap > 0) {
         if (event.isEventSelected_bit(1)) {
           // for this track, count the number of associated collisions with in-bunch pileup and out of bunch associations
-          if (fNAssocsInBunch.find(track.globalIndex()) == fNAssocsInBunch.end()) {
+          if (!fNAssocsInBunch.contains(track.globalIndex())) {
             std::vector<int64_t> evVector = {event.globalIndex()};
             fNAssocsInBunch[track.globalIndex()] = evVector;
           } else {
@@ -481,7 +481,7 @@ struct AnalysisTrackSelection {
             evVector.push_back(event.globalIndex());
           }
         } else {
-          if (fNAssocsOutOfBunch.find(track.globalIndex()) == fNAssocsOutOfBunch.end()) {
+          if (!fNAssocsOutOfBunch.contains(track.globalIndex())) {
             std::vector<int64_t> evVector = {event.globalIndex()};
             fNAssocsOutOfBunch[track.globalIndex()] = evVector;
           } else {
@@ -523,11 +523,11 @@ struct AnalysisTrackSelection {
       // publish the ambiguity table
       for (const auto& track : tracks) {
         int8_t nInBunch = 0;
-        if (fNAssocsInBunch.find(track.globalIndex()) != fNAssocsInBunch.end()) {
+        if (!fNAssocsInBunch.contains(track.globalIndex())) {
           nInBunch = fNAssocsInBunch[track.globalIndex()].size();
         }
         int8_t nOutOfBunch = 0;
-        if (fNAssocsOutOfBunch.find(track.globalIndex()) != fNAssocsOutOfBunch.end()) {
+        if (!fNAssocsOutOfBunch.contains(track.globalIndex())) {
           nOutOfBunch = fNAssocsOutOfBunch[track.globalIndex()].size();
         }
         trackAmbiguities(nInBunch, nOutOfBunch);
@@ -677,10 +677,10 @@ struct AnalysisPrefilterSelection {
       }
       // if the pair fullfils the criteria, add an entry into the prefilter map for the two tracks
       if (fPairCut->IsSelected(dqefficiency_helpers::varValues())) {
-        if (fPrefilterMap.find(track1.globalIndex()) == fPrefilterMap.end() && track1Candidate > 0) {
+        if (!fPrefilterMap.contains(track1.globalIndex()) && track1Candidate > 0) {
           fPrefilterMap[track1.globalIndex()] = track1Candidate;
         }
-        if (fPrefilterMap.find(track2.globalIndex()) == fPrefilterMap.end() && track2Candidate > 0) {
+        if (!fPrefilterMap.contains(track2.globalIndex()) && track2Candidate > 0) {
           fPrefilterMap[track2.globalIndex()] = track2Candidate;
         }
       }
@@ -710,7 +710,7 @@ struct AnalysisPrefilterSelection {
         // TODO: just use the index from the assoc (no need to cast the whole track)
         auto track = assoc.template reducedA3track_as<MyBarrelTracks>();
         mymap = -1;
-        if (fPrefilterMap.find(track.globalIndex()) != fPrefilterMap.end()) {
+        if (!fPrefilterMap.contains(track.globalIndex())) {
           // NOTE: publish the bitwise negated bits (~), so there will be zeroes for cuts that failed the prefiltering and 1 everywhere else
           mymap = ~fPrefilterMap[track.globalIndex()];
           prefilter(mymap);
@@ -1027,7 +1027,7 @@ struct AnalysisSameEventPairing {
         auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
         size_t nGood = 0;
         for (auto const& t : groupedAssocs) {
-          if (t.isBarrelSelected_raw()) {
+          if (t.isBarrelSelected_raw() > 0u) {
             nGood++;
           }
         }
@@ -1060,7 +1060,7 @@ struct AnalysisSameEventPairing {
 
         twoTrackFilter = a1.isBarrelSelected_raw() & a2.isBarrelSelected_raw() & a1.isBarrelSelectedPrefilter_raw() & a2.isBarrelSelectedPrefilter_raw() & fTrackFilterMask;
 
-        if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
+        if (twoTrackFilter == 0u) { // the tracks must have at least one filter bit in common to continue
           continue;
         }
 
@@ -1114,13 +1114,13 @@ struct AnalysisSameEventPairing {
         bool isAmbiOutOfBunch = false;
 
         for (int icut = 0; icut < ncuts; icut++) {
-          if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
-            isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
-            isAmbiOutOfBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
+          if ((twoTrackFilter & (static_cast<uint32_t>(1) << icut)) != 0u) {
+            isAmbiInBunch = ((twoTrackFilter & (static_cast<uint32_t>(1) << 28)) != 0u) || ((twoTrackFilter & (static_cast<uint32_t>(1) << 29)) != 0u);
+            isAmbiOutOfBunch = ((twoTrackFilter & (static_cast<uint32_t>(1) << 30)) != 0u) || ((twoTrackFilter & (static_cast<uint32_t>(1) << 31)) != 0u);
             if (sign1 * sign2 < 0) {                                                                 // +- pairs
               fHistMan->FillHistClass(histNames[icut][0].Data(), dqefficiency_helpers::varValues()); // reconstructed, unmatched
               for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {                     // loop over MC signals
-                if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+                if ((mcDecision & (static_cast<uint32_t>(1) << isig)) != 0u) {
                   fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][0].Data(), dqefficiency_helpers::varValues()); // matched signal
                   if (fConfigQA) {
                     if (isCorrectAssoc_leg1 && isCorrectAssoc_leg2) { // correct track-collision association
@@ -1159,7 +1159,7 @@ struct AnalysisSameEventPairing {
               if (sign1 > 0) { // ++ pairs
                 fHistMan->FillHistClass(histNames[icut][1].Data(), dqefficiency_helpers::varValues());
                 for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
-                  if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+                  if ((mcDecision & (static_cast<uint32_t>(1) << isig)) != 0u) {
                     fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][1].Data(), dqefficiency_helpers::varValues());
                   }
                 }
@@ -1174,7 +1174,7 @@ struct AnalysisSameEventPairing {
               } else { // -- pairs
                 fHistMan->FillHistClass(histNames[icut][2].Data(), dqefficiency_helpers::varValues());
                 for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
-                  if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+                  if ((mcDecision & (static_cast<uint32_t>(1) << isig)) != 0u) {
                     fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][2].Data(), dqefficiency_helpers::varValues());
                   }
                 }
@@ -1190,8 +1190,9 @@ struct AnalysisSameEventPairing {
             }
             for (unsigned int iPairCut = 0; iPairCut < fPairCuts.size(); iPairCut++) {
               AnalysisCompositeCut cut = fPairCuts.at(iPairCut);
-              if (!(cut.IsSelected(dqefficiency_helpers::varValues()))) // apply pair cuts
+              if (!(cut.IsSelected(dqefficiency_helpers::varValues()))) { // apply pair cuts
                 continue;
+              }
               if (sign1 * sign2 < 0) {
                 fHistMan->FillHistClass(histNames[ncuts + icut * ncuts + iPairCut][0].Data(), dqefficiency_helpers::varValues());
               } else {
@@ -1609,7 +1610,7 @@ struct AnalysisAsymmetricPairing {
     if (addPairCutsStr != "") {
       std::vector<AnalysisCut*> addPairCuts = dqcuts::GetCutsFromJSON(addPairCutsStr.Data());
       for (const auto& t : addPairCuts) {
-        fPairCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
+        fPairCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
         cutNamesStr += Form(",%s", t->GetName());
       }
     }
@@ -1948,25 +1949,24 @@ struct AnalysisAsymmetricPairing {
       }
 
       for (const auto& [a1, a2] : combinations(soa::CombinationsFullIndexPolicy(groupedLegAAssocs, groupedLegBAssocs))) {
-
         uint32_t twoTrackFilter = 0;
         uint32_t twoTrackCommonFilter = 0;
         uint32_t pairFilter = 0;
         bool isPairIdWrong = false;
         for (int icut = 0; icut < fNLegCuts; ++icut) {
           // Find leg pair definitions both candidates participate in
-          if ((a1.isBarrelSelected_raw() & fConstructedLegAFilterMasksMap[icut]) && (a2.isBarrelSelected_raw() & fConstructedLegBFilterMasksMap[icut])) {
+          if (((a1.isBarrelSelected_raw() & fConstructedLegAFilterMasksMap[icut]) != 0u) && ((a2.isBarrelSelected_raw() & fConstructedLegBFilterMasksMap[icut]) != 0u)) {
             twoTrackFilter |= static_cast<uint32_t>(1) << icut;
             // If the supposed pion passes a kaon cut, this is a K+K-. Skip it.
             if (fConfigSkipAmbiguousIdCombinations.value) {
-              if (a2.isBarrelSelected_raw() & fLegAFilterMask) {
+              if ((a2.isBarrelSelected_raw() & fLegAFilterMask) != 0u) {
                 isPairIdWrong = true;
               }
             }
           }
         }
 
-        if (!twoTrackFilter || isPairIdWrong) {
+        if (twoTrackFilter == 0u || isPairIdWrong) {
           continue;
         }
 
@@ -1983,12 +1983,12 @@ struct AnalysisAsymmetricPairing {
 
         bool isReflected = false;
         std::pair<int32_t, int32_t> trackIds(t1.globalIndex(), t2.globalIndex());
-        if (fPairCount.find(trackIds) != fPairCount.end()) {
+        if (fPairCount.contains(trackIds)) {
           // Double counting is possible due to track-collision ambiguity. Skip pairs which were counted before
           fPairCount[trackIds] += 1;
           continue;
         }
-        if (fPairCount.find(std::pair(trackIds.second, trackIds.first)) != fPairCount.end()) {
+        if (fPairCount.contains(std::pair(trackIds.second, trackIds.first))) {
           isReflected = true;
         }
         fPairCount[trackIds] += 1;
@@ -2021,8 +2021,8 @@ struct AnalysisAsymmetricPairing {
         // Fill histograms
         bool isAmbi = false;
         for (int icut = 0; icut < fNLegCuts; icut++) {
-          if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
-            isAmbi = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
+          if ((twoTrackFilter & (static_cast<uint32_t>(1) << icut)) != 0u) {
+            isAmbi = ((twoTrackFilter & (static_cast<uint32_t>(1) << 30)) != 0u) || ((twoTrackFilter & (static_cast<uint32_t>(1) << 31)) != 0u);
             if (sign1 * sign2 < 0) {                                                                                             // +- pairs
               fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s", fLegCutNames[icut].Data()), dqefficiency_helpers::varValues()); // reconstructed, unmatched
               if (isAmbi && fConfigQA) {
@@ -2051,7 +2051,7 @@ struct AnalysisAsymmetricPairing {
               }
             }
             for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
-              if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+              if ((mcDecision & (static_cast<uint32_t>(1) << isig)) != 0u) {
                 if (sign1 * sign2 < 0) {
                   fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s_%s", fLegCutNames[icut].Data(), fRecMCSignalNames[isig].Data()), dqefficiency_helpers::varValues());
                   if (isReflected && fConfigReflectedHistograms.value) {
@@ -2073,7 +2073,7 @@ struct AnalysisAsymmetricPairing {
               }
             }
             for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; iCommonCut++) {
-              if (twoTrackCommonFilter & fCommonTrackCutFilterMasks[iCommonCut]) {
+              if ((twoTrackCommonFilter & fCommonTrackCutFilterMasks[iCommonCut]) != 0u) {
                 if (sign1 * sign2 < 0) {
                   fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s_%s", fLegCutNames[icut].Data(), fCommonCutNames[iCommonCut].Data()), dqefficiency_helpers::varValues());
                 } else if (fConfigSameSignHistograms.value) {
@@ -2084,7 +2084,7 @@ struct AnalysisAsymmetricPairing {
                   }
                 }
                 for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
-                  if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+                  if ((mcDecision & (static_cast<uint32_t>(1) << isig)) != 0u) {
                     if (sign1 * sign2 < 0) {
                       fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s_%s_%s", fLegCutNames[icut].Data(), fCommonCutNames[iCommonCut].Data(), fRecMCSignalNames[isig].Data()), dqefficiency_helpers::varValues());
                     } else if (fConfigSameSignHistograms.value) {
@@ -2100,8 +2100,9 @@ struct AnalysisAsymmetricPairing {
             } // end loop (common cuts)
             int iPairCut = 0;
             for (auto cut = fPairCuts.begin(); cut != fPairCuts.end(); cut++, iPairCut++) {
-              if (!((*cut)->IsSelected(dqefficiency_helpers::varValues()))) // apply pair cuts
+              if (!((*cut)->IsSelected(dqefficiency_helpers::varValues()))) { // apply pair cuts
                 continue;
+              }
               pairFilter |= (static_cast<uint32_t>(1) << iPairCut);
               // Histograms with pair cuts
               if (sign1 * sign2 < 0) {
@@ -2114,7 +2115,7 @@ struct AnalysisAsymmetricPairing {
                 }
               }
               for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
-                if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+                if ((mcDecision & (static_cast<uint32_t>(1) << isig)) != 0u) {
                   if (sign1 * sign2 < 0) {
                     fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s_%s_%s", fLegCutNames[icut].Data(), fPairCutNames[iPairCut].Data(), fRecMCSignalNames[isig].Data()), dqefficiency_helpers::varValues());
                   } else if (fConfigSameSignHistograms.value) {
@@ -2128,7 +2129,7 @@ struct AnalysisAsymmetricPairing {
               }
               // Histograms with pair cuts and common track cuts
               for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
-                if (twoTrackCommonFilter & fCommonTrackCutFilterMasks[iCommonCut]) {
+                if ((twoTrackCommonFilter & fCommonTrackCutFilterMasks[iCommonCut]) != 0u) {
                   if (sign1 * sign2 < 0) {
                     fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s_%s_%s", fLegCutNames[icut].Data(), fCommonCutNames[iCommonCut].Data(), fPairCutNames[iPairCut].Data()), dqefficiency_helpers::varValues());
                   } else if (fConfigSameSignHistograms.value) {
@@ -2139,7 +2140,7 @@ struct AnalysisAsymmetricPairing {
                     }
                   }
                   for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
-                    if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
+                    if ((mcDecision & (static_cast<uint32_t>(1) << isig)) != 0u) {
                       if (sign1 * sign2 < 0) {
                         fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s_%s_%s_%s", fLegCutNames[icut].Data(), fCommonCutNames[iCommonCut].Data(), fPairCutNames[iPairCut].Data(), fRecMCSignalNames[isig].Data()), dqefficiency_helpers::varValues());
                       } else if (fConfigSameSignHistograms.value) {
@@ -2314,8 +2315,9 @@ struct AnalysisAsymmetricPairing {
         } // end loop (common cuts)
         int iPairCut = 0;
         for (auto cut = fPairCuts.begin(); cut != fPairCuts.end(); cut++, iPairCut++) {
-          if (!((*cut)->IsSelected(dqefficiency_helpers::varValues()))) // apply pair cuts
+          if (!((*cut)->IsSelected(dqefficiency_helpers::varValues()))) { // apply pair cuts
             continue;
+          }
           // Histograms with pair cuts
           fHistMan->FillHistClass(Form("TripletsBarrelSE_%s_%s", fLegCutNames[icut].Data(), fPairCutNames[iPairCut].Data()), dqefficiency_helpers::varValues());
           for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) { // loop over MC signals
