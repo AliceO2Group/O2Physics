@@ -1544,7 +1544,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (!nameStr.compare("electronPrimaryProbe_TPC")) {
     cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
     cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
-    cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
     return cut;
   }
 
@@ -7839,9 +7838,7 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
           }
         }
 
-        if (!cutDirsFilled) {
-          cutDirsFilled = true;
-        }
+        cutDirsFilled = true;
 
         centBins.emplace_back(centMin, centMax);
         ptBins.emplace_back(ptMin, ptMax);

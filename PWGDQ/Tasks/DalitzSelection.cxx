@@ -280,24 +280,24 @@ struct DalitzSelection {
 
     // Define histograms
 
-    std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
-    for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
-      TString classStr = objArray->At(iclass)->GetName();
+    std::unique_ptr<TObjArray> histArray(histClasses.Tokenize(";"));
+    for (Int_t iclass = 0; iclass < histArray->GetEntries(); ++iclass) {
+      TString classStr = histArray->At(iclass)->GetName();
       fHistMan->AddHistClass(classStr.Data());
 
       if (classStr.Contains("Event")) {
-        dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "event", "");
+        dqhistograms::DefineHistograms(fHistMan, histArray->At(iclass)->GetName(), "event", "");
       }
 
       TString histTrackName = fConfigHistograms.fConfigAddTrackHistogram.value;
       if (classStr.Contains("Track")) {
-        dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histTrackName);
-        dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "software-trigger", histTrackName);
+        dqhistograms::DefineHistograms(fHistMan, histArray->At(iclass)->GetName(), "track", histTrackName);
+        dqhistograms::DefineHistograms(fHistMan, histArray->At(iclass)->GetName(), "software-trigger", histTrackName);
       }
 
       TString histPairName = fConfigHistograms.fConfigAddPairHistogram.value;
       if (classStr.Contains("Pair")) {
-        dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "pair", histPairName);
+        dqhistograms::DefineHistograms(fHistMan, histArray->At(iclass)->GetName(), "pair", histPairName);
       }
     }
 
@@ -311,7 +311,7 @@ struct DalitzSelection {
     fStatsList->SetOwner(kTRUE);
 
     // Dalitz selection statistics: one bin for each (track,pair) selection
-    TH1I* histTracks = new TH1I("TrackStats", "Dalitz selection statistics", fPairCuts.size() * (1 + (int)fIsTagAndProbe) + 1, -0.5, fPairCuts.size() * (1 + (int)fIsTagAndProbe) + 0.5);
+    TH1I* histTracks = new TH1I("TrackStats", "Dalitz selection statistics", fPairCuts.size() * (1 + static_cast<int>(fIsTagAndProbe)) + 1, -0.5, fPairCuts.size() * (1 + static_cast<int>(fIsTagAndProbe)) + 0.5);
     histTracks->GetXaxis()->SetBinLabel(1, "Events selected");
     auto trackCut = fTrackCuts.begin();
     int icut = 1;
@@ -332,7 +332,7 @@ struct DalitzSelection {
 
     // autodetect whether the dalitz bits are requested
     fIsOutputRequested = false;
-    auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
+    const auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
     // autodetect this table in other devices
     for (o2::framework::DeviceSpec const& device : workflows.devices) {
       // Check if this device subscribed to the dalitz table
@@ -437,23 +437,23 @@ struct DalitzSelection {
           auto const& fullTrack = track1.template track_as<TFullTracks>();
           if (filterMap) {
             // we use the 8th bit to keep track of the track sign
-            MixingHandler::MixingTrack mixingTrack(fullTrack.pt(), fullTrack.eta(), fullTrack.phi(), fullTrack.sign() > 0 ? (static_cast<uint32_t>(filterMap) | (uint32_t(1) << 8)) : static_cast<uint32_t>(filterMap));
+            MixingHandler::MixingTrack mixingTrack(fullTrack.pt(), fullTrack.eta(), fullTrack.phi(), fullTrack.sign() > 0 ? (static_cast<uint32_t>(filterMap) | (static_cast<uint32_t>(1) << 8)) : static_cast<uint32_t>(filterMap));
             fMixingEvent->AddTrack1(mixingTrack);
           }
           if (filterMapProbe) {
             // we use the 8th bit to keep track of the track sign
-            MixingHandler::MixingTrack mixingTrack(fullTrack.pt(), fullTrack.eta(), fullTrack.phi(), fullTrack.sign() > 0 ? (static_cast<uint32_t>(filterMapProbe) | (uint32_t(1) << 8)) : static_cast<uint32_t>(filterMapProbe));
+            MixingHandler::MixingTrack mixingTrack(fullTrack.pt(), fullTrack.eta(), fullTrack.phi(), fullTrack.sign() > 0 ? (static_cast<uint32_t>(filterMapProbe) | (static_cast<uint32_t>(1) << 8)) : static_cast<uint32_t>(filterMapProbe));
             fMixingEvent->AddTrack2(mixingTrack);
           }
         } else {
           if (filterMap) {
             // we use the 8th bit to keep track of the track sign
-            MixingHandler::MixingTrack mixingTrack(track1.pt(), track1.eta(), track1.phi(), track1.sign() > 0 ? (static_cast<uint32_t>(filterMap) | (uint32_t(1) << 8)) : static_cast<uint32_t>(filterMap));
+            MixingHandler::MixingTrack mixingTrack(track1.pt(), track1.eta(), track1.phi(), track1.sign() > 0 ? (static_cast<uint32_t>(filterMap) | (static_cast<uint32_t>(1) << 8)) : static_cast<uint32_t>(filterMap));
             fMixingEvent->AddTrack1(mixingTrack);
           }
           if (filterMapProbe) {
             // we use the 8th bit to keep track of the track sign
-            MixingHandler::MixingTrack mixingTrack(track1.pt(), track1.eta(), track1.phi(), track1.sign() > 0 ? (static_cast<uint32_t>(filterMapProbe) | (uint32_t(1) << 8)) : static_cast<uint32_t>(filterMapProbe));
+            MixingHandler::MixingTrack mixingTrack(track1.pt(), track1.eta(), track1.phi(), track1.sign() > 0 ? (static_cast<uint32_t>(filterMapProbe) | (static_cast<uint32_t>(1) << 8)) : static_cast<uint32_t>(filterMapProbe));
             fMixingEvent->AddTrack2(mixingTrack);
           }
         }
@@ -585,8 +585,8 @@ struct DalitzSelection {
     // Fill Hists
     if (fConfigOptions.fQA && !fSkipEvent) {
       for (const auto& track : tracks1) {
-        auto filterMap = uint8_t(0);
-        auto filterMapProbe = uint8_t(0);
+        uint8_t filterMap;
+        uint8_t filterMapProbe;
         if constexpr (isReassoc) {
           auto const& fullTrack = track.template track_as<TFullTracks>();
           filterMap = fDalitzmap[fullTrack.globalIndex()];
