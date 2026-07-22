@@ -366,8 +366,8 @@ struct HfTaskD0 {
 
       // Insert ML scores after pt (position 2) to match taskDplus structure: [mass, pt, mlScores, ...]
       if (doprocessDataWithDCAFitterNMlWithUpc) {
-        axes.insert(axes.begin() + 2, thnAxisPromptScore);
         axes.insert(axes.begin() + 2, thnAxisNonPromptScore);
+        axes.insert(axes.begin() + 2, thnAxisPromptScore);
         axes.insert(axes.begin() + 2, thnAxisBkgScore);
       } else {
         axes.insert(axes.begin(), thnAxisPromptScore);
