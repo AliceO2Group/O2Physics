@@ -233,6 +233,8 @@ struct dimuonV1 {
 
     const o2::framework::AxisSpec axis_centrality{ConfCentBins, "centrality (%)"};
 
+    fRegistry.add("Track/hs", "single muon;p_{T} (GeV/c);#eta;#varphi (rad.);sign;", o2::framework::HistType::kTHnSparseD, {{100, 0, 10}, {30, -5, -2}, {36, 0, 2 * M_PI}, {3, -1.5, +1.5}}, true);
+
     fRegistry.add("Pair/same/uls/hs", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_eta, axis_uxQx, axis_uyQy, axis_centrality}, true);
     fRegistry.add("Pair/same/uls/hsRotBkg", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_eta}, true);
 
@@ -392,6 +394,17 @@ struct dimuonV1 {
 
       auto posTracks_per_coll = posTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
+
+      for (const auto& track : posTracks_per_coll) {
+        if (cut.IsSelectedTrack(track)) {
+          fRegistry.fill(HIST("Track/hs"), track.pt(), track.eta(), track.phi(), track.sign());
+        }
+      }
+      for (const auto& track : negTracks_per_coll) {
+        if (cut.IsSelectedTrack(track)) {
+          fRegistry.fill(HIST("Track/hs"), track.pt(), track.eta(), track.phi(), track.sign());
+        }
+      }
 
       for (const auto& [pos, neg] : combinations(o2::soa::CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
         fillPairInfo<0>(collision, pos, neg, cut, centrality);
