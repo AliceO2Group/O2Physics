@@ -71,13 +71,11 @@ int counter = 0;
 // Energy calibration:
 const std::array<TString, 10> namesEcal = {{"hZNA_mean_t0_cent", "hZNA_mean_t1_cent", "hZNA_mean_t2_cent", "hZNA_mean_t3_cent", "hZNA_mean_t4_cent",
                                             "hZNC_mean_t0_cent", "hZNC_mean_t1_cent", "hZNC_mean_t2_cent", "hZNC_mean_t3_cent", "hZNC_mean_t4_cent"}};
-const std::array<std::array<TString, 4>, 5> names = {{
-  {{"hQXA_mean_Cent_V_run", "hQYA_mean_Cent_V_run", "hQXC_mean_Cent_V_run", "hQYC_mean_Cent_V_run"}},
-  {{"hQXA_mean_cent_run", "hQYA_mean_cent_run", "hQXC_mean_cent_run", "hQYC_mean_cent_run"}},
-  {{"hQXA_mean_vx_run", "hQYA_mean_vx_run", "hQXC_mean_vx_run", "hQYC_mean_vx_run"}},
-  {{"hQXA_mean_vy_run", "hQYA_mean_vy_run", "hQXC_mean_vy_run", "hQYC_mean_vy_run"}},
-  {{"hQXA_mean_vz_run", "hQYA_mean_vz_run", "hQXC_mean_vz_run", "hQYC_mean_vz_run"}}
-}};
+const std::array<std::array<TString, 4>, 5> names = {{{{"hQXA_mean_Cent_V_run", "hQYA_mean_Cent_V_run", "hQXC_mean_Cent_V_run", "hQYC_mean_Cent_V_run"}},
+                                                      {{"hQXA_mean_cent_run", "hQYA_mean_cent_run", "hQXC_mean_cent_run", "hQYC_mean_cent_run"}},
+                                                      {{"hQXA_mean_vx_run", "hQYA_mean_vx_run", "hQXC_mean_vx_run", "hQYC_mean_vx_run"}},
+                                                      {{"hQXA_mean_vy_run", "hQYA_mean_vy_run", "hQXC_mean_vy_run", "hQYC_mean_vy_run"}},
+                                                      {{"hQXA_mean_vz_run", "hQYA_mean_vz_run", "hQXC_mean_vz_run", "hQYC_mean_vz_run"}}}};
 const std::array<TString, 4> namesTS = {{"hQXA_mean_timestamp_run", "hQYA_mean_timestamp_run", "hQXC_mean_timestamp_run", "hQYC_mean_timestamp_run"}}; // for timestamp recentering
 const std::array<TString, 2> vnames = {"hvertex_vx", "hvertex_vy"};
 
@@ -200,13 +198,13 @@ struct ZdcQVectors {
     TProfile3D* shiftprofileA = nullptr;
     bool isShiftProfileFound = false;
 
-    int lastRunNumber = 0; 
-    int runnumber = 0; 
+    int lastRunNumber = 0;
+    int runnumber = 0;
     float centrality = 0;
     double rsTimestamp = 0;
-    uint64_t timestamp = 0; 
+    uint64_t timestamp = 0;
     std::vector<float> v = {0, 0, 0};
-    bool isSelected = 0; 
+    bool isSelected = 0;
   } cal;
 
   enum FillType {
@@ -513,7 +511,7 @@ struct ZdcQVectors {
   }
 
   template <FillType ft>
-  inline void fillCommonRegistry(double qxa, double qya, double qxc, double qyc, std::vector<float>  v, double centrality, double rsTimestamp)
+  inline void fillCommonRegistry(double qxa, double qya, double qxc, double qyc, std::vector<float> v, double centrality, double rsTimestamp)
   {
     // loop for filling multiple histograms with different naming patterns
     //  Always fill the uncentered "raw" Q-vector histos!
@@ -736,11 +734,10 @@ struct ZdcQVectors {
     std::vector<float> v = {collision.posX(), collision.posY(), collision.posZ()};
     cal.v = v;
 
-
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
     auto runnumber = foundBC.runNumber();
     cal.runnumber = runnumber;
-    cal.centrality = cent; 
+    cal.centrality = cent;
 
     if (cfgFillHistRegistry && !cfgFillNothing) {
       registry.fill(HIST("QA/centrality_before"), cent);
@@ -767,11 +764,10 @@ struct ZdcQVectors {
     int nTowers = 8;
     int nTowersPerSide = 4;
 
-        // for energy calibration
+    // for energy calibration
     std::array<double, 8> eZN;      // uncalibrated energy for the 2x4 towers (a1, a2, a3, a4, c1, c2, c3, c4)
     std::array<double, 10> meanEZN; // mean energies from calibration histos (common A, t1-4 A,common C, t1-4C)
-    std::array<double, 8> e;    // calibrated energies (a1, a2, a3, a4, c1, c2, c3, c4))
-
+    std::array<double, 8> e;        // calibrated energies (a1, a2, a3, a4, c1, c2, c3, c4))
 
     for (int tower = 0; tower < nTowers; tower++) {
       eZN[tower] = (tower < nTowersPerSide) ? zdcCol.energySectorZNA()[tower] : zdcCol.energySectorZNC()[tower % nTowersPerSide];
@@ -967,7 +963,7 @@ struct ZdcQVectors {
       loadCalibrations<kTimestamp>(extraTS.cfgCCDBdir_Timestamp.value, timestamp);
     }
 
-    std::array<double,4> qRec(q);
+    std::array<double, 4> qRec(q);
 
     if (cal.atIteration == 0) {
       if (cal.isSelected && cfgFillHistRegistry && isEventSelected)
@@ -1142,7 +1138,7 @@ struct ZdcQVectors {
       }
 
       spTableZDC(runnumber, cents, v, foundBC.timestamp(), qXaShift, qYaShift, qXcShift, qYcShift, cal.isSelected, eventSelectionFlags);
-      qRec = {0,0,0,0}; 
+      qRec = {0, 0, 0, 0};
 
       cal.lastRunNumber = runnumber;
       return;
