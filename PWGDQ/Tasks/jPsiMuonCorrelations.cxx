@@ -250,13 +250,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<DqJPsiMuonCorrelations>(cfgc)};
 }
 
-double getRapidity(const double pT, const double eta)
-{
-  return std::log(
-    (std::sqrt(std::pow(o2::constants::physics::MassJPsi, 2) + (std::pow(pT, 2) * std::pow(std::cosh(eta), 2))) + pT * std::sinh(eta)) /
-    (std::sqrt(std::pow(o2::constants::physics::MassJPsi, 2) + std::pow(pT, 2))));
-}
-
 double getWeight(const double pT, const std::vector<double>& binsPT, const std::vector<double>& efficiency, const double etaMin, const double etaMax)
 {
 
@@ -273,5 +266,5 @@ double getWeight(const double pT, const std::vector<double>& binsPT, const std::
     LOGF(warn, "pT value %f is outside the defined pT bins", pT);
     return 0.0;
   }
-  return 1.0 / (efficiency[binEff] * (getRapidity(pT, etaMax) - getRapidity(pT, etaMin)));
+  return 1.0 / (efficiency[binEff] * (RecoDecayPtEtaPhi::y(pT, etaMax, o2::constants::physics::MassJPsi) - RecoDecayPtEtaPhi::y(pT, etaMin, o2::constants::physics::MassJPsi)));
 }
