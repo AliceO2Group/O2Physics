@@ -41,6 +41,7 @@
 #include <TProfile3D.h>
 #include <TString.h>
 
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
@@ -68,35 +69,24 @@ int counter = 0;
 
 // Define histogrm names here to use same names for creating and later uploading and retrieving data from ccdb
 // Energy calibration:
-std::vector<TString> namesEcal(10, "");
-std::vector<std::vector<TString>> names(5, std::vector<TString>()); //(1x 4d 4x 1d)
-std::vector<TString> namesTS;                                       // for timestamo recentering
-std::vector<TString> vnames = {"hvertex_vx", "hvertex_vy"};
+const std::array<TString, 10> namesEcal = {{"hZNA_mean_t0_cent", "hZNA_mean_t1_cent", "hZNA_mean_t2_cent", "hZNA_mean_t3_cent", "hZNA_mean_t4_cent",
+                                            "hZNC_mean_t0_cent", "hZNC_mean_t1_cent", "hZNC_mean_t2_cent", "hZNC_mean_t3_cent", "hZNC_mean_t4_cent"}};
+const std::array<std::array<TString, 4>, 5> names = {{
+  {{"hQXA_mean_Cent_V_run", "hQYA_mean_Cent_V_run", "hQXC_mean_Cent_V_run", "hQYC_mean_Cent_V_run"}},
+  {{"hQXA_mean_cent_run", "hQYA_mean_cent_run", "hQXC_mean_cent_run", "hQYC_mean_cent_run"}},
+  {{"hQXA_mean_vx_run", "hQYA_mean_vx_run", "hQXC_mean_vx_run", "hQYC_mean_vx_run"}},
+  {{"hQXA_mean_vy_run", "hQYA_mean_vy_run", "hQXC_mean_vy_run", "hQYC_mean_vy_run"}},
+  {{"hQXA_mean_vz_run", "hQYA_mean_vz_run", "hQXC_mean_vz_run", "hQYC_mean_vz_run"}}
+}};
+const std::array<TString, 4> namesTS = {{"hQXA_mean_timestamp_run", "hQYA_mean_timestamp_run", "hQXC_mean_timestamp_run", "hQYC_mean_timestamp_run"}}; // for timestamp recentering
+const std::array<TString, 2> vnames = {"hvertex_vx", "hvertex_vy"};
 
 // https://alice-notes.web.cern.ch/system/files/notes/analysis/620/017-May-31-analysis_note-ALICE_analysis_note_v2.pdf
-std::vector<double> pxZDC = {-1.75, 1.75, -1.75, 1.75};
-std::vector<double> pyZDC = {-1.75, -1.75, 1.75, 1.75};
-double alphaZDC = 0.395;
+const std::array<double, 4> pxZDC = {-1.75, 1.75, -1.75, 1.75};
+const std::array<double, 4> pyZDC = {-1.75, -1.75, 1.75, 1.75};
+const double alphaZDC = 0.395;
 
-// q-vectors before (q) and after (qRec) recentering.
-std::vector<double> q(4);     // start values of [QxA, QyA, QxC, QyC]
-std::vector<double> qNoEq(4); // start values of [QxA, QyA, QxC, QyC]
-
-// for energy calibration
-std::vector<double> eZN(8);      // uncalibrated energy for the 2x4 towers (a1, a2, a3, a4, c1, c2, c3, c4)
-std::vector<double> meanEZN(10); // mean energies from calibration histos (common A, t1-4 A,common C, t1-4C)
-std::vector<double> e(8, 0.);    // calibrated energies (a1, a2, a3, a4, c1, c2, c3, c4))
-
-//  Define variables needed to do the recentring steps.
-float centrality = 0;
-int runnumber = 0;
-int lastRunNumber = 0;
-std::vector<float> v(3, 0); // vx, vy, vz
-bool isSelected = true;
-std::vector<float> cents; // centrality estimaters
-uint64_t timestamp = 0;
-double rsTimestamp = 0;
-
+const int totalTowers = 10;
 } // namespace o2::analysis::qvectortask
 
 using namespace o2::analysis::qvectortask;
@@ -129,9 +119,9 @@ struct ZdcQVectors {
   ConfigurableAxis axisCent{"axisCent", {90, 0, 90}, "Centrality axis in 1% bins"};
   ConfigurableAxis axisCent10{"axisCent10", {9, 0, 90}, "Centrality axis in 10% bins"};
   ConfigurableAxis axisQ{"axisQ", {100, -2, 2}, "Q vector (xy) in ZDC"};
-  ConfigurableAxis axisVxBig{"axisVxBig", {3, -0.01, 0.01}, "for Pos X of collision"};
-  ConfigurableAxis axisVyBig{"axisVyBig", {3, -0.01, 0.01}, "for Pos Y of collision"};
-  ConfigurableAxis axisVzBig{"axisVzBig", {3, -10, 10}, "for Pos Z of collision"};
+  ConfigurableAxis axisVxBig{"axisVxBig", {100, -0.01, 0.01}, "for Pos X of collision"};
+  ConfigurableAxis axisVyBig{"axisVyBig", {100, -0.01, 0.01}, "for Pos Y of collision"};
+  ConfigurableAxis axisVzBig{"axisVzBig", {100, -10, 10}, "for Pos Z of collision"};
   ConfigurableAxis axisVx{"axisVx", {100, -0.01, 0.01}, "for Pos X of collision"};
   ConfigurableAxis axisVy{"axisVy", {100, -0.01, 0.01}, "for Pos Y of collision"};
   ConfigurableAxis axisVz{"axisVz", {100, -10, 10}, "for vz of collision"};
@@ -148,12 +138,18 @@ struct ZdcQVectors {
   O2_DEFINE_CONFIGURABLE(cfgMagField, float, 99999, "Configurable magnetic field; default CCDB will be queried")
   O2_DEFINE_CONFIGURABLE(cfgEnergyCal, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass5/Energy", "ccdb path for energy calibration histos")
   O2_DEFINE_CONFIGURABLE(cfgMeanv, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass5/vmean", "ccdb path for mean v histos")
-  O2_DEFINE_CONFIGURABLE(cfgMinEntriesSparseBin, int, 100, "Minimal number of entries allowed in 4D recentering histogram to use for recentering.")
+  O2_DEFINE_CONFIGURABLE(cfgMinEntriesSparseBin, int, 1000, "Minimal number of entries allowed in 4D recentering histogram to use for recentering.")
   O2_DEFINE_CONFIGURABLE(cfgRec, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass5", "ccdb path for recentering histos");
   O2_DEFINE_CONFIGURABLE(cfgFillHistRegistry, bool, true, "Fill common registry with histograms");
   O2_DEFINE_CONFIGURABLE(cfgFillCutAnalysis, bool, true, "Fill cut analysis with histograms");
   O2_DEFINE_CONFIGURABLE(cfgFillNothing, bool, false, "Disable ALL Histograms -> ONLY use to reduce memory");
-  O2_DEFINE_CONFIGURABLE(cfgNoGain, bool, false, "Do not apply gain correction to ZDC energy calibration");
+  O2_DEFINE_CONFIGURABLE(cfgNoGain, bool, true, "Do not apply gain correction to ZDC energy calibration");
+
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelsDCAxy, float, 0.2, "Cut on DCA in the transverse direction (cm)");
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelsDCAz, float, 0.2, "Cut on DCA in the longitudinal direction (cm)");
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelsPtmin, float, 0.2, "minimum pt (GeV/c)");
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelsPtmax, float, 10, "maximum pt (GeV/c)");
+  O2_DEFINE_CONFIGURABLE(cfgTrackSelsEta, float, 0.8, "eta cut");
 
   O2_DEFINE_CONFIGURABLE(cfgCCDBdir_Shift, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass5/Shift", "CCDB directory for Shift ZDC");
 
@@ -204,6 +200,13 @@ struct ZdcQVectors {
     TProfile3D* shiftprofileA = nullptr;
     bool isShiftProfileFound = false;
 
+    int lastRunNumber = 0; 
+    int runnumber = 0; 
+    float centrality = 0;
+    double rsTimestamp = 0;
+    uint64_t timestamp = 0; 
+    std::vector<float> v = {0, 0, 0};
+    bool isSelected = 0; 
   } cal;
 
   enum FillType {
@@ -247,23 +250,6 @@ struct ZdcQVectors {
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kIsGoodITSLayersAll");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayer0123 + 1, "kIsGoodITSLayer0123");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_isSelectedZDC + 1, "isSelected");
-
-    int totalTowers = 10;
-    int totalTowersPerSide = 5;
-    for (int tower = 0; tower < totalTowers; tower++) {
-      namesEcal[tower] = TString::Format("hZN%s_mean_t%i_cent", sides[(tower < totalTowersPerSide) ? 0 : 1], tower % 5);
-    }
-
-    for (const auto& side : sides) {
-      for (const auto& coord : capCOORDS) {
-        names[0].push_back(TString::Format("hQ%s%s_mean_Cent_V_run", coord, side));
-        names[1].push_back(TString::Format("hQ%s%s_mean_cent_run", coord, side));
-        names[2].push_back(TString::Format("hQ%s%s_mean_vx_run", coord, side));
-        names[3].push_back(TString::Format("hQ%s%s_mean_vy_run", coord, side));
-        names[4].push_back(TString::Format("hQ%s%s_mean_vz_run", coord, side));
-        namesTS.push_back(TString::Format("hQ%s%s_mean_timestamp_run", coord, side));
-      } // end of capCOORDS
-    }
 
     if (!cfgFillNothing) {
       if (cfgFillHistRegistry) {
@@ -401,20 +387,20 @@ struct ZdcQVectors {
       return;
     // Add default with different centrality estimators as well
     // Here we fill the Energy and mean vx, vy vz histograms with an extra dimension for all the event selections used.
-    registry.get<TProfile2D>(HIST("CutAnalysis/hvertex_vx"))->Fill(Form("%d", runnumber), evSel, collision.posX());
-    registry.get<TProfile2D>(HIST("CutAnalysis/hvertex_vy"))->Fill(Form("%d", runnumber), evSel, collision.posY());
-    registry.get<TProfile2D>(HIST("CutAnalysis/hvertex_vz"))->Fill(Form("%d", runnumber), evSel, collision.posZ());
+    registry.get<TProfile2D>(HIST("CutAnalysis/hvertex_vx"))->Fill(Form("%d", cal.runnumber), evSel, collision.posX());
+    registry.get<TProfile2D>(HIST("CutAnalysis/hvertex_vy"))->Fill(Form("%d", cal.runnumber), evSel, collision.posY());
+    registry.get<TProfile2D>(HIST("CutAnalysis/hvertex_vz"))->Fill(Form("%d", cal.runnumber), evSel, collision.posZ());
 
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t0_cent"))->Fill(centrality, evSel, zdcBC.energyCommonZNA(), 1);
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t1_cent"))->Fill(centrality, evSel, zdcBC.energySectorZNA()[0], 1);
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t2_cent"))->Fill(centrality, evSel, zdcBC.energySectorZNA()[1], 1);
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t3_cent"))->Fill(centrality, evSel, zdcBC.energySectorZNA()[2], 1);
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t4_cent"))->Fill(centrality, evSel, zdcBC.energySectorZNA()[3], 1);
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t0_cent"))->Fill(centrality, evSel, zdcBC.energyCommonZNC(), 1);
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t1_cent"))->Fill(centrality, evSel, zdcBC.energySectorZNC()[0], 1);
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t2_cent"))->Fill(centrality, evSel, zdcBC.energySectorZNC()[1], 1);
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t3_cent"))->Fill(centrality, evSel, zdcBC.energySectorZNC()[2], 1);
-    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t4_cent"))->Fill(centrality, evSel, zdcBC.energySectorZNC()[3], 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t0_cent"))->Fill(cal.centrality, evSel, zdcBC.energyCommonZNA(), 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t1_cent"))->Fill(cal.centrality, evSel, zdcBC.energySectorZNA()[0], 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t2_cent"))->Fill(cal.centrality, evSel, zdcBC.energySectorZNA()[1], 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t3_cent"))->Fill(cal.centrality, evSel, zdcBC.energySectorZNA()[2], 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNA_mean_t4_cent"))->Fill(cal.centrality, evSel, zdcBC.energySectorZNA()[3], 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t0_cent"))->Fill(cal.centrality, evSel, zdcBC.energyCommonZNC(), 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t1_cent"))->Fill(cal.centrality, evSel, zdcBC.energySectorZNC()[0], 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t2_cent"))->Fill(cal.centrality, evSel, zdcBC.energySectorZNC()[1], 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t3_cent"))->Fill(cal.centrality, evSel, zdcBC.energySectorZNC()[2], 1);
+    registry.get<TProfile2D>(HIST("CutAnalysis/hZNC_mean_t4_cent"))->Fill(cal.centrality, evSel, zdcBC.energySectorZNC()[3], 1);
 
     if (evSel == nEventSelections) {
       int centCounter = 0;
@@ -527,7 +513,7 @@ struct ZdcQVectors {
   }
 
   template <FillType ft>
-  inline void fillCommonRegistry(double qxa, double qya, double qxc, double qyc, std::vector<float> v, double centrality, double rsTimestamp)
+  inline void fillCommonRegistry(double qxa, double qya, double qxc, double qyc, std::vector<float>  v, double centrality, double rsTimestamp)
   {
     // loop for filling multiple histograms with different naming patterns
     //  Always fill the uncentered "raw" Q-vector histos!
@@ -603,7 +589,7 @@ struct ZdcQVectors {
   }
 
   template <CalibModes cm>
-  void loadCalibrations(std::string ccdb_dir)
+  void loadCalibrations(std::string ccdb_dir, uint64_t timestamp)
   {
     // iteration = 0 (Energy calibration) -> step 0 only
     // iteration 1,2,3,4,5 = recentering -> 5 steps per iteration (1x 4D + 4x 1D)
@@ -633,10 +619,10 @@ struct ZdcQVectors {
       TList* list = cal.calibList[cm];
       hist = reinterpret_cast<T*>(list->FindObject(Form("%s", objName)));
     } else if (cm == kTimestamp) {
-      TList* list = reinterpret_cast<TList*>(cal.calibList[cm]->FindObject(Form("it%i_step%i", iteration, step)));
+      auto list = reinterpret_cast<TList*>(cal.calibList[cm]->FindObject(Form("it%i_step%i", iteration, step)));
       hist = reinterpret_cast<T*>(list->FindObject(Form("%s", objName)));
     } else if (cm == kRec) {
-      TList* list = reinterpret_cast<TList*>(cal.calibList[cm]->FindObject(Form("it%i_step%i", iteration, step)));
+      auto list = reinterpret_cast<TList*>(cal.calibList[cm]->FindObject(Form("it%i_step%i", iteration, step)));
       if (!list) {
         LOGF(fatal, "No calibration list for iteration %i and step %i", iteration, step);
       }
@@ -653,53 +639,53 @@ struct ZdcQVectors {
 
     if (hist->InheritsFrom("TProfile2D")) {
       // needed for energy calibration!
-      TProfile2D* h = reinterpret_cast<TProfile2D*>(hist);
+      auto h = reinterpret_cast<TProfile2D*>(hist);
       TString name = h->GetName();
-      int binrunnumber = h->GetXaxis()->FindBin(TString::Format("%d", runnumber));
-      int bin = h->GetYaxis()->FindBin(centrality);
+      int binrunnumber = h->GetXaxis()->FindBin(TString::Format("%d", cal.runnumber));
+      int bin = h->GetYaxis()->FindBin(cal.centrality);
       calibConstant = h->GetBinContent(binrunnumber, bin);
     } else if (hist->InheritsFrom("TProfile")) {
-      TProfile* h = reinterpret_cast<TProfile*>(hist);
+      auto h = reinterpret_cast<TProfile*>(hist);
       TString name = h->GetName();
       int bin{};
       if (name.Contains("mean_vx")) {
-        bin = h->GetXaxis()->FindBin(v[0]);
+        bin = h->GetXaxis()->FindBin(cal.v[0]);
       }
       if (name.Contains("mean_vy")) {
-        bin = h->GetXaxis()->FindBin(v[1]);
+        bin = h->GetXaxis()->FindBin(cal.v[1]);
       }
       if (name.Contains("mean_vz")) {
-        bin = h->GetXaxis()->FindBin(v[2]);
+        bin = h->GetXaxis()->FindBin(cal.v[2]);
       }
       if (name.Contains("mean_cent")) {
-        bin = h->GetXaxis()->FindBin(centrality);
+        bin = h->GetXaxis()->FindBin(cal.centrality);
       }
       if (name.Contains("vertex")) {
-        bin = h->GetXaxis()->FindBin(TString::Format("%i", runnumber));
+        bin = h->GetXaxis()->FindBin(TString::Format("%i", cal.runnumber));
       }
       if (name.Contains("timestamp")) {
-        bin = h->GetXaxis()->FindBin(rsTimestamp);
+        bin = h->GetXaxis()->FindBin(cal.timestamp);
       }
       calibConstant = h->GetBinContent(bin);
     } else if (hist->InheritsFrom("THnSparse")) {
       std::vector<int> sparsePars;
-      THnSparseD* h = reinterpret_cast<THnSparseD*>(hist);
-      sparsePars.push_back(h->GetAxis(0)->FindBin(centrality));
-      sparsePars.push_back(h->GetAxis(1)->FindBin(v[0]));
-      sparsePars.push_back(h->GetAxis(2)->FindBin(v[1]));
-      sparsePars.push_back(h->GetAxis(3)->FindBin(v[2]));
+      auto h = reinterpret_cast<THnSparseD*>(hist);
+      sparsePars.push_back(h->GetAxis(0)->FindBin(cal.centrality));
+      sparsePars.push_back(h->GetAxis(1)->FindBin(cal.v[0]));
+      sparsePars.push_back(h->GetAxis(2)->FindBin(cal.v[1]));
+      sparsePars.push_back(h->GetAxis(3)->FindBin(cal.v[2]));
 
       for (std::size_t i = 0; i < sparsePars.size(); i++) {
         h->GetAxis(i)->SetRange(sparsePars[i], sparsePars[i]);
       }
 
-      TH1D* tempProj = h->Projection(4);
+      auto tempProj = h->Projection(4);
       calibConstant = tempProj->GetMean();
 
       if (tempProj->GetEntries() < cfgMinEntriesSparseBin) {
         LOGF(debug, "1 entry in sparse bin! Not used... (increase binsize)");
         calibConstant = 0;
-        isSelected = false;
+        cal.isSelected = false;
       }
 
       delete tempProj;
@@ -718,41 +704,43 @@ struct ZdcQVectors {
     std::vector<double> xEnZN(2, 0.), xEnZN_noEq(2, 0.);
     std::vector<double> yEnZN(2, 0.), yEnZN_noEq(2, 0.);
 
-    isSelected = true;
+    cal.isSelected = true;
 
-    std::vector<float> centralities;
+    std::vector<float> cents;
 
     auto cent = collision.centFT0C();
 
-    centralities.push_back(collision.centFT0C());
+    cents.push_back(collision.centFT0C());
 
     if (cfgFT0Cvariant1) {
-      centralities.push_back(collision.centFT0CVariant1());
+      cents.push_back(collision.centFT0CVariant1());
       if (cfgUseSecondCent)
         cent = collision.centFT0CVariant1();
     }
     if (cfgFT0M) {
-      centralities.push_back(collision.centFT0M());
+      cents.push_back(collision.centFT0M());
       if (cfgUseSecondCent)
         cent = collision.centFT0M();
     }
     if (cfgFV0A) {
-      centralities.push_back(collision.centFV0A());
+      cents.push_back(collision.centFV0A());
       if (cfgUseSecondCent)
         cent = collision.centFV0A();
     }
     if (cfgNGlobal) {
-      centralities.push_back(collision.centNGlobal());
+      cents.push_back(collision.centNGlobal());
       if (cfgUseSecondCent)
         cent = collision.centNGlobal();
     }
 
-    v = {collision.posX(), collision.posY(), collision.posZ()};
-    cents = centralities;
-    centrality = cent;
+    std::vector<float> v = {collision.posX(), collision.posY(), collision.posZ()};
+    cal.v = v;
+
 
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
-    runnumber = foundBC.runNumber();
+    auto runnumber = foundBC.runNumber();
+    cal.runnumber = runnumber;
+    cal.centrality = cent; 
 
     if (cfgFillHistRegistry && !cfgFillNothing) {
       registry.fill(HIST("QA/centrality_before"), cent);
@@ -760,14 +748,15 @@ struct ZdcQVectors {
 
     registry.fill(HIST("hEventCount"), evSel_FilteredEvent);
 
-    timestamp = foundBC.timestamp();
-    rsTimestamp = rescaleTimestamp(timestamp, runnumber);
+    uint64_t timestamp = foundBC.timestamp();
+    auto rsTimestamp = rescaleTimestamp(timestamp, runnumber);
+    cal.timestamp = timestamp;
+    cal.rsTimestamp = rsTimestamp;
 
     if (!foundBC.has_zdc()) {
-      isSelected = false;
-      spTableZDC(runnumber, cents, v, foundBC.timestamp(), 0, 0, 0, 0, isSelected, 0);
-      counter++;
-      lastRunNumber = runnumber;
+      cal.isSelected = false;
+      spTableZDC(runnumber, cents, v, foundBC.timestamp(), 0, 0, 0, 0, cal.isSelected, 0);
+      cal.lastRunNumber = runnumber;
       return;
     }
     registry.fill(HIST("hEventCount"), evSel_BCHasZDC);
@@ -777,6 +766,12 @@ struct ZdcQVectors {
     // Get the raw energies eZN[8] (not the common A,C)
     int nTowers = 8;
     int nTowersPerSide = 4;
+
+        // for energy calibration
+    std::array<double, 8> eZN;      // uncalibrated energy for the 2x4 towers (a1, a2, a3, a4, c1, c2, c3, c4)
+    std::array<double, 10> meanEZN; // mean energies from calibration histos (common A, t1-4 A,common C, t1-4C)
+    std::array<double, 8> e;    // calibrated energies (a1, a2, a3, a4, c1, c2, c3, c4))
+
 
     for (int tower = 0; tower < nTowers; tower++) {
       eZN[tower] = (tower < nTowersPerSide) ? zdcCol.energySectorZNA()[tower] : zdcCol.energySectorZNC()[tower % nTowersPerSide];
@@ -799,10 +794,9 @@ struct ZdcQVectors {
 
     // if ZNA or ZNC not hit correctly.. do not use event in q-vector calculation
     if (!isZNAhit || !isZNChit) {
-      counter++;
-      isSelected = false;
-      spTableZDC(runnumber, cents, v, foundBC.timestamp(), 0, 0, 0, 0, isSelected, 0);
-      lastRunNumber = runnumber;
+      cal.isSelected = false;
+      spTableZDC(runnumber, cents, v, foundBC.timestamp(), 0, 0, 0, 0, cal.isSelected, 0);
+      cal.lastRunNumber = runnumber;
       return;
     }
     registry.fill(HIST("hEventCount"), evSel_isSelectedZDC);
@@ -812,16 +806,15 @@ struct ZdcQVectors {
     // ALWAYS use these event selections
     if (cent < EvSel.cfgCentMin || cent > EvSel.cfgCentMax || !collision.sel8() || std::abs(collision.posZ()) > cfgVtxZ) {
       // event not selected
-      isSelected = false;
-      spTableZDC(runnumber, cents, v, foundBC.timestamp(), 0, 0, 0, 0, isSelected, eventSelectionFlags);
-      counter++;
-      lastRunNumber = runnumber;
+      cal.isSelected = false;
+      spTableZDC(runnumber, cents, v, foundBC.timestamp(), 0, 0, 0, 0, cal.isSelected, eventSelectionFlags);
+      cal.lastRunNumber = runnumber;
       return;
     }
     registry.fill(HIST("hEventCount"), evSel_CentCuts);
 
     // load new calibrations for new runs only
-    if (runnumber != lastRunNumber) {
+    if (runnumber != cal.lastRunNumber) {
       cal.calibfilesLoaded[0] = false;
       cal.calibList[0] = nullptr;
 
@@ -841,9 +834,10 @@ struct ZdcQVectors {
 
     // load the calibration histos for iteration 0 step 0 (Energy Calibration)
     if (!cfgNoGain)
-      loadCalibrations<kEnergyCal>(cfgEnergyCal.value);
+      loadCalibrations<kEnergyCal>(cfgEnergyCal.value, timestamp);
+
     // load the calibrations for the mean v
-    loadCalibrations<kMeanv>(cfgMeanv.value);
+    loadCalibrations<kMeanv>(cfgMeanv.value, timestamp);
 
     if (!cfgFillNothing) {
       registry.get<TProfile>(HIST("vmean/hvertex_vx"))->Fill(Form("%d", runnumber), v[0]);
@@ -913,21 +907,21 @@ struct ZdcQVectors {
         double sumZNA = e[0] + e[1] + e[2] + e[3];
         double sumZNC = e[4] + e[5] + e[6] + e[7];
 
-        registry.fill(HIST("QA/ZNA_pmC_vs_Centrality"), centrality, zdcCol.energyCommonZNA());
-        registry.fill(HIST("QA/ZNA_pmSUM_vs_Centrality"), centrality, sumZNA);
+        registry.fill(HIST("QA/ZNA_pmC_vs_Centrality"), cent, zdcCol.energyCommonZNA());
+        registry.fill(HIST("QA/ZNA_pmSUM_vs_Centrality"), cent, sumZNA);
 
-        registry.fill(HIST("QA/ZNC_pmC_vs_Centrality"), centrality, zdcCol.energyCommonZNC());
-        registry.fill(HIST("QA/ZNC_pmSUM_vs_Centrality"), centrality, sumZNC);
+        registry.fill(HIST("QA/ZNC_pmC_vs_Centrality"), cent, zdcCol.energyCommonZNC());
+        registry.fill(HIST("QA/ZNC_pmSUM_vs_Centrality"), cent, sumZNC);
 
-        registry.fill(HIST("QA/ZNA_pm1_vs_Centrality"), centrality, e[0] / sumZNA);
-        registry.fill(HIST("QA/ZNA_pm2_vs_Centrality"), centrality, e[1] / sumZNA);
-        registry.fill(HIST("QA/ZNA_pm3_vs_Centrality"), centrality, e[2] / sumZNA);
-        registry.fill(HIST("QA/ZNA_pm4_vs_Centrality"), centrality, e[3] / sumZNA);
+        registry.fill(HIST("QA/ZNA_pm1_vs_Centrality"), cent, e[0] / sumZNA);
+        registry.fill(HIST("QA/ZNA_pm2_vs_Centrality"), cent, e[1] / sumZNA);
+        registry.fill(HIST("QA/ZNA_pm3_vs_Centrality"), cent, e[2] / sumZNA);
+        registry.fill(HIST("QA/ZNA_pm4_vs_Centrality"), cent, e[3] / sumZNA);
 
-        registry.fill(HIST("QA/ZNC_pm1_vs_Centrality"), centrality, e[4] / sumZNC);
-        registry.fill(HIST("QA/ZNC_pm2_vs_Centrality"), centrality, e[5] / sumZNC);
-        registry.fill(HIST("QA/ZNC_pm3_vs_Centrality"), centrality, e[6] / sumZNC);
-        registry.fill(HIST("QA/ZNC_pm4_vs_Centrality"), centrality, e[7] / sumZNC);
+        registry.fill(HIST("QA/ZNC_pm1_vs_Centrality"), cent, e[4] / sumZNC);
+        registry.fill(HIST("QA/ZNC_pm2_vs_Centrality"), cent, e[5] / sumZNC);
+        registry.fill(HIST("QA/ZNC_pm3_vs_Centrality"), cent, e[6] / sumZNC);
+        registry.fill(HIST("QA/ZNC_pm4_vs_Centrality"), cent, e[7] / sumZNC);
       }
     }
 
@@ -942,6 +936,8 @@ struct ZdcQVectors {
     }
 
     // "QXA", "QYA", "QXC", "QYC"
+    std::array<double, 4> q = {0, 0, 0, 0};
+
     int sides = 2;
     for (int i = 0; i < sides; ++i) {
       if (sumZN[i] > 0) {
@@ -965,25 +961,24 @@ struct ZdcQVectors {
       return;
     }
 
-    loadCalibrations<kRec>(cfgRec.value);
+    loadCalibrations<kRec>(cfgRec.value, timestamp);
 
     if (extraTS.cfgRecenterForTimestamp) {
-      loadCalibrations<kTimestamp>(extraTS.cfgCCDBdir_Timestamp.value);
+      loadCalibrations<kTimestamp>(extraTS.cfgCCDBdir_Timestamp.value, timestamp);
     }
 
-    std::vector<double> qRec(q);
+    std::array<double,4> qRec(q);
 
     if (cal.atIteration == 0) {
-      if (isSelected && cfgFillHistRegistry)
-        fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality, rsTimestamp);
+      if (cal.isSelected && cfgFillHistRegistry && isEventSelected)
+        fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, cent, rsTimestamp);
 
-      spTableZDC(runnumber, cents, v, foundBC.timestamp(), q[0], q[1], q[2], q[3], isSelected, eventSelectionFlags);
-      counter++;
-      lastRunNumber = runnumber;
+      spTableZDC(runnumber, cents, v, foundBC.timestamp(), q[0], q[1], q[2], q[3], cal.isSelected, eventSelectionFlags);
+      cal.lastRunNumber = runnumber;
       return;
     } else {
-      if (cfgFillHistRegistry)
-        fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality, rsTimestamp);
+      if (cfgFillHistRegistry && isEventSelected)
+        fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, cent, rsTimestamp);
 
       // vector of 4
       std::vector<double> corrQxA;
@@ -1079,11 +1074,11 @@ struct ZdcQVectors {
       }
 
       for (int ishift = 1; ishift <= nshift; ishift++) {
-        if (!cfgFillNothing) {
-          registry.fill(HIST("shift/ShiftZDCC"), centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCC));
-          registry.fill(HIST("shift/ShiftZDCC"), centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCC));
-          registry.fill(HIST("shift/ShiftZDCA"), centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCA));
-          registry.fill(HIST("shift/ShiftZDCA"), centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCA));
+        if (!cfgFillNothing && isEventSelected) {
+          registry.fill(HIST("shift/ShiftZDCC"), cent, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCC));
+          registry.fill(HIST("shift/ShiftZDCC"), cent, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCC));
+          registry.fill(HIST("shift/ShiftZDCA"), cent, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCA));
+          registry.fill(HIST("shift/ShiftZDCA"), cent, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCA));
         }
       }
 
@@ -1094,10 +1089,10 @@ struct ZdcQVectors {
 
       if (cal.isShiftProfileFound) {
         for (int ishift = 1; ishift <= nshift; ishift++) {
-          int binshiftxZDCC = cal.shiftprofileC->FindBin(centrality, 0.5, ishift - 0.5); // bin 0.5
-          int binshiftyZDCC = cal.shiftprofileC->FindBin(centrality, 1.5, ishift - 0.5);
-          int binshiftxZDCA = cal.shiftprofileA->FindBin(centrality, 0.5, ishift - 0.5);
-          int binshiftyZDCA = cal.shiftprofileA->FindBin(centrality, 1.5, ishift - 0.5);
+          int binshiftxZDCC = cal.shiftprofileC->FindBin(cent, 0.5, ishift - 0.5); // bin 0.5
+          int binshiftyZDCC = cal.shiftprofileC->FindBin(cent, 1.5, ishift - 0.5);
+          int binshiftxZDCA = cal.shiftprofileA->FindBin(cent, 0.5, ishift - 0.5);
+          int binshiftyZDCA = cal.shiftprofileA->FindBin(cent, 1.5, ishift - 0.5);
 
           if (binshiftxZDCC > 0)
             coeffshiftxZDCC = cal.shiftprofileC->GetBinContent(binshiftxZDCC);
@@ -1120,12 +1115,12 @@ struct ZdcQVectors {
       psiZDCCshift = std::atan2(std::sin(psiZDCCshift), std::cos(psiZDCCshift));
       psiZDCAshift = std::atan2(std::sin(psiZDCAshift), std::cos(psiZDCAshift));
 
-      if (cfgFillHistRegistry && !cfgFillNothing) {
-        registry.fill(HIST("QA/shift/psiZDCA"), psiZDCA, centrality);
-        registry.fill(HIST("QA/shift/psiZDCC"), psiZDCC, centrality);
+      if (cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
+        registry.fill(HIST("QA/shift/psiZDCA"), psiZDCA, cent);
+        registry.fill(HIST("QA/shift/psiZDCC"), psiZDCC, cent);
         registry.fill(HIST("QA/shift/psiZDCAC"), psiZDCA, psiZDCC);
-        registry.fill(HIST("QA/shift/psiZDCA_shift"), psiZDCAshift, centrality);
-        registry.fill(HIST("QA/shift/psiZDCC_shift"), psiZDCCshift, centrality);
+        registry.fill(HIST("QA/shift/psiZDCA_shift"), psiZDCAshift, cent);
+        registry.fill(HIST("QA/shift/psiZDCC_shift"), psiZDCCshift, cent);
         registry.fill(HIST("QA/shift/psiZDCAC_shift"), psiZDCAshift, psiZDCCshift);
         registry.fill(HIST("QA/shift/DeltaPsiZDCA"), psiZDCAshift, psiZDCA);
         registry.fill(HIST("QA/shift/DeltaPsiZDCC"), psiZDCCshift, psiZDCC);
@@ -1137,24 +1132,23 @@ struct ZdcQVectors {
       double qXcShift = std::hypot(qRec[2], qRec[3]) * std::cos(psiZDCCshift);
       double qYcShift = std::hypot(qRec[2], qRec[3]) * std::sin(psiZDCCshift);
 
-      if (isSelected && cfgFillHistRegistry && !cfgFillNothing) {
-        fillCommonRegistry<kAfter>(qXaShift, qYaShift, qXcShift, qYcShift, v, centrality, rsTimestamp);
-        registry.fill(HIST("QA/centrality_after"), centrality);
+      if (cal.isSelected && cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
+        fillCommonRegistry<kAfter>(qXaShift, qYaShift, qXcShift, qYcShift, v, cent, rsTimestamp);
+        registry.fill(HIST("QA/centrality_after"), cent);
         registry.get<TProfile>(HIST("QA/after/ZNA_Qx"))->Fill(Form("%d", runnumber), qXaShift);
         registry.get<TProfile>(HIST("QA/after/ZNA_Qy"))->Fill(Form("%d", runnumber), qYaShift);
         registry.get<TProfile>(HIST("QA/after/ZNC_Qx"))->Fill(Form("%d", runnumber), qXcShift);
         registry.get<TProfile>(HIST("QA/after/ZNC_Qy"))->Fill(Form("%d", runnumber), qYcShift);
       }
 
-      spTableZDC(runnumber, cents, v, foundBC.timestamp(), qXaShift, qYaShift, qXcShift, qYcShift, isSelected, eventSelectionFlags);
-      qRec.clear();
+      spTableZDC(runnumber, cents, v, foundBC.timestamp(), qXaShift, qYaShift, qXcShift, qYcShift, cal.isSelected, eventSelectionFlags);
+      qRec = {0,0,0,0}; 
 
-      counter++;
-      lastRunNumber = runnumber;
+      cal.lastRunNumber = runnumber;
       return;
     }
     LOGF(warning, "We return without saving table... -> THis is a problem");
-    lastRunNumber = runnumber;
+    cal.lastRunNumber = runnumber;
   } // end of process
 };
 
