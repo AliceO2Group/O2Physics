@@ -157,6 +157,8 @@ struct HmpidTableProducer {
     histos.add("hChamberAssignment",
                "Chamber assignment outcome; category; counts",
                kTH1F, {{4, -0.5, 3.5, ""}});
+
+    histos.add("hProdVertex", ";X (cm);Y (cm);Z (cm)", HistType::kTH3F, {{500, -500., 500.}, {500, -500., 500.}, {500, -500., 500.}});
   }
 
   // -----------------------------------------------------------------------
@@ -360,14 +362,14 @@ struct HmpidTableProducer {
     }
 
     // subtract the box center (translation is not rotated, see geometry block above)
-    const double dx = vx - centerX;
-    const double dy = vy; // centerY = 0
-    const double dz = vz - centerZ;
+    const double rx = vx * mAbsCosT + vy * mAbsSinT;
+    const double ry = -vx * mAbsSinT + vy * mAbsCosT;
+    const double rz = vz;
 
     // rotate by -theta into the box local frame
-    const double lx = dx * mAbsCosT + dy * mAbsSinT;
-    const double ly = -dx * mAbsSinT + dy * mAbsCosT;
-    const double lz = dz;
+    const double lx = rx - centerX;
+    const double ly = ry; // centerY = 0
+    const double lz = rz - centerZ;
 
     return std::abs(lx) <= halfX && std::abs(ly) <= AbsHalfY && std::abs(lz) <= AbsHalfZ;
   }
@@ -515,6 +517,8 @@ struct HmpidTableProducer {
 
             for (int32_t idx = dIds.front(); idx <= dIds.back(); ++idx) {
               auto daughter = mcParticles.rawIteratorAt(idx);
+
+              histos.fill(HIST("hProdVertex"), daughter.vx(), daughter.vy(), daughter.vz());
 
               if (isInAbsorber(daughter.vx(), daughter.vy(), daughter.vz(), chamberM3)) {
                 interactionInAbsorber = true;
