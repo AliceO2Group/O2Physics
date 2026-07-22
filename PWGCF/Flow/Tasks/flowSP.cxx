@@ -101,7 +101,6 @@ struct FlowSP {
     O2_DEFINE_CONFIGURABLE(cFillQABefore, bool, false, "Fill QA histograms before cuts, only for processData");
     O2_DEFINE_CONFIGURABLE(cFillMeanPT, bool, false, "Fill histograms for mean PX/PT");
     O2_DEFINE_CONFIGURABLE(cFillMeanPTextra, bool, false, "Fill histograms for mean PX/PT extra");
-    O2_DEFINE_CONFIGURABLE(cUseCentAveragePt, bool, false, "Use <pt> in 1% centrality intervals and not cent average");
     O2_DEFINE_CONFIGURABLE(cFillWithMCParticle, bool, false, "Fill histograms with MCParticle instead of Track");
     // Flags to make and fill histograms
     O2_DEFINE_CONFIGURABLE(cFillGeneralV1Histos, bool, true, "Fill histograms for vn analysis");
