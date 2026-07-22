@@ -1016,6 +1016,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * 
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(FwdDCAXY, fwdDcaXY, [](float dcaX, float dcaY) -> float { return std::hypot(dcaX, dcaY); });
+DECLARE_SOA_DYNAMIC_COLUMN(Chi2IP, chi2IP, [](float dcaX, float dcaY, float cXX, float cXY, float cYY) -> float {
+  float det = cXX * cYY - cXY * cXY; // determinanat
+  return (det < 0.f) ? 1e+10 : (dcaX * dcaX * cYY + dcaY * dcaY * cXX - 2.f * dcaX * dcaY * cXY) / det;
+});
 DECLARE_SOA_DYNAMIC_COLUMN(NClustersMFT, nClustersMFT, //! Number of MFT clusters
                            [](uint64_t mftClusterSizesAndTrackFlags) -> uint8_t {
                              uint8_t nClusters = 0;
@@ -1152,7 +1157,9 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuons_004, "AOD", "EMPRIMARYMU", 4, //!
                             emprimarymuon::P<fwdtrack::Pt, fwdtrack::Eta>,
                             emprimarymuon::Px<fwdtrack::Pt, fwdtrack::Phi>,
                             emprimarymuon::Py<fwdtrack::Pt, fwdtrack::Phi>,
-                            emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>);
+                            emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>,
+                            emprimarymuon::FwdDCAXY<fwdtrack::FwdDcaX, fwdtrack::FwdDcaY>,
+                            emprimarymuon::Chi2IP<fwdtrack::FwdDcaX, fwdtrack::FwdDcaY, emprimarymuon::CXXatDCA, emprimarymuon::CXYatDCA, emprimarymuon::CYYatDCA>);
 
 using EMPrimaryMuons = EMPrimaryMuons_004;
 // iterators
