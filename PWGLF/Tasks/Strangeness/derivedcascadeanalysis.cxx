@@ -251,8 +251,8 @@ struct Derivedcascadeanalysis {
 
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
-  uint16_t selectionCheckMask;
-  double selectionCheck;
+  uint16_t selectionCheckMask = 0;
+  double selectionCheck = -1;
 
   static constexpr std::array<std::string_view, 10> CentIndex = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"};
   static constexpr std::array<float, 11> CentralityIntervals = {0., 5., 10., 20., 30., 40., 50., 60., 70., 80., 90.};
@@ -274,8 +274,6 @@ struct Derivedcascadeanalysis {
     ccdb->setCaching(true);
     ccdb->setFatalWhenNull(false);
 
-    selectionCheck = -1;
-    selectionCheckMask = 0;
     if (!candidateSelectionFlags.doBachelorBaryonCut) {
       SETBIT(selectionCheckMask, 0);
     }
@@ -896,9 +894,6 @@ struct Derivedcascadeanalysis {
     }
     if (fillHists) {
       histos.fill(HIST("hEventSelection"), 27.5 /* INEL > 0 selection */);
-    }
-
-    if (fillHists) {
       histos.fill(HIST("hInteractionRate"), interactionRate);
       histos.fill(HIST("hCentralityVsInteractionRate"), centrality, interactionRate);
       histos.fill(HIST("hOccupancyVsOccupFt0VsCentrality"), occupancy, occupancyFT0, centrality);
@@ -1113,7 +1108,7 @@ struct Derivedcascadeanalysis {
           selectionCheck = std::abs(casc.dcanegtopv());
         }
       }
-      ++counter;
+      counter += 1;
     }
 
     return true;
