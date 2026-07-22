@@ -37,7 +37,6 @@
 #include <CommonConstants/LHCConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsTPC/VDriftCorrFact.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -383,7 +382,6 @@ struct DalitzSelection {
         // if the track is TPC only, we shift it in z to be compatible with vertex time
         if (!fullTrack.hasITS() && !fullTrack.hasTOF() && !fullTrack.hasTRD() && fVdrift > 0. && fConfigOptions.fConfigShiftTPConly) {
           float tTB = 0.;
-          ;
           if (collision.collisionTimeRes() < 0.f || fullTrack.collisionId() < 0) { // use track data
             tTB = fullTrack.trackTime();
           } else {
