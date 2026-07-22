@@ -136,6 +136,9 @@ struct centralityStudy {
     Configurable<bool> rejectUpc{"rejectUpc", false, "Reject upc events based on forward signals. Configurable group: upcRejection"};
     Configurable<bool> rejectCollInTimeRangeNarrow{"rejectCollInTimeRangeNarrow", false, "reject if extra colls in time range (narrow)"};
     Configurable<float> maxVtxZ{"maxVtxZ", 10.0f, "max vertex z distance from ip"};
+    Configurable<bool> applyBcSel{"applyBcSel", false, "For each collision; de-reference the bc and apply the bc selections"};
+    Configurable<bool> rejectNoFoundBC{"rejectNoFoundBC", true, "if applyBcSel; reject if no BC found when de-referencing"};
+
   } evsel;
 
   // _______________________________________
@@ -248,6 +251,7 @@ struct centralityStudy {
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(15, "rejectCollInTimeRangeNarrow");
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(16, "em/upc rejection");
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(17, "isFlangeEvent");
+      histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(18, "bcsel");
 
       histos.add("hFT0A_Collisions", "hFT0A_Collisions", kTH1D, {axisMultUltraFineFT0A});
       histos.add("hFT0C_Collisions", "hFT0C_Collisions", kTH1D, {axisMultUltraFineFT0C});
@@ -266,6 +270,13 @@ struct centralityStudy {
       histos.add("hFV0AvsPVz_Collisions", "hFV0AvsPVz_Collisions", kTProfile, {axisPVz});
       histos.add("hNGlobalTracksvsPVz_Collisions", "hNGlobalTracksvsPVz_Collisions", kTProfile, {axisPVz});
       histos.add("hNMFTTracksvsPVz_Collisions", "hNMFTTracksvsPVz_Collisions", kTProfile, {axisPVz});
+
+      if (evsel.applyBcSel) {
+        histos.add("hCollToBcQa", "hCollToBcQa", kTH1D, {{3, -0.5, 2.5}});
+        histos.get<TH1>(HIST("hCollToBcQa"))->GetXaxis()->SetBinLabel(1, "Found");
+        histos.get<TH1>(HIST("hCollToBcQa"))->GetXaxis()->SetBinLabel(2, "Not found");
+        histos.get<TH1>(HIST("hCollToBcQa"))->GetXaxis()->SetBinLabel(3, "Rejected");
+      }
 
       if (studies.do2DPlots) {
         histos.add("hNContribsVsFT0C", "hNContribsVsFT0C", kTH2F, {axisMultFT0C, axisMultPVContributors});
@@ -477,6 +488,7 @@ struct centralityStudy {
       getHist(TH1, histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(15, "rejectCollInTimeRangeNarrow");
       getHist(TH1, histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(16, "em/upc rejection");
       getHist(TH1, histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(17, "isFlangeEvent");
+      getHist(TH1, histPath + "hCollisionSelection")->GetXaxis()->SetBinLabel(18, "bcsel");
 
       histPointers.insert({histPath + "hFT0C_Collisions", histos.add((histPath + "hFT0C_Collisions").c_str(), "hFT0C_Collisions", {kTH1D, {{axisMultUltraFineFT0C}}})});
       histPointers.insert({histPath + "hFT0A_Collisions", histos.add((histPath + "hFT0A_Collisions").c_str(), "hFT0A_Collisions", {kTH1D, {{axisMultUltraFineFT0A}}})});
@@ -829,6 +841,31 @@ struct centralityStudy {
     if (studies.doRunByRunHistograms) {
       getHist(TH1, histPath + "hCollisionSelection")->Fill(16);
     }
+
+    if (evsel.applyBcSel) {
+      if constexpr (requires { collision.has_multBC(); }) {
+        if (collision.has_multBC()) {
+          auto multbc = collision.template multBC_as<soa::Join<aod::MultBCs, aod::MultBcSel>>();
+          histos.fill(HIST("hCollToBcQa"), 0 /* found */);
+          if (!selectedBC(multbc)) {
+            return;
+          }
+        } else {
+          histos.fill(HIST("hCollToBcQa"), 1 /* not found */);
+          if (evsel.rejectNoFoundBC) {
+            histos.fill(HIST("hCollToBcQa"), 2 /* rejected */);
+
+            return;
+          }
+        }
+      }
+    }
+
+    histos.fill(HIST("hCollisionSelection"), 17 /* bc selections */);
+    if (studies.doRunByRunHistograms) {
+      getHist(TH1, histPath + "hCollisionSelection")->Fill(17);
+    }
+
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hNPVContributors"), collision.multNTracksPV());
     histos.fill(HIST("hFT0A_Collisions"), collision.multFT0A() * scale.factorFT0C);
