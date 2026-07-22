@@ -1544,6 +1544,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (!nameStr.compare("electronPrimaryProbe_TPC")) {
     cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly"));
     cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
     return cut;
   }
 
