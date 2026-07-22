@@ -20,6 +20,8 @@
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
@@ -41,6 +43,7 @@
 #include <TProfile3D.h>
 #include <TString.h>
 
+#include <memory>
 #include <array>
 #include <chrono>
 #include <cmath>
