@@ -854,7 +854,6 @@ struct centralityStudy {
           histos.fill(HIST("hCollToBcQa"), 1 /* not found */);
           if (evsel.rejectNoFoundBC) {
             histos.fill(HIST("hCollToBcQa"), 2 /* rejected */);
-
             return;
           }
         }
