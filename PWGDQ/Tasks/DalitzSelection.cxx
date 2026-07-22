@@ -154,13 +154,13 @@ struct DalitzSelection {
   bool fIsTagAndProbe = false; // whether we are doing tag and probe, or just symmetric cuts
   bool fIsOutputRequested = false;
   bool fSkipEvent = false; // speed up by skipping next step of event if no track/pair is selected
-  
+
   MixingHandler fMixingHandler;
   MixingHandler::MixingEvent* fMixingEvent = nullptr;
 
   HistogramManager* fHistMan = nullptr;
-  
-  float fVdrift = -1.; // TPC drift velocity
+
+  float fVdrift = -1.;    // TPC drift velocity
   int64_t fFirstTime = 0; // validity time for the v drift, granularity is smaller than one run
   int64_t fLastTime = 0;
 
@@ -347,7 +347,7 @@ struct DalitzSelection {
         }
       }
     }
-    
+
     // setup mixing handler
     if (fConfigOptions.fRunEventMixing) {
       TString mixVarsString = fConfigOptions.fConfigMixingVariables.value;
@@ -382,7 +382,8 @@ struct DalitzSelection {
         VarManager::FillTrackCollision<TTrackFillMap>(fullTrack, collision);
         // if the track is TPC only, we shift it in z to be compatible with vertex time
         if (!fullTrack.hasITS() && !fullTrack.hasTOF() && !fullTrack.hasTRD() && fVdrift > 0. && fConfigOptions.fConfigShiftTPConly) {
-          float tTB = 0.;;
+          float tTB = 0.;
+          ;
           if (collision.collisionTimeRes() < 0.f || fullTrack.collisionId() < 0) { // use track data
             tTB = fullTrack.trackTime();
           } else {
@@ -670,14 +671,14 @@ struct DalitzSelection {
     // Bit 8 is a special bit in this case (keeping track sign), so we don't want it to be erased, except when everything else is empty
     uint32_t bitMask = (static_cast<uint32_t>(1) << 8);
     fMixingEvent->ClearFilteringMask(bitMask);
-    
+
     for (auto& poolEvent : pool.events) {
       if (!(poolEvent.filteringMask & static_cast<uint32_t>(255))) {
         // all other bits have been erased, so we can also mark bit 8 for deletion
         poolEvent.filteringMask |= bitMask;
         poolEvent.counters[8] = fMixingHandler.GetPoolDepth();
       }
-      for (auto const & t1 : fMixingEvent->tracks1) {
+      for (auto const& t1 : fMixingEvent->tracks1) {
         // tag from event 1 and probe from event 2. If not tag and probe method, all tracks are in tracks1 array
         for (auto const& t2 : (fIsTagAndProbe ? poolEvent.tracks2 : poolEvent.tracks1)) {
           // check the two-track filter for the mixed pair
@@ -691,7 +692,7 @@ struct DalitzSelection {
             // (They are not filled by default in the FillPairMEAcrossTFs) to keep it light
             VarManager::fgValues[VarManager::kPt2] = t2.pt;
             VarManager::fgValues[VarManager::kEta2] = t2.eta;
-            VarManager::fgValues[VarManager::kPhi2] = t2.phi;            
+            VarManager::fgValues[VarManager::kPhi2] = t2.phi;
           }
           bool isLS = (t1.filteringFlags & (static_cast<uint32_t>(1) << 8)) == (t2.filteringFlags & (static_cast<uint32_t>(1) << 8));
           for (size_t icut = 0; icut < fPairCuts.size(); icut++) {
@@ -780,7 +781,7 @@ struct DalitzSelection {
       VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
     }
   }
-  
+
   void initNewDF(int64_t timestamp)
   {
     if (fConfigOptions.fConfigShiftTPConly && (timestamp < fFirstTime || timestamp > fLastTime)) {
@@ -799,7 +800,7 @@ struct DalitzSelection {
     const int pairType = VarManager::kDecayToEE;
     fDalitzmap.clear();
     fDalitzmapProbe.clear();
-    
+
     bool initDFDone = false; // some quantities might need to be updated for each dataframe
 
     for (const auto& collision : collisions) {
@@ -818,7 +819,7 @@ struct DalitzSelection {
           initNewRun(bc.timestamp());
           fCurrentRun = bc.runNumber();
         }
-        
+
         if (!initDFDone) {
           initNewDF(bc.timestamp());
           initDFDone = true;
@@ -860,7 +861,7 @@ struct DalitzSelection {
     fDalitzmapAmbiguity.clear();
     fDalitzmapProbeAmbiguity.clear();
     fAmbiguousPairs.clear();
-    
+
     bool initDFDone = false; // some quantities might need to be updated for each dataframe
 
     for (const auto& collision : collisions) {
@@ -885,7 +886,7 @@ struct DalitzSelection {
           initNewDF(bc.timestamp());
           initDFDone = true;
         }
-        
+
         if (fConfigOptions.fRunEventMixing) {
           fMixingEvent = new MixingHandler::MixingEvent();
         }
@@ -898,8 +899,8 @@ struct DalitzSelection {
         if (fConfigOptions.fRunEventMixing) {
           if (fMixingEvent->tracks1.size() > 0) {
             // we require that there is at least one tag track in the event to avoid having the pool full of events with only probe tracks which are then useless
-            // In addition, this allows to avoid mixing events which are too close in time, which could contain tracks from the same event due to track-to-collision reassociation 
-            runMixing();            
+            // In addition, this allows to avoid mixing events which are too close in time, which could contain tracks from the same event due to track-to-collision reassociation
+            runMixing();
           }
           delete fMixingEvent;
         }
@@ -947,7 +948,7 @@ struct DalitzSelection {
           initNewDF(bc.timestamp());
           initDFDone = true;
         }
-        
+
         if (fConfigOptions.fRunEventMixing) {
           fMixingEvent = new MixingHandler::MixingEvent();
         }
@@ -960,7 +961,7 @@ struct DalitzSelection {
         if (fConfigOptions.fRunEventMixing) {
           if (fMixingEvent->tracks1.size() > 0) {
             // we require that there is at least one tag track in the event to avoid having the pool full of events with only probe tracks which are then useless
-            // In addition, this allows to avoid mixing events which are too close in time, which could contain tracks from the same event due to track-to-collision reassociation 
+            // In addition, this allows to avoid mixing events which are too close in time, which could contain tracks from the same event due to track-to-collision reassociation
             runMixing();
           }
           delete fMixingEvent;
