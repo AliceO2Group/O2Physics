@@ -150,11 +150,20 @@ struct ZdcQVectors {
   O2_DEFINE_CONFIGURABLE(cfgTrackSelsEta, float, 0.8, "eta cut");
 
   O2_DEFINE_CONFIGURABLE(cfgCCDBdir_Shift, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass5/Shift", "CCDB directory for Shift ZDC");
+  Configurable<std::vector<int>> cfgSelVec{"cfgSelVec", std::vector<int>{1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1}, "Put 1 for every event selection from SelectionCriteria that is used in flowSP"};
+  Configurable<std::vector<double>> cfgEvSelsMultPv{"cfgEvSelsMultPv", std::vector<double>{2223.49, -75.1444, 0.963572, -0.00570399, 1.34877e-05, 3790.99, -137.064, 2.13044, -0.017122, 5.82834e-05}, "Multiplicity cuts (PV) first 5 parameters cutLOW last 5 cutHIGH (Default is +-2sigma pass5) "};
+  Configurable<std::vector<double>> cfgEvSelsMult{"cfgEvSelsMult", std::vector<double>{1301.56, -41.4615, 0.478224, -0.00239449, 4.46966e-06, 2967.6, -102.927, 1.47488, -0.0106534, 3.28622e-05}, "Multiplicity cuts (Global) first 5 parameters cutLOW last 5 cutHIGH (Default is +-2sigma pass5) "};
+
 
   // define my.....
   // Filter collisionFilter = nabs(aod::collision::posZ) <;
-  using UsedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNGlobals>;
+
+  using UsedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNGlobals>;
   using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
+  Filter trackFilter = nabs(aod::track::eta) < cfgTrackSelsEta && aod::track::pt > cfgTrackSelsPtmin&& aod::track::pt < cfgTrackSelsPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && nabs(aod::track::dcaXY) < cfgTrackSelsDCAxy&& nabs(aod::track::dcaZ) < cfgTrackSelsDCAz;
+  using UnfilteredTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
+  using UsedTracks = soa::Filtered<UnfilteredTracks>;
+
 
   enum SelectionCriteria {
     evSel_FilteredEvent,
@@ -172,6 +181,7 @@ struct ZdcQVectors {
     evSel_kIsGoodITSLayer0123,
     evSel_RCTFlagsZDC,
     evSel_CentCuts,
+    evSel_MultCut,
     nEventSelections
   };
 
@@ -184,6 +194,15 @@ struct ZdcQVectors {
 
   //  Define output
   HistogramRegistry registry{"Registry"};
+
+  // Event selection cuts
+  std::unique_ptr<TF1> fPhiCutLow = nullptr;
+  std::unique_ptr<TF1> fPhiCutHigh = nullptr;
+  std::unique_ptr<TF1> fMultPVCutLow = nullptr;
+  std::unique_ptr<TF1> fMultPVCutHigh = nullptr;
+  std::unique_ptr<TF1> fMultCutLow = nullptr;
+  std::unique_ptr<TF1> fMultCutHigh = nullptr;
+  std::unique_ptr<TF1> fMultMultPVCut = nullptr;
 
   Service<ccdb::BasicCCDBManager> ccdb;
 
@@ -247,6 +266,7 @@ struct ZdcQVectors {
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_CentCuts + 1, "Cenrality range");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kIsGoodITSLayersAll");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayer0123 + 1, "kIsGoodITSLayer0123");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_MultCut + 1, "Mult & MultPV");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_isSelectedZDC + 1, "isSelected");
 
     if (!cfgFillNothing) {
@@ -364,6 +384,28 @@ struct ZdcQVectors {
       registry.addClone("recentering/before/", "recentering/after/");
       registry.addClone("QA/before/", "QA/after/");
     }
+
+    fMultPVCutLow = std::make_unique<TF1>("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+    fMultPVCutHigh = std::make_unique<TF1>("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+    fMultCutLow = std::make_unique<TF1>("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+    fMultCutHigh = std::make_unique<TF1>("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 100);
+
+    std::vector<double> paramsMultPVCut = cfgEvSelsMultPv;
+    std::vector<double> paramsMultCut = cfgEvSelsMult;
+
+    uint64_t nParams = 10;
+
+    if (paramsMultPVCut.size() < nParams) {
+      LOGF(fatal, "cfg.cEvSelsMultPv not set properly.. size = %d (should be 10) --> Check your config files!", paramsMultPVCut.size());
+    } else if (paramsMultCut.size() < nParams) {
+      LOGF(fatal, "cfg.cEvSelsMult not set properly.. size = %d (should be 10) --> Check your config files!", paramsMultCut.size());
+    } else {
+      fMultPVCutLow->SetParameters(paramsMultPVCut[0], paramsMultPVCut[1], paramsMultPVCut[2], paramsMultPVCut[3], paramsMultPVCut[4]);
+      fMultPVCutHigh->SetParameters(paramsMultPVCut[5], paramsMultPVCut[6], paramsMultPVCut[7], paramsMultPVCut[8], paramsMultPVCut[9]);
+      fMultCutLow->SetParameters(paramsMultCut[0], paramsMultCut[1], paramsMultCut[2], paramsMultCut[3], paramsMultCut[4]);
+      fMultCutHigh->SetParameters(paramsMultCut[5], paramsMultCut[6], paramsMultCut[7], paramsMultCut[8], paramsMultCut[9]);
+    }
+
   }
 
   double rescaleTimestamp(uint64_t timestamp, int runnumber)
@@ -426,8 +468,8 @@ struct ZdcQVectors {
     }
   }
 
-  template <typename TCollision, typename TBunchCrossing>
-  uint16_t eventSelected(TCollision collision, TBunchCrossing bunchCrossing)
+    template <typename TCollision, typename TBunchCrossing>
+  uint16_t eventSelected(TCollision collision, TBunchCrossing bunchCrossing, bool& isEventSelected, const int& multTrk)
   {
     uint16_t selectionBits = 0;
     bool selected;
@@ -441,12 +483,16 @@ struct ZdcQVectors {
     if (selected) {
       selectionBits |= static_cast<uint16_t>(0x1u << evSel_Zvtx);
       fillCutAnalysis(collision, bunchCrossing, evSel_Zvtx);
+    } else if (cfgSelVec.value[evSel_Zvtx]) {
+      isEventSelected = false;
     }
 
     selected = collision.sel8();
     if (selected) {
       selectionBits |= static_cast<uint16_t>(0x1u << evSel_sel8);
       fillCutAnalysis(collision, bunchCrossing, evSel_sel8);
+    } else if (cfgSelVec.value[evSel_sel8]) {
+      isEventSelected = false;
     }
 
     auto occupancy = collision.trackOccupancyInTimeRange();
@@ -454,59 +500,107 @@ struct ZdcQVectors {
     if (selected) {
       selectionBits |= static_cast<uint16_t>(0x1u << evSel_occupancy);
       fillCutAnalysis(collision, bunchCrossing, evSel_occupancy);
+    } else if (cfgSelVec.value[evSel_occupancy]) {
+      isEventSelected = false;
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
     if (selected) {
       selectionBits |= static_cast<uint16_t>(0x1u << evSel_kNoSameBunchPileup);
       fillCutAnalysis(collision, bunchCrossing, evSel_kNoSameBunchPileup);
+    } else if (cfgSelVec.value[evSel_kNoSameBunchPileup]) {
+      isEventSelected = false;
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
     if (selected) {
       selectionBits |= static_cast<uint16_t>(0x1u << evSel_kIsGoodZvtxFT0vsPV);
       fillCutAnalysis(collision, bunchCrossing, evSel_kIsGoodZvtxFT0vsPV);
+    } else if (cfgSelVec.value[evSel_kIsGoodZvtxFT0vsPV]) {
+      isEventSelected = false;
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard);
     if (selected) {
       selectionBits |= static_cast<uint16_t>(0x1u << evSel_kNoCollInTimeRangeStandard);
       fillCutAnalysis(collision, bunchCrossing, evSel_kNoCollInTimeRangeStandard);
+    } else if (cfgSelVec.value[evSel_kNoCollInTimeRangeStandard]) {
+      isEventSelected = false;
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow);
     if (selected) {
       selectionBits |= static_cast<uint16_t>(0x1u << evSel_kNoCollInTimeRangeNarrow);
       fillCutAnalysis(collision, bunchCrossing, evSel_kNoCollInTimeRangeNarrow);
+    } else if (cfgSelVec.value[evSel_kNoCollInTimeRangeNarrow]) {
+      isEventSelected = false;
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC);
     if (selected) {
       selectionBits |= static_cast<uint16_t>(0x1u << evSel_kIsVertexITSTPC);
       fillCutAnalysis(collision, bunchCrossing, evSel_kIsVertexITSTPC);
+    } else if (cfgSelVec.value[evSel_kIsVertexITSTPC]) {
+      isEventSelected = false;
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
     if (selected) {
       selectionBits |= static_cast<uint16_t>(0x1u << evSel_kIsGoodITSLayersAll);
       fillCutAnalysis(collision, bunchCrossing, evSel_kIsGoodITSLayersAll);
+    } else if (cfgSelVec.value[evSel_kIsGoodITSLayersAll]) {
+      isEventSelected = false;
     }
 
     selected = collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123);
     if (selected) {
       selectionBits |= static_cast<uint16_t>(0x1u << evSel_kIsGoodITSLayer0123);
       fillCutAnalysis(collision, bunchCrossing, evSel_kIsGoodITSLayer0123);
+    } else if (cfgSelVec.value[evSel_kIsGoodITSLayer0123]) {
+      isEventSelected = false;
     }
 
     selected = rctChecker(collision);
     if (selected) {
       selectionBits |= static_cast<uint16_t>(0x1u << evSel_RCTFlagsZDC);
       fillCutAnalysis(collision, bunchCrossing, evSel_RCTFlagsZDC);
+    } else if (cfgSelVec.value[evSel_RCTFlagsZDC]) {
+      isEventSelected = false;
+    }
+
+    float vtxz = -999;
+    if (collision.numContrib() > 1) {
+      vtxz = collision.posZ();
+      float zRes = std::sqrt(collision.covZZ());
+      float minzRes = 0.25;
+      int maxNumContrib = 20;
+      if (zRes > minzRes && collision.numContrib() < maxNumContrib)
+        vtxz = -999;
+    }
+
+    auto multNTracksPV = collision.multNTracksPV();
+    selected = true;
+
+    if (vtxz > cfgVtxZ || vtxz < -cfgVtxZ)
+      selected = false;
+    if (multNTracksPV < fMultPVCutLow->Eval(collision.centFT0C()))
+      selected = false;
+    if (multNTracksPV > fMultPVCutHigh->Eval(collision.centFT0C()))
+      selected = false;
+    if (multTrk < fMultCutLow->Eval(collision.centFT0C()))
+      selected = false;
+    if (multTrk > fMultCutHigh->Eval(collision.centFT0C()))
+      selected = false;
+
+    if (selected) {
+      selectionBits |= static_cast<uint16_t>(0x1u << evSel_MultCut);
+      fillCutAnalysis(collision, bunchCrossing, evSel_MultCut);
+    } else if (cfgSelVec.value[evSel_MultCut]) {
+      isEventSelected = false;
     }
 
     // Fill for centrality estimators!
     fillCutAnalysis(collision, bunchCrossing, nEventSelections);
-
     return selectionBits;
   }
 
@@ -694,7 +788,8 @@ struct ZdcQVectors {
 
   void process(UsedCollisions::iterator const& collision,
                BCsRun3 const& /*bcs*/,
-               aod::Zdcs const& /*zdcs*/)
+               aod::Zdcs const& /*zdcs*/,
+               UsedTracks const& tracks)
   {
     // for Q-vector calculation
     //  A[0] & C[1]
@@ -797,10 +892,14 @@ struct ZdcQVectors {
     }
     registry.fill(HIST("hEventCount"), evSel_isSelectedZDC);
 
-    uint16_t eventSelectionFlags = eventSelected(collision, foundBC.zdc());
+    // Use this bool to check for given set of event selections of Q-vectors would be selected
+    // Enable plotting only if event would be selected
+    bool isEventSelected = true;
+
+    uint16_t eventSelectionFlags = eventSelected(collision, foundBC.zdc(), isEventSelected, tracks.size());
 
     // ALWAYS use these event selections
-    if (cent < EvSel.cfgCentMin || cent > EvSel.cfgCentMax || !collision.sel8() || std::abs(collision.posZ()) > cfgVtxZ) {
+    if (cent < EvSel.cfgCentMin || cent > EvSel.cfgCentMax || std::abs(collision.posZ()) > cfgVtxZ || !collision.sel8()) {
       // event not selected
       cal.isSelected = false;
       spTableZDC(runnumber, cents, v, foundBC.timestamp(), 0, 0, 0, 0, cal.isSelected, eventSelectionFlags);
@@ -835,7 +934,7 @@ struct ZdcQVectors {
     // load the calibrations for the mean v
     loadCalibrations<kMeanv>(cfgMeanv.value, timestamp);
 
-    if (!cfgFillNothing) {
+    if (!cfgFillNothing && isEventSelected) {
       registry.get<TProfile>(HIST("vmean/hvertex_vx"))->Fill(Form("%d", runnumber), v[0]);
       registry.get<TProfile>(HIST("vmean/hvertex_vy"))->Fill(Form("%d", runnumber), v[1]);
       registry.get<TProfile>(HIST("vmean/hvertex_vz"))->Fill(Form("%d", runnumber), v[2]);
@@ -879,7 +978,7 @@ struct ZdcQVectors {
       calibtower++;
     }
 
-    if (cfgFillHistRegistry && !cfgFillNothing) {
+    if (cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
       for (int i = 0; i < nTowersPerSide; i++) {
         float bincenter = i + .5;
         registry.fill(HIST("QA/ZNA_Energy"), bincenter, eZN[i]);
@@ -940,7 +1039,7 @@ struct ZdcQVectors {
       }
     }
 
-    if (cfgFillHistRegistry && !cfgFillNothing) {
+    if (cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
       registry.get<TProfile>(HIST("QA/before/ZNA_Qx"))->Fill(Form("%d", runnumber), q[0]);
       registry.get<TProfile>(HIST("QA/before/ZNA_Qy"))->Fill(Form("%d", runnumber), q[1]);
       registry.get<TProfile>(HIST("QA/before/ZNC_Qx"))->Fill(Form("%d", runnumber), q[2]);
@@ -991,7 +1090,7 @@ struct ZdcQVectors {
         corrQxC.push_back(getCorrection<THnSparse, kRec>(names[0][2].Data(), it, 1));
         corrQyC.push_back(getCorrection<THnSparse, kRec>(names[0][3].Data(), it, 1));
 
-        if (cfgFillHistRegistry && !cfgFillNothing) {
+        if (cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
           registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, q[0] - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
           registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, q[1] - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
           registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, q[2] - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
@@ -1005,7 +1104,7 @@ struct ZdcQVectors {
           corrQxC.push_back(getCorrection<TProfile, kRec>(names[step - 1][2].Data(), it, step));
           corrQyC.push_back(getCorrection<TProfile, kRec>(names[step - 1][3].Data(), it, step));
 
-          if (cfgFillHistRegistry && !cfgFillNothing) {
+          if (cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
             registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, q[0] - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
             registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, q[1] - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
             registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, q[2] - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
@@ -1021,7 +1120,7 @@ struct ZdcQVectors {
           corrQxC.push_back(getCorrection<TProfile, kTimestamp>(namesTS[2].Data(), it, 6));
           corrQyC.push_back(getCorrection<TProfile, kTimestamp>(namesTS[3].Data(), it, 6));
 
-          if (cfgFillHistRegistry && !cfgFillNothing) {
+          if (cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
             registry.get<TH2>(HIST("recentering/QXA_vs_iteration"))->Fill(pb + 1, q[0] - std::accumulate(corrQxA.begin(), corrQxA.end(), 0.0));
             registry.get<TH2>(HIST("recentering/QYA_vs_iteration"))->Fill(pb + 1, q[1] - std::accumulate(corrQyA.begin(), corrQyA.end(), 0.0));
             registry.get<TH2>(HIST("recentering/QXC_vs_iteration"))->Fill(pb + 1, q[2] - std::accumulate(corrQxC.begin(), corrQxC.end(), 0.0));
