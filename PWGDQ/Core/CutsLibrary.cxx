@@ -7838,7 +7838,9 @@ o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFro
           }
         }
 
-        cutDirsFilled = true;
+        if (!cutDirsFilled) {
+          cutDirsFilled = true;
+        }
 
         centBins.emplace_back(centMin, centMax);
         ptBins.emplace_back(ptMin, ptMax);
