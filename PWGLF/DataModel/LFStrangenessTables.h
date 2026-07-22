@@ -47,12 +47,32 @@ DECLARE_SOA_TABLE(StraOrigins, "AOD", "STRAORIGIN", //! Table which contains the
 // for keeping track of the number of selected collisions
 namespace straselections
 {
+// Event selection criteria
+enum EventSelectionFlags {
+  kIsTriggerTVX = 0,     // FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level
+  kNoITSROFrameBorder,   // bunch crossing is far from ITS RO Frame border
+  kNoTimeFrameBorder,    // bunch crossing is far from Time Frame borders
+  kIsGoodZvtxAcceptance, // Zvtx within detector acceptance
+  kNoSameBunchPileup,    // reject collisions in case of pileup with another collision in the same foundBC
+  kIsGoodRCT,            // Good RCT
+  kNsel                  // counter
+};
+
 DECLARE_SOA_COLUMN(TotalNbrOfCollisions, totalNbrOfCollisions, int);       //! total number of analysed collisions
 DECLARE_SOA_COLUMN(TotalNbrOfSelCollisions, totalNbrOfSelCollisions, int); //! total number of selected collisions
+DECLARE_SOA_COLUMN(TotalIsTriggerTVXCollisions, totalIsTriggerTVXCollisions, int);     //! N selected collisions after applying IsTriggerTVX
+DECLARE_SOA_COLUMN(TotalNoITSROFBorderCollisions, totalNoITSROFBorderCollisions, int); //! N selected collisions after applying IsTriggerTVX, NoITSROF
+DECLARE_SOA_COLUMN(TotalNoTFBorderCollisions, totalNoTFBorderCollisions, int);         //! N selected collisions after applying IsTriggerTVX, NoITSROF, NoTF
+DECLARE_SOA_COLUMN(TotalIsGoodZvtxCollisions, totalIsGoodZvtxCollisions, int);         //! N selected collisions after applying IsTriggerTVX, NoITSROF, NoTF, |Zvtx| < X cm
+DECLARE_SOA_COLUMN(TotalNoSBPileupCollisions, totalNoSBPileupCollisions, int);         //! N selected collisions after applying IsTriggerTVX, NoITSROF, NoTF, |Zvtx| < X cm, NoSameBunchPileup
+DECLARE_SOA_COLUMN(TotalIsGoodRCTCollisions, totalIsGoodRCTCollisions, int);           //! N selected collisions after applying IsTriggerTVX, NoITSROF, NoTF, |Zvtx| < X cm, NoSameBunchPileup, Good RCT
 } // namespace straselections
 
 DECLARE_SOA_TABLE(StraSelections, "AOD", "STRASELECTIONS", //! keep track of the number of analysed collisions in this DF
-                  o2::soa::Index<>, straselections::TotalNbrOfCollisions, straselections::TotalNbrOfSelCollisions);
+                  o2::soa::Index<>, straselections::TotalNbrOfCollisions, straselections::TotalNbrOfSelCollisions,
+                  straselections::TotalIsTriggerTVXCollisions, straselections::TotalNoITSROFBorderCollisions,
+                  straselections::TotalNoTFBorderCollisions, straselections::TotalIsGoodZvtxCollisions,
+                  straselections::TotalNoSBPileupCollisions, straselections::TotalIsGoodRCTCollisions);
 
 namespace stracollision
 {
