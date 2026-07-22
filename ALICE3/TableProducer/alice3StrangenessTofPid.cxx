@@ -17,7 +17,6 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "ALICE3/DataModel/OTFStrangeness.h"
-#include "ALICE3/DataModel/tracksAlice3.h"
 #include "ALICE3/Utils/a3StrangenessTofPidHelper.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/trackUtilities.h"
@@ -45,19 +44,29 @@ using namespace o2::framework;
 using namespace o2::upgrade::stratofpid;
 
 using CascTofResults = StrangenessTofResults<Topology::Cascade>;
-using Alice3Tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtraA3>;
+using V0TofResults = StrangenessTofResults<Topology::V0>;
+using Alice3Tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels>;
+using FullV0Candidates = soa::Join<aod::V0CandidateIndices, aod::V0CandidateCores>;
 using FullCascadeCandidates = soa::Join<aod::StoredCascCores, aod::CascIndices, aod::A3CascadeMcLabels>;
 using Alice3Collision = soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator;
 
 struct Alice3StrangenessTofPid {
-  Produces<aod::A3XiInnerTofPid> tableA3XiInnerTofPid;                     // contains xi strangeness iTOF nsigma
-  Produces<aod::A3XiOuterTofPid> tableA3XiOuterTofPid;                     // contains xi strangeness oTOF nsigma
-  Produces<aod::A3OmegaInnerTofPid> tableA3OmegaInnerTofPid;               // contains omega strangeness iTOF nsigma
-  Produces<aod::A3OmegaOuterTofPid> tableA3OmegaOuterTofPid;               // contains omega strangeness oTOF nsigma
-  Produces<aod::A3XiExpectedInnerTimes> tableA3XiExpectedInnerTimes;       // contains xi strangeness iTOF info
-  Produces<aod::A3XiExpectedOuterTimes> tableA3XiExpectedOuterTimes;       // contains xi strangeness oTOF info
-  Produces<aod::A3OmegaExpectedInnerTimes> tableA3OmegaExpectedInnerTimes; // contains omega strangeness iTOF info
-  Produces<aod::A3OmegaExpectedOuterTimes> tableA3OmegaExpectedOuterTimes; // contains omega strangeness oTOF info
+  Produces<aod::A3K0SInnerTofPid> tableA3K0SInnerTofPid;                     // contains K0S strangeness iTOF nsigma
+  Produces<aod::A3K0SOuterTofPid> tableA3K0SOuterTofPid;                     // contains K0S strangeness oTOF nsigma
+  Produces<aod::A3LambdaInnerTofPid> tableA3LambdaInnerTofPid;               // contains lambda strangeness iTOF nsigma
+  Produces<aod::A3LambdaOuterTofPid> tableA3LambdaOuterTofPid;               // contains lambda strangeness oTOF nsigma
+  Produces<aod::A3K0SExpectedInnerTimes> tableA3K0SExpectedInnerTimes;       // contains K0S strangeness iTOF info
+  Produces<aod::A3K0SExpectedOuterTimes> tableA3K0SExpectedOuterTimes;       // contains K0S strangeness oTOF info
+  Produces<aod::A3LambdaExpectedInnerTimes> tableA3LambdaExpectedInnerTimes; // contains lambda strangeness iTOF info
+  Produces<aod::A3LambdaExpectedOuterTimes> tableA3LambdaExpectedOuterTimes; // contains lambda strangeness oTOF info
+  Produces<aod::A3XiInnerTofPid> tableA3XiInnerTofPid;                       // contains xi strangeness iTOF nsigma
+  Produces<aod::A3XiOuterTofPid> tableA3XiOuterTofPid;                       // contains xi strangeness oTOF nsigma
+  Produces<aod::A3OmegaInnerTofPid> tableA3OmegaInnerTofPid;                 // contains omega strangeness iTOF nsigma
+  Produces<aod::A3OmegaOuterTofPid> tableA3OmegaOuterTofPid;                 // contains omega strangeness oTOF nsigma
+  Produces<aod::A3XiExpectedInnerTimes> tableA3XiExpectedInnerTimes;         // contains xi strangeness iTOF info
+  Produces<aod::A3XiExpectedOuterTimes> tableA3XiExpectedOuterTimes;         // contains xi strangeness oTOF info
+  Produces<aod::A3OmegaExpectedInnerTimes> tableA3OmegaExpectedInnerTimes;   // contains omega strangeness iTOF info
+  Produces<aod::A3OmegaExpectedOuterTimes> tableA3OmegaExpectedOuterTimes;   // contains omega strangeness oTOF info
 
   struct : ConfigurableGroup {
     ConfigurableAxis axisNSigma{"axisNSigma", {200, -10, 10}, "N sigma axis"};
@@ -81,6 +90,14 @@ struct Alice3StrangenessTofPid {
     std::string prefix = "produce";
 
     // Tables
+    Configurable<bool> tableInnerNSigmaK0S{"tableInnerNSigmaK0S", true, "Produce NSigma tables for K0S candidate"};
+    Configurable<bool> tableOuterNSigmaK0S{"tableOuterNSigmaK0S", true, "Produce NSigma tables for K0S candidate"};
+    Configurable<bool> tableInnerExpectedTimesK0S{"tableInnerExpectedTimesK0S", false, "Produce expected and measured times tables for K0S candidate"};
+    Configurable<bool> tableOuterExpectedTimesK0S{"tableOuterExpectedTimesK0S", false, "Produce expected and measured times tables for K0S candidate"};
+    Configurable<bool> tableInnerNSigmaLambda{"tableInnerNSigmaLambda", true, "Produce NSigma tables for Lambda candidate"};
+    Configurable<bool> tableOuterNSigmaLambda{"tableOuterNSigmaLambda", true, "Produce NSigma tables for Lambda candidate"};
+    Configurable<bool> tableInnerExpectedTimesLambda{"tableInnerExpectedTimesLambda", false, "Produce expected and measured times tables for Lambda candidate"};
+    Configurable<bool> tableOuterExpectedTimesLambda{"tableOuterExpectedTimesLambda", false, "Produce expected and measured times tables for Lambda candidate"};
     Configurable<bool> tableInnerNSigmaXi{"tableInnerNSigmaXi", true, "Produce NSigma tables for xi candidate"};
     Configurable<bool> tableOuterNSigmaXi{"tableOuterNSigmaXi", true, "Produce NSigma tables for xi candidate"};
     Configurable<bool> tableInnerExpectedTimesXi{"tableInnerExpectedTimesXi", false, "Produce expected and measured times tables for xi candidate"};
@@ -91,18 +108,23 @@ struct Alice3StrangenessTofPid {
     Configurable<bool> tableOuterExpectedTimesOmega{"tableOuterExpectedTimesOmega", false, "Produce expected and measured times tables for omega candidate"};
 
     // Histograms
-    Configurable<bool> histosXi{"histosXi", true, "Produce histograms for xi candidates"};
-    Configurable<bool> histosAntiXi{"histosAntiXi", true, "Produce histograms for anti xi candidates"};
-    Configurable<bool> histosOmega{"histosOmega", true, "Produce histograms for omega candidates"};
-    Configurable<bool> histosAntiOmega{"histosAntiOmega", true, "Produce histograms for anti omega candidates"};
+    Configurable<bool> histosK0S{"histosK0S", false, "Produce histograms for xi candidates"};
+    Configurable<bool> histosLambda{"histosLambda", false, "Produce histograms for xi candidates"};
+    Configurable<bool> histosAntiLambda{"histosAntiLambda", false, "Produce histograms for xi candidates"};
+    Configurable<bool> histosXi{"histosXi", false, "Produce histograms for xi candidates"};
+    Configurable<bool> histosAntiXi{"histosAntiXi", false, "Produce histograms for anti xi candidates"};
+    Configurable<bool> histosOmega{"histosOmega", false, "Produce histograms for omega candidates"};
+    Configurable<bool> histosAntiOmega{"histosAntiOmega", false, "Produce histograms for anti omega candidates"};
   } produce;
 
   Configurable<float> magneticField{"magneticField", 20.0f, "Magnetic field (in kilogauss)"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   StrangenessTofPid<Topology::Cascade> tofPidCasc;
+  StrangenessTofPid<Topology::V0> tofPidV0;
   Service<o2::framework::O2DatabasePDG> pdgDB{};
   static constexpr float NanoToPico = 1e+3;
+  static constexpr int ChargeV0 = 0;
   static constexpr std::array<float, o2::track::kLabCovMatSize> ParentTrackCovMatrix{};
 
   struct TimeOfFlight {
@@ -129,8 +151,90 @@ struct Alice3StrangenessTofPid {
     tofPidCasc.setResolution(tof.iTofResolution, tof.oTofResolution);
     tofPidCasc.setRadius(tof.iTofRadius, tof.oTofRadius);
     tofPidCasc.setMagneticField(magneticField);
+    tofPidV0.setResolution(tof.iTofResolution, tof.oTofResolution);
+    tofPidV0.setRadius(tof.iTofRadius, tof.oTofRadius);
+    tofPidV0.setMagneticField(magneticField);
 
-    // Todo: doProcessV0s
+    if (doprocessV0s) {
+      if (produce.histosK0S) {
+        histos.add("K0S/hInnerArrivalTimeDeltaNeg", "hInnerArrivalTimeDeltaNeg", kTH1D, {{axes.axisTimeDelta}});
+        histos.add("K0S/hInnerArrivalTimeDeltaPos", "hInnerArrivalTimeDeltaPos", kTH1D, {{axes.axisTimeDelta}});
+        histos.add("K0S/hOuterArrivalTimeDeltaNeg", "hOuterArrivalTimeDeltaNeg", kTH1D, {{axes.axisTimeDelta}});
+        histos.add("K0S/hOuterArrivalTimeDeltaPos", "hOuterArrivalTimeDeltaPos", kTH1D, {{axes.axisTimeDelta}});
+
+        histos.add("K0S/hInnerNSigmaNeg", "hInnerNSigmaNeg", kTH1D, {{axes.axisNSigma}});
+        histos.add("K0S/hInnerNSigmaPos", "hInnerNSigmaPos", kTH1D, {{axes.axisNSigma}});
+        histos.add("K0S/hOuterNSigmaNeg", "hOuterNSigmaNeg", kTH1D, {{axes.axisNSigma}});
+        histos.add("K0S/hOuterNSigmaPos", "hOuterNSigmaPos", kTH1D, {{axes.axisNSigma}});
+
+        histos.add("K0S/hInnerExpectedArrivalTimeNeg", "hInnerExpectedArrivalTimeNeg", kTH1D, {{axes.axisTime}});
+        histos.add("K0S/hInnerExpectedArrivalTimePos", "hInnerExpectedArrivalTimePos", kTH1D, {{axes.axisTime}});
+        histos.add("K0S/hOuterExpectedArrivalTimeNeg", "hOuterExpectedArrivalTimeNeg", kTH1D, {{axes.axisTime}});
+        histos.add("K0S/hOuterExpectedArrivalTimePos", "hOuterExpectedArrivalTimePos", kTH1D, {{axes.axisTime}});
+
+        histos.add("K0S/hInnerMeasuredArrivalTimeNeg", "hInnerMeasuredArrivalTimeNeg", kTH1D, {{axes.axisTime}});
+        histos.add("K0S/hInnerMeasuredArrivalTimePos", "hInnerMeasuredArrivalTimePos", kTH1D, {{axes.axisTime}});
+        histos.add("K0S/hOuterMeasuredArrivalTimeNeg", "hOuterMeasuredArrivalTimeNeg", kTH1D, {{axes.axisTime}});
+        histos.add("K0S/hOuterMeasuredArrivalTimePos", "hOuterMeasuredArrivalTimePos", kTH1D, {{axes.axisTime}});
+
+        histos.add("K0S/hInnerMeasuredVsExpectedArrivalTimeNeg", "hInnerMeasuredVsExpectedArrivalTimeNeg;Measured time (ps);Expected time (ps)", kTH2D, {{axes.axisTime}, {axes.axisTime}});
+        histos.add("K0S/hInnerMeasuredVsExpectedArrivalTimePos", "hInnerMeasuredVsExpectedArrivalTimePos;Measured time (ps);Expected time (ps)", kTH2D, {{axes.axisTime}, {axes.axisTime}});
+        histos.add("K0S/hOuterMeasuredVsExpectedArrivalTimeNeg", "hOuterMeasuredVsExpectedArrivalTimeNeg;Measured time (ps);Expected time (ps)", kTH2D, {{axes.axisTime}, {axes.axisTime}});
+        histos.add("K0S/hOuterMeasuredVsExpectedArrivalTimePos", "hOuterMeasuredVsExpectedArrivalTimePos;Measured time (ps);Expected time (ps)", kTH2D, {{axes.axisTime}, {axes.axisTime}});
+      }
+      if (produce.histosLambda) {
+        histos.add("Lambda/hInnerArrivalTimeDeltaNeg", "hInnerArrivalTimeDeltaNeg", kTH1D, {{axes.axisTimeDelta}});
+        histos.add("Lambda/hInnerArrivalTimeDeltaPos", "hInnerArrivalTimeDeltaPos", kTH1D, {{axes.axisTimeDelta}});
+        histos.add("Lambda/hOuterArrivalTimeDeltaNeg", "hOuterArrivalTimeDeltaNeg", kTH1D, {{axes.axisTimeDelta}});
+        histos.add("Lambda/hOuterArrivalTimeDeltaPos", "hOuterArrivalTimeDeltaPos", kTH1D, {{axes.axisTimeDelta}});
+
+        histos.add("Lambda/hInnerNSigmaNeg", "hInnerNSigmaNeg", kTH1D, {{axes.axisNSigma}});
+        histos.add("Lambda/hInnerNSigmaPos", "hInnerNSigmaPos", kTH1D, {{axes.axisNSigma}});
+        histos.add("Lambda/hOuterNSigmaNeg", "hOuterNSigmaNeg", kTH1D, {{axes.axisNSigma}});
+        histos.add("Lambda/hOuterNSigmaPos", "hOuterNSigmaPos", kTH1D, {{axes.axisNSigma}});
+
+        histos.add("Lambda/hInnerExpectedArrivalTimeNeg", "hInnerExpectedArrivalTimeNeg", kTH1D, {{axes.axisTime}});
+        histos.add("Lambda/hInnerExpectedArrivalTimePos", "hInnerExpectedArrivalTimePos", kTH1D, {{axes.axisTime}});
+        histos.add("Lambda/hOuterExpectedArrivalTimeNeg", "hOuterExpectedArrivalTimeNeg", kTH1D, {{axes.axisTime}});
+        histos.add("Lambda/hOuterExpectedArrivalTimePos", "hOuterExpectedArrivalTimePos", kTH1D, {{axes.axisTime}});
+
+        histos.add("Lambda/hInnerMeasuredArrivalTimeNeg", "hInnerMeasuredArrivalTimeNeg", kTH1D, {{axes.axisTime}});
+        histos.add("Lambda/hInnerMeasuredArrivalTimePos", "hInnerMeasuredArrivalTimePos", kTH1D, {{axes.axisTime}});
+        histos.add("Lambda/hOuterMeasuredArrivalTimeNeg", "hOuterMeasuredArrivalTimeNeg", kTH1D, {{axes.axisTime}});
+        histos.add("Lambda/hOuterMeasuredArrivalTimePos", "hOuterMeasuredArrivalTimePos", kTH1D, {{axes.axisTime}});
+
+        histos.add("Lambda/hInnerMeasuredVsExpectedArrivalTimeNeg", "hInnerMeasuredVsExpectedArrivalTimeNeg;Measured time (ps);Expected time (ps)", kTH2D, {{axes.axisTime}, {axes.axisTime}});
+        histos.add("Lambda/hInnerMeasuredVsExpectedArrivalTimePos", "hInnerMeasuredVsExpectedArrivalTimePos;Measured time (ps);Expected time (ps)", kTH2D, {{axes.axisTime}, {axes.axisTime}});
+        histos.add("Lambda/hOuterMeasuredVsExpectedArrivalTimeNeg", "hOuterMeasuredVsExpectedArrivalTimeNeg;Measured time (ps);Expected time (ps)", kTH2D, {{axes.axisTime}, {axes.axisTime}});
+        histos.add("Lambda/hOuterMeasuredVsExpectedArrivalTimePos", "hOuterMeasuredVsExpectedArrivalTimePos;Measured time (ps);Expected time (ps)", kTH2D, {{axes.axisTime}, {axes.axisTime}});
+      }
+      if (produce.histosAntiLambda) {
+        histos.add("AntiLambda/hInnerArrivalTimeDeltaNeg", "hInnerArrivalTimeDeltaNeg", kTH1D, {{axes.axisTimeDelta}});
+        histos.add("AntiLambda/hInnerArrivalTimeDeltaPos", "hInnerArrivalTimeDeltaPos", kTH1D, {{axes.axisTimeDelta}});
+        histos.add("AntiLambda/hOuterArrivalTimeDeltaNeg", "hOuterArrivalTimeDeltaNeg", kTH1D, {{axes.axisTimeDelta}});
+        histos.add("AntiLambda/hOuterArrivalTimeDeltaPos", "hOuterArrivalTimeDeltaPos", kTH1D, {{axes.axisTimeDelta}});
+
+        histos.add("AntiLambda/hInnerNSigmaNeg", "hInnerNSigmaNeg", kTH1D, {{axes.axisNSigma}});
+        histos.add("AntiLambda/hInnerNSigmaPos", "hInnerNSigmaPos", kTH1D, {{axes.axisNSigma}});
+        histos.add("AntiLambda/hOuterNSigmaNeg", "hOuterNSigmaNeg", kTH1D, {{axes.axisNSigma}});
+        histos.add("AntiLambda/hOuterNSigmaPos", "hOuterNSigmaPos", kTH1D, {{axes.axisNSigma}});
+
+        histos.add("AntiLambda/hInnerExpectedArrivalTimeNeg", "hInnerExpectedArrivalTimeNeg", kTH1D, {{axes.axisTime}});
+        histos.add("AntiLambda/hInnerExpectedArrivalTimePos", "hInnerExpectedArrivalTimePos", kTH1D, {{axes.axisTime}});
+        histos.add("AntiLambda/hOuterExpectedArrivalTimeNeg", "hOuterExpectedArrivalTimeNeg", kTH1D, {{axes.axisTime}});
+        histos.add("AntiLambda/hOuterExpectedArrivalTimePos", "hOuterExpectedArrivalTimePos", kTH1D, {{axes.axisTime}});
+
+        histos.add("AntiLambda/hInnerMeasuredArrivalTimeNeg", "hInnerMeasuredArrivalTimeNeg", kTH1D, {{axes.axisTime}});
+        histos.add("AntiLambda/hInnerMeasuredArrivalTimePos", "hInnerMeasuredArrivalTimePos", kTH1D, {{axes.axisTime}});
+        histos.add("AntiLambda/hOuterMeasuredArrivalTimeNeg", "hOuterMeasuredArrivalTimeNeg", kTH1D, {{axes.axisTime}});
+        histos.add("AntiLambda/hOuterMeasuredArrivalTimePos", "hOuterMeasuredArrivalTimePos", kTH1D, {{axes.axisTime}});
+
+        histos.add("AntiLambda/hInnerMeasuredVsExpectedArrivalTimeNeg", "hInnerMeasuredVsExpectedArrivalTimeNeg;Measured time (ps);Expected time (ps)", kTH2D, {{axes.axisTime}, {axes.axisTime}});
+        histos.add("AntiLambda/hInnerMeasuredVsExpectedArrivalTimePos", "hInnerMeasuredVsExpectedArrivalTimePos;Measured time (ps);Expected time (ps)", kTH2D, {{axes.axisTime}, {axes.axisTime}});
+        histos.add("AntiLambda/hOuterMeasuredVsExpectedArrivalTimeNeg", "hOuterMeasuredVsExpectedArrivalTimeNeg;Measured time (ps);Expected time (ps)", kTH2D, {{axes.axisTime}, {axes.axisTime}});
+        histos.add("AntiLambda/hOuterMeasuredVsExpectedArrivalTimePos", "hOuterMeasuredVsExpectedArrivalTimePos;Measured time (ps);Expected time (ps)", kTH2D, {{axes.axisTime}, {axes.axisTime}});
+      }
+    }
 
     if (doprocessCascades) {
       if (produce.histosXi) {
@@ -284,6 +388,187 @@ struct Alice3StrangenessTofPid {
     histos.print();
   }
 
+  void processV0s(Alice3Collision const& collision, FullV0Candidates const& v0Candidates, Alice3Tracks const&, aod::McParticles const&, aod::McCollisions const&)
+  {
+    const std::array<float, 3> vtx = {collision.posX(), collision.posY(), collision.posZ()};
+    const auto mcCollision = collision.template mcCollision_as<aod::McCollisions>();
+    for (const auto& v0 : v0Candidates) {
+      const std::array<float, 3> v0SV = {v0.x(), v0.y(), v0.z()};
+      const std::array<float, 3> v0P = {v0.px(), v0.py(), v0.pz()};
+      o2::track::TrackParCov trackParCovV0(v0SV, v0P, ParentTrackCovMatrix, ChargeV0);
+
+      const auto posTrack = v0.template posTrack_as<Alice3Tracks>();
+      const auto posParticle = posTrack.template mcParticle_as<aod::McParticles>();
+      o2::track::TrackParCov positive = getTrackParCov(posTrack);
+
+      const auto negTrack = v0.template negTrack_as<Alice3Tracks>();
+      const auto negParticle = negTrack.template mcParticle_as<aod::McParticles>();
+      o2::track::TrackParCov negative = getTrackParCov(negTrack);
+
+      tofPidV0.reset();
+      tofPidV0.setTrack(TrackType::Positive, positive, mcCollision.t() + posParticle.vt(), pdgDB->Mass(posParticle.pdgCode()));
+      tofPidV0.setTrack(TrackType::Negative, negative, mcCollision.t() + negParticle.vt(), pdgDB->Mass(negParticle.pdgCode()));
+      tofPidV0.setTrack(TrackType::V0, trackParCovV0); // no track time
+
+      V0TofResults straTofResultsK0S{}, straTofResultsLambda{}, straTofResultsAntiLambda{};
+      straTofResultsK0S = tofPidV0.findNSigmas<CandidateType::K0S>(vtx, v0SV);
+      straTofResultsLambda = tofPidV0.findNSigmas<CandidateType::Lambda>(vtx, v0SV);
+      straTofResultsAntiLambda = tofPidV0.findNSigmas<CandidateType::AntiLambda>(vtx, v0SV);
+
+      if (produce.histosK0S) {
+        if (straTofResultsK0S.pos.hasInnerTof) {
+          histos.fill(HIST("K0S/hInnerArrivalTimeDeltaPos"), (straTofResultsK0S.pos.measuredTimeInner - straTofResultsK0S.pos.expectedTimeInner) * NanoToPico);
+          histos.fill(HIST("K0S/hInnerNSigmaPos"), straTofResultsK0S.pos.nSigmaInner);
+          histos.fill(HIST("K0S/hInnerExpectedArrivalTimePos"), straTofResultsK0S.pos.expectedTimeInner * NanoToPico);
+          histos.fill(HIST("K0S/hInnerMeasuredArrivalTimePos"), straTofResultsK0S.pos.measuredTimeInner * NanoToPico);
+          histos.fill(HIST("K0S/hInnerMeasuredVsExpectedArrivalTimePos"), straTofResultsK0S.pos.measuredTimeInner * NanoToPico, straTofResultsK0S.pos.expectedTimeInner * NanoToPico);
+        }
+        if (straTofResultsK0S.neg.hasInnerTof) {
+          histos.fill(HIST("K0S/hInnerArrivalTimeDeltaNeg"), (straTofResultsK0S.neg.measuredTimeInner - straTofResultsK0S.neg.expectedTimeInner) * NanoToPico);
+          histos.fill(HIST("K0S/hInnerNSigmaNeg"), straTofResultsK0S.neg.nSigmaInner);
+          histos.fill(HIST("K0S/hInnerExpectedArrivalTimeNeg"), straTofResultsK0S.neg.expectedTimeInner * NanoToPico);
+          histos.fill(HIST("K0S/hInnerMeasuredArrivalTimeNeg"), straTofResultsK0S.neg.measuredTimeInner * NanoToPico);
+          histos.fill(HIST("K0S/hInnerMeasuredVsExpectedArrivalTimeNeg"), straTofResultsK0S.neg.measuredTimeInner * NanoToPico, straTofResultsK0S.neg.expectedTimeInner * NanoToPico);
+        }
+        if (straTofResultsK0S.pos.hasOuterTof) {
+          histos.fill(HIST("K0S/hOuterArrivalTimeDeltaPos"), (straTofResultsK0S.pos.measuredTimeOuter - straTofResultsK0S.pos.expectedTimeOuter) * NanoToPico);
+          histos.fill(HIST("K0S/hOuterNSigmaPos"), straTofResultsK0S.pos.nSigmaOuter);
+          histos.fill(HIST("K0S/hOuterExpectedArrivalTimePos"), straTofResultsK0S.pos.expectedTimeOuter * NanoToPico);
+          histos.fill(HIST("K0S/hOuterMeasuredArrivalTimePos"), straTofResultsK0S.pos.measuredTimeOuter * NanoToPico);
+          histos.fill(HIST("K0S/hOuterMeasuredVsExpectedArrivalTimePos"), straTofResultsK0S.pos.measuredTimeOuter * NanoToPico, straTofResultsK0S.pos.expectedTimeOuter * NanoToPico);
+        }
+        if (straTofResultsK0S.neg.hasOuterTof) {
+          histos.fill(HIST("K0S/hOuterArrivalTimeDeltaNeg"), (straTofResultsK0S.neg.measuredTimeOuter - straTofResultsK0S.neg.expectedTimeOuter) * NanoToPico);
+          histos.fill(HIST("K0S/hOuterNSigmaNeg"), straTofResultsK0S.neg.nSigmaOuter);
+          histos.fill(HIST("K0S/hOuterExpectedArrivalTimeNeg"), straTofResultsK0S.neg.expectedTimeOuter * NanoToPico);
+          histos.fill(HIST("K0S/hOuterMeasuredArrivalTimeNeg"), straTofResultsK0S.neg.measuredTimeOuter * NanoToPico);
+          histos.fill(HIST("K0S/hOuterMeasuredVsExpectedArrivalTimeNeg"), straTofResultsK0S.neg.measuredTimeOuter * NanoToPico, straTofResultsK0S.neg.expectedTimeOuter * NanoToPico);
+        }
+      }
+      if (produce.histosLambda) {
+        if (straTofResultsLambda.pos.hasInnerTof) {
+          histos.fill(HIST("Lambda/hInnerArrivalTimeDeltaPos"), (straTofResultsLambda.pos.measuredTimeInner - straTofResultsLambda.pos.expectedTimeInner) * NanoToPico);
+          histos.fill(HIST("Lambda/hInnerNSigmaPos"), straTofResultsLambda.pos.nSigmaInner);
+          histos.fill(HIST("Lambda/hInnerExpectedArrivalTimePos"), straTofResultsLambda.pos.expectedTimeInner * NanoToPico);
+          histos.fill(HIST("Lambda/hInnerMeasuredArrivalTimePos"), straTofResultsLambda.pos.measuredTimeInner * NanoToPico);
+          histos.fill(HIST("Lambda/hInnerMeasuredVsExpectedArrivalTimePos"), straTofResultsLambda.pos.measuredTimeInner * NanoToPico, straTofResultsLambda.pos.expectedTimeInner * NanoToPico);
+        }
+        if (straTofResultsLambda.neg.hasInnerTof) {
+          histos.fill(HIST("Lambda/hInnerArrivalTimeDeltaNeg"), (straTofResultsLambda.neg.measuredTimeInner - straTofResultsLambda.neg.expectedTimeInner) * NanoToPico);
+          histos.fill(HIST("Lambda/hInnerNSigmaNeg"), straTofResultsLambda.neg.nSigmaInner);
+          histos.fill(HIST("Lambda/hInnerExpectedArrivalTimeNeg"), straTofResultsLambda.neg.expectedTimeInner * NanoToPico);
+          histos.fill(HIST("Lambda/hInnerMeasuredArrivalTimeNeg"), straTofResultsLambda.neg.measuredTimeInner * NanoToPico);
+          histos.fill(HIST("Lambda/hInnerMeasuredVsExpectedArrivalTimeNeg"), straTofResultsLambda.neg.measuredTimeInner * NanoToPico, straTofResultsLambda.neg.expectedTimeInner * NanoToPico);
+        }
+        if (straTofResultsLambda.pos.hasOuterTof) {
+          histos.fill(HIST("Lambda/hOuterArrivalTimeDeltaPos"), (straTofResultsLambda.pos.measuredTimeOuter - straTofResultsLambda.pos.expectedTimeOuter) * NanoToPico);
+          histos.fill(HIST("Lambda/hOuterNSigmaPos"), straTofResultsLambda.pos.nSigmaOuter);
+          histos.fill(HIST("Lambda/hOuterExpectedArrivalTimePos"), straTofResultsLambda.pos.expectedTimeOuter * NanoToPico);
+          histos.fill(HIST("Lambda/hOuterMeasuredArrivalTimePos"), straTofResultsLambda.pos.measuredTimeOuter * NanoToPico);
+          histos.fill(HIST("Lambda/hOuterMeasuredVsExpectedArrivalTimePos"), straTofResultsLambda.pos.measuredTimeOuter * NanoToPico, straTofResultsLambda.pos.expectedTimeOuter * NanoToPico);
+        }
+        if (straTofResultsLambda.neg.hasOuterTof) {
+          histos.fill(HIST("Lambda/hOuterArrivalTimeDeltaNeg"), (straTofResultsLambda.neg.measuredTimeOuter - straTofResultsLambda.neg.expectedTimeOuter) * NanoToPico);
+          histos.fill(HIST("Lambda/hOuterNSigmaNeg"), straTofResultsLambda.neg.nSigmaOuter);
+          histos.fill(HIST("Lambda/hOuterExpectedArrivalTimeNeg"), straTofResultsLambda.neg.expectedTimeOuter * NanoToPico);
+          histos.fill(HIST("Lambda/hOuterMeasuredArrivalTimeNeg"), straTofResultsLambda.neg.measuredTimeOuter * NanoToPico);
+          histos.fill(HIST("Lambda/hOuterMeasuredVsExpectedArrivalTimeNeg"), straTofResultsLambda.neg.measuredTimeOuter * NanoToPico, straTofResultsLambda.neg.expectedTimeOuter * NanoToPico);
+        }
+      }
+      if (produce.histosAntiLambda) {
+        if (straTofResultsAntiLambda.pos.hasInnerTof) {
+          histos.fill(HIST("AntiLambda/hInnerArrivalTimeDeltaPos"), (straTofResultsAntiLambda.pos.measuredTimeInner - straTofResultsAntiLambda.pos.expectedTimeInner) * NanoToPico);
+          histos.fill(HIST("AntiLambda/hInnerNSigmaPos"), straTofResultsAntiLambda.pos.nSigmaInner);
+          histos.fill(HIST("AntiLambda/hInnerExpectedArrivalTimePos"), straTofResultsAntiLambda.pos.expectedTimeInner * NanoToPico);
+          histos.fill(HIST("AntiLambda/hInnerMeasuredArrivalTimePos"), straTofResultsAntiLambda.pos.measuredTimeInner * NanoToPico);
+          histos.fill(HIST("AntiLambda/hInnerMeasuredVsExpectedArrivalTimePos"), straTofResultsAntiLambda.pos.measuredTimeInner * NanoToPico, straTofResultsAntiLambda.pos.expectedTimeInner * NanoToPico);
+        }
+        if (straTofResultsAntiLambda.neg.hasInnerTof) {
+          histos.fill(HIST("AntiLambda/hInnerArrivalTimeDeltaNeg"), (straTofResultsAntiLambda.neg.measuredTimeInner - straTofResultsAntiLambda.neg.expectedTimeInner) * NanoToPico);
+          histos.fill(HIST("AntiLambda/hInnerNSigmaNeg"), straTofResultsAntiLambda.neg.nSigmaInner);
+          histos.fill(HIST("AntiLambda/hInnerExpectedArrivalTimeNeg"), straTofResultsAntiLambda.neg.expectedTimeInner * NanoToPico);
+          histos.fill(HIST("AntiLambda/hInnerMeasuredArrivalTimeNeg"), straTofResultsAntiLambda.neg.measuredTimeInner * NanoToPico);
+          histos.fill(HIST("AntiLambda/hInnerMeasuredVsExpectedArrivalTimeNeg"), straTofResultsAntiLambda.neg.measuredTimeInner * NanoToPico, straTofResultsAntiLambda.neg.expectedTimeInner * NanoToPico);
+        }
+        if (straTofResultsAntiLambda.pos.hasOuterTof) {
+          histos.fill(HIST("AntiLambda/hOuterArrivalTimeDeltaPos"), (straTofResultsAntiLambda.pos.measuredTimeOuter - straTofResultsAntiLambda.pos.expectedTimeOuter) * NanoToPico);
+          histos.fill(HIST("AntiLambda/hOuterNSigmaPos"), straTofResultsAntiLambda.pos.nSigmaOuter);
+          histos.fill(HIST("AntiLambda/hOuterExpectedArrivalTimePos"), straTofResultsAntiLambda.pos.expectedTimeOuter * NanoToPico);
+          histos.fill(HIST("AntiLambda/hOuterMeasuredArrivalTimePos"), straTofResultsAntiLambda.pos.measuredTimeOuter * NanoToPico);
+          histos.fill(HIST("AntiLambda/hOuterMeasuredVsExpectedArrivalTimePos"), straTofResultsAntiLambda.pos.measuredTimeOuter * NanoToPico, straTofResultsAntiLambda.pos.expectedTimeOuter * NanoToPico);
+        }
+        if (straTofResultsAntiLambda.neg.hasOuterTof) {
+          histos.fill(HIST("AntiLambda/hOuterArrivalTimeDeltaNeg"), (straTofResultsAntiLambda.neg.measuredTimeOuter - straTofResultsAntiLambda.neg.expectedTimeOuter) * NanoToPico);
+          histos.fill(HIST("AntiLambda/hOuterNSigmaNeg"), straTofResultsAntiLambda.neg.nSigmaOuter);
+          histos.fill(HIST("AntiLambda/hOuterExpectedArrivalTimeNeg"), straTofResultsAntiLambda.neg.expectedTimeOuter * NanoToPico);
+          histos.fill(HIST("AntiLambda/hOuterMeasuredArrivalTimeNeg"), straTofResultsAntiLambda.neg.measuredTimeOuter * NanoToPico);
+          histos.fill(HIST("AntiLambda/hOuterMeasuredVsExpectedArrivalTimeNeg"), straTofResultsAntiLambda.neg.measuredTimeOuter * NanoToPico, straTofResultsAntiLambda.neg.expectedTimeOuter * NanoToPico);
+        }
+      }
+
+      if (produce.tableInnerNSigmaK0S) {
+        tableA3K0SInnerTofPid(
+          (straTofResultsK0S.pos.hasInnerTof) ? straTofResultsK0S.pos.nSigmaInner : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsK0S.neg.hasInnerTof) ? straTofResultsK0S.neg.nSigmaInner : o2::upgrade::pid::NoPidSignal);
+      }
+      if (produce.tableOuterNSigmaK0S) {
+        tableA3K0SOuterTofPid(
+          (straTofResultsK0S.pos.hasOuterTof) ? straTofResultsK0S.pos.nSigmaOuter : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsK0S.neg.hasOuterTof) ? straTofResultsK0S.neg.nSigmaOuter : o2::upgrade::pid::NoPidSignal);
+      }
+      if (produce.tableInnerNSigmaLambda) {
+        tableA3LambdaInnerTofPid(
+          (straTofResultsLambda.pos.hasInnerTof) ? straTofResultsLambda.pos.nSigmaInner : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsAntiLambda.pos.hasInnerTof) ? straTofResultsAntiLambda.pos.nSigmaInner : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsAntiLambda.neg.hasInnerTof) ? straTofResultsAntiLambda.neg.nSigmaInner : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsLambda.neg.hasInnerTof) ? straTofResultsLambda.neg.nSigmaInner : o2::upgrade::pid::NoPidSignal);
+      }
+      if (produce.tableOuterNSigmaLambda) {
+        tableA3LambdaOuterTofPid(
+          (straTofResultsLambda.pos.hasOuterTof) ? straTofResultsLambda.pos.nSigmaOuter : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsAntiLambda.pos.hasOuterTof) ? straTofResultsAntiLambda.pos.nSigmaOuter : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsAntiLambda.neg.hasOuterTof) ? straTofResultsAntiLambda.neg.nSigmaOuter : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsLambda.neg.hasOuterTof) ? straTofResultsLambda.neg.nSigmaOuter : o2::upgrade::pid::NoPidSignal);
+      }
+      if (produce.tableInnerExpectedTimesK0S) {
+        tableA3K0SExpectedInnerTimes(
+          straTofResultsK0S.pos.expectedTimeInner,
+          straTofResultsK0S.neg.expectedTimeInner,
+          straTofResultsK0S.pos.measuredTimeInner,
+          straTofResultsK0S.neg.measuredTimeInner);
+      }
+      if (produce.tableOuterExpectedTimesK0S) {
+        tableA3K0SExpectedOuterTimes(
+          straTofResultsK0S.pos.expectedTimeOuter,
+          straTofResultsK0S.neg.expectedTimeOuter,
+          straTofResultsK0S.pos.measuredTimeOuter,
+          straTofResultsK0S.neg.measuredTimeOuter);
+      }
+      if (produce.tableInnerExpectedTimesLambda) {
+        tableA3LambdaExpectedInnerTimes(
+          straTofResultsLambda.pos.expectedTimeInner,
+          straTofResultsAntiLambda.pos.expectedTimeInner,
+          straTofResultsAntiLambda.neg.expectedTimeInner,
+          straTofResultsLambda.neg.expectedTimeInner,
+          straTofResultsLambda.pos.measuredTimeInner,
+          straTofResultsAntiLambda.pos.measuredTimeInner,
+          straTofResultsAntiLambda.neg.measuredTimeInner,
+          straTofResultsLambda.neg.measuredTimeInner);
+      }
+      if (produce.tableOuterExpectedTimesLambda) {
+        tableA3LambdaExpectedOuterTimes(
+          straTofResultsLambda.pos.expectedTimeOuter,
+          straTofResultsAntiLambda.pos.expectedTimeOuter,
+          straTofResultsAntiLambda.neg.expectedTimeOuter,
+          straTofResultsLambda.neg.expectedTimeOuter,
+          straTofResultsLambda.pos.measuredTimeOuter,
+          straTofResultsAntiLambda.pos.measuredTimeOuter,
+          straTofResultsAntiLambda.neg.measuredTimeOuter,
+          straTofResultsLambda.neg.measuredTimeOuter);
+      }
+    }
+  }
+
   void processCascades(Alice3Collision const& collision, FullCascadeCandidates const& cascadeCandidates, Alice3Tracks const&, aod::McParticles const&, aod::McCollisions const&)
   {
     const std::array<float, 3> vtx = {collision.posX(), collision.posY(), collision.posZ()};
@@ -292,12 +577,11 @@ struct Alice3StrangenessTofPid {
       const std::array<float, 3> cascSV = {casc.x(), casc.y(), casc.z()};
       const std::array<float, 3> cascP = {casc.px(), casc.py(), casc.pz()};
       const int chargeCascade = (casc.sign() > 0) ? 1 : -1;
-      o2::track::TrackParCov cascade(cascSV, cascP, ParentTrackCovMatrix, chargeCascade);
+      o2::track::TrackParCov trackParCovCasc(cascSV, cascP, ParentTrackCovMatrix, chargeCascade);
 
       const std::array<float, 3> v0SV = {casc.xlambda(), casc.ylambda(), casc.zlambda()};
       const std::array<float, 3> v0P = {casc.pxpos() + casc.pxneg(), casc.pypos() + casc.pyneg(), casc.pzpos() + casc.pzneg()};
-      static constexpr int ChargeV0 = 0;
-      o2::track::TrackParCov v0(v0SV, v0P, ParentTrackCovMatrix, ChargeV0);
+      o2::track::TrackParCov trackParCovV0(v0SV, v0P, ParentTrackCovMatrix, ChargeV0);
 
       const auto bachTrack = casc.template bachelor_as<Alice3Tracks>();
       const auto bachParticle = bachTrack.template mcParticle_as<aod::McParticles>();
@@ -315,8 +599,8 @@ struct Alice3StrangenessTofPid {
       tofPidCasc.setTrack(TrackType::Positive, positive, mcCollision.t() + posParticle.vt(), pdgDB->Mass(posParticle.pdgCode()));
       tofPidCasc.setTrack(TrackType::Negative, negative, mcCollision.t() + negParticle.vt(), pdgDB->Mass(negParticle.pdgCode()));
       tofPidCasc.setTrack(TrackType::Bachelor, bachelor, mcCollision.t() + bachParticle.vt(), pdgDB->Mass(bachParticle.pdgCode()));
-      tofPidCasc.setTrack(TrackType::V0, v0);           // no track time
-      tofPidCasc.setTrack(TrackType::Cascade, cascade); // no track time
+      tofPidCasc.setTrack(TrackType::V0, trackParCovV0);        // no track time
+      tofPidCasc.setTrack(TrackType::Cascade, trackParCovCasc); // no track time
 
       CascTofResults straTofResultsXi{}, straTofResultsAntiXi{}, straTofResultsOmega{}, straTofResultsAntiOmega{};
       straTofResultsXi = tofPidCasc.findNSigmas<CandidateType::Xi>(vtx, cascSV, v0SV);
@@ -505,34 +789,34 @@ struct Alice3StrangenessTofPid {
       if (produce.tableInnerNSigmaXi) {
         tableA3XiInnerTofPid(
           (straTofResultsXi.bach.hasInnerTof) ? straTofResultsXi.bach.nSigmaInner : o2::upgrade::pid::NoPidSignal,
-          (straTofResultsXi.pos.hasInnerTof) ? straTofResultsXi.bach.nSigmaInner : o2::upgrade::pid::NoPidSignal,
-          (straTofResultsAntiXi.pos.hasInnerTof) ? straTofResultsAntiXi.bach.nSigmaInner : o2::upgrade::pid::NoPidSignal,
-          (straTofResultsAntiXi.neg.hasInnerTof) ? straTofResultsAntiXi.bach.nSigmaInner : o2::upgrade::pid::NoPidSignal,
-          (straTofResultsXi.neg.hasInnerTof) ? straTofResultsXi.bach.nSigmaInner : o2::upgrade::pid::NoPidSignal);
+          (straTofResultsXi.pos.hasInnerTof) ? straTofResultsXi.pos.nSigmaInner : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsAntiXi.pos.hasInnerTof) ? straTofResultsAntiXi.pos.nSigmaInner : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsAntiXi.neg.hasInnerTof) ? straTofResultsAntiXi.neg.nSigmaInner : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsXi.neg.hasInnerTof) ? straTofResultsXi.neg.nSigmaInner : o2::upgrade::pid::NoPidSignal);
       }
       if (produce.tableOuterNSigmaXi) {
         tableA3XiOuterTofPid(
           (straTofResultsXi.bach.hasOuterTof) ? straTofResultsXi.bach.nSigmaOuter : o2::upgrade::pid::NoPidSignal,
-          (straTofResultsXi.pos.hasOuterTof) ? straTofResultsXi.bach.nSigmaOuter : o2::upgrade::pid::NoPidSignal,
-          (straTofResultsAntiXi.pos.hasOuterTof) ? straTofResultsAntiXi.bach.nSigmaOuter : o2::upgrade::pid::NoPidSignal,
-          (straTofResultsAntiXi.neg.hasOuterTof) ? straTofResultsAntiXi.bach.nSigmaOuter : o2::upgrade::pid::NoPidSignal,
-          (straTofResultsXi.neg.hasOuterTof) ? straTofResultsXi.bach.nSigmaOuter : o2::upgrade::pid::NoPidSignal);
+          (straTofResultsXi.pos.hasOuterTof) ? straTofResultsXi.pos.nSigmaOuter : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsAntiXi.pos.hasOuterTof) ? straTofResultsAntiXi.pos.nSigmaOuter : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsAntiXi.neg.hasOuterTof) ? straTofResultsAntiXi.neg.nSigmaOuter : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsXi.neg.hasOuterTof) ? straTofResultsXi.neg.nSigmaOuter : o2::upgrade::pid::NoPidSignal);
       }
       if (produce.tableInnerNSigmaOmega) {
         tableA3OmegaInnerTofPid(
           (straTofResultsOmega.bach.hasInnerTof) ? straTofResultsOmega.bach.nSigmaInner : o2::upgrade::pid::NoPidSignal,
-          (straTofResultsOmega.pos.hasInnerTof) ? straTofResultsOmega.bach.nSigmaInner : o2::upgrade::pid::NoPidSignal,
-          (straTofResultsAntiOmega.pos.hasInnerTof) ? straTofResultsAntiOmega.bach.nSigmaInner : o2::upgrade::pid::NoPidSignal,
-          (straTofResultsAntiOmega.neg.hasInnerTof) ? straTofResultsAntiOmega.bach.nSigmaInner : o2::upgrade::pid::NoPidSignal,
-          (straTofResultsOmega.neg.hasInnerTof) ? straTofResultsOmega.bach.nSigmaInner : o2::upgrade::pid::NoPidSignal);
+          (straTofResultsOmega.pos.hasInnerTof) ? straTofResultsOmega.pos.nSigmaInner : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsAntiOmega.pos.hasInnerTof) ? straTofResultsAntiOmega.pos.nSigmaInner : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsAntiOmega.neg.hasInnerTof) ? straTofResultsAntiOmega.neg.nSigmaInner : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsOmega.neg.hasInnerTof) ? straTofResultsOmega.neg.nSigmaInner : o2::upgrade::pid::NoPidSignal);
       }
       if (produce.tableOuterNSigmaOmega) {
         tableA3OmegaOuterTofPid(
           (straTofResultsOmega.bach.hasOuterTof) ? straTofResultsOmega.bach.nSigmaOuter : o2::upgrade::pid::NoPidSignal,
-          (straTofResultsOmega.pos.hasOuterTof) ? straTofResultsOmega.bach.nSigmaOuter : o2::upgrade::pid::NoPidSignal,
-          (straTofResultsAntiOmega.pos.hasOuterTof) ? straTofResultsAntiOmega.bach.nSigmaOuter : o2::upgrade::pid::NoPidSignal,
-          (straTofResultsAntiOmega.neg.hasOuterTof) ? straTofResultsAntiOmega.bach.nSigmaOuter : o2::upgrade::pid::NoPidSignal,
-          (straTofResultsOmega.neg.hasOuterTof) ? straTofResultsOmega.bach.nSigmaOuter : o2::upgrade::pid::NoPidSignal);
+          (straTofResultsOmega.pos.hasOuterTof) ? straTofResultsOmega.pos.nSigmaOuter : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsAntiOmega.pos.hasOuterTof) ? straTofResultsAntiOmega.pos.nSigmaOuter : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsAntiOmega.neg.hasOuterTof) ? straTofResultsAntiOmega.neg.nSigmaOuter : o2::upgrade::pid::NoPidSignal,
+          (straTofResultsOmega.neg.hasOuterTof) ? straTofResultsOmega.neg.nSigmaOuter : o2::upgrade::pid::NoPidSignal);
       }
 
       if (produce.tableInnerExpectedTimesXi) {
@@ -590,6 +874,7 @@ struct Alice3StrangenessTofPid {
     }
   }
 
+  PROCESS_SWITCH(Alice3StrangenessTofPid, processV0s, "", true);
   PROCESS_SWITCH(Alice3StrangenessTofPid, processCascades, "", true);
 };
 
