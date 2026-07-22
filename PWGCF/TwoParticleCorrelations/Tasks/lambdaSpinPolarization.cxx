@@ -413,7 +413,6 @@ struct LambdaTableProducer {
 
   // Initialize Global Variables
   float cent = 0., mult = 0.;
-  float pt = 0., eta = 0., rap = 0., phi = 0.;
 
   void init(InitContext const&)
   {
@@ -926,6 +925,7 @@ struct LambdaTableProducer {
     PrmScdType v0PrmScdType = kPrimary;
     float mass = 0., corr_fact = 1.;
     float prPx = 0., prPy = 0., prPz = 0.;
+    float pt = 0., eta = 0., rap = 0., phi = 0.;
 
     for (auto const& v0 : v0tracks) {
       if constexpr (dmc == kMC) {
