@@ -1308,7 +1308,7 @@ struct LambdaSpinPolarization {
   Configurable<float> cMinRap{"cMinRap", -0.5f, "Rapidity min"};
   Configurable<float> cMaxRap{"cMaxRap", 0.5f, "Rapidity max"};
   Configurable<int> cNPhiBins{"cNPhiBins", 36, "N phi bins"};
-  Configurable<int> cNBinsCosTS{"cNBinsCosTS", 20, "N costheta* bins"};
+  Configurable<int> cNBinsCosTS{"cNBinsCosTS", 10, "N costheta* bins"};
   Configurable<int> cNBinsDeltaR{"cNBinsDeltaR", 20, "N DeltaR bins"};
 
   Configurable<float> cMassHistMin{"cMassHistMin", 1.08f, "Mass histogram min (GeV/c2)"};
@@ -1372,67 +1372,39 @@ struct LambdaSpinPolarization {
     const AxisSpec axisDRap(2 * cNRapBins, cMinRap - cMaxRap, cMaxRap - cMinRap, "#Deltay");
     const AxisSpec axisDPhi(cNPhiBins, -PI, PI, "#Delta#varphi");
     const AxisSpec axisCosTS(cNBinsCosTS, -1, 1, "cos(#theta*)");
-    const AxisSpec axisDR(cNBinsDeltaR, 0, 4, "#DeltaR");
-    const AxisSpec axisPosZ(220, -7, 7, "V_{z} (cm)");
+    const AxisSpec axisDR(cNBinsDeltaR, 0, 3.5, "#DeltaR");
+    const AxisSpec axisPosZ(200, -10, 10, "V_{z} (cm)");
     const AxisSpec axisMult(10, 0, 10, "N_{#Lambda}");
 
     histos.add("QA/ME/hPoolCentVz", "ME pool;cent (%);V_{z}", kTH2F, {axisCentME, axisVtxZME});
     histos.add("QA/ME/hLambdaMultVsCent", "ME #Lambda mult;cent;N", kTH2F, {axisCentME, {50, 0, 50}});
     histos.add("QA/ME/hAntiLambdaMultVsCent", "ME #bar{#Lambda} mult;cent;N", kTH2F, {axisCentME, {50, 0, 50}});
 
-    histos.add("SE/Reco/h2f_n2_mass_LaPLaM", "M_{inv}: #Lambda#bar{#Lambda} inclusive",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
-    histos.add("SE/Reco/h2f_n2_mass_LaMLaP", "M_{inv}: #bar{#Lambda}#Lambda inclusive",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
-    histos.add("SE/Reco/h2f_n2_mass_LaPLaP", "M_{inv}: #Lambda#Lambda inclusive",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
-    histos.add("SE/Reco/h2f_n2_mass_LaMLaM", "M_{inv}: #bar{#Lambda}#bar{#Lambda} inclusive",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
+    const std::vector<AxisSpec> massSparseAxes = {axisCent, axisMass, axisMass, axisPt, axisPt,
+                                                  axisDRap, axisDPhi, axisDR, axisCosTS};
 
-    histos.add("SE/RecoBkgSigSB/h2f_n2_mass_LaPLaM", "M_{inv}: #Lambda#bar{#Lambda} Sig#timesSB",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
-    histos.add("SE/RecoBkgSigSB/h2f_n2_mass_LaMLaP", "M_{inv}: #bar{#Lambda}#Lambda Sig#timesSB",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
-    histos.add("SE/RecoBkgSigSB/h2f_n2_mass_LaPLaP", "M_{inv}: #Lambda#Lambda Sig#timesSB",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
-    histos.add("SE/RecoBkgSigSB/h2f_n2_mass_LaMLaM", "M_{inv}: #bar{#Lambda}#bar{#Lambda} Sig#timesSB",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
+    histos.add("SE/Reco/Star/h2f_n2_mass_LaPLaM", "M_{inv}: #Lambda#bar{#Lambda} inclusive", kTHnSparseF, massSparseAxes);
+    histos.add("SE/Reco/Star/h2f_n2_mass_LaMLaP", "M_{inv}: #bar{#Lambda}#Lambda inclusive", kTHnSparseF, massSparseAxes);
+    histos.add("SE/Reco/Star/h2f_n2_mass_LaPLaP", "M_{inv}: #Lambda#Lambda inclusive", kTHnSparseF, massSparseAxes);
+    histos.add("SE/Reco/Star/h2f_n2_mass_LaMLaM", "M_{inv}: #bar{#Lambda}#bar{#Lambda} inclusive", kTHnSparseF, massSparseAxes);
 
-    histos.add("SE/RecoBkgSBSB/h2f_n2_mass_LaPLaM", "M_{inv}: #Lambda#bar{#Lambda} SB#timesSB",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
-    histos.add("SE/RecoBkgSBSB/h2f_n2_mass_LaMLaP", "M_{inv}: #bar{#Lambda}#Lambda SB#timesSB",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
-    histos.add("SE/RecoBkgSBSB/h2f_n2_mass_LaPLaP", "M_{inv}: #Lambda#Lambda SB#timesSB",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
-    histos.add("SE/RecoBkgSBSB/h2f_n2_mass_LaMLaM", "M_{inv}: #bar{#Lambda}#bar{#Lambda} SB#timesSB",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
+    histos.add("SE/RecoBkgSigSB/Star/h2f_n2_mass_LaPLaM", "M_{inv}: #Lambda#bar{#Lambda} Sig#timesSB", kTHnSparseF, massSparseAxes);
+    histos.add("SE/RecoBkgSigSB/Star/h2f_n2_mass_LaMLaP", "M_{inv}: #bar{#Lambda}#Lambda Sig#timesSB", kTHnSparseF, massSparseAxes);
+    histos.add("SE/RecoBkgSigSB/Star/h2f_n2_mass_LaPLaP", "M_{inv}: #Lambda#Lambda Sig#timesSB", kTHnSparseF, massSparseAxes);
+    histos.add("SE/RecoBkgSigSB/Star/h2f_n2_mass_LaMLaM", "M_{inv}: #bar{#Lambda}#bar{#Lambda} Sig#timesSB", kTHnSparseF, massSparseAxes);
 
-    histos.add("ME/Reco/h2f_n2_mass_LaPLaM", "M_{inv}: #Lambda#bar{#Lambda} inclusive",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
-    histos.add("ME/Reco/h2f_n2_mass_LaMLaP", "M_{inv}: #bar{#Lambda}#Lambda inclusive",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
-    histos.add("ME/Reco/h2f_n2_mass_LaPLaP", "M_{inv}: #Lambda#Lambda inclusive",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
-    histos.add("ME/Reco/h2f_n2_mass_LaMLaM", "M_{inv}: #bar{#Lambda}#bar{#Lambda} inclusive",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
+    histos.add("SE/RecoBkgSBSB/Star/h2f_n2_mass_LaPLaM", "M_{inv}: #Lambda#bar{#Lambda} SB#timesSB", kTHnSparseF, massSparseAxes);
+    histos.add("SE/RecoBkgSBSB/Star/h2f_n2_mass_LaMLaP", "M_{inv}: #bar{#Lambda}#Lambda SB#timesSB", kTHnSparseF, massSparseAxes);
+    histos.add("SE/RecoBkgSBSB/Star/h2f_n2_mass_LaPLaP", "M_{inv}: #Lambda#Lambda SB#timesSB", kTHnSparseF, massSparseAxes);
+    histos.add("SE/RecoBkgSBSB/Star/h2f_n2_mass_LaMLaM", "M_{inv}: #bar{#Lambda}#bar{#Lambda} SB#timesSB", kTHnSparseF, massSparseAxes);
 
-    histos.add("ME/RecoBkgSigSB/h2f_n2_mass_LaPLaM", "M_{inv}: #Lambda#bar{#Lambda} Sig#timesSB",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
-    histos.add("ME/RecoBkgSigSB/h2f_n2_mass_LaMLaP", "M_{inv}: #bar{#Lambda}#Lambda Sig#timesSB",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
-    histos.add("ME/RecoBkgSigSB/h2f_n2_mass_LaPLaP", "M_{inv}: #Lambda#Lambda Sig#timesSB",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
-    histos.add("ME/RecoBkgSigSB/h2f_n2_mass_LaMLaM", "M_{inv}: #bar{#Lambda}#bar{#Lambda} Sig#timesSB",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
+    histos.addClone("SE/Reco/Star/", "SE/Reco/Atlas/");
+    histos.addClone("SE/RecoBkgSigSB/Star/", "SE/RecoBkgSigSB/Atlas/");
+    histos.addClone("SE/RecoBkgSBSB/Star/", "SE/RecoBkgSBSB/Atlas/");
 
-    histos.add("ME/RecoBkgSBSB/h2f_n2_mass_LaPLaM", "M_{inv}: #Lambda#bar{#Lambda} SB#timesSB",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
-    histos.add("ME/RecoBkgSBSB/h2f_n2_mass_LaMLaP", "M_{inv}: #bar{#Lambda}#Lambda SB#timesSB",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
-    histos.add("ME/RecoBkgSBSB/h2f_n2_mass_LaPLaP", "M_{inv}: #Lambda#Lambda SB#timesSB",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
-    histos.add("ME/RecoBkgSBSB/h2f_n2_mass_LaMLaM", "M_{inv}: #bar{#Lambda}#bar{#Lambda} SB#timesSB",
-               kTHnSparseF, {axisMass, axisMass, axisPt, axisPt, axisDRap, axisDPhi, axisDR});
+    histos.addClone("SE/Reco/", "ME/Reco/");
+    histos.addClone("SE/RecoBkgSigSB/", "ME/RecoBkgSigSB/");
+    histos.addClone("SE/RecoBkgSBSB/", "ME/RecoBkgSBSB/");
 
     histos.add("SE/RecoCorr/Star/h2f_n2_dltaR_LaPLaM", "#rho_{2} #Lambda#bar{#Lambda} [Star]", kTHnSparseF, {axisCent, axisDR, axisCosTS});
     histos.add("SE/RecoCorr/Star/h2f_n2_dltaR_LaMLaP", "#rho_{2} #bar{#Lambda}#Lambda [Star]", kTHnSparseF, {axisCent, axisDR, axisCosTS});
@@ -1523,6 +1495,54 @@ struct LambdaSpinPolarization {
     p[2] = p[2] + gam2 * bp * b[2] + gam * b[2] * e;
   }
 
+  // cos of the opening angle between the two proton three-momenta.
+  static float cosOpeningAngle(std::array<float, 4> const& a, std::array<float, 4> const& b)
+  {
+    std::array<float, 3> n1 = {a[0], a[1], a[2]}, n2 = {b[0], b[1], b[2]};
+    return RecoDecay::dotProd(n1, n2) /
+           (RecoDecay::sqrtSumOfSquares(n1[0], n1[1], n1[2]) *
+            RecoDecay::sqrtSumOfSquares(n2[0], n2[1], n2[2]));
+  }
+
+  float cosThetaStarAtlas(std::array<float, 4> const& l1, std::array<float, 4> const& l2,
+                          std::array<float, 4> const& pr1, std::array<float, 4> const& pr2)
+  {
+    auto l1a = l1;
+    auto l2a = l2;
+    auto pr1a = pr1;
+    auto pr2a = pr2;
+
+    const float mPair = RecoDecay::m(std::array{std::array{l1a[0], l1a[1], l1a[2]},
+                                                std::array{l2a[0], l2a[1], l2a[2]}},
+                                     std::array{l1a[3], l2a[3]});
+    std::array<float, 4> llpair = {l1a[0] + l2a[0], l1a[1] + l2a[1], l1a[2] + l2a[2], mPair};
+    std::array<float, 3> vPair;
+    getBoostVector(llpair, vPair, cInvBoostFlag);
+    boost(l1a, vPair);
+    boost(l2a, vPair);
+    boost(pr1a, vPair);
+    boost(pr2a, vPair);
+    std::array<float, 3> v1p, v2p;
+    getBoostVector(l1a, v1p, cInvBoostFlag);
+    getBoostVector(l2a, v2p, cInvBoostFlag);
+    boost(pr1a, v1p);
+    boost(pr2a, v2p);
+    return cosOpeningAngle(pr1a, pr2a);
+  }
+
+  float cosThetaStarStar(std::array<float, 4> const& l1, std::array<float, 4> const& l2,
+                         std::array<float, 4> const& pr1, std::array<float, 4> const& pr2)
+  {
+    auto pr1s = pr1;
+    auto pr2s = pr2;
+    std::array<float, 3> v1lab, v2lab;
+    getBoostVector(l1, v1lab, cInvBoostFlag);
+    getBoostVector(l2, v2lab, cInvBoostFlag);
+    boost(pr1s, v1lab);
+    boost(pr2s, v2lab);
+    return cosOpeningAngle(pr1s, pr2s);
+  }
+
   template <ParticlePairType part_pair, typename U>
   void fillPairHistos(U const& p1, U const& p2)
   {
@@ -1545,74 +1565,46 @@ struct LambdaSpinPolarization {
     float dphi = RecoDecay::constrainAngle(p1.phi() - p2.phi(), -PI);
     float dR = std::sqrt(drap * drap + dphi * dphi);
 
-    if constexpr (!IsSigSB && !IsSBSB) {
-      histos.fill(HIST("SE/Reco/h2f_n2_mass_") + HIST(SubDir[Idx]),
-                  p1.mass(), p2.mass(), p1.pt(), p2.pt(), drap, dphi, dR);
-    } else if constexpr (IsSigSB) {
-      histos.fill(HIST("SE/RecoBkgSigSB/h2f_n2_mass_") + HIST(SubDir[Idx]),
-                  p1.mass(), p2.mass(), p1.pt(), p2.pt(), drap, dphi, dR);
-    } else {
-      histos.fill(HIST("SE/RecoBkgSBSB/h2f_n2_mass_") + HIST(SubDir[Idx]),
-                  p1.mass(), p2.mass(), p1.pt(), p2.pt(), drap, dphi, dR);
-    }
-
     std::array<float, 4> l1 = {p1.px(), p1.py(), p1.pz(), MassLambda0};
     std::array<float, 4> l2 = {p2.px(), p2.py(), p2.pz(), MassLambda0};
     std::array<float, 4> pr1 = {p1.prPx(), p1.prPy(), p1.prPz(), MassProton};
     std::array<float, 4> pr2 = {p2.prPx(), p2.prPy(), p2.prPz(), MassProton};
 
     if (cDoAtlasMethod) {
-      auto l1a = l1;
-      auto l2a = l2;
-      auto pr1a = pr1;
-      auto pr2a = pr2;
-      std::array<float, 4> llpair = {l1a[0] + l2a[0], l1a[1] + l2a[1], l1a[2] + l2a[2], l1a[3] + l2a[3]};
-      std::array<float, 3> vPair;
-      getBoostVector(llpair, vPair, cInvBoostFlag);
-      boost(l1a, vPair);
-      boost(l2a, vPair);
-      boost(pr1a, vPair);
-      boost(pr2a, vPair);
-      std::array<float, 3> v1p, v2p;
-      getBoostVector(l1a, v1p, cInvBoostFlag);
-      getBoostVector(l2a, v2p, cInvBoostFlag);
-      boost(pr1a, v1p);
-      boost(pr2a, v2p);
-      std::array<float, 3> n1 = {pr1a[0], pr1a[1], pr1a[2]}, n2 = {pr2a[0], pr2a[1], pr2a[2]};
-      float ctheta = RecoDecay::dotProd(n1, n2) /
-                     (RecoDecay::sqrtSumOfSquares(n1[0], n1[1], n1[2]) *
-                      RecoDecay::sqrtSumOfSquares(n2[0], n2[1], n2[2]));
+      float ctheta = cosThetaStarAtlas(l1, l2, pr1, pr2);
       if constexpr (!IsSigSB && !IsSBSB) {
+        histos.fill(HIST("SE/Reco/Atlas/h2f_n2_mass_") + HIST(SubDir[Idx]),
+                    cent, p1.mass(), p2.mass(), p1.pt(), p2.pt(), drap, dphi, dR, ctheta);
         histos.fill(HIST("SE/RecoCorr/Atlas/h2f_n2_ctheta_") + HIST(SubDir[Idx]), cent, drap, dphi, ctheta);
         histos.fill(HIST("SE/RecoCorr/Atlas/h2f_n2_dltaR_") + HIST(SubDir[Idx]), cent, dR, ctheta);
       } else if constexpr (IsSigSB) {
+        histos.fill(HIST("SE/RecoBkgSigSB/Atlas/h2f_n2_mass_") + HIST(SubDir[Idx]),
+                    cent, p1.mass(), p2.mass(), p1.pt(), p2.pt(), drap, dphi, dR, ctheta);
         histos.fill(HIST("SE/RecoCorrBkgSigSB/Atlas/h2f_n2_ctheta_") + HIST(SubDir[Idx]), cent, drap, dphi, ctheta);
         histos.fill(HIST("SE/RecoCorrBkgSigSB/Atlas/h2f_n2_dltaR_") + HIST(SubDir[Idx]), cent, dR, ctheta);
       } else {
+        histos.fill(HIST("SE/RecoBkgSBSB/Atlas/h2f_n2_mass_") + HIST(SubDir[Idx]),
+                    cent, p1.mass(), p2.mass(), p1.pt(), p2.pt(), drap, dphi, dR, ctheta);
         histos.fill(HIST("SE/RecoCorrBkgSBSB/Atlas/h2f_n2_ctheta_") + HIST(SubDir[Idx]), cent, drap, dphi, ctheta);
         histos.fill(HIST("SE/RecoCorrBkgSBSB/Atlas/h2f_n2_dltaR_") + HIST(SubDir[Idx]), cent, dR, ctheta);
       }
     }
 
     if (cDoStarMethod) {
-      auto pr1s = pr1;
-      auto pr2s = pr2;
-      std::array<float, 3> v1lab, v2lab;
-      getBoostVector(l1, v1lab, cInvBoostFlag);
-      getBoostVector(l2, v2lab, cInvBoostFlag);
-      boost(pr1s, v1lab);
-      boost(pr2s, v2lab);
-      std::array<float, 3> n1 = {pr1s[0], pr1s[1], pr1s[2]}, n2 = {pr2s[0], pr2s[1], pr2s[2]};
-      float ctheta = RecoDecay::dotProd(n1, n2) /
-                     (RecoDecay::sqrtSumOfSquares(n1[0], n1[1], n1[2]) *
-                      RecoDecay::sqrtSumOfSquares(n2[0], n2[1], n2[2]));
+      float ctheta = cosThetaStarStar(l1, l2, pr1, pr2);
       if constexpr (!IsSigSB && !IsSBSB) {
+        histos.fill(HIST("SE/Reco/Star/h2f_n2_mass_") + HIST(SubDir[Idx]),
+                    cent, p1.mass(), p2.mass(), p1.pt(), p2.pt(), drap, dphi, dR, ctheta);
         histos.fill(HIST("SE/RecoCorr/Star/h2f_n2_ctheta_") + HIST(SubDir[Idx]), cent, drap, dphi, ctheta);
         histos.fill(HIST("SE/RecoCorr/Star/h2f_n2_dltaR_") + HIST(SubDir[Idx]), cent, dR, ctheta);
       } else if constexpr (IsSigSB) {
+        histos.fill(HIST("SE/RecoBkgSigSB/Star/h2f_n2_mass_") + HIST(SubDir[Idx]),
+                    cent, p1.mass(), p2.mass(), p1.pt(), p2.pt(), drap, dphi, dR, ctheta);
         histos.fill(HIST("SE/RecoCorrBkgSigSB/Star/h2f_n2_ctheta_") + HIST(SubDir[Idx]), cent, drap, dphi, ctheta);
         histos.fill(HIST("SE/RecoCorrBkgSigSB/Star/h2f_n2_dltaR_") + HIST(SubDir[Idx]), cent, dR, ctheta);
       } else {
+        histos.fill(HIST("SE/RecoBkgSBSB/Star/h2f_n2_mass_") + HIST(SubDir[Idx]),
+                    cent, p1.mass(), p2.mass(), p1.pt(), p2.pt(), drap, dphi, dR, ctheta);
         histos.fill(HIST("SE/RecoCorrBkgSBSB/Star/h2f_n2_ctheta_") + HIST(SubDir[Idx]), cent, drap, dphi, ctheta);
         histos.fill(HIST("SE/RecoCorrBkgSBSB/Star/h2f_n2_dltaR_") + HIST(SubDir[Idx]), cent, dR, ctheta);
       }
@@ -1641,57 +1633,31 @@ struct LambdaSpinPolarization {
     float dphi = RecoDecay::constrainAngle(p1.phi() - p2.phi(), -PI);
     float dR = std::sqrt(drap * drap + dphi * dphi);
 
-    if constexpr (!IsSigSB && !IsSBSB) {
-      histos.fill(HIST("ME/Reco/h2f_n2_mass_") + HIST(SubDir[Idx]),
-                  p1.mass(), p2.mass(), p1.pt(), p2.pt(), drap, dphi, dR, w);
-    } else if constexpr (IsSigSB) {
-      histos.fill(HIST("ME/RecoBkgSigSB/h2f_n2_mass_") + HIST(SubDir[Idx]),
-                  p1.mass(), p2.mass(), p1.pt(), p2.pt(), drap, dphi, dR, w);
-    } else {
-      histos.fill(HIST("ME/RecoBkgSBSB/h2f_n2_mass_") + HIST(SubDir[Idx]),
-                  p1.mass(), p2.mass(), p1.pt(), p2.pt(), drap, dphi, dR, w);
-    }
-
     std::array<float, 4> l1 = {p1.px(), p1.py(), p1.pz(), MassLambda0};
     std::array<float, 4> l2 = {p2.px(), p2.py(), p2.pz(), MassLambda0};
     std::array<float, 4> pr1 = {p1.prPx(), p1.prPy(), p1.prPz(), MassProton};
     std::array<float, 4> pr2 = {p2.prPx(), p2.prPy(), p2.prPz(), MassProton};
 
     if (cDoAtlasMethod) {
-      auto l1a = l1;
-      auto l2a = l2;
-      auto pr1a = pr1;
-      auto pr2a = pr2;
-      std::array<float, 4> llpair = {l1a[0] + l2a[0], l1a[1] + l2a[1],
-                                     l1a[2] + l2a[2], l1a[3] + l2a[3]};
-      std::array<float, 3> vPair;
-      getBoostVector(llpair, vPair, cInvBoostFlag);
-      boost(l1a, vPair);
-      boost(l2a, vPair);
-      boost(pr1a, vPair);
-      boost(pr2a, vPair);
-      std::array<float, 3> v1p, v2p;
-      getBoostVector(l1a, v1p, cInvBoostFlag);
-      getBoostVector(l2a, v2p, cInvBoostFlag);
-      boost(pr1a, v1p);
-      boost(pr2a, v2p);
-      std::array<float, 3> n1 = {pr1a[0], pr1a[1], pr1a[2]},
-                           n2 = {pr2a[0], pr2a[1], pr2a[2]};
-      float ctheta = RecoDecay::dotProd(n1, n2) /
-                     (RecoDecay::sqrtSumOfSquares(n1[0], n1[1], n1[2]) *
-                      RecoDecay::sqrtSumOfSquares(n2[0], n2[1], n2[2]));
+      float ctheta = cosThetaStarAtlas(l1, l2, pr1, pr2);
 
       if constexpr (!IsSigSB && !IsSBSB) {
+        histos.fill(HIST("ME/Reco/Atlas/h2f_n2_mass_") + HIST(SubDir[Idx]),
+                    cent, p1.mass(), p2.mass(), p1.pt(), p2.pt(), drap, dphi, dR, ctheta, w);
         histos.fill(HIST("ME/RecoCorr/Atlas/h2f_n2_ctheta_") + HIST(SubDir[Idx]),
                     cent, drap, dphi, ctheta, w);
         histos.fill(HIST("ME/RecoCorr/Atlas/h2f_n2_dltaR_") + HIST(SubDir[Idx]),
                     cent, dR, ctheta, w);
       } else if constexpr (IsSigSB) {
+        histos.fill(HIST("ME/RecoBkgSigSB/Atlas/h2f_n2_mass_") + HIST(SubDir[Idx]),
+                    cent, p1.mass(), p2.mass(), p1.pt(), p2.pt(), drap, dphi, dR, ctheta, w);
         histos.fill(HIST("ME/RecoCorrBkgSigSB/Atlas/h2f_n2_ctheta_") + HIST(SubDir[Idx]),
                     cent, drap, dphi, ctheta, w);
         histos.fill(HIST("ME/RecoCorrBkgSigSB/Atlas/h2f_n2_dltaR_") + HIST(SubDir[Idx]),
                     cent, dR, ctheta, w);
       } else {
+        histos.fill(HIST("ME/RecoBkgSBSB/Atlas/h2f_n2_mass_") + HIST(SubDir[Idx]),
+                    cent, p1.mass(), p2.mass(), p1.pt(), p2.pt(), drap, dphi, dR, ctheta, w);
         histos.fill(HIST("ME/RecoCorrBkgSBSB/Atlas/h2f_n2_ctheta_") + HIST(SubDir[Idx]),
                     cent, drap, dphi, ctheta, w);
         histos.fill(HIST("ME/RecoCorrBkgSBSB/Atlas/h2f_n2_dltaR_") + HIST(SubDir[Idx]),
@@ -1700,30 +1666,25 @@ struct LambdaSpinPolarization {
     }
 
     if (cDoStarMethod) {
-      auto pr1s = pr1;
-      auto pr2s = pr2;
-      std::array<float, 3> v1lab, v2lab;
-      getBoostVector(l1, v1lab, cInvBoostFlag);
-      getBoostVector(l2, v2lab, cInvBoostFlag);
-      boost(pr1s, v1lab);
-      boost(pr2s, v2lab);
-      std::array<float, 3> n1 = {pr1s[0], pr1s[1], pr1s[2]},
-                           n2 = {pr2s[0], pr2s[1], pr2s[2]};
-      float ctheta = RecoDecay::dotProd(n1, n2) /
-                     (RecoDecay::sqrtSumOfSquares(n1[0], n1[1], n1[2]) *
-                      RecoDecay::sqrtSumOfSquares(n2[0], n2[1], n2[2]));
+      float ctheta = cosThetaStarStar(l1, l2, pr1, pr2);
 
       if constexpr (!IsSigSB && !IsSBSB) {
+        histos.fill(HIST("ME/Reco/Star/h2f_n2_mass_") + HIST(SubDir[Idx]),
+                    cent, p1.mass(), p2.mass(), p1.pt(), p2.pt(), drap, dphi, dR, ctheta, w);
         histos.fill(HIST("ME/RecoCorr/Star/h2f_n2_ctheta_") + HIST(SubDir[Idx]),
                     cent, drap, dphi, ctheta, w);
         histos.fill(HIST("ME/RecoCorr/Star/h2f_n2_dltaR_") + HIST(SubDir[Idx]),
                     cent, dR, ctheta, w);
       } else if constexpr (IsSigSB) {
+        histos.fill(HIST("ME/RecoBkgSigSB/Star/h2f_n2_mass_") + HIST(SubDir[Idx]),
+                    cent, p1.mass(), p2.mass(), p1.pt(), p2.pt(), drap, dphi, dR, ctheta, w);
         histos.fill(HIST("ME/RecoCorrBkgSigSB/Star/h2f_n2_ctheta_") + HIST(SubDir[Idx]),
                     cent, drap, dphi, ctheta, w);
         histos.fill(HIST("ME/RecoCorrBkgSigSB/Star/h2f_n2_dltaR_") + HIST(SubDir[Idx]),
                     cent, dR, ctheta, w);
       } else {
+        histos.fill(HIST("ME/RecoBkgSBSB/Star/h2f_n2_mass_") + HIST(SubDir[Idx]),
+                    cent, p1.mass(), p2.mass(), p1.pt(), p2.pt(), drap, dphi, dR, ctheta, w);
         histos.fill(HIST("ME/RecoCorrBkgSBSB/Star/h2f_n2_ctheta_") + HIST(SubDir[Idx]),
                     cent, drap, dphi, ctheta, w);
         histos.fill(HIST("ME/RecoCorrBkgSBSB/Star/h2f_n2_dltaR_") + HIST(SubDir[Idx]),
