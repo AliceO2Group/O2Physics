@@ -124,7 +124,7 @@ struct DqJPsiMuonCorrelations {
     ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
 
     // Assert correct size of the efficiency correction vector
-    int nAxisPtBins = axisPt.value.size() - 2;
+    uint8_t nAxisPtBins = axisPt.value.size() - 2;
     if (nAxisPtBins != fConfigBinEffJPsi.value.size() || nAxisPtBins != fConfigBinEffMuon.value.size()) {
       LOGF(fatal, "Configurables axisPt: %zu must have one more value than fConfigBinEffJPsi: %zu and fConfigBinEffMuon: %zu (excluding 'VARIABLE_WIDTH' entry)",
            axisPt.value.size() - 1, fConfigBinEffJPsi.value.size(), fConfigBinEffMuon.value.size());
