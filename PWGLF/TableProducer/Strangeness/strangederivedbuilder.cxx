@@ -778,13 +778,13 @@ struct strangederivedbuilder {
     for (const auto& casc : TraCascades) {
       products.tracasccollref(TraCascadeCollIndices[casc.globalIndex()]);
     }
-    products.straSelection(totalNbrCollisions, totalNbrSelectedCollisions, 
-      totalNbrCollisionsPerSelection[o2::aod::straselections::kIsTriggerTVX], 
-      totalNbrCollisionsPerSelection[o2::aod::straselections::kNoITSROFrameBorder], 
-      totalNbrCollisionsPerSelection[o2::aod::straselections::kNoTimeFrameBorder], 
-      totalNbrCollisionsPerSelection[o2::aod::straselections::kIsGoodZvtxAcceptance],
-      totalNbrCollisionsPerSelection[o2::aod::straselections::kNoSameBunchPileup], 
-      totalNbrCollisionsPerSelection[o2::aod::straselections::kIsGoodRCT]);
+    products.straSelection(totalNbrCollisions, totalNbrSelectedCollisions,
+                           totalNbrCollisionsPerSelection[o2::aod::straselections::kIsTriggerTVX],
+                           totalNbrCollisionsPerSelection[o2::aod::straselections::kNoITSROFrameBorder],
+                           totalNbrCollisionsPerSelection[o2::aod::straselections::kNoTimeFrameBorder],
+                           totalNbrCollisionsPerSelection[o2::aod::straselections::kIsGoodZvtxAcceptance],
+                           totalNbrCollisionsPerSelection[o2::aod::straselections::kNoSameBunchPileup],
+                           totalNbrCollisionsPerSelection[o2::aod::straselections::kIsGoodRCT]);
   }
 
   // helper function to estimate collision time
