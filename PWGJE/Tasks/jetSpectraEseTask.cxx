@@ -113,6 +113,7 @@ struct JetSpectraEseTask {
   Configurable<std::vector<float>> cfgOccupancyPtCut{"cfgOccupancyPtCut", {0, 100}, "pT cut"};
 
   Configurable<bool> cfgrhoPhi{"cfgrhoPhi", true, "Flag for rho(phi)"};
+  Configurable<bool> cfgRhoPhiPvalCriteria{"cfgRhoPhiPvalCriteria", true, "Use <rho> instead of rho(phi) when the rho(phi) fit p-value is below 0.01"};
 
   Configurable<int> cfgnTotalSystem{"cfgnTotalSystem", 7, "total qvector number // look in Qvector table for this number"};
   Configurable<int> cfgnCorrLevel{"cfgnCorrLevel", 3, "QVector step: 0 = no corr, 1 = rect, 2 = twist, 3 = full"};
@@ -347,6 +348,7 @@ struct JetSpectraEseTask {
 
       registry.add("eventQA/before/hVtxZ", ";z_{vtx} (cm);entries", {HistType::kTH1F, {{vertexZAxis}}});
       registry.add("eventQA/after/hVtxZ", ";z_{vtx} (cm);entries", {HistType::kTH1F, {{vertexZAxis}}});
+      registry.add("eventQA/hRhoPhiCheck", "event status;event status;entries", {HistType::kTH1F, {{2, 0.0, 2.0}}});
 
       registry.get<TH1>(HIST("eventQA/hEventCounter"))->GetXaxis()->SetBinLabel(kFilteredInputEv, "Input filtered event");
       registry.get<TH1>(HIST("eventQA/hEventCounter"))->GetXaxis()->SetBinLabel(kEventSel, "Event selection");
@@ -607,7 +609,7 @@ struct JetSpectraEseTask {
       if (cfg.hEff == nullptr) {
         LOGF(fatal, "Could not find %s as TH1F in track efficiency list %s", efficiencyName.c_str(), cfgEfficiency.value.c_str());
       }
-      LOGF(info, "Loaded tracking efficiency %s from %s (%p)", efficiencyName.c_str(), cfgEfficiency.value.c_str(), (void*)cfg.hEff);
+      LOGF(info, "Loaded tracking efficiency %s from %s (%p)", efficiencyName.c_str(), cfgEfficiency.value.c_str(), static_cast<void*>(cfg.hEff));
     }
     if (!cfgEfficiency3D.value.empty()) {
       cfg.h3EffList = ccdb->getForTimeStamp<TList>(cfgEfficiency3D, timestamp);
@@ -618,7 +620,7 @@ struct JetSpectraEseTask {
       if (cfg.h3Eff == nullptr) {
         LOGF(fatal, "Could not find %s as TH3F in 3D track efficiency list %s", efficiencyName.c_str(), cfgEfficiency3D.value.c_str());
       }
-      LOGF(info, "Loaded 3D tracking efficiency %s from %s (%p)", efficiencyName.c_str(), cfgEfficiency3D.value.c_str(), (void*)cfg.h3Eff);
+      LOGF(info, "Loaded 3D tracking efficiency %s from %s (%p)", efficiencyName.c_str(), cfgEfficiency3D.value.c_str(), static_cast<void*>(cfg.h3Eff));
       cfg.is3D = true;
     }
     cfg.isLoaded = true;
@@ -1480,6 +1482,15 @@ struct JetSpectraEseTask {
       return nullptr;
 
     auto cDF = 1. - TMath::Gamma(nDF, chi2);
+    if constexpr (fillHist)
+      registry.fill(HIST("eventQA/hRhoPhiCheck"), 0.5);
+    if (cfgRhoPhiPvalCriteria && cDF < 0.01) {
+      const float noFlow = 0.0f;
+      modulationFit->SetParameter(1, noFlow); // o2-linter: disable=magic-number (fit params)
+      modulationFit->SetParameter(3, noFlow); // o2-linter: disable=magic-number (fit params)
+      if constexpr (fillHist)
+        registry.fill(HIST("eventQA/hRhoPhiCheck"), 1.5);
+    }
 
     if constexpr (fillHist) {
       registry.fill(HIST("eventQA/hPValueCentCDF"), col.centFT0M(), cDF);
