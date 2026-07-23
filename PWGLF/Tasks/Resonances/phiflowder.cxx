@@ -225,8 +225,8 @@ struct phiflowder {
     auto qxtQxp = qxZDCC * qxZDCA;
     auto qytQyp = qyZDCC * qyZDCA;
     auto qxytp = qxtQxp + qytQyp;
-    auto qxpQyt = qxZDCA * qyZDCC;
-    auto qxtQyp = qxZDCC * qyZDCA;
+    // auto qxpQyt = qxZDCA * qyZDCC;
+    // auto qxtQyp = qxZDCC * qyZDCA;
 
     histos.fill(HIST("hCentrality"), centrality);
     histos.fill(HIST("hpQxytpvscent"), centrality, qxytp);

@@ -268,7 +268,7 @@ struct cksspinalignment {
     float dcaPositive;
     float dcaNegative;
     float dcaBetweenDaughters;
-    float lifetime;
+    // float lifetime;
     int64_t positiveIndex;
     int64_t negativeIndex;
   };
