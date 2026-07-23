@@ -2400,6 +2400,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCPhi"] = kMCPhi;
   fgVarNamesMap["kMCEta"] = kMCEta;
   fgVarNamesMap["kMCY"] = kMCY;
+  fgVarNamesMap["kMCMass"] = kMCMass;
   fgVarNamesMap["kMCCosThetaHE"] = kMCCosThetaHE;
   fgVarNamesMap["kMCPhiHE"] = kMCPhiHE;
   fgVarNamesMap["kMCPhiTildeHE"] = kMCPhiTildeHE;
