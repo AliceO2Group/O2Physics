@@ -17,22 +17,31 @@
 #include "PWGCF/Femto3D/DataModel/PIDutils.h"
 #include "PWGCF/Femto3D/DataModel/singletrackselector.h"
 
-#include "Common/DataModel/Multiplicity.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/PIDResponseITS.h"
 
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/DataTypes.h>
+#include <Framework/Configurable.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/StaticFor.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <MathUtils/Utils.h>
 
-#include <TH1F.h>
-#include <TParameter.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TPDGCode.h>
+#include <TString.h>
 
 #include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>
@@ -71,7 +80,7 @@ struct AntitritonAnalysis {
   Configurable<float> maxTpcFractionSharedCls{"maxTpcFractionSharedCls", 0.4, "maximum fraction of TPC shared clasters"};
   Configurable<int> minItsNCls{"minItsNCls", 0, "minimum allowed number of ITS clasters for a track"};
   Configurable<float> itsChi2NCl{"itsChi2NCl", 100.0, "upper limit for chi2 value of a fit over ITS clasters for a track"};
-  Configurable<int> particlePDG{"particlePDG", 1000010030, "PDG code of a particle to perform PID for (only pion, kaon, proton and deurton are supported now)"};
+  Configurable<int> particlePDG{"particlePDG", o2::constants::physics::Pdg::kTriton, "PDG code of a particle to perform PID for"};
   Configurable<std::vector<float>> tpcNSigma{"tpcNSigma", std::vector<float>{-4.0f, 4.0f}, "Nsigma range in TPC before the TOF is used"};
   Configurable<std::vector<float>> itsNSigma{"itsNSigma", std::vector<float>{-10.0f, 10.0f}, "Nsigma range in ITS to use along with TPC"};
   Configurable<float> pidTrshld{"pidTrshld", 0.0, "value of momentum from which the PID is done with TOF (before that only TPC is used)"};
@@ -81,7 +90,7 @@ struct AntitritonAnalysis {
   Configurable<std::vector<float>> tofNSigma{"tofNSigma", std::vector<float>{-4.0f, 4.0f}, "Nsigma range in TOF"};
   Configurable<std::vector<float>> tpcNSigmaResidual{"tpcNSigmaResidual", std::vector<float>{-5.0f, 5.0f}, "residual TPC Nsigma cut to use with the TOF"};
 
-  Configurable<std::vector<int>> particlePDGtoReject{"particlePDGtoReject", std::vector<int>{2212}, "PDG codes of perticles that will be rejected with TPC"};
+  Configurable<std::vector<int>> particlePDGtoReject{"particlePDGtoReject", std::vector<int>{PDG_t::kProton}, "PDG codes of perticles that will be rejected with TPC"};
   Configurable<std::vector<float>> rejectWithinNsigmaTOF{"rejectWithinNsigmaTOF", std::vector<float>{-0.0f, 0.0f}, "TOF rejection Nsigma range for particles specified with PDG to be rejected"};
   Configurable<std::vector<float>> rejectWithinNsigmaTPC{"rejectWithinNsigmaTPC", std::vector<float>{-0.0f, 0.0f}, "TPC rejection Nsigma range for particles specified with PDG to be rejected"};
 
@@ -94,7 +103,7 @@ struct AntitritonAnalysis {
   std::pair<int, std::vector<float>> TPCcuts;
   std::pair<int, std::vector<float>> TOFcuts;
 
-  static constexpr float kMassTriton = 2.808921f; // GeV/c^2
+  static constexpr float kMassTriton = o2::constants::physics::MassTriton; // GeV/c^2
 
   Filter pFilter = o2::aod::singletrackselector::p > minP&& o2::aod::singletrackselector::p < maxP;
   Filter etaFilter = nabs(o2::aod::singletrackselector::eta) < eta;
@@ -129,7 +138,7 @@ struct AntitritonAnalysis {
     std::shared_ptr<TH1> origin;
   };
 
-  const std::vector<std::string> stageDirs = {
+  static inline const std::vector<std::string> stageDirs = {
     "init",
     "No_Cuts",
     "ITS_Cuts",
@@ -143,7 +152,7 @@ struct AntitritonAnalysis {
   };
 
   // signDirs[0] = "t" for sign > 0 (triton), signDirs[1] = "at" for sign < 0 (antitriton).
-  const std::array<std::string, 2> signDirs = {"t", "at"};
+  static inline const std::array<std::string, 2> signDirs = {"t", "at"};
 
   std::vector<std::array<HistSet, 2>> hSets;
   std::vector<std::array<HistSet, 2>> hSetsTrue;
@@ -209,21 +218,13 @@ struct AntitritonAnalysis {
   }
 
   template <typename TrackType>
-  static float getY(const TrackType& track, float mass)
-  {
-    const float pTr = track.p();
-    const float pzTr = track.pz();
-    const float ETr = std::sqrt(pTr * pTr + mass * mass);
-    return 0.5f * std::log((ETr + pzTr) / (ETr - pzTr));
-  }
-
-  template <typename TrackType>
   void fillHistSet(HistSet& h, const TrackType& track, int pdg)
   {
     const float mass = kMassTriton;
+    const auto y = static_cast<float>(RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, mass));
     h.eta->Fill(track.eta());
-    h.eta_to_y->Fill(track.eta(), getY(track, mass));
-    h.y->Fill(getY(track, mass));
+    h.eta_to_y->Fill(track.eta(), y);
+    h.y->Fill(y);
     h.phi->Fill(track.phi());
     h.p->Fill(track.p());
     h.pt->Fill(track.pt());
@@ -281,7 +282,7 @@ struct AntitritonAnalysis {
     TPCcuts = std::make_pair(particlePDG.value, tpcNSigma);
     TOFcuts = std::make_pair(particlePDG.value, tofNSigma);
 
-    int N = dcaBinning.value[0]; // number of bins -- must be odd otherwise will be increased by 1
+    int N = static_cast<int>(dcaBinning.value[0]); // number of bins -- must be odd otherwise will be increased by 1
     if (N % 2 != 1) {
       N += 1;
     }
@@ -397,7 +398,7 @@ struct AntitritonAnalysis {
           : o2::aod::singletrackselector::TPCselection<false>(track, std::make_pair(particlePDG.value, tpcNSigmaResidual.value), tpcNSigmaResidual.value);
       if (!pidOk)
         continue;
-      if (std::fabs(getY(track, kMassTriton)) > eta)
+      if (std::fabs(static_cast<float>(RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, kMassTriton))) > eta)
         continue;
 
       fillSet<FillExtra, HasMC>(hSets[6][signIdx], hSetsTrue[6][signIdx], track, particlePDG.value); // PIDcuts
