@@ -60,6 +60,7 @@
 #include <cstdlib>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -184,6 +185,14 @@ struct FlowGfwNonflow {
     bool correctionsLoaded = false;
   } correctionsConfig;
 
+  struct MultipletConfig {
+    std::size_t representativeConfigIndex = 0;
+    int order = 0;
+    std::shared_ptr<TProfile> profile;
+  };
+
+  std::map<std::string, MultipletConfig> effectiveMultiplets;
+
   // Outputs
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
   OutputObj<FlowContainer> fFCgen{FlowContainer("FlowContainer_gen")};
@@ -234,11 +243,11 @@ struct FlowGfwNonflow {
 
   // Generic Framework
   GFW* fGFW = new GFW();
-  std::vector<GFW::CorrConfig> corrconfigs;
+  std::vector<GFW::CorrConfig> corrconfigs{};
   TRandom3* fRndm = new TRandom3(0);
   TAxis* fPtAxis = nullptr;
   int lastRun = -1;
-  std::map<std::string, std::shared_ptr<TProfile>> recipNHistograms;
+  std::vector<std::string> multipletKeys{};
 
   // Track selection - DCA functions
   TF1* fPtDepDCAxy = nullptr;
@@ -395,10 +404,6 @@ struct FlowGfwNonflow {
     }
     for (auto i = 0; i < gfwMemberCache.configs.GetSize(); ++i) {
       corrconfigs.push_back(fGFW->GetCorrelatorConfig(gfwMemberCache.configs.GetCorrs()[i], gfwMemberCache.configs.GetHeads()[i], gfwMemberCache.configs.GetpTDifs()[i] != 0));
-      const auto& head = gfwMemberCache.configs.GetHeads()[i];
-      std::string histName = "inverseN";
-      histName += head;
-      recipNHistograms[histName] = registry.add<TProfile>(histName, " centrality (%); ", HistType::kTProfile, {centAxis});
     }
     if (corrconfigs.empty()) {
       LOGF(error, "Configuration contains vectors of different size - check the GFWCorrConfig configurable");
@@ -413,6 +418,13 @@ struct FlowGfwNonflow {
     fFCgen->SetXAxis(fPtAxis);
     fFCgen->Initialize(oba, multAxis, cfgNbootstrap);
     delete oba;
+
+    // Identify unique multiplet setups and populate with identifying keys
+    identifyUniqueMultipletKeys(multipletKeys, corrconfigs, centAxis); // For now keep centrality axis hardcoded
+    LOGF(info, "Unique multiplet keys for current configuration setup");
+    for (const auto& key : multipletKeys) {
+      LOGF(info, key);
+    }
 
     const auto& ptPtGaps = cfgPtPtGaps->getData();
     for (uint32_t i = 0; i < ptPtGaps.rows; ++i) {
@@ -508,6 +520,72 @@ struct FlowGfwNonflow {
         }
       } else {
         oba->Add(new TNamed(it->Head.c_str(), it->Head.c_str()));
+      }
+    }
+  }
+
+  void identifyUniqueMultipletKeys(std::vector<std::string>& keys, const std::vector<GFW::CorrConfig>& configs, AxisSpec xAxis)
+  {
+    std::set<std::string> uniqueKeys(keys.begin(), keys.end());
+    const auto& regionNames = gfwMemberCache.regions.GetNames();
+
+    for (std::size_t configIndex = 0; configIndex < configs.size(); ++configIndex) {
+      const auto& config = configs[configIndex];
+      // TODO: Support pT-differential and explicit-overlap configurations.
+      if (config.pTDif) {
+        continue;
+      }
+
+      if (config.Regs.size() != config.Hars.size()) {
+        LOGF(error, "Cannot construct multiplet key for %s: %zu region groups but %zu harmonic groups", config.Head.c_str(), config.Regs.size(), config.Hars.size());
+        continue;
+      }
+
+      std::string key;
+      int totalOrder = 0;
+      bool valid = true;
+
+      for (std::size_t group = 0; group < config.Regs.size(); ++group) {
+        const auto& regionIndices = config.Regs[group];
+        const auto& harmonics = config.Hars[group];
+
+        if (regionIndices.size() != 1 || harmonics.empty()) {
+          LOGF(error, "Cannot construct simple multiplet key for %s, group %zu: expected one region and at least one harmonic", config.Head.c_str(), group);
+          valid = false;
+          break;
+        }
+
+        const int regionIndex = regionIndices.front();
+        if (regionIndex < 0 ||
+            static_cast<std::size_t>(regionIndex) >= regionNames.size()) {
+          LOGF(error, "Invalid region index %d in configuration %s", regionIndex, config.Head.c_str());
+          valid = false;
+          break;
+        }
+
+        const int regionOrder = static_cast<int>(harmonics.size());
+        totalOrder += regionOrder;
+
+        if (!key.empty()) {
+          key += "_";
+        }
+
+        key += regionNames[regionIndex];
+        key += "_";
+        key += std::to_string(regionOrder);
+      }
+
+      if (!valid || key.empty()) {
+        continue;
+      }
+
+      key += "_";
+      key += std::to_string(totalOrder);
+
+      if (uniqueKeys.insert(key).second) {
+        keys.push_back(std::move(key));
+        MultipletConfig currentMultipletConfig{configIndex, totalOrder, registry.add<TProfile>(Form("%s", keys.back().c_str()), Form("; centrality ; N_{%d}", totalOrder), {HistType::kTProfile, {xAxis}})};
+        effectiveMultiplets[keys.back()] = currentMultipletConfig;
       }
     }
   }
@@ -745,20 +823,23 @@ struct FlowGfwNonflow {
     fFCpt->fillCMProfiles(centmult, rndm);
     fFCpt->fillCMSubeventProfiles(centmult, rndm);
 
+    for (const auto& [key, multiplet] : effectiveMultiplets) {
+      const auto& config = corrconfigs.at(multiplet.representativeConfigIndex);
+      const double dnx = fGFW->Calculate(config, 0, true).real();
+
+      if (dnx > 0.) {
+        const double multPower = std::pow(multiplicity, multiplet.order - 1);
+        if (multPower > 0.) {
+          multiplet.profile->Fill(centmult, 1. / multPower, dnx);
+        }
+      }
+    }
+
     for (std::size_t l_ind = 0; l_ind < corrconfigs.size(); ++l_ind) {
       if (!corrconfigs.at(l_ind).pTDif) {
         auto dnx = fGFW->Calculate(corrconfigs.at(l_ind), 0, true).real();
         if (dnx == 0) {
           continue;
-        }
-        const auto corrOrder = gfwMemberCache.configs.GetHeads()[l_ind].back();
-        const auto& head = gfwMemberCache.configs.GetHeads()[l_ind];
-        std::string histName = "inverseN";
-        histName += head;
-        const int m = corrOrder - '0';
-        double multPower = std::pow(multiplicity, m - 1);
-        if (multPower != 0) {
-          recipNHistograms.at(histName)->Fill(centmult, 1. / multPower, dnx);
         }
         auto val = fGFW->Calculate(corrconfigs.at(l_ind), 0, false).real() / dnx;
         if (std::abs(val) < 1) {

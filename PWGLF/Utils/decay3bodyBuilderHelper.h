@@ -38,9 +38,7 @@
 #include <cstdlib>
 #include <stdexcept>
 
-namespace o2
-{
-namespace pwglf
+namespace o2::pwglf
 {
 
 //_______________________________________________________________________
@@ -54,43 +52,46 @@ struct decay3bodyCandidate {
   int deuteronID = -1;
 
   // daughter properties
-  std::array<float, 3> momProton = {0.0f, 0.0f, 0.0f};
-  std::array<float, 3> momPion = {0.0f, 0.0f, 0.0f};
-  std::array<float, 3> momDeuteron = {0.0f, 0.0f, 0.0f};
-  std::array<float, 3> posProton = {0.0f, 0.0f, 0.0f};
-  std::array<float, 3> posPion = {0.0f, 0.0f, 0.0f};
-  std::array<float, 3> posDeuteron = {0.0f, 0.0f, 0.0f};
-  float xProton = 0.0f;
-  float xPion = 0.0f;
-  float xDeuteron = 0.0f;
-  std::array<float, 3> trackDCAxyToPV = {0.0f, 0.0f, 0.0f};     // 0 - proton, 1 - pion, 2 - deuteron
-  std::array<float, 3> trackDCAToPV = {0.0f, 0.0f, 0.0f};       // 0 - proton, 1 - pion, 2 - deuteron
-  std::array<float, 3> trackDCAxyToPVprop = {0.0f, 0.0f, 0.0f}; // 0 - proton, 1 - pion, 2 - deuteron
-  std::array<float, 3> trackDCAToPVprop = {0.0f, 0.0f, 0.0f};   // 0 - proton, 1 - pion, 2 - deuteron
-  std::array<float, 4> tpcNsigma = {0.0f, 0.0f, 0.0f, 0.0f};    // 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp
-  double tofNsigmaDeuteron = 0.0f;
-  std::array<float, 3> averageITSClSize = {0.0f, 0.0f, 0.0f}; // 0 - proton, 1 - pion, 2 - deuteron
-  std::array<float, 3> tpcNCl = {0.0f, 0.0f, 0.0f};           // 0 - proton, 1 - pion, 2 - deuteron
-  int pidForTrackingDeuteron = 0;
+  std::array<float, 3> momProton{};
+  std::array<float, 3> momPion{};
+  std::array<float, 3> momDeuteron{};
+  std::array<float, 3> posProton{};
+  std::array<float, 3> posPion{};
+  std::array<float, 3> posDeuteron{};
+  float xProton{};
+  float xPion{};
+  float xDeuteron{};
+  std::array<float, 3> trackDCAxyToPV{};     // 0 - proton, 1 - pion, 2 - deuteron
+  std::array<float, 3> trackDCAToPV{};       // 0 - proton, 1 - pion, 2 - deuteron
+  std::array<float, 3> trackDCAxyToPVprop{}; // 0 - proton, 1 - pion, 2 - deuteron
+  std::array<float, 3> trackDCAToPVprop{};   // 0 - proton, 1 - pion, 2 - deuteron
+  std::array<float, 4> tpcNsigma{};          // 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp
+  double tofNsigmaDeuteron{};
+  std::array<float, 3> averageITSClSize{}; // 0 - proton, 1 - pion, 2 - deuteron
+  std::array<float, 3> tpcNCl{};           // 0 - proton, 1 - pion, 2 - deuteron
+  int pidForTrackingDeuteron{};
 
   // vertex properties
-  float mass;
-  float massV0;
-  int sign;
-  float momentum[3];
-  float position[3];
-  float chi2 = 0.0f;
-  float trackedClSize = 0.0f;
-  float cosPA = 0.0f;                                        // cosine of pointing angle
-  float ctau = 0.0f;                                         // ctau of the candidate
-  float daughterDCAtoSVaverage = 0.0f;                       // average of quadratic sum of daughter DCAs to SV
-  std::array<float, 3> daughterDCAtoSV = {0.0f, 0.0f, 0.0f}; // 0 - pos, 1 - neg, 2 - bach
+  float mass{};
+  float massV0{};
+  int sign{};
+  std::array<float, 3> momentum{};
+  std::array<float, 3> position{};
+  float chi2{};
+  float trackedClSize{};
+  float cosPA{};                          // cosine of pointing angle
+  float ctau{};                           // ctau of the candidate
+  float daughterDCAtoSVaverage{};         // average of quadratic sum of daughter DCAs to SV
+  std::array<float, 3> daughterDCAtoSV{}; // 0 - pos, 1 - neg, 2 - bach
 
   // covariance matrix
-  float covProton[21] = {0.0f};
-  float covPion[21] = {0.0f};
-  float covDeuteron[21] = {0.0f};
-  float covariance[21] = {0.0f};
+  std::array<float, 21> covProton{};
+  std::array<float, 21> covPion{};
+  std::array<float, 21> covDeuteron{};
+  std::array<float, 21> covariance{};
+
+  // strangeness tracking
+  std::array<float, 2> itsTrackDCAToSV{};
 };
 
 //_______________________________________________________________________
@@ -163,7 +164,7 @@ class decay3bodyBuilderHelper
     float maxCtau;
     float minCosPA;
     float maxChi2;
-  } decay3bodyselections;
+  } decay3bodyselections{};
 
   // SVertexer selection criteria
   struct {
@@ -177,7 +178,7 @@ class decay3bodyBuilderHelper
     float maxTgl3Body;
     float maxDCAXY3Body;
     float maxDCAZ3Body;
-  } svertexerselections;
+  } svertexerselections{};
 
   //_______________________________________________________________________
   // build Decay3body from three tracks, including V0 building.
@@ -295,8 +296,8 @@ class decay3bodyBuilderHelper
 
     //_______________________________________________________________________
     // daughter track DCA to PV associated with decay3body --> computed with KFParticle
-    float pvXY[2] = {pvX, pvY};
-    float pv[3] = {pvX, pvY, pvZ};
+    std::array<float, 2> pvXY = {pvX, pvY};
+    std::array<float, 3> pv = {pvX, pvY, pvZ};
     auto trackParCovProtonCopy = trackParCovProton;
     auto trackParCovPionCopy = trackParCovPion;
     auto trackParCovDeuteronCopy = trackParCovDeuteron;
@@ -305,14 +306,14 @@ class decay3bodyBuilderHelper
     KFParticle kfdeuteron = createKFParticleFromTrackParCov(trackParCovDeuteronCopy, trackDeuteron.sign(), constants::physics::MassDeuteron);
 
     // proton DCA to PV
-    decay3body.trackDCAxyToPV[0] = kfproton.GetDistanceFromVertexXY(pvXY);
-    decay3body.trackDCAToPV[0] = kfproton.GetDistanceFromVertex(pv);
+    decay3body.trackDCAxyToPV[0] = kfproton.GetDistanceFromVertexXY(pvXY.data());
+    decay3body.trackDCAToPV[0] = kfproton.GetDistanceFromVertex(pv.data());
     // pion DCA to PV
-    decay3body.trackDCAxyToPV[1] = kfpion.GetDistanceFromVertexXY(pvXY);
-    decay3body.trackDCAToPV[1] = kfpion.GetDistanceFromVertex(pv);
+    decay3body.trackDCAxyToPV[1] = kfpion.GetDistanceFromVertexXY(pvXY.data());
+    decay3body.trackDCAToPV[1] = kfpion.GetDistanceFromVertex(pv.data());
     // deuteron DCA to PV
-    decay3body.trackDCAxyToPV[2] = kfdeuteron.GetDistanceFromVertexXY(pvXY);
-    decay3body.trackDCAToPV[2] = kfdeuteron.GetDistanceFromVertex(pv);
+    decay3body.trackDCAxyToPV[2] = kfdeuteron.GetDistanceFromVertexXY(pvXY.data());
+    decay3body.trackDCAToPV[2] = kfdeuteron.GetDistanceFromVertex(pv.data());
     // selection
     if (useSelections) {
       if (decay3body.trackDCAToPV[0] < decay3bodyselections.minDCAProtonToPV) {
@@ -438,14 +439,14 @@ class decay3bodyBuilderHelper
       }
 
       // rapidity
-      float rapidity = RecoDecay::y(std::array{decay3body.momentum[0], decay3body.momentum[1], decay3body.momentum[2]}, o2::constants::physics::MassHyperTriton);
+      float rapidity = RecoDecay::y(decay3body.momentum, o2::constants::physics::MassHyperTriton);
       if (std::fabs(rapidity) > decay3bodyselections.maxRapidity) {
         decay3body = {};
         return false;
       }
 
       // pT
-      float pT = RecoDecay::pt(std::array{decay3body.momentum[0], decay3body.momentum[1], decay3body.momentum[2]});
+      float pT = RecoDecay::pt(decay3body.momentum);
       if (pT < decay3bodyselections.minPt || pT > decay3bodyselections.maxPt) {
         decay3body = {};
         return false;
@@ -465,7 +466,7 @@ class decay3bodyBuilderHelper
     }
 
     // pointing angle
-    float cpa = RecoDecay::cpa(std::array{pvX, pvY, pvZ}, std::array{decay3body.position[0], decay3body.position[1], decay3body.position[2]}, std::array{decay3body.momentum[0], decay3body.momentum[1], decay3body.momentum[2]});
+    float cpa = RecoDecay::cpa(std::array{pvX, pvY, pvZ}, decay3body.position, decay3body.momentum);
     if (useSelections) {
       if (cpa < decay3bodyselections.minCosPA) {
         decay3body = {};
@@ -555,8 +556,7 @@ class decay3bodyBuilderHelper
     auto trackParCovDeuteron = getTrackParCov(trackDeuteron);
 
     // initialise KF primary vertex
-    KFVertex kfpVertex = createKFPVertexFromCollision(collision);
-    KFParticle kfpv(kfpVertex);
+    KFParticle kfpv(createKFPVertexFromCollision(collision));
 
     // create KFParticle objects
     KFParticle kfpProton, kfpPion, kfpDeuteron;
@@ -606,9 +606,9 @@ class decay3bodyBuilderHelper
     decay3body.sign = KFH3L.GetQ() / std::abs(KFH3L.GetQ());
 
     // transport all daughter tracks to hypertriton vertex
-    kfpProton.TransportToPoint(decay3body.position);
-    kfpPion.TransportToPoint(decay3body.position);
-    kfpDeuteron.TransportToPoint(decay3body.position);
+    kfpProton.TransportToPoint(decay3body.position.data());
+    kfpPion.TransportToPoint(decay3body.position.data());
+    kfpDeuteron.TransportToPoint(decay3body.position.data());
 
     // daughter positions
     decay3body.posProton[0] = kfpProton.GetX();
@@ -638,7 +638,8 @@ class decay3bodyBuilderHelper
     decay3body.mass = mass;
 
     // V0 mass
-    float massV0, massV0Err;
+    float massV0{};
+    float massV0Err{};
     KFV0.GetMass(massV0, massV0Err);
     decay3body.massV0 = massV0;
 
@@ -648,10 +649,8 @@ class decay3bodyBuilderHelper
     // caluclate covariance matrices
     if (calculateCovariance) {
       // candidate covariance matrix
-      std::array<float, 21> covKF;
       for (int i = 0; i < 21; i++) { // get covariance matrix elements (lower triangle)
-        covKF[i] = KFH3L.GetCovariance(i);
-        decay3body.covariance[i] = covKF[i];
+        decay3body.covariance[i] = KFH3L.GetCovariance(i);
       }
       // daughter track covariance matrices
       for (int i = 0; i < 21; i++) { // get covariance matrix elements (lower triangle)
@@ -660,8 +659,6 @@ class decay3bodyBuilderHelper
         decay3body.covDeuteron[i] = kfpDeuteron.GetCovariance(i);
       }
     }
-
-    return;
   }
 
   //_______________________________________________________________________
@@ -735,21 +732,13 @@ class decay3bodyBuilderHelper
       decay3body.covariance[4] = covVtxV(2, 1);
       decay3body.covariance[5] = covVtxV(2, 2);
       // daughter covariance matrices
-      std::array<float, 21> covTproton = {0.};
-      std::array<float, 21> covTpion = {0.};
-      std::array<float, 21> covTdeuteron = {0.};
-      propagatedTrackProton.getCovXYZPxPyPzGlo(covTproton);
-      propagatedTrackPion.getCovXYZPxPyPzGlo(covTpion);
-      propagatedTrackDeuteron.getCovXYZPxPyPzGlo(covTdeuteron);
-      for (int i = 0; i < 21; i++) {
-        decay3body.covProton[i] = covTproton[i];
-        decay3body.covPion[i] = covTpion[i];
-        decay3body.covDeuteron[i] = covTdeuteron[i];
-      }
+      propagatedTrackProton.getCovXYZPxPyPzGlo(decay3body.covProton);
+      propagatedTrackPion.getCovXYZPxPyPzGlo(decay3body.covPion);
+      propagatedTrackDeuteron.getCovXYZPxPyPzGlo(decay3body.covDeuteron);
       // candidate momentum covairance matrix
       constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
       for (int i = 0; i < 6; i++) {
-        decay3body.covariance[MomInd[i]] = covTproton[MomInd[i]] + covTpion[MomInd[i]] + covTdeuteron[MomInd[i]];
+        decay3body.covariance[MomInd[i]] = decay3body.covProton[MomInd[i]] + decay3body.covPion[MomInd[i]] + decay3body.covDeuteron[MomInd[i]];
       }
       /// WARNING: position-momentum covariances are not calculated in the DCAFitter - remain zero
     }
@@ -883,8 +872,6 @@ class decay3bodyBuilderHelper
         std::abs(dca.getY()) > svertexerselections.maxDCAXY3Body || std::abs(dca.getZ()) > svertexerselections.maxDCAZ3Body) {
       return;
     }
-
-    return;
   }
 
  private:
@@ -895,7 +882,6 @@ class decay3bodyBuilderHelper
   }
 };
 
-} // namespace pwglf
-} // namespace o2
+} // namespace o2::pwglf
 
 #endif // PWGLF_UTILS_DECAY3BODYBUILDERHELPER_H_

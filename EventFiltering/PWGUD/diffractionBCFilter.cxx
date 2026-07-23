@@ -348,7 +348,7 @@ struct DGBCFilterRun3 {
           auto fwdTracksArray = ftibc.fwdtrack_as<FTCs>();
           isDGBC = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         } else {
-          auto fwdTracksArray = FTCs{{fwdtracks.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
+          auto fwdTracksArray = fwdtracks.emptySlice();
           isDGBC = dgSelector.IsSelected(diffCuts, bcRange, tracksArray, fwdTracksArray);
         }
 

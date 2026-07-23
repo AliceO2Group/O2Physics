@@ -407,14 +407,14 @@ struct LfLambdaTwoPartPolarization {
         weight *= cfgAccCor ? 1.0 / AccMap->GetBinContent(AccMap->GetXaxis()->FindBin(v01.pt()), AccMap->GetYaxis()->FindBin(v01.yLambda())) : 1.;
 
         if (LambdaTag) {
-          histos.fill(HIST("AnaHL/LambdaSignal"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, v01.mLambda(), costhetastar1 * weight);
-          histos.fill(HIST("AnaHL/LambdaSignalSin2"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, v01.mLambda(), costhetastar1 * std::sin(2.0 * dphi) * weight);
-          histos.fill(HIST("AnaHL/LambdaSignalCos2"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, v01.mLambda(), costhetastar1 * std::cos(2.0 * dphi) * weight);
+          histos.fill(HIST("AnaHL/LambdaSignal"), trk.pt(), v01.pt(), v01.eta() - trk.eta(), dphi, centrality, v01.mLambda(), costhetastar1 * weight);
+          histos.fill(HIST("AnaHL/LambdaSignalSin2"), trk.pt(), v01.pt(), v01.eta() - trk.eta(), dphi, centrality, v01.mLambda(), costhetastar1 * std::sin(2.0 * dphi) * weight);
+          histos.fill(HIST("AnaHL/LambdaSignalCos2"), trk.pt(), v01.pt(), v01.eta() - trk.eta(), dphi, centrality, v01.mLambda(), costhetastar1 * std::cos(2.0 * dphi) * weight);
         }
         if (aLambdaTag) {
-          histos.fill(HIST("AnaHL/ALambdaSignal"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, v01.mAntiLambda(), costhetastar1 * weight);
-          histos.fill(HIST("AnaHL/ALambdaSignalSin2"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, v01.mAntiLambda(), costhetastar1 * std::sin(2.0 * dphi) * weight);
-          histos.fill(HIST("AnaHL/ALambdaSignalCos2"), trk.pt(), v01.pt(), v01.yLambda() - trk.eta(), dphi, centrality, v01.mAntiLambda(), costhetastar1 * std::cos(2.0 * dphi) * weight);
+          histos.fill(HIST("AnaHL/ALambdaSignal"), trk.pt(), v01.pt(), v01.eta() - trk.eta(), dphi, centrality, v01.mAntiLambda(), costhetastar1 * weight);
+          histos.fill(HIST("AnaHL/ALambdaSignalSin2"), trk.pt(), v01.pt(), v01.eta() - trk.eta(), dphi, centrality, v01.mAntiLambda(), costhetastar1 * std::sin(2.0 * dphi) * weight);
+          histos.fill(HIST("AnaHL/ALambdaSignalCos2"), trk.pt(), v01.pt(), v01.eta() - trk.eta(), dphi, centrality, v01.mAntiLambda(), costhetastar1 * std::cos(2.0 * dphi) * weight);
         }
       }
     }

@@ -101,6 +101,31 @@ o2::track::TrackParCovFwd getTrackParCovFwdShift(TFwdTrack const& track, float z
   return o2::track::TrackParCovFwd(track.z() + zshift, tpars, tcovs, chi2);
 }
 
+inline o2::track::TrackParCovFwd getTrackParCovFwdShiftManual(
+  const double x, const double y, const double phi, const double tgl, const double signed1Pt,
+  const double cXX,
+  const double cXY, const double cYY,
+  const double cPhiX, const double cPhiY, const double cPhiPhi,
+  const double cTglX, const double cTglY, const double cTglPhi, const double cTglTgl,
+  const double c1PtX, const double c1PtY, const double c1PtPhi, const double c1PtTgl, const double c1Pt21Pt2,
+  const float z, const float zshift, const float chi2)
+{
+  SMatrix5 tpars(x, y, phi, tgl, signed1Pt);
+
+  SMatrix55 tcovs;
+  std::vector<double> v1{
+    cXX,
+    cXY, cYY,
+    cPhiX, cPhiY, cPhiPhi,
+    cTglX, cTglY, cTglPhi, cTglTgl,
+    c1PtX, c1PtY, c1PtPhi, c1PtTgl, c1Pt21Pt2};
+  tcovs = SMatrix55(v1.begin(), v1.end());
+  v1.clear();
+  v1.shrink_to_fit();
+
+  return o2::track::TrackParCovFwd(z + zshift, tpars, tcovs, chi2);
+}
+
 template <typename TFwdTrack, typename TFwdTrackCov>
 o2::track::TrackParCovFwd getTrackParCovFwd(TFwdTrack const& track, TFwdTrackCov const& cov)
 {
@@ -243,6 +268,68 @@ o2::dataformats::GlobalFwdTrack refitGlobalMuonCov(TFwdTrack const& muon, TMFTTr
   globalTrack.setCovariances(globalCov);
 
   return globalTrack;
+}
+
+template <typename TTrackParCovFwd, typename TCollision>
+float getFwdChi2IP(TTrackParCovFwd const& inputTrk, TCollision const& collision, const float bz)
+{
+  // this function returns imcompatibility of fwdtrack respect to a given PV.
+  // fwdtracks are never PV contributors in ALICE.
+  // chi2IP is defined as chi2^{PV}_{with fwdtrack} - chi2^{PV}_{without fwdtrack}. https://arxiv.org/abs/2604.11574
+  // chi2IP cannot be used to decide the best fwdtrack-to-collision match or MFT-MCH match, because it gives biases toward small muon impact parameter.
+  // chi2IP should be used only after the best fwdtrack-to-collision association and the best MFT-MCH match are defined.
+
+  auto trk = inputTrk; // mutable copy
+
+  if (std::abs(bz) < 1e-12) {
+    trk.propagateToZlinear(collision.posZ());
+  } else {
+    trk.propagateToZhelix(collision.posZ(), bz);
+  }
+
+  float x = trk.getX();
+  float y = trk.getY();
+  float phi = trk.getPhi();
+  float tgl = trk.getTanl();
+
+  if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(phi) || !std::isfinite(tgl) || std::abs(tgl) < 1e-8) {
+    return -1.f;
+  }
+
+  float dx = x - collision.posX();
+  float dy = y - collision.posY();
+
+  // dx/dz and dy/dz for TrackParFwd.
+  float tx = std::cos(phi) / tgl;
+  float ty = std::sin(phi) / tgl;
+
+  const auto& ct = trk.getCovariances();
+
+  float trkXX = ct(0, 0);
+  float trkXY = ct(0, 1);
+  float trkYY = ct(1, 1);
+
+  float pvXX = collision.covXX() - 2.0 * tx * collision.covXZ() + tx * tx * collision.covZZ();
+  float pvXY = collision.covXY() - ty * collision.covXZ() - tx * collision.covYZ() + tx * ty * collision.covZZ();
+  float pvYY = collision.covYY() - 2.0 * ty * collision.covYZ() + ty * ty * collision.covZZ();
+
+  float sXX = trkXX + pvXX;
+  float sXY = trkXY + pvXY;
+  float sYY = trkYY + pvYY;
+
+  float det = sXX * sYY - sXY * sXY;
+
+  if (!std::isfinite(det) || det <= 0.0) {
+    return -1.f;
+  }
+
+  float chi2 = (sYY * dx * dx - 2.0 * sXY * dx * dy + sXX * dy * dy) / det;
+
+  if (!std::isfinite(chi2) || chi2 < -1e-8) {
+    return -1.f;
+  }
+
+  return std::max(0.f, chi2);
 }
 
 template <typename TFullFwdTrack, typename TCollision>
