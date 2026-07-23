@@ -144,6 +144,12 @@ enum MftTrackSelectionStep {
   NMftTrackSelectionSteps
 };
 
+enum CentralityEstimators {
+  CentFT0C = 0,
+  CentFT0CVariants1s,
+  CentFT0M
+};
+
 enum MultiplicityEstimators {
   MultNTracksPV = 0,
   MultNumContrib,
@@ -175,6 +181,7 @@ enum TrackSelection {
 static constexpr std::string_view WhatDataType[] = {"Data/", "MC/"};
 static constexpr std::string_view WhatCorrelationCase[] = {"TpcTpc/", "TpcMft/", "TpcFv0a/", "MftFv0a/", "TpcFt0a/", "MftFt0a/", "TpcFt0c/", "Ft0aFt0c/"};
 static constexpr std::string_view WhatParticles[] = {"ChPartChPart/", "D0ChPart/", "LcChPart/"};
+static constexpr std::string_view WhatCentralityEstimator[] = {"centFT0C", "centFT0CVariants1s", "centFT0M"};
 static constexpr std::string_view WhatMultiplicityEstimator[] = {"multNTracksPV", "multNumContrib", "multFT0C", "multFT0M"};
 auto static constexpr MinFt0cCell = 96;
 
@@ -234,6 +241,7 @@ struct HfTaskFlow {
   //   configurables for collisions
   struct : ConfigurableGroup {
     std::string prefix = "ConfigCollision_group";
+    Configurable<int> centralityEstimator{"centralityEstimator", 0, "0: centFT0C, 1: centFT0CVariants1s, 2: centFT0M"};
     Configurable<bool> isApplyGoodItsLayersAll{"isApplyGoodItsLayersAll", false, "Enable GoodITSLayersAll"};
     Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", false, "Enable GoodZvtxFT0vsPV cut"};
     Configurable<bool> isApplyNoCollInRofStandard{"isApplyNoCollInRofStandard", false, ""};
@@ -244,7 +252,7 @@ struct HfTaskFlow {
     Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", false, "Enable SameBunchPileup cut"};
     Configurable<int> maxMultiplicity{"maxMultiplicity", 300, "maximum multiplicity selection for collision"};
     Configurable<int> minMultiplicity{"minMultiplicity", 0, "minimum multiplicity selection for collision"};
-    Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "0: multNTracksPV, 1: numContrib, 2: multFT0C, 3: multFT0M, 4: centFT0C, 5: centFT0CVariants1s, 6: centFT0M, 7: centFV0A, 8: centNTracksPV, 9: centNGlobal, 10: centMFT"};
+    Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "0: multNTracksPV, 1: numContrib, 2: multFT0C, 3: multFT0M"};
     Configurable<bool> useMultiplicityFromTracks{"useMultiplicityFromTracks", false, "Use multiplicity from counting tracks"};
     Configurable<bool> useMultiplicityFromTracksCorrected{"useMultiplicityFromTracksCorrected", false, "Use multiplicity from counting tracks, corrected but takes a lot of computation time"};
     Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", false, "Check event quality in run condition table"};
@@ -1011,6 +1019,30 @@ struct HfTaskFlow {
         return collision.multFT0M();
       default:
         return collision.multNTracksPV();
+    }
+  }
+
+  template <typename TCollision>
+  float getCentralityEstimator(TCollision const& collision, bool isSameEvent)
+  {
+    switch (configCollision.centralityEstimator) {
+      case CentralityEstimators::CentFT0C:
+        if (isSameEvent) {
+          registry.fill(HIST("Data/hCentrality_centFT0C"), collision.centFT0C());
+        }
+        return collision.centFT0C();
+      case CentralityEstimators::CentFT0CVariants1s:
+        if (isSameEvent) {
+          registry.fill(HIST("Data/hCentrality_centFT0CVariants1s"), collision.centFT0CVariants1s());
+        }
+        return collision.centFT0CVariants1s();
+      case CentralityEstimators::CentFT0M:
+        if (isSameEvent) {
+          registry.fill(HIST("Data/hCentrality_centFT0M"), collision.centFT0M());
+        }
+        return collision.centFT0M();
+      default:
+        return collision.centFT0C();
     }
   }
 
