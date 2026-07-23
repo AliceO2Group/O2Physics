@@ -349,6 +349,7 @@ struct SingleTrackQC {
       fRegistry.add("Track/positive/hChi2MatchMCHMFT_Pt", "chi2 match MCH-MFT;p_{T,#mu} (GeV/c);chi2/ndf", o2::framework::HistType::kTH2F, {{200, 0, 10}, {200, 0.0f, 100}}, false);
       fRegistry.add("Track/positive/hMFTClusterMap", "MFT cluster map", o2::framework::HistType::kTH1F, {{1024, -0.5, 1023.5}}, false);
       fRegistry.add("Track/positive/hdR_Chi2MatchMCHMFT", "dr vs. matching chi2 MCH-MFT;chi2 match MCH-MFT;#DeltaR;", o2::framework::HistType::kTH2F, {{200, 0.0f, 100}, {200, 0, 0.5}}, false);
+      fRegistry.add("Track/positive/hLog10Chi2IP", "chi2IP;log_{10}(#chi^{2}_{IP})", o2::framework::HistType::kTH1F, {{100, -5, 5}}, false);
       fRegistry.addClone("Track/positive/", "Track/negative/");
     }
   }
@@ -681,6 +682,7 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/positive/hChi2MatchMCHMFT_Pt"), track.pt(), track.chi2MatchMCHMFT());
       fRegistry.fill(HIST("Track/positive/hMFTClusterMap"), track.mftClusterMap());
       fRegistry.fill(HIST("Track/positive/hdR_Chi2MatchMCHMFT"), track.chi2MatchMCHMFT(), std::sqrt(deta * deta + dphi * dphi));
+      fRegistry.fill(HIST("Track/positive/hLog10Chi2IP"), std::log10(track.chi2IP()));
     } else {
       fRegistry.fill(HIST("Track/negative/hs"), track.pt(), track.eta(), track.phi(), dca_xy, weight);
       fRegistry.fill(HIST("Track/negative/hEtaPhi_MatchMCHMID"), track.phiMatchedMCHMID(), track.etaMatchedMCHMID(), weight);
@@ -705,6 +707,7 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/negative/hChi2MatchMCHMFT_Pt"), track.pt(), track.chi2MatchMCHMFT());
       fRegistry.fill(HIST("Track/negative/hMFTClusterMap"), track.mftClusterMap());
       fRegistry.fill(HIST("Track/negative/hdR_Chi2MatchMCHMFT"), track.chi2MatchMCHMFT(), std::sqrt(deta * deta + dphi * dphi));
+      fRegistry.fill(HIST("Track/negative/hLog10Chi2IP"), std::log10(track.chi2IP()));
     }
   }
 
