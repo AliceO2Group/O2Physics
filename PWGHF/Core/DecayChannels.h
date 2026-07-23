@@ -205,17 +205,32 @@ enum DecayChannelResonant : HfDecayChannel {
 /// @brief beauty candidates: beauty to J/ψ decay channels
 enum DecayChannelToJpsiMain : HfDecayChannel {
   // B0
-  B0ToJpsiPiK = 1, // J/ψ π− K+
+  B0ToJpsiPiKToMuMuPiK = 1, // J/ψ(->μ+μ−) π− K+
+  B0ToJpsiPiKToEEPiK = 6,   // J/ψ(->e+e−) π− K+
+  B0ToJpsiXToMuMuX = 7,     // J/ψ(->μ+μ−) X (partly/mis reconstructed)
+  B0ToJpsiXToEEX = 8,       // J/ψ(->e+e−) X (partly/mis reconstructed)
   // Bs0
-  BsToJpsiKK = 2, // J/ψ K+ K−
+  BsToJpsiKKToMuMuKK = 2, // J/ψ(->μ+μ−) K+ K−
+  BsToJpsiKKToEEKK = 9,   // J/ψ(->e+e−) K+ K−
+  BsToJpsiXToMuMuX = 10,  // J/ψ(->μ+μ−) X (partly/mis reconstructed)
+  BsToJpsiXToEEX = 11,    // J/ψ(->e+e−) X (partly/mis reconstructed)
   // Λb0
-  LbToJpsiPK = 3, // J/ψ p K−
+  LbToJpsiPKToMuMuPK = 3, // J/ψ(->μ+μ−) p K−
+  LbToJpsiPKToEEPK = 12,  // J/ψ(->e+e−) p K−
+  LbToJpsiXToMuMuX = 13,  // J/ψ(->μ+μ−) X (partly/mis reconstructed)
+  LbToJpsiXToEEX = 14,    // J/ψ(->e+e−) X (partly/mis reconstructed)
   // B+
-  BplusToJpsiK = 4, // J/ψ K+
+  BplusToJpsiKToMuMuK = 4,  // J/ψ(->μ+μ−) K+
+  BplusToJpsiKToEEK = 15,   // J/ψ(->e+e−) K+
+  BplusToJpsiXToMuMuX = 16, // J/ψ(->μ+μ−) X (partly/mis reconstructed)
+  BplusToJpsiXToEEX = 17,   // J/ψ(->e+e−) X (partly/mis reconstructed)
   // Bc+
-  BcToJpsiPi = 5, // J/ψ π+
+  BcToJpsiPiToMuMuPi = 5, // J/ψ(->μ+μ−) π+
+  BcToJpsiPiToEEPi = 18,  // J/ψ(->e+e−) π+
+  BcToJpsiXToMuMuX = 19,  // J/ψ(->μ+μ−) X (partly/mis reconstructed)
+  BcToJpsiXToEEX = 20,    // J/ψ(->e+e−) X (partly/mis reconstructed)
   //
-  NChannelsToJpsiMain = BcToJpsiPi // last channel
+  NChannelsToJpsiMain = BcToJpsiXToEEX // last channel
 };
 /// @brief beauty candidates: beauty to J/ψ resonant decay channels
 enum DecayChannelToJpsiResonant : HfDecayChannel {

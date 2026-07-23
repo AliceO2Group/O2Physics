@@ -33,6 +33,7 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -42,8 +43,6 @@
 #include <vector>
 
 using namespace o2::constants::physics;
-
-ClassImp(VarManager);
 
 TString VarManager::fgVariableNames[VarManager::kNVars] = {""};
 TString VarManager::fgVariableUnits[VarManager::kNVars] = {""};
@@ -71,7 +70,7 @@ o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
 o2::vertexing::FwdDCAFitterN<3> VarManager::fgFitterThreeProngFwd;
 o2::globaltracking::MatchGlobalFwd VarManager::mMatching;
 std::map<VarManager::CalibObjects, TObject*> VarManager::fgCalibs;
-bool VarManager::fgRunTPCPostCalibration[4] = {false, false, false, false};
+std::array<bool, 4> VarManager::fgRunTPCPostCalibration = {false, false, false, false};
 int VarManager::fgCalibrationType = 0;                // 0 - no calibration, 1 - calibration vs (TPCncls,pIN,eta) typically for pp, 2 - calibration vs (eta,nPV,nLong,tLong) typically for PbPb
 bool VarManager::fgUseInterpolatedCalibration = true; // use interpolated calibration histograms (default: true)
 int VarManager::fgEfficiencyType = 0;                 // type of efficiency to be applied, default is no efficiency
@@ -2487,6 +2486,12 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kDCATrackVtxProd"] = kDCATrackVtxProd;
   fgVarNamesMap["kV2SP"] = kV2SP;
   fgVarNamesMap["kV2EP"] = kV2EP;
+  fgVarNamesMap["kA2EP_TPC"] = kA2EP_TPC;
+  fgVarNamesMap["kA2EP_FT0A"] = kA2EP_FT0A;
+  fgVarNamesMap["kA2EP_FT0C"] = kA2EP_FT0C;
+  fgVarNamesMap["kA2EPME_TPC"] = kA2EPME_TPC;
+  fgVarNamesMap["kA2EPME_FT0A"] = kA2EPME_FT0A;
+  fgVarNamesMap["kA2EPME_FT0C"] = kA2EPME_FT0C;
   fgVarNamesMap["kWV2SP"] = kWV2SP;
   fgVarNamesMap["kWV2EP"] = kWV2EP;
   fgVarNamesMap["kU2Q2"] = kU2Q2;

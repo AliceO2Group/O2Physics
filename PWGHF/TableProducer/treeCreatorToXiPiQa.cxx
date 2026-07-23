@@ -36,6 +36,8 @@
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
+#include <Rtypes.h>
+
 #include <cstdint>
 
 using namespace o2;
@@ -219,9 +221,10 @@ DECLARE_SOA_COLUMN(MassV0Chi2OverNdf, massV0Chi2OverNdf, float);
 DECLARE_SOA_COLUMN(MassCascChi2OverNdf, massCascChi2OverNdf, float);
 // MC
 DECLARE_SOA_COLUMN(ParticlePdg, particlePdg, int);
+DECLARE_SOA_COLUMN(PtGenB, ptGenB, float);
 DECLARE_SOA_COLUMN(NContribMax, nContribMax, int);
 DECLARE_SOA_COLUMN(NRecoColl, nRecoColl, int);
-DECLARE_SOA_COLUMN(PtGenB, ptGenB, float);
+DECLARE_SOA_COLUMN(IsXic0WithRecoCollSel8, isXic0WithRecoCollSel8, bool);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfToXiPiEvs, "AOD", "HFTOXIPIEV",
@@ -322,9 +325,11 @@ DECLARE_SOA_TABLE(HfCandToXiPiGen, "AOD", "HFCANDTOXIPIGEN",
                   full::FlagMcMatchRec,
                   full::OriginRec,
                   full::ParticlePdg,
+                  full::PtGenB,
                   full::NContribMax,
                   full::NRecoColl,
-                  full::PtGenB)
+                  full::IsXic0WithRecoCollSel8);
+
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -660,10 +665,14 @@ struct HfTreeCreatorToXiPiQa {
       auto yGen = particle.rapidityCharmBaryonGen();
 
       int nContribMax = 0;
+      bool recoCollPassedSel8 = false;
       auto mcCollision = particle.template mcCollision_as<McCollType>();
       const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, mcCollision.globalIndex());
       for (const auto& recoCol : recoCollsPerMcColl) {
         nContribMax = recoCol.numContrib() > nContribMax ? recoCol.numContrib() : nContribMax;
+        if (recoCol.sel8()) {
+          recoCollPassedSel8 = true;
+        }
       }
 
       float ptGenBhad = (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) ? mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt() : -999.f;
@@ -676,9 +685,10 @@ struct HfTreeCreatorToXiPiQa {
                             particle.flagMcMatchGen(),
                             particle.originMcGen(),
                             particle.pdgCode(),
+                            ptGenBhad,
                             nContribMax,
                             recoCollsPerMcColl.size(),
-                            ptGenBhad);
+                            recoCollPassedSel8);
     }
   }
 

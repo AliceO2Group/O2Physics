@@ -20,6 +20,7 @@
 #include "PWGCF/Femto/Core/closePairRejection.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
 #include "PWGCF/Femto/Core/kinkHistManager.h"
+#include "PWGCF/Femto/Core/mcParticleHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/pairCleaner.h"
 #include "PWGCF/Femto/Core/pairHistManager.h"
@@ -42,15 +43,12 @@
 #include <random>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::pairbuilder
 {
-namespace pairbuilder
-{
-
 const int64_t nLimitPartitionIdenticalParticles = 2;
 const int64_t nLimitPartitionParticles = 1;
 
-template <const char* prefixTrack1, const char* prefixTrack2, const char* prefixSe, const char* prefixMe, const char* prefixCprSe, const char* prefixCprMe>
+template <auto& prefixTrack1, auto& prefixTrack2, auto& prefixSe, auto& prefixMe, auto& prefixCprSe, auto& prefixCprMe>
 class PairTrackTrackBuilder
 {
  public:
@@ -287,18 +285,18 @@ class PairTrackTrackBuilder
   std::uniform_int_distribution<> mDist;
 };
 
-template <const char* prefixV01,
-          const char* prefixPosDau1,
-          const char* prefixNegDau1,
-          const char* prefixV02,
-          const char* prefixPosDau2,
-          const char* prefixNegDau2,
-          const char* prefixSe,
-          const char* prefixMe,
-          const char* prefixCprPosSe,
-          const char* prefixCprNegSe,
-          const char* prefixCprPosMe,
-          const char* prefixCprNegMe,
+template <auto& prefixV01,
+          auto& prefixPosDau1,
+          auto& prefixNegDau1,
+          auto& prefixV02,
+          auto& prefixPosDau2,
+          auto& prefixNegDau2,
+          auto& prefixSe,
+          auto& prefixMe,
+          auto& prefixCprPosSe,
+          auto& prefixCprNegSe,
+          auto& prefixCprPosMe,
+          auto& prefixCprNegMe,
           modes::V0 v0Type1,
           modes::V0 v0Type2>
 class PairV0V0Builder
@@ -542,14 +540,14 @@ class PairV0V0Builder
   std::uniform_int_distribution<> mDist;
 };
 
-template <const char* prefixTrack,
-          const char* prefixV0,
-          const char* prefixPosDau,
-          const char* prefixNegDau,
-          const char* prefixSe,
-          const char* prefixMe,
-          const char* prefixCprSe,
-          const char* prefixCprMe,
+template <auto& prefixTrack,
+          auto& prefixV0,
+          auto& prefixPosDau,
+          auto& prefixNegDau,
+          auto& prefixSe,
+          auto& prefixMe,
+          auto& prefixCprSe,
+          auto& prefixCprMe,
           modes::V0 v0Type>
 class PairTrackV0Builder
 {
@@ -709,14 +707,14 @@ class PairTrackV0Builder
   int mMixingDepth = 5;
 };
 
-template <const char* prefixTrack,
-          const char* prefixResonance,
-          const char* prefixPosDau,
-          const char* prefixNegDau,
-          const char* prefixSe,
-          const char* prefixMe,
-          const char* prefixCprSe,
-          const char* prefixCprMe,
+template <auto& prefixTrack,
+          auto& prefixResonance,
+          auto& prefixPosDau,
+          auto& prefixNegDau,
+          auto& prefixSe,
+          auto& prefixMe,
+          auto& prefixCprSe,
+          auto& prefixCprMe,
           modes::TwoTrackResonance resonanceType>
 class PairTrackTwoTrackResonanceBuilder
 {
@@ -820,18 +818,18 @@ class PairTrackTwoTrackResonanceBuilder
   int mMixingDepth = 5;
 };
 
-template <const char* prefixV0,
-          const char* prefixV0PosDau,
-          const char* prefixV0NegDau,
-          const char* prefixResonance,
-          const char* prefixResonancePosDau,
-          const char* prefixResonanceNegDau,
-          const char* prefixSe,
-          const char* prefixMe,
-          const char* prefixCprPosSe,
-          const char* prefixCprNegSe,
-          const char* prefixCprPosMe,
-          const char* prefixCprNegMe,
+template <auto& prefixV0,
+          auto& prefixV0PosDau,
+          auto& prefixV0NegDau,
+          auto& prefixResonance,
+          auto& prefixResonancePosDau,
+          auto& prefixResonanceNegDau,
+          auto& prefixSe,
+          auto& prefixMe,
+          auto& prefixCprPosSe,
+          auto& prefixCprNegSe,
+          auto& prefixCprPosMe,
+          auto& prefixCprNegMe,
           modes::V0 v0Type,
           modes::TwoTrackResonance resonanceType>
 class PairV0TwoTrackResonanceBuilder
@@ -944,13 +942,13 @@ class PairV0TwoTrackResonanceBuilder
   int mMixingDepth = 5;
 };
 
-template <const char* prefixTrack,
-          const char* prefixKink,
-          const char* prefixChaDau,
-          const char* prefixSe,
-          const char* prefixMe,
-          const char* prefixCprSe,
-          const char* prefixCprMe,
+template <auto& prefixTrack,
+          auto& prefixKink,
+          auto& prefixChaDau,
+          auto& prefixSe,
+          auto& prefixMe,
+          auto& prefixCprSe,
+          auto& prefixCprMe,
           modes::Kink kinkType>
 class PairTrackKinkBuilder
 {
@@ -1093,17 +1091,17 @@ class PairTrackKinkBuilder
   int mMixingDepth = 5;
 };
 
-template <const char* prefixTrack,
-          const char* prefixCascade,
-          const char* prefixBachelor,
-          const char* prefixPosDau,
-          const char* prefixNegDau,
-          const char* prefixSe,
-          const char* prefixMe,
-          const char* prefixCprBachelorSe,
-          const char* prefixCprV0DaughterSe,
-          const char* prefixCprBachelorMe,
-          const char* prefixCprV0DaughterMe,
+template <auto& prefixTrack,
+          auto& prefixCascade,
+          auto& prefixBachelor,
+          auto& prefixPosDau,
+          auto& prefixNegDau,
+          auto& prefixSe,
+          auto& prefixMe,
+          auto& prefixCprBachelorSe,
+          auto& prefixCprV0DaughterSe,
+          auto& prefixCprBachelorMe,
+          auto& prefixCprV0DaughterMe,
           modes::Cascade cascadeType>
 class PairTrackCascadeBuilder
 {
@@ -1253,7 +1251,183 @@ class PairTrackCascadeBuilder
   int mMixingDepth = 5;
 };
 
-} // namespace pairbuilder
-} // namespace o2::analysis::femto
+template <auto& prefixMcParticle1, auto& prefixMcParticle2, auto& prefixSe, auto& prefixMe, auto& prefixCprSe, auto& prefixCprMe>
+class PairMcParticleMcParticleBuilder
+{
+ public:
+  PairMcParticleMcParticleBuilder() = default;
+  ~PairMcParticleMcParticleBuilder() = default;
+
+  template <modes::Mode modeSe,
+            modes::Mode modeMe,
+            typename T1,
+            typename T2,
+            typename T3,
+            typename T4,
+            typename T5,
+            typename T6,
+            typename T7,
+            typename T8,
+            typename T9,
+            typename T10,
+            typename T11,
+            typename T12,
+            typename T13,
+            typename T14,
+            typename T15,
+            typename T16>
+  void init(o2::framework::HistogramRegistry* registry,
+            T1 const& confCollisionBinning,
+            T2 const& confMcParticleSelection1,
+            T3 const& confMcParticleSelection2,
+            T4 const& confMcParticleBinning1,
+            T5 const& confMcParticleBinning2,
+            T6 const& confMcParticleCleaner1,
+            T7 const& confMcParticleCleaner2,
+            T8 const& confCpr,
+            T9 const& confMixing,
+            T10 const& confPairBinning,
+            T11 const& confPairCuts,
+            std::map<T12, std::vector<o2::framework::AxisSpec>> const& colHistSpec,
+            std::map<T13, std::vector<o2::framework::AxisSpec>> const& mcParticleHistSpec1,
+            std::map<T14, std::vector<o2::framework::AxisSpec>> const& mcParticleHistSpec2,
+            std::map<T15, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
+            std::map<T16, std::vector<o2::framework::AxisSpec>> const& cprHistSpec)
+  {
+
+    // check if correlate the same tracks or not
+    mSameSpecies = confMixing.sameSpecies.value;
+
+    mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
+    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPc.template init<modeSe>(confPairCuts);
+
+    if (mSameSpecies) {
+      mMcParticleCleaner1.init(confMcParticleCleaner1);
+
+      mMcParticleHistManager1.init(registry, mcParticleHistSpec1, confMcParticleBinning1);
+
+      mPairHistManagerSe.setMass(confMcParticleSelection1.pdgCodeAbs.value, confMcParticleSelection1.pdgCodeAbs.value);
+      mPairHistManagerSe.setCharge(1, 1);
+      mCprSe.init(registry, cprHistSpec, confCpr);
+
+      mPairHistManagerMe.setMass(confMcParticleSelection1.pdgCodeAbs.value, confMcParticleSelection1.pdgCodeAbs.value);
+      mPairHistManagerMe.setCharge(1, 1);
+      mCprMe.init(registry, cprHistSpec, confCpr);
+    } else {
+      mMcParticleCleaner1.init(confMcParticleCleaner1);
+      mMcParticleCleaner2.init(confMcParticleCleaner2);
+      mMcParticleHistManager1.init(registry, mcParticleHistSpec1, confMcParticleBinning1);
+      mMcParticleHistManager2.init(registry, mcParticleHistSpec2, confMcParticleBinning2);
+
+      mPairHistManagerSe.setMass(confMcParticleSelection1.pdgCodeAbs.value, confMcParticleSelection2.pdgCodeAbs.value);
+      mPairHistManagerSe.setCharge(1, 1);
+      mCprSe.init(registry, cprHistSpec, confCpr);
+
+      mPairHistManagerMe.setMass(confMcParticleSelection1.pdgCodeAbs.value, confMcParticleSelection2.pdgCodeAbs.value);
+      mPairHistManagerMe.setCharge(1, 1);
+      mCprMe.init(registry, cprHistSpec, confCpr);
+    }
+
+    // setup mixing
+    mMixingPolicy = static_cast<pairhistmanager::MixingPolicy>(confMixing.policy.value);
+    mMixingDepth = confMixing.depth.value;
+
+    // setup rng if necessary
+    if (confMixing.seed.value >= 0) {
+      uint64_t randomSeed = 0;
+      mMixIdenticalParticles = true;
+      if (confMixing.seed.value == 0) {
+        randomSeed = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+      } else {
+        randomSeed = static_cast<uint64_t>(confMixing.seed.value);
+      }
+      mRng = std::mt19937(randomSeed);
+      mDist = std::uniform_int_distribution(static_cast<int>(pairprocesshelpers::kOrder12), static_cast<int>(pairprocesshelpers::kOrder21));
+    }
+  }
+
+  // only mc
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
+  void processSameEvent(T1 const& col, T2 const& mcParticles, T3 const& mcMothers, T4 const& mcPartonicMothers, T5& partition1, T6& partition2, T7& cache)
+  {
+    if (mSameSpecies) {
+      auto mcParticleSlice = partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
+
+      if (mcParticleSlice.size() < nLimitPartitionIdenticalParticles) {
+        return;
+      }
+      mColHistManager.template fill<mode>(col);
+      pairprocesshelpers::PairOrder pairOrder = pairprocesshelpers::kOrder12;
+      if (mMixIdenticalParticles) {
+        pairOrder = static_cast<pairprocesshelpers::PairOrder>(mDist(mRng));
+      }
+      pairprocesshelpers::processSameEvent<mode>(mcParticleSlice, mcParticles, mcMothers, mcPartonicMothers, col, mMcParticleHistManager1, mPairHistManagerSe, mMcParticleCleaner1, mCprSe, mPc, pairOrder);
+    } else {
+      auto mcParticleSlice1 = partition1->sliceByCached(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
+      auto mcParticleSlice2 = partition2->sliceByCached(o2::aod::femtomcparticle::fMcColId, col.globalIndex(), cache);
+      if (mcParticleSlice1.size() < nLimitPartitionParticles || mcParticleSlice2.size() < nLimitPartitionParticles) {
+        return;
+      }
+      mColHistManager.template fill<mode>(col);
+      pairprocesshelpers::processSameEvent<mode>(mcParticleSlice1, mcParticleSlice2, mcParticles, mcMothers, mcPartonicMothers, col, mMcParticleHistManager1, mMcParticleHistManager2, mPairHistManagerSe, mMcParticleCleaner1, mMcParticleCleaner2, mCprSe, mPc);
+    }
+  }
+
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
+  void processMixedEvent(T1 const& cols, T2 const& mcParticles, T3 const& mcMothers, T4 const& mcPartonicMothers, T5& partition1, T6& partition2, T7& cache, T8& binsVtxMult, T9& binsVtxCent, T10& binsVtxMultCent)
+  {
+    if (mSameSpecies) {
+      switch (mMixingPolicy) {
+        case static_cast<int>(pairhistmanager::kVtxMult):
+          pairprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMult, mMixingDepth, mPairHistManagerMe, mMcParticleCleaner1, mMcParticleCleaner1, mCprMe, mPc);
+          break;
+        case static_cast<int>(pairhistmanager::kVtxCent):
+          pairprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mPairHistManagerMe, mMcParticleCleaner1, mMcParticleCleaner1, mCprMe, mPc);
+          break;
+        case static_cast<int>(pairhistmanager::kVtxMultCent):
+          pairprocesshelpers::processMixedEvent<mode>(cols, partition1, partition1, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mMcParticleCleaner1, mMcParticleCleaner1, mCprMe, mPc);
+          break;
+        default:
+          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+      }
+    } else {
+      switch (mMixingPolicy) {
+        case static_cast<int>(pairhistmanager::kVtxMult):
+          pairprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMult, mMixingDepth, mPairHistManagerMe, mMcParticleCleaner1, mMcParticleCleaner2, mCprMe, mPc);
+          break;
+        case static_cast<int>(pairhistmanager::kVtxCent):
+          pairprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxCent, mMixingDepth, mPairHistManagerMe, mMcParticleCleaner1, mMcParticleCleaner2, mCprMe, mPc);
+          break;
+        case static_cast<int>(pairhistmanager::kVtxMultCent):
+          pairprocesshelpers::processMixedEvent<mode>(cols, partition1, partition2, mcParticles, mcMothers, mcPartonicMothers, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mMcParticleCleaner1, mMcParticleCleaner2, mCprMe, mPc);
+          break;
+        default:
+          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+      }
+    }
+  }
+
+ private:
+  colhistmanager::CollisionHistManager mColHistManager;
+  mcparticlehistmanager::McParticleHistManager<prefixMcParticle1> mMcParticleHistManager1;
+  mcparticlehistmanager::McParticleHistManager<prefixMcParticle2> mMcParticleHistManager2;
+  pairhistmanager::PairHistManager<prefixSe, modes::Particle::kTrack, modes::Particle::kTrack> mPairHistManagerSe;
+  pairhistmanager::PairHistManager<prefixMe, modes::Particle::kTrack, modes::Particle::kTrack> mPairHistManagerMe;
+  closepairrejection::ClosePairRejectionMcParticleMcParticle<prefixCprSe> mCprSe;
+  closepairrejection::ClosePairRejectionMcParticleMcParticle<prefixCprMe> mCprMe;
+  paircleaner::McParticleMcParticlePairCleaner mPc;
+  particlecleaner::ParticleCleaner mMcParticleCleaner1;
+  particlecleaner::ParticleCleaner mMcParticleCleaner2;
+  pairhistmanager::MixingPolicy mMixingPolicy = pairhistmanager::MixingPolicy::kVtxMult;
+  int mMixingDepth = 5;
+  bool mSameSpecies = false;
+  bool mMixIdenticalParticles = false;
+  std::mt19937 mRng;
+  std::uniform_int_distribution<> mDist;
+};
+
+} // namespace o2::analysis::femto::pairbuilder
 
 #endif // PWGCF_FEMTO_CORE_PAIRBUILDER_H_

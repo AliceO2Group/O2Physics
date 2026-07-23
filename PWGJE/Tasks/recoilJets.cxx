@@ -21,7 +21,6 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 
@@ -1128,8 +1127,8 @@ struct RecoilJets {
                     Form("Bkgd fluctuations RC with #it{R} = %.1f avoid lead, sublead jet in vic. %.1f vs. EA", bkgd.randomConeR.value, bkgd.minDeltaRToJet.value),
                     kTH2F, {{eaAxis.axis}, {400, -40., 60., "#delta#it{p}_{T} (GeV/#it{c})"}}, hist.sumw2);
 
-        spectra.add(Form("hScaled%s_deltaPtRandomConeInEventTTSig", eaAxis.label),
-                    Form("Bkgd fluctuations RC with #it{R} = %.1f in events with TT{%.0f, %.0f} in vic. %.1f vs. EA", bkgd.randomConeR.value, ptTTsigMin, ptTTsigMax, bkgd.minDeltaRToJet.value),
+        spectra.add(Form("hScaled%s_deltaPtPerpConeTTSig", eaAxis.label),
+                    Form("Bkgd fluctuations PC with #it{R} = %.1f in events with TT{%.0f, %.0f} vs. EA", bkgd.randomConeR.value, ptTTsigMin, ptTTsigMax),
                     kTH2F, {{eaAxis.axis}, {400, -40., 60., "#delta#it{p}_{T} (GeV/#it{c})"}}, hist.sumw2);
       }
     }
@@ -1153,7 +1152,7 @@ struct RecoilJets {
                     Form("Bkgd fluctuations RC with #it{R} = %.1f avoid lead, sublead jet in vic. %.1f vs. EA", bkgd.randomConeR.value, bkgd.minDeltaRToJet.value),
                     kTH2F, {{eaAxis.axis}, {400, -40., 60., "#delta#it{p}_{T} (GeV/#it{c})"}}, hist.sumw2);
 
-        spectra.add(Form("hScaled%s_deltaPtRandomConeInEventTTSig_PartLevel", eaAxis.label),
+        spectra.add(Form("hScaled%s_deltaPtPerpConeTTSig_PartLevel", eaAxis.label),
                     Form("Bkgd fluctuations RC with #it{R} = %.1f in events with TT{%.0f, %.0f} in vic. %.1f vs. EA", bkgd.randomConeR.value, ptTTsigMin, ptTTsigMax, bkgd.minDeltaRToJet.value),
                     kTH2F, {{eaAxis.axis}, {400, -40., 60., "#delta#it{p}_{T} (GeV/#it{c})"}}, hist.sumw2);
       }
@@ -2480,6 +2479,7 @@ struct RecoilJets {
 
     uint64_t index = 0;
     for (const auto& track : tracks) {
+      ++index;
       if (skipTrack(track))
         continue;
 
@@ -2495,9 +2495,8 @@ struct RecoilJets {
       const auto ptTTsigMin = tt.sigPtRange->at(0);
       const auto ptTTsigMax = tt.sigPtRange->at(1);
       if (track.pt() > ptTTsigMin && track.pt() < ptTTsigMax) {
-        vCandForTT.emplace_back(index);
+        vCandForTT.emplace_back(index - 1);
       }
-      ++index;
     }
     spectra.fill(HIST("hScaledFT0C_deltaPtRandomCone"), scaledFT0C, randomConePt - areaRC * rho, weight);
     spectra.fill(HIST("hScaledFT0M_deltaPtRandomCone"), scaledFT0M, randomConePt - areaRC * rho, weight);
@@ -2590,19 +2589,6 @@ struct RecoilJets {
       float dEtaSubleadJet = std::pow(subleadJetEta - randomConeEta, 2);
       float dPhiSubleadJet = std::pow(RecoDecay::constrainAngle(subleadJetPhi - randomConePhi, -constants::math::PI), 2);
 
-      // Try to add events with TTsig
-      bool keepEventWithTT = false;
-      if (vCandForTT.size() > 0) // at least 1 TT
-      {
-        auto randIndexTrack = randGen->Integer(vCandForTT.size());
-        auto objTT = tracks.iteratorAt(vCandForTT[randIndexTrack]);
-
-        // Skip events where TT is not a part of leading or subleading jets (mutlijet event, difficult to place RC and avoid hard jets)
-        if (isTrackInJet(jets.iteratorAt(0), objTT) || isTrackInJet(jets.iteratorAt(1), objTT)) {
-          keepEventWithTT = true;
-        }
-      }
-
       //----------------------------------------------------------
       bool isTherePlaceForRC = false;
       for (int attempt = 0; attempt < maxAttempts; ++attempt) {
@@ -2637,11 +2623,37 @@ struct RecoilJets {
         }
         spectra.fill(HIST("hScaledFT0C_deltaPtRandomConeAvoidLeadAndSubleadJet"), scaledFT0C, randomConePt - areaRC * rho, weight);
         spectra.fill(HIST("hScaledFT0M_deltaPtRandomConeAvoidLeadAndSubleadJet"), scaledFT0M, randomConePt - areaRC * rho, weight);
+      }
+    }
 
-        if (keepEventWithTT) {
-          spectra.fill(HIST("hScaledFT0C_deltaPtRandomConeInEventTTSig"), scaledFT0C, randomConePt - areaRC * rho, weight);
-          spectra.fill(HIST("hScaledFT0M_deltaPtRandomConeInEventTTSig"), scaledFT0M, randomConePt - areaRC * rho, weight);
+    //----------------------------------------------------------
+    // Place cone perpendicular to TTSig candidate
+    if (vCandForTT.size() > 0) // at least 1 TT
+    {
+      auto randIndexTrack = randGen->Integer(vCandForTT.size());
+      auto objTT = tracks.iteratorAt(vCandForTT[randIndexTrack]);
+
+      float perpTTConeEta = objTT.eta();
+      float perpTTConePhi = RecoDecay::constrainAngle(objTT.phi() + constants::math::PIHalf, 0.0f);
+
+      // Keep the full cone inside the track acceptance
+      if (std::abs(perpTTConeEta) < (trk.etaCut - bkgd.randomConeR)) {
+        float perpTTConePt = 0.0;
+        for (const auto& track : tracks) {
+          if (skipTrack(track))
+            continue;
+
+          float dEta = std::pow(perpTTConeEta - track.eta(), 2);
+          float dPhi = std::pow(RecoDecay::constrainAngle(perpTTConePhi - track.phi(), -constants::math::PI), 2);
+
+          if ((dEta + dPhi) < radiusRC2) // inside TT perpendicular cone
+          {
+            perpTTConePt += track.pt();
+          }
         }
+
+        spectra.fill(HIST("hScaledFT0C_deltaPtPerpConeTTSig"), scaledFT0C, perpTTConePt - areaRC * rho, weight);
+        spectra.fill(HIST("hScaledFT0M_deltaPtPerpConeTTSig"), scaledFT0M, perpTTConePt - areaRC * rho, weight);
       }
     }
   }
@@ -2831,8 +2843,8 @@ struct RecoilJets {
         spectra.fill(HIST("hScaledFT0M_deltaPtRandomConeAvoidLeadAndSubleadJet_PartLevel"), scaledFT0M, randomConePt - areaRC * rho, weight);
 
         if (keepEventWithTT) {
-          spectra.fill(HIST("hScaledFT0C_deltaPtRandomConeInEventTTSig_PartLevel"), scaledFT0C, randomConePt - areaRC * rho, weight);
-          spectra.fill(HIST("hScaledFT0M_deltaPtRandomConeInEventTTSig_PartLevel"), scaledFT0M, randomConePt - areaRC * rho, weight);
+          spectra.fill(HIST("hScaledFT0C_deltaPtPerpConeTTSig_PartLevel"), scaledFT0C, randomConePt - areaRC * rho, weight);
+          spectra.fill(HIST("hScaledFT0M_deltaPtPerpConeTTSig_PartLevel"), scaledFT0M, randomConePt - areaRC * rho, weight);
         }
       }
     }

@@ -19,17 +19,14 @@
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
-#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -38,11 +35,10 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
-#include <TH2.h>
+#include <TMCProcess.h>
 #include <TPDGCode.h>
 
 #include <algorithm>
-#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -68,7 +64,7 @@ using TrackMCTrueTable = aod::McParticles;
 
 enum {
   kTrackTypebegin = 0,
-  kGlobalplusITS = 1,
+  kGlobalplusITS,
   kGlobalonly,
   kITSonly,
   kTrackTypeend
@@ -76,7 +72,7 @@ enum {
 
 enum {
   kGenpTbegin = 0,
-  kNoGenpTVar = 1,
+  kNoGenpTVar,
   kGenpTup,
   kGenpTdown,
   kGenpTend
@@ -91,7 +87,7 @@ enum {
 // ────────────────────────────────────────────────────────────────────────────
 enum {
   kGenTrkTypebegin = 0,
-  kGenAll = 1,
+  kGenAll,
   kGenPion,
   kGenKaon,
   kGenProton,
@@ -102,7 +98,7 @@ enum {
 
 enum {
   kRecTrkTypebegin = 0,
-  kRecoAll = 1,
+  kRecoAll,
   kRecoHasmc,
   kRecoPrimary,
   kRecoPion,
@@ -111,30 +107,30 @@ enum {
   kRecoOther,
   kRecoSecondary,
   kRecoWeakDecay,
+  kRecoMaterial,
   kRecoFake,
   kRecoBkg,
   kRecTrkTypeend
 };
 
-AxisSpec axisEvent{15, 0.5, 15.5, "#Event", "EventAxis"};
-AxisSpec axisVtxZ{40, -20, 20, "Vertex Z", "VzAxis"};
-AxisSpec axisEta{40, -2, 2, "#eta", "EtaAxis"};
-AxisSpec axisPhi{{0, o2::constants::math::PIQuarter, o2::constants::math::PIHalf, o2::constants::math::PIQuarter * 3., o2::constants::math::PI, o2::constants::math::PIQuarter * 5., o2::constants::math::PIHalf * 3., o2::constants::math::PIQuarter * 7., o2::constants::math::TwoPI}, "#phi", "PhiAxis"};
-AxisSpec axisPhi2{629, 0, o2::constants::math::TwoPI, "#phi"};
-AxisSpec axisCent{100, 0, 100, "#Cent"};
-AxisSpec axisDeltaPt{50, -1.0, +1.0, "#Delta(pT)"};
-AxisSpec axisDCAxy{600, -3.0, 3.0, "DCA_{xy} (cm)", "DCAxyAxis"}; // range ±3 cm for TPC-only case
-AxisSpec axisGenPtVary = {kGenpTend - 1, +kGenpTbegin + 0.5, +kGenpTend - 0.5, "", "GenpTVaryAxis"};
-// axisGenTrkType auto-expands: kGenTrkTypeend is now 8, giving 6 bins (kGenAll … kGenAllCharged)
-AxisSpec axisGenTrkType = {kGenTrkTypeend - 1, +kGenTrkTypebegin + 0.5, +kGenTrkTypeend - 0.5, "", "GenTrackTypeAxis"};
-AxisSpec axisRecTrkType = {kRecTrkTypeend - 1, +kRecTrkTypebegin + 0.5, +kRecTrkTypeend - 0.5, "", "RecTrackTypeAxis"};
-AxisSpec axisTrackType = {kTrackTypeend - 1, +kTrackTypebegin + 0.5, +kTrackTypeend - 0.5, "", "TrackTypeAxis"};
+const AxisSpec axisEvent{15, 0.5, 15.5, "#Event", "EventAxis"};
+const AxisSpec axisVtxZ{40, -20, 20, "Vertex Z", "VzAxis"};
+const AxisSpec axisEta{40, -2, 2, "#eta", "EtaAxis"};
+const AxisSpec axisPhi{{0, o2::constants::math::PIQuarter, o2::constants::math::PIHalf, o2::constants::math::PIQuarter * 3., o2::constants::math::PI, o2::constants::math::PIQuarter * 5., o2::constants::math::PIHalf * 3., o2::constants::math::PIQuarter * 7., o2::constants::math::TwoPI}, "#phi", "PhiAxis"};
+const AxisSpec axisPhi2{629, 0, o2::constants::math::TwoPI, "#phi"};
+const AxisSpec axisCent{100, 0, 100, "#Cent"};
+const AxisSpec axisDeltaPt{50, -1.0, +1.0, "#Delta(pT)"};
+const AxisSpec axisDCAxy{600, -3.0, 3.0, "DCA_{xy} (cm)", "DCAxyAxis"}; // range ±3 cm for TPC-only case
+const AxisSpec axisGenPtVary = {kGenpTend - 1, +kGenpTbegin + 0.5, +kGenpTend - 0.5, "", "GenpTVaryAxis"};
+const AxisSpec axisGenTrkType = {kGenTrkTypeend - 1, +kGenTrkTypebegin + 0.5, +kGenTrkTypeend - 0.5, "", "GenTrackTypeAxis"};
+const AxisSpec axisRecTrkType = {kRecTrkTypeend - 1, +kRecTrkTypebegin + 0.5, +kRecTrkTypeend - 0.5, "", "RecTrackTypeAxis"};
+const AxisSpec axisTrackType = {kTrackTypeend - 1, +kTrackTypebegin + 0.5, +kTrackTypeend - 0.5, "", "TrackTypeAxis"};
 auto static constexpr KminCharge = 3.f;
 
 struct PtmultCorr {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
   Configurable<float> etaRange{"etaRange", 0.8f, "Eta range to consider"};
   Configurable<float> vtxRange{"vtxRange", 10.0f, "Vertex Z range to consider"};
@@ -145,6 +141,7 @@ struct PtmultCorr {
   Configurable<float> extraphicut2{"extraphicut2", 3.12661f, "Extra Phi cut 2"};
   Configurable<float> extraphicut3{"extraphicut3", 0.03f, "Extra Phi cut 3"};
   Configurable<float> extraphicut4{"extraphicut4", 6.253f, "Extra Phi cut 4"};
+  Configurable<bool> isZvtxPosSelMC{"isZvtxPosSelMC", true, "Zvtx position selection for MC events"};
 
   Configurable<int16_t> cfgMinNCrossedRows{"cfgMinNCrossedRows", 70, "Minimum TPC crossed rows"};
   Configurable<bool> cfgUseNclsPID{"cfgUseNclsPID", false, "Use NclsPID instead of NclsFound for the Ncls cut"};
@@ -183,6 +180,9 @@ struct PtmultCorr {
 
   // RCT checker instance
   RCTFlagsChecker rctChecker;
+
+  static constexpr int kZeroInt{0};
+  static constexpr float kOne{1.0f};
 
   void init(InitContext const&)
   {
@@ -310,72 +310,80 @@ struct PtmultCorr {
   {
     histos.fill(HIST("EventHist"), 1);
 
-    if (selHasBC && !col.has_foundBC())
+    if (!col.sel8()) {
       return false;
-    if (selHasFT0 && !col.has_foundFT0())
-      return false;
-
+    }
     // TVX trigger (replaces sel8 as primary trigger requirement)
-    if (!col.selection_bit(o2::aod::evsel::kIsTriggerTVX))
-      return false;
-    histos.fill(HIST("EventHist"), 4);
+    // if (!col.selection_bit(o2::aod::evsel::kIsTriggerTVX))
+    // return false;
+    // histos.fill(HIST("EventHist"), 4);
 
     // ITS ROF border
-    if (!col.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
+    if (!col.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return false;
+    }
     histos.fill(HIST("EventHist"), 5);
 
     // Time frame border
-    if (!col.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
+    if (!col.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return false;
+    }
     histos.fill(HIST("EventHist"), 6);
 
     // vtxZ
-    if (std::abs(col.posZ()) > vtxRange)
+    if (std::abs(col.posZ()) > vtxRange) {
       return false;
+    }
     histos.fill(HIST("EventHist"), 7);
 
     // Good ZvtxFT0vsPV
     if (isGoodZvtxFT0vsPV &&
-        !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+        !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
+    }
     histos.fill(HIST("EventHist"), 8);
 
     // No same bunch pileup
     if (isSameBunchPileup &&
-        !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+        !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
+    }
     histos.fill(HIST("EventHist"), 9);
 
     // Time range isolation — Strict (replaces Standard)
     if (isNoCollInTimeRangeStrict &&
-        !col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict))
+        !col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
       return false;
+    }
     histos.fill(HIST("EventHist"), 10);
 
     // ROF isolation — Strict (replaces Standard)
     if (isNoCollInRofStrict &&
-        !col.selection_bit(o2::aod::evsel::kNoCollInRofStrict))
+        !col.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
       return false;
+    }
     histos.fill(HIST("EventHist"), 11);
 
     // No high mult collision in previous ROF
     if (isNoHighMultCollInPrevRof &&
-        !col.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof))
+        !col.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
       return false;
+    }
     histos.fill(HIST("EventHist"), 12);
 
     // INEL > 0
-    if (applyInelgt0 && !col.isInelGt0())
+    if (applyInelgt0 && !col.isInelGt0()) {
       return false;
+    }
     histos.fill(HIST("EventHist"), 13);
 
     // Occupancy
     auto occu = applyFT0CbasedOccupancy
                   ? col.ft0cOccupancyInTimeRange()
                   : col.trackOccupancyInTimeRange();
-    if (applyOccuCut && occu > occuRange)
+    if (applyOccuCut && occu > occuRange) {
       return false;
+    }
     histos.fill(HIST("EventHist"), 14);
 
     return true;
@@ -415,8 +423,9 @@ struct PtmultCorr {
       }
     }
 
-    if (std::abs(track.dcaZ()) > cfgDCAz)
+    if (std::abs(track.dcaZ()) > cfgDCAz) {
       return false;
+    }
 
     // --- optional phi cut (applied to all track types) ---
     histos.fill(HIST("PhiVsEtaHistNoCut"), track.phi(), track.eta());
@@ -487,8 +496,9 @@ struct PtmultCorr {
   {
     if (requireGoodRct) {
       histos.fill(HIST("RCTSel"), 1); // all events
-      if (!rctChecker(cols))
+      if (!rctChecker(cols)) {
         return;
+      }
       histos.fill(HIST("RCTSel"), 2); // passed RCT
     }
     if (!isEventSelected(cols)) {
@@ -515,8 +525,9 @@ struct PtmultCorr {
   {
     if (requireGoodRct) {
       histos.fill(HIST("RCTSel"), 1); // all events
-      if (!rctChecker(cols))
+      if (!rctChecker(cols)) {
         return;
+      }
       histos.fill(HIST("RCTSel"), 2); // passed RCT
     }
     if (!isEventSelected(cols)) {
@@ -555,8 +566,9 @@ struct PtmultCorr {
         continue;
       }
 
-      if (RecCol.globalIndex() != bestCollisionIndex)
+      if (RecCol.globalIndex() != bestCollisionIndex) {
         continue;
+      }
 
       atLeastOne = true;
       gencent = RecCol.centFT0C();
@@ -629,8 +641,9 @@ struct PtmultCorr {
         continue;
       }
 
-      if (RecCol.globalIndex() != bestCollisionIndex)
+      if (RecCol.globalIndex() != bestCollisionIndex) {
         continue;
+      }
 
       histos.fill(HIST("hPbPbRecMCvtxz"), RecCol.posZ());
       histos.fill(HIST("hPbPbRecMCcent"), RecCol.centFT0C());
@@ -670,25 +683,30 @@ struct PtmultCorr {
                 break;
             }
           } else {
-            pid = kRecoSecondary;
-          }
-          if (mcpart.has_mothers()) {
-            auto mcpartMother = mcpart.template mothers_as<aod::McParticles>().front();
-            if (mcpartMother.pdgCode() == PDG_t::kK0Short || std::abs(mcpartMother.pdgCode()) == PDG_t::kLambda0) {
+            // non-primary → split weak-decay vs material by production mechanism
+            if (mcpart.getProcess() == TMCProcess::kPDecay) {
               pid = kRecoWeakDecay;
+            } else {
+              pid = kRecoMaterial;
             }
+            // also fill the union bin as a cross-check (weak + material)
+            histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoSecondary), kGlobalplusITS, Rectrack.dcaXY());
+            histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoSecondary), trkType, Rectrack.dcaXY());
           }
+
+          // duplicate-track (split) relabel — overrides origin, as before
           if (find(mclabels.begin(), mclabels.end(), Rectrack.mcParticleId()) != mclabels.end()) {
             pid = kRecoFake;
           }
           mclabels.push_back(Rectrack.mcParticleId());
+
           histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid), kGlobalplusITS, Rectrack.dcaXY());
           histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), mcpart.pt(), mcpart.phi(), static_cast<double>(pid), trkType, Rectrack.dcaXY());
         } else {
           histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg), kGlobalplusITS, Rectrack.dcaXY());
           histos.fill(HIST("hPbPbRecMCdndpt"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), Rectrack.phi(), static_cast<double>(kRecoBkg), trkType, Rectrack.dcaXY());
         }
-      } // track (mcrec) loop
+      }
     } // collision loop
   }
 
@@ -709,8 +727,9 @@ struct PtmultCorr {
         continue;
       }
 
-      if (RecCol.globalIndex() != bestCollisionIndex)
+      if (RecCol.globalIndex() != bestCollisionIndex) {
         continue;
+      }
 
       atLeastOne = true;
     }
@@ -721,30 +740,20 @@ struct PtmultCorr {
 
     // ── CHANGE 4 ────────────────────────────────────────────────────────────
     // Restructured pp gen particle loop for primary fraction from MC truth.
-    //
-    // Pass 1 (loose): isGenChargedTrackSelected — all charged in acceptance.
-    //   → fills kGenAllCharged (denominator) when associated with a reco event.
-    //
-    // Pass 2 (tight): additionally require isPhysicalPrimary (via continue).
-    //   → fills kGenAll and species bins (numerator) — identical to before.
-    //
-    // Primary fraction (pp) = hppGenMCAssoRecdndpt[kGenAll]
-    //                       / hppGenMCAssoRecdndpt[kGenAllCharged]  per pT bin
+    //   Pass 1 (loose): isGenChargedTrackSelected → fills kGenAllCharged (denom).
+    //   Pass 2 (tight):  + isPhysicalPrimary      → fills kGenAll + species (num).
+    //   Primary fraction (pp) = kGenAll / kGenAllCharged per pT bin.
     // ────────────────────────────────────────────────────────────────────────
     for (const auto& particle : GenParticles) {
-      // Loose check: charged + |eta| + phi (no isPhysicalPrimary requirement)
       if (!isGenChargedTrackSelected(particle)) {
         continue;
       }
-      // Fill denominator: all charged particles (primaries + secondaries)
       if (atLeastOne) {
         histos.fill(HIST("hppGenMCAssoRecdndpt"), mcCollision.posZ(), particle.pt(), particle.phi(), static_cast<double>(kGenAllCharged), kNoGenpTVar);
       }
-      // Tight check: physical primaries only — skip secondaries from this point on
       if (!particle.isPhysicalPrimary()) {
         continue;
       }
-      // Fill primary-only histograms (numerator + species breakdown)
       histos.fill(HIST("hppGenMCdndpt"), mcCollision.posZ(), particle.pt(), particle.phi());
       if (atLeastOne) {
         histos.fill(HIST("hppGenMCAssoRecdndpt"), mcCollision.posZ(), particle.pt(), particle.phi(), static_cast<double>(kGenAll), kNoGenpTVar);
@@ -780,8 +789,9 @@ struct PtmultCorr {
         continue;
       }
 
-      if (RecCol.globalIndex() != bestCollisionIndex)
+      if (RecCol.globalIndex() != bestCollisionIndex) {
         continue;
+      }
 
       histos.fill(HIST("hppRecMCvtxz"), RecCol.posZ());
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
@@ -817,14 +827,17 @@ struct PtmultCorr {
                 break;
             }
           } else {
-            pid = kRecoSecondary;
-          }
-          if (mcpart.has_mothers()) {
-            auto mcpartMother = mcpart.template mothers_as<aod::McParticles>().front();
-            if (mcpartMother.pdgCode() == PDG_t::kK0Short || std::abs(mcpartMother.pdgCode()) == PDG_t::kLambda0) {
+            // non-primary → split weak-decay vs material by production mechanism
+            if (mcpart.getProcess() == TMCProcess::kPDecay) {
               pid = kRecoWeakDecay;
+            } else {
+              pid = kRecoMaterial;
             }
+            // union cross-check bin (weak + material)
+            histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoSecondary), kGlobalplusITS, Rectrack.dcaXY());
+            histos.fill(HIST("hppRecMCdndpt"), RecCol.posZ(), mcpart.pt(), mcpart.phi(), static_cast<double>(kRecoSecondary), trkType, Rectrack.dcaXY());
           }
+          // duplicate-track (split) relabel — overrides origin, as before
           if (find(mclabels.begin(), mclabels.end(), Rectrack.mcParticleId()) != mclabels.end()) {
             pid = kRecoFake;
           }
@@ -838,65 +851,91 @@ struct PtmultCorr {
       } // track (mcrec) loop
     } // collision loop
   }
-
-  void processEvtLossSigLossMCpp(ColMCTrueTable::iterator const& /*mcCollision*/, ColMCRecTablepp const& RecCols, TrackMCTrueTable const& GenParticles)
+  void processEvtLossSigLossMCpp(ColMCTrueTable::iterator const& mcCollision, ColMCRecTablepp const& RecCols, TrackMCTrueTable const& GenParticles)
   {
 
     // ── Count generated Nch in |eta| < etaRange for event loss ──────────────
     int nChMC = 0;
+    int nChMCEta1 = 0;
     for (const auto& particle : GenParticles) {
-      if (!particle.isPhysicalPrimary())
+      if (!particle.isPhysicalPrimary()) {
         continue;
+      }
       auto pdgParticle = pdg->GetParticle(particle.pdgCode());
-      if (!pdgParticle)
+      if (!pdgParticle) {
         continue;
-      if (std::abs(pdgParticle->Charge()) < KminCharge)
+      }
+      if (std::abs(pdgParticle->Charge()) < KminCharge) {
         continue;
-      if (std::abs(particle.eta()) < etaRange)
+      }
+      if (std::abs(particle.eta()) < etaRange) {
         nChMC++;
+      }
+      if (std::abs(particle.eta()) > kOne) {
+        continue;
+      }
+      nChMCEta1++;
     }
 
+    if (isZvtxPosSelMC && (std::fabs(mcCollision.posZ()) > vtxRange)) {
+      return;
+    }
+
+    //---------------------------
+    // Select only INEL > 0 generated events?
+    //---------------------------
+    if (applyInelgt0) {
+      if (!(nChMCEta1 > kZeroInt)) {
+        return;
+      }
+    }
+
+    bool atLeastOne = false;
+    int bestCollisionIndex = -1;
+    int biggestNContribs = -1;
+
     for (const auto& RecCol : RecCols) {
-      if (!RecCol.has_foundBC())
+
+      if (biggestNContribs < RecCol.numContrib()) {
+        biggestNContribs = RecCol.numContrib();
+        bestCollisionIndex = RecCol.globalIndex();
+      }
+
+      if (!RecCol.sel8()) {
         continue;
-      if (!RecCol.has_foundFT0())
+      }
+
+      if (!RecCol.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
         continue;
-      if (!RecCol.selection_bit(o2::aod::evsel::kIsTriggerTVX))
+      }
+      if (!RecCol.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
         continue;
-      if (!RecCol.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
+      }
+      if (std::fabs(RecCol.posZ()) > vtxRange) {
         continue;
-      if (!RecCol.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
-        continue;
-      if (std::fabs(RecCol.posZ()) > vtxRange)
-        continue;
+      }
       if (isGoodZvtxFT0vsPV &&
-          !RecCol.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+          !RecCol.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
         continue;
+      }
       if (isSameBunchPileup &&
-          !RecCol.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+          !RecCol.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
         continue;
+      }
 
       histos.fill(HIST("hNch_AllRecoEvt"), nChMC); // denominator for event splitting
     }
 
     // ── Find best collision, apply full selection ────────────────────────────
-    // isEventSelected() first, bestCollisionIndex filter second
-    // matches processMCeffpp cut order
-    bool atLeastOne = false;
-    int bestCollisionIndex = -1;
-    int biggestNContribs = -1;
-    for (const auto& RecCol : RecCols) {
-      if (biggestNContribs < RecCol.numContrib()) {
-        biggestNContribs = RecCol.numContrib();
-        bestCollisionIndex = RecCol.globalIndex();
-      }
-    }
-    for (const auto& RecCol : RecCols) {
-      if (!isEventSelected(RecCol))
-        continue;
 
-      if (RecCol.globalIndex() != bestCollisionIndex)
+    for (const auto& RecCol : RecCols) {
+      if (!isEventSelected(RecCol)) {
         continue;
+      }
+
+      if (RecCol.globalIndex() != bestCollisionIndex) {
+        continue;
+      }
       atLeastOne = true;
       histos.fill(HIST("hNch_WRecoEvtWSelCri"), nChMC); // numerator for event splitting
     }
@@ -912,8 +951,9 @@ struct PtmultCorr {
 
     // ── Signal loss particle loop ────────────────────────────────────────────
     for (const auto& particle : GenParticles) {
-      if (!isGenTrackSelected(particle))
+      if (!isGenTrackSelected(particle)) {
         continue;
+      }
 
       histos.fill(HIST("hPtVsNchMC_AllGen"), particle.pt(), nChMC); // denominator: all generated events
       histos.fill(HIST("hgenptBeforeEvtSel"), particle.pt());
@@ -929,62 +969,91 @@ struct PtmultCorr {
   {
     // ── Count generated Nch in |eta| < etaRange for event loss ──────────────
     int nChMC = 0;
+
+    int nChMCEta1 = 0;
     for (const auto& particle : GenParticles) {
-      if (!particle.isPhysicalPrimary())
+      if (!particle.isPhysicalPrimary()) {
         continue;
+      }
       auto pdgParticle = pdg->GetParticle(particle.pdgCode());
-      if (!pdgParticle)
+      if (!pdgParticle) {
         continue;
-      if (std::abs(pdgParticle->Charge()) < KminCharge)
+      }
+      if (std::abs(pdgParticle->Charge()) < KminCharge) {
         continue;
-      if (std::abs(particle.eta()) < etaRange)
+      }
+      if (std::abs(particle.eta()) < etaRange) {
         nChMC++;
+      }
+
+      if (std::abs(particle.eta()) > kOne) {
+        continue;
+      }
+      nChMCEta1++;
+    }
+
+    if (isZvtxPosSelMC && (std::fabs(mcCollision.posZ()) > vtxRange)) {
+      return;
+    }
+
+    //---------------------------
+    // Select only INEL > 0 generated events?
+    //---------------------------
+    if (applyInelgt0) {
+      if (!(nChMCEta1 > kZeroInt)) {
+        return;
+      }
     }
 
     // ── Event splitting denominator ──────────────────────────────────────────
+    bool atLeastOne = false;
+    int bestCollisionIndex = -1;
+    int biggestNContribs = -1;
 
     for (const auto& RecCol : RecCols) {
-      if (!RecCol.has_foundBC())
+
+      if (biggestNContribs < RecCol.numContrib()) {
+        biggestNContribs = RecCol.numContrib();
+        bestCollisionIndex = RecCol.globalIndex();
+      }
+
+      if (!RecCol.sel8()) {
         continue;
-      if (!RecCol.has_foundFT0())
+      }
+
+      if (!RecCol.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
         continue;
-      if (!RecCol.selection_bit(o2::aod::evsel::kIsTriggerTVX))
+      }
+      if (!RecCol.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
         continue;
-      if (!RecCol.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
+      }
+      if (std::fabs(RecCol.posZ()) > vtxRange) {
         continue;
-      if (!RecCol.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
-        continue;
-      if (std::fabs(RecCol.posZ()) > vtxRange)
-        continue;
+      }
       if (isGoodZvtxFT0vsPV &&
-          !RecCol.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+          !RecCol.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
         continue;
+      }
       if (isSameBunchPileup &&
-          !RecCol.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+          !RecCol.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
         continue;
+      }
 
       histos.fill(HIST("hCent_AllRecoEvt"), RecCol.centFT0C()); // denominator for event splitting
     }
 
     // ── Find best collision, apply full selection ────────────────────────────
-    // isEventSelected() first, bestCollisionIndex filter second
-    // matches processMCeffPbPb cut order
-    bool atLeastOne = false;
-    int bestCollisionIndex = -1;
-    int biggestNContribs = -1;
-    for (const auto& RecCol : RecCols) {
-      if (biggestNContribs < RecCol.numContrib()) {
-        biggestNContribs = RecCol.numContrib();
-        bestCollisionIndex = RecCol.globalIndex();
-      }
-    }
+
     auto centrality = -999.f;
     for (const auto& RecCol : RecCols) {
-      if (!isEventSelected(RecCol))
+      if (RecCol.globalIndex() != bestCollisionIndex) {
         continue;
+      }
 
-      if (RecCol.globalIndex() != bestCollisionIndex)
+      if (!isEventSelected(RecCol)) {
         continue;
+      }
+
       atLeastOne = true;
       centrality = RecCol.centFT0C();
       histos.fill(HIST("hCent_WRecoEvtWSelCri"), RecCol.centFT0C()); // numerator for event splitting
@@ -1005,14 +1074,15 @@ struct PtmultCorr {
 
     // ── Signal loss particle loop ────────────────────────────────────────────
     for (const auto& particle : GenParticles) {
-      if (!isGenTrackSelected(particle))
+      if (!isGenTrackSelected(particle)) {
         continue;
+      }
 
-      histos.fill(HIST("hPtVsNchMC_AllGen"), particle.pt(), nChMC); // denominator: all generated events
+      histos.fill(HIST("hPtVsNchMC_AllGen"), particle.pt(), nChMC); // denominator: all generated particles from all events
       histos.fill(HIST("hgenptBeforeEvtSelPbPb"), particle.pt(), mcCollision.impactParameter());
 
       if (atLeastOne) {
-        histos.fill(HIST("hPtVsNchMC_WithRecoEvt"), particle.pt(), nChMC); // numerator: ≥1 reco collision passing selection
+        histos.fill(HIST("hPtVsNchMC_WithRecoEvt"), particle.pt(), nChMC); // numerator: particles from events with ≥1 reco collision passing selection
         histos.fill(HIST("hgenptAfterEvtSelPbPb"), particle.pt(), mcCollision.impactParameter());
       }
     }

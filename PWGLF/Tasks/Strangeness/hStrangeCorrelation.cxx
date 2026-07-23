@@ -128,6 +128,7 @@ struct HStrangeCorrelation {
     Configurable<bool> useCentralityinPrediction{"useCentralityinPrediction", false, "if true, use centrality instead of multiplisity"};
     Configurable<bool> doMirroringInDelataEta{"doMirroringInDelataEta", false, "if true, fill only positive delta eta and mirror the negative side in post processing, Adjust the delta axis!"};
     Configurable<bool> fillCorrelationHistWithMass{"fillCorrelationHistWithMass", false, "if true, fill correlation histograms with particle mass"};
+    Configurable<bool> doMassSpectrumCheck{"doMassSpectrumCheck", false, "if true, add and fill invariant-mass spectrum"};
   } masterConfigurations;
 
   // master analysis switches
@@ -379,6 +380,19 @@ struct HStrangeCorrelation {
   static constexpr int IndexK0 = 0;
   static constexpr int IndexLambda = 1;
   static constexpr int IndexAntiLambda = 2;
+
+  template <int Index, typename TV0>
+  static float getV0InvariantMass(TV0 const& v0)
+  {
+    static_assert(Index >= IndexK0 && Index <= IndexAntiLambda);
+    if constexpr (Index == IndexK0) {
+      return v0.mK0Short();
+    } else if constexpr (Index == IndexLambda) {
+      return v0.mLambda();
+    } else {
+      return v0.mAntiLambda();
+    }
+  }
 
   uint16_t doCorrelation;
   int mRunNumber;
@@ -849,6 +863,9 @@ struct HStrangeCorrelation {
 
         float deltaphi = computeDeltaPhi(trigg.phi(), assoc.phi());
         float deltaeta = trigg.eta() - assoc.eta();
+        if (masterConfigurations.doMirroringInDelataEta) {
+          deltaeta = std::abs(deltaeta);
+        }
         float ptassoc = assoc.pt();
         float pttrigger = trigg.pt();
 
@@ -923,9 +940,7 @@ struct HStrangeCorrelation {
           if (efficiencyFlags.applyEfficiencyPropagation) {
             totalEffUncert = std::sqrt(std::pow(efficiencyTrigg * efficiencyError, 2) + std::pow(efficiencyTriggError * efficiency, 2));
           }
-          if (masterConfigurations.doMirroringInDelataEta) {
-            deltaeta = std::abs(deltaeta);
-          }
+
           double binFillThn[6] = {deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult};
           if (TESTBIT(doCorrelation, Index) && (!efficiencyFlags.applyEfficiencyCorrection || efficiency != 0) && (masterConfigurations.doPPAnalysis || (TESTBIT(selMap, Index) && TESTBIT(selMap, Index + 3)))) {
             if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma && !masterConfigurations.fillCorrelationHistWithMass) {
@@ -948,19 +963,7 @@ struct HStrangeCorrelation {
             }
             if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && (masterConfigurations.fillCorrelationHistWithMass || (-massWindowConfigurations.maxPeakNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxPeakNSigma))) {
               if (masterConfigurations.fillCorrelationHistWithMass) {
-                float massAssoc = 0.f;
-                switch (i) {
-                  case 0:
-                    massAssoc = assoc.mK0Short();
-                    break;
-                  case 1:
-                    massAssoc = assoc.mLambda();
-                    break;
-                  case 2:
-                    massAssoc = assoc.mAntiLambda();
-                    break;
-                }
-                binFillThn[1] = massAssoc;
+                binFillThn[1] = getV0InvariantMass<Index>(assoc);
               }
               fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/") + HIST(V0names[Index])), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
               if (std::abs(deltaphi) < checks.towardDeltaEtaRange && doITSClustersQA) {
@@ -1218,6 +1221,9 @@ struct HStrangeCorrelation {
 
         float deltaphi = computeDeltaPhi(trigg.phi(), assoc.phi());
         float deltaeta = trigg.eta() - assoc.eta();
+        if (masterConfigurations.doMirroringInDelataEta) {
+          deltaeta = std::abs(deltaeta);
+        }
         float ptassoc = assoc.pt();
         float pttrigger = trigg.pt();
 
@@ -1282,9 +1288,7 @@ struct HStrangeCorrelation {
           if (efficiencyFlags.applyEfficiencyPropagation) {
             totalEffUncert = std::sqrt(std::pow(efficiencyTrigg * efficiencyError, 2) + std::pow(efficiencyTriggError * efficiency, 2));
           }
-          if (masterConfigurations.doMirroringInDelataEta) {
-            deltaeta = std::abs(deltaeta);
-          }
+
           double binFillThn[6] = {deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult};
           if (TESTBIT(doCorrelation, Index + 3) && (!efficiencyFlags.applyEfficiencyCorrection || efficiency != 0) && (masterConfigurations.doPPAnalysis || (TESTBIT(cascselMap, Index) && TESTBIT(cascselMap, Index + 4) && TESTBIT(cascselMap, Index + 8) && TESTBIT(cascselMap, Index + 12)))) {
             if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma) {
@@ -1465,6 +1469,9 @@ struct HStrangeCorrelation {
         }
         float deltaphi = computeDeltaPhi(trigg.phi(), assoc.phi());
         float deltaeta = trigg.eta() - assoc.eta();
+        if (masterConfigurations.doMirroringInDelataEta) {
+          deltaeta = std::abs(deltaeta);
+        }
         float ptassoc = assoc.pt();
         float pttrigger = trigg.pt();
 
@@ -1529,9 +1536,7 @@ struct HStrangeCorrelation {
           totalEffUncert = std::sqrt(std::pow(efficiencyTrigger * efficiencyUncertainty, 2) + std::pow(efficiencyTriggerError * efficiency, 2));
           totalPurityUncert = std::sqrt(std::pow(purityTrigger * purityUncertainty, 2) + std::pow(purity * purityTriggerError, 2));
         }
-        if (masterConfigurations.doMirroringInDelataEta) {
-          deltaeta = std::abs(deltaeta);
-        }
+
         double binFillThn[6] = {deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult};
         double deltaPhiStar = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStar, bField);
         if (!mixing) {
@@ -1861,7 +1866,7 @@ struct HStrangeCorrelation {
 
     bool hStrange = false;
     for (int i = 0; i < AssocParticleTypes; i++) {
-      if (TESTBIT(doCorrelation, i) && (doprocessSameEventHV0s || doprocessSameEventHCascades)) {
+      if (TESTBIT(doCorrelation, i)) {
         if (masterConfigurations.doFullCorrelationStudy && !masterConfigurations.fillCorrelationHistWithMass)
           histos.add(fmt::format("sameEvent/Signal/{}", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
         if (doDeltaPhiStarCheck && masterConfigurations.doFullCorrelationStudy) {
@@ -1904,7 +1909,15 @@ struct HStrangeCorrelation {
       histos.addClone("sameEvent/Signal/", "sameEvent/LeftBg/");
       histos.addClone("sameEvent/Signal/", "sameEvent/RightBg/");
     }
-
+    if (TESTBIT(doCorrelation, 0) && doprocessSameEventHV0s && masterConfigurations.doMassSpectrumCheck) {
+      histos.add("hK0ShortPtVsMass", "", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisK0ShortMass});
+    }
+    if (TESTBIT(doCorrelation, 1) && doprocessSameEventHV0s && masterConfigurations.doMassSpectrumCheck) {
+      histos.add("hLambdaPtVsMass", "", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisLambdaMass});
+    }
+    if (TESTBIT(doCorrelation, 2) && doprocessSameEventHV0s && masterConfigurations.doMassSpectrumCheck) {
+      histos.add("hAntiLambdaPtVsMass", "", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisLambdaMass});
+    }
     LOGF(info, "Init THnFs done");
     // mixed-event correlation functions
     if ((doprocessMixedEventHV0sInBuffer || doprocessMixedEventHCascadesInBuffer || doprocessMixedEventHV0s || doprocessMixedEventHCascades || doprocessMixedEventHPions || doprocessMixedEventHHadrons) && masterConfigurations.doFullCorrelationStudy) {
@@ -2366,6 +2379,9 @@ struct HStrangeCorrelation {
         if (v0.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || v0.mcTrue(Index)) && (!doAssocPhysicalPrimary || v0.mcPhysicalPrimary()) && (!efficiencyFlags.applyEfficiencyCorrection || efficiency != 0)) {
           if ((TESTBIT(doCorrelation, Index)) && (masterConfigurations.doPPAnalysis || (TESTBIT(selMap, Index) && TESTBIT(selMap, Index + 3)))) {
             histos.fill(HIST("h3d") + HIST(V0names[Index]) + HIST("Spectrum"), v0Data.pt(), cent, v0.invMassNSigma(Index), weight);
+            if (masterConfigurations.doMassSpectrumCheck) {
+              histos.fill(HIST("h") + HIST(V0names[Index]) + HIST("PtVsMass"), v0Data.pt(), getV0InvariantMass<Index>(v0Data));
+            }
             if (std::abs(v0Data.rapidity(Index)) < ySel) {
               histos.fill(HIST("h3d") + HIST(V0names[Index]) + HIST("SpectrumY"), v0Data.pt(), cent, v0.invMassNSigma(Index), weight);
             }

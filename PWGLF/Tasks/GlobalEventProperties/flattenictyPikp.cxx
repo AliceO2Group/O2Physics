@@ -63,12 +63,12 @@
 
 #include <fmt/format.h>
 
+#include <Rtypes.h>
+
 #include <algorithm>
 #include <array>
-#include <bitset>
 #include <chrono>
 #include <cmath>
-#include <cstdint>
 #include <cstdlib>
 #include <iterator>
 #include <map>
@@ -94,7 +94,7 @@ static constexpr float Cone = 1.0f;
 static constexpr int CmaxRingsFV0 = 5;
 static constexpr int CnCellsFV0 = 48;
 static constexpr int CinnerFV0 = 32;
-static constexpr float Cfv0IndexPhi[5] = {0., 8., 16., 24., 32.};
+const std::array<int, CmaxRingsFV0> cFV0IndexPhi{0, 8, 16, 24, 32};
 static constexpr float CmaxEtaFV0 = 5.1;
 static constexpr float CminEtaFV0 = 2.2;
 static constexpr float CdEtaFV0 = (CmaxEtaFV0 - CminEtaFV0) / CmaxRingsFV0;
@@ -102,30 +102,34 @@ auto static constexpr CminAccFT0A = 3.5f;
 auto static constexpr CmaxAccFT0A = 4.9f;
 auto static constexpr CminAccFT0C = -3.3f;
 auto static constexpr CmaxAccFT0C = -2.1f;
+
 // PID names
 static constexpr int CprocessIdWeak = 4;
 static constexpr int Ncharges = 2;
 static constexpr o2::track::PID::ID Npart = 5;
 static constexpr o2::track::PID::ID NpartChrg = Npart * Ncharges;
-static constexpr int PDGs[] = {11, 13, 211, 321, 2212};
-static constexpr int PidSgn[NpartChrg] = {11, 13, 211, 321, 2212, -11, -13, -211, -321, -2212};
-static constexpr const char* Pid[Npart] = {"el", "mu", "pi", "ka", "pr"};
-static constexpr const char* PidChrg[NpartChrg] = {"e^{-}", "#mu^{-}", "#pi^{+}", "K^{+}", "p", "e^{+}", "#mu^{+}", "#pi^{-}", "K^{-}", "#bar{p}"};
-static constexpr std::string_view CspeciesAll[Npart] = {"El", "Mu", "Pi", "Ka", "Pr"};
+const std::array<int, Npart> pDGs{11, 13, 211, 321, 2212};
+const std::array<int, NpartChrg> pIdSgn{11, 13, 211, 321, 2212, -11, -13, -211, -321, -2212};
+const std::array<const char*, Npart> pID{"el", "mu", "pi", "ka", "pr"};
+const std::array<const char*, NpartChrg> pIdChrg{"e^{-}", "#mu^{-}", "#pi^{+}", "K^{+}", "p", "e^{+}", "#mu^{+}", "#pi^{-}", "K^{-}", "#bar{p}"};
+static constexpr std::array<std::string, Npart> CspeciesAll{"El", "Mu", "Pi", "Ka", "Pr"};
+
 // histogram naming
-static constexpr std::string_view PidDir[] = {"el/", "pi/", "pr/"};
-static constexpr std::string_view V0Dir[] = {"Ga/", "K0s/", "La/", "ALa/"};
-static constexpr std::string_view Ccharge[] = {"all/", "pos/", "neg/"};
+static constexpr std::array<std::string, 3> PidDir{"el/", "pi/", "pr/"};
+static constexpr std::array<std::string, 4> V0Dir{"Ga/", "K0s/", "La/", "ALa/"};
+static constexpr std::array<std::string, 3> Ccharge{"all/", "pos/", "neg/"};
 static constexpr std::string_view Cprefix = "Tracks/";
 static constexpr std::string_view CprefixCleanTof = "Tracks/CleanTof/";
 static constexpr std::string_view CprefixCleanV0 = "Tracks/CleanV0/";
 static constexpr std::string_view CprefixV0qa = "Tracks/V0qa/";
-static constexpr std::string_view Cstatus[] = {"preSel/", "postSel/"};
-static constexpr std::string_view CstatCalib[] = {"preCalib/", "postCalib/"};
+static constexpr std::array<std::string, 2> Cstatus{"preSel/", "postSel/"};
+static constexpr std::array<std::string, 2> CstatCalib{"preCalib/", "postCalib/"};
 static constexpr std::string_view CdEdxMcRecPrim = "/hdEdxMcRecPrim";
 static constexpr std::string_view CdEdxMcRecPrimF = "Tracks/{}/hdEdxMcRecPrim";
 static constexpr std::string_view CdEdxMcRecPrimSel = "/hdEdxMcRecPrimSel";
 static constexpr std::string_view CdEdxMcRecPrimSelF = "Tracks/{}/hdEdxMcRecPrimSel";
+static constexpr std::string_view CEtaVsPtVsPMcRecPrimSel = "/hEtaVsPtVsPMcRecPrimSel";
+static constexpr std::string_view CEtaVsPtVsPMcRecPrimSelF = "Tracks/{}/hEtaVsPtVsPMcRecPrimSel";
 static constexpr std::string_view CpTvsDCAxy = "/hPtVsDCAxy";
 static constexpr std::string_view CpTvsDCAxyF = "Tracks/{}/hPtVsDCAxy";
 static constexpr std::string_view CpTvsDCAxyAll = "/hPtVsDCAxyAll";
@@ -183,6 +187,7 @@ enum TrkSel {
   trkSelNClsFound,
   trkSelNClsPID,
   trkSelTPCBndr,
+  trkSelCustomDCA,
   nTrkSel
 };
 
@@ -219,31 +224,6 @@ struct MultE {
   static constexpr int CmultTPC = 2;
 };
 
-std::array<float, CnCellsFV0> rhoLatticeFV0{0};
-std::array<float, CnCellsFV0> fv0AmplitudeWoCalib{0};
-std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtGenRecEvt{};
-std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtGenPrimRecEvt{};
-std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtGenRecEvtGtZero{};
-std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtGenPrimRecEvtGtZero{};
-std::array<std::shared_ptr<TH1>, NpartChrg> hPtEffRec{};
-std::array<std::shared_ptr<TH1>, NpartChrg> hPtEffGen{};
-std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtEffRecGoodCollPrim{};
-std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtEffRecGoodCollWeak{};
-std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtEffRecGoodCollMat{};
-std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtEffGenPrim{};
-std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtEffGenWeak{};
-std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtEffGenMat{};
-std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtEffGenPrimEvtSelGen{};
-std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtEffGenWeakEvtSelGen{};
-std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtEffGenMatEvtSelGen{};
-
-std::array<std::shared_ptr<TH2>, NpartChrg> hDCAxyRecBadCollPrim{};
-std::array<std::shared_ptr<TH2>, NpartChrg> hDCAxyRecBadCollWeak{};
-std::array<std::shared_ptr<TH2>, NpartChrg> hDCAxyRecBadCollMat{};
-std::array<std::shared_ptr<TH2>, NpartChrg> hPtVsDCAxyRecGoodCollPrim{};
-std::array<std::shared_ptr<TH2>, NpartChrg> hPtVsDCAxyRecGoodCollWeak{};
-std::array<std::shared_ptr<TH2>, NpartChrg> hPtVsDCAxyRecGoodCollMat{};
-
 struct FlattenictyPikp {
 
   HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -251,11 +231,11 @@ struct FlattenictyPikp {
   HistogramRegistry registryQC{"registryQC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   OutputObj<THashList> listEfficiency{"Efficiency"};
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
 
-  std::vector<float> fv0AmplCorr{};
+  std::vector<float> fv0AmplCorr;
   TProfile2D* zVtxMap = nullptr;
-  float magField;
+  float magField{0.};
   int runNumber{-1};
   o2::parameters::GRPMagField* grpmag = nullptr;
 
@@ -263,7 +243,7 @@ struct FlattenictyPikp {
   Configurable<bool> applyCalibGain{"applyCalibGain", false, "equalize detector amplitudes"};
   Configurable<bool> applyCalibVtx{"applyCalibVtx", false, "equalize Amp vs vtx"};
   Configurable<bool> applyCalibDeDx{"applyCalibDeDx", false, "calibration of dedx signal"};
-  Configurable<bool> applyCalibDeDxFromCCDB{"applyCalibDeDxFromCCDB", false, "use CCDB-based calibration of dedx signal"};
+  Configurable<bool> applyCalibDeDxFromCCDB{"applyCalibDeDxFromCCDB", true, "use CCDB-based calibration of dedx signal"};
   Configurable<bool> cfgFillTrackQaHist{"cfgFillTrackQaHist", false, "fill track QA histograms"};
   Configurable<bool> cfgFillNclVsPhiCutQaHist{"cfgFillNclVsPhiCutQaHist", false, "fill TPC cluster vs geometrical cut QA histograms"};
   Configurable<bool> cfgFilldEdxCalibHist{"cfgFilldEdxCalibHist", false, "fill dEdx calibration histograms"};
@@ -288,8 +268,7 @@ struct FlattenictyPikp {
   Configurable<std::string> cfgGainEqCcdbPath{"cfgGainEqCcdbPath", "Users/g/gbencedi/flattenicity/GainEq", "CCDB path for gain equalization constants"};
   Configurable<std::string> cfgVtxEqCcdbPath{"cfgVtxEqCcdbPath", "Users/g/gbencedi/flattenicity/ZvtxEq", "CCDB path for z-vertex equalization constants"};
   Configurable<std::string> cfgDeDxCalibCcdbPath{"cfgDeDxCalibCcdbPath", "Users/g/gbencedi/flattenicity/dEdxCalib", "CCDB path for dEdx calibration"};
-  Configurable<bool> cfgUseCcdbForRun{"cfgUseCcdbForRun", true, "Get ccdb object based on run number instead of timestamp"};
-  Configurable<bool> cfgStoreThnSparse{"cfgStoreThnSparse", false, "Store histograms as THnSparse"};
+  Configurable<bool> cfgStoreThnSparse{"cfgStoreThnSparse", true, "Store histograms as THnSparse"};
 
   struct : ConfigurableGroup {
     Configurable<bool> cfgCustomTVX{"cfgCustomTVX", false, "Ask for custom TVX instead of sel8"};
@@ -310,12 +289,13 @@ struct FlattenictyPikp {
   struct : ConfigurableGroup {
     ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.2, 3.4, 3.6, 3.8, 4, 4.4, 4.8, 5.2, 5.6, 6, 6.5, 7, 7.5, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30}, "pT binning"};
     ConfigurableAxis axisPtV0s{"axisPtV0s", {VARIABLE_WIDTH, 0, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.2, 3.4, 3.6, 3.8, 4, 4.4, 4.8, 5.2, 5.6, 6, 6.4, 6.8, 7.2, 7.6, 8, 8.4, 8.8, 9.2, 9.6, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15, 20}, "pT V0s binning"};
+    ConfigurableAxis axisPtFine{"axisPtFine", {250, 0.1f, 20.1f}, "pT fine binning"};
     ConfigurableAxis axisFlatPerc{"axisFlatPerc", {102, -0.01, 1.01}, "Flattenicity percentiles binning"};
     ConfigurableAxis axisMultPerc{"axisMultPerc", {VARIABLE_WIDTH, 0., 5., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.}, "T0 percentiles binning"};
     ConfigurableAxis axisVertexZ{"axisVertexZ", {80, -20., 20.}, "Vertex z binning"};
     ConfigurableAxis axisMult{"axisMult", {301, -0.5, 300.5}, "Multiplicity binning"};
-    ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -5., 5.}, "DCAxy binning"};
-    ConfigurableAxis axisDCAz{"axisDCAz", {200, -5., 5.}, "DCAz binning"};
+    ConfigurableAxis axisDCAxy{"axisDCAxy", {210, -1.05f, 1.05f}, "DCAxy binning"};
+    ConfigurableAxis axisDCAz{"axisDCAz", {210, -1.05f, 1.05f}, "DCAz binning"};
     ConfigurableAxis axisPhi = {"axisPhi", {60, 0, constants::math::TwoPI}, "#varphi binning"};
     ConfigurableAxis axisPhiMod = {"axisPhiMod", {100, 0, constants::math::PI / 9}, "fmod(#varphi,#pi/9)"};
     ConfigurableAxis axisEta = {"axisEta", {50, -1.0, 1.0}, "#eta binning"};
@@ -351,6 +331,9 @@ struct FlattenictyPikp {
     Configurable<float> cfgMomSelPiTOF{"cfgMomSelPiTOF", 0.4f, "Minimum momentum cut for TOF pions"};
     Configurable<float> cfgNsigSelKaTOF{"cfgNsigSelKaTOF", 3.0f, "Nsigma cut for TOF kaons"};
     Configurable<float> cfgBetaPlateuMax{"cfgBetaPlateuMax", 0.1f, "Beta max for Plateau electrons"};
+    Configurable<bool> cfgApplyCustomDCASel{"cfgApplyCustomDCASel", false, "Apply custom DCA selection"};
+    Configurable<std::vector<float>> cfgDcaXY{"cfgDcaXY", std::vector<float>{0.1f, 0.0f, 0.0f}, "abs dcaXY selection: [0] + [1] * pT^[2]"};
+    Configurable<std::vector<float>> cfgDcaZ{"cfgDcaZ", std::vector<float>{0.1f, 0.0f, 0.0f}, "abs dcaZ selection: [0] + [1] * pT^[2]"};
   } trkSelOpt;
 
   struct : ConfigurableGroup {
@@ -370,7 +353,7 @@ struct FlattenictyPikp {
     // standad parameters for V0 selection
     Configurable<float> cfgV0etamin{"cfgV0etamin", -0.8f, "min eta of V0s"};
     Configurable<float> cfgV0etamax{"cfgV0etamax", +0.8f, "max eta of V0s"};
-    Configurable<float> cfgminNCrossedRowsTPC{"cfgminNCrossedRowsTPC", 70.f, "Additional cut on the minimum number of crossed rows in the TPC"};
+    Configurable<int> cfgminNCrossedRowsTPC{"cfgminNCrossedRowsTPC", 70, "Additional cut on the minimum number of crossed rows in the TPC"};
     Configurable<bool> cfgApplyV0sNclFound{"cfgApplyV0sNclFound", false, "Apply cut on TPC Found clusters"};
     Configurable<float> cfgV0NclTPCMin{"cfgV0NclTPCMin", 135.0f, "Minimum of number of TPC found clusters"};
     Configurable<bool> cfgApplyV0sNclPID{"cfgApplyV0sNclPID", true, "Apply cut on TPC PID clusters"};
@@ -406,7 +389,7 @@ struct FlattenictyPikp {
     Configurable<float> cfgdEdxPlateauSel{"cfgdEdxPlateauSel", 50, "dEdx selection sensitivity for electrons"};
   } v0SelOpt;
 
-  Service<ccdb::BasicCCDBManager> ccdb;
+  Service<ccdb::BasicCCDBManager> ccdb{};
   struct : ConfigurableGroup {
     Configurable<float> cfgMagField{"cfgMagField", 99999, "Configurable magnetic field;default CCDB will be queried"};
     Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -445,7 +428,7 @@ struct FlattenictyPikp {
   Configurable<bool> requireITS{"requireITS", true, "Additional cut on the ITS requirement"};
   Configurable<bool> requireTPC{"requireTPC", true, "Additional cut on the TPC requirement"};
   Configurable<bool> requireGoldenChi2{"requireGoldenChi2", true, "Additional cut on the GoldenChi2"};
-  Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.f, "Additional cut on the minimum number of crossed rows in the TPC"};
+  Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70, "Additional cut on the minimum number of crossed rows in the TPC"};
   Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
   Configurable<float> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 4.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
   Configurable<float> maxChi2PerClusterITS{"maxChi2PerClusterITS", 36.f, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
@@ -460,6 +443,28 @@ struct FlattenictyPikp {
   std::vector<std::vector<float>> vecParamsMIP;
   std::vector<std::unique_ptr<TF1>> fEDeDxVsEta;
   std::vector<std::vector<float>> vecParamsPLA;
+
+  std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtGenRecEvt{};
+  std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtGenPrimRecEvt{};
+  std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtGenRecEvtGtZero{};
+  std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtGenPrimRecEvtGtZero{};
+  std::array<std::shared_ptr<TH1>, NpartChrg> hPtEffRec{};
+  std::array<std::shared_ptr<TH1>, NpartChrg> hPtEffGen{};
+  std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtEffRecGoodCollPrim{};
+  std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtEffRecGoodCollWeak{};
+  std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtEffRecGoodCollMat{};
+  std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtEffGenPrim{};
+  std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtEffGenWeak{};
+  std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtEffGenMat{};
+  std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtEffGenPrimEvtSelGen{};
+  std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtEffGenWeakEvtSelGen{};
+  std::array<std::shared_ptr<THnSparse>, NpartChrg> hPtEffGenMatEvtSelGen{};
+  std::array<std::shared_ptr<TH2>, NpartChrg> hDCAxyRecBadCollPrim{};
+  std::array<std::shared_ptr<TH2>, NpartChrg> hDCAxyRecBadCollWeak{};
+  std::array<std::shared_ptr<TH2>, NpartChrg> hDCAxyRecBadCollMat{};
+  std::array<std::shared_ptr<TH2>, NpartChrg> hPtVsDCAxyRecGoodCollPrim{};
+  std::array<std::shared_ptr<TH2>, NpartChrg> hPtVsDCAxyRecGoodCollWeak{};
+  std::array<std::shared_ptr<TH2>, NpartChrg> hPtVsDCAxyRecGoodCollMat{};
 
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected, aod::CentFT0As, aod::CentFT0Cs>;
   using Colls = soa::Join<aod::Collisions, aod::EvSels, aod::TPCMults, aod::PVMults, aod::MultZeqs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
@@ -496,9 +501,6 @@ struct FlattenictyPikp {
         targetVec.emplace_back(vecParamsMIPposEtaN);
         targetVec.emplace_back(vecParamsMIPnegEtaN);
         targetVec.emplace_back(vecParamsMIPallEtaN);
-        if (!vecParamsMIP.size()) {
-          LOG(info) << "size of " << name << "is zero.";
-        }
       } else {
         targetVec.emplace_back(vecParamsPLAposEtaP);
         targetVec.emplace_back(vecParamsPLAnegEtaP);
@@ -506,9 +508,9 @@ struct FlattenictyPikp {
         targetVec.emplace_back(vecParamsPLAposEtaN);
         targetVec.emplace_back(vecParamsPLAnegEtaN);
         targetVec.emplace_back(vecParamsPLAallEtaN);
-        if (!vecParamsPLA.size()) {
-          LOG(info) << "size of " << name << "is zero.";
-        }
+      }
+      if (vecParamsMIP.empty() || vecParamsPLA.empty()) {
+        LOG(info) << "size of " << name << "is zero.";
       }
     };
     addVec(vecParamsMIP, "vecParamsMIP", true);
@@ -560,6 +562,7 @@ struct FlattenictyPikp {
     const AxisSpec phiAxisMod{binOpt.axisPhiMod, "fmod(#varphi,#pi/9)"};
     const AxisSpec pAxis{binOpt.axisPt, "#it{p} (GeV/#it{c})"};
     const AxisSpec ptAxis{binOpt.axisPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec ptFineAxis{binOpt.axisPtFine, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec ptAxisV0s{binOpt.axisPtV0s, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec dcaXYAxis{binOpt.axisDCAxy, "DCA_{xy} (cm)"};
     const AxisSpec dcaZAxis{binOpt.axisDCAz, "DCA_{z} (cm)"};
@@ -608,6 +611,7 @@ struct FlattenictyPikp {
     registryQC.get<TH1>(HIST("Events/hEvtSel"))->GetXaxis()->SetBinLabel(evtSelRCTFlagChecker + 1, "RCT Flag Checker");
     // Number of tracks vs centrality
     registryQC.add("Events/hNchVsCent", "Measured Nch vs Cent; centrality; Nch (|#eta|<0.8)", {kTH2F, {nChAxis, multAxis}});
+    registryQC.add("Tracks/hPtRes", "#it{p}_{T} resolution;;(#it{p}_{T}_{rec} - #it{p}_{T}_{gen})/#it{p}_{T}_{gen};", kTH2F, {ptAxis, {100, -1.0, 1.0}});
     // FV0 QA
     registryQC.add("FV0/hFV0AmplWCalib", "", {kTH2F, {channelFV0Axis, amplitudeFV0}});
     registryQC.add("FV0/hFV0AmplvsVtxzWoCalib", "", {kTH2F, {vtxzAxis, amplitudeFV0Sum}});
@@ -615,6 +619,7 @@ struct FlattenictyPikp {
     registryQC.add("FV0/hFV0amp", "", {kTH2F, {channelFV0Axis, amplitudeFV0}});
     registryQC.add("FV0/pFV0amp", "", kTProfile, {channelFV0Axis});
     registryQC.add("FV0/hFV0ampCorr", "", {kTH2F, {channelFV0Axis, amplitudeFV0}});
+    registryQC.add("FV0/pFV0ampCorr", "", kTProfile, {channelFV0Axis});
 
     LOG(info) << "Size of the QC histograms:";
     registryQC.print();
@@ -630,6 +635,7 @@ struct FlattenictyPikp {
       registryData.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelNClsFound + 1, "NClsTPCFound");
       registryData.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelNClsPID + 1, "NClsTPCPid");
       registryData.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelTPCBndr + 1, "TPC Boundary");
+      registryData.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelCustomDCA + 1, "Custom DCA sel.");
       // V0 counter
       registryData.add("Tracks/V0qa/hV0Sel", "Number of V0s; Cut; #Tracks Passed Cut", {kTH1F, {{nV0Sel, 0, nV0Sel}}});
       registryData.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelAll + 1, "All");
@@ -660,13 +666,13 @@ struct FlattenictyPikp {
           registryData.add("Tracks/postSel/hNclTPCFoundvsEta", "", {kTH2F, {etaAxis, clTpcAxis}});
           registryData.add("Tracks/postSel/hNClTPCPidvsEta", "", {kTH2F, {etaAxis, clTpcAxis}});
           registryData.add("Tracks/postSel/hTPCCluster", "N_{cluster}", kTH1F, {clTpcAxis});
-          registryData.add("Tracks/postSel/hPtVsWOcutDCA", "hPtVsWOcutDCA", kTH2F, {ptAxis, dcaXYAxis});
+          registryData.add("Tracks/postSel/hPtVsWOcutDCA", "hPtVsWOcutDCA", kTH2F, {ptFineAxis, dcaXYAxis});
           registryData.add("Tracks/postSel/hPt", "", kTH1F, {ptAxis});
           registryData.add("Tracks/postSel/hPhi", "", kTH1F, {phiAxis});
           registryData.add("Tracks/postSel/hEta", "", kTH1F, {etaAxis});
           registryData.add("Tracks/postSel/hTpcInnerParamVsP", ";Global track p (GeV/#it{c});Track p at inner wall of the TPC (GeV/#it{c});", kTH2F, {pAxis, pAxis});
-          registryData.add("Tracks/postSel/hDCAXYvsPt", "", kTH2F, {ptAxis, dcaXYAxis});
-          registryData.add("Tracks/postSel/hDCAZvsPt", "", kTH2F, {ptAxis, dcaZAxis});
+          registryData.add("Tracks/postSel/hDCAXYvsPt", "", kTH2F, {ptFineAxis, dcaXYAxis});
+          registryData.add("Tracks/postSel/hDCAZvsPt", "", kTH2F, {ptFineAxis, dcaZAxis});
           // tpc
           registryData.add("Tracks/postSel/hTPCnClsShared", " ; # shared TPC clusters TPC", kTH1F, {{165, -0.5, 164.5}});
           registryData.add("Tracks/postSel/hTPCcrossedRows", " ; # crossed TPC rows", kTH1F, {{165, -0.5, 164.5}});
@@ -689,9 +695,11 @@ struct FlattenictyPikp {
           registryData.add("Tracks/postCalib/all/hMIPVsPhi", "; #varphi; #LT dE/dx #GT_{MIP, primary tracks};", {kTH2F, {phiAxis, dEdxAxis}});
           registryData.add("Tracks/postCalib/all/pMIPVsPhi", "; #varphi; #LT dE/dx #GT_{MIP, primary tracks};", {kTProfile, {phiAxis}});
           registryData.add("Tracks/postCalib/all/hMIPVsPhiVsEta", "; #varphi; #LT dE/dx #GT_{MIP, primary tracks}; #eta;", {kTH3F, {phiAxis, dEdxAxis, etaAxis}});
+          registryData.add("Tracks/postCalib/all/hMIPNClTPCPidvsEta", ";#eta; Ncl pid", {kTH2F, {etaAxis, clTpcAxis}});
           registryData.add("Tracks/postCalib/all/hPlateauVsPhi", "; #varphi; #LT dE/dx #GT_{Plateau, primary tracks};", {kTH2F, {phiAxis, dEdxAxis}});
           registryData.add("Tracks/postCalib/all/pPlateauVsPhi", "; #varphi; #LT dE/dx #GT_{Plateau, primary tracks};", {kTProfile, {phiAxis}});
           registryData.add("Tracks/postCalib/all/hPlateauVsPhiVsEta", "; #varphi; #LT dE/dx #GT_{Plateau, primary tracks}; #eta;", {kTH3F, {phiAxis, dEdxAxis, etaAxis}});
+          registryData.add("Tracks/postCalib/all/hPlateauNClTPCPidvsEta", ";#eta; Ncl pid", {kTH2F, {etaAxis, clTpcAxis}});
           registryData.addClone("Tracks/postCalib/all/", "Tracks/preCalib/all/");
           if (cfgFillChrgType) {
             registryData.addClone("Tracks/postCalib/all/", "Tracks/postCalib/pos/");
@@ -702,7 +710,7 @@ struct FlattenictyPikp {
         }
         if (cfgFillDCAxyHist) {
           for (int i = 0; i < Npart; i++) {
-            registryData.add({fmt::format(CpTvsDCAxyF.data(), CspeciesAll[i]).c_str(), "; mult; flat; #it{p} (GeV/#it{c}); DCA_{xy} (cm)", {kTHnSparseF, {multAxis, flatAxis, ptAxis, dcaXYAxis}}});
+            registryData.add({fmt::format(CpTvsDCAxyF.data(), CspeciesAll[i].data()).c_str(), "; mult; flat; #it{p} (GeV/#it{c}); DCA_{xy} (cm)", {kTHnSparseF, {multAxis, flatAxis, ptAxis, dcaXYAxis}}});
           }
         }
       }
@@ -715,6 +723,8 @@ struct FlattenictyPikp {
       registryData.add("Tracks/V0qa/pi/K0s/hArmPod", ";#alpha; #it{q}_T (GeV/c)", kTH2F, {v0SelOpt.axisArmPodAlpha, v0SelOpt.axisArmPodqT});
       registryData.add("Tracks/V0qa/el/Ga/hNclVsEta", ";#eta; #it{N}^{TPC}_cl", kTH2F, {etaAxis, clTpcAxis});
       registryData.add("Tracks/V0qa/pi/K0s/hNclVsEta", ";#eta; #it{N}^{TPC}_cl", kTH2F, {etaAxis, clTpcAxis});
+      registryData.add("Tracks/V0qa/el/Ga/hNclVsPt", ";#it{p}_{T} (GeV/#it{c}); #it{N}^{TPC}_cl", kTH2F, {ptAxis, clTpcAxis});
+      registryData.add("Tracks/V0qa/pi/K0s/hNclVsPt", ";#it{p}_{T} (GeV/#it{c}); #it{N}^{TPC}_cl", kTH2F, {ptAxis, clTpcAxis});
       registryData.add("Tracks/V0qa/el/Ga/hdEdxMIPVsEta", ";#eta; dE/dx", kTH2F, {etaAxis, dEdxAxis});
       registryData.add("Tracks/V0qa/pi/K0s/hdEdxMIPVsEta", ";#eta; dE/dx", kTH2F, {etaAxis, dEdxAxis});
       registryData.addClone("Tracks/V0qa/pi/K0s/", "Tracks/V0qa/pi/La/");
@@ -780,11 +790,11 @@ struct FlattenictyPikp {
       registryMC.add("Events/hCentVsFlatRecINELgt0wRecEvtSel", "Gen evt w/ Nrec > 0 + Evt sel; mult; flat", {kTH2F, {multAxis, flatAxis}});
       for (int i = 0; i < Npart; ++i) {
         // Signal loss
-        registryMC.add({fmt::format(CpTgenPrimSgnF.data(), CspeciesAll[i]).c_str(), "Gen evt w/o Evt sel; Gen Nch (|#eta|<0.8); flat; #it{p}_{T} (GeV/#it{c})", {kTHnSparseF, {nChAxis, flatAxis, ptAxis}}});
-        registryMC.add({fmt::format(CpTrecCollPrimSgnF.data(), CspeciesAll[i]).c_str(), "Gen Nch w/ Nrec > 0; Gen Nch (|#eta|<0.8); flat; #it{p}_{T} (GeV/#it{c})", {kTHnSparseF, {nChAxis, flatAxis, ptAxis}}});
+        registryMC.add({fmt::format(CpTgenPrimSgnF.data(), CspeciesAll[i].data()).c_str(), "Gen evt w/o Evt sel; Gen Nch (|#eta|<0.8); flat; #it{p}_{T} (GeV/#it{c})", {kTHnSparseF, {nChAxis, flatAxis, ptAxis}}});
+        registryMC.add({fmt::format(CpTrecCollPrimSgnF.data(), CspeciesAll[i].data()).c_str(), "Gen Nch w/ Nrec > 0; Gen Nch (|#eta|<0.8); flat; #it{p}_{T} (GeV/#it{c})", {kTHnSparseF, {nChAxis, flatAxis, ptAxis}}});
         // Closure test
-        registryMC.add({fmt::format(CpTmcClosureGenPrimF.data(), CspeciesAll[i]).c_str(), "Gen evt w/o Evt sel; Gen Nch (|#eta|<0.8); flat; #it{p}_{T} (GeV/#it{c})", {kTHnSparseF, {nChAxis, flatAxis, ptAxis}}});
-        registryMC.add({fmt::format(CpTmcClosureRecF.data(), CspeciesAll[i]).c_str(), "Gen Nch w/ Nrec > 0 + Evt. sel; Gen Nch (|#eta|<0.8); flat; #it{p}_{T} (GeV/#it{c})", {kTHnSparseF, {nChAxis, flatAxis, ptAxis}}});
+        registryMC.add({fmt::format(CpTmcClosureGenPrimF.data(), CspeciesAll[i].data()).c_str(), "Gen evt w/o Evt sel; Gen Nch (|#eta|<0.8); flat; #it{p}_{T} (GeV/#it{c})", {kTHnSparseF, {nChAxis, flatAxis, ptAxis}}});
+        registryMC.add({fmt::format(CpTmcClosureRecF.data(), CspeciesAll[i].data()).c_str(), "Gen Nch w/ Nrec > 0 + Evt. sel; Gen Nch (|#eta|<0.8); flat; #it{p}_{T} (GeV/#it{c})", {kTHnSparseF, {nChAxis, flatAxis, ptAxis}}});
       }
       if (cfgFillNclVsPhiCutQaHist) {
         registryMC.add("Tracks/postSel/hPtPhi", "; #it{p}_{T} (GeV/#it{c}); fmod(#varphi,#pi/9)", {kTH2F, {ptAxis, phiAxisMod}});
@@ -798,7 +808,7 @@ struct FlattenictyPikp {
       registryMC.addClone("Tracks/postSel/", "Tracks/preSel/");
 
       for (int i = 0; i < NpartChrg; i++) {
-        const std::string strID = Form("/%s/%s", (i < Npart) ? "pos" : "neg", Pid[i % Npart]);
+        const std::string strID = Form("/%s/%s", (i < Npart) ? "pos" : "neg", pID[i % Npart]);
         hPtGenRecEvt[i] = registryMC.add<THnSparse>("Tracks/hPtGenRecEvt" + strID, "Gen evt w/ Nrec > 0; mult; flat; #it{p}_{T} (GeV/#it{c})", kTHnSparseF, {multAxis, flatAxis, ptAxis});
         hPtGenPrimRecEvt[i] = registryMC.add<THnSparse>("Tracks/hPtGenPrimRecEvt" + strID, "Gen evt w/ Nrec > 0 (primary); mult; flat; #it{p}_{T} (GeV/#it{c})", kTHnSparseF, {multAxis, flatAxis, ptAxis});
         hPtGenRecEvtGtZero[i] = registryMC.add<THnSparse>("Tracks/hPtGenRecEvtGtZero" + strID, "Gen evt w/ Nrec > 0; mult; flat; #it{p}_{T} (GeV/#it{c})", kTHnSparseF, {multAxis, flatAxis, ptAxis});
@@ -821,14 +831,15 @@ struct FlattenictyPikp {
       }
 
       for (int i = 0; i < Npart; i++) {
-        registryMC.add({fmt::format(CpTeffGenPrimRecEvtF.data(), CspeciesAll[i]).c_str(), "Gen evt w/ Nrec > 0; mult; flat; #it{p}_{T} (GeV/#it{c})", {kTHnSparseF, {multAxis, flatAxis, ptAxis}}});
-        registryMC.add({fmt::format(CpTeffPrimRecEvtF.data(), CspeciesAll[i]).c_str(), "Gen evt w/ Nrec > 0 + Evt sel; mult; flat; #it{p}_{T} (GeV/#it{c})", {kTHnSparseF, {multAxis, flatAxis, ptAxis}}});
-        registryMC.add({fmt::format(CpTvsDCAxyAllF.data(), CspeciesAll[i]).c_str(), "; mult; flat; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", {kTHnSparseF, {multAxis, flatAxis, ptAxis, dcaXYAxis}}});
-        registryMC.add({fmt::format(CpTvsDCAxyPrimAllF.data(), CspeciesAll[i]).c_str(), "; mult; flat; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", {kTHnSparseF, {multAxis, flatAxis, ptAxis, dcaXYAxis}}});
-        registryMC.add({fmt::format(CpTvsDCAxyWeakAllF.data(), CspeciesAll[i]).c_str(), "; mult; flat; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", {kTHnSparseF, {multAxis, flatAxis, ptAxis, dcaXYAxis}}});
-        registryMC.add({fmt::format(CpTvsDCAxyMatAllF.data(), CspeciesAll[i]).c_str(), "; mult; flat; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", {kTHnSparseF, {multAxis, flatAxis, ptAxis, dcaXYAxis}}});
-        registryMC.add({fmt::format(CdEdxMcRecPrimF.data(), CspeciesAll[i]).c_str(), "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTHnSparseF, {etaAxis, multAxis, flatAxis, pAxis, dEdxAxis}}});
-        registryMC.add({fmt::format(CdEdxMcRecPrimSelF.data(), CspeciesAll[i]).c_str(), "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTHnSparseF, {etaAxis, multAxis, flatAxis, pAxis, dEdxAxis}}});
+        registryMC.add({fmt::format(CpTeffGenPrimRecEvtF.data(), CspeciesAll[i].data()).c_str(), "Gen evt w/ Nrec > 0; mult; flat; #it{p}_{T} (GeV/#it{c})", {kTHnSparseF, {multAxis, flatAxis, ptAxis}}});
+        registryMC.add({fmt::format(CpTeffPrimRecEvtF.data(), CspeciesAll[i].data()).c_str(), "Gen evt w/ Nrec > 0 + Evt sel; mult; flat; #it{p}_{T} (GeV/#it{c})", {kTHnSparseF, {multAxis, flatAxis, ptAxis}}});
+        registryMC.add({fmt::format(CpTvsDCAxyAllF.data(), CspeciesAll[i].data()).c_str(), "; mult; flat; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", {kTHnSparseF, {multAxis, flatAxis, ptAxis, dcaXYAxis}}});
+        registryMC.add({fmt::format(CpTvsDCAxyPrimAllF.data(), CspeciesAll[i].data()).c_str(), "; mult; flat; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", {kTHnSparseF, {multAxis, flatAxis, ptAxis, dcaXYAxis}}});
+        registryMC.add({fmt::format(CpTvsDCAxyWeakAllF.data(), CspeciesAll[i].data()).c_str(), "; mult; flat; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", {kTHnSparseF, {multAxis, flatAxis, ptAxis, dcaXYAxis}}});
+        registryMC.add({fmt::format(CpTvsDCAxyMatAllF.data(), CspeciesAll[i].data()).c_str(), "; mult; flat; #it{p}_{T} (GeV/#it{c}); DCA_{xy} (cm)", {kTHnSparseF, {multAxis, flatAxis, ptAxis, dcaXYAxis}}});
+        registryMC.add({fmt::format(CdEdxMcRecPrimF.data(), CspeciesAll[i].data()).c_str(), "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTHnSparseF, {etaAxis, multAxis, flatAxis, pAxis, dEdxAxis}}});
+        registryMC.add({fmt::format(CdEdxMcRecPrimSelF.data(), CspeciesAll[i].data()).c_str(), "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTHnSparseF, {etaAxis, multAxis, flatAxis, pAxis, dEdxAxis}}});
+        registryMC.add({fmt::format(CEtaVsPtVsPMcRecPrimSelF.data(), CspeciesAll[i].data()).c_str(), "; #eta; #it{p}_{T} (GeV/#it{c}); #it{p} (GeV/#it{c})", {kTHnSparseF, {etaAxis, ptAxis, pAxis}}});
       }
 
       // Hash list for efficiency
@@ -851,11 +862,6 @@ struct FlattenictyPikp {
   {
     fv0AmplCorr.clear();
     fv0AmplCorr = {};
-    std::string fullPathCalibGain;
-    std::string fullPathCalibVtx;
-    std::string fullPathCalibDeDxMip;
-    std::string fullPathCalibDeDxPlateau;
-    auto timestamp = bc.timestamp();
     auto runnumber = bc.runNumber();
 
     if (trkSelOpt.cfgRejectTrkAtTPCSector || v0SelOpt.cfgRejectV0sAtTPCSector) {
@@ -867,9 +873,9 @@ struct FlattenictyPikp {
       LOG(info) << "Retrieved GRP for run " << runnumber << " with magnetic field of " << magField << " kZG";
     }
     if (applyCalibGain) {
-      fullPathCalibGain = cfgGainEqCcdbPath;
+      std::string fullPathCalibGain = cfgGainEqCcdbPath;
       fullPathCalibGain += "/FV0";
-      const auto* objfv0Gain = getForTsOrRun<std::vector<float>>(fullPathCalibGain, timestamp, runnumber);
+      const auto* objfv0Gain = ccdb->getForRun<std::vector<float>>(fullPathCalibGain, runnumber);
       if (!objfv0Gain) {
         for (auto i{0u}; i < CnCellsFV0; i++) {
           fv0AmplCorr.push_back(1.);
@@ -880,48 +886,48 @@ struct FlattenictyPikp {
       }
     }
     if (applyCalibVtx) {
-      fullPathCalibVtx = cfgVtxEqCcdbPath;
+      std::string fullPathCalibVtx = cfgVtxEqCcdbPath;
       fullPathCalibVtx += "/FV0";
-      zVtxMap = getForTsOrRun<TProfile2D>(fullPathCalibVtx, timestamp, runnumber);
+      zVtxMap = ccdb->getForRun<TProfile2D>(fullPathCalibVtx, runnumber);
     }
 
     if (applyCalibDeDxFromCCDB) {
-      fullPathCalibDeDxMip = cfgDeDxCalibCcdbPath;
-      fullPathCalibDeDxMip += "/MIP";
-      fullPathCalibDeDxPlateau = cfgDeDxCalibCcdbPath;
-      fullPathCalibDeDxPlateau += "/Plateau";
+      std::string fullPathCalibDeDxMip = cfgDeDxCalibCcdbPath;
       if (!fullPathCalibDeDxMip.empty()) {
-        dedxcalib.lCalibObjects = getForTsOrRun<TList>(fullPathCalibDeDxMip, timestamp, runnumber);
-        if (dedxcalib.lCalibObjects) {
-          LOG(info) << "CCDB objects loaded successfully";
-          dedxcalib.hMIPcalibPos = static_cast<TH1F*>(dedxcalib.lCalibObjects->FindObject("hMIPcalibPos"));
-          dedxcalib.hMIPcalibNeg = static_cast<TH1F*>(dedxcalib.lCalibObjects->FindObject("hMIPcalibNeg"));
-          dedxcalib.hMIPcalibAll = static_cast<TH1F*>(dedxcalib.lCalibObjects->FindObject("hMIPcalibAll"));
-          dedxcalib.lCalibLoaded = true;
-          if (!dedxcalib.hMIPcalibPos || !dedxcalib.hMIPcalibNeg || !dedxcalib.hMIPcalibAll) {
-            LOGF(error, "Problem loading CCDB objects! Please check");
-            dedxcalib.lCalibLoaded = false;
-          }
-        } else {
-          LOGF(fatal, "Could not load hMIPcalib from %s", fullPathCalibDeDxMip.c_str());
+        fullPathCalibDeDxMip += "/MIP";
+      }
+      std::string fullPathCalibDeDxPlateau = cfgDeDxCalibCcdbPath;
+      if (!fullPathCalibDeDxPlateau.empty()) {
+        fullPathCalibDeDxPlateau += "/Plateau";
+      }
+      dedxcalib.lCalibObjects = ccdb->getForRun<TList>(fullPathCalibDeDxMip, runnumber);
+      if (dedxcalib.lCalibObjects) {
+        LOG(info) << "CCDB objects loaded successfully";
+        dedxcalib.hMIPcalibPos = dynamic_cast<TH1F*>(dedxcalib.lCalibObjects->FindObject("hMIPcalibPos"));
+        dedxcalib.hMIPcalibNeg = dynamic_cast<TH1F*>(dedxcalib.lCalibObjects->FindObject("hMIPcalibNeg"));
+        dedxcalib.hMIPcalibAll = dynamic_cast<TH1F*>(dedxcalib.lCalibObjects->FindObject("hMIPcalibAll"));
+        dedxcalib.lCalibLoaded = true;
+        if (!dedxcalib.hMIPcalibPos || !dedxcalib.hMIPcalibNeg || !dedxcalib.hMIPcalibAll) {
+          LOGF(error, "Problem loading CCDB objects! Please check");
           dedxcalib.lCalibLoaded = false;
         }
+      } else {
+        LOGF(fatal, "Could not load hMIPcalib from %s", fullPathCalibDeDxMip.c_str());
+        dedxcalib.lCalibLoaded = false;
       }
-      if (!fullPathCalibDeDxPlateau.empty()) {
-        dedxcalib.lCalibObjects = getForTsOrRun<TList>(fullPathCalibDeDxPlateau, timestamp, runnumber);
-        if (dedxcalib.lCalibObjects) {
-          LOG(info) << "CCDB objects loaded successfully";
-          dedxcalib.hPlateauCalibPos = static_cast<TH1F*>(dedxcalib.lCalibObjects->FindObject("hPlateauCalibPos"));
-          dedxcalib.hPlateauCalibNeg = static_cast<TH1F*>(dedxcalib.lCalibObjects->FindObject("hPlateauCalibNeg"));
-          dedxcalib.hPlateauCalibAll = static_cast<TH1F*>(dedxcalib.lCalibObjects->FindObject("hPlateauCalibAll"));
-          dedxcalib.lCalibLoaded = true;
-          if (!dedxcalib.hPlateauCalibPos || !dedxcalib.hPlateauCalibNeg || !dedxcalib.hPlateauCalibAll) {
-            LOGF(error, "Problem loading CCDB objects! Please check");
-            dedxcalib.lCalibLoaded = false;
-          }
-        } else {
-          LOGF(fatal, "Could not load hPlateauCalib from %s", fullPathCalibDeDxPlateau.c_str());
+      dedxcalib.lCalibObjects = ccdb->getForRun<TList>(fullPathCalibDeDxPlateau, runnumber);
+      if (dedxcalib.lCalibObjects) {
+        LOG(info) << "CCDB objects loaded successfully";
+        dedxcalib.hPlateauCalibPos = dynamic_cast<TH1F*>(dedxcalib.lCalibObjects->FindObject("hPlateauCalibPos"));
+        dedxcalib.hPlateauCalibNeg = dynamic_cast<TH1F*>(dedxcalib.lCalibObjects->FindObject("hPlateauCalibNeg"));
+        dedxcalib.hPlateauCalibAll = dynamic_cast<TH1F*>(dedxcalib.lCalibObjects->FindObject("hPlateauCalibAll"));
+        dedxcalib.lCalibLoaded = true;
+        if (!dedxcalib.hPlateauCalibPos || !dedxcalib.hPlateauCalibNeg || !dedxcalib.hPlateauCalibAll) {
+          LOGF(error, "Problem loading CCDB objects! Please check");
+          dedxcalib.lCalibLoaded = false;
         }
+      } else {
+        LOGF(fatal, "Could not load hPlateauCalib from %s", fullPathCalibDeDxPlateau.c_str());
       }
     }
   }
@@ -929,6 +935,7 @@ struct FlattenictyPikp {
   template <typename T>
   std::unique_ptr<TF1> setFuncPars(T const& vecPars)
   {
+    static_assert(!std::is_pointer<T>::value, "Pointers to pointers not allowed here");
     std::unique_ptr<TF1> fCalibDeDxFunc(new TF1("fCalibDeDxFunc", cfgCalibDeDxFunction.value.c_str(), -1., 1.));
     if (vecPars.size() >= 1) {
       for (typename T::size_type i = 0; i < vecPars.size(); i++) {
@@ -942,9 +949,9 @@ struct FlattenictyPikp {
   bool isPID(const P& mcParticle)
   {
     static_assert(pidSgn == CnullInt || pidSgn == ConeInt);
-    static_assert(id > CnullInt || id < Npart);
+    static_assert(id > CnullInt && id < Npart);
     constexpr int Cidx = id + pidSgn * Npart;
-    return mcParticle.pdgCode() == PidSgn[Cidx];
+    return mcParticle.pdgCode() == pIdSgn[Cidx];
   }
 
   template <ChargeType chrg, typename T>
@@ -1160,31 +1167,32 @@ struct FlattenictyPikp {
         if (selectTypeV0s(collision, v0, posTrack, negTrack) == kGa) { // Gamma selection
           fillV0QA<kEl, kGa>(v0, posTrack);
           fillV0QA<kEl, kGa>(v0, negTrack);
+          // float dEdxPosGa{-1.}, dEdxNegGa{-1.};
           if (applyCalibDeDx) {
             if (cfgFillChrgTypeV0s) {
               if (applyCalibDeDxFromCCDB) {
-                const float dEdxPosGa = dedxcalib.hMIPcalibPos->GetBinContent(dedxcalib.hMIPcalibPos->FindBin(posTrack.eta()));
-                const float dEdxNegGa = dedxcalib.hMIPcalibNeg->GetBinContent(dedxcalib.hMIPcalibNeg->FindBin(negTrack.eta()));
+                float dEdxPosGa = dedxcalib.hMIPcalibPos->GetBinContent(dedxcalib.hMIPcalibPos->FindBin(posTrack.eta()));
+                float dEdxNegGa = dedxcalib.hMIPcalibNeg->GetBinContent(dedxcalib.hMIPcalibNeg->FindBin(negTrack.eta()));
                 if (std::abs(dEdxPos - dEdxPosGa) >= v0SelOpt.cfgdEdxPlateauSel || std::abs(dEdxNeg - dEdxNegGa) >= v0SelOpt.cfgdEdxPlateauSel) {
                   continue;
                 }
               } else {
-                const float dEdxPosGa = getCalibration(fEDeDxVsEta, posTrack);
-                const float dEdxNegGa = getCalibration(fEDeDxVsEta, negTrack);
+                float dEdxPosGa = getCalibration(fEDeDxVsEta, posTrack);
+                float dEdxNegGa = getCalibration(fEDeDxVsEta, negTrack);
                 if (std::abs(dEdxPos - dEdxPosGa) >= v0SelOpt.cfgdEdxPlateauSel || std::abs(dEdxNeg - dEdxNegGa) >= v0SelOpt.cfgdEdxPlateauSel) {
                   continue;
                 }
               }
             } else {
               if (applyCalibDeDxFromCCDB) {
-                const float dEdxPosGa = dedxcalib.hPlateauCalibAll->GetBinContent(dedxcalib.hPlateauCalibAll->FindBin(posTrack.eta()));
-                const float dEdxNegGa = dedxcalib.hPlateauCalibAll->GetBinContent(dedxcalib.hPlateauCalibAll->FindBin(negTrack.eta()));
+                float dEdxPosGa = dedxcalib.hPlateauCalibAll->GetBinContent(dedxcalib.hPlateauCalibAll->FindBin(posTrack.eta()));
+                float dEdxNegGa = dedxcalib.hPlateauCalibAll->GetBinContent(dedxcalib.hPlateauCalibAll->FindBin(negTrack.eta()));
                 if (std::abs(dEdxPos - dEdxPosGa) >= v0SelOpt.cfgdEdxPlateauSel || std::abs(dEdxNeg - dEdxNegGa) >= v0SelOpt.cfgdEdxPlateauSel) {
                   continue;
                 }
               } else {
-                const float dEdxPosGa = getCalibration<false>(fEDeDxVsEta, posTrack);
-                const float dEdxNegGa = getCalibration<false>(fEDeDxVsEta, negTrack);
+                float dEdxPosGa = getCalibration<false>(fEDeDxVsEta, posTrack);
+                float dEdxNegGa = getCalibration<false>(fEDeDxVsEta, negTrack);
                 if (std::abs(dEdxPos - dEdxPosGa) >= v0SelOpt.cfgdEdxPlateauSel || std::abs(dEdxNeg - dEdxNegGa) >= v0SelOpt.cfgdEdxPlateauSel) {
                   continue;
                 }
@@ -1360,9 +1368,6 @@ struct FlattenictyPikp {
       return false;
     }
     registryMC.fill(HIST("Events/hNchTVX"), nChrgMc, 1.5);
-    if (nChrgMc == CnullInt) {
-      return false;
-    }
     return true;
   }
 
@@ -1391,15 +1396,17 @@ struct FlattenictyPikp {
     return nTrk;
   }
 
-  void phiMod(float& phimodn, const int& mag, const int& charge)
+  void phiMod(float& phimodn, const float& mag, const int& charge)
   {
-    if (mag < Cnull) // for negative polarity field
+    if (mag < Cnull) { // for negative polarity field
       phimodn = o2::constants::math::TwoPI - phimodn;
-    if (charge < Cnull) // for negative charge
+    }
+    if (charge < Cnull) { // for negative charge
       phimodn = o2::constants::math::TwoPI - phimodn;
-    if (phimodn < Cnull)
+    }
+    if (phimodn < Cnull) {
       LOGF(warning, "phi < Cnull: %g", phimodn);
-
+    }
     phimodn += o2::constants::math::PI / 18.0f; // to center gap in the middle
     phimodn = std::fmod(phimodn, o2::constants::math::PI / 9.0f);
   }
@@ -1460,6 +1467,12 @@ struct FlattenictyPikp {
       fillNclVsPhiCutQaHist<kAfter>(track, phimodn);
     }
     registryData.fill(HIST("Tracks/hTrkSel"), trkSelTPCBndr);
+    if (trkSelOpt.cfgApplyCustomDCASel) {
+      if (std::fabs(track.dcaXY()) > trkSelOpt.cfgDcaXY.value[0] + trkSelOpt.cfgDcaXY.value[1] * std::pow(track.pt(), trkSelOpt.cfgDcaXY.value[2]) || std::fabs(track.dcaZ()) > trkSelOpt.cfgDcaZ.value[0] + trkSelOpt.cfgDcaZ.value[1] * std::pow(track.pt(), trkSelOpt.cfgDcaZ.value[2])) {
+        return false;
+      }
+      registryData.fill(HIST("Tracks/hTrkSel"), trkSelCustomDCA);
+    }
     return true;
   }
 
@@ -1468,40 +1481,35 @@ struct FlattenictyPikp {
   {
     registryData.fill(HIST(CprefixV0qa) + HIST(PidDir[id]) + HIST(V0Dir[typeMother]) + HIST("hArmPod"), v0.alpha(), v0.qtarm());
     registryData.fill(HIST(CprefixV0qa) + HIST(PidDir[id]) + HIST(V0Dir[typeMother]) + HIST("hNclVsEta"), track.eta(), track.tpcNClsPID());
+    registryData.fill(HIST(CprefixV0qa) + HIST(PidDir[id]) + HIST(V0Dir[typeMother]) + HIST("hNclVsPt"), track.pt(), track.tpcNClsPID());
     registryData.fill(HIST(CprefixV0qa) + HIST(PidDir[id]) + HIST(V0Dir[typeMother]) + HIST("hdEdxMIPVsEta"), track.eta(), track.tpcSignal());
   }
 
   template <typename C, typename T1, typename T2>
   int selectTypeV0s(C const& collision, T1 const& v0, T2 const& postrk, T2 const& negtrk)
   {
-    const float dMassK0s = std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short);
-    const float dMassL = std::abs(v0.mLambda() - o2::constants::physics::MassLambda0);
-    const float dMassAL = std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda0);
-    const float dMassG = std::abs(v0.mGamma() - o2::constants::physics::MassGamma);
-
     bool isMassG = false;
     bool isMassK0s = false;
     bool isMassL = false;
     bool isMassAL = false;
 
-    if (dMassK0s > v0SelOpt.cfgdmassK && dMassL > v0SelOpt.cfgdmassL && dMassAL > v0SelOpt.cfgdmassL && dMassG < v0SelOpt.cfgdmassG) {
+    if (std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) > v0SelOpt.cfgdmassK && std::abs(v0.mLambda() - o2::constants::physics::MassLambda0) > v0SelOpt.cfgdmassL && std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda0) > v0SelOpt.cfgdmassL && std::abs(v0.mGamma() - o2::constants::physics::MassGamma) < v0SelOpt.cfgdmassG) {
       isMassG = true;
     }
-    if (dMassK0s < v0SelOpt.cfgdmassK && dMassL > v0SelOpt.cfgdmassL && dMassAL > v0SelOpt.cfgdmassL && dMassG > v0SelOpt.cfgdmassG) {
+    if (std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0SelOpt.cfgdmassK && std::abs(v0.mLambda() - o2::constants::physics::MassLambda0) > v0SelOpt.cfgdmassL && std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda0) > v0SelOpt.cfgdmassL && std::abs(v0.mGamma() - o2::constants::physics::MassGamma) > v0SelOpt.cfgdmassG) {
       isMassK0s = true;
     }
-    if (dMassK0s > v0SelOpt.cfgdmassK && dMassL < v0SelOpt.cfgdmassL && dMassG > v0SelOpt.cfgdmassG) {
+    if (std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) > v0SelOpt.cfgdmassK && std::abs(v0.mLambda() - o2::constants::physics::MassLambda0) < v0SelOpt.cfgdmassL && std::abs(v0.mGamma() - o2::constants::physics::MassGamma) > v0SelOpt.cfgdmassG) {
       isMassL = true;
     }
-    if (dMassK0s > v0SelOpt.cfgdmassK && dMassAL < v0SelOpt.cfgdmassL && dMassG > v0SelOpt.cfgdmassG) {
+    if (std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) > v0SelOpt.cfgdmassK && std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda0) < v0SelOpt.cfgdmassL && std::abs(v0.mGamma() - o2::constants::physics::MassGamma) > v0SelOpt.cfgdmassG) {
       isMassAL = true;
     }
 
     // Gamma selection
-    const float yGamma = RecoDecay::y(std::array{v0.px(), v0.py(), v0.pz()}, o2::constants::physics::MassGamma);
     if (isMassG) {
-      if (std::abs(yGamma) < v0SelOpt.cfgV0Ymax) {                                                             // rapidity cut
-        if (std::abs(v0.alpha()) < v0SelOpt.cfgArmPodGammasalpha && v0.qtarm() < v0SelOpt.cfgArmPodGammasqT) { //
+      if (std::abs(RecoDecay::y(std::array{v0.px(), v0.py(), v0.pz()}, o2::constants::physics::MassGamma)) < v0SelOpt.cfgV0Ymax) { // rapidity cut
+        if (std::abs(v0.alpha()) < v0SelOpt.cfgArmPodGammasalpha && v0.qtarm() < v0SelOpt.cfgArmPodGammasqT) {                     //
           if (postrk.hasTPC() && std::abs(postrk.tpcNSigmaEl()) < v0SelOpt.cfgNsigmaElTPC) {
             if (postrk.hasTOF() && std::abs(postrk.tofNSigmaEl()) < v0SelOpt.cfgNsigmaElTOF) {
               return kGa;
@@ -1709,8 +1717,9 @@ struct FlattenictyPikp {
             registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hMIP"), track.eta(), dEdx);
           }
           registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hMIPVsPhi"), track.phi(), dEdx);
-          registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hMIPVsPhiVsEta"), track.phi(), dEdx, track.eta());
           registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("pMIPVsPhi"), track.phi(), dEdx);
+          registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hMIPVsPhiVsEta"), track.phi(), dEdx, track.eta());
+          registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hMIPNClTPCPidvsEta"), track.eta(), track.tpcNClsPID());
         }
         if (dEdx > trkSelOpt.cfgDeDxMIPMax + 10. && dEdx < trkSelOpt.cfgDeDxMIPMax + 30.) { // Plateau electrons
           if (std::abs(track.beta() - 1) < trkSelOpt.cfgBetaPlateuMax) {
@@ -1720,8 +1729,9 @@ struct FlattenictyPikp {
               registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hPlateau"), track.eta(), dEdx);
             }
             registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hPlateauVsPhi"), track.phi(), dEdx);
-            registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hPlateauVsPhiVsEta"), track.phi(), dEdx, track.eta());
             registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("pPlateauVsPhi"), track.phi(), dEdx);
+            registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hPlateauVsPhiVsEta"), track.phi(), dEdx, track.eta());
+            registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hPlateauNClTPCPidvsEta"), track.eta(), track.tpcNClsPID());
           }
         }
       }
@@ -1808,93 +1818,93 @@ struct FlattenictyPikp {
   {
     int iRing = -1;
 
-    if (i_ch >= Cfv0IndexPhi[0] && i_ch < Cfv0IndexPhi[1]) {
-      if (i_ch < Cfv0IndexPhi[0] + 4) {
+    if (i_ch >= cFV0IndexPhi[0] && i_ch < cFV0IndexPhi[1]) {
+      if (i_ch < cFV0IndexPhi[0] + 4) {
         iRing = i_ch;
       } else {
-        if (i_ch == Cfv0IndexPhi[1] - 1) {
+        if (i_ch == cFV0IndexPhi[1] - 1) {
           iRing = i_ch - 3; // 4;
-        } else if (i_ch == Cfv0IndexPhi[1] - 2) {
+        } else if (i_ch == cFV0IndexPhi[1] - 2) {
           iRing = i_ch - 1; // 5;
-        } else if (i_ch == Cfv0IndexPhi[1] - 3) {
+        } else if (i_ch == cFV0IndexPhi[1] - 3) {
           iRing = i_ch + 1; // 6;
-        } else if (i_ch == Cfv0IndexPhi[1] - 4) {
+        } else if (i_ch == cFV0IndexPhi[1] - 4) {
           iRing = i_ch + 3; // 7;
         }
       }
-    } else if (i_ch >= Cfv0IndexPhi[1] && i_ch < Cfv0IndexPhi[2]) {
-      if (i_ch < Cfv0IndexPhi[2] - 4) {
+    } else if (i_ch >= cFV0IndexPhi[1] && i_ch < cFV0IndexPhi[2]) {
+      if (i_ch < cFV0IndexPhi[2] - 4) {
         iRing = i_ch;
       } else {
-        if (i_ch == Cfv0IndexPhi[2] - 1) {
+        if (i_ch == cFV0IndexPhi[2] - 1) {
           iRing = i_ch - 3; // 12;
-        } else if (i_ch == Cfv0IndexPhi[2] - 2) {
+        } else if (i_ch == cFV0IndexPhi[2] - 2) {
           iRing = i_ch - 1; // 13;
-        } else if (i_ch == Cfv0IndexPhi[2] - 3) {
+        } else if (i_ch == cFV0IndexPhi[2] - 3) {
           iRing = i_ch + 1; // 14;
-        } else if (i_ch == Cfv0IndexPhi[2] - 4) {
+        } else if (i_ch == cFV0IndexPhi[2] - 4) {
           iRing = i_ch + 3; // 15;
         }
       }
-    } else if (i_ch >= Cfv0IndexPhi[2] && i_ch < Cfv0IndexPhi[3]) {
-      if (i_ch < Cfv0IndexPhi[3] - 4) {
+    } else if (i_ch >= cFV0IndexPhi[2] && i_ch < cFV0IndexPhi[3]) {
+      if (i_ch < cFV0IndexPhi[3] - 4) {
         iRing = i_ch;
       } else {
-        if (i_ch == Cfv0IndexPhi[3] - 1) {
+        if (i_ch == cFV0IndexPhi[3] - 1) {
           iRing = i_ch - 3; // 20;
-        } else if (i_ch == Cfv0IndexPhi[3] - 2) {
+        } else if (i_ch == cFV0IndexPhi[3] - 2) {
           iRing = i_ch - 1; // 21;
-        } else if (i_ch == Cfv0IndexPhi[3] - 3) {
+        } else if (i_ch == cFV0IndexPhi[3] - 3) {
           iRing = i_ch + 1; // 22;
-        } else if (i_ch == Cfv0IndexPhi[3] - 4) {
+        } else if (i_ch == cFV0IndexPhi[3] - 4) {
           iRing = i_ch + 3; // 23;
         }
       }
-    } else if (i_ch >= Cfv0IndexPhi[3] && i_ch < Cfv0IndexPhi[4]) {
-      if (i_ch < Cfv0IndexPhi[3] + 4) {
+    } else if (i_ch >= cFV0IndexPhi[3] && i_ch < cFV0IndexPhi[4]) {
+      if (i_ch < cFV0IndexPhi[3] + 4) {
         iRing = i_ch;
       } else {
-        if (i_ch == Cfv0IndexPhi[4] - 5) {
+        if (i_ch == cFV0IndexPhi[4] - 5) {
           iRing = i_ch - 3; // 28;
-        } else if (i_ch == Cfv0IndexPhi[4] - 6) {
+        } else if (i_ch == cFV0IndexPhi[4] - 6) {
           iRing = i_ch - 1; // 29;
-        } else if (i_ch == Cfv0IndexPhi[4] - 7) {
+        } else if (i_ch == cFV0IndexPhi[4] - 7) {
           iRing = i_ch + 1; // 30;
-        } else if (i_ch == Cfv0IndexPhi[4] - 8) {
+        } else if (i_ch == cFV0IndexPhi[4] - 8) {
           iRing = i_ch + 3; // 31;
         }
       }
-    } else if (i_ch == Cfv0IndexPhi[4]) {
-      iRing = Cfv0IndexPhi[4];
-    } else if (i_ch == Cfv0IndexPhi[4] + 8) {
+    } else if (i_ch == cFV0IndexPhi[4]) {
+      iRing = cFV0IndexPhi[4];
+    } else if (i_ch == cFV0IndexPhi[4] + 8) {
       iRing = i_ch - 7; // 33;
-    } else if (i_ch == Cfv0IndexPhi[4] + 1) {
+    } else if (i_ch == cFV0IndexPhi[4] + 1) {
       iRing = i_ch + 1; // 34;
-    } else if (i_ch == Cfv0IndexPhi[4] + 9) {
+    } else if (i_ch == cFV0IndexPhi[4] + 9) {
       iRing = i_ch - 6; // 35;
-    } else if (i_ch == Cfv0IndexPhi[4] + 2) {
+    } else if (i_ch == cFV0IndexPhi[4] + 2) {
       iRing = i_ch + 2; // 36;
-    } else if (i_ch == Cfv0IndexPhi[4] + 10) {
+    } else if (i_ch == cFV0IndexPhi[4] + 10) {
       iRing = i_ch - 5; // 37;
-    } else if (i_ch == Cfv0IndexPhi[4] + 3) {
+    } else if (i_ch == cFV0IndexPhi[4] + 3) {
       iRing = i_ch + 3; // 38;
-    } else if (i_ch == Cfv0IndexPhi[4] + 11) {
+    } else if (i_ch == cFV0IndexPhi[4] + 11) {
       iRing = i_ch - 4; // 39;
-    } else if (i_ch == Cfv0IndexPhi[4] + 15) {
+    } else if (i_ch == cFV0IndexPhi[4] + 15) {
       iRing = i_ch - 7; // 40;
-    } else if (i_ch == Cfv0IndexPhi[4] + 7) {
+    } else if (i_ch == cFV0IndexPhi[4] + 7) {
       iRing = i_ch + 2; // 41;
-    } else if (i_ch == Cfv0IndexPhi[4] + 14) {
+    } else if (i_ch == cFV0IndexPhi[4] + 14) {
       iRing = i_ch - 4; // 42;
-    } else if (i_ch == Cfv0IndexPhi[4] + 6) {
+    } else if (i_ch == cFV0IndexPhi[4] + 6) {
       iRing = i_ch + 5; // 43;
-    } else if (i_ch == Cfv0IndexPhi[4] + 13) {
+    } else if (i_ch == cFV0IndexPhi[4] + 13) {
       iRing = i_ch - 1; // 44;
-    } else if (i_ch == Cfv0IndexPhi[4] + 5) {
+    } else if (i_ch == cFV0IndexPhi[4] + 5) {
       iRing = i_ch + 8; // 45;
-    } else if (i_ch == Cfv0IndexPhi[4] + 12) {
+    } else if (i_ch == cFV0IndexPhi[4] + 12) {
       iRing = i_ch + 2; // 46;
-    } else if (i_ch == Cfv0IndexPhi[4] + 4) {
+    } else if (i_ch == cFV0IndexPhi[4] + 4) {
       iRing = i_ch + 11; // 47;
     }
     return iRing;
@@ -1973,13 +1983,12 @@ struct FlattenictyPikp {
   template <bool fillHist = true, typename C>
   float fillFlat(C const& collision)
   {
-    rhoLatticeFV0.fill(0);
-    fv0AmplitudeWoCalib.fill(0);
+    float oneMinusFlat{9999};
     if (collision.has_foundFV0()) {
       auto fv0 = collision.foundFV0();
-      std::bitset<8> fV0Triggers = fv0.triggerMask();
-      bool isOkFV0OrA = fV0Triggers[o2::fit::Triggers::bitA];
-      if (isOkFV0OrA) {
+      if (TESTBIT(fv0.triggerMask(), o2::fit::Triggers::bitA)) {
+        std::array<float, CnCellsFV0> rhoLatticeFV0{0.};
+        std::array<float, CnCellsFV0> fv0AmplitudeWoCalib{0.};
         for (std::size_t ich = 0; ich < fv0.channel().size(); ich++) {
           float amplCh = fv0.amplitude()[ich];
           int chv0 = fv0.channel()[ich];
@@ -1989,6 +1998,7 @@ struct FlattenictyPikp {
             registryQC.fill(HIST("FV0/pFV0amp"), chv0, amplCh);
             if (applyCalibGain) {
               registryQC.fill(HIST("FV0/hFV0ampCorr"), chv0, amplCh / fv0AmplCorr[chv0]);
+              registryQC.fill(HIST("FV0/pFV0ampCorr"), chv0, amplCh / fv0AmplCorr[chv0]);
             }
           }
           if (amplCh > Cnull) {
@@ -2018,13 +2028,10 @@ struct FlattenictyPikp {
           }
         }
         float flattenicityFV0 = calcFlatenicity(rhoLatticeFV0);
-        return 1. - flattenicityFV0;
-      } else {
-        return 9999;
+        oneMinusFlat = 1. - flattenicityFV0;
       }
-    } else {
-      return 9999;
     }
+    return oneMinusFlat;
   }
 
   template <typename T>
@@ -2108,8 +2115,8 @@ struct FlattenictyPikp {
     float maxPhi = 0;
     float dPhi = 0;
 
-    float etaMinFV0bins[CmaxRingsFV0] = {0.0};
-    float etaMaxFV0bins[CmaxRingsFV0] = {0.0};
+    std::array<float, CmaxRingsFV0> etaMinFV0bins{0.};
+    std::array<float, CmaxRingsFV0> etaMaxFV0bins{0.};
     for (int i = 0; i < CmaxRingsFV0; ++i) {
       etaMaxFV0bins[i] = CmaxEtaFV0 - i * CdEtaFV0;
       if (i < CmaxRingsFV0 - 1) {
@@ -2119,7 +2126,7 @@ struct FlattenictyPikp {
       }
     }
 
-    rhoLatticeFV0.fill(0);
+    std::array<float, CnCellsFV0> rhoLatticeFV0{0.};
     std::vector<float> vNch;
     float nChFV0{0};
     for (const auto& mcPart : mcparts) {
@@ -2175,8 +2182,8 @@ struct FlattenictyPikp {
   {
     AxisSpec ptAxis{binOpt.axisPt, "#it{p}_{T} (GeV/#it{c})"};
     constexpr int ChistIdx = id + pidSgn * Npart;
-    auto idx = static_cast<int>(id);
-    const std::string strID = Form("/%s/%s", (pidSgn == CnullInt && id < Npart) ? "pos" : "neg", Pid[idx]);
+    auto idx = id;
+    const std::string strID = Form("/%s/%s", (pidSgn == CnullInt && id < Npart) ? "pos" : "neg", pID[idx]);
     hPtEffRec[ChistIdx] = registryMC.add<TH1>("Tracks/hPtEffRec" + strID, " ; #it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
     hPtEffGen[ChistIdx] = registryMC.add<TH1>("Tracks/hPtEffGen" + strID, " ; #it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
   }
@@ -2185,14 +2192,14 @@ struct FlattenictyPikp {
   void initEfficiency()
   {
     static_assert(pidSgn == CnullInt || pidSgn == ConeInt);
-    static_assert(id > CnullInt || id < Npart);
+    static_assert(id > CnullInt && id < Npart);
     constexpr int Cidx = id + pidSgn * Npart;
-    const TString partName = PidChrg[Cidx];
-    THashList* lhash = new THashList();
+    const TString partName = pIdChrg[Cidx];
+    auto lhash = new THashList();
     lhash->SetName(partName);
     listEfficiency->Add(lhash);
 
-    auto bookEff = [&](const TString eName, auto h) {
+    auto bookEff = [&](const TString& eName, const auto& h) {
       const TAxis* axis = h->GetXaxis();
       TString eTitle = h->GetTitle();
       eTitle.ReplaceAll("Numerator", "").Strip(TString::kBoth);
@@ -2209,15 +2216,15 @@ struct FlattenictyPikp {
   {
     static_assert(pidSgn == CnullInt || pidSgn == ConeInt);
     constexpr int ChistIdx = id + pidSgn * Npart;
-    const char* partName = PidChrg[ChistIdx];
-    THashList* lhash = static_cast<THashList*>(listEfficiency->FindObject(partName));
+    const char* partName = pIdChrg[ChistIdx];
+    auto lhash = dynamic_cast<THashList*>(listEfficiency->FindObject(partName));
     if (!lhash) {
       LOG(warning) << "No efficiency object found for particle " << partName;
       return;
     }
 
-    auto fillEff = [&](const TString eName, auto num, auto den) {
-      TEfficiency* eff = static_cast<TEfficiency*>(lhash->FindObject(eName));
+    auto fillEff = [&](const TString& eName, const auto& num, const auto& den) {
+      auto eff = dynamic_cast<TEfficiency*>(lhash->FindObject(eName));
       if (!eff) {
         LOG(warning) << "Cannot find TEfficiency " << eName;
         return;
@@ -2334,7 +2341,6 @@ struct FlattenictyPikp {
         }
       } else {
         hPtEffGenPrim[ChistIdx]->Fill(mult, flat, mcParticle.pt());
-        // hPtEffGen[ChistIdx]->Fill(mcParticle.pt());
       }
     }
   }
@@ -2426,7 +2432,7 @@ struct FlattenictyPikp {
         });
         static_for<0, 4>([&](auto i) {
           constexpr int Cidx = i.value;
-          if (std::fabs(particle.pdgCode()) == PDGs[Cidx]) {
+          if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
             registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTrecCollPrimSgn), multMC, flatMC, particle.pt());        // Sgn loss num
             registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTeffGenPrimRecEvt), multRecGt1, flatRec, particle.pt()); // Tracking eff. den
           }
@@ -2485,35 +2491,37 @@ struct FlattenictyPikp {
         });
         static_for<0, 4>([&](auto i) {
           constexpr int Cidx = i.value;
-          if (std::sqrt(std::pow(std::fabs(o2::aod::pidutils::tpcNSigma<Cidx>(track)), 2) + std::pow(std::fabs(o2::aod::pidutils::tofNSigma<Cidx>(track)), 2) < trkSelOpt.cfgDcaNsigmaCombinedMax)) {
-            if (std::fabs(particle.pdgCode()) == PDGs[Cidx]) {
-              if (!particle.isPhysicalPrimary()) {
-                if (particle.getProcess() == CprocessIdWeak) {
-                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyWeakAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
-                } else {
-                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyMatAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
-                }
+          if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
+            if (!particle.isPhysicalPrimary()) {
+              if (particle.getProcess() == CprocessIdWeak) {
+                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyWeakAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
               } else {
-                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyPrimAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
-                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CdEdxMcRecPrim), track.eta(), multRecGt1, flatRec, track.p(), track.tpcSignal());
+                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyMatAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
               }
-              registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
+            } else {
+              registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyPrimAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
+              registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CdEdxMcRecPrim), track.eta(), multRecGt1, flatRec, track.p(), track.tpcSignal());
             }
+            registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTvsDCAxyAll), multRecGt1, flatRec, track.pt(), track.dcaXY());
           }
         });
         if (isDCAxyCut(track)) {
           static_for<0, 4>([&](auto i) {
             constexpr int Cidx = i.value;
-            if (std::fabs(particle.pdgCode()) == PDGs[Cidx]) {
-              if (particle.isPhysicalPrimary()) {
-                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CdEdxMcRecPrimSel), track.eta(), multRecGt1, flatRec, track.p(), track.tpcSignal());
-                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTeffPrimRecEvt), multRecGt1, flatRec, track.pt()); // Tracking eff. num
-                registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTmcClosureRec), multMC, flatMC, track.pt());       // closure
+            if (std::sqrt(std::pow(std::fabs(o2::aod::pidutils::tpcNSigma<Cidx>(track)), 2) + std::pow(std::fabs(o2::aod::pidutils::tofNSigma<Cidx>(track)), 2) < trkSelOpt.cfgDcaNsigmaCombinedMax)) {
+              if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
+                if (particle.isPhysicalPrimary()) {
+                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CdEdxMcRecPrimSel), track.eta(), multRecGt1, flatRec, track.p(), track.tpcSignal());
+                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CEtaVsPtVsPMcRecPrimSel), track.eta(), track.pt(), track.p());
+                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTeffPrimRecEvt), multRecGt1, flatRec, track.pt()); // Tracking eff. num
+                  registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTmcClosureRec), multMC, flatMC, track.pt());       // closure
+                }
               }
             }
           });
           nTrk++;
         }
+        registryQC.fill(HIST("Tracks/hPtRes"), particle.pt(), (track.pt() - particle.pt()) / particle.pt());
       }
       registryQC.fill(HIST("Events/hNchVsCent"), nTrk, multRecGt1);
     }
@@ -2581,7 +2589,7 @@ struct FlattenictyPikp {
         constexpr int Cidx = i.value;
         // LOG(debug) << "fillMCGen for pidSgn '" << pidSgn << "' and id '" << static_cast<int>(id) << " with index " << ChistIdx;
         if (particle.isPhysicalPrimary()) {
-          if (std::fabs(particle.pdgCode()) == PDGs[Cidx]) {
+          if (std::fabs(particle.pdgCode()) == pDGs[Cidx]) {
             registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTgenPrimSgn), multMC, flatMC, particle.pt());       // Sgn loss den
             registryMC.fill(HIST(Cprefix) + HIST(CspeciesAll[Cidx]) + HIST(CpTmcClosureGenPrim), multMC, flatMC, particle.pt()); // closure
           }
@@ -2590,16 +2598,6 @@ struct FlattenictyPikp {
     }
   }
   PROCESS_SWITCH(FlattenictyPikp, processMC, "process MC", false);
-
-  template <typename ObjType>
-  ObjType* getForTsOrRun(std::string const& fullPath, int64_t timestamp, int runNumber)
-  {
-    if (cfgUseCcdbForRun) {
-      return ccdb->getForRun<ObjType>(fullPath, runNumber);
-    } else {
-      return ccdb->getForTimeStamp<ObjType>(fullPath, timestamp);
-    }
-  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

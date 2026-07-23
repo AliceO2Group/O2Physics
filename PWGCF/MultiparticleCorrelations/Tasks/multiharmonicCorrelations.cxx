@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -26,6 +27,7 @@
 
 #include <TCollection.h>
 #include <TComplex.h>
+#include <TF1.h>
 #include <TFile.h>
 #include <TGrid.h>
 #include <TH1.h>
@@ -38,6 +40,7 @@
 
 #include <RtypesCore.h>
 
+#include <cmath>
 #include <cstring>
 #include <string>
 #include <unordered_map>
@@ -114,10 +117,17 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
   Configurable<bool> cfQA{"cfQA", true, "quality assurance"};
   Configurable<bool> cfInitsim{"cfInitsim", false, "init histograms of sim"};
   Configurable<bool> cfUseWeights{"cfUseWeights", true, "use weights"};
+  Configurable<bool> cfToyModel{"cfToyModel", true, "phi-distribution from toy model"};
+  Configurable<bool> cfNest{"cfNest", true, "nested loops"};
+  Configurable<bool> cfTechcuts{"cfTechcuts", true, "technical cuts"};
 
   Configurable<std::vector<float>> cfVertexZ{"cfVertexZ", {-10, 10.}, "vertex z position range: {min, max}[cm], with convention: min <= Vz < max"};
   Configurable<std::vector<float>> cfPt{"cfPt", {0.2, 5.0}, "transverse momentum range"};
   Configurable<std::vector<float>> cfEta{"cfEta", {-0.8, 0.8}, "eta range"};
+  Configurable<std::vector<float>> cfDCAxy{"cfDCAxy", {-0.5, 0.5}, "dca xy range"};
+  Configurable<std::vector<float>> cfDCAz{"cfDCAz", {-0.2, 0.2}, "dca z range"};
+  Configurable<float> cftpcNClsFoundmin{"cftpcNClsFoundmin", 70., "tpcNClsFoundmin"};
+  Configurable<float> cftpcChi2NClmax{"cftpcChi2NClmax", 4., "tpcChi2NClmax"};
 
   Configurable<std::vector<int>> cfRuns{"cfRuns", {544091, 544095, 544098, 544116, 544121, 544122, 544123, 544124}, "List of run numbers to analyze"};
   Configurable<std::string> cfFileWithWeights{"cfFileWithWeights", "/alice-ccdb.cern.ch/Users/p/pengchon/weightsfile06", "path to external ROOT file which holds all particle weights"};
@@ -169,6 +179,12 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     TProfile* pfour32_centr = NULL;
     TProfile* pfour42_centr = NULL;
     TComplex Qvector[maxHarmonic][maxPower];
+    std::vector<float> vecphi;
+    std::vector<float> vecwei;
+    TProfile* nestedLoops[maxHarmonic] = {NULL};
+    TProfile* pv2_nest = NULL;
+    TProfile* pv3_nest = NULL;
+    TProfile* pv4_nest = NULL;
   } cor;
 
   struct PhiHist {
@@ -241,15 +257,15 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     string pathstr = filePath;
     const string pathalien = "/alice/cern.ch/";
     const string pathccdb = "/alice-ccdb.cern.ch/";
-    if (pathstr.find(pathalien) == 0) {
+    if (pathstr.starts_with(pathalien)) {
       bFileIsInAliEn = true;
-    } else if (pathstr.find(pathccdb) == 0) {
+    } else if (pathstr.starts_with(pathccdb)) {
       bFileIsInCCDB = true;
     }
     LOGF(info, "bFileIsInCCDB= %d", bFileIsInCCDB);
 
     if (bFileIsInAliEn) {
-      TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", ""); // do not forget to add #include <TGrid.h> to the preamble of your analysis task
+      const TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", ""); // do not forget to add #include <TGrid.h> to the preamble of your analysis task
       if (!alien) {
         LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
       }
@@ -358,6 +374,10 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     float NContrcut = 2.;
     if (posZ < vertexZmin || posZ > vertexZmax || (!collision.sel8()) || collision.numContrib() < NContrcut)
       return false;
+    if (cfTechcuts) {
+      if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) || !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard) || !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC) || !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) || !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof))
+        return false;
+    }
     return true;
   }
 
@@ -372,7 +392,15 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     float etacutmin = static_cast<float>(Eta[0]);
     float etacutmax = static_cast<float>(Eta[1]);
     float eta = track.eta();
-    if (pt < ptcutmin || pt > ptcutmax || eta < etacutmin || eta > etacutmax)
+    vector<float> dcaXY = cfDCAxy.value;
+    float dcaxycutmin = static_cast<float>(dcaXY[0]);
+    float dcaxycutmax = static_cast<float>(dcaXY[1]);
+    float dcaxy = track.dcaXY();
+    vector<float> dcaZ = cfDCAz.value;
+    float dcazcutmin = static_cast<float>(dcaZ[0]);
+    float dcazcutmax = static_cast<float>(dcaZ[1]);
+    float dcaz = track.dcaZ();
+    if (pt < ptcutmin || pt > ptcutmax || eta < etacutmin || eta > etacutmax || dcaxy < dcaxycutmin || dcaxy > dcaxycutmax || dcaz < dcazcutmin || dcaz > dcazcutmax || (!track.isPrimaryTrack()) || (!track.isPVContributor()) || track.tpcNClsFound() < cftpcNClsFoundmin.value || track.tpcChi2NCl() > cftpcChi2NClmax)
       return false;
     return true;
   }
@@ -399,6 +427,16 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     return four;
   } // TComplex Four(Int_t n1, Int_t n2, Int_t n3, Int_t n4)
 
+  static double pdf(const double* x, const double* par)
+  {
+    double y = 1;
+    int harm = 6;
+    for (int i = 0; i < harm; i = i + 1) {
+      y = y + 2 * (0.04 + (i + 1.) * 0.01) * TMath::Cos((i + 1) * (x[0] - par[0]));
+    }
+    return y;
+  }
+
   template <eRecSim rs, typename T1, typename T2>
   void Steer(T1 const& collision, T2 const& tracks)
   {
@@ -407,11 +445,21 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       return;
     }
     // Print current run number:
-    // LOGF(info, "Run number: %d", collision.bc().runNumber());
     int currentRun = collision.bc().runNumber();
     auto it = phih.histMap.find(currentRun);
     auto histweight = wh.weightsmap.find(currentRun);
     float centr = 0, M = 0., msel = 0.;
+    // TF1* f = new TF1("f", pdf, 0, TMath::TwoPi(), 1);
+    TF1* f = new TF1("f",
+                     "1 +"
+                     "2 * (0.05) * cos(1 * (x - [0])) +"
+                     "2 * (0.06) * cos(2 * (x - [0])) +"
+                     "2 * (0.07) * cos(3 * (x - [0])) +"
+                     "2 * (0.08) * cos(4 * (x - [0])) +"
+                     "2 * (0.09) * cos(5 * (x - [0])) +"
+                     "2 * (0.10) * cos(6 * (x - [0]))",
+                     0, TMath::TwoPi());
+    f->SetParameters(0.);
 
     if constexpr (rs == eRec || rs == eRecAndSim) {
       if (cfCent.value == "FT0C")
@@ -473,11 +521,23 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
 
     // before loop over particles
     float phi = 0, weight = 1.;
+    vector<float>().swap(cor.vecphi);
+    vector<float>().swap(cor.vecwei);
     for (int ih = 0; ih < maxHarmonic; ih++) {
       for (int ip = 0; ip < maxPower; ip++) {
         cor.Qvector[ih][ip] = TComplex(0., 0.);
       }
     }
+
+    /*
+    for (int ih = 0; ih < maxHarmonic; ih++) {
+      for (int ip = 0; ip < maxPower; ip++) {
+        LOGF(info, "Qvector[%d][%d]=%f, ", ih, ip, cor.Qvector[ih][ip].Rho2());
+      }
+      LOGF(info, "\n");
+    }
+    LOGF(info, "\n\n");
+    */
 
     // Main loop over particles:
     for (const auto& track : tracks) {
@@ -511,14 +571,25 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         event.fEventHistograms[ePt][eRec][1]->Fill(ptrec);
 
         phi = track.phi();
+        if (cfToyModel) {
+          phi = f->GetRandom();
+        }
+        cor.vecphi.push_back(phi);
         if (it != phih.histMap.end()) {
           it->second->Fill(phi);
         }
 
-        if (cfUseWeights && histweight != wh.weightsmap.end())
-          weight = histweight->second->GetBinContent(histweight->second->FindBin(phi));
-        else
+        if (cfUseWeights) {
+          if (histweight != wh.weightsmap.end() && histweight->second) {
+            weight = histweight->second->GetBinContent(histweight->second->FindBin(phi));
+          } else {
+            LOG(warning) << "No weights found for run " << currentRun << ", using weight=1";
+            weight = 1;
+          }
+        } else {
           weight = 1;
+        }
+        cor.vecwei.push_back(weight);
 
         // ... and corresponding MC truth simulated:
         // See https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx
@@ -548,6 +619,30 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
       }
     } // end of for (auto track: tracks)
     event.fHistMsel[eAfter]->Fill(msel);
+
+    if (cfNest) {
+      float phi1 = 0., phi2 = 0., weight1 = 1., weight2 = 2.;
+      for (Int_t c = 0; c < maxHarmonic; c++) {
+        delete cor.nestedLoops[c];
+        cor.nestedLoops[c] = new TProfile("", "", 1, 0., 1.);
+        cor.nestedLoops[c]->Sumw2();
+      }
+      for (int i1 = 0; i1 < static_cast<int>(cor.vecphi.size()); i1++) { // nested loop of particles
+        phi1 = cor.vecphi[i1];
+        weight1 = cor.vecwei[i1];
+        for (int i2 = 0; i2 < static_cast<int>(cor.vecphi.size()); i2++) {
+          if (i2 == i1) {
+            continue;
+          }
+          phi2 = cor.vecphi[i2];
+          weight2 = cor.vecwei[i2];
+          cor.nestedLoops[0]->Fill(0.5, TMath::Cos(2 * phi1 - 2 * phi2), weight1 * weight2);
+          cor.nestedLoops[1]->Fill(0.5, TMath::Cos(3 * phi1 - 3 * phi2), weight1 * weight2);
+          cor.nestedLoops[2]->Fill(0.5, TMath::Cos(4 * phi1 - 4 * phi2), weight1 * weight2);
+        }
+      } // end of two nested loop
+    }
+
     // calculate correlations
     float Mmin = 4.;
     if (msel < Mmin)
@@ -556,9 +651,9 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     float wFour = Four(0, 0, 0, 0).Re();
     float four32 = Four(3, 2, -3, -2).Re() / wFour;
     float four42 = Four(4, 2, -4, -2).Re() / wFour;
-    float v22 = Two(2, -2) / wTwo;
-    float v32 = Two(3, -3) / wTwo;
-    float v42 = Two(4, -4) / wTwo;
+    float v22 = Two(2, -2).Re() / wTwo;
+    float v32 = Two(3, -3).Re() / wTwo;
+    float v42 = Two(4, -4).Re() / wTwo;
     if (std::isnan(v22) || std::isnan(v32) || std::isnan(v42) || std::isnan(four32) || std::isnan(four42)) {
       LOGF(info, "\033[1;31m%s std::isnan(v22) || std::isnan(v32) || std::isnan(v42) || std::isnan(four32) || std::isnan(four42)\033[0m", __FUNCTION__);
       LOGF(error, "v22 = %f\nv32 = %f\nv42 = %f\nfour32=%f\nv42 = %f\n", v22, v32, v42, four32, four42);
@@ -571,6 +666,13 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     cor.pfour32_centr->Fill(centr, four32, wFour);
     cor.pfour42_centr->Fill(centr, four42, wFour);
 
+    if (cfNest) {
+      cor.pv2_nest->Fill(centr, cor.nestedLoops[0]->GetBinContent(1), wTwo);
+      cor.pv3_nest->Fill(centr, cor.nestedLoops[1]->GetBinContent(1), wTwo);
+      cor.pv4_nest->Fill(centr, cor.nestedLoops[2]->GetBinContent(1), wTwo);
+
+      LOGF(info, "v22=%f, v22_nest=%f", v22, cor.nestedLoops[0]->GetBinContent(1));
+    }
   } // end of template <eRecSim rs, typename T1, typename T2> void Steer(T1 const& collision, T2 const& tracks)
 
   // *) Initialize and book all objects:
@@ -674,8 +776,8 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     float maxdcaxy = l_dcaxy_bins[2];
     float mindcaz = l_dcaz_bins[1];
     float maxdcaz = l_dcaz_bins[2];
-    float maxncontr = l_ncontr_bins[1];
-    float minncontr = l_ncontr_bins[2];
+    float minncontr = l_ncontr_bins[1];
+    float maxncontr = l_ncontr_bins[2];
 
     const char* cevent[] = {"vertexZ", "Pt"};
     const char* cpro[] = {"rec", "sim"};
@@ -785,6 +887,7 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
         LOG(fatal) << "Failed to load weights for run " << run;
         return;
       }
+      histweights->SetName(Form("histWithEfficiencyCorrections_%d", run));
       wh.fWeightsHistList->Add(histweights);
       wh.weightsmap[run] = histweights;
     }
@@ -804,6 +907,9 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     cor.pv42_centr = new TProfile("pv42", "profile of v_{4}^{2}", 9, quantiles);
     cor.pfour32_centr = new TProfile("pfour32", "profile of v_{2}^{2}*v_{3}^{2}", 9, quantiles);
     cor.pfour42_centr = new TProfile("pfour42", "profile of v_{2}^{2}*v_{4}^{2}", 9, quantiles);
+    cor.pv2_nest = new TProfile("pv2_nest", "profile of v_{2} from nest", 9, quantiles);
+    cor.pv3_nest = new TProfile("pv3_nest", "profile of v_{3} from nest", 9, quantiles);
+    cor.pv4_nest = new TProfile("pv4_nest", "profile of v_{4} from nest", 9, quantiles);
     cor.pv22_centr->GetYaxis()->SetTitle("v_{2}^{2}");
     cor.pv32_centr->GetYaxis()->SetTitle("v_{3}^{2}");
     cor.pv42_centr->GetYaxis()->SetTitle("v_{4}^{2}");
@@ -814,11 +920,22 @@ struct MultiharmonicCorrelations { // this name is used in lower-case format to 
     cor.pfour42_centr->GetYaxis()->SetTitle("v_{2}^{2}v_{4}^{2}");
     cor.pfour32_centr->GetXaxis()->SetTitle("centrality");
     cor.pfour42_centr->GetXaxis()->SetTitle("centrality");
+    cor.pv2_nest->GetYaxis()->SetTitle("v_{2}");
+    cor.pv3_nest->GetYaxis()->SetTitle("v_{3}");
+    cor.pv4_nest->GetYaxis()->SetTitle("v_{4}");
+    cor.pv2_nest->GetXaxis()->SetTitle("centrality");
+    cor.pv3_nest->GetXaxis()->SetTitle("centrality");
+    cor.pv4_nest->GetXaxis()->SetTitle("centrality");
     cor.fCorrelationVariablesList->Add(cor.pv22_centr);
     cor.fCorrelationVariablesList->Add(cor.pv32_centr);
     cor.fCorrelationVariablesList->Add(cor.pv42_centr);
     cor.fCorrelationVariablesList->Add(cor.pfour32_centr);
     cor.fCorrelationVariablesList->Add(cor.pfour42_centr);
+    if (cfNest) {
+      cor.fCorrelationVariablesList->Add(cor.pv2_nest);
+      cor.fCorrelationVariablesList->Add(cor.pv3_nest);
+      cor.fCorrelationVariablesList->Add(cor.pv4_nest);
+    }
 
     // init of phi hist for different runs
     for (const int& run : targetRuns) {

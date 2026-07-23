@@ -35,9 +35,7 @@
 #include <string_view>
 #include <vector>
 
-namespace o2::analysis::femto
-{
-namespace twotrackresonancehistmanager
+namespace o2::analysis::femto::twotrackresonancehistmanager
 {
 // enum for track histograms
 enum TwoTrackResonanceHist {
@@ -55,11 +53,12 @@ enum TwoTrackResonanceHist {
   kTwoTrackResonanceHistLast
 };
 
-#define TWOTRACKRESONANCE_DEFAULT_BINNING(defaultMassMin, defaultMassMax)                          \
-  o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};                                   \
-  o2::framework::ConfigurableAxis eta{"eta", {{300, -1.5, 1.5}}, "Eta"};                           \
-  o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"}; \
-  o2::framework::ConfigurableAxis mass{"mass", {{200, defaultMassMin, defaultMassMax}}, "Mass"};   \
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define TWOTRACKRESONANCE_DEFAULT_BINNING(defaultMassMin, defaultMassMax)                            \
+  o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};                                     \
+  o2::framework::ConfigurableAxis eta{"eta", {{300, -1.5, 1.5}}, "Eta"};                             \
+  o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"};   \
+  o2::framework::ConfigurableAxis mass{"mass", {{200, (defaultMassMin), (defaultMassMax)}}, "Mass"}; \
   o2::framework::ConfigurableAxis sign{"sign", {{3, -1.5, 1.5}}, "Sign"};
 
 struct ConfPhiBinning : o2::framework::ConfigurableGroup {
@@ -89,19 +88,21 @@ constexpr std::array<histmanager::HistInfo<TwoTrackResonanceHist>, kTwoTrackReso
    {kPhiVsEta, o2::framework::HistType::kTH2F, "hPhiVsEta", "#varphi vs #eta; #varphi ; #eta"},
    {kPtVsMass, o2::framework::HistType::kTH2F, "hPtVsMass", "p_{T} vs invariant mass; p_{T} (GeV/#it{c}); m (GeV/#it{c}^{2})"}}};
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TWOTRACKRESONANCE_HIST_ANALYSIS_MAP(conf) \
-  {kPt, {conf.pt}},                               \
-    {kEta, {conf.eta}},                           \
-    {kPhi, {conf.phi}},                           \
-    {kMass, {conf.mass}},                         \
-    {kSign, {conf.sign}},                         \
-    {kPtVsMass, {conf.pt, conf.mass}},
+  {kPt, {(conf).pt}},                             \
+    {kEta, {(conf).eta}},                         \
+    {kPhi, {(conf).phi}},                         \
+    {kMass, {(conf).mass}},                       \
+    {kSign, {(conf).sign}},                       \
+    {kPtVsMass, {(conf).pt, (conf).mass}},
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TWOTRACKRESONANCE_HIST_QA_MAP(conf) \
-  {kPtVsEta, {conf.pt, conf.eta}},          \
-    {kPtVsPhi, {conf.pt, conf.phi}},        \
-    {kPhiVsEta, {conf.phi, conf.eta}},      \
-    {kPtVsMass, {conf.pt, conf.mass}},
+  {kPtVsEta, {(conf).pt, (conf).eta}},      \
+    {kPtVsPhi, {(conf).pt, (conf).phi}},    \
+    {kPhiVsEta, {(conf).phi, (conf).eta}},  \
+    {kPtVsMass, {(conf).pt, (conf).mass}},
 
 template <typename T>
 std::map<TwoTrackResonanceHist, std::vector<o2::framework::AxisSpec>> makeTwoTrackResonanceHistSpecMap(const T& confBinningAnalysis)
@@ -118,6 +119,9 @@ auto makeTwoTrackResonanceQaHistSpecMap(const T& confBinningAnalysis)
       TWOTRACKRESONANCE_HIST_QA_MAP(confBinningAnalysis)};
 };
 
+#undef TWOTRACKRESONANCE_HIST_ANALYSIS_MAP
+#undef TWOTRACKRESONANCE_HIST_QA_MAP
+
 constexpr char PrefixRho[] = "Rho0/";
 constexpr char PrefixPhi[] = "Phi/";
 constexpr char PrefixKstar[] = "Kstar0/";
@@ -125,9 +129,9 @@ constexpr char PrefixKstar[] = "Kstar0/";
 constexpr std::string_view AnalysisDir = "Analysis/";
 constexpr std::string_view QaDir = "QA/";
 
-template <const char* resoPrefix,
-          const char* posDauPrefix,
-          const char* negDauPrefix,
+template <auto& resoPrefix,
+          auto& posDauPrefix,
+          auto& negDauPrefix,
           modes::TwoTrackResonance reso>
 class TwoTrackResonanceHistManager
 {
@@ -173,7 +177,7 @@ class TwoTrackResonanceHistManager
 
     mPosDauManager.template init<mode>(registry, PosDauSpecs, absCharge, signPlus, posDauPdgCodeAbs);
     mNegDauManager.template init<mode>(registry, NegDauSpecs, absCharge, signMinus, negDauPdgCodeAbs);
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       initAnalysis(ResoSpecs);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
@@ -221,7 +225,7 @@ class TwoTrackResonanceHistManager
 
     mPosDauManager.template init<mode>(registry, PosDauSpecs, absCharge, signPlus, posDauPdgCodeAbs, ConfPosDauBinningQa);
     mNegDauManager.template init<mode>(registry, NegDauSpecs, absCharge, signMinus, negDauPdgCodeAbs, ConfNegDauBinningQa);
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       initAnalysis(ResoSpecs);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
@@ -239,7 +243,7 @@ class TwoTrackResonanceHistManager
     mPosDauManager.template fill<mode>(posDaughter, tracks);
     auto negDaughter = tracks.rawIteratorAt(resonance.negDauId() - tracks.offset());
     mNegDauManager.template fill<mode>(negDaughter, tracks);
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       fillAnalysis(resonance);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
@@ -295,6 +299,5 @@ class TwoTrackResonanceHistManager
   trackhistmanager::TrackHistManager<negDauPrefix> mNegDauManager;
   int mPdgCode = 0;
 };
-}; // namespace twotrackresonancehistmanager
-}; // namespace o2::analysis::femto
+}; // namespace o2::analysis::femto::twotrackresonancehistmanager
 #endif // PWGCF_FEMTO_CORE_TWOTRACKRESONANCEHISTMANAGER_H_

@@ -13,7 +13,6 @@
 /// \file uecharged.cxx
 /// \brief Underlying event analysis task
 /// \since November 2021
-/// \last update: April 2026
 
 #include "PWGLF/Utils/inelGt.h"
 
@@ -21,6 +20,7 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -62,6 +62,7 @@ struct ueCharged {
   Configurable<bool> removeITSROFBorder{"event_removeITSROFBorder", false, "Remove ITS Read-Out Frame border and only apply kIsTriggerTVX & kNoTimeFrameBorder (recommended for MC)"};
   Configurable<int> cfgINELCut{"event_cfgINELCut", 0, "INEL event selection: 0 no sel, 1 INEL>0, 2 INEL>1"};
   Configurable<float> CollPosZ{"event_CollPosZ", 10.f, "Cut on the z component of the vertex position"};
+  Configurable<bool> GoodITS{"event_GoodITS", true, "Numbers of inactive chips on all ITS layers are below maximum allowed values"};
   Configurable<bool> analyzeEvandTracksel{"analyzeEvandTracksel", true, "Analyze the event and track selection"};
 
   // Track selection configurables
@@ -72,16 +73,16 @@ struct ueCharged {
   Configurable<float> minPt{"trkcfg_minPt", 0.1f, "Set minimum pT of tracks"};
   Configurable<float> maxPt{"trkcfg_maxPt", 1e10f, "Set maximum pT of tracks"};
   Configurable<float> requireEta{"trkcfg_requireEta", 0.8f, "Set eta range of tracks"};
-  Configurable<bool> requireITSRefit{"trkcfg_requireITSRefit", true, "Additional cut on the ITS requirement"};
-  Configurable<bool> requireTPCRefit{"trkcfg_requireTPCRefit", true, "Additional cut on the TPC requirement"};
   Configurable<bool> requireGoldenChi2{"trkcfg_requireGoldenChi2", true, "Additional cut on the GoldenChi2"};
   Configurable<float> maxChi2PerClusterTPC{"trkcfg_maxChi2PerClusterTPC", 4.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
   Configurable<float> maxChi2PerClusterITS{"trkcfg_maxChi2PerClusterITS", 36.f, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
-  // Configurable<int> minITSnClusters{"trkcfg_minITSnClusters", 5, "minimum number of found ITS clusters"};
   Configurable<float> minNCrossedRowsTPC{"trkcfg_minNCrossedRowsTPC", 70.f, "Additional cut on the minimum number of crossed rows in the TPC"};
-  Configurable<float> minNCrossedRowsOverFindableClustersTPC{"trkcfg_minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
   Configurable<float> maxDcaXYFactor{"trkcfg_maxDcaXYFactor", 1.f, "Multiplicative factor on the maximum value of the DCA xy"};
   Configurable<float> maxDcaZ{"trkcfg_maxDcaZ", 0.1f, "Additional cut on the maximum value of the DCA z"};
+  // Configurable<bool> requireITSRefit{"trkcfg_requireITSRefit", true, "Additional cut on the ITS requirement"};
+  // Configurable<bool> requireTPCRefit{"trkcfg_requireTPCRefit", true, "Additional cut on the TPC requirement"};
+  // Configurable<float> minNCrossedRowsOverFindableClustersTPC{"trkcfg_minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
+  // Configurable<int> minITSnClusters{"trkcfg_minITSnClusters", 5, "minimum number of found ITS clusters"};
 
   Service<o2::framework::O2DatabasePDG> pdg;
 
@@ -94,6 +95,7 @@ struct ueCharged {
   using TrackMCTrueTable = aod::McParticles;
 
   // reconstructed collisions associated to MC collisions (small groups keyed by mcCollisionId)
+  using ColMCTrueTableWithExtra = soa::Join<aod::McCollisions, aod::McCollsExtra>;
   using ColMCRecTable = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults>>;
   using TrackMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
   using FilTrackMCRecTable = soa::Filtered<TrackMCRecTable>;
@@ -138,17 +140,17 @@ struct ueCharged {
       myTrkSel = getGlobalTrackSelectionRun3ITSMatch(setITSreq.value);
       myTrkSel.SetPtRange(minPt.value, maxPt.value);
       myTrkSel.SetEtaRange(-requireEta.value, requireEta.value);
-      myTrkSel.SetRequireITSRefit(requireITSRefit.value);
-      myTrkSel.SetRequireTPCRefit(requireTPCRefit.value);
       myTrkSel.SetRequireGoldenChi2(requireGoldenChi2.value);
       myTrkSel.SetMaxChi2PerClusterTPC(maxChi2PerClusterTPC.value);
       myTrkSel.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
-      // myTrkSel.SetMinNClustersITS(minITSnClusters.value);
       myTrkSel.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
-      myTrkSel.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
-      // myTrkSel.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / pow(pt, 1.1f); });
       myTrkSel.SetMaxDcaXYPtDep([](float /*pt*/) { return 10000.f; });
       myTrkSel.SetMaxDcaZ(maxDcaZ.value);
+      // myTrkSel.SetRequireITSRefit(requireITSRefit.value);
+      // myTrkSel.SetRequireTPCRefit(requireTPCRefit.value);
+      // myTrkSel.SetMinNClustersITS(minITSnClusters.value);
+      // myTrkSel.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
+      // myTrkSel.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / pow(pt, 1.1f); });
       myTrkSel.print();
     }
 
@@ -214,7 +216,7 @@ struct ueCharged {
     ue.add("vtxZEta", ";#eta;vtxZ", HistType::kTH2F, {{50, -2.5, 2.5, " "}, {60, -30, 30, " "}});
     ue.add("phiEta", ";#eta;#varphi", HistType::kTH2F, {{50, -2.5, 2.5}, {200, 0., 2 * o2::constants::math::PI, " "}});
     ue.add("hvtxZ", "vtxZ", HistType::kTH1F, {{40, -20.0, 20.0, " "}});
-    ue.add("hCounter", "Counter; sel; Nev", HistType::kTH1D, {{7, 0, 7, " "}});
+    ue.add("hCounter", "Counter; sel; Nev", HistType::kTH1D, {{8, 0, 8, " "}});
     ue.add("hPtLeadingRecPS", "rec pTleading after physics selection", HistType::kTH1D, {ptAxist});
     ue.add("hPtLeadingMeasured", "measured pTleading after physics selection", HistType::kTH1D, {ptAxist});
     ue.add("hPtLeadingVsTracks", "", HistType::kTProfile, {{ptAxist}});
@@ -226,6 +228,7 @@ struct ueCharged {
     h->GetXaxis()->SetBinLabel(4, "NoSameBunchPileup");
     h->GetXaxis()->SetBinLabel(5, "IsGoodZvtxFT0vsPV");
     h->GetXaxis()->SetBinLabel(6, "posZ passed");
+    h->GetXaxis()->SetBinLabel(7, "GoodITSLayersAll");
 
     for (int i = 0; i < 3; ++i) {
       ue.add(pNumDenMeasuredPS[i].data(), "Number Density; ; #LT #it{N}_{trk} #GT", HistType::kTProfile, {ptAxist});
@@ -252,6 +255,8 @@ struct ueCharged {
     ue.add("hEtaLeadingVsPtLeading", " ", HistType::kTH2D, {{ptAxist}, {50, -2.5, 2.5, "#eta"}});
 
     if (analyzeEvandTracksel) {
+      ue.add("hPtVsDCAxy", " ", HistType::kTH2D, {{ptAxis}, {225, -0.6, 0.6, "#it{DCA}_{xy} (cm)"}});
+      ue.add("hPtVsDCAz", " ", HistType::kTH2D, {{ptAxis}, {225, -0.6, 0.6, "#it{DCA}_{z} (cm)"}});
       const AxisSpec axisVtxZ{500, -25., 25., ""};
       ue.add("hVtxFT0VsVtxCol", " ", HistType::kTH2D, {{axisVtxZ}, {axisVtxZ}});
       ue.add("hVtxFT0VsVtxCol_afterSel8", " ", HistType::kTH2D, {{axisVtxZ}, {axisVtxZ}});
@@ -422,8 +427,14 @@ struct ueCharged {
     if ((std::abs(collision.posZ()) > CollPosZ)) {
       return false;
     }
-
     ue.fill(HIST("hCounter"), 5);
+
+    if (GoodITS && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      return false;
+    }
+
+    ue.fill(HIST("hCounter"), 6);
+
     return true;
   }
 
@@ -470,6 +481,12 @@ struct ueCharged {
     }
 
     ue.fill(HIST("hCounter"), 5);
+
+    if (GoodITS && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      return false;
+    }
+
+    ue.fill(HIST("hCounter"), 6);
     return true;
   }
 
@@ -652,7 +669,7 @@ struct ueCharged {
   }
   PROCESS_SWITCH(ueCharged, processData, "Process data", false);
 
-  void processMC(ColMCTrueTable::iterator const& mcCollision,
+  void processMC(ColMCTrueTableWithExtra::iterator const& mcCollision,
                  ColMCRecTable const& RecCols,
                  TrackMCTrueTable const& GenParticles,
                  TrackMCRecTable const& RecTracks,
@@ -672,20 +689,20 @@ struct ueCharged {
     ue.fill(HIST("hStat"), mcCollision.size());
     const auto vtxZ = mcCollision.posZ();
 
-    // pick best reconstructed collision associated to this mcCollision (max ntracks = recRow.size())
+    // pick best reconstructed collision associated to this mcCollision using bestCollisionIndex
     bool foundRec = false;
     auto chosenRec = *RecCols.begin();
     int64_t chosenRecGlobalIndex = -1;
-    int maxTracks = -1;
 
-    if (RecCols.size() != 0) {
+    int bestCollIdx = mcCollision.bestCollisionIndex();
+    if (bestCollIdx >= 0) {
+      // Find the reconstructed collision with this index
       for (const auto& recRow : RecCols) {
-        int ntracks = recRow.size();
-        if (ntracks > maxTracks) {
+        if (recRow.globalIndex() == bestCollIdx) {
           chosenRec = recRow;
-          chosenRecGlobalIndex = recRow.globalIndex();
-          maxTracks = ntracks;
+          chosenRecGlobalIndex = bestCollIdx;
           foundRec = true;
+          break;
         }
       }
     }
@@ -1154,12 +1171,17 @@ struct ueCharged {
 
     ue.fill(HIST("hvtxZ_after"), collision.posZ());
 
+    if (!isMCEventSelected(collision))
+      return;
+
     int tracks_before = 0;
     int tracks_after = 0;
 
     for (auto& track : tracks) {
 
       if (track.hasITS() && track.hasTPC()) {
+        ue.fill(HIST("hPtVsDCAxy"), track.pt(), track.dcaXY());
+        ue.fill(HIST("hPtVsDCAz"), track.pt(), track.dcaZ());
         ue.fill(HIST("preselection_track/ITS/itsNCls"), track.itsNCls());
         ue.fill(HIST("preselection_track/ITS/itsChi2NCl"), track.itsChi2NCl());
         ue.fill(HIST("preselection_track/ITS/itsClusterMap"), track.itsClusterMap());

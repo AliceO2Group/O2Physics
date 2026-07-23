@@ -37,11 +37,8 @@
 #include <unordered_map>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::cascadebuilder
 {
-namespace cascadebuilder
-{
-
 struct ConfCascadeFilters : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CascadeFilters");
   o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};
@@ -50,19 +47,24 @@ struct ConfCascadeFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};
   o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};
+  o2::framework::Configurable<float> massLambdaMin{"massLambdaMin", 1.0f, "Minimum mass of Lambda daughters in cascade decay"};
+  o2::framework::Configurable<float> massLambdaMax{"massLambdaMax", 1.2f, "Maximum mass of Lambda daughters in cascade decay"};
   o2::framework::Configurable<float> massXiMin{"massXiMin", 1.2f, "Minimum Xi mass"};
   o2::framework::Configurable<float> massXiMax{"massXiMax", 1.4f, "Maximum Xi mass"};
-  o2::framework::Configurable<float> rejectMassXiMin{"rejectMassXiMin", 1.317f, "Reject Minimum Xi mass for Omega hypothesis"};
-  o2::framework::Configurable<float> rejectMassXiMax{"rejectMassXiMax", 1.325f, "Rejection Maximum Xi mass for Omega hypothesis"};
-  o2::framework::Configurable<float> massOmegaMin{"massOmegaMin", 1.5f, "Minimum Omega mass"};
-  o2::framework::Configurable<float> massOmegaMax{"massOmegaMax", 1.9f, "Maximum Omega mass"};
+  o2::framework::Configurable<bool> rejectHypothesisOmega{"rejectHypothesisOmega", false, "Rejection of Omega hypothesis for Xi candidates"};
   o2::framework::Configurable<float> rejectMassOmegaMin{"rejectMassOmegaMin", 1.668f, "Reject minimum Omega mass for Xi hypothesis"};
   o2::framework::Configurable<float> rejectMassOmegaMax{"rejectMassOmegaMax", 1.676f, "Reject maximum Omega mass for Xi hypothesis"};
-  o2::framework::Configurable<float> massLambdaMin{"massLambdaMin", 1.0f, "Minimum Lambda mass"};
-  o2::framework::Configurable<float> massLambdaMax{"massLambdaMax", 1.2f, "Maximum Lambda mass"};
+
+  o2::framework::Configurable<float> massOmegaMin{"massOmegaMin", 1.5f, "Minimum Omega mass"};
+  o2::framework::Configurable<float> massOmegaMax{"massOmegaMax", 1.9f, "Maximum Omega mass"};
+  o2::framework::Configurable<bool> rejectHypothesisXi{"rejectHypothesisXi", false, "Rejection of Xi hypothesis for Omega candidates"};
+  o2::framework::Configurable<float> rejectMassXiMin{"rejectMassXiMin", 1.317f, "Reject Minimum Xi mass for Omega hypothesis"};
+  o2::framework::Configurable<float> rejectMassXiMax{"rejectMassXiMax", 1.325f, "Reject Maximum Xi mass for Omega hypothesis"};
 };
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CASCADE_DEFAULT_BITS                                                                                                                               \
+  o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all Cascades are passed through. Bits for all selections are stored."};    \
   o2::framework::Configurable<std::vector<float>> cascadeCpaMin{"cascadeCpaMin", {0.95f}, "Minimum cosine of pointing angle"};                             \
   o2::framework::Configurable<std::vector<float>> cascadeTransRadMin{"cascadeTransRadMin", {0.9f}, "Minimum transverse radius (cm)"};                      \
   o2::framework::Configurable<std::vector<float>> cascadeDcaDauMax{"cascadeDcaDauMax", {0.25f}, "Maximum DCA between the daughters at decay vertex (cm)"}; \
@@ -70,7 +72,7 @@ struct ConfCascadeFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> lambdaTransRadMin{"lambdaTransRadMin", {0.9f}, "Minimum transverse radius (cm)"};                        \
   o2::framework::Configurable<std::vector<float>> lambdaDcaDauMax{"lambdaDcaDauMax", {0.5f}, "Maximum DCA between the daughters at decay vertex (cm)"};    \
   o2::framework::Configurable<std::vector<float>> lambdaDcaToPvMin{"lambdaDcaToPvMin", {0.3f}, "Minimum DCA between the lambda and primary vertex"};       \
-  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.8f}, "Minimum DCA of the daughters from primary vertex (cm)"};           \
+  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.8f}, "Maximum |eta| of all daughters"};                                  \
   o2::framework::Configurable<std::vector<float>> dauDcaMin{"dauDcaMin", {0.05f}, "Minimum DCA of the daughters from primary vertex (cm)"};                \
   o2::framework::Configurable<std::vector<float>> dauTpcClustersMin{"dauTpcClustersMin", {80.f}, "Minimum number of TPC clusters for daughter tracks"};    \
   o2::framework::Configurable<std::vector<float>> posDauTpc{"posDauTpc", {5.f}, "Maximum |nsimga_Pion/Proton| TPC for positive daughter tracks"};          \
@@ -90,18 +92,19 @@ struct ConfOmegaBits : o2::framework::ConfigurableGroup {
 
 #undef CASCADE_DEFAULT_BITS
 
-#define CASCADE_DEFAULT_SELECTION(defaultMassMin, defaultMassMax, defaultPdgCode)                                                       \
-  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", defaultPdgCode, "Cascade PDG code. Set sign to +1 to select antiparticle"}; \
-  o2::framework::Configurable<int> sign{"sign", -1, "Sign of the charge of the Cascade"};                                               \
-  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                                 \
-  o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                                               \
-  o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                                            \
-  o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                                             \
-  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum eta"};                                                              \
-  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                                 \
-  o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Cascade"};                          \
-  o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Cascade"};                          \
-  o2::framework::Configurable<o2::aod::femtodatatypes::CascadeMaskType> mask{"mask", 0x0, "Bitmask for cascade selection"};
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CASCADE_DEFAULT_SELECTION(defaultMassMin, defaultMassMax, defaultPdgCode)                                                         \
+  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", (defaultPdgCode), "Cascade PDG code. Set sign to +1 to select antiparticle"}; \
+  o2::framework::Configurable<int> sign{"sign", -1, "Sign of the charge of the Cascade"};                                                 \
+  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                                   \
+  o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                                                 \
+  o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                                              \
+  o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                                               \
+  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                                                \
+  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                                   \
+  o2::framework::Configurable<float> massMin{"massMin", (defaultMassMin), "Minimum invariant mass for Cascade"};                          \
+  o2::framework::Configurable<float> massMax{"massMax", (defaultMassMax), "Maximum invariant mass for Cascade"};                          \
+  o2::framework::Configurable<o2::analysis::femto::datatypes::CascadeMaskType> mask{"mask", 0x0, "Bitmask for cascade selection"};
 
 struct ConfXiSelection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("XiSelection");
@@ -112,6 +115,8 @@ struct ConfOmegaSelection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("OmegaSelection");
   CASCADE_DEFAULT_SELECTION(1.57, 1.77, 3334)
 };
+
+#undef CASCADE_DEFAULT_SELECTION
 
 /// The different selections this task is capable of doing
 enum CascadeSels {
@@ -167,21 +172,62 @@ const std::unordered_map<CascadeSels, std::string> cascadeSelectionNames = {
 
   {kCascadeSelsMax, "Cascade Selections Max"}};
 
+/// enum for all cascade pre-filters (evaluated in checkFilters, before the selection bitmask)
+enum CascadeFilters {
+  kPtMin,
+  kPtMax,
+  kEtaMin,
+  kEtaMax,
+  kPhiMin,
+  kPhiMax,
+  kLambdaMassMin,
+  kLambdaMassMax,
+  kXiMassMin,
+  kXiMassMax,
+  kRejectionOmegaMass,
+  kOmegaMassMin,
+  kOmegaMassMax,
+  kRejectionXiMass,
+  kCascadeFiltersMax
+};
+
+constexpr char XiFilterHistName[] = "hXiFilters";
+constexpr char OmegaFilterHistName[] = "hOmegaFilters";
+const std::unordered_map<CascadeFilters, std::string> cascadeFilterNames = {
+  {kPtMin, "ptMin"},
+  {kPtMax, "ptMax"},
+  {kEtaMin, "etaMin"},
+  {kEtaMax, "etaMax"},
+  {kPhiMin, "phiMin"},
+  {kPhiMax, "phiMax"},
+  {kLambdaMassMin, "lambdaMassMin"},
+  {kLambdaMassMax, "lambdaMassMax"},
+  {kXiMassMin, "xiMassMin"},
+  {kXiMassMax, "xiMassMax"},
+  {kRejectionOmegaMass, "rejectOmega"},
+  {kOmegaMassMin, "omegaMassMin"},
+  {kOmegaMassMax, "omegaMassMax"},
+  {kRejectionXiMass, "rejectXi"},
+};
+
 /// \class FemtoDreamTrackCuts
 /// \brief Cut class to contain and execute all cuts applied to tracks
-template <modes::Cascade cascadeType, const char* HistName>
-class CascadeSelection : public BaseSelection<float, o2::aod::femtodatatypes::CascadeMaskType, kCascadeSelsMax>
+template <modes::Cascade cascadeType, auto& SelectionHistName, auto& FilterHistName>
+class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis::femto::datatypes::CascadeMaskType, kCascadeSelsMax>
 {
  public:
   CascadeSelection() = default;
-  ~CascadeSelection() = default;
+  ~CascadeSelection() override = default;
 
   template <typename T1, typename T2>
   void configure(o2::framework::HistogramRegistry* registry, T1 const& config, T2 const& filter)
   {
+    this->init(config.passThrough.value);
+
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
       mXiMassLowerLimit = filter.massXiMin.value;
       mXiMassUpperLimit = filter.massXiMax.value;
+      mRejectOmegaHypothesis = filter.rejectHypothesisOmega.value;
       mOmegaMassLowerLimit = filter.rejectMassOmegaMin.value;
       mOmegaMassUpperLimit = filter.rejectMassOmegaMax.value;
       this->addSelection(kBachelorTpcPion, cascadeSelectionNames.at(kBachelorTpcPion), config.bachelorTpcPion.value, limits::kAbsUpperLimit, true, true, false);
@@ -189,6 +235,7 @@ class CascadeSelection : public BaseSelection<float, o2::aod::femtodatatypes::Ca
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
       mOmegaMassLowerLimit = filter.massOmegaMin.value;
       mOmegaMassUpperLimit = filter.massOmegaMax.value;
+      mRejectXiHypothesis = filter.rejectHypothesisXi.value;
       mXiMassLowerLimit = filter.rejectMassXiMin.value;
       mXiMassUpperLimit = filter.rejectMassXiMax.value;
       this->addSelection(kBachelorTpcKaon, cascadeSelectionNames.at(kBachelorTpcKaon), config.bachelorTpcKaon.value, limits::kAbsUpperLimit, true, true, false);
@@ -208,16 +255,34 @@ class CascadeSelection : public BaseSelection<float, o2::aod::femtodatatypes::Ca
 
     this->addSelection(kCascadeCpaMin, cascadeSelectionNames.at(kCascadeCpaMin), config.cascadeCpaMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kCascadeTransRadMin, cascadeSelectionNames.at(kCascadeTransRadMin), config.cascadeTransRadMin.value, limits::kLowerLimit, true, true, false);
-    this->addSelection(kCascadeDcaDaughMax, cascadeSelectionNames.at(kCascadeDcaDaughMax), config.cascadeDcaDauMax.value, limits::kAbsUpperLimit, true, true, false);
+    this->addSelection(kCascadeDcaDaughMax, cascadeSelectionNames.at(kCascadeDcaDaughMax), config.cascadeDcaDauMax.value, limits::kUpperLimit, true, true, false);
     this->addSelection(kLambdaCpaMin, cascadeSelectionNames.at(kLambdaCpaMin), config.lambdaCpaMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kLambdaTransRadMin, cascadeSelectionNames.at(kLambdaTransRadMin), config.lambdaTransRadMin.value, limits::kLowerLimit, true, true, false);
-    this->addSelection(kLambdaDcaDauMax, cascadeSelectionNames.at(kLambdaDcaDauMax), config.lambdaDcaDauMax.value, limits::kAbsUpperLimit, true, true, false);
+    this->addSelection(kLambdaDcaDauMax, cascadeSelectionNames.at(kLambdaDcaDauMax), config.lambdaDcaDauMax.value, limits::kUpperLimit, true, true, false);
     this->addSelection(kLambdaDcaToPvMin, cascadeSelectionNames.at(kLambdaDcaToPvMin), config.lambdaDcaToPvMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kDauAbsEtaMax, cascadeSelectionNames.at(kDauAbsEtaMax), config.dauAbsEtaMax.value, limits::kAbsUpperLimit, true, true, false);
     this->addSelection(kDauDcaMin, cascadeSelectionNames.at(kDauDcaMin), config.dauDcaMin.value, limits::kAbsLowerLimit, true, true, false);
     this->addSelection(kDauTpcClsMin, cascadeSelectionNames.at(kDauTpcClsMin), config.dauTpcClustersMin.value, limits::kLowerLimit, true, true, false);
 
-    this->setupContainers<HistName>(registry);
+    this->setupSelectionHistogram<SelectionHistName>(registry);
+    this->template setupFilterHistogram<FilterHistName>(
+      registry,
+      {
+        {cascadeFilterNames.at(kPtMin), mPtMin},
+        {cascadeFilterNames.at(kPtMax), mPtMax},
+        {cascadeFilterNames.at(kEtaMin), mEtaMin},
+        {cascadeFilterNames.at(kEtaMax), mEtaMax},
+        {cascadeFilterNames.at(kPhiMin), mPhiMin},
+        {cascadeFilterNames.at(kPhiMax), mPhiMax},
+        {cascadeFilterNames.at(kLambdaMassMin), mLambdaMassMin},
+        {cascadeFilterNames.at(kLambdaMassMax), mLambdaMassMax},
+        {cascadeFilterNames.at(kXiMassMin), mXiMassLowerLimit},
+        {cascadeFilterNames.at(kXiMassMax), mXiMassUpperLimit},
+        {cascadeFilterNames.at(kRejectionOmegaMass), mRejectOmegaHypothesis ? 1.f : 0.f},
+        {cascadeFilterNames.at(kOmegaMassMin), mOmegaMassLowerLimit},
+        {cascadeFilterNames.at(kOmegaMassMax), mOmegaMassUpperLimit},
+        {cascadeFilterNames.at(kRejectionXiMass), mRejectXiHypothesis ? 1.f : 0.f},
+      });
   };
 
   template <typename T1, typename T2, typename T3>
@@ -267,52 +332,103 @@ class CascadeSelection : public BaseSelection<float, o2::aod::femtodatatypes::Ca
       LOG(warn) << "Encountered Cascade candidate with 0 charge";
     }
 
-    this->assembleBitmask<HistName>();
+    this->assembleBitmask<SelectionHistName>();
   };
 
   template <typename T>
   bool checkFilters(const T& cascade) const
   {
-    // check kinematics
-    const bool kinematicsOK =
-      (cascade.pt() > mPtMin && cascade.pt() < mPtMax) &&
-      (cascade.eta() > mEtaMin && cascade.eta() < mEtaMax) &&
-      (cascade.phi() > mPhiMin && cascade.phi() < mPhiMax);
+    bool pass = true;
+    bool p = false;
 
-    if (!kinematicsOK) {
-      return false;
-    }
+    // kinematics
+    p = cascade.pt() > mPtMin;
+    this->template fillFilter<FilterHistName>(kPtMin, p);
+    pass &= p;
 
-    // check mass of daughter lambda
-    const bool lambdaOK =
-      (cascade.mLambda() > mLambdaMassMin && cascade.mLambda() < mLambdaMassMax);
+    p = cascade.pt() < mPtMax;
+    this->template fillFilter<FilterHistName>(kPtMax, p);
+    pass &= p;
 
-    if (!lambdaOK) {
-      return false;
-    }
+    p = cascade.eta() > mEtaMin;
+    this->template fillFilter<FilterHistName>(kEtaMin, p);
+    pass &= p;
 
-    // check mass hypothesis
+    p = cascade.eta() < mEtaMax;
+    this->template fillFilter<FilterHistName>(kEtaMax, p);
+    pass &= p;
+
+    p = cascade.phi() > mPhiMin;
+    this->template fillFilter<FilterHistName>(kPhiMin, p);
+    pass &= p;
+
+    p = cascade.phi() < mPhiMax;
+    this->template fillFilter<FilterHistName>(kPhiMax, p);
+    pass &= p;
+
+    // mass of daughter lambda (gating AND-cut)
+    p = cascade.mLambda() > mLambdaMassMin;
+    this->template fillFilter<FilterHistName>(kLambdaMassMin, p);
+    pass &= p;
+
+    p = cascade.mLambda() < mLambdaMassMax;
+    this->template fillFilter<FilterHistName>(kLambdaMassMax, p);
+    pass &= p;
+
+    // mass hypothesis: signal window is a gating AND-cut, competing hypothesis is a
+    // rejection OR-cut (pass if outside its window, or if rejection is disabled);
+    // the competing window's own min/max bins are diagnostic only.
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
-      // Xi candidate must be inside Xi window and outside Omega
-      return (cascade.mXi() > mXiMassLowerLimit && cascade.mXi() < mXiMassUpperLimit) &&
-             (cascade.mOmega() < mOmegaMassLowerLimit || cascade.mOmega() > mOmegaMassUpperLimit);
+      p = cascade.mXi() > mXiMassLowerLimit;
+      this->template fillFilter<FilterHistName>(kXiMassMin, p);
+      pass &= p;
+
+      p = cascade.mXi() < mXiMassUpperLimit;
+      this->template fillFilter<FilterHistName>(kXiMassMax, p);
+      pass &= p;
+
+      bool const belowOmega = cascade.mOmega() < mOmegaMassLowerLimit;
+      this->template fillFilter<FilterHistName>(kOmegaMassMin, belowOmega);
+      bool const aboveOmega = cascade.mOmega() > mOmegaMassUpperLimit;
+      this->template fillFilter<FilterHistName>(kOmegaMassMax, aboveOmega);
+
+      p = !mRejectOmegaHypothesis || belowOmega || aboveOmega;
+      this->template fillFilter<FilterHistName>(kRejectionOmegaMass, p);
+      pass &= p;
     }
 
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
-      // Omega candidate must be inside Omega window and outside Xi
-      return (cascade.mOmega() > mOmegaMassLowerLimit && cascade.mOmega() < mOmegaMassUpperLimit) &&
-             (cascade.mXi() < mXiMassLowerLimit || cascade.mXi() > mXiMassUpperLimit);
+      p = cascade.mOmega() > mOmegaMassLowerLimit;
+      this->template fillFilter<FilterHistName>(kOmegaMassMin, p);
+      pass &= p;
+
+      p = cascade.mOmega() < mOmegaMassUpperLimit;
+      this->template fillFilter<FilterHistName>(kOmegaMassMax, p);
+      pass &= p;
+
+      bool const belowXi = cascade.mXi() < mXiMassLowerLimit;
+      this->template fillFilter<FilterHistName>(kXiMassMin, belowXi);
+      bool const aboveXi = cascade.mXi() > mXiMassUpperLimit;
+      this->template fillFilter<FilterHistName>(kXiMassMax, aboveXi);
+
+      p = !mRejectXiHypothesis || belowXi || aboveXi;
+      this->template fillFilter<FilterHistName>(kRejectionXiMass, p);
+      pass &= p;
     }
 
-    return false; // should never happen
+    this->template fillFilterSummary<FilterHistName>(pass);
+
+    return this->isPassThrough() || pass;
   }
 
  protected:
-  float mXiMassLowerLimit = 0.f;
-  float mXiMassUpperLimit = 999.f;
-
+  bool mRejectOmegaHypothesis = false;
   float mOmegaMassLowerLimit = 0.f;
   float mOmegaMassUpperLimit = 999.f;
+
+  bool mRejectXiHypothesis = false;
+  float mXiMassLowerLimit = 0.f;
+  float mXiMassUpperLimit = 999.f;
 
   // kinematic filters
   float mPtMin = 0.f;
@@ -344,7 +460,7 @@ struct ConfCascadeTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceOmegaExtras{"produceOmegaExtras", -1, "Produce OmegaExtras (-1: auto; 0 off; 1 on)"};
 };
 
-template <modes::Cascade cascadeType, const char* HistName>
+template <modes::Cascade cascadeType, auto& SelectionHistName, auto& FilterHistName>
 class CascadeBuilder
 {
  public:
@@ -438,19 +554,17 @@ class CascadeBuilder
       bachelorIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCascadeBachelor>(col, collisionProducts, mcCols, bachelor, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       auto posDaughter = cascade.template posTrack_as<T8>();
-      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCascadeBachelor>(col, collisionProducts, mcCols, posDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionProducts, mcCols, posDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       auto negDaughter = cascade.template negTrack_as<T8>();
-      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCascadeBachelor>(col, collisionProducts, mcCols, negDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionProducts, mcCols, negDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       fillCascade(collisionProducts, cascadeProducts, cascade, col, bachelorIndex, posDaughterIndex, negDaughterIndex);
       if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
         mcBuilder.template fillMcXiWithLabel<system>(col, mcCols, cascade, mcParticles, mcProducts);
-        ;
       }
       if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
         mcBuilder.template fillMcOmegaWithLabel<system>(col, mcCols, cascade, mcParticles, mcProducts);
-        ;
       }
     }
   }
@@ -478,10 +592,11 @@ class CascadeBuilder
           cascade.casccosPA(col.posX(), col.posY(), col.posZ()),
           cascade.dcacascdaughters(),
           cascade.cascradius(),
+          cascade.mLambda(),
           cascade.v0cosPA(col.posX(), col.posY(), col.posZ()),
           cascade.dcaV0daughters(),
           cascade.v0radius(),
-          cascade.dcav0topv(col.posY(), col.posY(), col.posZ()));
+          cascade.dcav0topv(col.posX(), col.posY(), col.posZ()));
       }
     }
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
@@ -504,10 +619,11 @@ class CascadeBuilder
           cascade.casccosPA(col.posX(), col.posY(), col.posZ()),
           cascade.dcacascdaughters(),
           cascade.cascradius(),
+          cascade.mLambda(),
           cascade.v0cosPA(col.posX(), col.posY(), col.posZ()),
           cascade.dcaV0daughters(),
           cascade.v0radius(),
-          cascade.dcav0topv(col.posY(), col.posY(), col.posZ()));
+          cascade.dcav0topv(col.posX(), col.posY(), col.posZ()));
       }
     }
   }
@@ -515,7 +631,7 @@ class CascadeBuilder
   bool fillAnyTable() { return mFillAnyTable; }
 
  private:
-  CascadeSelection<cascadeType, HistName> mCascadeSelection;
+  CascadeSelection<cascadeType, SelectionHistName, FilterHistName> mCascadeSelection;
   bool mFillAnyTable = false;
   bool mProduceXis = false;
   bool mProduceXiMasks = false;
@@ -525,6 +641,114 @@ class CascadeBuilder
   bool mProduceOmegaExtras = false;
 };
 
-} // namespace cascadebuilder
-} // namespace o2::analysis::femto
+struct ConfCascadeTablesDerivedToDerived : o2::framework::ConfigurableGroup {
+  std::string prefix = std::string("CascadeTables");
+  o2::framework::Configurable<int> limitXi{"limitXi", 1, "At least this many xi need to be in the collision"};
+  o2::framework::Configurable<int> limitOmega{"limitOmega", 0, "At least this many omega need to be in the collision"};
+};
+
+struct CascadeBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
+  o2::framework::Produces<o2::aod::StoredFXis> producedXis;
+  o2::framework::Produces<o2::aod::StoredFXiMasks> producedXiMasks;
+  o2::framework::Produces<o2::aod::StoredFOmegas> producedOmegas;
+  o2::framework::Produces<o2::aod::StoredFOmegaMasks> producedOmegaMasks;
+};
+
+class CascadeBuilderDerivedToDerived
+{
+ public:
+  CascadeBuilderDerivedToDerived() = default;
+  ~CascadeBuilderDerivedToDerived() = default;
+
+  template <typename T>
+  void init(T& config)
+  {
+    mLimitXi = config.limitXi.value;
+    mLimitOmega = config.limitOmega.value;
+
+    if (mLimitXi == 0 && mLimitOmega == 0) {
+      LOG(fatal) << "Both xi limit and omega limit are 0. Breaking...";
+    }
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  bool collisionHasTooFewXis(T1 const& col, T2 const& /*xiTable*/, T3& partitionXi, T4& cache)
+  {
+    auto xiSlice = partitionXi->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    return xiSlice.size() < mLimitXi;
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  bool collisionHasTooFewOmegas(T1 const& col, T2 const& /*omegaTable*/, T3& partitionOmega, T4& cache)
+  {
+    auto omegaSlice = partitionOmega->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    return omegaSlice.size() < mLimitOmega;
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void processXis(T1 const& col, T2 const& /*xiTable*/, T3 const& oldTrackTable, T4& partitionXi, T5& trackBuilder, T6& cache, T7& newXiTable, T8& newTrackTable, T9& newCollisionTable)
+  {
+    auto xiSlice = partitionXi->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+
+    for (auto const& xi : xiSlice) {
+
+      // auto bachelor = xi.template bachelor_as<T3>();
+      // auto posDaughter = xi.template posDau_as<T3>();
+      // auto negDaughter = xi.template negDau_as<T3>();
+      auto bachelor = oldTrackTable.rawIteratorAt(xi.bachelorId() - oldTrackTable.offset());
+      auto posDaughter = oldTrackTable.rawIteratorAt(xi.posDauId() - oldTrackTable.offset());
+      auto negDaughter = oldTrackTable.rawIteratorAt(xi.negDauId() - oldTrackTable.offset());
+
+      int bachelorIndex = trackBuilder.getDaughterIndex(bachelor, newTrackTable, newCollisionTable);
+      int posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
+      int negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable);
+
+      newXiTable.producedXis(newCollisionTable.producedCollision.lastIndex(),
+                             xi.signedPt(),
+                             xi.eta(),
+                             xi.phi(),
+                             xi.mass(),
+                             bachelorIndex,
+                             posDaughterIndex,
+                             negDaughterIndex);
+      newXiTable.producedXiMasks(xi.mask());
+    }
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
+  void processOmegas(T1 const& col, T2 const& /*omegaTable*/, T3 const& oldTrackTable, T4& partitionOmega, T5& trackBuilder, T6& cache, T7& newOmegaTable, T8& newTrackTable, T9& newCollisionTable)
+  {
+    auto omegaSlice = partitionOmega->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+
+    for (auto const& omega : omegaSlice) {
+
+      // auto bachelor = omega.template bachelor_as<T3>();
+      // auto posDaughter = omega.template posDau_as<T3>();
+      // auto negDaughter = omega.template negDau_as<T3>();
+      auto bachelor = oldTrackTable.rawIteratorAt(omega.bachelorId() - oldTrackTable.offset());
+      auto posDaughter = oldTrackTable.rawIteratorAt(omega.posDauId() - oldTrackTable.offset());
+      auto negDaughter = oldTrackTable.rawIteratorAt(omega.negDauId() - oldTrackTable.offset());
+
+      int bachelorIndex = trackBuilder.getDaughterIndex(bachelor, newTrackTable, newCollisionTable);
+      int posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
+      int negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable);
+
+      newOmegaTable.producedOmegas(newCollisionTable.producedCollision.lastIndex(),
+                                   omega.signedPt(),
+                                   omega.eta(),
+                                   omega.phi(),
+                                   omega.mass(),
+                                   bachelorIndex,
+                                   posDaughterIndex,
+                                   negDaughterIndex);
+      newOmegaTable.producedOmegaMasks(omega.mask());
+    }
+  }
+
+ private:
+  int mLimitXi = 0;
+  int mLimitOmega = 0;
+};
+
+} // namespace o2::analysis::femto::cascadebuilder
 #endif // PWGCF_FEMTO_CORE_CASCADEBUILDER_H_

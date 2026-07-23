@@ -239,6 +239,7 @@ using MyEventsVtxCovZdcFitSelectedMultExtra = soa::Join<aod::ReducedEvents, aod:
 using MyEventsQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector>;
 using MyEventsHashSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector>;
 using MyEventsQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
+using MyEventsQvectorCentrMerge = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsMergingTable>;
 using MyEventsQvectorCentrSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::EventCuts>;
 using MyEventsHashSelectedQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 
@@ -247,7 +248,7 @@ using MyBarrelTracksWithAmbiguities = soa::Join<aod::ReducedTracks, aod::Reduced
 using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID>;
 using MyBarrelTracksWithCovWithAmbiguities = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelAmbiguities>;
 using MyBarrelTracksWithCovWithAmbiguitiesWithColl = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelAmbiguities, aod::ReducedTracksBarrelInfo>;
-using MyDielectronCandidates = soa::Join<aod::Dielectrons, aod::DielectronsExtra>;
+using MyDielectronCandidates = soa::Join<aod::Dielectrons, aod::DielectronsExtra, aod::DielectronsAll>;
 using MyDitrackCandidates = soa::Join<aod::Ditracks, aod::DitracksExtra>;
 using MyDimuonCandidates = soa::Join<aod::Dimuons, aod::DimuonsExtra>;
 using MyMuonTracks = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra>;
@@ -349,7 +350,7 @@ struct AnalysisEventSelection {
   void init(o2::framework::InitContext& context)
   {
 
-    bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedBasic") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraNoQvector") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdcFit") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr");
+    bool isAnyProcessEnabled = context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedBasic") || context.mOptions.get<bool>("processSkimmedWithZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtra") || context.mOptions.get<bool>("processSkimmedWithMultExtraNoQvector") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdc") || context.mOptions.get<bool>("processSkimmedWithMultExtraZdcFit") || context.mOptions.get<bool>("processSkimmedWithQvectorCentr") || context.mOptions.get<bool>("processSkimmedWithQvectorCentrMerge");
     bool isDummyEnabled = context.mOptions.get<bool>("processDummy");
 
     if (isDummyEnabled) {
@@ -615,6 +616,11 @@ struct AnalysisEventSelection {
     runEventSelection<gkEventFillMapWithQvectorCentr>(events);
     publishSelections<gkEventFillMapWithQvectorCentr>(events);
   }
+  void processSkimmedWithQvectorCentrMerge(MyEventsQvectorCentrMerge const& events)
+  {
+    runEventSelection<gkEventFillMapWithQvectorCentr>(events);
+    publishSelections<gkEventFillMapWithQvectorCentr>(events);
+  }
   void processFillEvents(MyEventsBasic const& events) // Used to forward the event table from tablemaker, typical use for now is jet analysis.
   {
     for (auto const& event : events) {
@@ -641,6 +647,7 @@ struct AnalysisEventSelection {
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraZdc, "Run event selection on DQ skimmed events, with mult extra and ZDC", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraZdcFit, "Run event selection on DQ skimmed events, with mult extra, ZDC and FIT", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithQvectorCentr, "Run event selection on DQ skimmed events, with Q-vector", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithQvectorCentrMerge, "Run event selection on DQ skimmed events, with Q-vector and ReducedEventsMergingTable", false);
   PROCESS_SWITCH(AnalysisEventSelection, processFillEvents, "Fill storedReducedEvents table for use in JE framework", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", true);
 };
@@ -1318,6 +1325,8 @@ struct AnalysisSameEventPairing {
   Produces<aod::DileptonsMiniTree> dileptonMiniTree;
 
   o2::base::MatLayerCylSet* fLUT = nullptr;
+  TH1D* ResoFlowSP = nullptr;
+  TH1D* ResoFlowEP = nullptr;
   int fCurrentRun = -1; // needed to detect if the run changed and trigger update of calibrations etc.
 
   OutputObj<THashList> fOutputList{"output"};
@@ -1326,6 +1335,7 @@ struct AnalysisSameEventPairing {
     Configurable<std::string> track{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
     Configurable<std::string> muon{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
     Configurable<std::string> pair{"cfgPairCuts", "", "Comma separated list of pair cuts"};
+    Configurable<std::string> qVector{"cfgQvectorTrackCut", "", "Track cut of Q-vector, enable this if you want to remove the auto-correlation in TPC"};
     Configurable<bool> event{"cfgRemoveCollSplittingCandidates", false, "If true, remove collision splitting candidates as determined by the event selection task upstream"};
     // TODO: Add pair cuts via JSON
   } fConfigCuts;
@@ -1351,6 +1361,7 @@ struct AnalysisSameEventPairing {
     Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
     Configurable<std::string> GrpLhcIfPath{"grplhcif", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
     Configurable<std::string> efficiencyPath{"effHistPath", "Users/z/zhxiong/efficiency", "Path on the CCDB for the efficiency histograms"};
+    Configurable<std::string> flowPath{"flowPath", "Users/y/yiping/FlowResolution", "Path to the flow resolution object"};
   } fConfigCCDB;
 
   struct : ConfigurableGroup {
@@ -1369,6 +1380,7 @@ struct AnalysisSameEventPairing {
     Configurable<bool> useRemoteCollisionInfo{"cfgUseRemoteCollisionInfo", false, "Use remote collision information from CCDB"};
     Configurable<bool> useEfficiencyWeighting{"cfgUseEfficiencyWeighting", false, "Apply efficiency weighting to the pairs from CCDB"};
     Configurable<int> efficiencyType{"cfgEfficiencyType", 0, "Type of efficiency to apply from CCDB: 0 no efficiency, 1 pt-cent-costhetastar"};
+    Configurable<bool> useFlowReso{"cfgUseFlowReso", false, "Use remote flow information from CCDB"};
   } fConfigOptions;
   struct : ConfigurableGroup {
     Configurable<bool> applyBDT{"applyBDT", false, "Flag to apply ML selections"};
@@ -1404,8 +1416,9 @@ struct AnalysisSameEventPairing {
   std::vector<TString> fMuonCuts;
   std::map<std::pair<uint32_t, uint32_t>, uint32_t> fAmbiguousPairs;
 
-  uint32_t fTrackFilterMask = 0; // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
-  uint32_t fMuonFilterMask = 0;  // mask for the muon cuts required in this task to be applied on the muon cuts produced upstream
+  uint32_t fTrackFilterMask = 0;   // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
+  uint32_t fMuonFilterMask = 0;    // mask for the muon cuts required in this task to be applied on the muon cuts produced upstream
+  uint32_t fQvectorFilterMask = 0; // mask for the track cuts applied in TPC Q-vector calculation, used to remove auto-correlation in flow analysis
   int fNCutsBarrel = 0;
   int fNCutsMuon = 0;
   int fNPairCuts = 0;
@@ -1478,6 +1491,7 @@ struct AnalysisSameEventPairing {
     if (!muonCutsStr.IsNull()) {
       objArrayMuonCuts = muonCutsStr.Tokenize(",");
     }
+    TString qVectorCutStr = fConfigCuts.qVector.value;
 
     if (fConfigML.applyBDT) {
       // BDT cuts via JSON
@@ -1545,6 +1559,9 @@ struct AnalysisSameEventPairing {
       fNCutsBarrel = objArray->GetEntries();
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         TString tempStr = objArray->At(icut)->GetName();
+        if (tempStr.CompareTo(qVectorCutStr) == 0) {
+          fQvectorFilterMask |= (static_cast<uint32_t>(1) << icut);
+        }
         fTrackCuts.push_back(tempStr);
         if (objArrayTrackCuts->FindObject(tempStr.Data()) != nullptr) {
           fTrackFilterMask |= (static_cast<uint32_t>(1) << icut);
@@ -1728,7 +1745,6 @@ struct AnalysisSameEventPairing {
             Form("PairsEleMuSEMM_%s_%s", trackCutName.Data(), muonCutName.Data())};
           histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
           int index = iTrack * fNCutsMuon + iMuon;
-          fTrackMuonHistNames[index] = names;
 
           if (fEnableBarrelMuonMixingHistos) {
             names.push_back(Form("PairsEleMuMEPM_%s_%s", trackCutName.Data(), muonCutName.Data()));
@@ -1736,6 +1752,7 @@ struct AnalysisSameEventPairing {
             names.push_back(Form("PairsEleMuMEMM_%s_%s", trackCutName.Data(), muonCutName.Data()));
             histNames += Form("%s;%s;%s;", names[3].Data(), names[4].Data(), names[5].Data());
           }
+          fTrackMuonHistNames[index] = names;
 
           if (!cutNamesStr.IsNull()) {
             std::unique_ptr<TObjArray> objArrayPair(cutNamesStr.Tokenize(","));
@@ -1827,6 +1844,17 @@ struct AnalysisSameEventPairing {
       auto effList = fCCDB->getForTimeStamp<TList>(fConfigCCDB.efficiencyPath.value, timestamp);
       VarManager::SetEfficiencyObject(fConfigOptions.efficiencyType.value, effList->FindObject("efficiency"));
     }
+
+    if (fConfigOptions.useFlowReso) {
+      TString PathFlow = fConfigCCDB.flowPath.value;
+      TString ccdbPathFlowSP = Form("%s/ScalarProduct", PathFlow.Data());
+      TString ccdbPathFlowEP = Form("%s/EventPlane", PathFlow.Data());
+      ResoFlowSP = fCCDB->getForTimeStamp<TH1D>(ccdbPathFlowSP.Data(), timestamp);
+      ResoFlowEP = fCCDB->getForTimeStamp<TH1D>(ccdbPathFlowEP.Data(), timestamp);
+      if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
+        LOGF(fatal, "Flow resolution histograms not available in CCDB at timestamp=%llu", timestamp);
+      }
+    }
   }
 
   // Template function to run same event pairing (barrel-barrel, muon-muon, barrel-muon)
@@ -1914,6 +1942,7 @@ struct AnalysisSameEventPairing {
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
     constexpr bool eventHasQvectorCentr = ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0);
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
+    // constexpr bool fillFlowReso = eventHasQvector || eventHasQvectorCentr;
     bool isSelectedBDT = false;
     fNPairPerEvent = 0;
 
@@ -1933,6 +1962,13 @@ struct AnalysisSameEventPairing {
       auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
       if (groupedAssocs.size() == 0) {
         continue;
+      }
+
+      if (fConfigOptions.useFlowReso) {
+        if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
+          LOGF(fatal, "Flow resolution histograms are not available, cannot fill flow variables!");
+        }
+        VarManager::FillEventFlowResoFactor(ResoFlowSP, ResoFlowEP);
       }
 
       bool isFirst = true;
@@ -1964,6 +2000,20 @@ struct AnalysisSameEventPairing {
           }
 
           fNPairPerEvent++;
+
+          // check if t1 or t2 is used in TPC Q vector calculation, so as to remove auto correlations in the flow analysis
+          VarManager::fgValues[VarManager::kSel1] = -9999.;
+          VarManager::fgValues[VarManager::kSel2] = -9999.;
+          if (t1.reducedeventId() == event.globalIndex()) {
+            if ((a1.isBarrelSelected_raw() & fQvectorFilterMask) > 0) {
+              VarManager::fgValues[VarManager::kSel1] = 1.;
+            }
+          }
+          if (t2.reducedeventId() == event.globalIndex()) {
+            if ((a2.isBarrelSelected_raw() & fQvectorFilterMask) > 0) {
+              VarManager::fgValues[VarManager::kSel2] = 1.;
+            }
+          }
           VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
           // compute quantities which depend on the associated collision, such as DCA
           if (fConfigOptions.propTrack) {
@@ -2642,6 +2692,12 @@ struct AnalysisSameEventPairing {
   template <int TPairType, uint32_t TEventFillMap, typename TEvents, typename TAssocs, typename TTracks>
   void runSameSideMixing(TEvents& events, TAssocs const& assocs, TTracks const& tracks, Preslice<TAssocs>& preSlice)
   {
+    if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
+      LOG(info) << "Flow resolution objects not set, flow will not be filled for mixed events";
+      if (events.size() > 0) {
+        initParamsFromCCDB(events.begin().timestamp(), events.begin().runNumber(), false);
+      }
+    }
     events.bindExternalIndices(&assocs);
     int mixingDepth = fConfigMixingDepth.value;
     fAmbiguousPairs.clear();
@@ -2656,6 +2712,10 @@ struct AnalysisSameEventPairing {
       assocs2.bindExternalIndices(&events);
 
       fNPairPerEvent = 0;
+      VarManager::FillTwoMixEvents<TEventFillMap>(event1, event2, assocs1, assocs2);
+      if (fConfigOptions.useFlowReso) {
+        VarManager::FillTwoMixEventsFlowResoFactor(ResoFlowSP, ResoFlowEP);
+      }
       runMixedPairing<TPairType, TEventFillMap>(assocs1, assocs2, tracks, tracks);
       VarManager::fgValues[VarManager::kNPairsPerEvent] = fNPairPerEvent;
       if (fEnableBarrelMixingHistos && fConfigQA) {
@@ -3803,6 +3863,7 @@ struct AnalysisDileptonTrack {
   Configurable<float> fConfigDileptonHighpTCut{"cfgDileptonHighpTCut", 1E5, "High pT cut for dileptons used in the triplet vertexing"};
   Configurable<float> fConfigDileptonRapCutAbs{"cfgDileptonRapCutAbs", 1.0, "Rap cut for dileptons used in the triplet vertexing"};
   Configurable<float> fConfigDileptonLxyCut{"cfgDileptonLxyCut", 0.0, "Lxy cut for dileptons used in the triplet vertexing"};
+  Configurable<float> fConfigDileptonTauxyCut{"cfgDileptonTauxyCut", -10000, "Tauxy cut for dileptons used to select the non-prompt Jpsi"};
   Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
 
   Configurable<std::string> fConfigHistogramSubgroups{"cfgDileptonTrackHistogramsSubgroups", "invmass,vertexing", "Comma separated list of dilepton-track histogram subgroups"};
@@ -3844,7 +3905,7 @@ struct AnalysisDileptonTrack {
 
   // TODO: The filter expressions seem to always use the default value of configurables, not the values from the actual configuration file
   Filter eventFilter = aod::dqanalysisflags::isEventSelected > static_cast<uint8_t>(0);
-  Filter dileptonFilter = aod::reducedpair::pt > fConfigDileptonLowpTCut&& aod::reducedpair::pt<fConfigDileptonHighpTCut && aod::reducedpair::mass> fConfigDileptonLowMass&& aod::reducedpair::mass<fConfigDileptonHighMass && aod::reducedpair::sign == 0 && aod::reducedpair::lxy> fConfigDileptonLxyCut;
+  Filter dileptonFilter = aod::reducedpair::pt > fConfigDileptonLowpTCut&& aod::reducedpair::pt<fConfigDileptonHighpTCut && aod::reducedpair::mass> fConfigDileptonLowMass&& aod::reducedpair::mass<fConfigDileptonHighMass && aod::reducedpair::sign == 0 && aod::reducedpair::lxy> fConfigDileptonLxyCut&& aod::reducedpair::tauxy > fConfigDileptonTauxyCut;
   Filter filterBarrel = aod::dqanalysisflags::isBarrelSelected > static_cast<uint32_t>(0);
   Filter filterMuon = aod::dqanalysisflags::isMuonSelected > static_cast<uint32_t>(0);
 
@@ -4816,19 +4877,6 @@ struct AnalysisDileptonTrackTrack {
   PROCESS_SWITCH(AnalysisDileptonTrackTrack, processJpsiPiPi, "Run barrel pairing of J/psi with pion candidate", false);
   PROCESS_SWITCH(AnalysisDileptonTrackTrack, processDummy, "Dummy function", true);
 };
-
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{
-    adaptAnalysisTask<AnalysisEventSelection>(cfgc),
-    adaptAnalysisTask<AnalysisTrackSelection>(cfgc),
-    adaptAnalysisTask<AnalysisMuonSelection>(cfgc),
-    adaptAnalysisTask<AnalysisPrefilterSelection>(cfgc),
-    adaptAnalysisTask<AnalysisSameEventPairing>(cfgc),
-    adaptAnalysisTask<AnalysisAsymmetricPairing>(cfgc),
-    adaptAnalysisTask<AnalysisDileptonTrack>(cfgc),
-    adaptAnalysisTask<AnalysisDileptonTrackTrack>(cfgc)};
-}
 
 void DefineHistograms(HistogramManager* histMan, const TString& histClasses, const char* histGroups)
 {

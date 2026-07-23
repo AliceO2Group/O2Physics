@@ -937,6 +937,7 @@ struct decay3bodyBuilder {
                                    -1., -1., -1.,      // momProton
                                    -1., -1., -1.,      // momPion
                                    -1., -1., -1.,      // momDeuteron
+                                   -1., -1., -1.,      // xProton, xPion, xDeuteron
                                    -1., -1., -1.,      // trackDCAxyToPV: 0 - proton, 1 - pion, 2 - deuteron
                                    -1., -1., -1.,      // trackDCAToPV: 0 - proton, 1 - pion, 2 - deuteron
                                    -1., -1., -1.,      // trackDCAxyToPVprop: 0 - proton, 1 - pion, 2 - deuteron
@@ -1098,6 +1099,7 @@ struct decay3bodyBuilder {
                              helper.decay3body.momProton[0], helper.decay3body.momProton[1], helper.decay3body.momProton[2],
                              helper.decay3body.momPion[0], helper.decay3body.momPion[1], helper.decay3body.momPion[2],
                              helper.decay3body.momDeuteron[0], helper.decay3body.momDeuteron[1], helper.decay3body.momDeuteron[2],
+                             helper.decay3body.xProton, helper.decay3body.xPion, helper.decay3body.xDeuteron,
                              helper.decay3body.trackDCAxyToPV[0], helper.decay3body.trackDCAxyToPV[1], helper.decay3body.trackDCAxyToPV[2],             // 0 - proton, 1 - pion, 2 - deuteron
                              helper.decay3body.trackDCAToPV[0], helper.decay3body.trackDCAToPV[1], helper.decay3body.trackDCAToPV[2],                   // 0 - proton, 1 - pion, 2 - deuteron
                              helper.decay3body.trackDCAxyToPVprop[0], helper.decay3body.trackDCAxyToPVprop[1], helper.decay3body.trackDCAxyToPVprop[2], // 0 - proton, 1 - pion, 2 - deuteron
@@ -1113,10 +1115,10 @@ struct decay3bodyBuilder {
       registry.fill(HIST("Counters/hTableBuildingStatistics"), kVtx3BodyDatas);
     }
     if (mEnabledTables[kVtx3BodyCovs]) {
-      products.vtx3bodycovs(helper.decay3body.covProton,
-                            helper.decay3body.covPion,
-                            helper.decay3body.covDeuteron,
-                            helper.decay3body.covariance);
+      products.vtx3bodycovs(helper.decay3body.covProton.data(),
+                            helper.decay3body.covPion.data(),
+                            helper.decay3body.covDeuteron.data(),
+                            helper.decay3body.covariance.data());
       registry.fill(HIST("Counters/hTableBuildingStatistics"), kVtx3BodyCovs);
     }
     if (mEnabledTables[kMcVtx3BodyDatas]) {
@@ -1129,6 +1131,7 @@ struct decay3bodyBuilder {
                                helper.decay3body.momProton[0], helper.decay3body.momProton[1], helper.decay3body.momProton[2],
                                helper.decay3body.momPion[0], helper.decay3body.momPion[1], helper.decay3body.momPion[2],
                                helper.decay3body.momDeuteron[0], helper.decay3body.momDeuteron[1], helper.decay3body.momDeuteron[2],
+                               helper.decay3body.xProton, helper.decay3body.xPion, helper.decay3body.xDeuteron,
                                helper.decay3body.trackDCAxyToPV[0], helper.decay3body.trackDCAxyToPV[1], helper.decay3body.trackDCAxyToPV[2],             // 0 - proton, 1 - pion, 2 - deuteron
                                helper.decay3body.trackDCAToPV[0], helper.decay3body.trackDCAToPV[1], helper.decay3body.trackDCAToPV[2],                   // 0 - proton, 1 - pion, 2 - deuteron
                                helper.decay3body.trackDCAxyToPVprop[0], helper.decay3body.trackDCAxyToPVprop[1], helper.decay3body.trackDCAxyToPVprop[2], // 0 - proton, 1 - pion, 2 - deuteron

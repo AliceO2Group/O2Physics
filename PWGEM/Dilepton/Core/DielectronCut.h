@@ -29,6 +29,8 @@
 #include <Math/Vector4Dfwd.h>
 #include <TNamed.h>
 
+#include <sys/types.h>
+
 #include <Rtypes.h>
 
 #include <algorithm>

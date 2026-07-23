@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "FastTracker.h"
-#include "TrackUtilities.h"
+#include "ALICE3/Core/FastTracker.h"
+#include "ALICE3/Core/TrackUtilities.h"
 
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/Propagator.h>

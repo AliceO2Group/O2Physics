@@ -912,7 +912,7 @@ struct skimmerPrimaryElectron {
         continue;
       }
 
-      if (collision.swtaliastmp_raw() == 0) {
+      if (collision.triggerMask_raw() == 0) {
         continue;
       }
 
@@ -976,7 +976,7 @@ struct skimmerPrimaryElectron {
       if (!collision.isSelected()) {
         continue;
       }
-      if (collision.swtaliastmp_raw() == 0) {
+      if (collision.triggerMask_raw() == 0) {
         continue;
       }
 

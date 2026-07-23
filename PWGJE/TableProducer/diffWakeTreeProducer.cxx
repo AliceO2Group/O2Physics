@@ -25,11 +25,15 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+
+#include <cstdint>
+#include <cstdlib>
 
 // Event selection: Only events that contain track above some threshold
 // -------------------------------------------------------------------------------------------
@@ -67,7 +71,6 @@ namespace o2::aod
 namespace testcol
 {
 // Event properties
-// DECLARE_SOA_COLUMN(Gi, gi, int64_t);
 DECLARE_SOA_COLUMN(Rn, rn, int32_t);         // run number
 DECLARE_SOA_COLUMN(Cent, cent, float);       // FT0C centrality
 DECLARE_SOA_COLUMN(Mult, mult, int32_t);     // TPC multiplicity
@@ -107,7 +110,6 @@ DECLARE_SOA_COLUMN(Dcaz, dcaz, int16_t);
 } // namespace testtrack
 
 DECLARE_SOA_TABLE(TableTrack, "AOD", "TABLETRACK",
-                  o2::soa::Index<>,
                   testtrack::TableColId,
                   testtrack::Charge,
                   testtrack::P,
@@ -127,8 +129,6 @@ struct DiffWakeTreeProducer {
   Configurable<float> centMax{"centMax", 10, "centrality"};
   Configurable<float> zVertCut{"zVertCut", 10.0, "z_vertex cut"};
   Configurable<float> etaCut{"etaCut", 0.9, "eta cut"};
-
-  int64_t collisionCounter = 0;
 
   Produces<o2::aod::TableCols> testcol;
   Produces<o2::aod::TableTrack> testtrack;
@@ -153,17 +153,21 @@ struct DiffWakeTreeProducer {
     const float minMomentum = 0.1;   // min for pT
 
     // Event selection corresponds to sel8FullPbPb
-    if (!col.sel8())
+    if (!col.sel8()) {
       return;
-    if (col.centFT0C() > centMax)
+    }
+    if (col.centFT0C() > centMax) {
       return; // Centrality 0 - 10 %
-    if (std::abs(col.posZ()) > zVertCut)
+    }
+    if (std::abs(col.posZ()) > zVertCut) {
       return; // z position < 10 cm
-    if (!col.selection_bit(o2::aod::evsel::kNoCollInRofStandard))
+    }
+    if (!col.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       return;
-    if (!col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
+    }
+    if (!col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return;
-
+    }
     //------ Get Run number ---------------------
     auto bc = col.bc_as<Bcs>();
     int run = bc.runNumber();
@@ -178,23 +182,27 @@ struct DiffWakeTreeProducer {
     bool eventHighpT = false;
     for (const auto& track : tracks) {
 
-      if (!track.isGlobalTrackWoPtEta())
+      if (!track.isGlobalTrackWoPtEta()) {
         continue;
-      if (track.pt() < minMomentum)
+      }
+      if (track.pt() < minMomentum) {
         continue;
-      if (std::abs(track.eta()) > etaCut)
+      }
+      if (std::abs(track.eta()) > etaCut) {
         continue;
+      }
       if (track.pt() > ptThresh) {
         eventHighpT = true;
         break;
       }
     }
-    if (!eventHighpT)
+    if (!eventHighpT) {
       return;
+    }
     //------------------------------------------------------------
     // Translate values to less memory consuming values
-    int16_t substituteEp2 = static_cast<int16_t>(ep2 * 1000);
-    int16_t substituteEp3 = static_cast<int16_t>(ep3 * 1000);
+    auto substituteEp2 = static_cast<int16_t>(ep2 * 1000);
+    auto substituteEp3 = static_cast<int16_t>(ep3 * 1000);
 
     testcol(run,
             col.centFT0C(),
@@ -210,15 +218,19 @@ struct DiffWakeTreeProducer {
     for (const auto& track : tracks) {
 
       // Track cut
-      if (!track.isGlobalTrackWoPtEta())
+      if (!track.isGlobalTrackWoPtEta()) {
         continue; // General track cuts, but pT and eta cut are set manually
-      if (track.pt() < minMomentum)
+      }
+      if (track.pt() < minMomentum) {
         continue;
-      if (std::abs(track.eta()) > etaCut)
+      }
+      if (std::abs(track.eta()) > etaCut) {
         continue;
+      }
 
-      if (std::abs(track.px()) > maxMomentum || std::abs(track.py()) > maxMomentum || std::abs(track.pz()) > maxMomentum)
+      if (std::abs(track.px()) > maxMomentum || std::abs(track.py()) > maxMomentum || std::abs(track.pz()) > maxMomentum) {
         continue; // to avoid overflow in Substitute_p
+      }
 
       histos.fill(HIST("etaHistogram"), track.eta());
       histos.fill(HIST("pTHistogram"), track.pt());
@@ -231,46 +243,45 @@ struct DiffWakeTreeProducer {
       uint64_t bitmask20Bits = 0b11111111111111111111;
 
       int64_t particlePx = (track.px() * 6000);
-      if (particlePx < 0)
+      if (particlePx < 0) {
         substituteP |= static_cast<uint64_t>(1) << uppermostBit;
-      if (particlePx < 0)
         particlePx = (-1) * particlePx;
+      }
       substituteP |= (particlePx & bitmask20Bits) << lowermostBit;
 
       uppermostBit = 41;
       lowermostBit = 21;
       int64_t particlePy = (track.py() * 6000);
-      if (particlePy < 0)
+      if (particlePy < 0) {
         substituteP |= static_cast<uint64_t>(1) << uppermostBit;
-      if (particlePy < 0)
         particlePy = (-1) * particlePy;
+      }
       substituteP |= (particlePy & bitmask20Bits) << lowermostBit;
 
       uppermostBit = 62;
       lowermostBit = 42;
       int64_t particlePz = (track.pz() * 6000);
-      if (particlePz < 0)
+      if (particlePz < 0) {
         substituteP |= static_cast<uint64_t>(1) << uppermostBit;
-      if (particlePz < 0)
         particlePz = (-1) * particlePz;
+      }
       substituteP |= (particlePz & bitmask20Bits) << lowermostBit;
 
       // dEdx
-      uint16_t substituteDEDX = static_cast<uint16_t>(track.tpcSignal() * 10);
+      auto substituteDEDX = static_cast<uint16_t>(track.tpcSignal() * 10);
 
       // DCA
-      int16_t substituteDCAXY = static_cast<int16_t>(track.dcaXY() * 100);
-      int16_t substituteDCAZ = static_cast<int16_t>(track.dcaZ() * 100);
+      auto substituteDCAXY = static_cast<int16_t>(track.dcaXY() * 100);
+      auto substituteDCAZ = static_cast<int16_t>(track.dcaZ() * 100);
 
       //--------------- Fill track table ------------------
-      testtrack(collisionCounter,
+      testtrack(testcol.lastIndex(),
                 track.sign(),
                 substituteP,
                 substituteDEDX,
                 substituteDCAXY,
                 substituteDCAZ);
     }
-    collisionCounter++;
   }
 };
 

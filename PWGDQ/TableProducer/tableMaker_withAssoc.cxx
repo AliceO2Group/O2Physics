@@ -92,8 +92,6 @@ using namespace o2::framework::expressions;
 using namespace o2::aod;
 using namespace o2::aod::rctsel;
 
-Zorro zorro;
-
 // Declaration of various Joins used in the different process functions
 // TODO: Since DCA depends on which collision the track is associated to, we should remove writing and subscribing to DCA tables, to optimize on CPU / memory
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
@@ -181,42 +179,48 @@ enum SkimStatsHists {
   kStatsZorroSel
 };
 
+namespace dqtablemaker_helpers
+{
+inline float* varValues() { return static_cast<float*>(VarManager::fgValues); }
+inline TString* varNames() { return static_cast<TString*>(VarManager::fgVariableNames); }
+inline TString* varUnits() { return static_cast<TString*>(VarManager::fgVariableUnits); }
+} // namespace dqtablemaker_helpers
+
 struct TableMaker {
 
-  Produces<ReducedEvents> event;
-  Produces<ReducedEventsExtended> eventExtended;
-  Produces<ReducedEventsVtxCov> eventVtxCov;
-  Produces<ReducedEventsInfo> eventInfo;
-  Produces<ReducedZdcs> zdc;
-  Produces<ReducedFITs> fit;
-  Produces<ReducedEventsMultPV> multPV;
-  Produces<ReducedEventsMultAll> multAll;
-  Produces<ReducedEventsMergingTable> mergingTable;
-  Produces<ReducedTracksBarrelInfo> trackBarrelInfo;
-  Produces<ReducedTracks> trackBasic;
-  Produces<ReducedTracksBarrel> trackBarrel;
-  Produces<ReducedTracksBarrelCov> trackBarrelCov;
-  Produces<ReducedTracksBarrelPID> trackBarrelPID;
-  Produces<ReducedTracksAssoc> trackBarrelAssoc;
-  Produces<ReducedMuons> muonBasic;
-  Produces<ReducedMuonsExtra> muonExtra;
-  Produces<ReducedMuonsCov> muonCov;
-  Produces<ReducedMuonsInfo> muonInfo;
-  Produces<ReducedMuonsAssoc> muonAssoc;
-  Produces<ReducedMFTs> mftTrack;
-  Produces<ReducedMFTsExtra> mftTrackExtra;
-  Produces<ReducedMFTAssoc> mftAssoc;
-
-  // Q-vector related tables, to be filled only if the user selects the corresponding option; since they are not needed for the skimming, we keep them in a separate group to avoid filling them when not needed
   struct : ProducesGroup {
+    Produces<ReducedEvents> event;
+    Produces<ReducedEventsExtended> eventExtended;
+    Produces<ReducedEventsVtxCov> eventVtxCov;
+    Produces<ReducedEventsInfo> eventInfo;
+    Produces<ReducedZdcs> zdc;
+    Produces<ReducedFITs> fit;
+    Produces<ReducedEventsMultPV> multPV;
+    Produces<ReducedEventsMultAll> multAll;
+    Produces<ReducedEventsMergingTable> mergingTable;
+    Produces<ReducedTracksBarrelInfo> trackBarrelInfo;
+    Produces<ReducedTracks> trackBasic;
+    Produces<ReducedTracksBarrel> trackBarrel;
+    Produces<ReducedTracksBarrelCov> trackBarrelCov;
+    Produces<ReducedTracksBarrelPID> trackBarrelPID;
+    Produces<ReducedTracksAssoc> trackBarrelAssoc;
+    Produces<ReducedMuons> muonBasic;
+    Produces<ReducedMuonsExtra> muonExtra;
+    Produces<ReducedMuonsCov> muonCov;
+    Produces<ReducedMuonsInfo> muonInfo;
+    Produces<ReducedMuonsAssoc> muonAssoc;
+    Produces<ReducedMFTs> mftTrack;
+    Produces<ReducedMFTsExtra> mftTrackExtra;
+    Produces<ReducedMFTAssoc> mftAssoc;
+    // Q-vector related tables, to be filled only if the user selects the corresponding option
     Produces<ReducedEventsQvectorCentr> eventQvectorCentr;
     Produces<ReducedEventsQvectorCentrExtra> eventQvectorCentrExtra;
-  } qvecGroup;
+  } outTables;
 
   OutputObj<THashList> fOutputList{"output"}; //! the histogram manager output list
   OutputObj<TList> fStatsList{"Statistics"};  //! skimming statistics
 
-  HistogramManager* fHistMan;
+  HistogramManager* fHistMan = nullptr;
 
   // Event and track AnalysisCut configurables
   struct : ConfigurableGroup {
@@ -321,18 +325,18 @@ struct TableMaker {
     Configurable<bool> fExcludeShort{"cfgTPCExcludeShort", true, "Exclude short term from long term occupancy (micro-seconds)"};
   } fConfigVariousOptions;
 
-  Service<o2::ccdb::BasicCCDBManager> fCCDB;
+  Service<o2::ccdb::BasicCCDBManager> fCCDB{};
   o2::ccdb::CcdbApi fCCDBApi;
 
   o2::parameters::GRPObject* fGrpMagRun2 = nullptr; // for run 2, we access the GRPObject from GLO/GRP/GRP
   o2::parameters::GRPMagField* fGrpMag = nullptr;   // for run 3, we access GRPMagField from GLO/Config/GRPMagField
 
-  AnalysisCompositeCut* fEventCut;               //! Event selection cut
+  AnalysisCompositeCut* fEventCut = nullptr;     //! Event selection cut
   std::vector<AnalysisCompositeCut*> fTrackCuts; //! Barrel track cuts
   std::vector<AnalysisCompositeCut*> fMuonCuts;  //! Muon track cuts
 
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
-  int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
+  int fCurrentRun = -1;       // needed to detect if the run changed and trigger update of calibrations etc.
 
   // maps used to store index info; NOTE: std::map are sorted in ascending order by default (needed for track to collision indices)
   std::map<uint32_t, uint32_t> fCollIndexMap;             // key: old collision index, value: skimmed collision index
@@ -347,7 +351,7 @@ struct TableMaker {
 
   o2::analysis::MlResponseMFTMuonMatch<float> matchingMlResponse;
   std::vector<double> binsPtMl;
-  std::array<double, 1> cutValues;
+  std::array<double, 1> cutValues{};
   std::vector<int> cutDirMl;
 
   // RCT flag checker
@@ -385,6 +389,7 @@ struct TableMaker {
   Partition<MyBarrelTracksWithCov> tracksNegWithCov = (((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor)) && (aod::track::tgl < static_cast<float>(-0.05)));
 
   ctpRateFetcher mRateFetcher;
+  Zorro zorro;
   parameters::GRPLHCIFData* mLHCIFdata = nullptr;
 
   struct {
@@ -455,7 +460,7 @@ struct TableMaker {
     // Initialize the histogram manager
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
-    fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+    fHistMan->SetDefaultVarNames(dqtablemaker_helpers::varNames(), dqtablemaker_helpers::varUnits());
 
     // Only use detailed QA when QA is set true
     if (fConfigHistOutput.fConfigQA && fConfigHistOutput.fConfigDetailedQA) {
@@ -491,7 +496,7 @@ struct TableMaker {
       }
       if (fConfigHistOutput.fConfigQA) {
         // Barrel track histograms after selections; one histogram directory for each user specified selection
-        for (auto& cut : fTrackCuts) {
+        for (const auto& cut : fTrackCuts) {
           histClasses += Form("TrackBarrel_%s;", cut->GetName());
         }
       }
@@ -510,7 +515,7 @@ struct TableMaker {
       }
       if (fConfigHistOutput.fConfigQA) {
         // Muon tracks after selections; one directory per selection
-        for (auto& muonCut : fMuonCuts) {
+        for (const auto& muonCut : fMuonCuts) {
           histClasses += Form("Muons_%s;", muonCut->GetName());
         }
       }
@@ -556,7 +561,7 @@ struct TableMaker {
     TString addEvCutsStr = fConfigCuts.fConfigEventCutsJSON.value;
     if (addEvCutsStr != "") {
       std::vector<AnalysisCut*> addEvCuts = dqcuts::GetCutsFromJSON(addEvCutsStr.Data());
-      for (auto& cutIt : addEvCuts) {
+      for (const auto& cutIt : addEvCuts) {
         fEventCut->AddCut(cutIt);
       }
     }
@@ -573,8 +578,8 @@ struct TableMaker {
     TString addTrackCutsStr = fConfigCuts.fConfigTrackCutsJSON.value;
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
-      for (auto& t : addTrackCuts) {
-        fTrackCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
+      for (const auto& t : addTrackCuts) {
+        fTrackCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
       }
     }
 
@@ -590,19 +595,19 @@ struct TableMaker {
     TString addMuonCutsStr = fConfigCuts.fConfigMuonCutsJSON.value;
     if (addMuonCutsStr != "") {
       std::vector<AnalysisCut*> addMuonCuts = dqcuts::GetCutsFromJSON(addMuonCutsStr.Data());
-      for (auto& t : addMuonCuts) {
-        fMuonCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
+      for (const auto& t : addMuonCuts) {
+        fMuonCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
       }
     }
 
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
   }
 
-  void DefineHistograms(TString histClasses)
+  void DefineHistograms(const TString& histClasses)
   {
     // Create histograms via HistogramManager
     std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
-    for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
+    for (int iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
       TString classStr = objArray->At(iclass)->GetName();
       if (fConfigHistOutput.fConfigQA) {
         fHistMan->AddHistClass(classStr.Data());
@@ -666,8 +671,8 @@ struct TableMaker {
     for (auto label = eventLabels.begin(); label != eventLabels.end(); label++, ib++) {
       histEvents->GetXaxis()->SetBinLabel(ib, (*label).Data());
     }
-    for (int ib = 1; ib <= o2::aod::evsel::kNsel; ib++) {
-      histEvents->GetYaxis()->SetBinLabel(ib, o2::aod::evsel::selectionLabels[ib - 1]);
+    for (int iy = 1; iy <= o2::aod::evsel::kNsel; iy++) {
+      histEvents->GetYaxis()->SetBinLabel(iy, o2::aod::evsel::selectionLabels[iy - 1]);
     }
     histEvents->GetYaxis()->SetBinLabel(o2::aod::evsel::kNsel + 1, "Total");
     fStatsList->AddAt(histEvents, kStatsEvent);
@@ -681,13 +686,13 @@ struct TableMaker {
     fStatsList->AddAt(histBcs, kStatsBcs);
 
     // Track statistics: one bin for each track selection and 5 bins for V0 tags (gamma, K0s, Lambda, anti-Lambda, Omega)
-    TH1D* histTracks = new TH1D("TrackStats", "Track statistics", fTrackCuts.size() + 5.0, -0.5, fTrackCuts.size() - 0.5 + 5.0);
+    TH1D* histTracks = new TH1D("TrackStats", "Track statistics", fTrackCuts.size() + 5, -0.5, fTrackCuts.size() - 0.5 + 5.0);
     ib = 1;
     for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, ib++) {
       histTracks->GetXaxis()->SetBinLabel(ib, (*cut)->GetName());
     }
-    const char* v0TagNames[5] = {"Photon conversion", "K^{0}_{s}", "#Lambda", "#bar{#Lambda}", "#Omega"};
-    for (ib = 0; ib < 5; ib++) {
+    constexpr std::array v0TagNames{"Photon conversion", "K^{0}_{s}", "#Lambda", "#bar{#Lambda}", "#Omega"};
+    for (ib = 0; ib < static_cast<int>(v0TagNames.size()); ib++) {
       histTracks->GetXaxis()->SetBinLabel(fTrackCuts.size() + 1 + ib, v0TagNames[ib]);
     }
     fStatsList->AddAt(histTracks, kStatsTracks);
@@ -712,7 +717,7 @@ struct TableMaker {
   }
 
   template <typename TEvents, typename TTracks, typename TBCs>
-  void computeOccupancyEstimators(TEvents const& collisions, Partition<TTracks> const& tracksPos, Partition<TTracks> const& tracksNeg, Preslice<TTracks>& preslice, TBCs const&)
+  void computeOccupancyEstimators(TEvents const& collisions, Partition<TTracks> const& tracksPosPart, Partition<TTracks> const& tracksNegPart, Preslice<TTracks>& presliceTracks, TBCs const&)
   {
 
     // clear the occupancy maps for this time frame
@@ -751,7 +756,7 @@ struct TableMaker {
       oVtxZ[collision.globalIndex()] = collision.posZ();
 
       // if more than one collision per bunch, add that collision to the list for that bunch
-      if (oBCreversed.find(bc) == oBCreversed.end()) {
+      if (!oBCreversed.contains(bc)) {
         std::vector<int64_t> evs = {collision.globalIndex()};
         oBCreversed[bc] = evs;
       } else {
@@ -760,8 +765,8 @@ struct TableMaker {
       }
 
       // make a slice for this collision and get the number of tracks
-      auto thisCollTrackPos = tracksPos.sliceBy(preslice, collision.globalIndex());
-      auto thisCollTrackNeg = tracksNeg.sliceBy(preslice, collision.globalIndex());
+      auto thisCollTrackPos = tracksPosPart.sliceBy(presliceTracks, collision.globalIndex());
+      auto thisCollTrackNeg = tracksNegPart.sliceBy(presliceTracks, collision.globalIndex());
       collMultPos[collision.globalIndex()] = thisCollTrackPos.size();
       collMultNeg[collision.globalIndex()] = thisCollTrackNeg.size();
     }
@@ -795,7 +800,7 @@ struct TableMaker {
         // check if this collision is also within the short time range
         bool isShort = (thisBC >= pastShortBC && thisBC < futureShortBC);
         // loop over all collisions in this BC
-        for (auto& thisColl : colls) {
+        for (const auto& thisColl : colls) {
           // skip if this is the same collision
           if (thisColl == collision) {
             continue;
@@ -841,8 +846,8 @@ struct TableMaker {
       // iterate over the time maps to obtain the median time
       fOccup.oMedianTimeLongA[collision] = 0.0;
       float sumMult = 0.0;
-      if (oTimeMapLongA.size() > 0) {
-        for (auto& [dt, mult] : oTimeMapLongA) {
+      if (!oTimeMapLongA.empty()) {
+        for (const auto& [dt, mult] : oTimeMapLongA) {
           sumMult += mult;
           if (sumMult > fOccup.oContribLongA[collision] / 2.0) {
             fOccup.oMedianTimeLongA[collision] = dt;
@@ -852,8 +857,8 @@ struct TableMaker {
       }
       fOccup.oMedianTimeLongC[collision] = 0.0;
       sumMult = 0.0;
-      if (oTimeMapLongC.size() > 0) {
-        for (auto& [dt, mult] : oTimeMapLongC) {
+      if (!oTimeMapLongC.empty()) {
+        for (const auto& [dt, mult] : oTimeMapLongC) {
           sumMult += mult;
           if (sumMult > fOccup.oContribLongC[collision] / 2.0) {
             fOccup.oMedianTimeLongC[collision] = dt;
@@ -863,8 +868,8 @@ struct TableMaker {
       }
       fOccup.oMedianTimeShortA[collision] = 0.0;
       sumMult = 0.0;
-      if (oTimeMapShortA.size() > 0) {
-        for (auto& [dt, mult] : oTimeMapShortA) {
+      if (!oTimeMapShortA.empty()) {
+        for (const auto& [dt, mult] : oTimeMapShortA) {
           sumMult += mult;
           if (sumMult > fOccup.oContribShortA[collision] / 2.0) {
             fOccup.oMedianTimeShortA[collision] = dt;
@@ -874,8 +879,8 @@ struct TableMaker {
       }
       fOccup.oMedianTimeShortC[collision] = 0.0;
       sumMult = 0.0;
-      if (oTimeMapShortC.size() > 0) {
-        for (auto& [dt, mult] : oTimeMapShortC) {
+      if (!oTimeMapShortC.empty()) {
+        for (const auto& [dt, mult] : oTimeMapShortC) {
           sumMult += mult;
           if (sumMult > fOccup.oContribShortC[collision] / 2.0) {
             fOccup.oMedianTimeShortC[collision] = dt;
@@ -893,12 +898,9 @@ struct TableMaker {
     auto bfilling = mLHCIFdata->getBunchFilling();
     double nbc = bfilling.getFilledBCs().size();
 
-    double tvxRate;
-    if (fConfigHistOutput.fConfigIrEstimator.value.empty()) {
-      tvxRate = mRateFetcher.fetch(fCCDB.service, timeStamp, bc.runNumber(), "T0VTX");
-    } else {
-      tvxRate = mRateFetcher.fetch(fCCDB.service, timeStamp, bc.runNumber(), fConfigHistOutput.fConfigIrEstimator.value);
-    }
+    const double tvxRate = fConfigHistOutput.fConfigIrEstimator.value.empty()
+                             ? mRateFetcher.fetch(fCCDB.service, timeStamp, bc.runNumber(), "T0VTX")
+                             : mRateFetcher.fetch(fCCDB.service, timeStamp, bc.runNumber(), fConfigHistOutput.fConfigIrEstimator.value);
 
     double nTriggersPerFilledBC = tvxRate / nbc / o2::constants::lhc::LHCRevFreq;
     double mu = -std::log(1 - nTriggersPerFilledBC);
@@ -906,7 +908,7 @@ struct TableMaker {
   }
 
   template <typename TEvents, typename TTracks>
-  void computeCollMergingTag(TEvents const& collisions, TTracks const& tracks, Preslice<TTracks>& preslice)
+  void computeCollMergingTag(TEvents const& collisions, TTracks const& tracks, Preslice<TTracks>& presliceTracks)
   {
     // This function uses the standard track-collision association to compute quantities related to collision merging
     // clear the maps for this time frame
@@ -939,7 +941,7 @@ struct TableMaker {
 
     for (const auto& collision : collisions) {
       // make a slice for this collision and compute the DCAz based event quantities
-      auto thisCollTracks = tracks.sliceBy(preslice, collision.globalIndex());
+      auto thisCollTracks = tracks.sliceBy(presliceTracks, collision.globalIndex());
       VarManager::FillEventTracks(thisCollTracks); // fill the VarManager arrays with the information of the tracks associated to this collision, needed for the cuts and histograms
       // add the computed variables to the maps with the collision index as key
       fCollMergingTag.bimodalityCoeffDCAz[collision.globalIndex()] = VarManager::fgValues[VarManager::kDCAzBimodalityCoefficient];
@@ -1012,22 +1014,22 @@ struct TableMaker {
           bool isTriggerZNA = bc.selection_bit(aod::evsel::kIsBBZNA);
           bool isTriggerZNC = bc.selection_bit(aod::evsel::kIsBBZNC);
 
-          (reinterpret_cast<TH1D*>(fStatsList->At(kStatsBcs)))->Fill(0.0, muTVX);
+          (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(0.0, muTVX);
           if (isTvx) {
-            (reinterpret_cast<TH1D*>(fStatsList->At(kStatsBcs)))->Fill(1.0, muTVX);
+            (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(1.0, muTVX);
             if (noBorder) {
-              (reinterpret_cast<TH1D*>(fStatsList->At(kStatsBcs)))->Fill(2.0, muTVX);
+              (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(2.0, muTVX);
               if (isCentral) {
-                (reinterpret_cast<TH1D*>(fStatsList->At(kStatsBcs)))->Fill(3.0, muTVX);
+                (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(3.0, muTVX);
               }
               if (isSemiCentral) {
-                (reinterpret_cast<TH1D*>(fStatsList->At(kStatsBcs)))->Fill(4.0, muTVX);
+                (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(4.0, muTVX);
               }
               if (isCentral || isSemiCentral) {
-                (reinterpret_cast<TH1D*>(fStatsList->At(kStatsBcs)))->Fill(5.0, muTVX);
+                (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(5.0, muTVX);
               }
               if (isTriggerZNA && isTriggerZNC) {
-                (reinterpret_cast<TH1D*>(fStatsList->At(kStatsBcs)))->Fill(6.0, muTVX);
+                (dynamic_cast<TH2D*>(fStatsList->At(kStatsBcs)))->Fill(6.0, muTVX);
               }
             }
           }
@@ -1039,10 +1041,10 @@ struct TableMaker {
 
       for (int i = 0; i < o2::aod::evsel::kNsel; i++) {
         if (collision.selection_bit(i)) {
-          (reinterpret_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(1.0, static_cast<float>(i));
+          (dynamic_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(1.0, static_cast<float>(i));
         }
       }
-      (reinterpret_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(1.0, static_cast<float>(o2::aod::evsel::kNsel));
+      (dynamic_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(1.0, static_cast<float>(o2::aod::evsel::kNsel));
 
       // apply the event filter computed by filter-PP
       if constexpr ((TEventFillMap & VarManager::ObjTypes::EventFilter) > 0) {
@@ -1118,28 +1120,28 @@ struct TableMaker {
       }
 
       if (fDoDetailedQA) {
-        fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
+        fHistMan->FillHistClass("Event_BeforeCuts", dqtablemaker_helpers::varValues());
       }
 
       // fill stats information, before selections
       for (int i = 0; i < o2::aod::evsel::kNsel; i++) {
         if (collision.selection_bit(i)) {
-          (reinterpret_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(2.0, static_cast<float>(i));
+          (dynamic_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(2.0, static_cast<float>(i));
         }
       }
-      (reinterpret_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(2.0, static_cast<float>(o2::aod::evsel::kNsel));
+      (dynamic_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(2.0, static_cast<float>(o2::aod::evsel::kNsel));
 
       if (fConfigZorro.fConfigRunZorro) {
         zorro.setBaseCCDBPath(fConfigCCDB.fConfigCcdbPathZorro.value);
         zorro.setBCtolerance(fConfigZorro.fBcTolerance);
         zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorro.fConfigZorroTrigMask.value);
-        zorro.populateExternalHists(fCurrentRun, reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroInfo)), reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
+        zorro.populateExternalHists(fCurrentRun, dynamic_cast<TH2D*>(fStatsList->At(kStatsZorroInfo)), dynamic_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
 
-        if (!fEventCut->IsSelected(VarManager::fgValues) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(collision))) {
+        if (!fEventCut->IsSelected(dqtablemaker_helpers::varValues()) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(collision))) {
           continue;
         }
 
-        bool zorroSel = zorro.isSelected(bc.globalBC(), fConfigZorro.fBcTolerance, reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
+        bool zorroSel = zorro.isSelected(bc.globalBC(), fConfigZorro.fBcTolerance, dynamic_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
         if (zorroSel) {
           tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
         }
@@ -1147,7 +1149,7 @@ struct TableMaker {
           continue;
         }
       } else {
-        if (!fEventCut->IsSelected(VarManager::fgValues) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(collision))) {
+        if (!fEventCut->IsSelected(dqtablemaker_helpers::varValues()) || (fConfigRCT.fConfigUseRCT.value && !rctChecker(collision))) {
           continue;
         }
       }
@@ -1155,15 +1157,15 @@ struct TableMaker {
       // fill stats information, after selections
       for (int i = 0; i < o2::aod::evsel::kNsel; i++) {
         if (collision.selection_bit(i)) {
-          (reinterpret_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(3.0, static_cast<float>(i));
+          (dynamic_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(3.0, static_cast<float>(i));
         }
       }
-      (reinterpret_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(3.0, static_cast<float>(o2::aod::evsel::kNsel));
+      (dynamic_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(3.0, static_cast<float>(o2::aod::evsel::kNsel));
 
-      fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+      fHistMan->FillHistClass("Event_AfterCuts", dqtablemaker_helpers::varValues());
 
       // create the event tables
-      event(tag, bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
+      outTables.event(tag, bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0) {
         multFV0C = collision.multFV0C();
         multTPC = collision.multTPC();
@@ -1182,16 +1184,16 @@ struct TableMaker {
         centFT0A = collision.centFT0A();
         centFT0M = collision.centFT0M();
       }
-      eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO],
-                    multTPC, multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTracksPV, centFT0C, centFT0A, centFT0M);
-      eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
-      eventInfo(collision.globalIndex());
+      outTables.eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO],
+                              multTPC, multFV0A, multFV0C, multFT0A, multFT0C, multFDDA, multFDDC, multZNA, multZNC, multTracklets, multTracksPV, centFT0C, centFT0A, centFT0M);
+      outTables.eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
+      outTables.eventInfo(collision.globalIndex());
 
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvectCentr) > 0) {
         if (fConfigQvector.fConfigQvectCalibAvailable) {
-          qvecGroup.eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
+          outTables.eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
                                       collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
-          qvecGroup.eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
+          outTables.eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
         }
       }
       if constexpr ((TEventFillMap & VarManager::ObjTypes::Zdc) > 0) {
@@ -1200,70 +1202,70 @@ struct TableMaker {
           auto newbc = bcs.rawIteratorAt(collision.newBcIndex());
           if (newbc.has_zdc()) {
             auto newbc_zdc = newbc.zdc();
-            zdc(newbc_zdc.energyCommonZNA(), newbc_zdc.energyCommonZNC(), newbc_zdc.energyCommonZPA(), newbc_zdc.energyCommonZPC(),
-                newbc_zdc.timeZNA(), newbc_zdc.timeZNC(), newbc_zdc.timeZPA(), newbc_zdc.timeZPC());
+            outTables.zdc(newbc_zdc.energyCommonZNA(), newbc_zdc.energyCommonZNC(), newbc_zdc.energyCommonZPA(), newbc_zdc.energyCommonZPC(),
+                          newbc_zdc.timeZNA(), newbc_zdc.timeZNC(), newbc_zdc.timeZPA(), newbc_zdc.timeZPC());
           } else {
-            zdc(-999.0, -999.0, -999.0, -999.0, -999.0, -999.0, -999.0, -999.0);
+            outTables.zdc(-999.0, -999.0, -999.0, -999.0, -999.0, -999.0, -999.0, -999.0);
           }
         } else if (bcEvSel.has_zdc()) {
           auto bc_zdc = bcEvSel.zdc();
-          zdc(bc_zdc.energyCommonZNA(), bc_zdc.energyCommonZNC(), bc_zdc.energyCommonZPA(), bc_zdc.energyCommonZPC(),
-              bc_zdc.timeZNA(), bc_zdc.timeZNC(), bc_zdc.timeZPA(), bc_zdc.timeZPC());
+          outTables.zdc(bc_zdc.energyCommonZNA(), bc_zdc.energyCommonZNC(), bc_zdc.energyCommonZPA(), bc_zdc.energyCommonZPC(),
+                        bc_zdc.timeZNA(), bc_zdc.timeZNC(), bc_zdc.timeZPA(), bc_zdc.timeZPC());
         } else {
-          zdc(-999.0, -999.0, -999.0, -999.0, -999.0, -999.0, -999.0, -999.0);
+          outTables.zdc(-999.0, -999.0, -999.0, -999.0, -999.0, -999.0, -999.0, -999.0);
         }
       }
       // Fill FIT table if requested
       if constexpr ((TEventFillMap & VarManager::ObjTypes::Fit) > 0) {
-        fit(VarManager::fgValues[VarManager::kAmplitudeFT0A], VarManager::fgValues[VarManager::kAmplitudeFT0C],
-            VarManager::fgValues[VarManager::kTimeFT0A], VarManager::fgValues[VarManager::kTimeFT0C],
-            static_cast<uint8_t>(VarManager::fgValues[VarManager::kTriggerMaskFT0]),
-            static_cast<int>(VarManager::fgValues[VarManager::kNFiredChannelsFT0A]),
-            static_cast<int>(VarManager::fgValues[VarManager::kNFiredChannelsFT0C]),
-            VarManager::fgValues[VarManager::kAmplitudeFDDA], VarManager::fgValues[VarManager::kAmplitudeFDDC],
-            VarManager::fgValues[VarManager::kTimeFDDA], VarManager::fgValues[VarManager::kTimeFDDC],
-            static_cast<uint8_t>(VarManager::fgValues[VarManager::kTriggerMaskFDD]),
-            VarManager::fgValues[VarManager::kAmplitudeFV0A], VarManager::fgValues[VarManager::kTimeFV0A],
-            static_cast<uint8_t>(VarManager::fgValues[VarManager::kTriggerMaskFV0A]),
-            static_cast<int>(VarManager::fgValues[VarManager::kNFiredChannelsFV0A]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFT0Apf]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFT0Apf]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFT0Cpf]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFT0Cpf]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFV0Apf]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFV0Apf]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFDDApf]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFDDApf]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFDDCpf]),
-            static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFDDCpf]));
+        outTables.fit(VarManager::fgValues[VarManager::kAmplitudeFT0A], VarManager::fgValues[VarManager::kAmplitudeFT0C],
+                      VarManager::fgValues[VarManager::kTimeFT0A], VarManager::fgValues[VarManager::kTimeFT0C],
+                      static_cast<uint8_t>(VarManager::fgValues[VarManager::kTriggerMaskFT0]),
+                      static_cast<int>(VarManager::fgValues[VarManager::kNFiredChannelsFT0A]),
+                      static_cast<int>(VarManager::fgValues[VarManager::kNFiredChannelsFT0C]),
+                      VarManager::fgValues[VarManager::kAmplitudeFDDA], VarManager::fgValues[VarManager::kAmplitudeFDDC],
+                      VarManager::fgValues[VarManager::kTimeFDDA], VarManager::fgValues[VarManager::kTimeFDDC],
+                      static_cast<uint8_t>(VarManager::fgValues[VarManager::kTriggerMaskFDD]),
+                      VarManager::fgValues[VarManager::kAmplitudeFV0A], VarManager::fgValues[VarManager::kTimeFV0A],
+                      static_cast<uint8_t>(VarManager::fgValues[VarManager::kTriggerMaskFV0A]),
+                      static_cast<int>(VarManager::fgValues[VarManager::kNFiredChannelsFV0A]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFT0Apf]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFT0Apf]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFT0Cpf]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFT0Cpf]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFV0Apf]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFV0Apf]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFDDApf]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFDDApf]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBBFDDCpf]),
+                      static_cast<int32_t>(VarManager::fgValues[VarManager::kBGFDDCpf]));
       }
       if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMultExtra) > 0) {
-        multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
-               collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(),
-               collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+        outTables.multPV(collision.multNTracksHasITS(), collision.multNTracksHasTPC(), collision.multNTracksHasTOF(), collision.multNTracksHasTRD(),
+                         collision.multNTracksITSOnly(), collision.multNTracksTPCOnly(), collision.multNTracksITSTPC(),
+                         collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
 
-        multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
-                fOccup.oContribLongA[collision.globalIndex()], fOccup.oContribLongC[collision.globalIndex()],
-                fOccup.oMeanTimeLongA[collision.globalIndex()], fOccup.oMeanTimeLongC[collision.globalIndex()],
-                fOccup.oMedianTimeLongA[collision.globalIndex()], fOccup.oMedianTimeLongC[collision.globalIndex()],
-                fOccup.oContribShortA[collision.globalIndex()], fOccup.oContribShortC[collision.globalIndex()],
-                fOccup.oMeanTimeShortA[collision.globalIndex()], fOccup.oMeanTimeShortC[collision.globalIndex()],
-                fOccup.oMedianTimeShortA[collision.globalIndex()], fOccup.oMedianTimeShortC[collision.globalIndex()]);
+        outTables.multAll(collision.multAllTracksTPCOnly(), collision.multAllTracksITSTPC(),
+                          fOccup.oContribLongA[collision.globalIndex()], fOccup.oContribLongC[collision.globalIndex()],
+                          fOccup.oMeanTimeLongA[collision.globalIndex()], fOccup.oMeanTimeLongC[collision.globalIndex()],
+                          fOccup.oMedianTimeLongA[collision.globalIndex()], fOccup.oMedianTimeLongC[collision.globalIndex()],
+                          fOccup.oContribShortA[collision.globalIndex()], fOccup.oContribShortC[collision.globalIndex()],
+                          fOccup.oMeanTimeShortA[collision.globalIndex()], fOccup.oMeanTimeShortC[collision.globalIndex()],
+                          fOccup.oMedianTimeShortA[collision.globalIndex()], fOccup.oMedianTimeShortC[collision.globalIndex()]);
       }
-      mergingTable(fCollMergingTag.bimodalityCoeffDCAz[collision.globalIndex()], fCollMergingTag.bimodalityCoeffDCAzBinned[collision.globalIndex()],
-                   fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed1[collision.globalIndex()], fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed2[collision.globalIndex()], fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed3[collision.globalIndex()],
-                   fCollMergingTag.meanDCAz[collision.globalIndex()], fCollMergingTag.meanDCAzBinnedTrimmed1[collision.globalIndex()], fCollMergingTag.meanDCAzBinnedTrimmed2[collision.globalIndex()], fCollMergingTag.meanDCAzBinnedTrimmed3[collision.globalIndex()],
-                   fCollMergingTag.rmsDCAz[collision.globalIndex()], fCollMergingTag.rmsDCAzBinnedTrimmed1[collision.globalIndex()], fCollMergingTag.rmsDCAzBinnedTrimmed2[collision.globalIndex()], fCollMergingTag.rmsDCAzBinnedTrimmed3[collision.globalIndex()],
-                   fCollMergingTag.skewnessDCAz[collision.globalIndex()], fCollMergingTag.kurtosisDCAz[collision.globalIndex()],
-                   fCollMergingTag.fraction100umDCAz[collision.globalIndex()], fCollMergingTag.fraction200umDCAz[collision.globalIndex()],
-                   fCollMergingTag.fraction500umDCAz[collision.globalIndex()], fCollMergingTag.fraction1mmDCAz[collision.globalIndex()],
-                   fCollMergingTag.fraction2mmDCAz[collision.globalIndex()], fCollMergingTag.fraction5mmDCAz[collision.globalIndex()],
-                   fCollMergingTag.fraction10mmDCAz[collision.globalIndex()],
-                   fCollMergingTag.nPeaksDCAz[collision.globalIndex()], fCollMergingTag.nPeaksDCAzTrimmed1[collision.globalIndex()],
-                   fCollMergingTag.nPeaksDCAzTrimmed2[collision.globalIndex()], fCollMergingTag.nPeaksDCAzTrimmed3[collision.globalIndex()]);
+      outTables.mergingTable(fCollMergingTag.bimodalityCoeffDCAz[collision.globalIndex()], fCollMergingTag.bimodalityCoeffDCAzBinned[collision.globalIndex()],
+                             fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed1[collision.globalIndex()], fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed2[collision.globalIndex()], fCollMergingTag.bimodalityCoeffDCAzBinnedTrimmed3[collision.globalIndex()],
+                             fCollMergingTag.meanDCAz[collision.globalIndex()], fCollMergingTag.meanDCAzBinnedTrimmed1[collision.globalIndex()], fCollMergingTag.meanDCAzBinnedTrimmed2[collision.globalIndex()], fCollMergingTag.meanDCAzBinnedTrimmed3[collision.globalIndex()],
+                             fCollMergingTag.rmsDCAz[collision.globalIndex()], fCollMergingTag.rmsDCAzBinnedTrimmed1[collision.globalIndex()], fCollMergingTag.rmsDCAzBinnedTrimmed2[collision.globalIndex()], fCollMergingTag.rmsDCAzBinnedTrimmed3[collision.globalIndex()],
+                             fCollMergingTag.skewnessDCAz[collision.globalIndex()], fCollMergingTag.kurtosisDCAz[collision.globalIndex()],
+                             fCollMergingTag.fraction100umDCAz[collision.globalIndex()], fCollMergingTag.fraction200umDCAz[collision.globalIndex()],
+                             fCollMergingTag.fraction500umDCAz[collision.globalIndex()], fCollMergingTag.fraction1mmDCAz[collision.globalIndex()],
+                             fCollMergingTag.fraction2mmDCAz[collision.globalIndex()], fCollMergingTag.fraction5mmDCAz[collision.globalIndex()],
+                             fCollMergingTag.fraction10mmDCAz[collision.globalIndex()],
+                             fCollMergingTag.nPeaksDCAz[collision.globalIndex()], fCollMergingTag.nPeaksDCAzTrimmed1[collision.globalIndex()],
+                             fCollMergingTag.nPeaksDCAzTrimmed2[collision.globalIndex()], fCollMergingTag.nPeaksDCAzTrimmed3[collision.globalIndex()]);
 
       //
-      fCollIndexMap[collision.globalIndex()] = event.lastIndex();
+      fCollIndexMap[collision.globalIndex()] = outTables.event.lastIndex();
     }
   }
 
@@ -1275,8 +1277,8 @@ struct TableMaker {
     //     One can apply here cuts which depend on the association (e.g. DCA), which will discard (hopefully most) wrong associations.
     //     Tracks are written only once, even if they constribute to more than one association
 
-    uint64_t trackFilteringTag = static_cast<uint64_t>(0);
-    uint32_t trackTempFilterMap = static_cast<uint32_t>(0);
+    auto trackFilteringTag = static_cast<uint64_t>(0);
+    auto trackTempFilterMap = static_cast<uint32_t>(0);
 
     // material correction for track propagation
     // TODO: Do we need a configurable to switch between different material correction options?
@@ -1304,20 +1306,20 @@ struct TableMaker {
       }
 
       if (fDoDetailedQA) {
-        fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
+        fHistMan->FillHistClass("TrackBarrel_BeforeCuts", dqtablemaker_helpers::varValues());
       }
 
       // apply track cuts and fill stats histogram
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
-        if ((*cut)->IsSelected(VarManager::fgValues)) {
+        if ((*cut)->IsSelected(dqtablemaker_helpers::varValues())) {
           trackTempFilterMap |= (static_cast<uint32_t>(1) << i);
           // NOTE: the QA is filled here just for the first occurence of this track.
           //    So if there are histograms of quantities which depend on the collision association, these will not be accurate
           if (fConfigHistOutput.fConfigQA && (fTrackIndexMap.find(track.globalIndex()) == fTrackIndexMap.end())) {
-            fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut)->GetName()), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut)->GetName()), dqtablemaker_helpers::varValues());
           }
-          (reinterpret_cast<TH1D*>(fStatsList->At(kStatsTracks)))->Fill(static_cast<float>(i));
+          (dynamic_cast<TH1D*>(fStatsList->At(kStatsTracks)))->Fill(static_cast<float>(i));
         }
       }
       if (!trackTempFilterMap) {
@@ -1327,7 +1329,7 @@ struct TableMaker {
       // If this track is already present in the index map, it means it was already skimmed,
       // so we just store the association and we skip the track
       if (fTrackIndexMap.find(track.globalIndex()) != fTrackIndexMap.end()) {
-        trackBarrelAssoc(fCollIndexMap[collision.globalIndex()], fTrackIndexMap[track.globalIndex()]);
+        outTables.trackBarrelAssoc(fCollIndexMap[collision.globalIndex()], fTrackIndexMap[track.globalIndex()]);
         continue;
       }
 
@@ -1336,22 +1338,22 @@ struct TableMaker {
         trackFilteringTag |= static_cast<uint64_t>(track.pidbit());
         for (int iv0 = 0; iv0 < 5; iv0++) {
           if (track.pidbit() & (uint8_t(1) << iv0)) {
-            (reinterpret_cast<TH1D*>(fStatsList->At(kStatsTracks)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
+            (dynamic_cast<TH1D*>(fStatsList->At(kStatsTracks)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
           }
         }
         // TODO: this part should be removed since the calibration histogram can be filled as any other histogram
         if (fConfigPostCalibTPC.fConfigIsOnlyforMaps) {
           if (trackFilteringTag & (static_cast<uint64_t>(1) << VarManager::kIsConversionLeg)) { // for electron
-            fHistMan->FillHistClass("TrackBarrel_PostCalibElectron", VarManager::fgValues);
+            fHistMan->FillHistClass("TrackBarrel_PostCalibElectron", dqtablemaker_helpers::varValues());
           }
           if (trackFilteringTag & (static_cast<uint64_t>(1) << VarManager::kIsK0sLeg)) { // for pion
-            fHistMan->FillHistClass("TrackBarrel_PostCalibPion", VarManager::fgValues);
+            fHistMan->FillHistClass("TrackBarrel_PostCalibPion", dqtablemaker_helpers::varValues());
           }
           if ((static_cast<bool>(trackFilteringTag & (static_cast<uint64_t>(1) << VarManager::kIsLambdaLeg)) * (track.sign()) > 0)) { // for proton from Lambda
-            fHistMan->FillHistClass("TrackBarrel_PostCalibProton", VarManager::fgValues);
+            fHistMan->FillHistClass("TrackBarrel_PostCalibProton", dqtablemaker_helpers::varValues());
           }
           if ((static_cast<bool>(trackFilteringTag & (static_cast<uint64_t>(1) << VarManager::kIsALambdaLeg)) * (track.sign()) < 0)) { // for proton from AntiLambda
-            fHistMan->FillHistClass("TrackBarrel_PostCalibProton", VarManager::fgValues);
+            fHistMan->FillHistClass("TrackBarrel_PostCalibProton", dqtablemaker_helpers::varValues());
           }
         }
         if (fConfigPostCalibTPC.fConfigSaveElectronSample) { // only save electron sample
@@ -1373,9 +1375,9 @@ struct TableMaker {
 
       // Calculating the percentage of orphan tracks i.e., tracks which have no collisions associated to it
       if (!track.has_collision()) {
-        (reinterpret_cast<TH1D*>(fStatsList->At(kStatsOrphanTracks)))->Fill(static_cast<float>(-1));
+        (dynamic_cast<TH1D*>(fStatsList->At(kStatsOrphanTracks)))->Fill(static_cast<float>(-1));
       } else {
-        (reinterpret_cast<TH1D*>(fStatsList->At(kStatsOrphanTracks)))->Fill(0.9);
+        (dynamic_cast<TH1D*>(fStatsList->At(kStatsOrphanTracks)))->Fill(0.9);
       }
 
       // NOTE: The collision ID written in the table is the one of the original collision assigned in the AO2D.
@@ -1386,45 +1388,45 @@ struct TableMaker {
 
       // NOTE: trackBarrelInfo stores the index of the collision as in AO2D (for use in some cases where the analysis on skims is done
       //   in workflows where the original AO2Ds are also present)
-      trackBarrelInfo(collision.globalIndex(), collision.posX(), collision.posY(), collision.posZ(), track.globalIndex());
-      trackBasic(reducedEventIdx, trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign(), 0);
-      trackBarrel(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
-                  track.tpcInnerParam(), track.flags(), track.itsClusterMap(), track.itsChi2NCl(),
-                  track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
-                  track.tpcNClsShared(), track.tpcChi2NCl(),
-                  track.trdChi2(), track.trdPattern(), track.tofChi2(),
-                  track.length(), track.dcaXY(), track.dcaZ(),
-                  track.trackTime(), track.trackTimeRes(), track.tofExpMom(),
-                  track.detectorMap());
+      outTables.trackBarrelInfo(collision.globalIndex(), collision.posX(), collision.posY(), collision.posZ(), track.globalIndex());
+      outTables.trackBasic(reducedEventIdx, trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign(), 0);
+      outTables.trackBarrel(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
+                            track.tpcInnerParam(), track.flags(), track.itsClusterMap(), track.itsChi2NCl(),
+                            track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
+                            track.tpcNClsShared(), track.tpcChi2NCl(),
+                            track.trdChi2(), track.trdPattern(), track.tofChi2(),
+                            track.length(), track.dcaXY(), track.dcaZ(),
+                            track.trackTime(), track.trackTimeRes(), track.tofExpMom(),
+                            track.detectorMap());
       if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
-        trackBarrelCov(track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
-                       track.cSnpSnp(), track.cTglY(), track.cTglZ(), track.cTglSnp(), track.cTglTgl(),
-                       track.c1PtY(), track.c1PtZ(), track.c1PtSnp(), track.c1PtTgl(), track.c1Pt21Pt2());
+        outTables.trackBarrelCov(track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
+                                 track.cSnpSnp(), track.cTglY(), track.cTglZ(), track.cTglSnp(), track.cTglTgl(),
+                                 track.c1PtY(), track.c1PtZ(), track.c1PtSnp(), track.c1PtTgl(), track.c1Pt21Pt2());
       }
       if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackPID)) {
         float nSigmaEl = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaEl_Corr] : track.tpcNSigmaEl());
         float nSigmaPi = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPi_Corr] : track.tpcNSigmaPi());
         float nSigmaKa = ((fConfigPostCalibTPC.fConfigComputeTPCpostCalib && fConfigPostCalibTPC.fConfigComputeTPCpostCalibKaon) ? VarManager::fgValues[VarManager::kTPCnSigmaKa_Corr] : track.tpcNSigmaKa());
         float nSigmaPr = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPr_Corr] : track.tpcNSigmaPr());
-        trackBarrelPID(track.tpcSignal(),
-                       nSigmaEl, track.tpcNSigmaMu(), nSigmaPi, nSigmaKa, nSigmaPr,
-                       track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                       track.trdSignal());
+        outTables.trackBarrelPID(track.tpcSignal(),
+                                 nSigmaEl, track.tpcNSigmaMu(), nSigmaPi, nSigmaKa, nSigmaPr,
+                                 track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                                 track.trdSignal());
       } else if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackTPCPID)) {
         float nSigmaEl = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaEl_Corr] : track.tpcNSigmaEl());
         float nSigmaPi = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPi_Corr] : track.tpcNSigmaPi());
         float nSigmaKa = ((fConfigPostCalibTPC.fConfigComputeTPCpostCalib && fConfigPostCalibTPC.fConfigComputeTPCpostCalibKaon) ? VarManager::fgValues[VarManager::kTPCnSigmaKa_Corr] : track.tpcNSigmaKa());
         float nSigmaPr = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPr_Corr] : track.tpcNSigmaPr());
-        trackBarrelPID(track.tpcSignal(),
-                       nSigmaEl, -999.0, nSigmaPi, nSigmaKa, nSigmaPr,
-                       -999.0, -999.0, -999.0, -999.0, -999.0, -999.0,
-                       -999.0);
+        outTables.trackBarrelPID(track.tpcSignal(),
+                                 nSigmaEl, -999.0, nSigmaPi, nSigmaKa, nSigmaPr,
+                                 -999.0, -999.0, -999.0, -999.0, -999.0, -999.0,
+                                 -999.0);
       }
 
-      fTrackIndexMap[track.globalIndex()] = trackBasic.lastIndex();
+      fTrackIndexMap[track.globalIndex()] = outTables.trackBasic.lastIndex();
 
       // write the skimmed collision - track association
-      trackBarrelAssoc(fCollIndexMap[collision.globalIndex()], fTrackIndexMap[track.globalIndex()]);
+      outTables.trackBarrelAssoc(fCollIndexMap[collision.globalIndex()], fTrackIndexMap[track.globalIndex()]);
     } // end loop over associations
   } // end skimTracks
 
@@ -1439,19 +1441,19 @@ struct TableMaker {
 
       if (fConfigHistOutput.fConfigQA) {
         VarManager::FillTrack<TMFTFillMap>(track);
-        fHistMan->FillHistClass("MftTracks", VarManager::fgValues);
+        fHistMan->FillHistClass("MftTracks", dqtablemaker_helpers::varValues());
       }
 
       // write the MFT track global index in the map for skimming (to make sure we have it just once)
-      if (fMftIndexMap.find(track.globalIndex()) == fMftIndexMap.end()) {
+      if (!fMftIndexMap.contains(track.globalIndex())) {
         uint32_t reducedEventIdx = fCollIndexMap[collision.globalIndex()];
-        mftTrack(reducedEventIdx, static_cast<uint64_t>(0), track.pt(), track.eta(), track.phi());
+        outTables.mftTrack(reducedEventIdx, static_cast<uint64_t>(0), track.pt(), track.eta(), track.phi());
         // TODO: We are not writing the DCA at the moment, because this depend on the collision association
-        mftTrackExtra(track.mftClusterSizesAndTrackFlags(), track.sign(), 0.0, 0.0, track.nClusters());
+        outTables.mftTrackExtra(track.mftClusterSizesAndTrackFlags(), track.sign(), 0.0, 0.0, track.nClusters());
 
-        fMftIndexMap[track.globalIndex()] = mftTrack.lastIndex();
+        fMftIndexMap[track.globalIndex()] = outTables.mftTrack.lastIndex();
       }
-      mftAssoc(fCollIndexMap[collision.globalIndex()], fMftIndexMap[track.globalIndex()]);
+      outTables.mftAssoc(fCollIndexMap[collision.globalIndex()], fMftIndexMap[track.globalIndex()]);
     }
   }
 
@@ -1472,7 +1474,7 @@ struct TableMaker {
         }
       }
     }
-    for (auto& pairCand : mCandidates) {
+    for (const auto& pairCand : mCandidates) {
       fBestMatch[pairCand.second.second] = true;
     }
   }
@@ -1506,7 +1508,7 @@ struct TableMaker {
         }
       }
     }
-    for (auto& pairCand : mCandidates) {
+    for (const auto& pairCand : mCandidates) {
       fBestMatch[pairCand.second.second] = true;
     }
   }
@@ -1521,11 +1523,11 @@ struct TableMaker {
 
     // TODO: Currently, the TMFTFillMap is not used in this function. Is it needed ?
 
-    uint8_t trackFilteringTag = static_cast<uint8_t>(0);
-    uint8_t trackTempFilterMap = static_cast<uint8_t>(0);
+    auto trackFilteringTag = static_cast<uint8_t>(0);
+    auto trackTempFilterMap = static_cast<uint8_t>(0);
     fFwdTrackIndexMapReversed.clear();
 
-    uint32_t offset = muonBasic.lastIndex();
+    uint32_t offset = outTables.muonBasic.lastIndex();
     uint32_t counter = 0;
     for (const auto& assoc : muonAssocs) {
       // get the muon
@@ -1574,20 +1576,20 @@ struct TableMaker {
       }
 
       if (fDoDetailedQA) {
-        fHistMan->FillHistClass("Muons_BeforeCuts", VarManager::fgValues);
+        fHistMan->FillHistClass("Muons_BeforeCuts", dqtablemaker_helpers::varValues());
       }
       // check the cuts and filters
       int i = 0;
       for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, i++) {
-        if ((*cut)->IsSelected(VarManager::fgValues)) {
+        if ((*cut)->IsSelected(dqtablemaker_helpers::varValues())) {
           trackTempFilterMap |= (static_cast<uint8_t>(1) << i);
           // NOTE: the QA is filled here just for the first occurence of this muon, which means the current association
           //     will be skipped from histograms if this muon was already filled in the skimming map.
           //    So if there are histograms of quantities which depend on the collision association, these histograms will not be completely accurate
           if (fConfigHistOutput.fConfigQA && (fFwdTrackIndexMap.find(muon.globalIndex()) == fFwdTrackIndexMap.end())) {
-            fHistMan->FillHistClass(Form("Muons_%s", (*cut)->GetName()), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("Muons_%s", (*cut)->GetName()), dqtablemaker_helpers::varValues());
           }
-          (reinterpret_cast<TH1D*>(fStatsList->At(kStatsMuons)))->Fill(static_cast<float>(i));
+          (dynamic_cast<TH1D*>(fStatsList->At(kStatsMuons)))->Fill(static_cast<float>(i));
         }
       }
 
@@ -1613,7 +1615,7 @@ struct TableMaker {
         fFwdTrackFilterMap[muon.globalIndex()] |= trackFilteringTag; // make a bitwise OR with previous existing cuts
       }
       // write the association table
-      muonAssoc(fCollIndexMap[collision.globalIndex()], fFwdTrackIndexMap[muon.globalIndex()]);
+      outTables.muonAssoc(fCollIndexMap[collision.globalIndex()], fFwdTrackIndexMap[muon.globalIndex()]);
     } // end loop over assocs
 
     // Now we have the full index map of selected muons so we can proceed with writing the muon tables
@@ -1664,19 +1666,19 @@ struct TableMaker {
       } else {
         VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
       }
-      muonBasic(reducedEventIdx, mchIdx, mftIdx, fFwdTrackFilterMap[muon.globalIndex()], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], muon.sign(), 0);
-      muonExtra(globalClusters, VarManager::fgValues[VarManager::kMuonPDca], VarManager::fgValues[VarManager::kMuonRAtAbsorberEnd],
-                VarManager::fgValues[VarManager::kMuonChi2], muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
-                muon.matchScoreMCHMFT(),
-                muon.mchBitMap(), muon.midBitMap(),
-                muon.midBoards(), muon.trackType(), VarManager::fgValues[VarManager::kMuonDCAx], VarManager::fgValues[VarManager::kMuonDCAy],
-                muon.trackTime(), muon.trackTimeRes());
-      muonInfo(muon.collisionId(), collision.posX(), collision.posY(), collision.posZ());
+      outTables.muonBasic(reducedEventIdx, mchIdx, mftIdx, fFwdTrackFilterMap[muon.globalIndex()], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], muon.sign(), 0);
+      outTables.muonExtra(globalClusters, VarManager::fgValues[VarManager::kMuonPDca], VarManager::fgValues[VarManager::kMuonRAtAbsorberEnd],
+                          VarManager::fgValues[VarManager::kMuonChi2], muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
+                          muon.matchScoreMCHMFT(),
+                          muon.mchBitMap(), muon.midBitMap(),
+                          muon.midBoards(), muon.trackType(), VarManager::fgValues[VarManager::kMuonDCAx], VarManager::fgValues[VarManager::kMuonDCAy],
+                          muon.trackTime(), muon.trackTimeRes());
+      outTables.muonInfo(muon.collisionId(), collision.posX(), collision.posY(), collision.posZ());
       if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov) || static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCovRealign)) {
-        muonCov(VarManager::fgValues[VarManager::kX], VarManager::fgValues[VarManager::kY], VarManager::fgValues[VarManager::kZ], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kTgl], muon.sign() / VarManager::fgValues[VarManager::kPt],
-                VarManager::fgValues[VarManager::kMuonCXX], VarManager::fgValues[VarManager::kMuonCXY], VarManager::fgValues[VarManager::kMuonCYY], VarManager::fgValues[VarManager::kMuonCPhiX], VarManager::fgValues[VarManager::kMuonCPhiY], VarManager::fgValues[VarManager::kMuonCPhiPhi],
-                VarManager::fgValues[VarManager::kMuonCTglX], VarManager::fgValues[VarManager::kMuonCTglY], VarManager::fgValues[VarManager::kMuonCTglPhi], VarManager::fgValues[VarManager::kMuonCTglTgl], VarManager::fgValues[VarManager::kMuonC1Pt2X], VarManager::fgValues[VarManager::kMuonC1Pt2Y],
-                VarManager::fgValues[VarManager::kMuonC1Pt2Phi], VarManager::fgValues[VarManager::kMuonC1Pt2Tgl], VarManager::fgValues[VarManager::kMuonC1Pt21Pt2]);
+        outTables.muonCov(VarManager::fgValues[VarManager::kX], VarManager::fgValues[VarManager::kY], VarManager::fgValues[VarManager::kZ], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kTgl], muon.sign() / VarManager::fgValues[VarManager::kPt],
+                          VarManager::fgValues[VarManager::kMuonCXX], VarManager::fgValues[VarManager::kMuonCXY], VarManager::fgValues[VarManager::kMuonCYY], VarManager::fgValues[VarManager::kMuonCPhiX], VarManager::fgValues[VarManager::kMuonCPhiY], VarManager::fgValues[VarManager::kMuonCPhiPhi],
+                          VarManager::fgValues[VarManager::kMuonCTglX], VarManager::fgValues[VarManager::kMuonCTglY], VarManager::fgValues[VarManager::kMuonCTglPhi], VarManager::fgValues[VarManager::kMuonCTglTgl], VarManager::fgValues[VarManager::kMuonC1Pt2X], VarManager::fgValues[VarManager::kMuonC1Pt2Y],
+                          VarManager::fgValues[VarManager::kMuonC1Pt2Phi], VarManager::fgValues[VarManager::kMuonC1Pt2Tgl], VarManager::fgValues[VarManager::kMuonC1Pt21Pt2]);
       }
     } // end loop over selected muons
   } // end skimMuons
@@ -1713,7 +1715,7 @@ struct TableMaker {
         }
         VarManager::SetCalibrationType(fConfigPostCalibTPC.fConfigTPCpostCalibType, fConfigPostCalibTPC.fConfigTPCuseInterpolatedCalib);
       }
-      if (fIsRun2 == true) {
+      if (fIsRun2) {
         fGrpMagRun2 = fCCDB->getForTimeStamp<o2::parameters::GRPObject>(fConfigCCDB.fConfigGrpMagPathRun2, bcs.begin().timestamp());
         if (fGrpMagRun2 != nullptr) {
           o2::base::Propagator::initFieldFromGRP(fGrpMagRun2);
@@ -1751,46 +1753,46 @@ struct TableMaker {
     } // end updating the CCDB quantities at change of run
 
     // skim collisions
-    event.reserve(collisions.size());
-    eventExtended.reserve(collisions.size());
-    eventVtxCov.reserve(collisions.size());
+    outTables.event.reserve(collisions.size());
+    outTables.eventExtended.reserve(collisions.size());
+    outTables.eventVtxCov.reserve(collisions.size());
 
     skimCollisions<TEventFillMap>(collisions, bcs, zdcs, ft0s, fv0as, fdds);
-    if (fCollIndexMap.size() == 0) {
+    if (fCollIndexMap.empty()) {
       return;
     }
 
     if constexpr (static_cast<bool>(TTrackFillMap)) {
       fTrackIndexMap.clear();
-      trackBarrelInfo.reserve(tracksBarrel.size());
-      trackBasic.reserve(tracksBarrel.size());
-      trackBarrel.reserve(tracksBarrel.size());
-      trackBarrelCov.reserve(tracksBarrel.size());
-      trackBarrelPID.reserve(tracksBarrel.size());
-      trackBarrelAssoc.reserve(tracksBarrel.size());
+      outTables.trackBarrelInfo.reserve(tracksBarrel.size());
+      outTables.trackBasic.reserve(tracksBarrel.size());
+      outTables.trackBarrel.reserve(tracksBarrel.size());
+      outTables.trackBarrelCov.reserve(tracksBarrel.size());
+      outTables.trackBarrelPID.reserve(tracksBarrel.size());
+      outTables.trackBarrelAssoc.reserve(trackAssocs.size());
     }
 
     if constexpr (static_cast<bool>(TMFTFillMap)) {
       fMftIndexMap.clear();
       map_mfttrackcovs.clear();
-      mftTrack.reserve(mftTracks.size());
-      mftTrackExtra.reserve(mftTracks.size());
-      mftAssoc.reserve(mftTracks.size());
+      outTables.mftTrack.reserve(mftTracks.size());
+      outTables.mftTrackExtra.reserve(mftTracks.size());
+      outTables.mftAssoc.reserve(mftAssocs.size());
     }
 
     if constexpr (static_cast<bool>(TMuonFillMap)) {
       fFwdTrackIndexMap.clear();
       fFwdTrackFilterMap.clear();
       fBestMatch.clear();
-      muonBasic.reserve(muons.size());
-      muonExtra.reserve(muons.size());
-      muonInfo.reserve(muons.size());
-      muonCov.reserve(muons.size());
-      muonAssoc.reserve(muons.size());
+      outTables.muonBasic.reserve(muons.size());
+      outTables.muonExtra.reserve(muons.size());
+      outTables.muonInfo.reserve(muons.size());
+      outTables.muonCov.reserve(muons.size());
+      outTables.muonAssoc.reserve(fwdTrackAssocs.size());
     }
 
     if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
-      for (auto& mfttrackConv : mftCovs) {
+      for (const auto& mfttrackConv : mftCovs) {
         map_mfttrackcovs[mfttrackConv.matchMFTTrackId()] = mfttrackConv.globalIndex();
       }
     }
@@ -1834,8 +1836,8 @@ struct TableMaker {
     } // end loop over skimmed collisions
 
     // LOG(info) << "Skims in this TF: " << fCollIndexMap.size() << " collisions; " << trackBasic.lastIndex() << " barrel tracks; "
-    //<< muonBasic.lastIndex() << " muon tracks; " << mftTrack.lastIndex() << " MFT tracks; ";
-    // LOG(info) << "      " << trackBarrelAssoc.lastIndex() << " barrel assocs; " << muonAssoc.lastIndex() << " muon assocs; " << mftAssoc.lastIndex() << " MFT assoc";
+    //<< outTables.muonBasic.lastIndex() << " muon tracks; " << mftTrack.lastIndex() << " MFT tracks; ";
+    // LOG(info) << "      " << trackBarrelAssoc.lastIndex() << " barrel assocs; " << outTables.muonAssoc.lastIndex() << " muon assocs; " << outTables.mftAssoc.lastIndex() << " MFT assoc";
   }
 
   // produce the full DQ skimmed data model typically for pp/p-Pb or UPC Pb-Pb (no centrality), subscribe to the DQ event filter (filter-pp or filter-PbPb)
@@ -1859,7 +1861,7 @@ struct TableMaker {
   }
 
   // produce the barrel-only DQ skimmed data model typically for pp/p-Pb or UPC Pb-Pb (no centrality), subscribe to the DQ event filter (filter-pp or filter-PbPb)
-  void processPPWithFilterBarrelOnly(MyEventsWithMultsAndFilter const& collisions, MyBCs const& bcs, aod::Zdcs& zdcs,
+  void processPPWithFilterBarrelOnly(MyEventsWithMultsAndFilter const& collisions, MyBCs const& bcs, aod::Zdcs const& zdcs,
                                      MyBarrelTracksWithCov const& tracksBarrel,
                                      TrackAssoc const& trackAssocs)
   {
@@ -1882,7 +1884,7 @@ struct TableMaker {
   }
 
   // produce the barrel-only DQ skimmed data model typically for pp/p-Pb or UPC Pb-Pb (no centrality), meant to run on skimmed data
-  void processPPBarrelOnly(MyEventsWithMults const& collisions, MyBCs const& bcs, aod::Zdcs& zdcs,
+  void processPPBarrelOnly(MyEventsWithMults const& collisions, MyBCs const& bcs, aod::Zdcs const& zdcs,
                            MyBarrelTracksWithCov const& tracksBarrel,
                            TrackAssoc const& trackAssocs)
   {
@@ -1932,7 +1934,7 @@ struct TableMaker {
                    MyBarrelTracksWithCov const& tracksBarrel,
                    MyMuonsWithCov const& muons, MFTTracks const& mftTracks,
                    TrackAssoc const& trackAssocs, FwdTrackAssoc const& fwdTrackAssocs,
-                   MFTTrackAssoc const& mftAssocs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+                   MFTTrackAssoc const& mftAssocs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
     fullSkimming<gkEventFillMapWithCentAndMultsQvect, gkTrackFillMapWithCov, gkMuonFillMapWithCov, gkMFTFillMap>(collisions, bcs, nullptr, tracksBarrel, muons, mftTracks, trackAssocs, fwdTrackAssocs, mftAssocs, nullptr, ft0s, fv0as, fdds);
   }
@@ -1940,7 +1942,7 @@ struct TableMaker {
   // produce the barrel only DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
   void processPbPbBarrelOnly(MyEventsWithCentAndMultsQvect const& collisions, MyBCs const& bcs,
                              MyBarrelTracksWithCov const& tracksBarrel,
-                             TrackAssoc const& trackAssocs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+                             TrackAssoc const& trackAssocs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
     computeOccupancyEstimators(collisions, tracksPosWithCov, tracksNegWithCov, presliceWithCov, bcs);
     computeCollMergingTag(collisions, tracksBarrel, presliceWithCov);
@@ -1950,7 +1952,7 @@ struct TableMaker {
   // produce the barrel only DQ skimmed data model typically for Pb-Pb (with centrality), no TOF
   void processPbPbBarrelOnlyNoTOF(MyEventsWithCentAndMultsQvect const& collisions, MyBCs const& bcs,
                                   MyBarrelTracksWithCovNoTOF const& tracksBarrel,
-                                  TrackAssoc const& trackAssocs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+                                  TrackAssoc const& trackAssocs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
     computeOccupancyEstimators(collisions, tracksPosWithCovNoTOF, tracksNegWithCovNoTOF, presliceWithCovNoTOF, bcs);
     computeCollMergingTag(collisions, tracksBarrel, presliceWithCovNoTOF);
@@ -1958,9 +1960,9 @@ struct TableMaker {
   }
 
   // produce the barrel-only DQ skimmed data model typically for UPC Pb-Pb (no centrality), subscribe to the DQ rapidity gap event filter (filter-PbPb)
-  void processPbPbWithFilterBarrelOnly(MyEventsWithMultsAndRapidityGapFilter const& collisions, MyBCs const& bcs, aod::Zdcs& zdcs,
+  void processPbPbWithFilterBarrelOnly(MyEventsWithMultsAndRapidityGapFilter const& collisions, MyBCs const& bcs, aod::Zdcs const& zdcs,
                                        MyBarrelTracksWithCov const& tracksBarrel,
-                                       TrackAssoc const& trackAssocs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+                                       TrackAssoc const& trackAssocs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
     computeOccupancyEstimators(collisions, tracksPosWithCov, tracksNegWithCov, presliceWithCov, bcs);
     computeCollMergingTag(collisions, tracksBarrel, presliceWithCov);
@@ -1970,7 +1972,7 @@ struct TableMaker {
   // produce the barrel only DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
   void processPbPbBarrelOnlyWithV0Bits(MyEventsWithCentAndMultsQvect const& collisions, MyBCs const& bcs,
                                        MyBarrelTracksWithV0Bits const& tracksBarrel,
-                                       TrackAssoc const& trackAssocs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+                                       TrackAssoc const& trackAssocs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
     computeOccupancyEstimators(collisions, tracksPos, tracksNeg, preslice, bcs);
     computeCollMergingTag(collisions, tracksBarrel, preslice);
@@ -1980,7 +1982,7 @@ struct TableMaker {
   // produce the barrel only DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
   void processPbPbBarrelOnlyWithV0BitsNoTOF(MyEventsWithCentAndMultsQvect const& collisions, MyBCs const& bcs,
                                             MyBarrelTracksWithV0BitsNoTOF const& tracksBarrel,
-                                            TrackAssoc const& trackAssocs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+                                            TrackAssoc const& trackAssocs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
     computeOccupancyEstimators(collisions, tracksPosNoTOF, tracksNegNoTOF, presliceNoTOF, bcs);
     computeCollMergingTag(collisions, tracksBarrel, presliceNoTOF);
@@ -1989,14 +1991,14 @@ struct TableMaker {
 
   // produce the muon only DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
   void processPbPbMuonOnly(MyEventsWithCentAndMults const& collisions, MyBCs const& bcs,
-                           MyMuonsWithCov const& muons, FwdTrackAssoc const& fwdTrackAssocs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+                           MyMuonsWithCov const& muons, FwdTrackAssoc const& fwdTrackAssocs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
     fullSkimming<gkEventFillMapWithCentAndMults, 0u, gkMuonFillMapWithCov, 0u>(collisions, bcs, nullptr, nullptr, muons, nullptr, nullptr, fwdTrackAssocs, nullptr, nullptr, ft0s, fv0as, fdds);
   }
 
   // produce the muon-only DQ skimmed data model typically for UPC Pb-Pb (no centrality), subscribe to the DQ rapidity gap event filter (filter-PbPb)
-  void processPbPbWithFilterMuonOnly(MyEventsWithMultsAndRapidityGapFilter const& collisions, MyBCs const& bcs, aod::Zdcs& zdcs,
-                                     MyMuonsWithCov const& muons, FwdTrackAssoc const& fwdTrackAssocs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+  void processPbPbWithFilterMuonOnly(MyEventsWithMultsAndRapidityGapFilter const& collisions, MyBCs const& bcs, aod::Zdcs const& zdcs,
+                                     MyMuonsWithCov const& muons, FwdTrackAssoc const& fwdTrackAssocs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
     fullSkimming<gkEventFillMapWithMultsRapidityGapFilterZdcFit, 0u, gkMuonFillMapWithCov, 0u>(collisions, bcs, zdcs, nullptr, muons, nullptr, nullptr, fwdTrackAssocs, nullptr, nullptr, ft0s, fv0as, fdds);
   }
@@ -2004,7 +2006,7 @@ struct TableMaker {
   // produce the muon only DQ skimmed data model typically for Pb-Pb (with centrality and flow), no subscribtion to the DQ event filter
   // no DCA table filled by the FwdTracExtension to optimize the memory consumption
   void processPbPbStreamMuonOnly(MyEventsWithCentAndMultsQvect const& collisions, MyBCs const& bcs,
-                                 MyMuonsNoDca const& muons, FwdTrackAssoc const& fwdTrackAssocs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+                                 MyMuonsNoDca const& muons, FwdTrackAssoc const& fwdTrackAssocs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
     fullSkimming<gkEventFillMapWithCentAndMultsQvect, 0u, gkMuonFillMap, 0u>(collisions, bcs, nullptr, nullptr, muons, nullptr, nullptr, fwdTrackAssocs, nullptr, nullptr, ft0s, fv0as, fdds);
   }
@@ -2037,11 +2039,11 @@ struct TableMaker {
   void processOnlyBCs(soa::Join<aod::BCs, aod::BcSels>::iterator const& bc)
   {
     for (int i = 0; i < o2::aod::evsel::kNsel; i++) {
-      if (bc.selection_bit(i) > 0) {
-        (reinterpret_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(0.0, static_cast<float>(i));
+      if (static_cast<int>(bc.selection_bit(i)) > 0) {
+        (dynamic_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(0.0, static_cast<float>(i));
       }
     }
-    (reinterpret_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(0.0, static_cast<float>(o2::aod::evsel::kNsel));
+    (dynamic_cast<TH2D*>(fStatsList->At(kStatsEvent)))->Fill(0.0, static_cast<float>(o2::aod::evsel::kNsel));
   }
 
   PROCESS_SWITCH(TableMaker, processPP, "Build full DQ skimmed data model for pp/p-Pb w/o event filtering (use Zorro)", false);
@@ -2066,10 +2068,10 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processPbPbStreamMuonOnly, "Build muon only DQ skimmed data model for Pb-Pb, with event properties and flow for streaming", false);
   PROCESS_SWITCH(TableMaker, processPbPbRealignedMuonOnly, "Build realigned muon only DQ skimmed data model typically for Pb-Pb, w/o event filtering", false);
   PROCESS_SWITCH(TableMaker, processPbPbMuonMFT, "Build muon + mft DQ skimmed data model typically for Pb-Pb, w/o event filtering", false);
-  // PROCESS_SWITCH(TableMaker, processOnlyBCs, "Analyze the BCs to store sampled lumi", false); // removed because the number of process functions reached the limit
+  PROCESS_SWITCH(TableMaker, processOnlyBCs, "Analyze the BCs to store sampled lumi", false);
 };
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar)
+void DefineHistograms(HistogramManager* histMan, const TString& histClasses, const Configurable<std::string>& configVar)
 {
   //
   // Define here the histograms for all the classes required in analysis.
@@ -2077,7 +2079,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurab
   //  The histogram classes and their components histograms are defined below depending on the name of the histogram class
   //
   std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
-  for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
+  for (int iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
     TString classStr = objArray->At(iclass)->GetName();
     histMan->AddHistClass(classStr.Data());
 

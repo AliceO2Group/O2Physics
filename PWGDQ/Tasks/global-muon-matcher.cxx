@@ -9,13 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file global-muon-matcher.cxx
+/// \file global-muon-matcher.cxx // o2-linter: disable=name/file-cpp,name/workflow-file (legacy workflow executable name)
 /// \brief Task for analysis MFT-MCH muon matching
 /// \author Andrea Ferrero
 ///
 #include "PWGDQ/Core/MuonMatchingMlResponse.h"
 #include "PWGDQ/Core/VarManager.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/fwdtrackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FwdTrackReAlignTables.h"
@@ -38,6 +39,7 @@
 #include <Framework/DataTypes.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <GlobalTracking/MatchGlobalFwd.h>
 #include <MCHBase/TrackerParam.h>
 #include <MCHGeometryTransformer/Transformations.h>
@@ -58,6 +60,7 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <functional>
@@ -73,37 +76,19 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod;
 
-namespace o2::aod::globalmuonmatching
-{
-DECLARE_SOA_COLUMN(MchTrackId, mchTrackId, int64_t);
-DECLARE_SOA_COLUMN(MftTrackId, mftTrackId, int64_t);
-DECLARE_SOA_COLUMN(MatchChi2, matchChi2, float);
-DECLARE_SOA_COLUMN(MatchScore, matchScore, float);
-DECLARE_SOA_COLUMN(MatchRanking, matchRanking, int32_t);
-DECLARE_SOA_COLUMN(IsTagged, isTagged, bool);
-} // namespace o2::aod::globalmuonmatching
-
 namespace o2::aod
 {
-DECLARE_SOA_TABLE(GlobalMuonMatchCandidates, "AOD", "GMCAND",
-                  o2::soa::Index<>,
-                  globalmuonmatching::MchTrackId,
-                  globalmuonmatching::MftTrackId,
-                  globalmuonmatching::MatchChi2, globalmuonmatching::MatchScore, globalmuonmatching::MatchRanking,
-                  globalmuonmatching::IsTagged);
-
 namespace globalmuonmatching
 {
-DECLARE_SOA_ARRAY_INDEX_COLUMN(GlobalMuonMatchCandidate, globalMuonMatchCandidate);         //! Array of GlobalMuonMatchCandidates indices
-DECLARE_SOA_INDEX_COLUMN_FULL(FwdTrackRealign, fwdTrackRealign, int, FwdTracksReAlign, ""); //! Index of ambiguous FwdTracksReAlign entry
-DECLARE_SOA_SLICE_INDEX_COLUMN_FULL(Bc, bc, int32_t, BCs, "");                              //! BC index slice compatible with the track time window
+DECLARE_SOA_COLUMN(IsTagged, isTagged, bool);                  //! Whether the MCH(-MID) track passes tagging cuts
+DECLARE_SOA_COLUMN(MatchRanking, matchRanking, int32_t);       //! Match candidate ranking (-1 for base MCH entries)
+DECLARE_SOA_COLUMN(MixedGroupIndex, mixedGroupIndex, int32_t); //! Mixed-event group index (-1 for same-event candidates)
 } // namespace globalmuonmatching
 
-DECLARE_SOA_TABLE(FwdTrkMatchCands, "AOD", "FWDTRKMATCHCAND", //! Vectors of match-candidate indices stored per fwdtrack
-                  globalmuonmatching::GlobalMuonMatchCandidateIds, o2::soa::Marker<3>);
-
-DECLARE_SOA_TABLE(AmbiguousFwdTracksReAlign, "AOD", "AMBIGFWDREALIGN", //! FwdTracksReAlign entries without a unique collision association
-                  o2::soa::Index<>, globalmuonmatching::FwdTrackRealignId, globalmuonmatching::BcIdSlice);
+DECLARE_SOA_TABLE(GmmCandFwdTrkExtras, "AOD", "GMMCANDEXTRA", //! Extra info joinable to FwdTracksReAlign
+                  globalmuonmatching::IsTagged,
+                  globalmuonmatching::MatchRanking,
+                  globalmuonmatching::MixedGroupIndex);
 } // namespace o2::aod
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
@@ -117,6 +102,12 @@ using SMatrix5 = o2::track::SMatrix5;
 
 constexpr std::array<int, 10> NDetElemCh = {4, 4, 4, 4, 18, 18, 26, 26, 26, 26};
 constexpr std::array<int, 11> SNDetElemCh = {0, 4, 8, 12, 16, 34, 52, 78, 104, 130, 156};
+
+// compute minimum difference between azimuthal angles
+static float getDeltaPhi(float phi1, float phi2)
+{
+  return RecoDecay::constrainAngle(phi1 - phi2, -o2::constants::math::PI);
+}
 
 struct GlobalMuonMatching {
 
@@ -136,6 +127,16 @@ struct GlobalMuonMatching {
     double matchScore{-1};
     double matchChi2{-1};
     int matchRanking{-1};
+    int32_t mixedGroupIndex{-1};
+  };
+
+  struct MchTrackInfo {
+    int nMatchAttempts{-1};
+    bool isTagged{false};
+    // vector of MFT-MCH matching candidates
+    std::vector<MatchingCandidate> matchingCandidates;
+    // vector of vectors of MFT-MCH matching candidates from mixed events
+    std::vector<std::vector<MatchingCandidate>> mixedMatchingCandidates;
   };
 
   ////   Variables for selecting tagged muons
@@ -204,6 +205,15 @@ struct GlobalMuonMatching {
     Configurable<bool> cfgMatchAllTracks{"cfgMatchAllTracks", false, "If true the matching is performed considering all the MFT tracks for which the covariances are available; if false the matching is performed considering only the global forward tracks stored at production"};
   } configMatching;
 
+  struct : ConfigurableGroup {
+    Configurable<int> cfgMixingDepth{"cfgMixingDepth", -1, "Maximum number of mixed candidate groups per MCH track (-1: no limit)"};
+    Configurable<int64_t> cfgMinDeltaBc{"cfgMinDeltaBc", 3564, "Minimum DeltaBc between mixed collisions"};
+    Configurable<float> cfgMaxDeltaPhi{"cfgMaxDeltaPhi", static_cast<float>(o2::constants::math::PI / 10), "Maximum DelptaPhi between mixed MCH tracks (rad)"};
+    Configurable<float> cfgMaxDeltaR{"cfgMaxDeltaR", 10.f, "Maximum DeltaR between mixed MCH tracks"};
+    Configurable<float> cfgMaxDeltaAttempts{"cfgMaxDeltaAttempts", 0.1f, "Maximum relative difference in match attempts"};
+    Configurable<float> cfgMaxDeltaZ{"cfgMaxDeltaZ", 1.f, "Maximum deltaZ between mixed collisions"};
+  } configEventMixing;
+
   double mBzAtMftCenter{0};
 
   using MatchingFunc = std::function<std::tuple<double, int>(const o2::track::TrackParCovFwd& mchtrack, const o2::track::TrackParCovFwd& mfttrack)>;
@@ -245,7 +255,6 @@ struct GlobalMuonMatching {
   // to be sorted in descending order with respect to the matching score
   // the map key is the MCH(-MID) track global index
   using MatchingCandidates = std::map<int64_t, std::vector<MatchingCandidate>>;
-  std::map<int64_t, std::vector<MatchingCandidate>> mMatchingCandidates;
 
   class TrackParExt : public o2::track::TrackParCovFwd
   {
@@ -275,7 +284,10 @@ struct GlobalMuonMatching {
     void setRemovable() { removable = true; }
     [[nodiscard]] bool isRemovable() const { return removable; }
 
-    [[nodiscard]] o2::track::TrackParCovFwd asTrackParCovFwd() const { return *this; }
+    [[nodiscard]] o2::track::TrackParCovFwd asTrackParCovFwd() const
+    {
+      return {static_cast<const o2::track::TrackParCovFwd&>(*this)};
+    }
 
    private:
     int nClusters{-1};
@@ -287,20 +299,18 @@ struct GlobalMuonMatching {
 
   std::unordered_map<int64_t, int32_t> mftTrackCovs;
 
-  Produces<o2::aod::GlobalMuonMatchCandidates> globalMuonMatchCandidates;
-  Produces<o2::aod::FwdTrkMatchCands> fwdTrkMatchCands;
   Produces<o2::aod::StoredFwdTracksReAlign> gmCandidateFwdTracks;
   Produces<o2::aod::StoredFwdTrksCovReAlign> gmCandidateFwdTracksCov;
-  Produces<o2::aod::AmbiguousFwdTracksReAlign> gmAmbiguousFwdTracksReAlign;
+  Produces<o2::aod::GmmCandFwdTrkExtras> gmCandidateFwdTrackExtras;
+  Produces<o2::aod::AmbiguousFwdTrksReAlign> gmAmbiguousFwdTracksReAlign;
 
   int32_t mGmmCandFwdTrackRowIndex{0};
   std::unordered_map<int64_t, std::array<int32_t, 2>> mAmbBcSliceByFwdTrackId;
   bool mHasLastMchAmbiguousBcSlice{false};
   std::array<int32_t, 2> mLastMchAmbiguousBcSlice{};
 
-  int32_t mMatchCandidateCounter{0};
-  std::unordered_map<int64_t, std::vector<int32_t>> mMchTrackToCandidateIndices;
-  std::unordered_map<int64_t, std::vector<MatchingCandidate>> mMchTrackMatchingCandidates;
+  std::unordered_map<int64_t, MchTrackInfo> mMchTrackInfos;
+  std::unordered_map<int64_t, std::vector<MatchingCandidate>> mStoredMatchingCandidates;
   std::unordered_map<int64_t, int32_t> mFwdTrackToGmmCandTrkIndex;
 
   mch::TrackFitter trackFitter; // Track fitter from MCH tracking library
@@ -872,12 +882,19 @@ struct GlobalMuonMatching {
                             rhoXY, rhoPhiY, rhoPhiX, rhoTglX, rhoTglY, rhoTglPhi, rho1PtX, rho1PtY, rho1PtPhi, rho1PtTgl);
   }
 
+  bool isMchTrackTagged(int64_t mchTrackIndex) const
+  {
+    const auto it = mMchTrackInfos.find(mchTrackIndex);
+    return it != mMchTrackInfos.end() && it->second.isTagged;
+  }
+
   template <class TMCH>
   void fillBaseGmmCandFwdTrack(TMCH const& track,
                                TrackParExt const& trackPar,
                                int32_t gmmMchTrackId,
                                float chi2MatchMCHMFT,
-                               float matchScoreMCHMFT)
+                               float matchScoreMCHMFT,
+                               bool isTagged)
   {
     const auto collisionId = track.collisionId();
     bool hasBcSlice = false;
@@ -916,6 +933,7 @@ struct GlobalMuonMatching {
       track.trackTimeRes());
 
     storeFwdTrackCovariance(trackPar.getCovariances());
+    gmCandidateFwdTrackExtras(isTagged, -1, -1);
     if (hasBcSlice) {
       gmAmbiguousFwdTracksReAlign(mGmmCandFwdTrackRowIndex, bcSlice.data());
     }
@@ -938,7 +956,7 @@ struct GlobalMuonMatching {
     using o2::aod::fwdtrack::ForwardTrackTypeEnum;
     using o2::aod::fwdtrackutils::propagationPoint;
 
-    constexpr uint8_t CandidateTrackType = static_cast<uint8_t>(ForwardTrackTypeEnum::GlobalForwardTrack);
+    constexpr auto CandidateTrackType = static_cast<uint8_t>(ForwardTrackTypeEnum::GlobalForwardTrack);
 
     auto propmuonAtMft = fwdToMch(mchPar);
     o2::mch::TrackExtrap::extrapToVertex(propmuonAtMft,
@@ -952,7 +970,7 @@ struct GlobalMuonMatching {
 
     const auto nClusters = static_cast<int8_t>(std::min(127, mchPar.getNClusters() + mftPar.getNClusters()));
 
-    const float chi2 = static_cast<float>(mchTrack.chi2());
+    const auto chi2 = static_cast<float>(mchTrack.chi2());
     const int32_t collisionId = mchTrack.collisionId();
     bool hasBcSlice = false;
     std::array<int32_t, 2> bcSlice{};
@@ -997,6 +1015,7 @@ struct GlobalMuonMatching {
       mchTrack.trackTimeRes());
 
     storeFwdTrackCovariance(globalMuonRefit.getCovariances());
+    gmCandidateFwdTrackExtras(isMchTrackTagged(mchTrack.globalIndex()), candidate.matchRanking, candidate.mixedGroupIndex);
     if (hasBcSlice) {
       gmAmbiguousFwdTracksReAlign(mGmmCandFwdTrackRowIndex, bcSlice.data());
     }
@@ -1119,6 +1138,41 @@ struct GlobalMuonMatching {
     return std::fabs(deltaTrackTime) <= trackTimeResTot;
   }
 
+  template <class EVT, class BC, class TMUON, class TMFTS>
+  int getMftMchMatchAttempts(EVT const& collisions,
+                             BC const& bcs,
+                             TMUON const& mchTrack,
+                             TMFTS const& mftTracks)
+  {
+    if (!mchTrack.has_collision()) {
+      return 0;
+    }
+    const auto& collMch = collisions.rawIteratorAt(mchTrack.collisionId());
+    const auto& bcMch = bcs.rawIteratorAt(collMch.bcId());
+
+    int attempts{0};
+    for (const auto& mftTrack : mftTracks) {
+      if (!mftTrack.has_collision()) {
+        continue;
+      }
+
+      const auto& collMft = collisions.rawIteratorAt(mftTrack.collisionId());
+      const auto& bcMft = bcs.rawIteratorAt(collMft.bcId());
+
+      int64_t deltaBc = static_cast<int64_t>(bcMft.globalBC()) - static_cast<int64_t>(bcMch.globalBC());
+      double deltaBcNS = o2::constants::lhc::LHCBunchSpacingNS * deltaBc;
+      double deltaTrackTime = mftTrack.trackTime() - mchTrack.trackTime() + deltaBcNS;
+      double trackTimeResTot = mftTrack.trackTimeRes() + mchTrack.trackTimeRes();
+
+      if (std::fabs(deltaTrackTime) > trackTimeResTot) {
+        continue;
+      }
+      attempts += 1;
+    }
+
+    return attempts;
+  }
+
   template <class EVT, class BC, class TMUON, class TMFT>
   void prepareMatchingCandidates(EVT const& collisions,
                                  BC const& bcs,
@@ -1128,7 +1182,6 @@ struct GlobalMuonMatching {
   {
     mMftTrackPars.clear();
     mMchTrackPars.clear();
-    mMatchingCandidates.clear();
 
     LOGF(info, "Filling matching candidate tables");
 
@@ -1140,6 +1193,11 @@ struct GlobalMuonMatching {
 
       // initialize the MCH track parameters, which will be updated by the realignment if enabled
       mMchTrackPars.try_emplace(mchTrackIndex, TrackParExt(fwdtrackutils::getTrackParCovFwd(muonTrack, muonTrack), muonTrack.nClusters()));
+
+      mMchTrackInfos.try_emplace(mchTrackIndex, MchTrackInfo{
+                                                  .nMatchAttempts = 0,
+                                                  .matchingCandidates = std::vector<MatchingCandidate>(),
+                                                  .mixedMatchingCandidates = std::vector<std::vector<MatchingCandidate>>()});
     }
 
     for (const auto& mftTrack : mftTracks) {
@@ -1170,11 +1228,18 @@ struct GlobalMuonMatching {
           continue;
         }
 
-        mMatchingCandidates[mchTrackIndex].emplace_back(MatchingCandidate{
+        auto& mchTrackInfo = mMchTrackInfos[mchTrackIndex];
+        mchTrackInfo.matchingCandidates.emplace_back(MatchingCandidate{
           .muonTrackId = muonTrack.globalIndex(),
           .mftTrackId = mftTrackIndex,
           .matchScore = muonTrack.matchScoreMCHMFT(),
           .matchChi2 = muonTrack.chi2MatchMCHMFT()});
+      }
+
+      // set the number of match attempts for this track
+      for (auto& mchTrackInfo : mMchTrackInfos) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
+        const auto& mchTrack = muonTracks.rawIteratorAt(mchTrackInfo.first);
+        mchTrackInfo.second.nMatchAttempts = getMftMchMatchAttempts(collisions, bcs, mchTrack, mftTracks);
       }
     } else {
       // build matching candidates from all time-compatible MFT-MCH pairs
@@ -1191,19 +1256,111 @@ struct GlobalMuonMatching {
             continue;
           }
 
-          mMatchingCandidates[mchTrackIndex].emplace_back(MatchingCandidate{
+          auto& mchTrackInfo = mMchTrackInfos[mchTrackIndex];
+          mchTrackInfo.matchingCandidates.emplace_back(MatchingCandidate{
             .mftTrackId = mftTrack.globalIndex()});
         }
       }
+
+      // set the number of match attempts for this track
+      for (auto& mchTrackInfo : mMchTrackInfos) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
+        mchTrackInfo.second.nMatchAttempts = mchTrackInfo.second.matchingCandidates.size();
+      }
     }
 
-    // sort the vectors of matching candidates in ascending order based on the matching chi2 value
-    auto compareMatchingChi2 = [](const MatchingCandidate& track1, const MatchingCandidate& track2) -> bool {
-      return (track1.matchChi2 < track2.matchChi2);
-    };
+    std::vector<int64_t> taggedMuons;
+    getTaggedMuons(collisions, muonTracks, taggedMuons);
+    for (const auto& mchTrackIndex : taggedMuons) {
+      auto it = mMchTrackInfos.find(mchTrackIndex);
+      if (it != mMchTrackInfos.end()) {
+        it->second.isTagged = true;
+      }
+    }
+  }
 
-    for (auto& [mchIndex, candidatesVector] : mMatchingCandidates) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
-      std::sort(candidatesVector.begin(), candidatesVector.end(), compareMatchingChi2);
+  template <class EVT, class BC, class TMUON>
+  void prepareEventMixingMatchingCandidates(EVT const& collisions,
+                                            BC const& bcs,
+                                            TMUON const& muonTracks)
+  {
+    LOGF(info, "Filling mixed matching candidate tables");
+
+    const int mixingDepth = configEventMixing.cfgMixingDepth.value;
+    const int64_t minDeltaBc = configEventMixing.cfgMinDeltaBc.value;
+    const float maxDeltaPhi = configEventMixing.cfgMaxDeltaPhi.value;
+    const float maxDeltaR = configEventMixing.cfgMaxDeltaR.value;
+    const float maxDeltaAttemptsRel = configEventMixing.cfgMaxDeltaAttempts.value;
+    const float maxDeltaZ = configEventMixing.cfgMaxDeltaZ.value;
+
+    for (auto& [mchIndex1, mchTrackInfo1] : mMchTrackInfos) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
+      const auto& mchTrack1 = muonTracks.rawIteratorAt(mchIndex1);
+
+      if (!mchTrack1.has_collision()) {
+        continue;
+      }
+
+      const auto& collision1 = collisions.rawIteratorAt(mchTrack1.collisionId());
+      const auto& bc1 = bcs.rawIteratorAt(collision1.bcId());
+
+      auto phi1 = std::atan2(mchTrack1.y(), mchTrack1.x());
+      auto r1 = std::hypot(mchTrack1.x(), mchTrack1.y());
+
+      auto nAttempts1 = mchTrackInfo1.nMatchAttempts;
+
+      auto vz1 = collision1.posZ();
+
+      for (const auto& [mchIndex2, mchTrackInfo2] : mMchTrackInfos) {
+        if (mixingDepth >= 0 && static_cast<int>(mchTrackInfo1.mixedMatchingCandidates.size()) >= mixingDepth) {
+          break;
+        }
+
+        const auto& mchTrack2 = muonTracks.rawIteratorAt(mchIndex2);
+
+        if (!mchTrack2.has_collision()) {
+          continue;
+        }
+
+        const auto& collision2 = collisions.rawIteratorAt(mchTrack2.collisionId());
+        const auto& bc2 = bcs.rawIteratorAt(collision2.bcId());
+
+        auto deltaBc = std::abs(static_cast<int64_t>(bc2.globalBC()) - static_cast<int64_t>(bc1.globalBC()));
+        if (deltaBc < minDeltaBc) {
+          continue;
+        }
+
+        auto phi2 = std::atan2(mchTrack2.y(), mchTrack2.x());
+        auto deltaPhi = std::fabs(getDeltaPhi(phi1, phi2));
+        if (deltaPhi > maxDeltaPhi) {
+          continue;
+        }
+
+        auto r2 = std::hypot(mchTrack2.x(), mchTrack2.y());
+        auto deltaR = r2 - r1;
+        if (deltaR > maxDeltaR) {
+          continue;
+        }
+
+        auto nAttempts2 = mchTrackInfo2.nMatchAttempts;
+
+        float deltaAttempts = nAttempts2 - nAttempts1;
+        float deltaAttemptsRel = (nAttempts1 > 0) ? deltaAttempts / nAttempts1 : 0;
+        if (deltaAttemptsRel > maxDeltaAttemptsRel) {
+          continue;
+        }
+
+        auto vz2 = collision2.posZ();
+        auto deltaZ = std::fabs(vz2 - vz1);
+        if (deltaZ > maxDeltaZ) {
+          continue;
+        }
+
+        // add the candidates of MCH track #2 to the list of mixed candidates of track #1
+        mchTrackInfo1.mixedMatchingCandidates.push_back(mchTrackInfo2.matchingCandidates);
+        // update the muon track index of the mixed candidates to the index of track #1
+        for (auto& candidate : mchTrackInfo1.mixedMatchingCandidates.back()) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
+          candidate.muonTrackId = mchIndex1;
+        }
+      }
     }
   }
 
@@ -1258,7 +1415,7 @@ struct GlobalMuonMatching {
     for (auto const& muon : muons) {
       int mchIndex = muon.globalIndex();
       // skip global forward matches
-      if (muon.trackType() > GlobalTrackTypeMax) {
+      if (muon.trackType() <= GlobalTrackTypeMax) {
         continue;
       }
 
@@ -1325,8 +1482,8 @@ struct GlobalMuonMatching {
 
   void runChi2Matching(const std::string& funcName,
                        float matchingPlaneZ,
-                       const MatchingCandidates& matchingCandidates,
-                       MatchingCandidates& newMatchingCandidates)
+                       MatchingCandidates& newMatchingCandidates,
+                       bool useMixedMatchingCandidates)
   {
     newMatchingCandidates.clear();
 
@@ -1342,50 +1499,74 @@ struct GlobalMuonMatching {
     }
     auto matchingFunc = mMatchingFunctionMap.at(funcNameEffective);
 
-    for (const auto& [mchIndex, candidatesVector] : matchingCandidates) {
-
+    for (const auto& [mchIndex, mchTrackInfo] : mMchTrackInfos) {
       // get the tracks parameters, which have been updated by the realignment if enabled
       const auto mchTrackParIt = mMchTrackPars.find(mchIndex);
       if (mchTrackParIt == mMchTrackPars.end()) {
         continue;
       }
 
-      for (const auto& candidate : candidatesVector) {
-        auto mftTrackParIt = mMftTrackPars.find(candidate.mftTrackId);
-        if (mftTrackParIt == mMftTrackPars.end()) {
-          continue;
+      auto processGroup = [&](const std::vector<MatchingCandidate>& candidatesGroup, int32_t mixedGroupIndex, int64_t mchTrackIndex) {
+        std::vector<MatchingCandidate> groupResults;
+        groupResults.reserve(candidatesGroup.size());
+
+        for (const auto& candidate : candidatesGroup) {
+          auto mftTrackParIt = mMftTrackPars.find(candidate.mftTrackId);
+          if (mftTrackParIt == mMftTrackPars.end()) {
+            continue;
+          }
+
+          auto mftTrackProp = mftTrackParIt->second.asTrackParCovFwd();
+          auto mchTrackProp = mchTrackParIt->second.asTrackParCovFwd();
+
+          if (matchingPlaneZEffective < 0.) {
+            mftTrackProp = propagateToZMft(mftTrackProp, matchingPlaneZ);
+            mchTrackProp = propagateToZMch(mchTrackProp, matchingPlaneZ);
+          }
+
+          auto matchResult = matchingFunc(mchTrackProp, mftTrackProp);
+          float matchChi2 = std::get<0>(matchResult);
+
+          groupResults.emplace_back(MatchingCandidate{
+            .muonTrackId = candidate.muonTrackId,
+            .mftTrackId = candidate.mftTrackId,
+            .matchScore = -1,
+            .matchChi2 = matchChi2});
         }
 
-        auto mftTrackProp = mftTrackParIt->second.asTrackParCovFwd();
-        auto mchTrackProp = mchTrackParIt->second.asTrackParCovFwd();
+        auto compareMatchingChi2 = [](const MatchingCandidate& track1, const MatchingCandidate& track2) -> bool {
+          return (track1.matchChi2 < track2.matchChi2);
+        };
+        std::sort(groupResults.begin(), groupResults.end(), compareMatchingChi2);
 
-        if (matchingPlaneZEffective < 0.) {
-          mftTrackProp = propagateToZMft(mftTrackProp, matchingPlaneZ);
-          mchTrackProp = propagateToZMch(mchTrackProp, matchingPlaneZ);
+        int ranking = 1;
+        for (auto& matchedCandidate : groupResults) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
+          matchedCandidate.matchRanking = ranking;
+          ranking += 1;
         }
 
-        auto matchResult = matchingFunc(mchTrackProp, mftTrackProp);
-        float matchChi2 = std::get<0>(matchResult);
+        const int maxCandidates = configMatching.cfgMaxCandidatesPerMchTrack.value;
 
-        newMatchingCandidates[mchIndex].emplace_back(MatchingCandidate{
-          .muonTrackId = candidate.muonTrackId,
-          .mftTrackId = candidate.mftTrackId,
-          .matchScore = -1,
-          .matchChi2 = matchChi2});
-      }
-    }
+        auto& storedCandidates = newMatchingCandidates[mchTrackIndex];
+        size_t nStoredThisGroup = 0;
+        for (auto& result : groupResults) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
+          if (maxCandidates >= 0 && nStoredThisGroup >= static_cast<size_t>(maxCandidates)) {
+            break;
+          }
+          result.mixedGroupIndex = useMixedMatchingCandidates ? mixedGroupIndex : -1;
+          storedCandidates.push_back(result);
+          ++nStoredThisGroup;
+        }
+      };
 
-    auto compareMatchingChi2 = [](const MatchingCandidate& track1, const MatchingCandidate& track2) -> bool {
-      return (track1.matchChi2 < track2.matchChi2);
-    };
-
-    for (auto& [mchIndex, globalTracksVector] : newMatchingCandidates) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
-      std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingChi2);
-
-      int ranking = 1;
-      for (auto& candidate : globalTracksVector) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
-        candidate.matchRanking = ranking;
-        ranking += 1;
+      if (useMixedMatchingCandidates) {
+        int32_t groupIdx = 0;
+        for (const auto& candidatesGroup : mchTrackInfo.mixedMatchingCandidates) {
+          processGroup(candidatesGroup, groupIdx, mchIndex);
+          groupIdx += 1;
+        }
+      } else {
+        processGroup(mchTrackInfo.matchingCandidates, -1, mchIndex);
       }
     }
   }
@@ -1396,11 +1577,11 @@ struct GlobalMuonMatching {
                      TMFT const& mftTracks,
                      o2::analysis::MlResponseMFTMuonMatch<float>& mlResponse,
                      float matchingPlaneZ,
-                     const MatchingCandidates& matchingCandidates,
-                     MatchingCandidates& newMatchingCandidates)
+                     MatchingCandidates& newMatchingCandidates,
+                     bool useMixedMatchingCandidates)
   {
     newMatchingCandidates.clear();
-    for (const auto& [mchIndex, candidatesVector] : matchingCandidates) {
+    for (const auto& [mchIndex, mchTrackInfo] : mMchTrackInfos) {
       auto const& mchTrack = muonTracks.rawIteratorAt(mchIndex);
       if (!mchTrack.has_collision()) {
         continue;
@@ -1414,46 +1595,71 @@ struct GlobalMuonMatching {
         continue;
       }
 
-      for (const auto& candidate : candidatesVector) {
-        auto const& muonTrack = (candidate.muonTrackId >= 0) ? muonTracks.rawIteratorAt(candidate.muonTrackId) : mchTrack;
-        auto const& mftTrack = mftTracks.rawIteratorAt(candidate.mftTrackId);
-        auto mftTrackParIt = mMftTrackPars.find(candidate.mftTrackId);
-        if (mftTrackParIt == mMftTrackPars.end()) {
-          continue;
+      auto processGroup = [&](const std::vector<MatchingCandidate>& candidatesGroup, int32_t mixedGroupIndex, int64_t mchTrackIndex) {
+        std::vector<MatchingCandidate> groupResults;
+        groupResults.reserve(candidatesGroup.size());
+
+        for (const auto& candidate : candidatesGroup) {
+          auto const& muonTrack = (candidate.muonTrackId >= 0) ? muonTracks.rawIteratorAt(candidate.muonTrackId) : mchTrack;
+          auto const& mftTrack = mftTracks.rawIteratorAt(candidate.mftTrackId);
+          auto mftTrackParIt = mMftTrackPars.find(candidate.mftTrackId);
+          if (mftTrackParIt == mMftTrackPars.end()) {
+            continue;
+          }
+
+          auto mftTrackProp = mftTrackParIt->second.asTrackParCovFwd();
+          auto mchTrackProp = mchTrackParIt->second.asTrackParCovFwd();
+
+          if (matchingPlaneZ < 0.) {
+            mftTrackProp = propagateToZMft(mftTrackProp, matchingPlaneZ);
+            mchTrackProp = propagateToZMch(mchTrackProp, matchingPlaneZ);
+          }
+
+          std::vector<float> output;
+          std::vector<float> inputML = mlResponse.getInputFeatures(muonTrack, mftTrack, mchTrack, mftTrackProp, mchTrackProp, collision);
+          mlResponse.isSelectedMl(inputML, 0, output);
+          float matchScore = output[0];
+
+          groupResults.emplace_back(MatchingCandidate{
+            .muonTrackId = candidate.muonTrackId,
+            .mftTrackId = candidate.mftTrackId,
+            .matchScore = matchScore,
+            .matchChi2 = -1});
         }
 
-        auto mftTrackProp = mftTrackParIt->second.asTrackParCovFwd();
-        auto mchTrackProp = mchTrackParIt->second.asTrackParCovFwd();
+        auto compareMatchingScore = [](const MatchingCandidate& track1, const MatchingCandidate& track2) -> bool {
+          return (track1.matchScore > track2.matchScore);
+        };
+        std::sort(groupResults.begin(), groupResults.end(), compareMatchingScore);
 
-        if (matchingPlaneZ < 0.) {
-          mftTrackProp = propagateToZMft(mftTrackProp, matchingPlaneZ);
-          mchTrackProp = propagateToZMch(mchTrackProp, matchingPlaneZ);
+        int ranking = 1;
+        for (auto& matchedCandidate : groupResults) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
+          matchedCandidate.matchRanking = ranking;
+          ranking += 1;
         }
 
-        std::vector<float> output;
-        std::vector<float> inputML = mlResponse.getInputFeatures(muonTrack, mftTrack, mchTrack, mftTrackProp, mchTrackProp, collision);
-        mlResponse.isSelectedMl(inputML, 0, output);
-        float matchScore = output[0];
+        const int maxCandidates = configMatching.cfgMaxCandidatesPerMchTrack.value;
 
-        newMatchingCandidates[mchIndex].emplace_back(MatchingCandidate{
-          .muonTrackId = candidate.muonTrackId,
-          .mftTrackId = candidate.mftTrackId,
-          .matchScore = matchScore,
-          .matchChi2 = -1});
-      }
-    }
+        auto& storedCandidates = newMatchingCandidates[mchTrackIndex];
+        size_t nStoredThisGroup = 0;
+        for (auto& result : groupResults) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
+          if (maxCandidates >= 0 && nStoredThisGroup >= static_cast<size_t>(maxCandidates)) {
+            break;
+          }
+          result.mixedGroupIndex = useMixedMatchingCandidates ? mixedGroupIndex : -1;
+          storedCandidates.push_back(result);
+          ++nStoredThisGroup;
+        }
+      };
 
-    auto compareMatchingScore = [](const MatchingCandidate& track1, const MatchingCandidate& track2) -> bool {
-      return (track1.matchScore > track2.matchScore);
-    };
-
-    for (auto& [mchIndex, globalTracksVector] : newMatchingCandidates) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
-      std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareMatchingScore);
-
-      int ranking = 1;
-      for (auto& candidate : globalTracksVector) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
-        candidate.matchRanking = ranking;
-        ranking += 1;
+      if (useMixedMatchingCandidates) {
+        int32_t groupIdx = 0;
+        for (const auto& candidatesGroup : mchTrackInfo.mixedMatchingCandidates) {
+          processGroup(candidatesGroup, groupIdx, mchIndex);
+          groupIdx += 1;
+        }
+      } else {
+        processGroup(mchTrackInfo.matchingCandidates, -1, mchIndex);
       }
     }
   }
@@ -1463,7 +1669,8 @@ struct GlobalMuonMatching {
                                  TMUON const& muonTracks,
                                  TMFT const& mftTracks,
                                  CMFT const& mftCovs,
-                                 aod::FwdTrkCls const& clusters)
+                                 aod::FwdTrkCls const& clusters,
+                                 bool useMixedMatchingCandidates)
   {
     if (configMchRealign.cfgEnableMCHRealign.value) {
       runMuonRealignment(muonTracks, clusters);
@@ -1473,66 +1680,30 @@ struct GlobalMuonMatching {
       runMftRealignment(mftTracks, mftCovs);
     }
 
-    std::vector<int64_t> taggedMuons;
-    getTaggedMuons(collisions, muonTracks, taggedMuons);
-
+    MatchingCandidates newMatchingCandidates;
     if (configMatching.cfgCustomMatchingStrategy.value == 0) {
       if (hasActiveChi2Matching) {
-        MatchingCandidates newMatchingCandidates;
-        runChi2Matching(activeChi2FunctionName, activeChi2MatchingPlaneZ, mMatchingCandidates, newMatchingCandidates);
-        fillMatchingCandidates(newMatchingCandidates, taggedMuons);
+        runChi2Matching(activeChi2FunctionName, activeChi2MatchingPlaneZ, newMatchingCandidates, useMixedMatchingCandidates);
       }
     } else {
       if (hasActiveMlMatching) {
-        MatchingCandidates newMatchingCandidates;
-        runMlMatching(collisions, muonTracks, mftTracks, activeMlResponse, activeMlMatchingPlaneZ, mMatchingCandidates, newMatchingCandidates);
-        fillMatchingCandidates(newMatchingCandidates, taggedMuons);
+        runMlMatching(collisions, muonTracks, mftTracks, activeMlResponse, activeMlMatchingPlaneZ, newMatchingCandidates, useMixedMatchingCandidates);
       }
     }
-  }
 
-  void fillMatchingCandidates(const MatchingCandidates& matchingCandidates,
-                              const std::vector<int64_t>& taggedMuons)
-  {
-    for (const auto& [mchIndex, candidates] : matchingCandidates) {
+    for (const auto& [mchIndex, candidates] : newMatchingCandidates) {
       if (candidates.empty()) {
         continue;
       }
 
-      bool isTagged = std::find(taggedMuons.begin(), taggedMuons.end(), mchIndex) != taggedMuons.end();
-
-      std::vector<MatchingCandidate> storedCandidates;
-      int nStored = 0;
-      for (const auto& candidate : candidates) {
-        if (configMatching.cfgMaxCandidatesPerMchTrack.value >= 0 && nStored >= configMatching.cfgMaxCandidatesPerMchTrack.value) {
-          break;
-        }
-
-        int32_t candidateIndex = mMatchCandidateCounter;
-        globalMuonMatchCandidates(
-          mchIndex,
-          candidate.mftTrackId,
-          static_cast<float>(candidate.matchChi2),
-          static_cast<float>(candidate.matchScore),
-          static_cast<int32_t>(candidate.matchRanking),
-          isTagged);
-        mMatchCandidateCounter += 1;
-
-        mMchTrackToCandidateIndices[mchIndex].push_back(candidateIndex);
-        storedCandidates.push_back(candidate);
-        nStored += 1;
-      }
-
-      if (!storedCandidates.empty()) {
-        mMchTrackMatchingCandidates[mchIndex] = std::move(storedCandidates);
-      }
+      mStoredMatchingCandidates[mchIndex] = candidates;
     }
   }
 
   int32_t countStoredCandidatesForMchTrack(int64_t mchTrackIndex) const
   {
-    const auto candidateIterator = mMchTrackMatchingCandidates.find(mchTrackIndex);
-    if (candidateIterator == mMchTrackMatchingCandidates.end()) {
+    const auto candidateIterator = mStoredMatchingCandidates.find(mchTrackIndex);
+    if (candidateIterator == mStoredMatchingCandidates.end()) {
       return 0;
     }
     return static_cast<int32_t>(candidateIterator->second.size());
@@ -1574,18 +1745,12 @@ struct GlobalMuonMatching {
         const int64_t mchTrackIndex = track.globalIndex();
         const int32_t gmmMchTrackId = mFwdTrackToGmmCandTrkIndex.at(mchTrackIndex);
 
-        const auto candidateIterator = mMchTrackMatchingCandidates.find(mchTrackIndex);
+        const auto candidateIterator = mStoredMatchingCandidates.find(mchTrackIndex);
         auto mchTrackParIt = mMchTrackPars.find(mchTrackIndex);
-        if (mchTrackParIt == mMchTrackPars.end()) {
-          // fill muon tracks table with original parameters
-          const TrackParExt trackPar{fwdtrackutils::getTrackParCovFwd(track, track)};
-          fillBaseGmmCandFwdTrack(track, trackPar, gmmMchTrackId, -1.f, -1.f);
-        } else {
-          // fill muon tracks table with realignment parameters
-          fillBaseGmmCandFwdTrack(track, mchTrackParIt->second, gmmMchTrackId, -1.f, -1.f);
-        }
+        fillBaseGmmCandFwdTrack(track, mchTrackParIt->second, gmmMchTrackId, -1.f, -1.f,
+                                isMchTrackTagged(mchTrackIndex));
 
-        if (candidateIterator != mMchTrackMatchingCandidates.end()) {
+        if (candidateIterator != mStoredMatchingCandidates.end()) {
           for (const auto& candidate : candidateIterator->second) {
             auto mftTrackParIt = mMftTrackPars.find(candidate.mftTrackId);
             if (mftTrackParIt != mMftTrackPars.end()) {
@@ -1607,38 +1772,20 @@ struct GlobalMuonMatching {
                                 parExt,
                                 gmmMchTrackId,
                                 track.chi2MatchMCHMFT(),
-                                track.matchScoreMCHMFT());
+                                track.matchScoreMCHMFT(),
+                                isMchTrackTagged(track.matchMCHTrackId()));
       }
     }
   }
 
-  template <class TMUON>
-  void fillFwdTrkMatchCands(TMUON const& muonTracks)
-  {
-    std::vector<int32_t> empty{};
-    for (const auto& muonTrack : muonTracks) {
-      if (static_cast<int>(muonTrack.trackType()) <= GlobalTrackTypeMax) {
-        fwdTrkMatchCands(empty);
-        continue;
-      }
-
-      const int64_t mchTrackIndex = muonTrack.globalIndex();
-      const auto matchIterator = mMchTrackToCandidateIndices.find(mchTrackIndex);
-      if (matchIterator == mMchTrackToCandidateIndices.end() || matchIterator->second.empty()) {
-        fwdTrkMatchCands(empty);
-      } else {
-        fwdTrkMatchCands(matchIterator->second);
-      }
-    }
-  }
-
-  void processData(MyEvents const& collisions,
-                   aod::BCsWithTimestamps const& bcs,
-                   MyMuons const& muonTracks,
-                   MyMFTs const& mftTracks,
-                   MyMFTCovariances const& mftCovs,
-                   aod::FwdTrkCls const& clusters,
-                   aod::AmbiguousFwdTracks const& ambFwdTracks)
+  void runCandidateProcessing(MyEvents const& collisions,
+                              aod::BCsWithTimestamps const& bcs,
+                              MyMuons const& muonTracks,
+                              MyMFTs const& mftTracks,
+                              MyMFTCovariances const& mftCovs,
+                              aod::FwdTrkCls const& clusters,
+                              aod::AmbiguousFwdTracks const& ambFwdTracks,
+                              bool useMixedMatchingCandidates)
   {
     auto bc = bcs.begin();
     initCcdb(bc);
@@ -1649,25 +1796,47 @@ struct GlobalMuonMatching {
       mftTrackCovs[mftTrackCov.matchMFTTrackId()] = mftTrackCov.globalIndex();
     }
 
-    mMatchCandidateCounter = 0;
-    mMchTrackToCandidateIndices.clear();
-    mMchTrackMatchingCandidates.clear();
+    mStoredMatchingCandidates.clear();
     mFwdTrackToGmmCandTrkIndex.clear();
+    mMchTrackInfos.clear();
 
     LOGF(info, "Preparing candidates");
     prepareMatchingCandidates(collisions, bcs, muonTracks, mftTracks, mftCovs);
+    if (useMixedMatchingCandidates) {
+      prepareEventMixingMatchingCandidates(collisions, bcs, muonTracks);
+    }
 
     LOGF(info, "Processing candidates");
-    processMatchingCandidates(collisions, muonTracks, mftTracks, mftCovs, clusters);
+    processMatchingCandidates(collisions, muonTracks, mftTracks, mftCovs, clusters, useMixedMatchingCandidates);
 
     LOGF(info, "Filling tables");
-    // fill table with track/candidates index mapping
-    fillFwdTrkMatchCands(muonTracks);
-    // fill track tables
     fillGmmCandidateFwdTracks(muonTracks, mftTracks, ambFwdTracks);
   }
 
+  void processData(MyEvents const& collisions,
+                   aod::BCsWithTimestamps const& bcs,
+                   MyMuons const& muonTracks,
+                   MyMFTs const& mftTracks,
+                   MyMFTCovariances const& mftCovs,
+                   aod::FwdTrkCls const& clusters,
+                   aod::AmbiguousFwdTracks const& ambFwdTracks)
+  {
+    runCandidateProcessing(collisions, bcs, muonTracks, mftTracks, mftCovs, clusters, ambFwdTracks, false);
+  }
+
+  void processMixedData(MyEvents const& collisions,
+                        aod::BCsWithTimestamps const& bcs,
+                        MyMuons const& muonTracks,
+                        MyMFTs const& mftTracks,
+                        MyMFTCovariances const& mftCovs,
+                        aod::FwdTrkCls const& clusters,
+                        aod::AmbiguousFwdTracks const& ambFwdTracks)
+  {
+    runCandidateProcessing(collisions, bcs, muonTracks, mftTracks, mftCovs, clusters, ambFwdTracks, true);
+  }
+
   PROCESS_SWITCH(GlobalMuonMatching, processData, "processData", true);
+  PROCESS_SWITCH(GlobalMuonMatching, processMixedData, "process event-mixed matching candidates", false);
 };
 
 // Extends the fwdtracksrealign table with expression columns

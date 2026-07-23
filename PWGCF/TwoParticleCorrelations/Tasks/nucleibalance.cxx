@@ -71,10 +71,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace constants::math;
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, (DEFAULT), (HELP)};
 
 static constexpr float PairCutOff = -1.f;
-static constexpr float CfgPairCutDefaults[1][5] = {{PairCutOff, PairCutOff, PairCutOff, PairCutOff, PairCutOff}};
+static constexpr std::array<std::array<float, 5>, 1> CfgPairCutDefaults{{{PairCutOff, PairCutOff, PairCutOff, PairCutOff, PairCutOff}}};
 
 struct Nucleibalance {
   SliceCache cache;
@@ -125,7 +125,7 @@ struct Nucleibalance {
   O2_DEFINE_CONFIGURABLE(cfgAssociatedSpecies, int, 2, "Associated species for BF: 0 = #pi, 1 = K, 2 = p, 3 = d, -1 = all charged tracks");
 
   // Suggested values: Photon: 0.004; K0 and Lambda: 0.005
-  Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {CfgPairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
+  Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {CfgPairCutDefaults[0].data(), 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
 
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyTrigger, std::string, "", "CCDB path to efficiency object for trigger particles")
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyAssociated, std::string, "", "CCDB path to efficiency object for associated particles")
@@ -134,7 +134,7 @@ struct Nucleibalance {
 
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 1, "Verbosity level (0 = major, 1 = per collision)")
 
-  O2_DEFINE_CONFIGURABLE(cfgMcTriggerPDGs, std::vector<int>, {}, "MC PDG codes to use exclusively as trigger particles and exclude from associated particles. Empty = no selection.")
+  O2_DEFINE_CONFIGURABLE(cfgMcTriggerPDGs, std::vector<int>, std::vector<int>{}, "MC PDG codes to use exclusively as trigger particles and exclude from associated particles. Empty = no selection.")
 
   ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
@@ -172,14 +172,17 @@ struct Nucleibalance {
   {
     if (cfgTrigger.value == TriggerNone) {
       return true;
-    } else if (cfgTrigger.value == TriggerSel8) {
+    }
+    if (cfgTrigger.value == TriggerSel8) {
       return collision.sel8();
-    } else if (cfgTrigger.value == TriggerSel8Quality) {
+    }
+    if (cfgTrigger.value == TriggerSel8Quality) {
       return collision.sel8() &&
              collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
              collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
              collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
-    } else if (cfgTrigger.value == TriggerSel8OccQuality) {
+    }
+    if (cfgTrigger.value == TriggerSel8OccQuality) {
       const int occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy < cfgMinOcc.value || occupancy >= cfgMaxOcc.value) {
         return false;
@@ -189,7 +192,8 @@ struct Nucleibalance {
              collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
              collision.selection_bit(aod::evsel::kNoCollInTimeRangeStandard) &&
              collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
-    } else if (cfgTrigger.value == TriggerSel8NoSbpZvtx) {
+    }
+    if (cfgTrigger.value == TriggerSel8NoSbpZvtx) {
       return collision.sel8() &&
              collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
              collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV);
@@ -270,7 +274,7 @@ struct Nucleibalance {
   std::vector<float> efficiencyAssociatedCache;
 
   std::unique_ptr<TFormula> multCutFormula;
-  std::array<uint, 4> multCutFormulaParamIndex;
+  std::array<uint, 4> multCutFormulaParamIndex{};
 
   struct Config {
     bool mPairCuts = false;
@@ -282,7 +286,7 @@ struct Nucleibalance {
   HistogramRegistry registry{"registry"};
   PairCuts mPairCuts;
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   // AO2D-based tracks with PID for pi / K / p / d
   using TracksPID = soa::Join<aod::Tracks,
@@ -394,15 +398,20 @@ struct Nucleibalance {
   }
 
   struct SimpleTrack {
-    float eta;
-    float phi;
-    float pt;
-    int charge;
+    float eta{};
+    float phi{};
+    float pt{};
+    int charge{};
   };
 
+  static SimpleTrack makeSimpleTrack(float eta, float phi, float pt, int charge)
+  {
+    return SimpleTrack{.eta = eta, .phi = phi, .pt = pt, .charge = charge};
+  }
+
   struct MixEventEntry {
-    float multiplicity;
-    float zvtx;
+    float multiplicity = 0.f;
+    float zvtx = 0.f;
     std::vector<SimpleTrack> triggerTracks;
     std::vector<SimpleTrack> associatedTracks;
   };
@@ -424,17 +433,22 @@ struct Nucleibalance {
     registry.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, o2::constants::math::TwoPI, "#varphi"}}});
 
     if (doprocessSameDerivedMultSet) {
-      if (cfgMultCorrelationsMask == 0)
+      if (cfgMultCorrelationsMask.value == 0u) {
         LOGF(fatal, "cfgMultCorrelationsMask can not be 0 when MultSet process functions are in use.");
+      }
       std::vector<AxisSpec> multAxes;
-      if (cfgMultCorrelationsMask & aod::cfmultset::CentFT0C)
+      if ((cfgMultCorrelationsMask.value & aod::cfmultset::CentFT0C) != 0u) {
         multAxes.emplace_back(100, 0, 100, "FT0C centrality");
-      if (cfgMultCorrelationsMask & aod::cfmultset::MultFV0A)
+      }
+      if ((cfgMultCorrelationsMask.value & aod::cfmultset::MultFV0A) != 0u) {
         multAxes.emplace_back(1000, 0, 100000, "V0A multiplicity");
-      if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksPV)
+      }
+      if ((cfgMultCorrelationsMask.value & aod::cfmultset::MultNTracksPV) != 0u) {
         multAxes.emplace_back(100, 0, 1000, "Nch PV");
-      if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksGlobal)
+      }
+      if ((cfgMultCorrelationsMask.value & aod::cfmultset::MultNTracksGlobal) != 0u) {
         multAxes.emplace_back(100, 0, 1000, "Nch Global");
+      }
       registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     }
     registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
@@ -502,8 +516,9 @@ struct Nucleibalance {
     same->setTrackEtaCut(cfgCutEta);
     mixed->setTrackEtaCut(cfgCutEta);
 
-    if (!cfgEfficiencyAssociated.value.empty())
+    if (!cfgEfficiencyAssociated.value.empty()) {
       efficiencyAssociatedCache.reserve(512);
+    }
 
     // o2-ccdb-upload -p Users/jgrosseo/correlations/LHC15o -f /tmp/correction_2011_global.root -k correction
 
@@ -698,41 +713,41 @@ struct Nucleibalance {
     if (cfg.efficiencyLoaded) {
       return;
     }
-    if (cfgEfficiencyTrigger.value.empty() == false) {
+    if (!cfgEfficiencyTrigger.value.empty()) {
       if (cfgLocalEfficiency > 0) {
         TFile* fEfficiencyTrigger = TFile::Open(cfgEfficiencyTrigger.value.c_str(), "READ");
-        cfg.mEfficiencyTrigger = reinterpret_cast<THn*>(fEfficiencyTrigger->Get("ccdb_object"));
+        cfg.mEfficiencyTrigger = dynamic_cast<THn*>(fEfficiencyTrigger->Get("ccdb_object"));
       } else {
         cfg.mEfficiencyTrigger = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyTrigger, timestamp);
       }
       if (cfg.mEfficiencyTrigger == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiencyTrigger.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram for trigger particles from %s (%p)", cfgEfficiencyTrigger.value.c_str(), (void*)cfg.mEfficiencyTrigger);
+      LOGF(info, "Loaded efficiency histogram for trigger particles from %s (%p)", cfgEfficiencyTrigger.value.c_str(), static_cast<void*>(cfg.mEfficiencyTrigger));
     }
-    if (cfgEfficiencyAssociated.value.empty() == false) {
+    if (!cfgEfficiencyAssociated.value.empty()) {
       if (cfgLocalEfficiency > 0) {
         TFile* fEfficiencyAssociated = TFile::Open(cfgEfficiencyAssociated.value.c_str(), "READ");
-        cfg.mEfficiencyAssociated = reinterpret_cast<THn*>(fEfficiencyAssociated->Get("ccdb_object"));
+        cfg.mEfficiencyAssociated = dynamic_cast<THn*>(fEfficiencyAssociated->Get("ccdb_object"));
       } else {
         cfg.mEfficiencyAssociated = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyAssociated, timestamp);
       }
       if (cfg.mEfficiencyAssociated == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for associated particles from %s", cfgEfficiencyAssociated.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram for associated particles from %s (%p)", cfgEfficiencyAssociated.value.c_str(), (void*)cfg.mEfficiencyAssociated);
+      LOGF(info, "Loaded efficiency histogram for associated particles from %s (%p)", cfgEfficiencyAssociated.value.c_str(), static_cast<void*>(cfg.mEfficiencyAssociated));
     }
     cfg.efficiencyLoaded = true;
   }
 
   double getEfficiencyCorrection(THn* eff, float eta, float pt, float multiplicity, float posZ)
   {
-    int effVars[4];
+    std::array<int, 4> effVars{};
     effVars[0] = eff->GetAxis(0)->FindBin(eta);
     effVars[1] = eff->GetAxis(1)->FindBin(pt);
     effVars[2] = eff->GetAxis(2)->FindBin(multiplicity);
     effVars[3] = eff->GetAxis(3)->FindBin(posZ);
-    return eff->GetBinContent(effVars);
+    return eff->GetBinContent(effVars.data());
   }
 
   template <typename TTrack>
@@ -863,13 +878,13 @@ struct Nucleibalance {
 
       if (passPIDForSpecies(trk, cfgTriggerSpecies.value)) {
         if (cfgTriggerCharge.value == 0 || trk.sign() == cfgTriggerCharge.value) {
-          triggerTracks.push_back(SimpleTrack{cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()});
+          triggerTracks.push_back(makeSimpleTrack(cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()));
         }
       }
 
       if (passPIDForSpecies(trk, cfgAssociatedSpecies.value)) {
         if (cfgAssociatedCharge.value == 0 || trk.sign() == cfgAssociatedCharge.value) {
-          associatedTracks.push_back(SimpleTrack{cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()});
+          associatedTracks.push_back(makeSimpleTrack(cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()));
         }
       }
     }
@@ -952,7 +967,7 @@ struct Nucleibalance {
       }
 
       // Save for multiplicity / QA (keep charge even if neutral)
-      eventTracks.push_back(SimpleTrack{trk.eta(), trk.phi(), trk.pt(), static_cast<int>(trk.sign())});
+      eventTracks.push_back(makeSimpleTrack(trk.eta(), trk.phi(), trk.pt(), static_cast<int>(trk.sign())));
 
       if (trk.sign() == 0) {
         continue;
@@ -961,14 +976,14 @@ struct Nucleibalance {
       // Trigger selection: PID + charge
       if (passPIDForSpecies(trk, cfgTriggerSpecies.value)) {
         if (cfgTriggerCharge.value == 0 || trk.sign() == cfgTriggerCharge.value) {
-          triggerTracks.push_back(SimpleTrack{trk.eta(), trk.phi(), trk.pt(), trk.sign()});
+          triggerTracks.push_back(makeSimpleTrack(trk.eta(), trk.phi(), trk.pt(), trk.sign()));
         }
       }
 
       // Associated selection: PID + charge
       if (passPIDForSpecies(trk, cfgAssociatedSpecies.value)) {
         if (cfgAssociatedCharge.value == 0 || trk.sign() == cfgAssociatedCharge.value) {
-          associatedTracks.push_back(SimpleTrack{trk.eta(), trk.phi(), trk.pt(), trk.sign()});
+          associatedTracks.push_back(makeSimpleTrack(trk.eta(), trk.phi(), trk.pt(), trk.sign()));
         }
       }
     }
@@ -1108,7 +1123,7 @@ struct Nucleibalance {
         continue;
       }
 
-      eventTracks.push_back(SimpleTrack{trk.eta(), trk.phi(), trk.pt(), static_cast<int>(trk.sign())});
+      eventTracks.push_back(makeSimpleTrack(trk.eta(), trk.phi(), trk.pt(), static_cast<int>(trk.sign())));
 
       if (trk.sign() == 0) {
         continue;
@@ -1116,12 +1131,12 @@ struct Nucleibalance {
 
       if (passPIDForSpecies(trk, cfgTriggerSpecies.value) &&
           (cfgTriggerCharge.value == 0 || trk.sign() == cfgTriggerCharge.value)) {
-        triggerTracks.push_back(SimpleTrack{trk.eta(), trk.phi(), trk.pt(), trk.sign()});
+        triggerTracks.push_back(makeSimpleTrack(trk.eta(), trk.phi(), trk.pt(), trk.sign()));
       }
 
       if (passPIDForSpecies(trk, cfgAssociatedSpecies.value) &&
           (cfgAssociatedCharge.value == 0 || trk.sign() == cfgAssociatedCharge.value)) {
-        associatedTracks.push_back(SimpleTrack{trk.eta(), trk.phi(), trk.pt(), trk.sign()});
+        associatedTracks.push_back(makeSimpleTrack(trk.eta(), trk.phi(), trk.pt(), trk.sign()));
       }
     }
 
@@ -1395,7 +1410,7 @@ struct Nucleibalance {
         }
         if (passPIDForSpecies(trk, cfgTriggerSpecies.value)) {
           if (cfgTriggerCharge.value == 0 || trk.sign() == cfgTriggerCharge.value) {
-            triggerTracks.push_back(SimpleTrack{cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()});
+            triggerTracks.push_back(makeSimpleTrack(cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()));
           }
         }
       }
@@ -1408,7 +1423,7 @@ struct Nucleibalance {
         }
         if (passPIDForSpecies(trk, cfgAssociatedSpecies.value)) {
           if (cfgAssociatedCharge.value == 0 || trk.sign() == cfgAssociatedCharge.value) {
-            associatedTracks.push_back(SimpleTrack{cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()});
+            associatedTracks.push_back(makeSimpleTrack(cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()));
           }
         }
       }
@@ -1468,11 +1483,13 @@ struct Nucleibalance {
       case PdgProton: // proton
       case -PdgProton:
         return 2;
+      default:
+        break;
     }
-    if (std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), pdgCode) != cfgMcTriggerPDGs->end())
+    if (std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), pdgCode) != cfgMcTriggerPDGs->end()) {
       return 4;
-    else
-      return 3;
+    }
+    return 3;
   }
 
   // NOTE SmallGroups includes soa::Filtered always
@@ -1573,11 +1590,13 @@ struct Nucleibalance {
     bool useMCMultiplicity = (cfgCentBinsForMC == 0);
     auto getMultiplicity =
       [&collisions, &useMCMultiplicity, this](auto& col) {
-        if (useMCMultiplicity)
+        if (useMCMultiplicity) {
           return col.multiplicity();
+        }
         auto groupedCollisions = collisions.sliceBy(collisionPerMCCollision, col.globalIndex());
-        if (groupedCollisions.size() == 0)
+        if (groupedCollisions.size() == 0) {
           return -1.0f;
+        }
         return groupedCollisions.begin().multiplicity();
       };
 
@@ -1686,7 +1705,6 @@ struct Lambdastarproxy {
   static constexpr float ProxyMomentumScale = 0.5f;
   static constexpr float TofBetaMin = 0.01f;
   static constexpr float TofBetaMax = 1.2f;
-  static constexpr double Half = 0.5;
   // PID strategy values
   static constexpr int PidStrategyRectangular = 0;
   static constexpr int PidStrategyCircularTPCAndTOF = 1;
@@ -1711,6 +1729,7 @@ struct Lambdastarproxy {
   Configurable<float> lstarCutNsigmaTPCDe{"lstarCutNsigmaTPCDe", float{NsigmaTPCDefault}, "|nSigma^{TPC}_{d}| cut"};
   Configurable<float> lstarCutNsigmaTOFDe{"lstarCutNsigmaTOFDe", float{NsigmaTOFDefault}, "|nSigma^{TOF}_{d}| cut"};
   Configurable<int> lstarEnableTOFNsigmaCutDe{"lstarEnableTOFNsigmaCutDe", 0, "Enable deuteron-only TOF nSigma cut in PID strategy 2"};
+  Configurable<int> lstarProxyUseProtonPIDAsDeuteron{"lstarProxyUseProtonPIDAsDeuteron", 0, "Closure/control test: keep proxy candidates that pass the normal deuteron selection and are also proton-like, then build p_proxy = p_track/2"};
   // Optional deuteron-only TOF auxiliary selections.
   // Defaults are OFF, so strategy 2 remains TPC nSigma only for deuterons.
   Configurable<int> lstarEnableBetaCutDe{"lstarEnableBetaCutDe", 0, "Enable deuteron-only TOF beta cut using beta() > lstarBetaCutDe"};
@@ -1763,6 +1782,9 @@ struct Lambdastarproxy {
   Configurable<int> lstarNoMixedEvents{"lstarNoMixedEvents", int{NoMixedEventsDefault}, "Number of previous events kept for mixed-event background"};
   Configurable<float> lstarMixZvtxMax{"lstarMixZvtxMax", float{MixZvtxMaxDefault}, "Max |Δzvtx| (cm) for event mixing"};
   Configurable<float> lstarMixMultMax{"lstarMixMultMax", float{MixMultMaxDefault}, "Max |Δmult| for event mixing"};
+  // Master switch for PID QA histogram filling.
+  // Inclusive PID-QA histograms are filled before final PID cuts, after event/track-quality cuts.
+  // Candidate-level nSigma/TOF/DCA histograms are filled after final PID cuts.
   Configurable<int> lstarEnablePidQA{"lstarEnablePidQA", 0, "Enable PID QA histograms (dE/dx, TOF #beta, proxy invariant-mass QA, etc.): 1 = ON, 0 = OFF"};
   Configurable<int> lstarEnableSparse{"lstarEnableSparse", 1, "Enable THnSparse invariant-mass histograms (#Lambda^{*} pK and proxy); 1 = ON, 0 = OFF"};
   Configurable<float> lstarLambdaAbsYMax{"lstarLambdaAbsYMax", 0.5f, "Max |y_{pK}| (or y_{proxy K}) for #Lambda^{*} candidates"};
@@ -1833,14 +1855,17 @@ struct Lambdastarproxy {
     }
     if (lstarCfgTrigger.value == TriggerNone) {
       return true;
-    } else if (lstarCfgTrigger.value == TriggerSel8) {
+    }
+    if (lstarCfgTrigger.value == TriggerSel8) {
       return collision.sel8();
-    } else if (lstarCfgTrigger.value == TriggerSel8Quality) {
+    }
+    if (lstarCfgTrigger.value == TriggerSel8Quality) {
       return collision.sel8() &&
              collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
              collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
              collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
-    } else if (lstarCfgTrigger.value == TriggerSel8OccQuality) {
+    }
+    if (lstarCfgTrigger.value == TriggerSel8OccQuality) {
       const int occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy < lstarMinOcc.value || occupancy >= lstarMaxOcc.value) {
         return false;
@@ -1850,7 +1875,8 @@ struct Lambdastarproxy {
              collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
              collision.selection_bit(aod::evsel::kNoCollInTimeRangeStandard) &&
              collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
-    } else if (lstarCfgTrigger.value == TriggerSel8NoSbpZvtx) {
+    }
+    if (lstarCfgTrigger.value == TriggerSel8NoSbpZvtx) {
       return collision.sel8() &&
              collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
              collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV);
@@ -2038,7 +2064,8 @@ struct Lambdastarproxy {
   {
     AxisSpec massAxis{200, 1.4, 1.9, "M_{pK} (GeV/c^{2})"};
     AxisSpec ptAxis{100, 0., 10., "p_{T} (GeV/c)"};
-    AxisSpec nsAxis{100, -10., 10., "n#sigma"};
+    AxisSpec nsAxis{500, -50., 50., "n#sigma"};
+    AxisSpec tofMatchAxis{2, -0.5, 1.5, "has TOF match"};
     AxisSpec pAxis{100, 0., 10., "p (GeV/c)"};
     AxisSpec etaAxis{80, -2., 2., "#eta"};
     AxisSpec phiAxis{64, 0., o2::constants::math::TwoPI, "#varphi"};
@@ -2104,6 +2131,7 @@ struct Lambdastarproxy {
                "#Lambda^{*} proxy invariant mass from (d/2 + K);M_{p_{proxy}K} (GeV/c^{2});Counts",
                HistType::kTH1F, {massAxis});
 
+    // Inclusive PID QA before final candidate PID cuts: after track-quality cuts only
     // TPC dE/dx vs total momentum
     histos.add("hTPCdEdxVsP",
                "TPC dE/dx vs p;p (GeV/c);dE/dx (arb. units);Counts",
@@ -2114,7 +2142,16 @@ struct Lambdastarproxy {
                "TOF #beta vs p;p (GeV/c);#beta_{TOF};Counts",
                HistType::kTH2F, {pAxis, betaAxis});
 
-    // --- Per-species PID QA (tagged) ---
+    histos.add("hHasTOFVsP",
+               "TOF matching flag vs p;p (GeV/c);has TOF match;Counts",
+               HistType::kTH2F, {pAxis, tofMatchAxis});
+
+    histos.add("hHasTOFVsPt",
+               "TOF matching flag vs p_{T};p_{T} (GeV/c);has TOF match;Counts",
+               HistType::kTH2F, {ptAxis, tofMatchAxis});
+
+    // --- Per-species inclusive PID QA before final candidate PID cuts ---
+    // Species tagging here uses classifyPidSpecies() and is meant only for QA.
     histos.add("hTPCdEdxVsP_Pi",
                "TPC dE/dx vs p (tagged #pi);p (GeV/c);dE/dx (arb. units);Counts",
                HistType::kTH2F, {pAxis, dEdxAxis});
@@ -2140,6 +2177,36 @@ struct Lambdastarproxy {
     histos.add("hTOFBetaVsP_D",
                "TOF #beta vs p (tagged d);p (GeV/c);#beta_{TOF};Counts",
                HistType::kTH2F, {pAxis, betaAxis});
+
+    // Inclusive tagged nSigma QA before final candidate PID cuts: after track-quality cuts only.
+    // These are separate from the final-candidate PID QA histograms.
+    histos.add("hNsigmaTPCPionTaggedVsP",
+               "TPC n#sigma_{#pi} vs p for tagged #pi;p (GeV/c);n#sigma^{TPC}_{#pi};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+    histos.add("hNsigmaTOFPionTaggedVsP",
+               "TOF n#sigma_{#pi} vs p for tagged #pi;p (GeV/c);n#sigma^{TOF}_{#pi};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+
+    histos.add("hNsigmaTPCKaonTaggedVsP",
+               "TPC n#sigma_{K} vs p for tagged K;p (GeV/c);n#sigma^{TPC}_{K};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+    histos.add("hNsigmaTOFKaonTaggedVsP",
+               "TOF n#sigma_{K} vs p for tagged K;p (GeV/c);n#sigma^{TOF}_{K};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+
+    histos.add("hNsigmaTPCProtonTaggedVsP",
+               "TPC n#sigma_{p} vs p for tagged p;p (GeV/c);n#sigma^{TPC}_{p};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+    histos.add("hNsigmaTOFProtonTaggedVsP",
+               "TOF n#sigma_{p} vs p for tagged p;p (GeV/c);n#sigma^{TOF}_{p};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+
+    histos.add("hNsigmaTPCDeuteronTaggedVsP",
+               "TPC n#sigma_{d} vs p for tagged d;p (GeV/c);n#sigma^{TPC}_{d};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+    histos.add("hNsigmaTOFDeuteronTaggedVsP",
+               "TOF n#sigma_{d} vs p for tagged d;p (GeV/c);n#sigma^{TOF}_{d};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
 
     // --- MC QA (AO2D-MC mode) ---
     histos.add("hMcPrimariesPtEta",
@@ -2204,7 +2271,7 @@ struct Lambdastarproxy {
                "TOF n#sigma_{K} vs p; p (GeV/c); n#sigma^{TOF}_{K};Counts",
                HistType::kTH2F, {pAxis, nsAxis});
 
-    // --- Additional pT-based PID QA for the final selected K/p/d candidates ---
+    // --- Candidate PID QA after final selected K/p/d PID cuts ---
     // These histograms are needed for PID studies in the same pT intervals used by the analysis.
     histos.add("hTOFBetaVsPt_K",
                "TOF #beta vs p_{T} for selected K;p_{T} (GeV/c);#beta_{TOF};Counts",
@@ -2451,16 +2518,15 @@ struct Lambdastarproxy {
     }
 
     if (lstarPidStrategy.value == PidStrategyNucleiDeuteronTPC) {
-      // For deuterons, follow the default idea of the official nuclei task:
-      // use TPC nσ as the main hard PID selection.
+      // For deuterons, use TPC nσ as the main hard PID selection.
+      // If the optional deuteron TOF nσ cut is enabled, apply it only when
+      // the track has a valid TOF match. Tracks without TOF are kept with
+      // the TPC-only decision, avoiding an additional TOF-matching efficiency loss.
       if (isDeuteron) {
         if (std::abs(nsTPC) >= tpcCut) {
           return false;
         }
-        if (lstarEnableTOFNsigmaCutDe.value != 0) {
-          if (!hasTof) {
-            return false;
-          }
+        if (lstarEnableTOFNsigmaCutDe.value != 0 && hasTof) {
           return std::abs(nsTOF) < tofCut;
         }
         return true;
@@ -2580,87 +2646,6 @@ struct Lambdastarproxy {
     constexpr double MassProton = o2::constants::physics::MassProton;
     constexpr double MassKaonCharged = o2::constants::physics::MassKaonCharged;
 
-    // --- Inclusive PID QA: keep #pi/K/p/d bands in TPC dE/dx and TOF beta plots ---
-    if (lstarEnablePidQA.value != 0) {
-      for (auto const& trk : tracks) {
-        if (trk.pt() < lstarCutPtMin.value || std::abs(trk.eta()) > lstarCutEtaMax.value) {
-          continue;
-        }
-        if (!passTrackQuality(trk)) {
-          continue;
-        }
-        if (trk.sign() == 0) {
-          continue;
-        }
-        // Inclusive PID QA
-        fillTPCdEdxVsPIfAvailable(trk);
-        fillTOFBetaVsPIfAvailable(trk);
-
-        // Per-species PID-QA (tagged) histograms
-        const int sp = classifyPidSpecies(trk);
-        switch (sp) {
-          case 0: { // pion
-            if constexpr (requires { trk.tpcSignal(); }) {
-              histos.fill(HIST("hTPCdEdxVsP_Pi"), trk.p(), trk.tpcSignal());
-            }
-            if constexpr (requires { trk.beta(); }) {
-              const bool hasTof = hasTOFMatch(trk);
-              const float beta = trk.beta();
-              if (hasTof && beta > TofBetaMin && beta < TofBetaMax) {
-                histos.fill(HIST("hTOFBetaVsP_Pi"), trk.p(), beta);
-              }
-            }
-            break;
-          }
-
-          case 1: { // kaon
-            if constexpr (requires { trk.tpcSignal(); }) {
-              histos.fill(HIST("hTPCdEdxVsP_K"), trk.p(), trk.tpcSignal());
-            }
-            if constexpr (requires { trk.beta(); }) {
-              const bool hasTof = hasTOFMatch(trk);
-              const float beta = trk.beta();
-              if (hasTof && beta > TofBetaMin && beta < TofBetaMax) {
-                histos.fill(HIST("hTOFBetaVsP_K"), trk.p(), beta);
-              }
-            }
-            break;
-          }
-
-          case 2: { // proton
-            if constexpr (requires { trk.tpcSignal(); }) {
-              histos.fill(HIST("hTPCdEdxVsP_P"), trk.p(), trk.tpcSignal());
-            }
-            if constexpr (requires { trk.beta(); }) {
-              const bool hasTof = hasTOFMatch(trk);
-              const float beta = trk.beta();
-              if (hasTof && beta > TofBetaMin && beta < TofBetaMax) {
-                histos.fill(HIST("hTOFBetaVsP_P"), trk.p(), beta);
-              }
-            }
-            break;
-          }
-
-          case 3: { // deuteron
-            if constexpr (requires { trk.tpcSignal(); }) {
-              histos.fill(HIST("hTPCdEdxVsP_D"), trk.p(), trk.tpcSignal());
-            }
-            if constexpr (requires { trk.beta(); }) {
-              const bool hasTof = hasTOFMatch(trk);
-              const float beta = trk.beta();
-              if (hasTof && beta > TofBetaMin && beta < TofBetaMax) {
-                histos.fill(HIST("hTOFBetaVsP_D"), trk.p(), beta);
-              }
-            }
-            break;
-          }
-
-          default:
-            break;
-        }
-      }
-    }
-
     std::vector<KaonCand> kaonCands;
     std::vector<ProxyCand> proxyCands;
     std::vector<ProtonCand> protonCands;
@@ -2670,7 +2655,9 @@ struct Lambdastarproxy {
 
     float eventMultFallback = 0.f; // fallback mixing variable: number of selected charged tracks (after quality cuts)
 
-    // Inclusive PID QA loop: count all selected charged tracks for fallback multiplicity
+    // Inclusive track loop before final candidate PID cuts.
+    // It counts selected charged tracks for fallback multiplicity and when enabled,
+    // fills inclusive PID QA after track-quality cuts but before final K/p/d PID cuts.
     for (auto const& trk : tracks) {
       if (trk.pt() < lstarCutPtMin.value || std::abs(trk.eta()) > lstarCutEtaMax.value) {
         continue;
@@ -2689,10 +2676,18 @@ struct Lambdastarproxy {
       fillTPCdEdxVsPIfAvailable(trk);
       fillTOFBetaVsPIfAvailable(trk);
 
+      const double pForPidQA = static_cast<double>(trk.pt()) * std::cosh(static_cast<double>(trk.eta()));
+      const bool hasTofForPidQA = hasTOFMatch(trk);
+
+      histos.fill(HIST("hHasTOFVsP"), pForPidQA, hasTofForPidQA ? 1.0 : 0.0);
+      histos.fill(HIST("hHasTOFVsPt"), trk.pt(), hasTofForPidQA ? 1.0 : 0.0);
+
       // Per-species PID-QA (tagged) histograms
       const int sp = classifyPidSpecies(trk);
       switch (sp) {
         case 0: { // pion
+          histos.fill(HIST("hNsigmaTPCPionTaggedVsP"), pForPidQA, trk.tpcNSigmaPi());
+          histos.fill(HIST("hNsigmaTOFPionTaggedVsP"), pForPidQA, trk.tofNSigmaPi());
           if constexpr (requires { trk.tpcSignal(); }) {
             histos.fill(HIST("hTPCdEdxVsP_Pi"), trk.p(), trk.tpcSignal());
           }
@@ -2706,6 +2701,8 @@ struct Lambdastarproxy {
           break;
         }
         case 1: { // kaon
+          histos.fill(HIST("hNsigmaTPCKaonTaggedVsP"), pForPidQA, trk.tpcNSigmaKa());
+          histos.fill(HIST("hNsigmaTOFKaonTaggedVsP"), pForPidQA, trk.tofNSigmaKa());
           if constexpr (requires { trk.tpcSignal(); }) {
             histos.fill(HIST("hTPCdEdxVsP_K"), trk.p(), trk.tpcSignal());
           }
@@ -2719,6 +2716,8 @@ struct Lambdastarproxy {
           break;
         }
         case 2: { // proton
+          histos.fill(HIST("hNsigmaTPCProtonTaggedVsP"), pForPidQA, trk.tpcNSigmaPr());
+          histos.fill(HIST("hNsigmaTOFProtonTaggedVsP"), pForPidQA, trk.tofNSigmaPr());
           if constexpr (requires { trk.tpcSignal(); }) {
             histos.fill(HIST("hTPCdEdxVsP_P"), trk.p(), trk.tpcSignal());
           }
@@ -2732,6 +2731,8 @@ struct Lambdastarproxy {
           break;
         }
         case 3: { // deuteron
+          histos.fill(HIST("hNsigmaTPCDeuteronTaggedVsP"), pForPidQA, trk.tpcNSigmaDe());
+          histos.fill(HIST("hNsigmaTOFDeuteronTaggedVsP"), pForPidQA, trk.tofNSigmaDe());
           if constexpr (requires { trk.tpcSignal(); }) {
             histos.fill(HIST("hTPCdEdxVsP_D"), trk.p(), trk.tpcSignal());
           }
@@ -2769,23 +2770,44 @@ struct Lambdastarproxy {
       const float etaD = trkD.eta();
       const float phiD = trkD.phi();
 
-      // PID for deuteron candidates
+      // PID for proxy candidates.
+      // Normal mode: use the standard deuteron PID and build p_proxy = p_d / 2.
+      // Closure/control mode: select the subset of standard deuteron-proxy candidates
+      // that are also proton-like. This tests proton contamination inside the deuteron
+      // selection, not all proton candidates.
+      const bool useProtonAsProxy = (lstarProxyUseProtonPIDAsDeuteron.value != 0);
+
       const float nsTPCDe = trkD.tpcNSigmaDe();
       const float nsTOFDe = trkD.tofNSigmaDe();
       const bool hasTofDe = hasTOFMatch(trkD);
+
       if (!passOptionalDeuteronTOFExtras(trkD)) {
         continue;
       }
-      const bool isDeuteron = passFinalCandidatePID(trkD.pt(), trkD.tpcNSigmaDe(), nsTOFDe, hasTofDe,
-                                                    lstarCutNsigmaTPCDe.value, lstarCutNsigmaTOFDe.value,
-                                                    lstarPidCircularCutDe.value, lstarPidPtRefDe.value, true);
-      if (!isDeuteron) {
+
+      const bool passesDeuteronSelection = passFinalCandidatePID(ptD, nsTPCDe, nsTOFDe, hasTofDe,
+                                                                 lstarCutNsigmaTPCDe.value, lstarCutNsigmaTOFDe.value,
+                                                                 lstarPidCircularCutDe.value, lstarPidPtRefDe.value,
+                                                                 true);
+      if (!passesDeuteronSelection) {
         continue;
+      }
+
+      if (useProtonAsProxy) {
+        const float nsTPCPrAsProxy = trkD.tpcNSigmaPr();
+        const float nsTOFPrAsProxy = trkD.tofNSigmaPr();
+        const bool passesProtonSelection = passFinalCandidatePID(ptD, nsTPCPrAsProxy, nsTOFPrAsProxy, hasTofDe,
+                                                                 lstarCutNsigmaTPCPr.value, lstarCutNsigmaTOFPr.value,
+                                                                 lstarPidCircularCutPr.value, lstarPidPtRefPr.value,
+                                                                 false);
+        if (!passesProtonSelection) {
+          continue;
+        }
       }
 
       const double pD = static_cast<double>(ptD) * std::cosh(static_cast<double>(etaD));
 
-      // QA histos for deuteron PID and kinematics
+      // Candidate QA after final deuteron PID cut
       if (lstarEnablePidQA.value != 0) {
         histos.fill(HIST("hDeuteronProxyPt"), ptD);
         histos.fill(HIST("hDeuteronProxyEta"), etaD);
@@ -2816,7 +2838,7 @@ struct Lambdastarproxy {
       const float pyProxy = ProxyMomentumScale * ptD * std::sin(phiD);
       const float pzProxy = ProxyMomentumScale * ptD * std::sinh(etaD);
 
-      proxyCands.push_back(ProxyCand{pxProxy, pyProxy, pzProxy, static_cast<int>(trkD.sign()), static_cast<int>(trkD.globalIndex())});
+      proxyCands.push_back(ProxyCand{.px = pxProxy, .py = pyProxy, .pz = pzProxy, .charge = static_cast<int>(trkD.sign()), .tid = static_cast<int>(trkD.globalIndex())});
     }
 
     // Proton candidates (for genuine pK #Lambda^{*} reconstruction)
@@ -2876,7 +2898,7 @@ struct Lambdastarproxy {
       const float pyP = ptP * std::sin(phiP);
       const float pzP = ptP * std::sinh(etaP);
 
-      protonCands.push_back(ProtonCand{pxP, pyP, pzP, static_cast<int>(trkP.sign()), static_cast<int>(trkP.globalIndex())});
+      protonCands.push_back(ProtonCand{.px = pxP, .py = pyP, .pz = pzP, .charge = static_cast<int>(trkP.sign()), .tid = static_cast<int>(trkP.globalIndex())});
     }
 
     // Kaon candidates
@@ -2944,7 +2966,7 @@ struct Lambdastarproxy {
       const float pyK = ptK * std::sin(phiK);
       const float pzK = ptK * std::sinh(etaK);
 
-      kaonCands.push_back(KaonCand{pxK, pyK, pzK, static_cast<int>(trkK.sign()), static_cast<int>(trkK.globalIndex())});
+      kaonCands.push_back(KaonCand{.px = pxK, .py = pyK, .pz = pzK, .charge = static_cast<int>(trkK.sign()), .tid = static_cast<int>(trkK.globalIndex())});
     }
 
     if (kaonCands.empty()) {
@@ -3008,8 +3030,9 @@ struct Lambdastarproxy {
     if (hasProxyCandidates) {
       for (auto const& pr : proxyCands) {
         for (auto const& k : kaonCands) {
-          if (pr.tid == k.tid)
+          if (pr.tid == k.tid) {
             continue; // sanity check: should never match, but just in case of bug in candidate-building logic
+          }
           const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton, k.px, k.py, k.pz, MassKaonCharged);
 
           const float pxTot = pr.px + k.px;
