@@ -589,7 +589,7 @@ struct DalitzSelection {
         auto filterMapProbe = uint8_t(0);
         if constexpr (isReassoc) {
           auto const& fullTrack = track.template track_as<TFullTracks>();
-          filterMap = fDalitzmap[fullTrack.globalIndex()];  // cppcheck-suppress redundantInitialization
+          filterMap = fDalitzmap[fullTrack.globalIndex()];           // cppcheck-suppress redundantInitialization
           filterMapProbe = fDalitzmapProbe[fullTrack.globalIndex()]; // cppcheck-suppress redundantInitialization
           if (fConfigOptions.fRemoveDoubleCounting) {
             // we remove track selections which were already selected before
