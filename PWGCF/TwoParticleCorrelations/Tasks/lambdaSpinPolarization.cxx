@@ -396,7 +396,7 @@ struct LambdaTableProducer {
   Configurable<std::string> cPathCCDB{"cPathCCDB", "Users/y/ypatley/lambda_corr_fact", "Path for ccdb-object"};
 
   // Initialize CCDB Service
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -596,10 +596,7 @@ struct LambdaTableProducer {
   // Kinematic Selection
   bool kinCutSelection(float const& pt, float const& rap, float const& ptMin, float const& ptMax, float const& rapMax)
   {
-    if (pt <= ptMin || pt >= ptMax || rap >= rapMax) {
-      return false;
-    }
-    return true;
+    return !(pt <= ptMin || pt >= ptMax || rap >= rapMax);
   }
 
   // Track Selection
@@ -812,8 +809,8 @@ struct LambdaTableProducer {
 
     // Get Efficiency Factor
     if (cGetEffFact) {
-      TObject* objEff = reinterpret_cast<TObject*>(ccdbObj->FindObject(Form("%s", vCorrFactStrings[cCorrFactHist][part].c_str())));
-      TH1F* histEff = reinterpret_cast<TH1F*>(objEff->Clone());
+      auto* objEff = ccdbObj->FindObject(Form("%s", vCorrFactStrings[cCorrFactHist][part].c_str()));
+      auto* histEff = dynamic_cast<TH1*>(objEff->Clone());
       if (histEff->GetDimension() == TwoDimCorr) {
         histos.fill(HIST("Tracks/h1f_tracks_info"), kEffCorrPtCent);
         effCorrFact = histEff->GetBinContent(histEff->FindBin(cent, v0.pt()));
@@ -828,8 +825,8 @@ struct LambdaTableProducer {
       delete histEff;
     }
     if (cGetPrimFrac) {
-      TObject* objPrm = reinterpret_cast<TObject*>(ccdbObj->FindObject(Form("%s", vPrimFracStrings[cPrimFracHist][part].c_str())));
-      TH1F* histPrm = reinterpret_cast<TH1F*>(objPrm->Clone());
+      auto* objPrm = ccdbObj->FindObject(Form("%s", vPrimFracStrings[cPrimFracHist][part].c_str()));
+      auto* histPrm = dynamic_cast<TH1*>(objPrm->Clone());
       if (histPrm->GetDimension() == TwoDimCorr) {
         histos.fill(HIST("Tracks/h1f_tracks_info"), kPFCorrPtCent);
         primFrac = histPrm->GetBinContent(histPrm->FindBin(cent, v0.pt()));
@@ -857,7 +854,7 @@ struct LambdaTableProducer {
   template <ParticleType part, typename C, typename V, typename T>
   void fillLambdaQAHistos(C const& col, V const& v0, T const&)
   {
-    static constexpr std::string_view SubDir[] = {"QA/Lambda/", "QA/AntiLambda/"};
+    static constexpr std::array<std::string_view, 2> SubDir = {"QA/Lambda/", "QA/AntiLambda/"};
     auto postrack = v0.template posTrack_as<T>();
     auto negtrack = v0.template negTrack_as<T>();
     float mass = (part == kLambda) ? v0.mLambda() : v0.mAntiLambda();
@@ -895,8 +892,8 @@ struct LambdaTableProducer {
   template <RecGenType rg, ParticleType part>
   void fillKinematicHists(float const& pt, float const& eta, float const& y, float const& phi)
   {
-    static constexpr std::string_view SubDirRG[] = {"McRec/", "McGen/"};
-    static constexpr std::string_view SubDirPart[] = {"Lambda/", "AntiLambda/"};
+    static constexpr std::array<std::string_view, 2> SubDirRG = {"McRec/", "McGen/"};
+    static constexpr std::array<std::string_view, 2> SubDirPart = {"Lambda/", "AntiLambda/"};
 
     histos.fill(HIST(SubDirRG[rg]) + HIST(SubDirPart[part]) + HIST("hPt"), pt);
     histos.fill(HIST(SubDirRG[rg]) + HIST(SubDirPart[part]) + HIST("hEta"), eta);
@@ -1198,7 +1195,7 @@ struct LambdaTracksExtProducer {
   template <ShareDauLambda sd, typename T>
   void fillHistos(T const& track)
   {
-    static constexpr std::string_view SubDir[] = {"Reco/", "SharingDau/"};
+    static constexpr std::array<std::string_view, 2> SubDir = {"Reco/", "SharingDau/"};
     if (track.v0Type() == kLambda) {
       histos.fill(HIST(SubDir[sd]) + HIST("h1f_lambda_invmass"), track.mass());
       histos.fill(HIST(SubDir[sd]) + HIST("h1f_lambda_dcadau"), track.dcaDau());
@@ -1266,14 +1263,12 @@ struct LambdaTracksExtProducer {
       else
         fillHistos<kUniqueLambda>(lambda);
 
-      if (cAcceptAllLambda)
+      if (cAcceptAllLambda ||
+          (cRejAllLambdaShaDau && !lambdaSharingDauFlag) ||
+          (cSelLambdaMassPdg && lambdaMinDeltaMassFlag) ||
+          (cSelLambdaTScore && lambdaMinTScoreFlag)) {
         trueLambdaFlag = true;
-      else if (cRejAllLambdaShaDau && !lambdaSharingDauFlag)
-        trueLambdaFlag = true;
-      else if (cSelLambdaMassPdg && lambdaMinDeltaMassFlag)
-        trueLambdaFlag = true;
-      else if (cSelLambdaTScore && lambdaMinTScoreFlag)
-        trueLambdaFlag = true;
+      }
 
       if (trueLambdaFlag) {
         if (lambda.v0Type() == kLambda)
@@ -1342,16 +1337,16 @@ struct LambdaSpinPolarization {
   struct PoolTrack {
     float _px, _py, _pz, _pt, _rap, _phi, _mass;
     float _prPx, _prPy, _prPz;
-    float px() const { return _px; }
-    float py() const { return _py; }
-    float pz() const { return _pz; }
-    float pt() const { return _pt; }
-    float rap() const { return _rap; }
-    float phi() const { return _phi; }
-    float mass() const { return _mass; }
-    float prPx() const { return _prPx; }
-    float prPy() const { return _prPy; }
-    float prPz() const { return _prPz; }
+    [[nodiscard]] float px() const { return _px; }
+    [[nodiscard]] float py() const { return _py; }
+    [[nodiscard]] float pz() const { return _pz; }
+    [[nodiscard]] float pt() const { return _pt; }
+    [[nodiscard]] float rap() const { return _rap; }
+    [[nodiscard]] float phi() const { return _phi; }
+    [[nodiscard]] float mass() const { return _mass; }
+    [[nodiscard]] float prPx() const { return _prPx; }
+    [[nodiscard]] float prPy() const { return _prPy; }
+    [[nodiscard]] float prPz() const { return _prPz; }
   };
 
   template <typename T>
@@ -1516,13 +1511,13 @@ struct LambdaSpinPolarization {
                                                 std::array{l2a[0], l2a[1], l2a[2]}},
                                      std::array{l1a[3], l2a[3]});
     std::array<float, 4> llpair = {l1a[0] + l2a[0], l1a[1] + l2a[1], l1a[2] + l2a[2], mPair};
-    std::array<float, 3> vPair;
+    std::array<float, 3> vPair{};
     getBoostVector(llpair, vPair, cInvBoostFlag);
     boost(l1a, vPair);
     boost(l2a, vPair);
     boost(pr1a, vPair);
     boost(pr2a, vPair);
-    std::array<float, 3> v1p, v2p;
+    std::array<float, 3> v1p{}, v2p{};
     getBoostVector(l1a, v1p, cInvBoostFlag);
     getBoostVector(l2a, v2p, cInvBoostFlag);
     boost(pr1a, v1p);
@@ -1535,7 +1530,7 @@ struct LambdaSpinPolarization {
   {
     auto pr1s = pr1;
     auto pr2s = pr2;
-    std::array<float, 3> v1lab, v2lab;
+    std::array<float, 3> v1lab{}, v2lab{};
     getBoostVector(l1, v1lab, cInvBoostFlag);
     getBoostVector(l2, v2lab, cInvBoostFlag);
     boost(pr1s, v1lab);
@@ -1546,7 +1541,7 @@ struct LambdaSpinPolarization {
   template <ParticlePairType part_pair, typename U>
   void fillPairHistos(U const& p1, U const& p2)
   {
-    static constexpr std::string_view SubDir[] = {"LaPLaM", "LaMLaP", "LaPLaP", "LaMLaM"};
+    static constexpr std::array<std::string_view, 4> SubDir = {"LaPLaM", "LaMLaP", "LaPLaP", "LaMLaM"};
 
     constexpr bool IsSigSB = (part_pair == kLambdaSBAntiLambda ||
                               part_pair == kAntiLambdaSBLambda ||
@@ -1614,7 +1609,7 @@ struct LambdaSpinPolarization {
   template <ParticlePairType part_pair>
   void fillPairHistosWeighted(PoolTrack const& p1, PoolTrack const& p2, float w)
   {
-    static constexpr std::string_view SubDir[] = {"LaPLaM", "LaMLaP", "LaPLaP", "LaMLaM"};
+    static constexpr std::array<std::string_view, 4> SubDir = {"LaPLaM", "LaMLaP", "LaPLaP", "LaMLaM"};
 
     constexpr bool IsSigSB = (part_pair == kLambdaSBAntiLambda ||
                               part_pair == kAntiLambdaSBLambda ||
