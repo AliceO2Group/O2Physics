@@ -507,15 +507,15 @@ struct cksspinalignment {
       // v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) *
       // o2::constants::physics::MassK0;
 
-      selectedK0s.push_back({k0s.Px(),
-                             k0s.Py(),
-                             k0s.Pz(),
-                             k0s.M(),
-                             v0.v0cosPA(),
-                             v0.v0radius(),
-                             std::abs(v0.dcapostopv()),
-                             std::abs(v0.dcanegtopv()),
-                             std::abs(v0.dcaV0daughters()),
+      selectedK0s.push_back({static_cast<float>(k0s.Px()),
+                             static_cast<float>(k0s.Py()),
+                             static_cast<float>(k0s.Pz()),
+                             static_cast<float>(k0s.M()),
+                             static_cast<float>(v0.v0cosPA()),
+                             static_cast<float>(v0.v0radius()),
+                             static_cast<float>(std::abs(v0.dcapostopv())),
+                             static_cast<float>(std::abs(v0.dcanegtopv())),
+                             static_cast<float>(std::abs(v0.dcaV0daughters())),
                              // lifetime,
                              posId,
                              negId});

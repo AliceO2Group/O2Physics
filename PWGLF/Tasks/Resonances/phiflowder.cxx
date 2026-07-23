@@ -460,9 +460,9 @@ struct phiflowder {
       nMixedPairs += fillMixedPairs(posGroup2,
                                     negGroup1,
                                     centrality2, qxZDCA, qxZDCC, qyZDCA, qyZDCC);
-    }
 
-    histos.fill(HIST("hMixpairs"), nMixedPairs);
+      histos.fill(HIST("hMixpairs"), nMixedPairs);
+    }
   }
 
   PROCESS_SWITCH(phiflowder, processMixedData, "Process mixed-event K+K- pairs", true);
