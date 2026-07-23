@@ -1269,20 +1269,19 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "Mass_Pt_cosThetaRM_Tauxy", "", 4, varspTRM.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
   }
   if (groupStr.CompareTo("polarization-dielectron-pbpb-midy-he-gen") == 0) {
-    std::array<int, 5> varspTHE = {VarManager::kMCMass, VarManager::kMCPt,VarManager::kMCEventCentrFT0C, VarManager::kMCCosThetaHE,VarManager::kMCPhiHE};
+    std::array<int, 5> varspTHE = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCEventCentrFT0C, VarManager::kMCCosThetaHE, VarManager::kMCPhiHE};
     std::array<int, 5> bins = {50, 30, 10, 20, 10};
-    std::array<double, 5> xmin = {2., 0.,0, -1., 0.0};
-    std::array<double, 5> xmax = {4., 3.,100, 1., 6.28};
+    std::array<double, 5> xmin = {2., 0., 0, -1., 0.0};
+    std::array<double, 5> xmax = {4., 3., 100, 1., 6.28};
     hm->AddHistogram(histClass, "MC_Dielectron_Mass_Pt_Cent_cosThetaHE", "", 5, varspTHE.data(), bins.data(), xmin.data(), xmax.data(), 0, -1, kFALSE);
-  
-    }
+  }
   if (groupStr.CompareTo("polarization-dielectron-pbpb-midy-cs-gen") == 0) {
-    std::array<int, 5> varspTCS = {VarManager::kMCMass, VarManager::kMCPt,VarManager::kMCEventCentrFT0C, VarManager::kMCCosThetaCS,VarManager::kMCPhiCS};
+    std::array<int, 5> varspTCS = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCEventCentrFT0C, VarManager::kMCCosThetaCS, VarManager::kMCPhiCS};
     std::array<int, 5> bins = {50, 30, 10, 20, 10};
-    std::array<double, 5> xmin = {2., 0.,0, -1., 0.0};
-    std::array<double, 5> xmax = {4., 3.,100, 1., 6.28};
+    std::array<double, 5> xmin = {2., 0., 0, -1., 0.0};
+    std::array<double, 5> xmax = {4., 3., 100, 1., 6.28};
     hm->AddHistogram(histClass, "MC_Dielectron_Mass_Pt_Cent_cosThetaCS", "", 5, varspTCS.data(), bins.data(), xmin.data(), xmax.data(), 0, -1, kFALSE);
-   }
+  }
   if (groupStr.CompareTo("pair") == 0) {
     if (subGroupStr.Contains("cepf")) {
       hm->AddHistogram(histClass, "Mass", "", false, 300, 0.0, 12.0, VarManager::kMass);
