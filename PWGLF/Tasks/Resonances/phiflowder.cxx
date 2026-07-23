@@ -55,7 +55,6 @@ struct phiflowder {
   ConfigurableAxis axisCent{"axisCent", {80, 0.f, 80.f}, "Centrality (%)"};
   ConfigurableAxis axisV1{"axisV1", {1000, -1.0f, 1.0f}, "v1"};
   ConfigurableAxis axisEta{"axisEta", {8, -0.8f, 0.8f}, "Eta"};
-  ConfigurableAxis axisNKaons{"axisNKaons", {300, 0.f, 300.f}, "Number of stored kaons per event"};
   ConfigurableAxis axisNPairs{"axisNPairs", {500, 0.f, 5000.f}, "Number of K^{+}K^{-} pairs per event"};
 
   Configurable<int> nEvtMixing{"nEvtMixing", 5, "Number of events to mix"};
@@ -84,6 +83,7 @@ struct phiflowder {
     histos.add("hpQxtvscent", "hpQxtvscent", HistType::kTHnSparseF, {axisCent, axisV1}, true);
     histos.add("hpQypvscent", "hpQypvscent", HistType::kTHnSparseF, {axisCent, axisV1}, true);
     histos.add("hpQytvscent", "hpQytvscent", HistType::kTHnSparseF, {axisCent, axisV1}, true);
+    histos.add("hMixpairs", "hMixpairs", HistType::kTHnSparseF, {axisNPairs}, true);
   }
 
   uint8_t getRequiredPidBit() const
@@ -461,6 +461,8 @@ struct phiflowder {
                                     negGroup1,
                                     centrality2, qxZDCA, qxZDCC, qyZDCA, qyZDCC);
     }
+
+    histos.fill(HIST("hMixpairs"), nMixedPairs);
   }
 
   PROCESS_SWITCH(phiflowder, processMixedData, "Process mixed-event K+K- pairs", true);
