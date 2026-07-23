@@ -812,7 +812,6 @@ void HistogramManager::FillHistClass(const char* className, float* values)
   bool isProfile = false;
   bool isTHn = false;
   int dimension = 0;
-  bool isSparse = kFALSE;
   bool isFillLabelx = kFALSE;
   // TODO: At the moment, maximum 20 dimensions are foreseen for the THn histograms. We should make this more dynamic
   //       But maybe its better to have it like to avoid dynamically allocating this array in the histogram loop
@@ -950,18 +949,14 @@ void HistogramManager::FillHistClass(const char* className, float* values)
       // end if(!isTHn)
     } else {
       if (varW > kNothing) {
-        if (isSparse) {
-          if (auto* hn = dynamic_cast<THnSparse*>(h)) {
-            hn->Fill(fillValues.data(), values[varW]);
-          }
+        if (auto* hn = dynamic_cast<THnSparse*>(h)) {
+          hn->Fill(fillValues.data(), values[varW]);
         } else if (auto* hn = dynamic_cast<THn*>(h)) {
           hn->Fill(fillValues.data(), values[varW]);
         }
       } else {
-        if (isSparse) {
-          if (auto* hn = dynamic_cast<THnSparse*>(h)) {
-            hn->Fill(fillValues.data());
-          }
+        if (auto* hn = dynamic_cast<THnSparse*>(h)) {
+          hn->Fill(fillValues.data());
         } else if (auto* hn = dynamic_cast<THn*>(h)) {
           hn->Fill(fillValues.data());
         }
