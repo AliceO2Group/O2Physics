@@ -517,13 +517,13 @@ class CascadeBuilder
       collisionBuilder.template fillCollision<system>(collisionProducts, col);
 
       auto bachelor = cascade.template bachelor_as<T7>();
-      bachelorIndex = trackBuilder.template getDaughterIndex<modes::Track::kCascadeBachelor>(bachelor, trackProducts, collisionProducts);
+      bachelorIndex = trackBuilder.template getDaughterIndex<modes::Track::kCascadeBachelor>(bachelor, trackProducts, collisionBuilder);
 
       auto posDaughter = cascade.template posTrack_as<T7>();
-      posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionProducts);
+      posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionBuilder);
 
       auto negDaughter = cascade.template negTrack_as<T7>();
-      negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(negDaughter, trackProducts, collisionProducts);
+      negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(negDaughter, trackProducts, collisionBuilder);
 
       fillCascade(collisionProducts, cascadeProducts, cascade, col, bachelorIndex, posDaughterIndex, negDaughterIndex);
     }
@@ -551,13 +551,13 @@ class CascadeBuilder
       collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
 
       auto bachelor = cascade.template bachelor_as<T8>();
-      bachelorIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCascadeBachelor>(col, collisionProducts, mcCols, bachelor, trackProducts, mcParticles, mcBuilder, mcProducts);
+      bachelorIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCascadeBachelor>(col, collisionBuilder, mcCols, bachelor, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       auto posDaughter = cascade.template posTrack_as<T8>();
-      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionProducts, mcCols, posDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionBuilder, mcCols, posDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       auto negDaughter = cascade.template negTrack_as<T8>();
-      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionProducts, mcCols, negDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionBuilder, mcCols, negDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       fillCascade(collisionProducts, cascadeProducts, cascade, col, bachelorIndex, posDaughterIndex, negDaughterIndex);
       if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {

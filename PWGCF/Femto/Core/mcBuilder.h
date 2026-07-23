@@ -162,6 +162,7 @@ class McBuilder
   void fillMcCollisionWithLabel(T1& mcProducts, T2 const& col, T3 const& /*mcCols*/)
   {
     if (!mProduceCollisionLabels) {
+      mcProducts.producedCollisionLabels(-1);
       return;
     }
     // Case: This reconstructed collision has an MC collision
@@ -265,6 +266,7 @@ class McBuilder
   void fillMcSigmaWithLabel(T1 const& col, T2 const& mcCols, T3 const& sigmaDaughter, T4 const& mcParticles, T5& mcProducts)
   {
     if (!mProduceSigmaLabels) {
+      mcProducts.producedSigmaLabels(-1);
       return;
     }
     fillMcLabelGeneric<system>(col, mcCols, sigmaDaughter, mcParticles, mcProducts, [](auto& prod, int64_t p) { prod.producedSigmaLabels(p); }, true);
@@ -274,6 +276,7 @@ class McBuilder
   void fillMcSigmaPlusWithLabel(T1 const& col, T2 const& mcCols, T3 const& sigmaPlusDaughter, T4 const& mcParticles, T5& mcProducts)
   {
     if (!mProduceSigmaPlusLabels) {
+      mcProducts.producedSigmaPlusLabels(-1);
       return;
     }
     fillMcLabelGeneric<system>(col, mcCols, sigmaPlusDaughter, mcParticles, mcProducts, [](auto& prod, int64_t p) { prod.producedSigmaPlusLabels(p); }, true);
