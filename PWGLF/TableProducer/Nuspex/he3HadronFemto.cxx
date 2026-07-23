@@ -146,30 +146,30 @@ enum ParticleFlags {
   kFromOtherDecays = BIT(4), // from other (weak) decays
 };
 
-constexpr double kItsParamsDefault[static_cast<int>(Species::kAllSpecies)][6] = {
+constexpr std::array<std::array<double, 6>, static_cast<int>(Species::kAllSpecies)> kItsParamsDefault = {{
   {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}, // He3
   {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}  // hadron
-};
+}};
 static const std::vector<std::string> kItsParNames{"p0", "p1", "p2", "res0", "res1", "res2"};
 
-constexpr double kBetheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
+constexpr std::array<std::array<double, 6>, 1> kBetheBlochDefault = {{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}}};
 static const std::vector<std::string> kBetheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 
-constexpr double kBetheBlochCorrectionDefault[1][6]{{0.0, -1.e32, -1.e32, 0.0, -1.e32, -1.e32}};
+constexpr std::array<std::array<double, 6>, 1> kBetheBlochCorrectionDefault = {{{0.0, -1.e32, -1.e32, 0.0, -1.e32, -1.e32}}};
 static const std::vector<std::string> kBetheBlochCorrectionParNames{"p0", "p1", "p2", "p3", "p4", "p5"};
 
-constexpr double kDCAxyResDefault[static_cast<int>(Species::kAllSpecies)][4] = {
+constexpr std::array<std::array<double, 4>, static_cast<int>(Species::kAllSpecies)> kDCAxyResDefault = {{
   {1.09e-4, 0.0011, 0.0065, 1.0399}, // He3
   {8.19e-5, 0.004, 0.0026, 1.1741}   // Pr
-};
-constexpr double kDCAzResDefault[static_cast<int>(Species::kAllSpecies)][4] = {
+}};
+constexpr std::array<std::array<double, 4>, static_cast<int>(Species::kAllSpecies)> kDCAzResDefault = {{
   {9.36e-5, 0.0019, 0.0080, 1.416}, // He3
   {1.18e-4, 0.0020, 0.0025, 1.3460} // Pr
-};
+}};
 static const std::vector<std::string> kDCAResParNames{"res0", "res1", "res2", "mean"};
 
-constexpr double kHePidTrkPtParamsHeDefault[3] = {0.3101, -0.1759, 0.0262};
-constexpr double kHePidTrkPParamsHeDefault[3] = {1.1157, -0.9171, 0.1987};
+constexpr std::array<double, 3> kHePidTrkPtParamsHeDefault = {0.3101, -0.1759, 0.0262};
+constexpr std::array<double, 3> kHePidTrkPParamsHeDefault = {0., 0., 0.};
 
 } // namespace
 
@@ -311,13 +311,13 @@ struct he3HadronFemto {
   Configurable<std::string> settingGeoPath{"settingGeoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> settingPidPath{"settingPidPath", "", "Path to the PID response object"};
 
-  Configurable<LabeledArray<double>> settingBetheBlochParams{"settingBetheBlochParams", {kBetheBlochDefault[0], 1, 6, {"He3"}, kBetheBlochParNames}, "TPC Bethe-Bloch parameterisation for He3"};
-  Configurable<LabeledArray<double>> settingBetheBlochCorrectionParams{"settingBetheBlochCorrectionParams", {kBetheBlochCorrectionDefault[0], 1, 6, {"He3"}, kBetheBlochCorrectionParNames}, "TPC Bethe-Bloch correction parameterisation for He3"};
-  Configurable<LabeledArray<double>> settingItsParams{"settingItsParams", {kItsParamsDefault[0], 2, 6, {"He3", "Had"}, kItsParNames}, "ITS parameterisation"};
-  Configurable<LabeledArray<double>> settingDCAxyResParams{"settingDCAxyResParams", {kDCAxyResDefault[0], 2, 4, {"He3", "Had"}, kDCAResParNames}, "DCAxy resolution parameterisation"};
-  Configurable<LabeledArray<double>> settingDCAzResParams{"settingDCAzResParams", {kDCAzResDefault[0], 2, 4, {"He3", "Had"}, kDCAResParNames}, "DCAz resolution parameterisation"};
-  Configurable<LabeledArray<double>> settingHePidTrkPtParams{"settingHePidTrkPtParams", {kHePidTrkPtParamsHeDefault, 1, 3, {"He3"}, {"p0", "p1", "p2"}}, "PID in tracking pT dependence for He3"};
-  Configurable<LabeledArray<double>> settingHePidTrkPParams{"settingHePidTrkPParams", {kHePidTrkPParamsHeDefault, 1, 3, {"He3"}, {"p0", "p1", "p2"}}, "PID in tracking p dependence for He3"};
+  Configurable<LabeledArray<double>> settingBetheBlochParams{"settingBetheBlochParams", {kBetheBlochDefault[0].data(), 1, 6, {"He3"}, kBetheBlochParNames}, "TPC Bethe-Bloch parameterisation for He3"};
+  Configurable<LabeledArray<double>> settingBetheBlochCorrectionParams{"settingBetheBlochCorrectionParams", {kBetheBlochCorrectionDefault[0].data(), 1, 6, {"He3"}, kBetheBlochCorrectionParNames}, "TPC Bethe-Bloch correction parameterisation for He3"};
+  Configurable<LabeledArray<double>> settingItsParams{"settingItsParams", {kItsParamsDefault[0].data(), 2, 6, {"He3", "Had"}, kItsParNames}, "ITS parameterisation"};
+  Configurable<LabeledArray<double>> settingDCAxyResParams{"settingDCAxyResParams", {kDCAxyResDefault[0].data(), 2, 4, {"He3", "Had"}, kDCAResParNames}, "DCAxy resolution parameterisation"};
+  Configurable<LabeledArray<double>> settingDCAzResParams{"settingDCAzResParams", {kDCAzResDefault[0].data(), 2, 4, {"He3", "Had"}, kDCAResParNames}, "DCAz resolution parameterisation"};
+  Configurable<LabeledArray<double>> settingHePidTrkPtParams{"settingHePidTrkPtParams", {kHePidTrkPtParamsHeDefault.data(), 1, 3, {"He3"}, {"p0", "p1", "p2"}}, "PID in tracking pT dependence for He3"};
+  Configurable<LabeledArray<double>> settingHePidTrkPParams{"settingHePidTrkPParams", {kHePidTrkPParamsHeDefault.data(), 1, 3, {"He3"}, {"p0", "p1", "p2"}}, "PID in tracking p dependence for He3"};
 
   Configurable<bool> settingCompensatePIDinTracking{"settingCompensatePIDinTracking", false, "If true, divide tpcInnerParam by the electric charge"};
   Configurable<int> settingMaterialCorrection{"settingMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Material correction type"};
@@ -334,24 +334,23 @@ struct he3HadronFemto {
   SameKindPair<CollisionsFull, TrackCandidates, BinningType> mPair{binningPolicy, settingNoMixedEvents, -1, &cache};
 
   struct He3HadronParams {
-    std::array<float, 6> betheBlochParams;
-    std::array<float, 6> betheBlochCorrectionParams;
+    std::array<float, 6> betheBlochParams = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+    std::array<float, 6> betheBlochCorrectionParams = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     std::array<std::array<float, 6>, static_cast<int>(Species::kAllSpecies)> itsParams;
     std::array<std::array<float, 4>, static_cast<int>(Species::kAllSpecies)> dcaxyResParams;
     std::array<std::array<float, 4>, static_cast<int>(Species::kAllSpecies)> dcazResParams;
-    std::array<float, 3> hePidTrkPtParams;
-    std::array<float, 3> hePidTrkPParams;
+    std::array<float, 3> hePidTrkPtParams = {0.0f, 0.0f, 0.0f};
+    std::array<float, 3> hePidTrkPParams = {0.0f, 0.0f, 0.0f};
   } mHe3HadronParams;
 
   o2::aod::ITSResponse mResponseITS;
 
-  std::vector<int> mRecoCollisionIDs;
   std::vector<bool> mGoodCollisions;
   std::vector<SVCand> mTrackPairs;
   o2::vertexing::DCAFitterN<2> mFitter;
   svPoolCreator mSvPoolCreator{He3PDG, ProtonPDG};
-  int mRunNumber;
-  float mDbz;
+  int mRunNumber = 0;
+  float mDbz = 0.f;
   Service<o2::ccdb::BasicCCDBManager> mCcdb;
   Zorro mZorro;
   OutputObj<ZorroSummary> mZorroSummary{"zorroSummary"};
@@ -1291,7 +1290,6 @@ struct he3HadronFemto {
         }
 
         fillHistograms(he3Hadcand, /*isMc*/ true);
-        auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
         fillTable(he3Hadcand, collision, /*isMC*/ true);
       }
     }
