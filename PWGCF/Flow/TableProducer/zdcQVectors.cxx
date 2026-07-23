@@ -118,11 +118,7 @@ struct ZdcQVectors {
   } extraTS;
 
   ConfigurableAxis axisCent{"axisCent", {90, 0, 90}, "Centrality axis in 1% bins"};
-  ConfigurableAxis axisCent10{"axisCent10", {9, 0, 90}, "Centrality axis in 10% bins"};
   ConfigurableAxis axisQ{"axisQ", {100, -2, 2}, "Q vector (xy) in ZDC"};
-  ConfigurableAxis axisVxBig{"axisVxBig", {100, -0.01, 0.01}, "for Pos X of collision"};
-  ConfigurableAxis axisVyBig{"axisVyBig", {100, -0.01, 0.01}, "for Pos Y of collision"};
-  ConfigurableAxis axisVzBig{"axisVzBig", {100, -10, 10}, "for Pos Z of collision"};
   ConfigurableAxis axisVx{"axisVx", {100, -0.01, 0.01}, "for Pos X of collision"};
   ConfigurableAxis axisVy{"axisVy", {100, -0.01, 0.01}, "for Pos Y of collision"};
   ConfigurableAxis axisVz{"axisVz", {100, -10, 10}, "for vz of collision"};
@@ -272,9 +268,9 @@ struct ZdcQVectors {
 
     if (!cfgFillNothing) {
       if (cfgFillHistRegistry) {
-        registry.add<TH2>(Form("QA/before/hSPplaneA"), "hSPplaneA", kTH2D, {axisPsiA, axisCent10});
-        registry.add<TH2>(Form("QA/before/hSPplaneC"), "hSPplaneC", kTH2D, {axisPsiC, axisCent10});
-        registry.add<TH2>(Form("QA/before/hSPplaneFull"), "hSPplaneFull", kTH2D, {{100, -PI, PI}, axisCent10});
+        registry.add<TH2>(Form("QA/before/hSPplaneA"), "hSPplaneA", kTH2D, {axisPsiA, axisCent});
+        registry.add<TH2>(Form("QA/before/hSPplaneC"), "hSPplaneC", kTH2D, {axisPsiC, axisCent});
+        registry.add<TH2>(Form("QA/before/hSPplaneFull"), "hSPplaneFull", kTH2D, {{100, -PI, PI}, axisCent});
         for (const auto& side : sides) {
           registry.add<TH2>(Form("recentering/before/hZN%s_Qx_vs_Qy", side), Form("hZN%s_Qx_vs_Qy", side), kTH2F, {axisQ, axisQ});
         }
@@ -294,7 +290,7 @@ struct ZdcQVectors {
         // Sides is {A,C} and capcoords is {X,Y}
         for (const auto& side : sides) {
           for (const auto& coord : capCOORDS) {
-            registry.add(Form("recentering/before/hQ%s%s_vs_cent", coord, side), Form("hQ%s%s_vs_cent", coord, side), {HistType::kTProfile, {axisCent10}});
+            registry.add(Form("recentering/before/hQ%s%s_vs_cent", coord, side), Form("hQ%s%s_vs_cent", coord, side), {HistType::kTProfile, {axisCent}});
             registry.add(Form("recentering/before/hQ%s%s_vs_vx", coord, side), Form("hQ%s%s_vs_vx", coord, side), {HistType::kTProfile, {axisVx}});
             registry.add(Form("recentering/before/hQ%s%s_vs_vy", coord, side), Form("hQ%s%s_vs_vy", coord, side), {HistType::kTProfile, {axisVy}});
             registry.add(Form("recentering/before/hQ%s%s_vs_vz", coord, side), Form("hQ%s%s_vs_vz", coord, side), {HistType::kTProfile, {axisVz}});
