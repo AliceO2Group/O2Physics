@@ -1527,7 +1527,7 @@ struct AnalysisSameEventPairing {
             histNames += Form("MCTruthGenPseudoPolPairSel_%s_%s;", sig->GetName(), cut->GetName());
           }
           if (fConfigOptions.fConfigTruthPbPbMIDYHE.value) {
-            histNames += Form("MCTruthGenPoldielectronPbPbPairHESel_%s;", sig->GetName(), cut->GetName());
+            histNames += Form("MCTruthGenPoldielectronPbPbPairHESel_%s_%s;", sig->GetName(), cut->GetName());
           }
           if (fConfigOptions.fConfigTruthPbPbMIDYCS.value) {
             histNames += Form("MCTruthGenPseudoPolPairCSSel_%s_%s;", sig->GetName(), cut->GetName());
@@ -2210,10 +2210,10 @@ struct AnalysisSameEventPairing {
                       }
 
                       if (fConfigOptions.fConfigTruthPbPbMIDYHE.value) {
-                        fHistMan->FillHistClass(Form("MCTruthGenPoldielectronPbPbPairHESel_%s", sig->GetName(), cut->GetName()), VarManager::fgValues);
+                        fHistMan->FillHistClass(Form("MCTruthGenPoldielectronPbPbPairHESel_%s_%s", sig->GetName(), cut->GetName()), VarManager::fgValues);
                       }
                       if (fConfigOptions.fConfigTruthPbPbMIDYCS.value) {
-                        fHistMan->FillHistClass(Form("MCTruthGenPoldielectronPbPbPairCSSel_%s", sig->GetName(), cut->GetName()), VarManager::fgValues);
+                        fHistMan->FillHistClass(Form("MCTruthGenPoldielectronPbPbPairCSSel_%s_%s", sig->GetName(), cut->GetName()), VarManager::fgValues);
                       }
                     }
                   }
