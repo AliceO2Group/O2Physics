@@ -1703,8 +1703,10 @@ struct JetChargedV2 {
       float randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
       float randomConePhi = randomNumber.Uniform(0.0, o2::constants::math::TwoPI);
       float randomConePt = 0;
-      double integralValueRC = fFitModulationV2v3->Integral(randomConePhi - randomConeR, randomConePhi + randomConeR);
-      double rholocalRC = collision.rho() / (2 * randomConeR * temppara[0]) * integralValueRC;
+      double integralValueRC = 0.0;
+      double rholocalRC = 0.0;
+      integralValueRC = fFitModulationV2v3->Integral(randomConePhi - randomConeR, randomConePhi + randomConeR);
+      rholocalRC = collision.rho() / (2 * randomConeR * temppara[0]) * integralValueRC;
 
       int nmode = cfgnMods->at(i);
       if (nmode == cfgNmodA) {
@@ -1744,6 +1746,11 @@ struct JetChargedV2 {
           }
           if (jetWasInCone) {
             randomConePt = 0.0;
+            integralValueRC = fFitModulationV2v3->Integral(randomConePhi - randomConeR, randomConePhi + randomConeR);
+            rholocalRC = collision.rho() / (2 * randomConeR * temppara[0]) * integralValueRC;
+            rcPhiPsi2 = RecoDecay::constrainAngle(randomConePhi - ep2, -o2::constants::math::PI);
+            absRcPhiPsi2 = std::abs(rcPhiPsi2);
+
             for (auto const& track : tracks) {
               if (jetderiveddatautilities::selectTrack(track, trackSelection)) { // if track selection is uniformTrack, dcaXY and dcaZ cuts need to be added as they aren't in the selection so that they can be studied here
                 float dPhi = RecoDecay::constrainAngle(track.phi() - randomConePhi, -o2::constants::math::PI);
