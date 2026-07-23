@@ -47,9 +47,9 @@
 using namespace o2;
 using namespace o2::framework;
 
-static constexpr int NumDecays = 12;
+static constexpr int NumDecays = 13;
 static constexpr int NumParameters = 1;
-static constexpr std::array<std::array<int, NumParameters>, NumDecays> DefaultParameters{{{1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}}};
+static constexpr std::array<std::array<int, NumParameters>, NumDecays> DefaultParameters{{{1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}, {1}}};
 static const std::vector<std::string> parameterNames{"enable"};
 static const std::vector<std::string> particleNames{"K0s",
                                                     "Lambda",
@@ -59,6 +59,7 @@ static const std::vector<std::string> particleNames{"K0s",
                                                     "SigmaMinus",
                                                     "Anti-SigmaMinus",
                                                     "Xi0",
+                                                    "Anti-Xi0",
                                                     "Xi",
                                                     "Anti-Xi",
                                                     "Omega",
@@ -72,6 +73,7 @@ static const std::vector<int> pdgCodes{PDG_t::kK0Short,
                                        PDG_t::kSigmaMinus,
                                        PDG_t::kSigmaBarPlus,
                                        o2::constants::physics::kXi0,
+                                       -o2::constants::physics::kXi0,
                                        PDG_t::kXiMinus,
                                        PDG_t::kXiPlusBar,
                                        PDG_t::kOmegaMinus,
