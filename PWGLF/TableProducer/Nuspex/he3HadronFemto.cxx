@@ -258,6 +258,7 @@ struct he3HadronFemto {
   Configurable<int> settingHadPDGCode{"settingHadPDGCode", 211, "Hadron - PDG code"};
 
   struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"cutSettings"};
     Configurable<float> settingCutVertex{"settingCutVertex", 10.0f, "Accepted z-vertex range"};
     Configurable<float> settingCutRigidityMinHe3{"settingCutRigidityMinHe3", 0.8f, "Minimum rigidity for He3"};
@@ -556,7 +557,7 @@ struct he3HadronFemto {
     if (std::abs(candidate.eta()) > cutSettings.settingCutEta) {
       return false;
     }
-    const int minTPCNClsFound = ispecies == Species::kHe3 ? static_cast<int>(cutSettings.settingCutNClsTPCHe3) : static_cast<int>(cutSettings.settingCutNClsTPCHe3);
+    const int minTPCNClsFound = ispecies == Species::kHe3 ? static_cast<int>(cutSettings.settingCutNClsTPCHe3) : static_cast<int>(cutSettings.settingCutNClsTPC);
     const int minTPCNClsCrossedRows = 70;
     const float minChi2NCl = ispecies == Species::kHe3 ? static_cast<int>(cutSettings.settingCutChi2tpcLowHe3) : static_cast<int>(cutSettings.settingCutChi2tpcLow);
     const float maxChi2NCl = 4.f;
