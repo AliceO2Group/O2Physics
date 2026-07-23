@@ -90,44 +90,40 @@ const std::vector<int> particleCharge{1, 1, 1, 1, 2, 2};
 constexpr int NBetheParams = 6;
 const std::vector<int> hfMothCodes = {511, 521, 531, 541, 5122}; // b-mesons + Lambda_b
 const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
-const std::array<std::array<double, NBetheParams>, NParticles> kBetheBlochDefault{{
-  {13.611469, 3.598765, -0.021138, 2.039562, 0.651040, 0.09},     // pion
-  {5.393020, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},       // proton
-  {5.393020, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},       // deuteron
-  {5.393020, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},       // triton
-  {-126.557359, -0.858569, 1.111643, 1.210323, 2.656374, 0.09},   // helion
-  {-126.557359, -0.858569, 1.111643, 1.210323, 2.656374, 0.09}}}; // alpha
+const std::array<std::array<double, NBetheParams>, NParticles> kBetheBlochDefault{{{13.611469, 3.598765, -0.021138, 2.039562, 0.651040, 0.09},     // pion
+                                                                                   {5.393020, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},       // proton
+                                                                                   {5.393020, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},       // deuteron
+                                                                                   {5.393020, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},       // triton
+                                                                                   {-126.557359, -0.858569, 1.111643, 1.210323, 2.656374, 0.09},   // helion
+                                                                                   {-126.557359, -0.858569, 1.111643, 1.210323, 2.656374, 0.09}}}; // alpha
 
 // ---- Track PID/quality selection defaults (per species) --------------------
 constexpr int NTrkSettings = 13;
 const std::vector<std::string> trackPIDsettingsNames{"useBBparams", "minITSnCls", "minITSnClscos", "minTPCnCls", "maxTPCchi2", "minTPCchi2", "maxITSchi2", "maxTPCnSigma", "maxDcaXY", "maxDcaZ", "minITSclsSize", "minTPCnClsCrossedRows", "minReqClusterITSib"};
-const std::array<std::array<double, NTrkSettings>, NParticles> kTrackPIDSettings{{
-  {0, 0, 4, 60, 4.0, 0.5, 100, 2.5, 2., 2., 0., 70, 1},
-  {1, 0, 4, 70, 4.0, 0.5, 100, 3.0, 2., 2., 0., 70, 1},
-  {1, 0, 4, 70, 4.0, 0.5, 100, 3.0, 2., 2., 0., 70, 1},
-  {1, 0, 4, 70, 4.0, 0.5, 100, 3.0, 2., 2., 0., 70, 1},
-  {1, 0, 4, 75, 4.0, 0.5, 100, 5.0, 2., 2., 0., 70, 1},
-  {1, 0, 4, 70, 4.0, 0.5, 100, 5.0, 2., 2., 0., 70, 1}}};
+const std::array<std::array<double, NTrkSettings>, NParticles> kTrackPIDSettings{{{0, 0, 4, 60, 4.0, 0.5, 100, 2.5, 2., 2., 0., 70, 1},
+                                                                                  {1, 0, 4, 70, 4.0, 0.5, 100, 3.0, 2., 2., 0., 70, 1},
+                                                                                  {1, 0, 4, 70, 4.0, 0.5, 100, 3.0, 2., 2., 0., 70, 1},
+                                                                                  {1, 0, 4, 70, 4.0, 0.5, 100, 3.0, 2., 2., 0., 70, 1},
+                                                                                  {1, 0, 4, 75, 4.0, 0.5, 100, 5.0, 2., 2., 0., 70, 1},
+                                                                                  {1, 0, 4, 70, 4.0, 0.5, 100, 5.0, 2., 2., 0., 70, 1}}};
 
 constexpr int NTrkSettings2 = 7;
 const std::vector<std::string> trackPIDsettingsNames2{"useITSnsigma", "minITSnsigma", "maxITSnsigma", "fillsparsh", "useTPCnsigmaTOF", "maxTPCnsigmaTOF", "maxTOFnsigma"};
-const std::array<std::array<double, NTrkSettings2>, NParticles> kTrackPIDSettings2{{
-  {1, -5, 4, 0, 1, 2, 2},
-  {1, -5, 4, 0, 1, 2, 2},
-  {1, -5, 4, 0, 1, 2, 2},
-  {1, -5, 4, 1, 1, 2, 2},
-  {1, -5, 4, 1, 1, 2, 2},
-  {1, -5, 4, 1, 1, 2, 2}}};
+const std::array<std::array<double, NTrkSettings2>, NParticles> kTrackPIDSettings2{{{1, -5, 4, 0, 1, 2, 2},
+                                                                                    {1, -5, 4, 0, 1, 2, 2},
+                                                                                    {1, -5, 4, 0, 1, 2, 2},
+                                                                                    {1, -5, 4, 1, 1, 2, 2},
+                                                                                    {1, -5, 4, 1, 1, 2, 2},
+                                                                                    {1, -5, 4, 1, 1, 2, 2}}};
 
 // ---- pT-dependent reconstruction correction parameters for He3/He4 ---------
 constexpr int NFittingParticle = 4;
 constexpr int NFittingParameters = 4;
 const std::vector<std::string> trackcorrectionNames{"a", "b", "c", "d"};
-const std::array<std::array<double, NFittingParameters>, NFittingParticle> ktrackcorrection{{
-  {0.464215, 0.195771, 0.0183111, 0.0},  // He3
-  {0.464215, 0.195771, 0.0183111, 0.0},  // anti-He3
-  {0.00765, 0.503791, -1.10517, 0.0},    // He4
-  {0.00765, 0.503791, -1.10517, 0.0}}};  // anti-He4
+const std::array<std::array<double, NFittingParameters>, NFittingParticle> ktrackcorrection{{{0.464215, 0.195771, 0.0183111, 0.0}, // He3
+                                                                                             {0.464215, 0.195771, 0.0183111, 0.0}, // anti-He3
+                                                                                             {0.00765, 0.503791, -1.10517, 0.0},   // He4
+                                                                                             {0.00765, 0.503791, -1.10517, 0.0}}}; // anti-He4
 
 // ---- pT-dependent DCA cut parameters ----------------------------------------
 //   DCAxy(pt) = p0 * exp( p1 * pt) + p2
@@ -136,9 +132,8 @@ constexpr int NDCATypes = 2;
 constexpr int NDCAParameters = 3;
 const std::vector<std::string> dcaNames{"p0", "p1", "p2"};
 const std::vector<std::string> dcaTypeNames{"DCAxy", "DCAz"};
-const std::array<std::array<double, NDCAParameters>, NDCATypes> kDCAcorrection{{
-  {0.0118, -0.6889, 0.0017},
-  {0.1014, 1.7512, 0.0024}}};
+const std::array<std::array<double, NDCAParameters>, NDCATypes> kDCAcorrection{{{0.0118, -0.6889, 0.0017},
+                                                                                {0.1014, 1.7512, 0.0024}}};
 
 // ---- MC decay-origin classification -----------------------------------------
 constexpr int DecayTypePrimary = 0;
