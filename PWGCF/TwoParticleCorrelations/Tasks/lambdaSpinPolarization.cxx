@@ -554,40 +554,53 @@ struct LambdaTableProducer {
   template <RunType run, typename C>
   bool selCollision(C const& col)
   {
-    if (col.posZ() <= cMinZVtx || col.posZ() >= cMaxZVtx)
+    if (col.posZ() <= cMinZVtx || col.posZ() >= cMaxZVtx) {
       return false;
-
-    if constexpr (run == kRun3) {
-      if (cCentEstimator == kCentFT0M)
-        cent = col.centFT0M();
-      else if (cCentEstimator == kCentFT0C)
-        cent = col.centFT0C();
-      if (cSel8Trig && !col.sel8())
-        return false;
-    } else {
-      cent = col.centRun2V0M();
-      if (cInt7Trig && !col.alias_bit(kINT7))
-        return false;
-      if (cSel7Trig && !col.sel7())
-        return false;
     }
 
-    if (cent <= cMinMult || cent >= cMaxMult)
+    if constexpr (run == kRun3) {
+      if (cCentEstimator == kCentFT0M) {
+        cent = col.centFT0M();
+      } else if (cCentEstimator == kCentFT0C) {
+        cent = col.centFT0C();
+      }
+      if (cSel8Trig && !col.sel8()) {
+        return false;
+      }
+    } else {
+      cent = col.centRun2V0M();
+      if (cInt7Trig && !col.alias_bit(kINT7)) {
+        return false;
+      }
+      if (cSel7Trig && !col.sel7()) {
+        return false;
+      }
+    }
+
+    if (cent <= cMinMult || cent >= cMaxMult) {
       return false;
-    if (cTriggerTvxSel && !col.selection_bit(aod::evsel::kIsTriggerTVX))
+    }
+    if (cTriggerTvxSel && !col.selection_bit(aod::evsel::kIsTriggerTVX)) {
       return false;
-    if (cTFBorder && !col.selection_bit(aod::evsel::kNoTimeFrameBorder))
+    }
+    if (cTFBorder && !col.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return false;
-    if (cNoItsROBorder && !col.selection_bit(aod::evsel::kNoITSROFrameBorder))
+    }
+    if (cNoItsROBorder && !col.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return false;
-    if (cItsTpcVtx && !col.selection_bit(aod::evsel::kIsVertexITSTPC))
+    }
+    if (cItsTpcVtx && !col.selection_bit(aod::evsel::kIsVertexITSTPC)) {
       return false;
-    if (cPileupReject && !col.selection_bit(aod::evsel::kNoSameBunchPileup))
+    }
+    if (cPileupReject && !col.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
-    if (cZVtxTimeDiff && !col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+    }
+    if (cZVtxTimeDiff && !col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
-    if (cIsGoodITSLayers && !col.selection_bit(aod::evsel::kIsGoodITSLayersAll))
+    }
+    if (cIsGoodITSLayers && !col.selection_bit(aod::evsel::kIsGoodITSLayersAll)) {
       return false;
+    }
 
     mult = col.multNTracksPV();
     return true;
@@ -596,23 +609,28 @@ struct LambdaTableProducer {
   // Kinematic Selection
   bool kinCutSelection(float const& pt, float const& rap, float const& ptMin, float const& ptMax, float const& rapMax)
   {
-    return !(pt <= ptMin || pt >= ptMax || rap >= rapMax);
+    return pt > ptMin && pt < ptMax && rap < rapMax;
   }
 
   // Track Selection
   template <typename T>
   bool selTrack(T const& track)
   {
-    if (!kinCutSelection(track.pt(), std::abs(track.eta()), cTrackMinPt, cTrackMaxPt, cTrackEtaCut))
+    if (!kinCutSelection(track.pt(), std::abs(track.eta()), cTrackMinPt, cTrackMaxPt, cTrackEtaCut)) {
       return false;
-    if (track.tpcNClsCrossedRows() <= cMinTpcCrossedRows)
+    }
+    if (track.tpcNClsCrossedRows() <= cMinTpcCrossedRows) {
       return false;
-    if (track.tpcCrossedRowsOverFindableCls() < cMinTpcCROverCls)
+    }
+    if (track.tpcCrossedRowsOverFindableCls() < cMinTpcCROverCls) {
       return false;
-    if (track.tpcNClsShared() > cMaxTpcSharedClusters)
+    }
+    if (track.tpcNClsShared() > cMaxTpcSharedClusters) {
       return false;
-    if (track.tpcChi2NCl() > cMaxChi2Tpc)
+    }
+    if (track.tpcChi2NCl() > cMaxChi2Tpc) {
       return false;
+    }
     return true;
   }
 
@@ -622,8 +640,9 @@ struct LambdaTableProducer {
   {
     auto posTrack = v0.template posTrack_as<T>();
     auto negTrack = v0.template negTrack_as<T>();
-    if (!selTrack(posTrack) || !selTrack(negTrack))
+    if (!selTrack(posTrack) || !selTrack(negTrack)) {
       return false;
+    }
 
     // Apply DCA Selection on Daughter Tracks Based on Lambda/AntiLambda daughters
     float dcaProton = 0., dcaPion = 0.;
@@ -634,26 +653,32 @@ struct LambdaTableProducer {
       dcaPion = std::abs(v0.dcapostopv());
       dcaProton = std::abs(v0.dcanegtopv());
     }
-    if (dcaProton < cMinDcaProtonToPV || dcaPion < cMinDcaPionToPV)
+    if (dcaProton < cMinDcaProtonToPV || dcaPion < cMinDcaPionToPV) {
       return false;
+    }
     return true;
   }
 
   template <typename C, typename V, typename T>
   bool topoCutSelection(C const& col, V const& v0, T const&)
   {
-    if (v0.dcaV0daughters() <= cMinV0DcaDaughters || v0.dcaV0daughters() >= cMaxV0DcaDaughters)
+    if (v0.dcaV0daughters() <= cMinV0DcaDaughters || v0.dcaV0daughters() >= cMaxV0DcaDaughters) {
       return false;
-    if (v0.dcav0topv() <= cMinDcaV0ToPV || v0.dcav0topv() >= cMaxDcaV0ToPV)
+    }
+    if (v0.dcav0topv() <= cMinDcaV0ToPV || v0.dcav0topv() >= cMaxDcaV0ToPV) {
       return false;
-    if (v0.v0radius() <= cMinV0TransRadius || v0.v0radius() >= cMaxV0TransRadius)
+    }
+    if (v0.v0radius() <= cMinV0TransRadius || v0.v0radius() >= cMaxV0TransRadius) {
       return false;
+    }
 
     float ctau = v0.distovertotmom(col.posX(), col.posY(), col.posZ()) * MassLambda0;
-    if (ctau <= cMinV0CTau || ctau >= cMaxV0CTau)
+    if (ctau <= cMinV0CTau || ctau >= cMaxV0CTau) {
       return false;
-    if (v0.v0cosPA() <= cMinV0CosPA)
+    }
+    if (v0.v0cosPA() <= cMinV0CosPA) {
       return false;
+    }
     return true;
   }
 
@@ -712,21 +737,25 @@ struct LambdaTableProducer {
   template <typename C, typename V, typename T>
   bool selV0Particle(C const& col, V const& v0, T const& tracks, ParticleType& v0Type)
   {
-    if (!selLambdaMassWindow(v0, tracks, v0Type))
+    if (!selLambdaMassWindow(v0, tracks, v0Type)) {
       return false;
+    }
     histos.fill(HIST("Tracks/h1f_tracks_info"), kV0IsLambdaOrAntiLambda);
 
-    if (!selDaughterTracks(v0, tracks, v0Type))
+    if (!selDaughterTracks(v0, tracks, v0Type)) {
       return false;
+    }
     histos.fill(HIST("Tracks/h1f_tracks_info"), kPassV0DauTrackSel);
 
     float rap = cDoEtaAnalysis ? std::abs(v0.eta()) : std::abs(v0.yLambda());
-    if (!kinCutSelection(v0.pt(), rap, cMinV0Pt, cMaxV0Pt, cMaxV0Rap))
+    if (!kinCutSelection(v0.pt(), rap, cMinV0Pt, cMaxV0Pt, cMaxV0Rap)) {
       return false;
+    }
     histos.fill(HIST("Tracks/h1f_tracks_info"), kPassV0KinCuts);
 
-    if (!topoCutSelection(col, v0, tracks))
+    if (!topoCutSelection(col, v0, tracks)) {
       return false;
+    }
     histos.fill(HIST("Tracks/h1f_tracks_info"), kPassV0TopoSel);
 
     // All Selection Criterion Passed
@@ -740,11 +769,13 @@ struct LambdaTableProducer {
     auto negTrack = v0.template negTrack_as<T>();
     auto posCC = posTrack.compatibleCollIds();
     auto negCC = negTrack.compatibleCollIds();
-    if (posCC.size() > 1 || negCC.size() > 1)
+    if (posCC.size() > 1 || negCC.size() > 1) {
       return true;
+    }
     if ((posCC.size() != 0 && posCC[0] != posTrack.collisionId()) ||
-        (negCC.size() != 0 && negCC[0] != negTrack.collisionId()))
+        (negCC.size() != 0 && negCC[0] != negTrack.collisionId())) {
       return true;
+    }
     return false;
   }
 
@@ -764,8 +795,9 @@ struct LambdaTableProducer {
   bool selTrueMcRecLambda(V const& v0, T const&)
   {
     auto mcpart = v0.template mcParticle_as<aod::McParticles>();
-    if (std::abs(mcpart.pdgCode()) != kLambda0)
+    if (std::abs(mcpart.pdgCode()) != kLambda0) {
       return false;
+    }
 
     if (cCheckRecoDauFlag) {
       auto postrack = v0.template posTrack_as<T>();
@@ -794,8 +826,9 @@ struct LambdaTableProducer {
   template <ParticleType part, typename V>
   float getCorrectionFactors(V const& v0)
   {
-    if (!cCorrectionFlag)
+    if (!cCorrectionFlag) {
       return 1.;
+    }
 
     // Get  from CCDB
     auto ccdbObj = ccdb->getForTimeStamp<TList>(cPathCCDB.value, 1);
@@ -907,8 +940,9 @@ struct LambdaTableProducer {
     histos.fill(HIST("Events/h1f_collisions_info"), kTotCol);
 
     if constexpr (dmc == kData) {
-      if (!selCollision<run>(collision))
+      if (!selCollision<run>(collision)) {
         return;
+      }
     }
 
     histos.fill(HIST("Events/h1f_collisions_info"), kPassSelCol);
@@ -927,23 +961,27 @@ struct LambdaTableProducer {
     for (auto const& v0 : v0tracks) {
       if constexpr (dmc == kMC) {
         histos.fill(HIST("Tracks/h1f_tracks_info"), kTracksBeforeHasMcParticle);
-        if (!v0.has_mcParticle())
+        if (!v0.has_mcParticle()) {
           continue;
+        }
       }
 
       histos.fill(HIST("Tracks/h1f_tracks_info"), kAllV0Tracks);
       histos.fill(HIST("Tracks/h2f_armpod_before_sel"), v0.alpha(), v0.qtarm());
 
-      if (!selV0Particle(collision, v0, tracks, v0Type))
+      if (!selV0Particle(collision, v0, tracks, v0Type)) {
         continue;
-      if (cV0TypeSelFlag && v0.v0Type() != cV0TypeSelection)
+      }
+      if (cV0TypeSelFlag && v0.v0Type() != cV0TypeSelection) {
         continue;
+      }
 
       histos.fill(HIST("Tracks/h1f_tracks_info"), kAllSelPassed);
 
       if constexpr (run == kRun3) {
-        if (cRemoveAmbiguousTracks && hasAmbiguousDaughters(v0, tracks))
+        if (cRemoveAmbiguousTracks && hasAmbiguousDaughters(v0, tracks)) {
           continue;
+        }
       }
 
       mass = (v0Type == kLambda) ? v0.mLambda() : v0.mAntiLambda();
@@ -954,12 +992,15 @@ struct LambdaTableProducer {
 
       if constexpr (dmc == kMC) {
         histos.fill(HIST("Tracks/h2f_tracks_pid_before_sel"), v0.mcParticle().pdgCode(), v0.pt());
-        if (cSelMCPSV0)
+        if (cSelMCPSV0) {
           v0PrmScdType = isPrimaryV0(v0);
-        if (cSelectTrueLambda && !selTrueMcRecLambda(v0, tracks))
+        }
+        if (cSelectTrueLambda && !selTrueMcRecLambda(v0, tracks)) {
           continue;
-        if (v0PrmScdType == kSecondary)
+        }
+        if (v0PrmScdType == kSecondary) {
           fillLambdaMothers(v0, tracks);
+        }
         histos.fill(HIST("Tracks/h1f_tracks_info"), kPassTrueLambdaSel);
         histos.fill(HIST("Tracks/h2f_tracks_pid_after_sel"), v0.mcParticle().pdgCode(), v0.pt());
         if (cRecoMomResoFlag) {
@@ -969,8 +1010,9 @@ struct LambdaTableProducer {
           rap = mc.y();
           phi = mc.phi();
           float y = cDoEtaAnalysis ? eta : rap;
-          if (!kinCutSelection(pt, std::abs(y), cMinV0Pt, cMaxV0Pt, cMaxV0Rap))
+          if (!kinCutSelection(pt, std::abs(y), cMinV0Pt, cMaxV0Pt, cMaxV0Rap)) {
             continue;
+          }
         }
       }
 
@@ -1012,17 +1054,19 @@ struct LambdaTableProducer {
     float prPx = 0., prPy = 0., prPz = 0.;
 
     for (auto const& mcpart : mcParticles) {
-      if (mcpart.pdgCode() == kLambda0)
+      if (mcpart.pdgCode() == kLambda0) {
         v0Type = kLambda;
-      else if (mcpart.pdgCode() == kLambda0Bar)
+      } else if (mcpart.pdgCode() == kLambda0Bar) {
         v0Type = kAntiLambda;
-      else
+      } else {
         continue;
+      }
 
       v0PrmScdType = mcpart.isPhysicalPrimary() ? kPrimary : kSecondary;
       rap = cDoEtaAnalysis ? mcpart.eta() : mcpart.y();
-      if (!kinCutSelection(mcpart.pt(), std::abs(rap), cMinV0Pt, cMaxV0Pt, cMaxV0Rap))
+      if (!kinCutSelection(mcpart.pt(), std::abs(rap), cMinV0Pt, cMaxV0Pt, cMaxV0Rap)) {
         continue;
+      }
       histos.fill(HIST("Tracks/h1f_tracks_info"), kGenTotAccLambda);
 
       if (!mcpart.has_daughters()) {
@@ -1045,10 +1089,12 @@ struct LambdaTableProducer {
         vDauPz.push_back(dautrack.pz());
       }
       if (cGenDecayChannel) {
-        if (v0Type == kLambda && (daughterPDGs[0] != kProton || daughterPDGs[1] != kPiMinus))
+        if (v0Type == kLambda && (daughterPDGs[0] != kProton || daughterPDGs[1] != kPiMinus)) {
           continue;
-        if (v0Type == kAntiLambda && (daughterPDGs[0] != kProtonBar || daughterPDGs[1] != kPiPlus))
+        }
+        if (v0Type == kAntiLambda && (daughterPDGs[0] != kProtonBar || daughterPDGs[1] != kPiPlus)) {
           continue;
+        }
       }
       histos.fill(HIST("Tracks/h1f_tracks_info"), kGenLambdaToPrPi);
 
@@ -1100,16 +1146,19 @@ struct LambdaTableProducer {
   void analyzeMcRecoGen(M const& mcCollision, C const& collisions, V const& /*V0s*/, T const& /*tracks*/, P const& mcParticles)
   {
     int nRecCols = collisions.size();
-    if (nRecCols != 0)
+    if (nRecCols != 0) {
       histos.fill(HIST("McGen/h1f_collision_recgen"), nRecCols);
-    if (nRecCols != 1)
+    }
+    if (nRecCols != 1) {
       return;
+    }
 
     histos.fill(HIST("McGen/h1f_collisions_info"), kTotCol);
     if (!collisions.begin().has_mcCollision() ||
         !selCollision<run>(collisions.begin()) ||
-        collisions.begin().mcCollisionId() != mcCollision.globalIndex())
+        collisions.begin().mcCollisionId() != mcCollision.globalIndex()) {
       return;
+    }
     histos.fill(HIST("McGen/h1f_collisions_info"), kPassSelCol);
     histos.fill(HIST("McGen/h2f_collision_posZ"), mcCollision.posZ(), collisions.begin().posZ());
     fillLambdaMcGenTables<run>(mcCollision, mcParticles);
@@ -1217,51 +1266,57 @@ struct LambdaTracksExtProducer {
       std::vector<int64_t> vSharedDauLambdaIndex;
       float tLambda = 0., tTrack = 0.;
 
-      if (lambda.v0Type() == kLambda)
+      if (lambda.v0Type() == kLambda) {
         ++nTotLambda;
-      else if (lambda.v0Type() == kAntiLambda)
+      } else if (lambda.v0Type() == kAntiLambda) {
         ++nTotAntiLambda;
+      }
 
       tLambda = (cA * std::abs(lambda.mass() - MassLambda0)) +
                 (cB * lambda.dcaDau()) +
                 (cC * std::abs(lambda.cosPA() - 1.));
 
       for (auto const& track : tracks) {
-        if (lambda.index() == track.index())
+        if (lambda.index() == track.index()) {
           continue;
+        }
 
         if (lambda.posTrackId() == track.posTrackId() || lambda.negTrackId() == track.negTrackId()) {
           vSharedDauLambdaIndex.push_back(track.index());
           lambdaSharingDauFlag = true;
 
-          if (lambda.v0Type() == kLambda && track.v0Type() == kAntiLambda)
+          if (lambda.v0Type() == kLambda && track.v0Type() == kAntiLambda) {
             histos.fill(HIST("h2d_n2_etaphi_LaP_LaM"), lambda.eta() - track.eta(),
                         RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PIHalf));
-          else if (lambda.v0Type() == kAntiLambda && track.v0Type() == kLambda)
+          } else if (lambda.v0Type() == kAntiLambda && track.v0Type() == kLambda) {
             histos.fill(HIST("h2d_n2_etaphi_LaM_LaP"), lambda.eta() - track.eta(),
                         RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PIHalf));
-          else if (lambda.v0Type() == kLambda && track.v0Type() == kLambda)
+          } else if (lambda.v0Type() == kLambda && track.v0Type() == kLambda) {
             histos.fill(HIST("h2d_n2_etaphi_LaP_LaP"), lambda.eta() - track.eta(),
                         RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PIHalf));
-          else if (lambda.v0Type() == kAntiLambda && track.v0Type() == kAntiLambda)
+          } else if (lambda.v0Type() == kAntiLambda && track.v0Type() == kAntiLambda) {
             histos.fill(HIST("h2d_n2_etaphi_LaM_LaM"), lambda.eta() - track.eta(),
                         RecoDecay::constrainAngle((lambda.phi() - track.phi()), -PIHalf));
+          }
 
-          if (std::abs(lambda.mass() - MassLambda0) > std::abs(track.mass() - MassLambda0))
+          if (std::abs(lambda.mass() - MassLambda0) > std::abs(track.mass() - MassLambda0)) {
             lambdaMinDeltaMassFlag = false;
+          }
 
           tTrack = (cA * std::abs(track.mass() - MassLambda0)) +
                    (cB * track.dcaDau()) +
                    (cC * std::abs(track.cosPA() - 1.));
-          if (tLambda > tTrack)
+          if (tLambda > tTrack) {
             lambdaMinTScoreFlag = false;
+          }
         }
       }
 
-      if (lambdaSharingDauFlag)
+      if (lambdaSharingDauFlag) {
         fillHistos<kLambdaShareDau>(lambda);
-      else
+      } else {
         fillHistos<kUniqueLambda>(lambda);
+      }
 
       if (cAcceptAllLambda ||
           (cRejAllLambdaShaDau && !lambdaSharingDauFlag) ||
@@ -1271,23 +1326,28 @@ struct LambdaTracksExtProducer {
       }
 
       if (trueLambdaFlag) {
-        if (lambda.v0Type() == kLambda)
+        if (lambda.v0Type() == kLambda) {
           ++nSelLambda;
-        else if (lambda.v0Type() == kAntiLambda)
+        } else if (lambda.v0Type() == kAntiLambda) {
           ++nSelAntiLambda;
+        }
       }
 
       lambdaTrackExtTable(lambdaSharingDauFlag, vSharedDauLambdaIndex, trueLambdaFlag);
     }
 
-    if (nTotLambda != 0)
+    if (nTotLambda != 0) {
       histos.fill(HIST("h1i_totlambda_mult"), nTotLambda);
-    if (nTotAntiLambda != 0)
+    }
+    if (nTotAntiLambda != 0) {
       histos.fill(HIST("h1i_totantilambda_mult"), nTotAntiLambda);
-    if (nSelLambda != 0)
+    }
+    if (nSelLambda != 0) {
       histos.fill(HIST("h1i_lambda_mult"), nSelLambda);
-    if (nSelAntiLambda != 0)
+    }
+    if (nSelAntiLambda != 0) {
       histos.fill(HIST("h1i_antilambda_mult"), nSelAntiLambda);
+    }
   }
 };
 
@@ -1695,26 +1755,31 @@ struct LambdaSpinPolarization {
   void analyzePairsWithMassWindow(T const& trks_1, T const& trks_2)
   {
     for (auto const& trk_1 : trks_1) {
-      if (!isInclusive(trk_1.mass()))
+      if (!isInclusive(trk_1.mass())) {
         continue;
+      }
       bool t1sig = isSignal(trk_1.mass());
       bool t1sb = isSideband(trk_1.mass());
 
       for (auto const& trk_2 : trks_2) {
         if constexpr (samelambda) {
-          if (trk_1.index() == trk_2.index())
+          if (trk_1.index() == trk_2.index()) {
             continue;
+          }
         }
-        if (!isInclusive(trk_2.mass()))
+        if (!isInclusive(trk_2.mass())) {
           continue;
+        }
         bool t2sig = isSignal(trk_2.mass());
         bool t2sb = isSideband(trk_2.mass());
 
         fillPairHistos<part_pair_sig>(trk_1, trk_2);
-        if ((t1sig && t2sb) || (t1sb && t2sig))
+        if ((t1sig && t2sb) || (t1sb && t2sig)) {
           fillPairHistos<part_pair_bkg_sigsb>(trk_1, trk_2);
-        if (t1sb && t2sb)
+        }
+        if (t1sb && t2sb) {
           fillPairHistos<part_pair_bkg_sbsb>(trk_1, trk_2);
+        }
       }
     }
   }
@@ -1730,30 +1795,35 @@ struct LambdaSpinPolarization {
   {
 
     for (auto const& trk_1 : trks_1) {
-      if (!isInclusive(trk_1.mass()))
+      if (!isInclusive(trk_1.mass())) {
         continue;
+      }
       const bool t1sig = isSignal(trk_1.mass());
       const bool t1sb = isSideband(trk_1.mass());
       PoolTrack p1 = toPoolTrack(trk_1);
 
       for (auto const& trk_2 : trks_2) {
         if constexpr (samelambda) {
-          if (trk_1.index() == trk_2.index())
+          if (trk_1.index() == trk_2.index()) {
             continue;
+          }
         }
-        if (!isInclusive(trk_2.mass()))
+        if (!isInclusive(trk_2.mass())) {
           continue;
+        }
         const bool t2sig = isSignal(trk_2.mass());
         const bool t2sb = isSideband(trk_2.mass());
         PoolTrack p2 = toPoolTrack(trk_2);
 
         fillPairHistosWeighted<part_pair_sig>(p1, p2, 1.0f);
 
-        if ((t1sig && t2sb) || (t1sb && t2sig))
+        if ((t1sig && t2sb) || (t1sb && t2sig)) {
           fillPairHistosWeighted<part_pair_bkg_sigsb>(p1, p2, 1.0f);
+        }
 
-        if (t1sb && t2sb)
+        if (t1sb && t2sb) {
           fillPairHistosWeighted<part_pair_bkg_sbsb>(p1, p2, 1.0f);
+        }
       }
     }
   }
@@ -1768,30 +1838,38 @@ struct LambdaSpinPolarization {
     std::vector<PoolTrack> meVec1, meVec2;
     meVec1.reserve(me_pool_1.size());
     meVec2.reserve(me_pool_2.size());
-    for (auto const& me : me_pool_1)
-      if (isInclusive(me.mass()))
+    for (auto const& me : me_pool_1) {
+      if (isInclusive(me.mass())) {
         meVec1.push_back(toPoolTrack(me));
-    for (auto const& me : me_pool_2)
-      if (isInclusive(me.mass()))
+      }
+    }
+    for (auto const& me : me_pool_2) {
+      if (isInclusive(me.mass())) {
         meVec2.push_back(toPoolTrack(me));
+      }
+    }
 
-    if (meVec1.empty() && meVec2.empty())
+    if (meVec1.empty() && meVec2.empty()) {
       return;
+    }
 
     for (auto const& trk1 : se_trks_1) {
-      if (!isInclusive(trk1.mass()))
+      if (!isInclusive(trk1.mass())) {
         continue;
+      }
       const bool se1sig = isSignal(trk1.mass());
       const bool se1sb = isSideband(trk1.mass());
       PoolTrack p1 = toPoolTrack(trk1);
 
       for (auto const& trk2 : se_trks_2) {
         if constexpr (samelambda) {
-          if (trk1.index() == trk2.index())
+          if (trk1.index() == trk2.index()) {
             continue;
+          }
         }
-        if (!isInclusive(trk2.mass()))
+        if (!isInclusive(trk2.mass())) {
           continue;
+        }
         const bool se2sig = isSignal(trk2.mass());
         const bool se2sb = isSideband(trk2.mass());
         PoolTrack p2 = toPoolTrack(trk2);
@@ -1801,8 +1879,9 @@ struct LambdaSpinPolarization {
           for (auto const& meP : meVec2) {
             if (std::abs(meP.pt() - p2.pt()) < cMaxDeltaPt &&
                 std::abs(meP.rap() - p2.rap()) < cMaxDeltaRap &&
-                std::abs(RecoDecay::constrainAngle(meP.phi() - p2.phi(), -PI)) < cMaxDeltaPhi)
+                std::abs(RecoDecay::constrainAngle(meP.phi() - p2.phi(), -PI)) < cMaxDeltaPhi) {
               matchA.push_back(meP);
+            }
           }
           if (!matchA.empty()) {
             const float wA = 1.0f / static_cast<float>(matchA.size());
@@ -1812,11 +1891,13 @@ struct LambdaSpinPolarization {
 
               fillPairHistosWeighted<part_pair_sig>(p1, meP2, wA);
 
-              if ((se1sig && me2sb) || (se1sb && me2sig))
+              if ((se1sig && me2sb) || (se1sb && me2sig)) {
                 fillPairHistosWeighted<part_pair_bkg_sigsb>(p1, meP2, wA);
+              }
 
-              if (se1sb && me2sb)
+              if (se1sb && me2sb) {
                 fillPairHistosWeighted<part_pair_bkg_sbsb>(p1, meP2, wA);
+              }
             }
           }
         }
@@ -1826,8 +1907,9 @@ struct LambdaSpinPolarization {
           for (auto const& meP : meVec1) {
             if (std::abs(meP.pt() - p1.pt()) < cMaxDeltaPt &&
                 std::abs(meP.rap() - p1.rap()) < cMaxDeltaRap &&
-                std::abs(RecoDecay::constrainAngle(meP.phi() - p1.phi(), -PI)) < cMaxDeltaPhi)
+                std::abs(RecoDecay::constrainAngle(meP.phi() - p1.phi(), -PI)) < cMaxDeltaPhi) {
               matchB.push_back(meP);
+            }
           }
           if (!matchB.empty()) {
             const float wB = 1.0f / static_cast<float>(matchB.size());
@@ -1837,11 +1919,13 @@ struct LambdaSpinPolarization {
 
               fillPairHistosWeighted<part_pair_sig>(meP1, p2, wB);
 
-              if ((me1sig && se2sb) || (me1sb && se2sig))
+              if ((me1sig && se2sb) || (me1sb && se2sig)) {
                 fillPairHistosWeighted<part_pair_bkg_sigsb>(meP1, p2, wB);
+              }
 
-              if (me1sb && se2sb)
+              if (me1sb && se2sb) {
                 fillPairHistosWeighted<part_pair_bkg_sbsb>(meP1, p2, wB);
+              }
             }
           }
         }
@@ -1899,8 +1983,9 @@ struct LambdaSpinPolarization {
   {
     for (auto const& [col1, col2] :
          soa::selfCombinations(binningOnVtxAndMult, mixingParameter, -1, col, col)) {
-      if (col1.globalIndex() == col2.globalIndex())
+      if (col1.globalIndex() == col2.globalIndex()) {
         continue;
+      }
       cent = col1.cent();
       histos.fill(HIST("QA/ME/hPoolCentVz"), col1.cent(), col1.posZ());
 
@@ -1953,22 +2038,25 @@ struct LambdaSpinPolarization {
     auto alTrks = partAntiLambdaTracks->sliceByCached(
       aod::lambdatrack::lambdaCollisionId, collision.globalIndex(), cache);
 
-    if (lTrks.size() == 0 && alTrks.size() == 0)
+    if (lTrks.size() == 0 && alTrks.size() == 0) {
       return;
+    }
 
     lambdaMixEvtCol(collision.index(), collision.cent(),
                     collision.posZ(), collision.timeStamp());
 
-    for (auto const& track : lTrks)
+    for (auto const& track : lTrks) {
       lambdaMixEvtTrk(collision.index(), track.globalIndex(),
                       track.px(), track.py(), track.pz(), track.mass(),
                       track.prPx(), track.prPy(), track.prPz(),
                       track.v0Type(), collision.timeStamp());
-    for (auto const& track : alTrks)
+    }
+    for (auto const& track : alTrks) {
       lambdaMixEvtTrk(collision.index(), track.globalIndex(),
                       track.px(), track.py(), track.pz(), track.mass(),
                       track.prPx(), track.prPy(), track.prPz(),
                       track.v0Type(), collision.timeStamp());
+    }
   }
   PROCESS_SWITCH(LambdaSpinPolarization, processDataRecoMixEvent,
                  "Mix-event table filling", false);
