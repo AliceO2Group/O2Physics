@@ -411,7 +411,7 @@ struct DalitzSelection {
       }
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); ++cut, ++i) {
-        if ((*cut).IsSelected(VarManager::fgValues)) {
+        if ((*cut).IsSelected(static_cast<float*>(VarManager::fgValues))) {
           filterMap |= (uint8_t(1) << i);
           fSkipEvent = false;
         }
@@ -419,7 +419,7 @@ struct DalitzSelection {
       if (fIsTagAndProbe) {
         i = 0;
         for (auto cut = fTrackCutsProbe.begin(); cut != fTrackCutsProbe.end(); ++cut, ++i) {
-          if ((*cut).IsSelected(VarManager::fgValues)) {
+          if ((*cut).IsSelected(static_cast<float*>(VarManager::fgValues))) {
             filterMapProbe |= (uint8_t(1) << i);
           }
         }
@@ -530,7 +530,7 @@ struct DalitzSelection {
           if (!(twoTracksFilterMap & (uint8_t(1) << icut))) {
             continue;
           }
-          if ((*pairCut).IsSelected(VarManager::fgValues)) {
+          if ((*pairCut).IsSelected(static_cast<float*>(VarManager::fgValues))) {
             fSkipEvent = false;
             bool isPairAlreadySelected = false;
             if (isReassoc & fConfigOptions.fRemoveDoubleCounting) {
@@ -560,7 +560,7 @@ struct DalitzSelection {
                   fDalitzmapProbe[trackIdx2] |= (uint8_t(1) << icut);
                 }
                 if (fConfigOptions.fQA && !isPairAlreadySelected) {
-                  fHistMan->FillHistClass(Form("Pair_%s_%s_%s", (*trackCut).GetName(), fTrackCutsProbe.at(icut).GetName(), (*pairCut).GetName()), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("Pair_%s_%s_%s", (*trackCut).GetName(), fTrackCutsProbe.at(icut).GetName(), (*pairCut).GetName()), static_cast<float*>(VarManager::fgValues));
                 }
               } else {
                 if (isReassoc & fConfigOptions.fRemoveDoubleCounting) {
@@ -569,12 +569,12 @@ struct DalitzSelection {
                   fDalitzmap[trackIdx2] |= (uint8_t(1) << icut);
                 }
                 if (fConfigOptions.fQA && !isPairAlreadySelected) {
-                  fHistMan->FillHistClass(Form("Pair_%s_%s", (*trackCut).GetName(), (*pairCut).GetName()), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("Pair_%s_%s", (*trackCut).GetName(), (*pairCut).GetName()), static_cast<float*>(VarManager::fgValues));
                 }
               }
             } else {
               if (fConfigOptions.fQA && !isPairAlreadySelected) {
-                fHistMan->FillHistClass(fIsTagAndProbe ? Form("PairLS_%s_%s_%s", (*trackCut).GetName(), fTrackCutsProbe.at(icut).GetName(), (*pairCut).GetName()) : Form("PairLS_%s_%s", (*trackCut).GetName(), (*pairCut).GetName()), VarManager::fgValues);
+                fHistMan->FillHistClass(fIsTagAndProbe ? Form("PairLS_%s_%s_%s", (*trackCut).GetName(), fTrackCutsProbe.at(icut).GetName(), (*pairCut).GetName()) : Form("PairLS_%s_%s", (*trackCut).GetName(), (*pairCut).GetName()), static_cast<float*>(VarManager::fgValues));
               }
             } // end if like-sign
           } // end if isSelected
@@ -585,12 +585,12 @@ struct DalitzSelection {
     // Fill Hists
     if (fConfigOptions.fQA && !fSkipEvent) {
       for (const auto& track : tracks1) {
-        uint8_t filterMap;
-        uint8_t filterMapProbe;
+        auto filterMap = uint8_t(0);
+        auto filterMapProbe = uint8_t(0);
         if constexpr (isReassoc) {
           auto const& fullTrack = track.template track_as<TFullTracks>();
-          filterMap = fDalitzmap[fullTrack.globalIndex()];
-          filterMapProbe = fDalitzmapProbe[fullTrack.globalIndex()];
+          filterMap = fDalitzmap[fullTrack.globalIndex()];  // cppcheck-suppress redundantInitialization
+          filterMapProbe = fDalitzmapProbe[fullTrack.globalIndex()]; // cppcheck-suppress redundantInitialization
           if (fConfigOptions.fRemoveDoubleCounting) {
             // we remove track selections which were already selected before
             uint8_t currentFilterMap = fDalitzmapAmbiguity[fullTrack.globalIndex()];
@@ -650,11 +650,11 @@ struct DalitzSelection {
         for (auto pairCut = fPairCuts.begin(); pairCut != fPairCuts.end(); pairCut++, trackCut++, icut++) {
           if (filterMap & (uint8_t(1) << icut)) {
             dynamic_cast<TH1I*>(fStatsList->At(0))->Fill(fIsTagAndProbe ? 2 * icut + 1 : icut + 1);
-            fHistMan->FillHistClass(fIsTagAndProbe ? Form("TrackBarrelTag_%s_%s_%s", (*trackCut).GetName(), fTrackCutsProbe.at(icut).GetName(), (*pairCut).GetName()) : Form("TrackBarrel_%s_%s", (*trackCut).GetName(), (*pairCut).GetName()), VarManager::fgValues);
+            fHistMan->FillHistClass(fIsTagAndProbe ? Form("TrackBarrelTag_%s_%s_%s", (*trackCut).GetName(), fTrackCutsProbe.at(icut).GetName(), (*pairCut).GetName()) : Form("TrackBarrel_%s_%s", (*trackCut).GetName(), (*pairCut).GetName()), static_cast<float*>(VarManager::fgValues));
           }
           if (filterMapProbe & (uint8_t(1) << icut)) {
             dynamic_cast<TH1I*>(fStatsList->At(0))->Fill(2 * icut + 2);
-            fHistMan->FillHistClass(Form("TrackBarrelProbe_%s_%s_%s", (*trackCut).GetName(), fTrackCutsProbe.at(icut).GetName(), (*pairCut).GetName()), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("TrackBarrelProbe_%s_%s_%s", (*trackCut).GetName(), fTrackCutsProbe.at(icut).GetName(), (*pairCut).GetName()), static_cast<float*>(VarManager::fgValues));
           }
         }
       }
@@ -664,14 +664,14 @@ struct DalitzSelection {
   void runMixing()
   {
     // run the mixing with the events in the pool corresponding to this event
-    auto& pool = fMixingHandler.GetPool(fMixingHandler.FindEventCategory(VarManager::fgValues));
+    auto& pool = fMixingHandler.GetPool(fMixingHandler.FindEventCategory(static_cast<float*>(VarManager::fgValues)));
 
     // Bit 8 is a special bit in this case (keeping track sign), so we don't want it to be erased, except when everything else is empty
     uint32_t bitMask = (static_cast<uint32_t>(1) << 8);
     fMixingEvent->ClearFilteringMask(bitMask);
 
     for (auto& poolEvent : pool.events) {
-      if (!(poolEvent.filteringMask & static_cast<uint32_t>(255))) {
+      if ((poolEvent.filteringMask & static_cast<uint32_t>(255)) == 0) {
         // all other bits have been erased, so we can also mark bit 8 for deletion
         poolEvent.filteringMask |= bitMask;
         poolEvent.counters[8] = fMixingHandler.GetPoolDepth();
@@ -680,8 +680,8 @@ struct DalitzSelection {
         // tag from event 1 and probe from event 2. If not tag and probe method, all tracks are in tracks1 array
         for (auto const& t2 : (fIsTagAndProbe ? poolEvent.tracks2 : poolEvent.tracks1)) {
           // check the two-track filter for the mixed pair
-          uint8_t mixedTwoTrackFilter = static_cast<uint8_t>(t1.filteringFlags & t2.filteringFlags & static_cast<uint32_t>(255)); // we keep only first 8 bits
-          if (!mixedTwoTrackFilter) {
+          auto mixedTwoTrackFilter = static_cast<uint8_t>(t1.filteringFlags & t2.filteringFlags & static_cast<uint32_t>(255)); // we keep only first 8 bits
+          if (mixedTwoTrackFilter == 0) {
             continue;
           }
           VarManager::FillPairMEAcrossTFs(t1, t2);
@@ -693,19 +693,19 @@ struct DalitzSelection {
             VarManager::fgValues[VarManager::kPhi2] = t2.phi;
           }
           bool isLS = (t1.filteringFlags & (static_cast<uint32_t>(1) << 8)) == (t2.filteringFlags & (static_cast<uint32_t>(1) << 8));
-          for (size_t icut = 0; icut < fPairCuts.size(); icut++) {
-            if ((mixedTwoTrackFilter & (static_cast<uint8_t>(1) << icut)) && fPairCuts.at(icut).IsSelected(VarManager::fgValues)) {
+          for (uint32_t icut = 0; icut < fPairCuts.size(); icut++) {
+            if (((mixedTwoTrackFilter & (static_cast<uint8_t>(1) << icut)) != 0) && fPairCuts.at(icut).IsSelected(static_cast<float*>(VarManager::fgValues))) {
               if (fIsTagAndProbe) {
                 if (!isLS) {
-                  fHistMan->FillHistClass(Form("PairME_%s_%s_%s", fTrackCuts.at(icut).GetName(), fTrackCutsProbe.at(icut).GetName(), fPairCuts.at(icut).GetName()), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("PairME_%s_%s_%s", fTrackCuts.at(icut).GetName(), fTrackCutsProbe.at(icut).GetName(), fPairCuts.at(icut).GetName()), static_cast<float*>(VarManager::fgValues));
                 } else {
-                  fHistMan->FillHistClass(Form("PairMELS_%s_%s_%s", fTrackCuts.at(icut).GetName(), fTrackCutsProbe.at(icut).GetName(), fPairCuts.at(icut).GetName()), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("PairMELS_%s_%s_%s", fTrackCuts.at(icut).GetName(), fTrackCutsProbe.at(icut).GetName(), fPairCuts.at(icut).GetName()), static_cast<float*>(VarManager::fgValues));
                 }
               } else {
                 if (!isLS) {
-                  fHistMan->FillHistClass(Form("PairME_%s_%s", fTrackCuts.at(icut).GetName(), fPairCuts.at(icut).GetName()), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("PairME_%s_%s", fTrackCuts.at(icut).GetName(), fPairCuts.at(icut).GetName()), static_cast<float*>(VarManager::fgValues));
                 } else {
-                  fHistMan->FillHistClass(Form("PairMELS_%s_%s", fTrackCuts.at(icut).GetName(), fPairCuts.at(icut).GetName()), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("PairMELS_%s_%s", fTrackCuts.at(icut).GetName(), fPairCuts.at(icut).GetName()), static_cast<float*>(VarManager::fgValues));
                 }
               }
             }
@@ -716,8 +716,8 @@ struct DalitzSelection {
         for (auto const& t2 : fMixingEvent->tracks2) {
           // tag from event 2 and probe from event 1
           for (auto const& t1 : poolEvent.tracks1) {
-            uint8_t mixedTwoTrackFilter = static_cast<uint8_t>(t1.filteringFlags & t2.filteringFlags & static_cast<uint32_t>(255)); // we keep only first 8 bits
-            if (!mixedTwoTrackFilter) {
+            auto mixedTwoTrackFilter = static_cast<uint8_t>(t1.filteringFlags & t2.filteringFlags & static_cast<uint32_t>(255)); // we keep only first 8 bits
+            if (mixedTwoTrackFilter == 0) {
               continue;
             }
             VarManager::FillPairMEAcrossTFs(t1, t2);
@@ -729,12 +729,12 @@ struct DalitzSelection {
               VarManager::fgValues[VarManager::kPhi2] = t2.phi;
             }
             bool isLS = (t1.filteringFlags & (static_cast<uint32_t>(1) << 8)) == (t2.filteringFlags & (static_cast<uint32_t>(1) << 8));
-            for (size_t icut = 0; icut < fPairCuts.size(); icut++) {
-              if ((mixedTwoTrackFilter & (static_cast<uint8_t>(1) << icut)) && fPairCuts.at(icut).IsSelected(VarManager::fgValues)) {
+            for (uint32_t icut = 0; icut < fPairCuts.size(); icut++) {
+              if (((mixedTwoTrackFilter & (static_cast<uint8_t>(1) << icut)) != 0) && fPairCuts.at(icut).IsSelected(static_cast<float*>(VarManager::fgValues))) {
                 if (!isLS) {
-                  fHistMan->FillHistClass(Form("PairME_%s_%s_%s", fTrackCuts.at(icut).GetName(), fTrackCutsProbe.at(icut).GetName(), fPairCuts.at(icut).GetName()), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("PairME_%s_%s_%s", fTrackCuts.at(icut).GetName(), fTrackCutsProbe.at(icut).GetName(), fPairCuts.at(icut).GetName()), static_cast<float*>(VarManager::fgValues));
                 } else {
-                  fHistMan->FillHistClass(Form("PairMELS_%s_%s_%s", fTrackCuts.at(icut).GetName(), fTrackCutsProbe.at(icut).GetName(), fPairCuts.at(icut).GetName()), VarManager::fgValues);
+                  fHistMan->FillHistClass(Form("PairMELS_%s_%s_%s", fTrackCuts.at(icut).GetName(), fTrackCutsProbe.at(icut).GetName(), fPairCuts.at(icut).GetName()), static_cast<float*>(VarManager::fgValues));
                 }
               }
             }
@@ -806,7 +806,7 @@ struct DalitzSelection {
       fTrackmapProbe.clear();
       VarManager::ResetValues(VarManager::kNRunWiseVariables, VarManager::kNBarrelTrackVariables);
       VarManager::FillEvent<EventFillMapWithCent>(collision);
-      bool isEventSelected = fEventCut->IsSelected(VarManager::fgValues);
+      bool isEventSelected = fEventCut->IsSelected(static_cast<float*>(VarManager::fgValues));
 
       if (isEventSelected) {
         dynamic_cast<TH1I*>(fStatsList->At(0))->Fill(0);
@@ -834,7 +834,7 @@ struct DalitzSelection {
         }
 
         if (fConfigOptions.fRunEventMixing) {
-          if (fMixingEvent->tracks1.size() > 0) {
+          if (!fMixingEvent->tracks1.empty()) {
             // we require that there is at least one tag track in the event to avoid having the pool full of events with only probe tracks which become useless for mixing
             runMixing();
           }
@@ -867,7 +867,7 @@ struct DalitzSelection {
       fTrackmapProbe.clear();
       VarManager::ResetValues(VarManager::kNRunWiseVariables, VarManager::kNBarrelTrackVariables);
       VarManager::FillEvent<EventFillMapWithCent>(collision);
-      bool isEventSelected = fEventCut->IsSelected(VarManager::fgValues);
+      bool isEventSelected = fEventCut->IsSelected(static_cast<float*>(VarManager::fgValues));
 
       if (isEventSelected) {
 
@@ -895,7 +895,7 @@ struct DalitzSelection {
           runDalitzPairing<true, pairType, TrackFillMap, MyBarrelTracks>(groupedTracksAssoc, groupedTracksAssoc, collision);
         }
         if (fConfigOptions.fRunEventMixing) {
-          if (fMixingEvent->tracks1.size() > 0) {
+          if (!fMixingEvent->tracks1.empty()) {
             // we require that there is at least one tag track in the event to avoid having the pool full of events with only probe tracks which are then useless
             // In addition, this allows to avoid mixing events which are too close in time, which could contain tracks from the same event due to track-to-collision reassociation
             runMixing();
@@ -929,7 +929,7 @@ struct DalitzSelection {
       fTrackmapProbe.clear();
       VarManager::ResetValues(VarManager::kNRunWiseVariables, VarManager::kNBarrelTrackVariables);
       VarManager::FillEvent<EventFillMapWithCent>(collision);
-      bool isEventSelected = fEventCut->IsSelected(VarManager::fgValues);
+      bool isEventSelected = fEventCut->IsSelected(static_cast<float*>(VarManager::fgValues));
 
       if (isEventSelected) {
 
@@ -957,7 +957,7 @@ struct DalitzSelection {
           runDalitzPairing<true, pairType, TrackFillMapNoTOF, MyBarrelTracksNoTOF>(groupedTracksAssoc, groupedTracksAssoc, collision);
         }
         if (fConfigOptions.fRunEventMixing) {
-          if (fMixingEvent->tracks1.size() > 0) {
+          if (!fMixingEvent->tracks1.empty()) {
             // we require that there is at least one tag track in the event to avoid having the pool full of events with only probe tracks which are then useless
             // In addition, this allows to avoid mixing events which are too close in time, which could contain tracks from the same event due to track-to-collision reassociation
             runMixing();
