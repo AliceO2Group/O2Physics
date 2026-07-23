@@ -715,7 +715,7 @@ struct FlowGenericFramework {
           registryQA.add("K0/PiMinusTOF_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("K0/hK0Phi", "", {HistType::kTH1D, {phiAxis}});
           registryQA.add("K0/hK0Eta", "", {HistType::kTH1D, {etaAxis}});
-          registryQA.add("K0/hK0AP", "", {HistType::kTH2D, {{100, -1, 1}, {100, 0, 5.}}});
+          registryQA.add("K0/hK0AP", "", {HistType::kTH2D, {{100, -1, 1}, {500, 0, 1.}}});
           registryQA.add("K0/hK0Mass_sparse", "", {HistType::kTHnSparseF, {{axisK0Mass, ptAxis, nchAxis}}});
           registryQA.add("K0/hK0s", "", {HistType::kTH1D, {singleCount}});
           registryQA.add("K0/hK0s_corrected", "", {HistType::kTH1D, {singleCount}});
@@ -2916,20 +2916,6 @@ struct FlowGenericFramework {
     return track.eta() > cfgKinematics.cfgEta->first && track.eta() < cfgKinematics.cfgEta->second;
   }
 
-  template <typename TParticle>
-  bool areGeneratedDaughtersWithinEfficiencyEtaAcceptance(const TParticle& particle)
-  {
-    if (!particle.has_daughters()) {
-      return false;
-    }
-    for (const auto& daughter : particle.template daughters_as<aod::McParticles>()) {
-      if (daughter.eta() <= cfgKinematics.cfgEta->first || daughter.eta() >= cfgKinematics.cfgEta->second) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   void fillV0EfficiencyRecoDebug(float pt, float centrality, int particleIndex, int stage)
   {
     registry.fill(HIST("Efficiency/v0RecoDebug"), pt, centrality, particleIndex, stage);
@@ -3010,7 +2996,7 @@ struct FlowGenericFramework {
             return;
           }
           fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencySelection);
-          if (!areGeneratedDaughtersWithinEfficiencyEtaAcceptance(posMother)) {
+          if (!isWithinEfficiencyEtaAcceptance(posMcParticle) || !isWithinEfficiencyEtaAcceptance(negMcParticle)) {
             return;
           }
           fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyGeneratedDaughterEta);
@@ -3035,7 +3021,7 @@ struct FlowGenericFramework {
             return;
           }
           fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencySelection);
-          if (!areGeneratedDaughtersWithinEfficiencyEtaAcceptance(posMother)) {
+          if (!isWithinEfficiencyEtaAcceptance(posMcParticle) || !isWithinEfficiencyEtaAcceptance(negMcParticle)) {
             return;
           }
           fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyGeneratedDaughterEta);
