@@ -33,11 +33,7 @@ template <o2::soa::is_iterator TTrack>
 bool IsPhysicalPrimary(TTrack const& mctrack)
 {
   // This is to check mctrack is ALICE physical primary.
-  if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) {
-    return true;
-  } else {
-    return false;
-  }
+  return (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator());
 }
 //_______________________________________________________________________
 template <o2::soa::is_iterator TCollision, o2::soa::is_iterator T, o2::soa::is_table TMCs>
@@ -105,9 +101,8 @@ int FindMotherInChain(T const& mcparticle, TMCs const& mcparticles, TTargetPDGs 
   auto mother = mcparticles.iteratorAt(motherid);
   if (std::find(motherpdgs.begin(), motherpdgs.end(), mother.pdgCode()) != motherpdgs.end()) {
     return mcparticle.globalIndex(); // The mother has the required pdg code, so return its daughters global mc particle code.
-  } else {
-    return FindMotherInChain(mother, mcparticles, motherpdgs, Depth - 1);
   }
+  return FindMotherInChain(mother, mcparticles, motherpdgs, Depth - 1);
 }
 //_______________________________________________________________________
 template <o2::soa::is_iterator T, o2::soa::is_table TMCs>
@@ -178,10 +173,7 @@ bool IsInAcceptanceNonDerived(TMCParticle const& mcparticle, TMCParticles const&
   bool is_equal = std::equal(pdgs.cbegin(), pdgs.cend(), target_pdgs.cbegin());
   pdgs.clear();
   pdgs.shrink_to_fit();
-  if (!is_equal) {
-    return false; // garantee daughter is in acceptance.
-  }
-  return true;
+  return is_equal;
 }
 //_______________________________________________________________________
 template <o2::soa::is_iterator TMCParticle, o2::soa::is_table TMCParticles, typename TTargetPDGs>
@@ -226,10 +218,7 @@ bool IsInAcceptance(TMCParticle const& mcparticle, TMCParticles const& mcparticl
   bool is_equal = std::equal(pdgs.cbegin(), pdgs.cend(), target_pdgs.cbegin());
   pdgs.clear();
   pdgs.shrink_to_fit();
-  if (!is_equal) {
-    return false; // garantee daughter is in acceptance.
-  }
-  return true;
+  return is_equal;
 }
 //_______________________________________________________________________
 template <o2::soa::is_iterator TMCPhoton, o2::soa::is_table TMCParticles>
@@ -299,9 +288,8 @@ bool isMotherPDG(T& mcparticle, const int motherPDG, const int depth = 10) // o2
   mcparticle.setCursor(motherid);
   if (mcparticle.pdgCode() == motherPDG) {
     return true; // The mother has the required pdg code, so return its daughters global mc particle code.
-  } else {
-    return isMotherPDG(mcparticle, motherPDG, depth - 1);
   }
+  return isMotherPDG(mcparticle, motherPDG, depth - 1);
 }
 
 //_______________________________________________________________________
@@ -321,9 +309,8 @@ int32_t getMotherIndexFromChain(T& mcparticle, const int motherPDG, const int de
   mcparticle.setCursor(motherid);
   if (mcparticle.pdgCode() == motherPDG) {
     return motherid; // The mother has the required pdg code, so return its daughters global mc particle code.
-  } else {
-    return getMotherIndexFromChain(mcparticle, motherPDG, depth - 1);
   }
+  return getMotherIndexFromChain(mcparticle, motherPDG, depth - 1);
 }
 
 //_______________________________________________________________________
