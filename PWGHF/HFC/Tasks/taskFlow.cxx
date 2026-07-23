@@ -138,6 +138,7 @@ enum MftTrackSelectionStep {
   DCAxy,
   DCAz,
   Chi2OverNdf,
+  Phi,
   IsLTF,
   IsCA,
   NMftTrackSelectionSteps
@@ -304,9 +305,14 @@ struct HfTaskFlow {
     Configurable<float> mftMaxDCAxy{"mftMaxDCAxy", 2.0f, "Cut on dcaXY for MFT tracks"};
     Configurable<float> mftMaxDCAz{"mftMaxDCAz", 2.0f, "Cut on dcaZ for MFT tracks"};
     Configurable<int> nClustersMftTrack{"nClustersMftTrack", 5, "Minimum number of clusters for the reconstruction of MFT tracks"};
+    Configurable<float> phiMftTrackMin{"phiMftTrackMin", 0.1, "Minimum value for the phi of MFT tracks when used in cut function"};
+    Configurable<float> phiMftTrackMiddleMin{"phiMftTrackMiddleMin", PI - 0.1, "cut to remove before phi = pi for MFT tracks when used in cut function"};
+    Configurable<float> phiMftTrackMiddleMax{"phiMftTrackMiddleMax", PI + 0.1, "cut to remove after phi = pi for MFT tracks when used in cut function"};
+    Configurable<float> phiMftTrackMax{"phiMftTrackMax", 2 * PI - 0.1, "Maximum value for the phi of MFT tracks when used in cut function"};
     Configurable<float> ptMftTrackMax{"ptMftTrackMax", 10.0f, "max value of MFT tracks pT when used in cut function"};
     Configurable<float> ptMftTrackMin{"ptMftTrackMin", 0.f, "min value of MFT tracks pT when used in cut function"};
     Configurable<bool> useMftChi2OverNdfCut{"useMftChi2OverNdfCut", false, "use mft track chi2/ndf cut"};
+    Configurable<bool> useMftPhiCut{"useMftPhiCut", false, "if true, use the Mft phi function cut"};
     Configurable<bool> useMftPtCut{"useMftPtCut", false, "if true, use the Mft pt function cut"};
     Configurable<bool> useOnlyCATracks{"useOnlyCATracks", false, "if true, use strictly MFT tracks reconstructed with CA algo."};
     Configurable<bool> useOnlyLTFTracks{"useOnlyLTFTracks", false, "if true, use strictly MFT tracks reconstructed with LTF algo."};
@@ -508,6 +514,7 @@ struct HfTaskFlow {
     labelsMftTracksSelection[MftTrackSelectionStep::DCAxy] = "MFT tracks after DCAxy selection";
     labelsMftTracksSelection[MftTrackSelectionStep::DCAz] = "MFT tracks after DCAz selection";
     labelsMftTracksSelection[MftTrackSelectionStep::Chi2OverNdf] = "MFT tracks after Chi2OverNdf selection";
+    labelsMftTracksSelection[MftTrackSelectionStep::Phi] = "MFT tracks after phi selection";
     labelsMftTracksSelection[MftTrackSelectionStep::IsLTF] = "Linear Track Finder MFT tracks";
     labelsMftTracksSelection[MftTrackSelectionStep::IsCA] = "Cellular Automaton MFT tracks";
     registry.get<TH1>(HIST("Data/Mft/hMftTracksSelection"))->SetMinimum(0);
@@ -1463,6 +1470,18 @@ struct HfTaskFlow {
     }
     if (fillHistograms) {
       registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::Chi2OverNdf);
+    }
+
+    if (configMft.useMftPhiCut) {
+      auto phiMftTrack = mftTrack.phi();
+      o2::math_utils::bringTo02Pi(phiMftTrack);
+      if (phiMftTrack > configMft.phiMftTrackMax || phiMftTrack < configMft.phiMftTrackMin ||
+          (phiMftTrack > configMft.phiMftTrackMiddleMin && phiMftTrack < configMft.phiMftTrackMiddleMax)) {
+        return false;
+      }
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::Phi);
     }
 
     // cut on the track algorithm of MFT tracks
@@ -4368,8 +4387,18 @@ struct HfTaskFlow {
           particle.eta() >= configTask.etaMcParticlesAssocMin &&
           particle.pt() >= configTask.ptMcParticlesAssocMin &&
           particle.pt() <= configTask.ptMcParticlesAssocMax) {
-        if (hasReconstructedCollision) {
-          registry.fill(HIST("MC/hEfficiencyAssociated"), particle.pt(), particle.eta(), mcCollision.posZ());
+
+        if (configMft.useMftPhiCut) {
+          if (particle.phi() < configMft.phiMftTrackMax && particle.phi() > configMft.phiMftTrackMin &&
+              !(particle.phi() > configMft.phiMftTrackMiddleMin && particle.phi() < configMft.phiMftTrackMiddleMax)) {
+            if (hasReconstructedCollision) {
+              registry.fill(HIST("MC/hEfficiencyAssociated"), particle.pt(), particle.eta(), mcCollision.posZ());
+            }
+          }
+        } else {
+          if (hasReconstructedCollision) {
+            registry.fill(HIST("MC/hEfficiencyAssociated"), particle.pt(), particle.eta(), mcCollision.posZ());
+          }
         }
       }
     }
