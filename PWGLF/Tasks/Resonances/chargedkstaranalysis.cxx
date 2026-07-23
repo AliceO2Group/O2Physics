@@ -94,6 +94,7 @@ struct Chargedkstaranalysis {
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
   bool currentIsGen = false;
+  bool mcClosure = false;
   struct : ConfigurableGroup {
     ConfigurableAxis cfgvtxbins{"cfgvtxbins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
     ConfigurableAxis cfgmultbins{"cfgmultbins", {VARIABLE_WIDTH, 0., 1., 5., 10., 30., 50., 70., 100., 110.}, "Mixing bins - multiplicity"};
@@ -226,6 +227,7 @@ struct Chargedkstaranalysis {
   // MC configurables
   struct : ConfigurableGroup {
     Configurable<bool> doBkgMc{"doBkgMc", false, "Apply rotation in MC"};
+    Configurable<bool> doMcClosure{"doMcClosure", true, "Do MC Closure Study in MC"};
   } mcCfgs;
 
   /// Track selections
@@ -300,7 +302,7 @@ struct Chargedkstaranalysis {
   } kstarCutCfgs;
 
   Configurable<bool> isQaRequired{"isQaRequired", false, "Fill QA plots"};
-  float centrality;
+  float centrality = 0.f;
 
   // PDG code
   int kPDGK0s = kK0Short;
@@ -562,9 +564,12 @@ struct Chargedkstaranalysis {
       if (!helicityCfgs.qAOptimisation) {
         histosMc.add("h3ChaKstarInvMassDSMcGen", "h3ChaKstarInvMassDSMcGen", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
         histosMc.add("h3ChaKstarInvMassDSMcRec", "h3ChaKstarInvMassDSMcRec", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
+        histosMc.add("h3ChaKstarInvMassDSMcRecClosure", "h3ChaKstarInvMassDSMcRecClosure", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
+
         if (mcCfgs.doBkgMc) {
           histosMc.add("h3ChaKstarInvMassRotMcGen", "h3ChaKstarInvMassRotMcGen", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
           histosMc.add("h3ChaKstarInvMassRotMcRec", "h3ChaKstarInvMassRotMcRec", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
+          histosMc.add("h3ChaKstarInvMassRotMcRecClosure", "h3ChaKstarInvMassRotMcRecClosure", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
         }
       }
 
@@ -602,7 +607,7 @@ struct Chargedkstaranalysis {
   std::unordered_map<int64_t, float> centTruthByAllowed;
   std::unordered_set<int64_t> refClassIds;
   std::unordered_map<int64_t, float> refCentByMcId;
-  float lMultiplicity;
+  float lMultiplicity = 0.f;
   template <typename CollisionType>
   float getCentrality(CollisionType const& collision)
   {
@@ -790,9 +795,17 @@ struct Chargedkstaranalysis {
         }
       } else {
         if (isRot) {
-          histosMc.fill(HIST("h3ChaKstarInvMassRotMcRec"), multiplicity, mother.Pt(), mother.M(), cosTheta);
+          if (!mcClosure) {
+            histosMc.fill(HIST("h3ChaKstarInvMassRotMcRec"), multiplicity, mother.Pt(), mother.M(), cosTheta);
+          } else {
+            histosMc.fill(HIST("h3ChaKstarInvMassRotMcRecClosure"), multiplicity, mother.Pt(), mother.M(), cosTheta);
+          }
         } else {
-          histosMc.fill(HIST("h3ChaKstarInvMassDSMcRec"), multiplicity, mother.Pt(), mother.M(), cosTheta);
+          if (!mcClosure) {
+            histosMc.fill(HIST("h3ChaKstarInvMassDSMcGen"), multiplicity, mother.Pt(), mother.M(), cosTheta);
+          } else {
+            histosMc.fill(HIST("h3ChaKstarInvMassDSMcRecClosure"), multiplicity, mother.Pt(), mother.M(), cosTheta);
+          }
         }
       }
     }
@@ -844,7 +857,7 @@ struct Chargedkstaranalysis {
     auto phiCS = std::atan2(yAxisCS.Dot(v1CM), xAxisCS.Dot(v1CM));
     phiCS = RecoDecay::constrainAngle(phiCS, 0.0);
 
-    bool doRotation = (!doprocessMC) || (doprocessMC && mcCfgs.doBkgMc);
+    bool doRotation = (!doprocessMC || mcCfgs.doBkgMc);
     // if (std::abs(mother.Rapidity()) < config.rapidityMotherData) {
     if (helicityCfgs.activateHelicityFrame) {
       // helicityVec = mother.Vect(); // 3 vector of mother in COM frame
@@ -1466,6 +1479,17 @@ struct Chargedkstaranalysis {
         const double yreco = lResoKstar.Rapidity();
         if (std::abs(yreco) > kstarCutCfgs.cKstarMaxRap)
           continue;
+
+        if (mcCfgs.doMcClosure) {
+          // For MC clousre test
+          mcClosure = true;
+          if (helicityCfgs.cCosWithKShot) {
+            fillInvMass(lResoKstar, lCentrality, lResoSecondary, lDecayDaughter_bach, eventCutCfgs.confIsMix);
+          } else {
+            fillInvMass(lResoKstar, lCentrality, lDecayDaughter_bach, lResoSecondary, eventCutCfgs.confIsMix);
+          }
+        }
+        mcClosure = false;
         // Since we are doing the MC study and we know about the PDG code of each particle let's try to check the things which we have
         if (!v0.has_mcParticle() || !bTrack.has_mcParticle())
           continue;
