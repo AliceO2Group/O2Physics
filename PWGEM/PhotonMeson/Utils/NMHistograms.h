@@ -35,6 +35,7 @@ inline void addNMHistograms(o2::framework::HistogramRegistry* fRegistry, bool is
 {
   // !!Don't change pt,eta,y binning. These binnings have to be consistent with binned data at skimming.!!
   std::vector<double> ptbins;
+  ptbins.reserve(72);
   for (int i = 0; i < 2; i++) {                // o2-linter: disable=magic-number (just numbers for binning)
     ptbins.emplace_back(0.05 * (i - 0) + 0.0); // from 0 to 0.05 GeV/c, every 0.05 GeV/c
   }
