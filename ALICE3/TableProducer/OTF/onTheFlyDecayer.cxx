@@ -20,6 +20,7 @@
 #include "ALICE3/Core/TrackUtilities.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
