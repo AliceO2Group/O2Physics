@@ -51,9 +51,9 @@ class EMFwdTrack
   float pz() const { return fPt * std::sinh(fEta); }
   float signed1Pt() const { return fSign / fPt; }
 
-  float cXX() const { return fCXX; }
-  float cXY() const { return fCXY; }
-  float cYY() const { return fCYY; }
+  float cXXatDCA() const { return fCXX; }
+  float cXYatDCA() const { return fCXY; }
+  float cYYatDCA() const { return fCYY; }
 
  protected:
   float fPt;

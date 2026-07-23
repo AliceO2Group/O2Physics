@@ -250,6 +250,7 @@ using StoredFTrackMasks = StoredFTrackMasks_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackMass_001, "FTRACKMASS", 1, //! track mass
                                    femtobase::stored::Mass);
 using FTrackMass = FTrackMass_001;
+using StoredFTrackMass = StoredFTrackMass_001;
 
 // table for track DCA
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FTrackDcas_001, "FTRACKDCAS", 1, //! track dcas
@@ -624,6 +625,7 @@ DECLARE_SOA_COLUMN(MassOmega, massOmega, float);                   //! Mass of o
 DECLARE_SOA_COLUMN(CascadeCosPa, cascadeCosPa, float);             //! cosine of the poiting angle at decay vertex
 DECLARE_SOA_COLUMN(CascadeDauDca, cascadeDauDca, float);           //! Lambda daughter DCA at decay vertex
 DECLARE_SOA_COLUMN(CascadeTransRadius, cascadeTransRadius, float); //! Lambda transvers radius
+DECLARE_SOA_COLUMN(LambdaMass, lambdaMass, float);                 //! Lambda daughter mass
 DECLARE_SOA_COLUMN(LambdaCosPa, lambdaCosPa, float);               //! cosine of the poiting angle at decay vertex
 DECLARE_SOA_COLUMN(LambdaDauDca, lambdaDauDca, float);             //! Lambda daughter DCA at decay vertex
 DECLARE_SOA_COLUMN(LambdaTransRadius, lambdaTransRadius, float);   //! Lambda transvers radius
@@ -665,6 +667,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiExtras_001, "FXIEXTRA", 1, //! xi extra in
                                    femtocascades::CascadeCosPa,
                                    femtocascades::CascadeDauDca,
                                    femtocascades::CascadeTransRadius,
+                                   femtocascades::LambdaMass,
                                    femtocascades::LambdaCosPa,
                                    femtocascades::LambdaDauDca,
                                    femtocascades::LambdaTransRadius,
@@ -701,6 +704,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaExtras_001, "FOMEGAEXTRA", 1, //! omega
                                    femtocascades::CascadeCosPa,
                                    femtocascades::CascadeDauDca,
                                    femtocascades::CascadeTransRadius,
+                                   femtocascades::LambdaMass,
                                    femtocascades::LambdaCosPa,
                                    femtocascades::LambdaDauDca,
                                    femtocascades::LambdaTransRadius,

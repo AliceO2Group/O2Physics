@@ -77,6 +77,7 @@ struct propagationService {
   o2::pwglf::strangenessbuilder::v0Configurables v0BuilderOpts;
   o2::pwglf::strangenessbuilder::cascadeConfigurables cascadeBuilderOpts;
   o2::pwglf::strangenessbuilder::preSelectOpts preSelectOpts;
+  o2::pwglf::strangenessbuilder::eventSelectOpts eventSelectOpts;
   o2::pwglf::strangenessbuilder::BuilderModule strangenessBuilderModule;
 
   // the track tuner object -> needs to be here as it inherits from ConfigurableGroup (+ has its own copy of ccdbApi)
@@ -99,7 +100,7 @@ struct propagationService {
 
     // task-specific
     trackPropagation.init(trackPropagationConfigurables, trackTunerObj, histos, initContext);
-    strangenessBuilderModule.init(baseOpts, v0BuilderOpts, cascadeBuilderOpts, preSelectOpts, histos, initContext);
+    strangenessBuilderModule.init(baseOpts, v0BuilderOpts, cascadeBuilderOpts, preSelectOpts, eventSelectOpts, histos, initContext);
   }
 
   void processRealData(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)

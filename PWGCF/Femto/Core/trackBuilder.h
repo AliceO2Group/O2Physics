@@ -16,6 +16,8 @@
 #ifndef PWGCF_FEMTO_CORE_TRACKBUILDER_H_
 #define PWGCF_FEMTO_CORE_TRACKBUILDER_H_
 
+#include "femtoUtils.h"
+
 #include "PWGCF/Femto/Core/baseSelection.h"
 #include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/femtoUtils.h"
@@ -799,6 +801,7 @@ class TrackBuilder
 struct TrackBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::StoredFTracks> producedTracks;
   o2::framework::Produces<o2::aod::StoredFTrackMasks> producedTrackMasks;
+  o2::framework::Produces<o2::aod::StoredFTrackMass> producedTrackMass;
 };
 
 struct ConfTrackTablesDerivedToDerived : o2::framework::ConfigurableGroup {
@@ -861,6 +864,9 @@ class TrackBuilderDerivedToDerived
                                    track.eta(),
                                    track.phi());
       trackProducts.producedTrackMasks(track.mask());
+      if constexpr (utils::HasMass<T1>) {
+        trackProducts.producedTrackMass(track.mass());
+      }
       indexMap.emplace(track.globalIndex(), trackProducts.producedTracks.lastIndex());
     }
   }

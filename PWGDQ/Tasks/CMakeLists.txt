@@ -194,6 +194,11 @@ o2physics_add_dpl_workflow(muon-global-alignment
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore O2::MCHGeometryTransformer
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(j-psi-muon-correlations
+                    SOURCES jPsiMuonCorrelations.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore O2::MCHGeometryTransformer
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(global-muon-matcher
                     SOURCES global-muon-matcher.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore O2::MCHGeometryTransformer

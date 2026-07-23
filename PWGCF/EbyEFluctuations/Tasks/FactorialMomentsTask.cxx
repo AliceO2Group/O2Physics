@@ -47,14 +47,11 @@
 #include <cmath>
 #include <cstdlib>
 #include <memory>
-#include <string_view>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-TH1D* tmpFqErr[6][5][52];
-float collisionZ = 0.f;
 struct FactorialMomentsTask {
   Configurable<bool> useITS{"useITS", false, "Select tracks with ITS"};
   Configurable<bool> useTPC{"useTPC", false, "Select tracks with TPC"};
@@ -95,7 +92,7 @@ struct FactorialMomentsTask {
   Configurable<int> reduceOutput{"reduceOutput", 0, "Suppress info level output (0 = all output, 1 = per collision, 2 = none)"};
   Filter filterTracks = (nabs(aod::track::eta) < centralEta) && (aod::track::pt >= ptMin);
   Filter filterCollisions = (nabs(aod::collision::posZ) < vertexXYZ.value[2]) && (nabs(aod::collision::posX) < vertexXYZ.value[0]) && (nabs(aod::collision::posY) < vertexXYZ.value[1]);
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
   // Histograms
   HistogramRegistry histos1{
     "histos1",
@@ -167,22 +164,23 @@ struct FactorialMomentsTask {
     },
     OutputObjHandlingPolicy::AnalysisObject,
     true};
-  const double dcaxyMaxTrackPar0 = 0.0105;
-  const double dcaxyMaxTrackPar1 = 0.035;
-  const double dcaxyMaxTrackPar2 = 1.1;
-  const double dcazMaxTrack = 2.0;
+  float collisionZ = 0.f;
+  double dcaxyMaxTrackPar0 = 0.0105;
+  double dcaxyMaxTrackPar1 = 0.035;
+  double dcaxyMaxTrackPar2 = 1.1;
   static const int nBins = 52;
   double kMinCharge = 1e-6;
   static const int nfqOrder = 6;
   int countSamples = 0;
   int testc1 = 0, testc2 = 0, testc3 = 0;
-  std::array<int, nBins> binningM;
+  std::array<int, nBins> binningM{};
   std::array<int, 5> countTracks{0, 0, 0, 0, 0};
-  std::array<std::array<std::array<double, nBins>, 5>, 6> fqEvent;
-  std::array<std::array<std::array<double, nBins>, 5>, 6> fqEventSampled;
-  std::array<std::array<double, nBins>, 5> binConEvent;
-  std::array<std::array<std::array<double, nBins>, 5>, 6> binConEventSampled;
-  std::array<std::array<std::array<double, nBins>, 5>, 6> errorFq = {{{{{0, 0, 0, 0, 0}}}}};
+  std::array<std::array<std::array<double, nBins>, 5>, 6> fqEvent{};
+  std::array<std::array<std::array<double, nBins>, 5>, 6> fqEventSampled{};
+  std::array<std::array<double, nBins>, 5> binConEvent{};
+  std::array<std::array<std::array<double, nBins>, 5>, 6> binConEventSampled{};
+  std::array<std::array<std::array<int, nBins>, 5>, nfqOrder> nSubsamples{};
+  std::array<std::array<std::array<TH1D*, nBins>, 5>, nfqOrder> tmpFqErr{};
   std::vector<std::shared_ptr<TH2>> mHistArrReset;
   std::vector<std::shared_ptr<TH1>> mHistArrQA;
   std::vector<std::shared_ptr<TH3>> mHistArrEff;
@@ -191,9 +189,7 @@ struct FactorialMomentsTask {
   std::vector<std::shared_ptr<TH1>> mFqBinFinalSampled;
   std::vector<std::shared_ptr<TH1>> mBinConFinalSampled;
   std::vector<std::shared_ptr<TH1>> mFqError;
-  // max number of bins restricted to 5
-  static constexpr std::array<std::string_view, 5>
-    mbinNames{"bin1/", "bin2/", "bin3/", "bin4/", "bin5/"};
+
   void init(o2::framework::InitContext&)
   {
     // NOTE: check to make number of pt and the vector consistent
@@ -203,7 +199,7 @@ struct FactorialMomentsTask {
         ptCuts.value[2 * i + 1] = 0;
       }
     }
-    AxisSpec axisPt[5] = {{100, -0.01, 3 * ptCuts.value[1], ""}, {100, -0.01, 3 * ptCuts.value[3], ""}, {100, -0.01, 3 * ptCuts.value[5], ""}, {100, -0.01, 3 * ptCuts.value[7], ""}, {100, -0.01, 3 * ptCuts.value[9], ""}}; // pT axis
+    std::array<AxisSpec, 5> axisPt = {AxisSpec{100, -0.01, 3 * ptCuts.value[1], ""}, AxisSpec{100, -0.01, 3 * ptCuts.value[3], ""}, AxisSpec{100, -0.01, 3 * ptCuts.value[5], ""}, AxisSpec{100, -0.01, 3 * ptCuts.value[7], ""}, AxisSpec{100, -0.01, 3 * ptCuts.value[9], ""}}; // pT axis
     auto mEventSelected = std::get<std::shared_ptr<TH1>>(histos.add("mEventSelected", "eventSelected", HistType::kTH1D, {{7, 0.5, 8.5}}));
     mEventSelected->GetXaxis()->SetBinLabel(0, "all");
     mEventSelected->GetXaxis()->SetBinLabel(1, "sel8");
@@ -286,7 +282,7 @@ struct FactorialMomentsTask {
     for (int iPt = 0; iPt < numPt; ++iPt) {
       for (int iM = 0; iM < nBins; ++iM) {
         binContent = 0;
-        double sumfqBin[6] = {0};
+        std::array<double, 6> sumfqBin{0.};
 
         for (int iEta = 1; iEta <= hist[iPt * nBins + iM]->GetNbinsX(); ++iEta) {
           for (int iPhi = 1; iPhi <= hist[iPt * nBins + iM]->GetNbinsY(); ++iPhi) {
@@ -296,7 +292,7 @@ struct FactorialMomentsTask {
             for (int iq = 0; iq < nfqOrder; ++iq) {
               double fqBin = 0;
               if (binconVal >= iq + 2) {
-                fqBin = TMath::Factorial(binconVal) / (TMath::Factorial(binconVal - (iq + 2)));
+                fqBin = TMath::Factorial(static_cast<Int_t>(binconVal)) / (TMath::Factorial(static_cast<Int_t>(binconVal) - (iq + 2)));
               }
               if (std::isnan(fqBin)) {
                 break;
@@ -307,23 +303,28 @@ struct FactorialMomentsTask {
         }
         binConEvent[iPt][iM] = binContent / (std::pow(binningM[iM], 2));
         for (int iq = 0; iq < nfqOrder; ++iq) {
-          if (sumfqBin[iq] > 0) {
-            fqEvent[iq][iPt][iM] = sumfqBin[iq] / (std::pow(binningM[iM], 2));
-            fqEventSampled[iq][iPt][iM] += fqEvent[iq][iPt][iM];
-          }
+          // Always accumulate raw fq numerator and binCon unconditionally so
+          // both sums run over exactly the same set of events.
+          fqEvent[iq][iPt][iM] = sumfqBin[iq] / (std::pow(binningM[iM], 2));
+          fqEventSampled[iq][iPt][iM] += fqEvent[iq][iPt][iM];
           binConEventSampled[iq][iPt][iM] += binConEvent[iPt][iM];
           mFqBinFinal[iPt * 6 + iq]->Fill(iM, fqEvent[iq][iPt][iM]);
           mBinConFinal[iPt * 6 + iq]->Fill(iM, binConEvent[iPt][iM]);
           if (compSample) {
-            mBinConFinalSampled[iPt * 6 + iq]->Fill(iM, binConEventSampled[iq][iPt][iM] / samplesize);
+            const double avM = binConEventSampled[iq][iPt][iM] / samplesize;
+            mBinConFinalSampled[iPt * 6 + iq]->Fill(iM, avM);
+            const double den = std::pow(avM, iq + 2);
+            const double fqM = ((fqEventSampled[iq][iPt][iM]) / samplesize);
 
-            double tmp = (fqEventSampled[iq][iPt][iM] / (samplesize)) / (std::pow(binConEventSampled[iq][iPt][iM] / (samplesize), (iq + 2)));
+            const double tmp = (den > 0.) ? fqM / den : 0.;
             mFqBinFinalSampled[iPt * 6 + iq]->Fill(iM, tmp);
-            tmpFqErr[iq][iPt][iM]->Fill(tmp);
-            errorFq[iq][iPt][iM] += std::pow(fqEventSampled[iq][iPt][iM] / (samplesize), 2);
-            mFqError[iPt * 6 + iq]->SetBinContent(iM + 1, 0);
-            mFqError[iPt * 6 + iq]->Fill(iM, tmpFqErr[iq][iPt][iM]->GetStdDev());
 
+            tmpFqErr[iq][iPt][iM]->Fill(tmp);
+            ++nSubsamples[iq][iPt][iM];
+            const double stdErr = (nSubsamples[iq][iPt][iM] > 1)
+                                    ? tmpFqErr[iq][iPt][iM]->GetStdDev() / std::sqrt(static_cast<double>(nSubsamples[iq][iPt][iM]))
+                                    : 0.;
+            mFqError[iPt * 6 + iq]->SetBinContent(iM + 1, stdErr);
             fqEventSampled[iq][iPt][iM] = 0;
             binConEventSampled[iq][iPt][iM] = 0;
           }
@@ -382,12 +383,15 @@ struct FactorialMomentsTask {
     fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
     binConEvent = {{{0, 0, 0, 0, 0}}};
     for (auto const& track : tracks) {
-      if (useITS && !track.hasITS())
+      if (useITS && !track.hasITS()) {
         continue;
-      if (useTPC && !track.hasTPC())
+      }
+      if (useTPC && !track.hasTPC()) {
         continue;
-      if (useGlobal && !track.isGlobalTrack())
+      }
+      if (useGlobal && !track.isGlobalTrack()) {
         continue;
+      }
 
       if (std::fabs(track.dcaXY()) < (dcaxyMaxTrackPar0 + dcaxyMaxTrackPar1 / std::pow(track.pt(), dcaxyMaxTrackPar2))) {
         histos.fill(HIST("mCollID"), track.collisionId());
@@ -462,12 +466,15 @@ struct FactorialMomentsTask {
     fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
     binConEvent = {{{0, 0, 0, 0, 0}}};
     for (auto const& track : colltracks) {
-      if (useITS && !track.hasITS())
+      if (useITS && !track.hasITS()) {
         continue;
-      if (useTPC && !track.hasTPC())
+      }
+      if (useTPC && !track.hasTPC()) {
         continue;
-      if (useGlobal && !track.isGlobalTrack())
+      }
+      if (useGlobal && !track.isGlobalTrack()) {
         continue;
+      }
       if (std::fabs(track.dcaXY()) < (dcaxyMaxTrackPar0 + dcaxyMaxTrackPar1 / std::pow(track.pt(), dcaxyMaxTrackPar2))) {
         histos.fill(HIST("mCollID"), track.collisionId());
         histos.fill(HIST("mEta"), track.eta());
@@ -536,7 +543,7 @@ struct FactorialMomentsTask {
                      BCsWithRun2Info const&)
   {
     auto bc = coll.bc_as<BCsWithRun2Info>();
-    if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted))) {
+    if (!(static_cast<bool>(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))) {
       return;
     }
     if (coll.centRun2V0M() < centLimits.value[0] || coll.centRun2V0M() > centLimits.value[1]) {
