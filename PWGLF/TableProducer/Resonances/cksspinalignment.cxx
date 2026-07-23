@@ -470,7 +470,7 @@ struct cksspinalignment {
         continue;
       }
 
-      const int8_t charge = static_cast<int8_t>(track.sign());
+      const auto charge = static_cast<int8_t>(track.sign());
 
       if (charge == 0) {
         continue;
@@ -496,6 +496,9 @@ struct cksspinalignment {
       auto postrack = v0.template posTrack_as<AllTrackCandidates>();
       auto negtrack = v0.template negTrack_as<AllTrackCandidates>();
 
+      const auto posId = static_cast<int64_t>(postrack.globalIndex());
+      const auto negId = static_cast<int64_t>(negtrack.globalIndex());
+
       ROOT::Math::PxPyPzMVector pionPos(v0.pxpos(), v0.pypos(), v0.pzpos(), o2::constants::physics::MassPionCharged);
       ROOT::Math::PxPyPzMVector pionNeg(v0.pxneg(), v0.pyneg(), v0.pzneg(), o2::constants::physics::MassPionCharged);
       ROOT::Math::PxPyPzMVector k0s = pionPos + pionNeg;
@@ -504,18 +507,18 @@ struct cksspinalignment {
       // v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) *
       // o2::constants::physics::MassK0;
 
-      selectedK0s.push_back({static_cast<float>(k0s.Px()),
-                             static_cast<float>(k0s.Py()),
-                             static_cast<float>(k0s.Pz()),
-                             static_cast<float>(k0s.M()),
-                             static_cast<float>(v0.v0cosPA()),
-                             static_cast<float>(v0.v0radius()),
-                             static_cast<float>(std::abs(v0.dcapostopv())),
-                             static_cast<float>(std::abs(v0.dcanegtopv())),
-                             static_cast<float>(std::abs(v0.dcaV0daughters())),
+      selectedK0s.push_back({k0s.Px(),
+                             k0s.Py(),
+                             k0s.Pz(),
+                             k0s.M(),
+                             v0.v0cosPA(),
+                             v0.v0radius(),
+                             std::abs(v0.dcapostopv()),
+                             std::abs(v0.dcanegtopv()),
+                             std::abs(v0.dcaV0daughters()),
                              // lifetime,
-                             postrack.globalIndex(),
-                             negtrack.globalIndex()});
+                             posId,
+                             negId});
 
       histos.fill(HIST("hV0Info"), 1.5);
       histos.fill(HIST("hKShortMass"), k0s.M());
