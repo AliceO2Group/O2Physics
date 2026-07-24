@@ -62,6 +62,7 @@ struct zdcvector {
   Produces<aod::ZDCCalTables> zdccaltable;
   Produces<aod::ZDCEnergyTables> zdcenergytable;
   Produces<aod::ZDCTimeTables> zdctimetable;
+  Produces<aod::ZDCChargedTracks> zdcchargedtracks;
 
   // Configurables.
   struct : ConfigurableGroup {
@@ -79,6 +80,12 @@ struct zdcvector {
   Configurable<bool> additionalEvSel{"additionalEvSel", false, "additionalEvSel"};
   Configurable<bool> usemem{"usemem", true, "usemem"};
   Configurable<bool> usecfactor{"usecfactor", false, "use c factor"};
+
+  Configurable<float> cfgTrackPtMin{"cfgTrackPtMin", 0.2f, "Minimum charged-track pT"};
+  Configurable<float> cfgTrackPtMax{"cfgTrackPtMax", 10.0f, "Maximum charged-track pT"};
+  Configurable<float> cfgTrackEtaMax{"cfgTrackEtaMax", 0.8f, "Maximum absolute eta"};
+  Configurable<bool> cfgUseGlobalTracks{"cfgUseGlobalTracks", true, "Use global tracks"};
+  Configurable<bool> storeChargedTracks{"storeChargedTracks", true, "Store selected charged tracks in a linked extra table"};
 
   struct : ConfigurableGroup {
     Configurable<int> vzFineNbins{"vzFineNbins", 20, "Number of bins in Vz fine histograms"};
@@ -143,13 +150,35 @@ struct zdcvector {
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
   }
 
+  template <typename T>
+  bool selectionTrack(const T& candidate)
+  {
+    if (!(candidate.isGlobalTrack() &&
+          candidate.isPVContributor() &&
+          candidate.itsNCls() > 3 &&
+          candidate.tpcNClsFound() > 50.0 &&
+          candidate.itsNClsInnerBarrel() >= 1)) {
+      return false;
+    }
+
+    if (std::abs(candidate.dcaXY()) >= 0.1) {
+      return false;
+    }
+
+    if (std::abs(candidate.dcaZ()) >= 0.1) {
+      return false;
+    }
+
+    return true;
+  }
+
   int currentRunNumber = -999;
   int lastRunNumber = -999;
   TH2D* gainprofile = nullptr;
   TProfile* gainprofilevxy = nullptr;
 
   // int lastRunNumberTimeRec = -999;
-  //  for time since start of run
+  // for time since start of run
   // int runForStartTime = -999;
   // uint64_t runStartTime = 0;
 
@@ -217,7 +246,7 @@ struct zdcvector {
                           float qxA,
                           float qxC,
                           float qyA,
-                          float qyC) {
+                          float qyC) -> int32_t {
       zdccaltable(trigger,
                   currentRunNumber,
                   centrality,
@@ -229,7 +258,7 @@ struct zdcvector {
                   qyA,
                   qyC);
 
-      auto zdcCalIndex = zdccaltable.lastIndex();
+      const auto zdcCalIndex = static_cast<int32_t>(zdccaltable.lastIndex());
 
       if (storeZdcEnergy) {
         zdcenergytable(zdcCalIndex,
@@ -244,11 +273,14 @@ struct zdcvector {
                        znc2,
                        znc3);
       }
+
       if (storeZdcTime) {
         zdctimetable(zdcCalIndex,
                      timestampzdc,
                      timeInMinutes);
       }
+
+      return zdcCalIndex;
     };
 
     if (!bc.has_zdc()) {
@@ -439,11 +471,42 @@ struct zdcvector {
       lastRunNumber = currentRunNumber;
     }
     // zdccaltable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC);
-    fillTables(triggerevent,
-               qxZDCA,
-               qxZDCC,
-               qyZDCA,
-               qyZDCC);
+    const auto zdcCalIndex = fillTables(triggerevent,
+                                        qxZDCA,
+                                        qxZDCC,
+                                        qyZDCA,
+                                        qyZDCC);
+
+    // Do not write tracks for events rejected by your ZDC/event selection
+    if (!triggerevent || !storeChargedTracks) {
+      return;
+    }
+
+    // In this process signature, "tracks" are the tracks associated with
+    // the current collision.
+    for (const auto& track : tracks) {
+      if (!selectionTrack(track)) {
+        continue;
+      }
+
+      if (track.pt() < cfgTrackPtMin || track.pt() > cfgTrackPtMax) {
+        continue;
+      }
+
+      if (track.sign() == 0) {
+        continue;
+      }
+
+      if (std::abs(track.eta()) > cfgTrackEtaMax) {
+        continue;
+      }
+
+      zdcchargedtracks(zdcCalIndex,
+                       track.px(),
+                       track.py(),
+                       track.pz(),
+                       static_cast<int8_t>(track.sign()));
+    }
   }
 };
 

@@ -13,17 +13,15 @@
 
 #include "PWGDQ/Core/VarManager.h"
 
-#include <TArrayF.h>
-#include <TMathBase.h>
 #include <TNamed.h>
 
 #include <Rtypes.h>
-#include <RtypesCore.h>
 
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
 #include <vector>
 using namespace std;
-
-ClassImp(MixingHandler);
 
 //_________________________________________________________________________
 MixingHandler::MixingHandler() : TNamed(),

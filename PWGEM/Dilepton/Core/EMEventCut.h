@@ -16,7 +16,7 @@
 #ifndef PWGEM_DILEPTON_CORE_EMEVENTCUT_H_
 #define PWGEM_DILEPTON_CORE_EMEVENTCUT_H_
 
-#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+#include "PWGEM/Dilepton/DataModel/EvSelFlags.h"
 
 #include <TNamed.h>
 

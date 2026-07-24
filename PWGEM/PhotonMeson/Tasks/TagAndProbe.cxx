@@ -133,14 +133,14 @@ struct TagAndProbe {
   template <typename TTagCut, typename TProbeCuts, typename TPairCuts>
   void add_pair_histograms(THashList* list_pair, const std::string pairname, TTagCut const& tagcut, TProbeCuts const& probecuts, TPairCuts const& paircuts)
   {
-    std::string cutname1 = tagcut.GetName();
+    std::string cutname1 = tagcut.getName();
     for (auto& cut2 : probecuts) {
-      std::string cutname2 = cut2.GetName();
+      std::string cutname2 = cut2.getName();
       std::string photon_cut_name = cutname1 + "_" + cutname2;
       THashList* list_pair_subsys_photoncut = o2::aod::pwgem::photon::histogram::AddHistClass(list_pair, photon_cut_name.data());
 
       for (auto& cut3 : paircuts) {
-        std::string pair_cut_name = cut3.GetName();
+        std::string pair_cut_name = cut3.getName();
         o2::aod::pwgem::photon::histogram::AddHistClass(list_pair_subsys_photoncut, pair_cut_name.data());
         THashList* list_pair_subsys_paircut = reinterpret_cast<THashList*>(list_pair_subsys_photoncut->FindObject(pair_cut_name.data()));
         o2::aod::pwgem::photon::histogram::DefineHistograms(list_pair_subsys_paircut, "tag_and_probe", pairname.data());
@@ -315,7 +315,7 @@ struct TagAndProbe {
               if (abs(v12.Rapidity()) > maxY) {
                 continue;
               }
-              reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.GetName(), probecut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Probe_Same"))->Fill(v12.M(), v2.Pt());
+              reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.getName().c_str(), probecut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hMggPt_Probe_Same"))->Fill(v12.M(), v2.Pt());
 
               if constexpr (pairtype == PairType::kPCMPCM) {
                 if (!probecut.template IsSelected<decltype(g2), TLegs>(g2)) {
@@ -331,7 +331,7 @@ struct TagAndProbe {
                 }
               }
 
-              reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.GetName(), probecut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_PassingProbe_Same"))->Fill(v12.M(), v2.Pt());
+              reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.getName().c_str(), probecut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hMggPt_PassingProbe_Same"))->Fill(v12.M(), v2.Pt());
 
               if constexpr (pairtype == PairType::kEMCEMC) {
                 RotationBackground<aod::SkimEMCClusters>(v12, v1, v2, photons2_coll, g1.globalIndex(), g2.globalIndex(), probecut, paircut);
@@ -406,7 +406,7 @@ struct TagAndProbe {
               if (abs(v12.Rapidity()) > maxY) {
                 continue;
               }
-              reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.GetName(), probecut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Probe_Mixed"))->Fill(v12.M(), v2.Pt());
+              reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.getName().c_str(), probecut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hMggPt_Probe_Mixed"))->Fill(v12.M(), v2.Pt());
 
               if constexpr (pairtype == PairType::kPCMPCM) {
                 if (!probecut.template IsSelected<decltype(g2), TLegs>(g2)) {
@@ -422,7 +422,7 @@ struct TagAndProbe {
                 }
               }
 
-              reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.GetName(), probecut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_PassingProbe_Mixed"))->Fill(v12.M(), v2.Pt());
+              reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", tagcut.getName().c_str(), probecut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hMggPt_PassingProbe_Mixed"))->Fill(v12.M(), v2.Pt());
 
             } // end of probe cut loop
           } // end of pair cut loop
@@ -484,10 +484,10 @@ struct TagAndProbe {
       // LOG(info) << "openingAngle2_2 = " << openingAngle2_2;
 
       if (openingAngle1 > minOpenAngle) {
-        reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject("EMCEMC")->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Same_RotatedBkg"))->Fill(mother1.M(), mother1.Pt());
+        reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject("EMCEMC")->FindObject(Form("%s_%s", cut.getName().c_str(), cut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hMggPt_Same_RotatedBkg"))->Fill(mother1.M(), mother1.Pt());
       }
       if (openingAngle2 > minOpenAngle) {
-        reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject("EMCEMC")->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Same_RotatedBkg"))->Fill(mother2.M(), mother2.Pt());
+        reinterpret_cast<TH2F*>(fMainList->FindObject("Pair")->FindObject("EMCEMC")->FindObject(Form("%s_%s", cut.getName().c_str(), cut.getName().c_str()))->FindObject(paircut.getName().c_str())->FindObject("hMggPt_Same_RotatedBkg"))->Fill(mother2.M(), mother2.Pt());
       }
     }
   }

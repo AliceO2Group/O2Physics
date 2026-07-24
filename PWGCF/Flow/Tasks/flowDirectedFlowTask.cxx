@@ -279,6 +279,8 @@ struct flowDirectedFlowTask {
       q1 = q1C;
     } else if (cfgq1mode == 3) {
       q1 = q1Mean;
+    } else if (cfgq1mode == 4) {
+      q1 = std::sqrt(std::pow(qxA + qxC, 2) + std::pow(qyA + qyC, 2));
     } else {
       q1 = q1Full;
     }

@@ -19,6 +19,7 @@
 #include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
 
 #include <CommonConstants/MathConstants.h>
@@ -28,6 +29,7 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 #include <cmath>

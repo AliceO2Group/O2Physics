@@ -107,16 +107,25 @@ struct HfCandidateCreatorXicToXiPiPi {
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   //  KFParticle
-  Configurable<bool> useXiMassConstraint{"useXiMassConstraint", true, "Use mass constraint for Xi"};
+  Configurable<bool> useXiMassConstraint{"useXiMassConstraint", true, "Use mass constraint for Xi. WARNING: Only disable if you know what you are doing!"};
   Configurable<bool> constrainXicPlusToPv{"constrainXicPlusToPv", false, "Constrain XicPlus to PV"};
   Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "Construct method of XicPlus: 0 fast mathematics without constraint of fixed daughter particle masses, 2 daughter particle masses stay fixed in construction process"};
   Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks coming from different collisions (effective only for KFParticle w/o derived data)"};
+  // configurables for software trigger selections
+  struct : ConfigurableGroup {
+    std::string prefix = "softtrig";
+    Configurable<bool> applySoftwareTrigSelections{"applySoftwareTrigSelections", false, "Enable application of software trigger selections"};
+    Configurable<float> minDecayLength{"minDecayLength", 0.015, "Minimum decay length (computed with DCAFitter)"};
+    Configurable<float> minCosPA{"minCosPA", 0.9, "Minimum coine of pointing angle (computed with DCAFitter)"};
+    Configurable<float> maxChi2Pca{"maxChi2Pca", 3., "Maximum chi2 PCA (computed with DCAFitter)"};
+  } softTrigCuts;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
   o2::vertexing::DCAFitterN<3> df;
+  o2::vertexing::DCAFitterN<2> df2Prong;
 
   HfEventSelection hfEvSel;
 
@@ -196,6 +205,66 @@ struct HfCandidateCreatorXicToXiPiPi {
     df.setMinRelChi2Change(minRelChi2Change);
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
+
+    if (softTrigCuts.applySoftwareTrigSelections) {
+      float maxRadSoftTrig = 200.;
+      float maxDZIniSoftTrig = 1.e9;
+      float maxDXYIniSoftTrig = 4.;
+      float minParamChangeSoftTrig = 1.e-3;
+      float maxChi2SoftTrig = 0.9;
+      float minRelChi2ChangeSoftTrig = 0.9;
+      df2Prong.setPropagateToPCA(true);
+      df2Prong.setMaxR(maxRadSoftTrig);
+      df2Prong.setMaxDZIni(maxDZIniSoftTrig);
+      df2Prong.setMaxDXYIni(maxDXYIniSoftTrig);
+      df2Prong.setMinParamChange(minParamChangeSoftTrig);
+      df2Prong.setMinRelChi2Change(minRelChi2ChangeSoftTrig);
+      df2Prong.setMaxChi2(maxChi2SoftTrig);
+      df2Prong.setUseAbsDCA(false);
+      df2Prong.setWeightedFinalPCA(false);
+    }
+  }
+
+  /// Method that reapplies the selections applied in the software trigger
+  /// \param pVecCascade is the cascade momentum vector
+  /// \param trackParBachelor is the array with two bachelor track parametrisations
+  /// \param collision is the collision containing the candidate
+  template <typename TTrackParCov, typename Coll>
+  bool isSelectedXicSoftwareTriggers(std::array<float, 3> const& pVecCascade, std::array<TTrackParCov, 2> const& trackParBachelor, Coll const& collision)
+  {
+    int nCand{0};
+    try {
+      nCand = df2Prong.process(trackParBachelor[0], trackParBachelor[1]);
+    } catch (...) {
+      LOG(error) << "Exception caught in DCA fitter process call for bachelor + bachelor in software trigger selection function!";
+      return false;
+    }
+    if (nCand == 0) {
+      return false;
+    }
+
+    const auto& vtx = df2Prong.getPCACandidate();
+    if (df2Prong.getChi2AtPCACandidate() > softTrigCuts.maxChi2Pca) {
+      return false;
+    }
+
+    std::array<float, 3> pVecBachFirst{}, pVecBachSecond{};
+    const auto& trackBachFirstProp = df2Prong.getTrack(0);
+    const auto& trackBachSecondProp = df2Prong.getTrack(1);
+    trackBachFirstProp.getPxPyPzGlo(pVecBachFirst);
+    trackBachSecondProp.getPxPyPzGlo(pVecBachSecond);
+    auto momXiBachBach = RecoDecay::pVec(pVecCascade, pVecBachFirst, pVecBachSecond);
+
+    std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
+    if (RecoDecay::cpa(primVtx, std::array{vtx[0], vtx[1], vtx[2]}, momXiBachBach) < softTrigCuts.minCosPA) {
+      return false;
+    }
+
+    if (RecoDecay::distance(primVtx, vtx) < softTrigCuts.minDecayLength) {
+      return false;
+    }
+
+    return true;
   }
 
   template <o2::hf_centrality::CentralityEstimator CentEstimator, typename Collision>
@@ -282,6 +351,13 @@ struct HfCandidateCreatorXicToXiPiPi {
       auto trackParCovCharmBachelor0 = getTrackParCov(trackCharmBachelor0);
       auto trackParCovCharmBachelor1 = getTrackParCov(trackCharmBachelor1);
 
+      // if enabled, apply selections of software trigger
+      if (softTrigCuts.applySoftwareTrigSelections) {
+        if (!isSelectedXicSoftwareTriggers(pVecCasc, std::array{trackParCovCharmBachelor0, trackParCovCharmBachelor1}, collision)) {
+          continue;
+        }
+      }
+
       // reconstruct the 3-prong secondary vertex
       try {
         if (df.process(trackCasc, trackParCovCharmBachelor0, trackParCovCharmBachelor1) == 0) {
@@ -337,6 +413,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       float const cpaXYXi = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
       float const cpaLambdaToXi = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
       float const cpaXYLambdaToXi = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
+
+      // calculate Lambda radius
+      float const radiusLambda = std::hypot(vertexV0[0], vertexV0[1]);
 
       // get invariant mass of Xi-pi pairs
       auto arrayMomentaXiPi0 = std::array{pVecXi, pVecPi0};
@@ -419,9 +498,10 @@ struct HfCandidateCreatorXicToXiPiPi {
                        impactParameterCasc.getY(), impactParameter0.getY(), impactParameter1.getY(),
                        std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
                        /*cascade specific columns*/
-                       trackPionFromXi.p(), pPiFromLambda, pPrFromLambda,
+                       trackPionFromXi.p(), pPiFromLambda, pPrFromLambda, trackPionFromXi.pt(),
                        cpaXi, cpaXYXi, cpaLambda, cpaXYLambda, cpaLambdaToXi, cpaXYLambdaToXi,
                        casc.mXi(), casc.mLambda(), massXiPi0, massXiPi1,
+                       radiusLambda,
                        /*DCA information*/
                        casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(),
                        casc.dcaXYCascToPV(), casc.dcaZCascToPV(),
@@ -459,8 +539,19 @@ struct HfCandidateCreatorXicToXiPiPi {
         continue;
       }
       auto casc = cascAodElement.kfCascData_as<KFCascFull>();
+
       auto trackCharmBachelor0 = rowTrackIndexXicPlus.prong0_as<TracksWCovExtraPidPrPi>();
       auto trackCharmBachelor1 = rowTrackIndexXicPlus.prong1_as<TracksWCovExtraPidPrPi>();
+
+      // if enabled, apply selections of software trigger
+      if (softTrigCuts.applySoftwareTrigSelections) {
+        auto trackParCovCharmBachelor0 = getTrackParCov(trackCharmBachelor0);
+        auto trackParCovCharmBachelor1 = getTrackParCov(trackCharmBachelor1);
+        std::array<float, 3> const pVecCasc = {casc.px(), casc.py(), casc.pz()};
+        if (!isSelectedXicSoftwareTriggers(pVecCasc, std::array{trackParCovCharmBachelor0, trackParCovCharmBachelor1}, collision)) {
+          continue;
+        }
+      }
 
       //-------------------preselect cascade candidates--------------------------------------
       if (doCascadePreselection) {
@@ -511,6 +602,10 @@ struct HfCandidateCreatorXicToXiPiPi {
       float parPosMom[NElementsStateVector];
       std::copy(xyzpxpypz.begin(), xyzpxpypz.end(), parPosMom);
       // create KFParticle
+      // README: The Xi KFParticle in this case is constructed from the parameters stored in the LF cascade table.
+      // The LF strangenessbuilder should in this case be run WITHOUT the mass constraint on the Xi to consistently store the unconstrained parameters and invariant mass of the Xi.
+      // The mass constraint on the Xi is applied here only after the KFParticle object was created from the unconstrained parameters and covariance matrix of the Xi.
+      // WARNING: If the Xi gets already constrained in the LF strangenessbuilder, the parameters and cov matrix passed to the KFParticle.Create() function will be constrained while the mass won't be. The stored energy, mass, and momentum will not be correctly related anymore!
       KFParticle kfXi;
       float const massXi = casc.mXi();
       kfXi.Create(parPosMom, casc.kfTrackCovMat(), casc.sign(), massXi);
@@ -575,6 +670,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       float const cpaXYXi = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
       float const cpaLambdaToXi = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
       float const cpaXYLambdaToXi = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
+
+      // calculate Lambda radius
+      float const radiusLambda = std::hypot(vertexV0[0], vertexV0[1]);
 
       // get chi2 deviation of Pi0-Pi1, Pi0-Xi, Pi1-Xi
       float chi2DevPi0Pi1 = kfCharmBachelor0.GetDeviationFromParticle(kfCharmBachelor1);
@@ -692,9 +790,10 @@ struct HfCandidateCreatorXicToXiPiPi {
                        impactParameterXiXY, impactParameterPi0XY, impactParameterPi1XY,
                        errImpactParameterXiXY, errImpactParameterPi0XY, errImpactParameterPi1XY,
                        /*cascade specific columns*/
-                       trackPionFromXi.p(), pPiFromLambda, pPrFromLambda,
+                       trackPionFromXi.p(), pPiFromLambda, pPrFromLambda, trackPionFromXi.pt(),
                        cpaXi, cpaXYXi, cpaLambda, cpaXYLambda, cpaLambdaToXi, cpaXYLambdaToXi,
                        massXi, casc.mLambda(), massXiPi0, massXiPi1,
+                       radiusLambda,
                        /*DCA information*/
                        casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(),
                        casc.dcaXYCascToPV(), casc.dcaZCascToPV(),

@@ -13,50 +13,49 @@
 /// \file multiplicityPt.cxx
 /// \brief Analysis to do PID with MC - Full correction factors for pions, kaons, protons
 
-#include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "PWGLF/DataModel/mcCentrality.h"
-#include "PWGLF/DataModel/spectraTOF.h"
-#include "PWGLF/Utils/inelGt.h"
-
-#include "Common/Core/RecoDecay.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/Track.h>
 
 #include <TF1.h>
+#include <TH2.h>
+#include <TH3.h>
 #include <TMCProcess.h>
 #include <TPDGCode.h>
+#include <TString.h>
 
-#include <algorithm>
 #include <array>
 #include <cmath>
-#include <map>
+#include <cstdint>
 #include <memory>
-#include <numeric>
-#include <set>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace constants::physics;
 
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels,
                           aod::Run3MatchedToBCSparse>;
@@ -81,31 +80,31 @@ using TracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                            aod::TrackSelection, aod::McTrackLabels,
                            aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
 
-static constexpr int NCentHists{10};
-static constexpr int NPartHists{5};
-std::array<std::shared_ptr<TH3>, NCentHists> hDedxVsMomentumVsCentPos{};
-std::array<std::shared_ptr<TH3>, NCentHists> hDedxVsMomentumVsCentNeg{};
-std::array<std::shared_ptr<TH3>, NCentHists + 1> hDedxVspTMomentumVsCent{};
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hMomentumVsEtaPos{};
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hMomentumVsEtaNeg{};
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hpTVsEtaPos{};
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hpTVsEtaNeg{};
-// Total counts
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalMomPosCent{};
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalMomNegCent{};
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalPtPosCent{};
-std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalPtNegCent{};
-// Counts for particles
-std::array<std::array<std::shared_ptr<TH2>, NCentHists + 1>, NPartHists> hFracMomPosCent{};
-std::array<std::array<std::shared_ptr<TH2>, NCentHists + 1>, NPartHists> hFracMomNegCent{};
-std::array<std::array<std::shared_ptr<TH2>, NCentHists + 1>, NPartHists> hFracPtPosCent{};
-std::array<std::array<std::shared_ptr<TH2>, NCentHists + 1>, NPartHists> hFracPtNegCent{};
-
 struct MultiplicityPt {
 
   // ── Services ──────────────────────────────────────────────
-  Service<o2::framework::O2DatabasePDG> pdg;
-  Service<ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdg{};
+  Service<ccdb::BasicCCDBManager> ccdb{};
+
+  static constexpr int NCentHists{10};
+  static constexpr int NPartHists{5};
+  std::array<std::shared_ptr<TH3>, NCentHists> hDedxVsMomentumVsCentPos{};
+  std::array<std::shared_ptr<TH3>, NCentHists> hDedxVsMomentumVsCentNeg{};
+  std::array<std::shared_ptr<TH3>, NCentHists + 1> hDedxVspTMomentumVsCent{};
+  std::array<std::shared_ptr<TH2>, NCentHists + 1> hMomentumVsEtaPos{};
+  std::array<std::shared_ptr<TH2>, NCentHists + 1> hMomentumVsEtaNeg{};
+  std::array<std::shared_ptr<TH2>, NCentHists + 1> hpTVsEtaPos{};
+  std::array<std::shared_ptr<TH2>, NCentHists + 1> hpTVsEtaNeg{};
+  // Total counts
+  std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalMomPosCent{};
+  std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalMomNegCent{};
+  std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalPtPosCent{};
+  std::array<std::shared_ptr<TH2>, NCentHists + 1> hTotalPtNegCent{};
+  // Counts for particles
+  std::array<std::array<std::shared_ptr<TH2>, NCentHists + 1>, NPartHists> hFracMomPosCent{};
+  std::array<std::array<std::shared_ptr<TH2>, NCentHists + 1>, NPartHists> hFracMomNegCent{};
+  std::array<std::array<std::shared_ptr<TH2>, NCentHists + 1>, NPartHists> hFracPtPosCent{};
+  std::array<std::array<std::shared_ptr<TH2>, NCentHists + 1>, NPartHists> hFracPtNegCent{};
 
   // ── Constant values ──────────────────────────────────
   static constexpr int CentBinMax = 100;
@@ -151,8 +150,15 @@ struct MultiplicityPt {
   Configurable<float> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 4.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
   Configurable<float> minChi2PerClusterTPC{"minChi2PerClusterTPC", 0.5f, "Additional cut on the minimum value of the chi2 per cluster in the TPC"};
   Configurable<float> maxChi2PerClusterITS{"maxChi2PerClusterITS", 36.f, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
-  Configurable<float> maxDcaXYFactor{"maxDcaXYFactor", 1.f, "Additional cut on the maximum value of the DCA xy (multiplicative factor)"};
-  Configurable<float> maxDcaZ{"maxDcaZ", 2.0f, "Additional cut on the maximum value of the DCA z"};
+  Configurable<float> nSigmaDCAxy{"nSigmaDCAxy", 1.f, "Additional cut on the maximum value of the DCA xy (multiplicative factor)"};
+  Configurable<float> dcaXYp0{"dcaXYp0", 0.0105f, "DCAxy formula: p0 + p1/pt^p2"};
+  Configurable<float> dcaXYp1{"dcaXYp1", 0.0350f, "DCAxy p1 parameter"};
+  Configurable<float> dcaXYp2{"dcaXYp2", 1.1f, "DCAxy p2 parameter"};
+  Configurable<float> nSigmaDCAz{"nSigmaDCAz", 1.f, "Additional cut on the maximum value of the DCA z (multiplicative factor)"};
+  Configurable<float> dcaZp0{"dcaZp0", 0.0105f, "DCAz formula: p0 + p1/pt^p2"};
+  Configurable<float> dcaZp1{"dcaZp1", 0.0350f, "DCAz p1 parameter"};
+  Configurable<float> dcaZp2{"dcaZp2", 1.1f, "DCAz p2 parameter"};
+  // Configurable<float> maxDcaZ{"maxDcaZ", 2.0f, "Additional cut on the maximum value of the DCA z"};
   Configurable<float> minTPCNClsFound{"minTPCNClsFound", 70.0f, "min number of found TPC clusters"};
   Configurable<float> minTPCNClsPID{"minTPCNClsPID", 130.0f, "min number of PID TPC clusters"};
   Configurable<bool> nClTPCFoundCut{"nClTPCFoundCut", false, "Apply TPC found clusters cut"};
@@ -187,6 +193,7 @@ struct MultiplicityPt {
   ConfigurableAxis pFineBins{"pFineBins", {1995, 0.1, 40}, "Binning for momentum"};
   ConfigurableAxis dedxBins{"dedxBins", {100, 0, 100}, "Binning for dedx"};
   std::vector<double> centBinningStd = {0., 1., 5., 10., 15., 20., 30., 40., 50., 70., 100.};
+  ConfigurableAxis dcaBins{"dcaBins", {200, -0.5, 0.5}, "Binning for DCA plots"};
   // ── Custom track-selection object ────────────────────────
   TrackSelection customTrackCuts;
 
@@ -209,7 +216,6 @@ struct MultiplicityPt {
 
   static constexpr float MinCharge = 3.0f;
   static constexpr int CentralityClasses = 10;
-  static constexpr double CentClasses[CentralityClasses + 1] = {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0};
 
   static constexpr int ParticleTypes = 4;
   // Response Matrix histogram names
@@ -255,7 +261,7 @@ struct MultiplicityPt {
       customTrackCuts.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
       customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
       customTrackCuts.SetMaxDcaXYPtDep([](float /*pt*/) { return 10000.f; });
-      customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
+      // customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
     }
 
     // Initialize phi cut functions if enabled
@@ -295,7 +301,7 @@ struct MultiplicityPt {
     const AxisSpec dcaXYAxis{105, -1.05f, 1.05f, "DCA_{xy} (cm)"};
     const AxisSpec zvtxAxis{60, -30.0, 30.0, "Vtx_{z} (cm)"};
     const AxisSpec nclAxis{161, -0.5, 160.5, "N_{cl} TPC"};
-
+    AxisSpec dcaAxis{dcaBins, ""};
     // ========================================================================
     // EVENT COUNTER AND BASIC HISTOGRAMS
     // ========================================================================
@@ -617,6 +623,18 @@ struct MultiplicityPt {
       registry.add("PhiCut/hPtVsPhiPrimeAfter", "pT vs #phi' after cut;p_{T};#phi'",
                    kTH2F, {{100, 0, 10}, {100, 0, 0.4}});
     }
+    // ========================================================================
+    // DCA CUT MONITORING
+    // ========================================================================
+
+    registry.add("hDCAxyVsPt_before", "DCAxy vs pT before cut;#it{p}_{T} (GeV/c);DCA_{xy} (cm)",
+                 HistType::kTH2F, {{ptAxis}, {dcaAxis}});
+    registry.add("hDCAzVsPt_before", "DCAz vs pT before cut;#it{p}_{T} (GeV/c);DCA_{z} (cm)",
+                 HistType::kTH2F, {{ptAxis}, {dcaAxis}});
+    registry.add("hDCAxyVsPt_after", "DCAxy vs pT after cut;#it{p}_{T} (GeV/c);DCA_{xy} (cm)",
+                 HistType::kTH2F, {{ptAxis}, {dcaAxis}});
+    registry.add("hDCAzVsPt_after", "DCAz vs pT after cut;#it{p}_{T} (GeV/c);DCA_{z} (cm)",
+                 HistType::kTH2F, {{ptAxis}, {dcaAxis}});
 
     // ========================================================================
     // CALIBRATION HISTOGRAMS
@@ -711,7 +729,7 @@ struct MultiplicityPt {
     LOG(info) << "cfgINELCut       = " << cfgINELCut.value;
     LOG(info) << "selTVXMC         = " << selTVXMC.value;
     LOG(info) << "applyPhiCut      = " << applyPhiCut.value;
-    LOG(info) << "maxDcaZ          = " << maxDcaZ.value;
+    // LOG(info) << "maxDcaZ          = " << maxDcaZ.value;
   }
 
   // Get magnetic field from CCDB
@@ -790,19 +808,26 @@ struct MultiplicityPt {
     return true;
   }
 
-  template <typename T>
-  bool passesDCAxyCut(const T& track) const
+  // DCA xy cut
+  template <typename T1>
+  bool passesDCAxyCut(const T1& track) const
   {
-    constexpr float C = 0.0105f, S = 0.0350f, P = 1.1f;
-    const float maxDCAxy = maxDcaXYFactor.value * (C + S / std::pow(track.pt(), P));
-    return std::abs(track.dcaXY()) <= maxDCAxy;
+    const float maxDcaXY = nSigmaDCAxy.value * (dcaXYp0.value + dcaXYp1.value / std::pow(track.pt(), dcaXYp2.value)) / 3.0;
+    return std::abs(track.dcaXY()) < maxDcaXY;
+  }
+  // DCA z cut
+  template <typename T1>
+  bool passesDCAzCut(const T1& track) const
+  {
+    const float maxiDcaZ = nSigmaDCAz.value * (dcaZp0.value + dcaZp1.value / std::pow(track.pt(), dcaZp2.value)) / 3.0;
+    return std::abs(track.dcaZ()) < maxiDcaZ;
   }
 
   // Full track selection
   template <typename T>
   bool passesTrackSelection(const T& track) const
   {
-    return passesTrackSelectionNoDCA(track) && passesDCAxyCut(track);
+    return passesTrackSelectionNoDCA(track) && passesDCAxyCut(track) && passesDCAzCut(track);
   }
 
   template <typename C>
@@ -1138,6 +1163,10 @@ struct MultiplicityPt {
         if (!track.has_mcParticle())
           continue;
 
+        // Before DCA cuts
+        registry.fill(HIST("hDCAxyVsPt_before"), track.pt(), track.dcaXY());
+        registry.fill(HIST("hDCAzVsPt_before"), track.pt(), track.dcaZ());
+
         if (applyPhiCut.value && track.pt() >= pTthresholdPhiCut.value) {
           float phiPrime = getTransformedPhi(track.phi(), track.sign(), magField);
           registry.fill(HIST("PhiCut/hPtVsPhiPrimeBefore"), track.pt(), phiPrime);
@@ -1171,38 +1200,6 @@ struct MultiplicityPt {
         }
         if (centIndex == -1)
           continue;
-
-        // ====================================================================
-        // DEDX VS MOMENTUM HISTOGRAMS FILLING - ALL TRACKS
-        // ====================================================================
-        hDedxVspTMomentumVsCent[10]->Fill(track.pt(), tpcSignal, eta);
-        if (charge > 0) {
-          registry.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_all_Pos"), momentum, tpcSignal, eta);
-          hDedxVsMomentumVsCentPos[centIndex]->Fill(momentum, tpcSignal, eta);
-          hDedxVspTMomentumVsCent[centIndex]->Fill(track.pt(), tpcSignal, eta);
-          hMomentumVsEtaPos[centIndex]->Fill(eta, momentum);
-          hMomentumVsEtaPos[10]->Fill(eta, momentum);
-          hpTVsEtaPos[centIndex]->Fill(eta, track.pt());
-          hpTVsEtaPos[10]->Fill(eta, track.pt());
-          registry.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Pos"), eta, track.pt(), momentum);
-        } else {
-          registry.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_all_Neg"), momentum, tpcSignal, eta);
-          hDedxVsMomentumVsCentNeg[centIndex]->Fill(momentum, tpcSignal, eta);
-          hDedxVspTMomentumVsCent[centIndex]->Fill(track.pt(), tpcSignal, eta);
-          hMomentumVsEtaNeg[centIndex]->Fill(eta, momentum);
-          hMomentumVsEtaNeg[10]->Fill(eta, momentum);
-          hpTVsEtaNeg[centIndex]->Fill(eta, track.pt());
-          hpTVsEtaNeg[10]->Fill(eta, track.pt());
-          registry.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Neg"), eta, track.pt(), momentum);
-        }
-
-        if (isPrimary) {
-          if (charge > 0) {
-            registry.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Pos_Pri"), eta, track.pt(), momentum);
-          } else {
-            registry.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Neg_Pri"), eta, track.pt(), momentum);
-          }
-        }
 
         registry.fill(HIST("hEta"), track.eta());
         registry.fill(HIST("hPhi"), track.phi());
@@ -1250,6 +1247,10 @@ struct MultiplicityPt {
 
         if (!passesTrackSelection(track))
           continue;
+
+        // After Trk cuts
+        registry.fill(HIST("hDCAxyVsPt_after"), track.pt(), track.dcaXY());
+        registry.fill(HIST("hDCAzVsPt_after"), track.pt(), track.dcaZ());
 
         if (applyPhiCut.value && !passedPhiCut(track, magField))
           continue;
@@ -1315,6 +1316,38 @@ struct MultiplicityPt {
           } else if (isPr) {
             registry.fill(HIST("Proton/hPtSecReco"), track.pt());
             registry.fill(HIST("Proton/hPtSecRecoVsMult"), track.pt(), nchF);
+          }
+        }
+
+        // ====================================================================
+        // DEDX VS MOMENTUM HISTOGRAMS FILLING - ALL TRACKS
+        // ====================================================================
+        hDedxVspTMomentumVsCent[10]->Fill(track.pt(), tpcSignal, eta);
+        if (charge > 0) {
+          registry.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_all_Pos"), momentum, tpcSignal, eta);
+          hDedxVsMomentumVsCentPos[centIndex]->Fill(momentum, tpcSignal, eta);
+          hDedxVspTMomentumVsCent[centIndex]->Fill(track.pt(), tpcSignal, eta);
+          hMomentumVsEtaPos[centIndex]->Fill(eta, momentum);
+          hMomentumVsEtaPos[10]->Fill(eta, momentum);
+          hpTVsEtaPos[centIndex]->Fill(eta, track.pt());
+          hpTVsEtaPos[10]->Fill(eta, track.pt());
+          registry.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Pos"), eta, track.pt(), momentum);
+        } else {
+          registry.fill(HIST("DedxVsMomentum/dEdx_vs_Momentum_all_Neg"), momentum, tpcSignal, eta);
+          hDedxVsMomentumVsCentNeg[centIndex]->Fill(momentum, tpcSignal, eta);
+          hDedxVspTMomentumVsCent[centIndex]->Fill(track.pt(), tpcSignal, eta);
+          hMomentumVsEtaNeg[centIndex]->Fill(eta, momentum);
+          hMomentumVsEtaNeg[10]->Fill(eta, momentum);
+          hpTVsEtaNeg[centIndex]->Fill(eta, track.pt());
+          hpTVsEtaNeg[10]->Fill(eta, track.pt());
+          registry.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Neg"), eta, track.pt(), momentum);
+        }
+
+        if (isPrimary) {
+          if (charge > 0) {
+            registry.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Pos_Pri"), eta, track.pt(), momentum);
+          } else {
+            registry.fill(HIST("ResponseMatrix/heta_vs_pt_vs_p_all_Neg_Pri"), eta, track.pt(), momentum);
           }
         }
 

@@ -940,7 +940,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
 
       // double dd0mrpn=std::abs(sd0mrpn)-std::abs(sd0mrpo);
       // double deltaDcaXYmean = std::abs(dcaXYMeanData) - std::abs(dcaXYMeanMC) ;
-      double deltaDcaXYmean = dcaXYMeanData - dcaXYMeanMC;
+      double deltaDcaXYmean = dcaXYMeanData; // - dcaXYMeanMC; // Remove the shift of the mean, already introduced in deltaDcaXYTuned
 
       // double d0rpn =d0rpmc+dd0rpn-dd0mrpn;
       double trackParDcaXYTuned = trackParDcaXYMC + deltaDcaXYTuned + deltaDcaXYmean;

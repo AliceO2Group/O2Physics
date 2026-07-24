@@ -22,17 +22,3 @@ o2physics_add_library(PWGDQCore
                         MCProng.cxx
                         MCSignal.cxx
                PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2::GlobalTracking O2Physics::AnalysisCore KFParticle::KFParticle O2Physics::MLCore)
-
-o2physics_target_root_dictionary(PWGDQCore
-                          HEADERS   AnalysisCut.h
-                                    AnalysisCompositeCut.h
-                                    VarManager.h
-                                    HistogramManager.h
-                                    CutsLibrary.h
-                                    MixingHandler.h
-                                    MixingLibrary.h
-                                    HistogramsLibrary.h
-                                    MCProng.h
-                                    MCSignal.h
-                                    MCSignalLibrary.h
-                          LINKDEF PWGDQCoreLinkDef.h)

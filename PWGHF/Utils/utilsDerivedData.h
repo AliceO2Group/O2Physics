@@ -230,16 +230,18 @@ struct HfProducesDerivedData : o2::framework::ProducesGroup {
                           const TMass massParticle)
   {
     // Fill MC collision properties
-    const auto sizeTableMcColl = mcCollisions.size();
-    reserveTablesMcColl(sizeTableMcColl);
+    // const auto sizeTableMcColl = mcCollisions.size();
+    // reserveTablesMcColl(sizeTableMcColl);
+    const auto sizeTablePart = mcParticles.size();
+    reserveTablesParticles(sizeTablePart);
     for (const auto& mcCollision : mcCollisions) {
       const auto thisMcCollId = mcCollision.globalIndex();
       const auto particlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, thisMcCollId);
-      const auto sizeTablePart = particlesThisMcColl.size();
-      LOGF(debug, "MC collision %d has %d MC particles", thisMcCollId, sizeTablePart);
+      const auto sizeTablePartThisColl = particlesThisMcColl.size();
+      LOGF(debug, "MC collision %d has %d MC particles", thisMcCollId, sizeTablePartThisColl);
       // Skip MC collisions without HF particles (and without HF candidates in matched reconstructed collisions if saving indices of reconstructed collisions matched to MC collisions)
       LOGF(debug, "MC collision %d has %d saved derived rec. collisions", thisMcCollId, matchedCollisions[thisMcCollId].size());
-      if (sizeTablePart == 0 && (!conf->fillMcRCollId.value || matchedCollisions[thisMcCollId].empty())) {
+      if (sizeTablePartThisColl == 0 && (!conf->fillMcRCollId.value || matchedCollisions[thisMcCollId].empty())) {
         LOGF(debug, "Skipping MC collision %d", thisMcCollId);
         continue;
       }
@@ -247,7 +249,6 @@ struct HfProducesDerivedData : o2::framework::ProducesGroup {
       fillTablesMcCollision(mcCollision);
 
       // Fill MC particle properties
-      reserveTablesParticles(sizeTablePart);
       for (const auto& particle : particlesThisMcColl) {
         fillTablesParticle(particle, massParticle);
       }

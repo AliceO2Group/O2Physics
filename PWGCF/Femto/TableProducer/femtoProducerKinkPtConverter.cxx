@@ -106,8 +106,8 @@ struct FemtoProducerKinkPtConverter {
   }
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
-  o2::framework::WorkflowSpec workflow{adaptAnalysisTask<FemtoProducerKinkPtConverter>(cfgc)};
+  o2::framework::WorkflowSpec workflow{adaptAnalysisTask<FemtoProducerKinkPtConverter>(context)};
   return workflow;
 }

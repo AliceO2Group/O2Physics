@@ -73,7 +73,7 @@ using namespace o2::aod::pwgem::photon;
 
 enum QvecEstimator {
   FT0M = 0,
-  FT0A = 1,
+  FT0A,
   FT0C,
   TPCPos,
   TPCNeg,
@@ -83,7 +83,7 @@ enum QvecEstimator {
 
 enum CentralityEstimator {
   None = 0,
-  CFT0A = 1,
+  CFT0A,
   CFT0C,
   CFT0M,
   NCentralityEstimators
@@ -228,7 +228,7 @@ struct CalibTaskEmc {
   } correctionConfig;
 
   SliceCache cache;
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   int runNow = 0;
   int runBefore = -1;
 
@@ -246,8 +246,8 @@ struct CalibTaskEmc {
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  o2::emcal::Geometry* emcalGeom;
-  o2::emcal::BadChannelMap* mBadChannels;
+  o2::emcal::Geometry* emcalGeom{};
+  o2::emcal::BadChannelMap* mBadChannels{};
   // Constants for eta and phi ranges for the look up table
   static constexpr double EtaMin = -0.75, etaMax = 0.75;
   static constexpr int NBinsEta = 150; // 150 bins for eta
@@ -255,7 +255,7 @@ struct CalibTaskEmc {
   static constexpr double PhiMin = 1.35, phiMax = 5.75;
   static constexpr int NBinsPhi = 440; // (440 bins = 0.01 step size covering most regions)
 
-  std::array<int8_t, NBinsEta * NBinsPhi> lookupTable1D;
+  std::array<int8_t, NBinsEta * NBinsPhi> lookupTable1D{};
 
   // Usage when cfgEnableNonLin is enabled
   uint8_t nColl = 1;
@@ -446,7 +446,7 @@ struct CalibTaskEmc {
   template <const int histType>
   void fillThn(const float mass, const float pt, const float cent)
   {
-    static constexpr std::string_view HistTypes[3] = {"hSparsePi0", "hSparseBkgRot", "hSparseBkgMix"};
+    static constexpr std::array<std::string_view, 3> HistTypes = {"hSparsePi0", "hSparseBkgRot", "hSparseBkgMix"};
     registry.fill(HIST(HistTypes[histType]), mass, pt, cent);
   }
 
@@ -457,7 +457,7 @@ struct CalibTaskEmc {
   template <const int histType>
   void fillOpeningAngleHisto(const float openingAngle, const float pt, const float cent)
   {
-    static constexpr std::string_view HistTypes[3] = {"hOpeningAngleSE", "hOpeningAngleRot", "hOpeningAngleME"};
+    static constexpr std::array<std::string_view, 3> HistTypes = {"hOpeningAngleSE", "hOpeningAngleRot", "hOpeningAngleME"};
     registry.fill(HIST(HistTypes[histType]), openingAngle, pt, cent);
   }
 
@@ -504,9 +504,7 @@ struct CalibTaskEmc {
     int iRowLast = 24;
     if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::EMCAL_HALF) {
       iRowLast /= 2; // 2/3 sm case
-    } else if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::EMCAL_THIRD) {
-      iRowLast /= 3; // 1/3 sm case
-    } else if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::DCAL_EXT) {
+    } else if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::EMCAL_THIRD || emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::DCAL_EXT) {
       iRowLast /= 3; // 1/3 sm case
     }
 
@@ -579,7 +577,6 @@ struct CalibTaskEmc {
     float massCand = meson.M();
 
     fillThn<histType>(massCand, photonCalibValue, cent);
-    return;
   }
 
   /// \brief check if standard event cuts + FT0 occupancy + centrality + QVec good is
@@ -716,7 +713,7 @@ struct CalibTaskEmc {
         // general event selection
         continue;
       }
-      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange() && c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange() && c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
+      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange()) || !(c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange()) || !(c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
         // occupancy selection
         continue;
       }
@@ -739,7 +736,7 @@ struct CalibTaskEmc {
           continue;
         }
         // Cut edge clusters away, similar to rotation method to ensure same acceptance is used
-        if (cfgDistanceToEdge.value) {
+        if (cfgDistanceToEdge.value > 0) {
           if (checkEtaPhi1D(g1.eta(), RecoDecay::constrainAngle(g1.phi())) >= cfgEMCalMapLevelBackground.value) {
             continue;
           }
@@ -819,7 +816,7 @@ struct CalibTaskEmc {
         }
 
         // Cut edge clusters away, similar to rotation method to ensure same acceptance is used
-        if (cfgDistanceToEdge.value) {
+        if (cfgDistanceToEdge.value > 0) {
           if (checkEtaPhi1D(g1.eta(), RecoDecay::constrainAngle(g1.phi())) >= cfgEMCalMapLevelSameEvent.value) {
             continue;
           }
@@ -889,7 +886,7 @@ struct CalibTaskEmc {
         // general event selection
         continue;
       }
-      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange() && c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange() && c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
+      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange()) || !(c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange()) || !(c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
         // occupancy selection
         continue;
       }
@@ -908,7 +905,7 @@ struct CalibTaskEmc {
           continue;
         }
         // Cut edge clusters away, similar to rotation method to ensure same acceptance is used
-        if (cfgDistanceToEdge.value) {
+        if (cfgDistanceToEdge.value > 0) {
           if (checkEtaPhi1D(g1.eta(), RecoDecay::constrainAngle(g1.phi())) >= cfgEMCalMapLevelBackground.value) {
             continue;
           }
@@ -1035,7 +1032,7 @@ struct CalibTaskEmc {
         // general event selection
         continue;
       }
-      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange() && c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange() && c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
+      if (!(eventcuts.cfgFT0COccupancyMin <= c1.ft0cOccupancyInTimeRange()) || !(c1.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax) || !(eventcuts.cfgFT0COccupancyMin <= c2.ft0cOccupancyInTimeRange()) || !(c2.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
         // occupancy selection
         continue;
       }
@@ -1092,7 +1089,7 @@ struct CalibTaskEmc {
 
 }; // End struct CalibTaskEmc
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<CalibTaskEmc>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<CalibTaskEmc>(context)};
 }

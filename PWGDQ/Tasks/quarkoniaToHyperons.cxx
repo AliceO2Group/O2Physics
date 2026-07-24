@@ -519,7 +519,7 @@ struct QuarkoniaToHyperons {
     secondaryMaskSelectionAntiLambda = maskTopological | maskTrackProperties | maskAntiLambdaSpecific;
 
     // Event Counters
-    histos.add("hEventSelection", "hEventSelection", kTH1F, {{20, -0.5f, +19.5f}});
+    histos.add("hEventSelection", "hEventSelection", kTH1D, {{20, -0.5f, +19.5f}});
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
@@ -536,20 +536,20 @@ struct QuarkoniaToHyperons {
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "Below min occup.");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "Above max occup.");
 
-    histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
-    histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2F, {axes.axisCentrality, axes.axisNch});
+    histos.add("hEventCentrality", "hEventCentrality", kTH1D, {{100, 0.0f, +100.0f}});
+    histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2D, {axes.axisCentrality, axes.axisNch});
 
-    histos.add("hEventOccupancy", "hEventOccupancy", kTH1F, {axes.axisOccupancy});
-    histos.add("hCentralityVsOccupancy", "hCentralityVsOccupancy", kTH2F, {axes.axisCentrality, axes.axisOccupancy});
+    histos.add("hEventOccupancy", "hEventOccupancy", kTH1D, {axes.axisOccupancy});
+    histos.add("hCentralityVsOccupancy", "hCentralityVsOccupancy", kTH2D, {axes.axisCentrality, axes.axisOccupancy});
 
     if (!isPP) {
-      histos.add("hGapSide", "Gap side; Entries", kTH1F, {{5, -0.5, 4.5}});
-      histos.add("hSelGapSide", "Selected gap side; Entries", kTH1F, {axes.axisSelGap});
-      histos.add("hEventCentralityVsSelGapSide", ";Centrality (%); Selected gap side", kTH2F, {{100, 0.0f, +100.0f}, axes.axisSelGap});
+      histos.add("hGapSide", "Gap side; Entries", kTH1D, {{5, -0.5, 4.5}});
+      histos.add("hSelGapSide", "Selected gap side; Entries", kTH1D, {axes.axisSelGap});
+      histos.add("hEventCentralityVsSelGapSide", ";Centrality (%); Selected gap side", kTH2D, {{100, 0.0f, +100.0f}, axes.axisSelGap});
     }
 
     // for QA and test purposes
-    auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axes.axisRawCentrality});
+    auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1D, {axes.axisRawCentrality});
 
     for (int ii = 1; ii < 101; ii++) {
       float value = 100.5f - static_cast<float>(ii);
@@ -558,340 +558,340 @@ struct QuarkoniaToHyperons {
 
     // histograms versus mass
     if (buildK0sK0sPairs) {
-      histos.add("K0sK0s/h3dMassK0sK0s", "h3dMassK0sK0s", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+      histos.add("K0sK0s/h3dMassK0sK0s", "h3dMassK0sK0s", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
       if (!isPP) {
         // Non-UPC info
-        histos.add("K0sK0s/h3dMassK0sK0sHadronic", "h3dMassK0sK0sHadronic", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dMassK0sK0sHadronic", "h3dMassK0sK0sHadronic", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
         // UPC info
-        histos.add("K0sK0s/h3dMassK0sK0sSGA", "h3dMassK0sK0sSGA", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("K0sK0s/h3dMassK0sK0sSGC", "h3dMassK0sK0sSGC", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("K0sK0s/h3dMassK0sK0sDG", "h3dMassK0sK0sDG", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dMassK0sK0sSGA", "h3dMassK0sK0sSGA", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dMassK0sK0sSGC", "h3dMassK0sK0sSGC", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dMassK0sK0sDG", "h3dMassK0sK0sDG", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
       }
-      histos.add("K0sK0s/h2dNbrOfK0ShortVsCentrality", "h2dNbrOfK0ShortVsCentrality", kTH2F, {axes.axisCentrality, {10, -0.5f, 9.5f}});
+      histos.add("K0sK0s/h2dNbrOfK0ShortVsCentrality", "h2dNbrOfK0ShortVsCentrality", kTH2D, {axes.axisCentrality, {10, -0.5f, 9.5f}});
       // QA plot
       // Candidates after K0s selections
-      histos.add("K0sK0s/K0s/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axes.axisDCAtoPV});
-      histos.add("K0sK0s/K0s/hNegDCAToPV", "hNegDCAToPV", kTH1F, {axes.axisDCAtoPV});
-      histos.add("K0sK0s/K0s/hDCAV0Daughters", "hDCAV0Daughters", kTH1F, {axes.axisDCAdau});
-      histos.add("K0sK0s/K0s/hDCAV0ToPV", "hDCAV0ToPV", kTH1F, {axes.axisDCAV0ToPV});
-      histos.add("K0sK0s/K0s/hV0PointingAngle", "hV0PointingAngle", kTH1F, {axes.axisPointingAngle});
-      histos.add("K0sK0s/K0s/hV0Radius", "hV0Radius", kTH1F, {axes.axisRadius});
-      histos.add("K0sK0s/K0s/hV0DecayLength", "hDecayLength", kTH1F, {axes.axisProperLifeTime});
-      histos.add("K0sK0s/K0s/hV0InvMassWindow", "hInvMassWindow", kTH1F, {axes.axisMassWindow});
-      histos.add("K0sK0s/K0s/h2dCompetingMassRej", "h2dCompetingMassRej", kTH2F, {axes.axisLambdaMass, axes.axisK0Mass});
-      histos.add("K0sK0s/K0s/h2dArmenteros", "h2dArmenteros", kTH2F, {axes.axisAPAlpha, axes.axisAPQt});
-      histos.add("K0sK0s/K0s/hPosTPCNsigma", "hPosTPCNsigma", kTH1F, {axes.axisNsigmaTPC});
-      histos.add("K0sK0s/K0s/hNegTPCNsigma", "hNegTPCNsigma", kTH1F, {axes.axisNsigmaTPC});
-      histos.add("K0sK0s/K0s/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axes.axisTPCrows, axes.axisITSclus});
-      histos.add("K0sK0s/K0s/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axes.axisTPCrows, axes.axisITSclus});
+      histos.add("K0sK0s/K0s/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axes.axisDCAtoPV});
+      histos.add("K0sK0s/K0s/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axes.axisDCAtoPV});
+      histos.add("K0sK0s/K0s/hDCAV0Daughters", "hDCAV0Daughters", kTH1D, {axes.axisDCAdau});
+      histos.add("K0sK0s/K0s/hDCAV0ToPV", "hDCAV0ToPV", kTH1D, {axes.axisDCAV0ToPV});
+      histos.add("K0sK0s/K0s/hV0PointingAngle", "hV0PointingAngle", kTH1D, {axes.axisPointingAngle});
+      histos.add("K0sK0s/K0s/hV0Radius", "hV0Radius", kTH1D, {axes.axisRadius});
+      histos.add("K0sK0s/K0s/hV0DecayLength", "hDecayLength", kTH1D, {axes.axisProperLifeTime});
+      histos.add("K0sK0s/K0s/hV0InvMassWindow", "hInvMassWindow", kTH1D, {axes.axisMassWindow});
+      histos.add("K0sK0s/K0s/h2dCompetingMassRej", "h2dCompetingMassRej", kTH2D, {axes.axisLambdaMass, axes.axisK0Mass});
+      histos.add("K0sK0s/K0s/h2dArmenteros", "h2dArmenteros", kTH2D, {axes.axisAPAlpha, axes.axisAPQt});
+      histos.add("K0sK0s/K0s/hPosTPCNsigma", "hPosTPCNsigma", kTH1D, {axes.axisNsigmaTPC});
+      histos.add("K0sK0s/K0s/hNegTPCNsigma", "hNegTPCNsigma", kTH1D, {axes.axisNsigmaTPC});
+      histos.add("K0sK0s/K0s/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axes.axisTPCrows, axes.axisITSclus});
+      histos.add("K0sK0s/K0s/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axes.axisTPCrows, axes.axisITSclus});
       if (doMCAssociation) {
-        histos.add("K0sK0s/h3dInvMassTrueEtaC1S", "h3dInvMassTrueEtaC1S", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("K0sK0s/h3dInvMassTrueJPsi", "h3dInvMassTrueJPsi", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("K0sK0s/h3dInvMassTrueChiC0", "h3dInvMassTrueChiC0", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("K0sK0s/h3dInvMassTrueChiC1", "h3dInvMassTrueChiC1", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("K0sK0s/h3dInvMassTrueHC", "h3dInvMassTrueHC", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("K0sK0s/h3dInvMassTrueChiC2", "h3dInvMassTrueChiC2", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("K0sK0s/h3dInvMassTrueEtaC2S", "h3dInvMassTrueEtaC2S", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("K0sK0s/h3dInvMassTruePsi2S", "h3dInvMassTruePsi2S", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTrueEtaC1S", "h3dInvMassTrueEtaC1S", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTrueJPsi", "h3dInvMassTrueJPsi", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTrueChiC0", "h3dInvMassTrueChiC0", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTrueChiC1", "h3dInvMassTrueChiC1", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTrueHC", "h3dInvMassTrueHC", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTrueChiC2", "h3dInvMassTrueChiC2", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTrueEtaC2S", "h3dInvMassTrueEtaC2S", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("K0sK0s/h3dInvMassTruePsi2S", "h3dInvMassTruePsi2S", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
       }
       if (doQA) {
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPosDCAToPV", "h3dMassK0sK0sVsPosDCAToPV", kTH3F, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsNegDCAToPV", "h3dMassK0sK0sVsNegDCAToPV", kTH3F, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsDCAV0Daughters", "h3dMassK0sK0sVsDCAV0Daughters", kTH3F, {axes.axisDCAdau, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsDCAV0ToPV", "h3dMassK0sK0sVsDCAV0ToPV", kTH3F, {axes.axisDCAV0ToPV, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsV0PointingAngle", "h3dMassK0sK0sVsV0PointingAngle", kTH3F, {axes.axisPointingAngle, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsV0Radius", "h3dMassK0sK0sVsV0Radius", kTH3F, {axes.axisRadius, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsDecayLength", "h3dMassK0sK0sVsDecayLength", kTH3F, {axes.axisProperLifeTime, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsInvMassWindow", "h3dMassK0sK0sVsInvMassWindow", kTH3F, {axes.axisMassWindow, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPosTPCNsigma", "h3dMassK0sK0sVsPosTPCNsigma", kTH3F, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsNegTPCNsigma", "h3dMassK0sK0sVsNegTPCNsigma", kTH3F, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPosITSclusters", "h3dMassK0sK0sVsPosITSclusters", kTH3F, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsNegITSclusters", "h3dMassK0sK0sVsNegITSclusters", kTH3F, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPosNbrCrossedRows", "h3dMassK0sK0sVsPosNbrCrossedRows", kTH3F, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsNegNbrCrossedRows", "h3dMassK0sK0sVsNegNbrCrossedRows", kTH3F, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPairRadius3D", "h3dMassK0sK0sVsPairRadius3D", kTH3F, {axes.axisHypPairRadius3D, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPairRadius2D", "h3dMassK0sK0sVsPairRadius2D", kTH3F, {axes.axisHypPairRadius2D, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPairZ", "h3dMassK0sK0sVsPairZ", kTH3F, {axes.axisHypPairZ, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsDCAPair", "h3dMassK0sK0sVsDCAPair", kTH3F, {axes.axisDCAHypPair, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPairCosPA", "h3dMassK0sK0sVsPairCosPA", kTH3F, {axes.axisHypPairCosPA, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPairOpAngle", "h3dMassK0sK0sVsPairOpAngle", kTH3F, {axes.axisHypPairOpAngle, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPairEta", "h3dMassK0sK0sVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPairPhi", "h3dMassK0sK0sVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/K0sK0s/h3dDeltaEtaK0sK0sVsPairEta", "h3dDeltaEtaK0sK0sVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
-        histos.add("QA/K0sK0s/h3dDeltaPhiK0sK0sVsPairPhi", "h3dDeltaPhiK0sK0sVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPosDCAToPV", "h3dMassK0sK0sVsPosDCAToPV", kTH3D, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsNegDCAToPV", "h3dMassK0sK0sVsNegDCAToPV", kTH3D, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsDCAV0Daughters", "h3dMassK0sK0sVsDCAV0Daughters", kTH3D, {axes.axisDCAdau, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsDCAV0ToPV", "h3dMassK0sK0sVsDCAV0ToPV", kTH3D, {axes.axisDCAV0ToPV, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsV0PointingAngle", "h3dMassK0sK0sVsV0PointingAngle", kTH3D, {axes.axisPointingAngle, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsV0Radius", "h3dMassK0sK0sVsV0Radius", kTH3D, {axes.axisRadius, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsDecayLength", "h3dMassK0sK0sVsDecayLength", kTH3D, {axes.axisProperLifeTime, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsInvMassWindow", "h3dMassK0sK0sVsInvMassWindow", kTH3D, {axes.axisMassWindow, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPosTPCNsigma", "h3dMassK0sK0sVsPosTPCNsigma", kTH3D, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsNegTPCNsigma", "h3dMassK0sK0sVsNegTPCNsigma", kTH3D, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPosITSclusters", "h3dMassK0sK0sVsPosITSclusters", kTH3D, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsNegITSclusters", "h3dMassK0sK0sVsNegITSclusters", kTH3D, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPosNbrCrossedRows", "h3dMassK0sK0sVsPosNbrCrossedRows", kTH3D, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsNegNbrCrossedRows", "h3dMassK0sK0sVsNegNbrCrossedRows", kTH3D, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPairRadius3D", "h3dMassK0sK0sVsPairRadius3D", kTH3D, {axes.axisHypPairRadius3D, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPairRadius2D", "h3dMassK0sK0sVsPairRadius2D", kTH3D, {axes.axisHypPairRadius2D, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPairZ", "h3dMassK0sK0sVsPairZ", kTH3D, {axes.axisHypPairZ, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsDCAPair", "h3dMassK0sK0sVsDCAPair", kTH3D, {axes.axisDCAHypPair, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPairCosPA", "h3dMassK0sK0sVsPairCosPA", kTH3D, {axes.axisHypPairCosPA, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPairOpAngle", "h3dMassK0sK0sVsPairOpAngle", kTH3D, {axes.axisHypPairOpAngle, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPairEta", "h3dMassK0sK0sVsPairEta", kTH3D, {axes.axisHypPairEta, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dMassK0sK0sVsPairPhi", "h3dMassK0sK0sVsPairPhi", kTH3D, {axes.axisHypPairPhi, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/K0sK0s/h3dDeltaEtaK0sK0sVsPairEta", "h3dDeltaEtaK0sK0sVsPairEta", kTH3D, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
+        histos.add("QA/K0sK0s/h3dDeltaPhiK0sK0sVsPairPhi", "h3dDeltaPhiK0sK0sVsPairPhi", kTH3D, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
       }
     }
     if (buildLaLaBarPairs) {
-      histos.add("LaLaBar/h3dMassLaLabar", "h3dMassLaLabar", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+      histos.add("LaLaBar/h3dMassLaLabar", "h3dMassLaLabar", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
       if (!isPP) {
         // Non-UPC info
-        histos.add("LaLaBar/h3dMassLaLabarHadronic", "h3dMassLaLabarHadronic", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("LaLaBar/h3dMassLaLabarHadronic", "h3dMassLaLabarHadronic", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
         // UPC info
-        histos.add("LaLaBar/h3dMassLaLabarSGA", "h3dMassLaLabarSGA", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("LaLaBar/h3dMassLaLabarSGC", "h3dMassLaLabarSGC", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("LaLaBar/h3dMassLaLabarDG", "h3dMassLaLabarDG", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("LaLaBar/h3dMassLaLabarSGA", "h3dMassLaLabarSGA", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("LaLaBar/h3dMassLaLabarSGC", "h3dMassLaLabarSGC", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("LaLaBar/h3dMassLaLabarDG", "h3dMassLaLabarDG", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
       }
-      histos.add("LaLaBar/h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2F, {axes.axisCentrality, {10, -0.5f, 9.5f}});
-      histos.add("LaLaBar/h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2F, {axes.axisCentrality, {10, -0.5f, 9.5f}});
+      histos.add("LaLaBar/h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2D, {axes.axisCentrality, {10, -0.5f, 9.5f}});
+      histos.add("LaLaBar/h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2D, {axes.axisCentrality, {10, -0.5f, 9.5f}});
       // QA plot
       // Candidates after Lambda selections
-      histos.add("LaLaBar/Lambda/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axes.axisDCAtoPV});
-      histos.add("LaLaBar/Lambda/hNegDCAToPV", "hNegDCAToPV", kTH1F, {axes.axisDCAtoPV});
-      histos.add("LaLaBar/Lambda/hDCAV0Daughters", "hDCAV0Daughters", kTH1F, {axes.axisDCAdau});
-      histos.add("LaLaBar/Lambda/hDCAV0ToPV", "hDCAV0ToPV", kTH1F, {axes.axisDCAV0ToPV});
-      histos.add("LaLaBar/Lambda/hV0PointingAngle", "hV0PointingAngle", kTH1F, {axes.axisPointingAngle});
-      histos.add("LaLaBar/Lambda/hV0Radius", "hV0Radius", kTH1F, {axes.axisRadius});
-      histos.add("LaLaBar/Lambda/hV0DecayLength", "hDecayLength", kTH1F, {axes.axisProperLifeTime});
-      histos.add("LaLaBar/Lambda/hV0InvMassWindow", "hInvMassWindow", kTH1F, {axes.axisMassWindow});
-      histos.add("LaLaBar/Lambda/h2dCompetingMassRej", "h2dCompetingMassRej", kTH2F, {axes.axisLambdaMass, axes.axisK0Mass});
-      histos.add("LaLaBar/Lambda/hPosTPCNsigma", "hPosTPCNsigma", kTH1F, {axes.axisNsigmaTPC});
-      histos.add("LaLaBar/Lambda/hNegTPCNsigma", "hNegTPCNsigma", kTH1F, {axes.axisNsigmaTPC});
-      histos.add("LaLaBar/Lambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axes.axisTPCrows, axes.axisITSclus});
-      histos.add("LaLaBar/Lambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axes.axisTPCrows, axes.axisITSclus});
+      histos.add("LaLaBar/Lambda/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axes.axisDCAtoPV});
+      histos.add("LaLaBar/Lambda/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axes.axisDCAtoPV});
+      histos.add("LaLaBar/Lambda/hDCAV0Daughters", "hDCAV0Daughters", kTH1D, {axes.axisDCAdau});
+      histos.add("LaLaBar/Lambda/hDCAV0ToPV", "hDCAV0ToPV", kTH1D, {axes.axisDCAV0ToPV});
+      histos.add("LaLaBar/Lambda/hV0PointingAngle", "hV0PointingAngle", kTH1D, {axes.axisPointingAngle});
+      histos.add("LaLaBar/Lambda/hV0Radius", "hV0Radius", kTH1D, {axes.axisRadius});
+      histos.add("LaLaBar/Lambda/hV0DecayLength", "hDecayLength", kTH1D, {axes.axisProperLifeTime});
+      histos.add("LaLaBar/Lambda/hV0InvMassWindow", "hInvMassWindow", kTH1D, {axes.axisMassWindow});
+      histos.add("LaLaBar/Lambda/h2dCompetingMassRej", "h2dCompetingMassRej", kTH2D, {axes.axisLambdaMass, axes.axisK0Mass});
+      histos.add("LaLaBar/Lambda/hPosTPCNsigma", "hPosTPCNsigma", kTH1D, {axes.axisNsigmaTPC});
+      histos.add("LaLaBar/Lambda/hNegTPCNsigma", "hNegTPCNsigma", kTH1D, {axes.axisNsigmaTPC});
+      histos.add("LaLaBar/Lambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axes.axisTPCrows, axes.axisITSclus});
+      histos.add("LaLaBar/Lambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axes.axisTPCrows, axes.axisITSclus});
 
       // Candidates after AntiLambda selections
-      histos.add("LaLaBar/AntiLambda/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axes.axisDCAtoPV});
-      histos.add("LaLaBar/AntiLambda/hNegDCAToPV", "hNegDCAToPV", kTH1F, {axes.axisDCAtoPV});
-      histos.add("LaLaBar/AntiLambda/hDCAV0Daughters", "hDCADaughters", kTH1F, {axes.axisDCAdau});
-      histos.add("LaLaBar/AntiLambda/hDCAV0ToPV", "hDCAV0ToPV", kTH1F, {axes.axisDCAV0ToPV});
-      histos.add("LaLaBar/AntiLambda/hV0PointingAngle", "hV0PointingAngle", kTH1F, {axes.axisPointingAngle});
-      histos.add("LaLaBar/AntiLambda/hV0Radius", "hV0Radius", kTH1F, {axes.axisRadius});
-      histos.add("LaLaBar/AntiLambda/hV0DecayLength", "hDecayLength", kTH1F, {axes.axisProperLifeTime});
-      histos.add("LaLaBar/AntiLambda/hV0InvMassWindow", "hInvMassWindow", kTH1F, {axes.axisMassWindow});
-      histos.add("LaLaBar/AntiLambda/h2dCompetingMassRej", "h2dCompetingMassRej", kTH2F, {axes.axisLambdaMass, axes.axisK0Mass});
-      histos.add("LaLaBar/AntiLambda/hPosTPCNsigma", "hPosTPCNsigma", kTH1F, {axes.axisNsigmaTPC});
-      histos.add("LaLaBar/AntiLambda/hNegTPCNsigma", "hNegTPCNsigma", kTH1F, {axes.axisNsigmaTPC});
-      histos.add("LaLaBar/AntiLambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axes.axisTPCrows, axes.axisITSclus});
-      histos.add("LaLaBar/AntiLambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axes.axisTPCrows, axes.axisITSclus});
+      histos.add("LaLaBar/AntiLambda/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axes.axisDCAtoPV});
+      histos.add("LaLaBar/AntiLambda/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axes.axisDCAtoPV});
+      histos.add("LaLaBar/AntiLambda/hDCAV0Daughters", "hDCADaughters", kTH1D, {axes.axisDCAdau});
+      histos.add("LaLaBar/AntiLambda/hDCAV0ToPV", "hDCAV0ToPV", kTH1D, {axes.axisDCAV0ToPV});
+      histos.add("LaLaBar/AntiLambda/hV0PointingAngle", "hV0PointingAngle", kTH1D, {axes.axisPointingAngle});
+      histos.add("LaLaBar/AntiLambda/hV0Radius", "hV0Radius", kTH1D, {axes.axisRadius});
+      histos.add("LaLaBar/AntiLambda/hV0DecayLength", "hDecayLength", kTH1D, {axes.axisProperLifeTime});
+      histos.add("LaLaBar/AntiLambda/hV0InvMassWindow", "hInvMassWindow", kTH1D, {axes.axisMassWindow});
+      histos.add("LaLaBar/AntiLambda/h2dCompetingMassRej", "h2dCompetingMassRej", kTH2D, {axes.axisLambdaMass, axes.axisK0Mass});
+      histos.add("LaLaBar/AntiLambda/hPosTPCNsigma", "hPosTPCNsigma", kTH1D, {axes.axisNsigmaTPC});
+      histos.add("LaLaBar/AntiLambda/hNegTPCNsigma", "hNegTPCNsigma", kTH1D, {axes.axisNsigmaTPC});
+      histos.add("LaLaBar/AntiLambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axes.axisTPCrows, axes.axisITSclus});
+      histos.add("LaLaBar/AntiLambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axes.axisTPCrows, axes.axisITSclus});
       if (doMCAssociation) {
-        histos.add("LaLaBar/h3dInvMassTrueEtaC1S", "h3dInvMassTrueEtaC1S", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("LaLaBar/h3dInvMassTrueJPsi", "h3dInvMassTrueJPsi", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("LaLaBar/h3dInvMassTrueChiC0", "h3dInvMassTrueChiC0", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("LaLaBar/h3dInvMassTrueChiC1", "h3dInvMassTrueChiC1", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("LaLaBar/h3dInvMassTrueHC", "h3dInvMassTrueHC", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("LaLaBar/h3dInvMassTrueChiC2", "h3dInvMassTrueChiC2", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("LaLaBar/h3dInvMassTrueEtaC2S", "h3dInvMassTrueEtaC2S", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("LaLaBar/h3dInvMassTruePsi2S", "h3dInvMassTruePsi2S", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("LaLaBar/h3dInvMassTrueEtaC1S", "h3dInvMassTrueEtaC1S", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("LaLaBar/h3dInvMassTrueJPsi", "h3dInvMassTrueJPsi", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("LaLaBar/h3dInvMassTrueChiC0", "h3dInvMassTrueChiC0", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("LaLaBar/h3dInvMassTrueChiC1", "h3dInvMassTrueChiC1", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("LaLaBar/h3dInvMassTrueHC", "h3dInvMassTrueHC", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("LaLaBar/h3dInvMassTrueChiC2", "h3dInvMassTrueChiC2", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("LaLaBar/h3dInvMassTrueEtaC2S", "h3dInvMassTrueEtaC2S", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("LaLaBar/h3dInvMassTruePsi2S", "h3dInvMassTruePsi2S", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
       }
       if (doQA) {
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPosDCAToPV", "h3dMassLaLaBarVsPosDCAToPV", kTH3F, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsNegDCAToPV", "h3dMassLaLaBarVsNegDCAToPV", kTH3F, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsDCAV0Daughters", "h3dMassLaLaBarVsDCAV0Daughters", kTH3F, {axes.axisDCAdau, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsDCAV0ToPV", "h3dMassLaLaBarVsDCAV0ToPV", kTH3F, {axes.axisDCAV0ToPV, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsV0PointingAngle", "h3dMassLaLaBarVsV0PointingAngle", kTH3F, {axes.axisPointingAngle, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsV0Radius", "h3dMassLaLaBarVsV0Radius", kTH3F, {axes.axisRadius, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsDecayLength", "h3dMassLaLaBarVsDecayLength", kTH3F, {axes.axisProperLifeTime, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsInvMassWindow", "h3dMassLaLaBarVsInvMassWindow", kTH3F, {axes.axisMassWindow, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPosTPCNsigma", "h3dMassLaLaBarVsPosTPCNsigma", kTH3F, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsNegTPCNsigma", "h3dMassLaLaBarVsNegTPCNsigma", kTH3F, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPosITSclusters", "h3dMassLaLaBarVsPosITSclusters", kTH3F, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsNegITSclusters", "h3dMassLaLaBarVsNegITSclusters", kTH3F, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPosNbrCrossedRows", "h3dMassLaLaBarVsPosNbrCrossedRows", kTH3F, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsNegNbrCrossedRows", "h3dMassLaLaBarVsNegNbrCrossedRows", kTH3F, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPairRadius3D", "h3dMassLaLaBarVsPairRadius3D", kTH3F, {axes.axisHypPairRadius3D, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPairRadius2D", "h3dMassLaLaBarVsPairRadius2D", kTH3F, {axes.axisHypPairRadius2D, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPairZ", "h3dMassLaLaBarVsPairZ", kTH3F, {axes.axisHypPairZ, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsDCAPair", "h3dMassLaLaBarVsDCAPair", kTH3F, {axes.axisDCAHypPair, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPairCosPA", "h3dMassLaLaBarVsPairCosPA", kTH3F, {axes.axisHypPairCosPA, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPairOpAngle", "h3dMassLaLaBarVsPairOpAngle", kTH3F, {axes.axisHypPairOpAngle, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPairEta", "h3dMassLaLaBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPairPhi", "h3dMassLaLaBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/LaLaBar/h3dDeltaEtaLaLaBarVsPairEta", "h3dDeltaEtaLaLaBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
-        histos.add("QA/LaLaBar/h3dDeltaPhiLaLaBarVsPairPhi", "h3dDeltaPhiLaLaBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPosDCAToPV", "h3dMassLaLaBarVsPosDCAToPV", kTH3D, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsNegDCAToPV", "h3dMassLaLaBarVsNegDCAToPV", kTH3D, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsDCAV0Daughters", "h3dMassLaLaBarVsDCAV0Daughters", kTH3D, {axes.axisDCAdau, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsDCAV0ToPV", "h3dMassLaLaBarVsDCAV0ToPV", kTH3D, {axes.axisDCAV0ToPV, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsV0PointingAngle", "h3dMassLaLaBarVsV0PointingAngle", kTH3D, {axes.axisPointingAngle, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsV0Radius", "h3dMassLaLaBarVsV0Radius", kTH3D, {axes.axisRadius, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsDecayLength", "h3dMassLaLaBarVsDecayLength", kTH3D, {axes.axisProperLifeTime, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsInvMassWindow", "h3dMassLaLaBarVsInvMassWindow", kTH3D, {axes.axisMassWindow, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPosTPCNsigma", "h3dMassLaLaBarVsPosTPCNsigma", kTH3D, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsNegTPCNsigma", "h3dMassLaLaBarVsNegTPCNsigma", kTH3D, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPosITSclusters", "h3dMassLaLaBarVsPosITSclusters", kTH3D, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsNegITSclusters", "h3dMassLaLaBarVsNegITSclusters", kTH3D, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPosNbrCrossedRows", "h3dMassLaLaBarVsPosNbrCrossedRows", kTH3D, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsNegNbrCrossedRows", "h3dMassLaLaBarVsNegNbrCrossedRows", kTH3D, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPairRadius3D", "h3dMassLaLaBarVsPairRadius3D", kTH3D, {axes.axisHypPairRadius3D, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPairRadius2D", "h3dMassLaLaBarVsPairRadius2D", kTH3D, {axes.axisHypPairRadius2D, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPairZ", "h3dMassLaLaBarVsPairZ", kTH3D, {axes.axisHypPairZ, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsDCAPair", "h3dMassLaLaBarVsDCAPair", kTH3D, {axes.axisDCAHypPair, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPairCosPA", "h3dMassLaLaBarVsPairCosPA", kTH3D, {axes.axisHypPairCosPA, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPairOpAngle", "h3dMassLaLaBarVsPairOpAngle", kTH3D, {axes.axisHypPairOpAngle, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPairEta", "h3dMassLaLaBarVsPairEta", kTH3D, {axes.axisHypPairEta, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dMassLaLaBarVsPairPhi", "h3dMassLaLaBarVsPairPhi", kTH3D, {axes.axisHypPairPhi, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/LaLaBar/h3dDeltaEtaLaLaBarVsPairEta", "h3dDeltaEtaLaLaBarVsPairEta", kTH3D, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
+        histos.add("QA/LaLaBar/h3dDeltaPhiLaLaBarVsPairPhi", "h3dDeltaPhiLaLaBarVsPairPhi", kTH3D, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
       }
     }
     if (buildXiXiBarPairs) {
-      histos.add("XiXiBar/h3dMassXiXibar", "h3dMassXiXibar", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+      histos.add("XiXiBar/h3dMassXiXibar", "h3dMassXiXibar", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
       if (!isPP) {
         // Non-UPC info
-        histos.add("XiXiBar/h3dMassXiXibarHadronic", "h3dMassXiXibarHadronic", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("XiXiBar/h3dMassXiXibarHadronic", "h3dMassXiXibarHadronic", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
         // UPC info
-        histos.add("XiXiBar/h3dMassXiXibarSGA", "h3dMassXiXibarSGA", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("XiXiBar/h3dMassXiXibarSGC", "h3dMassXiXibarSGC", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("XiXiBar/h3dMassXiXibarDG", "h3dMassXiXibarDG", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("XiXiBar/h3dMassXiXibarSGA", "h3dMassXiXibarSGA", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("XiXiBar/h3dMassXiXibarSGC", "h3dMassXiXibarSGC", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("XiXiBar/h3dMassXiXibarDG", "h3dMassXiXibarDG", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
       }
-      histos.add("XiXiBar/h2dNbrOfXiVsCentrality", "h2dNbrOfXiVsCentrality", kTH2F, {axes.axisCentrality, {10, -0.5f, 9.5f}});
-      histos.add("XiXiBar/h2dNbrOfAntiXiVsCentrality", "h2dNbrOfAntiXiVsCentrality", kTH2F, {axes.axisCentrality, {10, -0.5f, 9.5f}});
+      histos.add("XiXiBar/h2dNbrOfXiVsCentrality", "h2dNbrOfXiVsCentrality", kTH2D, {axes.axisCentrality, {10, -0.5f, 9.5f}});
+      histos.add("XiXiBar/h2dNbrOfAntiXiVsCentrality", "h2dNbrOfAntiXiVsCentrality", kTH2D, {axes.axisCentrality, {10, -0.5f, 9.5f}});
       // QA plot
       // Candidates after Xi selections
-      histos.add("XiXiBar/Xi/hBachDCAToPV", "hBachDCAToPV", kTH1F, {axes.axisDCAtoPV});
-      histos.add("XiXiBar/Xi/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axes.axisDCAtoPV});
-      histos.add("XiXiBar/Xi/hNegDCAToPV", "hNegDCAToPV", kTH1F, {axes.axisDCAtoPV});
-      histos.add("XiXiBar/Xi/hDCACascDaughters", "hDCACascDaughters", kTH1F, {axes.axisDCAdau});
-      histos.add("XiXiBar/Xi/hDCAV0Daughters", "hDCAV0Daughters", kTH1F, {axes.axisDCAdau});
-      histos.add("XiXiBar/Xi/hDCAV0ToPV", "hDCAV0ToPV", kTH1F, {axes.axisDCAV0ToPV});
-      histos.add("XiXiBar/Xi/hV0PointingAngle", "hV0PointingAngle", kTH1F, {axes.axisPointingAngle});
-      histos.add("XiXiBar/Xi/hV0Radius", "hV0Radius", kTH1F, {axes.axisRadius});
-      histos.add("XiXiBar/Xi/hCascPointingAngle", "hCascPointingAngle", kTH1F, {axes.axisPointingAngle});
-      histos.add("XiXiBar/Xi/hCascRadius", "hCascRadius", kTH1F, {axes.axisRadius});
-      histos.add("XiXiBar/Xi/hCascDecayLength", "hCascDecayLength", kTH1F, {axes.axisProperLifeTime});
-      histos.add("XiXiBar/Xi/hV0InvMassWindow", "hV0InvMassWindow", kTH1F, {axes.axisMassWindow});
-      histos.add("XiXiBar/Xi/hCascInvMassWindow", "hCascInvMassWindow", kTH1F, {axes.axisMassWindow});
-      histos.add("XiXiBar/Xi/h2dCompetingMassRej", "h2dCompetingMassRej", kTH2F, {axes.axisXiMass, axes.axisOmegaMass});
-      histos.add("XiXiBar/Xi/hBachTPCNsigma", "hBachTPCNsigma", kTH1F, {axes.axisNsigmaTPC});
-      histos.add("XiXiBar/Xi/hPosTPCNsigma", "hPosTPCNsigma", kTH1F, {axes.axisNsigmaTPC});
-      histos.add("XiXiBar/Xi/hNegTPCNsigma", "hNegTPCNsigma", kTH1F, {axes.axisNsigmaTPC});
-      histos.add("XiXiBar/Xi/h2dBachelorITSvsTPCpts", "h2dBachelorITSvsTPCpts", kTH2F, {axes.axisTPCrows, axes.axisITSclus});
-      histos.add("XiXiBar/Xi/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axes.axisTPCrows, axes.axisITSclus});
-      histos.add("XiXiBar/Xi/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axes.axisTPCrows, axes.axisITSclus});
+      histos.add("XiXiBar/Xi/hBachDCAToPV", "hBachDCAToPV", kTH1D, {axes.axisDCAtoPV});
+      histos.add("XiXiBar/Xi/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axes.axisDCAtoPV});
+      histos.add("XiXiBar/Xi/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axes.axisDCAtoPV});
+      histos.add("XiXiBar/Xi/hDCACascDaughters", "hDCACascDaughters", kTH1D, {axes.axisDCAdau});
+      histos.add("XiXiBar/Xi/hDCAV0Daughters", "hDCAV0Daughters", kTH1D, {axes.axisDCAdau});
+      histos.add("XiXiBar/Xi/hDCAV0ToPV", "hDCAV0ToPV", kTH1D, {axes.axisDCAV0ToPV});
+      histos.add("XiXiBar/Xi/hV0PointingAngle", "hV0PointingAngle", kTH1D, {axes.axisPointingAngle});
+      histos.add("XiXiBar/Xi/hV0Radius", "hV0Radius", kTH1D, {axes.axisRadius});
+      histos.add("XiXiBar/Xi/hCascPointingAngle", "hCascPointingAngle", kTH1D, {axes.axisPointingAngle});
+      histos.add("XiXiBar/Xi/hCascRadius", "hCascRadius", kTH1D, {axes.axisRadius});
+      histos.add("XiXiBar/Xi/hCascDecayLength", "hCascDecayLength", kTH1D, {axes.axisProperLifeTime});
+      histos.add("XiXiBar/Xi/hV0InvMassWindow", "hV0InvMassWindow", kTH1D, {axes.axisMassWindow});
+      histos.add("XiXiBar/Xi/hCascInvMassWindow", "hCascInvMassWindow", kTH1D, {axes.axisMassWindow});
+      histos.add("XiXiBar/Xi/h2dCompetingMassRej", "h2dCompetingMassRej", kTH2D, {axes.axisXiMass, axes.axisOmegaMass});
+      histos.add("XiXiBar/Xi/hBachTPCNsigma", "hBachTPCNsigma", kTH1D, {axes.axisNsigmaTPC});
+      histos.add("XiXiBar/Xi/hPosTPCNsigma", "hPosTPCNsigma", kTH1D, {axes.axisNsigmaTPC});
+      histos.add("XiXiBar/Xi/hNegTPCNsigma", "hNegTPCNsigma", kTH1D, {axes.axisNsigmaTPC});
+      histos.add("XiXiBar/Xi/h2dBachelorITSvsTPCpts", "h2dBachelorITSvsTPCpts", kTH2D, {axes.axisTPCrows, axes.axisITSclus});
+      histos.add("XiXiBar/Xi/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axes.axisTPCrows, axes.axisITSclus});
+      histos.add("XiXiBar/Xi/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axes.axisTPCrows, axes.axisITSclus});
       // Candidates after AntiXi selections
-      histos.add("XiXiBar/AntiXi/hBachDCAToPV", "hBachDCAToPV", kTH1F, {axes.axisDCAtoPV});
-      histos.add("XiXiBar/AntiXi/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axes.axisDCAtoPV});
-      histos.add("XiXiBar/AntiXi/hNegDCAToPV", "hNegDCAToPV", kTH1F, {axes.axisDCAtoPV});
-      histos.add("XiXiBar/AntiXi/hDCACascDaughters", "hDCACascDaughters", kTH1F, {axes.axisDCAdau});
-      histos.add("XiXiBar/AntiXi/hDCAV0Daughters", "hDCAV0Daughters", kTH1F, {axes.axisDCAdau});
-      histos.add("XiXiBar/AntiXi/hDCAV0ToPV", "hDCAV0ToPV", kTH1F, {axes.axisDCAV0ToPV});
-      histos.add("XiXiBar/AntiXi/hV0PointingAngle", "hV0PointingAngle", kTH1F, {axes.axisPointingAngle});
-      histos.add("XiXiBar/AntiXi/hV0Radius", "hV0Radius", kTH1F, {axes.axisRadius});
-      histos.add("XiXiBar/AntiXi/hCascPointingAngle", "hCascPointingAngle", kTH1F, {axes.axisPointingAngle});
-      histos.add("XiXiBar/AntiXi/hCascRadius", "hCascRadius", kTH1F, {axes.axisRadius});
-      histos.add("XiXiBar/AntiXi/hCascDecayLength", "hCascDecayLength", kTH1F, {axes.axisProperLifeTime});
-      histos.add("XiXiBar/AntiXi/hV0InvMassWindow", "hV0InvMassWindow", kTH1F, {axes.axisMassWindow});
-      histos.add("XiXiBar/AntiXi/hCascInvMassWindow", "hCascInvMassWindow", kTH1F, {axes.axisMassWindow});
-      histos.add("XiXiBar/AntiXi/h2dCompetingMassRej", "h2dCompetingMassRej", kTH2F, {axes.axisXiMass, axes.axisOmegaMass});
-      histos.add("XiXiBar/AntiXi/hBachTPCNsigma", "hBachTPCNsigma", kTH1F, {axes.axisNsigmaTPC});
-      histos.add("XiXiBar/AntiXi/hPosTPCNsigma", "hPosTPCNsigma", kTH1F, {axes.axisNsigmaTPC});
-      histos.add("XiXiBar/AntiXi/hNegTPCNsigma", "hNegTPCNsigma", kTH1F, {axes.axisNsigmaTPC});
-      histos.add("XiXiBar/AntiXi/h2dBachelorITSvsTPCpts", "h2dBachelorITSvsTPCpts", kTH2F, {axes.axisTPCrows, axes.axisITSclus});
-      histos.add("XiXiBar/AntiXi/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axes.axisTPCrows, axes.axisITSclus});
-      histos.add("XiXiBar/AntiXi/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axes.axisTPCrows, axes.axisITSclus});
+      histos.add("XiXiBar/AntiXi/hBachDCAToPV", "hBachDCAToPV", kTH1D, {axes.axisDCAtoPV});
+      histos.add("XiXiBar/AntiXi/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axes.axisDCAtoPV});
+      histos.add("XiXiBar/AntiXi/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axes.axisDCAtoPV});
+      histos.add("XiXiBar/AntiXi/hDCACascDaughters", "hDCACascDaughters", kTH1D, {axes.axisDCAdau});
+      histos.add("XiXiBar/AntiXi/hDCAV0Daughters", "hDCAV0Daughters", kTH1D, {axes.axisDCAdau});
+      histos.add("XiXiBar/AntiXi/hDCAV0ToPV", "hDCAV0ToPV", kTH1D, {axes.axisDCAV0ToPV});
+      histos.add("XiXiBar/AntiXi/hV0PointingAngle", "hV0PointingAngle", kTH1D, {axes.axisPointingAngle});
+      histos.add("XiXiBar/AntiXi/hV0Radius", "hV0Radius", kTH1D, {axes.axisRadius});
+      histos.add("XiXiBar/AntiXi/hCascPointingAngle", "hCascPointingAngle", kTH1D, {axes.axisPointingAngle});
+      histos.add("XiXiBar/AntiXi/hCascRadius", "hCascRadius", kTH1D, {axes.axisRadius});
+      histos.add("XiXiBar/AntiXi/hCascDecayLength", "hCascDecayLength", kTH1D, {axes.axisProperLifeTime});
+      histos.add("XiXiBar/AntiXi/hV0InvMassWindow", "hV0InvMassWindow", kTH1D, {axes.axisMassWindow});
+      histos.add("XiXiBar/AntiXi/hCascInvMassWindow", "hCascInvMassWindow", kTH1D, {axes.axisMassWindow});
+      histos.add("XiXiBar/AntiXi/h2dCompetingMassRej", "h2dCompetingMassRej", kTH2D, {axes.axisXiMass, axes.axisOmegaMass});
+      histos.add("XiXiBar/AntiXi/hBachTPCNsigma", "hBachTPCNsigma", kTH1D, {axes.axisNsigmaTPC});
+      histos.add("XiXiBar/AntiXi/hPosTPCNsigma", "hPosTPCNsigma", kTH1D, {axes.axisNsigmaTPC});
+      histos.add("XiXiBar/AntiXi/hNegTPCNsigma", "hNegTPCNsigma", kTH1D, {axes.axisNsigmaTPC});
+      histos.add("XiXiBar/AntiXi/h2dBachelorITSvsTPCpts", "h2dBachelorITSvsTPCpts", kTH2D, {axes.axisTPCrows, axes.axisITSclus});
+      histos.add("XiXiBar/AntiXi/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axes.axisTPCrows, axes.axisITSclus});
+      histos.add("XiXiBar/AntiXi/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axes.axisTPCrows, axes.axisITSclus});
       if (doMCAssociation) {
-        histos.add("XiXiBar/h3dInvMassTrueEtaC1S", "h3dInvMassTrueEtaC1S", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("XiXiBar/h3dInvMassTrueJPsi", "h3dInvMassTrueJPsi", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("XiXiBar/h3dInvMassTrueChiC0", "h3dInvMassTrueChiC0", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("XiXiBar/h3dInvMassTrueChiC1", "h3dInvMassTrueChiC1", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("XiXiBar/h3dInvMassTrueHC", "h3dInvMassTrueHC", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("XiXiBar/h3dInvMassTrueChiC2", "h3dInvMassTrueChiC2", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("XiXiBar/h3dInvMassTrueEtaC2S", "h3dInvMassTrueEtaC2S", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("XiXiBar/h3dInvMassTruePsi2S", "h3dInvMassTruePsi2S", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("XiXiBar/h3dInvMassTrueEtaC1S", "h3dInvMassTrueEtaC1S", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("XiXiBar/h3dInvMassTrueJPsi", "h3dInvMassTrueJPsi", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("XiXiBar/h3dInvMassTrueChiC0", "h3dInvMassTrueChiC0", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("XiXiBar/h3dInvMassTrueChiC1", "h3dInvMassTrueChiC1", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("XiXiBar/h3dInvMassTrueHC", "h3dInvMassTrueHC", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("XiXiBar/h3dInvMassTrueChiC2", "h3dInvMassTrueChiC2", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("XiXiBar/h3dInvMassTrueEtaC2S", "h3dInvMassTrueEtaC2S", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("XiXiBar/h3dInvMassTruePsi2S", "h3dInvMassTruePsi2S", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
       }
       if (doQA) {
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsBachDCAToPV", "h3dMassXiXiBarVsBachDCAToPV", kTH3F, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPosDCAToPV", "h3dMassXiXiBarVsPosDCAToPV", kTH3F, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsNegDCAToPV", "h3dMassXiXiBarVsNegDCAToPV", kTH3F, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsDCACascDaughters", "h3dMassXiXiBarVsDCACascDaughters", kTH3F, {axes.axisDCAdau, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsDCAV0Daughters", "h3dMassXiXiBarVsDCAV0Daughters", kTH3F, {axes.axisDCAdau, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsDCAV0ToPV", "h3dMassXiXiBarVsDCAV0ToPV", kTH3F, {axes.axisDCAV0ToPV, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsV0PointingAngle", "h3dMassXiXiBarVsV0PointingAngle", kTH3F, {axes.axisPointingAngle, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsV0Radius", "h3dMassXiXiBarVsV0Radius", kTH3F, {axes.axisRadius, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsCascPointingAngle", "h3dMassXiXiBarVsCascPointingAngle", kTH3F, {axes.axisPointingAngle, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsCascRadius", "h3dMassXiXiBarVsCascRadius", kTH3F, {axes.axisRadius, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsDecayLength", "h3dMassXiXiBarVsDecayLength", kTH3F, {axes.axisProperLifeTime, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsV0InvMassWindow", "h3dMassXiXiBarVsV0InvMassWindow", kTH3F, {axes.axisMassWindow, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsCascInvMassWindow", "h3dMassXiXiBarVsCascInvMassWindow", kTH3F, {axes.axisMassWindow, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsBachTPCNsigma", "h3dMassXiXiBarVsBachTPCNsigma", kTH3F, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPosTPCNsigma", "h3dMassXiXiBarVsPosTPCNsigma", kTH3F, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsNegTPCNsigma", "h3dMassXiXiBarVsNegTPCNsigma", kTH3F, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsBachITSclusters", "h3dMassXiXiBarVsBachITSclusters", kTH3F, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPosITSclusters", "h3dMassXiXiBarVsPosITSclusters", kTH3F, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsNegITSclusters", "h3dMassXiXiBarVsNegITSclusters", kTH3F, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsBachNbrCrossedRows", "h3dMassXiXiBarVsBachNbrCrossedRows", kTH3F, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPosNbrCrossedRows", "h3dMassXiXiBarVsPosNbrCrossedRows", kTH3F, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsNegNbrCrossedRows", "h3dMassXiXiBarVsNegNbrCrossedRows", kTH3F, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairRadius3D", "h3dMassXiXiBarVsPairRadius3D", kTH3F, {axes.axisHypPairRadius3D, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairRadius2D", "h3dMassXiXiBarVsPairRadius2D", kTH3F, {axes.axisHypPairRadius2D, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairZ", "h3dMassXiXiBarVsPairZ", kTH3F, {axes.axisHypPairZ, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsDCAPair", "h3dMassXiXiBarVsDCAPair", kTH3F, {axes.axisDCAHypPair, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairCosPA", "h3dMassXiXiBarVsPairCosPA", kTH3F, {axes.axisHypPairCosPA, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairOpAngle", "h3dMassXiXiBarVsPairOpAngle", kTH3F, {axes.axisHypPairOpAngle, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairEta", "h3dMassXiXiBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairPhi", "h3dMassXiXiBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/XiXiBar/h3dDeltaEtaXiXiBarVsPairEta", "h3dDeltaEtaXiXiBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
-        histos.add("QA/XiXiBar/h3dDeltaPhiXiXiBarVsPairPhi", "h3dDeltaPhiXiXiBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsBachDCAToPV", "h3dMassXiXiBarVsBachDCAToPV", kTH3D, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPosDCAToPV", "h3dMassXiXiBarVsPosDCAToPV", kTH3D, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsNegDCAToPV", "h3dMassXiXiBarVsNegDCAToPV", kTH3D, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsDCACascDaughters", "h3dMassXiXiBarVsDCACascDaughters", kTH3D, {axes.axisDCAdau, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsDCAV0Daughters", "h3dMassXiXiBarVsDCAV0Daughters", kTH3D, {axes.axisDCAdau, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsDCAV0ToPV", "h3dMassXiXiBarVsDCAV0ToPV", kTH3D, {axes.axisDCAV0ToPV, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsV0PointingAngle", "h3dMassXiXiBarVsV0PointingAngle", kTH3D, {axes.axisPointingAngle, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsV0Radius", "h3dMassXiXiBarVsV0Radius", kTH3D, {axes.axisRadius, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsCascPointingAngle", "h3dMassXiXiBarVsCascPointingAngle", kTH3D, {axes.axisPointingAngle, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsCascRadius", "h3dMassXiXiBarVsCascRadius", kTH3D, {axes.axisRadius, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsDecayLength", "h3dMassXiXiBarVsDecayLength", kTH3D, {axes.axisProperLifeTime, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsV0InvMassWindow", "h3dMassXiXiBarVsV0InvMassWindow", kTH3D, {axes.axisMassWindow, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsCascInvMassWindow", "h3dMassXiXiBarVsCascInvMassWindow", kTH3D, {axes.axisMassWindow, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsBachTPCNsigma", "h3dMassXiXiBarVsBachTPCNsigma", kTH3D, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPosTPCNsigma", "h3dMassXiXiBarVsPosTPCNsigma", kTH3D, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsNegTPCNsigma", "h3dMassXiXiBarVsNegTPCNsigma", kTH3D, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsBachITSclusters", "h3dMassXiXiBarVsBachITSclusters", kTH3D, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPosITSclusters", "h3dMassXiXiBarVsPosITSclusters", kTH3D, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsNegITSclusters", "h3dMassXiXiBarVsNegITSclusters", kTH3D, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsBachNbrCrossedRows", "h3dMassXiXiBarVsBachNbrCrossedRows", kTH3D, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPosNbrCrossedRows", "h3dMassXiXiBarVsPosNbrCrossedRows", kTH3D, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsNegNbrCrossedRows", "h3dMassXiXiBarVsNegNbrCrossedRows", kTH3D, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairRadius3D", "h3dMassXiXiBarVsPairRadius3D", kTH3D, {axes.axisHypPairRadius3D, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairRadius2D", "h3dMassXiXiBarVsPairRadius2D", kTH3D, {axes.axisHypPairRadius2D, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairZ", "h3dMassXiXiBarVsPairZ", kTH3D, {axes.axisHypPairZ, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsDCAPair", "h3dMassXiXiBarVsDCAPair", kTH3D, {axes.axisDCAHypPair, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairCosPA", "h3dMassXiXiBarVsPairCosPA", kTH3D, {axes.axisHypPairCosPA, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairOpAngle", "h3dMassXiXiBarVsPairOpAngle", kTH3D, {axes.axisHypPairOpAngle, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairEta", "h3dMassXiXiBarVsPairEta", kTH3D, {axes.axisHypPairEta, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dMassXiXiBarVsPairPhi", "h3dMassXiXiBarVsPairPhi", kTH3D, {axes.axisHypPairPhi, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/XiXiBar/h3dDeltaEtaXiXiBarVsPairEta", "h3dDeltaEtaXiXiBarVsPairEta", kTH3D, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
+        histos.add("QA/XiXiBar/h3dDeltaPhiXiXiBarVsPairPhi", "h3dDeltaPhiXiXiBarVsPairPhi", kTH3D, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
       }
     }
     if (buildOmOmBarPairs) {
-      histos.add("OmOmBar/h3dMassOmOmbar", "h3dMassOmOmbar", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+      histos.add("OmOmBar/h3dMassOmOmbar", "h3dMassOmOmbar", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
       if (!isPP) {
         // Non-UPC info
-        histos.add("OmOmBar/h3dMassOmOmbarHadronic", "h3dMassOmOmbarHadronic", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("OmOmBar/h3dMassOmOmbarHadronic", "h3dMassOmOmbarHadronic", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
         // UPC info
-        histos.add("OmOmBar/h3dMassOmOmbarSGA", "h3dMassOmOmbarSGA", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("OmOmBar/h3dMassOmOmbarSGC", "h3dMassOmOmbarSGC", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("OmOmBar/h3dMassOmOmbarDG", "h3dMassOmOmbarDG", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("OmOmBar/h3dMassOmOmbarSGA", "h3dMassOmOmbarSGA", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("OmOmBar/h3dMassOmOmbarSGC", "h3dMassOmOmbarSGC", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("OmOmBar/h3dMassOmOmbarDG", "h3dMassOmOmbarDG", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
       }
-      histos.add("OmOmBar/h2dNbrOfOmegaVsCentrality", "h2dNbrOfOmegaVsCentrality", kTH2F, {axes.axisCentrality, {10, -0.5f, 9.5f}});
-      histos.add("OmOmBar/h2dNbrOfAntiOmegaVsCentrality", "h2dNbrOfAntiOmegaVsCentrality", kTH2F, {axes.axisCentrality, {10, -0.5f, 9.5f}});
+      histos.add("OmOmBar/h2dNbrOfOmegaVsCentrality", "h2dNbrOfOmegaVsCentrality", kTH2D, {axes.axisCentrality, {10, -0.5f, 9.5f}});
+      histos.add("OmOmBar/h2dNbrOfAntiOmegaVsCentrality", "h2dNbrOfAntiOmegaVsCentrality", kTH2D, {axes.axisCentrality, {10, -0.5f, 9.5f}});
       // QA plot
       // Candidates after Omega selections
-      histos.add("OmOmBar/Omega/hBachDCAToPV", "hBachDCAToPV", kTH1F, {axes.axisDCAtoPV});
-      histos.add("OmOmBar/Omega/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axes.axisDCAtoPV});
-      histos.add("OmOmBar/Omega/hNegDCAToPV", "hNegDCAToPV", kTH1F, {axes.axisDCAtoPV});
-      histos.add("OmOmBar/Omega/hDCACascDaughters", "hDCACascDaughters", kTH1F, {axes.axisDCAdau});
-      histos.add("OmOmBar/Omega/hDCAV0Daughters", "hDCAV0Daughters", kTH1F, {axes.axisDCAdau});
-      histos.add("OmOmBar/Omega/hDCAV0ToPV", "hDCAV0ToPV", kTH1F, {axes.axisDCAV0ToPV});
-      histos.add("OmOmBar/Omega/hV0PointingAngle", "hV0PointingAngle", kTH1F, {axes.axisPointingAngle});
-      histos.add("OmOmBar/Omega/hV0Radius", "hV0Radius", kTH1F, {axes.axisRadius});
-      histos.add("OmOmBar/Omega/hCascPointingAngle", "hCascPointingAngle", kTH1F, {axes.axisPointingAngle});
-      histos.add("OmOmBar/Omega/hCascRadius", "hCascRadius", kTH1F, {axes.axisRadius});
-      histos.add("OmOmBar/Omega/hCascDecayLength", "hCascDecayLength", kTH1F, {axes.axisProperLifeTime});
-      histos.add("OmOmBar/Omega/hV0InvMassWindow", "hV0InvMassWindow", kTH1F, {axes.axisMassWindow});
-      histos.add("OmOmBar/Omega/hCascInvMassWindow", "hCascInvMassWindow", kTH1F, {axes.axisMassWindow});
-      histos.add("OmOmBar/Omega/h2dCompetingMassRej", "h2dCompetingMassRej", kTH2F, {axes.axisXiMass, axes.axisOmegaMass});
-      histos.add("OmOmBar/Omega/hBachTPCNsigma", "hBachTPCNsigma", kTH1F, {axes.axisNsigmaTPC});
-      histos.add("OmOmBar/Omega/hPosTPCNsigma", "hPosTPCNsigma", kTH1F, {axes.axisNsigmaTPC});
-      histos.add("OmOmBar/Omega/hNegTPCNsigma", "hNegTPCNsigma", kTH1F, {axes.axisNsigmaTPC});
-      histos.add("OmOmBar/Omega/h2dBachelorITSvsTPCpts", "h2dBachelorITSvsTPCpts", kTH2F, {axes.axisTPCrows, axes.axisITSclus});
-      histos.add("OmOmBar/Omega/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axes.axisTPCrows, axes.axisITSclus});
-      histos.add("OmOmBar/Omega/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axes.axisTPCrows, axes.axisITSclus});
+      histos.add("OmOmBar/Omega/hBachDCAToPV", "hBachDCAToPV", kTH1D, {axes.axisDCAtoPV});
+      histos.add("OmOmBar/Omega/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axes.axisDCAtoPV});
+      histos.add("OmOmBar/Omega/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axes.axisDCAtoPV});
+      histos.add("OmOmBar/Omega/hDCACascDaughters", "hDCACascDaughters", kTH1D, {axes.axisDCAdau});
+      histos.add("OmOmBar/Omega/hDCAV0Daughters", "hDCAV0Daughters", kTH1D, {axes.axisDCAdau});
+      histos.add("OmOmBar/Omega/hDCAV0ToPV", "hDCAV0ToPV", kTH1D, {axes.axisDCAV0ToPV});
+      histos.add("OmOmBar/Omega/hV0PointingAngle", "hV0PointingAngle", kTH1D, {axes.axisPointingAngle});
+      histos.add("OmOmBar/Omega/hV0Radius", "hV0Radius", kTH1D, {axes.axisRadius});
+      histos.add("OmOmBar/Omega/hCascPointingAngle", "hCascPointingAngle", kTH1D, {axes.axisPointingAngle});
+      histos.add("OmOmBar/Omega/hCascRadius", "hCascRadius", kTH1D, {axes.axisRadius});
+      histos.add("OmOmBar/Omega/hCascDecayLength", "hCascDecayLength", kTH1D, {axes.axisProperLifeTime});
+      histos.add("OmOmBar/Omega/hV0InvMassWindow", "hV0InvMassWindow", kTH1D, {axes.axisMassWindow});
+      histos.add("OmOmBar/Omega/hCascInvMassWindow", "hCascInvMassWindow", kTH1D, {axes.axisMassWindow});
+      histos.add("OmOmBar/Omega/h2dCompetingMassRej", "h2dCompetingMassRej", kTH2D, {axes.axisXiMass, axes.axisOmegaMass});
+      histos.add("OmOmBar/Omega/hBachTPCNsigma", "hBachTPCNsigma", kTH1D, {axes.axisNsigmaTPC});
+      histos.add("OmOmBar/Omega/hPosTPCNsigma", "hPosTPCNsigma", kTH1D, {axes.axisNsigmaTPC});
+      histos.add("OmOmBar/Omega/hNegTPCNsigma", "hNegTPCNsigma", kTH1D, {axes.axisNsigmaTPC});
+      histos.add("OmOmBar/Omega/h2dBachelorITSvsTPCpts", "h2dBachelorITSvsTPCpts", kTH2D, {axes.axisTPCrows, axes.axisITSclus});
+      histos.add("OmOmBar/Omega/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axes.axisTPCrows, axes.axisITSclus});
+      histos.add("OmOmBar/Omega/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axes.axisTPCrows, axes.axisITSclus});
       // Candidates after AntiOmega selections
-      histos.add("OmOmBar/AntiOmega/hBachDCAToPV", "hBachDCAToPV", kTH1F, {axes.axisDCAtoPV});
-      histos.add("OmOmBar/AntiOmega/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axes.axisDCAtoPV});
-      histos.add("OmOmBar/AntiOmega/hNegDCAToPV", "hNegDCAToPV", kTH1F, {axes.axisDCAtoPV});
-      histos.add("OmOmBar/AntiOmega/hDCACascDaughters", "hDCACascDaughters", kTH1F, {axes.axisDCAdau});
-      histos.add("OmOmBar/AntiOmega/hDCAV0Daughters", "hDCAV0Daughters", kTH1F, {axes.axisDCAdau});
-      histos.add("OmOmBar/AntiOmega/hDCAV0ToPV", "hDCAV0ToPV", kTH1F, {axes.axisDCAV0ToPV});
-      histos.add("OmOmBar/AntiOmega/hV0PointingAngle", "hV0PointingAngle", kTH1F, {axes.axisPointingAngle});
-      histos.add("OmOmBar/AntiOmega/hV0Radius", "hV0Radius", kTH1F, {axes.axisRadius});
-      histos.add("OmOmBar/AntiOmega/hCascPointingAngle", "hCascPointingAngle", kTH1F, {axes.axisPointingAngle});
-      histos.add("OmOmBar/AntiOmega/hCascRadius", "hCascRadius", kTH1F, {axes.axisRadius});
-      histos.add("OmOmBar/AntiOmega/hCascDecayLength", "hCascDecayLength", kTH1F, {axes.axisProperLifeTime});
-      histos.add("OmOmBar/AntiOmega/hV0InvMassWindow", "hV0InvMassWindow", kTH1F, {axes.axisMassWindow});
-      histos.add("OmOmBar/AntiOmega/hCascInvMassWindow", "hCascInvMassWindow", kTH1F, {axes.axisMassWindow});
-      histos.add("OmOmBar/AntiOmega/h2dCompetingMassRej", "h2dCompetingMassRej", kTH2F, {axes.axisXiMass, axes.axisOmegaMass});
-      histos.add("OmOmBar/AntiOmega/hBachTPCNsigma", "hBachTPCNsigma", kTH1F, {axes.axisNsigmaTPC});
-      histos.add("OmOmBar/AntiOmega/hPosTPCNsigma", "hPosTPCNsigma", kTH1F, {axes.axisNsigmaTPC});
-      histos.add("OmOmBar/AntiOmega/hNegTPCNsigma", "hNegTPCNsigma", kTH1F, {axes.axisNsigmaTPC});
-      histos.add("OmOmBar/AntiOmega/h2dBachelorITSvsTPCpts", "h2dBachelorITSvsTPCpts", kTH2F, {axes.axisTPCrows, axes.axisITSclus});
-      histos.add("OmOmBar/AntiOmega/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axes.axisTPCrows, axes.axisITSclus});
-      histos.add("OmOmBar/AntiOmega/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axes.axisTPCrows, axes.axisITSclus});
+      histos.add("OmOmBar/AntiOmega/hBachDCAToPV", "hBachDCAToPV", kTH1D, {axes.axisDCAtoPV});
+      histos.add("OmOmBar/AntiOmega/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axes.axisDCAtoPV});
+      histos.add("OmOmBar/AntiOmega/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axes.axisDCAtoPV});
+      histos.add("OmOmBar/AntiOmega/hDCACascDaughters", "hDCACascDaughters", kTH1D, {axes.axisDCAdau});
+      histos.add("OmOmBar/AntiOmega/hDCAV0Daughters", "hDCAV0Daughters", kTH1D, {axes.axisDCAdau});
+      histos.add("OmOmBar/AntiOmega/hDCAV0ToPV", "hDCAV0ToPV", kTH1D, {axes.axisDCAV0ToPV});
+      histos.add("OmOmBar/AntiOmega/hV0PointingAngle", "hV0PointingAngle", kTH1D, {axes.axisPointingAngle});
+      histos.add("OmOmBar/AntiOmega/hV0Radius", "hV0Radius", kTH1D, {axes.axisRadius});
+      histos.add("OmOmBar/AntiOmega/hCascPointingAngle", "hCascPointingAngle", kTH1D, {axes.axisPointingAngle});
+      histos.add("OmOmBar/AntiOmega/hCascRadius", "hCascRadius", kTH1D, {axes.axisRadius});
+      histos.add("OmOmBar/AntiOmega/hCascDecayLength", "hCascDecayLength", kTH1D, {axes.axisProperLifeTime});
+      histos.add("OmOmBar/AntiOmega/hV0InvMassWindow", "hV0InvMassWindow", kTH1D, {axes.axisMassWindow});
+      histos.add("OmOmBar/AntiOmega/hCascInvMassWindow", "hCascInvMassWindow", kTH1D, {axes.axisMassWindow});
+      histos.add("OmOmBar/AntiOmega/h2dCompetingMassRej", "h2dCompetingMassRej", kTH2D, {axes.axisXiMass, axes.axisOmegaMass});
+      histos.add("OmOmBar/AntiOmega/hBachTPCNsigma", "hBachTPCNsigma", kTH1D, {axes.axisNsigmaTPC});
+      histos.add("OmOmBar/AntiOmega/hPosTPCNsigma", "hPosTPCNsigma", kTH1D, {axes.axisNsigmaTPC});
+      histos.add("OmOmBar/AntiOmega/hNegTPCNsigma", "hNegTPCNsigma", kTH1D, {axes.axisNsigmaTPC});
+      histos.add("OmOmBar/AntiOmega/h2dBachelorITSvsTPCpts", "h2dBachelorITSvsTPCpts", kTH2D, {axes.axisTPCrows, axes.axisITSclus});
+      histos.add("OmOmBar/AntiOmega/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axes.axisTPCrows, axes.axisITSclus});
+      histos.add("OmOmBar/AntiOmega/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axes.axisTPCrows, axes.axisITSclus});
       if (doMCAssociation) {
-        histos.add("OmOmBar/h3dInvMassTrueEtaC2S", "h3dInvMassTrueEtaC2S", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("OmOmBar/h3dInvMassTruePsi2S", "h3dInvMassTruePsi2S", kTH3F, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("OmOmBar/h3dInvMassTrueEtaC2S", "h3dInvMassTrueEtaC2S", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("OmOmBar/h3dInvMassTruePsi2S", "h3dInvMassTruePsi2S", kTH3D, {axes.axisCentrality, axes.axisPt, axes.axisQuarkoniumMass});
       }
       if (doQA) {
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsBachDCAToPV", "h3dMassOmOmBarVsBachDCAToPV", kTH3F, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPosDCAToPV", "h3dMassOmOmBarVsPosDCAToPV", kTH3F, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsNegDCAToPV", "h3dMassOmOmBarVsNegDCAToPV", kTH3F, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsDCACascDaughters", "h3dMassOmOmBarVsDCACascDaughters", kTH3F, {axes.axisDCAdau, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsDCAV0Daughters", "h3dMassOmOmBarVsDCAV0Daughters", kTH3F, {axes.axisDCAdau, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsDCAV0ToPV", "h3dMassOmOmBarVsDCAV0ToPV", kTH3F, {axes.axisDCAV0ToPV, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsV0PointingAngle", "h3dMassOmOmBarVsV0PointingAngle", kTH3F, {axes.axisPointingAngle, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsV0Radius", "h3dMassOmOmBarVsV0Radius", kTH3F, {axes.axisRadius, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsCascPointingAngle", "h3dMassOmOmBarVsCascPointingAngle", kTH3F, {axes.axisPointingAngle, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsCascRadius", "h3dMassOmOmBarVsCascRadius", kTH3F, {axes.axisRadius, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsDecayLength", "h3dMassOmOmBarVsDecayLength", kTH3F, {axes.axisProperLifeTime, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsV0InvMassWindow", "h3dMassOmOmBarVsV0InvMassWindow", kTH3F, {axes.axisMassWindow, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsCascInvMassWindow", "h3dMassOmOmBarVsCascInvMassWindow", kTH3F, {axes.axisMassWindow, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsBachTPCNsigma", "h3dMassOmOmBarVsBachTPCNsigma", kTH3F, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPosTPCNsigma", "h3dMassOmOmBarVsPosTPCNsigma", kTH3F, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsNegTPCNsigma", "h3dMassOmOmBarVsNegTPCNsigma", kTH3F, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsBachITSclusters", "h3dMassOmOmBarVsBachITSclusters", kTH3F, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPosITSclusters", "h3dMassOmOmBarVsPosITSclusters", kTH3F, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsNegITSclusters", "h3dMassOmOmBarVsNegITSclusters", kTH3F, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsBachNbrCrossedRows", "h3dMassOmOmBarVsBachNbrCrossedRows", kTH3F, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPosNbrCrossedRows", "h3dMassOmOmBarVsPosNbrCrossedRows", kTH3F, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsNegNbrCrossedRows", "h3dMassOmOmBarVsNegNbrCrossedRows", kTH3F, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairRadius3D", "h3dMassOmOmBarVsPairRadius3D", kTH3F, {axes.axisHypPairRadius3D, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairRadius2D", "h3dMassOmOmBarVsPairRadius2D", kTH3F, {axes.axisHypPairRadius2D, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairZ", "h3dMassOmOmBarVsPairZ", kTH3F, {axes.axisHypPairZ, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsDCAPair", "h3dMassOmOmBarVsDCAPair", kTH3F, {axes.axisDCAHypPair, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairCosPA", "h3dMassOmOmBarVsPairCosPA", kTH3F, {axes.axisHypPairCosPA, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairOpAngle", "h3dMassOmOmBarVsPairOpAngle", kTH3F, {axes.axisHypPairOpAngle, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairEta", "h3dMassOmOmBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairPhi", "h3dMassOmOmBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisQuarkoniumMass});
-        histos.add("QA/OmOmBar/h3dDeltaEtaOmOmBarVsPairEta", "h3dDeltaEtaOmOmBarVsPairEta", kTH3F, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
-        histos.add("QA/OmOmBar/h3dDeltaPhiOmOmBarVsPairPhi", "h3dDeltaPhiOmOmBarVsPairPhi", kTH3F, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsBachDCAToPV", "h3dMassOmOmBarVsBachDCAToPV", kTH3D, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPosDCAToPV", "h3dMassOmOmBarVsPosDCAToPV", kTH3D, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsNegDCAToPV", "h3dMassOmOmBarVsNegDCAToPV", kTH3D, {axes.axisDCAtoPV, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsDCACascDaughters", "h3dMassOmOmBarVsDCACascDaughters", kTH3D, {axes.axisDCAdau, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsDCAV0Daughters", "h3dMassOmOmBarVsDCAV0Daughters", kTH3D, {axes.axisDCAdau, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsDCAV0ToPV", "h3dMassOmOmBarVsDCAV0ToPV", kTH3D, {axes.axisDCAV0ToPV, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsV0PointingAngle", "h3dMassOmOmBarVsV0PointingAngle", kTH3D, {axes.axisPointingAngle, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsV0Radius", "h3dMassOmOmBarVsV0Radius", kTH3D, {axes.axisRadius, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsCascPointingAngle", "h3dMassOmOmBarVsCascPointingAngle", kTH3D, {axes.axisPointingAngle, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsCascRadius", "h3dMassOmOmBarVsCascRadius", kTH3D, {axes.axisRadius, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsDecayLength", "h3dMassOmOmBarVsDecayLength", kTH3D, {axes.axisProperLifeTime, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsV0InvMassWindow", "h3dMassOmOmBarVsV0InvMassWindow", kTH3D, {axes.axisMassWindow, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsCascInvMassWindow", "h3dMassOmOmBarVsCascInvMassWindow", kTH3D, {axes.axisMassWindow, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsBachTPCNsigma", "h3dMassOmOmBarVsBachTPCNsigma", kTH3D, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPosTPCNsigma", "h3dMassOmOmBarVsPosTPCNsigma", kTH3D, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsNegTPCNsigma", "h3dMassOmOmBarVsNegTPCNsigma", kTH3D, {axes.axisNsigmaTPC, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsBachITSclusters", "h3dMassOmOmBarVsBachITSclusters", kTH3D, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPosITSclusters", "h3dMassOmOmBarVsPosITSclusters", kTH3D, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsNegITSclusters", "h3dMassOmOmBarVsNegITSclusters", kTH3D, {axes.axisITSclus, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsBachNbrCrossedRows", "h3dMassOmOmBarVsBachNbrCrossedRows", kTH3D, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPosNbrCrossedRows", "h3dMassOmOmBarVsPosNbrCrossedRows", kTH3D, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsNegNbrCrossedRows", "h3dMassOmOmBarVsNegNbrCrossedRows", kTH3D, {axes.axisTPCrows, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairRadius3D", "h3dMassOmOmBarVsPairRadius3D", kTH3D, {axes.axisHypPairRadius3D, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairRadius2D", "h3dMassOmOmBarVsPairRadius2D", kTH3D, {axes.axisHypPairRadius2D, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairZ", "h3dMassOmOmBarVsPairZ", kTH3D, {axes.axisHypPairZ, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsDCAPair", "h3dMassOmOmBarVsDCAPair", kTH3D, {axes.axisDCAHypPair, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairCosPA", "h3dMassOmOmBarVsPairCosPA", kTH3D, {axes.axisHypPairCosPA, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairOpAngle", "h3dMassOmOmBarVsPairOpAngle", kTH3D, {axes.axisHypPairOpAngle, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairEta", "h3dMassOmOmBarVsPairEta", kTH3D, {axes.axisHypPairEta, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dMassOmOmBarVsPairPhi", "h3dMassOmOmBarVsPairPhi", kTH3D, {axes.axisHypPairPhi, axes.axisPt, axes.axisQuarkoniumMass});
+        histos.add("QA/OmOmBar/h3dDeltaEtaOmOmBarVsPairEta", "h3dDeltaEtaOmOmBarVsPairEta", kTH3D, {axes.axisHypPairEta, axes.axisPt, axes.axisHypPairEta});
+        histos.add("QA/OmOmBar/h3dDeltaPhiOmOmBarVsPairPhi", "h3dDeltaPhiOmOmBarVsPairPhi", kTH3D, {axes.axisHypPairPhi, axes.axisPt, axes.axisHypPairPhi});
       }
     }
 
@@ -2217,13 +2217,13 @@ struct QuarkoniaToHyperons {
           if (hyperonMC.pdgCodeMother() == 441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // EtaC(1S)
             histos.fill(HIST("K0sK0s/h3dInvMassTrueEtaC1S"), centrality, ptmc, invmass);
           }
-          if (hyperonMC.pdgCodeMother() == 443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // J/psi
+          if (hyperonMC.pdgCodeMother() == o2::constants::physics::kJPsi && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // J/psi
             histos.fill(HIST("K0sK0s/h3dInvMassTrueJPsi"), centrality, ptmc, invmass);
           }
           if (hyperonMC.pdgCodeMother() == 10441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC0
             histos.fill(HIST("K0sK0s/h3dInvMassTrueChiC0"), centrality, ptmc, invmass);
           }
-          if (hyperonMC.pdgCodeMother() == 20443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC1
+          if (hyperonMC.pdgCodeMother() == o2::constants::physics::kChiC1 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC1
             histos.fill(HIST("K0sK0s/h3dInvMassTrueChiC1"), centrality, ptmc, invmass);
           }
           if (hyperonMC.pdgCodeMother() == 10443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // hC
@@ -2273,13 +2273,13 @@ struct QuarkoniaToHyperons {
           if (hyperonMC.pdgCodeMother() == 441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // EtaC(1S)
             histos.fill(HIST("LaLaBar/h3dInvMassTrueEtaC1S"), centrality, ptmc, invmass);
           }
-          if (hyperonMC.pdgCodeMother() == 443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // J/psi
+          if (hyperonMC.pdgCodeMother() == o2::constants::physics::kJPsi && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // J/psi
             histos.fill(HIST("LaLaBar/h3dInvMassTrueJPsi"), centrality, ptmc, invmass);
           }
           if (hyperonMC.pdgCodeMother() == 10441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC0
             histos.fill(HIST("LaLaBar/h3dInvMassTrueChiC0"), centrality, ptmc, invmass);
           }
-          if (hyperonMC.pdgCodeMother() == 20443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC1
+          if (hyperonMC.pdgCodeMother() == o2::constants::physics::kChiC1 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC1
             histos.fill(HIST("LaLaBar/h3dInvMassTrueChiC1"), centrality, ptmc, invmass);
           }
           if (hyperonMC.pdgCodeMother() == 10443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // hC
@@ -2329,13 +2329,13 @@ struct QuarkoniaToHyperons {
           if (hyperonMC.pdgCodeMother() == 441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // EtaC(1S)
             histos.fill(HIST("XiXiBar/h3dInvMassTrueEtaC1S"), centrality, ptmc, invmass);
           }
-          if (hyperonMC.pdgCodeMother() == 443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // J/psi
+          if (hyperonMC.pdgCodeMother() == o2::constants::physics::kJPsi && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // J/psi
             histos.fill(HIST("XiXiBar/h3dInvMassTrueJPsi"), centrality, ptmc, invmass);
           }
           if (hyperonMC.pdgCodeMother() == 10441 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC0
             histos.fill(HIST("XiXiBar/h3dInvMassTrueChiC0"), centrality, ptmc, invmass);
           }
-          if (hyperonMC.pdgCodeMother() == 20443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC1
+          if (hyperonMC.pdgCodeMother() == o2::constants::physics::kChiC1 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // ChiC1
             histos.fill(HIST("XiXiBar/h3dInvMassTrueChiC1"), centrality, ptmc, invmass);
           }
           if (hyperonMC.pdgCodeMother() == 10443 && hyperonMC.pdgCodeMother() == antiHyperonMC.pdgCodeMother()) { // hC
