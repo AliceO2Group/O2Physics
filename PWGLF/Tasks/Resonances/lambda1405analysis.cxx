@@ -120,6 +120,7 @@ struct lambda1405analysis {
   Produces<aod::Lambda1405Cands> outputDataTable;     // Output table for Lambda(1405) candidates
   Produces<aod::Lambda1405Flow> outputDataFlowTable;  // Output table for Lambda(1405) flow analysis
   Produces<aod::Lambda1405CandsMC> outputDataTableMC; // Output table for Lambda(1405) candidates in MC
+  Produces<aod::Lambda1405SigmaEffMC> outputSigmaEffMC; // Output table for Lambda(1405) sigma efficiency in MC
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -168,6 +169,7 @@ struct lambda1405analysis {
   Configurable<float> downSampleFactor{"downSampleFactor", 1., "Fraction of candidates to keep in TTree"};
   Configurable<float> ptDownSampleMax{"ptDownSampleMax", 10., "Maximum pt for the application of the downsampling factor"};
 
+  Configurable<bool> skipBkgSigmas{"skipBkgSigmas", true, "If true, skip un-matched sigmas in efficiency process function"};
   Configurable<bool> fillOutputTree{"fillOutputTree", true, "If true, fill the output tree with Lambda(1405) candidates"};
   Configurable<bool> doLikeSignBkg{"doLikeSignBkg", false, "Use like-sign background"};
   Configurable<bool> useTof{"useTof", false, "Use Tof for PID for pion candidates"};
@@ -446,6 +448,11 @@ struct lambda1405analysis {
       rLambda1405.add("h2PtMassMC", "h2PtMassMC", {HistType::kTH2F, {ptAxis, lambda1405MassAxis}});
     }
 
+    if (doprocessMcSigmasCentSel) {
+      rSigmaPlus.add("hSparseGenSigmaPlus", "THn for generated Sigma plus", {HistType::kTHnSparseF, {sigmaMassAxis, ptAxis, alphaAxis, qtAxis, sigmaRadiusAxis, centMultAxis, occAxis, pvContribAxis}});
+      rSigmaMinus.add("hSparseGenSigmaMinus", "THn for generated Sigma minus", {HistType::kTHnSparseF, {sigmaMassAxis, ptAxis, alphaAxis, qtAxis, sigmaRadiusAxis, centMultAxis, occAxis, pvContribAxis}});
+    }
+
     // Functional selections
     funcMinQtAlphaAP = TF1("funcMinQtAlphaAP", Form("%s", cutSigmaQtAPMin.value.data()), -1, 1);
     LOGF(info, "funcMinQtAlphaAP: %s", Form("%s", cutSigmaQtAPMin.value.data()));
@@ -518,7 +525,7 @@ struct lambda1405analysis {
 
     double pMother = std::sqrt(sigmaPx * sigmaPx + sigmaPy * sigmaPy + sigmaPz * sigmaPz);
     if (pMother < 1e-12f) {
-      LOG(info) << "Recalculation of Sigma momentum failed: mother momentum is zero " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz;
+      LOG(debug) << "Recalculation of Sigma momentum failed: mother momentum is zero " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz;
       return -999.f;
     }
     if (isSigmaMinus) {
@@ -538,7 +545,7 @@ struct lambda1405analysis {
     double C = 4.0 * eChDau * eChDau * massSigma * massSigma - K * K;
 
     if (std::abs(A) < 1e-6f) {
-      LOG(info) << "Recalculation of Sigma momentum failed: A is zero " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz << ", A = " << A << ", B = " << B << ", C = " << C;
+      LOG(debug) << "Recalculation of Sigma momentum failed: A is zero " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz << ", A = " << A << ", B = " << B << ", C = " << C;
       return -999.f;
     }
     if (isSigmaMinus) {
@@ -549,7 +556,7 @@ struct lambda1405analysis {
 
     double D = B * B - 4.0 * A * C;
     if (D < 0.0) {
-      LOG(info) << "Recalculation of Sigma momentum failed: D is negative " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz << ", A = " << A << ", B = " << B << ", C = " << C << ", D = " << D;
+      LOG(debug) << "Recalculation of Sigma momentum failed: D is negative " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz << ", A = " << A << ", B = " << B << ", C = " << C << ", D = " << D;
       return -999.f;
     }
     if (isSigmaMinus) {
@@ -562,7 +569,7 @@ struct lambda1405analysis {
     double P1 = (-B + sqrtD) / (2.0 * A);
     double P2 = (-B - sqrtD) / (2.0 * A);
     if (P2 < 0.0 && P1 < 0.0) {
-      LOG(info) << "Recalculation of Sigma momentum failed: both solutions are negative " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz << ", P1: " << P1 << ", P2: " << P2;
+      LOG(debug) << "Recalculation of Sigma momentum failed: both solutions are negative " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz << ", P1: " << P1 << ", P2: " << P2;
       return -999.f;
     }
     if (isSigmaMinus) {
@@ -1079,20 +1086,16 @@ struct lambda1405analysis {
   template <typename mcTrack>
   bool checkSigmaKinkMC(const mcTrack& mcTrackSigma, const mcTrack& mcTrackKinkDau, float sigmaAbsPDG, float kinkAbsPDG, aod::McParticles const&)
   {
-    LOG(info) << "Checking Sigma kink decay for MC tracks: Sigma PDG = " << mcTrackSigma.pdgCode() << ", Kink daughter PDG = " << mcTrackKinkDau.pdgCode();
     if (std::abs(mcTrackSigma.pdgCode()) != sigmaAbsPDG || std::abs(mcTrackKinkDau.pdgCode()) != kinkAbsPDG) {
-      LOG(info) << "PDG codes do not match expected values: Sigma PDG = " << sigmaAbsPDG << ", Kink daughter PDG = " << kinkAbsPDG;
       return false; // Not a valid Sigma kink decay
     }
     if (!mcTrackKinkDau.has_mothers()) {
-      LOG(info) << "Kink daughter has no mothers";
       return false; // No mothers found
     }
     // Check if the kink comes from the Sigma
     bool isKinkFromSigma = false;
     for (const auto& mcMother : mcTrackKinkDau.template mothers_as<aod::McParticles>()) {
       if (mcMother.globalIndex() == mcTrackSigma.globalIndex()) {
-        LOG(info) << "Kink daughter comes from the Sigma";
         isKinkFromSigma = true;
         break;
       }
@@ -1271,42 +1274,31 @@ struct lambda1405analysis {
                     const TTrack& tracks,
                     const aod::McParticles& particlesMC)
   {
-    LOG(info) << "Filling output MC for " << recoCollisions.size() << " collisions, " << sigmaCands.size() << " Sigma candidates, and " << tracks.size() << " tracks";
     for (const auto& collision : recoCollisions) {
-      LOG(info) << "\n\nProcessing collision with global index: " << collision.globalIndex() << " and " << sigmaCands.size() << " Sigma candidates, and " << tracks.size() << " tracks";
       if (std::abs(collision.posZ()) > cutZVertex) { // || !collision.sel8()) {
-        LOG(info) << "Collision failed Z vertex cut: " << collision.posZ();
         continue;
       }
-      LOG(info) << "Collision passed Z vertex cut: " << collision.posZ();
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
       float centMult = getCentMult(collision);
-      LOG(info) << "Collision centrality: " << centMult;
       if (centMult < centMultMin || centMult > centMultMax) {
-        LOG(info) << "Collision failed centrality cut: " << centMult;
         continue;
       }
-      LOG(info) << "Collision passed centrality cut: " << centMult;
       rEventSelection.fill(HIST("hCentMultVsPvContrib"), centMult, collision.numContrib());
       rEventSelection.fill(HIST("hOccVsPvContrib"), collision.ft0cOccupancyInTimeRange(), collision.numContrib());
       rEventSelection.fill(HIST("hCentVsOcc"), centMult, collision.ft0cOccupancyInTimeRange());
 
       auto sigmaCandsPerCol = sigmaCands.sliceBy(mKinkPerCol, collision.globalIndex());
       auto tracksPerCol = tracks.sliceBy(mPerColTracks, collision.globalIndex());
-      LOG(info) << "Start loop on " << sigmaCandsPerCol.size() << " Sigma candidates ... ";
       for (const auto& sigmaCand : sigmaCandsPerCol) {
-        LOG(info) << "Processing Sigma candidate with global index: " << sigmaCand.globalIndex();
 
         // Perform the sigma matching here, so sigma histograms
         // can be used for efficiency studies on the sigma
         auto labelSigma = trackLabelsMC.rawIteratorAt(sigmaCand.trackMothId());
         auto labelKinkDaug = trackLabelsMC.rawIteratorAt(sigmaCand.trackDaugId());
         if (!labelSigma.has_mcParticle()) {
-          LOG(info) << "Sigma candidate with global index: " << sigmaCand.globalIndex() << " is not matched to MC particle";
           rSelections.fill(HIST("hRecoNotMatchedCounter"), 1); // Sigma not matched
         }
         if (!labelKinkDaug.has_mcParticle()) {
-          LOG(info) << "Kink daughter candidate with global index: " << sigmaCand.globalIndex() << " is not matched to MC particle";
           rSelections.fill(HIST("hRecoNotMatchedCounter"), 2); // Kink daughter not matched
         }
         auto genSigma = labelSigma.template mcParticle_as<aod::McParticles>();
@@ -1317,20 +1309,15 @@ struct lambda1405analysis {
         bool isSigmaPlusToPrKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaPlus, PDG_t::kProton, particlesMC);
 
         if (!isSigmaMinusKink && !isSigmaPlusToPiKink && !isSigmaPlusToPrKink) {
-          LOG(info) << "Candidate is not a valid Sigma kink decay, skipping ...";
           continue; // Skip if not a valid Sigma kink decay
         }
         if (isSigmaMinusKink) {
-          LOG(info) << "Filling h2DeltaGenRecoPtSigmaMinus with: " << sigmaCand.ptMoth() - genSigma.pt() << ", " << sigmaCand.ptMoth();
           rSigmaMinus.fill(HIST("h2DeltaGenRecoPtSigmaMinus"), sigmaCand.ptMoth() - genSigma.pt(), sigmaCand.ptMoth());
         }
         if (isSigmaPlusToPiKink || isSigmaPlusToPrKink) {
-          LOG(info) << "Filling h2DeltaGenRecoPtSigmaPlus with: " << sigmaCand.ptMoth() - genSigma.pt() << ", " << sigmaCand.ptMoth();
           rSigmaPlus.fill(HIST("h2DeltaGenRecoPtSigmaPlus"), sigmaCand.ptMoth() - genSigma.pt(), sigmaCand.ptMoth());
         }
-
         std::vector<lambda1405candidate> selectedCandidates;
-        LOG(info) << "Constructing Lambda(1405) candidates from Sigma candidate with global index: " << sigmaCand.globalIndex();
         constructCollCandidates(collision, sigmaCand, tracksPerCol, selectedCandidates);
         for (const auto& lambda1405Cand : selectedCandidates) {
           rLambda1405.fill(HIST("hRecoL1405"), 0., lambda1405Cand.pt()); // All reconstructed
@@ -1486,6 +1473,157 @@ struct lambda1405analysis {
     fillOutputMc(recoCollisions, kinkCands, trackLabelsMC, tracks, particlesMC);
   }
   PROCESS_SWITCH(lambda1405analysis, processMcWCentSel, "MC processing with centrality selection", false);
+
+  void processMcSigmasCentSel(McRecoCollisionsCentSel const& recoCollisions,
+                              aod::KinkCands const& kinkCands,
+                              aod::McTrackLabels const& trackLabelsMC,
+                              aod::McParticles const& particlesMC,
+                              const aod::BCs&)
+  {
+    // Loop over kink candidates to fill Sigma efficiency histograms
+    for (const auto& collision : recoCollisions) {
+      if (std::abs(collision.posZ()) > cutZVertex) { // || !collision.sel8()) {
+        continue;
+      }
+      rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
+      float centMult = getCentMult(collision);
+      if (centMult < centMultMin || centMult > centMultMax) {
+        continue;
+      }
+
+      rEventSelection.fill(HIST("hCentMultVsPvContrib"), centMult, collision.numContrib());
+      rEventSelection.fill(HIST("hOccVsPvContrib"), collision.ft0cOccupancyInTimeRange(), collision.numContrib());
+      rEventSelection.fill(HIST("hCentVsOcc"), centMult, collision.ft0cOccupancyInTimeRange());
+
+      // Compute occupancy and pv contrib of the generated collision
+      const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollision, collision.mcCollisionId());
+      if (recoCollsPerMcColl.size() == 0) {
+        continue; // Skip if no reconstructed collisions associated with this MC collision
+      }
+      unsigned genNumContrib = 0;
+      float genOcc{0.f};
+      float genCentMult{0.f};
+      for (const auto& recCol : recoCollsPerMcColl) {
+        genNumContrib = recCol.numContrib() > genNumContrib ? recCol.numContrib() : genNumContrib;
+        genOcc = recCol.ft0cOccupancyInTimeRange() > genOcc ? recCol.ft0cOccupancyInTimeRange() : genOcc;
+        genCentMult = getCentMult(collision) > genCentMult ? getCentMult(collision) : genCentMult;
+      }
+
+      auto sigmaCandsPerCol = sigmaCands.sliceBy(mKinkPerCol, collision.globalIndex());
+      for (const auto& sigmaCand : sigmaCandsPerCol) {
+
+        auto labelSigma = trackLabelsMC.rawIteratorAt(sigmaCand.trackMothId());
+        auto labelKinkDaug = trackLabelsMC.rawIteratorAt(sigmaCand.trackDaugId());
+        if (!labelSigma.has_mcParticle() || !labelKinkDaug.has_mcParticle()) {
+          continue; // No generated particles
+        }
+        auto genSigma = labelSigma.template mcParticle_as<aod::McParticles>();
+        auto genKinkDaug = labelKinkDaug.template mcParticle_as<aod::McParticles>();
+
+        bool isSigmaMinusKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaMinus, PDG_t::kPiPlus, particlesMC);
+        bool isSigmaPlusToPiKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaPlus, PDG_t::kPiPlus, particlesMC);
+        bool isSigmaPlusToPrKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaPlus, PDG_t::kProton, particlesMC);
+
+        if (skipBkgSigmas && (!isSigmaMinusKink && !isSigmaPlusToPiKink && !isSigmaPlusToPrKink)) {
+          continue; // Skip if not a valid Sigma kink decay
+        }
+
+        float sigmaPt = sigmaCand.ptMoth();
+        float kinkPt = sigmaCand.ptDaug();
+        if (downSampleFactor < 1.) {
+          float const pseudoRndm = sigmaPt * 1000. - static_cast<int64_t>(sigmaPt * 1000);
+          if (sigmaPt < ptDownSampleMax && pseudoRndm >= downSampleFactor) {
+            continue;
+          }
+        }
+
+        std::array<float, 3> sigmaMomReco{sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth()};
+        std::array<float, 3> kinkMomReco{sigmaCand.pxDaug(), sigmaCand.pyDaug(), sigmaCand.pzDaug()};
+        float recoSigmaAlphaAP = alphaAP(sigmaMomReco, kinkMomReco);
+        float recoSigmaQtAP = qtAP(sigmaMomReco, kinkMomReco);
+
+        // Recompute the sigma momentum
+        bool success{false};
+        float sigmaPRecalc = recalcSigmaMom(success, isSigmaMinusKink,
+                                            sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth(),
+                                            sigmaCand.pxDaug(), sigmaCand.pyDaug(), sigmaCand.pzDaug());
+        if (!success && skipSigmasFailedRecompMom) {
+          return;
+        }
+        if (success) {
+          float sigmaPOriginal = std::sqrt(sigmaCand.pxMoth() * sigmaCand.pxMoth() +
+                                           sigmaCand.pyMoth() * sigmaCand.pyMoth() +
+                                           sigmaCand.pzMoth() * sigmaCand.pzMoth());
+          if (sigmaPRecalc > 0.f && sigmaPOriginal > 0.f) {
+            float scale = sigmaPRecalc / sigmaPOriginal;
+            sigmaMomReco[0] *= scale;
+            sigmaMomReco[1] *= scale;
+            sigmaMomReco[2] *= scale;
+
+            sigmaPt = std::sqrt(sigmaMomReco[0] * sigmaMomReco[0] + sigmaMomReco[1] * sigmaMomReco[1]);
+            if (isSigmaMinusKink) {
+              rSigmaMinus.fill(HIST("hDeltaPxRecalcSigmaMinus"), sigmaMomReco[0] - sigmaCand.pxMoth(), sigmaCand.pxMoth());
+              rSigmaMinus.fill(HIST("hDeltaPyRecalcSigmaMinus"), sigmaMomReco[1] - sigmaCand.pyMoth(), sigmaCand.pyMoth());
+              rSigmaMinus.fill(HIST("hDeltaPzRecalcSigmaMinus"), sigmaMomReco[2] - sigmaCand.pzMoth(), sigmaCand.pzMoth());
+              rSigmaMinus.fill(HIST("hRecalcPtFactorSigmaMinus"), scale, sigmaPOriginal);
+            } else {
+              rSigmaPlus.fill(HIST("hDeltaPxRecalcSigmaPlus"), sigmaMomReco[0] - sigmaCand.pxMoth(), sigmaCand.pxMoth());
+              rSigmaPlus.fill(HIST("hDeltaPyRecalcSigmaPlus"), sigmaMomReco[1] - sigmaCand.pyMoth(), sigmaCand.pyMoth());
+              rSigmaPlus.fill(HIST("hDeltaPzRecalcSigmaPlus"), sigmaMomReco[2] - sigmaCand.pzMoth(), sigmaCand.pzMoth());
+              rSigmaPlus.fill(HIST("hRecalcPtFactorSigmaPlus"), scale, sigmaPOriginal);
+            }
+          }
+        }
+
+        float recoRecalcPtSigmaAlphaAP = alphaAP(sigmaMomReco, kinkMomReco);
+        float recoRecalcPtSigmaQtAP = qtAP(sigmaMomReco, kinkMomReco);
+        float massSigma = isSigmaMinusKink ? sigmaCand.mSigmaMinus : sigmaCand.mSigmaPlus;
+
+        // Generated properties
+        float genMassSigma{-1.f};
+        if (isSigmaMinusKink || isSigmaPlusToPiKink || isSigmaPlusToPrKink) {
+          genMassSigma = std::sqrt(genSigma.e() * genSigma.e() - genSigma.p() * genSigma.p());
+          std::array<float, 3> sigmaMomGen{sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth()};
+          std::array<float, 3> kinkMomGen{sigmaCand.pxDaug(), sigmaCand.pyDaug(), sigmaCand.pzDaug()};
+          float genSigmaAlphaAP = alphaAP(sigmaMomGen, kinkMomGen);
+          float genSigmaQtAP = qtAP(sigmaMomGen, kinkMomGen);
+          if (isSigmaMinusKink) {
+            rSigmaMinus.fill(HIST("hSparseGenSigmaMinus"), genMassSigma, genSigma.pt(), genSigmaAlphaAP, genSigmaQtAP, genCentMult, genNumContrib, genOcc);
+          } else if (isSigmaPlusToPiKink || isSigmaPlusToPrKink) {
+            rSigmaPlus.fill(HIST("hSparseGenSigmaPlus"), genMassSigma, genSigma.pt(), genSigmaAlphaAP, genSigmaQtAP, genCentMult, genNumContrib, genOcc);
+          }
+        }
+
+        // Fill table with sigma properties for efficiency studies
+        outputSigmaEffMC(
+          sigmaCand.pxMoth(), sigmaCand.pxMoth() - genSigma.px(),
+          sigmaCand.pyMoth(), sigmaCand.pyMoth() - genSigma.py(),
+          sigmaCand.pzMoth(), sigmaCand.pzMoth() - genSigma.pz(),
+          sigmaCand.pt(), sigmaCand.pt() - genSigma.pt(),
+          massSigma, massSigma - genMassSigma,
+          sigmaCand.pxMoth() - sigmaMomReco[0],
+          sigmaCand.pyMoth() - sigmaMomReco[1],
+          sigmaCand.pzMoth() - sigmaMomReco[2],
+          genSigma.phi(),
+          genSigma.eta(),
+          sigmaCand.pxDaug(), sigmaCand.pxDaug() - genKinkDaug.px(),
+          sigmaCand.pyDaug(), sigmaCand.pyDaug() - genKinkDaug.py(),
+          sigmaCand.pzDaug(), sigmaCand.pzDaug() - genKinkDaug.pz(),
+          kinkPt, kinkPt - genKinkDaug.pt(),
+          genKinkDaug.phi(),
+          genKinkDaug.eta(),
+          sigmaCand.xDecVtx(), sigmaCand.xDecVtx() - genKinkDaug.vx(),
+          sigmaCand.yDecVtx(), sigmaCand.yDecVtx() - genKinkDaug.vy(),
+          sigmaCand.zDecVtx(), sigmaCand.zDecVtx() - genKinkDaug.vz(),
+          recoSigmaAlphaAP, recoSigmaQtAP,
+          recoRecalcPtSigmaAlphaAP, recoRecalcPtSigmaQtAP,
+          sigmaCand.dcaDaugPv(), sigmaCand.dcaMothPv(),
+          genSigma.pdgCode(), genKinkDaug.pdgCode(),
+          centMult, collision.ft0cOccupancyInTimeRange(), collision.numContrib());
+      }
+    }
+  }
+  PROCESS_SWITCH(lambda1405analysis, processMcSigmasCentSel, "MC processing for sigma efficiency studies", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
