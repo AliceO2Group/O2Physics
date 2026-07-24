@@ -25,7 +25,9 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
+#include "TPDGCode.h"
 #include <CommonConstants/MathConstants.h>
+#include "CommonConstants/PhysicsConstants.h"
 #include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
@@ -483,7 +485,7 @@ struct FemtoUniversePairTaskTrackPhi {
       trackHistoPartPhi.fillQA<false, false>(phicandidate);
       if constexpr (isMC) {
         // reco
-        effCorrection.fillRecoHist<ParticleNo::ONE, FilteredFDCollisions>(phicandidate, 333);
+        effCorrection.fillRecoHist<ParticleNo::ONE, FilteredFDCollisions>(phicandidate, o2::constants::physics::Pdg::kPhi );
       }
     }
 
@@ -691,18 +693,18 @@ struct FemtoUniversePairTaskTrackPhi {
       // charge +
       if (pdgParticle->Charge() > 0.0) {
         registryMCtruth.fill(HIST("MCtruthAllPositivePt"), part.pt());
-        if (pdgCode == 2212) {
+        if (pdgCode == kProton) {
           registryMCtruth.fill(HIST("MCtruthPpos"), part.pt(), part.eta());
           registryMCtruth.fill(HIST("MCtruthPposPt"), part.pt());
           continue;
-        } else if (pdgCode == 321) {
+        } else if (pdgCode == kKPlus) {
           registryMCtruth.fill(HIST("MCtruthKp"), part.pt(), part.eta());
           registryMCtruth.fill(HIST("MCtruthKpPt"), part.pt());
           continue;
         }
       }
       // charge 0
-      if (pdgCode == 333) {
+      if (pdgCode == o2::constants::physics::Pdg::kPhi) { 
         registryMCtruth.fill(HIST("MCtruthPhi"), part.pt(), part.eta());
         registryMCtruth.fill(HIST("MCtruthPhiPt"), part.pt());
         effCorrection.fillTruthHist<ParticleNo::ONE, FilteredFDCollisions>(part);
@@ -713,11 +715,11 @@ struct FemtoUniversePairTaskTrackPhi {
       if (pdgParticle->Charge() < 0.0) {
         registryMCtruth.fill(HIST("MCtruthAllNegativePt"), part.pt());
 
-        if (pdgCode == -321) {
+        if (pdgCode == kKMinus) {
           registryMCtruth.fill(HIST("MCtruthKm"), part.pt(), part.eta());
           registryMCtruth.fill(HIST("MCtruthKmPt"), part.pt());
           continue;
-        } else if (pdgCode == -2212) {
+        } else if (pdgCode == kProtonBar) {
           registryMCtruth.fill(HIST("MCtruthPneg"), part.pt(), part.eta());
           registryMCtruth.fill(HIST("MCtruthPnegPt"), part.pt());
           continue;
@@ -740,7 +742,7 @@ struct FemtoUniversePairTaskTrackPhi {
         float weightTrack = effCorrection.getWeight<FilteredFDCollisions>(ParticleNo::TWO, part);
         registryMCpT.fill(HIST("MCReco/C_p_pT"), part.pt(), weightTrack);
       }
-      if ((mcpart.pdgMCTruth() == 333) && (part.partType() == aod::femtouniverseparticle::ParticleType::kPhi) && (part.pt() > ConfPhiPtLow) && (part.pt() < ConfPhiPtHigh)) {
+      if ((mcpart.pdgMCTruth() == o2::constants::physics::Pdg::kPhi) && (part.partType() == aod::femtouniverseparticle::ParticleType::kPhi) && (part.pt() > ConfPhiPtLow) && (part.pt() < ConfPhiPtHigh)) {
         registryMCpT.fill(HIST("MCReco/NC_phi_pT"), part.pt());
         float weightPhi = effCorrection.getWeight<FilteredFDCollisions>(ParticleNo::ONE, part);
         registryMCpT.fill(HIST("MCReco/C_phi_pT"), part.pt(), weightPhi);
@@ -748,19 +750,19 @@ struct FemtoUniversePairTaskTrackPhi {
 
       if (isParticleNSigmaAccepted(part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon)))
         hTrackDCA.fillQA<true, true>(part);
-      if ((part.partType() == aod::femtouniverseparticle::ParticleType::kPhi) && (mcpart.pdgMCTruth() == 333) && (mcpart.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary)) {
+      if ((part.partType() == aod::femtouniverseparticle::ParticleType::kPhi) && (mcpart.pdgMCTruth() == o2::constants::physics::Pdg::kPhi) && (mcpart.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary)) {
         registryMCreco.fill(HIST("MCrecoPhi"), mcpart.pt(), mcpart.eta()); // phi
         registryMCreco.fill(HIST("MCrecoPhiPt"), mcpart.pt());
       } else if (part.partType() == aod::femtouniverseparticle::ParticleType::kTrack) {
         if (part.sign() > 0) {
           registryMCreco.fill(HIST("MCrecoAllPositivePt"), mcpart.pt());
-          if (mcpart.pdgMCTruth() == 2212 && isParticleNSigmaAccepted(part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
+          if (mcpart.pdgMCTruth() == kProton && isParticleNSigmaAccepted(part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
             registryMCreco.fill(HIST("MCrecoPpos"), mcpart.pt(), mcpart.eta());
             registryMCreco.fill(HIST("MCrecoPposPt"), mcpart.pt());
           }
         } else if (part.sign() < 0) {
           registryMCreco.fill(HIST("MCrecoAllNegativePt"), mcpart.pt());
-          if (mcpart.pdgMCTruth() == -2212 && isParticleNSigmaAccepted(part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
+          if (mcpart.pdgMCTruth() == kProtonBar && isParticleNSigmaAccepted(part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
             registryMCreco.fill(HIST("MCrecoPneg"), mcpart.pt(), mcpart.eta());
             registryMCreco.fill(HIST("MCrecoPnegPt"), mcpart.pt());
           }
