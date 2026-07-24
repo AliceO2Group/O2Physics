@@ -98,10 +98,10 @@ struct FemtoMcParticleQa {
 };
 
 o2::framework::WorkflowSpec
-  defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+  defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoMcParticleQa>(cfgc),
+    adaptAnalysisTask<FemtoMcParticleQa>(context),
   };
   return workflow;
 }

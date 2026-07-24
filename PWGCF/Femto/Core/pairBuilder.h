@@ -43,15 +43,12 @@
 #include <random>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::pairbuilder
 {
-namespace pairbuilder
-{
-
 const int64_t nLimitPartitionIdenticalParticles = 2;
 const int64_t nLimitPartitionParticles = 1;
 
-template <const char* prefixTrack1, const char* prefixTrack2, const char* prefixSe, const char* prefixMe, const char* prefixCprSe, const char* prefixCprMe>
+template <auto& prefixTrack1, auto& prefixTrack2, auto& prefixSe, auto& prefixMe, auto& prefixCprSe, auto& prefixCprMe>
 class PairTrackTrackBuilder
 {
  public:
@@ -288,18 +285,18 @@ class PairTrackTrackBuilder
   std::uniform_int_distribution<> mDist;
 };
 
-template <const char* prefixV01,
-          const char* prefixPosDau1,
-          const char* prefixNegDau1,
-          const char* prefixV02,
-          const char* prefixPosDau2,
-          const char* prefixNegDau2,
-          const char* prefixSe,
-          const char* prefixMe,
-          const char* prefixCprPosSe,
-          const char* prefixCprNegSe,
-          const char* prefixCprPosMe,
-          const char* prefixCprNegMe,
+template <auto& prefixV01,
+          auto& prefixPosDau1,
+          auto& prefixNegDau1,
+          auto& prefixV02,
+          auto& prefixPosDau2,
+          auto& prefixNegDau2,
+          auto& prefixSe,
+          auto& prefixMe,
+          auto& prefixCprPosSe,
+          auto& prefixCprNegSe,
+          auto& prefixCprPosMe,
+          auto& prefixCprNegMe,
           modes::V0 v0Type1,
           modes::V0 v0Type2>
 class PairV0V0Builder
@@ -543,14 +540,14 @@ class PairV0V0Builder
   std::uniform_int_distribution<> mDist;
 };
 
-template <const char* prefixTrack,
-          const char* prefixV0,
-          const char* prefixPosDau,
-          const char* prefixNegDau,
-          const char* prefixSe,
-          const char* prefixMe,
-          const char* prefixCprSe,
-          const char* prefixCprMe,
+template <auto& prefixTrack,
+          auto& prefixV0,
+          auto& prefixPosDau,
+          auto& prefixNegDau,
+          auto& prefixSe,
+          auto& prefixMe,
+          auto& prefixCprSe,
+          auto& prefixCprMe,
           modes::V0 v0Type>
 class PairTrackV0Builder
 {
@@ -710,14 +707,14 @@ class PairTrackV0Builder
   int mMixingDepth = 5;
 };
 
-template <const char* prefixTrack,
-          const char* prefixResonance,
-          const char* prefixPosDau,
-          const char* prefixNegDau,
-          const char* prefixSe,
-          const char* prefixMe,
-          const char* prefixCprSe,
-          const char* prefixCprMe,
+template <auto& prefixTrack,
+          auto& prefixResonance,
+          auto& prefixPosDau,
+          auto& prefixNegDau,
+          auto& prefixSe,
+          auto& prefixMe,
+          auto& prefixCprSe,
+          auto& prefixCprMe,
           modes::TwoTrackResonance resonanceType>
 class PairTrackTwoTrackResonanceBuilder
 {
@@ -821,18 +818,18 @@ class PairTrackTwoTrackResonanceBuilder
   int mMixingDepth = 5;
 };
 
-template <const char* prefixV0,
-          const char* prefixV0PosDau,
-          const char* prefixV0NegDau,
-          const char* prefixResonance,
-          const char* prefixResonancePosDau,
-          const char* prefixResonanceNegDau,
-          const char* prefixSe,
-          const char* prefixMe,
-          const char* prefixCprPosSe,
-          const char* prefixCprNegSe,
-          const char* prefixCprPosMe,
-          const char* prefixCprNegMe,
+template <auto& prefixV0,
+          auto& prefixV0PosDau,
+          auto& prefixV0NegDau,
+          auto& prefixResonance,
+          auto& prefixResonancePosDau,
+          auto& prefixResonanceNegDau,
+          auto& prefixSe,
+          auto& prefixMe,
+          auto& prefixCprPosSe,
+          auto& prefixCprNegSe,
+          auto& prefixCprPosMe,
+          auto& prefixCprNegMe,
           modes::V0 v0Type,
           modes::TwoTrackResonance resonanceType>
 class PairV0TwoTrackResonanceBuilder
@@ -945,13 +942,13 @@ class PairV0TwoTrackResonanceBuilder
   int mMixingDepth = 5;
 };
 
-template <const char* prefixTrack,
-          const char* prefixKink,
-          const char* prefixChaDau,
-          const char* prefixSe,
-          const char* prefixMe,
-          const char* prefixCprSe,
-          const char* prefixCprMe,
+template <auto& prefixTrack,
+          auto& prefixKink,
+          auto& prefixChaDau,
+          auto& prefixSe,
+          auto& prefixMe,
+          auto& prefixCprSe,
+          auto& prefixCprMe,
           modes::Kink kinkType>
 class PairTrackKinkBuilder
 {
@@ -1094,17 +1091,17 @@ class PairTrackKinkBuilder
   int mMixingDepth = 5;
 };
 
-template <const char* prefixTrack,
-          const char* prefixCascade,
-          const char* prefixBachelor,
-          const char* prefixPosDau,
-          const char* prefixNegDau,
-          const char* prefixSe,
-          const char* prefixMe,
-          const char* prefixCprBachelorSe,
-          const char* prefixCprV0DaughterSe,
-          const char* prefixCprBachelorMe,
-          const char* prefixCprV0DaughterMe,
+template <auto& prefixTrack,
+          auto& prefixCascade,
+          auto& prefixBachelor,
+          auto& prefixPosDau,
+          auto& prefixNegDau,
+          auto& prefixSe,
+          auto& prefixMe,
+          auto& prefixCprBachelorSe,
+          auto& prefixCprV0DaughterSe,
+          auto& prefixCprBachelorMe,
+          auto& prefixCprV0DaughterMe,
           modes::Cascade cascadeType>
 class PairTrackCascadeBuilder
 {
@@ -1254,7 +1251,7 @@ class PairTrackCascadeBuilder
   int mMixingDepth = 5;
 };
 
-template <const char* prefixMcParticle1, const char* prefixMcParticle2, const char* prefixSe, const char* prefixMe, const char* prefixCprSe, const char* prefixCprMe>
+template <auto& prefixMcParticle1, auto& prefixMcParticle2, auto& prefixSe, auto& prefixMe, auto& prefixCprSe, auto& prefixCprMe>
 class PairMcParticleMcParticleBuilder
 {
  public:
@@ -1431,7 +1428,6 @@ class PairMcParticleMcParticleBuilder
   std::uniform_int_distribution<> mDist;
 };
 
-} // namespace pairbuilder
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::pairbuilder
 
 #endif // PWGCF_FEMTO_CORE_PAIRBUILDER_H_

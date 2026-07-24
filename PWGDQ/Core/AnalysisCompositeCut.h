@@ -19,7 +19,6 @@
 
 #include "PWGDQ/Core/AnalysisCut.h"
 
-#include <Rtypes.h>
 #include <RtypesCore.h>
 
 #include <vector>

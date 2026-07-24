@@ -36,6 +36,17 @@ DECLARE_SOA_COLUMN(IsTrackPrefilter, isTrackPrefilter, int);
 DECLARE_SOA_TABLE(DiEventCentCuts, "AOD", "DIEVENTCENTCUTS", dileptonanalysisflags::IsEventCentSelected);
 DECLARE_SOA_TABLE(DiTrackPrefilter, "AOD", "DITRACKPREFILTER", dileptonanalysisflags::IsTrackPrefilter);
 
+namespace dileptonsmearedtrack
+{
+DECLARE_SOA_COLUMN(PtSmeared, ptSmeared, float);
+DECLARE_SOA_COLUMN(EtaSmeared, etaSmeared, float);
+DECLARE_SOA_COLUMN(PhiSmeared, phiSmeared, float);
+DECLARE_SOA_COLUMN(Selected, selected, bool);
+} // namespace dileptonsmearedtrack
+
+DECLARE_SOA_TABLE(SmearedAlice3Dilepton, "AOD", "SMEAREDALICE3DILEPTON",
+                  dileptonsmearedtrack::PtSmeared, dileptonsmearedtrack::EtaSmeared, dileptonsmearedtrack::PhiSmeared, dileptonsmearedtrack::Selected);
+
 } // namespace o2::aod
 
 #endif // ALICE3_DATAMODEL_PREFILTERDILEPTON_H_

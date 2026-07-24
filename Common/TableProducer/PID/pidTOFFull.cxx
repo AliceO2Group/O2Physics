@@ -286,7 +286,7 @@ struct tofPidFull {
   Preslice<Trks> perCollision = aod::track::collisionId;
   template <o2::track::PID::ID pid>
   using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
-  void processWSlice(Trks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  void processWSlice(Trks const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
   {
     constexpr auto responseEl = ResponseImplementation<PID::Electron>();
     constexpr auto responseMu = ResponseImplementation<PID::Muon>();
@@ -305,7 +305,7 @@ struct tofPidFull {
     int lastCollisionId = -1;          // Last collision ID analysed
     float resolution = 1.f;            // Last resolution assigned
     for (auto const& track : tracks) { // Loop on all tracks
-      if (!track.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
+      if (!track.has_collision() || collisions.size() == 0) { // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
         for (auto const& pidId : mEnabledParticles) {
           makeTableEmpty(pidId);
         }
@@ -392,7 +392,7 @@ struct tofPidFull {
   using TrksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
   template <o2::track::PID::ID pid>
   using ResponseImplementationIU = o2::pid::tof::ExpTimes<TrksIU::iterator, pid>;
-  void processWoSlice(TrksIU const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  void processWoSlice(TrksIU const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const&)
   {
     constexpr auto responseEl = ResponseImplementationIU<PID::Electron>();
     constexpr auto responseMu = ResponseImplementationIU<PID::Muon>();
@@ -409,7 +409,7 @@ struct tofPidFull {
     }
     float resolution = 1.f;            // Last resolution assigned
     for (auto const& track : tracks) { // Loop on all tracks
-      if (!track.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
+      if (!track.has_collision() || collisions.size() == 0) { // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
         for (auto const& pidId : mEnabledParticles) {
           makeTableEmpty(pidId);
         }

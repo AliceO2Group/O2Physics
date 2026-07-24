@@ -30,6 +30,7 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <MathUtils/Utils.h>
 #include <ReconstructionDataFormats/TrackParametrization.h>
 
@@ -39,8 +40,6 @@
 #include <TRandom.h>
 
 #include <sys/types.h>
-
-#include <GPUROOTCartesianFwd.h>
 
 #include <algorithm>
 #include <cmath>

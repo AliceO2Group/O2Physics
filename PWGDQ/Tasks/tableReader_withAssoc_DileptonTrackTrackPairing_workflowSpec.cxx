@@ -14,6 +14,7 @@
 
 #include "PWGDQ/Tasks/tableReader_withAssoc.cxx"
 
+#include <Framework/AnalysisTask.h>
 #include <Framework/runDataProcessing.h>
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -83,7 +83,7 @@ struct FemtoTrackQa {
 
   void init(o2::framework::InitContext&)
   {
-    if ((doprocessData + doprocessMc) > 1) {
+    if ((static_cast<int>(doprocessData) + static_cast<int>(doprocessMc)) > 1) {
       LOG(fatal) << "More than 1 process function is activated. Breaking...";
     }
     bool processData = doprocessData;
@@ -137,10 +137,10 @@ struct FemtoTrackQa {
 };
 
 o2::framework::WorkflowSpec
-  defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+  defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoTrackQa>(cfgc),
+    adaptAnalysisTask<FemtoTrackQa>(context),
   };
   return workflow;
 }

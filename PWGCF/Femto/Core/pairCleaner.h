@@ -20,11 +20,8 @@
 
 #include <Framework/Logger.h>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::paircleaner
 {
-namespace paircleaner
-{
-
 class BasePairCleaner
 {
  public:
@@ -298,7 +295,6 @@ class McParticleMcParticlePairCleaner : public BasePairCleaner
   }
 };
 
-} // namespace paircleaner
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::paircleaner
 
 #endif // PWGCF_FEMTO_CORE_PAIRCLEANER_H_

@@ -54,9 +54,9 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod:
 using MyCollisionsCent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
 using MyCollisionsCentQvec = soa::Join<MyCollisionsCent, MyQvectors>;
 
-using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
-using MyCollisionsWithSWT_Cent = soa::Join<MyCollisionsWithSWT, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
-using MyCollisionsWithSWT_Cent_Qvec = soa::Join<MyCollisionsWithSWT_Cent, MyQvectors>;
+// using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
+// using MyCollisionsWithSWT_Cent = soa::Join<MyCollisionsWithSWT, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
+// using MyCollisionsWithSWT_Cent_Qvec = soa::Join<MyCollisionsWithSWT_Cent, MyQvectors>;
 
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 using MyCollisionsMCCent = soa::Join<MyCollisionsMC, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
@@ -200,13 +200,13 @@ struct CreateEMEventPhoton {
         continue;
       }
 
-      if constexpr (isTriggerAnalysis) {
-        if (collision.swtaliastmp_raw() == 0) {
-          continue;
-        } else {
-          emswtbit(collision.swtaliastmp_raw());
-        }
-      }
+      // if constexpr (isTriggerAnalysis) {
+      //   if (collision.triggerMask_raw() == 0) {
+      //     continue;
+      //   } else {
+      //     emswtbit(collision.triggerMask_raw());
+      //   }
+      // }
 
       const float qDefault = 999.f; // default value for q vectors if not obtained
 
@@ -308,23 +308,23 @@ struct CreateEMEventPhoton {
   }
   PROCESS_SWITCH(CreateEMEventPhoton, processEvent_Cent_Qvec, "process event info", false);
 
-  void processEvent_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs)
-  {
-    skimEvent<false, true, EMEventType::kEvent>(collisions, bcs);
-  }
-  PROCESS_SWITCH(CreateEMEventPhoton, processEvent_SWT, "process event info", false);
+  // void processEvent_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs)
+  // {
+  //   skimEvent<false, true, EMEventType::kEvent>(collisions, bcs);
+  // }
+  // PROCESS_SWITCH(CreateEMEventPhoton, processEvent_SWT, "process event info", false);
 
-  void processEvent_SWT_Cent(MyCollisionsWithSWT_Cent const& collisions, MyBCs const& bcs)
-  {
-    skimEvent<false, true, EMEventType::kEvent_Cent>(collisions, bcs);
-  }
-  PROCESS_SWITCH(CreateEMEventPhoton, processEvent_SWT_Cent, "process event info", false);
+  // void processEvent_SWT_Cent(MyCollisionsWithSWT_Cent const& collisions, MyBCs const& bcs)
+  // {
+  //   skimEvent<false, true, EMEventType::kEvent_Cent>(collisions, bcs);
+  // }
+  // PROCESS_SWITCH(CreateEMEventPhoton, processEvent_SWT_Cent, "process event info", false);
 
-  void processEvent_SWT_Cent_Qvec(MyCollisionsWithSWT_Cent_Qvec const& collisions, MyBCs const& bcs)
-  {
-    skimEvent<false, true, EMEventType::kEvent_Cent_Qvec>(collisions, bcs);
-  }
-  PROCESS_SWITCH(CreateEMEventPhoton, processEvent_SWT_Cent_Qvec, "process event info", false);
+  // void processEvent_SWT_Cent_Qvec(MyCollisionsWithSWT_Cent_Qvec const& collisions, MyBCs const& bcs)
+  // {
+  //   skimEvent<false, true, EMEventType::kEvent_Cent_Qvec>(collisions, bcs);
+  // }
+  // PROCESS_SWITCH(CreateEMEventPhoton, processEvent_SWT_Cent_Qvec, "process event info", false);
 
   // for MC
   void processEventMC(MyCollisionsMC const& collisions, MyBCs const& bcs)

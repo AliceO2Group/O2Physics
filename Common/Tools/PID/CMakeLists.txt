@@ -16,3 +16,7 @@ o2physics_add_executable(pidparam-tpc-response
 o2physics_add_executable(check-pid-packing
     SOURCES checkPidPacking.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore)
+
+o2physics_add_library(pidTPCModule
+  SOURCES pidTPCModule.cxx
+  PUBLIC_LINK_LIBRARIES O2Physics::MLCore)

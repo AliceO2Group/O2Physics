@@ -21,14 +21,15 @@
 
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/Logger.h>
-#include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/PID.h>
-#include <ReconstructionDataFormats/V0.h>
+#include <ReconstructionDataFormats/Track.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 
 #include <array>
+
+#include <math.h>
 
 namespace o2::aod::pwgem::dilepton::utils
 {

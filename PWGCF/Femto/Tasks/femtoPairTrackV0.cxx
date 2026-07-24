@@ -261,10 +261,10 @@ struct FemtoPairTrackV0 {
   PROCESS_SWITCH(FemtoPairTrackV0, processK0shortMixedEventMc, "Enable processing mixed event processing for tracks and k0shorts with mc information", false);
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoPairTrackV0>(cfgc),
+    adaptAnalysisTask<FemtoPairTrackV0>(context),
   };
   return workflow;
 }

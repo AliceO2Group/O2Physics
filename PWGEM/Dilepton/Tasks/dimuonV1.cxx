@@ -17,20 +17,13 @@
 #include "PWGEM/Dilepton/Core/DimuonCut.h"
 #include "PWGEM/Dilepton/Core/EMEventCut.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
-#include "PWGEM/Dilepton/Utils/EMFwdTrack.h"
-#include "PWGEM/Dilepton/Utils/EMTrack.h"
-#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/Dilepton/Utils/EventHistograms.h"
-#include "PWGEM/Dilepton/Utils/EventMixingHandler.h"
-#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
-#include <CommonConstants/LHCConstants.h>
-#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
@@ -38,6 +31,7 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
 #include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -45,29 +39,20 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
-#include <MathUtils/Utils.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
-#include <TString.h>
-
-#include <sys/types.h>
 
 #include <algorithm>
 #include <array>
-#include <chrono>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <random>
 #include <string>
 #include <string_view>
-#include <tuple>
 #include <utility>
 #include <vector>
-
-#include <math.h>
 
 struct dimuonV1 {
 
@@ -87,12 +72,14 @@ struct dimuonV1 {
   o2::framework::ConfigurableAxis ConfMllBins{"ConfMllBins", {o2::framework::VARIABLE_WIDTH, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.3, 1.4, 1.5, 2.00, 2.01, 2.02, 2.03, 2.04, 2.05, 2.06, 2.07, 2.08, 2.09, 2.1, 2.11, 2.12, 2.13, 2.14, 2.15, 2.16, 2.17, 2.18, 2.19, 2.2, 2.21, 2.22, 2.23, 2.24, 2.25, 2.26, 2.27, 2.28, 2.29, 2.3, 2.31, 2.32, 2.33, 2.34, 2.35, 2.36, 2.37, 2.38, 2.39, 2.4, 2.41, 2.42, 2.43, 2.44, 2.45, 2.46, 2.47, 2.48, 2.49, 2.5, 2.51, 2.52, 2.53, 2.54, 2.55, 2.56, 2.57, 2.58, 2.59, 2.6, 2.61, 2.62, 2.63, 2.64, 2.65, 2.66, 2.67, 2.68, 2.69, 2.7, 2.71, 2.72, 2.73, 2.74, 2.75, 2.76, 2.77, 2.78, 2.79, 2.8, 2.81, 2.82, 2.83, 2.84, 2.85, 2.86, 2.87, 2.88, 2.89, 2.9, 2.91, 2.92, 2.93, 2.94, 2.95, 2.96, 2.97, 2.98, 2.99, 3., 3.01, 3.02, 3.03, 3.04, 3.05, 3.06, 3.07, 3.08, 3.09, 3.1, 3.11, 3.12, 3.13, 3.14, 3.15, 3.16, 3.17, 3.18, 3.19, 3.2, 3.21, 3.22, 3.23, 3.24, 3.25, 3.26, 3.27, 3.28, 3.29, 3.3, 3.31, 3.32, 3.33, 3.34, 3.35, 3.36, 3.37, 3.38, 3.39, 3.4, 3.41, 3.42, 3.43, 3.44, 3.45, 3.46, 3.47, 3.48, 3.49, 3.5, 3.51, 3.52, 3.53, 3.54, 3.55, 3.56, 3.57, 3.58, 3.59, 3.6, 3.61, 3.62, 3.63, 3.64, 3.65, 3.66, 3.67, 3.68, 3.69, 3.7, 3.71, 3.72, 3.73, 3.74, 3.75, 3.76, 3.77, 3.78, 3.79, 3.8, 3.81, 3.82, 3.83, 3.84, 3.85, 3.86, 3.87, 3.88, 3.89, 3.9, 3.91, 3.92, 3.93, 3.94, 3.95, 3.96, 3.97, 3.98, 3.99, 4.0, 6.00, 6.10, 6.20, 6.30, 6.40, 6.50, 6.60, 6.70, 6.80, 6.90, 7.00, 7.10, 7.20, 7.30, 7.40, 7.50, 7.60, 7.70, 7.80, 7.90, 8.00, 8.10, 8.20, 8.30, 8.40, 8.50, 8.60, 8.70, 8.80, 8.90, 9.00, 9.10, 9.20, 9.30, 9.40, 9.50, 9.60, 9.70, 9.80, 9.90, 10.00, 10.10, 10.20, 10.30, 10.40, 10.50, 10.60, 10.70, 10.80, 10.90, 11.00, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 12.0}, "mmumu bins for output histograms"};
 
   o2::framework::ConfigurableAxis ConfPtllBins{"ConfPtllBins", {10, 0, 10}, "pTll bins for output histograms"};
-  o2::framework::ConfigurableAxis ConfYllBins{"ConfYllBins", {3, -4.0, -2.5}, "yll bins for output histograms"};
-  o2::framework::ConfigurableAxis ConfUQBins{"ConfUQBins", {200, -1, 1}, "uQ bins for output histograms"};
+  o2::framework::ConfigurableAxis ConfYllBins{"ConfYllBins", {30, -5, -2}, "yll or etall bins for output histograms"};
+  o2::framework::ConfigurableAxis ConfUQBins{"ConfUQBins", {400, -1, 1}, "uQ bins for output histograms"};
+  o2::framework::ConfigurableAxis ConfCentBins{"ConfCentBins", {20, 10, 30}, "centrality bins for output histograms"};
   o2::framework::Configurable<int> cfgNrotation{"cfgNrotation", 1, "number of rotation bkg"};
   o2::framework::Configurable<int> cfgRandomSeed{"cfgRandomSeed", 1, "randam seed for rotation bkg"};
   o2::framework::Configurable<float> cfgRotationMin{"cfgRotationMin", -M_PI / 4, "min. rotation angle for rotation bkg"};
   o2::framework::Configurable<float> cfgRotationMax{"cfgRotationMax", +M_PI / 4, "max. rotation angle for rotation bkg"};
+  o2::framework::Configurable<bool> cfgUseRapidity{"cfgUseRapidity", true, "flag to use rapidity. if false, pseudorapidity"};
 
   EMEventCut fEMEventCut;
   struct : o2::framework::ConfigurableGroup {
@@ -147,7 +134,7 @@ struct dimuonV1 {
     o2::framework::Configurable<float> cfg_min_deta{"cfg_min_deta", 0.02, "min deta between 2 muons (elliptic cut)"};
     o2::framework::Configurable<float> cfg_min_dphi{"cfg_min_dphi", 0.02, "min dphi between 2 muons (elliptic cut)"};
 
-    o2::framework::Configurable<uint8_t> cfg_track_type{"cfg_track_type", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
+    // o2::framework::Configurable<uint8_t> cfg_track_type{"cfg_track_type", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
     o2::framework::Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.8, "min pT for single track"};
     o2::framework::Configurable<float> cfg_max_pt_track{"cfg_max_pt_track", 1e+10, "max pT for single track"};
     o2::framework::Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -4.0, "min eta for single track"};
@@ -222,23 +209,42 @@ struct dimuonV1 {
     // event info
     o2::aod::pwgem::dilepton::utils::eventhistogram::addEventHistograms<-1>(&fRegistry);
 
-    fRegistry.add("Event/before/ZDC/hQxtQxp", "Q_{x}^{t} #upoint Q_{x}^{p} vs. centrality;centrality FT0C (%);Q_{x}^{t} #upoint Q_{x}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {2000, -1, +1}}, false);
-    fRegistry.add("Event/before/ZDC/hQytQyp", "Q_{y}^{t} #upoint Q_{y}^{p} vs. centrality;centrality FT0C (%);Q_{y}^{t} #upoint Q_{y}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {2000, -1, +1}}, false);
-    fRegistry.add("Event/before/ZDC/hQxtQyp", "Q_{x}^{t} #upoint Q_{y}^{p} vs. centrality;centrality FT0C (%);Q_{x}^{t} #upoint Q_{y}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {2000, -1, +1}}, false);
-    fRegistry.add("Event/before/ZDC/hQytQxp", "Q_{y}^{t} #upoint Q_{x}^{p} vs. centrality;centrality FT0C (%);Q_{y}^{t} #upoint Q_{x}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {2000, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQxt", "Q_{x}^{t} vs. centrality;centrality FT0C (%);Q_{x}^{t}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {200, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQyt", "Q_{y}^{t} vs. centrality;centrality FT0C (%);Q_{y}^{t}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {200, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQxp", "Q_{x}^{p} vs. centrality;centrality FT0C (%);Q_{x}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {200, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQyp", "Q_{y}^{p} vs. centrality;centrality FT0C (%);Q_{y}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {200, -1, +1}}, false);
+
+    fRegistry.add("Event/before/ZDC/hQxtQxp", "Q_{x}^{t} #upoint Q_{x}^{p} vs. centrality;centrality FT0C (%);Q_{x}^{t} #upoint Q_{x}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {1000, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQytQyp", "Q_{y}^{t} #upoint Q_{y}^{p} vs. centrality;centrality FT0C (%);Q_{y}^{t} #upoint Q_{y}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {1000, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQxtQyp", "Q_{x}^{t} #upoint Q_{y}^{p} vs. centrality;centrality FT0C (%);Q_{x}^{t} #upoint Q_{y}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {1000, -1, +1}}, false);
+    fRegistry.add("Event/before/ZDC/hQytQxp", "Q_{y}^{t} #upoint Q_{x}^{p} vs. centrality;centrality FT0C (%);Q_{y}^{t} #upoint Q_{x}^{p}", o2::framework::HistType::kTH2D, {{110, 0, 110}, {1000, -1, +1}}, false);
     fRegistry.addClone("Event/before/ZDC/", "Event/after/ZDC/");
 
     // pair info
     const o2::framework::AxisSpec axis_mass{ConfMllBins, "m_{#mu#mu} (GeV/c^{2})"};
     const o2::framework::AxisSpec axis_pt{ConfPtllBins, "p_{T,#mu#mu} (GeV/c)"};
     const o2::framework::AxisSpec axis_y{ConfYllBins, "y_{#mu#mu}"};
-    const o2::framework::AxisSpec axis_uxQxt{ConfUQBins, "u_{x}Q_{x}^{t}"};
-    const o2::framework::AxisSpec axis_uxQxp{ConfUQBins, "u_{x}Q_{x}^{p}"};
-    const o2::framework::AxisSpec axis_uyQyt{ConfUQBins, "u_{y}Q_{y}^{t}"};
-    const o2::framework::AxisSpec axis_uyQyp{ConfUQBins, "u_{y}Q_{y}^{p}"};
+    const o2::framework::AxisSpec axis_eta{ConfYllBins, "#eta_{#mu#mu}"};
 
-    fRegistry.add("Pair/same/uls/hs", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_uxQxt, axis_uxQxp, axis_uyQyt, axis_uyQyp}, true);
-    fRegistry.add("Pair/same/uls/hsRotBkg", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y}, true);
+    // const o2::framework::AxisSpec axis_uxQxt{ConfUQBins, "u_{x}Q_{x}^{t}"};
+    // const o2::framework::AxisSpec axis_uxQxp{ConfUQBins, "u_{x}Q_{x}^{p}"};
+    // const o2::framework::AxisSpec axis_uyQyt{ConfUQBins, "u_{y}Q_{y}^{t}"};
+    // const o2::framework::AxisSpec axis_uyQyp{ConfUQBins, "u_{y}Q_{y}^{p}"};
+
+    const o2::framework::AxisSpec axis_uxQx{ConfUQBins, "u_{x}Q_{x}^{p} - u_{x}Q_{x}^{t}"};
+    const o2::framework::AxisSpec axis_uyQy{ConfUQBins, "u_{y}Q_{y}^{p} - u_{y}Q_{y}^{t}"};
+
+    const o2::framework::AxisSpec axis_centrality{ConfCentBins, "centrality (%)"};
+
+    fRegistry.add("Track/hs", "single muon;p_{T} (GeV/c);#eta;#varphi (rad.);sign;", o2::framework::HistType::kTHnSparseD, {{100, 0, 10}, {30, -5, -2}, {36, 0, 2 * M_PI}, {3, -1.5, +1.5}}, true);
+
+    if (cfgUseRapidity) {
+      fRegistry.add("Pair/same/uls/hs", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_uxQx, axis_uyQy, axis_centrality}, true);
+      fRegistry.add("Pair/same/uls/hsRotBkg", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_y}, true);
+    } else {
+      fRegistry.add("Pair/same/uls/hs", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_eta, axis_uxQx, axis_uyQy, axis_centrality}, true);
+      fRegistry.add("Pair/same/uls/hsRotBkg", "dilepton", o2::framework::HistType::kTHnSparseD, {axis_mass, axis_pt, axis_eta}, true);
+    }
 
     // fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
     // fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
@@ -279,7 +285,8 @@ struct dimuonV1 {
     fDimuonCut.SetMindEtadPhi(dimuoncuts.cfg_apply_detadphi, dimuoncuts.cfg_min_deta, dimuoncuts.cfg_min_dphi);
 
     // for track
-    fDimuonCut.SetTrackType(dimuoncuts.cfg_track_type);
+    // fDimuonCut.SetTrackType(dimuoncuts.cfg_track_type);
+    fDimuonCut.SetTrackType(3);
     fDimuonCut.SetTrackPtRange(dimuoncuts.cfg_min_pt_track, dimuoncuts.cfg_max_pt_track);
     fDimuonCut.SetTrackEtaRange(dimuoncuts.cfg_min_eta_track, dimuoncuts.cfg_max_eta_track);
     fDimuonCut.SetTrackPhiRange(dimuoncuts.cfg_min_phi_track, dimuoncuts.cfg_max_phi_track);
@@ -299,7 +306,7 @@ struct dimuonV1 {
   }
 
   template <int ev_id, typename TCollision, typename TTrack1, typename TTrack2, typename TCut>
-  bool fillPairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, TCut const& cut)
+  bool fillPairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, const float centrality)
   {
     if (!cut.template IsSelectedTrack<false>(t1) || !cut.template IsSelectedTrack<false>(t2)) {
       return false;
@@ -321,26 +328,33 @@ struct dimuonV1 {
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
     float phi = RecoDecay::constrainAngle(v12.Phi(), 0, 1U);
 
-    // TODO : implement correction for NUA
     float uxQxt = std::cos(1.f * phi) * collision.qxZDCC();
     float uxQxp = std::cos(1.f * phi) * collision.qxZDCA();
     float uyQyt = std::sin(1.f * phi) * collision.qyZDCC();
     float uyQyp = std::sin(1.f * phi) * collision.qyZDCA();
 
     if (t1.sign() * t2.sign() < 0) { // ULS
-      fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), uxQxt, uxQxp, uyQyt, uyQyp, weight);
+      if (cfgUseRapidity) {
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), uxQxp - uxQxt, uyQyp - uyQyt, centrality, weight);
+      } else {
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), v12.Eta(), uxQxp - uxQxt, uyQyp - uyQyt, centrality, weight);
+      }
 
       for (int i = 0; i < cfgNrotation; i++) {
         float dphi = distDPhi(engine);
         ROOT::Math::PtEtaPhiMVector v2rot(t2.pt(), t2.eta(), RecoDecay::constrainAngle(t2.phi() + M_PI + dphi, 0, 1U), o2::constants::physics::MassMuon);
         ROOT::Math::PtEtaPhiMVector v12bkg = v1 + v2rot;
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hsRotBkg"), v12bkg.M(), v12bkg.Pt(), v12bkg.Rapidity(), weight * 1.f / static_cast<float>(cfgNrotation));
+        if (cfgUseRapidity) {
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hsRotBkg"), v12bkg.M(), v12bkg.Pt(), v12bkg.Rapidity(), weight * 1.f / static_cast<float>(cfgNrotation));
+        } else {
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hsRotBkg"), v12bkg.M(), v12bkg.Pt(), v12bkg.Eta(), weight * 1.f / static_cast<float>(cfgNrotation));
+        }
       }
 
       // } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-      //   fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), v12.Rapidity(), uxQxt, uxQxp, uyQyt, uyQyp, weight);
+      //   fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), v12.Eta(), uxQxt, uxQxp, uyQyt, uyQyp, weight);
       // } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-      //   fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), v12.Rapidity(), uxQxt, uxQxp, uyQyt, uyQyp, weight);
+      //   fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), v12.Eta(), uxQxt, uxQxp, uyQyt, uyQyp, weight);
     }
     return true;
   }
@@ -362,6 +376,11 @@ struct dimuonV1 {
       float QytQxp = collision.qxZDCA() * collision.qyZDCC();
       float QxtQyp = collision.qxZDCC() * collision.qyZDCA();
 
+      fRegistry.fill(HIST("Event/before/ZDC/hQxt"), centrality, collision.qxZDCC());
+      fRegistry.fill(HIST("Event/before/ZDC/hQyt"), centrality, collision.qyZDCC());
+      fRegistry.fill(HIST("Event/before/ZDC/hQxp"), centrality, collision.qxZDCA());
+      fRegistry.fill(HIST("Event/before/ZDC/hQyp"), centrality, collision.qyZDCA());
+
       fRegistry.fill(HIST("Event/before/ZDC/hQxtQxp"), centrality, QxtQxp);
       fRegistry.fill(HIST("Event/before/ZDC/hQytQyp"), centrality, QytQyp);
       fRegistry.fill(HIST("Event/before/ZDC/hQxtQyp"), centrality, QxtQyp);
@@ -379,6 +398,11 @@ struct dimuonV1 {
       fRegistry.fill(HIST("Event/before/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev);  // accepted
 
+      fRegistry.fill(HIST("Event/after/ZDC/hQxt"), centrality, collision.qxZDCC());
+      fRegistry.fill(HIST("Event/after/ZDC/hQyt"), centrality, collision.qyZDCC());
+      fRegistry.fill(HIST("Event/after/ZDC/hQxp"), centrality, collision.qxZDCA());
+      fRegistry.fill(HIST("Event/after/ZDC/hQyp"), centrality, collision.qyZDCA());
+
       fRegistry.fill(HIST("Event/after/ZDC/hQxtQxp"), centrality, QxtQxp);
       fRegistry.fill(HIST("Event/after/ZDC/hQytQyp"), centrality, QytQyp);
       fRegistry.fill(HIST("Event/after/ZDC/hQxtQyp"), centrality, QxtQyp);
@@ -387,15 +411,26 @@ struct dimuonV1 {
       auto posTracks_per_coll = posTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
 
+      for (const auto& track : posTracks_per_coll) {
+        if (cut.IsSelectedTrack(track)) {
+          fRegistry.fill(HIST("Track/hs"), track.pt(), track.eta(), track.phi(), track.sign());
+        }
+      }
+      for (const auto& track : negTracks_per_coll) {
+        if (cut.IsSelectedTrack(track)) {
+          fRegistry.fill(HIST("Track/hs"), track.pt(), track.eta(), track.phi(), track.sign());
+        }
+      }
+
       for (const auto& [pos, neg] : combinations(o2::soa::CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
-        fillPairInfo<0>(collision, pos, neg, cut);
+        fillPairInfo<0>(collision, pos, neg, cut, centrality);
       }
 
       // for (const auto& [pos1, pos2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
-      //   fillPairInfo<0>(collision, pos1, pos2, cut);
+      //   fillPairInfo<0>(collision, pos1, pos2, cut, centrality);
       // }
       // for (const auto& [neg1, neg2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
-      //   fillPairInfo<0>(collision, neg1, neg2, cut);
+      //   fillPairInfo<0>(collision, neg1, neg2, cut, centrality);
       // }
 
     } // end of collision loop
@@ -478,21 +513,23 @@ struct dimuonV1 {
 
   using MyMuons = o2::soa::Join<o2::aod::EMPrimaryMuons, o2::aod::EMPrimaryMuonEMEventIds, o2::aod::EMAmbiguousMuonSelfIds>;
   using MyMuon = MyMuons::iterator;
-  using FilteredMyMuons = o2::soa::Filtered<MyMuons>;
-  using FilteredMyMuon = FilteredMyMuons::iterator;
 
-  using MyEMH_muon = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMFwdTrack>;
+  // using MyEMH_muon = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, o2::aod::pwgem::dilepton::utils::EMFwdTrack>;
 
   o2::framework::expressions::Filter collisionFilter_centrality = (eventcuts.cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < eventcuts.cfgCentMax) || (eventcuts.cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < eventcuts.cfgCentMax);
   o2::framework::expressions::Filter collisionFilter_numContrib = eventcuts.cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < eventcuts.cfgNumContribMax;
   o2::framework::expressions::Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   o2::framework::expressions::Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = o2::soa::Filtered<MyCollisions>;
+  using FilteredMyCollision = FilteredMyCollisions::iterator;
 
   o2::framework::SliceCache cache;
   o2::framework::Preslice<o2::aod::EMPrimaryMuonEMEventIds> perCollision_muon = o2::aod::emprimarymuon::emeventId;
+
   o2::framework::expressions::Filter trackFilter_muon = o2::aod::fwdtrack::trackType == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack) && dimuoncuts.cfg_min_pt_track < o2::aod::fwdtrack::pt && o2::aod::fwdtrack::pt < dimuoncuts.cfg_max_pt_track && dimuoncuts.cfg_min_eta_track < o2::aod::fwdtrack::eta && o2::aod::fwdtrack::eta < dimuoncuts.cfg_max_eta_track;
   o2::framework::expressions::Filter ttcaFilter_muon = ifnode(dimuoncuts.enableTTCA.node(), true, o2::aod::emprimarymuon::isAssociatedToMPC == true);
+  using FilteredMyMuons = o2::soa::Filtered<MyMuons>;
+  using FilteredMyMuon = FilteredMyMuons::iterator;
 
   o2::framework::Partition<FilteredMyMuons> positive_muons = o2::aod::emprimarymuon::sign > int8_t(0);
   o2::framework::Partition<FilteredMyMuons> negative_muons = o2::aod::emprimarymuon::sign < int8_t(0);

@@ -274,10 +274,10 @@ struct FemtoPairTrackCascade {
   PROCESS_SWITCH(FemtoPairTrackCascade, processOmegaMixedEventMc, "Enable processing mixed event processing for tracks and omegas with mc information", false);
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoPairTrackCascade>(cfgc),
+    adaptAnalysisTask<FemtoPairTrackCascade>(context),
   };
   return workflow;
 }

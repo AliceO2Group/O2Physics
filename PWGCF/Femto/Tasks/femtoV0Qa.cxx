@@ -122,7 +122,7 @@ struct FemtoV0Qa {
 
   void init(o2::framework::InitContext&)
   {
-    if ((doprocessLambda + doprocessLambdaMc + doprocessK0short + doprocessK0shortMc) != 1) {
+    if ((static_cast<int>(doprocessLambda) + static_cast<int>(doprocessLambdaMc) + static_cast<int>(doprocessK0short) + static_cast<int>(doprocessK0shortMc)) != 1) {
       LOG(fatal) << "Only one process can be activated";
     }
     bool processData = doprocessLambda || doprocessK0short;
@@ -225,10 +225,10 @@ struct FemtoV0Qa {
   PROCESS_SWITCH(FemtoV0Qa, processLambdaMc, "Process lambdas with MC informaton", false);
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoV0Qa>(cfgc),
+    adaptAnalysisTask<FemtoV0Qa>(context),
   };
   return workflow;
 }

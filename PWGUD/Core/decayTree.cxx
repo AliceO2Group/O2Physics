@@ -12,6 +12,7 @@
 #include "decayTree.h"
 
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
 
 #include <TDatabasePDG.h>

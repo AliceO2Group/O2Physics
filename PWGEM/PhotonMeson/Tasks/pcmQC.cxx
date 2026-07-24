@@ -107,6 +107,8 @@ struct PCMQC {
     Configurable<float> cfg_max_eta_v0{"cfg_max_eta_v0", +0.8, "max eta for v0 photons at PV"};
     Configurable<float> cfg_min_v0radius{"cfg_min_v0radius", 4.0, "min v0 radius"};
     Configurable<float> cfg_max_v0radius{"cfg_max_v0radius", 90.0, "max v0 radius"};
+    Configurable<float> cfg_midL_v0radius{"cfg_midL_v0radius", -1.0, "middle low v0 radius for rejection if >0"};
+    Configurable<float> cfg_midH_v0radius{"cfg_midH_v0radius", -1.0, "middle high v0 radius for rejection if >0"};
     Configurable<float> cfg_max_alpha_ap{"cfg_max_alpha_ap", 0.95, "max alpha for AP cut"};
     Configurable<float> cfg_max_qt_ap{"cfg_max_qt_ap", 0.01, "max qT for AP cut"};
     Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.999, "min V0 CosPA"};
@@ -141,10 +143,10 @@ struct PCMQC {
   } pcmcuts;
 
   o2::ccdb::CcdbApi ccdbApi;
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
-  int mRunNumber;
-  float d_bz;
-  static constexpr std::string_view event_types[2] = {"before/", "after/"};
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  int mRunNumber = 0;
+  float d_bz = 0;
+  static constexpr std::array<std::string_view, 2> event_types = {"before/", "after/"};
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   void init(InitContext&)
@@ -181,10 +183,11 @@ struct PCMQC {
     }
 
     auto run3grp_timestamp = collision.timestamp();
-    o2::parameters::GRPObject* grpo = 0x0;
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!skipGRPOquery)
+    o2::parameters::GRPObject* grpo = nullptr;
+    o2::parameters::GRPMagField* grpmag = nullptr;
+    if (!skipGRPOquery) {
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    }
     if (grpo) {
       // Fetch magnetic field from ccdb for current collision
       d_bz = grpo->getNominalL3Field();
@@ -320,7 +323,7 @@ struct PCMQC {
     fV0PhotonCut.SetMinCosPA(pcmcuts.cfg_min_cospa);
     fV0PhotonCut.SetMaxPCA(pcmcuts.cfg_max_pca);
     fV0PhotonCut.SetMaxChi2KF(pcmcuts.cfg_max_chi2kf);
-    fV0PhotonCut.SetRxyRange(pcmcuts.cfg_min_v0radius, pcmcuts.cfg_max_v0radius);
+    fV0PhotonCut.SetRxyRange(pcmcuts.cfg_min_v0radius, pcmcuts.cfg_max_v0radius, pcmcuts.cfg_midL_v0radius, pcmcuts.cfg_midH_v0radius);
     fV0PhotonCut.SetAPRange(pcmcuts.cfg_max_alpha_ap, pcmcuts.cfg_max_qt_ap);
     fV0PhotonCut.RejectITSib(pcmcuts.cfg_reject_v0_on_itsib);
 
@@ -347,8 +350,7 @@ struct PCMQC {
     fV0PhotonCut.SetNClassesMl(pcmcuts.cfg_nclasses_ml);
     fV0PhotonCut.SetMlTimestampCCDB(pcmcuts.cfg_timestamp_ccdb);
     fV0PhotonCut.SetCcdbUrl(ccdburl);
-    CentType mCentralityTypeMlEnum;
-    mCentralityTypeMlEnum = static_cast<CentType>(cfgCentEstimator.value);
+    auto mCentralityTypeMlEnum = static_cast<CentType>(cfgCentEstimator.value);
     fV0PhotonCut.SetCentralityTypeMl(mCentralityTypeMlEnum);
     fV0PhotonCut.SetCutDirMl(pcmcuts.cfg_cut_dir_ml);
     fV0PhotonCut.SetMlModelPathsCCDB(pcmcuts.cfg_model_paths_ccdb);
@@ -494,7 +496,7 @@ struct PCMQC {
   {
     for (const auto& collision : collisions) {
       initCCDB(collision);
-      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      const std::array<float, 3> centralities = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
@@ -513,12 +515,11 @@ struct PCMQC {
       for (const auto& v0 : v0photons_coll) {
         auto pos = v0.template posTrack_as<aod::V0Legs>();
         auto ele = v0.template negTrack_as<aod::V0Legs>();
-
         if (!fV0PhotonCut.IsSelected<decltype(v0), aod::V0Legs>(v0)) {
           continue;
         }
         fillV0Info(v0);
-        for (auto& leg : {pos, ele}) {
+        for (const auto& leg : {pos, ele}) {
           fillV0LegInfo(leg);
         }
         if (pcmcuts.cfg_dEdx_postcalibration) {
@@ -547,8 +548,8 @@ struct PCMQC {
   PROCESS_SWITCH(PCMQC, processDummy, "Dummy function", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<PCMQC>(cfgc, TaskName{"pcm-qc"})};
+    adaptAnalysisTask<PCMQC>(context, TaskName{"pcm-qc"})};
 }

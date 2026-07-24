@@ -19,12 +19,10 @@
 
 #include "PWGDQ/Core/VarManager.h"
 
-#include <TArrayF.h>
 #include <TNamed.h>
 
 #include <Rtypes.h>
 
-#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <iostream>

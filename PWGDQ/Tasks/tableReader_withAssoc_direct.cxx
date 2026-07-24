@@ -27,11 +27,13 @@
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -52,6 +54,7 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/Track.h>
 
+#include <TH1.h>
 #include <TH2.h>
 #include <THashList.h>
 #include <TList.h>
@@ -1691,7 +1694,7 @@ struct AnalysisSameEventPairing {
 
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::CollisionQvectCentr) > 0);
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0);
-    constexpr bool fillFlowReso = eventHasQvector;
+    // constexpr bool fillFlowReso = eventHasQvector;
 
     for (auto& event : events) {
       if (!event.isEventSelected_bit(0))
@@ -1708,7 +1711,7 @@ struct AnalysisSameEventPairing {
       if (groupedAssocs.size() == 0)
         continue;
 
-      if (fillFlowReso) {
+      if (fConfigOptions.useFlowReso) {
         if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
           LOGF(fatal, "Flow resolution histograms are not available, cannot fill flow variables!");
         }

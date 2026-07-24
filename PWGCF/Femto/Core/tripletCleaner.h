@@ -18,16 +18,13 @@
 
 #include "PWGCF/Femto/Core/pairCleaner.h"
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::tripletcleaner
 {
-namespace tripletcleaner
-{
-
 class TrackTrackTrackTripletCleaner : public paircleaner::BasePairCleaner
 {
  public:
   TrackTrackTrackTripletCleaner() = default;
-  ~TrackTrackTrackTripletCleaner() = default;
+  ~TrackTrackTrackTripletCleaner() override = default;
 
   template <typename T1, typename T2, typename T3, typename T4>
   bool isCleanTriplet(T1 const& track1, T2 const& track2, T3 const& track3, T4 const& /*trackTable*/) const
@@ -63,7 +60,7 @@ class TrackTrackV0TripletCleaner : public paircleaner::BasePairCleaner
 {
  public:
   TrackTrackV0TripletCleaner() = default;
-  ~TrackTrackV0TripletCleaner() = default;
+  ~TrackTrackV0TripletCleaner() override = default;
 
   template <typename T1, typename T2, typename T3, typename T4>
   bool isCleanTriplet(T1 const& track1, T2 const& track2, T3 const& v0, T4 const& trackTable) const
@@ -103,7 +100,7 @@ class TrackTrackCascadeTripletCleaner : public paircleaner::BasePairCleaner
 {
  public:
   TrackTrackCascadeTripletCleaner() = default;
-  ~TrackTrackCascadeTripletCleaner() = default;
+  ~TrackTrackCascadeTripletCleaner() override = default;
 
   template <typename T1, typename T2, typename T3, typename T4>
   bool isCleanTriplet(T1 const& track1, T2 const& track2, T3 const& cascade, T4 const& trackTable) const
@@ -142,7 +139,6 @@ class TrackTrackCascadeTripletCleaner : public paircleaner::BasePairCleaner
   }
 };
 
-} // namespace tripletcleaner
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::tripletcleaner
 
 #endif // PWGCF_FEMTO_CORE_TRIPLETCLEANER_H_

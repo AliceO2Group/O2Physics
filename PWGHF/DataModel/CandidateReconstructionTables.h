@@ -1450,7 +1450,9 @@ DECLARE_SOA_COLUMN(CpaLambda, cpaLambda, float);
 DECLARE_SOA_COLUMN(CpaXYLambda, cpaXYLambda, float);
 DECLARE_SOA_COLUMN(CpaLambdaToXi, cpaLambdaToXi, float);
 DECLARE_SOA_COLUMN(CpaXYLambdaToXi, cpaXYLambdaToXi, float);
+DECLARE_SOA_COLUMN(RadiusLambda, radiusLambda, float);
 DECLARE_SOA_COLUMN(PBachelorPi, pBachelorPi, float);
+DECLARE_SOA_COLUMN(PtBachelorPi, ptBachelorPi, float);
 DECLARE_SOA_COLUMN(PPiFromLambda, pPiFromLambda, float);
 DECLARE_SOA_COLUMN(PPrFromLambda, pPrFromLambda, float);
 DECLARE_SOA_COLUMN(DcaXiDaughters, dcaXiDaughters, float);
@@ -1462,10 +1464,10 @@ DECLARE_SOA_COLUMN(DcaXYCascToPV, dcaXYCascToPV, float);
 DECLARE_SOA_COLUMN(DcaZCascToPV, dcaZCascToPV, float);
 // KF specific columns
 DECLARE_SOA_COLUMN(Chi2TopoXicPlusToPV, chi2TopoXicPlusToPV, float);
-DECLARE_SOA_COLUMN(Chi2TopoXicPlusToPVBefConst, chi2TopoXicPlusToPVBefConst, float);
-DECLARE_SOA_COLUMN(Chi2PrimXi, chi2PrimXi, float);
-DECLARE_SOA_COLUMN(Chi2PrimPi0, chi2PrimPi0, float);
-DECLARE_SOA_COLUMN(Chi2PrimPi1, chi2PrimPi1, float);
+DECLARE_SOA_COLUMN(Chi2XicPlusToPV, chi2XicPlusToPV, float);
+DECLARE_SOA_COLUMN(Chi2XiToPV, chi2XiToPV, float);
+DECLARE_SOA_COLUMN(Chi2Pi0ToPV, chi2Pi0ToPV, float);
+DECLARE_SOA_COLUMN(Chi2Pi1ToPV, chi2Pi1ToPV, float);
 DECLARE_SOA_COLUMN(Chi2DevPi0Pi1, chi2DevPi0Pi1, float);
 DECLARE_SOA_COLUMN(Chi2DevPi0Xi, chi2DevPi0Xi, float);
 DECLARE_SOA_COLUMN(Chi2DevPi1Xi, chi2DevPi1Xi, float);
@@ -1535,9 +1537,10 @@ DECLARE_SOA_TABLE(HfCandXicBase, "AOD", "HFCANDXICBASE",
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ImpactParameter2,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1, hf_cand::ErrorImpactParameter2,
                   // cascade specific columns
-                  hf_cand_xic_to_xi_pi_pi::PBachelorPi, hf_cand_xic_to_xi_pi_pi::PPiFromLambda, hf_cand_xic_to_xi_pi_pi::PPrFromLambda,
+                  hf_cand_xic_to_xi_pi_pi::PBachelorPi, hf_cand_xic_to_xi_pi_pi::PPiFromLambda, hf_cand_xic_to_xi_pi_pi::PPrFromLambda, hf_cand_xic_to_xi_pi_pi::PtBachelorPi,
                   hf_cand_xic_to_xi_pi_pi::CpaXi, hf_cand_xic_to_xi_pi_pi::CpaXYXi, hf_cand_xic_to_xi_pi_pi::CpaLambda, hf_cand_xic_to_xi_pi_pi::CpaXYLambda, hf_cand_xic_to_xi_pi_pi::CpaLambdaToXi, hf_cand_xic_to_xi_pi_pi::CpaXYLambdaToXi,
                   hf_cand_xic_to_xi_pi_pi::InvMassXi, hf_cand_xic_to_xi_pi_pi::InvMassLambda, hf_cand_xic_to_xi_pi_pi::InvMassXiPi0, hf_cand_xic_to_xi_pi_pi::InvMassXiPi1,
+                  hf_cand_xic_to_xi_pi_pi::RadiusLambda,
                   // DCA
                   hf_cand_xic_to_xi_pi_pi::DcaXiDaughters, hf_cand_xic_to_xi_pi_pi::DcaV0Daughters, hf_cand_xic_to_xi_pi_pi::DcaPosToPV, hf_cand_xic_to_xi_pi_pi::DcaNegToPV, hf_cand_xic_to_xi_pi_pi::DcaBachelorToPV, hf_cand_xic_to_xi_pi_pi::DcaXYCascToPV, hf_cand_xic_to_xi_pi_pi::DcaZCascToPV,
                   // PID
@@ -1580,8 +1583,8 @@ using HfCandXic = HfCandXicExt;
 DECLARE_SOA_TABLE(HfCandXicKF, "AOD", "HFCANDXICKF",
                   hf_cand_xic_to_xi_pi_pi::KfDecayLength, hf_cand_xic_to_xi_pi_pi::KfDecayLengthNormalised, hf_cand_xic_to_xi_pi_pi::KfDecayLengthXY, hf_cand_xic_to_xi_pi_pi::KfDecayLengthXYNormalised,
                   cascdata::KFCascadeChi2, cascdata::KFV0Chi2,
-                  hf_cand_xic_to_xi_pi_pi::Chi2TopoXicPlusToPVBefConst, hf_cand_xic_to_xi_pi_pi::Chi2TopoXicPlusToPV,
-                  hf_cand_xic_to_xi_pi_pi::Chi2PrimXi, hf_cand_xic_to_xi_pi_pi::Chi2PrimPi0, hf_cand_xic_to_xi_pi_pi::Chi2PrimPi1,
+                  hf_cand_xic_to_xi_pi_pi::Chi2XicPlusToPV, hf_cand_xic_to_xi_pi_pi::Chi2TopoXicPlusToPV,
+                  hf_cand_xic_to_xi_pi_pi::Chi2XiToPV, hf_cand_xic_to_xi_pi_pi::Chi2Pi0ToPV, hf_cand_xic_to_xi_pi_pi::Chi2Pi1ToPV,
                   hf_cand_xic_to_xi_pi_pi::Chi2DevPi0Pi1, hf_cand_xic_to_xi_pi_pi::Chi2DevPi0Xi, hf_cand_xic_to_xi_pi_pi::Chi2DevPi1Xi,
                   hf_cand_xic_to_xi_pi_pi::DcaPi0Pi1, hf_cand_xic_to_xi_pi_pi::DcaPi0Xi, hf_cand_xic_to_xi_pi_pi::DcaPi1Xi,
                   hf_cand_xic_to_xi_pi_pi::DcaXYPi0Pi1, hf_cand_xic_to_xi_pi_pi::DcaXYPi0Xi, hf_cand_xic_to_xi_pi_pi::DcaXYPi1Xi);

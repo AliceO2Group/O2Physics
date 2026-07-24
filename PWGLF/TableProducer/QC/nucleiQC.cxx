@@ -41,6 +41,7 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/StaticFor.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 
@@ -50,8 +51,6 @@
 #include <TRandom3.h>
 
 #include <fmt/format.h>
-
-#include <GPUROOTCartesianFwd.h>
 
 #include <algorithm>
 #include <array>
@@ -102,7 +101,7 @@ struct nucleiQC {
   Configurable<bool> cfgSkipNonReconstructedCollisions{"cfgSkipNonReconstructedCollisions", true, "Should you skip collisions for which no particle is reconstructed?"};
   Configurable<bool> cfgFillOnlyPhysicalPrimaries{"cfgFillOnlyPhysicalPrimaries", true, "Should you only select physical primary particles?"};
   Configurable<LabeledArray<int>> cfgSpeciesToProcess{"cfgSpeciesToProcess", {nuclei::speciesToProcessDefault[0], nuclei::Species::kNspecies, 1, nuclei::names, {"processNucleus"}}, "Nuclei to process"};
-  Configurable<LabeledArray<int>> cfgEventSelections{"cfgEventSelections", {nuclei::EvSelDefault[0], 8, 1, nuclei::eventSelectionLabels, nuclei::eventSelectionTitle}, "Event selections"};
+  Configurable<LabeledArray<int>> cfgEventSelections{"cfgEventSelections", {nuclei::EvSelDefault[0], nuclei::evSel::kNevSels, 1, nuclei::eventSelectionLabels, nuclei::eventSelectionTitle}, "Event selections"};
   Configurable<int> cfgCentralityEstimator{"cfgCentralityEstimator", 0, "Centrality estimator (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3)"};
   Configurable<bool> cfgPerformPidSelectionInIts{"cfgPerformPidSelectionInIts", false, "Perform PID selections in ITS"};
   Configurable<bool> cfgPerformPidSelectionInTpc{"cfgPerformPidSelectionInTpc", false, "Perform PID selections in TPC"};

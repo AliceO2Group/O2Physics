@@ -38,6 +38,30 @@
 namespace o2::aod
 {
 
+namespace pwgem::dilepton::swt
+{
+enum class swtAliases : int { // software trigger aliases for EM
+  kHighTrackMult = 0,
+  kHighFt0cFv0Mult,
+  kLMeeIMR,
+  kLMeeHMR,
+  kGlobalDimuon,
+  kDiElectron,
+  kDiMuon,
+  kNaliases
+};
+
+const std::unordered_map<std::string, int> aliasLabels = {
+  {"fHighTrackMult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighTrackMult)},
+  {"fHighFt0cFv0Mult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighFt0cFv0Mult)},
+  {"fLMeeIMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeIMR)},
+  {"fLMeeHMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeHMR)},
+  {"fGlobalDimuon", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kGlobalDimuon)},
+  {"fDiElectron", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiElectron)},
+  {"fDiMuon", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiMuon)},
+};
+} // namespace pwgem::dilepton::swt
+
 namespace emevsel
 {
 DECLARE_SOA_BITMAP_COLUMN(Selection, selection, 32); //! Bitmask of selection flags
@@ -106,13 +130,13 @@ uint32_t reduceSelectionBit(TBC const& bc)
 namespace emevent
 {
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);
-DECLARE_SOA_BITMAP_COLUMN(SWTAliasTmp, swtaliastmp, 16);             //! Bitmask of fired trigger aliases (see above for definitions) to be join to o2::aod::Collisions for skimming
-DECLARE_SOA_BITMAP_COLUMN(SWTAlias, swtalias, 16);                   //! Bitmask of fired trigger aliases (see above for definitions) to be join to o2::aod::EMEvents for analysis
+// DECLARE_SOA_BITMAP_COLUMN(TriggerMaskTmp, triggerMaskTmp, 16);       //! Bitmask of fired trigger aliases (see above for definitions) to be join to o2::aod::Collisions for skimming
+DECLARE_SOA_BITMAP_COLUMN(TriggerMask, triggerMask, 16);             //! Bitmask of fired trigger aliases (see above for definitions) to be join to o2::aod::EMEvents for analysis
 DECLARE_SOA_COLUMN(NInspectedTVX, nInspectedTVX, uint64_t);          //! the number of inspected TVX bcs per run
 DECLARE_SOA_COLUMN(NScalars, nScalers, std::vector<uint64_t>);       //! the number of triggered bcs before down scaling per run
 DECLARE_SOA_COLUMN(NSelections, nSelections, std::vector<uint64_t>); //! the number of triggered bcs after down scaling per run
-DECLARE_SOA_BITMAP_COLUMN(IsAnalyzed, isAnalyzed, 16);
-DECLARE_SOA_BITMAP_COLUMN(IsAnalyzedToI, isAnalyzedToI, 16);
+DECLARE_SOA_BITMAP_COLUMN(IsAT, isAT, 16);
+DECLARE_SOA_BITMAP_COLUMN(IsAToI, isAToI, 16);
 DECLARE_SOA_COLUMN(NeeULS, neeuls, int);
 DECLARE_SOA_COLUMN(NeeLSpp, neelspp, int);
 DECLARE_SOA_COLUMN(NeeLSmm, neelsmm, int);
@@ -374,33 +398,33 @@ DECLARE_SOA_TABLE_VERSIONED(EMEventsZDC_000, "AOD", "EMEVENTZDC", 0, //!   ZDC Q
 using EMEventsZDC = EMEventsZDC_000;
 using EMEventZDC = EMEventsZDC::iterator;
 
-DECLARE_SOA_TABLE(EMSWTriggerBits, "AOD", "EMSWTBIT", emevent::SWTAlias, o2::soa::Marker<1>); //! joinable to EMEvents
+DECLARE_SOA_TABLE(EMSWTriggerBits, "AOD", "EMSWTBIT", emevent::TriggerMask, o2::soa::Marker<1>); //! joinable to EMEvents
 using EMSWTriggerBit = EMSWTriggerBits::iterator;
 
-DECLARE_SOA_TABLE(EMSWTriggerInfos, "AOD", "EMSWTINFO", bc::RunNumber, emevent::NInspectedTVX, emevent::NScalars, emevent::NSelections, o2::soa::Marker<1>); //! independent table. Don't join anything.
-using EMSWTriggerInfo = EMSWTriggerInfos::iterator;
+// DECLARE_SOA_TABLE(EMSWTriggerInfos, "AOD", "EMSWTINFO", bc::RunNumber, emevent::NInspectedTVX, emevent::NScalars, emevent::NSelections, o2::soa::Marker<1>); //! independent table. Don't join anything.
+// using EMSWTriggerInfo = EMSWTriggerInfos::iterator;
 
-DECLARE_SOA_TABLE(EMSWTriggerATCounters, "AOD", "EMSWTAT", emevent::IsAnalyzed, o2::soa::Marker<1>); //! independent table. Don't join anything.
+DECLARE_SOA_TABLE(EMSWTriggerATCounters, "AOD", "EMSWTAT", emevent::IsAT, o2::soa::Marker<1>); //! independent table. Don't join anything.
 using EMSWTriggerATCounter = EMSWTriggerATCounters::iterator;
 
-DECLARE_SOA_TABLE(EMSWTriggerTOICounters, "AOD", "EMSWTTOI", emevent::IsAnalyzedToI, o2::soa::Marker<1>); //! independent table. Don't join anything.
-using EMSWTriggerTOICounter = EMSWTriggerTOICounters::iterator;
+DECLARE_SOA_TABLE(EMSWTriggerATOICounters, "AOD", "EMSWTATOI", emevent::IsAToI, o2::soa::Marker<1>); //! independent table. Don't join anything.
+using EMSWTriggerATOICounter = EMSWTriggerATOICounters::iterator;
 
-DECLARE_SOA_TABLE(EMSWTriggerBitsTMP, "AOD", "EMSWTBITTMP", emevent::SWTAliasTmp, o2::soa::Marker<2>); //! joinable to o2::aod::Collisions
+DECLARE_SOA_TABLE(EMSWTriggerBitsTMP, "AOD", "EMSWTBITTMP", emevent::TriggerMask, o2::soa::Marker<2>); //! joinable to o2::aod::Collisions
 using EMSWTriggerBitTMP = EMSWTriggerBitsTMP::iterator;
 
-DECLARE_SOA_TABLE(EMSWTriggerInfosTMP, "AOD", "EMSWTINFOTMP", bc::RunNumber, emevent::NInspectedTVX, emevent::NScalars, emevent::NSelections, o2::soa::Marker<2>);
-using EMSWTriggerInfoTMP = EMSWTriggerInfosTMP::iterator;
+// DECLARE_SOA_TABLE(EMSWTriggerInfosTMP, "AOD", "EMSWTINFOTMP", bc::RunNumber, emevent::NInspectedTVX, emevent::NScalars, emevent::NSelections, o2::soa::Marker<2>);
+// using EMSWTriggerInfoTMP = EMSWTriggerInfosTMP::iterator;
 
-DECLARE_SOA_TABLE(EMSWTriggerATCountersTMP, "AOD", "EMSWTATTMP", emevent::IsAnalyzed, o2::soa::Marker<2>); //! independent table. Don't join anything.
+DECLARE_SOA_TABLE(EMSWTriggerATCountersTMP, "AOD", "EMSWTATTMP", emevent::IsAT, o2::soa::Marker<2>); //! independent table. Don't join anything.
 using EMSWTriggerATCounterTMP = EMSWTriggerATCountersTMP::iterator;
 
-DECLARE_SOA_TABLE(EMSWTriggerTOICountersTMP, "AOD", "EMSWTTOITMP", emevent::IsAnalyzedToI, o2::soa::Marker<2>); //! independent table. Don't join anything.
-using EMSWTriggerTOICounterTMP = EMSWTriggerTOICountersTMP::iterator;
+DECLARE_SOA_TABLE(EMSWTriggerATOICountersTMP, "AOD", "EMSWTATOITMP", emevent::IsAToI, o2::soa::Marker<2>); //! independent table. Don't join anything.
+using EMSWTriggerATOICounterTMP = EMSWTriggerATOICountersTMP::iterator;
 
-DECLARE_SOA_TABLE(EMEventsProperty, "AOD", "EMEVENTPROP", //! joinable to EMEvents
-                  emevent::SpherocityPtWeighted, emevent::SpherocityPtUnWeighted, emevent::NtrackSpherocity);
-using EMEventProperty = EMEventsProperty::iterator;
+// DECLARE_SOA_TABLE(EMEventsProperty, "AOD", "EMEVENTPROP", //! joinable to EMEvents
+//                   emevent::SpherocityPtWeighted, emevent::SpherocityPtUnWeighted, emevent::NtrackSpherocity);
+// using EMEventProperty = EMEventsProperty::iterator;
 
 DECLARE_SOA_TABLE(EMEventsNee, "AOD", "EMEVENTNEE", emevent::NeeULS, emevent::NeeLSpp, emevent::NeeLSmm); // joinable to EMEvents or o2::aod::Collisions
 using EMEventNee = EMEventsNee::iterator;
@@ -992,6 +1016,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * 
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(FwdDCAXY, fwdDcaXY, [](float dcaX, float dcaY) -> float { return std::hypot(dcaX, dcaY); });
+DECLARE_SOA_DYNAMIC_COLUMN(Chi2IP, chi2IP, [](float dcaX, float dcaY, float cXX, float cXY, float cYY) -> float {
+  float det = cXX * cYY - cXY * cXY; // determinanat
+  return (det < 0.f) ? 1e+10 : (dcaX * dcaX * cYY + dcaY * dcaY * cXX - 2.f * dcaX * dcaY * cXY) / det;
+});
 DECLARE_SOA_DYNAMIC_COLUMN(NClustersMFT, nClustersMFT, //! Number of MFT clusters
                            [](uint64_t mftClusterSizesAndTrackFlags) -> uint8_t {
                              uint8_t nClusters = 0;
@@ -1107,7 +1136,32 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuons_003, "AOD", "EMPRIMARYMU", 3, //!
                             emprimarymuon::Py<fwdtrack::Pt, fwdtrack::Phi>,
                             emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>);
 
-using EMPrimaryMuons = EMPrimaryMuons_003;
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuons_004, "AOD", "EMPRIMARYMU", 4, //!
+                            o2::soa::Index<>, emprimarymuon::CollisionId,
+                            emprimarymuon::FwdTrackId, emprimarymuon::MFTTrackId, emprimarymuon::MCHTrackId, fwdtrack::TrackType,
+                            fwdtrack::Pt, fwdtrack::Eta, fwdtrack::Phi, emprimarymuon::Sign,
+                            fwdtrack::FwdDcaX, fwdtrack::FwdDcaY, emprimarymuon::CXXatDCA, emprimarymuon::CYYatDCA, emprimarymuon::CXYatDCA,
+                            emprimarymuon::PtMatchedMCHMID, emprimarymuon::EtaMatchedMCHMID, emprimarymuon::PhiMatchedMCHMID,
+
+                            fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
+                            fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT, emprimarymuon::DiffChi2MatchMCHMFT,
+                            fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards,
+                            fwdtrack::MFTClusterSizesAndTrackFlags, emprimarymuon::Chi2MFT, emprimarymuon::IsAssociatedToMPC, emprimarymuon::IsAmbiguous,
+
+                            // dynamic column
+                            emprimarymuon::Signed1Pt<fwdtrack::Pt, emprimarymuon::Sign>,
+                            emprimarymuon::Tgl<fwdtrack::Eta>,
+                            emprimarymuon::NClustersMFT<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            fwdtrack::IsCA<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            emprimarymuon::MFTClusterMap<fwdtrack::MFTClusterSizesAndTrackFlags>,
+                            emprimarymuon::P<fwdtrack::Pt, fwdtrack::Eta>,
+                            emprimarymuon::Px<fwdtrack::Pt, fwdtrack::Phi>,
+                            emprimarymuon::Py<fwdtrack::Pt, fwdtrack::Phi>,
+                            emprimarymuon::Pz<fwdtrack::Pt, fwdtrack::Eta>,
+                            emprimarymuon::FwdDCAXY<fwdtrack::FwdDcaX, fwdtrack::FwdDcaY>,
+                            emprimarymuon::Chi2IP<fwdtrack::FwdDcaX, fwdtrack::FwdDcaY, emprimarymuon::CXXatDCA, emprimarymuon::CXYatDCA, emprimarymuon::CYYatDCA>);
+
+using EMPrimaryMuons = EMPrimaryMuons_004;
 // iterators
 using EMPrimaryMuon = EMPrimaryMuons::iterator;
 
@@ -1128,7 +1182,16 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuonsCov_002, "AOD", "EMPRIMARYMUCOV", 2, /
                             o2::aod::fwdtrack::C1PtPhi,
                             o2::aod::fwdtrack::C1PtTgl,
                             o2::aod::fwdtrack::C1Pt21Pt2);
-using EMPrimaryMuonsCov = EMPrimaryMuonsCov_002;
+
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryMuonsCov_003, "AOD", "EMPRIMARYMUCOV", 3, //! at PV. Signed1Pt, Tgl and Phi are in EMPrimaryMuons table.
+                            fwdtrack::X, fwdtrack::Y, fwdtrack::Z,
+                            o2::aod::fwdtrack::CXX,
+                            o2::aod::fwdtrack::CXY, o2::aod::fwdtrack::CYY,
+                            o2::aod::fwdtrack::CPhiX, o2::aod::fwdtrack::CPhiY, o2::aod::fwdtrack::CPhiPhi,
+                            o2::aod::fwdtrack::CTglX, o2::aod::fwdtrack::CTglY, o2::aod::fwdtrack::CTglPhi, o2::aod::fwdtrack::CTglTgl,
+                            o2::aod::fwdtrack::C1PtX, o2::aod::fwdtrack::C1PtY, o2::aod::fwdtrack::C1PtPhi, o2::aod::fwdtrack::C1PtTgl, o2::aod::fwdtrack::C1Pt21Pt2);
+
+using EMPrimaryMuonsCov = EMPrimaryMuonsCov_003;
 // iterators
 using EMPrimaryMuonCov = EMPrimaryMuonsCov::iterator;
 
@@ -1150,9 +1213,9 @@ DECLARE_SOA_TABLE(EMPrimaryMuonsPrefilterBitDerived, "AOD", "PRMMUPFBDERIVED", e
 // iterators
 using EMPrimaryMuonPrefilterBitDerived = EMPrimaryMuonsPrefilterBitDerived::iterator;
 
-DECLARE_SOA_TABLE(EMPrimaryMuonsMatchMC, "AOD", "EMMUONMATCHMC", emprimarymuon::IsCorrectMatchMFTMCH); // To be joined with EMPrimaryMuons table at analysis level. only for MC.
-// iterators
-using EMPrimaryMuonMatchMC = EMPrimaryMuonsMatchMC::iterator;
+// DECLARE_SOA_TABLE(EMPrimaryMuonsMatchMC, "AOD", "EMMUONMATCHMC", emprimarymuon::IsCorrectMatchMFTMCH); // To be joined with EMPrimaryMuons table at analysis level. only for MC.
+// // iterators
+// using EMPrimaryMuonMatchMC = EMPrimaryMuonsMatchMC::iterator;
 
 namespace oldemprimarytrack
 {

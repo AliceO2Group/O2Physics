@@ -29,8 +29,6 @@
 
 #include "PWGLF/DataModel/mcCentrality.h"
 
-#include "Common/DataModel/Centrality.h"
-
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -40,7 +38,6 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/Logger.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
@@ -53,8 +50,9 @@
 #include <TPDGCode.h>
 #include <TTree.h>
 
+#include <RtypesCore.h>
+
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <vector>
 
