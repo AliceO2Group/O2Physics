@@ -1226,28 +1226,28 @@ struct HfTaskFlow {
       if (mEfficiencyTpc == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for TPC tracks from %s", configTask.loadEfficienciesForTpc.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", configTask.loadEfficienciesForTpc.value.c_str(), (void*)mEfficiencyTpc);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", configTask.loadEfficienciesForTpc.value.c_str(), static_cast<void*>(mEfficiencyTpc));
     }
     if (configTask.loadEfficienciesForMft.value.empty() == false) {
       mEfficiencyMft = ccdb->getForTimeStamp<TH3D>(configTask.loadEfficienciesForTpc, timestamp);
       if (mEfficiencyMft == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for MFT tracks from %s", configTask.loadEfficienciesForMft.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", configTask.loadEfficienciesForMft.value.c_str(), (void*)mEfficiencyMft);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", configTask.loadEfficienciesForMft.value.c_str(), static_cast<void*>(mEfficiencyMft));
     }
     if (configTask.loadEfficienciesForNch.value.empty() == false) {
       mEfficiencyNch = ccdb->getForTimeStamp<TH1D>(configTask.loadEfficienciesForNch, timestamp);
       if (!mEfficiencyNch) {
         LOGF(fatal, "Could not load efficiency histogram for Nch estimator from %s", configTask.loadEfficienciesForNch.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", configTask.loadEfficienciesForNch.value.c_str(), (void*)mEfficiencyNch);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", configTask.loadEfficienciesForNch.value.c_str(), static_cast<void*>(mEfficiencyNch));
     }
     if (configTask.loadCentralityWeight.value.empty() == false) {
       mCentralityWeight = ccdb->getForTimeStamp<TH1D>(configTask.loadCentralityWeight, timestamp);
       if (mCentralityWeight == nullptr) {
         LOGF(fatal, "Could not load centrality weight correction from %s", configTask.loadCentralityWeight.value.c_str());
       }
-      LOGF(info, "Loaded centrality weight from %s (%p)", configTask.loadCentralityWeight.value.c_str(), (void*)mCentralityWeight);
+      LOGF(info, "Loaded centrality weight from %s (%p)", configTask.loadCentralityWeight.value.c_str(), static_cast<void*>(mCentralityWeight));
     }
     areCorrectionsLoaded = true;
   }
