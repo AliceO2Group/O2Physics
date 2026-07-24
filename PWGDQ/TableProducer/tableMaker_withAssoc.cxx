@@ -26,6 +26,7 @@
 #include "PWGDQ/Core/MuonMatchingMlResponse.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
@@ -155,6 +156,7 @@ constexpr static uint32_t gkEventFillMapWithMultsExtra = VarManager::ObjTypes::B
 //  constexpr static uint32_t gkEventFillMapWithCentRun2 = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCentRun2; // Unused variable
 // constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID | VarManager::ObjTypes::TrackPIDExtra;
+constexpr static uint32_t gkTrackFillMapWithCovWithEMCal = gkTrackFillMapWithCov | VarManager::ObjTypes::TrackEMCal;
 constexpr static uint32_t gkTrackFillMapWithV0Bits = gkTrackFillMapWithCov | VarManager::ObjTypes::TrackV0Bits;
 constexpr static uint32_t gkTrackFillMapWithV0BitsNoTOF = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackV0Bits | VarManager::ObjTypes::TrackTPCPID;
 constexpr static uint32_t gkTrackFillMapNoTOF = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackTPCPID;
@@ -176,7 +178,8 @@ enum SkimStatsHists {
   kStatsMuons,
   kStatsOrphanTracks,
   kStatsZorroInfo,
-  kStatsZorroSel
+  kStatsZorroSel,
+  kStatsEMCal
 };
 
 namespace dqtablemaker_helpers
@@ -204,6 +207,8 @@ struct TableMaker {
     Produces<ReducedTracksBarrelCov> trackBarrelCov;
     Produces<ReducedTracksBarrelPID> trackBarrelPID;
     Produces<ReducedTracksAssoc> trackBarrelAssoc;
+    Produces<ReducedEMCals> emcal;
+    Produces<ReducedTracksBarrelEMCal> trackBarrelEMCal;
     Produces<ReducedMuons> muonBasic;
     Produces<ReducedMuonsExtra> muonExtra;
     Produces<ReducedMuonsCov> muonCov;
@@ -230,6 +235,7 @@ struct TableMaker {
     Configurable<std::string> fConfigEventCutsJSON{"cfgEventCutsJSON", "", "Additional event selection in JSON format"};
     Configurable<std::string> fConfigTrackCutsJSON{"cfgBarrelTrackCutsJSON", "", "Additional list of barrel track cuts in JSON format"};
     Configurable<std::string> fConfigMuonCutsJSON{"cfgMuonCutsJSON", "", "Additional list of muon cuts in JSON format"};
+    Configurable<std::string> fConfigEMCalCutsJSON{"cfgEMCalClusterCutsJSON", "", "List of EMCal cluster cuts in JSON format; if empty, all clusters are written"};
   } fConfigCuts;
 
   // RCT selection
@@ -255,6 +261,7 @@ struct TableMaker {
     Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
+    Configurable<std::string> fConfigAddEMCalHistogram{"cfgAddEMCalHistogram", "emcal", "Comma separated list of histogram subgroups for the EMCal cluster classes"};
     Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
     Configurable<std::string> fConfigIrEstimator{"cfgIrEstimator", "", "Estimator of the interaction rate (pp,OO --> T0VTX, Pb-Pb --> ZNC hadronic), to be used with cfgFillBcStat"};
   } fConfigHistOutput;
@@ -334,6 +341,7 @@ struct TableMaker {
   AnalysisCompositeCut* fEventCut = nullptr;     //! Event selection cut
   std::vector<AnalysisCompositeCut*> fTrackCuts; //! Barrel track cuts
   std::vector<AnalysisCompositeCut*> fMuonCuts;  //! Muon track cuts
+  std::vector<AnalysisCompositeCut*> fEMCalCuts; //! EMCal cluster cuts
 
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
   int fCurrentRun = -1;       // needed to detect if the run changed and trigger update of calibrations etc.
@@ -345,6 +353,16 @@ struct TableMaker {
   std::map<uint32_t, uint32_t> fFwdTrackIndexMapReversed; // key: new fwd-track global index, value: fwd-track global index
   std::map<uint32_t, uint8_t> fFwdTrackFilterMap;         // key: fwd-track global index, value: fwd-track filter map
   std::map<uint32_t, uint32_t> fMftIndexMap;              // key: MFT tracklet global index, value: new MFT tracklet global index
+  std::map<uint32_t, uint32_t> fEmcalIndexMap;            // key: EMCal cluster global index, value: skimmed cluster index
+
+  // best (smallest delta-R) matched skimmed EMCal cluster for a barrel track
+  struct EMCalMatch {
+    int32_t clusterIdx = -1;
+    float deltaEta = -999.0f;
+    float deltaPhi = -999.0f;
+    float deltaR2 = 999.0f;
+  };
+  std::map<uint32_t, EMCalMatch> fTrackEMCalMatchMap; // key: track global index, value: best matched skimmed EMCal cluster
 
   std::map<uint32_t, bool> fBestMatch;
   std::unordered_map<int64_t, int32_t> map_mfttrackcovs;
@@ -371,6 +389,8 @@ struct TableMaker {
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::MFTTrackAssoc> mfttrackIndicesPerCollision = aod::track_association::collisionId;
+  Preslice<aod::EMCALClusters> emcalClustersPerCollision = aod::emcalcluster::collisionId;
+  Preslice<aod::EMCALMatchedTracks> emcalMatchedTracksPerCluster = aod::emcalclustercell::emcalclusterId;
 
   Preslice<MyBarrelTracksWithV0Bits> preslice = aod::track::collisionId;
   Partition<MyBarrelTracksWithV0Bits> tracksPos = (((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor)) && (aod::track::tgl > static_cast<float>(0.05)));
@@ -484,9 +504,11 @@ struct TableMaker {
     // Check whether we have to define barrel or muon histograms
     bool enableBarrelHistos = (context.mOptions.get<bool>("processPP") || context.mOptions.get<bool>("processPPWithFilter") || context.mOptions.get<bool>("processPPWithFilterBarrelOnly") || context.mOptions.get<bool>("processPPBarrelOnly") ||
                                context.mOptions.get<bool>("processPbPb") || context.mOptions.get<bool>("processPbPbBarrelOnly") || context.mOptions.get<bool>("processPbPbBarrelOnlyWithV0Bits") || context.mOptions.get<bool>("processPbPbBarrelOnlyWithV0BitsNoTOF")) ||
-                              context.mOptions.get<bool>("processPbPbWithFilterBarrelOnly") || context.mOptions.get<bool>("processPPBarrelOnlyWithV0s") || context.mOptions.get<bool>("processPbPbBarrelOnlyNoTOF");
+                              context.mOptions.get<bool>("processPbPbWithFilterBarrelOnly") || context.mOptions.get<bool>("processPPBarrelOnlyWithV0s") || context.mOptions.get<bool>("processPbPbBarrelOnlyNoTOF") || context.mOptions.get<bool>("processPPBarrelOnlyWithEMCal") || context.mOptions.get<bool>("processPPWithEMCal");
 
-    bool enableMuonHistos = (context.mOptions.get<bool>("processPP") || context.mOptions.get<bool>("processPPWithFilter") || context.mOptions.get<bool>("processPPWithFilterMuonOnly") || context.mOptions.get<bool>("processPPWithFilterMuonMFT") || context.mOptions.get<bool>("processPPMuonOnly") || context.mOptions.get<bool>("processPPRealignedMuonOnly") || context.mOptions.get<bool>("processPPMuonMFT") || context.mOptions.get<bool>("processPPMuonMFTWithMultsExtra") ||
+    bool enableEMCalHistos = (context.mOptions.get<bool>("processPPBarrelOnlyWithEMCal") || context.mOptions.get<bool>("processPPWithEMCal"));
+
+    bool enableMuonHistos = (context.mOptions.get<bool>("processPP") || context.mOptions.get<bool>("processPPWithEMCal") || context.mOptions.get<bool>("processPPWithFilter") || context.mOptions.get<bool>("processPPWithFilterMuonOnly") || context.mOptions.get<bool>("processPPWithFilterMuonMFT") || context.mOptions.get<bool>("processPPMuonOnly") || context.mOptions.get<bool>("processPPRealignedMuonOnly") || context.mOptions.get<bool>("processPPMuonMFT") || context.mOptions.get<bool>("processPPMuonMFTWithMultsExtra") ||
                              context.mOptions.get<bool>("processPbPb") || context.mOptions.get<bool>("processPbPbMuonOnly") || context.mOptions.get<bool>("processPbPbWithFilterMuonOnly") || context.mOptions.get<bool>("processPbPbStreamMuonOnly") || context.mOptions.get<bool>("processPbPbRealignedMuonOnly") || context.mOptions.get<bool>("processPbPbMuonMFT"));
 
     if (enableBarrelHistos) {
@@ -505,6 +527,18 @@ struct TableMaker {
         histClasses += "TrackBarrel_PostCalibElectron;";
         histClasses += "TrackBarrel_PostCalibPion;";
         histClasses += "TrackBarrel_PostCalibProton;";
+      }
+    }
+    if (enableEMCalHistos) {
+      // EMCal cluster histograms, before selections
+      if (fDoDetailedQA) {
+        histClasses += "EMCalClusters_BeforeCuts;";
+      }
+      if (fConfigHistOutput.fConfigQA) {
+        // EMCal cluster histograms after selections; one histogram directory for each user specified selection
+        for (const auto& cut : fEMCalCuts) {
+          histClasses += Form("EMCalClusters_%s;", cut->GetName());
+        }
       }
     }
     if (enableMuonHistos) {
@@ -583,6 +617,15 @@ struct TableMaker {
       }
     }
 
+    // EMCal cluster cuts, via JSON only (there are no named EMCal cluster cuts in the CutsLibrary yet)
+    TString addEMCalCutsStr = fConfigCuts.fConfigEMCalCutsJSON.value;
+    if (addEMCalCutsStr != "") {
+      std::vector<AnalysisCut*> addEMCalCuts = dqcuts::GetCutsFromJSON(addEMCalCutsStr.Data());
+      for (const auto& t : addEMCalCuts) {
+        fEMCalCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
+      }
+    }
+
     // Muon cuts
     cutNamesStr = fConfigCuts.fConfigMuonCuts.value;
     if (!cutNamesStr.IsNull()) {
@@ -644,6 +687,13 @@ struct TableMaker {
       if (classStr.Contains("Muons")) {
         if (fConfigHistOutput.fConfigQA) {
           dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histMuonName);
+        }
+      }
+
+      TString histEMCalName = fConfigHistOutput.fConfigAddEMCalHistogram.value;
+      if (classStr.Contains("EMCalClusters")) {
+        if (fConfigHistOutput.fConfigQA) {
+          dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histEMCalName);
         }
       }
 
@@ -714,6 +764,15 @@ struct TableMaker {
 
     TH2D* histZorroSel = new TH2D("ZorroSel", "trigger of interested", 1, -0.5, 0.5, 1, -0.5, 0.5);
     fStatsList->AddAt(histZorroSel, kStatsZorroSel);
+
+    // EMCal cluster statistics: one bin per cluster selection, plus one bin counting all skimmed clusters
+    TH1D* histEMCal = new TH1D("EMCalClusterStats", "EMCal cluster statistics", fEMCalCuts.size() + 1, -0.5, fEMCalCuts.size() + 0.5);
+    ib = 1;
+    for (auto cut = fEMCalCuts.begin(); cut != fEMCalCuts.end(); cut++, ib++) {
+      histEMCal->GetXaxis()->SetBinLabel(ib, (*cut)->GetName());
+    }
+    histEMCal->GetXaxis()->SetBinLabel(fEMCalCuts.size() + 1, "Skimmed clusters");
+    fStatsList->AddAt(histEMCal, kStatsEMCal);
   }
 
   template <typename TEvents, typename TTracks, typename TBCs>
@@ -1423,12 +1482,88 @@ struct TableMaker {
                                  -999.0);
       }
 
+      // write the matched EMCal cluster index (or -1 if the track has no matched cluster);
+      //   this table has exactly one entry per skimmed track, so it is joinable to the ReducedTracks tables
+      if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackEMCal)) {
+        auto match = fTrackEMCalMatchMap.find(track.globalIndex());
+        if (match != fTrackEMCalMatchMap.end()) {
+          outTables.trackBarrelEMCal(match->second.clusterIdx, match->second.deltaEta, match->second.deltaPhi);
+        } else {
+          outTables.trackBarrelEMCal(-1, -999.0f, -999.0f);
+        }
+      }
+
       fTrackIndexMap[track.globalIndex()] = outTables.trackBasic.lastIndex();
 
       // write the skimmed collision - track association
       outTables.trackBarrelAssoc(fCollIndexMap[collision.globalIndex()], fTrackIndexMap[track.globalIndex()]);
     } // end loop over associations
   } // end skimTracks
+
+  template <typename TEMCals, typename TEMCalMatches>
+  void skimEMCal(TEMCals const& clusters, TEMCalMatches const& matchedTracks)
+  {
+    // Skim the EMCal clusters of all the selected collisions and record, for each track matched to a cluster,
+    //   the closest (smallest delta-R) skimmed cluster. This has to run before skimTracks, such that the
+    //   matching indices are available at the time the tracks are written.
+    // NOTE: only the unique clusters (aod::EMCALClusters) are skimmed here; the ambiguous clusters
+    //   (aod::EMCALAmbiguousClusters, from BCs with none or multiple reconstructed collisions) are not
+    //   associated to a collision and have no track matching, so they are left for a dedicated treatment.
+    for (auto const& [origIdx, skimIdx] : fCollIndexMap) {
+      auto groupedClusters = clusters.sliceBy(emcalClustersPerCollision, origIdx);
+      for (const auto& cluster : groupedClusters) {
+        VarManager::FillTrackEMCal(cluster);
+        if (fDoDetailedQA) {
+          fHistMan->FillHistClass("EMCalClusters_BeforeCuts", dqtablemaker_helpers::varValues());
+        }
+
+        // apply the cluster selections and fill the filtering tag and the stats histogram
+        auto clusterTempFilterMap = static_cast<uint32_t>(0);
+        int i = 0;
+        for (auto cut = fEMCalCuts.begin(); cut != fEMCalCuts.end(); cut++, i++) {
+          if ((*cut)->IsSelected(dqtablemaker_helpers::varValues())) {
+            clusterTempFilterMap |= (static_cast<uint32_t>(1) << i);
+            if (fConfigHistOutput.fConfigQA) {
+              fHistMan->FillHistClass(Form("EMCalClusters_%s", (*cut)->GetName()), dqtablemaker_helpers::varValues());
+            }
+            (dynamic_cast<TH1D*>(fStatsList->At(kStatsEMCal)))->Fill(static_cast<float>(i));
+          }
+        }
+        // if cluster selections are specified, write only the clusters which fulfill at least one of them
+        if (!fEMCalCuts.empty() && clusterTempFilterMap == 0) {
+          continue;
+        }
+        (dynamic_cast<TH1D*>(fStatsList->At(kStatsEMCal)))->Fill(static_cast<float>(fEMCalCuts.size()));
+        auto clusterFilteringTag = (static_cast<uint64_t>(clusterTempFilterMap) << VarManager::kEMCalClusterUserCutsBits);
+
+        // flag the clusters which have at least one matched track, such that a clean
+        //   "EMCal only" cluster sample (e.g. for photons) can be selected on the skimmed data
+        auto clusterMatches = matchedTracks.sliceBy(emcalMatchedTracksPerCluster, cluster.globalIndex());
+        if (clusterMatches.size() > 0) {
+          clusterFilteringTag |= (static_cast<uint64_t>(1) << VarManager::kEMCalClusterIsMatched);
+        }
+
+        outTables.emcal(skimIdx, clusterFilteringTag,
+                        cluster.energy(), cluster.coreEnergy(), cluster.rawEnergy(),
+                        cluster.eta(), cluster.phi(), cluster.m02(), cluster.m20(),
+                        cluster.nCells(), cluster.time(), cluster.isExotic(),
+                        cluster.distanceToBadChannel(), cluster.nlm(), cluster.definition(),
+                        false);
+        fEmcalIndexMap[cluster.globalIndex()] = outTables.emcal.lastIndex();
+
+        // record the track matches of this cluster; for each track keep only the closest cluster
+        for (const auto& match : clusterMatches) {
+          float deltaEta = match.deltaEta();
+          float deltaPhi = match.deltaPhi();
+          float deltaR2 = deltaEta * deltaEta + deltaPhi * deltaPhi;
+          auto existing = fTrackEMCalMatchMap.find(match.trackId());
+          if (existing == fTrackEMCalMatchMap.end() || deltaR2 < existing->second.deltaR2) {
+            fTrackEMCalMatchMap[match.trackId()] = EMCalMatch{static_cast<int32_t>(outTables.emcal.lastIndex()), deltaEta, deltaPhi, deltaR2};
+          }
+        }
+      } // end loop over clusters
+    } // end loop over skimmed collisions
+  } // end skimEMCal
 
   template <uint32_t TMFTFillMap, typename TEvent, typename TBCs>
   void skimMFT(TEvent const& collision, TBCs const& /*bcs*/, MFTTracks const& /*mfts*/, MFTTrackAssoc const& mftAssocs)
@@ -1689,7 +1824,8 @@ struct TableMaker {
             typename TTrackAssoc, typename TFwdTrackAssoc, typename TMFTTrackAssoc, typename TMFTCov, typename TFt0s, typename TFv0as, typename TFdds>
   void fullSkimming(TEvents const& collisions, TBCs const& bcs, TZdcs const& zdcs,
                     TTracks const& tracksBarrel, TMuons const& muons, TMFTTracks const& mftTracks,
-                    TTrackAssoc const& trackAssocs, TFwdTrackAssoc const& fwdTrackAssocs, TMFTTrackAssoc const& mftAssocs, TMFTCov const& mftCovs, TFt0s const& ft0s, TFv0as const& fv0as, TFdds const& fdds)
+                    TTrackAssoc const& trackAssocs, TFwdTrackAssoc const& fwdTrackAssocs, TMFTTrackAssoc const& mftAssocs, TMFTCov const& mftCovs, TFt0s const& ft0s, TFv0as const& fv0as, TFdds const& fdds,
+                    aod::EMCALClusters const* emcalClusters = nullptr, aod::EMCALMatchedTracks const* emcalMatchedTracks = nullptr)
   {
 
     if (bcs.size() > 0 && fCurrentRun != bcs.begin().runNumber()) {
@@ -1770,6 +1906,16 @@ struct TableMaker {
       outTables.trackBarrelCov.reserve(tracksBarrel.size());
       outTables.trackBarrelPID.reserve(tracksBarrel.size());
       outTables.trackBarrelAssoc.reserve(trackAssocs.size());
+    }
+
+    // skim the EMCal clusters of the selected collisions; this runs before the track skimming
+    //   such that the track to cluster matching indices are available when the tracks are written
+    if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackEMCal)) {
+      fEmcalIndexMap.clear();
+      fTrackEMCalMatchMap.clear();
+      outTables.emcal.reserve(emcalClusters->size());
+      outTables.trackBarrelEMCal.reserve(tracksBarrel.size());
+      skimEMCal(*emcalClusters, *emcalMatchedTracks);
     }
 
     if constexpr (static_cast<bool>(TMFTFillMap)) {
@@ -1860,6 +2006,17 @@ struct TableMaker {
     fullSkimming<gkEventFillMapWithMultsExtra, gkTrackFillMapWithCov, gkMuonFillMapWithCov, 0u>(collisions, bcs, nullptr, tracksBarrel, muons, nullptr, trackAssocs, fwdTrackAssocs, nullptr, nullptr, nullptr, nullptr, nullptr);
   }
 
+  // produce the full (barrel + muon) DQ skimmed data model with EMCal clusters, typically for pp (e.g. for e-mu correlations with EMCal electron ID);
+  //   requires the emcal-correction-task upstream in the workflow (for the EMCALClusters and EMCALMatchedTracks tables)
+  void processPPWithEMCal(MyEventsWithMultsExtra const& collisions, MyBCs const& bcs,
+                          MyBarrelTracksWithCov const& tracksBarrel,
+                          MyMuonsWithCov const& muons,
+                          aod::EMCALClusters const& emcalClusters, aod::EMCALMatchedTracks const& emcalMatchedTracks,
+                          TrackAssoc const& trackAssocs, FwdTrackAssoc const& fwdTrackAssocs)
+  {
+    fullSkimming<gkEventFillMapWithMultsExtra, gkTrackFillMapWithCovWithEMCal, gkMuonFillMapWithCov, 0u>(collisions, bcs, nullptr, tracksBarrel, muons, nullptr, trackAssocs, fwdTrackAssocs, nullptr, nullptr, nullptr, nullptr, nullptr, &emcalClusters, &emcalMatchedTracks);
+  }
+
   // produce the barrel-only DQ skimmed data model typically for pp/p-Pb or UPC Pb-Pb (no centrality), subscribe to the DQ event filter (filter-pp or filter-PbPb)
   void processPPWithFilterBarrelOnly(MyEventsWithMultsAndFilter const& collisions, MyBCs const& bcs, aod::Zdcs const& zdcs,
                                      MyBarrelTracksWithCov const& tracksBarrel,
@@ -1889,6 +2046,16 @@ struct TableMaker {
                            TrackAssoc const& trackAssocs)
   {
     fullSkimming<gkEventFillMapWithMultsZdc, gkTrackFillMapWithCov, 0u, 0u>(collisions, bcs, zdcs, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+  }
+
+  // produce the barrel-only DQ skimmed data model with EMCal clusters, typically for pp (no centrality);
+  //   requires the emcal-correction-task upstream in the workflow (for the EMCALClusters and EMCALMatchedTracks tables)
+  void processPPBarrelOnlyWithEMCal(MyEventsWithMults const& collisions, MyBCs const& bcs, aod::Zdcs const& zdcs,
+                                    MyBarrelTracksWithCov const& tracksBarrel,
+                                    aod::EMCALClusters const& emcalClusters, aod::EMCALMatchedTracks const& emcalMatchedTracks,
+                                    TrackAssoc const& trackAssocs)
+  {
+    fullSkimming<gkEventFillMapWithMultsZdc, gkTrackFillMapWithCovWithEMCal, 0u, 0u>(collisions, bcs, zdcs, tracksBarrel, nullptr, nullptr, trackAssocs, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, &emcalClusters, &emcalMatchedTracks);
   }
 
   // produce the barrel-only DQ skimmed barrel data model, with V0 tagged tracks
@@ -2047,11 +2214,13 @@ struct TableMaker {
   }
 
   PROCESS_SWITCH(TableMaker, processPP, "Build full DQ skimmed data model for pp/p-Pb w/o event filtering (use Zorro)", false);
+  PROCESS_SWITCH(TableMaker, processPPWithEMCal, "Build full DQ skimmed data model for pp/p-Pb w/o event filtering, with EMCal clusters", false);
   PROCESS_SWITCH(TableMaker, processPPWithFilter, "Build full DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb, w/ event filtering", false);
   PROCESS_SWITCH(TableMaker, processPPWithFilterBarrelOnly, "Build barrel only DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb, w/ event filtering", false);
   PROCESS_SWITCH(TableMaker, processPPWithFilterMuonOnly, "Build muon only DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb, w/ event filtering", false);
   PROCESS_SWITCH(TableMaker, processPPWithFilterMuonMFT, "Build muon + mft DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb, w/ event filtering", false);
   PROCESS_SWITCH(TableMaker, processPPBarrelOnly, "Build barrel only DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb", false);
+  PROCESS_SWITCH(TableMaker, processPPBarrelOnlyWithEMCal, "Build barrel only DQ skimmed data model with EMCal clusters, typically for pp", false);
   PROCESS_SWITCH(TableMaker, processPPBarrelOnlyWithV0s, "Build barrel only DQ skimmed data model, pp like, with V0 tagged tracks", false);
   PROCESS_SWITCH(TableMaker, processPPMuonOnly, "Build muon only DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb", false);
   PROCESS_SWITCH(TableMaker, processPPRealignedMuonOnly, "Build realigned muon only DQ skimmed data model typically for pp/p-Pb and UPC Pb-Pb", false);

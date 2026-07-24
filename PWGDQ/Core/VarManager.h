@@ -150,7 +150,8 @@ class VarManager : public TObject
     MFTCov = BIT(27),
     TrackTOFService = BIT(28),
     ParticleMC = BIT(29),
-    MuonDca = BIT(30)
+    MuonDca = BIT(30),
+    TrackEMCal = BIT(31) // NOTE: last free bit of the uint32 track fill maps; used both for aod::EMCALClusters and ReducedEMCals
   };
 
   enum PairCandidateType {
@@ -189,6 +190,11 @@ class VarManager : public TObject
   enum MuonTrackFilteringBits {
     kMuonUserCutsBits = 0, // first bit for user muon cuts
     kMuonIsPropagated = 7  // whether the muon was propagated already
+  };
+
+  enum EMCalClusterFilteringBits {
+    kEMCalClusterIsMatched = 0,   // cluster has at least one matched track (from EMCALMatchedTracks)
+    kEMCalClusterUserCutsBits = 1 // first bit for the user EMCal cluster selections
   };
 
   // NOLINTNEXTLINE(readability-enum-initial-value)
@@ -648,6 +654,22 @@ class VarManager : public TObject
     kIsDalitzLeg,                             // Up to 8 dalitz selections
     kBarrelNAssocsInBunch = kIsDalitzLeg + 8, // number of in bunch collision associations
     kBarrelNAssocsOutOfBunch,                 // number of out of bunch collision associations
+    kEMCalEnergy,                             // EMCal cluster energy
+    kEMCalCoreEnergy,                         // EMCal cluster core energy
+    kEMCalRawEnergy,                          // EMCal cluster raw energy
+    kEMCalEta,                                // EMCal cluster pseudorapidity
+    kEMCalPhi,                                // EMCal cluster azimuthal angle
+    kEMCalM02,                                // EMCal shower shape long axis
+    kEMCalM20,                                // EMCal shower shape short axis
+    kEMCalNCells,                             // number of cells in the EMCal cluster
+    kEMCalTime,                               // EMCal cluster time
+    kEMCalIsExotic,                           // exotic EMCal cluster flag
+    kEMCalDistanceToBadChannel,               // distance of the EMCal cluster to the closest bad channel
+    kEMCalNLM,                                // number of local maxima of the EMCal cluster
+    kEMCalDefinition,                         // EMCal cluster definition
+    kEMCalEoverP,                             // EMCal cluster energy over matched track momentum
+    kEMCalMatchDeltaEta,                      // eta residual of the matched EMCal cluster w.r.t. the track
+    kEMCalMatchDeltaPhi,                      // phi residual of the matched EMCal cluster w.r.t. the track
     kNBarrelTrackVariables,
 
     // Muon track variables
@@ -1407,6 +1429,8 @@ class VarManager : public TObject
   static void FillTrack(T const& track, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillPhoton(T const& track, float* values = nullptr);
+  template <typename T>
+  static void FillTrackEMCal(T const& cluster, float trackP = -1.0f, float deltaEta = -999.0f, float deltaPhi = -999.0f, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C>
   static void FillTrackCollision(T const& track, C const& collision, float* values = nullptr);
   template <int candidateType, uint32_t fillMap, typename T1, typename T2, typename C>
@@ -3444,6 +3468,35 @@ void VarManager::FillPhoton(T const& track, float* values)
     values[kRap] = track.eta(); // photon does not know rapidity .y()
     values[kMassDau] = track.mGamma();
   }
+}
+
+template <typename T>
+void VarManager::FillTrackEMCal(T const& cluster, float trackP, float deltaEta, float deltaPhi, float* values)
+{
+  // Fill the EMCal cluster quantities; the cluster can be either an aod::EMCALCluster (skimming)
+  //   or an aod::ReducedEMCal (analysis on skimmed data), the column schemas are identical.
+  // trackP: momentum of the matched track, used to compute E/p when called in a track-cluster matching context;
+  //   the default (negative) value leaves E/p at the -999 sentinel, as for tracks without a matched cluster.
+  if (!values) {
+    values = fgValues;
+  }
+
+  values[kEMCalEnergy] = cluster.energy();
+  values[kEMCalCoreEnergy] = cluster.coreEnergy();
+  values[kEMCalRawEnergy] = cluster.rawEnergy();
+  values[kEMCalEta] = cluster.eta();
+  values[kEMCalPhi] = cluster.phi();
+  values[kEMCalM02] = cluster.m02();
+  values[kEMCalM20] = cluster.m20();
+  values[kEMCalNCells] = cluster.nCells();
+  values[kEMCalTime] = cluster.time();
+  values[kEMCalIsExotic] = cluster.isExotic();
+  values[kEMCalDistanceToBadChannel] = cluster.distanceToBadChannel();
+  values[kEMCalNLM] = cluster.nlm();
+  values[kEMCalDefinition] = cluster.definition();
+  values[kEMCalEoverP] = (trackP > 0.0f ? cluster.energy() / trackP : -999.0f);
+  values[kEMCalMatchDeltaEta] = deltaEta;
+  values[kEMCalMatchDeltaPhi] = deltaPhi;
 }
 
 template <typename U, typename T>
