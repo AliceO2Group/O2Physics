@@ -646,52 +646,78 @@ struct JetHadronsPid {
     double const buffer = 999.0;
     double pt = track.pt();
 
-    double dPi = 0;
-    double dKa = 0;
-    double dPr = 0;
+    double distForPionsPi = 0;
+    double distForPionsKa = 0;
+    double distForPionsPr = 0;
+
+    double distForKaonsPi = 0;
+    double distForKaonsKa = 0;
+    double distForKaonsPr = 0;
+
+    double distForProtonsPi = 0;
+    double distForProtonsKa = 0;
+    double distForProtonsPr = 0;
 
     if (pt < cfg.ptThresholdPion) {
-      dPi = std::abs(track.tpcNSigmaPi());
+      distForPionsPi = std::abs(track.tpcNSigmaPi());
+      distForPionsKa = std::abs(track.tpcNSigmaKa());
+      distForPionsPr = std::abs(track.tpcNSigmaPr());
     } else {
       if (track.hasTOF()) {
-        dPi = std::hypot(track.tofNSigmaPi(), track.tpcNSigmaPi());
+        distForPionsPi = std::hypot(track.tofNSigmaPi(), track.tpcNSigmaPi());
+        distForPionsKa = std::hypot(track.tofNSigmaKa(), track.tpcNSigmaKa());
+        distForPionsPr = std::hypot(track.tofNSigmaPr(), track.tpcNSigmaPr());
       } else {
-        dPi = buffer;
+        distForPionsPi = buffer;
+        distForPionsKa = buffer;
+        distForPionsPr = buffer;
       }
     }
 
     if (pt < cfg.ptThresholdKaon) {
-      dKa = std::abs(track.tpcNSigmaKa());
+      distForKaonsPi = std::abs(track.tpcNSigmaPi());
+      distForKaonsKa = std::abs(track.tpcNSigmaKa());
+      distForKaonsPr = std::abs(track.tpcNSigmaPr());
     } else {
       if (track.hasTOF()) {
-        dKa = std::hypot(track.tofNSigmaKa(), track.tpcNSigmaKa());
+        distForKaonsPi = std::hypot(track.tofNSigmaPi(), track.tpcNSigmaPi());
+        distForKaonsKa = std::hypot(track.tofNSigmaKa(), track.tpcNSigmaKa());
+        distForKaonsPr = std::hypot(track.tofNSigmaPr(), track.tpcNSigmaPr());
       } else {
-        dKa = buffer;
+        distForKaonsPi = buffer;
+        distForKaonsKa = buffer;
+        distForKaonsPr = buffer;
       }
     }
 
     if (pt < cfg.ptThresholdProton) {
-      dPr = std::abs(track.tpcNSigmaPr());
+      distForProtonsPi = std::abs(track.tpcNSigmaPi());
+      distForProtonsKa = std::abs(track.tpcNSigmaKa());
+      distForProtonsPr = std::abs(track.tpcNSigmaPr());
     } else {
       if (track.hasTOF()) {
-        dPr = std::hypot(track.tofNSigmaPr(), track.tpcNSigmaPr());
+        distForProtonsPi = std::hypot(track.tofNSigmaPi(), track.tpcNSigmaPi());
+        distForProtonsKa = std::hypot(track.tofNSigmaKa(), track.tpcNSigmaKa());
+        distForProtonsPr = std::hypot(track.tofNSigmaPr(), track.tpcNSigmaPr());
       } else {
-        dPr = buffer;
+        distForProtonsPi = buffer;
+        distForProtonsKa = buffer;
+        distForProtonsPr = buffer;
       }
     }
 
-    bool isPiMatch = (dPi <= cfg.nSigmaCut);
-    bool isKaMatch = (dKa <= cfg.nSigmaCut);
-    bool isPrMatch = (dPr <= cfg.nSigmaCut);
+    bool isPiMatch = (distForPionsPi <= cfg.nSigmaCut);
+    bool isKaMatch = (distForKaonsKa <= cfg.nSigmaCut);
+    bool isPrMatch = (distForProtonsPr <= cfg.nSigmaCut);
 
     PidResult res{.isPion = false, .isKaon = false, .isProton = false};
 
     if (cfg.pidMethod == ClosestMatch) {
-      if (isPiMatch && dPi < dKa && dPi < dPr) {
+      if (isPiMatch && distForPionsPi < distForPionsKa && distForPionsPi < distForPionsPr) {
         res.isPion = true;
-      } else if (isKaMatch && dKa < dPi && dKa < dPr) {
+      } else if (isKaMatch && distForKaonsKa < distForKaonsPi && distForKaonsKa < distForKaonsPr) {
         res.isKaon = true;
-      } else if (isPrMatch && dPr < dPi && dPr < dKa) {
+      } else if (isPrMatch && distForProtonsPr < distForProtonsPi && distForProtonsPr < distForProtonsKa) {
         res.isProton = true;
       }
     } else if (cfg.pidMethod == ExclusiveMatch) {
@@ -703,11 +729,11 @@ struct JetHadronsPid {
         res.isProton = true;
       }
     } else if (cfg.pidMethod == RejectionBased) {
-      if (isPiMatch && dKa > cfg.rejectionSigma && dPr > cfg.rejectionSigma) {
+      if (isPiMatch && distForPionsKa > cfg.rejectionSigma && distForPionsPr > cfg.rejectionSigma) {
         res.isPion = true;
-      } else if (isKaMatch && dPi > cfg.rejectionSigma && dPr > cfg.rejectionSigma) {
+      } else if (isKaMatch && distForKaonsPi > cfg.rejectionSigma && distForKaonsPr > cfg.rejectionSigma) {
         res.isKaon = true;
-      } else if (isPrMatch && dPi > cfg.rejectionSigma && dKa > cfg.rejectionSigma) {
+      } else if (isPrMatch && distForProtonsPi > cfg.rejectionSigma && distForProtonsKa > cfg.rejectionSigma) {
         res.isProton = true;
       }
     }
