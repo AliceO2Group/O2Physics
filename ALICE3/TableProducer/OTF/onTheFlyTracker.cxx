@@ -211,6 +211,7 @@ struct OnTheFlyTracker {
 
   struct : ConfigurableGroup {
     std::string prefix = "fastPrimaryTrackerSettings";
+    Configurable<bool> fastTrackShortLivedParticles{"fastTrackShortLivedParticles", false, "Use fasttracker for short lived tracks"};
     Configurable<bool> fastTrackPrimaries{"fastTrackPrimaries", false, "Use fasttracker for primary tracks. Enable with care"};
     Configurable<int> minSiliconHits{"minSiliconHits", 4, "minimum number of silicon hits to accept track"};
     Configurable<bool> applyZacceptance{"applyZacceptance", false, "apply z limits to detector layers or not"};
@@ -348,15 +349,20 @@ struct OnTheFlyTracker {
   v0candidate thisV0;
   // Constants
   static constexpr int kv0Prongs = 2;
-  static constexpr std::array<int, 3> v0PDGs = {kK0Short,
-                                                kLambda0,
-                                                kLambda0Bar};
+  static constexpr std::array<int, 3> v0PDGs = {PDG_t::kK0Short,
+                                                PDG_t::kLambda0,
+                                                PDG_t::kLambda0Bar};
 
-  static constexpr std::array<int, 5> longLivedHandledPDGs = {kElectron,
-                                                              kMuonMinus,
-                                                              kPiPlus,
-                                                              kKPlus,
-                                                              kProton};
+  static constexpr std::array<int, 5> longLivedHandledPDGs = {PDG_t::kElectron,
+                                                              PDG_t::kMuonMinus,
+                                                              PDG_t::kPiPlus,
+                                                              PDG_t::kKPlus,
+                                                              PDG_t::kProton};
+
+  static constexpr std::array<int, 5> shortLivedHandledPDGs = {PDG_t::kSigmaPlus,
+                                                               PDG_t::kSigmaMinus,
+                                                               PDG_t::kXiMinus,
+                                                               PDG_t::kOmegaMinus};
 
   static constexpr std::array<int, 4> nucleiPDGs = {o2::constants::physics::kDeuteron,
                                                     o2::constants::physics::kTriton,
@@ -760,6 +766,10 @@ struct OnTheFlyTracker {
       return o2::track::PID::Proton;
     } else if (std::abs(pdgCode) == PDG_t::kLambda0) {
       return o2::track::PID::Lambda;
+    } else if (std::abs(pdgCode) == PDG_t::kSigmaPlus) {
+      return o2::track::PID::XiMinus; // Close enough
+    } else if (std::abs(pdgCode) == PDG_t::kSigmaMinus) {
+      return o2::track::PID::XiMinus; // Close enough
     } else if (std::abs(pdgCode) == PDG_t::kXiMinus) {
       return o2::track::PID::XiMinus;
     } else if (std::abs(pdgCode) == PDG_t::kOmegaMinus) {
@@ -1875,12 +1885,14 @@ struct OnTheFlyTracker {
 
       const bool isCascadeToDecay = (mcParticle.pdgCode() == kXiMinus) && cascadeDecaySettings.decayXi;
       const bool isV0ToDecay = std::find(v0PDGs.begin(), v0PDGs.end(), mcParticle.pdgCode()) != v0PDGs.end() && v0DecaySettings.decayV0;
-
       const bool longLivedToBeHandled = std::find(longLivedHandledPDGs.begin(), longLivedHandledPDGs.end(), std::abs(mcParticle.pdgCode())) != longLivedHandledPDGs.end();
+      const bool shortLivedToBeHandled = std::find(shortLivedHandledPDGs.begin(), shortLivedHandledPDGs.end(), std::abs(mcParticle.pdgCode())) != shortLivedHandledPDGs.end();
       const bool nucleiToBeHandled = std::find(nucleiPDGs.begin(), nucleiPDGs.end(), std::abs(mcParticle.pdgCode())) != nucleiPDGs.end();
       const bool pdgsToBeHandled = longLivedToBeHandled ||
                                    (enableNucleiSmearing && nucleiToBeHandled) ||
-                                   (isCascadeToDecay) || (isV0ToDecay);
+                                   (isCascadeToDecay) || (isV0ToDecay) ||
+                                   (shortLivedToBeHandled && fastPrimaryTrackerSettings.fastTrackShortLivedParticles);
+
       if (!pdgsToBeHandled) {
         continue;
       }
@@ -1902,7 +1914,7 @@ struct OnTheFlyTracker {
       bool reconstructed = true;
       int nTrkHits = 0;
       if (enablePrimarySmearing) {
-        if (fastPrimaryTrackerSettings.fastTrackPrimaries) {
+        if (fastPrimaryTrackerSettings.fastTrackPrimaries || fastPrimaryTrackerSettings.fastTrackShortLivedParticles) {
           o2::track::TrackParCov perfectTrackParCov;
           o2::upgrade::convertMCParticleToO2Track(mcParticle, perfectTrackParCov, pdgDB);
           perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
@@ -2052,8 +2064,10 @@ struct OnTheFlyTracker {
     // Now that the multiplicity is known, we can process the particles to smear them
     for (const auto& mcParticle : mcParticles) {
       const bool longLivedToBeHandled = std::find(longLivedHandledPDGs.begin(), longLivedHandledPDGs.end(), std::abs(mcParticle.pdgCode())) != longLivedHandledPDGs.end();
+      const bool shortLivedToBeHandled = std::find(shortLivedHandledPDGs.begin(), shortLivedHandledPDGs.end(), std::abs(mcParticle.pdgCode())) != shortLivedHandledPDGs.end();
       const bool nucleiToBeHandled = std::find(nucleiPDGs.begin(), nucleiPDGs.end(), std::abs(mcParticle.pdgCode())) != nucleiPDGs.end();
-      const bool pdgsToBeHandled = longLivedToBeHandled || (enableNucleiSmearing && nucleiToBeHandled);
+      const bool pdgsToBeHandled = longLivedToBeHandled || (enableNucleiSmearing && nucleiToBeHandled) ||
+                                   (shortLivedToBeHandled && fastPrimaryTrackerSettings.fastTrackShortLivedParticles);
 
       o2::upgrade::OTFParticle otfParticle(mcParticle);
       otfParticle.setBits(mcParticle.decayerBits_raw());
@@ -2099,10 +2113,21 @@ struct OnTheFlyTracker {
       bool reconstructed = false;
       int nTrkHits = 0;
       const bool isSecondary = !otfParticle.isPrimary() && otfParticle.checkBit(o2::upgrade::DecayerBits::ProducedByDecayer) && otfParticle.isAlive();
-      if (enablePrimarySmearing && otfParticle.isPrimary()) {
+      if (enablePrimarySmearing && longLivedToBeHandled && otfParticle.isPrimary()) {
         o2::upgrade::convertMCParticleToO2Track(mcParticle, trackParCov, pdgDB);
         computeBremsstrahlungLoss(icfg, mcParticle, trackParCov);
         reconstructed = mSmearer[icfg]->smearTrack(trackParCov, mcParticle.pdgCode(), dNdEta);
+      } else if (shortLivedToBeHandled && fastPrimaryTrackerSettings.fastTrackShortLivedParticles) {
+        o2::track::TrackParCov perfectTrackParCov;
+        o2::upgrade::convertMCParticleToO2Track(mcParticle, perfectTrackParCov, pdgDB);
+        perfectTrackParCov.setPID(pdgCodeToPID(mcParticle.pdgCode()));
+        computeBremsstrahlungLoss(icfg, mcParticle, perfectTrackParCov);
+        nTrkHits = fastTracker[icfg]->FastTrack(perfectTrackParCov, trackParCov, dNdEta);
+        if (nTrkHits < fastPrimaryTrackerSettings.minSiliconHits) {
+          reconstructed = false;
+        } else {
+          reconstructed = true;
+        }
       } else if (enableSecondarySmearing && isSecondary) {
         o2::track::TrackParCov perfectTrackParCov;
         o2::upgrade::convertMCParticleToO2Track(mcParticle, perfectTrackParCov, pdgDB);
