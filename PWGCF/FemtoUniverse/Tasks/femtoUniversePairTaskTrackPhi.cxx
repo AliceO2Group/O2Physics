@@ -25,9 +25,8 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
-#include "TPDGCode.h"
-#include <CommonConstants/MathConstants.h>
 #include "CommonConstants/PhysicsConstants.h"
+#include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
@@ -44,6 +43,8 @@
 #include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
+
+#include "TPDGCode.h"
 
 #include <cmath>
 #include <cstddef>
@@ -485,7 +486,7 @@ struct FemtoUniversePairTaskTrackPhi {
       trackHistoPartPhi.fillQA<false, false>(phicandidate);
       if constexpr (isMC) {
         // reco
-        effCorrection.fillRecoHist<ParticleNo::ONE, FilteredFDCollisions>(phicandidate, o2::constants::physics::Pdg::kPhi );
+        effCorrection.fillRecoHist<ParticleNo::ONE, FilteredFDCollisions>(phicandidate, o2::constants::physics::Pdg::kPhi);
       }
     }
 
@@ -704,7 +705,7 @@ struct FemtoUniversePairTaskTrackPhi {
         }
       }
       // charge 0
-      if (pdgCode == o2::constants::physics::Pdg::kPhi) { 
+      if (pdgCode == o2::constants::physics::Pdg::kPhi) {
         registryMCtruth.fill(HIST("MCtruthPhi"), part.pt(), part.eta());
         registryMCtruth.fill(HIST("MCtruthPhiPt"), part.pt());
         effCorrection.fillTruthHist<ParticleNo::ONE, FilteredFDCollisions>(part);
