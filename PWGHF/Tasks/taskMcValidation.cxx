@@ -558,8 +558,8 @@ struct HfTaskMcValidationGen {
           } else if (origin == RecoDecay::OriginType::NonPrompt) {
             counterNonPrompt[iD]++;
           }
-        } else if (iD >= NCharmMesonChannels && iD < NCharmMesonChannels + NBeautyChannels) { // Beauty hadrons
-          counterBeauty[iD]++;                                                                // Matched already, no need to check origin for beauty hadrons
+        } else {               // Beauty hadrons
+          counterBeauty[iD]++; // Matched already, no need to check origin for beauty hadrons
         }
 
         auto daughter0 = particle.template daughters_as<Particles>().begin();
