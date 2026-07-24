@@ -302,7 +302,7 @@ class TrackPropagationModule
         }
         bool isPropagationOK = true;
         registry.fill(HIST("hPropagation"), 1.5);
-        
+
         if (track.has_collision()) {
           auto const& collision = collisions.rawIteratorAt(track.collisionId());
           if (fillTracksCov) {
