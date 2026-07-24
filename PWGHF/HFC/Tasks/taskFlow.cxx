@@ -1415,9 +1415,6 @@ struct HfTaskFlow {
     }
     if (fillHistograms) {
       registry.fill(HIST("Data/hPreciseEventCounter"), SpecificEventSelectionStep::IsRctFlagChecked);
-    }
-
-    if (fillHistograms) {
       registry.fill(HIST("Data/hEventCounter"), EventSelectionStep::AfterEventSelection);
     }
 
