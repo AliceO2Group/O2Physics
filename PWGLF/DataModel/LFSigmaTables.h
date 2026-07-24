@@ -264,6 +264,20 @@ DECLARE_SOA_DYNAMIC_COLUMN(OPAngle, opAngle,
                              return v1.Angle(v2);
                            });
 
+DECLARE_SOA_DYNAMIC_COLUMN(OPAngleKShortKStar, opAngleKShortKStar,
+                           [](float photonPx, float photonPy, float photonPz, float kshortPx, float kshortPy, float kshortPz) {
+                             TVector3 v1(photonPx + kshortPx, photonPy + kshortPy, photonPz + kshortPz);
+                             TVector3 v2(kshortPx, kshortPy, kshortPz);
+                             return v1.Angle(v2);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(OPAnglePhotonKStar, opAnglePhotonKStar,
+                           [](float photonPx, float photonPy, float photonPz, float kshortPx, float kshortPy, float kshortPz) {
+                             TVector3 v1(photonPx, photonPy, photonPz);
+                             TVector3 v2(kshortPx + photonPx, kshortPy + photonPy, kshortPz + photonPz);
+                             return v1.Angle(v2);
+                           });
+
 // Photon
 DECLARE_SOA_DYNAMIC_COLUMN(PhotonPt, photonPt, //! Transverse momentum in GeV/c
                            [](float photonPx, float photonPy) -> float {
@@ -332,6 +346,8 @@ DECLARE_SOA_TABLE(KStarCores, "AOD", "KSTARCORES",
                   kstarCore::Eta<kstarCore::PhotonPx, kstarCore::PhotonPy, kstarCore::PhotonPz, kstarCore::KShortPx, kstarCore::KShortPy, kstarCore::KShortPz>,
                   kstarCore::Radius<kstarCore::X, kstarCore::Y>,
                   kstarCore::OPAngle<kstarCore::PhotonPx, kstarCore::PhotonPy, kstarCore::PhotonPz, kstarCore::KShortPx, kstarCore::KShortPy, kstarCore::KShortPz>,
+                  kstarCore::OPAngleKShortKStar<kstarCore::PhotonPx, kstarCore::PhotonPy, kstarCore::PhotonPz, kstarCore::KShortPx, kstarCore::KShortPy, kstarCore::KShortPz>,
+                  kstarCore::OPAnglePhotonKStar<kstarCore::PhotonPx, kstarCore::PhotonPy, kstarCore::PhotonPz, kstarCore::KShortPx, kstarCore::KShortPy, kstarCore::KShortPz>,
 
                   kstarCore::PhotonPt<kstarCore::PhotonPx, kstarCore::PhotonPy>,
                   kstarCore::PhotonP<kstarCore::PhotonPx, kstarCore::PhotonPy, kstarCore::PhotonPz>,

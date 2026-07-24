@@ -115,6 +115,16 @@ o2physics_add_dpl_workflow(dimuon-mc
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(dimuon-sv
+                    SOURCES dimuonSV.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::DCAFitter O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(dimuon-sv-mc
+                    SOURCES dimuonSVMC.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2::DCAFitter O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(dimuon-v1
                     SOURCES dimuonV1.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMDileptonCore

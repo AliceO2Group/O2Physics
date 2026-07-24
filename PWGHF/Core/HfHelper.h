@@ -272,6 +272,30 @@ struct HfHelper {
   }
 
   template <typename T>
+  static auto massKFirstPiPairDsToKKPi(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+  }
+
+  template <typename T>
+  static auto massKFirstPiPairDsToPiKK(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
+  static auto massKSecondPiPairDsToKKPi(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+  }
+
+  template <typename T>
+  static auto massKSecondPiPairDsToPiKK(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng1()}, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
   static auto deltaMassPhiDsToKKPi(const T& candidate)
   {
     return std::abs(massKKPairDsToKKPi(candidate) - o2::constants::physics::MassPhi);

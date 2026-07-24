@@ -187,6 +187,7 @@ enum TrkSel {
   trkSelNClsFound,
   trkSelNClsPID,
   trkSelTPCBndr,
+  trkSelCustomDCA,
   nTrkSel
 };
 
@@ -288,12 +289,13 @@ struct FlattenictyPikp {
   struct : ConfigurableGroup {
     ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.2, 3.4, 3.6, 3.8, 4, 4.4, 4.8, 5.2, 5.6, 6, 6.5, 7, 7.5, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30}, "pT binning"};
     ConfigurableAxis axisPtV0s{"axisPtV0s", {VARIABLE_WIDTH, 0, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.2, 3.4, 3.6, 3.8, 4, 4.4, 4.8, 5.2, 5.6, 6, 6.4, 6.8, 7.2, 7.6, 8, 8.4, 8.8, 9.2, 9.6, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15, 20}, "pT V0s binning"};
+    ConfigurableAxis axisPtFine{"axisPtFine", {250, 0.1f, 20.1f}, "pT fine binning"};
     ConfigurableAxis axisFlatPerc{"axisFlatPerc", {102, -0.01, 1.01}, "Flattenicity percentiles binning"};
     ConfigurableAxis axisMultPerc{"axisMultPerc", {VARIABLE_WIDTH, 0., 5., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100.}, "T0 percentiles binning"};
     ConfigurableAxis axisVertexZ{"axisVertexZ", {80, -20., 20.}, "Vertex z binning"};
     ConfigurableAxis axisMult{"axisMult", {301, -0.5, 300.5}, "Multiplicity binning"};
-    ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -5., 5.}, "DCAxy binning"};
-    ConfigurableAxis axisDCAz{"axisDCAz", {200, -5., 5.}, "DCAz binning"};
+    ConfigurableAxis axisDCAxy{"axisDCAxy", {210, -1.05f, 1.05f}, "DCAxy binning"};
+    ConfigurableAxis axisDCAz{"axisDCAz", {210, -1.05f, 1.05f}, "DCAz binning"};
     ConfigurableAxis axisPhi = {"axisPhi", {60, 0, constants::math::TwoPI}, "#varphi binning"};
     ConfigurableAxis axisPhiMod = {"axisPhiMod", {100, 0, constants::math::PI / 9}, "fmod(#varphi,#pi/9)"};
     ConfigurableAxis axisEta = {"axisEta", {50, -1.0, 1.0}, "#eta binning"};
@@ -329,6 +331,9 @@ struct FlattenictyPikp {
     Configurable<float> cfgMomSelPiTOF{"cfgMomSelPiTOF", 0.4f, "Minimum momentum cut for TOF pions"};
     Configurable<float> cfgNsigSelKaTOF{"cfgNsigSelKaTOF", 3.0f, "Nsigma cut for TOF kaons"};
     Configurable<float> cfgBetaPlateuMax{"cfgBetaPlateuMax", 0.1f, "Beta max for Plateau electrons"};
+    Configurable<bool> cfgApplyCustomDCASel{"cfgApplyCustomDCASel", false, "Apply custom DCA selection"};
+    Configurable<std::vector<float>> cfgDcaXY{"cfgDcaXY", std::vector<float>{0.1f, 0.0f, 0.0f}, "abs dcaXY selection: [0] + [1] * pT^[2]"};
+    Configurable<std::vector<float>> cfgDcaZ{"cfgDcaZ", std::vector<float>{0.1f, 0.0f, 0.0f}, "abs dcaZ selection: [0] + [1] * pT^[2]"};
   } trkSelOpt;
 
   struct : ConfigurableGroup {
@@ -557,6 +562,7 @@ struct FlattenictyPikp {
     const AxisSpec phiAxisMod{binOpt.axisPhiMod, "fmod(#varphi,#pi/9)"};
     const AxisSpec pAxis{binOpt.axisPt, "#it{p} (GeV/#it{c})"};
     const AxisSpec ptAxis{binOpt.axisPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec ptFineAxis{binOpt.axisPtFine, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec ptAxisV0s{binOpt.axisPtV0s, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec dcaXYAxis{binOpt.axisDCAxy, "DCA_{xy} (cm)"};
     const AxisSpec dcaZAxis{binOpt.axisDCAz, "DCA_{z} (cm)"};
@@ -605,6 +611,7 @@ struct FlattenictyPikp {
     registryQC.get<TH1>(HIST("Events/hEvtSel"))->GetXaxis()->SetBinLabel(evtSelRCTFlagChecker + 1, "RCT Flag Checker");
     // Number of tracks vs centrality
     registryQC.add("Events/hNchVsCent", "Measured Nch vs Cent; centrality; Nch (|#eta|<0.8)", {kTH2F, {nChAxis, multAxis}});
+    registryQC.add("Tracks/hPtRes", "#it{p}_{T} resolution;;(#it{p}_{T}_{rec} - #it{p}_{T}_{gen})/#it{p}_{T}_{gen};", kTH2F, {ptAxis, {100, -1.0, 1.0}});
     // FV0 QA
     registryQC.add("FV0/hFV0AmplWCalib", "", {kTH2F, {channelFV0Axis, amplitudeFV0}});
     registryQC.add("FV0/hFV0AmplvsVtxzWoCalib", "", {kTH2F, {vtxzAxis, amplitudeFV0Sum}});
@@ -612,6 +619,7 @@ struct FlattenictyPikp {
     registryQC.add("FV0/hFV0amp", "", {kTH2F, {channelFV0Axis, amplitudeFV0}});
     registryQC.add("FV0/pFV0amp", "", kTProfile, {channelFV0Axis});
     registryQC.add("FV0/hFV0ampCorr", "", {kTH2F, {channelFV0Axis, amplitudeFV0}});
+    registryQC.add("FV0/pFV0ampCorr", "", kTProfile, {channelFV0Axis});
 
     LOG(info) << "Size of the QC histograms:";
     registryQC.print();
@@ -627,6 +635,7 @@ struct FlattenictyPikp {
       registryData.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelNClsFound + 1, "NClsTPCFound");
       registryData.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelNClsPID + 1, "NClsTPCPid");
       registryData.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelTPCBndr + 1, "TPC Boundary");
+      registryData.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelCustomDCA + 1, "Custom DCA sel.");
       // V0 counter
       registryData.add("Tracks/V0qa/hV0Sel", "Number of V0s; Cut; #Tracks Passed Cut", {kTH1F, {{nV0Sel, 0, nV0Sel}}});
       registryData.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelAll + 1, "All");
@@ -657,13 +666,13 @@ struct FlattenictyPikp {
           registryData.add("Tracks/postSel/hNclTPCFoundvsEta", "", {kTH2F, {etaAxis, clTpcAxis}});
           registryData.add("Tracks/postSel/hNClTPCPidvsEta", "", {kTH2F, {etaAxis, clTpcAxis}});
           registryData.add("Tracks/postSel/hTPCCluster", "N_{cluster}", kTH1F, {clTpcAxis});
-          registryData.add("Tracks/postSel/hPtVsWOcutDCA", "hPtVsWOcutDCA", kTH2F, {ptAxis, dcaXYAxis});
+          registryData.add("Tracks/postSel/hPtVsWOcutDCA", "hPtVsWOcutDCA", kTH2F, {ptFineAxis, dcaXYAxis});
           registryData.add("Tracks/postSel/hPt", "", kTH1F, {ptAxis});
           registryData.add("Tracks/postSel/hPhi", "", kTH1F, {phiAxis});
           registryData.add("Tracks/postSel/hEta", "", kTH1F, {etaAxis});
           registryData.add("Tracks/postSel/hTpcInnerParamVsP", ";Global track p (GeV/#it{c});Track p at inner wall of the TPC (GeV/#it{c});", kTH2F, {pAxis, pAxis});
-          registryData.add("Tracks/postSel/hDCAXYvsPt", "", kTH2F, {ptAxis, dcaXYAxis});
-          registryData.add("Tracks/postSel/hDCAZvsPt", "", kTH2F, {ptAxis, dcaZAxis});
+          registryData.add("Tracks/postSel/hDCAXYvsPt", "", kTH2F, {ptFineAxis, dcaXYAxis});
+          registryData.add("Tracks/postSel/hDCAZvsPt", "", kTH2F, {ptFineAxis, dcaZAxis});
           // tpc
           registryData.add("Tracks/postSel/hTPCnClsShared", " ; # shared TPC clusters TPC", kTH1F, {{165, -0.5, 164.5}});
           registryData.add("Tracks/postSel/hTPCcrossedRows", " ; # crossed TPC rows", kTH1F, {{165, -0.5, 164.5}});
@@ -686,9 +695,11 @@ struct FlattenictyPikp {
           registryData.add("Tracks/postCalib/all/hMIPVsPhi", "; #varphi; #LT dE/dx #GT_{MIP, primary tracks};", {kTH2F, {phiAxis, dEdxAxis}});
           registryData.add("Tracks/postCalib/all/pMIPVsPhi", "; #varphi; #LT dE/dx #GT_{MIP, primary tracks};", {kTProfile, {phiAxis}});
           registryData.add("Tracks/postCalib/all/hMIPVsPhiVsEta", "; #varphi; #LT dE/dx #GT_{MIP, primary tracks}; #eta;", {kTH3F, {phiAxis, dEdxAxis, etaAxis}});
+          registryData.add("Tracks/postCalib/all/hMIPNClTPCPidvsEta", ";#eta; Ncl pid", {kTH2F, {etaAxis, clTpcAxis}});
           registryData.add("Tracks/postCalib/all/hPlateauVsPhi", "; #varphi; #LT dE/dx #GT_{Plateau, primary tracks};", {kTH2F, {phiAxis, dEdxAxis}});
           registryData.add("Tracks/postCalib/all/pPlateauVsPhi", "; #varphi; #LT dE/dx #GT_{Plateau, primary tracks};", {kTProfile, {phiAxis}});
           registryData.add("Tracks/postCalib/all/hPlateauVsPhiVsEta", "; #varphi; #LT dE/dx #GT_{Plateau, primary tracks}; #eta;", {kTH3F, {phiAxis, dEdxAxis, etaAxis}});
+          registryData.add("Tracks/postCalib/all/hPlateauNClTPCPidvsEta", ";#eta; Ncl pid", {kTH2F, {etaAxis, clTpcAxis}});
           registryData.addClone("Tracks/postCalib/all/", "Tracks/preCalib/all/");
           if (cfgFillChrgType) {
             registryData.addClone("Tracks/postCalib/all/", "Tracks/postCalib/pos/");
@@ -712,6 +723,8 @@ struct FlattenictyPikp {
       registryData.add("Tracks/V0qa/pi/K0s/hArmPod", ";#alpha; #it{q}_T (GeV/c)", kTH2F, {v0SelOpt.axisArmPodAlpha, v0SelOpt.axisArmPodqT});
       registryData.add("Tracks/V0qa/el/Ga/hNclVsEta", ";#eta; #it{N}^{TPC}_cl", kTH2F, {etaAxis, clTpcAxis});
       registryData.add("Tracks/V0qa/pi/K0s/hNclVsEta", ";#eta; #it{N}^{TPC}_cl", kTH2F, {etaAxis, clTpcAxis});
+      registryData.add("Tracks/V0qa/el/Ga/hNclVsPt", ";#it{p}_{T} (GeV/#it{c}); #it{N}^{TPC}_cl", kTH2F, {ptAxis, clTpcAxis});
+      registryData.add("Tracks/V0qa/pi/K0s/hNclVsPt", ";#it{p}_{T} (GeV/#it{c}); #it{N}^{TPC}_cl", kTH2F, {ptAxis, clTpcAxis});
       registryData.add("Tracks/V0qa/el/Ga/hdEdxMIPVsEta", ";#eta; dE/dx", kTH2F, {etaAxis, dEdxAxis});
       registryData.add("Tracks/V0qa/pi/K0s/hdEdxMIPVsEta", ";#eta; dE/dx", kTH2F, {etaAxis, dEdxAxis});
       registryData.addClone("Tracks/V0qa/pi/K0s/", "Tracks/V0qa/pi/La/");
@@ -849,10 +862,6 @@ struct FlattenictyPikp {
   {
     fv0AmplCorr.clear();
     fv0AmplCorr = {};
-    // std::string fullPathCalibGain{};
-    // std::string fullPathCalibVtx{};
-    // std::string fullPathCalibDeDxMip{};
-    // std::string fullPathCalibDeDxPlateau{};
     auto runnumber = bc.runNumber();
 
     if (trkSelOpt.cfgRejectTrkAtTPCSector || v0SelOpt.cfgRejectV0sAtTPCSector) {
@@ -891,7 +900,6 @@ struct FlattenictyPikp {
       if (!fullPathCalibDeDxPlateau.empty()) {
         fullPathCalibDeDxPlateau += "/Plateau";
       }
-      // if (!fullPathCalibDeDxMip.empty()) {
       dedxcalib.lCalibObjects = ccdb->getForRun<TList>(fullPathCalibDeDxMip, runnumber);
       if (dedxcalib.lCalibObjects) {
         LOG(info) << "CCDB objects loaded successfully";
@@ -907,8 +915,6 @@ struct FlattenictyPikp {
         LOGF(fatal, "Could not load hMIPcalib from %s", fullPathCalibDeDxMip.c_str());
         dedxcalib.lCalibLoaded = false;
       }
-      // }
-      // if (!fullPathCalibDeDxPlateau.empty()) {
       dedxcalib.lCalibObjects = ccdb->getForRun<TList>(fullPathCalibDeDxPlateau, runnumber);
       if (dedxcalib.lCalibObjects) {
         LOG(info) << "CCDB objects loaded successfully";
@@ -923,13 +929,13 @@ struct FlattenictyPikp {
       } else {
         LOGF(fatal, "Could not load hPlateauCalib from %s", fullPathCalibDeDxPlateau.c_str());
       }
-      // }
     }
   }
 
   template <typename T>
   std::unique_ptr<TF1> setFuncPars(T const& vecPars)
   {
+    static_assert(!std::is_pointer<T>::value, "Pointers to pointers not allowed here");
     std::unique_ptr<TF1> fCalibDeDxFunc(new TF1("fCalibDeDxFunc", cfgCalibDeDxFunction.value.c_str(), -1., 1.));
     if (vecPars.size() >= 1) {
       for (typename T::size_type i = 0; i < vecPars.size(); i++) {
@@ -1461,6 +1467,12 @@ struct FlattenictyPikp {
       fillNclVsPhiCutQaHist<kAfter>(track, phimodn);
     }
     registryData.fill(HIST("Tracks/hTrkSel"), trkSelTPCBndr);
+    if (trkSelOpt.cfgApplyCustomDCASel) {
+      if (std::fabs(track.dcaXY()) > trkSelOpt.cfgDcaXY.value[0] + trkSelOpt.cfgDcaXY.value[1] * std::pow(track.pt(), trkSelOpt.cfgDcaXY.value[2]) || std::fabs(track.dcaZ()) > trkSelOpt.cfgDcaZ.value[0] + trkSelOpt.cfgDcaZ.value[1] * std::pow(track.pt(), trkSelOpt.cfgDcaZ.value[2])) {
+        return false;
+      }
+      registryData.fill(HIST("Tracks/hTrkSel"), trkSelCustomDCA);
+    }
     return true;
   }
 
@@ -1469,6 +1481,7 @@ struct FlattenictyPikp {
   {
     registryData.fill(HIST(CprefixV0qa) + HIST(PidDir[id]) + HIST(V0Dir[typeMother]) + HIST("hArmPod"), v0.alpha(), v0.qtarm());
     registryData.fill(HIST(CprefixV0qa) + HIST(PidDir[id]) + HIST(V0Dir[typeMother]) + HIST("hNclVsEta"), track.eta(), track.tpcNClsPID());
+    registryData.fill(HIST(CprefixV0qa) + HIST(PidDir[id]) + HIST(V0Dir[typeMother]) + HIST("hNclVsPt"), track.pt(), track.tpcNClsPID());
     registryData.fill(HIST(CprefixV0qa) + HIST(PidDir[id]) + HIST(V0Dir[typeMother]) + HIST("hdEdxMIPVsEta"), track.eta(), track.tpcSignal());
   }
 
@@ -1704,8 +1717,9 @@ struct FlattenictyPikp {
             registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hMIP"), track.eta(), dEdx);
           }
           registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hMIPVsPhi"), track.phi(), dEdx);
-          registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hMIPVsPhiVsEta"), track.phi(), dEdx, track.eta());
           registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("pMIPVsPhi"), track.phi(), dEdx);
+          registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hMIPVsPhiVsEta"), track.phi(), dEdx, track.eta());
+          registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hMIPNClTPCPidvsEta"), track.eta(), track.tpcNClsPID());
         }
         if (dEdx > trkSelOpt.cfgDeDxMIPMax + 10. && dEdx < trkSelOpt.cfgDeDxMIPMax + 30.) { // Plateau electrons
           if (std::abs(track.beta() - 1) < trkSelOpt.cfgBetaPlateuMax) {
@@ -1715,8 +1729,9 @@ struct FlattenictyPikp {
               registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hPlateau"), track.eta(), dEdx);
             }
             registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hPlateauVsPhi"), track.phi(), dEdx);
-            registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hPlateauVsPhiVsEta"), track.phi(), dEdx, track.eta());
             registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("pPlateauVsPhi"), track.phi(), dEdx);
+            registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hPlateauVsPhiVsEta"), track.phi(), dEdx, track.eta());
+            registryData.fill(HIST(Cprefix) + HIST(CstatCalib[ft]) + HIST(Ccharge[chrg]) + HIST("hPlateauNClTPCPidvsEta"), track.eta(), track.tpcNClsPID());
           }
         }
       }
@@ -1983,6 +1998,7 @@ struct FlattenictyPikp {
             registryQC.fill(HIST("FV0/pFV0amp"), chv0, amplCh);
             if (applyCalibGain) {
               registryQC.fill(HIST("FV0/hFV0ampCorr"), chv0, amplCh / fv0AmplCorr[chv0]);
+              registryQC.fill(HIST("FV0/pFV0ampCorr"), chv0, amplCh / fv0AmplCorr[chv0]);
             }
           }
           if (amplCh > Cnull) {
@@ -2325,7 +2341,6 @@ struct FlattenictyPikp {
         }
       } else {
         hPtEffGenPrim[ChistIdx]->Fill(mult, flat, mcParticle.pt());
-        // hPtEffGen[ChistIdx]->Fill(mcParticle.pt());
       }
     }
   }
@@ -2506,6 +2521,7 @@ struct FlattenictyPikp {
           });
           nTrk++;
         }
+        registryQC.fill(HIST("Tracks/hPtRes"), particle.pt(), (track.pt() - particle.pt()) / particle.pt());
       }
       registryQC.fill(HIST("Events/hNchVsCent"), nTrk, multRecGt1);
     }

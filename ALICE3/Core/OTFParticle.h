@@ -55,7 +55,7 @@ class OTFParticle
     mVt = particle.vt();
     mFlag = particle.flags();
     mStatusCode = particle.statusCode();
-    mIsFromMcParticles = true;
+    setBitOff(DecayerBits::ProducedByDecayer);
     if (particle.has_mothers()) {
       mIndicesMother = {particle.mothersIds().front(), particle.mothersIds().back()};
     }
@@ -72,7 +72,6 @@ class OTFParticle
   }
 
   // Setters
-  void setIsPrimary(const bool isPrimary) { mIsPrimary = isPrimary; }
   void setCollisionId(const int collisionId) { mCollisionId = collisionId; }
   void setPDG(const int pdg) { mPdgCode = pdg; }
   void setIndicesMother(const int start, const int stop) { mIndicesMother = {start, stop}; }
@@ -105,9 +104,9 @@ class OTFParticle
   int pdgCode() const { return mPdgCode; }
   int globalIndex() const { return mGlobalIndex; }
   int collisionId() const { return mCollisionId; }
-  bool isAlive() const { return mIsAlive; }
-  bool isPrimary() const { return mIsPrimary; }
-  bool isFromMcParticles() const { return mIsFromMcParticles; }
+  bool isAlive() const { return checkBit(DecayerBits::IsAlive); }
+  bool isPrimary() const { return checkBit(DecayerBits::IsPrimary); }
+  bool isFromMcParticles() const { return !checkBit(DecayerBits::ProducedByDecayer); }
   float weight() const
   {
     static constexpr float Weight = 1.f;
@@ -154,8 +153,8 @@ class OTFParticle
   int getMotherIndexStop() const { return mIndicesMother[1]; }
   int getDaughterIndexStart() const { return mIndicesDaughter[0]; }
   int getDaughterIndexStop() const { return mIndicesDaughter[1]; }
-  std::array<int, 2> getMothers() const { return mIndicesMother; }
-  std::array<int, 2> getDaughters() const { return mIndicesDaughter; }
+  const std::array<int, 2>& getMothers() const { return mIndicesMother; }
+  const std::array<int, 2>& getDaughters() const { return mIndicesDaughter; }
   std::span<const int> getMotherSpan() const { return hasMothers() ? std::span<const int>(mIndicesMother.data(), 2) : std::span<const int>(); }
 
   // Checks
@@ -177,7 +176,7 @@ class OTFParticle
   void setBitOn(DecayerBits bit) { mBits.set(static_cast<size_t>(bit), true); }
   void setBitOff(DecayerBits bit) { mBits.set(static_cast<size_t>(bit), false); }
 
-  std::bitset<8> getBits() const { return mBits; }
+  const std::bitset<8>& getBits() const { return mBits; }
   uint8_t getBitsValue() const { return static_cast<uint8_t>(mBits.to_ulong()); }
   void setBits(std::bitset<8> bits) { mBits = bits; }
 
@@ -186,8 +185,6 @@ class OTFParticle
   int mCollisionId{-1};
   float mVx{}, mVy{}, mVz{}, mVt{};
   float mPx{}, mPy{}, mPz{}, mE{};
-  bool mIsAlive{}, mIsFromMcParticles{false};
-  bool mIsPrimary{};
 
   int mStatusCode{};
   uint8_t mFlag{};

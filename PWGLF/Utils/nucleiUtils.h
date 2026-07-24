@@ -307,15 +307,21 @@ enum evSel {
   kIsGoodZvtxFT0vsPV,
   kIsGoodITSLayersAll,
   kIsEPtriggered,
+  kNoCollInRofStandard,
+  kNoHighMultCollInPrevRof,
+  kNoCollInTimeRangeStandard,
   kNevSels
 };
 
 static const std::vector<std::string> eventSelectionTitle{"Event selections"};
-static const std::vector<std::string> eventSelectionLabels{"TVX", "Z vtx", "TF border", "ITS ROF border", "No same-bunch pile-up", "kIsGoodZvtxFT0vsPV", "isGoodITSLayersAll", "isEPtriggered"};
+static const std::vector<std::string> eventSelectionLabels{"TVX", "Z vtx", "TF border", "ITS ROF border", "No same-bunch pile-up", "kIsGoodZvtxFT0vsPV", "isGoodITSLayersAll", "isEPtriggered", "No collision in ROF standard", "No high-multiplicity collision in previous ROF", "No collision in time range standard"};
 
-constexpr int EvSelDefault[8][1]{
+constexpr int EvSelDefault[evSel::kNevSels][1]{
   {1},
   {1},
+  {0},
+  {0},
+  {0},
   {0},
   {0},
   {0},
@@ -382,6 +388,22 @@ bool eventSelection(const Tcollision& collision, o2::framework::HistogramRegistr
     }
     registry.fill(HIST("hEventSelections"), evSel::kIsEPtriggered + 1);
   }
+
+  if (eventSelections.get(evSel::kNoCollInRofStandard) && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+    return false;
+  }
+  registry.fill(HIST("hEventSelections"), evSel::kNoCollInRofStandard + 1);
+
+  if (eventSelections.get(evSel::kNoHighMultCollInPrevRof) && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+    return false;
+  }
+  registry.fill(HIST("hEventSelections"), evSel::kNoHighMultCollInPrevRof + 1);
+
+  if (eventSelections.get(evSel::kNoCollInTimeRangeStandard) && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    return false;
+  }
+  registry.fill(HIST("hEventSelections"), evSel::kNoCollInTimeRangeStandard + 1);
+
   registry.fill(HIST("hVtxZ"), collision.posZ());
 
   return true;

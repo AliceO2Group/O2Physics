@@ -56,7 +56,6 @@ using Run3PpMcRecoCollisions = o2::soa::Join<Run3PpCollisions, o2::aod::McCollis
 using Run3PpMcGenCollisions = o2::soa::Join<o2::aod::McCollisions, o2::aod::MultsExtraMC, o2::aod::McCentFT0Ms>;
 
 using Run3PbPbCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::Mults, o2::aod::CentFT0Cs>;
-
 using Run3PbPbMcRecoCollisions = o2::soa::Join<Run3PbPbCollisions, o2::aod::McCollisionLabels>;
 using Run3PbPbMcGenCollisions = o2::soa::Join<o2::aod::McCollisions, o2::aod::MultsExtraMC, o2::aod::McCentFT0Cs>;
 
@@ -92,12 +91,12 @@ struct FemtoProducer {
   collisionbuilder::ConfCollisionFilters confCollisionFilters;
   collisionbuilder::ConfCollisionBits confCollisionBits;
   collisionbuilder::ConfCollisionRctFlags confCollisionRctFlags;
-  collisionbuilder::CollisionBuilder<collisionbuilder::ColSelHistName> collisionBuilder;
+  collisionbuilder::CollisionBuilder<collisionbuilder::ColSelHistName, collisionbuilder::CollisionFilterHistName> collisionBuilder;
 
   // track builder
   trackbuilder::TrackBuilderProducts trackBuilderProducts;
   trackbuilder::ConfTrackTables confTrackTables;
-  trackbuilder::TrackBuilder<trackbuilder::TrackSelHistName> trackBuilder;
+  trackbuilder::TrackBuilder<trackbuilder::TrackSelHistName, trackbuilder::TrackFilterHistName> trackBuilder;
   trackbuilder::ConfTrackBits confTrackBits;
   trackbuilder::ConfTrackFilters confTrackFilters;
 
@@ -106,28 +105,28 @@ struct FemtoProducer {
   v0builder::ConfV0Tables confV0Tables;
   v0builder::ConfV0Filters confV0Filters;
   v0builder::ConfK0shortBits confK0shortBits;
-  v0builder::V0Builder<modes::V0::kK0short, v0builder::K0shortSelHistName> k0shortBuilder;
+  v0builder::V0Builder<modes::V0::kK0short, v0builder::K0shortSelHistName, v0builder::K0shortFilterHistName> k0shortBuilder;
   v0builder::ConfLambdaBits confLambdaBits;
-  v0builder::V0Builder<modes::V0::kLambda, v0builder::LambdaSelHistName> lambdaBuilder;
-  v0builder::V0Builder<modes::V0::kAntiLambda, v0builder::AntilambdaSelHistName> antilambdaBuilder;
+  v0builder::V0Builder<modes::V0::kLambda, v0builder::LambdaSelHistName, v0builder::LambdaFilterHistName> lambdaBuilder;
+  v0builder::V0Builder<modes::V0::kAntiLambda, v0builder::AntilambdaSelHistName, v0builder::AntiLambdaFilterHistName> antilambdaBuilder;
 
   // cascade builder
   cascadebuilder::CascadeBuilderProducts cascadeBuilderProducts;
   cascadebuilder::ConfCascadeTables confCascadeTables;
   cascadebuilder::ConfCascadeFilters confCascadeFilters;
   cascadebuilder::ConfXiBits confXiBits;
-  cascadebuilder::CascadeBuilder<modes::Cascade::kXi, cascadebuilder::XiSelHistName> xiBuilder;
+  cascadebuilder::CascadeBuilder<modes::Cascade::kXi, cascadebuilder::XiSelHistName, cascadebuilder::XiFilterHistName> xiBuilder;
   cascadebuilder::ConfOmegaBits confOmegaBits;
-  cascadebuilder::CascadeBuilder<modes::Cascade::kOmega, cascadebuilder::OmegaSelHistName> omegaBuilder;
+  cascadebuilder::CascadeBuilder<modes::Cascade::kOmega, cascadebuilder::OmegaSelHistName, cascadebuilder::OmegaFilterHistName> omegaBuilder;
 
   // kink builder
   kinkbuilder::KinkBuilderProducts kinkBuilderProducts;
   kinkbuilder::ConfKinkTables confKinkTables;
   kinkbuilder::ConfKinkFilters confKinkFilters;
   kinkbuilder::ConfSigmaBits confSigmaBits;
-  kinkbuilder::KinkBuilder<modes::Kink::kSigma, kinkbuilder::SigmaSelHistName> sigmaBuilder;
+  kinkbuilder::KinkBuilder<modes::Kink::kSigma, kinkbuilder::SigmaSelHistName, kinkbuilder::SigmaFilterHistName> sigmaBuilder;
   kinkbuilder::ConfSigmaPlusBits confSigmaPlusBits;
-  kinkbuilder::KinkBuilder<modes::Kink::kSigmaPlus, kinkbuilder::SigmaPlusSelHistName> sigmaPlusBuilder;
+  kinkbuilder::KinkBuilder<modes::Kink::kSigmaPlus, kinkbuilder::SigmaPlusSelHistName, kinkbuilder::SigmaPlusFilterHistName> sigmaPlusBuilder;
 
   // mc builder
   mcbuilder::ConfMc confMc;
@@ -145,11 +144,13 @@ struct FemtoProducer {
   void init(o2::framework::InitContext& context)
   {
     if ((xiBuilder.fillAnyTable() || omegaBuilder.fillAnyTable()) &&
-        (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksV0sCascadesRun3ppMc)) {
+        (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sCascadesRun3PbPb &&
+         !doprocessTracksV0sCascadesKinksRun3pp && !doprocessTracksV0sCascadesRun3ppMc)) {
       LOG(fatal) << "At least one cascade table is enabled, but wrong process function is enabled. Breaking...";
     }
     if ((lambdaBuilder.fillAnyTable() || antilambdaBuilder.fillAnyTable() || k0shortBuilder.fillAnyTable()) &&
-        (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sRun3pp && !doprocessTracksV0sCascadesKinksRun3pp &&
+        (!doprocessTracksV0sCascadesRun3pp && !doprocessTracksV0sCascadesRun3PbPb &&
+         !doprocessTracksV0sRun3pp && !doprocessTracksV0sCascadesKinksRun3pp &&
          !doprocessTracksV0sRun3ppMc && !doprocessTracksV0sRun3PbPb && !doprocessTracksV0sRun3PbPbMc &&
          !doprocessTracksV0sCascadesRun3ppMc && !doprocessTracksV0sKinksRun3ppMc)) {
       LOG(fatal) << "At least one v0 table is enabled, but wrong process function is enabled. Breaking...";
@@ -544,7 +545,7 @@ struct FemtoProducer {
   {
     mcBuilder.reset(mcParticles);
     for (const auto& mcCol : mcCols) {
-      mcBuilder.fillMcCollision<modes::System::kMC>(mcCol, mcProducts);
+      mcBuilder.fillMcCollision(mcCol, mcParticles, mcProducts);
       auto particlesThisCollision = mcParticles.sliceBy(perMcCollision, mcCol.globalIndex());
       for (const auto& mcParticle : particlesThisCollision) {
         mcBuilder.fillMcParticle<modes::System::kMC>(mcParticle, mcParticles, mcCol, mcProducts);

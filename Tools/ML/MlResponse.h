@@ -185,7 +185,8 @@ class MlResponse
     const int numInputNodes = mModels[nModel].getNumInputNodes();
     const int numInputFeatures = static_cast<int>(input.size());
 
-    if (numInputNodes != numInputFeatures) {
+    // Check that the number of input nodes in the model is equal to the number of input features, except for the case where the model input is dynamic (numInputNodes == -1)
+    if (numInputNodes != numInputFeatures && numInputNodes >= 0) {
       LOG(fatal) << "Number of input nodes in the model " << mPaths[nModel] << " is different from the number of input features to be tested (" << numInputNodes << " vs " << numInputFeatures << ")";
     }
 

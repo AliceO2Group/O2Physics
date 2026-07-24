@@ -185,32 +185,45 @@ struct spvector {
     Configurable<bool> finecent3{"finecent3", false, "Apply fine centrality recentering, stage 3"};
     Configurable<bool> finecent4{"finecent4", false, "Apply fine centrality recentering, stage 4"};
     Configurable<bool> finecent5{"finecent5", false, "Apply fine centrality recentering, stage 5"};
+    Configurable<bool> finecent6{"finecent6", false, "Apply fine centrality recentering, stage 6"};
 
     Configurable<bool> finecentvx1{"finecentvx1", false, "Apply fine (cent,Vx) recentering, stage 1"};
     Configurable<bool> finecentvx2{"finecentvx2", false, "Apply fine (cent,Vx) recentering, stage 2"};
     Configurable<bool> finecentvx3{"finecentvx3", false, "Apply fine (cent,Vx) recentering, stage 3"};
     Configurable<bool> finecentvx4{"finecentvx4", false, "Apply fine (cent,Vx) recentering, stage 4"};
     Configurable<bool> finecentvx5{"finecentvx5", false, "Apply fine (cent,Vx) recentering, stage 5"};
+    Configurable<bool> finecentvx6{"finecentvx6", false, "Apply fine (cent,Vx) recentering, stage 6"};
 
     Configurable<bool> finecentvy1{"finecentvy1", false, "Apply fine (cent,Vy) recentering, stage 1"};
     Configurable<bool> finecentvy2{"finecentvy2", false, "Apply fine (cent,Vy) recentering, stage 2"};
     Configurable<bool> finecentvy3{"finecentvy3", false, "Apply fine (cent,Vy) recentering, stage 3"};
     Configurable<bool> finecentvy4{"finecentvy4", false, "Apply fine (cent,Vy) recentering, stage 4"};
     Configurable<bool> finecentvy5{"finecentvy5", false, "Apply fine (cent,Vy) recentering, stage 5"};
+    Configurable<bool> finecentvy6{"finecentvy6", false, "Apply fine (cent,Vy) recentering, stage 6"};
 
     Configurable<bool> finecentvz1{"finecentvz1", false, "Apply fine (cent,Vz) recentering, stage 1"};
     Configurable<bool> finecentvz2{"finecentvz2", false, "Apply fine (cent,Vz) recentering, stage 2"};
     Configurable<bool> finecentvz3{"finecentvz3", false, "Apply fine (cent,Vz) recentering, stage 3"};
     Configurable<bool> finecentvz4{"finecentvz4", false, "Apply fine (cent,Vz) recentering, stage 4"};
     Configurable<bool> finecentvz5{"finecentvz5", false, "Apply fine (cent,Vz) recentering, stage 5"};
+    Configurable<bool> finecentvz6{"finecentvz6", false, "Apply fine (cent,Vz) recentering, cycle 6"};
+
+    Configurable<bool> finevztime1{"finevztime1", false, "Apply fine (Vz,time) recentering, cycle 1"};
+    Configurable<bool> finevztime2{"finevztime2", false, "Apply fine (Vz,time) recentering, cycle 2"};
+    Configurable<bool> finevztime3{"finevztime3", false, "Apply fine (Vz,time) recentering, cycle 3"};
+    Configurable<bool> finevztime4{"finevztime4", false, "Apply fine (Vz,time) recentering, cycle 4"};
+    Configurable<bool> finevztime5{"finevztime5", false, "Apply fine (Vz,time) recentering, cycle 5"};
+
     Configurable<bool> useRecenterefinecentSp{"useRecenterefinecentSp", false, "use finecent Recentering with THn"};
     Configurable<bool> useRecenterefinecentvxvyvzSp{"useRecenterefinecentvxvyvzSp", false, "use finecentvxvyvz Recentering with THn"};
+    Configurable<bool> useRecenterefinevztimeSp{"useRecenterefinevztimeSp", false, "use fine (Vz,time) recentering with TH3F"};
 
     Configurable<std::string> confRecentereCentSp{"confRecentereCentSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for cent recentering"};
     Configurable<std::string> confRecentereCentSp2{"confRecentereCentSp2", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for cent recentering 2"};
     Configurable<std::string> confRecentereCentSp3{"confRecentereCentSp3", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for cent recentering 3"};
     Configurable<std::string> confRecentereCentSp4{"confRecentereCentSp4", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for cent recentering 4"};
     Configurable<std::string> confRecentereCentSp5{"confRecentereCentSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for cent recentering 5"};
+    Configurable<std::string> confRecentereCentSp6{"confRecentereCentSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for cent recentering 6"};
     Configurable<std::string> confRecentereCentVxSp{"confRecentereCentVxSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvx recentering"};
     Configurable<std::string> confRecentereCentVySp{"confRecentereCentVySp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvy recentering"};
     Configurable<std::string> confRecentereCentVzSp{"confRecentereCentVzSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvz recentering"};
@@ -226,6 +239,14 @@ struct spvector {
     Configurable<std::string> confRecentereCentVxSp5{"confRecentereCentVxSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvx5 recentering"};
     Configurable<std::string> confRecentereCentVySp5{"confRecentereCentVySp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvy5 recentering"};
     Configurable<std::string> confRecentereCentVzSp5{"confRecentereCentVzSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvz5 recentering"};
+    Configurable<std::string> confRecentereCentVxSp6{"confRecentereCentVxSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvx6 recentering"};
+    Configurable<std::string> confRecentereCentVySp6{"confRecentereCentVySp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvy6 recentering"};
+    Configurable<std::string> confRecentereCentVzSp6{"confRecentereCentVzSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvz6 recentering"};
+    Configurable<std::string> confRecentereVzTimeSp{"confRecentereVzTimeSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "TH3F path for (Vz,time) recentering, cycle 1"};
+    Configurable<std::string> confRecentereVzTimeSp2{"confRecentereVzTimeSp2", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "TH3F path for (Vz,time) recentering, cycle 2"};
+    Configurable<std::string> confRecentereVzTimeSp3{"confRecentereVzTimeSp3", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "TH3F path for (Vz,time) recentering, cycle 3"};
+    Configurable<std::string> confRecentereVzTimeSp4{"confRecentereVzTimeSp4", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "TH3F path for (Vz,time) recentering, cycle 4"};
+    Configurable<std::string> confRecentereVzTimeSp5{"confRecentereVzTimeSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "TH3F path for (Vz,time) recentering, cycle 5"};
   } confignewpro;
 
   struct : ConfigurableGroup {
@@ -393,6 +414,54 @@ struct spvector {
                  "V_{y};V_{x} (cm);<Q_{y}^{ZNC}>",
                  kTProfile2D,
                  {vyfineAxis, vxfineAxis});
+
+      histos.add("pQxZDCAvsCentTimeAfter",
+                 "<Q_{x}^{ZNA}> after recentering;"
+                 "centrality (%);Time (min);<Q_{x}^{ZNA}>",
+                 kTProfile2D,
+                 {centfineAxis, timefineAxis});
+
+      histos.add("pQyZDCAvsCentTimeAfter",
+                 "<Q_{y}^{ZNA}> after recentering;"
+                 "centrality (%);Time (min);<Q_{y}^{ZNA}>",
+                 kTProfile2D,
+                 {centfineAxis, timefineAxis});
+
+      histos.add("pQxZDCCvsCentTimeAfter",
+                 "<Q_{x}^{ZNC}> after recentering;"
+                 "centrality (%);Time (min);<Q_{x}^{ZNC}>",
+                 kTProfile2D,
+                 {centfineAxis, timefineAxis});
+
+      histos.add("pQyZDCCvsCentTimeAfter",
+                 "<Q_{y}^{ZNC}> after recentering;"
+                 "centrality (%);Time (min);<Q_{y}^{ZNC}>",
+                 kTProfile2D,
+                 {centfineAxis, timefineAxis});
+
+      histos.add("pQxZDCAvsVzTimeAfter",
+                 "<Q_{x}^{ZNA}> after recentering;"
+                 "vz (cm);Time (min);<Q_{x}^{ZNA}>",
+                 kTProfile2D,
+                 {vzfineAxis, timefineAxis});
+
+      histos.add("pQyZDCAvsVzTimeAfter",
+                 "<Q_{y}^{ZNA}> after recentering;"
+                 "vz (cm);Time (min);<Q_{y}^{ZNA}>",
+                 kTProfile2D,
+                 {vzfineAxis, timefineAxis});
+
+      histos.add("pQxZDCCvsVzTimeAfter",
+                 "<Q_{x}^{ZNC}> after recentering;"
+                 "vz (cm);Time (min);<Q_{x}^{ZNC}>",
+                 kTProfile2D,
+                 {vzfineAxis, timefineAxis});
+
+      histos.add("pQyZDCCvsVzTimeAfter",
+                 "<Q_{y}^{ZNC}> after recentering;"
+                 "vz (cm);Time (min);<Q_{y}^{ZNC}>",
+                 kTProfile2D,
+                 {vzfineAxis, timefineAxis});
     }
 
     histos.add("PsiZDCC", "PsiZDCC", kTH2F, {centfineAxis, phiAxis});
@@ -430,9 +499,10 @@ struct spvector {
   TH2F* hrecentereTimeSp2 = nullptr;
   TH2F* hrecentereTimeSp3 = nullptr;
   // One payload for each of the five iterations.
-  std::array<TH3F*, 5> hrecenterecentvxSpA{};
-  std::array<TH3F*, 5> hrecenterecentvySpA{};
-  std::array<TH3F*, 5> hrecenterecentvzSpA{};
+  std::array<TH3F*, 6> hrecenterecentvxSpA{};
+  std::array<TH3F*, 6> hrecenterecentvySpA{};
+  std::array<TH3F*, 6> hrecenterecentvzSpA{};
+  std::array<TH3F*, 5> hrecenterevztimeSpA{};
 
   bool CorrectfineCent(TH2F* hrecenterecentSp,
                        auto centrality,
@@ -649,6 +719,44 @@ struct spvector {
     qyZDCA -= meanyA;
     qxZDCC -= meanxC;
     qyZDCC -= meanyC;
+
+    return true;
+  }
+
+  bool CorrectfineVzTime(TH3F* hrecenterevstimeSp,
+                         auto vz,
+                         auto timeMin,
+                         auto& qxZDCA,
+                         auto& qyZDCA,
+                         auto& qxZDCC,
+                         auto& qyZDCC)
+  {
+    if (!hrecenterevstimeSp) {
+      return false;
+    }
+
+    // Payload axes:
+    //   X = Vz
+    //   Y = time from run start
+    //   Z = component
+    // component channels:
+    //   0.5 = Qx ZNA
+    //   1.5 = Qy ZNA
+    //   2.5 = Qx ZNC
+    //   3.5 = Qy ZNC
+    const double meanxAvstime = hrecenterevstimeSp->GetBinContent(
+      hrecenterevstimeSp->FindBin(vz + 0.00001, timeMin + 0.00001, 0.5));
+    const double meanyAvstime = hrecenterevstimeSp->GetBinContent(
+      hrecenterevstimeSp->FindBin(vz + 0.00001, timeMin + 0.00001, 1.5));
+    const double meanxCvstime = hrecenterevstimeSp->GetBinContent(
+      hrecenterevstimeSp->FindBin(vz + 0.00001, timeMin + 0.00001, 2.5));
+    const double meanyCvstime = hrecenterevstimeSp->GetBinContent(
+      hrecenterevstimeSp->FindBin(vz + 0.00001, timeMin + 0.00001, 3.5));
+
+    qxZDCA -= meanxAvstime;
+    qyZDCA -= meanyAvstime;
+    qxZDCC -= meanxCvstime;
+    qyZDCC -= meanyCvstime;
 
     return true;
   }
@@ -1042,6 +1150,16 @@ struct spvector {
           }
         }
 
+        if (confignewpro.finevztime1) {
+          if (confignewpro.useRecenterefinevztimeSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterevztimeSpA[0])) {
+            hrecenterevztimeSpA[0] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereVzTimeSp.value, bc.timestamp());
+          }
+          if (!CorrectfineVzTime(hrecenterevztimeSpA[0], vz, timeMin, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (Vz, time) recentering, stage 1");
+          }
+        }
+
         // -------------------- Stage 2 --------------------
         if (confignewpro.finecent2) {
           if (confignewpro.useRecenterefinecentSp &&
@@ -1080,6 +1198,16 @@ struct spvector {
           }
           if (!CorrectfineCentVz(hrecenterecentvzSpA[1], centrality, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
             LOGF(fatal, "Cannot apply fine (cent,Vz) recentering, stage 2");
+          }
+        }
+
+        if (confignewpro.finevztime2) {
+          if (confignewpro.useRecenterefinevztimeSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterevztimeSpA[1])) {
+            hrecenterevztimeSpA[1] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereVzTimeSp2.value, bc.timestamp());
+          }
+          if (!CorrectfineVzTime(hrecenterevztimeSpA[1], vz, timeMin, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (Vz, time) recentering, stage 2");
           }
         }
 
@@ -1124,6 +1252,16 @@ struct spvector {
           }
         }
 
+        if (confignewpro.finevztime3) {
+          if (confignewpro.useRecenterefinevztimeSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterevztimeSpA[2])) {
+            hrecenterevztimeSpA[2] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereVzTimeSp3.value, bc.timestamp());
+          }
+          if (!CorrectfineVzTime(hrecenterevztimeSpA[2], vz, timeMin, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (Vz, time) recentering, stage 3");
+          }
+        }
+
         // -------------------- Stage 4 --------------------
         if (confignewpro.finecent4) {
           if (confignewpro.useRecenterefinecentSp &&
@@ -1165,6 +1303,16 @@ struct spvector {
           }
         }
 
+        if (confignewpro.finevztime4) {
+          if (confignewpro.useRecenterefinevztimeSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterevztimeSpA[3])) {
+            hrecenterevztimeSpA[3] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereVzTimeSp4.value, bc.timestamp());
+          }
+          if (!CorrectfineVzTime(hrecenterevztimeSpA[3], vz, timeMin, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (Vz, time) recentering, stage 4");
+          }
+        }
+
         // -------------------- Stage 5 --------------------
         if (confignewpro.finecent5) {
           if (confignewpro.useRecenterefinecentSp &&
@@ -1203,6 +1351,57 @@ struct spvector {
           }
           if (!CorrectfineCentVz(hrecenterecentvzSpA[4], centrality, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
             LOGF(fatal, "Cannot apply fine (cent,Vz) recentering, stage 5");
+          }
+        }
+
+        if (confignewpro.finevztime5) {
+          if (confignewpro.useRecenterefinevztimeSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterevztimeSpA[4])) {
+            hrecenterevztimeSpA[4] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereVzTimeSp5.value, bc.timestamp());
+          }
+          if (!CorrectfineVzTime(hrecenterevztimeSpA[4], vz, timeMin, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (Vz, time) recentering, stage 5");
+          }
+        }
+
+        // -------------------- Stage 6 --------------------
+        if (confignewpro.finecent6) {
+          if (confignewpro.useRecenterefinecentSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentSpA[5])) {
+            hrecenterecentSpA[5] = ccdb->getForTimeStamp<TH2F>(confignewpro.confRecentereCentSp6.value, bc.timestamp());
+          }
+          if (!CorrectfineCent(hrecenterecentSpA[5], centrality, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine centrality recentering, stage 6");
+          }
+        }
+
+        if (confignewpro.finecentvx6) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvxSpA[5])) {
+            hrecenterecentvxSpA[5] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVxSp6.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVx(hrecenterecentvxSpA[5], centrality, vx, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vx) recentering, stage 6");
+          }
+        }
+
+        if (confignewpro.finecentvy6) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvySpA[5])) {
+            hrecenterecentvySpA[5] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVySp6.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVy(hrecenterecentvySpA[5], centrality, vy, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vy) recentering, stage 6");
+          }
+        }
+
+        if (confignewpro.finecentvz6) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvzSpA[5])) {
+            hrecenterecentvzSpA[5] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVzSp6.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVz(hrecenterecentvzSpA[5], centrality, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vz) recentering, stage 6");
           }
         }
       }

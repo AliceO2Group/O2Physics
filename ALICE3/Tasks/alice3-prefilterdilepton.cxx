@@ -14,32 +14,26 @@
 /// \author  s.scheid@cern.ch, daiki.sekihata@cern.ch
 ///
 
+#include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/prefilterDilepton.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 #include <MathUtils/Utils.h>
 
 #include <Math/GenVector/VectorUtil.h>
-#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
-#include <Math/Vector4Dfwd.h>
-#include <TMath.h>
+#include <Math/Vector4D.h>
 
-#include <cstdint>
-#include <cstdlib>
 #include <unordered_map>
 #include <vector>
 
@@ -148,6 +142,8 @@ struct Alice3DileptonPrefilter {
 
   HistogramRegistry registry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  using MyTracksWithSmearings = soa::Join<aod::Tracks, aod::TracksAlice3, aod::SmearedAlice3Dilepton>;
+  using MyTracksWithSmearing = MyTracksWithSmearings::iterator;
   using MyTracksMCs = soa::Join<aod::Tracks, aod::UpgradeTofs, aod::UpgradeTofMCs, aod::UpgradeRichs, aod::TracksAlice3>;
   using MyTracksMC = MyTracksMCs::iterator;
   using DileptonCollisions = soa::Join<aod::Collisions, aod::DiEventCentCuts>;
@@ -156,6 +152,8 @@ struct Alice3DileptonPrefilter {
   Preslice<MyTracksMCs> perCollision = aod::track::collisionId;
   Partition<MyTracksMCs> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<MyTracksMCs> negTracks = o2::aod::track::signed1Pt < 0.f;
+  Partition<MyTracksWithSmearings> posTracksWithSmearing = o2::aod::track::signed1Pt > 0.f;
+  Partition<MyTracksWithSmearings> negTracksWithSmearing = o2::aod::track::signed1Pt < 0.f;
 
   void init(InitContext&)
   {
@@ -175,10 +173,171 @@ struct Alice3DileptonPrefilter {
     registry.add("Reconstructed/Track/Eta", "Track Eta", kTH1F, {axisEta});
     registry.add("Reconstructed/Track/Phi", "Track Phi", kTH1F, {axisPhi});
     registry.add("Reconstructed/Track/Eta_Pt", "Eta vs. Pt", kTH2F, {axisPt, axisEta}, true);
-    registry.add("Reconstructed/Track/SigmaOTofvspt", "Track #sigma oTOF", kTH2F, {axisPt, axisSigmaEl});
-    registry.add("Reconstructed/Track/SigmaITofvspt", "Track #sigma iTOF", kTH2F, {axisPt, axisSigmaEl});
-    registry.add("Reconstructed/Track/SigmaRichvspt", "Track #sigma RICH", kTH2F, {axisPt, axisSigmaEl});
-    registry.add("Reconstructed/Track/outerTOFTrackLength", "Track length outer TOF", kTH1F, {axisTrackLengthOuterTOF});
+
+    if (doprocessPreFilter) {
+      registry.add("Reconstructed/Track/SigmaOTofvspt", "Track #sigma oTOF", kTH2F, {axisPt, axisSigmaEl});
+      registry.add("Reconstructed/Track/SigmaITofvspt", "Track #sigma iTOF", kTH2F, {axisPt, axisSigmaEl});
+      registry.add("Reconstructed/Track/SigmaRichvspt", "Track #sigma RICH", kTH2F, {axisPt, axisSigmaEl});
+      registry.add("Reconstructed/Track/outerTOFTrackLength", "Track length outer TOF", kTH1F, {axisTrackLengthOuterTOF});
+    }
+  }
+
+  template <bool isWithSmearing, typename TTracks>
+  void PreFilter(TTracks const& posTracks_coll, TTracks const& negTracks_coll)
+  {
+    for (const auto& pos : posTracks_coll) {
+      if constexpr (isWithSmearing) {
+        if (!pos.isReconstructed() || !pos.selected()) {
+          continue;
+        }
+        if (pos.etaSmeared() < etaMin || etaMax < pos.etaSmeared()) {
+          continue;
+        }
+        if (pos.ptSmeared() < ptMin || ptMax < pos.ptSmeared()) {
+          continue;
+        }
+        registry.fill(HIST("Reconstructed/Track/Pt"), pos.ptSmeared());
+        registry.fill(HIST("Reconstructed/Track/Eta"), pos.etaSmeared());
+        registry.fill(HIST("Reconstructed/Track/Phi"), pos.phiSmeared());
+        registry.fill(HIST("Reconstructed/Track/Eta_Pt"), pos.ptSmeared(), pos.etaSmeared());
+      } else {
+        if (!pos.isReconstructed()) {
+          continue;
+        }
+        if (pos.eta() < etaMin || etaMax < pos.eta()) {
+          continue;
+        }
+        if (pos.pt() < ptMin || ptMax < pos.pt()) {
+          continue;
+        }
+        if ((std::abs(pos.nSigmaElectronRich()) < nSigmaElectronRich && nSigmaPionRich < std::abs(pos.nSigmaPionRich())) || (std::abs(pos.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF && nSigmaPionCutOuterTOF < std::abs(pos.nSigmaPionOuterTOF())) || (std::abs(pos.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF && nSigmaPionCutInnerTOF < std::abs(pos.nSigmaPionInnerTOF()))) {
+          registry.fill(HIST("Reconstructed/Track/SigmaOTofvspt"), pos.pt(), pos.nSigmaElectronOuterTOF());
+          registry.fill(HIST("Reconstructed/Track/SigmaITofvspt"), pos.pt(), pos.nSigmaElectronInnerTOF());
+          registry.fill(HIST("Reconstructed/Track/SigmaRichvspt"), pos.pt(), pos.nSigmaElectronRich());
+          registry.fill(HIST("Reconstructed/Track/outerTOFTrackLength"), pos.outerTOFTrackLength());
+          registry.fill(HIST("Reconstructed/Track/Pt"), pos.pt());
+          registry.fill(HIST("Reconstructed/Track/Eta"), pos.eta());
+          registry.fill(HIST("Reconstructed/Track/Phi"), pos.phi());
+          registry.fill(HIST("Reconstructed/Track/Eta_Pt"), pos.pt(), pos.eta());
+        }
+      }
+    }
+    for (const auto& ele : negTracks_coll) {
+      if constexpr (isWithSmearing) {
+        if (!ele.isReconstructed() || !ele.selected()) {
+          continue;
+        }
+        if (ele.etaSmeared() < etaMin || etaMax < ele.etaSmeared()) {
+          continue;
+        }
+        if (ele.ptSmeared() < ptMin || ptMax < ele.ptSmeared()) {
+          continue;
+        }
+        registry.fill(HIST("Reconstructed/Track/Pt"), ele.ptSmeared());
+        registry.fill(HIST("Reconstructed/Track/Eta"), ele.etaSmeared());
+        registry.fill(HIST("Reconstructed/Track/Phi"), ele.phiSmeared());
+        registry.fill(HIST("Reconstructed/Track/Eta_Pt"), ele.ptSmeared(), ele.etaSmeared());
+      } else {
+        if (!ele.isReconstructed()) {
+          continue;
+        }
+        if (ele.eta() < etaMin || etaMax < ele.eta()) {
+          continue;
+        }
+        if (ele.pt() < ptMin || ptMax < ele.pt()) {
+          continue;
+        }
+        if ((std::abs(ele.nSigmaElectronRich()) < nSigmaElectronRich && nSigmaPionRich < std::abs(ele.nSigmaPionRich())) || (std::abs(ele.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF && nSigmaPionCutOuterTOF < std::abs(ele.nSigmaPionOuterTOF())) || (std::abs(ele.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF && nSigmaPionCutInnerTOF < std::abs(ele.nSigmaPionInnerTOF()))) {
+          registry.fill(HIST("Reconstructed/Track/SigmaOTofvspt"), ele.pt(), ele.nSigmaElectronOuterTOF());
+          registry.fill(HIST("Reconstructed/Track/SigmaITofvspt"), ele.pt(), ele.nSigmaElectronInnerTOF());
+          registry.fill(HIST("Reconstructed/Track/SigmaRichvspt"), ele.pt(), ele.nSigmaElectronRich());
+          registry.fill(HIST("Reconstructed/Track/outerTOFTrackLength"), ele.outerTOFTrackLength());
+          registry.fill(HIST("Reconstructed/Track/Pt"), ele.pt());
+          registry.fill(HIST("Reconstructed/Track/Eta"), ele.eta());
+          registry.fill(HIST("Reconstructed/Track/Phi"), ele.phi());
+          registry.fill(HIST("Reconstructed/Track/Eta_Pt"), ele.pt(), ele.eta());
+        }
+      }
+    }
+
+    for (const auto& [pos, ele] : combinations(CombinationsFullIndexPolicy(posTracks_coll, negTracks_coll))) { // ULS
+      if constexpr (isWithSmearing) {
+        if (!pos.isReconstructed() || !pos.selected()) {
+          continue;
+        }
+        if (pos.etaSmeared() < etaMin || etaMax < pos.etaSmeared()) {
+          continue;
+        }
+        if (pos.ptSmeared() < ptMin || ptMax < pos.ptSmeared()) {
+          continue;
+        }
+        if (!ele.isReconstructed() || !ele.selected()) {
+          continue;
+        }
+        if (ele.etaSmeared() < etaMin || etaMax < ele.etaSmeared()) {
+          continue;
+        }
+        if (ele.ptSmeared() < ptMin || ptMax < ele.ptSmeared()) {
+          continue;
+        }
+      } else {
+        if (!pos.isReconstructed()) {
+          continue;
+        }
+        if (pos.eta() < etaMin || etaMax < pos.eta()) {
+          continue;
+        }
+        if (pos.pt() < ptMin || ptMax < pos.pt()) {
+          continue;
+        }
+        if (!ele.isReconstructed()) {
+          continue;
+        }
+        if (ele.eta() < etaMin || etaMax < ele.eta()) {
+          continue;
+        }
+        if (ele.pt() < ptMin || ptMax < ele.pt()) {
+          continue;
+        }
+      }
+      if constexpr (isWithSmearing) {
+
+        ROOT::Math::PtEtaPhiMVector v1(pos.ptSmeared(), pos.etaSmeared(), pos.phiSmeared(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v2(ele.ptSmeared(), ele.etaSmeared(), ele.phiSmeared(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        float angle = RecoDecay::constrainAngle(ROOT::Math::VectorUtil::Angle(v1, v2), -M_PI);
+        // o2::math_utils::bringToPMPi(angle);
+
+        registry.fill(HIST("Reconstructed/Pair/ULS/Mass_Pt"), v12.M(), v12.Pt());
+
+        if (v12.M() < maxMass && std::abs(angle) < maxOp) {
+          map_pfb[pos.globalIndex()] = 1;
+          map_pfb[ele.globalIndex()] = 1;
+          registry.fill(HIST("ReconstructedFiltered/Pair/ULS/Mass_Pt"), v12.M(), v12.Pt());
+        }
+
+      } else {
+
+        if ((std::abs(pos.nSigmaElectronRich()) < nSigmaElectronRich && nSigmaPionRich < std::abs(pos.nSigmaPionRich())) || (std::abs(pos.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF && nSigmaPionCutOuterTOF < std::abs(pos.nSigmaPionOuterTOF())) || (std::abs(pos.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF && nSigmaPionCutInnerTOF < std::abs(pos.nSigmaPionInnerTOF()))) {
+          if ((std::abs(ele.nSigmaElectronRich()) < nSigmaElectronRich && nSigmaPionRich < std::abs(ele.nSigmaPionRich())) || (std::abs(ele.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF && nSigmaPionCutOuterTOF < std::abs(ele.nSigmaPionOuterTOF())) || (std::abs(ele.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF && nSigmaPionCutInnerTOF < std::abs(ele.nSigmaPionInnerTOF()))) {
+
+            ROOT::Math::PtEtaPhiMVector v1(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassElectron);
+            ROOT::Math::PtEtaPhiMVector v2(ele.pt(), ele.eta(), ele.phi(), o2::constants::physics::MassElectron);
+            ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+            float angle = RecoDecay::constrainAngle(ROOT::Math::VectorUtil::Angle(v1, v2), -M_PI);
+            // o2::math_utils::bringToPMPi(angle);
+
+            registry.fill(HIST("Reconstructed/Pair/ULS/Mass_Pt"), v12.M(), v12.Pt());
+
+            if (v12.M() < maxMass && std::abs(angle) < maxOp) {
+              map_pfb[pos.globalIndex()] = 1;
+              map_pfb[ele.globalIndex()] = 1;
+              registry.fill(HIST("ReconstructedFiltered/Pair/ULS/Mass_Pt"), v12.M(), v12.Pt());
+            }
+          }
+        }
+      }
+    } // combination
   }
 
   void processPreFilter(DileptonCollisions const& collisions, MyTracksMCs const& tracks)
@@ -200,89 +359,35 @@ struct Alice3DileptonPrefilter {
         }
         continue;
       }
+      PreFilter<false>(posTracks_coll, negTracks_coll);
+    }
+    for (const auto& track : tracks) {
+      pfb_derived(map_pfb[track.globalIndex()]);
+    } // end of track loop
+    map_pfb.clear();
+  }
 
-      for (const auto& pos : posTracks_coll) {
-        if (!pos.isReconstructed()) {
-          continue;
+  void processPreFilterWithSmearing(DileptonCollisions const& collisions, MyTracksWithSmearings const& tracks)
+  {
+    for (const auto& track : tracks) {
+      map_pfb[track.globalIndex()] = 0;
+    } // end of track loop
+
+    for (const auto& collision : collisions) {
+      auto negTracks_coll = negTracksWithSmearing->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache_rec);
+      auto posTracks_coll = posTracksWithSmearing->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache_rec);
+
+      if (collision.isEventCentSelected() == 0) {
+        for (const auto& pos : posTracks_coll) {
+          map_pfb[pos.globalIndex()] = 0;
         }
-        if (pos.eta() < etaMin || etaMax < pos.eta()) {
-          continue;
+        for (const auto& neg : negTracks_coll) {
+          map_pfb[neg.globalIndex()] = 0;
         }
-        if (pos.pt() < ptMin || ptMax < pos.pt()) {
-          continue;
-        }
-        if ((std::abs(pos.nSigmaElectronRich()) < nSigmaElectronRich && nSigmaPionRich < std::abs(pos.nSigmaPionRich())) || (std::abs(pos.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF && nSigmaPionCutOuterTOF < std::abs(pos.nSigmaPionOuterTOF())) || (std::abs(pos.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF && nSigmaPionCutInnerTOF < std::abs(pos.nSigmaPionInnerTOF()))) {
-          registry.fill(HIST("Reconstructed/Track/SigmaOTofvspt"), pos.pt(), pos.nSigmaElectronOuterTOF());
-          registry.fill(HIST("Reconstructed/Track/SigmaITofvspt"), pos.pt(), pos.nSigmaElectronInnerTOF());
-          registry.fill(HIST("Reconstructed/Track/SigmaRichvspt"), pos.pt(), pos.nSigmaElectronRich());
-          registry.fill(HIST("Reconstructed/Track/outerTOFTrackLength"), pos.outerTOFTrackLength());
-          registry.fill(HIST("Reconstructed/Track/Pt"), pos.pt());
-          registry.fill(HIST("Reconstructed/Track/Eta"), pos.eta());
-          registry.fill(HIST("Reconstructed/Track/Phi"), pos.phi());
-          registry.fill(HIST("Reconstructed/Track/Eta_Pt"), pos.pt(), pos.eta());
-        }
+        continue;
       }
-      for (const auto& ele : negTracks_coll) {
-        if (!ele.isReconstructed()) {
-          continue;
-        }
-        if (ele.eta() < etaMin || etaMax < ele.eta()) {
-          continue;
-        }
-        if (ele.pt() < ptMin || ptMax < ele.pt()) {
-          continue;
-        }
-        if ((std::abs(ele.nSigmaElectronRich()) < nSigmaElectronRich && nSigmaPionRich < std::abs(ele.nSigmaPionRich())) || (std::abs(ele.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF && nSigmaPionCutOuterTOF < std::abs(ele.nSigmaPionOuterTOF())) || (std::abs(ele.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF && nSigmaPionCutInnerTOF < std::abs(ele.nSigmaPionInnerTOF()))) {
-          registry.fill(HIST("Reconstructed/Track/SigmaOTofvspt"), ele.pt(), ele.nSigmaElectronOuterTOF());
-          registry.fill(HIST("Reconstructed/Track/SigmaITofvspt"), ele.pt(), ele.nSigmaElectronInnerTOF());
-          registry.fill(HIST("Reconstructed/Track/SigmaRichvspt"), ele.pt(), ele.nSigmaElectronRich());
-          registry.fill(HIST("Reconstructed/Track/outerTOFTrackLength"), ele.outerTOFTrackLength());
-          registry.fill(HIST("Reconstructed/Track/Pt"), ele.pt());
-          registry.fill(HIST("Reconstructed/Track/Eta"), ele.eta());
-          registry.fill(HIST("Reconstructed/Track/Phi"), ele.phi());
-          registry.fill(HIST("Reconstructed/Track/Eta_Pt"), ele.pt(), ele.eta());
-        }
-      }
-
-      for (const auto& [pos, ele] : combinations(CombinationsFullIndexPolicy(posTracks_coll, negTracks_coll))) { // ULS
-        if (!pos.isReconstructed()) {
-          continue;
-        }
-        if (pos.eta() < etaMin || etaMax < pos.eta()) {
-          continue;
-        }
-        if (pos.pt() < ptMin || ptMax < pos.pt()) {
-          continue;
-        }
-        if (!ele.isReconstructed()) {
-          continue;
-        }
-        if (ele.eta() < etaMin || etaMax < ele.eta()) {
-          continue;
-        }
-        if (ele.pt() < ptMin || ptMax < ele.pt()) {
-          continue;
-        }
-        if ((std::abs(pos.nSigmaElectronRich()) < nSigmaElectronRich && nSigmaPionRich < std::abs(pos.nSigmaPionRich())) || (std::abs(pos.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF && nSigmaPionCutOuterTOF < std::abs(pos.nSigmaPionOuterTOF())) || (std::abs(pos.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF && nSigmaPionCutInnerTOF < std::abs(pos.nSigmaPionInnerTOF()))) {
-          if ((std::abs(ele.nSigmaElectronRich()) < nSigmaElectronRich && nSigmaPionRich < std::abs(ele.nSigmaPionRich())) || (std::abs(ele.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF && nSigmaPionCutOuterTOF < std::abs(ele.nSigmaPionOuterTOF())) || (std::abs(ele.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF && nSigmaPionCutInnerTOF < std::abs(ele.nSigmaPionInnerTOF()))) {
-            ROOT::Math::PtEtaPhiMVector v1(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassElectron);
-            ROOT::Math::PtEtaPhiMVector v2(ele.pt(), ele.eta(), ele.phi(), o2::constants::physics::MassElectron);
-            ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-            float angle = ROOT::Math::VectorUtil::Angle(v1, v2);
-            o2::math_utils::bringToPMPi(angle);
-
-            registry.fill(HIST("Reconstructed/Pair/ULS/Mass_Pt"), v12.M(), v12.Pt());
-
-            if (v12.M() < maxMass && angle < maxOp) {
-              map_pfb[pos.globalIndex()] = 1;
-              map_pfb[ele.globalIndex()] = 1;
-              registry.fill(HIST("ReconstructedFiltered/Pair/ULS/Mass_Pt"), v12.M(), v12.Pt());
-            }
-          }
-        }
-      }
-    } // end of collision
-
+      PreFilter<true>(posTracks_coll, negTracks_coll);
+    }
     for (const auto& track : tracks) {
       pfb_derived(map_pfb[track.globalIndex()]);
     } // end of track loop
@@ -297,6 +402,7 @@ struct Alice3DileptonPrefilter {
   }
 
   PROCESS_SWITCH(Alice3DileptonPrefilter, processPreFilter, "Run prefilter", false);
+  PROCESS_SWITCH(Alice3DileptonPrefilter, processPreFilterWithSmearing, "Run prefilter with smearing", false);
   PROCESS_SWITCH(Alice3DileptonPrefilter, processDummy, "Dummy", true);
 };
 

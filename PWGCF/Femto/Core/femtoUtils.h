@@ -24,9 +24,11 @@
 
 #include <TPDGCode.h>
 
+#include <algorithm>
 #include <cmath>
 #include <concepts>
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <unordered_map>
 
@@ -228,6 +230,56 @@ inline int signum(T x)
   return (T(0) < x) - (x < T(0));
 }
 
+template <typename T>
+inline T binLinear(float value, float lo, float hi, float step)
+{
+  float v = std::clamp(value, lo, hi);
+  auto idx = static_cast<int64_t>(std::round((v - lo) / step));
+  auto maxIdx = static_cast<int64_t>(std::numeric_limits<T>::max()) - static_cast<int64_t>(std::numeric_limits<T>::min());
+  idx = std::clamp(idx, static_cast<int64_t>(0), maxIdx);
+  return static_cast<T>(idx + std::numeric_limits<T>::min());
+}
+
+template <typename T>
+inline float unBinLinear(T binned, float lo, float step)
+{
+  auto idx = static_cast<int64_t>(binned) - static_cast<int64_t>(std::numeric_limits<T>::min());
+  return lo + static_cast<float>(idx) * step;
+}
+
+template <typename T>
+inline T binLogSigned(float signedValue, float magMin, float magMax)
+{
+  static_assert(std::is_unsigned_v<T>, "binLogSigned requires an unsigned storage type");
+  constexpr uint32_t TotalBits = sizeof(T) * 8;
+  constexpr uint32_t HalfLevels = 1u << (TotalBits - 1);
+  uint32_t sign = (signedValue < 0.f) ? 1u : 0u;
+  float mag = std::clamp(std::fabs(signedValue), magMin, magMax);
+  float logLo = std::log(magMin);
+  float logHi = std::log(magMax);
+  float step = (logHi - logLo) / static_cast<float>(HalfLevels - 1);
+  auto idx = static_cast<uint32_t>(std::round((std::log(mag) - logLo) / step));
+  idx = std::clamp(idx, 0u, HalfLevels - 1);
+  return static_cast<T>((sign << (TotalBits - 1)) | idx);
+}
+
+template <typename T>
+inline float unBinLogSigned(T binned, float magMin, float magMax)
+{
+  constexpr uint32_t TotalBits = sizeof(T) * 8;
+  constexpr uint32_t HalfLevels = 1u << (TotalBits - 1);
+  constexpr T SignMask = static_cast<T>(1u << (TotalBits - 1));
+  constexpr T MagMask = static_cast<T>(SignMask - 1);
+  float sign = (binned & SignMask) ? -1.f : 1.f;
+  uint32_t idx = binned & MagMask;
+  float logLo = std::log(magMin);
+  float logHi = std::log(magMax);
+  float step = (logHi - logLo) / static_cast<float>(HalfLevels - 1);
+  float mag = std::exp(logLo + static_cast<float>(idx) * step);
+  return sign * mag;
+}
+
 }; // namespace utils
 }; // namespace o2::analysis::femto
+//
 #endif // PWGCF_FEMTO_CORE_FEMTOUTILS_H_
