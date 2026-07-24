@@ -61,8 +61,8 @@ namespace
 {
 // static constexpr int NPart = 2;
 // static constexpr int NCuts = 5;
-static const std::vector<std::string> partNames{"PhiCandidate", "Track"};
-static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"};
+const std::vector<std::string> partNames{"PhiCandidate", "Track"};
+const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"};
 // static const float cutsTable[NPart][NCuts]{ //unused variable
 //   {4.05f, 1.f, 3.f, 3.f, 100.f},
 //   {4.05f, 1.f, 3.f, 3.f, 100.f}};
@@ -70,7 +70,7 @@ static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "
 
 struct FemtoUniversePairTaskTrackPhi {
 
-  Service<o2::framework::O2DatabasePDG> pdgMC;
+  Service<o2::framework::O2DatabasePDG> pdgMC = {};
 
   using FilteredFemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
 
@@ -215,17 +215,9 @@ struct FemtoUniversePairTaskTrackPhi {
   bool isProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
   {
     if (mom < ConfTrackPtPIDLimit) {
-      if (std::abs(nsigmaTPCPr) < ConfPIDProtonNsigmaTPC) {
-        return true;
-      } else {
-        return false;
-      }
+      return std::abs(nsigmaTPCPr) < ConfPIDProtonNsigmaTPC;
     } else if (mom > ConfTrackPtPIDLimit) {
-      if (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfPIDProtonNsigmaCombined) {
-        return true;
-      } else {
-        return false;
-      }
+      return std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfPIDProtonNsigmaCombined;
     }
     return false;
   }
@@ -236,13 +228,7 @@ struct FemtoUniversePairTaskTrackPhi {
       return true;
     }
     if (mom > 0.5) {
-      if (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPIDPionNsigmaReject) {
-        return true;
-      } else if (std::hypot(nsigmaTOFK, nsigmaTPCK) < ConfPIDKaonNsigmaReject) {
-        return true;
-      } else {
-        return false;
-      }
+      return std::hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPIDPionNsigmaReject || std::hypot(nsigmaTOFK, nsigmaTPCK) < ConfPIDKaonNsigmaReject;
     } else {
       return false;
     }
@@ -252,26 +238,14 @@ struct FemtoUniversePairTaskTrackPhi {
   {
     if (ConfTrackUseRun3PIDforKaons) {
       if (mom < 0.5) {
-        if (std::abs(nsigmaTPCK) < 3.0) {
-          return true;
-        } else {
-          return false;
-        }
+        return std::abs(nsigmaTPCK) < 3.0;
       } else if (mom >= 0.5) {
         if (hasTOF) // if TOF is available, use combine nsigma
         {
-          if (std::hypot(nsigmaTOFK, nsigmaTPCK) < 3.0) {
-            return true;
-          } else {
-            return false;
-          }
+          return std::hypot(nsigmaTOFK, nsigmaTPCK) < 3.0;
         } else // if TOF is not available, use TPC nsigma only
         {
-          if (std::abs(nsigmaTPCK) < 3.0) {
-            return true;
-          } else {
-            return false;
-          }
+          return std::abs(nsigmaTPCK) < 3.0;
         }
       }
 
@@ -280,37 +254,15 @@ struct FemtoUniversePairTaskTrackPhi {
       }
     } else {
       if (mom < 0.3) { // 0.0-0.3
-        if (std::abs(nsigmaTPCK) < 3.0) {
-          return true;
-        } else {
-          return false;
-        }
+        return std::abs(nsigmaTPCK) < 3.0;
       } else if (mom < 0.45) { // 0.30 - 0.45
-        if (std::abs(nsigmaTPCK) < 2.0) {
-          return true;
-        } else {
-          return false;
-        }
+        return std::abs(nsigmaTPCK) < 2.0;
       } else if (mom < 0.55) { // 0.45-0.55
-        if (std::abs(nsigmaTPCK) < 1.0) {
-          return true;
-        } else {
-          return false;
-        }
+        return std::abs(nsigmaTPCK) < 1.0;
       } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-        if ((std::abs(nsigmaTOFK) < 3.0) && (std::abs(nsigmaTPCK) < 3.0)) {
-          {
-            return true;
-          }
-        } else {
-          return false;
-        }
+        return std::hypot(nsigmaTOFK, nsigmaTPCK) < 3.0;
       } else if (mom > 1.5) { // 1.5 -
-        if ((std::abs(nsigmaTOFK) < 2.0) && (std::abs(nsigmaTPCK) < 3.0)) {
-          return true;
-        } else {
-          return false;
-        }
+        return (std::abs(nsigmaTOFK) < 2.0) && (std::abs(nsigmaTPCK) < 3.0);
       } else {
         return false;
       }
@@ -320,20 +272,10 @@ struct FemtoUniversePairTaskTrackPhi {
   bool isKaonRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi)
   {
     if (mom < 0.5) {
-      if (std::abs(nsigmaTPCPi) < ConfPIDPionNsigmaReject) {
-        return true;
-      } else if (std::abs(nsigmaTPCPr) < ConfPIDProtonNsigmaReject) {
-        return true;
-      }
+      return (std::abs(nsigmaTPCPi) < ConfPIDPionNsigmaReject) || (std::abs(nsigmaTPCPr) < ConfPIDProtonNsigmaReject);
     }
     if (mom > 0.5) {
-      if (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPIDPionNsigmaReject) {
-        return true;
-      } else if (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfPIDProtonNsigmaReject) {
-        return true;
-      } else {
-        return false;
-      }
+      return (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPIDPionNsigmaReject) || (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfPIDProtonNsigmaReject);
     } else {
       return false;
     }
@@ -343,17 +285,9 @@ struct FemtoUniversePairTaskTrackPhi {
   {
     if (true) {
       if (mom < 0.5) {
-        if (std::abs(nsigmaTPCPi) < ConfPIDPionNsigmaTPC) {
-          return true;
-        } else {
-          return false;
-        }
+        return (std::abs(nsigmaTPCPi) < ConfPIDPionNsigmaTPC);
       } else if (mom > 0.5) {
-        if (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPIDPionNsigmaCombined) {
-          return true;
-        } else {
-          return false;
-        }
+        return (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPIDPionNsigmaCombined);
       }
     }
     return false;
@@ -362,20 +296,10 @@ struct FemtoUniversePairTaskTrackPhi {
   bool isPionRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCK, float nsigmaTOFK)
   {
     if (mom < 0.5) {
-      if (std::abs(nsigmaTPCK) < ConfPIDKaonNsigmaReject) {
-        return true;
-      } else if (std::abs(nsigmaTPCPr) < ConfPIDProtonNsigmaReject) {
-        return true;
-      }
+      return (std::abs(nsigmaTPCK) < ConfPIDKaonNsigmaReject) || (std::abs(nsigmaTPCPr) < ConfPIDProtonNsigmaReject);
     }
     if (mom > 0.5) {
-      if (std::hypot(nsigmaTOFK, nsigmaTPCK) < ConfPIDKaonNsigmaReject) {
-        return true;
-      } else if (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfPIDProtonNsigmaReject) {
-        return true;
-      } else {
-        return false;
-      }
+      return (std::hypot(nsigmaTOFK, nsigmaTPCK) < ConfPIDKaonNsigmaReject) || (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfPIDProtonNsigmaReject);
     } else {
       return false;
     }
@@ -532,7 +456,7 @@ struct FemtoUniversePairTaskTrackPhi {
   }
 
   template <bool isMC, typename PartitionType, typename PartType, typename MCParticles = std::nullptr_t>
-  void doSameEvent(PartitionType groupPartsTrack, PartitionType groupPartsPhi, PartType parts, float magFieldTesla, int multCol, [[maybe_unused]] MCParticles mcParts = nullptr)
+  void doSameEvent(const PartitionType& groupPartsTrack, const PartitionType& groupPartsPhi, const PartType& parts, float magFieldTesla, int multCol, [[maybe_unused]] MCParticles mcParts = nullptr)
   {
     for (auto const& phicandidate : groupPartsPhi) {
       // TODO: add phi meson minv cut here
@@ -660,7 +584,7 @@ struct FemtoUniversePairTaskTrackPhi {
   }
 
   template <bool isMC, typename PartitionType, typename PartType, typename MCParticles = std::nullptr_t>
-  void doMixedEvent(PartitionType groupPartsTrack, PartitionType groupPartsPhi, PartType parts, float magFieldTesla, int multCol, [[maybe_unused]] MCParticles mcParts = nullptr)
+  void doMixedEvent(const PartitionType& groupPartsTrack, const PartitionType& groupPartsPhi, const PartType& parts, float magFieldTesla, int multCol, [[maybe_unused]] MCParticles mcParts = nullptr)
   {
     for (auto const& [track, phicandidate] : combinations(CombinationsFullIndexPolicy(groupPartsTrack, groupPartsPhi))) {
       if (ConfTrackIsIdentified) {
