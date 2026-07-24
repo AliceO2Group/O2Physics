@@ -500,6 +500,19 @@ struct McParticlePrediction {
         continue;
       }
 
+      TParticlePDG* p = pdgDB->GetParticle(particle.pdgCode());
+      if (p) {
+        if (std::abs(p->Charge()) > chargetolerance) {
+          histos.fill(HIST("particles/eta/charged"), particle.eta());
+        } else {
+          histos.fill(HIST("particles/eta/neutral"), particle.eta());
+        }
+      }
+
+      if (std::abs(particle.y()) >= rapidityCut) {
+        continue;
+      }
+
       histos.fill(HIST("particles/vtx/x"), particle.vx());
       histos.fill(HIST("particles/vtx/y"), particle.vy());
       histos.fill(HIST("particles/vtx/z"), particle.vz() - mcCollision.posZ());
