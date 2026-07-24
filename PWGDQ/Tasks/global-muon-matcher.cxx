@@ -80,15 +80,25 @@ namespace o2::aod
 {
 namespace globalmuonmatching
 {
-DECLARE_SOA_COLUMN(IsTagged, isTagged, bool);                  //! Whether the MCH(-MID) track passes tagging cuts
-DECLARE_SOA_COLUMN(MatchRanking, matchRanking, int32_t);       //! Match candidate ranking (-1 for base MCH entries)
-DECLARE_SOA_COLUMN(MixedGroupIndex, mixedGroupIndex, int32_t); //! Mixed-event group index (-1 for same-event candidates)
+DECLARE_SOA_COLUMN(IsTagged, isTagged, bool);                          //! Whether the MCH(-MID) track passes tagging cuts
+DECLARE_SOA_COLUMN(MatchRanking, matchRanking, int32_t);               //! Match candidate ranking (-1 for base MCH entries)
+DECLARE_SOA_COLUMN(MixedGroupIndex, mixedGroupIndex, int32_t);         //! Mixed-event group index (-1 for same-event candidates)
+DECLARE_SOA_COLUMN(DeltaBc, deltaBc, int64_t);                         //! |ΔBC| between mixed collisions (-1 if same-event)
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                         //! |Δφ| between mixed MCH tracks (-1 if same-event)
+DECLARE_SOA_COLUMN(DeltaR, deltaR, float);                             //! ΔR = r2−r1 between mixed MCH tracks (-1 if same-event)
+DECLARE_SOA_COLUMN(DeltaAttemptsRel, deltaAttemptsRel, float);         //! relative Δ(nMatchAttempts) (-1 if same-event)
+DECLARE_SOA_COLUMN(DeltaZ, deltaZ, float);                             //! |Δvz| between mixed collisions (-1 if same-event)
 } // namespace globalmuonmatching
 
 DECLARE_SOA_TABLE(GmmCandFwdTrkExtras, "AOD", "GMMCANDEXTRA", //! Extra info joinable to FwdTracksReAlign
                   globalmuonmatching::IsTagged,
                   globalmuonmatching::MatchRanking,
-                  globalmuonmatching::MixedGroupIndex);
+                  globalmuonmatching::MixedGroupIndex,
+                  globalmuonmatching::DeltaBc,
+                  globalmuonmatching::DeltaPhi,
+                  globalmuonmatching::DeltaR,
+                  globalmuonmatching::DeltaAttemptsRel,
+                  globalmuonmatching::DeltaZ);
 } // namespace o2::aod
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
@@ -128,6 +138,11 @@ struct GlobalMuonMatching {
     double matchChi2{-1};
     int matchRanking{-1};
     int32_t mixedGroupIndex{-1};
+    int64_t deltaBc{-1};
+    float deltaPhi{-1.f};
+    float deltaR{-1.f};
+    float deltaAttemptsRel{-1.f};
+    float deltaZ{-1.f};
   };
 
   struct MchTrackInfo {
@@ -933,7 +948,7 @@ struct GlobalMuonMatching {
       track.trackTimeRes());
 
     storeFwdTrackCovariance(trackPar.getCovariances());
-    gmCandidateFwdTrackExtras(isTagged, -1, -1);
+    gmCandidateFwdTrackExtras(isTagged, -1, -1, -1, -1.f, -1.f, -1.f, -1.f);
     if (hasBcSlice) {
       gmAmbiguousFwdTracksReAlign(mGmmCandFwdTrackRowIndex, bcSlice.data());
     }
@@ -1015,7 +1030,14 @@ struct GlobalMuonMatching {
       mchTrack.trackTimeRes());
 
     storeFwdTrackCovariance(globalMuonRefit.getCovariances());
-    gmCandidateFwdTrackExtras(isMchTrackTagged(mchTrack.globalIndex()), candidate.matchRanking, candidate.mixedGroupIndex);
+    gmCandidateFwdTrackExtras(isMchTrackTagged(mchTrack.globalIndex()),
+                              candidate.matchRanking,
+                              candidate.mixedGroupIndex,
+                              candidate.deltaBc,
+                              candidate.deltaPhi,
+                              candidate.deltaR,
+                              candidate.deltaAttemptsRel,
+                              candidate.deltaZ);
     if (hasBcSlice) {
       gmAmbiguousFwdTracksReAlign(mGmmCandFwdTrackRowIndex, bcSlice.data());
     }
@@ -1357,8 +1379,14 @@ struct GlobalMuonMatching {
         // add the candidates of MCH track #2 to the list of mixed candidates of track #1
         mchTrackInfo1.mixedMatchingCandidates.push_back(mchTrackInfo2.matchingCandidates);
         // update the muon track index of the mixed candidates to the index of track #1
+        // and store the mixing deltas for this group
         for (auto& candidate : mchTrackInfo1.mixedMatchingCandidates.back()) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
           candidate.muonTrackId = mchIndex1;
+          candidate.deltaBc = deltaBc;
+          candidate.deltaPhi = deltaPhi;
+          candidate.deltaR = deltaR;
+          candidate.deltaAttemptsRel = deltaAttemptsRel;
+          candidate.deltaZ = deltaZ;
         }
       }
     }
@@ -1554,6 +1582,13 @@ struct GlobalMuonMatching {
             break;
           }
           result.mixedGroupIndex = useMixedMatchingCandidates ? mixedGroupIndex : -1;
+          if (useMixedMatchingCandidates && !candidatesGroup.empty()) {
+            result.deltaBc = candidatesGroup.front().deltaBc;
+            result.deltaPhi = candidatesGroup.front().deltaPhi;
+            result.deltaR = candidatesGroup.front().deltaR;
+            result.deltaAttemptsRel = candidatesGroup.front().deltaAttemptsRel;
+            result.deltaZ = candidatesGroup.front().deltaZ;
+          }
           storedCandidates.push_back(result);
           ++nStoredThisGroup;
         }
@@ -1647,6 +1682,13 @@ struct GlobalMuonMatching {
             break;
           }
           result.mixedGroupIndex = useMixedMatchingCandidates ? mixedGroupIndex : -1;
+          if (useMixedMatchingCandidates && !candidatesGroup.empty()) {
+            result.deltaBc = candidatesGroup.front().deltaBc;
+            result.deltaPhi = candidatesGroup.front().deltaPhi;
+            result.deltaR = candidatesGroup.front().deltaR;
+            result.deltaAttemptsRel = candidatesGroup.front().deltaAttemptsRel;
+            result.deltaZ = candidatesGroup.front().deltaZ;
+          }
           storedCandidates.push_back(result);
           ++nStoredThisGroup;
         }
