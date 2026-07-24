@@ -1596,8 +1596,8 @@ struct HfTaskFlow {
 
   template <typename TTarget, typename TTracksTrig, typename TTracksAssoc>
   void fillCorrelations(TTarget target, CorrelationContainer::CFStep step,
-                        TTracksTrig const& tracks1, TTracksAssoc const& tracks2,
-                        float multiplicity, float posZ, bool sameEvent, int magneticField, float centralityWeight)
+                        TTracksTrig const& tracksTrigger, TTracksAssoc const& tracksAssoc,
+                        float multiplicity, float posZ, bool isSameEvent, int magneticField, float centralityWeight)
   {
     auto triggerWeight = 1.0f;
     auto associatedWeight = 1.0f;
@@ -1605,7 +1605,7 @@ struct HfTaskFlow {
     int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
 
     // TRIGGER PARTICLE
-    for (const auto& track1 : tracks1) {
+    for (const auto& track1 : tracksTrigger) {
       loopCounter++;
 
       if constexpr (std::is_same_v<FilteredTracksWDcaSel, TTracksTrig>) {
@@ -1656,7 +1656,7 @@ struct HfTaskFlow {
       }
 
       // FILL QA PLOTS for trigger particle
-      if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
+      if (isSameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
         if constexpr (!std::is_same_v<FilteredMftTracks, TTracksAssoc>) { // IF TPC-TPC case
           if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-TPC D0-h
             fillTriggerQa<Data, TpcTpc, D0ChPart>(multiplicity, eta1, phi1, pt1);
@@ -1677,7 +1677,7 @@ struct HfTaskFlow {
       }
 
       // ASSOCIATED PARTICLE
-      for (const auto& track2 : tracks2) {
+      for (const auto& track2 : tracksAssoc) {
 
         if constexpr (std::is_same_v<FilteredTracksWDcaSel, TTracksAssoc>) {
           if (!isAcceptedCentralTrack(track2)) {
@@ -1688,7 +1688,7 @@ struct HfTaskFlow {
         // apply cuts for MFT tracks
         if constexpr (std::is_same_v<FilteredMftTracks, TTracksAssoc>) {
 
-          if (sameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
+          if (isSameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
             registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::NoSelection);
 
             if (!isAcceptedMftTrack(track2, 0.f, 0.f, true)) {
@@ -1705,10 +1705,10 @@ struct HfTaskFlow {
           continue;
         }
 
-        if (configCentral.isApplyPtOrderingSameEvent && sameEvent && (track1.pt() <= track2.pt())) {
+        if (configCentral.isApplyPtOrderingSameEvent && isSameEvent && (track1.pt() <= track2.pt())) {
           continue;
         }
-        if (configCentral.isApplyPtOrderingMixedEvent && !sameEvent && (track1.pt() <= track2.pt())) {
+        if (configCentral.isApplyPtOrderingMixedEvent && !isSameEvent && (track1.pt() <= track2.pt())) {
           continue;
         }
 
@@ -1804,7 +1804,7 @@ struct HfTaskFlow {
         }
 
         // FILL QA PLOTS for associated particle
-        if (sameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
+        if (isSameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
           if constexpr (!std::is_same_v<FilteredMftTracks, TTracksAssoc>) { // IF TPC-TPC case
             if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-TPC D0-h
               fillAssociatedQa<Data, TpcTpc, D0ChPart>(multiplicity, eta2, phi2);
@@ -1833,8 +1833,8 @@ struct HfTaskFlow {
 
   template <typename TTarget, typename TTracksTrig, typename TTracksAssoc>
   void fillCorrelationsReassociatedMftTracks(TTarget target, CorrelationContainer::CFStep step,
-                                             TTracksTrig const& tracks1, TTracksAssoc const& tracks2,
-                                             float multiplicity, float posZ, bool sameEvent, bool cutAmbiguousTracks, float centralityWeight)
+                                             TTracksTrig const& tracksTrigger, TTracksAssoc const& tracksAssoc,
+                                             float multiplicity, float posZ, bool isSameEvent, bool cutAmbiguousTracks, float centralityWeight)
   {
     auto triggerWeight = 1.0f;
     auto associatedWeight = 1.0f;
@@ -1842,7 +1842,7 @@ struct HfTaskFlow {
     int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
 
     // TRIGGER PARTICLE
-    for (const auto& track1 : tracks1) {
+    for (const auto& track1 : tracksTrigger) {
       loopCounter++;
 
       if constexpr (std::is_same_v<FilteredTracksWDcaSel, TTracksTrig>) {
@@ -1889,7 +1889,7 @@ struct HfTaskFlow {
       }
 
       // FILL QA PLOTS for trigger particle
-      if (sameEvent) {
+      if (isSameEvent) {
         if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) {
           fillTriggerQa<Data, TpcMft, D0ChPart>(multiplicity, eta1, phi1, pt1);
         } else if constexpr (std::is_same_v<HfCandidatesSelLc, TTracksTrig>) {
@@ -1901,10 +1901,10 @@ struct HfTaskFlow {
       }
 
       // ASSOCIATED PARTICLE
-      for (const auto& track2 : tracks2) {
+      for (const auto& track2 : tracksAssoc) {
 
         // Fill QA plot for all MFT tracks () (only if cutAmbiguousTracks is false to avoid double counting)
-        if (!cutAmbiguousTracks && sameEvent && (loopCounter == 1)) {
+        if (!cutAmbiguousTracks && isSameEvent && (loopCounter == 1)) {
           registry.fill(HIST("Data/Mft/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::AllMftTracks);
         }
 
@@ -1920,7 +1920,7 @@ struct HfTaskFlow {
           reassociatedMftTrackDcaZ = track2.bestDCAZ();
         }
 
-        if (sameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
+        if (isSameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
           registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::NoSelection);
 
           if (!isAcceptedMftTrack(reassociatedMftTrack, reassociatedMftTrackDcaXY, reassociatedMftTrackDcaZ, true)) {
@@ -1933,15 +1933,15 @@ struct HfTaskFlow {
         }
 
         // Fill QA plot for MFT tracks after physical selection (eta + clusters)
-        if (!cutAmbiguousTracks && sameEvent && (loopCounter == 1)) {
+        if (!cutAmbiguousTracks && isSameEvent && (loopCounter == 1)) {
           registry.fill(HIST("Data/Mft/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::AfterTrackSelection);
         }
 
         // We check if the track is ambiguous or non-ambiguous (QA plots are filled in isAmbiguousMftTrack)
         // Fill plots only if cutAmbiguousTracks is false (to avoid double counting)
-        if (isAmbiguousMftTrack(track2, (!cutAmbiguousTracks && sameEvent && (loopCounter == 1)))) {
+        if (isAmbiguousMftTrack(track2, (!cutAmbiguousTracks && isSameEvent && (loopCounter == 1)))) {
           // If the MFT track is ambiguous we may cut or not on the ambiguous track
-          if (sameEvent && (loopCounter == 1)) {
+          if (isSameEvent && (loopCounter == 1)) {
             registry.fill(HIST("Data/Mft/hReassociationMftTracks"), ReassociationMftTracks::NotReassociatedMftTracks);
           }
           if (cutAmbiguousTracks) {
@@ -1950,7 +1950,7 @@ struct HfTaskFlow {
         }
 
         if (reassociatedMftTrack.collisionId() != track2.bestCollisionId()) {
-          if (sameEvent && (loopCounter == 1)) {
+          if (isSameEvent && (loopCounter == 1)) {
             registry.fill(HIST("Data/Mft/hReassociationMftTracks"), ReassociationMftTracks::ReassociatedMftTracks);
           }
         }
@@ -1972,10 +1972,10 @@ struct HfTaskFlow {
           continue;
         }
 
-        if (configCentral.isApplyPtOrderingSameEvent && sameEvent && (track1.pt() <= reassociatedMftTrack.pt())) {
+        if (configCentral.isApplyPtOrderingSameEvent && isSameEvent && (track1.pt() <= reassociatedMftTrack.pt())) {
           continue;
         }
-        if (configCentral.isApplyPtOrderingMixedEvent && !sameEvent && (track1.pt() <= reassociatedMftTrack.pt())) {
+        if (configCentral.isApplyPtOrderingMixedEvent && !isSameEvent && (track1.pt() <= reassociatedMftTrack.pt())) {
           continue;
         }
 
@@ -2013,7 +2013,7 @@ struct HfTaskFlow {
         }
 
         // FILL QA PLOTS for associated particle
-        if (sameEvent && (loopCounter == 1)) {
+        if (isSameEvent && (loopCounter == 1)) {
           if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) {
             fillAssociatedQa<Data, TpcMft, D0ChPart>(multiplicity, eta2, phi2);
             registry.fill(HIST("Data/Mft/hPtMft"), pt2);
@@ -2032,8 +2032,8 @@ struct HfTaskFlow {
 
   template <typename TTarget, typename TTracksTrig, typename TTracksAssoc, typename TFits>
   void fillCorrelationsFIT(TTarget target, CorrelationContainer::CFStep step,
-                           TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TFits const&,
-                           float multiplicity, float posZ, bool sameEvent, int fitType, float centralityWeight)
+                           TTracksTrig const& tracksTrigger, TTracksAssoc const& tracksAssoc, TFits const&,
+                           float multiplicity, float posZ, bool isSameEvent, int fitType, float centralityWeight)
   {
     auto triggerWeight = 1.0f;
     auto associatedWeight = 1.0f;
@@ -2041,7 +2041,7 @@ struct HfTaskFlow {
     int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
 
     // TRIGGER PARTICLE
-    for (auto const& track1 : tracks1) {
+    for (auto const& track1 : tracksTrigger) {
       loopCounter++;
 
       if constexpr (std::is_same_v<FilteredTracksWDcaSel, TTracksTrig>) {
@@ -2049,7 +2049,7 @@ struct HfTaskFlow {
           continue;
         }
       } else if constexpr (std::is_same_v<FilteredMftTracks, TTracksTrig>) {
-        if (sameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
+        if (isSameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
           registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::NoSelection);
 
           if (!isAcceptedMftTrack(track1, 0.f, 0.f, true)) {
@@ -2131,7 +2131,7 @@ struct HfTaskFlow {
       }
 
       // FILL QA PLOTS for trigger particle
-      if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
+      if (isSameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
         if constexpr (!std::is_same_v<FilteredMftTracks, TTracksTrig>) {  // If not FilteredMftTracks as trigger -> TPC-FV0a correlations
           if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-FV0a D0-h
             if constexpr (std::is_same_v<aod::FV0As, TFits>) {            // IF NEITHER D0 NOR LC ->
@@ -2200,7 +2200,7 @@ struct HfTaskFlow {
       //     }
 
       //     // FILL QA PLOTS for associated particle
-      //     if (sameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
+      //     if (isSameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
       //       if constexpr (!std::is_same_v<FilteredMftTracks, TTracksTrig>) {  // If not FilteredMftTracks as trigger -> TPC-FV0a correlations
       //         if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-FV0a D0-h
       //           fillAssociatedQa<Data, TpcFv0a, D0ChPart>(multiplicity, eta2, phi2);
@@ -2222,9 +2222,9 @@ struct HfTaskFlow {
         // select the right channel size if it is FT0a or FT0c
         std::size_t channelSize = 0;
         if (fitType == isFT0C) {
-          channelSize = tracks2.channelC().size();
+          channelSize = tracksAssoc.channelC().size();
         } else if (fitType == isFT0A) {
-          channelSize = tracks2.channelA().size();
+          channelSize = tracksAssoc.channelA().size();
         } else {
           LOGF(fatal, "Cor Index %d out of range", fitType);
         }
@@ -2233,7 +2233,7 @@ struct HfTaskFlow {
 
           int channelId = 0;
           float amplitude = 0.;
-          getChannel(tracks2, indexChannel, channelId, fitType, amplitude);
+          getChannel(tracksAssoc, indexChannel, channelId, fitType, amplitude);
           auto phi2 = getPhiFT0(channelId, fitType);
           auto eta2 = getEtaFT0(channelId, fitType);
           float deltaPhi = phi1 - phi2;
@@ -2256,7 +2256,7 @@ struct HfTaskFlow {
           }
 
           // FILL QA PLOTS for associated particle
-          if (sameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
+          if (isSameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
             if constexpr (!std::is_same_v<FilteredMftTracks, TTracksTrig>) {  // If not FilteredMftTracks as trigger -> TPC-Ft0a correlations
               if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-FV0a D0-h
                 if (fitType == isFT0A) {
@@ -2293,8 +2293,8 @@ struct HfTaskFlow {
 
   template <typename TTarget, typename TTracksTrig, typename TTracksAssoc, typename TFits>
   void fillCorrelationsFITReassociatedMftTracks(TTarget target, CorrelationContainer::CFStep step,
-                                                TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TFits const&,
-                                                float multiplicity, float posZ, bool sameEvent, bool cutAmbiguousTracks, int fitType, float centralityWeight)
+                                                TTracksTrig const& tracksTrigger, TTracksAssoc const& tracksAssoc, TFits const&,
+                                                float multiplicity, float posZ, bool isSameEvent, bool cutAmbiguousTracks, int fitType, float centralityWeight)
   {
     auto triggerWeight = 1.0f;
     auto associatedWeight = 1.0f;
@@ -2302,7 +2302,7 @@ struct HfTaskFlow {
     int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
 
     // TRIGGER PARTICLE
-    for (auto const& track1 : tracks1) {
+    for (auto const& track1 : tracksTrigger) {
       loopCounter++;
 
       auto reassociatedMftTrack = track1.template mfttrack_as<FilteredMftTracks>();
@@ -2317,7 +2317,7 @@ struct HfTaskFlow {
         reassociatedMftTrackDcaZ = track1.bestDCAZ();
       }
 
-      if (sameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
+      if (isSameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
         registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::NoSelection);
 
         if (!isAcceptedMftTrack(reassociatedMftTrack, reassociatedMftTrackDcaXY, reassociatedMftTrackDcaZ, true)) {
@@ -2354,7 +2354,7 @@ struct HfTaskFlow {
       }
 
       // FILL QA PLOTS for trigger particle
-      if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
+      if (isSameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
         if constexpr (std::is_same_v<aod::FV0As, TFits>) {
           fillTriggerQa<Data, MftFv0a, ChPartChPart>(multiplicity, eta1, phi1, pt1);
         } else if constexpr (std::is_same_v<aod::FT0s, TFits>) {
@@ -2384,7 +2384,7 @@ struct HfTaskFlow {
       //     }
 
       //     // FILL QA PLOTS for associated particle
-      //     if (sameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
+      //     if (isSameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
       //       fillAssociatedQa<Data, MftFv0a, ChPartChPart>(multiplicity, eta2, phi2);
       //     } // end of if condition to fill QA plots for associated particle
       //   } // end of loop over FV0 channel indices
@@ -2396,9 +2396,9 @@ struct HfTaskFlow {
         // select the right channel size if it is FT0a or FT0c
         std::size_t channelSize = 0;
         if (fitType == isFT0C) {
-          channelSize = tracks2.channelC().size();
+          channelSize = tracksAssoc.channelC().size();
         } else if (fitType == isFT0A) {
-          channelSize = tracks2.channelA().size();
+          channelSize = tracksAssoc.channelA().size();
         } else {
           LOGF(fatal, "Cor Index %d out of range", fitType);
         }
@@ -2407,7 +2407,7 @@ struct HfTaskFlow {
 
           int channelId = 0;
           float amplitude = 0.;
-          getChannel(tracks2, indexChannel, channelId, fitType, amplitude);
+          getChannel(tracksAssoc, indexChannel, channelId, fitType, amplitude);
           auto phi2 = getPhiFT0(channelId, fitType);
           auto eta2 = getEtaFT0(channelId, fitType);
           float deltaPhi = phi1 - phi2;
@@ -2425,7 +2425,7 @@ struct HfTaskFlow {
           }
 
           // FILL QA PLOTS for associated particle
-          if (sameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
+          if (isSameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
             if (fitType == isFT0A) {
               fillAssociatedQa<Data, MftFt0a, ChPartChPart>(multiplicity, eta2, phi2);
             }
@@ -2438,7 +2438,7 @@ struct HfTaskFlow {
   template <typename TTarget, typename TFT0As, typename TFT0Cs>
   void fillCorrelationsFt0aFt0c(TTarget target, CorrelationContainer::CFStep step,
                                 TFT0As const& ft0as, TFT0Cs const& ft0cs,
-                                float multiplicity, float posZ, bool sameEvent, float centralityWeight)
+                                float multiplicity, float posZ, bool isSameEvent, float centralityWeight)
   {
     auto triggerWeight = 1.0f;
     auto associatedWeight = 1.0f;
@@ -2463,7 +2463,7 @@ struct HfTaskFlow {
         registry.fill(HIST("Trig_hist_FT0A_FT0C"), sampleIndex, posZ, 0.5, amplitudeA * centralityWeight * triggerWeight);
       }
 
-      if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
+      if (isSameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
         fillTriggerQa<Data, Ft0aFt0c, ChPartChPart>(multiplicity, etaA, phiA, 0.5);
       } // end of fill trigger QA
 
@@ -2488,7 +2488,7 @@ struct HfTaskFlow {
                                       amplitudeA * amplitudeC * centralityWeight * triggerWeight * associatedWeight);
         }
 
-        if (sameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
+        if (isSameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
           fillAssociatedQa<Data, Ft0aFt0c, ChPartChPart>(multiplicity, etaC, phiC);
         } // end of fill associated QA
       } // end of associated loop
@@ -2497,8 +2497,8 @@ struct HfTaskFlow {
 
   template <typename TTarget, typename TTracksTrig, typename TTracksAssoc>
   void fillCorrelationsMonteCarlo(TTarget target, CorrelationContainer::CFStep step,
-                                  TTracksTrig const& tracks1, TTracksAssoc const& tracks2,
-                                  float multiplicity, float posZ, bool sameEvent)
+                                  TTracksTrig const& tracksTrigger, TTracksAssoc const& tracksAssoc,
+                                  float multiplicity, float posZ, bool isSameEvent)
   {
     auto triggerWeight = 1.0f;
     auto associatedWeight = 1.0f;
@@ -2516,7 +2516,7 @@ struct HfTaskFlow {
       }
     }
 
-    for (auto const& track1 : tracks1) {
+    for (auto const& track1 : tracksTrigger) {
       loopCounter++;
 
       if (track1.eta() < configTask.etaMcParticlesTriggerMin || track1.eta() > configTask.etaMcParticlesTriggerMax) {
@@ -2539,7 +2539,7 @@ struct HfTaskFlow {
       }
 
       // FILL QA FOR TRIGGER PARTICLE
-      if (sameEvent && fillQaPlots) {
+      if (isSameEvent && fillQaPlots) {
         registry.fill(HIST("MC/hEfficiencyTrigger"), track1.pt(), track1.eta(), posZ);
         if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcTpc)) {
           fillTriggerQa<Mc, TpcTpc, ChPartChPart>(multiplicity, track1.eta(), track1.phi(), track1.pt());
@@ -2560,7 +2560,7 @@ struct HfTaskFlow {
         }
       }
 
-      for (auto const& track2 : tracks2) {
+      for (auto const& track2 : tracksAssoc) {
 
         if (track1.globalIndex() == track2.globalIndex()) {
           continue;
@@ -2590,7 +2590,7 @@ struct HfTaskFlow {
         }
 
         // FILL QA PLOTS for associated particle
-        if (sameEvent && fillQaPlots && (loopCounter == 1)) {
+        if (isSameEvent && fillQaPlots && (loopCounter == 1)) {
           registry.fill(HIST("MC/hEfficiencyAssociated"), track2.pt(), track2.eta(), posZ);
           if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcTpc)) {
             fillAssociatedQa<Mc, TpcTpc, ChPartChPart>(multiplicity, track2.eta(), track2.phi());
@@ -2620,7 +2620,7 @@ struct HfTaskFlow {
 
   template <typename TCollisions, typename TTracksTrig, typename TTracksAssoc>
   void mixCollisions(TCollisions const& collisions, CorrelationContainer::CFStep step,
-                     TTracksTrig const& tracks1, TTracksAssoc const& tracks2,
+                     TTracksTrig const& tracksTrigger, TTracksAssoc const& tracksAssoc,
                      OutputObj<CorrelationContainer>& corrContainer, aod::BCsWithTimestamps const&)
   {
     // auto getMultiplicity = [this](FilteredCollisionsWSelMult::iterator const& collision) {
@@ -2628,8 +2628,8 @@ struct HfTaskFlow {
     //   return multiplicity;
     // };
 
-    auto getMultiplicity = [&tracks1, this](FilteredCollisionsWSelMult::iterator const& collision) {
-      auto associatedTracks = tracks1.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
+    auto getMultiplicity = [&tracksTrigger, this](FilteredCollisionsWSelMult::iterator const& collision) {
+      auto associatedTracks = tracksTrigger.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
       // auto mult = 0.f;
       if (configCollision.useMultiplicityFromTracks) {
         return associatedTracks.size();
@@ -2642,7 +2642,7 @@ struct HfTaskFlow {
     using BinningTypeData = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
 
     BinningTypeData binningWithTracksSize{{getMultiplicity}, {configAxis.binsMixingVertex, configAxis.binsMixingMultiplicity}, true};
-    auto tracksTuple = std::make_tuple(tracks1, tracks2);
+    auto tracksTuple = std::make_tuple(tracksTrigger, tracksAssoc);
     Pair<TCollisions, TTracksTrig, TTracksAssoc, BinningTypeData> pair{binningWithTracksSize, configTask.nMixedEvents, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
@@ -2682,7 +2682,7 @@ struct HfTaskFlow {
 
   template <typename TCollisions, typename TTracksTrig, typename TTracksAssoc, typename TPresliceTrigger, typename TPresliceAssociated>
   void mixCollisionsBis(TCollisions const& collisions, CorrelationContainer::CFStep step,
-                        TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TPresliceTrigger const& presliceTrigger, TPresliceAssociated const& presliceAssociated,
+                        TTracksTrig const& tracksTrigger, TTracksAssoc const& tracksAssoc, TPresliceTrigger const& presliceTrigger, TPresliceAssociated const& presliceAssociated,
                         OutputObj<CorrelationContainer>& corrContainer, aod::BCsWithTimestamps const&)
   {
     // auto getMultiplicity = [this](FilteredCollisionsWSelMult::iterator const& collision) {
@@ -2690,8 +2690,8 @@ struct HfTaskFlow {
     //   return multiplicity;
     // };
 
-    auto getMultiplicity = [&tracks1, this](FilteredCollisionsWSelMult::iterator const& collision) {
-      auto associatedTracks = tracks1.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
+    auto getMultiplicity = [&tracksTrigger, this](FilteredCollisionsWSelMult::iterator const& collision) {
+      auto associatedTracks = tracksTrigger.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
       auto mult = associatedTracks.size();
       if (configCollision.useMultiplicityFromTracks) {
         return mult;
@@ -2719,7 +2719,7 @@ struct HfTaskFlow {
       loadEfficiencyCorrection(bc.timestamp());
       auto multiplicity = 0;
       if (configCollision.useMultiplicityFromTracks) {
-        multiplicity = tracks1.size();
+        multiplicity = tracksTrigger.size();
       } else {
         multiplicity = getMultiplicityEstimator(collision1, false);
       }
@@ -2736,8 +2736,8 @@ struct HfTaskFlow {
         }
       }
 
-      auto slicedTriggerTracks = tracks1.sliceBy(presliceTrigger, collision1.globalIndex());
-      auto slicedAssociatedTracks = tracks2.sliceBy(presliceAssociated, collision2.globalIndex());
+      auto slicedTriggerTracks = tracksTrigger.sliceBy(presliceTrigger, collision1.globalIndex());
+      auto slicedAssociatedTracks = tracksAssoc.sliceBy(presliceAssociated, collision2.globalIndex());
 
       corrContainer->fillEvent(multiplicity, step);
       fillCorrelations(corrContainer, step, slicedTriggerTracks, slicedAssociatedTracks, multiplicity, collision1.posZ(), false, getMagneticField(bc.timestamp()), centralityWeight);
@@ -2746,7 +2746,7 @@ struct HfTaskFlow {
 
   template <typename TCollisions, typename TTracksTpc, typename TTracksTrig, typename TTracksAssoc, typename TPresliceTrigger, typename TPresliceAssociated>
   void mixCollisionsReassociatedMftTracks(TCollisions const& collisions, CorrelationContainer::CFStep step, TTracksTpc const& tracksTpc,
-                                          TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TPresliceTrigger const& presliceTrigger, TPresliceAssociated const& presliceAssociated,
+                                          TTracksTrig const& tracksTrigger, TTracksAssoc const& tracksAssoc, TPresliceTrigger const& presliceTrigger, TPresliceAssociated const& presliceAssociated,
                                           OutputObj<CorrelationContainer>& corrContainer, bool cutAmbiguousTracks, aod::BCsWithTimestamps const&)
   {
     // auto getMultiplicity = [this](FilteredCollisionsWSelMult::iterator const& collision) {
@@ -2800,24 +2800,24 @@ struct HfTaskFlow {
 
       // if TPC-MFT cases
       if constexpr (std::is_same_v<FilteredTracksWDcaSel, TTracksTrig>) {
-        auto slicedTriggerTracks = tracks1.sliceBy(presliceTrigger, collision1.globalIndex());
-        auto slicedAssociatedTracks = tracks2.sliceBy(presliceAssociated, collision2.globalIndex());
+        auto slicedTriggerTracks = tracksTrigger.sliceBy(presliceTrigger, collision1.globalIndex());
+        auto slicedAssociatedTracks = tracksAssoc.sliceBy(presliceAssociated, collision2.globalIndex());
 
         corrContainer->fillEvent(multiplicity, step);
         fillCorrelationsReassociatedMftTracks(corrContainer, step, slicedTriggerTracks, slicedAssociatedTracks, multiplicity, collision1.posZ(), false, cutAmbiguousTracks, centralityWeight);
       } else if ((collision1.has_foundFT0() && collision2.has_foundFT0())) { // if MFT-FT0A cases
-        auto slicedTriggerTracks = tracks1.sliceBy(presliceTrigger, collision1.globalIndex());
+        auto slicedTriggerTracks = tracksTrigger.sliceBy(presliceTrigger, collision1.globalIndex());
         const auto& ft0 = collision2.foundFT0();
 
         corrContainer->fillEvent(multiplicity, step);
-        fillCorrelationsFITReassociatedMftTracks(corrContainer, step, slicedTriggerTracks, ft0, tracks2, multiplicity, collision1.posZ(), false, cutAmbiguousTracks, isFT0A, centralityWeight);
+        fillCorrelationsFITReassociatedMftTracks(corrContainer, step, slicedTriggerTracks, ft0, tracksAssoc, multiplicity, collision1.posZ(), false, cutAmbiguousTracks, isFT0A, centralityWeight);
       }
     } // end of for loop
   }
 
   template <typename TCollisions, typename TTracksTpc, typename TTracksTrig, typename TTracksAssoc, typename TPreslice>
   void mixCollisionsFIT(TCollisions const& collisions, CorrelationContainer::CFStep step, TTracksTpc const& tracksTpc,
-                        TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TPreslice const& preslice,
+                        TTracksTrig const& tracksTrigger, TTracksAssoc const& tracksAssoc, TPreslice const& preslice,
                         OutputObj<CorrelationContainer>& corrContainer, int fitType, aod::BCsWithTimestamps const&)
   {
     // auto getMultiplicity = [this](FilteredCollisionsWSelMult::iterator const& collision) {
@@ -2825,8 +2825,8 @@ struct HfTaskFlow {
     //   return multiplicity;
     // };
 
-    auto getMultiplicity = [&tracks1, this](FilteredCollisionsWSelMult::iterator const& collision) {
-      auto associatedTracks = tracks1.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
+    auto getMultiplicity = [&tracksTrigger, this](FilteredCollisionsWSelMult::iterator const& collision) {
+      auto associatedTracks = tracksTrigger.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
       auto mult = associatedTracks.size();
       if (configCollision.useMultiplicityFromTracks) {
         return mult;
@@ -2854,7 +2854,7 @@ struct HfTaskFlow {
       // if constexpr (std::is_same_v<aod::FV0As, TTracksAssoc>) { // IF ASSOCIATED PARTICLE FROM FV0A
       //   if (collision1.has_foundFV0() && collision2.has_foundFV0()) {
 
-      //     auto slicedTriggerTracks = tracks1.sliceBy(preslice, collision1.globalIndex());
+      //     auto slicedTriggerTracks = tracksTrigger.sliceBy(preslice, collision1.globalIndex());
       //     auto tracksForMultiplicity = tracksTpc.sliceByCached(o2::aod::track::collisionId, collision1.globalIndex(), cache);
       //     const auto& fv0 = collision2.foundFV0();
 
@@ -2877,7 +2877,7 @@ struct HfTaskFlow {
       if constexpr (std::is_same_v<aod::FT0s, TTracksAssoc>) {
         if (collision1.has_foundFT0() && collision2.has_foundFT0()) {
 
-          auto slicedTriggerTracks = tracks1.sliceBy(preslice, collision1.globalIndex());
+          auto slicedTriggerTracks = tracksTrigger.sliceBy(preslice, collision1.globalIndex());
           auto tracksForMultiplicity = tracksTpc.sliceByCached(o2::aod::track::collisionId, collision1.globalIndex(), cache);
           const auto& ft0 = collision2.foundFT0();
 
@@ -2901,7 +2901,7 @@ struct HfTaskFlow {
           }
 
           corrContainer->fillEvent(multiplicity, step);
-          fillCorrelationsFIT(corrContainer, step, slicedTriggerTracks, ft0, tracks2, multiplicity, collision1.posZ(), false, fitType, centralityWeight);
+          fillCorrelationsFIT(corrContainer, step, slicedTriggerTracks, ft0, tracksAssoc, multiplicity, collision1.posZ(), false, fitType, centralityWeight);
         }
       } // end of if condition for TPC-FT0 or MFT-FT0s
     } // end of for loop
