@@ -505,8 +505,8 @@ class V0Builder
       auto posDaughter = v0.template posTrack_as<T7>();
       auto negDaughter = v0.template negTrack_as<T7>();
 
-      posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionProducts);
-      negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(negDaughter, trackProducts, collisionProducts);
+      posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionBuilder);
+      negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(negDaughter, trackProducts, collisionBuilder);
 
       if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
         fillLambda(collisionProducts, v0Products, v0, 1.f, posDaughterIndex, negDaughterIndex);
@@ -541,10 +541,10 @@ class V0Builder
       collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
 
       auto posDaughter = v0.template posTrack_as<T8>();
-      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionProducts, mcCols, posDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionBuilder, mcCols, posDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       auto negDaughter = v0.template negTrack_as<T8>();
-      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionProducts, mcCols, negDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionBuilder, mcCols, negDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
         fillLambda(collisionProducts, v0Products, v0, 1.f, posDaughterIndex, negDaughterIndex);

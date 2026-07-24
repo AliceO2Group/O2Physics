@@ -547,7 +547,7 @@ class KinkBuilder
       collisionBuilder.template fillCollision<system>(collisionProducts, col);
 
       auto daughter = kink.template trackDaug_as<T7>();
-      daughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kKinkDaughter>(daughter, trackProducts, collisionProducts);
+      daughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kKinkDaughter>(daughter, trackProducts, collisionBuilder);
       if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
         fillSigma(collisionProducts, kinkProducts, kink, daughterIndex);
       }
@@ -581,7 +581,7 @@ class KinkBuilder
       collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
 
       auto daughter = kink.template trackDaug_as<T8>();
-      daughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kKinkDaughter>(col, collisionProducts, mcCols, daughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+      daughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kKinkDaughter>(col, collisionBuilder, mcCols, daughter, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
         fillSigma(collisionProducts, kinkProducts, kink, daughterIndex);

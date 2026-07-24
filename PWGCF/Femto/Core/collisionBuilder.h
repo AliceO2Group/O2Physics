@@ -500,6 +500,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
 
 struct CollisionBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FCols> producedCollision;
+  o2::framework::Produces<o2::aod::FLiteCols> producedLiteCollision;
   o2::framework::Produces<o2::aod::FColMasks> producedCollisionMask;
   o2::framework::Produces<o2::aod::FColPos> producedPositions;
   o2::framework::Produces<o2::aod::FColSphericities> producedSphericities;
@@ -511,6 +512,7 @@ struct CollisionBuilderProducts : o2::framework::ProducesGroup {
 struct ConfCollisionTables : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CollisionTables");
   o2::framework::Configurable<int> produceCollisions{"produceCollisions", -1, "Produce Collisions (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceLiteCollisions{"produceLiteCollisions", -1, "Produce Lite Collisions (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceCollisionMasks{"produceCollisionMasks", -1, "Produce Collision Masks (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> producePositions{"producePositions", -1, "Produce Positions (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceSphericities{"produceSphericities", -1, "Produce Sphericity (-1: auto; 0 off; 1 on)"};
@@ -536,13 +538,21 @@ class CollisionBuilder
     mSubGeneratorId = confFilter.subGeneratorId.value;
 
     mProducedCollisions = utils::enableTable("FCols_001", confTable.produceCollisions.value, initContext);
+    mProducedLiteCollisions = utils::enableTable("FLiteCols_001", confTable.produceLiteCollisions.value, initContext);
     mProducedCollisionMasks = utils::enableTable("FColMasks_001", confTable.produceCollisionMasks.value, initContext);
     mProducedPositions = utils::enableTable("FColPos_001", confTable.producePositions.value, initContext);
     mProducedSphericities = utils::enableTable("FColSphericities_001", confTable.produceSphericities.value, initContext);
     mProducedMultiplicities = utils::enableTable("FColMults_001", confTable.produceMults.value, initContext);
     mProducedCentralities = utils::enableTable("FColCents_001", confTable.produceCents.value, initContext);
     mProduceQns = utils::enableTable("FColQnBins_001", confTable.produceQns.value, initContext);
-    if (mProducedCollisions || mProducedCollisionMasks || mProducedPositions || mProducedSphericities || mProducedMultiplicities || mProducedCentralities) {
+
+    if (mProducedCollisions && mProducedLiteCollisions) {
+      LOG(fatal) << "FCols and FLiteCols are mutually exclusive -- enable only one. "
+                 << "FLiteCols is meant to only replace FCols at the producer stage (for better compression in derived data); "
+                 << "use the dedicated converter task to reconstruct FCols from FLiteCols downstream.";
+    }
+
+    if (mProducedCollisions || mProducedLiteCollisions || mProducedCollisionMasks || mProducedPositions || mProducedSphericities || mProducedMultiplicities || mProducedCentralities) {
       mFillAnyTable = true;
     } else {
       LOG(info) << "No tables configured, Selection object will not be configured...";
@@ -616,17 +626,25 @@ class CollisionBuilder
     if (!mFillAnyTable) {
       return;
     }
-
     if (mCollisionAlreadyFilled) {
       return;
     }
-
     if (mProducedCollisions) {
       collisionProducts.producedCollision(col.posZ(),
                                           col.multNTracksPV(),
                                           mCollisionSelection.getCentrality(),
                                           static_cast<int8_t>(mCollisionSelection.getMagneticField()));
+
+      mCurrentCollisionIndex = collisionProducts.producedCollision.lastIndex();
     }
+    if (mProducedLiteCollisions) {
+      collisionProducts.producedLiteCollision(o2::aod::femtocollisions::lite::binPosZ(col.posZ()),
+                                              o2::aod::femtocollisions::lite::binMult(col.multNTracksPV()),
+                                              o2::aod::femtocollisions::lite::binCent(mCollisionSelection.getCentrality()),
+                                              static_cast<int8_t>(mCollisionSelection.getMagneticField()));
+      mCurrentCollisionIndex = collisionProducts.producedLiteCollision.lastIndex();
+    }
+
     if (mProducedCollisionMasks) {
       collisionProducts.producedCollisionMask(mCollisionSelection.getBitmask());
     }
@@ -673,11 +691,17 @@ class CollisionBuilder
     mcBuilder.template fillMcCollisionWithLabel<system>(mcProducts, col, mcCols);
   }
 
-  void reset() { mCollisionAlreadyFilled = false; }
+  [[nodiscard]] int64_t collisionIndex() const { return mCurrentCollisionIndex; }
+  void reset()
+  {
+    mCollisionAlreadyFilled = false;
+    mCurrentCollisionIndex = -1;
+  }
 
  private:
   CollisionSelection<SelectionHistName, FilterHistName> mCollisionSelection;
   bool mCollisionAlreadyFilled = false;
+  int64_t mCurrentCollisionIndex = -1;
   int mRunNumber = -1;
   std::string mGrpPath = std::string("");
   int mMagFieldForced = 0;
@@ -685,6 +709,7 @@ class CollisionBuilder
   int mSubGeneratorId = -1;
   bool mFillAnyTable = false;
   bool mProducedCollisions = false;
+  bool mProducedLiteCollisions = false;
   bool mProducedCollisionMasks = false;
   bool mProducedPositions = false;
   bool mProducedSphericities = false;

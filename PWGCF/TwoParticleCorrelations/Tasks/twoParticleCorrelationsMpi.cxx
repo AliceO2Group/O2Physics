@@ -99,7 +99,7 @@ struct TwoParticleCorrelationsMpi {
   Configurable<std::string> cfgMultCutFormula{"cfgMultCutFormula", "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity, [cFT0M] FT0M centrality"};
 
   // Suggested values: Photon: 0.004; K0 and Lambda: 0.005
-  Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {CfgPairCutDefaults.front().data(), 5, 1, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
+  Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {CfgPairCutDefaults.front().data(), 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
 
   Configurable<std::string> cfgEfficiencyTrigger{"cfgEfficiencyTrigger", "", "CCDB path to efficiency object for trigger particles"};
   Configurable<std::string> cfgEfficiencyAssociated{"cfgEfficiencyAssociated", "", "CCDB path to efficiency object for associated particles"};
