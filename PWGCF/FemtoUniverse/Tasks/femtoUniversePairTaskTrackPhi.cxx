@@ -219,7 +219,8 @@ struct FemtoUniversePairTaskTrackPhi {
   {
     if (mom < ConfTrackPtPIDLimit) {
       return std::abs(nsigmaTPCPr) < ConfPIDProtonNsigmaTPC;
-    } else if (mom > ConfTrackPtPIDLimit) {
+    }
+    if (mom > ConfTrackPtPIDLimit) {
       return std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfPIDProtonNsigmaCombined;
     }
     return false;
@@ -230,11 +231,11 @@ struct FemtoUniversePairTaskTrackPhi {
     if (mom < 0.5) {
       return true;
     }
-    if (mom > 0.5) {
+    if (mom >= 0.5) {
       return std::hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPIDPionNsigmaReject || std::hypot(nsigmaTOFK, nsigmaTPCK) < ConfPIDKaonNsigmaReject;
-    } else {
-      return false;
     }
+    // this will never be reached but is needed to avoid compiler warnings
+    return false;
   }
 
   bool isKaonNSigma(float mom, bool hasTOF, float nsigmaTPCK, float nsigmaTOFK)
@@ -242,33 +243,34 @@ struct FemtoUniversePairTaskTrackPhi {
     if (ConfTrackUseRun3PIDforKaons) {
       if (mom < 0.5) {
         return std::abs(nsigmaTPCK) < 3.0;
-      } else if (mom >= 0.5) {
-        if (hasTOF) // if TOF is available, use combine nsigma
-        {
+      }
+      if (mom >= 0.5) {
+        if (hasTOF) { // if TOF is available, use combine nsigma
           return std::hypot(nsigmaTOFK, nsigmaTPCK) < 3.0;
-        } else // if TOF is not available, use TPC nsigma only
+        }
+        if (!hasTOF) // if TOF is not available, use TPC nsigma only
         {
           return std::abs(nsigmaTPCK) < 3.0;
         }
       }
-
-      else {
-        return false;
-      }
+      return false;
     } else {
       if (mom < 0.3) { // 0.0-0.3
         return std::abs(nsigmaTPCK) < 3.0;
-      } else if (mom < 0.45) { // 0.30 - 0.45
-        return std::abs(nsigmaTPCK) < 2.0;
-      } else if (mom < 0.55) { // 0.45-0.55
-        return std::abs(nsigmaTPCK) < 1.0;
-      } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-        return std::hypot(nsigmaTOFK, nsigmaTPCK) < 3.0;
-      } else if (mom > 1.5) { // 1.5 -
-        return (std::abs(nsigmaTOFK) < 2.0) && (std::abs(nsigmaTPCK) < 3.0);
-      } else {
-        return false;
       }
+      if (mom < 0.45) { // 0.30 - 0.45
+        return std::abs(nsigmaTPCK) < 2.0;
+      }
+      if (mom < 0.55) { // 0.45-0.55
+        return std::abs(nsigmaTPCK) < 1.0;
+      }
+      if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
+        return std::hypot(nsigmaTOFK, nsigmaTPCK) < 3.0;
+      }
+      if (mom > 1.5) { // 1.5 -
+        return (std::abs(nsigmaTOFK) < 2.0) && (std::abs(nsigmaTPCK) < 3.0);
+      }
+      return false;
     }
   }
 
@@ -277,21 +279,19 @@ struct FemtoUniversePairTaskTrackPhi {
     if (mom < 0.5) {
       return (std::abs(nsigmaTPCPi) < ConfPIDPionNsigmaReject) || (std::abs(nsigmaTPCPr) < ConfPIDProtonNsigmaReject);
     }
-    if (mom > 0.5) {
+    if (mom >= 0.5) {
       return (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPIDPionNsigmaReject) || (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfPIDProtonNsigmaReject);
-    } else {
-      return false;
     }
+    return false;
   }
 
   bool isPionNSigma(float mom, float nsigmaTPCPi, float nsigmaTOFPi)
   {
-    if (true) {
-      if (mom < 0.5) {
-        return (std::abs(nsigmaTPCPi) < ConfPIDPionNsigmaTPC);
-      } else if (mom > 0.5) {
-        return (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPIDPionNsigmaCombined);
-      }
+    if (mom < 0.5) {
+      return (std::abs(nsigmaTPCPi) < ConfPIDPionNsigmaTPC);
+    }
+    if (mom >= 0.5) {
+      return (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfPIDPionNsigmaCombined);
     }
     return false;
   }
@@ -301,7 +301,7 @@ struct FemtoUniversePairTaskTrackPhi {
     if (mom < 0.5) {
       return (std::abs(nsigmaTPCK) < ConfPIDKaonNsigmaReject) || (std::abs(nsigmaTPCPr) < ConfPIDProtonNsigmaReject);
     }
-    if (mom > 0.5) {
+    if (mom >= 0.5) {
       return (std::hypot(nsigmaTOFK, nsigmaTPCK) < ConfPIDKaonNsigmaReject) || (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfPIDProtonNsigmaReject);
     } else {
       return false;
@@ -698,7 +698,8 @@ struct FemtoUniversePairTaskTrackPhi {
           registryMCtruth.fill(HIST("MCtruthPpos"), part.pt(), part.eta());
           registryMCtruth.fill(HIST("MCtruthPposPt"), part.pt());
           continue;
-        } else if (pdgCode == kKPlus) {
+        }
+        if (pdgCode == kKPlus) {
           registryMCtruth.fill(HIST("MCtruthKp"), part.pt(), part.eta());
           registryMCtruth.fill(HIST("MCtruthKpPt"), part.pt());
           continue;
@@ -720,7 +721,8 @@ struct FemtoUniversePairTaskTrackPhi {
           registryMCtruth.fill(HIST("MCtruthKm"), part.pt(), part.eta());
           registryMCtruth.fill(HIST("MCtruthKmPt"), part.pt());
           continue;
-        } else if (pdgCode == kProtonBar) {
+        }
+        if (pdgCode == kProtonBar) {
           registryMCtruth.fill(HIST("MCtruthPneg"), part.pt(), part.eta());
           registryMCtruth.fill(HIST("MCtruthPnegPt"), part.pt());
           continue;
