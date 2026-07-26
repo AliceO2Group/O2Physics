@@ -898,7 +898,7 @@ namespace lite
 
 // Xi-: PDG mass 1.32171 GeV, roughly ±100 MeV window
 constexpr float XiMassMin = 1.22;
-constexpr float XiMassMax = 1.42; 
+constexpr float XiMassMax = 1.42;
 constexpr float XiMassStep = (XiMassMax - XiMassMin) / 65536.f;
 
 // Omega-: PDG mass 1.67245 GeV, roughly ±100 MeV window
