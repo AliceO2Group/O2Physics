@@ -97,7 +97,7 @@ using FCol = FCols::iterator;
 using StoredFCols = StoredFCols_001;
 
 // table for basic collision information, compressed/binned information
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteCols_001, "FLITECOLS", 1, //! femto collisions, binned information
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteCols_001, "FLITECOL", 1, //! femto collisions, binned information
                                    o2::soa::Index<>,
                                    femtocollisions::lite::BinnedPosZ,
                                    femtocollisions::lite::BinnedMult,
@@ -347,7 +347,7 @@ using FTrack = FTracks::iterator;
 using StoredFTracks = StoredFTracks_001;
 
 // table for basic track information, compressed/binned kinematics
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteTracks_001, "FLITETRACKS", 1, //! femto tracks, binned kinematics
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteTracks_001, "FLITETRACK", 1, //! femto tracks, binned kinematics
                                    o2::soa::Index<>,
                                    femtobase::stored::FLiteColId,
                                    femtobase::lite::SignedBinnedPt,
@@ -617,7 +617,7 @@ using FLambdas = FLambdas_001;
 using StoredFLambdas = StoredFLambdas_001;
 
 // table for basic lambda information with compressed/binned kinematics
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteLambdas_001, "FLITELAMBDAS", 1,
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteLambdas_001, "FLITELAMBDA", 1,
                                    o2::soa::Index<>,
                                    femtobase::stored::FLiteColId,
                                    femtobase::lite::SignedBinnedPt,
