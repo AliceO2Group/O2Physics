@@ -338,7 +338,7 @@ struct doublephimeson {
     }
 
     if (PIDStrategy == 1003) {
-      if (ptcand < 0.5 && TOFHit != 1 && std::abs(nsigmaTPC) < cutNsigmaTPC {
+      if (ptcand < 0.5 && TOFHit != 1 && std::abs(nsigmaTPC) < cutNsigmaTPC) {
         return true;
       }
       if (ptcand < 0.5 && TOFHit == 1 && std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < cutNsigmaTPC) {
