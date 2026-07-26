@@ -565,9 +565,9 @@ constexpr float LambdaMassMin = 1.05f; // Kinematic lower limit
 constexpr float LambdaMassMax = 1.30f;
 constexpr float LambdaMassStep = (LambdaMassMax - LambdaMassMin) / 65536.f;
 
-// K0short: PDG mass 0.497611 GeV, ±100 MeV window
-constexpr float K0shortMassMin = 0.497611f - 0.1f; // = 0.397611
-constexpr float K0shortMassMax = 0.497611f + 0.1f; // = 0.597611
+// K0short: PDG mass 0.497611 GeV roughly ±100 MeV window
+constexpr float K0shortMassMin = 0.4f;
+constexpr float K0shortMassMax = 0.6f;
 constexpr float K0shortMassStep = (K0shortMassMax - K0shortMassMin) / 65536.f;
 
 inline uint16_t binLambdaMass(float lambdaMass) { return o2::analysis::femto::utils::binLinear<uint16_t>(lambdaMass, LambdaMassMin, LambdaMassMax, LambdaMassStep); }
@@ -726,10 +726,9 @@ DECLARE_SOA_INDEX_COLUMN_FULL(ChaDau, chaDau, int32_t, FTracks, "_ChaDau"); //!
 
 namespace lite
 {
-// Sigma (using a shared window covering both Sigma- 1.19745 and Sigma+ 1.18937):
-// centered on the midpoint ~1.19341, +-100 MeV comfortably covers both species + margin
-constexpr float SigmaMassMin = 1.19341f - 0.1f; // = 1.09341
-constexpr float SigmaMassMax = 1.19341f + 0.1f; // = 1.29341
+// Sigma (using a shared window covering both Sigma- 1.19745 and Sigma+ 1.18937) with roughly +-100 MeV
+constexpr float SigmaMassMin = 1.1f;
+constexpr float SigmaMassMax = 1.3f;
 constexpr float SigmaMassStep = (SigmaMassMax - SigmaMassMin) / 65536.f;
 
 inline uint16_t binSigmaMass(float mass) { return o2::analysis::femto::utils::binLinear<uint16_t>(mass, SigmaMassMin, SigmaMassMax, SigmaMassStep); }
@@ -897,14 +896,14 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int32_t, FTracks, "_Bachelor")
 namespace lite
 {
 
-// Xi-: PDG mass 1.32171 GeV, ±100 MeV window
-constexpr float XiMassMin = 1.32171f - 0.1f; // = 1.22171
-constexpr float XiMassMax = 1.32171f + 0.1f; // = 1.42171
+// Xi-: PDG mass 1.32171 GeV, roughly ±100 MeV window
+constexpr float XiMassMin = 1.22;
+constexpr float XiMassMax = 1.42; 
 constexpr float XiMassStep = (XiMassMax - XiMassMin) / 65536.f;
 
-// Omega-: PDG mass 1.67245 GeV, ±100 MeV window
-constexpr float OmegaMassMin = 1.67245f - 0.1f; // = 1.57245
-constexpr float OmegaMassMax = 1.67245f + 0.1f; // = 1.77245
+// Omega-: PDG mass 1.67245 GeV, roughly ±100 MeV window
+constexpr float OmegaMassMin = 1.57;
+constexpr float OmegaMassMax = 1.77;
 constexpr float OmegaMassStep = (OmegaMassMax - OmegaMassMin) / 65536.f;
 
 inline uint16_t binXiMass(float mass) { return o2::analysis::femto::utils::binLinear<uint16_t>(mass, XiMassMin, XiMassMax, XiMassStep); }
