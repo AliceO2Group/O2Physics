@@ -170,6 +170,13 @@ static inline int piIdx(const T& t)
 {
   return t.pionIndexmc();
 }
+
+template <typename T>
+static inline int dcaV0ToPV(const T& t)
+{
+  return t.dcaV0ToPVmc();
+}
+
 } // namespace mcacc
 
 // Optional fixed-leg correction pointers kept outside the task struct.
@@ -273,6 +280,7 @@ struct lambdaspincorrderived {
   Configurable<float> rapidity{"rapidity", 0.5, "Rapidity cut on lambda"};
   Configurable<float> v0etaMixBuffer{"v0etaMixBuffer", 0.8, "Eta cut on mix event buffer"};
   Configurable<float> v0eta{"v0eta", 0.8, "Eta cut on lambda"};
+  Configurable<float> dcaV0ToPV{"dcaV0ToPV", 1.2, "DCA V0 to PV cut on lambda"};
 
   // Event Mixing
   Configurable<int> cosDef{"cosDef", 1, "Defination of cos"};
@@ -584,6 +592,9 @@ struct lambdaspincorrderived {
       return false;
     }
     if (candidate.dcaBetweenDaughter() > dcaDaughters) {
+      return false;
+    }
+    if (candidate.dcaV0ToPV() > dcaV0ToPV) {
       return false;
     }
     if (candidate.v0Status() == 0 && (std::abs(candidate.dcaPositive()) < dcaProton || std::abs(candidate.dcaNegative()) < dcaPion)) {
@@ -1645,6 +1656,9 @@ struct lambdaspincorrderived {
       return false;
     }
     if (mcacc::dcaDau(candidate) > dcaDaughters) {
+      return false;
+    }
+    if (mcacc::dcaV0ToPV(candidate) > dcaV0ToPV) {
       return false;
     }
     if (mcacc::v0Status(candidate) == 0 && (std::abs(mcacc::dcaPos(candidate)) < dcaProton || std::abs(mcacc::dcaNeg(candidate)) < dcaPion)) {
