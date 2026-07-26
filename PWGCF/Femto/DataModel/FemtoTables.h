@@ -198,8 +198,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, //! theta
 namespace lite
 {
 
-constexpr float EtaMin = -1.2f; // Eta coverage of ITS
-constexpr float EtaMax = 1.2f;
+constexpr float EtaMin = -1.5f;
+constexpr float EtaMax = 1.5f;
 constexpr float EtaStep = (EtaMax - EtaMin) / 65536.f;
 
 constexpr float PhiMin = 0.f;
