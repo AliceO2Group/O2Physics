@@ -897,13 +897,13 @@ namespace lite
 {
 
 // Xi-: PDG mass 1.32171 GeV, roughly ±100 MeV window
-constexpr float XiMassMin = 1.22;
-constexpr float XiMassMax = 1.42;
+constexpr float XiMassMin = 1.22f;
+constexpr float XiMassMax = 1.42f;
 constexpr float XiMassStep = (XiMassMax - XiMassMin) / 65536.f;
 
 // Omega-: PDG mass 1.67245 GeV, roughly ±100 MeV window
-constexpr float OmegaMassMin = 1.57;
-constexpr float OmegaMassMax = 1.77;
+constexpr float OmegaMassMin = 1.57f;
+constexpr float OmegaMassMax = 1.77f;
 constexpr float OmegaMassStep = (OmegaMassMax - OmegaMassMin) / 65536.f;
 
 inline uint16_t binXiMass(float mass) { return o2::analysis::femto::utils::binLinear<uint16_t>(mass, XiMassMin, XiMassMax, XiMassStep); }
