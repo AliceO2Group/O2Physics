@@ -88,7 +88,7 @@ struct Phi1020analysis {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Service<framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
   RCTFlagsChecker rctChecker;
 
   struct : ConfigurableGroup {
@@ -409,7 +409,7 @@ struct Phi1020analysis {
 
   // Centralicity estimator selection
   template <typename Coll>
-  float centEst(Coll collisions)
+  float centEst(const Coll& collisions)
   {
     float returnValue = -999.0f;
     switch (centEstimator) {
@@ -433,68 +433,89 @@ struct Phi1020analysis {
   bool isSelected(const Coll& collision, bool fillHist = true)
   {
     auto applyCut = [&](bool enabled, bool condition, int bin) {
-      if (!enabled)
+      if (!enabled) {
         return true;
-      if (!condition)
+      }
+      if (!condition) {
         return false;
-      if (fillHist)
+      }
+      if (fillHist) {
         histos.fill(HIST("CollCutCounts"), bin);
+      }
       return true;
     };
 
-    if (fillHist)
+    if (fillHist) {
       histos.fill(HIST("CollCutCounts"), 0);
+    }
 
-    if (!applyCut(true, std::abs(collision.posZ()) <= configEvents.cfgEvtZvtx, 1))
+    if (!applyCut(true, std::abs(collision.posZ()) <= configEvents.cfgEvtZvtx, 1)) {
       return false;
+    }
 
     if (!applyCut(configEvents.cfgEvtTriggerTVXSel,
-                  collision.selection_bit(aod::evsel::kIsTriggerTVX), 2))
+                  collision.selection_bit(aod::evsel::kIsTriggerTVX), 2)) {
       return false;
+    }
 
     if (!applyCut(configEvents.cfgEvtNoTFBorderCut,
-                  collision.selection_bit(aod::evsel::kNoTimeFrameBorder), 3))
+                  collision.selection_bit(aod::evsel::kNoTimeFrameBorder), 3)) {
       return false;
+    }
 
     if (!applyCut(configEvents.cfgEvtNoITSROFrameBorderCut,
-                  collision.selection_bit(aod::evsel::kNoITSROFrameBorder), 4))
+                  collision.selection_bit(aod::evsel::kNoITSROFrameBorder), 4)) {
       return false;
+    }
 
-    if (!applyCut(configEvents.cfgEvtIsRCTFlagpassed, rctChecker(collision), 5))
+    if (!applyCut(configEvents.cfgEvtIsRCTFlagpassed, rctChecker(collision), 5)) {
       return false;
+    }
 
-    if (!applyCut(configEvents.cfgEvtSel8, collision.sel8(), 6))
+    if (!applyCut(configEvents.cfgEvtSel8, collision.sel8(), 6)) {
       return false;
+    }
 
-    if (!applyCut(configEvents.cfgEvtIsINELgt0, collision.isInelGt0(), 7))
+    if (!applyCut(configEvents.cfgEvtIsINELgt0, collision.isInelGt0(), 7)) {
       return false;
+    }
 
-    if (fillHist)
+    if (fillHist) {
       histos.fill(HIST("CollCutCounts"), 8);
+    }
 
     return true;
   }
 
   template <typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     // basic track cuts
     if (configTracks.cDCAr7SigCut && std::abs(track.dcaXY()) > (0.004f + 0.013f / (track.pt()))) // 7 - Sigma cut
+    {
       return false;
-    if (configTracks.cTPCNClsFound && (track.tpcNClsFound() < configTracks.cMinTPCNClsFound))
+    }
+    if (configTracks.cTPCNClsFound && (track.tpcNClsFound() < configTracks.cMinTPCNClsFound)) {
       return false;
-    if (track.tpcNClsCrossedRows() < configTracks.cfgMinCrossedRows)
+    }
+    if (track.tpcNClsCrossedRows() < configTracks.cfgMinCrossedRows) {
       return false;
-    if (configTracks.cfgHasTOF && !track.hasTOF())
+    }
+    if (configTracks.cfgHasTOF && !track.hasTOF()) {
       return false;
-    if (configTracks.cfgPrimaryTrack && !track.isPrimaryTrack())
+    }
+    if (configTracks.cfgPrimaryTrack && !track.isPrimaryTrack()) {
       return false;
-    if (configTracks.cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
+    }
+    if (configTracks.cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA()) {
       return false;
-    if (configTracks.cfgPVContributor && !track.isPVContributor())
+    }
+    if (configTracks.cfgPVContributor && !track.isPVContributor()) {
       return false;
-    if (configTracks.cfgGlobalTrack && !track.isGlobalTrack())
+    }
+    if (configTracks.cfgGlobalTrack && !track.isGlobalTrack()) {
       return false;
+    }
 
     return true;
   }
@@ -596,10 +617,7 @@ struct Phi1020analysis {
   template <typename T>
   bool rejectPion(const T& candidate)
   {
-    if (candidate.pt() > MinPtforPionRejection && candidate.pt() < MaxPtforPionRejection && !candidate.hasTOF() && candidate.tpcNSigmaPi() < MaxnSigmaforPionRejection) {
-      return false;
-    }
-    return true;
+    return !(candidate.pt() > MinPtforPionRejection && candidate.pt() < MaxPtforPionRejection && !candidate.hasTOF() && candidate.tpcNSigmaPi() < MaxnSigmaforPionRejection);
   }
 
   auto static constexpr MaxNophi1020Daughters = 2;
@@ -630,14 +648,19 @@ struct Phi1020analysis {
 
     LorentzVectorPtEtaPhiMass lDecayDaughter1, lDecayDaughter2, lResonance, ldaughterRot, lResonanceRot;
 
-    for (const auto& [trk1, trk2] : combinations(CombinationsUpperIndexPolicy(dTracks1, dTracks2))) {
-      // Full index policy is needed to consider all possible combinations
-      if (trk1.index() == trk2.index())
-        continue; // We need to run (0,1), (1,0) pairs as well. but same id pairs are not needed.
+    for (const auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
+      LOG(info) << "Before pass, Track1 index:" << trk1.index() << ",Track2 index:" << trk2.index();
+
+      if (trk2.index() <= trk1.index()) {
+        continue;
+      }
+
+      LOG(info) << "After pass, Track1 index:" << trk1.index() << ",Track2 index:" << trk2.index();
 
       // apply the track cut
-      if (!trackCut(trk1) || !trackCut(trk2))
+      if (!trackCut(trk1) || !trackCut(trk2)) {
         continue;
+      }
 
       //// Initialize variables
       // Trk1: Proton
@@ -663,10 +686,12 @@ struct Phi1020analysis {
         deltaEta = std::abs(trk1eta - trk2eta);
         deltaPhi = std::abs(trk1phi - trk2phi);
         deltaPhi = (deltaPhi > o2::constants::math::PI) ? (o2::constants::math::TwoPI - deltaPhi) : deltaPhi;
-        if (deltaEta >= cMaxDeltaEtaCut)
+        if (deltaEta >= cMaxDeltaEtaCut) {
           continue;
-        if (deltaPhi >= cMaxDeltaPhiCut)
+        }
+        if (deltaPhi >= cMaxDeltaPhiCut) {
           continue;
+        }
       }
 
       //// QA plots before the selection
@@ -696,13 +721,17 @@ struct Phi1020analysis {
 
       //// Apply the pid selection
       if (crejectPion && rejectPion(trk2)) // to remove pion contamination from the kaon track
+      {
         continue;
+      }
 
-      if (configPID.ispTdepPID && (!ptDependentPidKaon(trk1) || !ptDependentPidKaon(trk2)))
+      if (configPID.ispTdepPID && (!ptDependentPidKaon(trk1) || !ptDependentPidKaon(trk2))) {
         continue;
+      }
 
-      if (!configPID.ispTdepPID && (!selectionPID(trk1) || !selectionPID(trk2)))
+      if (!configPID.ispTdepPID && (!selectionPID(trk1) || !selectionPID(trk2))) {
         continue;
+      }
 
       //// QA plots after the selection
       if constexpr (IsData) { //  --- PID QA Proton
@@ -756,8 +785,9 @@ struct Phi1020analysis {
         auto v1 = lDecayDaughter1.Vect();
         auto v2 = lDecayDaughter2.Vect();
         float alpha = std::acos(v1.Dot(v2) / (v1.R() * v2.R()));
-        if (alpha > cMinOpeningAngle && alpha < cMaxOpeningAngle)
+        if (alpha > cMinOpeningAngle && alpha < cMaxOpeningAngle) {
           continue;
+        }
       }
 
       lResonance = lDecayDaughter1 + lDecayDaughter2;
@@ -767,14 +797,19 @@ struct Phi1020analysis {
       auto resonanceRapidity = lResonance.Rapidity();
 
       // Rapidity cut
-      if (std::abs(resonanceRapidity) > configTracks.cfgCutRapidity)
+      if (std::abs(resonanceRapidity) > configTracks.cfgCutRapidity) {
         continue;
+      }
 
       if (cfgUseCutsOnMother) {
         if (resonancePt >= cMaxPtMotherCut) // excluding candidates in overflow
+        {
           continue;
+        }
         if (resonanceMass >= cMaxMinvMotherCut) // excluding candidates in overflow
+        {
           continue;
+        }
       }
 
       if (cFilladditionalQAeventPlots) {
@@ -801,14 +836,19 @@ struct Phi1020analysis {
             auto resonanceRotPt = lResonanceRot.Pt();
 
             // Rapidity cut
-            if (std::abs(lResonanceRot.Rapidity()) >= configTracks.cfgCutRapidity)
+            if (std::abs(lResonanceRot.Rapidity()) >= configTracks.cfgCutRapidity) {
               continue;
+            }
 
             if (cfgUseCutsOnMother) {
               if (resonanceRotPt >= cMaxPtMotherCut) // excluding candidates in overflow
+              {
                 continue;
+              }
               if (resonanceRotMass >= cMaxMinvMotherCut) // excluding candidates in overflow
+              {
                 continue;
+              }
             }
             if (cFill1DQAs) {
               histos.fill(HIST("Result/Data/phi1020InvMassRotation"), resonanceRotMass);
@@ -877,14 +917,18 @@ struct Phi1020analysis {
             mothersPDGtrk2.pop_back();
           }
 
-          if (std::abs(mctrk1.pdgCode()) != kKPlus || std::abs(mctrk2.pdgCode()) != kKPlus)
+          if (std::abs(mctrk1.pdgCode()) != kKPlus || std::abs(mctrk2.pdgCode()) != kKPlus) {
             continue;
+          }
 
           if (motherstrk1[0] != motherstrk2[0]) // Same mother
+          {
             continue;
+          }
 
-          if (std::abs(mothersPDGtrk1[0]) != Pdg::kPhi)
+          if (std::abs(mothersPDGtrk1[0]) != Pdg::kPhi) {
             continue;
+          }
 
           // LOGF(info, "mother trk1 id: %d, mother trk1: %d, trk1 id: %d, trk1 pdgcode: %d, mother trk2 id: %d, mother trk2: %d, trk2 id: %d, trk2 pdgcode: %d", motherstrk1[0], mothersPDGtrk1[0], trk1.globalIndex(), mctrk1.pdgCode(), motherstrk2[0], mothersPDGtrk2[0], trk2.globalIndex(), mctrk2.pdgCode());
 
@@ -947,7 +991,9 @@ struct Phi1020analysis {
                    TrackCandidates const& tracks)
   {
     if (!isSelected(collision)) // Default event selection
+    {
       return;
+    }
 
     auto centrality = centEst(collision);
 
@@ -961,10 +1007,14 @@ struct Phi1020analysis {
   void processRotational(EventCandidates::iterator const& collision, TrackCandidates const& tracks)
   {
     if (!isSelected(collision, false)) // Default event selection
+    {
       return;
+    }
 
     if (!collision.isInelGt0()) // <--
+    {
       return;
+    }
 
     fillHistograms<false, true, false, false>(collision, tracks, tracks);
   }
@@ -984,21 +1034,29 @@ struct Phi1020analysis {
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       // LOGF(info, "Mixed event collisions: (%d, %d)", collision1.globalIndex(), collision2.globalIndex());
 
-      // for (auto& [t1, t2] : combinations(CombinationsUpperIndexPolicy(tracks1, tracks2))) {
+      // for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
       //  LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d)", t1.index(), t2.index(), collision1.index(), collision2.index());
       //  }
 
       if (!isSelected(collision1, false)) // Default event selection
+      {
         continue;
+      }
 
       if (!isSelected(collision2, false)) // Default event selection
+      {
         continue;
+      }
 
       if (!collision1.isInelGt0()) // <--
+      {
         continue;
+      }
 
       if (!collision2.isInelGt0()) // <--
+      {
         continue;
+      }
 
       if (cFilladditionalQAeventPlots) {
         // Fill histograms for the characteristics of the *mixed* events (collision1 and collision2)
@@ -1023,11 +1081,13 @@ struct Phi1020analysis {
                     aod::McCollisions const&,
                     MCTrackCandidates const& tracks, aod::McParticles const&)
   {
-    if (!collision.has_mcCollision())
+    if (!collision.has_mcCollision()) {
       return;
+    }
 
-    if (!isSelected(collision))
+    if (!isSelected(collision)) {
       return;
+    }
 
     auto centrality = centEst(collision);
 
@@ -1042,8 +1102,9 @@ struct Phi1020analysis {
 
   void processMCGen(MCEventCandidates::iterator const& collision, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
-    if (!collision.has_mcCollision())
+    if (!collision.has_mcCollision()) {
       return;
+    }
 
     bool isInAfterAllCuts = isSelected(collision, false);
 
@@ -1077,20 +1138,24 @@ struct Phi1020analysis {
       histos.fill(HIST("QA/MC/h2GenPhiRapidity_beforeanycut"), part.phi(), part.y());
 
       if (cUseRapcutMC && std::abs(part.y()) > configTracks.cfgCutRapidity) // rapidity cut
+      {
         continue;
+      }
 
       if (cfgUseDaughterEtaCutMC) {
         for (auto const& daughters : part.daughters_as<aod::McParticles>()) {
-          if (std::fabs(daughters.eta()) > configTracks.cfgCutEta)
-            continue; // eta cut for daughters
+          if (std::fabs(daughters.eta()) > configTracks.cfgCutEta) {
+            continue;
+          } // eta cut for daughters
         } // loop over daughters
       }
 
       histos.fill(HIST("QA/MC/h2GenEtaPt_afterRapcut"), part.eta(), part.pt());
       histos.fill(HIST("QA/MC/h2GenPhiRapidity_afterRapcut"), part.phi(), part.y());
 
-      if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
+      if (isInAfterAllCuts && isTrueINELgt0) { // after all event selection && INEL>0
         histos.fill(HIST("Result/MC/Genphi1020pt"), part.pt(), centrality);
+      }
     }
   }
   PROCESS_SWITCH(Phi1020analysis, processMCGen, "Process Event for MC only", false);
@@ -1110,8 +1175,9 @@ struct Phi1020analysis {
 
       float centrality = mcCollision.centFT0M();
 
-      if (isTrueINELgt0 && isInAfterAllCuts)
+      if (isTrueINELgt0 && isInAfterAllCuts) {
         histos.fill(HIST("Event/MultiplicityRecoEv"), centrality);
+      }
     }
 
     // Loop on generated collisions to fill the event factor for the INEL>0 correction
@@ -1122,8 +1188,9 @@ struct Phi1020analysis {
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccolls.globalIndex(), cacheMC);
       bool isTrueINELgt0 = pwglf::isINELgt0mc(particlesInCollision, pdg); // QA for Trigger efficiency
 
-      if (inVtx10 && isTrueINELgt0)
+      if (inVtx10 && isTrueINELgt0) {
         histos.fill(HIST("Event/MultiplicityGenEv"), centrality);
+      }
     }
   }
   PROCESS_SWITCH(Phi1020analysis, processEventFactor, "Process Event factor", false);
@@ -1145,22 +1212,26 @@ struct Phi1020analysis {
       float centrality = mcCollision.centFT0M();
 
       // ===== NUM =====
-      if (!(inVtx10 && isTrueINELgt0))
+      if (!(inVtx10 && isTrueINELgt0)) {
         continue;
+      }
 
-      if (!isInAfterAllCuts)
+      if (!isInAfterAllCuts) {
         continue;
+      }
 
       for (const auto& part : particlesInCollision) {
 
-        if (cUseRapcutMC && std::abs(part.y()) > configTracks.cfgCutRapidity)
+        if (cUseRapcutMC && std::abs(part.y()) > configTracks.cfgCutRapidity) {
           continue;
+        }
 
         float pt = part.pt();
 
         // phi
-        if (std::abs(part.pdgCode()) == Pdg::kPhi)
+        if (std::abs(part.pdgCode()) == Pdg::kPhi) {
           histos.fill(HIST("Result/SignalLoss/GenTruephi1020pt_num"), pt, centrality);
+        }
       }
     }
 
@@ -1173,13 +1244,15 @@ struct Phi1020analysis {
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccolls.globalIndex(), cacheMC);
       bool isTrueINELgt0 = pwglf::isINELgt0mc(particlesInCollision, pdg);
 
-      if (!(inVtx10 && isTrueINELgt0))
+      if (!(inVtx10 && isTrueINELgt0)) {
         continue;
+      }
 
       for (const auto& part : particlesInCollision) {
 
-        if (cUseRapcutMC && std::abs(part.y()) > configTracks.cfgCutRapidity)
+        if (cUseRapcutMC && std::abs(part.y()) > configTracks.cfgCutRapidity) {
           continue;
+        }
 
         // =========================
         // ===== PHI(1020) ======
