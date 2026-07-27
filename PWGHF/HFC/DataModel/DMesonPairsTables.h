@@ -100,7 +100,7 @@ DECLARE_DMESON_PAIR_MCINFO_TABLE(D0PairMcGenInfo, 2, "D0PAIRGEN"); //! D0 pairs 
 namespace hf_correlation_d_meson_had
 {
 // D candidate
-DECLARE_SOA_COLUMN(PtD, pD, float);                  //! Transverse momentum of the D meson
+DECLARE_SOA_COLUMN(PtD, ptD, float);                 //! Transverse momentum of the D meson
 DECLARE_SOA_COLUMN(YD, yD, float);                   //! Rapidity of the D meson
 DECLARE_SOA_COLUMN(EtaD, etaD, float);               //! Pseudorapidity of the D meson
 DECLARE_SOA_COLUMN(PhiD, phiD, float);               //! Azimuthal angle of the D meson
@@ -110,7 +110,7 @@ DECLARE_SOA_COLUMN(GIndexColD, gIndexColD, int);     //! G-index column of the D
 DECLARE_SOA_COLUMN(TimestampD, timestampD, int64_t); //! Timestamp of the D meson
 
 // Associated hadron
-DECLARE_SOA_COLUMN(PtHad, pHad, float);                  //! Transverse momentum of the associated hadron
+DECLARE_SOA_COLUMN(PtHad, ptHad, float);                 //! Transverse momentum of the associated hadron
 DECLARE_SOA_COLUMN(YHad, yHad, float);                   //! Rapidity of the associated hadron
 DECLARE_SOA_COLUMN(EtaHad, etaHad, float);               //! Pseudorapidity of the associated hadron
 DECLARE_SOA_COLUMN(PhiHad, phiHad, float);               //! Azimuthal angle of the associated hadron

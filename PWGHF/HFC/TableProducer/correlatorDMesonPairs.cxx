@@ -514,12 +514,12 @@ struct HfCorrelatorDMesonPairs {
   }
 
   /// Fill counters for D0 and D0bar
-  /// \param selectedD0Candidates contains all D0 candidates
+  /// \param d0Candidates contains all D0 candidates
   template <typename T>
-  void getCountersPerEvent(const T& selectedD0Candidates)
+  void getCountersPerEvent(const T& d0Candidates)
   {
     int nDevent = 0, nDbarevent = 0, nDDbarevent = 0, nDorDbarevent = 0;
-    for (const auto& candidate : selectedD0Candidates) {
+    for (const auto& candidate : d0Candidates) {
       // Get counters per event
       bool const isSignalD0 = std::abs(HfHelper::invMassD0ToPiK(candidate) - MassD0) < massCut;
       bool const isSignalD0bar = std::abs(HfHelper::invMassD0barToKPi(candidate) - MassD0Bar) < massCut;
