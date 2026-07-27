@@ -63,7 +63,6 @@
 
 #include <Rtypes.h>
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -150,13 +149,13 @@ constexpr std::array<std::array<double, 6>, static_cast<int>(Species::kAllSpecie
   {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}, // He3
   {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}  // hadron
 }};
-static const std::vector<std::string> kItsParNames{"p0", "p1", "p2", "res0", "res1", "res2"};
+const std::vector<std::string> kItsParNames{"p0", "p1", "p2", "res0", "res1", "res2"};
 
 constexpr std::array<std::array<double, 6>, 1> kBetheBlochDefault = {{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}}};
-static const std::vector<std::string> kBetheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
+const std::vector<std::string> kBetheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 
 constexpr std::array<std::array<double, 6>, 1> kBetheBlochCorrectionDefault = {{{0.0, -1.e32, -1.e32, 0.0, -1.e32, -1.e32}}};
-static const std::vector<std::string> kBetheBlochCorrectionParNames{"p0", "p1", "p2", "p3", "p4", "p5"};
+const std::vector<std::string> kBetheBlochCorrectionParNames{"p0", "p1", "p2", "p3", "p4", "p5"};
 
 constexpr std::array<std::array<double, 4>, static_cast<int>(Species::kAllSpecies)> kDCAxyResDefault = {{
   {1.09e-4, 0.0011, 0.0065, 1.0399}, // He3
@@ -166,7 +165,7 @@ constexpr std::array<std::array<double, 4>, static_cast<int>(Species::kAllSpecie
   {9.36e-5, 0.0019, 0.0080, 1.416}, // He3
   {1.18e-4, 0.0020, 0.0025, 1.3460} // Pr
 }};
-static const std::vector<std::string> kDCAResParNames{"res0", "res1", "res2", "mean"};
+const std::vector<std::string> kDCAResParNames{"res0", "res1", "res2", "mean"};
 
 constexpr std::array<double, 3> kHePidTrkPtParamsHeDefault = {0.3101, -0.1759, 0.0262};
 constexpr std::array<double, 3> kHePidTrkPParamsHeDefault = {0., 0., 0.};
@@ -175,12 +174,14 @@ constexpr std::array<double, 3> kHePidTrkPParamsHeDefault = {0., 0., 0.};
 
 struct He3HadCandidate {
 
-  float recoPtHe3() const { return signHe3 * std::hypot(momHe3[0], momHe3[1]); }
-  float recoPhiHe3() const { return std::atan2(momHe3[1], momHe3[0]); }
-  float recoEtaHe3() const { return std::asinh(momHe3[2] / std::abs(recoPtHe3())); }
-  float recoPtHad() const { return signHad * std::hypot(momHad[0], momHad[1]); }
-  float recoPhiHad() const { return std::atan2(momHad[1], momHad[0]); }
-  float recoEtaHad() const { return std::asinh(momHad[2] / std::abs(recoPtHad())); }
+  [[nodiscard]] float recoPtHe3() const { return signHe3 * std::hypot(momHe3[0], momHe3[1]); }
+  [[nodiscard]] float recoPhiHe3() const { return std::atan2(momHe3[1], momHe3[0]); }
+  [[nodiscard]] float recoEtaHe3() const { return std::asinh(momHe3[2] / std::abs(recoPtHe3())); }
+  [[nodiscard]] float recoPtHad() const { return signHad * std::hypot(momHad[0], momHad[1]); }
+  [[nodiscard]] float recoPhiHad() const { return std::atan2(momHad[1], momHad[0]); }
+  [[nodiscard]] float recoEtaHad() const { return std::asinh(momHad[2] / std::abs(recoPtHad())); }
+  [[nodiscard]] float recoKstar() const { return getkstar(recoPtHe3(), recoEtaHe3(), recoPhiHe3(), constants::physics::MassHelium3, 1.f,
+                                                          recoPtHad(), recoEtaHad(), recoPhiHad(), constants::physics::MassProton, 1.f); }
 
   std::array<float, 3> momHe3 = {99.f, 99.f, 99.f};
   std::array<float, 3> momHad = {99.f, 99.f, 99.f};
@@ -335,13 +336,13 @@ struct he3HadronFemto {
   SameKindPair<CollisionsFull, TrackCandidates, BinningType> mPair{binningPolicy, settingNoMixedEvents, -1, &cache};
 
   struct He3HadronParams {
-    std::array<float, 6> betheBlochParams = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
-    std::array<float, 6> betheBlochCorrectionParams = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
-    std::array<std::array<float, 6>, static_cast<int>(Species::kAllSpecies)> itsParams;
-    std::array<std::array<float, 4>, static_cast<int>(Species::kAllSpecies)> dcaxyResParams;
-    std::array<std::array<float, 4>, static_cast<int>(Species::kAllSpecies)> dcazResParams;
-    std::array<float, 3> hePidTrkPtParams = {0.0f, 0.0f, 0.0f};
-    std::array<float, 3> hePidTrkPParams = {0.0f, 0.0f, 0.0f};
+    std::array<float, 6> betheBlochParams{};
+    std::array<float, 6> betheBlochCorrectionParams{};
+    std::array<std::array<float, 6>, static_cast<int>(Species::kAllSpecies)> itsParams{};
+    std::array<std::array<float, 4>, static_cast<int>(Species::kAllSpecies)> dcaxyResParams{};
+    std::array<std::array<float, 4>, static_cast<int>(Species::kAllSpecies)> dcazResParams{};
+    std::array<float, 3> hePidTrkPtParams{};
+    std::array<float, 3> hePidTrkPParams{};
   } mHe3HadronParams;
 
   o2::aod::ITSResponse mResponseITS;
@@ -497,8 +498,8 @@ struct he3HadronFemto {
     mRunNumber = bc.runNumber();
     const float defaultBzValue = -999.0f;
     auto run3GrpTimestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = mCcdb->getForTimeStamp<o2::parameters::GRPObject>(settingGrpPath, run3GrpTimestamp);
-    o2::parameters::GRPMagField* grpmag = 0x0;
+    auto grpo = mCcdb->getForTimeStamp<o2::parameters::GRPObject>(settingGrpPath, run3GrpTimestamp);
+    o2::parameters::GRPMagField* grpmag = nullptr;
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
       if (settingDbz < defaultBzValue) {
@@ -575,8 +576,9 @@ struct he3HadronFemto {
 
   float correctPtHe3TrackedAsTriton(const float pt, const uint32_t pidForTracking)
   {
-    if (pt < 2.5 && pidForTracking == o2::track::PID::Triton)
+    if (pt < 2.5 && pidForTracking == o2::track::PID::Triton) {
       return pt * (1. - mHe3HadronParams.hePidTrkPtParams[0] - mHe3HadronParams.hePidTrkPtParams[1] * pt - mHe3HadronParams.hePidTrkPtParams[2] * pt * pt);
+    }
 
     return pt;
   }
@@ -587,8 +589,9 @@ struct he3HadronFemto {
     float correctedTPCinnerParam = (heliumPID && settingCompensatePIDinTracking) ? tpcInnerParam / 2.f : tpcInnerParam;
 
     correctedTPCinnerParam *= 2.f; // rigidity to momentum
-    if (correctedTPCinnerParam < 2.5 && pidForTracking == o2::track::PID::Triton)
+    if (correctedTPCinnerParam < 2.5 && pidForTracking == o2::track::PID::Triton) {
       return correctedTPCinnerParam * (1. - mHe3HadronParams.hePidTrkPParams[0] - mHe3HadronParams.hePidTrkPParams[1] * correctedTPCinnerParam - mHe3HadronParams.hePidTrkPParams[2] * correctedTPCinnerParam * correctedTPCinnerParam);
+    }
 
     return correctedTPCinnerParam;
   }
@@ -596,7 +599,7 @@ struct he3HadronFemto {
   float computeNsigmaDCA(const float pt, const float dca, const int iSpecies, const char* dcaType = "xy")
   {
 
-    std::array<float, 4> parameters;
+    std::array<float, 4> parameters{{0., 0., 0., 0.}};
     if (std::strcmp(dcaType, "xy") == 0) {
       parameters = mHe3HadronParams.dcaxyResParams[iSpecies];
     } else if (std::strcmp(dcaType, "z") == 0) {
@@ -616,8 +619,9 @@ struct he3HadronFemto {
     const float nsigmaDcaZ = computeNsigmaDCA(pt, dcaZ, ispecies, "z");
 
     if (std::abs(nsigmaDcaXy) > cutSettings.settingCutNsigmaDcaXy ||
-        std::abs(nsigmaDcaZ) > cutSettings.settingCutNsigmaDcaZ)
+        std::abs(nsigmaDcaZ) > cutSettings.settingCutNsigmaDcaZ) {
       return false;
+    }
 
     return true;
   }
@@ -787,8 +791,9 @@ struct he3HadronFemto {
     std::array<float, 3> collisionVertex = getCollisionVertex(collisions, he3Hadcand.collisionID);
 
     he3Hadcand.momHe3 = std::array{trackHe3.px(), trackHe3.py(), trackHe3.pz()};
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 3; i++) {
       he3Hadcand.momHe3[i] = he3Hadcand.momHe3[i] * 2;
+    }
     he3Hadcand.momHad = std::array{trackHad.px(), trackHad.py(), trackHad.pz()};
     float invMass = CommonInite;
     if (settingHadPDGCode == PDG_t::kPiPlus) {
@@ -817,7 +822,7 @@ struct he3HadronFemto {
     } else {
       auto trackCovHe3 = getTrackParCov(trackHe3);
       auto trackCovHad = getTrackParCov(trackHad);
-      std::array<float, 2> dcaInfo;
+      std::array<float, 2> dcaInfo{{-999., -999.}};
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collisionVertex[0], collisionVertex[1], collisionVertex[2]}, trackCovHe3, 2.f, mFitter.getMatCorrType(), &dcaInfo);
       he3Hadcand.dcaxyHe3 = dcaInfo[0];
       he3Hadcand.dcazHe3 = dcaInfo[1];
@@ -1009,6 +1014,7 @@ struct he3HadronFemto {
     mQaRegistry.fill(HIST("He3/hHe3Pt"), he3Hadcand.recoPtHe3());
     mQaRegistry.fill(HIST("Had/hHadronPt"), he3Hadcand.recoPtHad());
     mQaRegistry.fill(HIST("hhe3HadtInvMass"), he3Hadcand.invMass);
+    mQaRegistry.fill(HIST("hhe3HadKstar"), he3Hadcand.recoKstar());
     mQaRegistry.fill(HIST("He3/hDCAxyHe3"), he3Hadcand.dcaxyHe3);
     mQaRegistry.fill(HIST("He3/hDCAzHe3"), he3Hadcand.dcazHe3);
     mQaRegistry.fill(HIST("Had/hDCAxyHad"), he3Hadcand.dcaxyHad);
@@ -1167,7 +1173,7 @@ struct he3HadronFemto {
 
       pairTracksSameEvent(trackTableThisCollision, collision);
 
-      if (mTrackPairs.size() == 0) {
+      if (mTrackPairs.empty()) {
         continue;
       }
 
@@ -1248,14 +1254,14 @@ struct he3HadronFemto {
           he3Hadcand.flags |= Flags::kBothPrimaries;
           isMixedPair = false;
 
-        } else if ((he3Hadcand.flagsHe3 & ParticleFlags::kFromLi4) && (he3Hadcand.flagsHad & ParticleFlags::kFromLi4)) {
+        } else if (static_cast<bool>(he3Hadcand.flagsHe3 & ParticleFlags::kFromLi4) && static_cast<bool>(he3Hadcand.flagsHad & ParticleFlags::kFromLi4)) {
 
           searchForCommonMotherTrack(motherHe3Idxs, motherHadIdxs, mcParticles, motherParticle, he3Hadcand, isMixedPair, Li4PDG);
           if (!isMixedPair) {
             he3Hadcand.flags |= Flags::kBothFromLi4;
           }
 
-        } else if ((he3Hadcand.flagsHe3 & ParticleFlags::kFromHypertriton) && (he3Hadcand.flagsHad & ParticleFlags::kFromHypertriton)) {
+        } else if (static_cast<bool>(he3Hadcand.flagsHe3 & ParticleFlags::kFromHypertriton) && static_cast<bool>(he3Hadcand.flagsHad & ParticleFlags::kFromHypertriton)) {
 
           searchForCommonMotherTrack(motherHe3Idxs, motherHadIdxs, mcParticles, motherParticle, he3Hadcand, isMixedPair, H3LPDG);
           if (!isMixedPair) {
@@ -1306,8 +1312,9 @@ struct he3HadronFemto {
 
     for (const auto& track : tracks) {
 
-      if (!selectTrack(track, Species::kHad))
+      if (!selectTrack(track, Species::kHad)) {
         continue;
+      }
 
       const float itsNSigmaHad = settingHadPDGCode == PDG_t::kProton ? mResponseITS.nSigmaITS<o2::track::PID::Proton>(track.itsClusterSizes(), track.p(), track.eta()) : mResponseITS.nSigmaITS<o2::track::PID::Pion>(track.itsClusterSizes(), track.p(), track.eta());
       mQaRegistry.fill(HIST("Had/h2NsigmaHadronITS_preselection"), track.sign() * track.pt(), itsNSigmaHad, collision.centFT0C());
@@ -1332,8 +1339,9 @@ struct he3HadronFemto {
       const float itsNSigmaHe3 = mResponseITS.nSigmaITS<o2::track::PID::Helium3>(track.itsClusterSizes(), 2 * track.p(), track.eta());
       mQaRegistry.fill(HIST("He3/h2NsigmaHe3ITS_preselection"), ptHe3Corrected, itsNSigmaHe3, collision.centFT0C());
 
-      if (!selectTrack(track, Species::kHe3) || !selectDcaNsigmaCut(ptHe3Corrected, track.dcaXY(), track.dcaZ(), Species::kHe3) || (itsNSigmaHe3 < cutSettings.settingCutNsigmaITSHe3))
+      if (!selectTrack(track, Species::kHe3) || !selectDcaNsigmaCut(ptHe3Corrected, track.dcaXY(), track.dcaZ(), Species::kHe3) || (itsNSigmaHe3 < cutSettings.settingCutNsigmaITSHe3)) {
         continue;
+      }
 
       mQaRegistry.fill(HIST("He3/hHe3Pt"), track.sign() * ptHe3Corrected);
       mQaRegistry.fill(HIST("He3/hDCAxyHe3"), track.dcaXY());
@@ -1353,17 +1361,20 @@ struct he3HadronFemto {
 
   void processPurityMc(const CollisionsFullMC::iterator& collision, const TrackCandidatesMC& tracks, const aod::BCsWithTimestamps& bcs, const aod::McParticles& /*mcParticles*/, const aod::McTrackLabels& /*mcTrackLabels*/)
   {
-    if (!selectCollision</*isMC*/ false>(collision, bcs))
+    if (!selectCollision</*isMC*/ false>(collision, bcs)) {
       return;
+    }
 
     for (const auto& track : tracks) {
 
-      if (!track.has_mcParticle())
+      if (!track.has_mcParticle()) {
         continue;
+      }
       const auto& particle = track.mcParticle_as<aod::McParticles>();
 
-      if (!selectTrack(track, Species::kHad))
+      if (!selectTrack(track, Species::kHad)) {
         continue;
+      }
 
       if (selectDcaNsigmaCut(track.pt(), track.dcaXY(), track.dcaZ(), Species::kHad)) {
         mQaRegistry.fill(HIST("Had/hHadronPt"), track.pt());
@@ -1390,8 +1401,9 @@ struct he3HadronFemto {
       }
 
       const float ptHe3Corrected = correctPtHe3TrackedAsTriton(track.pt(), track.pidForTracking());
-      if (!selectTrack(track, Species::kHe3) || !selectDcaNsigmaCut(ptHe3Corrected, track.dcaXY(), track.dcaZ(), Species::kHe3))
+      if (!selectTrack(track, Species::kHe3) || !selectDcaNsigmaCut(ptHe3Corrected, track.dcaXY(), track.dcaZ(), Species::kHe3)) {
         continue;
+      }
 
       mQaRegistry.fill(HIST("He3/hHe3Pt"), ptHe3Corrected);
       mQaRegistry.fill(HIST("He3/hDCAxyHe3"), track.dcaXY());
