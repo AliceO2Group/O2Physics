@@ -24,8 +24,6 @@
 
 #include <TPDGCode.h>
 
-#include <sys/types.h>
-
 #include <algorithm>
 #include <cmath>
 #include <concepts>
