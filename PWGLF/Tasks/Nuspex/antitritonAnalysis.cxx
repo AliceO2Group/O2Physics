@@ -9,9 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \brief (Anti)triton analysis
-/// \author Nikita Gladin (ngladin@cern.ch)
-/// Based on PWGCF/Femto3D/DataModel/singletrackselector.h
+
+/// \file antitritonAnalysis.cxx
+/// \brief Analysis of (anti)tritons, based on PWGCF/Femto3D/DataModel/singletrackselector.h
+/// \author Nikita Gladin <ngladin@cern.ch>
 
 #include "PWGCF/Femto3D/Core/femto3dPairTask.h"
 #include "PWGCF/Femto3D/DataModel/PIDutils.h"
@@ -20,6 +21,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/PIDResponseITS.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -29,6 +31,7 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
@@ -57,6 +60,9 @@ struct AntitritonAnalysis {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryTrue{"registryTrue", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  Service<o2::framework::O2DatabasePDG> pdgDB;
+  float particleMass = 0.f;
+
   Configurable<bool> isMC{"isMC", false, ""};
 
   Configurable<bool> removeSameBunchPileup{"removeSameBunchPileup", false, ""};
@@ -72,6 +78,7 @@ struct AntitritonAnalysis {
   Configurable<float> minP{"minP", 0.0, "lower mometum limit"};
   Configurable<float> maxP{"maxP", 100.0, "upper mometum limit"};
   Configurable<float> eta{"eta", 100.0, "abs eta value limit"};
+  Configurable<float> y{"y", 100.0, "abs y value limit"};
   Configurable<std::vector<float>> dcaXY{"dcaXY", std::vector<float>{0.3f, 0.0f, 0.0f}, "abs dcaXY value limit; formula: [0] + [1]*pT^[2]"};
   Configurable<std::vector<float>> dcaZ{"dcaZ", std::vector<float>{0.3f, 0.0f, 0.0f}, "abs dcaZ value limit; formula: [0] + [1]*pT^[2]"};
   Configurable<int16_t> minTpcNClsFound{"minTpcNClsFound", 0, "minimum allowed number of TPC clasters"};
@@ -99,11 +106,9 @@ struct AntitritonAnalysis {
   Configurable<std::vector<float>> dcaBinning{"dcaBinning", std::vector<float>{501, 0.5f, 1}, "setup for variable binning (geometric progression is used): 1st (int) -- N_bins (must be odd, otherwise will be increased by 1); 2nd (float) -- abs value of the edge of axises in histos (-2nd, +2nd); 3d (int) -- desired ratio between w_bin at the edges and at 0;"};
   Configurable<std::vector<float>> tofMass{"tofMass", std::vector<float>{3.0f, 3.0f}, "TOF Mass bounds"};
 
-  std::pair<int, std::vector<float>> ITScuts;
-  std::pair<int, std::vector<float>> TPCcuts;
-  std::pair<int, std::vector<float>> TOFcuts;
-
-  static constexpr float kMassTriton = o2::constants::physics::MassTriton; // GeV/c^2
+  std::pair<int, std::vector<float>> itsCuts;
+  std::pair<int, std::vector<float>> tpcCuts;
+  std::pair<int, std::vector<float>> tofCuts;
 
   Filter pFilter = o2::aod::singletrackselector::p > minP&& o2::aod::singletrackselector::p < maxP;
   Filter etaFilter = nabs(o2::aod::singletrackselector::eta) < eta;
@@ -113,28 +118,28 @@ struct AntitritonAnalysis {
 
   struct HistSet {
     std::shared_ptr<TH1> eta;
-    std::shared_ptr<TH2> eta_to_y;
+    std::shared_ptr<TH2> etaToY;
     std::shared_ptr<TH1> y;
     std::shared_ptr<TH1> phi;
     std::shared_ptr<TH1> p;
     std::shared_ptr<TH1> pt;
-    std::shared_ptr<TH2> dcaxy_to_p;
-    std::shared_ptr<TH2> dcaxy_to_pt;
-    std::shared_ptr<TH2> dcaz_to_p;
-    std::shared_ptr<TH2> dcaz_to_pt;
-    std::shared_ptr<TH1> TPCClusters;
-    std::shared_ptr<TH1> ITSClusters;
-    std::shared_ptr<TH2> TPCSignal;
-    std::shared_ptr<TH2> TOFSignal;
-    std::shared_ptr<TH2> mTOF;
+    std::shared_ptr<TH2> dcaxyToP;
+    std::shared_ptr<TH2> dcaxyToPt;
+    std::shared_ptr<TH2> dcazToP;
+    std::shared_ptr<TH2> dcazToPt;
+    std::shared_ptr<TH1> tpcClusters;
+    std::shared_ptr<TH1> itsClusters;
+    std::shared_ptr<TH2> tpcSignal;
+    std::shared_ptr<TH2> tofSignal;
+    std::shared_ptr<TH2> massTOF;
     std::shared_ptr<TH2> nsigmaITS;
     std::shared_ptr<TH2> nsigmaTPC;
     std::shared_ptr<TH2> nsigmaTOF;
-    std::shared_ptr<TH2> TOFoverTPC;
+    std::shared_ptr<TH2> tofOverTPC;
     std::shared_ptr<TH2> innerParamToP;
-    std::shared_ptr<TH2> PtGenPtRec;
-    std::shared_ptr<TH3> dcaxy_dcaz_to_pt;
-    std::shared_ptr<TH2> dcaxy_to_dcaz;
+    std::shared_ptr<TH2> ptGenPtRec;
+    std::shared_ptr<TH3> dcaxyDcazToPt;
+    std::shared_ptr<TH2> dcaxyToDcaz;
     std::shared_ptr<TH1> origin;
   };
 
@@ -163,22 +168,22 @@ struct AntitritonAnalysis {
 
     h.eta = reg.add<TH1>((dir + "/eta").c_str(), "#eta;#eta;Entries", kTH1F, {{200, -2.5, 2.5}});
     h.y = reg.add<TH1>((dir + "/y").c_str(), "y;y;Entries", kTH1F, {{200, -2.5, 2.5}});
-    h.eta_to_y = reg.add<TH2>((dir + "/eta_to_y").c_str(), "#eta;y;Entries", kTH2F, {{200, -2.5, 2.5}, {200, -2.5, 2.5}});
-    h.phi = reg.add<TH1>((dir + "/phi").c_str(), "#phi;#phi;Entries", kTH1F, {{200, 0., 2. * M_PI}});
+    h.etaToY = reg.add<TH2>((dir + "/eta_to_y").c_str(), "#eta;y;Entries", kTH2F, {{200, -2.5, 2.5}, {200, -2.5, 2.5}});
+    h.phi = reg.add<TH1>((dir + "/phi").c_str(), "#phi;#phi;Entries", kTH1F, {{200, 0., o2::constants::math::TwoPI}});
     h.p = reg.add<TH1>((dir + "/p").c_str(), "p;p (GeV/#it{c});Entries", kTH1F, {{100, 0., 5.}});
     h.pt = reg.add<TH1>((dir + "/pt").c_str(), "p_{T};p_{T} (GeV/#it{c});Entries", kTH1F, {{100, 0., 5.}});
-    h.dcaxy_to_p = reg.add<TH2>((dir + "/dcaxy_to_p").c_str(), "DCA_{xy} vs p;p (GeV/#it{c});DCA_{xy} (cm)", kTH2F, {{100, 0., 5.0}, {501, -0.5, 0.5}});
-    h.dcaxy_to_pt = reg.add<TH2>((dir + "/dcaxy_to_pt").c_str(), "DCA_{xy} vs p_{T};p_{T} (GeV/#it{c});DCA_{xy} (cm)", kTH2F, {{100, 0., 5.0}, {501, -0.5, 0.5}});
-    h.dcaz_to_p = reg.add<TH2>((dir + "/dcaz_to_p").c_str(), "DCA_{z} vs p;p (GeV/#it{c});DCA_{z} (cm)", kTH2F, {{100, 0., 5.0}, {501, -0.5, 0.5}});
-    h.dcaz_to_pt = reg.add<TH2>((dir + "/dcaz_to_pt").c_str(), "DCA_{z} vs p_{T};p_{T} (GeV/#it{c});DCA_{z} (cm)", kTH2F, {{100, 0., 5.0}, {501, -0.5, 0.5}});
-    h.TPCClusters = reg.add<TH1>((dir + "/TPCClusters").c_str(), "TPC Clusters;N_{TPC clusters};Entries", kTH1F, {{163, -0.5, 162.5}});
-    h.ITSClusters = reg.add<TH1>((dir + "/ITSClusters").c_str(), "ITS Clusters;N_{ITS clusters};Entries", kTH1F, {{10, -0.5, 9.5}});
-    h.TPCSignal = reg.add<TH2>((dir + "/TPCSignal").c_str(), "TPC Signal;#it{p}_{inner} (GeV/#it{c});dE/dx in TPC (arbitrary units)", kTH2F, {{200, 0., 5.0}, {1000, 0., 1000.0}});
-    h.TOFSignal = reg.add<TH2>((dir + "/TOFSignal").c_str(), "TOF Signal;#it{p} (GeV/#it{c});#beta", kTH2F, {{200, 0., 5.0}, {100, 0., 1.5}});
-    h.mTOF = reg.add<TH2>((dir + "/mTOF").c_str(), "m_{TOF};p_{T} (GeV/#it{c});m_{TOF}(GeV/#it{c}^{2})", kTH2F, {{120, 0., 6.}, {1000, -1.5, 5.0}});
+    h.dcaxyToP = reg.add<TH2>((dir + "/dcaxy_to_p").c_str(), "DCA_{xy} vs p;p (GeV/#it{c});DCA_{xy} (cm)", kTH2F, {{100, 0., 5.0}, {501, -0.5, 0.5}});
+    h.dcaxyToPt = reg.add<TH2>((dir + "/dcaxy_to_pt").c_str(), "DCA_{xy} vs p_{T};p_{T} (GeV/#it{c});DCA_{xy} (cm)", kTH2F, {{100, 0., 5.0}, {501, -0.5, 0.5}});
+    h.dcazToP = reg.add<TH2>((dir + "/dcaz_to_p").c_str(), "DCA_{z} vs p;p (GeV/#it{c});DCA_{z} (cm)", kTH2F, {{100, 0., 5.0}, {501, -0.5, 0.5}});
+    h.dcazToPt = reg.add<TH2>((dir + "/dcaz_to_pt").c_str(), "DCA_{z} vs p_{T};p_{T} (GeV/#it{c});DCA_{z} (cm)", kTH2F, {{100, 0., 5.0}, {501, -0.5, 0.5}});
+    h.tpcClusters = reg.add<TH1>((dir + "/TPCClusters").c_str(), "TPC Clusters;N_{TPC clusters};Entries", kTH1F, {{163, -0.5, 162.5}});
+    h.itsClusters = reg.add<TH1>((dir + "/ITSClusters").c_str(), "ITS Clusters;N_{ITS clusters};Entries", kTH1F, {{10, -0.5, 9.5}});
+    h.tpcSignal = reg.add<TH2>((dir + "/TPCSignal").c_str(), "TPC Signal;#it{p}_{inner} (GeV/#it{c});dE/dx in TPC (arbitrary units)", kTH2F, {{200, 0., 5.0}, {1000, 0., 1000.0}});
+    h.tofSignal = reg.add<TH2>((dir + "/TOFSignal").c_str(), "TOF Signal;#it{p} (GeV/#it{c});#beta", kTH2F, {{200, 0., 5.0}, {100, 0., 1.5}});
+    h.massTOF = reg.add<TH2>((dir + "/mTOF").c_str(), "m_{TOF};p_{T} (GeV/#it{c});m_{TOF}(GeV/#it{c}^{2})", kTH2F, {{120, 0., 6.}, {1000, -1.5, 5.0}});
     h.innerParamToP = reg.add<TH2>((dir + "/ip_to_p").c_str(), ";#it{p} (GeV/#it{c});ip_to_p", kTH2F, {{100, 0., 5.0}, {100, 0.0, 2.0}});
-    h.PtGenPtRec = reg.add<TH2>((dir + "/ptgenptrec").c_str(), ";#it{p_{T, rec}} (GeV/#it{c});#it{p_{T, rec}} - #it{p_{T, gen}}(GeV/#it{c})", kTH2F, {{100, 0., 5.0}, {100, -2.5, 2.5}});
-    h.dcaxy_dcaz_to_pt = reg.add<TH3>(
+    h.ptGenPtRec = reg.add<TH2>((dir + "/ptgenptrec").c_str(), ";#it{p_{T, rec}} (GeV/#it{c});#it{p_{T, rec}} - #it{p_{T, gen}}(GeV/#it{c})", kTH2F, {{100, 0., 5.0}, {100, -2.5, 2.5}});
+    h.dcaxyDcazToPt = reg.add<TH3>(
       (dir + "/dcaxy_dcaz_to_pt").c_str(),
       "DCA_{xy} vs DCA_{z} vs p_{T};DCA_{xy} (cm);DCA_{z} (cm);p_{T} (GeV/#it{c})",
       kTH3F,
@@ -187,7 +192,7 @@ struct AntitritonAnalysis {
         {101, -0.5, 0.5}, // y axis: DCA_z
         {20, 0., 5.0}     // z axis: pT
       });
-    h.dcaxy_to_dcaz = reg.add<TH2>(
+    h.dcaxyToDcaz = reg.add<TH2>(
       (dir + "/dcaxy_to_dcaz").c_str(),
       "DCA_{z} vs DCA_{xy};DCA_{xy} (cm);DCA_{z} (cm);Counts",
       kTH2F,
@@ -198,7 +203,7 @@ struct AntitritonAnalysis {
     h.origin = reg.add<TH1>((dir + "/origin").c_str(), "MC origin;origin (-1: unmatched, 0: primary, 1: weak decay, 2: material);Entries", kTH1F, {{4, -1.5, 2.5}});
 
     if (pdgForPid != 0) {
-      h.TOFoverTPC = reg.add<TH2>((dir + Form("/TOFoverTPC_PDG%i", pdgForPid)).c_str(), "n#sigma_{TOF};n#sigma_{TPC};", kTH2F, {{100, -10., 10.}, {100, -10., 10.}});
+      h.tofOverTPC = reg.add<TH2>((dir + Form("/TOFoverTPC_PDG%i", pdgForPid)).c_str(), "n#sigma_{TOF};n#sigma_{TPC};", kTH2F, {{100, -10., 10.}, {100, -10., 10.}});
       h.nsigmaITS = reg.add<TH2>((dir + Form("/nsigmaITS_PDG%i", pdgForPid)).c_str(), Form("n#sigma_{ITS};p (GeV/#it{c});n#sigma_{ITS}"), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
       h.nsigmaTPC = reg.add<TH2>((dir + Form("/nsigmaTPC_PDG%i", pdgForPid)).c_str(), Form("n#sigma_{TPC};p (GeV/#it{c});n#sigma_{TPC}"), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
       h.nsigmaTOF = reg.add<TH2>((dir + Form("/nsigmaTOF_PDG%i", pdgForPid)).c_str(), Form("n#sigma_{TOF};p (GeV/#it{c});n#sigma_{TOF}"), kTH2F, {{100, 0., 5.}, {100, -10., 10.}});
@@ -208,7 +213,7 @@ struct AntitritonAnalysis {
   }
 
   template <typename TrackType>
-  static float getMTOF(const TrackType& track)
+  static float getMassTOF(const TrackType& track)
   {
     const float beta = track.beta();
     if (beta <= 0.f || beta >= 1.f) {
@@ -220,45 +225,45 @@ struct AntitritonAnalysis {
   template <typename TrackType>
   void fillHistSet(HistSet& h, const TrackType& track, int pdg)
   {
-    const float mass = kMassTriton;
-    const auto y = static_cast<float>(RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, mass));
+    const auto y = static_cast<float>(RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, particleMass));
     h.eta->Fill(track.eta());
-    h.eta_to_y->Fill(track.eta(), y);
+    h.etaToY->Fill(track.eta(), y);
     h.y->Fill(y);
     h.phi->Fill(track.phi());
     h.p->Fill(track.p());
     h.pt->Fill(track.pt());
-    h.dcaxy_to_p->Fill(track.p(), track.dcaXY());
-    h.dcaxy_to_pt->Fill(track.pt(), track.dcaXY());
-    h.dcaz_to_p->Fill(track.p(), track.dcaZ());
-    h.dcaz_to_pt->Fill(track.pt(), track.dcaZ());
-    h.dcaxy_dcaz_to_pt->Fill(track.dcaXY(), track.dcaZ(), track.pt());
-    h.dcaxy_to_dcaz->Fill(track.dcaXY(), track.dcaZ());
-    h.TPCClusters->Fill(track.tpcNClsFound());
-    h.ITSClusters->Fill(track.itsNCls());
+    h.dcaxyToP->Fill(track.p(), track.dcaXY());
+    h.dcaxyToPt->Fill(track.pt(), track.dcaXY());
+    h.dcazToP->Fill(track.p(), track.dcaZ());
+    h.dcazToPt->Fill(track.pt(), track.dcaZ());
+    h.dcaxyDcazToPt->Fill(track.dcaXY(), track.dcaZ(), track.pt());
+    h.dcaxyToDcaz->Fill(track.dcaXY(), track.dcaZ());
+    h.tpcClusters->Fill(track.tpcNClsFound());
+    h.itsClusters->Fill(track.itsNCls());
     h.nsigmaITS->Fill(track.p(), o2::aod::singletrackselector::getITSNsigma(track, pdg));
     h.nsigmaTPC->Fill(track.p(), o2::aod::singletrackselector::getTPCNsigma(track, pdg));
     h.nsigmaTOF->Fill(track.p(), o2::aod::singletrackselector::getTOFNsigma(track, pdg));
-    h.TOFoverTPC->Fill(o2::aod::singletrackselector::getTPCNsigma(track, pdg), o2::aod::singletrackselector::getTOFNsigma(track, pdg));
+    h.tofOverTPC->Fill(o2::aod::singletrackselector::getTPCNsigma(track, pdg), o2::aod::singletrackselector::getTOFNsigma(track, pdg));
   }
 
   template <bool HasMC, typename TrackType>
   void fillHistSetExtra(HistSet& h, const TrackType& track)
   {
-    h.TPCSignal->Fill(track.tpcInnerParam(), track.tpcSignal());
-    h.TOFSignal->Fill(track.p(), track.beta());
-    h.mTOF->Fill(track.pt(), getMTOF(track));
+    h.tpcSignal->Fill(track.tpcInnerParam(), track.tpcSignal());
+    h.tofSignal->Fill(track.p(), track.beta());
+    h.massTOF->Fill(track.pt(), getMassTOF(track));
     h.innerParamToP->Fill(track.p(), track.tpcInnerParam() / track.p());
-    if constexpr (HasMC)
-      h.PtGenPtRec->Fill(track.pt(), track.pt() - track.pt_MC());
+    if constexpr (HasMC) {
+      h.ptGenPtRec->Fill(track.pt(), track.pt() - track.pt_MC());
+    }
   }
 
   template <bool FillExtra, bool HasMC, typename TrackType>
-  void fillSet(HistSet& Set, HistSet& mcSet, const TrackType& track, int pdg)
+  void fillSet(HistSet& set, HistSet& mcSet, const TrackType& track, int pdg)
   {
-    fillHistSet(Set, track, pdg);
+    fillHistSet(set, track, pdg);
     if constexpr (FillExtra) {
-      fillHistSetExtra<false>(Set, track);
+      fillHistSetExtra<false>(set, track);
     }
 
     if constexpr (HasMC) {
@@ -275,25 +280,25 @@ struct AntitritonAnalysis {
   void init(o2::framework::InitContext&)
   {
 
-    if (isMC.value)
+    if (isMC.value) {
       o2::aod::ITSResponse::setMCDefaultParameters(); // set MC parametrisation for the ITS PID
-
-    ITScuts = std::make_pair(particlePDG.value, itsNSigma);
-    TPCcuts = std::make_pair(particlePDG.value, tpcNSigma);
-    TOFcuts = std::make_pair(particlePDG.value, tofNSigma);
-
-    int N = static_cast<int>(dcaBinning.value[0]); // number of bins -- must be odd otherwise will be increased by 1
-    if (N % 2 != 1) {
-      N += 1;
     }
 
-    std::unique_ptr<double[]> dca_bins;
-    if (static_cast<int>(dcaBinning.value[2]) != 1.0) {
-      dca_bins = calc_var_bins(N + 1, dcaBinning.value[1], static_cast<int>(dcaBinning.value[2]));
-    } else {
-      dca_bins = calc_const_bins(N, -dcaBinning.value[1], dcaBinning.value[1]);
+    particleMass = static_cast<float>(pdgDB->Mass(particlePDG.value));
+
+    itsCuts = std::make_pair(particlePDG.value, itsNSigma);
+    tpcCuts = std::make_pair(particlePDG.value, tpcNSigma);
+    tofCuts = std::make_pair(particlePDG.value, tofNSigma);
+
+    int nBins = static_cast<int>(dcaBinning.value[0]); // number of bins -- must be odd otherwise will be increased by 1
+    if ((nBins & 1) == 0) {                            // bin count must be odd
+      nBins += 1;
     }
-    auto const_bins_p = calc_const_bins(100, 0., 5.0);
+
+    auto dcaBins = (static_cast<int>(dcaBinning.value[2]) != 1.0)
+                     ? calc_var_bins(nBins + 1, dcaBinning.value[1], static_cast<int>(dcaBinning.value[2]))
+                     : calc_const_bins(nBins, -dcaBinning.value[1], dcaBinning.value[1]);
+    auto constBinsP = calc_const_bins(100, 0., 5.0);
 
     hSets.resize(stageDirs.size());
     hSetsTrue.resize(stageDirs.size());
@@ -321,24 +326,33 @@ struct AntitritonAnalysis {
       fillSet<FillExtra, HasMC>(hSets[1][signIdx], hSetsTrue[1][signIdx], track, particlePDG.value); // nocuts
     }
     for (const auto& collision : collisions) {
-      if (removeSameBunchPileup && !collision.isNoSameBunchPileup())
+      if (removeSameBunchPileup && !collision.isNoSameBunchPileup()) {
         continue;
-      if (requestGoodZvtxFT0vsPV && !collision.isGoodZvtxFT0vsPV())
+      }
+      if (requestGoodZvtxFT0vsPV && !collision.isGoodZvtxFT0vsPV()) {
         continue;
-      if (requestVertexITSTPC && !collision.isVertexITSTPC())
+      }
+      if (requestVertexITSTPC && !collision.isVertexITSTPC()) {
         continue;
-      if (requestVertexTOFmatched > collision.isVertexTOForTRDmatched())
+      }
+      if (requestVertexTOFmatched > collision.isVertexTOForTRDmatched()) {
         continue;
-      if (requestNoCollInTimeRangeStandard && !collision.noCollInTimeRangeStandard())
+      }
+      if (requestNoCollInTimeRangeStandard && !collision.noCollInTimeRangeStandard()) {
         continue;
-      if (requestIsGoodITSLayersAll && !collision.isGoodITSLayersAll())
+      }
+      if (requestIsGoodITSLayersAll && !collision.isGoodITSLayersAll()) {
         continue;
-      if (collision.multPerc() < centCut.value.first || collision.multPerc() >= centCut.value.second)
+      }
+      if (collision.multPerc() < centCut.value.first || collision.multPerc() >= centCut.value.second) {
         continue;
-      if (collision.hadronicRate() < irCut.value.first || collision.hadronicRate() >= irCut.value.second)
+      }
+      if (collision.hadronicRate() < irCut.value.first || collision.hadronicRate() >= irCut.value.second) {
         continue;
-      if (collision.occupancy() < occupancyCut.value.first || collision.occupancy() >= occupancyCut.value.second)
+      }
+      if (collision.occupancy() < occupancyCut.value.first || collision.occupancy() >= occupancyCut.value.second) {
         continue;
+      }
 
       registry.fill(HIST("posZ"), collision.posZ());
       registry.fill(HIST("mult"), collision.mult());
@@ -350,60 +364,76 @@ struct AntitritonAnalysis {
       const auto& coll = track.template singleCollSel_as<ColsType>();
       const int signIdx = (-track.sign() + 1) / 2; // 0: triton, 1: antitriton
 
-      if (removeSameBunchPileup && !coll.isNoSameBunchPileup())
+      if (removeSameBunchPileup && !coll.isNoSameBunchPileup()) {
         continue;
-      if (requestGoodZvtxFT0vsPV && !coll.isGoodZvtxFT0vsPV())
+      }
+      if (requestGoodZvtxFT0vsPV && !coll.isGoodZvtxFT0vsPV()) {
         continue;
-      if (requestVertexITSTPC && !coll.isVertexITSTPC())
+      }
+      if (requestVertexITSTPC && !coll.isVertexITSTPC()) {
         continue;
-      if (requestVertexTOFmatched > coll.isVertexTOForTRDmatched())
+      }
+      if (requestVertexTOFmatched > coll.isVertexTOForTRDmatched()) {
         continue;
-      if (requestNoCollInTimeRangeStandard && !coll.noCollInTimeRangeStandard())
+      }
+      if (requestNoCollInTimeRangeStandard && !coll.noCollInTimeRangeStandard()) {
         continue;
-      if (requestIsGoodITSLayersAll && !coll.isGoodITSLayersAll())
+      }
+      if (requestIsGoodITSLayersAll && !coll.isGoodITSLayersAll()) {
         continue;
-      if (std::fabs(coll.posZ()) > vertexZ)
+      }
+      if (std::fabs(coll.posZ()) > vertexZ) {
         continue;
-      if (coll.multPerc() < centCut.value.first || coll.multPerc() >= centCut.value.second)
+      }
+      if (coll.multPerc() < centCut.value.first || coll.multPerc() >= centCut.value.second) {
         continue;
-      if (coll.hadronicRate() < irCut.value.first || coll.hadronicRate() >= irCut.value.second)
+      }
+      if (coll.hadronicRate() < irCut.value.first || coll.hadronicRate() >= irCut.value.second) {
         continue;
-      if (coll.occupancy() < occupancyCut.value.first || coll.occupancy() >= occupancyCut.value.second)
+      }
+      if (coll.occupancy() < occupancyCut.value.first || coll.occupancy() >= occupancyCut.value.second) {
         continue;
-      if (track.tpcFractionSharedCls() > maxTpcFractionSharedCls)
+      }
+      if (track.tpcFractionSharedCls() > maxTpcFractionSharedCls) {
         continue;
-      if (track.itsNCls() < minItsNCls)
+      }
+      if (track.itsNCls() < minItsNCls) {
         continue;
-      if (std::fabs(track.dcaXY()) > dcaXY.value[0] + dcaXY.value[1] * std::pow(track.pt(), dcaXY.value[2]))
+      }
+      if (std::fabs(track.dcaXY()) > dcaXY.value[0] + dcaXY.value[1] * std::pow(track.pt(), dcaXY.value[2])) {
         continue;
-      if (std::fabs(track.dcaZ()) > dcaZ.value[0] + dcaZ.value[1] * std::pow(track.pt(), dcaZ.value[2]))
+      }
+      if (std::fabs(track.dcaZ()) > dcaZ.value[0] + dcaZ.value[1] * std::pow(track.pt(), dcaZ.value[2])) {
         continue;
+      }
 
-      if (o2::aod::singletrackselector::ITSselection(track, ITScuts)) {
+      if (o2::aod::singletrackselector::ITSselection(track, itsCuts)) {
         fillSet<FillExtra, HasMC>(hSets[2][signIdx], hSetsTrue[2][signIdx], track, particlePDG.value); // ITSCuts
       }
-      if (o2::aod::singletrackselector::TPCselection<false>(track, TPCcuts, itsNSigma.value)) {
+      if (o2::aod::singletrackselector::TPCselection<false>(track, tpcCuts, itsNSigma.value)) {
         fillSet<FillExtra, HasMC>(hSets[3][signIdx], hSetsTrue[3][signIdx], track, particlePDG.value); // TPCCuts
       }
-      if (o2::aod::singletrackselector::TOFselection(track, TOFcuts, tpcNSigmaResidual.value)) {
+      if (o2::aod::singletrackselector::TOFselection(track, tofCuts, tpcNSigmaResidual.value)) {
         fillSet<FillExtra, HasMC>(hSets[4][signIdx], hSetsTrue[4][signIdx], track, particlePDG.value); // TOFCuts
       }
-      if (o2::aod::singletrackselector::TPCselection<true>(track, TPCcuts, itsNSigma.value)) {
+      if (o2::aod::singletrackselector::TPCselection<true>(track, tpcCuts, itsNSigma.value)) {
         fillSet<FillExtra, HasMC>(hSets[5][signIdx], hSetsTrue[5][signIdx], track, particlePDG.value); // ITSTPC
       }
 
       const bool pidOk =
         (track.p() < pidTrshld)
-          ? o2::aod::singletrackselector::TPCselection<true>(track, TPCcuts, itsNSigma.value)
+          ? o2::aod::singletrackselector::TPCselection<true>(track, tpcCuts, itsNSigma.value)
           : o2::aod::singletrackselector::TPCselection<false>(track, std::make_pair(particlePDG.value, tpcNSigmaResidual.value), tpcNSigmaResidual.value);
-      if (!pidOk)
+      if (!pidOk) {
         continue;
-      if (std::fabs(static_cast<float>(RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, kMassTriton))) > eta)
+      }
+      if (std::fabs(static_cast<float>(RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, particleMass))) > y) {
         continue;
+      }
 
       fillSet<FillExtra, HasMC>(hSets[6][signIdx], hSetsTrue[6][signIdx], track, particlePDG.value); // PIDcuts
       if constexpr (FillExtra) {
-        if (track.p() >= massCuttrshld && (getMTOF(track) <= tofMass.value[0] || getMTOF(track) >= tofMass.value[1])) {
+        if (track.p() >= massCuttrshld && (getMassTOF(track) <= tofMass.value[0] || getMassTOF(track) >= tofMass.value[1])) {
           continue;
         }
       }
@@ -416,8 +446,9 @@ struct AntitritonAnalysis {
           break;
         }
       }
-      if (rejectedByPDG)
+      if (rejectedByPDG) {
         continue;
+      }
       fillSet<FillExtra, HasMC>(hSets[8][signIdx], hSetsTrue[8][signIdx], track, particlePDG.value); // rd
 
       if (getITSNsigma(track, particlePDG.value) <= itsNsigNL.value[0] + itsNsigNL.value[1] * track.p()) {
