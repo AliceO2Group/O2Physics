@@ -70,7 +70,7 @@ struct FemtoProducerLiteConverter {
   void processLiteK0shorts(o2::aod::FLiteK0shorts::iterator const& liteK0short)
   {
     producedK0shorts(liteK0short.fLiteColId(),
-                     liteK0short.unsignedPt(),
+                     liteK0short.pt(),
                      liteK0short.eta(),
                      liteK0short.phi(),
                      liteK0short.k0shortMass(),
