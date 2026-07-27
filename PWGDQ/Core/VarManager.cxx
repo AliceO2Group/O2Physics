@@ -75,7 +75,8 @@ int VarManager::fgCalibrationType = 0;                // 0 - no calibration, 1 -
 bool VarManager::fgUseInterpolatedCalibration = true; // use interpolated calibration histograms (default: true)
 int VarManager::fgEfficiencyType = 0;                 // type of efficiency to be applied, default is no efficiency
 TObject* VarManager::fgEfficiencyHist = nullptr;      // histogram for efficiency
-
+TH3D* VarManager::fgPosiPhiMap = nullptr;
+TH3D* VarManager::fgNegaPhiMap = nullptr;
 //__________________________________________________________________
 VarManager::VarManager() : TObject()
 {
@@ -451,6 +452,129 @@ void VarManager::FillEfficiency(float* values)
     values[kPairEfficiency] = 1;
     values[kPairWeight] = 1;
   }
+}
+
+void VarManager::SetPhiMap(TH3D* hposi, TH3D* hnega)
+{
+  fgPosiPhiMap = hposi;
+  fgNegaPhiMap = hnega;
+}
+
+double VarManager::SampleRotationPhi(double pt, double eta, int charge)
+{
+  // each type only alarm once
+  static bool warnedInvalidCharge = false;
+  static bool warnedMissingPositiveMap = false;
+  static bool warnedMissingNegativeMap = false;
+  static bool warnedOutOfRange = false;
+  static bool warnedEmptyPhi = false;
+
+  TH3D* hMap = nullptr;
+
+  if (charge > 0) {
+    hMap = fgPosiPhiMap;
+
+    if (!hMap) {
+      if (!warnedMissingPositiveMap) {
+        LOGF(warn,
+             "Positive phi correction map is not available. "
+             "Falling back to uniform phi sampling.");
+        warnedMissingPositiveMap = true;
+      }
+
+      return gRandom->Uniform(
+          0., o2::constants::math::TwoPI);
+    }
+  } else if (charge < 0) {
+    hMap = fgNegaPhiMap;
+
+    if (!hMap) {
+      if (!warnedMissingNegativeMap) {
+        LOGF(warn,
+             "Negative phi correction map is not available. "
+             "Falling back to uniform phi sampling.");
+        warnedMissingNegativeMap = true;
+      }
+
+      return gRandom->Uniform(
+          0., o2::constants::math::TwoPI);
+    }
+  } else {
+    if (!warnedInvalidCharge) {
+      LOGF(warn,
+           "Track with charge=0 passed to SampleRotationPhi. "
+           "Falling back to uniform phi sampling.");
+      warnedInvalidCharge = true;
+    }
+
+    return gRandom->Uniform(
+        0., o2::constants::math::TwoPI);
+  }
+
+  // TH3 axes: X=pT, Y=phi, Z=eta
+  const int ptBin = hMap->GetXaxis()->FindBin(pt);
+  const int etaBin = hMap->GetZaxis()->FindBin(eta);
+
+  if (ptBin < 1 || ptBin > hMap->GetNbinsX() ||
+      etaBin < 1 || etaBin > hMap->GetNbinsZ()) {
+    if (!warnedOutOfRange) {
+      LOGF(warn,
+           "Track outside phi correction map: "
+           "pt=%f, eta=%f, charge=%d, ptBin=%d, etaBin=%d. "
+           "Map ranges: pt=[%f,%f], eta=[%f,%f]. "
+           "Falling back to uniform phi sampling.",
+           pt,
+           eta,
+           charge,
+           ptBin,
+           etaBin,
+           hMap->GetXaxis()->GetXmin(),
+           hMap->GetXaxis()->GetXmax(),
+           hMap->GetZaxis()->GetXmin(),
+           hMap->GetZaxis()->GetXmax());
+
+      warnedOutOfRange = true;
+    }
+
+    return gRandom->Uniform(
+        0., o2::constants::math::TwoPI);
+  }
+
+  TH1D* hPhi = hMap->ProjectionY(
+      Form("hTRPhi_tmp_charge%d_ptbin%d_etabin%d",
+           charge, ptBin, etaBin),
+      ptBin,
+      ptBin,
+      etaBin,
+      etaBin);
+
+  if (!hPhi ||
+      hPhi->Integral(1, hPhi->GetNbinsX()) <= 0.) {
+    if (!warnedEmptyPhi) {
+      LOGF(warn,
+           "Empty phi distribution for "
+           "pt=%f, eta=%f, charge=%d, ptBin=%d, etaBin=%d. "
+           "Falling back to uniform phi sampling.",
+           pt,
+           eta,
+           charge,
+           ptBin,
+           etaBin);
+
+      warnedEmptyPhi = true;
+    }
+
+    delete hPhi;
+
+    return gRandom->Uniform(
+        0., o2::constants::math::TwoPI);
+  }
+
+  const double phi =
+      RecoDecay::constrainAngle(hPhi->GetRandom());
+
+  delete hPhi;
+  return phi;
 }
 
 //__________________________________________________________________

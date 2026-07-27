@@ -1530,6 +1530,8 @@ class VarManager : public TObject
 
   static void SetEfficiencyObject(int type, TObject* obj);
   static void FillEfficiency(float* values = nullptr);
+  static void SetPhiMap(TH3D* h1, TH3D* h2);
+  static double SampleRotationPhi(double pT, int charge);
   static TObject* GetCalibrationObject(CalibObjects calib)
   {
     auto obj = fgCalibs.find(calib);
@@ -3956,7 +3958,7 @@ void VarManager::FillPairRotation(T1 const& t1, T2 const& t2, float* values)
     m2 = o2::constants::physics::MassMuon;
   }
 
-  double dphi = gRandom->Uniform(0., o2::constants::math::TwoPI);
+  double dphi = SampleRotationPhi(t2.pt(),t2.eta(),t2.sign());
   double rotationphi2 = RecoDecay::constrainAngle(t2.phi() + dphi);
 
   values[kCharge] = t1.sign() + t2.sign();
