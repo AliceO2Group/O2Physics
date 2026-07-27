@@ -25,6 +25,7 @@
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/Expressions.h>
@@ -60,7 +61,7 @@ struct AntitritonAnalysis {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registryTrue{"registryTrue", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Service<o2::framework::O2DatabasePDG> pdgDB;
+  Service<o2::framework::O2DatabasePDG> pdgDB{};
   float particleMass = 0.f;
 
   Configurable<bool> isMC{"isMC", false, ""};
