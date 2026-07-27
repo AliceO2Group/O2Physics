@@ -494,12 +494,13 @@ struct Lambda1520analysisinpp {
 
   float massKa = MassKaonCharged;
   float massPr = MassProton;
+  constexpr float kInvalidCentrality = -999.0f;
 
   // Centralicity estimator selection
   template <typename Coll>
   float centEst(const Coll& collisions)
   {
-    float returnValue = -999.0f;
+    float returnValue = kInvalidCentrality;
     switch (centEstimator) {
       case 0:
         returnValue = collisions.centFT0M();
@@ -1203,7 +1204,7 @@ struct Lambda1520analysisinpp {
         return centres[i];
       }
     }
-    return -999.0f; // Invalid centrality
+    return kInvalidCentrality; // Invalid centrality
   }
 
   void processData(EventCandidates::iterator const& collision,
@@ -1466,7 +1467,7 @@ struct Lambda1520analysisinpp {
       bool isTrueINELgt0 = pwglf::isINELgt0mc(particlesInCollision, pdg);
       bool isInAfterAllCuts = isSelected(collision, false);
 
-      float centrality = -999.f;
+      float centrality = kInvalidCentrality;
 
       if (useManualCalibration) {
         // Multiplicity-to-centrality mapping
@@ -1476,7 +1477,7 @@ struct Lambda1520analysisinpp {
         centrality = mcCollision.centFT0M();
       }
 
-      if (centrality == -999.0f) {
+      if (centrality == kInvalidCentrality) {
         continue;
       }
 
@@ -1489,7 +1490,7 @@ struct Lambda1520analysisinpp {
     for (const auto& mccolls : mcCollisions) {
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccolls.globalIndex(), cacheMC);
 
-      float centrality = -999.f;
+      float centrality = kInvalidCentrality;
 
       if (useManualCalibration) {
         // Multiplicity-to-centrality mapping
@@ -1499,7 +1500,7 @@ struct Lambda1520analysisinpp {
         centrality = mccolls.centFT0M();
       }
 
-      if (centrality == -999.0f) {
+      if (centrality == kInvalidCentrality) {
         continue;
       }
 
@@ -1534,7 +1535,7 @@ struct Lambda1520analysisinpp {
       bool isInAfterAllCuts = isSelected(collision, false);
       bool inVtx10 = std::abs(mcCollision.posZ()) <= configEvents.cfgEvtZvtx;
 
-      float centrality = -999.f;
+      float centrality = kInvalidCentrality;
 
       if (useManualCalibration) {
         // Multiplicity-to-centrality mapping
@@ -1544,7 +1545,7 @@ struct Lambda1520analysisinpp {
         centrality = mcCollision.centFT0M();
       }
 
-      if (centrality == -999.0f) {
+      if (centrality == kInvalidCentrality) {
         continue;
       }
 
@@ -1639,7 +1640,7 @@ struct Lambda1520analysisinpp {
     for (const auto& mccolls : mcCollisions) {
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccolls.globalIndex(), cacheMC);
 
-      float centrality = -999.f;
+      float centrality = kInvalidCentrality;
 
       if (useManualCalibration) {
         // Multiplicity-to-centrality mapping
@@ -1649,7 +1650,7 @@ struct Lambda1520analysisinpp {
         centrality = mccolls.centFT0M();
       }
 
-      if (centrality == -999.0f) {
+      if (centrality == kInvalidCentrality) {
         continue;
       }
 
@@ -1705,8 +1706,8 @@ struct Lambda1520analysisinpp {
         }
 
         if (!part.isPhysicalPrimary()) {
-          continue
-        };
+          continue;
+        }
 
         float pt = part.pt();
         float weight = 1.f;
