@@ -82,7 +82,7 @@ struct FlowEseTask {
                                      "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
     Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::ccdb::CcdbApi ccdbApi;
 
   Configurable<float> cfgCentSel{"cfgCentSel", 80., "Centrality selection"};
@@ -204,7 +204,7 @@ struct FlowEseTask {
 
   int currentRunNumber = -999;
   int lastRunNumber = -999;
-  std::vector<TProfile3D*> shiftprofile{};
+  std::vector<TProfile3D*> shiftprofile;
   TProfile2D* effMap = nullptr;
   TProfile2D* accMap = nullptr;
 
@@ -213,23 +213,25 @@ struct FlowEseTask {
   template <typename T>
   int getDetId(const T& name)
   {
-    if (name.value == "FT0C") {
-      return 0;
-    } else if (name.value == "FT0A") {
+    if (name.value == "FT0A") {
       return 1;
-    } else if (name.value == "FT0M") {
-      return 2;
-    } else if (name.value == "FV0A") {
-      return 3;
-    } else if (name.value == "TPCpos") {
-      return 4;
-    } else if (name.value == "TPCneg") {
-      return 5;
-    } else if (name.value == "TPCall") {
-      return 6;
-    } else {
-      return 0;
     }
+    if (name.value == "FT0M") {
+      return 2;
+    }
+    if (name.value == "FV0A") {
+      return 3;
+    }
+    if (name.value == "TPCpos") {
+      return 4;
+    }
+    if (name.value == "TPCneg") {
+      return 5;
+    }
+    if (name.value == "TPCall") {
+      return 6;
+    }
+    return 0;
   }
 
   int q2CentBin(float cent) const
@@ -242,7 +244,7 @@ struct FlowEseTask {
 
   const char* q2GroupSuffix(int group) const
   {
-    static constexpr const char* Q2GroupSuffixes[] = {
+    static constexpr std::array<const char*, NQ2Groups> Q2GroupSuffixes = {
       "q2p00_10", "q2p10_20", "q2p20_30", "q2p30_40", "q2p40_50",
       "q2p50_60", "q2p60_70", "q2p70_80", "q2p80_90", "q2p90_100"};
     if (group < 0 || group >= NQ2Groups) {
@@ -269,10 +271,10 @@ struct FlowEseTask {
   template <typename TCollision>
   double getQ2(TCollision const& collision)
   {
-    if (cfgMultCor)
+    if (cfgMultCor) {
       return std::sqrt(collision.qvecFT0CReVec()[0] * collision.qvecFT0CReVec()[0] + collision.qvecFT0CImVec()[0] * collision.qvecFT0CImVec()[0]) * collision.sumAmplFT0C() / std::sqrt(collision.multFT0C());
-    else
-      return std::sqrt(collision.qvecFT0CReVec()[0] * collision.qvecFT0CReVec()[0] + collision.qvecFT0CImVec()[0] * collision.qvecFT0CImVec()[0]) * std::sqrt(collision.sumAmplFT0C());
+    }
+    return std::sqrt(collision.qvecFT0CReVec()[0] * collision.qvecFT0CReVec()[0] + collision.qvecFT0CImVec()[0] * collision.qvecFT0CImVec()[0]) * std::sqrt(collision.sumAmplFT0C());
   }
 
   void init(o2::framework::InitContext&)
@@ -499,7 +501,7 @@ struct FlowEseTask {
   ROOT::Math::PxPyPzMVector protonVec, pionVec, LambdaVec, protonBoostedVec, pionBoostedVec;
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision)
+  bool eventSelected(TCollision const& collision)
   {
     if (!collision.sel8()) {
       return 0;
@@ -591,14 +593,16 @@ struct FlowEseTask {
 
   double safeATan2(double y, double x)
   {
-    if (x != 0)
+    if (x != 0) {
       return std::atan2(y, x);
-    if (y == 0)
+    }
+    if (y == 0) {
       return 0;
-    if (y > 0)
+    }
+    if (y > 0) {
       return o2::constants::math::PIHalf;
-    else
-      return -o2::constants::math::PIHalf;
+    }
+    return -o2::constants::math::PIHalf;
   }
 
   template <typename TrackType>
