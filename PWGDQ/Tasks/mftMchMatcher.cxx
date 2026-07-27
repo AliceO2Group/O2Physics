@@ -143,6 +143,7 @@ DECLARE_SOA_COLUMN(Chi2Glob, chi2Glob, float);
 DECLARE_SOA_COLUMN(Chi2Match, chi2Match, float);
 DECLARE_SOA_COLUMN(IsAmbig, isAmbig, bool);
 DECLARE_SOA_COLUMN(MFTMult, mftMult, int);
+DECLARE_SOA_COLUMN(MatchAttempts, matchAttempts, int);
 DECLARE_SOA_COLUMN(DCAX, dcaX, float);
 DECLARE_SOA_COLUMN(DCAY, dcaY, float);
 DECLARE_SOA_COLUMN(McMaskGlob, mcMaskGlob, int);
@@ -207,6 +208,7 @@ DECLARE_SOA_TABLE(FwdMatchMLCandidates, "AOD", "FWDMLCAND",
                   fwdmatchcandidates::DCAY,
                   fwdmatchcandidates::IsAmbig,
                   fwdmatchcandidates::MFTMult,
+                  fwdmatchcandidates::MatchAttempts,
                   fwdmatchcandidates::McMaskMCH,
                   fwdmatchcandidates::McMaskMFT,
                   fwdmatchcandidates::McMaskGlob,
@@ -268,7 +270,6 @@ struct mftMchMatcher {
     kMatchTypeUndefined
   };
 
-  double mBzAtMftCenter{0};
   o2::globaltracking::MatchGlobalFwd mExtrap;
 
   int mRunNumber{0}; // needed to detect if the run changed and trigger update of magnetic field
@@ -470,7 +471,7 @@ struct mftMchMatcher {
         }
       }
     }
-    for (auto& pairCand : mCandidates) {
+    for (const auto& pairCand : mCandidates) {
       fBestMatch[pairCand.second.second] = true;
     }
   }
@@ -593,14 +594,50 @@ struct mftMchMatcher {
 
     return result;
   }
+  template <class EVT, class BC, class TMUON, class TMFTS>
+  int getMftMchMatchAttempts(EVT const& collisions,
+                             BC const& bcs,
+                             TMUON const& mchTrack,
+                             TMFTS const& mftTracks)
+  {
+    if (!mchTrack.has_collision()) {
+      return 0;
+    }
+    const auto& collMch = collisions.rawIteratorAt(mchTrack.collisionId());
+    const auto& bcMch = bcs.rawIteratorAt(collMch.bcId());
+
+    int attempts{0};
+    for (const auto& mftTrack : mftTracks) {
+      if (!mftTrack.has_collision()) {
+        continue;
+      }
+
+      const auto& collMft = collisions.rawIteratorAt(mftTrack.collisionId());
+      const auto& bcMft = bcs.rawIteratorAt(collMft.bcId());
+
+      int64_t deltaBc = static_cast<int64_t>(bcMft.globalBC()) - static_cast<int64_t>(bcMch.globalBC());
+      double deltaBcNS = o2::constants::lhc::LHCBunchSpacingNS * deltaBc;
+      double deltaTrackTime = mftTrack.trackTime() - mchTrack.trackTime() + deltaBcNS;
+      double trackTimeResTot = mftTrack.trackTimeRes() + mchTrack.trackTimeRes();
+
+      if (std::fabs(deltaTrackTime) > trackTimeResTot) {
+        continue;
+      }
+      attempts += 1;
+    }
+
+    return attempts;
+  }
 
   template <bool isMc, class TCOLLS, class TBCS, class TMUONS, class TMFTS, class TCOVS>
   void fillTable(TCOLLS const& collisions,
-                 TBCS const& /*bcs*/,
+                 TBCS const& bcs,
                  TMUONS const& muonTracks,
                  TMFTS const& mftTracks,
                  TCOVS const& mftCovs)
   {
+    std::unordered_map<int64_t, int> matchAttemptsMap;
+
     registry.get<TH1>(HIST("acceptedEvents"))->Fill(0);
     // reject a randomly selected fraction of events
     if (fSamplingFraction < 1.0) {
@@ -670,6 +707,14 @@ struct mftMchMatcher {
 
       bool IsAmbig = (muon.compatibleCollIds().size() != 1);
       int MFTMult = collision.mftNtracks();
+      int matchAttempts = 0;
+      auto matchAttemptsIt = matchAttemptsMap.find(muontrack.globalIndex());
+      if (matchAttemptsIt == matchAttemptsMap.end()) {
+        matchAttempts = getMftMchMatchAttempts(collisions, bcs, muontrack, mftTracks);
+        matchAttemptsMap.insert(std::make_pair(static_cast<int64_t>(muontrack.globalIndex()), matchAttempts));
+      } else {
+        matchAttempts = matchAttemptsIt->second;
+      }
 
       auto matchType = kMatchTypeUndefined;
       if constexpr (isMc) {
@@ -789,6 +834,7 @@ struct mftMchMatcher {
         muon.fwdDcaY(),
         IsAmbig,
         MFTMult,
+        matchAttempts,
         mcMaskMuon,
         mcMaskMft,
         ncMaskGlob,
