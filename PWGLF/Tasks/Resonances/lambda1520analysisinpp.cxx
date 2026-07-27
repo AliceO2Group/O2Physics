@@ -203,6 +203,13 @@ struct Lambda1520analysisinpp {
   Configurable<bool> cFill1DQAs{"cFill1DQAs", false, "Invariant mass 1D"};
   Configurable<int> centEstimator{"centEstimator", 0, "Select centrality estimator: 0 - FT0M, 1 - FT0A, 2 - FT0C"};
 
+  // calibration
+  Configurable<std::vector<float>> cfgGenMultCuts{"cfgGenMultCuts", std::vector<float>{500, 300, 200, 120, 80, 50, 30, 10, 0}, "Generated multiplicity lower cuts"};
+  Configurable<std::vector<float>> cfgCentBinCentres{"cfgCentBinCentres", std::vector<float>{2.5f, 7.5f, 15.0f, 25.0f, 35.0f, 45.0f, 55.0f, 75.0f, 95.0f}, "Reco centrality bin centres"};
+  Configurable<float> cfgGenMultEtaMax{"cfgGenMultEtaMax", 0.5f, "Max Eta for generated mid-rapidity multiplicity"};
+  Configurable<float> cfgGenMultEtaMin{"cfgGenMultEtaMin", -0.5f, "Min Eta for generated mid-rapidity multiplicity"};
+  Configurable<bool> useManualCalibration{"useManualCalibration", false, "Use Manual generated multiplicity for centrality estimation"};
+
   TRandom* rn = new TRandom();
 
   // Pre-filters for efficient process
@@ -1116,6 +1123,40 @@ struct Lambda1520analysisinpp {
     }
   }
 
+  // Helper 1: Calculate generated mid-rapidity multiplicity
+  template <typename McPartsT>
+  int getGenMidRapMultiplicity(McPartsT const& partsThisMc)
+  {
+    int nCh = 0;
+    for (auto const& part : partsThisMc) {
+      if (!part.isPhysicalPrimary()) {
+        continue;
+      }
+      if (part.eta() > cfgGenMultEtaMax || part.eta() < cfgGenMultEtaMin) {
+        continue;
+      }
+      auto pdgParticle = pdg->GetParticle(part.pdgCode());
+      if (!pdgParticle || pdgParticle->Charge() == 0) {
+        continue;
+      }
+      nCh++;
+    }
+    return nCh;
+  }
+
+  // Helper 2: Map multiplicity count to a specific centrality bin
+  float getCentClassFromGenMult(int nCh)
+  {
+    const auto& cuts = cfgGenMultCuts.value;
+    const auto& centres = cfgCentBinCentres.value;
+    for (size_t i = 0; i < cuts.size(); ++i) {
+      if (nCh >= cuts[i]) {
+        return centres[i];
+      }
+    }
+    return -999.0f; // Invalid centrality
+  }
+
   void processData(EventCandidates::iterator const& collision,
                    TrackCandidates const& tracks)
   {
@@ -1345,7 +1386,17 @@ struct Lambda1520analysisinpp {
       bool isTrueINELgt0 = pwglf::isINELgt0mc(particlesInCollision, pdg);
       bool isInAfterAllCuts = isSelected(collision, false);
 
-      float centrality = mcCollision.centFT0M();
+      float centrality;
+
+      if (useManualCalibration) {
+        // Multiplicity-to-centrality mapping
+        int genMult = getGenMidRapMultiplicity(particlesInCollision);
+        centrality = getCentClassFromGenMult(genMult);
+      } else
+        centrality = mcCollision.centFT0M();
+
+      if (centrality == -999.0f)
+        continue;
 
       if (isTrueINELgt0 && isInAfterAllCuts)
         histos.fill(HIST("Event/MultiplicityRecoEv"), centrality);
@@ -1353,10 +1404,21 @@ struct Lambda1520analysisinpp {
 
     // Loop on generated collisions to fill the event factor for the INEL>0 correction
     for (const auto& mccolls : mcCollisions) {
-      float centrality = mccolls.centFT0M();
-      bool inVtx10 = std::abs(mccolls.posZ()) <= configEvents.cfgEvtZvtx;
-
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccolls.globalIndex(), cacheMC);
+
+      float centrality;
+
+      if (useManualCalibration) {
+        // Multiplicity-to-centrality mapping
+        int genMult = getGenMidRapMultiplicity(particlesInCollision);
+        centrality = getCentClassFromGenMult(genMult);
+      } else
+        centrality = mccolls.centFT0M();
+
+      if (centrality == -999.0f)
+        continue;
+
+      bool inVtx10 = std::abs(mccolls.posZ()) <= configEvents.cfgEvtZvtx;
       bool isTrueINELgt0 = pwglf::isINELgt0mc(particlesInCollision, pdg); // QA for Trigger efficiency
 
       histos.fill(HIST("Event/hMCEventIndices"), centrality, Inel);
@@ -1384,7 +1446,17 @@ struct Lambda1520analysisinpp {
       bool isInAfterAllCuts = isSelected(collision, false);
       bool inVtx10 = std::abs(mcCollision.posZ()) <= configEvents.cfgEvtZvtx;
 
-      float centrality = mcCollision.centFT0M();
+      float centrality;
+
+      if (useManualCalibration) {
+        // Multiplicity-to-centrality mapping
+        int genMult = getGenMidRapMultiplicity(particlesInCollision);
+        centrality = getCentClassFromGenMult(genMult);
+      } else
+        centrality = mcCollision.centFT0M();
+
+      if (centrality == -999.0f)
+        continue;
 
       auto computePtL = [&](float pt, float m_ref) {
         float ptL2 = pt * pt + m_ref * m_ref - MassLambda1520 * MassLambda1520;
@@ -1470,11 +1542,21 @@ struct Lambda1520analysisinpp {
 
     // Loop on generated collisions to fill the event factor for the INEL>0 correction
     for (const auto& mccolls : mcCollisions) {
-      float centrality = mccolls.centFT0M();
+      const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccolls.globalIndex(), cacheMC);
+
+      float centrality;
+
+      if (useManualCalibration) {
+        // Multiplicity-to-centrality mapping
+        int genMult = getGenMidRapMultiplicity(particlesInCollision);
+        centrality = getCentClassFromGenMult(genMult);
+      } else
+        centrality = mccolls.centFT0M();
+
+      if (centrality == -999.0f)
+        continue;
 
       bool inVtx10 = std::abs(mccolls.posZ()) <= configEvents.cfgEvtZvtx;
-
-      const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccolls.globalIndex(), cacheMC);
       bool isTrueINELgt0 = pwglf::isINELgt0mc(particlesInCollision, pdg);
 
       if (!(inVtx10 && isTrueINELgt0))
