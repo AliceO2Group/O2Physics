@@ -234,10 +234,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(SignedPt, signedPt,
                            [](uint16_t signedBinnedPt) -> float {
                              return unBinSignedPt(signedBinnedPt);
                            });
-DECLARE_SOA_DYNAMIC_COLUMN(UnsignedPt, unsignedPt,
-                           [](uint16_t unsignedBinnedPt) -> float {
-                             return unBinUnsignedPt(unsignedBinnedPt);
-                           });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta,
                            [](uint16_t binnedEta) -> float {
                              return unBinEta(binnedEta);
@@ -246,6 +242,23 @@ DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi,
                            [](uint16_t binnedPhi) -> float {
                              return unBinPhi(binnedPhi);
                            });
+
+namespace signedpt
+{
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, 
+                           [](uint16_t signedBinnedPt) -> float {
+                             return std::fabs(unBinSignedPt(signedBinnedPt));
+                           });
+} // namespace signedpt
+
+namespace unsignedpt
+{
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, 
+                           [](uint16_t unsignedBinnedPt) -> float {
+                             return unBinUnsignedPt(unsignedBinnedPt);
+                           });
+} // namespace unsignedpt
+
 } // namespace lite
 } // namespace femtobase
 
@@ -355,6 +368,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteTracks_001, "FLITETRACK", 1, //! femto t
                                    femtobase::lite::BinnedPhi,
                                    femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::signedpt::Pt<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::Eta<femtobase::lite::BinnedEta>,
                                    femtobase::lite::Phi<femtobase::lite::BinnedPhi>);
 using FLiteTracks = FLiteTracks_001;
@@ -628,6 +642,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteLambdas_001, "FLITELAMBDA", 1,
                                    femtov0s::lite::NegDauId,
                                    femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::signedpt::Pt<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::Eta<femtobase::lite::BinnedEta>,
                                    femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
                                    femtov0s::lite::LambdaMass<femtov0s::lite::BinnedLambdaMass>);
@@ -681,7 +696,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteK0shorts_001, "FLITEK0SHORT", 1,
                                    femtov0s::lite::BinnedK0shortMass,
                                    femtov0s::lite::PosDauId,
                                    femtov0s::lite::NegDauId,
-                                   femtobase::lite::UnsignedPt<femtobase::lite::UnsignedBinnedPt>,
+                                   femtobase::lite::unsignedpt::Pt<femtobase::lite::UnsignedBinnedPt>,
                                    femtobase::lite::Eta<femtobase::lite::BinnedEta>,
                                    femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
                                    femtov0s::lite::K0shortMass<femtov0s::lite::BinnedK0shortMass>);
@@ -795,6 +810,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteSigmas_001, "FLITESIGMA", 1,
                                    femtokinks::lite::ChaDauId,
                                    femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::signedpt::Pt<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::Eta<femtobase::lite::BinnedEta>,
                                    femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
                                    femtokinks::lite::SigmaMass<femtokinks::lite::BinnedSigmaMass>);
@@ -850,6 +866,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteSigmaPlus_001, "FLITESIGMAPLUS", 1,
                                    femtokinks::lite::ChaDauId,
                                    femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::signedpt::Pt<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::Eta<femtobase::lite::BinnedEta>,
                                    femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
                                    femtokinks::lite::SigmaMass<femtokinks::lite::BinnedSigmaMass>);
@@ -963,6 +980,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteXis_001, "FLITEXI", 1,
                                    femtov0s::lite::NegDauId,
                                    femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::signedpt::Pt<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::Eta<femtobase::lite::BinnedEta>,
                                    femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
                                    femtocascades::lite::XiMass<femtocascades::lite::BinnedXiMass>);
@@ -1021,6 +1039,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteOmegas_001, "FLITEOMEGA", 1,
                                    femtov0s::lite::NegDauId,
                                    femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::signedpt::Pt<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::Eta<femtobase::lite::BinnedEta>,
                                    femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
                                    femtocascades::lite::OmegaMass<femtocascades::lite::BinnedOmegaMass>);
