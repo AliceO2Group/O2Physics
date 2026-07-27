@@ -1283,7 +1283,7 @@ struct Photonhbt {
                                     d1[0] * d2[1] - d1[1] * d2[0]};
     const float nMag = std::sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
     const float d1Mag2 = d1[0] * d1[0] + d1[1] * d1[1] + d1[2] * d1[2];
-    if (nMag < 1e-6f * d1Mag2) { // near-parallel: point-to-line distance
+    if (nMag < 1e-6f * d1Mag2) { // o2-linter: disable=magic-number near-parallel: point-to-line distance
       const float wDotD = (w[0] * d1[0] + w[1] * d1[1] + w[2] * d1[2]) / d1Mag2;
       const std::array<float, 3> perp = {w[0] - wDotD * d1[0], w[1] - wDotD * d1[1], w[2] - wDotD * d1[2]};
       return std::sqrt(perp[0] * perp[0] + perp[1] * perp[1] + perp[2] * perp[2]);
@@ -1304,7 +1304,7 @@ struct Photonhbt {
     };
     // Leg index 0 = e+, 1 = e- (makePhotonWithLegs filling order).
     // Combo 0: a's e+ with b's e-.  Combo 1: b's e+ with a's e-.
-    for (int combo = 0; combo < 2; ++combo) {
+    for (int combo = 0; combo < 2; ++combo) { // o2-linter: disable=magic-number combinations of fake photons
       PhotonWithLegs const& pPos = (combo == 0) ? a : b;
       PhotonWithLegs const& pEle = (combo == 0) ? b : a;
       c.mee[combo] = static_cast<float>((legVec(pPos, 0) + legVec(pEle, 1)).M());
@@ -1319,7 +1319,7 @@ struct Photonhbt {
     if (!crosspair.cfgDoCrossPairCut.value) {
       return true;
     }
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < 2; ++i) { // o2-linter: disable=magic-number combinations of fake photons
       if (c.mee[i] < crosspair.cfgCrossMaxMee.value && c.dist[i] < crosspair.cfgCrossMaxDist.value) {
         return false;
       }
@@ -1335,7 +1335,7 @@ struct Photonhbt {
     if (qinv > crosspair.cfgCrossMaxQinvQA.value) {
       return;
     }
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < 2; ++i) { // o2-linter : disable = magic - number combinations of fake photons
       fRegistryCF.fill(HIST(dir) + HIST("hSparse_Mee_Dist_Qinv"), c.mee[i], c.dist[i], qinv);
     }
   }
