@@ -225,10 +225,10 @@ struct AntitritonAnalysis {
   template <typename TrackType>
   void fillHistSet(HistSet& h, const TrackType& track, int pdg)
   {
-    const auto y = static_cast<float>(RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, particleMass));
+    const auto rapidity = static_cast<float>(RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, particleMass));
     h.eta->Fill(track.eta());
-    h.etaToY->Fill(track.eta(), y);
-    h.y->Fill(y);
+    h.etaToY->Fill(track.eta(), rapidity);
+    h.y->Fill(rapidity);
     h.phi->Fill(track.phi());
     h.p->Fill(track.p());
     h.pt->Fill(track.pt());
