@@ -494,7 +494,7 @@ struct Lambda1520analysisinpp {
 
   float massKa = MassKaonCharged;
   float massPr = MassProton;
-  constexpr float kInvalidCentrality = -999.0f;
+  static constexpr float kInvalidCentrality = -999.0f;
 
   // Centralicity estimator selection
   template <typename Coll>
