@@ -1335,7 +1335,7 @@ struct Photonhbt {
     if (qinv > crosspair.cfgCrossMaxQinvQA.value) {
       return;
     }
-    for (int i = 0; i < 2; ++i) { // o2-linter: disable = magic - number combinations of fake photons
+    for (int i = 0; i < 2; ++i) { // o2-linter: disable=magic-number (combinations of fake photons)
       fRegistryCF.fill(HIST(dir) + HIST("hSparse_Mee_Dist_Qinv"), c.mee[i], c.dist[i], qinv);
     }
   }
