@@ -60,8 +60,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct HStrangeCorrelationFilter {
-  static constexpr float ctauxi = 4.91;     // from PDG
-  static constexpr float ctauomega = 2.461; // from PDG
+  static constexpr float Xictau = 4.91;     // from PDG
+  static constexpr float Omegactau = 2.461; // from PDG
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -246,14 +246,14 @@ struct HStrangeCorrelationFilter {
   TF1* fXiWidth = new TF1("fXiWidth", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
   TF1* fOmegaMean = new TF1("fomegaMean", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
   TF1* fOmegaWidth = new TF1("fomegaWidth", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
-  TH1F* hK0ShortMean;
-  TH1F* hK0ShortWidth;
-  TH1F* hLambdaMean;
-  TH1F* hLambdaWidth;
-  TH1F* hXiMean;
-  TH1F* hXiWidth;
-  TH1F* hOmegaMean;
-  TH1F* hOmegaWidth;
+  TH1F* hK0ShortMean = nullptr;
+  TH1F* hK0ShortWidth = nullptr;
+  TH1F* hLambdaMean = nullptr;
+  TH1F* hLambdaWidth = nullptr;
+  TH1F* hXiMean = nullptr;
+  TH1F* hXiWidth = nullptr;
+  TH1F* hOmegaMean = nullptr;
+  TH1F* hOmegaWidth = nullptr;
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
   int mRunNumber;
@@ -1115,8 +1115,8 @@ struct HStrangeCorrelationFilter {
       int compatibleOmegaPlus = -1;
       float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
       float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
-      float ctauXi = o2::constants::physics::MassXiMinus * cascpos / ((cascptotmom + 1e-13) * ctauxi);
-      float ctauOmega = o2::constants::physics::MassOmegaMinus * cascpos / ((cascptotmom + 1e-13) * ctauomega);
+      float ctauXi = o2::constants::physics::MassXiMinus * cascpos / ((cascptotmom + 1e-13) * Xictau);
+      float ctauOmega = o2::constants::physics::MassOmegaMinus * cascpos / ((cascptotmom + 1e-13) * Omegactau);
 
       bool isGoodXiPbPb = std::abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) > cascSelection.rejcomp &&
                           ctauXi < cascSelection.proplifetime && std::abs(casc.yXi()) < cascSelection.rapCut;
@@ -1283,8 +1283,8 @@ struct HStrangeCorrelationFilter {
       int compatibleOmegaPlus = -1;
       float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
       float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
-      float ctauXi = o2::constants::physics::MassXiMinus * cascpos / ((cascptotmom + 1e-13) * ctauxi);
-      float ctauOmega = o2::constants::physics::MassOmegaMinus * cascpos / ((cascptotmom + 1e-13) * ctauomega);
+      float ctauXi = o2::constants::physics::MassXiMinus * cascpos / ((cascptotmom + 1e-13) * Xictau);
+      float ctauOmega = o2::constants::physics::MassOmegaMinus * cascpos / ((cascptotmom + 1e-13) * Omegactau);
 
       bool iGoodXiPbPb = std::abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) > cascSelection.rejcomp &&
                          ctauXi < cascSelection.proplifetime && std::abs(casc.yXi()) < cascSelection.rapCut;
