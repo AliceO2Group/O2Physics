@@ -121,22 +121,22 @@ DECLARE_SOA_COLUMN(TimestampHad, timestampHad, int64_t); //! Timestamp of the as
 } // namespace hf_correlation_d_meson_had
 
 // Definition of the D meson table for D-had correlations. Contains the info needed at Data level.
-DECLARE_SOA_TABLE(DMesonCandInfo, "AOD", "DMESONCANDINFO",  \
-                    hf_correlation_d_meson_had::PtD,        \
-                    hf_correlation_d_meson_had::EtaD,       \
-                    hf_correlation_d_meson_had::PhiD,       \
-                    hf_correlation_d_meson_had::MD,         \
-                    hf_correlation_d_meson_had::PoolBinD,   \
-                    hf_correlation_d_meson_had::GIndexColD, \
-                    hf_correlation_d_meson_had::TimestampD);
+DECLARE_SOA_TABLE(DMesonCandInfo, "AOD", "DMESONCANDINFO",
+                  hf_correlation_d_meson_had::PtD,
+                  hf_correlation_d_meson_had::EtaD,
+                  hf_correlation_d_meson_had::PhiD,
+                  hf_correlation_d_meson_had::MD,
+                  hf_correlation_d_meson_had::PoolBinD,
+                  hf_correlation_d_meson_had::GIndexColD,
+                  hf_correlation_d_meson_had::TimestampD);
 
-DECLARE_SOA_TABLE(AssocHadInfo, "AOD", "ASSOCHADINFO",        \
-                    hf_correlation_d_meson_had::PtHad,        \
-                    hf_correlation_d_meson_had::EtaHad,       \
-                    hf_correlation_d_meson_had::PhiHad,       \
-                    hf_correlation_d_meson_had::PoolBinHad,   \
-                    hf_correlation_d_meson_had::GIndexColHad, \
-                    hf_correlation_d_meson_had::TimestampHad);
+DECLARE_SOA_TABLE(AssocHadInfo, "AOD", "ASSOCHADINFO",
+                  hf_correlation_d_meson_had::PtHad,
+                  hf_correlation_d_meson_had::EtaHad,
+                  hf_correlation_d_meson_had::PhiHad,
+                  hf_correlation_d_meson_had::PoolBinHad,
+                  hf_correlation_d_meson_had::GIndexColHad,
+                  hf_correlation_d_meson_had::TimestampHad);
 
 } // namespace o2::aod
 
