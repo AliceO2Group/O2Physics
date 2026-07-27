@@ -87,8 +87,8 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
   } twotracksconfigs;
 
   struct : o2::framework::ConfigurableGroup {
-    Configurable<int> confTrkTPCnclsMin{"confTrkTPCnclsMin", 0, "Track selection: "};
-    Configurable<int> confTrkTPCcRowsMin{"confTrkTPCcRowsMin", 0, "Track selection: "};
+    Configurable<int> confTrkTPCnclsMin{"confTrkTPCnclsMin", 0, "Min. TPC clusters"};
+    Configurable<int> confTrkTPCcRowsMin{"confTrkTPCcRowsMin", 0, "Min. TPC crossed rows"};
     Configurable<float> confDcaXYCustom1FilterCut{"confDcaXYCustom1FilterCut", 10, "Value for [1] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
     Configurable<float> confDcaXYCustom2FilterCut{"confDcaXYCustom2FilterCut", 0, "Value for [2] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
   } additionalcuts;
