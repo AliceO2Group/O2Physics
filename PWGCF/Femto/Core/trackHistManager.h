@@ -154,17 +154,12 @@ struct ConfTrackBinning : o2::framework::ConfigurableGroup {
 constexpr const char PrefixTrackBinning1[] = "TrackBinning1";
 constexpr const char PrefixTrackBinning2[] = "TrackBinning2";
 constexpr const char PrefixTrackBinning3[] = "TrackBinning3";
-<<<<<<< HEAD
 constexpr const char PrefixV01PosDauBinning[] = "V01PosDauBinning";
 constexpr const char PrefixV01NegDauBinning[] = "V01NegDauBinning";
 constexpr const char PrefixV02PosDauBinning[] = "V02PosDauBinning";
 constexpr const char PrefixV02NegDauBinning[] = "V02NegDauBinning";
-=======
-constexpr const char PrefixV0PosDauBinning[] = "V0PosDauBinning";
-constexpr const char PrefixV0NegDauBinning[] = "V0NegDauBinning";
 constexpr const char PrefixD0PosDauBinning[] = "D0PosDauBinning";
 constexpr const char PrefixD0NegDauBinning[] = "D0NegDauBinning";
->>>>>>> ba8868c47 ([PWGCF] Femto: Add D0-hadron correlation task)
 constexpr const char PrefixCascadePosDauBinning[] = "CascadePosDauBinning";
 constexpr const char PrefixCascadeNegDauBinning[] = "CascadeNegDauBinning";
 constexpr const char PrefixCascadeBachelorBinning[] = "CascadeBachelorBinning";
@@ -272,6 +267,8 @@ constexpr const char PrefixV01PosDauQaBinning[] = "V01PosDauQaBinning";
 constexpr const char PrefixV01NegDauQaBinning[] = "V01NegDauQaBinning";
 constexpr const char PrefixV02PosDauQaBinning[] = "V02PosDauQaBinning";
 constexpr const char PrefixV02NegDauQaBinning[] = "V02NegDauQaBinning";
+constexpr const char PrefixD0PosDauQaBinning[] = "D0PosDauQaBinning";
+constexpr const char PrefixD0NegDauQaBinning[] = "D0NegDauQaBinning";
 constexpr const char PrefixCascadePosDauQaBinning[] = "CascadePosDauQaBinning";
 constexpr const char PrefixCascadeNegDauQaBinning[] = "CascadeNegDauQaBinning";
 constexpr const char PrefixCascadeBachelorQaBinning[] = "CascadeBachelorQaBinning";
@@ -285,6 +282,8 @@ using ConfV01PosDauQaBinning = ConfTrackQaBinning<PrefixV01PosDauQaBinning>;
 using ConfV01NegDauQaBinning = ConfTrackQaBinning<PrefixV01NegDauQaBinning>;
 using ConfV02PosDauQaBinning = ConfTrackQaBinning<PrefixV02PosDauQaBinning>;
 using ConfV02NegDauQaBinning = ConfTrackQaBinning<PrefixV02NegDauQaBinning>;
+using ConfD0PosDauQaBinning = ConfTrackQaBinning<PrefixD0PosDauQaBinning>;
+using ConfD0NegDauQaBinning = ConfTrackQaBinning<PrefixD0NegDauQaBinning>;
 using ConfCascadePosDauQaBinning = ConfTrackQaBinning<PrefixCascadePosDauQaBinning>;
 using ConfCascadeNegDauQaBinning = ConfTrackQaBinning<PrefixCascadeNegDauQaBinning>;
 using ConfCascadeBachelorQaBinning = ConfTrackQaBinning<PrefixCascadeBachelorQaBinning>;
@@ -526,10 +525,13 @@ constexpr char PrefixResonanceNegDaughter[] = "ResonanceNegDau/";
 constexpr char PrefixResonancePosDaughterQa[] = "ResonancePosDauQa/";
 constexpr char PrefixResonanceNegDaughterQa[] = "ResonanceNegDauQa/";
 
-constexpr char PrefixV01PosDaughter[] = "V01PosDau/";
-constexpr char PrefixV01NegDaughter[] = "V01NegDau/";
 constexpr char PrefixD01PosDaughter[] = "D01PosDau/";
 constexpr char PrefixD01NegDaughter[] = "D01NegDau/";
+constexpr char PrefixD01PosDaughterQa[] = "D01PosDauQa/";
+constexpr char PrefixD01NegDaughterQa[] = "D01NegDauQa/";
+
+constexpr char PrefixV01PosDaughter[] = "V01PosDau/";
+constexpr char PrefixV01NegDaughter[] = "V01NegDau/";
 constexpr char PrefixV02PosDaughter[] = "V02PosDau/";
 constexpr char PrefixV02NegDaughter[] = "V02NegDau/";
 constexpr char PrefixV0PosDaughterQa[] = "V0PosDauQa/";
