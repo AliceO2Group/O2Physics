@@ -2486,6 +2486,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kDCATrackVtxProd"] = kDCATrackVtxProd;
   fgVarNamesMap["kV2SP"] = kV2SP;
   fgVarNamesMap["kV2EP"] = kV2EP;
+  fgVarNamesMap["kV2EP_FT0C"] = kV2EP_FT0C;
   fgVarNamesMap["kA2EP_TPC"] = kA2EP_TPC;
   fgVarNamesMap["kA2EP_FT0A"] = kA2EP_FT0A;
   fgVarNamesMap["kA2EP_FT0C"] = kA2EP_FT0C;
