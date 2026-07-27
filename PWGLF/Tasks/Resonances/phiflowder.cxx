@@ -84,6 +84,10 @@ struct phiflowder {
     histos.add("hpQypvscent", "hpQypvscent", HistType::kTHnSparseF, {axisCent, axisV1}, true);
     histos.add("hpQytvscent", "hpQytvscent", HistType::kTHnSparseF, {axisCent, axisV1}, true);
     histos.add("hMixpairs", "hMixpairs", HistType::kTHnSparseF, {axisNPairs}, true);
+    histos.add("hSparseSameUx", "Same-event #Sigma u_{x};M;pT;centrality;eta", kTHnSparseF, {axisInvMass, axisPhiPt, axisCent, axisEta, axisV1}, true);
+    histos.add("hSparseSameUy", "Same-event #Sigma u_{y};M;pT;centrality;eta", kTHnSparseF, {axisInvMass, axisPhiPt, axisCent, axisEta, axisV1}, true);
+    histos.add("hSparseSameUQA", "Same-event #Sigma u#upoint Q_{A};M;pT;centrality;eta", kTHnSparseF, {axisInvMass, axisPhiPt, axisCent, axisEta, axisV1}, true);
+    histos.add("hSparseSameUQC", "Same-event #Sigma u#upoint Q_{C};M;pT;centrality;eta", kTHnSparseF, {axisInvMass, axisPhiPt, axisCent, axisEta, axisV1}, true);
   }
 
   uint8_t getRequiredPidBit() const
@@ -291,12 +295,18 @@ struct phiflowder {
         auto uy = sinNPhi; // imaginary part of candidate q vector
         auto oddv1 = ux * (qxZDCA - qxZDCC) + uy * (qyZDCA - qyZDCC);
         // auto evenv1 = ux * (qxZDCA + qxZDCC) + uy * (qyZDCA + qyZDCC);
+        auto uQA = ux * qxZDCA + uy * qyZDCA;
+        auto uQC = ux * qxZDCC + uy * qyZDCC;
 
         if (phiMass < massMin || phiMass > massMax) {
           continue;
         }
 
         histos.fill(HIST("hSparseSame"), phiMass, phiPt, centrality, etaCand, oddv1);
+        histos.fill(HIST("hSparseSameUx"), phiMass, phiPt, centrality, etaCand, ux);
+        histos.fill(HIST("hSparseSameUy"), phiMass, phiPt, centrality, etaCand, uy);
+        histos.fill(HIST("hSparseSameUQA"), phiMass, phiPt, centrality, etaCand, uQA);
+        histos.fill(HIST("hSparseSameUQC"), phiMass, phiPt, centrality, etaCand, uQC);
         // nPhiSame++;
       }
     }
