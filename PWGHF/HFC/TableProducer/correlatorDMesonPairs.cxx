@@ -98,11 +98,11 @@ struct HfCorrelatorD0HadronsSelection {
 
   // Process function to select collisions with at least one D0 candidate passing the selection criteria
   void processD0SelectionData(SelCollisions::iterator const& collision,
-                               CandidatesD0Data const& candidates)
+                              CandidatesD0Data const& candidates)
   {
     bool isSel8 = !useSel8 || collision.sel8();
     bool isNoSameBunchPileUp = !selNoSameBunchPileUpColl ||
-                                collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+                               collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
     bool isD0Found = !doSelD0Collision;
 
     if (doSelD0Collision) {
@@ -804,27 +804,32 @@ struct HfCorrelatorDMesonPairs {
       if (applyMixedEvent) {
         // Loop on the associated tracks for offline event mixing
         for (const auto& track : tracks) {
-            // apply track selection
-            if (track.collisionId() != gCollisionId) continue;
+          // apply track selection
+          if (track.collisionId() != gCollisionId)
+            continue;
 
-            // Manual trackFilter check
-            if (std::abs(track.eta()) >= etaTrackMax) continue;
-            if (track.pt() <= ptTrackMin) continue;
-            if (std::abs(track.dcaXY()) >= dcaXYTrackMax) continue;
-            if (std::abs(track.dcaZ()) >= dcaZTrackMax) continue;
-            // Removing D0 daughters by checking track indices
-            if (daughterTracksCutFlag) {
-              if ((candidate1.prong0Id() == track.globalIndex()) || (candidate1.prong1Id() == track.globalIndex())) {
-                continue;
-              }
+          // Manual trackFilter check
+          if (std::abs(track.eta()) >= etaTrackMax)
+            continue;
+          if (track.pt() <= ptTrackMin)
+            continue;
+          if (std::abs(track.dcaXY()) >= dcaXYTrackMax)
+            continue;
+          if (std::abs(track.dcaZ()) >= dcaZTrackMax)
+            continue;
+          // Removing D0 daughters by checking track indices
+          if (daughterTracksCutFlag) {
+            if ((candidate1.prong0Id() == track.globalIndex()) || (candidate1.prong1Id() == track.globalIndex())) {
+              continue;
             }
-            if (cntD0 == 0) {
-              entryAssocHad(track.pt(), track.eta(), track.phi(), poolBin, gCollisionId, timeStamp);
-              registry.fill(HIST("hTracksBin"), poolBin);
-              registry.fill(HIST("hDcaXYVsPt"), track.dcaXY(), track.pt());
-            }
-          } // Hadron Tracks loop
-          cntD0++;
+          }
+          if (cntD0 == 0) {
+            entryAssocHad(track.pt(), track.eta(), track.phi(), poolBin, gCollisionId, timeStamp);
+            registry.fill(HIST("hTracksBin"), poolBin);
+            registry.fill(HIST("hDcaXYVsPt"), track.dcaXY(), track.pt());
+          }
+        } // Hadron Tracks loop
+        cntD0++;
       }
 
       // Loop on the second D0 candidate
@@ -886,7 +891,7 @@ struct HfCorrelatorDMesonPairs {
           entryD0PairMl(outputMlD0Cand1, outputMlD0barCand1, outputMlD0Cand2, outputMlD0barCand2);
         } else {
           // Fill entries
-          fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, HfHelper::yD0(candidate1), HfHelper::yD0(candidate2), 
+          fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, HfHelper::yD0(candidate1), HfHelper::yD0(candidate2),
                     candidate1.eta(), candidate2.eta(), candidate1.phi(), candidate2.phi(),
                     candidate1.pt(), candidate2.pt(), HfHelper::invMassD0ToPiK(candidate1), HfHelper::invMassD0barToKPi(candidate1),
                     HfHelper::invMassD0ToPiK(candidate2), HfHelper::invMassD0barToKPi(candidate2));
