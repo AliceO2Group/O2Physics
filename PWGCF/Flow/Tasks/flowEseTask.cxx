@@ -300,8 +300,10 @@ struct FlowEseTask {
 
     AxisSpec shiftAxis = {10, 0, 10, "shift"};
     AxisSpec basisAxis = {20, 0, 20, "basis"};
+    AxisSpec q2GroupAxis = {10, 0.0, 10.0, "q_{2} percentile group"};
 
     histos.add("histQvecCent", "", {HistType::kTH2F, {q2QaAxis, centQaAxis}});
+    histos.add("histEventCountQ2Group", "", {HistType::kTH2F, {centQaAxis, q2GroupAxis}});
     histos.add(Form("histVertex"), "", {HistType::kTHnSparseF, {vertexAxis, vertexAxis, vertexAxis, centAxis}});
     for (int iGroup = 0; iGroup < NQ2Groups; ++iGroup) {
       histos.add(Form("histV2_%s", q2GroupSuffix(iGroup)), "", {HistType::kTHnSparseF, {centAxis, ptAxis, cosAxis}});
@@ -434,6 +436,13 @@ struct FlowEseTask {
         histos.add(Form("psi%d/QA/EPRes_Det_RefA", i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
         histos.add(Form("psi%d/QA/EPRes_Det_RefB", i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
         histos.add(Form("psi%d/QA/EPRes_RefA_RefB", i), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
+        if (i == CorrLevel[0]) {
+          for (int iGroup = 0; iGroup < NQ2Groups; ++iGroup) {
+            histos.add(Form("psi2/QA/EPRes_Det_RefA_%s", q2GroupSuffix(iGroup)), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
+            histos.add(Form("psi2/QA/EPRes_Det_RefB_%s", q2GroupSuffix(iGroup)), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
+            histos.add(Form("psi2/QA/EPRes_RefA_RefB_%s", q2GroupSuffix(iGroup)), "", {HistType::kTH2F, {centQaAxis, cosAxis}});
+          }
+        }
         histos.add(Form("psi%d/QA/EP_FT0C_shifted", i), "", {HistType::kTH2F, {centQaAxis, epQaAxis}});
         histos.add(Form("psi%d/QA/EP_FT0A_shifted", i), "", {HistType::kTH2F, {centQaAxis, epQaAxis}});
         histos.add(Form("psi%d/QA/EP_FV0A_shifted", i), "", {HistType::kTH2F, {centQaAxis, epQaAxis}});
@@ -682,6 +691,63 @@ struct FlowEseTask {
       histos.fill(HIST("psi2/QA/EPRes_Det_RefA"), centrality, std::cos(std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) - std::atan2(collision.qvecIm()[qvecRefAInd], collision.qvecRe()[qvecRefAInd])));
       histos.fill(HIST("psi2/QA/EPRes_Det_RefB"), centrality, std::cos(std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) - std::atan2(collision.qvecIm()[qvecRefBInd], collision.qvecRe()[qvecRefBInd])));
       histos.fill(HIST("psi2/QA/EPRes_RefA_RefB"), centrality, std::cos(std::atan2(collision.qvecIm()[qvecRefAInd], collision.qvecRe()[qvecRefAInd]) - std::atan2(collision.qvecIm()[qvecRefBInd], collision.qvecRe()[qvecRefBInd])));
+      const double epResDetRefA = std::cos(std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) - std::atan2(collision.qvecIm()[qvecRefAInd], collision.qvecRe()[qvecRefAInd]));
+      const double epResDetRefB = std::cos(std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) - std::atan2(collision.qvecIm()[qvecRefBInd], collision.qvecRe()[qvecRefBInd]));
+      const double epResRefARefB = std::cos(std::atan2(collision.qvecIm()[qvecRefAInd], collision.qvecRe()[qvecRefAInd]) - std::atan2(collision.qvecIm()[qvecRefBInd], collision.qvecRe()[qvecRefBInd]));
+      switch (q2Group(centrality, getQ2(collision))) {
+        case 0:
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefA_q2p00_10"), centrality, epResDetRefA);
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefB_q2p00_10"), centrality, epResDetRefB);
+          histos.fill(HIST("psi2/QA/EPRes_RefA_RefB_q2p00_10"), centrality, epResRefARefB);
+          break;
+        case 1:
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefA_q2p10_20"), centrality, epResDetRefA);
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefB_q2p10_20"), centrality, epResDetRefB);
+          histos.fill(HIST("psi2/QA/EPRes_RefA_RefB_q2p10_20"), centrality, epResRefARefB);
+          break;
+        case 2:
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefA_q2p20_30"), centrality, epResDetRefA);
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefB_q2p20_30"), centrality, epResDetRefB);
+          histos.fill(HIST("psi2/QA/EPRes_RefA_RefB_q2p20_30"), centrality, epResRefARefB);
+          break;
+        case 3:
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefA_q2p30_40"), centrality, epResDetRefA);
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefB_q2p30_40"), centrality, epResDetRefB);
+          histos.fill(HIST("psi2/QA/EPRes_RefA_RefB_q2p30_40"), centrality, epResRefARefB);
+          break;
+        case 4:
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefA_q2p40_50"), centrality, epResDetRefA);
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefB_q2p40_50"), centrality, epResDetRefB);
+          histos.fill(HIST("psi2/QA/EPRes_RefA_RefB_q2p40_50"), centrality, epResRefARefB);
+          break;
+        case 5:
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefA_q2p50_60"), centrality, epResDetRefA);
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefB_q2p50_60"), centrality, epResDetRefB);
+          histos.fill(HIST("psi2/QA/EPRes_RefA_RefB_q2p50_60"), centrality, epResRefARefB);
+          break;
+        case 6:
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefA_q2p60_70"), centrality, epResDetRefA);
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefB_q2p60_70"), centrality, epResDetRefB);
+          histos.fill(HIST("psi2/QA/EPRes_RefA_RefB_q2p60_70"), centrality, epResRefARefB);
+          break;
+        case 7:
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefA_q2p70_80"), centrality, epResDetRefA);
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefB_q2p70_80"), centrality, epResDetRefB);
+          histos.fill(HIST("psi2/QA/EPRes_RefA_RefB_q2p70_80"), centrality, epResRefARefB);
+          break;
+        case 8:
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefA_q2p80_90"), centrality, epResDetRefA);
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefB_q2p80_90"), centrality, epResDetRefB);
+          histos.fill(HIST("psi2/QA/EPRes_RefA_RefB_q2p80_90"), centrality, epResRefARefB);
+          break;
+        case 9:
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefA_q2p90_100"), centrality, epResDetRefA);
+          histos.fill(HIST("psi2/QA/EPRes_Det_RefB_q2p90_100"), centrality, epResDetRefB);
+          histos.fill(HIST("psi2/QA/EPRes_RefA_RefB_q2p90_100"), centrality, epResRefARefB);
+          break;
+        default:
+          break;
+      }
     } else if (nmode == CorrLevel[1]) {
       histos.fill(HIST("psi3/QA/EP_Det"), centrality, std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) / static_cast<float>(nmode));
       histos.fill(HIST("psi3/QA/EP_RefA"), centrality, std::atan2(collision.qvecIm()[qvecRefAInd], collision.qvecRe()[qvecRefAInd]) / static_cast<float>(nmode));
@@ -1212,6 +1278,10 @@ struct FlowEseTask {
     histos.fill(HIST("QA/CentDist"), centrality, 1.0);
     histos.fill(HIST("QA/PVzDist"), collision.posZ(), 1.0);
     histos.fill(HIST("histQvecCent"), getQ2(collision), centrality);
+    const int q2PercentileGroup = q2Group(centrality, getQ2(collision));
+    if (q2PercentileGroup >= 0) {
+      histos.fill(HIST("histEventCountQ2Group"), centrality, q2PercentileGroup + 0.5);
+    }
 
     if (cfgShiftCorr) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
