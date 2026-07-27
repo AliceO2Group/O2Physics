@@ -245,7 +245,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi,
 
 namespace signedpt
 {
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, 
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,
                            [](uint16_t signedBinnedPt) -> float {
                              return std::fabs(unBinSignedPt(signedBinnedPt));
                            });
@@ -253,7 +253,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,
 
 namespace unsignedpt
 {
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, 
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,
                            [](uint16_t unsignedBinnedPt) -> float {
                              return unBinUnsignedPt(unsignedBinnedPt);
                            });
