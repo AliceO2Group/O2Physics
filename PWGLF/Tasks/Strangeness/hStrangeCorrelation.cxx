@@ -127,7 +127,6 @@ struct HStrangeCorrelation {
     Configurable<bool> doSeparateFT0Prediction{"doSeparateFT0Prediction", false, "separate FT0M to FT0A and FT0C in prediction process"};
     Configurable<bool> useCentralityinPrediction{"useCentralityinPrediction", false, "if true, use centrality instead of multiplisity"};
     Configurable<bool> doMirroringInDelataEta{"doMirroringInDelataEta", false, "if true, fill only positive delta eta and mirror the negative side in post processing, Adjust the delta axis!"};
-    Configurable<bool> fillCorrelationHistWithMass{"fillCorrelationHistWithMass", false, "if true, fill correlation histograms with particle mass"};
     Configurable<bool> doMassSpectrumCheck{"doMassSpectrumCheck", false, "if true, add and fill invariant-mass spectrum"};
   } masterConfigurations;
 
@@ -943,7 +942,7 @@ struct HStrangeCorrelation {
 
           double binFillThn[6] = {deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult};
           if (TESTBIT(doCorrelation, Index) && (!efficiencyFlags.applyEfficiencyCorrection || efficiency != 0) && (masterConfigurations.doPPAnalysis || (TESTBIT(selMap, Index) && TESTBIT(selMap, Index + 3)))) {
-            if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma && !masterConfigurations.fillCorrelationHistWithMass) {
+            if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma) {
               fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/LeftBg/") + HIST(V0names[Index])), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
               if (doDeltaPhiStarCheck) {
                 double deltaPhiStar = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStar, bField);
@@ -961,10 +960,7 @@ struct HStrangeCorrelation {
                 }
               }
             }
-            if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && (masterConfigurations.fillCorrelationHistWithMass || (-massWindowConfigurations.maxPeakNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxPeakNSigma))) {
-              if (masterConfigurations.fillCorrelationHistWithMass) {
-                binFillThn[1] = getV0InvariantMass<Index>(assoc);
-              }
+            if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxPeakNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxPeakNSigma) {
               fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/") + HIST(V0names[Index])), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
               if (std::abs(deltaphi) < checks.towardDeltaEtaRange && doITSClustersQA) {
                 histos.fill(HIST("hITSClusters") + HIST(V0names[Index]) + HIST("NegativeDaughterToward"), ptassoc, negtrack.itsNCls(), assoc.v0radius());
@@ -990,7 +986,7 @@ struct HStrangeCorrelation {
                 }
               }
             }
-            if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && +massWindowConfigurations.minBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxBgNSigma && !masterConfigurations.fillCorrelationHistWithMass) {
+            if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && +massWindowConfigurations.minBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxBgNSigma) {
               fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/RightBg/") + HIST(V0names[Index])), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
               if (doDeltaPhiStarCheck) {
                 double deltaPhiStar = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStar, bField);
@@ -1858,16 +1854,10 @@ struct HStrangeCorrelation {
       histos.add("EventQA/hPvz", ";pvz;Entries", kTH1F, {{30, -15, 15}});
       histos.add("EventQA/hMultFT0vsTPC", ";centFT0M;multNTracksPVeta1", kTH2F, {{100, 0, 100}, {300, 0, 300}});
     }
-    if (masterConfigurations.doFullCorrelationStudy && masterConfigurations.fillCorrelationHistWithMass) {
-      histos.add("sameEvent/Signal/K0Short", "", kTHnF, {axisDeltaPhiNDim, axesConfigurations.axisK0ShortMass, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-      histos.add("sameEvent/Signal/Lambda", "", kTHnF, {axisDeltaPhiNDim, axesConfigurations.axisLambdaMass, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-      histos.add("sameEvent/Signal/AntiLambda", "", kTHnF, {axisDeltaPhiNDim, axesConfigurations.axisLambdaMass, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-    }
-
     bool hStrange = false;
     for (int i = 0; i < AssocParticleTypes; i++) {
       if (TESTBIT(doCorrelation, i)) {
-        if (masterConfigurations.doFullCorrelationStudy && !masterConfigurations.fillCorrelationHistWithMass)
+        if (masterConfigurations.doFullCorrelationStudy)
           histos.add(fmt::format("sameEvent/Signal/{}", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
         if (doDeltaPhiStarCheck && masterConfigurations.doFullCorrelationStudy) {
           histos.add(fmt::format("sameEvent/Signal/{}DeltaPhiStar", Particlenames[i]).c_str(), "", kTH3F, {{100, -0.3, 0.3}, {50, -0.05, 0.05}, {2, -1, 1}}); // -1 oposite charge, 1 same charge
@@ -1905,7 +1895,7 @@ struct HStrangeCorrelation {
       histos.add("hAssocPtResolution", ";p_{T}^{reconstructed} (GeV/c); p_{T}^{generated} (GeV/c)", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisPtQA});
     }
 
-    if (hStrange && masterConfigurations.doFullCorrelationStudy && !masterConfigurations.fillCorrelationHistWithMass) {
+    if (hStrange && masterConfigurations.doFullCorrelationStudy) {
       histos.addClone("sameEvent/Signal/", "sameEvent/LeftBg/");
       histos.addClone("sameEvent/Signal/", "sameEvent/RightBg/");
     }
@@ -3052,7 +3042,7 @@ struct HStrangeCorrelation {
       });
     }
   }
-  void processClosureTest(aod::McCollision const& /*mcCollision*/, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>> const& recCollisions, aod::McParticles const& mcParticles)
+  void processClosureTest(aod::McCollision const& /*mcCollision*/, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>> const& recCollisions, aod::McParticles const& mcParticles)
   {
 
     std::vector<uint32_t> triggerIndices;
@@ -3088,20 +3078,25 @@ struct HStrangeCorrelation {
 
     histos.fill(HIST("hClosureTestEventCounter"), 0.5f);
 
-    int bestCollisionFT0Mpercentile = -1;
+    int bestCollisionCentpercentile = -1;
     float bestCollisionVtxZ = 0.0f;
     bool bestCollisionSel8 = false;
     bool bestCollisionINELgtZERO = false;
+    bool isCollisionSelect = false;
     int biggestNContribs = -1;
     uint32_t bestCollisionTriggerPresenceMap = 0;
 
     for (auto const& recCollision : recCollisions) {
       if (biggestNContribs < recCollision.numContrib()) {
         biggestNContribs = recCollision.numContrib();
-        bestCollisionFT0Mpercentile = recCollision.centFT0M();
-        bestCollisionSel8 = recCollision.sel8();
-        bestCollisionVtxZ = recCollision.posZ();
-        bestCollisionINELgtZERO = recCollision.isInelGt0();
+        bestCollisionCentpercentile = masterConfigurations.doPPAnalysis ? recCollision.centFT0M() : recCollision.centFT0C();
+        if (masterConfigurations.applyNewMCSelection) {
+          isCollisionSelect = ((masterConfigurations.doPPAnalysis && isCollisionSelected(recCollision)) || (!masterConfigurations.doPPAnalysis && isCollisionSelectedPbPb(recCollision, false)));
+        } else {
+          bestCollisionSel8 = recCollision.sel8();
+          bestCollisionVtxZ = recCollision.posZ();
+          bestCollisionINELgtZERO = recCollision.isInelGt0();
+        }
         if (triggerPresenceMap.size() > 0)
           bestCollisionTriggerPresenceMap = triggerPresenceMap[recCollision.globalIndex()];
       }
@@ -3111,19 +3106,22 @@ struct HStrangeCorrelation {
     if (triggerPresenceMap.size() > 0 && !TESTBIT(bestCollisionTriggerPresenceMap, triggerBinToSelect)) {
       return;
     }
-
-    if (masterConfigurations.doGenEventSelection) {
-      if (!bestCollisionSel8)
+    if (masterConfigurations.applyNewMCSelection) {
+      if (!isCollisionSelect)
         return;
-      if (std::abs(bestCollisionVtxZ) > masterConfigurations.zVertexCut)
-        return;
-      if (!bestCollisionINELgtZERO)
-        return;
-      if (bestCollisionFT0Mpercentile > axisRanges[5][1] || bestCollisionFT0Mpercentile < axisRanges[5][0]) {
-        return;
+    } else {
+      if (masterConfigurations.doGenEventSelection) {
+        if (!bestCollisionSel8)
+          return;
+        if (std::abs(bestCollisionVtxZ) > masterConfigurations.zVertexCut)
+          return;
+        if (!bestCollisionINELgtZERO)
+          return;
+        if (bestCollisionCentpercentile > axisRanges[5][1] || bestCollisionCentpercentile < axisRanges[5][0]) {
+          return;
+        }
       }
     }
-
     histos.fill(HIST("hClosureTestEventCounter"), 1.5f);
 
     for (auto const& mcParticle : mcParticles) {
@@ -3157,7 +3155,7 @@ struct HStrangeCorrelation {
       if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus || std::abs(mcParticle.pdgCode()) == PDG_t::kProton || std::abs(mcParticle.pdgCode()) == PDG_t::kElectron || std::abs(mcParticle.pdgCode()) == PDG_t::kMuonMinus) {
         if (!masterConfigurations.doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
           triggerIndices.emplace_back(iteratorNum);
-          histos.fill(HIST("ClosureTest/hTrigger"), gpt, geta, bestCollisionFT0Mpercentile);
+          histos.fill(HIST("ClosureTest/hTrigger"), gpt, geta, bestCollisionCentpercentile);
         }
         if (masterConfigurations.doCorrelationHadron) {
           if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
@@ -3242,7 +3240,7 @@ struct HStrangeCorrelation {
             if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
               continue;
             if (TESTBIT(doCorrelation, i))
-              histos.fill(HIST("ClosureTest/sameEvent/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, bestCollisionVtxZ, bestCollisionFT0Mpercentile);
+              histos.fill(HIST("ClosureTest/sameEvent/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, bestCollisionVtxZ, bestCollisionCentpercentile);
           }
         }
       });

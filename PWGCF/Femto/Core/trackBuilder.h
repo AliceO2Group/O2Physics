@@ -568,8 +568,8 @@ class TrackBuilder
   TrackBuilder() = default;
   ~TrackBuilder() = default;
 
-  template <typename T1, typename T2, typename T3, typename T4>
-  void init(o2::framework::HistogramRegistry* registry, T1& config, T2& filter, T3& table, T4& initContext)
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  void init(o2::framework::HistogramRegistry* registry, T1& config, T2& filter, T3& table, T4& initContext, T5& collisionBuilder)
   {
     LOG(info) << "Initialize femto track builder...";
 
@@ -591,6 +591,17 @@ class TrackBuilder
       LOG(fatal) << "FTracks and FLiteTracks are mutually exclusive -- enable only one. "
                  << "FLiteTracks is meant to replace FTracks at the producer stage (for better compression in derived data); "
                  << "use the dedicated converter task to reconstruct FTracks from FLiteTracks downstream.";
+    }
+
+    if (mProduceTracks && !collisionBuilder.producingCollisions()) {
+      LOG(fatal) << "FTracks is enabled, but the collision builder is not producing FCols (full precision). "
+                 << "FTracks stores the collision index into FCols -- enable CollisionTables.produceCollisions, "
+                 << "or switch to FLiteTracks if CollisionTables.produceLiteCollisions is enabled instead.";
+    }
+    if (mProduceLiteTracks && !collisionBuilder.producingLiteCollisions()) {
+      LOG(fatal) << "FLiteTracks is enabled, but the collision builder is not producing FLiteCols. "
+                 << "FLiteTracks stores the collision index into FLiteCols -- enable CollisionTables.produceLiteCollisions, "
+                 << "or switch to FTracks if CollisionTables.produceCollisions is enabled instead.";
     }
 
     if (mProduceTracks || mProduceLiteTracks || mProduceTrackMasks || mProduceTrackMass || mProduceTrackDcas || mProduceTrackExtras || mProduceElectronPids || mProducePionPids || mProduceKaonPids || mProduceProtonPids || mProduceDeuteronPids || mProduceTritonPids || mProduceHeliumPids) {
@@ -642,7 +653,7 @@ class TrackBuilder
 
     if (mProduceLiteTracks) {
       trackProducts.producedLiteTracks(collisionBuilder.collisionIndex(),
-                                       o2::aod::femtobase::lite::binPt(track.pt() * track.sign()),
+                                       o2::aod::femtobase::lite::binSignedPt(track.pt() * track.sign()),
                                        o2::aod::femtobase::lite::binEta(track.eta()),
                                        o2::aod::femtobase::lite::binPhi(track.phi()));
       lastIndex = trackProducts.producedLiteTracks.lastIndex();
@@ -789,6 +800,9 @@ class TrackBuilder
     // fillTrack already inserted the correct index (FTracks or FLiteTracks) into indexMap
     return indexMap.at(daughter.globalIndex());
   }
+
+  [[nodiscard]] bool producingTracks() const { return mProduceTracks; }
+  [[nodiscard]] bool producingLiteTracks() const { return mProduceLiteTracks; }
 
   template <typename T>
   void reset(T const& tracks)

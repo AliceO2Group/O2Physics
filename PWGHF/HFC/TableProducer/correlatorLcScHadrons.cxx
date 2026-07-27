@@ -644,7 +644,7 @@ struct HfCorrelatorLcScHadrons {
           // We evaluate both applicable hypotheses based on charge sign and pick the best match.
           double tofLa = (pid > 0) ? v0.tofNSigmaALaPi() : v0.tofNSigmaLaPi();
 
-          passTOF = tofLa > cfgV0.cfgV0DaughPIDCutsTOFPi;
+          passTOF = std::abs(tofLa) > cfgV0.cfgV0DaughPIDCutsTOFPi;
         } else {
           // Fallback to standard track TOF
           passTOF = std::abs(track.tofNSigmaPi()) > cfgV0.cfgV0DaughPIDCutsTOFPi;
@@ -836,7 +836,7 @@ struct HfCorrelatorLcScHadrons {
         auto posTrackV0 = v0.template posTrack_as<TrackType>();
         auto negTrackV0 = v0.template negTrack_as<TrackType>();
 
-        if ((candidate.prong0Id() == posTrackV0.globalIndex()) || (candidate.prong1Id() == posTrackV0.globalIndex()) || (candidate.prong2Id() == posTrackV0.globalIndex() || (candidate.prong0Id() == negTrackV0.globalIndex()) || (candidate.prong1Id() == negTrackV0.globalIndex()) || (candidate.prong2Id() == negTrackV0.globalIndex()))) {
+        if ((candidate.prong0Id() == posTrackV0.globalIndex()) || (candidate.prong1Id() == posTrackV0.globalIndex()) || (candidate.prong2Id() == posTrackV0.globalIndex()) || (candidate.prong0Id() == negTrackV0.globalIndex()) || (candidate.prong1Id() == negTrackV0.globalIndex()) || (candidate.prong2Id() == negTrackV0.globalIndex())) {
           if (!cfgCharmCand.storeAutoCorrelationFlag) {
             continue;
           }

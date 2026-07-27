@@ -16,6 +16,7 @@
 #include "PWGEM/PhotonMeson/Core/EMBitFlags.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
+#include "PWGEM/PhotonMeson/DataModel/ConversionMl.h"
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
@@ -40,6 +41,8 @@
 #include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
 
+#include <Math/Vector3D.h> // IWYU pragma: keep (do not replace with Math/Vector3Dfwd.h)
+#include <Math/Vector3Dfwd.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TF1.h>
@@ -48,6 +51,7 @@
 #include <TTree.h>
 
 #include <cmath>
+#include <random>
 #include <string>
 #include <utility>
 #include <vector>
@@ -92,20 +96,21 @@ enum class TagDecision {
 
 struct EmcalPhotonMcTask {
   static constexpr float EMCALRadius = 440.f;
+  static constexpr float PhiVUndefined = -999.f;
 
-  o2::framework::Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  o2::framework::Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  o2::framework::Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
-  o2::framework::Configurable<bool> writeTree{"writeTree", true, "write tree for ML."};
+  Produces<aod::ConvTagCandidates> convTagCandidates;
+
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
+  Configurable<bool> writeTable{"writeTable", true, "write table for ML."};
+  Configurable<int> bkgPrescale{"bkgPrescale", 1000, "keep 1 in N background pairs in the ML training table"};
+  Configurable<uint32_t> bkgPrescaleSeed{"bkgPrescaleSeed", 42, "seed for the background-prescale RNG"};
 
   // configurable axis
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {400, 0.0, 0.8}, "invariant mass axis for the neutral meson"};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {400, 0., 20.}, "pT axis for the neutral meson"};
-  ConfigurableAxis thnConfigAxisERelative{"thnConfigAxisERelative", {600, -1., 5.}, "(E rec - E true) / E true axis"};
-  ConfigurableAxis thnConfigAxisPRelative{"thnConfigAxisPRelative", {300, -1., 2.}, "(P rec - P true) / P true axis"};
-  ConfigurableAxis thnConfigAxisEtaRelative{"thnConfigAxisEtaRelative", {300, -1., 2.}, "(eta rec - eta true) / eta true axis"};
-  ConfigurableAxis thnConfigAxisPhiRelative{"thnConfigAxisPhiRelative", {300, -1., 2.}, "(phi rec - phi true) / phi true axis"};
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {20, 0., 100.}, "centrality axis for the current event"};
   ConfigurableAxis thnConfigAxisMult{"thnConfigAxisMult", {60, 0., 60000.}, "multiplicity axis for the current event"};
   ConfigurableAxis thnConfigAxisDeltaEta{"thnConfigAxisDeltaEta", {100, -1, 1}, "delta eta axis"};
@@ -117,8 +122,8 @@ struct EmcalPhotonMcTask {
     Configurable<float> maxMinv{"maxMinv", 0.1f, "maximum invariant mass for tagging conversions."};
     Configurable<float> maxDeltaEta{"maxDeltaEta", 0.05f, "maximum delta eta between two clusters for tagging them as conversions."};
     Configurable<float> maxDeltaPhi{"maxDeltaPhi", 0.1f, "maximum delta phi between two clusters for tagging them as conversions."};
-    Configurable<float> minRConv{"minRConv", 370.f, "minimum conversion Radius of two clusters for tagging them as conversions."};
-    Configurable<float> maxRConv{"maxRConv", 430.f, "maximum conversion Radius of two clusters for tagging them as conversions."};
+    Configurable<float> minrConv{"minrConv", 370.f, "minimum conversion Radius of two clusters for tagging them as conversions."};
+    Configurable<float> maxrConv{"maxrConv", 430.f, "maximum conversion Radius of two clusters for tagging them as conversions."};
   } conversiontaggingcuts;
 
   EMPhotonEventCut fEMEventCut;
@@ -183,14 +188,14 @@ struct EmcalPhotonMcTask {
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  OutputObj<TTree> fConvTagTree{"convTagTree", OutputObjHandlingPolicy::AnalysisObject};
+  int bTruthLabel{};
 
-  float bMinv{}, bRConv{}, bDeltaEta{}, bDeltaPhi{}, bE1{}, bE2{}, bAsymmetry{}, bCentOrMult{}, bM021{}, bM022{}, bTime1{}, bTime2{}, bNCell1{}, bNCell2{}, bOpeningAngle{};
-  int bTruthLabel{}, bCollisionIndex{};
-
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   int mRunNumber{0};
   float dBz{0.f};
+
+  std::mt19937 mRandGen;
+  std::uniform_int_distribution<int> mPrescaleDist;
 
   void defineEMEventCut()
   {
@@ -244,24 +249,11 @@ struct EmcalPhotonMcTask {
     fEMCCut.addQAHistograms(&registry);
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&registry);
 
-    const AxisSpec thnAxisPtGen{thnConfigAxisPt, "#it{p}_{T,Gen} (GeV/#it{c})"};
-    const AxisSpec thnAxisPtRec{thnConfigAxisPt, "#it{p}_{T,Rec} (GeV/#it{c})"};
-    const AxisSpec thnAxisPGen{thnConfigAxisPt, "#it{p}_{Gen} (GeV/#it{c})"};
-    const AxisSpec thnAxisPRec{thnConfigAxisPt, "#it{p}_{Rec} (GeV/#it{c})"};
-    const AxisSpec thnAxisPRelative{thnConfigAxisPRelative, "#it{p}_{Rec} - #it{p}_{Gen} / #it{p}_{Gen}"};
-    const AxisSpec thnAxisEGen{thnConfigAxisPt, "#it{E}_{Gen} (GeV)"};
     const AxisSpec thnAxisERec{thnConfigAxisPt, "#it{E}_{Rec} (GeV)"};
-    const AxisSpec thnAxisERelative{thnConfigAxisERelative, "#it{E}_{Rec} - #it{E}_{Gen} / #it{E}_{Gen}"};
     const AxisSpec thnAxisInvMass{thnConfigAxisInvMass, "#it{M}_{#gamma#gamma} (GeV/#it{c}^{2})"};
 
-    const AxisSpec thnAxisEtaRelative{thnConfigAxisEtaRelative, "#it{#eta}_{Rec} - #it{#eta}_{Gen} / #it{#eta}_{Gen}"};
-    const AxisSpec thnAxisPhiRelative{thnConfigAxisPhiRelative, "#it{#varphi}_{Rec} - #it{#varphi}_{Gen} / #it{#varphi}_{Gen}"};
-
-    const AxisSpec thnAxisEtaGen{280, -0.7, 0.7, "#it{#eta}_{Gen}"};
-    const AxisSpec thnAxisPhiGen{360, 0., o2::constants::math::TwoPI, "#it{#varphi}_{Gen} (rad)"};
-
-    const AxisSpec thnAxisRConvRec{100, 0, 500, "#it{R}_{rec}"};
-    const AxisSpec thnAxisRConvGen{100, 0, 500, "#it{R}_{gen}"};
+    const AxisSpec thnAxisrConvRec{100, 0, 500, "#it{R}_{rec}"};
+    const AxisSpec thnAxisrConvGen{100, 0, 500, "#it{R}_{gen}"};
 
     const AxisSpec thnAxisDeltaEta{thnConfigAxisDeltaEta, "#Delta#it{eta}"};
     const AxisSpec thnAxisDeltaPhi{thnConfigAxisDeltaPhi, "#Delta#it{#varphi} (rad)"};
@@ -278,8 +270,8 @@ struct EmcalPhotonMcTask {
       thnAxisCentOrMult = {thnConfigAxisMult, "FT0C Multiplicity"};
     }
 
-    registry.add("EMCal/TrueConversion/hMassReco", "minv vs Rconv vs E1 vs E2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisRConvRec, thnAxisERec, thnAxisERec, thnAxisCentOrMult});
-    registry.add("EMCal/TrueConversion/hRconvReco", "Rconv vs true RConv vs E1 vs E2", HistType::kTHnSparseF, {thnAxisRConvRec, thnAxisRConvGen, thnAxisERec, thnAxisERec, thnAxisCentOrMult});
+    registry.add("EMCal/TrueConversion/hMassReco", "minv vs rConv vs E1 vs E2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisrConvRec, thnAxisERec, thnAxisERec, thnAxisCentOrMult});
+    registry.add("EMCal/TrueConversion/hrConvReco", "rConv vs true rConv vs E1 vs E2", HistType::kTHnSparseF, {thnAxisrConvRec, thnAxisrConvGen, thnAxisERec, thnAxisERec, thnAxisCentOrMult});
     registry.add("EMCal/TrueConversion/hDeltaEtaDeltaPhi", "EMCal Delta Eta vs Delta vs E1 vs E2", HistType::kTHnSparseF, {thnAxisDeltaEta, thnAxisDeltaPhi, thnAxisERec, thnAxisERec, thnAxisCentOrMult});
     registry.add("EMCal/TrueConversion/hEnergyReco", "energy vs cent", HistType::kTH2D, {thnAxisERec, thnAxisCentOrMult});
 
@@ -301,26 +293,9 @@ struct EmcalPhotonMcTask {
     hConfusionMatrixConversionTagging->GetYaxis()->SetBinLabel(4, "background");
     hConfusionMatrixConversionTagging->GetYaxis()->SetBinLabel(5, "#gamma");
 
-    if (writeTree.value) {
-      fConvTagTree.setObject(new TTree("convTagTree", "flattened conversion tagging features"));
-      fConvTagTree->Branch("collisionIndex", &bCollisionIndex);
-      fConvTagTree->Branch("minv", &bMinv);
-      fConvTagTree->Branch("rConv", &bRConv);
-      fConvTagTree->Branch("deltaEta", &bDeltaEta);
-      fConvTagTree->Branch("deltaPhi", &bDeltaPhi);
-      fConvTagTree->Branch("e1", &bE1);
-      fConvTagTree->Branch("e2", &bE2);
-      fConvTagTree->Branch("asymmetry", &bAsymmetry);
-      fConvTagTree->Branch("centOrMult", &bCentOrMult);
-      fConvTagTree->Branch("m021", &bM021);
-      fConvTagTree->Branch("m022", &bM022);
-      fConvTagTree->Branch("time1", &bTime1);
-      fConvTagTree->Branch("time2", &bTime2);
-      fConvTagTree->Branch("ncell1", &bNCell1);
-      fConvTagTree->Branch("ncell2", &bNCell2);
-      fConvTagTree->Branch("openingAngle", &bOpeningAngle);
-      fConvTagTree->Branch("truthLabel", &bTruthLabel);
-    }
+    mRandGen.seed(bkgPrescaleSeed.value);
+    mPrescaleDist = std::uniform_int_distribution<int>(0, bkgPrescale.value - 1);
+
   }; // end init
 
   template <o2::soa::is_iterator TCollision>
@@ -424,6 +399,9 @@ struct EmcalPhotonMcTask {
       LOG(info) << "Skipping DF because there are not photons!";
       return;
     }
+    if (collisions.size() <= 0) {
+      return;
+    }
     std::vector<bool> wasMeassured(mcParticles.size(), false);
     EMBitFlags emcFlagsFromTrueMeson(clusters.size());
     EMBitFlags emcFlagsFromTrueMesonSameGamma(clusters.size());
@@ -440,7 +418,6 @@ struct EmcalPhotonMcTask {
     auto mcMother = mcParticles.begin();
 
     for (const auto& collision : collisions) {
-      bCollisionIndex = collision.globalIndex(); // or emmceventId() if you want to split by MC event specifically
       initCCDB(collision);
       isFullEventSelected(collision, true);
 
@@ -462,35 +439,34 @@ struct EmcalPhotonMcTask {
         ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
-        const float deltaPhi = RecoDecay::constrainAngle(v1.Phi() - v2.Phi(), -o2::constants::math::PIHalf);
+        // z-axis unit vector (beam/field direction)
+        ROOT::Math::XYZVector p1 = v1.Vect();
+        ROOT::Math::XYZVector p2 = v2.Vect();
+        ROOT::Math::XYZVector pSum = p1 + p2;
+        ROOT::Math::XYZVector zAxis(0, 0, 1);
+
+        ROOT::Math::XYZVector u = pSum.Unit();
+        ROOT::Math::XYZVector nDecay = p1.Cross(p2); // normal to the plane containing p1, p2
+        ROOT::Math::XYZVector nRef = u.Cross(zAxis); // normal to the plane containing u and z
+
+        float phiV = PhiVUndefined; // sentinel for degenerate geometry
+        if (nDecay.R() > 1e-6f && nRef.R() > 1e-6f) {
+          float cosPhiV = static_cast<float>(nDecay.Unit().Dot(nRef.Unit()));
+          cosPhiV = std::clamp(cosPhiV, -1.f, 1.f);
+          phiV = std::acos(cosPhiV);
+        }
+
+        const float deltaPhi = RecoDecay::constrainAngle(v1.Phi() - v2.Phi(), -o2::constants::math::PI);
         const float deltaEta = v1.Eta() - v2.Eta();
         const float eT1 = v1.Et();
         const float eT2 = v2.Et();
-
-        const float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
+        const float harmonicET = (eT1 * eT2) / (eT1 + eT2);
 
         // calculate the conversion radius in cm. The formula expects radii in m, B field in T and energies in GeV
-        const float RConv = 100.f * (EMCALRadius / 100.f - std::fabs(deltaPhi) / (0.15f * (std::fabs(dBz) / 10.f)) * (eT1 * eT2) / (eT1 + eT2));
-
-        // tree values
-        bMinv = vMeson.M();
-        bRConv = RConv;
-        bDeltaEta = deltaEta;
-        bDeltaPhi = deltaPhi;
-        bE1 = g1.e();
-        bE2 = g2.e();
-        bAsymmetry = std::fabs(g1.e() - g2.e()) / (g1.e() + g2.e());
-        bCentOrMult = centOrMult;
-        bM021 = g1.m02();
-        bM022 = g2.m02();
-        bTime1 = g1.time();
-        bTime2 = g2.time();
-        bNCell1 = g1.nCells();
-        bNCell2 = g2.nCells();
-        bOpeningAngle = openingAngle;
+        const float rConv = 100.f * (EMCALRadius / 100.f - std::fabs(deltaPhi) / (0.15f * (std::fabs(dBz) / 10.f)) * harmonicET);
 
         // tag conversion pairs
-        if (conversiontaggingcuts.maxMinv >= vMeson.M() && conversiontaggingcuts.maxDeltaEta >= std::fabs(deltaEta) && conversiontaggingcuts.minRConv <= RConv && RConv <= conversiontaggingcuts.maxRConv && conversiontaggingcuts.maxDeltaPhi >= std::fabs(deltaPhi)) {
+        if (conversiontaggingcuts.maxMinv >= vMeson.M() && conversiontaggingcuts.maxDeltaEta >= std::fabs(deltaEta) && conversiontaggingcuts.minrConv <= rConv && rConv <= conversiontaggingcuts.maxrConv && conversiontaggingcuts.maxDeltaPhi >= std::fabs(deltaPhi)) {
           emcFlagsTagging.set(g1.globalIndex());
           emcFlagsTagging.set(g2.globalIndex());
         }
@@ -548,37 +524,35 @@ struct EmcalPhotonMcTask {
 
         // do we have two conversions
         if (areLeptons && areConversionLegs) {
-          registry.fill(HIST("EMCal/TrueConversion/hMassReco"), vMeson.M(), RConv, g1.e(), g2.e(), centOrMult);
-          registry.fill(HIST("EMCal/TrueConversion/hRconvReco"), RConv, std::hypot(mcCluster1.vx(), mcCluster1.vy()), g1.e(), g2.e(), centOrMult);
+          registry.fill(HIST("EMCal/TrueConversion/hMassReco"), vMeson.M(), rConv, g1.e(), g2.e(), centOrMult);
+          registry.fill(HIST("EMCal/TrueConversion/hrConvReco"), rConv, std::hypot(mcCluster1.vx(), mcCluster1.vy()), g1.e(), g2.e(), centOrMult);
           registry.fill(HIST("EMCal/TrueConversion/hDeltaEtaDeltaPhi"), deltaEta, deltaPhi, g1.e(), g2.e(), centOrMult);
           if (arePhotonFromPi0) {
-            registry.fill(HIST("EMCal/TrueConversionFromPi0/hMassReco"), vMeson.M(), RConv, g1.e(), g2.e(), centOrMult);
-            registry.fill(HIST("EMCal/TrueConversionFromPi0/hRconvReco"), RConv, std::hypot(mcCluster1.vx(), mcCluster1.vy()), g1.e(), g2.e(), centOrMult);
+            registry.fill(HIST("EMCal/TrueConversionFromPi0/hMassReco"), vMeson.M(), rConv, g1.e(), g2.e(), centOrMult);
+            registry.fill(HIST("EMCal/TrueConversionFromPi0/hrConvReco"), rConv, std::hypot(mcCluster1.vx(), mcCluster1.vy()), g1.e(), g2.e(), centOrMult);
             registry.fill(HIST("EMCal/TrueConversionFromPi0/hDeltaEtaDeltaPhi"), deltaEta, deltaPhi, g1.e(), g2.e(), centOrMult);
           }
         }
         if (areClusterFromPi0) {
-          registry.fill(HIST("EMCal/TrueClusterFromPi0/hMassReco"), vMeson.M(), RConv, g1.e(), g2.e(), centOrMult);
-          registry.fill(HIST("EMCal/TrueClusterFromPi0/hRconvReco"), RConv, std::hypot(mcCluster1.vx(), mcCluster1.vy()), g1.e(), g2.e(), centOrMult);
+          registry.fill(HIST("EMCal/TrueClusterFromPi0/hMassReco"), vMeson.M(), rConv, g1.e(), g2.e(), centOrMult);
+          registry.fill(HIST("EMCal/TrueClusterFromPi0/hrConvReco"), rConv, std::hypot(mcCluster1.vx(), mcCluster1.vy()), g1.e(), g2.e(), centOrMult);
           registry.fill(HIST("EMCal/TrueClusterFromPi0/hDeltaEtaDeltaPhi"), deltaEta, deltaPhi, g1.e(), g2.e(), centOrMult);
         }
         if (!areClusterFromPi0 && !areConversionLegs) {
-          registry.fill(HIST("EMCal/Background/hMassReco"), vMeson.M(), RConv, g1.e(), g2.e(), centOrMult);
-          registry.fill(HIST("EMCal/Background/hRconvReco"), RConv, std::hypot(mcCluster1.vx(), mcCluster1.vy()), g1.e(), g2.e(), centOrMult);
+          registry.fill(HIST("EMCal/Background/hMassReco"), vMeson.M(), rConv, g1.e(), g2.e(), centOrMult);
+          registry.fill(HIST("EMCal/Background/hrConvReco"), rConv, std::hypot(mcCluster1.vx(), mcCluster1.vy()), g1.e(), g2.e(), centOrMult);
           registry.fill(HIST("EMCal/Background/hDeltaEtaDeltaPhi"), deltaEta, deltaPhi, g1.e(), g2.e(), centOrMult);
         }
 
         // final tree values plus filling
         bTruthLabel = (areLeptons && areConversionLegs) ? 0 : (areClusterFromPi0 ? 1 : 2);
-        if (writeTree.value) {
-          fConvTagTree->Fill();
+        const bool isConversionOrPi0 = (areLeptons && areConversionLegs) || areClusterFromPi0;
+        const bool keepThisRow = isConversionOrPi0 || (mPrescaleDist(mRandGen) == 0);
+        if (writeTable.value && keepThisRow) {
+          convTagCandidates(collision.globalIndex(), vMeson.M(), harmonicET, deltaEta, deltaPhi, phiV, g1.e(), g2.e(), g1.m02(), g2.m02(), g1.time(), g2.time(), g1.nCells(), g2.nCells(), bTruthLabel, centOrMult);
         }
       } // pair loop
     } // collision loop
-
-    if (collisions.size() <= 0) {
-      return;
-    }
     std::vector<bool> photonSeen(mcParticles.size(), false);   // this decay photon has >=1 resolved cluster
     std::vector<bool> photonTagged(mcParticles.size(), false); // >=1 of those clusters got conversion-tagged
     auto collision = collisions.begin();
@@ -642,7 +616,7 @@ struct EmcalPhotonMcTask {
       if (!mcPart.producedByGenerator()) {
         continue;
       }
-      if (mcPart.daughtersIds().size() != 2) {
+      if (mcPart.daughtersIds().size() != 2) { // o2-linter: disable=magic-number (self explanatory and does not need extra named variable)
         continue;
       }
 

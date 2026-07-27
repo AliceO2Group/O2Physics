@@ -720,6 +720,12 @@ struct doublephitable {
         const auto phi2Fit = k3Fit + k4Fit;
         const auto pairFit = phi1Fit + phi2Fit;
 
+        if (pairFit.Pt() < 6.0) {
+          continue;
+        }
+        if (pairFit.M() < 2.5 || pairFit.M() > 3.2) {
+          continue;
+        }
         // No pair-pT or pair-mass cut here.
 
         PhiPhiPairPayload pair;

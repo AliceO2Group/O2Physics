@@ -599,6 +599,9 @@ class CollisionBuilder
   template <typename T1>
   bool checkCollision(T1 const& col)
   {
+    if (!mFillAnyTable) {
+      return false; // selection object was never configured, nothing to check or fill
+    }
     return mCollisionSelection.checkFilters(col) &&
            mCollisionSelection.passesAllRequiredSelections();
   }
@@ -606,6 +609,9 @@ class CollisionBuilder
   template <typename T1, typename T2>
   bool checkCollision(T1 const& col, T2 const& /*mcCols*/)
   {
+    if (!mFillAnyTable) {
+      return false; // selection object was never configured, nothing to check or fill
+    }
     // check sub generator id of associated generated collision
     if (mSubGeneratorId >= 0) {
       if (col.has_mcCollision()) {
@@ -697,6 +703,9 @@ class CollisionBuilder
     mCollisionAlreadyFilled = false;
     mCurrentCollisionIndex = -1;
   }
+
+  [[nodiscard]] bool producingCollisions() const { return mProducedCollisions; }
+  [[nodiscard]] bool producingLiteCollisions() const { return mProducedLiteCollisions; }
 
  private:
   CollisionSelection<SelectionHistName, FilterHistName> mCollisionSelection;

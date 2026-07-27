@@ -335,6 +335,112 @@ DECLARE_SOA_TABLE(McVtx3BodyDatas, "AOD", "MC3BODYDATA", //!
 using Vtx3BodyDatasCovs = soa::Join<Vtx3BodyDatas, Vtx3BodyCovs>;
 using Vtx3BodyDatasCovsIndexed = soa::Join<Vtx3BodyDatas, Vtx3BodyCovs, Decay3BodyIndices>;
 
+namespace nuclei3body
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Helium3Track, helium3Track, int, Tracks, "_He3");    //!
+DECLARE_SOA_INDEX_COLUMN_FULL(Daughter1Track, daughter1Track, int, Tracks, "_D1"); //!
+DECLARE_SOA_INDEX_COLUMN_FULL(Daughter2Track, daughter2Track, int, Tracks, "_D2"); //!
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                    //!
+
+DECLARE_SOA_COLUMN(SignHe3, signHe3, int8_t);             //! He3 charge sign
+DECLARE_SOA_COLUMN(SignDaughter1, signDaughter1, int8_t); //! daughter 1 charge sign
+DECLARE_SOA_COLUMN(SignDaughter2, signDaughter2, int8_t); //! daughter 2 charge sign
+DECLARE_SOA_COLUMN(Pt, pt, float);                        //! candidate transverse momentum
+DECLARE_SOA_COLUMN(Eta, eta, float);                      //! candidate pseudorapidity
+DECLARE_SOA_COLUMN(Phi, phi, float);                      //! candidate azimuth
+DECLARE_SOA_COLUMN(PHe3, pHe3, float);                    //! magnitude of fitted, charge-corrected He3 momentum
+DECLARE_SOA_COLUMN(PDaughter1, pDaughter1, float);        //! magnitude of fitted daughter 1 momentum
+DECLARE_SOA_COLUMN(PDaughter2, pDaughter2, float);        //! magnitude of fitted daughter 2 momentum
+DECLARE_SOA_COLUMN(Chi2, chi2, float);                    //! DCA-fitter chi2 at PCA
+DECLARE_SOA_COLUMN(DcaDaughters, dcaDaughters, float);    //! square root of DCA-fitter chi2 at PCA
+DECLARE_SOA_COLUMN(CosPA, cosPA, float);                  //! cosine of pointing angle
+DECLARE_SOA_COLUMN(DecayLength, decayLength, float);      //! PV-to-SV distance
+
+DECLARE_SOA_COLUMN(DcaXYHe3ToPv, dcaXYHe3ToPv, float);             //! He3 DCAxy to PV
+DECLARE_SOA_COLUMN(DcaZHe3ToPv, dcaZHe3ToPv, float);               //! He3 DCAz to PV
+DECLARE_SOA_COLUMN(DcaXYDaughter1ToPv, dcaXYDaughter1ToPv, float); //! daughter 1 DCAxy to PV
+DECLARE_SOA_COLUMN(DcaZDaughter1ToPv, dcaZDaughter1ToPv, float);   //! daughter 1 DCAz to PV
+DECLARE_SOA_COLUMN(DcaXYDaughter2ToPv, dcaXYDaughter2ToPv, float); //! daughter 2 DCAxy to PV
+DECLARE_SOA_COLUMN(DcaZDaughter2ToPv, dcaZDaughter2ToPv, float);   //! daughter 2 DCAz to PV
+
+DECLARE_SOA_COLUMN(TpcNSigmaHe3, tpcNSigmaHe3, float); //! custom He3 TPC n-sigma
+DECLARE_SOA_COLUMN(TofNSigmaHe3, tofNSigmaHe3, float); //! He3 TOF n-sigma; sentinel without TOF
+DECLARE_SOA_COLUMN(TpcNSigmaPiDaughter1, tpcNSigmaPiDaughter1, float);
+DECLARE_SOA_COLUMN(TpcNSigmaKaDaughter1, tpcNSigmaKaDaughter1, float);
+DECLARE_SOA_COLUMN(TpcNSigmaPrDaughter1, tpcNSigmaPrDaughter1, float);
+DECLARE_SOA_COLUMN(TofNSigmaPiDaughter1, tofNSigmaPiDaughter1, float);
+DECLARE_SOA_COLUMN(TofNSigmaKaDaughter1, tofNSigmaKaDaughter1, float);
+DECLARE_SOA_COLUMN(TofNSigmaPrDaughter1, tofNSigmaPrDaughter1, float);
+DECLARE_SOA_COLUMN(TpcNSigmaPiDaughter2, tpcNSigmaPiDaughter2, float);
+DECLARE_SOA_COLUMN(TpcNSigmaKaDaughter2, tpcNSigmaKaDaughter2, float);
+DECLARE_SOA_COLUMN(TpcNSigmaPrDaughter2, tpcNSigmaPrDaughter2, float);
+DECLARE_SOA_COLUMN(TofNSigmaPiDaughter2, tofNSigmaPiDaughter2, float);
+DECLARE_SOA_COLUMN(TofNSigmaKaDaughter2, tofNSigmaKaDaughter2, float);
+DECLARE_SOA_COLUMN(TofNSigmaPrDaughter2, tofNSigmaPrDaughter2, float);
+
+DECLARE_SOA_COLUMN(TpcNClsHe3, tpcNClsHe3, uint16_t);
+DECLARE_SOA_COLUMN(TpcNClsDaughter1, tpcNClsDaughter1, uint16_t);
+DECLARE_SOA_COLUMN(TpcNClsDaughter2, tpcNClsDaughter2, uint16_t);
+DECLARE_SOA_COLUMN(TpcCrossedRowsHe3, tpcCrossedRowsHe3, uint16_t);
+DECLARE_SOA_COLUMN(TpcCrossedRowsDaughter1, tpcCrossedRowsDaughter1, uint16_t);
+DECLARE_SOA_COLUMN(TpcCrossedRowsDaughter2, tpcCrossedRowsDaughter2, uint16_t);
+DECLARE_SOA_COLUMN(ItsNClsHe3, itsNClsHe3, uint8_t);
+DECLARE_SOA_COLUMN(ItsNClsDaughter1, itsNClsDaughter1, uint8_t);
+DECLARE_SOA_COLUMN(ItsNClsDaughter2, itsNClsDaughter2, uint8_t);
+
+DECLARE_SOA_COLUMN(McLabelHe3, mcLabelHe3, int);
+DECLARE_SOA_COLUMN(McLabelDaughter1, mcLabelDaughter1, int);
+DECLARE_SOA_COLUMN(McLabelDaughter2, mcLabelDaughter2, int);
+DECLARE_SOA_COLUMN(McPdgHe3, mcPdgHe3, int);
+DECLARE_SOA_COLUMN(McPdgDaughter1, mcPdgDaughter1, int);
+DECLARE_SOA_COLUMN(McPdgDaughter2, mcPdgDaughter2, int);
+DECLARE_SOA_COLUMN(McMatchStatus, mcMatchStatus, uint8_t); //! 0 missing label, 1 no common mother, 2 common mother, 3 configured decay
+DECLARE_SOA_COLUMN(McMotherLabel, mcMotherLabel, int);
+DECLARE_SOA_COLUMN(McMotherPdg, mcMotherPdg, int);
+DECLARE_SOA_COLUMN(GenMotherPt, genMotherPt, float);
+DECLARE_SOA_COLUMN(GenMotherEta, genMotherEta, float);
+DECLARE_SOA_COLUMN(GenMotherPhi, genMotherPhi, float);
+DECLARE_SOA_COLUMN(GenDecayLength, genDecayLength, float);
+} // namespace nuclei3body
+
+#define NUCLEI_THREE_BODY_RECO_COLUMNS                                                     \
+  nuclei3body::Helium3TrackId, nuclei3body::Daughter1TrackId,                              \
+    nuclei3body::Daughter2TrackId, nuclei3body::CollisionId,                               \
+    nuclei3body::SignHe3, nuclei3body::SignDaughter1, nuclei3body::SignDaughter2,          \
+    nuclei3body::Pt, nuclei3body::Eta, nuclei3body::Phi,                                   \
+    nuclei3body::PHe3, nuclei3body::PDaughter1, nuclei3body::PDaughter2,                   \
+    nuclei3body::Chi2, nuclei3body::DcaDaughters, nuclei3body::CosPA,                      \
+    nuclei3body::DecayLength,                                                              \
+    nuclei3body::DcaXYHe3ToPv, nuclei3body::DcaZHe3ToPv,                                   \
+    nuclei3body::DcaXYDaughter1ToPv, nuclei3body::DcaZDaughter1ToPv,                       \
+    nuclei3body::DcaXYDaughter2ToPv, nuclei3body::DcaZDaughter2ToPv,                       \
+    nuclei3body::TpcNSigmaHe3, nuclei3body::TofNSigmaHe3,                                  \
+    nuclei3body::TpcNSigmaPiDaughter1, nuclei3body::TpcNSigmaKaDaughter1,                  \
+    nuclei3body::TpcNSigmaPrDaughter1, nuclei3body::TofNSigmaPiDaughter1,                  \
+    nuclei3body::TofNSigmaKaDaughter1, nuclei3body::TofNSigmaPrDaughter1,                  \
+    nuclei3body::TpcNSigmaPiDaughter2, nuclei3body::TpcNSigmaKaDaughter2,                  \
+    nuclei3body::TpcNSigmaPrDaughter2, nuclei3body::TofNSigmaPiDaughter2,                  \
+    nuclei3body::TofNSigmaKaDaughter2, nuclei3body::TofNSigmaPrDaughter2,                  \
+    nuclei3body::TpcNClsHe3, nuclei3body::TpcNClsDaughter1, nuclei3body::TpcNClsDaughter2, \
+    nuclei3body::TpcCrossedRowsHe3, nuclei3body::TpcCrossedRowsDaughter1,                  \
+    nuclei3body::TpcCrossedRowsDaughter2, nuclei3body::ItsNClsHe3,                         \
+    nuclei3body::ItsNClsDaughter1, nuclei3body::ItsNClsDaughter2
+
+DECLARE_SOA_TABLE(NucleiThreeBodyDatas, "AOD", "NUC3BODYDATA",
+                  o2::soa::Index<>,
+                  NUCLEI_THREE_BODY_RECO_COLUMNS);
+
+DECLARE_SOA_TABLE(McNucleiThreeBodyDatas, "AOD", "MCNUC3BODY",
+                  o2::soa::Index<>,
+                  NUCLEI_THREE_BODY_RECO_COLUMNS,
+                  nuclei3body::McLabelHe3, nuclei3body::McLabelDaughter1, nuclei3body::McLabelDaughter2,
+                  nuclei3body::McPdgHe3, nuclei3body::McPdgDaughter1, nuclei3body::McPdgDaughter2,
+                  nuclei3body::McMatchStatus, nuclei3body::McMotherLabel, nuclei3body::McMotherPdg,
+                  nuclei3body::GenMotherPt, nuclei3body::GenMotherEta,
+                  nuclei3body::GenMotherPhi, nuclei3body::GenDecayLength);
+
+#undef NUCLEI_THREE_BODY_RECO_COLUMNS
+
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_VTX3BODYTABLES_H_

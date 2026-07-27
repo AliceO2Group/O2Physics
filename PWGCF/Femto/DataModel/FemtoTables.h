@@ -51,11 +51,11 @@ namespace lite
 {
 constexpr float PosZMin = -20.f;
 constexpr float PosZMax = 20.f;
-constexpr float PosZStep = 0.5f; // cm
+constexpr float PosZStep = 0.5f; // bin vtz in 0.5cm steps
 constexpr float CentMin = 0.f;
 constexpr float CentMax = 100.f;
-constexpr float CentStep = 0.5f; // percent
-constexpr float MultStep = 1.f;  // rounded to nearest integer
+constexpr float CentStep = 0.5f; // bin centrality in 0.5% steps
+constexpr float MultStep = 1.f;  // round multiplicity to nearest integer
 
 inline uint8_t binPosZ(float posZ) { return o2::analysis::femto::utils::binLinear<uint8_t>(posZ, PosZMin, PosZMax, PosZStep); }
 inline float unBinPosZ(uint8_t binned) { return o2::analysis::femto::utils::unBinLinear<uint8_t>(binned, PosZMin, PosZStep); }
@@ -63,7 +63,7 @@ inline float unBinPosZ(uint8_t binned) { return o2::analysis::femto::utils::unBi
 inline uint8_t binCent(float cent) { return o2::analysis::femto::utils::binLinear<uint8_t>(cent, CentMin, CentMax, CentStep); }
 inline float unBinCent(uint8_t binned) { return o2::analysis::femto::utils::unBinLinear<uint8_t>(binned, CentMin, CentStep); }
 
-inline uint16_t binMult(float mult) { return o2::analysis::femto::utils::binLinear<uint16_t>(mult, 0.f, 65535.f, MultStep); } // use full range of uint16_6
+inline uint16_t binMult(float mult) { return o2::analysis::femto::utils::binLinear<uint16_t>(mult, 0.f, 65535.f, MultStep); } // use full range of uint16_t
 inline float unBinMult(uint16_t binned) { return o2::analysis::femto::utils::unBinLinear<uint16_t>(binned, 0.f, MultStep); }
 
 DECLARE_SOA_COLUMN(BinnedPosZ, binnedPosZ, uint8_t);
@@ -97,7 +97,7 @@ using FCol = FCols::iterator;
 using StoredFCols = StoredFCols_001;
 
 // table for basic collision information, compressed/binned information
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteCols_001, "FLITECOLS", 1, //! femto collisions, binned information
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteCols_001, "FLITECOL", 1, //! femto collisions, binned information
                                    o2::soa::Index<>,
                                    femtocollisions::lite::BinnedPosZ,
                                    femtocollisions::lite::BinnedMult,
@@ -154,6 +154,7 @@ namespace stored
 {
 // static columns
 DECLARE_SOA_INDEX_COLUMN(FCol, fCol);          //! collision index of femto collision table
+DECLARE_SOA_INDEX_COLUMN(FLiteCol, fLiteCol);  //! collision index of femto collision table
 DECLARE_SOA_COLUMN(SignedPt, signedPt, float); //! signed pt
 DECLARE_SOA_COLUMN(Pt, pt, float);             //! pt
 DECLARE_SOA_COLUMN(Eta, eta, float);           //! eta
@@ -197,16 +198,16 @@ DECLARE_SOA_DYNAMIC_COLUMN(Theta, theta, //! theta
 namespace lite
 {
 
-constexpr float EtaMin = -1.f;
-constexpr float EtaMax = 1.f;
+constexpr float EtaMin = -1.5f;
+constexpr float EtaMax = 1.5f;
 constexpr float EtaStep = (EtaMax - EtaMin) / 65536.f;
 
 constexpr float PhiMin = 0.f;
-constexpr float PhiMax = constants::math::TwoPI;
+constexpr float PhiMax = constants::math::TwoPI; // phi is bound on [0,2pi)
 constexpr float PhiStep = (PhiMax - PhiMin) / 65536.f;
 
-constexpr float PtMagMin = 0.1f;
-constexpr float PtMagMax = 6.f;
+constexpr float PtMagMin = 0.1f; // lowest pt cut for pions is usually 0.12-0.14 GeV/c
+constexpr float PtMagMax = 6.f;  // sensible upper limit for pt
 
 inline uint16_t binEta(float eta) { return o2::analysis::femto::utils::binLinear<uint16_t>(eta, EtaMin, EtaMax, EtaStep); }
 inline float unBinEta(uint16_t binned) { return o2::analysis::femto::utils::unBinLinear<uint16_t>(binned, EtaMin, EtaStep); }
@@ -214,24 +215,28 @@ inline float unBinEta(uint16_t binned) { return o2::analysis::femto::utils::unBi
 inline uint16_t binPhi(float phi) { return o2::analysis::femto::utils::binLinear<uint16_t>(phi, PhiMin, PhiMax, PhiStep); }
 inline float unBinPhi(uint16_t binned) { return o2::analysis::femto::utils::unBinLinear<uint16_t>(binned, PhiMin, PhiStep); }
 
-inline uint16_t binPt(float signedPt) { return o2::analysis::femto::utils::binLogSigned<uint16_t>(signedPt, PtMagMin, PtMagMax); }
-inline float unBinPt(uint16_t binned) { return o2::analysis::femto::utils::unBinLogSigned<uint16_t>(binned, PtMagMin, PtMagMax); }
+inline uint16_t binSignedPt(float signedPt) { return o2::analysis::femto::utils::binLogSigned<uint16_t>(signedPt, PtMagMin, PtMagMax); }
+inline float unBinSignedPt(uint16_t binned) { return o2::analysis::femto::utils::unBinLogSigned<uint16_t>(binned, PtMagMin, PtMagMax); }
+
+inline uint16_t binUnsignedPt(float unsignedPt) { return o2::analysis::femto::utils::binLogUnsigned<uint16_t>(unsignedPt, PtMagMin, PtMagMax); }
+inline float unBinUnsignedPt(uint16_t binned) { return o2::analysis::femto::utils::unBinLogUnsigned<uint16_t>(binned, PtMagMin, PtMagMax); }
 
 DECLARE_SOA_COLUMN(SignedBinnedPt, signedBinnedPt, uint16_t);
+DECLARE_SOA_COLUMN(UnsignedBinnedPt, unsignedBinnedPt, uint16_t);
 DECLARE_SOA_COLUMN(BinnedEta, binnedEta, uint16_t);
 DECLARE_SOA_COLUMN(BinnedPhi, binnedPhi, uint16_t);
 
 DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign,
                            [](uint16_t signedBinnedPt) -> int {
-                             return (signedBinnedPt & 0x8000u) ? -1 : 1; // top bit, matches binLogSigned
+                             return o2::analysis::femto::utils::unBinSign(signedBinnedPt);
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(SignedPt, signedPt,
                            [](uint16_t signedBinnedPt) -> float {
-                             return unBinPt(signedBinnedPt);
+                             return unBinSignedPt(signedBinnedPt);
                            });
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,
-                           [](uint16_t signedBinnedPt) -> float {
-                             return std::fabs(unBinPt(signedBinnedPt));
+DECLARE_SOA_DYNAMIC_COLUMN(UnsignedPt, unsignedPt,
+                           [](uint16_t unsignedBinnedPt) -> float {
+                             return unBinUnsignedPt(unsignedBinnedPt);
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta,
                            [](uint16_t binnedEta) -> float {
@@ -342,14 +347,13 @@ using FTrack = FTracks::iterator;
 using StoredFTracks = StoredFTracks_001;
 
 // table for basic track information, compressed/binned kinematics
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteTracks_001, "FLITETRACKS", 1, //! femto tracks, binned kinematics
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteTracks_001, "FLITETRACK", 1, //! femto tracks, binned kinematics
                                    o2::soa::Index<>,
-                                   femtobase::stored::FColId,
+                                   femtobase::stored::FLiteColId,
                                    femtobase::lite::SignedBinnedPt,
                                    femtobase::lite::BinnedEta,
                                    femtobase::lite::BinnedPhi,
                                    femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
-                                   femtobase::lite::Pt<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::Eta<femtobase::lite::BinnedEta>,
                                    femtobase::lite::Phi<femtobase::lite::BinnedPhi>);
@@ -554,6 +558,42 @@ DECLARE_SOA_DYNAMIC_COLUMN(DecayVtx, decayVtx,             //! distance of decay
 DECLARE_SOA_INDEX_COLUMN_FULL(PosDau, posDau, int32_t, FTracks, "_PosDau"); //! index column for positive daughter track
 DECLARE_SOA_INDEX_COLUMN_FULL(NegDau, negDau, int32_t, FTracks, "_NegDau"); //! index column for negative daughter track
 
+namespace lite
+{
+
+constexpr float LambdaMassMin = 1.05f; // Kinematic lower limit
+constexpr float LambdaMassMax = 1.30f;
+constexpr float LambdaMassStep = (LambdaMassMax - LambdaMassMin) / 65536.f;
+
+// K0short: PDG mass 0.497611 GeV roughly ±100 MeV window
+constexpr float K0shortMassMin = 0.4f;
+constexpr float K0shortMassMax = 0.6f;
+constexpr float K0shortMassStep = (K0shortMassMax - K0shortMassMin) / 65536.f;
+
+inline uint16_t binLambdaMass(float lambdaMass) { return o2::analysis::femto::utils::binLinear<uint16_t>(lambdaMass, LambdaMassMin, LambdaMassMax, LambdaMassStep); }
+inline float unBinLambdaMass(uint16_t binned) { return o2::analysis::femto::utils::unBinLinear<uint16_t>(binned, LambdaMassMin, LambdaMassStep); }
+
+inline uint16_t binK0shortMass(float lambdaMass) { return o2::analysis::femto::utils::binLinear<uint16_t>(lambdaMass, K0shortMassMin, K0shortMassMax, K0shortMassStep); }
+inline float unBinK0shortMass(uint16_t binned) { return o2::analysis::femto::utils::unBinLinear<uint16_t>(binned, K0shortMassMin, K0shortMassStep); }
+
+DECLARE_SOA_COLUMN(BinnedLambdaMass, binnedLambdaMass, uint16_t);
+DECLARE_SOA_COLUMN(BinnedK0shortMass, binnedK0shortMass, uint16_t);
+
+DECLARE_SOA_DYNAMIC_COLUMN(LambdaMass, lambdaMass,
+                           [](uint16_t binnedLambdaMass) -> float {
+                             return unBinLambdaMass(binnedLambdaMass);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(K0shortMass, k0shortMass,
+                           [](uint16_t binnedK0shortMass) -> float {
+                             return unBinK0shortMass(binnedK0shortMass);
+                           });
+
+// index for lite track table
+DECLARE_SOA_INDEX_COLUMN_FULL(PosDau, posDau, int32_t, FLiteTracks, "_PosDau"); //! index column for positive daughter track
+DECLARE_SOA_INDEX_COLUMN_FULL(NegDau, negDau, int32_t, FLiteTracks, "_NegDau"); //! index column for negative daughter track
+
+} // namespace lite
 } // namespace femtov0s
 
 // table for basic lambda information
@@ -575,6 +615,25 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdas_001, "FLAMBDA", 1, //! femto lambdas
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FLambdas = FLambdas_001;
 using StoredFLambdas = StoredFLambdas_001;
+
+// table for basic lambda information with compressed/binned kinematics
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteLambdas_001, "FLITELAMBDA", 1,
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FLiteColId,
+                                   femtobase::lite::SignedBinnedPt,
+                                   femtobase::lite::BinnedEta,
+                                   femtobase::lite::BinnedPhi,
+                                   femtov0s::lite::BinnedLambdaMass,
+                                   femtov0s::lite::PosDauId,
+                                   femtov0s::lite::NegDauId,
+                                   femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::Eta<femtobase::lite::BinnedEta>,
+                                   femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
+                                   femtov0s::lite::LambdaMass<femtov0s::lite::BinnedLambdaMass>);
+using FLiteLambdas = FLiteLambdas_001;
+using FLiteLambda = FLiteLambdas::iterator;
+using StoredFLiteLambdas = StoredFLiteLambdas_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaMasks_001, "FLAMBDAMASK", 1, //! lambda masks
                                    femtov0s::Mask);
@@ -612,6 +671,24 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shorts_001, "FK0SHORT", 1, //! femto k0sho
 using FK0shorts = FK0shorts_001;
 using StoredFK0shorts = StoredFK0shorts_001;
 
+// table for basic lambda information with compressed/binned kinematics
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteK0shorts_001, "FLITEK0SHORT", 1,
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FLiteColId,
+                                   femtobase::lite::UnsignedBinnedPt,
+                                   femtobase::lite::BinnedEta,
+                                   femtobase::lite::BinnedPhi,
+                                   femtov0s::lite::BinnedK0shortMass,
+                                   femtov0s::lite::PosDauId,
+                                   femtov0s::lite::NegDauId,
+                                   femtobase::lite::UnsignedPt<femtobase::lite::UnsignedBinnedPt>,
+                                   femtobase::lite::Eta<femtobase::lite::BinnedEta>,
+                                   femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
+                                   femtov0s::lite::K0shortMass<femtov0s::lite::BinnedK0shortMass>);
+using FLiteK0shorts = FLiteK0shorts_001;
+using FLiteK0short = FLiteK0shorts::iterator;
+using StoredFLiteK0shorts = StoredFLiteK0shorts_001;
+
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortMasks_001, "FK0SHORTMASK", 1, //! k0short masks
                                    femtov0s::Mask);
 using FK0shortMasks = FK0shortMasks_001;
@@ -646,13 +723,35 @@ DECLARE_SOA_COLUMN(TransRadius, transRadius, float); //! Transverse decay radius
 
 // id column for charged daughter track
 DECLARE_SOA_INDEX_COLUMN_FULL(ChaDau, chaDau, int32_t, FTracks, "_ChaDau"); //!
+
+namespace lite
+{
+// Sigma (using a shared window covering both Sigma- 1.19745 and Sigma+ 1.18937) with roughly +-100 MeV
+constexpr float SigmaMassMin = 1.1f;
+constexpr float SigmaMassMax = 1.3f;
+constexpr float SigmaMassStep = (SigmaMassMax - SigmaMassMin) / 65536.f;
+
+inline uint16_t binSigmaMass(float mass) { return o2::analysis::femto::utils::binLinear<uint16_t>(mass, SigmaMassMin, SigmaMassMax, SigmaMassStep); }
+inline float unBinSigmaMass(uint16_t binned) { return o2::analysis::femto::utils::unBinLinear<uint16_t>(binned, SigmaMassMin, SigmaMassStep); }
+
+DECLARE_SOA_COLUMN(BinnedSigmaMass, binnedSigmaMass, uint16_t);
+
+DECLARE_SOA_DYNAMIC_COLUMN(SigmaMass, sigmaMass,
+                           [](uint16_t binnedSigmaMass) -> float {
+                             return unBinSigmaMass(binnedSigmaMass);
+                           });
+
+// index for lite track table
+DECLARE_SOA_INDEX_COLUMN_FULL(ChaDau, chaDau, int32_t, FLiteTracks, "_ChaDau"); //! charged daughter index, into FLiteTracks
+} // namespace lite
+
 } // namespace femtokinks
 
 // table for basic sigma information
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmas_001, "FSIGMA", 1,
                                    o2::soa::Index<>,
-                                   femtobase::stored::FColId, // use sign to differentiate between sigma minus (-1) and anti sigma minus (+1)
-                                   femtobase::stored::SignedPt,
+                                   femtobase::stored::FColId,
+                                   femtobase::stored::SignedPt, // use sign to differentiate between sigma minus (-1) and anti sigma minus (+1)
                                    femtobase::stored::Eta,
                                    femtobase::stored::Phi,
                                    femtobase::stored::Mass,
@@ -668,8 +767,8 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmas_001, "FSIGMA", 1,
 // table for basic sigma information
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmas_002, "FSIGMA", 2,
                                    o2::soa::Index<>,
-                                   femtobase::stored::FColId, // use sign to differentiate between sigma minus (-1) and anti sigma minus (+1)
-                                   femtobase::stored::SignedPt,
+                                   femtobase::stored::FColId,
+                                   femtobase::stored::SignedPt, // use sign to differentiate between sigma minus (-1) and anti sigma minus (+1)
                                    femtobase::stored::Eta,
                                    femtobase::stored::Phi,
                                    femtobase::stored::Mass,
@@ -682,10 +781,32 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmas_002, "FSIGMA", 2,
                                    femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FSigmas = FSigmas_002;
+using FSigma = FSigmas::iterator;
+using StoredFSigmas = StoredFSigmas_002;
+
+// table for basic sigma information, compressed/binned kinematics
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteSigmas_001, "FLITESIGMA", 1,
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FLiteColId,
+                                   femtobase::lite::SignedBinnedPt,
+                                   femtobase::lite::BinnedEta,
+                                   femtobase::lite::BinnedPhi,
+                                   femtokinks::lite::BinnedSigmaMass,
+                                   femtokinks::lite::ChaDauId,
+                                   femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::Eta<femtobase::lite::BinnedEta>,
+                                   femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
+                                   femtokinks::lite::SigmaMass<femtokinks::lite::BinnedSigmaMass>);
+using FLiteSigmas = FLiteSigmas_001;
+using FLiteSigma = FLiteSigmas::iterator;
+using StoredFLiteSigmas = StoredFLiteSigmas_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaMasks_001, "FSIGMAMASKS", 1,
                                    femtokinks::Mask);
 using FSigmaMasks = FSigmaMasks_001;
+using FSigmamask = FSigmaMasks::iterator;
+using StoredFSigmaMasks = StoredFSigmaMasks_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaExtras_001, "FSIGMAEXTRAS", 1,
                                    femtokinks::KinkAngle,
@@ -701,8 +822,8 @@ using FSigmaExtras = FSigmaExtras_001;
 // table for basic sigma plus information
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlus_001, "FSIGMAPLUS", 1,
                                    o2::soa::Index<>,
-                                   femtobase::stored::FColId, // use sign to differentiate between sigma minus (-1) and anti sigma minus (+1)
-                                   femtobase::stored::SignedPt,
+                                   femtobase::stored::FColId,
+                                   femtobase::stored::SignedPt, // use sign to differentiate between sigma minus (-1) and anti sigma minus (+1)
                                    femtobase::stored::Eta,
                                    femtobase::stored::Phi,
                                    femtobase::stored::Mass,
@@ -715,6 +836,26 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlus_001, "FSIGMAPLUS", 1,
                                    femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FSigmaPlus = FSigmaPlus_001;
+using FSigmaPlusRow = FSigmaPlus::iterator;
+using StoredFSigmaPlus = StoredFSigmaPlus_001;
+
+// table for basic sigma plus information, compressed/binned kinematics
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteSigmaPlus_001, "FLITESIGMAPLUS", 1,
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FLiteColId,
+                                   femtobase::lite::SignedBinnedPt,
+                                   femtobase::lite::BinnedEta,
+                                   femtobase::lite::BinnedPhi,
+                                   femtokinks::lite::BinnedSigmaMass,
+                                   femtokinks::lite::ChaDauId,
+                                   femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::Eta<femtobase::lite::BinnedEta>,
+                                   femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
+                                   femtokinks::lite::SigmaMass<femtokinks::lite::BinnedSigmaMass>);
+using FLiteSigmaPlus = FLiteSigmaPlus_001;
+using FLiteSigmaPlusRow = FLiteSigmaPlus::iterator;
+using StoredFLiteSigmaPlus = StoredFLiteSigmaPlus_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusMasks_001, "FSIGMAPLUSMASKS", 1,
                                    femtokinks::Mask);
@@ -752,6 +893,40 @@ DECLARE_SOA_COLUMN(LambdaDcaToPv, lambdaDcaToPv, float);           //! Lambda tr
 // following same style as strangeness tables were we do not store the id of the lambda, but its daughters
 DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int32_t, FTracks, "_Bachelor"); //! bachelor id
 
+namespace lite
+{
+
+// Xi-: PDG mass 1.32171 GeV, roughly ±100 MeV window
+constexpr float XiMassMin = 1.22f;
+constexpr float XiMassMax = 1.42f;
+constexpr float XiMassStep = (XiMassMax - XiMassMin) / 65536.f;
+
+// Omega-: PDG mass 1.67245 GeV, roughly ±100 MeV window
+constexpr float OmegaMassMin = 1.57f;
+constexpr float OmegaMassMax = 1.77f;
+constexpr float OmegaMassStep = (OmegaMassMax - OmegaMassMin) / 65536.f;
+
+inline uint16_t binXiMass(float mass) { return o2::analysis::femto::utils::binLinear<uint16_t>(mass, XiMassMin, XiMassMax, XiMassStep); }
+inline float unBinXiMass(uint16_t binned) { return o2::analysis::femto::utils::unBinLinear<uint16_t>(binned, XiMassMin, XiMassStep); }
+
+inline uint16_t binOmegaMass(float mass) { return o2::analysis::femto::utils::binLinear<uint16_t>(mass, OmegaMassMin, OmegaMassMax, OmegaMassStep); }
+inline float unBinOmegaMass(uint16_t binned) { return o2::analysis::femto::utils::unBinLinear<uint16_t>(binned, OmegaMassMin, OmegaMassStep); }
+
+DECLARE_SOA_COLUMN(BinnedXiMass, binnedXiMass, uint16_t);
+DECLARE_SOA_COLUMN(BinnedOmegaMass, binnedOmegaMass, uint16_t);
+
+DECLARE_SOA_DYNAMIC_COLUMN(XiMass, xiMass,
+                           [](uint16_t binnedXiMass) -> float {
+                             return unBinXiMass(binnedXiMass);
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(OmegaMass, omegaMass,
+                           [](uint16_t binnedOmegaMass) -> float {
+                             return unBinOmegaMass(binnedOmegaMass);
+                           });
+
+// index for lite track table
+DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int32_t, FLiteTracks, "_Bachelor"); //! bachelor index, into FLiteTracks
+} // namespace lite
 } // namespace femtocascades
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FXis_001, "FXI", 1, //! femto xis
@@ -772,7 +947,28 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FXis_001, "FXI", 1, //! femto xis
                                    femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FXis = FXis_001;
+using FXi = FXis::iterator;
 using StoredFXis = StoredFXis_001;
+
+// table for basic xi information, compressed/binned kinematics
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteXis_001, "FLITEXI", 1,
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FLiteColId,
+                                   femtobase::lite::SignedBinnedPt,
+                                   femtobase::lite::BinnedEta,
+                                   femtobase::lite::BinnedPhi,
+                                   femtocascades::lite::BinnedXiMass,
+                                   femtocascades::lite::BachelorId,
+                                   femtov0s::lite::PosDauId,
+                                   femtov0s::lite::NegDauId,
+                                   femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::Eta<femtobase::lite::BinnedEta>,
+                                   femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
+                                   femtocascades::lite::XiMass<femtocascades::lite::BinnedXiMass>);
+using FLiteXis = FLiteXis_001;
+using FLiteXi = FLiteXis::iterator;
+using StoredFLiteXis = StoredFLiteXis_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiMasks_001, "FXIMASK", 1, //! xi masks
                                    femtocascades::Mask);
@@ -809,7 +1005,28 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegas_001, "FOMEGA", 1, //! femto omegas
                                    femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
                                    femtobase::dynamic::Theta<femtobase::stored::Eta>);
 using FOmegas = FOmegas_001;
+using FOmega = FOmegas::iterator;
 using StoredFOmegas = StoredFOmegas_001;
+
+// table for basic omega information, compressed/binned kinematics
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteOmegas_001, "FLITEOMEGA", 1,
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FLiteColId,
+                                   femtobase::lite::SignedBinnedPt,
+                                   femtobase::lite::BinnedEta,
+                                   femtobase::lite::BinnedPhi,
+                                   femtocascades::lite::BinnedOmegaMass,
+                                   femtocascades::lite::BachelorId,
+                                   femtov0s::lite::PosDauId,
+                                   femtov0s::lite::NegDauId,
+                                   femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::Eta<femtobase::lite::BinnedEta>,
+                                   femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
+                                   femtocascades::lite::OmegaMass<femtocascades::lite::BinnedOmegaMass>);
+using FLiteOmegas = FLiteOmegas_001;
+using FLiteOmega = FLiteOmegas::iterator;
+using StoredFLiteOmegas = StoredFLiteOmegas_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaMasks_001, "FOMEGAMASK", 1, //! omega masks
                                    femtocascades::Mask);

@@ -176,30 +176,34 @@ struct FemtoProducer {
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
-    // collision selection
+    // Order matters here: CollisionBuilder must init before TrackBuilder (which checks
+    // collisionBuilder.producingCollisions()/producingLiteCollisions()), and TrackBuilder
+    // must init before the V0/Cascade/Kink builders (which check
+    // trackBuilder.producingTracks()/producingLiteTracks()).
+
+    // configure collision builder
     collisionBuilder.init(&hRegistry, confCollisionFilters, confCollisionBits, confCollisionRctFlags, confCcdb, confCollisionTables, context);
 
     // configure track builder
-    trackBuilder.init(&hRegistry, confTrackBits, confTrackFilters, confTrackTables, context);
+    trackBuilder.init(&hRegistry, confTrackBits, confTrackFilters, confTrackTables, context, collisionBuilder);
 
     // configure v0 builder
-    k0shortBuilder.init(&hRegistry, confK0shortBits, confV0Filters, confV0Tables, context);
-    lambdaBuilder.init(&hRegistry, confLambdaBits, confV0Filters, confV0Tables, context);
-    antilambdaBuilder.init(&hRegistry, confLambdaBits, confV0Filters, confV0Tables, context);
+    k0shortBuilder.init(&hRegistry, confK0shortBits, confV0Filters, confV0Tables, context, trackBuilder);
+    lambdaBuilder.init(&hRegistry, confLambdaBits, confV0Filters, confV0Tables, context, trackBuilder);
+    antilambdaBuilder.init(&hRegistry, confLambdaBits, confV0Filters, confV0Tables, context, trackBuilder);
 
     // configure kink builder
-    sigmaBuilder.init(&hRegistry, confSigmaBits, confKinkFilters, confKinkTables, context);
-    sigmaPlusBuilder.init(&hRegistry, confSigmaPlusBits, confKinkFilters, confKinkTables, context);
+    sigmaBuilder.init(&hRegistry, confSigmaBits, confKinkFilters, confKinkTables, context, trackBuilder);
+    sigmaPlusBuilder.init(&hRegistry, confSigmaPlusBits, confKinkFilters, confKinkTables, context, trackBuilder);
 
     // cascade selections
-    xiBuilder.init(&hRegistry, confXiBits, confCascadeFilters, confCascadeTables, context);
-    omegaBuilder.init(&hRegistry, confOmegaBits, confCascadeFilters, confCascadeTables, context);
+    xiBuilder.init(&hRegistry, confXiBits, confCascadeFilters, confCascadeTables, context, trackBuilder);
+    omegaBuilder.init(&hRegistry, confOmegaBits, confCascadeFilters, confCascadeTables, context, trackBuilder);
 
     // configure mcBuilder
     mcBuilder.init(confMc, confMcTables, context);
 
     hRegistry.print();
-    LOG(warn) << __LINE__;
   }
 
   // processing collisions
