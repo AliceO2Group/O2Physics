@@ -95,7 +95,7 @@ struct Lambda1520analysisinpp {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Service<framework::O2DatabasePDG> pdg;
+  Service<o2::framework::O2DatabasePDG> pdg{};
   RCTFlagsChecker rctChecker;
 
   struct : ConfigurableGroup {
@@ -497,7 +497,7 @@ struct Lambda1520analysisinpp {
 
   // Centralicity estimator selection
   template <typename Coll>
-  float centEst(Coll collisions)
+  float centEst(const Coll& collisions)
   {
     float returnValue = -999.0f;
     switch (centEstimator) {
@@ -521,68 +521,89 @@ struct Lambda1520analysisinpp {
   bool isSelected(const Coll& collision, bool fillHist = true)
   {
     auto applyCut = [&](bool enabled, bool condition, int bin) {
-      if (!enabled)
+      if (!enabled) {
         return true;
-      if (!condition)
+      }
+      if (!condition) {
         return false;
-      if (fillHist)
+      }
+      if (fillHist) {
         histos.fill(HIST("CollCutCounts"), bin);
+      }
       return true;
     };
 
-    if (fillHist)
+    if (fillHist) {
       histos.fill(HIST("CollCutCounts"), 0);
+    }
 
-    if (!applyCut(true, std::abs(collision.posZ()) <= configEvents.cfgEvtZvtx, 1))
+    if (!applyCut(true, std::abs(collision.posZ()) <= configEvents.cfgEvtZvtx, 1)) {
       return false;
+    }
 
     if (!applyCut(configEvents.cfgEvtTriggerTVXSel,
-                  collision.selection_bit(aod::evsel::kIsTriggerTVX), 2))
+                  collision.selection_bit(aod::evsel::kIsTriggerTVX), 2)) {
       return false;
+    }
 
     if (!applyCut(configEvents.cfgEvtNoTFBorderCut,
-                  collision.selection_bit(aod::evsel::kNoTimeFrameBorder), 3))
+                  collision.selection_bit(aod::evsel::kNoTimeFrameBorder), 3)) {
       return false;
+    }
 
     if (!applyCut(configEvents.cfgEvtNoITSROFrameBorderCut,
-                  collision.selection_bit(aod::evsel::kNoITSROFrameBorder), 4))
+                  collision.selection_bit(aod::evsel::kNoITSROFrameBorder), 4)) {
       return false;
+    }
 
-    if (!applyCut(configEvents.cfgEvtIsRCTFlagpassed, rctChecker(collision), 5))
+    if (!applyCut(configEvents.cfgEvtIsRCTFlagpassed, rctChecker(collision), 5)) {
       return false;
+    }
 
-    if (!applyCut(configEvents.cfgEvtSel8, collision.sel8(), 6))
+    if (!applyCut(configEvents.cfgEvtSel8, collision.sel8(), 6)) {
       return false;
+    }
 
-    if (!applyCut(configEvents.cfgEvtIsINELgt0, collision.isInelGt0(), 7))
+    if (!applyCut(configEvents.cfgEvtIsINELgt0, collision.isInelGt0(), 7)) {
       return false;
+    }
 
-    if (fillHist)
+    if (fillHist) {
       histos.fill(HIST("CollCutCounts"), 8);
+    }
 
     return true;
   }
 
   template <typename TrackType>
-  bool trackCut(const TrackType track)
+  bool trackCut(const TrackType& track)
   {
     // basic track cuts
     if (configTracks.cDCAr7SigCut && std::abs(track.dcaXY()) > (0.004f + 0.013f / (track.pt()))) // 7 - Sigma cut
+    {
       return false;
-    if (configTracks.cTPCNClsFound && (track.tpcNClsFound() < configTracks.cMinTPCNClsFound))
+    }
+    if (configTracks.cTPCNClsFound && (track.tpcNClsFound() < configTracks.cMinTPCNClsFound)) {
       return false;
-    if (track.tpcNClsCrossedRows() < configTracks.cfgMinCrossedRows)
+    }
+    if (track.tpcNClsCrossedRows() < configTracks.cfgMinCrossedRows) {
       return false;
-    if (configTracks.cfgHasTOF && !track.hasTOF())
+    }
+    if (configTracks.cfgHasTOF && !track.hasTOF()) {
       return false;
-    if (configTracks.cfgPrimaryTrack && !track.isPrimaryTrack())
+    }
+    if (configTracks.cfgPrimaryTrack && !track.isPrimaryTrack()) {
       return false;
-    if (configTracks.cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
+    }
+    if (configTracks.cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA()) {
       return false;
-    if (configTracks.cfgPVContributor && !track.isPVContributor())
+    }
+    if (configTracks.cfgPVContributor && !track.isPVContributor()) {
       return false;
-    if (configTracks.cfgGlobalTrack && !track.isGlobalTrack())
+    }
+    if (configTracks.cfgGlobalTrack && !track.isGlobalTrack()) {
       return false;
+    }
 
     return true;
   }
@@ -611,14 +632,17 @@ struct Lambda1520analysisinpp {
     // TPC PID (interval check)
     for (size_t i = 0; i < vProtonTPCPIDpTintv.size() - 1; ++i) {
       if (pt > vProtonTPCPIDpTintv[i] && pt < vProtonTPCPIDpTintv[i + 1]) {
-        if (std::abs(tpcNsigmaPr) < vProtonTPCPIDcuts[i])
+        if (std::abs(tpcNsigmaPr) < vProtonTPCPIDcuts[i]) {
           tpcPIDPassed = true;
+        }
       }
     }
 
     // TOF bypass option (for QA or MC)
     if (configPID.cByPassTOF) {
-      return std::abs(tpcNsigmaPr) < vProtonTPCPIDcuts.back();
+      {
+        return std::abs(tpcNsigmaPr) < vProtonTPCPIDcuts.back();
+      }
     }
 
     // Case 1: No TOF and pt ≤ threshold → accept only via TPC PID
@@ -638,8 +662,9 @@ struct Lambda1520analysisinpp {
         for (size_t i = 0; i < vProtonTOFPIDpTintv.size(); ++i) {
           if (pt < vProtonTOFPIDpTintv[i]) {
             if (std::abs(tofNsigmaPr) < vProtonTOFPIDcuts[i] &&
-                std::abs(tpcNsigmaPr) < vProtonTPCPIDcuts.back())
+                std::abs(tpcNsigmaPr) < vProtonTPCPIDcuts.back()) {
               return true;
+            }
           }
         }
       } else if (configPID.cPIDcutType == CircularType) {
@@ -649,8 +674,9 @@ struct Lambda1520analysisinpp {
             float combinedSigma2 =
               tpcNsigmaPr * tpcNsigmaPr +
               tofNsigmaPr * tofNsigmaPr;
-            if (combinedSigma2 < vProtonTPCTOFCombinedPIDcuts[i] * vProtonTPCTOFCombinedPIDcuts[i])
+            if (combinedSigma2 < vProtonTPCTOFCombinedPIDcuts[i] * vProtonTPCTOFCombinedPIDcuts[i]) {
               return true;
+            }
           }
         }
       }
@@ -738,10 +764,7 @@ struct Lambda1520analysisinpp {
   template <typename T>
   bool rejectPion(const T& candidate)
   {
-    if (candidate.pt() > MinPtforPionRejection && candidate.pt() < MaxPtforPionRejection && !candidate.hasTOF() && candidate.tpcNSigmaPi() < MaxnSigmaforPionRejection) {
-      return false;
-    }
-    return true;
+    return !(candidate.pt() > MinPtforPionRejection && candidate.pt() < MaxPtforPionRejection && !candidate.hasTOF() && candidate.tpcNSigmaPi() < MaxnSigmaforPionRejection);
   }
 
   auto static constexpr MaxNoLambda1520Daughters = 2;
@@ -774,12 +797,14 @@ struct Lambda1520analysisinpp {
 
     for (const auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
       // Full index policy is needed to consider all possible combinations
-      if (trk1.index() == trk2.index())
-        continue; // We need to run (0,1), (1,0) pairs as well. but same id pairs are not needed.
+      if (trk1.index() == trk2.index()) {
+        continue;
+      } // We need to run (0,1), (1,0) pairs as well. but same id pairs are not needed.
 
       // apply the track cut
-      if (!trackCut(trk1) || !trackCut(trk2))
+      if (!trackCut(trk1) || !trackCut(trk2)) {
         continue;
+      }
 
       //// Initialize variables
       // Trk1: Proton
@@ -805,10 +830,12 @@ struct Lambda1520analysisinpp {
         deltaEta = std::abs(trk1etaPr - trk2etaKa);
         deltaPhi = std::abs(trk1phiPr - trk2phiKa);
         deltaPhi = (deltaPhi > o2::constants::math::PI) ? (o2::constants::math::TwoPI - deltaPhi) : deltaPhi;
-        if (deltaEta >= cMaxDeltaEtaCut)
+        if (deltaEta >= cMaxDeltaEtaCut) {
           continue;
-        if (deltaPhi >= cMaxDeltaPhiCut)
+        }
+        if (deltaPhi >= cMaxDeltaPhiCut) {
           continue;
+        }
       }
 
       //// QA plots before the selection
@@ -846,10 +873,13 @@ struct Lambda1520analysisinpp {
 
       //// Apply the pid selection
       if (crejectPion && rejectPion(trk2)) // to remove pion contamination from the kaon track
+      {
         continue;
+      }
 
-      if (!ptDependentPidProton(trk1) || !ptDependentPidKaon(trk2))
+      if (!ptDependentPidProton(trk1) || !ptDependentPidKaon(trk2)) {
         continue;
+      }
 
       //// QA plots after the selection
       if constexpr (IsData) { //  --- PID QA Proton
@@ -903,8 +933,9 @@ struct Lambda1520analysisinpp {
         auto v1 = lDecayDaughter1.Vect();
         auto v2 = lDecayDaughter2.Vect();
         float alpha = std::acos(v1.Dot(v2) / (v1.R() * v2.R()));
-        if (alpha > cMinOpeningAngle && alpha < cMaxOpeningAngle)
+        if (alpha > cMinOpeningAngle && alpha < cMaxOpeningAngle) {
           continue;
+        }
       }
 
       lResonance = lDecayDaughter1 + lDecayDaughter2;
@@ -915,15 +946,20 @@ struct Lambda1520analysisinpp {
 
       if constexpr (IsData || IsMix) {
         // Rapidity cut
-        if (std::abs(resonanceRapidity) > configTracks.cfgCutRapidity)
+        if (std::abs(resonanceRapidity) > configTracks.cfgCutRapidity) {
           continue;
+        }
       }
 
       if (cfgUseCutsOnMother) {
         if (resonancePt >= cMaxPtMotherCut) // excluding candidates in overflow
+        {
           continue;
+        }
         if (resonanceMass >= cMaxMinvMotherCut) // excluding candidates in overflow
+        {
           continue;
+        }
       }
 
       if (cFilladditionalQAeventPlots) {
@@ -950,14 +986,19 @@ struct Lambda1520analysisinpp {
             auto resonanceRotPt = lResonanceRot.Pt();
 
             // Rapidity cut
-            if (std::abs(lResonanceRot.Rapidity()) >= configTracks.cfgCutRapidity)
+            if (std::abs(lResonanceRot.Rapidity()) >= configTracks.cfgCutRapidity) {
               continue;
+            }
 
             if (cfgUseCutsOnMother) {
               if (resonanceRotPt >= cMaxPtMotherCut) // excluding candidates in overflow
+              {
                 continue;
+              }
               if (resonanceRotMass >= cMaxMinvMotherCut) // excluding candidates in overflow
+              {
                 continue;
+              }
             }
             if (trk1.sign() < 0) {
               if (cFill1DQAs) {
@@ -1047,22 +1088,30 @@ struct Lambda1520analysisinpp {
             mothersPDGtrk2.pop_back();
           }
 
-          if (std::abs(mctrk1.pdgCode()) != kProton || std::abs(mctrk2.pdgCode()) != kKPlus)
+          if (std::abs(mctrk1.pdgCode()) != kProton || std::abs(mctrk2.pdgCode()) != kKPlus) {
             continue;
+          }
 
           if (motherstrk1[0] != motherstrk2[0]) // Same mother
+          {
             continue;
+          }
 
-          if (std::abs(mothersPDGtrk1[0]) != Pdg::kLambda1520_Py)
+          if (std::abs(mothersPDGtrk1[0]) != Pdg::kLambda1520_Py) {
             continue;
+          }
 
           // LOGF(info, "mother trk1 id: %d, mother trk1: %d, trk1 id: %d, trk1 pdgcode: %d, mother trk2 id: %d, mother trk2: %d, trk2 id: %d, trk2 pdgcode: %d", motherstrk1[0], mothersPDGtrk1[0], trk1.globalIndex(), mctrk1.pdgCode(), motherstrk2[0], mothersPDGtrk2[0], trk2.globalIndex(), mctrk2.pdgCode());
 
           if (cUseEtacutMC && std::abs(lResonance.Eta()) > cEtacutMC) // eta cut
+          {
             continue;
+          }
 
           if (cUseRapcutMC && std::abs(resonanceRapidity) > configTracks.cfgCutRapidity) // rapidity cut
+          {
             continue;
+          }
 
           histos.fill(HIST("QA/MC/h2RecoEtaPt_after"), lResonance.Eta(), resonancePt);
           histos.fill(HIST("QA/MC/h2RecoPhiRapidity_after"), lResonance.Phi(), resonanceRapidity);
@@ -1161,7 +1210,9 @@ struct Lambda1520analysisinpp {
                    TrackCandidates const& tracks)
   {
     if (!isSelected(collision)) // Default event selection
+    {
       return;
+    }
 
     auto centrality = centEst(collision);
 
@@ -1175,10 +1226,14 @@ struct Lambda1520analysisinpp {
   void processRotational(EventCandidates::iterator const& collision, TrackCandidates const& tracks)
   {
     if (!isSelected(collision, false)) // Default event selection
+    {
       return;
+    }
 
     if (!collision.isInelGt0()) // <--
+    {
       return;
+    }
 
     fillHistograms<false, true, false, false>(collision, tracks, tracks);
   }
@@ -1203,16 +1258,24 @@ struct Lambda1520analysisinpp {
       //  }
 
       if (!isSelected(collision1, false)) // Default event selection
+      {
         continue;
+      }
 
       if (!isSelected(collision2, false)) // Default event selection
+      {
         continue;
+      }
 
       if (!collision1.isInelGt0()) // <--
+      {
         continue;
+      }
 
       if (!collision2.isInelGt0()) // <--
+      {
         continue;
+      }
 
       if (cFilladditionalQAeventPlots) {
         // Fill histograms for the characteristics of the *mixed* events (collision1 and collision2)
@@ -1237,11 +1300,13 @@ struct Lambda1520analysisinpp {
                     aod::McCollisions const&,
                     MCTrackCandidates const& tracks, aod::McParticles const&)
   {
-    if (!collision.has_mcCollision())
+    if (!collision.has_mcCollision()) {
       return;
+    }
 
-    if (!isSelected(collision))
+    if (!isSelected(collision)) {
       return;
+    }
 
     auto centrality = centEst(collision);
 
@@ -1256,11 +1321,12 @@ struct Lambda1520analysisinpp {
 
   void processMCGen(MCEventCandidates::iterator const& collision, aod::McCollisions const&, aod::McParticles const& mcParticles)
   {
-    if (!collision.has_mcCollision())
+    if (!collision.has_mcCollision()) {
       return;
+    }
 
     bool isInAfterAllCuts = isSelected(collision, false);
-    bool inVtx10 = (std::abs(collision.mcCollision().posZ()) > configEvents.cfgEvtZvtx) ? false : true;
+    bool inVtx10 = std::abs(collision.mcCollision().posZ()) <= configEvents.cfgEvtZvtx;
     bool isTriggerTVX = collision.selection_bit(aod::evsel::kIsTriggerTVX);
     bool isSel8 = collision.sel8();
 
@@ -1288,8 +1354,9 @@ struct Lambda1520analysisinpp {
       bool pass2 = std::abs(daughterPDGs[0]) == kProton || std::abs(daughterPDGs[1]) == kProton; // At least one decay to Proton
 
       // Checking if we have both decay products
-      if (!pass1 || !pass2)
+      if (!pass1 || !pass2) {
         continue;
+      }
 
       // LOGF(info, "Part PDG: %d", part.pdgCode(), "DAU_ID1: %d", pass1, "DAU_ID2: %d", pass2);
 
@@ -1297,12 +1364,15 @@ struct Lambda1520analysisinpp {
       histos.fill(HIST("QA/MC/h2GenPhiRapidity_beforeanycut"), part.phi(), part.y());
 
       if (cUseRapcutMC && std::abs(part.y()) > configTracks.cfgCutRapidity) // rapidity cut
+      {
         continue;
+      }
 
       if (cfgUseDaughterEtaCutMC) {
         for (auto const& daughters : part.daughters_as<aod::McParticles>()) {
-          if (std::fabs(daughters.eta()) > configTracks.cfgCutEta)
-            continue; // eta cut for daughters
+          if (std::fabs(daughters.eta()) > configTracks.cfgCutEta) {
+            continue;
+          } // eta cut for daughters
         } // loop over daughters
       }
 
@@ -1310,64 +1380,74 @@ struct Lambda1520analysisinpp {
       histos.fill(HIST("QA/MC/h2GenPhiRapidity_afterRapcut"), part.phi(), part.y());
 
       if (cUseEtacutMC && std::abs(part.eta()) > cEtacutMC) // eta cut
+      {
         continue;
+      }
 
       histos.fill(HIST("QA/MC/h2GenEtaPt_afterEtaRapCut"), part.eta(), part.pt());
       histos.fill(HIST("QA/MC/h2GenPhiRapidity_afterEtaRapCut"), part.phi(), part.y());
 
       histos.fill(HIST("QA/Gen"), 1);
       if (part.pdgCode() > 0) // without any event selection
+      {
         histos.fill(HIST("Result/MC/Genlambda1520pt"), 0, part.pt(), centrality);
-      else
+      } else {
         histos.fill(HIST("Result/MC/Genantilambda1520pt"), 0, part.pt(), centrality);
+      }
 
       if (inVtx10) // vtx10
       {
         histos.fill(HIST("QA/Gen"), 2);
-        if (part.pdgCode() > 0)
+        if (part.pdgCode() > 0) {
           histos.fill(HIST("Result/MC/Genlambda1520pt"), 1, part.pt(), centrality);
-        else
+        } else {
           histos.fill(HIST("Result/MC/Genantilambda1520pt"), 1, part.pt(), centrality);
+        }
       }
       if (inVtx10 && isSel8) // vtx10, sel8
       {
         histos.fill(HIST("QA/Gen"), 3);
-        if (part.pdgCode() > 0)
+        if (part.pdgCode() > 0) {
           histos.fill(HIST("Result/MC/Genlambda1520pt"), 2, part.pt(), centrality);
-        else
+        } else {
           histos.fill(HIST("Result/MC/Genantilambda1520pt"), 2, part.pt(), centrality);
+        }
       }
       if (inVtx10 && isTriggerTVX) // vtx10, TriggerTVX
       {
         histos.fill(HIST("QA/Gen"), 4);
-        if (part.pdgCode() > 0)
+        if (part.pdgCode() > 0) {
           histos.fill(HIST("Result/MC/Genlambda1520pt"), 3, part.pt(), centrality);
-        else
+        } else {
           histos.fill(HIST("Result/MC/Genantilambda1520pt"), 3, part.pt(), centrality);
+        }
       }
       if (inVtx10 && isTrueINELgt0) // vtx10, INEL>0
       {
         histos.fill(HIST("QA/Gen"), 5);
-        if (part.pdgCode() > 0)
+        if (part.pdgCode() > 0) {
           histos.fill(HIST("Result/MC/Genlambda1520pt"), 4, part.pt(), centrality);
-        else
+        } else {
           histos.fill(HIST("Result/MC/Genantilambda1520pt"), 4, part.pt(), centrality);
+        }
       }
       if (isInAfterAllCuts) // after all event selection
       {
         histos.fill(HIST("QA/Gen"), 6);
-        if (part.pdgCode() > 0)
+        if (part.pdgCode() > 0) {
           histos.fill(HIST("Result/MC/Genlambda1520pt"), 5, part.pt(), centrality);
-        else
+        } else {
           histos.fill(HIST("Result/MC/Genantilambda1520pt"), 5, part.pt(), centrality);
+        }
       }
       if (isInAfterAllCuts && isTrueINELgt0) // after all event selection && INEL>0
       {
         histos.fill(HIST("QA/Gen"), 7);
-        if (part.pdgCode() > 0)
+        if (part.pdgCode() > 0) {
           histos.fill(HIST("Result/MC/Genlambda1520pt"), 6, part.pt(), centrality);
-        else
+        } else {
           histos.fill(HIST("Result/MC/Genantilambda1520pt"), 6, part.pt(), centrality);
+        }
       }
     }
   }
@@ -1386,48 +1466,56 @@ struct Lambda1520analysisinpp {
       bool isTrueINELgt0 = pwglf::isINELgt0mc(particlesInCollision, pdg);
       bool isInAfterAllCuts = isSelected(collision, false);
 
-      float centrality;
+      float centrality = -999.f;
 
       if (useManualCalibration) {
         // Multiplicity-to-centrality mapping
         int genMult = getGenMidRapMultiplicity(particlesInCollision);
         centrality = getCentClassFromGenMult(genMult);
-      } else
+      } else {
         centrality = mcCollision.centFT0M();
+      }
 
-      if (centrality == -999.0f)
+      if (centrality == -999.0f) {
         continue;
+      }
 
-      if (isTrueINELgt0 && isInAfterAllCuts)
+      if (isTrueINELgt0 && isInAfterAllCuts) {
         histos.fill(HIST("Event/MultiplicityRecoEv"), centrality);
+      }
     }
 
     // Loop on generated collisions to fill the event factor for the INEL>0 correction
     for (const auto& mccolls : mcCollisions) {
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccolls.globalIndex(), cacheMC);
 
-      float centrality;
+      float centrality = -999.f;
 
       if (useManualCalibration) {
         // Multiplicity-to-centrality mapping
         int genMult = getGenMidRapMultiplicity(particlesInCollision);
         centrality = getCentClassFromGenMult(genMult);
-      } else
+      } else {
         centrality = mccolls.centFT0M();
+      }
 
-      if (centrality == -999.0f)
+      if (centrality == -999.0f) {
         continue;
+      }
 
       bool inVtx10 = std::abs(mccolls.posZ()) <= configEvents.cfgEvtZvtx;
       bool isTrueINELgt0 = pwglf::isINELgt0mc(particlesInCollision, pdg); // QA for Trigger efficiency
 
       histos.fill(HIST("Event/hMCEventIndices"), centrality, Inel);
-      if (inVtx10)
+      if (inVtx10) {
         histos.fill(HIST("Event/hMCEventIndices"), centrality, Inel10);
-      if (isTrueINELgt0)
+      }
+      if (isTrueINELgt0) {
         histos.fill(HIST("Event/hMCEventIndices"), centrality, Inelg0);
-      if (inVtx10 && isTrueINELgt0)
+      }
+      if (inVtx10 && isTrueINELgt0) {
         histos.fill(HIST("Event/hMCEventIndices"), centrality, Inelg010);
+      }
     }
   }
   PROCESS_SWITCH(Lambda1520analysisinpp, processEventFactor, "Process Event factor", false);
@@ -1446,17 +1534,19 @@ struct Lambda1520analysisinpp {
       bool isInAfterAllCuts = isSelected(collision, false);
       bool inVtx10 = std::abs(mcCollision.posZ()) <= configEvents.cfgEvtZvtx;
 
-      float centrality;
+      float centrality = -999.f;
 
       if (useManualCalibration) {
         // Multiplicity-to-centrality mapping
         int genMult = getGenMidRapMultiplicity(particlesInCollision);
         centrality = getCentClassFromGenMult(genMult);
-      } else
+      } else {
         centrality = mcCollision.centFT0M();
+      }
 
-      if (centrality == -999.0f)
+      if (centrality == -999.0f) {
         continue;
+      }
 
       auto computePtL = [&](float pt, float m_ref) {
         float ptL2 = pt * pt + m_ref * m_ref - MassLambda1520 * MassLambda1520;
@@ -1464,22 +1554,27 @@ struct Lambda1520analysisinpp {
       };
 
       // ===== NUM =====
-      if (!(inVtx10 && isTrueINELgt0))
+      if (!(inVtx10 && isTrueINELgt0)) {
         continue;
+      }
 
-      if (!isInAfterAllCuts)
+      if (!isInAfterAllCuts) {
         continue;
+      }
 
       for (const auto& part : particlesInCollision) {
 
-        if (!part.isPhysicalPrimary())
+        if (!part.isPhysicalPrimary()) {
           continue;
+        }
 
-        if (cUseRapcutMC && std::abs(part.y()) > configTracks.cfgCutRapidity)
+        if (cUseRapcutMC && std::abs(part.y()) > configTracks.cfgCutRapidity) {
           continue;
+        }
 
-        if (cUseEtacutMC && std::abs(part.eta()) > cEtacutMC)
+        if (cUseEtacutMC && std::abs(part.eta()) > cEtacutMC) {
           continue;
+        }
 
         float pt = part.pt();
 
@@ -1544,23 +1639,26 @@ struct Lambda1520analysisinpp {
     for (const auto& mccolls : mcCollisions) {
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccolls.globalIndex(), cacheMC);
 
-      float centrality;
+      float centrality = -999.f;
 
       if (useManualCalibration) {
         // Multiplicity-to-centrality mapping
         int genMult = getGenMidRapMultiplicity(particlesInCollision);
         centrality = getCentClassFromGenMult(genMult);
-      } else
+      } else {
         centrality = mccolls.centFT0M();
+      }
 
-      if (centrality == -999.0f)
+      if (centrality == -999.0f) {
         continue;
+      }
 
       bool inVtx10 = std::abs(mccolls.posZ()) <= configEvents.cfgEvtZvtx;
       bool isTrueINELgt0 = pwglf::isINELgt0mc(particlesInCollision, pdg);
 
-      if (!(inVtx10 && isTrueINELgt0))
+      if (!(inVtx10 && isTrueINELgt0)) {
         continue;
+      }
 
       auto computePtL = [&](float pt, float m_ref) {
         float ptL2 = pt * pt + m_ref * m_ref - MassLambda1520 * MassLambda1520;
@@ -1569,11 +1667,13 @@ struct Lambda1520analysisinpp {
 
       for (const auto& part : particlesInCollision) {
 
-        if (cUseRapcutMC && std::abs(part.y()) > configTracks.cfgCutRapidity)
+        if (cUseRapcutMC && std::abs(part.y()) > configTracks.cfgCutRapidity) {
           continue;
+        }
 
-        if (cUseEtacutMC && std::abs(part.eta()) > cEtacutMC)
+        if (cUseEtacutMC && std::abs(part.eta()) > cEtacutMC) {
           continue;
+        }
 
         // =========================
         // ===== LAMBDA(1520) ======
@@ -1593,17 +1693,20 @@ struct Lambda1520analysisinpp {
           bool pass2 = std::abs(daughterPDGs[0]) == kProton || std::abs(daughterPDGs[1]) == kProton; // At least one decay to Proton
 
           // Checking if we have both decay products
-          if (!pass1 || !pass2)
+          if (!pass1 || !pass2) {
             continue;
+          }
 
-          if (part.pdgCode() > 0)
+          if (part.pdgCode() > 0) {
             histos.fill(HIST("Result/SignalLoss/GenTruelambda1520pt_den"), part.pt(), centrality);
-          else
+          } else {
             histos.fill(HIST("Result/SignalLoss/GenTrueantilambda1520pt_den"), part.pt(), centrality);
+          }
         }
 
-        if (!part.isPhysicalPrimary())
-          continue;
+        if (!part.isPhysicalPrimary()) {
+          continue
+        };
 
         float pt = part.pt();
         float weight = 1.f;
@@ -1617,11 +1720,13 @@ struct Lambda1520analysisinpp {
           histos.fill(HIST("Result/SignalLoss/GenTruekaonpt_den"), pt, centrality);
 
           float ptL = computePtL(pt, massKa);
-          if (ptL < 0)
+          if (ptL < 0) {
             continue;
+          }
 
-          if (useWeight)
+          if (useWeight) {
             weight = ptL / pt;
+          }
 
           histos.fill(HIST("Result/SignalLoss/Genkaonpt_den"), ptL, centrality, weight);
         }
@@ -1635,11 +1740,13 @@ struct Lambda1520analysisinpp {
           histos.fill(HIST("Result/SignalLoss/GenTrueprotonpt_den"), pt, centrality);
 
           float ptL = computePtL(pt, massPr);
-          if (ptL < 0)
+          if (ptL < 0) {
             continue;
+          }
 
-          if (useWeight)
+          if (useWeight) {
             weight = ptL / pt;
+          }
 
           histos.fill(HIST("Result/SignalLoss/Genprotonpt_den"), ptL, centrality, weight);
         }
@@ -1652,11 +1759,13 @@ struct Lambda1520analysisinpp {
           histos.fill(HIST("Result/SignalLoss/GenTruelambdapt_den"), pt, centrality);
 
           float ptL = computePtL(pt, MassLambda0);
-          if (ptL < 0)
+          if (ptL < 0) {
             continue;
+          }
 
-          if (useWeight)
+          if (useWeight) {
             weight = ptL / pt;
+          }
 
           histos.fill(HIST("Result/SignalLoss/Genlambdapt_den"), ptL, centrality, weight);
         }
@@ -1669,11 +1778,13 @@ struct Lambda1520analysisinpp {
           histos.fill(HIST("Result/SignalLoss/GenTruexipt_den"), pt, centrality);
 
           float ptL = computePtL(pt, MassXiMinus);
-          if (ptL < 0)
+          if (ptL < 0) {
             continue;
+          }
 
-          if (useWeight)
+          if (useWeight) {
             weight = ptL / pt;
+          }
 
           histos.fill(HIST("Result/SignalLoss/Genxipt_den"), ptL, centrality, weight);
         }
@@ -1686,11 +1797,13 @@ struct Lambda1520analysisinpp {
           histos.fill(HIST("Result/SignalLoss/GenTrueomegapt_den"), pt, centrality);
 
           float ptL = computePtL(pt, MassOmegaMinus);
-          if (ptL < 0)
+          if (ptL < 0) {
             continue;
+          }
 
-          if (useWeight)
+          if (useWeight) {
             weight = ptL / pt;
+          }
 
           histos.fill(HIST("Result/SignalLoss/Genomegapt_den"), ptL, centrality, weight);
         }
