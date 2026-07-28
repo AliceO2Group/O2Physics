@@ -1467,15 +1467,9 @@ struct Lambda1520analysisinpp {
       bool isTrueINELgt0 = pwglf::isINELgt0mc(particlesInCollision, pdg);
       bool isInAfterAllCuts = isSelected(collision, false);
 
-      float centrality = kInvalidCentrality;
-
-      if (useManualCalibration) {
-        // Multiplicity-to-centrality mapping
-        int genMult = getGenMidRapMultiplicity(particlesInCollision);
-        centrality = getCentClassFromGenMult(genMult);
-      } else {
-        centrality = mcCollision.centFT0M();
-      }
+      float centrality = useManualCalibration
+                           ? getCentClassFromGenMult(getGenMidRapMultiplicity(particlesInCollision))
+                           : mcCollision.centFT0M();
 
       if (centrality == kInvalidCentrality) {
         continue;
@@ -1490,15 +1484,9 @@ struct Lambda1520analysisinpp {
     for (const auto& mccolls : mcCollisions) {
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccolls.globalIndex(), cacheMC);
 
-      float centrality = kInvalidCentrality;
-
-      if (useManualCalibration) {
-        // Multiplicity-to-centrality mapping
-        int genMult = getGenMidRapMultiplicity(particlesInCollision);
-        centrality = getCentClassFromGenMult(genMult);
-      } else {
-        centrality = mccolls.centFT0M();
-      }
+      float centrality = useManualCalibration
+                           ? getCentClassFromGenMult(getGenMidRapMultiplicity(particlesInCollision))
+                           : mccolls.centFT0M();
 
       if (centrality == kInvalidCentrality) {
         continue;
@@ -1535,15 +1523,9 @@ struct Lambda1520analysisinpp {
       bool isInAfterAllCuts = isSelected(collision, false);
       bool inVtx10 = std::abs(mcCollision.posZ()) <= configEvents.cfgEvtZvtx;
 
-      float centrality = kInvalidCentrality;
-
-      if (useManualCalibration) {
-        // Multiplicity-to-centrality mapping
-        int genMult = getGenMidRapMultiplicity(particlesInCollision);
-        centrality = getCentClassFromGenMult(genMult);
-      } else {
-        centrality = mcCollision.centFT0M();
-      }
+      float centrality = useManualCalibration
+                           ? getCentClassFromGenMult(getGenMidRapMultiplicity(particlesInCollision))
+                           : mcCollision.centFT0M();
 
       if (centrality == kInvalidCentrality) {
         continue;
@@ -1640,15 +1622,9 @@ struct Lambda1520analysisinpp {
     for (const auto& mccolls : mcCollisions) {
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccolls.globalIndex(), cacheMC);
 
-      float centrality = kInvalidCentrality;
-
-      if (useManualCalibration) {
-        // Multiplicity-to-centrality mapping
-        int genMult = getGenMidRapMultiplicity(particlesInCollision);
-        centrality = getCentClassFromGenMult(genMult);
-      } else {
-        centrality = mccolls.centFT0M();
-      }
+      float centrality = useManualCalibration
+                           ? getCentClassFromGenMult(getGenMidRapMultiplicity(particlesInCollision))
+                           : mccolls.centFT0M();
 
       if (centrality == kInvalidCentrality) {
         continue;
