@@ -293,6 +293,28 @@ bool isMotherPDG(T& mcparticle, const int motherPDG, const int depth = 10) // o2
 }
 
 //_______________________________________________________________________
+/// \brief Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return true else false
+/// E.g. if electron cluster is coming from a photon return true, if primary electron return false
+/// \param mcparticle iterator of mcparticle, NOT modified by this function
+/// \param mcparticleWorking a second iterator of the SAME table, used as scratch space to walk up the chain -- caller must supply this so the function doesn't construct its own
+/// \param motherPDG target mother PDG value
+/// \param depth how many steps in the chain this check should go maximum before failing
+template <o2::soa::is_iterator T>
+bool isMotherPDG(const T& mcparticle, T& mcparticleWorking, const int motherPDG, const int depth = 10) // o2-linter: disable=pdg/explicit-code (false positive)
+{
+  if (!mcparticle.has_mothers() || depth < 1) {
+    return false;
+  }
+
+  int motherid = mcparticle.mothersIds()[0];
+  mcparticleWorking.setCursor(motherid);
+  if (mcparticleWorking.pdgCode() == motherPDG) {
+    return true; // The mother has the required pdg code.
+  }
+  return isMotherPDG(mcparticleWorking, mcparticleWorking, motherPDG, depth - 1);
+}
+
+//_______________________________________________________________________
 /// \brief Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return id else -1
 /// E.g. if electron cluster is coming from a photon return true, if primary electron return false
 /// \param mcparticle iterator of mxparticle, WILL BE CHANGED by this function!
@@ -311,6 +333,28 @@ int32_t getMotherIndexFromChain(T& mcparticle, const int motherPDG, const int de
     return motherid; // The mother has the required pdg code, so return its daughters global mc particle code.
   }
   return getMotherIndexFromChain(mcparticle, motherPDG, depth - 1);
+}
+
+//_______________________________________________________________________
+/// \brief Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return id else -1
+/// E.g. if electron cluster is coming from a photon return the photon's id, if primary electron return -1
+/// \param mcparticle iterator of mcparticle, NOT modified by this function
+/// \param mcparticleWorking a second iterator of the SAME table, used as scratch space to walk up the chain -- caller must supply this so the function doesn't construct its own
+/// \param motherPDG target mother PDG value
+/// \param depth how many steps in the chain this check should go maximum before failing
+template <o2::soa::is_iterator T>
+int32_t getMotherIndexFromChain(const T& mcparticle, T& mcparticleWorking, const int motherPDG, const int depth = 10) // o2-linter: disable=pdg/explicit-code (false positive)
+{
+  if (!mcparticle.has_mothers() || depth < 1) {
+    return -1;
+  }
+
+  int32_t motherid = mcparticle.mothersIds()[0];
+  mcparticleWorking.setCursor(motherid);
+  if (mcparticleWorking.pdgCode() == motherPDG) {
+    return motherid;
+  }
+  return getMotherIndexFromChain(mcparticleWorking, mcparticleWorking, motherPDG, depth - 1);
 }
 
 //_______________________________________________________________________
