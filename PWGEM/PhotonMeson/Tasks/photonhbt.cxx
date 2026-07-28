@@ -512,7 +512,6 @@ struct Photonhbt {
   // INITS
   /*************************************************/
 
-
   bool mDoPairQa{true}, mDoSinglePhotonQa{true}, mDoLegPairQA{true};
   bool mDoPairSepQA{true}, mFillDRDZSparse{true};
 
@@ -520,11 +519,11 @@ struct Photonhbt {
   {
     isMC = context.mOptions.get<bool>("processMC");
     const int qaLevel = qaflags.cfgQaLevel.value;
-    mDoPairQa = qaflags.doPairQa.value && qaLevel >= 1;
-    mDoSinglePhotonQa = qaflags.doSinglePhotonQa.value && qaLevel >= 1;
-    mDoLegPairQA = qaflags.doLegPairQA.value && qaLevel >= 2;
-    mDoPairSepQA = pairsep.cfgDoPairSepQA.value && qaLevel >= 2;
-    mFillDRDZSparse = qaflags.cfgFillDRDZSparse.value && qaLevel >= 2;
+    mDoPairQa = qaflags.doPairQa.value && qaLevel >= 1;                 // o2-linter: disable=magic-number (QA set-up)
+    mDoSinglePhotonQa = qaflags.doSinglePhotonQa.value && qaLevel >= 1; // o2-linter: disable=magic-number (QA set-up)
+    mDoLegPairQA = qaflags.doLegPairQA.value && qaLevel >= 2;           // o2-linter: disable=magic-number (QA set-up)
+    mDoPairSepQA = pairsep.cfgDoPairSepQA.value && qaLevel >= 2;        // o2-linter: disable=magic-number (QA set-up)
+    mFillDRDZSparse = qaflags.cfgFillDRDZSparse.value && qaLevel >= 2;  // o2-linter: disable=magic-number (QA set-up)
     LOGF(info, "photonhbt QA level %d -> pairQA %d, singlePhotonQA %d, legPairQA %d, pairSep %d, dRdZ sparse %d",
          qaLevel, mDoPairQa, mDoSinglePhotonQa, mDoLegPairQA, mDoPairSepQA, mFillDRDZSparse);
     mRunNumber = 0;
