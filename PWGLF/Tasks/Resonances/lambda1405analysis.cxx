@@ -122,7 +122,7 @@ struct lambda1405candidate {
 };
 
 struct lambda1405analysis {
-  int lambda1405PdgCode = 102132;                     // PDG code for Lambda(1405); o2-linter: disable=pdg/explicit-code
+  int lambda1405PdgCode = 102132;                     // o2-linter: disable=pdg/explicit-code
   Produces<aod::Lambda1405Cands> outputDataTable;     // Output table for Lambda(1405) candidates
   Produces<aod::Lambda1405Flow> outputDataFlowTable;  // Output table for Lambda(1405) flow analysis
   Produces<aod::Lambda1405CandsMC> outputDataTableMC; // Output table for Lambda(1405) candidates in MC
