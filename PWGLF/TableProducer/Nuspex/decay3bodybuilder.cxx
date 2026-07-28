@@ -1115,10 +1115,10 @@ struct decay3bodyBuilder {
       registry.fill(HIST("Counters/hTableBuildingStatistics"), kVtx3BodyDatas);
     }
     if (mEnabledTables[kVtx3BodyCovs]) {
-      products.vtx3bodycovs(helper.decay3body.covProton,
-                            helper.decay3body.covPion,
-                            helper.decay3body.covDeuteron,
-                            helper.decay3body.covariance);
+      products.vtx3bodycovs(helper.decay3body.covProton.data(),
+                            helper.decay3body.covPion.data(),
+                            helper.decay3body.covDeuteron.data(),
+                            helper.decay3body.covariance.data());
       registry.fill(HIST("Counters/hTableBuildingStatistics"), kVtx3BodyCovs);
     }
     if (mEnabledTables[kMcVtx3BodyDatas]) {

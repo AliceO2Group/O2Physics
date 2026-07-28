@@ -470,9 +470,11 @@ class KinkSelection : public baseselection::BaseSelection<float, o2::analysis::f
 
 struct KinkBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FSigmas> producedSigmas;
+  o2::framework::Produces<o2::aod::FLiteSigmas> producedLiteSigmas;
   o2::framework::Produces<o2::aod::FSigmaMasks> producedSigmaMasks;
   o2::framework::Produces<o2::aod::FSigmaExtras> producedSigmaExtras;
   o2::framework::Produces<o2::aod::FSigmaPlus> producedSigmaPlus;
+  o2::framework::Produces<o2::aod::FLiteSigmaPlus> producedLiteSigmaPlus;
   o2::framework::Produces<o2::aod::FSigmaPlusMasks> producedSigmaPlusMasks;
   o2::framework::Produces<o2::aod::FSigmaPlusExtras> producedSigmaPlusExtras;
 };
@@ -480,9 +482,11 @@ struct KinkBuilderProducts : o2::framework::ProducesGroup {
 struct ConfKinkTables : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("KinkTables");
   o2::framework::Configurable<int> produceSigmas{"produceSigmas", -1, "Produce Sigmas (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceLiteSigmas{"produceLiteSigmas", -1, "Produce LiteSigmas (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceSigmaMasks{"produceSigmaMasks", -1, "Produce SigmaMasks (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceSigmaExtras{"produceSigmaExtras", -1, "Produce SigmaExtras (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceSigmaPlus{"produceSigmaPlus", -1, "Produce SigmaPlus (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceLiteSigmaPlus{"produceLiteSigmaPlus", -1, "Produce LiteSigmaPlus (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceSigmaPlusMasks{"produceSigmaPlusMasks", -1, "Produce SigmaPlusMasks (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceSigmaPlusExtras{"produceSigmaPlusExtras", -1, "Produce SigmaPlusExtras (-1: auto; 0 off; 1 on)"};
 };
@@ -494,21 +498,55 @@ class KinkBuilder
   KinkBuilder() = default;
   ~KinkBuilder() = default;
 
-  template <typename T1, typename T2, typename T3, typename T4>
-  void init(o2::framework::HistogramRegistry* registry, T1& config, T2& filter, T3& table, T4& initContext)
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  void init(o2::framework::HistogramRegistry* registry, T1& config, T2& filter, T3& table, T4& initContext, T5& trackBuilder)
   {
     if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
       LOG(info) << "Initialize femto Sigma builder...";
       mProduceSigmas = utils::enableTable("FSigmas_002", table.produceSigmas.value, initContext);
+      mProduceLiteSigmas = utils::enableTable("FLiteSigmas_001", table.produceLiteSigmas.value, initContext);
       mProduceSigmaMasks = utils::enableTable("FSigmaMasks_001", table.produceSigmaMasks.value, initContext);
       mProduceSigmaExtras = utils::enableTable("FSigmaExtras_001", table.produceSigmaExtras.value, initContext);
+
+      if (mProduceSigmas && mProduceLiteSigmas) {
+        LOG(fatal) << "FSigmas and FLiteSigmas are mutually exclusive -- enable only one. "
+                   << "FLiteSigmas is meant to replace FSigmas at the producer stage (for better compression in derived data); "
+                   << "use the dedicated converter task to reconstruct FSigmas from FLiteSigmas downstream.";
+      }
+      if (mProduceSigmas && !trackBuilder.producingTracks()) {
+        LOG(fatal) << "FSigmas is enabled, but the track builder is not producing FTracks (full precision). "
+                   << "FSigmas stores the daughter index into FTracks -- enable TrackTables.produceTracks, "
+                   << "or switch to FLiteSigmas if TrackTables.produceLiteTracks is enabled instead.";
+      }
+      if (mProduceLiteSigmas && !trackBuilder.producingLiteTracks()) {
+        LOG(fatal) << "FLiteSigmas is enabled, but the track builder is not producing FLiteTracks. "
+                   << "FLiteSigmas stores the daughter index into FLiteTracks -- enable TrackTables.produceLiteTracks, "
+                   << "or switch to FSigmas if TrackTables.produceTracks is enabled instead.";
+      }
     }
 
     if constexpr (modes::isEqual(kinkType, modes::Kink::kSigmaPlus)) {
       LOG(info) << "Initialize femto SigmaPlus builder...";
       mProduceSigmaPlus = utils::enableTable("FSigmaPlus_001", table.produceSigmaPlus.value, initContext);
+      mProduceLiteSigmaPlus = utils::enableTable("FLiteSigmaPlus_001", table.produceLiteSigmaPlus.value, initContext);
       mProduceSigmaPlusMasks = utils::enableTable("FSigmaPlusMasks_001", table.produceSigmaPlusMasks.value, initContext);
       mProduceSigmaPlusExtras = utils::enableTable("FSigmaPlusExtras_001", table.produceSigmaPlusExtras.value, initContext);
+
+      if (mProduceSigmaPlus && mProduceLiteSigmaPlus) {
+        LOG(fatal) << "FSigmaPlus and FLiteSigmaPlus are mutually exclusive -- enable only one. "
+                   << "FLiteSigmaPlus is meant to replace FSigmaPlus at the producer stage (for better compression in derived data); "
+                   << "use the dedicated converter task to reconstruct FSigmaPlus from FLiteSigmaPlus downstream.";
+      }
+      if (mProduceSigmaPlus && !trackBuilder.producingTracks()) {
+        LOG(fatal) << "FSigmaPlus is enabled, but the track builder is not producing FTracks (full precision). "
+                   << "FSigmaPlus stores the daughter index into FTracks -- enable TrackTables.produceTracks, "
+                   << "or switch to FLiteSigmaPlus if TrackTables.produceLiteTracks is enabled instead.";
+      }
+      if (mProduceLiteSigmaPlus && !trackBuilder.producingLiteTracks()) {
+        LOG(fatal) << "FLiteSigmaPlus is enabled, but the track builder is not producing FLiteTracks. "
+                   << "FLiteSigmaPlus stores the daughter index into FLiteTracks -- enable TrackTables.produceLiteTracks, "
+                   << "or switch to FSigmaPlus if TrackTables.produceTracks is enabled instead.";
+      }
     }
 
     if (mProduceSigmas || mProduceSigmaMasks || mProduceSigmaExtras || mProduceSigmaPlus || mProduceSigmaPlusMasks || mProduceSigmaPlusExtras) {
@@ -547,12 +585,12 @@ class KinkBuilder
       collisionBuilder.template fillCollision<system>(collisionProducts, col);
 
       auto daughter = kink.template trackDaug_as<T7>();
-      daughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kKinkDaughter>(daughter, trackProducts, collisionProducts);
+      daughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kKinkDaughter>(daughter, trackProducts, collisionBuilder);
       if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
-        fillSigma(collisionProducts, kinkProducts, kink, daughterIndex);
+        fillSigma(collisionBuilder, kinkProducts, kink, daughterIndex);
       }
       if constexpr (modes::isEqual(kinkType, modes::Kink::kSigmaPlus)) {
-        fillSigmaPlus(collisionProducts, kinkProducts, kink, daughterIndex);
+        fillSigmaPlus(collisionBuilder, kinkProducts, kink, daughterIndex);
       }
     }
   }
@@ -581,32 +619,41 @@ class KinkBuilder
       collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
 
       auto daughter = kink.template trackDaug_as<T8>();
-      daughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kKinkDaughter>(col, collisionProducts, mcCols, daughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+      daughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kKinkDaughter>(col, collisionBuilder, mcCols, daughter, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
-        fillSigma(collisionProducts, kinkProducts, kink, daughterIndex);
+        fillSigma(collisionBuilder, kinkProducts, kink, daughterIndex);
         mcBuilder.template fillMcSigmaWithLabel<system>(col, mcCols, daughter, mcParticles, mcProducts);
       }
       if constexpr (modes::isEqual(kinkType, modes::Kink::kSigmaPlus)) {
-        fillSigmaPlus(collisionProducts, kinkProducts, kink, daughterIndex);
+        fillSigmaPlus(collisionBuilder, kinkProducts, kink, daughterIndex);
         mcBuilder.template fillMcSigmaPlusWithLabel<system>(col, mcCols, daughter, mcParticles, mcProducts);
       }
     }
   }
 
   template <typename T1, typename T2, typename T3>
-  void fillSigma(T1& collisionProducts, T2& kinkProducts, T3 const& kink, int64_t daughterIndex)
+  void fillSigma(T1& collisionBuilder, T2& kinkProducts, T3 const& kink, int64_t daughterIndex)
   {
     // Mass is calculated from original momentum components stored in kink table
     float mass = kink.mSigmaMinus();
+    float signedPt = kink.mothSign() * mKinkSelection.getKinkMotherPt(); // Recalculated pT
 
     if (mProduceSigmas) {
-      kinkProducts.producedSigmas(collisionProducts.producedCollision.lastIndex(),
-                                  kink.mothSign() * mKinkSelection.getKinkMotherPt(), // Recalculated pT
+      kinkProducts.producedSigmas(collisionBuilder.collisionIndex(),
+                                  signedPt,
                                   mKinkSelection.getKinkMotherEta(),
                                   mKinkSelection.getKinkMotherPhi(),
                                   mass,
                                   daughterIndex);
+    }
+    if (mProduceLiteSigmas) {
+      kinkProducts.producedLiteSigmas(collisionBuilder.collisionIndex(),
+                                      o2::aod::femtobase::lite::binSignedPt(signedPt),
+                                      o2::aod::femtobase::lite::binEta(mKinkSelection.getKinkMotherEta()),
+                                      o2::aod::femtobase::lite::binPhi(mKinkSelection.getKinkMotherPhi()),
+                                      o2::aod::femtokinks::lite::binSigmaMass(mass),
+                                      daughterIndex);
     }
     if (mProduceSigmaMasks) {
       kinkProducts.producedSigmaMasks(mKinkSelection.getBitmask());
@@ -624,18 +671,26 @@ class KinkBuilder
   }
 
   template <typename T1, typename T2, typename T3>
-  void fillSigmaPlus(T1& collisionProducts, T2& kinkProducts, T3 const& kink, int64_t daughterIndex)
+  void fillSigmaPlus(T1& collisionBuilder, T2& kinkProducts, T3 const& kink, int64_t daughterIndex)
   {
     // Mass is calculated from original momentum components stored in kink table
     float mass = kink.mSigmaPlus();
-
+    float signedPt = kink.mothSign() * mKinkSelection.getKinkMotherPt(); // Recalculated pT
     if (mProduceSigmaPlus) {
-      kinkProducts.producedSigmaPlus(collisionProducts.producedCollision.lastIndex(),
-                                     kink.mothSign() * mKinkSelection.getKinkMotherPt(), // Recalculated pT
+      kinkProducts.producedSigmaPlus(collisionBuilder.collisionIndex(),
+                                     signedPt,
                                      mKinkSelection.getKinkMotherEta(),
                                      mKinkSelection.getKinkMotherPhi(),
                                      mass,
                                      daughterIndex);
+    }
+    if (mProduceLiteSigmaPlus) {
+      kinkProducts.producedLiteSigmaPlus(collisionBuilder.collisionIndex(),
+                                         o2::aod::femtobase::lite::binSignedPt(signedPt),
+                                         o2::aod::femtobase::lite::binEta(mKinkSelection.getKinkMotherEta()),
+                                         o2::aod::femtobase::lite::binPhi(mKinkSelection.getKinkMotherPhi()),
+                                         o2::aod::femtokinks::lite::binSigmaMass(mass),
+                                         daughterIndex);
     }
     if (mProduceSigmaPlusMasks) {
       kinkProducts.producedSigmaPlusMasks(mKinkSelection.getBitmask());
@@ -658,9 +713,11 @@ class KinkBuilder
   KinkSelection<kinkType, SelectionHistName, FilterHistName> mKinkSelection;
   bool mFillAnyTable = false;
   bool mProduceSigmas = false;
+  bool mProduceLiteSigmas = false;
   bool mProduceSigmaMasks = false;
   bool mProduceSigmaExtras = false;
   bool mProduceSigmaPlus = false;
+  bool mProduceLiteSigmaPlus = false;
   bool mProduceSigmaPlusMasks = false;
   bool mProduceSigmaPlusExtras = false;
 };

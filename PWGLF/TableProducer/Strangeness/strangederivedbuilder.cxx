@@ -287,32 +287,38 @@ struct strangederivedbuilder {
   }
 
   template <typename TCollision>
-  bool isCollisionAccepted(TCollision collision)
+  bool isCollisionAccepted(TCollision collision, std::array<int, o2::aod::straselections::kNsel>& nSelected)
   // check whether the collision passes our collision selections
   {
     if (requireTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
       return false;
     }
+    nSelected[o2::aod::straselections::kIsTriggerTVX]++;
 
     if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
+    nSelected[o2::aod::straselections::kNoITSROFrameBorder]++;
 
     if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
+    nSelected[o2::aod::straselections::kNoTimeFrameBorder]++;
 
     if (std::abs(collision.posZ()) > maxZVtxPosition) {
       return false;
     }
+    nSelected[o2::aod::straselections::kIsGoodZvtxAcceptance]++;
 
     if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
+    nSelected[o2::aod::straselections::kNoSameBunchPileup]++;
 
     if (!cfgApplyRCTrequirement && !rctFlagsChecker(collision)) {
       return false;
     }
+    nSelected[o2::aod::straselections::kIsGoodRCT]++;
 
     return true;
   }
@@ -559,6 +565,7 @@ struct strangederivedbuilder {
 
     int totalNbrCollisions = collisions.size();
     int totalNbrSelectedCollisions = 0;
+    std::array<int, o2::aod::straselections::kNsel> totalNbrCollisionsPerSelection = {};
 
     // +-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
     for (const auto& collision : collisions) {
@@ -639,7 +646,7 @@ struct strangederivedbuilder {
       for (const auto& track : TrackTable_thisColl)
         TrackCollIndices[track.globalIndex()] = bc.globalBC();
 
-      if (fillOnlySelectedCollisions && !isCollisionAccepted(collision)) {
+      if (fillOnlySelectedCollisions && !isCollisionAccepted(collision, totalNbrCollisionsPerSelection)) {
         continue;
       }
 
@@ -771,7 +778,13 @@ struct strangederivedbuilder {
     for (const auto& casc : TraCascades) {
       products.tracasccollref(TraCascadeCollIndices[casc.globalIndex()]);
     }
-    products.straSelection(totalNbrCollisions, totalNbrSelectedCollisions);
+    products.straSelection(totalNbrCollisions, totalNbrSelectedCollisions,
+                           totalNbrCollisionsPerSelection[o2::aod::straselections::kIsTriggerTVX],
+                           totalNbrCollisionsPerSelection[o2::aod::straselections::kNoITSROFrameBorder],
+                           totalNbrCollisionsPerSelection[o2::aod::straselections::kNoTimeFrameBorder],
+                           totalNbrCollisionsPerSelection[o2::aod::straselections::kIsGoodZvtxAcceptance],
+                           totalNbrCollisionsPerSelection[o2::aod::straselections::kNoSameBunchPileup],
+                           totalNbrCollisionsPerSelection[o2::aod::straselections::kIsGoodRCT]);
   }
 
   // helper function to estimate collision time
@@ -781,6 +794,8 @@ struct strangederivedbuilder {
     std::vector<double> collisionEventTime(collisions.size(), 0.0);
     std::vector<double> collisionEventTimeErr(collisions.size(), 0.0);
     std::vector<int> collisionNtracks(collisions.size(), 0);
+
+    std::array<int, o2::aod::straselections::kNsel> totalNbrCollisionsPerSelection = {};
     for (const auto& track : tracks) {
       if (track.hasTOF() && track.collisionId() >= 0) {
         collisionEventTime[track.collisionId()] += track.tofEvTime();
@@ -797,7 +812,7 @@ struct strangederivedbuilder {
         collisionEventTime[collision.globalIndex()] = -1e+6; // undefined
         collisionEventTimeErr[collision.globalIndex()] = -1e-6; // undefined
       }
-      if (fillOnlySelectedCollisions && !isCollisionAccepted(collision)) {
+      if (fillOnlySelectedCollisions && !isCollisionAccepted(collision, totalNbrCollisionsPerSelection)) {
         continue;
       }
       histos.fill(HIST("h2dCollisionTimesVsNTracks"), collisionNtracks[collision.globalIndex()], collisionEventTime[collision.globalIndex()]);

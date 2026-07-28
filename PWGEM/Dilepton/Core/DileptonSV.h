@@ -1433,16 +1433,16 @@ struct DileptonSV {
           used_trackIds_per_col.emplace_back(t1.globalIndex());
           if (mixingGroup.cfgDoMix) {
             if (t1.sign() > 0) {
-              emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrack(candidate.pt1, candidate.eta1, candidate.phi1, leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), t1.cXX(), t1.cXY(), t1.cYY()));
-              // emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrackWithCov(t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), t1.cXX(), t1.cXY(), t1.cYY(),
+              emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrack(candidate.pt1, candidate.eta1, candidate.phi1, leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), t1.cXXatDCA(), t1.cXYatDCA(), t1.cYYatDCA()));
+              // emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrackWithCov(t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), t1.cXXatDCA(), t1.cXYatDCA(), t1.cYYatDCA(),
               //       t1.x(), t1.y(), t1.z(), t1.tgl(),
               //       t1.cPhiX(), t1.cPhiY(), t1.cPhiPhi(),
               //       t1.cTglX(), t1.cTglY(), t1.cTglPhi(), t1.cTglTgl(),
               //       t1.c1PtX(), t1.c1PtY(), t1.c1PtPhi(), t1.c1PtTgl(), t1.c1Pt21Pt2(), t1.chi2()));
 
             } else {
-              emh_neg->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrack(candidate.pt1, candidate.eta1, candidate.phi1, leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), t1.cXX(), t1.cXY(), t1.cYY()));
-              // emh_neg->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrackWithCov(t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), t1.cXX(), t1.cXY(), t1.cYY(),
+              emh_neg->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrack(candidate.pt1, candidate.eta1, candidate.phi1, leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), t1.cXXatDCA(), t1.cXYatDCA(), t1.cYYatDCA()));
+              // emh_neg->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrackWithCov(t1.pt(), t1.eta(), t1.phi(), leptonM1, t1.sign(), t1.fwdDcaX(), t1.fwdDcaY(), t1.cXXatDCA(), t1.cXYatDCA(), t1.cYYatDCA(),
               //       t1.x(), t1.y(), t1.z(), t1.tgl(),
               //       t1.cPhiX(), t1.cPhiY(), t1.cPhiPhi(),
               //       t1.cTglX(), t1.cTglY(), t1.cTglPhi(), t1.cTglTgl(),
@@ -1454,15 +1454,15 @@ struct DileptonSV {
           used_trackIds_per_col.emplace_back(t2.globalIndex());
           if (mixingGroup.cfgDoMix) {
             if (t2.sign() > 0) {
-              emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrack(candidate.pt2, candidate.eta2, candidate.phi2, leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), t2.cXX(), t2.cXY(), t2.cYY()));
-              // emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrackWithCov(t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), t2.cXX(), t2.cXY(), t2.cYY(),
+              emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrack(candidate.pt2, candidate.eta2, candidate.phi2, leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), t2.cXXatDCA(), t2.cXYatDCA(), t2.cYYatDCA()));
+              // emh_pos->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrackWithCov(t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), t2.cXXatDCA(), t2.cXYatDCA(), t2.cYYatDCA(),
               //       t2.x(), t2.y(), t2.z(), t2.tgl(),
               //       t2.cPhiX(), t2.cPhiY(), t2.cPhiPhi(),
               //       t2.cTglX(), t2.cTglY(), t2.cTglPhi(), t2.cTglTgl(),
               //       t2.c1PtX(), t2.c1PtY(), t2.c1PtPhi(), t2.c1PtTgl(), t2.c1Pt21Pt2(), t2.chi2()));
             } else {
-              emh_neg->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrack(candidate.pt2, candidate.eta2, candidate.phi2, leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), t2.cXX(), t2.cXY(), t2.cYY()));
-              // emh_neg->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrackWithCov(t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), t2.cXX(), t2.cXY(), t2.cYY(),
+              emh_neg->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrack(candidate.pt2, candidate.eta2, candidate.phi2, leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), t2.cXXatDCA(), t2.cXYatDCA(), t2.cYYatDCA()));
+              // emh_neg->AddTrackToEventPool(key_df_collision, o2::aod::pwgem::dilepton::utils::EMFwdTrackWithCov(t2.pt(), t2.eta(), t2.phi(), leptonM2, t2.sign(), t2.fwdDcaX(), t2.fwdDcaY(), t2.cXXatDCA(), t2.cXYatDCA(), t2.cYYatDCA(),
               //       t2.x(), t2.y(), t2.z(), t2.tgl(),
               //       t2.cPhiX(), t2.cPhiY(), t2.cPhiPhi(),
               //       t2.cTglX(), t2.cTglY(), t2.cTglPhi(), t2.cTglTgl(),
