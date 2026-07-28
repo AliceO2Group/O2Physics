@@ -106,7 +106,9 @@ enum class McOrigin : o2::analysis::femto::datatypes::McOriginType {
   kFromSecondaryDecay = 3, // particle from secondary decay
   kFromMaterial = 4,       // partilce orginates from material
   kMissidentified = 5,     // partilce was kMissidentified (also know as fake)
-  kMcOriginLast = 6
+  kPrompt = 6,             // HF only: charm hadron produced promptly (from c quark)
+  kNonPrompt = 7,          // HF only: charm hadron from beauty decay
+  kMcOriginLast = 8
   // kFromFakeRecoCollision,
   // kFromUnkown
 };
@@ -126,6 +128,10 @@ constexpr const char* mcOriginToString(McOrigin origin)
       return "FromMaterial";
     case McOrigin::kMissidentified:
       return "Missidentified";
+    case McOrigin::kPrompt:
+      return "Prompt";
+    case McOrigin::kNonPrompt:
+      return "NonPrompt";
     default:
       return "UnknownMcOrigin";
   }

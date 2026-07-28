@@ -27,6 +27,7 @@
 #include <Framework/Logger.h>
 
 #include <TPDGCode.h>
+#include <TH1.h>
 
 #include <array>
 #include <cstddef>
@@ -58,6 +59,15 @@ enum CharmHadronHist {
     kDecayLengthXY,
     kImpactParameterProduct,
     kCosThetaStar,
+
+    // mc
+    kOrigin,
+    kPdg,
+    kPdgMother,
+    kTruePtVsPt,
+    kTrueEtaVsEta,
+    kTruePhiVsPhi,
+    kPtVsOrigin,
 
     kCharmHadronHistLast
 };
@@ -123,7 +133,14 @@ constexpr std::array<histmanager::HistInfo<CharmHadronHist>, kCharmHadronHistLas
    {kDecayLength, o2::framework::HistType::kTH1F, "hDecayLength", "Decay length; L (cm); Entries"},
    {kDecayLengthXY, o2::framework::HistType::kTH1F, "hDecayLengthXY", "Decay length (XY); L_{XY} (cm); Entries"},
    {kImpactParameterProduct, o2::framework::HistType::kTH1F, "hImpactParameterProduct", "Product of daughter impact parameters; d_{0}^{K} #times d_{0}^{#pi} (cm^{2}); Entries"},
-   {kCosThetaStar, o2::framework::HistType::kTH1F, "hCosThetaStar", "Cosine of decay angle in D0 rest frame; cos(#theta*); Entries"}},
+   {kCosThetaStar, o2::framework::HistType::kTH1F, "hCosThetaStar", "Cosine of decay angle in D0 rest frame; cos(#theta*); Entries"},
+   {kOrigin, o2::framework::HistType::kTH1F, "hOrigin", "MC origin (prompt / non-prompt); origin; Entries"},
+   {kPdg, o2::framework::HistType::kTH1F, "hPdg", "PDG code of matched generated particle; PDG code; Entries"},
+   {kPdgMother, o2::framework::HistType::kTH1F, "hPdgMother", "PDG code of the mother; PDG code; Entries"},
+   {kTruePtVsPt, o2::framework::HistType::kTH2F, "hTruePtVsPt", "True vs reconstructed p_{T}; p_{T,true} (GeV/#it{c}); p_{T} (GeV/#it{c})"},
+   {kTrueEtaVsEta, o2::framework::HistType::kTH2F, "hTrueEtaVsEta", "True vs reconstructed #eta; #eta_{true}; #eta"},
+   {kTruePhiVsPhi, o2::framework::HistType::kTH2F, "hTruePhiVsPhi", "True vs reconstructed #varphi; #varphi_{true}; #varphi"},
+   {kPtVsOrigin, o2::framework::HistType::kTH2F, "hPtVsOrigin", "p_{T} vs MC origin; p_{T} (GeV/#it{c}); origin"}},
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -146,6 +163,22 @@ auto makeD0HistSpecMap(const T& confBinningAnalysis)
     CHARMHADRON_HIST_ANALYSIS_MAP(confBinningAnalysis)};
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define CHARMHADRON_HIST_MC_MAP(conf)                 \
+  {kPdg, {(conf).charmHadrons}},                      \
+    {kPdgMother, {(conf).charmHadrons}},              \
+    {kTruePtVsPt, {(conf).pt, (conf).pt}},            \
+    {kTrueEtaVsEta, {(conf).eta, (conf).eta}},        \
+    {kTruePhiVsPhi, {(conf).phi, (conf).phi}},        \
+    {kPtVsOrigin, {(conf).pt2d}},
+
+template <typename T>
+auto makeD0McHistSpecMap(const T& confBinningAnalysis)
+{
+  return std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>>{
+    CHARMHADRON_HIST_ANALYSIS_MAP(confBinningAnalysis)
+      CHARMHADRON_HIST_MC_MAP(confBinningAnalysis)};
+}
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CHARMHADRON_HIST_QA_MAP(conf) \
@@ -167,8 +200,19 @@ auto makeD0QaHistSpecMap(const T& confBinningQa)
   return std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>>{
     CHARMHADRON_HIST_QA_MAP(confBinningQa)};
 }
+
+template <typename T1, typename T2>
+auto makeD0McQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQa)
+{
+  return std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>>{
+    CHARMHADRON_HIST_ANALYSIS_MAP(confBinningAnalysis)
+      CHARMHADRON_HIST_QA_MAP(confBinningQa)
+        CHARMHADRON_HIST_MC_MAP(confBinningAnalysis)};
+}
+
   
 #undef CHARMHADRON_HIST_ANALYSIS_MAP
+#undef CHARMHADRON_HIST_MC_MAP
 #undef CHARMHADRON_HIST_QA_MAP
 
 // prefixes for the output directories in the histogram registry
@@ -176,6 +220,7 @@ constexpr char PrefixD01[] = "D01/";
 constexpr char PrefixD02[] = "D02/";
 constexpr char PrefixD0Qa[] = "D0QA/";
 constexpr std::string_view AnalysisDir = "Analysis/";
+constexpr std::string_view McDir = "MC/";
 constexpr std::string_view QaDir = "QA/";
 
 /// \class CharmHadronHistManager
@@ -232,6 +277,9 @@ class CharmHadronHistManager
     if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->initAnalysis(CharmHadronSpecs);
     }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
+      this->initMc(CharmHadronSpecs);
+    }
   }
 
   // init for analysis and qa
@@ -284,6 +332,9 @@ class CharmHadronHistManager
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
       this->initQa(CharmHadronQaSpecs);
     }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
+      this->initMc(CharmHadronSpecs);
+    }
   }
 
   template <modes::Mode mode, typename T1, typename T2>
@@ -299,6 +350,25 @@ class CharmHadronHistManager
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
       this->fillQa(charmHadronCandidate);
+    }
+  }
+
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fill(T1 const& charmHadronCandidate, T2 const& tracks, T3 const& mcParticles, T4 const& mcMothers, T5 const& mcPartonicMothers)
+  {
+    auto prong0 = tracks.rawIteratorAt(charmHadronCandidate.posDauId() - tracks.offset());
+    mProng0Manager.template fill<mode>(prong0, tracks, mcParticles, mcMothers, mcPartonicMothers);
+    auto prong1 = tracks.rawIteratorAt(charmHadronCandidate.negDauId() - tracks.offset());
+    mProng1Manager.template fill<mode>(prong1, tracks, mcParticles, mcMothers, mcPartonicMothers);
+
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
+      this->fillAnalysis(charmHadronCandidate);
+    }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
+      this->fillQa(charmHadronCandidate);
+    }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
+      this->fillMc(charmHadronCandidate, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
 
@@ -356,6 +426,25 @@ class CharmHadronHistManager
     }
   }
 
+  void initMc(std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>> const& CharmHadronSpecs)
+  {
+    std::string mcDir = std::string(charmHadronPrefix) + std::string(McDir);
+
+    const o2::framework::AxisSpec axisOrigin = {static_cast<int>(modes::McOrigin::kMcOriginLast), -0.5, static_cast<double>(modes::McOrigin::kMcOriginLast) - 0.5};
+    mHistogramRegistry->add(mcDir + getHistNameV2(kOrigin, HistTable), getHistDesc(kOrigin, HistTable), getHistType(kOrigin, HistTable), {axisOrigin});
+    mHistogramRegistry->get<TH1>(HIST(charmHadronPrefix) + HIST(McDir) + HIST(histmanager::getHistName(kOrigin, HistTable)))->GetXaxis()->SetBinLabel(1 + static_cast<int>(modes::McOrigin::kPrompt), modes::mcOriginToString(modes::McOrigin::kPrompt));
+    mHistogramRegistry->get<TH1>(HIST(charmHadronPrefix) + HIST(McDir) + HIST(histmanager::getHistName(kOrigin, HistTable)))->GetXaxis()->SetBinLabel(1 + static_cast<int>(modes::McOrigin::kNonPrompt), modes::mcOriginToString(modes::McOrigin::kNonPrompt));
+
+    mHistogramRegistry->add(mcDir + getHistNameV2(kPdg, HistTable), getHistDesc(kPdg, HistTable), getHistType(kPdg, HistTable), {CharmHadronSpecs.at(kPdg)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kPdgMother, HistTable), getHistDesc(kPdgMother, HistTable), getHistType(kPdgMother, HistTable), {CharmHadronSpecs.at(kPdgMother)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTruePtVsPt, HistTable), getHistDesc(kTruePtVsPt, HistTable), getHistType(kTruePtVsPt, HistTable), {CharmHadronSpecs.at(kTruePtVsPt)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTrueEtaVsEta, HistTable), getHistDesc(kTrueEtaVsEta, HistTable), getHistType(kTrueEtaVsEta, HistTable), {CharmHadronSpecs.at(kTrueEtaVsEta)});
+    mHistogramRegistry->add(mcDir + getHistNameV2(kTruePhiVsPhi, HistTable), getHistDesc(kTruePhiVsPhi, HistTable), getHistType(kTruePhiVsPhi, HistTable), {CharmHadronSpecs.at(kTruePhiVsPhi)});
+    std::vector<o2::framework::AxisSpec> ptVsOriginAxes = CharmHadronSpecs.at(kPtVsOrigin);
+    ptVsOriginAxes.push_back(axisOrigin);
+    mHistogramRegistry->add(mcDir + getHistNameV2(kPtVsOrigin, HistTable), getHistDesc(kPtVsOrigin, HistTable), getHistType(kPtVsOrigin, HistTable), ptVsOriginAxes);
+  }
+
   template <typename T>
   void fillQa(T const& charmHadronCandidate)
   {
@@ -387,6 +476,37 @@ class CharmHadronHistManager
       mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kDecayLengthXY, HistTable)), charmHadronCandidate.decayLengthXY());
       mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kImpactParameterProduct, HistTable)), charmHadronCandidate.impactParameterProduct());
       mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kCosThetaStar, HistTable)), charmHadronCandidate.cosThetaStar());
+    }
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4>
+  void fillMc(T1 const& charmHadronCandidate, T2 const& /*mcParticles*/, T3 const& /*mcMothers*/, T4 const& /*mcPartonicMothers*/)
+  {
+    // no matched generated particle -> reconstructed but not a true D0
+    if (!charmHadronCandidate.has_fMcParticle()) {
+      mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), 0);
+      mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kNoMcParticle));
+      return;
+    }
+
+    auto mcParticle = charmHadronCandidate.template fMcParticle_as<T2>();
+
+    // resolution: generated vs reconstructed kinematics (numerator of the efficiency is the matched reco)
+    mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(McDir) + HIST(getHistName(kTruePtVsPt, HistTable)), mcParticle.pt(), charmHadronCandidate.pt());
+    mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(McDir) + HIST(getHistName(kTrueEtaVsEta, HistTable)), mcParticle.eta(), charmHadronCandidate.eta());
+    mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(McDir) + HIST(getHistName(kTruePhiVsPhi, HistTable)), mcParticle.phi(), charmHadronCandidate.phi());
+
+    // origin already resolved to prompt / non-prompt for the generated D0 (see mcBuilder)
+    mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), mcParticle.origin());
+    mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(McDir) + HIST(getHistName(kPtVsOrigin, HistTable)), charmHadronCandidate.pt(), mcParticle.origin());
+    mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), mcParticle.pdgCode());
+
+    // mother pdg (source of non-prompt D0s: which beauty hadron)
+    if (mcParticle.has_fMcMother()) {
+      auto mother = mcParticle.template fMcMother_as<T3>();
+      mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), mother.pdgCode());
+    } else {
+      mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), 0);
     }
   }
 

@@ -316,72 +316,11 @@ public:
 
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-  void fillD0s(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts,
-               T5& d0Products, T6 const& candidates, T7 const& /*tracks*/, T8& trackBuilder)
+  template <typename T1, typename T2, typename T3>
+  void fillD0Tables(T1& collisionProducts, T2& d0Products, T3 const& candidate,
+                    float signedPt, float mass, int64_t posDauIndex, int64_t negDauIndex)
   {
-    if (!mFillAnyTable) {
-      return;
-    }
-
-    for (const auto& candidate : candidates) {
-      // keep only the D0 -> K pi decay channel hypothesis
-      if (!(candidate.hfflag() & (1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK))) {
-        continue;
-      }
-
-      // HF acceptance: cut on rapidity y insted of eta
-      if (mD0Selection.getUseYCut()) {
-        const float y = mHfHelper.yD0(candidate);
-        if (y < mD0Selection.getYMin() || y > mD0Selection.getYMax()) {
-          continue;
-        }
-      }
-
-      // loose kinematic pre-selection (pt/eta/phi)
-      if (!mD0Selection.checkFilters(candidate)) {
-        continue;
-      }
-
-      // resolve the D0 / D0bar hypothesis from PWGHF verdict 
-      const bool selD0 = candidate.isSelD0(); 
-      const bool selD0bar = candidate.isSelD0bar(); 
-
-      float signedPt = 0.f; 
-      float mass = 0.f; 
-
-      // ML scores are not cut on here (PWGHF already did via isSelD0); all 3 stored in QA
-      if (selD0 && !selD0bar) {                 // unambiguous D0
-        signedPt = candidate.pt();              // positive sign
-        mass = mHfHelper.invMassD0ToPiK(candidate);
-      } else if (!selD0 && selD0bar) {          // unambiguous D0bar
-        signedPt = -candidate.pt();             // negative sign
-        mass = mHfHelper.invMassD0barToKPi(candidate);
-      } else if (selD0 && selD0bar) {           // ambiguous: passes both
-        if (!mStoreDoubleHypo) {
-          continue;
-        }
-        signedPt = candidate.pt();              // policy: treat as D0 (or emit both)
-        mass = mHfHelper.invMassD0ToPiK(candidate);
-      } else {                                  // passes neither -> drop
-        continue;
-      }
-
-      // run the bit selection and drop candidates failing required cuts
-      mD0Selection.applySelections(candidate);
-      if (!mD0Selection.passesAllRequiredSelections()) {
-        continue;
-      }
-
-      collisionBuilder.template fillCollision<system>(collisionProducts, col);
-
-      // store the two prongs as femto tracks, keep their indices for D0 row
-      auto prong0 = candidate.template prong0_as<T7>();
-      auto prong1 = candidate.template prong1_as<T7>();
-      int64_t posDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong0, trackProducts, collisionProducts);
-      int64_t negDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong1, trackProducts, collisionProducts);
-
-      if (mProduceD0s) {
+    if (mProduceD0s) {
         d0Products.producedD0s(collisionProducts.producedCollision.lastIndex(),
                                signedPt,
                                candidate.eta(),
@@ -412,8 +351,132 @@ public:
           static_cast<int8_t>(candidate.isSelD0()),
           static_cast<int8_t>(candidate.isSelD0bar()));
       }
+  }
+
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
+  void fillD0s(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts,
+               T5& d0Products, T6 const& candidates, T7 const& /*tracks*/, T8& trackBuilder)
+  {
+    if (!mFillAnyTable) {
+      return;
+    }
+
+    for (const auto& candidate : candidates) {
+      // keep only the D0 -> K pi decay channel hypothesis
+      if (!(candidate.hfflag() & (1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK))) {
+        continue;
+      }
+
+      // HF acceptance: cut on rapidity y insted of eta
+      if (mD0Selection.getUseYCut()) {
+        const float y = mHfHelper.yD0(candidate);
+        if (y < mD0Selection.getYMin() || y > mD0Selection.getYMax()) {
+          continue;
+        }
+      }
+
+      // loose kinematic pre-selection (pt/eta/phi)
+      if (!mD0Selection.checkFilters(candidate)) {
+        continue;
+      }
+
+      const bool selD0 = candidate.isSelD0();
+      const bool selD0bar = candidate.isSelD0bar();
+      if (selD0 && selD0bar && !mStoreDoubleHypo) {
+        continue;
+      }
+      if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
+        if (!selD0) {
+          continue;
+        }
+      } else {
+        if (!selD0bar) {
+          continue;
+        }
+      }
+
+      mD0Selection.applySelections(candidate);
+      if (!mD0Selection.passesAllRequiredSelections()) {
+        continue;
+      }
+
+      collisionBuilder.template fillCollision<system>(collisionProducts, col);
+
+      auto prong0 = candidate.template prong0_as<T7>();
+      auto prong1 = candidate.template prong1_as<T7>();
+      int64_t posDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong0, trackProducts, collisionProducts);
+      int64_t negDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong1, trackProducts, collisionProducts);
+
+      if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
+        this->fillD0Tables(collisionProducts, d0Products, candidate, candidate.pt(), mHfHelper.invMassD0ToPiK(candidate), posDauIndex, negDauIndex);
+      } else {
+        this->fillD0Tables(collisionProducts, d0Products, candidate, -candidate.pt(), mHfHelper.invMassD0barToKPi(candidate), posDauIndex, negDauIndex);
+      }
+
+
     }
   }
+  
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
+  void fillMcD0s(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4 const& mcCols, T5& trackProducts,
+                 T6& d0Products, T7 const& candidates, T8 const& tracks, T9& trackBuilder, T10 const& mcParticles, T11& mcBuilder, T12& mcProducts)
+  {
+    if (!mFillAnyTable) {
+      return;
+    }
+
+    for (const auto& candidate : candidates) { 
+      if (!(candidate.hfflag() & (1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK))) {
+        continue;
+      }
+
+      if (mD0Selection.getUseYCut()) {
+        const float y = mHfHelper.yD0(candidate);
+        if (y < mD0Selection.getYMin() || y > mD0Selection.getYMax()) {
+          continue;
+        }
+      }
+
+      if (!mD0Selection.checkFilters(candidate)) {
+        continue;
+      }
+
+      const bool selD0 = candidate.isSelD0();
+      const bool selD0bar = candidate.isSelD0bar();
+      if (selD0 && selD0bar && !mStoreDoubleHypo) {
+        continue;
+      }
+      if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
+        if (!selD0) {
+          continue;
+        }
+      } else {
+        if (!selD0bar) {
+          continue;
+        }
+      }
+
+      mD0Selection.applySelections(candidate);
+      if (!mD0Selection.passesAllRequiredSelections()) {
+        continue;
+      }
+
+      collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
+
+      auto prong0 = candidate.template prong0_as<T8>();
+      auto prong1 = candidate.template prong1_as<T8>();
+      int64_t posDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(col, collisionProducts, mcCols, prong0, trackProducts, mcParticles, mcBuilder, mcProducts);
+      int64_t negDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(col, collisionProducts, mcCols, prong1, trackProducts, mcParticles, mcBuilder, mcProducts);
+
+      if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
+        this->fillD0Tables(collisionProducts, d0Products, candidate, candidate.pt(), mHfHelper.invMassD0ToPiK(candidate), posDauIndex, negDauIndex);
+      } else {
+        this->fillD0Tables(collisionProducts, d0Products, candidate, -candidate.pt(), mHfHelper.invMassD0barToKPi(candidate), posDauIndex, negDauIndex);
+      }
+      mcBuilder.template fillMcD0WithLabel<system>(col, mcCols, candidate, tracks, mcParticles, mcProducts);
+    }
+  }
+
 
 private:
   D0Selection<hadronType, SelectionHistName, FilterHistName> mD0Selection;

@@ -1147,6 +1147,8 @@ DECLARE_SOA_TABLE(FLambdaLabels, "AOD", "FLAMBDALABEL", femtolabels::FMcParticle
 
 DECLARE_SOA_TABLE(FK0shortLabels, "AOD", "FK0SHORTLABEL", femtolabels::FMcParticleId);
 
+DECLARE_SOA_TABLE(FD0Labels, "AOD", "FD0LABEL", femtolabels::FMcParticleId);
+
 DECLARE_SOA_TABLE(FSigmaLabels, "AOD", "FSIGMALABEL", femtolabels::FMcParticleId);
 
 DECLARE_SOA_TABLE(FSigmaPlusLabels, "AOD", "FSIGMAPLUSLABEL", femtolabels::FMcParticleId);

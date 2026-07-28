@@ -49,6 +49,16 @@ struct FemtoD0Qa {
   using FemtoD0s = o2::soa::Join<o2::aod::FD0s, o2::aod::FD0Masks, o2::aod::FD0Extras>;
   // full-PID tracks so daughter TPC/TOF/PID QA can be booked
   using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMass, o2::aod::FTrackDcas, o2::aod::FTrackExtras, o2::aod::FTrackPids>;
+  
+  // MC: same tables joined with their labels (link reco -> generated particle)
+  using FemtoCollisionsWithLabel = o2::soa::Join<FemtoCollisions, o2::aod::FColLabels>;
+  using FilteredFemtoCollisionsWithLabel = o2::soa::Filtered<FemtoCollisionsWithLabel>;
+  using FilteredFemtoCollisionWithLabel = FilteredFemtoCollisionsWithLabel::iterator;
+
+  using FemtoD0sWithLabel = o2::soa::Join<FemtoD0s, o2::aod::FD0Labels>;
+  using FemtoTracksWithLabel = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels>;
+  using FemtoMcParticlesWithLabel = o2::soa::Join<o2::aod::FMcParticles, o2::aod::FMcMotherLabels>;
+
 
   o2::framework::SliceCache cache;
 
@@ -64,6 +74,8 @@ struct FemtoD0Qa {
 
   o2::framework::Partition<FemtoD0s> d0Partition = MAKE_D0_PARTITION(confD0Selection);
   o2::framework::Preslice<FemtoD0s> perColD0s = o2::aod::femtobase::stored::fColId;
+  o2::framework::Partition<FemtoD0sWithLabel> d0WithLabelPartition = MAKE_D0_PARTITION(confD0Selection);
+  o2::framework::Preslice<FemtoD0sWithLabel> perColD0sWithLabel = o2::aod::femtobase::stored::fColId;
 
   charmhadronhistmanager::ConfD0Binning1 confD0Binning;
   charmhadronhistmanager::ConfD0QaBinning1 confD0QaBinning;
@@ -83,18 +95,33 @@ struct FemtoD0Qa {
 
   o2::framework::HistogramRegistry hRegistry{"FemtoD0Qa", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
 
-  void init(o2::framework::InitContext&)
+    void init(o2::framework::InitContext&)
   {
-    std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
-    colHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
+    bool processData = doprocessD0;
 
-    std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> posDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confD0PosDaughterBinning, confD0PosDaughterQaBinning);
-    std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> negDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confD0NegDaughterBinning, confD0NegDaughterQaBinning);
+    std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;
+    std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> posDaughterHistSpec;
+    std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> negDaughterHistSpec;
+    std::map<charmhadronhistmanager::CharmHadronHist, std::vector<o2::framework::AxisSpec>> d0HistSpec;
+    std::map<charmhadronhistmanager::CharmHadronHist, std::vector<o2::framework::AxisSpec>> d0QaHistSpec;
 
-    std::map<charmhadronhistmanager::CharmHadronHist, std::vector<o2::framework::AxisSpec>> d0HistSpec = charmhadronhistmanager::makeD0HistSpecMap(confD0Binning);
-    std::map<charmhadronhistmanager::CharmHadronHist, std::vector<o2::framework::AxisSpec>> d0QaHistSpec = charmhadronhistmanager::makeD0QaHistSpecMap(confD0QaBinning);
-
-    d0HistManager.init<modes::Mode::kReco_Qa>(&hRegistry, d0HistSpec, d0QaHistSpec, confD0Selection, confD0QaBinning, posDaughterHistSpec, confD0PosDaughterQaBinning, negDaughterHistSpec, confD0NegDaughterQaBinning);
+    if (processData) {
+      colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
+      colHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
+      posDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confD0PosDaughterBinning, confD0PosDaughterQaBinning);
+      negDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confD0NegDaughterBinning, confD0NegDaughterQaBinning);
+      d0HistSpec = charmhadronhistmanager::makeD0HistSpecMap(confD0Binning);
+      d0QaHistSpec = charmhadronhistmanager::makeD0QaHistSpecMap(confD0QaBinning);
+      d0HistManager.init<modes::Mode::kReco_Qa>(&hRegistry, d0HistSpec, d0QaHistSpec, confD0Selection, confD0QaBinning, posDaughterHistSpec, confD0PosDaughterQaBinning, negDaughterHistSpec, confD0NegDaughterQaBinning);
+    } else {
+      colHistSpec = colhistmanager::makeColMcQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
+      colHistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
+      posDaughterHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confD0PosDaughterBinning, confD0PosDaughterQaBinning);
+      negDaughterHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confD0NegDaughterBinning, confD0NegDaughterQaBinning);
+      d0HistSpec = charmhadronhistmanager::makeD0McQaHistSpecMap(confD0Binning, confD0QaBinning);
+      d0QaHistSpec = charmhadronhistmanager::makeD0QaHistSpecMap(confD0QaBinning);
+      d0HistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, d0HistSpec, d0QaHistSpec, confD0Selection, confD0QaBinning, posDaughterHistSpec, confD0PosDaughterQaBinning, negDaughterHistSpec, confD0NegDaughterQaBinning);
+    }
 
     hRegistry.print();
   };
@@ -111,6 +138,21 @@ struct FemtoD0Qa {
     }
   }
   PROCESS_SWITCH(FemtoD0Qa, processD0, "Process D0s", true);
+
+  void processD0Mc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoD0sWithLabel const& /*d0s*/, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  {
+    auto d0Slice = d0WithLabelPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (d0Slice.size() == 0) {
+      return;
+    }
+    colHistManager.fill<modes::Mode::kReco_Qa_Mc>(col, mcCols);
+    for (auto const& d0 : d0Slice) {
+      d0HistManager.fill<modes::Mode::kReco_Qa_Mc>(d0, tracks, mcParticles, mcMothers, mcPartonicMothers);
+    }
+  }
+  PROCESS_SWITCH(FemtoD0Qa, processD0Mc, "Process D0s with MC information", false);
+
+
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
