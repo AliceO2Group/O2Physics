@@ -150,8 +150,8 @@ struct Photonhbt {
   };
 
   struct CrossObs {
-    std::array<float, 2> mee{999.f, 999.f};  // crossed m(e+e-) per combo
-    std::array<float, 2> dist{999.f, 999.f}; // crossed line-line distance (cm)
+    std::array<float, 2> mee{999.f, 999.f};
+    float meeOverQ{999.f};
   };
 
   struct TruthGamma {
@@ -345,8 +345,7 @@ struct Photonhbt {
     std::string prefix = "crosspair_group";
     Configurable<bool> cfgDoCrossPairQA{"cfgDoCrossPairQA", false, "fill crossed-hypothesis QA (mee_cross, dist_cross vs qinv) for pairs passing all other pair cuts; SE and ME"};
     Configurable<bool> cfgDoCrossPairCut{"cfgDoCrossPairCut", false, "reject pairs with a photon-like crossed combination; applied to SE AND ME"};
-    Configurable<float> cfgCrossMaxMee{"cfgCrossMaxMee", 0.04f, "veto: crossed m_ee below this (GeV/c^2)"};
-    Configurable<float> cfgCrossMaxDist{"cfgCrossMaxDist", 1.0f, "veto: crossed line-line distance below this (cm)"};
+    Configurable<float> cfgCrossMaxMeeRatio{"cfgCrossMaxMeeRatio", 0.2f, "veto: min(m_ee^cross)/q_inv below this; genuine pairs sit near 0.5, leg swaps near 0"};
     Configurable<float> cfgCrossMaxQinvQA{"cfgCrossMaxQinvQA", 0.3f, "fill crossed QA sparses only below this qinv"};
   } crosspair;
 
@@ -736,9 +735,9 @@ struct Photonhbt {
       return;
     }
     for (const auto& sm : {std::string("Pair/same/CrossPair/"), std::string("Pair/mix/CrossPair/")}) {
-      fRegistryCF.add((sm + "hSparse_Mee_Dist_Qinv").c_str(),
-                      "crossed-hypothesis QA;m_{ee}^{cross} (GeV/c^{2});crossed line distance (cm);q_{inv} (GeV/c)",
-                      kTHnSparseF, {{100, 0.f, 0.1f}, {100, 0.f, 10.f}, {60, 0.f, 0.3f}}, true);
+      fRegistryCF.add((sm + "hSparse_MeeRatio_dR_Qinv").c_str(),
+                      "crossed-hypothesis QA;min(m_{ee}^{cross})/q_{inv};|R_{1}-R_{2}| (cm);q_{inv} (GeV/c)",
+                      kTHnSparseF, {{100, 0.f, 2.f}, {80, 0.f, 80.f}, {60, 0.f, 0.3f}}, true);
       auto h = fRegistryCF.add<TH1>((sm + "hVetoCounter").c_str(), "crossed-pair veto;;pairs", kTH1D, {{2, -0.5f, 1.5f}}, true);
       h->GetXaxis()->SetBinLabel(1, "evaluated");
       h->GetXaxis()->SetBinLabel(2, "vetoed");
@@ -1274,42 +1273,22 @@ struct Photonhbt {
     return s.u > pairsep.cfgUCut.value;
   }
 
-  [[nodiscard]] static float lineLineDistance(std::array<float, 3> const& o1, std::array<float, 3> const& d1,
-                                              std::array<float, 3> const& o2, std::array<float, 3> const& d2)
-  {
-    const std::array<float, 3> w = {o2[0] - o1[0], o2[1] - o1[1], o2[2] - o1[2]};
-    const std::array<float, 3> n = {d1[1] * d2[2] - d1[2] * d2[1],
-                                    d1[2] * d2[0] - d1[0] * d2[2],
-                                    d1[0] * d2[1] - d1[1] * d2[0]};
-    const float nMag = std::sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
-    const float d1Mag2 = d1[0] * d1[0] + d1[1] * d1[1] + d1[2] * d1[2];
-    if (nMag < 1e-6f * d1Mag2) { // o2-linter: disable=magic-number (near-parallel: point-to-line distance)
-      const float wDotD = (w[0] * d1[0] + w[1] * d1[1] + w[2] * d1[2]) / d1Mag2;
-      const std::array<float, 3> perp = {w[0] - wDotD * d1[0], w[1] - wDotD * d1[1], w[2] - wDotD * d1[2]};
-      return std::sqrt(perp[0] * perp[0] + perp[1] * perp[1] + perp[2] * perp[2]);
-    }
-    return std::fabs(w[0] * n[0] + w[1] * n[1] + w[2] * n[2]) / nMag;
-  }
-
-  [[nodiscard]] CrossObs computeCrossObs(PhotonWithLegs const& a, PhotonWithLegs const& b) const
+  [[nodiscard]] CrossObs computeCrossObs(PhotonWithLegs const& a, PhotonWithLegs const& b, float qinv) const
   {
     constexpr float kMe = 0.000510999f; // electron mass, GeV/c^2
     CrossObs c;
     auto legVec = [](PhotonWithLegs const& p, int i) {
       return ROOT::Math::PtEtaPhiMVector(p.fLegPt[i], p.fLegEta[i], p.fLegPhi[i], kMe);
     };
-    auto legDir = [](PhotonWithLegs const& p, int i) -> std::array<float, 3> {
-      return {p.fLegPt[i] * std::cos(p.fLegPhi[i]), p.fLegPt[i] * std::sin(p.fLegPhi[i]),
-              p.fLegPt[i] * std::sinh(p.fLegEta[i])};
-    };
     // Leg index 0 = e+, 1 = e- (makePhotonWithLegs filling order).
     // Combo 0: a's e+ with b's e-.  Combo 1: b's e+ with a's e-.
-    for (int combo = 0; combo < 2; ++combo) { // o2-linter: disable=magic-number (combinations of fake photons)
+    for (int combo = 0; combo < 2; ++combo) { // o2-linter: disable=magic-number (the two leg-swap combinations)
       PhotonWithLegs const& pPos = (combo == 0) ? a : b;
       PhotonWithLegs const& pEle = (combo == 0) ? b : a;
       c.mee[combo] = static_cast<float>((legVec(pPos, 0) + legVec(pEle, 1)).M());
-      c.dist[combo] = lineLineDistance({pPos.fVx, pPos.fVy, pPos.fVz}, legDir(pPos, 0),
-                                       {pEle.fVx, pEle.fVy, pEle.fVz}, legDir(pEle, 1));
+    }
+    if (qinv > 0.f) {
+      c.meeOverQ = std::min(c.mee[0], c.mee[1]) / qinv;
     }
     return c;
   }
@@ -1319,25 +1298,19 @@ struct Photonhbt {
     if (!crosspair.cfgDoCrossPairCut.value) {
       return true;
     }
-    for (int i = 0; i < 2; ++i) { // o2-linter: disable=magic-number (combinations of fake photons)
-      if (c.mee[i] < crosspair.cfgCrossMaxMee.value && c.dist[i] < crosspair.cfgCrossMaxDist.value) {
-        return false;
-      }
-    }
-    return true;
+    // A photon-like crossed combination means the pairing is ambiguous.
+    return c.meeOverQ > crosspair.cfgCrossMaxMeeRatio.value;
   }
 
   template <int ev_id>
-  inline void fillCrossPair(CrossObs const& c, float qinv, bool vetoed)
+  inline void fillCrossPair(CrossObs const& c, float qinv, float deltaR, bool vetoed)
   {
     constexpr auto dir = (ev_id == 0) ? "Pair/same/CrossPair/" : "Pair/mix/CrossPair/";
     fRegistryCF.fill(HIST(dir) + HIST("hVetoCounter"), vetoed ? 1.0 : 0.0);
     if (qinv > crosspair.cfgCrossMaxQinvQA.value) {
       return;
     }
-    for (int i = 0; i < 2; ++i) { // o2-linter: disable=magic-number (combinations of fake photons)
-      fRegistryCF.fill(HIST(dir) + HIST("hSparse_Mee_Dist_Qinv"), c.mee[i], c.dist[i], qinv);
-    }
+    fRegistryCF.fill(HIST(dir) + HIST("hSparse_MeeRatio_dR_Qinv"), c.meeOverQ, deltaR, qinv);
   }
 
   [[nodiscard]] float uTrue(TruthGamma const& g1, TruthGamma const& g2) const
@@ -2008,9 +1981,9 @@ struct Photonhbt {
           continue;
         }
         if (crosspair.cfgDoCrossPairQA.value || crosspair.cfgDoCrossPairCut.value) {
-          const auto cross = computeCrossObs(pwl1, pwl2);
+          const auto cross = computeCrossObs(pwl1, pwl2, obs.qinv);
           const bool vetoed = !passCrossPairVeto(cross);
-          fillCrossPair<0>(cross, obs.qinv, vetoed);
+          fillCrossPair<0>(cross, obs.qinv, obs.deltaR, vetoed);
           if (vetoed) {
             continue;
           }
@@ -2103,9 +2076,9 @@ struct Photonhbt {
               continue;
             }
             if (crosspair.cfgDoCrossPairQA.value || crosspair.cfgDoCrossPairCut.value) {
-              const auto cross = computeCrossObs(g1, g2);
+              const auto cross = computeCrossObs(g1, g2, obs.qinv);
               const bool vetoed = !passCrossPairVeto(cross);
-              fillCrossPair<1>(cross, obs.qinv, vetoed);
+              fillCrossPair<1>(cross, obs.qinv, obs.deltaR, vetoed);
               if (vetoed) {
                 continue;
               }
@@ -2233,9 +2206,9 @@ struct Photonhbt {
           continue;
         }
         if (crosspair.cfgDoCrossPairQA.value || crosspair.cfgDoCrossPairCut.value) {
-          const auto cross = computeCrossObs(pwl1, pwl2);
+          const auto cross = computeCrossObs(pwl1, pwl2, obs.qinv);
           const bool vetoed = !passCrossPairVeto(cross);
-          fillCrossPair<0>(cross, obs.qinv, vetoed);
+          fillCrossPair<0>(cross, obs.qinv, obs.deltaR, vetoed);
           if (vetoed) {
             continue;
           }
@@ -2379,9 +2352,9 @@ struct Photonhbt {
               continue;
             }
             if (crosspair.cfgDoCrossPairQA.value || crosspair.cfgDoCrossPairCut.value) {
-              const auto cross = computeCrossObs(g1, g2);
+              const auto cross = computeCrossObs(g1, g2, obs.qinv);
               const bool vetoed = !passCrossPairVeto(cross);
-              fillCrossPair<1>(cross, obs.qinv, vetoed);
+              fillCrossPair<1>(cross, obs.qinv, obs.deltaR, vetoed);
               if (vetoed) {
                 continue;
               }
@@ -2692,7 +2665,7 @@ struct Photonhbt {
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hQinvVsKt_all4LegsThisColl"), kt, qinv_true);
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hDEtaDPhi_all4LegsThisColl"), deta, dphi);
           }
-          if (g1Sel && g2Sel) {
+          if (g1Built && g2Built) {
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hSparse_DEtaDPhi_qinv_bothPhotonsBuilt"), deta, dphi, qinv_true);
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hSparse_DEtaDPhi_kT_bothPhotonsBuilt"), deta, dphi, kt);
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hQinvVsKt_bothPhotonsBuilt"), kt, qinv_true);
