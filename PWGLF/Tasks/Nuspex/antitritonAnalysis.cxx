@@ -18,7 +18,6 @@
 #include "PWGCF/Femto3D/DataModel/PIDutils.h"
 #include "PWGCF/Femto3D/DataModel/singletrackselector.h"
 
-#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/PIDResponseITS.h"
 
 #include <CommonConstants/MathConstants.h>
@@ -226,7 +225,7 @@ struct AntitritonAnalysis {
   template <typename TrackType>
   void fillHistSet(HistSet& h, const TrackType& track, int pdg)
   {
-    const auto rapidity = static_cast<float>(RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, particleMass));
+    const auto rapidity = track.rapidity(particleMass);
     h.eta->Fill(track.eta());
     h.etaToY->Fill(track.eta(), rapidity);
     h.y->Fill(rapidity);
@@ -428,7 +427,7 @@ struct AntitritonAnalysis {
       if (!pidOk) {
         continue;
       }
-      if (std::fabs(static_cast<float>(RecoDecay::y(std::array{track.px(), track.py(), track.pz()}, particleMass))) > y) {
+      if (std::fabs(track.rapidity(particleMass)) > y) {
         continue;
       }
 
