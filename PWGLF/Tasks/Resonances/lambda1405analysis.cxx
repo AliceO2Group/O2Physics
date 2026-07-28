@@ -209,8 +209,6 @@ struct lambda1405analysis {
   int poolBins{0};
 
   // Needed for DCA propagation of bachelor tracks
-  int mRunNumber;
-  float mBz;
   o2::base::MatLayerCylSet* lut = nullptr;
 
   // Configurable axes
@@ -505,8 +503,6 @@ struct lambda1405analysis {
     rLambda1405.print();
 
     // Info for DCA propagation of bachelor tracks
-    mRunNumber = 0;
-    mBz = 0;
     ccdb->setURL(ccdbPath);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -614,10 +610,10 @@ struct lambda1405analysis {
     }
 
     double sqrtD = std::sqrt(D);
-    double P1 = (-B + sqrtD) / (2.0 * A);
-    double P2 = (-B - sqrtD) / (2.0 * A);
-    if (P2 < 0.0 && P1 < 0.0) {
-      LOG(debug) << "Recalculation of Sigma momentum failed: both solutions are negative " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz << ", P1: " << P1 << ", P2: " << P2;
+    double p1 = (-B + sqrtD) / (2.0 * A);
+    double p2 = (-B - sqrtD) / (2.0 * A);
+    if (p2 < 0.0 && p1 < 0.0) {
+      LOG(debug) << "Recalculation of Sigma momentum failed: both solutions are negative " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz << ", p1: " << p1 << ", p2: " << p2;
       return -999.f;
     }
     if (isSigmaMinus) {
@@ -627,15 +623,15 @@ struct lambda1405analysis {
     }
 
     success = true;
-    if (P2 < 0.0) {
-      return static_cast<float>(P1);
+    if (p2 < 0.0) {
+      return static_cast<float>(p1);
     }
-    if (P1 < 0.0) {
-      return static_cast<float>(P2);
+    if (p1 < 0.0) {
+      return static_cast<float>(p2);
     }
-    double p1Diff = std::abs(P1 - pMother);
-    double p2Diff = std::abs(P2 - pMother);
-    return static_cast<float>((p1Diff < p2Diff) ? P1 : P2);
+    double p1Diff = std::abs(p1 - pMother);
+    double p2Diff = std::abs(p2 - pMother);
+    return static_cast<float>((p1Diff < p2Diff) ? p1 : p2);
   }
 
   template <typename TTrack>

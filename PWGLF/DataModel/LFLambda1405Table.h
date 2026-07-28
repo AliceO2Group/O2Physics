@@ -9,11 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-///
 /// \file LFLambda1405Tables.h
 /// \brief Slim tables for Lambda(1405) candidates
-/// \author Francesco Mazzaschi <francesco.mazzaschi@cern.ch>
 ///
+/// \author Francesco Mazzaschi <francesco.mazzaschi@cern.ch>
 
 #ifndef PWGLF_DATAMODEL_LFLAMBDA1405TABLE_H_
 #define PWGLF_DATAMODEL_LFLAMBDA1405TABLE_H_
