@@ -7173,6 +7173,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (nameStr == "pairIsPr") {
+    cut->AddCut(VarManager::kIsPrPair, 0.5, 1.5);
+    return cut;
+  }
+
   // -------------------------------------------------------------------------------------------------
   //
   // Below are a list of single electron single muon and pair selection in order or optimize the trigger
