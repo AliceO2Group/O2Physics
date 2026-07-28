@@ -163,6 +163,8 @@ class HFInvMassFitter : public TNamed
   [[nodiscard]] double getReflOverSig() const { return mReflPdf != nullptr ? mReflOverSgn : 0.; }
   [[nodiscard]] int getFitStatus() const { return mFitStatus; }
   [[nodiscard]] int getCovQual() const { return mCovQual; }
+  [[nodiscard]] double getEDM() const { return mEdm; }
+  [[nodiscard]] double getMinNll() const { return mMinNll; }
   void calculateSignal(double& signal, double& signalErr) const;
   void countSignal(double& signal, double& signalErr) const;
   void calculateBackground(double& bkg, double& bkgErr) const;
@@ -274,6 +276,8 @@ class HFInvMassFitter : public TNamed
   TRandom3* mRandomGen;            /// engine for fit's initial parameters randomization
   int mFitStatus;                  /// fit result status, see https://root-forum.cern.ch/t/meaning-of-values-returned-by-roofitresult-status/16355/2
   int mCovQual;                    /// fit result covariance matrix quality, see https://root.cern.ch/doc/v620/Minuit2Minimizer_8cxx_source.html#l01121
+  double mEdm;                     /// fit quality metrics: Estimated Distance to Minimum
+  double mMinNll;                  /// fit quality metrics: minimum negative log-likelihood (NLL) value achieved at the best-fit parameter values
 
   ClassDefOverride(HFInvMassFitter, 1);
 };

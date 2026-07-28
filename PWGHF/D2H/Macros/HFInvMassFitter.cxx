@@ -156,7 +156,9 @@ HFInvMassFitter::HFInvMassFitter(TH1* histoToFit,
                                                    mRandomSeed(randomSeed),
                                                    mRandomGen(nullptr),
                                                    mFitStatus(-999),
-                                                   mCovQual(-999)
+                                                   mCovQual(-999),
+                                                   mEdm(-999.),
+                                                   mMinNll(-999.)
 {
   // standard constructor
   mHistoInvMass = histoToFit;
@@ -326,6 +328,8 @@ void HFInvMassFitter::doFit()
     fitResult->Print("v");
     mFitStatus = fitResult->status();
     mCovQual = fitResult->covQual();
+    mEdm = fitResult->edm();
+    mMinNll = fitResult->minNll();
     std::cout << "mRooNBkg->getVal() = " << mRooNBkg->getVal() << "\n";
     std::cout << "mRooNSgn->getVal() = " << mRooNSgn->getVal() << "\n";
     plotBkg(mTotalPdf);

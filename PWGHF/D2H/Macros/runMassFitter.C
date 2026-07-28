@@ -388,12 +388,14 @@ void runMassFitter(const std::string& configFileName)
   enum {
     FitResultStatus = 1,
     FitResultCovQual,
+    FitResultEdm,
+    FitResultMinNll,
     NFitResultsToSave
   };
   auto* hFitConfig = new TH2F("hFitConfig", "Fit Configurations", NConfigsToSave - 1, 0, NConfigsToSave - 1, nHistograms, sliceVarLimits.data());
   const char* hFitConfigXLabel[NConfigsToSave - 1] = {"mass min", "mass max", "rebin num", "fix sigma", "bkg func", "sgn func", "rnd seed"};
   auto* hFitResult = new TH2F("hFitResult", "Fit Result", NFitResultsToSave - 1, 0, NFitResultsToSave - 1, nHistograms, sliceVarLimits.data());
-  const char* hFitResultXLabel[NConfigsToSave - 1] = {"status", "cov qual"};
+  const char* hFitResultXLabel[NConfigsToSave - 1] = {"status", "cov qual", "edm", "minNLL"};
   for (int i = 0; i < NConfigsToSave - 1; i++) {
     hFitConfig->GetXaxis()->SetBinLabel(i + 1, hFitConfigXLabel[i]);
   }
@@ -671,6 +673,8 @@ void runMassFitter(const std::string& configFileName)
 
     hFitResult->SetBinContent(FitResultStatus, iSliceVar + 1, massFitter->getFitStatus());
     hFitResult->SetBinContent(FitResultCovQual, iSliceVar + 1, massFitter->getCovQual());
+    hFitResult->SetBinContent(FitResultEdm, iSliceVar + 1, massFitter->getEDM());
+    hFitResult->SetBinContent(FitResultMinNll, iSliceVar + 1, massFitter->getMinNll());
   }
 
   // save output histograms
