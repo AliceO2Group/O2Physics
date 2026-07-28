@@ -113,19 +113,8 @@ DECLARE_SOA_TABLE(Lambda1405Cands, "AOD", "LAMBDA1405",
                   lambda1405::NSigmaTPCPrKink, lambda1405::NSigmaTOFPrKink,
                   lambda1405::DcaKinkDauToPv,
                   lambda1405::NSigmaTPCPiDau, lambda1405::NSigmaTOFPiDau,
+                  lambda1405::ScalarProd,
                   lambda1405::Centrality, lambda1405::Occupancy, lambda1405::PoolBin);
-
-DECLARE_SOA_TABLE(Lambda1405Flow, "AOD", "LAMBDA1405FLOW",
-                  o2::soa::Index<>,
-                  lambda1405::Pt, lambda1405::Mass,
-                  lambda1405::PtSigma,
-                  lambda1405::SigmaMinusMass, lambda1405::SigmaPlusMass,
-                  lambda1405::AlphaAPSigma, lambda1405::QtAPSigma,
-                  lambda1405::NSigmaTPCPiKink, lambda1405::NSigmaTOFPiKink,
-                  lambda1405::NSigmaTPCPrKink, lambda1405::NSigmaTOFPrKink,
-                  lambda1405::DcaKinkDauToPv,
-                  lambda1405::NSigmaTPCPiDau, lambda1405::NSigmaTOFPiDau,
-                  lambda1405::ScalarProd, lambda1405::Centrality, lambda1405::PoolBin);
 
 DECLARE_SOA_TABLE(Lambda1405CandsMC, "AOD", "MCLAMBDA1405",
                   o2::soa::Index<>,

@@ -124,7 +124,6 @@ struct lambda1405candidate {
 struct lambda1405analysis {
   int lambda1405PdgCode = 102132;                     // o2-linter: disable=pdg/explicit-code
   Produces<aod::Lambda1405Cands> outputDataTable;     // Output table for Lambda(1405) candidates
-  Produces<aod::Lambda1405Flow> outputDataFlowTable;  // Output table for Lambda(1405) flow analysis
   Produces<aod::Lambda1405CandsMC> outputDataTableMC; // Output table for Lambda(1405) candidates in MC
   Produces<aod::Lambda1405SigmaEffMC> outputSigmaEffMC; // Output table for Lambda(1405) sigma efficiency in MC
 
@@ -809,7 +808,7 @@ struct lambda1405analysis {
       hSparseScalProd->Fill(sparseScalProdEntry.data());
     }
     if constexpr (FillCorrelations) {
-      std::vector<double> sparseCorrelEntry = {static_cast<double>(cand.poolBin), cand.massL1405, cand.pt(), cand.sigmaMinusMass, cand.dcaSigmaToPv, cand.kinkDcaDauToPv};
+      std::vector<double> sparseCorrelEntry = {static_cast<double>(cand.poolBin), cand.massL1405, cand.pt()};
       auto hSparseCorrel = rLambda1405.get<THnSparse>(HIST("hSparseL1405Correl"));
       sparseCorrelEntry.push_back(0.0); // Δη
       sparseCorrelEntry.push_back(0.0); // Δφ
@@ -1156,17 +1155,8 @@ struct lambda1405analysis {
                             lambda1405Cand.kinkPrNSigTpc, lambda1405Cand.kinkPrNSigTof,
                             lambda1405Cand.kinkDcaDauToPv,
                             lambda1405Cand.bachPiNSigTpc, lambda1405Cand.bachPiNSigTof,
-                            lambda1405Cand.centMult, lambda1405Cand.occupancy, lambda1405Cand.poolBin);
-          } else {
-            outputDataFlowTable(ptCand, lambda1405Cand.massL1405,
-                                lambda1405Cand.sigmaPt,
-                                lambda1405Cand.sigmaMinusMass, lambda1405Cand.sigmaPlusMass,
-                                lambda1405Cand.sigmaAlphaAP, lambda1405Cand.sigmaQtAP,
-                                lambda1405Cand.kinkPiNSigTpc, lambda1405Cand.kinkPiNSigTof,
-                                lambda1405Cand.kinkPrNSigTpc, lambda1405Cand.kinkPrNSigTof,
-                                lambda1405Cand.kinkDcaDauToPv,
-                                lambda1405Cand.bachPiNSigTpc, lambda1405Cand.bachPiNSigTof,
-                                lambda1405Cand.scalarProd, lambda1405Cand.centMult, lambda1405Cand.poolBin);
+                            lambda1405Cand.scalarProd,
+                            lambda1405Cand.centMult, lambda1405Cand.occupancy, lambda1405Cand.poolBin); // 24
           }
         }
 
