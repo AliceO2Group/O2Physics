@@ -496,9 +496,9 @@ struct McParticlePrediction {
         continue;
       }
 
-      // if (!particle.isPhysicalPrimary()) {
-      //   continue;
-      // }
+      if (!particle.isPhysicalPrimary()) {
+        continue;
+      }
 
       TParticlePDG* p = pdgDB->GetParticle(particle.pdgCode());
       if (p) {
@@ -510,27 +510,6 @@ struct McParticlePrediction {
       }
 
       if (std::abs(particle.y()) >= rapidityCut) {
-        continue;
-      }
-
-      // Check if particle has daughters (not a final state particle)
-      auto daughters = particle.daughters_as<aod::McParticles>();
-      bool isValid = false;
-
-      if (daughters.size() > 0) {
-        isValid = true;
-        for (const auto& daughter : daughters) {
-          if (!daughter.isPhysicalPrimary()) {
-            isValid = false;
-            break;
-          }
-        }
-      } else {
-        // Final state particle - check if particle itself is physical primary
-        isValid = particle.isPhysicalPrimary();
-      }
-
-      if (!isValid) {
         continue;
       }
 

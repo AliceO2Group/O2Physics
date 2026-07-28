@@ -14,7 +14,6 @@
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Utils/ElectronModule.h"
-// #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -22,9 +21,6 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
-#include <DCAFitter/DCAFitterN.h>
-#include <DCAFitter/FwdDCAFitterN.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>
 #include <DetectorsBase/MatLayerCylSet.h>
@@ -40,7 +36,6 @@
 #include <PID/PIDTOFParamService.h>
 
 #include <cmath>
-#include <cstdint>
 #include <string>
 #include <vector>
 

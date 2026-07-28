@@ -37,7 +37,8 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <TH1.h>
 #include <TRandom3.h>
 
@@ -63,7 +64,7 @@ static const std::vector<std::string> kshortSels = {"No Sel", "Mass", "Y", "Neg 
                                                     "CosPA", "TPCCR", "ITSNCls", "Lifetime", "TPC NSigma"};
 
 struct k892hadronphotonBkg {
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   ctpRateFetcher rateFetcher;
   TRandom3 rotRng{12345}; // struct member; fixed seed for reproducibility across grid jobs
 
@@ -90,6 +91,8 @@ struct k892hadronphotonBkg {
     Configurable<float> kstarMaxRap{"kstarMaxRap", 0.5f, "Max |y(K*)|"};
     Configurable<int> nBkgRot{"nBkgRot", 3, "Rotations per pair (rotational bkg)"};
     Configurable<int> rotationalCut{"rotationalCut", 10, "theta band: [pi - pi/cut, pi + pi/cut]"};
+    Configurable<float> rotationalFactor{"rotationalFactor", 1.f, "Factor to scale the angle of rotation (rotationalFactor * PI)"};
+    Configurable<bool> rotGamma{"rotGamma", false, "Flag to rotate the photon direction"};
   } kstarBkgConfig;
 
   ConfigurableAxis axisVertexMixBkg{"axisVertexMixBkg", {VARIABLE_WIDTH, -10.f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "z-vertex bins for mixing"};
@@ -385,13 +388,11 @@ struct k892hadronphotonBkg {
     if (eventSelections.maxIR >= 0 && interactionRate > eventSelections.maxIR) {
       return false;
     }
-    if (fillHists)
+    if (fillHists) {
       histos.fill(HIST("hEventSelection"), 19 /* Above max IR */);
-
-    // Fill centrality histogram after event selection
-    if (fillHists)
+      // Fill centrality histogram after event selection
       histos.fill(HIST("hEventCentrality"), centrality);
-
+    }
     return true;
   }
 
@@ -430,11 +431,11 @@ struct k892hadronphotonBkg {
         return false;
 
       histos.fill(HIST("PhotonSel/hSelectionStatistics"), 5.);
-      if ((TMath::Abs(gamma.dcapostopv()) < photonSelections.photonMinDCADauToPv) || (TMath::Abs(gamma.dcanegtopv()) < photonSelections.photonMinDCADauToPv))
+      if ((std::abs(gamma.dcapostopv()) < photonSelections.photonMinDCADauToPv) || (std::abs(gamma.dcanegtopv()) < photonSelections.photonMinDCADauToPv))
         return false;
 
       histos.fill(HIST("PhotonSel/hSelectionStatistics"), 6.);
-      if (TMath::Abs(gamma.dcaV0daughters()) > photonSelections.photonMaxDCAV0Dau)
+      if (std::abs(gamma.dcaV0daughters()) > photonSelections.photonMaxDCAV0Dau)
         return false;
 
       histos.fill(HIST("PhotonSel/hSelectionStatistics"), 7.);
@@ -459,7 +460,7 @@ struct k892hadronphotonBkg {
         return false;
 
       histos.fill(HIST("PhotonSel/hSelectionStatistics"), 12.);
-      if (TMath::Abs(gamma.alpha()) > photonSelections.photonMaxAlpha)
+      if (std::abs(gamma.alpha()) > photonSelections.photonMaxAlpha)
         return false;
 
       auto posTrackGamma = gamma.template posTrackExtra_as<dauTracks>();
@@ -494,79 +495,78 @@ struct k892hadronphotonBkg {
     if (useMLScores) {
       // if (kshort.k0ShortBDTScore() <= kshortSelections.kshortMLThreshold)
       return false;
-
-    } else {
-      // KShort basic selection criteria:
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 1.);
-      if ((TMath::Abs(kshort.mK0Short() - o2::constants::physics::MassK0Short) > kshortSelections.kshortWindow) && kshortSelections.kshortWindow > 0)
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 2.);
-      if ((kshort.yK0Short() < kshortSelections.kshortMinRapidity) || (kshort.yK0Short() > kshortSelections.kshortMaxRapidity))
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 3.);
-      if ((kshort.negativeeta() < kshortSelections.kshortDauEtaMin) || (kshort.negativeeta() > kshortSelections.kshortDauEtaMax))
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 4.);
-      if ((kshort.positiveeta() < kshortSelections.kshortDauEtaMin) || (kshort.positiveeta() > kshortSelections.kshortDauEtaMax))
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 5.);
-      if ((TMath::Abs(kshort.dcapostopv()) < kshortSelections.kshortMinDCAPosToPv) || (TMath::Abs(kshort.dcanegtopv()) < kshortSelections.kshortMinDCANegToPv))
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 6.);
-      if ((kshort.v0radius() < kshortSelections.kshortMinv0radius) || (kshort.v0radius() > kshortSelections.kshortMaxv0radius))
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 7.);
-      if ((kshort.z() < kshortSelections.kshortMinZ) || (kshort.z() > kshortSelections.kshortMaxZ))
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 8.);
-      if (TMath::Abs(kshort.dcaV0daughters()) > kshortSelections.kshortMaxDCAV0Dau)
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 9.);
-      if (kshort.qtarm() < kshortSelections.kshortArmenterosCoefficient * TMath::Abs(kshort.alpha()))
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 10.);
-      if (kshort.v0cosPA() < kshortSelections.kshortMinv0cospa)
-        return false;
-
-      auto posTrackKShort = kshort.template posTrackExtra_as<dauTracks>();
-      auto negTrackKShort = kshort.template negTrackExtra_as<dauTracks>();
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 11.);
-      if ((posTrackKShort.tpcCrossedRows() < kshortSelections.kshortMinTPCCrossedRows) || (negTrackKShort.tpcCrossedRows() < kshortSelections.kshortMinTPCCrossedRows))
-        return false;
-
-      // MinITSCls
-      bool posIsFromAfterburner = posTrackKShort.itsChi2PerNcl() < 0;
-      bool negIsFromAfterburner = negTrackKShort.itsChi2PerNcl() < 0;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 12.);
-      if (posTrackKShort.itsNCls() < kshortSelections.kshortMinITSclusters && (!kshortSelections.kshortRejectPosITSafterburner || posIsFromAfterburner))
-        return false;
-      if (negTrackKShort.itsNCls() < kshortSelections.kshortMinITSclusters && (!kshortSelections.kshortRejectNegITSafterburner || negIsFromAfterburner))
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 13.);
-      float fKShortLifeTime = kshort.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
-      if (fKShortLifeTime > kshortSelections.kshortMaxLifeTime)
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 14.);
-      // TPC PID selection on the K0S pion daughters (same convention as posTrackKShort.tpcNSigmaPi())
-      if (((TMath::Abs(posTrackKShort.tpcNSigmaPi()) > kshortSelections.kshortMaxTPCNSigmas) ||
-           (TMath::Abs(negTrackKShort.tpcNSigmaPi()) > kshortSelections.kshortMaxTPCNSigmas)))
-        return false;
-
-      histos.fill(HIST("KShortSel/hSelectionStatistics"), 15.);
     }
+
+    // KShort basic selection criteria:
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 1.);
+    if ((std::abs(kshort.mK0Short() - o2::constants::physics::MassK0Short) > kshortSelections.kshortWindow) && kshortSelections.kshortWindow > 0)
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 2.);
+    if ((kshort.yK0Short() < kshortSelections.kshortMinRapidity) || (kshort.yK0Short() > kshortSelections.kshortMaxRapidity))
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 3.);
+    if ((kshort.negativeeta() < kshortSelections.kshortDauEtaMin) || (kshort.negativeeta() > kshortSelections.kshortDauEtaMax))
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 4.);
+    if ((kshort.positiveeta() < kshortSelections.kshortDauEtaMin) || (kshort.positiveeta() > kshortSelections.kshortDauEtaMax))
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 5.);
+    if ((std::abs(kshort.dcapostopv()) < kshortSelections.kshortMinDCAPosToPv) || (std::abs(kshort.dcanegtopv()) < kshortSelections.kshortMinDCANegToPv))
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 6.);
+    if ((kshort.v0radius() < kshortSelections.kshortMinv0radius) || (kshort.v0radius() > kshortSelections.kshortMaxv0radius))
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 7.);
+    if ((kshort.z() < kshortSelections.kshortMinZ) || (kshort.z() > kshortSelections.kshortMaxZ))
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 8.);
+    if (std::abs(kshort.dcaV0daughters()) > kshortSelections.kshortMaxDCAV0Dau)
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 9.);
+    if (kshort.qtarm() < kshortSelections.kshortArmenterosCoefficient * std::abs(kshort.alpha()))
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 10.);
+    if (kshort.v0cosPA() < kshortSelections.kshortMinv0cospa)
+      return false;
+
+    auto posTrackKShort = kshort.template posTrackExtra_as<dauTracks>();
+    auto negTrackKShort = kshort.template negTrackExtra_as<dauTracks>();
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 11.);
+    if ((posTrackKShort.tpcCrossedRows() < kshortSelections.kshortMinTPCCrossedRows) || (negTrackKShort.tpcCrossedRows() < kshortSelections.kshortMinTPCCrossedRows))
+      return false;
+
+    // MinITSCls
+    bool posIsFromAfterburner = posTrackKShort.itsChi2PerNcl() < 0;
+    bool negIsFromAfterburner = negTrackKShort.itsChi2PerNcl() < 0;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 12.);
+    if (posTrackKShort.itsNCls() < kshortSelections.kshortMinITSclusters && (!kshortSelections.kshortRejectPosITSafterburner || posIsFromAfterburner))
+      return false;
+    if (negTrackKShort.itsNCls() < kshortSelections.kshortMinITSclusters && (!kshortSelections.kshortRejectNegITSafterburner || negIsFromAfterburner))
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 13.);
+    float fKShortLifeTime = kshort.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
+    if (fKShortLifeTime > kshortSelections.kshortMaxLifeTime)
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 14.);
+    // TPC PID selection on the K0S pion daughters (same convention as posTrackKShort.tpcNSigmaPi())
+    if (((std::abs(posTrackKShort.tpcNSigmaPi()) > kshortSelections.kshortMaxTPCNSigmas) ||
+         (std::abs(negTrackKShort.tpcNSigmaPi()) > kshortSelections.kshortMaxTPCNSigmas)))
+      return false;
+
+    histos.fill(HIST("KShortSel/hSelectionStatistics"), 15.);
     return true;
   }
 
@@ -592,15 +592,24 @@ struct k892hadronphotonBkg {
         ROOT::Math::PtEtaPhiMVector pGamma(photon.pt(),
                                            photon.eta(),
                                            photon.phi(),
-                                           0.0);
+                                           o2::constants::physics::MassGamma);
+
+        ROOT::Math::PtEtaPhiMVector pKShort(kshort.pt(),
+                                            kshort.eta(),
+                                            kshort.phi(),
+                                            o2::constants::physics::MassK0Short);
 
         for (int irot = 0; irot < kstarBkgConfig.nBkgRot; ++irot) {
-          float theta = rotRng.Uniform(o2::constants::math::PI - o2::constants::math::PI / kstarBkgConfig.rotationalCut,
-                                       o2::constants::math::PI + o2::constants::math::PI / kstarBkgConfig.rotationalCut);
+          float theta = rotRng.Uniform(kstarBkgConfig.rotationalFactor * o2::constants::math::PI - o2::constants::math::PI / kstarBkgConfig.rotationalCut,
+                                       kstarBkgConfig.rotationalFactor * o2::constants::math::PI + o2::constants::math::PI / kstarBkgConfig.rotationalCut);
 
           ROOT::Math::PtEtaPhiMVector kRot(kshort.pt(), kshort.eta(), kshort.phi() + theta, o2::constants::physics::MassK0Short);
+          ROOT::Math::PtEtaPhiMVector gRot(photon.pt(), photon.eta(), photon.phi() + theta, o2::constants::physics::MassGamma);
 
           auto kstar = pGamma + kRot;
+          if (kstarBkgConfig.rotGamma) {
+            kstar = gRot + pKShort;
+          }
 
           float rapidity = RecoDecay::y(std::array{static_cast<float>(kstar.Px()),
                                                    static_cast<float>(kstar.Py()),
@@ -611,6 +620,10 @@ struct k892hadronphotonBkg {
 
           // Opening angle between photon and rotated K0s (QA only, not used as a cut)
           double cosOA = pGamma.Vect().Dot(kRot.Vect()) / (pGamma.P() * kRot.P());
+          if (kstarBkgConfig.rotGamma) {
+            cosOA = gRot.Vect().Dot(pKShort.Vect()) / (gRot.P() * pKShort.P());
+          }
+
           double openAngle = std::acos(cosOA);
 
           histos.fill(HIST("KStarBkg/h2dRotKStarMassVsPt"), kstar.M(), kstar.Pt());
@@ -675,8 +688,7 @@ struct k892hadronphotonBkg {
       return;
 
     // Build the mixing binning locally: a struct member initialized from a
-    // ConfigurableAxis captures the default bins at task construction time (before
-    // the framework applies JSON overrides), silently ignoring user configuration.
+    // ConfigurableAxis captures the default bins at task construction time
     BkgBinningType bkgColBinning{{axisVertexMixBkg, axisCentralityMixBkg}, true};
 
     for (const auto& [coll1, coll2] : selfCombinations(bkgColBinning, kstarBkgConfig.nMix, -1,

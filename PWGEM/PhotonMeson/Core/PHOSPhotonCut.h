@@ -18,15 +18,13 @@
 
 #include <Framework/ASoA.h>
 
-#include <TNamed.h>
+#include <string>
 
-#include <Rtypes.h>
-
-class PHOSPhotonCut : public TNamed
+class PHOSPhotonCut
 {
  public:
   PHOSPhotonCut() = default;
-  PHOSPhotonCut(const char* name, const char* title) : TNamed(name, title) {}
+  PHOSPhotonCut(const char* name, const char* title) : name(name), title(title) {}
 
   enum class PHOSPhotonCuts : int {
     kEnergy = 0,
@@ -34,6 +32,9 @@ class PHOSPhotonCut : public TNamed
     kCPV,
     kNCuts
   };
+
+  const std::string getName() const { return name; }
+  const std::string getTitle() const { return title; }
 
   static const char* mCutNames[static_cast<int>(PHOSPhotonCuts::kNCuts)];
 
@@ -96,9 +97,9 @@ class PHOSPhotonCut : public TNamed
   void print() const;
 
  private:
+  std::string name;
+  std::string title;
   float mMinEnergy{0.1f}, mMaxEnergy{1e+10f};
-
-  ClassDef(PHOSPhotonCut, 2);
 };
 
 #endif // PWGEM_PHOTONMESON_CORE_PHOSPHOTONCUT_H_

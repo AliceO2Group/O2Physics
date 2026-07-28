@@ -42,6 +42,8 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
@@ -101,6 +103,10 @@ struct TreeWriterTpcV0 {
   Configurable<float> maxPt4dwnsmplTsalisProtons{"maxPt4dwnsmplTsalisProtons", 100., "Maximum Pt for applying downsampling factor of protons"};
   Configurable<float> maxPt4dwnsmplTsalisElectrons{"maxPt4dwnsmplTsalisElectrons", 100., "Maximum Pt for applying  downsampling factor of electrons"};
   Configurable<float> maxPt4dwnsmplTsalisKaons{"maxPt4dwnsmplTsalisKaons", 100., "Maximum Pt for applying  downsampling factor of kaons"};
+  // Configurables for output tables reservation size
+  Configurable<float> reserveV0Ratio{"reserveV0Ratio", 0.05, "Ratio of how many tracks from V0s are expected in the output table to the input V0 table size"};
+  Configurable<float> reserveCascRatio{"reserveCascRatio", 0.0025, "Ratio of how many tracks from cascades are expected in the output table to the input Cascade table size"};
+  Configurable<bool> saveReserveQaHisto{"saveReserveQaHisto", true, "Flag to save the DF-wise ratio of output table size to that of input table"};
   // Configurables for run condtion table
   Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
   Configurable<bool> checkZdc{"checkZdc", false, "set ZDC flag for PbPb"};
@@ -108,6 +114,8 @@ struct TreeWriterTpcV0 {
   Configurable<bool> requireGoodRct{"requireGoodRct", false, "require good detector flag in run condtion table"};
   // Configurable for the path of CCDB General Run Parameters LHC Interface information
   Configurable<std::string> ccdbPathGrpLhcIf{"ccdbPathGrpLhcIf", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
+
+  HistogramRegistry registry{"registry", {}};
 
   // an arbitrary value of N sigma TOF assigned by TOF task to tracks which are not matched to TOF hits
   constexpr static float NSigmaTofUnmatched{o2::aod::v0data::kNoTOFValue};
@@ -182,6 +190,11 @@ struct TreeWriterTpcV0 {
     ccdb->setFatalWhenNull(false);
 
     rctChecker.init(rctLabel, checkZdc, treatLimitedAcceptanceAsBad);
+
+    if (saveReserveQaHisto) {
+      registry.add("hV0OutputRatio", "V0 out/in ratio;V0 out/in ratio;Entries", {HistType::kTH1F, {{100, 0, reserveV0Ratio}}});
+      registry.add("hCascOutputRatio", "Casc out/in ratio;Casc out/in ratio;Entries", {HistType::kTH1F, {{100, 0, reserveCascRatio}}});
+    }
   }
 
   template <bool IsCorrectedDeDx, typename V0Casc, typename T>
@@ -422,6 +435,16 @@ struct TreeWriterTpcV0 {
                                               aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi,
                                               aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr>(myTracks);
 
+    int nV0Entries{0};
+    int nCascEntries{0};
+
+    const int64_t expectedOutputTableSize = static_cast<int64_t>(reserveV0Ratio * myV0s.size() + reserveCascRatio * myCascs.size());
+    if constexpr (ModeId == ModeWithdEdxTrkQA || ModeId == ModeStandard) {
+      rowTPCTree.reserve(expectedOutputTableSize);
+    } else {
+      rowTPCTreeWithTrkQA.reserve(expectedOutputTableSize);
+    }
+
     std::string irSource{};
     float sqrtSNN{};
     bool isFirstCollision{true};
@@ -448,11 +471,9 @@ struct TreeWriterTpcV0 {
       if constexpr (ModeId == ModeWithdEdxTrkQA || ModeId == ModeStandard) {
         bcTimeFrameId = UndefValueInt;
         bcBcInTimeFrame = UndefValueInt;
-        rowTPCTree.reserve(2 * v0s.size() + cascs.size());
       } else if constexpr (ModeId == ModeWithTrkQA) {
         bcTimeFrameId = bc.tfId();
         bcBcInTimeFrame = bc.bcInTF();
-        rowTPCTreeWithTrkQA.reserve(2 * v0s.size() + cascs.size());
       }
 
       auto getTrackQA = [&](const TrksType::iterator& track) {
@@ -488,7 +509,9 @@ struct TreeWriterTpcV0 {
             evaluateOccupancyVariables(dauTrack, occValues);
           }
           fillSkimmedV0Table<IsCorrectedDeDx, ModeId>(mother, dauTrack, trackQAInstance, existTrkQA, collision, daughter.tpcNSigma, daughter.tofNSigma, daughter.itsNSigma, daughter.tpcExpSignal, daughter.id, runnumber, daughter.dwnSmplFactor, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame, occValues, isGoodRctEvent);
+          return true;
         }
+        return false;
       };
 
       /// Loop over v0 candidates
@@ -500,8 +523,12 @@ struct TreeWriterTpcV0 {
         const auto posTrack = v0.posTrack_as<TrksType>();
         const auto negTrack = v0.negTrack_as<TrksType>();
 
-        fillDaughterTrack(v0, posTrack, v0, true);
-        fillDaughterTrack(v0, negTrack, v0, false);
+        if (fillDaughterTrack(v0, posTrack, v0, true)) {
+          ++nV0Entries;
+        }
+        if (fillDaughterTrack(v0, negTrack, v0, false)) {
+          ++nV0Entries;
+        }
       }
 
       /// Loop over cascade candidates
@@ -513,8 +540,22 @@ struct TreeWriterTpcV0 {
         const auto bachTrack = casc.bachelor_as<TrksType>();
         // Omega and antiomega
         const auto isDaughterPositive = cascId == MotherAntiOmega ? true : false;
-        fillDaughterTrack(casc, bachTrack, casc, isDaughterPositive);
+        if (fillDaughterTrack(casc, bachTrack, casc, isDaughterPositive)) {
+          ++nCascEntries;
+        }
       }
+    }
+    LOG(info) << "runV0() summary:";
+    LOG(info) << "V0 table size = " << myV0s.size();
+    LOG(info) << "Cascade table size = " << myCascs.size();
+    LOG(info) << "nV0Entries = " << nV0Entries;
+    LOG(info) << "nCascEntries = " << nCascEntries;
+    LOG(info) << "nV0Entries / V0 table size = " << static_cast<double>(nV0Entries) / myV0s.size();
+    LOG(info) << "nCascEntries / Cascade table size = " << static_cast<double>(nCascEntries) / myCascs.size();
+
+    if (saveReserveQaHisto) {
+      registry.fill(HIST("hV0OutputRatio"), static_cast<double>(nV0Entries) / myV0s.size());
+      registry.fill(HIST("hCascOutputRatio"), static_cast<double>(nCascEntries) / myCascs.size());
     }
   } /// runV0
 
@@ -637,6 +678,9 @@ struct TreeWriterTpcTof {
   Configurable<float> downsamplingTsalisProtons{"downsamplingTsalisProtons", -1., "Downsampling factor to reduce the number of protons"};
   Configurable<float> downsamplingTsalisKaons{"downsamplingTsalisKaons", -1., "Downsampling factor to reduce the number of kaons"};
   Configurable<float> downsamplingTsalisPions{"downsamplingTsalisPions", -1., "Downsampling factor to reduce the number of pions"};
+  // Configurable for output table reservation size
+  Configurable<float> reserveTrackRatio{"reserveTrackRatio", 0.003, "Ratio of how many tracks are expected in the output table to the input Tracks table size"};
+  Configurable<bool> saveReserveQaHisto{"saveReserveQaHisto", true, "Flag to save the DF-wise ratio of output table size to that of input table"};
   // Configurables for run condtion table
   Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
   Configurable<bool> checkZdc{"checkZdc", false, "set ZDC flag for PbPb"};
@@ -644,6 +688,8 @@ struct TreeWriterTpcTof {
   Configurable<bool> requireGoodRct{"requireGoodRct", false, "require good detector flag in run condtion table"};
   // Configurable for the path of CCDB General Run Parameters LHC Interface information
   Configurable<std::string> ccdbPathGrpLhcIf{"ccdbPathGrpLhcIf", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
+
+  HistogramRegistry registry{"registry", {}};
 
   struct TofTrack {
     bool isApplyHardCutOnly;
@@ -699,6 +745,10 @@ struct TreeWriterTpcTof {
     ccdb->setFatalWhenNull(false);
 
     rctChecker.init(rctLabel, checkZdc, treatLimitedAcceptanceAsBad);
+
+    if (saveReserveQaHisto) {
+      registry.add("hTrackOutputRatio", "Track out/in ratio;Track out/in ratio;Entries", {HistType::kTH1F, {{100, 0, reserveTrackRatio}}});
+    }
   }
 
   template <bool DoCorrectDeDx, int ModeId, typename T, typename C>
@@ -810,6 +860,14 @@ struct TreeWriterTpcTof {
         labelTrack2TrackQA.at(trackId) = trackQA.globalIndex();
       }
     }
+
+    const int64_t expectedOutputTableSize = static_cast<int64_t>(reserveTrackRatio * myTracks.size());
+    if constexpr (ModeId == ModeWithdEdxTrkQA || ModeId == ModeStandard) {
+      rowTPCTOFTree.reserve(expectedOutputTableSize);
+    } else {
+      rowTPCTOFTreeWithTrkQA.reserve(expectedOutputTableSize);
+    }
+
     std::string irSource{};
     float sqrtSNN{};
     bool isFirstCollision{true};
@@ -843,11 +901,9 @@ struct TreeWriterTpcTof {
       if constexpr (ModeId == ModeStandard || ModeId == ModeWithdEdxTrkQA) {
         bcTimeFrameId = UndefValueInt;
         bcBcInTimeFrame = UndefValueInt;
-        rowTPCTOFTree.reserve(tracks.size());
       } else {
         bcTimeFrameId = bc.tfId();
         bcBcInTimeFrame = bc.bcInTF();
-        rowTPCTOFTreeWithTrkQA.reserve(tracks.size());
       }
       for (auto const& trk : tracksWithITSPid) {
         if (!isTrackSelected(trk, trackSelection)) {
@@ -888,6 +944,14 @@ struct TreeWriterTpcTof {
           }
         }
       } /// Loop tracks
+    }
+    LOG(info) << "runTof() summary:";
+    LOG(info) << "Track table size = " << myTracks.size();
+    LOG(info) << "nTrackEntries = " << rowTPCTOFTree.lastIndex() + 1;
+    LOG(info) << "nTrackEntries / Track table size = " << static_cast<double>((rowTPCTOFTree.lastIndex() + 1)) / myTracks.size();
+
+    if (saveReserveQaHisto) {
+      registry.fill(HIST("hTrackOutputRatio"), static_cast<double>((rowTPCTOFTree.lastIndex() + 1)) / myTracks.size());
     }
   } /// runTof
 

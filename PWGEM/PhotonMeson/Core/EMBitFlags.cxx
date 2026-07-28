@@ -33,7 +33,7 @@ std::size_t EMBitFlags::size() const
 bool EMBitFlags::test(std::size_t i) const
 {
   assert(i < mSize);
-  return mBits[word(i)] & mask(i);
+  return static_cast<bool>(mBits[word(i)] & mask(i));
 }
 
 void EMBitFlags::set(std::size_t i)

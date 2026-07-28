@@ -107,7 +107,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   //  KFParticle
-  Configurable<bool> useXiMassConstraint{"useXiMassConstraint", true, "Use mass constraint for Xi"};
+  Configurable<bool> useXiMassConstraint{"useXiMassConstraint", true, "Use mass constraint for Xi. WARNING: Only disable if you know what you are doing!"};
   Configurable<bool> constrainXicPlusToPv{"constrainXicPlusToPv", false, "Constrain XicPlus to PV"};
   Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "Construct method of XicPlus: 0 fast mathematics without constraint of fixed daughter particle masses, 2 daughter particle masses stay fixed in construction process"};
   Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks coming from different collisions (effective only for KFParticle w/o derived data)"};
@@ -414,6 +414,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       float const cpaLambdaToXi = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
       float const cpaXYLambdaToXi = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
 
+      // calculate Lambda radius
+      float const radiusLambda = std::hypot(vertexV0[0], vertexV0[1]);
+
       // get invariant mass of Xi-pi pairs
       auto arrayMomentaXiPi0 = std::array{pVecXi, pVecPi0};
       massXiPi0 = RecoDecay::m(arrayMomentaXiPi0, std::array{MassXiMinus, MassPiPlus});
@@ -495,9 +498,10 @@ struct HfCandidateCreatorXicToXiPiPi {
                        impactParameterCasc.getY(), impactParameter0.getY(), impactParameter1.getY(),
                        std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
                        /*cascade specific columns*/
-                       trackPionFromXi.p(), pPiFromLambda, pPrFromLambda,
+                       trackPionFromXi.p(), pPiFromLambda, pPrFromLambda, trackPionFromXi.pt(),
                        cpaXi, cpaXYXi, cpaLambda, cpaXYLambda, cpaLambdaToXi, cpaXYLambdaToXi,
                        casc.mXi(), casc.mLambda(), massXiPi0, massXiPi1,
+                       radiusLambda,
                        /*DCA information*/
                        casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(),
                        casc.dcaXYCascToPV(), casc.dcaZCascToPV(),
@@ -598,6 +602,10 @@ struct HfCandidateCreatorXicToXiPiPi {
       float parPosMom[NElementsStateVector];
       std::copy(xyzpxpypz.begin(), xyzpxpypz.end(), parPosMom);
       // create KFParticle
+      // README: The Xi KFParticle in this case is constructed from the parameters stored in the LF cascade table.
+      // The LF strangenessbuilder should in this case be run WITHOUT the mass constraint on the Xi to consistently store the unconstrained parameters and invariant mass of the Xi.
+      // The mass constraint on the Xi is applied here only after the KFParticle object was created from the unconstrained parameters and covariance matrix of the Xi.
+      // WARNING: If the Xi gets already constrained in the LF strangenessbuilder, the parameters and cov matrix passed to the KFParticle.Create() function will be constrained while the mass won't be. The stored energy, mass, and momentum will not be correctly related anymore!
       KFParticle kfXi;
       float const massXi = casc.mXi();
       kfXi.Create(parPosMom, casc.kfTrackCovMat(), casc.sign(), massXi);
@@ -662,6 +670,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       float const cpaXYXi = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
       float const cpaLambdaToXi = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
       float const cpaXYLambdaToXi = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
+
+      // calculate Lambda radius
+      float const radiusLambda = std::hypot(vertexV0[0], vertexV0[1]);
 
       // get chi2 deviation of Pi0-Pi1, Pi0-Xi, Pi1-Xi
       float chi2DevPi0Pi1 = kfCharmBachelor0.GetDeviationFromParticle(kfCharmBachelor1);
@@ -779,9 +790,10 @@ struct HfCandidateCreatorXicToXiPiPi {
                        impactParameterXiXY, impactParameterPi0XY, impactParameterPi1XY,
                        errImpactParameterXiXY, errImpactParameterPi0XY, errImpactParameterPi1XY,
                        /*cascade specific columns*/
-                       trackPionFromXi.p(), pPiFromLambda, pPrFromLambda,
+                       trackPionFromXi.p(), pPiFromLambda, pPrFromLambda, trackPionFromXi.pt(),
                        cpaXi, cpaXYXi, cpaLambda, cpaXYLambda, cpaLambdaToXi, cpaXYLambdaToXi,
                        massXi, casc.mLambda(), massXiPi0, massXiPi1,
+                       radiusLambda,
                        /*DCA information*/
                        casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(),
                        casc.dcaXYCascToPV(), casc.dcaZCascToPV(),

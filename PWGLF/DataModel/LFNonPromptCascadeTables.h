@@ -464,7 +464,8 @@ DECLARE_SOA_TABLE(NPCollisionTable, "AOD", "NPCollisionTABLE",
                   NPCascadeTable::MultNTracksGlobal,
                   NPCascadeTable::MultNTracksNP,
                   NPCascadeTable::CentFT0M,
-                  NPCascadeTable::MultFT0M);
+                  NPCascadeTable::MultFT0M,
+                  NPCascadeTable::NoSameBunchPileup);
 DECLARE_SOA_INDEX_COLUMN_FULL(NPCollision, npCollision, int32_t, NPCollisionTable, "");
 DECLARE_SOA_TABLE(NPRecoChargedCand, "AOD", "NPRecoChargedCand",
                   NPCollisionId,

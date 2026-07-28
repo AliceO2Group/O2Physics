@@ -56,7 +56,7 @@
 #include <MathUtils/Utils.h>
 #include <ReconstructionDataFormats/PID.h>
 
-#include <TPDGCode.h>
+#include <TH3.h>
 
 #include <sys/types.h>
 
@@ -68,9 +68,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <iterator>
 #include <string>
-#include <string_view>
 #include <vector>
 
 using namespace o2;

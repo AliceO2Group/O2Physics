@@ -25,11 +25,8 @@
 #include <Framework/HistogramSpec.h>
 
 #include <TH2.h>
-#include <TNamed.h>
 
 #include <sys/types.h>
-
-#include <Rtypes.h>
 
 #include <cmath>
 #include <concepts>
@@ -108,11 +105,11 @@ struct TrackMatchingParams {
   float c{-2.5f};
 };
 
-class EMCPhotonCut : public TNamed
+class EMCPhotonCut
 {
  public:
   EMCPhotonCut() = default;
-  EMCPhotonCut(const char* name, const char* title) : TNamed(name, title) {}
+  EMCPhotonCut(const char* name, const char* title) : name(name), title(title) {}
 
   enum class EMCPhotonCuts : std::uint8_t {
     // cluster cut
@@ -133,7 +130,10 @@ class EMCPhotonCut : public TNamed
     kSecondary,
   };
 
-  static const char* mCutNames[static_cast<int>(EMCPhotonCuts::kNCuts)];
+  const std::string& getName() const { return name; }
+  const std::string& getTitle() const { return title; }
+
+  static std::array<std::string, static_cast<std::size_t>(EMCPhotonCut::EMCPhotonCuts::kNCuts)> mCutNames;
 
   static constexpr auto getClusterId(o2::soa::is_iterator auto const& t)
   {
@@ -253,7 +253,7 @@ class EMCPhotonCut : public TNamed
   void fillBeforeClusterHistogram(o2::soa::is_iterator auto const& cluster, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
 
-    if (mDoQA == false || fRegistry == nullptr) {
+    if (!mDoQA || fRegistry == nullptr) {
       return;
     }
 
@@ -269,7 +269,7 @@ class EMCPhotonCut : public TNamed
   void fillAfterClusterHistogram(o2::soa::is_iterator auto const& cluster, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
 
-    if (mDoQA == false || fRegistry == nullptr) {
+    if (!mDoQA || fRegistry == nullptr) {
       return;
     }
 
@@ -421,8 +421,6 @@ class EMCPhotonCut : public TNamed
         return mMinTime <= cluster.time() && cluster.time() <= mMaxTime;
 
       case EMCPhotonCuts::kTM:
-        return false;
-
       case EMCPhotonCuts::kSecondaryTM:
         return false;
 
@@ -593,7 +591,7 @@ class EMCPhotonCut : public TNamed
   // Setters
   /// \brief Set clusterizer
   /// \param clusterDefinitionString name of the clusterizer
-  void SetClusterizer(std::string clusterDefinitionString = "kV3Default");
+  void SetClusterizer(const std::string& clusterDefinitionString = "kV3Default");
 
   /// \brief Set minimum cluster energy
   /// \param min minimum cluster energy
@@ -639,7 +637,7 @@ class EMCPhotonCut : public TNamed
   /// \param c c in a + (pT + b)^c
   void SetTrackMatchingEtaParams(float a, float b, float c)
   {
-    mTrackMatchingEtaParams = {a, b, c};
+    mTrackMatchingEtaParams = {.a = a, .b = b, .c = c};
   }
 
   /// \brief Set parameters for track matching delta phi = a + (pT + b)^c
@@ -648,7 +646,7 @@ class EMCPhotonCut : public TNamed
   /// \param c c in a + (pT + b)^c
   void SetTrackMatchingPhiParams(float a, float b, float c)
   {
-    mTrackMatchingPhiParams = {a, b, c};
+    mTrackMatchingPhiParams = {.a = a, .b = b, .c = c};
   }
 
   /// \brief Set parameters for secondary track matching delta eta = a + (pT + b)^c
@@ -657,7 +655,7 @@ class EMCPhotonCut : public TNamed
   /// \param c c in a + (pT + b)^c
   void SetSecTrackMatchingEtaParams(float a, float b, float c)
   {
-    mSecTrackMatchingEtaParams = {a, b, c};
+    mSecTrackMatchingEtaParams = {.a = a, .b = b, .c = c};
   }
 
   /// \brief Set parameters for secondary track matching delta phi = a + (pT + b)^c
@@ -666,7 +664,7 @@ class EMCPhotonCut : public TNamed
   /// \param c c in a + (pT + b)^c
   void SetSecTrackMatchingPhiParams(float a, float b, float c)
   {
-    mSecTrackMatchingPhiParams = {a, b, c};
+    mSecTrackMatchingPhiParams = {.a = a, .b = b, .c = c};
   }
 
   /// \brief calculate delta eta for track matching at given track pT
@@ -701,6 +699,8 @@ class EMCPhotonCut : public TNamed
   void print() const;
 
  private:
+  std::string name;
+  std::string title;
   // EMCal cluster cuts
   int mDefinition{10};         ///< clusterizer definition
   float mMinE{0.7f};           ///< minimum energy
@@ -719,12 +719,10 @@ class EMCPhotonCut : public TNamed
   mutable uint nAccClusterPerColl{0}; ///< running number of accepted cluster per collision used for QA
   mutable int currentCollID{-1};      ///< running collision ID of clusters used for QA
 
-  TrackMatchingParams mTrackMatchingEtaParams = {-1.f, 0.f, 0.f};
-  TrackMatchingParams mTrackMatchingPhiParams = {-1.f, 0.f, 0.f};
-  TrackMatchingParams mSecTrackMatchingEtaParams = {-1.f, 0.f, 0.f};
-  TrackMatchingParams mSecTrackMatchingPhiParams = {-1.f, 0.f, 0.f};
-
-  ClassDef(EMCPhotonCut, 3);
+  TrackMatchingParams mTrackMatchingEtaParams = {.a = -1.f, .b = 0.f, .c = 0.f};
+  TrackMatchingParams mTrackMatchingPhiParams = {.a = -1.f, .b = 0.f, .c = 0.f};
+  TrackMatchingParams mSecTrackMatchingEtaParams = {.a = -1.f, .b = 0.f, .c = 0.f};
+  TrackMatchingParams mSecTrackMatchingPhiParams = {.a = -1.f, .b = 0.f, .c = 0.f};
 };
 
 #endif // PWGEM_PHOTONMESON_CORE_EMCPHOTONCUT_H_

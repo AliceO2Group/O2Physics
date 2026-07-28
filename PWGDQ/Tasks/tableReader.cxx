@@ -350,6 +350,8 @@ struct AnalysisTrackSelection {
 
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
+  int64_t reserveSize = 0;
+
   void init(o2::framework::InitContext& context)
   {
     if (context.mOptions.get<bool>("processDummy")) {
@@ -416,7 +418,8 @@ struct AnalysisTrackSelection {
       fCurrentRun = event.runNumber();
     }
 
-    trackSel.reserve(tracks.size());
+    reserveSize += tracks.size();
+    trackSel.reserve(reserveSize);
     uint32_t filterMap = 0;
     bool prefilterSelected = false;
     int iCut = 0;
@@ -477,6 +480,8 @@ struct AnalysisMuonSelection {
 
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
 
+  int64_t reserveSize = 0;
+
   void init(o2::framework::InitContext& context)
   {
     if (context.mOptions.get<bool>("processDummy")) {
@@ -516,7 +521,8 @@ struct AnalysisMuonSelection {
     VarManager::ResetValues(0, VarManager::kNMuonTrackVariables);
     VarManager::FillEvent<TEventFillMap>(event);
 
-    muonSel.reserve(muons.size());
+    reserveSize += muons.size();
+    muonSel.reserve(reserveSize);
     uint32_t filterMap = 0;
     int iCut = 0;
 
@@ -1103,6 +1109,8 @@ struct AnalysisSameEventPairing {
   std::vector<std::vector<TString>> fTrackMuonHistNames;
   std::vector<AnalysisCompositeCut> fPairCuts;
 
+  int64_t reserveSize = 0;
+
   void init(o2::framework::InitContext& context)
   {
     if (context.mOptions.get<bool>("processDummy")) {
@@ -1372,20 +1380,26 @@ struct AnalysisSameEventPairing {
     uint32_t twoTrackFilter = 0;
     uint32_t dileptonFilterMap = 0;
     uint32_t dileptonMcDecision = 0; // placeholder, copy of the dqEfficiency.cxx one
-    dielectronList.reserve(1);
-    dimuonList.reserve(1);
-    dielectronExtraList.reserve(1);
-    dielectronInfoList.reserve(1);
-    dimuonExtraList.reserve(1);
-    dileptonInfoList.reserve(1);
-    dileptonFlowList.reserve(1);
+
+    if constexpr (TPairType != VarManager::kElectronMuon) {
+      // tracks1 = tracks2
+      // since emu does not require any table in this task, reserveSize is updated for same particle only now
+      reserveSize += tracks1.size() * (tracks1.size() - 1) / 2;
+    }
+    dielectronList.reserve(reserveSize);
+    dimuonList.reserve(reserveSize);
+    dielectronExtraList.reserve(reserveSize);
+    dielectronInfoList.reserve(reserveSize);
+    dimuonExtraList.reserve(reserveSize);
+    dileptonInfoList.reserve(reserveSize);
+    dileptonFlowList.reserve(reserveSize);
     if (fConfigFlatTables.value) {
-      dielectronAllList.reserve(1);
-      dielectronMlList.reserve(1);
-      dimuonAllList.reserve(1);
+      dielectronAllList.reserve(reserveSize);
+      dielectronMlList.reserve(reserveSize);
+      dimuonAllList.reserve(reserveSize);
     }
     if (useMiniTree.fConfigMiniTree) {
-      dileptonMiniTree.reserve(1);
+      dileptonMiniTree.reserve(reserveSize);
     }
 
     bool isSelectedBDT = false;

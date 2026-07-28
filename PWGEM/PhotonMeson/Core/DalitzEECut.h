@@ -24,21 +24,19 @@
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
-#include <TNamed.h>
-
-#include <Rtypes.h>
 
 #include <algorithm>
 #include <cstdint>
 #include <functional>
 #include <set>
+#include <string>
 #include <utility>
 
-class DalitzEECut : public TNamed
+class DalitzEECut
 {
  public:
   DalitzEECut() = default;
-  DalitzEECut(const char* name, const char* title) : TNamed(name, title) {}
+  DalitzEECut(const char* name, const char* title) : name(name), title(title) {}
 
   enum class DalitzEECuts : int {
     // pair cut
@@ -63,13 +61,16 @@ class DalitzEECut : public TNamed
     kITSChi2NDF,
     kNCuts
   };
-  static const char* mCutNames[static_cast<int>(DalitzEECuts::kNCuts)];
+  // static std::array<std::string, static_cast<std::size_t>(DalitzEECuts::kNCuts)> mCutNames;
 
   enum class PIDSchemes : int {
     kUnDef = -1,
     kTOFif = 0,
     kTPConly = 1,
   };
+
+  [[nodiscard]] const std::string& getName() const { return name; }
+  [[nodiscard]] const std::string& getTitle() const { return title; }
 
   template <o2::soa::is_iterator TTrack1, o2::soa::is_iterator TTrack2>
   bool IsSelected(TTrack1 const& t1, TTrack2 const& t2, float bz) const
@@ -204,8 +205,6 @@ class DalitzEECut : public TNamed
         return PassTOFif(track);
 
       case static_cast<int>(PIDSchemes::kUnDef):
-        return true;
-
       default:
         return true;
     }
@@ -277,7 +276,7 @@ class DalitzEECut : public TNamed
   void SetPairPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetPairYRange(float minY = -1e10f, float maxY = 1e10f);
   void SetMeeRange(float min = 0.f, float max = 0.04);
-  void SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut);
+  void SetMaxPhivPairMeeDep(const std::function<float(float)>& meeDepCut);
   void SelectPhotonConversion(bool flag);
 
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
@@ -302,15 +301,17 @@ class DalitzEECut : public TNamed
   void SetTrackDca3DRange(float min, float max); // in sigma
   void SetMaxDcaXY(float maxDcaXY);              // in cm
   void SetMaxDcaZ(float maxDcaZ);                // in cm
-  void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
+  void SetMaxDcaXYPtDep(const std::function<float(float)>& ptDepCut);
   void ApplyPrefilter(bool flag);
   void ApplyPhiV(bool flag);
   void IncludeITSsa(bool flag, float maxpt);
 
   // Getters
-  bool IsPhotonConversionSelected() const { return mSelectPC; }
+  [[nodiscard]] bool IsPhotonConversionSelected() const { return mSelectPC; }
 
  private:
+  std::string name;
+  std::string title;
   static const std::pair<int8_t, std::set<uint8_t>> its_ib_any_Requirement;
   static const std::pair<int8_t, std::set<uint8_t>> its_ib_1st_Requirement;
   // pair cuts
@@ -318,8 +319,8 @@ class DalitzEECut : public TNamed
   float mMinPairPt{0.f}, mMaxPairPt{1e10f};  // range in pT
   float mMinPairY{-1e10f}, mMaxPairY{1e10f}; // range in rapidity
   float mMinPhivPair{0.f}, mMaxPhivPair{+3.2};
-  std::function<float(float)> mMaxPhivPairMeeDep{}; // max phiv as a function of mee
-  bool mSelectPC{false};                            // flag to select photon conversion used in mMaxPhivPairMeeDep
+  std::function<float(float)> mMaxPhivPairMeeDep; // max phiv as a function of mee
+  bool mSelectPC{false};                          // flag to select photon conversion used in mMaxPhivPairMeeDep
 
   // kinematic cuts
   float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};      // range in pT
@@ -337,11 +338,11 @@ class DalitzEECut : public TNamed
   bool mRequireITSibAny{true};
   bool mRequireITSib1st{false};
 
-  float mMinDca3D{0.0f};                        // min dca in 3D in units of sigma
-  float mMaxDca3D{1e+10};                       // max dca in 3D in units of sigma
-  float mMaxDcaXY{1.0f};                        // max dca in xy plane
-  float mMaxDcaZ{1.0f};                         // max dca in z direction
-  std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
+  float mMinDca3D{0.0f};                      // min dca in 3D in units of sigma
+  float mMaxDca3D{1e+10};                     // max dca in 3D in units of sigma
+  float mMaxDcaXY{1.0f};                      // max dca in xy plane
+  float mMaxDcaZ{1.0f};                       // max dca in z direction
+  std::function<float(float)> mMaxDcaXYPtDep; // max dca in xy plane as function of pT
   bool mApplyPhiV{true};
   float mMinMeanClusterSizeITS{-1e10f}, mMaxMeanClusterSizeITS{1e10f}; // <its cluster size> x cos(lmabda)
   float mMinChi2TOF{-1e10f}, mMaxChi2TOF{1e10f};                       // max tof chi2 per
@@ -353,8 +354,6 @@ class DalitzEECut : public TNamed
   float mMinTPCNsigmaEl{-1e+10}, mMaxTPCNsigmaEl{+1e+10};
   float mMinTPCNsigmaPi{0}, mMaxTPCNsigmaPi{0};
   float mMinTOFNsigmaEl{-1e+10}, mMaxTOFNsigmaEl{+1e+10};
-
-  ClassDef(DalitzEECut, 2);
 };
 
 #endif // PWGEM_PHOTONMESON_CORE_DALITZEECUT_H_

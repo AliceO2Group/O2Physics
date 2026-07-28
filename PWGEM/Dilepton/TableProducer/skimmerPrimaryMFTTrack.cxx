@@ -313,7 +313,7 @@ struct skimmerPrimaryMFTTrack {
       if (!collision.isEoI()) {
         continue;
       }
-      if (collision.swtaliastmp_raw() == 0) {
+      if (collision.triggerMask_raw() == 0) {
         continue;
       }
 

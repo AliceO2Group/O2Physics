@@ -21,12 +21,9 @@
 #include <string>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::particlecleaner
 {
-namespace particlecleaner
-{
-
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfParticleCleaner : o2::framework::ConfigurableGroup {
   std::string prefix = std::string(Prefix);
   o2::framework::Configurable<bool> activate{"activate", false, "Activate particle cleaner"};
@@ -78,6 +75,11 @@ constexpr const char PrefixOmegaCleaner2[] = "OmegaCleaner2";
 using ConfOmegaCleaner1 = ConfParticleCleaner<PrefixOmegaCleaner1>;
 using ConfOmegaCleaner2 = ConfParticleCleaner<PrefixOmegaCleaner2>;
 
+constexpr const char PrefixMcParticleCleaner1[] = "McParticleCleaner1";
+constexpr const char PrefixMcParticleCleaner2[] = "McParticleCleaner2";
+using ConfMcParticleCleaner1 = ConfParticleCleaner<PrefixMcParticleCleaner1>;
+using ConfMcParticleCleaner2 = ConfParticleCleaner<PrefixMcParticleCleaner2>;
+
 class ParticleCleaner
 {
  public:
@@ -103,12 +105,36 @@ class ParticleCleaner
     mRejectedPartonicMotherPdgCodes = confMpc.rejectPartonicMotherPdgCodes.value;
   }
 
+  /// mc + reco
   template <typename T1, typename T2, typename T3, typename T4>
   bool isClean(T1 const& particle,
                T2 const& /*mcParticles*/,
-               T3 const& /*mcMothers*/,
-               T4 const& /*mcPartonicMothers*/)
+               T3 const& mcMothers,
+               T4 const& mcPartonicMothers)
   {
+    if (!mActivate) {
+      return true;
+    }
+
+    // No MC particle at all → no mother/partonic-mother info is reachable either,
+    // since that lookup now goes through the mc particle row.
+    if (!particle.has_fMcParticle()) {
+      return !mRejectParticleWithoutMcParticle && mRequiredPdgCodes.empty() &&
+             !mRejectParticleWithoutMcMother && mRequiredMotherPdgCodes.empty() &&
+             !mRejectParticleWithoutMcPartonicMother && mRequiredPartonicMotherPdgCodes.empty();
+    }
+
+    auto mcParticle = particle.template fMcParticle_as<T2>();
+    return this->isClean(mcParticle, mcMothers, mcPartonicMothers);
+  }
+
+  // mc only
+  template <typename T1, typename T2, typename T3>
+  bool isClean(T1 const& mcParticle,
+               T2 const& /*mcMothers*/,
+               T3 const& /*mcPartonicMothers*/)
+  {
+
     if (!mActivate) {
       return true;
     }
@@ -123,40 +149,32 @@ class ParticleCleaner
     bool hasPartonicMotherWithRejectedPdgCode = false;
 
     // MC particle
-    if (!particle.has_fMcParticle()) {
-      if (mRejectParticleWithoutMcParticle || !mRequiredPdgCodes.empty()) {
-        return false;
-      }
-    } else {
-      auto mcParticle = particle.template fMcParticle_as<T2>();
-
-      if (!mRequiredPdgCodes.empty()) {
-        hasRequiredPdgCode = false;
-        for (int const& pdgCode : mRequiredPdgCodes) {
-          if (pdgCode == mcParticle.pdgCode()) {
-            hasRequiredPdgCode = true;
-            break;
-          }
-        }
-      }
-
-      if (!mRejectedPdgCodes.empty()) {
-        for (int const& pdgCode : mRejectedPdgCodes) {
-          if (pdgCode == mcParticle.pdgCode()) {
-            hasRejectedPdgCode = true;
-            break;
-          }
+    if (!mRequiredPdgCodes.empty()) {
+      hasRequiredPdgCode = false;
+      for (int const& pdgCode : mRequiredPdgCodes) {
+        if (pdgCode == mcParticle.pdgCode()) {
+          hasRequiredPdgCode = true;
+          break;
         }
       }
     }
 
-    // MC mother
-    if (!particle.has_fMcMother()) {
+    if (!mRejectedPdgCodes.empty()) {
+      for (int const& pdgCode : mRejectedPdgCodes) {
+        if (pdgCode == mcParticle.pdgCode()) {
+          hasRejectedPdgCode = true;
+          break;
+        }
+      }
+    }
+
+    // MC mother — looked up via mcParticle (T2 must be Join<FMcParticles, FMcMotherLabels>)
+    if (!mcParticle.has_fMcMother()) {
       if (mRejectParticleWithoutMcMother || !mRequiredMotherPdgCodes.empty()) {
         return false;
       }
     } else {
-      auto mother = particle.template fMcMother_as<T3>();
+      auto mother = mcParticle.template fMcMother_as<T2>();
 
       if (!mRequiredMotherPdgCodes.empty()) {
         hasMotherWithRequiredPdgCode = false;
@@ -178,14 +196,14 @@ class ParticleCleaner
       }
     }
 
-    // MC partonic mother
-    if (!particle.has_fMcPartMoth()) {
+    // MC partonic mother — same idea, via mcParticle
+    if (!mcParticle.has_fMcPartMoth()) {
       if (mRejectParticleWithoutMcPartonicMother ||
           !mRequiredPartonicMotherPdgCodes.empty()) {
         return false;
       }
     } else {
-      auto partonicMother = particle.template fMcPartMoth_as<T4>();
+      auto partonicMother = mcParticle.template fMcPartMoth_as<T3>();
 
       if (!mRequiredPartonicMotherPdgCodes.empty()) {
         hasPartonicMotherWithRequiredPdgCode = false;
@@ -214,18 +232,17 @@ class ParticleCleaner
 
  private:
   bool mActivate = false;
-  bool mRejectParticleWithoutMcParticle = true;
-  bool mRejectParticleWithoutMcMother = true;
-  bool mRejectParticleWithoutMcPartonicMother = true;
-  std::vector<int> mRequiredPdgCodes{};
-  std::vector<int> mRejectedPdgCodes{};
-  std::vector<int> mRequiredMotherPdgCodes{};
-  std::vector<int> mRejectedMotherPdgCodes{};
-  std::vector<int> mRequiredPartonicMotherPdgCodes{};
-  std::vector<int> mRejectedPartonicMotherPdgCodes{};
+  bool mRejectParticleWithoutMcParticle = false;
+  bool mRejectParticleWithoutMcMother = false;
+  bool mRejectParticleWithoutMcPartonicMother = false;
+  std::vector<int> mRequiredPdgCodes;
+  std::vector<int> mRejectedPdgCodes;
+  std::vector<int> mRequiredMotherPdgCodes;
+  std::vector<int> mRejectedMotherPdgCodes;
+  std::vector<int> mRequiredPartonicMotherPdgCodes;
+  std::vector<int> mRejectedPartonicMotherPdgCodes;
 };
 
-} // namespace particlecleaner
-} // namespace o2::analysis::femto
+} // namespace o2::analysis::femto::particlecleaner
 
 #endif // PWGCF_FEMTO_CORE_PARTICLECLEANER_H_

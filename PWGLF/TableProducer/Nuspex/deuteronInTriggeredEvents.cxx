@@ -11,7 +11,7 @@
 ///
 /// \file deuteronInTriggeredEvents.cxx
 ///
-/// \brief (Anti-)nuclei spectra analysis task in jet-triggered events
+/// \brief (Anti-)nuclei spectra analysis task in MB and triggered events
 /// \author Cristian Moscatelli (cristian.moscatelli@cern.ch)
 ///
 /// Based on PWGLF/TableProducer/Nuspex/nucleiSpectra.cxx
@@ -59,6 +59,7 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <MathUtils/BetheBlochAleph.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/PID.h>
@@ -81,7 +82,6 @@
 #include <fastjet/PseudoJet.hh>
 #include <fmt/format.h>
 
-#include <GPUROOTCartesianFwd.h>
 #include <Rtypes.h>
 
 #include <algorithm>
@@ -246,11 +246,6 @@ enum evGenSel : uint8_t {
   kGenIsJetTriggered = 1 << 1,
   kGenHasRecoEv = 1 << 2
 };
-
-enum triggerListName {
-  fChJetLowPt = 0,
-  fChJetHighPt = 1
-};
 } // namespace nuclei
 
 struct DeuteronInTriggeredEvents {
@@ -280,7 +275,6 @@ struct DeuteronInTriggeredEvents {
   Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", false, "If true, divide tpcInnerParam by the electric charge"};
 
   struct : o2::framework::ConfigurableGroup {
-    std::string prefix{"cfgTrackCut"};
     Configurable<LabeledArray<double>> dcaMax{"dcaMax", {nuclei::DCAcutDefault[0], 5, 2, nuclei::names, nuclei::nDCAConfigName}, "Max DCAxy and DCAz for light nuclei"};
     Configurable<float> etaMax{"etaMax", 0.8f, "Max Eta for tracks"};
     Configurable<int> itsNClusMin{"itsNClusMin", 5, "Minimum number of ITS clusters"};
@@ -312,6 +306,7 @@ struct DeuteronInTriggeredEvents {
 
   Configurable<double> cfgNsigmaTPCcutDCAhists{"cfgNsigmaTPCcutDCAhists", 3., "TPC nsigma cut for DCA hists"};
   Configurable<double> cfgDeltaTOFmassCutDCAhists{"cfgDeltaTOFmassCutDCAhists", 0.2, "Delta TOF mass cut for DCA hists"};
+  Configurable<double> cfgNsigmaTPCcutTOFhists{"cfgNsigmaTPCcutTOFhists", 3., "TPC nsigma cut for TOF analysis"};
   ConfigurableAxis cfgDCAxyBinsProtons{"cfgDCAxyBinsProtons", {1500, -1.5f, 1.5f}, "DCAxy binning for Protons"};
   ConfigurableAxis cfgDCAxyBinsDeuterons{"cfgDCAxyBinsDeuterons", {1500, -1.5f, 1.5f}, "DCAxy binning for Deuterons"};
   ConfigurableAxis cfgDCAxyBinsTritons{"cfgDCAxyBinsTritons", {1500, -1.5f, 1.5f}, "DCAxy binning for Tritons"};
@@ -335,7 +330,8 @@ struct DeuteronInTriggeredEvents {
   // Configurable for working with skimmed data
   Configurable<bool> cfgApplyMCEvSel{"cfgApplyMCEvSel", false, "If true, apply jet-trigger selection on gen events"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
-  Configurable<int> cfgTriggerList{"cfgTriggerList", 0, "0 : Low jet-pT thr, 1 : High jet-pT thr"};
+  Configurable<std::string> cfgTriggerList{"cfgTriggerList", "fH2", "Trigger List"};
+  Configurable<bool> cfgSelectTrgEv{"cfgSelectTrgEv", false, "If true, select events with active trigger list"};
 
   // Configurable for jet identification
   Configurable<double> cfgRJet{"cfgRJet", 0.6, "R_jet"};
@@ -365,7 +361,7 @@ struct DeuteronInTriggeredEvents {
     if (!particle.has_daughters())
       return -1.f;
 
-    float mothVtx[3]{particle.vx(), particle.vy(), particle.vz()};
+    const float mothVtx[3]{particle.vx(), particle.vy(), particle.vz()};
     float dauVtx[3]{0.f, 0.f, 0.f};
     auto daughters = particle.daughters_as<aod::McParticles>();
     for (const auto& dau : daughters) {
@@ -441,7 +437,7 @@ struct DeuteronInTriggeredEvents {
 
     if (cfgSkimmedProcessing) {
       bool isTriggered = zorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting
-      if (!isTriggered)
+      if (!isTriggered && cfgSelectTrgEv)
         return false;
     }
 
@@ -456,8 +452,7 @@ struct DeuteronInTriggeredEvents {
       return;
     }
     if (cfgSkimmedProcessing) {
-      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), (cfgTriggerList.value == nuclei::fChJetLowPt) ? "fJetChLowPt" : (cfgTriggerList.value == nuclei::fChJetHighPt) ? "fJetChHighPt"
-                                                                                                                                                                                  : throw std::runtime_error("Invalid TriggerList value"));
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfgTriggerList);
       zorro.populateHistRegistry(spectra, bc.runNumber());
     }
     auto timestamp = bc.timestamp();
@@ -576,20 +571,17 @@ struct DeuteronInTriggeredEvents {
   }
 
   template <typename Ttrks>
-  bool isJetTriggered(Ttrks const& tracks, nuclei::triggerListName triggerCondition)
+  bool isJetTriggered(Ttrks const& tracks)
   {
     // Defining trigger condition
     double jetPtThreshold(0.0);
 
-    switch (triggerCondition) {
-      case nuclei::fChJetLowPt:
-        jetPtThreshold = 30.0;
-        break;
-      case nuclei::fChJetHighPt:
-        jetPtThreshold = 55.0;
-        break;
-      default:
-        return false; // Non-valid trigger
+    if (cfgTriggerList.value == "fChJetLowPt") {
+      jetPtThreshold = 30.0;
+    } else if (cfgTriggerList.value == "fChJetHighPt") {
+      jetPtThreshold = 55.0;
+    } else {
+      return false;
     }
 
     // Loop over tracks
@@ -635,20 +627,17 @@ struct DeuteronInTriggeredEvents {
   }
 
   template <typename McParts>
-  bool isMCJetTriggered(McParts const& McParticles, aod::McParticles const& particlesMC, nuclei::triggerListName triggerCondition)
+  bool isMCJetTriggered(McParts const& McParticles, aod::McParticles const& particlesMC)
   {
     // Defining trigger condition
     double jetPtThreshold(0.0);
 
-    switch (triggerCondition) {
-      case nuclei::fChJetLowPt:
-        jetPtThreshold = 30.0;
-        break;
-      case nuclei::fChJetHighPt:
-        jetPtThreshold = 55.0;
-        break;
-      default:
-        return false; // Non-valid trigger
+    if (cfgTriggerList.value == "fChJetLowPt") {
+      jetPtThreshold = 30.0;
+    } else if (cfgTriggerList.value == "fChJetHighPt") {
+      jetPtThreshold = 55.0;
+    } else {
+      return false;
     }
 
     std::vector<fastjet::PseudoJet> fjParticles;
@@ -883,7 +872,7 @@ struct DeuteronInTriggeredEvents {
                   nuclei::hNsigma[iPID][iS][iC]->Fill(fvector.pt(), nSigma[iPID][iS]);
                   nuclei::hNsigmaEta[iPID][iS][iC]->Fill(fvector.eta(), fvector.pt(), nSigma[iPID][iS]);
                 }
-                if (iPID) {
+                if (iPID && std::abs(nSigma[iPID][iS]) < cfgNsigmaTPCcutTOFhists) {
                   nuclei::hTOFmass[iS][iC]->Fill(fvector.pt(), tofMasses[iS]);
                   nuclei::hTOFmassEta[iS][iC]->Fill(fvector.eta(), fvector.pt(), tofMasses[iS]);
                 }
@@ -959,9 +948,6 @@ struct DeuteronInTriggeredEvents {
     std::vector<bool> goodCollisions(mcCollisions.size(), false);
     std::vector<uint8_t> eventMask(mcCollisions.size(), 0);
 
-    // Jet trigger condition
-    auto trigger = static_cast<nuclei::triggerListName>(cfgTriggerList.value);
-
     for (const auto& c : mcCollisions) {
 
       spectra.fill(HIST("hGenVtxZ"), c.posZ());
@@ -972,7 +958,7 @@ struct DeuteronInTriggeredEvents {
       if (o2::pwglf::isINELgt0mc(mcParticlesPerColl, pdgDB))
         mask |= nuclei::kGenIsINELgt0;
 
-      if (isMCJetTriggered(mcParticlesPerColl, particlesMC, trigger))
+      if (isMCJetTriggered(mcParticlesPerColl, particlesMC))
         mask |= nuclei::kGenIsJetTriggered;
     }
 
@@ -992,7 +978,7 @@ struct DeuteronInTriggeredEvents {
       const auto& slicedTracks = tracks.sliceBy(tracksPerCollisions, collision.globalIndex());
 
       if (cfgApplyMCEvSel) {
-        if (!isJetTriggered(slicedTracks, trigger))
+        if (!isJetTriggered(slicedTracks))
           continue;
       }
 
@@ -1056,7 +1042,7 @@ struct DeuteronInTriggeredEvents {
             }
           }
         }
-      } else if (particle.has_mothers()) {
+      } else if (particle.getProcess() == TMCProcess::kPDecay) {
         c.flags |= kIsSecondaryFromWeakDecay;
         for (const auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
           motherPdgCode = motherparticle.pdgCode();

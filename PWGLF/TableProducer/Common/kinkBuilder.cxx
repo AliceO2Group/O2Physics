@@ -48,6 +48,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -96,7 +97,10 @@ std::shared_ptr<TH2> hDCAMothToPV;
 std::shared_ptr<TH2> hDCADaugToPV;
 std::shared_ptr<TH2> hMothDecRad2;
 std::shared_ptr<TH2> hGenCandidates;
-std::shared_ptr<TH2> hRecCandidates;
+std::shared_ptr<TH2> hGenDecayRadius;
+std::shared_ptr<TH2> hRecCandidatesRecoPt;
+std::shared_ptr<TH2> hRecCandidatesGenPt;
+std::shared_ptr<TH2> hRecCandidatesDeltaPt;
 std::array<std::shared_ptr<TH2>, NMatchedDecays> hGenPtKinkAngle;
 std::array<std::shared_ptr<TH2>, NMatchedDecays> hRecPtKinkAngle;
 } // namespace
@@ -362,21 +366,27 @@ struct kinkBuilder {
 
     if (doprocessMc || doprocessMcWCent) {
       if (skipBkgCands) {
-        hRecCandidates = qaRegistry.add<TH2>("hRecCandidates", "hRecCandidates;Counts;", {HistType::kTH2F, {{NMatchedDecays, -0.5, static_cast<float>(NMatchedDecays) - 0.5}, absPtAxis}});
-        hRecCandidates->GetXaxis()->SetBinLabel(1, "#Sigma^{-} #rightarrow n#pi^{-}");
-        hRecCandidates->GetXaxis()->SetBinLabel(2, "#Sigma^{+} #rightarrow n#pi^{+}");
-        hRecCandidates->GetXaxis()->SetBinLabel(3, "#Sigma^{+} #rightarrow p#pi^{0}");
+        hRecCandidatesRecoPt = qaRegistry.add<TH2>("hRecCandidatesRecoPt", "hRecCandidates;Counts;Reco #it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{NMatchedDecays, -0.5, static_cast<float>(NMatchedDecays) - 0.5}, absPtAxis}});
+        hRecCandidatesRecoPt->GetXaxis()->SetBinLabel(1, "#Sigma^{-} #rightarrow n#pi^{-}");
+        hRecCandidatesRecoPt->GetXaxis()->SetBinLabel(2, "#Sigma^{+} #rightarrow n#pi^{+}");
+        hRecCandidatesRecoPt->GetXaxis()->SetBinLabel(3, "#Sigma^{+} #rightarrow p#pi^{0}");
+        hRecCandidatesGenPt = qaRegistry.add<TH2>("hRecCandidatesGenPt", "hRecCandidatesGenPt;Counts;Gen #it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{NMatchedDecays, -0.5, static_cast<float>(NMatchedDecays) - 0.5}, absPtAxis}});
+        hRecCandidatesGenPt->GetXaxis()->SetBinLabel(1, "#Sigma^{-} #rightarrow n#pi^{-}");
+        hRecCandidatesGenPt->GetXaxis()->SetBinLabel(2, "#Sigma^{+} #rightarrow n#pi^{+}");
+        hRecCandidatesGenPt->GetXaxis()->SetBinLabel(3, "#Sigma^{+} #rightarrow p#pi^{0}");
+        hRecCandidatesDeltaPt = qaRegistry.add<TH2>("hRecCandidatesDeltaPt", "hRecCandidatesDeltaPt;Counts;#Delta p_{T} (GeV/c)", {HistType::kTH2F, {{400, -0.5, 0.5}, absPtAxis}});
       }
-      hGenCandidates = qaRegistry.add<TH2>("hGenCandidates", "hGenCandidates;Counts;", {HistType::kTH2F, {{NMatchedDecays, -0.5, static_cast<float>(NMatchedDecays) - 0.5}, absPtAxis}});
+      hGenDecayRadius = qaRegistry.add<TH2>("hGenDecayRadius", "hGenDecayRadius;Radius (cm); #it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{300, 0, 30}, absPtAxis}});
+      hGenCandidates = qaRegistry.add<TH2>("hGenCandidates", "hGenCandidates;Counts;Gen #it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{NMatchedDecays, -0.5, static_cast<float>(NMatchedDecays) - 0.5}, absPtAxis}});
       hGenCandidates->GetXaxis()->SetBinLabel(1, "#Sigma^{-} #rightarrow n#pi^{-}");
       hGenCandidates->GetXaxis()->SetBinLabel(2, "#Sigma^{+} #rightarrow n#pi^{+}");
       hGenCandidates->GetXaxis()->SetBinLabel(3, "#Sigma^{+} #rightarrow p#pi^{0}");
-      hRecPtKinkAngle[SigmaMinusToPiMinusNeutron] = qaRegistry.add<TH2>("hRecPtKinkAngleSigmaMinusToPiMinusNeutron", "Rec Pt vs KinkAngle #Sigma^{-} #rightarrow #pi^{-}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
-      hRecPtKinkAngle[SigmaPlusToPiPlusNeutron] = qaRegistry.add<TH2>("hRecPtKinkAngleSigmaPlusToPiPlusNeutron", "Rec Pt vs KinkAngle #Sigma^{+} #rightarrow #pi^{+}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
-      hRecPtKinkAngle[SigmaPlusToProtonPi0] = qaRegistry.add<TH2>("hRecPtKinkAngleSigmaPlusToProtonPi0", "Rec Pt vs KinkAngle #Sigma^{+} #rightarrow p#pi^{0};Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
-      hGenPtKinkAngle[SigmaMinusToPiMinusNeutron] = qaRegistry.add<TH2>("hGenPtKinkAngleSigmaMinusToPiMinusNeutron", "Gen Pt vs KinkAngle #Sigma^{-} #rightarrow #pi^{-}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
-      hGenPtKinkAngle[SigmaPlusToPiPlusNeutron] = qaRegistry.add<TH2>("hGenPtKinkAngleSigmaPlusToPiPlusNeutron", "Gen Pt vs KinkAngle #Sigma^{+} #rightarrow #pi^{+}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
-      hGenPtKinkAngle[SigmaPlusToProtonPi0] = qaRegistry.add<TH2>("hGenPtKinkAngleSigmaPlusToProtonPi0", "Gen Pt vs KinkAngle #Sigma^{+} #rightarrow p#pi^{0};Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
+      hRecPtKinkAngle[SigmaMinusToPiMinusNeutron] = qaRegistry.add<TH2>("hRecPtKinkAngleSigmaMinusToPi", "Rec Pt vs KinkAngle #Sigma^{-} #rightarrow #pi^{-}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
+      hRecPtKinkAngle[SigmaPlusToPiPlusNeutron] = qaRegistry.add<TH2>("hRecPtKinkAngleSigmaPlusToPi", "Rec Pt vs KinkAngle #Sigma^{+} #rightarrow #pi^{+}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
+      hRecPtKinkAngle[SigmaPlusToProtonPi0] = qaRegistry.add<TH2>("hRecPtKinkAngleSigmaPlusToPr", "Rec Pt vs KinkAngle #Sigma^{+} #rightarrow p#pi^{0};Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
+      hGenPtKinkAngle[SigmaMinusToPiMinusNeutron] = qaRegistry.add<TH2>("hGenPtKinkAngleSigmaMinusToPi", "Gen Pt vs KinkAngle #Sigma^{-} #rightarrow #pi^{-}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
+      hGenPtKinkAngle[SigmaPlusToPiPlusNeutron] = qaRegistry.add<TH2>("hGenPtKinkAngleSigmaPlusToPi", "Gen Pt vs KinkAngle #Sigma^{+} #rightarrow #pi^{+}n;Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
+      hGenPtKinkAngle[SigmaPlusToProtonPi0] = qaRegistry.add<TH2>("hGenPtKinkAngleSigmaPlusToPr", "Gen Pt vs KinkAngle #Sigma^{+} #rightarrow p#pi^{0};Counts;", {HistType::kTH2F, {absPtAxis, kinkAngleAxis}});
     }
   }
 
@@ -402,12 +412,14 @@ struct kinkBuilder {
       return false;
     hSelMotherQA->Fill(4.f, isPositive);
 
-    h2ItsClsMothBeforeSel->Fill(candidate.itsNCls(), candidate.itsNClsInnerBarrel());
-    if (candidate.itsNCls() >= nItsTotalLayers - 1)
+    int itsTotCls = static_cast<int>(candidate.itsNCls());
+    int itsIBCls = static_cast<int>(candidate.itsNClsInnerBarrel());
+    h2ItsClsMothBeforeSel->Fill(itsTotCls, itsIBCls);
+    if (itsTotCls >= nItsTotalLayers - 1)
       return false;
     hSelMotherQA->Fill(5.f, isPositive);
 
-    if (candidate.itsNClsInnerBarrel() != nItsInnerBarrelLayers)
+    if (itsIBCls != nItsInnerBarrelLayers)
       return false;
     hSelMotherQA->Fill(6.f, isPositive);
 
@@ -440,8 +452,10 @@ struct kinkBuilder {
       return false;
     hSelDaugQA->Fill(3.f, isPositive);
 
-    h2ItsClsDaugBeforeSel->Fill(candidate.itsNCls(), candidate.itsNClsInnerBarrel());
-    if (candidate.itsNClsInnerBarrel() != 0)
+    int itsTotCls = static_cast<int>(candidate.itsNCls());
+    int itsIBCls = static_cast<int>(candidate.itsNClsInnerBarrel());
+    h2ItsClsDaugBeforeSel->Fill(itsTotCls, itsIBCls);
+    if (itsIBCls != 0)
       return false;
     hSelDaugQA->Fill(4.f, isPositive);
 
@@ -649,7 +663,7 @@ struct kinkBuilder {
     LOG(info) << "Task initialized for run " << mRunNumber << " with magnetic field " << mBz << " kZG";
   }
 
-  template <typename TColls, typename TTracks, typename TAmbiTracks>
+  template <bool KeepOnlyKinks, typename TColls, typename TTracks, typename TAmbiTracks>
   void buildSvPool(const TColls& collisions, const TTracks& tracks, const TAmbiTracks& ambiguousTracks, const aod::BCs& bcs)
   {
     svCreator.clearPools();
@@ -660,8 +674,36 @@ struct kinkBuilder {
         continue;
       }
 
-      bool isDaug = selectDaugTrack(track);
-      bool isMoth = selectMothTrack(track);
+      bool canBeMoth = true;
+      bool canBeDaug = true;
+
+      if constexpr (KeepOnlyKinks) {
+        if (!track.has_mcParticle()) {
+          LOG(debug) << "Track has no MC particle";
+          continue;
+        }
+        auto genPart = track.template mcParticle_as<aod::McParticles>();
+
+        canBeMoth = std::find(
+                      mothMatchPdgCodes.begin(),
+                      mothMatchPdgCodes.end(),
+                      std::abs(genPart.pdgCode())) != mothMatchPdgCodes.end();
+
+        canBeDaug = false;
+        for (const auto& mother : genPart.template mothers_as<aod::McParticles>()) {
+          if (std::find(
+                mothMatchPdgCodes.begin(),
+                mothMatchPdgCodes.end(),
+                std::abs(mother.pdgCode())) != mothMatchPdgCodes.end()) {
+            canBeDaug = true;
+            break;
+          }
+        }
+      }
+
+      bool isMoth = canBeMoth && selectMothTrack(track);
+      bool isDaug = canBeDaug && selectDaugTrack(track);
+
       if (!isDaug && !isMoth) {
         continue;
       }
@@ -675,7 +717,7 @@ struct kinkBuilder {
   {
     kinkCandidates.clear();
 
-    buildSvPool(collisions, tracks, ambiTracks, bcs);
+    buildSvPool<false>(collisions, tracks, ambiTracks, bcs);
     auto& kinkPool = svCreator.getSVCandPool(collisions, !unlikeSignBkg);
     bool isAccepted = false;
     for (const auto& svCand : kinkPool) {
@@ -762,7 +804,12 @@ struct kinkBuilder {
   {
     kinkCandidates.clear();
 
-    buildSvPool(mcRecoCollisions, tracksMc, ambiTracksMc, bcs);
+    if (skipBkgCands) {
+      buildSvPool<true>(mcRecoCollisions, tracksMc, ambiTracksMc, bcs);
+    } else {
+      buildSvPool<false>(mcRecoCollisions, tracksMc, ambiTracksMc, bcs);
+    }
+
     auto& kinkPool = svCreator.getSVCandPool(mcRecoCollisions, !unlikeSignBkg);
     for (const auto& svCand : kinkPool) {
       // Perform matching of the kink candidate
@@ -787,7 +834,9 @@ struct kinkBuilder {
         if (decayChannel < 0) {
           continue; // Skip candidates that do not match the decay channels of interest
         }
-        hRecCandidates->Fill(decayChannel, trackMoth.pt()); // Decay channel match bin
+        hRecCandidatesRecoPt->Fill(decayChannel, trackMoth.pt());                                              // Decay channel match bin
+        hRecCandidatesGenPt->Fill(decayChannel, genMothPart.pt());                                             // Decay channel match bin
+        hRecCandidatesDeltaPt->Fill((trackMoth.pt() - genMothPart.pt()) / genMothPart.pt(), genMothPart.pt()); // Decay channel match bin
       }
       bool isAccepted = false;
       buildKinkCand(svCand, tracksMc, isAccepted, mcRecoCollisions);
@@ -831,6 +880,7 @@ struct kinkBuilder {
         auto daughI = mcParticles.rawIteratorAt(arrDaughIdxs[iProng]);
         if (std::abs(daughI.pdgCode()) == PDG_t::kPiPlus || std::abs(daughI.pdgCode()) == PDG_t::kProton) {
           hGenPtKinkAngle[decayChannel]->Fill(mcPart.pt(), std::abs(mcPart.phi() - daughI.phi()) * radToDeg);
+          hGenDecayRadius->Fill(std::hypot(daughI.vx(), daughI.vy()), mcPart.pt());
         }
       }
     }

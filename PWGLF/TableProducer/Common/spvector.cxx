@@ -20,11 +20,8 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -37,6 +34,7 @@
 
 #include <TF1.h>
 #include <TH2.h>
+#include <TH3.h>
 #include <THn.h>
 #include <TMath.h>
 #include <TMathBase.h>
@@ -62,8 +60,6 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 using namespace o2::aod::rctsel;
 
-using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
-
 struct spvector {
 
   Produces<aod::SPCalibrationTables> spcalibrationtable;
@@ -76,7 +72,6 @@ struct spvector {
 
   // Enable access to the CCDB for the offset and correction constants and save them in dedicated variables.
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::ccdb::CcdbApi ccdbApi;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
@@ -120,6 +115,7 @@ struct spvector {
     Configurable<float> hfinebinTime{"hfinebinTime", 120, "higher bin value in Time fine histograms"};
   } configbins;
 
+  Configurable<bool> useoldrecentering{"useoldrecentering", true, "flag to perform old vs new recentering"};
   Configurable<bool> useShift{"useShift", false, "shift histograms"};
   Configurable<bool> ispolarization{"ispolarization", false, "Flag to check polarization"};
   Configurable<bool> followpub{"followpub", true, "flag to use alphaZDC"};
@@ -127,10 +123,13 @@ struct spvector {
   Configurable<bool> useCallibvertex{"useCallibvertex", false, "use calibration for vxy"};
   Configurable<bool> coarse1{"coarse1", false, "RE1"};
   Configurable<bool> fine1{"fine1", false, "REfine1"};
+  Configurable<bool> finetime1{"finetime1", false, "REfinetime1"};
   Configurable<bool> coarse2{"coarse2", false, "RE2"};
   Configurable<bool> fine2{"fine2", false, "REfine2"};
+  Configurable<bool> finetime2{"finetime2", false, "REfinetime2"};
   Configurable<bool> coarse3{"coarse3", false, "RE3"};
   Configurable<bool> fine3{"fine3", false, "REfine3"};
+  Configurable<bool> finetime3{"finetime3", false, "REfinetime3"};
   Configurable<bool> coarse4{"coarse4", false, "RE4"};
   Configurable<bool> fine4{"fine4", false, "REfine4"};
   Configurable<bool> coarse5{"coarse5", false, "RE5"};
@@ -139,6 +138,7 @@ struct spvector {
   Configurable<bool> fine6{"fine6", false, "REfine6"};
   Configurable<bool> useRecentereSp{"useRecentereSp", false, "use Recentering with Sparse or THn"};
   Configurable<bool> useRecenterefineSp{"useRecenterefineSp", false, "use fine Recentering with THn"};
+  Configurable<bool> useTimeRecentering{"useTimeRecentering", false, "Use residual time recentering"};
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/p/prottay/My/Object/NewPbPbpass4_10092024/gaincallib", "Path to gain calibration"};
   Configurable<std::string> ConfGainPathvxy{"ConfGainPathvxy", "Users/p/prottay/My/Object/swapcoords/PbPbpass4_20112024/recentervert", "Path to gain calibration for vxy"};
   Configurable<std::string> ConfRecentereSp{"ConfRecentereSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for recentere"};
@@ -173,30 +173,81 @@ struct spvector {
   Configurable<std::string> ConfRecenterevzSp6{"ConfRecenterevzSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vz recentere6"};
   Configurable<std::string> ConfShiftC{"ConfShiftC", "Users/p/prottay/My/Object/Testinglocaltree/shiftcallib2", "Path to shift C"};
   Configurable<std::string> ConfShiftA{"ConfShiftA", "Users/p/prottay/My/Object/Testinglocaltree/shiftcallib2", "Path to shift A"};
-  Configurable<bool> useTimeRecentering{"useTimeRecentering", false, "Use residual time recentering"};
-  Configurable<std::string> confRecentereTimeSp{"confRecentereTimeSp", "Users/p/prottay/My/Object/GCwithoutcfactorgoodVztimedep/From676541/TestDDlocal/2024PbPbpass3_23062026/recenterlast2", "Path to time recentering map"};
+  Configurable<std::string> confRecentereTimeSp1{"confRecentereTimeSp1", "Users/p/prottay/My/Object/GCwithoutcfactorgoodVztimedep/From676541/TestDDlocal/2024PbPbpass3_23062026/recenterlast2", "Path to time recentering map 1"};
+  Configurable<std::string> confRecentereTimeSp2{"confRecentereTimeSp2", "Users/p/prottay/My/Object/GCwithoutcfactorgoodVztimedep/From676541/TestDDlocal/2024PbPbpass3_23062026/recenterlast2", "Path to time recentering map 2"};
+  Configurable<std::string> confRecentereTimeSp3{"confRecentereTimeSp3", "Users/p/prottay/My/Object/GCwithoutcfactorgoodVztimedep/From676541/TestDDlocal/2024PbPbpass3_23062026/recenterlast3", "Path to time recentering map 3"};
 
-  // Event selection cuts - Alex
-  /*
-  TF1* fMultPVCutLow = nullptr;
-  TF1* fMultPVCutHigh = nullptr;
-  TF1* fMultCutLow = nullptr;
-  TF1* fMultCutHigh = nullptr;
-  TF1* fMultMultPVCut = nullptr;
-  */
-  /*
-  template <typename TCollision>
-  bool eventSelected(TCollision collision, const double& centrality)
-  {
-     auto multNTracksPV = collision.multNTracksPV();
-     if (multNTracksPV < fMultPVCutLow->Eval(centrality))
-       return 0;
-     if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
-       return 0;
+  struct : ConfigurableGroup {
+    // Five recentering stages. Each stage is applied in the strict order:
+    // cent -> (cent,Vx) -> (cent,Vy) -> (cent,Vz).
+    Configurable<bool> finecent1{"finecent1", false, "Apply fine centrality recentering, stage 1"};
+    Configurable<bool> finecent2{"finecent2", false, "Apply fine centrality recentering, stage 2"};
+    Configurable<bool> finecent3{"finecent3", false, "Apply fine centrality recentering, stage 3"};
+    Configurable<bool> finecent4{"finecent4", false, "Apply fine centrality recentering, stage 4"};
+    Configurable<bool> finecent5{"finecent5", false, "Apply fine centrality recentering, stage 5"};
+    Configurable<bool> finecent6{"finecent6", false, "Apply fine centrality recentering, stage 6"};
 
-    return 1;
-  }
-  */
+    Configurable<bool> finecentvx1{"finecentvx1", false, "Apply fine (cent,Vx) recentering, stage 1"};
+    Configurable<bool> finecentvx2{"finecentvx2", false, "Apply fine (cent,Vx) recentering, stage 2"};
+    Configurable<bool> finecentvx3{"finecentvx3", false, "Apply fine (cent,Vx) recentering, stage 3"};
+    Configurable<bool> finecentvx4{"finecentvx4", false, "Apply fine (cent,Vx) recentering, stage 4"};
+    Configurable<bool> finecentvx5{"finecentvx5", false, "Apply fine (cent,Vx) recentering, stage 5"};
+    Configurable<bool> finecentvx6{"finecentvx6", false, "Apply fine (cent,Vx) recentering, stage 6"};
+
+    Configurable<bool> finecentvy1{"finecentvy1", false, "Apply fine (cent,Vy) recentering, stage 1"};
+    Configurable<bool> finecentvy2{"finecentvy2", false, "Apply fine (cent,Vy) recentering, stage 2"};
+    Configurable<bool> finecentvy3{"finecentvy3", false, "Apply fine (cent,Vy) recentering, stage 3"};
+    Configurable<bool> finecentvy4{"finecentvy4", false, "Apply fine (cent,Vy) recentering, stage 4"};
+    Configurable<bool> finecentvy5{"finecentvy5", false, "Apply fine (cent,Vy) recentering, stage 5"};
+    Configurable<bool> finecentvy6{"finecentvy6", false, "Apply fine (cent,Vy) recentering, stage 6"};
+
+    Configurable<bool> finecentvz1{"finecentvz1", false, "Apply fine (cent,Vz) recentering, stage 1"};
+    Configurable<bool> finecentvz2{"finecentvz2", false, "Apply fine (cent,Vz) recentering, stage 2"};
+    Configurable<bool> finecentvz3{"finecentvz3", false, "Apply fine (cent,Vz) recentering, stage 3"};
+    Configurable<bool> finecentvz4{"finecentvz4", false, "Apply fine (cent,Vz) recentering, stage 4"};
+    Configurable<bool> finecentvz5{"finecentvz5", false, "Apply fine (cent,Vz) recentering, stage 5"};
+    Configurable<bool> finecentvz6{"finecentvz6", false, "Apply fine (cent,Vz) recentering, cycle 6"};
+
+    Configurable<bool> finevztime1{"finevztime1", false, "Apply fine (Vz,time) recentering, cycle 1"};
+    Configurable<bool> finevztime2{"finevztime2", false, "Apply fine (Vz,time) recentering, cycle 2"};
+    Configurable<bool> finevztime3{"finevztime3", false, "Apply fine (Vz,time) recentering, cycle 3"};
+    Configurable<bool> finevztime4{"finevztime4", false, "Apply fine (Vz,time) recentering, cycle 4"};
+    Configurable<bool> finevztime5{"finevztime5", false, "Apply fine (Vz,time) recentering, cycle 5"};
+
+    Configurable<bool> useRecenterefinecentSp{"useRecenterefinecentSp", false, "use finecent Recentering with THn"};
+    Configurable<bool> useRecenterefinecentvxvyvzSp{"useRecenterefinecentvxvyvzSp", false, "use finecentvxvyvz Recentering with THn"};
+    Configurable<bool> useRecenterefinevztimeSp{"useRecenterefinevztimeSp", false, "use fine (Vz,time) recentering with TH3F"};
+
+    Configurable<std::string> confRecentereCentSp{"confRecentereCentSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for cent recentering"};
+    Configurable<std::string> confRecentereCentSp2{"confRecentereCentSp2", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for cent recentering 2"};
+    Configurable<std::string> confRecentereCentSp3{"confRecentereCentSp3", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for cent recentering 3"};
+    Configurable<std::string> confRecentereCentSp4{"confRecentereCentSp4", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for cent recentering 4"};
+    Configurable<std::string> confRecentereCentSp5{"confRecentereCentSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for cent recentering 5"};
+    Configurable<std::string> confRecentereCentSp6{"confRecentereCentSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for cent recentering 6"};
+    Configurable<std::string> confRecentereCentVxSp{"confRecentereCentVxSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvx recentering"};
+    Configurable<std::string> confRecentereCentVySp{"confRecentereCentVySp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvy recentering"};
+    Configurable<std::string> confRecentereCentVzSp{"confRecentereCentVzSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvz recentering"};
+    Configurable<std::string> confRecentereCentVxSp2{"confRecentereCentVxSp2", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvx2 recentering"};
+    Configurable<std::string> confRecentereCentVySp2{"confRecentereCentVySp2", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvy2 recentering"};
+    Configurable<std::string> confRecentereCentVzSp2{"confRecentereCentVzSp2", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvz2 recentering"};
+    Configurable<std::string> confRecentereCentVxSp3{"confRecentereCentVxSp3", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvx3 recentering"};
+    Configurable<std::string> confRecentereCentVySp3{"confRecentereCentVySp3", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvy3 recentering"};
+    Configurable<std::string> confRecentereCentVzSp3{"confRecentereCentVzSp3", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvz3 recentering"};
+    Configurable<std::string> confRecentereCentVxSp4{"confRecentereCentVxSp4", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvx4 recentering"};
+    Configurable<std::string> confRecentereCentVySp4{"confRecentereCentVySp4", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvy4 recentering"};
+    Configurable<std::string> confRecentereCentVzSp4{"confRecentereCentVzSp4", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvz4 recentering"};
+    Configurable<std::string> confRecentereCentVxSp5{"confRecentereCentVxSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvx5 recentering"};
+    Configurable<std::string> confRecentereCentVySp5{"confRecentereCentVySp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvy5 recentering"};
+    Configurable<std::string> confRecentereCentVzSp5{"confRecentereCentVzSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvz5 recentering"};
+    Configurable<std::string> confRecentereCentVxSp6{"confRecentereCentVxSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvx6 recentering"};
+    Configurable<std::string> confRecentereCentVySp6{"confRecentereCentVySp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvy6 recentering"};
+    Configurable<std::string> confRecentereCentVzSp6{"confRecentereCentVzSp6", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn path for centvz6 recentering"};
+    Configurable<std::string> confRecentereVzTimeSp{"confRecentereVzTimeSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "TH3F path for (Vz,time) recentering, cycle 1"};
+    Configurable<std::string> confRecentereVzTimeSp2{"confRecentereVzTimeSp2", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "TH3F path for (Vz,time) recentering, cycle 2"};
+    Configurable<std::string> confRecentereVzTimeSp3{"confRecentereVzTimeSp3", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "TH3F path for (Vz,time) recentering, cycle 3"};
+    Configurable<std::string> confRecentereVzTimeSp4{"confRecentereVzTimeSp4", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "TH3F path for (Vz,time) recentering, cycle 4"};
+    Configurable<std::string> confRecentereVzTimeSp5{"confRecentereVzTimeSp5", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "TH3F path for (Vz,time) recentering, cycle 5"};
+  } confignewpro;
 
   struct : ConfigurableGroup {
     Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
@@ -267,6 +318,150 @@ struct spvector {
       histos.add("htimeQyZDCA", "htimeQyZDCA", kTH2F, {{timefineAxis}, {qxZDCAxis}});
       histos.add("htimeQxZDCC", "htimeQxZDCC", kTH2F, {{timefineAxis}, {qxZDCAxis}});
       histos.add("htimeQyZDCC", "htimeQyZDCC", kTH2F, {{timefineAxis}, {qxZDCAxis}});
+
+      histos.add("pQxZDCAvsCentVzAfter",
+                 "<Q_{x}^{ZNA}> after recentering;"
+                 "centrality (%);V_{z} (cm);<Q_{x}^{ZNA}>",
+                 kTProfile2D,
+                 {centfineAxis, vzfineAxis});
+
+      histos.add("pQyZDCAvsCentVzAfter",
+                 "<Q_{y}^{ZNA}> after recentering;"
+                 "centrality (%);V_{z} (cm);<Q_{y}^{ZNA}>",
+                 kTProfile2D,
+                 {centfineAxis, vzfineAxis});
+
+      histos.add("pQxZDCCvsCentVzAfter",
+                 "<Q_{x}^{ZNC}> after recentering;"
+                 "centrality (%);V_{z} (cm);<Q_{x}^{ZNC}>",
+                 kTProfile2D,
+                 {centfineAxis, vzfineAxis});
+
+      histos.add("pQyZDCCvsCentVzAfter",
+                 "<Q_{y}^{ZNC}> after recentering;"
+                 "centrality (%);V_{z} (cm);<Q_{y}^{ZNC}>",
+                 kTProfile2D,
+                 {centfineAxis, vzfineAxis});
+
+      histos.add("pQxZDCAvsCentVyAfter",
+                 "<Q_{x}^{ZNA}> after recentering;"
+                 "centrality (%);V_{y} (cm);<Q_{x}^{ZNA}>",
+                 kTProfile2D,
+                 {centfineAxis, vyfineAxis});
+
+      histos.add("pQyZDCAvsCentVyAfter",
+                 "<Q_{y}^{ZNA}> after recentering;"
+                 "centrality (%);V_{y} (cm);<Q_{y}^{ZNA}>",
+                 kTProfile2D,
+                 {centfineAxis, vyfineAxis});
+
+      histos.add("pQxZDCCvsCentVyAfter",
+                 "<Q_{x}^{ZNC}> after recentering;"
+                 "centrality (%);V_{y} (cm);<Q_{x}^{ZNC}>",
+                 kTProfile2D,
+                 {centfineAxis, vyfineAxis});
+
+      histos.add("pQyZDCCvsCentVyAfter",
+                 "<Q_{y}^{ZNC}> after recentering;"
+                 "centrality (%);V_{y} (cm);<Q_{y}^{ZNC}>",
+                 kTProfile2D,
+                 {centfineAxis, vyfineAxis});
+
+      histos.add("pQxZDCAvsCentVxAfter",
+                 "<Q_{x}^{ZNA}> after recentering;"
+                 "centrality (%);V_{x} (cm);<Q_{x}^{ZNA}>",
+                 kTProfile2D,
+                 {centfineAxis, vxfineAxis});
+
+      histos.add("pQyZDCAvsCentVxAfter",
+                 "<Q_{y}^{ZNA}> after recentering;"
+                 "centrality (%);V_{x} (cm);<Q_{y}^{ZNA}>",
+                 kTProfile2D,
+                 {centfineAxis, vxfineAxis});
+
+      histos.add("pQxZDCCvsCentVxAfter",
+                 "<Q_{x}^{ZNC}> after recentering;"
+                 "centrality (%);V_{x} (cm);<Q_{x}^{ZNC}>",
+                 kTProfile2D,
+                 {centfineAxis, vxfineAxis});
+
+      histos.add("pQyZDCCvsCentVxAfter",
+                 "<Q_{y}^{ZNC}> after recentering;"
+                 "centrality (%);V_{x} (cm);<Q_{y}^{ZNC}>",
+                 kTProfile2D,
+                 {centfineAxis, vxfineAxis});
+
+      histos.add("pQxZDCAvsVyVxAfter",
+                 "<Q_{x}^{ZNA}> after recentering;"
+                 "V_{y};V_{x} (cm);<Q_{x}^{ZNA}>",
+                 kTProfile2D,
+                 {vyfineAxis, vxfineAxis});
+
+      histos.add("pQyZDCAvsVyVxAfter",
+                 "<Q_{y}^{ZNA}> after recentering;"
+                 "V_{y};V_{x} (cm);<Q_{y}^{ZNA}>",
+                 kTProfile2D,
+                 {vyfineAxis, vxfineAxis});
+
+      histos.add("pQxZDCCvsVyVxAfter",
+                 "<Q_{x}^{ZNC}> after recentering;"
+                 "V_{y};V_{x} (cm);<Q_{x}^{ZNC}>",
+                 kTProfile2D,
+                 {vyfineAxis, vxfineAxis});
+
+      histos.add("pQyZDCCvsVyVxAfter",
+                 "<Q_{y}^{ZNC}> after recentering;"
+                 "V_{y};V_{x} (cm);<Q_{y}^{ZNC}>",
+                 kTProfile2D,
+                 {vyfineAxis, vxfineAxis});
+
+      histos.add("pQxZDCAvsCentTimeAfter",
+                 "<Q_{x}^{ZNA}> after recentering;"
+                 "centrality (%);Time (min);<Q_{x}^{ZNA}>",
+                 kTProfile2D,
+                 {centfineAxis, timefineAxis});
+
+      histos.add("pQyZDCAvsCentTimeAfter",
+                 "<Q_{y}^{ZNA}> after recentering;"
+                 "centrality (%);Time (min);<Q_{y}^{ZNA}>",
+                 kTProfile2D,
+                 {centfineAxis, timefineAxis});
+
+      histos.add("pQxZDCCvsCentTimeAfter",
+                 "<Q_{x}^{ZNC}> after recentering;"
+                 "centrality (%);Time (min);<Q_{x}^{ZNC}>",
+                 kTProfile2D,
+                 {centfineAxis, timefineAxis});
+
+      histos.add("pQyZDCCvsCentTimeAfter",
+                 "<Q_{y}^{ZNC}> after recentering;"
+                 "centrality (%);Time (min);<Q_{y}^{ZNC}>",
+                 kTProfile2D,
+                 {centfineAxis, timefineAxis});
+
+      histos.add("pQxZDCAvsVzTimeAfter",
+                 "<Q_{x}^{ZNA}> after recentering;"
+                 "vz (cm);Time (min);<Q_{x}^{ZNA}>",
+                 kTProfile2D,
+                 {vzfineAxis, timefineAxis});
+
+      histos.add("pQyZDCAvsVzTimeAfter",
+                 "<Q_{y}^{ZNA}> after recentering;"
+                 "vz (cm);Time (min);<Q_{y}^{ZNA}>",
+                 kTProfile2D,
+                 {vzfineAxis, timefineAxis});
+
+      histos.add("pQxZDCCvsVzTimeAfter",
+                 "<Q_{x}^{ZNC}> after recentering;"
+                 "vz (cm);Time (min);<Q_{x}^{ZNC}>",
+                 kTProfile2D,
+                 {vzfineAxis, timefineAxis});
+
+      histos.add("pQyZDCCvsVzTimeAfter",
+                 "<Q_{y}^{ZNC}> after recentering;"
+                 "vz (cm);Time (min);<Q_{y}^{ZNC}>",
+                 kTProfile2D,
+                 {vzfineAxis, timefineAxis});
     }
 
     histos.add("PsiZDCC", "PsiZDCC", kTH2F, {centfineAxis, phiAxis});
@@ -283,21 +478,7 @@ struct spvector {
     histos.add("hpQyZDCAvstime", "hpQyZDCAvstime", kTProfile, {{timefineAxis}});
     histos.add("hpQyZDCCvstime", "hpQyZDCCvstime", kTProfile, {{timefineAxis}});
 
-    // Event selection cut additional - Alex
-    /*
-    fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
-    fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
-    fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
-    fMultPVCutHigh->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
-    fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x)", 0, 100);
-    fMultCutLow->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
-    fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x)", 0, 100);
-    fMultCutHigh->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
-    fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
-    fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
-    */
     ccdb->setURL(cfgCcdbParam.cfgURL);
-    ccdbApi.init("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
@@ -305,18 +486,140 @@ struct spvector {
 
   int currentRunNumber = -999;
   int lastRunNumber = -999;
-  TH2D* gainprofile;
-  TProfile* gainprofilevxy;
+  TH2D* gainprofile = nullptr;
+  TProfile* gainprofilevxy = nullptr;
   std::array<THnF*, 6> hrecentereSpA;     // Array of 6 histograms
   std::array<TH2F*, 6> hrecenterecentSpA; // Array of 5 histograms
   std::array<TH2F*, 6> hrecenterevxSpA;   // Array of 5 histograms
   std::array<TH2F*, 6> hrecenterevySpA;   // Array of 5 histograms
   std::array<TH2F*, 6> hrecenterevzSpA;   // Array of 5 histograms
-  TProfile3D* shiftprofileA;
-  TProfile3D* shiftprofileC;
-  TH2F* hrecentereTimeSp = nullptr;
+  TProfile3D* shiftprofileA = nullptr;
+  TProfile3D* shiftprofileC = nullptr;
+  TH2F* hrecentereTimeSp1 = nullptr;
+  TH2F* hrecentereTimeSp2 = nullptr;
+  TH2F* hrecentereTimeSp3 = nullptr;
+  // One payload for each of the five iterations.
+  std::array<TH3F*, 6> hrecenterecentvxSpA{};
+  std::array<TH3F*, 6> hrecenterecentvySpA{};
+  std::array<TH3F*, 6> hrecenterecentvzSpA{};
+  std::array<TH3F*, 5> hrecenterevztimeSpA{};
 
-  Bool_t Correctcoarse(const THnF* hrecentereSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
+  bool CorrectfineCent(TH2F* hrecenterecentSp,
+                       auto centrality,
+                       auto& qxZDCA,
+                       auto& qyZDCA,
+                       auto& qxZDCC,
+                       auto& qyZDCC)
+  {
+    if (!hrecenterecentSp) {
+      return false;
+    }
+
+    const double meanxAcent = hrecenterecentSp->GetBinContent(
+      hrecenterecentSp->FindBin(centrality + 0.00001, 0.5));
+    const double meanyAcent = hrecenterecentSp->GetBinContent(
+      hrecenterecentSp->FindBin(centrality + 0.00001, 1.5));
+    const double meanxCcent = hrecenterecentSp->GetBinContent(
+      hrecenterecentSp->FindBin(centrality + 0.00001, 2.5));
+    const double meanyCcent = hrecenterecentSp->GetBinContent(
+      hrecenterecentSp->FindBin(centrality + 0.00001, 3.5));
+
+    qxZDCA -= meanxAcent;
+    qyZDCA -= meanyAcent;
+    qxZDCC -= meanxCcent;
+    qyZDCC -= meanyCcent;
+
+    return true;
+  }
+
+  bool CorrectfineCentVx(TH3F* hrecenterecentvxSp,
+                         auto centrality,
+                         auto vx,
+                         auto& qxZDCA,
+                         auto& qyZDCA,
+                         auto& qxZDCC,
+                         auto& qyZDCC)
+  {
+    if (!hrecenterecentvxSp) {
+      return false;
+    }
+
+    const double meanxAcentvx = hrecenterecentvxSp->GetBinContent(
+      hrecenterecentvxSp->FindBin(centrality + 0.00001, vx + 0.00001, 0.5));
+    const double meanyAcentvx = hrecenterecentvxSp->GetBinContent(
+      hrecenterecentvxSp->FindBin(centrality + 0.00001, vx + 0.00001, 1.5));
+    const double meanxCcentvx = hrecenterecentvxSp->GetBinContent(
+      hrecenterecentvxSp->FindBin(centrality + 0.00001, vx + 0.00001, 2.5));
+    const double meanyCcentvx = hrecenterecentvxSp->GetBinContent(
+      hrecenterecentvxSp->FindBin(centrality + 0.00001, vx + 0.00001, 3.5));
+
+    qxZDCA -= meanxAcentvx;
+    qyZDCA -= meanyAcentvx;
+    qxZDCC -= meanxCcentvx;
+    qyZDCC -= meanyCcentvx;
+
+    return true;
+  }
+
+  bool CorrectfineCentVy(TH3F* hrecenterecentvySp,
+                         auto centrality,
+                         auto vy,
+                         auto& qxZDCA,
+                         auto& qyZDCA,
+                         auto& qxZDCC,
+                         auto& qyZDCC)
+  {
+    if (!hrecenterecentvySp) {
+      return false;
+    }
+
+    const double meanxAcentvy = hrecenterecentvySp->GetBinContent(
+      hrecenterecentvySp->FindBin(centrality + 0.00001, vy + 0.00001, 0.5));
+    const double meanyAcentvy = hrecenterecentvySp->GetBinContent(
+      hrecenterecentvySp->FindBin(centrality + 0.00001, vy + 0.00001, 1.5));
+    const double meanxCcentvy = hrecenterecentvySp->GetBinContent(
+      hrecenterecentvySp->FindBin(centrality + 0.00001, vy + 0.00001, 2.5));
+    const double meanyCcentvy = hrecenterecentvySp->GetBinContent(
+      hrecenterecentvySp->FindBin(centrality + 0.00001, vy + 0.00001, 3.5));
+
+    qxZDCA -= meanxAcentvy;
+    qyZDCA -= meanyAcentvy;
+    qxZDCC -= meanxCcentvy;
+    qyZDCC -= meanyCcentvy;
+
+    return true;
+  }
+
+  bool CorrectfineCentVz(TH3F* hrecenterecentvzSp,
+                         auto centrality,
+                         auto vz,
+                         auto& qxZDCA,
+                         auto& qyZDCA,
+                         auto& qxZDCC,
+                         auto& qyZDCC)
+  {
+    if (!hrecenterecentvzSp) {
+      return false;
+    }
+
+    const double meanxAcentvz = hrecenterecentvzSp->GetBinContent(
+      hrecenterecentvzSp->FindBin(centrality + 0.00001, vz + 0.00001, 0.5));
+    const double meanyAcentvz = hrecenterecentvzSp->GetBinContent(
+      hrecenterecentvzSp->FindBin(centrality + 0.00001, vz + 0.00001, 1.5));
+    const double meanxCcentvz = hrecenterecentvzSp->GetBinContent(
+      hrecenterecentvzSp->FindBin(centrality + 0.00001, vz + 0.00001, 2.5));
+    const double meanyCcentvz = hrecenterecentvzSp->GetBinContent(
+      hrecenterecentvzSp->FindBin(centrality + 0.00001, vz + 0.00001, 3.5));
+
+    qxZDCA -= meanxAcentvz;
+    qyZDCA -= meanyAcentvz;
+    qxZDCC -= meanxCcentvz;
+    qyZDCC -= meanyCcentvz;
+
+    return true;
+  }
+
+  bool Correctcoarse(const THnF* hrecentereSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
   {
 
     int binCoords[5];
@@ -360,7 +663,7 @@ struct spvector {
     return kTRUE;
   }
 
-  Bool_t Correctfine(TH2F* hrecenterecentSp, TH2F* hrecenterevxSp, TH2F* hrecenterevySp, TH2F* hrecenterevzSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
+  bool Correctfine(TH2F* hrecenterecentSp, TH2F* hrecenterevxSp, TH2F* hrecenterevySp, TH2F* hrecenterevzSp, auto centrality, auto vx, auto vy, auto vz, auto& qxZDCA, auto& qyZDCA, auto& qxZDCC, auto& qyZDCC)
   {
 
     if (!hrecenterecentSp || !hrecenterevxSp || !hrecenterevySp || !hrecenterevzSp) {
@@ -420,19 +723,50 @@ struct spvector {
     return true;
   }
 
-  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected, aod::CentFT0Cs>;
-  using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>;
-  Preslice<aod::Zdcs> zdcPerCollision = aod::collision::bcId;
-
-  void process(MyCollisions::iterator const& collision, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0s*/, BCsRun3 const& bcs, aod::Zdcs const&, AllTrackCandidates const& tracks)
+  bool CorrectfineVzTime(TH3F* hrecenterevstimeSp,
+                         auto vz,
+                         auto timeMin,
+                         auto& qxZDCA,
+                         auto& qyZDCA,
+                         auto& qxZDCC,
+                         auto& qyZDCC)
   {
-
-    if (usemem) {
-      for (const auto& track : tracks) {
-        histos.fill(HIST("htpcnsigmapi"), track.tpcNSigmaPi());
-      }
+    if (!hrecenterevstimeSp) {
+      return false;
     }
 
+    // Payload axes:
+    //   X = Vz
+    //   Y = time from run start
+    //   Z = component
+    // component channels:
+    //   0.5 = Qx ZNA
+    //   1.5 = Qy ZNA
+    //   2.5 = Qx ZNC
+    //   3.5 = Qy ZNC
+    const double meanxAvstime = hrecenterevstimeSp->GetBinContent(
+      hrecenterevstimeSp->FindBin(vz + 0.00001, timeMin + 0.00001, 0.5));
+    const double meanyAvstime = hrecenterevstimeSp->GetBinContent(
+      hrecenterevstimeSp->FindBin(vz + 0.00001, timeMin + 0.00001, 1.5));
+    const double meanxCvstime = hrecenterevstimeSp->GetBinContent(
+      hrecenterevstimeSp->FindBin(vz + 0.00001, timeMin + 0.00001, 2.5));
+    const double meanyCvstime = hrecenterevstimeSp->GetBinContent(
+      hrecenterevstimeSp->FindBin(vz + 0.00001, timeMin + 0.00001, 3.5));
+
+    qxZDCA -= meanxAvstime;
+    qyZDCA -= meanyAvstime;
+    qxZDCC -= meanxCvstime;
+    qyZDCC -= meanyCvstime;
+
+    return true;
+  }
+
+  using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
+  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected, aod::CentFT0Cs>;
+  Preslice<aod::Zdcs> zdcPerCollision = aod::collision::bcId;
+
+  void process(MyCollisions::iterator const& collision, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0s*/, BCsRun3 const& bcs, aod::Zdcs const&)
+  {
     histos.fill(HIST("hEvtSelInfo"), 0.5);
     auto centrality = collision.centFT0C();
     bool triggerevent = false;
@@ -471,7 +805,8 @@ struct spvector {
     // Store first timestamp of run to calculate relative time
     static std::unordered_map<int, uint64_t> runStartTime;
     if (runStartTime.find(currentRunNumber) == runStartTime.end()) {
-      runStartTime[currentRunNumber] = timestampzdc;
+      // runStartTime[currentRunNumber] = timestampzdc;
+      runStartTime.try_emplace(currentRunNumber, timestampzdc);
     }
 
     double timeMin = (timestampzdc - runStartTime[currentRunNumber]) / 60000.0; // ms -> minutes
@@ -630,128 +965,445 @@ struct spvector {
         vy = vy - gainprofilevxy->GetBinContent(2);
       }
 
-      Bool_t res = 0;
-      Bool_t resfine = 0;
-      Int_t check = 1;
+      bool res = false;
+      bool resfine = false;
+      int check = 1;
 
-      if (coarse1) {
-        if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
-          hrecentereSpA[0] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp.value, bc.timestamp());
+      if (useoldrecentering) {
+        if (coarse1) {
+          if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
+            hrecentereSpA[0] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp.value, bc.timestamp());
+          }
+          res = Correctcoarse(hrecentereSpA[0], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
         }
-        res = Correctcoarse(hrecentereSpA[0], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
-      }
 
-      if (fine1) {
+        if (fine1) {
 
-        if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
-          hrecenterecentSpA[0] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp.value, bc.timestamp());
-          hrecenterevxSpA[0] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp.value, bc.timestamp());
-          hrecenterevySpA[0] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp.value, bc.timestamp());
-          hrecenterevzSpA[0] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp.value, bc.timestamp());
+          if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
+            hrecenterecentSpA[0] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp.value, bc.timestamp());
+            hrecenterevxSpA[0] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp.value, bc.timestamp());
+            hrecenterevySpA[0] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp.value, bc.timestamp());
+            hrecenterevzSpA[0] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp.value, bc.timestamp());
+          }
+          resfine = Correctfine(hrecenterecentSpA[0], hrecenterevxSpA[0], hrecenterevySpA[0], hrecenterevzSpA[0], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
         }
-        resfine = Correctfine(hrecenterecentSpA[0], hrecenterevxSpA[0], hrecenterevySpA[0], hrecenterevzSpA[0], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
-      }
 
-      if (coarse2) {
-        if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
-          hrecentereSpA[1] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp2.value, bc.timestamp());
+        if (finetime1 && (currentRunNumber != lastRunNumber)) {
+          hrecentereTimeSp1 = ccdb->getForTimeStamp<TH2F>(confRecentereTimeSp1.value, bc.timestamp());
         }
-        res = Correctcoarse(hrecentereSpA[1], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
-      }
-
-      if (fine2) {
-        if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
-          hrecenterecentSpA[1] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp2.value, bc.timestamp());
-          hrecenterevxSpA[1] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp2.value, bc.timestamp());
-          hrecenterevySpA[1] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp2.value, bc.timestamp());
-          hrecenterevzSpA[1] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp2.value, bc.timestamp());
+        bool restime = false;
+        if (useTimeRecentering) {
+          restime = Correcttime(hrecentereTimeSp1, timeMin, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
         }
-        resfine = Correctfine(hrecenterecentSpA[1], hrecenterevxSpA[1], hrecenterevySpA[1], hrecenterevzSpA[1], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
-      }
 
-      if (coarse3) {
-        if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
-          hrecentereSpA[2] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp3.value, bc.timestamp());
+        if (coarse2) {
+          if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
+            hrecentereSpA[1] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp2.value, bc.timestamp());
+          }
+          res = Correctcoarse(hrecentereSpA[1], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
         }
-        res = Correctcoarse(hrecentereSpA[2], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
-      }
 
-      if (fine3) {
-        if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
-          hrecenterecentSpA[2] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp3.value, bc.timestamp());
-          hrecenterevxSpA[2] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp3.value, bc.timestamp());
-          hrecenterevySpA[2] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp3.value, bc.timestamp());
-          hrecenterevzSpA[2] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp3.value, bc.timestamp());
+        if (fine2) {
+          if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
+            hrecenterecentSpA[1] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp2.value, bc.timestamp());
+            hrecenterevxSpA[1] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp2.value, bc.timestamp());
+            hrecenterevySpA[1] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp2.value, bc.timestamp());
+            hrecenterevzSpA[1] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp2.value, bc.timestamp());
+          }
+          resfine = Correctfine(hrecenterecentSpA[1], hrecenterevxSpA[1], hrecenterevySpA[1], hrecenterevzSpA[1], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
         }
-        resfine = Correctfine(hrecenterecentSpA[2], hrecenterevxSpA[2], hrecenterevySpA[2], hrecenterevzSpA[2], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
-      }
 
-      if (coarse4) {
-        if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
-          hrecentereSpA[3] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp4.value, bc.timestamp());
+        if (finetime2 && (currentRunNumber != lastRunNumber)) {
+          hrecentereTimeSp2 = ccdb->getForTimeStamp<TH2F>(confRecentereTimeSp2.value, bc.timestamp());
         }
-        res = Correctcoarse(hrecentereSpA[3], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
-      }
-
-      if (fine4) {
-        if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
-          hrecenterecentSpA[3] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp4.value, bc.timestamp());
-          hrecenterevxSpA[3] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp4.value, bc.timestamp());
-          hrecenterevySpA[3] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp4.value, bc.timestamp());
-          hrecenterevzSpA[3] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp4.value, bc.timestamp());
+        if (useTimeRecentering) {
+          restime = Correcttime(hrecentereTimeSp2, timeMin, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
         }
-        resfine = Correctfine(hrecenterecentSpA[3], hrecenterevxSpA[3], hrecenterevySpA[3], hrecenterevzSpA[3], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
-      }
 
-      if (coarse5) {
-        if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
-          hrecentereSpA[4] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp5.value, bc.timestamp());
+        if (coarse3) {
+          if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
+            hrecentereSpA[2] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp3.value, bc.timestamp());
+          }
+          res = Correctcoarse(hrecentereSpA[2], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
         }
-        res = Correctcoarse(hrecentereSpA[4], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
-      }
 
-      if (fine5) {
-        if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
-          hrecenterecentSpA[4] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp5.value, bc.timestamp());
-          hrecenterevxSpA[4] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp5.value, bc.timestamp());
-          hrecenterevySpA[4] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp5.value, bc.timestamp());
-          hrecenterevzSpA[4] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp5.value, bc.timestamp());
+        if (fine3) {
+          if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
+            hrecenterecentSpA[2] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp3.value, bc.timestamp());
+            hrecenterevxSpA[2] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp3.value, bc.timestamp());
+            hrecenterevySpA[2] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp3.value, bc.timestamp());
+            hrecenterevzSpA[2] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp3.value, bc.timestamp());
+          }
+          resfine = Correctfine(hrecenterecentSpA[2], hrecenterevxSpA[2], hrecenterevySpA[2], hrecenterevzSpA[2], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
         }
-        resfine = Correctfine(hrecenterecentSpA[4], hrecenterevxSpA[4], hrecenterevySpA[4], hrecenterevzSpA[4], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
-      }
 
-      if (coarse6) {
-        if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
-          hrecentereSpA[5] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp6.value, bc.timestamp());
+        if (finetime3 && (currentRunNumber != lastRunNumber)) {
+          hrecentereTimeSp3 = ccdb->getForTimeStamp<TH2F>(confRecentereTimeSp3.value, bc.timestamp());
         }
-        res = Correctcoarse(hrecentereSpA[5], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
-      }
-
-      if (fine6) {
-        if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
-          hrecenterecentSpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp6.value, bc.timestamp());
-          hrecenterevxSpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp6.value, bc.timestamp());
-          hrecenterevySpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp6.value, bc.timestamp());
-          hrecenterevzSpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp6.value, bc.timestamp());
+        if (useTimeRecentering) {
+          restime = Correcttime(hrecentereTimeSp3, timeMin, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
         }
-        resfine = Correctfine(hrecenterecentSpA[5], hrecenterevxSpA[5], hrecenterevySpA[5], hrecenterevzSpA[5], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
-      }
 
-      if (res == 0 && resfine == 0 && check == 0) {
-        LOG(info) << "Histograms are null";
-      }
+        if (coarse4) {
+          if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
+            hrecentereSpA[3] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp4.value, bc.timestamp());
+          }
+          res = Correctcoarse(hrecentereSpA[3], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+        }
 
-      if (useTimeRecentering && (currentRunNumber != lastRunNumber)) {
-        hrecentereTimeSp = ccdb->getForTimeStamp<TH2F>(confRecentereTimeSp.value, bc.timestamp());
-      }
+        if (fine4) {
+          if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
+            hrecenterecentSpA[3] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp4.value, bc.timestamp());
+            hrecenterevxSpA[3] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp4.value, bc.timestamp());
+            hrecenterevySpA[3] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp4.value, bc.timestamp());
+            hrecenterevzSpA[3] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp4.value, bc.timestamp());
+          }
+          resfine = Correctfine(hrecenterecentSpA[3], hrecenterevxSpA[3], hrecenterevySpA[3], hrecenterevzSpA[3], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+        }
 
-      bool restime = false;
-      if (useTimeRecentering) {
-        restime = Correcttime(hrecentereTimeSp, timeMin, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
-      }
+        if (coarse5) {
+          if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
+            hrecentereSpA[4] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp5.value, bc.timestamp());
+          }
+          res = Correctcoarse(hrecentereSpA[4], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+        }
 
-      if (restime == 0) {
-        LOG(info) << "Histograms are null";
+        if (fine5) {
+          if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
+            hrecenterecentSpA[4] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp5.value, bc.timestamp());
+            hrecenterevxSpA[4] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp5.value, bc.timestamp());
+            hrecenterevySpA[4] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp5.value, bc.timestamp());
+            hrecenterevzSpA[4] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp5.value, bc.timestamp());
+          }
+          resfine = Correctfine(hrecenterecentSpA[4], hrecenterevxSpA[4], hrecenterevySpA[4], hrecenterevzSpA[4], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+        }
+
+        if (coarse6) {
+          if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
+            hrecentereSpA[5] = ccdb->getForTimeStamp<THnF>(ConfRecentereSp6.value, bc.timestamp());
+          }
+          res = Correctcoarse(hrecentereSpA[5], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+        }
+
+        if (fine6) {
+          if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
+            hrecenterecentSpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp6.value, bc.timestamp());
+            hrecenterevxSpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp6.value, bc.timestamp());
+            hrecenterevySpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp6.value, bc.timestamp());
+            hrecenterevzSpA[5] = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp6.value, bc.timestamp());
+          }
+          resfine = Correctfine(hrecenterecentSpA[5], hrecenterevxSpA[5], hrecenterevySpA[5], hrecenterevzSpA[5], centrality, vx, vy, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC);
+        }
+
+        if (res == 0 && resfine == 0 && check == 0) {
+          LOG(info) << "Histograms are null";
+        }
+
+        if (useTimeRecentering && restime == 0 && check == 0) {
+          LOG(info) << "Histograms are null";
+        }
+      } else {
+
+        // Each stage must preserve this order:
+        // centrality -> (centrality,Vx) -> (centrality,Vy) -> (centrality,Vz).
+        // Keeping the switches separate allows the residual maps to be made
+        // in the same order in separate calibration passes.
+
+        // -------------------- Stage 1 --------------------
+        if (confignewpro.finecent1) {
+          if (confignewpro.useRecenterefinecentSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentSpA[0])) {
+            hrecenterecentSpA[0] = ccdb->getForTimeStamp<TH2F>(confignewpro.confRecentereCentSp.value, bc.timestamp());
+          }
+          if (!CorrectfineCent(hrecenterecentSpA[0], centrality, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine centrality recentering, stage 1");
+          }
+        }
+
+        if (confignewpro.finecentvx1) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvxSpA[0])) {
+            hrecenterecentvxSpA[0] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVxSp.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVx(hrecenterecentvxSpA[0], centrality, vx, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vx) recentering, stage 1");
+          }
+        }
+
+        if (confignewpro.finecentvy1) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvySpA[0])) {
+            hrecenterecentvySpA[0] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVySp.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVy(hrecenterecentvySpA[0], centrality, vy, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vy) recentering, stage 1");
+          }
+        }
+
+        if (confignewpro.finecentvz1) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvzSpA[0])) {
+            hrecenterecentvzSpA[0] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVzSp.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVz(hrecenterecentvzSpA[0], centrality, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vz) recentering, stage 1");
+          }
+        }
+
+        if (confignewpro.finevztime1) {
+          if (confignewpro.useRecenterefinevztimeSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterevztimeSpA[0])) {
+            hrecenterevztimeSpA[0] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereVzTimeSp.value, bc.timestamp());
+          }
+          if (!CorrectfineVzTime(hrecenterevztimeSpA[0], vz, timeMin, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (Vz, time) recentering, stage 1");
+          }
+        }
+
+        // -------------------- Stage 2 --------------------
+        if (confignewpro.finecent2) {
+          if (confignewpro.useRecenterefinecentSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentSpA[1])) {
+            hrecenterecentSpA[1] = ccdb->getForTimeStamp<TH2F>(confignewpro.confRecentereCentSp2.value, bc.timestamp());
+          }
+          if (!CorrectfineCent(hrecenterecentSpA[1], centrality, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine centrality recentering, stage 2");
+          }
+        }
+
+        if (confignewpro.finecentvx2) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvxSpA[1])) {
+            hrecenterecentvxSpA[1] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVxSp2.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVx(hrecenterecentvxSpA[1], centrality, vx, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vx) recentering, stage 2");
+          }
+        }
+
+        if (confignewpro.finecentvy2) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvySpA[1])) {
+            hrecenterecentvySpA[1] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVySp2.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVy(hrecenterecentvySpA[1], centrality, vy, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vy) recentering, stage 2");
+          }
+        }
+
+        if (confignewpro.finecentvz2) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvzSpA[1])) {
+            hrecenterecentvzSpA[1] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVzSp2.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVz(hrecenterecentvzSpA[1], centrality, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vz) recentering, stage 2");
+          }
+        }
+
+        if (confignewpro.finevztime2) {
+          if (confignewpro.useRecenterefinevztimeSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterevztimeSpA[1])) {
+            hrecenterevztimeSpA[1] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereVzTimeSp2.value, bc.timestamp());
+          }
+          if (!CorrectfineVzTime(hrecenterevztimeSpA[1], vz, timeMin, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (Vz, time) recentering, stage 2");
+          }
+        }
+
+        // -------------------- Stage 3 --------------------
+        if (confignewpro.finecent3) {
+          if (confignewpro.useRecenterefinecentSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentSpA[2])) {
+            hrecenterecentSpA[2] = ccdb->getForTimeStamp<TH2F>(confignewpro.confRecentereCentSp3.value, bc.timestamp());
+          }
+          if (!CorrectfineCent(hrecenterecentSpA[2], centrality, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine centrality recentering, stage 3");
+          }
+        }
+
+        if (confignewpro.finecentvx3) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvxSpA[2])) {
+            hrecenterecentvxSpA[2] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVxSp3.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVx(hrecenterecentvxSpA[2], centrality, vx, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vx) recentering, stage 3");
+          }
+        }
+
+        if (confignewpro.finecentvy3) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvySpA[2])) {
+            hrecenterecentvySpA[2] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVySp3.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVy(hrecenterecentvySpA[2], centrality, vy, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vy) recentering, stage 3");
+          }
+        }
+
+        if (confignewpro.finecentvz3) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvzSpA[2])) {
+            hrecenterecentvzSpA[2] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVzSp3.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVz(hrecenterecentvzSpA[2], centrality, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vz) recentering, stage 3");
+          }
+        }
+
+        if (confignewpro.finevztime3) {
+          if (confignewpro.useRecenterefinevztimeSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterevztimeSpA[2])) {
+            hrecenterevztimeSpA[2] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereVzTimeSp3.value, bc.timestamp());
+          }
+          if (!CorrectfineVzTime(hrecenterevztimeSpA[2], vz, timeMin, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (Vz, time) recentering, stage 3");
+          }
+        }
+
+        // -------------------- Stage 4 --------------------
+        if (confignewpro.finecent4) {
+          if (confignewpro.useRecenterefinecentSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentSpA[3])) {
+            hrecenterecentSpA[3] = ccdb->getForTimeStamp<TH2F>(confignewpro.confRecentereCentSp4.value, bc.timestamp());
+          }
+          if (!CorrectfineCent(hrecenterecentSpA[3], centrality, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine centrality recentering, stage 4");
+          }
+        }
+
+        if (confignewpro.finecentvx4) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvxSpA[3])) {
+            hrecenterecentvxSpA[3] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVxSp4.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVx(hrecenterecentvxSpA[3], centrality, vx, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vx) recentering, stage 4");
+          }
+        }
+
+        if (confignewpro.finecentvy4) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvySpA[3])) {
+            hrecenterecentvySpA[3] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVySp4.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVy(hrecenterecentvySpA[3], centrality, vy, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vy) recentering, stage 4");
+          }
+        }
+
+        if (confignewpro.finecentvz4) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvzSpA[3])) {
+            hrecenterecentvzSpA[3] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVzSp4.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVz(hrecenterecentvzSpA[3], centrality, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vz) recentering, stage 4");
+          }
+        }
+
+        if (confignewpro.finevztime4) {
+          if (confignewpro.useRecenterefinevztimeSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterevztimeSpA[3])) {
+            hrecenterevztimeSpA[3] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereVzTimeSp4.value, bc.timestamp());
+          }
+          if (!CorrectfineVzTime(hrecenterevztimeSpA[3], vz, timeMin, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (Vz, time) recentering, stage 4");
+          }
+        }
+
+        // -------------------- Stage 5 --------------------
+        if (confignewpro.finecent5) {
+          if (confignewpro.useRecenterefinecentSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentSpA[4])) {
+            hrecenterecentSpA[4] = ccdb->getForTimeStamp<TH2F>(confignewpro.confRecentereCentSp5.value, bc.timestamp());
+          }
+          if (!CorrectfineCent(hrecenterecentSpA[4], centrality, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine centrality recentering, stage 5");
+          }
+        }
+
+        if (confignewpro.finecentvx5) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvxSpA[4])) {
+            hrecenterecentvxSpA[4] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVxSp5.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVx(hrecenterecentvxSpA[4], centrality, vx, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vx) recentering, stage 5");
+          }
+        }
+
+        if (confignewpro.finecentvy5) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvySpA[4])) {
+            hrecenterecentvySpA[4] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVySp5.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVy(hrecenterecentvySpA[4], centrality, vy, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vy) recentering, stage 5");
+          }
+        }
+
+        if (confignewpro.finecentvz5) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvzSpA[4])) {
+            hrecenterecentvzSpA[4] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVzSp5.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVz(hrecenterecentvzSpA[4], centrality, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vz) recentering, stage 5");
+          }
+        }
+
+        if (confignewpro.finevztime5) {
+          if (confignewpro.useRecenterefinevztimeSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterevztimeSpA[4])) {
+            hrecenterevztimeSpA[4] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereVzTimeSp5.value, bc.timestamp());
+          }
+          if (!CorrectfineVzTime(hrecenterevztimeSpA[4], vz, timeMin, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (Vz, time) recentering, stage 5");
+          }
+        }
+
+        // -------------------- Stage 6 --------------------
+        if (confignewpro.finecent6) {
+          if (confignewpro.useRecenterefinecentSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentSpA[5])) {
+            hrecenterecentSpA[5] = ccdb->getForTimeStamp<TH2F>(confignewpro.confRecentereCentSp6.value, bc.timestamp());
+          }
+          if (!CorrectfineCent(hrecenterecentSpA[5], centrality, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine centrality recentering, stage 6");
+          }
+        }
+
+        if (confignewpro.finecentvx6) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvxSpA[5])) {
+            hrecenterecentvxSpA[5] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVxSp6.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVx(hrecenterecentvxSpA[5], centrality, vx, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vx) recentering, stage 6");
+          }
+        }
+
+        if (confignewpro.finecentvy6) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvySpA[5])) {
+            hrecenterecentvySpA[5] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVySp6.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVy(hrecenterecentvySpA[5], centrality, vy, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vy) recentering, stage 6");
+          }
+        }
+
+        if (confignewpro.finecentvz6) {
+          if (confignewpro.useRecenterefinecentvxvyvzSp &&
+              (currentRunNumber != lastRunNumber || !hrecenterecentvzSpA[5])) {
+            hrecenterecentvzSpA[5] = ccdb->getForTimeStamp<TH3F>(confignewpro.confRecentereCentVzSp6.value, bc.timestamp());
+          }
+          if (!CorrectfineCentVz(hrecenterecentvzSpA[5], centrality, vz, qxZDCA, qyZDCA, qxZDCC, qyZDCC)) {
+            LOGF(fatal, "Cannot apply fine (cent,Vz) recentering, stage 6");
+          }
+        }
       }
 
       histos.fill(HIST("hpQxZDCAvstime"), timeMin, qxZDCA);
@@ -821,6 +1473,54 @@ struct spvector {
         histos.fill(HIST("hvzQyZDCA"), vz, qyZDCA);
         histos.fill(HIST("hvzQxZDCC"), vz, qxZDCC);
         histos.fill(HIST("hvzQyZDCC"), vz, qyZDCC);
+
+        histos.fill(HIST("pQxZDCAvsCentVzAfter"),
+                    centrality, vz, qxZDCA);
+
+        histos.fill(HIST("pQyZDCAvsCentVzAfter"),
+                    centrality, vz, qyZDCA);
+
+        histos.fill(HIST("pQxZDCCvsCentVzAfter"),
+                    centrality, vz, qxZDCC);
+
+        histos.fill(HIST("pQyZDCCvsCentVzAfter"),
+                    centrality, vz, qyZDCC);
+
+        histos.fill(HIST("pQxZDCAvsCentVyAfter"),
+                    centrality, vy, qxZDCA);
+
+        histos.fill(HIST("pQyZDCAvsCentVyAfter"),
+                    centrality, vy, qyZDCA);
+
+        histos.fill(HIST("pQxZDCCvsCentVyAfter"),
+                    centrality, vy, qxZDCC);
+
+        histos.fill(HIST("pQyZDCCvsCentVyAfter"),
+                    centrality, vy, qyZDCC);
+
+        histos.fill(HIST("pQxZDCAvsCentVxAfter"),
+                    centrality, vx, qxZDCA);
+
+        histos.fill(HIST("pQyZDCAvsCentVxAfter"),
+                    centrality, vx, qyZDCA);
+
+        histos.fill(HIST("pQxZDCCvsCentVxAfter"),
+                    centrality, vx, qxZDCC);
+
+        histos.fill(HIST("pQyZDCCvsCentVxAfter"),
+                    centrality, vx, qyZDCC);
+
+        histos.fill(HIST("pQxZDCAvsVyVxAfter"),
+                    vy, vx, qxZDCA);
+
+        histos.fill(HIST("pQyZDCAvsVyVxAfter"),
+                    vy, vx, qyZDCA);
+
+        histos.fill(HIST("pQxZDCCvsVyVxAfter"),
+                    vy, vx, qxZDCC);
+
+        histos.fill(HIST("pQyZDCCvsVyVxAfter"),
+                    vy, vx, qyZDCC);
       }
 
       histos.fill(HIST("hpCosPsiAPsiC"), centrality, (TMath::Cos(psiZDCA - psiZDCC)));

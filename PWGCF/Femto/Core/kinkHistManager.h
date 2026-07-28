@@ -37,9 +37,7 @@
 #include <string_view>
 #include <vector>
 
-namespace o2::analysis::femto
-{
-namespace kinkhistmanager
+namespace o2::analysis::femto::kinkhistmanager
 {
 // enum for kink histograms
 enum KinkHist {
@@ -88,24 +86,26 @@ enum KinkHist {
 
 constexpr std::size_t MaxSecondary = 3;
 
-#define KINK_DEFAULT_BINNING(defaultMassMin, defaultMassMax)                                       \
-  o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};                                   \
-  o2::framework::ConfigurableAxis eta{"eta", {{300, -1.5, 1.5}}, "Eta"};                           \
-  o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"}; \
-  o2::framework::ConfigurableAxis mass{"mass", {{200, defaultMassMin, defaultMassMax}}, "Mass"};   \
-  o2::framework::ConfigurableAxis sign{"sign", {{3, -1.5, 1.5}}, "Sign"};                          \
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define KINK_DEFAULT_BINNING(defaultMassMin, defaultMassMax)                                         \
+  o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};                                     \
+  o2::framework::ConfigurableAxis eta{"eta", {{300, -1.5, 1.5}}, "Eta"};                             \
+  o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"};   \
+  o2::framework::ConfigurableAxis mass{"mass", {{200, (defaultMassMin), (defaultMassMax)}}, "Mass"}; \
+  o2::framework::ConfigurableAxis sign{"sign", {{3, -1.5, 1.5}}, "Sign"};                            \
   o2::framework::ConfigurableAxis pdgCodes{"pdgCodes", {{8001, -4000.5, 4000.5}}, "PDG codes of selected V0s"};
 
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfSigmaBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   KINK_DEFAULT_BINNING(1.1, 1.3)
 };
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfSigmaPlusBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   KINK_DEFAULT_BINNING(1.1, 1.3)
 };
+
 #undef KINK_DEFAULT_BINNING
 
 constexpr const char PrefixSigmaBinning1[] = "SigmaBinning1";
@@ -114,7 +114,7 @@ using ConfSigmaBinning1 = ConfSigmaBinning<PrefixSigmaBinning1>;
 constexpr const char PrefixSigmaPlusBinning1[] = "SigmaPlusBinning1";
 using ConfSigmaPlusBinning1 = ConfSigmaPlusBinning<PrefixSigmaPlusBinning1>;
 
-template <const char* Prefix>
+template <auto& Prefix>
 struct ConfKinkQaBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   o2::framework::Configurable<bool> plot2d{"plot2d", true, "Enable 2d QA h histograms"};
@@ -171,46 +171,50 @@ constexpr std::array<histmanager::HistInfo<KinkHist>, kKinkHistLast> HistTable =
    {kSecondary3, o2::framework::HistType::kTH2F, "hFromSecondary3", "Particles from seconary decay; p_{T} (GeV/#it{c}); kink angle"},
    {kSecondaryOther, o2::framework::HistType::kTH2F, "hFromSecondaryOther", "Particles from every other seconary decay; p_{T} (GeV/#it{c}); kink angle"}}};
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define KINK_HIST_ANALYSIS_MAP(conf) \
-  {kPt, {conf.pt}},                  \
-    {kEta, {conf.eta}},              \
-    {kPhi, {conf.phi}},              \
-    {kMass, {conf.mass}},            \
-    {kSign, {conf.sign}},
+  {kPt, {(conf).pt}},                \
+    {kEta, {(conf).eta}},            \
+    {kPhi, {(conf).phi}},            \
+    {kMass, {(conf).mass}},          \
+    {kSign, {(conf).sign}},
 
-#define KINK_HIST_MC_MAP(conf)     \
-  {kTruePt, {conf.pt}},            \
-    {kTrueEta, {conf.eta}},        \
-    {kTruePhi, {conf.phi}},        \
-    {kPdg, {conf.pdgCodes}},       \
-    {kPdgMother, {conf.pdgCodes}}, \
-    {kPdgPartonicMother, {conf.pdgCodes}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define KINK_HIST_MC_MAP(conf)       \
+  {kTruePt, {(conf).pt}},            \
+    {kTrueEta, {(conf).eta}},        \
+    {kTruePhi, {(conf).phi}},        \
+    {kPdg, {(conf).pdgCodes}},       \
+    {kPdgMother, {(conf).pdgCodes}}, \
+    {kPdgPartonicMother, {(conf).pdgCodes}},
 
-#define KINK_HIST_QA_MAP(confAnalysis, confQa)             \
-  {kKinkAngle, {confQa.kinkAngle}},                        \
-    {kDcaMothToPV, {confQa.dcaMothToPV}},                  \
-    {kDcaDaugToPV, {confQa.dcaDaugToPV}},                  \
-    {kDecayVtxX, {confQa.decayVertex}},                    \
-    {kDecayVtxY, {confQa.decayVertex}},                    \
-    {kDecayVtxZ, {confQa.decayVertex}},                    \
-    {kDecayVtx, {confQa.decayVertex}},                     \
-    {kTransRadius, {confQa.transRadius}},                  \
-    {kPtVsEta, {confAnalysis.pt, confAnalysis.eta}},       \
-    {kPtVsPhi, {confAnalysis.pt, confAnalysis.phi}},       \
-    {kPhiVsEta, {confAnalysis.phi, confAnalysis.eta}},     \
-    {kPtVsKinkAngle, {confAnalysis.pt, confQa.kinkAngle}}, \
-    {kPtVsDecayRadius, {confAnalysis.pt, confQa.transRadius}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define KINK_HIST_QA_MAP(confAnalysis, confQa)                 \
+  {kKinkAngle, {(confQa).kinkAngle}},                          \
+    {kDcaMothToPV, {(confQa).dcaMothToPV}},                    \
+    {kDcaDaugToPV, {(confQa).dcaDaugToPV}},                    \
+    {kDecayVtxX, {(confQa).decayVertex}},                      \
+    {kDecayVtxY, {(confQa).decayVertex}},                      \
+    {kDecayVtxZ, {(confQa).decayVertex}},                      \
+    {kDecayVtx, {(confQa).decayVertex}},                       \
+    {kTransRadius, {(confQa).transRadius}},                    \
+    {kPtVsEta, {(confAnalysis).pt, (confAnalysis).eta}},       \
+    {kPtVsPhi, {(confAnalysis).pt, (confAnalysis).phi}},       \
+    {kPhiVsEta, {(confAnalysis).phi, (confAnalysis).eta}},     \
+    {kPtVsKinkAngle, {(confAnalysis).pt, (confQa).kinkAngle}}, \
+    {kPtVsDecayRadius, {(confAnalysis).pt, (confQa).transRadius}},
 
-#define KINK_HIST_MC_QA_MAP(confAnalysis, confQa)               \
-  {kNoMcParticle, {confAnalysis.pt, confQa.kinkAngle}},         \
-    {kPrimary, {confAnalysis.pt, confQa.kinkAngle}},            \
-    {kFromWrongCollision, {confAnalysis.pt, confQa.kinkAngle}}, \
-    {kFromMaterial, {confAnalysis.pt, confQa.kinkAngle}},       \
-    {kMissidentified, {confAnalysis.pt, confQa.kinkAngle}},     \
-    {kSecondary1, {confAnalysis.pt, confQa.kinkAngle}},         \
-    {kSecondary2, {confAnalysis.pt, confQa.kinkAngle}},         \
-    {kSecondary3, {confAnalysis.pt, confQa.kinkAngle}},         \
-    {kSecondaryOther, {confAnalysis.pt, confQa.kinkAngle}},
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define KINK_HIST_MC_QA_MAP(confAnalysis, confQa)                   \
+  {kNoMcParticle, {(confAnalysis).pt, (confQa).kinkAngle}},         \
+    {kPrimary, {(confAnalysis).pt, (confQa).kinkAngle}},            \
+    {kFromWrongCollision, {(confAnalysis).pt, (confQa).kinkAngle}}, \
+    {kFromMaterial, {(confAnalysis).pt, (confQa).kinkAngle}},       \
+    {kMissidentified, {(confAnalysis).pt, (confQa).kinkAngle}},     \
+    {kSecondary1, {(confAnalysis).pt, (confQa).kinkAngle}},         \
+    {kSecondary2, {(confAnalysis).pt, (confQa).kinkAngle}},         \
+    {kSecondary3, {(confAnalysis).pt, (confQa).kinkAngle}},         \
+    {kSecondaryOther, {(confAnalysis).pt, (confQa).kinkAngle}},
 
 template <typename T>
 auto makeKinkHistSpecMap(const T& confBinningAnalysis)
@@ -263,8 +267,8 @@ constexpr std::string_view McDir = "MC/";
 
 constexpr int AbsChargeDaughters = 1;
 
-template <const char* kinkPrefix,
-          const char* chaDauPrefix,
+template <auto& kinkPrefix,
+          auto& chaDauPrefix,
           modes::Kink kink>
 class KinkHistManager
 {
@@ -307,7 +311,7 @@ class KinkHistManager
     }
 
     mChaDauManager.template init<mode>(registry, ChaDauSpecs, absCharge, chaDauCharge, chaDauPdgCodeAbs);
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       this->initAnalysis(KinkSpecs);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
@@ -356,7 +360,7 @@ class KinkHistManager
     }
 
     mChaDauManager.template init<mode>(registry, ChaDauSpecs, absCharge, chaDauCharge, chaDauPdgCodeAbs, ConfChaDauBinningQa);
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       this->initAnalysis(KinkSpecs);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
@@ -374,7 +378,7 @@ class KinkHistManager
     // auto chaDaughter = kinkcandidate.template chaDau_as<T2>();
     auto chaDaughter = tracks.rawIteratorAt(kinkCandidate.chaDauId() - tracks.offset());
     mChaDauManager.template fill<mode>(chaDaughter, tracks);
-    if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(kinkCandidate);
     }
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
@@ -387,7 +391,7 @@ class KinkHistManager
   {
     auto chaDaughter = tracks.rawIteratorAt(kinkCandidate.chaDauId() - tracks.offset());
     mChaDauManager.template fill<mode>(chaDaughter, tracks, mcParticles, mcMothers, mcPartonicMothers);
-    if constexpr (modes::isFlagSet(mode, modes::Mode::kAnalysis)) {
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(kinkCandidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
@@ -559,16 +563,16 @@ class KinkHistManager
     mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), mcParticle.pdgCode());
 
     // get mother
-    if (kinkCandidate.has_fMcMother()) {
-      auto mother = kinkCandidate.template fMcMother_as<T3>();
+    if (mcParticle.has_fMcMother()) {
+      auto mother = mcParticle.template fMcMother_as<T3>();
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), mother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), 0);
     }
 
     // get partonic mother
-    if (kinkCandidate.has_fMcPartMoth()) {
-      auto partonicMother = kinkCandidate.template fMcPartMoth_as<T4>();
+    if (mcParticle.has_fMcPartMoth()) {
+      auto partonicMother = mcParticle.template fMcPartMoth_as<T4>();
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), partonicMother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), 0);
@@ -593,8 +597,8 @@ class KinkHistManager
               mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), kinkCandidate.pt(), kinkCandidate.kinkAngle());
               break;
             case modes::McOrigin::kFromSecondaryDecay:
-              if (kinkCandidate.has_fMcMother()) {
-                auto mother = kinkCandidate.template fMcMother_as<T3>();
+              if (mcParticle.has_fMcMother()) {
+                auto mother = mcParticle.template fMcMother_as<T3>();
                 int motherPdgCode = std::abs(mother.pdgCode());
                 // Switch on PDG of the mother
                 if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {
@@ -625,6 +629,5 @@ class KinkHistManager
   int mPlotNSecondaries = 0;
   std::array<int, MaxSecondary> mPdgCodesSecondaryMother = {0};
 };
-}; // namespace kinkhistmanager
-}; // namespace o2::analysis::femto
+}; // namespace o2::analysis::femto::kinkhistmanager
 #endif // PWGCF_FEMTO_CORE_KINKHISTMANAGER_H_

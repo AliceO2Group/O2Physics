@@ -59,7 +59,6 @@ struct AssociateMCInfoDilepton {
   Produces<o2::aod::EMPrimaryElectronMCLabels> emprimaryelectronmclabels;
   Produces<o2::aod::EMPrimaryMuonMCLabels> emprimarymuonmclabels;
   Produces<o2::aod::EMMFTMCLabels> emmftmclabels;
-  Produces<o2::aod::EMDummyDatas> emdummydata;
 
   Configurable<int> n_dummy_loop{"n_dummy_loop", 0, "for loop runs over n times"};
   Configurable<float> down_scaling_omega{"down_scaling_omega", 1.0, "down scaling factor to store omega"};
@@ -686,25 +685,11 @@ struct AssociateMCInfoDilepton {
     skimmingMC<sysflag>(collisions, bcs, mccollisions, mcTracks, o2tracks, o2fwdtracks, o2mfttracks, nullptr, nullptr, emprimaryelectrons, emprimarymuons);
   }
 
-  void processGenDummy(MyCollisionsMC const&)
-  {
-    for (int i = 0; i < n_dummy_loop; i++) {
-      emdummydata(
-        0.f, 0.f, 0.f, 0.f, 0.f,
-        0.f, 0.f, 0.f, 0.f, 0.f,
-        0.f, 0.f, 0.f, 0.f, 0.f,
-        0.f, 0.f, 0.f, 0.f, 0.f,
-        0.f, 0.f, 0.f, 0.f, 0.f,
-        0.f);
-    }
-  }
-
   void processDummy(MyCollisionsMC const&) {}
 
   PROCESS_SWITCH(AssociateMCInfoDilepton, processMC_Electron, "create em mc event table for Electron", false);
   PROCESS_SWITCH(AssociateMCInfoDilepton, processMC_FwdMuon, "create em mc event table for Forward Muon", false);
   PROCESS_SWITCH(AssociateMCInfoDilepton, processMC_Electron_FwdMuon, "create em mc event table for Electron, FwdMuon", false);
-  PROCESS_SWITCH(AssociateMCInfoDilepton, processGenDummy, "produce dummy data", false);
   PROCESS_SWITCH(AssociateMCInfoDilepton, processDummy, "processDummy", true);
 };
 
