@@ -29,6 +29,7 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
+#include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -47,6 +48,7 @@
 #include <Math/Vector3Dfwd.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep
 #include <Math/Vector4Dfwd.h>
+#include <TH1.h>
 #include <TPDGCode.h>
 #include <TString.h>
 
@@ -222,6 +224,9 @@ struct Photonhbt {
     Configurable<float> cfgMaxQinvForQA{"cfgMaxQinvForQA", 0.1f, "fill per-step pair QA histograms only when q_inv < this value"};
     Configurable<float> cfgMaxQinvForFullRange{"cfgMaxQinvForFullRange", 0.3f, "fill full-range histograms only when q_inv < this value"};
     Configurable<float> cfgMaxQinvForMCQA{"cfgMaxQinvForMCQA", 0.3f, "fill MC truth 1D histograms only when q_inv < this value"};
+    Configurable<int> cfgQaLevel{"cfgQaLevel", 2, "QA: 0 no QA, 1 standard, 2 full diagnostics with leg information etc."};
+    Configurable<bool> cfgFillDRDZSparse{"cfgFillDRDZSparse", true, "book/fill the FullRange |R1-R2|-Deltaz-qinv sparse (large; needs cfgQaLevel>=2)"};
+    Configurable<float> cfgMaxQinvForProcessing{"cfgMaxQinvForProcessing", 0.5, "skip mixed pairs with q_inv above this before building observables"};
   } qaflags;
 
   // ─── HBT analysis mode ───────────────────────────────────────────────────────────
@@ -507,9 +512,20 @@ struct Photonhbt {
   // INITS
   /*************************************************/
 
+  bool mDoPairQa{true}, mDoSinglePhotonQa{true}, mDoLegPairQA{true};
+  bool mDoPairSepQA{true}, mFillDRDZSparse{true};
+
   void init(InitContext& context)
   {
     isMC = context.mOptions.get<bool>("processMC");
+    const int qaLevel = qaflags.cfgQaLevel.value;
+    mDoPairQa = qaflags.doPairQa.value && qaLevel >= 1;                 // o2-linter: disable=magic-number (QA set-up)
+    mDoSinglePhotonQa = qaflags.doSinglePhotonQa.value && qaLevel >= 1; // o2-linter: disable=magic-number (QA set-up)
+    mDoLegPairQA = qaflags.doLegPairQA.value && qaLevel >= 2;           // o2-linter: disable=magic-number (QA set-up)
+    mDoPairSepQA = pairsep.cfgDoPairSepQA.value && qaLevel >= 2;        // o2-linter: disable=magic-number (QA set-up)
+    mFillDRDZSparse = qaflags.cfgFillDRDZSparse.value && qaLevel >= 2;  // o2-linter: disable=magic-number (QA set-up)
+    LOGF(info, "photonhbt QA level %d -> pairQA %d, singlePhotonQA %d, legPairQA %d, pairSep %d, dRdZ sparse %d",
+         qaLevel, mDoPairQa, mDoSinglePhotonQa, mDoLegPairQA, mDoPairSepQA, mFillDRDZSparse);
     mRunNumber = 0;
     parseBins(mixing.confVtxBins, ztxBinEdges);
     parseBins(mixing.confCentBins, centBinEdges);
@@ -676,7 +692,7 @@ struct Photonhbt {
 
     if (isMC) {
       addPairMCHistograms();
-      if (qaflags.doLegPairQA) {
+      if (mDoLegPairQA) {
         addLegPairMCHistograms();
       }
       addTruthMCHistograms();
@@ -763,8 +779,10 @@ struct Photonhbt {
     }
 
     fRegistryPairQA.addClone("Pair/same/QA/", "Pair/mix/QA/");
-    addLegPairQAForStep("Pair/same/QA/Before/");
-    addLegPairQAForStep("Pair/same/QA/AfterPairCuts/");
+    if (mDoLegPairQA) {
+      addLegPairQAForStep("Pair/same/QA/Before/");
+      addLegPairQAForStep("Pair/same/QA/AfterPairCuts/");
+    }
   }
 
   void addPairMCHistograms()
@@ -1005,7 +1023,9 @@ struct Photonhbt {
     fRegistryCF.add((path + "hDeltaR3DVsQinv").c_str(), "#Delta r_{3D} vs q_{inv};q_{inv} (GeV/c);#Delta r_{3D} (cm)", kTH2D, {axisQinv, axisDeltaR3D}, true);
     fRegistryCF.add((path + "hQinvVsCent").c_str(), "q_{inv} vs centrality;centrality (%);q_{inv} (GeV/c)", kTH2D, {axisCentQA, axisQinv}, true);
     fRegistryCF.add((path + "hQinvVsOccupancy").c_str(), "q_{inv} vs occupancy;occupancy;q_{inv} (GeV/c)", kTH2D, {axisOccupancy, axisQinv}, true);
-    fRegistryCF.add((path + "hSparseDeltaRDeltaZQinv").c_str(), "|R_{1}-R_{2}|,#Delta z,q_{inv}", kTHnSparseD, {axisDeltaR, axisDeltaZ, axisQinv}, true);
+    if (mFillDRDZSparse) {
+      fRegistryCF.add((path + "hSparseDeltaRDeltaZQinv").c_str(), "|R_{1}-R_{2}|,#Delta z,q_{inv}", kTHnSparseD, {axisDeltaR, axisDeltaZ, axisQinv}, true);
+    }
     fRegistryCF.add((path + "hDeltaRCosOAVsQinv").c_str(), "#Delta r/cos(#theta_{op}/2) vs q_{inv};q_{inv} (GeV/c);#Delta r/cos(#theta_{op}/2) (cm)", kTH2D, {axisQinv, {100, 0, 100}}, true);
   }
 
@@ -1266,6 +1286,19 @@ struct Photonhbt {
     return s;
   }
 
+  template <typename TG1, typename TG2>
+  [[nodiscard]] inline bool passFastQinvGate(TG1 const& g1, TG2 const& g2) const
+  {
+    const float qMax = qaflags.cfgMaxQinvForProcessing.value;
+    if (qMax > 1e9f) { // o2-linter: disable=magic-number (skip if non-sensical value is chosen)
+      return true;
+    }
+    const float dEta = g1.eta() - g2.eta();
+    const float dPhi = RecoDecay::constrainAngle(g1.phi() - g2.phi(), -o2::constants::math::PI);
+    const float q2 = 2.f * g1.pt() * g2.pt() * (std::cosh(dEta) - std::cos(dPhi));
+    return q2 <= qMax * qMax;
+  }
+
   [[nodiscard]] inline bool passLegSepCut(PairSep const& s) const
   {
     if (!pairsep.cfgDoLegSepCut.value) {
@@ -1386,13 +1419,15 @@ struct Photonhbt {
     fRegistryCF.fill(HIST(base) + HIST("hDeltaR3DVsQinv"), obs.qinv, obs.deltaR3D);
     fRegistryCF.fill(HIST(base) + HIST("hQinvVsCent"), cent, obs.qinv);
     fRegistryCF.fill(HIST(base) + HIST("hQinvVsOccupancy"), occupancy, obs.qinv);
-    fRegistryCF.fill(HIST(base) + HIST("hSparseDeltaRDeltaZQinv"), obs.deltaR, obs.deltaZ, obs.qinv);
+    if (mFillDRDZSparse) {
+      fRegistryCF.fill(HIST(base) + HIST("hSparseDeltaRDeltaZQinv"), obs.deltaR, obs.deltaZ, obs.qinv);
+    }
   }
 
   template <int ev_id, bool after_cut = false>
   inline void fillPairSep(PairSep const& s, PairQAObservables const& obs)
   {
-    if (!pairsep.cfgDoPairSepQA.value) {
+    if (!mDoPairSepQA) {
       return;
     }
     const float limit = pairsep.cfgPairSepMaxQinv.value;
@@ -1422,7 +1457,7 @@ struct Photonhbt {
   template <int step_id, typename TPhoton>
   inline void fillSinglePhotonQAStep(TPhoton const& g)
   {
-    if (!qaflags.doSinglePhotonQa) {
+    if (!mDoSinglePhotonQa) {
       return;
     }
     constexpr auto base = singlePhotonQAPrefix<step_id>();
@@ -1519,7 +1554,7 @@ struct Photonhbt {
   template <int ev_id, int step_id>
   inline void fillPairQAStep(PairQAObservables const& o, float /*cent*/, float /*occupancy*/)
   {
-    if (!qaflags.doPairQa) {
+    if (!mDoPairQa) {
       return;
     }
     constexpr auto base = qaPrefix<ev_id, step_id>();
@@ -1559,7 +1594,7 @@ struct Photonhbt {
   template <int step_id>
   inline void fillLegPairQAStep(LegPairObservables const& lo, float kt)
   {
-    if (!qaflags.doPairQa) {
+    if (!mDoLegPairQA) {
       return;
     }
     constexpr auto base = qaPrefix<0, step_id>();
@@ -1948,7 +1983,7 @@ struct Photonhbt {
       auto keyDFCollision = std::make_pair(ndf, collision.globalIndex());
       auto photons1Coll = photons1.sliceBy(perCollision1, collision.globalIndex());
       auto photons2Coll = photons2.sliceBy(perCollision2, collision.globalIndex());
-      if (qaflags.doSinglePhotonQa) {
+      if (mDoSinglePhotonQa) {
         for (const auto& g : photons1Coll) {
           if (cut1.template IsSelected<decltype(g), TSubInfos1>(g)) {
             fillSinglePhotonQAStep<0>(g);
@@ -2039,7 +2074,7 @@ struct Photonhbt {
         addToPool(g1, pwl1);
         addToPool(g2, pwl2);
       }
-      if (qaflags.doSinglePhotonQa) {
+      if (mDoSinglePhotonQa) {
         for (const auto& g : photons1Coll) {
           if (cut1.template IsSelected<decltype(g), TSubInfos1>(g)) {
             if (idsAfterPairCuts.contains(g.globalIndex())) {
@@ -2068,6 +2103,9 @@ struct Photonhbt {
         for (const auto& g1 : selectedPhotons) {
           for (const auto& g2 : poolPhotons) {
             if (!passAsymmetryCut(g1.pt(), g2.pt())) {
+              continue;
+            }
+            if (!passFastQinvGate(g1, g2)) {
               continue;
             }
             auto obs = buildPairQAObservables(g1, g2);
@@ -2170,7 +2208,7 @@ struct Photonhbt {
       auto keyBin = std::make_tuple(zbin, centbin, epbin, occbin);
       auto keyDFCollision = std::make_pair(ndf, collision.globalIndex());
       auto photonsColl = photons.sliceBy(perCollision, collision.globalIndex());
-      if (qaflags.doSinglePhotonQa) {
+      if (mDoSinglePhotonQa) {
         for (const auto& g : photonsColl) {
           if (cut.template IsSelected<decltype(g), TLegs>(g)) {
             fillSinglePhotonQAStep<0>(g);
@@ -2265,7 +2303,9 @@ struct Photonhbt {
         } else {
           const bool doMCQA = passQinvMCQAGate(obs.qinv);
           fillMCPairQA<false>(truthType, obs, doQA, doMCQA);
-          fillLegPairMC(truthType, legObs, obs.kt);
+          if (mDoLegPairQA) {
+            fillLegPairMC(truthType, legObs, obs.kt);
+          }
           if (doFR) {
             fillMCPairQAFullRange<false>(truthType, obs);
           }
@@ -2318,7 +2358,7 @@ struct Photonhbt {
         addToPool(g1, pwl1);
         addToPool(g2, pwl2);
       }
-      if (qaflags.doSinglePhotonQa) {
+      if (mDoSinglePhotonQa) {
         for (const auto& g : photonsColl) {
           if (cut.template IsSelected<decltype(g), TLegs>(g)) {
             if (idsAfterPairCuts.contains(g.globalIndex())) {
@@ -2347,6 +2387,9 @@ struct Photonhbt {
         for (const auto& g1 : selectedPhotons) {
           for (const auto& g2 : poolPhotons) {
             if (!passAsymmetryCut(g1.pt(), g2.pt())) {
+              continue;
+            }
+            if (!passFastQinvGate(g1, g2)) {
               continue;
             }
             auto obs = buildPairQAObservables(g1, g2);
