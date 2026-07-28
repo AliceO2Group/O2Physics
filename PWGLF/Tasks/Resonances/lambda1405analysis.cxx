@@ -143,7 +143,7 @@ struct lambda1405analysis {
     Configurable<float> centMultMax{"centMultMax", 100., "Maximum collision centrality/multiplicity accepted"};
     Configurable<float> occupancyMax{"occupancyMax", 3000000., "Maximum collision occupancy accepted"};
   } eventSelection;
-  
+
   struct : o2::framework::ConfigurableGroup {
     Configurable<float> cutEtaDaughter{"cutEtaDaughter", 0.8f, "Eta cut for daughter tracks"};
     Configurable<float> cutDcaToPvSigma{"cutDcaToPvSigma", 0.1f, "Max DCA to primary vertex for Sigma candidates (cm)"};
@@ -1192,9 +1192,9 @@ struct lambda1405analysis {
   }
 
   void processDataSameEvent(CollisionsSel::iterator const& collision,
-                   aod::KinkCands const& kinkCands,
-                   TracksFull const& tracks,
-                   const aod::BCs&)
+                            aod::KinkCands const& kinkCands,
+                            TracksFull const& tracks,
+                            const aod::BCs&)
   {
     if (useCentrality) {
       BinningCentPosZ binPolicy{{centMultPoolBins, zPoolBins}, true};
@@ -1207,9 +1207,9 @@ struct lambda1405analysis {
   PROCESS_SWITCH(lambda1405analysis, processDataSameEvent, "Data processing", true);
 
   void processDataWQVecsSameEvent(CollisionsSelWQVecs::iterator const& collision,
-                             aod::KinkCands const& kinkCands,
-                             TracksFull const& tracks,
-                             const aod::BCs&)
+                                  aod::KinkCands const& kinkCands,
+                                  TracksFull const& tracks,
+                                  const aod::BCs&)
   {
     BinningCentPosZ binPolicy{{centMultPoolBins, zPoolBins}, true};
     fillOutputData(collision, kinkCands, tracks, binPolicy);
@@ -1257,9 +1257,9 @@ struct lambda1405analysis {
   PROCESS_SWITCH(lambda1405analysis, processDataMixedEvent, "Data event mixing processing", false);
 
   void processDataWQVecsMixedEvent(CollisionsSelWQVecs const& collisions,
-                                       aod::KinkCands const& kinkCands,
-                                       TracksFull const& tracks,
-                                       const aod::BCs&)
+                                   aod::KinkCands const& kinkCands,
+                                   TracksFull const& tracks,
+                                   const aod::BCs&)
   {
     auto pairsTuple = std::make_tuple(kinkCands, tracks);
     BinningCentPosZ binPolicy{{centMultPoolBins, zPoolBins}, true};
