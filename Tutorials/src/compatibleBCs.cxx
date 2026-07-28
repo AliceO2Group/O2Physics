@@ -60,7 +60,7 @@ T getCompatibleBCs(aod::Collision const& collision, T const& bcs)
 
   LOGF(info, "Will consider BC entries from %d to %d", minBCId, maxBCId);
 
-  T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
+  auto slice = bcs.rawSlice(minBCId, maxBCId);
   bcs.copyIndexBindings(slice);
   return slice;
 }

@@ -157,18 +157,18 @@ struct DeltaAnalysis {
   ConfigurableAxis cfgVtxAxis{"cfgVtxAxis", {VARIABLE_WIDTH, -12.f, -10.f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 12.f}, "Vertex z [cm]"};
   ConfigurableAxis cfgRapAxis{"cfgRapAxis", {20, -1.0, 1.0}, "Rapidity y"};
 
-  std::vector<float> mProtonTPCMomBins{};
-  std::vector<float> mProtonTPCNSigCuts{};
-  std::vector<float> mProtonTOFMomBins{};
-  std::vector<float> mProtonTOFNSigCuts{};
-  std::vector<float> mPionTPCMomBins{};
-  std::vector<float> mPionTPCNSigCuts{};
-  std::vector<float> mPionTOFMomBins{};
-  std::vector<float> mPionTOFNSigCuts{};
-  std::vector<float> mProtonDCAPtEdges{};
-  std::vector<float> mProtonMaxDCAxy{};
-  std::vector<float> mPionDCAPtEdges{};
-  std::vector<float> mPionMaxDCAxy{};
+  std::vector<float> mProtonTPCMomBins;
+  std::vector<float> mProtonTPCNSigCuts;
+  std::vector<float> mProtonTOFMomBins;
+  std::vector<float> mProtonTOFNSigCuts;
+  std::vector<float> mPionTPCMomBins;
+  std::vector<float> mPionTPCNSigCuts;
+  std::vector<float> mPionTOFMomBins;
+  std::vector<float> mPionTOFNSigCuts;
+  std::vector<float> mProtonDCAPtEdges;
+  std::vector<float> mProtonMaxDCAxy;
+  std::vector<float> mPionDCAPtEdges;
+  std::vector<float> mPionMaxDCAxy;
 
   void init(InitContext const&)
   {
@@ -319,10 +319,11 @@ struct DeltaAnalysis {
       histos.add("THnSparse/hAntiDeltaPlusPlusMC", "THnSparse #bar{#Delta}^{++} MC reconstructed", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
       histos.add("THnSparse/hDeltaZeroMC", "THnSparse #Delta^{0} MC reconstructed", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
       histos.add("THnSparse/hAntiDeltaZeroMC", "THnSparse #bar{#Delta}^{0} MC reconstructed", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
-      histos.add("THnSparse/hDeltaPlusPlusGen", "THnSparse #Delta^{++} generated", kTHnSparseF, {ptAxis, centAxis, rapAxis});
-      histos.add("THnSparse/hAntiDeltaPlusPlusGen", "THnSparse #bar{#Delta}^{++} generated", kTHnSparseF, {ptAxis, centAxis, rapAxis});
-      histos.add("THnSparse/hDeltaZeroGen", "THnSparse #Delta^{0} generated", kTHnSparseF, {ptAxis, centAxis, rapAxis});
-      histos.add("THnSparse/hAntiDeltaZeroGen", "THnSparse #bar{#Delta}^{0} generated", kTHnSparseF, {ptAxis, centAxis, rapAxis});
+      // CHANGED: generated-particle THnSparse now carries mass at axis 0, followed by pt, cent, rap
+      histos.add("THnSparse/hDeltaPlusPlusGen", "THnSparse #Delta^{++} generated", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+      histos.add("THnSparse/hAntiDeltaPlusPlusGen", "THnSparse #bar{#Delta}^{++} generated", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+      histos.add("THnSparse/hDeltaZeroGen", "THnSparse #Delta^{0} generated", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+      histos.add("THnSparse/hAntiDeltaZeroGen", "THnSparse #bar{#Delta}^{0} generated", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
 
       histos.add("Analysis/hDeltaPlusPlusInvMassMC", "#Delta^{++} invariant mass (MC truth-matched)", kTH2F, {ptAxis, massAxis});
       histos.add("Analysis/hAntiDeltaPlusPlusInvMassMC", "#bar{#Delta}^{++} invariant mass (MC truth-matched)", kTH2F, {ptAxis, massAxis});
@@ -421,18 +422,22 @@ struct DeltaAnalysis {
   template <typename CollisionType>
   bool passesEventSelection(CollisionType const& collision)
   {
-    if (!collision.sel8())
+    if (!collision.sel8()) {
       return false;
-    if (std::abs(collision.posZ()) > cfgCutVertex)
+    }
+    if (std::abs(collision.posZ()) > cfgCutVertex) {
       return false;
+    }
     if (applyOccupancyInTimeRangeCut) {
       const int occ = collision.trackOccupancyInTimeRange();
-      if (occ < cfgOccupancyMin || occ > cfgOccupancyMax)
+      if (occ < cfgOccupancyMin || occ > cfgOccupancyMax) {
         return false;
+      }
     }
     const float cent = getCentrality(collision);
-    if (cent < cfgCentMin || cent > cfgCentMax)
+    if (cent < cfgCentMin || cent > cfgCentMax) {
       return false;
+    }
 
     if (cfgUseNoSameBunchPileupCut &&
         !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
@@ -449,26 +454,36 @@ struct DeltaAnalysis {
   template <typename TrackType>
   bool passesBasicTrackSelection(TrackType const& track)
   {
-    if (track.itsNCls() < cfgMinITSClusters)
+    if (track.itsNCls() < cfgMinITSClusters) {
       return false;
-    if (track.tpcNClsShared() > cfgMaxTPCSharedClusters)
+    }
+    if (track.tpcNClsShared() > cfgMaxTPCSharedClusters) {
       return false;
-    if (track.tpcNClsFound() < cfgMinTPCClusters)
+    }
+    if (track.tpcNClsFound() < cfgMinTPCClusters) {
       return false;
-    if (track.tpcNClsCrossedRows() < cfgMinTPCCrossedRows)
+    }
+    if (track.tpcNClsCrossedRows() < cfgMinTPCCrossedRows) {
       return false;
-    if (track.tpcNClsCrossedRows() < cfgMinCrossedRowsOverFindable * track.tpcNClsFindable())
+    }
+    if (track.tpcNClsCrossedRows() < cfgMinCrossedRowsOverFindable * track.tpcNClsFindable()) {
       return false;
-    if (track.tpcChi2NCl() > cfgMaxTPCChi2NCl)
+    }
+    if (track.tpcChi2NCl() > cfgMaxTPCChi2NCl) {
       return false;
-    if (track.itsChi2NCl() > cfgMaxITSChi2NCl)
+    }
+    if (track.itsChi2NCl() > cfgMaxITSChi2NCl) {
       return false;
-    if (requirePrimaryTrack && !track.isPrimaryTrack())
+    }
+    if (requirePrimaryTrack && !track.isPrimaryTrack()) {
       return false;
-    if (requireGlobalTrackNoDCA && !track.isGlobalTrackWoDCA())
+    }
+    if (requireGlobalTrackNoDCA && !track.isGlobalTrackWoDCA()) {
       return false;
-    if (requirePVContributor && !track.isPVContributor())
+    }
+    if (requirePVContributor && !track.isPVContributor()) {
       return false;
+    }
     return true;
   }
 
@@ -516,14 +531,15 @@ struct DeltaAnalysis {
     const float tofNSigPr = std::abs(track.tofNSigmaPr());
     const float combinedNSigPr = tpcNSigPr * tpcNSigPr + tofNSigPr * tofNSigPr;
     const float combinedNSigPi = tpcNSigPi * tpcNSigPi + tofNSigPi * tofNSigPi;
-    const float circularCutSq = static_cast<float>(combinedNSigmaCutProton * combinedNSigmaCutProton);
+    const auto circularCutSq = static_cast<float>(combinedNSigmaCutProton * combinedNSigmaCutProton);
 
     const float circularVetoCutSq = tpcNSigmaVetoThreshold * tpcNSigmaVetoThreshold + tofNSigmaVetoThreshold * tofNSigmaVetoThreshold;
 
     if (!useTPCOnlyPID && track.hasTOF()) {
       if (combinedNSigmaCutProton < 0 && totalMomentum >= minProtonMomentum) {
-        if (track.tofNSigmaPr() < minTOFNSigmaProton)
+        if (track.tofNSigmaPr() < minTOFNSigmaProton) {
           return false;
+        }
         for (int i = 0; i < nTOFBins - 1; ++i) {
           if (totalMomentum >= mProtonTOFMomBins[i] && totalMomentum < mProtonTOFMomBins[i + 1] &&
               tofNSigPr < mProtonTOFNSigCuts[i] && tofNSigPi > tofNSigmaVetoThreshold) {
@@ -531,10 +547,12 @@ struct DeltaAnalysis {
             break;
           }
         }
-        if (track.tpcNSigmaPr() < minCombinedNSigmaProton)
+        if (track.tpcNSigmaPr() < minCombinedNSigmaProton) {
           return false;
-        if (tpcNSigPr < static_cast<float>(maxTPCNSigmaProton) && tpcNSigPi > tpcNSigmaVetoThreshold)
+        }
+        if (tpcNSigPr < static_cast<float>(maxTPCNSigmaProton) && tpcNSigPi > tpcNSigmaVetoThreshold) {
           tpcPassed = true;
+        }
       } else if (combinedNSigmaCutProton > 0 && totalMomentum >= minProtonMomentum) {
         if (combinedNSigPr < circularCutSq && combinedNSigPi > circularVetoCutSq) {
           tpcPassed = true;
@@ -559,8 +577,9 @@ struct DeltaAnalysis {
         tofPassed = true;
       } else {
         tofPassed = true;
-        if (track.tpcNSigmaPr() < minTPCNSigmaProton)
+        if (track.tpcNSigmaPr() < minTPCNSigmaProton) {
           return false;
+        }
         for (int i = 0; i < nTPCBins - 1; ++i) {
           if (totalMomentum >= mProtonTPCMomBins[i] && totalMomentum < mProtonTPCMomBins[i + 1] &&
               tpcNSigPr < mProtonTPCNSigCuts[i] && tpcNSigPi > tpcNSigmaVetoThreshold) {
@@ -585,13 +604,14 @@ struct DeltaAnalysis {
     const float tofNSigPr = std::abs(track.tofNSigmaPr());
     const float combinedNSigPi = tpcNSigPi * tpcNSigPi + tofNSigPi * tofNSigPi;
     const float combinedNSigPr = tpcNSigPr * tpcNSigPr + tofNSigPr * tofNSigPr;
-    const float circularCutSq = static_cast<float>(combinedNSigmaCutPion * combinedNSigmaCutPion);
+    const auto circularCutSq = static_cast<float>(combinedNSigmaCutPion * combinedNSigmaCutPion);
     const float circularVetoCutSq = tpcNSigmaVetoThreshold * tpcNSigmaVetoThreshold + tofNSigmaVetoThreshold * tofNSigmaVetoThreshold;
 
     if (!useTPCOnlyPID && track.hasTOF()) {
       if (combinedNSigmaCutPion < 0 && totalMomentum >= minPionMomentum) {
-        if (track.tofNSigmaPi() < minTOFNSigmaPion)
+        if (track.tofNSigmaPi() < minTOFNSigmaPion) {
           return false;
+        }
         for (int i = 0; i < nTOFBins - 1; ++i) {
           if (totalMomentum >= mPionTOFMomBins[i] && totalMomentum < mPionTOFMomBins[i + 1] &&
               tofNSigPi < mPionTOFNSigCuts[i] && tofNSigPr > tofNSigmaVetoThreshold) {
@@ -599,10 +619,12 @@ struct DeltaAnalysis {
             break;
           }
         }
-        if (track.tpcNSigmaPi() < minCombinedNSigmaPion)
+        if (track.tpcNSigmaPi() < minCombinedNSigmaPion) {
           return false;
-        if (tpcNSigPi < static_cast<float>(maxTPCNSigmaPion) && tpcNSigPr > tpcNSigmaVetoThreshold)
+        }
+        if (tpcNSigPi < static_cast<float>(maxTPCNSigmaPion) && tpcNSigPr > tpcNSigmaVetoThreshold) {
           tpcPassed = true;
+        }
       } else if (combinedNSigmaCutPion > 0 && totalMomentum >= minPionMomentum) {
         if (combinedNSigPi < circularCutSq && combinedNSigPr > circularVetoCutSq) {
           tpcPassed = true;
@@ -627,8 +649,9 @@ struct DeltaAnalysis {
         tofPassed = true;
       } else {
         tofPassed = true;
-        if (track.tpcNSigmaPi() < minTPCNSigmaPion)
+        if (track.tpcNSigmaPi() < minTPCNSigmaPion) {
           return false;
+        }
         for (int i = 0; i < nTPCBins - 1; ++i) {
           if (totalMomentum >= mPionTPCMomBins[i] && totalMomentum < mPionTPCMomBins[i + 1] &&
               tpcNSigPi < mPionTPCNSigCuts[i] && tpcNSigPr > tpcNSigmaVetoThreshold) {
@@ -833,13 +856,14 @@ struct DeltaAnalysis {
 
   void fillRotationalBackground(int protonSign, int pionSign, float pxProton, float pyProton, float pzProton, float pionPhi, float pionPt, float pzPion, float centrality)
   {
-    if (numberOfRotations <= 0)
+    if (numberOfRotations <= 0) {
       return;
+    }
     const float weight = 1.f / static_cast<float>(numberOfRotations);
     const float rotWindowHalf = o2::constants::math::PI / static_cast<float>(rotationAngleWindow);
 
     for (int iRot = 0; iRot < numberOfRotations; ++iRot) {
-      float rotAngle;
+      float rotAngle = 0.f;
       if (numberOfRotations == 1) {
         rotAngle = o2::constants::math::PI;
       } else {
@@ -856,8 +880,9 @@ struct DeltaAnalysis {
       const float rotPt = RecoDecay::pt(std::array{pxProton + pxPionRot, pyProton + pyPionRot});
       const float rotY = RecoDecay::y(
         std::array{pxProton + pxPionRot, pyProton + pyPionRot, pzProton + pzPion}, rotMass);
-      if (rotY < cfgMinY || rotY > cfgMaxY)
+      if (rotY < cfgMinY || rotY > cfgMaxY) {
         continue;
+      }
 
       if (protonSign > 0) {
         if (pionSign > 0) {
@@ -906,16 +931,18 @@ struct DeltaAnalysis {
     protons.clear();
     pions.clear();
     for (auto const& track : tracks) {
-      if (!passesBasicTrackSelection(track))
+      if (!passesBasicTrackSelection(track)) {
         continue;
+      }
       const float mom = RecoDecay::p(track.px(), track.py(), track.pz());
       const bool isProton = passesProtonPID(track, mom) && passesProtonDCASelection(track) &&
                             !(requireTOFForProton && !track.hasTOF());
       const bool isPion = passesPionPID(track, mom) && passesPionDCASelection(track) &&
                           !(requireTOFForPion && !track.hasTOF());
-      if (!isProton && !isPion)
+      if (!isProton && !isPion) {
         continue;
-      TrackCandidate cand;
+      }
+      TrackCandidate cand{};
       cand.px = track.px();
       cand.py = track.py();
       cand.pz = track.pz();
@@ -930,10 +957,12 @@ struct DeltaAnalysis {
       cand.tpcNSigmaPr = track.tpcNSigmaPr();
       cand.tpcNSigmaPi = track.tpcNSigmaPi();
       cand.globalIndex = track.globalIndex();
-      if (isProton)
+      if (isProton) {
         protons.push_back(cand);
-      if (isPion)
+      }
+      if (isPion) {
         pions.push_back(cand);
+      }
     }
   }
 
@@ -948,23 +977,26 @@ struct DeltaAnalysis {
       for (auto const& pionCand : pionPool) {
 
         if constexpr (!isMixed) {
-          if (protonCand.globalIndex == pionCand.globalIndex)
+          if (protonCand.globalIndex == pionCand.globalIndex) {
             continue;
+          }
         }
 
         const float pxPr = protonCand.px, pyPr = protonCand.py, pzPr = protonCand.pz;
         const float pxPi = pionCand.px, pyPi = pionCand.py, pzPi = pionCand.pz;
 
         if constexpr (!isMixed) {
-          if (fillPairQA)
+          if (fillPairQA) {
             fillPairQABefore(pxPr, pyPr, pzPr, pxPi, pyPi, pzPi, protonCand.mom, pionCand.mom);
+          }
         }
 
         if (applyDeepAngleCut) {
           const float cosAngle = std::clamp(
             (pxPr * pxPi + pyPr * pyPi + pzPr * pzPi) / (protonCand.mom * pionCand.mom), -1.f, 1.f);
-          if (std::acos(cosAngle) < static_cast<float>(deepAngleCutValue))
+          if (std::acos(cosAngle) < static_cast<float>(deepAngleCutValue)) {
             continue;
+          }
         }
 
         const std::array<std::array<float, 3>, 2> bothMomenta = {
@@ -974,21 +1006,24 @@ struct DeltaAnalysis {
         const float pairPt = RecoDecay::pt(std::array{pxPr + pxPi, pyPr + pyPi});
         const float pairY = RecoDecay::y(std::array{pxPr + pxPi, pyPr + pyPi, pzPr + pzPi}, pairMass);
 
-        if (pairY < cfgMinY || pairY > cfgMaxY)
+        if (pairY < cfgMinY || pairY > cfgMaxY) {
           continue;
+        }
 
         if constexpr (!isMixed) {
-          if (fillPairQA)
+          if (fillPairQA) {
             fillPairQAAfter(pxPr, pyPr, pzPr, pxPi, pyPi, pzPi, protonCand.mom, pionCand.mom);
+          }
         }
 
         if constexpr (isMixed) {
           fillDeltaHistogramMixedEvent(protonCand.sign, pionCand.sign, pairPt, pairMass, centrality, pairY);
         } else {
           fillDeltaHistogramSameEvent(protonCand.sign, pionCand.sign, pairPt, pairMass, centrality, pairY);
-          if (enableRotationalBackground)
+          if (enableRotationalBackground) {
             fillRotationalBackground(protonCand.sign, pionCand.sign,
                                      pxPr, pyPr, pzPr, pionCand.phi, pionCand.pt, pzPi, centrality);
+          }
         }
       }
     }
@@ -1023,16 +1058,17 @@ struct DeltaAnalysis {
   SameKindPair<EventCandidates, TrackCandidates, BinningTypeFV0A> pairFV0A{binningFV0A, cfgNoMixedEvents, -1, &cache};
   SameKindPair<EventCandidates, TrackCandidates, BinningTypeNTPV> pairNTPV{binningNTPV, cfgNoMixedEvents, -1, &cache};
 
-  std::vector<TrackCandidate> mProtonPool{};
-  std::vector<TrackCandidate> mPionPool{};
+  std::vector<TrackCandidate> mProtonPool;
+  std::vector<TrackCandidate> mPionPool;
 
   void processSameEvent(EventCandidates const& collisions,
                         TrackCandidates const& tracks,
                         aod::BCs const&)
   {
     for (auto const& collision : collisions) {
-      if (!passesEventSelection(collision))
+      if (!passesEventSelection(collision)) {
         continue;
+      }
       const float centrality = getCentrality(collision);
       const int occupancy = collision.trackOccupancyInTimeRange();
 
@@ -1064,12 +1100,15 @@ struct DeltaAnalysis {
           histos.fill(HIST("QAbefore/Pion/tofNSigmaVsMomentum"), mom, track.tofNSigmaPi());
           histos.fill(HIST("QAbefore/Pion/tofNSigmaVsTPCNSigma"), track.tpcNSigmaPi(), track.tofNSigmaPi());
         }
-        if (!passesBasicTrackSelection(track))
+        if (!passesBasicTrackSelection(track)) {
           continue;
-        if (passesProtonPID(track, mom) && passesProtonDCASelection(track))
+        }
+        if (passesProtonPID(track, mom) && passesProtonDCASelection(track)) {
           fillQAProton(track, mom, centrality);
-        if (passesPionPID(track, mom) && passesPionDCASelection(track))
+        }
+        if (passesPionPID(track, mom) && passesPionDCASelection(track)) {
           fillQAPion(track, mom, centrality);
+        }
       }
       buildCandidatePools(perColTracks, mProtonPool, mPionPool);
       fillInvariantMassHistogramsFromPools<false>(mProtonPool, mPionPool, centrality, true);
@@ -1082,8 +1121,9 @@ struct DeltaAnalysis {
   void runMixedEvent(PairType& mixingPair)
   {
     for (auto const& [c1, tracks1, c2, tracks2] : mixingPair) {
-      if (!passesEventSelection(c1) || !passesEventSelection(c2))
+      if (!passesEventSelection(c1) || !passesEventSelection(c2)) {
         continue;
+      }
       const float centrality = getCentrality(c1);
       std::vector<TrackCandidate> protonPool1, pionPool1, protonPool2, pionPool2;
       buildCandidatePools(tracks1, protonPool1, pionPool1);
@@ -1123,8 +1163,9 @@ struct DeltaAnalysis {
     constexpr float kGenCentrality = 1.f;
 
     for (auto const& collision : collisions) {
-      if (!passesEventSelection(collision))
+      if (!passesEventSelection(collision)) {
         continue;
+      }
       const float centrality = getCentrality(collision);
       histos.fill(HIST("Event/hNcontributor"), collision.numContrib());
       histos.fill(HIST("Event/hVtxZ"), collision.posZ());
@@ -1134,37 +1175,42 @@ struct DeltaAnalysis {
       perColTracks.bindExternalIndices(&tracks);
 
       for (auto const& t0 : perColTracks) {
-        if (!passesBasicTrackSelection(t0) || !t0.has_mcParticle())
+        if (!passesBasicTrackSelection(t0) || !t0.has_mcParticle()) {
           continue;
+        }
         const auto mcTrack = t0.mcParticle();
         const float mom = RecoDecay::p(t0.px(), t0.py(), t0.pz());
         if (std::abs(mcTrack.pdgCode()) == delta_analysis::PdgProton && passesProtonPID(t0, mom)) {
           for (const auto& mother : mcTrack.mothers_as<aod::McParticles>()) {
             if (std::abs(mother.pdgCode()) == delta_analysis::PdgDeltaPlusPlus) {
-              if (t0.sign() < 0)
+              if (t0.sign() < 0) {
                 histos.fill(HIST("QAChecks/hRecProtonAntiDeltaPlusPlus"), t0.pt());
-              else
+              } else {
                 histos.fill(HIST("QAChecks/hRecProtonDeltaPlusPlus"), t0.pt());
+              }
             } else if (std::abs(mother.pdgCode()) == delta_analysis::PdgDeltaZero) {
-              if (t0.sign() < 0)
+              if (t0.sign() < 0) {
                 histos.fill(HIST("QAChecks/hRecProtonAntiDeltaZero"), t0.pt());
-              else
+              } else {
                 histos.fill(HIST("QAChecks/hRecProtonDeltaZero"), t0.pt());
+              }
             }
           }
         }
         if (std::abs(mcTrack.pdgCode()) == delta_analysis::PdgPion && passesPionPID(t0, mom)) {
           for (const auto& mother : mcTrack.mothers_as<aod::McParticles>()) {
             if (std::abs(mother.pdgCode()) == delta_analysis::PdgDeltaPlusPlus) {
-              if (t0.sign() < 0)
+              if (t0.sign() < 0) {
                 histos.fill(HIST("QAChecks/hRecPionAntiDeltaPlusPlus"), t0.pt());
-              else
+              } else {
                 histos.fill(HIST("QAChecks/hRecPionDeltaPlusPlus"), t0.pt());
+              }
             } else if (std::abs(mother.pdgCode()) == delta_analysis::PdgDeltaZero) {
-              if (t0.sign() < 0)
+              if (t0.sign() < 0) {
                 histos.fill(HIST("QAChecks/hRecPionAntiDeltaZero"), t0.pt());
-              else
+              } else {
                 histos.fill(HIST("QAChecks/hRecPionDeltaZero"), t0.pt());
+              }
             }
           }
         }
@@ -1173,25 +1219,32 @@ struct DeltaAnalysis {
       // fill QAMC for every reconstructed MC track passing basic+PID+DCA cuts, irrespective of truth matching.
       for (auto const& trackForQAMC : perColTracks) {
         const float momQAMC = RecoDecay::p(trackForQAMC.px(), trackForQAMC.py(), trackForQAMC.pz());
-        if (!passesBasicTrackSelection(trackForQAMC))
+        if (!passesBasicTrackSelection(trackForQAMC)) {
           continue;
-        if (passesProtonPID(trackForQAMC, momQAMC) && passesProtonDCASelection(trackForQAMC))
+        }
+        if (passesProtonPID(trackForQAMC, momQAMC) && passesProtonDCASelection(trackForQAMC)) {
           fillQAMCProton(trackForQAMC, momQAMC, centrality);
-        if (passesPionPID(trackForQAMC, momQAMC) && passesPionDCASelection(trackForQAMC))
+        }
+        if (passesPionPID(trackForQAMC, momQAMC) && passesPionDCASelection(trackForQAMC)) {
           fillQAMCPion(trackForQAMC, momQAMC, centrality);
+        }
       }
 
       for (auto const& [t0, t1] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(perColTracks, perColTracks))) {
-        if (t0.globalIndex() == t1.globalIndex())
+        if (t0.globalIndex() == t1.globalIndex()) {
           continue;
-        if (!passesBasicTrackSelection(t0) || !passesBasicTrackSelection(t1))
+        }
+        if (!passesBasicTrackSelection(t0) || !passesBasicTrackSelection(t1)) {
           continue;
+        }
         const float momT0 = RecoDecay::p(t0.px(), t0.py(), t0.pz());
         const float momT1 = RecoDecay::p(t1.px(), t1.py(), t1.pz());
-        if (!passesProtonPID(t0, momT0) || !passesPionPID(t1, momT1))
+        if (!passesProtonPID(t0, momT0) || !passesPionPID(t1, momT1)) {
           continue;
-        if (!passesProtonDCASelection(t0) || !passesPionDCASelection(t1))
+        }
+        if (!passesProtonDCASelection(t0) || !passesPionDCASelection(t1)) {
           continue;
+        }
 
         // reconstructed-level (pre-truth-matching) invariant mass.
         {
@@ -1206,38 +1259,46 @@ struct DeltaAnalysis {
           }
         }
 
-        if (!t0.has_mcParticle() || !t1.has_mcParticle())
+        if (!t0.has_mcParticle() || !t1.has_mcParticle()) {
           continue;
+        }
         const auto mcProton = t0.mcParticle();
         const auto mcPion = t1.mcParticle();
-        if (std::abs(mcProton.pdgCode()) != delta_analysis::PdgProton)
+        if (std::abs(mcProton.pdgCode()) != delta_analysis::PdgProton) {
           continue;
-        if (std::abs(mcPion.pdgCode()) != delta_analysis::PdgPion)
+        }
+        if (std::abs(mcPion.pdgCode()) != delta_analysis::PdgPion) {
           continue;
+        }
         bool foundMother = false;
         for (const auto& motherPr : mcProton.mothers_as<aod::McParticles>()) {
           for (const auto& motherPi : mcPion.mothers_as<aod::McParticles>()) {
-            if (motherPr != motherPi)
+            if (motherPr != motherPi) {
               continue;
+            }
             if (std::abs(motherPr.pdgCode()) != delta_analysis::PdgDeltaPlusPlus &&
-                std::abs(motherPr.pdgCode()) != delta_analysis::PdgDeltaZero)
+                std::abs(motherPr.pdgCode()) != delta_analysis::PdgDeltaZero) {
               continue;
+            }
             foundMother = true;
             break;
           }
-          if (foundMother)
+          if (foundMother) {
             break;
+          }
         }
-        if (!foundMother)
+        if (!foundMother) {
           continue;
+        }
         const std::array<std::array<float, 3>, 2> momenta = {
           std::array<float, 3>{t0.px(), t0.py(), t0.pz()},
           std::array<float, 3>{t1.px(), t1.py(), t1.pz()}};
         const float pairMass = RecoDecay::m(momenta, std::array{massProton, massPion});
         const float pairPt = RecoDecay::pt(std::array{t0.px() + t1.px(), t0.py() + t1.py()});
         const float pairY = RecoDecay::y(std::array{t0.px() + t1.px(), t0.py() + t1.py(), t0.pz() + t1.pz()}, pairMass);
-        if (pairY < cfgMinY || pairY > cfgMaxY)
+        if (pairY < cfgMinY || pairY > cfgMaxY) {
           continue;
+        }
         fillDeltaHistogramMC(t0.sign(), t1.sign(), pairPt, pairMass, centrality, pairY);
       }
     }
@@ -1245,49 +1306,59 @@ struct DeltaAnalysis {
     for (auto const& mcParticle : mcParticles) {
       const int pdg = mcParticle.pdgCode();
       if (std::abs(pdg) != delta_analysis::PdgDeltaPlusPlus &&
-          std::abs(pdg) != delta_analysis::PdgDeltaZero)
+          std::abs(pdg) != delta_analysis::PdgDeltaZero) {
         continue;
-      if (mcParticle.y() < cfgMinY || mcParticle.y() > cfgMaxY)
+      }
+      if (mcParticle.y() < cfgMinY || mcParticle.y() > cfgMaxY) {
         continue;
+      }
       const auto daughters = mcParticle.daughters_as<aod::McParticles>();
+      // CHANGED: daughter loop is now used only for decay-channel validation / QA
+      // (hasPr, hasPi, ptPr, ptPi). It no longer accumulates daughter energy for
+      // the mass calculation.
       bool hasPr = false, hasPi = false;
       float ptPr = -999.f, ptPi = -999.f;
-      double eTotal = 0.;
       for (const auto& d : daughters) {
         if (std::abs(d.pdgCode()) == delta_analysis::PdgProton) {
           hasPr = true;
           ptPr = d.pt();
-          eTotal += d.e();
         } else if (std::abs(d.pdgCode()) == delta_analysis::PdgPion) {
           hasPi = true;
           ptPi = d.pt();
-          eTotal += d.e();
         }
       }
-      if (!hasPr || !hasPi)
+      if (!hasPr || !hasPi) {
         continue;
-      const float pSq = mcParticle.p() * mcParticle.p();
-      const float genMass = std::sqrt(std::max(0., eTotal * eTotal - static_cast<double>(pSq)));
+      }
+      // CHANGED: genMass is now computed directly from the mother particle's own four-momentum (E, px, py, pz)
+      const float eMother = mcParticle.e();
+      const float pxMother = mcParticle.px();
+      const float pyMother = mcParticle.py();
+      const float pzMother = mcParticle.pz();
+      const float mass2 = eMother * eMother - pxMother * pxMother - pyMother * pyMother - pzMother * pzMother;
+      const float genMass = std::sqrt(std::max(0.f, mass2));
       const float genPt = mcParticle.pt();
       const float genY = mcParticle.y();
       if (pdg == delta_analysis::PdgDeltaPlusPlus) {
         histos.fill(HIST("Analysis/hDeltaPlusPlusInvMassGen"), genPt, genMass);
-        histos.fill(HIST("THnSparse/hDeltaPlusPlusGen"), genPt, kGenCentrality, genY);
+        // CHANGED: THnSparse Gen fill now carries genMass as the first argument,
+        // matching the new {massAxis, ptAxis, centAxis, rapAxis} axis order.
+        histos.fill(HIST("THnSparse/hDeltaPlusPlusGen"), genMass, genPt, kGenCentrality, genY);
         histos.fill(HIST("QAChecks/hGenProtonDeltaPlusPlus"), ptPr);
         histos.fill(HIST("QAChecks/hGenPionDeltaPlusPlus"), ptPi);
       } else if (pdg == -delta_analysis::PdgDeltaPlusPlus) {
         histos.fill(HIST("Analysis/hAntiDeltaPlusPlusInvMassGen"), genPt, genMass);
-        histos.fill(HIST("THnSparse/hAntiDeltaPlusPlusGen"), genPt, kGenCentrality, genY);
+        histos.fill(HIST("THnSparse/hAntiDeltaPlusPlusGen"), genMass, genPt, kGenCentrality, genY);
         histos.fill(HIST("QAChecks/hGenProtonAntiDeltaPlusPlus"), ptPr);
         histos.fill(HIST("QAChecks/hGenPionAntiDeltaPlusPlus"), ptPi);
       } else if (pdg == delta_analysis::PdgDeltaZero) {
         histos.fill(HIST("Analysis/hDeltaZeroInvMassGen"), genPt, genMass);
-        histos.fill(HIST("THnSparse/hDeltaZeroGen"), genPt, kGenCentrality, genY);
+        histos.fill(HIST("THnSparse/hDeltaZeroGen"), genMass, genPt, kGenCentrality, genY);
         histos.fill(HIST("QAChecks/hGenProtonDeltaZero"), ptPr);
         histos.fill(HIST("QAChecks/hGenPionDeltaZero"), ptPi);
       } else if (pdg == -delta_analysis::PdgDeltaZero) {
         histos.fill(HIST("Analysis/hAntiDeltaZeroInvMassGen"), genPt, genMass);
-        histos.fill(HIST("THnSparse/hAntiDeltaZeroGen"), genPt, kGenCentrality, genY);
+        histos.fill(HIST("THnSparse/hAntiDeltaZeroGen"), genMass, genPt, kGenCentrality, genY);
         histos.fill(HIST("QAChecks/hGenProtonAntiDeltaZero"), ptPr);
         histos.fill(HIST("QAChecks/hGenPionAntiDeltaZero"), ptPi);
       }
@@ -1296,7 +1367,7 @@ struct DeltaAnalysis {
   PROCESS_SWITCH(DeltaAnalysis, processMC, "Process MC", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<DeltaAnalysis>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<DeltaAnalysis>(context)};
 }

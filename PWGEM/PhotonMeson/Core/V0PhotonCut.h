@@ -46,11 +46,7 @@
 #include <utility>
 #include <vector>
 
-namespace o2::analysis
-{
-
-// namespace per channel
-namespace em_cuts_ml
+namespace o2::analysis::em_cuts_ml
 {
 // direction of the cut
 enum CutDirection {
@@ -64,7 +60,7 @@ static constexpr int NBins = 12;
 static constexpr int NBinsPt = 12;
 static constexpr int NCutScores = 2;
 // default values for the pT bin edges, offset by 1 from the bin numbers in cuts array
-constexpr double BinsPt[NBinsPt + 1] = {
+constexpr std::array<double, NBins + 1> BinsPt = {
   0.,
   0.25,
   0.5,
@@ -78,9 +74,9 @@ constexpr double BinsPt[NBinsPt + 1] = {
   20.,
   50.,
   100.};
-const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+const auto vecBinsPt = std::vector<double>{BinsPt.begin(), BinsPt.end()};
 static constexpr int NBinsCent = 11;
-constexpr double BinsCent[NBinsCent + 1] = {
+constexpr std::array<double, NBinsCent + 1> BinsCent = {
   0.,
   5,
   10,
@@ -93,30 +89,29 @@ constexpr double BinsCent[NBinsCent + 1] = {
   80,
   90,
   100.};
-const auto vecBinsCent = std::vector<double>{BinsCent, BinsCent + NBinsCent + 1};
+const auto vecBinsCent = std::vector<double>{BinsCent.begin(), BinsCent.end()};
 
 // default values for the ML model paths, one model per pT bin
 static const std::vector<std::string> modelPaths = {
   ""};
 
 // default values for the cut directions
-constexpr int CutDir[NCutScores] = {CutGreater, CutSmaller};
-const auto vecCutDir = std::vector<int>{CutDir, CutDir + NCutScores};
+constexpr std::array<int, NCutScores> CutDir = {CutGreater, CutSmaller};
+const auto vecCutDir = std::vector<int>{CutDir.begin(), CutDir.end()};
 
 // default values for the cuts
-constexpr double Cuts[NBins][NCutScores] = {
-  {0.5, 0.5},
-  {0.5, 0.5},
-  {0.5, 0.5},
-  {0.5, 0.5},
-  {0.5, 0.5},
-  {0.5, 0.5},
-  {0.5, 0.5},
-  {0.5, 0.5},
-  {0.5, 0.5},
-  {0.5, 0.5},
-  {0.5, 0.5},
-  {0.5, 0.5}};
+constexpr std::array<std::array<double, NCutScores>, NBins> Cuts = {{{0.5, 0.5},
+                                                                     {0.5, 0.5},
+                                                                     {0.5, 0.5},
+                                                                     {0.5, 0.5},
+                                                                     {0.5, 0.5},
+                                                                     {0.5, 0.5},
+                                                                     {0.5, 0.5},
+                                                                     {0.5, 0.5},
+                                                                     {0.5, 0.5},
+                                                                     {0.5, 0.5},
+                                                                     {0.5, 0.5},
+                                                                     {0.5, 0.5}}};
 
 // row labels
 static const std::vector<std::string> labelsPt = {
@@ -148,9 +143,8 @@ static const std::vector<std::string> labelsCent = {
 
 // column labels
 static const std::vector<std::string> labelsCutScore = {"score background", "score primary photons"};
-} // namespace em_cuts_ml
 
-} // namespace o2::analysis
+} // namespace o2::analysis::em_cuts_ml
 
 namespace o2::analysis::em::v0
 {
@@ -214,8 +208,8 @@ class V0PhotonCut : public TNamed
     kRadAndAngle = 2
   };
 
-  const std::string getName() const { return name; }
-  const std::string getTitle() const { return title; }
+  const std::string& getName() const { return name; }
+  const std::string& getTitle() const { return title; }
 
   /// \brief add histograms to registry
   /// \param fRegistry pointer to histogram registry
@@ -307,7 +301,7 @@ class V0PhotonCut : public TNamed
   void fillBeforePhotonHistogram(TV0 const& v0, TLeg1 const& pos, TLeg2 const& ele, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
 
-    if (mDoQA == false || fRegistry == nullptr) {
+    if (!mDoQA || fRegistry == nullptr) {
       return;
     }
 
@@ -337,7 +331,7 @@ class V0PhotonCut : public TNamed
   void fillAfterPhotonHistogram(TV0 const& v0, TLeg1 const& pos, TLeg2 const& ele, o2::framework::HistogramRegistry* fRegistry = nullptr) const
   {
 
-    if (mDoQA == false || fRegistry == nullptr) {
+    if (!mDoQA || fRegistry == nullptr) {
       return;
     }
 
@@ -864,6 +858,10 @@ class V0PhotonCut : public TNamed
         if (v0.v0radius() < mMinRxy || mMaxRxy < v0.v0radius()) {
           return false;
         }
+        if (mMidRxyLow > 0.f && mMidRxyHigh > 0.f &&
+            v0.v0radius() >= mMidRxyLow && v0.v0radius() <= mMidRxyHigh) {
+          return false;
+        }
         return true;
       }
 
@@ -1014,7 +1012,7 @@ class V0PhotonCut : public TNamed
       int binsNCent = static_cast<int>(mBinsCentMl.size()) - 1;
       int binsN = binsNPt * binsNCent;
       if (binsN * static_cast<int>(mCutDirMl.size()) != static_cast<int>(mCutsMlFlat.size())) {
-        LOG(fatal) << "Mismatch in number of bins and cuts provided for 2D ML application: binsN * mCutDirMl: " << int(binsN) * int(mCutDirMl.size()) << " bins vs. mCutsMlFlat: " << mCutsMlFlat.size() << " cuts";
+        LOG(fatal) << "Mismatch in number of bins and cuts provided for 2D ML application: binsN * mCutDirMl: " << binsN * static_cast<int>(mCutDirMl.size()) << " bins vs. mCutsMlFlat: " << mCutsMlFlat.size() << " cuts";
       }
       if (binsN != static_cast<int>(mOnnxFileNames.size())) {
         LOG(fatal) << "Mismatch in number of bins and ONNX files provided for 2D ML application: binsN " << binsN << " bins vs. mOnnxFileNames: " << mOnnxFileNames.size() << " ONNX files";
@@ -1060,7 +1058,7 @@ class V0PhotonCut : public TNamed
     mEmMlResponse->init();
   }
 
-  const std::span<float> getBDTValue() const
+  std::span<float> getBDTValue() const
   {
     return mMlBDTScores;
   }
@@ -1093,7 +1091,7 @@ class V0PhotonCut : public TNamed
   void SetPsiPairRange(float min = -3.15, float max = +3.15);
   void SetPhivPairRange(float min = 0.f, float max = +3.15);
   void SetAPRange(float max_alpha = 0.95, float max_qt = 0.05); // Armenteros Podolanski
-  void SetRxyRange(float min = 0.f, float max = 180.f);
+  void SetRxyRange(float min = 0.f, float max = 180.f, float midL = -1.f, float midH = -1.f);
   void SetMinCosPA(float min = 0.95);
   void SetMaxPCA(float max = 2.f);
   void SetMaxChi2KF(float max = 1e+10);
@@ -1169,11 +1167,12 @@ class V0PhotonCut : public TNamed
   float mMinPsiPair{-3.15}, mMaxPsiPair{+3.15};
   float mMinPhivPair{0.f}, mMaxPhivPair{+3.15};
   float mMinRxy{0.f}, mMaxRxy{180.f};
+  float mMidRxyLow{-1.f}, mMidRxyHigh{-1.f};
   float mMinCosPA{0.95};
   float mMaxPCA{2.f};
   float mMaxChi2KF{1e+10};
   float mMaxMarginZ{7.f};
-  std::function<float(float)> mMaxMeePsiPairDep{}; // max mee as a function of psipair
+  std::function<float(float)> mMaxMeePsiPairDep; // max mee as a function of psipair
   bool mIsOnWwireIB{false};
   bool mIsOnWwireOB{false};
   bool mRejectITSib{false};
@@ -1181,7 +1180,7 @@ class V0PhotonCut : public TNamed
   float mMinV0DistSquared{1.};                                         // for TooCloseV0Cut: cut value when using squared distance between conversion points
   float mDeltaR{6.};                                                   // for TooCloseV0Cut: V0PhotonCut::TooCloseCuts::kRadAndAngle when deltaR < this -> compare chi2
   float mMinOpeningAngle{0.02};                                        // for TooCloseV0Cut: V0PhotonCut::TooCloseCuts::kRadAndAngle when opening angle < this -> compare chi2
-  mutable std::vector<uint8_t> mRejectMask{};
+  mutable std::vector<uint8_t> mRejectMask;
 
   // ML cuts
   bool mApplyMlCuts{false};
@@ -1203,9 +1202,9 @@ class V0PhotonCut : public TNamed
   std::vector<double> mCutsMlFlat{std::vector<double>{0.5}};
   o2::analysis::EmMlResponsePCM<float>* mEmMlResponse{nullptr};
   mutable bool mIsSelectedMl{false};
-  mutable std::vector<float> mOutputML{};
-  mutable std::vector<float> mMlInputFeatures{};
-  mutable std::span<float> mMlBDTScores{};
+  mutable std::vector<float> mOutputML;
+  mutable std::vector<float> mMlInputFeatures;
+  mutable std::span<float> mMlBDTScores;
   CentType mCentralityTypeMl{CentType::CentFT0C};
   mutable V0PhotonCandidate mV0PhotonForMl;
 
@@ -1227,9 +1226,9 @@ class V0PhotonCut : public TNamed
   float mMinChi2PerClusterITS{-1e10f}, mMaxChi2PerClusterITS{1e10f};   // max its fit chi2 per ITS cluster
   float mMinMeanClusterSizeITS{-1e10f}, mMaxMeanClusterSizeITS{1e10f}; // max <its cluster size> x cos(Lmabda)
 
-  float mMaxDcaXY{1e10f};                       // max dca in xy plane
-  float mMaxDcaZ{1e10f};                        // max dca in z direction
-  std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
+  float mMaxDcaXY{1e10f};                     // max dca in xy plane
+  float mMaxDcaZ{1e10f};                      // max dca in z direction
+  std::function<float(float)> mMaxDcaXYPtDep; // max dca in xy plane as function of pT
   bool mRequireITSTPC{false};
   bool mRequireITSonly{false};
   bool mRequireTPConly{false};

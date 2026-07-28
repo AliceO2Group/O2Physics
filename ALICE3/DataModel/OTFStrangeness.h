@@ -41,7 +41,7 @@ DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                 
 DECLARE_SOA_INDEX_COLUMN_FULL(CascadeTrack, cascadeTrack, int, Tracks, "_Cascade"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, Tracks, "_Pos");             //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, Tracks, "_Neg");             //!
-DECLARE_SOA_INDEX_COLUMN_FULL(BachTrack, bachTrack, int, Tracks, "_Bach");          //!
+DECLARE_SOA_INDEX_COLUMN_FULL(Bachelor, bachelor, int, Tracks, "_Bach");            //!
 
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
 
@@ -53,6 +53,8 @@ DECLARE_SOA_COLUMN(CascRadius, cascRadius, float);
 DECLARE_SOA_COLUMN(CascRadiusMC, cascRadiusMC, float);
 DECLARE_SOA_COLUMN(MLambda, mLambda, float);
 DECLARE_SOA_COLUMN(MXi, mXi, float);
+DECLARE_SOA_COLUMN(DcaXYCascToPV, dcaXYCascToPV, float);
+DECLARE_SOA_COLUMN(DcaZCascToPV, dcaZCascToPV, float);
 
 // strangeness tracking
 DECLARE_SOA_COLUMN(FindableClusters, findableClusters, int);
@@ -65,7 +67,7 @@ DECLARE_SOA_TABLE(UpgradeCascades, "AOD", "UPGRADECASCADES",
                   otfcascade::CascadeTrackId,
                   otfcascade::PosTrackId,
                   otfcascade::NegTrackId,
-                  otfcascade::BachTrackId,
+                  otfcascade::BachelorId,
                   otfcascade::DcaV0Daughters,
                   otfcascade::DcaCascadeDaughters,
                   otfcascade::V0Radius,
@@ -74,11 +76,15 @@ DECLARE_SOA_TABLE(UpgradeCascades, "AOD", "UPGRADECASCADES",
                   otfcascade::MLambda,
                   otfcascade::MXi,
                   otfcascade::FindableClusters,
-                  otfcascade::FoundClusters);
+                  otfcascade::FoundClusters,
+                  otfcascade::DcaXYCascToPV,
+                  otfcascade::DcaZCascToPV);
 
 using UpgradeCascade = UpgradeCascades::iterator;
 
 DECLARE_SOA_TABLE(A3CascadeMcLabels, "AOD", "A3CASCADEMCLABELS",
+                  o2::soa::Index<>, otfcascade::McParticleId);
+DECLARE_SOA_TABLE(UpgradeCascadeMcLabels, "AOD", "UPGRADECASCMCLAB",
                   o2::soa::Index<>, otfcascade::McParticleId);
 
 namespace casc_pid
@@ -478,5 +484,148 @@ DECLARE_SOA_TABLE(V0CandidateCores, "AOD", "V0CANDIDATECORE",
                   candidatev0::PositivePhi<candidatev0::PxPos, candidatev0::PyPos>);
 
 using V0CandidateCore = V0CandidateCores::iterator;
+
+namespace v0_pid
+{
+
+// K0S
+DECLARE_SOA_COLUMN(NSigmaInnerTofK0SPosPi, nSigmaInnerTofK0SPosPi, float);
+DECLARE_SOA_COLUMN(NSigmaInnerTofK0SNegPi, nSigmaInnerTofK0SNegPi, float);
+DECLARE_SOA_DYNAMIC_COLUMN(HasInnerTofK0SPosPi, hasInnerTofK0SPosPi,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasInnerTofK0SNegPi, hasInnerTofK0SNegPi,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+
+DECLARE_SOA_COLUMN(NSigmaOuterTofK0SPosPi, nSigmaOuterTofK0SPosPi, float);
+DECLARE_SOA_COLUMN(NSigmaOuterTofK0SNegPi, nSigmaOuterTofK0SNegPi, float);
+DECLARE_SOA_DYNAMIC_COLUMN(HasOuterTofK0SPosPi, hasOuterTofK0SPosPi,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasOuterTofK0SNegPi, hasOuterTofK0SNegPi,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+
+DECLARE_SOA_COLUMN(ExpectedInnerTofK0SPosPi, expectedInnerTofK0SPosPi, float);
+DECLARE_SOA_COLUMN(ExpectedInnerTofK0SNegPi, expectedInnerTofK0SNegPi, float);
+
+DECLARE_SOA_COLUMN(ExpectedOuterTofK0SPosPi, expectedOuterTofK0SPosPi, float);
+DECLARE_SOA_COLUMN(ExpectedOuterTofK0SNegPi, expectedOuterTofK0SNegPi, float);
+
+DECLARE_SOA_COLUMN(MeasuredInnerTofK0SPosPi, measuredInnerTofK0SPosPi, float);
+DECLARE_SOA_COLUMN(MeasuredInnerTofK0SNegPi, measuredInnerTofK0SNegPi, float);
+
+DECLARE_SOA_COLUMN(MeasuredOuterTofK0SPosPi, measuredOuterTofK0SPosPi, float);
+DECLARE_SOA_COLUMN(MeasuredOuterTofK0SNegPi, measuredOuterTofK0SNegPi, float);
+
+// Lambda
+DECLARE_SOA_COLUMN(NSigmaInnerTofLambdaPosPr, nSigmaInnerTofLambdaPosPr, float);
+DECLARE_SOA_COLUMN(NSigmaInnerTofLambdaPosPi, nSigmaInnerTofLambdaPosPi, float);
+DECLARE_SOA_COLUMN(NSigmaInnerTofLambdaNegPr, nSigmaInnerTofLambdaNegPr, float);
+DECLARE_SOA_COLUMN(NSigmaInnerTofLambdaNegPi, nSigmaInnerTofLambdaNegPi, float);
+DECLARE_SOA_DYNAMIC_COLUMN(HasInnerTofLambdaPosPr, hasInnerTofLambdaPosPr,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasInnerTofLambdaPosPi, hasInnerTofLambdaPosPi,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasInnerTofLambdaNegPr, hasInnerTofLambdaNegPr,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasInnerTofLambdaNegPi, hasInnerTofLambdaNegPi,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+
+DECLARE_SOA_COLUMN(NSigmaOuterTofLambdaPosPr, nSigmaOuterTofLambdaPosPr, float);
+DECLARE_SOA_COLUMN(NSigmaOuterTofLambdaPosPi, nSigmaOuterTofLambdaPosPi, float);
+DECLARE_SOA_COLUMN(NSigmaOuterTofLambdaNegPr, nSigmaOuterTofLambdaNegPr, float);
+DECLARE_SOA_COLUMN(NSigmaOuterTofLambdaNegPi, nSigmaOuterTofLambdaNegPi, float);
+DECLARE_SOA_DYNAMIC_COLUMN(HasOuterTofLambdaPosPr, hasOuterTofLambdaPosPr,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasOuterTofLambdaPosPi, hasOuterTofLambdaPosPi,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasOuterTofLambdaNegPr, hasOuterTofLambdaNegPr,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+DECLARE_SOA_DYNAMIC_COLUMN(HasOuterTofLambdaNegPi, hasOuterTofLambdaNegPi,
+                           [](float nSigma) -> bool { return (nSigma > o2::upgrade::pid::NoPidSignalThreshold); });
+
+DECLARE_SOA_COLUMN(ExpectedInnerTofLambdaPosPr, expectedInnerTofLambdaPosPr, float);
+DECLARE_SOA_COLUMN(ExpectedInnerTofLambdaPosPi, expectedInnerTofLambdaPosPi, float);
+DECLARE_SOA_COLUMN(ExpectedInnerTofLambdaNegPr, expectedInnerTofLambdaNegPr, float);
+DECLARE_SOA_COLUMN(ExpectedInnerTofLambdaNegPi, expectedInnerTofLambdaNegPi, float);
+
+DECLARE_SOA_COLUMN(ExpectedOuterTofLambdaPosPr, expectedOuterTofLambdaPosPr, float);
+DECLARE_SOA_COLUMN(ExpectedOuterTofLambdaPosPi, expectedOuterTofLambdaPosPi, float);
+DECLARE_SOA_COLUMN(ExpectedOuterTofLambdaNegPr, expectedOuterTofLambdaNegPr, float);
+DECLARE_SOA_COLUMN(ExpectedOuterTofLambdaNegPi, expectedOuterTofLambdaNegPi, float);
+
+DECLARE_SOA_COLUMN(MeasuredInnerTofLambdaPosPr, measuredInnerTofLambdaPosPr, float);
+DECLARE_SOA_COLUMN(MeasuredInnerTofLambdaPosPi, measuredInnerTofLambdaPosPi, float);
+DECLARE_SOA_COLUMN(MeasuredInnerTofLambdaNegPr, measuredInnerTofLambdaNegPr, float);
+DECLARE_SOA_COLUMN(MeasuredInnerTofLambdaNegPi, measuredInnerTofLambdaNegPi, float);
+
+DECLARE_SOA_COLUMN(MeasuredOuterTofLambdaPosPr, measuredOuterTofLambdaPosPr, float);
+DECLARE_SOA_COLUMN(MeasuredOuterTofLambdaPosPi, measuredOuterTofLambdaPosPi, float);
+DECLARE_SOA_COLUMN(MeasuredOuterTofLambdaNegPr, measuredOuterTofLambdaNegPr, float);
+DECLARE_SOA_COLUMN(MeasuredOuterTofLambdaNegPi, measuredOuterTofLambdaNegPi, float);
+} // namespace v0_pid
+
+DECLARE_SOA_TABLE(A3K0SInnerTofPid, "AOD", "A3K0SITOFPID",
+                  v0_pid::NSigmaInnerTofK0SPosPi,
+                  v0_pid::NSigmaInnerTofK0SNegPi,
+                  v0_pid::HasInnerTofK0SPosPi<v0_pid::NSigmaInnerTofK0SPosPi>,
+                  v0_pid::HasInnerTofK0SNegPi<v0_pid::NSigmaInnerTofK0SNegPi>);
+
+DECLARE_SOA_TABLE(A3K0SOuterTofPid, "AOD", "A3K0SOTOFPID",
+                  v0_pid::NSigmaOuterTofK0SPosPi,
+                  v0_pid::NSigmaOuterTofK0SNegPi,
+                  v0_pid::HasOuterTofK0SPosPi<v0_pid::NSigmaOuterTofK0SPosPi>,
+                  v0_pid::HasOuterTofK0SNegPi<v0_pid::NSigmaOuterTofK0SNegPi>);
+
+DECLARE_SOA_TABLE(A3LambdaInnerTofPid, "AOD", "A3LAITOFPID",
+                  v0_pid::NSigmaInnerTofLambdaPosPr,
+                  v0_pid::NSigmaInnerTofLambdaPosPi,
+                  v0_pid::NSigmaInnerTofLambdaNegPr,
+                  v0_pid::NSigmaInnerTofLambdaNegPi,
+                  v0_pid::HasInnerTofLambdaPosPr<v0_pid::NSigmaInnerTofLambdaPosPr>,
+                  v0_pid::HasInnerTofLambdaPosPi<v0_pid::NSigmaInnerTofLambdaPosPi>,
+                  v0_pid::HasInnerTofLambdaNegPr<v0_pid::NSigmaInnerTofLambdaNegPr>,
+                  v0_pid::HasInnerTofLambdaNegPi<v0_pid::NSigmaInnerTofLambdaNegPi>);
+
+DECLARE_SOA_TABLE(A3LambdaOuterTofPid, "AOD", "A3LAOTOFPID",
+                  v0_pid::NSigmaOuterTofLambdaPosPr,
+                  v0_pid::NSigmaOuterTofLambdaPosPi,
+                  v0_pid::NSigmaOuterTofLambdaNegPr,
+                  v0_pid::NSigmaOuterTofLambdaNegPi,
+                  v0_pid::HasOuterTofLambdaPosPr<v0_pid::NSigmaOuterTofLambdaPosPr>,
+                  v0_pid::HasOuterTofLambdaPosPi<v0_pid::NSigmaOuterTofLambdaPosPi>,
+                  v0_pid::HasOuterTofLambdaNegPr<v0_pid::NSigmaOuterTofLambdaNegPr>,
+                  v0_pid::HasOuterTofLambdaNegPi<v0_pid::NSigmaOuterTofLambdaNegPi>);
+
+DECLARE_SOA_TABLE(A3K0SExpectedInnerTimes, "AOD", "A3K0SITIMES",
+                  v0_pid::ExpectedInnerTofK0SPosPi,
+                  v0_pid::ExpectedInnerTofK0SNegPi,
+                  v0_pid::MeasuredInnerTofK0SPosPi,
+                  v0_pid::MeasuredInnerTofK0SNegPi);
+
+DECLARE_SOA_TABLE(A3K0SExpectedOuterTimes, "AOD", "A3K0SOTIMES",
+                  v0_pid::ExpectedOuterTofK0SPosPi,
+                  v0_pid::ExpectedOuterTofK0SNegPi,
+                  v0_pid::MeasuredOuterTofK0SPosPi,
+                  v0_pid::MeasuredOuterTofK0SNegPi);
+
+DECLARE_SOA_TABLE(A3LambdaExpectedInnerTimes, "AOD", "A3LAITIMES",
+                  v0_pid::ExpectedInnerTofLambdaPosPr,
+                  v0_pid::ExpectedInnerTofLambdaPosPi,
+                  v0_pid::ExpectedInnerTofLambdaNegPr,
+                  v0_pid::ExpectedInnerTofLambdaNegPi,
+                  v0_pid::MeasuredInnerTofLambdaPosPr,
+                  v0_pid::MeasuredInnerTofLambdaPosPi,
+                  v0_pid::MeasuredInnerTofLambdaNegPr,
+                  v0_pid::MeasuredInnerTofLambdaNegPi);
+
+DECLARE_SOA_TABLE(A3LambdaExpectedOuterTimes, "AOD", "A3LAOTIMES",
+                  v0_pid::ExpectedOuterTofLambdaPosPr,
+                  v0_pid::ExpectedOuterTofLambdaPosPi,
+                  v0_pid::ExpectedOuterTofLambdaNegPr,
+                  v0_pid::ExpectedOuterTofLambdaNegPi,
+                  v0_pid::MeasuredOuterTofLambdaPosPr,
+                  v0_pid::MeasuredOuterTofLambdaPosPi,
+                  v0_pid::MeasuredOuterTofLambdaNegPr,
+                  v0_pid::MeasuredOuterTofLambdaNegPi);
+
 } // namespace o2::aod
 #endif // ALICE3_DATAMODEL_OTFSTRANGENESS_H_

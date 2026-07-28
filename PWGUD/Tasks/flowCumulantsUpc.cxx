@@ -70,9 +70,11 @@ struct FlowCumulantsUpc {
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgIfVertex, bool, false, "choose vertex or not")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.1f, "Minimal pT for poi tracks")
+  O2_DEFINE_CONFIGURABLE(cfgPtCutMin, float, 0.2f, "minimum accepted track pT")
+  O2_DEFINE_CONFIGURABLE(cfgPtCutMax, float, 10.0f, "maximum accepted track pT")
+  O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMax, float, 10.0f, "Maximal pT for poi tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtRefMin, float, 0.1f, "Minimal pT for ref tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutPtRefMin, float, 0.2f, "Minimal pT for ref tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtRefMax, float, 3.0f, "Maximal pT for ref tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "max Eta range for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCCrossedRows, float, 70.0f, "minimum number of crossed TPC Rows")
@@ -101,6 +103,11 @@ struct FlowCumulantsUpc {
   O2_DEFINE_CONFIGURABLE(cfgZdcTime, bool, false, "choose zdc time cut")
   O2_DEFINE_CONFIGURABLE(cfgZdcTimeCut, float, 2.0, "zdc time cut")
   O2_DEFINE_CONFIGURABLE(cfgIRMaxCut, double, 50, "maximum interaction rate for UPC events")
+  O2_DEFINE_CONFIGURABLE(cfgMaxDebugEvents, int, -1, "Maximum number of events for debug (-1: all events)")
+  O2_DEFINE_CONFIGURABLE(cfgvtxITSTPC, bool, true, "require vertex from ITS+TPC")
+  O2_DEFINE_CONFIGURABLE(cfgsbp, bool, true, "require sbp")
+  O2_DEFINE_CONFIGURABLE(cfgitsROFb, bool, true, "require itsROFb")
+  O2_DEFINE_CONFIGURABLE(cfgtfb, bool, true, "require tfb")
 
   Configurable<std::vector<std::string>> cfgUserDefineGFWCorr{"cfgUserDefineGFWCorr", std::vector<std::string>{"refN02 {2} refP02 {-2}", "refN12 {2} refP12 {-2}"}, "User defined GFW CorrelatorConfig"};
   Configurable<std::vector<std::string>> cfgUserDefineGFWName{"cfgUserDefineGFWName", std::vector<std::string>{"Ch02Gap22", "Ch12Gap22"}, "User defined GFW Name"};
@@ -334,10 +341,24 @@ struct FlowCumulantsUpc {
     fGFW->AddRegion("refP", 0.4, maxEta, 1, 1);
     fGFW->AddRegion("refM", -0.4, 0.4, 1, 1);
     fGFW->AddRegion("poiN", minEta, -0.4, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN00", minEta, 0., 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN02", minEta, -0.1, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN04", minEta, -0.2, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN06", minEta, -0.3, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN08", minEta, -0.4, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("poiN10", minEta, -0.5, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN12", minEta, -0.6, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN14", minEta, -0.7, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("poifull", minEta, maxEta, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("olN", minEta, -0.4, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN00", minEta, 0., 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN02", minEta, -0.1, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN04", minEta, -0.2, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN06", minEta, -0.3, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN08", minEta, -0.4, 1 + fPtAxis->GetNbins(), 4);
     fGFW->AddRegion("olN10", minEta, -0.5, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN12", minEta, -0.6, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN14", minEta, -0.7, 1 + fPtAxis->GetNbins(), 4);
     fGFW->AddRegion("olfull", minEta, maxEta, 1 + fPtAxis->GetNbins(), 4);
 
     // eta region for MC, can be different from data to study the effect of acceptance
@@ -362,10 +383,24 @@ struct FlowCumulantsUpc {
     fGFWMC->AddRegion("refP", 0.4, maxEta, 1, 1);
     fGFWMC->AddRegion("refM", -0.4, 0.4, 1, 1);
     fGFWMC->AddRegion("poiN", minEta, -0.4, 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN00", minEta, 0., 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN02", minEta, -0.1, 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN04", minEta, -0.2, 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN06", minEta, -0.3, 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN08", minEta, -0.4, 1 + fPtAxis->GetNbins(), 2);
     fGFWMC->AddRegion("poiN10", minEta, -0.5, 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN12", minEta, -0.6, 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN14", minEta, -0.7, 1 + fPtAxis->GetNbins(), 2);
     fGFWMC->AddRegion("poifull", minEta, maxEta, 1 + fPtAxis->GetNbins(), 2);
     fGFWMC->AddRegion("olN", minEta, -0.4, 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN00", minEta, 0., 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN02", minEta, -0.1, 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN04", minEta, -0.2, 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN06", minEta, -0.3, 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN08", minEta, -0.4, 1 + fPtAxis->GetNbins(), 4);
     fGFWMC->AddRegion("olN10", minEta, -0.5, 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN12", minEta, -0.6, 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN14", minEta, -0.7, 1 + fPtAxis->GetNbins(), 4);
     fGFWMC->AddRegion("olfull", minEta, maxEta, 1 + fPtAxis->GetNbins(), 4);
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
@@ -597,6 +632,9 @@ struct FlowCumulantsUpc {
   bool trackSelected(TTrack track)
   {
     registry.fill(HIST("hTrackCount"), 0.5);
+    if (track.pt() < cfgPtCutMin || track.pt() > cfgPtCutMax) {
+      return false;
+    }
     // UPC selection
     if (!track.isPVContributor()) {
       return false;
@@ -748,19 +786,19 @@ struct FlowCumulantsUpc {
       }
     }
     registry.fill(HIST("hEventCount"), 5.5);
-    if (!collision.vtxITSTPC()) {
+    if (cfgvtxITSTPC && !collision.vtxITSTPC()) {
       return;
     }
     registry.fill(HIST("hEventCount"), 6.5);
-    if (!collision.sbp()) {
+    if (cfgsbp && !collision.sbp()) {
       return;
     }
     registry.fill(HIST("hEventCount"), 7.5);
-    if (!collision.itsROFb()) {
+    if (cfgitsROFb && !collision.itsROFb()) {
       return;
     }
     registry.fill(HIST("hEventCount"), 8.5);
-    if (!collision.tfb()) {
+    if (cfgtfb && !collision.tfb()) {
       return;
     }
     registry.fill(HIST("hEventCount"), 9.5);

@@ -31,10 +31,11 @@ enum TripletOrder : uint8_t {
   kOrder123, // no swap
   kOrder213, // swap 1&2: for the case that particle 1 & 2 are the same species, particle 3 is something else
   kOrder132, // swap 2&3
-  kOrder321, // swap 1&2&3
+  kOrder321, // reverse: swap 1&3
 };
 
 // process same event for identical 3 particles
+// (no cleaner here — ParticleCleaner only operates on MC info, see the mc overload below)
 template <modes::Mode mode,
           typename T1,
           typename T2,
@@ -104,6 +105,7 @@ void processSameEvent(T1 const& SliceParticle,
 }
 
 // process same event for identical 2 particles and 1 other particle
+// (no cleaner here — ParticleCleaner only operates on MC info, see the mc overload below)
 template <modes::Mode mode,
           typename T1, typename T2, typename T3, typename T4,
           typename T5, typename T6, typename T7, typename T8, typename T9>
@@ -168,6 +170,7 @@ void processSameEvent(T1 const& SliceParticle1, // 1&2 have same species
 }
 
 // process same event for 3 different particles
+// (no cleaner here — ParticleCleaner only operates on MC info, see the mc overload below)
 template <modes::Mode mode,
           typename T1,
           typename T2,
@@ -233,6 +236,7 @@ void processSameEvent(T1 const& SliceParticle1,
 }
 
 // process same event for 3 identical particles with mc information
+// NOTE: added `Cleaner` (single cleaner, uses the isClean(part, mcParticles, mcMothers, mcPartonicMothers) overload)
 template <modes::Mode mode,
           typename T1,
           typename T2,
@@ -244,7 +248,8 @@ template <modes::Mode mode,
           typename T8,
           typename T9,
           typename T10,
-          typename T11>
+          typename T11,
+          typename T12>
 void processSameEvent(T1 const& SliceParticle,
                       T2 const& TrackTable,
                       T3 const& mcParticles,
@@ -254,17 +259,27 @@ void processSameEvent(T1 const& SliceParticle,
                       T7 const& mcCollisions,
                       T8& ParticleHistManager,
                       T9& TripletHistManager,
-                      T10& CtrManager,
-                      T11& TcManager,
+                      T10& Cleaner,
+                      T11& CtrManager,
+                      T12& TcManager,
                       TripletOrder tripletOrder)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
 
   for (auto const& part : SliceParticle) {
+    if (!Cleaner.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
     ParticleHistManager.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
   }
 
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle, SliceParticle))) {
+    // check if all three particles are clean
+    if (!Cleaner.isClean(p1, mcParticles, mcMothers, mcPartonicMothers) ||
+        !Cleaner.isClean(p2, mcParticles, mcMothers, mcPartonicMothers) ||
+        !Cleaner.isClean(p3, mcParticles, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
     // check if triplet is clean
     if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcParticles, mcPartonicMothers)) {
       continue;
@@ -305,9 +320,10 @@ void processSameEvent(T1 const& SliceParticle,
 }
 
 // process same event for 2 identical particles and one other with mc information
+// NOTE: added `Cleaner1` (for particle 1&2) and `Cleaner3` (for particle 3, a different species)
 template <modes::Mode mode,
           typename T1, typename T2, typename T3, typename T4, typename T5, typename T6,
-          typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13>
+          typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13, typename T14, typename T15>
 void processSameEvent(T1 const& SliceParticle1,
                       T2 const& SliceParticle3,
                       T3 const& TrackTable,
@@ -319,21 +335,35 @@ void processSameEvent(T1 const& SliceParticle1,
                       T9& ParticleHistManager1,
                       T10& ParticleHistManager3,
                       T11& TripletHistManager,
-                      T12& CtrManager,
-                      T13& TcManager,
+                      T12& Cleaner1,
+                      T13& Cleaner3,
+                      T14& CtrManager,
+                      T15& TcManager,
                       TripletOrder tripletOrder)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
 
   for (auto const& part : SliceParticle1) {
+    if (!Cleaner1.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
     ParticleHistManager1.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
   }
   for (auto const& part : SliceParticle3) {
+    if (!Cleaner3.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
     ParticleHistManager3.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
   }
 
   for (auto const& p3 : SliceParticle3) {
     for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle1, SliceParticle1))) {
+      // check if all three particles are clean
+      if (!Cleaner1.isClean(p1, mcParticles, mcMothers, mcPartonicMothers) ||
+          !Cleaner1.isClean(p2, mcParticles, mcMothers, mcPartonicMothers) ||
+          !Cleaner3.isClean(p3, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
       // check if triplet is clean
       if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcParticles, mcPartonicMothers)) {
         continue;
@@ -368,6 +398,7 @@ void processSameEvent(T1 const& SliceParticle1,
 }
 
 // process same event for 3 different particles with mc information
+// NOTE: added `Cleaner1`, `Cleaner2`, `Cleaner3` (one per species)
 template <modes::Mode mode,
           typename T1,
           typename T2,
@@ -383,7 +414,10 @@ template <modes::Mode mode,
           typename T12,
           typename T13,
           typename T14,
-          typename T15>
+          typename T15,
+          typename T16,
+          typename T17,
+          typename T18>
 void processSameEvent(T1 const& SliceParticle1,
                       T2 const& SliceParticle2,
                       T3 const& SliceParticle3,
@@ -397,22 +431,40 @@ void processSameEvent(T1 const& SliceParticle1,
                       T11& ParticleHistManager2,
                       T12& ParticleHistManager3,
                       T13& TripletHistManager,
-                      T14& CtrManager,
-                      T15& TcManager)
+                      T14& Cleaner1,
+                      T15& Cleaner2,
+                      T16& Cleaner3,
+                      T17& CtrManager,
+                      T18& TcManager)
 {
   TripletHistManager.resetTrackedParticlesPerEvent();
 
   for (auto const& part : SliceParticle1) {
+    if (!Cleaner1.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
     ParticleHistManager1.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
   }
   for (auto const& part : SliceParticle2) {
+    if (!Cleaner2.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
     ParticleHistManager2.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
   }
   for (auto const& part : SliceParticle3) {
+    if (!Cleaner3.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
     ParticleHistManager3.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
   }
 
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2, SliceParticle3))) {
+    // check if all three particles are clean
+    if (!Cleaner1.isClean(p1, mcParticles, mcMothers, mcPartonicMothers) ||
+        !Cleaner2.isClean(p2, mcParticles, mcMothers, mcPartonicMothers) ||
+        !Cleaner3.isClean(p3, mcParticles, mcMothers, mcPartonicMothers)) {
+      continue;
+    }
     // check if triplet is clean
     if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcParticles, mcPartonicMothers)) {
       continue;
@@ -436,6 +488,7 @@ void processSameEvent(T1 const& SliceParticle1,
 }
 
 // process mixed event
+// (no cleaner here — ParticleCleaner only operates on MC info, see the mc overload below)
 template <modes::Mode mode,
           typename T1,
           typename T2,
@@ -548,6 +601,8 @@ void processMixedEvent(T1 const& Collisions,
 }
 
 // process mixed event in mc
+// NOTE: added `mcMothers`, `mcPartonicMothers` (missing in the original — mixed-event mc triplets
+// were never mc-cleaned via TcManager) plus `Cleaner1`, `Cleaner2`, `Cleaner3`
 template <modes::Mode mode,
           typename T1,
           typename T2,
@@ -561,7 +616,12 @@ template <modes::Mode mode,
           typename T10,
           typename T11,
           typename T12,
-          typename T13>
+          typename T13,
+          typename T14,
+          typename T15,
+          typename T16,
+          typename T17,
+          typename T18>
 void processMixedEvent(T1 const& Collisions,
                        T2 const& mcCollisions,
                        T3& Partition1,
@@ -569,12 +629,17 @@ void processMixedEvent(T1 const& Collisions,
                        T5& Partition3,
                        T6 const& TrackTable,
                        T7 const& mcParticles,
-                       T8& cache,
-                       T9 const& policy,
-                       T10 const& depth,
-                       T11& TripletHistManager,
-                       T12& CtrManager,
-                       T13& TcManager)
+                       T8 const& mcMothers,
+                       T9 const& mcPartonicMothers,
+                       T10& cache,
+                       T11 const& policy,
+                       T12 const& depth,
+                       T13& TripletHistManager,
+                       T14& Cleaner1,
+                       T15& Cleaner2,
+                       T16& Cleaner3,
+                       T17& CtrManager,
+                       T18& TcManager)
 {
   int64_t lastCollisionIndex1 = -1;
   int64_t lastCollisionIndex2 = -1;
@@ -630,8 +695,14 @@ void processMixedEvent(T1 const& Collisions,
     TripletHistManager.fillMixingQaMe(collision1, collision2, collision3);
 
     for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(*sliceParticle1, *sliceParticle2, sliceParticle3))) {
+      // particle cleaning
+      if (!Cleaner1.isClean(p1, mcParticles, mcMothers, mcPartonicMothers) ||
+          !Cleaner2.isClean(p2, mcParticles, mcMothers, mcPartonicMothers) ||
+          !Cleaner3.isClean(p3, mcParticles, mcMothers, mcPartonicMothers)) {
+        continue;
+      }
       // pair cleaning
-      if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable)) {
+      if (!TcManager.isCleanTriplet(p1, p2, p3, TrackTable, mcParticles, mcPartonicMothers)) {
         continue;
       }
       // Close pair rejection

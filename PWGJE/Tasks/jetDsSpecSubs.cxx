@@ -132,6 +132,7 @@ struct JetDsSpecSubs {
       {"h_ds_jet_mass_data", ";m_{jet}^{ch} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 0., 25.}}}},
       {"h_ds_jet_lambda11_data", ";#lambda_{1}^{1};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
       {"h_ds_jet_lambda12_data", ";#lambda_{2}^{1};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
+
       {"hSparse_ds_data", ";m_{D_{S}};#it{p}_{T,D_{S}};#it{p}_{T,jet};z^{D_{S},jet}_{||};#DeltaR_{D_{S},jet}", {HistType::kTHnSparseF, {{60, 1.6, 2.3}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.0}}}},
 
       // MC general histograms
@@ -150,6 +151,7 @@ struct JetDsSpecSubs {
 
       // MCD - Sparse 1: mass, p_{T,Ds}, p_{T,jet}, z|| and prompt/non-prompt
       {"hSparse_ds_mcd1", ";m_{D_{S}}^{rec};#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||, det};Origin(D_{S})", {HistType::kTHnSparseF, {{60, 1.6, 2.3}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {2, -0.5, 1.5}}}},
+
       // MCD - Sparse 2: p_{T,Ds}, p_{T,jet}, and DeltaR
       {"hSparse_ds_mcd2", ";#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};#DeltaR_{D_{S},jet}^{det}", {HistType::kTHnSparseF, {{60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.0}}}},
       // MCD - Sparse 3: p_{T,jet}, z|| and DeltaR
@@ -432,6 +434,7 @@ struct JetDsSpecSubs {
           registry.fill(HIST("h_jet_pt_mcd"), mcdjet.pt());
           registry.fill(HIST("h_jet_eta_mcd"), mcdjet.eta());
           registry.fill(HIST("h_jet_phi_mcd"), mcdjet.phi());
+
           // Detector-level Ds Histgrams
           registry.fill(HIST("h_ds_pt_mcd"), mcdDscand.pt());
           registry.fill(HIST("h_ds_mass_mcd"), mcdDscand.m());

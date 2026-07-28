@@ -255,10 +255,10 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
 
     this->addSelection(kCascadeCpaMin, cascadeSelectionNames.at(kCascadeCpaMin), config.cascadeCpaMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kCascadeTransRadMin, cascadeSelectionNames.at(kCascadeTransRadMin), config.cascadeTransRadMin.value, limits::kLowerLimit, true, true, false);
-    this->addSelection(kCascadeDcaDaughMax, cascadeSelectionNames.at(kCascadeDcaDaughMax), config.cascadeDcaDauMax.value, limits::kAbsUpperLimit, true, true, false);
+    this->addSelection(kCascadeDcaDaughMax, cascadeSelectionNames.at(kCascadeDcaDaughMax), config.cascadeDcaDauMax.value, limits::kUpperLimit, true, true, false);
     this->addSelection(kLambdaCpaMin, cascadeSelectionNames.at(kLambdaCpaMin), config.lambdaCpaMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kLambdaTransRadMin, cascadeSelectionNames.at(kLambdaTransRadMin), config.lambdaTransRadMin.value, limits::kLowerLimit, true, true, false);
-    this->addSelection(kLambdaDcaDauMax, cascadeSelectionNames.at(kLambdaDcaDauMax), config.lambdaDcaDauMax.value, limits::kAbsUpperLimit, true, true, false);
+    this->addSelection(kLambdaDcaDauMax, cascadeSelectionNames.at(kLambdaDcaDauMax), config.lambdaDcaDauMax.value, limits::kUpperLimit, true, true, false);
     this->addSelection(kLambdaDcaToPvMin, cascadeSelectionNames.at(kLambdaDcaToPvMin), config.lambdaDcaToPvMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kDauAbsEtaMax, cascadeSelectionNames.at(kDauAbsEtaMax), config.dauAbsEtaMax.value, limits::kAbsUpperLimit, true, true, false);
     this->addSelection(kDauDcaMin, cascadeSelectionNames.at(kDauDcaMin), config.dauDcaMin.value, limits::kAbsLowerLimit, true, true, false);
@@ -443,9 +443,11 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
 
 struct CascadeBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FXis> producedXis;
+  o2::framework::Produces<o2::aod::FLiteXis> producedLiteXis;
   o2::framework::Produces<o2::aod::FXiMasks> producedXiMasks;
   o2::framework::Produces<o2::aod::FXiExtras> producedXiExtras;
   o2::framework::Produces<o2::aod::FOmegas> producedOmegas;
+  o2::framework::Produces<o2::aod::FLiteOmegas> producedLiteOmegas;
   o2::framework::Produces<o2::aod::FOmegaMasks> producedOmegaMasks;
   o2::framework::Produces<o2::aod::FOmegaExtras> producedOmegaExtras;
 };
@@ -453,9 +455,11 @@ struct CascadeBuilderProducts : o2::framework::ProducesGroup {
 struct ConfCascadeTables : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CascadeTables");
   o2::framework::Configurable<int> produceXis{"produceXis", -1, "Produce Xis (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceLiteXis{"produceLiteXis", -1, "Produce LiteXis (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceXiMasks{"produceXiMasks", -1, "Produce XiMasks (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceXiExtras{"produceXiExtras", -1, "Produce XiExtras (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceOmegas{"produceOmegas", -1, "Produce Omegas (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceLiteOmegas{"produceLiteOmegas", -1, "Produce LiteOmegas (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceOmegaMasks{"produceOmegaMasks", -1, "Produce OmegaMasks (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceOmegaExtras{"produceOmegaExtras", -1, "Produce OmegaExtras (-1: auto; 0 off; 1 on)"};
 };
@@ -467,23 +471,58 @@ class CascadeBuilder
   CascadeBuilder() = default;
   ~CascadeBuilder() = default;
 
-  template <typename T1, typename T2, typename T3, typename T4>
-  void init(o2::framework::HistogramRegistry* registry, T1& config, T2& filter, T3& table, T4& initContext)
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  void init(o2::framework::HistogramRegistry* registry, T1& config, T2& filter, T3& table, T4& initContext, T5& trackBuilder)
   {
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
       LOG(info) << "Initialize femto Xi builder...";
+      mProduceLiteXis = utils::enableTable("FLiteXis_001", table.produceLiteXis.value, initContext);
       mProduceXis = utils::enableTable("FXis_001", table.produceXis.value, initContext);
       mProduceXiMasks = utils::enableTable("FXiMasks_001", table.produceXiMasks.value, initContext);
       mProduceXiExtras = utils::enableTable("FXiExtras_001", table.produceXiExtras.value, initContext);
+
+      if (mProduceXis && mProduceLiteXis) {
+        LOG(fatal) << "FXis and FLiteXis are mutually exclusive -- enable only one. "
+                   << "FLiteXis is meant to replace FXis at the producer stage (for better compression in derived data); "
+                   << "use the dedicated converter task to reconstruct FXis from FLiteXis downstream.";
+      }
+      if (mProduceXis && !trackBuilder.producingTracks()) {
+        LOG(fatal) << "FXis is enabled, but the track builder is not producing FTracks (full precision). "
+                   << "FXis stores daughter indices into FTracks -- enable TrackTables.produceTracks, "
+                   << "or switch to FLiteXis if TrackTables.produceLiteTracks is enabled instead.";
+      }
+      if (mProduceLiteXis && !trackBuilder.producingLiteTracks()) {
+        LOG(fatal) << "FLiteXis is enabled, but the track builder is not producing FLiteTracks. "
+                   << "FLiteXis stores daughter indices into FLiteTracks -- enable TrackTables.produceLiteTracks, "
+                   << "or switch to FXis if TrackTables.produceTracks is enabled instead.";
+      }
     }
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
       LOG(info) << "Initialize femto Omega builder...";
       mProduceOmegas = utils::enableTable("FOmegas_001", table.produceOmegas.value, initContext);
+      mProduceLiteOmegas = utils::enableTable("FLiteOmegas_001", table.produceLiteOmegas.value, initContext);
       mProduceOmegaMasks = utils::enableTable("FOmegaMasks_001", table.produceOmegaMasks.value, initContext);
       mProduceOmegaExtras = utils::enableTable("FOmegaExtras_001", table.produceOmegaExtras.value, initContext);
+
+      if (mProduceOmegas && mProduceLiteOmegas) {
+        LOG(fatal) << "FOmegas and FLiteOmegas are mutually exclusive -- enable only one. "
+                   << "FLiteOmegas is meant to replace FOmegas at the producer stage (for better compression in derived data); "
+                   << "use the dedicated converter task to reconstruct FOmegas from FLiteOmegas downstream.";
+      }
+      if (mProduceOmegas && !trackBuilder.producingTracks()) {
+        LOG(fatal) << "FOmegas is enabled, but the track builder is not producing FTracks (full precision). "
+                   << "FOmegas stores daughter indices into FTracks -- enable TrackTables.produceTracks, "
+                   << "or switch to FLiteOmegas if TrackTables.produceLiteTracks is enabled instead.";
+      }
+      if (mProduceLiteOmegas && !trackBuilder.producingLiteTracks()) {
+        LOG(fatal) << "FLiteOmegas is enabled, but the track builder is not producing FLiteTracks. "
+                   << "FLiteOmegas stores daughter indices into FLiteTracks -- enable TrackTables.produceLiteTracks, "
+                   << "or switch to FOmegas if TrackTables.produceTracks is enabled instead.";
+      }
     }
 
-    if (mProduceXis || mProduceXiExtras || mProduceXiMasks || mProduceOmegas || mProduceOmegaMasks || mProduceOmegaExtras) {
+    if (mProduceXis || mProduceLiteXis || mProduceXiExtras || mProduceXiMasks ||
+        mProduceOmegas || mProduceLiteOmegas || mProduceOmegaMasks || mProduceOmegaExtras) {
       mFillAnyTable = true;
     } else {
       LOG(info) << "No tables configured, Selection object will not be configured...";
@@ -517,15 +556,15 @@ class CascadeBuilder
       collisionBuilder.template fillCollision<system>(collisionProducts, col);
 
       auto bachelor = cascade.template bachelor_as<T7>();
-      bachelorIndex = trackBuilder.template getDaughterIndex<modes::Track::kCascadeBachelor>(bachelor, trackProducts, collisionProducts);
+      bachelorIndex = trackBuilder.template getDaughterIndex<modes::Track::kCascadeBachelor>(bachelor, trackProducts, collisionBuilder);
 
       auto posDaughter = cascade.template posTrack_as<T7>();
-      posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionProducts);
+      posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionBuilder);
 
       auto negDaughter = cascade.template negTrack_as<T7>();
-      negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(negDaughter, trackProducts, collisionProducts);
+      negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(negDaughter, trackProducts, collisionBuilder);
 
-      fillCascade(collisionProducts, cascadeProducts, cascade, col, bachelorIndex, posDaughterIndex, negDaughterIndex);
+      fillCascade(collisionBuilder, cascadeProducts, cascade, col, bachelorIndex, posDaughterIndex, negDaughterIndex);
     }
   }
 
@@ -551,15 +590,15 @@ class CascadeBuilder
       collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
 
       auto bachelor = cascade.template bachelor_as<T8>();
-      bachelorIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCascadeBachelor>(col, collisionProducts, mcCols, bachelor, trackProducts, mcParticles, mcBuilder, mcProducts);
+      bachelorIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCascadeBachelor>(col, collisionBuilder, mcCols, bachelor, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       auto posDaughter = cascade.template posTrack_as<T8>();
-      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionProducts, mcCols, posDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionBuilder, mcCols, posDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       auto negDaughter = cascade.template negTrack_as<T8>();
-      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionProducts, mcCols, negDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionBuilder, mcCols, negDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
 
-      fillCascade(collisionProducts, cascadeProducts, cascade, col, bachelorIndex, posDaughterIndex, negDaughterIndex);
+      fillCascade(collisionBuilder, cascadeProducts, cascade, col, bachelorIndex, posDaughterIndex, negDaughterIndex);
       if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
         mcBuilder.template fillMcXiWithLabel<system>(col, mcCols, cascade, mcParticles, mcProducts);
       }
@@ -570,11 +609,11 @@ class CascadeBuilder
   }
 
   template <typename T1, typename T2, typename T3, typename T4>
-  void fillCascade(T1& collisionProducts, T2& cascadeProducts, T3 const& cascade, T4 const& col, int bachelorIndex, int posDaughterIndex, int negDaughterIndex)
+  void fillCascade(T1& collisionBuilder, T2& cascadeProducts, T3 const& cascade, T4 const& col, int bachelorIndex, int posDaughterIndex, int negDaughterIndex)
   {
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
       if (mProduceXis) {
-        cascadeProducts.producedXis(collisionProducts.producedCollision.lastIndex(),
+        cascadeProducts.producedXis(collisionBuilder.collisionIndex(),
                                     cascade.sign() * cascade.pt(),
                                     cascade.eta(),
                                     cascade.phi(),
@@ -582,6 +621,16 @@ class CascadeBuilder
                                     bachelorIndex,
                                     posDaughterIndex,
                                     negDaughterIndex);
+      }
+      if (mProduceLiteXis) {
+        cascadeProducts.producedLiteXis(collisionBuilder.collisionIndex(),
+                                        o2::aod::femtobase::lite::binSignedPt(cascade.sign() * cascade.pt()),
+                                        o2::aod::femtobase::lite::binEta(cascade.eta()),
+                                        o2::aod::femtobase::lite::binPhi(cascade.phi()),
+                                        o2::aod::femtocascades::lite::binXiMass(cascade.mXi()),
+                                        bachelorIndex,
+                                        posDaughterIndex,
+                                        negDaughterIndex);
       }
       if (mProduceXiMasks) {
         cascadeProducts.producedXiMasks(mCascadeSelection.getBitmask());
@@ -592,6 +641,7 @@ class CascadeBuilder
           cascade.casccosPA(col.posX(), col.posY(), col.posZ()),
           cascade.dcacascdaughters(),
           cascade.cascradius(),
+          cascade.mLambda(),
           cascade.v0cosPA(col.posX(), col.posY(), col.posZ()),
           cascade.dcaV0daughters(),
           cascade.v0radius(),
@@ -600,7 +650,7 @@ class CascadeBuilder
     }
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
       if (mProduceOmegas) {
-        cascadeProducts.producedOmegas(collisionProducts.producedCollision.lastIndex(),
+        cascadeProducts.producedOmegas(collisionBuilder.collisionIndex(),
                                        cascade.sign() * cascade.pt(),
                                        cascade.eta(),
                                        cascade.phi(),
@@ -608,6 +658,16 @@ class CascadeBuilder
                                        bachelorIndex,
                                        posDaughterIndex,
                                        negDaughterIndex);
+      }
+      if (mProduceLiteOmegas) {
+        cascadeProducts.producedLiteOmegas(collisionBuilder.collisionIndex(),
+                                           o2::aod::femtobase::lite::binSignedPt(cascade.sign() * cascade.pt()),
+                                           o2::aod::femtobase::lite::binEta(cascade.eta()),
+                                           o2::aod::femtobase::lite::binPhi(cascade.phi()),
+                                           o2::aod::femtocascades::lite::binOmegaMass(cascade.mOmega()),
+                                           bachelorIndex,
+                                           posDaughterIndex,
+                                           negDaughterIndex);
       }
       if (mProduceOmegaMasks) {
         cascadeProducts.producedOmegaMasks(mCascadeSelection.getBitmask());
@@ -618,6 +678,7 @@ class CascadeBuilder
           cascade.casccosPA(col.posX(), col.posY(), col.posZ()),
           cascade.dcacascdaughters(),
           cascade.cascradius(),
+          cascade.mLambda(),
           cascade.v0cosPA(col.posX(), col.posY(), col.posZ()),
           cascade.dcaV0daughters(),
           cascade.v0radius(),
@@ -632,9 +693,11 @@ class CascadeBuilder
   CascadeSelection<cascadeType, SelectionHistName, FilterHistName> mCascadeSelection;
   bool mFillAnyTable = false;
   bool mProduceXis = false;
+  bool mProduceLiteXis = false;
   bool mProduceXiMasks = false;
   bool mProduceXiExtras = false;
   bool mProduceOmegas = false;
+  bool mProduceLiteOmegas = false;
   bool mProduceOmegaMasks = false;
   bool mProduceOmegaExtras = false;
 };

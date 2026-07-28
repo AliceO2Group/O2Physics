@@ -53,6 +53,7 @@ enum CascadeHist {
   kCosPa,
   kDecayDauDca,
   kTransRadius,
+  kLambdaMass,
   kLambdaCosPa,
   kLambdaDauDca,
   kLambdaTransRadius,
@@ -64,6 +65,7 @@ enum CascadeHist {
   kPtVsCosPa,
   kPtVsMassXi,
   kPtVsMassOmega,
+  kPtVsMassLambda,
   kMassXiVsMassOmega,
   // mc
   kOrigin,
@@ -115,7 +117,8 @@ struct ConfCascadeQaBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis transRadius{"transRadius", {{100, 0, 100}}, "Transverse radius"};
   o2::framework::ConfigurableAxis massXi{"massXi", {{400, 1.2f, 1.6f}}, "mass for antiparticle hypothesis"};
   o2::framework::ConfigurableAxis massOmega{"massOmega", {{400, 1.4f, 1.8f}}, "mass for antiparticle hypothesis"};
-  o2::framework::ConfigurableAxis lambdaCosPa{"lambdaCosPa", {{100, 0.9, 1}}, "Cosine of poiting angle of daughter lambda"};
+  o2::framework::ConfigurableAxis lambdaMass{"lambdaMass", {{200, 1., 1.2}}, "Mass of daughter lambda"};
+  o2::framework::ConfigurableAxis lambdaCosPa{"lambdaCosPa", {{100, 0.9, 1}}, "Cosine of pointing angle of daughter lambda"};
   o2::framework::ConfigurableAxis lambdaDauDca{"lambdaDauDca", {{150, 0, 1.0}}, "DCA of lambda daughters at lambda decay vertex"};
   o2::framework::ConfigurableAxis lambdaTransRadius{"lambdaTransRadius", {{100, 0, 100}}, "DCA of lambda daughters at lambda decay vertex"};
   o2::framework::ConfigurableAxis lambdaDcaToPv{"lambdaDcaToPv", {{100, 0, 200}}, "DCA of lambda daughter from primary vertex"};
@@ -141,16 +144,18 @@ constexpr std::array<histmanager::HistInfo<CascadeHist>, kCascadeHistLast> HistT
    {kCosPa, o2::framework::HistType::kTH1F, "hCosPa", "Cosine of pointing angle; cos(#alpha); Entries"},
    {kDecayDauDca, o2::framework::HistType::kTH1F, "hDauDca", "Daughter DCA at decay vertex ; DCA_{Decay vertex} (cm); Entries"},
    {kTransRadius, o2::framework::HistType::kTH1F, "hTransRadius", "Transverse radius ; r_{xy} (cm); Entries"},
-   {kLambdaCosPa, o2::framework::HistType::kTH1F, "hLambdaCosPa", "Cosine of poiting angle of daughter lambda ; cos_{#Lambda}(#alpha); Entries"},
-   {kLambdaDauDca, o2::framework::HistType::kTH1F, "hLambdaDauDca", "Daughter DCA at #Lambda decay vertex ; DCA_{#Lambda decay vertex} (cm); Entries"},
-   {kLambdaTransRadius, o2::framework::HistType::kTH1F, "hLambdaTransRadius", "Transverse radius of daughter #Lambda ; r_{xy} (cm); Entries"},
-   {kLambdaDcaToPv, o2::framework::HistType::kTH1F, "hLambdaDcaToPv", "DCA to primary vertex of daughter #Lambda ; DCA (cm); Entries"},
+   {kLambdaMass, o2::framework::HistType::kTH1F, "hLambdaMass", "Invariant mass of daughter lambda ; m_{#Lambda dau} (GeV/#it{c}^{2}); Entries"},
+   {kLambdaCosPa, o2::framework::HistType::kTH1F, "hLambdaCosPa", "Cosine of poiting angle of daughter lambda ; cos_{#Lambda dau}(#alpha); Entries"},
+   {kLambdaDauDca, o2::framework::HistType::kTH1F, "hLambdaDauDca", "Daughter DCA at #Lambda decay vertex ; DCA_{#Lambda dau decay vertex} (cm); Entries"},
+   {kLambdaTransRadius, o2::framework::HistType::kTH1F, "hLambdaTransRadius", "Transverse radius of daughter #Lambda ; r_{xy,#Lambda dau} (cm); Entries"},
+   {kLambdaDcaToPv, o2::framework::HistType::kTH1F, "hLambdaDcaToPv", "DCA to primary vertex of daughter #Lambda ; DCA_{#Lambda} (cm); Entries"},
    {kPtVsEta, o2::framework::HistType::kTH2F, "hPtVsEta", "p_{T} vs #eta; p_{T} (GeV/#it{c}) ; #eta"},
    {kPtVsPhi, o2::framework::HistType::kTH2F, "hPtVsPhi", "p_{T} vs #varphi; p_{T} (GeV/#it{c}) ; #varphi"},
    {kPhiVsEta, o2::framework::HistType::kTH2F, "hPhiVsEta", "#varphi vs #eta; #varphi ; #eta"},
    {kPtVsCosPa, o2::framework::HistType::kTH2F, "hPtVsCosPa", "Cosine of poiting angle vs p_{T}; cos(#alpha); p_{T} (GeV/#it{c})"},
    {kPtVsMassXi, o2::framework::HistType::kTH2F, "hPtVsMassXi", "p_{T} vs mass #Xi; p_{T} (GeV/#it{c}); m_{#Lambda#pi} (GeV/#it{c}^{2})"},
    {kPtVsMassOmega, o2::framework::HistType::kTH2F, "hPtVsMassOmega", "p_{T} vs mass #Omega; p_{T} (GeV/#it{c}); m_{#LambdaK} (GeV/#it{c}^{2})"},
+   {kPtVsMassLambda, o2::framework::HistType::kTH2F, "hPtVsMassLambda", "p_{T} vs mass daughter #Lambda; p_{T} (GeV/#it{c}); m_{#Lambda dau} (GeV/#it{c}^{2})"},
    {kMassXiVsMassOmega, o2::framework::HistType::kTH2F, "hMassXiVsMassOmega", "mass #Xi vs mass #Omega; m_{#Lambda#pi} (GeV/#it{c}^{2}); m_{#LambdaK} (GeV/#it{c}^{2})"},
    {kOrigin, o2::framework::HistType::kTH1F, "hOrigin", "Status Codes (=Origin); Status Code; Entries"},
    {kPdg, o2::framework::HistType::kTH1F, "hPdg", "PDG Codes of reconstructed v0; PDG Code; Entries"},
@@ -189,22 +194,24 @@ constexpr std::array<histmanager::HistInfo<CascadeHist>, kCascadeHistLast> HistT
     {kPdgPartonicMother, {(conf).pdgCodes}},
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CASCADE_HIST_QA_MAP(confAnalysis, confQa)              \
-  {kCosPa, {(confQa).cosPa}},                                  \
-    {kDecayDauDca, {(confQa).dauDcaAtDecay}},                  \
-    {kTransRadius, {(confQa).transRadius}},                    \
-    {kLambdaCosPa, {(confQa).lambdaCosPa}},                    \
-    {kLambdaDauDca, {(confQa).lambdaDauDca}},                  \
-    {kLambdaTransRadius, {(confQa).lambdaTransRadius}},        \
-    {kLambdaDcaToPv, {(confQa).lambdaDcaToPv}},                \
-    {kPtVsEta, {(confAnalysis).pt, (confAnalysis).eta}},       \
-    {kPtVsPhi, {(confAnalysis).pt, (confAnalysis).phi}},       \
-    {kPhiVsEta, {(confAnalysis).phi, (confAnalysis).eta}},     \
-    {kPtVsCosPa, {(confAnalysis).pt, (confQa).cosPa}},         \
-    {kMassXi, {(confQa).massXi}},                              \
-    {kMassOmega, {(confQa).massOmega}},                        \
-    {kPtVsMassXi, {(confAnalysis).pt, (confQa).massXi}},       \
-    {kPtVsMassOmega, {(confAnalysis).pt, (confQa).massOmega}}, \
+#define CASCADE_HIST_QA_MAP(confAnalysis, confQa)                \
+  {kCosPa, {(confQa).cosPa}},                                    \
+    {kDecayDauDca, {(confQa).dauDcaAtDecay}},                    \
+    {kTransRadius, {(confQa).transRadius}},                      \
+    {kLambdaMass, {(confQa).lambdaMass}},                        \
+    {kLambdaCosPa, {(confQa).lambdaCosPa}},                      \
+    {kLambdaDauDca, {(confQa).lambdaDauDca}},                    \
+    {kLambdaTransRadius, {(confQa).lambdaTransRadius}},          \
+    {kLambdaDcaToPv, {(confQa).lambdaDcaToPv}},                  \
+    {kPtVsEta, {(confAnalysis).pt, (confAnalysis).eta}},         \
+    {kPtVsPhi, {(confAnalysis).pt, (confAnalysis).phi}},         \
+    {kPhiVsEta, {(confAnalysis).phi, (confAnalysis).eta}},       \
+    {kPtVsCosPa, {(confAnalysis).pt, (confQa).cosPa}},           \
+    {kMassXi, {(confQa).massXi}},                                \
+    {kMassOmega, {(confQa).massOmega}},                          \
+    {kPtVsMassXi, {(confAnalysis).pt, (confQa).massXi}},         \
+    {kPtVsMassOmega, {(confAnalysis).pt, (confQa).massOmega}},   \
+    {kPtVsMassLambda, {(confAnalysis).pt, (confQa).lambdaMass}}, \
     {kMassXiVsMassOmega, {(confQa).massXi, (confQa).massOmega}},
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
@@ -482,6 +489,7 @@ class CascadeHistManager
     mHistogramRegistry->add(qaDir + getHistNameV2(kCosPa, HistTable), getHistDesc(kCosPa, HistTable), getHistType(kCosPa, HistTable), {cascadeSpecs.at(kCosPa)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kDecayDauDca, HistTable), getHistDesc(kDecayDauDca, HistTable), getHistType(kDecayDauDca, HistTable), {cascadeSpecs.at(kDecayDauDca)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kTransRadius, HistTable), getHistDesc(kTransRadius, HistTable), getHistType(kTransRadius, HistTable), {cascadeSpecs.at(kTransRadius)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kLambdaMass, HistTable), getHistDesc(kLambdaMass, HistTable), getHistType(kLambdaMass, HistTable), {cascadeSpecs.at(kLambdaMass)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kLambdaCosPa, HistTable), getHistDesc(kLambdaCosPa, HistTable), getHistType(kLambdaCosPa, HistTable), {cascadeSpecs.at(kLambdaCosPa)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kLambdaDauDca, HistTable), getHistDesc(kLambdaDauDca, HistTable), getHistType(kLambdaDauDca, HistTable), {cascadeSpecs.at(kLambdaDauDca)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kLambdaTransRadius, HistTable), getHistDesc(kLambdaTransRadius, HistTable), getHistType(kLambdaTransRadius, HistTable), {cascadeSpecs.at(kLambdaTransRadius)});
@@ -497,6 +505,7 @@ class CascadeHistManager
 
       mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsMassXi, HistTable), getHistDesc(kPtVsMassXi, HistTable), getHistType(kPtVsMassXi, HistTable), {cascadeSpecs.at(kPtVsMassXi)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsMassOmega, HistTable), getHistDesc(kPtVsMassOmega, HistTable), getHistType(kPtVsMassOmega, HistTable), {cascadeSpecs.at(kPtVsMassOmega)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kPtVsMassLambda, HistTable), getHistDesc(kPtVsMassLambda, HistTable), getHistType(kPtVsMassLambda, HistTable), {cascadeSpecs.at(kPtVsMassLambda)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kMassXiVsMassOmega, HistTable), getHistDesc(kMassXiVsMassOmega, HistTable), getHistType(kMassXiVsMassOmega, HistTable), {cascadeSpecs.at(kMassXiVsMassOmega)});
     }
   }
@@ -569,6 +578,7 @@ class CascadeHistManager
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kCosPa, HistTable)), cascadeCandidate.cascadeCosPa());
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kDecayDauDca, HistTable)), cascadeCandidate.cascadeDauDca());
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kTransRadius, HistTable)), cascadeCandidate.cascadeTransRadius());
+    mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kLambdaMass, HistTable)), cascadeCandidate.lambdaMass());
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kLambdaCosPa, HistTable)), cascadeCandidate.lambdaCosPa());
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kLambdaDauDca, HistTable)), cascadeCandidate.lambdaDauDca());
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kLambdaTransRadius, HistTable)), cascadeCandidate.lambdaTransRadius());
@@ -583,6 +593,7 @@ class CascadeHistManager
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kPtVsCosPa, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kPtVsMassXi, HistTable)), cascadeCandidate.pt(), massXi);
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kPtVsMassOmega, HistTable)), cascadeCandidate.pt(), massOmega);
+      mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kPtVsMassLambda, HistTable)), cascadeCandidate.pt(), cascadeCandidate.lambdaMass());
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(QaDir) + HIST(getHistName(kMassXiVsMassOmega, HistTable)), massXi, massOmega);
     }
   }

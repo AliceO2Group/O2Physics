@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file MuPa-DataMembers.h
-/// \brief ... TBI 20250425
+/// \brief Task to calculate multiparticle correlations and related observables
 /// \author Ante.Bilandzic@cern.ch
 
 #ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_
@@ -86,7 +86,8 @@ struct TaskConfiguration {
                                                               //                                              || es.fCalculateEtaSeparationsAsFunctionOf[AFO_PT]
   bool fCalculate2DAsFunctionOf[eAsFunctionOf2D_N] = {false}; //! See example above for 1D case + enum for 2D details
   bool fCalculate3DAsFunctionOf[eAsFunctionOf3D_N] = {false}; //! See example above for 1D case + enum for 3D details
-  TDatabasePDG* fDatabasePDG = NULL;                          // booked only when MC info is available. There is a standard memory blow-up when booked, therefore I need to request also fUseDatabasePDG = true
+  TDatabasePDG* fDatabasePDG = NULL;                          // o2-linter: disable=pdg/database (using until o2::framework::O2DatabasePDG lazy initialization is provided)
+                                                              // booked only when MC info is available. There is a standard memory blow-up when booked, therefore I need to request also fUseDatabasePDG = true
                                                               // TBI 20250625 replace eventually with the service O2DatabasePDG, when memory consumption problem is resolved
   bool fUseSetBinLabel = false;                               // until SetBinLabel(...) large memory consumption is resolved, do not use hist->SetBinLabel(...), see ROOT Forum
                                                               // See also local executable PostprocessLabels.C
@@ -165,7 +166,7 @@ struct QualityAssurance {
   bool fBookQACorrelationsVsHistograms2D[eQACorrelationsVsHistograms2D_N] = {true};                   // book or not this 2D histogram, see configurable cfBookQACorrelationsVsHistograms2D
   float fQACorrelationsVsHistogramsBins2D[eQACorrelationsVsHistograms2D_N][2][3] = {{{0.}}};          // [type - see enum][x,y][nBins,min,max]
   TString fQACorrelationsVsHistogramsName2D[eQACorrelationsVsHistograms2D_N] = {""};                  // name of fQACorrelationsVsHistograms2D, determined programatically from other 1D names, to ease bookkeeping
-  int fQACorrelationsVsHistogramsMinMaxHarmonic[2];                                                   // book only for MinMaxHarmonic[0] <= harmonics < MinMaxHarmonic[1]
+  int fQACorrelationsVsHistogramsMinMaxHarmonic[2] = {0};                                             // book only for MinMaxHarmonic[0] <= harmonics < MinMaxHarmonic[1]
 
   TList* fQACorrelationsVsInteractionRateVsList = NULL;                                                                    //!<! base list to hold all QA "CorrelationsVsInteractionRateVs" output object
   TProfile2D* fQACorrVsIRVsProfiles2D[eQACorrelationsVsInteractionRateVsProfiles2D_N][gMaxHarmonic][2] = {{{NULL}}};       //! [ type - see enum eQACorrelationsVsInteractionRateVsProfiles2D_N ][reco,sim]. I do not have here support for [before, after], because I do not fill Q-vectors before cuts
@@ -173,7 +174,7 @@ struct QualityAssurance {
   bool fBookQACorrelationsVsInteractionRateVsProfiles2D[eQACorrelationsVsInteractionRateVsProfiles2D_N] = {true};          // book or not this 2D profile, see configurable cfBookQACorrelationsVsInteractionRateVsProfiles2D
   float fQACorrelationsVsInteractionRateVsProfilesBins2D[eQACorrelationsVsInteractionRateVsProfiles2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
   TString fQACorrelationsVsInteractionRateVsProfilesName2D[eQACorrelationsVsInteractionRateVsProfiles2D_N] = {""};         // name of fQACorrelationsVsInteractionRateVsProfiles2D, determined programatically from other 1D names, to ease bookkeeping
-  int fQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[2];                                                         // book only for MinMaxHarmonic[0] <= harmonics < MinMaxHarmonic[1]
+  int fQACorrelationsVsInteractionRateVsProfilesMinMaxHarmonic[2] = {0};                                                   // book only for MinMaxHarmonic[0] <= harmonics < MinMaxHarmonic[1]
 
   float fReferenceMultiplicity[eReferenceMultiplicityEstimators_N] = {0.};                // used mostly in QA correlation plots
   TString fReferenceMultiplicityEstimatorName[eReferenceMultiplicityEstimators_N] = {""}; // TBI 20241123 add comment
@@ -428,14 +429,14 @@ struct Test0 {
 
 // *) Eta separations:
 struct EtaSeparations {
-  TList* fEtaSeparationsList;                                                            // list to hold all correlations with eta separations
-  TProfile* fEtaSeparationsFlagsPro;                                                     // profile to hold all flags for correlations with eta separations
-  bool fCalculateEtaSeparations;                                                         // calculate correlations with eta separations
-  bool fCalculateEtaSeparationsAsFunctionOf[eAsFunctionOf_N] = {false};                  //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy, ...]
-  float fEtaSeparationsValues[gMaxNumberEtaSeparations] = {-1.};                         // this array holds eta separation interals for which 2p correlations with eta separation will be calculated
-                                                                                         // See the corresponding cofigurable cfEtaSeparationsValues. If entry is -1, it's ignored
-  bool fEtaSeparationsSkipHarmonics[gMaxHarmonic] = {false};                             // For calculation of 2p correlation with eta separation these harmonics will be skipped
-  TProfile* fEtaSeparationsPro[gMaxHarmonic][gMaxNumberEtaSeparations][eAsFunctionOf_N]; // [harmonic, 0 = v1, 8 = v9][ different eta Separations - see that enum ] [ AFO ]
+  TList* fEtaSeparationsList = NULL;                                                                  // list to hold all correlations with eta separations
+  TProfile* fEtaSeparationsFlagsPro = NULL;                                                           // profile to hold all flags for correlations with eta separations
+  bool fCalculateEtaSeparations = false;                                                              // calculate correlations with eta separations
+  bool fCalculateEtaSeparationsAsFunctionOf[eAsFunctionOf_N] = {false};                               //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy, ...]
+  float fEtaSeparationsValues[gMaxNumberEtaSeparations] = {-1.};                                      // this array holds eta separation interals for which 2p correlations with eta separation will be calculated
+                                                                                                      // See the corresponding cofigurable cfEtaSeparationsValues. If entry is -1, it's ignored
+  bool fEtaSeparationsSkipHarmonics[gMaxHarmonic] = {false};                                          // For calculation of 2p correlation with eta separation these harmonics will be skipped
+  TProfile* fEtaSeparationsPro[gMaxHarmonic][gMaxNumberEtaSeparations][eAsFunctionOf_N] = {{{NULL}}}; // [harmonic, 0 = v1, 8 = v9][ different eta Separations - see that enum ] [ AFO ]
 } es;
 
 // *) Global cosmetics:

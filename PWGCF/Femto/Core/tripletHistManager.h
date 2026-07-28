@@ -328,9 +328,11 @@ class TripletHistManager
     // set Q3
     mQ3 = getQ3(mParticle1, mParticle2, mParticle3);
 
-    mKstar12 = getKstar(mParticle1, mParticle2);
-    mKstar13 = getKstar(mParticle1, mParticle3);
-    mKstar23 = getKstar(mParticle2, mParticle3);
+    if (mPlotKstar) {
+      mKstar12 = getKstar(mParticle1, mParticle2);
+      mKstar13 = getKstar(mParticle1, mParticle3);
+      mKstar23 = getKstar(mParticle2, mParticle3);
+    }
 
     // if one of the particles has a mass getter, we cache the value for the filling later
     if constexpr (utils::HasMass<T1>) {
@@ -373,9 +375,9 @@ class TripletHistManager
     auto mcParticle2 = particle2.template fMcParticle_as<T4>();
     auto mcParticle3 = particle3.template fMcParticle_as<T4>();
 
-    mTrueParticle1 = ROOT::Math::PtEtaPhiMVector(mAbsCharge1 * mcParticle1.pt(), mcParticle1.eta(), mcParticle1.phi(), mPdgMass1);
-    mTrueParticle2 = ROOT::Math::PtEtaPhiMVector(mAbsCharge2 * mcParticle2.pt(), mcParticle2.eta(), mcParticle2.phi(), mPdgMass2);
-    mTrueParticle3 = ROOT::Math::PtEtaPhiMVector(mAbsCharge3 * mcParticle3.pt(), mcParticle3.eta(), mcParticle3.phi(), mPdgMass3);
+    mTrueParticle1 = ROOT::Math::PtEtaPhiMVector(mcParticle1.pt(), mcParticle1.eta(), mcParticle1.phi(), mPdgMass1);
+    mTrueParticle2 = ROOT::Math::PtEtaPhiMVector(mcParticle2.pt(), mcParticle2.eta(), mcParticle2.phi(), mPdgMass2);
+    mTrueParticle3 = ROOT::Math::PtEtaPhiMVector(mcParticle3.pt(), mcParticle3.eta(), mcParticle3.phi(), mPdgMass3);
 
     // set true mT
     mTrueMt = getMt(mTrueParticle1, mTrueParticle2, mTrueParticle3);
