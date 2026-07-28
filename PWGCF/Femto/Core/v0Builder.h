@@ -64,13 +64,13 @@ struct ConfV0Filters : o2::framework::ConfigurableGroup {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define V0_DEFAULT_BITS                                                                                                                                          \
   o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all V0s are passed through. Bits for all selections are stored."};               \
-  o2::framework::Configurable<std::vector<float>> dcaDauMax{"dcaDauMax", {1.5f}, "Maximum DCA between the daughters at V0 decay vertex (cm)"};                      \
+  o2::framework::Configurable<std::vector<float>> dcaDauMax{"dcaDauMax", {1.5f}, "Maximum DCA between the daughters at V0 decay vertex (cm)"};                   \
   o2::framework::Configurable<std::vector<float>> cpaMin{"cpaMin", {0.99f}, "Minimum cosine of pointing angle"};                                                 \
   o2::framework::Configurable<std::vector<float>> transRadMin{"transRadMin", {0.2f}, "Minimum transverse radius (cm)"};                                          \
   o2::framework::Configurable<std::vector<float>> transRadMax{"transRadMax", {100.f}, "Maximum transverse radius (cm)"};                                         \
   o2::framework::Configurable<std::vector<float>> decayVtxMax{"decayVtxMax", {100.f}, "Maximum distance in x,y,z of the decay vertex from primary vertex (cm)"}; \
   o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.8f}, "Maximum |eta| for daughter tracks"};                                     \
-  o2::framework::Configurable<std::vector<float>> dauAbsDcaxyMin{"dauAbsDcaxyMin", {0.05f}, "Minimum DCAxy of the daughters from primary vertex (cm)"};                \
+  o2::framework::Configurable<std::vector<float>> dauAbsDcaxyMin{"dauAbsDcaxyMin", {0.05f}, "Minimum DCAxy of the daughters from primary vertex (cm)"};          \
   o2::framework::Configurable<std::vector<float>> dauTpcClustersMin{"dauTpcClustersMin", {80.f}, "Minimum number of TPC clusters for daughter tracks"};
 
 // derived selection bits for lambda
@@ -144,9 +144,9 @@ enum V0Sels {
   kTransRadMax, ///< max. transverse radius
 
   // selection for daughter
-  kDauAbsEtaMax, ///< Max. absolute pseudo rapidity
-  kDauAbsDcaxyMin,  ///< Min. |DCAxy| of the daughters from primary vertex
-  kDauTpcClsMin, ///< Min. number of TPC clusters of daughter
+  kDauAbsEtaMax,   ///< Max. absolute pseudo rapidity
+  kDauAbsDcaxyMin, ///< Min. |DCAxy| of the daughters from primary vertex
+  kDauTpcClsMin,   ///< Min. number of TPC clusters of daughter
 
   // pid selection for daughters
   kPosDaughTpcPion,   ///< TPC Pion PID for positive daughter
