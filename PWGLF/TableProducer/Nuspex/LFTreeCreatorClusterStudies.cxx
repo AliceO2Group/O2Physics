@@ -111,9 +111,10 @@ enum V0Selections {
 enum CascSelections {
   kCascNoCut = 0,
   kCascTopology,
+  kNSigmaTPCV0Daughters,
   kRejectedXi,
-  kAcceptedOmega,
   kNSigmaTPC,
+  kAcceptedOmega,
   kCascAll
 };
 
@@ -274,12 +275,12 @@ struct LfTreeCreatorClusterStudies {
       {"photon_conversion_position", "Photon conversion position; #it{x} (cm); #it{y} (cm)", {HistType::kTH2F, {{250, -5.f, 5.f}, {250, -5.f, 5.f}}}},
       {"photon_conversion_position_layer", "Photon conversion position (ITS layers); #it{x} (cm); #it{y} (cm)", {HistType::kTH2F, {{100, -5.f, 5.f}, {100, -5.f, 5.f}}}},
       {"casc_dca_daughter_pairs", "DCA (xy) for cascade daughter pairs; DCA_{#it{xy}} (cm); counts", {HistType::kTH1F, {{100, -0.1, 0.1}}}},
-      {"Xi_vs_Omega", "Mass Xi vs Omega; mass Omega (GeV/#it{c}^{2}); #it{m}_#Xi (GeV/#it{c}^{2})", {HistType::kTH2F, {{50, 1.f, 2.f}, {50, 1.f, 2.f}}}},
+      {"Xi_vs_Omega", "Mass Xi vs Omega; #it{m}_{#Omega} (GeV/#it{c}^{2}); #it{m}_{#Xi} (GeV/#it{c}^{2})", {HistType::kTH2F, {{60, 1.5f, 2.1f}, {50, 1.1f, 1.6f}}}},
       {"massOmega", "Mass #Omega; signed #it{p}_{T} (GeV/#it{c}); #it{m}_{#Omega} (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {400, 1.62f, 1.72f}}}},
       {"massOmegaMc", "Mass #Omega (MC); signed #it{p}_{T} (GeV/#it{c}); #it{m}_{#Omega} (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {400, 1.62f, 1.72f}}}},
-      {"massPi0", "Mass #pi^{0}; #it{m}_{#pi^{0}} (GeV/#it{c}^{2})", {HistType::kTH1F, {{100, 0.0f, 0.200f}}}},
-      {"massPi0Mc", "Mass #pi^{0} (MC); #it{m}_{#pi^{0}} (GeV/#it{c}^{2})", {HistType::kTH1F, {{100, 0.0f, 0.200f}}}},
-      {"massPi0WithBkg", "Mass #pi^{0} with Background; #it{m}_{#pi^{0}} (GeV/#it{c}^{2}); counts", {HistType::kTH1F, {{100, 0.0f, 0.200f}}}},
+      {"massPi0", "Mass #pi^{0}; #it{m}_{ee} (GeV/#it{c}^{2})", {HistType::kTH1F, {{100, 0.0f, 0.200f}}}},
+      {"massPi0Mc", "Mass #pi^{0} (MC); #it{m}_{ee} (GeV/#it{c}^{2})", {HistType::kTH1F, {{100, 0.0f, 0.200f}}}},
+      {"massPi0WithBkg", "Mass #pi^{0} with Background; #it{m}_{ee} (GeV/#it{c}^{2}); counts", {HistType::kTH1F, {{100, 0.0f, 0.200f}}}},
       {"zVtx", "Binning for the vertex z in cm; #it{z}_{vertex} (cm)", {HistType::kTH1F, {{100, -20.f, 20.f}}}},
       {"isPositive", "is the candidate positive?; isPositive; counts", {HistType::kTH1F, {{2, -0.5f, 1.5f}}}},
 
@@ -469,6 +470,23 @@ struct LfTreeCreatorClusterStudies {
       return false;
     }
 
+    return true;
+  }
+
+  template <typename Track>
+  bool selectPidV0Daughters(const Track& posTrack, const Track& negTrack, uint8_t v0Bitmask)
+  {
+    if (TESTBIT(v0Bitmask, Lambda)) {
+      if (std::abs(posTrack.tpcNSigmaPr()) > v0settingNsigmatpcPr || std::abs(negTrack.tpcNSigmaPi()) > v0settingNsigmatpcPi) {
+        return false;
+      }
+    } else if (TESTBIT(v0Bitmask, AntiLambda)) {
+      if (std::abs(posTrack.tpcNSigmaPi()) > v0settingNsigmatpcPi || std::abs(negTrack.tpcNSigmaPr()) > v0settingNsigmatpcPr) {
+        return false;
+      }
+    } else {
+      return false;
+    }
     return true;
   }
 
@@ -812,7 +830,7 @@ struct LfTreeCreatorClusterStudies {
     for (int i = 0; i < V0Selections::kV0All; i++)
       mHistograms.get<TH1>(HIST("v0_selections"))->GetXaxis()->SetBinLabel(i + 1, V0selectionLabels[i].c_str());
 
-    std::vector<std::string> CascSelectionLabels = {"All", "Topology", "Veto Xi", "Accepted Omega", "n#sigma_{TPC} K"};
+    std::vector<std::string> CascSelectionLabels = {"All", "Topology", "n#sigma_{TPC} V0 daughters", "Veto Xi", "n#sigma_{TPC} K", "Accepted Omega"};
     for (int i = 0; i < CascSelections::kCascAll; i++)
       mHistograms.get<TH1>(HIST("casc_selections"))->GetXaxis()->SetBinLabel(i + 1, CascSelectionLabels[i].c_str());
 
@@ -879,7 +897,6 @@ struct LfTreeCreatorClusterStudies {
 
       const auto& posMcParticle = posTrack.mcParticle();
       const auto& negMcParticle = negTrack.mcParticle();
-
       candidatePos.pdgCode = posMcParticle.pdgCode();
       candidateNeg.pdgCode = negMcParticle.pdgCode();
 
@@ -894,7 +911,7 @@ struct LfTreeCreatorClusterStudies {
   }
 
   template <bool isMC = false, typename Track>
-  void fillKCand(const std::array<float, 3>& pv, aod::CascDatas::iterator const& cascade, const Track&)
+  void fillKCand(const std::array<float, 3>& pv, aod::CascDatas::iterator const& cascade, const aod::V0Datas& v0s, const Track&)
   {
     mHistograms.fill(HIST("casc_selections"), CascSelections::kCascNoCut);
     const auto& bachelorTrack = cascade.template bachelor_as<Track>();
@@ -906,6 +923,15 @@ struct LfTreeCreatorClusterStudies {
     }
     mHistograms.fill(HIST("casc_selections"), CascSelections::kCascTopology);
 
+    const auto& posTrack = cascade.template posTrack_as<Track>();
+    const auto& negTrack = cascade.template negTrack_as<Track>();
+    uint8_t v0Bitmask = 0;
+    SETBIT(v0Bitmask, bachelorTrack.sign() < 0 ? V0Type::Lambda : V0Type::AntiLambda);
+    if (!selectPidV0Daughters(posTrack, negTrack, v0Bitmask)) {
+      return;
+    }
+    mHistograms.fill(HIST("casc_selections"), CascSelections::kNSigmaTPCV0Daughters);
+
     const float& massXi = cascade.mXi();
     const float& massOmega = cascade.mOmega();
     mHistograms.fill(HIST("Xi_vs_Omega"), massOmega, massXi);
@@ -914,6 +940,10 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
     mHistograms.fill(HIST("casc_selections"), CascSelections::kRejectedXi);
+    if (std::abs(bachelorTrack.tpcNSigmaKa()) > cascsettingNsigmatpc) {
+      return;
+    }
+    mHistograms.fill(HIST("casc_selections"), CascSelections::kNSigmaTPC);
 
     mHistograms.fill(HIST("massOmega"), cascade.pt() * bachelorTrack.sign(), massOmega);
     if (std::abs(massOmega - o2::constants::physics::MassOmegaMinus) > cascsettingMassWindowOmega) {
@@ -921,10 +951,6 @@ struct LfTreeCreatorClusterStudies {
     }
     mHistograms.fill(HIST("casc_selections"), CascSelections::kAcceptedOmega);
 
-    if (std::abs(bachelorTrack.tpcNSigmaKa()) > cascsettingNsigmatpc) {
-      return;
-    }
-    mHistograms.fill(HIST("casc_selections"), CascSelections::kNSigmaTPC);
     fillHistogramsParticle<PartID::ka, isMC>(bachelorTrack);
 
     mClusterStudiesTable(
@@ -1262,7 +1288,7 @@ struct LfTreeCreatorClusterStudies {
     }
 
     for (const auto& cascade : cascades) {
-      fillKCand</*isMC*/ false>(PV, cascade, tracks);
+      fillKCand</*isMC*/ false>(PV, cascade, v0s, tracks);
     }
   }
   PROCESS_SWITCH(LfTreeCreatorClusterStudies, processDataV0Casc, "process Data V0 and cascade", false);
@@ -1370,7 +1396,7 @@ struct LfTreeCreatorClusterStudies {
     }
 
     for (const auto& cascade : cascades) {
-      fillKCand</*isMC*/ true>(PV, cascade, tracks);
+      fillKCand</*isMC*/ true>(PV, cascade, v0s, tracks);
     }
   }
   PROCESS_SWITCH(LfTreeCreatorClusterStudies, processMcV0Casc, "process Mc V0 and cascade", false);
