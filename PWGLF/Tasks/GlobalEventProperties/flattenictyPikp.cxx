@@ -784,6 +784,8 @@ struct FlattenictyPikp {
       // Event loss
       registryMC.add("Events/hNchVsFlatGenINELgt0", "Gen Nch w/o Evt sel; Gen Nch (|#eta|<0.8); flat", {kTH2F, {nChAxis, flatAxis}});
       registryMC.add("Events/hNchVsFlatGenINELgt0wRecEvtSel", "Gen Nch w/ Nrec > 0 + Evt sel; Gen Nch (|#eta|<0.8); flat", {kTH2F, {nChAxis, flatAxis}});
+      // Response
+      registryMC.add("Events/hFlatResponse", "Flattenicity response; flat ture; flat measured", {kTH2F, {flatAxis, flatAxis}});
       // Event split
       registryMC.add("Events/hCentVsFlatRecINELgt0", "Gen evt w/o Evt sel; mult; flat", {kTH2F, {multAxis, flatAxis}});
       registryMC.add("Events/hCentVsFlatRecINELgt0wRecEvt", "Gen evt w/ Nrec > 0; mult; flat", {kTH2F, {multAxis, flatAxis}});
@@ -2410,6 +2412,7 @@ struct FlattenictyPikp {
       registryMC.fill(HIST("Events/hCentVsFlatRecINELgt0wRecEvtSel"), multRecGt1, flatRec); // Evt split num,  w/ Nrec > 0 + Evt. sel
       registryMC.fill(HIST("Events/hNchGenVsCent"), multMC, multRecGt1);
       registryMC.fill(HIST("Events/hNchVsFlatGenINELgt0wRecEvtSel"), multMC, flatMC); // Evt loss num,   w/ Nrec > 0 + Evt. sel
+      registryMC.fill(HIST("Events/hFlatResponse"), flatMC, flatRec);
 
       // Obtain here: Denominator of tracking efficiency; Numerator event and signal loss
       for (const auto& particle : particles) {
