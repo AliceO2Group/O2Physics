@@ -104,7 +104,7 @@ struct DqJPsiMuonCorrelations {
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb{};
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   // Define the filter for events
   Filter eventFilter = aod::dqanalysisflags::isEventSelected == 1;
