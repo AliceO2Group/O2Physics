@@ -29,11 +29,11 @@ class BasePairCleaner
   virtual ~BasePairCleaner() = default;
 
   template <modes::Mode mode, typename T>
-  void init(T const& PairCuts)
+  void init(T const& pairCuts)
   {
     if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
-      mMixPairsWithCommonAncestor = PairCuts.mixOnlyCommonAncestor.value;
-      mMixPairsWithNonCommonAncestor = PairCuts.mixOnlyNonCommonAncestor.value;
+      mMixPairsWithCommonAncestor = pairCuts.mixOnlyCommonAncestor.value;
+      mMixPairsWithNonCommonAncestor = pairCuts.mixOnlyNonCommonAncestor.value;
       if (mMixPairsWithCommonAncestor && mMixPairsWithNonCommonAncestor) {
         LOG(fatal) << "Both mixing with common and non-common ancestor is activated. Breaking...";
       }
@@ -147,14 +147,14 @@ class V0V0PairCleaner : public BasePairCleaner // also works for particles decay
  public:
   V0V0PairCleaner() = default;
   template <typename T1, typename T2, typename T3>
-  bool isCleanPair(const T1& v01, const T2& v02, const T3& trackTable) const
+  bool isCleanPair(T1 const& v01, T2 const& v02, T3 const& trackTable) const
   {
     auto posDaughter1 = trackTable.rawIteratorAt(v01.posDauId() - trackTable.offset());
     auto negDaughter1 = trackTable.rawIteratorAt(v01.negDauId() - trackTable.offset());
     auto posDaughter2 = trackTable.rawIteratorAt(v02.posDauId() - trackTable.offset());
     auto negDaughter2 = trackTable.rawIteratorAt(v02.negDauId() - trackTable.offset());
-    // check all charge combinations
-    return this->isCleanParticlePair(posDaughter1, posDaughter2) && this->isCleanParticlePair(negDaughter1, negDaughter2) &&
+    return this->isCleanParticlePair(v01, v02) &&
+           this->isCleanParticlePair(posDaughter1, posDaughter2) && this->isCleanParticlePair(negDaughter1, negDaughter2) &&
            this->isCleanParticlePair(posDaughter1, negDaughter2) && this->isCleanParticlePair(negDaughter1, posDaughter2);
   }
 
@@ -181,7 +181,7 @@ class TrackV0PairCleaner : public BasePairCleaner // also works for particles de
  public:
   TrackV0PairCleaner() = default;
   template <typename T1, typename T2, typename T3>
-  bool isCleanPair(const T1& track, const T2& v0, const T3& trackTable) const
+  bool isCleanPair(T1 const& track, T2 const& v0, T3 const& trackTable) const
   {
     auto posDaughter = trackTable.rawIteratorAt(v0.posDauId() - trackTable.offset());
     auto negDaughter = trackTable.rawIteratorAt(v0.negDauId() - trackTable.offset());
@@ -211,7 +211,7 @@ class TrackKinkPairCleaner : public BasePairCleaner
  public:
   TrackKinkPairCleaner() = default;
   template <typename T1, typename T2, typename T3>
-  bool isCleanPair(const T1& track, const T2& kink, const T3& trackTable) const
+  bool isCleanPair(T1 const& track, T2 const& kink, T3 const& trackTable) const
   {
     auto chaDaughter = trackTable.rawIteratorAt(kink.chaDauId() - trackTable.offset());
     return this->isCleanParticlePair(chaDaughter, track);
@@ -240,7 +240,7 @@ class TrackCascadePairCleaner : public BasePairCleaner
  public:
   TrackCascadePairCleaner() = default;
   template <typename T1, typename T2, typename T3>
-  bool isCleanPair(const T1& track, const T2& cascade, const T3& trackTable) const
+  bool isCleanPair(T1 const& track, T2 const& cascade, T3 const& trackTable) const
   {
     auto bachelor = trackTable.rawIteratorAt(cascade.bachelorId() - trackTable.offset());
     auto posDaughter = trackTable.rawIteratorAt(cascade.posDauId() - trackTable.offset());
