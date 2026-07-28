@@ -122,7 +122,7 @@ struct lambda1405candidate {
 };
 
 struct lambda1405analysis {
-  int lambda1405PdgCode = 102132;                     // PDG code for Lambda(1405)
+  int lambda1405PdgCode = 102132;                     // PDG code for Lambda(1405); o2-linter: disable=pdg/explicit-code
   Produces<aod::Lambda1405Cands> outputDataTable;     // Output table for Lambda(1405) candidates
   Produces<aod::Lambda1405Flow> outputDataFlowTable;  // Output table for Lambda(1405) flow analysis
   Produces<aod::Lambda1405CandsMC> outputDataTableMC; // Output table for Lambda(1405) candidates in MC
@@ -568,7 +568,8 @@ struct lambda1405analysis {
     double massSigma = isSigmaMinus ? o2::constants::physics::MassSigmaMinus : o2::constants::physics::MassSigmaPlus;
 
     double pMother = std::sqrt(sigmaPx * sigmaPx + sigmaPy * sigmaPy + sigmaPz * sigmaPz);
-    if (pMother < 1e-12f) {
+    float zeroValTolerance{1e-12f};
+    if (pMother < zeroValTolerance) {
       LOG(debug) << "Recalculation of Sigma momentum failed: mother momentum is zero " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz;
       return -999.f;
     }
@@ -588,7 +589,7 @@ struct lambda1405analysis {
     double B = -4.0 * a * K;
     double C = 4.0 * eChDau * eChDau * massSigma * massSigma - K * K;
 
-    if (std::abs(A) < 1e-6f) {
+    if (std::abs(A) < zeroValTolerance) {
       LOG(debug) << "Recalculation of Sigma momentum failed: A is zero " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz << ", A = " << A << ", B = " << B << ", C = " << C;
       return -999.f;
     }
@@ -598,20 +599,20 @@ struct lambda1405analysis {
       rSelections.fill(HIST("hRecalcSigmaPlusMom"), 2); // Non-zero A
     }
 
-    double D = B * B - 4.0 * A * C;
-    if (D < 0.0) {
-      LOG(debug) << "Recalculation of Sigma momentum failed: D is negative " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz << ", A = " << A << ", B = " << B << ", C = " << C << ", D = " << D;
+    double det = B * B - 4.0 * A * C;
+    if (det < 0.0) {
+      LOG(debug) << "Recalculation of Sigma momentum failed: determinant is negative " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz << ", A = " << A << ", B = " << B << ", C = " << C << ", determinant = " << det;
       return -999.f;
     }
     if (isSigmaMinus) {
-      rSelections.fill(HIST("hRecalcSigmaMinusMom"), 3); // Positive D
+      rSelections.fill(HIST("hRecalcSigmaMinusMom"), 3); // Positive determinant
     } else {
-      rSelections.fill(HIST("hRecalcSigmaPlusMom"), 3); // Positive D
+      rSelections.fill(HIST("hRecalcSigmaPlusMom"), 3); // Positive determinant
     }
 
-    double sqrtD = std::sqrt(D);
-    double p1 = (-B + sqrtD) / (2.0 * A);
-    double p2 = (-B - sqrtD) / (2.0 * A);
+    double sqrtDet = std::sqrt(det);
+    double p1 = (-B + sqrtDet) / (2.0 * A);
+    double p2 = (-B - sqrtDet) / (2.0 * A);
     if (p2 < 0.0 && p1 < 0.0) {
       LOG(debug) << "Recalculation of Sigma momentum failed: both solutions are negative " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz << ", p1: " << p1 << ", p2: " << p2;
       return -999.f;
