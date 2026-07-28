@@ -131,29 +131,36 @@ struct lambda1405analysis {
   HistogramRegistry rSigmaPlus{"sigmaPlus", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rSelections{"selections", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   // Configurable for event selection
-  Configurable<float> cutZVertex{"cutZVertex", 10.0f, "Accepted z-vertex range (cm)"};
-  Configurable<float> cutEtaDaughter{"cutEtaDaughter", 0.8f, "Eta cut for daughter tracks"};
-  Configurable<float> cutDcaToPvSigma{"cutDcaToPvSigma", 0.1f, "Max DCA to primary vertex for Sigma candidates (cm)"};
-  Configurable<float> cutDcaToPvPiFromSigma{"cutDcaToPvPiFromSigma", 2., "Min DCA to primary vertex for pion from Sigma candidates (cm)"};
-
-  Configurable<float> cutMinPtL1405{"cutMinPtL1405", 2.0f, "Minimum pT cut for Lambda(1405) candidates (GeV/c)"};
-  Configurable<float> cutUpperMass{"cutUpperMass", 1.6f, "Upper mass cut for Lambda(1405) candidates (GeV/c^2)"};
-  Configurable<float> cutSigmaRadius{"cutSigmaRadius", 20.f, "Minimum radius for Sigma candidates (cm)"};
-  Configurable<float> cutSigmaMass{"cutSigmaMass", 0.1, "Sigma mass window (MeV/c^2)"};
-  Configurable<float> cutItsNClusKinkMin{"cutItsNClusKinkMin", 1, "Minimum number of ITS clusters for kink daughter"};
-  Configurable<float> cutItsNClusKinkMax{"cutItsNClusKinkMax", 3, "Maximum number of ITS clusters for kink daughter"};
-  Configurable<float> cutNTpcClus{"cutNTpcClus", 90, "Minimum number of Tpc clusters for pion candidate"};
-  Configurable<float> cutNSigTpc{"cutNSigTpc", 3, "NSigTpcPion"};
-  Configurable<float> cutNSigTof{"cutNSigTof", 3, "NSigTofPion"};
-  Configurable<float> cutMaxDcaZBach{"cutMaxDcaZBach", 0.1, "Maximum DcaZ for bachelor pion (cm)"};
-  Configurable<float> dcaXYBachNSigmaMax{"dcaXYBachNSigmaMax", 7, "Cut on number of sigma deviations from expected DCA in the transverse direction"};
-  Configurable<std::string> dcaXYPtBachFunc{"dcaXYPtBachFunc", "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut"};
-  Configurable<std::string> cutSigmaQtAPMin{"cutSigmaQtAPMin", "0.17", "Functional form of minimum qT(alpha) selection"};
-  Configurable<std::string> cutSigmaQtAPMax{"cutSigmaQtAPMax", "0.2", "Functional form of minimum qT(alpha) selection"};
-  Configurable<std::string> cutMinBachPiPtVsL1405Pt{"cutMinBachPiPtVsL1405Pt", "0", "Functional form of minimum qT(alpha) selection"};
-  Configurable<std::string> cutMaxBachPiPtVsL1405Pt{"cutMaxBachPiPtVsL1405Pt", "10", "Functional form of minimum qT(alpha) selection"};
-  Configurable<std::string> cutMinSigmaPtVsL1405Pt{"cutMinSigmaPtVsL1405Pt", "0", "Functional form of minimum qT(alpha) selection"};
-  Configurable<std::string> cutMaxSigmaPtVsL1405Pt{"cutMaxSigmaPtVsL1405Pt", "10", "Functional form of minimum qT(alpha) selection"};
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<float> cutZVertex{"cutZVertex", 10.0f, "Accepted z-vertex range (cm)"};
+    Configurable<float> centMultMin{"centMultMin", 0., "Minimum collision centrality/multiplicity accepted"};
+    Configurable<float> centMultMax{"centMultMax", 100., "Maximum collision centrality/multiplicity accepted"};
+    Configurable<float> occupancyMax{"occupancyMax", 3000000., "Maximum collision occupancy accepted"};
+  } eventSelection;
+  
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<float> cutEtaDaughter{"cutEtaDaughter", 0.8f, "Eta cut for daughter tracks"};
+    Configurable<float> cutDcaToPvSigma{"cutDcaToPvSigma", 0.1f, "Max DCA to primary vertex for Sigma candidates (cm)"};
+    Configurable<float> cutDcaToPvPiFromSigma{"cutDcaToPvPiFromSigma", 2., "Min DCA to primary vertex for pion from Sigma candidates (cm)"};
+    Configurable<float> cutMinPtL1405{"cutMinPtL1405", 2.0f, "Minimum pT cut for Lambda(1405) candidates (GeV/c)"};
+    Configurable<float> cutUpperMass{"cutUpperMass", 1.6f, "Upper mass cut for Lambda(1405) candidates (GeV/c^2)"};
+    Configurable<float> cutSigmaRadius{"cutSigmaRadius", 20.f, "Minimum radius for Sigma candidates (cm)"};
+    Configurable<float> cutSigmaMass{"cutSigmaMass", 0.1, "Sigma mass window (MeV/c^2)"};
+    Configurable<float> cutItsNClusKinkMin{"cutItsNClusKinkMin", 1, "Minimum number of ITS clusters for kink daughter"};
+    Configurable<float> cutItsNClusKinkMax{"cutItsNClusKinkMax", 3, "Maximum number of ITS clusters for kink daughter"};
+    Configurable<float> cutNTpcClus{"cutNTpcClus", 90, "Minimum number of Tpc clusters for pion candidate"};
+    Configurable<float> cutNSigTpc{"cutNSigTpc", 3, "NSigTpcPion"};
+    Configurable<float> cutNSigTof{"cutNSigTof", 3, "NSigTofPion"};
+    Configurable<float> cutMaxDcaZBach{"cutMaxDcaZBach", 0.1, "Maximum DcaZ for bachelor pion (cm)"};
+    Configurable<float> dcaXYBachNSigmaMax{"dcaXYBachNSigmaMax", 7, "Cut on number of sigma deviations from expected DCA in the transverse direction"};
+    Configurable<std::string> dcaXYPtBachFunc{"dcaXYPtBachFunc", "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut"};
+    Configurable<std::string> cutSigmaQtAPMin{"cutSigmaQtAPMin", "0.17", "Functional form of minimum qT(alpha) selection"};
+    Configurable<std::string> cutSigmaQtAPMax{"cutSigmaQtAPMax", "0.2", "Functional form of minimum qT(alpha) selection"};
+    Configurable<std::string> cutMinBachPiPtVsL1405Pt{"cutMinBachPiPtVsL1405Pt", "0", "Functional form of minimum qT(alpha) selection"};
+    Configurable<std::string> cutMaxBachPiPtVsL1405Pt{"cutMaxBachPiPtVsL1405Pt", "10", "Functional form of minimum qT(alpha) selection"};
+    Configurable<std::string> cutMinSigmaPtVsL1405Pt{"cutMinSigmaPtVsL1405Pt", "0", "Functional form of minimum qT(alpha) selection"};
+    Configurable<std::string> cutMaxSigmaPtVsL1405Pt{"cutMaxSigmaPtVsL1405Pt", "10", "Functional form of minimum qT(alpha) selection"};
+  } selections;
 
   // Configurables for flow analysis
   Configurable<float> centMultMin{"centMultMin", 0., "Minimum collision centrality/multiplicity accepted"};
@@ -454,21 +461,21 @@ struct lambda1405analysis {
     }
 
     // Functional selections
-    funcMinQtAlphaAP = TF1("funcMinQtAlphaAP", Form("%s", cutSigmaQtAPMin.value.data()), -1, 1);
-    LOGF(info, "funcMinQtAlphaAP: %s", Form("%s", cutSigmaQtAPMin.value.data()));
-    funcMaxQtAlphaAP = TF1("funcMaxQtAlphaAP", Form("%s", cutSigmaQtAPMax.value.data()), -1, 1);
-    LOGF(info, "funcMaxQtAlphaAP: %s", Form("%s", cutSigmaQtAPMax.value.data()));
-    funcMinBachPiPtVsL1405Pt = TF1("funcMinBachPiPtVsL1405Pt", Form("%s", cutMinBachPiPtVsL1405Pt.value.data()), 0., 100);
-    LOGF(info, "funcMinBachPiPtVsL1405Pt: %s", Form("%s", cutMinBachPiPtVsL1405Pt.value.data()));
-    funcMaxBachPiPtVsL1405Pt = TF1("funcMaxBachPiPtVsL1405Pt", Form("%s", cutMaxBachPiPtVsL1405Pt.value.data()), 0., 100);
-    LOGF(info, "funcMaxBachPiPtVsL1405Pt: %s", Form("%s", cutMaxBachPiPtVsL1405Pt.value.data()));
-    funcMinSigmaPtVsL1405Pt = TF1("funcMinSigmaPtVsL1405Pt", Form("%s", cutMinSigmaPtVsL1405Pt.value.data()), 0., 100);
-    LOGF(info, "funcMinSigmaPtVsL1405Pt: %s", Form("%s", cutMinSigmaPtVsL1405Pt.value.data()));
-    funcMaxSigmaPtVsL1405Pt = TF1("funcMaxSigmaPtVsL1405Pt", Form("%s", cutMaxSigmaPtVsL1405Pt.value.data()), 0., 100);
-    LOGF(info, "funcMaxSigmaPtVsL1405Pt: %s", Form("%s", cutMaxSigmaPtVsL1405Pt.value.data()));
-    funcDcaXYPtCutBachPi = TF1("funcDcaXYPtCutBachPi", Form("[0]*%s", dcaXYPtBachFunc.value.data()), 0.001, 100);
-    funcDcaXYPtCutBachPi.SetParameter(0, dcaXYBachNSigmaMax);
-    LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", dcaXYPtBachFunc.value.data()));
+    funcMinQtAlphaAP = TF1("funcMinQtAlphaAP", Form("%s", selections.cutSigmaQtAPMin.value.data()), -1, 1);
+    LOGF(info, "funcMinQtAlphaAP: %s", Form("%s", selections.cutSigmaQtAPMin.value.data()));
+    funcMaxQtAlphaAP = TF1("funcMaxQtAlphaAP", Form("%s", selections.cutSigmaQtAPMax.value.data()), -1, 1);
+    LOGF(info, "funcMaxQtAlphaAP: %s", Form("%s", selections.cutSigmaQtAPMax.value.data()));
+    funcMinBachPiPtVsL1405Pt = TF1("funcMinBachPiPtVsL1405Pt", Form("%s", selections.cutMinBachPiPtVsL1405Pt.value.data()), 0., 100);
+    LOGF(info, "funcMinBachPiPtVsL1405Pt: %s", Form("%s", selections.cutMinBachPiPtVsL1405Pt.value.data()));
+    funcMaxBachPiPtVsL1405Pt = TF1("funcMaxBachPiPtVsL1405Pt", Form("%s", selections.cutMaxBachPiPtVsL1405Pt.value.data()), 0., 100);
+    LOGF(info, "funcMaxBachPiPtVsL1405Pt: %s", Form("%s", selections.cutMaxBachPiPtVsL1405Pt.value.data()));
+    funcMinSigmaPtVsL1405Pt = TF1("funcMinSigmaPtVsL1405Pt", Form("%s", selections.cutMinSigmaPtVsL1405Pt.value.data()), 0., 100);
+    LOGF(info, "funcMinSigmaPtVsL1405Pt: %s", Form("%s", selections.cutMinSigmaPtVsL1405Pt.value.data()));
+    funcMaxSigmaPtVsL1405Pt = TF1("funcMaxSigmaPtVsL1405Pt", Form("%s", selections.cutMaxSigmaPtVsL1405Pt.value.data()), 0., 100);
+    LOGF(info, "funcMaxSigmaPtVsL1405Pt: %s", Form("%s", selections.cutMaxSigmaPtVsL1405Pt.value.data()));
+    funcDcaXYPtCutBachPi = TF1("funcDcaXYPtCutBachPi", Form("[0]*%s", selections.dcaXYPtBachFunc.value.data()), 0.001, 100);
+    funcDcaXYPtCutBachPi.SetParameter(0, selections.dcaXYBachNSigmaMax);
+    LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", selections.dcaXYPtBachFunc.value.data()));
 
     rSelections.print();
     rSigmaMinus.print();
@@ -591,31 +598,28 @@ struct lambda1405analysis {
   }
 
   template <typename TTrack>
-  bool selectPiBach(const TTrack& candidate, const o2::dataformats::VertexBase& vtx, float centMult)
+  bool selectPiBach(const TTrack& candidate, float centMult)
   {
-    if (std::abs(candidate.tpcNSigmaPi()) > cutNSigTpc) {
+    if (std::abs(candidate.tpcNSigmaPi()) > selections.cutNSigTpc) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsBachPi"), 2); // Nsigma Tpc
 
-    if (candidate.tpcNClsFound() < cutNTpcClus) {
+    if (candidate.tpcNClsFound() < selections.cutNTpcClus) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsBachPi"), 3); // Tpc clusters
 
-    if (std::abs(candidate.eta()) > cutEtaDaughter) {
+    if (std::abs(candidate.eta()) > selections.cutEtaDaughter) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsBachPi"), 4); // Eta selection
 
-    o2::track::TrackParCov trackParCovTrack = getTrackParCov(candidate);
-    std::array<float, 2> dcaInfoMoth;
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({vtx.getX(), vtx.getY(), vtx.getZ()},
-                                                           trackParCovTrack, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value),
-                                                           &dcaInfoMoth);
-    rLambda1405.fill(HIST("h3BachPiDcaXYVsPt"), candidate.pt(), dcaInfoMoth[0], centMult);
-    rLambda1405.fill(HIST("h3BachPiDcaZVsPt"), candidate.pt(), dcaInfoMoth[1], centMult);
-    if (std::abs(dcaInfoMoth[0]) > funcDcaXYPtCutBachPi.Eval(candidate.pt()) || std::abs(dcaInfoMoth[1]) > cutMaxDcaZBach) {
+    std::array<float, 2> dcaInfoBachPi{candidate.dcaXY(), candidate.dcaZ()};
+    rLambda1405.fill(HIST("h3BachPiDcaXYVsPt"), candidate.pt(), dcaInfoBachPi[0], centMult);
+    rLambda1405.fill(HIST("h3BachPiDcaZVsPt"), candidate.pt(), dcaInfoBachPi[1], centMult);
+    if (std::abs(dcaInfoBachPi[0]) > funcDcaXYPtCutBachPi.Eval(candidate.pt()) ||
+        std::abs(dcaInfoBachPi[1]) > selections.cutMaxDcaZBach) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsBachPi"), 5); // DCA selection
@@ -628,22 +632,22 @@ struct lambda1405analysis {
   {
     rSelections.fill(HIST("hSelectionsKinkPi"), 0); // All pion kink candidates
 
-    if (std::abs(candidate.tpcNSigmaPi()) > cutNSigTpc) {
+    if (std::abs(candidate.tpcNSigmaPi()) > selections.cutNSigTpc) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPi"), 1); // Nsigma Tpc
 
-    if (candidate.tpcNClsFound() < cutNTpcClus) {
+    if (candidate.tpcNClsFound() < selections.cutNTpcClus) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPi"), 2); // Tpc clusters
 
-    if (std::abs(candidate.eta()) > cutEtaDaughter) {
+    if (std::abs(candidate.eta()) > selections.cutEtaDaughter) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPi"), 3); // Eta selection
 
-    if (candidate.itsNCls() < cutItsNClusKinkMin || candidate.itsNCls() > cutItsNClusKinkMax) {
+    if (candidate.itsNCls() < selections.cutItsNClusKinkMin || candidate.itsNCls() > selections.cutItsNClusKinkMax) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPi"), 4); // ITS clusters
@@ -653,7 +657,7 @@ struct lambda1405analysis {
     }
     rSelections.fill(HIST("hSelectionsKinkPi"), 5); // has Tof
 
-    if (useTof && std::abs(candidate.tofNSigmaPi()) > cutNSigTof) {
+    if (useTof && std::abs(candidate.tofNSigmaPi()) > selections.cutNSigTof) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPi"), 6); // Nsigma Tof
@@ -666,22 +670,22 @@ struct lambda1405analysis {
   {
     rSelections.fill(HIST("hSelectionsKinkPr"), 0); // All proton kink candidates
 
-    if (std::abs(candidate.tpcNSigmaPr()) > cutNSigTpc) {
+    if (std::abs(candidate.tpcNSigmaPr()) > selections.cutNSigTpc) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPr"), 1); // Nsigma Tpc
 
-    if (candidate.tpcNClsFound() < cutNTpcClus) {
+    if (candidate.tpcNClsFound() < selections.cutNTpcClus) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPr"), 2); // Tpc clusters
 
-    if (std::abs(candidate.eta()) > cutEtaDaughter) {
+    if (std::abs(candidate.eta()) > selections.cutEtaDaughter) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPr"), 3); // eta selection
 
-    if (candidate.itsNCls() < cutItsNClusKinkMin || candidate.itsNCls() > cutItsNClusKinkMax) {
+    if (candidate.itsNCls() < selections.cutItsNClusKinkMin || candidate.itsNCls() > selections.cutItsNClusKinkMax) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPr"), 4); // ITS clusters
@@ -691,7 +695,7 @@ struct lambda1405analysis {
     }
     rSelections.fill(HIST("hSelectionsKinkPr"), 5); // has Tof
 
-    if (useTof && std::abs(candidate.tofNSigmaPr()) > cutNSigTof) {
+    if (useTof && std::abs(candidate.tofNSigmaPr()) > selections.cutNSigTof) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPr"), 6); // Nsigma Tof
@@ -914,12 +918,12 @@ struct lambda1405analysis {
       rSigmaPlus.fill(HIST("h2PtPrKinkNSigBeforeCuts"), kinkDauTrack.pt(), kinkDauTrack.tpcNSigmaPr());
     }
 
-    if (lambda1405Cand.isSigmaMinus && (sigmaCand.mSigmaMinus() < o2::constants::physics::MassSigmaMinus - cutSigmaMass ||
-                                        sigmaCand.mSigmaMinus() > o2::constants::physics::MassSigmaMinus + cutSigmaMass)) {
+    if (lambda1405Cand.isSigmaMinus && (sigmaCand.mSigmaMinus() < o2::constants::physics::MassSigmaMinus - selections.cutSigmaMass ||
+                                        sigmaCand.mSigmaMinus() > o2::constants::physics::MassSigmaMinus + selections.cutSigmaMass)) {
       return;
     }
-    if (lambda1405Cand.isSigmaPlus && (sigmaCand.mSigmaPlus() < o2::constants::physics::MassSigmaPlus - cutSigmaMass ||
-                                       sigmaCand.mSigmaPlus() > o2::constants::physics::MassSigmaPlus + cutSigmaMass)) {
+    if (lambda1405Cand.isSigmaPlus && (sigmaCand.mSigmaPlus() < o2::constants::physics::MassSigmaPlus - selections.cutSigmaMass ||
+                                       sigmaCand.mSigmaPlus() > o2::constants::physics::MassSigmaPlus + selections.cutSigmaMass)) {
       return;
     }
     if (lambda1405Cand.isSigmaMinus) {
@@ -928,7 +932,7 @@ struct lambda1405analysis {
       rSelections.fill(HIST("hSelectionsSigmaPlus"), 3); // Passed mass sel
     }
 
-    if (std::abs(sigmaCand.dcaMothPv()) > cutDcaToPvSigma) {
+    if (std::abs(sigmaCand.dcaMothPv()) > selections.cutDcaToPvSigma) {
       return;
     }
     if (lambda1405Cand.isSigmaMinus) {
@@ -937,7 +941,7 @@ struct lambda1405analysis {
       rSelections.fill(HIST("hSelectionsSigmaPlus"), 4); // Passed cutDcaToPvSigma
     }
 
-    if (std::abs(sigmaCand.dcaDaugPv()) < cutDcaToPvPiFromSigma) {
+    if (std::abs(sigmaCand.dcaDaugPv()) < selections.cutDcaToPvPiFromSigma) {
       return;
     }
     if (lambda1405Cand.isSigmaMinus) {
@@ -947,7 +951,7 @@ struct lambda1405analysis {
     }
 
     float sigmaRad = std::hypot(sigmaCand.xDecVtx(), sigmaCand.yDecVtx());
-    if (sigmaRad < cutSigmaRadius) {
+    if (sigmaRad < selections.cutSigmaRadius) {
       return;
     }
     if (lambda1405Cand.isSigmaMinus) {
@@ -1017,7 +1021,7 @@ struct lambda1405analysis {
       }
       rSelections.fill(HIST("hSelectionsBachPi"), 1);
 
-      if (!selectPiBach(piTrack, primaryVertex, lambda1405Cand.centMult)) {
+      if (!selectPiBach(piTrack, lambda1405Cand.centMult)) {
         continue;
       }
       rSelections.fill(HIST("hSelectionsL1405"), 2); // Bach Pi selection
@@ -1029,7 +1033,7 @@ struct lambda1405analysis {
       } else if (lambda1405Cand.isSigmaPlus) {
         invMass = RecoDecay::m(std::array{sigmaMom, piMom}, std::array{o2::constants::physics::MassSigmaPlus, o2::constants::physics::MassPiMinus});
       }
-      if (invMass > cutUpperMass) {
+      if (invMass > selections.cutUpperMass) {
         continue;
       }
       rSelections.fill(HIST("hSelectionsL1405"), 3); // Upper mass selection
@@ -1072,7 +1076,7 @@ struct lambda1405analysis {
       }
       rSelections.fill(HIST("hSelectionsL1405"), 4); // Pt correlations
 
-      if (lambda1405Cand.pt() < cutMinPtL1405) {
+      if (lambda1405Cand.pt() < selections.cutMinPtL1405) {
         continue;
       }
       rSelections.fill(HIST("hSelectionsL1405"), 5); // Accepted
@@ -1104,14 +1108,14 @@ struct lambda1405analysis {
   }
 
   template <typename TCollision, typename TCand, typename TTrack>
-  void fillOutputData(const TCollision& collision, const TCand& sigmaCands, const TTrack& tracks)
+  void fillOutputData(const TCollision& collision, const TCand& sigmaCands, const TTrack& tracks, TBinningType binPolicy)
   {
-    if (std::abs(collision.posZ()) > cutZVertex || !collision.sel8()) {
+    if (std::abs(collision.posZ()) > eventSelection.cutZVertex || !collision.sel8()) {
       return;
     }
     rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
     float centMult = getCentMult(collision);
-    if (centMult < centMultMin || centMult > centMultMax) {
+    if (centMult < eventSelection.centMultMin || centMult > eventSelection.centMultMax) {
       return;
     }
     rEventSelection.fill(HIST("hCentMultVsPvContrib"), centMult, collision.numContrib());
@@ -1275,12 +1279,12 @@ struct lambda1405analysis {
                     const aod::McParticles& particlesMC)
   {
     for (const auto& collision : recoCollisions) {
-      if (std::abs(collision.posZ()) > cutZVertex) { // || !collision.sel8()) {
+      if (std::abs(collision.posZ()) > eventSelection.cutZVertex) { // || !collision.sel8()) {
         continue;
       }
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
       float centMult = getCentMult(collision);
-      if (centMult < centMultMin || centMult > centMultMax) {
+      if (centMult < eventSelection.centMultMin || centMult > eventSelection.centMultMax) {
         continue;
       }
       rEventSelection.fill(HIST("hCentMultVsPvContrib"), centMult, collision.numContrib());
