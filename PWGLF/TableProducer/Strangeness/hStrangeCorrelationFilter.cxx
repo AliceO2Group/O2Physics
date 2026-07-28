@@ -792,9 +792,9 @@ struct HStrangeCorrelationFilter {
         continue;
       }
       // check dE/dx compatibility
-      int compatibleK0Short = -1;
-      int compatibleLambda = -1;
-      int compatibleAntiLambda = -1;
+      int compatibleK0Short = 0;
+      int compatibleLambda = 0;
+      int compatibleAntiLambda = 0;
 
       auto posdau = v0.posTrack_as<DauTracks>();
       auto negdau = v0.negTrack_as<DauTracks>();
@@ -927,9 +927,9 @@ struct HStrangeCorrelationFilter {
         continue;
       }
       // check dE/dx compatibility
-      int compatibleK0Short = -1;
-      int compatibleLambda = -1;
-      int compatibleAntiLambda = -1;
+      int compatibleK0Short = 0;
+      int compatibleLambda = 0;
+      int compatibleAntiLambda = 0;
 
       auto posdau = v0.posTrack_as<DauTracksMC>();
       auto negdau = v0.negTrack_as<DauTracksMC>();
@@ -1109,10 +1109,10 @@ struct HStrangeCorrelationFilter {
       bool isGoodPosCascadePbPb = std::abs(casc.dcabachtopv()) > cascSelection.dcaBachToPV && std::abs(casc.dcapostopv()) > cascSelection.cascDcaMesonToPV &&
                                   std::abs(casc.dcanegtopv()) > cascSelection.cascDcaBaryonToPV;
       // check dE/dx compatibility
-      int compatibleXiMinus = -1;
-      int compatibleXiPlus = -1;
-      int compatibleOmegaMinus = -1;
-      int compatibleOmegaPlus = -1;
+      int compatibleXiMinus = 0;
+      int compatibleXiPlus = 0;
+      int compatibleOmegaMinus = 0;
+      int compatibleOmegaPlus = 0;
       float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
       float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
       float ctauXi = o2::constants::physics::MassXiMinus * cascpos / ((cascptotmom + 1e-13) * Xictau);
@@ -1277,10 +1277,10 @@ struct HStrangeCorrelationFilter {
       bool isGoodPosCascadePbPb = (std::abs(casc.dcabachtopv()) > cascSelection.dcaBachToPV && std::abs(casc.dcapostopv()) > cascSelection.cascDcaMesonToPV &&
                                    std::abs(casc.dcanegtopv()) > cascSelection.cascDcaBaryonToPV);
       // check dE/dx compatibility
-      int compatibleXiMinus = -1;
-      int compatibleXiPlus = -1;
-      int compatibleOmegaMinus = -1;
-      int compatibleOmegaPlus = -1;
+      int compatibleXiMinus = 0;
+      int compatibleXiPlus = 0;
+      int compatibleOmegaMinus = 0;
+      int compatibleOmegaPlus = 0;
       float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
       float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
       float ctauXi = o2::constants::physics::MassXiMinus * cascpos / ((cascptotmom + 1e-13) * Xictau);

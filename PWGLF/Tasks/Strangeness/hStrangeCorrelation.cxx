@@ -1053,8 +1053,8 @@ struct HStrangeCorrelation {
             }
             if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && ((-massWindowConfigurations.maxPeakNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxPeakNSigma))) {
               if (masterConfigurations.doCorrelationsHadronV0daughter) {
-                fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/") + HIST(V0names[Index]) + HIST("/hSameSign")), binFillThnSameSignDaugher, 1, 1, 1, 1, 1);
-                fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/") + HIST(V0names[Index]) + HIST("/hOppositeSign")), binFillThnOppositeSignDaugher, 1, 1, 1, 1, 1);
+                fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/") + HIST(V0names[Index]) + HIST("_hSameSign")), binFillThnSameSignDaugher, 1, 1, 1, 1, 1);
+                fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/") + HIST(V0names[Index]) + HIST("_hOppositeSign")), binFillThnOppositeSignDaugher, 1, 1, 1, 1, 1);
               }
               fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/") + HIST(V0names[Index])), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
               if (std::abs(deltaphi) < checks.towardDeltaEtaRange && doITSClustersQA) {
@@ -1113,8 +1113,8 @@ struct HStrangeCorrelation {
                 fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/") + HIST(V0names[Index])), binFillThn, 1, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
               }
               if (masterConfigurations.doCorrelationsHadronV0daughter) {
-                fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/") + HIST(V0names[Index]) + HIST("/hSameSign")), binFillThnSameSignDaugher, 1, 1, 1, 1, 1);
-                fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/") + HIST(V0names[Index]) + HIST("/hOppositeSign")), binFillThnOppositeSignDaugher, 1, 1, 1, 1, 1);
+                fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/") + HIST(V0names[Index]) + HIST("_hSameSign")), binFillThnSameSignDaugher, 1, 1, 1, 1, 1);
+                fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/") + HIST(V0names[Index]) + HIST("_hOppositeSign")), binFillThnOppositeSignDaugher, 1, 1, 1, 1, 1);
               }
             }
             if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && mixing && +massWindowConfigurations.minBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxBgNSigma) {
@@ -2071,8 +2071,8 @@ struct HStrangeCorrelation {
         histos.add("sameEvent/K0Short/hInvariantMassAwaySide", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisK0ShortMass});
         histos.add("sameEvent/K0Short/hInvariantMassUE", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisK0ShortMass});
         if (masterConfigurations.doCorrelationsHadronV0daughter) {
-          histos.add("sameEvent/Signal/K0Short/hSameSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-          histos.add("sameEvent/Signal/K0Short/hOppositeSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+          histos.add("sameEvent/Signal/K0Short_hSameSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+          histos.add("sameEvent/Signal/K0Short_hOppositeSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
         }
       }
       if (TESTBIT(doCorrelation, 1)) {
@@ -2080,15 +2080,15 @@ struct HStrangeCorrelation {
         histos.add("sameEvent/Lambda/hInvariantMassAwaySide", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisLambdaMass});
         histos.add("sameEvent/Lambda/hInvariantMassUE", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisLambdaMass});
         if (masterConfigurations.doCorrelationsHadronV0daughter) {
-          histos.add("sameEvent/Signal/Lambda/hSameSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-          histos.add("sameEvent/Signal/Lambda/hOppositeSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+          histos.add("sameEvent/Signal/Lambda_hSameSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+          histos.add("sameEvent/Signal/Lambda_hOppositeSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
         }
       }
       if (TESTBIT(doCorrelation, 2)) {
         histos.addClone("sameEvent/Lambda/", "sameEvent/AntiLambda/");
         if (masterConfigurations.doCorrelationsHadronV0daughter) {
-          histos.add("sameEvent/Signal/AntiLambda/hSameSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-          histos.add("sameEvent/Signal/AntiLambda/hOppositeSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+          histos.add("sameEvent/Signal/AntiLambda_hSameSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+          histos.add("sameEvent/Signal/AntiLambda_hOppositeSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
         }
       }
     }
