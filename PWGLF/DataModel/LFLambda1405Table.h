@@ -98,6 +98,9 @@ DECLARE_SOA_COLUMN(DeltaXKinkVtx, deltaXKinkVtx, float);           //! Gen-reco 
 DECLARE_SOA_COLUMN(DeltaYKinkVtx, deltaYKinkVtx, float);           //! Gen-reco diff of Y of kink vertex
 DECLARE_SOA_COLUMN(DeltaZKinkVtx, deltaZKinkVtx, float);           //! Gen-reco diff of Z of kink vertex
 
+// Event mixing
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int); //! Signed pT of the Sigma daughter for mixed events
+
 } // namespace lambda1405
 
 DECLARE_SOA_TABLE(Lambda1405Cands, "AOD", "LAMBDA1405",
@@ -111,7 +114,7 @@ DECLARE_SOA_TABLE(Lambda1405Cands, "AOD", "LAMBDA1405",
                   lambda1405::NSigmaTPCPrKink, lambda1405::NSigmaTOFPrKink,
                   lambda1405::DcaKinkDauToPv,
                   lambda1405::NSigmaTPCPiDau, lambda1405::NSigmaTOFPiDau,
-                  lambda1405::Centrality, lambda1405::Occupancy);
+                  lambda1405::Centrality, lambda1405::Occupancy, lambda1405::PoolBin);
 
 DECLARE_SOA_TABLE(Lambda1405Flow, "AOD", "LAMBDA1405FLOW",
                   o2::soa::Index<>,
@@ -123,7 +126,7 @@ DECLARE_SOA_TABLE(Lambda1405Flow, "AOD", "LAMBDA1405FLOW",
                   lambda1405::NSigmaTPCPrKink, lambda1405::NSigmaTOFPrKink,
                   lambda1405::DcaKinkDauToPv,
                   lambda1405::NSigmaTPCPiDau, lambda1405::NSigmaTOFPiDau,
-                  lambda1405::ScalarProd, lambda1405::Centrality);
+                  lambda1405::ScalarProd, lambda1405::Centrality, lambda1405::PoolBin);
 
 DECLARE_SOA_TABLE(Lambda1405CandsMC, "AOD", "MCLAMBDA1405",
                   o2::soa::Index<>,
@@ -144,8 +147,6 @@ DECLARE_SOA_TABLE(Lambda1405SigmaEffMC, "AOD", "MCL1405SIGEFF",
                   lambda1405::PxSigma, lambda1405::DeltaPxSigma,
                   lambda1405::PySigma, lambda1405::DeltaPySigma,
                   lambda1405::PzSigma, lambda1405::DeltaPzSigma,
-                  lambda1405::PtSigma, lambda1405::DeltaPtSigma,
-                  lambda1405::RadiusSigma, lambda1405::DeltaRadiusSigma,
                   lambda1405::MassSigma, lambda1405::DeltaMassSigma,
                   lambda1405::DeltaPxSigmaRecalc,
                   lambda1405::DeltaPySigmaRecalc,
@@ -155,7 +156,6 @@ DECLARE_SOA_TABLE(Lambda1405SigmaEffMC, "AOD", "MCL1405SIGEFF",
                   lambda1405::PxKinkDaug, lambda1405::DeltaPxKinkDaug,
                   lambda1405::PyKinkDaug, lambda1405::DeltaPyKinkDaug,
                   lambda1405::PzKinkDaug, lambda1405::DeltaPzKinkDaug,
-                  lambda1405::PtKinkDaug, lambda1405::DeltaPtKinkDaug,
                   lambda1405::GenPhiKinkDaug,
                   lambda1405::GenEtaKinkDaug,
                   lambda1405::XKinkVtx, lambda1405::DeltaXKinkVtx,
