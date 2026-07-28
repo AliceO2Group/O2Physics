@@ -63,6 +63,8 @@ enum PairHist {
   kKstarVsMt,
   kKstarVsMult,
   kKstarVsCent,
+  // 3D: k* vs kT vs centrality
+  kKstarVsKtVsCent,
   // 2D with mass
   kKstarVsMass1,
   kKstarVsMass2,
@@ -170,6 +172,7 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> usePdgMass{"usePdgMass", true, "(Reco) Use PDF masses for 4-vectors. If false, use reconstructed mass (if available). Not consulted for pure mc-truth pairs, which always use PDG mass"};
   o2::framework::Configurable<bool> plot1D{"plot1D", true, "(Reco/Mc) Enable 1D histograms"};
   o2::framework::Configurable<bool> plot2D{"plot2D", true, "(Reco/Mc) Enable 2D histograms"};
+  o2::framework::Configurable<bool> plotKstarVsKtVsCent{"plotKstarVsKtVsCent", false, "(Reco/Mc) Enable 3D histogram (Kstar Vs Kt Vs Cent)"};
   o2::framework::Configurable<bool> plotKstarVsMtVsMult{"plotKstarVsMtVsMult", false, "(Reco/Mc) Enable 3D histogram (Kstar Vs Mt Vs Mult)"};
   o2::framework::Configurable<bool> plotKstarVsMtVsMultVsCent{"plotKstarVsMtVsMultVsCent", false, "(Reco/Mc) Enable 4D histogram (Kstar Vs Mt Vs Mult Vs Cent)"};
   o2::framework::Configurable<bool> plotKstarVsMtVsPt1VsPt2{"plotKstarVsMtVsPt1VsPt2", false, "(Reco/Mc) Enable 4D histogram (Kstar Vs Mt Vs Pt1 Vs Pt2)"};
@@ -251,6 +254,7 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kPt1VsMinv, o2::framework::HistType::kTH2F, "hPt1VsMinv", "p_{T,1} vs m_{Inv}; p_{T,1} (GeV/#it{c}); m_{Inv} (GeV/#it{c}^{2})"},
       {kPt2VsMinv, o2::framework::HistType::kTH2F, "hPt2VsMinv", "p_{T,2} vs m_{Inv}; p_{T,2} (GeV/#it{c}); m_{Inv} (GeV/#it{c}^{2})"},
       // n-D
+      {kKstarVsKtVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsKtVsCent", "k* vs k_{T} vs centrality; k* (GeV/#it{c}); k_{T} (GeV/#it{c}); Centrality (%);"},
       {kKstarVsMtVsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMult", "k* vs m_{T} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity;"},
       {kKstarVsMtVsMultVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMultVsCent", "k* vs m_{T} vs multiplicity vs centrality; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity; Centrality (%);"},
       // n-D with pt
@@ -334,6 +338,7 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
     {kKstarVsMt, {(confAnalysis).kstar, (confAnalysis).mt}},                                                                                                                                                                                 \
     {kKstarVsMult, {(confAnalysis).kstar, (confAnalysis).multiplicity}},                                                                                                                                                                     \
     {kKstarVsCent, {(confAnalysis).kstar, (confAnalysis).centrality}},                                                                                                                                                                       \
+    {kKstarVsKtVsCent, {(confAnalysis).kstar, (confAnalysis).kt, (confAnalysis).centrality}},                                                                                                                                                \
     {kKstarVsMass1, {(confAnalysis).kstar, (confAnalysis).mass1}},                                                                                                                                                                           \
     {kKstarVsMass2, {(confAnalysis).kstar, (confAnalysis).mass2}},                                                                                                                                                                           \
     {kMass1VsMass2, {(confAnalysis).mass1, (confAnalysis).mass2}},                                                                                                                                                                           \
@@ -496,6 +501,7 @@ class PairHistManager
     // flags for histograms
     mPlot1d = ConfPairBinning.plot1D.value;
     mPlot2d = ConfPairBinning.plot2D.value;
+    mPlotKstarVsKtVsCent = ConfPairBinning.plotKstarVsKtVsCent.value;
     mPlotKstarVsMtVsMult = ConfPairBinning.plotKstarVsMtVsMult.value;
     mPlotKstarVsMtVsMultVsCent = ConfPairBinning.plotKstarVsMtVsMultVsCent.value;
 
@@ -869,6 +875,9 @@ class PairHistManager
     }
 
     // higher dimensional histograms
+    if (mPlotKstarVsKtVsCent) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsKtVsCent, HistTable), getHistDesc(kKstarVsKtVsCent, HistTable), getHistType(kKstarVsKtVsCent, HistTable), {Specs.at(kKstarVsKtVsCent)});
+    }
     if (mPlotKstarVsMtVsMult) {
       mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMtVsMult, HistTable), getHistDesc(kKstarVsMtVsMult, HistTable), getHistType(kKstarVsMtVsMult, HistTable), {Specs.at(kKstarVsMtVsMult)});
     }
@@ -1046,6 +1055,9 @@ class PairHistManager
     // n-D histograms are only filled if enabled
     // if "mass" getter does not exist for particle, it will be just set to 0
     // the user has to make sure that in this case the bin number of this dimension is set to 1
+    if (mPlotKstarVsKtVsCent) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsKtVsCent, HistTable)), mKstar, mKt, mCent);
+    }
     if (mPlotKstarVsMtVsMult) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMtVsMult, HistTable)), mKstar, mMt, mMult);
     }
@@ -1318,6 +1330,7 @@ class PairHistManager
   bool mPlot1d = true;
   bool mPlot2d = true;
 
+  bool mPlotKstarVsKtVsCent = false;
   bool mPlotKstarVsMtVsMult = false;
   bool mPlotKstarVsMtVsMultVsCent = false;
 
