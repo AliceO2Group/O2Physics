@@ -909,9 +909,9 @@ struct AnalysisSameEventPairing {
             // if there are pair cuts specified, assign hist directories for each barrel cut - pair cut combination
             // NOTE: This could possibly lead to large histogram outputs. It is strongly advised to use pair cuts only
             //   if you know what you are doing.
-            TString pairCutNamesStr = fConfigCuts.pair.value;
-            if (!pairCutNamesStr.IsNull()) { // if pair cuts
-              std::unique_ptr<TObjArray> objArrayPair(pairCutNamesStr.Tokenize(","));
+            TString pairCutHistNamesStr = fConfigCuts.pair.value;
+            if (!pairCutHistNamesStr.IsNull()) { // if pair cuts
+              std::unique_ptr<TObjArray> objArrayPair(pairCutHistNamesStr.Tokenize(","));
               fNPairCuts = objArrayPair->GetEntries();
               for (int iPairCut = 0; iPairCut < fNPairCuts; ++iPairCut) { // loop over pair cuts
                 names = {
@@ -1757,9 +1757,9 @@ struct AnalysisAsymmetricPairing {
           DefineHistograms(fHistMan, Form("TripletsBarrelSE_%s_%s", legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName()), fConfigHistogramSubgroups.value.data());
         }
 
-        TString pairCutNamesStr = fConfigPairCuts.value;
-        if (!pairCutNamesStr.IsNull()) { // if pair cuts
-          std::unique_ptr<TObjArray> objArrayPair(pairCutNamesStr.Tokenize(","));
+        TString pairCutHistNamesStr = fConfigPairCuts.value;
+        if (!pairCutHistNamesStr.IsNull()) { // if pair cuts
+          std::unique_ptr<TObjArray> objArrayPair(pairCutHistNamesStr.Tokenize(","));
           fNPairCuts = objArrayPair->GetEntries();
           for (int iPairCut = 0; iPairCut < fNPairCuts; ++iPairCut) { // loop over pair cuts
             DefineHistograms(fHistMan, Form("TripletsBarrelSE_%s_%s", legsStr.Data(), objArrayPair->At(iPairCut)->GetName()), fConfigHistogramSubgroups.value.data());

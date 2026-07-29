@@ -381,19 +381,22 @@ struct Alice3DQTableMaker {
       }
 
       // If this MC track was not already added to the map, add it now
-      if (fLabelsMap.find(mctrack.globalIndex()) == fLabelsMap.end()) {
-        fLabelsMap[mctrack.globalIndex()] = trackCounter;
-        fLabelsMapReversed[trackCounter] = mctrack.globalIndex();
-        fMCFlags[mctrack.globalIndex()] = mcflags;
-        trackCounter++;
+      const auto mcTrackIndex = mctrack.globalIndex();
+      const bool inserted = fLabelsMap.try_emplace(mcTrackIndex, trackCounter).second;
+
+      if (inserted) {
+        fLabelsMapReversed.try_emplace(trackCounter, mcTrackIndex);
+        fMCFlags.try_emplace(mcTrackIndex, mcflags);
+        ++trackCounter;
 
         // fill histograms for each of the signals, if found
         if (fConfigHistOutput.fConfigQA) {
           VarManager::FillTrackMC(mcTracks, mctrack);
           auto mcCollision = mctrack.template mcCollision_as<MyEventsMC>();
           VarManager::FillEvent<gkEventMcFillMap>(mcCollision);
+
           int j = 0;
-          for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, j++) {
+          for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); ++signal, ++j) {
             if (mcflags & (static_cast<uint16_t>(1) << j)) {
               fHistMan->FillHistClass(Form("MCTruth_%s", (*signal)->GetName()), VarManager::fgValues);
             }
