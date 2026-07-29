@@ -321,6 +321,7 @@ void runMassFitter(const std::string& configFileName)
   std::vector<TH1*> hMassSgn(nHistograms);
   std::vector<TH1*> hMassRefl(nHistograms);
   std::vector<TH1*> hMass(nHistograms);
+  std::vector<TH1*> hSgnCorr(nHistograms);
 
   for (int iSliceVar = 0; iSliceVar < nHistograms; iSliceVar++) {
     if (!isMc) {
@@ -390,13 +391,12 @@ void runMassFitter(const std::string& configFileName)
     FitResultCovQual,
     FitResultEdm,
     FitResultMinNll,
-    FitResultNSgnGlobalCorrelCoeff,
     NFitResultsToSave
   };
   auto* hFitConfig = new TH2F("hFitConfig", "Fit Configurations", NConfigsToSave - 1, 0, NConfigsToSave - 1, nHistograms, sliceVarLimits.data());
   const char* hFitConfigXLabel[NConfigsToSave - 1] = {"mass min", "mass max", "rebin num", "fix sigma", "bkg func", "sgn func", "rnd seed"};
   auto* hFitResult = new TH2F("hFitResult", "Fit Result", NFitResultsToSave - 1, 0, NFitResultsToSave - 1, nHistograms, sliceVarLimits.data());
-  const char* hFitResultXLabel[NConfigsToSave - 1] = {"status", "cov qual", "edm", "minNLL", "N sig GCC"};
+  const char* hFitResultXLabel[NFitResultsToSave - 1] = {"status", "cov qual", "edm", "minNLL"};
   for (int i = 0; i < NConfigsToSave - 1; i++) {
     hFitConfig->GetXaxis()->SetBinLabel(i + 1, hFitConfigXLabel[i]);
   }
@@ -676,7 +676,16 @@ void runMassFitter(const std::string& configFileName)
     hFitResult->SetBinContent(FitResultCovQual, iSliceVar + 1, massFitter->getCovQual());
     hFitResult->SetBinContent(FitResultEdm, iSliceVar + 1, massFitter->getEDM());
     hFitResult->SetBinContent(FitResultMinNll, iSliceVar + 1, massFitter->getMinNll());
-    hFitResult->SetBinContent(FitResultNSgnGlobalCorrelCoeff, iSliceVar + 1, massFitter->getSgnGlobalCorrelCoeff());
+
+    const std::string hSgnCorrName = "hSgnCorr" + std::to_string(iSliceVar + 1);
+    const auto& sgnCorrValues = massFitter->getSgnCorrelCoeffValues();
+    const auto& sgnCorrNames = massFitter->getSgnCorrelCoeffNames();
+    const int nSgnCorrValues = sgnCorrValues.size();
+    hSgnCorr[iSliceVar] = new TH1D(hSgnCorrName.c_str(), hSgnCorrName.c_str(), nSgnCorrValues, 0, nSgnCorrValues);
+    for (int iSgnCorrValue = 0; iSgnCorrValue < nSgnCorrValues; ++iSgnCorrValue) {
+      hSgnCorr[iSliceVar]->SetBinContent(iSgnCorrValue + 1, sgnCorrValues.at(iSgnCorrValue));
+      hSgnCorr[iSliceVar]->GetXaxis()->SetBinLabel(iSgnCorrValue + 1, sgnCorrNames.at(iSgnCorrValue).c_str());
+    }
   }
 
   // save output histograms
@@ -694,6 +703,7 @@ void runMassFitter(const std::string& configFileName)
 
   for (int iSliceVar = 0; iSliceVar < nHistograms; iSliceVar++) {
     hMass[iSliceVar]->Write();
+    hSgnCorr[iSliceVar]->Write();
   }
   hRawYieldsSignal->Write();
   hRawYieldsSignalCounted->Write();

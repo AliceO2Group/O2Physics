@@ -22,6 +22,8 @@
 #ifndef PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 #define PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 
+#include <RooAbsPdf.h>
+#include <RooDataHist.h>
 #include <RooPlot.h>
 #include <RooRealVar.h>
 #include <RooWorkspace.h>
@@ -165,7 +167,8 @@ class HFInvMassFitter : public TNamed
   [[nodiscard]] int getCovQual() const { return mCovQual; }
   [[nodiscard]] double getEDM() const { return mEdm; }
   [[nodiscard]] double getMinNll() const { return mMinNll; }
-  [[nodiscard]] double getSgnGlobalCorrelCoeff() const { return mSgnGlobalCorrelCoeff; }
+  [[nodiscard]] const std::vector<double>& getSgnCorrelCoeffValues() const { return mSgnCorrelCoeffValues; }
+  [[nodiscard]] const std::vector<std::string>& getSgnCorrelCoeffNames() const { return mSgnCorrelCoeffNames; }
   void calculateSignal(double& signal, double& signalErr) const;
   void countSignal(double& signal, double& signalErr) const;
   void calculateBackground(double& bkg, double& bkgErr) const;
@@ -189,97 +192,98 @@ class HFInvMassFitter : public TNamed
 
   TH1* mHistoInvMass; // histogram to fit
   std::string mFitOption;
-  double mMinMass;                 // lower mass limit
-  double mMaxMass;                 // upper mass limit
-  int mTypeOfBkgPdf;               // background fit function
-  int mTypeOfSgnPdf;               // signal fit function
-  int mTypeOfReflPdf;              // reflection fit function
-  double mMassParticle;            // pdg value of particle mass
-  double mMass;                    /// signal gaussian mean value
-  double mMassLowLimit;            /// lower limit of the allowed mass range
-  double mMassUpLimit;             /// upper limit of the allowed mass range
-  double mMassReflLowLimit;        /// lower limit of the allowed mass range for reflection
-  double mMassReflUpLimit;         /// upper limit of the allowed mass range for reflection
-  double mSecMass;                 /// Second peak mean value
-  double mSigmaSgn;                /// signal gaussian sigma
-  double mSecSigma;                /// Second peak gaussian sigma
-  double mNSigmaForSidebands;      /// number of sigmas to veto the signal peak
-  double mNSigmaForSgn;            /// number of sigmas to veto the signal peak
-  double mSigmaSgnErr;             /// uncertainty on signal gaussian sigma
-  double mSigmaSgnDoubleGaus;      /// signal 2gaussian sigma
-  bool mFixedMean;                 /// switch for fix mean of gaussian
-  bool mBoundMean;                 /// switch for bound mean of guassian
-  bool mBoundReflMean;             /// switch for bound mean of guassian for reflection
-  bool mFixedSigma;                /// fix sigma or not
-  bool mFixedSigmaDoubleGaus;      /// fix sigma of 2gaussian or not
-  bool mBoundSigma;                /// set bound sigma or not
-  bool mFixedDscbTailParams;       /// switch for fix double sided Crystal Ball tail parameters
-  double mSigmaValue;              /// value of sigma
-  double mParamSgn;                /// +/- range variation of bound Sigma of gaussian in %
-  double mFracDoubleGaus;          /// initialization for fraction of 2nd gaussian in case of k2Gaus or k2GausSigmaRatioPar
-  double mFixedRawYield;           /// initialization for raw yield
-  bool mFixedFracDoubleGaus;       /// switch for fixed fraction of 2nd gaussian in case of k2Gaus or k2GausSigmaRatioPar
-  double mRatioDoubleGausSigma;    /// initialization for ratio between two gaussian sigmas in case of k2GausSigmaRatioPar
-  bool mFixedRatioDoubleGausSigma; /// switch for fixed ratio between two gaussian sigmas in case of k2GausSigmaRatioPar
-  double mReflOverSgn;             /// reflection/signal
-  bool mEnableReflections;         /// flag use/not use reflections
-  double mRawYield;                /// signal gaussian integral
-  double mRawYieldErr;             /// err on signal gaussian integral
-  double mRawYieldCounted;         /// signal gaussian integral evaluated via bin counting
-  double mRawYieldCountedErr;      /// err on signal gaussian integral evaluated via bin counting
-  double mBkgYield;                /// background
-  double mBkgYieldErr;             /// err on background
-  double mSignificance;            /// significance
-  double mSignificanceErr;         /// err on significance
-  double mChiSquareOverNdfTotal;   /// chi2/ndf of the total fit
-  double mChiSquareOverNdfBkg;     /// chi2/ndf of the background (sidebands) pre-fit
-  bool mFixReflOverSgn;            /// switch for fix refl/signal
-  double mDscbAlphaLInitialValue;  /// double sided Crystal Ball alpha left initial value
-  double mDscbAlphaLLowLimit;      /// double sided Crystal Ball alpha left lower limit
-  double mDscbAlphaLUpLimit;       /// double sided Crystal Ball alpha left upper limit
-  double mDscbAlphaRInitialValue;  /// double sided Crystal Ball alpha right initial value
-  double mDscbAlphaRLowLimit;      /// double sided Crystal Ball alpha right lower limit
-  double mDscbAlphaRUpLimit;       /// double sided Crystal Ball alpha right upper limit
-  double mDscbNLInitialValue;      /// double sided Crystal Ball n left initial value
-  double mDscbNLLowLimit;          /// double sided Crystal Ball n left lower limit
-  double mDscbNLUpLimit;           /// double sided Crystal Ball n left upper limit
-  double mDscbNRInitialValue;      /// double sided Crystal Ball n right initial value
-  double mDscbNRLowLimit;          /// double sided Crystal Ball n right lower limit
-  double mDscbNRUpLimit;           /// double sided Crystal Ball n right upper limit
-  RooRealVar* mRooMeanSgn;         /// mean for gaussian of signal
-  RooRealVar* mRooSigmaSgn;        /// sigma for gaussian of signal
-  RooRealVar* mRooSecSigmaSgn;     /// second sigma for composite gaussian of signal
-  RooRealVar* mRooFracDoubleGaus;  /// fraction of second gaussian for composite gaussian of signal
-  RooAbsPdf* mSgnPdf;              /// signal fit function
-  RooAbsPdf* mBkgPdf;              /// background fit function
-  RooAbsPdf* mReflPdf;             /// reflection fit function
-  RooRealVar* mRooNSgn;            /// total Signal fit function integral
-  RooRealVar* mRooNBkg;            /// total background fit function integral
-  RooRealVar* mRooNRefl;           /// total reflection fit function integral
-  RooRealVar* mRooDscbAlphaL;      /// double sided Crystal Ball alpha left
-  RooRealVar* mRooDscbAlphaR;      /// double sided Crystal Ball alpha right
-  RooRealVar* mRooDscbNL;          /// double sided Crystal Ball n left
-  RooRealVar* mRooDscbNR;          /// double sided Crystal Ball n right
-  RooAbsPdf* mTotalPdf;            /// total fit function
-  RooPlot* mInvMassFrame;          /// frame of mass
-  RooPlot* mReflFrame;             /// reflection frame
-  RooPlot* mReflOnlyFrame;         /// reflection frame plot on reflection only
-  RooPlot* mResidualFrame;         /// residual frame
-  RooHist* mResidualHist;          /// residual histogram
-  RooPlot* mRatioFrame;            /// fit/data ratio frame
-  RooWorkspace* mWorkspace;        /// workspace
-  double mIntegralBkg;             /// integral of background fit function
-  double mIntegralSgn;             /// integral of signal fit function
-  TH1* mHistoTemplateRefl;         /// reflection histogram
-  bool mDrawBgPrefit;              /// draw background after fitting the sidebands
-  bool mHighlightPeakRegion;       /// draw vertical lines showing the peak region (usually +- 3 sigma)
-  int mRandomSeed;                 /// seed for random engine for fit's initial parameters randomization
-  TRandom3* mRandomGen;            /// engine for fit's initial parameters randomization
-  int mFitStatus;                  /// fit result status, see https://root-forum.cern.ch/t/meaning-of-values-returned-by-roofitresult-status/16355/2
-  int mCovQual;                    /// fit result covariance matrix quality, see https://root.cern.ch/doc/v620/Minuit2Minimizer_8cxx_source.html#l01121
-  double mEdm;                     /// fit quality metrics: Estimated Distance to Minimum
-  double mMinNll;                  /// fit quality metrics: minimum negative log-likelihood (NLL) value achieved at the best-fit parameter values
-  double mSgnGlobalCorrelCoeff;    /// global correlation coefficient of mRooNSgn with other fit parameters
+  double mMinMass;                               // lower mass limit
+  double mMaxMass;                               // upper mass limit
+  int mTypeOfBkgPdf;                             // background fit function
+  int mTypeOfSgnPdf;                             // signal fit function
+  int mTypeOfReflPdf;                            // reflection fit function
+  double mMassParticle;                          // pdg value of particle mass
+  double mMass;                                  /// signal gaussian mean value
+  double mMassLowLimit;                          /// lower limit of the allowed mass range
+  double mMassUpLimit;                           /// upper limit of the allowed mass range
+  double mMassReflLowLimit;                      /// lower limit of the allowed mass range for reflection
+  double mMassReflUpLimit;                       /// upper limit of the allowed mass range for reflection
+  double mSecMass;                               /// Second peak mean value
+  double mSigmaSgn;                              /// signal gaussian sigma
+  double mSecSigma;                              /// Second peak gaussian sigma
+  double mNSigmaForSidebands;                    /// number of sigmas to veto the signal peak
+  double mNSigmaForSgn;                          /// number of sigmas to veto the signal peak
+  double mSigmaSgnErr;                           /// uncertainty on signal gaussian sigma
+  double mSigmaSgnDoubleGaus;                    /// signal 2gaussian sigma
+  bool mFixedMean;                               /// switch for fix mean of gaussian
+  bool mBoundMean;                               /// switch for bound mean of guassian
+  bool mBoundReflMean;                           /// switch for bound mean of guassian for reflection
+  bool mFixedSigma;                              /// fix sigma or not
+  bool mFixedSigmaDoubleGaus;                    /// fix sigma of 2gaussian or not
+  bool mBoundSigma;                              /// set bound sigma or not
+  bool mFixedDscbTailParams;                     /// switch for fix double sided Crystal Ball tail parameters
+  double mSigmaValue;                            /// value of sigma
+  double mParamSgn;                              /// +/- range variation of bound Sigma of gaussian in %
+  double mFracDoubleGaus;                        /// initialization for fraction of 2nd gaussian in case of k2Gaus or k2GausSigmaRatioPar
+  double mFixedRawYield;                         /// initialization for raw yield
+  bool mFixedFracDoubleGaus;                     /// switch for fixed fraction of 2nd gaussian in case of k2Gaus or k2GausSigmaRatioPar
+  double mRatioDoubleGausSigma;                  /// initialization for ratio between two gaussian sigmas in case of k2GausSigmaRatioPar
+  bool mFixedRatioDoubleGausSigma;               /// switch for fixed ratio between two gaussian sigmas in case of k2GausSigmaRatioPar
+  double mReflOverSgn;                           /// reflection/signal
+  bool mEnableReflections;                       /// flag use/not use reflections
+  double mRawYield;                              /// signal gaussian integral
+  double mRawYieldErr;                           /// err on signal gaussian integral
+  double mRawYieldCounted;                       /// signal gaussian integral evaluated via bin counting
+  double mRawYieldCountedErr;                    /// err on signal gaussian integral evaluated via bin counting
+  double mBkgYield;                              /// background
+  double mBkgYieldErr;                           /// err on background
+  double mSignificance;                          /// significance
+  double mSignificanceErr;                       /// err on significance
+  double mChiSquareOverNdfTotal;                 /// chi2/ndf of the total fit
+  double mChiSquareOverNdfBkg;                   /// chi2/ndf of the background (sidebands) pre-fit
+  bool mFixReflOverSgn;                          /// switch for fix refl/signal
+  double mDscbAlphaLInitialValue;                /// double sided Crystal Ball alpha left initial value
+  double mDscbAlphaLLowLimit;                    /// double sided Crystal Ball alpha left lower limit
+  double mDscbAlphaLUpLimit;                     /// double sided Crystal Ball alpha left upper limit
+  double mDscbAlphaRInitialValue;                /// double sided Crystal Ball alpha right initial value
+  double mDscbAlphaRLowLimit;                    /// double sided Crystal Ball alpha right lower limit
+  double mDscbAlphaRUpLimit;                     /// double sided Crystal Ball alpha right upper limit
+  double mDscbNLInitialValue;                    /// double sided Crystal Ball n left initial value
+  double mDscbNLLowLimit;                        /// double sided Crystal Ball n left lower limit
+  double mDscbNLUpLimit;                         /// double sided Crystal Ball n left upper limit
+  double mDscbNRInitialValue;                    /// double sided Crystal Ball n right initial value
+  double mDscbNRLowLimit;                        /// double sided Crystal Ball n right lower limit
+  double mDscbNRUpLimit;                         /// double sided Crystal Ball n right upper limit
+  RooRealVar* mRooMeanSgn;                       /// mean for gaussian of signal
+  RooRealVar* mRooSigmaSgn;                      /// sigma for gaussian of signal
+  RooRealVar* mRooSecSigmaSgn;                   /// second sigma for composite gaussian of signal
+  RooRealVar* mRooFracDoubleGaus;                /// fraction of second gaussian for composite gaussian of signal
+  RooAbsPdf* mSgnPdf;                            /// signal fit function
+  RooAbsPdf* mBkgPdf;                            /// background fit function
+  RooAbsPdf* mReflPdf;                           /// reflection fit function
+  RooRealVar* mRooNSgn;                          /// total Signal fit function integral
+  RooRealVar* mRooNBkg;                          /// total background fit function integral
+  RooRealVar* mRooNRefl;                         /// total reflection fit function integral
+  RooRealVar* mRooDscbAlphaL;                    /// double sided Crystal Ball alpha left
+  RooRealVar* mRooDscbAlphaR;                    /// double sided Crystal Ball alpha right
+  RooRealVar* mRooDscbNL;                        /// double sided Crystal Ball n left
+  RooRealVar* mRooDscbNR;                        /// double sided Crystal Ball n right
+  RooAbsPdf* mTotalPdf;                          /// total fit function
+  RooPlot* mInvMassFrame;                        /// frame of mass
+  RooPlot* mReflFrame;                           /// reflection frame
+  RooPlot* mReflOnlyFrame;                       /// reflection frame plot on reflection only
+  RooPlot* mResidualFrame;                       /// residual frame
+  RooHist* mResidualHist;                        /// residual histogram
+  RooPlot* mRatioFrame;                          /// fit/data ratio frame
+  RooWorkspace* mWorkspace;                      /// workspace
+  double mIntegralBkg;                           /// integral of background fit function
+  double mIntegralSgn;                           /// integral of signal fit function
+  TH1* mHistoTemplateRefl;                       /// reflection histogram
+  bool mDrawBgPrefit;                            /// draw background after fitting the sidebands
+  bool mHighlightPeakRegion;                     /// draw vertical lines showing the peak region (usually +- 3 sigma)
+  int mRandomSeed;                               /// seed for random engine for fit's initial parameters randomization
+  TRandom3* mRandomGen;                          /// engine for fit's initial parameters randomization
+  int mFitStatus;                                /// fit result status, see https://root-forum.cern.ch/t/meaning-of-values-returned-by-roofitresult-status/16355/2
+  int mCovQual;                                  /// fit result covariance matrix quality, see https://root.cern.ch/doc/v620/Minuit2Minimizer_8cxx_source.html#l01121
+  double mEdm;                                   /// fit quality metrics: Estimated Distance to Minimum
+  double mMinNll;                                /// fit quality metrics: minimum negative log-likelihood (NLL) value achieved at the best-fit parameter values
+  std::vector<double> mSgnCorrelCoeffValues;     /// correlation coefficients of mRooNSgn (global and with BG fit parameters) values
+  std::vector<std::string> mSgnCorrelCoeffNames; /// correlation coefficients of mRooNSgn (global and with BG fit parameters) names
 
   ClassDefOverride(HFInvMassFitter, 1);
 };
