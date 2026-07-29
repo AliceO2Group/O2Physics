@@ -165,6 +165,7 @@ class HFInvMassFitter : public TNamed
   [[nodiscard]] int getCovQual() const { return mCovQual; }
   [[nodiscard]] double getEDM() const { return mEdm; }
   [[nodiscard]] double getMinNll() const { return mMinNll; }
+  [[nodiscard]] double getSgnGlobalCorrelCoeff() const { return mSgnGlobalCorrelCoeff; }
   void calculateSignal(double& signal, double& signalErr) const;
   void countSignal(double& signal, double& signalErr) const;
   void calculateBackground(double& bkg, double& bkgErr) const;
@@ -278,6 +279,7 @@ class HFInvMassFitter : public TNamed
   int mCovQual;                    /// fit result covariance matrix quality, see https://root.cern.ch/doc/v620/Minuit2Minimizer_8cxx_source.html#l01121
   double mEdm;                     /// fit quality metrics: Estimated Distance to Minimum
   double mMinNll;                  /// fit quality metrics: minimum negative log-likelihood (NLL) value achieved at the best-fit parameter values
+  double mSgnGlobalCorrelCoeff;    /// global correlation coefficient of mRooNSgn with other fit parameters
 
   ClassDefOverride(HFInvMassFitter, 1);
 };

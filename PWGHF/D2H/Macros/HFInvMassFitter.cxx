@@ -158,7 +158,8 @@ HFInvMassFitter::HFInvMassFitter(TH1* histoToFit,
                                                    mFitStatus(-999),
                                                    mCovQual(-999),
                                                    mEdm(-999.),
-                                                   mMinNll(-999.)
+                                                   mMinNll(-999.),
+                                                   mSgnGlobalCorrelCoeff(-999.)
 {
   // standard constructor
   mHistoInvMass = histoToFit;
@@ -325,11 +326,13 @@ void HFInvMassFitter::doFit()
     std::cout << "CovQual = " << fitResult->covQual() << "\n";
     std::cout << "EDM     = " << fitResult->edm() << "\n";
     std::cout << "minNLL  = " << fitResult->minNll() << "\n";
+    std::cout << "Global correlation of mNSgn = " << fitResult->globalCorr("mNSgn") << "\n";
     fitResult->Print("v");
     mFitStatus = fitResult->status();
     mCovQual = fitResult->covQual();
     mEdm = fitResult->edm();
     mMinNll = fitResult->minNll();
+    mSgnGlobalCorrelCoeff = fitResult->globalCorr("mNSgn");
     std::cout << "mRooNBkg->getVal() = " << mRooNBkg->getVal() << "\n";
     std::cout << "mRooNSgn->getVal() = " << mRooNSgn->getVal() << "\n";
     plotBkg(mTotalPdf);
