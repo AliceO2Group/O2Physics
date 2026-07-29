@@ -386,8 +386,9 @@ struct FemtoProducer {
                               rawinputs::Run3FullPidTracks const& tracks,
                               rawinputs::Run3D0Candidates const& candidates)
   {
-    if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracks))
+    if (!processCollisions<modes::System::kPP_Run3>(col, bcs, tracks)) {
       return;
+    }
     auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
                                             o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
     processTracks<modes::System::kPP_Run3>(col, tracksWithItsPid);
@@ -400,8 +401,9 @@ struct FemtoProducer {
                                 rawinputs::Run3FullPidTracks const& tracks,
                                 rawinputs::Run3D0Candidates const& candidates)
   {
-    if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracks))
+    if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracks)) {
       return;
+    }
     auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
                                             o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
     processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);

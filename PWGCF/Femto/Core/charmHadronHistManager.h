@@ -31,7 +31,6 @@
 #include <TPDGCode.h>
 
 #include <array>
-#include <cstddef>
 #include <map>
 #include <string>
 #include <string_view>

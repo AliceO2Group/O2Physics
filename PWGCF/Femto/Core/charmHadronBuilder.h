@@ -20,9 +20,9 @@
 #include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/modes.h"
+#include "PWGCF/Femto/Core/selectionContainer.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 
 #include <CommonConstants/MathConstants.h>
@@ -33,8 +33,10 @@
 #include <Framework/Logger.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace o2::analysis::femto::charmhadronbuilder
 {
