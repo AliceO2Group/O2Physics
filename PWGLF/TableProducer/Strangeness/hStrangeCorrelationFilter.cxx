@@ -256,24 +256,23 @@ struct HStrangeCorrelationFilter {
   TH1F* hOmegaWidth = nullptr;
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
-  int mRunNumber;
+  int mRunNumberZorro = -1;
+  int mRunNumberParameters = -1;
 
   struct TriggCandidate {
-    float pt;
-    int collisionId;
-    int trackId;
-    bool isPhysicalPrimary;
-    float origPt;
-    uint16_t mcMask;
+    float pt = 0.f;
+    int collisionId = -1;
+    int trackId = -1;
+    bool isPhysicalPrimary = false;
+    float origPt = 0.f;
+    uint16_t mcMask = 0;
   };
-  TriggCandidate thisTrigg;
 
   std::vector<TriggCandidate> triggerCandidates;
 
   void init(InitContext const&)
   {
     zorroSummary.setObject(zorro.getZorroSummary());
-    mRunNumber = -1;
     if (useParameterization) {
       fK0Mean->SetParameters(parameters.massParsK0Mean->at(0), parameters.massParsK0Mean->at(1), parameters.massParsK0Mean->at(2), parameters.massParsK0Mean->at(3));
       fK0Width->SetParameters(parameters.massParsK0Width->at(0), parameters.massParsK0Width->at(1), parameters.massParsK0Width->at(2), parameters.massParsK0Width->at(3));
@@ -308,23 +307,23 @@ struct HStrangeCorrelationFilter {
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
-    if (mRunNumber == bc.runNumber()) {
+    if (mRunNumberZorro == bc.runNumber()) {
       return;
     }
 
     zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), zorroMask.value);
     zorro.populateHistRegistry(histos, bc.runNumber());
 
-    mRunNumber = bc.runNumber();
+    mRunNumberZorro = bc.runNumber();
   }
 
   void initParametersFromCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
-    if (mRunNumber == bc.runNumber()) {
+    if (mRunNumberParameters == bc.runNumber()) {
       return;
     }
-    mRunNumber = bc.runNumber();
-    LOG(info) << "Loading mean and sigma from CCDB for run " << mRunNumber << " now...";
+    mRunNumberParameters = bc.runNumber();
+    LOG(info) << "Loading mean and sigma from CCDB for run " << mRunNumberParameters << " now...";
     auto timeStamp = bc.timestamp();
 
     auto listParameters = ccdb->getForTimeStamp<TList>(parameterCCDBPath, timeStamp);
@@ -344,7 +343,7 @@ struct HStrangeCorrelationFilter {
       hOmegaMean = dynamic_cast<TH1F*>(listParameters->FindObject("hOmegaMean"));
       hOmegaWidth = dynamic_cast<TH1F*>(listParameters->FindObject("hOmegaWidth"));
     }
-    LOG(info) << "parameters now loaded for " << mRunNumber;
+    LOG(info) << "parameters now loaded for " << mRunNumberParameters;
   }
 
   // this function allows for all event selections to be done in a modular way
@@ -591,6 +590,7 @@ struct HStrangeCorrelationFilter {
       if (!isValidTrigger(track)) {
         continue;
       }
+      TriggCandidate thisTrigg{};
       thisTrigg.pt = track.pt();
       thisTrigg.trackId = track.globalIndex();
       thisTrigg.collisionId = track.collisionId();
@@ -631,6 +631,7 @@ struct HStrangeCorrelationFilter {
       if (!isValidTrigger(track)) {
         continue;
       }
+      TriggCandidate thisTrigg{};
       thisTrigg.pt = track.pt();
       thisTrigg.trackId = track.globalIndex();
       thisTrigg.collisionId = track.collisionId();
@@ -792,9 +793,9 @@ struct HStrangeCorrelationFilter {
         continue;
       }
       // check dE/dx compatibility
-      int compatibleK0Short = -1;
-      int compatibleLambda = -1;
-      int compatibleAntiLambda = -1;
+      int compatibleK0Short = 0;
+      int compatibleLambda = 0;
+      int compatibleAntiLambda = 0;
 
       auto posdau = v0.posTrack_as<DauTracks>();
       auto negdau = v0.negTrack_as<DauTracks>();
@@ -927,9 +928,9 @@ struct HStrangeCorrelationFilter {
         continue;
       }
       // check dE/dx compatibility
-      int compatibleK0Short = -1;
-      int compatibleLambda = -1;
-      int compatibleAntiLambda = -1;
+      int compatibleK0Short = 0;
+      int compatibleLambda = 0;
+      int compatibleAntiLambda = 0;
 
       auto posdau = v0.posTrack_as<DauTracksMC>();
       auto negdau = v0.negTrack_as<DauTracksMC>();
@@ -1109,10 +1110,10 @@ struct HStrangeCorrelationFilter {
       bool isGoodPosCascadePbPb = std::abs(casc.dcabachtopv()) > cascSelection.dcaBachToPV && std::abs(casc.dcapostopv()) > cascSelection.cascDcaMesonToPV &&
                                   std::abs(casc.dcanegtopv()) > cascSelection.cascDcaBaryonToPV;
       // check dE/dx compatibility
-      int compatibleXiMinus = -1;
-      int compatibleXiPlus = -1;
-      int compatibleOmegaMinus = -1;
-      int compatibleOmegaPlus = -1;
+      int compatibleXiMinus = 0;
+      int compatibleXiPlus = 0;
+      int compatibleOmegaMinus = 0;
+      int compatibleOmegaPlus = 0;
       float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
       float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
       float ctauXi = o2::constants::physics::MassXiMinus * cascpos / ((cascptotmom + 1e-13) * Xictau);
@@ -1277,10 +1278,10 @@ struct HStrangeCorrelationFilter {
       bool isGoodPosCascadePbPb = (std::abs(casc.dcabachtopv()) > cascSelection.dcaBachToPV && std::abs(casc.dcapostopv()) > cascSelection.cascDcaMesonToPV &&
                                    std::abs(casc.dcanegtopv()) > cascSelection.cascDcaBaryonToPV);
       // check dE/dx compatibility
-      int compatibleXiMinus = -1;
-      int compatibleXiPlus = -1;
-      int compatibleOmegaMinus = -1;
-      int compatibleOmegaPlus = -1;
+      int compatibleXiMinus = 0;
+      int compatibleXiPlus = 0;
+      int compatibleOmegaMinus = 0;
+      int compatibleOmegaPlus = 0;
       float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
       float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
       float ctauXi = o2::constants::physics::MassXiMinus * cascpos / ((cascptotmom + 1e-13) * Xictau);
