@@ -809,9 +809,9 @@ struct AnalysisSameEventPairing {
 
     // Keep track of all the histogram class names to avoid composing strings in the pairing loop
     TString histNames = "";
-    TString cutNamesStr = fConfigCuts.pair.value;
-    if (!cutNamesStr.IsNull()) {
-      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
+    TString pairCutNamesStr = fConfigCuts.pair.value;
+    if (!pairCutNamesStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(pairCutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         fPairCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
       }
@@ -1598,9 +1598,9 @@ struct AnalysisAsymmetricPairing {
     fLegCFilterMask = fConfigLegCFilterMask.value;
 
     // Get the pair cuts
-    TString cutNamesStr = fConfigPairCuts.value;
-    if (!cutNamesStr.IsNull()) {
-      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
+    TString pairCutNamesStr = fConfigPairCuts.value;
+    if (!pairCutNamesStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(pairCutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         fPairCuts.push_back(dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
       }
@@ -1611,10 +1611,10 @@ struct AnalysisAsymmetricPairing {
       std::vector<AnalysisCut*> addPairCuts = dqcuts::GetCutsFromJSON(addPairCutsStr.Data());
       for (const auto& t : addPairCuts) {
         fPairCuts.push_back(static_cast<AnalysisCompositeCut*>(t));
-        cutNamesStr += Form(",%s", t->GetName());
+        pairCutNamesStr += Form(",%s", t->GetName());
       }
     }
-    std::unique_ptr<TObjArray> objArrayPairCuts(cutNamesStr.Tokenize(","));
+    std::unique_ptr<TObjArray> objArrayPairCuts(pairCutNamesStr.Tokenize(","));
     fNPairCuts = objArrayPairCuts->GetEntries();
     for (int j = 0; j < fNPairCuts; j++) {
       fPairCutNames.push_back(objArrayPairCuts->At(j)->GetName());
@@ -1757,9 +1757,9 @@ struct AnalysisAsymmetricPairing {
           DefineHistograms(fHistMan, Form("TripletsBarrelSE_%s_%s", legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName()), fConfigHistogramSubgroups.value.data());
         }
 
-        TString cutNamesStr = fConfigPairCuts.value;
-        if (!cutNamesStr.IsNull()) { // if pair cuts
-          std::unique_ptr<TObjArray> objArrayPair(cutNamesStr.Tokenize(","));
+        TString pairCutNamesStr = fConfigPairCuts.value;
+        if (!pairCutNamesStr.IsNull()) { // if pair cuts
+          std::unique_ptr<TObjArray> objArrayPair(pairCutNamesStr.Tokenize(","));
           fNPairCuts = objArrayPair->GetEntries();
           for (int iPairCut = 0; iPairCut < fNPairCuts; ++iPairCut) { // loop over pair cuts
             DefineHistograms(fHistMan, Form("TripletsBarrelSE_%s_%s", legsStr.Data(), objArrayPair->At(iPairCut)->GetName()), fConfigHistogramSubgroups.value.data());
@@ -1779,8 +1779,8 @@ struct AnalysisAsymmetricPairing {
               DefineHistograms(fHistMan, Form("TripletsBarrelSE_%s_%s_%s", legsStr.Data(), objArrayCommon->At(iCommonCut)->GetName(), sig->GetName()), fConfigHistogramSubgroups.value.data());
             }
 
-            if (!cutNamesStr.IsNull()) { // if pair cuts
-              std::unique_ptr<TObjArray> objArrayPair(cutNamesStr.Tokenize(","));
+            if (!pairCutNamesStr.IsNull()) { // if pair cuts
+              std::unique_ptr<TObjArray> objArrayPair(pairCutNamesStr.Tokenize(","));
               for (int iPairCut = 0; iPairCut < fNPairCuts; ++iPairCut) { // loop over pair cuts
                 DefineHistograms(fHistMan, Form("TripletsBarrelSE_%s_%s_%s", legsStr.Data(), objArrayPair->At(iPairCut)->GetName(), sig->GetName()), fConfigHistogramSubgroups.value.data());
                 for (int iCommonCut = 0; iCommonCut < fNCommonTrackCuts; ++iCommonCut) {
@@ -1819,8 +1819,8 @@ struct AnalysisAsymmetricPairing {
           }
         }
 
-        if (!cutNamesStr.IsNull()) { // if pair cuts
-          std::unique_ptr<TObjArray> objArrayPair(cutNamesStr.Tokenize(","));
+        if (!pairCutNamesStr.IsNull()) { // if pair cuts
+          std::unique_ptr<TObjArray> objArrayPair(pairCutNamesStr.Tokenize(","));
           fNPairCuts = objArrayPair->GetEntries();
           for (int iPairCut = 0; iPairCut < fNPairCuts; ++iPairCut) { // loop over pair cuts
             for (int iPrefix = 0; iPrefix < fNPairHistPrefixes; ++iPrefix) {
@@ -1853,8 +1853,8 @@ struct AnalysisAsymmetricPairing {
               }
             }
 
-            if (!cutNamesStr.IsNull()) { // if pair cuts
-              std::unique_ptr<TObjArray> objArrayPair(cutNamesStr.Tokenize(","));
+            if (!pairCutNamesStr.IsNull()) { // if pair cuts
+              std::unique_ptr<TObjArray> objArrayPair(pairCutNamesStr.Tokenize(","));
               for (int iPairCut = 0; iPairCut < fNPairCuts; ++iPairCut) { // loop over pair cuts
                 for (int iPrefix = 0; iPrefix < fNPairHistPrefixes; ++iPrefix) {
                   DefineHistograms(fHistMan, Form("%s_%s_%s_%s", pairHistPrefixes[iPrefix].Data(), legsStr.Data(), objArrayPair->At(iPairCut)->GetName(), sig->GetName()), fConfigHistogramSubgroups.value.data());

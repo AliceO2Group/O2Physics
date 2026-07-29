@@ -94,7 +94,7 @@ struct Alice3DQTableMaker {
   OutputObj<THashList> fOutputList{"output"};
   OutputObj<TList> fStatsList{"Statistics"}; //! skimming statistics
 
-  HistogramManager* fHistMan;
+  HistogramManager* fHistMan = nullptr;
 
   // Event and track AnalysisCut configurables
   struct : ConfigurableGroup {
@@ -118,9 +118,8 @@ struct Alice3DQTableMaker {
     Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
   } fConfigHistOutput;
 
-  AnalysisCompositeCut* fEventCut;               //! Event selection cut
+  AnalysisCompositeCut* fEventCut = nullptr;     //! Event selection cut
   std::vector<AnalysisCompositeCut*> fTrackCuts; //! Barrel track cuts
-  std::vector<AnalysisCompositeCut*> fMuonCuts;  //! Muon track cuts
 
   bool fDoDetailedQA = false;
 
@@ -288,38 +287,38 @@ struct Alice3DQTableMaker {
       }
     }
 
-    // create statistics histograms (event, tracks, muons, MCsignals)
+    // create statistics histograms (event, tracks, MCsignals)
     fStatsList.setObject(new TList());
     fStatsList->SetOwner(true);
     std::vector<TString> eventLabels{"Collisions before filtering", "Before cuts", "After cuts"};
     TH2I* histEvents = new TH2I("EventStats", "Event statistics", eventLabels.size(), -0.5, eventLabels.size() - 0.5, o2::aod::evsel::kNsel + 1, -0.5, (float)o2::aod::evsel::kNsel + 0.5);
-    int ib = 1;
-    for (auto label = eventLabels.begin(); label != eventLabels.end(); label++, ib++) {
-      histEvents->GetXaxis()->SetBinLabel(ib, (*label).Data());
+    int ibX = 1;
+    for (auto label = eventLabels.begin(); label != eventLabels.end(); label++, ibX++) {
+      histEvents->GetXaxis()->SetBinLabel(ibX, (*label).Data());
     }
-    for (int ib = 1; ib <= o2::aod::evsel::kNsel; ib++) {
-      histEvents->GetYaxis()->SetBinLabel(ib, o2::aod::evsel::selectionLabels[ib - 1]);
+    for (int ibY = 1; ibY <= o2::aod::evsel::kNsel; ibY++) {
+      histEvents->GetYaxis()->SetBinLabel(ibY, o2::aod::evsel::selectionLabels[ibY - 1]);
     }
     histEvents->GetYaxis()->SetBinLabel(o2::aod::evsel::kNsel + 1, "Total");
     fStatsList->Add(histEvents);
 
     // Track statistics: one bin for each track selection and 5 bins for V0 tags (gamma, K0s, Lambda, anti-Lambda, Omega)
     TH1I* histTracks = new TH1I("TrackStats", "Track statistics", fTrackCuts.size() + 5.0, -0.5, fTrackCuts.size() - 0.5 + 5.0);
-    ib = 1;
-    for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, ib++) {
-      histTracks->GetXaxis()->SetBinLabel(ib, (*cut)->GetName());
+    ibX = 1;
+    for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, ibX++) {
+      histTracks->GetXaxis()->SetBinLabel(ibX, (*cut)->GetName());
     }
     constexpr int nV0Tags = 5;
     const char* v0TagNames[nV0Tags] = {"Photon conversion", "K^{0}_{s}", "#Lambda", "#bar{#Lambda}", "#Omega"};
-    for (int ib = 0; ib < nV0Tags; ib++) {
-      histTracks->GetXaxis()->SetBinLabel(fTrackCuts.size() + 1 + ib, v0TagNames[ib]);
+    for (int ibY = 0; ibY < nV0Tags; ibY++) {
+      histTracks->GetXaxis()->SetBinLabel(fTrackCuts.size() + 1 + ibY, v0TagNames[ibY]);
     }
     fStatsList->Add(histTracks);
 
     TH1I* histMCsignals = new TH1I("MCsignals", "MC signals", fMCSignals.size() + 1, -0.5, fMCSignals.size() - 0.5 + 1.0);
-    ib = 1;
-    for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, ib++) {
-      histMCsignals->GetXaxis()->SetBinLabel(ib, (*signal)->GetName());
+    ibX = 1;
+    for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, ibX++) {
+      histMCsignals->GetXaxis()->SetBinLabel(ibX, (*signal)->GetName());
     }
     histMCsignals->GetXaxis()->SetBinLabel(fMCSignals.size() + 1, "Others (matched to reco tracks)");
     fStatsList->Add(histMCsignals);
@@ -481,14 +480,14 @@ struct Alice3DQTableMaker {
         fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
       }
 
-      int i = 0;
-      for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
+      int n = 0;
+      for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, n++) {
         if ((*cut)->IsSelected(VarManager::fgValues)) {
-          trackTempFilterMap |= (static_cast<uint32_t>(1) << i);
+          trackTempFilterMap |= (static_cast<uint32_t>(1) << n);
           if (fConfigHistOutput.fConfigQA) {
             fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut)->GetName()), VarManager::fgValues);
           }
-          (reinterpret_cast<TH1I*>(fStatsList->At(1)))->Fill(static_cast<float>(i));
+          (reinterpret_cast<TH1I*>(fStatsList->At(1)))->Fill(static_cast<float>(n));
         }
       }
       if (!trackTempFilterMap) {
