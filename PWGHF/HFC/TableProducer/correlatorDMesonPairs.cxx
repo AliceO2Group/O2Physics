@@ -98,7 +98,7 @@ struct HfCorrelatorD0HadronsSelection {
 
   // Process function to select collisions with at least one D0 candidate passing the selection criteria
   void processD0SelectionData(SelCollisions::iterator const& collision,
-                              CandidatesD0Data const& candidates)
+                              CandidatesD0Data const&)
   {
     bool isSel8 = !useSel8 || collision.sel8();
     bool isNoSameBunchPileUp = !selNoSameBunchPileUpColl ||
