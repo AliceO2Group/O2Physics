@@ -73,6 +73,9 @@ using namespace o2::aod::pwgem::photon;
 using namespace o2::constants::physics;
 using namespace o2::aod::pwgem::photonmeson::utils::mcutil;
 
+constexpr float MinAmpThreshold = 0.2f; // Minimum cluster amplitude threshold to count as significant
+constexpr float MaxAmpDiff = 0.1f;      // Maximum cluster amplitude difference to leading cluster contribution to count as significant
+
 enum CentralityEstimator {
   None = 0,
   CFT0A,
@@ -82,21 +85,25 @@ enum CentralityEstimator {
 };
 
 enum class TruthClass {
-  Conversion = 0, // 1: true e+/e- pair from the same conversion
+  Conversion = 0, // 0: true e+/e- pair from the same conversion
 
-  PhotonPairSamePi0, // 2: two photon clusters, same Pi0
-  PhotonPairDiffPi0, // 3: two photon clusters, different Pi0s
-  PhotonPairOnePi0,  // 4: two photon clusters, only one from a Pi0
+  PhotonPairSamePi0, // 1: two photon clusters, same Pi0
+  PhotonPairDiffPi0, // 2: two photon clusters, different Pi0s
+  PhotonPairOnePi0,  // 3: two photon clusters, only one from a Pi0
 
-  PhotonElectronSamePi0, // 5: photon + electron cluster, same Pi0
-  PhotonElectronDiffPi0, // 6: photon + electron cluster, different Pi0s
-  PhotonElectronOnePi0,  // 7: photon + electron cluster, only one from a Pi0
+  PhotonElectronSamePi0, // 4: photon + electron cluster, same Pi0
+  PhotonElectronDiffPi0, // 5: photon + electron cluster, different Pi0s
+  PhotonElectronOnePi0,  // 6: photon + electron cluster, only one from a Pi0
+  PhotonElectronBS,      // 7: photon + electron cluster, from Bremsstrahlung
 
   ElectronPairSamePi0, // 8: e+e cluster pair, same Pi0 (conversion and/or Dalitz)
   ElectronPairDiffPi0, // 9: e+e cluster pair, different Pi0s
   ElectronPairOnePi0,  // 10: e+e cluster pair, only one from a Pi0
 
-  Background, // 11: else / uncorrelated
+  SplitPhotonCluster, // 11: one photon producing two clusters
+  SplitLeptonCluster, // 12: one lepton producing two clusters
+
+  Background, // 13: else / uncorrelated
 
   NClasses
 };
@@ -122,6 +129,7 @@ struct ClusterMcInfo {
   bool isFromConv = false;
   bool isMergedConv = false;
   bool isFromPi0 = false;
+  bool isFromBremsstrahlung = false;
   int convMotherId = -1;
   int photonId = -1;
 };
@@ -131,6 +139,8 @@ ClusterMcInfo classifyCluster(const TGroup& g, TIter& mcCluster, TIter& mcCluste
 {
   ClusterMcInfo info;
   mcCluster.setCursor(g.emmcparticleIds()[0]);
+  info.isFromBremsstrahlung = isFromBremsstrahlung(mcCluster, mcClusterLooper);
+  float leadingAmplitude = g.amplitude()[0];
   if (std::abs(mcCluster.pdgCode()) == PDG_t::kElectron) {
     info.isLepton = true;
     info.convMotherId = getMotherIndexFromChain(mcCluster, mcClusterLooper, PDG_t::kGamma);
@@ -139,12 +149,12 @@ ClusterMcInfo classifyCluster(const TGroup& g, TIter& mcCluster, TIter& mcCluste
     if (mcCluster.mothersIds().size() > 0 && info.isFromConv) {
       for (size_t i = 1; i < g.emmcparticleIds().size(); ++i) {
         mcClusterLooper.setCursor(g.emmcparticleIds()[i]);
-        if (std::abs(mcClusterLooper.pdgCode()) == PDG_t::kElectron) {
+        if (std::abs(mcClusterLooper.pdgCode()) == PDG_t::kElectron && mcClusterLooper.pdgCode() == -1 * mcCluster.pdgCode()) {
           int32_t otherConvMotherId = getMotherIndexFromChain(mcClusterLooper, mcClusterLooper2, PDG_t::kGamma);
           if (otherConvMotherId == info.convMotherId) {
-            info.isMergedConv = true;
-            info.isLepton = false;
-            info.isPhoton = true;
+            if (g.amplitude()[i] >= leadingAmplitude - MaxAmpDiff && g.amplitude()[i] > MinAmpThreshold) {
+              info.isMergedConv = true;
+            }
             break;
           }
         }
@@ -155,14 +165,22 @@ ClusterMcInfo classifyCluster(const TGroup& g, TIter& mcCluster, TIter& mcCluste
     info.isPhoton = true;
   }
 
-  info.photonId = o2::aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(mcCluster, mcParticles, std::vector<int>{PDG_t::kPi0, Pdg::kEta});
+  info.photonId = o2::aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(mcCluster, mcParticles, std::vector<int>{PDG_t::kPi0, Pdg::kEta, Pdg::kOmega, Pdg::kEtaPrime});
   info.isFromPi0 = info.photonId >= 0;
 
   return info;
 }
+
 struct EmcalPhotonMcTask {
   static constexpr float EMCALRadius = 440.f;
   static constexpr float PhiVUndefined = -999.f;
+  static constexpr float Epsilon = 1.e-6f;
+
+  static constexpr std::array<const char*, static_cast<size_t>(TruthClass::NClasses)> kTruthClassNames = {
+    "Conversion", "PhotonPairSamePi0", "PhotonPairDiffPi0", "PhotonPairOnePi0",
+    "PhotonElectronSamePi0", "PhotonElectronDiffPi0", "PhotonElectronOnePi0", "PhotonElectronBS",
+    "ElectronPairSamePi0", "ElectronPairDiffPi0", "ElectronPairOnePi0",
+    "SplitPhotonCluster", "SplitLeptonCluster", "Background"};
 
   Produces<aod::ConvTagCandidates> convTagCandidates;
 
@@ -171,7 +189,7 @@ struct EmcalPhotonMcTask {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<bool> writeTable{"writeTable", true, "write table for ML."};
-  Configurable<std::vector<int>> classPrescale{"classPrescale", {1, 1, 700, 25, 1, 350, 15, 1, 35, 2, 1000}, "prescale factor per TruthClass, indexed 0..10 matching the enum order"};
+  Configurable<std::vector<int>> classPrescale{"classPrescale", {1, 1, 700, 25, 1, 350, 15, 1, 1, 35, 2, 1, 1, 1000}, "prescale factor per TruthClass, indexed 0..10 matching the enum order"};
   Configurable<uint32_t> bkgPrescaleSeed{"bkgPrescaleSeed", 42, "seed for the background-prescale RNG"};
 
   // configurable axis
@@ -181,7 +199,7 @@ struct EmcalPhotonMcTask {
   ConfigurableAxis thnConfigAxisMult{"thnConfigAxisMult", {60, 0., 60000.}, "multiplicity axis for the current event"};
   ConfigurableAxis thnConfigAxisDeltaEta{"thnConfigAxisDeltaEta", {100, -1, 1}, "delta eta axis"};
   ConfigurableAxis thnConfigAxisDeltaPhi{"thnConfigAxisDeltaPhi", {100, -1, 1}, "delta phi axis"};
-  Configurable<bool> useCent{"useCent", 0, "flag to enable usage of centrality instead of multiplicity as axis."};
+  Configurable<bool> useCent{"useCent", false, "flag to enable usage of centrality instead of multiplicity as axis."};
 
   struct : ConfigurableGroup {
     std::string prefix = "conversiontagging";
@@ -241,14 +259,14 @@ struct EmcalPhotonMcTask {
 
   SliceCache cache;
 
-  using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters, aod::EMEMCClusterMCLabels>;
+  using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters, aod::EMEMCClusterMCLabels_001>;
 
   using Colls = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMMCEventLabels>;
 
   using McColls = o2::soa::Join<o2::aod::EMMCEvents, o2::aod::BinnedGenPts>;
   using McParticles = EMMCParticles;
 
-  PresliceOptional<EMCalPhotons> perCollisionEMC = o2::aod::emccluster::pmeventId;
+  PresliceOptional<aod::EMCEMEventIds> perCollisionEMC = o2::aod::emccluster::pmeventId;
   PresliceOptional<MinMTracks> perEMCClusterMT = o2::aod::mintm::minClusterId;
   PresliceOptional<MinMSTracks> perEMCClusterMS = o2::aod::mintm::minClusterId;
 
@@ -346,9 +364,12 @@ struct EmcalPhotonMcTask {
     hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::PhotonElectronSamePi0) + 1, "PhotonElectronSamePi0");
     hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::PhotonElectronDiffPi0) + 1, "PhotonElectronDiffPi0");
     hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::PhotonElectronOnePi0) + 1, "PhotonElectronOnePi0");
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::PhotonElectronBS) + 1, "PhotonElectronBS");
     hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::ElectronPairSamePi0) + 1, "ElectronPairSamePi0");
     hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::ElectronPairDiffPi0) + 1, "ElectronPairDiffPi0");
     hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::ElectronPairOnePi0) + 1, "ElectronPairOnePi0");
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::SplitPhotonCluster) + 1, "SplitPhotonCluster");
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::SplitLeptonCluster) + 1, "SplitLeptonCluster");
     hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::Background) + 1, "Background");
 
     auto hPi0BothResolvedLost = registry.add<TH1>("EMCal/hPi0BothResolvedLost", "Confusion matrix for conversion tagging", HistType::kTH1D, {{2, -0.5, 1.5}});
@@ -366,6 +387,16 @@ struct EmcalPhotonMcTask {
     hConfusionMatrixConversionTagging->GetYaxis()->SetBinLabel(5, "#gamma");
 
     mRandGen.seed(bkgPrescaleSeed.value);
+
+    if (classPrescale.value.size() != kTruthClassNames.size()) {
+      LOG(fatal) << "classPrescale has " << classPrescale.value.size() << " entries, "
+                 << "but TruthClass has " << kTruthClassNames.size() << " members -- update classPrescale!";
+    }
+
+    LOG(info) << "=== classPrescale configuration ===";
+    for (size_t i = 0; i < kTruthClassNames.size(); ++i) {
+      LOG(info) << "  [" << i << "] " << kTruthClassNames[i] << " -> prescale = " << classPrescale.value[i];
+    }
   }; // end init
 
   template <o2::soa::is_iterator TCollision>
@@ -522,7 +553,7 @@ struct EmcalPhotonMcTask {
         ROOT::Math::XYZVector nRef = u.Cross(zAxis); // normal to the plane containing u and z
 
         float phiV = PhiVUndefined; // sentinel for degenerate geometry
-        if (nDecay.R() > 1e-6f && nRef.R() > 1e-6f) {
+        if (nDecay.R() > Epsilon && nRef.R() > Epsilon) {
           float cosPhiV = static_cast<float>(nDecay.Unit().Dot(nRef.Unit()));
           cosPhiV = std::clamp(cosPhiV, -1.f, 1.f);
           phiV = std::acos(cosPhiV);
@@ -547,28 +578,50 @@ struct EmcalPhotonMcTask {
         mcCluster1.setCursor(g1.emmcparticleIds()[0]);
         mcCluster2.setCursor(g2.emmcparticleIds()[0]);
 
-        bool areFromSamePi0 = false;    // both clusters are from same pi0 or eta
-        bool areConversionLegs = false; // both clusters are e+ + e- from one photon
+        bool areFromSamePi0 = false;
+        bool areConversionLegs = false;
+        bool areSplitPhotonCluster = false;
+        bool areSplitLeptonCluster = false;
+        bool arePhotonElectronBS = false;
 
         auto c1 = classifyCluster(g1, mcCluster1, mcClusterLooper, mcClusterLooper2, mcParticles);
         auto c2 = classifyCluster(g2, mcCluster2, mcClusterLooper, mcClusterLooper2, mcParticles);
 
-        if (c1.isFromConv && c2.isFromConv && c1.convMotherId == c2.convMotherId) {
+        // split-cluster check MUST run first and take priority over everything else --
+        // if both clusters share the same dominant MC particle, this is one physical
+        // shower reconstructed as two clusters, not a genuine pair of anything.
+        const bool isSameDominantParticle = (g1.emmcparticleIds()[0] == g2.emmcparticleIds()[0]);
+        if (isSameDominantParticle) {
+          if (c1.isPhoton) {
+            areSplitPhotonCluster = true;
+          } else if (c1.isLepton) {
+            areSplitLeptonCluster = true;
+          }
+        }
+
+        // if they are not a split cluster check for proper conversion pair
+        if (!isSameDominantParticle && c1.isFromConv && c2.isFromConv && c1.convMotherId == c2.convMotherId) {
           emcFlagsFromTrueConversion.set(g1.globalIndex());
           emcFlagsFromTrueConversion.set(g2.globalIndex());
           areConversionLegs = true;
         }
 
-        if (c1.isFromPi0 && c2.isFromPi0) {
-          // set the cursors to the photonId
+        // if they are not a split cluster check for neutral meson connection
+        if (!isSameDominantParticle && c1.isFromPi0 && c2.isFromPi0) {
           mcPhoton1.setCursor(c1.photonId);
           mcPhoton2.setCursor(c2.photonId);
           mcMother.setCursor(mcPhoton1.mothersIds()[0]);
           if (mcMother.producedByGenerator()) {
             if (c1.photonId == c2.photonId) {
-              areFromSamePi0 = true;
-              emcFlagsFromTrueMesonSameGamma.set(g1.globalIndex());
-              emcFlagsFromTrueMesonSameGamma.set(g2.globalIndex());
+              // bremsstrahlung: one side is a photon born from the other side's lepton lineage
+              const bool photonIsBS = (c1.isPhoton && c1.isFromBremsstrahlung) || (c2.isPhoton && c2.isFromBremsstrahlung);
+              if (photonIsBS && ((c1.isLepton && c2.isPhoton) || (c2.isLepton && c1.isPhoton))) {
+                arePhotonElectronBS = true;
+              } else {
+                areFromSamePi0 = true;
+                emcFlagsFromTrueMesonSameGamma.set(g1.globalIndex());
+                emcFlagsFromTrueMesonSameGamma.set(g2.globalIndex());
+              }
             } else if (mcPhoton1.mothersIds()[0] == mcPhoton2.mothersIds()[0]) {
               areFromSamePi0 = true;
               emcFlagsFromTrueMeson.set(g1.globalIndex());
@@ -576,34 +629,39 @@ struct EmcalPhotonMcTask {
             }
           }
         }
+
         bTruthLabel = static_cast<int8_t>(TruthClass::Background);
-        if (areConversionLegs) {
+        if (areSplitPhotonCluster) {
+          bTruthLabel = static_cast<int8_t>(TruthClass::SplitPhotonCluster);
+        } else if (areSplitLeptonCluster) {
+          bTruthLabel = static_cast<int8_t>(TruthClass::SplitLeptonCluster);
+        } else if (areConversionLegs) {
           bTruthLabel = static_cast<int8_t>(TruthClass::Conversion);
-        } else {
-          if (areFromSamePi0) {
-            if ((c1.isLepton && c2.isPhoton) || (c2.isLepton && c1.isPhoton)) {
-              bTruthLabel = static_cast<int8_t>(TruthClass::PhotonElectronSamePi0);
-            } else if (c1.isPhoton && c2.isPhoton) {
-              bTruthLabel = static_cast<int8_t>(TruthClass::PhotonPairSamePi0);
-            } else if (c1.isLepton && c2.isLepton) {
-              bTruthLabel = static_cast<int8_t>(TruthClass::ElectronPairSamePi0);
-            }
-          } else if (c1.isFromPi0 && c2.isFromPi0) {
-            if ((c1.isLepton && c2.isPhoton) || (c2.isLepton && c1.isPhoton)) {
-              bTruthLabel = static_cast<int8_t>(TruthClass::PhotonElectronDiffPi0);
-            } else if (c1.isPhoton && c2.isPhoton) {
-              bTruthLabel = static_cast<int8_t>(TruthClass::PhotonPairDiffPi0);
-            } else if (c1.isLepton && c2.isLepton) {
-              bTruthLabel = static_cast<int8_t>(TruthClass::ElectronPairDiffPi0);
-            }
-          } else if ((c1.isFromPi0 && !c2.isFromPi0) || (!c1.isFromPi0 && c2.isFromPi0)) {
-            if ((c1.isLepton && c2.isPhoton) || (c2.isLepton && c1.isPhoton)) {
-              bTruthLabel = static_cast<int8_t>(TruthClass::PhotonElectronOnePi0);
-            } else if (c1.isPhoton && c2.isPhoton) {
-              bTruthLabel = static_cast<int8_t>(TruthClass::PhotonPairOnePi0);
-            } else if (c1.isLepton && c2.isLepton) {
-              bTruthLabel = static_cast<int8_t>(TruthClass::ElectronPairOnePi0);
-            }
+        } else if (arePhotonElectronBS) {
+          bTruthLabel = static_cast<int8_t>(TruthClass::PhotonElectronBS);
+        } else if (areFromSamePi0) {
+          if ((c1.isLepton && c2.isPhoton) || (c2.isLepton && c1.isPhoton)) {
+            bTruthLabel = static_cast<int8_t>(TruthClass::PhotonElectronSamePi0);
+          } else if (c1.isPhoton && c2.isPhoton) {
+            bTruthLabel = static_cast<int8_t>(TruthClass::PhotonPairSamePi0);
+          } else if (c1.isLepton && c2.isLepton) {
+            bTruthLabel = static_cast<int8_t>(TruthClass::ElectronPairSamePi0);
+          }
+        } else if (c1.isFromPi0 && c2.isFromPi0) {
+          if ((c1.isLepton && c2.isPhoton) || (c2.isLepton && c1.isPhoton)) {
+            bTruthLabel = static_cast<int8_t>(TruthClass::PhotonElectronDiffPi0);
+          } else if (c1.isPhoton && c2.isPhoton) {
+            bTruthLabel = static_cast<int8_t>(TruthClass::PhotonPairDiffPi0);
+          } else if (c1.isLepton && c2.isLepton) {
+            bTruthLabel = static_cast<int8_t>(TruthClass::ElectronPairDiffPi0);
+          }
+        } else if ((c1.isFromPi0 && !c2.isFromPi0) || (!c1.isFromPi0 && c2.isFromPi0)) {
+          if ((c1.isLepton && c2.isPhoton) || (c2.isLepton && c1.isPhoton)) {
+            bTruthLabel = static_cast<int8_t>(TruthClass::PhotonElectronOnePi0);
+          } else if (c1.isPhoton && c2.isPhoton) {
+            bTruthLabel = static_cast<int8_t>(TruthClass::PhotonPairOnePi0);
+          } else if (c1.isLepton && c2.isLepton) {
+            bTruthLabel = static_cast<int8_t>(TruthClass::ElectronPairOnePi0);
           }
         }
 
@@ -634,7 +692,7 @@ struct EmcalPhotonMcTask {
       }
 
       mcCluster1.setCursor(cluster.emmcparticleIds()[0]);
-      int photonid1 = o2::aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(mcCluster1, mcParticles, std::vector<int>{PDG_t::kPi0, Pdg::kEta});
+      int photonid1 = o2::aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(mcCluster1, mcParticles, std::vector<int>{PDG_t::kPi0, Pdg::kEta, Pdg::kOmega, Pdg::kEtaPrime});
       int motherId = -1;
       if (photonid1 >= 0) {
         mcPhoton1.setCursor(photonid1);

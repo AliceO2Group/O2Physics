@@ -51,7 +51,7 @@ using namespace o2::aod::pwgem::photon;
 
 enum QvecEstimator {
   FT0M = 0,
-  FT0A = 1,
+  FT0A,
   FT0C,
   TPCPos,
   TPCNeg,
@@ -61,7 +61,7 @@ enum QvecEstimator {
 
 enum CentralityEstimator {
   None = 0,
-  CFT0A = 1,
+  CFT0A,
   CFT0C,
   CFT0M,
   NCentralityEstimators
@@ -383,7 +383,7 @@ struct TaskFlowReso {
       // no selection on the centrality is applied on purpose to allow for the resolution study in post-processing
       return;
     }
-    if (!(eventcuts.cfgFT0COccupancyMin <= collision.ft0cOccupancyInTimeRange() && collision.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
+    if (!(eventcuts.cfgFT0COccupancyMin <= collision.ft0cOccupancyInTimeRange()) || !(collision.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
       return;
     }
     float cent = getCentrality(collision);
@@ -531,7 +531,7 @@ struct TaskFlowReso {
 
 }; // End struct TaskFlowReso
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<TaskFlowReso>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<TaskFlowReso>(context)};
 }

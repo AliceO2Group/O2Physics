@@ -316,6 +316,24 @@ bool isMotherPDG(const T& mcparticle, T& mcparticleWorking, const int motherPDG,
 }
 
 //_______________________________________________________________________
+/// \brief Check if given particle is from Bremsstrahlung
+/// \param mcCursor iterator of mcparticle
+/// \param iter shared iterator used to walk to the mother
+template <o2::soa::is_iterator TIter>
+bool isFromBremsstrahlung(TIter const& mcCursor, TIter& iter)
+{
+  if (!mcCursor.has_mothers()) {
+    return false;
+  }
+  if (mcCursor.pdgCode() != PDG_t::kGamma) {
+    return false; // only a photon can itself be a bremsstrahlung emission
+  }
+  const int motherId = mcCursor.mothersIds()[0];
+  iter.setCursor(motherId);
+  return std::abs(iter.pdgCode()) == PDG_t::kElectron;
+}
+
+//_______________________________________________________________________
 /// \brief Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return id else -1
 /// E.g. if electron cluster is coming from a photon return true, if primary electron return false
 /// \param mcparticle iterator of mxparticle, WILL BE CHANGED by this function!
