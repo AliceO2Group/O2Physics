@@ -117,8 +117,12 @@ struct ConfK0shortBinning : o2::framework::ConfigurableGroup {
 
 constexpr const char PrefixLambdaBinning1[] = "LambdaBinning1";
 using ConfLambdaBinning1 = ConfLambdaBinning<PrefixLambdaBinning1>;
+constexpr const char PrefixLambdaBinning2[] = "LambdaBinning2";
+using ConfLambdaBinning2 = ConfLambdaBinning<PrefixLambdaBinning2>;
 constexpr const char PrefixK0shortBinning1[] = "K0shortBinning1";
 using ConfK0shortBinning1 = ConfK0shortBinning<PrefixK0shortBinning1>;
+constexpr const char PrefixK0shortBinning2[] = "K0shortBinning2";
+using ConfK0shortBinning2 = ConfK0shortBinning<PrefixK0shortBinning2>;
 
 template <auto& Prefix>
 struct ConfV0QaBinning : o2::framework::ConfigurableGroup {
