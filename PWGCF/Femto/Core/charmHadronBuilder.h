@@ -401,8 +401,8 @@ class CharmHadronBuilder
 
       auto prong0 = candidate.template prong0_as<T7>();
       auto prong1 = candidate.template prong1_as<T7>();
-      int64_t posDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong0, trackProducts, collisionProducts);
-      int64_t negDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong1, trackProducts, collisionProducts);
+      int64_t posDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong0, trackProducts, collisionBuilder);
+      int64_t negDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong1, trackProducts, collisionBuilder);
 
       if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
         this->fillD0Tables(collisionProducts, d0Products, candidate, candidate.pt(), mHfHelper.invMassD0ToPiK(candidate), posDauIndex, negDauIndex);
@@ -460,8 +460,8 @@ class CharmHadronBuilder
 
       auto prong0 = candidate.template prong0_as<T8>();
       auto prong1 = candidate.template prong1_as<T8>();
-      int64_t posDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(col, collisionProducts, mcCols, prong0, trackProducts, mcParticles, mcBuilder, mcProducts);
-      int64_t negDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(col, collisionProducts, mcCols, prong1, trackProducts, mcParticles, mcBuilder, mcProducts);
+      int64_t posDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(col, collisionBuilder, mcCols, prong0, trackProducts, mcParticles, mcBuilder, mcProducts);
+      int64_t negDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(col, collisionBuilder, mcCols, prong1, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
         this->fillD0Tables(collisionProducts, d0Products, candidate, candidate.pt(), mHfHelper.invMassD0ToPiK(candidate), posDauIndex, negDauIndex);
