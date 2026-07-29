@@ -163,27 +163,38 @@ struct LegHelix {
 [[nodiscard]] inline float selfTestLegHelix()
 {
   float worst = 0.f;
-  const float eps = 1.e-5f; // m, "at the origin"
-  for (const float bz : {0.5f, -0.5f}) {
-    for (const int q : {+1, -1}) {
-      for (const float pt : {0.1f, 0.2f, 0.5f}) {
-        for (const float r : {0.85f, 1.45f, 2.45f}) {
-          for (const float phi : {0.f, 1.f, -2.f}) {
+  constexpr float eps = 1.e-5f;
+
+  for (const auto& bz : {0.5f, -0.5f}) {
+    for (const auto& q : {+1, -1}) {
+      for (const auto& pt : {0.1f, 0.2f, 0.5f}) {
+        for (const auto& r : {0.85f, 1.45f, 2.45f}) {
+          for (const auto& phi : {0.f, 1.f, -2.f}) {
             const auto h = legHelixAt(eps * std::cos(phi), eps * std::sin(phi), phi, pt, q, bz, r);
+
             if (h.status != 0) {
               continue;
             }
-            const float arg = -0.3f * bz * static_cast<float>(q) * r / (2.f * pt);
+            const float arg =
+              -0.3f * bz * static_cast<float>(q) * r / (2.f * pt);
+
             if (std::fabs(arg) >= 1.f) {
               continue;
             }
-            const float ref = RecoDecay::constrainAngle(phi + std::asin(arg), 0.f);
-            worst = std::max(worst, std::fabs(RecoDecay::constrainAngle(h.phiStar - ref, -o2::constants::math::PI)));
+            const float referencePhi =
+              RecoDecay::constrainAngle(phi + std::asin(arg), 0.f);
+
+            worst = std::max(
+              worst,
+              std::fabs(RecoDecay::constrainAngle(
+                h.phiStar - referencePhi,
+                -o2::constants::math::PI)));
           }
         }
       }
     }
   }
+
   return worst;
 }
 
@@ -1839,7 +1850,7 @@ struct Photonhbt {
           for (int k = 0; k < s.nPoints[ic]; ++k) {
             fRegistryCF.fill(HIST(dir) + HIST("hSparse_DzSignedLocal_dVtxZ_R"),
                              s.ptDZSgnLocal[ic][k], s.dVtxZ, s.ptR[ic][k]);
-            if (s.ptSameSide[ic][k] < 0.5f) {
+            if (s.ptSameSide[ic][k] < 0.5f) { // o2-linter: disable=magic-number
               fRegistryCF.fill(HIST(dir) + HIST("hSparse_Calib_OppositeSide"), s.ptDRPhi[ic][k], s.ptDZ[ic][k]);
               continue; // cannot merge: different endcap
             }
