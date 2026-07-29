@@ -224,7 +224,9 @@ DECLARE_SOA_COLUMN(ParticlePdg, particlePdg, int);
 DECLARE_SOA_COLUMN(PtGenB, ptGenB, float);
 DECLARE_SOA_COLUMN(NContribMax, nContribMax, int);
 DECLARE_SOA_COLUMN(NRecoColl, nRecoColl, int);
+DECLARE_SOA_COLUMN(IsXic0WithRecoCollTVX, isXic0WithRecoCollTVX, bool);
 DECLARE_SOA_COLUMN(IsXic0WithRecoCollSel8, isXic0WithRecoCollSel8, bool);
+DECLARE_SOA_COLUMN(IsXic0WithRecoCollSel8Zvtx, isXic0WithRecoCollSel8Ztvx, bool);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfToXiPiEvs, "AOD", "HFTOXIPIEV",
@@ -328,7 +330,9 @@ DECLARE_SOA_TABLE(HfCandToXiPiGen, "AOD", "HFCANDTOXIPIGEN",
                   full::PtGenB,
                   full::NContribMax,
                   full::NRecoColl,
-                  full::IsXic0WithRecoCollSel8);
+                  full::IsXic0WithRecoCollTVX,
+                  full::IsXic0WithRecoCollSel8,
+                  full::IsXic0WithRecoCollSel8Zvtx);
 
 } // namespace o2::aod
 
@@ -380,9 +384,9 @@ struct HfTreeCreatorToXiPiQa {
   //////////////////////////////////////////////////////
 
   template <bool useCentrality, typename T>
-  void fillEvent(const T& collision, float cutZPv)
+  void fillEvent(const T& collision)
   {
-    rowEv(collision.sel8(), std::abs(collision.posZ()) < cutZPv);
+    rowEv(collision.sel8(), std::abs(collision.posZ()) < zPvCut);
   }
 
   template <int svReco, int tableSize, bool useCentrality, typename MyEventTableType, typename T>
@@ -660,18 +664,29 @@ struct HfTreeCreatorToXiPiQa {
   void fillParticle(const CandType& mcParticles, const CollType& collisions)
   {
     for (const auto& particle : mcParticles) {
-      // Mc.Gen
+
       auto ptGen = particle.pt();
       auto yGen = particle.rapidityCharmBaryonGen();
 
       int nContribMax = 0;
+      bool recoCollPassedTvx = false;
       bool recoCollPassedSel8 = false;
+      bool recoCollPassedSel8Zvtx = false;
+
       auto mcCollision = particle.template mcCollision_as<McCollType>();
       const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, mcCollision.globalIndex());
+
       for (const auto& recoCol : recoCollsPerMcColl) {
         nContribMax = recoCol.numContrib() > nContribMax ? recoCol.numContrib() : nContribMax;
-        if (recoCol.sel8()) {
-          recoCollPassedSel8 = true;
+        if (recoCol.selection_bit(aod::evsel::kIsTriggerTVX)) {
+          recoCollPassedTvx = true;
+          if (recoCol.sel8()) {
+            recoCollPassedSel8 = true;
+            if (std::abs(recoCol.posZ()) < zPvCut) {
+              recoCollPassedSel8Zvtx = true;
+              break;
+            }
+          }
         }
       }
 
@@ -688,7 +703,9 @@ struct HfTreeCreatorToXiPiQa {
                             ptGenBhad,
                             nContribMax,
                             recoCollsPerMcColl.size(),
-                            recoCollPassedSel8);
+                            recoCollPassedTvx,
+                            recoCollPassedSel8,
+                            recoCollPassedSel8Zvtx);
     }
   }
 
@@ -709,7 +726,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent<false>(collision, zPvCut);
+      fillEvent<false>(collision);
     }
 
     // Filling candidate properties
@@ -726,7 +743,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent<false>(collision, zPvCut);
+      fillEvent<false>(collision);
     }
 
     // Filling candidate properties
@@ -743,7 +760,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent<true>(collision, zPvCut);
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -760,7 +777,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent<true>(collision, zPvCut);
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -777,7 +794,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent<true>(collision, zPvCut);
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -803,7 +820,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent<false>(collision, zPvCut);
+      fillEvent<false>(collision);
     }
 
     // Filling candidate properties
@@ -820,7 +837,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent<true>(collision, zPvCut);
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -837,7 +854,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent<true>(collision, zPvCut);
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -854,7 +871,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      fillEvent<true>(collision, zPvCut);
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -882,7 +899,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collsWithMcLable.size());
     for (const auto& collision : collsWithMcLable) {
-      fillEvent<false>(collision, zPvCut);
+      fillEvent<false>(collision);
     }
 
     // Filling candidate properties
@@ -907,7 +924,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collsWithMcLable.size());
     for (const auto& collision : collsWithMcLable) {
-      fillEvent<false>(collision, zPvCut);
+      fillEvent<false>(collision);
     }
 
     // Filling candidate properties
@@ -932,7 +949,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collsWithMcLable.size());
     for (const auto& collision : collsWithMcLable) {
-      fillEvent<false>(collision, zPvCut);
+      fillEvent<false>(collision);
     }
 
     // Filling candidate properties
@@ -957,7 +974,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collsWithMcLable.size());
     for (const auto& collision : collsWithMcLable) {
-      fillEvent<true>(collision, zPvCut);
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -982,7 +999,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collsWithMcLable.size());
     for (const auto& collision : collsWithMcLable) {
-      fillEvent<true>(collision, zPvCut);
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -1007,7 +1024,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collsWithMcLable.size());
     for (const auto& collision : collsWithMcLable) {
-      fillEvent<true>(collision, zPvCut);
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -1032,7 +1049,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collsWithMcLable.size());
     for (const auto& collision : collsWithMcLable) {
-      fillEvent<false>(collision, zPvCut);
+      fillEvent<false>(collision);
     }
 
     // Filling candidate properties
@@ -1068,7 +1085,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collsWithMcLable.size());
     for (const auto& collision : collsWithMcLable) {
-      fillEvent<false>(collision, zPvCut);
+      fillEvent<false>(collision);
     }
 
     // Filling candidate properties
@@ -1093,7 +1110,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collsWithMcLable.size());
     for (const auto& collision : collsWithMcLable) {
-      fillEvent<true>(collision, zPvCut);
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -1118,7 +1135,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collsWithMcLable.size());
     for (const auto& collision : collsWithMcLable) {
-      fillEvent<true>(collision, zPvCut);
+      fillEvent<true>(collision);
     }
 
     // Filling candidate properties
@@ -1143,7 +1160,7 @@ struct HfTreeCreatorToXiPiQa {
     // Filling event properties
     rowEv.reserve(collsWithMcLable.size());
     for (const auto& collision : collsWithMcLable) {
-      fillEvent<true>(collision, zPvCut);
+      fillEvent<true>(collision);
     }
 
     // Filling candidate table
