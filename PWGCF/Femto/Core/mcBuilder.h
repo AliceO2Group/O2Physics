@@ -20,6 +20,7 @@
 #include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
+
 #include "Common/Core/RecoDecay.h"
 
 #include <CommonConstants/MathConstants.h>
@@ -236,12 +237,12 @@ class McBuilder
   template <modes::System system, typename T1, typename T2, typename T3, typename T4>
   void fillMcParticle(T1 const& mcParticle, T2 const& mcParticles, T3 const& mcCol, T4& mcProducts)
   {
-    // charm hadrons get a prompt/non-prompt origin (see resolveCharmOrigin), consistent with the
-    // reco-matched path; all other particles use the generic getOrigin inside getOrCreateMcParticleRow.
+    // charm hadrons get a prompt/non-prompt origin, consistent with the reco-matched path;
+    // all other particles use the generic getOrigin inside getOrCreateMcParticleRow
     if (std::abs(mcParticle.pdgCode()) == o2::constants::physics::Pdg::kD0) {
-      // truth-level acceptance for the efficiency denominator 
-      // keep only generated D0 -> K pi decays within the rapidity acceptance.
-      int8_t sign = 0; 
+      // truth-level acceptance for the efficiency denominator: keep only
+      // generated D0 -> K pi decays inside the rapidity acceptance
+      int8_t sign = 0;
       if (!RecoDecay::isMatchedMCGen(mcParticles, mcParticle, o2::constants::physics::Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
         return;
       }
@@ -285,11 +286,10 @@ class McBuilder
     fillMcLabelGeneric<system>(col, mcCols, k0short, mcParticles, mcProducts, [](auto& prod, int64_t p) { prod.producedK0shortLabels(p); });
   }
 
-  // D0 has no direct MC label (it is a 2-prong hypothesis built by PWGHF), so we cannot reuse
-  // fillMcLabelGeneric (which needs has_mcParticle). Instead we match the two prongs to a generated
-  // D0 -> K pi decay with RecoDecay::getMatchedMCRec, which returns
-  // the index of the generated mother. If matched, we resolve/create its FMcParticles row and write
-  // the FD0Labels row; otherwise we write -1.
+  // D0 has no direct MC label (2-prong hypothesis built by PWGHF), so fillMcLabelGeneric
+  // cannot be reused. Both prongs are matched to a generated D0 -> K pi decay with
+  // RecoDecay::getMatchedMCRec, which returns the index of the generated mother;
+  // unmatched candidates get -1.
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void fillMcD0WithLabel(T1 const& /*col*/, T2 const& /*mcCols*/, T3 const& d0candidate, T4 const& /*tracks*/, T5 const& mcParticles, T6& mcProducts)
   {
@@ -386,15 +386,14 @@ class McBuilder
   }
 
  private:
-  // HF origin: charm hadrons are classified prompt (charm from a c quark) vs non-prompt (charm from
-  // a beauty decay), resolved from the mc decay tree. Shared by the reco-matched (fillMcD0WithLabel)
-  // and generator-level (fillMcParticle) paths so both write a consistent origin.
+  // classify a charm hadron as prompt (charm from a c quark) or non-prompt (charm from a
+  // beauty decay) from the mc decay tree; shared by the reco-matched and generator-level paths
   template <typename T1, typename T2>
   modes::McOrigin resolveCharmOrigin(T1 const& mcParticle, T2 const& mcParticles)
   {
     const int charmOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle);
     return (charmOrigin == RecoDecay::OriginType::NonPrompt) ? modes::McOrigin::kNonPrompt : modes::McOrigin::kPrompt;
-  }  
+  }
 
   template <typename T1, typename T2, typename T3>
   modes::McOrigin getOrigin(T1 const& col, T2 const& /*mcCols*/, T3 const& mcParticle)
@@ -458,8 +457,8 @@ class McBuilder
     return this->buildMcParticleRow<system>(mcParticle, mcParticles, mcCol, origin, mcProducts);
   }
 
-  /// Origin-injecting entry point: the caller already resolved the origin (e.g. prompt vs non-prompt
-  /// for a charm hadron, which getOrigin does not classify), so we skip getOrigin and store it directly.
+  /// \brief Overload for a caller-provided origin, e.g. prompt vs non-prompt for a charm
+  /// hadron, which getOrigin does not classify; the origin is stored as given
   template <modes::System system, typename T1, typename T2, typename T3, typename T4>
   int64_t getOrCreateMcParticleRow(T1 const& mcParticle, T2 const& mcParticles, T3 const& mcCol, modes::McOrigin origin, T4& mcProducts)
   {

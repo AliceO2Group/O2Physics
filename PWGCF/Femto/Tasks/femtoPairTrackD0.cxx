@@ -11,7 +11,7 @@
 
 /// \file femtoPairTrackD0.cxx
 /// \brief Tasks that computes correlation between tracks and D0 mesons
-/// \author Igor Ptak, WUT, igor.ptak.stud@pw.edu.pl
+/// \author Igor Ptak, WUT, igor.tomasz.ptak@cern.ch
 
 #include "PWGCF/Femto/Core/charmHadronBuilder.h"
 #include "PWGCF/Femto/Core/charmHadronHistManager.h"
@@ -61,7 +61,6 @@ struct FemtoPairTrackD0 {
   using FemtoTracksWithLabel = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels>;
   using FemtoD0sWithLabel = o2::soa::Join<FemtoD0s, o2::aod::FD0Labels>;
   using FemtoMcParticlesWithLabel = o2::soa::Join<o2::aod::FMcParticles, o2::aod::FMcMotherLabels>;
-
 
   o2::framework::SliceCache cache;
 
@@ -193,7 +192,6 @@ struct FemtoPairTrackD0 {
     pairTrackD0Builder.processMixedEvent<modes::Mode::kMe_Reco_Mc>(cols, mcCols, tracks, trackWithLabelPartition, d0WithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
   PROCESS_SWITCH(FemtoPairTrackD0, processMixedEventMc, "Enable processing mixed event processing for tracks and D0s with MC information", false);
-
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)

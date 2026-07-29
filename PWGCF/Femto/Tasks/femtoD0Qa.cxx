@@ -11,12 +11,12 @@
 
 /// \file femtoD0Qa.cxx
 /// \brief QA task for D0 mesons
-/// \author Igor Ptak, WUT, igor.ptak.stud@pw.edu.pl
+/// \author Igor Ptak, WUT, igor.tomasz.ptak@cern.ch
 
+#include "PWGCF/Femto/Core/charmHadronBuilder.h"
 #include "PWGCF/Femto/Core/charmHadronHistManager.h"
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
-#include "PWGCF/Femto/Core/charmHadronBuilder.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
@@ -45,12 +45,12 @@ struct FemtoD0Qa {
   using FilteredFemtoCollisions = o2::soa::Filtered<FemtoCollisions>;
   using FilteredFemtoCollision = FilteredFemtoCollisions::iterator;
 
-  // D0s joined with mask (partition) and extras (QA columns)
+  // setup D0s, joined with the mask for the partition and the QA columns
   using FemtoD0s = o2::soa::Join<o2::aod::FD0s, o2::aod::FD0Masks, o2::aod::FD0Extras>;
-  // full-PID tracks so daughter TPC/TOF/PID QA can be booked
+  // setup tracks with full pid information for the daughter QA
   using FemtoTracks = o2::soa::Join<o2::aod::FTracks, o2::aod::FTrackMass, o2::aod::FTrackDcas, o2::aod::FTrackExtras, o2::aod::FTrackPids>;
-  
-  // MC: same tables joined with their labels (link reco -> generated particle)
+
+  // setup monte carlo, joining the labels that link reco to generated particles
   using FemtoCollisionsWithLabel = o2::soa::Join<FemtoCollisions, o2::aod::FColLabels>;
   using FilteredFemtoCollisionsWithLabel = o2::soa::Filtered<FemtoCollisionsWithLabel>;
   using FilteredFemtoCollisionWithLabel = FilteredFemtoCollisionsWithLabel::iterator;
@@ -58,7 +58,6 @@ struct FemtoD0Qa {
   using FemtoD0sWithLabel = o2::soa::Join<FemtoD0s, o2::aod::FD0Labels>;
   using FemtoTracksWithLabel = o2::soa::Join<FemtoTracks, o2::aod::FTrackLabels>;
   using FemtoMcParticlesWithLabel = o2::soa::Join<o2::aod::FMcParticles, o2::aod::FMcMotherLabels>;
-
 
   o2::framework::SliceCache cache;
 
@@ -95,7 +94,7 @@ struct FemtoD0Qa {
 
   o2::framework::HistogramRegistry hRegistry{"FemtoD0Qa", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
 
-    void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext&)
   {
     bool processData = doprocessD0;
 
@@ -151,8 +150,6 @@ struct FemtoD0Qa {
     }
   }
   PROCESS_SWITCH(FemtoD0Qa, processD0Mc, "Process D0s with MC information", false);
-
-
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)

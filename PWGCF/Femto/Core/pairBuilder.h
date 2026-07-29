@@ -622,7 +622,7 @@ class PairTrackD0Builder
     mTrackCleaner.init(confTrackCleaner);
     mD0Cleaner.init(confD0Cleaner);
 
-    // PDG codes of the D0 prongs depend on the hypothesis (set via confD0Selection.sign):
+    // pdg codes of the D0 prongs depend on the hypothesis:
     //   D0    -> pi+ K-  => PosDau = pion, NegDau = kaon
     //   D0bar -> K+ pi-  => PosDau = kaon, NegDau = pion
     int posDauPdg = 0;
@@ -712,7 +712,6 @@ class PairTrackD0Builder
         LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
     }
   }
-
 
  private:
   colhistmanager::CollisionHistManager mColHistManager;

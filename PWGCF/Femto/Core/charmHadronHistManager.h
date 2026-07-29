@@ -1,4 +1,4 @@
-// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2026 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -11,7 +11,7 @@
 
 /// \file charmHadronHistManager.h
 /// \brief histogram manager for charm hadron histograms
-/// \author Igor Ptak, WUT, igor.ptak.stud@pw.edu.pl
+/// \author Igor Ptak, WUT, igor.tomasz.ptak@cern.ch
 
 #ifndef PWGCF_FEMTO_CORE_CHARMHADRONHISTMANAGER_H_
 #define PWGCF_FEMTO_CORE_CHARMHADRONHISTMANAGER_H_
@@ -21,67 +21,69 @@
 #include "PWGCF/Femto/Core/trackHistManager.h"
 
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
 
-#include <TPDGCode.h>
 #include <TH1.h>
+#include <TPDGCode.h>
 
 #include <array>
 #include <cstddef>
 #include <map>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
-namespace o2::analysis::femto::charmhadronhistmanager 
+namespace o2::analysis::femto::charmhadronhistmanager
 {
 enum CharmHadronHist {
-    kPt,
-    kEta,
-    kPhi,
-    kMass,
-    kSign,
-    kPtVsMass,
-    kPtVsEta,
-    kPtVsPhi,
-    kPhiVsEta,
-    kMassD0,
-    kMassD0bar,
-    kMlBkg,
-    kMlPrompt,
-    kMlNonPrompt,
-    kCpa,
-    kCpaXY,
-    kDecayLength,
-    kDecayLengthXY,
-    kImpactParameterProduct,
-    kCosThetaStar,
+  kPt,
+  kEta,
+  kPhi,
+  kMass,
+  kSign,
+  kPtVsMass,
+  kPtVsEta,
+  kPtVsPhi,
+  kPhiVsEta,
+  kMassD0,
+  kMassD0bar,
+  kMlBkg,
+  kMlPrompt,
+  kMlNonPrompt,
+  kCpa,
+  kCpaXY,
+  kDecayLength,
+  kDecayLengthXY,
+  kImpactParameterProduct,
+  kCosThetaStar,
 
-    // mc
-    kOrigin,
-    kPdg,
-    kPdgMother,
-    kTruePtVsPt,
-    kTrueEtaVsEta,
-    kTruePhiVsPhi,
-    kPtVsOrigin,
+  // mc
+  kOrigin,
+  kPdg,
+  kPdgMother,
+  kTruePtVsPt,
+  kTrueEtaVsEta,
+  kTruePhiVsPhi,
+  kPtVsOrigin,
 
-    kCharmHadronHistLast
+  kCharmHadronHistLast
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CHARMHADRON_DEFAULT_BINNING(defaultMassMin, defaultMassMax)                                                                             \
-  o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};                                                                                \
-  o2::framework::ConfigurableAxis eta{"eta", {{300, -1.5, 1.5}}, "Eta"};                                                                        \
-  o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"};                                              \
-  o2::framework::ConfigurableAxis mass{"mass", {{200, (defaultMassMin), (defaultMassMax)}}, "Mass"};                                            \
-  o2::framework::ConfigurableAxis sign{"sign", {{3, -1.5, 1.5}}, "Sign"};                                                                       \
-  o2::framework::ConfigurableAxis charmHadrons{"charmHadrons", {{8001, -4000.5, 4000.5}}, "MC ONLY: CharmHadrons codes of reconstructed D0s"};  \
-  o2::framework::ConfigurableAxis pt2d{"pt2d", {{240, 0, 6}}, "Pt for 2D QA"};                                                                  \
-  o2::framework::ConfigurableAxis eta2d{"eta2d", {{200, -1.5, 1.5}}, "Eta for 2D QA"};                                                          \
+#define CHARMHADRON_DEFAULT_BINNING(defaultMassMin, defaultMassMax)                                                                            \
+  o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};                                                                               \
+  o2::framework::ConfigurableAxis eta{"eta", {{300, -1.5, 1.5}}, "Eta"};                                                                       \
+  o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"};                                             \
+  o2::framework::ConfigurableAxis mass{"mass", {{200, (defaultMassMin), (defaultMassMax)}}, "Mass"};                                           \
+  o2::framework::ConfigurableAxis sign{"sign", {{3, -1.5, 1.5}}, "Sign"};                                                                      \
+  o2::framework::ConfigurableAxis charmHadrons{"charmHadrons", {{8001, -4000.5, 4000.5}}, "MC ONLY: CharmHadrons codes of reconstructed D0s"}; \
+  o2::framework::ConfigurableAxis pt2d{"pt2d", {{240, 0, 6}}, "Pt for 2D QA"};                                                                 \
+  o2::framework::ConfigurableAxis eta2d{"eta2d", {{200, -1.5, 1.5}}, "Eta for 2D QA"};                                                         \
   o2::framework::ConfigurableAxis phi2d{"phi2d", {{200, 0, 1.f * o2::constants::math::TwoPI}}, "Phi for 2D QA"};
 
 template <auto& Prefix>
@@ -144,17 +146,16 @@ constexpr std::array<histmanager::HistInfo<CharmHadronHist>, kCharmHadronHistLas
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CHARMHADRON_HIST_ANALYSIS_MAP(conf)     \
-  {kPt, {(conf).pt}},                           \
-    {kEta, {(conf).eta}},                       \
-    {kPhi, {(conf).phi}},                       \
-    {kMass, {(conf).mass}},                     \
-    {kSign, {(conf).sign}},                     \
-    {kPtVsMass, {(conf).pt, (conf).mass}},      \
-    {kPtVsEta, {(conf).pt2d, (conf).eta2d}},    \
-    {kPtVsPhi, {(conf).pt2d, (conf).phi2d}},    \
+#define CHARMHADRON_HIST_ANALYSIS_MAP(conf)  \
+  {kPt, {(conf).pt}},                        \
+    {kEta, {(conf).eta}},                    \
+    {kPhi, {(conf).phi}},                    \
+    {kMass, {(conf).mass}},                  \
+    {kSign, {(conf).sign}},                  \
+    {kPtVsMass, {(conf).pt, (conf).mass}},   \
+    {kPtVsEta, {(conf).pt2d, (conf).eta2d}}, \
+    {kPtVsPhi, {(conf).pt2d, (conf).phi2d}}, \
     {kPhiVsEta, {(conf).phi2d, (conf).eta2d}},
-
 
 template <typename T>
 auto makeD0HistSpecMap(const T& confBinningAnalysis)
@@ -164,12 +165,12 @@ auto makeD0HistSpecMap(const T& confBinningAnalysis)
 }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CHARMHADRON_HIST_MC_MAP(conf)                 \
-  {kPdg, {(conf).charmHadrons}},                      \
-    {kPdgMother, {(conf).charmHadrons}},              \
-    {kTruePtVsPt, {(conf).pt, (conf).pt}},            \
-    {kTrueEtaVsEta, {(conf).eta, (conf).eta}},        \
-    {kTruePhiVsPhi, {(conf).phi, (conf).phi}},        \
+#define CHARMHADRON_HIST_MC_MAP(conf)          \
+  {kPdg, {(conf).charmHadrons}},               \
+    {kPdgMother, {(conf).charmHadrons}},       \
+    {kTruePtVsPt, {(conf).pt, (conf).pt}},     \
+    {kTrueEtaVsEta, {(conf).eta, (conf).eta}}, \
+    {kTruePhiVsPhi, {(conf).phi, (conf).phi}}, \
     {kPtVsOrigin, {(conf).pt2d}},
 
 template <typename T>
@@ -181,18 +182,18 @@ auto makeD0McHistSpecMap(const T& confBinningAnalysis)
 }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define CHARMHADRON_HIST_QA_MAP(conf) \
-{kMassD0, {(conf).massD0}},         \
-{kMassD0bar, {(conf).massD0bar}},   \
-{kMlBkg, {(conf).mlScore}},         \
-{kMlPrompt, {(conf).mlScore}},      \
-{kMlNonPrompt, {(conf).mlScore}},   \
-{kCpa, {(conf).cpa}},               \
-{kCpaXY, {(conf).cpa}},             \
-{kDecayLength, {(conf).decayLength}}, \
-{kDecayLengthXY, {(conf).decayLength}}, \
-{kImpactParameterProduct, {(conf).impactParameterProduct}}, \
-{kCosThetaStar, {(conf).cosThetaStar}},
+#define CHARMHADRON_HIST_QA_MAP(conf)                           \
+  {kMassD0, {(conf).massD0}},                                   \
+    {kMassD0bar, {(conf).massD0bar}},                           \
+    {kMlBkg, {(conf).mlScore}},                                 \
+    {kMlPrompt, {(conf).mlScore}},                              \
+    {kMlNonPrompt, {(conf).mlScore}},                           \
+    {kCpa, {(conf).cpa}},                                       \
+    {kCpaXY, {(conf).cpa}},                                     \
+    {kDecayLength, {(conf).decayLength}},                       \
+    {kDecayLengthXY, {(conf).decayLength}},                     \
+    {kImpactParameterProduct, {(conf).impactParameterProduct}}, \
+    {kCosThetaStar, {(conf).cosThetaStar}},
 
 template <typename T>
 auto makeD0QaHistSpecMap(const T& confBinningQa)
@@ -210,7 +211,6 @@ auto makeD0McQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQ
         CHARMHADRON_HIST_MC_MAP(confBinningAnalysis)};
 }
 
-  
 #undef CHARMHADRON_HIST_ANALYSIS_MAP
 #undef CHARMHADRON_HIST_MC_MAP
 #undef CHARMHADRON_HIST_QA_MAP
@@ -246,33 +246,10 @@ class CharmHadronHistManager
     mHistogramRegistry = registry;
     mPdgCode = std::abs(ConfCharmHadronSelection.pdgCodeAbs.value);
 
-    // in PWGHF the prong charge is fixed by the reconstruction: prong0 is always the positive
-    // daughter, prong1 the negative one. The D0/D0bar hypothesis only swaps which prong is the
-    // pion and which is the kaon, not their charge.
-    int prong0PdgCodeAbs = 0;
-    int prong1PdgCodeAbs = 0;
-    const int absCharge = 1;
-    const int signPlus = 1;
-    const int signMinus = -1;
+    auto [prong0PdgCodeAbs, prong1PdgCodeAbs] = this->resolveProngPdgCodes(ConfCharmHadronSelection.sign.value);
 
-    constexpr int PdgD0 = 421; // not defined in ROOT's TPDGCode.h
-    if (mPdgCode == PdgD0) {
-      if (ConfCharmHadronSelection.sign.value > 0) {
-        // D0 -> pi+ K-
-        prong0PdgCodeAbs = std::abs(PDG_t::kPiPlus);
-        prong1PdgCodeAbs = std::abs(PDG_t::kKMinus);
-      } else {
-        // D0bar -> K+ pi-
-        mPdgCode = -1 * mPdgCode; // switch sign for D0bar
-        prong0PdgCodeAbs = std::abs(PDG_t::kKPlus);
-        prong1PdgCodeAbs = std::abs(PDG_t::kPiMinus);
-      }
-    } else {
-      LOG(fatal) << "PDG code for charm hadron has to be D0 (421)";
-    }
-
-    mProng0Manager.template init<mode>(registry, Prong0Specs, absCharge, signPlus, prong0PdgCodeAbs);
-    mProng1Manager.template init<mode>(registry, Prong1Specs, absCharge, signMinus, prong1PdgCodeAbs);
+    mProng0Manager.template init<mode>(registry, Prong0Specs, AbsCharge, SignPlus, prong0PdgCodeAbs);
+    mProng1Manager.template init<mode>(registry, Prong1Specs, AbsCharge, SignMinus, prong1PdgCodeAbs);
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->initAnalysis(CharmHadronSpecs);
@@ -298,33 +275,10 @@ class CharmHadronHistManager
     mPdgCode = std::abs(ConfCharmHadronSelection.pdgCodeAbs.value);
     this->enableOptionalHistograms(ConfCharmHadronQaBinning);
 
-    // in PWGHF the prong charge is fixed by the reconstruction: prong0 is always the positive
-    // daughter, prong1 the negative one. The D0/D0bar hypothesis only swaps which prong is the
-    // pion and which is the kaon, not their charge.
-    int prong0PdgCodeAbs = 0;
-    int prong1PdgCodeAbs = 0;
-    const int absCharge = 1;
-    const int signPlus = 1;
-    const int signMinus = -1;
+    auto [prong0PdgCodeAbs, prong1PdgCodeAbs] = this->resolveProngPdgCodes(ConfCharmHadronSelection.sign.value);
 
-    constexpr int pdgD0 = 421; // not defined in ROOT's TPDGCode.h
-    if (mPdgCode == pdgD0) {
-      if (ConfCharmHadronSelection.sign.value > 0) {
-        // D0 -> pi+ K-
-        prong0PdgCodeAbs = std::abs(PDG_t::kPiPlus);
-        prong1PdgCodeAbs = std::abs(PDG_t::kKMinus);
-      } else {
-        // D0bar -> K+ pi-
-        mPdgCode = -1 * mPdgCode; // switch sign for D0bar
-        prong0PdgCodeAbs = std::abs(PDG_t::kKPlus);
-        prong1PdgCodeAbs = std::abs(PDG_t::kPiMinus);
-      }
-    } else {
-      LOG(fatal) << "PDG code for charm hadron has to be D0 (421)";
-    }
-
-    mProng0Manager.template init<mode>(registry, Prong0Specs, absCharge, signPlus, prong0PdgCodeAbs, ConfProng0BinningQa);
-    mProng1Manager.template init<mode>(registry, Prong1Specs, absCharge, signMinus, prong1PdgCodeAbs, ConfProng1BinningQa);
+    mProng0Manager.template init<mode>(registry, Prong0Specs, AbsCharge, SignPlus, prong0PdgCodeAbs, ConfProng0BinningQa);
+    mProng1Manager.template init<mode>(registry, Prong1Specs, AbsCharge, SignMinus, prong1PdgCodeAbs, ConfProng1BinningQa);
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->initAnalysis(CharmHadronSpecs);
@@ -373,6 +327,27 @@ class CharmHadronHistManager
   }
 
  private:
+  static constexpr int AbsCharge = 1;
+  static constexpr int SignPlus = 1;
+  static constexpr int SignMinus = -1;
+
+  // charge of the prongs is fixed by the PWGHF reconstruction: prong0 is the positive
+  // daughter, prong1 the negative one. The D0/D0bar hypothesis only swaps which prong is
+  // the pion and which is the kaon, not their charge.
+  std::pair<int, int> resolveProngPdgCodes(int sign)
+  {
+    if (mPdgCode != o2::constants::physics::Pdg::kD0) {
+      LOG(fatal) << "PDG code for charm hadron has to be D0";
+    }
+    if (sign > 0) {
+      // D0 -> pi+ K-
+      return {std::abs(PDG_t::kPiPlus), std::abs(PDG_t::kKMinus)};
+    }
+    // D0bar -> K+ pi-
+    mPdgCode = -1 * mPdgCode; // switch sign for D0bar
+    return {std::abs(PDG_t::kKPlus), std::abs(PDG_t::kPiMinus)};
+  }
+
   template <typename T>
   void enableOptionalHistograms(T const& ConfCharmHadronQaBinning)
   {
@@ -451,7 +426,7 @@ class CharmHadronHistManager
     mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kMassD0, HistTable)), charmHadronCandidate.massD0());
     mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kMassD0bar, HistTable)), charmHadronCandidate.massD0bar());
 
-    // BDT scores of the accepted hypothesis: D0 (sign > 0) uses mlProbD0*, D0bar (sign < 0) uses mlProbD0bar*
+    // BDT scores of the accepted hypothesis: D0 (sign > 0) or D0bar (sign < 0)
     float mlBkg = 0.f;
     float mlPrompt = 0.f;
     float mlNonPrompt = 0.f;
@@ -468,7 +443,7 @@ class CharmHadronHistManager
     mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kMlPrompt, HistTable)), mlPrompt);
     mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kMlNonPrompt, HistTable)), mlNonPrompt);
 
-    // topological variables (same discriminators PWGHF selects on)
+    // topological variables PWGHF selects on
     if (mPlotTopology) {
       mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kCpa, HistTable)), charmHadronCandidate.cpa());
       mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kCpaXY, HistTable)), charmHadronCandidate.cpaXY());
@@ -482,7 +457,7 @@ class CharmHadronHistManager
   template <typename T1, typename T2, typename T3, typename T4>
   void fillMc(T1 const& charmHadronCandidate, T2 const& /*mcParticles*/, T3 const& /*mcMothers*/, T4 const& /*mcPartonicMothers*/)
   {
-    // no matched generated particle -> reconstructed but not a true D0
+    // no matched generated particle: reconstructed, but not a true D0
     if (!charmHadronCandidate.has_fMcParticle()) {
       mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), 0);
       mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kNoMcParticle));
@@ -491,17 +466,17 @@ class CharmHadronHistManager
 
     auto mcParticle = charmHadronCandidate.template fMcParticle_as<T2>();
 
-    // resolution: generated vs reconstructed kinematics (numerator of the efficiency is the matched reco)
+    // resolution: generated vs reconstructed kinematics
     mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(McDir) + HIST(getHistName(kTruePtVsPt, HistTable)), mcParticle.pt(), charmHadronCandidate.pt());
     mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(McDir) + HIST(getHistName(kTrueEtaVsEta, HistTable)), mcParticle.eta(), charmHadronCandidate.eta());
     mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(McDir) + HIST(getHistName(kTruePhiVsPhi, HistTable)), mcParticle.phi(), charmHadronCandidate.phi());
 
-    // origin already resolved to prompt / non-prompt for the generated D0 (see mcBuilder)
+    // origin is resolved to prompt / non-prompt in the mc builder
     mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), mcParticle.origin());
     mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(McDir) + HIST(getHistName(kPtVsOrigin, HistTable)), charmHadronCandidate.pt(), mcParticle.origin());
     mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(McDir) + HIST(getHistName(kPdg, HistTable)), mcParticle.pdgCode());
 
-    // mother pdg (source of non-prompt D0s: which beauty hadron)
+    // pdg of the mother, i.e. the beauty hadron for non-prompt D0s
     if (mcParticle.has_fMcMother()) {
       auto mother = mcParticle.template fMcMother_as<T3>();
       mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), mother.pdgCode());

@@ -1,4 +1,4 @@
-// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2026 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -11,7 +11,7 @@
 
 /// \file charmHadronBuilder.h
 /// \brief charm hadron builder
-/// \author Igor Ptak, WUT, igor.ptak.stud@pw.edu.pl
+/// \author Igor Ptak, WUT, igor.tomasz.ptak@cern.ch
 
 #ifndef PWGCF_FEMTO_CORE_CHARMHADRONBUILDER_H_
 #define PWGCF_FEMTO_CORE_CHARMHADRONBUILDER_H_
@@ -21,45 +21,45 @@
 #include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 
-
-#include "Common/Core/RecoDecay.h"
-
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/Logger.h>
 
-#include <array>
+#include <cstddef>
 #include <string>
 #include <unordered_map>
 
 namespace o2::analysis::femto::charmhadronbuilder
 {
+// number of ML probability classes (background, prompt, non-prompt) provided by the HF ML selector
+constexpr std::size_t NSizeMLScore{3u};
+
 // filter applied in the producer task
 struct ConfD0Filters : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("D0Filters");
-  // kinematic windows: structure from ConfV0Filters, pT/eta/y defaults from femtoUniverse ConfD0Selection
-  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                            // femtoUniverse trackD0pTGenMin
-  o2::framework::Configurable<float> ptMax{"ptMax", 24.f, "Maximum pT"};                           // femtoUniverse trackD0pTGenMax
-  o2::framework::Configurable<float> etaMin{"etaMin", -0.8f, "Minimum eta"};                       // femtoUniverse trackD0CandEtaMax (symmetric)
-  o2::framework::Configurable<float> etaMax{"etaMax", 0.8f, "Maximum eta"};                        // femtoUniverse trackD0CandEtaMax
-  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                         // ConfV0Filters
-  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"}; // ConfV0Filters
-  // rapidity acceptance (HF convention: y, not eta).
-  o2::framework::Configurable<bool> useYCut{"useYCut", true, "cut on y (true) or eta (false)"};    // femtoUniverse useYCutD0Cand
-  o2::framework::Configurable<float> yMin{"yMin", -0.8f, "Minimum rapidity"};                      // femtoUniverse yD0CandMax (symmetric)
-  o2::framework::Configurable<float> yMax{"yMax", 0.8f, "Maximum rapidity"};                       // femtoUniverse yD0CandMax
+  // kinematic windows
+  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};
+  o2::framework::Configurable<float> ptMax{"ptMax", 24.f, "Maximum pT"};
+  o2::framework::Configurable<float> etaMin{"etaMin", -0.8f, "Minimum eta"};
+  o2::framework::Configurable<float> etaMax{"etaMax", 0.8f, "Maximum eta"};
+  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};
+  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};
+  // rapidity acceptance (HF convention: y, not eta)
+  o2::framework::Configurable<bool> useYCut{"useYCut", true, "cut on y (true) or eta (false)"};
+  o2::framework::Configurable<float> yMin{"yMin", -0.8f, "Minimum rapidity"};
+  o2::framework::Configurable<float> yMax{"yMax", 0.8f, "Maximum rapidity"};
   // invariant-mass window
-  o2::framework::Configurable<float> massMin{"massMin", 1.7f, "Minimum invariant mass for D0"};    
-  o2::framework::Configurable<float> massMax{"massMax", 2.0f, "Maximum invariant mass for D0"};   
+  o2::framework::Configurable<float> massMin{"massMin", 1.7f, "Minimum invariant mass for D0"};
+  o2::framework::Configurable<float> massMax{"massMax", 2.0f, "Maximum invariant mass for D0"};
 };
-    
+
 // derived selection bits for D0s
 struct ConfD0Bits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("D0Bits");
@@ -72,32 +72,31 @@ struct ConfD0Bits : o2::framework::ConfigurableGroup {
 };
 
 // base selection for analysis task for D0s
-// defaults follow femtoUniverse
 struct ConfD0Selection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("D0Selection");
-  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", 421, "PDG code (D0 = 421)"};
+  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", o2::constants::physics::Pdg::kD0, "PDG code (D0)"};
   o2::framework::Configurable<int> sign{"sign", 0, "Particle sign (+1: D0; -1: D0bar; 0: both)"};
-  o2::framework::Configurable<float> ptMin{"ptMin", 1.f, "Minimum pT"};   // femtoUniverse confMinPtD0D0bar
-  o2::framework::Configurable<float> ptMax{"ptMax", 3.f, "Maximum pT"};   // femtoUniverse confMaxPtD0D0bar
-  // acceptance is enforced via the rapidity cut in the builder (|y| < 0.8, femtoUniverse yD0CandMax),
-  // so eta/phi windows here are open by default and exist only to satisfy MAKE_D0_PARTITION
+  o2::framework::Configurable<float> ptMin{"ptMin", 1.f, "Minimum pT"};
+  o2::framework::Configurable<float> ptMax{"ptMax", 3.f, "Maximum pT"};
+  // acceptance is applied as a rapidity cut in the builder; the eta/phi windows
+  // are kept open and exist only to satisfy MAKE_D0_PARTITION
   o2::framework::Configurable<float> etaMin{"etaMin", -0.8f, "Minimum eta"};
   o2::framework::Configurable<float> etaMax{"etaMax", 0.8f, "Maximum eta"};
   o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};
-  // signal region; side-bands (1.65-1.754, 1.978-2.09) stay available in the derived data
-  o2::framework::Configurable<float> massMin{"massMin", 1.81f, "Minimum invariant mass for D0"};   // femtoUniverse minInvMassD0D0barSignal
-  o2::framework::Configurable<float> massMax{"massMax", 1.922f, "Maximum invariant mass for D0"};  // femtoUniverse maxInvMassD0D0barSignal
+  // signal region; side-bands remain available in the derived data
+  o2::framework::Configurable<float> massMin{"massMin", 1.81f, "Minimum invariant mass for D0"};
+  o2::framework::Configurable<float> massMax{"massMax", 1.922f, "Maximum invariant mass for D0"};
   o2::framework::Configurable<datatypes::CharmHadronMaskType> mask{"mask", 0, "Bitmask for D0 selection"};
 };
 
 /// The different selections for D0s
 enum D0Sels {
   // topological selections
-  kCpaMin,                  ///< Min. CPA (cosine pointing angle)
-  kDecayLengthMin,          ///< Min. decay length
+  kCpaMin,                    ///< Min. CPA (cosine pointing angle)
+  kDecayLengthMin,            ///< Min. decay length
   kImpactParameterProductMax, ///< Max. product of prong impact parameters (d0*d0)
-  kCosThetaStarMax,         ///< Max. |cos(theta*)| of the decay
+  kCosThetaStarMax,           ///< Max. |cos(theta*)| of the decay
 
   kD0SelsMax
 };
@@ -143,14 +142,14 @@ const std::unordered_map<D0Filters, std::string> d0FilterNames = {
 template <modes::CharmHadron hadronType, auto& SelectionHistName, auto& FilterHistName>
 class D0Selection : public baseselection::BaseSelection<float, o2::analysis::femto::datatypes::CharmHadronMaskType, kD0SelsMax>
 {
-public:
-  D0Selection() = default; 
+ public:
+  D0Selection() = default;
   ~D0Selection() override = default;
 
   template <typename T1, typename T2>
   void configure(o2::framework::HistogramRegistry* registry, T1& config, T2& filter)
   {
-    this->init(config.passThrough.value); 
+    this->init(config.passThrough.value);
 
     mPtMin = filter.ptMin.value;
     mPtMax = filter.ptMax.value;
@@ -158,10 +157,10 @@ public:
     mEtaMax = filter.etaMax.value;
     mPhiMin = filter.phiMin.value;
     mPhiMax = filter.phiMax.value;
-    mMassMin = filter.massMin.value; 
-    mMassMax = filter.massMax.value; 
-    mUseYCut = filter.useYCut.value; 
-    mYMin = filter.yMin.value; 
+    mMassMin = filter.massMin.value;
+    mMassMax = filter.massMax.value;
+    mUseYCut = filter.useYCut.value;
+    mYMin = filter.yMin.value;
     mYMax = filter.yMax.value;
 
     this->addSelection(kCpaMin, d0SelectionNames.at(kCpaMin), config.cpaMin.value, limits::kLowerLimit, true, true, false);
@@ -183,13 +182,12 @@ public:
         {d0FilterNames.at(kYMax), mYMax},
         {d0FilterNames.at(kMassMin), mMassMin},
         {d0FilterNames.at(kMassMax), mMassMax},
-      }
-    );
+      });
   }
 
   template <typename T1>
-  void applySelections(T1 const& d0candidate) 
-  { 
+  void applySelections(T1 const& d0candidate)
+  {
     this->reset();
     this->evaluateObservable(kCpaMin, d0candidate.cpa());
     this->evaluateObservable(kDecayLengthMin, d0candidate.decayLength());
@@ -201,64 +199,63 @@ public:
   template <typename T>
   bool checkFilters(const T& d0candidate) const
   {
-    bool pass = true; 
-    bool p = false; 
+    bool pass = true;
+    bool p = false;
 
-    p = d0candidate.pt() > mPtMin;   
-    this->template fillFilter<FilterHistName>(kPtMin, p); 
+    p = d0candidate.pt() > mPtMin;
+    this->template fillFilter<FilterHistName>(kPtMin, p);
     pass &= p;
 
-    p = d0candidate.pt() < mPtMax;   
-    this->template fillFilter<FilterHistName>(kPtMax, p); 
+    p = d0candidate.pt() < mPtMax;
+    this->template fillFilter<FilterHistName>(kPtMax, p);
     pass &= p;
 
-    p = d0candidate.eta() > mEtaMin; 
-    this->template fillFilter<FilterHistName>(kEtaMin, p); 
+    p = d0candidate.eta() > mEtaMin;
+    this->template fillFilter<FilterHistName>(kEtaMin, p);
     pass &= p;
 
-    p = d0candidate.eta() < mEtaMax; 
-    this->template fillFilter<FilterHistName>(kEtaMax, p); 
+    p = d0candidate.eta() < mEtaMax;
+    this->template fillFilter<FilterHistName>(kEtaMax, p);
     pass &= p;
 
-    p = d0candidate.phi() > mPhiMin; 
-    this->template fillFilter<FilterHistName>(kPhiMin, p); 
+    p = d0candidate.phi() > mPhiMin;
+    this->template fillFilter<FilterHistName>(kPhiMin, p);
     pass &= p;
 
-    p = d0candidate.phi() < mPhiMax; 
-    this->template fillFilter<FilterHistName>(kPhiMax, p); 
+    p = d0candidate.phi() < mPhiMax;
+    this->template fillFilter<FilterHistName>(kPhiMax, p);
     pass &= p;
 
-    this->template fillFilterSummary<FilterHistName>(pass); 
+    this->template fillFilterSummary<FilterHistName>(pass);
     return this->isPassThrough() || pass;
   }
 
-  bool getUseYCut() const 
-  { 
-    return mUseYCut; 
-  }
-
-  float getYMin() const 
-  { 
-    return mYMin; 
-  }
-
-  float getYMax() const 
-  { 
-    return mYMax; 
-  }
-
-  float getMassMin() const 
+  [[nodiscard]] bool getUseYCut() const
   {
-    return mMassMin; 
+    return mUseYCut;
   }
 
-  float getMassMax() const 
-  { 
-    return mMassMax; 
+  [[nodiscard]] float getYMin() const
+  {
+    return mYMin;
   }
 
+  [[nodiscard]] float getYMax() const
+  {
+    return mYMax;
+  }
 
-private:
+  [[nodiscard]] float getMassMin() const
+  {
+    return mMassMin;
+  }
+
+  [[nodiscard]] float getMassMax() const
+  {
+    return mMassMax;
+  }
+
+ private:
   HfHelper mHfHelper;
   float mPtMin = 0.f;
   float mPtMax = 24.f;
@@ -273,7 +270,7 @@ private:
   float mYMax = 0.8f;
 };
 
-// tables produced by the D0 builder (one triplet: kinematics / bitmask / QA)
+// tables produced by the D0 builder: kinematics, bitmask and QA
 struct CharmHadronBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FD0s> producedD0s;
   o2::framework::Produces<o2::aod::FD0Masks> producedD0Masks;
@@ -289,12 +286,13 @@ struct ConfD0Tables : o2::framework::ConfigurableGroup {
 };
 
 template <modes::CharmHadron hadronType, auto& SelectionHistName, auto& FilterHistName>
-class CharmHadronBuilder {
-public: 
+class CharmHadronBuilder
+{
+ public:
   CharmHadronBuilder() = default;
   ~CharmHadronBuilder() = default;
 
-  template<typename T1, typename T2, typename T3, typename T4>
+  template <typename T1, typename T2, typename T3, typename T4>
   void init(o2::framework::HistogramRegistry* registry, T1& config, T2& filter, T3& table, T4& initContext)
   {
     LOG(info) << "Initialize femto D0 builder...";
@@ -313,7 +311,6 @@ public:
 
     mD0Selection.configure(registry, config, filter);
     mD0Selection.printSelections(D0SelsName);
-
   }
 
   template <typename T1, typename T2, typename T3>
@@ -321,36 +318,36 @@ public:
                     float signedPt, float mass, int64_t posDauIndex, int64_t negDauIndex)
   {
     if (mProduceD0s) {
-        d0Products.producedD0s(collisionProducts.producedCollision.lastIndex(),
-                               signedPt,
-                               candidate.eta(),
-                               candidate.phi(),
-                               mass,
-                               posDauIndex,
-                               negDauIndex);
-      } 
-      if (mProduceD0Masks) {
-        d0Products.producedD0Masks(mD0Selection.getBitmask());
-      }
-      if (mProduceD0Extras) {
-        d0Products.producedD0Extras(
-          mHfHelper.invMassD0ToPiK(candidate),
-          mHfHelper.invMassD0barToKPi(candidate),
-          candidate.cpa(),
-          candidate.cpaXY(),
-          candidate.decayLength(),
-          candidate.decayLengthXY(),
-          candidate.impactParameter0() * candidate.impactParameter1(),
-          mHfHelper.cosThetaStarD0(candidate),
-          candidate.mlProbD0().size() < 3 ? -1.f : candidate.mlProbD0()[0],
-          candidate.mlProbD0().size() < 3 ? -1.f : candidate.mlProbD0()[1],
-          candidate.mlProbD0().size() < 3 ? -1.f : candidate.mlProbD0()[2],
-          candidate.mlProbD0bar().size() < 3 ? -1.f : candidate.mlProbD0bar()[0],
-          candidate.mlProbD0bar().size() < 3 ? -1.f : candidate.mlProbD0bar()[1],
-          candidate.mlProbD0bar().size() < 3 ? -1.f : candidate.mlProbD0bar()[2],
-          static_cast<int8_t>(candidate.isSelD0()),
-          static_cast<int8_t>(candidate.isSelD0bar()));
-      }
+      d0Products.producedD0s(collisionProducts.producedCollision.lastIndex(),
+                             signedPt,
+                             candidate.eta(),
+                             candidate.phi(),
+                             mass,
+                             posDauIndex,
+                             negDauIndex);
+    }
+    if (mProduceD0Masks) {
+      d0Products.producedD0Masks(mD0Selection.getBitmask());
+    }
+    if (mProduceD0Extras) {
+      d0Products.producedD0Extras(
+        mHfHelper.invMassD0ToPiK(candidate),
+        mHfHelper.invMassD0barToKPi(candidate),
+        candidate.cpa(),
+        candidate.cpaXY(),
+        candidate.decayLength(),
+        candidate.decayLengthXY(),
+        candidate.impactParameter0() * candidate.impactParameter1(),
+        mHfHelper.cosThetaStarD0(candidate),
+        candidate.mlProbD0().size() < NSizeMLScore ? -1.f : candidate.mlProbD0()[0],
+        candidate.mlProbD0().size() < NSizeMLScore ? -1.f : candidate.mlProbD0()[1],
+        candidate.mlProbD0().size() < NSizeMLScore ? -1.f : candidate.mlProbD0()[2],
+        candidate.mlProbD0bar().size() < NSizeMLScore ? -1.f : candidate.mlProbD0bar()[0],
+        candidate.mlProbD0bar().size() < NSizeMLScore ? -1.f : candidate.mlProbD0bar()[1],
+        candidate.mlProbD0bar().size() < NSizeMLScore ? -1.f : candidate.mlProbD0bar()[2],
+        static_cast<int8_t>(candidate.isSelD0()),
+        static_cast<int8_t>(candidate.isSelD0bar()));
+    }
   }
 
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
@@ -367,7 +364,7 @@ public:
         continue;
       }
 
-      // HF acceptance: cut on rapidity y insted of eta
+      // HF acceptance: cut on rapidity instead of eta
       if (mD0Selection.getUseYCut()) {
         const float y = mHfHelper.yD0(candidate);
         if (y < mD0Selection.getYMin() || y > mD0Selection.getYMax()) {
@@ -412,11 +409,9 @@ public:
       } else {
         this->fillD0Tables(collisionProducts, d0Products, candidate, -candidate.pt(), mHfHelper.invMassD0barToKPi(candidate), posDauIndex, negDauIndex);
       }
-
-
     }
   }
-  
+
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
   void fillMcD0s(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4 const& mcCols, T5& trackProducts,
                  T6& d0Products, T7 const& candidates, T8 const& tracks, T9& trackBuilder, T10 const& mcParticles, T11& mcBuilder, T12& mcProducts)
@@ -425,7 +420,7 @@ public:
       return;
     }
 
-    for (const auto& candidate : candidates) { 
+    for (const auto& candidate : candidates) {
       if (!(candidate.hfflag() & (1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK))) {
         continue;
       }
@@ -477,8 +472,7 @@ public:
     }
   }
 
-
-private:
+ private:
   D0Selection<hadronType, SelectionHistName, FilterHistName> mD0Selection;
   HfHelper mHfHelper;
 
