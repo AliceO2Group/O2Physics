@@ -111,9 +111,10 @@ enum V0Selections {
 enum CascSelections {
   kCascNoCut = 0,
   kCascTopology,
+  kNSigmaTPCV0Daughters,
   kRejectedXi,
-  kAcceptedOmega,
   kNSigmaTPC,
+  kAcceptedOmega,
   kCascAll
 };
 
@@ -274,12 +275,12 @@ struct LfTreeCreatorClusterStudies {
       {"photon_conversion_position", "Photon conversion position; #it{x} (cm); #it{y} (cm)", {HistType::kTH2F, {{250, -5.f, 5.f}, {250, -5.f, 5.f}}}},
       {"photon_conversion_position_layer", "Photon conversion position (ITS layers); #it{x} (cm); #it{y} (cm)", {HistType::kTH2F, {{100, -5.f, 5.f}, {100, -5.f, 5.f}}}},
       {"casc_dca_daughter_pairs", "DCA (xy) for cascade daughter pairs; DCA_{#it{xy}} (cm); counts", {HistType::kTH1F, {{100, -0.1, 0.1}}}},
-      {"Xi_vs_Omega", "Mass Xi vs Omega; mass Omega (GeV/#it{c}^{2}); #it{m}_#Xi (GeV/#it{c}^{2})", {HistType::kTH2F, {{50, 1.f, 2.f}, {50, 1.f, 2.f}}}},
+      {"Xi_vs_Omega", "Mass Xi vs Omega; #it{m}_{#Omega} (GeV/#it{c}^{2}); #it{m}_{#Xi} (GeV/#it{c}^{2})", {HistType::kTH2F, {{60, 1.5f, 2.1f}, {50, 1.1f, 1.6f}}}},
       {"massOmega", "Mass #Omega; signed #it{p}_{T} (GeV/#it{c}); #it{m}_{#Omega} (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {400, 1.62f, 1.72f}}}},
       {"massOmegaMc", "Mass #Omega (MC); signed #it{p}_{T} (GeV/#it{c}); #it{m}_{#Omega} (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {400, 1.62f, 1.72f}}}},
-      {"massPi0", "Mass #pi^{0}; #it{m}_{#pi^{0}} (GeV/#it{c}^{2})", {HistType::kTH1F, {{100, 0.0f, 0.200f}}}},
-      {"massPi0Mc", "Mass #pi^{0} (MC); #it{m}_{#pi^{0}} (GeV/#it{c}^{2})", {HistType::kTH1F, {{100, 0.0f, 0.200f}}}},
-      {"massPi0WithBkg", "Mass #pi^{0} with Background; #it{m}_{#pi^{0}} (GeV/#it{c}^{2}); counts", {HistType::kTH1F, {{100, 0.0f, 0.200f}}}},
+      {"massPi0", "Mass #pi^{0}; #it{m}_{ee} (GeV/#it{c}^{2})", {HistType::kTH1F, {{100, 0.0f, 0.200f}}}},
+      {"massPi0Mc", "Mass #pi^{0} (MC); #it{m}_{ee} (GeV/#it{c}^{2})", {HistType::kTH1F, {{100, 0.0f, 0.200f}}}},
+      {"massPi0WithBkg", "Mass #pi^{0} with Background; #it{m}_{ee} (GeV/#it{c}^{2}); counts", {HistType::kTH1F, {{100, 0.0f, 0.200f}}}},
       {"zVtx", "Binning for the vertex z in cm; #it{z}_{vertex} (cm)", {HistType::kTH1F, {{100, -20.f, 20.f}}}},
       {"isPositive", "is the candidate positive?; isPositive; counts", {HistType::kTH1F, {{2, -0.5f, 1.5f}}}},
 
@@ -472,6 +473,23 @@ struct LfTreeCreatorClusterStudies {
     return true;
   }
 
+  template <typename Track>
+  bool selectPidV0Daughters(const Track& posTrack, const Track& negTrack, uint8_t v0Bitmask)
+  {
+    if (TESTBIT(v0Bitmask, Lambda)) {
+      if (std::abs(posTrack.tpcNSigmaPr()) > v0settingNsigmatpcPr || std::abs(negTrack.tpcNSigmaPi()) > v0settingNsigmatpcPi) {
+        return false;
+      }
+    } else if (TESTBIT(v0Bitmask, AntiLambda)) {
+      if (std::abs(posTrack.tpcNSigmaPi()) > v0settingNsigmatpcPi || std::abs(negTrack.tpcNSigmaPr()) > v0settingNsigmatpcPr) {
+        return false;
+      }
+    } else {
+      return false;
+    }
+    return true;
+  }
+
   /**
    * Fill the histograms for the V0 candidate and return the mass of the V0
    */
@@ -585,8 +603,9 @@ struct LfTreeCreatorClusterStudies {
     mHistograms.fill(HIST(cNames[partID]) + HIST("/nSigmaTPC"), track.p() * track.sign(), nsigmaTpc);
     mHistograms.fill(HIST(cNames[partID]) + HIST("/nSigmaITS"), track.p() * track.sign(), nsigmaIts);
     mHistograms.fill(HIST(cNames[partID]) + HIST("/nSigmaTOF"), track.p() * track.sign(), nsigmaTof);
-    if (partID == static_cast<int>(PartID::de) || partID == static_cast<int>(PartID::he))
+    if (partID == static_cast<int>(PartID::de) || partID == static_cast<int>(PartID::he)) {
       mHistograms.fill(HIST(cNames[partID]) + HIST("/TOFmass"), track.p() * track.sign(), massTof);
+    }
     mHistograms.fill(HIST(cNames[partID]) + HIST("/pmatching"), correctedTpcInnerParam * track.sign(), (correctedTpcInnerParam - track.p()) / correctedTpcInnerParam);
   }
 
@@ -740,7 +759,7 @@ struct LfTreeCreatorClusterStudies {
     }
 
     const auto& timestamp = bc.timestamp();
-    o2::parameters::GRPMagField* grpmag = 0x0;
+    o2::parameters::GRPMagField* grpmag = nullptr;
 
     auto grpmagPath{"GLO/Config/GRPMagField"};
     grpmag = mccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
@@ -805,24 +824,29 @@ struct LfTreeCreatorClusterStudies {
     LOG(info) << "resolution: " << mBBparamsDe[5];
 
     std::vector<std::string> collisionSelectionLabels = {"All", "sel8", "z_{VTX} < 10 cm"};
-    for (int i = 0; i < Selections::kAll; i++)
+    for (int i = 0; i < Selections::kAll; i++) {
       mHistograms.get<TH1>(HIST("collision_selections"))->GetXaxis()->SetBinLabel(i + 1, collisionSelectionLabels[i].c_str());
+    }
 
     std::vector<std::string> V0selectionLabels = {"All", "daughter track quality", "V0 topology", "V0 mass selection"};
-    for (int i = 0; i < V0Selections::kV0All; i++)
+    for (int i = 0; i < V0Selections::kV0All; i++) {
       mHistograms.get<TH1>(HIST("v0_selections"))->GetXaxis()->SetBinLabel(i + 1, V0selectionLabels[i].c_str());
+    }
 
-    std::vector<std::string> CascSelectionLabels = {"All", "Topology", "Veto Xi", "Accepted Omega", "n#sigma_{TPC} K"};
-    for (int i = 0; i < CascSelections::kCascAll; i++)
+    std::vector<std::string> CascSelectionLabels = {"All", "Topology", "n#sigma_{TPC} V0 daughters", "Veto Xi", "n#sigma_{TPC} K", "Accepted Omega"};
+    for (int i = 0; i < CascSelections::kCascAll; i++) {
       mHistograms.get<TH1>(HIST("casc_selections"))->GetXaxis()->SetBinLabel(i + 1, CascSelectionLabels[i].c_str());
+    }
 
     std::vector<std::string> ESelectionLabels = {"All", "Track quality", "Primary", "Pid", "#pi^{0}"};
-    for (int i = 0; i < ESelections::kEAll; i++)
+    for (int i = 0; i < ESelections::kEAll; i++) {
       mHistograms.get<TH1>(HIST("e_selections"))->GetXaxis()->SetBinLabel(i + 1, ESelectionLabels[i].c_str());
+    }
 
     std::vector<std::string> V0TypeLabels = {"K0s", "#Lambda", "#bar{#Lambda}", "Photon"};
-    for (int i = 0; i < V0Type::V0TypeAll; i++)
+    for (int i = 0; i < V0Type::V0TypeAll; i++) {
       mHistograms.get<TH1>(HIST("v0_type"))->GetXaxis()->SetBinLabel(i + 1, V0TypeLabels[i].c_str());
+    }
   }
 
   template <bool isMC = false, typename Tracks>
@@ -879,7 +903,6 @@ struct LfTreeCreatorClusterStudies {
 
       const auto& posMcParticle = posTrack.mcParticle();
       const auto& negMcParticle = negTrack.mcParticle();
-
       candidatePos.pdgCode = posMcParticle.pdgCode();
       candidateNeg.pdgCode = negMcParticle.pdgCode();
 
@@ -906,6 +929,15 @@ struct LfTreeCreatorClusterStudies {
     }
     mHistograms.fill(HIST("casc_selections"), CascSelections::kCascTopology);
 
+    const auto& posTrack = cascade.template posTrack_as<Track>();
+    const auto& negTrack = cascade.template negTrack_as<Track>();
+    uint8_t v0Bitmask = 0;
+    SETBIT(v0Bitmask, bachelorTrack.sign() < 0 ? V0Type::Lambda : V0Type::AntiLambda);
+    if (!selectPidV0Daughters(posTrack, negTrack, v0Bitmask)) {
+      return;
+    }
+    mHistograms.fill(HIST("casc_selections"), CascSelections::kNSigmaTPCV0Daughters);
+
     const float& massXi = cascade.mXi();
     const float& massOmega = cascade.mOmega();
     mHistograms.fill(HIST("Xi_vs_Omega"), massOmega, massXi);
@@ -914,6 +946,10 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
     mHistograms.fill(HIST("casc_selections"), CascSelections::kRejectedXi);
+    if (std::abs(bachelorTrack.tpcNSigmaKa()) > cascsettingNsigmatpc) {
+      return;
+    }
+    mHistograms.fill(HIST("casc_selections"), CascSelections::kNSigmaTPC);
 
     mHistograms.fill(HIST("massOmega"), cascade.pt() * bachelorTrack.sign(), massOmega);
     if (std::abs(massOmega - o2::constants::physics::MassOmegaMinus) > cascsettingMassWindowOmega) {
@@ -921,10 +957,6 @@ struct LfTreeCreatorClusterStudies {
     }
     mHistograms.fill(HIST("casc_selections"), CascSelections::kAcceptedOmega);
 
-    if (std::abs(bachelorTrack.tpcNSigmaKa()) > cascsettingNsigmatpc) {
-      return;
-    }
-    mHistograms.fill(HIST("casc_selections"), CascSelections::kNSigmaTPC);
     fillHistogramsParticle<PartID::ka, isMC>(bachelorTrack);
 
     mClusterStudiesTable(
@@ -973,8 +1005,9 @@ struct LfTreeCreatorClusterStudies {
     }
     mHistograms.fill(HIST(cNames[kPartID]) + HIST("/trackSelections"), NucleiSelections::kNucleiNoCut);
 
-    if (track.itsNCls() < desettingNclsIts)
+    if (track.itsNCls() < desettingNclsIts) {
       return;
+    }
     mHistograms.fill(HIST(cNames[kPartID]) + HIST("/trackSelections"), NucleiSelections::kNucleiNClsIts);
 
     const float tpcNsigma = kPartID == static_cast<int>(PartID::de) ? track.tpcNSigmaDe() : computeNSigmaTPCHe3(track);
@@ -1415,8 +1448,9 @@ struct LfTreeCreatorClusterStudies {
     const auto& negTracks_thisCollision = negTracksMc.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), mcache);
 
     for (const auto& [posTrack, negTrack] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posTracks_thisCollision, negTracks_thisCollision))) {
-      if (!posTrack.has_mcParticle() || !negTrack.has_mcParticle())
+      if (!posTrack.has_mcParticle() || !negTrack.has_mcParticle()) {
         continue;
+      }
 
       fillElectronTableFromPi0Dalitz</*isMC*/ true>(posTrack, negTrack);
     }
