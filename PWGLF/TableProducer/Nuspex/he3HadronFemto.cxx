@@ -370,8 +370,8 @@ struct he3HadronFemto {
       {"hNcontributor", "Number of primary vertex contributor", {HistType::kTH1F, {{2000, 0.0f, 2000.0f}}}},
       {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
       {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
-      {"hhe3HadtInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
-      {"hhe3HadtKstar", "; #it{k}* (GeV/#it{c})", {HistType::kTH1F, {{300, 0.f, 0.8f}}}},
+      {"hhe3HadInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
+      {"hhe3HadKstar", "; #it{k}* (GeV/#it{c})", {HistType::kTH1F, {{300, 0.f, 0.8f}}}},
       {"hKstarRecVsKstarGen", "; #it{k}*_{gen} (GeV/#it{c}); #it{k}*_{rec} (GeV/#it{c})", {HistType::kTH2F, {{400, 0.f, 0.8f}, {400, 0.f, 0.8f}}}},
 
       {"He3/hDCAxyHe3", "^{3}He;DCA_{xy} (cm)", {HistType::kTH1F, {{200, -0.5f, 0.5f}}}},
@@ -1014,7 +1014,7 @@ struct he3HadronFemto {
   {
     mQaRegistry.fill(HIST("He3/hHe3Pt"), he3Hadcand.recoPtHe3());
     mQaRegistry.fill(HIST("Had/hHadronPt"), he3Hadcand.recoPtHad());
-    mQaRegistry.fill(HIST("hhe3HadtInvMass"), he3Hadcand.invMass);
+    mQaRegistry.fill(HIST("hhe3HadInvMass"), he3Hadcand.invMass);
     mQaRegistry.fill(HIST("hhe3HadKstar"), he3Hadcand.recoKstar());
     mQaRegistry.fill(HIST("He3/hDCAxyHe3"), he3Hadcand.dcaxyHe3);
     mQaRegistry.fill(HIST("He3/hDCAzHe3"), he3Hadcand.dcazHe3);
