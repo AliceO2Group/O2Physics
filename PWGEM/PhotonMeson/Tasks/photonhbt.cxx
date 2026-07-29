@@ -1850,7 +1850,7 @@ struct Photonhbt {
           for (int k = 0; k < s.nPoints[ic]; ++k) {
             fRegistryCF.fill(HIST(dir) + HIST("hSparse_DzSignedLocal_dVtxZ_R"),
                              s.ptDZSgnLocal[ic][k], s.dVtxZ, s.ptR[ic][k]);
-            if (s.ptSameSide[ic][k] < 0.5f) { // o2-linter: disable=magic-number
+            if (s.ptSameSide[ic][k] < 0.5f) { // o2-linter: disable=magic-number (indication of side)
               fRegistryCF.fill(HIST(dir) + HIST("hSparse_Calib_OppositeSide"), s.ptDRPhi[ic][k], s.ptDZ[ic][k]);
               continue; // cannot merge: different endcap
             }
