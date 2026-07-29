@@ -22,10 +22,10 @@
 #include "PWGDQ/Core/MCSignal.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
 #include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/DataModel/ReducedTablesAlice3.h"
 
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
+#include "ALICE3/DataModel/ReducedTablesAlice3.h"
 #include "ALICE3/DataModel/collisionAlice3.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/CCDB/EventSelectionParams.h"
@@ -74,16 +74,14 @@ constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | 
 
 struct Alice3DQTableMaker {
 
-  Produces<ReducedA3MCEvents> eventMC;
-  Produces<ReducedA3MCTracks> trackMC;
+  Produces<ReA3MCEvents> eventMC;
+  Produces<ReA3MCTracks> trackMC;
 
-  Produces<ReducedA3Events> event;
+  Produces<ReA3Events> event;
   Produces<ReducedA3EventsVtxCov> eventVtxCov;
-  Produces<ReducedA3EventsInfo> eventInfo;
   Produces<ReducedA3MCEventLabels> eventMClabels;
 
-  Produces<ReducedA3TracksBarrelInfo> trackBarrelInfo;
-  Produces<ReducedA3Tracks> trackBasic;
+  Produces<ReA3Tracks> trackBasic;
   Produces<ReducedA3TracksBarrel> trackBarrel;
   Produces<ReducedA3TracksBarrelCov> trackBarrelCov;
   Produces<ReducedA3TracksAssoc> trackBarrelAssoc;
@@ -444,7 +442,6 @@ struct Alice3DQTableMaker {
 
       eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
       eventMClabels(collision.mcCollisionId(), collision.mcMask());
-      eventInfo(collision.globalIndex());
 
       // add an element for this collision into the map
       fCollIndexMap[collision.globalIndex()] = event.lastIndex();
@@ -512,9 +509,6 @@ struct Alice3DQTableMaker {
       //      In the case of Run2-like analysis, there will be no associations, so this ID will be the one originally assigned in the AO2Ds (updated for the skims)
       uint32_t reducedEventIdx = fCollIndexMap[track.collisionId()];
 
-      // NOTE: trackBarrelInfo stores the index of the collision as in AO2D (for use in some cases where the analysis on skims is done
-      //   in workflows where the original AO2Ds are also present)
-      // trackBarrelInfo(track.collisionId(), collision.posX(), collision.posY(), collision.posZ(), track.globalIndex());
       trackBasic(reducedEventIdx, trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign(), 0);
 
       trackBarrel(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
@@ -612,7 +606,6 @@ struct Alice3DQTableMaker {
     event.reserve(collisions.size());
     eventVtxCov.reserve(collisions.size());
     eventMClabels.reserve(collisions.size());
-    eventInfo.reserve(collisions.size());
 
     skimCollisions(collisions);
 

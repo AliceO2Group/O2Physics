@@ -24,8 +24,8 @@
 #include "PWGDQ/Core/MixingLibrary.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGDQ/DataModel/ReducedTablesAlice3.h"
 
+#include "ALICE3/DataModel/ReducedTablesAlice3.h"
 #include "Common/Core/TableHelper.h"
 
 #include <DetectorsBase/MatLayerCylSet.h>
@@ -111,23 +111,23 @@ DECLARE_SOA_TABLE(OniaMCTruth, "AOD", "MCTRUTHONIA", dqanalysisflags::OniaPt, dq
 
 // TODO: USE PROPER TABLES
 
-using MyEvents = soa::Join<aod::ReducedA3Events, aod::ReducedA3MCEventLabels>;
-using MyEventsSelected = soa::Join<aod::ReducedA3Events, aod::EventCuts, aod::ReducedA3MCEventLabels>;
-using MyEventsVtxCov = soa::Join<aod::ReducedA3Events, aod::ReducedA3EventsVtxCov, aod::ReducedA3MCEventLabels>;
-using MyEventsVtxCovSelected = soa::Join<aod::ReducedA3Events, aod::ReducedA3EventsVtxCov, aod::EventCuts, aod::ReducedA3MCEventLabels>;
+using MyEvents = soa::Join<aod::ReA3Events, aod::ReducedA3MCEventLabels>;
+using MyEventsSelected = soa::Join<aod::ReA3Events, aod::EventCuts, aod::ReducedA3MCEventLabels>;
+using MyEventsVtxCov = soa::Join<aod::ReA3Events, aod::ReducedA3EventsVtxCov, aod::ReducedA3MCEventLabels>;
+using MyEventsVtxCovSelected = soa::Join<aod::ReA3Events, aod::ReducedA3EventsVtxCov, aod::EventCuts, aod::ReducedA3MCEventLabels>;
 
 using MyBarrelAssocs = soa::Join<aod::ReducedA3TracksAssoc, aod::BarrelTrackCuts>;
 using MyBarrelAssocsPrefilter = soa::Join<aod::ReducedA3TracksAssoc, aod::BarrelTrackCuts, aod::Prefilter>;
 
-using MyBarrelTracks = soa::Join<aod::ReducedA3Tracks, aod::ReducedA3TracksBarrel,
+using MyBarrelTracks = soa::Join<aod::ReA3Tracks, aod::ReducedA3TracksBarrel,
                                  aod::ReducedA3PIDTOF, aod::ReducedA3PIDRich, aod::ReducedA3PIDRichSignals,
                                  aod::ReducedA3TracksBarrelLabels>;
 
-using MyBarrelTracksWithCov = soa::Join<aod::ReducedA3Tracks, aod::ReducedA3TracksBarrel, aod::ReducedA3TracksBarrelCov,
+using MyBarrelTracksWithCov = soa::Join<aod::ReA3Tracks, aod::ReducedA3TracksBarrel, aod::ReducedA3TracksBarrelCov,
                                         aod::ReducedA3PIDTOF, aod::ReducedA3PIDRich, aod::ReducedA3PIDRichSignals,
                                         aod::ReducedA3TracksBarrelLabels>;
 
-using MyBarrelTracksWithCovWithAmbiguities = soa::Join<aod::ReducedA3Tracks, aod::ReducedA3TracksBarrel, aod::ReducedA3TracksBarrelCov,
+using MyBarrelTracksWithCovWithAmbiguities = soa::Join<aod::ReA3Tracks, aod::ReducedA3TracksBarrel, aod::ReducedA3TracksBarrelCov,
                                                        aod::ReducedA3PIDTOF, aod::ReducedA3PIDRich, aod::ReducedA3PIDRichSignals,
                                                        aod::BarrelAmbiguities, aod::ReducedA3TracksBarrelLabels>;
 
@@ -218,7 +218,7 @@ struct AnalysisEventSelection {
     }
   }
 
-  void runEventSelection(MyEventsVtxCov const& events, ReducedA3MCEvents const& mcEvents)
+  void runEventSelection(MyEventsVtxCov const& events, ReA3MCEvents const& mcEvents)
   {
     fSelMap.clear();
 
@@ -226,8 +226,8 @@ struct AnalysisEventSelection {
       // Reset the fValues array and fill event observables
       VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
       VarManager::FillEventAlice3<gkEventFillMap>(event);
-      if (event.has_reducedA3MCEvent()) {
-        VarManager::FillEventAlice3<VarManager::ObjTypes::ReducedEventMC>(event.reducedA3MCEvent());
+      if (event.has_reA3MCEvent()) {
+        VarManager::FillEventAlice3<VarManager::ObjTypes::ReducedEventMC>(event.reA3MCEvent());
       }
 
       bool decision = false;
@@ -271,7 +271,7 @@ struct AnalysisEventSelection {
     }
   }
 
-  void processSkimmed(MyEventsVtxCov const& events, aod::ReducedA3MCEvents const& mcEvents)
+  void processSkimmed(MyEventsVtxCov const& events, aod::ReA3MCEvents const& mcEvents)
   {
     runEventSelection(events, mcEvents);
     publishSelections(events);
@@ -392,7 +392,7 @@ struct AnalysisTrackSelection {
     }
   }
 
-  void runTrackSelection(ReducedA3TracksAssoc const& assocs, MyEventsVtxCovSelected const& /*events*/, MyBarrelTracksWithCov const& tracks, ReducedA3MCEvents const& /*eventsMC*/, ReducedA3MCTracks const& tracksMC)
+  void runTrackSelection(ReducedA3TracksAssoc const& assocs, MyEventsVtxCovSelected const& /*events*/, MyBarrelTracksWithCov const& tracks, ReA3MCEvents const& /*eventsMC*/, ReA3MCTracks const& tracksMC)
   {
     fNAssocsInBunch.clear();
     fNAssocsOutOfBunch.clear();
@@ -402,7 +402,7 @@ struct AnalysisTrackSelection {
 
     // Loop over associations
     for (const auto& assoc : assocs) {
-      auto event = assoc.template reducedA3event_as<MyEventsVtxCovSelected>();
+      auto event = assoc.template reA3event_as<MyEventsVtxCovSelected>();
       if (!event.isEventSelected_bit(0)) {
         trackSel(0);
         continue;
@@ -411,21 +411,21 @@ struct AnalysisTrackSelection {
       VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
       // fill event information which might be needed in histograms/cuts that combine track and event properties
       VarManager::FillEventAlice3<gkEventFillMapWithCov>(event);
-      if (event.has_reducedA3MCEvent()) {
-        VarManager::FillEventAlice3<VarManager::ObjTypes::ReducedEventMC>(event.reducedA3MCEvent());
+      if (event.has_reA3MCEvent()) {
+        VarManager::FillEventAlice3<VarManager::ObjTypes::ReducedEventMC>(event.reA3MCEvent());
       }
 
-      auto track = assoc.template reducedA3track_as<MyBarrelTracksWithCov>();
+      auto track = assoc.template reA3track_as<MyBarrelTracksWithCov>();
       VarManager::FillTrackAlice3<gkTrackFillMapWithCov>(track);
       // compute quantities which depend on the associated collision, such as DCA
       VarManager::FillTrackCollision<gkTrackFillMapWithCov>(track, event);
 
       bool isCorrectAssoc = false;
-      if (track.has_reducedA3MCTrack()) {
-        auto trackMC = track.reducedA3MCTrack();
-        auto eventMCfromTrack = trackMC.reducedA3MCEvent();
-        if (event.has_reducedA3MCEvent()) {
-          isCorrectAssoc = (eventMCfromTrack.globalIndex() == event.reducedA3MCEvent().globalIndex());
+      if (track.has_reA3MCTrack()) {
+        auto trackMC = track.reA3MCTrack();
+        auto eventMCfromTrack = trackMC.reA3MCEvent();
+        if (event.has_reA3MCEvent()) {
+          isCorrectAssoc = (eventMCfromTrack.globalIndex() == event.reA3MCEvent().globalIndex());
         }
         VarManager::FillTrackMC(tracksMC, trackMC);
         VarManager::FillResolutions(trackMC, track);
@@ -449,11 +449,11 @@ struct AnalysisTrackSelection {
 
       // compute MC matching decisions and fill histograms for matched associations
       int isig = 0;
-      if (filterMap > 0 && track.has_reducedA3MCTrack()) {
+      if (filterMap > 0 && track.has_reA3MCTrack()) {
         // loop over all MC signals
         for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
           // check if this MC signal is matched
-          if ((*sig)->CheckSignal(true, track.reducedA3MCTrack())) {
+          if ((*sig)->CheckSignal(true, track.reA3MCTrack())) {
             // mcDecision |= (static_cast<uint32_t>(1) << isig);
             //  loop over cuts and fill histograms for the cuts that are fulfilled
             for (unsigned int icut = 0; icut < fTrackCuts.size(); icut++) {
@@ -535,7 +535,7 @@ struct AnalysisTrackSelection {
     }
   } // end runTrackSelection()
 
-  void processSkimmedWithCov(ReducedA3TracksAssoc const& assocs, MyEventsVtxCovSelected const& events, MyBarrelTracksWithCov const& tracks, ReducedA3MCEvents const& eventsMC, ReducedA3MCTracks const& tracksMC)
+  void processSkimmedWithCov(ReducedA3TracksAssoc const& assocs, MyEventsVtxCovSelected const& events, MyBarrelTracksWithCov const& tracks, ReA3MCEvents const& eventsMC, ReA3MCTracks const& tracksMC)
   {
     runTrackSelection(assocs, events, tracks, eventsMC, tracksMC);
   }
@@ -564,7 +564,7 @@ struct AnalysisPrefilterSelection {
   uint32_t fPrefilterMask = 0;
   int fPrefilterCutBit = -1;
 
-  PresliceUnsorted<aod::ReducedA3TracksAssoc> trackAssocsPerCollision = aod::reducedA3track_association::reducedA3eventId;
+  PresliceUnsorted<aod::ReducedA3TracksAssoc> trackAssocsPerCollision = aod::reducedA3track_association::reA3eventId;
 
   void init(o2::framework::InitContext& context)
   {
@@ -651,8 +651,8 @@ struct AnalysisPrefilterSelection {
     }
 
     for (const auto& [assoc1, assoc2] : o2::soa::combinations(assocs, assocs)) {
-      auto track1 = assoc1.template reducedA3track_as<MyBarrelTracks>();
-      auto track2 = assoc2.template reducedA3track_as<MyBarrelTracks>();
+      auto track1 = assoc1.template reA3track_as<MyBarrelTracks>();
+      auto track2 = assoc2.template reA3track_as<MyBarrelTracks>();
 
       // NOTE: here we restrict to just pairs of opposite sign (conversions), but in principle this can be made
       // a configurable and check also same-sign pairs (track splitting)
@@ -708,7 +708,7 @@ struct AnalysisPrefilterSelection {
     } else {
       for (const auto& assoc : assocs) {
         // TODO: just use the index from the assoc (no need to cast the whole track)
-        auto track = assoc.template reducedA3track_as<MyBarrelTracks>();
+        auto track = assoc.template reA3track_as<MyBarrelTracks>();
         mymap = -1;
         if (!fPrefilterMap.contains(track.globalIndex())) {
           // NOTE: publish the bitwise negated bits (~), so there will be zeroes for cuts that failed the prefiltering and 1 everywhere else
@@ -795,7 +795,7 @@ struct AnalysisSameEventPairing {
 
   bool fEnableBarrelHistos = false;
 
-  PresliceUnsorted<MyBarrelAssocsPrefilter> trackAssocsPerCollision = aod::reducedA3track_association::reducedA3eventId;
+  PresliceUnsorted<MyBarrelAssocsPrefilter> trackAssocsPerCollision = aod::reducedA3track_association::reA3eventId;
 
   void init(o2::framework::InitContext& context)
   {
@@ -1002,7 +1002,7 @@ struct AnalysisSameEventPairing {
   }
 
   // Template function to run same event pairing (barrel-barrel)
-  void runSameEventPairing(MyEventsVtxCovSelected const& events, PresliceUnsorted<MyBarrelAssocsPrefilter>& preslice, MyBarrelAssocsPrefilter const& assocs, MyBarrelTracksWithCovWithAmbiguities const& /*tracks*/, ReducedA3MCEvents const& /*mcEvents*/, ReducedA3MCTracks const& /*mcTracks*/)
+  void runSameEventPairing(MyEventsVtxCovSelected const& events, PresliceUnsorted<MyBarrelAssocsPrefilter>& preslice, MyBarrelAssocsPrefilter const& assocs, MyBarrelTracksWithCovWithAmbiguities const& /*tracks*/, ReA3MCEvents const& /*mcEvents*/, ReA3MCTracks const& /*mcTracks*/)
   {
     if (events.size() == 0) {
       LOG(warning) << "No events in this TF, going to the next one ...";
@@ -1049,7 +1049,7 @@ struct AnalysisSameEventPairing {
       // Reset the fValues array
       VarManager::ResetValues(0, VarManager::kNVars);
       VarManager::FillEventAlice3<gkEventFillMap>(event, dqefficiency_helpers::varValues());
-      VarManager::FillEventAlice3<VarManager::ObjTypes::ReducedEventMC>(event.reducedA3MCEvent(), dqefficiency_helpers::varValues());
+      VarManager::FillEventAlice3<VarManager::ObjTypes::ReducedEventMC>(event.reA3MCEvent(), dqefficiency_helpers::varValues());
 
       auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
       if (groupedAssocs.size() == 0) {
@@ -1064,8 +1064,8 @@ struct AnalysisSameEventPairing {
           continue;
         }
 
-        auto t1 = a1.template reducedA3track_as<MyBarrelTracksWithCovWithAmbiguities>();
-        auto t2 = a2.template reducedA3track_as<MyBarrelTracksWithCovWithAmbiguities>();
+        auto t1 = a1.template reA3track_as<MyBarrelTracksWithCovWithAmbiguities>();
+        auto t2 = a2.template reA3track_as<MyBarrelTracksWithCovWithAmbiguities>();
         sign1 = t1.sign();
         sign2 = t2.sign();
         // store the ambiguity number of the two dilepton legs in the last 4 digits of the two-track filter
@@ -1086,15 +1086,15 @@ struct AnalysisSameEventPairing {
         int iSigMc = 0;
         mcDecision = 0;
         for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, iSigMc++) {
-          if (t1.has_reducedA3MCTrack() && t2.has_reducedA3MCTrack()) {
-            if ((*sig)->CheckSignal(true, t1.reducedA3MCTrack(), t2.reducedA3MCTrack())) {
+          if (t1.has_reA3MCTrack() && t2.has_reA3MCTrack()) {
+            if ((*sig)->CheckSignal(true, t1.reA3MCTrack(), t2.reA3MCTrack())) {
               mcDecision |= (static_cast<uint32_t>(1) << iSigMc);
             }
           }
         } // end loop over MC signals
-        if (t1.has_reducedA3MCTrack() && t2.has_reducedA3MCTrack()) {
-          isCorrectAssoc_leg1 = (t1.reducedA3MCTrack().reducedA3MCEvent() == event.reducedA3MCEvent());
-          isCorrectAssoc_leg2 = (t2.reducedA3MCTrack().reducedA3MCEvent() == event.reducedA3MCEvent());
+        if (t1.has_reA3MCTrack() && t2.has_reA3MCTrack()) {
+          isCorrectAssoc_leg1 = (t1.reA3MCTrack().reA3MCEvent() == event.reA3MCEvent());
+          isCorrectAssoc_leg2 = (t2.reA3MCTrack().reA3MCEvent() == event.reA3MCEvent());
         }
 
         VarManager::FillPairAlice3<VarManager::kDecayToEE, gkTrackFillMap>(t1, t2);
@@ -1209,9 +1209,9 @@ struct AnalysisSameEventPairing {
     } // end loop over events
   }
 
-  PresliceUnsorted<ReducedA3MCTracks> perReducedMcEvent = aod::reducedA3trackMC::reducedA3MCEventId;
+  PresliceUnsorted<ReA3MCTracks> perReducedMcEvent = aod::reducedA3trackMC::reA3MCEventId;
 
-  void runMCGenWithGrouping(MyEventsVtxCovSelected const& events, ReducedA3MCEvents const& /*mcEvents*/, ReducedA3MCTracks const& mcTracks)
+  void runMCGenWithGrouping(MyEventsVtxCovSelected const& events, ReA3MCEvents const& /*mcEvents*/, ReA3MCTracks const& mcTracks)
   {
     for (const auto& mctrack : mcTracks) {
       VarManager::FillTrackMC(mcTracks, mctrack);
@@ -1235,12 +1235,12 @@ struct AnalysisSameEventPairing {
       if (!event.isEventSelected_bit(0)) {
         continue;
       }
-      if (!event.has_reducedA3MCEvent()) {
+      if (!event.has_reA3MCEvent()) {
         continue;
       }
 
       for (const auto& track : mcTracks) {
-        if (track.reducedA3MCEventId() != event.reducedA3MCEventId()) {
+        if (track.reA3MCEventId() != event.reA3MCEventId()) {
           continue;
         }
         VarManager::FillTrackMC(mcTracks, track);
@@ -1264,7 +1264,7 @@ struct AnalysisSameEventPairing {
       for (const auto& [t1, t2] : combinations(mcTracks, mcTracks)) {
         auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
         auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
-        if (t1_raw.reducedA3MCEventId() == t2_raw.reducedA3MCEventId()) {
+        if (t1_raw.reA3MCEventId() == t2_raw.reA3MCEventId()) {
           for (const auto& sig : fGenMCSignals) {
             if (sig->GetNProngs() != TWO_PRONG) { // NOTE: 2-prong signals required here
               continue;
@@ -1286,17 +1286,17 @@ struct AnalysisSameEventPairing {
       if (!event.isEventSelected_bit(0)) {
         continue;
       }
-      if (!event.has_reducedA3MCEvent()) {
+      if (!event.has_reA3MCEvent()) {
         continue;
       }
       // CURRENTLY ONLY FOR 1-GENERATION 2-PRONG SIGNALS
       if (fHasTwoProngGenMCsignals) {
-        auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.reducedA3MCEventId());
+        auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.reA3MCEventId());
         groupedMCTracks.bindInternalIndicesTo(&mcTracks);
         for (const auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
           auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
           auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
-          if (t1_raw.reducedA3MCEventId() == t2_raw.reducedA3MCEventId()) {
+          if (t1_raw.reA3MCEventId() == t2_raw.reA3MCEventId()) {
             for (const auto& sig : fGenMCSignals) {
               if (sig->GetNProngs() != TWO_PRONG) { // NOTE: 2-prong signals required here
                 continue;
@@ -1319,15 +1319,15 @@ struct AnalysisSameEventPairing {
 
   void processBarrelOnlySkimmed(MyEventsVtxCovSelected const& events,
                                 MyBarrelAssocsPrefilter const& barrelAssocs,
-                                MyBarrelTracksWithCovWithAmbiguities const& barrelTracks, ReducedA3MCEvents const& mcEvents, ReducedA3MCTracks const& mcTracks)
+                                MyBarrelTracksWithCovWithAmbiguities const& barrelTracks, ReA3MCEvents const& mcEvents, ReA3MCTracks const& mcTracks)
   {
     runSameEventPairing(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
     runMCGenWithGrouping(events, mcEvents, mcTracks);
   }
 
-  PresliceUnsorted<ReducedA3MCTracks> perReducedMcGenEvent = aod::reducedA3trackMC::reducedA3MCEventId;
+  PresliceUnsorted<ReA3MCTracks> perReducedMcGenEvent = aod::reducedA3trackMC::reA3MCEventId;
 
-  void processMCGen(soa::Filtered<MyEventsVtxCovSelected> const& events, ReducedA3MCEvents const& /*mcEvents*/, ReducedA3MCTracks const& mcTracks)
+  void processMCGen(soa::Filtered<MyEventsVtxCovSelected> const& events, ReA3MCEvents const& /*mcEvents*/, ReA3MCTracks const& mcTracks)
   {
     for (const auto& mctrack : mcTracks) {
       VarManager::FillTrackMC(mcTracks, mctrack);
@@ -1346,14 +1346,14 @@ struct AnalysisSameEventPairing {
       if (!event.isEventSelected_bit(0)) {
         continue;
       }
-      if (!event.has_reducedA3MCEvent()) {
+      if (!event.has_reA3MCEvent()) {
         continue;
       }
       VarManager::FillEventAlice3<gkEventFillMap>(event, dqefficiency_helpers::varValues());
-      VarManager::FillEventAlice3<VarManager::ObjTypes::ReducedEventMC>(event.reducedA3MCEvent(), dqefficiency_helpers::varValues());
+      VarManager::FillEventAlice3<VarManager::ObjTypes::ReducedEventMC>(event.reA3MCEvent(), dqefficiency_helpers::varValues());
 
       for (const auto& track : mcTracks) {
-        if (track.reducedA3MCEventId() != event.reducedA3MCEventId()) {
+        if (track.reA3MCEventId() != event.reA3MCEventId()) {
           continue;
         }
         VarManager::FillTrackMC(mcTracks, track);
@@ -1370,7 +1370,7 @@ struct AnalysisSameEventPairing {
       for (const auto& [t1, t2] : combinations(mcTracks, mcTracks)) {
         auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
         auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
-        if (t1_raw.reducedA3MCEventId() == t2_raw.reducedA3MCEventId()) {
+        if (t1_raw.reA3MCEventId() == t2_raw.reA3MCEventId()) {
           for (const auto& sig : fGenMCSignals) {
             if (sig->GetNProngs() != TWO_PRONG) { // NOTE: 2-prong signals required here
               continue;
@@ -1387,21 +1387,21 @@ struct AnalysisSameEventPairing {
       if (!event.isEventSelected_bit(0)) {
         continue;
       }
-      if (!event.has_reducedA3MCEvent()) {
+      if (!event.has_reA3MCEvent()) {
         continue;
       }
 
       if (fHasTwoProngGenMCsignals) {
         for (const auto& [t1, t2] : combinations(mcTracks, mcTracks)) {
-          if (t1.reducedA3MCEventId() != event.reducedA3MCEventId()) {
+          if (t1.reA3MCEventId() != event.reA3MCEventId()) {
             continue;
           }
-          if (t2.reducedA3MCEventId() != event.reducedA3MCEventId()) {
+          if (t2.reA3MCEventId() != event.reA3MCEventId()) {
             continue;
           }
           auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
           auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
-          if (t1_raw.reducedA3MCEventId() == t2_raw.reducedA3MCEventId()) {
+          if (t1_raw.reA3MCEventId() == t2_raw.reA3MCEventId()) {
             for (const auto& sig : fGenMCSignals) {
               if (sig->GetNProngs() != TWO_PRONG) { // NOTE: 2-prong signals required here
                 continue;
@@ -1416,7 +1416,7 @@ struct AnalysisSameEventPairing {
     } // end loop over reconstructed events
   }
 
-  void processMCGenWithGrouping(soa::Filtered<MyEventsVtxCovSelected> const& events, ReducedA3MCEvents const& /*mcEvents*/, ReducedA3MCTracks const& mcTracks)
+  void processMCGenWithGrouping(soa::Filtered<MyEventsVtxCovSelected> const& events, ReA3MCEvents const& /*mcEvents*/, ReA3MCTracks const& mcTracks)
   {
     for (const auto& mctrack : mcTracks) {
       VarManager::FillTrackMC(mcTracks, mctrack);
@@ -1434,12 +1434,12 @@ struct AnalysisSameEventPairing {
       if (!event.isEventSelected_bit(0)) {
         continue;
       }
-      if (!event.has_reducedA3MCEvent()) {
+      if (!event.has_reA3MCEvent()) {
         continue;
       }
 
       for (const auto& track : mcTracks) {
-        if (track.reducedA3MCEventId() != event.reducedA3MCEventId()) {
+        if (track.reA3MCEventId() != event.reA3MCEventId()) {
           continue;
         }
         VarManager::FillTrackMC(mcTracks, track);
@@ -1456,7 +1456,7 @@ struct AnalysisSameEventPairing {
       for (const auto& [t1, t2] : combinations(mcTracks, mcTracks)) {
         auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
         auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
-        if (t1_raw.reducedA3MCEventId() == t2_raw.reducedA3MCEventId()) {
+        if (t1_raw.reA3MCEventId() == t2_raw.reA3MCEventId()) {
           for (const auto& sig : fGenMCSignals) {
             if (sig->GetNProngs() != TWO_PRONG) { // NOTE: 2-prong signals required here
               continue;
@@ -1472,17 +1472,17 @@ struct AnalysisSameEventPairing {
       if (!event.isEventSelected_bit(0)) {
         continue;
       }
-      if (!event.has_reducedA3MCEvent()) {
+      if (!event.has_reA3MCEvent()) {
         continue;
       }
       // CURRENTLY ONLY FOR 1-GENERATION 2-PRONG SIGNALS
       if (fHasTwoProngGenMCsignals) {
-        auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.reducedA3MCEventId());
+        auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.reA3MCEventId());
         groupedMCTracks.bindInternalIndicesTo(&mcTracks);
         for (const auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
           auto t1_raw = groupedMCTracks.rawIteratorAt(t1.globalIndex());
           auto t2_raw = groupedMCTracks.rawIteratorAt(t2.globalIndex());
-          if (t1_raw.reducedA3MCEventId() == t2_raw.reducedA3MCEventId()) {
+          if (t1_raw.reA3MCEventId() == t2_raw.reA3MCEventId()) {
             for (const auto& sig : fGenMCSignals) {
               if (sig->GetNProngs() != TWO_PRONG) { // NOTE: 2-prong signals required here
                 continue;
@@ -1569,8 +1569,8 @@ struct AnalysisAsymmetricPairing {
 
   Filter eventFilter = aod::dqanalysisflags::isEventSelected > static_cast<uint32_t>(0);
 
-  PresliceUnsorted<MyBarrelAssocs> trackAssocsPerCollision = aod::reducedA3track_association::reducedA3eventId;
-  // PresliceUnsorted<aod::ReducedA3TracksAssoc> trackAssocsPerCollision = aod::reducedA3track_association::reducedA3eventId;
+  PresliceUnsorted<MyBarrelAssocs> trackAssocsPerCollision = aod::reducedA3track_association::reA3eventId;
+  // PresliceUnsorted<aod::ReducedA3TracksAssoc> trackAssocsPerCollision = aod::reducedA3track_association::reA3eventId;
 
   // Partitions for triplets and asymmetric pairs
   Partition<MyBarrelAssocs> legACandidateAssocs = (o2::aod::dqanalysisflags::isBarrelSelected & fConfigLegAFilterMask) > static_cast<uint32_t>(0);
@@ -1921,7 +1921,7 @@ struct AnalysisAsymmetricPairing {
   }
 
   // Function to run same event pairing with asymmetric pairs (e.g. kaon-pion)
-  void runAsymmetricPairing(MyEventsVtxCovSelected const& events, PresliceUnsorted<MyBarrelAssocs>& preslice, MyBarrelAssocs const& /*assocs*/, MyBarrelTracksWithCovWithAmbiguities const& /*tracks*/, ReducedA3MCEvents const& /*mcEvents*/, ReducedA3MCTracks const& /*mcTracks*/)
+  void runAsymmetricPairing(MyEventsVtxCovSelected const& events, PresliceUnsorted<MyBarrelAssocs>& preslice, MyBarrelAssocs const& /*assocs*/, MyBarrelTracksWithCovWithAmbiguities const& /*tracks*/, ReA3MCEvents const& /*mcEvents*/, ReA3MCTracks const& /*mcTracks*/)
   {
     fPairCount.clear();
 
@@ -1973,8 +1973,8 @@ struct AnalysisAsymmetricPairing {
         // Find common track cuts both candidates pass
         twoTrackCommonFilter |= a1.isBarrelSelected_raw() & a2.isBarrelSelected_raw() & fCommonTrackCutMask;
 
-        auto t1 = a1.template reducedA3track_as<MyBarrelTracksWithCovWithAmbiguities>();
-        auto t2 = a2.template reducedA3track_as<MyBarrelTracksWithCovWithAmbiguities>();
+        auto t1 = a1.template reA3track_as<MyBarrelTracksWithCovWithAmbiguities>();
+        auto t2 = a2.template reA3track_as<MyBarrelTracksWithCovWithAmbiguities>();
 
         // Avoid self-pairs
         if (t1.globalIndex() == t2.globalIndex()) {
@@ -2007,9 +2007,9 @@ struct AnalysisAsymmetricPairing {
         int iSigMc = 0;
         mcDecision = 0;
         for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, iSigMc++) {
-          if (t1.has_reducedA3MCTrack() && t2.has_reducedA3MCTrack()) {
-            VarManager::FillPairMC<VarManager::kDecayToKPi>(t1.reducedA3MCTrack(), t2.reducedA3MCTrack());
-            if ((*sig)->CheckSignal(true, t1.reducedA3MCTrack(), t2.reducedA3MCTrack())) {
+          if (t1.has_reA3MCTrack() && t2.has_reA3MCTrack()) {
+            VarManager::FillPairMC<VarManager::kDecayToKPi>(t1.reA3MCTrack(), t2.reA3MCTrack());
+            if ((*sig)->CheckSignal(true, t1.reA3MCTrack(), t2.reA3MCTrack())) {
               mcDecision |= static_cast<uint32_t>(1) << iSigMc;
             }
           }
@@ -2166,7 +2166,7 @@ struct AnalysisAsymmetricPairing {
 
   // Function to run same event triplets (e.g. D+->K-pi+pi+)
   template <bool TThreeProngFitter, typename TEvents, typename TTrackAssocs, typename TTracks>
-  void runThreeProng(TEvents const& events, PresliceUnsorted<TTrackAssocs>& preslice, TTrackAssocs const& /*assocs*/, TTracks const& tracks, ReducedA3MCEvents const& /*mcEvents*/, ReducedA3MCTracks const& /*mcTracks*/, VarManager::PairCandidateType tripletType)
+  void runThreeProng(TEvents const& events, PresliceUnsorted<TTrackAssocs>& preslice, TTrackAssocs const& /*assocs*/, TTracks const& tracks, ReA3MCEvents const& /*mcEvents*/, ReA3MCTracks const& /*mcTracks*/, VarManager::PairCandidateType tripletType)
   {
     for (const auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
@@ -2242,9 +2242,9 @@ struct AnalysisAsymmetricPairing {
     // Find common track cuts all candidates pass
     threeTrackCommonFilter |= a1.isBarrelSelected_raw() & a2.isBarrelSelected_raw() & a3.isBarrelSelected_raw() & fCommonTrackCutMask;
 
-    auto t1 = a1.template reducedA3track_as<TTracks>();
-    auto t2 = a2.template reducedA3track_as<TTracks>();
-    auto t3 = a3.template reducedA3track_as<TTracks>();
+    auto t1 = a1.template reA3track_as<TTracks>();
+    auto t2 = a2.template reA3track_as<TTracks>();
+    auto t3 = a3.template reA3track_as<TTracks>();
 
     // Avoid self-pairs
     if (t1 == t2 || t1 == t3 || t2 == t3) {
@@ -2277,8 +2277,8 @@ struct AnalysisAsymmetricPairing {
     int iSigMc = 0;
     mcDecision = 0;
     for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, iSigMc++) {
-      if (t1.has_reducedA3MCTrack() && t2.has_reducedA3MCTrack() && t3.has_reducedA3MCTrack()) {
-        if ((*sig)->CheckSignal(true, t1.reducedA3MCTrack(), t2.reducedA3MCTrack(), t3.reducedA3MCTrack())) {
+      if (t1.has_reA3MCTrack() && t2.has_reA3MCTrack() && t3.has_reA3MCTrack()) {
+        if ((*sig)->CheckSignal(true, t1.reA3MCTrack(), t2.reA3MCTrack(), t3.reA3MCTrack())) {
           mcDecision |= (static_cast<uint32_t>(1) << iSigMc);
         }
       }
@@ -2344,7 +2344,7 @@ struct AnalysisAsymmetricPairing {
   void processKaonPionSkimmed(MyEventsVtxCovSelected const& events,
                               MyBarrelAssocs const& barrelAssocs,
                               MyBarrelTracksWithCovWithAmbiguities const& barrelTracks,
-                              ReducedA3MCEvents const& mcEvents, ReducedA3MCTracks const& mcTracks)
+                              ReA3MCEvents const& mcEvents, ReA3MCTracks const& mcTracks)
   {
     runAsymmetricPairing(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
   }
@@ -2352,7 +2352,7 @@ struct AnalysisAsymmetricPairing {
   void processKaonPionPionSkimmed(MyEventsVtxCovSelected const& events,
                                   MyBarrelAssocs const& barrelAssocs,
                                   MyBarrelTracksWithCovWithAmbiguities const& barrelTracks,
-                                  ReducedA3MCEvents const& mcEvents, ReducedA3MCTracks const& mcTracks)
+                                  ReA3MCEvents const& mcEvents, ReA3MCTracks const& mcTracks)
   {
     runThreeProng<true>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks, VarManager::kTripleCandidateToKPiPi);
   }
@@ -2360,16 +2360,16 @@ struct AnalysisAsymmetricPairing {
   void processProtonKaonPionSkimmed(MyEventsVtxCovSelected const& events,
                                     MyBarrelAssocs const& barrelAssocs,
                                     MyBarrelTracksWithCovWithAmbiguities const& barrelTracks,
-                                    ReducedA3MCEvents const& mcEvents, ReducedA3MCTracks const& mcTracks)
+                                    ReA3MCEvents const& mcEvents, ReA3MCTracks const& mcTracks)
   {
     runThreeProng<true>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks, VarManager::kTripleCandidateToPKPi);
   }
 
-  void processMCGen(ReducedA3MCTracks const& mcTracks)
+  void processMCGen(ReA3MCTracks const& mcTracks)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // group all the MC tracks which belong to the MC event corresponding to the current reconstructed event
-    // auto groupedMCTracks = tracksMC.sliceBy(aod::reducedA3trackMC::reducedA3MCEventId, event.reducedMCevent().globalIndex());
+    // auto groupedMCTracks = tracksMC.sliceBy(aod::reducedA3trackMC::reA3MCEventId, event.reducedMCevent().globalIndex());
     for (const auto& mctrack : mcTracks) {
 
       VarManager::FillTrackMC(mcTracks, mctrack);
@@ -2384,20 +2384,20 @@ struct AnalysisAsymmetricPairing {
     }
   }
 
-  PresliceUnsorted<ReducedA3MCTracks> perReducedMcEvent = aod::reducedA3trackMC::reducedA3MCEventId;
+  PresliceUnsorted<ReA3MCTracks> perReducedMcEvent = aod::reducedA3trackMC::reA3MCEventId;
 
   void processMCGenWithEventSelection(soa::Filtered<MyEventsVtxCovSelected> const& events,
-                                      ReducedA3MCEvents const& /*mcEvents*/, ReducedA3MCTracks const& mcTracks)
+                                      ReA3MCEvents const& /*mcEvents*/, ReA3MCTracks const& mcTracks)
   {
     for (const auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
         continue;
       }
-      if (!event.has_reducedA3MCEvent()) {
+      if (!event.has_reA3MCEvent()) {
         continue;
       }
 
-      auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.reducedA3MCEventId());
+      auto groupedMCTracks = mcTracks.sliceBy(perReducedMcEvent, event.reA3MCEventId());
       groupedMCTracks.bindInternalIndicesTo(&mcTracks);
       for (const auto& track : groupedMCTracks) {
 
