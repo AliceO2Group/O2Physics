@@ -256,24 +256,23 @@ struct HStrangeCorrelationFilter {
   TH1F* hOmegaWidth = nullptr;
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
-  int mRunNumber;
+  int mRunNumberZorro = -1;
+  int mRunNumberParameters = -1;
 
   struct TriggCandidate {
-    float pt;
-    int collisionId;
-    int trackId;
-    bool isPhysicalPrimary;
-    float origPt;
-    uint16_t mcMask;
+    float pt = 0.f;
+    int collisionId = -1;
+    int trackId = -1;
+    bool isPhysicalPrimary = false;
+    float origPt = 0.f;
+    uint16_t mcMask = 0;
   };
-  TriggCandidate thisTrigg;
 
   std::vector<TriggCandidate> triggerCandidates;
 
   void init(InitContext const&)
   {
     zorroSummary.setObject(zorro.getZorroSummary());
-    mRunNumber = -1;
     if (useParameterization) {
       fK0Mean->SetParameters(parameters.massParsK0Mean->at(0), parameters.massParsK0Mean->at(1), parameters.massParsK0Mean->at(2), parameters.massParsK0Mean->at(3));
       fK0Width->SetParameters(parameters.massParsK0Width->at(0), parameters.massParsK0Width->at(1), parameters.massParsK0Width->at(2), parameters.massParsK0Width->at(3));
@@ -308,23 +307,23 @@ struct HStrangeCorrelationFilter {
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
-    if (mRunNumber == bc.runNumber()) {
+    if (mRunNumberZorro == bc.runNumber()) {
       return;
     }
 
     zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), zorroMask.value);
     zorro.populateHistRegistry(histos, bc.runNumber());
 
-    mRunNumber = bc.runNumber();
+    mRunNumberZorro = bc.runNumber();
   }
 
   void initParametersFromCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
-    if (mRunNumber == bc.runNumber()) {
+    if (mRunNumberParameters == bc.runNumber()) {
       return;
     }
-    mRunNumber = bc.runNumber();
-    LOG(info) << "Loading mean and sigma from CCDB for run " << mRunNumber << " now...";
+    mRunNumberParameters = bc.runNumber();
+    LOG(info) << "Loading mean and sigma from CCDB for run " << mRunNumberParameters << " now...";
     auto timeStamp = bc.timestamp();
 
     auto listParameters = ccdb->getForTimeStamp<TList>(parameterCCDBPath, timeStamp);
@@ -344,7 +343,7 @@ struct HStrangeCorrelationFilter {
       hOmegaMean = dynamic_cast<TH1F*>(listParameters->FindObject("hOmegaMean"));
       hOmegaWidth = dynamic_cast<TH1F*>(listParameters->FindObject("hOmegaWidth"));
     }
-    LOG(info) << "parameters now loaded for " << mRunNumber;
+    LOG(info) << "parameters now loaded for " << mRunNumberParameters;
   }
 
   // this function allows for all event selections to be done in a modular way
@@ -591,6 +590,7 @@ struct HStrangeCorrelationFilter {
       if (!isValidTrigger(track)) {
         continue;
       }
+      TriggCandidate thisTrigg{};
       thisTrigg.pt = track.pt();
       thisTrigg.trackId = track.globalIndex();
       thisTrigg.collisionId = track.collisionId();
@@ -631,6 +631,7 @@ struct HStrangeCorrelationFilter {
       if (!isValidTrigger(track)) {
         continue;
       }
+      TriggCandidate thisTrigg{};
       thisTrigg.pt = track.pt();
       thisTrigg.trackId = track.globalIndex();
       thisTrigg.collisionId = track.collisionId();

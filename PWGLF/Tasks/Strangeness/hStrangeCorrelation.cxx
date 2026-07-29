@@ -73,6 +73,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -398,9 +399,9 @@ struct HStrangeCorrelation {
     }
   }
 
-  uint16_t doCorrelation;
-  int mRunNumber;
-  int mRunNumberZorro;
+  uint16_t doCorrelation = 0;
+  int mRunNumber = -1;
+  int mRunNumberZorro = -1;
 
   std::vector<std::vector<float>> axisRanges;
 
@@ -1711,8 +1712,6 @@ struct HStrangeCorrelation {
   void init(InitContext const&)
   {
     zorroSummary.setObject(zorro.getZorroSummary());
-    mRunNumber = 0;
-    mRunNumberZorro = 0;
     hEfficiencyPion = nullptr;
     hEfficiencyK0Short = nullptr;
     hEfficiencyLambda = nullptr;
