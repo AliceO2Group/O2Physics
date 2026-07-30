@@ -250,8 +250,7 @@ struct FemtoUniversePairTaskTrackPhi {
     if (confTrackUseRun3PIDforKaons) {
       if (mom < kMomCutLow) {
         return std::abs(nsigmaTPCK) < kNSigmaStandard;
-      }
-      if (mom >= kMomCutLow) {
+      } else {
         if (hasTOF) { // if TOF is available, use combine nsigma
           return std::hypot(nsigmaTOFK, nsigmaTPCK) < kNSigmaStandard;
         } else // if TOF is not available, use TPC nsigma only
