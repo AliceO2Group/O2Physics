@@ -6,9 +6,10 @@
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
 //
 // In applying this license CERN does not waive the privileges and immunities
-// granted by this license.
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
 
-/// \file PiDeFemtoSystematics.cxx
+/// \file piDeFemtoSystematics.cxx
 /// \brief Histogram-only pion-deuteron femtoscopy task for train subwagon cut variations
 ///
 /// The task intentionally produces no derived AOD tables. A train subwagon
