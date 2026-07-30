@@ -211,7 +211,7 @@ struct FlowGfwV02 {
     TH1D* mEfficiency[4] = {nullptr, nullptr, nullptr, nullptr};
     GFWWeights* mAcceptance;
     bool correctionsLoaded = false;
-  } cfg;
+  } cfg{};
 
   // Define output
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
@@ -261,9 +261,9 @@ struct FlowGfwV02 {
 
   struct PIDState {
     o2::aod::ITSResponse itsResponse;
-    std::array<float, 6> tofNsigmaCut;
-    std::array<float, 6> itsNsigmaCut;
-    std::array<float, 6> tpcNsigmaCut;
+    std::array<float, 6> tofNsigmaCut{};
+    std::array<float, 6> itsNsigmaCut{};
+    std::array<float, 6> tpcNsigmaCut{};
     std::array<std::unique_ptr<TH1D>, 4> hPtMid{};
     std::array<std::unique_ptr<TH1D>, 4> hPtForward{};
     std::array<std::unique_ptr<TH1D>, 4> hPtBackward{};
@@ -276,10 +276,6 @@ struct FlowGfwV02 {
   std::unique_ptr<TF1> fMultCutLow;
   std::unique_ptr<TF1> fMultCutHigh;
   std::unique_ptr<TF1> fMultPVGlobalCutHigh;
-  std::unique_ptr<TF1> fMultGlobalV0ACutLow;
-  std::unique_ptr<TF1> fMultGlobalV0ACutHigh;
-  std::unique_ptr<TF1> fMultGlobalT0ACutLow;
-  std::unique_ptr<TF1> fMultGlobalT0ACutHigh;
 
   std::unique_ptr<TF1> fPtDepDCAxy;
 
@@ -431,19 +427,24 @@ struct FlowGfwV02 {
     AxisSpec multpvAxis = {600, 0, 600, "N_{ch} (PV)"};
     AxisSpec dcaZAxis = {200, -2, 2, "DCA_{z} (cm)"};
     AxisSpec dcaXYAxis = {200, -0.5, 0.5, "DCA_{xy} (cm)"};
-    AxisSpec pidAxis = {4, -0.5, 3.5, "PID"}; // 0 = not identified, 1 = pion, 2 = kaon, 3 = proton
+    AxisSpec bsAxis = {o2::analysis::gfw::nBootstrap, -0.5, o2::analysis::gfw::nBootstrap - 0.5, "PID"}; // 0 = not identified, 1 = pion, 2 = kaon, 3 = proton
+
 
     registry.add("v02pt", "", {HistType::kTProfile2D, {ptAxis, centAxis}});
     registry.add("nchMid", "", {HistType::kTProfile3D, {ptAxis, centAxis, nchAxis}});
     registry.add("v02centmult", "", {HistType::kTProfile2D, {centAxis, nchAxis}});
 
-    registry.add("analysis/v0AB", "", {HistType::kTProfile3D, {pidAxis, ptAxis, centAxis}});
-    registry.add("analysis/v0BA", "", {HistType::kTProfile3D, {pidAxis, ptAxis, centAxis}});
-    registry.add("analysis/nchA", "", {HistType::kTProfile3D, {pidAxis, ptAxis, centAxis}});
-    registry.add("analysis/nchB", "", {HistType::kTProfile3D, {pidAxis, ptAxis, centAxis}});
-    registry.add("analysis/ptA", "", {HistType::kTProfile3D, {pidAxis, centAxis, nchAxis}});
-    registry.add("analysis/ptB", "", {HistType::kTProfile3D, {pidAxis, centAxis, nchAxis}});
-    registry.add("analysis/ptAB", "", {HistType::kTProfile3D, {pidAxis, centAxis, nchAxis}});
+    registry.add("analysis/charged/v0AB", "", {HistType::kTProfile3D, {bsAxis, ptAxis, centAxis}});
+    registry.add("analysis/charged/v0BA", "", {HistType::kTProfile3D, {bsAxis, ptAxis, centAxis}});
+    registry.add("analysis/charged/nchA", "", {HistType::kTProfile3D, {bsAxis, ptAxis, centAxis}});
+    registry.add("analysis/charged/nchB", "", {HistType::kTProfile3D, {bsAxis, ptAxis, centAxis}});
+    registry.add("analysis/charged/ptA", "", {HistType::kTProfile3D, {bsAxis, centAxis, nchAxis}});
+    registry.add("analysis/charged/ptB", "", {HistType::kTProfile3D, {bsAxis, centAxis, nchAxis}});
+    registry.add("analysis/charged/ptAB", "", {HistType::kTProfile3D, {bsAxis, centAxis, nchAxis}});
+
+    registry.addClone("analysis/charged/", "analysis/pion/");
+    registry.addClone("analysis/charged/", "analysis/kaon/");
+    registry.addClone("analysis/charged/", "analysis/proton/");
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -653,7 +654,7 @@ struct FlowGfwV02 {
       if (cfg.mEfficiency[PidCharged] == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram from %s", cfgEfficiency.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)cfg.mEfficiency[PidCharged]);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), static_cast<void*>(cfg.mEfficiency[PidCharged]));
     }
     if (cfgPIDEfficiency) {
       const std::array<std::string, 4> pidStrings = {"ch", "pi", "ka", "pr"};
@@ -663,7 +664,7 @@ struct FlowGfwV02 {
         if (cfg.mEfficiency[i] == nullptr) {
           LOGF(fatal, "Could not load PID efficiency histogram from %s", cfgEfficiency.value + pidStrings[i].c_str());
         }
-        LOGF(info, "Loaded PID efficiency histogram from %s (%p)", cfgEfficiency.value + pidStrings[i].c_str(), (void*)cfg.mEfficiency[i]);
+        LOGF(info, "Loaded PID efficiency histogram from %s (%p)", cfgEfficiency.value + pidStrings[i].c_str(), static_cast<void*>(cfg.mEfficiency[i]));
       }
     }
     cfg.correctionsLoaded = true;
@@ -897,6 +898,7 @@ struct FlowGfwV02 {
       double ptMeanBackward = pidStates.hPtBackward[PidCharged]->GetMean();
       double ptFractionForward = 0.;
       double ptFractionBackward = 0.;
+      int bootstrap = fRndm->Integer(o2::analysis::gfw::nBootstrap);
       for (int pid = 0; pid < PidTotal; pid++) {
         int normIndex = (cfgNormalizeByCharged) ? PidCharged : pid;
         for (int i = 1; i <= fSecondAxis->GetNbins(); i++) {
@@ -904,14 +906,59 @@ struct FlowGfwV02 {
           ptFractionBackward = pidStates.hPtBackward[pid]->GetBinContent(i) / pidStates.hPtBackward[normIndex]->Integral();
           v0corrAB = ptFractionForward * ptMeanBackward;
           v0corrBA = ptFractionBackward * ptMeanForward;
-          registry.fill(HIST("analysis/v0AB"), pid, fSecondAxis->GetBinCenter(i), centmult, v0corrAB);
-          registry.fill(HIST("analysis/v0BA"), pid, fSecondAxis->GetBinCenter(i), centmult, v0corrBA);
-          registry.fill(HIST("analysis/nchA"), pid, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward);
-          registry.fill(HIST("analysis/nchB"), pid, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward);
+          switch (pid) {
+            case PidCharged:
+              registry.fill(HIST("analysis/charged/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB);
+              registry.fill(HIST("analysis/charged/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA);
+              registry.fill(HIST("analysis/charged/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward);
+              registry.fill(HIST("analysis/charged/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward);
+              break;
+            case PidPions:
+              registry.fill(HIST("analysis/pion/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB);
+              registry.fill(HIST("analysis/pion/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA);
+              registry.fill(HIST("analysis/pion/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward);
+              registry.fill(HIST("analysis/pion/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward);
+              break;
+            case PidKaons:
+              registry.fill(HIST("analysis/kaon/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB);
+              registry.fill(HIST("analysis/kaon/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA);
+              registry.fill(HIST("analysis/kaon/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward);
+              registry.fill(HIST("analysis/kaon/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward);
+              break;
+            case PidProtons:
+              registry.fill(HIST("analysis/proton/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB);
+              registry.fill(HIST("analysis/proton/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA);
+              registry.fill(HIST("analysis/proton/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward);
+              registry.fill(HIST("analysis/proton/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward);
+              break;
+            default:
+              break;
+          }
         }
-        registry.fill(HIST("analysis/ptA"), pid, centmult, multiplicity, ptMeanForward);
-        registry.fill(HIST("analysis/ptB"), pid, centmult, multiplicity, ptMeanBackward);
-        registry.fill(HIST("analysis/ptAB"), pid, centmult, multiplicity, ptMeanForward * ptMeanBackward);
+        switch (pid) {
+          case PidCharged:
+            registry.fill(HIST("analysis/charged/ptA"), bootstrap, centmult, multiplicity, ptMeanForward);
+            registry.fill(HIST("analysis/charged/ptB"), bootstrap, centmult, multiplicity, ptMeanBackward);
+            registry.fill(HIST("analysis/charged/ptAB"), bootstrap, centmult, multiplicity, ptMeanForward * ptMeanBackward);
+            break;
+          case PidPions:
+            registry.fill(HIST("analysis/pion/ptA"), bootstrap, centmult, multiplicity, ptMeanForward);
+            registry.fill(HIST("analysis/pion/ptB"), bootstrap, centmult, multiplicity, ptMeanBackward);
+            registry.fill(HIST("analysis/pion/ptAB"), bootstrap, centmult, multiplicity, ptMeanForward * ptMeanBackward);
+            break;
+          case PidKaons:
+            registry.fill(HIST("analysis/kaon/ptA"), bootstrap, centmult, multiplicity, ptMeanForward);
+            registry.fill(HIST("analysis/kaon/ptB"), bootstrap, centmult, multiplicity, ptMeanBackward);
+            registry.fill(HIST("analysis/kaon/ptAB"), bootstrap, centmult, multiplicity, ptMeanForward * ptMeanBackward);
+            break;
+          case PidProtons:
+            registry.fill(HIST("analysis/proton/ptA"), bootstrap, centmult, multiplicity, ptMeanForward);
+            registry.fill(HIST("analysis/proton/ptB"), bootstrap, centmult, multiplicity, ptMeanBackward);
+            registry.fill(HIST("analysis/proton/ptAB"), bootstrap, centmult, multiplicity, ptMeanForward * ptMeanBackward);
+            break;
+          default:
+            break;
+        }
       }
     }
 
@@ -936,7 +983,6 @@ struct FlowGfwV02 {
   struct XAxis {
     float centrality;
     int64_t multiplicity;
-    double time;
   };
 
   struct AcceptedTracks {
@@ -1240,7 +1286,7 @@ struct FlowGfwV02 {
     registry.fill(HIST("eventQA/eventSel"), kSel8);
     registry.fill(HIST("eventQA/eventSel"), kOccupancy); // Add occupancy selection later
 
-    const XAxis xaxis{getCentrality(collision), tracks.size(), -1.0};
+    const XAxis xaxis{getCentrality(collision), tracks.size()};
     if (cfgFillQA) {
       fillEventQA<kBefore>(collision, xaxis);
       registry.fill(HIST("eventQA/before/centrality"), xaxis.centrality);
@@ -1265,7 +1311,7 @@ struct FlowGfwV02 {
       LOGF(info, "run = %d", run);
     }
     loadCorrections(run);
-    const XAxis xaxis{collision.multiplicity(), tracks.size(), -1.0};
+    const XAxis xaxis{collision.multiplicity(), tracks.size()};
 
     registry.fill(HIST("eventQA/after/centrality"), xaxis.centrality);
     registry.fill(HIST("eventQA/after/multiplicity"), xaxis.multiplicity);
@@ -1280,7 +1326,7 @@ struct FlowGfwV02 {
       lastRun = run;
       LOGF(info, "run = %d", run);
     }
-    const XAxis xaxis{collision.multiplicity(), tracks.size(), -1.0};
+    const XAxis xaxis{collision.multiplicity(), tracks.size()};
     registry.fill(HIST("eventQA/after/centrality"), xaxis.centrality);
     registry.fill(HIST("eventQA/after/multiplicity"), xaxis.multiplicity);
     // processCollision<kReco>(collision, tracks, xaxis, run);
