@@ -57,6 +57,7 @@ DECLARE_SOA_COLUMN(MlProbD0barCand2, mlProbD0barCand2, std::vector<float>); //!
 } // namespace hf_correlation_d_meson_pair
 
 // Definition of the D meson pair table. Contains the info needed at Data level.
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECLARE_DMESON_PAIR_TABLE(_pair_type_, _marker_value_, _description_)           \
   DECLARE_SOA_TABLE(_pair_type_, "AOD", _description_, o2::soa::Marker<_marker_value_>, \
                     hf_correlation_d_meson_pair::PtCand1,                               \
@@ -75,6 +76,7 @@ DECLARE_SOA_COLUMN(MlProbD0barCand2, mlProbD0barCand2, std::vector<float>); //!
                     hf_correlation_d_meson_pair::CandidateType1,                        \
                     hf_correlation_d_meson_pair::CandidateType2);
 // Definition of the D meson pair table with info at MC level.
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECLARE_DMESON_PAIR_MCINFO_TABLE(_pair_type_, _marker_value_, _description_)             \
   DECLARE_SOA_TABLE(_pair_type_, "AOD", _description_ "MCINFO", o2::soa::Marker<_marker_value_>, \
                     hf_correlation_d_meson_pair::Origin1,                                        \
@@ -82,6 +84,7 @@ DECLARE_SOA_COLUMN(MlProbD0barCand2, mlProbD0barCand2, std::vector<float>); //!
                     hf_correlation_d_meson_pair::MatchedMc1,                                     \
                     hf_correlation_d_meson_pair::MatchedMc2);
 // Definition of the table with the ML info of the D meson pair.
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECLARE_DMESON_PAIR_MLINFO_TABLE(_pair_type_, _marker_value_, _description_)         \
   DECLARE_SOA_TABLE(_pair_type_, "AOD", _description_ "ML", o2::soa::Marker<_marker_value_>, \
                     hf_correlation_d_meson_pair::MlProbD0Cand1,                              \

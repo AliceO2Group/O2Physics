@@ -24,7 +24,11 @@
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/HFC/DataModel/DMesonPairsTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
@@ -45,6 +49,8 @@
 
 #include <Rtypes.h>
 
+#include <array>
+#include <cmath>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -164,7 +170,7 @@ struct HfCorrelatorDMesonPairs {
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
-  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {static_cast<const double*>(hf_cuts_ml::Cuts[0]), hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
 
@@ -278,7 +284,7 @@ struct HfCorrelatorDMesonPairs {
 
     auto vbins = (std::vector<double>)binsPt;
     constexpr int kNBinsSelStatus = 25;
-    std::string labels[kNBinsSelStatus];
+    std::array<std::string, kNBinsSelStatus> labels;
 
     labels[0] = "total # of Selected pairs";
     // Cand1 analysis
@@ -320,7 +326,7 @@ struct HfCorrelatorDMesonPairs {
     }
 
     constexpr int kNBinsMatching = 8;
-    std::string labelsMatching[kNBinsMatching];
+    std::array<std::string, kNBinsMatching> labelsMatching;
     // Cand1 analysis
     labelsMatching[0] = "total # of Cand 1";
     labelsMatching[1] = "# of matched D Cand 1";
@@ -342,7 +348,7 @@ struct HfCorrelatorDMesonPairs {
     }
 
     constexpr int kNBinsSinglePart = 6;
-    std::string labelsSinglePart[kNBinsSinglePart];
+    std::array<std::string, kNBinsSinglePart> labelsSinglePart;
     // Candidate analysis
     labelsSinglePart[0] = "total # of Candidates";
     labelsSinglePart[1] = "# of selected D";
@@ -576,7 +582,7 @@ struct HfCorrelatorDMesonPairs {
 
   /// Fill selection status histogram
   void fillEntry(const bool& isDCand1, const bool& isDbarCand1, const bool& isDCand2, const bool& isDbarCand2,
-                 const uint8_t& candidateType1, const uint8_t& candidateType2, float yCand1, float yCand2, float phiCand1, float phiCand2, float etaCand1, float etaCand2,
+                 const uint8_t& candidateType1, const uint8_t& candidateType2, float yCand1, float yCand2, float etaCand1, float etaCand2, float phiCand1, float phiCand2,
                  double ptCand1, double ptCand2, float massDCand1, float massDbarCand1, float massDCand2, float massDbarCand2)
   {
 
@@ -805,18 +811,23 @@ struct HfCorrelatorDMesonPairs {
         // Loop on the associated tracks for offline event mixing
         for (const auto& track : tracks) {
           // apply track selection
-          if (track.collisionId() != gCollisionId)
+          if (track.collisionId() != gCollisionId) {
             continue;
+          }
 
           // Manual trackFilter check
-          if (std::abs(track.eta()) >= etaTrackMax)
+          if (std::abs(track.eta()) >= etaTrackMax) {
             continue;
-          if (track.pt() <= ptTrackMin)
+          }
+          if (track.pt() <= ptTrackMin) {
             continue;
-          if (std::abs(track.dcaXY()) >= dcaXYTrackMax)
+          }
+          if (std::abs(track.dcaXY()) >= dcaXYTrackMax) {
             continue;
-          if (std::abs(track.dcaZ()) >= dcaZTrackMax)
+          }
+          if (std::abs(track.dcaZ()) >= dcaZTrackMax) {
             continue;
+          }
           // Removing D0 daughters by checking track indices
           if (daughterTracksCutFlag) {
             if ((candidate1.prong0Id() == track.globalIndex()) || (candidate1.prong1Id() == track.globalIndex())) {
