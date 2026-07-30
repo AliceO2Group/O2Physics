@@ -284,9 +284,9 @@ struct HfCorrelatorDMesonPairs {
       hfMlResponse.init();
     }
 
-    auto vbins = (std::vector<double>)binsPt;
-    constexpr int kNBinsSelStatus = 25;
-    std::array<std::string, kNBinsSelStatus> labels;
+    auto vbins = static_cast<std::vector<double>>(binsPt);
+    constexpr int NBinsSelStatus = 25;
+    std::array<std::string, NBinsSelStatus> labels;
 
     labels[0] = "total # of Selected pairs";
     // Cand1 analysis
@@ -318,17 +318,17 @@ struct HfCorrelatorDMesonPairs {
     labels[23] = "# of True D+Dbar Pairs";
     labels[24] = "# of True Dbar+D Pairs";
 
-    AxisSpec const axisSelStatus = {kNBinsSelStatus, 0.5, kNBinsSelStatus + 0.5, ""};
+    AxisSpec const axisSelStatus = {NBinsSelStatus, 0.5, NBinsSelStatus + 0.5, ""};
     registry.add("hSelectionStatus", "D Meson candidates;selection status;entries", HistType::kTH1F, {axisSelStatus});
     registry.add("hSelectionStatusMcGen", "D Meson candidates MC Gen;selection status;entries", HistType::kTH1F, {axisSelStatus});
 
-    for (int iBin = 0; iBin < kNBinsSelStatus; iBin++) {
+    for (int iBin = 0; iBin < NBinsSelStatus; iBin++) {
       registry.get<TH1>(HIST("hSelectionStatus"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       registry.get<TH1>(HIST("hSelectionStatusMcGen"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
 
-    constexpr int kNBinsMatching = 8;
-    std::array<std::string, kNBinsMatching> labelsMatching;
+    constexpr int NBinsMatching = 8;
+    std::array<std::string, NBinsMatching> labelsMatching;
     // Cand1 analysis
     labelsMatching[0] = "total # of Cand 1";
     labelsMatching[1] = "# of matched D Cand 1";
@@ -340,17 +340,17 @@ struct HfCorrelatorDMesonPairs {
     labelsMatching[6] = "# of matched Dbar Cand 2";
     labelsMatching[7] = "# of unmatched Cand 2";
 
-    AxisSpec const axisMatching = {kNBinsMatching, 0.5, kNBinsMatching + 0.5, ""};
+    AxisSpec const axisMatching = {NBinsMatching, 0.5, NBinsMatching + 0.5, ""};
     registry.add("hMatchingMcRec", "D Meson candidates; MC matching status;entries", HistType::kTH1F, {axisMatching});
     registry.add("hMatchingMcGen", "D Meson candidates; MC matching status;entries", HistType::kTH1F, {axisMatching});
 
-    for (int iBin = 0; iBin < kNBinsMatching; iBin++) {
+    for (int iBin = 0; iBin < NBinsMatching; iBin++) {
       registry.get<TH1>(HIST("hMatchingMcRec"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMatching[iBin].data());
       registry.get<TH1>(HIST("hMatchingMcGen"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMatching[iBin].data());
     }
 
-    constexpr int kNBinsSinglePart = 6;
-    std::array<std::string, kNBinsSinglePart> labelsSinglePart;
+    constexpr int NBinsSinglePart = 6;
+    std::array<std::string, NBinsSinglePart> labelsSinglePart;
     // Candidate analysis
     labelsSinglePart[0] = "total # of Candidates";
     labelsSinglePart[1] = "# of selected D";
@@ -359,11 +359,11 @@ struct HfCorrelatorDMesonPairs {
     labelsSinglePart[4] = "# of true D";
     labelsSinglePart[5] = "# of true Dbar";
 
-    AxisSpec const axisSinglePart = {kNBinsSinglePart, 0.5, kNBinsSinglePart + 0.5, ""};
+    AxisSpec const axisSinglePart = {NBinsSinglePart, 0.5, NBinsSinglePart + 0.5, ""};
     registry.add("hStatusSinglePart", "D Meson candidates; MC matching status;entries", HistType::kTH1F, {axisSinglePart});
     registry.add("hStatusSinglePartMcGen", "D Meson candidates; MC matching status;entries", HistType::kTH1F, {axisSinglePart});
 
-    for (int iBin = 0; iBin < kNBinsSinglePart; iBin++) {
+    for (int iBin = 0; iBin < NBinsSinglePart; iBin++) {
       registry.get<TH1>(HIST("hStatusSinglePart"))->GetXaxis()->SetBinLabel(iBin + 1, labelsSinglePart[iBin].data());
       registry.get<TH1>(HIST("hStatusSinglePartMcGen"))->GetXaxis()->SetBinLabel(iBin + 1, labelsSinglePart[iBin].data());
     }
