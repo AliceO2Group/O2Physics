@@ -1534,6 +1534,8 @@ class VarManager : public TObject
 
   static void SetEfficiencyObject(int type, TObject* obj);
   static void FillEfficiency(float* values = nullptr);
+  static void SetPhiMap(TObject* h1, TObject* h2, bool option);
+  static double SampleRotationPhi(double pT, double eta, int charge);
   static TObject* GetCalibrationObject(CalibObjects calib)
   {
     auto obj = fgCalibs.find(calib);
@@ -1617,6 +1619,10 @@ class VarManager : public TObject
 
   static int fgEfficiencyType;      // type of efficiency correction to apply
   static TObject* fgEfficiencyHist; // histogram for efficiency correction
+
+  static TObject* fgPosiPhiMap; // phi map to correct track rotation
+  static TObject* fgNegaPhiMap;
+  static bool fgUsePhiCorrection;
 
   VarManager& operator=(const VarManager& c);
   VarManager(const VarManager& c);
@@ -3960,8 +3966,7 @@ void VarManager::FillPairRotation(T1 const& t1, T2 const& t2, float* values)
     m2 = o2::constants::physics::MassMuon;
   }
 
-  double dphi = gRandom->Uniform(0., o2::constants::math::TwoPI);
-  double rotationphi2 = RecoDecay::constrainAngle(t2.phi() + dphi);
+  double rotationphi2 = SampleRotationPhi(t2.pt(), t2.eta(), t2.sign());
 
   values[kCharge] = t1.sign() + t2.sign();
   values[kCharge1] = t1.sign();

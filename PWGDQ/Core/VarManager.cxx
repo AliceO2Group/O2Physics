@@ -33,6 +33,7 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -75,7 +76,9 @@ int VarManager::fgCalibrationType = 0;                // 0 - no calibration, 1 -
 bool VarManager::fgUseInterpolatedCalibration = true; // use interpolated calibration histograms (default: true)
 int VarManager::fgEfficiencyType = 0;                 // type of efficiency to be applied, default is no efficiency
 TObject* VarManager::fgEfficiencyHist = nullptr;      // histogram for efficiency
-
+TObject* VarManager::fgPosiPhiMap = nullptr;
+TObject* VarManager::fgNegaPhiMap = nullptr;
+bool VarManager::fgUsePhiCorrection = false;
 //__________________________________________________________________
 VarManager::VarManager() : TObject()
 {
@@ -450,6 +453,76 @@ void VarManager::FillEfficiency(float* values)
     LOG(warning) << "FillEfficiency: unknown efficiency type " << fgEfficiencyType << ", using default efficiency = 1";
     values[kPairEfficiency] = 1;
     values[kPairWeight] = 1;
+  }
+}
+
+void VarManager::SetPhiMap(TObject* hposi, TObject* hnega, bool option)
+{
+  fgPosiPhiMap = hposi;
+  fgNegaPhiMap = hnega;
+  fgUsePhiCorrection = option;
+}
+
+double VarManager::SampleRotationPhi(double pt, double eta, int charge)
+{
+  // each type only alarm once
+  static bool warnedEmptyPhi = false;
+
+  if (!fgUsePhiCorrection) {
+    return gRandom->Uniform(0., o2::constants::math::TwoPI);
+  } else {
+
+    TH3D* hMap = nullptr;
+    if (charge > 0) {
+      hMap = dynamic_cast<TH3D*>(fgPosiPhiMap);
+    } else {
+      hMap = dynamic_cast<TH3D*>(fgNegaPhiMap);
+    }
+
+    if (!hMap) {
+      LOGF(fatal, "Phi map is not a TH3D");
+    }
+    // TH3 axes: X=pT, Y=phi, Z=eta
+    int ptBin = hMap->GetXaxis()->FindBin(pt);
+    int etaBin = hMap->GetZaxis()->FindBin(eta);
+
+    ptBin = std::clamp(ptBin, 1, hMap->GetNbinsX());
+    etaBin = std::clamp(etaBin, 1, hMap->GetNbinsZ());
+
+    TH1D* hPhi = hMap->ProjectionY(
+      Form("hTRPhi_tmp_charge%d_ptbin%d_etabin%d",
+           charge, ptBin, etaBin),
+      ptBin,
+      ptBin,
+      etaBin,
+      etaBin);
+
+    if (!hPhi || hPhi->Integral(1, hPhi->GetNbinsX()) <= 0.) {
+      if (!warnedEmptyPhi) {
+        LOGF(warn,
+             "Empty phi distribution for "
+             "pt=%f, eta=%f, charge=%d, ptBin=%d, etaBin=%d. "
+             "Falling back to uniform phi sampling.",
+             pt,
+             eta,
+             charge,
+             ptBin,
+             etaBin);
+
+        warnedEmptyPhi = true;
+      }
+
+      delete hPhi;
+
+      return gRandom->Uniform(
+        0., o2::constants::math::TwoPI);
+    }
+
+    const double phi =
+      RecoDecay::constrainAngle(hPhi->GetRandom());
+
+    delete hPhi;
+    return phi;
   }
 }
 
