@@ -229,9 +229,9 @@ struct PiDeFemtoSystematics {
     registry.add("Pairs/hMELowKstarYield", "ME low-kstar yield;pair channel;Entries",
                  HistType::kTH1F, {channelAxis});
     registry.add("Pairs/hCPRBefore", "CPR before selection;#Delta#eta;#Delta#varphi^{*}",
-                 HistType::kTH2F, {{160, -2., 2.}, {160, -3.2, 3.2}});
+                 HistType::kTH2F, {{300, -0.15, 0.15}, {400, -0.2, 0.2}});
     registry.add("Pairs/hCPRAfter", "CPR after selection;#Delta#eta;#Delta#varphi^{*}",
-                 HistType::kTH2F, {{160, -2., 2.}, {160, -3.2, 3.2}});
+                 HistType::kTH2F, {{300, -0.15, 0.15}, {400, -0.2, 0.2}});
     registry.add("Event/hCounter", "Event selection;step;Entries",
                  HistType::kTH1F, {{3, -0.5, 2.5}});
     registry.add("Event/hVertexZ", "Selected collision vertex;z (cm);Entries",
