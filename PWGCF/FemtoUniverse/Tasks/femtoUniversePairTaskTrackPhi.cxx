@@ -62,13 +62,25 @@ using namespace o2::soa;
 
 namespace
 {
-// static constexpr int NPart = 2;
-// static constexpr int NCuts = 5;
 const std::vector<std::string> partNames{"PhiCandidate", "Track"};
 const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"};
-// static const float cutsTable[NPart][NCuts]{ //unused variable
-//   {4.05f, 1.f, 3.f, 3.f, 100.f},
-//   {4.05f, 1.f, 3.f, 3.f, 100.f}};
+
+// Constants for pT / momentum
+constexpr float kMomCutLow = 0.5f;
+constexpr float kMomCutKaonLow = 0.3f;
+constexpr float kMomCutKaonMid = 0.45f;
+constexpr float kMomCutKaonHigh = 0.55f;
+constexpr float kMomCutKaonMax = 1.5f;
+
+// Constants for nSigma cuts
+constexpr float kNSigmaStrict = 1.0f;
+constexpr float kNSigmaMedium = 2.0f;
+constexpr float kNSigmaStandard = 3.0f;
+
+// Helper constants and indices
+constexpr int kInvalidMCPartId = -1;
+constexpr int kPhiDaughterOffsetPos = 2;
+constexpr int kPhiDaughterOffsetNeg = 1;
 } // namespace
 
 struct FemtoUniversePairTaskTrackPhi {
@@ -185,9 +197,9 @@ struct FemtoUniversePairTaskTrackPhi {
   ConfigurableAxis confBins3DmT{"confBins3DmT", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"};
   ConfigurableAxis confBins3Dmult{"confBins3Dmult", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<confUse3D>> to true in order to use)"};
 
-  ConfigurableAxis ConfBinskstar{"ConfBinskstar", {1500, 0., 6.}, "binning kstar"};
-  ConfigurableAxis ConfBinskT{"ConfBinskT", {150, 0., 9.}, "binning kT"};
-  ConfigurableAxis ConfBinsmT{"ConfBinsmT", {225, 0., 7.5}, "binning mT"};
+  ConfigurableAxis confBinskstar{"confBinskstar", {1500, 0., 6.}, "binning kstar"};
+  ConfigurableAxis confBinskT{"confBinskT", {150, 0., 9.}, "binning kT"};
+  ConfigurableAxis confBinsmT{"confBinsmT", {225, 0., 7.5}, "binning mT"};
 
   FemtoUniverseContainer<femto_universe_container::EventType::same, femto_universe_container::Observable::kstar> sameEventCont;
   FemtoUniverseContainer<femto_universe_container::EventType::mixed, femto_universe_container::Observable::kstar> mixedEventCont;
@@ -212,7 +224,7 @@ struct FemtoUniversePairTaskTrackPhi {
   EffCorConfigurableGroup effCorConfGroup;
   EfficiencyCorrection effCorrection{&effCorConfGroup};
 
-  float weight = 1;
+  float mWeight = 1.0f;
 
   // PID for protons
   bool isProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
@@ -226,7 +238,7 @@ struct FemtoUniversePairTaskTrackPhi {
 
   bool isProtonRejected(float mom, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCK, float nsigmaTOFK)
   {
-    if (mom < 0.5) {
+    if (mom < kMomCutLow) {
       return true;
     } else {
       return std::hypot(nsigmaTOFPi, nsigmaTPCPi) < confPIDPionNsigmaReject || std::hypot(nsigmaTOFK, nsigmaTPCK) < confPIDKaonNsigmaReject;
@@ -236,10 +248,10 @@ struct FemtoUniversePairTaskTrackPhi {
   bool isKaonNSigma(float mom, bool hasTOF, float nsigmaTPCK, float nsigmaTOFK)
   {
     if (confTrackUseRun3PIDforKaons) {
-      if (mom < 0.5) {
+      if (mom < kMomCutLow) {
         return std::abs(nsigmaTPCK) < 3.0;
       }
-      if (mom >= 0.5) {
+      if (mom >= kMomCutLow) {
         if (hasTOF) { // if TOF is available, use combine nsigma
           return std::hypot(nsigmaTOFK, nsigmaTPCK) < 3.0;
         } else // if TOF is not available, use TPC nsigma only
@@ -248,19 +260,19 @@ struct FemtoUniversePairTaskTrackPhi {
         }
       }
     } else {
-      if (mom < 0.3) { // 0.0-0.3
+      if (mom < kMomCutKaonLow) { // 0.0-0.3
         return std::abs(nsigmaTPCK) < 3.0;
       }
-      if (mom < 0.45) { // 0.30 - 0.45
+      if (mom < kMomCutKaonMid) { // 0.30 - 0.45
         return std::abs(nsigmaTPCK) < 2.0;
       }
-      if (mom < 0.55) { // 0.45-0.55
+      if (mom < kMomCutKaonHigh) { // 0.45-0.55
         return std::abs(nsigmaTPCK) < 1.0;
       }
-      if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
+      if (mom < kMomCutKaonMax) { // 0.55-1.5 (now we use TPC and TOF)
         return std::hypot(nsigmaTOFK, nsigmaTPCK) < 3.0;
       }
-      if (mom > 1.5) { // 1.5 -
+      if (mom > kMomCutKaonMax) { // 1.5 -
         return (std::abs(nsigmaTOFK) < 2.0) && (std::abs(nsigmaTPCK) < 3.0);
       }
       return false;
@@ -432,8 +444,8 @@ struct FemtoUniversePairTaskTrackPhi {
     mixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     mixQaRegistry.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
 
-    sameEventCont.init(&resultRegistry, ConfBinskstar, confBinsMult, ConfBinskT, ConfBinsmT, confBins3Dmult, confBins3DmT, confBinsEta, confBinsPhi, confIsMC, confUse3D);
-    mixedEventCont.init(&resultRegistry, ConfBinskstar, confBinsMult, ConfBinskT, ConfBinsmT, confBins3Dmult, confBins3DmT, confBinsEta, confBinsPhi, confIsMC, confUse3D);
+    sameEventCont.init(&resultRegistry, confBinskstar, confBinsMult, confBinskT, confBinsmT, confBins3Dmult, confBins3DmT, confBinsEta, confBinsPhi, confIsMC, confUse3D);
+    mixedEventCont.init(&resultRegistry, confBinskstar, confBinsMult, confBinskT, confBinsmT, confBins3Dmult, confBins3DmT, confBinsEta, confBinsPhi, confIsMC, confUse3D);
 
     sameEventCont.setPDGCodes(333, confTrackPDGCode);
     mixedEventCont.setPDGCodes(333, confTrackPDGCode);
@@ -449,7 +461,7 @@ struct FemtoUniversePairTaskTrackPhi {
   {
     for (auto const& phicandidate : groupPartsPhi) {
       // TODO: add phi meson minv cut here
-      const auto& posChild = parts.iteratorAt(phicandidate.index() - 2);
+      const auto& posChild = parts.iteratorAt(phicandidate.index() - kPhiDaughterOffsetPos);
       float tpcNSigmaKp = trackCuts.getNsigmaTPC(posChild, o2::track::PID::Kaon);
       float tofNSigmaKp = trackCuts.getNsigmaTOF(posChild, o2::track::PID::Kaon);
       qaRegistry.fill(HIST("PhiDaugh_pos/nSigmaTPC"), posChild.p(), tpcNSigmaKp);
@@ -459,7 +471,7 @@ struct FemtoUniversePairTaskTrackPhi {
       qaRegistry.fill(HIST("PhiDaugh_pos/eta"), posChild.eta());
       qaRegistry.fill(HIST("PhiDaugh_pos/phi"), posChild.phi());
 
-      const auto& negChild = parts.iteratorAt(phicandidate.index() - 1);
+      const auto& negChild = parts.iteratorAt(phicandidate.index() - kPhiDaughterOffsetNeg);
       float tpcNSigmaKm = trackCuts.getNsigmaTPC(negChild, o2::track::PID::Kaon);
       float tofNSigmaKm = trackCuts.getNsigmaTOF(negChild, o2::track::PID::Kaon);
       qaRegistry.fill(HIST("PhiDaugh_neg/nSigmaTPC"), negChild.p(), tpcNSigmaKm);
@@ -541,8 +553,8 @@ struct FemtoUniversePairTaskTrackPhi {
       if (!pairCleaner.isCleanPair(track, phicandidate, parts)) {
         continue;
       }
-      weight = effCorrection.getWeight<FilteredFDCollisions>(ParticleNo::ONE, phicandidate) * effCorrection.getWeight<FilteredFDCollisions>(ParticleNo::TWO, track);
-      sameEventCont.setPair<isMC>(track, phicandidate, multCol, confUse3D, weight);
+      mWeight = effCorrection.getWeight<FilteredFDCollisions>(ParticleNo::ONE, phicandidate) * effCorrection.getWeight<FilteredFDCollisions>(ParticleNo::TWO, track);
+      sameEventCont.setPair<isMC>(track, phicandidate, multCol, confUse3D, mWeight);
     }
 
     // // Used for better fitting of invariant mass background.
@@ -592,8 +604,8 @@ struct FemtoUniversePairTaskTrackPhi {
           continue;
         }
       }
-      weight = effCorrection.getWeight<FilteredFDCollisions>(ParticleNo::ONE, phicandidate) * effCorrection.getWeight<FilteredFDCollisions>(ParticleNo::TWO, track);
-      mixedEventCont.setPair<isMC>(track, phicandidate, multCol, confUse3D, weight);
+      mWeight = effCorrection.getWeight<FilteredFDCollisions>(ParticleNo::ONE, phicandidate) * effCorrection.getWeight<FilteredFDCollisions>(ParticleNo::TWO, track);
+      mixedEventCont.setPair<isMC>(track, phicandidate, multCol, confUse3D, mWeight);
     }
   }
 
@@ -722,7 +734,7 @@ struct FemtoUniversePairTaskTrackPhi {
   {
     for (auto const& part : parts) {
       auto mcPartId = part.fdMCParticleId();
-      if (mcPartId == -1)
+      if (mcPartId == kInvalidMCPartId)
         continue; // no MC particle
       const auto& mcpart = mcparts.iteratorAt(mcPartId);
 
