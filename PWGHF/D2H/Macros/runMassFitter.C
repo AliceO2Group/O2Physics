@@ -490,7 +490,7 @@ void runMassFitter(const std::string& configFileName)
     hMass[iSliceVar]->SetTitle(Form("%s;%s;Counts per %0.1f MeV/#it{c}^{2}",
                                     ptTitle.Data(), massAxisTitle.c_str(),
                                     hMass[iSliceVar]->GetBinWidth(1) * 1000));
-    hMass[iSliceVar]->SetName(Form("MassForFit%d", iSliceVar));
+    hMass[iSliceVar]->SetName(Form("hMassForFit%d", iSliceVar + 1));
 
     if (enableRefl) {
       hMassRefl[iSliceVar]->Rebin(nRebin[iSliceVar]);
@@ -702,9 +702,16 @@ void runMassFitter(const std::string& configFileName)
   }
 
   for (int iSliceVar = 0; iSliceVar < nHistograms; iSliceVar++) {
+    if (iSliceVar == 0) {
+      outputFile.mkdir("MassHistograms");
+      outputFile.mkdir("SgnCorrHistograms");
+    }
+    outputFile.cd("MassHistograms");
     hMass[iSliceVar]->Write();
+    outputFile.cd("SgnCorrHistograms");
     hSgnCorr[iSliceVar]->Write();
   }
+  outputFile.cd();
   hRawYieldsSignal->Write();
   hRawYieldsSignalCounted->Write();
   hRawYieldsBkg->Write();

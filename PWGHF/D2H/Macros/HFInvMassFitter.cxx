@@ -164,7 +164,6 @@ HFInvMassFitter::HFInvMassFitter(TH1* histoToFit,
 {
   // standard constructor
   mHistoInvMass = histoToFit;
-  mHistoInvMass->SetName("mHistoInvMass");
   mHistoInvMass->SetDirectory(nullptr);
   if (mRandomSeed >= 0) {
     mRandomGen = new TRandom3();
