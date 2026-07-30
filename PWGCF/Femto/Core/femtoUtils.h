@@ -279,6 +279,43 @@ inline float unBinLogSigned(T binned, float magMin, float magMax)
   return sign * mag;
 }
 
+template <typename T>
+inline int unBinSign(T binned)
+{
+  static_assert(std::is_unsigned_v<T>, "unBinSign requires an unsigned storage type");
+  constexpr uint64_t TotalBits = sizeof(T) * 8;
+  constexpr T SignMask = static_cast<T>(uint64_t{1} << (TotalBits - 1));
+  return (binned & SignMask) ? -1 : 1;
+}
+
+template <typename T>
+inline T binLogUnsigned(float value, float magMin, float magMax)
+{
+  static_assert(std::is_unsigned_v<T>, "binLogUnsigned requires an unsigned storage type");
+  constexpr uint64_t TotalBits = sizeof(T) * 8;
+  constexpr uint64_t Levels = uint64_t{1} << TotalBits; // number of representable values, e.g. 65536 for uint16_t
+  float mag = std::clamp(value, magMin, magMax);
+  float logLo = std::log(magMin);
+  float logHi = std::log(magMax);
+  float step = (logHi - logLo) / static_cast<float>(Levels - 1);
+  auto idx = static_cast<uint64_t>(std::round((std::log(mag) - logLo) / step));
+  idx = std::clamp(idx, uint64_t{0}, Levels - 1);
+  return static_cast<T>(idx);
+}
+
+template <typename T>
+inline float unBinLogUnsigned(T binned, float magMin, float magMax)
+{
+  constexpr uint64_t TotalBits = sizeof(T) * 8;
+  constexpr uint64_t Levels = uint64_t{1} << TotalBits;
+  uint64_t idx = binned;
+  float logLo = std::log(magMin);
+  float logHi = std::log(magMax);
+  float step = (logHi - logLo) / static_cast<float>(Levels - 1);
+  float mag = std::exp(logLo + static_cast<float>(idx) * step);
+  return mag;
+}
+
 }; // namespace utils
 }; // namespace o2::analysis::femto
 //

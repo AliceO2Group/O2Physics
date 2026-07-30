@@ -64,13 +64,13 @@ struct ConfV0Filters : o2::framework::ConfigurableGroup {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define V0_DEFAULT_BITS                                                                                                                                          \
   o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all V0s are passed through. Bits for all selections are stored."};               \
-  o2::framework::Configurable<std::vector<float>> dcaDauMax{"dcaDauMax", {1.5f}, "Maximum DCA between the daughters at decay vertex (cm)"};                      \
+  o2::framework::Configurable<std::vector<float>> dcaDauMax{"dcaDauMax", {1.5f}, "Maximum DCA between the daughters at V0 decay vertex (cm)"};                   \
   o2::framework::Configurable<std::vector<float>> cpaMin{"cpaMin", {0.99f}, "Minimum cosine of pointing angle"};                                                 \
   o2::framework::Configurable<std::vector<float>> transRadMin{"transRadMin", {0.2f}, "Minimum transverse radius (cm)"};                                          \
   o2::framework::Configurable<std::vector<float>> transRadMax{"transRadMax", {100.f}, "Maximum transverse radius (cm)"};                                         \
   o2::framework::Configurable<std::vector<float>> decayVtxMax{"decayVtxMax", {100.f}, "Maximum distance in x,y,z of the decay vertex from primary vertex (cm)"}; \
   o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.8f}, "Maximum |eta| for daughter tracks"};                                     \
-  o2::framework::Configurable<std::vector<float>> dauDcaMin{"dauDcaMin", {0.05f}, "Minimum DCA of the daughters from primary vertex (cm)"};                      \
+  o2::framework::Configurable<std::vector<float>> dauAbsDcaxyMin{"dauAbsDcaxyMin", {0.05f}, "Minimum DCAxy of the daughters from primary vertex (cm)"};          \
   o2::framework::Configurable<std::vector<float>> dauTpcClustersMin{"dauTpcClustersMin", {80.f}, "Minimum number of TPC clusters for daughter tracks"};
 
 // derived selection bits for lambda
@@ -144,9 +144,9 @@ enum V0Sels {
   kTransRadMax, ///< max. transverse radius
 
   // selection for daughter
-  kDauAbsEtaMax, ///< Max. absolute pseudo rapidity
-  kDauDcaMin,    ///< Min. DCA of the daughters at primary vertex
-  kDauTpcClsMin, ///< Min. number of TPC clusters of daughter
+  kDauAbsEtaMax,   ///< Max. absolute pseudo rapidity
+  kDauAbsDcaxyMin, ///< Min. |DCAxy| of the daughters from primary vertex
+  kDauTpcClsMin,   ///< Min. number of TPC clusters of daughter
 
   // pid selection for daughters
   kPosDaughTpcPion,   ///< TPC Pion PID for positive daughter
@@ -169,7 +169,7 @@ const std::unordered_map<V0Sels, std::string> v0SelectionNames = {
   {kTransRadMax, "Max. transverse radius"},
 
   {kDauAbsEtaMax, "Max. absolute pseudo rapidity of daughters"},
-  {kDauDcaMin, "Min. DCA of the daughters at primary vertex"},
+  {kDauAbsDcaxyMin, "Min. |DCAxy| of the daughters from primary vertex"},
   {kDauTpcClsMin, "Min. number of TPC clusters of daughters"},
 
   {kPosDaughTpcPion, "TPC Pion PID for positive daughter"},
@@ -265,7 +265,7 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
     this->addSelection(kTransRadMin, v0SelectionNames.at(kTransRadMin), config.transRadMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kTransRadMax, v0SelectionNames.at(kTransRadMax), config.transRadMax.value, limits::kUpperLimit, true, true, false);
     this->addSelection(kDauAbsEtaMax, v0SelectionNames.at(kDauAbsEtaMax), config.dauAbsEtaMax.value, limits::kAbsUpperLimit, true, true, false);
-    this->addSelection(kDauDcaMin, v0SelectionNames.at(kDauDcaMin), config.dauDcaMin.value, limits::kAbsLowerLimit, true, true, false);
+    this->addSelection(kDauAbsDcaxyMin, v0SelectionNames.at(kDauAbsDcaxyMin), config.dauAbsDcaxyMin.value, limits::kAbsLowerLimit, true, true, false);
     this->addSelection(kDauTpcClsMin, v0SelectionNames.at(kDauTpcClsMin), config.dauTpcClustersMin.value, limits::kLowerLimit, true, true, false);
 
     this->setupSelectionHistogram<SelectionHistName>(registry);
@@ -307,11 +307,11 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
     auto posDaughter = v0candidate.template posTrack_as<T2>();
     auto negDaughter = v0candidate.template negTrack_as<T2>();
 
-    std::array<float, 2> etaDaughters = {std::fabs(posDaughter.eta()), std::fabs(negDaughter.eta())};
-    this->evaluateObservable(kDauAbsEtaMax, *std::max_element(etaDaughters.begin(), etaDaughters.end()));
+    std::array<float, 2> etaAbsDaughters = {std::fabs(posDaughter.eta()), std::fabs(negDaughter.eta())};
+    this->evaluateObservable(kDauAbsEtaMax, *std::max_element(etaAbsDaughters.begin(), etaAbsDaughters.end()));
 
-    std::array<float, 2> dcaDaughters = {std::hypot(posDaughter.dcaXY(), posDaughter.dcaZ()), std::hypot(negDaughter.dcaXY(), negDaughter.dcaZ())};
-    this->evaluateObservable(kDauDcaMin, *std::min_element(dcaDaughters.begin(), dcaDaughters.end()));
+    std::array<float, 2> dcaxyAbsDaughters = {std::fabs(posDaughter.dcaXY()), std::fabs(negDaughter.dcaXY())};
+    this->evaluateObservable(kDauAbsDcaxyMin, *std::min_element(dcaxyAbsDaughters.begin(), dcaxyAbsDaughters.end()));
 
     std::array<float, 2> clustersDaughters = {1.f * posDaughter.tpcNClsFound(), 1.f * negDaughter.tpcNClsFound()};
     this->evaluateObservable(kDauTpcClsMin, *std::min_element(clustersDaughters.begin(), clustersDaughters.end()));
@@ -427,9 +427,11 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
 
 struct V0BuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FLambdas> producedLambdas;
+  o2::framework::Produces<o2::aod::FLiteLambdas> producedLiteLambdas;
   o2::framework::Produces<o2::aod::FLambdaMasks> producedLambdaMasks;
   o2::framework::Produces<o2::aod::FLambdaExtras> producedLambdaExtras;
   o2::framework::Produces<o2::aod::FK0shorts> producedK0shorts;
+  o2::framework::Produces<o2::aod::FLiteK0shorts> producedLiteK0shorts;
   o2::framework::Produces<o2::aod::FK0shortMasks> producedK0shortMasks;
   o2::framework::Produces<o2::aod::FK0shortExtras> producedK0shortExtras;
 };
@@ -437,9 +439,11 @@ struct V0BuilderProducts : o2::framework::ProducesGroup {
 struct ConfV0Tables : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("V0Tables");
   o2::framework::Configurable<int> produceLambdas{"produceLambdas", -1, "Produce Lambdas (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceLiteLambdas{"produceLiteLambdas", -1, "Produce LiteLambdas (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceLambdaMasks{"produceLambdaMasks", -1, "Produce LambdaMasks (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceLambdaExtras{"produceLambdaExtras", -1, "Produce LambdaExtras (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceK0shorts{"produceK0shorts", -1, "Produce K0shorts (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceLiteK0shorts{"produceLiteK0shorts", -1, "Produce LiteK0shorts (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceK0shortMasks{"produceK0shortMasks", -1, "Produce K0shortMasks (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceK0shortExtras{"produceK0shortExtras", -1, "Produce K0shortExtras (-1: auto; 0 off; 1 on)"};
 };
@@ -451,8 +455,8 @@ class V0Builder
   V0Builder() = default;
   ~V0Builder() = default;
 
-  template <typename T1, typename T2, typename T3, typename T4>
-  void init(o2::framework::HistogramRegistry* registry, T1& config, T2& filter, T3& table, T4& initContext)
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  void init(o2::framework::HistogramRegistry* registry, T1& config, T2& filter, T3& table, T4& initContext, T5& trackBuilder)
   {
     if constexpr (modes::isEqual(v0Type, modes::V0::kLambda) || modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
       if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
@@ -462,16 +466,51 @@ class V0Builder
         LOG(info) << "Initialize femto AntiLambda builder...";
       }
       mProduceLambdas = utils::enableTable("FLambdas_001", table.produceLambdas.value, initContext);
+      mProduceLiteLambdas = utils::enableTable("FLiteLambdas_001", table.produceLiteLambdas.value, initContext);
       mProduceLambdaMasks = utils::enableTable("FLambdaMasks_001", table.produceLambdaMasks.value, initContext);
       mProduceLambdaExtras = utils::enableTable("FLambdaExtras_001", table.produceLambdaExtras.value, initContext);
+
+      if (mProduceLambdas && mProduceLiteLambdas) {
+        LOG(fatal) << "FLambdas and FLiteLambdas are mutually exclusive -- enable only one. "
+                   << "FLiteLambdas is meant to replace FLambdas at the producer stage (for better compression in derived data); "
+                   << "use the dedicated converter task to reconstruct FLambdas from FLiteLambdas downstream.";
+      }
+      if (mProduceLambdas && !trackBuilder.producingTracks()) {
+        LOG(fatal) << "FLambdas is enabled, but the track builder is not producing FTracks (full precision). "
+                   << "FLambdas stores daughter indices into FTracks -- enable TrackTables.produceTracks, "
+                   << "or switch to FLiteLambdas if TrackTables.produceLiteTracks is enabled instead.";
+      }
+      if (mProduceLiteLambdas && !trackBuilder.producingLiteTracks()) {
+        LOG(fatal) << "FLiteLambdas is enabled, but the track builder is not producing FLiteTracks. "
+                   << "FLiteLambdas stores daughter indices into FLiteTracks -- enable TrackTables.produceLiteTracks, "
+                   << "or switch to FLambdas if TrackTables.produceTracks is enabled instead.";
+      }
     }
     if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
       LOG(info) << "Initialize femto K0short builder...";
       mProduceK0shorts = utils::enableTable("FK0shorts_001", table.produceK0shorts.value, initContext);
+      mProduceLiteK0shorts = utils::enableTable("FLiteK0shorts_001", table.produceLiteK0shorts.value, initContext);
       mProduceK0shortMasks = utils::enableTable("FK0shortMasks_001", table.produceK0shortMasks.value, initContext);
       mProduceK0shortExtras = utils::enableTable("FK0shortExtras_001", table.produceK0shortExtras.value, initContext);
+
+      if (mProduceK0shorts && mProduceLiteK0shorts) {
+        LOG(fatal) << "FK0shorts and FLiteK0shorts are mutually exclusive -- enable only one. "
+                   << "FLiteK0shorts is meant to replace FK0shorts at the producer stage (for better compression in derived data); "
+                   << "use the dedicated converter task to reconstruct FK0shorts from FLiteK0shorts downstream.";
+      }
+      if (mProduceK0shorts && !trackBuilder.producingTracks()) {
+        LOG(fatal) << "FK0shorts is enabled, but the track builder is not producing FTracks (full precision). "
+                   << "FK0shorts stores daughter indices into FTracks -- enable TrackTables.produceTracks, "
+                   << "or switch to FLiteK0shorts if TrackTables.produceLiteTracks is enabled instead.";
+      }
+      if (mProduceLiteK0shorts && !trackBuilder.producingLiteTracks()) {
+        LOG(fatal) << "FLiteK0shorts is enabled, but the track builder is not producing FLiteTracks. "
+                   << "FLiteK0shorts stores daughter indices into FLiteTracks -- enable TrackTables.produceLiteTracks, "
+                   << "or switch to FK0shorts if TrackTables.produceTracks is enabled instead.";
+      }
     }
-    if (mProduceLambdas || mProduceLambdaMasks || mProduceLambdaExtras || mProduceK0shorts || mProduceK0shortMasks || mProduceK0shortExtras) {
+    if (mProduceLambdas || mProduceLiteLambdas || mProduceLambdaMasks || mProduceLambdaExtras ||
+        mProduceK0shorts || mProduceLiteK0shorts || mProduceK0shortMasks || mProduceK0shortExtras) {
       mFillAnyTable = true;
     } else {
       LOG(info) << "No tables configured, Selection object will not be configured...";
@@ -509,13 +548,13 @@ class V0Builder
       negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(negDaughter, trackProducts, collisionBuilder);
 
       if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
-        fillLambda(collisionProducts, v0Products, v0, 1.f, posDaughterIndex, negDaughterIndex);
+        fillLambda(collisionBuilder, v0Products, v0, 1.f, posDaughterIndex, negDaughterIndex);
       }
       if constexpr (modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
-        fillLambda(collisionProducts, v0Products, v0, -1.f, posDaughterIndex, negDaughterIndex);
+        fillLambda(collisionBuilder, v0Products, v0, -1.f, posDaughterIndex, negDaughterIndex);
       }
       if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
-        fillK0short(collisionProducts, v0Products, v0, posDaughterIndex, negDaughterIndex);
+        fillK0short(collisionBuilder, v0Products, v0, posDaughterIndex, negDaughterIndex);
       }
     }
   }
@@ -547,22 +586,22 @@ class V0Builder
       negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionBuilder, mcCols, negDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
-        fillLambda(collisionProducts, v0Products, v0, 1.f, posDaughterIndex, negDaughterIndex);
+        fillLambda(collisionBuilder, v0Products, v0, 1.f, posDaughterIndex, negDaughterIndex);
         mcBuilder.template fillMcLambdaWithLabel<system>(col, mcCols, v0, mcParticles, mcProducts);
       }
       if constexpr (modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
-        fillLambda(collisionProducts, v0Products, v0, -1.f, posDaughterIndex, negDaughterIndex);
+        fillLambda(collisionBuilder, v0Products, v0, -1.f, posDaughterIndex, negDaughterIndex);
         mcBuilder.template fillMcLambdaWithLabel<system>(col, mcCols, v0, mcParticles, mcProducts);
       }
       if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
-        fillK0short(collisionProducts, v0Products, v0, posDaughterIndex, negDaughterIndex);
+        fillK0short(collisionBuilder, v0Products, v0, posDaughterIndex, negDaughterIndex);
         mcBuilder.template fillMcK0shortWithLabel<system>(col, mcCols, v0, mcParticles, mcProducts);
       }
     }
   }
 
   template <typename T1, typename T2, typename T3>
-  void fillLambda(T1& collisionProducts, T2& v0Products, T3 const& v0, float sign, int64_t posDaughterIndex, int64_t negDaughterIndex)
+  void fillLambda(T1& collisionBuilder, T2& v0Products, T3 const& v0, float sign, int64_t posDaughterIndex, int64_t negDaughterIndex)
   {
     float mass = 0;
     float massAnti = 0;
@@ -574,13 +613,22 @@ class V0Builder
       massAnti = v0.mLambda();
     }
     if (mProduceLambdas) {
-      v0Products.producedLambdas(collisionProducts.producedCollision.lastIndex(),
+      v0Products.producedLambdas(collisionBuilder.collisionIndex(),
                                  sign * v0.pt(),
                                  v0.eta(),
                                  v0.phi(),
                                  mass,
                                  posDaughterIndex,
                                  negDaughterIndex);
+    }
+    if (mProduceLiteLambdas) {
+      v0Products.producedLiteLambdas(collisionBuilder.collisionIndex(),
+                                     o2::aod::femtobase::lite::binSignedPt(sign * v0.pt()),
+                                     o2::aod::femtobase::lite::binEta(v0.eta()),
+                                     o2::aod::femtobase::lite::binPhi(v0.phi()),
+                                     o2::aod::femtov0s::lite::binLambdaMass(mass),
+                                     posDaughterIndex,
+                                     negDaughterIndex);
     }
     if (mProduceLambdaMasks) {
       v0Products.producedLambdaMasks(mV0Selection.getBitmask());
@@ -599,16 +647,25 @@ class V0Builder
   }
 
   template <typename T1, typename T2, typename T3>
-  void fillK0short(T1& collisionProducts, T2& v0Products, T3 const& v0, int64_t posDaughterIndex, int64_t negDaughterIndex)
+  void fillK0short(T1& collisionBuilder, T2& v0Products, T3 const& v0, int64_t posDaughterIndex, int64_t negDaughterIndex)
   {
     if (mProduceK0shorts) {
-      v0Products.producedK0shorts(collisionProducts.producedCollision.lastIndex(),
+      v0Products.producedK0shorts(collisionBuilder.collisionIndex(),
                                   v0.pt(),
                                   v0.eta(),
                                   v0.phi(),
                                   v0.mK0Short(),
                                   posDaughterIndex,
                                   negDaughterIndex);
+    }
+    if (mProduceLiteK0shorts) {
+      v0Products.producedLiteK0shorts(collisionBuilder.collisionIndex(),
+                                      o2::aod::femtobase::lite::binUnsignedPt(v0.pt()),
+                                      o2::aod::femtobase::lite::binEta(v0.eta()),
+                                      o2::aod::femtobase::lite::binPhi(v0.phi()),
+                                      o2::aod::femtov0s::lite::binK0shortMass(v0.mK0Short()),
+                                      posDaughterIndex,
+                                      negDaughterIndex);
     }
     if (mProduceK0shortMasks) {
       v0Products.producedK0shortMasks(mV0Selection.getBitmask());
@@ -632,9 +689,11 @@ class V0Builder
   V0Selection<v0Type, SelectionHistName, FilterHistName> mV0Selection;
   bool mFillAnyTable = false;
   bool mProduceLambdas = false;
+  bool mProduceLiteLambdas = false;
   bool mProduceLambdaMasks = false;
   bool mProduceLambdaExtras = false;
   bool mProduceK0shorts = false;
+  bool mProduceLiteK0shorts = false;
   bool mProduceK0shortMasks = false;
   bool mProduceK0shortExtras = false;
 };

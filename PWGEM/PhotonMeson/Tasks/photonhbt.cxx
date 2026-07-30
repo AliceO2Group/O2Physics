@@ -29,6 +29,8 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsTPC/VDriftCorrFact.h>
+#include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -47,6 +49,8 @@
 #include <Math/Vector3Dfwd.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep
 #include <Math/Vector4Dfwd.h>
+#include <TH1.h>
+#include <TH2.h>
 #include <TPDGCode.h>
 #include <TString.h>
 
@@ -98,21 +102,100 @@ static constexpr float kMinMagnitude = 1e-12f;
 static constexpr float kMinCosine = 1e-12f;
 static constexpr float kMinSigma = 1e-9f;
 
-static constexpr std::array<float, 9> kPhiStarRadiiM = {0.85f, 1.05f, 1.25f, 1.45f, 1.65f,
-                                                        1.85f, 2.05f, 2.25f, 2.45f};
+static constexpr std::array<float, 17> kPhiStarRadiiM = {
+  0.85f, 0.95f, 1.05f, 1.15f, 1.25f, 1.35f, 1.45f, 1.55f, 1.65f,
+  1.75f, 1.85f, 1.95f, 2.05f, 2.15f, 2.25f, 2.35f, 2.45f};
 static constexpr float kPhiStarInvalid = -999.f;
 static constexpr float kCmPerM = 100.f;
 
-[[nodiscard]] static float legPhiStar(float phi, float pt, int charge, float bzT, float radiusM)
+struct LegHelix {
+  float phiStar = kPhiStarInvalid; // azimuth of the track at that radius
+  float sxy = -1.f;
+  int status = 3; // 0 ok, 1 below R_conv, 2 out of reach,3 bad input
+};
+
+[[nodiscard]] static LegHelix legHelixAt(float vxM, float vyM, float phiMom, float pt, int charge, float bzT, float radiusM)
 {
-  if (pt < kMinSigma) {
-    return kPhiStarInvalid;
+  LegHelix out;
+  if (pt < kMinSigma || std::fabs(bzT) < kMinSigma) {
+    out.status = 3; // o2-linter: disable=magic-number (status code)
+    return out;
   }
-  const float arg = -0.3f * bzT * static_cast<float>(charge) * radiusM / (2.f * pt);
-  if (std::fabs(arg) >= 1.f) {
-    return kPhiStarInvalid; // leg curls up before
+  const float rStart = std::hypot(vxM, vyM);
+  if (rStart < kMinSigma) {
+    out.status = 3; // o2-linter: disable=magic-number (status code)
+    return out;
   }
-  return RecoDecay::constrainAngle(phi + std::asin(arg), 0.f);
+  if (radiusM < rStart) {
+    out.status = 1;
+    return out;
+  }
+  const float rho = pt / (0.3f * std::fabs(bzT)); // curvature radius, m
+  const float sgn = (bzT >= 0.f ? 1.f : -1.f) * static_cast<float>(charge);
+  const float cx = vxM + sgn * rho * std::sin(phiMom);
+  const float cy = vyM - sgn * rho * std::cos(phiMom);
+  const float d = std::hypot(cx, cy);
+  if (d < kMinSigma) {
+    out.status = 3; // o2-linter: disable=magic-number (status code)
+    return out;
+  }
+  if (radiusM > d + rho || radiusM < std::fabs(d - rho)) {
+    out.status = 2; // o2-linter: disable=magic-number (status code)
+    return out;
+  }
+  const float phiC = std::atan2(cy, cx);
+  auto clamp1 = [](float x) { return std::max(-1.f, std::min(1.f, x)); };
+  auto alphaAt = [&](float r) { return std::acos(clamp1((r * r + d * d - rho * rho) / (2.f * r * d))); };
+  auto betaAt = [&](float r) { return std::acos(clamp1((d * d + rho * rho - r * r) / (2.f * d * rho))); };
+
+  const float phiVtx = std::atan2(vyM, vxM);
+  const float a0 = alphaAt(rStart);
+  const float resPlus = std::fabs(RecoDecay::constrainAngle(phiC + a0 - phiVtx, -o2::constants::math::PI));
+  const float resMinus = std::fabs(RecoDecay::constrainAngle(phiC - a0 - phiVtx, -o2::constants::math::PI));
+  const float branch = (resPlus < resMinus) ? 1.f : -1.f;
+
+  out.phiStar = RecoDecay::constrainAngle(phiC + branch * alphaAt(radiusM), 0.f);
+  out.sxy = rho * std::fabs(betaAt(radiusM) - betaAt(rStart));
+  out.status = 0;
+  return out;
+}
+
+[[nodiscard]] inline float selfTestLegHelix()
+{
+  float worst = 0.f;
+  constexpr float eps = 1.e-5f;
+
+  for (const auto& bz : {0.5f, -0.5f}) {
+    for (const auto& q : {+1, -1}) {
+      for (const auto& pt : {0.1f, 0.2f, 0.5f}) {
+        for (const auto& r : {0.85f, 1.45f, 2.45f}) {
+          for (const auto& phi : {0.f, 1.f, -2.f}) {
+            const auto h = legHelixAt(eps * std::cos(phi), eps * std::sin(phi), phi, pt, q, bz, r);
+
+            if (h.status != 0) {
+              continue;
+            }
+            const float arg =
+              -0.3f * bz * static_cast<float>(q) * r / (2.f * pt);
+
+            if (std::fabs(arg) >= 1.f) {
+              continue;
+            }
+            const float referencePhi =
+              RecoDecay::constrainAngle(phi + std::asin(arg), 0.f);
+
+            worst = std::max(
+              worst,
+              std::fabs(RecoDecay::constrainAngle(
+                h.phiStar - referencePhi,
+                -o2::constants::math::PI)));
+          }
+        }
+      }
+    }
+  }
+
+  return worst;
 }
 
 struct Photonhbt {
@@ -145,8 +228,42 @@ struct Photonhbt {
   };
 
   struct PairSep {
-    float dEtaPP{0}, dPhiPP{0}, dEtaNN{0}, dPhiNN{0};
-    float u{999.f};
+    float dMin3D{999.f}, dRPhiAtMin3D{999.f}, dZAtMin3D{999.f};
+    float dMinRPhi{999.f}, dZAtMinRPhi{999.f};
+    std::array<float, 4> fCloseRPhiThr{};
+    std::array<int, 4> nCloseRPhiThr{};
+    float fCloseRPhi{0.f}; // == fCloseRPhiThr[3]
+    int nCommon{0};
+    int nSameSide{0};       // usable radii on the SAME TPC side
+    int criticalCharge{-1}; // 0 = e+e+, 1 = e-e-, chosen by d_3D
+    int rphiCharge{-1};     // chosen by d_rphi alone
+    std::array<float, 2> dMin3DPerCharge{999.f, 999.f};
+    std::array<float, 2> fCloseRPhiPerCharge{0.f, 0.f};
+    std::array<float, 2> dMinRPhiPerCharge{999.f, 999.f};
+    std::array<int, 2> nSameSidePerCharge{};
+    std::array<std::array<int, 4>, 2> nCloseRPhiThrPerCharge{};
+    std::array<std::array<float, 4>, 2> fCloseRPhiThrPerCharge{};
+    float dMinRPhiAll{999.f}, dPairMinAll{999.f};
+    float dPairMin{999.f};
+    float dRPhiAtDPairMin{999.f}, dZAtDPairMin{999.f};
+    float rAtDPairMin{-1.f}, absZAtDPairMin{-1.f}, driftLen{-1.f};
+    int nCloseScaled{0};
+    std::array<float, 2> dPairMinPerCharge{999.f, 999.f};
+    float dZGlobalAtDPairMin{999.f};
+    float dZSignedLocalAtDPairMin{999.f}, dZSignedGlobalAtDPairMin{999.f};
+    float dVtxZ{0.f};
+    float fCloseScaled{0.f};
+    float driftOldAtDPairMin{-1.f}; // kept only to show the difference
+    bool sameSideAtDPairMin{true};
+    int nLegsITSTPC{0};
+    std::array<int, 2> nPoints{};
+    std::array<std::array<float, kPhiStarRadiiM.size()>, 2> ptDRPhi{}, ptDZ{}, ptDZSgnLocal{}, ptR{}, ptDrift{}, ptSameSide{};
+  };
+
+  struct CrossObs {
+    // m(e+e-) of the two leg-swapped combinations
+    std::array<float, 2> mee{999.f, 999.f};
+    float meeOverQ{999.f};
   };
 
   struct TruthGamma {
@@ -163,8 +280,10 @@ struct Photonhbt {
   struct PhotonWithLegs {
     float fPt{0}, fEta{0}, fPhi{0};
     float fVx{0}, fVy{0}, fVz{0};
+    float fVtxZ{0};
     std::array<float, 2> fLegPt{}, fLegEta{}, fLegPhi{};
     std::array<std::array<float, kPhiStarRadiiM.size()>, 2> fLegPhiStar{};
+    std::array<std::array<float, kPhiStarRadiiM.size()>, 2> fLegSxy{}; // transverse arc length since conversion (m)
     [[nodiscard]] float pt() const { return fPt; }
     [[nodiscard]] float eta() const { return fEta; }
     [[nodiscard]] float phi() const { return fPhi; }
@@ -174,6 +293,7 @@ struct Photonhbt {
     [[nodiscard]] float legEta(int i) const { return fLegEta[i]; }
     [[nodiscard]] float legPhi(int i) const { return fLegPhi[i]; }
     [[nodiscard]] float legPt(int i) const { return fLegPt[i]; }
+    int fNITSTPC{0};
     pairutil::V0PhotonLegCounts fLegCounts{};
     [[nodiscard]] pairutil::V0PhotonLegCounts const& legCounts() const { return fLegCounts; }
   };
@@ -206,7 +326,8 @@ struct Photonhbt {
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
   Configurable<std::string> cfgCcdbUrl{"cfgCcdbUrl", "http://alice-ccdb.cern.ch", "CCDB url"};
   Configurable<float> cfgBzOverrideT{"cfgBzOverrideT", -999.f, "Bz in Tesla; used instead of CCDB if > -100"};
-  float mBzT{0.f}; // signed, Tesla
+  float mBzT{0.f};           // signed, Tesla
+  float mVDriftCmPerNs{0.f}; // TPC drift velocity from CCDB; 0 = unavailable
 
   // ─── Configurables: QA flags ───────────────────────────────────────────────
   struct : ConfigurableGroup {
@@ -217,6 +338,11 @@ struct Photonhbt {
     Configurable<float> cfgMaxQinvForQA{"cfgMaxQinvForQA", 0.1f, "fill per-step pair QA histograms only when q_inv < this value"};
     Configurable<float> cfgMaxQinvForFullRange{"cfgMaxQinvForFullRange", 0.3f, "fill full-range histograms only when q_inv < this value"};
     Configurable<float> cfgMaxQinvForMCQA{"cfgMaxQinvForMCQA", 0.3f, "fill MC truth 1D histograms only when q_inv < this value"};
+    Configurable<int> cfgQaLevel{"cfgQaLevel", 2, "QA: 0 no QA, 1 standard, 2 full diagnostics with leg information etc."};
+    Configurable<bool> cfgFillDRDZSparse{"cfgFillDRDZSparse", true, "book/fill the FullRange |R1-R2|-Deltaz-qinv sparse (large; needs cfgQaLevel>=2)"};
+    Configurable<float> cfgMaxQinvForProcessing{"cfgMaxQinvForProcessing", 0.5, "skip mixed pairs with q_inv above this before building observables"};
+    Configurable<bool> cfgFillLegPairSparses{"cfgFillLegPairSparses", false, "book/fill the 4D leg-pair QA sparses (very large)"};
+    Configurable<bool> cfgFillR1R2Sparse{"cfgFillR1R2Sparse", true, "book/fill the FullRange (R1, R2, q_inv) sparse: fix one conversion radius, see where the partner sits, per q_inv"};
   } qaflags;
 
   // ─── HBT analysis mode ───────────────────────────────────────────────────────────
@@ -229,8 +355,7 @@ struct Photonhbt {
 
   // ----- Photon Leg Classification
 
-  Configurable<bool> cfgDoPhotonClassPairCut{"cfgDoPhotonClassPairCut", false,
-                                             "apply photon-class pair selection A x B (leg track composition)"};
+  Configurable<bool> cfgDoPhotonClassPairCut{"cfgDoPhotonClassPairCut", false, "apply photon-class pair selection A x B (leg track composition)"};
 
   struct : ConfigurableGroup {
     std::string prefix = "photonclassA_group";
@@ -328,13 +453,31 @@ struct Photonhbt {
   struct : ConfigurableGroup {
     std::string prefix = "pairsep_group";
     Configurable<bool> cfgDoPairSepQA{"cfgDoPairSepQA", true, "fill SE/ME same-sign leg separation histograms"};
-    Configurable<float> cfgUSigEta{"cfgUSigEta", 0.02f, "eta scale defining u (axis units only, NOT a cut)"};
-    Configurable<float> cfgUSigPhi{"cfgUSigPhi", 0.02f, "phi(*) scale defining u (axis units only, NOT a cut)"};
     Configurable<float> cfgPairSepMaxQinv{"cfgPairSepMaxQinv", 0.5f, "fill PairSep histograms only for qinv < this value (<=0: no gate)"};
-    Configurable<bool> cfgUsePhiStar{"cfgUsePhiStar", true, "compute u from phi* at TPC radii instead of vertex phi"};
-    Configurable<bool> cfgDoLegSepCut{"cfgDoLegSepCut", false, "apply symmetric leg-separation cut u > cfgUCut to SE and ME"};
-    Configurable<float> cfgUCut{"cfgUCut", 0.f, "min u (sigma units); pairs with u < cut rejected in SE AND ME"};
+    Configurable<float> cfgSigRPhi{"cfgSigRPhi", 1.f, "rphi scale of the pair-merging metric (cm)"};
+    Configurable<float> cfgSigZ{"cfgSigZ", 1.f, "z scale of the pair-merging metric (cm)"};
+    Configurable<float> cfgSigZNs{"cfgSigZNs", -1.f, "z scale in ns of drift time; <=0 keeps cfgSigZ in cm"};
+    Configurable<float> cfgDPairClose{"cfgDPairClose", 1.f, "a sampled radius counts as close when D_pair < this"};
+    Configurable<std::vector<float>> cfgCloseThrCm{"cfgCloseThrCm", {0.5f, 1.0f, 1.5f, 2.0f}, "four d_rphi thresholds (cm) for N_close/f_close"};
+    Configurable<bool> cfgDoPairMergeCut{"cfgDoPairMergeCut", false, "apply the pair-merging cut to SE AND ME"};
+    Configurable<float> cfgDPairCut{"cfgDPairCut", 1.f, "reject pairs with min D_pair below this (needs cfgDoPairMergeCut)"};
+    Configurable<int> cfgNCloseCut{"cfgNCloseCut", 0, "reject pairs with at least this many close radii; 0 disables"};
+    Configurable<float> cfgTpcHalfLengthCm{"cfgTpcHalfLengthCm", 250.f, "TPC half length, used for drift length = halfLength - |z|"};
+    Configurable<float> cfgRegionEdge1{"cfgRegionEdge1", 132.f, "radius (cm) separating region 0 from 1 (approx. IROC / OROC1)"};
+    Configurable<float> cfgRegionEdge2{"cfgRegionEdge2", 171.f, "radius (cm) separating region 1 from 2"};
+    Configurable<float> cfgRegionEdge3{"cfgRegionEdge3", 208.f, "radius (cm) separating region 2 from 3"};
+    Configurable<float> cfgCondQinvMin{"cfgCondQinvMin", 0.10f, "control window for the (d_rphi, d_z) calibration map: min qinv"};
+    Configurable<float> cfgCondQinvMax{"cfgCondQinvMax", 0.30f, "control window for the (d_rphi, d_z) calibration map: max qinv"};
+    Configurable<bool> cfgFillCalibSparse{"cfgFillCalibSparse", true, "fill the per-radius calibration sparse (d_rphi, d_z, region, drift, qinv)"};
   } pairsep;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "crosspair_group";
+    Configurable<bool> cfgDoCrossPairQA{"cfgDoCrossPairQA", false, "fill crossed-hypothesis QA (mee_cross, dist_cross vs qinv) for pairs passing all other pair cuts; SE and ME"};
+    Configurable<bool> cfgDoCrossPairCut{"cfgDoCrossPairCut", false, "reject pairs with a photon-like crossed combination; applied to SE AND ME"};
+    Configurable<float> cfgCrossMaxMeeRatio{"cfgCrossMaxMeeRatio", 0.2f, "veto: min(m_ee^cross)/q_inv below this; genuine pairs sit near 0.5, leg swaps near 0"};
+    Configurable<float> cfgCrossMaxQinvQA{"cfgCrossMaxQinvQA", 0.3f, "fill crossed QA sparses only below this qinv"};
+  } crosspair;
 
   struct : ConfigurableGroup {
     std::string prefix = "eventcut_group";
@@ -493,9 +636,44 @@ struct Photonhbt {
   // INITS
   /*************************************************/
 
+  struct QaGates {
+    bool pairQa{true};
+    bool singlePhotonQa{true};
+    bool legPairQa{true};
+    bool pairSepQa{true};
+    bool fillDRDZSparse{true};
+    bool fillR1R2Sparse{true};
+    bool pairSepAfterCut{true};
+  } mQa;
+
   void init(InitContext& context)
   {
     isMC = context.mOptions.get<bool>("processMC");
+
+    if (pairsep.cfgCloseThrCm.value.size() != 4) { // o2-linter: disable=magic-number (four thresholds)
+      LOGF(fatal, "cfgCloseThrCm must contain exactly four thresholds, got %zu",
+           pairsep.cfgCloseThrCm.value.size());
+    }
+    if (pairsep.cfgCloseThrCm.value.front() <= 0.f ||
+        !std::is_sorted(pairsep.cfgCloseThrCm.value.begin(), pairsep.cfgCloseThrCm.value.end())) {
+      LOGF(fatal, "cfgCloseThrCm must be positive and sorted in ascending order");
+    }
+    const int qaLevel = qaflags.cfgQaLevel.value;
+    mQa.pairQa = qaflags.doPairQa.value && qaLevel >= 1;                  // o2-linter: disable=magic-number (QA set-up)
+    mQa.singlePhotonQa = qaflags.doSinglePhotonQa.value && qaLevel >= 1;  // o2-linter: disable=magic-number (QA set-up)
+    mQa.legPairQa = qaflags.doLegPairQA.value && qaLevel >= 2;            // o2-linter: disable=magic-number (QA set-up)
+    mQa.pairSepQa = pairsep.cfgDoPairSepQA.value && qaLevel >= 2;         // o2-linter: disable=magic-number (QA set-up)
+    mQa.fillDRDZSparse = qaflags.cfgFillDRDZSparse.value && qaLevel >= 2; // o2-linter: disable=magic-number (QA set-up)
+    mQa.fillR1R2Sparse = qaflags.cfgFillR1R2Sparse.value && qaLevel >= 2; // o2-linter: disable=magic-number (QA set-up)
+    // an AfterCut copy only differs from Before when a pair cut is active
+    mQa.pairSepAfterCut =
+      mQa.pairSepQa &&
+      (ggpaircuts.cfgDoEllipseCut.value || ggpaircuts.cfgDoRCut.value ||
+       ggpaircuts.cfgDoZCut.value || ggpaircuts.cfgMinDRCosOA.value > 0.f ||
+       ggpaircuts.cfgMaxAsymmetry.value >= 0.f || pairsep.cfgDoPairMergeCut.value ||
+       crosspair.cfgDoCrossPairCut.value || cfgDoPhotonClassPairCut.value);
+    LOGF(info, "photonhbt QA level %d -> pairQA %d, singlePhotonQA %d, legPairQA %d, pairSep %d, dRdZ sparse %d, R1R2 sparse %d, pairSep afterCut %d",
+         qaLevel, mQa.pairQa, mQa.singlePhotonQa, mQa.legPairQa, mQa.pairSepQa, mQa.fillDRDZSparse, mQa.fillR1R2Sparse, mQa.pairSepAfterCut);
     mRunNumber = 0;
     parseBins(mixing.confVtxBins, ztxBinEdges);
     parseBins(mixing.confCentBins, centBinEdges);
@@ -514,6 +692,46 @@ struct Photonhbt {
     ccdb->setURL(cfgCcdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+
+    const float worst = selfTestLegHelix();
+    constexpr float kSelfTestTol = 1.e-4f;
+    if (worst < kSelfTestTol) {
+      LOGF(info, "photonhbt: leg-helix origin-limit self test PASSED (max |dphi| = %.2e rad)", worst);
+    } else {
+      LOGF(fatal,
+           "photonhbt: leg-helix origin-limit self test FAILED, max |dphi| = %.3e rad. "
+           "The helix-centre sign convention or the branch choice is wrong; every "
+           "leg-separation variable would be mirrored. Refusing to run.",
+           worst);
+    }
+    LOGF(info, "photonhbt: leg propagation sampled at %zu radii, %.0f-%.0f cm in %.0f cm steps",
+         kPhiStarRadiiM.size(), kPhiStarRadiiM.front() * kCmPerM, kPhiStarRadiiM.back() * kCmPerM,
+         (kPhiStarRadiiM.size() > 1) ? (kPhiStarRadiiM[1] - kPhiStarRadiiM[0]) * kCmPerM : 0.f);
+    LOGF(info, "photonhbt: PairSep QA %s", pairsep.cfgDoPairSepQA.value ? "on" : "off");
+    LOGF(info, "photonhbt r-phi closeness thresholds: %.2f, %.2f, %.2f, %.2f cm",
+         pairsep.cfgCloseThrCm.value[0], pairsep.cfgCloseThrCm.value[1],
+         pairsep.cfgCloseThrCm.value[2], pairsep.cfgCloseThrCm.value[3]);
+    LOGF(info, "photonhbt pair merging: metric sigma_rphi = %.2f cm, sigma_z = %.2f cm (or %.1f ns if > 0), close at D_pair < %.2f",
+         pairsep.cfgSigRPhi.value, pairsep.cfgSigZ.value, pairsep.cfgSigZNs.value, pairsep.cfgDPairClose.value);
+    LOGF(info,
+         "photonhbt pair separation: all merging observables (d_rphi^min, D_pair^min, "
+         "N_close, f_close) use SAME-SIDE radii only; the pure r-phi quantities are "
+         "selected by d_rphi, not by d_3D");
+    LOGF(info,
+         "photonhbt pair separation: d_z is vertex-LOCAL (each leg relative to its own primary vertex); "
+         "drift length uses global z. Check PairSep/mix/hDzLocal_vs_dVtxZ -- it must NOT be diagonal.");
+    LOGF(info, "photonhbt pair merging cut: %s, D_pair > %.2f, N_close < %d (0 = off); control window %.2f < q_inv < %.2f",
+         pairsep.cfgDoPairMergeCut.value ? "ON" : "off", pairsep.cfgDPairCut.value,
+         pairsep.cfgNCloseCut.value, pairsep.cfgCondQinvMin.value, pairsep.cfgCondQinvMax.value);
+    LOGF(info, "photonhbt: crossed-pair QA %s, cut %s (min(m_ee)/q_inv > %.2f)",
+         crosspair.cfgDoCrossPairQA.value ? "on" : "off",
+         crosspair.cfgDoCrossPairCut.value ? "ON" : "off", crosspair.cfgCrossMaxMeeRatio.value);
+    LOGF(info, "photonhbt: q_inv gates -- QA < %.3f, FullRange < %.3f, PairSep < %.3f",
+         qaflags.cfgMaxQinvForQA.value, qaflags.cfgMaxQinvForFullRange.value,
+         pairsep.cfgPairSepMaxQinv.value);
+    LOGF(info,
+         "photonhbt: check PairSep/hLegPropStatus after the run -- if 'propagated' is "
+         "not the dominant bin, the separation variables rest on a minority of legs");
   }
 
   template <typename TCollision>
@@ -523,6 +741,18 @@ struct Photonhbt {
       return;
     }
     mRunNumber = collision.runNumber();
+
+    auto vd = ccdb->getForRun<o2::tpc::VDriftCorrFact>("TPC/Calib/VDriftTgl", mRunNumber);
+    if (vd != nullptr) {
+      mVDriftCmPerNs = vd->refVDrift * vd->corrFact * 1e-3f; // o2-linter: disable=magic-number (cm/us -> cm/ns)
+      LOGF(info, "photonhbt: run %d, TPC vdrift = %.6f cm/ns (%.4f cm/us); 1 cm in z = %.0f ns",
+           mRunNumber, mVDriftCmPerNs, 1e3f * mVDriftCmPerNs,
+           (mVDriftCmPerNs > 0.f) ? 1.f / mVDriftCmPerNs : -1.f);
+    } else {
+      mVDriftCmPerNs = 0.f;
+      LOGF(warn, "photonhbt: no TPC VDrift object for run %d -- the z scale stays in cm", mRunNumber);
+    }
+
     if (cfgBzOverrideT.value > -100.f) { // o2-linter: disable=magic-number (number in case B-field is overridden in case not fetched from CCDB)
       mBzT = cfgBzOverrideT.value;
       return;
@@ -656,12 +886,13 @@ struct Photonhbt {
     addEventHistograms();
     addPairCFHistograms();
     addPairSepHistograms();
+    addCrossPairHistograms();
     addSinglePhotonQAHistograms();
     addPairQAHistograms();
 
     if (isMC) {
       addPairMCHistograms();
-      if (qaflags.doLegPairQA) {
+      if (mQa.legPairQa) {
         addLegPairMCHistograms();
       }
       addTruthMCHistograms();
@@ -696,7 +927,7 @@ struct Photonhbt {
     fRegistryCF.add("Pair/same/hSparse_DEtaDPhi_qinv_kT",
                     "pair (#Delta#eta,#Delta#phi,q_{inv},k_{T}) for efficiency reweighting;"
                     "#Delta#eta;#Delta#phi (rad);q_{inv} (GeV/c);k_{T} (GeV/c)",
-                    kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisQinv, axisKt}, true);
+                    kTHnSparseF, {axisDeltaEta, axisDeltaPhi, axisQinv, axisKt}, true);
     fRegistryCF.add("Pair/same/hPhi_lowerPtV0", "azimuthal angle of lower-p_{T} V0 in pair;#phi (rad);counts", kTH1D, {axisPhi}, true);
     addFullRangeHistograms("Pair/same/FullRange/");
 
@@ -704,16 +935,111 @@ struct Photonhbt {
 
     fRegistryCF.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current}-BC_{mixed}|", kTH1D, {{10001, -0.5, 10000.5}}, true);
   }
-
-  // ─── CF: PairSep  ────────────────────────
   // ─── CF: PairSep  ────────────────────────
   void addPairSepHistograms()
   {
-    for (const auto& sm : {std::string("PairSep/same/"), std::string("PairSep/mix/"), std::string("PairSep/sameAfterCut/"), std::string("PairSep/mixAfterCut/")}) {
-      fRegistryCF.add((sm + "hDEtaDPhiKt_PP").c_str(), "e^{+}e^{+};#Delta#eta;#Delta#phi (rad);k_{T} (GeV/c)", kTHnSparseF, {{160, -0.4f, 0.4f}, {160, -0.4f, 0.4f}, axisKt}, true);
-      fRegistryCF.add((sm + "hDEtaDPhiKt_NN").c_str(), "e^{-}e^{-};#Delta#eta;#Delta#phi (rad);k_{T} (GeV/c)", kTHnSparseF, {{160, -0.4f, 0.4f}, {160, -0.4f, 0.4f}, axisKt}, true);
-      fRegistryCF.add((sm + "hU_Qinv_Kt").c_str(), ";u;q_{inv} (GeV/c);k_{T} (GeV/c)", kTHnSparseF, {{100, 0.f, 10.f}, {50, 0.f, 0.5f}, axisKt}, true);
-      fRegistryCF.add((sm + "hU_Qinv_dE").c_str(), ";u;q_{inv} (GeV/c);#DeltaE (GeV)", kTHnSparseF, {{100, 0.f, 10.f}, {50, 0.f, 0.5f}, {40, 0.f, 2.f}}, true);
+
+    auto hs = fRegistryCF.add<TH1>("PairSep/hLegPropStatus", "leg propagation;;legs", kTH1D, {{4, -0.5f, 3.5f}}, true);
+    hs->GetXaxis()->SetBinLabel(1, "propagated");
+    hs->GetXaxis()->SetBinLabel(2, "below R_{conv}");
+    hs->GetXaxis()->SetBinLabel(3, "out of reach");
+    hs->GetXaxis()->SetBinLabel(4, "bad input");
+    // low-pT legs curl up early, so N_valid differs between pairs
+    fRegistryCF.add("PairSep/hPropStatus_vs_LegPt", "propagation vs leg p_{T};status;p_{T}^{leg} (GeV/c)",
+                    kTH2F, {{4, -0.5f, 3.5f}, {40, 0.f, 2.f}}, true);
+    fRegistryCF.add("PairSep/hPropStatus_vs_Rconv", "propagation vs conversion radius;status;R_{conv} (cm)",
+                    kTH2F, {{4, -0.5f, 3.5f}, {50, 0.f, 100.f}}, true);
+
+    const AxisSpec axisQcal4{{0.00, 0.01, 0.02, 0.04, 0.06, 0.10, 0.15, 0.20, 0.30, 0.50}};
+
+    // variable width: fine below 10 cm, coarse above
+    std::vector<double> sepEdges;
+    for (int i = 0; i <= 20; ++i) { // o2-linter: disable=magic-number (axis definition)
+      sepEdges.push_back(0.25 * i); // 0 .. 5 cm in 0.25 cm
+    }
+    for (int i = 1; i <= 10; ++i) {      // o2-linter: disable=magic-number (axis definition)
+      sepEdges.push_back(5.0 + 0.5 * i); // 5 .. 10 cm in 0.5 cm
+    }
+    for (int i = 1; i <= 10; ++i) {       // o2-linter: disable=magic-number (axis definition)
+      sepEdges.push_back(10.0 + 1.0 * i); // 10 .. 20 cm in 1 cm
+    }
+    for (int i = 1; i <= 6; ++i) {        // o2-linter: disable=magic-number (axis definition)
+      sepEdges.push_back(20.0 + 5.0 * i); // 20 .. 50 cm in 5 cm
+    }
+    const AxisSpec axisSep{sepEdges};
+
+    std::vector<std::string> dirs = {"PairSep/same/", "PairSep/mix/"};
+    if (mQa.pairSepAfterCut) {
+      dirs.push_back("PairSep/sameAfterCut/");
+      dirs.push_back("PairSep/mixAfterCut/");
+    }
+
+    for (const auto& sm : dirs) {
+      fRegistryCF.add((sm + "hSparse_dRPhiAtMin3D_dZAtMin3D_Qinv").c_str(), "components at the closest 3D approach;d_{r#varphi} @ d^{min}_{3D} (cm);d_{z} @ d^{min}_{3D} (cm);q_{inv} (GeV/c)",
+                      kTHnSparseF, {axisSep, axisSep, {50, 0.f, 0.5f}}, true);
+      fRegistryCF.add((sm + "hSparse_dMin3D_fClose_Qinv").c_str(), "closest approach vs how long they stay close;d^{min}_{3D} (cm);f_{close}^{r#varphi}(2 cm);q_{inv} (GeV/c)",
+                      kTHnSparseF, {axisSep, {18, -0.028f, 1.028f}, {50, 0.f, 0.5f}}, true);
+      fRegistryCF.add((sm + "hSparse_dRPhiMin_fClose_Thr_Qinv").c_str(), "pure r#varphi;d_{r#varphi}^{min} (cm);f_{close}^{r#varphi};threshold index;q_{inv} (GeV/c)",
+                      kTHnSparseF, {{40, 0.f, 10.f}, {18, -0.028f, 1.028f}, {4, -0.5f, 3.5f}, axisQcal4}, true);
+      fRegistryCF.add((sm + "hSparse_DPair_NClose_Qinv").c_str(), "scaled pair distance;D_{pair}^{min};N_{close};q_{inv} (GeV/c)",
+                      kTHnSparseF, {{40, 0.f, 10.f}, {18, -0.5f, 17.5f}, {50, 0.f, 0.5f}}, true);
+      fRegistryCF.add((sm + "hSparse_dRPhi_dZ_Cond").c_str(), "control window;d_{r#varphi} @ D^{min}_{pair} (cm);d_{z} @ D^{min}_{pair} (cm);3#upoint region + drift bin",
+                      kTHnSparseF, {axisSep, axisSep, {12, -0.5f, 11.5f}}, true);
+      fRegistryCF.add((sm + "hDzLocal_vs_dVtxZ").c_str(), "vertex-local;#Deltaz_{vtx} (cm);d_{z} @ D^{min}_{pair} (cm)", kTH2F,
+                      {{80, -4.f, 4.f}, {100, 0.f, 20.f}}, true);
+      fRegistryCF.add((sm + "hDzGlobal_vs_dVtxZ").c_str(), "global z;#Deltaz_{vtx} (cm);|z_{1}-z_{2}| @ D^{min}_{pair} (cm)", kTH2F,
+                      {{80, -4.f, 4.f}, {100, 0.f, 20.f}}, true);
+      fRegistryCF.add((sm + "hDzLocalSigned_vs_dVtxZ").c_str(), "vertex-local, signed;#Deltaz_{vtx} (cm);d_{z}^{signed} (cm)", kTH2F,
+                      {{80, -4.f, 4.f}, {200, -20.f, 20.f}}, true);
+      fRegistryCF.add((sm + "hDzGlobalSigned_vs_dVtxZ").c_str(), "global z, signed;#Deltaz_{vtx} (cm);z_{1}-z_{2} (cm)", kTH2F,
+                      {{80, -4.f, 4.f}, {200, -20.f, 20.f}}, true);
+      fRegistryCF.add((sm + "hDriftOld_vs_DriftNew").c_str(), "drift length, same side;L from mean z (cm);L from the two legs (cm)", kTH2F,
+                      {{50, 0.f, 250.f}, {50, 0.f, 250.f}}, true);
+      fRegistryCF.add((sm + "hDriftOld_vs_DriftNew_opp").c_str(), "drift length, opposite side;L from mean z (cm);L from the two legs (cm)", kTH2F,
+                      {{50, 0.f, 250.f}, {50, 0.f, 250.f}}, true);
+      fRegistryCF.add((sm + "hZ1_vs_Z2").c_str(), "leg z at D^{min}_{pair};z_{1} (cm);z_{2} (cm)", kTH2F,
+                      {{100, -250.f, 250.f}, {100, -250.f, 250.f}}, true);
+      auto hss = fRegistryCF.add<TH2>((sm + "hSameSide_vs_Qinv").c_str(), "TPC side;;q_{inv} (GeV/c)", kTH2F, {{2, -0.5f, 1.5f}, {50, 0.f, 0.5f}}, true);
+      hss->GetXaxis()->SetBinLabel(1, "opposite side");
+      hss->GetXaxis()->SetBinLabel(2, "same side");
+      fRegistryCF.add((sm + "hNCommon_vs_Qinv").c_str(), "usable radii;N_{valid};q_{inv} (GeV/c)", kTH2F, {{18, -0.5f, 17.5f}, {50, 0.f, 0.5f}}, true);
+      fRegistryCF.add((sm + "hNSameSide_vs_Qinv").c_str(), "usable radii on the same TPC side;N_{same side};q_{inv} (GeV/c)", kTH2F, {{18, -0.5f, 17.5f}, {50, 0.f, 0.5f}}, true);
+      fRegistryCF.add((sm + "hSparse_FClose_NClose_Qinv").c_str(), "scaled closeness;f_{close}^{D};N_{close}^{D};q_{inv} (GeV/c)", kTHnSparseF, {{18, -0.028f, 1.028f}, {18, -0.5f, 17.5f}, {50, 0.f, 0.5f}}, true);
+      if (pairsep.cfgFillCalibSparse.value) {
+        const AxisSpec axisQcal{{0.00, 0.01, 0.02, 0.04, 0.06, 0.10, 0.15, 0.20, 0.30, 0.50}};
+        fRegistryCF.add((sm + "hSparse_Calib_dRPhi_dZ_R_L_C_Q").c_str(), "per-radius calibration;d_{r#varphi} (cm);d_{z} (cm);TPC region;drift bin;charge (0 = e^{+}e^{+});q_{inv} (GeV/c)",
+                        kTHnSparseF, {{32, 0.f, 8.f}, {32, 0.f, 8.f}, {4, -0.5f, 3.5f}, {3, -0.5f, 2.5f}, {2, -0.5f, 1.5f}, axisQcal}, true);
+        fRegistryCF.add((sm + "hSparse_dRPhi_dZ_LegClass_L_Q").c_str(), "by leg type;d_{r#varphi} (cm);d_{z} (cm);leg class (0: <2, 1: #geq2 ITS-TPC legs);drift bin;q_{inv} (GeV/c)",
+                        kTHnSparseF, {{32, 0.f, 8.f}, {32, 0.f, 8.f}, {2, -0.5f, 1.5f}, {3, -0.5f, 2.5f}, axisQcal}, true);
+
+        fRegistryCF.add((sm + "hSparse_DzSignedLocal_dVtxZ_R").c_str(), "vertex QA, all radii;d_{z}^{signed,local} (cm);#Deltaz_{vtx} (cm);r (cm)",
+                        kTHnSparseF, {{80, -20.f, 20.f}, {20, -4.f, 4.f}, {17, 82.5f, 252.5f}}, true);
+        fRegistryCF.add((sm + "hSparse_Calib_OppositeSide").c_str(), "opposite-side points;d_{r#varphi} (cm);d_{z} (cm)", kTH2F,
+                        {{32, 0.f, 8.f}, {32, 0.f, 8.f}}, true);
+      }
+      fRegistryCF.add((sm + "hSparse_fCloseRPhi_dR_Qinv").c_str(), "fraction of TPC radii with transverse leg distance < 2 cm;f_{close}^{r#varphi}(2 cm);|R_{1}-R_{2}| (cm);q_{inv} (GeV/c)",
+                      kTHnSparseF, {{18, -0.028f, 1.028f}, {90, 0.f, 180.f}, {50, 0.f, 0.5f}}, true);
+      fRegistryCF.add((sm + "hDRPhiMin_All_vs_SameSide").c_str(), "r#varphi minimum;d_{r#varphi}^{min}, all radii (cm);d_{r#varphi}^{min}, same side (cm)",
+                      kTH2F, {{40, 0.f, 10.f}, {40, 0.f, 10.f}}, true);
+      fRegistryCF.add((sm + "hDMin3D_PP_vs_NN").c_str(), "d^{min}_{3D};e^{+}e^{+} (cm);e^{-}e^{-} (cm)", kTH2F,
+                      {axisSep, axisSep}, true);
+      fRegistryCF.add((sm + "hFClose_PP_vs_NN").c_str(), "f_{close}^{r#varphi}(2 cm);e^{+}e^{+};e^{-}e^{-}", kTH2F,
+                      {{18, -0.028f, 1.028f}, {18, -0.028f, 1.028f}}, true);
+    }
+  }
+
+  void addCrossPairHistograms()
+  {
+    if (!(crosspair.cfgDoCrossPairQA.value || crosspair.cfgDoCrossPairCut.value)) {
+      return;
+    }
+    for (const auto& sm : {std::string("Pair/same/CrossPair/"), std::string("Pair/mix/CrossPair/")}) {
+      fRegistryCF.add((sm + "hSparse_MeeRatio_dR_Qinv").c_str(),
+                      "crossed-hypothesis QA;min(m_{ee}^{cross})/q_{inv};|R_{1}-R_{2}| (cm);q_{inv} (GeV/c)",
+                      kTHnSparseF, {{100, 0.f, 2.f}, {80, 0.f, 80.f}, {60, 0.f, 0.3f}}, true);
+      auto h = fRegistryCF.add<TH1>((sm + "hVetoCounter").c_str(), "crossed-pair veto;;pairs", kTH1D, {{2, -0.5f, 1.5f}}, true);
+      h->GetXaxis()->SetBinLabel(1, "evaluated");
+      h->GetXaxis()->SetBinLabel(2, "vetoed");
     }
   }
 
@@ -735,8 +1061,10 @@ struct Photonhbt {
     }
 
     fRegistryPairQA.addClone("Pair/same/QA/", "Pair/mix/QA/");
-    addLegPairQAForStep("Pair/same/QA/Before/");
-    addLegPairQAForStep("Pair/same/QA/AfterPairCuts/");
+    if (mQa.legPairQa) {
+      addLegPairQAForStep("Pair/same/QA/Before/");
+      addLegPairQAForStep("Pair/same/QA/AfterPairCuts/");
+    }
   }
 
   void addPairMCHistograms()
@@ -901,9 +1229,6 @@ struct Photonhbt {
                    axisDeltaEta, axisDeltaPhi, axisKt);
     addStageHistos2D("hQinvVsKt", "q_{inv}^{true} vs k_{T};k_{T} (GeV/c);q_{inv}^{true} (GeV/c)", axisKt, axQinvMC);
     addStageHistos2D("hDEtaDPhi", "#Delta#eta vs #Delta#phi;#Delta#eta_{#gamma#gamma};#Delta#phi_{#gamma#gamma} (rad)", axisDeltaEta, axisDeltaPhi);
-    const AxisSpec axisUtrue{100, 0.f, 10.f, "u^{true}"};
-    addStageHistos2D("hUtrueVsKt", "u^{true} vs k_{T};k_{T} (GeV/c);u^{true}", axisKt, axisUtrue);
-    addStageHistos2D("hUtrueVsQinv", "u^{true} vs q_{inv}^{true};q_{inv}^{true} (GeV/c);u^{true}", axQinvMC, axisUtrue);
 
     // ─── Rconv waterfall
     fRegistryTruthMC.add("MC/TruthAO2D/hRconv1_vs_Rconv2_truthConverted", "denominator: R_{conv,1} vs R_{conv,2};R_{conv,1}^{true} (cm);R_{conv,2}^{true} (cm)", kTH2D, {axRconv, axRconv}, true);
@@ -912,12 +1237,8 @@ struct Photonhbt {
     fRegistryTruthMC.add("MC/TruthAO2D/hMinRconv_vs_kT_bothPhotonsSelected", "numerator: min(R_{conv}) vs k_{T};k_{T} (GeV/c);min(R_{conv}^{true}) (cm)", kTH2D, {axisKt, axRconv}, true);
 
     // ─── Stage summary
-    fRegistryTruthMC.add("MC/TruthAO2D/hStage_vs_kT",
-                         "efficiency waterfall;k_{T} (GeV/c);stage (0=converted,1=all4legs,2=bothBuilt,3=bothSel)",
-                         kTH2D, {axisKt, AxisSpec{4, -0.5f, 3.5f, "stage"}}, true);
-    fRegistryTruthMC.add("MC/TruthAO2D/hStageConsistency",
-                         "stage consistency (expect all at 0);N(V0 built but legs not found);counts",
-                         kTH1D, {AxisSpec{20, -0.5f, 19.5f, "N_{bad}"}}, true);
+    fRegistryTruthMC.add("MC/TruthAO2D/hStage_vs_kT", "efficiency waterfall;k_{T} (GeV/c);stage (0=converted,1=all4legs,2=bothBuilt,3=bothSel)", kTH2D, {axisKt, AxisSpec{4, -0.5f, 3.5f, "stage"}}, true);
+    fRegistryTruthMC.add("MC/TruthAO2D/hStageConsistency", "stage consistency (expect all at 0);N(V0 built but legs not found);counts", kTH1D, {AxisSpec{20, -0.5f, 19.5f, "N_{bad}"}}, true);
 
     // ─── Single-leg diagnostics ──────────────────────────────────────────
     fRegistryTruthMC.add("MC/LegDiag/hLegDRtrue_vs_pt_legFound", "leg found: #Delta R^{true} vs p_{T};p_{T,#gamma}^{true} (GeV/c);#Delta R_{e^{+}e^{-}}^{true}", kTH2D, {axisPt, axLegDR}, true);
@@ -956,8 +1277,11 @@ struct Photonhbt {
       const std::string base = std::string("Pair/same/MC/") + std::string(label) + "LegLS/";
       fRegistryPairMC.add((base + "hSparse_DR_kT_minLegPt_PP").c_str(), "e^{+}e^{+} #DeltaR,k_{T},min(p_{T,leg})", kTHnSparseF, {axisLegDR, axisKt, axisLegPt}, false);
       fRegistryPairMC.add((base + "hSparse_DR_kT_minLegPt_NN").c_str(), "e^{-}e^{-} #DeltaR,k_{T},min(p_{T,leg})", kTHnSparseF, {axisLegDR, axisKt, axisLegPt}, false);
-      fRegistryPairMC.add((base + "hSparse_DEtaDPhi_PtG1_PtG2_PP").c_str(), "e^{+}e^{+} #Delta#eta,#Delta#phi,p_{T,#gamma 1},p_{T,#gamma 2}", kTHnSparseF, {axisDeltaEta, axisDeltaPhi, axisPt, axisPt}, false);
-      fRegistryPairMC.add((base + "hSparse_DEtaDPhi_PtG1_PtG2_NN").c_str(), "e^{-}e^{-} #Delta#eta,#Delta#phi,p_{T,#gamma 1},p_{T,#gamma 2}", kTHnSparseF, {axisDeltaEta, axisDeltaPhi, axisPt, axisPt}, false);
+      if (qaflags.cfgFillLegPairSparses.value) {
+        const AxisSpec axDE{80, -0.8f, 0.8f, "#Delta#eta"}, axDP{80, -0.8f, 0.8f, "#Delta#phi (rad)"}, axP{20, 0.f, 2.f, "p_{T} (GeV/c)"};
+        fRegistryPairMC.add((base + "hSparse_DEtaDPhi_PtG1_PtG2_PP").c_str(), "e^{+}e^{+} #Delta#eta,#Delta#phi,p_{T,#gamma 1},p_{T,#gamma 2}", kTHnSparseF, {axDE, axDP, axP, axP}, false);
+        fRegistryPairMC.add((base + "hSparse_DEtaDPhi_PtG1_PtG2_NN").c_str(), "e^{-}e^{-} #Delta#eta,#Delta#phi,p_{T,#gamma 1},p_{T,#gamma 2}", kTHnSparseF, {axDE, axDP, axP, axP}, false);
+      }
     }
 
     const AxisSpec axisTruthType{{0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5}, "truth type"};
@@ -977,7 +1301,13 @@ struct Photonhbt {
     fRegistryCF.add((path + "hDeltaR3DVsQinv").c_str(), "#Delta r_{3D} vs q_{inv};q_{inv} (GeV/c);#Delta r_{3D} (cm)", kTH2D, {axisQinv, axisDeltaR3D}, true);
     fRegistryCF.add((path + "hQinvVsCent").c_str(), "q_{inv} vs centrality;centrality (%);q_{inv} (GeV/c)", kTH2D, {axisCentQA, axisQinv}, true);
     fRegistryCF.add((path + "hQinvVsOccupancy").c_str(), "q_{inv} vs occupancy;occupancy;q_{inv} (GeV/c)", kTH2D, {axisOccupancy, axisQinv}, true);
-    fRegistryCF.add((path + "hSparseDeltaRDeltaZQinv").c_str(), "|R_{1}-R_{2}|,#Delta z,q_{inv}", kTHnSparseD, {axisDeltaR, axisDeltaZ, axisQinv}, true);
+    if (mQa.fillDRDZSparse) {
+      fRegistryCF.add((path + "hSparseDeltaRDeltaZQinv").c_str(), "|R_{1}-R_{2}|,#Delta z,q_{inv}", kTHnSparseD, {axisDeltaR, axisDeltaZ, axisQinv}, true);
+    }
+    // partner radius at fixed R1, differentially in q_inv
+    if (mQa.fillR1R2Sparse) {
+      fRegistryCF.add((path + "hSparseR1R2Qinv").c_str(), "R_{1},R_{2},q_{inv};R_{1} (cm);R_{2} (cm);q_{inv} (GeV/c)", kTHnSparseD, {axisR, axisR, axisQinv}, true);
+    }
     fRegistryCF.add((path + "hDeltaRCosOAVsQinv").c_str(), "#Delta r/cos(#theta_{op}/2) vs q_{inv};q_{inv} (GeV/c);#Delta r/cos(#theta_{op}/2) (cm)", kTH2D, {axisQinv, {100, 0, 100}}, true);
   }
 
@@ -1011,16 +1341,25 @@ struct Photonhbt {
 
   void addLegPairQAForStep(const std::string& path)
   {
+    // local, not members: each member costs one of the 99 decomposable slots
+    const AxisSpec axisLegDEtaCoarse{80, -0.8f, 0.8f, "#Delta#eta"};
+    const AxisSpec axisLegDPhiCoarse{80, -0.8f, 0.8f, "#Delta#phi (rad)"};
+    const AxisSpec axisLegPtCoarse{20, 0.f, 2.f, "p_{T}^{leg} (GeV/c)"};
+    const AxisSpec axisPtCoarse{20, 0.f, 2.f, "p_{T} (GeV/c)"};
     // LS positive
     fRegistryPairQA.add((path + "LegLS/hDEtaDPhi_PP").c_str(), "e^{+}e^{+} #Delta#eta vs #Delta#phi;#Delta#eta;#Delta#phi (rad)", kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
-    fRegistryPairQA.add((path + "LegLS/hSparse_DEtaDPhi_kT_minLegPt_PP").c_str(), "e^{+}e^{+} #Delta#eta,#Delta#phi,k_{T},min(p_{T,leg})", kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt, axisLegPt}, true);
+    if (qaflags.cfgFillLegPairSparses.value) {
+      fRegistryPairQA.add((path + "LegLS/hSparse_DEtaDPhi_kT_minLegPt_PP").c_str(), "e^{+}e^{+} #Delta#eta,#Delta#phi,k_{T},min(p_{T,leg})", kTHnSparseF, {axisLegDEtaCoarse, axisLegDPhiCoarse, axisKt, axisLegPtCoarse}, true);
+    }
     fRegistryPairQA.add((path + "LegLS/hDR_PP").c_str(), "e^{+}e^{+} #DeltaR;#DeltaR;counts", kTH1D, {axisLegDR}, true);
     fRegistryPairQA.add((path + "LegLS/hLegPtLow_vs_LegPtHigh_PP").c_str(), "e^{+}e^{+} p_{T,low} vs p_{T,high};p_{T,low}^{leg};p_{T,high}^{leg}", kTH2D, {axisLegPt, axisLegPt}, true);
     fRegistryPairQA.add((path + "LegLS/hDR_PP_vs_minLegPt").c_str(), "e^{+}e^{+} #DeltaR vs min(p_{T,leg});#DeltaR;min(p_{T,leg}) (GeV/c)", kTH2D, {axisLegDR, axisLegPt}, true);
 
     // LS negative
     fRegistryPairQA.add((path + "LegLS/hDEtaDPhi_NN").c_str(), "e^{-}e^{-} #Delta#eta vs #Delta#phi;#Delta#eta;#Delta#phi (rad)", kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
-    fRegistryPairQA.add((path + "LegLS/hSparse_DEtaDPhi_kT_minLegPt_NN").c_str(), "e^{-}e^{-} #Delta#eta,#Delta#phi,k_{T},min(p_{T,leg})", kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisKt, axisLegPt}, true);
+    if (qaflags.cfgFillLegPairSparses.value) {
+      fRegistryPairQA.add((path + "LegLS/hSparse_DEtaDPhi_kT_minLegPt_NN").c_str(), "e^{-}e^{-} #Delta#eta,#Delta#phi,k_{T},min(p_{T,leg})", kTHnSparseF, {axisLegDEtaCoarse, axisLegDPhiCoarse, axisKt, axisLegPtCoarse}, true);
+    }
     fRegistryPairQA.add((path + "LegLS/hDR_NN").c_str(), "e^{-}e^{-} #DeltaR;#DeltaR;counts", kTH1D, {axisLegDR}, true);
     fRegistryPairQA.add((path + "LegLS/hLegPtLow_vs_LegPtHigh_NN").c_str(), "e^{-}e^{-} p_{T,low} vs p_{T,high};p_{T,low}^{leg};p_{T,high}^{leg}", kTH2D, {axisLegPt, axisLegPt}, true);
     fRegistryPairQA.add((path + "LegLS/hDR_NN_vs_minLegPt").c_str(), "e^{-}e^{-} #DeltaR vs min(p_{T,leg});#DeltaR;min(p_{T,leg}) (GeV/c)", kTH2D, {axisLegDR, axisLegPt}, true);
@@ -1032,14 +1371,16 @@ struct Photonhbt {
     fRegistryPairQA.add((path + "LegUScross/hDEtaDPhi_NP12").c_str(), "ele1-pos2 #Delta#eta vs #Delta#phi;#Delta#eta;#Delta#phi (rad)", kTH2D, {axisDeltaEta, axisDeltaPhi}, true);
 
     // 4D Photon-pT diagnostics
-    fRegistryPairQA.add((path + "LegLS/hSparse_DEtaDPhi_PtG1_PtG2_PP").c_str(),
-                        "e^{+}e^{+} #Delta#eta,#Delta#phi,p_{T,#gamma 1},p_{T,#gamma 2};"
-                        "#Delta#eta;#Delta#phi (rad);p_{T,#gamma 1} (GeV/c);p_{T,#gamma 2} (GeV/c)",
-                        kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisPt, axisPt}, true);
-    fRegistryPairQA.add((path + "LegLS/hSparse_DEtaDPhi_PtG1_PtG2_NN").c_str(),
-                        "e^{-}e^{-} #Delta#eta,#Delta#phi,p_{T,#gamma 1},p_{T,#gamma 2};"
-                        "#Delta#eta;#Delta#phi (rad);p_{T,#gamma 1} (GeV/c);p_{T,#gamma 2} (GeV/c)",
-                        kTHnSparseD, {axisDeltaEta, axisDeltaPhi, axisPt, axisPt}, true);
+    if (qaflags.cfgFillLegPairSparses.value) {
+      fRegistryPairQA.add((path + "LegLS/hSparse_DEtaDPhi_PtG1_PtG2_PP").c_str(),
+                          "e^{+}e^{+} #Delta#eta,#Delta#phi,p_{T,#gamma 1},p_{T,#gamma 2};"
+                          "#Delta#eta;#Delta#phi (rad);p_{T,#gamma 1} (GeV/c);p_{T,#gamma 2} (GeV/c)",
+                          kTHnSparseF, {axisLegDEtaCoarse, axisLegDPhiCoarse, axisPtCoarse, axisPtCoarse}, true);
+      fRegistryPairQA.add((path + "LegLS/hSparse_DEtaDPhi_PtG1_PtG2_NN").c_str(),
+                          "e^{-}e^{-} #Delta#eta,#Delta#phi,p_{T,#gamma 1},p_{T,#gamma 2};"
+                          "#Delta#eta;#Delta#phi (rad);p_{T,#gamma 1} (GeV/c);p_{T,#gamma 2} (GeV/c)",
+                          kTHnSparseF, {axisLegDEtaCoarse, axisLegDPhiCoarse, axisPtCoarse, axisPtCoarse}, true);
+    }
 
     // Photon-pT Scatter
     fRegistryPairQA.add((path + "LegLS/hPtG1_vs_PtG2").c_str(), "p_{T,#gamma 1} vs p_{T,#gamma 2};p_{T,#gamma 1} (GeV/c);p_{T,#gamma 2} (GeV/c)", kTH2D, {axisPt, axisPt}, true);
@@ -1080,10 +1421,8 @@ struct Photonhbt {
 
   static int binOf(const std::vector<float>& edges, float val)
   {
-    const int b = static_cast<int>(
-                    std::lower_bound(edges.begin(), edges.end(), val) - edges.begin()) -
-                  1;
-    return clampBin(b, static_cast<int>(edges.size()) - 2); //
+    const auto pos = static_cast<int>(std::lower_bound(edges.begin(), edges.end(), val) - edges.begin());
+    return clampBin(pos - 1, static_cast<int>(edges.size()) - 2);
   }
 
   template <int ev_id, int step_id>
@@ -1178,10 +1517,12 @@ struct Photonhbt {
     return o;
   }
 
+  // not const: fills the propagation-status histogram
   template <typename TGamma, typename TLeg>
-  [[nodiscard]] PhotonWithLegs makePhotonWithLegs(TGamma const& g, TLeg const& pos, TLeg const& ele) const
+  [[nodiscard]] PhotonWithLegs makePhotonWithLegs(TGamma const& g, TLeg const& pos, TLeg const& ele, float vtxZ)
   {
     PhotonWithLegs p;
+    p.fVtxZ = vtxZ;
     p.fPt = g.pt();
     p.fEta = g.eta();
     p.fPhi = g.phi();
@@ -1192,15 +1533,18 @@ struct Photonhbt {
     p.fLegEta = {static_cast<float>(pos.eta()), static_cast<float>(ele.eta())};
     p.fLegPhi = {static_cast<float>(pos.phi()), static_cast<float>(ele.phi())};
     p.fLegCounts = pairutil::getV0PhotonLegCounts(pos, ele);
-    const float rConvCm = std::hypot(p.fVx, p.fVy);
+    p.fNITSTPC = p.fLegCounts.nITSTPC;
+    // legHelixAt itself rejects radii below the conversion point
     for (size_t ir = 0; ir < kPhiStarRadiiM.size(); ++ir) {
-      if (kPhiStarRadiiM[ir] * kCmPerM < rConvCm) { // leg does not exist below R_conv
-        p.fLegPhiStar[0][ir] = kPhiStarInvalid;
-        p.fLegPhiStar[1][ir] = kPhiStarInvalid;
-        continue;
+      for (int il = 0; il < 2; ++il) { // o2-linter: disable=magic-number (two legs)
+        const auto h = legHelixAt(p.fVx / kCmPerM, p.fVy / kCmPerM, p.fLegPhi[il], p.fLegPt[il],
+                                  (il == 0) ? +1 : -1, mBzT, kPhiStarRadiiM[ir]);
+        p.fLegPhiStar[il][ir] = h.phiStar;
+        p.fLegSxy[il][ir] = h.sxy;
+        fRegistryCF.fill(HIST("PairSep/hLegPropStatus"), static_cast<float>(h.status));
+        fRegistryCF.fill(HIST("PairSep/hPropStatus_vs_LegPt"), static_cast<float>(h.status), p.fLegPt[il]);
+        fRegistryCF.fill(HIST("PairSep/hPropStatus_vs_Rconv"), static_cast<float>(h.status), std::hypot(p.fVx, p.fVy));
       }
-      p.fLegPhiStar[0][ir] = legPhiStar(p.fLegPhi[0], p.fLegPt[0], +1, mBzT, kPhiStarRadiiM[ir]);
-      p.fLegPhiStar[1][ir] = legPhiStar(p.fLegPhi[1], p.fLegPt[1], -1, mBzT, kPhiStarRadiiM[ir]);
     }
     return p;
   }
@@ -1208,75 +1552,232 @@ struct Photonhbt {
   [[nodiscard]] PairSep computePairSep(PhotonWithLegs const& a, PhotonWithLegs const& b) const
   {
     PairSep s;
-    const float sE = pairsep.cfgUSigEta.value, sP = pairsep.cfgUSigPhi.value;
-    auto uSameSign = [&](int i, float& dEtaOut, float& dPhiOut) -> float {
-      dEtaOut = a.fLegEta[i] - b.fLegEta[i];
-      if (!pairsep.cfgUsePhiStar.value) {
-        dPhiOut = RecoDecay::constrainAngle(a.fLegPhi[i] - b.fLegPhi[i], -o2::constants::math::PI);
-        return std::hypot(dEtaOut / sE, dPhiOut / sP);
-      }
-      float sumDp = 0.f;
-      int n = 0;
+    s.dVtxZ = a.fVtxZ - b.fVtxZ;
+    s.nLegsITSTPC = a.fNITSTPC + b.fNITSTPC;
+
+    const float sigR = std::max(pairsep.cfgSigRPhi.value, kMinSigma);
+    const float sigZcm = (pairsep.cfgSigZNs.value > 0.f && mVDriftCmPerNs > 0.f)
+                           ? pairsep.cfgSigZNs.value * mVDriftCmPerNs
+                           : pairsep.cfgSigZ.value;
+    const float sigZ = std::max(sigZcm, kMinSigma);
+    const float dClose = pairsep.cfgDPairClose.value;
+    for (int i = 0; i < 2; ++i) { // o2-linter: disable=magic-number (PP and NN)
+      int nHere = 0, nSame = 0, nCloseD = 0;
+      std::array<int, 4> nCloseThr{};
+      float best3 = 999.f, bestR = 999.f, bestD = 999.f;
+      float bestRAll = 999.f, bestDAll = 999.f;
+      float rphiAt3 = 999.f, zAt3 = 999.f, zAtR = 999.f;
+      float rphiAtD = 999.f, zAtD = 999.f, rAtD = -1.f, absZAtD = -1.f;
+      float zGlobAtD = 999.f, zSgnLocAtD = 999.f, zSgnGlobAtD = 999.f;
+      float driftAtD = -1.f, driftOldAtD = -1.f;
       for (size_t ir = 0; ir < kPhiStarRadiiM.size(); ++ir) {
         const float p1 = a.fLegPhiStar[i][ir], p2 = b.fLegPhiStar[i][ir];
-        if (p1 < -100.f || p2 < -100.f) { // o2-linter: disable=magic-number (skip if non-sensical value is chosen)
+        if (p1 < -100.f || p2 < -100.f) { // o2-linter: disable=magic-number (invalid phi*)
           continue;
         }
-        sumDp += RecoDecay::constrainAngle(p1 - p2, -o2::constants::math::PI);
-        ++n;
+        const float rCm = kPhiStarRadiiM[ir] * kCmPerM;
+        const float dphi = RecoDecay::constrainAngle(p1 - p2, -o2::constants::math::PI);
+        const float dRPhi = 2.f * rCm * std::fabs(std::sin(0.5f * dphi));
+        const float z1 = a.fVz + a.fLegSxy[i][ir] * kCmPerM * std::sinh(a.fLegEta[i]);
+        const float z2 = b.fVz + b.fLegSxy[i][ir] * kCmPerM * std::sinh(b.fLegEta[i]);
+        const float dZSignedLocal = (z1 - a.fVtxZ) - (z2 - b.fVtxZ);
+        const float dZSignedGlobal = z1 - z2;
+        const float dZ = std::fabs(dZSignedLocal);
+        const float dZGlobal = std::fabs(dZSignedGlobal);
+        const float d3 = std::hypot(dRPhi, dZ);
+        const float zMax = pairsep.cfgTpcHalfLengthCm.value;
+        const float l1 = std::max(0.f, zMax - std::fabs(z1));
+        const float l2 = std::max(0.f, zMax - std::fabs(z2));
+        const float driftHere = 0.5f * (l1 + l2);
+        const float driftOldHere = std::max(0.f, zMax - 0.5f * std::fabs(z1 + z2));
+        const bool sameSide = (z1 * z2 >= 0.f);
+        const float dPair = std::hypot(dRPhi / sigR, dZ / sigZ);
+        ++nHere;
+        s.ptR[i][nHere - 1] = rCm;
+        s.ptDRPhi[i][nHere - 1] = dRPhi;
+        s.ptDZ[i][nHere - 1] = dZ;
+        s.ptDZSgnLocal[i][nHere - 1] = dZSignedLocal;
+        s.ptDrift[i][nHere - 1] = driftHere;
+        s.ptSameSide[i][nHere - 1] = sameSide ? 1.f : 0.f;
+        bestRAll = std::min(bestRAll, dRPhi);
+        bestDAll = std::min(bestDAll, dPair);
+        if (d3 < best3) {
+          best3 = d3;
+          rphiAt3 = dRPhi;
+          zAt3 = dZ;
+        }
+        if (!sameSide) {
+          continue;
+        }
+        ++nSame;
+        for (std::size_t t = 0; t < s.nCloseRPhiThr.size(); ++t) {
+          if (dRPhi < pairsep.cfgCloseThrCm.value[t]) {
+            ++nCloseThr[t];
+          }
+        }
+        if (dPair < dClose) {
+          ++nCloseD;
+        }
+        if (dPair < bestD) {
+          bestD = dPair;
+          rphiAtD = dRPhi;
+          zAtD = dZ;
+          zGlobAtD = dZGlobal;
+          zSgnLocAtD = dZSignedLocal;
+          zSgnGlobAtD = dZSignedGlobal;
+          rAtD = rCm;
+          absZAtD = 0.5f * std::fabs(z1 + z2);
+          driftAtD = driftHere;
+          driftOldAtD = driftOldHere;
+        }
+        if (dRPhi < bestR) {
+          bestR = dRPhi;
+          zAtR = dZ;
+        }
       }
-      if (n == 0) {
-        dPhiOut = 999.f;
-        return 999.f;
+      if (nHere == 0) {
+        continue;
       }
-      dPhiOut = sumDp / static_cast<float>(n);
-      return std::hypot(dEtaOut / sE, dPhiOut / sP);
-    };
-    const float uPP = uSameSign(0, s.dEtaPP, s.dPhiPP);
-    const float uNN = uSameSign(1, s.dEtaNN, s.dPhiNN);
-    s.u = std::min(uPP, uNN);
+      s.nPoints[i] = nHere;
+      s.nSameSidePerCharge[i] = nSame;
+      s.dMin3DPerCharge[i] = best3;
+      s.dPairMinPerCharge[i] = bestD;
+      s.dMinRPhiPerCharge[i] = bestR;
+      s.dMinRPhiAll = std::min(s.dMinRPhiAll, bestRAll);
+      s.dPairMinAll = std::min(s.dPairMinAll, bestDAll);
+      const float invS = (nSame > 0) ? 1.f / static_cast<float>(nSame) : 0.f;
+      for (std::size_t t = 0; t < nCloseThr.size(); ++t) {
+        s.nCloseRPhiThrPerCharge[i][t] = nCloseThr[t];
+        s.fCloseRPhiThrPerCharge[i][t] = static_cast<float>(nCloseThr[t]) * invS;
+      }
+      s.fCloseRPhiPerCharge[i] = s.fCloseRPhiThrPerCharge[i][3]; // o2-linter: disable=magic-number (last threshold)
+      if (bestD < s.dPairMin) {
+        s.dPairMin = bestD;
+        s.dRPhiAtDPairMin = rphiAtD;
+        s.dZAtDPairMin = zAtD;
+        s.dZGlobalAtDPairMin = zGlobAtD;
+        s.dZSignedLocalAtDPairMin = zSgnLocAtD;
+        s.dZSignedGlobalAtDPairMin = zSgnGlobAtD;
+        s.rAtDPairMin = rAtD;
+        s.absZAtDPairMin = absZAtD;
+        s.driftLen = driftAtD;
+        s.driftOldAtDPairMin = driftOldAtD;
+        s.nCloseScaled = nCloseD;
+        s.fCloseScaled = static_cast<float>(nCloseD) * invS;
+      }
+      if (best3 < s.dMin3D) {
+        s.dMin3D = best3;
+        s.dRPhiAtMin3D = rphiAt3;
+        s.dZAtMin3D = zAt3;
+        s.criticalCharge = i;
+      }
+      if (bestR < s.dMinRPhi) {
+        s.dMinRPhi = bestR;
+        s.dZAtMinRPhi = zAtR;
+        s.nCloseRPhiThr = s.nCloseRPhiThrPerCharge[i];
+        s.fCloseRPhiThr = s.fCloseRPhiThrPerCharge[i];
+        s.fCloseRPhi = s.fCloseRPhiThr[3]; // o2-linter: disable=magic-number (last threshold)
+        s.nSameSide = nSame;
+        s.rphiCharge = i;
+      }
+    }
+    s.sameSideAtDPairMin = (s.nSameSidePerCharge[0] + s.nSameSidePerCharge[1]) > 0;
+    s.nCommon = (s.rphiCharge >= 0) ? s.nPoints[s.rphiCharge]
+                                    : std::max(s.nPoints[0], s.nPoints[1]);
     return s;
   }
 
-  [[nodiscard]] inline bool passLegSepCut(PairSep const& s) const
+  template <typename TG1, typename TG2>
+  [[nodiscard]] inline bool passFastQinvGate(TG1 const& g1, TG2 const& g2) const
   {
-    if (!pairsep.cfgDoLegSepCut.value) {
+    const float qMax = qaflags.cfgMaxQinvForProcessing.value;
+    if (qMax > 1e9f) { // o2-linter: disable=magic-number (skip if non-sensical value is chosen)
       return true;
     }
-    return s.u > pairsep.cfgUCut.value;
+    const float dEta = g1.eta() - g2.eta();
+    const float dPhi = RecoDecay::constrainAngle(g1.phi() - g2.phi(), -o2::constants::math::PI);
+    const float q2 = 2.f * g1.pt() * g2.pt() * (std::cosh(dEta) - std::cos(dPhi));
+    return q2 <= qMax * qMax;
   }
 
-  [[nodiscard]] float uTrue(TruthGamma const& g1, TruthGamma const& g2) const
+  [[nodiscard]] inline bool passPairMergeCut(PairSep const& s) const
   {
-    const float sE = pairsep.cfgUSigEta.value, sP = pairsep.cfgUSigPhi.value;
-    auto uSameSign = [&](int i) -> float {
-      const float dEta = g1.legEtaTrue[i] - g2.legEtaTrue[i];
-      if (!pairsep.cfgUsePhiStar.value) {
-        const float dp = RecoDecay::constrainAngle(g1.legPhiTrue[i] - g2.legPhiTrue[i], -o2::constants::math::PI);
-        return std::hypot(dEta / sE, dp / sP);
-      }
-      const int q = (i == 0) ? +1 : -1;
-      float sumDp = 0.f;
-      int n = 0;
-      for (const float& r : kPhiStarRadiiM) {
-        if ((g1.rTrue >= 0.f && r * kCmPerM < g1.rTrue) ||
-            (g2.rTrue >= 0.f && r * kCmPerM < g2.rTrue)) {
-          continue;
-        }
-        const float p1 = legPhiStar(g1.legPhiTrue[i], g1.legPtTrue[i], q, mBzT, r);
-        const float p2 = legPhiStar(g2.legPhiTrue[i], g2.legPtTrue[i], q, mBzT, r);
-        if (p1 < -100.f || p2 < -100.f) { // o2-linter: disable=magic-number (skip if non-sensical value is chosen)
-          continue;
-        }
-        sumDp += RecoDecay::constrainAngle(p1 - p2, -o2::constants::math::PI);
-        ++n;
-      }
-      if (n == 0) {
-        return 999.f;
-      }
-      return std::hypot(dEta / sE, (sumDp / static_cast<float>(n)) / sP);
+    if (!pairsep.cfgDoPairMergeCut.value) {
+      return true;
+    }
+    if (s.nCommon <= 0) { // nothing was propagated: no statement possible
+      return true;
+    }
+    if (s.dPairMin < pairsep.cfgDPairCut.value) {
+      return false;
+    }
+    const int nCut = pairsep.cfgNCloseCut.value;
+    // dipping close once is survivable, running alongside is not
+    return nCut <= 0 || s.nCloseScaled < nCut;
+  }
+
+  [[nodiscard]] inline int tpcRegion(float rCm) const
+  {
+    if (rCm < pairsep.cfgRegionEdge1.value) {
+      return 0;
+    }
+    if (rCm < pairsep.cfgRegionEdge2.value) {
+      return 1;
+    }
+    if (rCm < pairsep.cfgRegionEdge3.value) {
+      return 2; // o2-linter: disable=magic-number (region index)
+    }
+    return 3; // o2-linter: disable=magic-number (region index)
+  }
+
+  [[nodiscard]] inline int driftBin(float driftLen) const
+  {
+    const float third = pairsep.cfgTpcHalfLengthCm.value / 3.f; // o2-linter: disable=magic-number (three drift slices)
+    if (driftLen < third) {
+      return 0;
+    }
+    if (driftLen < 2.f * third) { // o2-linter: disable=magic-number (three drift slices)
+      return 1;
+    }
+    return 2; // o2-linter: disable=magic-number (three drift slices)
+  }
+
+  [[nodiscard]] CrossObs computeCrossObs(PhotonWithLegs const& a, PhotonWithLegs const& b, float qinv) const
+  {
+    constexpr float kMe = 0.000510999f; // electron mass, GeV/c^2
+    CrossObs c;
+    auto legVec = [](PhotonWithLegs const& p, int i) {
+      return ROOT::Math::PtEtaPhiMVector(p.fLegPt[i], p.fLegEta[i], p.fLegPhi[i], kMe);
     };
-    return std::min(uSameSign(0), uSameSign(1));
+    // Combo 0: a's e+ with b's e-.  Combo 1: b's e+ with a's e-.
+    for (int combo = 0; combo < 2; ++combo) { // o2-linter: disable=magic-number (the two leg-swap combinations)
+      PhotonWithLegs const& pPos = (combo == 0) ? a : b;
+      PhotonWithLegs const& pEle = (combo == 0) ? b : a;
+      c.mee[combo] = static_cast<float>((legVec(pPos, 0) + legVec(pEle, 1)).M());
+    }
+    if (qinv > 0.f) {
+      c.meeOverQ = std::min(c.mee[0], c.mee[1]) / qinv;
+    }
+    return c;
+  }
+
+  [[nodiscard]] inline bool passCrossPairVeto(CrossObs const& c) const
+  {
+    if (!crosspair.cfgDoCrossPairCut.value) {
+      return true;
+    }
+    return c.meeOverQ > crosspair.cfgCrossMaxMeeRatio.value;
+  }
+
+  template <int ev_id>
+  inline void fillCrossPair(CrossObs const& c, float qinv, float deltaR, bool vetoed)
+  {
+    constexpr auto dir = (ev_id == 0) ? "Pair/same/CrossPair/" : "Pair/mix/CrossPair/";
+    fRegistryCF.fill(HIST(dir) + HIST("hVetoCounter"), vetoed ? 1.0 : 0.0);
+    if (qinv > crosspair.cfgCrossMaxQinvQA.value) {
+      return;
+    }
+    fRegistryCF.fill(HIST(dir) + HIST("hSparse_MeeRatio_dR_Qinv"), c.meeOverQ, deltaR, qinv);
   }
 
   /*************************************************/
@@ -1292,24 +1793,82 @@ struct Photonhbt {
     fRegistryCF.fill(HIST(base) + HIST("hDeltaR3DVsQinv"), obs.qinv, obs.deltaR3D);
     fRegistryCF.fill(HIST(base) + HIST("hQinvVsCent"), cent, obs.qinv);
     fRegistryCF.fill(HIST(base) + HIST("hQinvVsOccupancy"), occupancy, obs.qinv);
-    fRegistryCF.fill(HIST(base) + HIST("hSparseDeltaRDeltaZQinv"), obs.deltaR, obs.deltaZ, obs.qinv);
+    if (mQa.fillDRDZSparse) {
+      fRegistryCF.fill(HIST(base) + HIST("hSparseDeltaRDeltaZQinv"), obs.deltaR, obs.deltaZ, obs.qinv);
+    }
+    if (mQa.fillR1R2Sparse) {
+      // both orderings: the pair is unordered
+      fRegistryCF.fill(HIST(base) + HIST("hSparseR1R2Qinv"), obs.r1, obs.r2, obs.qinv);
+      fRegistryCF.fill(HIST(base) + HIST("hSparseR1R2Qinv"), obs.r2, obs.r1, obs.qinv);
+    }
   }
 
   template <int ev_id, bool after_cut = false>
   inline void fillPairSep(PairSep const& s, PairQAObservables const& obs)
   {
-    if (!pairsep.cfgDoPairSepQA.value) {
+    if (!mQa.pairSepQa) {
       return;
+    }
+    // the AfterCut directories only exist when a pair cut is active
+    if constexpr (after_cut) {
+      if (!mQa.pairSepAfterCut) {
+        return;
+      }
     }
     const float limit = pairsep.cfgPairSepMaxQinv.value;
     if (limit > 0.f && obs.qinv >= limit) {
       return;
     }
     constexpr auto dir = pairSepPrefix<ev_id, after_cut>();
-    fRegistryCF.fill(HIST(dir) + HIST("hDEtaDPhiKt_PP"), s.dEtaPP, s.dPhiPP, obs.kt);
-    fRegistryCF.fill(HIST(dir) + HIST("hDEtaDPhiKt_NN"), s.dEtaNN, s.dPhiNN, obs.kt);
-    fRegistryCF.fill(HIST(dir) + HIST("hU_Qinv_Kt"), s.u, obs.qinv, obs.kt);
-    fRegistryCF.fill(HIST(dir) + HIST("hU_Qinv_dE"), s.u, obs.qinv, std::fabs(obs.v1.E() - obs.v2.E()));
+    if (s.nCommon > 0) {
+      fRegistryCF.fill(HIST(dir) + HIST("hSparse_dRPhiAtMin3D_dZAtMin3D_Qinv"), s.dRPhiAtMin3D, s.dZAtMin3D, obs.qinv);
+      fRegistryCF.fill(HIST(dir) + HIST("hSparse_dMin3D_fClose_Qinv"), s.dMin3D, s.fCloseRPhi, obs.qinv);
+      fRegistryCF.fill(HIST(dir) + HIST("hSparse_fCloseRPhi_dR_Qinv"), s.fCloseRPhi, obs.deltaR, obs.qinv);
+      fRegistryCF.fill(HIST(dir) + HIST("hDRPhiMin_All_vs_SameSide"), s.dMinRPhiAll, s.dMinRPhi);
+      fRegistryCF.fill(HIST(dir) + HIST("hDMin3D_PP_vs_NN"), s.dMin3DPerCharge[0], s.dMin3DPerCharge[1]);
+      fRegistryCF.fill(HIST(dir) + HIST("hFClose_PP_vs_NN"), s.fCloseRPhiPerCharge[0], s.fCloseRPhiPerCharge[1]);
+      for (std::size_t t = 0; t < s.fCloseRPhiThr.size(); ++t) {
+        fRegistryCF.fill(HIST(dir) + HIST("hSparse_dRPhiMin_fClose_Thr_Qinv"), s.dMinRPhi,
+                         s.fCloseRPhiThr[t], static_cast<float>(t), obs.qinv);
+      }
+      fRegistryCF.fill(HIST(dir) + HIST("hSparse_DPair_NClose_Qinv"), s.dPairMin, static_cast<float>(s.nCloseScaled), obs.qinv);
+      fRegistryCF.fill(HIST(dir) + HIST("hDzLocal_vs_dVtxZ"), s.dVtxZ, s.dZAtDPairMin);
+      fRegistryCF.fill(HIST(dir) + HIST("hDzGlobal_vs_dVtxZ"), s.dVtxZ, s.dZGlobalAtDPairMin);
+      fRegistryCF.fill(HIST(dir) + HIST("hDzLocalSigned_vs_dVtxZ"), s.dVtxZ, s.dZSignedLocalAtDPairMin);
+      fRegistryCF.fill(HIST(dir) + HIST("hDzGlobalSigned_vs_dVtxZ"), s.dVtxZ, s.dZSignedGlobalAtDPairMin);
+      if (s.sameSideAtDPairMin) {
+        fRegistryCF.fill(HIST(dir) + HIST("hDriftOld_vs_DriftNew"), s.driftOldAtDPairMin, s.driftLen);
+      } else {
+        fRegistryCF.fill(HIST(dir) + HIST("hDriftOld_vs_DriftNew_opp"), s.driftOldAtDPairMin, s.driftLen);
+      }
+      fRegistryCF.fill(HIST(dir) + HIST("hSameSide_vs_Qinv"), s.sameSideAtDPairMin ? 1.f : 0.f, obs.qinv);
+      fRegistryCF.fill(HIST(dir) + HIST("hNCommon_vs_Qinv"), static_cast<float>(s.nCommon), obs.qinv);
+      fRegistryCF.fill(HIST(dir) + HIST("hNSameSide_vs_Qinv"), static_cast<float>(s.nSameSide), obs.qinv);
+      fRegistryCF.fill(HIST(dir) + HIST("hSparse_FClose_NClose_Qinv"), s.fCloseScaled, static_cast<float>(s.nCloseScaled), obs.qinv);
+      if (pairsep.cfgFillCalibSparse.value) {
+        for (int ic = 0; ic < 2; ++ic) { // o2-linter: disable=magic-number (PP and NN)
+          for (int k = 0; k < s.nPoints[ic]; ++k) {
+            fRegistryCF.fill(HIST(dir) + HIST("hSparse_DzSignedLocal_dVtxZ_R"),
+                             s.ptDZSgnLocal[ic][k], s.dVtxZ, s.ptR[ic][k]);
+            if (s.ptSameSide[ic][k] < 0.5f) { // o2-linter: disable=magic-number (indication of side)
+              fRegistryCF.fill(HIST(dir) + HIST("hSparse_Calib_OppositeSide"), s.ptDRPhi[ic][k], s.ptDZ[ic][k]);
+              continue; // cannot merge: different endcap
+            }
+            fRegistryCF.fill(HIST(dir) + HIST("hSparse_Calib_dRPhi_dZ_R_L_C_Q"), s.ptDRPhi[ic][k], s.ptDZ[ic][k],
+                             static_cast<float>(tpcRegion(s.ptR[ic][k])), static_cast<float>(driftBin(s.ptDrift[ic][k])),
+                             static_cast<float>(ic), obs.qinv);
+            fRegistryCF.fill(HIST(dir) + HIST("hSparse_dRPhi_dZ_LegClass_L_Q"), s.ptDRPhi[ic][k], s.ptDZ[ic][k],
+                             (s.nLegsITSTPC >= 2) ? 1.f : 0.f, // o2-linter: disable=magic-number (two leg classes)
+                             static_cast<float>(driftBin(s.ptDrift[ic][k])), obs.qinv);
+          }
+        }
+      }
+      if (obs.qinv >= pairsep.cfgCondQinvMin.value && obs.qinv < pairsep.cfgCondQinvMax.value &&
+          s.rAtDPairMin > 0.f) {
+        const auto cond = static_cast<float>(3 * tpcRegion(s.rAtDPairMin) + driftBin(s.driftLen)); // o2-linter: disable=magic-number (three drift bins per region)
+        fRegistryCF.fill(HIST(dir) + HIST("hSparse_dRPhi_dZ_Cond"), s.dRPhiAtDPairMin, s.dZAtDPairMin, cond);
+      }
+    }
   }
 
   template <int ev_id>
@@ -1328,7 +1887,7 @@ struct Photonhbt {
   template <int step_id, typename TPhoton>
   inline void fillSinglePhotonQAStep(TPhoton const& g)
   {
-    if (!qaflags.doSinglePhotonQa) {
+    if (!mQa.singlePhotonQa) {
       return;
     }
     constexpr auto base = singlePhotonQAPrefix<step_id>();
@@ -1425,7 +1984,7 @@ struct Photonhbt {
   template <int ev_id, int step_id>
   inline void fillPairQAStep(PairQAObservables const& o, float /*cent*/, float /*occupancy*/)
   {
-    if (!qaflags.doPairQa) {
+    if (!mQa.pairQa) {
       return;
     }
     constexpr auto base = qaPrefix<ev_id, step_id>();
@@ -1465,19 +2024,23 @@ struct Photonhbt {
   template <int step_id>
   inline void fillLegPairQAStep(LegPairObservables const& lo, float kt)
   {
-    if (!qaflags.doPairQa) {
+    if (!mQa.legPairQa) {
       return;
     }
     constexpr auto base = qaPrefix<0, step_id>();
 
     fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hDEtaDPhi_PP"), lo.dEtaPP, lo.dPhiPP);
-    fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hSparse_DEtaDPhi_kT_minLegPt_PP"), lo.dEtaPP, lo.dPhiPP, kt, lo.minLegPt_PP);
+    if (qaflags.cfgFillLegPairSparses.value) {
+      fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hSparse_DEtaDPhi_kT_minLegPt_PP"), lo.dEtaPP, lo.dPhiPP, kt, lo.minLegPt_PP);
+    }
     fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hDR_PP"), lo.dRPP);
     fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hLegPtLow_vs_LegPtHigh_PP"), lo.minLegPt_PP, lo.maxLegPt_PP);
     fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hDR_PP_vs_minLegPt"), lo.dRPP, lo.minLegPt_PP);
 
     fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hDEtaDPhi_NN"), lo.dEtaNN, lo.dPhiNN);
-    fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hSparse_DEtaDPhi_kT_minLegPt_NN"), lo.dEtaNN, lo.dPhiNN, kt, lo.minLegPt_NN);
+    if (qaflags.cfgFillLegPairSparses.value) {
+      fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hSparse_DEtaDPhi_kT_minLegPt_NN"), lo.dEtaNN, lo.dPhiNN, kt, lo.minLegPt_NN);
+    }
     fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hDR_NN"), lo.dRNN);
     fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hLegPtLow_vs_LegPtHigh_NN"), lo.minLegPt_NN, lo.maxLegPt_NN);
     fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hDR_NN_vs_minLegPt"), lo.dRNN, lo.minLegPt_NN);
@@ -1487,8 +2050,10 @@ struct Photonhbt {
     fRegistryPairQA.fill(HIST(base) + HIST("LegUScross/hDEtaDPhi_PN12"), lo.dEtaPN12, lo.dPhiPN12);
     fRegistryPairQA.fill(HIST(base) + HIST("LegUScross/hDEtaDPhi_NP12"), lo.dEtaNP12, lo.dPhiNP12);
 
-    fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hSparse_DEtaDPhi_PtG1_PtG2_PP"), lo.dEtaPP, lo.dPhiPP, lo.ptG1, lo.ptG2);
-    fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hSparse_DEtaDPhi_PtG1_PtG2_NN"), lo.dEtaNN, lo.dPhiNN, lo.ptG1, lo.ptG2);
+    if (qaflags.cfgFillLegPairSparses.value) {
+      fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hSparse_DEtaDPhi_PtG1_PtG2_PP"), lo.dEtaPP, lo.dPhiPP, lo.ptG1, lo.ptG2);
+      fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hSparse_DEtaDPhi_PtG1_PtG2_NN"), lo.dEtaNN, lo.dPhiNN, lo.ptG1, lo.ptG2);
+    }
     fRegistryPairQA.fill(HIST(base) + HIST("LegLS/hPtG1_vs_PtG2"), lo.ptG1, lo.ptG2);
   }
 
@@ -1498,8 +2063,10 @@ struct Photonhbt {
     constexpr auto base = mcDirPrefix<TruthT>();
     fRegistryPairMC.fill(HIST(base) + HIST("LegLS/hSparse_DR_kT_minLegPt_PP"), lo.dRPP, kt, lo.minLegPt_PP);
     fRegistryPairMC.fill(HIST(base) + HIST("LegLS/hSparse_DR_kT_minLegPt_NN"), lo.dRNN, kt, lo.minLegPt_NN);
-    fRegistryPairMC.fill(HIST(base) + HIST("LegLS/hSparse_DEtaDPhi_PtG1_PtG2_PP"), lo.dEtaPP, lo.dPhiPP, lo.ptG1, lo.ptG2);
-    fRegistryPairMC.fill(HIST(base) + HIST("LegLS/hSparse_DEtaDPhi_PtG1_PtG2_NN"), lo.dEtaNN, lo.dPhiNN, lo.ptG1, lo.ptG2);
+    if (qaflags.cfgFillLegPairSparses.value) {
+      fRegistryPairMC.fill(HIST(base) + HIST("LegLS/hSparse_DEtaDPhi_PtG1_PtG2_PP"), lo.dEtaPP, lo.dPhiPP, lo.ptG1, lo.ptG2);
+      fRegistryPairMC.fill(HIST(base) + HIST("LegLS/hSparse_DEtaDPhi_PtG1_PtG2_NN"), lo.dEtaNN, lo.dPhiNN, lo.ptG1, lo.ptG2);
+    }
   }
 
   inline void fillLegPairMC(PairTruthType t, LegPairObservables const& lo, float kt)
@@ -1854,7 +2421,7 @@ struct Photonhbt {
       auto keyDFCollision = std::make_pair(ndf, collision.globalIndex());
       auto photons1Coll = photons1.sliceBy(perCollision1, collision.globalIndex());
       auto photons2Coll = photons2.sliceBy(perCollision2, collision.globalIndex());
-      if (qaflags.doSinglePhotonQa) {
+      if (mQa.singlePhotonQa) {
         for (const auto& g : photons1Coll) {
           if (cut1.template IsSelected<decltype(g), TSubInfos1>(g)) {
             fillSinglePhotonQAStep<0>(g);
@@ -1882,8 +2449,8 @@ struct Photonhbt {
         }
         const bool doQA = passQinvQAGate(obs.qinv), doFR = passQinvFullRangeGate(obs.qinv);
         const auto legObs = buildLegPairObservables(g1, g2, pos1, ele1, pos2, ele2);
-        const auto pwl1 = makePhotonWithLegs(g1, pos1, ele1);
-        const auto pwl2 = makePhotonWithLegs(g2, pos2, ele2);
+        const auto pwl1 = makePhotonWithLegs(g1, pos1, ele1, collision.posZ());
+        const auto pwl2 = makePhotonWithLegs(g2, pos2, ele2, collision.posZ());
         const auto sep = computePairSep(pwl1, pwl2);
 
         // ───before pair cuts ─────────────────────────────────────
@@ -1903,7 +2470,7 @@ struct Photonhbt {
         if (obs.drOverCosOA < ggpaircuts.cfgMinDRCosOA) {
           continue;
         }
-        if (!passLegSepCut(sep)) {
+        if (!passPairMergeCut(sep)) {
           continue;
         }
         if (!passRZCut(obs.deltaR, obs.deltaZ)) {
@@ -1912,6 +2479,14 @@ struct Photonhbt {
 
         if (isInsideEllipse(obs.deta, obs.dphi)) {
           continue;
+        }
+        if (crosspair.cfgDoCrossPairQA.value || crosspair.cfgDoCrossPairCut.value) {
+          const auto cross = computeCrossObs(pwl1, pwl2, obs.qinv);
+          const bool vetoed = !passCrossPairVeto(cross);
+          fillCrossPair<0>(cross, obs.qinv, obs.deltaR, vetoed);
+          if (vetoed) {
+            continue;
+          }
         }
 
         // ───after pair cuts ──────────────────────────────────────
@@ -1937,7 +2512,7 @@ struct Photonhbt {
         addToPool(g1, pwl1);
         addToPool(g2, pwl2);
       }
-      if (qaflags.doSinglePhotonQa) {
+      if (mQa.singlePhotonQa) {
         for (const auto& g : photons1Coll) {
           if (cut1.template IsSelected<decltype(g), TSubInfos1>(g)) {
             if (idsAfterPairCuts.contains(g.globalIndex())) {
@@ -1968,6 +2543,9 @@ struct Photonhbt {
             if (!passAsymmetryCut(g1.pt(), g2.pt())) {
               continue;
             }
+            if (!passFastQinvGate(g1, g2)) {
+              continue;
+            }
             auto obs = buildPairQAObservables(g1, g2);
             if (!obs.valid) {
               continue;
@@ -1991,7 +2569,7 @@ struct Photonhbt {
             if (obs.drOverCosOA < ggpaircuts.cfgMinDRCosOA) {
               continue;
             }
-            if (!passLegSepCut(sep)) {
+            if (!passPairMergeCut(sep)) {
               continue;
             }
             if (!passRZCut(obs.deltaR, obs.deltaZ)) {
@@ -1999,6 +2577,14 @@ struct Photonhbt {
             }
             if (isInsideEllipse(obs.deta, obs.dphi)) {
               continue;
+            }
+            if (crosspair.cfgDoCrossPairQA.value || crosspair.cfgDoCrossPairCut.value) {
+              const auto cross = computeCrossObs(g1, g2, obs.qinv);
+              const bool vetoed = !passCrossPairVeto(cross);
+              fillCrossPair<1>(cross, obs.qinv, obs.deltaR, vetoed);
+              if (vetoed) {
+                continue;
+              }
             }
 
             fillPairSep<1, true>(sep, obs);
@@ -2060,7 +2646,7 @@ struct Photonhbt {
       auto keyBin = std::make_tuple(zbin, centbin, epbin, occbin);
       auto keyDFCollision = std::make_pair(ndf, collision.globalIndex());
       auto photonsColl = photons.sliceBy(perCollision, collision.globalIndex());
-      if (qaflags.doSinglePhotonQa) {
+      if (mQa.singlePhotonQa) {
         for (const auto& g : photonsColl) {
           if (cut.template IsSelected<decltype(g), TLegs>(g)) {
             fillSinglePhotonQAStep<0>(g);
@@ -2093,8 +2679,8 @@ struct Photonhbt {
         }
         const bool doQA = passQinvQAGate(obs.qinv), doFR = passQinvFullRangeGate(obs.qinv);
         const auto legObs = buildLegPairObservables(g1, g2, pos1, ele1, pos2, ele2);
-        const auto pwl1 = makePhotonWithLegs(g1, pos1, ele1);
-        const auto pwl2 = makePhotonWithLegs(g2, pos2, ele2);
+        const auto pwl1 = makePhotonWithLegs(g1, pos1, ele1, collision.posZ());
+        const auto pwl2 = makePhotonWithLegs(g2, pos2, ele2, collision.posZ());
         const auto sep = computePairSep(pwl1, pwl2);
 
         // ──before pair cuts ─────────────────────────────────────
@@ -2112,7 +2698,7 @@ struct Photonhbt {
           continue;
         }
 
-        if (!passLegSepCut(sep)) {
+        if (!passPairMergeCut(sep)) {
           continue;
         }
 
@@ -2121,6 +2707,14 @@ struct Photonhbt {
         }
         if (isInsideEllipse(obs.deta, obs.dphi)) {
           continue;
+        }
+        if (crosspair.cfgDoCrossPairQA.value || crosspair.cfgDoCrossPairCut.value) {
+          const auto cross = computeCrossObs(pwl1, pwl2, obs.qinv);
+          const bool vetoed = !passCrossPairVeto(cross);
+          fillCrossPair<0>(cross, obs.qinv, obs.deltaR, vetoed);
+          if (vetoed) {
+            continue;
+          }
         }
 
         // ─── after pair cuts ──────────────────────────────────────
@@ -2147,7 +2741,9 @@ struct Photonhbt {
         } else {
           const bool doMCQA = passQinvMCQAGate(obs.qinv);
           fillMCPairQA<false>(truthType, obs, doQA, doMCQA);
-          fillLegPairMC(truthType, legObs, obs.kt);
+          if (mQa.legPairQa) {
+            fillLegPairMC(truthType, legObs, obs.kt);
+          }
           if (doFR) {
             fillMCPairQAFullRange<false>(truthType, obs);
           }
@@ -2200,7 +2796,7 @@ struct Photonhbt {
         addToPool(g1, pwl1);
         addToPool(g2, pwl2);
       }
-      if (qaflags.doSinglePhotonQa) {
+      if (mQa.singlePhotonQa) {
         for (const auto& g : photonsColl) {
           if (cut.template IsSelected<decltype(g), TLegs>(g)) {
             if (idsAfterPairCuts.contains(g.globalIndex())) {
@@ -2231,6 +2827,9 @@ struct Photonhbt {
             if (!passAsymmetryCut(g1.pt(), g2.pt())) {
               continue;
             }
+            if (!passFastQinvGate(g1, g2)) {
+              continue;
+            }
             auto obs = buildPairQAObservables(g1, g2);
             if (!obs.valid) {
               continue;
@@ -2251,7 +2850,7 @@ struct Photonhbt {
             if (obs.drOverCosOA < ggpaircuts.cfgMinDRCosOA) {
               continue;
             }
-            if (!passLegSepCut(sep)) {
+            if (!passPairMergeCut(sep)) {
               continue;
             }
             if (!passRZCut(obs.deltaR, obs.deltaZ)) {
@@ -2259,6 +2858,14 @@ struct Photonhbt {
             }
             if (isInsideEllipse(obs.deta, obs.dphi)) {
               continue;
+            }
+            if (crosspair.cfgDoCrossPairQA.value || crosspair.cfgDoCrossPairCut.value) {
+              const auto cross = computeCrossObs(g1, g2, obs.qinv);
+              const bool vetoed = !passCrossPairVeto(cross);
+              fillCrossPair<1>(cross, obs.qinv, obs.deltaR, vetoed);
+              if (vetoed) {
+                continue;
+              }
             }
 
             // ─after pair cuts ──────────────────────────────────
@@ -2566,7 +3173,7 @@ struct Photonhbt {
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hQinvVsKt_all4LegsThisColl"), kt, qinv_true);
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hDEtaDPhi_all4LegsThisColl"), deta, dphi);
           }
-          if (g1Sel && g2Sel) {
+          if (g1Built && g2Built) {
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hSparse_DEtaDPhi_qinv_bothPhotonsBuilt"), deta, dphi, qinv_true);
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hSparse_DEtaDPhi_kT_bothPhotonsBuilt"), deta, dphi, kt);
             fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hQinvVsKt_bothPhotonsBuilt"), kt, qinv_true);
@@ -2584,21 +3191,6 @@ struct Photonhbt {
             if (g1Sel && g2Sel && pairClassSel) {
               fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hRconv1_vs_Rconv2_bothPhotonsSelected"), g1.rTrue, g2.rTrue);
             }
-          }
-          const float ut = uTrue(g1, g2);
-          fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hUtrueVsKt_truthConverted"), kt, ut);
-          fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hUtrueVsQinv_truthConverted"), qinv_true, ut);
-          if (pairAll4LegsThisColl) {
-            fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hUtrueVsKt_all4LegsThisColl"), kt, ut);
-            fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hUtrueVsQinv_all4LegsThisColl"), qinv_true, ut);
-          }
-          if (g1Built && g2Built) {
-            fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hUtrueVsKt_bothPhotonsBuilt"), kt, ut);
-            fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hUtrueVsQinv_bothPhotonsBuilt"), qinv_true, ut);
-          }
-          if (g1Sel && g2Sel && pairClassSel) {
-            fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hUtrueVsKt_bothPhotonsSelected"), kt, ut);
-            fRegistryTruthMC.fill(HIST("MC/TruthAO2D/hUtrueVsQinv_bothPhotonsSelected"), qinv_true, ut);
           }
           const float minRconv = (g1.rTrue >= 0.f && g2.rTrue >= 0.f)
                                    ? std::min(g1.rTrue, g2.rTrue)

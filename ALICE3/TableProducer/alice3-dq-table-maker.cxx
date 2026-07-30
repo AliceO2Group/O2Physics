@@ -22,10 +22,10 @@
 #include "PWGDQ/Core/MCSignal.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
 #include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/DataModel/ReducedTablesAlice3.h"
 
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
+#include "ALICE3/DataModel/ReducedTablesAlice3.h"
 #include "ALICE3/DataModel/collisionAlice3.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/CCDB/EventSelectionParams.h"
@@ -74,16 +74,14 @@ constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | 
 
 struct Alice3DQTableMaker {
 
-  Produces<ReducedA3MCEvents> eventMC;
-  Produces<ReducedA3MCTracks> trackMC;
+  Produces<ReA3MCEvents> eventMC;
+  Produces<ReA3MCTracks> trackMC;
 
-  Produces<ReducedA3Events> event;
+  Produces<ReA3Events> event;
   Produces<ReducedA3EventsVtxCov> eventVtxCov;
-  Produces<ReducedA3EventsInfo> eventInfo;
   Produces<ReducedA3MCEventLabels> eventMClabels;
 
-  Produces<ReducedA3TracksBarrelInfo> trackBarrelInfo;
-  Produces<ReducedA3Tracks> trackBasic;
+  Produces<ReA3Tracks> trackBasic;
   Produces<ReducedA3TracksBarrel> trackBarrel;
   Produces<ReducedA3TracksBarrelCov> trackBarrelCov;
   Produces<ReducedA3TracksAssoc> trackBarrelAssoc;
@@ -96,7 +94,7 @@ struct Alice3DQTableMaker {
   OutputObj<THashList> fOutputList{"output"};
   OutputObj<TList> fStatsList{"Statistics"}; //! skimming statistics
 
-  HistogramManager* fHistMan;
+  HistogramManager* fHistMan = nullptr;
 
   // Event and track AnalysisCut configurables
   struct : ConfigurableGroup {
@@ -120,9 +118,8 @@ struct Alice3DQTableMaker {
     Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
   } fConfigHistOutput;
 
-  AnalysisCompositeCut* fEventCut;               //! Event selection cut
+  AnalysisCompositeCut* fEventCut = nullptr;     //! Event selection cut
   std::vector<AnalysisCompositeCut*> fTrackCuts; //! Barrel track cuts
-  std::vector<AnalysisCompositeCut*> fMuonCuts;  //! Muon track cuts
 
   bool fDoDetailedQA = false;
 
@@ -290,38 +287,38 @@ struct Alice3DQTableMaker {
       }
     }
 
-    // create statistics histograms (event, tracks, muons, MCsignals)
+    // create statistics histograms (event, tracks, MCsignals)
     fStatsList.setObject(new TList());
     fStatsList->SetOwner(true);
     std::vector<TString> eventLabels{"Collisions before filtering", "Before cuts", "After cuts"};
     TH2I* histEvents = new TH2I("EventStats", "Event statistics", eventLabels.size(), -0.5, eventLabels.size() - 0.5, o2::aod::evsel::kNsel + 1, -0.5, (float)o2::aod::evsel::kNsel + 0.5);
-    int ib = 1;
-    for (auto label = eventLabels.begin(); label != eventLabels.end(); label++, ib++) {
-      histEvents->GetXaxis()->SetBinLabel(ib, (*label).Data());
+    int ibX = 1;
+    for (auto label = eventLabels.begin(); label != eventLabels.end(); label++, ibX++) {
+      histEvents->GetXaxis()->SetBinLabel(ibX, (*label).Data());
     }
-    for (int ib = 1; ib <= o2::aod::evsel::kNsel; ib++) {
-      histEvents->GetYaxis()->SetBinLabel(ib, o2::aod::evsel::selectionLabels[ib - 1]);
+    for (int ibY = 1; ibY <= o2::aod::evsel::kNsel; ibY++) {
+      histEvents->GetYaxis()->SetBinLabel(ibY, o2::aod::evsel::selectionLabels[ibY - 1]);
     }
     histEvents->GetYaxis()->SetBinLabel(o2::aod::evsel::kNsel + 1, "Total");
     fStatsList->Add(histEvents);
 
     // Track statistics: one bin for each track selection and 5 bins for V0 tags (gamma, K0s, Lambda, anti-Lambda, Omega)
     TH1I* histTracks = new TH1I("TrackStats", "Track statistics", fTrackCuts.size() + 5.0, -0.5, fTrackCuts.size() - 0.5 + 5.0);
-    ib = 1;
-    for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, ib++) {
-      histTracks->GetXaxis()->SetBinLabel(ib, (*cut)->GetName());
+    ibX = 1;
+    for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, ibX++) {
+      histTracks->GetXaxis()->SetBinLabel(ibX, (*cut)->GetName());
     }
     constexpr int nV0Tags = 5;
     const char* v0TagNames[nV0Tags] = {"Photon conversion", "K^{0}_{s}", "#Lambda", "#bar{#Lambda}", "#Omega"};
-    for (int ib = 0; ib < nV0Tags; ib++) {
-      histTracks->GetXaxis()->SetBinLabel(fTrackCuts.size() + 1 + ib, v0TagNames[ib]);
+    for (int ibY = 0; ibY < nV0Tags; ibY++) {
+      histTracks->GetXaxis()->SetBinLabel(fTrackCuts.size() + 1 + ibY, v0TagNames[ibY]);
     }
     fStatsList->Add(histTracks);
 
     TH1I* histMCsignals = new TH1I("MCsignals", "MC signals", fMCSignals.size() + 1, -0.5, fMCSignals.size() - 0.5 + 1.0);
-    ib = 1;
-    for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, ib++) {
-      histMCsignals->GetXaxis()->SetBinLabel(ib, (*signal)->GetName());
+    ibX = 1;
+    for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, ibX++) {
+      histMCsignals->GetXaxis()->SetBinLabel(ibX, (*signal)->GetName());
     }
     histMCsignals->GetXaxis()->SetBinLabel(fMCSignals.size() + 1, "Others (matched to reco tracks)");
     fStatsList->Add(histMCsignals);
@@ -384,19 +381,22 @@ struct Alice3DQTableMaker {
       }
 
       // If this MC track was not already added to the map, add it now
-      if (fLabelsMap.find(mctrack.globalIndex()) == fLabelsMap.end()) {
-        fLabelsMap[mctrack.globalIndex()] = trackCounter;
-        fLabelsMapReversed[trackCounter] = mctrack.globalIndex();
-        fMCFlags[mctrack.globalIndex()] = mcflags;
-        trackCounter++;
+      const auto mcTrackIndex = mctrack.globalIndex();
+      const bool inserted = fLabelsMap.try_emplace(mcTrackIndex, trackCounter).second;
+
+      if (inserted) {
+        fLabelsMapReversed.try_emplace(trackCounter, mcTrackIndex);
+        fMCFlags.try_emplace(mcTrackIndex, mcflags);
+        ++trackCounter;
 
         // fill histograms for each of the signals, if found
         if (fConfigHistOutput.fConfigQA) {
           VarManager::FillTrackMC(mcTracks, mctrack);
           auto mcCollision = mctrack.template mcCollision_as<MyEventsMC>();
           VarManager::FillEvent<gkEventMcFillMap>(mcCollision);
+
           int j = 0;
-          for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); signal++, j++) {
+          for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); ++signal, ++j) {
             if (mcflags & (static_cast<uint16_t>(1) << j)) {
               fHistMan->FillHistClass(Form("MCTruth_%s", (*signal)->GetName()), VarManager::fgValues);
             }
@@ -444,7 +444,6 @@ struct Alice3DQTableMaker {
 
       eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
       eventMClabels(collision.mcCollisionId(), collision.mcMask());
-      eventInfo(collision.globalIndex());
 
       // add an element for this collision into the map
       fCollIndexMap[collision.globalIndex()] = event.lastIndex();
@@ -484,14 +483,14 @@ struct Alice3DQTableMaker {
         fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
       }
 
-      int i = 0;
-      for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, i++) {
+      int n = 0;
+      for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, n++) {
         if ((*cut)->IsSelected(VarManager::fgValues)) {
-          trackTempFilterMap |= (static_cast<uint32_t>(1) << i);
+          trackTempFilterMap |= (static_cast<uint32_t>(1) << n);
           if (fConfigHistOutput.fConfigQA) {
             fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut)->GetName()), VarManager::fgValues);
           }
-          (reinterpret_cast<TH1I*>(fStatsList->At(1)))->Fill(static_cast<float>(i));
+          (reinterpret_cast<TH1I*>(fStatsList->At(1)))->Fill(static_cast<float>(n));
         }
       }
       if (!trackTempFilterMap) {
@@ -512,9 +511,6 @@ struct Alice3DQTableMaker {
       //      In the case of Run2-like analysis, there will be no associations, so this ID will be the one originally assigned in the AO2Ds (updated for the skims)
       uint32_t reducedEventIdx = fCollIndexMap[track.collisionId()];
 
-      // NOTE: trackBarrelInfo stores the index of the collision as in AO2D (for use in some cases where the analysis on skims is done
-      //   in workflows where the original AO2Ds are also present)
-      // trackBarrelInfo(track.collisionId(), collision.posX(), collision.posY(), collision.posZ(), track.globalIndex());
       trackBasic(reducedEventIdx, trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign(), 0);
 
       trackBarrel(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
@@ -612,7 +608,6 @@ struct Alice3DQTableMaker {
     event.reserve(collisions.size());
     eventVtxCov.reserve(collisions.size());
     eventMClabels.reserve(collisions.size());
-    eventInfo.reserve(collisions.size());
 
     skimCollisions(collisions);
 
