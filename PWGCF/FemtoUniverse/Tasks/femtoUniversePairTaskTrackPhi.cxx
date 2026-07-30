@@ -277,6 +277,7 @@ struct FemtoUniversePairTaskTrackPhi {
       }
       return false;
     }
+    return false;
   }
 
   bool isKaonRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi)
