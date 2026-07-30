@@ -11,7 +11,7 @@
 /// \author Ionut Cristian Arsene <iarsene@cern.ch>, Oslo
 /// \author Alexander Tiekoetter <alexander.tiekoetter@cern.ch>, Muenster
 /// \brief Skimming Task for DQ Table Maker
-/// \file dqTableMaker.cxx
+/// \file alice3DqTableMaker.cxx
 
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "PWGDQ/Core/AnalysisCut.h"
@@ -71,7 +71,7 @@ constexpr static uint32_t GkEventMcFillMap = VarManager::ObjTypes::CollisionMC;
 
 constexpr static uint32_t GkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
 
-struct DqTableMaker {
+struct Alice3DqTableMaker {
 
   Produces<ReA3MCEvents> eventMC;
   Produces<ReA3MCTracks> trackMC;
@@ -706,11 +706,11 @@ struct DqTableMaker {
     fullSkimming(collisions, tracksBarrel, trackAssocs, mcCollisions, mcParticles);
   }
 
-  PROCESS_SWITCH(DqTableMaker, processSkimming, "Build DQ skimmed data model for ALICE3", true);
+  PROCESS_SWITCH(Alice3DqTableMaker, processSkimming, "Build DQ skimmed data model for ALICE3", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<DqTableMaker>(cfgc)};
+    adaptAnalysisTask<Alice3DqTableMaker>(cfgc)};
 }
