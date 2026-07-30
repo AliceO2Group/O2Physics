@@ -285,7 +285,7 @@ struct FemtoUniversePairTaskTrackPhi {
 
   bool isKaonRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi)
   {
-    if (mom < 0.5) {
+    if (mom < kMomCutLow) {
       return (std::abs(nsigmaTPCPi) < confPIDPionNsigmaReject) || (std::abs(nsigmaTPCPr) < confPIDProtonNsigmaReject);
     } else {
       return (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < confPIDPionNsigmaReject) || (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < confPIDProtonNsigmaReject);
@@ -294,7 +294,7 @@ struct FemtoUniversePairTaskTrackPhi {
 
   bool isPionNSigma(float mom, float nsigmaTPCPi, float nsigmaTOFPi)
   {
-    if (mom < 0.5) {
+    if (mom < kMomCutLow) {
       return (std::abs(nsigmaTPCPi) < confPIDPionNsigmaTPC);
     } else {
       return (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < confPIDPionNsigmaCombined);
@@ -303,7 +303,7 @@ struct FemtoUniversePairTaskTrackPhi {
 
   bool isPionRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCK, float nsigmaTOFK)
   {
-    if (mom < 0.5) {
+    if (mom < kMomCutLow) {
       return (std::abs(nsigmaTPCK) < confPIDKaonNsigmaReject) || (std::abs(nsigmaTPCPr) < confPIDProtonNsigmaReject);
     } else {
       return (std::hypot(nsigmaTOFK, nsigmaTPCK) < confPIDKaonNsigmaReject) || (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < confPIDProtonNsigmaReject);
