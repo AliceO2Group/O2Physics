@@ -48,19 +48,19 @@ target_precompile_headers(JetSubstructureHFOutputPCH PRIVATE
 )
 endif()
 
-o2physics_add_dpl_workflow(emc-cell-monitor
+o2physics_add_dpl_workflow(emc-cellmonitor
                     SOURCES emcCellMonitor.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-o2physics_add_dpl_workflow(emc-cluster-monitor
+o2physics_add_dpl_workflow(emc-clustermonitor
                     SOURCES emcClusterMonitor.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-o2physics_add_dpl_workflow(emc-event-selection-q-a
+o2physics_add_dpl_workflow(emc-eventselection-qa
                     SOURCES emcEventSelectionQA.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-o2physics_add_dpl_workflow(emc-vertex-selection-q-a
+o2physics_add_dpl_workflow(emc-vertexselection-qa
                     SOURCES emcVertexSelectionQA.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
@@ -68,11 +68,11 @@ o2physics_add_dpl_workflow(emcal-gamma-gamma-bc-wise
                     SOURCES emcalGammaGammaBcWise.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-o2physics_add_dpl_workflow(emcal-pi0-energy-scale-calib
+o2physics_add_dpl_workflow(emc-pi0-energyscale-calib
                     SOURCES emcalPi0EnergyScaleCalib.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-o2physics_add_dpl_workflow(emc-tm-monitor
+o2physics_add_dpl_workflow(emc-tmmonitor
                     SOURCES emcTmMonitor.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
@@ -80,7 +80,7 @@ o2physics_add_dpl_workflow(mc-generator-studies
                     SOURCES mcGeneratorStudies.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-o2physics_add_dpl_workflow(photon-isolation-q-a
+o2physics_add_dpl_workflow(photon-isolation-qa
                     SOURCES photonIsolationQA.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
