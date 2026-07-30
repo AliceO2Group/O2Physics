@@ -688,14 +688,23 @@ struct HadNucleiFemto {
   template <typename Ttrack>
   bool selectTrackTr(const Ttrack& candidate)
   {
-    return !(std::abs(candidate.eta()) >= 0.8 ||
-             std::abs(candidate.dcaXY()) >= 0.2 ||
-             std::abs(candidate.dcaZ()) >= 0.2 ||
-             candidate.tpcNClsCrossedRows() < 70 ||
-             candidate.tpcChi2NCl() >= 5 ||
-             candidate.tpcFractionSharedCls() >= 0.3 ||
-             candidate.itsNCls() < 5 ||
-             candidate.itsChi2NCl() >= 10);
+    constexpr float maxAbsEta = 0.8f;
+    constexpr float maxAbsDcaXY = 0.2f;
+    constexpr float maxAbsDcaZ = 0.2f;
+    constexpr int minTPCCrossedRows = 70;
+    constexpr float maxTPCChi2NCl = 5.f;
+    constexpr float maxTPCFractionSharedCls = 0.3f;
+    constexpr int minITSNCls = 5;
+    constexpr float maxITSChi2NCl = 10.f;
+
+    return !(std::abs(candidate.eta()) >= maxAbsEta ||
+             std::abs(candidate.dcaXY()) >= maxAbsDcaXY ||
+             std::abs(candidate.dcaZ()) >= maxAbsDcaZ ||
+             candidate.tpcNClsCrossedRows() < minTPCCrossedRows ||
+             candidate.tpcChi2NCl() >= maxTPCChi2NCl ||
+             candidate.tpcFractionSharedCls() >= maxTPCFractionSharedCls ||
+             candidate.itsNCls() < minITSNCls ||
+             candidate.itsChi2NCl() >= maxITSChi2NCl);
   }
 
   bool useDeuteronNucleus() const
