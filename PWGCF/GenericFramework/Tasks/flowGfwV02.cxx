@@ -427,8 +427,7 @@ struct FlowGfwV02 {
     AxisSpec multpvAxis = {600, 0, 600, "N_{ch} (PV)"};
     AxisSpec dcaZAxis = {200, -2, 2, "DCA_{z} (cm)"};
     AxisSpec dcaXYAxis = {200, -0.5, 0.5, "DCA_{xy} (cm)"};
-    AxisSpec bsAxis = {o2::analysis::gfw::nBootstrap, -0.5, o2::analysis::gfw::nBootstrap - 0.5, "PID"}; // 0 = not identified, 1 = pion, 2 = kaon, 3 = proton
-
+    AxisSpec bsAxis = {o2::analysis::gfw::nBootstrap, -0.5, o2::analysis::gfw::nBootstrap - 0.5, "Bootstrap Index"};
 
     registry.add("v02pt", "", {HistType::kTProfile2D, {ptAxis, centAxis}});
     registry.add("nchMid", "", {HistType::kTProfile3D, {ptAxis, centAxis, nchAxis}});
