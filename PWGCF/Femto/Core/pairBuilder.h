@@ -323,8 +323,10 @@ class PairV0V0Builder
             typename T14,
             typename T15,
             typename T16,
+            typename T17,
             typename T18,
-            typename T17>
+            typename T19,
+            typename T20>
   void init(o2::framework::HistogramRegistry* registry,
             T1 const& confCollisionBinning,
             T2 const& confV0Selection1,
@@ -339,37 +341,55 @@ class PairV0V0Builder
             std::map<T11, std::vector<o2::framework::AxisSpec>> const& colHistSpec,
             std::map<T12, std::vector<o2::framework::AxisSpec>> const& V0HistSpec1,
             std::map<T13, std::vector<o2::framework::AxisSpec>> const& V0HistSpec2,
-            std::map<T14, std::vector<o2::framework::AxisSpec>> const& PosDauHistSpec,
-            std::map<T15, std::vector<o2::framework::AxisSpec>> const& NegDauHistSpec,
-            std::map<T16, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
-            std::map<T17, std::vector<o2::framework::AxisSpec>> const& cprHistSpecPos,
-            std::map<T18, std::vector<o2::framework::AxisSpec>> const& cprHistSpecNeg)
+            std::map<T14, std::vector<o2::framework::AxisSpec>> const& PosDauHistSpec1,
+            std::map<T15, std::vector<o2::framework::AxisSpec>> const& NegDauHistSpec1,
+            std::map<T16, std::vector<o2::framework::AxisSpec>> const& PosDauHistSpec2,
+            std::map<T17, std::vector<o2::framework::AxisSpec>> const& NegDauHistSpec2,
+            std::map<T18, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
+            std::map<T19, std::vector<o2::framework::AxisSpec>> const& cprHistSpecPos,
+            std::map<T20, std::vector<o2::framework::AxisSpec>> const& cprHistSpecNeg)
   {
-
-    // check if correlate the same tracks or not
     mSameSpecies = confMixing.sameSpecies.value;
+
+    if constexpr (v0Type1 != v0Type2) {
+      // two different v0 species can never be identical particles
+      if (mSameSpecies) {
+        LOG(warn) << "sameSpecies=true is impossible for different v0 species (v0Type1="
+                  << static_cast<int>(v0Type1) << ", v0Type2=" << static_cast<int>(v0Type2)
+                  << "). Overriding sameSpecies to false.";
+        mSameSpecies = false;
+      }
+    } else {
+      // same v0 species: both values are legitimate (e.g. lambda-lambda vs lambda-antilambda),
+      // but running as different species only makes sense if the two selections are disjoint
+      if (!mSameSpecies && confV0Selection1.sign.value == confV0Selection2.sign.value) {
+        LOG(warn) << "sameSpecies=false for identical v0 species with identical sign ("
+                  << confV0Selection1.sign.value << "). If both selections match the same "
+                  << "candidates, this produces self-pairs and double counting.";
+      }
+    }
 
     mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
     mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
     mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
     mPc.template init<modeSe>(confPairCuts);
 
-    if (mSameSpecies) {
-      mV0Cleaner1.init(confV0Cleaner1);
-      mV0HistManager1.template init<modeSe>(registry, V0HistSpec1, confV0Selection1, PosDauHistSpec, NegDauHistSpec);
+    mV0Cleaner1.init(confV0Cleaner1);
+    mV0Cleaner2.init(confV0Cleaner2);
 
+    // the first v0 (and its daughters) is always present
+    mV0HistManager1.template init<modeSe>(registry, V0HistSpec1, confV0Selection1, PosDauHistSpec1, NegDauHistSpec1);
+
+    if (mSameSpecies) {
       mPairHistManagerSe.setMass(confV0Selection1.pdgCodeAbs.value, confV0Selection1.pdgCodeAbs.value);
       mPairHistManagerSe.setCharge(1, 1);
-      mCprSe.init(registry, cprHistSpecPos, cprHistSpecNeg, confCprPos, confCprPos);
+      mCprSe.init(registry, cprHistSpecPos, cprHistSpecNeg, confCprPos, confCprNeg);
 
       mPairHistManagerMe.setMass(confV0Selection1.pdgCodeAbs.value, confV0Selection1.pdgCodeAbs.value);
       mPairHistManagerMe.setCharge(1, 1);
       mCprMe.init(registry, cprHistSpecPos, cprHistSpecNeg, confCprPos, confCprNeg);
     } else {
-      mV0Cleaner1.init(confV0Cleaner1);
-      mV0Cleaner2.init(confV0Cleaner2);
-      mV0HistManager1.template init<modeSe>(registry, V0HistSpec1, confV0Selection1, PosDauHistSpec, NegDauHistSpec);
-      mV0HistManager2.template init<modeSe>(registry, V0HistSpec2, confV0Selection2, PosDauHistSpec, NegDauHistSpec);
+      mV0HistManager2.template init<modeSe>(registry, V0HistSpec2, confV0Selection2, PosDauHistSpec2, NegDauHistSpec2);
 
       mPairHistManagerSe.setMass(confV0Selection1.pdgCodeAbs.value, confV0Selection2.pdgCodeAbs.value);
       mPairHistManagerSe.setCharge(1, 1);
@@ -385,6 +405,7 @@ class PairV0V0Builder
     mMixingDepth = confMixing.depth.value;
 
     // setup rng if necessary
+    // mDist is bounded at declaration, so it stays valid even if this branch is not taken
     if (confMixing.seed.value >= 0) {
       uint64_t randomSeed = 0;
       mMixIdenticalParticles = true;
@@ -452,8 +473,8 @@ class PairV0V0Builder
     }
   }
 
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-  void processMixedEvent(T1 const& cols, T2 const& trackTable, T3 const& /*v0table*/, T4& partition1, T5& partition2, T6& cache, T7& binsVtxMult, T8& binsVtxCent, T9& binsVtxMultCent)
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
+  void processMixedEvent(T1 const& cols, T2 const& trackTable, T3& partition1, T4& partition2, T5& cache, T6& binsVtxMult, T7& binsVtxCent, T8& binsVtxMultCent)
   {
 
     if (mSameSpecies) {
@@ -537,7 +558,8 @@ class PairV0V0Builder
   int mMixingDepth = 5;
   bool mMixIdenticalParticles = false;
   std::mt19937 mRng;
-  std::uniform_int_distribution<> mDist;
+  std::uniform_int_distribution<> mDist{static_cast<int>(pairprocesshelpers::kOrder12),
+                                        static_cast<int>(pairprocesshelpers::kOrder21)};
 };
 
 template <auto& prefixTrack,

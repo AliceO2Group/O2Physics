@@ -191,7 +191,7 @@ enum V0Filters {
   kRejectionLambdaMass,
   kLambdaMassMin,
   kLambdaMassMax,
-  kTrackFiltersMax
+  kV0FiltersMax
 };
 
 constexpr char LambdaFilterHistName[] = "hLambdaFilters";
@@ -261,6 +261,7 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
     }
 
     this->addSelection(kDcaDaughMax, v0SelectionNames.at(kDcaDaughMax), config.dcaDauMax.value, limits::kAbsUpperLimit, true, true, false);
+    this->addSelection(kDecayVtxMax, v0SelectionNames.at(kDecayVtxMax), config.decayVtxMax.value, limits::kUpperLimit, true, true, false);
     this->addSelection(kCpaMin, v0SelectionNames.at(kCpaMin), config.cpaMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kTransRadMin, v0SelectionNames.at(kTransRadMin), config.transRadMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kTransRadMax, v0SelectionNames.at(kTransRadMax), config.transRadMax.value, limits::kUpperLimit, true, true, false);
@@ -316,7 +317,6 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
     std::array<float, 2> clustersDaughters = {1.f * posDaughter.tpcNClsFound(), 1.f * negDaughter.tpcNClsFound()};
     this->evaluateObservable(kDauTpcClsMin, *std::min_element(clustersDaughters.begin(), clustersDaughters.end()));
 
-    // daughter pid selections
     this->evaluateObservable(kPosDaughTpcPion, posDaughter.tpcNSigmaPi());
     this->evaluateObservable(kPosDaughTpcProton, posDaughter.tpcNSigmaPr());
     this->evaluateObservable(kNegDaughTpcPion, negDaughter.tpcNSigmaPi());
