@@ -3929,6 +3929,11 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       values[kQuadDCAabsXY] = std::sqrt((dca1XY * dca1XY + dca2XY * dca2XY) / 2.);
     }
   }
+  if constexpr ((pairType == kElectronMuon) && ((fillMap & ReducedTrackBarrel) > 0)) {
+    // DCA of the barrel (electron) leg; not filled in FillPairME since the mixed-event barrel track type has no DCA columns
+    values[kDCAxy1] = t1.dcaXY();
+    values[kDCAz1] = t1.dcaZ();
+  }
   if (fgUsedVars[kPairPhiv]) {
     values[kPairPhiv] = calculatePhiV<pairType>(t1, t2);
   }
