@@ -92,7 +92,7 @@ float philow = 0.0;
 float phiup = o2::constants::math::TwoPI;
 int nchbins = 300;
 float nchlow = 0;
-float nchup = 3000;
+float nchup = 300;
 std::vector<double> centbinning(90);
 int nBootstrap = 10;
 std::vector<std::pair<double, double>> etagapsPtPt;
@@ -104,6 +104,7 @@ std::vector<double> multGlobalPVCorrCutPars;
 } // namespace o2::analysis::gfw
 
 struct FlowGfwV02 {
+
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgMpar, int, 4, "Highest order of pt-pt correlations")
   O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
@@ -124,6 +125,7 @@ struct FlowGfwV02 {
   O2_DEFINE_CONFIGURABLE(cfgNormalizeByCharged, bool, true, "Enable or disable the normalization by charged particles");
   O2_DEFINE_CONFIGURABLE(cfgConsistentEventFlag, int, 15, "Flag for consistent event selection");
   O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, true, "Use additional event cut on mult correlations");
+  O2_DEFINE_CONFIGURABLE(cfgUseV0, bool, false, "Use V0 analysis");
 
   // Event selection cuts
   struct : ConfigurableGroup {
@@ -138,6 +140,16 @@ struct FlowGfwV02 {
     O2_DEFINE_CONFIGURABLE(cfgTVXinTRD, bool, true, "kTVXinTRD - Use kTVXinTRD (reject TRD triggered events)");
     O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, true, "kIsVertexITSTPC - Selects collisions with at least one ITS-TPC track");
   } cfgEventCutFlags;
+
+    // Event selection cuts
+    struct : ConfigurableGroup {
+      O2_DEFINE_CONFIGURABLE(cfgEtaSubAMin, float, -0.8, "Minimum eta for subevent A");
+      O2_DEFINE_CONFIGURABLE(cfgEtaSubAMax, float, -0.5, "Maximum eta for subevent A");
+      O2_DEFINE_CONFIGURABLE(cfgEtaSubBMin, float, 0.5, "Minimum eta for subevent B");
+      O2_DEFINE_CONFIGURABLE(cfgEtaSubBMax, float, 0.8, "Maximum eta for subevent B");
+      O2_DEFINE_CONFIGURABLE(cfgEtaSubCMin, float, -0.4, "Minimum eta for subevent C");
+      O2_DEFINE_CONFIGURABLE(cfgEtaSubCMax, float, 0.4, "Maximum eta for subevent C");
+    } cfgSubeventCuts;
 
   struct : ConfigurableGroup {
     Configurable<std::vector<double>> cfgMultGlobalCutPars{"cfgMultGlobalCutPars", std::vector<double>{2272.16, -76.6932, 1.01204, -0.00631545, 1.59868e-05, 136.336, -4.97006, 0.121199, -0.0015921, 7.66197e-06}, "Global vs FT0C multiplicity cut parameter values"};
@@ -253,6 +265,8 @@ struct FlowGfwV02 {
     std::array<float, 6> itsNsigmaCut;
     std::array<float, 6> tpcNsigmaCut;
     std::array<std::unique_ptr<TH1D>, 4> hPtMid{};
+    std::array<std::unique_ptr<TH1D>, 4> hPtForward{};
+    std::array<std::unique_ptr<TH1D>, 4> hPtBackward{};
   };
   PIDState pidStates;
 
@@ -275,7 +289,8 @@ struct FlowGfwV02 {
     PidCharged = 0,
     PidPions,
     PidKaons,
-    PidProtons
+    PidProtons,
+    PidTotal
   };
   enum PiKpArrayIndex {
     IndPionUp = 0,
@@ -378,6 +393,25 @@ struct FlowGfwV02 {
     pidStates.hPtMid[PidKaons]->SetDirectory(nullptr);
     pidStates.hPtMid[PidProtons]->SetDirectory(nullptr);
 
+    pidStates.hPtForward[PidCharged] = std::make_unique<TH1D>("hPtForward_charged", "hPtForward_charged", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
+    pidStates.hPtForward[PidPions] = std::make_unique<TH1D>("hPtForward_pions", "hPtForward_pions", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
+    pidStates.hPtForward[PidKaons] = std::make_unique<TH1D>("hPtForward_kaons", "hPtForward_kaons", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
+    pidStates.hPtForward[PidProtons] = std::make_unique<TH1D>("hPtForward_protons", "hPtForward_protons", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
+    pidStates.hPtForward[PidCharged]->SetDirectory(nullptr);
+    pidStates.hPtForward[PidPions]->SetDirectory(nullptr);
+    pidStates.hPtForward[PidKaons]->SetDirectory(nullptr);
+    pidStates.hPtForward[PidProtons]->SetDirectory(nullptr);
+
+    pidStates.hPtBackward[PidCharged] = std::make_unique<TH1D>("hPtBackward_charged", "hPtBackward_charged", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
+    pidStates.hPtBackward[PidPions] = std::make_unique<TH1D>("hPtBackward_pions", "hPtBackward_pions", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
+    pidStates.hPtBackward[PidKaons] = std::make_unique<TH1D>("hPtBackward_kaons", "hPtBackward_kaons", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
+    pidStates.hPtBackward[PidProtons] = std::make_unique<TH1D>("hPtBackward_protons", "hPtBackward_protons", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
+    pidStates.hPtBackward[PidCharged]->SetDirectory(nullptr);
+    pidStates.hPtBackward[PidPions]->SetDirectory(nullptr);
+    pidStates.hPtBackward[PidKaons]->SetDirectory(nullptr);
+    pidStates.hPtBackward[PidProtons]->SetDirectory(nullptr);
+
+
     AxisSpec phiAxis = {o2::analysis::gfw::phibins, o2::analysis::gfw::philow, o2::analysis::gfw::phiup, "#phi"};
     AxisSpec etaAxis = {o2::analysis::gfw::etabins, -cfgTrackCuts.cfgEtaMax, cfgTrackCuts.cfgEtaMax, "#eta"};
     AxisSpec vtxAxis = {o2::analysis::gfw::vtxZbins, -cfgEventCuts.cfgZvtxMax, cfgEventCuts.cfgZvtxMax, "Vtx_{z} (cm)"};
@@ -398,9 +432,20 @@ struct FlowGfwV02 {
     AxisSpec multpvAxis = {600, 0, 600, "N_{ch} (PV)"};
     AxisSpec dcaZAxis = {200, -2, 2, "DCA_{z} (cm)"};
     AxisSpec dcaXYAxis = {200, -0.5, 0.5, "DCA_{xy} (cm)"};
+    AxisSpec pidAxis = {4, -0.5, 3.5, "PID"}; // 0 = not identified, 1 = pion, 2 = kaon, 3 = proton
 
     registry.add("v02pt", "", {HistType::kTProfile2D, {ptAxis, centAxis}});
-    registry.add("nchMid", "", {HistType::kTProfile2D, {ptAxis, centAxis}});
+    registry.add("nchMid", "", {HistType::kTProfile3D, {ptAxis, centAxis, nchAxis}});
+    registry.add("v02centmult", "", {HistType::kTProfile2D, {centAxis, nchAxis}});
+
+
+    registry.add("analysis/v0AB", "", {HistType::kTProfile3D, {pidAxis,ptAxis, centAxis}});
+    registry.add("analysis/v0BA", "", {HistType::kTProfile3D, {pidAxis,ptAxis, centAxis}});
+    registry.add("analysis/nchA", "", {HistType::kTProfile3D, {pidAxis,ptAxis, centAxis}});
+    registry.add("analysis/nchB", "", {HistType::kTProfile3D, {pidAxis,ptAxis, centAxis}});
+    registry.add("analysis/ptA", "", {HistType::kTProfile3D, {pidAxis, centAxis, nchAxis}});
+    registry.add("analysis/ptB", "", {HistType::kTProfile3D, {pidAxis, centAxis, nchAxis}});
+    registry.add("analysis/ptAB", "", {HistType::kTProfile3D, {pidAxis, centAxis, nchAxis}});
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -614,7 +659,7 @@ struct FlowGfwV02 {
     }
     if (cfgPIDEfficiency) {
       const std::array<std::string, 4> pidStrings = {"ch", "pi", "ka", "pr"};
-      for (int i = 1; i < 4; i++) {
+      for (int i = 1; i < PidTotal; i++) {
 
         cfg.mEfficiency[i] = ccdb->getForTimeStamp<TH1D>(cfgEfficiency.value + pidStrings[i], timestamp);
         if (cfg.mEfficiency[i] == nullptr) {
@@ -806,7 +851,7 @@ struct FlowGfwV02 {
   }
 
   template <DataType dt>
-  void fillOutputContainers(const float& centmult, const double& rndm, const int& /*run*/ = 0)
+  void fillOutputContainers(const float& centmult, const int& multiplicity, const double& rndm, const int& /*run*/ = 0)
   {
     for (uint l_ind = 0; l_ind < corrconfigs.size(); ++l_ind) {
       if (!corrconfigs.at(l_ind).pTDif) {
@@ -846,6 +891,32 @@ struct FlowGfwV02 {
         }
       }
     }
+
+    if (cfgUseV0) {
+      double v0corrAB = 0;
+      double v0corrBA = 0;
+      double ptMeanForward = pidStates.hPtForward[PidCharged]->GetMean();
+      double ptMeanBackward = pidStates.hPtBackward[PidCharged]->GetMean();
+      double ptFractionForward = 0.;
+      double ptFractionBackward = 0.;
+      for (int pid = 0; pid < PidTotal; pid++) {
+        int normIndex = (cfgNormalizeByCharged) ? PidCharged : pid;
+        for (int i = 1; i <= fSecondAxis->GetNbins(); i++) {
+          ptFractionForward = pidStates.hPtForward[pid]->GetBinContent(i) / pidStates.hPtForward[normIndex]->Integral();
+          ptFractionBackward = pidStates.hPtBackward[pid]->GetBinContent(i) / pidStates.hPtBackward[normIndex]->Integral();
+          v0corrAB = ptFractionForward * ptMeanBackward;
+          v0corrBA = ptFractionBackward * ptMeanForward;
+          registry.fill(HIST("analysis/v0AB"), pid, fSecondAxis->GetBinCenter(i), centmult, v0corrAB);
+          registry.fill(HIST("analysis/v0BA"), pid, fSecondAxis->GetBinCenter(i), centmult, v0corrBA);
+          registry.fill(HIST("analysis/nchA"), pid, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward);
+          registry.fill(HIST("analysis/nchB"), pid, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward);
+        }
+        registry.fill(HIST("analysis/ptA"), pid, centmult, multiplicity, ptMeanForward);
+        registry.fill(HIST("analysis/ptB"), pid, centmult, multiplicity, ptMeanBackward);
+        registry.fill(HIST("analysis/ptAB"), pid, centmult, multiplicity, ptMeanForward * ptMeanBackward);
+      }
+    }
+
     // Fill the profiles for each pT bin
     auto dnx = fGFW->Calculate(corrconfigs.at(0), 0, kTRUE).real();
     if (dnx == 0)
@@ -857,9 +928,10 @@ struct FlowGfwV02 {
         ptFraction = pidStates.hPtMid[PidCharged]->GetBinContent(i) / pidStates.hPtMid[PidCharged]->Integral();
         if (std::abs(val) < 1)
           registry.fill(HIST("v02pt"), fSecondAxis->GetBinCenter(i), centmult, val * ptFraction, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0);
-        registry.fill(HIST("nchMid"), fSecondAxis->GetBinCenter(i), centmult, ptFraction);
+        registry.fill(HIST("nchMid"), fSecondAxis->GetBinCenter(i), centmult, multiplicity, ptFraction);
       }
     }
+    registry.fill(HIST("v02centmult"), centmult, multiplicity, val);
     return;
   }
 
@@ -891,6 +963,14 @@ struct FlowGfwV02 {
     pidStates.hPtMid[PidPions]->Reset();
     pidStates.hPtMid[PidKaons]->Reset();
     pidStates.hPtMid[PidProtons]->Reset();
+    pidStates.hPtBackward[PidCharged]->Reset();
+    pidStates.hPtBackward[PidPions]->Reset();
+    pidStates.hPtBackward[PidKaons]->Reset();
+    pidStates.hPtBackward[PidProtons]->Reset();
+    pidStates.hPtForward[PidCharged]->Reset();
+    pidStates.hPtForward[PidPions]->Reset();
+    pidStates.hPtForward[PidKaons]->Reset();
+    pidStates.hPtForward[PidProtons]->Reset();
 
     float lRandom = fRndm->Rndm();
 
@@ -898,15 +978,31 @@ struct FlowGfwV02 {
     AcceptedTracks acceptedTracks{0, 0, 0, 0};
     for (const auto& track : tracks) {
       processTrack(track, vtxz, xaxis.multiplicity, run, acceptedTracks);
-      if (track.eta() > -0.4 && track.eta() < 0.4)
+      if (track.eta() > cfgSubeventCuts.cfgEtaSubCMin && track.eta() < cfgSubeventCuts.cfgEtaSubCMax)
         pidStates.hPtMid[PidCharged]->Fill(track.pt(), getEfficiency(track, PidCharged));
+      if (track.eta() > cfgSubeventCuts.cfgEtaSubAMin && track.eta() < cfgSubeventCuts.cfgEtaSubAMax) // add mean pT
+        pidStates.hPtBackward[PidCharged]->Fill(track.pt(), getEfficiency(track, PidCharged));
+      if (track.eta() > cfgSubeventCuts.cfgEtaSubBMin && track.eta() < cfgSubeventCuts.cfgEtaSubBMax) // add mean pT
+        pidStates.hPtForward[PidCharged]->Fill(track.pt(), getEfficiency(track, PidCharged));
       // If PID is identified, fill pt spectrum for the corresponding particle
       int pidInd = getNsigmaPID(track);
-      if (pidInd != -1 && track.eta() > -0.4 && track.eta() < 0.4) {
+      if (pidInd != -1 && track.eta() > cfgSubeventCuts.cfgEtaSubCMin && track.eta() < cfgSubeventCuts.cfgEtaSubCMax) {
         if (cfgPIDEfficiency)
           pidStates.hPtMid[pidInd]->Fill(track.pt(), getEfficiency(track, pidInd));
         else
           pidStates.hPtMid[pidInd]->Fill(track.pt(), getEfficiency(track, PidCharged)); // Default to charged particles if PID efficiency is not used
+      }
+      if (pidInd != -1 && track.eta() > cfgSubeventCuts.cfgEtaSubAMin && track.eta() < cfgSubeventCuts.cfgEtaSubAMax) {
+        if (cfgPIDEfficiency)
+          pidStates.hPtBackward[pidInd]->Fill(track.pt(), getEfficiency(track, pidInd));
+        else
+          pidStates.hPtBackward[pidInd]->Fill(track.pt(), getEfficiency(track, PidCharged)); // Default to charged particles if PID efficiency is not used
+      }
+      if (pidInd != -1 && track.eta() > cfgSubeventCuts.cfgEtaSubBMin && track.eta() < cfgSubeventCuts.cfgEtaSubBMax) {
+        if (cfgPIDEfficiency)
+          pidStates.hPtForward[pidInd]->Fill(track.pt(), getEfficiency(track, pidInd));
+        else
+          pidStates.hPtForward[pidInd]->Fill(track.pt(), getEfficiency(track, PidCharged)); // Default to charged particles if PID efficiency is not used
       }
     }
     if (cfgConsistentEventFlag & 1)
@@ -922,7 +1018,7 @@ struct FlowGfwV02 {
       if (acceptedTracks.nPos < 2 || acceptedTracks.nMid < 2 || acceptedTracks.nNeg < 2) // o2-linter: disable=magic-number (at least two tracks in all three subevents)
         return;
     // Fill output containers
-    fillOutputContainers<dt>(xaxis.centrality, lRandom, run);
+    fillOutputContainers<dt>(xaxis.centrality, xaxis.multiplicity, lRandom, run);
   }
 
   template <typename TTrack>
