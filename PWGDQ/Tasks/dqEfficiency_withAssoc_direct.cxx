@@ -1141,9 +1141,9 @@ struct AnalysisSameEventPairing {
     Configurable<std::string> pair{"cfgPairCuts", "", "Comma separated list of pair cuts, !!! Use only if you know what you are doing, otherwise leave empty"};
     Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
     Configurable<bool> fConfigMCtruthQA{"cfgMCtruthQA", false, "If true, fill QA histograms with default"};
-    Configurable<bool> fConfigPseudoHEQA{"cfgPseudoQA", false, "If true, fill QA histograms with pseudo-proper decay length analysis with polarization HE"};
-    Configurable<bool> fConfigPseudoCSQA{"cfgPseudoQA", false, "If true, fill QA histograms with pseudo-proper decay length analysis with polarization CS"};
-    Configurable<bool> fConfigPseudoRMQA{"cfgPseudoQA", false, "If true, fill QA histograms with pseudo-proper decay length analysis with polarization RM"};
+    Configurable<bool> fConfigPseudoHEQA{"cfgPseudoHEQA", false, "If true, fill QA histograms with pseudo-proper decay length analysis with polarization HE"};
+    Configurable<bool> fConfigPseudoCSQA{"cfgPseudoCSQA", false, "If true, fill QA histograms with pseudo-proper decay length analysis with polarization CS"};
+    Configurable<bool> fConfigPseudoRMQA{"cfgPseudoRMQA", false, "If true, fill QA histograms with pseudo-proper decay length analysis with polarization RM"};
     Configurable<bool> fConfigTruthPbPbMIDYHE{"cfgTruthPbPbmidyHE", false, "If true, fill QA histograms with dielectron pairs in helicity frame"};
     Configurable<bool> fConfigTruthPbPbMIDYCS{"cfgTruthPbPbmidyCS", false, "If true, fill QA histograms with dielectron pairs in collion-soper frame"};
     Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
@@ -1511,17 +1511,17 @@ struct AnalysisSameEventPairing {
         if (fConfigOptions.fConfigPseudoHEQA.value) {
           histNames += Form("MCTruthGenPseudoPolPairHESel_%s;", sig->GetName());
         }
-        if (fConfigOptions.fConfigPseudoCSQA.value) {
+	 if (fConfigOptions.fConfigPseudoCSQA.value) {
           histNames += Form("MCTruthGenPseudoPolPairCSSel_%s;", sig->GetName());
         }
-        if (fConfigOptions.fConfigPseudoRMQA.value) {
+	 if (fConfigOptions.fConfigPseudoRMQA.value) {
           histNames += Form("MCTruthGenPseudoPolPairRMSel_%s;", sig->GetName());
         }
         if (fConfigOptions.fConfigTruthPbPbMIDYHE.value) {
           histNames += Form("MCTruthGenPoldielectronPbPbPairHESel_%s;", sig->GetName());
         }
         if (fConfigOptions.fConfigTruthPbPbMIDYCS.value) {
-          histNames += Form("MCTruthGenPseudoPolPairCSSel_%s;", sig->GetName());
+          histNames += Form("MCTruthGenPoldielectronPbPbPairCSSel_%s;", sig->GetName());
         }
         fHasTwoProngGenMCsignals = true;
       }
@@ -1534,17 +1534,17 @@ struct AnalysisSameEventPairing {
           if (fConfigOptions.fConfigPseudoHEQA.value) {
             histNames += Form("MCTruthGenPseudoPolPairHESel_%s_%s;", sig->GetName(), cut->GetName());
           }
-          if (fConfigOptions.fConfigPseudoCSQA.value) {
+	   if (fConfigOptions.fConfigPseudoCSQA.value) {
             histNames += Form("MCTruthGenPseudoPolPairCSSel_%s_%s;", sig->GetName(), cut->GetName());
           }
-          if (fConfigOptions.fConfigPseudoRMQA.value) {
+	    if (fConfigOptions.fConfigPseudoRMQA.value) {
             histNames += Form("MCTruthGenPseudoPolPairRMSel_%s_%s;", sig->GetName(), cut->GetName());
           }
           if (fConfigOptions.fConfigTruthPbPbMIDYHE.value) {
             histNames += Form("MCTruthGenPoldielectronPbPbPairHESel_%s_%s;", sig->GetName(), cut->GetName());
           }
           if (fConfigOptions.fConfigTruthPbPbMIDYCS.value) {
-            histNames += Form("MCTruthGenPseudoPolPairCSSel_%s_%s;", sig->GetName(), cut->GetName());
+            histNames += Form("MCTruthGenPoldielectronPbPbPairCSSel_%s_%s;", sig->GetName(), cut->GetName());
           }
         }
       }
@@ -2206,10 +2206,10 @@ struct AnalysisSameEventPairing {
                 if (fConfigOptions.fConfigPseudoHEQA.value) {
                   fHistMan->FillHistClass(Form("MCTruthGenPseudoPolPairHESel_%s", sig->GetName()), VarManager::fgValues);
                 }
-                if (fConfigOptions.fConfigPseudoCSQA.value) {
+		if (fConfigOptions.fConfigPseudoCSQA.value) {
                   fHistMan->FillHistClass(Form("MCTruthGenPseudoPolPairCSSel_%s", sig->GetName()), VarManager::fgValues);
                 }
-                if (fConfigOptions.fConfigPseudoRMQA.value) {
+		    if (fConfigOptions.fConfigPseudoRMQA.value) {
                   fHistMan->FillHistClass(Form("MCTruthGenPseudoPolPairRMSel_%s", sig->GetName()), VarManager::fgValues);
                 }
                 if (fConfigOptions.fConfigTruthPbPbMIDYHE.value) {
@@ -2228,10 +2228,10 @@ struct AnalysisSameEventPairing {
                       if (fConfigOptions.fConfigPseudoHEQA.value) {
                         fHistMan->FillHistClass(Form("MCTruthGenPseudoPolPairHESel_%s_%s", sig->GetName(), cut->GetName()), VarManager::fgValues);
                       }
-                      if (fConfigOptions.fConfigPseudoCSQA.value) {
+		      if (fConfigOptions.fConfigPseudoCSQA.value) {
                         fHistMan->FillHistClass(Form("MCTruthGenPseudoPolPairCSSel_%s_%s", sig->GetName(), cut->GetName()), VarManager::fgValues);
                       }
-                      if (fConfigOptions.fConfigPseudoRMQA.value) {
+		      if (fConfigOptions.fConfigPseudoRMQA.value) {
                         fHistMan->FillHistClass(Form("MCTruthGenPseudoPolPairRMSel_%s_%s", sig->GetName(), cut->GetName()), VarManager::fgValues);
                       }
 
@@ -3244,10 +3244,10 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, const char
     if (classStr.Contains("MCTruthGenPseudoPolPairHE")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "polarization-pseudoproper-midy-he-gen", histName);
     }
-    if (classStr.Contains("MCTruthGenPseudoPolPairCS")) {
+     if (classStr.Contains("MCTruthGenPseudoPolPairCS")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "polarization-pseudoproper-midy-cs-gen", histName);
     }
-    if (classStr.Contains("MCTruthGenPseudoPolPairRM")) {
+      if (classStr.Contains("MCTruthGenPseudoPolPairRM")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "polarization-pseudoproper-midy-rand-gen", histName);
     }
     if (classStr.Contains("MCTruthGenPoldielectronPbPbPairHE")) {
