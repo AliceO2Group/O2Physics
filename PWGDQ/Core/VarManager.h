@@ -7336,10 +7336,6 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
     m2 = o2::constants::physics::MassPionCharged;
   }
 
-  if constexpr (pairType == kElectronMuon) {
-    m2 = o2::constants::physics::MassMuon;
-  }
-
   values[kCharge] = t1.sign() + t2.sign();
   values[kCharge1] = t1.sign();
   values[kCharge2] = t2.sign();
@@ -7349,7 +7345,6 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
   values[kMass] = v12.M();
   values[kPt] = v12.Pt();
   values[kEta] = v12.Eta();
-  // values[kPhi] = v12.Phi();
   values[kPhi] = RecoDecay::constrainAngle(v12.Phi());
   values[kRap] = -v12.Rapidity();
   double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
@@ -7523,17 +7518,6 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
       }
     }
   }
-  if constexpr ((pairType == kDecayToMuMu) && ((fillMap & Muon) > 0 || (fillMap & ReducedMuon) > 0)) {
-    if (fgUsedVars[kQuadDCAabsXY]) {
-      double dca1X = t1.fwdDcaX();
-      double dca1Y = t1.fwdDcaY();
-      double dca1XY = std::sqrt(dca1X * dca1X + dca1Y * dca1Y);
-      double dca2X = t2.fwdDcaX();
-      double dca2Y = t2.fwdDcaY();
-      double dca2XY = std::sqrt(dca2X * dca2X + dca2Y * dca2Y);
-      values[kQuadDCAabsXY] = std::sqrt((dca1XY * dca1XY + dca2XY * dca2XY) / 2.);
-    }
-  }
   if (fgUsedVars[kPairPhiv]) {
     values[kPairPhiv] = calculatePhiV<pairType>(t1, t2);
   }
@@ -7558,7 +7542,6 @@ void VarManager::FillPairVertexingAlice3(C const& collision, T const& t1, T cons
   // check at compile time that the event and cov matrix have the cov matrix
   constexpr bool eventHasVtxCov = ((collFillMap & Collision) > 0 || (collFillMap & ReducedEventVtxCov) > 0);
   constexpr bool trackHasCov = ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0);
-  constexpr bool muonHasCov = ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0);
 
   if (!values) {
     values = fgValues;
@@ -7568,10 +7551,6 @@ void VarManager::FillPairVertexingAlice3(C const& collision, T const& t1, T cons
   if constexpr (pairType == kDecayToKPi) {
     m1 = o2::constants::physics::MassKaonCharged;
     m2 = o2::constants::physics::MassPionCharged;
-  }
-  if constexpr (pairType == kDecayToMuMu && muonHasCov) {
-    m1 = o2::constants::physics::MassMuon;
-    m2 = o2::constants::physics::MassMuon;
   }
   ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
   ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
@@ -7597,11 +7576,6 @@ void VarManager::FillPairVertexingAlice3(C const& collision, T const& t1, T cons
                                       t2.c1PtY(), t2.c1PtZ(), t2.c1PtSnp(), t2.c1PtTgl(), t2.c1Pt21Pt2()};
       o2::track::TrackParCov pars2{t2.x(), t2.alpha(), t2pars, t2covs};
       procCode = fgFitterTwoProngBarrel.process(pars1, pars2);
-    } else if constexpr ((pairType == kDecayToMuMu) && muonHasCov) {
-      // Initialize track parameters for forward
-      o2::track::TrackParCovFwd pars1 = FwdToTrackPar(t1, t1);
-      o2::track::TrackParCovFwd pars2 = FwdToTrackPar(t2, t2);
-      procCode = fgFitterTwoProngFwd.process(pars1, pars2);
     } else {
       return;
     }
