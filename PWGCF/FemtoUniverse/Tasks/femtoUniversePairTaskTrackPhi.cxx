@@ -72,6 +72,10 @@ constexpr float kMomCutKaonMid = 0.45f;
 constexpr float kMomCutKaonHigh = 0.55f;
 constexpr float kMomCutKaonMax = 1.5f;
 
+constexpr float kNSigmaStandard = 3.0f;
+constexpr float kNSigmaMedium = 2.0f;
+constexpr float kNSigmaStrict = 1.0f;
+
 // Constants for nSigma cuts
 constexpr float kNSigmaStrict = 1.0f;
 constexpr float kNSigmaMedium = 2.0f;
@@ -249,31 +253,31 @@ struct FemtoUniversePairTaskTrackPhi {
   {
     if (confTrackUseRun3PIDforKaons) {
       if (mom < kMomCutLow) {
-        return std::abs(nsigmaTPCK) < 3.0;
+        return std::abs(nsigmaTPCK) < kNSigmaStandard;
       }
       if (mom >= kMomCutLow) {
         if (hasTOF) { // if TOF is available, use combine nsigma
-          return std::hypot(nsigmaTOFK, nsigmaTPCK) < 3.0;
+          return std::hypot(nsigmaTOFK, nsigmaTPCK) < kNSigmaStandard;
         } else // if TOF is not available, use TPC nsigma only
         {
-          return std::abs(nsigmaTPCK) < 3.0;
+          return std::abs(nsigmaTPCK) < kNSigmaStandard;
         }
       }
     } else {
       if (mom < kMomCutKaonLow) { // 0.0-0.3
-        return std::abs(nsigmaTPCK) < 3.0;
+        return std::abs(nsigmaTPCK) < kNSigmaStandard;
       }
       if (mom < kMomCutKaonMid) { // 0.30 - 0.45
-        return std::abs(nsigmaTPCK) < 2.0;
+        return std::abs(nsigmaTPCK) < kNSigmaMedium;
       }
       if (mom < kMomCutKaonHigh) { // 0.45-0.55
-        return std::abs(nsigmaTPCK) < 1.0;
+        return std::abs(nsigmaTPCK) < kNSigmaStrict;
       }
       if (mom < kMomCutKaonMax) { // 0.55-1.5 (now we use TPC and TOF)
-        return std::hypot(nsigmaTOFK, nsigmaTPCK) < 3.0;
+        return std::hypot(nsigmaTOFK, nsigmaTPCK) < kNSigmaStandard;
       }
       if (mom > kMomCutKaonMax) { // 1.5 -
-        return (std::abs(nsigmaTOFK) < 2.0) && (std::abs(nsigmaTPCK) < 3.0);
+        return (std::abs(nsigmaTOFK) < kNSigmaMedium) && (std::abs(nsigmaTPCK) < kNSigmaStandard);
       }
       return false;
     }
