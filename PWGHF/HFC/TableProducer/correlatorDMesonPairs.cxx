@@ -582,7 +582,7 @@ struct HfCorrelatorDMesonPairs {
 
   /// Fill selection status histogram
   void fillEntry(const bool& isDCand1, const bool& isDbarCand1, const bool& isDCand2, const bool& isDbarCand2,
-                 const uint8_t& candidateType1, const uint8_t& candidateType2, float yCand1, float yCand2, float etaCand1, float etaCand2, float phiCand1, float phiCand2,
+                 const uint8_t candidateType1, const uint8_t candidateType2, float yCand1, float yCand2, float etaCand1, float etaCand2, float phiCand1, float phiCand2,
                  double ptCand1, double ptCand2, float massDCand1, float massDbarCand1, float massDCand2, float massDbarCand2)
   {
 
