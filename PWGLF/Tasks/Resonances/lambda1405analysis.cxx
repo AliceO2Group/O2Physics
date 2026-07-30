@@ -17,7 +17,6 @@
 #include "PWGLF/DataModel/LFLambda1405Table.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -29,21 +28,20 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
-#include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/Track.h>
-#include <ReconstructionDataFormats/Vertex.h>
 
 #include <TF1.h>
 #include <TH2.h>
@@ -122,9 +120,9 @@ struct lambda1405candidate {
 };
 
 struct lambda1405analysis {
-  int lambda1405PdgCode = 102132;                     // o2-linter: disable=pdg/explicit-code
-  Produces<aod::Lambda1405Cands> outputDataTable;     // Output table for Lambda(1405) candidates
-  Produces<aod::Lambda1405CandsMC> outputDataTableMC; // Output table for Lambda(1405) candidates in MC
+  int lambda1405PdgCode = 102132;                       // o2-linter: disable=pdg/explicit-code
+  Produces<aod::Lambda1405Cands> outputDataTable;       // Output table for Lambda(1405) candidates
+  Produces<aod::Lambda1405CandsMC> outputDataTableMC;   // Output table for Lambda(1405) candidates in MC
   Produces<aod::Lambda1405SigmaEffMC> outputSigmaEffMC; // Output table for Lambda(1405) sigma efficiency in MC
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;

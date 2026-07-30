@@ -29,6 +29,8 @@
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 
+#include <cstdint>
+
 // Simple checker
 #define bitcheck(var, nbit) ((var) & (1 << (nbit)))
 

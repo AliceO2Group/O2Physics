@@ -43,6 +43,7 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 #include <MathUtils/BetheBlochAleph.h>
+#include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 
 #include <Math/GenVector/LorentzVector.h>

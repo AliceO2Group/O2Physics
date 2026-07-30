@@ -50,7 +50,10 @@
 #include <TList.h>
 #include <TPDGCode.h>
 
+#include <Rtypes.h>
+
 #include <cmath>
+#include <cstdint>
 #include <string>
 #include <vector>
 

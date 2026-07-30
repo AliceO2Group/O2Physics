@@ -19,6 +19,7 @@
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 
 #include <Framework/ASoA.h>
+#include <Framework/Concepts.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 

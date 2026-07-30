@@ -40,7 +40,6 @@
 #include <TH1.h>
 #include <TH3.h>
 #include <TRandom3.h>
-#include <TString.h>
 
 #include <array>
 #include <chrono>
@@ -161,7 +160,7 @@ struct FlowCorrelationsUpc {
 
     registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisIndependent, axisPtTrigger}}});
 
-    registry.add("eventcont", "bin", {HistType::kTH1F, {{10, 0, 10, "bin"}}});                                     // histogram to see how many events are in the same and mixed event
+    registry.add("eventcont", "bin", {HistType::kTH1F, {{10, 0, 10, "bin"}}}); // histogram to see how many events are in the same and mixed event
     registry.get<TH1>(HIST("eventcont"))->GetXaxis()->SetBinLabel(4, "same");
     registry.get<TH1>(HIST("eventcont"))->GetXaxis()->SetBinLabel(5, "mix pair");
     registry.add("deltaPhi_deltaEta_same", "deltaphi-deltaeta", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}});  // histogram to check the delta eta and delta phi distribution
