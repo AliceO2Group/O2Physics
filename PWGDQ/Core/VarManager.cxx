@@ -2560,6 +2560,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kDCATrackVtxProd"] = kDCATrackVtxProd;
   fgVarNamesMap["kV2SP"] = kV2SP;
   fgVarNamesMap["kV2EP"] = kV2EP;
+  fgVarNamesMap["kV2EP_FT0C"] = kV2EP_FT0C;
   fgVarNamesMap["kA2EP_TPC"] = kA2EP_TPC;
   fgVarNamesMap["kA2EP_FT0A"] = kA2EP_FT0A;
   fgVarNamesMap["kA2EP_FT0C"] = kA2EP_FT0C;
@@ -2648,6 +2649,18 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kCos2DeltaPhiMu1"] = kCos2DeltaPhiMu1;
   fgVarNamesMap["kCos2DeltaPhiMu2"] = kCos2DeltaPhiMu2;
   fgVarNamesMap["kCos3DeltaPhi"] = kCos3DeltaPhi;
+  fgVarNamesMap["kDeltaPhi_TPC"] = kDeltaPhi_TPC;
+  fgVarNamesMap["kDeltaPhi_FT0A"] = kDeltaPhi_FT0A;
+  fgVarNamesMap["kDeltaPhi_FT0C"] = kDeltaPhi_FT0C;
+  fgVarNamesMap["kCos2DeltaPhi_TPC"] = kCos2DeltaPhi_TPC;
+  fgVarNamesMap["kCos2DeltaPhi_FT0A"] = kCos2DeltaPhi_FT0A;
+  fgVarNamesMap["kCos2DeltaPhi_FT0C"] = kCos2DeltaPhi_FT0C;
+  fgVarNamesMap["kDeltaPhiME_TPC"] = kDeltaPhiME_TPC;
+  fgVarNamesMap["kDeltaPhiME_FT0A"] = kDeltaPhiME_FT0A;
+  fgVarNamesMap["kDeltaPhiME_FT0C"] = kDeltaPhiME_FT0C;
+  fgVarNamesMap["kCos2DeltaPhiME_TPC"] = kCos2DeltaPhiME_TPC;
+  fgVarNamesMap["kCos2DeltaPhiME_FT0A"] = kCos2DeltaPhiME_FT0A;
+  fgVarNamesMap["kCos2DeltaPhiME_FT0C"] = kCos2DeltaPhiME_FT0C;
   fgVarNamesMap["kDeltaPtotTracks"] = kDeltaPtotTracks;
   fgVarNamesMap["kVertexingLxyOverErr"] = kVertexingLxyOverErr;
   fgVarNamesMap["kVertexingLzOverErr"] = kVertexingLzOverErr;
