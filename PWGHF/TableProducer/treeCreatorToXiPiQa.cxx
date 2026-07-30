@@ -26,6 +26,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/CCDB/EventSelectionParams.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
