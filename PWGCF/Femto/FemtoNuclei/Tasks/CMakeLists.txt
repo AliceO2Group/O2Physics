@@ -6,9 +6,10 @@
 # License v3 (GPL Version 3), copied verbatim in the file "COPYING".
 #
 # In applying this license CERN does not waive the privileges and immunities
-# granted by this license.
+# granted to it by virtue of its status as an Intergovernmental Organization
+# or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(pidefemtosystematics
-          SOURCES PiDeFemtoSystematics.cxx
+o2physics_add_dpl_workflow(pi-de-femto-systematics
+          SOURCES piDeFemtoSystematics.cxx
           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
           COMPONENT_NAME Analysis)
