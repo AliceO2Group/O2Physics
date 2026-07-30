@@ -141,15 +141,15 @@ struct FlowGfwV02 {
     O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, true, "kIsVertexITSTPC - Selects collisions with at least one ITS-TPC track");
   } cfgEventCutFlags;
 
-    // Event selection cuts
-    struct : ConfigurableGroup {
-      O2_DEFINE_CONFIGURABLE(cfgEtaSubAMin, float, -0.8, "Minimum eta for subevent A");
-      O2_DEFINE_CONFIGURABLE(cfgEtaSubAMax, float, -0.5, "Maximum eta for subevent A");
-      O2_DEFINE_CONFIGURABLE(cfgEtaSubBMin, float, 0.5, "Minimum eta for subevent B");
-      O2_DEFINE_CONFIGURABLE(cfgEtaSubBMax, float, 0.8, "Maximum eta for subevent B");
-      O2_DEFINE_CONFIGURABLE(cfgEtaSubCMin, float, -0.4, "Minimum eta for subevent C");
-      O2_DEFINE_CONFIGURABLE(cfgEtaSubCMax, float, 0.4, "Maximum eta for subevent C");
-    } cfgSubeventCuts;
+  // Event selection cuts
+  struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(cfgEtaSubAMin, float, -0.8, "Minimum eta for subevent A");
+    O2_DEFINE_CONFIGURABLE(cfgEtaSubAMax, float, -0.5, "Maximum eta for subevent A");
+    O2_DEFINE_CONFIGURABLE(cfgEtaSubBMin, float, 0.5, "Minimum eta for subevent B");
+    O2_DEFINE_CONFIGURABLE(cfgEtaSubBMax, float, 0.8, "Maximum eta for subevent B");
+    O2_DEFINE_CONFIGURABLE(cfgEtaSubCMin, float, -0.4, "Minimum eta for subevent C");
+    O2_DEFINE_CONFIGURABLE(cfgEtaSubCMax, float, 0.4, "Maximum eta for subevent C");
+  } cfgSubeventCuts;
 
   struct : ConfigurableGroup {
     Configurable<std::vector<double>> cfgMultGlobalCutPars{"cfgMultGlobalCutPars", std::vector<double>{2272.16, -76.6932, 1.01204, -0.00631545, 1.59868e-05, 136.336, -4.97006, 0.121199, -0.0015921, 7.66197e-06}, "Global vs FT0C multiplicity cut parameter values"};
@@ -411,7 +411,6 @@ struct FlowGfwV02 {
     pidStates.hPtBackward[PidKaons]->SetDirectory(nullptr);
     pidStates.hPtBackward[PidProtons]->SetDirectory(nullptr);
 
-
     AxisSpec phiAxis = {o2::analysis::gfw::phibins, o2::analysis::gfw::philow, o2::analysis::gfw::phiup, "#phi"};
     AxisSpec etaAxis = {o2::analysis::gfw::etabins, -cfgTrackCuts.cfgEtaMax, cfgTrackCuts.cfgEtaMax, "#eta"};
     AxisSpec vtxAxis = {o2::analysis::gfw::vtxZbins, -cfgEventCuts.cfgZvtxMax, cfgEventCuts.cfgZvtxMax, "Vtx_{z} (cm)"};
@@ -438,11 +437,10 @@ struct FlowGfwV02 {
     registry.add("nchMid", "", {HistType::kTProfile3D, {ptAxis, centAxis, nchAxis}});
     registry.add("v02centmult", "", {HistType::kTProfile2D, {centAxis, nchAxis}});
 
-
-    registry.add("analysis/v0AB", "", {HistType::kTProfile3D, {pidAxis,ptAxis, centAxis}});
-    registry.add("analysis/v0BA", "", {HistType::kTProfile3D, {pidAxis,ptAxis, centAxis}});
-    registry.add("analysis/nchA", "", {HistType::kTProfile3D, {pidAxis,ptAxis, centAxis}});
-    registry.add("analysis/nchB", "", {HistType::kTProfile3D, {pidAxis,ptAxis, centAxis}});
+    registry.add("analysis/v0AB", "", {HistType::kTProfile3D, {pidAxis, ptAxis, centAxis}});
+    registry.add("analysis/v0BA", "", {HistType::kTProfile3D, {pidAxis, ptAxis, centAxis}});
+    registry.add("analysis/nchA", "", {HistType::kTProfile3D, {pidAxis, ptAxis, centAxis}});
+    registry.add("analysis/nchB", "", {HistType::kTProfile3D, {pidAxis, ptAxis, centAxis}});
     registry.add("analysis/ptA", "", {HistType::kTProfile3D, {pidAxis, centAxis, nchAxis}});
     registry.add("analysis/ptB", "", {HistType::kTProfile3D, {pidAxis, centAxis, nchAxis}});
     registry.add("analysis/ptAB", "", {HistType::kTProfile3D, {pidAxis, centAxis, nchAxis}});
