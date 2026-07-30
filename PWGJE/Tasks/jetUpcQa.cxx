@@ -9,6 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file jetUpcQa.cxx
+/// \brief Standalone QA task for UPC event tagging and charged-jet information.
+/// \author Jaehyeok Ryu
+
 #include <Framework/AnalysisDataModel.h>
 
 namespace o2::aod
