@@ -253,8 +253,7 @@ struct FemtoUniversePairTaskTrackPhi {
       } else {
         if (hasTOF) { // if TOF is available, use combine nsigma
           return std::hypot(nsigmaTOFK, nsigmaTPCK) < kNSigmaStandard;
-        } else // if TOF is not available, use TPC nsigma only
-        {
+        } else { // if TOF is not available, use TPC nsigma
           return std::abs(nsigmaTPCK) < kNSigmaStandard;
         }
       }
