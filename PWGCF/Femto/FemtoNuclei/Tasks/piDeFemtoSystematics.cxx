@@ -47,17 +47,20 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 #include <MathUtils/BetheBlochAleph.h>
+#include <ReconstructionDataFormats/PID.h>
 
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
+#include <Math/GenVector/LorentzVector.h>
+#include <Math/GenVector/PxPyPzM4D.h>
 #include <TH1.h>
 #include <THnSparse.h>
+#include <TString.h>
 
-#include <algorithm>
 #include <array>
 #include <cmath>
-#include <cstdint>
+#include <cstddef>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -205,7 +208,7 @@ struct PiDeFemtoSystematics {
 
   HistogramRegistry registry{"PiDeFemtoSystematics", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
   o2::vertexing::DCAFitterN<2> pairFitter;
@@ -376,7 +379,7 @@ struct PiDeFemtoSystematics {
     registry.add("Config/hCutValues", "Configured cut values;cut;value",
                  HistType::kTH1D, {cutAxis});
     auto histogram = registry.get<TH1>(HIST("Config/hCutValues"));
-    for (size_t index = 0; index < cuts.size(); ++index) {
+    for (std::size_t index = 0; index < cuts.size(); ++index) {
       histogram->GetXaxis()->SetBinLabel(static_cast<int>(index) + 1, cuts[index].first.c_str());
       histogram->SetBinContent(static_cast<int>(index) + 1, cuts[index].second);
     }
@@ -761,7 +764,7 @@ struct PiDeFemtoSystematics {
       pion.px(), pion.py(), pion.pz()};
     const float kstar = pairKstar(pionMomentum, deuteronMomentum);
     const float mt = pairMT(pionMomentum, deuteronMomentum);
-    const float channel = static_cast<float>(
+    const auto channel = static_cast<float>(
       pairChannel(deuteron.sign(), pion.sign()));
     if (mixedEvent) {
       registry.fill(HIST("Pairs/hME"), kstar, mt, centrality, channel);
