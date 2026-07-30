@@ -323,12 +323,21 @@ void HFInvMassFitter::doFit()
     }
 
     std::cout << "Finish total fit\n";
+
+    std::cout << "History:\t";
+    for (unsigned i = 0; i < fitResult->numStatusHistory(); ++i) {
+      std::cout << fitResult->statusLabelHistory(i) << " : " << fitResult->statusCodeHistory(i) << "\t";
+    }
+    std::cout << "\n";
+
     std::cout << "Status  = " << fitResult->status() << "\n";
     std::cout << "CovQual = " << fitResult->covQual() << "\n";
     std::cout << "EDM     = " << fitResult->edm() << "\n";
     std::cout << "minNLL  = " << fitResult->minNll() << "\n";
     std::cout << "Global correlation of mNSgn = " << fitResult->globalCorr("mNSgn") << "\n";
     fitResult->Print("v");
+    fitResult->covarianceMatrix().Print();
+    fitResult->correlationMatrix().Print();
     mFitStatus = fitResult->status();
     mCovQual = fitResult->covQual();
     mEdm = fitResult->edm();
@@ -347,6 +356,12 @@ void HFInvMassFitter::doFit()
 
     std::cout << "mRooNBkg->getVal() = " << mRooNBkg->getVal() << "\n";
     std::cout << "mRooNSgn->getVal() = " << mRooNSgn->getVal() << "\n";
+
+    std::cout << "Value       = " << mRooNSgn->getVal() << "\n";
+    std::cout << "HESSE error = " << mRooNSgn->getError() << "\n";
+    std::cout << "MINOS lower = " << mRooNSgn->getAsymErrorLo() << "\n";
+    std::cout << "MINOS upper = " << mRooNSgn->getAsymErrorHi() << "\n";
+
     plotBkg(mTotalPdf);
     mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
     if (mHistoTemplateRefl != nullptr) {
