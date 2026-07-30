@@ -72,10 +72,6 @@ constexpr float kMomCutKaonMid = 0.45f;
 constexpr float kMomCutKaonHigh = 0.55f;
 constexpr float kMomCutKaonMax = 1.5f;
 
-constexpr float kNSigmaStandard = 3.0f;
-constexpr float kNSigmaMedium = 2.0f;
-constexpr float kNSigmaStrict = 1.0f;
-
 // Constants for nSigma cuts
 constexpr float kNSigmaStrict = 1.0f;
 constexpr float kNSigmaMedium = 2.0f;
