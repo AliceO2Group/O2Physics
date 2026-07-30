@@ -11,9 +11,11 @@
 
 #include "PWGDQ/Core/VarManager.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
 #include <CommonConstants/LHCConstants.h>
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <DCAFitter/FwdDCAFitterN.h>
@@ -26,6 +28,7 @@
 #include <TH3.h>
 #include <THn.h>
 #include <TObject.h>
+#include <TRandom.h>
 #include <TString.h>
 
 #include <KFParticle.h>
@@ -514,12 +517,10 @@ double VarManager::SampleRotationPhi(double pt, double eta, int charge)
 
       delete hPhi;
 
-      return gRandom->Uniform(
-        0., o2::constants::math::TwoPI);
+      return gRandom->Uniform(0., o2::constants::math::TwoPI);
     }
 
-    const double phi =
-      RecoDecay::constrainAngle(hPhi->GetRandom());
+    const double phi = RecoDecay::constrainAngle(hPhi->GetRandom());
 
     delete hPhi;
     return phi;

@@ -27,12 +27,14 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>
 #include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -51,7 +53,12 @@
 #include <TPDGCode.h>
 #include <TTree.h>
 
+#include <sys/types.h>
+
+#include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <random>
 #include <string>
 #include <utility>
