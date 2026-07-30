@@ -104,11 +104,15 @@ struct FemtoUniversePairTaskTrackV0Extended {
     Configurable<float> confDcaXYCustom2FilterCut{"confDcaXYCustom2FilterCut", 0, "Value for [2] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT (if stricter than in Producer)"};
   } ConfTrkSelection;
 
-  Configurable<float> confmom{"confmom", 0.5, "momentum threshold for particle identification using TOF"};
-  Configurable<float> confNsigmaTPCParticle{"confNsigmaTPCParticle", 3.0, "TPC Sigma for particle momentum < confmom"};
-  Configurable<float> confNsigmaTPCDaughter{"confNsigmaTPCDaughter", 3.0, "TPC Sigma for daughter"};
-  Configurable<float> confNsigmaTOFParticle{"confNsigmaTOFParticle", 3.0, "TOF Sigma for particle (daugh & bach) momentum > Confmom"};
-  Configurable<float> confNsigmaCombinedParticle{"confNsigmaCombinedParticle", 3.0, "TPC and TOF Sigma (combined) for particle momentum > confmom"};
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<float> confmom{"confmom", 0.5, "momentum threshold for particle identification using TOF"};
+    Configurable<float> confNsigmaTPCParticle{"confNsigmaTPCParticle", 3.0, "TPC Sigma for particle momentum < ConfNSigmaSelection.confmom"};
+    Configurable<float> confNsigmaTPCDaughter{"confNsigmaTPCDaughter", 3.0, "TPC Sigma for daughter"};
+    Configurable<float> confNsigmaTOFParticle{"confNsigmaTOFParticle", 3.0, "TOF Sigma for particle (daugh & bach) momentum > ConfNSigmaSelection.confmom"};
+    Configurable<float> confNsigmaCombinedParticle{"confNsigmaCombinedParticle", 3.0, "TPC and TOF Sigma (combined) for particle momentum > ConfNSigmaSelection.confmom"};
+    Configurable<float> confNsigmaKaonRejection{"confNsigmaKaonRejection", 0, "In proton selection reject tracks with kaon Nsigma <confNsigmaRejection"};
+    Configurable<float> confNsigmaPionRejection{"confNsigmaPionRejection", 0, "In proton selection reject tracks with pion Nsigma <confNsigmaRejection"};
+  } ConfNSigmaSelection;
 
   Filter collisionFilter = (nabs(aod::collision::posZ) < confZVertexCut);
   using FilteredFDCollisions = soa::Filtered<o2::aod::FdCollisions>;
@@ -255,11 +259,11 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
   bool isNSigmaCombined(float mom, float nsigmaTPCParticle, float nsigmaTOFParticle, bool hasTOF)
   {
-    if (mom <= confmom) {
-      return (std::abs(nsigmaTPCParticle) < confNsigmaTPCParticle);
+    if (mom <= ConfNSigmaSelection.confmom) {
+      return (std::abs(nsigmaTPCParticle) < ConfNSigmaSelection.confNsigmaTPCParticle);
     }
     if (hasTOF) {
-      return (std::hypot(nsigmaTOFParticle, nsigmaTPCParticle) < confNsigmaCombinedParticle);
+      return (std::hypot(nsigmaTOFParticle, nsigmaTPCParticle) < ConfNSigmaSelection.confNsigmaCombinedParticle);
     }
     return false;
   }
@@ -267,7 +271,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
   template <typename T>
   bool isNSigmaCombinedBitmask(float mom, const T& part)
   {
-    if (mom <= confmom) {
+    if (mom <= ConfNSigmaSelection.confmom) {
       return ((part.pidCut() & (1u << ConfTrkSelection.confTrackChoicePartOne)) != 0);
     }
     if ((part.pidCut() & 512u) != 0) {
@@ -293,14 +297,14 @@ struct FemtoUniversePairTaskTrackV0Extended {
 
   bool isNSigmaTPC(float nsigmaTPCParticle)
   {
-    return std::abs(nsigmaTPCParticle) < confNsigmaTPCDaughter;
+    return std::abs(nsigmaTPCParticle) < ConfNSigmaSelection.confNsigmaTPCDaughter;
   }
 
   bool isNSigmaTOF(float mom, float nsigmaTOFParticle, bool hasTOF)
   {
     // Cut only on daughter tracks, that have TOF signal
-    if (mom > confmom && hasTOF) {
-      return std::abs(nsigmaTOFParticle) < confNsigmaTOFParticle;
+    if (mom > ConfNSigmaSelection.confmom && hasTOF) {
+      return std::abs(nsigmaTOFParticle) < ConfNSigmaSelection.confNsigmaTOFParticle;
     }
     return true;
   }
@@ -310,7 +314,19 @@ struct FemtoUniversePairTaskTrackV0Extended {
   {
     const std::array<float, 3> tpcNSigmas = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
     const std::array<float, 3> tofNSigmas = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
+    enum particleID { protonId,
+                      pionId,
+                      kaonId };
 
+    if (id == protonId) {
+      if (part.p() < ConfNSigmaSelection.confmom) {
+        if (std::abs(tpcNSigmas[kaonId]) < ConfNSigmaSelection.confNsigmaKaonRejection || std::abs(tpcNSigmas[pionId]) < ConfNSigmaSelection.confNsigmaPionRejection) {
+          return false;
+        }
+      } else if (std::hypot(tofNSigmas[kaonId], tpcNSigmas[kaonId]) < ConfNSigmaSelection.confNsigmaKaonRejection || std::hypot(tofNSigmas[pionId], tpcNSigmas[pionId]) < ConfNSigmaSelection.confNsigmaPionRejection) {
+        return false;
+      }
+    }
     return isNSigmaCombined(part.p(), tpcNSigmas[id], tofNSigmas[id], (part.pidCut() & 512u) != 0);
   }
 
@@ -560,7 +576,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
         const std::array<float, 3> tpcNSigmas = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
         const std::array<float, 3> tofNSigmas = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
 
-        if (!isNSigmaCombined(part.p(), tpcNSigmas[ConfTrkSelection.confTrackChoicePartOne], tofNSigmas[ConfTrkSelection.confTrackChoicePartOne], (part.pidCut() & 512u) != 0)) {
+        if (!isParticleCombined(part, ConfTrkSelection.confTrackChoicePartOne)) {
           continue;
         }
         if (part.sign() > 0) {
@@ -1832,10 +1848,7 @@ struct FemtoUniversePairTaskTrackV0Extended {
     }
 
     for (const auto& part : groupPartsOne) {
-      const std::array<float, 3> tpcNSigmas = {aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePr()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStorePi()), aod::pidtpc_tiny::binning::unPackInTable(part.tpcNSigmaStoreKa())};
-      const std::array<float, 3> tofNSigmas = {aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePr()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStorePi()), aod::pidtof_tiny::binning::unPackInTable(part.tofNSigmaStoreKa())};
-
-      if (!isNSigmaCombined(part.p(), tpcNSigmas[ConfTrkSelection.confTrackChoicePartOne], tofNSigmas[ConfTrkSelection.confTrackChoicePartOne], (part.pidCut() & 512u) != 0)) {
+      if (!isParticleCombined(part, ConfTrkSelection.confTrackChoicePartOne)) {
         continue;
       }
       registryMCreco.fill(HIST("mothersReco/motherParticleTrack"), part.motherPDG());

@@ -76,6 +76,9 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
     Configurable<bool> isNsigmaRectangular{"isNsigmaRectangular", false, "Apply rectangular TPC and TOF nSigma cut, instead of a combined one (TPC<confNsigmaTPC, TOF<confNsigmaCombined)"};
     Configurable<float> confNsigmaCombined{"confNsigmaCombined", 3.0f, "TPC and TOF Pion Sigma (combined) for momentum > confTOFpMin"};
     Configurable<float> confNsigmaTPC{"confNsigmaTPC", 3.0f, "TPC Pion Sigma for momentum < confTOFpMin"};
+    Configurable<float> confNsigmaKaonRejection{"confNsigmaKaonRejection", 0, "In proton selection reject tracks with combined Nsigma <confNsigmaRejection"};
+    Configurable<float> confNsigmaPionRejection{"confNsigmaPionRejection", 0, "In proton selection reject tracks with combined Nsigma <confNsigmaRejection"};
+
     Configurable<float> confTOFpMin{"confTOFpMin", 0.5f, "Min. momentum for which TOF is required for PID."};
     Configurable<float> confEtaMax{"confEtaMax", 0.8f, "Higher limit for |Eta| (the same for both particles)"};
 
@@ -280,6 +283,30 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
     return std::hypot(nsigmaTOF, nsigmaTPC) < twotracksconfigs.confNsigmaCombined;
   }
 
+  bool isNSigmaProton(float mom, float nsigmaTPC, float nsigmaTOF, float nsigmaTPCkaon, float nsigmaTOFkaon, float nsigmaTPCpion, float nsigmaTOFpion)
+  {
+    // with additional nSigma kaon and pion rejection
+    if (mom < twotracksconfigs.confTOFpMin) {
+      if (std::abs(nsigmaTPCkaon) < twotracksconfigs.confNsigmaKaonRejection || std::abs(nsigmaTPCpion) < twotracksconfigs.confNsigmaPionRejection) {
+        return false;
+      }
+    } else if (std::hypot(nsigmaTOFkaon, nsigmaTPCkaon) < twotracksconfigs.confNsigmaKaonRejection || std::hypot(nsigmaTOFpion, nsigmaTPCpion) < twotracksconfigs.confNsigmaPionRejection) {
+      return false;
+    }
+
+    if (twotracksconfigs.isNsigmaRectangular) {
+      if (mom < twotracksconfigs.confTOFpMin) {
+        return std::abs(nsigmaTPC) < twotracksconfigs.confNsigmaTPC;
+      }
+      return (std::abs(nsigmaTPC) < twotracksconfigs.confNsigmaTPC && std::abs(nsigmaTOF) < twotracksconfigs.confNsigmaCombined);
+    }
+
+    if (mom < twotracksconfigs.confTOFpMin) {
+      return std::abs(nsigmaTPC) < twotracksconfigs.confNsigmaTPC;
+    }
+    return std::hypot(nsigmaTOF, nsigmaTPC) < twotracksconfigs.confNsigmaCombined;
+  }
+
   /// TPC Kaon Sigma selection (stricter cuts for K+ and K-) -- based on Run2 results
   bool isKaonNsigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
   {
@@ -313,7 +340,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
       switch (trackonefilter.confPDGCodePartOne) {
         case kProton:
         case kProtonBar:
-          return isNSigma(mom, nsigmaTPCPr, nsigmaTOFPr);
+          return isNSigmaProton(mom, nsigmaTPCPr, nsigmaTOFPr, nsigmaTPCK, nsigmaTOFK, nsigmaTPCPi, nsigmaTOFPi);
         case kPiPlus:
         case kPiMinus:
         case kPi0:
@@ -331,7 +358,7 @@ struct FemtoUniversePairTaskTrackTrackMultKtExtended {
       switch (tracktwofilter.confPDGCodePartTwo) {
         case kProton:
         case kProtonBar:
-          return isNSigma(mom, nsigmaTPCPr, nsigmaTOFPr);
+          return isNSigmaProton(mom, nsigmaTPCPr, nsigmaTOFPr, nsigmaTPCK, nsigmaTOFK, nsigmaTPCPi, nsigmaTOFPi);
         case kPiPlus:
         case kPiMinus:
         case kPi0:
