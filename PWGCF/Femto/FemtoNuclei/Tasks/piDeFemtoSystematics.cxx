@@ -102,12 +102,14 @@ enum PairChannel {
 
 struct PiDeFemtoSystematics {
   struct : ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"event"};
     Configurable<float> vertexZMax{"vertexZMax", 10.f, "Maximum absolute collision z vertex"};
     Configurable<int> numberOfMixedEvents{"numberOfMixedEvents", 5, "Number of mixed events per event"};
   } eventCuts;
 
   struct : ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"pion"};
     Configurable<float> ptMin{"ptMin", 0.14f, "Minimum pion pT"};
     Configurable<float> ptMax{"ptMax", 4.0f, "Maximum pion pT"};
@@ -126,6 +128,7 @@ struct PiDeFemtoSystematics {
   } pionCuts;
 
   struct : ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"deuteron"};
     Configurable<float> ptMin{"ptMin", 0.6f, "Minimum deuteron pT"};
     Configurable<float> ptMax{"ptMax", 2.0f, "Maximum deuteron pT"};
@@ -147,6 +150,7 @@ struct PiDeFemtoSystematics {
   } deuteronCuts;
 
   struct : ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"pair"};
     Configurable<bool> enableClosePairRejection{"enableClosePairRejection", true, "Enable pion-deuteron close-pair rejection"};
     Configurable<float> closePairDeltaEtaMax{"closePairDeltaEtaMax", 0.01f, "CPR ellipse delta-eta radius"};
@@ -156,17 +160,20 @@ struct PiDeFemtoSystematics {
   } pairCuts;
 
   struct : ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"analysis"};
     Configurable<bool> useBetheBlochDeuteronNsigma{"useBetheBlochDeuteronNsigma", false, "Compute deuteron TPC n-sigma from the configured Bethe-Bloch parameters"};
     Configurable<float> lowKstarYieldMax{"lowKstarYieldMax", 0.3f, "Upper kstar used for the SE-yield stability check"};
   } analysisSettings;
 
   struct : ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"zorro"};
     Configurable<bool> skimmedProcessing{"skimmedProcessing", false, "Process a Zorro-selected deuteron skim"};
   } zorroSettings;
 
   struct : ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"ccdb"};
     Configurable<double> magneticField{"magneticField", -999., "Magnetic field; -999 reads it from CCDB"};
     Configurable<std::string> url{"url", "http://alice-ccdb.cern.ch", "CCDB URL"};
@@ -176,6 +183,7 @@ struct PiDeFemtoSystematics {
   } ccdbSettings;
 
   struct : ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
     std::string prefix{"pidCalibration"};
     Configurable<LabeledArray<double>> betheBlochParameters{"betheBlochParameters",
                                                             {BetheBlochDeDefault.data(), 1, 6, betheBlochParticleNames, betheBlochParameterNames},
