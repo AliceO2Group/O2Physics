@@ -1263,14 +1263,14 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     std::array<double, 4> xmin = {2., 0., -1., -0.5};
     std::array<double, 4> xmax = {4., 20., 1., 0.5};
     hm->AddHistogram(histClass, "Mass_Pt_cosThetaHE_Tauxy", "", 4, varspTHE.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
-   }
+  }
   if (groupStr.CompareTo("polarization-pseudoproper-midy-cs-gen") == 0) {
-     std::array<int, 4> varspTCS = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCCosThetaCS, VarManager::kMCVertexingTauxyProjected};
-     std::array<int, 4> bins = {50, 20, 20, 1000};
-     std::array<double, 4> xmin = {2., 0., -1., -0.5};
-     std::array<double, 4> xmax = {4., 20., 1., 0.5};
+    std::array<int, 4> varspTCS = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCCosThetaCS, VarManager::kMCVertexingTauxyProjected};
+    std::array<int, 4> bins = {50, 20, 20, 1000};
+    std::array<double, 4> xmin = {2., 0., -1., -0.5};
+    std::array<double, 4> xmax = {4., 20., 1., 0.5};
     hm->AddHistogram(histClass, "Mass_Pt_cosThetaCS_Tauxy", "", 4, varspTCS.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
-    }
+  }
   if (groupStr.CompareTo("polarization-pseudoproper-midy-rand-gen") == 0) {
     std::array<int, 4> varspTRM = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCCosThetaRM, VarManager::kMCVertexingTauxyProjected};
     std::array<int, 4> bins = {50, 20, 20, 1000};
