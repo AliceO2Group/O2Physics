@@ -395,8 +395,8 @@ struct HadNucleiFemto {
      {"hHadPin", "P distribution; #it{p} (GeV/#it{c})", {HistType::kTH1F, {{120, -4.0f, 4.0f}}}},
      {"hHadEta", "eta distribution; #eta(had)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hHadPhi", "phi distribution; phi(had)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
-     {"h2CPRBefore", "Close pair rejection before cut; #Delta#eta; #Delta#phi^{*}", {HistType::kTH2F, {{160, -2.0f, 2.0f}, {160, -3.2f, 3.2f}}}},
-     {"h2CPRAfter", "Close pair rejection after cut; #Delta#eta; #Delta#phi^{*}", {HistType::kTH2F, {{160, -2.0f, 2.0f}, {160, -3.2f, 3.2f}}}},
+     {"h2CPRBefore", "Close pair rejection before cut; #Delta#eta; #Delta#phi^{*}", {HistType::kTH2F, {{300, -0.15f, 0.15f}, {400, -0.2f, 0.2f}}}},
+     {"h2CPRAfter", "Close pair rejection after cut; #Delta#eta; #Delta#phi^{*}", {HistType::kTH2F, {{300, -0.15f, 0.15f}, {400, -0.2f, 0.2f}}}},
 
      // dE/dx
      {"h2dEdxNucandidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
