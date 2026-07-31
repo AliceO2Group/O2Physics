@@ -456,7 +456,7 @@ struct FemtoUniversePairTaskTrackPhi {
   }
 
   template <bool isMC, typename PartitionType, typename PartType, typename MCParticles = std::nullptr_t>
-  void doSameEvent(const PartitionType& groupPartsTrack, const PartitionType& groupPartsPhi, const PartType& parts, float magFieldTesla, int multCol, [[maybe_unused]] MCParticles mcParts = nullptr)
+  void doSameEvent(const PartitionType& groupPartsTrack, const PartitionType& groupPartsPhi, const PartType& parts, float magFieldTesla, int multCol, [[maybe_unused]] const MCParticles& mcParts = nullptr)
   {
     for (auto const& phicandidate : groupPartsPhi) {
       // TODO: add phi meson minv cut here
@@ -584,7 +584,7 @@ struct FemtoUniversePairTaskTrackPhi {
   }
 
   template <bool isMC, typename PartitionType, typename PartType, typename MCParticles = std::nullptr_t>
-  void doMixedEvent(const PartitionType& groupPartsTrack, const PartitionType& groupPartsPhi, const PartType& parts, float magFieldTesla, int multCol, [[maybe_unused]] MCParticles mcParts = nullptr)
+  void doMixedEvent(const PartitionType& groupPartsTrack, const PartitionType& groupPartsPhi, const PartType& parts, float magFieldTesla, int multCol, [[maybe_unused]] const MCParticles& mcParts = nullptr)
   {
     for (auto const& [track, phicandidate] : combinations(CombinationsFullIndexPolicy(groupPartsTrack, groupPartsPhi))) {
       if (confTrackIsIdentified) {
@@ -675,8 +675,9 @@ struct FemtoUniversePairTaskTrackPhi {
   void processMCTruth(aod::FDParticles const& parts)
   {
     for (auto const& part : parts) {
-      if (part.partType() != uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack))
+      if (part.partType() != uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) {
         continue;
+      }
 
       int pdgCode = static_cast<int>(part.pidCut());
       const auto& pdgParticle = pdgMC->GetParticle(pdgCode);
@@ -733,8 +734,9 @@ struct FemtoUniversePairTaskTrackPhi {
   {
     for (auto const& part : parts) {
       auto mcPartId = part.fdMCParticleId();
-      if (mcPartId == kInvalidMCPartId)
+      if (mcPartId == kInvalidMCPartId) {
         continue; // no MC particle
+      }
       const auto& mcpart = mcparts.iteratorAt(mcPartId);
 
       if (mcpart.pdgMCTruth() == confTrackPDGCode && (part.pt() > confTrackPtLow) && (part.pt() < confTrackPtHigh) && isParticleNSigmaAccepted(part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
@@ -748,8 +750,9 @@ struct FemtoUniversePairTaskTrackPhi {
         registryMCpT.fill(HIST("MCReco/C_phi_pT"), part.pt(), weightPhi);
       }
 
-      if (isParticleNSigmaAccepted(part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon)))
+      if (isParticleNSigmaAccepted(part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
         hTrackDCA.fillQA<true, true>(part);
+      }
       if ((part.partType() == aod::femtouniverseparticle::ParticleType::kPhi) && (mcpart.pdgMCTruth() == o2::constants::physics::Pdg::kPhi) && (mcpart.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary)) {
         registryMCreco.fill(HIST("MCrecoPhi"), mcpart.pt(), mcpart.eta()); // phi
         registryMCreco.fill(HIST("MCrecoPhiPt"), mcpart.pt());
