@@ -338,7 +338,7 @@ struct AnalysisEventSelection {
 
   std::map<int64_t, bool> fSelMap;                     // key: reduced event global index, value: event selection decision
   std::map<uint64_t, std::vector<int64_t>> fBCCollMap; // key: global BC, value: vector of reduced event global indices
-  int fCurrentRun;
+  int fCurrentRun = nullptr;
 
   void init(o2::framework::InitContext& context)
   {
@@ -595,13 +595,13 @@ struct AnalysisTrackSelection {
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
   Service<o2::pid::tof::TOFResponse> fTofResponse;
 
-  HistogramManager* fHistMan;
+  HistogramManager* fHistMan = nullptr;
   std::vector<AnalysisCompositeCut*> fTrackCuts;
   std::vector<MCSignal*> fMCSignals; // list of signals to be checked
   std::vector<TString> fHistNamesReco;
   std::vector<TString> fHistNamesMCMatched;
 
-  int fCurrentRun; // current run (needed to detect run changes for loading CCDB parameters)
+  int fCurrentRun = nullptr; // current run (needed to detect run changes for loading CCDB parameters)
 
   std::map<int64_t, std::vector<int64_t>> fNAssocsInBunch;    // key: track global index, value: vector of global index for events associated in-bunch (events that have in-bunch pileup or splitting)
   std::map<int64_t, std::vector<int64_t>> fNAssocsOutOfBunch; // key: track global index, value: vector of global index for events associated out-of-bunch (events that have no in-bunch pileup)
@@ -938,9 +938,9 @@ struct AnalysisPrefilterSelection {
   Configurable<bool> fPropTrack{"cfgPropTrack", false, "Propagate tracks to associated collision to recalculate DCA and momentum vector"};
 
   std::map<uint32_t, uint32_t> fPrefilterMap;
-  AnalysisCompositeCut* fPairCut;
-  uint32_t fPrefilterMask;
-  int fPrefilterCutBit;
+  AnalysisCompositeCut* fPairCut = nullptr;
+  uint32_t fPrefilterMask = nullptr;
+  int fPrefilterCutBit = nullptr;
 
   Preslice<aod::TrackAssoc> trackAssocsPerCollision = aod::track_association::collisionId;
 
@@ -1206,14 +1206,14 @@ struct AnalysisSameEventPairing {
   std::vector<AnalysisCut*> fMCGenAccCuts;
   bool fUseMCGenAccCut = false;
 
-  uint32_t fTrackFilterMask; // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
-  uint32_t fMuonFilterMask;  // mask for the muon cuts required in this task to be applied on the muon cuts produced upstream
-  int fNCutsBarrel;
-  int fNCutsMuon;
-  int fNPairCuts;
+  uint32_t fTrackFilterMask = nullptr; // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
+  uint32_t fMuonFilterMask = nullptr;  // mask for the muon cuts required in this task to be applied on the muon cuts produced upstream
+  int fNCutsBarrel = nullptr;
+  int fNCutsMuon = nullptr;
+  int fNPairCuts = nullptr;
   bool fHasTwoProngGenMCsignals = false;
 
-  bool fEnableBarrelHistos;
+  bool fEnableBarrelHistos = nullptr;
   // bool fEnableMuonHistos;
 
   Preslice<soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter>> trackAssocsPerCollision = aod::track_association::collisionId;
@@ -2337,13 +2337,13 @@ struct AnalysisDileptonTrack {
     Configurable<std::string> fConfigMCGenSignalHadronJSON{"cfgMCGenSignalHadronJSON", "", "generator level hadron signal (JSON format), used for MC level combinatorics"};
   } fConfigMCOptions;
 
-  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
-  int fNCuts;
-  int fNLegCuts;
-  int fNPairCuts;
-  int fNCommonTrackCuts;
+  int fCurrentRun = nullptr; // needed to detect if the run changed and trigger update of calibrations etc.
+  int fNCuts = nullptr;
+  int fNLegCuts = nullptr;
+  int fNPairCuts = nullptr;
+  int fNCommonTrackCuts = nullptr;
   std::map<int, int> fCommonTrackCutMap;
-  uint32_t fTrackCutBitMap; // track cut bit mask to be used in the selection of tracks associated with dileptons
+  uint32_t fTrackCutBitMap = nullptr; // track cut bit mask to be used in the selection of tracks associated with dileptons
   // vector for single-lepton and track cut names for easy access when calling FillHistogramList()
   std::vector<TString> fTrackCutNames;
   std::vector<TString> fLegCutNames;
@@ -2360,14 +2360,14 @@ struct AnalysisDileptonTrack {
   // Filter filterMuon = aod::dqanalysisflags::isMuonSelected > static_cast<uint32_t>(0);
 
   // use two values array to avoid mixing up the quantities
-  float* fValuesDilepton;
-  float* fValuesHadron;
-  HistogramManager* fHistMan;
+  float* fValuesDilepton = nullptr;
+  float* fValuesHadron = nullptr;
+  HistogramManager* fHistMan = nullptr;
 
   std::vector<MCSignal*> fRecMCSignals;
   std::vector<MCSignal*> fGenMCSignals;
-  MCSignal* fDileptonLegSignal;
-  MCSignal* fHadronSignal;
+  MCSignal* fDileptonLegSignal = nullptr;
+  MCSignal* fHadronSignal = nullptr;
 
   void init(o2::framework::InitContext& context)
   {
@@ -2379,7 +2379,7 @@ struct AnalysisDileptonTrack {
     bool isDummy = context.mOptions.get<bool>("processDummy");
 
     if (isDummy) {
-      if (isBarrel || isMCGen /*|| isBarrelAsymmetric*/ /*|| isMuon*/) {
+      if (isBarrel || isMCGen) {
         LOG(fatal) << "Dummy function is enabled even if there are normal process functions running! Fix your config!" << endl;
       } else {
         LOG(info) << "Dummy function is enabled. Skipping the rest of the init function" << endl;
@@ -2602,13 +2602,13 @@ struct AnalysisDileptonTrack {
     fNLegCuts = fNCuts;
 
     // loop over single lepton cuts
-    if (isBarrel /*|| isBarrelAsymmetric*/ /* || isMuon*/) {
+    if (isBarrel) {
       for (int icut = 0; icut < fNLegCuts; ++icut) {
 
         TString pairLegCutName;
 
         // here we check that this cut is one of those used for building the dileptons
-        if (isBarrel /*|| isMuon*/) {
+        if (isBarrel) {
           if (!cfgPairing_objArrayTrackCuts->FindObject(fTrackCutNames[icut].Data())) {
             continue;
           }
