@@ -160,8 +160,6 @@ HFInvMassFitter::HFInvMassFitter(TH1* histoToFit,
                                                    mCovQual(-999),
                                                    mEdm(-999.),
                                                    mMinNll(-999.),
-                                                   mSgnCorrelCoeffValues({}),
-                                                   mSgnCorrelCoeffNames({}),
                                                    mCovCorrMatrix(nullptr)
 {
   // standard constructor
@@ -346,17 +344,6 @@ void HFInvMassFitter::doFit()
     mMinNll = fitResult->minNll();
 
     mCovCorrMatrix = fillCovCorrMatrix(fitResult);
-
-    mSgnCorrelCoeffValues.push_back(fitResult->globalCorr("mNSgn"));
-    mSgnCorrelCoeffNames.push_back("global");
-    mSgnCorrelCoeffValues.push_back(fitResult->correlation("mNSgn", "mRooNBkg"));
-    mSgnCorrelCoeffNames.push_back("mRooNBkg");
-    const auto& bkgPars = bkgPdf->getParameters(dataHistogram)->selectByAttrib("Constant", false);
-    for (const auto& bkgPar : *bkgPars) {
-      const std::string& bkgParName = bkgPar->GetName();
-      mSgnCorrelCoeffValues.push_back(fitResult->correlation("mNSgn", bkgParName.c_str()));
-      mSgnCorrelCoeffNames.push_back(bkgParName);
-    }
 
     std::cout << "mRooNBkg->getVal() = " << mRooNBkg->getVal() << "\n";
     std::cout << "mRooNSgn->getVal() = " << mRooNSgn->getVal() << "\n";

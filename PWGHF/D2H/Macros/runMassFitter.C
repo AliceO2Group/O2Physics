@@ -321,7 +321,6 @@ void runMassFitter(const std::string& configFileName)
   std::vector<TH1*> hMassSgn(nHistograms);
   std::vector<TH1*> hMassRefl(nHistograms);
   std::vector<TH1*> hMass(nHistograms);
-  std::vector<TH1*> hSgnCorr(nHistograms);
   std::vector<TH2*> hCovCorr(nHistograms);
 
   for (int iSliceVar = 0; iSliceVar < nHistograms; iSliceVar++) {
@@ -678,16 +677,6 @@ void runMassFitter(const std::string& configFileName)
     hFitResult->SetBinContent(FitResultEdm, iSliceVar + 1, massFitter->getEDM());
     hFitResult->SetBinContent(FitResultMinNll, iSliceVar + 1, massFitter->getMinNll());
 
-    const std::string hSgnCorrName = "hSgnCorr" + std::to_string(iSliceVar + 1);
-    const auto& sgnCorrValues = massFitter->getSgnCorrelCoeffValues();
-    const auto& sgnCorrNames = massFitter->getSgnCorrelCoeffNames();
-    const int nSgnCorrValues = sgnCorrValues.size();
-    hSgnCorr[iSliceVar] = new TH1D(hSgnCorrName.c_str(), hSgnCorrName.c_str(), nSgnCorrValues, 0, nSgnCorrValues);
-    for (int iSgnCorrValue = 0; iSgnCorrValue < nSgnCorrValues; ++iSgnCorrValue) {
-      hSgnCorr[iSliceVar]->SetBinContent(iSgnCorrValue + 1, sgnCorrValues.at(iSgnCorrValue));
-      hSgnCorr[iSliceVar]->GetXaxis()->SetBinLabel(iSgnCorrValue + 1, sgnCorrNames.at(iSgnCorrValue).c_str());
-    }
-
     hCovCorr[iSliceVar] = massFitter->getCovCorrMatrix();
   }
 
@@ -711,8 +700,7 @@ void runMassFitter(const std::string& configFileName)
     }
     outputFile.cd("MassHistograms");
     hMass[iSliceVar]->Write();
-    outputFile.cd("SgnCorrHistograms");
-    hSgnCorr[iSliceVar]->Write();
+    outputFile.cd("CovCorrMatrices");
     hCovCorr[iSliceVar]->Write(Form("hCovCorrMatrix%d", iSliceVar + 1));
   }
   outputFile.cd();
