@@ -91,6 +91,8 @@ struct FlowCorrelationsUpc {
   O2_DEFINE_CONFIGURABLE(cfgRctFlagEnabled, bool, false, "use run condition table flag")
   O2_DEFINE_CONFIGURABLE(cfgRctFlagIndex, int, 1, "1: isCBTOk; 2:isCBTZdcOk; 3: isCBTHadronOk; 4:isCBTHadronZdcOk ")
   O2_DEFINE_CONFIGURABLE(cfgIRMaxCut, double, 50, "maximum interaction rate for UPC events")
+  O2_DEFINE_CONFIGURABLE(cfgZdcTime, bool, false, "choose zdc time cut")
+  O2_DEFINE_CONFIGURABLE(cfgZdcTimeCut, float, 2.0, "zdc time cut")
 
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
@@ -167,6 +169,9 @@ struct FlowCorrelationsUpc {
     registry.add("deltaPhi_deltaEta_mixed", "deltaphi-deltaeta", {HistType::kTH2D, {axisDeltaPhi, axisDeltaEta}}); // histogram to check the delta eta and delta phi distribution
     registry.add("Nch_raw_vs_independent", "Raw vs Independent", {HistType::kTH2D, {axisMultiplicity, axisIndependent}});
     registry.add("interactionRate", "kHz", {HistType::kTH1F, {{50, 0, 50, "kHz"}}});
+    registry.add("ZDCEnergy", "ZNA; ZNC; Count", {HistType::kTH2D, {{100, 0, 100}, {100, 0, 100}}});
+    registry.add("ZDCTime", "ZNA; ZNC; Count", {HistType::kTH2D, {{100, -10, 10}, {100, -10, 10}}});
+    registry.add("neutronClass", "ZNA; ZNC; Count", {HistType::kTH2D, {{2, 0, 2}, {2, 0, 2}}});
 
     if (cfgUseNchRoughMCCorrected) {
       fnchRoughMCFunc = new TF1("fnchRoughMCFunc", cfgNchRoughMCFunction->c_str(), 0, 100);
@@ -226,6 +231,59 @@ struct FlowCorrelationsUpc {
   }
 
   template <typename C>
+  // zdc time cut
+  bool zdcTimeCut(const C& collision)
+  {
+    if (!cfgZdcTime) {
+      return true;
+    }
+    int neutronClass = -1;
+    float energyCommonZNA = collision.energyCommonZNA(), energyCommonZNC = collision.energyCommonZNC();
+    float timeZNA = collision.timeZNA(), timeZNC = collision.timeZNC();
+    if (std::isinf(energyCommonZNA))
+      energyCommonZNA = -999;
+    if (std::isinf(energyCommonZNC))
+      energyCommonZNC = -999;
+    if (std::isinf(timeZNA))
+      timeZNA = -999;
+    if (std::isinf(timeZNC))
+      timeZNC = -999;
+    registry.fill(HIST("ZDCEnergy"), energyCommonZNC, energyCommonZNA);
+    registry.fill(HIST("ZDCTime"), timeZNC, timeZNA);
+    if (std::abs(timeZNA) > cfgZdcTimeCut && std::abs(timeZNC) > cfgZdcTimeCut) {
+      neutronClass = 0;
+      registry.fill(HIST("neutronClass"), 0, 0);
+    }
+    if (std::abs(timeZNA) <= cfgZdcTimeCut && std::abs(timeZNC) > cfgZdcTimeCut) {
+      neutronClass = 1;
+      registry.fill(HIST("neutronClass"), 0, 1);
+    }
+    if (std::abs(timeZNA) > cfgZdcTimeCut && std::abs(timeZNC) <= cfgZdcTimeCut) {
+      neutronClass = 2;
+      registry.fill(HIST("neutronClass"), 1, 0);
+    }
+    if (std::abs(timeZNA) <= cfgZdcTimeCut && std::abs(timeZNC) <= cfgZdcTimeCut) {
+      neutronClass = 3;
+      registry.fill(HIST("neutronClass"), 1, 1);
+    }
+    if (cfgZdcTime) {
+      // reject 0n0n and XnXn
+      if (neutronClass == 0 || neutronClass == 3) { // o2-linter: disable=magic-number (ZDC time cut)
+        return false;
+      }
+      // if A or C gap is requested, keep corresponding neutron class
+      if (cfgGapSide == 0 || cfgGapSide == 1) {
+        if ((cfgGapSide == 0 && neutronClass == 1) || (cfgGapSide == 1 && neutronClass == 2)) { // o2-linter: disable=magic-number (ZDC time cut)
+          // accepted
+        } else {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  template <typename C>
   bool eventSelected(const C& collision)
   {
     if (cfgIfVertex && std::abs(collision.posZ()) > cfgZVtxCut) {
@@ -254,6 +312,10 @@ struct FlowCorrelationsUpc {
     if (cfgRctFlagEnabled) {
       if (!isGoodRctFlag(collision)) // check RCT flags
         return false;
+    }
+
+    if (!zdcTimeCut(collision)) {
+      return false;
     }
 
     return true;
