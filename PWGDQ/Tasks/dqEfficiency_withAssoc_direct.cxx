@@ -2360,8 +2360,8 @@ struct AnalysisDileptonTrack {
   // Filter filterMuon = aod::dqanalysisflags::isMuonSelected > static_cast<uint32_t>(0);
 
   // use two values array to avoid mixing up the quantities
-  float* fValuesDilepton = 0.0;
-  float* fValuesHadron = 0.0;
+  float* fValuesDilepton = nullptr;
+  float* fValuesHadron = nullptr;
   HistogramManager* fHistMan = nullptr;
 
   std::vector<MCSignal*> fRecMCSignals;
