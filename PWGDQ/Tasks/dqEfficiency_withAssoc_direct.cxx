@@ -338,7 +338,7 @@ struct AnalysisEventSelection {
 
   std::map<int64_t, bool> fSelMap;                     // key: reduced event global index, value: event selection decision
   std::map<uint64_t, std::vector<int64_t>> fBCCollMap; // key: global BC, value: vector of reduced event global indices
-  int fCurrentRun = nullptr;
+  int fCurrentRun = 0;
 
   void init(o2::framework::InitContext& context)
   {
@@ -601,7 +601,7 @@ struct AnalysisTrackSelection {
   std::vector<TString> fHistNamesReco;
   std::vector<TString> fHistNamesMCMatched;
 
-  int fCurrentRun = nullptr; // current run (needed to detect run changes for loading CCDB parameters)
+  int fCurrentRun = 0; // current run (needed to detect run changes for loading CCDB parameters)
 
   std::map<int64_t, std::vector<int64_t>> fNAssocsInBunch;    // key: track global index, value: vector of global index for events associated in-bunch (events that have in-bunch pileup or splitting)
   std::map<int64_t, std::vector<int64_t>> fNAssocsOutOfBunch; // key: track global index, value: vector of global index for events associated out-of-bunch (events that have no in-bunch pileup)
@@ -939,8 +939,8 @@ struct AnalysisPrefilterSelection {
 
   std::map<uint32_t, uint32_t> fPrefilterMap;
   AnalysisCompositeCut* fPairCut = nullptr;
-  uint32_t fPrefilterMask = nullptr;
-  int fPrefilterCutBit = nullptr;
+  uint32_t fPrefilterMask = 0;
+  int fPrefilterCutBit = 0;
 
   Preslice<aod::TrackAssoc> trackAssocsPerCollision = aod::track_association::collisionId;
 
@@ -1206,14 +1206,14 @@ struct AnalysisSameEventPairing {
   std::vector<AnalysisCut*> fMCGenAccCuts;
   bool fUseMCGenAccCut = false;
 
-  uint32_t fTrackFilterMask = nullptr; // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
-  uint32_t fMuonFilterMask = nullptr;  // mask for the muon cuts required in this task to be applied on the muon cuts produced upstream
-  int fNCutsBarrel = nullptr;
-  int fNCutsMuon = nullptr;
-  int fNPairCuts = nullptr;
+  uint32_t fTrackFilterMask = 0; // mask for the track cuts required in this task to be applied on the barrel cuts produced upstream
+  uint32_t fMuonFilterMask = 0;  // mask for the muon cuts required in this task to be applied on the muon cuts produced upstream
+  int fNCutsBarrel = 0;
+  int fNCutsMuon = 0;
+  int fNPairCuts = 0;
   bool fHasTwoProngGenMCsignals = false;
 
-  bool fEnableBarrelHistos = nullptr;
+  bool fEnableBarrelHistos = false;
   // bool fEnableMuonHistos;
 
   Preslice<soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter>> trackAssocsPerCollision = aod::track_association::collisionId;
@@ -2337,13 +2337,13 @@ struct AnalysisDileptonTrack {
     Configurable<std::string> fConfigMCGenSignalHadronJSON{"cfgMCGenSignalHadronJSON", "", "generator level hadron signal (JSON format), used for MC level combinatorics"};
   } fConfigMCOptions;
 
-  int fCurrentRun = nullptr; // needed to detect if the run changed and trigger update of calibrations etc.
-  int fNCuts = nullptr;
-  int fNLegCuts = nullptr;
-  int fNPairCuts = nullptr;
-  int fNCommonTrackCuts = nullptr;
+  int fCurrentRun = 0; // needed to detect if the run changed and trigger update of calibrations etc.
+  int fNCuts = 0;
+  int fNLegCuts = 0;
+  int fNPairCuts = 0;
+  int fNCommonTrackCuts = 0;
   std::map<int, int> fCommonTrackCutMap;
-  uint32_t fTrackCutBitMap = nullptr; // track cut bit mask to be used in the selection of tracks associated with dileptons
+  uint32_t fTrackCutBitMap = 0; // track cut bit mask to be used in the selection of tracks associated with dileptons
   // vector for single-lepton and track cut names for easy access when calling FillHistogramList()
   std::vector<TString> fTrackCutNames;
   std::vector<TString> fLegCutNames;
@@ -2360,8 +2360,8 @@ struct AnalysisDileptonTrack {
   // Filter filterMuon = aod::dqanalysisflags::isMuonSelected > static_cast<uint32_t>(0);
 
   // use two values array to avoid mixing up the quantities
-  float* fValuesDilepton = nullptr;
-  float* fValuesHadron = nullptr;
+  float* fValuesDilepton = 0.0;
+  float* fValuesHadron = 0.0;
   HistogramManager* fHistMan = nullptr;
 
   std::vector<MCSignal*> fRecMCSignals;
