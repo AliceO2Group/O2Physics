@@ -10,8 +10,8 @@
 // or submit itself to any jurisdiction.
 
 /// \file associateMCinfoPhoton.cxx
-/// \brief This code produces reduced events for photon analyses
-/// \author Daiki Sekihata (daiki.sekihata@cern.ch)
+/// \brief This code produces EmMc tables were the McParticleIds get reshuffled due to not storing all McParticles
+/// \author Daiki Sekihata (daiki.sekihata@cern.ch), Marvin Hemmer (marvin.hemmer@cern.ch), Nicolas Strangmann (nicolas.strangmann@cern.ch)
 
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
@@ -38,6 +38,7 @@
 #include <sys/types.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -57,7 +58,7 @@ using namespace o2::constants::physics;
 using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::EMEvSels>;
 using TracksMC = soa::Join<aod::TracksIU, aod::McTrackLabels>;
 using FwdTracksMC = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels>;
-using MyEMCClusters = soa::Join<aod::MinClusters, aod::EMCClusterMCLabels>;
+using MyEMCClusters = soa::Join<aod::MinClusters, aod::EMCClusterMCLabels_001>;
 
 struct Counter {
   int particles{0};
@@ -77,7 +78,7 @@ struct AssociateMCInfoPhoton {
   Produces<o2::aod::EMMCParticles> emmcparticles;
   Produces<o2::aod::V0LegMCLabels> v0legmclabels;
   Produces<o2::aod::EMPrimaryElectronMCLabels> emprimaryelectronmclabels;
-  Produces<o2::aod::EMEMCClusterMCLabels> ememcclustermclabels;
+  Produces<o2::aod::EMEMCClusterMCLabels_001> ememcclustermclabels;
 
   Produces<o2::aod::BinnedGenPts> binnedGenPt;
 
@@ -100,6 +101,7 @@ struct AssociateMCInfoPhoton {
 
     // !!Don't change pt,eta,y binning. These binnings have to be consistent with binned data at analysis.!!
     std::vector<double> ptbins;
+    ptbins.reserve(72);
     for (int i = 0; i < 2; i++) {                // o2-linter: disable=magic-number (just numbers for binning)
       ptbins.emplace_back(0.05 * (i - 0) + 0.0); // from 0 to 0.05 GeV/c, every 0.05 GeV/c
     }
@@ -116,7 +118,7 @@ struct AssociateMCInfoPhoton {
     const AxisSpec axisRapidity{{0.0, +0.8, +0.9}, "rapidity |y|"};
 
     static constexpr uint NParticleNames = 9;
-    static constexpr std::string_view ParticleNames[NParticleNames] = {
+    static constexpr std::array<std::string_view, NParticleNames> ParticleNames = {
       "Gamma", "Pi0", "Eta", "Omega", "Phi",
       "ChargedPion", "ChargedKaon", "K0S", "Lambda"};
 
@@ -267,8 +269,9 @@ struct AssociateMCInfoPhoton {
               genGamma[binNumber]++;
               break;
             case PDG_t::kPi0:
-              if (requireGammaGammaDecay && !isGammaGammaDecay(mcParticle, mcParticles))
+              if (requireGammaGammaDecay && !isGammaGammaDecay(mcParticle, mcParticles)) {
                 continue;
+              }
               registry.fill(HIST("Generated/h2PtY_Pi0"), mcParticle.pt(), std::fabs(mcParticle.y()));
               genPi0[binNumber]++;
               if (isMesonAccepted) {
@@ -276,8 +279,9 @@ struct AssociateMCInfoPhoton {
               }
               break;
             case Pdg::kEta:
-              if (requireGammaGammaDecay && !isGammaGammaDecay(mcParticle, mcParticles))
+              if (requireGammaGammaDecay && !isGammaGammaDecay(mcParticle, mcParticles)) {
                 continue;
+              }
               registry.fill(HIST("Generated/h2PtY_Eta"), mcParticle.pt(), std::fabs(mcParticle.y()));
               genEta[binNumber]++;
               if (isMesonAccepted) {
@@ -291,7 +295,7 @@ struct AssociateMCInfoPhoton {
       } // end of mc track loop
 
       // make an entry for this MC event only if it was not already added to the table
-      if (!(fEventLabels.find(mcCollisionIter.globalIndex()) != fEventLabels.end())) {
+      if (!fEventLabels.contains(mcCollisionIter.globalIndex())) {
         mcevents(mcCollisionIter.globalIndex(), mcCollisionIter.generatorsID(), mcCollisionIter.posX(), mcCollisionIter.posY(), mcCollisionIter.posZ(), mcCollisionIter.impactParameter(), mcCollisionIter.eventPlaneAngle());
         fEventLabels[mcCollisionIter.globalIndex()] = fCounter.events;
         fCounter.events++;
@@ -438,15 +442,17 @@ struct AssociateMCInfoPhoton {
         mcCollisionIter.setCursor(collisionIter.mcCollisionId());
 
         // TODO: test
-        if (emccluster.emmcparticleIds().size() <= 0) {
+        if (emccluster.mcParticleIds().size() <= 0) {
           continue;
         }
         std::vector<int32_t> vEmcMcParticleIds;
+        std::vector<float> vAmplitudes;
 
-        vEmcMcParticleIds.reserve(emccluster.emmcparticleIds().size());
+        vEmcMcParticleIds.reserve(emccluster.mcParticleIds().size());
+        vAmplitudes.reserve(emccluster.mcParticleIds().size());
 
-        for (const auto& emcParticleId : emccluster.emmcparticleIds()) {
-          mcPhoton.setCursor(emcParticleId);
+        for (size_t iCont = 0; iCont < emccluster.mcParticleIds().size(); iCont++) {
+          mcPhoton.setCursor(emccluster.mcParticleIds()[iCont]);
 
           // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
           auto [iter, isNew] = fNewLabels.try_emplace(mcPhoton.globalIndex(), fCounter.particles);
@@ -456,6 +462,7 @@ struct AssociateMCInfoPhoton {
             fCounter.particles++;
           }
           vEmcMcParticleIds.emplace_back(iter->second);
+          vAmplitudes.emplace_back(emccluster.amplitude()[iCont]);
           // ememcclustermclabels(fNewLabels.find(mcPhoton.index())->second);
 
           // Next, store mother-chain of this reconstructed track.
@@ -465,7 +472,7 @@ struct AssociateMCInfoPhoton {
           }
           selectMothersToStore(motherid, mcParticles.size(), motherParticle, daughterIter, mcCollisionIter, fNewLabels, fNewLabelsReversed, fEventIdx, fEventLabels, fCounter);
         } // end of loop over mc particles of the current emc cluster
-        ememcclustermclabels(vEmcMcParticleIds);
+        ememcclustermclabels(vEmcMcParticleIds, vAmplitudes);
 
       } // end of em emc cluster loop
     }
@@ -625,8 +632,8 @@ struct AssociateMCInfoPhoton {
   PROCESS_SWITCH(AssociateMCInfoPhoton, processDummy, "processDummy", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<AssociateMCInfoPhoton>(cfgc, TaskName{"associate-mc-info-photon"})};
+    adaptAnalysisTask<AssociateMCInfoPhoton>(context, TaskName{"associate-mc-info-photon"})};
 }
