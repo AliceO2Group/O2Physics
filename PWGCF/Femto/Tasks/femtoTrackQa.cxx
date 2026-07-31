@@ -86,13 +86,13 @@ struct FemtoTrackQa {
     if ((static_cast<int>(doprocessData) + static_cast<int>(doprocessMc)) > 1) {
       LOG(fatal) << "More than 1 process function is activated. Breaking...";
     }
-    bool processData = doprocessData;
+    bool processDataFlag = doprocessData;
     trackCleaner.init(confTrackCleaner);
 
     std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;
     std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> trackHistSpec;
 
-    if (processData) {
+    if (processDataFlag) {
       colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
       colHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
       trackHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confTrackBinning, confTrackQaBinning);

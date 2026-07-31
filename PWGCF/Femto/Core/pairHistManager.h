@@ -216,7 +216,7 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis pt2{"pt2", {{100, 0, 6}}, "Pt binning for particle 2"};
   o2::framework::ConfigurableAxis mass1{"mass1", {{100, 0, 2}}, "Mass binning for particle 1 (if particle has mass getter, otherwise PDG mass)"};
   o2::framework::ConfigurableAxis mass2{"mass2", {{100, 0, 2}}, "Mass binning for particle 2 (if particle has mass getter, otherwise PDG mass)"};
-  o2::framework::ConfigurableAxis massInv{"massInv", {{100, 0, 2}}, "Invariant Mass binning"};
+  o2::framework::ConfigurableAxis massInv{"massInv", {{100, 0, 5}}, "Invariant Mass binning"};
   o2::framework::ConfigurableAxis dalitzMtot{"dalitzMtot", {{100, 0, 10}}, "Total invariant mass squared binning in darlitz plot"};
   o2::framework::ConfigurableAxis dalitzM12{"dalitzM12", {{100, 0, 10}}, "Mass12 binning of darlitz plot"};
   o2::framework::ConfigurableAxis dalitzM13{"dalitzM13", {{100, 0, 10}}, "Mass13 binning of darlitz plot"};
@@ -705,7 +705,9 @@ class PairHistManager
     }
 
     if (mPlotDalitz) {
-      if constexpr (modes::isEqual(particleType1, modes::Particle::kTrack) && (modes::isEqual(particleType2, modes::Particle::kV0) || modes::isEqual(particleType2, modes::Particle::kCharmHadron))) {
+      if constexpr (modes::isEqual(particleType1, modes::Particle::kTrack) && (modes::isEqual(particleType2, modes::Particle::kV0) ||
+                                                                               modes::isEqual(particleType2, modes::Particle::kTwoTrackResonance) ||
+                                                                               modes::isEqual(particleType2, modes::Particle::kCharmHadron))) {
         auto posDaughter = trackTable.rawIteratorAt(particle2.posDauId() - trackTable.offset());
         auto negDaughter = trackTable.rawIteratorAt(particle2.negDauId() - trackTable.offset());
         ROOT::Math::PtEtaPhiMVector posDau4v = ROOT::Math::PtEtaPhiMVector(posDaughter.pt(), posDaughter.eta(), posDaughter.phi(), mPdgMassPosDau2);
