@@ -1511,7 +1511,7 @@ struct PiKpRAA {
       //---------------------------
       for (const auto& collision : collisions) {
 
-        int nChMCTPCAcc{0};
+        int mcNchInTPCAcc{0};
         for (const auto& particle : mcParticles) {
 
           auto charge{0.};
@@ -1543,7 +1543,7 @@ struct PiKpRAA {
 
           const float eta{particle.eta()};
           if (std::abs(eta) < tpcNchAcceptance) {
-            nChMCTPCAcc++;
+            mcNchInTPCAcc++;
           }
         }
 
@@ -1554,7 +1554,7 @@ struct PiKpRAA {
           registry.fill(HIST("EventCounterMC"), 1.5);
           // To calculate the amount of charged-primary MC particles (|eta|<0.5)
           // that belongs to a MC event that was reconstructed at least once
-          registry.fill(HIST("NchMC_WithRecColl"), nChMCTPCAcc);
+          registry.fill(HIST("NchMC_WithRecColl"), mcNchInTPCAcc);
         }
 
         //---------------------------
@@ -1565,7 +1565,7 @@ struct PiKpRAA {
           // To calculate the amount of charged-primary MC particles (|eta|<0.5)
           // that belongs to a MC event that was reconstructed
           // and only from the with the largest number of contributors
-          registry.fill(HIST("NchMC_WithOnlyRecColl"), nChMCTPCAcc);
+          registry.fill(HIST("NchMC_WithOnlyRecColl"), mcNchInTPCAcc);
         }
 
         //---------------------------
