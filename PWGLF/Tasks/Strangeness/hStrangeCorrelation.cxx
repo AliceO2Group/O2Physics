@@ -213,7 +213,7 @@ struct HStrangeCorrelation {
     Configurable<int> minITSClustersForDaughterTracks{"minITSClustersForDaughterTracks", 1, "Minimum number of ITS clusters for V0 daughter tracks"};
     Configurable<bool> requireDCAzCut{"requireDCAzCut", false, "require DCAz cut for trigger and associated primary tracks"};
     Configurable<bool> doITSChi2Selection{"doITSChi2Selection", false, "require ITS chi2 cut for trigger and associated primary tracks"};
-    Configurable<bool> checkForITSTPCMissmatchMC{"checkForITSTPCMissmatchMC", false, "if true, reject tracks with MC mask 13 (ITS-TPC mismatch) for trigger and associated primary tracks"};
+    Configurable<bool> checkForITSTPCMissmatchMC{"checkForITSTPCMissmatchMC", false, "if true, reject tracks with MC mask bit 13 (ITS-TPC mismatch) for trigger and associated primary tracks"};
     // --- Trigger: DCA variation from basic formula: |DCAxy| <  0.004f + (0.013f / pt)
     Configurable<float> dcaXYconstant{"dcaXYconstant", 0.004, "[0] in |DCAxy| < [0]+[1]/pT"};
     Configurable<float> dcaXYpTdep{"dcaXYpTdep", 0.013, "[1] in |DCAxy| < [0]+[1]/pT"};
@@ -839,7 +839,7 @@ struct HStrangeCorrelation {
       if (!isValidTrigger(trigg, triggerTrack.isLeading())) {
         continue;
       }
-      if (trackSelection.checkForITSTPCMissmatchMC && triggerTrack.mcMask() == 13) {
+      if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(triggerTrack.mcMask(), 13)) {
         continue;
       }
       float efficiencyTrigg = 1.0f;
@@ -1218,6 +1218,9 @@ struct HStrangeCorrelation {
       if (!isValidTrigger(trigg, triggerTrack.isLeading())) {
         continue;
       }
+      if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(triggerTrack.mcMask(), 13)) {
+        continue;
+      }
 
       float efficiencyTrigg = 1.0f;
       float efficiencyTriggError = 0.0f;
@@ -1535,6 +1538,9 @@ struct HStrangeCorrelation {
       if (!isValidTrigger(trigg, triggerTrack.isLeading())) {
         continue;
       }
+      if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(triggerTrack.mcMask(), 13)) {
+        continue;
+      }
 
       float efficiencyTrigger = 1.0f;
       float efficiencyTriggerError = 0.0f;
@@ -1597,6 +1603,9 @@ struct HStrangeCorrelation {
         }
         //---] track quality check [---
         if (!isValidAssocHadron(assoc)) {
+          continue;
+        }
+        if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(assocTrack.mcMask(), 13)) {
           continue;
         }
         if (doAssocPhysicalPrimary && !assocTrack.mcPhysicalPrimary()) {
@@ -2411,6 +2420,9 @@ struct HStrangeCorrelation {
         if (!isValidTrigger(track, triggerTrack.isLeading())) {
           continue;
         }
+        if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(triggerTrack.mcMask(), 13)) {
+          continue;
+        }
         auto binNumber = histos.get<TH1>(HIST("axes/hPtTriggerAxis"))->FindFixBin(track.pt()) - 1;
         SETBIT(triggerPresenceMap[collision.globalIndex()], binNumber);
       }
@@ -2455,6 +2467,9 @@ struct HStrangeCorrelation {
         if (!isValidTrigger(track, triggerTrack.isLeading())) {
           continue;
         }
+        if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(triggerTrack.mcMask(), 13)) {
+          continue;
+        }
         histos.fill(HIST("hDCAzTriggerHadron"), track.dcaZ(), track.pt());
         histos.fill(HIST("hDCAxyTriggerHadron"), track.dcaXY(), track.pt());
         float efficiency = 1.0f;
@@ -2477,6 +2492,9 @@ struct HStrangeCorrelation {
     for (auto const& assocTrack : assocHadrons) {
       auto assoc = assocTrack.track_as<TracksComplete>();
       if (!isValidAssocHadron(assoc)) {
+        continue;
+      }
+      if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(assocTrack.mcMask(), 13)) {
         continue;
       }
       float efficiency = 1.0f;
@@ -2636,6 +2654,9 @@ struct HStrangeCorrelation {
         if (!isValidTrigger(track, triggerTrack.isLeading())) {
           continue;
         }
+        if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(triggerTrack.mcMask(), 13)) {
+          continue;
+        }
         histos.fill(HIST("hTriggerAllSelectedEtaVsPt"), track.pt(), track.eta(), cent);
         histos.fill(HIST("hTriggerPtResolution"), track.pt(), triggerTrack.mcOriginalPt());
         if (masterConfigurations.doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary()) {
@@ -2791,6 +2812,9 @@ struct HStrangeCorrelation {
       if (!isValidTrigger(track, triggerTrack.isLeading())) {
         continue;
       }
+      if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(triggerTrack.mcMask(), 13)) {
+        continue;
+      }
       histos.fill(HIST("hTriggerAllSelectedEtaVsPt"), track.pt(), track.eta(), cent);
       histos.fill(HIST("hTriggerPtResolution"), track.pt(), triggerTrack.mcOriginalPt());
       if (masterConfigurations.doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary()) {
@@ -2849,6 +2873,9 @@ struct HStrangeCorrelation {
       if (!isValidAssocHadron(pionTrack)) {
         continue;
       }
+      if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(pion.mcMask(), 13)) {
+        continue;
+      }
 
       histos.fill(HIST("hPionEtaVsPtAllSelected"), pionTrack.pt(), pionTrack.eta(), collision.centFT0M());
       if (doAssocPhysicalPrimary && !pion.mcPhysicalPrimary()) {
@@ -2868,6 +2895,9 @@ struct HStrangeCorrelation {
       for (auto const& triggerTrack : triggerTracks) {
         auto track = triggerTrack.track_as<TracksComplete>();
         if (!isValidTrigger(track, triggerTrack.isLeading())) {
+          continue;
+        }
+        if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(triggerTrack.mcMask(), 13)) {
           continue;
         }
         histos.fill(HIST("hTriggerAllSelectedEtaVsPt"), track.pt(), track.eta(), collision.centFT0M());
@@ -3504,6 +3534,8 @@ struct HStrangeCorrelation {
       double getatrigger = triggerParticle.eta();
       double gphitrigger = triggerParticle.phi();
       double pttrigger = triggerParticle.pt();
+      auto const* triggerPdg = pdgDB->GetParticle(triggerParticle.pdgCode());
+      const double triggerCharge = triggerPdg ? triggerPdg->Charge() : 0.;
       auto const& mother = triggerParticle.mothers_first_as<aod::McParticles>();
       auto globalIndex = mother.globalIndex();
       static_for<0, 8>([&](auto i) { // associated loop
@@ -3531,12 +3563,18 @@ struct HStrangeCorrelation {
               histos.fill(HIST("ClosureTest/sameEvent/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, bestCollisionVtxZ, bestCollisionCentpercentile);
             }
             if (i < 3 && TESTBIT(doCorrelation, i) && masterConfigurations.doCorrelationsHadronV0daughter) {
-              auto assocParticleDaugters = assocParticle.daughters_as<aod::McParticles>();
-              for (const auto& assocParticleDaugter : assocParticleDaugters) {
-                if (((assocParticleDaugter.pdgCode() == PDG_t::kPiPlus || assocParticleDaugter.pdgCode() == PDG_t::kProton) && (triggerParticle.pdgCode() > 0)) || ((assocParticleDaugter.pdgCode() == PDG_t::kPiMinus || assocParticleDaugter.pdgCode() == PDG_t::kProtonBar) && (triggerParticle.pdgCode() < 0))) {
-                  histos.fill(HIST("ClosureTest/sameEvent/") + HIST(Particlenames[Index]) + HIST("_SameSignDaughter"), computeDeltaPhi(gphitrigger, assocParticleDaugter.phi()), getatrigger - assocParticleDaugter.eta(), assocParticleDaugter.pt(), pttrigger, bestCollisionVtxZ, bestCollisionCentpercentile);
+              auto const assocParticleDaughters = assocParticle.daughters_as<aod::McParticles>();
+              for (const auto& assocParticleDaughter : assocParticleDaughters) {
+                auto const* daughterPdg = pdgDB->GetParticle(assocParticleDaughter.pdgCode());
+                const double daughterCharge = daughterPdg ? daughterPdg->Charge() : 0.;
+                // Neutral daughters, including pi0, do not correspond to reconstructed V0 daughter tracks.
+                if (triggerCharge == 0. || daughterCharge == 0.) {
+                  continue;
+                }
+                if (triggerCharge * daughterCharge > 0.) {
+                  histos.fill(HIST("ClosureTest/sameEvent/") + HIST(Particlenames[Index]) + HIST("_SameSignDaughter"), computeDeltaPhi(gphitrigger, assocParticleDaughter.phi()), getatrigger - assocParticleDaughter.eta(), assocParticleDaughter.pt(), pttrigger, bestCollisionVtxZ, bestCollisionCentpercentile);
                 } else {
-                  histos.fill(HIST("ClosureTest/sameEvent/") + HIST(Particlenames[Index]) + HIST("_OppSignDaughter"), computeDeltaPhi(gphitrigger, assocParticleDaugter.phi()), getatrigger - assocParticleDaugter.eta(), assocParticleDaugter.pt(), pttrigger, bestCollisionVtxZ, bestCollisionCentpercentile);
+                  histos.fill(HIST("ClosureTest/sameEvent/") + HIST(Particlenames[Index]) + HIST("_OppSignDaughter"), computeDeltaPhi(gphitrigger, assocParticleDaughter.phi()), getatrigger - assocParticleDaughter.eta(), assocParticleDaughter.pt(), pttrigger, bestCollisionVtxZ, bestCollisionCentpercentile);
                 }
               }
             }
