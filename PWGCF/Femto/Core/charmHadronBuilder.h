@@ -70,7 +70,6 @@ struct ConfD0Bits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> decayLengthMin{"decayLengthMin", {0.02f}, "Minimum decay length (cm)"};
   o2::framework::Configurable<std::vector<float>> impactParameterProductMax{"impactParameterProductMax", {0.f}, "Maximum product of prong impact parameters d0*d0 (cm^2)"};
   o2::framework::Configurable<std::vector<float>> cosThetaStarMax{"cosThetaStarMax", {1.f}, "Maximum |cos(theta*)| of the decay"};
-  o2::framework::Configurable<bool> storeDoubleHypo{"storeDoubleHypo", false, "keep candidates passing BOTH D0 and D0bar"};
 };
 
 // base selection for analysis task for D0s
@@ -114,13 +113,15 @@ const std::unordered_map<D0Sels, std::string> d0SelectionNames = {
 
 /// enum for all D0 filters (loose kinematic pre-selection, applied before the bit selections)
 enum D0Filters {
+  kDecayChannel,
+  kHypothesis,
   kPtMin,
   kPtMax,
   kEtaMin,
   kEtaMax,
   kPhiMin,
   kPhiMax,
-  kYMin, //! rapidity window (HF-specific, cut in the builder via HfHelper)
+  kYMin,
   kYMax,
   kMassMin,
   kMassMax,
@@ -130,6 +131,8 @@ enum D0Filters {
 constexpr char D0FilterHistName[] = "hD0Filters";
 constexpr char D0barFilterHistName[] = "hD0barFilters";
 const std::unordered_map<D0Filters, std::string> d0FilterNames = {
+  {kDecayChannel, "D0 -> K pi decay channel"},
+  {kHypothesis, "D0/D0bar hypothesis"},
   {kPtMin, "Minimum pT"},
   {kPtMax, "Maximum pT"},
   {kEtaMin, "Minimum eta"},
@@ -174,6 +177,8 @@ class D0Selection : public baseselection::BaseSelection<float, o2::analysis::fem
     this->template setupFilterHistogram<FilterHistName>(
       registry,
       {
+        {d0FilterNames.at(kDecayChannel), 1},
+        {d0FilterNames.at(kHypothesis), 1},
         {d0FilterNames.at(kPtMin), mPtMin},
         {d0FilterNames.at(kPtMax), mPtMax},
         {d0FilterNames.at(kEtaMin), mEtaMin},
@@ -204,6 +209,20 @@ class D0Selection : public baseselection::BaseSelection<float, o2::analysis::fem
     bool pass = true;
     bool p = false;
 
+    // decay channel
+    p = (d0candidate.hfflag() & (1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK)) != 0;
+    this->template fillFilter<FilterHistName>(kDecayChannel, p);
+    pass &= p;
+
+    if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
+      p = d0candidate.isSelD0();
+    } else {
+      p = d0candidate.isSelD0bar();
+    }
+
+    this->template fillFilter<FilterHistName>(kHypothesis, p);
+    pass &= p;
+
     p = d0candidate.pt() > mPtMin;
     this->template fillFilter<FilterHistName>(kPtMin, p);
     pass &= p;
@@ -228,23 +247,20 @@ class D0Selection : public baseselection::BaseSelection<float, o2::analysis::fem
     this->template fillFilter<FilterHistName>(kPhiMax, p);
     pass &= p;
 
+    // rapidity
+    if (mUseYCut) {
+      const float y = mHfHelper.yD0(d0candidate);
+      p = y > mYMin;
+      this->template fillFilter<FilterHistName>(kYMin, p);
+      pass &= p;
+
+      p = y < mYMax;
+      this->template fillFilter<FilterHistName>(kYMax, p);
+      pass &= p;
+    }
+
     this->template fillFilterSummary<FilterHistName>(pass);
     return this->isPassThrough() || pass;
-  }
-
-  [[nodiscard]] bool getUseYCut() const
-  {
-    return mUseYCut;
-  }
-
-  [[nodiscard]] float getYMin() const
-  {
-    return mYMin;
-  }
-
-  [[nodiscard]] float getYMax() const
-  {
-    return mYMax;
   }
 
   [[nodiscard]] float getMassMin() const
@@ -309,8 +325,6 @@ class CharmHadronBuilder
       return;
     }
 
-    mStoreDoubleHypo = config.storeDoubleHypo.value;
-
     mD0Selection.configure(registry, config, filter);
     mD0Selection.printSelections(D0SelsName);
   }
@@ -359,41 +373,12 @@ class CharmHadronBuilder
     if (!mFillAnyTable) {
       return;
     }
-
+    int64_t posDauIndex = 0;
+    int64_t negDauIndex = 0;
     for (const auto& candidate : candidates) {
-      // keep only the D0 -> K pi decay channel hypothesis
-      if (!(candidate.hfflag() & (1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK))) {
-        continue;
-      }
-
-      // HF acceptance: cut on rapidity instead of eta
-      if (mD0Selection.getUseYCut()) {
-        const float y = mHfHelper.yD0(candidate);
-        if (y < mD0Selection.getYMin() || y > mD0Selection.getYMax()) {
-          continue;
-        }
-      }
-
-      // loose kinematic pre-selection (pt/eta/phi)
       if (!mD0Selection.checkFilters(candidate)) {
         continue;
       }
-
-      const bool selD0 = candidate.isSelD0();
-      const bool selD0bar = candidate.isSelD0bar();
-      if (selD0 && selD0bar && !mStoreDoubleHypo) {
-        continue;
-      }
-      if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
-        if (!selD0) {
-          continue;
-        }
-      } else {
-        if (!selD0bar) {
-          continue;
-        }
-      }
-
       mD0Selection.applySelections(candidate);
       if (!mD0Selection.passesAllRequiredSelections()) {
         continue;
@@ -403,8 +388,8 @@ class CharmHadronBuilder
 
       auto prong0 = candidate.template prong0_as<T7>();
       auto prong1 = candidate.template prong1_as<T7>();
-      int64_t posDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong0, trackProducts, collisionBuilder);
-      int64_t negDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong1, trackProducts, collisionBuilder);
+      posDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong0, trackProducts, collisionBuilder);
+      negDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong1, trackProducts, collisionBuilder);
 
       if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
         this->fillD0Tables(collisionProducts, d0Products, candidate, candidate.pt(), mHfHelper.invMassD0ToPiK(candidate), posDauIndex, negDauIndex);
@@ -421,36 +406,11 @@ class CharmHadronBuilder
     if (!mFillAnyTable) {
       return;
     }
-
+    int64_t posDauIndex = 0;
+    int64_t negDauIndex = 0;
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & (1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK))) {
-        continue;
-      }
-
-      if (mD0Selection.getUseYCut()) {
-        const float y = mHfHelper.yD0(candidate);
-        if (y < mD0Selection.getYMin() || y > mD0Selection.getYMax()) {
-          continue;
-        }
-      }
-
       if (!mD0Selection.checkFilters(candidate)) {
         continue;
-      }
-
-      const bool selD0 = candidate.isSelD0();
-      const bool selD0bar = candidate.isSelD0bar();
-      if (selD0 && selD0bar && !mStoreDoubleHypo) {
-        continue;
-      }
-      if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
-        if (!selD0) {
-          continue;
-        }
-      } else {
-        if (!selD0bar) {
-          continue;
-        }
       }
 
       mD0Selection.applySelections(candidate);
@@ -462,8 +422,8 @@ class CharmHadronBuilder
 
       auto prong0 = candidate.template prong0_as<T8>();
       auto prong1 = candidate.template prong1_as<T8>();
-      int64_t posDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(col, collisionBuilder, mcCols, prong0, trackProducts, mcParticles, mcBuilder, mcProducts);
-      int64_t negDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(col, collisionBuilder, mcCols, prong1, trackProducts, mcParticles, mcBuilder, mcProducts);
+      posDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(col, collisionBuilder, mcCols, prong0, trackProducts, mcParticles, mcBuilder, mcProducts);
+      negDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(col, collisionBuilder, mcCols, prong1, trackProducts, mcParticles, mcBuilder, mcProducts);
 
       if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
         this->fillD0Tables(collisionProducts, d0Products, candidate, candidate.pt(), mHfHelper.invMassD0ToPiK(candidate), posDauIndex, negDauIndex);
@@ -482,7 +442,6 @@ class CharmHadronBuilder
   bool mProduceD0Masks = false;
   bool mProduceD0Extras = false;
   bool mFillAnyTable = false;
-  bool mStoreDoubleHypo = false;
 };
 } // namespace o2::analysis::femto::charmhadronbuilder
 

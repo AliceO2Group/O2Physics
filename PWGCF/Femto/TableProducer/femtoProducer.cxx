@@ -73,7 +73,7 @@ using Run3Vzeros = o2::aod::V0Datas;
 using Run3RecoVzeros = o2::soa::Join<o2::aod::V0Datas, o2::aod::McV0Labels>;
 
 using Run3D0Candidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>;
-using Run3McD0Candidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0, aod::HfCand2ProngMcRec>;
+using Run3McD0Candidates = soa::Join<Run3D0Candidates, aod::HfCand2ProngMcRec>;
 
 using Run3Cascades = o2::aod::CascDatas;
 using Run3RecoCascades = o2::soa::Join<Run3Cascades, o2::aod::McCascLabels>;

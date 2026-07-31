@@ -719,8 +719,8 @@ class PairTrackD0Builder
   charmhadronhistmanager::CharmHadronHistManager<prefixD0, prefixPosDau, prefixNegDau, charmHadronType> mD0HistManager;
   particlecleaner::ParticleCleaner mTrackCleaner;
   particlecleaner::ParticleCleaner mD0Cleaner;
-  pairhistmanager::PairHistManager<prefixSe, modes::Particle::kTrack, modes::Particle::kV0> mPairHistManagerSe;
-  pairhistmanager::PairHistManager<prefixMe, modes::Particle::kTrack, modes::Particle::kV0> mPairHistManagerMe;
+  pairhistmanager::PairHistManager<prefixSe, modes::Particle::kTrack, modes::Particle::kCharmHadron> mPairHistManagerSe;
+  pairhistmanager::PairHistManager<prefixMe, modes::Particle::kTrack, modes::Particle::kCharmHadron> mPairHistManagerMe;
   closepairrejection::ClosePairRejectionTrackV0<prefixCprSe> mCprSe;
   closepairrejection::ClosePairRejectionTrackV0<prefixCprMe> mCprMe;
   paircleaner::TrackV0PairCleaner mPc;

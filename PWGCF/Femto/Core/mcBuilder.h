@@ -250,11 +250,8 @@ class McBuilder
       if (std::abs(mcParticle.y()) > mCharmYGenMax) {
         return;
       }
-      const modes::McOrigin origin = this->resolveCharmOrigin(mcParticle, mcParticles);
-      this->getOrCreateMcParticleRow<system>(mcParticle, mcParticles, mcCol, origin, mcProducts);
-    } else {
-      this->getOrCreateMcParticleRow<system>(mcParticle, mcParticles, mcCol, mcProducts);
     }
+    this->getOrCreateMcParticleRow<system>(mcParticle, mcParticles, mcCol, mcProducts);
   }
 
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
@@ -312,8 +309,7 @@ class McBuilder
 
     auto mcParticle = mcParticles.rawIteratorAt(indexMcRec);
     auto mcCol = mcParticle.template mcCollision_as<T2>();
-    const modes::McOrigin origin = this->resolveCharmOrigin(mcParticle, mcParticles);
-    int64_t mcParticleRow = this->getOrCreateMcParticleRow<system>(mcParticle, mcParticles, mcCol, origin, mcProducts);
+    int64_t mcParticleRow = this->getOrCreateMcParticleRow<system>(mcParticle, mcParticles, mcCol, mcProducts);
 
     mcProducts.producedD0Labels(mcParticleRow);
   }
@@ -390,7 +386,7 @@ class McBuilder
   // classify a charm hadron as prompt (charm from a c quark) or non-prompt (charm from a
   // beauty decay) from the mc decay tree; shared by the reco-matched and generator-level paths
   template <typename T1, typename T2>
-  modes::McOrigin resolveCharmOrigin(T1 const& mcParticle, T2 const& mcParticles)
+  modes::McOrigin getHeavyFlavourOrigin(T1 const& mcParticle, T2 const& mcParticles)
   {
     const int charmOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle);
     return (charmOrigin == RecoDecay::OriginType::NonPrompt) ? modes::McOrigin::kNonPrompt : modes::McOrigin::kPrompt;
@@ -454,15 +450,9 @@ class McBuilder
   template <modes::System system, typename T1, typename T2, typename T3, typename T4>
   int64_t getOrCreateMcParticleRow(T1 const& mcParticle, T2 const& mcParticles, T3 const& mcCol, T4& mcProducts)
   {
-    auto origin = this->getOrigin(mcParticle);
-    return this->buildMcParticleRow<system>(mcParticle, mcParticles, mcCol, origin, mcProducts);
-  }
-
-  /// \brief Overload for a caller-provided origin, e.g. prompt vs non-prompt for a charm
-  /// hadron, which getOrigin does not classify; the origin is stored as given
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
-  int64_t getOrCreateMcParticleRow(T1 const& mcParticle, T2 const& mcParticles, T3 const& mcCol, modes::McOrigin origin, T4& mcProducts)
-  {
+    auto origin = std::abs(mcParticle.pdgCode()) == o2::constants::physics::Pdg::kD0
+                    ? this->getHeavyFlavourOrigin(mcParticle, mcParticles)
+                    : this->getOrigin(mcParticle);
     return this->buildMcParticleRow<system>(mcParticle, mcParticles, mcCol, origin, mcProducts);
   }
 
@@ -471,7 +461,9 @@ class McBuilder
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   int64_t getOrCreateMcParticleRow(T1 const& col, T2 const& mcCols, T3 const& mcParticle, T4 const& mcParticles, T5 const& mcCol, T6& mcProducts)
   {
-    auto origin = this->getOrigin(col, mcCols, mcParticle);
+    auto origin = std::abs(mcParticle.pdgCode()) == o2::constants::physics::Pdg::kD0
+                    ? this->getHeavyFlavourOrigin(mcParticle, mcParticles)
+                    : this->getOrigin(col, mcCols, mcParticle);
     return this->buildMcParticleRow<system>(mcParticle, mcParticles, mcCol, origin, mcProducts);
   }
 

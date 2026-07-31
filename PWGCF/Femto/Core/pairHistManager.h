@@ -705,7 +705,7 @@ class PairHistManager
     }
 
     if (mPlotDalitz) {
-      if constexpr (modes::isEqual(particleType1, modes::Particle::kTrack) && modes::isEqual(particleType2, modes::Particle::kV0)) {
+      if constexpr (modes::isEqual(particleType1, modes::Particle::kTrack) && (modes::isEqual(particleType2, modes::Particle::kV0) || modes::isEqual(particleType2, modes::Particle::kCharmHadron))) {
         auto posDaughter = trackTable.rawIteratorAt(particle2.posDauId() - trackTable.offset());
         auto negDaughter = trackTable.rawIteratorAt(particle2.negDauId() - trackTable.offset());
         ROOT::Math::PtEtaPhiMVector posDau4v = ROOT::Math::PtEtaPhiMVector(posDaughter.pt(), posDaughter.eta(), posDaughter.phi(), mPdgMassPosDau2);

@@ -86,11 +86,11 @@ struct FemtoD0Qa {
     d0HistManager;
 
   // setup for daughters
-  trackhistmanager::ConfD0PosDauBinning confD0PosDaughterBinning;
-  trackhistmanager::ConfD0PosDauQaBinning confD0PosDaughterQaBinning;
+  trackhistmanager::ConfD01PosDauBinning confD01PosDaughterBinning;
+  trackhistmanager::ConfD01PosDauQaBinning confD01PosDaughterQaBinning;
 
-  trackhistmanager::ConfD0NegDauBinning confD0NegDaughterBinning;
-  trackhistmanager::ConfD0NegDauQaBinning confD0NegDaughterQaBinning;
+  trackhistmanager::ConfD01NegDauBinning confD01NegDaughterBinning;
+  trackhistmanager::ConfD01NegDauQaBinning confD01NegDaughterQaBinning;
 
   o2::framework::HistogramRegistry hRegistry{"FemtoD0Qa", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
 
@@ -107,19 +107,19 @@ struct FemtoD0Qa {
     if (processData) {
       colHistSpec = colhistmanager::makeColQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
       colHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
-      posDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confD0PosDaughterBinning, confD0PosDaughterQaBinning);
-      negDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confD0NegDaughterBinning, confD0NegDaughterQaBinning);
+      posDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confD01PosDaughterBinning, confD01PosDaughterQaBinning);
+      negDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confD01NegDaughterBinning, confD01NegDaughterQaBinning);
       d0HistSpec = charmhadronhistmanager::makeD0HistSpecMap(confD0Binning);
       d0QaHistSpec = charmhadronhistmanager::makeD0QaHistSpecMap(confD0QaBinning);
-      d0HistManager.init<modes::Mode::kReco_Qa>(&hRegistry, d0HistSpec, d0QaHistSpec, confD0Selection, confD0QaBinning, posDaughterHistSpec, confD0PosDaughterQaBinning, negDaughterHistSpec, confD0NegDaughterQaBinning);
+      d0HistManager.init<modes::Mode::kReco_Qa>(&hRegistry, d0HistSpec, d0QaHistSpec, confD0Selection, confD0QaBinning, posDaughterHistSpec, confD01PosDaughterQaBinning, negDaughterHistSpec, confD01NegDaughterQaBinning);
     } else {
       colHistSpec = colhistmanager::makeColMcQaHistSpecMap(confCollisionBinning, confCollisionQaBinning);
       colHistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, colHistSpec, confCollisionBinning, confCollisionQaBinning);
-      posDaughterHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confD0PosDaughterBinning, confD0PosDaughterQaBinning);
-      negDaughterHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confD0NegDaughterBinning, confD0NegDaughterQaBinning);
+      posDaughterHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confD01PosDaughterBinning, confD01PosDaughterQaBinning);
+      negDaughterHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confD01NegDaughterBinning, confD01NegDaughterQaBinning);
       d0HistSpec = charmhadronhistmanager::makeD0McQaHistSpecMap(confD0Binning, confD0QaBinning);
       d0QaHistSpec = charmhadronhistmanager::makeD0QaHistSpecMap(confD0QaBinning);
-      d0HistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, d0HistSpec, d0QaHistSpec, confD0Selection, confD0QaBinning, posDaughterHistSpec, confD0PosDaughterQaBinning, negDaughterHistSpec, confD0NegDaughterQaBinning);
+      d0HistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, d0HistSpec, d0QaHistSpec, confD0Selection, confD0QaBinning, posDaughterHistSpec, confD01PosDaughterQaBinning, negDaughterHistSpec, confD01NegDaughterQaBinning);
     }
 
     hRegistry.print();
