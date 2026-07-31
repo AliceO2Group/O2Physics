@@ -231,18 +231,16 @@ struct FemtoUniversePairTaskTrackPhi {
   {
     if (mom < confTrackPtPIDLimit) {
       return std::abs(nsigmaTPCPr) < confPIDProtonNsigmaTPC;
-    } else {
-      return std::hypot(nsigmaTOFPr, nsigmaTPCPr) < confPIDProtonNsigmaCombined;
     }
+    return std::hypot(nsigmaTOFPr, nsigmaTPCPr) < confPIDProtonNsigmaCombined;
   }
 
   bool isProtonRejected(float mom, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCK, float nsigmaTOFK)
   {
     if (mom < kMomCutLow) {
       return true;
-    } else {
-      return std::hypot(nsigmaTOFPi, nsigmaTPCPi) < confPIDPionNsigmaReject || std::hypot(nsigmaTOFK, nsigmaTPCK) < confPIDKaonNsigmaReject;
     }
+    return std::hypot(nsigmaTOFPi, nsigmaTPCPi) < confPIDPionNsigmaReject || std::hypot(nsigmaTOFK, nsigmaTPCK) < confPIDKaonNsigmaReject;
   }
 
   bool isKaonNSigma(float mom, bool hasTOF, float nsigmaTPCK, float nsigmaTOFK)
@@ -250,30 +248,28 @@ struct FemtoUniversePairTaskTrackPhi {
     if (confTrackUseRun3PIDforKaons) {
       if (mom < kMomCutLow) {
         return std::abs(nsigmaTPCK) < kNSigmaStandard;
-      } else {
-        if (hasTOF) { // if TOF is available, use combine nsigma
-          return std::hypot(nsigmaTOFK, nsigmaTPCK) < kNSigmaStandard;
-        } else { // if TOF is not available, use TPC nsigma
-          return std::abs(nsigmaTPCK) < kNSigmaStandard;
-        }
       }
-    } else {
-      if (mom < kMomCutKaonLow) { // 0.0-0.3
-        return std::abs(nsigmaTPCK) < kNSigmaStandard;
-      }
-      if (mom < kMomCutKaonMid) { // 0.30 - 0.45
-        return std::abs(nsigmaTPCK) < kNSigmaMedium;
-      }
-      if (mom < kMomCutKaonHigh) { // 0.45-0.55
-        return std::abs(nsigmaTPCK) < kNSigmaStrict;
-      }
-      if (mom < kMomCutKaonMax) { // 0.55-1.5 (now we use TPC and TOF)
+      if (hasTOF) { // if TOF is available, use combine nsigma
         return std::hypot(nsigmaTOFK, nsigmaTPCK) < kNSigmaStandard;
       }
-      if (mom > kMomCutKaonMax) { // 1.5 -
-        return (std::abs(nsigmaTOFK) < kNSigmaMedium) && (std::abs(nsigmaTPCK) < kNSigmaStandard);
-      }
-      return false;
+      // if TOF is not available, use TPC nsigma
+      return std::abs(nsigmaTPCK) < kNSigmaStandard;
+    }
+
+    if (mom < kMomCutKaonLow) { // 0.0-0.3
+      return std::abs(nsigmaTPCK) < kNSigmaStandard;
+    }
+    if (mom < kMomCutKaonMid) { // 0.30 - 0.45
+      return std::abs(nsigmaTPCK) < kNSigmaMedium;
+    }
+    if (mom < kMomCutKaonHigh) { // 0.45-0.55
+      return std::abs(nsigmaTPCK) < kNSigmaStrict;
+    }
+    if (mom < kMomCutKaonMax) { // 0.55-1.5 (now we use TPC and TOF)
+      return std::hypot(nsigmaTOFK, nsigmaTPCK) < kNSigmaStandard;
+    }
+    if (mom > kMomCutKaonMax) { // 1.5 -
+      return (std::abs(nsigmaTOFK) < kNSigmaMedium) && (std::abs(nsigmaTPCK) < kNSigmaStandard);
     }
     return false;
   }
@@ -282,27 +278,24 @@ struct FemtoUniversePairTaskTrackPhi {
   {
     if (mom < kMomCutLow) {
       return (std::abs(nsigmaTPCPi) < confPIDPionNsigmaReject) || (std::abs(nsigmaTPCPr) < confPIDProtonNsigmaReject);
-    } else {
-      return (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < confPIDPionNsigmaReject) || (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < confPIDProtonNsigmaReject);
     }
+    return (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < confPIDPionNsigmaReject) || (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < confPIDProtonNsigmaReject);
   }
 
   bool isPionNSigma(float mom, float nsigmaTPCPi, float nsigmaTOFPi)
   {
     if (mom < kMomCutLow) {
       return (std::abs(nsigmaTPCPi) < confPIDPionNsigmaTPC);
-    } else {
-      return (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < confPIDPionNsigmaCombined);
     }
+    return (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < confPIDPionNsigmaCombined);
   }
 
   bool isPionRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCK, float nsigmaTOFK)
   {
     if (mom < kMomCutLow) {
       return (std::abs(nsigmaTPCK) < confPIDKaonNsigmaReject) || (std::abs(nsigmaTPCPr) < confPIDProtonNsigmaReject);
-    } else {
-      return (std::hypot(nsigmaTOFK, nsigmaTPCK) < confPIDKaonNsigmaReject) || (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < confPIDProtonNsigmaReject);
     }
+    return (std::hypot(nsigmaTOFK, nsigmaTPCK) < confPIDKaonNsigmaReject) || (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < confPIDProtonNsigmaReject);
   }
 
   bool isParticleNSigmaAccepted(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCK, float nsigmaTOFK)
