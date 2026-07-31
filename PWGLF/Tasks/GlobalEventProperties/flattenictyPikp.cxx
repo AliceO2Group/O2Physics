@@ -624,6 +624,17 @@ struct FlattenictyPikp {
     registryQC.get<TH1>(HIST("Events/hEvtSel"))->GetXaxis()->SetBinLabel(evtSelVtxZ + 1, "Vtx-z pos");
     registryQC.get<TH1>(HIST("Events/hEvtSel"))->GetXaxis()->SetBinLabel(evtSelINELgt0 + 1, "INEL>0");
     registryQC.get<TH1>(HIST("Events/hEvtSel"))->GetXaxis()->SetBinLabel(evtSelRCTFlagChecker + 1, "RCT Flag Checker");
+    // Track counter
+    registryQC.add("Tracks/hTrkSel", "Number of tracks; Cut; #Tracks Passed Cut", {kTH1F, {{nTrkSel, 0, nTrkSel}}});
+    registryQC.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelAll + 1, "All");
+    registryQC.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelEta + 1, "Eta");
+    registryQC.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelPt + 1, "Pt");
+    registryQC.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelDCA + 1, "DCA");
+    registryQC.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelCustomDCA + 1, "Custom DCA sel.");
+    registryQC.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkNRowsTPC + 1, "trkNRowsTPC");
+    registryQC.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelNClsFound + 1, "NClsTPCFound");
+    registryQC.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelNClsPID + 1, "NClsTPCPid");
+    registryQC.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelTPCBndr + 1, "TPC Boundary");
     // Number of tracks vs centrality
     registryQC.add("Events/hNchVsCent", "Measured Nch vs Cent; centrality; Nch (|#eta|<0.8)", {kTH2F, {nChAxis, multAxis}});
     registryQC.add("Tracks/hPtRes", "#it{p}_{T} resolution;;(#it{p}_{T}_{rec} - #it{p}_{T}_{gen})/#it{p}_{T}_{gen};", kTH2F, {ptAxis, {100, -1.0, 1.0}});
@@ -640,17 +651,6 @@ struct FlattenictyPikp {
     registryQC.print();
 
     if (doprocessFlat) {
-      // Track counter
-      registryData.add("Tracks/hTrkSel", "Number of tracks; Cut; #Tracks Passed Cut", {kTH1F, {{nTrkSel, 0, nTrkSel}}});
-      registryData.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelAll + 1, "All");
-      registryData.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelEta + 1, "Eta");
-      registryData.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelPt + 1, "Pt");
-      registryData.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelDCA + 1, "DCA");
-      registryData.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelCustomDCA + 1, "Custom DCA sel.");
-      registryData.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkNRowsTPC + 1, "trkNRowsTPC");
-      registryData.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelNClsFound + 1, "NClsTPCFound");
-      registryData.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelNClsPID + 1, "NClsTPCPid");
-      registryData.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelTPCBndr + 1, "TPC Boundary");
       // V0 counter
       registryData.add("Tracks/V0qa/hV0Sel", "Number of V0s; Cut; #Tracks Passed Cut", {kTH1F, {{nV0Sel, 0, nV0Sel}}});
       registryData.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelAll + 1, "All");
@@ -1443,20 +1443,20 @@ struct FlattenictyPikp {
   template <bool selDCA = true, typename T>
   bool isGoodTrack(T const& track, const float magfield)
   {
-    registryData.fill(HIST("Tracks/hTrkSel"), trkSelAll);
+    registryQC.fill(HIST("Tracks/hTrkSel"), trkSelAll);
     if (std::abs(track.eta()) > trkSelOpt.trkEtaMax) {
       return false;
     }
-    registryData.fill(HIST("Tracks/hTrkSel"), trkSelEta);
+    registryQC.fill(HIST("Tracks/hTrkSel"), trkSelEta);
     if (track.pt() < trkSelOpt.trkPtMin) {
       return false;
     }
-    registryData.fill(HIST("Tracks/hTrkSel"), trkSelPt);
+    registryQC.fill(HIST("Tracks/hTrkSel"), trkSelPt);
     if constexpr (selDCA) {
       if (!isDCAxyCut(track)) {
         return false;
       }
-      registryData.fill(HIST("Tracks/hTrkSel"), trkSelDCA);
+      registryQC.fill(HIST("Tracks/hTrkSel"), trkSelDCA);
       if (defOpt.applyDCAParam) {
         if (defOpt.applyDCAParamFromCCDB) {
           if (!isDCAParamCut(track)) {
@@ -1467,22 +1467,22 @@ struct FlattenictyPikp {
             return false;
           }
         }
-        registryData.fill(HIST("Tracks/hTrkSel"), trkSelCustomDCA);
+        registryQC.fill(HIST("Tracks/hTrkSel"), trkSelCustomDCA);
       }
     }
     if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC) {
       return false;
     }
-    registryData.fill(HIST("Tracks/hTrkSel"), trkNRowsTPC);
+    registryQC.fill(HIST("Tracks/hTrkSel"), trkNRowsTPC);
     if (trkSelOpt.applyNcl && track.tpcNClsFound() < trkSelOpt.nclTPCMin) {
       return false;
     }
-    registryData.fill(HIST("Tracks/hTrkSel"), trkSelNClsFound);
+    registryQC.fill(HIST("Tracks/hTrkSel"), trkSelNClsFound);
 
     if (trkSelOpt.applyNclPID && track.tpcNClsPID() < trkSelOpt.nclPidTPCMin) {
       return false;
     }
-    registryData.fill(HIST("Tracks/hTrkSel"), trkSelNClsPID);
+    registryQC.fill(HIST("Tracks/hTrkSel"), trkSelNClsPID);
 
     float phimodn = track.phi();
     phiMod(phimodn, magfield, track.sign());
@@ -1495,7 +1495,7 @@ struct FlattenictyPikp {
     if (defOpt.fillNclVsPhiCutQaHist) {
       fillNclVsPhiCutQaHist<kAfter>(track, phimodn);
     }
-    registryData.fill(HIST("Tracks/hTrkSel"), trkSelTPCBndr);
+    registryQC.fill(HIST("Tracks/hTrkSel"), trkSelTPCBndr);
     return true;
   }
 
