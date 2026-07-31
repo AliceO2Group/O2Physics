@@ -160,6 +160,7 @@ HFInvMassFitter::HFInvMassFitter(TH1* histoToFit,
                                                    mCovQual(-999),
                                                    mEdm(-999.),
                                                    mMinNll(-999.),
+                                                   mSgnGlobalCorrelCoeff(-999.),
                                                    mCovCorrMatrix(nullptr)
 {
   // standard constructor
@@ -342,6 +343,7 @@ void HFInvMassFitter::doFit()
     mCovQual = fitResult->covQual();
     mEdm = fitResult->edm();
     mMinNll = fitResult->minNll();
+    mSgnGlobalCorrelCoeff = fitResult->globalCorr("mNSgn");
 
     mCovCorrMatrix = fillCovCorrMatrix(fitResult);
 

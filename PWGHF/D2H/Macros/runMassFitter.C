@@ -391,12 +391,13 @@ void runMassFitter(const std::string& configFileName)
     FitResultCovQual,
     FitResultEdm,
     FitResultMinNll,
+    FitResultNSgnGCC,
     NFitResultsToSave
   };
   auto* hFitConfig = new TH2F("hFitConfig", "Fit Configurations", NConfigsToSave - 1, 0, NConfigsToSave - 1, nHistograms, sliceVarLimits.data());
   const char* hFitConfigXLabel[NConfigsToSave - 1] = {"mass min", "mass max", "rebin num", "fix sigma", "bkg func", "sgn func", "rnd seed"};
   auto* hFitResult = new TH2F("hFitResult", "Fit Result", NFitResultsToSave - 1, 0, NFitResultsToSave - 1, nHistograms, sliceVarLimits.data());
-  const char* hFitResultXLabel[NFitResultsToSave - 1] = {"status", "cov qual", "edm", "minNLL"};
+  const char* hFitResultXLabel[NFitResultsToSave - 1] = {"status", "cov qual", "edm", "minNLL", "N Sig GCC"};
   for (int i = 0; i < NConfigsToSave - 1; i++) {
     hFitConfig->GetXaxis()->SetBinLabel(i + 1, hFitConfigXLabel[i]);
   }
@@ -676,6 +677,7 @@ void runMassFitter(const std::string& configFileName)
     hFitResult->SetBinContent(FitResultCovQual, iSliceVar + 1, massFitter->getCovQual());
     hFitResult->SetBinContent(FitResultEdm, iSliceVar + 1, massFitter->getEDM());
     hFitResult->SetBinContent(FitResultMinNll, iSliceVar + 1, massFitter->getMinNll());
+    hFitResult->SetBinContent(FitResultNSgnGCC, iSliceVar + 1, massFitter->getSgnGlobalCorrelCoeff());
 
     hCovCorr[iSliceVar] = massFitter->getCovCorrMatrix();
   }
@@ -696,7 +698,7 @@ void runMassFitter(const std::string& configFileName)
   for (int iSliceVar = 0; iSliceVar < nHistograms; iSliceVar++) {
     if (iSliceVar == 0) {
       outputFile.mkdir("MassHistograms");
-      outputFile.mkdir("SgnCorrHistograms");
+      outputFile.mkdir("CovCorrMatrices");
     }
     outputFile.cd("MassHistograms");
     hMass[iSliceVar]->Write();
