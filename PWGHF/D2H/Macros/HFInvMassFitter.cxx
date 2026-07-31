@@ -40,6 +40,7 @@
 #include <RooWorkspace.h>
 #include <TColor.h>
 #include <TDatabasePDG.h>
+#include <TH2.h>
 #include <TLine.h>
 #include <TPaveText.h>
 #include <TRandom3.h>
@@ -160,7 +161,8 @@ HFInvMassFitter::HFInvMassFitter(TH1* histoToFit,
                                                    mEdm(-999.),
                                                    mMinNll(-999.),
                                                    mSgnCorrelCoeffValues({}),
-                                                   mSgnCorrelCoeffNames({})
+                                                   mSgnCorrelCoeffNames({}),
+                                                   mCovCorrMatrix(nullptr)
 {
   // standard constructor
   mHistoInvMass = histoToFit;
@@ -342,6 +344,8 @@ void HFInvMassFitter::doFit()
     mCovQual = fitResult->covQual();
     mEdm = fitResult->edm();
     mMinNll = fitResult->minNll();
+
+    mCovCorrMatrix = fillCovCorrMatrix(fitResult);
 
     mSgnCorrelCoeffValues.push_back(fitResult->globalCorr("mNSgn"));
     mSgnCorrelCoeffNames.push_back("global");
@@ -1255,4 +1259,29 @@ void HFInvMassFitter::cutRangesFromHisto(TH1* histo, const std::vector<std::stri
       histo->SetBinError(iBin, 1.e9);
     }
   }
+}
+
+TH2* HFInvMassFitter::fillCovCorrMatrix(const RooFitResult* fitResult)
+{
+  const RooArgList& pars = fitResult->floatParsFinal();
+  const int nPars = pars.size();
+
+  TH2* hMatrix = new TH2D("covCorrMatrix", "covariance (upper left + diagonal) and correlation (lower right) matrix", nPars, 0, nPars, nPars, 0, nPars);
+  for (int iPar = 0; iPar < nPars; ++iPar) {
+    hMatrix->GetXaxis()->SetBinLabel(iPar + 1, pars[iPar].GetName());
+    hMatrix->GetYaxis()->SetBinLabel(iPar + 1, pars[iPar].GetName());
+  }
+
+  const TMatrixDSym& covMatrix = fitResult->covarianceMatrix();
+  const TMatrixDSym& corrMatrix = fitResult->correlationMatrix();
+
+  for (int iPar = 0; iPar < nPars; ++iPar) {
+    hMatrix->SetBinContent(iPar + 1, iPar + 1, covMatrix(iPar, iPar));
+    for (int jPar = iPar + 1; jPar < nPars; ++jPar) {
+      hMatrix->SetBinContent(iPar + 1, jPar + 1, covMatrix(iPar, jPar));
+      hMatrix->SetBinContent(jPar + 1, iPar + 1, corrMatrix(iPar, jPar));
+    }
+  }
+
+  return hMatrix;
 }

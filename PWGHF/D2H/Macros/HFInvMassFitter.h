@@ -24,11 +24,13 @@
 
 #include <RooAbsPdf.h>
 #include <RooDataHist.h>
+#include <RooFitResult.h>
 #include <RooPlot.h>
 #include <RooRealVar.h>
 #include <RooWorkspace.h>
 #include <TF1.h>
 #include <TH1.h>
+#include <TH2.h>
 #include <TNamed.h>
 #include <TRandom3.h>
 #include <TVirtualPad.h>
@@ -169,6 +171,7 @@ class HFInvMassFitter : public TNamed
   [[nodiscard]] double getMinNll() const { return mMinNll; }
   [[nodiscard]] const std::vector<double>& getSgnCorrelCoeffValues() const { return mSgnCorrelCoeffValues; }
   [[nodiscard]] const std::vector<std::string>& getSgnCorrelCoeffNames() const { return mSgnCorrelCoeffNames; }
+  [[nodiscard]] TH2* getCovCorrMatrix() const { return mCovCorrMatrix; }
   void calculateSignal(double& signal, double& signalErr) const;
   void countSignal(double& signal, double& signalErr) const;
   void calculateBackground(double& bkg, double& bkgErr) const;
@@ -189,6 +192,7 @@ class HFInvMassFitter : public TNamed
   [[nodiscard]] std::pair<double, double> getRangesOfSignal() const;
   [[nodiscard]] double integrateHistoInvMassOverWorkspaceRanges(const std::vector<std::string>& ranges) const;
   void cutRangesFromHisto(TH1* histo, const std::vector<std::string>& ranges) const;
+  static TH2* fillCovCorrMatrix(const RooFitResult* fitResult);
 
   TH1* mHistoInvMass; // histogram to fit
   std::string mFitOption;
@@ -284,6 +288,7 @@ class HFInvMassFitter : public TNamed
   double mMinNll;                                /// fit quality metrics: minimum negative log-likelihood (NLL) value achieved at the best-fit parameter values
   std::vector<double> mSgnCorrelCoeffValues;     /// correlation coefficients of mRooNSgn (global and with BG fit parameters) values
   std::vector<std::string> mSgnCorrelCoeffNames; /// correlation coefficients of mRooNSgn (global and with BG fit parameters) names
+  TH2* mCovCorrMatrix;                           /// covariance (upper left + diagonal) and correlation (lower right) matrix of free fit parameters
 
   ClassDefOverride(HFInvMassFitter, 1);
 };

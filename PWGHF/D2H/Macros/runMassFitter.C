@@ -322,6 +322,7 @@ void runMassFitter(const std::string& configFileName)
   std::vector<TH1*> hMassRefl(nHistograms);
   std::vector<TH1*> hMass(nHistograms);
   std::vector<TH1*> hSgnCorr(nHistograms);
+  std::vector<TH2*> hCovCorr(nHistograms);
 
   for (int iSliceVar = 0; iSliceVar < nHistograms; iSliceVar++) {
     if (!isMc) {
@@ -686,6 +687,8 @@ void runMassFitter(const std::string& configFileName)
       hSgnCorr[iSliceVar]->SetBinContent(iSgnCorrValue + 1, sgnCorrValues.at(iSgnCorrValue));
       hSgnCorr[iSliceVar]->GetXaxis()->SetBinLabel(iSgnCorrValue + 1, sgnCorrNames.at(iSgnCorrValue).c_str());
     }
+
+    hCovCorr[iSliceVar] = massFitter->getCovCorrMatrix();
   }
 
   // save output histograms
@@ -710,6 +713,7 @@ void runMassFitter(const std::string& configFileName)
     hMass[iSliceVar]->Write();
     outputFile.cd("SgnCorrHistograms");
     hSgnCorr[iSliceVar]->Write();
+    hCovCorr[iSliceVar]->Write(Form("hCovCorrMatrix%d", iSliceVar + 1));
   }
   outputFile.cd();
   hRawYieldsSignal->Write();
