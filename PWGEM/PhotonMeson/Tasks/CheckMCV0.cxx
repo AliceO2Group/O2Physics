@@ -177,7 +177,6 @@ struct CheckMCV0 {
   // params
   std::array<float, 6> mcPosXYZEtaTglPtProp{};
   std::array<float, 6> mcEleXYZEtaTglPtProp{};
-  std::array<float, 6> mcMotherXYZEtaTglPtProp{};
 
   // Track Types
   static constexpr std::array<std::string_view, 6> v0Types{"ITSTPC_ITSTPC/", "TPConly_TPConly/", "ITSonly_ITSonly/", "ITSTPC_TPConly/", "ITSTPC_ITSonly/", "TPConly_ITSonly/"};
