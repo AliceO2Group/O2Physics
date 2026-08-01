@@ -110,7 +110,8 @@ struct DqJPsiMuonCorrelations {
   Filter eventFilter = aod::dqanalysisflags::isEventSelected == 1;
 
   // Define the filter for the dileptons
-  Filter dileptonFilter = aod::reducedpair::sign == 0;
+  Filter dileptonFilter = aod::reducedpair::pt > fConfigDileptonPtMin && aod::reducedpair::pt < fConfigDileptonPtMax &&
+                          aod::reducedpair::eta > fConfigDileptonEtaMin && aod::reducedpair::eta < fConfigDileptonEtaMax;
 
   constexpr static uint32_t FgDimuonsFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::Pair; // fill map
 
@@ -174,11 +175,6 @@ struct DqJPsiMuonCorrelations {
       for (const auto& dilepton : dileptons) {
         VarManager::FillTrack<FgDimuonsFillMap>(dilepton, fValuesDilepton.data());
 
-        // Dilepton kinematic cuts
-        if ((dilepton.eta() < fConfigDileptonEtaMin || dilepton.eta() > fConfigDileptonEtaMax) ||
-            (dilepton.pt() < fConfigDileptonPtMin || dilepton.pt() > fConfigDileptonPtMax)) {
-          continue;
-        }
         // Dilepton leg kinematic cuts
         if ((dilepton.eta1() < fConfigMuonEtaMin || dilepton.eta1() > fConfigMuonEtaMax) ||
             (dilepton.pt1() < axisPt.value[1] || dilepton.pt1() > axisPt.value.back()) ||
