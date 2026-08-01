@@ -1269,6 +1269,14 @@ class VarManager : public TObject
     fgzShiftFwd = z;
   }
 
+  // Set x, y and z shifts for forward tracks
+  static void Set3DShift(float x, float y, float z)
+  {
+    fgxShiftFwd = x;
+    fgyShiftFwd = y;
+    fgzShiftFwd = z;
+  }
+
   // Setup the 2 prong KFParticle
   static void SetupTwoProngKFParticle(float magField)
   {
@@ -1576,6 +1584,8 @@ class VarManager : public TObject
 
   static float fgMagField;
   static float fgzMatching;
+  static float fgxShiftFwd;
+  static float fgyShiftFwd;
   static float fgzShiftFwd;
   static float fgCenterOfMassEnergy;        // collision energy
   static float fgMassofCollidingParticle;   // mass of the colliding particle
@@ -1755,7 +1765,7 @@ o2::dataformats::VertexBase VarManager::RecalculatePrimaryVertex(T const& track0
 template <typename T, typename C>
 o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C& collision, const int endPoint)
 {
-  o2::track::TrackParCovFwd fwdtrack = o2::aod::fwdtrackutils::getTrackParCovFwdShift(muon, fgzShiftFwd, muon);
+  o2::track::TrackParCovFwd fwdtrack = o2::aod::fwdtrackutils::getTrackParCovFwd3DShift(muon, fgxShiftFwd, fgyShiftFwd, fgzShiftFwd, muon);
   o2::dataformats::GlobalFwdTrack propmuon;
   if (static_cast<int>(muon.trackType()) > 2) {
     o2::dataformats::GlobalFwdTrack track;
@@ -1887,7 +1897,7 @@ void VarManager::FillGlobalMuonRefit(T1 const& muontrack, T2 const& mfttrack, co
     double py = propmuon.getP() * std::sin(o2::constants::math::PIHalf - std::atan(mfttrack.tgl())) * std::sin(mfttrack.phi());
     double pz = propmuon.getP() * std::cos(o2::constants::math::PIHalf - std::atan(mfttrack.tgl()));
     double pt = std::sqrt(std::pow(px, 2) + std::pow(py, 2));
-    auto mftprop = o2::aod::fwdtrackutils::getTrackParCovFwdShift(mfttrack, fgzShiftFwd);
+    auto mftprop = o2::aod::fwdtrackutils::getTrackParCovFwd3DShift(mfttrack, fgxShiftFwd, fgyShiftFwd, fgzShiftFwd);
     values[kX] = mftprop.getX();
     values[kY] = mftprop.getY();
     values[kZ] = mftprop.getZ();
@@ -1908,7 +1918,7 @@ void VarManager::FillGlobalMuonRefitCov(T1 const& muontrack, T2 const& mfttrack,
   if constexpr ((MuonfillMap & MuonCov) > 0) {
     if constexpr ((MFTfillMap & MFTCov) > 0) {
       o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muontrack, collision);
-      auto mft = o2::aod::fwdtrackutils::getTrackParCovFwdShift(mfttrack, fgzShiftFwd, mftcov);
+      auto mft = o2::aod::fwdtrackutils::getTrackParCovFwd3DShift(mfttrack, fgxShiftFwd, fgyShiftFwd, fgzShiftFwd, mftcov);
 
       o2::dataformats::GlobalFwdTrack globalRefit = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuon, mft);
       values[kX] = globalRefit.getX();
@@ -3327,7 +3337,7 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kMuonC1Pt21Pt2] = track.c1Pt21Pt2();
   }
   if constexpr ((fillMap & MuonCov) > 0 || (fillMap & MuonCovRealign) > 0) {
-    auto muonTrack = o2::aod::fwdtrackutils::getTrackParCovFwdShift(track, fgzShiftFwd, track);
+    auto muonTrack = o2::aod::fwdtrackutils::getTrackParCovFwd3DShift(track, fgxShiftFwd, fgyShiftFwd, fgzShiftFwd, track);
     auto muonCov = muonTrack.getCovariances();
     values[kX] = muonTrack.getX();
     values[kY] = muonTrack.getY();
