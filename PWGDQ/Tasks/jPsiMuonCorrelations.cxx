@@ -140,14 +140,16 @@ struct DqJPsiMuonCorrelations {
 
     // Define trigger histograms
     ConfigurableAxis axisTriggerMass{"axisTriggerMass", {VARIABLE_WIDTH, fConfigBackgroundLowMass, fConfigDileptonLowMass, fConfigDileptonHighMass, fConfigBackgroundHighMass}, "Invariant Mass (GeV/c^{2}) for trigger counting"};
-    registry.add("h2dDimuonPtInvVsInvMass", "h2dDimuonPtInvVsInvMass", kTH2D, {axisInvMass, axisPt});
-    registry.add("h2dTriggersPtInvVsInvMassRegion", "h2dTriggersPtInvVsInvMassRegion", kTH2D, {axisTriggerMass, axisPt});
+    for (const auto& signDilepton : {"dileptonOS", "dileptonSS"}) {
+      registry.add(Form("%s/h2dDimuonPtInvVsInvMass", signDilepton), "h2dDimuonPtInvVsInvMass", kTH2D, {axisInvMass, axisPt});
+      registry.add(Form("%s/h2dTriggersPtInvVsInvMassRegion", signDilepton), "h2dTriggersPtInvVsInvMassRegion", kTH2D, {axisTriggerMass, axisPt});
 
-    // Define histograms for the dilepton-muon correlations
-    registry.add("h2dDimuonMuonDeltaEtaVsMuonPtSignal", "h2dDimuonMuonDeltaEtaVsMuonPtSignal", kTH2D, {axisDeltaEta, axisPt});
-    registry.add("h2dDimuonMuonDeltaPhiVsMuonPtSignal", "h2dDimuonMuonDeltaPhiVsMuonPtSignal", kTH2D, {axisDeltaPhi, axisPt});
-    registry.add("h2dDimuonMuonDeltaEtaVsMuonPtBackground", "h2dDimuonMuonDeltaEtaVsMuonPtBackground", kTH2D, {axisDeltaEta, axisPt});
-    registry.add("h2dDimuonMuonDeltaPhiVsMuonPtBackground", "h2dDimuonMuonDeltaPhiVsMuonPtBackground", kTH2D, {axisDeltaPhi, axisPt});
+      // Define histograms for the dilepton-muon correlations
+      registry.add(Form("%s/h2dDimuonMuonDeltaEtaVsMuonPtSignal", signDilepton), "h2dDimuonMuonDeltaEtaVsMuonPtSignal", kTH2D, {axisDeltaEta, axisPt});
+      registry.add(Form("%s/h2dDimuonMuonDeltaPhiVsMuonPtSignal", signDilepton), "h2dDimuonMuonDeltaPhiVsMuonPtSignal", kTH2D, {axisDeltaPhi, axisPt});
+      registry.add(Form("%s/h2dDimuonMuonDeltaEtaVsMuonPtBackground", signDilepton), "h2dDimuonMuonDeltaEtaVsMuonPtBackground", kTH2D, {axisDeltaEta, axisPt});
+      registry.add(Form("%s/h2dDimuonMuonDeltaPhiVsMuonPtBackground", signDilepton), "h2dDimuonMuonDeltaPhiVsMuonPtBackground", kTH2D, {axisDeltaPhi, axisPt});
+    }
 
     // QA histograms
     registry.add("hEventPosZMuon", "hEventPosZMuon", kTH1D, {{50, -25, 25}});
@@ -186,8 +188,13 @@ struct DqJPsiMuonCorrelations {
         // Fill invariant mass vs pT histogram for the dileptons and for trigger counting
         double weightDilepton = getWeight(dilepton.pt(), axisPt.value, fConfigBinEffJPsi.value, fConfigDileptonEtaMin, fConfigDileptonEtaMax);
 
-        registry.fill(HIST("h2dDimuonPtInvVsInvMass"), dilepton.mass(), dilepton.pt(), weightDilepton);
-        registry.fill(HIST("h2dTriggersPtInvVsInvMassRegion"), dilepton.mass(), dilepton.pt(), weightDilepton);
+        if (dilepton.sign() == 0) {
+          registry.fill(HIST("dileptonOS/h2dDimuonPtInvVsInvMass"), dilepton.mass(), dilepton.pt(), weightDilepton);
+          registry.fill(HIST("dileptonOS/h2dTriggersPtInvVsInvMassRegion"), dilepton.mass(), dilepton.pt(), weightDilepton);
+        } else {
+          registry.fill(HIST("dileptonSS/h2dDimuonPtInvVsInvMass"), dilepton.mass(), dilepton.pt(), weightDilepton);
+          registry.fill(HIST("dileptonSS/h2dTriggersPtInvVsInvMassRegion"), dilepton.mass(), dilepton.pt(), weightDilepton);
+        }
 
         for (const auto& assoc : assocs) {
           // Check selection bit
@@ -217,11 +224,21 @@ struct DqJPsiMuonCorrelations {
           double weightMuon = getWeight(track.pt(), axisPt.value, fConfigBinEffMuon.value, fConfigMuonEtaMin, fConfigMuonEtaMax);
 
           if (dilepton.mass() > fConfigDileptonLowMass && dilepton.mass() < fConfigDileptonHighMass) {
-            registry.fill(HIST("h2dDimuonMuonDeltaEtaVsMuonPtSignal"), deltaEta, track.pt(), weightDilepton * weightMuon);
-            registry.fill(HIST("h2dDimuonMuonDeltaPhiVsMuonPtSignal"), deltaPhi, track.pt(), weightDilepton * weightMuon);
+            if (dilepton.sign() == 0) {
+              registry.fill(HIST("dileptonOS/h2dDimuonMuonDeltaEtaVsMuonPtSignal"), deltaEta, track.pt(), weightDilepton * weightMuon);
+              registry.fill(HIST("dileptonOS/h2dDimuonMuonDeltaPhiVsMuonPtSignal"), deltaPhi, track.pt(), weightDilepton * weightMuon);
+            } else {
+              registry.fill(HIST("dileptonSS/h2dDimuonMuonDeltaEtaVsMuonPtSignal"), deltaEta, track.pt(), weightDilepton * weightMuon);
+              registry.fill(HIST("dileptonSS/h2dDimuonMuonDeltaPhiVsMuonPtSignal"), deltaPhi, track.pt(), weightDilepton * weightMuon);
+            }
           } else if (dilepton.mass() > fConfigBackgroundLowMass && dilepton.mass() < fConfigBackgroundHighMass) {
-            registry.fill(HIST("h2dDimuonMuonDeltaEtaVsMuonPtBackground"), deltaEta, track.pt(), weightDilepton * weightMuon);
-            registry.fill(HIST("h2dDimuonMuonDeltaPhiVsMuonPtBackground"), deltaPhi, track.pt(), weightDilepton * weightMuon);
+            if (dilepton.sign() == 0) {
+              registry.fill(HIST("dileptonOS/h2dDimuonMuonDeltaEtaVsMuonPtBackground"), deltaEta, track.pt(), weightDilepton * weightMuon);
+              registry.fill(HIST("dileptonOS/h2dDimuonMuonDeltaPhiVsMuonPtBackground"), deltaPhi, track.pt(), weightDilepton * weightMuon);
+            } else {
+              registry.fill(HIST("dileptonSS/h2dDimuonMuonDeltaEtaVsMuonPtBackground"), deltaEta, track.pt(), weightDilepton * weightMuon);
+              registry.fill(HIST("dileptonSS/h2dDimuonMuonDeltaPhiVsMuonPtBackground"), deltaPhi, track.pt(), weightDilepton * weightMuon);
+            }
           }
         }
       }
