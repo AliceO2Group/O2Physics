@@ -305,7 +305,6 @@ struct NonPromptCascadeTask {
     AxisSpec nTracksAxis = {100, 0., 100., "NTracksGlobal"};
     AxisSpec nTracksAxisMC = {100, 0., 100., "NTracksMC"};
     std::vector<double> centBinning;
-    std::vector<double> multBinning;
     std::vector<double> trackBinning;
     std::vector<double> runsBinning;
     double cent = -0.0;
@@ -841,6 +840,29 @@ struct NonPromptCascadeTask {
       return q != 0;
     };
 
+    static constexpr float MinEtaFT0A = 3.5f;
+    static constexpr float MaxEtaFT0A = 4.9f;
+    static constexpr float MinEtaFT0C = -3.3f;
+    static constexpr float MaxEtaFT0C = -2.1f;
+    static constexpr float InvalidEta = -999.f;
+
+    auto isAcceptedMCParticleFT0 = [&](auto const& mcp) {
+      if (!mcp.isPhysicalPrimary()) {
+        return false;
+      }
+
+      const float eta = mcp.eta();
+      if (!((eta > MinEtaFT0A && eta < MaxEtaFT0A) || (eta > MinEtaFT0C && eta < MaxEtaFT0C))) {
+        return false;
+      }
+
+      int q = 0;
+      if (auto pdg = pdgDB->GetParticle(mcp.pdgCode())) {
+        q = static_cast<int>(std::round(pdg->Charge() / 3.0));
+      }
+      return q != 0;
+    };
+
     // ------------------------------------------------------------
     // Helper: accepted reconstructed track
     // Use same cuts as data.
@@ -866,6 +888,7 @@ struct NonPromptCascadeTask {
     // mcid: mc collision row of mc particle
     // ------------------------------------------------------------
     std::vector<int> mcMult(mcCollisions.size(), 0);
+    std::vector<int> mcMultFT0(mcCollisions.size(), 0);
     // std::cout << "mcCollisions size:" << mcCollisions.size() << std::endl;
     for (auto const& mcp : mcParticles) {
       const int mcid = mcp.mcCollisionId();
@@ -874,10 +897,12 @@ struct NonPromptCascadeTask {
         LOG(info) << "0 This should never happen ?";
         continue;
       }
-      if (!isAcceptedMCParticle(mcp)) {
-        continue;
+      if (isAcceptedMCParticle(mcp)) {
+        ++mcMult[mcid];
       }
-      ++mcMult[mcid];
+      if (isAcceptedMCParticleFT0(mcp)) {
+        ++mcMultFT0[mcid];
+      }
     }
 
     // ------------------------------------------------------------
@@ -990,11 +1015,12 @@ struct NonPromptCascadeTask {
       const int mcCollId = col.mcCollisionId();
       const float multReco = recoMultDense[dIdx];
       const float ptReco = trk.pt();
+      const float etaReco = trk.eta();
 
       if (mcCollId < 0 || static_cast<int64_t>(mcCollId) >= mcCollisions.size()) {
         if (writeRecoCollision[dIdx]) {
           // Fake: accepted reco track whose reconstructed collision has no valid MC collision label.
-          NPMCNTable(-1.f, ptReco, multReco, -1.f);
+          NPMCNTable(-1.f, ptReco, InvalidEta, etaReco, multReco, -1.f, -1.f);
         }
         continue;
       }
@@ -1003,7 +1029,7 @@ struct NonPromptCascadeTask {
       if (mcPid < 0 || static_cast<int64_t>(mcPid) >= mcParticles.size()) {
         if (writeMcCollision[mcCollId]) {
           // Fake: accepted reco track with invalid or missing MC particle label.
-          NPMCNTable(-2.f, ptReco, multReco, -2.f);
+          NPMCNTable(-2.f, ptReco, InvalidEta, etaReco, multReco, -2.f, mcMultFT0[mcCollId]);
         }
         continue;
       }
@@ -1014,7 +1040,7 @@ struct NonPromptCascadeTask {
       if (mcParCollId != mcCollId) {
         if (writeMcCollision[mcCollId]) {
           // Fake: reco collision and particle label point to different MC collisions.
-          NPMCNTable(-3.f, ptReco, multReco, -3.f);
+          NPMCNTable(-3.f, ptReco, InvalidEta, etaReco, multReco, -3.f, mcMultFT0[mcCollId]);
         }
         continue;
       }
@@ -1022,7 +1048,7 @@ struct NonPromptCascadeTask {
       if (!isAcceptedMCParticle(mcPar)) {
         if (writeMcCollision[mcCollId]) {
           // Feed-in: accepted reco track matched to truth outside fiducial phase space.
-          NPMCNTable(-4.f, ptReco, multReco, -4.f);
+          NPMCNTable(-4.f, ptReco, mcPar.eta(), etaReco, multReco, -4.f, mcMultFT0[mcCollId]);
         }
         continue;
       }
@@ -1031,6 +1057,7 @@ struct NonPromptCascadeTask {
 
       const float multMC = mcMult[mcCollId];
       const float ptMC = mcPar.pt();
+      const float etaMC = mcPar.eta();
 
       mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRM"),
                            multMC,
@@ -1040,7 +1067,7 @@ struct NonPromptCascadeTask {
 
       if (writeMcCollision[mcCollId]) {
         // Matched: accepted truth particle reconstructed inside the fiducial reco phase space.
-        NPMCNTable(ptMC, ptReco, multReco, multMC);
+        NPMCNTable(ptMC, ptReco, etaMC, etaReco, multReco, multMC, mcMultFT0[mcCollId]);
       }
     }
 
@@ -1069,6 +1096,7 @@ struct NonPromptCascadeTask {
       }
 
       const float multMC = mcMult[mcid];
+      const float multMCFT0 = mcMultFT0[mcid];
 
       mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRMNotInRecoTrk"),
                            multMC,
@@ -1076,7 +1104,7 @@ struct NonPromptCascadeTask {
 
       if (writeMcCollision[mcid]) {
         // Missed track: accepted truth particle in a reconstructed MC collision, but no accepted reco track.
-        NPMCNTable(mcp.pt(), -1.f, -1.f, multMC);
+        NPMCNTable(mcp.pt(), -1.f, mcp.eta(), InvalidEta, -1.f, multMC, multMCFT0);
       }
     }
 
@@ -1089,6 +1117,7 @@ struct NonPromptCascadeTask {
       }
 
       const float multMC = mcMult[mcid];
+      const float multMCFT0 = mcMultFT0[mcid];
 
       for (auto const& mcp : mcParticles) {
         if (mcp.mcCollisionId() != mcid) {
@@ -1105,7 +1134,7 @@ struct NonPromptCascadeTask {
 
         if (writeMcCollision[mcid]) {
           // Missed collision: accepted truth particle from an MC collision with no reconstructed collision.
-          NPMCNTable(mcp.pt(), -2.f, -2.f, multMC);
+          NPMCNTable(mcp.pt(), -2.f, mcp.eta(), InvalidEta, -2.f, multMC, multMCFT0);
         }
       }
     }
@@ -1134,6 +1163,7 @@ struct NonPromptCascadeTask {
       auto tracksThisColl = tracks.sliceBy(perCollisionSel, coll.globalIndex());
       int multreco = 0;
       std::vector<float> recoPts;
+      std::vector<float> recoEtas;
       // std::cout << "tracks:" << tracksThisColl.size() << std::endl;
       for (auto const& track : tracksThisColl) {
         // std::cout << track.pt() << " tracks " << track.isGlobalTrack() << std::endl;
@@ -1141,6 +1171,7 @@ struct NonPromptCascadeTask {
           if (track.isGlobalTrack()) {
             multreco++;
             recoPts.push_back(track.pt());
+            recoEtas.push_back(track.eta());
           }
         }
       }
@@ -1158,8 +1189,8 @@ struct NonPromptCascadeTask {
                      coll.multFT0M(),
                      coll.selection_bit(aod::evsel::kNoSameBunchPileup));
         auto collIdx = NPCollsTable.lastIndex();
-        for (auto const& pt : recoPts) {
-          NPRecoCandTable(collIdx, pt);
+        for (size_t i = 0; i < recoPts.size(); ++i) {
+          NPRecoCandTable(collIdx, recoPts[i], recoEtas[i]);
         }
       }
     }
