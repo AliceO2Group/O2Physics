@@ -251,7 +251,7 @@ struct EmcalBcWiseGammaGamma {
           if (isTooCloseToEdge(iCellID, cfgDistanceToEdge)) {
             continue;
           }
-        } catch (o2::emcal::InvalidPositionException& e) {
+        } catch (o2::emcal::InvalidPositionException const& e) {
           continue;
         }
 

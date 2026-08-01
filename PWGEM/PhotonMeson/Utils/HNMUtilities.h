@@ -67,9 +67,8 @@ struct Photon {
 
 // -------> Struct to store gamma gamma pairs (pi0 or eta meson candidates)
 struct GammaGammaPair {
-  GammaGammaPair(Photon const& p1, Photon const& p2) : p1(p1), p2(p2)
+  GammaGammaPair(Photon const& p1, Photon const& p2) : p1(p1), p2(p2), vGG(p1.photon + p2.photon)
   {
-    vGG = p1.photon + p2.photon;
   }
   Photon p1, p2;
   ROOT::Math::PxPyPzEVector vGG;
@@ -142,7 +141,7 @@ inline int getSMNumber(float eta, float phi)
 
 /// \brief Store photons from EMC clusters and V0s in a vector and possibly add a eta and phi offset for alignment of EMCal clusters
 template <o2::soa::is_table C, o2::soa::is_table V>
-void storeGammasInVector(C clusters, V v0s, std::vector<Photon>& vPhotons, std::array<float, 20> EMCEtaShift, std::array<float, 20> EMCPhiShift)
+void storeGammasInVector(C clusters, V v0s, std::vector<Photon>& vPhotons, std::array<float, 20> const& EMCEtaShift, std::array<float, 20> const& EMCPhiShift)
 {
   vPhotons.clear();
   for (const auto& cluster : clusters) {
@@ -162,7 +161,7 @@ void storeGammasInVector(C clusters, V v0s, std::vector<Photon>& vPhotons, std::
 
 /// \brief Store photons from EMC clusters in a vector and possibly add a eta and phi offset for alignment of EMCal clusters
 template <o2::soa::is_table Clusters>
-void storeGammasInVector(Clusters clusters, std::vector<Photon>& vPhotons, std::array<float, 20> EMCEtaShift, std::array<float, 20> EMCPhiShift)
+void storeGammasInVector(Clusters clusters, std::vector<Photon>& vPhotons, std::array<float, 20> const& EMCEtaShift, std::array<float, 20> const& EMCPhiShift)
 {
   vPhotons.clear();
   for (const auto& cluster : clusters) {
@@ -177,7 +176,7 @@ void storeGammasInVector(Clusters clusters, std::vector<Photon>& vPhotons, std::
 }
 
 /// \brief Reconstruct light neutral mesons from photons and fill them into the vGGs vector
-inline void reconstructGGs(std::vector<Photon> vPhotons, std::vector<GammaGammaPair>& vGGs)
+inline void reconstructGGs(std::vector<Photon> const& vPhotons, std::vector<GammaGammaPair>& vGGs)
 {
   vGGs.clear();
   // loop over all photon combinations and build meson candidates

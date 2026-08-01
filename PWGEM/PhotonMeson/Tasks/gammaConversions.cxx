@@ -482,14 +482,14 @@ struct GammaConversions {
     }
   }
 
-  void lfillPDGHist(mapStringHistPtr& theContainer,
+  void lfillPDGHist(mapStringHistPtr const& theContainer,
                     std::span<const int, 2> const PDGCode)
   {
     fillTH1(theContainer, "hPDGCode", PDGCode[0]);
     fillTH1(theContainer, "hPDGCode", PDGCode[1]);
   }
 
-  void lfillDecaysHist(mapStringHistPtr& theContainer,
+  void lfillDecaysHist(mapStringHistPtr const& theContainer,
                        std::span<const int, 2> PDGCode,
                        const bool sameMother,
                        std::span<const float, 6> McTrackmomentum)
