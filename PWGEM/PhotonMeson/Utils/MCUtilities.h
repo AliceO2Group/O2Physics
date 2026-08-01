@@ -25,6 +25,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <ranges>
 #include <vector>
 
 //_______________________________________________________________________
@@ -91,7 +92,7 @@ int IsXFromY(T const& mctrack, TMCs const& mcTracks, const int pdgX, const int p
 //_______________________________________________________________________
 // Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return this mothers daughter
 // E.g. Find the gamma that was created in a pi0 or eta decay
-template <o2::soa::is_iterator T, o2::soa::is_table TMCs, typename TTargetPDGs>
+template <o2::soa::is_iterator T, o2::soa::is_table TMCs, std::ranges::input_range TTargetPDGs>
 int FindMotherInChain(T const& mcparticle, TMCs const& mcparticles, TTargetPDGs const& motherpdgs, const int Depth = 50) // o2-linter: disable=pdg/explicit-code (false positive)
 {
   if (!mcparticle.has_mothers() || Depth < 1) {
@@ -129,7 +130,7 @@ int IsEleFromPC(T const& mctrack, TMCs const& mcTracks)
   return -1;
 }
 //_______________________________________________________________________
-template <o2::soa::is_iterator TMCParticle, o2::soa::is_table TMCParticles, typename TTargetPDGs>
+template <o2::soa::is_iterator TMCParticle, o2::soa::is_table TMCParticles, std::ranges::input_range TTargetPDGs>
 bool IsInAcceptanceNonDerived(TMCParticle const& mcparticle, TMCParticles const& mcparticles, TTargetPDGs target_pdgs, const float ymin, const float ymax, const float phimin, const float phimax)
 {
   // contents in vector of daughter ID is different.
@@ -177,7 +178,7 @@ bool IsInAcceptanceNonDerived(TMCParticle const& mcparticle, TMCParticles const&
   return is_equal;
 }
 //_______________________________________________________________________
-template <o2::soa::is_iterator TMCParticle, o2::soa::is_table TMCParticles, typename TTargetPDGs>
+template <o2::soa::is_iterator TMCParticle, o2::soa::is_table TMCParticles, std::ranges::input_range TTargetPDGs>
 bool IsInAcceptance(TMCParticle const& mcparticle, TMCParticles const& mcparticles, TTargetPDGs target_pdgs, const float ymin, const float ymax, const float phimin, const float phimax)
 {
   if (mcparticle.y() < ymin || ymax < mcparticle.y()) {

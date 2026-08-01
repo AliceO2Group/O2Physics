@@ -26,6 +26,7 @@
 
 #include <TH2.h>
 
+#include <array>
 #include <cstddef>
 #include <string_view>
 
@@ -113,7 +114,7 @@ inline void fillClusterHistograms(o2::framework::HistogramRegistry* fRegistry, T
   const auto eta = cluster.eta();
   const auto phi = cluster.phi();
 
-  static constexpr std::string_view ClusterTypes[2] = {"Cluster/before/", "Cluster/after/"};
+  static constexpr std::array<std::string_view, 2> ClusterTypes = {"Cluster/before/", "Cluster/after/"};
 
   if constexpr (HasTrackMatching<TCluster>) {
     for (size_t iTrack = 0; iTrack < cluster.deltaEta().size(); ++iTrack) {
