@@ -1257,15 +1257,25 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "Coschi", "", false, 25, coschiBins.data(), VarManager::kMCCosChi, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kMCWeight);
   }
 
-  if (groupStr.CompareTo("polarization-pseudoproper-gen") == 0) {
+  if (groupStr.CompareTo("polarization-pseudoproper-midy-he-gen") == 0) {
     std::array<int, 4> varspTHE = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCCosThetaHE, VarManager::kMCVertexingTauxyProjected};
-    std::array<int, 4> varspTCS = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCCosThetaCS, VarManager::kMCVertexingTauxyProjected};
-    std::array<int, 4> varspTRM = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCCosThetaRM, VarManager::kMCVertexingTauxyProjected};
     std::array<int, 4> bins = {50, 20, 20, 1000};
     std::array<double, 4> xmin = {2., 0., -1., -0.5};
     std::array<double, 4> xmax = {4., 20., 1., 0.5};
     hm->AddHistogram(histClass, "Mass_Pt_cosThetaHE_Tauxy", "", 4, varspTHE.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
+  }
+  if (groupStr.CompareTo("polarization-pseudoproper-midy-cs-gen") == 0) {
+    std::array<int, 4> varspTCS = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCCosThetaCS, VarManager::kMCVertexingTauxyProjected};
+    std::array<int, 4> bins = {50, 20, 20, 1000};
+    std::array<double, 4> xmin = {2., 0., -1., -0.5};
+    std::array<double, 4> xmax = {4., 20., 1., 0.5};
     hm->AddHistogram(histClass, "Mass_Pt_cosThetaCS_Tauxy", "", 4, varspTCS.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
+  }
+  if (groupStr.CompareTo("polarization-pseudoproper-midy-rand-gen") == 0) {
+    std::array<int, 4> varspTRM = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCCosThetaRM, VarManager::kMCVertexingTauxyProjected};
+    std::array<int, 4> bins = {50, 20, 20, 1000};
+    std::array<double, 4> xmin = {2., 0., -1., -0.5};
+    std::array<double, 4> xmax = {4., 20., 1., 0.5};
     hm->AddHistogram(histClass, "Mass_Pt_cosThetaRM_Tauxy", "", 4, varspTRM.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
   }
   if (groupStr.CompareTo("polarization-dielectron-pbpb-midy-he-gen") == 0) {
