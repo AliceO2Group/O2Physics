@@ -3939,7 +3939,7 @@ struct DndetaMFTPbPb {
             }
           }
 
-          if (ids.size() > 0) {
+          if (!ids.empty()) {
             if (ids.size() == 1) {
               registry.fill(HIST("TimeAssocMC/hVTXkSelNonAmb"), deltaXv2, deltaYv2, deltaZv2);
               registry.fill(HIST("TimeAssocMC/hAmbTrkTypeAssocFlag"), static_cast<int>(AmbTrkTypeAssocFlag::kSelNonAmb));
@@ -4445,8 +4445,6 @@ struct DndetaMFTPbPb {
 
   PROCESS_SWITCH(DndetaMFTPbPb, processAssocMC, "Process collision-association information, requires extra table from TrackToCollisionAssociation task (fillTableOfCollIdsPerTrack=true)", false);
 
-  PresliceUnsorted<BestTracks3dWCollsMC> perColBest = aod::fwdtrack::bestCollisionId;
-
   template <typename C, typename B>
   void processReAssocMC(typename soa::Join<C, aod::McCollisionLabels> const& collisions,
                         B const& besttracks,
@@ -4545,9 +4543,7 @@ struct DndetaMFTPbPb {
         }
         registry.fill(HIST("ReAssocMC/hReAssocMCEventStatus"), static_cast<int>(ReAssocMCEventStatus::kEvtReAsZVtxCutMC), crec, occ);
 
-        auto perCollisionASample = besttracks.sliceBy(perColBest, collision.globalIndex());
-        for (auto const& atrack : perCollisionASample) {
-          // for (auto const& atrack : besttracks) {
+        for (auto const& atrack : besttracks) {
           registry.fill(HIST("ReAssocMC/hReAssocMCTrackStatus"), static_cast<int>(ReAssocMCTrackStatus::kTrkReAssocAll), crec, occ);
           if (!isBestTrackSelected<true>(atrack)) {
             continue;
