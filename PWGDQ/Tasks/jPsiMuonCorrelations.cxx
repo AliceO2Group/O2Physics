@@ -110,7 +110,7 @@ struct DqJPsiMuonCorrelations {
   Filter eventFilter = aod::dqanalysisflags::isEventSelected == 1;
 
   // Define the filter for the dileptons
-  Filter dileptonFilter = aod::reducedpair::pt > fConfigDileptonPtMin && aod::reducedpair::pt < fConfigDileptonPtMax && aod::reducedpair::eta > fConfigDileptonEtaMin && aod::reducedpair::eta < fConfigDileptonEtaMax;
+  Filter dileptonFilter = (aod::reducedpair::pt > fConfigDileptonPtMin && aod::reducedpair::pt < fConfigDileptonPtMax) && (aod::reducedpair::eta > fConfigDileptonEtaMin && aod::reducedpair::eta < fConfigDileptonEtaMax);
 
   constexpr static uint32_t FgDimuonsFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::Pair; // fill map
 
