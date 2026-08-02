@@ -27,6 +27,7 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/EndOfStreamContext.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -35,7 +36,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TH3.h>
 #include <TMath.h>
@@ -47,8 +48,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <deque>
-#include <iterator>
-#include <random>
 #include <string>
 #include <unordered_set>
 #include <utility>
@@ -170,6 +169,13 @@ static inline int piIdx(const T& t)
 {
   return t.pionIndexmc();
 }
+
+template <typename T>
+static inline float dcaV0ToPVMC(const T& t)
+{
+  return t.dcaV0ToPVmc();
+}
+
 } // namespace mcacc
 
 // Optional fixed-leg correction pointers kept outside the task struct.
@@ -221,19 +227,24 @@ struct lambdaspincorrderived {
   Configurable<bool> useNUA{"useNUA", false, "Apply single-candidate NUA weight in (phi,eta)"};
   Configurable<std::string> ConfNUAPathLambda{"ConfNUAPathLambda", "", "CCDB path for Lambda NUA TH2D(phi,eta)"};
   Configurable<std::string> ConfNUAPathAntiLambda{"ConfNUAPathAntiLambda", "", "CCDB path for AntiLambda NUA TH2D(phi,eta)"};
+
+  // Mixing selection and binning
   Configurable<std::vector<float>> massMixEdges{"massMixEdges", {1.09f, 1.108f, 1.122f, 1.14f}, "Mass-mixing region edges: [SB low | signal | SB high]"};
   Configurable<int> cfgMixLegMode{"cfgMixLegMode", 0, "0=replace leg-1 only, 1=replace leg-2 only, 2=do both one-leg replacements"};
   Configurable<int> cfgV5MassBins{"cfgV5MassBins", 5, "Number of fixed mass bins for V5 mixing"};
   Configurable<int> cfgV5NeighborPt{"cfgV5NeighborPt", 0, "v5: neighbor bins in pT (use symmetric ±N, edge-safe)"};
   Configurable<int> cfgV5NeighborEta{"cfgV5NeighborEta", 0, "v5: neighbor bins in eta (use symmetric ±N, edge-safe)"};
   Configurable<int> cfgV5NeighborPhi{"cfgV5NeighborPhi", 0, "v5: neighbor bins in phi (use symmetric ±N, periodic wrap)"};
-  Configurable<bool> usePairKineMatch{"usePairKineMatch", true, "Require pair-level matching between (A,B) and (C,B)"};
   Configurable<int> cfgV5MaxMatches{"cfgV5MaxMatches", 50, "v5: max ME replacements per SE pair (after all cuts)"};
   Configurable<uint64_t> cfgMixSeed{"cfgMixSeed", 0xdecafbadULL, "RNG seed for downsampling matches (deterministic)"};
+  Configurable<bool> cfgV6CarryUnmatched{"cfgV6CarryUnmatched", false, "Carry data and MC V6 replacement branches with zero matches to later data frames"};
+  Configurable<int> cfgV6MaxPendingBranches{"cfgV6MaxPendingBranches", 0, "Maximum retained V6 branches per data or MC buffer; <=0 means unlimited"};
+  Configurable<int> cfgV6MaxPendingAge{"cfgV6MaxPendingAge", 0, "Maximum later data frames searched by a retained V6 branch; <=0 means unlimited"};
+  Configurable<bool> cfgV6LogPending{"cfgV6LogPending", false, "Print one V6 pending-branch summary per data frame"};
+
+  // Event and candidate mixing cuts
   Configurable<float> centMin{"centMin", 0, "Minimum Centrality"};
   Configurable<float> centMax{"centMax", 80, "Maximum Centrality"};
-  Configurable<int> rngSeed{"rngSeed", 12345, "Seed for random mixing (reproducible)"};
-  std::mt19937 rng{12345};
   Configurable<int> nEvtMixing{"nEvtMixing", 10, "Number of events to mix"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10}, "Mixing bins - z-vertex"};
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0, 110}, "Mixing bins - centrality"};
@@ -258,21 +269,27 @@ struct lambdaspincorrderived {
   Configurable<bool> fillWeightQAHistos{"fillWeightQAHistos", false, "Fill weighted/final-weighted REP/FIX QA maps"};
   Configurable<bool> fillAnalysisSparses{"fillAnalysisSparses", false, "Fill extra deltaR/deltaRap/deltaPhi Analysis THnSparse objects"};
   Configurable<bool> fillAdditionalSparses{"fillAdditionalSparses", false, "Fill extra rapidity/dphi/pair-mass THnSparse objects"};
-
   Configurable<bool> checkDoubleStatus{"checkDoubleStatus", 0, "Check Double status"};
-  Configurable<float> cosPA{"cosPA", 0.995, "Cosine Pointing Angle"};
-  Configurable<float> radiusMin{"radiusMin", 3, "Minimum V0 radius"};
-  Configurable<float> radiusMax{"radiusMax", 30, "Maximum V0 radius"};
-  Configurable<float> dcaProton{"dcaProton", 0.1, "DCA Proton"};
-  Configurable<float> dcaPion{"dcaPion", 0.2, "DCA Pion"};
-  Configurable<float> dcaDaughters{"dcaDaughters", 1.0, "DCA between daughters"};
+
   Configurable<float> ptMin{"ptMin", 0.5, "V0 Pt minimum"};
   Configurable<float> ptMax{"ptMax", 3.0, "V0 Pt maximum"};
   Configurable<float> MassMin{"MassMin", 1.09, "V0 Mass minimum"};
   Configurable<float> MassMax{"MassMax", 1.14, "V0 Mass maximum"};
-  Configurable<float> rapidity{"rapidity", 0.5, "Rapidity cut on lambda"};
   Configurable<float> v0etaMixBuffer{"v0etaMixBuffer", 0.8, "Eta cut on mix event buffer"};
+  Configurable<float> rapidity{"rapidity", 0.5, "Rapidity cut on lambda"};
   Configurable<float> v0eta{"v0eta", 0.8, "Eta cut on lambda"};
+
+  struct : ConfigurableGroup {
+    std::string prefix = "v0Configuration";
+    Configurable<float> cosPA{"cosPA", 0.995, "Cosine Pointing Angle"};
+    Configurable<float> radiusMin{"radiusMin", 3, "Minimum V0 radius"};
+    Configurable<float> radiusMax{"radiusMax", 30, "Maximum V0 radius"};
+    Configurable<float> dcaProton{"dcaProton", 0.1, "DCA Proton"};
+    Configurable<float> dcaPion{"dcaPion", 0.2, "DCA Pion"};
+    Configurable<float> dcaDaughters{"dcaDaughters", 1.0, "DCA between daughters"};
+    Configurable<float> dcaV0ToPV{"dcaV0ToPV", 1.2, "DCA V0 to PV cut on lambda"};
+
+  } v0Configurations;
 
   // Event Mixing
   Configurable<int> cosDef{"cosDef", 1, "Defination of cos"};
@@ -478,7 +495,6 @@ struct lambdaspincorrderived {
       histos.add("hSparsePairMassAntiLambdaLambdaMixed", "hSparsePairMassAntiLambdaLambdaMixed", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisPairMass}, true);
       histos.add("hSparsePairMassAntiLambdaAntiLambdaMixed", "hSparsePairMassAntiLambdaAntiLambdaMixed", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisPairMass}, true);
     }
-    rng.seed(static_cast<uint32_t>(rngSeed.value));
     ccdb->setURL(cfgCcdbParam.cfgURL);
     ccdbApi.init("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -571,25 +587,30 @@ struct lambdaspincorrderived {
     if (candidate.lambdaMass() < MassMin || candidate.lambdaMass() > MassMax) {
       return false;
     }
-    if (candidate.v0Cospa() < cosPA) {
+    if (candidate.v0Cospa() < v0Configurations.cosPA) {
       return false;
     }
     if (checkDoubleStatus && candidate.doubleStatus()) {
       return false;
     }
-    if (candidate.v0Radius() > radiusMax) {
+    if (candidate.v0Radius() > v0Configurations.radiusMax) {
       return false;
     }
-    if (candidate.v0Radius() < radiusMin) {
+    if (candidate.v0Radius() < v0Configurations.radiusMin) {
       return false;
     }
-    if (candidate.dcaBetweenDaughter() > dcaDaughters) {
+    if (candidate.dcaBetweenDaughter() > v0Configurations.dcaDaughters) {
       return false;
     }
-    if (candidate.v0Status() == 0 && (std::abs(candidate.dcaPositive()) < dcaProton || std::abs(candidate.dcaNegative()) < dcaPion)) {
+
+    if (candidate.dcaV0ToPV() > v0Configurations.dcaV0ToPV) {
       return false;
     }
-    if (candidate.v0Status() == 1 && (std::abs(candidate.dcaPositive()) < dcaPion || std::abs(candidate.dcaNegative()) < dcaProton)) {
+
+    if (candidate.v0Status() == 0 && (std::abs(candidate.dcaPositive()) < v0Configurations.dcaProton || std::abs(candidate.dcaNegative()) < v0Configurations.dcaPion)) {
+      return false;
+    }
+    if (candidate.v0Status() == 1 && (std::abs(candidate.dcaPositive()) < v0Configurations.dcaPion || std::abs(candidate.dcaNegative()) < v0Configurations.dcaProton)) {
       return false;
     }
     if (candidate.lambdaPt() < ptMin) {
@@ -1587,8 +1608,6 @@ struct lambdaspincorrderived {
     inline int ptBin(float pt) const { return binFromValue(pt, ptMin, ptStep, nPt_); }
     inline int etaBin(float eta) const { return binFromValue(eta, etaMin, etaStep, nEta_); }
     inline int phiBin(float phi) const { return binFromValue(phi, phiMin, phiStep, nPhi_); }
-    inline int massBin(float m) const { return binFromValue(m, mMin, mStep, nM_); }
-
     inline int radiusBin(float r) const
     {
       if (!std::isfinite(r) || nR_ <= 0) {
@@ -1608,6 +1627,210 @@ struct lambdaspincorrderived {
     uint8_t v0Status;
     uint16_t ptBin, etaBin, phiBin, mBin, rBin;
   };
+
+  struct StoredV6Candidate {
+    int64_t collisionIdx = -1;
+    int64_t globalIdx = -1;
+    int status = -1;
+    bool isDouble = false;
+    float cospa = 0.f;
+    float radius = 0.f;
+    float dcaPos = 0.f;
+    float dcaNeg = 0.f;
+    float dcaDau = 0.f;
+    float lPt = 0.f;
+    float lEta = 0.f;
+    float lPhi = 0.f;
+    float lMass = 0.f;
+    float pPt = 0.f;
+    float pEta = 0.f;
+    float pPhi = 0.f;
+    int64_t pIndex = -1;
+    int64_t piIndex = -1;
+
+    int v0Status() const { return status; }
+    bool doubleStatus() const { return isDouble; }
+    float v0Cospa() const { return cospa; }
+    float v0Radius() const { return radius; }
+    float dcaPositive() const { return dcaPos; }
+    float dcaNegative() const { return dcaNeg; }
+    float dcaBetweenDaughter() const { return dcaDau; }
+    float lambdaPt() const { return lPt; }
+    float lambdaEta() const { return lEta; }
+    float lambdaPhi() const { return lPhi; }
+    float lambdaMass() const { return lMass; }
+    float protonPt() const { return pPt; }
+    float protonEta() const { return pEta; }
+    float protonPhi() const { return pPhi; }
+    int64_t protonIndex() const { return pIndex; }
+    int64_t pionIndex() const { return piIndex; }
+    int64_t globalIndex() const { return globalIdx; }
+  };
+
+  struct PendingV6Branch {
+    StoredV6Candidate target;
+    StoredV6Candidate fixed;
+    int colBin = -1;
+    int replacedLeg = 1;
+    int age = 0;
+    uint64_t seed = 0;
+  };
+
+  template <typename T>
+  StoredV6Candidate storeV6Candidate(T const& t, int64_t collisionIdx) const
+  {
+    return {collisionIdx, static_cast<int64_t>(t.globalIndex()), static_cast<int>(t.v0Status()), static_cast<bool>(t.doubleStatus()),
+            t.v0Cospa(), t.v0Radius(), t.dcaPositive(), t.dcaNegative(), t.dcaBetweenDaughter(),
+            t.lambdaPt(), t.lambdaEta(), t.lambdaPhi(), t.lambdaMass(),
+            t.protonPt(), t.protonEta(), t.protonPhi(),
+            static_cast<int64_t>(t.protonIndex()), static_cast<int64_t>(t.pionIndex())};
+  }
+
+  template <typename TRep, typename TFixed>
+  void fillV6MixedBranch(TRep const& replacement, TFixed const& fixed, int replacedLeg, float controlWeight, float mixWeight)
+  {
+    const auto repProton = ROOT::Math::PtEtaPhiMVector(replacement.protonPt(), replacement.protonEta(), replacement.protonPhi(), o2::constants::physics::MassProton);
+    const auto repLambda = ROOT::Math::PtEtaPhiMVector(replacement.lambdaPt(), replacement.lambdaEta(), replacement.lambdaPhi(), replacement.lambdaMass());
+    const auto fixedProton = ROOT::Math::PtEtaPhiMVector(fixed.protonPt(), fixed.protonEta(), fixed.protonPhi(), o2::constants::physics::MassProton);
+    const auto fixedLambda = ROOT::Math::PtEtaPhiMVector(fixed.lambdaPt(), fixed.lambdaEta(), fixed.lambdaPhi(), fixed.lambdaMass());
+    const int repStatus = replacement.v0Status();
+    const int fixedStatus = fixed.v0Status();
+
+    if (replacedLeg == 1) {
+      fillReplacementControlMap(repStatus, fixedStatus, 1, false, repLambda, controlWeight);
+      fillFixedLegControlMap(repStatus, fixedStatus, 1, false, fixedLambda, controlWeight);
+      if ((repStatus == 0 && fixedStatus == 1) || (repStatus == 1 && fixedStatus == 0)) {
+        if (fillBasicQAHistos) {
+          histos.fill(HIST("deltaPhiMix"), deltaPhiMinusPiToPi((float)repLambda.Phi(), (float)fixedLambda.Phi()), mixWeight);
+        }
+      }
+      if (repStatus == 0 && fixedStatus == 1) {
+        fillHistograms(0, 1, repLambda, fixedLambda, repProton, fixedProton, 1, mixWeight, 1, 1);
+      } else if (repStatus == 1 && fixedStatus == 0) {
+        fillHistograms(0, 1, fixedLambda, repLambda, fixedProton, repProton, 1, mixWeight, 2, 1);
+      } else {
+        fillHistograms(repStatus, fixedStatus, repLambda, fixedLambda, repProton, fixedProton, 1, mixWeight, 1, 1);
+      }
+      return;
+    }
+
+    fillReplacementControlMap(fixedStatus, repStatus, 2, false, repLambda, controlWeight);
+    fillFixedLegControlMap(fixedStatus, repStatus, 2, false, fixedLambda, controlWeight);
+    if (fillBasicQAHistos) {
+      histos.fill(HIST("deltaPhiMix"), deltaPhiMinusPiToPi((float)fixedLambda.Phi(), (float)repLambda.Phi()), mixWeight);
+    }
+    if (fixedStatus == 0 && repStatus == 1) {
+      fillHistograms(0, 1, fixedLambda, repLambda, fixedProton, repProton, 1, mixWeight, 2, 2);
+    } else if (fixedStatus == 1 && repStatus == 0) {
+      fillHistograms(0, 1, repLambda, fixedLambda, repProton, fixedProton, 1, mixWeight, 1, 2);
+    } else {
+      fillHistograms(fixedStatus, repStatus, fixedLambda, repLambda, fixedProton, repProton, 1, mixWeight, 2, 2);
+    }
+  }
+
+  struct StoredV6CandidateMC {
+    int64_t globalIdx = -1;
+    int status = -1;
+    bool isDouble = false;
+    float cospa = 0.f;
+    float radius = 0.f;
+    float dcaPos = 0.f;
+    float dcaNeg = 0.f;
+    float dcaDau = 0.f;
+    float lPt = 0.f;
+    float lEta = 0.f;
+    float lPhi = 0.f;
+    float lMass = 0.f;
+    float pPt = 0.f;
+    float pEta = 0.f;
+    float pPhi = 0.f;
+    int64_t pIndex = -1;
+    int64_t piIndex = -1;
+
+    int v0Statusmc() const { return status; }
+    bool doubleStatusmc() const { return isDouble; }
+    float v0Cospamc() const { return cospa; }
+    float v0Radiusmc() const { return radius; }
+    float dcaPositivemc() const { return dcaPos; }
+    float dcaNegativemc() const { return dcaNeg; }
+    float dcaBetweenDaughtermc() const { return dcaDau; }
+    float lambdaPtmc() const { return lPt; }
+    float lambdaEtamc() const { return lEta; }
+    float lambdaPhimc() const { return lPhi; }
+    float lambdaMassmc() const { return lMass; }
+    float protonPtmc() const { return pPt; }
+    float protonEtamc() const { return pEta; }
+    float protonPhimc() const { return pPhi; }
+    int64_t protonIndexmc() const { return pIndex; }
+    int64_t pionIndexmc() const { return piIndex; }
+    int64_t globalIndex() const { return globalIdx; }
+  };
+
+  struct PendingV6BranchMC {
+    StoredV6CandidateMC target;
+    StoredV6CandidateMC fixed;
+    int colBin = -1;
+    int replacedLeg = 1;
+    int age = 0;
+    uint64_t seed = 0;
+  };
+
+  struct V6PendingState {
+    std::deque<PendingV6Branch> data;
+    std::deque<PendingV6BranchMC> mc;
+  };
+
+  V6PendingState v6Pending;
+
+  template <typename T>
+  StoredV6CandidateMC storeV6CandidateMC(T const& t) const
+  {
+    return {static_cast<int64_t>(t.globalIndex()), mcacc::v0Status(t), mcacc::doubleStatus(t),
+            mcacc::v0CosPA(t), mcacc::v0Radius(t), mcacc::dcaPos(t), mcacc::dcaNeg(t), mcacc::dcaDau(t),
+            mcacc::lamPt(t), mcacc::lamEta(t), mcacc::lamPhi(t), mcacc::lamMass(t),
+            mcacc::prPt(t), mcacc::prEta(t), mcacc::prPhi(t),
+            static_cast<int64_t>(mcacc::prIdx(t)), static_cast<int64_t>(mcacc::piIdx(t))};
+  }
+
+  template <typename TRep, typename TFixed>
+  void fillV6MixedBranchMC(TRep const& replacement, TFixed const& fixed, int replacedLeg, float controlWeight, float mixWeight)
+  {
+    const auto repProton = ROOT::Math::PtEtaPhiMVector(mcacc::prPt(replacement), mcacc::prEta(replacement), mcacc::prPhi(replacement), o2::constants::physics::MassProton);
+    const auto repLambda = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(replacement), mcacc::lamEta(replacement), mcacc::lamPhi(replacement), mcacc::lamMass(replacement));
+    const auto fixedProton = ROOT::Math::PtEtaPhiMVector(mcacc::prPt(fixed), mcacc::prEta(fixed), mcacc::prPhi(fixed), o2::constants::physics::MassProton);
+    const auto fixedLambda = ROOT::Math::PtEtaPhiMVector(mcacc::lamPt(fixed), mcacc::lamEta(fixed), mcacc::lamPhi(fixed), mcacc::lamMass(fixed));
+    const int repStatus = mcacc::v0Status(replacement);
+    const int fixedStatus = mcacc::v0Status(fixed);
+
+    if (replacedLeg == 1) {
+      fillReplacementControlMap(repStatus, fixedStatus, 1, false, repLambda, controlWeight);
+      fillFixedLegControlMap(repStatus, fixedStatus, 1, false, fixedLambda, controlWeight);
+      if (fillBasicQAHistos) {
+        histos.fill(HIST("deltaPhiMix"), deltaPhiMinusPiToPi((float)repLambda.Phi(), (float)fixedLambda.Phi()), mixWeight);
+      }
+      if (repStatus == 0 && fixedStatus == 1) {
+        fillHistograms(0, 1, repLambda, fixedLambda, repProton, fixedProton, 1, mixWeight, 1, 1);
+      } else if (repStatus == 1 && fixedStatus == 0) {
+        fillHistograms(0, 1, fixedLambda, repLambda, fixedProton, repProton, 1, mixWeight, 2, 1);
+      } else {
+        fillHistograms(repStatus, fixedStatus, repLambda, fixedLambda, repProton, fixedProton, 1, mixWeight, 1, 1);
+      }
+      return;
+    }
+
+    fillReplacementControlMap(fixedStatus, repStatus, 2, false, repLambda, controlWeight);
+    fillFixedLegControlMap(fixedStatus, repStatus, 2, false, fixedLambda, controlWeight);
+    if (fillBasicQAHistos) {
+      histos.fill(HIST("deltaPhiMix"), deltaPhiMinusPiToPi((float)fixedLambda.Phi(), (float)repLambda.Phi()), mixWeight);
+    }
+    if (fixedStatus == 0 && repStatus == 1) {
+      fillHistograms(0, 1, fixedLambda, repLambda, fixedProton, repProton, 1, mixWeight, 2, 2);
+    } else if (fixedStatus == 1 && repStatus == 0) {
+      fillHistograms(0, 1, repLambda, fixedLambda, repProton, fixedProton, 1, mixWeight, 1, 2);
+    } else {
+      fillHistograms(fixedStatus, repStatus, fixedLambda, repLambda, fixedProton, repProton, 1, mixWeight, 2, 2);
+    }
+  }
 
   static inline size_t linearKeyR(int colBin, int statBin,
                                   int ptBin, int etaBin, int phiBin, int mBin, int rBin,
@@ -1632,25 +1855,30 @@ struct lambdaspincorrderived {
     if (mcacc::lamMass(candidate) < MassMin || mcacc::lamMass(candidate) > MassMax) {
       return false;
     }
-    if (mcacc::v0CosPA(candidate) < cosPA) {
+    if (mcacc::v0CosPA(candidate) < v0Configurations.cosPA) {
       return false;
     }
     if (checkDoubleStatus && mcacc::doubleStatus(candidate)) {
       return false;
     }
-    if (mcacc::v0Radius(candidate) > radiusMax) {
+    if (mcacc::v0Radius(candidate) > v0Configurations.radiusMax) {
       return false;
     }
-    if (mcacc::v0Radius(candidate) < radiusMin) {
+    if (mcacc::v0Radius(candidate) < v0Configurations.radiusMin) {
       return false;
     }
-    if (mcacc::dcaDau(candidate) > dcaDaughters) {
+    if (mcacc::dcaDau(candidate) > v0Configurations.dcaDaughters) {
       return false;
     }
-    if (mcacc::v0Status(candidate) == 0 && (std::abs(mcacc::dcaPos(candidate)) < dcaProton || std::abs(mcacc::dcaNeg(candidate)) < dcaPion)) {
+
+    if (mcacc::dcaV0ToPVMC(candidate) > v0Configurations.dcaV0ToPV) {
       return false;
     }
-    if (mcacc::v0Status(candidate) == 1 && (std::abs(mcacc::dcaPos(candidate)) < dcaPion || std::abs(mcacc::dcaNeg(candidate)) < dcaProton)) {
+
+    if (mcacc::v0Status(candidate) == 0 && (std::abs(mcacc::dcaPos(candidate)) < v0Configurations.dcaProton || std::abs(mcacc::dcaNeg(candidate)) < v0Configurations.dcaPion)) {
+      return false;
+    }
+    if (mcacc::v0Status(candidate) == 1 && (std::abs(mcacc::dcaPos(candidate)) < v0Configurations.dcaPion || std::abs(mcacc::dcaNeg(candidate)) < v0Configurations.dcaProton)) {
       return false;
     }
     if (mcacc::lamPt(candidate) < ptMin) {
@@ -2129,6 +2357,68 @@ struct lambdaspincorrderived {
       }
     };
 
+    const size_t pendingAtStart = v6Pending.data.size();
+    size_t pendingMatched = 0;
+    size_t pendingExpired = 0;
+    size_t pendingAdded = 0;
+    if (!cfgV6CarryUnmatched) {
+      v6Pending.data.clear();
+    } else {
+      for (auto it = v6Pending.data.begin(); it != v6Pending.data.end();) {
+        auto& pending = *it;
+        ++pending.age;
+        if (cfgV6MaxPendingAge.value > 0 && pending.age > cfgV6MaxPendingAge.value) {
+          ++pendingExpired;
+          it = v6Pending.data.erase(it);
+          continue;
+        }
+
+        auto& matches = pending.replacedLeg == 1 ? matches1 : matches2;
+        collectMatchesForReplacedLeg(pending.target, pending.fixed, pending.colBin, -1, matches);
+        limitMatchesToNEvents(matches, nEvtMixing.value);
+        downsampleMatches(matches, pending.seed ^ splitmix64(static_cast<uint64_t>(pending.age)));
+
+        int nAccepted = 0;
+        for (auto const& m : matches) {
+          auto replacement = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+          if (!selectionV0(replacement) || !checkKinematics(pending.target, replacement)) {
+            continue;
+          }
+          if (replacement.globalIndex() == pending.target.globalIndex() || replacement.globalIndex() == pending.fixed.globalIndex()) {
+            continue;
+          }
+          if (hasSharedDaughters(replacement, pending.target) || hasSharedDaughters(replacement, pending.fixed)) {
+            continue;
+          }
+          ++nAccepted;
+        }
+
+        if (nAccepted == 0) {
+          ++it;
+          continue;
+        }
+
+        const float controlWeight = 1.0f / static_cast<float>(nAccepted);
+        const float branchNorm = cfgMixLegMode.value == 2 ? 0.5f : 1.0f;
+        const float mixWeight = branchNorm * controlWeight;
+        for (auto const& m : matches) {
+          auto replacement = V0s.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+          if (!selectionV0(replacement) || !checkKinematics(pending.target, replacement)) {
+            continue;
+          }
+          if (replacement.globalIndex() == pending.target.globalIndex() || replacement.globalIndex() == pending.fixed.globalIndex()) {
+            continue;
+          }
+          if (hasSharedDaughters(replacement, pending.target) || hasSharedDaughters(replacement, pending.fixed)) {
+            continue;
+          }
+          fillV6MixedBranch(replacement, pending.fixed, pending.replacedLeg, controlWeight, mixWeight);
+        }
+        ++pendingMatched;
+        it = v6Pending.data.erase(it);
+      }
+    }
+
     // -------- PASS 2: configurable one-leg / two-leg mixing --------
     for (auto const& col1 : collisions) {
       const int colBin = colBinning.getBin(std::make_tuple(col1.posz(), col1.cent()));
@@ -2235,6 +2525,22 @@ struct lambdaspincorrderived {
           }
         }
 
+        if (cfgV6CarryUnmatched) {
+          const auto hasPendingSpace = [&]() {
+            return cfgV6MaxPendingBranches.value <= 0 || static_cast<int>(v6Pending.data.size()) < cfgV6MaxPendingBranches.value;
+          };
+          if (doMixLeg1 && nFill1 == 0 && hasPendingSpace()) {
+            v6Pending.data.push_back({storeV6Candidate(t1, curColIdx), storeV6Candidate(t2, curColIdx), colBin, 1, 0,
+                                      static_cast<uint64_t>(t1.globalIndex()) ^ splitmix64(static_cast<uint64_t>(t2.globalIndex())) ^ splitmix64(static_cast<uint64_t>(curColIdx))});
+            ++pendingAdded;
+          }
+          if (doMixLeg2 && nFill2 == 0 && hasPendingSpace()) {
+            v6Pending.data.push_back({storeV6Candidate(t2, curColIdx), storeV6Candidate(t1, curColIdx), colBin, 2, 0,
+                                      static_cast<uint64_t>(t2.globalIndex()) ^ splitmix64(static_cast<uint64_t>(t1.globalIndex())) ^ splitmix64(static_cast<uint64_t>(curColIdx))});
+            ++pendingAdded;
+          }
+        }
+
         if (nFill1 <= 0 && nFill2 <= 0) {
           continue;
         }
@@ -2246,9 +2552,10 @@ struct lambdaspincorrderived {
 
         const int nActiveMixBranches = ((doMixLeg1 && nFill1 > 0) ? 1 : 0) +
                                        ((doMixLeg2 && nFill2 > 0) ? 1 : 0);
-        const float branchNorm = (cfgMixLegMode.value == 2 && nActiveMixBranches > 0)
-                                   ? 1.0f / static_cast<float>(nActiveMixBranches)
-                                   : 1.0f;
+        float branchNorm = 1.0f;
+        if (cfgMixLegMode.value == 2) {
+          branchNorm = cfgV6CarryUnmatched ? 0.5f : 1.0f / static_cast<float>(nActiveMixBranches);
+        }
         const float finalMixWeightLeg1 = branchNorm * wSELeg1;
         const float finalMixWeightLeg2 = branchNorm * wSELeg2;
 
@@ -2355,6 +2662,10 @@ struct lambdaspincorrderived {
           }
         }
       }
+    }
+    if (cfgV6LogPending) {
+      LOGF(info, "MEV6 data pending branches: carriedIn=%zu matched=%zu expired=%zu newlyPropagated=%zu carriedToNext=%zu",
+           pendingAtStart, pendingMatched, pendingExpired, pendingAdded, v6Pending.data.size());
     }
   }
   PROCESS_SWITCH(lambdaspincorrderived, processMEV6, "Process data ME v6 with radius buffer", false);
@@ -2592,6 +2903,68 @@ struct lambdaspincorrderived {
       }
     };
 
+    const size_t pendingAtStartMC = v6Pending.mc.size();
+    size_t pendingMatchedMC = 0;
+    size_t pendingExpiredMC = 0;
+    size_t pendingAddedMC = 0;
+    if (!cfgV6CarryUnmatched) {
+      v6Pending.mc.clear();
+    } else {
+      for (auto it = v6Pending.mc.begin(); it != v6Pending.mc.end();) {
+        auto& pending = *it;
+        ++pending.age;
+        if (cfgV6MaxPendingAge.value > 0 && pending.age > cfgV6MaxPendingAge.value) {
+          ++pendingExpiredMC;
+          it = v6Pending.mc.erase(it);
+          continue;
+        }
+
+        auto& matches = pending.replacedLeg == 1 ? matches1 : matches2;
+        collectMatchesForReplacedLeg(pending.target, pending.fixed, pending.colBin, -1, matches);
+        limitMatchesToNEvents(matches, nEvtMixing.value);
+        downsampleMatches(matches, pending.seed ^ splitmix64(static_cast<uint64_t>(pending.age)));
+
+        int nAccepted = 0;
+        for (auto const& m : matches) {
+          auto replacement = V0sMC.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+          if (!selectionV0MC(replacement) || !checkKinematicsMC(pending.target, replacement)) {
+            continue;
+          }
+          if (replacement.globalIndex() == pending.target.globalIndex() || replacement.globalIndex() == pending.fixed.globalIndex()) {
+            continue;
+          }
+          if (hasSharedDaughtersMC(replacement, pending.target) || hasSharedDaughtersMC(replacement, pending.fixed)) {
+            continue;
+          }
+          ++nAccepted;
+        }
+
+        if (nAccepted == 0) {
+          ++it;
+          continue;
+        }
+
+        const float controlWeight = 1.0f / static_cast<float>(nAccepted);
+        const float branchNorm = cfgMixLegMode.value == 2 ? 0.5f : 1.0f;
+        const float mixWeight = branchNorm * controlWeight;
+        for (auto const& m : matches) {
+          auto replacement = V0sMC.iteratorAt(static_cast<uint64_t>(m.rowIndex));
+          if (!selectionV0MC(replacement) || !checkKinematicsMC(pending.target, replacement)) {
+            continue;
+          }
+          if (replacement.globalIndex() == pending.target.globalIndex() || replacement.globalIndex() == pending.fixed.globalIndex()) {
+            continue;
+          }
+          if (hasSharedDaughtersMC(replacement, pending.target) || hasSharedDaughtersMC(replacement, pending.fixed)) {
+            continue;
+          }
+          fillV6MixedBranchMC(replacement, pending.fixed, pending.replacedLeg, controlWeight, mixWeight);
+        }
+        ++pendingMatchedMC;
+        it = v6Pending.mc.erase(it);
+      }
+    }
+
     // -------- PASS 2: configurable one-leg / two-leg mixing --------
     for (auto const& col1 : collisions) {
       const int colBin = colBinning.getBin(std::make_tuple(mcacc::posz(col1), mcacc::cent(col1)));
@@ -2699,6 +3072,22 @@ struct lambdaspincorrderived {
           }
         }
 
+        if (cfgV6CarryUnmatched) {
+          const auto hasPendingSpace = [&]() {
+            return cfgV6MaxPendingBranches.value <= 0 || static_cast<int>(v6Pending.mc.size()) < cfgV6MaxPendingBranches.value;
+          };
+          if (doMixLeg1 && nFill1 == 0 && hasPendingSpace()) {
+            v6Pending.mc.push_back({storeV6CandidateMC(t1), storeV6CandidateMC(t2), colBin, 1, 0,
+                                    static_cast<uint64_t>(t1.globalIndex()) ^ splitmix64(static_cast<uint64_t>(t2.globalIndex())) ^ splitmix64(static_cast<uint64_t>(curColIdx))});
+            ++pendingAddedMC;
+          }
+          if (doMixLeg2 && nFill2 == 0 && hasPendingSpace()) {
+            v6Pending.mc.push_back({storeV6CandidateMC(t2), storeV6CandidateMC(t1), colBin, 2, 0,
+                                    static_cast<uint64_t>(t2.globalIndex()) ^ splitmix64(static_cast<uint64_t>(t1.globalIndex())) ^ splitmix64(static_cast<uint64_t>(curColIdx))});
+            ++pendingAddedMC;
+          }
+        }
+
         if (nFill1 <= 0 && nFill2 <= 0) {
           continue;
         }
@@ -2708,9 +3097,10 @@ struct lambdaspincorrderived {
 
         const int nActiveMixBranches = ((doMixLeg1 && nFill1 > 0) ? 1 : 0) +
                                        ((doMixLeg2 && nFill2 > 0) ? 1 : 0);
-        const float branchNorm = (cfgMixLegMode.value == 2 && nActiveMixBranches > 0)
-                                   ? 1.0f / static_cast<float>(nActiveMixBranches)
-                                   : 1.0f;
+        float branchNorm = 1.0f;
+        if (cfgMixLegMode.value == 2) {
+          branchNorm = cfgV6CarryUnmatched ? 0.5f : 1.0f / static_cast<float>(nActiveMixBranches);
+        }
         const float finalMixWeightLeg1 = branchNorm * wSELeg1;
         const float finalMixWeightLeg2 = branchNorm * wSELeg2;
 
@@ -2826,8 +3216,21 @@ struct lambdaspincorrderived {
         }
       }
     }
+    if (cfgV6LogPending) {
+      LOGF(info, "MEV6 MC pending branches: carriedIn=%zu matched=%zu expired=%zu newlyPropagated=%zu carriedToNext=%zu",
+           pendingAtStartMC, pendingMatchedMC, pendingExpiredMC, pendingAddedMC, v6Pending.mc.size());
+    }
   }
   PROCESS_SWITCH(lambdaspincorrderived, processMCMEV6, "Process MC ME v6 with radius buffer", false);
+
+  void endOfStream(EndOfStreamContext&)
+  {
+    if (cfgV6LogPending) {
+      LOGF(info, "MEV6 end of stream: unmatchedData=%zu unmatchedMC=%zu", v6Pending.data.size(), v6Pending.mc.size());
+    }
+    v6Pending.data.clear();
+    v6Pending.mc.clear();
+  }
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

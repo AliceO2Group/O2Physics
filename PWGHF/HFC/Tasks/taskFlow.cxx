@@ -22,13 +22,14 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
-#include "PWGHF/Utils/utilsPid.h"
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -38,7 +39,6 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsCommonDataFormats/AlignParam.h>
 #include <FT0Base/Geometry.h>
-#include <FV0Base/Geometry.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -57,7 +57,7 @@
 #include <MathUtils/Utils.h>
 
 #include <THn.h>
-#include <TPDGCode.h>
+#include <TRandom.h>
 #include <TString.h>
 
 #include <sys/types.h>
@@ -136,9 +136,17 @@ enum MftTrackSelectionStep {
   Pt,
   DCAxy,
   DCAz,
+  Chi2OverNdf,
+  Phi,
   IsLTF,
   IsCA,
   NMftTrackSelectionSteps
+};
+
+enum CentralityEstimators {
+  CentFT0C = 0,
+  CentFT0CVariant1,
+  CentFT0M
 };
 
 enum MultiplicityEstimators {
@@ -172,6 +180,7 @@ enum TrackSelection {
 static constexpr std::string_view WhatDataType[] = {"Data/", "MC/"};
 static constexpr std::string_view WhatCorrelationCase[] = {"TpcTpc/", "TpcMft/", "TpcFv0a/", "MftFv0a/", "TpcFt0a/", "MftFt0a/", "TpcFt0c/", "Ft0aFt0c/"};
 static constexpr std::string_view WhatParticles[] = {"ChPartChPart/", "D0ChPart/", "LcChPart/"};
+static constexpr std::string_view WhatCentralityEstimator[] = {"centFT0C", "CentFT0CVariant1", "centFT0M"};
 static constexpr std::string_view WhatMultiplicityEstimator[] = {"multNTracksPV", "multNumContrib", "multFT0C", "multFT0M"};
 auto static constexpr MinFt0cCell = 96;
 
@@ -213,6 +222,7 @@ struct HfTaskFlow {
     Configurable<float> etaMcParticlesAssocMax{"etaMcParticlesAssocMax", -2.4f, "Maximum value for the eta of MC particles when used in cut function"};
     Configurable<float> etaMcParticlesAssocMin{"etaMcParticlesAssocMin", -3.6f, "Minimum value for the eta of MC particles when used in cut function"};
     Configurable<bool> fillOnlyStepAll{"fillOnlyStepAll", true, "Fill Mc Gen QA plots only for StepAll, or only for Primaries"};
+    Configurable<std::string> loadCentralityWeight{"loadCentralityWeight", "", "Ccdb path to centrality weight correction"};
     Configurable<std::string> loadEfficienciesForTpc{"loadEfficienciesForTpc", "", "Ccdb path to Tpc tracks efficiency correction"};
     Configurable<std::string> loadEfficienciesForMft{"loadEfficienciesForMft", "", "Ccdb path to Mft tracks efficiency correction"};
     Configurable<std::string> loadEfficienciesForNch{"loadEfficienciesForNch", "", "Ccdb path to Nch estimation efficiency correction"};
@@ -231,6 +241,7 @@ struct HfTaskFlow {
   //   configurables for collisions
   struct : ConfigurableGroup {
     std::string prefix = "ConfigCollision_group";
+    Configurable<int> centralityEstimator{"centralityEstimator", 0, "0: centFT0C, 1: CentFT0CVariant1, 2: centFT0M"};
     Configurable<bool> isApplyGoodItsLayersAll{"isApplyGoodItsLayersAll", false, "Enable GoodITSLayersAll"};
     Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", false, "Enable GoodZvtxFT0vsPV cut"};
     Configurable<bool> isApplyNoCollInRofStandard{"isApplyNoCollInRofStandard", false, ""};
@@ -239,9 +250,12 @@ struct HfTaskFlow {
     Configurable<bool> isApplyNoCollInTimeRangeStrict{"isApplyNoCollInTimeRangeStrict", false, ""};
     Configurable<bool> isApplyNoHighMultCollInPrevRof{"isApplyNoHighMultCollInPrevRof", false, ""};
     Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", false, "Enable SameBunchPileup cut"};
+    Configurable<int> maxCentrality{"maxCentrality", 20, "maximum centrality"};
+    Configurable<int> minCentrality{"minCentrality", 0, "minimum centrality"};
     Configurable<int> maxMultiplicity{"maxMultiplicity", 300, "maximum multiplicity selection for collision"};
     Configurable<int> minMultiplicity{"minMultiplicity", 0, "minimum multiplicity selection for collision"};
-    Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "0: multNTracksPV, 1: numContrib, 2: multFT0C, 3: multFT0M, 4: centFT0C, 5: centFT0CVariants1s, 6: centFT0M, 7: centFV0A, 8: centNTracksPV, 9: centNGlobal, 10: centMFT"};
+    Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "0: multNTracksPV, 1: numContrib, 2: multFT0C, 3: multFT0M"};
+    Configurable<bool> useCentrality{"useCentrality", false, "use centrality instead of multiplicity"};
     Configurable<bool> useMultiplicityFromTracks{"useMultiplicityFromTracks", false, "Use multiplicity from counting tracks"};
     Configurable<bool> useMultiplicityFromTracksCorrected{"useMultiplicityFromTracksCorrected", false, "Use multiplicity from counting tracks, corrected but takes a lot of computation time"};
     Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", false, "Check event quality in run condition table"};
@@ -298,11 +312,18 @@ struct HfTaskFlow {
     Configurable<float> etaMftTrackMin{"etaMftTrackMin", -3.36f, "Minimum value for the eta of MFT tracks when used in cut function"};
     Configurable<float> etaMftTrackMaxFilter{"etaMftTrackMaxFilter", -2.0f, "Maximum value for the eta of MFT tracks when used in filter"};
     Configurable<float> etaMftTrackMinFilter{"etaMftTrackMinFilter", -3.9f, "Minimum value for the eta of MFT tracks when used in filter"};
+    Configurable<float> maxChi2OverNdf{"maxChi2OverNdf", 1000.f, "maximum chi2/ndf for MFT tracks"};
     Configurable<float> mftMaxDCAxy{"mftMaxDCAxy", 2.0f, "Cut on dcaXY for MFT tracks"};
     Configurable<float> mftMaxDCAz{"mftMaxDCAz", 2.0f, "Cut on dcaZ for MFT tracks"};
     Configurable<int> nClustersMftTrack{"nClustersMftTrack", 5, "Minimum number of clusters for the reconstruction of MFT tracks"};
+    Configurable<float> phiMftTrackMin{"phiMftTrackMin", 0.1, "Minimum value for the phi of MFT tracks when used in cut function"};
+    Configurable<float> phiMftTrackMiddleMin{"phiMftTrackMiddleMin", PI - 0.1, "cut to remove before phi = pi for MFT tracks when used in cut function"};
+    Configurable<float> phiMftTrackMiddleMax{"phiMftTrackMiddleMax", PI + 0.1, "cut to remove after phi = pi for MFT tracks when used in cut function"};
+    Configurable<float> phiMftTrackMax{"phiMftTrackMax", TwoPI - 0.1, "Maximum value for the phi of MFT tracks when used in cut function"};
     Configurable<float> ptMftTrackMax{"ptMftTrackMax", 10.0f, "max value of MFT tracks pT when used in cut function"};
     Configurable<float> ptMftTrackMin{"ptMftTrackMin", 0.f, "min value of MFT tracks pT when used in cut function"};
+    Configurable<bool> useMftChi2OverNdfCut{"useMftChi2OverNdfCut", false, "use mft track chi2/ndf cut"};
+    Configurable<bool> useMftPhiCut{"useMftPhiCut", false, "if true, use the Mft phi function cut"};
     Configurable<bool> useMftPtCut{"useMftPtCut", false, "if true, use the Mft pt function cut"};
     Configurable<bool> useOnlyCATracks{"useOnlyCATracks", false, "if true, use strictly MFT tracks reconstructed with CA algo."};
     Configurable<bool> useOnlyLTFTracks{"useOnlyLTFTracks", false, "if true, use strictly MFT tracks reconstructed with LTF algo."};
@@ -330,6 +351,7 @@ struct HfTaskFlow {
   TH3D* mEfficiencyTpc = nullptr;
   TH3D* mEfficiencyMft = nullptr;
   TH1D* mEfficiencyNch = nullptr;
+  TH1D* mCentralityWeight = nullptr;
   bool areCorrectionsLoaded = false;
 
   // o2::aod::rctsel::RCTFlagsChecker rctChecker{"CBT_muon_glo", false, false, true};
@@ -338,12 +360,14 @@ struct HfTaskFlow {
   //      using declarations : DATA
   // =========================
 
-  using FilteredCollisionsWSelMult = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
+  using FilteredCollisionsWSelMult = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms>>;
   using HfCandidatesSelD0 = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
   using HfCandidatesSelLc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
   using FilteredTracksWDcaSel = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra>>;
+  using FilteredTracksWDcaSelWLabels = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra, aod::McTrackLabels>>;
 
   using FilteredMftTracks = soa::Filtered<aod::MFTTracks>;
+  using FilteredMftTracksWCollsMcLabels = soa::Filtered<soa::Join<aod::MFTTracks, aod::McMFTTrackLabels>>;
 
   // =========================
   //      using declarations : MC
@@ -351,6 +375,7 @@ struct HfTaskFlow {
 
   using SmallGroupMcCollisions = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using FilteredMcCollisionsWMult = soa::Filtered<soa::Join<aod::McCollisions, aod::MultMCExtras>>;
+  using FilteredMcCollisionsWMultWCollsExtra = soa::Filtered<soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultMCExtras>>;
   using FilteredMcParticles = soa::Filtered<aod::McParticles>;
 
   // =========================
@@ -428,10 +453,13 @@ struct HfTaskFlow {
     ConfigurableAxis axisMass{"axisMass", {1, 1.5848, 2.1848}, "axis of invariant mass of candidates"};
     ConfigurableAxis binsMixingMultiplicity{"binsMixingMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity bins for event mixing"};
     ConfigurableAxis binsMixingVertex{"binsMixingVertex", {20, -10, 10}, "vertex bins for event mixing"};
+    ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "centrality axis for histograms"};
     ConfigurableAxis axisNClusters{"axisNClusters", {9, 1, 10}, "axis for number of clusters of MFT tracks"};
     ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {1, -1.0, 1.0}, "eta axis for efficiency histograms"};
     ConfigurableAxis axisEtaAssociated{"axisEtaAssociated", {48, -4, -2}, "eta axis for MFT histograms"};
     ConfigurableAxis axisEtaTrigger{"axisEtaTrigger", {48, -1, 1}, "eta axis for TPC histograms"};
+    ConfigurableAxis axisDcaXY{"axisDcaXY", {100, 0, 2}, "dcaXY axis for MFT histograms"};
+    ConfigurableAxis axisDcaZ{"axisDcaZ", {100, -2, 2}, "dcaZ axis for MFT histograms"};
     ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
     ConfigurableAxis axisDeltaEta{"axisDeltaEta", {48, -2.4, 2.4}, "delta eta axis for histograms"};
     ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity axis for histograms"};
@@ -498,6 +526,8 @@ struct HfTaskFlow {
     labelsMftTracksSelection[MftTrackSelectionStep::Pt] = "MFT tracks after pT selection";
     labelsMftTracksSelection[MftTrackSelectionStep::DCAxy] = "MFT tracks after DCAxy selection";
     labelsMftTracksSelection[MftTrackSelectionStep::DCAz] = "MFT tracks after DCAz selection";
+    labelsMftTracksSelection[MftTrackSelectionStep::Chi2OverNdf] = "MFT tracks after Chi2OverNdf selection";
+    labelsMftTracksSelection[MftTrackSelectionStep::Phi] = "MFT tracks after phi selection";
     labelsMftTracksSelection[MftTrackSelectionStep::IsLTF] = "Linear Track Finder MFT tracks";
     labelsMftTracksSelection[MftTrackSelectionStep::IsCA] = "Cellular Automaton MFT tracks";
     registry.get<TH1>(HIST("Data/Mft/hMftTracksSelection"))->SetMinimum(0);
@@ -519,6 +549,8 @@ struct HfTaskFlow {
     registry.add("Data/Mft/hPtMft", "", {HistType::kTH1D, {configAxis.axisPt}});
     registry.add("Data/Mft/hPtVsClustersLTF", "", {HistType::kTH2D, {configAxis.axisPt, configAxis.axisNClusters}});
     registry.add("Data/Mft/hPtVsClustersCA", "", {HistType::kTH2D, {configAxis.axisPt, configAxis.axisNClusters}});
+    registry.add("Data/Mft/hDcaXYMft", "", {HistType::kTH1D, {configAxis.axisDcaXY}});
+    registry.add("Data/Mft/hDcaZMft", "", {HistType::kTH1D, {configAxis.axisDcaZ}});
     registry.add("Data/Mft/hNMftTracks", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
     registry.add("Data/Mft/hNBestCollisionFwd", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
   }
@@ -552,6 +584,7 @@ struct HfTaskFlow {
     registry.add("Data/hVtxZ", "v_{z} (cm)", {HistType::kTH1D, {configAxis.axisVertex}});
     registry.add("Data/hNTracks", "", {HistType::kTH1F, {configAxis.axisMultiplicity}});
     registry.add(Form("Data/hMultiplicity_%s", WhatMultiplicityEstimator[configCollision.multiplicityEstimator].data()), "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
+    registry.add(Form("Data/hCentrality_%s", WhatCentralityEstimator[configCollision.centralityEstimator].data()), "", {HistType::kTH1D, {configAxis.axisCentrality}});
 
     registry.add("Data/hEventCounter", "hEventCounter", {HistType::kTH1D, {{EventSelectionStep::NEventSelectionSteps, -0.5, +EventSelectionStep::NEventSelectionSteps - 0.5}}});
     std::string labels[EventSelectionStep::NEventSelectionSteps];
@@ -661,8 +694,7 @@ struct HfTaskFlow {
       registry.add("Data/hEfficiencyTrigger", "", {HistType::kTH3D, {{configAxis.axisPtTrigger}, {configAxis.axisEtaTrigger}, {configAxis.axisVertex}}});
       registry.add("Data/hEfficiencyAssociated", "", {HistType::kTH3D, {{configAxis.axisPtAssoc}, {configAxis.axisEtaAssociated}, {configAxis.axisVertex}}});
 
-      registry.add("Data/hMultiplicity_uncorrected", "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
-      registry.add("Data/hMultiplicity_corrected", "", {HistType::kTH1D, {configAxis.axisMultiplicity}});
+      registry.add("Data/hMultiplicity_uncorrected_vs_corrected", "", {HistType::kTH2D, {{configAxis.axisMultiplicity}, {configAxis.axisMultiplicity}}});
 
       if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
         registry.add("Trig_hist_TPC_MFT", "", {HistType::kTHnSparseF, {{configAxis.axisSamples, configAxis.axisVertex, configAxis.axisPtTrigger}}});
@@ -883,7 +915,7 @@ struct HfTaskFlow {
     if (doprocessSameMcGen) {
 
       registry.add("MC/hEfficiencyTrigger", "", {HistType::kTH3D, {{configAxis.axisPtTrigger}, {configAxis.axisEtaTrigger}, {configAxis.axisVertex}}});
-      registry.add("MC/hEfficiencyAssociated", "", {HistType::kTH3D, {{configAxis.axisPtTrigger}, {configAxis.axisEtaAssociated}, {configAxis.axisVertex}}});
+      registry.add("MC/hEfficiencyAssociated", "", {HistType::kTH3D, {{configAxis.axisPtAssoc}, {configAxis.axisEtaAssociated}, {configAxis.axisVertex}}});
 
       if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcTpc)) {
         addHistograms<Mc, TpcTpc, ChPartChPart>();
@@ -916,6 +948,13 @@ struct HfTaskFlow {
         sameEvent.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxisVariations, effAxis, {}));
         mixedEvent.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxisVariations, effAxis, {}));
       }
+    }
+
+    if (doprocessTrackEfficiencies) {
+      registry.add("MC/hEfficiencyTrigger", "", {HistType::kTH3D, {{configAxis.axisPtTrigger}, {configAxis.axisEtaTrigger}, {configAxis.axisVertex}}});
+      registry.add("MC/hEfficiencyAssociated", "", {HistType::kTH3D, {{configAxis.axisPtTrigger}, {configAxis.axisEtaAssociated}, {configAxis.axisVertex}}});
+      registry.add("Data/hEfficiencyTrigger", "", {HistType::kTH3D, {{configAxis.axisPtTrigger}, {configAxis.axisEtaTrigger}, {configAxis.axisVertex}}});
+      registry.add("Data/hEfficiencyAssociated", "", {HistType::kTH3D, {{configAxis.axisPtAssoc}, {configAxis.axisEtaAssociated}, {configAxis.axisVertex}}});
     }
 
   } // End of init() function
@@ -986,6 +1025,30 @@ struct HfTaskFlow {
         return collision.multFT0M();
       default:
         return collision.multNTracksPV();
+    }
+  }
+
+  template <typename TCollision>
+  float getCentralityEstimator(TCollision const& collision, bool isSameEvent)
+  {
+    switch (configCollision.centralityEstimator) {
+      case CentralityEstimators::CentFT0C:
+        if (isSameEvent) {
+          registry.fill(HIST("Data/hCentrality_centFT0C"), collision.centFT0C());
+        }
+        return collision.centFT0C();
+      case CentralityEstimators::CentFT0CVariant1:
+        if (isSameEvent) {
+          registry.fill(HIST("Data/hCentrality_centFT0CVariant1"), collision.centFT0CVariant1());
+        }
+        return collision.centFT0CVariant1();
+      case CentralityEstimators::CentFT0M:
+        if (isSameEvent) {
+          registry.fill(HIST("Data/hCentrality_centFT0M"), collision.centFT0M());
+        }
+        return collision.centFT0M();
+      default:
+        return collision.centFT0C();
     }
   }
 
@@ -1162,21 +1225,28 @@ struct HfTaskFlow {
       if (mEfficiencyTpc == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for TPC tracks from %s", configTask.loadEfficienciesForTpc.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", configTask.loadEfficienciesForTpc.value.c_str(), (void*)mEfficiencyTpc);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", configTask.loadEfficienciesForTpc.value.c_str(), static_cast<void*>(mEfficiencyTpc));
     }
     if (configTask.loadEfficienciesForMft.value.empty() == false) {
       mEfficiencyMft = ccdb->getForTimeStamp<TH3D>(configTask.loadEfficienciesForTpc, timestamp);
       if (mEfficiencyMft == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for MFT tracks from %s", configTask.loadEfficienciesForMft.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", configTask.loadEfficienciesForMft.value.c_str(), (void*)mEfficiencyMft);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", configTask.loadEfficienciesForMft.value.c_str(), static_cast<void*>(mEfficiencyMft));
     }
     if (configTask.loadEfficienciesForNch.value.empty() == false) {
       mEfficiencyNch = ccdb->getForTimeStamp<TH1D>(configTask.loadEfficienciesForNch, timestamp);
       if (!mEfficiencyNch) {
         LOGF(fatal, "Could not load efficiency histogram for Nch estimator from %s", configTask.loadEfficienciesForNch.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", configTask.loadEfficienciesForNch.value.c_str(), (void*)mEfficiencyNch);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", configTask.loadEfficienciesForNch.value.c_str(), static_cast<void*>(mEfficiencyNch));
+    }
+    if (configTask.loadCentralityWeight.value.empty() == false) {
+      mCentralityWeight = ccdb->getForTimeStamp<TH1D>(configTask.loadCentralityWeight, timestamp);
+      if (mCentralityWeight == nullptr) {
+        LOGF(fatal, "Could not load centrality weight correction from %s", configTask.loadCentralityWeight.value.c_str());
+      }
+      LOGF(info, "Loaded centrality weight from %s (%p)", configTask.loadCentralityWeight.value.c_str(), static_cast<void*>(mCentralityWeight));
     }
     areCorrectionsLoaded = true;
   }
@@ -1254,6 +1324,21 @@ struct HfTaskFlow {
     return trackCounter;
   }
 
+  bool getCentralityWeight(float& weightCent, const float centrality)
+  {
+    float weight = 1.;
+    if (mCentralityWeight) {
+      weight = mCentralityWeight->GetBinContent(mCentralityWeight->FindBin(centrality));
+    } else {
+      weight = 1.0;
+    }
+    if (weight == 0) {
+      return false;
+    }
+    weightCent = weight;
+    return true;
+  }
+
   // =========================
   //      Cuts with functions
   // =========================
@@ -1329,9 +1414,6 @@ struct HfTaskFlow {
     }
     if (fillHistograms) {
       registry.fill(HIST("Data/hPreciseEventCounter"), SpecificEventSelectionStep::IsRctFlagChecked);
-    }
-
-    if (fillHistograms) {
       registry.fill(HIST("Data/hEventCounter"), EventSelectionStep::AfterEventSelection);
     }
 
@@ -1431,7 +1513,32 @@ struct HfTaskFlow {
     }
 
     if (fillHistograms) {
+      registry.fill(HIST("Data/Mft/hDcaXYMft"), dcaXY);
+      registry.fill(HIST("Data/Mft/hDcaZMft"), dcaZ);
       registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::DCAz);
+    }
+
+    if (configMft.useMftChi2OverNdfCut) {
+      float ndfMftTrack = std::max(2.0f * mftTrack.nClusters() - 5.0f, 1.0f);
+      float mftChi2OverNdf = mftTrack.chi2() / ndfMftTrack;
+      if (mftChi2OverNdf > configMft.maxChi2OverNdf) {
+        return false;
+      }
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::Chi2OverNdf);
+    }
+
+    if (configMft.useMftPhiCut) {
+      auto phiMftTrack = mftTrack.phi();
+      o2::math_utils::bringTo02Pi(phiMftTrack);
+      if (phiMftTrack > configMft.phiMftTrackMax || phiMftTrack < configMft.phiMftTrackMin ||
+          (phiMftTrack > configMft.phiMftTrackMiddleMin && phiMftTrack < configMft.phiMftTrackMiddleMax)) {
+        return false;
+      }
+    }
+    if (fillHistograms) {
+      registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::Phi);
     }
 
     // cut on the track algorithm of MFT tracks
@@ -1488,8 +1595,8 @@ struct HfTaskFlow {
 
   template <typename TTarget, typename TTracksTrig, typename TTracksAssoc>
   void fillCorrelations(TTarget target, CorrelationContainer::CFStep step,
-                        TTracksTrig const& tracks1, TTracksAssoc const& tracks2,
-                        float multiplicity, float posZ, bool sameEvent, int magneticField)
+                        TTracksTrig const& tracksTrigger, TTracksAssoc const& tracksAssoc,
+                        float multiplicity, float posZ, bool isSameEvent, int magneticField, float centralityWeight)
   {
     auto triggerWeight = 1.0f;
     auto associatedWeight = 1.0f;
@@ -1497,7 +1604,7 @@ struct HfTaskFlow {
     int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
 
     // TRIGGER PARTICLE
-    for (const auto& track1 : tracks1) {
+    for (const auto& track1 : tracksTrigger) {
       loopCounter++;
 
       if constexpr (std::is_same_v<FilteredTracksWDcaSel, TTracksTrig>) {
@@ -1534,21 +1641,21 @@ struct HfTaskFlow {
 
       //  fill single-track distributions
       if (!fillingHFcontainer) { // if not HF-h case
-        target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, triggerWeight);
+        target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, centralityWeight * triggerWeight);
 
         if (configTask.doEtaDependentFlow) {
-          registry.fill(HIST("Trig_hist_TPC_MFT"), sampleIndex, posZ, track1.eta(), triggerWeight); // think about event weight in near future
+          registry.fill(HIST("Trig_hist_TPC_MFT"), sampleIndex, posZ, track1.eta(), centralityWeight * triggerWeight);
         }
         if (configTask.doVariationContainers) {
-          registry.fill(HIST("Trig_hist_TPC_MFT"), sampleIndex, posZ, track1.pt(), triggerWeight);
+          registry.fill(HIST("Trig_hist_TPC_MFT"), sampleIndex, posZ, track1.pt(), centralityWeight * triggerWeight);
         }
 
       } else {
-        target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, invmass, triggerWeight);
+        target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, invmass, centralityWeight * triggerWeight);
       }
 
       // FILL QA PLOTS for trigger particle
-      if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
+      if (isSameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
         if constexpr (!std::is_same_v<FilteredMftTracks, TTracksAssoc>) { // IF TPC-TPC case
           if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-TPC D0-h
             fillTriggerQa<Data, TpcTpc, D0ChPart>(multiplicity, eta1, phi1, pt1);
@@ -1569,7 +1676,7 @@ struct HfTaskFlow {
       }
 
       // ASSOCIATED PARTICLE
-      for (const auto& track2 : tracks2) {
+      for (const auto& track2 : tracksAssoc) {
 
         if constexpr (std::is_same_v<FilteredTracksWDcaSel, TTracksAssoc>) {
           if (!isAcceptedCentralTrack(track2)) {
@@ -1580,7 +1687,7 @@ struct HfTaskFlow {
         // apply cuts for MFT tracks
         if constexpr (std::is_same_v<FilteredMftTracks, TTracksAssoc>) {
 
-          if (sameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
+          if (isSameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
             registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::NoSelection);
 
             if (!isAcceptedMftTrack(track2, 0.f, 0.f, true)) {
@@ -1597,10 +1704,10 @@ struct HfTaskFlow {
           continue;
         }
 
-        if (configCentral.isApplyPtOrderingSameEvent && sameEvent && (track1.pt() <= track2.pt())) {
+        if (configCentral.isApplyPtOrderingSameEvent && isSameEvent && (track1.pt() <= track2.pt())) {
           continue;
         }
-        if (configCentral.isApplyPtOrderingMixedEvent && !sameEvent && (track1.pt() <= track2.pt())) {
+        if (configCentral.isApplyPtOrderingMixedEvent && !isSameEvent && (track1.pt() <= track2.pt())) {
           continue;
         }
 
@@ -1682,21 +1789,21 @@ struct HfTaskFlow {
           //  fill pair correlations
           if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
             target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
-                                        triggerWeight * associatedWeight);
+                                        centralityWeight * triggerWeight * associatedWeight);
           } else if (configTask.doEtaDependentFlow) {
             target->getPairHist()->Fill(step, sampleIndex, posZ, eta2, eta1, deltaPhi, eta1 - eta2,
-                                        triggerWeight * associatedWeight);
+                                        centralityWeight * triggerWeight * associatedWeight);
           } else {
             target->getPairHist()->Fill(step, sampleIndex, posZ, pt1, multiplicity, deltaPhi, eta1 - eta2,
-                                        triggerWeight * associatedWeight);
+                                        centralityWeight * triggerWeight * associatedWeight);
           }
         } else {
           target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
-                                      triggerWeight * associatedWeight);
+                                      centralityWeight * triggerWeight * associatedWeight);
         }
 
         // FILL QA PLOTS for associated particle
-        if (sameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
+        if (isSameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
           if constexpr (!std::is_same_v<FilteredMftTracks, TTracksAssoc>) { // IF TPC-TPC case
             if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-TPC D0-h
               fillAssociatedQa<Data, TpcTpc, D0ChPart>(multiplicity, eta2, phi2);
@@ -1725,8 +1832,8 @@ struct HfTaskFlow {
 
   template <typename TTarget, typename TTracksTrig, typename TTracksAssoc>
   void fillCorrelationsReassociatedMftTracks(TTarget target, CorrelationContainer::CFStep step,
-                                             TTracksTrig const& tracks1, TTracksAssoc const& tracks2,
-                                             float multiplicity, float posZ, bool sameEvent, bool cutAmbiguousTracks)
+                                             TTracksTrig const& tracksTrigger, TTracksAssoc const& tracksAssoc,
+                                             float multiplicity, float posZ, bool isSameEvent, bool cutAmbiguousTracks, float centralityWeight)
   {
     auto triggerWeight = 1.0f;
     auto associatedWeight = 1.0f;
@@ -1734,7 +1841,7 @@ struct HfTaskFlow {
     int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
 
     // TRIGGER PARTICLE
-    for (const auto& track1 : tracks1) {
+    for (const auto& track1 : tracksTrigger) {
       loopCounter++;
 
       if constexpr (std::is_same_v<FilteredTracksWDcaSel, TTracksTrig>) {
@@ -1767,21 +1874,21 @@ struct HfTaskFlow {
 
       //  fill single-track distributions
       if (!fillingHFcontainer) { // if not HF-h case
-        target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, triggerWeight);
+        target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, centralityWeight * triggerWeight);
 
         if (configTask.doEtaDependentFlow) {
-          registry.fill(HIST("Trig_hist_TPC_MFT"), sampleIndex, posZ, track1.eta(), triggerWeight); // think about event weight in near future
+          registry.fill(HIST("Trig_hist_TPC_MFT"), sampleIndex, posZ, track1.eta(), centralityWeight * triggerWeight);
         }
         if (configTask.doVariationContainers) {
-          registry.fill(HIST("Trig_hist_TPC_MFT"), sampleIndex, posZ, track1.pt(), triggerWeight);
+          registry.fill(HIST("Trig_hist_TPC_MFT"), sampleIndex, posZ, track1.pt(), centralityWeight * triggerWeight);
         }
 
       } else {
-        target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, invmass, triggerWeight);
+        target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, invmass, centralityWeight * triggerWeight);
       }
 
       // FILL QA PLOTS for trigger particle
-      if (sameEvent) {
+      if (isSameEvent) {
         if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) {
           fillTriggerQa<Data, TpcMft, D0ChPart>(multiplicity, eta1, phi1, pt1);
         } else if constexpr (std::is_same_v<HfCandidatesSelLc, TTracksTrig>) {
@@ -1793,10 +1900,10 @@ struct HfTaskFlow {
       }
 
       // ASSOCIATED PARTICLE
-      for (const auto& track2 : tracks2) {
+      for (const auto& track2 : tracksAssoc) {
 
         // Fill QA plot for all MFT tracks () (only if cutAmbiguousTracks is false to avoid double counting)
-        if (!cutAmbiguousTracks && sameEvent && (loopCounter == 1)) {
+        if (!cutAmbiguousTracks && isSameEvent && (loopCounter == 1)) {
           registry.fill(HIST("Data/Mft/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::AllMftTracks);
         }
 
@@ -1812,7 +1919,7 @@ struct HfTaskFlow {
           reassociatedMftTrackDcaZ = track2.bestDCAZ();
         }
 
-        if (sameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
+        if (isSameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
           registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::NoSelection);
 
           if (!isAcceptedMftTrack(reassociatedMftTrack, reassociatedMftTrackDcaXY, reassociatedMftTrackDcaZ, true)) {
@@ -1825,15 +1932,15 @@ struct HfTaskFlow {
         }
 
         // Fill QA plot for MFT tracks after physical selection (eta + clusters)
-        if (!cutAmbiguousTracks && sameEvent && (loopCounter == 1)) {
+        if (!cutAmbiguousTracks && isSameEvent && (loopCounter == 1)) {
           registry.fill(HIST("Data/Mft/hAmbiguityOfMftTracks"), MftTrackAmbiguityStep::AfterTrackSelection);
         }
 
         // We check if the track is ambiguous or non-ambiguous (QA plots are filled in isAmbiguousMftTrack)
         // Fill plots only if cutAmbiguousTracks is false (to avoid double counting)
-        if (isAmbiguousMftTrack(track2, (!cutAmbiguousTracks && sameEvent && (loopCounter == 1)))) {
+        if (isAmbiguousMftTrack(track2, (!cutAmbiguousTracks && isSameEvent && (loopCounter == 1)))) {
           // If the MFT track is ambiguous we may cut or not on the ambiguous track
-          if (sameEvent && (loopCounter == 1)) {
+          if (isSameEvent && (loopCounter == 1)) {
             registry.fill(HIST("Data/Mft/hReassociationMftTracks"), ReassociationMftTracks::NotReassociatedMftTracks);
           }
           if (cutAmbiguousTracks) {
@@ -1842,7 +1949,7 @@ struct HfTaskFlow {
         }
 
         if (reassociatedMftTrack.collisionId() != track2.bestCollisionId()) {
-          if (sameEvent && (loopCounter == 1)) {
+          if (isSameEvent && (loopCounter == 1)) {
             registry.fill(HIST("Data/Mft/hReassociationMftTracks"), ReassociationMftTracks::ReassociatedMftTracks);
           }
         }
@@ -1864,10 +1971,10 @@ struct HfTaskFlow {
           continue;
         }
 
-        if (configCentral.isApplyPtOrderingSameEvent && sameEvent && (track1.pt() <= reassociatedMftTrack.pt())) {
+        if (configCentral.isApplyPtOrderingSameEvent && isSameEvent && (track1.pt() <= reassociatedMftTrack.pt())) {
           continue;
         }
-        if (configCentral.isApplyPtOrderingMixedEvent && !sameEvent && (track1.pt() <= reassociatedMftTrack.pt())) {
+        if (configCentral.isApplyPtOrderingMixedEvent && !isSameEvent && (track1.pt() <= reassociatedMftTrack.pt())) {
           continue;
         }
 
@@ -1891,21 +1998,21 @@ struct HfTaskFlow {
         if (!fillingHFcontainer) {
           if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
             target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
-                                        triggerWeight * associatedWeight);
+                                        centralityWeight * triggerWeight * associatedWeight);
           } else if (configTask.doEtaDependentFlow) {
             target->getPairHist()->Fill(step, sampleIndex, posZ, eta2, eta1, deltaPhi, eta1 - eta2,
-                                        triggerWeight * associatedWeight);
+                                        centralityWeight * triggerWeight * associatedWeight);
           } else {
             target->getPairHist()->Fill(step, sampleIndex, posZ, pt1, multiplicity, deltaPhi, eta1 - eta2,
-                                        triggerWeight * associatedWeight);
+                                        centralityWeight * triggerWeight * associatedWeight);
           }
         } else {
           target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
-                                      triggerWeight * associatedWeight);
+                                      centralityWeight * triggerWeight * associatedWeight);
         }
 
         // FILL QA PLOTS for associated particle
-        if (sameEvent && (loopCounter == 1)) {
+        if (isSameEvent && (loopCounter == 1)) {
           if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) {
             fillAssociatedQa<Data, TpcMft, D0ChPart>(multiplicity, eta2, phi2);
             registry.fill(HIST("Data/Mft/hPtMft"), pt2);
@@ -1924,8 +2031,8 @@ struct HfTaskFlow {
 
   template <typename TTarget, typename TTracksTrig, typename TTracksAssoc, typename TFits>
   void fillCorrelationsFIT(TTarget target, CorrelationContainer::CFStep step,
-                           TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TFits const&,
-                           float multiplicity, float posZ, bool sameEvent, int fitType)
+                           TTracksTrig const& tracksTrigger, TTracksAssoc const& tracksAssoc, TFits const&,
+                           float multiplicity, float posZ, bool isSameEvent, int fitType, float centralityWeight)
   {
     auto triggerWeight = 1.0f;
     auto associatedWeight = 1.0f;
@@ -1933,7 +2040,7 @@ struct HfTaskFlow {
     int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
 
     // TRIGGER PARTICLE
-    for (auto const& track1 : tracks1) {
+    for (auto const& track1 : tracksTrigger) {
       loopCounter++;
 
       if constexpr (std::is_same_v<FilteredTracksWDcaSel, TTracksTrig>) {
@@ -1941,7 +2048,7 @@ struct HfTaskFlow {
           continue;
         }
       } else if constexpr (std::is_same_v<FilteredMftTracks, TTracksTrig>) {
-        if (sameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
+        if (isSameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
           registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::NoSelection);
 
           if (!isAcceptedMftTrack(track1, 0.f, 0.f, true)) {
@@ -1984,29 +2091,46 @@ struct HfTaskFlow {
 
       //  fill single-track distributions
       if (!fillingHFcontainer) { // if not HF-h case
-        target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, triggerWeight);
+        target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, centralityWeight * triggerWeight);
 
         if (configTask.doEtaDependentFlow) {
           if (fitType == isFT0A) {
-            registry.fill(HIST("Trig_hist_TPC_FT0A"), sampleIndex, posZ, track1.eta(), triggerWeight); // think about event weight in near future
+            if constexpr (std::is_same_v<FilteredMftTracks, TTracksTrig>) {
+              registry.fill(HIST("Trig_hist_MFT_FT0A"), sampleIndex, posZ, track1.eta(), centralityWeight * triggerWeight);
+            } else {
+              registry.fill(HIST("Trig_hist_TPC_FT0A"), sampleIndex, posZ, track1.eta(), centralityWeight * triggerWeight);
+            }
           } else {
-            registry.fill(HIST("Trig_hist_TPC_FT0C"), sampleIndex, posZ, track1.eta(), triggerWeight); // think about event weight in near future
+            if constexpr (std::is_same_v<FilteredMftTracks, TTracksTrig>) {
+              registry.fill(HIST("Trig_hist_MFT_FT0C"), sampleIndex, posZ, track1.eta(), centralityWeight * triggerWeight);
+            } else {
+              registry.fill(HIST("Trig_hist_TPC_FT0C"), sampleIndex, posZ, track1.eta(), centralityWeight * triggerWeight);
+            }
           }
         }
         if (configTask.doVariationContainers) {
           if (fitType == isFT0A) {
-            registry.fill(HIST("Trig_hist_TPC_FT0A"), sampleIndex, posZ, track1.pt(), triggerWeight); // think about event weight in near future
+
+            if constexpr (std::is_same_v<FilteredMftTracks, TTracksTrig>) {
+              registry.fill(HIST("Trig_hist_MFT_FT0A"), sampleIndex, posZ, track1.pt(), centralityWeight * triggerWeight);
+            } else {
+              registry.fill(HIST("Trig_hist_TPC_FT0A"), sampleIndex, posZ, track1.pt(), centralityWeight * triggerWeight);
+            }
           } else {
-            registry.fill(HIST("Trig_hist_TPC_FT0C"), sampleIndex, posZ, track1.pt(), triggerWeight); // think about event weight in near future
+            if constexpr (std::is_same_v<FilteredMftTracks, TTracksTrig>) {
+              registry.fill(HIST("Trig_hist_MFT_FT0C"), sampleIndex, posZ, track1.pt(), centralityWeight * triggerWeight);
+            } else {
+              registry.fill(HIST("Trig_hist_TPC_FT0C"), sampleIndex, posZ, track1.pt(), centralityWeight * triggerWeight);
+            }
           }
         }
 
       } else {
-        target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, invmass, triggerWeight);
+        target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, invmass, centralityWeight * triggerWeight);
       }
 
       // FILL QA PLOTS for trigger particle
-      if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
+      if (isSameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
         if constexpr (!std::is_same_v<FilteredMftTracks, TTracksTrig>) {  // If not FilteredMftTracks as trigger -> TPC-FV0a correlations
           if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-FV0a D0-h
             if constexpr (std::is_same_v<aod::FV0As, TFits>) {            // IF NEITHER D0 NOR LC ->
@@ -2064,18 +2188,18 @@ struct HfTaskFlow {
       //     if (!fillingHFcontainer) {
       //       if (!configTask.doEtaDependentFlow) {
       //         target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
-      //                                     triggerWeight * associatedWeight);
+      //                                     centralityWeight * triggerWeight * associatedWeight);
       //       } else {
       //         target->getPairHist()->Fill(step, eta1 - eta2, eta2, eta1, multiplicity, deltaPhi, posZ,
-      //                                     triggerWeight * associatedWeight);
+      //                                     centralityWeight * triggerWeight * associatedWeight);
       //       }
       //     } else {
       //       target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ, invmass,
-      //                                   triggerWeight * associatedWeight);
+      //                                   centralityWeight * triggerWeight * associatedWeight);
       //     }
 
       //     // FILL QA PLOTS for associated particle
-      //     if (sameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
+      //     if (isSameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
       //       if constexpr (!std::is_same_v<FilteredMftTracks, TTracksTrig>) {  // If not FilteredMftTracks as trigger -> TPC-FV0a correlations
       //         if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-FV0a D0-h
       //           fillAssociatedQa<Data, TpcFv0a, D0ChPart>(multiplicity, eta2, phi2);
@@ -2097,9 +2221,9 @@ struct HfTaskFlow {
         // select the right channel size if it is FT0a or FT0c
         std::size_t channelSize = 0;
         if (fitType == isFT0C) {
-          channelSize = tracks2.channelC().size();
+          channelSize = tracksAssoc.channelC().size();
         } else if (fitType == isFT0A) {
-          channelSize = tracks2.channelA().size();
+          channelSize = tracksAssoc.channelA().size();
         } else {
           LOGF(fatal, "Cor Index %d out of range", fitType);
         }
@@ -2108,7 +2232,7 @@ struct HfTaskFlow {
 
           int channelId = 0;
           float amplitude = 0.;
-          getChannel(tracks2, indexChannel, channelId, fitType, amplitude);
+          getChannel(tracksAssoc, indexChannel, channelId, fitType, amplitude);
           auto phi2 = getPhiFT0(channelId, fitType);
           auto eta2 = getEtaFT0(channelId, fitType);
           float deltaPhi = phi1 - phi2;
@@ -2117,21 +2241,21 @@ struct HfTaskFlow {
           if (!fillingHFcontainer) {
             if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
               target->getPairHist()->Fill(step, eta1 - eta2, 0.5, pt1, multiplicity, deltaPhi, posZ,
-                                          amplitude * triggerWeight * associatedWeight);
+                                          amplitude * centralityWeight * triggerWeight * associatedWeight);
             } else if (configTask.doEtaDependentFlow) {
               target->getPairHist()->Fill(step, sampleIndex, posZ, eta2, eta1, deltaPhi, eta1 - eta2,
-                                          amplitude * triggerWeight * associatedWeight);
+                                          amplitude * centralityWeight * triggerWeight * associatedWeight);
             } else {
               target->getPairHist()->Fill(step, sampleIndex, posZ, pt1, multiplicity, deltaPhi, eta1 - eta2,
-                                          amplitude * triggerWeight * associatedWeight);
+                                          amplitude * centralityWeight * triggerWeight * associatedWeight);
             }
           } else {
             target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ, invmass,
-                                        amplitude * triggerWeight * associatedWeight);
+                                        amplitude * centralityWeight * triggerWeight * associatedWeight);
           }
 
           // FILL QA PLOTS for associated particle
-          if (sameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
+          if (isSameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
             if constexpr (!std::is_same_v<FilteredMftTracks, TTracksTrig>) {  // If not FilteredMftTracks as trigger -> TPC-Ft0a correlations
               if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-FV0a D0-h
                 if (fitType == isFT0A) {
@@ -2168,8 +2292,8 @@ struct HfTaskFlow {
 
   template <typename TTarget, typename TTracksTrig, typename TTracksAssoc, typename TFits>
   void fillCorrelationsFITReassociatedMftTracks(TTarget target, CorrelationContainer::CFStep step,
-                                                TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TFits const&,
-                                                float multiplicity, float posZ, bool sameEvent, bool cutAmbiguousTracks, int fitType)
+                                                TTracksTrig const& tracksTrigger, TTracksAssoc const& tracksAssoc, TFits const&,
+                                                float multiplicity, float posZ, bool isSameEvent, bool cutAmbiguousTracks, int fitType, float centralityWeight)
   {
     auto triggerWeight = 1.0f;
     auto associatedWeight = 1.0f;
@@ -2177,7 +2301,7 @@ struct HfTaskFlow {
     int sampleIndex = gRandom->Uniform(0, configTask.nSamples);
 
     // TRIGGER PARTICLE
-    for (auto const& track1 : tracks1) {
+    for (auto const& track1 : tracksTrigger) {
       loopCounter++;
 
       auto reassociatedMftTrack = track1.template mfttrack_as<FilteredMftTracks>();
@@ -2192,7 +2316,7 @@ struct HfTaskFlow {
         reassociatedMftTrackDcaZ = track1.bestDCAZ();
       }
 
-      if (sameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
+      if (isSameEvent && loopCounter == 1) { // To avoid double counting, we fill the plots only the first time
         registry.fill(HIST("Data/Mft/hMftTracksSelection"), MftTrackSelectionStep::NoSelection);
 
         if (!isAcceptedMftTrack(reassociatedMftTrack, reassociatedMftTrackDcaXY, reassociatedMftTrackDcaZ, true)) {
@@ -2219,17 +2343,17 @@ struct HfTaskFlow {
         continue;
       }
 
-      target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, triggerWeight);
+      target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, centralityWeight * triggerWeight);
 
       if (configTask.doEtaDependentFlow) {
-        registry.fill(HIST("Trig_hist_MFT_FT0A"), sampleIndex, posZ, eta1, triggerWeight); // think about event weight in near future
+        registry.fill(HIST("Trig_hist_MFT_FT0A"), sampleIndex, posZ, eta1, centralityWeight * triggerWeight);
       }
       if (configTask.doVariationContainers) {
-        registry.fill(HIST("Trig_hist_MFT_FT0A"), sampleIndex, posZ, pt1, triggerWeight);
+        registry.fill(HIST("Trig_hist_MFT_FT0A"), sampleIndex, posZ, pt1, centralityWeight * triggerWeight);
       }
 
       // FILL QA PLOTS for trigger particle
-      if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
+      if (isSameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
         if constexpr (std::is_same_v<aod::FV0As, TFits>) {
           fillTriggerQa<Data, MftFv0a, ChPartChPart>(multiplicity, eta1, phi1, pt1);
         } else if constexpr (std::is_same_v<aod::FT0s, TFits>) {
@@ -2252,14 +2376,14 @@ struct HfTaskFlow {
 
       //     if (!configTask.doEtaDependentFlow) {
       //       target->getPairHist()->Fill(step, eta1 - eta2, pt1, pt1, multiplicity, deltaPhi, posZ,
-      //                                   triggerWeight * associatedWeight);
+      //                                   centralityWeight * triggerWeight * associatedWeight);
       //     } else {
       //       target->getPairHist()->Fill(step, eta1 - eta2, eta2, eta1, multiplicity, deltaPhi, posZ,
-      //                                   triggerWeight * associatedWeight);
+      //                                   centralityWeight * triggerWeight * associatedWeight);
       //     }
 
       //     // FILL QA PLOTS for associated particle
-      //     if (sameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
+      //     if (isSameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
       //       fillAssociatedQa<Data, MftFv0a, ChPartChPart>(multiplicity, eta2, phi2);
       //     } // end of if condition to fill QA plots for associated particle
       //   } // end of loop over FV0 channel indices
@@ -2271,9 +2395,9 @@ struct HfTaskFlow {
         // select the right channel size if it is FT0a or FT0c
         std::size_t channelSize = 0;
         if (fitType == isFT0C) {
-          channelSize = tracks2.channelC().size();
+          channelSize = tracksAssoc.channelC().size();
         } else if (fitType == isFT0A) {
-          channelSize = tracks2.channelA().size();
+          channelSize = tracksAssoc.channelA().size();
         } else {
           LOGF(fatal, "Cor Index %d out of range", fitType);
         }
@@ -2282,7 +2406,7 @@ struct HfTaskFlow {
 
           int channelId = 0;
           float amplitude = 0.;
-          getChannel(tracks2, indexChannel, channelId, fitType, amplitude);
+          getChannel(tracksAssoc, indexChannel, channelId, fitType, amplitude);
           auto phi2 = getPhiFT0(channelId, fitType);
           auto eta2 = getEtaFT0(channelId, fitType);
           float deltaPhi = phi1 - phi2;
@@ -2290,17 +2414,17 @@ struct HfTaskFlow {
 
           if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
             target->getPairHist()->Fill(step, eta1 - eta2, 0.5, pt1, multiplicity, deltaPhi, posZ,
-                                        amplitude * triggerWeight * associatedWeight);
+                                        amplitude * centralityWeight * triggerWeight * associatedWeight);
           } else if (configTask.doEtaDependentFlow) {
             target->getPairHist()->Fill(step, sampleIndex, posZ, eta2, eta1, deltaPhi, eta1 - eta2,
-                                        amplitude * triggerWeight * associatedWeight);
+                                        amplitude * centralityWeight * triggerWeight * associatedWeight);
           } else {
             target->getPairHist()->Fill(step, sampleIndex, posZ, pt1, multiplicity, deltaPhi, eta1 - eta2,
-                                        amplitude * triggerWeight * associatedWeight);
+                                        amplitude * centralityWeight * triggerWeight * associatedWeight);
           }
 
           // FILL QA PLOTS for associated particle
-          if (sameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
+          if (isSameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
             if (fitType == isFT0A) {
               fillAssociatedQa<Data, MftFt0a, ChPartChPart>(multiplicity, eta2, phi2);
             }
@@ -2313,7 +2437,7 @@ struct HfTaskFlow {
   template <typename TTarget, typename TFT0As, typename TFT0Cs>
   void fillCorrelationsFt0aFt0c(TTarget target, CorrelationContainer::CFStep step,
                                 TFT0As const& ft0as, TFT0Cs const& ft0cs,
-                                float multiplicity, float posZ, bool sameEvent)
+                                float multiplicity, float posZ, bool isSameEvent, float centralityWeight)
   {
     auto triggerWeight = 1.0f;
     auto associatedWeight = 1.0f;
@@ -2324,21 +2448,21 @@ struct HfTaskFlow {
     for (std::size_t indexChannelA = 0; indexChannelA < ft0as.channelA().size(); indexChannelA++) {
       loopCounter++;
       int channelIdA = 0;
-      float amplitude = 0.;
-      getChannel(ft0as, indexChannelA, channelIdA, isFT0A, amplitude);
+      float amplitudeA = 0.;
+      getChannel(ft0as, indexChannelA, channelIdA, isFT0A, amplitudeA);
       auto phiA = getPhiFT0(channelIdA, isFT0A);
       auto etaA = getEtaFT0(channelIdA, isFT0A);
 
-      target->getTriggerHist()->Fill(step, 0.5, multiplicity, posZ, amplitude * triggerWeight);
+      target->getTriggerHist()->Fill(step, 0.5, multiplicity, posZ, amplitudeA * centralityWeight * triggerWeight);
 
       if (configTask.doEtaDependentFlow) {
-        registry.fill(HIST("Trig_hist_FT0A_FT0C"), sampleIndex, posZ, etaA, triggerWeight); // think about event weight in near future
+        registry.fill(HIST("Trig_hist_FT0A_FT0C"), sampleIndex, posZ, etaA, amplitudeA * centralityWeight * triggerWeight);
       }
       if (configTask.doVariationContainers) {
-        registry.fill(HIST("Trig_hist_FT0A_FT0C"), sampleIndex, posZ, 0.5, triggerWeight);
+        registry.fill(HIST("Trig_hist_FT0A_FT0C"), sampleIndex, posZ, 0.5, amplitudeA * centralityWeight * triggerWeight);
       }
 
-      if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
+      if (isSameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
         fillTriggerQa<Data, Ft0aFt0c, ChPartChPart>(multiplicity, etaA, phiA, 0.5);
       } // end of fill trigger QA
 
@@ -2346,24 +2470,24 @@ struct HfTaskFlow {
       for (std::size_t indexChannelC = 0; indexChannelC < ft0cs.channelC().size(); indexChannelC++) {
 
         int channelIdC = 0;
-        float amplitude = 0.;
-        getChannel(ft0cs, indexChannelC, channelIdC, isFT0C, amplitude);
+        float amplitudeC = 0.;
+        getChannel(ft0cs, indexChannelC, channelIdC, isFT0C, amplitudeC);
         auto phiC = getPhiFT0(channelIdC, isFT0C);
         auto etaC = getEtaFT0(channelIdC, isFT0C);
         float deltaPhi = RecoDecay::constrainAngle(phiA - phiC, -PIHalf);
 
         if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
           target->getPairHist()->Fill(step, etaA - etaC, 0.5, 0.5, multiplicity, deltaPhi, posZ,
-                                      amplitude * triggerWeight * associatedWeight);
+                                      amplitudeA * amplitudeC * centralityWeight * triggerWeight * associatedWeight);
         } else if (configTask.doEtaDependentFlow) {
           target->getPairHist()->Fill(step, sampleIndex, posZ, etaC, etaA, deltaPhi, etaA - etaC,
-                                      amplitude * triggerWeight * associatedWeight);
+                                      amplitudeA * amplitudeC * centralityWeight * triggerWeight * associatedWeight);
         } else {
           target->getPairHist()->Fill(step, sampleIndex, posZ, 0.5, multiplicity, deltaPhi, etaA - etaC,
-                                      amplitude * triggerWeight * associatedWeight);
+                                      amplitudeA * amplitudeC * centralityWeight * triggerWeight * associatedWeight);
         }
 
-        if (sameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
+        if (isSameEvent && (loopCounter == 1) && (step == CorrelationContainer::kCFStepReconstructed)) {
           fillAssociatedQa<Data, Ft0aFt0c, ChPartChPart>(multiplicity, etaC, phiC);
         } // end of fill associated QA
       } // end of associated loop
@@ -2372,8 +2496,8 @@ struct HfTaskFlow {
 
   template <typename TTarget, typename TTracksTrig, typename TTracksAssoc>
   void fillCorrelationsMonteCarlo(TTarget target, CorrelationContainer::CFStep step,
-                                  TTracksTrig const& tracks1, TTracksAssoc const& tracks2,
-                                  float multiplicity, float posZ, bool sameEvent)
+                                  TTracksTrig const& tracksTrigger, TTracksAssoc const& tracksAssoc,
+                                  float multiplicity, float posZ, bool isSameEvent)
   {
     auto triggerWeight = 1.0f;
     auto associatedWeight = 1.0f;
@@ -2391,7 +2515,7 @@ struct HfTaskFlow {
       }
     }
 
-    for (auto const& track1 : tracks1) {
+    for (auto const& track1 : tracksTrigger) {
       loopCounter++;
 
       if (track1.eta() < configTask.etaMcParticlesTriggerMin || track1.eta() > configTask.etaMcParticlesTriggerMax) {
@@ -2407,14 +2531,14 @@ struct HfTaskFlow {
       target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, triggerWeight);
 
       if (configTask.doEtaDependentFlow) {
-        registry.fill(HIST("Trig_hist"), sampleIndex, posZ, track1.eta(), triggerWeight); // think about event weight in near future
+        registry.fill(HIST("Trig_hist"), sampleIndex, posZ, track1.eta(), triggerWeight);
       }
       if (configTask.doVariationContainers) {
         registry.fill(HIST("Trig_hist"), sampleIndex, posZ, track1.pt(), triggerWeight);
       }
 
       // FILL QA FOR TRIGGER PARTICLE
-      if (sameEvent && fillQaPlots) {
+      if (isSameEvent && fillQaPlots) {
         registry.fill(HIST("MC/hEfficiencyTrigger"), track1.pt(), track1.eta(), posZ);
         if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcTpc)) {
           fillTriggerQa<Mc, TpcTpc, ChPartChPart>(multiplicity, track1.eta(), track1.phi(), track1.pt());
@@ -2435,7 +2559,7 @@ struct HfTaskFlow {
         }
       }
 
-      for (auto const& track2 : tracks2) {
+      for (auto const& track2 : tracksAssoc) {
 
         if (track1.globalIndex() == track2.globalIndex()) {
           continue;
@@ -2465,7 +2589,7 @@ struct HfTaskFlow {
         }
 
         // FILL QA PLOTS for associated particle
-        if (sameEvent && fillQaPlots && (loopCounter == 1)) {
+        if (isSameEvent && fillQaPlots && (loopCounter == 1)) {
           registry.fill(HIST("MC/hEfficiencyAssociated"), track2.pt(), track2.eta(), posZ);
           if (configTask.chooseCorrelationCase.value == static_cast<int>(CorrelationCase::TpcTpc)) {
             fillAssociatedQa<Mc, TpcTpc, ChPartChPart>(multiplicity, track2.eta(), track2.phi());
@@ -2495,7 +2619,7 @@ struct HfTaskFlow {
 
   template <typename TCollisions, typename TTracksTrig, typename TTracksAssoc>
   void mixCollisions(TCollisions const& collisions, CorrelationContainer::CFStep step,
-                     TTracksTrig const& tracks1, TTracksAssoc const& tracks2,
+                     TTracksTrig const& tracksTrigger, TTracksAssoc const& tracksAssoc,
                      OutputObj<CorrelationContainer>& corrContainer, aod::BCsWithTimestamps const&)
   {
     // auto getMultiplicity = [this](FilteredCollisionsWSelMult::iterator const& collision) {
@@ -2503,8 +2627,8 @@ struct HfTaskFlow {
     //   return multiplicity;
     // };
 
-    auto getMultiplicity = [&tracks1, this](FilteredCollisionsWSelMult::iterator const& collision) {
-      auto associatedTracks = tracks1.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
+    auto getMultiplicity = [&tracksTrigger, this](FilteredCollisionsWSelMult::iterator const& collision) {
+      auto associatedTracks = tracksTrigger.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
       // auto mult = 0.f;
       if (configCollision.useMultiplicityFromTracks) {
         return associatedTracks.size();
@@ -2517,7 +2641,7 @@ struct HfTaskFlow {
     using BinningTypeData = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
 
     BinningTypeData binningWithTracksSize{{getMultiplicity}, {configAxis.binsMixingVertex, configAxis.binsMixingMultiplicity}, true};
-    auto tracksTuple = std::make_tuple(tracks1, tracks2);
+    auto tracksTuple = std::make_tuple(tracksTrigger, tracksAssoc);
     Pair<TCollisions, TTracksTrig, TTracksAssoc, BinningTypeData> pair{binningWithTracksSize, configTask.nMixedEvents, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
@@ -2538,18 +2662,26 @@ struct HfTaskFlow {
         multiplicity = getMultiplicityEstimator(collision1, false);
       }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-        return;
+      float centralityWeight = 1.0f;
+      if (configCollision.useCentrality) {
+        getCentralityWeight(centralityWeight, getCentralityEstimator(collision1, true));
+        if (getCentralityEstimator(collision1, false) < configCollision.minCentrality || getCentralityEstimator(collision1, false) >= configCollision.maxCentrality) {
+          return;
+        }
+      } else {
+        if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+          return;
+        }
       }
 
       corrContainer->fillEvent(multiplicity, step);
-      fillCorrelations(corrContainer, step, tracks1, tracks2, multiplicity, collision1.posZ(), false, getMagneticField(bc.timestamp()));
+      fillCorrelations(corrContainer, step, tracks1, tracks2, multiplicity, collision1.posZ(), false, getMagneticField(bc.timestamp()), centralityWeight);
     }
   }
 
   template <typename TCollisions, typename TTracksTrig, typename TTracksAssoc, typename TPresliceTrigger, typename TPresliceAssociated>
   void mixCollisionsBis(TCollisions const& collisions, CorrelationContainer::CFStep step,
-                        TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TPresliceTrigger const& presliceTrigger, TPresliceAssociated const& presliceAssociated,
+                        TTracksTrig const& tracksTrigger, TTracksAssoc const& tracksAssoc, TPresliceTrigger const& presliceTrigger, TPresliceAssociated const& presliceAssociated,
                         OutputObj<CorrelationContainer>& corrContainer, aod::BCsWithTimestamps const&)
   {
     // auto getMultiplicity = [this](FilteredCollisionsWSelMult::iterator const& collision) {
@@ -2557,8 +2689,8 @@ struct HfTaskFlow {
     //   return multiplicity;
     // };
 
-    auto getMultiplicity = [&tracks1, this](FilteredCollisionsWSelMult::iterator const& collision) {
-      auto associatedTracks = tracks1.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
+    auto getMultiplicity = [&tracksTrigger, this](FilteredCollisionsWSelMult::iterator const& collision) {
+      auto associatedTracks = tracksTrigger.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
       auto mult = associatedTracks.size();
       if (configCollision.useMultiplicityFromTracks) {
         return mult;
@@ -2586,25 +2718,34 @@ struct HfTaskFlow {
       loadEfficiencyCorrection(bc.timestamp());
       auto multiplicity = 0;
       if (configCollision.useMultiplicityFromTracks) {
-        multiplicity = tracks1.size();
+        multiplicity = tracksTrigger.size();
       } else {
         multiplicity = getMultiplicityEstimator(collision1, false);
       }
-      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-        return;
+
+      float centralityWeight = 1.0f;
+      if (configCollision.useCentrality) {
+        getCentralityWeight(centralityWeight, getCentralityEstimator(collision1, true));
+        if (getCentralityEstimator(collision1, false) < configCollision.minCentrality || getCentralityEstimator(collision1, false) >= configCollision.maxCentrality) {
+          return;
+        }
+      } else {
+        if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+          return;
+        }
       }
 
-      auto slicedTriggerTracks = tracks1.sliceBy(presliceTrigger, collision1.globalIndex());
-      auto slicedAssociatedTracks = tracks2.sliceBy(presliceAssociated, collision2.globalIndex());
+      auto slicedTriggerTracks = tracksTrigger.sliceBy(presliceTrigger, collision1.globalIndex());
+      auto slicedAssociatedTracks = tracksAssoc.sliceBy(presliceAssociated, collision2.globalIndex());
 
       corrContainer->fillEvent(multiplicity, step);
-      fillCorrelations(corrContainer, step, slicedTriggerTracks, slicedAssociatedTracks, multiplicity, collision1.posZ(), false, getMagneticField(bc.timestamp()));
+      fillCorrelations(corrContainer, step, slicedTriggerTracks, slicedAssociatedTracks, multiplicity, collision1.posZ(), false, getMagneticField(bc.timestamp()), centralityWeight);
     }
   }
 
   template <typename TCollisions, typename TTracksTpc, typename TTracksTrig, typename TTracksAssoc, typename TPresliceTrigger, typename TPresliceAssociated>
   void mixCollisionsReassociatedMftTracks(TCollisions const& collisions, CorrelationContainer::CFStep step, TTracksTpc const& tracksTpc,
-                                          TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TPresliceTrigger const& presliceTrigger, TPresliceAssociated const& presliceAssociated,
+                                          TTracksTrig const& tracksTrigger, TTracksAssoc const& tracksAssoc, TPresliceTrigger const& presliceTrigger, TPresliceAssociated const& presliceAssociated,
                                           OutputObj<CorrelationContainer>& corrContainer, bool cutAmbiguousTracks, aod::BCsWithTimestamps const&)
   {
     // auto getMultiplicity = [this](FilteredCollisionsWSelMult::iterator const& collision) {
@@ -2643,30 +2784,39 @@ struct HfTaskFlow {
       } else {
         multiplicity = getMultiplicityEstimator(collision1, false);
       }
-      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-        return;
+
+      float centralityWeight = 1.0f;
+      if (configCollision.useCentrality) {
+        getCentralityWeight(centralityWeight, getCentralityEstimator(collision1, true));
+        if (getCentralityEstimator(collision1, false) < configCollision.minCentrality || getCentralityEstimator(collision1, false) >= configCollision.maxCentrality) {
+          return;
+        }
+      } else {
+        if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+          return;
+        }
       }
 
       // if TPC-MFT cases
       if constexpr (std::is_same_v<FilteredTracksWDcaSel, TTracksTrig>) {
-        auto slicedTriggerTracks = tracks1.sliceBy(presliceTrigger, collision1.globalIndex());
-        auto slicedAssociatedTracks = tracks2.sliceBy(presliceAssociated, collision2.globalIndex());
+        auto slicedTriggerTracks = tracksTrigger.sliceBy(presliceTrigger, collision1.globalIndex());
+        auto slicedAssociatedTracks = tracksAssoc.sliceBy(presliceAssociated, collision2.globalIndex());
 
         corrContainer->fillEvent(multiplicity, step);
-        fillCorrelationsReassociatedMftTracks(corrContainer, step, slicedTriggerTracks, slicedAssociatedTracks, multiplicity, collision1.posZ(), false, cutAmbiguousTracks);
+        fillCorrelationsReassociatedMftTracks(corrContainer, step, slicedTriggerTracks, slicedAssociatedTracks, multiplicity, collision1.posZ(), false, cutAmbiguousTracks, centralityWeight);
       } else if ((collision1.has_foundFT0() && collision2.has_foundFT0())) { // if MFT-FT0A cases
-        auto slicedTriggerTracks = tracks1.sliceBy(presliceTrigger, collision1.globalIndex());
+        auto slicedTriggerTracks = tracksTrigger.sliceBy(presliceTrigger, collision1.globalIndex());
         const auto& ft0 = collision2.foundFT0();
 
         corrContainer->fillEvent(multiplicity, step);
-        fillCorrelationsFITReassociatedMftTracks(corrContainer, step, slicedTriggerTracks, ft0, tracks2, multiplicity, collision1.posZ(), false, cutAmbiguousTracks, isFT0A);
+        fillCorrelationsFITReassociatedMftTracks(corrContainer, step, slicedTriggerTracks, ft0, tracksAssoc, multiplicity, collision1.posZ(), false, cutAmbiguousTracks, isFT0A, centralityWeight);
       }
     } // end of for loop
   }
 
   template <typename TCollisions, typename TTracksTpc, typename TTracksTrig, typename TTracksAssoc, typename TPreslice>
   void mixCollisionsFIT(TCollisions const& collisions, CorrelationContainer::CFStep step, TTracksTpc const& tracksTpc,
-                        TTracksTrig const& tracks1, TTracksAssoc const& tracks2, TPreslice const& preslice,
+                        TTracksTrig const& tracksTrigger, TTracksAssoc const& tracksAssoc, TPreslice const& preslice,
                         OutputObj<CorrelationContainer>& corrContainer, int fitType, aod::BCsWithTimestamps const&)
   {
     // auto getMultiplicity = [this](FilteredCollisionsWSelMult::iterator const& collision) {
@@ -2674,8 +2824,8 @@ struct HfTaskFlow {
     //   return multiplicity;
     // };
 
-    auto getMultiplicity = [&tracks1, this](FilteredCollisionsWSelMult::iterator const& collision) {
-      auto associatedTracks = tracks1.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
+    auto getMultiplicity = [&tracksTrigger, this](FilteredCollisionsWSelMult::iterator const& collision) {
+      auto associatedTracks = tracksTrigger.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
       auto mult = associatedTracks.size();
       if (configCollision.useMultiplicityFromTracks) {
         return mult;
@@ -2703,7 +2853,7 @@ struct HfTaskFlow {
       // if constexpr (std::is_same_v<aod::FV0As, TTracksAssoc>) { // IF ASSOCIATED PARTICLE FROM FV0A
       //   if (collision1.has_foundFV0() && collision2.has_foundFV0()) {
 
-      //     auto slicedTriggerTracks = tracks1.sliceBy(preslice, collision1.globalIndex());
+      //     auto slicedTriggerTracks = tracksTrigger.sliceBy(preslice, collision1.globalIndex());
       //     auto tracksForMultiplicity = tracksTpc.sliceByCached(o2::aod::track::collisionId, collision1.globalIndex(), cache);
       //     const auto& fv0 = collision2.foundFV0();
 
@@ -2726,7 +2876,7 @@ struct HfTaskFlow {
       if constexpr (std::is_same_v<aod::FT0s, TTracksAssoc>) {
         if (collision1.has_foundFT0() && collision2.has_foundFT0()) {
 
-          auto slicedTriggerTracks = tracks1.sliceBy(preslice, collision1.globalIndex());
+          auto slicedTriggerTracks = tracksTrigger.sliceBy(preslice, collision1.globalIndex());
           auto tracksForMultiplicity = tracksTpc.sliceByCached(o2::aod::track::collisionId, collision1.globalIndex(), cache);
           const auto& ft0 = collision2.foundFT0();
 
@@ -2737,12 +2887,20 @@ struct HfTaskFlow {
             multiplicity = getMultiplicityEstimator(collision1, false);
           }
 
-          if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-            return;
+          float centralityWeight = 1.0f;
+          if (configCollision.useCentrality) {
+            getCentralityWeight(centralityWeight, getCentralityEstimator(collision1, true));
+            if (getCentralityEstimator(collision1, false) < configCollision.minCentrality || getCentralityEstimator(collision1, false) >= configCollision.maxCentrality) {
+              return;
+            }
+          } else {
+            if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+              return;
+            }
           }
 
           corrContainer->fillEvent(multiplicity, step);
-          fillCorrelationsFIT(corrContainer, step, slicedTriggerTracks, ft0, tracks2, multiplicity, collision1.posZ(), false, fitType);
+          fillCorrelationsFIT(corrContainer, step, slicedTriggerTracks, ft0, tracksAssoc, multiplicity, collision1.posZ(), false, fitType, centralityWeight);
         }
       } // end of if condition for TPC-FT0 or MFT-FT0s
     } // end of for loop
@@ -2795,12 +2953,21 @@ struct HfTaskFlow {
         } else {
           multiplicity = getMultiplicityEstimator(collision1, false);
         }
-        if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-          return;
+
+        float centralityWeight = 1.0f;
+        if (configCollision.useCentrality) {
+          getCentralityWeight(centralityWeight, getCentralityEstimator(collision1, true));
+          if (getCentralityEstimator(collision1, false) < configCollision.minCentrality || getCentralityEstimator(collision1, false) >= configCollision.maxCentrality) {
+            return;
+          }
+        } else {
+          if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+            return;
+          }
         }
 
         corrContainer->fillEvent(multiplicity, step);
-        fillCorrelationsFt0aFt0c(corrContainer, step, ft0as, ft0cs, multiplicity, collision1.posZ(), true);
+        fillCorrelationsFt0aFt0c(corrContainer, step, ft0as, ft0cs, multiplicity, collision1.posZ(), true, centralityWeight);
       }
     } // end of for loop
   }
@@ -2837,12 +3004,20 @@ struct HfTaskFlow {
       multiplicity = getMultiplicityEstimator(collision, true);
     }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-      return;
+    float centralityWeight = 1.0f;
+    if (configCollision.useCentrality) {
+      getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+      if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+        return;
+      }
+    } else {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+        return;
+      }
     }
 
     sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-    fillCorrelations(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, tracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()));
+    fillCorrelations(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, tracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()), centralityWeight);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcChCh, "DATA : Process same-event correlations for TPC-TPC h-h case", false);
 
@@ -2876,12 +3051,20 @@ struct HfTaskFlow {
       multiplicity = getMultiplicityEstimator(collision, true);
     }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-      return;
+    float centralityWeight = 1.0f;
+    if (configCollision.useCentrality) {
+      getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+      if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+        return;
+      }
+    } else {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+        return;
+      }
     }
 
     sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-    fillCorrelations(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, tracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()));
+    fillCorrelations(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, tracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()), centralityWeight);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcD0Ch, "DATA : Process same-event correlations for TPC-TPC D0-h case", false);
 
@@ -2915,12 +3098,20 @@ struct HfTaskFlow {
       multiplicity = getMultiplicityEstimator(collision, true);
     }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-      return;
+    float centralityWeight = 1.0f;
+    if (configCollision.useCentrality) {
+      getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+      if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+        return;
+      }
+    } else {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+        return;
+      }
     }
 
     sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-    fillCorrelations(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, tracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()));
+    fillCorrelations(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, tracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()), centralityWeight);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcLcCh, "DATA : Process same-event correlations for TPC-TPC Lc-h case", false);
 
@@ -2947,16 +3138,24 @@ struct HfTaskFlow {
       multiplicity = getMultiplicityEstimator(collision, true);
     }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-      return;
+    float centralityWeight = 1.0f;
+    if (configCollision.useCentrality) {
+      getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+      if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+        return;
+      }
+    } else {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+        return;
+      }
     }
 
     if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillCorrelations(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, mftTracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()));
+      fillCorrelations(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, mftTracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()), centralityWeight);
     } else {
       sameEventTpcMft->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillCorrelations(sameEventTpcMft, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, mftTracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()));
+      fillCorrelations(sameEventTpcMft, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, mftTracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()), centralityWeight);
     }
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftChCh, "DATA : Process same-event correlations for TPC-MFT h-h case", false);
@@ -2983,16 +3182,24 @@ struct HfTaskFlow {
       multiplicity = getMultiplicityEstimator(collision, true);
     }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-      return;
+    float centralityWeight = 1.0f;
+    if (configCollision.useCentrality) {
+      getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+      if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+        return;
+      }
+    } else {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+        return;
+      }
     }
 
     if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillCorrelationsReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, reassociatedMftTracks, multiplicity, collision.posZ(), true, false);
+      fillCorrelationsReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, reassociatedMftTracks, multiplicity, collision.posZ(), true, false, centralityWeight);
     } else {
       sameEventTpcMft->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillCorrelationsReassociatedMftTracks(sameEventTpcMft, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, reassociatedMftTracks, multiplicity, collision.posZ(), true, false);
+      fillCorrelationsReassociatedMftTracks(sameEventTpcMft, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, reassociatedMftTracks, multiplicity, collision.posZ(), true, false, centralityWeight);
     }
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftChChReassociated, "DATA : Process same-event correlations for TPC-MFT h-h case reassociated", false);
@@ -3019,22 +3226,30 @@ struct HfTaskFlow {
       multiplicity = getMultiplicityEstimator(collision, true);
     }
 
-    registry.fill(HIST("Data/hMultiplicity_uncorrected"), multiplicity);
+    auto uncorrectedMultiplicity = multiplicity;
+    registry.fill(HIST("Data/hMultiplicity_uncorrected_vs_corrected"), uncorrectedMultiplicity, multiplicity);
     if (configCollision.useMultiplicityFromTracksCorrected) {
       multiplicity = getCorrectedMultiplicity(tracks);
-      registry.fill(HIST("Data/hMultiplicity_corrected"), multiplicity);
     }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-      return;
+    float centralityWeight = 1.0f;
+    if (configCollision.useCentrality) {
+      getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+      if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+        return;
+      }
+    } else {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+        return;
+      }
     }
 
     if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillCorrelationsReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, reassociatedMftTracks, multiplicity, collision.posZ(), true, false);
+      fillCorrelationsReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, reassociatedMftTracks, multiplicity, collision.posZ(), true, false, centralityWeight);
     } else {
       sameEventTpcMft->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillCorrelationsReassociatedMftTracks(sameEventTpcMft, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, reassociatedMftTracks, multiplicity, collision.posZ(), true, false);
+      fillCorrelationsReassociatedMftTracks(sameEventTpcMft, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, reassociatedMftTracks, multiplicity, collision.posZ(), true, false, centralityWeight);
     }
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftChChReassociated3d, "DATA : Process same-event correlations for TPC-MFT h-h case 3d reassociated", false);
@@ -3061,16 +3276,24 @@ struct HfTaskFlow {
       multiplicity = getMultiplicityEstimator(collision, true);
     }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-      return;
+    float centralityWeight = 1.0f;
+    if (configCollision.useCentrality) {
+      getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+      if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+        return;
+      }
+    } else {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+        return;
+      }
     }
 
     if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillCorrelationsReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, reassociatedMftTracks, multiplicity, collision.posZ(), true, true);
+      fillCorrelationsReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, reassociatedMftTracks, multiplicity, collision.posZ(), true, true, centralityWeight);
     } else {
       sameEventTpcMft->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillCorrelationsReassociatedMftTracks(sameEventTpcMft, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, reassociatedMftTracks, multiplicity, collision.posZ(), true, true);
+      fillCorrelationsReassociatedMftTracks(sameEventTpcMft, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, reassociatedMftTracks, multiplicity, collision.posZ(), true, true, centralityWeight);
     }
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftChChNonAmbiguous, "DATA : Process same-event correlations for TPC-MFT h-h case with non-ambiguous tracks", false);
@@ -3105,12 +3328,20 @@ struct HfTaskFlow {
       multiplicity = getMultiplicityEstimator(collision, true);
     }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-      return;
+    float centralityWeight = 1.0f;
+    if (configCollision.useCentrality) {
+      getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+      if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+        return;
+      }
+    } else {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+        return;
+      }
     }
 
     sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-    fillCorrelations(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, mftTracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()));
+    fillCorrelations(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, mftTracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()), centralityWeight);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftD0Ch, "DATA : Process same-event correlations for TPC-MFT D0-h case", false);
 
@@ -3134,12 +3365,20 @@ struct HfTaskFlow {
       multiplicity = getMultiplicityEstimator(collision, true);
     }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-      return;
+    float centralityWeight = 1.0f;
+    if (configCollision.useCentrality) {
+      getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+      if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+        return;
+      }
+    } else {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+        return;
+      }
     }
 
     sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-    fillCorrelationsReassociatedMftTracks(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, reassociatedMftTracks, multiplicity, collision.posZ(), true, false);
+    fillCorrelationsReassociatedMftTracks(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, reassociatedMftTracks, multiplicity, collision.posZ(), true, false, centralityWeight);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftD0ChReassociated, "DATA : Process same-event correlations for TPC-MFT D0-h case reassociated", false);
 
@@ -3173,12 +3412,20 @@ struct HfTaskFlow {
       multiplicity = getMultiplicityEstimator(collision, true);
     }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-      return;
+    float centralityWeight = 1.0f;
+    if (configCollision.useCentrality) {
+      getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+      if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+        return;
+      }
+    } else {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+        return;
+      }
     }
 
     sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-    fillCorrelations(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, mftTracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()));
+    fillCorrelations(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, mftTracks, multiplicity, collision.posZ(), true, getMagneticField(bc.timestamp()), centralityWeight);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftLcCh, "DATA : Process same-event correlations for TPC-MFT Lc-h case", false);
 
@@ -3202,12 +3449,20 @@ struct HfTaskFlow {
       multiplicity = getMultiplicityEstimator(collision, true);
     }
 
-    if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-      return;
+    float centralityWeight = 1.0f;
+    if (configCollision.useCentrality) {
+      getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+      if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+        return;
+      }
+    } else {
+      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+        return;
+      }
     }
 
     sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-    fillCorrelationsReassociatedMftTracks(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, reassociatedMftTracks, multiplicity, collision.posZ(), true, false);
+    fillCorrelationsReassociatedMftTracks(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, reassociatedMftTracks, multiplicity, collision.posZ(), true, false, centralityWeight);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftLcChReassociated, "DATA : Process same-event correlations for TPC-MFT Lc-h case reassociated", false);
 
@@ -3415,16 +3670,24 @@ struct HfTaskFlow {
         multiplicity = getMultiplicityEstimator(collision, true);
       }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-        return;
+      float centralityWeight = 1.0f;
+      if (configCollision.useCentrality) {
+        getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+        if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+          return;
+        }
+      } else {
+        if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+          return;
+        }
       }
 
       if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
         sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-        fillCorrelationsFIT(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, ft0, ft0as, multiplicity, collision.posZ(), true, isFT0A);
+        fillCorrelationsFIT(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, ft0, ft0as, multiplicity, collision.posZ(), true, isFT0A, centralityWeight);
       } else {
         sameEventTpcFt0a->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-        fillCorrelationsFIT(sameEventTpcFt0a, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, ft0, ft0as, multiplicity, collision.posZ(), true, isFT0A);
+        fillCorrelationsFIT(sameEventTpcFt0a, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, ft0, ft0as, multiplicity, collision.posZ(), true, isFT0A, centralityWeight);
       }
     }
   }
@@ -3457,12 +3720,20 @@ struct HfTaskFlow {
         multiplicity = getMultiplicityEstimator(collision, true);
       }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-        return;
+      float centralityWeight = 1.0f;
+      if (configCollision.useCentrality) {
+        getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+        if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+          return;
+        }
+      } else {
+        if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+          return;
+        }
       }
 
       sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillCorrelationsFIT(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, ft0, ft0as, multiplicity, collision.posZ(), true, isFT0A);
+      fillCorrelationsFIT(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, ft0, ft0as, multiplicity, collision.posZ(), true, isFT0A, centralityWeight);
     }
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcFt0aD0Ch, "DATA : Process same-event correlations for TPC-FT0-A D0-h case", false);
@@ -3494,12 +3765,20 @@ struct HfTaskFlow {
         multiplicity = getMultiplicityEstimator(collision, true);
       }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-        return;
+      float centralityWeight = 1.0f;
+      if (configCollision.useCentrality) {
+        getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+        if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+          return;
+        }
+      } else {
+        if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+          return;
+        }
       }
 
       sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillCorrelationsFIT(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, ft0, ft0as, multiplicity, collision.posZ(), true, isFT0A);
+      fillCorrelationsFIT(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, ft0, ft0as, multiplicity, collision.posZ(), true, isFT0A, centralityWeight);
     }
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcFt0aLcCh, "DATA : Process same-event correlations for TPC-FT0-A Lc-h case", false);
@@ -3531,16 +3810,24 @@ struct HfTaskFlow {
         multiplicity = getMultiplicityEstimator(collision, true);
       }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-        return;
+      float centralityWeight = 1.0f;
+      if (configCollision.useCentrality) {
+        getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+        if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+          return;
+        }
+      } else {
+        if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+          return;
+        }
       }
 
       if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
         sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-        fillCorrelationsFIT(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, mftTracks, ft0, ft0as, multiplicity, collision.posZ(), true, isFT0A);
+        fillCorrelationsFIT(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, mftTracks, ft0, ft0as, multiplicity, collision.posZ(), true, isFT0A, centralityWeight);
       } else {
         sameEventMftFt0a->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-        fillCorrelationsFIT(sameEventMftFt0a, CorrelationContainer::CFStep::kCFStepReconstructed, mftTracks, ft0, ft0as, multiplicity, collision.posZ(), true, isFT0A);
+        fillCorrelationsFIT(sameEventMftFt0a, CorrelationContainer::CFStep::kCFStepReconstructed, mftTracks, ft0, ft0as, multiplicity, collision.posZ(), true, isFT0A, centralityWeight);
       }
     }
   }
@@ -3570,16 +3857,24 @@ struct HfTaskFlow {
         multiplicity = getMultiplicityEstimator(collision, true);
       }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-        return;
+      float centralityWeight = 1.0f;
+      if (configCollision.useCentrality) {
+        getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+        if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+          return;
+        }
+      } else {
+        if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+          return;
+        }
       }
 
       if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
         sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-        fillCorrelationsFITReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, reassociatedMftTracks, ft0, ft0as, multiplicity, collision.posZ(), true, false, isFT0A);
+        fillCorrelationsFITReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, reassociatedMftTracks, ft0, ft0as, multiplicity, collision.posZ(), true, false, isFT0A, centralityWeight);
       } else {
         sameEventMftFt0a->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-        fillCorrelationsFITReassociatedMftTracks(sameEventMftFt0a, CorrelationContainer::CFStep::kCFStepReconstructed, reassociatedMftTracks, ft0, ft0as, multiplicity, collision.posZ(), true, false, isFT0A);
+        fillCorrelationsFITReassociatedMftTracks(sameEventMftFt0a, CorrelationContainer::CFStep::kCFStepReconstructed, reassociatedMftTracks, ft0, ft0as, multiplicity, collision.posZ(), true, false, isFT0A, centralityWeight);
       }
     }
   }
@@ -3609,16 +3904,24 @@ struct HfTaskFlow {
         multiplicity = getMultiplicityEstimator(collision, true);
       }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-        return;
+      float centralityWeight = 1.0f;
+      if (configCollision.useCentrality) {
+        getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+        if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+          return;
+        }
+      } else {
+        if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+          return;
+        }
       }
 
       if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
         sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-        fillCorrelationsFITReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, reassociatedMftTracks, ft0, ft0as, multiplicity, collision.posZ(), true, false, isFT0A);
+        fillCorrelationsFITReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, reassociatedMftTracks, ft0, ft0as, multiplicity, collision.posZ(), true, false, isFT0A, centralityWeight);
       } else {
         sameEventMftFt0a->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-        fillCorrelationsFITReassociatedMftTracks(sameEventMftFt0a, CorrelationContainer::CFStep::kCFStepReconstructed, reassociatedMftTracks, ft0, ft0as, multiplicity, collision.posZ(), true, false, isFT0A);
+        fillCorrelationsFITReassociatedMftTracks(sameEventMftFt0a, CorrelationContainer::CFStep::kCFStepReconstructed, reassociatedMftTracks, ft0, ft0as, multiplicity, collision.posZ(), true, false, isFT0A, centralityWeight);
       }
     }
   }
@@ -3648,16 +3951,24 @@ struct HfTaskFlow {
         multiplicity = getMultiplicityEstimator(collision, true);
       }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-        return;
+      float centralityWeight = 1.0f;
+      if (configCollision.useCentrality) {
+        getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+        if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+          return;
+        }
+      } else {
+        if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+          return;
+        }
       }
 
       if (!configTask.doEtaDependentFlow && !configTask.doVariationContainers) {
         sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-        fillCorrelationsFITReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, reassociatedMftTracks, ft0, ft0as, multiplicity, collision.posZ(), true, true, isFT0A);
+        fillCorrelationsFITReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, reassociatedMftTracks, ft0, ft0as, multiplicity, collision.posZ(), true, true, isFT0A, centralityWeight);
       } else {
         sameEventMftFt0a->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-        fillCorrelationsFITReassociatedMftTracks(sameEventMftFt0a, CorrelationContainer::CFStep::kCFStepReconstructed, reassociatedMftTracks, ft0, ft0as, multiplicity, collision.posZ(), true, true, isFT0A);
+        fillCorrelationsFITReassociatedMftTracks(sameEventMftFt0a, CorrelationContainer::CFStep::kCFStepReconstructed, reassociatedMftTracks, ft0, ft0as, multiplicity, collision.posZ(), true, true, isFT0A, centralityWeight);
       }
     }
   }
@@ -3690,12 +4001,20 @@ struct HfTaskFlow {
         multiplicity = getMultiplicityEstimator(collision, true);
       }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-        return;
+      float centralityWeight = 1.0f;
+      if (configCollision.useCentrality) {
+        getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+        if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+          return;
+        }
+      } else {
+        if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+          return;
+        }
       }
 
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillCorrelationsFIT(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, ft0, ft0cs, multiplicity, collision.posZ(), true, isFT0C);
+      fillCorrelationsFIT(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, ft0, ft0cs, multiplicity, collision.posZ(), true, isFT0C, centralityWeight);
     }
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcFt0cChCh, "DATA : Process same-event correlations for TPC-FT0C h-h case", false);
@@ -3727,12 +4046,20 @@ struct HfTaskFlow {
         multiplicity = getMultiplicityEstimator(collision, true);
       }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-        return;
+      float centralityWeight = 1.0f;
+      if (configCollision.useCentrality) {
+        getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+        if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+          return;
+        }
+      } else {
+        if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+          return;
+        }
       }
 
       sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillCorrelationsFIT(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, ft0, ft0cs, multiplicity, collision.posZ(), true, isFT0C);
+      fillCorrelationsFIT(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, ft0, ft0cs, multiplicity, collision.posZ(), true, isFT0C, centralityWeight);
     }
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcFt0cD0Ch, "DATA : Process same-event correlations for TPC-FT0C D0-h case", false);
@@ -3764,12 +4091,20 @@ struct HfTaskFlow {
         multiplicity = getMultiplicityEstimator(collision, true);
       }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-        return;
+      float centralityWeight = 1.0f;
+      if (configCollision.useCentrality) {
+        getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+        if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+          return;
+        }
+      } else {
+        if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+          return;
+        }
       }
 
       sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillCorrelationsFIT(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, ft0, ft0cs, multiplicity, collision.posZ(), true, isFT0C);
+      fillCorrelationsFIT(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, ft0, ft0cs, multiplicity, collision.posZ(), true, isFT0C, centralityWeight);
     }
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcFt0cLcCh, "DATA : Process same-event correlations for TPC-FT0C Lc-h case", false);
@@ -3800,12 +4135,20 @@ struct HfTaskFlow {
         multiplicity = getMultiplicityEstimator(collision, true);
       }
 
-      if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
-        return;
+      float centralityWeight = 1.0f;
+      if (configCollision.useCentrality) {
+        getCentralityWeight(centralityWeight, getCentralityEstimator(collision, true));
+        if (getCentralityEstimator(collision, false) < configCollision.minCentrality || getCentralityEstimator(collision, false) >= configCollision.maxCentrality) {
+          return;
+        }
+      } else {
+        if (multiplicity < configCollision.minMultiplicity || multiplicity >= configCollision.maxMultiplicity) {
+          return;
+        }
       }
 
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillCorrelationsFt0aFt0c(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, ft0, ft0, multiplicity, collision.posZ(), true);
+      fillCorrelationsFt0aFt0c(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, ft0, ft0, multiplicity, collision.posZ(), true, centralityWeight);
     }
   }
   PROCESS_SWITCH(HfTaskFlow, processSameFt0aFt0cChCh, "DATA : Process same-event correlations for FT0A-FT0C h-h case", false);
@@ -4273,6 +4616,115 @@ struct HfTaskFlow {
     }
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedMcGen, "MC Gen : Process mixed-event correlations", false);
+
+  void processTrackEfficiencies(FilteredMcCollisionsWMultWCollsExtra::iterator const& mcCollision,
+                                SmallGroupMcCollisions const& reconstructedCollisions,
+                                FilteredTracksWDcaSelWLabels const& tpcTracks, FilteredMftTracksWCollsMcLabels const& /*mftTracks*/,
+                                soa::Filtered<soa::Join<aod::BestCollisionsFwd3d, aod::McMFTTrackLabels>> const& reassociated3dMftTracks,
+                                FilteredMcParticles const& mcParticles)
+  {
+    if (std::abs(mcCollision.posZ()) >= configCollision.zVertexMax) {
+      return;
+    }
+
+    // check whether we have a selected reconstructed collision corresponding to the MC collision
+    bool hasReconstructedCollision = false;
+    for (const auto& reconstructedCollision : reconstructedCollisions) {
+      if (!isAcceptedCollision(reconstructedCollision)) {
+        continue;
+      }
+      if (reconstructedCollision.globalIndex() != mcCollision.bestCollisionIndex()) {
+        continue;
+      }
+      hasReconstructedCollision = true;
+    }
+
+    // fill histogram for MC Gen TPC particles
+    for (const auto& particle : mcParticles) {
+      auto pdgParticle = pdg->GetParticle(particle.pdgCode());
+      // check MC related properties of the particle
+      if (!particle.isPhysicalPrimary() || !particle.producedByGenerator()) {
+        continue;
+      }
+      // check charge of the particle
+      if (pdgParticle == nullptr || std::abs(pdgParticle->Charge()) == 0) {
+        continue;
+      }
+      // check kinematics of the particle for TPC
+      if (std::abs(particle.eta()) <= configTask.etaMcParticlesTriggerMax &&
+          particle.pt() >= configTask.ptMcParticlesTriggerMin &&
+          particle.pt() <= configTask.ptMcParticlesTriggerMax) {
+        if (hasReconstructedCollision) {
+          registry.fill(HIST("MC/hEfficiencyTrigger"), particle.pt(), particle.eta(), mcCollision.posZ());
+        }
+      }
+      // check kinematics of the particle for MFT
+      if (particle.eta() <= configTask.etaMcParticlesAssocMax &&
+          particle.eta() >= configTask.etaMcParticlesAssocMin &&
+          particle.pt() >= configTask.ptMcParticlesAssocMin &&
+          particle.pt() <= configTask.ptMcParticlesAssocMax) {
+
+        if (configMft.useMftPhiCut) {
+          if (particle.phi() < configMft.phiMftTrackMax && particle.phi() > configMft.phiMftTrackMin &&
+              !(particle.phi() > configMft.phiMftTrackMiddleMin && particle.phi() < configMft.phiMftTrackMiddleMax)) {
+            if (hasReconstructedCollision) {
+              registry.fill(HIST("MC/hEfficiencyAssociated"), particle.pt(), particle.eta(), mcCollision.posZ());
+            }
+          }
+        } else {
+          if (hasReconstructedCollision) {
+            registry.fill(HIST("MC/hEfficiencyAssociated"), particle.pt(), particle.eta(), mcCollision.posZ());
+          }
+        }
+      }
+    }
+
+    // fill histogram for reconstructed TPC tracks
+    for (const auto& reconstructedCollision : reconstructedCollisions) {
+      if (!isAcceptedCollision(reconstructedCollision)) {
+        continue;
+      }
+      if (reconstructedCollision.globalIndex() != mcCollision.bestCollisionIndex()) {
+        continue;
+      }
+
+      auto groupedTpcTracks = tpcTracks.sliceBy(perColTracks, reconstructedCollision.globalIndex());
+      for (const auto& tpcTrack : groupedTpcTracks) {
+        if (!isAcceptedCentralTrack(tpcTrack)) {
+          continue;
+        }
+        if (!tpcTrack.has_mcParticle()) {
+          continue;
+        }
+        auto tpcParticle = tpcTrack.template mcParticle_as<FilteredMcParticles>();
+        if (reconstructedCollision.mcCollisionId() != tpcParticle.mcCollisionId()) {
+          continue;
+        }
+        if (tpcParticle.isPhysicalPrimary()) {
+          registry.fill(HIST("Data/hEfficiencyTrigger"), tpcParticle.pt(), tpcParticle.eta(), mcCollision.posZ());
+        }
+      }
+
+      auto groupedreassociated3dMftTracks = reassociated3dMftTracks.sliceBy(perColReassociated3dTracks, reconstructedCollision.globalIndex());
+      for (const auto& reassociated3dMftTrack : reassociated3dMftTracks) {
+        if (!reassociated3dMftTrack.has_mcParticle()) {
+          continue;
+        }
+        auto templatedMftTrack = reassociated3dMftTrack.template mfttrack_as<FilteredMftTracksWCollsMcLabels>();
+        if (!isAcceptedMftTrack(templatedMftTrack, reassociated3dMftTrack.bestDCAXY(), reassociated3dMftTrack.bestDCAZ(), false)) {
+          continue;
+        }
+        auto mftParticle = templatedMftTrack.template mcParticle_as<FilteredMcParticles>();
+        if (reconstructedCollision.mcCollisionId() != mftParticle.mcCollisionId()) {
+          continue;
+        }
+        if (mftParticle.isPhysicalPrimary()) {
+          registry.fill(HIST("Data/hEfficiencyAssociated"), mftParticle.pt(), mftParticle.eta(), mcCollision.posZ());
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(HfTaskFlow, processTrackEfficiencies, "process track efficiencies for TPC and MFT", false);
 
 }; // End of struct
 

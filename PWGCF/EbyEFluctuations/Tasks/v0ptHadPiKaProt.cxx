@@ -116,8 +116,7 @@ struct V0ptHadPiKaProt {
   Configurable<float> cfgnSigmaCutTPC{"cfgnSigmaCutTPC", 2.0f, "PID nSigma cut for TPC"};
   Configurable<float> cfgnSigmaCutTOF{"cfgnSigmaCutTOF", 2.0f, "PID nSigma cut for TOF"};
   Configurable<bool> cfgUseNewSeperationPid{"cfgUseNewSeperationPid", false, "Use seperation based PID cuts (NEW)"};
-  Configurable<float> cfgnSigmaCutTPCHigherPt{"cfgnSigmaCutTPCHigherPt", 2.0f, "PID nSigma cut for TPC at higher pt"};
-  Configurable<float> cfgnSigmaCutTOFHigherPt{"cfgnSigmaCutTOFHigherPt", 2.0f, "PID nSigma cut for TOF at higher pt"};
+  Configurable<float> cfgnSigmaCutTPCorTOFHigherPt{"cfgnSigmaCutTPCorTOFHigherPt", 2.0f, "PID nSigma cut for TPC at higher pt"};
   Configurable<float> cfgnSigmaSeperationCut{"cfgnSigmaSeperationCut", 3.5f, "PID nSigma of other species must be greater than the vale"};
   Configurable<float> cfgnSigmaCutCombTPCTOF{"cfgnSigmaCutCombTPCTOF", 2.0f, "PID nSigma combined cut for TPC and TOF"};
   ConfigurableAxis nchAxis{"nchAxis", {5000, 0.5, 5000.5}, ""};
@@ -158,6 +157,7 @@ struct V0ptHadPiKaProt {
   Configurable<int> cfgV02WeightedFill{"cfgV02WeightedFill", false, "Fill profiles related to v2 with multiplicity-based weights?"};
   Configurable<int> cfgV02WeightedOption3Fill{"cfgV02WeightedOption3Fill", false, "Fill profiles related to v2 with multiplicity-based weights according to Option3, triplet weighting for <XYZ>"};
   Configurable<bool> cfgUseDominanceCut{"cfgUseDominanceCut", true, "Require particle selecting species' nSigma to be smallest among other two"};
+  Configurable<bool> cfgUseSeperationCutLowPt{"cfgUseSeperationCutLowPt", false, "Use separation cut for low pT"};
 
   // pT dep DCAxy and DCAz cuts
   Configurable<bool> cfgUsePtDepDCAxy{"cfgUsePtDepDCAxy", true, "Use pt-dependent DCAxy cut"};
@@ -786,12 +786,17 @@ struct V0ptHadPiKaProt {
       partNsigmaTpcOrItsPr = candidate.tpcNSigmaPr();
     }
 
+    bool separatedFromOthers = true;
+    if (cfgUseSeperationCutLowPt) {
+      separatedFromOthers = std::abs(partNsigmaTpcOrItsPi) > cfgnSigmaSeperationCut && std::abs(partNsigmaTpcOrItsKa) > cfgnSigmaSeperationCut;
+    }
+
     if (candidate.pt() > cfgCutPtLower && candidate.pt() <= cfgCutPtUpperTPC) {
 
-      if (!candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPr) < cfgnSigmaCutTPC) {
+      if (!candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPr) < cfgnSigmaCutTPC && separatedFromOthers) {
         flag = 1;
       }
-      if (candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPr) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaPr()) < cfgnSigmaCutTOF) {
+      if (candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPr) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaPr()) < cfgnSigmaCutTOF && separatedFromOthers) {
         flag = 1;
       }
     }
@@ -809,7 +814,7 @@ struct V0ptHadPiKaProt {
         flag2 += 1;
 
       if (cfgUseNewSeperationPid) {
-        if (std::abs(partNsigmaTpcOrItsPr) < cfgnSigmaCutTPCHigherPt && std::abs(candidate.tofNSigmaPr()) < cfgnSigmaCutTOFHigherPt) {
+        if (std::abs(partNsigmaTpcOrItsPr) < cfgnSigmaCutTPCorTOFHigherPt && std::abs(candidate.tofNSigmaPr()) < cfgnSigmaCutTPCorTOFHigherPt) {
           if (!(flag2 > 1) && std::abs(partNsigmaTpcOrItsPi) > cfgnSigmaSeperationCut && std::abs(candidate.tofNSigmaPi()) > cfgnSigmaSeperationCut && std::abs(partNsigmaTpcOrItsKa) > cfgnSigmaSeperationCut && std::abs(candidate.tofNSigmaKa()) > cfgnSigmaSeperationCut)
             flag = 1;
         }
@@ -822,7 +827,7 @@ struct V0ptHadPiKaProt {
         }
 
         if (!(flag2 > 1) && passDominance) {
-          histos.fill(HIST("h2DnsigmaKaonTpcVsTofInterimCut"), candidate.pt(), candidate.tpcNSigmaPr(), candidate.tofNSigmaPr());
+          histos.fill(HIST("h2DnsigmaProtonTpcVsTofInterimCut"), candidate.pt(), candidate.tpcNSigmaPr(), candidate.tofNSigmaPr());
 
           if (combNSigmaPr < cfgnSigmaCutCombTPCTOF) {
             flag = 1;
@@ -856,12 +861,17 @@ struct V0ptHadPiKaProt {
       partNsigmaTpcOrItsPr = candidate.tpcNSigmaPr();
     }
 
+    bool separatedFromOthers = true;
+    if (cfgUseSeperationCutLowPt) {
+      separatedFromOthers = std::abs(partNsigmaTpcOrItsKa) > cfgnSigmaSeperationCut && std::abs(partNsigmaTpcOrItsPr) > cfgnSigmaSeperationCut;
+    }
+
     if (candidate.pt() > cfgCutPtLower && candidate.pt() <= cfgCutPtUpperTPC) {
 
-      if (!candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPi) < cfgnSigmaCutTPC) {
+      if (!candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPi) < cfgnSigmaCutTPC && separatedFromOthers) {
         flag = 1;
       }
-      if (candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPi) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaPi()) < cfgnSigmaCutTOF) {
+      if (candidate.hasTOF() && std::abs(partNsigmaTpcOrItsPi) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaPi()) < cfgnSigmaCutTOF && separatedFromOthers) {
         flag = 1;
       }
     }
@@ -879,7 +889,7 @@ struct V0ptHadPiKaProt {
         flag2 += 1;
 
       if (cfgUseNewSeperationPid) {
-        if (std::abs(partNsigmaTpcOrItsPi) < cfgnSigmaCutTPCHigherPt && std::abs(candidate.tofNSigmaPi()) < cfgnSigmaCutTOFHigherPt) {
+        if (std::abs(partNsigmaTpcOrItsPi) < cfgnSigmaCutTPCorTOFHigherPt && std::abs(candidate.tofNSigmaPi()) < cfgnSigmaCutTPCorTOFHigherPt) {
           if (!(flag2 > 1) && std::abs(partNsigmaTpcOrItsKa) > cfgnSigmaSeperationCut && std::abs(candidate.tofNSigmaKa()) > cfgnSigmaSeperationCut && std::abs(partNsigmaTpcOrItsPr) > cfgnSigmaSeperationCut && std::abs(candidate.tofNSigmaPr()) > cfgnSigmaSeperationCut)
             flag = 1;
         }
@@ -892,7 +902,7 @@ struct V0ptHadPiKaProt {
         }
 
         if (!(flag2 > 1) && passDominance) {
-          histos.fill(HIST("h2DnsigmaKaonTpcVsTofInterimCut"), candidate.pt(), candidate.tpcNSigmaPi(), candidate.tofNSigmaPi());
+          histos.fill(HIST("h2DnsigmaPionTpcVsTofInterimCut"), candidate.pt(), candidate.tpcNSigmaPi(), candidate.tofNSigmaPi());
           if (combNSigmaPi < cfgnSigmaCutCombTPCTOF) {
             flag = 1;
           }
@@ -925,12 +935,17 @@ struct V0ptHadPiKaProt {
       partNsigmaTpcOrItsPr = candidate.tpcNSigmaPr();
     }
 
+    bool separatedFromOthers = true;
+    if (cfgUseSeperationCutLowPt) {
+      separatedFromOthers = std::abs(partNsigmaTpcOrItsPi) > cfgnSigmaSeperationCut && std::abs(partNsigmaTpcOrItsPr) > cfgnSigmaSeperationCut;
+    }
+
     if (candidate.pt() > cfgCutPtLower && candidate.pt() <= cfgCutPtUpperTPC) {
 
-      if (!candidate.hasTOF() && std::abs(partNsigmaTpcOrItsKa) < cfgnSigmaCutTPC) {
+      if (!candidate.hasTOF() && std::abs(partNsigmaTpcOrItsKa) < cfgnSigmaCutTPC && separatedFromOthers) {
         flag = 1;
       }
-      if (candidate.hasTOF() && std::abs(partNsigmaTpcOrItsKa) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaKa()) < cfgnSigmaCutTOF) {
+      if (candidate.hasTOF() && std::abs(partNsigmaTpcOrItsKa) < cfgnSigmaCutTPC && std::abs(candidate.tofNSigmaKa()) < cfgnSigmaCutTOF && separatedFromOthers) {
         flag = 1;
       }
     }
@@ -948,7 +963,7 @@ struct V0ptHadPiKaProt {
         flag2 += 1;
 
       if (cfgUseNewSeperationPid) {
-        if (std::abs(partNsigmaTpcOrItsKa) < cfgnSigmaCutTPCHigherPt && std::abs(candidate.tofNSigmaKa()) < cfgnSigmaCutTOFHigherPt) {
+        if (std::abs(partNsigmaTpcOrItsKa) < cfgnSigmaCutTPCorTOFHigherPt && std::abs(candidate.tofNSigmaKa()) < cfgnSigmaCutTPCorTOFHigherPt) {
           if (!(flag2 > 1) && std::abs(partNsigmaTpcOrItsPi) > cfgnSigmaSeperationCut && std::abs(candidate.tofNSigmaPi()) > cfgnSigmaSeperationCut && std::abs(partNsigmaTpcOrItsPr) > cfgnSigmaSeperationCut && std::abs(candidate.tofNSigmaPr()) > cfgnSigmaSeperationCut)
             flag = 1;
         }

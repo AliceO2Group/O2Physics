@@ -19,7 +19,7 @@
 #define PWGHF_D2H_CORE_DATACREATIONCHARMRESO_H_
 
 #ifndef HomogeneousField
-#define HomogeneousField // needed for KFParticle::SetField(magneticField);
+#define HomogeneousField // o2-linter: disable=name/macro (needed for KFParticle::SetField(magneticField);)
 #endif
 
 #include "PWGHF/Core/CentralityEstimation.h"
@@ -27,7 +27,6 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Utils/utilsMcMatching.h"
-
 //
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
@@ -63,6 +62,7 @@
 #include <cstdint>
 #include <map>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace o2::analysis

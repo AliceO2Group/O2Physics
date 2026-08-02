@@ -274,6 +274,9 @@ struct HfCandidateCreatorBToJpsiReduced {
           rowCandidateBpProngs(candJpsi.globalIndex(), trackLf0.globalIndex());
         } else if constexpr (DecChannel == DecayChannel::B0ToJpsiK0Star) {
           for (const auto& trackLf1 : tracksLfDau1ThisCollision) {
+            if (trackLf0.sign() == trackLf1.sign()) {
+              continue; // require opposite-sign tracks for K*0 reconstruction
+            }
             // this track is among daughters
             if (trackLf1.trackId() == candJpsi.prongPosId() || trackLf1.trackId() == candJpsi.prongNegId()) {
               continue;
@@ -351,6 +354,9 @@ struct HfCandidateCreatorBToJpsiReduced {
           }
         } else if constexpr (DecChannel == DecayChannel::BsToJpsiPhi) {
           for (const auto& trackLf1 : tracksLfDau1ThisCollision) {
+            if (trackLf0.sign() == trackLf1.sign()) {
+              continue; // require opposite-sign tracks for phi reconstruction
+            }
             // this track is among daughters
             if (trackLf1.trackId() == candJpsi.prongPosId() || trackLf1.trackId() == candJpsi.prongNegId()) {
               continue;

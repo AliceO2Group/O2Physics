@@ -11,10 +11,10 @@
 //
 // ========================
 //
-// This code is for dimuon analyses.
+// This code runs loop over dalitz ee table for dalitz QC.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include "PWGEM/Dilepton/Core/DileptonProducer.h"
+#include "PWGEM/Dilepton/Core/DileptonSVMC.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 #include <Framework/AnalysisTask.h>
@@ -24,5 +24,6 @@ using namespace o2::framework;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<DileptonProducer<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon, FilteredMyMuons>>(cfgc, TaskName{"dimuon-producer"})};
+  return WorkflowSpec{
+    adaptAnalysisTask<DileptonSVMC<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon, FilteredMyMCMuons, MySmearedMuons>>(cfgc, TaskName{"dimuon-sv-mc"})};
 }

@@ -500,7 +500,7 @@ struct HfTaskCd {
 
       float ctGen{-1.f}, ptGen{-1.f};
       int pdgCodeProng0{0};
-      if (candidate.flagMcMatchRec() == hf_decay::hf_cand_3prong::DecayChannelMain::CDeuteronToDeKPi) {
+      if (std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::CDeuteronToDeKPi) {
         const auto& mcParticleProng0 = candidate.template prong0_as<HFTracksMc>().template mcParticle_as<CandCdMcGen>();
         pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
         const auto indexMother = RecoDecay::getMother(mcParticles, mcParticleProng0, o2::constants::physics::Pdg::kCDeuteron, true);
@@ -591,7 +591,7 @@ struct HfTaskCd {
             nSigmaTpcPr,
             nSigmaItsDe,
             nSigmaTofDe,
-            candidate.ct(o2::constants::physics::MassCDeuteron),
+            candidate.ct(o2::constants::physics::MassCDeuteron) * cmToMum,
             candFlag,
             candSign,
             candidate.flagMcMatchRec(),
@@ -626,7 +626,7 @@ struct HfTaskCd {
             nSigmaTofPi,
             nSigmaTpcKa,
             nSigmaTofKa,
-            candidate.ct(o2::constants::physics::MassCDeuteron),
+            candidate.ct(o2::constants::physics::MassCDeuteron) * cmToMum,
             candFlag,
             candSign,
             candidate.flagMcMatchRec(),

@@ -38,6 +38,7 @@ DECLARE_SOA_COLUMN(QyA, qyA, float);
 DECLARE_SOA_COLUMN(QyC, qyC, float);
 } // namespace zdccaltable
 DECLARE_SOA_TABLE(ZDCCalTables, "AOD", "ZDCCALTABLE",
+                  o2::soa::Index<>,
                   zdccaltable::TriggerEventZDC,
                   zdccaltable::TriggerEventRunNo,
                   zdccaltable::Cent,
@@ -102,5 +103,29 @@ DECLARE_SOA_TABLE(ZDCTimeTables, "AOD", "ZDCTIME",
                   zdctimetable::TimeMin);
 
 using ZDCTimeTable = ZDCTimeTables::iterator;
+
+// charged-track linked table comes here
+
+namespace zdcchargedtrack
+{
+DECLARE_SOA_INDEX_COLUMN(ZDCCalTable, zdcCalTable);
+
+DECLARE_SOA_COLUMN(Px, px, float);
+DECLARE_SOA_COLUMN(Py, py, float);
+DECLARE_SOA_COLUMN(Pz, pz, float);
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);
+} // namespace zdcchargedtrack
+
+DECLARE_SOA_TABLE(ZDCChargedTracks,
+                  "AOD",
+                  "ZDCCHTRK",
+                  zdcchargedtrack::ZDCCalTableId,
+                  zdcchargedtrack::Px,
+                  zdcchargedtrack::Py,
+                  zdcchargedtrack::Pz,
+                  zdcchargedtrack::Sign);
+
+using ZDCChargedTrack = ZDCChargedTracks::iterator;
+
 } // namespace o2::aod
 #endif // PWGLF_DATAMODEL_ZDCCALTABLES_H_

@@ -142,6 +142,12 @@ DECLARE_SOA_TABLE(NucleiTableFlow, "AOD", "NUCLEITABLEFLOW",
                   NucleiFlowTableNS::QTPCl,
                   NucleiFlowTableNS::QTPCr);
 
+DECLARE_SOA_TABLE(NucleiTableCent, "AOD", "NUCLEITABLECENT",
+                  NucleiFlowTableNS::CentFV0A,
+                  NucleiFlowTableNS::CentFT0M,
+                  NucleiFlowTableNS::CentFT0A,
+                  NucleiFlowTableNS::CentFT0C);
+
 DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
                   NucleiTableNS::Pt,
                   NucleiTableNS::Eta,

@@ -53,7 +53,7 @@ struct SkimmerGammaCalo {
   Preslice<o2::aod::EMCMatchSecs> psMSperCluster = o2::aod::emcalclustercell::emcalclusterId;
 
   Produces<aod::SkimEMCClusters_001> tableGammaEMCReco;
-  Produces<aod::EMCClusterMCLabels> tableEMCClusterMCLabels;
+  Produces<aod::EMCClusterMCLabels_001> tableEMCClusterMCLabels;
   Produces<aod::SkimEMCCells> tableCellEMCReco;
 
   Produces<aod::EmEmcClusters_000> tableEmEmcClusters;
@@ -258,7 +258,7 @@ struct SkimmerGammaCalo {
                        convertForStorage<int16_t>(emccluster.m02(), Observable::kM02),
                        convertForStorage<int16_t>(emccluster.time(), Observable::kTime));
 
-      if (vEta.size() > 0) {
+      if (!vEta.empty()) {
         for (size_t iPart = 0; iPart < vEta.size(); ++iPart) {
           tableEmEmcMTracks(tableEmEmcClusters.lastIndex(), vEta[iPart], vPhi[iPart], vP[iPart], vPt[iPart]);
           tableMinMTracks(tableMinClusters.lastIndex(),
@@ -268,7 +268,7 @@ struct SkimmerGammaCalo {
                           convertForStorage<uint16_t>(vPt[iPart], Observable::kEnergy));
         }
       }
-      if (vEtaSecondaries.size() > 0) {
+      if (!vEtaSecondaries.empty()) {
         for (size_t iPart = 0; iPart < vEtaSecondaries.size(); ++iPart) {
           tableEmEmcMSTracks(tableEmEmcClusters.lastIndex(), vEtaSecondaries[iPart], vPhiSecondaries[iPart], vPSecondaries[iPart], vPtSecondaries[iPart]);
           tableMinMSTracks(tableMinClusters.lastIndex(),
@@ -331,15 +331,16 @@ struct SkimmerGammaCalo {
         continue;
       }
       std::vector<int32_t> mcLabels;
+      std::vector<float> amplitudes;
+      mcLabels.reserve(emccluster.amplitudeA().size());
+      amplitudes.reserve(emccluster.amplitudeA().size());
       for (size_t iCont = 0; iCont < emccluster.amplitudeA().size(); iCont++) {
         mcLabels.push_back(emccluster.mcParticleIds()[iCont]);
+        amplitudes.push_back(emccluster.amplitudeA()[iCont]);
       }
-      // LOGF(info, "---- New Cluster ---");
-      // for (unsigned long int iCont = 0; iCont < mcLabels.size(); iCont++) {
-      //   LOGF(info, "iCont = %d, mcParticle = %d, amplitudeA = %.5f", iCont, mcLabels.at(iCont), emccluster.amplitudeA()[iCont]);
-      // }
-      tableEMCClusterMCLabels(mcLabels);
+      tableEMCClusterMCLabels(mcLabels, amplitudes);
       mcLabels.clear();
+      amplitudes.clear();
     }
   }
   PROCESS_SWITCH(SkimmerGammaCalo, processMC, "process MC info", false); // Run this in addition to processRec for MCs to copy the cluster mc labels from the EMCALMCClusters to the skimmed EMCClusterMCLabels table
@@ -351,8 +352,8 @@ struct SkimmerGammaCalo {
   PROCESS_SWITCH(SkimmerGammaCalo, processDummy, "Dummy function", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<SkimmerGammaCalo>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<SkimmerGammaCalo>(context)};
   return workflow;
 }

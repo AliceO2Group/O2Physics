@@ -32,6 +32,8 @@ DECLARE_SOA_COLUMN(PtCand1, ptCand1, float);   //! Transverse momentum of first 
 DECLARE_SOA_COLUMN(PtCand2, ptCand2, float);   //! Transverse momentum of second candidate
 DECLARE_SOA_COLUMN(YCand1, yCand1, float);     //! Rapidity of first candidate
 DECLARE_SOA_COLUMN(YCand2, yCand2, float);     //! Rapidity of second candidate
+DECLARE_SOA_COLUMN(EtaCand1, etaCand1, float); //! Azimuthal angle of first candidate
+DECLARE_SOA_COLUMN(EtaCand2, etaCand2, float); //! Azimuthal angle of second candidate
 DECLARE_SOA_COLUMN(PhiCand1, phiCand1, float); //! Azimuthal angle of first candidate
 DECLARE_SOA_COLUMN(PhiCand2, phiCand2, float); //! Azimuthal angle of second candidate
 // Invariant mass
@@ -55,12 +57,15 @@ DECLARE_SOA_COLUMN(MlProbD0barCand2, mlProbD0barCand2, std::vector<float>); //!
 } // namespace hf_correlation_d_meson_pair
 
 // Definition of the D meson pair table. Contains the info needed at Data level.
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECLARE_DMESON_PAIR_TABLE(_pair_type_, _marker_value_, _description_)           \
   DECLARE_SOA_TABLE(_pair_type_, "AOD", _description_, o2::soa::Marker<_marker_value_>, \
                     hf_correlation_d_meson_pair::PtCand1,                               \
                     hf_correlation_d_meson_pair::PtCand2,                               \
                     hf_correlation_d_meson_pair::YCand1,                                \
                     hf_correlation_d_meson_pair::YCand2,                                \
+                    hf_correlation_d_meson_pair::EtaCand1,                              \
+                    hf_correlation_d_meson_pair::EtaCand2,                              \
                     hf_correlation_d_meson_pair::PhiCand1,                              \
                     hf_correlation_d_meson_pair::PhiCand2,                              \
                     hf_correlation_d_meson_pair::MDCand1,                               \
@@ -71,6 +76,7 @@ DECLARE_SOA_COLUMN(MlProbD0barCand2, mlProbD0barCand2, std::vector<float>); //!
                     hf_correlation_d_meson_pair::CandidateType1,                        \
                     hf_correlation_d_meson_pair::CandidateType2);
 // Definition of the D meson pair table with info at MC level.
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECLARE_DMESON_PAIR_MCINFO_TABLE(_pair_type_, _marker_value_, _description_)             \
   DECLARE_SOA_TABLE(_pair_type_, "AOD", _description_ "MCINFO", o2::soa::Marker<_marker_value_>, \
                     hf_correlation_d_meson_pair::Origin1,                                        \
@@ -78,6 +84,7 @@ DECLARE_SOA_COLUMN(MlProbD0barCand2, mlProbD0barCand2, std::vector<float>); //!
                     hf_correlation_d_meson_pair::MatchedMc1,                                     \
                     hf_correlation_d_meson_pair::MatchedMc2);
 // Definition of the table with the ML info of the D meson pair.
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECLARE_DMESON_PAIR_MLINFO_TABLE(_pair_type_, _marker_value_, _description_)         \
   DECLARE_SOA_TABLE(_pair_type_, "AOD", _description_ "ML", o2::soa::Marker<_marker_value_>, \
                     hf_correlation_d_meson_pair::MlProbD0Cand1,                              \
@@ -92,6 +99,47 @@ DECLARE_DMESON_PAIR_MLINFO_TABLE(D0PairMl, 1, "D0PAIR");     //! D0 pairs ML Inf
 
 DECLARE_DMESON_PAIR_TABLE(D0PairMcGen, 2, "D0PAIRGEN");            //! D0 pairs MC Gen Kinematic Info
 DECLARE_DMESON_PAIR_MCINFO_TABLE(D0PairMcGenInfo, 2, "D0PAIRGEN"); //! D0 pairs MC Gen Info
+
+namespace hf_correlation_d_meson_had
+{
+// D candidate
+DECLARE_SOA_COLUMN(PtD, ptD, float);                 //! Transverse momentum of the D meson
+DECLARE_SOA_COLUMN(YD, yD, float);                   //! Rapidity of the D meson
+DECLARE_SOA_COLUMN(EtaD, etaD, float);               //! Pseudorapidity of the D meson
+DECLARE_SOA_COLUMN(PhiD, phiD, float);               //! Azimuthal angle of the D meson
+DECLARE_SOA_COLUMN(MD, mD, float);                   //! Invariant mass of the D meson
+DECLARE_SOA_COLUMN(PoolBinD, poolBinD, int);         //! Pool bin of the D meson
+DECLARE_SOA_COLUMN(GIndexColD, gIndexColD, int);     //! G-index column of the D meson
+DECLARE_SOA_COLUMN(TimestampD, timestampD, int64_t); //! Timestamp of the D meson
+
+// Associated hadron
+DECLARE_SOA_COLUMN(PtHad, ptHad, float);                 //! Transverse momentum of the associated hadron
+DECLARE_SOA_COLUMN(YHad, yHad, float);                   //! Rapidity of the associated hadron
+DECLARE_SOA_COLUMN(EtaHad, etaHad, float);               //! Pseudorapidity of the associated hadron
+DECLARE_SOA_COLUMN(PhiHad, phiHad, float);               //! Azimuthal angle of the associated hadron
+DECLARE_SOA_COLUMN(PoolBinHad, poolBinHad, int);         //! Pool bin of the associated hadron
+DECLARE_SOA_COLUMN(GIndexColHad, gIndexColHad, int);     //! G-index column of the associated hadron
+DECLARE_SOA_COLUMN(TimestampHad, timestampHad, int64_t); //! Timestamp of the associated hadron
+
+} // namespace hf_correlation_d_meson_had
+
+// Definition of the D meson table for D-had correlations. Contains the info needed at Data level.
+DECLARE_SOA_TABLE(DMesonCandInfo, "AOD", "DMESONCANDINFO",
+                  hf_correlation_d_meson_had::PtD,
+                  hf_correlation_d_meson_had::EtaD,
+                  hf_correlation_d_meson_had::PhiD,
+                  hf_correlation_d_meson_had::MD,
+                  hf_correlation_d_meson_had::PoolBinD,
+                  hf_correlation_d_meson_had::GIndexColD,
+                  hf_correlation_d_meson_had::TimestampD);
+
+DECLARE_SOA_TABLE(AssocHadInfo, "AOD", "ASSOCHADINFO",
+                  hf_correlation_d_meson_had::PtHad,
+                  hf_correlation_d_meson_had::EtaHad,
+                  hf_correlation_d_meson_had::PhiHad,
+                  hf_correlation_d_meson_had::PoolBinHad,
+                  hf_correlation_d_meson_had::GIndexColHad,
+                  hf_correlation_d_meson_had::TimestampHad);
 
 } // namespace o2::aod
 

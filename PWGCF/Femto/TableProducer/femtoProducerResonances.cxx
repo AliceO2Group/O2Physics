@@ -103,8 +103,8 @@ struct FemtoProducerResonances {
   PROCESS_SWITCH(FemtoProducerResonances, processKstar0, "Build Kstar0/Kstar0bar candidates", true);
 };
 
-o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
+o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
-  o2::framework::WorkflowSpec workflow{adaptAnalysisTask<FemtoProducerResonances>(cfgc)};
+  o2::framework::WorkflowSpec workflow{adaptAnalysisTask<FemtoProducerResonances>(context)};
   return workflow;
 }

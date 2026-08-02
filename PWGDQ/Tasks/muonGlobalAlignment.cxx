@@ -15,7 +15,6 @@
 //
 
 #include "PWGDQ/Core/VarManager.h"
-// #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
@@ -37,6 +36,7 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <GlobalTracking/MatchGlobalFwd.h>
 #include <MCHBase/TrackerParam.h>
 #include <MCHGeometryTransformer/Transformations.h>
@@ -63,7 +63,6 @@
 #include <rapidjson/document.h>
 #include <rapidjson/error/error.h>
 
-#include <GPUROOTCartesianFwd.h>
 #include <RtypesCore.h>
 
 #include <algorithm>

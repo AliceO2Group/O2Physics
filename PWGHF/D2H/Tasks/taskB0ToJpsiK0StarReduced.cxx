@@ -402,7 +402,7 @@ struct HfTaskB0ToJpsiK0StarReduced {
       flagMcMatchRec = candidate.flagMcMatchRec();
       flagMcDecayChanRec = candidate.flagMcDecayChanRec();
       flagWrongCollision = candidate.flagWrongCollision();
-      isSignal = std::abs(flagMcMatchRec) == o2::hf_decay::hf_cand_beauty::B0ToJpsiPiK &&
+      isSignal = std::abs(flagMcMatchRec) == o2::hf_decay::hf_cand_beauty::B0ToJpsiPiKToMuMuPiK &&
                  flagMcDecayChanRec == o2::hf_decay::hf_cand_beauty::B0ToJpsiKstar0;
     }
 

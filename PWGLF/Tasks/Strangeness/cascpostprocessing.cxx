@@ -26,7 +26,9 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TAxis.h>
 #include <TH1.h>
+#include <TH2.h>
 #include <TMathBase.h>
 #include <TPDGCode.h>
 #include <TString.h>
@@ -44,7 +46,51 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct LfCascpostprocessing {
-  static constexpr int OobRejTofOnly = 2;
+  static constexpr int TrackQualityTofHighPt = 2;
+  static constexpr int TrackQualityMinITS = 3;
+
+  enum MisidentifiedParticleBin {
+    kMisIdUnknown = 0,
+    kMisIdElectron,
+    kMisIdMuon,
+    kMisIdPion,
+    kMisIdKaon,
+    kMisIdProton,
+    kMisIdK0Short,
+    kMisIdLambda,
+    kMisIdXi,
+    kMisIdOmega,
+    kMisIdOther,
+    kNMisidentifiedParticleBins
+  };
+
+  static int getMisidentifiedParticleBin(int pdgCode)
+  {
+    switch (TMath::Abs(pdgCode)) {
+      case 0:
+        return kMisIdUnknown;
+      case PDG_t::kElectron:
+        return kMisIdElectron;
+      case PDG_t::kMuonMinus:
+        return kMisIdMuon;
+      case PDG_t::kPiPlus:
+        return kMisIdPion;
+      case PDG_t::kKPlus:
+        return kMisIdKaon;
+      case PDG_t::kProton:
+        return kMisIdProton;
+      case PDG_t::kK0Short:
+        return kMisIdK0Short;
+      case PDG_t::kLambda0:
+        return kMisIdLambda;
+      case PDG_t::kXiMinus:
+        return kMisIdXi;
+      case PDG_t::kOmegaMinus:
+        return kMisIdOmega;
+      default:
+        return kMisIdOther;
+    }
+  }
 
   // Xi or Omega
   Configurable<bool> isXi{"isXi", 1, "Apply cuts for Xi identification"};
@@ -79,7 +125,8 @@ struct LfCascpostprocessing {
   Configurable<float> nsigmatofPr{"nsigmatofPr", 6, "N sigma TOF Proton"};
   Configurable<float> nsigmatofKa{"nsigmatofKa", 6, "N sigma TOF Kaon"};
   Configurable<int> mintpccrrows{"mintpccrrows", 50, "min N TPC crossed rows"};
-  Configurable<int> dooobrej{"dooobrej", 0, "OOB rejection: 0 no selection, 1 = ITS||TOF, 2 = TOF only for pT > ptthrtof"};
+  Configurable<int> dooobrej{"dooobrej", 0, "Track association requirement: 0 no selection, 1 = ITS||TOF, 2 = TOF only for pT > ptthrtof, 3 = ITS hits >= trackQualityMinITS"};
+  Configurable<int> trackQualityMinITS{"trackQualityMinITS", 2, "Minimum ITS hits for dooobrej=3 track-quality variation"};
 
   Configurable<bool> isSelectBachBaryon{"isSelectBachBaryon", 0, "Bachelor-baryon cascade selection"};
   Configurable<float> bachBaryonCosPA{"bachBaryonCosPA", 0.9999, "Bachelor baryon CosPA"};
@@ -107,6 +154,13 @@ struct LfCascpostprocessing {
     AxisSpec ptAxisPID = {50, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     ConfigurableAxis etaAxis{"etaAxis", {40, -2.0f, 2.0f}, "#eta"};
     AxisSpec pdgCodeAxis = {10001, -5000.5f, 5000.5f, "MC PDG code (0 = no MC assoc.)"};
+    AxisSpec misidentifiedParticleAxis = {kNMisidentifiedParticleBins, -0.5f, static_cast<float>(kNMisidentifiedParticleBins) - 0.5f, "Associated MC particle"};
+    auto setMisidentifiedParticleLabels = [](TAxis* axis) {
+      TString misidentifiedParticleLabels[kNMisidentifiedParticleBins] = {"Unknown/no assoc.", "e", "#mu", "#pi", "K", "p", "K^{0}_{S}", "#Lambda", "#Xi", "#Omega", "Other"};
+      for (int n = 1; n <= kNMisidentifiedParticleBins; n++) {
+        axis->SetBinLabel(n, misidentifiedParticleLabels[n - 1]);
+      }
+    };
 
     ConfigurableAxis centFT0MAxis{"centFT0MAxis",
                                   {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 101, 105.5},
@@ -119,8 +173,8 @@ struct LfCascpostprocessing {
 
     AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
 
-    TString CutLabel[26] = {"All", "MassWin", "y", "EtaDau", "DCADauToPV", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rCascMax", "rV0", "rV0Max", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "ctau", "CompDecayMass", "Bach-baryon", "NTPCrows", "OOBRej"};
-    TString CutLabelSummary[29] = {"MassWin", "y", "EtaDau", "dcapostopv", "dcanegtopv", "dcabachtopv", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "proplifetime", "rejcomp", "ptthrtof", "bachBaryonCosPA", "bachBaryonDCAxyToPV", "NTPCrows", "OOBRej", "rCascMax", "rV0Max"};
+    TString CutLabel[26] = {"All", "MassWin", "y", "EtaDau", "DCADauToPV", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rCascMax", "rV0", "rV0Max", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "ctau", "CompDecayMass", "Bach-baryon", "NTPCrows", "TrackQuality"};
+    TString CutLabelSummary[29] = {"MassWin", "y", "EtaDau", "dcapostopv", "dcanegtopv", "dcabachtopv", "CascCosPA", "V0CosPA", "DCACascDau", "DCAV0Dau", "rCasc", "rV0", "DCAV0ToPV", "LambdaMass", "TPCPr", "TPCPi", "TOFPr", "TOFPi", "TPCBach", "TOFBach", "proplifetime", "rejcomp", "ptthrtof", "bachBaryonCosPA", "bachBaryonDCAxyToPV", "NTPCrows", "TrackQuality", "rCascMax", "rV0Max"};
 
     registry.add("hCandidate", "hCandidate", HistType::kTH1F, {{26, -0.5, 25.5}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hCandidate"))->GetNbinsX(); n++) {
@@ -242,6 +296,14 @@ struct LfCascpostprocessing {
       registry.add("hMisidentifiedCascPdgCode", "hMisidentifiedCascPdgCode", {HistType::kTH1F, {pdgCodeAxis}});
       registry.add("hMisidentifiedCascMinusPdgCode", "hMisidentifiedCascMinusPdgCode", {HistType::kTH1F, {pdgCodeAxis}});
       registry.add("hMisidentifiedCascPlusPdgCode", "hMisidentifiedCascPlusPdgCode", {HistType::kTH1F, {pdgCodeAxis}});
+      registry.add("hMisidentifiedCascParticle", "hMisidentifiedCascParticle", {HistType::kTH1F, {misidentifiedParticleAxis}});
+      registry.add("hMisidentifiedCascMinusParticle", "hMisidentifiedCascMinusParticle", {HistType::kTH1F, {misidentifiedParticleAxis}});
+      registry.add("hMisidentifiedCascPlusParticle", "hMisidentifiedCascPlusParticle", {HistType::kTH1F, {misidentifiedParticleAxis}});
+      registry.add("hMisidentifiedCascParticleVsPt", "hMisidentifiedCascParticleVsPt", {HistType::kTH2F, {ptAxis, misidentifiedParticleAxis}});
+      setMisidentifiedParticleLabels(registry.get<TH1>(HIST("hMisidentifiedCascParticle"))->GetXaxis());
+      setMisidentifiedParticleLabels(registry.get<TH1>(HIST("hMisidentifiedCascMinusParticle"))->GetXaxis());
+      setMisidentifiedParticleLabels(registry.get<TH1>(HIST("hMisidentifiedCascPlusParticle"))->GetXaxis());
+      setMisidentifiedParticleLabels(registry.get<TH2>(HIST("hMisidentifiedCascParticleVsPt"))->GetYaxis());
       registry.add("hPtXiPlusTrue", "hPtXiPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
       registry.add("hPtXiMinusTrue", "hPtXiMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
       registry.add("hPtOmegaPlusTrue", "hPtOmegaPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
@@ -433,12 +495,17 @@ struct LfCascpostprocessing {
       registry.fill(HIST("hCandidate"), ++counter);
       bool kHasTOF = (candidate.poshastof() || candidate.neghastof() || candidate.bachhastof());
       bool kHasITS = ((candidate.positshits() > 1) || (candidate.negitshits() > 1) || (candidate.bachitshits() > 1));
+      bool kPassMinITS = ((candidate.positshits() >= trackQualityMinITS) || (candidate.negitshits() >= trackQualityMinITS) || (candidate.bachitshits() >= trackQualityMinITS));
       if (dooobrej == 1) {
         if (!kHasTOF && !kHasITS)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
-      } else if (dooobrej == OobRejTofOnly) {
+      } else if (dooobrej == TrackQualityTofHighPt) {
         if (!kHasTOF && (candidate.pt() > ptthrtof))
+          continue;
+        registry.fill(HIST("hCandidate"), ++counter);
+      } else if (dooobrej == TrackQualityMinITS) {
+        if (!kPassMinITS)
           continue;
         registry.fill(HIST("hCandidate"), ++counter);
       } else {
@@ -519,11 +586,16 @@ struct LfCascpostprocessing {
       // registry.fill(HIST("hBachITSHits"), candidate.bachitshits());
 
       if (isMC && !isCorrectlyRec) {
+        const int misidentifiedParticleBin = getMisidentifiedParticleBin(candidate.mcPdgCode());
         registry.fill(HIST("hMisidentifiedCascPdgCode"), candidate.mcPdgCode());
+        registry.fill(HIST("hMisidentifiedCascParticle"), misidentifiedParticleBin);
+        registry.fill(HIST("hMisidentifiedCascParticleVsPt"), candidate.pt(), misidentifiedParticleBin);
         if (candidate.sign() < 0) {
           registry.fill(HIST("hMisidentifiedCascMinusPdgCode"), candidate.mcPdgCode());
+          registry.fill(HIST("hMisidentifiedCascMinusParticle"), misidentifiedParticleBin);
         } else if (candidate.sign() > 0) {
           registry.fill(HIST("hMisidentifiedCascPlusPdgCode"), candidate.mcPdgCode());
+          registry.fill(HIST("hMisidentifiedCascPlusParticle"), misidentifiedParticleBin);
         }
       }
 

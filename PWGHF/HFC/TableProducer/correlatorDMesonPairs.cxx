@@ -18,11 +18,18 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseD0ToKPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
+#include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/HFC/DataModel/DMesonPairsTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
@@ -32,6 +39,7 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Array2D.h>
+#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -43,6 +51,8 @@
 
 #include <Rtypes.h>
 
+#include <array>
+#include <cmath>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -71,6 +81,57 @@ enum PairTypeOfSelMassSel {
 } // namespace
 
 using McParticlesPlus2Prong = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>;
+// definition of ME variables
+using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
+
+struct HfCorrelatorD0HadronsSelection {
+  Produces<aod::DmesonSelection> d0Sel;
+
+  Configurable<bool> useSel8{"useSel8", true, "Flag for applying sel8 for collision selection"};
+  Configurable<bool> selNoSameBunchPileUpColl{"selNoSameBunchPileUpColl", true, "Flag for rejecting the collisions associated with the same bunch crossing"};
+  Configurable<bool> doSelD0Collision{"doSelD0Collision", true, "Select collisions with at least one D0"};
+  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
+  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
+  Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
+  Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
+
+  SliceCache cache;
+
+  using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+  using CandidatesD0Data = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
+
+  Partition<CandidatesD0Data> selectedD0Candidates =
+    aod::hf_sel_candidate_d0::isSelD0 >= 1 ||
+    aod::hf_sel_candidate_d0::isSelD0bar >= 1;
+
+  // Process function to select collisions with at least one D0 candidate passing the selection criteria
+  void processD0SelectionData(SelCollisions::iterator const& collision,
+                              CandidatesD0Data const&)
+  {
+    bool isSel8 = !useSel8 || collision.sel8();
+    bool isNoSameBunchPileUp = !selNoSameBunchPileUpColl ||
+                               collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+    bool isD0Found = !doSelD0Collision;
+
+    if (doSelD0Collision) {
+      auto grouped = selectedD0Candidates.sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+      for (const auto& candidate : grouped) {
+
+        if (candidate.isSelD0() < selectionFlagD0 && candidate.isSelD0bar() < selectionFlagD0bar) {
+          continue;
+        }
+        if (std::abs(HfHelper::yD0(candidate)) > yCandMax || candidate.pt() < ptCandMin) {
+          continue;
+        }
+        isD0Found = true;
+        break;
+      }
+    }
+
+    d0Sel(isD0Found && isSel8 && isNoSameBunchPileUp);
+  }
+  PROCESS_SWITCH(HfCorrelatorD0HadronsSelection, processD0SelectionData, "Process D0 Selection Data", true);
+};
 
 struct HfCorrelatorDMesonPairs {
 
@@ -80,23 +141,38 @@ struct HfCorrelatorDMesonPairs {
   Produces<aod::D0PairMcGen> entryD0PairMcGen;
   Produces<aod::D0PairMcGenInfo> entryD0PairMcGenInfo;
 
+  // Tables for event mixing
+  Produces<aod::DMesonCandInfo> entryDMesonCand;
+  Produces<aod::AssocHadInfo> entryAssocHad;
+
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
   Configurable<int> selectionFlagHf{"selectionFlagHf", 1, "Selection Flag for HF flagged candidates"};
-  Configurable<float> yCandMax{"yCandMax", 0.8, "maxmum |y| of D0 candidates"};
+  Configurable<float> yCandMax{"yCandMax", 0.8, "maximum |y| of D0 candidates"};
   Configurable<float> ptCandMin{"ptCandMin", -1., "minimum pT of D0 candidates"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots"};
   Configurable<bool> selectSignalRegionOnly{"selectSignalRegionOnly", false, "only use events close to PDG peak"};
   Configurable<float> massCut{"massCut", 0.05, "Maximum deviation from PDG peak allowed for signal region"};
-  Configurable<bool> daughterTracksCutFlag{"daughterTracksCutFlag", false, "Flag to add cut on daughter tracks"};
   Configurable<bool> removeAmbiguous{"removeAmbiguous", false, "Flag to remove ambiguous candidates"};
   Configurable<float> ptMaxRemoveAmbiguous{"ptMaxRemoveAmbiguous", 5.0, "Max. pT to remove the ambiguous candidates"};
+
+  // Event mixing configurables
+  Configurable<bool> applyMixedEvent{"applyMixedEvent", false, "Flag to make the event mixing"};
+  Configurable<bool> daughterTracksCutFlag{"daughterTracksCutFlag", false, "Flag to add cut on daughter tracks"};
+  Configurable<std::vector<double>> binsPtHadron{"binsPtHadron", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for assoc particle"};
+  Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. eta of tracks"};
+  Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. DCA_xy of tracks"};
+  Configurable<float> dcaZTrackMax{"dcaZTrackMax", 1., "max. DCA_z of tracks"};
+  Configurable<float> ptTrackMin{"ptTrackMin", 0.3, "min. track pT"};
+  Configurable<float> ptTrackMax{"ptTrackMax", 100., "max. track pT"};
+  Configurable<float> multMin{"multMin", 0., "minimum multiplicity accepted"};
+  Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
 
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
-  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {static_cast<const double*>(hf_cuts_ml::Cuts[0]), hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
 
@@ -108,7 +184,20 @@ struct HfCorrelatorDMesonPairs {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   SliceCache cache;
+
+  using SelCollisionsWithD0 = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::DmesonSelection>>;
+  using CandidatesD0Data = soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfMlD0>;
+
+  using FilteredD0Candidates = soa::Filtered<CandidatesD0Data>;
+  using TracksData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>; // trackFilter applied
+
+  Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true;
+  Filter d0Filter = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK))) != static_cast<uint8_t>(0);
+  Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (nabs(aod::track::pt) > ptTrackMin) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
+
   Preslice<aod::HfCand2ProngWPid> perCol2Prong = aod::hf_cand::collisionId;
+  Preslice<FilteredD0Candidates> candsD0PerCollision = aod::hf_cand::collisionId;
+  Preslice<TracksData> trackIndicesPerCollision = aod::track::collisionId;
 
   o2::analysis::HfMlResponseD0ToKPi<float> hfMlResponse;
   o2::ccdb::CcdbApi ccdbApi;
@@ -140,6 +229,13 @@ struct HfCorrelatorDMesonPairs {
   HistogramConfigSpec hTH1Phi{HistType::kTH1F, {{32, 0., o2::constants::math::TwoPI}}};
   HistogramConfigSpec hTH2Pid{HistType::kTH2F, {{500, 0., 10.}, {400, -20., 20.}}};
   HistogramConfigSpec hTH3PtVsYVsNContrib{HistType::kTH3F, {{360, 0., 36.}, {20, -1., 1.}, {120, -0.5, 119.5}}};
+
+  ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
+  ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
+  ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 6000.}, "Multiplicity as FT0M signal amplitude"};
+  ConfigurableAxis binsDcaXY{"binsDcaXY", {128, -0.2, 0.2}, "DCA xy"};
+  BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
 
   HistogramRegistry registry{
     "registry",
@@ -188,9 +284,9 @@ struct HfCorrelatorDMesonPairs {
       hfMlResponse.init();
     }
 
-    auto vbins = (std::vector<double>)binsPt;
-    constexpr int kNBinsSelStatus = 25;
-    std::string labels[kNBinsSelStatus];
+    auto vbins = static_cast<std::vector<double>>(binsPt);
+    constexpr int NBinsSelStatus = 25;
+    std::array<std::string, NBinsSelStatus> labels;
 
     labels[0] = "total # of Selected pairs";
     // Cand1 analysis
@@ -222,17 +318,17 @@ struct HfCorrelatorDMesonPairs {
     labels[23] = "# of True D+Dbar Pairs";
     labels[24] = "# of True Dbar+D Pairs";
 
-    AxisSpec const axisSelStatus = {kNBinsSelStatus, 0.5, kNBinsSelStatus + 0.5, ""};
+    AxisSpec const axisSelStatus = {NBinsSelStatus, 0.5, NBinsSelStatus + 0.5, ""};
     registry.add("hSelectionStatus", "D Meson candidates;selection status;entries", HistType::kTH1F, {axisSelStatus});
     registry.add("hSelectionStatusMcGen", "D Meson candidates MC Gen;selection status;entries", HistType::kTH1F, {axisSelStatus});
 
-    for (int iBin = 0; iBin < kNBinsSelStatus; iBin++) {
+    for (int iBin = 0; iBin < NBinsSelStatus; iBin++) {
       registry.get<TH1>(HIST("hSelectionStatus"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       registry.get<TH1>(HIST("hSelectionStatusMcGen"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
 
-    constexpr int kNBinsMatching = 8;
-    std::string labelsMatching[kNBinsMatching];
+    constexpr int NBinsMatching = 8;
+    std::array<std::string, NBinsMatching> labelsMatching;
     // Cand1 analysis
     labelsMatching[0] = "total # of Cand 1";
     labelsMatching[1] = "# of matched D Cand 1";
@@ -244,17 +340,17 @@ struct HfCorrelatorDMesonPairs {
     labelsMatching[6] = "# of matched Dbar Cand 2";
     labelsMatching[7] = "# of unmatched Cand 2";
 
-    AxisSpec const axisMatching = {kNBinsMatching, 0.5, kNBinsMatching + 0.5, ""};
+    AxisSpec const axisMatching = {NBinsMatching, 0.5, NBinsMatching + 0.5, ""};
     registry.add("hMatchingMcRec", "D Meson candidates; MC matching status;entries", HistType::kTH1F, {axisMatching});
     registry.add("hMatchingMcGen", "D Meson candidates; MC matching status;entries", HistType::kTH1F, {axisMatching});
 
-    for (int iBin = 0; iBin < kNBinsMatching; iBin++) {
+    for (int iBin = 0; iBin < NBinsMatching; iBin++) {
       registry.get<TH1>(HIST("hMatchingMcRec"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMatching[iBin].data());
       registry.get<TH1>(HIST("hMatchingMcGen"))->GetXaxis()->SetBinLabel(iBin + 1, labelsMatching[iBin].data());
     }
 
-    constexpr int kNBinsSinglePart = 6;
-    std::string labelsSinglePart[kNBinsSinglePart];
+    constexpr int NBinsSinglePart = 6;
+    std::array<std::string, NBinsSinglePart> labelsSinglePart;
     // Candidate analysis
     labelsSinglePart[0] = "total # of Candidates";
     labelsSinglePart[1] = "# of selected D";
@@ -263,11 +359,11 @@ struct HfCorrelatorDMesonPairs {
     labelsSinglePart[4] = "# of true D";
     labelsSinglePart[5] = "# of true Dbar";
 
-    AxisSpec const axisSinglePart = {kNBinsSinglePart, 0.5, kNBinsSinglePart + 0.5, ""};
+    AxisSpec const axisSinglePart = {NBinsSinglePart, 0.5, NBinsSinglePart + 0.5, ""};
     registry.add("hStatusSinglePart", "D Meson candidates; MC matching status;entries", HistType::kTH1F, {axisSinglePart});
     registry.add("hStatusSinglePartMcGen", "D Meson candidates; MC matching status;entries", HistType::kTH1F, {axisSinglePart});
 
-    for (int iBin = 0; iBin < kNBinsSinglePart; iBin++) {
+    for (int iBin = 0; iBin < NBinsSinglePart; iBin++) {
       registry.get<TH1>(HIST("hStatusSinglePart"))->GetXaxis()->SetBinLabel(iBin + 1, labelsSinglePart[iBin].data());
       registry.get<TH1>(HIST("hStatusSinglePartMcGen"))->GetXaxis()->SetBinLabel(iBin + 1, labelsSinglePart[iBin].data());
     }
@@ -308,6 +404,24 @@ struct HfCorrelatorDMesonPairs {
     } else {
       registry.add("hnDMeson", "Thn for D0 candidates", HistType::kTHnSparseD, axes);
       registry.get<THnSparse>(HIST("hnDMeson"))->Sumw2();
+    }
+
+    // Event mixing
+    AxisSpec axisPtHadron = {(std::vector<double>)binsPtHadron, "#it{p}_{T} Hadron (GeV/#it{c})"};
+    AxisSpec const axisMultiplicity = {binsMultiplicity, "Multiplicity"};
+    AxisSpec axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
+    AxisSpec const axisPosZ = {binsZVtx, "PosZ"};
+    AxisSpec const axisPoolBin = {binsPoolBin, "PoolBin"};
+    AxisSpec const axisDcaXY = {binsDcaXY, "DCA xy"};
+
+    if (applyMixedEvent) {
+      registry.add("hMultiplicityPreSelection", "multiplicity prior to selection;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}});
+      registry.add("hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}});
+      registry.add("hMultFT0M", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}});
+      registry.add("hZvtx", "z vertex;z vertex;entries", {HistType::kTH1F, {{200, -20., 20.}}});
+      registry.add("hD0Bin", "D0 selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {{9, 0., 9.}}});
+      registry.add("hTracksBin", "Tracks selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {{9, 0., 9.}}});
+      registry.add("hDcaXYVsPt", "DCA xy vs pt", {HistType::kTH2F, {{axisDcaXY}, {axisPtHadron}}});
     }
   }
 
@@ -408,12 +522,12 @@ struct HfCorrelatorDMesonPairs {
   }
 
   /// Fill counters for D0 and D0bar
-  /// \param selectedD0Candidates contains all D0 candidates
+  /// \param d0Candidates contains all D0 candidates
   template <typename T>
-  void getCountersPerEvent(const T& selectedD0Candidates)
+  void getCountersPerEvent(const T& d0Candidates)
   {
     int nDevent = 0, nDbarevent = 0, nDDbarevent = 0, nDorDbarevent = 0;
-    for (const auto& candidate : selectedD0Candidates) {
+    for (const auto& candidate : d0Candidates) {
       // Get counters per event
       bool const isSignalD0 = std::abs(HfHelper::invMassD0ToPiK(candidate) - MassD0) < massCut;
       bool const isSignalD0bar = std::abs(HfHelper::invMassD0barToKPi(candidate) - MassD0Bar) < massCut;
@@ -470,7 +584,7 @@ struct HfCorrelatorDMesonPairs {
 
   /// Fill selection status histogram
   void fillEntry(const bool& isDCand1, const bool& isDbarCand1, const bool& isDCand2, const bool& isDbarCand2,
-                 const uint8_t& candidateType1, const uint8_t& candidateType2, float yCand1, float yCand2, float phiCand1, float phiCand2,
+                 const uint8_t candidateType1, const uint8_t candidateType2, float yCand1, float yCand2, float etaCand1, float etaCand2, float phiCand1, float phiCand2,
                  double ptCand1, double ptCand2, float massDCand1, float massDbarCand1, float massDCand2, float massDbarCand2)
   {
 
@@ -525,7 +639,7 @@ struct HfCorrelatorDMesonPairs {
       }
     }
 
-    entryD0Pair(ptCand1, ptCand2, yCand1, yCand2, phiCand1, phiCand2, massDCand1, massDbarCand1, massDCand2, massDbarCand2, pairType, candidateType1, candidateType2);
+    entryD0Pair(ptCand1, ptCand2, yCand1, yCand2, etaCand1, etaCand2, phiCand1, phiCand2, massDCand1, massDbarCand1, massDCand2, massDbarCand2, pairType, candidateType1, candidateType2);
   }
 
   void fillMcHistos(int8_t matchedRec1, int8_t matchedRec2, int8_t isTrueDCand1, int8_t isTrueDbarCand1, int8_t isTrueDCand2, int8_t isTrueDbarCand2)
@@ -571,13 +685,41 @@ struct HfCorrelatorDMesonPairs {
   }
 
   /// D0(bar)-D0(bar) correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
-  void processData(aod::Collision const& collision,
-                   soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfMlD0> const& candidates, aod::Tracks const&)
+  void processData(SelCollisionsWithD0::iterator const& collision,
+                   CandidatesD0Data const& candidates, TracksData const& tracks, aod::BCsWithTimestamps const&)
   {
+
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    int gCollisionId = collision.globalIndex();
+    int64_t timeStamp = bc.timestamp();
+
+    int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
+
+    int nTracks = 0;
+    if (collision.numContrib() > 1) {
+      for (const auto& track : tracks) {
+        if (std::abs(track.eta()) >= etaTrackMax || std::abs(track.dcaXY()) >= dcaXYTrackMax || std::abs(track.dcaZ()) >= dcaZTrackMax) {
+          continue;
+        }
+        nTracks++;
+      }
+    }
+    if (applyMixedEvent) {
+      registry.fill(HIST("hMultiplicityPreSelection"), nTracks);
+    }
+    if (nTracks < multMin || nTracks > multMax) {
+      return;
+    }
+    if (applyMixedEvent) {
+      registry.fill(HIST("hMultiplicity"), nTracks);
+    }
+
+    int cntD0 = 0;
+
     for (const auto& candidate : candidates) {
       analysePid(candidate);
     }
-    auto selectedD0CandidatesGrouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    auto selectedD0CandidatesGrouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, gCollisionId, cache);
     getCountersPerEvent(selectedD0CandidatesGrouped);
     // protection against empty tables to be sliced
     if (selectedD0Candidates.size() <= 1) {
@@ -594,8 +736,8 @@ struct HfCorrelatorDMesonPairs {
       if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
         continue;
       }
-      auto prong0Cand1 = candidate1.template prong0_as<aod::Tracks>();
-      auto prong1Cand1 = candidate1.template prong1_as<aod::Tracks>();
+      auto prong0Cand1 = candidate1.template prong0_as<TracksData>();
+      auto prong1Cand1 = candidate1.template prong1_as<TracksData>();
 
       bool const isSignalD0Cand1 = std::abs(HfHelper::invMassD0ToPiK(candidate1) - MassD0) < massCut;
       bool const isSignalD0barCand1 = std::abs(HfHelper::invMassD0barToKPi(candidate1) - MassD0Bar) < massCut;
@@ -638,6 +780,9 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hY"), candidate1.y(MassD0));
       registry.fill(HIST("hPtCandAfterCut"), candidate1.pt());
       registry.fill(HIST("hPVContrib"), collision.numContrib());
+      if (applyMixedEvent) {
+        registry.fill(HIST("hD0Bin"), poolBin);
+      }
 
       if (isDCand1) {
         registry.fill(HIST("hMass"), HfHelper::invMassD0ToPiK(candidate1), candidate1.pt());
@@ -645,6 +790,10 @@ struct HfCorrelatorDMesonPairs {
           registry.fill(HIST("hnDMesonMl"), outputMlD0Cand1[0], outputMlD0Cand1[1], HfHelper::invMassD0ToPiK(candidate1), candidate1.pt(), candidate1.y(MassD0), collision.numContrib(), 0, candidateType1);
         } else {
           registry.fill(HIST("hnDMeson"), HfHelper::invMassD0ToPiK(candidate1), candidate1.pt(), candidate1.y(MassD0), collision.numContrib(), 0, candidateType1);
+        }
+        // Fill D0 table for offline event mixing
+        if (applyMixedEvent) {
+          entryDMesonCand(candidate1.pt(), candidate1.eta(), candidate1.phi(), HfHelper::invMassD0ToPiK(candidate1), poolBin, gCollisionId, timeStamp);
         }
       }
       if (isDbarCand1) {
@@ -654,8 +803,49 @@ struct HfCorrelatorDMesonPairs {
         } else {
           registry.fill(HIST("hnDMeson"), HfHelper::invMassD0barToKPi(candidate1), candidate1.pt(), candidate1.y(MassD0), collision.numContrib(), 0, candidateType1);
         }
+        // Fill D0 table for offline event mixing
+        if (applyMixedEvent) {
+          entryDMesonCand(candidate1.pt(), candidate1.eta(), candidate1.phi(), HfHelper::invMassD0barToKPi(candidate1), poolBin, gCollisionId, timeStamp);
+        }
       }
 
+      if (applyMixedEvent) {
+        // Loop on the associated tracks for offline event mixing
+        for (const auto& track : tracks) {
+          // apply track selection
+          if (track.collisionId() != gCollisionId) {
+            continue;
+          }
+
+          // Manual trackFilter check
+          if (std::abs(track.eta()) >= etaTrackMax) {
+            continue;
+          }
+          if (track.pt() <= ptTrackMin) {
+            continue;
+          }
+          if (std::abs(track.dcaXY()) >= dcaXYTrackMax) {
+            continue;
+          }
+          if (std::abs(track.dcaZ()) >= dcaZTrackMax) {
+            continue;
+          }
+          // Removing D0 daughters by checking track indices
+          if (daughterTracksCutFlag) {
+            if ((candidate1.prong0Id() == track.globalIndex()) || (candidate1.prong1Id() == track.globalIndex())) {
+              continue;
+            }
+          }
+          if (cntD0 == 0) {
+            entryAssocHad(track.pt(), track.eta(), track.phi(), poolBin, gCollisionId, timeStamp);
+            registry.fill(HIST("hTracksBin"), poolBin);
+            registry.fill(HIST("hDcaXYVsPt"), track.dcaXY(), track.pt());
+          }
+        } // Hadron Tracks loop
+        cntD0++;
+      }
+
+      // Loop on the second D0 candidate
       for (auto candidate2 = candidate1 + 1; candidate2 != selectedD0CandidatesGrouped.end(); ++candidate2) {
 
         outputMlD0Cand2.clear();
@@ -667,9 +857,9 @@ struct HfCorrelatorDMesonPairs {
         if (ptCandMin >= 0. && candidate2.pt() < ptCandMin) {
           continue;
         }
-        auto prong0Cand2 = candidate2.template prong0_as<aod::Tracks>();
-        auto prong1Cand2 = candidate2.template prong1_as<aod::Tracks>();
-        if (daughterTracksCutFlag && ((prong0Cand1 == prong0Cand2) || (prong1Cand1 == prong1Cand2) || (prong0Cand1 == prong1Cand2) || (prong1Cand1 == prong0Cand2))) {
+        auto prong0Cand2 = candidate2.template prong0_as<TracksData>();
+        auto prong1Cand2 = candidate2.template prong1_as<TracksData>();
+        if ((prong0Cand1 == prong0Cand2) || (prong1Cand1 == prong1Cand2) || (prong0Cand1 == prong1Cand2) || (prong1Cand1 == prong0Cand2)) {
           continue;
         }
 
@@ -707,18 +897,25 @@ struct HfCorrelatorDMesonPairs {
           }
 
           fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, HfHelper::yD0(candidate1), HfHelper::yD0(candidate2),
-                    candidate1.phi(), candidate2.phi(), candidate1.pt(), candidate2.pt(), HfHelper::invMassD0ToPiK(candidate1), HfHelper::invMassD0barToKPi(candidate1),
+                    candidate1.eta(), candidate2.eta(), candidate1.phi(), candidate2.phi(),
+                    candidate1.pt(), candidate2.pt(), HfHelper::invMassD0ToPiK(candidate1), HfHelper::invMassD0barToKPi(candidate1),
                     HfHelper::invMassD0ToPiK(candidate2), HfHelper::invMassD0barToKPi(candidate2));
 
           entryD0PairMl(outputMlD0Cand1, outputMlD0barCand1, outputMlD0Cand2, outputMlD0barCand2);
         } else {
           // Fill entries
-          fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, HfHelper::yD0(candidate1), HfHelper::yD0(candidate2), candidate1.phi(), candidate2.phi(),
+          fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, HfHelper::yD0(candidate1), HfHelper::yD0(candidate2),
+                    candidate1.eta(), candidate2.eta(), candidate1.phi(), candidate2.phi(),
                     candidate1.pt(), candidate2.pt(), HfHelper::invMassD0ToPiK(candidate1), HfHelper::invMassD0barToKPi(candidate1),
                     HfHelper::invMassD0ToPiK(candidate2), HfHelper::invMassD0barToKPi(candidate2));
         }
       } // end inner loop (Cand2)
     } // end outer loop (Cand1)
+
+    if (applyMixedEvent) {
+      registry.fill(HIST("hZvtx"), collision.posZ());
+      registry.fill(HIST("hMultFT0M"), collision.multFT0M());
+    }
   }
 
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processData, "Process data mode", true);
@@ -730,10 +927,6 @@ struct HfCorrelatorDMesonPairs {
     }
     auto selectedD0CandidatesGroupedMc = selectedD0CandidatesMc->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     getCountersPerEvent(selectedD0CandidatesGroupedMc);
-    // protection against empty tables to be sliced
-    if (selectedD0CandidatesMc.size() <= 1) {
-      return;
-    }
     for (const auto& candidate1 : selectedD0CandidatesGroupedMc) {
 
       outputMlD0Cand1.clear();
@@ -742,10 +935,11 @@ struct HfCorrelatorDMesonPairs {
       auto ptCandidate1 = candidate1.pt();
       auto yCandidate1 = HfHelper::yD0(candidate1);
       auto phiCandidate1 = candidate1.phi();
+      auto etaCandidate1 = candidate1.eta();
       float const massD0Cand1 = HfHelper::invMassD0ToPiK(candidate1);
       float const massD0barCand1 = HfHelper::invMassD0barToKPi(candidate1);
-      auto prong0Cand1 = candidate1.template prong0_as<aod::Tracks>();
-      auto prong1Cand1 = candidate1.template prong1_as<aod::Tracks>();
+      auto prong0Cand1 = candidate1.template prong0_as<TracksData>();
+      auto prong1Cand1 = candidate1.template prong1_as<TracksData>();
 
       if (std::abs(HfHelper::yD0(candidate1)) > yCandMax) {
         continue;
@@ -857,6 +1051,7 @@ struct HfCorrelatorDMesonPairs {
         auto ptCandidate2 = candidate2.pt();
         auto yCandidate2 = HfHelper::yD0(candidate2);
         auto phiCandidate2 = candidate2.phi();
+        auto etaCandidate2 = candidate2.eta();
         float const massD0Cand2 = HfHelper::invMassD0ToPiK(candidate2);
         float const massD0barCand2 = HfHelper::invMassD0barToKPi(candidate2);
         auto prong0Cand2 = candidate2.template prong0_as<aod::Tracks>();
@@ -876,7 +1071,7 @@ struct HfCorrelatorDMesonPairs {
         if (candidate2.isSelD0() < selectionFlagD0 && candidate2.isSelD0bar() < selectionFlagD0bar) {
           continue;
         }
-        if (daughterTracksCutFlag && ((prong0Cand1 == prong0Cand2) || (prong1Cand1 == prong1Cand2) || (prong0Cand1 == prong1Cand2) || (prong1Cand1 == prong0Cand2))) {
+        if ((prong0Cand1 == prong0Cand2) || (prong1Cand1 == prong1Cand2) || (prong0Cand1 == prong1Cand2) || (prong1Cand1 == prong0Cand2)) {
           continue;
         }
         auto candidateType2 = assignCandidateTypeD0<true>(candidate2); // Candidate type attribution
@@ -913,7 +1108,7 @@ struct HfCorrelatorDMesonPairs {
           }
 
           // Fill tables
-          fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, yCandidate1, yCandidate2, phiCandidate1, phiCandidate2,
+          fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, yCandidate1, yCandidate2, etaCandidate1, etaCandidate2, phiCandidate1, phiCandidate2,
                     ptCandidate1, ptCandidate2, massD0Cand1, massD0barCand1, massD0Cand2, massD0barCand2);
           fillMcHistos(matchedRec1, matchedRec2, static_cast<int8_t>(isTrueDCand1), static_cast<int8_t>(isTrueDbarCand1), static_cast<int8_t>(isTrueDCand2), static_cast<int8_t>(isTrueDbarCand2));
           entryD0PairMcInfo(originRec1, originRec2, matchedRec1, matchedRec2);
@@ -921,7 +1116,7 @@ struct HfCorrelatorDMesonPairs {
 
         } else {
           // Fill tables
-          fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, yCandidate1, yCandidate2, phiCandidate1, phiCandidate2,
+          fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, yCandidate1, yCandidate2, etaCandidate1, etaCandidate2, phiCandidate1, phiCandidate2,
                     ptCandidate1, ptCandidate2, massD0Cand1, massD0barCand1, massD0Cand2, massD0barCand2);
           fillMcHistos(matchedRec1, matchedRec2, static_cast<int8_t>(isTrueDCand1), static_cast<int8_t>(isTrueDbarCand1), static_cast<int8_t>(isTrueDCand2), static_cast<int8_t>(isTrueDbarCand2));
           entryD0PairMcInfo(originRec1, originRec2, matchedRec1, matchedRec2);
@@ -1109,7 +1304,7 @@ struct HfCorrelatorDMesonPairs {
         }
 
         // Fill pair Selection Status
-        entryD0PairMcGen(particle1.pt(), particle2.pt(), particle1.y(), particle2.y(), particle1.phi(), particle2.phi(), MassD0, MassD0Bar, MassD0, MassD0Bar, pairType, particleType1, particleType2);
+        entryD0PairMcGen(particle1.pt(), particle2.pt(), particle1.y(), particle2.y(), particle1.eta(), particle2.eta(), particle1.phi(), particle2.phi(), MassD0, MassD0Bar, MassD0, MassD0Bar, pairType, particleType1, particleType2);
         entryD0PairMcGenInfo(originGen1, originGen2, matchedGen1, matchedGen2);
 
       } // end inner loop
@@ -1121,5 +1316,8 @@ struct HfCorrelatorDMesonPairs {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfCorrelatorDMesonPairs>(cfgc)};
+  return WorkflowSpec{
+    adaptAnalysisTask<HfCorrelatorD0HadronsSelection>(cfgc),
+    adaptAnalysisTask<HfCorrelatorDMesonPairs>(cfgc),
+  };
 }

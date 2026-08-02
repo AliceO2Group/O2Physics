@@ -20,6 +20,7 @@
 
 #include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
+#include <Framework/Concepts.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 

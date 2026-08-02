@@ -27,7 +27,6 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -41,7 +40,6 @@
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 
-#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <string>
@@ -77,8 +75,8 @@ struct phiflow {
   Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0, "Charge cut on daughter"};
   Configurable<float> cfgCutPt{"cfgCutPt", 0.2, "Pt cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
-  Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 0.2, "DCAxy cut on daughter track"};
-  Configurable<float> cfgCutDCAz{"cfgCutDCAz", 0.2, "DCAz cut on daughter track"};
+  Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 0.1, "DCAxy cut on daughter track"};
+  Configurable<float> cfgCutDCAz{"cfgCutDCAz", 0.1, "DCAz cut on daughter track"};
   Configurable<float> nsigmaCutTPC{"nsigmaCutTPC", 3.0, "Maximum nsigma cut TPC for filtered kaon track"};
 
   // Configs for kaon
@@ -91,19 +89,13 @@ struct phiflow {
     Configurable<float> cutDCAxyKaMeson{"cutDCAxyKaMeson", 0.1, "Maximum DCAxy for kaon meson track"};
     Configurable<float> cutDCAzKaMeson{"cutDCAzKaMeson", 0.1, "Maximum DCAz for kaon meson track"};
     Configurable<float> cutEtaKaMeson{"cutEtaKaMeson", 0.8, "Maximum eta for kaon meson track"};
-    Configurable<float> cutPTKaMeson{"cutPTKaMeson", 0.8, "Minimum pt for kaon meson track"};
+    Configurable<float> cutPTKaMeson{"cutPTKaMeson", 0.2, "Minimum pt for kaon meson track"};
     Configurable<bool> usePID{"usePID", true, "Flag for using PID selection for kaon meson track"};
     Configurable<float> nsigmaCutTPCKaMeson{"nsigmaCutTPCKaMeson", 3.0, "Maximum nsigma cut TPC for kaon meson track"};
     Configurable<float> nsigmaCutTOFKaMeson{"nsigmaCutTOFKaMeson", 3.0, "Maximum nsigma cut TOF for kaon meson track"};
-    Configurable<float> cutTOFBetaKaMeson{"cutTOFBetaKaMeson", 1.0, "Maximum beta cut for kaon meson track"};
+    Configurable<float> cutTOFBetaKaMeson{"cutTOFBetaKaMeson", 0.5f, "Maximum beta cut for kaon meson track"};
+    Configurable<float> pSwitchPID{"pSwitchPID", 0.5f, "pT switch for pT-dependent kaon PID"};
   } grpKaon;
-
-  enum KaonPidBits : uint8_t {
-    kPID1 = 1u << 0, // selectionPID
-    kPID2 = 1u << 1, // selectionPID2
-    kPID3 = 1u << 2, // selectionPID3
-    kPID4 = 1u << 3  // selectionPID4
-  };
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   RCTFlagsChecker rctChecker;
@@ -111,7 +103,7 @@ struct phiflow {
   {
     rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerZDCCheck, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
-    histos.add("hCent", "hCent", kTH1F, {{8, 0, 80.0}});
+    histos.add("hCent", "hCent", kTH1F, {{16, 0, 80.0}});
     histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{5, 0, 5.0}});
     histos.add("hTrkSelInfo", "hTrkSelInfo", kTH1F, {{10, 0, 10.0}});
   }
@@ -129,43 +121,29 @@ struct phiflow {
            candidate.pt() >= grpKaon.cutPTKaMeson;
   }
 
+  enum KaonPidBits : uint8_t {
+    kPID1 = 1u << 0,
+    kPID2 = 1u << 1,
+    kPID3 = 1u << 2,
+  };
+
   template <typename T>
   bool selectionPID(const T& candidate)
   {
-    if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < grpKaon.nsigmaCutTPCKaMeson) {
-      return true;
-    }
-    if (candidate.hasTOF() && candidate.beta() > grpKaon.cutTOFBetaKaMeson && std::abs(candidate.tpcNSigmaKa()) < grpKaon.nsigmaCutTPCKaMeson && std::abs(candidate.tofNSigmaKa()) < grpKaon.nsigmaCutTOFKaMeson) {
-      return true;
-    }
-    return false;
-  }
-
-  template <typename T>
-  bool selectionPID2(const T& candidate)
-  {
-    if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < grpKaon.nsigmaCutTPCKaMeson) {
-      return true;
-    }
-    if (candidate.hasTOF() && candidate.beta() > grpKaon.cutTOFBetaKaMeson && std::sqrt(candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < grpKaon.nsigmaCutTOFKaMeson) {
-      return true;
-    }
-    return false;
-  }
-
-  template <typename T>
-  bool selectionPID3(const T& candidate)
-  {
-    constexpr float pSwitch = 0.5f;
-
     const float pt = candidate.pt();
     const float nTPC = candidate.tpcNSigmaKa();
 
-    if (pt < pSwitch && !candidate.hasTOF()) {
+    // Low pT: TPC-only. TOF is ignored even if present.
+    if (pt < grpKaon.pSwitchPID) {
       return std::abs(nTPC) < grpKaon.nsigmaCutTPCKaMeson;
     }
 
+    // High pT: TOF is mandatory.
     if (!candidate.hasTOF()) {
+      return false;
+    }
+
+    if (candidate.beta() <= grpKaon.cutTOFBetaKaMeson) {
       return false;
     }
 
@@ -176,18 +154,22 @@ struct phiflow {
   }
 
   template <typename T>
-  bool selectionPID4(const T& candidate)
+  bool selectionPID2(const T& candidate)
   {
-    constexpr float pSwitch = 0.5f;
-
     const float pt = candidate.pt();
     const float nTPC = candidate.tpcNSigmaKa();
 
-    if (pt < pSwitch) {
+    // Low pT: TPC-only. TOF is ignored even if present.
+    if (pt < grpKaon.pSwitchPID) {
       return std::abs(nTPC) < grpKaon.nsigmaCutTPCKaMeson;
     }
 
+    // High pT: TOF is mandatory.
     if (!candidate.hasTOF()) {
+      return false;
+    }
+
+    if (candidate.beta() <= grpKaon.cutTOFBetaKaMeson) {
       return false;
     }
 
@@ -198,23 +180,39 @@ struct phiflow {
   }
 
   template <typename T>
-  uint8_t kaonPidMask(const T& trk)
+  bool selectionPID3(const T& candidate)
   {
-    uint8_t m = 0;
+    // This matches the TOF-only selection from the other task.
+    if (!candidate.hasTOF()) {
+      return false;
+    }
 
-    if (selectionPID(trk)) {
-      m |= kPID1;
+    if (candidate.beta() <= grpKaon.cutTOFBetaKaMeson) {
+      return false;
     }
-    if (selectionPID2(trk)) {
-      m |= kPID2;
+
+    return std::abs(candidate.tofNSigmaKa()) <
+           grpKaon.nsigmaCutTOFKaMeson;
+  }
+
+  template <typename T>
+  uint8_t kaonPidMask(const T& track)
+  {
+    uint8_t mask = 0;
+
+    if (selectionPID(track)) {
+      mask |= kPID1;
     }
-    if (selectionPID3(trk)) {
-      m |= kPID3;
+
+    if (selectionPID2(track)) {
+      mask |= kPID2;
     }
-    if (selectionPID4(trk)) {
-      m |= kPID4;
+
+    if (selectionPID3(track)) {
+      mask |= kPID3;
     }
-    return m;
+
+    return mask;
   }
 
   struct StoredKaon {
@@ -249,19 +247,26 @@ struct phiflow {
 
     histos.fill(HIST("hEvtSelInfo"), 0.5);
 
-    if (!((!rctCut.requireRCTFlagChecker || rctChecker(collision)) &&
-          collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
-          collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
-          (!useNoCollInTimeRangeStandard ||
-           collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) &&
-          collision.sel8() &&
-          (!useGoodITSLayersAll ||
-           collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) &&
-          occupancy < cfgCutOccupancy)) {
+    if (!collision.triggereventsp()) {
       return;
     }
 
     histos.fill(HIST("hEvtSelInfo"), 1.5);
+
+    if ((rctCut.requireRCTFlagChecker && !rctChecker(collision)) ||
+        !collision.selection_bit(aod::evsel::kNoSameBunchPileup) ||
+        !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) ||
+        (useNoCollInTimeRangeStandard &&
+         !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) ||
+        !collision.sel8() ||
+        (useGoodITSLayersAll &&
+         !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) ||
+        occupancy >= cfgCutOccupancy) {
+      return;
+    }
+
+    histos.fill(HIST("hEvtSelInfo"), 2.5);
+
     histos.fill(HIST("hCent"), centrality);
 
     std::vector<StoredKaon> selectedKaons;
@@ -290,7 +295,7 @@ struct phiflow {
       const float nSigmaITS1 =
         itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1);
 
-      if (grpKaon.itsPIDSelection &&
+      if (grpKaon.itsPIDSelection && track1.p() < 1.0 &&
           (nSigmaITS1 <= grpKaon.lowITSPIDNsigma ||
            nSigmaITS1 >= grpKaon.highITSPIDNsigma)) {
         continue;
@@ -310,7 +315,7 @@ struct phiflow {
                                track1.py(),
                                track1.pz(),
                                +1,
-                               static_cast<int64_t>(track1.globalIndex()),
+                               track1.globalIndex(),
                                mask1});
     }
 
@@ -327,7 +332,7 @@ struct phiflow {
       const float nSigmaITS2 =
         itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2);
 
-      if (grpKaon.itsPIDSelection &&
+      if (grpKaon.itsPIDSelection && track2.p() < 1.0 &&
           (nSigmaITS2 <= grpKaon.lowITSPIDNsigma ||
            nSigmaITS2 >= grpKaon.highITSPIDNsigma)) {
         continue;
@@ -347,17 +352,19 @@ struct phiflow {
                                track2.py(),
                                track2.pz(),
                                -1,
-                               static_cast<int64_t>(track2.globalIndex()),
+                               track2.globalIndex(),
                                mask2});
     }
 
     // No selected K+ or K- in this collision:
     // not writing a reduced event row.
+    histos.fill(HIST("hEvtSelInfo"), 3.5);
+
     if (selectedKaons.empty()) {
       return;
     }
 
-    histos.fill(HIST("hEvtSelInfo"), 2.5);
+    histos.fill(HIST("hEvtSelInfo"), 4.5);
 
     kaonEvent(centrality,
               vz,

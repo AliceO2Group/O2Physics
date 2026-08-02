@@ -45,6 +45,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TComplex.h>
+#include <TH3.h>
 #include <THn.h>
 #include <TProfile3D.h>
 

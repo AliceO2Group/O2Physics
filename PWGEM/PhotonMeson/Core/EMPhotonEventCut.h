@@ -19,15 +19,13 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 
-#include <TNamed.h>
+#include <string>
 
-#include <Rtypes.h>
-
-class EMPhotonEventCut : public TNamed
+class EMPhotonEventCut
 {
  public:
   EMPhotonEventCut() = default;
-  EMPhotonEventCut(const char* name, const char* title) : TNamed(name, title) {}
+  EMPhotonEventCut(const char* name, const char* title) : name(name), title(title) {}
 
   enum class EMPhotonEventCuts : int {
     kSel8 = 0,
@@ -51,6 +49,9 @@ class EMPhotonEventCut : public TNamed
     kEMCHardwareTriggered,
     kNCuts
   };
+
+  const std::string getName() const { return name; }
+  const std::string getTitle() const { return title; }
 
   template <typename T>
   bool IsSelected(T const& collision) const
@@ -203,6 +204,8 @@ class EMPhotonEventCut : public TNamed
   void SetRequireEMCHardwareTriggered(bool flag);
 
  private:
+  std::string name;
+  std::string title;
   bool mRequireSel8{false};
   bool mRequireFT0AND{true};
   float mMinZvtx{-10.f}, mMaxZvtx{+10.f};
@@ -222,8 +225,6 @@ class EMPhotonEventCut : public TNamed
   bool mRequireGoodITSLayersAll{false};
   bool mRequireEMCReadoutInMB{false};
   bool mRequireEMCHardwareTriggered{false};
-
-  ClassDef(EMPhotonEventCut, 1);
 };
 
 #endif // PWGEM_PHOTONMESON_CORE_EMPHOTONEVENTCUT_H_
