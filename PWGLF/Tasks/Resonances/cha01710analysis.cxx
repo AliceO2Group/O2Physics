@@ -52,13 +52,13 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct cha01710analysis {
-  enum centSel {
+struct Cha01710analysis {
+  enum CentSel {
     kFT0C = 0,
     kFT0M
   };
 
-  enum v0MassRegion {
+  enum V0MassRegion {
     kReject = 0,
     kSignal,
     kSideband
@@ -77,35 +77,35 @@ struct cha01710analysis {
   } eventCuts;
 
   struct : ConfigurableGroup {
-    Configurable<float> cfgPtMin{"cfgV0PtMin", 0.f, "minimum K0S pT"};
-    Configurable<float> cfgPtMax{"cfgV0PtMax", 100.f, "maximum K0S pT"};
-    Configurable<float> cfgRapidityMax{"cfgV0RapidityMax", 0.5f, "maximum |y(K0S)|"};
-    Configurable<float> cfgDcaDaughtersMax{"cfgV0DcaDaughtersMax", 1.f, "maximum daughter DCA"};
-    Configurable<float> cfgCosPAMin{"cfgV0CosPAMin", 0.97f, "minimum V0 cosine pointing angle"};
-    Configurable<float> cfgRadiusMin{"cfgV0RadiusMin", 0.5f, "minimum V0 radius (cm)"};
-    Configurable<float> cfgCtauMax{"cfgV0CtauMax", 15.f, "maximum K0S c tau (cm)"};
-    Configurable<float> cfgDaughterDcaPVMin{"cfgV0DaughterDcaPVMin", 0.06f, "minimum daughter |DCA to PV|"};
-    Configurable<float> cfgDaughterEtaMax{"cfgV0DaughterEtaMax", 0.8f, "maximum daughter |eta|"};
-    Configurable<float> cfgDaughterPtMin{"cfgV0DaughterPtMin", 0.1f, "minimum daughter pT"};
-    Configurable<int> cfgDaughterTPCNClsMin{"cfgV0DaughterTPCNClsMin", 70, "minimum daughter TPC clusters"};
-    Configurable<float> cfgDaughterTPCNSigmaPiMax{"cfgV0DaughterTPCNSigmaPiMax", 5.f, "maximum daughter |TPC nSigma(pi)|"};
-    Configurable<float> cfgDaughterTOFNSigmaPiMax{"cfgV0DaughterTOFNSigmaPiMax", 5.f, "maximum daughter |TOF nSigma(pi)|"};
+    Configurable<float> cfgV0PtMin{"cfgV0PtMin", 0.f, "minimum K0S pT"};
+    Configurable<float> cfgV0PtMax{"cfgV0PtMax", 100.f, "maximum K0S pT"};
+    Configurable<float> cfgV0RapidityMax{"cfgV0RapidityMax", 0.5f, "maximum |y(K0S)|"};
+    Configurable<float> cfgV0DcaDaughtersMax{"cfgV0DcaDaughtersMax", 1.f, "maximum daughter DCA"};
+    Configurable<float> cfgV0CosPAMin{"cfgV0CosPAMin", 0.97f, "minimum V0 cosine pointing angle"};
+    Configurable<float> cfgV0RadiusMin{"cfgV0RadiusMin", 0.5f, "minimum V0 radius (cm)"};
+    Configurable<float> cfgV0CtauMax{"cfgV0CtauMax", 15.f, "maximum K0S c tau (cm)"};
+    Configurable<float> cfgV0DaughterDcaPVMin{"cfgV0DaughterDcaPVMin", 0.06f, "minimum daughter |DCA to PV|"};
+    Configurable<float> cfgV0DaughterEtaMax{"cfgV0DaughterEtaMax", 0.8f, "maximum daughter |eta|"};
+    Configurable<float> cfgV0DaughterPtMin{"cfgV0DaughterPtMin", 0.1f, "minimum daughter pT"};
+    Configurable<int> cfgV0DaughterTPCNClsMin{"cfgV0DaughterTPCNClsMin", 70, "minimum daughter TPC clusters"};
+    Configurable<float> cfgV0DaughterTPCNSigmaPiMax{"cfgV0DaughterTPCNSigmaPiMax", 5.f, "maximum daughter |TPC nSigma(pi)|"};
+    Configurable<float> cfgV0DaughterTOFNSigmaPiMax{"cfgV0DaughterTOFNSigmaPiMax", 5.f, "maximum daughter |TOF nSigma(pi)|"};
     Configurable<float> cfgKsMassWindow{"cfgKsMassWindow", 0.01, "K short mass window"};
     Configurable<bool> cfgRejectLambda{"cfgRejectLambda", true, "reject Lambda/anti-Lambda competitors"};
     Configurable<float> cfgLambdaMassWindow{"cfgLambdaMassWindow", 0.005f, "Lambda rejection window (GeV/c2)"};
   } v0Cuts;
 
   struct : ConfigurableGroup {
-    Configurable<float> cfgPtMin{"cfgKaonPtMin", 0.2f, "minimum charged-kaon pT"};
-    Configurable<float> cfgEtaMax{"cfgKaonEtaMax", 0.8f, "maximum charged-kaon |eta|"};
-    Configurable<int> cfgTPCCrossedRowsMin{"cfgKaonTPCCrossedRowsMin", 70, "minimum crossed TPC rows"};
-    Configurable<float> cfgCrossedRowsRatioMin{"cfgKaonCrossedRowsRatioMin", 0.8f, "minimum crossed/findable ratio"};
-    Configurable<float> cfgTPCChi2Max{"cfgKaonTPCChi2Max", 4.f, "maximum TPC chi2/cluster"};
-    Configurable<float> cfgITSChi2Max{"cfgKaonITSChi2Max", 36.f, "maximum ITS chi2/cluster"};
-    Configurable<float> cfgDcaXYMax{"cfgKaonDcaXYMax", 0.5f, "maximum |DCAxy| (cm)"};
-    Configurable<float> cfgDcaZMax{"cfgKaonDcaZMax", 2.f, "maximum |DCAz| (cm)"};
-    Configurable<float> cfgTPCNSigmaMax{"cfgKaonTPCNSigmaMax", 3.f, "maximum |TPC nSigma(K)| without TOF"};
-    Configurable<float> cfgCombinedNSigmaMax{"cfgKaonCombinedNSigmaMax", 3.f, "maximum combined TPC-TOF nSigma(K)"};
+    Configurable<float> cfgPtMin{"cfgPtMin", 0.2f, "minimum charged-kaon pT"};
+    Configurable<float> cfgEtaMax{"cfgEtaMax", 0.8f, "maximum charged-kaon |eta|"};
+    Configurable<int> cfgTPCCrossedRowsMin{"cfgTPCCrossedRowsMin", 70, "minimum crossed TPC rows"};
+    Configurable<float> cfgCrossedRowsRatioMin{"cfgCrossedRowsRatioMin", 0.8f, "minimum crossed/findable ratio"};
+    Configurable<float> cfgTPCChi2Max{"cfgTPCChi2Max", 4.f, "maximum TPC chi2/cluster"};
+    Configurable<float> cfgITSChi2Max{"cfgITSChi2Max", 36.f, "maximum ITS chi2/cluster"};
+    Configurable<float> cfgDcaXYMax{"cfgDcaXYMax", 0.5f, "maximum |DCAxy| (cm)"};
+    Configurable<float> cfgDcaZMax{"cfgDcaZMax", 2.f, "maximum |DCAz| (cm)"};
+    Configurable<float> cfgTPCNSigmaMax{"cfgTPCNSigmaMax", 3.f, "maximum |TPC nSigma(K)| without TOF"};
+    Configurable<float> cfgCombinedNSigmaMax{"cfgCombinedNSigmaMax", 3.f, "maximum combined TPC-TOF nSigma(K)"};
   } kaonCuts;
 
   struct : ConfigurableGroup {
@@ -257,48 +257,48 @@ struct cha01710analysis {
   template <typename T>
   bool selectPionDaughter(T const& track)
   {
-    if (!track.hasTPC() || track.tpcNClsFound() < v0Cuts.cfgDaughterTPCNClsMin ||
-        track.pt() < v0Cuts.cfgDaughterPtMin || std::abs(track.eta()) > v0Cuts.cfgDaughterEtaMax ||
-        std::abs(track.tpcNSigmaPi()) > v0Cuts.cfgDaughterTPCNSigmaPiMax) {
+    if (!track.hasTPC() || track.tpcNClsFound() < v0Cuts.cfgV0DaughterTPCNClsMin ||
+        track.pt() < v0Cuts.cfgV0DaughterPtMin || std::abs(track.eta()) > v0Cuts.cfgV0DaughterEtaMax ||
+        std::abs(track.tpcNSigmaPi()) > v0Cuts.cfgV0DaughterTPCNSigmaPiMax) {
       return false;
     }
     return true;
   }
 
   template <typename C, typename V>
-  v0MassRegion selectV0(C const& collision, V const& v0)
+  V0MassRegion selectV0(C const& collision, V const& v0)
   {
     histos.fill(HIST("V0/hMassBefore"), v0.mK0Short(), v0.pt());
     float ctau = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassK0Short;
-    if (v0.pt() < v0Cuts.cfgPtMin || v0.pt() > v0Cuts.cfgPtMax ||
-        v0.dcaV0daughters() > v0Cuts.cfgDcaDaughtersMax || v0.v0cosPA() < v0Cuts.cfgCosPAMin ||
-        v0.v0radius() < v0Cuts.cfgRadiusMin || std::abs(ctau) > v0Cuts.cfgCtauMax) {
-      return v0MassRegion::kReject;
+    if (v0.pt() < v0Cuts.cfgV0PtMin || v0.pt() > v0Cuts.cfgV0PtMax ||
+        v0.dcaV0daughters() > v0Cuts.cfgV0DcaDaughtersMax || v0.v0cosPA() < v0Cuts.cfgV0CosPAMin ||
+        v0.v0radius() < v0Cuts.cfgV0RadiusMin || std::abs(ctau) > v0Cuts.cfgV0CtauMax) {
+      return V0MassRegion::kReject;
     }
     if (v0Cuts.cfgRejectLambda &&
         (std::abs(v0.mLambda() - constants::physics::MassLambda0) < v0Cuts.cfgLambdaMassWindow ||
          std::abs(v0.mAntiLambda() - constants::physics::MassLambda0) < v0Cuts.cfgLambdaMassWindow)) {
-      return v0MassRegion::kReject;
+      return V0MassRegion::kReject;
     }
     auto pos = v0.template posTrack_as<Tracks>();
     auto neg = v0.template negTrack_as<Tracks>();
     if (!selectPionDaughter(pos) || !selectPionDaughter(neg)) {
-      return v0MassRegion::kReject;
+      return V0MassRegion::kReject;
     }
     ROOT::Math::PxPyPzMVector k0(v0.px(), v0.py(), v0.pz(), constants::physics::MassK0Short);
-    if (std::abs(k0.Rapidity()) > v0Cuts.cfgRapidityMax) {
-      return v0MassRegion::kReject;
+    if (std::abs(k0.Rapidity()) > v0Cuts.cfgV0RapidityMax) {
+      return V0MassRegion::kReject;
     }
     float dm = std::abs(v0.mK0Short() - constants::physics::MassK0Short);
     if (dm < v0Cuts.cfgKsMassWindow) {
       histos.fill(HIST("V0/hMassSelected"), v0.mK0Short(), v0.pt());
-      return v0MassRegion::kSignal;
+      return V0MassRegion::kSignal;
     }
     if (dm > v0Cuts.cfgKsMassWindow) {
       histos.fill(HIST("V0/hMassSelected"), v0.mK0Short(), v0.pt());
-      return v0MassRegion::kSideband;
+      return V0MassRegion::kSideband;
     }
-    return v0MassRegion::kReject;
+    return V0MassRegion::kReject;
   }
 
   template <typename CollisionType, typename TracksType, typename V0Type>
@@ -322,7 +322,7 @@ struct cha01710analysis {
 
     for (const auto& v0 : v0s) {
       auto region = selectV0(collision, v0);
-      if (region == v0MassRegion::kReject) {
+      if (region == kReject) {
         continue;
       }
       auto pos = v0.template posTrack_as<Tracks>();
@@ -342,7 +342,7 @@ struct cha01710analysis {
 
         float relPhi = TVector2::Phi_0_2pi((mother.Phi() - eventPlaneDet) * harmonic);
         histos.fill(HIST("Pair/hMassVsK0SMass"), mother.M(), v0.mK0Short());
-        if (region == v0MassRegion::kSignal) {
+        if (region == kSignal) {
           if (track.sign() > 0) {
             histos.fill(HIST("Pair/hSignalPlus"), mother.M(), mother.Pt(), centrality, relPhi);
           } else if (track.sign() < 0) {
@@ -384,10 +384,10 @@ struct cha01710analysis {
 
     fillHistograms(collision, tracks, v0s);
   };
-  PROCESS_SWITCH(cha01710analysis, processDataSame, "Process Event for data", false);
+  PROCESS_SWITCH(Cha01710analysis, processDataSame, "Process Event for data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<cha01710analysis>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<Cha01710analysis>(cfgc)};
 }
