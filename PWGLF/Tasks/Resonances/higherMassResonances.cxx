@@ -212,6 +212,8 @@ struct HigherMassResonances {
     int refAId = 0;
     int refBId = 0;
     float minQvecAmp = 1e-5;
+  Service<o2::framework::O2DatabasePDG> pdgDB;
+
   } config;
 
   // Service<o2::framework::O2DatabasePDG> PDGdatabase;
@@ -1507,7 +1509,6 @@ struct HigherMassResonances {
   std::vector<bool> passKs;
   ROOT::Math::PxPyPzMVector lResonanceGen1;
   ROOT::Math::PxPyPzEVector lResonanceGen;
-  Service<o2::framework::O2DatabasePDG> pdgDB;
 
   // void processGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   void processGen(EventMCGenerated::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
@@ -1519,7 +1520,7 @@ struct HigherMassResonances {
 
     bool isINELgt0true = false;
 
-    if (pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
+    if (pwglf::isINELgtNmc(mcParticles, 0, config.pdgDB)) {
       isINELgt0true = true;
     }
     if (config.isINELgt0 && !isINELgt0true) {
@@ -1679,7 +1680,7 @@ struct HigherMassResonances {
 
     bool isINELgt0true = false;
 
-    if (pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
+    if (pwglf::isINELgtNmc(mcParticles, 0, config.pdgDB)) {
       isINELgt0true = true;
     }
     if (config.isINELgt0 && !isINELgt0true) {
