@@ -154,8 +154,6 @@ struct JEPFlowAnalysis {
 
   Configurable<bool> cfgSelEvtTwoHP{"cfgSelEvtTwoHP", false, "event selection with two high pT"};
   Configurable<float> cfgHighPtSel{"cfgHighPtSel", 5.0, "pT threshold with cfgSelEvtTwoHP"};
-  Configurable<float> cfgTwoLPAngle{"cfgTwoLPAngle", 0.5, "azimuthal difference between two LP"};
-  Configurable<float> cfgEtaBalancing{"cfgEtaBalancing", 0.5, "pseudorapidity difference between two LP"}; 
 
   Configurable<std::string> cfgDetName{"cfgDetName", "FT0C", "The name of detector to be analyzed"};
   Configurable<std::string> cfgRefAName{"cfgRefAName", "TPCPos", "The name of detector for reference A"};
@@ -195,14 +193,8 @@ struct JEPFlowAnalysis {
 
   float activity = -1.;
   float qOvecM = -1.;
-
-  float leadingPt = -1.;
-  float leadingPhi = -999.;
-  float leadingEta = -999.;
-
-  float subleadingPt = -1.;
-  float subleadingPhi = -999.;
-  float subleadingEta = -999.;
+  float highestPt = -1.;
+  float hPtPhi = -999.;
 
   std::vector<TProfile3D*> shiftprofile{};
   std::string fullCCDBShiftCorrPath;
@@ -431,47 +423,18 @@ struct JEPFlowAnalysis {
         q2selLow = q2Map->GetBinContent(q2Map->GetXaxis()->FindBin(i + 2), q2Map->GetYaxis()->FindBin(cent), q2Map->GetZaxis()->FindBin(1. - cfgQ2SelFrac));
       }
 
-
       if (cfgSelEvtTwoHP && i == 0) {
-        leadingPt = 0.0;
-        leadingPhi = 0.0;
-        leadingEta = 0.0;
-
-        subleadingPt = 0.0;
-        subleadingPhi = 0.0;
-        subleadingEta = 0.0;
-
         nHighPt = 0;
         for (const auto& track : tracks) {
           if (cfgTrkSelFlag && trackSel(track))
             continue;
 
-          if (leadingPt < track.pt()) {
-            subleadingPt = leadingPt;
-            subleadingPhi = leadingPhi;
-            subleadingEta = leadingEta;
-
-            leadingPt = track.pt();
-            leadingPhi = track.phi();
-            leadingEta = track.eta();
-          } else if (track.pt() > subleadingPt) {
-            subleadingPt = track.pt();
-            subleadingPhi = track.phi();
-            subleadingEta = track.eta();
-          }
-
-            if (track.pt() > cfgHighPtSel)
-              nHighPt++;
+          if (track.pt() > cfgHighPtSel)
+            nHighPt++;
         }
       }
 
       if (cfgSelEvtTwoHP && nHighPt < minnHighPt)
-        continue;
-
-      if (std::abs(RecoDecay::constrainAngle(leadingPhi - subleadingPhi, 0) - constants::math::PI) > cfgTwoLPAngle)
-        continue;
-
-      if (std::abs(leadingEta + subleadingEta) > cfgEtaBalancing)
         continue;
 
       epFlowHistograms.fill(HIST("EpDet"), i + 2, cent, eps[0]);
@@ -523,12 +486,16 @@ struct JEPFlowAnalysis {
         continue;
       }
 
-      leadingPt = 0.0;
-      leadingPhi = 0.0;
-      leadingEta = 0.0;
+      highestPt = 0.0;
+      hPtPhi = 0.0;
       for (const auto& track : tracks) {
         if (cfgTrkSelFlag && trackSel(track))
           continue;
+
+        if (highestPt < track.pt()) {
+          highestPt = track.pt();
+          hPtPhi = track.phi();
+        }
 
         if (cfgEffCor) {
           weight = getEfficiencyCorrection(effMap, track.eta(), track.pt(), cent, coll.posZ());
@@ -558,14 +525,14 @@ struct JEPFlowAnalysis {
         }
       }
       if (i == 0) { // second harmonic only
-        epFlowHistograms.fill(HIST("hQoverM"), cent, leadingPt, qOvecM);
-        epFlowHistograms.fill(HIST("hActivity"), cent, leadingPt, activity);
+        epFlowHistograms.fill(HIST("hQoverM"), cent, highestPt, qOvecM);
+        epFlowHistograms.fill(HIST("hActivity"), cent, highestPt, activity);
 
         epFlowHistograms.fill(HIST("hQoverM2M"), cent, coll.qvecAmp()[detId], qOvecM);
         epFlowHistograms.fill(HIST("hQoverM2Q2"), cent, q2Mag, qOvecM);
 
-        epFlowHistograms.fill(HIST("hQoverMdphi"), cent, RecoDecay::constrainAngle(leadingPhi - eps[0], -constants::math::PI), qOvecM);
-        epFlowHistograms.fill(HIST("hActivitydphi"), cent, RecoDecay::constrainAngle(leadingPhi - eps[0], -constants::math::PI), leadingPt, activity);
+        epFlowHistograms.fill(HIST("hQoverMdphi"), cent, RecoDecay::constrainAngle(hPtPhi - eps[0], -constants::math::PI), qOvecM);
+        epFlowHistograms.fill(HIST("hActivitydphi"), cent, RecoDecay::constrainAngle(hPtPhi - eps[0], -constants::math::PI), highestPt, activity);
       }
     }
   }
