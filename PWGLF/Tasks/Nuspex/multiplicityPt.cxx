@@ -121,7 +121,7 @@ struct MultiplicityPt {
   Configurable<bool> requireIsGoodZvtxFT0vsPV{"requireIsGoodZvtxFT0vsPV", false, "Require good Z vertex FT0 vs PV"};
   Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "Require vertex ITSTPC"};
   Configurable<bool> removeNoTimeFrameBorder{"removeNoTimeFrameBorder", false, "Remove no time frame border"};
-    Configurable<bool> nGoodITS{"nGoodITS", true, "Numbers of inactive chips on all ITS layers are below maximum allowed values"};
+  Configurable<bool> nGoodITS{"nGoodITS", true, "Numbers of inactive chips on all ITS layers are below maximum allowed values"};
 
   // Gen-level event selection
   Configurable<bool> selTVXMC{"selTVXMC", true, "Require TVX-equivalent at gen level"};
@@ -254,14 +254,14 @@ struct MultiplicityPt {
     // Setup custom track cuts
     if (useCustomTrackCuts.value) {
       customTrackCuts = getGlobalTrackSelectionRun3ITSMatch(itsPattern.value);
-      //customTrackCuts.SetRequireITSRefit(requireITS.value);
-      //customTrackCuts.SetRequireTPCRefit(requireTPC.value);
+      // customTrackCuts.SetRequireITSRefit(requireITS.value);
+      // customTrackCuts.SetRequireTPCRefit(requireTPC.value);
       customTrackCuts.SetMinNClustersITS(minITSnClusters.value);
       customTrackCuts.SetRequireGoldenChi2(requireGoldenChi2.value);
       customTrackCuts.SetMaxChi2PerClusterTPC(maxChi2PerClusterTPC.value);
       customTrackCuts.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
       customTrackCuts.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
-      //customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
+      // customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
       customTrackCuts.SetMaxDcaXYPtDep([](float /*pt*/) { return 10000.f; });
       // customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
     }
@@ -970,7 +970,7 @@ struct MultiplicityPt {
     if (isZvtxPosSelMC.value && std::abs(mcCollision.posZ()) > cfgCutVertex.value)
       return;
     registry.fill(HIST("EventCounter"), kVtxZ);
-      
+
     if (cfgINELCut.value == 1 && nChINEL == 0)
       return;
     if (cfgINELCut.value == INELgt1 && nChINEL < INELgt1)
@@ -1066,12 +1066,12 @@ struct MultiplicityPt {
         continue;
       if (!isEventSelectedMC(collision))
         continue;
-        
-        if (nGoodITS.value && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
-            continue;
+
+      if (nGoodITS.value && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+        continue;
       registry.fill(HIST("EventCounter"), kGoodITS);
-        
-        registry.fill(HIST("EventCounter"), kRecoSelected);
+
+      registry.fill(HIST("EventCounter"), kRecoSelected);
 
       const float centrality = collision.centFT0M();
 
