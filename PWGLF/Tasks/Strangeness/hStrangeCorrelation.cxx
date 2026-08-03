@@ -3888,7 +3888,11 @@ struct HStrangeCorrelation {
           .globalIndex = static_cast<int64_t>(mcParticle.globalIndex()),
           .pt = mcParticle.pt(),
           .eta = mcParticle.eta(),
-          .phi = mcParticle.phi()};
+          .phi = mcParticle.phi(),
+          .decayRadius = -1.0f,
+          .findable = false,
+          .positiveDaughter = {},
+          .negativeDaughter = {}};
         const auto daughters = mcParticle.daughters_as<aod::McParticles>();
         for (auto const& daughter : daughters) {
           PairLossTruthTrackInfo daughterInfo{
