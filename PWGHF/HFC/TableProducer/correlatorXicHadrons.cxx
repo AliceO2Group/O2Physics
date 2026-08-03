@@ -647,33 +647,38 @@ struct HfCorrelatorXicHadrons {
   }
 
   template <typename Tracktype, typename V0Type>
-  bool isSelectedV0Daughter(Tracktype const& track, V0Type v0, int pid)
+  bool isSelectedV0Daughter(Tracktype const& track, V0Type const& v0, int pid)
   {
-    if (std::abs(track.eta()) > cfgXicCand.etaTrackMax) {
+    if (std::abs(track.eta()) > cfgCharmCand.etaTrackMax) {
       return false;
     }
+
     // ---------------------------------------------------------
     // 1. Proton PID Selection
     // ---------------------------------------------------------
     if (std::abs(pid) == kProton) {
+      bool hasTOFProton = (pid > 0) ? v0.positiveHasTOF() : v0.negativeHasTOF();
       bool passTOF = false;
 
-      if (track.pt() > cfgV0.cfgDaughPrPtMax || track.pt() < cfgV0.cfgDaughPrPtMin) {
+      if (track.pt() > cfgV0.cfgV0DaughPrPtMax || track.pt() < cfgV0.cfgV0DaughPrPtMin) {
         return false;
       }
-      if (track.hasTOF()) {
+
+      if (hasTOFProton && (track.pt() > cfgCharmCand.tofPIDThreshold)) {
         if constexpr (std::experimental::is_detected<HasStrangeTOFinV0, V0Type>::value) {
           // pid > 0: Proton from Lambda (LaPr)
           // pid < 0: Antiproton from Anti-Lambda (ALaPr)
           double strangeTOF = (pid > 0) ? v0.tofNSigmaLaPr() : v0.tofNSigmaALaPr();
-          passTOF = std::abs(strangeTOF) > cfgV0.cfgDaughPIDCutsTOFPr;
+          passTOF = strangeTOF > cfgV0.cfgV0DaughPIDCutsTOFPr;
+
         } else {
           // if strange TOF is unavailable
-          passTOF = std::abs(track.tofNSigmaPr()) > cfgV0.cfgDaughPIDCutsTOFPr;
+          passTOF = track.tofNSigmaPr() > cfgV0.cfgV0DaughPIDCutsTOFPr;
         }
+
       }
 
-      if ((std::abs(track.tpcNSigmaPr()) > cfgV0.cfgDaughPIDCutsTPCPr) || passTOF) {
+      if ((std::abs(track.tpcNSigmaPr()) > cfgV0.cfgV0DaughPIDCutsTPCPr) && !passTOF) {
         return false;
       }
     }
@@ -681,31 +686,32 @@ struct HfCorrelatorXicHadrons {
     // ---------------------------------------------------------
     // 2. Pion PID Selection
     // ---------------------------------------------------------
-    if (std::abs(pid) == kPiPlus) {
+    if (std::abs(pid) == kPiPlus && cfgV0.checkTOFForPion) {
+      bool hasTOFPion = (pid < 0) ? v0.negativeHasTOF() : v0.positiveHasTOF();
       bool passTOF = false;
 
-      if (track.pt() > cfgV0.cfgDaughPiPtMax || track.pt() < cfgV0.cfgDaughPiPtMin) {
+      if (track.pt() > cfgV0.cfgV0DaughPiPtMax || track.pt() < cfgV0.cfgV0DaughPiPtMin) {
         return false;
       }
 
-      if (track.hasTOF()) {
+      if (hasTOFPion && (track.pt() > cfgCharmCand.tofPIDThreshold)) {
         if constexpr (std::experimental::is_detected<HasStrangeTOFinV0, V0Type>::value) {
           // A pion can belong to either a Lambda/Anti-Lambda decay or a K0s decay.
           // We evaluate both applicable hypotheses based on charge sign and pick the best match.
           double tofLa = (pid > 0) ? v0.tofNSigmaALaPi() : v0.tofNSigmaLaPi();
 
-          passTOF = tofLa > cfgV0.cfgDaughPIDCutsTOFPi;
+          passTOF = std::abs(tofLa) > cfgV0.cfgV0DaughPIDCutsTOFPi;
         } else {
           // Fallback to standard track TOF
-          passTOF = std::abs(track.tofNSigmaPi()) > cfgV0.cfgDaughPIDCutsTOFPi;
+          passTOF = std::abs(track.tofNSigmaPi()) > cfgV0.cfgV0DaughPIDCutsTOFPi;
         }
+
       }
 
-      if ((std::abs(track.tpcNSigmaPi()) > cfgV0.cfgDaughPIDCutsTPCPi) || passTOF) {
+      if ((std::abs(track.tpcNSigmaPi()) > cfgV0.cfgV0DaughPIDCutsTPCPi) && !passTOF) {
         return false;
       }
     }
-
     return true;
   }
 
@@ -730,7 +736,7 @@ struct HfCorrelatorXicHadrons {
       }
 
       // Process Lambda (proton + pion)
-      if (passV0Sel && std::abs(o2::constants::physics::MassLambda - v0.mLambda()) < cfgV0.cfgHypMassWindow) {
+      if (passV0Sel && std::abs(o2::constants::physics::MassLambda - v0.mLambda()) < cfgV0.cfgHypMassWindow && v0.alpha() > 0) {
         entryHadron(v0.mLambda(), trackV0Pos.eta(), trackV0Pos.pt() * trackV0Pos.sign(), 0, 0, v0.pt());
         entryTrkPID(trackV0Pos.tpcNSigmaPr(), trackV0Pos.tpcNSigmaKa(), trackV0Pos.tpcNSigmaPi(), trackV0Pos.tofNSigmaPr(), trackV0Pos.tofNSigmaKa(), trackV0Pos.tofNSigmaPi());
 
@@ -754,7 +760,7 @@ struct HfCorrelatorXicHadrons {
         }
       }
 
-      if (passV0Sel && std::abs(o2::constants::physics::MassLambda - v0.mAntiLambda()) < cfgV0.cfgHypMassWindow) {
+      if (passV0Sel && std::abs(o2::constants::physics::MassLambda - v0.mAntiLambda()) < cfgV0.cfgHypMassWindow && v0.alpha() < 0) {
         entryHadron(v0.mAntiLambda(), trackV0Neg.eta(), trackV0Neg.pt() * trackV0Neg.sign(), 0, 0, v0.pt());
         entryTrkPID(trackV0Neg.tpcNSigmaPr(), trackV0Neg.tpcNSigmaKa(), trackV0Neg.tpcNSigmaPi(), trackV0Neg.tofNSigmaPr(), trackV0Neg.tofNSigmaKa(), trackV0Neg.tofNSigmaPi());
 
@@ -787,7 +793,7 @@ struct HfCorrelatorXicHadrons {
         auto const& partV0Pos = trackV0Pos.mcParticle();
         auto const& partV0Neg = trackV0Neg.mcParticle();
 
-        if (passV0Sel && v0Mc.pdgCode() == kLambda0) {
+        if (passV0Sel && v0Mc.pdgCode() == kLambda0 && v0.alpha() > 0) {
           if (isSelectedV0Daughter(trackV0Pos, v0, kProton) && isSelectedV0Daughter(trackV0Neg, v0, kPiMinus)) {
             registry.fill(HIST("hV0LambdaMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
             registry.fill(HIST("hV0LambdaReflMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
@@ -802,7 +808,7 @@ struct HfCorrelatorXicHadrons {
             }
           }
         }
-        if (passV0Sel && v0Mc.pdgCode() == kLambda0Bar) {
+        if (passV0Sel && v0Mc.pdgCode() == kLambda0Bar && v0.alpha() < 0) {
           if (isSelectedV0Daughter(trackV0Neg, v0, kProtonBar) && isSelectedV0Daughter(trackV0Pos, v0, kPiPlus)) {
             registry.fill(HIST("hV0LambdaMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
             registry.fill(HIST("hV0LambdaReflMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
@@ -1032,7 +1038,7 @@ struct HfCorrelatorXicHadrons {
         }
 
         // Process Lambda (proton-pion)
-        if (std::abs(o2::constants::physics::MassLambda - v0.mLambda()) < cfgV0.cfgHypMassWindow) {
+        if (std::abs(o2::constants::physics::MassLambda - v0.mLambda()) < cfgV0.cfgHypMassWindow && v0.alpha() > 0) {
           if (isSelectedV0Daughter(trackV0Pos, v0, kProton) && isSelectedV0Daughter(trackV0Neg, v0, kPiMinus)) {
 
             if (selXicCand) {
@@ -1050,7 +1056,7 @@ struct HfCorrelatorXicHadrons {
         }
 
         // Process anti-Lambda (anti-proton-pion)
-        if (std::abs(o2::constants::physics::MassLambda - v0.mAntiLambda()) < cfgV0.cfgHypMassWindow) {
+        if (std::abs(o2::constants::physics::MassLambda - v0.mAntiLambda()) < cfgV0.cfgHypMassWindow && v0.alpha() < 0) {
           if (isSelectedV0Daughter(trackV0Neg, v0, kProtonBar) && isSelectedV0Daughter(trackV0Pos, v0, kPiPlus)) {
 
             if (selXicCand) {
@@ -1484,14 +1490,14 @@ struct HfCorrelatorXicHadrons {
           auto const& trackV0Pos = assocParticle.template posTrack_as<TrackType>();
           auto const& trackV0Neg = assocParticle.template negTrack_as<TrackType>();
 
-          if (std::abs(o2::constants::physics::MassLambda - assocParticle.mLambda()) < cfgV0.cfgHypMassWindow) {
+          if (std::abs(o2::constants::physics::MassLambda - assocParticle.mLambda()) < cfgV0.cfgHypMassWindow && v0.alpha() > 0) {
             if (isSelectedV0Daughter(trackV0Pos, assocParticle, kProton) && isSelectedV0Daughter(trackV0Neg, assocParticle, kPiPlus)) {
 
               fillCorrelationTable<IsMcRec, V0LambdaType::Lambda>(cfgXicCand.fillTrkPID, assocParticle, ptCand, etaCand, phiCand, outputMlXic, poolBin, correlationStatus, yCand, massCand, *mcParticles);
             }
           }
 
-          if (std::abs(o2::constants::physics::MassLambda - assocParticle.mAntiLambda()) < cfgV0.cfgHypMassWindow) {
+          if (std::abs(o2::constants::physics::MassLambda - assocParticle.mAntiLambda()) < cfgV0.cfgHypMassWindow && v0.alpha() < 0) {
             if (isSelectedV0Daughter(trackV0Neg, assocParticle, -kProton) && isSelectedV0Daughter(trackV0Pos, assocParticle, -kPiPlus)) {
               fillCorrelationTable<IsMcRec, V0LambdaType::AntiLambda>(cfgXicCand.fillTrkPID, assocParticle, ptCand, etaCand, phiCand, outputMlXic, poolBin, correlationStatus, yCand, massCand, *mcParticles);
             }
