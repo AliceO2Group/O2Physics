@@ -10,8 +10,8 @@
 // or submit itself to any jurisdiction.
 
 /// \file   flowMcUpc.cxx
-/// \author Zhiyong Lu (zhiyong.lu@cern.ch)
-/// \since  Feb/5/2025
+/// \author Zhiyong Lu (zhiyong.lu@cern.ch) Yongxi Du (yongxi.du@cern.ch)
+/// \since  Aug/04/2026
 /// \brief  QC of synthetic flow exercise
 
 #include "PWGCF/GenericFramework/Core/FlowContainer.h"
@@ -337,7 +337,6 @@ struct FlowMcUpc {
     } else {
       fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgDCAxyFunction->c_str()), 0.001, 100);
       fPtDepDCAxy->SetParameter(0, cfgDCAxyNSigma);
-      LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", cfgDCAxyFunction->c_str()));
       myTrackSel.SetMaxDcaXYPtDep([fPtDepDCAxy = this->fPtDepDCAxy](float pt) { return fPtDepDCAxy->Eval(pt); });
     }
     myTrackSel.SetMinNClustersTPC(cfgCutTPCclu);
@@ -864,21 +863,26 @@ struct FlowMcUpc {
                     histos.fill(HIST("hPtNchGlobalLambdaPions"), mcParticle.pt(), nChGlobal);
                   }
                 }
-                if (pdgCode == PDG_t::kProton && m.pdgCode() == PDG_t::kLambda0)
+                if (pdgCode == PDG_t::kProton && m.pdgCode() == PDG_t::kLambda0) {
                   histos.fill(HIST("hPtNchGlobalLambdaProtons"), mcParticle.pt(), nChGlobal);
+                }
               }
             }
           }
         }
         // if any track present, fill
-        if (validTrack)
+        if (validTrack) {
           histos.fill(HIST("hBVsPtVsPhiAny"), imp, deltaPhi, mcParticle.pt(), wacc * weff);
-        if (validTPCTrack)
+        }
+        if (validTPCTrack) {
           histos.fill(HIST("hBVsPtVsPhiTPCTrack"), imp, deltaPhi, mcParticle.pt(), wacc * weff);
-        if (validITSTrack)
+        }
+        if (validITSTrack) {
           histos.fill(HIST("hBVsPtVsPhiITSTrack"), imp, deltaPhi, mcParticle.pt(), wacc * weff);
-        if (validITSABTrack)
+        }
+        if (validITSABTrack) {
           histos.fill(HIST("hBVsPtVsPhiITSABTrack"), imp, deltaPhi, mcParticle.pt(), wacc * weff);
+        }
       }
 
       if (cfgFlowCumulantEnabled) {
@@ -897,15 +901,18 @@ struct FlowMcUpc {
   void processReco(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>::iterator const& collision, aod::BCsWithTimestamps const&, FilteredTracks const& tracks, aod::McParticles const&, aod::McCollisions const&)
   {
     histos.fill(HIST("RecoProcessEventCounter"), 0.5);
-    if (!eventSelected(collision))
+    if (!eventSelected(collision)) {
       return;
+    }
     histos.fill(HIST("RecoProcessEventCounter"), 1.5);
-    if (tracks.size() < 1)
+    if (tracks.size() < 1) {
       return;
+    }
     histos.fill(HIST("RecoProcessEventCounter"), 2.5);
     for (const auto& track : tracks) {
-      if (!trackSelected(track))
+      if (!trackSelected(track)) {
         continue;
+      }
       histos.fill(HIST("hPtReco"), track.pt());
       auto mcParticle = track.mcParticle();
       int pdgCode = std::abs(mcParticle.pdgCode());
@@ -913,12 +920,15 @@ struct FlowMcUpc {
       if (cfgK0Lambda0Enabled) {
         extraPDGType = (pdgCode != PDG_t::kK0Short && pdgCode != PDG_t::kLambda0);
       }
-      if (extraPDGType && pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton)
+      if (extraPDGType && pdgCode != PDG_t::kElectron && pdgCode != PDG_t::kMuonMinus && pdgCode != PDG_t::kPiPlus && pdgCode != kKPlus && pdgCode != PDG_t::kProton) {
         continue;
-      if (!mcParticle.isPhysicalPrimary())
+      }
+      if (!mcParticle.isPhysicalPrimary()) {
         continue;
-      if (std::fabs(mcParticle.eta()) > cfgCutEta) // main acceptance
+      }
+      if (std::fabs(mcParticle.eta()) > cfgCutEta) { // main acceptance
         continue;
+      }
       histos.fill(HIST("hPtReco_PhysicalPrimary"), track.pt());
     }
   }
