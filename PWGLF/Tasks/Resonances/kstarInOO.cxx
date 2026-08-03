@@ -1815,7 +1815,6 @@ struct kstarInOO {
         if (bestR < cfgJetdR) {
           histos.fill(HIST("dR_taggedjet_all"), dR_kaon, lResonance.Pt());
           histos.fill(HIST("dR_taggedjet_all"), dR_pion, lResonance.Pt());
-
           histos.fill(HIST("dR_taggedjet_kaon"), dR_kaon, lResonance.Pt());
           histos.fill(HIST("dR_taggedjet_pion"), dR_pion, lResonance.Pt());
 
@@ -1831,6 +1830,7 @@ struct kstarInOO {
           if (bestJet.Pt() > 10.0 && bestJet.Pt() < 12.0)
             histos.fill(HIST("Kstar_pT_INJet_10_12"), lResonance.Pt());
 
+	  // Daughters out of jets
           if (!isKaonInJet || !isPionInJet) {
             ROOT::Math::PxPyPzEVector recoveredJet = bestJet + missing_daughter;
             if (bestJet.Pt() > 6.0 && bestJet.Pt() < 8.0) {
@@ -1843,7 +1843,6 @@ struct kstarInOO {
               if (recoveredJet.Pt() > 8.0 && recoveredJet.Pt() < 10.0)
                 histos.fill(HIST("Kstar_pT_6_8to8_10_IN_recoveredJet"), lResonance.Pt());
             } // 6 < bestJetpT < 8 GeV/c
-
             if (bestJet.Pt() > 8.0 && bestJet.Pt() < 10.0)
               histos.fill(HIST("missed_kpi_INJets_8_10"), (bestJet.Pt() - missing_daughter.Pt()) / bestJet.Pt(), lResonance.Pt());
             if (bestJet.Pt() > 10.0 && bestJet.Pt() < 12.0)
@@ -1859,7 +1858,6 @@ struct kstarInOO {
               histos.fill(HIST("missed_kpi_INJets_8_infinite"), (bestJet.Pt() - missing_daughter.Pt()) / bestJet.Pt(), lResonance.Pt());
 
             histos.fill(HIST("JetMigration"), bestJet.Pt(), recoveredJet.Pt());
-
           } // Daughters out of jet
         } // K*0 InJet
       } // cfgJetdRHistos
