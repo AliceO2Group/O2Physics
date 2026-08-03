@@ -1192,7 +1192,7 @@ struct HigherMassResonances {
         }
 
         for (int i = 0; i < config.cRotations; i++) {
-          theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
+          config.theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
 
           daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(config.theta2) - daughter1.Py() * std::sin(config.theta2), daughter1.Px() * std::sin(config.theta2) + daughter1.Py() * std::cos(config.theta2), daughter1.Pz(), daughter1.M());
 
@@ -1359,7 +1359,7 @@ struct HigherMassResonances {
         }
 
         for (int i = 0; i < config.cRotations; i++) {
-          theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
+          config.theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
 
           daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(config.theta2) - daughter1.Py() * std::sin(config.theta2), daughter1.Px() * std::sin(config.theta2) + daughter1.Py() * std::cos(config.theta2), daughter1.Pz(), daughter1.M());
 
@@ -2031,7 +2031,7 @@ struct HigherMassResonances {
         }
 
         for (int i = 0; i < config.cRotations; i++) {
-          theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
+          config.theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
 
           daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(config.theta2) - daughter1.Py() * std::sin(config.theta2), daughter1.Px() * std::sin(config.theta2) + daughter1.Py() * std::cos(config.theta2), daughter1.Pz(), daughter1.M());
 
