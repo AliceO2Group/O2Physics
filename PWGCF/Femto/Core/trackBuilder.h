@@ -755,18 +755,18 @@ class TrackBuilder
       collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
       // get track from the track table so we can dereference mc particle properly
       auto track = tracks.iteratorAt(trackWithItsPid.index());
-      this->template fillMcTrack<system, modes::Track::kTrack>(col, collisionBuilder, mcCols, track, trackWithItsPid, trackProducts, mcParticles, mcBuilder, mcProducts);
+      this->template fillMcTrack<system, modes::Track::kTrack>(track, trackWithItsPid, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
     }
   }
 
-  template <modes::System system, modes::Track trackType, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-  bool fillMcTrack(T1 const& col, T2& collisionBuilder, T3 const& mcCols, T4 const& track, T5 const& trackWithItsPid, T6& trackProducts, T7 const& mcParticles, T8& mcBuilder, T9& mcProducts)
+  template <modes::System system, modes::Track trackType, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
+  bool fillMcTrack(T1 const& track, T2 const& trackWithItsPid, T3& trackProducts, T4 const& mcCols, T5& collisionBuilder, T6 const& mcParticles, T7& mcBuilder, T8& mcProducts)
   {
     if (!mProduceTracks && !mProduceLiteTracks) {
       return false;
     }
     this->template fillTrack<trackType>(trackWithItsPid, trackProducts, collisionBuilder);
-    mcBuilder.template fillMcTrackWithLabel<system>(col, mcCols, track, mcParticles, mcProducts);
+    mcBuilder.template fillMcTrackWithLabel<system>(track, mcParticles, mcCols, mcProducts);
     return true;
   }
 
@@ -785,15 +785,15 @@ class TrackBuilder
     return indexMap.at(daughter.globalIndex());
   }
 
-  template <modes::System system, modes::Track type, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-  int64_t getDaughterIndex(const T1& col, T2& collisionBuilder, T3 const& mcCols, const T4& daughter, T5& trackProducts, T6 const& mcParticles, T7& mcBuilder, T8& mcProducts)
+  template <modes::System system, modes::Track type, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
+  int64_t getDaughterIndex(const T1& daughter, T2& trackProducts, T3 const& mcCols, T4& collisionBuilder, T5 const& mcParticles, T6& mcBuilder, T7& mcProducts)
   {
     auto result = utils::getIndex(daughter.globalIndex(), indexMap);
     if (result) {
       // daugher already in track table
       return result.value();
     }
-    if (!this->template fillMcTrack<system, type>(col, collisionBuilder, mcCols, daughter, daughter, trackProducts, mcParticles, mcBuilder, mcProducts)) {
+    if (!this->template fillMcTrack<system, type>(daughter, daughter, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts)) {
       LOG(fatal) << "Trying to register a daughter track, but FTracks or FLiteTrack table is disabled. "
                  << "Enable TrackTables.produceTracks/produceLiteTracks when V0/Cascade/Kink tables that need daughter indices are enabled.";
     }
@@ -801,6 +801,8 @@ class TrackBuilder
     return indexMap.at(daughter.globalIndex());
   }
 
+  [[nodiscard]] bool fillAnyTable() const { return mFillAnyTable; }
+  [[nodiscard]] bool isPassThrough() const { return mTrackSelection.isPassThrough(); }
   [[nodiscard]] bool producingTracks() const { return mProduceTracks; }
   [[nodiscard]] bool producingLiteTracks() const { return mProduceLiteTracks; }
 

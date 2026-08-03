@@ -442,17 +442,20 @@ class CharmHadronBuilder
 
       auto prong0 = candidate.template prong0_as<T8>();
       auto prong1 = candidate.template prong1_as<T8>();
-      posDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(col, collisionBuilder, mcCols, prong0, trackProducts, mcParticles, mcBuilder, mcProducts);
-      negDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(col, collisionBuilder, mcCols, prong1, trackProducts, mcParticles, mcBuilder, mcProducts);
+      posDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(prong0, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
+      negDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(prong1, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
 
       if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
         this->fillD0Tables(collisionProducts, d0Products, candidate, candidate.pt(), mHfHelper.invMassD0ToPiK(candidate), posDauIndex, negDauIndex);
       } else {
         this->fillD0Tables(collisionProducts, d0Products, candidate, -candidate.pt(), mHfHelper.invMassD0barToKPi(candidate), posDauIndex, negDauIndex);
       }
-      mcBuilder.template fillMcD0WithLabel<system>(col, mcCols, candidate, tracks, mcParticles, mcProducts);
+      mcBuilder.template fillMcD0WithLabel<system>(candidate, tracks, mcParticles, mcCols, mcProducts);
     }
   }
+
+  [[nodiscard]] bool fillAnyTable() const { return mFillAnyTable; }
+  [[nodiscard]] bool isPassThrough() const { return mD0Selection.isPassThrough(); }
 
  private:
   D0Selection<hadronType, SelectionHistName, FilterHistName> mD0Selection;
