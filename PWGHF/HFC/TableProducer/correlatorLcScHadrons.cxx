@@ -626,7 +626,6 @@ struct HfCorrelatorLcScHadrons {
           // if strange TOF is unavailable
           passTOF = track.tofNSigmaPr() > cfgV0.cfgV0DaughPIDCutsTOFPr;
         }
-
       }
 
       if ((std::abs(track.tpcNSigmaPr()) > cfgV0.cfgV0DaughPIDCutsTPCPr) && !passTOF) {
@@ -656,7 +655,6 @@ struct HfCorrelatorLcScHadrons {
           // Fallback to standard track TOF
           passTOF = std::abs(track.tofNSigmaPi()) > cfgV0.cfgV0DaughPIDCutsTOFPi;
         }
-
       }
 
       if ((std::abs(track.tpcNSigmaPi()) > cfgV0.cfgV0DaughPIDCutsTPCPi) && !passTOF) {
@@ -833,7 +831,6 @@ struct HfCorrelatorLcScHadrons {
       // Correlate Lc with all Lambda V0 in the same event
       for (const auto& v0 : v0s) {
 
-        
         const int v0Lambda = 1;
         const int v0AntiLambda = -1;
 
@@ -844,7 +841,6 @@ struct HfCorrelatorLcScHadrons {
         auto posTrackV0 = v0.template posTrack_as<TrackType>();
         auto negTrackV0 = v0.template negTrack_as<TrackType>();
 
-
         if ((candidate.prong0Id() == posTrackV0.globalIndex()) || (candidate.prong1Id() == posTrackV0.globalIndex()) || (candidate.prong2Id() == posTrackV0.globalIndex()) || (candidate.prong0Id() == negTrackV0.globalIndex()) || (candidate.prong1Id() == negTrackV0.globalIndex()) || (candidate.prong2Id() == negTrackV0.globalIndex())) {
           if (!cfgCharmCand.storeAutoCorrelationFlag) {
             continue;
@@ -852,13 +848,12 @@ struct HfCorrelatorLcScHadrons {
           correlationStatus = true;
         }
 
-
         if (cfgV0.cfgIsCorrCollMatchV0 && ((v0.collisionId() != posTrackV0.collisionId()) || (v0.collisionId() != negTrackV0.collisionId()))) {
           continue;
         }
 
         // Process Lambda (proton-pion)
-        if ((std::abs(o2::constants::physics::MassLambda - v0.mLambda()) < cfgV0.cfgHypMassWindow ) && v0.alpha() > 0) {
+        if ((std::abs(o2::constants::physics::MassLambda - v0.mLambda()) < cfgV0.cfgHypMassWindow) && v0.alpha() > 0) {
           if (isSelectedV0Daughter(posTrackV0, v0, kProton) && isSelectedV0Daughter(negTrackV0, v0, kPiMinus)) {
 
             if (selLcPKPi) {
@@ -879,7 +874,7 @@ struct HfCorrelatorLcScHadrons {
         }
 
         // Process anti-Lambda (anti-proton-pion)
-        if ((std::abs(o2::constants::physics::MassLambda - v0.mAntiLambda()) < cfgV0.cfgHypMassWindow)  && v0.alpha() < 0) {
+        if ((std::abs(o2::constants::physics::MassLambda - v0.mAntiLambda()) < cfgV0.cfgHypMassWindow) && v0.alpha() < 0) {
           if (isSelectedV0Daughter(negTrackV0, v0, kProtonBar) && isSelectedV0Daughter(posTrackV0, v0, kPiPlus)) {
 
             if (selLcPKPi) {
@@ -966,7 +961,7 @@ struct HfCorrelatorLcScHadrons {
       }
 
       // Process Lambda (proton + pion)
-      if (passV0Sel && std::abs(o2::constants::physics::MassLambda - v0.mLambda()) < cfgV0.cfgHypMassWindow  && v0.alpha() > 0) {
+      if (passV0Sel && std::abs(o2::constants::physics::MassLambda - v0.mLambda()) < cfgV0.cfgHypMassWindow && v0.alpha() > 0) {
         entryHadron(v0.mLambda(), trackV0Pos.eta(), trackV0Pos.pt() * trackV0Pos.sign(), 0, 0, v0.pt());
         entryTrkPID(trackV0Pos.tpcNSigmaPr(), trackV0Pos.tpcNSigmaKa(), trackV0Pos.tpcNSigmaPi(), trackV0Pos.tofNSigmaPr(), trackV0Pos.tofNSigmaKa(), trackV0Pos.tofNSigmaPi());
 
@@ -1023,7 +1018,7 @@ struct HfCorrelatorLcScHadrons {
         auto const& partV0Pos = trackV0Pos.mcParticle();
         auto const& partV0Neg = trackV0Neg.mcParticle();
 
-        if (passV0Sel && v0Mc.pdgCode() == kLambda0  && v0.alpha() > 0) {
+        if (passV0Sel && v0Mc.pdgCode() == kLambda0 && v0.alpha() > 0) {
           if (isSelectedV0Daughter(trackV0Pos, v0, kProton) && isSelectedV0Daughter(trackV0Neg, v0, kPiMinus)) {
             registry.fill(HIST("hV0LambdaMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
             registry.fill(HIST("hV0LambdaReflMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
@@ -1038,7 +1033,7 @@ struct HfCorrelatorLcScHadrons {
             }
           }
         }
-        if (passV0Sel && v0Mc.pdgCode() == kLambda0Bar  && v0.alpha() < 0) {
+        if (passV0Sel && v0Mc.pdgCode() == kLambda0Bar && v0.alpha() < 0) {
           if (isSelectedV0Daughter(trackV0Neg, v0, kProtonBar) && isSelectedV0Daughter(trackV0Pos, v0, kPiPlus)) {
             registry.fill(HIST("hV0LambdaMcRec"), v0.mAntiLambda(), v0.pt(), partV0Neg.pt());
             registry.fill(HIST("hV0LambdaReflMcRec"), v0.mLambda(), v0.pt(), partV0Pos.pt());
