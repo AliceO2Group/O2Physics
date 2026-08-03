@@ -502,8 +502,8 @@ struct HigherMassResonances {
 
     // if (config.isSel8 && !collision.sel8())
     //   return false;
-    if (fillHist)
-      rEventSelection.fill(HIST("hEventCut"), 2);
+    // if (fillHist)
+    //   rEventSelection.fill(HIST("hEventCut"), 2);
 
     if (config.isNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
       return false;
@@ -517,8 +517,8 @@ struct HigherMassResonances {
 
     // if (config.isNoSameBunchPileup && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)))
     //   return false;
-    if (fillHist)
-      rEventSelection.fill(HIST("hEventCut"), 5);
+    // if (fillHist)
+    //   rEventSelection.fill(HIST("hEventCut"), 5);
 
     if (config.isAllLayersGoodITS && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
       return false;
@@ -530,8 +530,8 @@ struct HigherMassResonances {
 
     // if (config.isApplyOccCut && (std::abs(collision.trackOccupancyInTimeRange()) > config.configOccCut))
     //   return false;
-    if (fillHist)
-      rEventSelection.fill(HIST("hEventCut"), 7);
+    // if (fillHist)
+    //   rEventSelection.fill(HIST("hEventCut"), 7);
 
     if (rctCut.requireRCTFlagChecker && !rctChecker(collision))
       return false;
@@ -582,8 +582,8 @@ struct HigherMassResonances {
 
     // if (config.isSel8 && !collision.sel8())
     //   return false;
-    if (fillHist)
-      rEventSelection.fill(HIST("hEventCut"), 2);
+    // if (fillHist)
+    //   rEventSelection.fill(HIST("hEventCut"), 2);
 
     if (config.isNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
       return false;
@@ -597,8 +597,8 @@ struct HigherMassResonances {
 
     // if (config.isNoSameBunchPileup && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)))
     //   return false;
-    if (fillHist)
-      rEventSelection.fill(HIST("hEventCut"), 5);
+    // if (fillHist)
+    //   rEventSelection.fill(HIST("hEventCut"), 5);
 
     if (config.isAllLayersGoodITS && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
       return false;
@@ -610,8 +610,8 @@ struct HigherMassResonances {
 
     // if (config.isApplyOccCut && (std::abs(collision.trackOccupancyInTimeRange()) > config.configOccCut))
     //   return false;
-    if (fillHist)
-      rEventSelection.fill(HIST("hEventCut"), 7);
+    // if (fillHist)
+    //   rEventSelection.fill(HIST("hEventCut"), 7);
 
     if (rctCut.requireRCTFlagChecker && !rctChecker(collision))
       return false;
@@ -1192,7 +1192,7 @@ struct HigherMassResonances {
         }
 
         for (int i = 0; i < config.cRotations; i++) {
-          double config.theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
+          theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
 
           daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(config.theta2) - daughter1.Py() * std::sin(config.theta2), daughter1.Px() * std::sin(config.theta2) + daughter1.Py() * std::cos(config.theta2), daughter1.Pz(), daughter1.M());
 
@@ -1244,9 +1244,9 @@ struct HigherMassResonances {
 
     std::array<float, 3> eps{};
 
-    eps[0] = helperEP.GetEventPlane(collision.qvecRe()[4 * detId + 3], collision.qvecIm()[4 * detId + 3], 2);
-    eps[1] = helperEP.GetEventPlane(collision.qvecRe()[4 * refAId + 3], collision.qvecIm()[4 * refAId + 3], 2);
-    eps[2] = helperEP.GetEventPlane(collision.qvecRe()[4 * refBId + 3], collision.qvecIm()[4 * refBId + 3], 2);
+    eps[0] = helperEP.GetEventPlane(collision.qvecRe()[4 * config.detId + 3], collision.qvecIm()[4 * config.detId + 3], 2);
+    eps[1] = helperEP.GetEventPlane(collision.qvecRe()[4 * config.refAId + 3], collision.qvecIm()[4 * config.refAId + 3], 2);
+    eps[2] = helperEP.GetEventPlane(collision.qvecRe()[4 * config.refBId + 3], collision.qvecIm()[4 * config.refBId + 3], 2);
 
     float resNumA = helperEP.GetResolution(eps[0], eps[1], 2);
     float resNumB = helperEP.GetResolution(eps[0], eps[2], 2);
@@ -1359,7 +1359,7 @@ struct HigherMassResonances {
         }
 
         for (int i = 0; i < config.cRotations; i++) {
-          double config.theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
+          theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
 
           daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(config.theta2) - daughter1.Py() * std::sin(config.theta2), daughter1.Px() * std::sin(config.theta2) + daughter1.Py() * std::cos(config.theta2), daughter1.Pz(), daughter1.M());
 
@@ -2031,7 +2031,7 @@ struct HigherMassResonances {
         }
 
         for (int i = 0; i < config.cRotations; i++) {
-          double config.theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
+          theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
 
           daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(config.theta2) - daughter1.Py() * std::sin(config.theta2), daughter1.Px() * std::sin(config.theta2) + daughter1.Py() * std::cos(config.theta2), daughter1.Pz(), daughter1.M());
 
