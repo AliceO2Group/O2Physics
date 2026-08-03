@@ -958,8 +958,8 @@ class TrackHistManager
     }
   }
 
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4>
-  void fillMc(T1 const& track, T2 const& /*mcParticles*/, T3 const& /*mcMothers*/, T4 const& /*mcPartonicMothers*/)
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillMc(T1 const& track, T2 const& /*mcParticles*/, T3 const& /*mcMothers*/, T4 const& /*mcPartonicMothers*/, T5 const& col)
   {
     // No MC Particle
     if (!track.has_fMcParticle()) {
@@ -975,6 +975,10 @@ class TrackHistManager
 
     // Retrieve MC particle
     auto mcParticle = track.template fMcParticle_as<T2>();
+
+    // particles associcated to wrong collision
+    // whether a particle is associated to a wrong collision or not cannot be known by the producer so we check it here
+    bool fromWrongCollision = mcParticle.fMcColId() != col.fMcColId();
 
     // missidentifed particles are special case
     // whether a particle is missidentfied or not cannot be known by the producer so we check it here
@@ -1008,8 +1012,10 @@ class TrackHistManager
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
       if (mPlotOrigins) {
-        // check first if particle is missidentified
-        if (isMissidentified) {
+        // check first if particle is from a wrong collision
+        if (fromWrongCollision) {
+          mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
+        } else if (isMissidentified) {
           // if it is, we fill it as such
           mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kMissidentified, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
         } else {
@@ -1017,9 +1023,6 @@ class TrackHistManager
           switch (static_cast<modes::McOrigin>(mcParticle.origin())) {
             case modes::McOrigin::kPhysicalPrimary:
               mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kPrimary, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
-              break;
-            case modes::McOrigin::kFromWrongCollision:
-              mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
               break;
             case modes::McOrigin::kFromMaterial:
               mHistogramRegistry->fill(HIST(prefix) + HIST(McDir) + HIST(getHistName(kFromMaterial, HistTable)), track.pt(), track.dcaXY(), track.dcaZ());
