@@ -21,25 +21,22 @@
 
 #include <CommonConstants/MathConstants.h>
 #include <DetectorsBase/Propagator.h>
+#include <Framework/Concepts.h>
 #include <ReconstructionDataFormats/HelixHelper.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 
-#include <TVector2.h>
+#include <Math/GenVector/DisplacementVector2D.h> // IWYU pragma: keep (for rotate)
+#include <Math/Vector2D.h>                       // IWYU pragma: keep (do not replace with Math/Vector2Dfwd.h)
+#include <Math/Vector2Dfwd.h>
 
 #include <array>
 #include <cmath>
-
-#include <math.h>
 
 //_______________________________________________________________________
 inline bool checkAP(const float alpha, const float qt, const float alpha_max = 0.95, const float qt_max = 0.05)
 {
   float ellipse = std::pow(alpha / alpha_max, 2) + std::pow(qt / qt_max, 2);
-  if (ellipse < 1.0) {
-    return true;
-  } else {
-    return false;
-  }
+  return (ellipse < 1.0);
 }
 //_______________________________________________________________________
 inline float v0_alpha(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
@@ -58,7 +55,7 @@ inline float v0_qt(float pxpos, float pypos, float pzpos, float pxneg, float pyn
 }
 //_______________________________________________________________________
 template <typename TrackPrecision = float>
-inline void Vtx_recalculationParCov(o2::base::Propagator* prop, const o2::track::TrackParametrizationWithError<TrackPrecision>& trackPosInformation, const o2::track::TrackParametrizationWithError<TrackPrecision>& trackNegInformation, float xyz[3], o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE)
+inline void Vtx_recalculationParCov(o2::base::Propagator* prop, const o2::track::TrackParametrizationWithError<TrackPrecision>& trackPosInformation, const o2::track::TrackParametrizationWithError<TrackPrecision>& trackNegInformation, std::array<float, 3>& xyz, o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE)
 {
   float bz = prop->getNominalBz();
 
@@ -82,21 +79,21 @@ inline void Vtx_recalculationParCov(o2::base::Propagator* prop, const o2::track:
   float vertexXNeg = helixNeg.xC + helixNeg.rC * std::cos(alphaNeg);
   float vertexYNeg = helixNeg.yC + helixNeg.rC * std::sin(alphaNeg);
 
-  TVector2 vertexPos(vertexXPos, vertexYPos);
-  TVector2 vertexNeg(vertexXNeg, vertexYNeg);
+  ROOT::Math::XYVector vertexPos(vertexXPos, vertexYPos);
+  ROOT::Math::XYVector vertexNeg(vertexXNeg, vertexYNeg);
 
   // Convert to local coordinate system
-  TVector2 vertexPosRot = vertexPos.Rotate(-trackPosInformationCopy.getAlpha());
-  TVector2 vertexNegRot = vertexNeg.Rotate(-trackNegInformationCopy.getAlpha());
+  vertexPos.Rotate(-trackPosInformationCopy.getAlpha());
+  vertexNeg.Rotate(-trackNegInformationCopy.getAlpha());
 
   prop->propagateToX(trackPosInformationCopy,
-                     vertexPosRot.X(),
+                     vertexPos.X(),
                      bz,
                      o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI,
                      o2::base::PropagatorImpl<TrackPrecision>::MAX_STEP,
                      matCorr);
   prop->propagateToX(trackNegInformationCopy,
-                     vertexNegRot.X(),
+                     vertexNeg.X(),
                      bz,
                      o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI,
                      o2::base::PropagatorImpl<TrackPrecision>::MAX_STEP,
@@ -105,8 +102,8 @@ inline void Vtx_recalculationParCov(o2::base::Propagator* prop, const o2::track:
   xyz[2] = (trackPosInformationCopy.getZ() * helixNeg.rC + trackNegInformationCopy.getZ() * helixPos.rC) / (helixPos.rC + helixNeg.rC);
 }
 //_______________________________________________________________________
-template <typename TrackPrecision = float, typename T1, typename T2>
-inline void Vtx_recalculation(o2::base::Propagator* prop, T1 lTrackPos, T2 lTrackNeg, float xyz[3], o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE)
+template <typename TrackPrecision = float, o2::soa::is_iterator T1, o2::soa::is_iterator T2>
+inline void Vtx_recalculation(o2::base::Propagator* prop, T1 lTrackPos, T2 lTrackNeg, std::array<float, 3>& xyz, o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE)
 {
   // o2::track::TrackParametrizationWithError<TrackPrecision> = TrackParCov, I use the full version to have control over the data type
   o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformation = getTrackParCov(lTrackPos); // first get an object that stores Track information (positive)
@@ -114,80 +111,4 @@ inline void Vtx_recalculation(o2::base::Propagator* prop, T1 lTrackPos, T2 lTrac
 
   Vtx_recalculationParCov<TrackPrecision>(prop, trackPosInformation, trackNegInformation, xyz, matCorr);
 }
-//_______________________________________________________________________
-// template <typename TV0>
-// float getPtResolution(TV0 const& v0)
-// {
-//   float px = v0.px();
-//   float py = v0.py();
-//   float pt = v0.pt();
-//   float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
-//   float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
-//   float pxy_err = v0.sigmaPxPy();
-//   return std::sqrt(std::pow(px / pt * px_err, 2) + std::pow(py / pt * py_err, 2) + 2.f * px / pt * py / pt * pxy_err);
-// }
-// //_______________________________________________________________________
-// template <typename TV0>
-// float getPhiResolution(TV0 const& v0)
-// {
-//   float px = v0.px();
-//   float py = v0.py();
-//   float pt = v0.pt();
-//   float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
-//   float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
-//   float pxy_err = v0.sigmaPxPy();
-//   return std::sqrt(std::pow(px / pt / pt * py_err, 2) + std::pow(py / pt / pt * px_err, 2) - 2.f * px / pt / pt * py / pt / pt * pxy_err);
-// }
-// //_______________________________________________________________________
-// template <typename TV0>
-// float getThetaResolution(TV0 const& v0)
-// {
-//   float px = v0.px();
-//   float py = v0.py();
-//   float pz = v0.pz();
-//   float pt = v0.pt();
-//   float p = v0.p();
-//   float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
-//   float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
-//   float pz_err = std::sqrt(std::fabs(v0.sigmaPz2()));
-//   float pxy_err = v0.sigmaPxPy();
-//   float pyz_err = v0.sigmaPyPz();
-//   float pzx_err = v0.sigmaPzPx();
-//   return std::sqrt(std::pow(pz * pz / p / p, 2) * (std::pow(px / pz / pt * px_err, 2) + std::pow(py / pz / pt * py_err, 2) + std::pow(pt / pz / pz * pz_err, 2) + 2.f * (px * py / pz / pz / pt / pt * pxy_err - py / pz / pz / pz * pyz_err - px / pz / pz / pz * pzx_err)));
-// }
-// //_______________________________________________________________________
-// template <typename TV0>
-// float getEtaResolution(TV0 const& v0)
-// {
-//   float px = v0.px();
-//   float py = v0.py();
-//   float pz = v0.pz();
-//   float pt = v0.pt();
-//   float p = v0.p();
-//   float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
-//   float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
-//   float pz_err = std::sqrt(std::fabs(v0.sigmaPz2()));
-//   float pxy_err = v0.sigmaPxPy();
-//   float pyz_err = v0.sigmaPyPz();
-//   float pzx_err = v0.sigmaPzPx();
-//   return std::sqrt(std::pow(1.f / p / pt / pt, 2) * (std::pow(pz * px * px_err, 2) + std::pow(pz * py * py_err, 2) + std::pow(pt * pt * pz_err, 2) + 2.f * (pz * pz * px * py * pxy_err - pt * pt * py * pz * pyz_err - pt * pt * pz * px * pzx_err)));
-// }
-// //_______________________________________________________________________
-// template <typename TV0>
-// float getPResolution(TV0 const& v0)
-// {
-//   float px = v0.px();
-//   float py = v0.py();
-//   float pz = v0.pz();
-//   float p = v0.p();
-//   float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
-//   float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
-//   float pz_err = std::sqrt(std::fabs(v0.sigmaPz2()));
-//   float pxy_err = v0.sigmaPxPy();
-//   float pyz_err = v0.sigmaPyPz();
-//   float pzx_err = v0.sigmaPzPx();
-//   return std::sqrt(std::pow(1.f / p, 2) * (std::pow(px * px_err, 2) + std::pow(py * py_err, 2) + std::pow(pz * pz_err, 2) + 2.f * (px * py * pxy_err + py * pz * pyz_err + pz * px * pzx_err)));
-// }
-//_______________________________________________________________________
-//_______________________________________________________________________
 #endif // PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_

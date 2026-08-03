@@ -576,7 +576,7 @@ struct PhotonConversionBuilder {
     }
 
     std::array<float, 3> xyz = {0.f, 0.f, 0.f};
-    Vtx_recalculationParCov(o2::base::Propagator::Instance(), pTrack, nTrack, xyz.data(), matCorr);
+    Vtx_recalculationParCov(o2::base::Propagator::Instance(), pTrack, nTrack, xyz, matCorr);
     float rxy_tmp = RecoDecay::sqrtSumOfSquares(xyz[0], xyz[1]);
     if (rxy_tmp > maxX + margin_r_tpc) {
       return;

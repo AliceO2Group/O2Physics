@@ -85,7 +85,7 @@ template <const int ev_id, o2::soa::is_iterator TCollision>
 void fillEventInfo(o2::framework::HistogramRegistry* fRegistry, TCollision const& collision, float weight = 1.)
 {
   const float maxZ = 10.f;
-  static constexpr std::string_view EventTypes[2] = {"before/", "after/"};
+  static constexpr std::array<std::string_view, 2> EventTypes = {"before/", "after/"};
   fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hCollisionCounter"), 1.0, weight);
   if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
     fRegistry->fill(HIST("Event/") + HIST(EventTypes[ev_id]) + HIST("hCollisionCounter"), 2.0, weight);
