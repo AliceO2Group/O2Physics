@@ -684,7 +684,7 @@ struct Alice3DqTableMaker {
       }
       constexpr int NDaughters = 2;
       std::array<int, NDaughters> daughterRange = {-1, -1};
-      if (daughters.empty()) {
+      if (!daughters.empty()) {
         daughterRange[0] = daughters[0];
         daughterRange[1] = daughters[daughters.size() - 1];
       }
