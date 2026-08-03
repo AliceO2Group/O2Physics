@@ -86,15 +86,17 @@ class PairTrackTrackBuilder
             std::map<T11, std::vector<o2::framework::AxisSpec>> const& trackHistSpec1,
             std::map<T12, std::vector<o2::framework::AxisSpec>> const& trackHistSpec2,
             std::map<T13, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
-            std::map<T14, std::vector<o2::framework::AxisSpec>> const& cprHistSpec)
+            std::map<T14, std::vector<o2::framework::AxisSpec>> const& cprHistSpec,
+            std::vector<o2::framework::HistogramRegistry*> const& shRegistriesSe = {},
+            std::vector<o2::framework::HistogramRegistry*> const& shRegistriesMe = {})
   {
 
     // check if correlate the same tracks or not
     mSameSpecies = confMixing.sameSpecies.value;
 
     mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
-    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
-    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing, shRegistriesSe);
+    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing, shRegistriesMe);
     mPc.template init<modeSe>(confPairCuts);
 
     if (mSameSpecies) {
@@ -348,7 +350,9 @@ class PairV0V0Builder
             std::map<T17, std::vector<o2::framework::AxisSpec>> const& NegDauHistSpec2,
             std::map<T18, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
             std::map<T19, std::vector<o2::framework::AxisSpec>> const& cprHistSpecPos,
-            std::map<T20, std::vector<o2::framework::AxisSpec>> const& cprHistSpecNeg)
+            std::map<T20, std::vector<o2::framework::AxisSpec>> const& cprHistSpecNeg,
+            std::vector<o2::framework::HistogramRegistry*> const& shRegistriesSe = {},
+            std::vector<o2::framework::HistogramRegistry*> const& shRegistriesMe = {})
   {
     mSameSpecies = confMixing.sameSpecies.value;
 
@@ -371,8 +375,8 @@ class PairV0V0Builder
     }
 
     mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
-    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
-    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing, shRegistriesSe);
+    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing, shRegistriesMe);
     mPc.template init<modeSe>(confPairCuts);
 
     mV0Cleaner1.init(confV0Cleaner1);
@@ -612,7 +616,9 @@ class PairTrackD0Builder
             std::map<T13, std::vector<o2::framework::AxisSpec>>& posDauHistSpec,
             std::map<T14, std::vector<o2::framework::AxisSpec>>& negDauHistSpec,
             std::map<T15, std::vector<o2::framework::AxisSpec>>& pairHistSpec,
-            std::map<T16, std::vector<o2::framework::AxisSpec>>& cprHistSpec)
+            std::map<T16, std::vector<o2::framework::AxisSpec>>& cprHistSpec,
+            std::vector<o2::framework::HistogramRegistry*> const& shRegistriesSe = {},
+            std::vector<o2::framework::HistogramRegistry*> const& shRegistriesMe = {})
   {
     mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
 
@@ -635,12 +641,12 @@ class PairTrackD0Builder
       negDauPdg = PDG_t::kPiMinus;
     }
 
-    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing, shRegistriesSe);
     mPairHistManagerSe.setMass(confTrackSelection.pdgCodeAbs.value, 0, 0, confD0Selection.pdgCodeAbs.value, posDauPdg, negDauPdg);
     mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, 1);
     mCprSe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
 
-    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing, shRegistriesMe);
     mPairHistManagerMe.setMass(confTrackSelection.pdgCodeAbs.value, 0, 0, confD0Selection.pdgCodeAbs.value, posDauPdg, negDauPdg);
     mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, 1);
     mCprMe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
@@ -777,7 +783,9 @@ class PairTrackV0Builder
             std::map<T13, std::vector<o2::framework::AxisSpec>>& posDauHistSpec,
             std::map<T14, std::vector<o2::framework::AxisSpec>>& negDauHistSpec,
             std::map<T15, std::vector<o2::framework::AxisSpec>>& pairHistSpec,
-            std::map<T16, std::vector<o2::framework::AxisSpec>>& cprHistSpec)
+            std::map<T16, std::vector<o2::framework::AxisSpec>>& cprHistSpec,
+            std::vector<o2::framework::HistogramRegistry*> const& shRegistriesSe = {},
+            std::vector<o2::framework::HistogramRegistry*> const& shRegistriesMe = {})
   {
     mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
 
@@ -802,12 +810,12 @@ class PairTrackV0Builder
       }
     }
 
-    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing, shRegistriesSe);
     mPairHistManagerSe.setMass(confTrackSelection.pdgCodeAbs.value, 0, 0, confV0Selection.pdgCodeAbs.value, pdgCodePosDau, pdgCodeNegDau);
     mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, 1);
     mCprSe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
 
-    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing, shRegistriesMe);
     mPairHistManagerMe.setMass(confTrackSelection.pdgCodeAbs.value, 0, 0, confV0Selection.pdgCodeAbs.value, pdgCodePosDau, pdgCodeNegDau);
     mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, 1);
     mCprMe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
@@ -940,19 +948,21 @@ class PairTrackTwoTrackResonanceBuilder
             std::map<T11, std::vector<o2::framework::AxisSpec>> const& posDauHistSpec,
             std::map<T12, std::vector<o2::framework::AxisSpec>> const& negDauHistSpec,
             std::map<T13, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
-            std::map<T14, std::vector<o2::framework::AxisSpec>> const& cprHistSpec)
+            std::map<T14, std::vector<o2::framework::AxisSpec>> const& cprHistSpec,
+            std::vector<o2::framework::HistogramRegistry*> const& shRegistriesSe = {},
+            std::vector<o2::framework::HistogramRegistry*> const& shRegistriesMe = {})
   {
     mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
 
     mTrackHistManager.template init<modeSe>(registry, trackHistSpec, confTrackSelection);
     mResonanceHistManager.template init<modeSe>(registry, resonanceHistSpec, confResonanceSelection, posDauHistSpec, negDauHistSpec);
 
-    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing, shRegistriesSe);
     mPairHistManagerSe.setMass(confTrackSelection.pdgCodeAbs.value, confResonanceSelection.pdgCodeAbs.value);
     mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, 1);
     mCprSe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
 
-    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing, shRegistriesMe);
     mPairHistManagerMe.setMass(confTrackSelection.pdgCodeAbs.value, confResonanceSelection.pdgCodeAbs.value);
     mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, 1);
     mCprMe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
@@ -1064,19 +1074,21 @@ class PairV0TwoTrackResonanceBuilder
             std::map<T15, std::vector<o2::framework::AxisSpec>> const& ResonanceNegDauHistSpec,
             std::map<T16, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
             std::map<T17, std::vector<o2::framework::AxisSpec>> const& cprHistSpecPos,
-            std::map<T18, std::vector<o2::framework::AxisSpec>> const& cprHistSpecNeg)
+            std::map<T18, std::vector<o2::framework::AxisSpec>> const& cprHistSpecNeg,
+            std::vector<o2::framework::HistogramRegistry*> const& shRegistriesSe = {},
+            std::vector<o2::framework::HistogramRegistry*> const& shRegistriesMe = {})
   {
     mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
 
     mV0HistManager.template init<modeSe>(registry, v0HistSpec, confV0Selection, V0posDauHistSpec, V0negDauHistSpec);
     mResonanceHistManager.template init<modeSe>(registry, resonanceHistSpec, confResonanceSelection, ResonancePosDauHistSpec, ResonanceNegDauHistSpec);
 
-    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing, shRegistriesSe);
     mPairHistManagerSe.setMass(confV0Selection.pdgCodeAbs.value, confResonanceSelection.pdgCodeAbs.value);
     mPairHistManagerSe.setCharge(1, 1); // set charge to 1
     mCprSe.init(registry, cprHistSpecPos, cprHistSpecNeg, confCprPos, confCprNeg);
 
-    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing, shRegistriesMe);
     mPairHistManagerMe.setMass(confV0Selection.pdgCodeAbs.value, confResonanceSelection.pdgCodeAbs.value);
     mPairHistManagerMe.setCharge(1, 1); // set charge to 1
     mCprMe.init(registry, cprHistSpecPos, cprHistSpecNeg, confCprPos, confCprNeg);
@@ -1176,7 +1188,9 @@ class PairTrackKinkBuilder
             std::map<T12, std::vector<o2::framework::AxisSpec>> const& kinkHistSpec,
             std::map<T13, std::vector<o2::framework::AxisSpec>> const& chaDauHistSpec,
             std::map<T14, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
-            std::map<T15, std::vector<o2::framework::AxisSpec>> const& cprHistSpec)
+            std::map<T15, std::vector<o2::framework::AxisSpec>> const& cprHistSpec,
+            std::vector<o2::framework::HistogramRegistry*> const& shRegistriesSe = {},
+            std::vector<o2::framework::HistogramRegistry*> const& shRegistriesMe = {})
   {
     mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
 
@@ -1186,12 +1200,12 @@ class PairTrackKinkBuilder
     mTrackCleaner.init(confTrackCleaner);
     mKinkCleaner.init(confKinkCleaner);
 
-    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing, shRegistriesSe);
     mPairHistManagerSe.setMass(confTrackSelection.pdgCodeAbs.value, confKinkSelection.pdgCodeAbs.value);
     mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, 1); // abs charge of kink daughter is always 1
     mCprSe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
 
-    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing, shRegistriesMe);
     mPairHistManagerMe.setMass(confTrackSelection.pdgCodeAbs.value, confKinkSelection.pdgCodeAbs.value);
     mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, 1); // abs charge of kink daughter is always 1
     mCprMe.init(registry, cprHistSpec, confCpr, confTrackSelection.chargeAbs.value);
@@ -1337,7 +1351,9 @@ class PairTrackCascadeBuilder
             std::map<T16, std::vector<o2::framework::AxisSpec>> const& negDauHistSpec,
             std::map<T17, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
             std::map<T18, std::vector<o2::framework::AxisSpec>> const& cprHistSpecBachelor,
-            std::map<T19, std::vector<o2::framework::AxisSpec>> const& cprHistSpecV0Daughter)
+            std::map<T19, std::vector<o2::framework::AxisSpec>> const& cprHistSpecV0Daughter,
+            std::vector<o2::framework::HistogramRegistry*> const& shRegistriesSe = {},
+            std::vector<o2::framework::HistogramRegistry*> const& shRegistriesMe = {})
   {
     mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
 
@@ -1347,12 +1363,12 @@ class PairTrackCascadeBuilder
     mTrackCleaner.init(confTrackCleaner);
     mCascadeCleaner.init(confCascadeCleaner);
 
-    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing, shRegistriesSe);
     mPairHistManagerSe.setMass(confTrackSelection.pdgCodeAbs.value, confCascadeSelection.pdgCodeAbs.value);
     mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, 1);
     mCprSe.init(registry, cprHistSpecBachelor, cprHistSpecV0Daughter, confCprBachelor, confCprV0Daughter, confTrackSelection.chargeAbs.value);
 
-    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing, shRegistriesMe);
     mPairHistManagerMe.setMass(confTrackSelection.pdgCodeAbs.value, confCascadeSelection.pdgCodeAbs.value);
     mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, 1);
     mCprMe.init(registry, cprHistSpecBachelor, cprHistSpecV0Daughter, confCprBachelor, confCprV0Daughter, confTrackSelection.chargeAbs.value);
@@ -1480,15 +1496,17 @@ class PairMcParticleMcParticleBuilder
             std::map<T13, std::vector<o2::framework::AxisSpec>> const& mcParticleHistSpec1,
             std::map<T14, std::vector<o2::framework::AxisSpec>> const& mcParticleHistSpec2,
             std::map<T15, std::vector<o2::framework::AxisSpec>> const& pairHistSpec,
-            std::map<T16, std::vector<o2::framework::AxisSpec>> const& cprHistSpec)
+            std::map<T16, std::vector<o2::framework::AxisSpec>> const& cprHistSpec,
+            std::vector<o2::framework::HistogramRegistry*> const& shRegistriesSe = {},
+            std::vector<o2::framework::HistogramRegistry*> const& shRegistriesMe = {})
   {
 
     // check if correlate the same tracks or not
     mSameSpecies = confMixing.sameSpecies.value;
 
     mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
-    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
-    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing);
+    mPairHistManagerSe.template init<modeSe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing, shRegistriesSe);
+    mPairHistManagerMe.template init<modeMe>(registry, pairHistSpec, confPairBinning, confPairCuts, confMixing, shRegistriesMe);
     mPc.template init<modeSe>(confPairCuts);
 
     if (mSameSpecies) {

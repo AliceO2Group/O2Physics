@@ -115,6 +115,12 @@ struct FemtoPairTrackTrack {
   pairhistmanager::ConfMixing confMixing;
 
   o2::framework::HistogramRegistry hRegistry{"FemtoTrackTrack", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
+  o2::framework::HistogramRegistry hShSe0{"FemtoTrackTrackShSe0", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
+  o2::framework::HistogramRegistry hShSe1{"FemtoTrackTrackShSe1", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
+  o2::framework::HistogramRegistry hShSe2{"FemtoTrackTrackShSe2", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
+  o2::framework::HistogramRegistry hShMe0{"FemtoTrackTrackShMe0", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
+  o2::framework::HistogramRegistry hShMe1{"FemtoTrackTrackShMe1", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
+  o2::framework::HistogramRegistry hShMe2{"FemtoTrackTrackShMe2", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
 
   void init(o2::framework::InitContext&)
   {
@@ -145,13 +151,13 @@ struct FemtoPairTrackTrack {
       trackHistSpec1 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning1);
       trackHistSpec2 = trackhistmanager::makeTrackHistSpecMap(confTrackBinning2);
       pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confMixing);
-      pairTrackTrackBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
+      pairTrackTrackBuilder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec, {&hShSe0, &hShSe1, &hShSe2}, {&hShMe0, &hShMe1, &hShMe2});
     } else {
       colHistSpec = colhistmanager::makeColMcHistSpecMap(confCollisionBinning);
       trackHistSpec1 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning1);
       trackHistSpec2 = trackhistmanager::makeTrackMcHistSpecMap(confTrackBinning2);
       pairHistSpec = pairhistmanager::makePairMcHistSpecMap(confPairBinning, confMixing);
-      pairTrackTrackBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec);
+      pairTrackTrackBuilder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confTrackSelections1, confTrackSelections2, confTrackCleaner1, confTrackCleaner2, confCpr, confMixing, confPairBinning, confPairCuts, colHistSpec, trackHistSpec1, trackHistSpec2, pairHistSpec, cprHistSpec, {&hShSe0, &hShSe1, &hShSe2}, {&hShMe0, &hShMe1, &hShMe2});
     }
     hRegistry.print();
   };

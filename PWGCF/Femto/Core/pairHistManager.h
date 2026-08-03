@@ -535,9 +535,12 @@ class PairHistManager
             std::map<PairHist, std::vector<o2::framework::AxisSpec>> const& Specs,
             T1 const& ConfPairBinning,
             T2 const& ConfPairCuts,
-            T3 const& ConfMixing)
+            T3 const& ConfMixing,
+            std::vector<o2::framework::HistogramRegistry*> const& shRegistries = {})
   {
     mHistogramRegistry = registry;
+    mShRegistries = shRegistries;
+    mShRegistryFill.assign(mShRegistries.size(), 0);
 
     mUsePdgMass = ConfPairBinning.usePdgMass.value;
 
@@ -1039,21 +1042,24 @@ class PairHistManager
         mSh1D[iCent].resize(nKt);
         mShBinCount[iCent].resize(nKt);
         // folder name: mult_{low}_{high}
-        const std::string centFolder = "mult_" + std::to_string(static_cast<int>(mShCentEdges[iCent])) +
-                                       "_" + std::to_string(static_cast<int>(mShCentEdges[iCent + 1]));
+        const std::string centFolder = "mult_" + std::to_string(std::lround(mShCentEdges[iCent])) +
+                                       "_" + std::to_string(std::lround(mShCentEdges[iCent + 1]));
         for (int iKt = 0; iKt < nKt; ++iKt) {
           mShReal[iCent][iKt].resize(nJM);
           mShImag[iCent][iKt].resize(nJM);
           // folder name: kT_{low*100}_{high*100}
           std::string ktFolder = "kT_";
-          ktFolder += std::to_string(static_cast<int>(mShKtEdges[iKt] * 100.0));
+          ktFolder += std::to_string(std::lround(mShKtEdges[iKt] * 100.0));
           ktFolder += "_";
-          ktFolder += std::to_string(static_cast<int>(mShKtEdges[iKt + 1] * 100.0));
+          ktFolder += std::to_string(std::lround(mShKtEdges[iKt + 1] * 100.0));
           std::string dir = std::string(prefix) + std::string(AnalysisDir) + "SH/";
           dir += centFolder;
           dir += "/";
           dir += ktFolder;
           dir += "/";
+
+          const int nHistPerCell = 2 * nJM + 2 + (mShPlot1D ? 1 : 0);
+          o2::framework::HistogramRegistry* shReg = shRegistryFor(nHistPerCell);
 
           int ihist = 0;
           for (int l = 0; l <= mShLMax; ++l) {
@@ -1078,8 +1084,8 @@ class PairHistManager
               std::string titleIm = "Im ";
               titleIm += ylmLabel;
               titleIm += "; k* (GeV/#it{c}); Im[A_{l}^{m}]";
-              mShReal[iCent][iKt][ihist] = mHistogramRegistry->add<TH1>(nameRe.c_str(), titleRe.c_str(), o2::framework::kTH1D, {mShKstarSpec});
-              mShImag[iCent][iKt][ihist] = mHistogramRegistry->add<TH1>(nameIm.c_str(), titleIm.c_str(), o2::framework::kTH1D, {mShKstarSpec});
+              mShReal[iCent][iKt][ihist] = shReg->add<TH1>(nameRe.c_str(), titleRe.c_str(), o2::framework::kTH1D, {mShKstarSpec});
+              mShImag[iCent][iKt][ihist] = shReg->add<TH1>(nameIm.c_str(), titleIm.c_str(), o2::framework::kTH1D, {mShKstarSpec});
               mShReal[iCent][iKt][ihist]->Sumw2();
               mShImag[iCent][iKt][ihist]->Sumw2();
               ++ihist;
@@ -1091,17 +1097,17 @@ class PairHistManager
           const o2::framework::AxisSpec covLmAxis{nAxisLM, -0.5, static_cast<double>(nAxisLM) - 0.5, "l,m #times (re,im)"};
           std::string nameCov = dir;
           nameCov += "Cov";
-          mShCov[iCent][iKt] = mHistogramRegistry->add<TH3>(nameCov.c_str(), "SH covariance; k* (GeV/#it{c}); l,m; l,m", o2::framework::kTH3D, {mShKstarSpec, covLmAxis, covLmAxis});
+          mShCov[iCent][iKt] = shReg->add<TH3>(nameCov.c_str(), "SH covariance; k* (GeV/#it{c}); l,m; l,m", o2::framework::kTH3D, {mShKstarSpec, covLmAxis, covLmAxis});
           mShCov[iCent][iKt]->Sumw2();
 
           std::string nameBinCount = dir;
           nameBinCount += "BinCount";
-          mShBinCount[iCent][iKt] = mHistogramRegistry->add<TH1>(nameBinCount.c_str(), "SH bin occupancy; k* (GeV/#it{c}); Entries", o2::framework::kTH1D, {mShKstarSpec});
+          mShBinCount[iCent][iKt] = shReg->add<TH1>(nameBinCount.c_str(), "SH bin occupancy; k* (GeV/#it{c}); Entries", o2::framework::kTH1D, {mShKstarSpec});
 
           if (mShPlot1D) {
             std::string name1D = dir;
             name1D += "h1D";
-            mSh1D[iCent][iKt] = mHistogramRegistry->add<TH1>(name1D.c_str(), "1D distribution; k* (GeV/#it{c}); Entries", o2::framework::kTH1D, {mShKstarSpec});
+            mSh1D[iCent][iKt] = shReg->add<TH1>(name1D.c_str(), "1D distribution; k* (GeV/#it{c}); Entries", o2::framework::kTH1D, {mShKstarSpec});
             mSh1D[iCent][iKt]->Sumw2();
           }
         }
@@ -1456,6 +1462,23 @@ class PairHistManager
     return static_cast<float>(0.5 * std::sqrt(std::max(0.0, kallen) / s));
   }
 
+  o2::framework::HistogramRegistry* shRegistryFor(int nHist)
+  {
+    if (mShRegistries.empty()) {
+      return mHistogramRegistry;
+    }
+    constexpr int MaxHistPerRegistry = 512;
+    for (std::size_t i = 0; i < mShRegistries.size(); ++i) {
+      if (mShRegistryFill[i] + nHist <= MaxHistPerRegistry) {
+        mShRegistryFill[i] += nHist;
+        return mShRegistries[i];
+      }
+    }
+    LOG(fatal) << "SH histograms do not fit into the provided registry pool; "
+               << "add more registries to the task or reduce the centrality/kT binning or shLMax";
+    return nullptr;
+  }
+
   std::tuple<float, float, float> computeBertschPrattLCMS(ROOT::Math::PtEtaPhiMVector const& part1, ROOT::Math::PtEtaPhiMVector const& part2)
   {
     const ROOT::Math::PxPyPzEVector p1(part1);
@@ -1701,6 +1724,9 @@ class PairHistManager
   // SH histograms binned in [iCent][iKt][ihist]; ihist = l*(l+1)+m
   std::vector<std::vector<std::vector<std::shared_ptr<TH1>>>> mShReal;
   std::vector<std::vector<std::vector<std::shared_ptr<TH1>>>> mShImag;
+  // pool of extra registries for SH histograms;
+  std::vector<o2::framework::HistogramRegistry*> mShRegistries;
+  std::vector<int> mShRegistryFill;
   // SH covariance matrix per [iCent][iKt]; TH3d: k* on X, 2*nJM (l,m x re/im)
   std::vector<std::vector<std::shared_ptr<TH3>>> mShCov;
   bool mShPlot1D = false;
