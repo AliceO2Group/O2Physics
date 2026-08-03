@@ -668,9 +668,9 @@ struct kstarInOO {
             tofPIDPassed = true;
           }
         } else {
-          if (!cfgTrackTOFHard) {
+          if (!cfgTrackTOFHard)
             tofPIDPassed = true;
-          } else
+          else
             tofPIDPassed = false;
         }
       } // TPCPID cut
@@ -684,9 +684,8 @@ struct kstarInOO {
       if (candidate.hasTOF()) {
         tofpid = std::abs(candidate.tofNSigmaKa());
       } else {
-        if (cfgTrackTOFHard) {
+        if (cfgTrackTOFHard)
           tofpid = 999;
-        }
       }
       if (tpcpid * tpcpid + tofpid * tofpid < cfgTrackCircleValue) {
         tpcPIDPassed = true;
@@ -722,9 +721,9 @@ struct kstarInOO {
           if (std::abs(candidate.tofNSigmaPi()) < cfgTrackTOFPIDnSig)
             tofPIDPassed = true;
         } else {
-          if (!cfgTrackTOFHard) {
+          if (!cfgTrackTOFHard)
             tofPIDPassed = true;
-          } else
+          else
             tofPIDPassed = false;
         }
       } // TPCPID cut
@@ -739,9 +738,8 @@ struct kstarInOO {
       if (candidate.hasTOF()) {
         tofpid = std::abs(candidate.tofNSigmaPi());
       } else {
-        if (cfgTrackTOFHard) {
+        if (cfgTrackTOFHard)
           tofpid = 999;
-        }
       }
       if (tpcpid * tpcpid + tofpid * tofpid < cfgTrackCircleValue) {
         tpcPIDPassed = true;
@@ -848,9 +846,8 @@ struct kstarInOO {
       track2_mass = massKa;
     }
 
-    if (track1_mass == track2_mass) {
+    if (track1_mass == track2_mass)
       return {};
-    }
 
     ROOT::Math::PxPyPzMVector lTrueDaughter1, lTrueDaughter2, lTrueReso;
     lTrueDaughter1 = ROOT::Math::PxPyPzMVector(particle1.px(), particle1.py(), particle1.pz(), track1_mass);
@@ -1834,7 +1831,7 @@ struct kstarInOO {
           if (bestJet.Pt() > 10.0 && bestJet.Pt() < 12.0)
             histos.fill(HIST("Kstar_pT_INJet_10_12"), lResonance.Pt());
 
-	  // Daughters out of jets
+          // Daughters out of jets
           if (!isKaonInJet || !isPionInJet) {
             ROOT::Math::PxPyPzEVector recoveredJet = bestJet + missing_daughter;
             if (bestJet.Pt() > 6.0 && bestJet.Pt() < 8.0) {
