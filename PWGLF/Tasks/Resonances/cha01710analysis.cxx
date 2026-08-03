@@ -140,6 +140,8 @@ struct Cha01710analysis {
   int refBId = 5;
 
   float centrality = -1.;
+  float rotmin = 5.0 / 6.0;
+  float rotmax = 7.0 / 6.0;
 
   template <typename T>
   int getDetId(T const& name)
@@ -349,7 +351,7 @@ struct Cha01710analysis {
             histos.fill(HIST("Pair/hSignalMinus"), mother.M(), mother.Pt(), centrality, relPhi);
           }
           for (int i = 0; i < cfgNRotations; ++i) {
-            auto randomPhi = rn->Uniform(o2::constants::math::PI * 5.0 / 6.0, o2::constants::math::PI * 7.0 / 6.0);
+            auto randomPhi = rn->Uniform(o2::constants::math::PI * rotmin, o2::constants::math::PI * rotmax);
             randomPhi += kaon.Phi();
             auto kaonRot = ROOT::Math::PxPyPzMVector(kaon.Pt() * std::cos(randomPhi), kaon.Pt() * std::sin(randomPhi), track.pz(), o2::constants::physics::MassKaonCharged);
             auto motherRot = k0 + kaonRot;
