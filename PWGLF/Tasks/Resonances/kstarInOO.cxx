@@ -1764,7 +1764,10 @@ struct kstarInOO {
 
       //==================
       // daughters
-      double dR_kaon, dR_pion, dR_k_kstar, dR_pi_kstar;
+      double dR_kaon = 0;
+      double dR_pion = 0;
+      double dR_k_kstar = 0;
+      double dR_pi_kstar = 0;
       bool isKaonInJet = false;
       bool isPionInJet = false;
       ROOT::Math::PxPyPzEVector Daughter, missing_daughter;
@@ -1830,7 +1833,7 @@ struct kstarInOO {
           if (bestJet.Pt() > 10.0 && bestJet.Pt() < 12.0)
             histos.fill(HIST("Kstar_pT_INJet_10_12"), lResonance.Pt());
 
-	  // Daughters out of jets
+          // Daughters out of jets
           if (!isKaonInJet || !isPionInJet) {
             ROOT::Math::PxPyPzEVector recoveredJet = bestJet + missing_daughter;
             if (bestJet.Pt() > 6.0 && bestJet.Pt() < 8.0) {
