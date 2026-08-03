@@ -607,7 +607,7 @@ struct JetSpectraEseTask {
       if (cfg.hEff == nullptr) {
         LOGF(fatal, "Could not find %s as TH1F in track efficiency list %s", efficiencyName.c_str(), cfgEfficiency.value.c_str());
       }
-      LOGF(info, "Loaded tracking efficiency %s from %s (%p)", efficiencyName.c_str(), cfgEfficiency.value.c_str(), static_cast<void*>(cfg.hEff));
+      LOGF(info, "Loaded tracking efficiency %s from %s", efficiencyName.c_str(), cfgEfficiency.value.c_str());
     }
     if (!cfgEfficiency3D.value.empty()) {
       cfg.h3EffList = ccdb->getForTimeStamp<TList>(cfgEfficiency3D, timestamp);
@@ -618,7 +618,7 @@ struct JetSpectraEseTask {
       if (cfg.h3Eff == nullptr) {
         LOGF(fatal, "Could not find %s as TH3F in 3D track efficiency list %s", efficiencyName.c_str(), cfgEfficiency3D.value.c_str());
       }
-      LOGF(info, "Loaded 3D tracking efficiency %s from %s (%p)", efficiencyName.c_str(), cfgEfficiency3D.value.c_str(), static_cast<void*>(cfg.h3Eff));
+      LOGF(info, "Loaded 3D tracking efficiency %s from %s", efficiencyName.c_str(), cfgEfficiency3D.value.c_str());
       cfg.is3D = true;
     }
     cfg.isLoaded = true;
@@ -1482,7 +1482,8 @@ struct JetSpectraEseTask {
     auto cDF = 1. - TMath::Gamma(nDF, chi2);
     if constexpr (fillHist)
       registry.fill(HIST("eventQA/hRhoPhiCheck"), 0.5);
-    if (cfgRhoPhiPvalCriteria && cDF < 0.01) {
+    const float pValue = 0.01;
+    if (cfgRhoPhiPvalCriteria && cDF < pValue) {
       const float noFlow = 0.0f;
       modulationFit->SetParameter(1, noFlow); // o2-linter: disable=magic-number (fit params)
       modulationFit->SetParameter(3, noFlow); // o2-linter: disable=magic-number (fit params)
