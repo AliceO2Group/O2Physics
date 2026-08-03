@@ -677,7 +677,6 @@ struct HfCorrelatorXicHadrons {
           // if strange TOF is unavailable
           passTOF = track.tofNSigmaPr() > cfgV0.cfgV0DaughPIDCutsTOFPr;
         }
-
       }
 
       if ((std::abs(track.tpcNSigmaPr()) > cfgV0.cfgV0DaughPIDCutsTPCPr) && !passTOF) {
@@ -707,7 +706,6 @@ struct HfCorrelatorXicHadrons {
           // Fallback to standard track TOF
           passTOF = std::abs(track.tofNSigmaPi()) > cfgV0.cfgV0DaughPIDCutsTOFPi;
         }
-
       }
 
       if ((std::abs(track.tpcNSigmaPi()) > cfgV0.cfgV0DaughPIDCutsTPCPi) && !passTOF) {
