@@ -425,12 +425,17 @@ struct TrackEfficiency {
 
       registry.add("h_track_pt_track_dcaxy_mcprimary", "#it{p}_{T, track} (GeV/#it{c}); primaries dca_{xy}", {HistType::kTH2F, {ptAxisEff, dcaxyAxis}});
       registry.add("h_track_pt_track_dcaz_mcprimary", "#it{p}_{T, track} (GeV/#it{c}); primaries dca_{z}", {HistType::kTH2F, {ptAxisEff, dcazAxis}});
-      registry.add("h_track_pt_track_dcaxy_mcsecondary", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{xy}", {HistType::kTH2F, {ptAxisEff, dcaxyAxis}});
-      registry.add("h_track_pt_track_dcaz_mcsecondary", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{z}", {HistType::kTH2F, {ptAxisEff, dcazAxis}});
+      registry.add("h_track_pt_track_dcaxy_mcsecondarydecay", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{xy}", {HistType::kTH2F, {ptAxisEff, dcaxyAxis}});
+      registry.add("h_track_pt_track_dcaz_mcsecondarydecay", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{z}", {HistType::kTH2F, {ptAxisEff, dcazAxis}});
+      registry.add("h_track_pt_track_dcaxy_mcsecondarymat", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{xy}", {HistType::kTH2F, {ptAxisEff, dcaxyAxis}});
+      registry.add("h_track_pt_track_dcaz_mcsecondarymat", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{z}", {HistType::kTH2F, {ptAxisEff, dcazAxis}});
+
       registry.add("h_track_pt_high_track_dcaxy_mcprimary", "#it{p}_{T, track} (GeV/#it{c}); primaries dca_{xy}", {HistType::kTH2F, {ptAxisHighEff, dcaxyAxis}});
       registry.add("h_track_pt_high_track_dcaz_mcprimary", "#it{p}_{T, track} (GeV/#it{c}); primaries dca_{z}", {HistType::kTH2F, {ptAxisHighEff, dcazAxis}});
-      registry.add("h_track_pt_high_track_dcaxy_mcsecondary", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{xy}", {HistType::kTH2F, {ptAxisHighEff, dcaxyAxis}});
-      registry.add("h_track_pt_high_track_dcaz_mcsecondary", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{z}", {HistType::kTH2F, {ptAxisHighEff, dcazAxis}});
+      registry.add("h_track_pt_high_track_dcaxy_mcsecondarydecay", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{xy}", {HistType::kTH2F, {ptAxisHighEff, dcaxyAxis}});
+      registry.add("h_track_pt_high_track_dcaz_mcsecondarydecay", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{z}", {HistType::kTH2F, {ptAxisHighEff, dcazAxis}});
+      registry.add("h_track_pt_high_track_dcaxy_mcsecondarymat", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{xy}", {HistType::kTH2F, {ptAxisHighEff, dcaxyAxis}});
+      registry.add("h_track_pt_high_track_dcaz_mcsecondarymat", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{z}", {HistType::kTH2F, {ptAxisHighEff, dcazAxis}});
     }
   }
 
@@ -1388,6 +1393,7 @@ struct TrackEfficiency {
 
   void processItsTpcMatchingMC(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::JetTracks, aod::JTrackPIs> const& jetTracks, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels, aod::TrackSelectionExtension> const&, aod::McParticles const&)
   {
+    // could be added in future: pions+kaons vs protons distinction; easy in MC but what is the procedure for data?
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
@@ -1474,11 +1480,18 @@ struct TrackEfficiency {
         registry.fill(HIST("h_track_pt_high_track_dcaz_mcprimary"), aodTrack.pt(), aodTrack.dcaZ());
       }
 
-      if (!aodMcParticleFromTrack.isPhysicalPrimary()) {
-        registry.fill(HIST("h_track_pt_track_dcaxy_mcsecondary"), aodTrack.pt(), aodTrack.dcaXY());
-        registry.fill(HIST("h_track_pt_track_dcaz_mcsecondary"), aodTrack.pt(), aodTrack.dcaZ());
-        registry.fill(HIST("h_track_pt_high_track_dcaxy_mcsecondary"), aodTrack.pt(), aodTrack.dcaXY());
-        registry.fill(HIST("h_track_pt_high_track_dcaz_mcsecondary"), aodTrack.pt(), aodTrack.dcaZ());
+      if (!aodMcParticleFromTrack.isPhysicalPrimary()) {      // Secondaries (weak decays and material)
+        if (aodMcParticleFromTrack.getProcess() == kPDecay) { // Particles from decay
+          registry.fill(HIST("h_track_pt_track_dcaxy_mcsecondarydecay"), aodTrack.pt(), aodTrack.dcaXY());
+          registry.fill(HIST("h_track_pt_track_dcaz_mcsecondarydecay"), aodTrack.pt(), aodTrack.dcaZ());
+          registry.fill(HIST("h_track_pt_high_track_dcaxy_mcsecondarydecay"), aodTrack.pt(), aodTrack.dcaXY());
+          registry.fill(HIST("h_track_pt_high_track_dcaz_mcsecondarydecay"), aodTrack.pt(), aodTrack.dcaZ());
+        } else { // Particles from the material
+          registry.fill(HIST("h_track_pt_track_dcaxy_mcsecondarymat"), aodTrack.pt(), aodTrack.dcaXY());
+          registry.fill(HIST("h_track_pt_track_dcaz_mcsecondarymat"), aodTrack.pt(), aodTrack.dcaZ());
+          registry.fill(HIST("h_track_pt_high_track_dcaxy_mcsecondarymat"), aodTrack.pt(), aodTrack.dcaXY());
+          registry.fill(HIST("h_track_pt_high_track_dcaz_mcsecondarymat"), aodTrack.pt(), aodTrack.dcaZ());
+        }
       }
     }
   }
