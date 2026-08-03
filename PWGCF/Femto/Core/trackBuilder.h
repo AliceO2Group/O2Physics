@@ -871,7 +871,6 @@ class TrackBuilderDerivedToDerived
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
   void processTracks(T1& col, T2& /*trackTable*/, T3& partitionTrack1, T4& partitionTrack2, T5& cache, T6& newTrackTable, T7& newCollisionTable)
   {
-    indexMap.clear();
 
     if (mLimitTrack1 > 0) {
       auto trackSlice1 = partitionTrack1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
@@ -914,6 +913,13 @@ class TrackBuilderDerivedToDerived
     this->fillTrack(daughter, trackProducts, collisionProducts);
     int64_t idx = trackProducts.producedTracks.lastIndex();
     return idx;
+  }
+
+  template <typename T>
+  void reset(T const& tracks)
+  {
+    indexMap.clear();
+    indexMap.reserve(tracks.size());
   }
 
  private:

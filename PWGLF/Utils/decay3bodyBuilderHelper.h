@@ -31,7 +31,6 @@
 #include <ReconstructionDataFormats/Vertex.h>
 
 #include <KFParticle.h>
-#include <KFVertex.h>
 
 #include <array>
 #include <cmath>

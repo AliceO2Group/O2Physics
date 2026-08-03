@@ -58,6 +58,7 @@
 #include <RtypesCore.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -725,7 +726,7 @@ struct strangederivedbuilder {
                                       totalFDDAmplitudeA, totalFDDAmplitudeC,
                                       timeZNA, timeZNC, // ZDC info
                                       energyCommonZNA, energyCommonZNC);
-        } else {                                                           // We are in Run 2
+        } else { // We are in Run 2
           products.strangeCentsRun2(collision.centRun2V0M(), collision.centRun2V0A(),
                                     collision.centRun2SPDTracklets(), collision.centRun2SPDClusters());
           products.strangeEvSelsRun2(collision.sel8(), collision.sel7(), collision.selection_raw(),
@@ -809,7 +810,7 @@ struct strangederivedbuilder {
         collisionEventTime[collision.globalIndex()] /= static_cast<double>(collisionNtracks[collision.globalIndex()]);
         collisionEventTimeErr[collision.globalIndex()] /= static_cast<double>(collisionNtracks[collision.globalIndex()]);
       } else {
-        collisionEventTime[collision.globalIndex()] = -1e+6; // undefined
+        collisionEventTime[collision.globalIndex()] = -1e+6;    // undefined
         collisionEventTimeErr[collision.globalIndex()] = -1e-6; // undefined
       }
       if (fillOnlySelectedCollisions && !isCollisionAccepted(collision, totalNbrCollisionsPerSelection)) {

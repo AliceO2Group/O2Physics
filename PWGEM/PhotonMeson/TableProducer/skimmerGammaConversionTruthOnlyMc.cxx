@@ -111,7 +111,7 @@ struct skimmerGammaConversionTruthOnlyMc {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<skimmerGammaConversionTruthOnlyMc>(cfgc, TaskName{"skimmer-gamma-conversion-truthonlymc"})};
+  return WorkflowSpec{adaptAnalysisTask<skimmerGammaConversionTruthOnlyMc>(context, TaskName{"skimmer-gamma-conversion-truthonlymc"})};
 }

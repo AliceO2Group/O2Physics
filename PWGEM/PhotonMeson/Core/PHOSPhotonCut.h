@@ -17,6 +17,7 @@
 #define PWGEM_PHOTONMESON_CORE_PHOSPHOTONCUT_H_
 
 #include <Framework/ASoA.h>
+#include <Framework/Concepts.h>
 
 #include <string>
 

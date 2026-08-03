@@ -17,19 +17,28 @@
 #include "PWGLF/DataModel/LFPhiFlowTables.h"
 
 #include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TMath.h>
 
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
-#include <map>
 #include <string>
+#include <tuple>
 
 using namespace o2;
 using namespace o2::framework;
@@ -63,6 +72,7 @@ struct phiflowder {
   /*Configurable<float> ptMix{"ptMix", 0.2f, "ME: pT bin width"};
   Configurable<float> etaMix{"etaMix", 0.2f, "ME: eta bin width"};
   Configurable<float> phiMix{"phiMix", 0.3f, "ME: phi bin width"};*/
+  ConfigurableAxis cfgSPAngleBins{"cfgSPAngleBins", {12, 0.0, 2.0 * TMath::Pi()}, "Mixing bins - odd spectator-plane angle"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -476,6 +486,127 @@ struct phiflowder {
   }
 
   PROCESS_SWITCH(phiflowder, processMixedData, "Process mixed-event K+K- pairs", true);
+
+  // Processing Event Mixing
+  void processMixedData2(EventCandidates const& collisions,
+                         aod::KaonTracks const& /*kaontracks*/)
+  {
+    // Calculate the odd spectator-plane angle directly
+    // from the Q vectors already stored in KaonEvents.
+    auto getSPAngle =
+      [](EventCandidates::iterator const& collision) -> float {
+      const float qxOdd =
+        collision.qxA() - collision.qxC();
+
+      const float qyOdd =
+        collision.qyA() - collision.qyC();
+
+      float psiSP =
+        std::atan2(qyOdd, qxOdd);
+
+      // Put first-harmonic angle in [0, 2pi).
+      if (psiSP < 0.f) {
+        psiSP += 2.f * TMath::Pi();
+      }
+
+      return psiSP;
+    };
+
+    using BinningTypeSP =
+      FlexibleBinningPolicy<
+        std::tuple<decltype(getSPAngle)>,
+        aod::kaonevent::Posz,
+        aod::kaonevent::Cent,
+        decltype(getSPAngle)>;
+
+    BinningTypeSP binningOnSPAngle{
+      {getSPAngle},
+      {cfgVtxBins,
+       cfgCentBins,
+       cfgSPAngleBins},
+      true};
+
+    for (const auto& [collision1, collision2] :
+         selfCombinations(binningOnSPAngle,
+                          nEvtMixing.value,
+                          -1,
+                          collisions,
+                          collisions)) {
+
+      if (collision1.globalIndex() ==
+          collision2.globalIndex()) {
+        continue;
+      }
+
+      const float centrality =
+        collision1.cent();
+
+      const float qxZDCA =
+        collision1.qxA();
+
+      const float qyZDCA =
+        collision1.qyA();
+
+      const float qxZDCC =
+        collision1.qxC();
+
+      const float qyZDCC =
+        collision1.qyC();
+
+      // K+ from event 1 and K- from event 2.
+      auto posGroup1 =
+        posKaons->sliceByCached(
+          aod::kaonpair::kaoneventId,
+          collision1.globalIndex(),
+          cache);
+
+      auto negGroup2 =
+        negKaons->sliceByCached(
+          aod::kaonpair::kaoneventId,
+          collision2.globalIndex(),
+          cache);
+
+      // K+ from event 2 and K- from event 1.
+      auto posGroup2 =
+        posKaons->sliceByCached(
+          aod::kaonpair::kaoneventId,
+          collision2.globalIndex(),
+          cache);
+
+      auto negGroup1 =
+        negKaons->sliceByCached(
+          aod::kaonpair::kaoneventId,
+          collision1.globalIndex(),
+          cache);
+
+      int nMixedPairs = 0;
+
+      // Both combinations use centrality and Q vectors
+      // from collision1.
+      nMixedPairs +=
+        fillMixedPairs(posGroup1,
+                       negGroup2,
+                       centrality,
+                       qxZDCA,
+                       qxZDCC,
+                       qyZDCA,
+                       qyZDCC);
+
+      nMixedPairs +=
+        fillMixedPairs(posGroup2,
+                       negGroup1,
+                       centrality,
+                       qxZDCA,
+                       qxZDCC,
+                       qyZDCA,
+                       qyZDCC);
+
+      histos.fill(HIST("hMixpairs"),
+                  nMixedPairs);
+    }
+  }
+
+  PROCESS_SWITCH(phiflowder, processMixedData2, "Process mixed-event K+K- pairs in SP-angle bins", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

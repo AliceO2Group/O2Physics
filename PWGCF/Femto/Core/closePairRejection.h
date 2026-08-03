@@ -83,6 +83,9 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
 
 constexpr const char PrefixCprTrackTrack[] = "CprTrackTrack";
 constexpr const char PrefixCprTrackV0Daughter[] = "CprTrackV0Daughter";
+constexpr const char PrefixCprTrackD0Daughter[] = "CprTrackD0Daughter";
+constexpr const char PrefixCprD0DaughterD0DaughterPos[] = "CprD0DaughterD0DaughterPos";
+constexpr const char PrefixCprD0DaughterD0DaughterNeg[] = "CprD0DaughterD0DaughterNeg";
 constexpr const char PrefixCprTrackResonanceDaughter[] = "CprTrackResonanceDaughter";
 constexpr const char PrefixCprTrackKinkDaughter[] = "CprTrackKinkDaughter";
 constexpr const char PrefixCprV0DaughterV0DaughterPos[] = "CprV0DaughterV0DaughterPos";
@@ -94,6 +97,9 @@ constexpr const char PrefixCprTrackCascadeBachelor[] = "CprTrackCascadeBachelor"
 // pairs
 using ConfCprTrackTrack = ConfCpr<PrefixCprTrackTrack>;
 using ConfCprTrackV0Daughter = ConfCpr<PrefixCprTrackV0Daughter>;
+using ConfCprTrackD0Daughter = ConfCpr<PrefixCprTrackD0Daughter>;
+using ConfCprD0DaugherD0DaughterPos = ConfCpr<PrefixCprD0DaughterD0DaughterPos>;
+using ConfCprD0DaugherD0DaughterNeg = ConfCpr<PrefixCprD0DaughterD0DaughterNeg>;
 using ConfCprTrackResonanceDaughter = ConfCpr<PrefixCprTrackResonanceDaughter>;
 using ConfCprTrackKinkDaughter = ConfCpr<PrefixCprTrackKinkDaughter>;
 using ConfCprV0DaugherV0DaughterPos = ConfCpr<PrefixCprV0DaughterV0DaughterPos>;
@@ -111,6 +117,12 @@ constexpr char PrefixTrackTrackSe[] = "CPR_TrackTrack/SE/";
 constexpr char PrefixTrackTrackMe[] = "CPR_TrackTrack/ME/";
 constexpr char PrefixTrackV0DaughterSe[] = "CPR_TrackV0Dau/SE/";
 constexpr char PrefixTrackV0DaughterMe[] = "CPR_TrackV0Dau/ME/";
+constexpr char PrefixTrackD0DaughterSe[] = "CPR_TrackD0Dau/SE/";
+constexpr char PrefixTrackD0DaughterMe[] = "CPR_TrackD0Dau/ME/";
+constexpr char PrefixD0D0PosSe[] = "CPR_D0D0_PosDau/SE/";
+constexpr char PrefixD0D0NegSe[] = "CPR_D0D0_NegDau/SE/";
+constexpr char PrefixD0D0PosMe[] = "CPR_D0D0_PosDau/ME/";
+constexpr char PrefixD0D0NegMe[] = "CPR_D0D0_NegDau/ME/";
 constexpr char PrefixV0V0PosSe[] = "CPR_V0V0_PosDau/SE/";
 constexpr char PrefixV0V0NegSe[] = "CPR_V0V0_NegDau/SE/";
 constexpr char PrefixV0V0PosMe[] = "CPR_V0V0_PosDau/ME/";
