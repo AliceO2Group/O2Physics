@@ -97,6 +97,7 @@ enum class Particle : o2::analysis::femto::datatypes::ParticleType {
   kV0 = 3,
   kKink = 4,
   kCascade = 5,
+  kCharmHadron = 6,
 };
 
 enum class McOrigin : o2::analysis::femto::datatypes::McOriginType {
@@ -106,7 +107,9 @@ enum class McOrigin : o2::analysis::femto::datatypes::McOriginType {
   kFromSecondaryDecay = 3, // particle from secondary decay
   kFromMaterial = 4,       // partilce orginates from material
   kMissidentified = 5,     // partilce was kMissidentified (also know as fake)
-  kMcOriginLast = 6
+  kPrompt = 6,             // HF only: charm hadron produced promptly (from c quark)
+  kNonPrompt = 7,          // HF only: charm hadron from beauty decay
+  kMcOriginLast = 8
   // kFromFakeRecoCollision,
   // kFromUnkown
 };
@@ -126,6 +129,10 @@ constexpr const char* mcOriginToString(McOrigin origin)
       return "FromMaterial";
     case McOrigin::kMissidentified:
       return "Missidentified";
+    case McOrigin::kPrompt:
+      return "Prompt";
+    case McOrigin::kNonPrompt:
+      return "NonPrompt";
     default:
       return "UnknownMcOrigin";
   }
@@ -136,7 +143,8 @@ enum class Track : o2::analysis::femto::datatypes::TrackType {
   kV0Daughter,
   kCascadeBachelor,
   kResonanceDaughter,
-  kKinkDaughter
+  kKinkDaughter,
+  kCharmDaughter
 };
 
 enum class V0 : o2::analysis::femto::datatypes::V0Type {
@@ -161,6 +169,13 @@ enum class TwoTrackResonance : o2::analysis::femto::datatypes::TwoTrackResonance
   kPhi,
   kKstar0,
   kKstar0Bar
+};
+
+enum class CharmHadron : o2::analysis::femto::datatypes::CharmHadronType {
+  kD0,
+  kD0Bar,
+  kDplus,
+  kLc
 };
 
 }; // namespace o2::analysis::femto::modes

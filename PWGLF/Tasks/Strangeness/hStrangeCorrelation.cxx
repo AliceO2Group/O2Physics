@@ -73,6 +73,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -212,7 +213,7 @@ struct HStrangeCorrelation {
     Configurable<int> minITSClustersForDaughterTracks{"minITSClustersForDaughterTracks", 1, "Minimum number of ITS clusters for V0 daughter tracks"};
     Configurable<bool> requireDCAzCut{"requireDCAzCut", false, "require DCAz cut for trigger and associated primary tracks"};
     Configurable<bool> doITSChi2Selection{"doITSChi2Selection", false, "require ITS chi2 cut for trigger and associated primary tracks"};
-    Configurable<bool> checkForITSTPCMissmatchMC{"checkForITSTPCMissmatchMC", false, "if true, reject tracks with MC mask 13 (ITS-TPC mismatch) for trigger and associated primary tracks"};
+    Configurable<bool> checkForITSTPCMissmatchMC{"checkForITSTPCMissmatchMC", false, "if true, reject tracks with MC mask bit 13 (ITS-TPC mismatch) for trigger and associated primary tracks"};
     // --- Trigger: DCA variation from basic formula: |DCAxy| <  0.004f + (0.013f / pt)
     Configurable<float> dcaXYconstant{"dcaXYconstant", 0.004, "[0] in |DCAxy| < [0]+[1]/pT"};
     Configurable<float> dcaXYpTdep{"dcaXYpTdep", 0.013, "[1] in |DCAxy| < [0]+[1]/pT"};
@@ -398,9 +399,9 @@ struct HStrangeCorrelation {
     }
   }
 
-  uint16_t doCorrelation;
-  int mRunNumber;
-  int mRunNumberZorro;
+  uint16_t doCorrelation = 0;
+  int mRunNumber = -1;
+  int mRunNumberZorro = -1;
 
   std::vector<std::vector<float>> axisRanges;
 
@@ -838,7 +839,7 @@ struct HStrangeCorrelation {
       if (!isValidTrigger(trigg, triggerTrack.isLeading())) {
         continue;
       }
-      if (trackSelection.checkForITSTPCMissmatchMC && triggerTrack.mcMask() == 13) {
+      if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(triggerTrack.mcMask(), 13)) {
         continue;
       }
       float efficiencyTrigg = 1.0f;
@@ -1024,16 +1025,21 @@ struct HStrangeCorrelation {
           }
           std::array<double, 6> binFillThn = {deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult};
           if (TESTBIT(doCorrelation, Index) && (!efficiencyFlags.applyEfficiencyCorrection || efficiency != 0) && (masterConfigurations.doPPAnalysis || (TESTBIT(selMap, Index) && TESTBIT(selMap, Index + 3)))) {
-            if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma) {
+            if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing &&
+                ((-massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma) ||
+                 (-massWindowConfigurations.maxPeakNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxPeakNSigma) ||
+                 (+massWindowConfigurations.minBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxBgNSigma))) {
               if (std::abs(deltaphi) < 0.5) {
-                histos.fill(HIST("sameEvent/") + HIST(V0names[Index]) + HIST("/hInvariantMassNearSide"), ptassoc, pttrigger, getV0InvariantMass<Index>(assoc));
+                histos.fill(HIST("sameEvent/InvariantMass/") + HIST(V0names[Index]) + HIST("/hNearSide"), ptassoc, pttrigger, getV0InvariantMass<Index>(assoc));
               }
               if (std::abs(PI - deltaphi) < 0.5) {
-                histos.fill(HIST("sameEvent/") + HIST(V0names[Index]) + HIST("/hInvariantMassAwaySide"), ptassoc, pttrigger, getV0InvariantMass<Index>(assoc));
+                histos.fill(HIST("sameEvent/InvariantMass/") + HIST(V0names[Index]) + HIST("/hAwaySide"), ptassoc, pttrigger, getV0InvariantMass<Index>(assoc));
               }
               if (deltaphi > 1.0 && deltaphi < 1.5) {
-                histos.fill(HIST("sameEvent/") + HIST(V0names[Index]) + HIST("/hInvariantMassUE"), ptassoc, pttrigger, getV0InvariantMass<Index>(assoc));
+                histos.fill(HIST("sameEvent/InvariantMass/") + HIST(V0names[Index]) + HIST("/hUnderlyingEvent"), ptassoc, pttrigger, getV0InvariantMass<Index>(assoc));
               }
+            }
+            if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma) {
               fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/LeftBg/") + HIST(V0names[Index])), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
               if (doDeltaPhiStarCheck) {
                 double deltaPhiStar = calculateAverageDeltaPhiStar(triggForDeltaPhiStar, assocForDeltaPhiStar, bField);
@@ -1053,8 +1059,8 @@ struct HStrangeCorrelation {
             }
             if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && ((-massWindowConfigurations.maxPeakNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxPeakNSigma))) {
               if (masterConfigurations.doCorrelationsHadronV0daughter) {
-                fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/") + HIST(V0names[Index]) + HIST("/hSameSign")), binFillThnSameSignDaugher, 1, 1, 1, 1, 1);
-                fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/") + HIST(V0names[Index]) + HIST("/hOppositeSign")), binFillThnOppositeSignDaugher, 1, 1, 1, 1, 1);
+                fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/") + HIST(V0names[Index]) + HIST("_hSameSign")), binFillThnSameSignDaugher, 1, 1, 1, 1, 1);
+                fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/") + HIST(V0names[Index]) + HIST("_hOppositeSign")), binFillThnOppositeSignDaugher, 1, 1, 1, 1, 1);
               }
               fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/") + HIST(V0names[Index])), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
               if (std::abs(deltaphi) < checks.towardDeltaEtaRange && doITSClustersQA) {
@@ -1113,8 +1119,8 @@ struct HStrangeCorrelation {
                 fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/") + HIST(V0names[Index])), binFillThn, 1, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
               }
               if (masterConfigurations.doCorrelationsHadronV0daughter) {
-                fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/") + HIST(V0names[Index]) + HIST("/hSameSign")), binFillThnSameSignDaugher, 1, 1, 1, 1, 1);
-                fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/") + HIST(V0names[Index]) + HIST("/hOppositeSign")), binFillThnOppositeSignDaugher, 1, 1, 1, 1, 1);
+                fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/") + HIST(V0names[Index]) + HIST("_hSameSign")), binFillThnSameSignDaugher, 1, 1, 1, 1, 1);
+                fillCorrelationHistogram(histos.get<THn>(HIST("mixedEvent/Signal/") + HIST(V0names[Index]) + HIST("_hOppositeSign")), binFillThnOppositeSignDaugher, 1, 1, 1, 1, 1);
               }
             }
             if (assocCandidate.compatible(Index, trackSelection.dEdxCompatibility) && (!masterConfigurations.doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && mixing && +massWindowConfigurations.minBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < +massWindowConfigurations.maxBgNSigma) {
@@ -1210,6 +1216,9 @@ struct HStrangeCorrelation {
       }
       auto trigg = triggerTrack.track_as<TracksComplete>();
       if (!isValidTrigger(trigg, triggerTrack.isLeading())) {
+        continue;
+      }
+      if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(triggerTrack.mcMask(), 13)) {
         continue;
       }
 
@@ -1529,6 +1538,9 @@ struct HStrangeCorrelation {
       if (!isValidTrigger(trigg, triggerTrack.isLeading())) {
         continue;
       }
+      if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(triggerTrack.mcMask(), 13)) {
+        continue;
+      }
 
       float efficiencyTrigger = 1.0f;
       float efficiencyTriggerError = 0.0f;
@@ -1591,6 +1603,9 @@ struct HStrangeCorrelation {
         }
         //---] track quality check [---
         if (!isValidAssocHadron(assoc)) {
+          continue;
+        }
+        if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(assocTrack.mcMask(), 13)) {
           continue;
         }
         if (doAssocPhysicalPrimary && !assocTrack.mcPhysicalPrimary()) {
@@ -1706,8 +1721,6 @@ struct HStrangeCorrelation {
   void init(InitContext const&)
   {
     zorroSummary.setObject(zorro.getZorroSummary());
-    mRunNumber = 0;
-    mRunNumberZorro = 0;
     hEfficiencyPion = nullptr;
     hEfficiencyK0Short = nullptr;
     hEfficiencyLambda = nullptr;
@@ -2065,31 +2078,18 @@ struct HStrangeCorrelation {
       histos.addClone("sameEvent/Signal/", "sameEvent/RightBg/");
     }
 
-    if (masterConfigurations.doFullCorrelationStudy && doprocessSameEventHV0s) {
+    if (masterConfigurations.doFullCorrelationStudy && doprocessSameEventHV0s && masterConfigurations.doCorrelationsHadronV0daughter) {
       if (TESTBIT(doCorrelation, 0)) {
-        histos.add("sameEvent/K0Short/hInvariantMassNearSide", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisK0ShortMass});
-        histos.add("sameEvent/K0Short/hInvariantMassAwaySide", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisK0ShortMass});
-        histos.add("sameEvent/K0Short/hInvariantMassUE", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisK0ShortMass});
-        if (masterConfigurations.doCorrelationsHadronV0daughter) {
-          histos.add("sameEvent/Signal/K0Short/hSameSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-          histos.add("sameEvent/Signal/K0Short/hOppositeSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-        }
+        histos.add("sameEvent/Signal/K0Short_hSameSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+        histos.add("sameEvent/Signal/K0Short_hOppositeSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
       }
       if (TESTBIT(doCorrelation, 1)) {
-        histos.add("sameEvent/Lambda/hInvariantMassNearSide", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisLambdaMass});
-        histos.add("sameEvent/Lambda/hInvariantMassAwaySide", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisLambdaMass});
-        histos.add("sameEvent/Lambda/hInvariantMassUE", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisLambdaMass});
-        if (masterConfigurations.doCorrelationsHadronV0daughter) {
-          histos.add("sameEvent/Signal/Lambda/hSameSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-          histos.add("sameEvent/Signal/Lambda/hOppositeSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-        }
+        histos.add("sameEvent/Signal/Lambda_hSameSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+        histos.add("sameEvent/Signal/Lambda_hOppositeSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
       }
       if (TESTBIT(doCorrelation, 2)) {
-        histos.addClone("sameEvent/Lambda/", "sameEvent/AntiLambda/");
-        if (masterConfigurations.doCorrelationsHadronV0daughter) {
-          histos.add("sameEvent/Signal/AntiLambda/hSameSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-          histos.add("sameEvent/Signal/AntiLambda/hOppositeSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-        }
+        histos.add("sameEvent/Signal/AntiLambda_hSameSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+        histos.add("sameEvent/Signal/AntiLambda_hOppositeSign", "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
       }
     }
     if (TESTBIT(doCorrelation, 0) && doprocessSameEventHV0s && masterConfigurations.doMassSpectrumCheck) {
@@ -2105,6 +2105,23 @@ struct HStrangeCorrelation {
     // mixed-event correlation functions
     if ((doprocessMixedEventHV0sInBuffer || doprocessMixedEventHCascadesInBuffer || doprocessMixedEventHV0s || doprocessMixedEventHCascades || doprocessMixedEventHPions || doprocessMixedEventHHadrons) && masterConfigurations.doFullCorrelationStudy) {
       histos.addClone("sameEvent/", "mixedEvent/");
+    }
+    if (masterConfigurations.doFullCorrelationStudy && doprocessSameEventHV0s) {
+      if (TESTBIT(doCorrelation, 0)) {
+        histos.add("sameEvent/InvariantMass/K0Short/hNearSide", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisK0ShortMass});
+        histos.add("sameEvent/InvariantMass/K0Short/hAwaySide", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisK0ShortMass});
+        histos.add("sameEvent/InvariantMass/K0Short/hUnderlyingEvent", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisK0ShortMass});
+      }
+      if (TESTBIT(doCorrelation, 1)) {
+        histos.add("sameEvent/InvariantMass/Lambda/hNearSide", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisLambdaMass});
+        histos.add("sameEvent/InvariantMass/Lambda/hAwaySide", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisLambdaMass});
+        histos.add("sameEvent/InvariantMass/Lambda/hUnderlyingEvent", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisLambdaMass});
+      }
+      if (TESTBIT(doCorrelation, 2)) {
+        histos.add("sameEvent/InvariantMass/AntiLambda/hNearSide", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisLambdaMass});
+        histos.add("sameEvent/InvariantMass/AntiLambda/hAwaySide", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisLambdaMass});
+        histos.add("sameEvent/InvariantMass/AntiLambda/hUnderlyingEvent", "", kTH3F, {axesConfigurations.axisPtAssoc, axesConfigurations.axisPtTrigger, axesConfigurations.axisLambdaMass});
+      }
     }
     if (doprocessSameEventHHadrons && masterConfigurations.doFullCorrelationStudy) {
       histos.add("sameEvent/TriggerParticlesHadron", "TriggersHadron", kTH2F, {axesConfigurations.axisPtQA, axesConfigurations.axisMult});
@@ -2403,6 +2420,9 @@ struct HStrangeCorrelation {
         if (!isValidTrigger(track, triggerTrack.isLeading())) {
           continue;
         }
+        if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(triggerTrack.mcMask(), 13)) {
+          continue;
+        }
         auto binNumber = histos.get<TH1>(HIST("axes/hPtTriggerAxis"))->FindFixBin(track.pt()) - 1;
         SETBIT(triggerPresenceMap[collision.globalIndex()], binNumber);
       }
@@ -2447,6 +2467,9 @@ struct HStrangeCorrelation {
         if (!isValidTrigger(track, triggerTrack.isLeading())) {
           continue;
         }
+        if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(triggerTrack.mcMask(), 13)) {
+          continue;
+        }
         histos.fill(HIST("hDCAzTriggerHadron"), track.dcaZ(), track.pt());
         histos.fill(HIST("hDCAxyTriggerHadron"), track.dcaXY(), track.pt());
         float efficiency = 1.0f;
@@ -2469,6 +2492,9 @@ struct HStrangeCorrelation {
     for (auto const& assocTrack : assocHadrons) {
       auto assoc = assocTrack.track_as<TracksComplete>();
       if (!isValidAssocHadron(assoc)) {
+        continue;
+      }
+      if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(assocTrack.mcMask(), 13)) {
         continue;
       }
       float efficiency = 1.0f;
@@ -2628,6 +2654,9 @@ struct HStrangeCorrelation {
         if (!isValidTrigger(track, triggerTrack.isLeading())) {
           continue;
         }
+        if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(triggerTrack.mcMask(), 13)) {
+          continue;
+        }
         histos.fill(HIST("hTriggerAllSelectedEtaVsPt"), track.pt(), track.eta(), cent);
         histos.fill(HIST("hTriggerPtResolution"), track.pt(), triggerTrack.mcOriginalPt());
         if (masterConfigurations.doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary()) {
@@ -2783,6 +2812,9 @@ struct HStrangeCorrelation {
       if (!isValidTrigger(track, triggerTrack.isLeading())) {
         continue;
       }
+      if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(triggerTrack.mcMask(), 13)) {
+        continue;
+      }
       histos.fill(HIST("hTriggerAllSelectedEtaVsPt"), track.pt(), track.eta(), cent);
       histos.fill(HIST("hTriggerPtResolution"), track.pt(), triggerTrack.mcOriginalPt());
       if (masterConfigurations.doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary()) {
@@ -2841,6 +2873,9 @@ struct HStrangeCorrelation {
       if (!isValidAssocHadron(pionTrack)) {
         continue;
       }
+      if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(pion.mcMask(), 13)) {
+        continue;
+      }
 
       histos.fill(HIST("hPionEtaVsPtAllSelected"), pionTrack.pt(), pionTrack.eta(), collision.centFT0M());
       if (doAssocPhysicalPrimary && !pion.mcPhysicalPrimary()) {
@@ -2860,6 +2895,9 @@ struct HStrangeCorrelation {
       for (auto const& triggerTrack : triggerTracks) {
         auto track = triggerTrack.track_as<TracksComplete>();
         if (!isValidTrigger(track, triggerTrack.isLeading())) {
+          continue;
+        }
+        if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(triggerTrack.mcMask(), 13)) {
           continue;
         }
         histos.fill(HIST("hTriggerAllSelectedEtaVsPt"), track.pt(), track.eta(), collision.centFT0M());
@@ -3496,6 +3534,8 @@ struct HStrangeCorrelation {
       double getatrigger = triggerParticle.eta();
       double gphitrigger = triggerParticle.phi();
       double pttrigger = triggerParticle.pt();
+      auto const* triggerPdg = pdgDB->GetParticle(triggerParticle.pdgCode());
+      const double triggerCharge = triggerPdg ? triggerPdg->Charge() : 0.;
       auto const& mother = triggerParticle.mothers_first_as<aod::McParticles>();
       auto globalIndex = mother.globalIndex();
       static_for<0, 8>([&](auto i) { // associated loop
@@ -3523,12 +3563,18 @@ struct HStrangeCorrelation {
               histos.fill(HIST("ClosureTest/sameEvent/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, bestCollisionVtxZ, bestCollisionCentpercentile);
             }
             if (i < 3 && TESTBIT(doCorrelation, i) && masterConfigurations.doCorrelationsHadronV0daughter) {
-              auto assocParticleDaugters = assocParticle.daughters_as<aod::McParticles>();
-              for (const auto& assocParticleDaugter : assocParticleDaugters) {
-                if (((assocParticleDaugter.pdgCode() == PDG_t::kPiPlus || assocParticleDaugter.pdgCode() == PDG_t::kProton) && (triggerParticle.pdgCode() > 0)) || ((assocParticleDaugter.pdgCode() == PDG_t::kPiMinus || assocParticleDaugter.pdgCode() == PDG_t::kProtonBar) && (triggerParticle.pdgCode() < 0))) {
-                  histos.fill(HIST("ClosureTest/sameEvent/") + HIST(Particlenames[Index]) + HIST("_SameSignDaughter"), computeDeltaPhi(gphitrigger, assocParticleDaugter.phi()), getatrigger - assocParticleDaugter.eta(), assocParticleDaugter.pt(), pttrigger, bestCollisionVtxZ, bestCollisionCentpercentile);
+              auto const assocParticleDaughters = assocParticle.daughters_as<aod::McParticles>();
+              for (const auto& assocParticleDaughter : assocParticleDaughters) {
+                auto const* daughterPdg = pdgDB->GetParticle(assocParticleDaughter.pdgCode());
+                const double daughterCharge = daughterPdg ? daughterPdg->Charge() : 0.;
+                // Neutral daughters, including pi0, do not correspond to reconstructed V0 daughter tracks.
+                if (triggerCharge == 0. || daughterCharge == 0.) {
+                  continue;
+                }
+                if (triggerCharge * daughterCharge > 0.) {
+                  histos.fill(HIST("ClosureTest/sameEvent/") + HIST(Particlenames[Index]) + HIST("_SameSignDaughter"), computeDeltaPhi(gphitrigger, assocParticleDaughter.phi()), getatrigger - assocParticleDaughter.eta(), assocParticleDaughter.pt(), pttrigger, bestCollisionVtxZ, bestCollisionCentpercentile);
                 } else {
-                  histos.fill(HIST("ClosureTest/sameEvent/") + HIST(Particlenames[Index]) + HIST("_OppSignDaughter"), computeDeltaPhi(gphitrigger, assocParticleDaugter.phi()), getatrigger - assocParticleDaugter.eta(), assocParticleDaugter.pt(), pttrigger, bestCollisionVtxZ, bestCollisionCentpercentile);
+                  histos.fill(HIST("ClosureTest/sameEvent/") + HIST(Particlenames[Index]) + HIST("_OppSignDaughter"), computeDeltaPhi(gphitrigger, assocParticleDaughter.phi()), getatrigger - assocParticleDaughter.eta(), assocParticleDaughter.pt(), pttrigger, bestCollisionVtxZ, bestCollisionCentpercentile);
                 }
               }
             }

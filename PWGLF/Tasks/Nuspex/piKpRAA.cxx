@@ -143,6 +143,7 @@ struct PiKpRAA {
     Configurable<float> maxPt{"maxPt", 10000000000.0, "maximum pt of the tracks"};
     Configurable<float> nSigmaDCAxy{"nSigmaDCAxy", 1.0, "nSigma DCAxy selection"};
     Configurable<float> nSigmaDCAz{"nSigmaDCAz", 1.0, "nSigma DCAz selection"};
+    Configurable<float> particleVtxSel{"particleVtxSel", 5.0, "selection on the distance between particle creation vtx"};
 
     Configurable<int16_t> minNCrossedRows{"minNCrossedRows", 70, "minimum number of crossed rows"};
     Configurable<int16_t> minNcl{"minNcl", 135, "minimum number of clusters for primary-particle selection"};
@@ -499,7 +500,14 @@ struct PiKpRAA {
     }
 
     if (doprocessSim) {
+      registry.add("EventCounterMC", ";;Events", kTH1F, {{5, 0, 5}});
       registry.add("zPosMC", "Generated Events With at least One Rec. Collision + Sel. criteria;;Entries;", kTH1F, {axisZpos});
+      registry.add("EtaMCParAllMCColl", "#eta from all MC particles in all MC collisions;#eta;Entries;", kTH1F, {{50, -10.0, 10.0}});
+      registry.add("EtaMCParAllMCColl_Pion", "#eta from all MC particles in all MC collisions;#eta;Entries;", kTH1F, {{50, -10.0, 10.0}});
+      registry.add("EtaMCParAllMCColl_Kaon", "#eta from all MC particles in all MC collisions;#eta;Entries;", kTH1F, {{50, -10.0, 10.0}});
+      registry.add("EtaMCParAllMCColl_Proton", "#eta from all MC particles in all MC collisions;#eta;Entries;", kTH1F, {{50, -10.0, 10.0}});
+      registry.add("EtaMCParAllMCColl_Electron", "#eta from all MC particles in all MC collisions;#eta;Entries;", kTH1F, {{50, -10.0, 10.0}});
+      registry.add("EtaMCParAllMCColl_Rest", "#eta from all MC particles in all MC collisions;#eta;Entries;", kTH1F, {{50, -10.0, 10.0}});
       registry.add("dcaVsPtPiDec", "Secondary pions from decays;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);Centrality Perc.;", kTH3F, {axisPt, axisDCAxy, axisCent});
       registry.add("dcaVsPtPrDec", "Secondary protons from decays;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);Centrality Perc.;", kTH3F, {axisPt, axisDCAxy, axisCent});
       registry.add("dcaVsPtPiMat", "Secondary pions from material interactions;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);Centrality Perc.;", kTH3F, {axisPt, axisDCAxy, axisCent});
@@ -508,11 +516,8 @@ struct PiKpRAA {
       registry.add("DCAzVsPtWithSelection", ";#it{p}_{T} (GeV/#it{c});DCA_{z} (cm);", kTH2F, {{axisPtFineFixedWidth}, {axisDCAxy}});
 
       registry.add("CentralityVsBCVsFT0VsTVXVsEvSel", "All=1 | BC=2 | FT0=3 | TVX=4 | EvSel=5;;Status;", kTH2F, {{axisCent}, {5, 0.5, 5.5}});
-
-      // MC events passing the TVX requirement
-      registry.add("NchMCcentVsTVX", ";Passed(=1.5) NOT Passed(=0.5);", kTH2F, {axisNch, {2, 0, 2}});
-
-      registry.add("NumberOfRecoCollisions", "Number of times Gen. Coll.are reconstructed;N;Entries", kTH1F, {{10, -0.5, 9.5}});
+      registry.add("NumOfRecColl", "Num. of times a MC evt. is reconstructed;N;Entries", kTH1F, {{5, -0.5, 4.5}});
+      registry.add("NumOfRecCollVsNContributors", "Num. of times a MC evt. is reconstructed VS Num. of PV contributors;Number of times a MC event is reconstructed;Number of tracks used for the PV", kTH2F, {{5, -0.5, 4.5}, axisNch});
 
       // Pt resolution
       registry.add("PtResolution", "p_{T} resolution;;(pt_{rec} - pt_{gen})/pt_{gen};", kTH2F, {axisPt, {100, -1.0, 1.0}});
@@ -535,8 +540,10 @@ struct PiKpRAA {
       registry.add("NchMCVsCent", "Generated Nch v.s. Centrality (At least Once Rec. Coll. + Sel. criteria);;Gen. Nch MC", kTH2F, {axisCent, axisNch});
 
       // Needed to measure Event Loss
-      registry.add("NchMC_WithRecoEvt", "Generated Nch of Evts With at least one Rec. Coll. + Sel. criteria;Gen. Nch MC;Entries", kTH1F, {axisNch});
-      registry.add("NchMC_AllGen", "Generated Nch of All Gen. Evts.;Gen. Nch;Entries", kTH1F, {axisNch});
+      registry.add("NchMC_WithRecoEvt", "Gen Nch from MC event associated with the Rec. Coll (with largest Num. of contributors) + Evt. Sel.;Gen Nch MC;Entries", kTH1F, {axisNch});
+      registry.add("NchMC_AllGen", "Gen Nch of ALL MC events;Gen. Nch;Entries", kTH1F, {axisNch});
+      registry.add("NchMC_WithRecColl", "Gen Nch from MC event associated with a Rec. Coll (at least once);Gen. Nch;Entries", kTH1F, {axisNch});
+      registry.add("NchMC_WithOnlyRecColl", "Gen Nch from MC event associated with a ONLY ONE Rec. Coll from last Num. of Contributors;Gen. Nch;Entries", kTH1F, {axisNch});
 
       // Needed to measure Event Splitting
       registry.add("Centrality_WRecoEvt", "Generated Events With at least One Rec. Collision And NO Sel. criteria;;Entries", kTH1F, {axisCent});
@@ -560,6 +567,13 @@ struct PiKpRAA {
       registry.add("MCclosure_PtPiVsNchMC", "Gen Evts With at least one Rec. Coll. + Sel. criteria 4 MC closure;;Gen. Nch (|#eta|<0.8);", kTH2F, {axisPt, axisNch});
       registry.add("MCclosure_PtKaVsNchMC", "Gen Evts With at least one Rec. Coll. + Sel. criteria 4 MC closure;;Gen. Nch (|#eta|<0.8);", kTH2F, {axisPt, axisNch});
       registry.add("MCclosure_PtPrVsNchMC", "Gen Evts With at least one Rec. Coll. + Sel. criteria 4 MC closure;;Gen. Nch (|#eta|<0.8);", kTH2F, {axisPt, axisNch});
+
+      auto hMcCouter = registry.get<TH1>(HIST("EventCounterMC"));
+      auto* xMcCounter = hMcCouter->GetXaxis();
+      xMcCounter->SetBinLabel(1, "All MC Coll");
+      xMcCounter->SetBinLabel(2, "Rec Coll with nContributors > 0");
+      xMcCounter->SetBinLabel(3, "Rec Coll With largest nContributors");
+      xMcCounter->SetBinLabel(4, "Rec TVX-triggered Coll");
     }
 
     LOG(info) << "\trequireGoodRct=" << requireGoodRct.value;
@@ -1228,15 +1242,16 @@ struct PiKpRAA {
 
     const auto& kLowEta = (std::vector<double>)vecLowEta;
     const auto& kHighEta = (std::vector<double>)vecUpEta;
+    registry.fill(HIST("EventCounterMC"), 0.5);
 
     //---------------------------
-    // Only INEL > 0 generated collisions
-    // By counting number of primary charged particles in |eta| < 1
+    // Nch counters in different pseudorapidity intervals
     //---------------------------
     int nChMC{0};
     int nChMCTPCAcc{0};
     int nChFT0A{0};
     int nChFT0C{0};
+
     for (const auto& particle : mcParticles) {
 
       auto charge{0.};
@@ -1266,7 +1281,28 @@ struct PiKpRAA {
         continue;
       }
 
+      // Selects particles based on their vertex creation
+      // This is added to reject loopers
+      const float vX{particle.vx()};
+      const float vY{particle.vy()};
+      if (std::hypot(vX, vY) > trackSelections.particleVtxSel) {
+        continue;
+      }
+
       const float eta{particle.eta()};
+      registry.fill(HIST("EtaMCParAllMCColl"), eta);
+
+      if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
+        registry.fill(HIST("EtaMCParAllMCColl_Pion"), eta);
+      } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
+        registry.fill(HIST("EtaMCParAllMCColl_Kaon"), eta);
+      } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
+        registry.fill(HIST("EtaMCParAllMCColl_Proton"), eta);
+      } else if (particle.pdgCode() == PDG_t::kElectron || particle.pdgCode() == PDG_t::kPositron) {
+        registry.fill(HIST("EtaMCParAllMCColl_Electron"), eta);
+      } else {
+        registry.fill(HIST("EtaMCParAllMCColl_Rest"), eta);
+      }
 
       // TVX requirement
       if (eta > KminFT0A && eta < KmaxFT0A) {
@@ -1290,25 +1326,23 @@ struct PiKpRAA {
     }
 
     //---------------------------
-    // Select only events with at least one charged particle in the FT0A and FT0C acceptances?
+    // Selects MC events with at least one charged particle in the FT0A & FT0C
     //---------------------------
     if (selTVXMC) {
       if (!(nChFT0A > KzeroInt && nChFT0C > KzeroInt)) {
-        registry.fill(HIST("NchMCcentVsTVX"), nChMC, 0.5);
         return;
       }
-      registry.fill(HIST("NchMCcentVsTVX"), nChMC, 1.5);
     }
 
     //---------------------------
-    // Select only MC events with |Vtx Z| < 10 cm?
+    // Selects MC events with |Zvtx| < zVtx_Cut
     //---------------------------
     if (isZvtxPosSelMC && (std::fabs(mccollision.posZ()) > posZcut)) {
       return;
     }
 
     //---------------------------
-    // Select only INEL > 0 generated events?
+    // Selects INEL > 0 MC evets
     //---------------------------
     if (selINELgt0) {
       if (!(nChMC > KzeroInt)) {
@@ -1318,9 +1352,9 @@ struct PiKpRAA {
 
     //---------------------------
     // All Generated events irrespective of whether there is an associated reconstructed collision
-    // Consequently, the centrality being a reconstructed quantity, might not always be available
+    // Consequently, the centrality being a reconstructed quantity, is not always be available
     // Therefore it is expressed as a function of the generated pT and the generated Nch in ∣eta∣ < 0.8
-    // This is used for the denominator of the signal loss correction
+    // This is used for the denominator of the SIGNAL LOSS correction
     // Also for MC closure: True Pt vs Generated Nch
     //---------------------------
     for (const auto& particle : mcParticles) {
@@ -1346,7 +1380,7 @@ struct PiKpRAA {
         continue;
       }
 
-      // Select particle based on its charge
+      // Selects particle based on its charge
       if (trackSelections.signCharge.value == "Positive" && charge < Kzero) {
         continue;
       }
@@ -1354,39 +1388,44 @@ struct PiKpRAA {
         continue;
       }
 
-      // Is it a primary particle?
-      bool isPrimary{true};
+      // Selects only primary particles
       if (!particle.isPhysicalPrimary()) {
-        isPrimary = false;
+        continue;
       }
 
-      if (isPrimary) {
-        if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
-          registry.fill(HIST("PtPiVsNchMC_AllGen"), particle.pt(), nChMCTPCAcc);
-          registry.fill(HIST("MCclosure_PtMCPiVsNchMC"), particle.pt(), nChMCTPCAcc);
-        } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
-          registry.fill(HIST("PtKaVsNchMC_AllGen"), particle.pt(), nChMCTPCAcc);
-          registry.fill(HIST("MCclosure_PtMCKaVsNchMC"), particle.pt(), nChMCTPCAcc);
-        } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
-          registry.fill(HIST("PtPrVsNchMC_AllGen"), particle.pt(), nChMCTPCAcc);
-          registry.fill(HIST("MCclosure_PtMCPrVsNchMC"), particle.pt(), nChMCTPCAcc);
-        } else {
-          continue;
-        }
+      // Selects particles based on their vertex creation
+      // This is added to reject loopers
+      const float vX{particle.vx()};
+      const float vY{particle.vy()};
+      if (std::hypot(vX, vY) > trackSelections.particleVtxSel) {
+        continue;
+      }
+
+      if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
+        registry.fill(HIST("PtPiVsNchMC_AllGen"), particle.pt(), nChMCTPCAcc);
+        registry.fill(HIST("MCclosure_PtMCPiVsNchMC"), particle.pt(), nChMCTPCAcc);
+      } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
+        registry.fill(HIST("PtKaVsNchMC_AllGen"), particle.pt(), nChMCTPCAcc);
+        registry.fill(HIST("MCclosure_PtMCKaVsNchMC"), particle.pt(), nChMCTPCAcc);
+      } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
+        registry.fill(HIST("PtPrVsNchMC_AllGen"), particle.pt(), nChMCTPCAcc);
+        registry.fill(HIST("MCclosure_PtMCPrVsNchMC"), particle.pt(), nChMCTPCAcc);
+      } else {
+        continue;
       }
     } // Loop over Generated Particles
 
     //---------------------------
-    //  This is used for the denominator of the event loss correction
+    //  This is used for the denominator of the EVENT LOSS correction
     //  Only charge particles within tpcNchAcceptance and without pT selection
     //---------------------------
     registry.fill(HIST("NchMC_AllGen"), nChMCTPCAcc);
 
     //---------------------------
-    // How many times the Generated evet was reconstrued?
+    // How many times was the MC event reconstrued?
     //---------------------------
     const auto& nRecColls{collisions.size()};
-    registry.fill(HIST("NumberOfRecoCollisions"), nRecColls);
+    registry.fill(HIST("NumOfRecColl"), nRecColls);
 
     //---------------------------
     // Only Generated evets with at least one reconstrued collision
@@ -1394,8 +1433,8 @@ struct PiKpRAA {
     if (nRecColls > KzeroInt) {
 
       //---------------------------
-      // Looks for the collision with the largest number of contributors
-      // The selected collisions is identified with its index (bestCollisionIndex)
+      // Looks for the collision with the largest number of tracks contributing to the primary vertex reconstruction
+      // The selected collision is identified by its global index (bestCollisionIndex)
       //---------------------------
       int biggestNContribs{-1};
       int bestCollisionIndex{-1};
@@ -1412,13 +1451,10 @@ struct PiKpRAA {
           centrality = -999.0;
         }
 
+        registry.fill(HIST("NumOfRecCollVsNContributors"), nRecColls, collision.numContrib());
+
         if (selHasFT0 && !collision.has_foundFT0()) {
           continue;
-        }
-
-        if (biggestNContribs < collision.numContrib()) {
-          biggestNContribs = collision.numContrib();
-          bestCollisionIndex = collision.globalIndex();
         }
 
         if (selHasBC && !collision.has_foundBC()) {
@@ -1457,10 +1493,87 @@ struct PiKpRAA {
           continue;
         }
 
+        // Gets the index of the collision with the largest number of contributors
+        if (biggestNContribs < collision.numContrib()) {
+          biggestNContribs = collision.numContrib();
+          bestCollisionIndex = collision.globalIndex();
+        }
+
         //---------------------------
-        // Needed to calculate denominator of the Event Splitting correction
+        // Needed to calculate denominator of the EVENT SPLITTING correction
+        // MC Collisions that are reconstructed more than one will be stored here
         //---------------------------
         registry.fill(HIST("Centrality_AllRecoEvt"), centrality);
+      }
+
+      //---------------------------
+      // This is only for QA purposes
+      //---------------------------
+      for (const auto& collision : collisions) {
+
+        int mcNchInTPCAcc{0};
+        for (const auto& particle : mcParticles) {
+
+          auto charge{0.};
+          // Get the MC particle
+          const auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+          if (pdgParticle != nullptr) {
+            charge = pdgParticle->Charge();
+          } else {
+            continue;
+          }
+
+          // Is it a charged particle?
+          if (std::abs(charge) < KminCharge) {
+            continue;
+          }
+
+          // Is it a primary particle?
+          if (!particle.isPhysicalPrimary()) {
+            continue;
+          }
+
+          // Selects particles based on their vertex creation
+          // This is added to reject loopers
+          const float vX{particle.vx()};
+          const float vY{particle.vy()};
+          if (std::hypot(vX, vY) > trackSelections.particleVtxSel) {
+            continue;
+          }
+
+          const float eta{particle.eta()};
+          if (std::abs(eta) < tpcNchAcceptance) {
+            mcNchInTPCAcc++;
+          }
+        }
+
+        //---------------------------
+        // All collisions with N contributors > 0
+        //---------------------------
+        if (collision.numContrib() > KzeroInt) {
+          registry.fill(HIST("EventCounterMC"), 1.5);
+          // To calculate the amount of charged-primary MC particles (|eta|<0.5)
+          // that belongs to a MC event that was reconstructed at least once
+          registry.fill(HIST("NchMC_WithRecColl"), mcNchInTPCAcc);
+        }
+
+        //---------------------------
+        // Records only one collision with the largest number of contributors
+        //---------------------------
+        if (bestCollisionIndex == collision.globalIndex()) {
+          registry.fill(HIST("EventCounterMC"), 2.5);
+          // To calculate the amount of charged-primary MC particles (|eta|<0.5)
+          // that belongs to a MC event that was reconstructed
+          // and only from the with the largest number of contributors
+          registry.fill(HIST("NchMC_WithOnlyRecColl"), mcNchInTPCAcc);
+        }
+
+        //---------------------------
+        // TVX-triggered collision
+        //---------------------------
+        if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+          registry.fill(HIST("EventCounterMC"), 3.5);
+        }
       }
 
       //---------------------------
@@ -1585,9 +1698,9 @@ struct PiKpRAA {
           return;
         }
 
-        registry.fill(HIST("Centrality_WRecoEvtWSelCri"), centrality);
-        registry.fill(HIST("NchMCVsCent"), centrality, nChMCTPCAcc);
-        registry.fill(HIST("NchMC_WithRecoEvt"), nChMCTPCAcc); // Numerator of event loss correction
+        registry.fill(HIST("Centrality_WRecoEvtWSelCri"), centrality); // To calculate numerator of EVENT SPLITTING
+        registry.fill(HIST("NchMCVsCent"), centrality, nChMCTPCAcc);   // Needed for the mapping betwee MC Nch and centrality
+        registry.fill(HIST("NchMC_WithRecoEvt"), nChMCTPCAcc);         // Numerator of EVENT LOSS correction
         registry.fill(HIST("zPos"), collision.posZ());
         registry.fill(HIST("Centrality"), centrality);
 
@@ -1644,24 +1757,29 @@ struct PiKpRAA {
           }
 
           // Is it a primary particle?
-          bool isPrimary{true};
           if (!particle.isPhysicalPrimary()) {
-            isPrimary = false;
+            continue;
           }
 
-          if (isPrimary) {
-            if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
-              registry.fill(HIST("PtPiVsCentMC_WithRecoEvt"), particle.pt(), centrality); // Denominator of tracking efficiency
-              registry.fill(HIST("PtPiVsNchMC_WithRecoEvt"), particle.pt(), nChMCTPCAcc); // Numerator of signal loss
-            } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
-              registry.fill(HIST("PtKaVsCentMC_WithRecoEvt"), particle.pt(), centrality);
-              registry.fill(HIST("PtKaVsNchMC_WithRecoEvt"), particle.pt(), nChMCTPCAcc);
-            } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
-              registry.fill(HIST("PtPrVsCentMC_WithRecoEvt"), particle.pt(), centrality);
-              registry.fill(HIST("PtPrVsNchMC_WithRecoEvt"), particle.pt(), nChMCTPCAcc);
-            } else {
-              continue;
-            }
+          // Selects particles based on their vertex creation
+          // This is added to reject loopers
+          const float vX{particle.vx()};
+          const float vY{particle.vy()};
+          if (std::hypot(vX, vY) > trackSelections.particleVtxSel) {
+            continue;
+          }
+
+          if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
+            registry.fill(HIST("PtPiVsCentMC_WithRecoEvt"), particle.pt(), centrality); // Denominator of tracking efficiency
+            registry.fill(HIST("PtPiVsNchMC_WithRecoEvt"), particle.pt(), nChMCTPCAcc); // Numerator of signal loss
+          } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
+            registry.fill(HIST("PtKaVsCentMC_WithRecoEvt"), particle.pt(), centrality);
+            registry.fill(HIST("PtKaVsNchMC_WithRecoEvt"), particle.pt(), nChMCTPCAcc);
+          } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
+            registry.fill(HIST("PtPrVsCentMC_WithRecoEvt"), particle.pt(), centrality);
+            registry.fill(HIST("PtPrVsNchMC_WithRecoEvt"), particle.pt(), nChMCTPCAcc);
+          } else {
+            continue;
           }
         } // Loop over generated particles per generated collision
 
@@ -1733,6 +1851,15 @@ struct PiKpRAA {
           }
 
           if (isPrimary && !isDecay && !isMaterial) {
+
+            // Selects particles based on their vertex creation
+            // This is added to reject loopers
+            const float vX{particle.vx()};
+            const float vY{particle.vy()};
+            if (std::hypot(vX, vY) > trackSelections.particleVtxSel) {
+              continue;
+            }
+
             if (isPi && !isPr) {
               registry.fill(HIST("dcaVsPtPi"), track.pt(), track.dcaXY(), centrality);
             }
@@ -1829,12 +1956,16 @@ struct PiKpRAA {
           registry.fill(HIST("NclVsEtaPID"), track.eta(), track.tpcNClsPID());
           registry.fill(HIST("NclVsEtaPIDp"), track.eta(), track.tpcNClsPID());
 
-          bool isPrimary{false};
-          if (particle.isPhysicalPrimary()) {
-            isPrimary = true;
+          // Rejects non-physical primary particle
+          if (!particle.isPhysicalPrimary()) {
+            continue;
           }
 
-          if (!isPrimary) {
+          // Selects particles based on their vertex creation
+          // This is added to reject loopers
+          const float vX{particle.vx()};
+          const float vY{particle.vy()};
+          if (std::hypot(vX, vY) > trackSelections.particleVtxSel) {
             continue;
           }
 

@@ -128,7 +128,10 @@ DECLARE_SOA_COLUMN(NoSameBunchPileup, noSameBunchPileup, bool);
 DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
 DECLARE_SOA_COLUMN(PtGen, ptGen, float);
 DECLARE_SOA_COLUMN(PtRec, ptRec, float);
+DECLARE_SOA_COLUMN(EtaGen, etaGen, float);
+DECLARE_SOA_COLUMN(EtaRec, etaRec, float);
 DECLARE_SOA_COLUMN(MultGen, multGen, int);
+DECLARE_SOA_COLUMN(MultGenFT0, multGenFT0, int);
 
 } // namespace NPCascadeTable
 DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
@@ -455,8 +458,11 @@ DECLARE_SOA_TABLE(NPCascTableGen, "AOD", "NPCASCTABLEGen",
 DECLARE_SOA_TABLE(NPMCChargedTable, "AOD", "NPMCChargedTABLE",
                   NPCascadeTable::PtGen,
                   NPCascadeTable::PtRec,
+                  NPCascadeTable::EtaGen,
+                  NPCascadeTable::EtaRec,
                   NPCascadeTable::MultNTracksNP,
-                  NPCascadeTable::MultGen);
+                  NPCascadeTable::MultGen,
+                  NPCascadeTable::MultGenFT0);
 DECLARE_SOA_TABLE(NPCollisionTable, "AOD", "NPCollisionTABLE",
                   NPCascadeTable::RunNumber,
                   NPCascadeTable::GlobalBC,
@@ -469,7 +475,8 @@ DECLARE_SOA_TABLE(NPCollisionTable, "AOD", "NPCollisionTABLE",
 DECLARE_SOA_INDEX_COLUMN_FULL(NPCollision, npCollision, int32_t, NPCollisionTable, "");
 DECLARE_SOA_TABLE(NPRecoChargedCand, "AOD", "NPRecoChargedCand",
                   NPCollisionId,
-                  NPCascadeTable::PtRec);
+                  NPCascadeTable::PtRec,
+                  NPCascadeTable::EtaRec);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFNONPROMPTCASCADETABLES_H_
