@@ -41,6 +41,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <string>
 #include <vector>
 
 using namespace o2;
@@ -612,7 +613,7 @@ struct Sigmaplusbuilder {
     float coefA = 0.f, coefB = 0.f, coefK = 0.f, coefL = 0.f;
     float pGamma2In = 0.f, pGamma2Out = 0.f, tPerp2 = 0.f;
     float discriminant = -1.f;
-    std::array<float, 3> nHatOrig = nHat; // each retry perturbs around this
+    std::array<float, 3> nHatOrig = nHat;             // each retry perturbs around this
     constexpr float CoefADegenerateThreshold = 1e-6f; // guards against dividing by a near-zero quadratic coefficient
 
     if constexpr (IsMC) {
