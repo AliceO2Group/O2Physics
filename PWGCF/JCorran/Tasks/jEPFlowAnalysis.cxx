@@ -155,7 +155,7 @@ struct JEPFlowAnalysis {
   Configurable<bool> cfgSelEvtTwoHP{"cfgSelEvtTwoHP", false, "event selection with two high pT"};
   Configurable<float> cfgHighPtSel{"cfgHighPtSel", 5.0, "pT threshold with cfgSelEvtTwoHP"};
   Configurable<float> cfgTwoLPAngle{"cfgTwoLPAngle", 0.5, "azimuthal difference between two LP"};
-  Configurable<float> cfgEtaBalancing{"cfgEtaBalancing", 0.5, "pseudorapidity difference between two LP"}; 
+  Configurable<float> cfgEtaBalancing{"cfgEtaBalancing", 0.5, "pseudorapidity difference between two LP"};
 
   Configurable<std::string> cfgDetName{"cfgDetName", "FT0C", "The name of detector to be analyzed"};
   Configurable<std::string> cfgRefAName{"cfgRefAName", "TPCPos", "The name of detector for reference A"};
@@ -431,7 +431,6 @@ struct JEPFlowAnalysis {
         q2selLow = q2Map->GetBinContent(q2Map->GetXaxis()->FindBin(i + 2), q2Map->GetYaxis()->FindBin(cent), q2Map->GetZaxis()->FindBin(1. - cfgQ2SelFrac));
       }
 
-
       if (cfgSelEvtTwoHP && i == 0) {
         leadingPt = 0.0;
         leadingPhi = 0.0;
@@ -460,8 +459,8 @@ struct JEPFlowAnalysis {
             subleadingEta = track.eta();
           }
 
-            if (track.pt() > cfgHighPtSel)
-              nHighPt++;
+          if (track.pt() > cfgHighPtSel)
+            nHighPt++;
         }
       }
 
