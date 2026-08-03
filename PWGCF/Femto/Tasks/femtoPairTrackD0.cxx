@@ -85,7 +85,7 @@ struct FemtoPairTrackD0 {
   trackhistmanager::ConfD01NegDauBinning confNegDauBinning;
 
   // setup D0s
-  charmhadronbuilder::ConfD0Selection d0Selection;
+  charmhadronbuilder::ConfD0Selection1 d0Selection;
   charmhadronhistmanager::ConfD0Binning1 confD0Binning;
   particlecleaner::ConfD0Cleaner1 confD0Cleaner;
 

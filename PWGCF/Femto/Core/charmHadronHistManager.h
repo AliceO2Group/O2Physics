@@ -94,7 +94,9 @@ struct ConfD0Binning : o2::framework::ConfigurableGroup {
 #undef CHARMHADRON_DEFAULT_BINNING
 
 constexpr const char PrefixD0Binning1[] = "D0Binning1";
+constexpr const char PrefixD0Binning2[] = "D0Binning2";
 using ConfD0Binning1 = ConfD0Binning<PrefixD0Binning1>;
+using ConfD0Binning2 = ConfD0Binning<PrefixD0Binning2>;
 
 template <auto& Prefix>
 struct ConfD0QaBinning : o2::framework::ConfigurableGroup {

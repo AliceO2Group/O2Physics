@@ -73,8 +73,9 @@ struct ConfD0Bits : o2::framework::ConfigurableGroup {
 };
 
 // base selection for analysis task for D0s
+template <auto& Prefix>
 struct ConfD0Selection : o2::framework::ConfigurableGroup {
-  std::string prefix = std::string("D0Selection");
+  std::string prefix = Prefix;
   o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", o2::constants::physics::Pdg::kD0, "PDG code (D0)"};
   o2::framework::Configurable<int> sign{"sign", 0, "Particle sign (+1: D0; -1: D0bar; 0: both)"};
   o2::framework::Configurable<float> ptMin{"ptMin", 1.f, "Minimum pT"};
@@ -90,6 +91,11 @@ struct ConfD0Selection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> massMax{"massMax", 1.922f, "Maximum invariant mass for D0"};
   o2::framework::Configurable<datatypes::CharmHadronMaskType> mask{"mask", 0, "Bitmask for D0 selection"};
 };
+
+constexpr const char PrefixD0Selection1[] = "D0Selection1";
+constexpr const char PrefixD0Selection2[] = "D0Selection2";
+using ConfD0Selection1 = ConfD0Selection<PrefixD0Selection1>;
+using ConfD0Selection2 = ConfD0Selection<PrefixD0Selection2>;
 
 /// The different selections for D0s
 enum D0Sels {

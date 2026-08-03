@@ -69,7 +69,7 @@ struct FemtoD0Qa {
   colhistmanager::ConfCollisionQaBinning confCollisionQaBinning;
 
   // setup for D0s
-  charmhadronbuilder::ConfD0Selection confD0Selection;
+  charmhadronbuilder::ConfD0Selection1 confD0Selection;
 
   o2::framework::Partition<FemtoD0s> d0Partition = MAKE_D0_PARTITION(confD0Selection);
   o2::framework::Preslice<FemtoD0s> perColD0s = o2::aod::femtobase::stored::fColId;
