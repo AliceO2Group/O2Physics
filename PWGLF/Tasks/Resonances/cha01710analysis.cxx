@@ -138,6 +138,7 @@ struct Cha01710analysis {
   int detId = 0;
   int refAId = 4;
   int refBId = 5;
+  int minHarm = 2;
 
   float centrality = -1.;
   float rotmin = 5.0 / 6.0;
@@ -204,7 +205,7 @@ struct Cha01710analysis {
       refAId = 4;
       refBId = 5;
     }
-    if (epConfig.cfgQvecHarmonic < 2) {
+    if (epConfig.cfgQvecHarmonic < minHarm) {
       LOGF(fatal, "cfgQvecHarmonic must be >= 2");
     }
   }
