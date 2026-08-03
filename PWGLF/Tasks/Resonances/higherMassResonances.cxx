@@ -212,7 +212,7 @@ struct HigherMassResonances {
     int refAId = 0;
     int refBId = 0;
     float minQvecAmp = 1e-5;
-  Service<o2::framework::O2DatabasePDG> pdgDB;
+    Service<o2::framework::O2DatabasePDG> pdgDB;
 
   } config;
 
