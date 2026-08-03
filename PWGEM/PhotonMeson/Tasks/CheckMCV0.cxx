@@ -169,7 +169,7 @@ struct CheckMCV0 {
   Configurable<std::string> mLUTPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
   Configurable<std::string> mCCDBUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Service<o2::ccdb::BasicCCDBManager> mCCDB;
+  Service<o2::ccdb::BasicCCDBManager> mCCDB{};
   int mRunNumber{-1};
   o2::base::MatLayerCylSet* mLUT{nullptr};
   o2::parameters::GRPMagField* mGRPMagField{nullptr};
@@ -177,7 +177,6 @@ struct CheckMCV0 {
   // params
   std::array<float, 6> mcPosXYZEtaTglPtProp{};
   std::array<float, 6> mcEleXYZEtaTglPtProp{};
-  std::array<float, 6> mcMotherXYZEtaTglPtProp{};
 
   // Track Types
   static constexpr std::array<std::string_view, 6> v0Types{"ITSTPC_ITSTPC/", "TPConly_TPConly/", "ITSonly_ITSonly/", "ITSTPC_TPConly/", "ITSTPC_ITSonly/", "TPConly_ITSonly/"};
@@ -515,7 +514,7 @@ struct CheckMCV0 {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<CheckMCV0>(cfgc, TaskName{"check-mc-v0"})};
+  return WorkflowSpec{adaptAnalysisTask<CheckMCV0>(context, TaskName{"check-mc-v0"})};
 }

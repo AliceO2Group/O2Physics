@@ -69,6 +69,8 @@ enum PairHist {
   kKstarVsMt,
   kKstarVsMult,
   kKstarVsCent,
+  // 3D: k* vs kT vs centrality
+  kKstarVsKtVsCent,
   // 2D with mass
   kKstarVsMass1,
   kKstarVsMass2,
@@ -96,6 +98,11 @@ enum PairHist {
   kKstarVsMtVsMinvVsPt1VsPt2,
   kKstarVsMtVsMinvVsPt1VsPt2VsMult,
   kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent,
+  // higher dimensions with kt, invariant mass and pt
+  kKstarVsMinvVsKtVsMult,
+  kKstarVsMtVsMinvVsKtVsMult,
+  kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult,
+  kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent,
   // dalitz plots
   kDalitz, // between a track and pos/neg daughter of another particle
   // reco-vs-mc-truth correlation (requires BOTH a reco pair and matched mc info)
@@ -179,6 +186,7 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> usePdgMass{"usePdgMass", true, "(Reco) Use PDF masses for 4-vectors. If false, use reconstructed mass (if available). Not consulted for pure mc-truth pairs, which always use PDG mass"};
   o2::framework::Configurable<bool> plot1D{"plot1D", true, "(Reco/Mc) Enable 1D histograms"};
   o2::framework::Configurable<bool> plot2D{"plot2D", true, "(Reco/Mc) Enable 2D histograms"};
+  o2::framework::Configurable<bool> plotKstarVsKtVsCent{"plotKstarVsKtVsCent", false, "(Reco/Mc) Enable 3D histogram (Kstar Vs Kt Vs Cent)"};
   o2::framework::Configurable<bool> plotKstarVsMtVsMult{"plotKstarVsMtVsMult", false, "(Reco/Mc) Enable 3D histogram (Kstar Vs Mt Vs Mult)"};
   o2::framework::Configurable<bool> plotKstarVsMtVsMultVsCent{"plotKstarVsMtVsMultVsCent", false, "(Reco/Mc) Enable 4D histogram (Kstar Vs Mt Vs Mult Vs Cent)"};
   o2::framework::Configurable<bool> plotKstarVsMtVsPt1VsPt2{"plotKstarVsMtVsPt1VsPt2", false, "(Reco/Mc) Enable 4D histogram (Kstar Vs Mt Vs Pt1 Vs Pt2)"};
@@ -193,6 +201,10 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> plotKstarVsMtVsMinv1VsPt1VsPt2{"plotKstarVsMtVsMinv1VsPt1VsPt2", false, "(Reco) Enable 5D histogram (Kstar Vs Mt Vs Minv Vs Pt1 Vs Pt2)"};
   o2::framework::Configurable<bool> plotKstarVsMtVsMinv1VsPt1VsPt2VsMult{"plotKstarVsMtVsMinv1VsPt1VsPt2VsMult", false, "(Reco) Enable 6D histogram (Kstar Vs Mt Vs Minv Vs Pt1 Vs Pt2 Vs Mult)"};
   o2::framework::Configurable<bool> plotKstarVsMtVsMinv1VsPt1VsPt2VsMultVsCent{"plotKstarVsMtVsMinv1VsPt1VsPt2VsMultVsCent", false, "(Reco) Enable 7D histogram (Kstar Vs Mt Vs Minv Vs Pt1 Vs Pt2 Vs Mult Vs Cent)"};
+  o2::framework::Configurable<bool> plotKstarVsMinvVsKtVsMult{"plotKstarVsMinvVsKtVsMult", false, "(Reco) Enable 4D histogram (Kstar Vs Minv Vs Kt Vs Mult)"};
+  o2::framework::Configurable<bool> plotKstarVsMtVsMinvVsKtVsMult{"plotKstarVsMtVsMinvVsKtVsMult", false, "(Reco) Enable 5D histogram (Kstar Vs Mt Vs Minv Vs Kt Vs Mult)"};
+  o2::framework::Configurable<bool> plotKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult{"plotKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult", false, "(Reco) Enable 7D histogram (Kstar Vs Mt Vs Minv Vs Kt Vs Pt1 Vs Pt2 Vs Mult)"};
+  o2::framework::Configurable<bool> plotKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent{"plotKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent", false, "(Reco) Enable 8D histogram (Kstar Vs Mt Vs Minv Vs Kt Vs Pt1 Vs Pt2 Vs Mult Vs Cent)"};
   o2::framework::Configurable<bool> plotDalitz{"plotDalitz", false, "(Reco) Enable dalitz plot. Not supported for pure mc-truth pairs (no trackTable/daughter structure)"};
   o2::framework::Configurable<bool> plotDeltaEtaDeltaPhi{"plotDeltaEtaDeltaPhi", false, "(Reco/Mc) Plot #Delta#phi vs #Delta#eta"};
   o2::framework::ConfigurableAxis kstar{"kstar", {{600, 0, 6}}, "kstar"};
@@ -204,7 +216,7 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis pt2{"pt2", {{100, 0, 6}}, "Pt binning for particle 2"};
   o2::framework::ConfigurableAxis mass1{"mass1", {{100, 0, 2}}, "Mass binning for particle 1 (if particle has mass getter, otherwise PDG mass)"};
   o2::framework::ConfigurableAxis mass2{"mass2", {{100, 0, 2}}, "Mass binning for particle 2 (if particle has mass getter, otherwise PDG mass)"};
-  o2::framework::ConfigurableAxis massInv{"massInv", {{100, 0, 2}}, "Invariant Mass binning"};
+  o2::framework::ConfigurableAxis massInv{"massInv", {{100, 0, 5}}, "Invariant Mass binning"};
   o2::framework::ConfigurableAxis dalitzMtot{"dalitzMtot", {{100, 0, 10}}, "Total invariant mass squared binning in darlitz plot"};
   o2::framework::ConfigurableAxis dalitzM12{"dalitzM12", {{100, 0, 10}}, "Mass12 binning of darlitz plot"};
   o2::framework::ConfigurableAxis dalitzM13{"dalitzM13", {{100, 0, 10}}, "Mass13 binning of darlitz plot"};
@@ -219,6 +231,7 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> shLMax{"shLMax", 2, "Maximum l for SH decomposition (0..5). FemtoUniverse hard-codes 1."};
   o2::framework::Configurable<int> shFrame{"shFrame", 1, "SH reference frame/variable: 0=LCMS non-identical (k*), 1=LCMS identical (qinv, FemtoUniverse default), 2=PRF (q_PRF, matches FemtoUniverse isIdenPRF=true)"};
   o2::framework::ConfigurableAxis shKstar{"shKstar", {{60, 0.0f, 0.3f}}, "k*/qinv binning for SH histograms"};
+  o2::framework::Configurable<bool> shUseCent{"shUseCent", false, "SH: bin by centrality instead of multiplicity"};
   o2::framework::ConfigurableAxis shCentBins{"shCentBins", {o2::framework::VARIABLE_WIDTH, 0.0f, 200.0f}, "SH: multiplicity/centrality bin edges (like FemtoUniverse confMultKstarBins)"};
   o2::framework::ConfigurableAxis shKtBins{"shKtBins", {o2::framework::VARIABLE_WIDTH, 0.1f, 0.2f, 0.3f, 0.4f}, "SH: kT bin edges (like FemtoUniverse confKtKstarBins)"};
   o2::framework::Configurable<bool> shPlot1D{"shPlot1D", false, "(SH) Also fill 1D qinv/k* numerator/denominator (h1D) per (mult,kT) bin"};
@@ -267,6 +280,7 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kPt1VsMinv, o2::framework::HistType::kTH2F, "hPt1VsMinv", "p_{T,1} vs m_{Inv}; p_{T,1} (GeV/#it{c}); m_{Inv} (GeV/#it{c}^{2})"},
       {kPt2VsMinv, o2::framework::HistType::kTH2F, "hPt2VsMinv", "p_{T,2} vs m_{Inv}; p_{T,2} (GeV/#it{c}); m_{Inv} (GeV/#it{c}^{2})"},
       // n-D
+      {kKstarVsKtVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsKtVsCent", "k* vs k_{T} vs centrality; k* (GeV/#it{c}); k_{T} (GeV/#it{c}); Centrality (%);"},
       {kKstarVsMtVsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMult", "k* vs m_{T} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity;"},
       {kKstarVsMtVsMultVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMultVsCent", "k* vs m_{T} vs multiplicity vs centrality; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity; Centrality (%);"},
       // n-D with pt
@@ -284,6 +298,10 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kKstarVsMtVsMinvVsPt1VsPt2, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsPt1VsPt2", "k* vs m_{T} vs m_{Inv} vs p_{T,1} vs p_{T,2}; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c})"},
       {kKstarVsMtVsMinvVsPt1VsPt2VsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsPt1VsPt2VsMult", "k* vs m_{T} vs m_{Inv} vs p_{T,1} vs p_{T,2} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity"},
       {kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent", "k* vs m_{T} vs m_{Inv} vs p_{T,1} vs p_{T,2} vs multiplicity vs centrality; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity; Centrality (%)"},
+      {kKstarVsMinvVsKtVsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMinvVsKtVsMult", "k* vs m_{Inv} vs k_{T} vs multiplicity; k* (GeV/#it{c}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); Multiplicity"},
+      {kKstarVsMtVsMinvVsKtVsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsKtVsMult", "k* vs m_{T} vs m_{Inv} vs k_{T} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); Multiplicity"},
+      {kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult", "k* vs m_{T} vs m_{Inv} vs k_{T} vs p_{T,1} vs p_{T,2} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity"},
+      {kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent", "k* vs m_{T} vs m_{Inv} vs k_{T} vs p_{T,1} vs p_{T,2} vs multiplicity vs centrality; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); m_{Inv} (GeV/#it{c}^{2}); k_{T} (GeV/#it{c}); p_{T,1} (GeV/#it{c}); p_{T,2} (GeV/#it{c}); Multiplicity; Centrality (%)"},
       {kDalitz, o2::framework::HistType::kTHnSparseF, "hDalitz", "Dalitz plot; k* (GeV/#it{c}); m^{2}_{123} (GeV/#it{c}^{2})^{2}; m^{2}_{12} (GeV/#it{c}^{2})^{2}; m^{2}_{13} (GeV/#it{c}^{2})^{2};"},
       // reco-vs-mc-truth correlation
       {kTrueKstarVsKstar, o2::framework::HistType::kTH2F, "hTrueKstarVsKstar", "k*_{True} vs k*; k*_{True} (GeV/#it{c});  k* (GeV/#it{c})"},
@@ -353,6 +371,7 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
     {kKstarVsMt, {(confAnalysis).kstar, (confAnalysis).mt}},                                                                                                                                                                                 \
     {kKstarVsMult, {(confAnalysis).kstar, (confAnalysis).multiplicity}},                                                                                                                                                                     \
     {kKstarVsCent, {(confAnalysis).kstar, (confAnalysis).centrality}},                                                                                                                                                                       \
+    {kKstarVsKtVsCent, {(confAnalysis).kstar, (confAnalysis).kt, (confAnalysis).centrality}},                                                                                                                                                \
     {kKstarVsMass1, {(confAnalysis).kstar, (confAnalysis).mass1}},                                                                                                                                                                           \
     {kKstarVsMass2, {(confAnalysis).kstar, (confAnalysis).mass2}},                                                                                                                                                                           \
     {kMass1VsMass2, {(confAnalysis).mass1, (confAnalysis).mass2}},                                                                                                                                                                           \
@@ -373,6 +392,10 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
     {kKstarVsMtVsMinvVsPt1VsPt2, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).massInv, (confAnalysis).pt1, (confAnalysis).pt2}},                                                                                                 \
     {kKstarVsMtVsMinvVsPt1VsPt2VsMult, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).massInv, (confAnalysis).pt1, (confAnalysis).pt2, (confAnalysis).multiplicity}},                                                              \
     {kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).massInv, (confAnalysis).pt1, (confAnalysis).pt2, (confAnalysis).multiplicity, (confAnalysis).centrality}},                             \
+    {kKstarVsMinvVsKtVsMult, {(confAnalysis).kstar, (confAnalysis).massInv, (confAnalysis).kt, (confAnalysis).multiplicity}},                                                                                                                \
+    {kKstarVsMtVsMinvVsKtVsMult, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).massInv, (confAnalysis).kt, (confAnalysis).multiplicity}},                                                                                         \
+    {kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).massInv, (confAnalysis).kt, (confAnalysis).pt1, (confAnalysis).pt2, (confAnalysis).multiplicity}},                                       \
+    {kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent, {(confAnalysis).kstar, (confAnalysis).mt, (confAnalysis).massInv, (confAnalysis).kt, (confAnalysis).pt1, (confAnalysis).pt2, (confAnalysis).multiplicity, (confAnalysis).centrality}},      \
     {kDalitz, {(confAnalysis).kstar, (confAnalysis).dalitzMtot, (confAnalysis).dalitzM12, (confAnalysis).dalitzM13}},                                                                                                                        \
     {kDeltaEtaDeltaPhi, {(confAnalysis).binningDeltaPhi, (confAnalysis).binningDeltaEta}},                                                                                                                                                   \
     {kQout, {(confAnalysis).qout}},                                                                                                                                                                                                          \
@@ -473,6 +496,9 @@ constexpr char PrefixTrackTrackMe[] = "TrackTrack/ME/";
 constexpr char PrefixTrackV0Se[] = "TrackV0/SE/";
 constexpr char PrefixTrackV0Me[] = "TrackV0/ME/";
 
+constexpr char PrefixTrackD0Se[] = "TrackD0/SE/";
+constexpr char PrefixTrackD0Me[] = "TrackD0/ME/";
+
 constexpr char PrefixV0V0Se[] = "V0V0/SE/";
 constexpr char PrefixV0V0Me[] = "V0V0/ME/";
 
@@ -518,6 +544,7 @@ class PairHistManager
     // flags for histograms
     mPlot1d = ConfPairBinning.plot1D.value;
     mPlot2d = ConfPairBinning.plot2D.value;
+    mPlotKstarVsKtVsCent = ConfPairBinning.plotKstarVsKtVsCent.value;
     mPlotKstarVsMtVsMult = ConfPairBinning.plotKstarVsMtVsMult.value;
     mPlotKstarVsMtVsMultVsCent = ConfPairBinning.plotKstarVsMtVsMultVsCent.value;
 
@@ -537,11 +564,17 @@ class PairHistManager
     mPlotKstarVsMtVsMinvVsPt1VsPt2VsMult = ConfPairBinning.plotKstarVsMtVsMinv1VsPt1VsPt2VsMult.value;
     mPlotKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent = ConfPairBinning.plotKstarVsMtVsMinv1VsPt1VsPt2VsMultVsCent.value;
 
+    mPlotKstarVsMinvVsKtVsMult = ConfPairBinning.plotKstarVsMinvVsKtVsMult.value;
+    mPlotKstarVsMtVsMinvVsKtVsMult = ConfPairBinning.plotKstarVsMtVsMinvVsKtVsMult.value;
+    mPlotKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult = ConfPairBinning.plotKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult.value;
+    mPlotKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent = ConfPairBinning.plotKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent.value;
+
     mPlotDalitz = ConfPairBinning.plotDalitz.value;
     mPlotDeltaEtaDeltaPhi = ConfPairBinning.plotDeltaEtaDeltaPhi.value;
     mPlotBertschPratt = ConfPairBinning.plotBertschPratt.value;
 
     mPlotSH = ConfPairBinning.plotSH.value;
+    mShUseCent = ConfPairBinning.shUseCent.value;
     mShLMax = ConfPairBinning.shLMax.value;
     mShFrame = ConfPairBinning.shFrame.value;
     mShPlot1D = ConfPairBinning.shPlot1D.value;
@@ -672,7 +705,9 @@ class PairHistManager
     }
 
     if (mPlotDalitz) {
-      if constexpr (modes::isEqual(particleType1, modes::Particle::kTrack) && modes::isEqual(particleType2, modes::Particle::kV0)) {
+      if constexpr (modes::isEqual(particleType1, modes::Particle::kTrack) && (modes::isEqual(particleType2, modes::Particle::kV0) ||
+                                                                               modes::isEqual(particleType2, modes::Particle::kTwoTrackResonance) ||
+                                                                               modes::isEqual(particleType2, modes::Particle::kCharmHadron))) {
         auto posDaughter = trackTable.rawIteratorAt(particle2.posDauId() - trackTable.offset());
         auto negDaughter = trackTable.rawIteratorAt(particle2.negDauId() - trackTable.offset());
         ROOT::Math::PtEtaPhiMVector posDau4v = ROOT::Math::PtEtaPhiMVector(posDaughter.pt(), posDaughter.eta(), posDaughter.phi(), mPdgMassPosDau2);
@@ -912,6 +947,9 @@ class PairHistManager
     }
 
     // higher dimensional histograms
+    if (mPlotKstarVsKtVsCent) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsKtVsCent, HistTable), getHistDesc(kKstarVsKtVsCent, HistTable), getHistType(kKstarVsKtVsCent, HistTable), {Specs.at(kKstarVsKtVsCent)});
+    }
     if (mPlotKstarVsMtVsMult) {
       mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMtVsMult, HistTable), getHistDesc(kKstarVsMtVsMult, HistTable), getHistType(kKstarVsMtVsMult, HistTable), {Specs.at(kKstarVsMtVsMult)});
     }
@@ -956,6 +994,19 @@ class PairHistManager
     }
     if (mPlotKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent) {
       mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, HistTable), getHistDesc(kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, HistTable), getHistType(kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, HistTable), {Specs.at(kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent)});
+    }
+
+    if (mPlotKstarVsMinvVsKtVsMult) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMinvVsKtVsMult, HistTable), getHistDesc(kKstarVsMinvVsKtVsMult, HistTable), getHistType(kKstarVsMinvVsKtVsMult, HistTable), {Specs.at(kKstarVsMinvVsKtVsMult)});
+    }
+    if (mPlotKstarVsMtVsMinvVsKtVsMult) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMtVsMinvVsKtVsMult, HistTable), getHistDesc(kKstarVsMtVsMinvVsKtVsMult, HistTable), getHistType(kKstarVsMtVsMinvVsKtVsMult, HistTable), {Specs.at(kKstarVsMtVsMinvVsKtVsMult)});
+    }
+    if (mPlotKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult, HistTable), getHistDesc(kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult, HistTable), getHistType(kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult, HistTable), {Specs.at(kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult)});
+    }
+    if (mPlotKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent, HistTable), getHistDesc(kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent, HistTable), getHistType(kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent, HistTable), {Specs.at(kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent)});
     }
 
     if (mPlotDalitz) {
@@ -1181,6 +1232,9 @@ class PairHistManager
     // n-D histograms are only filled if enabled
     // if "mass" getter does not exist for particle, it will be just set to 0
     // the user has to make sure that in this case the bin number of this dimension is set to 1
+    if (mPlotKstarVsKtVsCent) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsKtVsCent, HistTable)), mKstar, mKt, mCent);
+    }
     if (mPlotKstarVsMtVsMult) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMtVsMult, HistTable)), mKstar, mMt, mMult);
     }
@@ -1223,6 +1277,18 @@ class PairHistManager
     if (mPlotKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent, HistTable)), mKstar, mMt, mMassInv, mParticle1.Pt(), mParticle2.Pt(), mMult, mCent);
     }
+    if (mPlotKstarVsMinvVsKtVsMult) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMinvVsKtVsMult, HistTable)), mKstar, mMassInv, mKt, mMult);
+    }
+    if (mPlotKstarVsMtVsMinvVsKtVsMult) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMtVsMinvVsKtVsMult, HistTable)), mKstar, mMt, mMassInv, mKt, mMult);
+    }
+    if (mPlotKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult, HistTable)), mKstar, mMt, mMassInv, mKt, mParticle1.Pt(), mParticle2.Pt(), mMult);
+    }
+    if (mPlotKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent, HistTable)), mKstar, mMt, mMassInv, mKt, mParticle1.Pt(), mParticle2.Pt(), mMult, mCent);
+    }
     if (mPlotDalitz) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kDalitz, HistTable)), mKstar, mMassTot2, mMass12, mMass13);
     }
@@ -1236,7 +1302,7 @@ class PairHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kQoutQsideQlong, HistTable)), mQout, mQside, mQlong);
     }
     if (mPlotSH) {
-      const int iCent = findShBin(mMult, mShCentEdges);
+      const int iCent = findShBin(mShUseCent ? mCent : mMult, mShCentEdges);
       const int iKt = findShBin(mKt, mShKtEdges);
       if (iCent >= 0 && iKt >= 0) {
         mYlm.doYlmUpToL(mShLMax, mShOut, mShSide, mShLong, mShYlmBuffer.data());
@@ -1578,6 +1644,7 @@ class PairHistManager
   bool mPlot1d = true;
   bool mPlot2d = true;
 
+  bool mPlotKstarVsKtVsCent = false;
   bool mPlotKstarVsMtVsMult = false;
   bool mPlotKstarVsMtVsMultVsCent = false;
 
@@ -1597,6 +1664,11 @@ class PairHistManager
   bool mPlotKstarVsMtVsMinvVsPt1VsPt2VsMult = false;
   bool mPlotKstarVsMtVsMinvVsPt1VsPt2VsMultVsCent = false;
 
+  bool mPlotKstarVsMinvVsKtVsMult = false;
+  bool mPlotKstarVsMtVsMinvVsKtVsMult = false;
+  bool mPlotKstarVsMtVsMinvVsKtVsPt1VsPt2VsMult = false;
+  bool mPlotKstarVsMtVsMinvVsKtVsPt1VsPt2VsMultVsCent = false;
+
   bool mPlotDalitz = false;
   bool mPlotDeltaEtaDeltaPhi = false;
 
@@ -1611,6 +1683,7 @@ class PairHistManager
 
   // Spherical harmonics
   bool mPlotSH = false;
+  bool mShUseCent = false;
   int mShLMax = 1;
   int mShFrame = 0;
   static constexpr int ShFrameLcmsNonIdentical = 0;

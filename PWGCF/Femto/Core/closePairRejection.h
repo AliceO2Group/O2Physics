@@ -83,6 +83,7 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
 
 constexpr const char PrefixCprTrackTrack[] = "CprTrackTrack";
 constexpr const char PrefixCprTrackV0Daughter[] = "CprTrackV0Daughter";
+constexpr const char PrefixCprTrackD0Daughter[] = "CprTrackD0Daughter";
 constexpr const char PrefixCprTrackResonanceDaughter[] = "CprTrackResonanceDaughter";
 constexpr const char PrefixCprTrackKinkDaughter[] = "CprTrackKinkDaughter";
 constexpr const char PrefixCprV0DaughterV0DaughterPos[] = "CprV0DaughterV0DaughterPos";
@@ -94,6 +95,7 @@ constexpr const char PrefixCprTrackCascadeBachelor[] = "CprTrackCascadeBachelor"
 // pairs
 using ConfCprTrackTrack = ConfCpr<PrefixCprTrackTrack>;
 using ConfCprTrackV0Daughter = ConfCpr<PrefixCprTrackV0Daughter>;
+using ConfCprTrackD0Daughter = ConfCpr<PrefixCprTrackD0Daughter>;
 using ConfCprTrackResonanceDaughter = ConfCpr<PrefixCprTrackResonanceDaughter>;
 using ConfCprTrackKinkDaughter = ConfCpr<PrefixCprTrackKinkDaughter>;
 using ConfCprV0DaugherV0DaughterPos = ConfCpr<PrefixCprV0DaughterV0DaughterPos>;
@@ -111,6 +113,8 @@ constexpr char PrefixTrackTrackSe[] = "CPR_TrackTrack/SE/";
 constexpr char PrefixTrackTrackMe[] = "CPR_TrackTrack/ME/";
 constexpr char PrefixTrackV0DaughterSe[] = "CPR_TrackV0Dau/SE/";
 constexpr char PrefixTrackV0DaughterMe[] = "CPR_TrackV0Dau/ME/";
+constexpr char PrefixTrackD0DaughterSe[] = "CPR_TrackD0Dau/SE/";
+constexpr char PrefixTrackD0DaughterMe[] = "CPR_TrackD0Dau/ME/";
 constexpr char PrefixV0V0PosSe[] = "CPR_V0V0_PosDau/SE/";
 constexpr char PrefixV0V0NegSe[] = "CPR_V0V0_NegDau/SE/";
 constexpr char PrefixV0V0PosMe[] = "CPR_V0V0_PosDau/ME/";

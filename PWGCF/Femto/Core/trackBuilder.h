@@ -530,6 +530,7 @@ class TrackSelection : public baseselection::BaseSelection<float, datatypes::Tra
 
 struct TrackBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FTracks> producedTracks;
+  o2::framework::Produces<o2::aod::FLiteTracks> producedLiteTracks;
   o2::framework::Produces<o2::aod::FTrackMass> producedTrackMass;
   o2::framework::Produces<o2::aod::FTrackMasks> producedTrackMasks;
   o2::framework::Produces<o2::aod::FTrackDcas> producedTrackDcas;
@@ -546,6 +547,7 @@ struct TrackBuilderProducts : o2::framework::ProducesGroup {
 struct ConfTrackTables : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("TrackTables");
   o2::framework::Configurable<int> produceTracks{"produceTracks", -1, "Produce Tracks (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceLiteTracks{"produceLiteTracks", -1, "Produce LiteTracks (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceTrackMasks{"produceTrackMasks", -1, "Produce TrackMasks (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceTrackMass{"produceTrackMass", -1, "Produce TrackMass (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceTrackDcas{"produceTrackDcas", -1, "Produce TrackDcas (-1: auto; 0 off; 1 on)"};
@@ -566,12 +568,13 @@ class TrackBuilder
   TrackBuilder() = default;
   ~TrackBuilder() = default;
 
-  template <typename T1, typename T2, typename T3, typename T4>
-  void init(o2::framework::HistogramRegistry* registry, T1& config, T2& filter, T3& table, T4& initContext)
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  void init(o2::framework::HistogramRegistry* registry, T1& config, T2& filter, T3& table, T4& initContext, T5& collisionBuilder)
   {
     LOG(info) << "Initialize femto track builder...";
 
     mProduceTracks = utils::enableTable("FTracks_001", table.produceTracks.value, initContext);
+    mProduceLiteTracks = utils::enableTable("FLiteTracks_001", table.produceLiteTracks.value, initContext); // new
     mProduceTrackMasks = utils::enableTable("FTrackMasks_001", table.produceTrackMasks.value, initContext);
     mProduceTrackMass = utils::enableTable("FTrackMass_001", table.produceTrackMass.value, initContext);
     mProduceTrackDcas = utils::enableTable("FTrackDcas_001", table.produceTrackDcas.value, initContext);
@@ -584,7 +587,24 @@ class TrackBuilder
     mProduceTritonPids = utils::enableTable("FTritonPids_001", table.produceTritonPids.value, initContext);
     mProduceHeliumPids = utils::enableTable("FHeliumPids_001", table.produceHeliumPids.value, initContext);
 
-    if (mProduceTracks || mProduceTrackMasks || mProduceTrackMass || mProduceTrackDcas || mProduceTrackExtras || mProduceElectronPids || mProducePionPids || mProduceKaonPids || mProduceProtonPids || mProduceDeuteronPids || mProduceTritonPids || mProduceHeliumPids) {
+    if (mProduceTracks && mProduceLiteTracks) {
+      LOG(fatal) << "FTracks and FLiteTracks are mutually exclusive -- enable only one. "
+                 << "FLiteTracks is meant to replace FTracks at the producer stage (for better compression in derived data); "
+                 << "use the dedicated converter task to reconstruct FTracks from FLiteTracks downstream.";
+    }
+
+    if (mProduceTracks && !collisionBuilder.producingCollisions()) {
+      LOG(fatal) << "FTracks is enabled, but the collision builder is not producing FCols (full precision). "
+                 << "FTracks stores the collision index into FCols -- enable CollisionTables.produceCollisions, "
+                 << "or switch to FLiteTracks if CollisionTables.produceLiteCollisions is enabled instead.";
+    }
+    if (mProduceLiteTracks && !collisionBuilder.producingLiteCollisions()) {
+      LOG(fatal) << "FLiteTracks is enabled, but the collision builder is not producing FLiteCols. "
+                 << "FLiteTracks stores the collision index into FLiteCols -- enable CollisionTables.produceLiteCollisions, "
+                 << "or switch to FTracks if CollisionTables.produceCollisions is enabled instead.";
+    }
+
+    if (mProduceTracks || mProduceLiteTracks || mProduceTrackMasks || mProduceTrackMass || mProduceTrackDcas || mProduceTrackExtras || mProduceElectronPids || mProducePionPids || mProduceKaonPids || mProduceProtonPids || mProduceDeuteronPids || mProduceTritonPids || mProduceHeliumPids) {
       mFillAnyTable = true;
     } else {
       LOG(info) << "No tables configured, Selection object will not be configured...";
@@ -612,22 +632,33 @@ class TrackBuilder
       }
 
       collisionBuilder.template fillCollision<system>(collisionProducts, col);
-      this->fillTrack<modes::Track::kTrack>(track, trackProducts, collisionProducts);
+      this->fillTrack<modes::Track::kTrack>(track, trackProducts, collisionBuilder);
     }
   }
 
   template <modes::Track type, typename T1, typename T2, typename T3>
-  bool fillTrack(T1 const& track, T2& trackProducts, T3& collisionProducts)
+  bool fillTrack(T1 const& track, T2& trackProducts, T3& collisionBuilder)
   {
-    if (!mProduceTracks) {
+    if (!mProduceTracks && !mProduceLiteTracks) {
       return false;
     }
+    int64_t lastIndex = 0;
+    if (mProduceTracks) {
+      trackProducts.producedTracks(collisionBuilder.collisionIndex(),
+                                   track.pt() * track.sign(),
+                                   track.eta(),
+                                   track.phi());
+      lastIndex = trackProducts.producedTracks.lastIndex();
+    }
 
-    trackProducts.producedTracks(collisionProducts.producedCollision.lastIndex(),
-                                 track.pt() * track.sign(),
-                                 track.eta(),
-                                 track.phi());
-    indexMap.emplace(track.globalIndex(), trackProducts.producedTracks.lastIndex());
+    if (mProduceLiteTracks) {
+      trackProducts.producedLiteTracks(collisionBuilder.collisionIndex(),
+                                       o2::aod::femtobase::lite::binSignedPt(track.pt() * track.sign()),
+                                       o2::aod::femtobase::lite::binEta(track.eta()),
+                                       o2::aod::femtobase::lite::binPhi(track.phi()));
+      lastIndex = trackProducts.producedLiteTracks.lastIndex();
+    }
+    indexMap.emplace(track.globalIndex(), lastIndex);
 
     if (mProduceTrackMasks) {
       if constexpr (type == modes::Track::kTrack) {
@@ -724,53 +755,54 @@ class TrackBuilder
       collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
       // get track from the track table so we can dereference mc particle properly
       auto track = tracks.iteratorAt(trackWithItsPid.index());
-      this->template fillMcTrack<system, modes::Track::kTrack>(col, collisionProducts, mcCols, track, trackWithItsPid, trackProducts, mcParticles, mcBuilder, mcProducts);
+      this->template fillMcTrack<system, modes::Track::kTrack>(col, collisionBuilder, mcCols, track, trackWithItsPid, trackProducts, mcParticles, mcBuilder, mcProducts);
     }
   }
 
   template <modes::System system, modes::Track trackType, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
-  bool fillMcTrack(T1 const& col, T2& collisionProducts, T3 const& mcCols, T4 const& track, T5 const& trackWithItsPid, T6& trackProducts, T7 const& mcParticles, T8& mcBuilder, T9& mcProducts)
+  bool fillMcTrack(T1 const& col, T2& collisionBuilder, T3 const& mcCols, T4 const& track, T5 const& trackWithItsPid, T6& trackProducts, T7 const& mcParticles, T8& mcBuilder, T9& mcProducts)
   {
-    // return value added, mirroring fillTrack(), so getDaughterIndex can detect
-    // whether a row was actually added before trusting lastIndex().
-    if (!mProduceTracks) {
+    if (!mProduceTracks && !mProduceLiteTracks) {
       return false;
     }
-    this->template fillTrack<trackType>(trackWithItsPid, trackProducts, collisionProducts);
+    this->template fillTrack<trackType>(trackWithItsPid, trackProducts, collisionBuilder);
     mcBuilder.template fillMcTrackWithLabel<system>(col, mcCols, track, mcParticles, mcProducts);
     return true;
   }
 
   template <modes::Track type, typename T1, typename T2, typename T3>
-  int64_t getDaughterIndex(const T1& daughter, T2& trackProducts, T3& collisionProducts)
+  int64_t getDaughterIndex(const T1& daughter, T2& trackProducts, T3& collisionBuilder)
   {
     auto result = utils::getIndex(daughter.globalIndex(), indexMap);
     if (result) {
       return result.value();
     }
-    if (!this->template fillTrack<type>(daughter, trackProducts, collisionProducts)) {
-      LOG(fatal) << "Trying to register a daughter track, but FTracks table is disabled. "
-                 << "Enable TrackTables.produceTracks when V0/Cascade/Kink tables that need daughter indices are enabled.";
+    if (!this->template fillTrack<type>(daughter, trackProducts, collisionBuilder)) {
+      LOG(fatal) << "Trying to register a daughter track, but FTracks or FLiteTrack table is disabled. "
+                 << "Enable TrackTables.produceTracks/produceLiteTracks when V0/Cascade/Kink tables that need daughter indices are enabled.";
     }
-    // daughter is last track which was added added
-    return trackProducts.producedTracks.lastIndex();
+    // fillTrack already inserted the correct index (FTracks or FLiteTracks) into indexMap
+    return indexMap.at(daughter.globalIndex());
   }
 
   template <modes::System system, modes::Track type, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
-  int64_t getDaughterIndex(const T1& col, T2& collisionProducts, T3 const& mcCols, const T4& daughter, T5& trackProducts, T6 const& mcParticles, T7& mcBuilder, T8& mcProducts)
+  int64_t getDaughterIndex(const T1& col, T2& collisionBuilder, T3 const& mcCols, const T4& daughter, T5& trackProducts, T6 const& mcParticles, T7& mcBuilder, T8& mcProducts)
   {
     auto result = utils::getIndex(daughter.globalIndex(), indexMap);
     if (result) {
       // daugher already in track table
       return result.value();
     }
-    if (!this->template fillMcTrack<system, type>(col, collisionProducts, mcCols, daughter, daughter, trackProducts, mcParticles, mcBuilder, mcProducts)) {
-      LOG(fatal) << "Trying to register a MC daughter track, but FTracks table is disabled. "
-                 << "Enable TrackTables.produceTracks when V0/Cascade/Kink tables that need daughter indices are enabled.";
+    if (!this->template fillMcTrack<system, type>(col, collisionBuilder, mcCols, daughter, daughter, trackProducts, mcParticles, mcBuilder, mcProducts)) {
+      LOG(fatal) << "Trying to register a daughter track, but FTracks or FLiteTrack table is disabled. "
+                 << "Enable TrackTables.produceTracks/produceLiteTracks when V0/Cascade/Kink tables that need daughter indices are enabled.";
     }
-    // daughter is last track which was added added
-    return trackProducts.producedTracks.lastIndex();
+    // fillTrack already inserted the correct index (FTracks or FLiteTracks) into indexMap
+    return indexMap.at(daughter.globalIndex());
   }
+
+  [[nodiscard]] bool producingTracks() const { return mProduceTracks; }
+  [[nodiscard]] bool producingLiteTracks() const { return mProduceLiteTracks; }
 
   template <typename T>
   void reset(T const& tracks)
@@ -783,6 +815,7 @@ class TrackBuilder
   TrackSelection<SelectionHistName, FilterHistName> mTrackSelection;
   bool mFillAnyTable = false;
   bool mProduceTracks = false;
+  bool mProduceLiteTracks = false;
   bool mProduceTrackMasks = false;
   bool mProduceTrackMass = false;
   bool mProduceTrackDcas = false;
@@ -838,7 +871,6 @@ class TrackBuilderDerivedToDerived
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
   void processTracks(T1& col, T2& /*trackTable*/, T3& partitionTrack1, T4& partitionTrack2, T5& cache, T6& newTrackTable, T7& newCollisionTable)
   {
-    indexMap.clear();
 
     if (mLimitTrack1 > 0) {
       auto trackSlice1 = partitionTrack1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
@@ -881,6 +913,13 @@ class TrackBuilderDerivedToDerived
     this->fillTrack(daughter, trackProducts, collisionProducts);
     int64_t idx = trackProducts.producedTracks.lastIndex();
     return idx;
+  }
+
+  template <typename T>
+  void reset(T const& tracks)
+  {
+    indexMap.clear();
+    indexMap.reserve(tracks.size());
   }
 
  private:

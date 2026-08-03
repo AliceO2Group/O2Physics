@@ -129,7 +129,7 @@ struct FemtoUniverseProducerMCTruthTask {
 
   void init(InitContext&)
   {
-    if (!doprocessTrackMC || !doprocessTrackMcOnlyRecoColl) {
+    if (!doprocessTrackMC && !doprocessTrackMcOnlyRecoColl) {
       LOGF(fatal, "Neither processTrackMC nor processTrackMcOnlyRecoColl enabled. Please choose one.");
     }
     rctChecker.init("CBT_hadronPID", false, true);

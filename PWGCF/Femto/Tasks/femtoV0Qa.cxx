@@ -112,11 +112,11 @@ struct FemtoV0Qa {
     k0shortHistManager;
 
   // setup for daughters
-  trackhistmanager::ConfV0PosDauBinning confV0PosDaughterBinning;
-  trackhistmanager::ConfV0PosDauQaBinning confV0PosDaughterQaBinning;
+  trackhistmanager::ConfV01PosDauBinning confV0PosDaughterBinning;
+  trackhistmanager::ConfV01PosDauQaBinning confV0PosDaughterQaBinning;
 
-  trackhistmanager::ConfV0NegDauBinning confV0NegDaughterBinning;
-  trackhistmanager::ConfV0NegDauQaBinning confV0NegDaughterQaBinning;
+  trackhistmanager::ConfV01NegDauBinning confV0NegDaughterBinning;
+  trackhistmanager::ConfV01NegDauQaBinning confV0NegDaughterQaBinning;
 
   o2::framework::HistogramRegistry hRegistry{"FemtoV0Qa", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
 

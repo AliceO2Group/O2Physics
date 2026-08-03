@@ -57,6 +57,10 @@ using ParticleType = uint16_t;
 using MomentumType = uint16_t;
 using TransverseMassType = uint16_t;
 
+// datatype for charm hadrons
+using CharmHadronMaskType = uint32_t;
+using CharmHadronType = uint16_t;
+
 } // namespace o2::analysis::femto::datatypes
 
 #endif // PWGCF_FEMTO_CORE_DATATYPES_H_

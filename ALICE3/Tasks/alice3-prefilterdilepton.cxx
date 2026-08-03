@@ -14,28 +14,36 @@
 /// \author  s.scheid@cern.ch, daiki.sekihata@cern.ch
 ///
 
-#include "ALICE3/DataModel/OTFCollision.h"
 #include "ALICE3/DataModel/OTFRICH.h"
 #include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/prefilterDilepton.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <MathUtils/Utils.h>
 
 #include <Math/GenVector/VectorUtil.h>
-#include <Math/Vector4D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TMath.h>
 
+#include <cstdint>
+#include <cstdlib>
 #include <unordered_map>
 #include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::aod;
@@ -300,20 +308,10 @@ struct Alice3DileptonPrefilter {
           continue;
         }
       }
-      bool pass = false;
       if constexpr (isWithSmearing) {
-        pass = true;
-      } else {
-        if ((std::abs(pos.nSigmaElectronRich()) < nSigmaElectronRich && nSigmaPionRich < std::abs(pos.nSigmaPionRich())) || (std::abs(pos.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF && nSigmaPionCutOuterTOF < std::abs(pos.nSigmaPionOuterTOF())) || (std::abs(pos.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF && nSigmaPionCutInnerTOF < std::abs(pos.nSigmaPionInnerTOF()))) {
-          if ((std::abs(ele.nSigmaElectronRich()) < nSigmaElectronRich && nSigmaPionRich < std::abs(ele.nSigmaPionRich())) || (std::abs(ele.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF && nSigmaPionCutOuterTOF < std::abs(ele.nSigmaPionOuterTOF())) || (std::abs(ele.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF && nSigmaPionCutInnerTOF < std::abs(ele.nSigmaPionInnerTOF()))) {
-            pass = true;
-          }
-        }
-      }
 
-      if (pass) {
-        ROOT::Math::PtEtaPhiMVector v1(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassElectron);
-        ROOT::Math::PtEtaPhiMVector v2(ele.pt(), ele.eta(), ele.phi(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v1(pos.ptSmeared(), pos.etaSmeared(), pos.phiSmeared(), o2::constants::physics::MassElectron);
+        ROOT::Math::PtEtaPhiMVector v2(ele.ptSmeared(), ele.etaSmeared(), ele.phiSmeared(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
         float angle = RecoDecay::constrainAngle(ROOT::Math::VectorUtil::Angle(v1, v2), -M_PI);
         // o2::math_utils::bringToPMPi(angle);
@@ -324,6 +322,27 @@ struct Alice3DileptonPrefilter {
           map_pfb[pos.globalIndex()] = 1;
           map_pfb[ele.globalIndex()] = 1;
           registry.fill(HIST("ReconstructedFiltered/Pair/ULS/Mass_Pt"), v12.M(), v12.Pt());
+        }
+
+      } else {
+
+        if ((std::abs(pos.nSigmaElectronRich()) < nSigmaElectronRich && nSigmaPionRich < std::abs(pos.nSigmaPionRich())) || (std::abs(pos.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF && nSigmaPionCutOuterTOF < std::abs(pos.nSigmaPionOuterTOF())) || (std::abs(pos.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF && nSigmaPionCutInnerTOF < std::abs(pos.nSigmaPionInnerTOF()))) {
+          if ((std::abs(ele.nSigmaElectronRich()) < nSigmaElectronRich && nSigmaPionRich < std::abs(ele.nSigmaPionRich())) || (std::abs(ele.nSigmaElectronOuterTOF()) < nSigmaEleCutOuterTOF && nSigmaPionCutOuterTOF < std::abs(ele.nSigmaPionOuterTOF())) || (std::abs(ele.nSigmaElectronInnerTOF()) < nSigmaEleCutInnerTOF && nSigmaPionCutInnerTOF < std::abs(ele.nSigmaPionInnerTOF()))) {
+
+            ROOT::Math::PtEtaPhiMVector v1(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassElectron);
+            ROOT::Math::PtEtaPhiMVector v2(ele.pt(), ele.eta(), ele.phi(), o2::constants::physics::MassElectron);
+            ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+            float angle = RecoDecay::constrainAngle(ROOT::Math::VectorUtil::Angle(v1, v2), -M_PI);
+            // o2::math_utils::bringToPMPi(angle);
+
+            registry.fill(HIST("Reconstructed/Pair/ULS/Mass_Pt"), v12.M(), v12.Pt());
+
+            if (v12.M() < maxMass && std::abs(angle) < maxOp) {
+              map_pfb[pos.globalIndex()] = 1;
+              map_pfb[ele.globalIndex()] = 1;
+              registry.fill(HIST("ReconstructedFiltered/Pair/ULS/Mass_Pt"), v12.M(), v12.Pt());
+            }
+          }
         }
       }
     } // combination

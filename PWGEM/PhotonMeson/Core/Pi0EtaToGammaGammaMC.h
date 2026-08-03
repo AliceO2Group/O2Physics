@@ -59,6 +59,7 @@
 #include <TPDGCode.h>
 #include <TString.h>
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -95,6 +96,36 @@ struct Pi0EtaToGammaGammaMC {
   o2::framework::Configurable<float> cfgAlphaMesonB{"cfgAlphaMesonB", 1.2, "photon energy asymmetry distribution parameter B for pT dependent cut (A * tanh(B*pT))"};
   o2::framework::Configurable<bool> cfgGGContaCheck{"cfgGGContaCheck", false, "check gamma gamma contamination of dalitz"};
 
+  o2::framework::Configurable<bool> cfgDoPhotonClassPairCut{"cfgDoPhotonClassPairCut", false, "apply photon-class pair selection A x B (leg track composition, PCM-PCM only)"};
+
+  struct : o2::framework::ConfigurableGroup {
+    std::string prefix = "photonclassA_group";
+    o2::framework::Configurable<int> cfgMinNLegsITSTPC{"cfgMinNLegsITSTPC", 0, "min number of ITS-TPC legs (0-2)"};
+    o2::framework::Configurable<int> cfgMaxNLegsITSTPC{"cfgMaxNLegsITSTPC", 2, "max number of ITS-TPC legs (0-2)"};
+    o2::framework::Configurable<int> cfgMinNLegsITSOnly{"cfgMinNLegsITSOnly", 0, "min number of ITS-only legs (0-2)"};
+    o2::framework::Configurable<int> cfgMaxNLegsITSOnly{"cfgMaxNLegsITSOnly", 2, "max number of ITS-only legs (0-2)"};
+    o2::framework::Configurable<int> cfgMinNLegsTPCOnly{"cfgMinNLegsTPCOnly", 0, "min number of TPC-only legs (0-2)"};
+    o2::framework::Configurable<int> cfgMaxNLegsTPCOnly{"cfgMaxNLegsTPCOnly", 2, "max number of TPC-only legs (0-2)"};
+    o2::framework::Configurable<int> cfgMinNLegsTRD{"cfgMinNLegsTRD", 0, "min number of legs with TRD (0-2)"};
+    o2::framework::Configurable<int> cfgMaxNLegsTRD{"cfgMaxNLegsTRD", 2, "max number of legs with TRD (0-2)"};
+    o2::framework::Configurable<int> cfgMinNLegsTOF{"cfgMinNLegsTOF", 0, "min number of legs with TOF (0-2)"};
+    o2::framework::Configurable<int> cfgMaxNLegsTOF{"cfgMaxNLegsTOF", 2, "max number of legs with TOF (0-2)"};
+  } photonclassA;
+
+  struct : o2::framework::ConfigurableGroup {
+    std::string prefix = "photonclassB_group";
+    o2::framework::Configurable<int> cfgMinNLegsITSTPC{"cfgMinNLegsITSTPC", 0, "min number of ITS-TPC legs (0-2)"};
+    o2::framework::Configurable<int> cfgMaxNLegsITSTPC{"cfgMaxNLegsITSTPC", 2, "max number of ITS-TPC legs (0-2)"};
+    o2::framework::Configurable<int> cfgMinNLegsITSOnly{"cfgMinNLegsITSOnly", 0, "min number of ITS-only legs (0-2)"};
+    o2::framework::Configurable<int> cfgMaxNLegsITSOnly{"cfgMaxNLegsITSOnly", 2, "max number of ITS-only legs (0-2)"};
+    o2::framework::Configurable<int> cfgMinNLegsTPCOnly{"cfgMinNLegsTPCOnly", 0, "min number of TPC-only legs (0-2)"};
+    o2::framework::Configurable<int> cfgMaxNLegsTPCOnly{"cfgMaxNLegsTPCOnly", 2, "max number of TPC-only legs (0-2)"};
+    o2::framework::Configurable<int> cfgMinNLegsTRD{"cfgMinNLegsTRD", 0, "min number of legs with TRD (0-2)"};
+    o2::framework::Configurable<int> cfgMaxNLegsTRD{"cfgMaxNLegsTRD", 2, "max number of legs with TRD (0-2)"};
+    o2::framework::Configurable<int> cfgMinNLegsTOF{"cfgMinNLegsTOF", 0, "min number of legs with TOF (0-2)"};
+    o2::framework::Configurable<int> cfgMaxNLegsTOF{"cfgMaxNLegsTOF", 2, "max number of legs with TOF (0-2)"};
+  } photonclassB;
+
   EMPhotonEventCut fEMEventCut;
   struct : o2::framework::ConfigurableGroup {
     std::string prefix = "eventcut_group";
@@ -115,6 +146,9 @@ struct Pi0EtaToGammaGammaMC {
     o2::framework::Configurable<float> cfgFT0COccupancyMax{"cfgFT0COccupancyMax", 1000000000, "max. FT0C occupancy"};
     o2::framework::Configurable<bool> onlyKeepWeightedEvents{"onlyKeepWeightedEvents", false, "flag to keep only weighted events (for JJ MCs) and remove all MB events (with weight = 1)"};
   } eventcuts;
+
+  o2::aod::pwgem::photonmeson::utils::pairutil::V0PhotonClassSelection mPhotonClassSelA{};
+  o2::aod::pwgem::photonmeson::utils::pairutil::V0PhotonClassSelection mPhotonClassSelB{};
 
   V0PhotonCut fV0PhotonCut;
   struct : o2::framework::ConfigurableGroup {
@@ -249,6 +283,8 @@ struct Pi0EtaToGammaGammaMC {
     }
     DefineEMEventCut();
     DefinePCMCut();
+    mPhotonClassSelA = o2::aod::pwgem::photonmeson::utils::pairutil::buildV0PhotonClassSelection(photonclassA);
+    mPhotonClassSelB = o2::aod::pwgem::photonmeson::utils::pairutil::buildV0PhotonClassSelection(photonclassB);
     DefineDileptonCut();
     DefineEMCCut();
     DefinePHOSCut();
@@ -649,6 +685,14 @@ struct Pi0EtaToGammaGammaMC {
             auto ele1 = g1.template negTrack_as<TLegs>();
             auto pos2 = g2.template posTrack_as<TLegs>();
             auto ele2 = g2.template negTrack_as<TLegs>();
+
+            if (cfgDoPhotonClassPairCut.value &&
+                !o2::aod::pwgem::photonmeson::utils::pairutil::isPairPhotonClassSelected(
+                  o2::aod::pwgem::photonmeson::utils::pairutil::getV0PhotonLegCounts(pos1, ele1),
+                  o2::aod::pwgem::photonmeson::utils::pairutil::getV0PhotonLegCounts(pos2, ele2),
+                  mPhotonClassSelA, mPhotonClassSelB)) {
+              continue;
+            }
 
             auto pos1mc = pos1.template emmcparticle_as<TMCParticles>();
             auto ele1mc = ele1.template emmcparticle_as<TMCParticles>();

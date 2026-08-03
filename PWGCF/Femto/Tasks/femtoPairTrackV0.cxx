@@ -84,8 +84,8 @@ struct FemtoPairTrackV0 {
   o2::framework::Preslice<FemtoTracksWithLabel> perColtracksWithLabel = o2::aod::femtobase::stored::fColId;
 
   // setup for daughters
-  trackhistmanager::ConfV0PosDauBinning confPosDauBinning;
-  trackhistmanager::ConfV0NegDauBinning confNegDauBinning;
+  trackhistmanager::ConfV01PosDauBinning confPosDauBinning;
+  trackhistmanager::ConfV01NegDauBinning confNegDauBinning;
 
   // setup lambdas
   v0builder::ConfLambdaSelection1 lambdaSelection;
@@ -169,7 +169,7 @@ struct FemtoPairTrackV0 {
 
     // setup columnpolicy for binning
     // default values are used during instantiation, so we need to explicity update them here
-    mixBinsVtxMult = {{confMixing.vtxBins, confMixing.multBins.value}, true};
+    mixBinsVtxMult = {{confMixing.vtxBins.value, confMixing.multBins.value}, true};
     mixBinsVtxCent = {{confMixing.vtxBins.value, confMixing.centBins.value}, true};
     mixBinsVtxMultCent = {{confMixing.vtxBins.value, confMixing.multBins.value, confMixing.centBins.value}, true};
 

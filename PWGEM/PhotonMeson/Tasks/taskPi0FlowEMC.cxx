@@ -38,6 +38,7 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/Expressions.h>
 #include <Framework/GroupedCombinations.h>
@@ -172,6 +173,7 @@ struct TaskPi0FlowEMC {
     Configurable<bool> cfgEMCUseTM{"cfgEMCUseTM", false, "flag to use EMCal track matching cut or not"};
     Configurable<bool> emcUseSecondaryTM{"emcUseSecondaryTM", false, "flag to use EMCal secondary track matching cut or not"};
     Configurable<bool> cfgEnableQA{"cfgEnableQA", false, "flag to turn QA plots on/off"};
+    Configurable<bool> separateEMCalDCal{"separateEMCalDCal", false, "flag to only pair EMCal with EMCal and DCal with DCal clusters"};
   } emccuts;
 
   V0PhotonCut fV0PhotonCut;
@@ -251,6 +253,8 @@ struct TaskPi0FlowEMC {
   int runNow = 0;
   int runBefore = -1;
 
+  static constexpr float MaxPhiEMCal = 3.5f;
+
   // Filter clusterFilter = aod::skimmedcluster::time >= emccuts.cfgEMCminTime && aod::skimmedcluster::time <= emccuts.cfgEMCmaxTime && aod::skimmedcluster::m02 >= emccuts.cfgEMCminM02 && aod::skimmedcluster::m02 <= emccuts.cfgEMCmaxM02 && aod::skimmedcluster::e >= emccuts.cfgEMCminE;
   Filter collisionFilter = (nabs(aod::collision::posZ) <= eventcuts.cfgZvtxMax) && (aod::evsel::ft0cOccupancyInTimeRange <= eventcuts.cfgFT0COccupancyMax) && (aod::evsel::ft0cOccupancyInTimeRange >= eventcuts.cfgFT0COccupancyMin);
   // using FilteredEMCalPhotons = soa::Filtered<soa::Join<aod::EMCEMEventIds, aod::MinClusters>>;
@@ -260,10 +264,13 @@ struct TaskPi0FlowEMC {
   using CollsWithQvecs = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMEventsQvec_001>;
   using Colls = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>;
 
+  Partition<EMCalPhotons> emcalPhotons = aod::mincluster::storedPhi < std::lround(MaxPhiEMCal * emcdownscaling::downscalingFactors[emcdownscaling::kPhi]);
+  Partition<EMCalPhotons> dcalPhotons = aod::mincluster::storedPhi >= std::lround(MaxPhiEMCal * emcdownscaling::downscalingFactors[emcdownscaling::kPhi]);
+
   static constexpr std::size_t NQVecEntries = 6;
 
-  PresliceOptional<EMCalPhotons> perCollisionEMC = o2::aod::emccluster::pmeventId;
-  PresliceOptional<PCMPhotons> perCollisionPCM = aod::v0photonkf::pmeventId;
+  PresliceOptional<aod::EMCEMEventIds> perCollisionEMC = o2::aod::emccluster::pmeventId;
+  PresliceOptional<aod::V0KFEMEventIds> perCollisionPCM = aod::v0photonkf::pmeventId;
   PresliceOptional<MinMTracks> perEMCClusterMT = o2::aod::mintm::minClusterId;
   PresliceOptional<MinMSTracks> perEMCClusterMS = o2::aod::mintm::minClusterId;
 
@@ -480,6 +487,13 @@ struct TaskPi0FlowEMC {
     LOG(info) << "thnConfigAxisPt.value[1] = " << thnConfigAxisPt.value[1] << " thnConfigAxisPt.value.back() = " << thnConfigAxisPt.value.back();
 
   }; // end init
+
+  /// \brief Check whether a photon (by its phi) falls in the EMCal or DCal acceptance
+  /// \param phi azimuthal angle of the photon
+  static bool isEMCalRegion(float phi)
+  {
+    return phi < MaxPhiEMCal;
+  }
 
   /// Change radians to degree
   /// \param angle in radians
@@ -1047,7 +1061,7 @@ struct TaskPi0FlowEMC {
         continue;
       }
       if (rotationConfig.cfgDoRotation.value && nColl % rotationConfig.cfgDownsampling == 0) {
-        rotationBackground<EMCalPhotons>(vMeson, v1, v2, photons1, g1.globalIndex(), g2.globalIndex(), collision);
+        rotationBackground<TPhotons1>(vMeson, v1, v2, photons1, g1.globalIndex(), g2.globalIndex(), collision);
       }
       if (thnConfigAxisInvMass.value[1] > vMeson.M() || thnConfigAxisInvMass.value.back() < vMeson.M()) {
         registry.fill(HIST("hMesonCuts"), 3);
@@ -1093,6 +1107,8 @@ struct TaskPi0FlowEMC {
       }
 
       auto photonsPerCollision = clusters.sliceBy(perCollisionEMC, collision.globalIndex());
+      auto emcalPhotonsPerCollision = emcalPhotons.sliceBy(perCollisionEMC, collision.globalIndex());
+      auto dcalPhotonsPerCollision = dcalPhotons.sliceBy(perCollisionEMC, collision.globalIndex());
 
       if (emccuts.cfgEnableQA.value) {
         for (const auto& photon : photonsPerCollision) {
@@ -1108,7 +1124,12 @@ struct TaskPi0FlowEMC {
           registry.fill(HIST("clusterQA/hClusterEtaPhiAfter"), photon.phi(), photon.eta()); // after cuts
         }
       }
-      runPairingLoop(collision, photonsPerCollision, photonsPerCollision, flags, flags);
+      if (emccuts.separateEMCalDCal.value) {
+        runPairingLoop(collision, emcalPhotonsPerCollision, emcalPhotonsPerCollision, flags, flags);
+        runPairingLoop(collision, dcalPhotonsPerCollision, dcalPhotonsPerCollision, flags, flags);
+      } else {
+        runPairingLoop(collision, photonsPerCollision, photonsPerCollision, flags, flags);
+      }
       if (rotationConfig.cfgDoRotation.value) {
         if (nColl % rotationConfig.cfgDownsampling == 0) {
           nColl = 1; // reset counter
@@ -1163,6 +1184,10 @@ struct TaskPi0FlowEMC {
         if (!(flags.test(g1.globalIndex())) || !(flags.test(g2.globalIndex()))) {
           continue;
         }
+        if (emccuts.separateEMCalDCal.value && isEMCalRegion(g1.phi()) != isEMCalRegion(g2.phi())) {
+          continue; // only pair EMCal-EMCal or DCal-DCal
+        }
+
         // Cut edge clusters away, similar to rotation method to ensure same acceptance is used
         if (cfgDistanceToEdge.value > 0) {
           if (checkEtaPhi1D(g1.eta(), RecoDecay::constrainAngle(g1.phi())) >= cfgEMCalMapLevelBackground.value) {

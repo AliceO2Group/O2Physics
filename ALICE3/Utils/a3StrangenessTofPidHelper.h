@@ -20,7 +20,7 @@
 #include "ALICE3/Core/TrackUtilities.h"
 
 #include <CommonConstants/PhysicsConstants.h>
-#include <ReconstructionDataFormats/TrackParametrizationWithError.h>
+#include <ReconstructionDataFormats/Track.h>
 
 #include <TRandom3.h>
 

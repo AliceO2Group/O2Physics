@@ -10,3 +10,5 @@
 # or submit itself to any jurisdiction.
 
 add_subdirectory(TableProducer)
+add_subdirectory(Tasks)
+

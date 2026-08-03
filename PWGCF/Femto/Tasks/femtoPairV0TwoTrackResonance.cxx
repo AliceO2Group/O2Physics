@@ -70,8 +70,8 @@ struct FemtoPairV0TwoTrackResonance {
   colhistmanager::ConfCollisionBinning confCollisionBinning;
 
   // setup for daughters for v0s
-  trackhistmanager::ConfV0PosDauBinning confV0PosDauBinning;
-  trackhistmanager::ConfV0NegDauBinning confV0NegDauBinning;
+  trackhistmanager::ConfV01PosDauBinning confV0PosDauBinning;
+  trackhistmanager::ConfV01NegDauBinning confV0NegDauBinning;
 
   // setup lambdas
   v0builder::ConfLambdaSelection1 lambdaSelection;

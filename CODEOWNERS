@@ -17,11 +17,11 @@
 /ALICE3 @alibuild @njacazio @hscheid @jesgum
 /DPG @alibuild @chiarazampolli @alcaliva @catalinristea
 /DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo @altsybee
-/DPG/Tasks/AOTTrack @alibuild @mfaggin @iouribelikov @njacazio @lbariogl @f3sch
+/DPG/Tasks/AOTTrack @alibuild @mfaggin @iouribelikov @njacazio @lbariogl
 /DPG/Tasks/TOF @alibuild @noferini @njacazio
-/DPG/Tasks/FT0 @alibuild @jotwinow @sahilupadhyaya92 @andreasmolander @afurs
-/DPG/Tasks/FV0 @alibuild @jotwinow @sahilupadhyaya92 @andreasmolander @afurs
-/DPG/Tasks/FDD @alibuild @jotwinow @sahilupadhyaya92 @andreasmolander @afurs
+/DPG/Tasks/FT0 @alibuild @sahilupadhyaya92 @afurs
+/DPG/Tasks/FV0 @alibuild @sahilupadhyaya92 @afurs
+/DPG/Tasks/FDD @alibuild @sahilupadhyaya92 @afurs
 /EventFiltering @alibuild @mpuccio @lietava @fgrosa @ariedel-cern
 /EventFiltering/PWGHF @alibuild @fgrosa @zhangbiao-phy @mpuccio @lietava @ariedel-cern
 /EventFiltering/PWGUD @alibuild @pbuehler @mpuccio @lietava @fgrosa @ariedel-cern
@@ -46,7 +46,7 @@
 /PWGCF/GenericFramework @alibuild @EmilGorm @jaelpark @wenyaCern @victor-gonzalez @shouqiye @lauraser
 /PWGCF/MultiparticleCorrelations @alibuild @abilandz @jaelpark @wenyaCern @victor-gonzalez @shouqiye @lauraser
 /PWGCF/JCorran @alibuild @jaelpark @wenyaCern @victor-gonzalez @shouqiye @lauraser
-/PWGCF/TwoParticleCorrelations @alibuild @Luzhiyongg @jaelpark @wenyaCern @victor-gonzalez @shouqiye @lauraser
+/PWGCF/TwoParticleCorrelations @alibuild @jaelpark @wenyaCern @victor-gonzalez @shouqiye @lauraser
 /PWGCF/Tutorial @alibuild @ariedel-cern @victor-gonzalez @shouqiye @lauraser
 
 /PWGDQ @alibuild @iarsene @mcoquet642 @XiaozhiBai @mguilbau
@@ -84,6 +84,6 @@
 /Tutorials/PWGEM @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
 /Tutorials/PWGHF @alibuild @vkucera @fcolamar @fgrosa @gluparel @xinyepeng
 /Tutorials/PWGJE @alibuild @nzardosh @fjonasALICE @jaimenorman
-/Tutorials/PWGLF @alibuild @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @ercolessi @iravasen @njacazio @romainschotter @skundu692 @lhusova
+/Tutorials/PWGLF @alibuild @alcaliva @lbariogl @BongHwi @lbarnby @ercolessi @iravasen @njacazio @romainschotter @skundu692 @lhusova
 /Tutorials/PWGMM @alibuild @aalkin @ddobrigk
 /Tutorials/PWGUD @alibuild @pbuehler @amatyja
