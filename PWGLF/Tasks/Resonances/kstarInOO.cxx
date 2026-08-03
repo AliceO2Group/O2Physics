@@ -1108,7 +1108,8 @@ struct kstarInOO {
       }
       if (!RT) {
         return;
-      } else if (RT && (VTtest1 || VTtest2 || VTtest3)) {
+      }
+      if (RT && (VTtest1 || VTtest2 || VTtest3)) {
         return;
       }
     } // Trigger cut
@@ -1833,7 +1834,7 @@ struct kstarInOO {
           if (bestJet.Pt() > 10.0 && bestJet.Pt() < 12.0)
             histos.fill(HIST("Kstar_pT_INJet_10_12"), lResonance.Pt());
 
-          // Daughters out of jets
+	  // Daughters out of jets
           if (!isKaonInJet || !isPionInJet) {
             ROOT::Math::PxPyPzEVector recoveredJet = bestJet + missing_daughter;
             if (bestJet.Pt() > 6.0 && bestJet.Pt() < 8.0) {
