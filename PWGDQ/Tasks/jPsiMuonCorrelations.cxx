@@ -36,6 +36,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <TString.h>
 
 using std::string;
 
