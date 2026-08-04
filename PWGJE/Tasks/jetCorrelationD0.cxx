@@ -378,9 +378,7 @@ struct JetCorrelationD0 {
         category = 1; // reflection
       } else if (d0DecayChannel == kD0ToKPiPi) {
         category = 2; // corr bkg: π+ K− π0
-      }
-
-      else if (d0DecayChannel == kD0ToPiPi) {
+      } else if (d0DecayChannel == kD0ToPiPi) {
         category = 3; // corr bkg: π+ π−
       } else if (d0DecayChannel == kD0ToPiPiPi) {
         category = 4; // corr bkg: π+ π− π0
