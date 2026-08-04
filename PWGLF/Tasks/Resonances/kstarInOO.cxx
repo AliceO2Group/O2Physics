@@ -50,11 +50,10 @@
 #include <cstddef>
 #include <cstdlib>
 #include <memory>
+#include <stdlib>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include <stdlib.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -522,7 +521,7 @@ struct kstarInOO {
   //======================================================================
 
   template <typename EventType>
-  std::pair<bool, int> eventSelection(const EventType event, const bool QA)
+  std::pair<bool, int> eventSelection(const EventType& event, const bool QA)
   {
     if (cfgEventCutQA && QA) {
       fillQA(false, event, 1);
@@ -586,7 +585,7 @@ struct kstarInOO {
   };
 
   template <typename EventType>
-  std::pair<bool, int> JetEventSelection(const EventType event, const bool QA)
+  std::pair<bool, int> JetEventSelection(const EventType& event, const bool QA)
   {
     if (cfgEventCutQA && QA) {
       fillQA(false, event, 1);
@@ -606,7 +605,7 @@ struct kstarInOO {
   };
 
   template <typename TracksType>
-  bool trackSelection(const TracksType track, const bool QA)
+  bool trackSelection(const TracksType& track, const bool QA)
   {
     if (cfgTrackCutQA && QA) {
       fillQA(false, track, 2);
@@ -741,8 +740,9 @@ struct kstarInOO {
     double tofpid = 0;
     bool tpcPIDPassed{false}, tofPIDPassed{false};
 
-    if (cfgTrackCutQA && QA)
+    if (cfgTrackCutQA && QA) {
       fillQA(false, candidate, 4);
+    }
 
     // TPC
     if (cfgTrackSquarePIDCut) {
@@ -962,10 +962,11 @@ struct kstarInOO {
   } // TrackSlicingMC
 
   template <typename JetType>
-  double DistinguishJets(const JetType& jets, ROOT::Math::PxPyPzMVector lResonance)
+  double DistinguishJets(const JetType& jets, ROOT::Math::PxPyPzMVector& lResonance)
   {
-    if (cDebugLevel > 0)
+    if (cDebugLevel > 0) {
       LOG(info) << "Found multiple jets to the same phi.";
+    }
 
     double bestR = 0;
     double bestJetpT = 0;
