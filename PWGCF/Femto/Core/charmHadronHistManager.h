@@ -308,13 +308,13 @@ class CharmHadronHistManager
     }
   }
 
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fill(T1 const& charmHadronCandidate, T2 const& tracks, T3 const& mcParticles, T4 const& mcMothers, T5 const& mcPartonicMothers)
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void fill(T1 const& charmHadronCandidate, T2 const& tracks, T3 const& col, T4 const& mcParticles, T5 const& mcMothers, T6 const& mcPartonicMothers)
   {
     auto prong0 = tracks.rawIteratorAt(charmHadronCandidate.posDauId() - tracks.offset());
-    mProng0Manager.template fill<mode>(prong0, tracks, mcParticles, mcMothers, mcPartonicMothers);
+    mProng0Manager.template fill<mode>(prong0, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     auto prong1 = tracks.rawIteratorAt(charmHadronCandidate.negDauId() - tracks.offset());
-    mProng1Manager.template fill<mode>(prong1, tracks, mcParticles, mcMothers, mcPartonicMothers);
+    mProng1Manager.template fill<mode>(prong1, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(charmHadronCandidate);

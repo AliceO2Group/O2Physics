@@ -163,7 +163,7 @@ struct FemtoProducer {
 
   // data members
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb = {}; /// Accessing the CCDB
-  o2::framework::Service<o2::framework::O2DatabasePDG> pdgDb;
+  o2::framework::Service<o2::framework::O2DatabasePDG> pdgDb = {};
 
   void init(o2::framework::InitContext& context)
   {

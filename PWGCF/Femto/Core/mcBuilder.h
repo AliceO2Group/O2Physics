@@ -31,7 +31,6 @@
 
 #include <TMCProcess.h>
 #include <TPDGCode.h>
-#include <TParticlePDG.h>
 
 #include <array>
 #include <cmath>
@@ -172,7 +171,7 @@ class McBuilder
   }
 
   template <modes::System system, typename T1, typename T2, typename T3>
-  void fillMcCollisionWithLabel(T1 const& col, T2 const& /*mcCols*/, T3& mcProducts )
+  void fillMcCollisionWithLabel(T1 const& col, T2 const& /*mcCols*/, T3& mcProducts)
   {
     if (!mProduceCollisionLabels) {
       mcProducts.producedCollisionLabels(-1);
