@@ -74,11 +74,10 @@ using namespace o2;
 using namespace o2::framework;
 using namespace analysis::genericframework;
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
-static constexpr float LongArrayFloat[3][20] = {{1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {2.1, 2.2, 2.3, -2.1, -2.2, -2.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}, {3.1, 3.2, 3.3, -3.1, -3.2, -3.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2, 1.3, -1.1, -1.2, -1.3, 1.1, 1.2}};
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, (DEFAULT), (HELP)};
+static constexpr std::array<std::array<float, 3>, 20> LongArrayFloat = {{{{1.1, 2.1, 3.1}}, {{1.2, 2.2, 3.2}}, {{1.3, 2.3, 3.3}}, {{-1.1, -2.1, -3.1}}, {{-1.2, -2.2, -3.2}}, {{-1.3, -2.3, -3.3}}, {{1.1, 1.1, 1.1}}, {{1.2, 1.2, 1.2}}, {{1.3, 1.3, 1.3}}, {{-1.1, -1.1, -1.1}}, {{-1.2, -1.2, -1.2}}, {{-1.3, -1.3, -1.3}}, {{1.1, 1.1, 1.1}}, {{1.2, 1.2, 1.2}}, {{1.3, 1.3, 1.3}}, {{-1.1, -1.1, -1.1}}, {{-1.2, -1.2, -1.2}}, {{-1.3, -1.3, -1.3}}, {{1.1, 1.1, 1.1}}, {{1.2, 1.2, 1.2}}}};
 
-namespace o2::analysis::gfw
-{
+struct GFWMemberCache {
 std::vector<double> ptbinning = {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
 float ptpoilow = 0.2, ptpoiup = 10.0;
 float ptreflow = 0.2, ptrefup = 3.0;
@@ -93,7 +92,7 @@ float phiup = o2::constants::math::TwoPI;
 int nchbins = 300;
 float nchlow = 0;
 float nchup = 300;
-std::vector<double> centbinning(90);
+std::vector<double> centbinning{90};
 int nBootstrap = 10;
 std::vector<std::pair<double, double>> etagapsPtPt;
 GFWRegions regions;
@@ -101,7 +100,7 @@ GFWCorrConfigs configs;
 std::vector<double> multGlobalCorrCutPars;
 std::vector<double> multPVCorrCutPars;
 std::vector<double> multGlobalPVCorrCutPars;
-} // namespace o2::analysis::gfw
+} gfwMemberCache;
 
 struct FlowGfwV02 {
 
@@ -191,7 +190,7 @@ struct FlowGfwV02 {
   Configurable<GFWRegions> cfgRegions{"cfgRegions", {{"refN", "refP", "refFull", "refMid", "piP", "kaP", "prP"}, {-0.8, 0.5, -0.8, -0.4, 0.5, 0.5, 0.5}, {-0.5, 0.8, 0.8, 0.4, 0.8, 0.8, 0.8}, {0, 0, 0, 0, 1, 1, 1}, {1, 1, 1, 1, 1, 1, 1}}, "Configurations for GFW regions"};
 
   Configurable<GFWCorrConfigs> cfgCorrConfig{"cfgCorrConfig", {{"refP {2} refN {-2}", "piP {2} refN {-2}", "kaP {2} refN {-2}", "prP {2} refN {-2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}", "refFull {2 -2}"}, {"ChGap22", "PiGap22", "KaGap22", "PrGap22", "ChFull22", "nchCh", "nchPi", "nchKa", "nchPr", "v02ptCh", "v02ptPi", "v02ptKa", "v02ptPr"}, {0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1}, {15, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}, "Configurations for each correlation to calculate"};
-  Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat[0], 6, 3, {"UpCut_pi", "UpCut_ka", "UpCut_pr", "LowCut_pi", "LowCut_ka", "LowCut_pr"}, {"TPC", "TOF", "ITS"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
+  Configurable<LabeledArray<float>> nSigmas{"nSigmas", {LongArrayFloat.front().data(), 6, 3, {"UpCut_pi", "UpCut_ka", "UpCut_pr", "LowCut_pi", "LowCut_ka", "LowCut_pr"}, {"TPC", "TOF", "ITS"}}, "Labeled array for n-sigma values for TPC, TOF, ITS for pions, kaons, protons (positive and negative)"};
 
   struct : ConfigurableGroup {
     Configurable<float> cfgZvtxMax{"cfgZvtxMax", 10.0f, "Maximum primary vertex cut applied for the events."};
@@ -205,10 +204,10 @@ struct FlowGfwV02 {
   o2::framework::expressions::Filter trackFilter = (aod::track::pt > cfgTrackCuts.cfgPtMin) && (aod::track::pt < cfgTrackCuts.cfgPtMax) && nabs(aod::track::eta) < cfgTrackCuts.cfgEtaMax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::itsChi2NCl < cfgTrackCuts.cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgTrackCuts.cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgTrackCuts.cfgDCAz;
 
   //  Connect to ccdb
-  Service<ccdb::BasicCCDBManager> ccdb;
+  Service<ccdb::BasicCCDBManager> ccdb{};
 
   struct Config {
-    TH1D* mEfficiency[4] = {nullptr, nullptr, nullptr, nullptr};
+    std::array<TH1D*, 4> mEfficiency{nullptr, nullptr, nullptr, nullptr};
     GFWWeights* mAcceptance;
     bool correctionsLoaded = false;
   } cfg{};
@@ -347,78 +346,78 @@ struct FlowGfwV02 {
       registry.addClone("QA_PID/before/", "QA_PID/after/");
     }
 
-    o2::analysis::gfw::regions.SetNames(cfgRegions->GetNames());
-    o2::analysis::gfw::regions.SetEtaMin(cfgRegions->GetEtaMin());
-    o2::analysis::gfw::regions.SetEtaMax(cfgRegions->GetEtaMax());
-    o2::analysis::gfw::regions.SetpTDifs(cfgRegions->GetpTDifs());
-    o2::analysis::gfw::regions.SetBitmasks(cfgRegions->GetBitmasks());
-    o2::analysis::gfw::configs.SetCorrs(cfgCorrConfig->GetCorrs());
-    o2::analysis::gfw::configs.SetHeads(cfgCorrConfig->GetHeads());
-    o2::analysis::gfw::configs.SetpTDifs(cfgCorrConfig->GetpTDifs());
-    o2::analysis::gfw::configs.SetpTCorrMasks(cfgCorrConfig->GetpTCorrMasks());
-    o2::analysis::gfw::regions.Print();
-    o2::analysis::gfw::configs.Print();
-    o2::analysis::gfw::ptbinning = cfgGFWBinning->GetPtBinning();
-    o2::analysis::gfw::ptpoilow = cfgGFWBinning->GetPtPOImin();
-    o2::analysis::gfw::ptpoiup = cfgGFWBinning->GetPtPOImax();
-    o2::analysis::gfw::ptreflow = cfgGFWBinning->GetPtRefMin();
-    o2::analysis::gfw::ptrefup = cfgGFWBinning->GetPtRefMax();
-    o2::analysis::gfw::ptlow = cfgTrackCuts.cfgPtMin;
-    o2::analysis::gfw::ptup = cfgTrackCuts.cfgPtMax;
-    o2::analysis::gfw::etabins = cfgGFWBinning->GetEtaBins();
-    o2::analysis::gfw::vtxZbins = cfgGFWBinning->GetVtxZbins();
-    o2::analysis::gfw::phibins = cfgGFWBinning->GetPhiBins();
-    o2::analysis::gfw::philow = 0.0f;
-    o2::analysis::gfw::phiup = o2::constants::math::TwoPI;
-    o2::analysis::gfw::nchbins = cfgGFWBinning->GetNchBins();
-    o2::analysis::gfw::nchlow = cfgGFWBinning->GetNchMin();
-    o2::analysis::gfw::nchup = cfgGFWBinning->GetNchMax();
-    o2::analysis::gfw::centbinning = cfgGFWBinning->GetCentBinning();
+    gfwMemberCache.regions.SetNames(cfgRegions->GetNames());
+    gfwMemberCache.regions.SetEtaMin(cfgRegions->GetEtaMin());
+    gfwMemberCache.regions.SetEtaMax(cfgRegions->GetEtaMax());
+    gfwMemberCache.regions.SetpTDifs(cfgRegions->GetpTDifs());
+    gfwMemberCache.regions.SetBitmasks(cfgRegions->GetBitmasks());
+    gfwMemberCache.configs.SetCorrs(cfgCorrConfig->GetCorrs());
+    gfwMemberCache.configs.SetHeads(cfgCorrConfig->GetHeads());
+    gfwMemberCache.configs.SetpTDifs(cfgCorrConfig->GetpTDifs());
+    gfwMemberCache.configs.SetpTCorrMasks(cfgCorrConfig->GetpTCorrMasks());
+    gfwMemberCache.regions.Print();
+    gfwMemberCache.configs.Print();
+    gfwMemberCache.ptbinning = cfgGFWBinning->GetPtBinning();
+    gfwMemberCache.ptpoilow = cfgGFWBinning->GetPtPOImin();
+    gfwMemberCache.ptpoiup = cfgGFWBinning->GetPtPOImax();
+    gfwMemberCache.ptreflow = cfgGFWBinning->GetPtRefMin();
+    gfwMemberCache.ptrefup = cfgGFWBinning->GetPtRefMax();
+    gfwMemberCache.ptlow = cfgTrackCuts.cfgPtMin;
+    gfwMemberCache.ptup = cfgTrackCuts.cfgPtMax;
+    gfwMemberCache.etabins = cfgGFWBinning->GetEtaBins();
+    gfwMemberCache.vtxZbins = cfgGFWBinning->GetVtxZbins();
+    gfwMemberCache.phibins = cfgGFWBinning->GetPhiBins();
+    gfwMemberCache.philow = 0.0f;
+    gfwMemberCache.phiup = o2::constants::math::TwoPI;
+    gfwMemberCache.nchbins = cfgGFWBinning->GetNchBins();
+    gfwMemberCache.nchlow = cfgGFWBinning->GetNchMin();
+    gfwMemberCache.nchup = cfgGFWBinning->GetNchMax();
+    gfwMemberCache.centbinning = cfgGFWBinning->GetCentBinning();
     cfgGFWBinning->Print();
-    o2::analysis::gfw::multGlobalCorrCutPars = cfgMultCorrCuts.cfgMultGlobalCutPars;
-    o2::analysis::gfw::multPVCorrCutPars = cfgMultCorrCuts.cfgMultPVCutPars;
-    o2::analysis::gfw::multGlobalPVCorrCutPars = cfgMultCorrCuts.cfgMultGlobalPVCutPars;
+    gfwMemberCache.multGlobalCorrCutPars = cfgMultCorrCuts.cfgMultGlobalCutPars;
+    gfwMemberCache.multPVCorrCutPars = cfgMultCorrCuts.cfgMultPVCutPars;
+    gfwMemberCache.multGlobalPVCorrCutPars = cfgMultCorrCuts.cfgMultGlobalPVCutPars;
 
     // Initialise pt spectra histograms for different particles
-    pidStates.hPtMid[PidCharged] = std::make_unique<TH1D>("hPtMid_charged", "hPtMid_charged", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
-    pidStates.hPtMid[PidPions] = std::make_unique<TH1D>("hPtMid_pions", "hPtMid_pions", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
-    pidStates.hPtMid[PidKaons] = std::make_unique<TH1D>("hPtMid_kaons", "hPtMid_kaons", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
-    pidStates.hPtMid[PidProtons] = std::make_unique<TH1D>("hPtMid_protons", "hPtMid_protons", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
+    pidStates.hPtMid[PidCharged] = std::make_unique<TH1D>("hPtMid_charged", "hPtMid_charged", gfwMemberCache.ptbinning.size() - 1, gfwMemberCache.ptbinning.data());
+    pidStates.hPtMid[PidPions] = std::make_unique<TH1D>("hPtMid_pions", "hPtMid_pions", gfwMemberCache.ptbinning.size() - 1, gfwMemberCache.ptbinning.data());
+    pidStates.hPtMid[PidKaons] = std::make_unique<TH1D>("hPtMid_kaons", "hPtMid_kaons", gfwMemberCache.ptbinning.size() - 1, gfwMemberCache.ptbinning.data());
+    pidStates.hPtMid[PidProtons] = std::make_unique<TH1D>("hPtMid_protons", "hPtMid_protons", gfwMemberCache.ptbinning.size() - 1, gfwMemberCache.ptbinning.data());
     pidStates.hPtMid[PidCharged]->SetDirectory(nullptr);
     pidStates.hPtMid[PidPions]->SetDirectory(nullptr);
     pidStates.hPtMid[PidKaons]->SetDirectory(nullptr);
     pidStates.hPtMid[PidProtons]->SetDirectory(nullptr);
 
-    pidStates.hPtForward[PidCharged] = std::make_unique<TH1D>("hPtForward_charged", "hPtForward_charged", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
-    pidStates.hPtForward[PidPions] = std::make_unique<TH1D>("hPtForward_pions", "hPtForward_pions", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
-    pidStates.hPtForward[PidKaons] = std::make_unique<TH1D>("hPtForward_kaons", "hPtForward_kaons", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
-    pidStates.hPtForward[PidProtons] = std::make_unique<TH1D>("hPtForward_protons", "hPtForward_protons", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
+    pidStates.hPtForward[PidCharged] = std::make_unique<TH1D>("hPtForward_charged", "hPtForward_charged", gfwMemberCache.ptbinning.size() - 1, gfwMemberCache.ptbinning.data());
+    pidStates.hPtForward[PidPions] = std::make_unique<TH1D>("hPtForward_pions", "hPtForward_pions", gfwMemberCache.ptbinning.size() - 1, gfwMemberCache.ptbinning.data());
+    pidStates.hPtForward[PidKaons] = std::make_unique<TH1D>("hPtForward_kaons", "hPtForward_kaons", gfwMemberCache.ptbinning.size() - 1, gfwMemberCache.ptbinning.data());
+    pidStates.hPtForward[PidProtons] = std::make_unique<TH1D>("hPtForward_protons", "hPtForward_protons", gfwMemberCache.ptbinning.size() - 1, gfwMemberCache.ptbinning.data());
     pidStates.hPtForward[PidCharged]->SetDirectory(nullptr);
     pidStates.hPtForward[PidPions]->SetDirectory(nullptr);
     pidStates.hPtForward[PidKaons]->SetDirectory(nullptr);
     pidStates.hPtForward[PidProtons]->SetDirectory(nullptr);
 
-    pidStates.hPtBackward[PidCharged] = std::make_unique<TH1D>("hPtBackward_charged", "hPtBackward_charged", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
-    pidStates.hPtBackward[PidPions] = std::make_unique<TH1D>("hPtBackward_pions", "hPtBackward_pions", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
-    pidStates.hPtBackward[PidKaons] = std::make_unique<TH1D>("hPtBackward_kaons", "hPtBackward_kaons", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
-    pidStates.hPtBackward[PidProtons] = std::make_unique<TH1D>("hPtBackward_protons", "hPtBackward_protons", o2::analysis::gfw::ptbinning.size() - 1, &o2::analysis::gfw::ptbinning[0]);
+    pidStates.hPtBackward[PidCharged] = std::make_unique<TH1D>("hPtBackward_charged", "hPtBackward_charged", gfwMemberCache.ptbinning.size() - 1, gfwMemberCache.ptbinning.data());
+    pidStates.hPtBackward[PidPions] = std::make_unique<TH1D>("hPtBackward_pions", "hPtBackward_pions", gfwMemberCache.ptbinning.size() - 1, gfwMemberCache.ptbinning.data());
+    pidStates.hPtBackward[PidKaons] = std::make_unique<TH1D>("hPtBackward_kaons", "hPtBackward_kaons", gfwMemberCache.ptbinning.size() - 1, gfwMemberCache.ptbinning.data());
+    pidStates.hPtBackward[PidProtons] = std::make_unique<TH1D>("hPtBackward_protons", "hPtBackward_protons", gfwMemberCache.ptbinning.size() - 1, gfwMemberCache.ptbinning.data());
     pidStates.hPtBackward[PidCharged]->SetDirectory(nullptr);
     pidStates.hPtBackward[PidPions]->SetDirectory(nullptr);
     pidStates.hPtBackward[PidKaons]->SetDirectory(nullptr);
     pidStates.hPtBackward[PidProtons]->SetDirectory(nullptr);
 
-    AxisSpec phiAxis = {o2::analysis::gfw::phibins, o2::analysis::gfw::philow, o2::analysis::gfw::phiup, "#phi"};
-    AxisSpec etaAxis = {o2::analysis::gfw::etabins, -cfgTrackCuts.cfgEtaMax, cfgTrackCuts.cfgEtaMax, "#eta"};
-    AxisSpec vtxAxis = {o2::analysis::gfw::vtxZbins, -cfgEventCuts.cfgZvtxMax, cfgEventCuts.cfgZvtxMax, "Vtx_{z} (cm)"};
-    AxisSpec ptAxis = {o2::analysis::gfw::ptbinning, "#it{p}_{T} GeV/#it{c}"};
+    AxisSpec phiAxis = {gfwMemberCache.phibins, gfwMemberCache.philow, gfwMemberCache.phiup, "#phi"};
+    AxisSpec etaAxis = {gfwMemberCache.etabins, -cfgTrackCuts.cfgEtaMax, cfgTrackCuts.cfgEtaMax, "#eta"};
+    AxisSpec vtxAxis = {gfwMemberCache.vtxZbins, -cfgEventCuts.cfgZvtxMax, cfgEventCuts.cfgZvtxMax, "Vtx_{z} (cm)"};
+    AxisSpec ptAxis = {gfwMemberCache.ptbinning, "#it{p}_{T} GeV/#it{c}"};
 
     std::string sCentralityEstimator = "FT0C centrality (%)";
-    AxisSpec centAxis = {o2::analysis::gfw::centbinning, sCentralityEstimator.c_str()};
+    AxisSpec centAxis = {gfwMemberCache.centbinning, sCentralityEstimator.c_str()};
 
     std::vector<double> nchbinning;
-    int nchskip = (o2::analysis::gfw::nchup - o2::analysis::gfw::nchlow) / o2::analysis::gfw::nchbins;
-    for (int i = 0; i <= o2::analysis::gfw::nchbins; ++i) {
-      nchbinning.push_back(nchskip * i + o2::analysis::gfw::nchlow + 0.5);
+    int nchskip = (gfwMemberCache.nchup - gfwMemberCache.nchlow) / gfwMemberCache.nchbins;
+    for (int i = 0; i <= gfwMemberCache.nchbins; ++i) {
+      nchbinning.push_back(nchskip * i + gfwMemberCache.nchlow + 0.5);
     }
     AxisSpec nchAxis = {nchbinning, "N_{ch}"};
     AxisSpec t0cAxis = {1000, 0, 10000, "N_{ch} (T0C)"};
@@ -427,9 +426,9 @@ struct FlowGfwV02 {
     AxisSpec multpvAxis = {600, 0, 600, "N_{ch} (PV)"};
     AxisSpec dcaZAxis = {200, -2, 2, "DCA_{z} (cm)"};
     AxisSpec dcaXYAxis = {200, -0.5, 0.5, "DCA_{xy} (cm)"};
-    AxisSpec bsAxis = {o2::analysis::gfw::nBootstrap, -0.5, o2::analysis::gfw::nBootstrap - 0.5, "Bootstrap Index"};
+    AxisSpec bsAxis = {gfwMemberCache.nBootstrap, -0.5, gfwMemberCache.nBootstrap - 0.5, "Bootstrap Index"};
 
-    registry.add("v02pt", "", {HistType::kTProfile2D, {ptAxis, centAxis}});
+    registry.add("v02pt", "", {HistType::kTProfile3D, {ptAxis, centAxis, nchAxis}});
     registry.add("nchMid", "", {HistType::kTProfile3D, {ptAxis, centAxis, nchAxis}});
     registry.add("v02centmult", "", {HistType::kTProfile2D, {centAxis, nchAxis}});
 
@@ -452,15 +451,15 @@ struct FlowGfwV02 {
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
-    int ptbins = o2::analysis::gfw::ptbinning.size() - 1;
-    fSecondAxis = std::make_unique<TAxis>(ptbins, &o2::analysis::gfw::ptbinning[0]);
+    int ptbins = gfwMemberCache.ptbinning.size() - 1;
+    fSecondAxis = std::make_unique<TAxis>(ptbins, gfwMemberCache.ptbinning.data());
 
     // QA histograms
     registry.add("trackQA/before/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
     registry.add("trackQA/before/pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxis, dcaXYAxis, dcaZAxis}});
     registry.add("trackQA/before/nch_pt", "#it{p}_{T} vs multiplicity; N_{ch}; #it{p}_{T}", {HistType::kTH2D, {nchAxis, ptAxis}});
-    registry.add("trackQA/after/pt_ref", "", {HistType::kTH1D, {{100, o2::analysis::gfw::ptreflow, o2::analysis::gfw::ptrefup}}});
-    registry.add("trackQA/after/pt_poi", "", {HistType::kTH1D, {{100, o2::analysis::gfw::ptpoilow, o2::analysis::gfw::ptpoiup}}});
+    registry.add("trackQA/after/pt_ref", "", {HistType::kTH1D, {{100, gfwMemberCache.ptreflow, gfwMemberCache.ptrefup}}});
+    registry.add("trackQA/after/pt_poi", "", {HistType::kTH1D, {{100, gfwMemberCache.ptpoilow, gfwMemberCache.ptpoiup}}});
     registry.add("trackQA/before/chi2prTPCcls", "#chi^{2}/cluster for the TPC track segment; #chi^{2}/TPC cluster", {HistType::kTH1D, {{100, 0., 5.}}});
     registry.add("trackQA/before/chi2prITScls", "#chi^{2}/cluster for the ITS track; #chi^{2}/ITS cluster", {HistType::kTH1D, {{100, 0., 50.}}});
     registry.add("trackQA/before/nTPCClusters", "Number of found TPC clusters; TPC N_{cls}; Counts", {HistType::kTH1D, {{100, 40, 180}}});
@@ -505,13 +504,13 @@ struct FlowGfwV02 {
     registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kMultCuts, "after Mult cuts");
     registry.get<TH1>(HIST("eventQA/eventSel"))->GetXaxis()->SetBinLabel(kTrackCent, "has track + within cent");
 
-    if (o2::analysis::gfw::regions.GetSize() < 0)
+    if (gfwMemberCache.regions.GetSize() < 0)
       LOGF(error, "Configuration contains vectors of different size - check the GFWRegions configurable");
-    for (auto i(0); i < o2::analysis::gfw::regions.GetSize(); ++i) {
-      fGFW->AddRegion(o2::analysis::gfw::regions.GetNames()[i], o2::analysis::gfw::regions.GetEtaMin()[i], o2::analysis::gfw::regions.GetEtaMax()[i], (o2::analysis::gfw::regions.GetpTDifs()[i]) ? ptbins + 1 : 1, o2::analysis::gfw::regions.GetBitmasks()[i]);
+    for (auto i(0); i < gfwMemberCache.regions.GetSize(); ++i) {
+      fGFW->AddRegion(gfwMemberCache.regions.GetNames()[i], gfwMemberCache.regions.GetEtaMin()[i], gfwMemberCache.regions.GetEtaMax()[i], (gfwMemberCache.regions.GetpTDifs()[i]) ? ptbins + 1 : 1, gfwMemberCache.regions.GetBitmasks()[i]);
     }
-    for (auto i = 0; i < o2::analysis::gfw::configs.GetSize(); ++i) {
-      corrconfigs.push_back(fGFW->GetCorrelatorConfig(o2::analysis::gfw::configs.GetCorrs()[i], o2::analysis::gfw::configs.GetHeads()[i], o2::analysis::gfw::configs.GetpTDifs()[i]));
+    for (auto i = 0; i < gfwMemberCache.configs.GetSize(); ++i) {
+      corrconfigs.push_back(fGFW->GetCorrelatorConfig(gfwMemberCache.configs.GetCorrs()[i], gfwMemberCache.configs.GetHeads()[i], gfwMemberCache.configs.GetpTDifs()[i]));
     }
     if (corrconfigs.empty())
       LOGF(error, "Configuration contains vectors of different size - check the GFWCorrConfig configurable");
@@ -554,15 +553,15 @@ struct FlowGfwV02 {
 
     if (cfgUseAdditionalEventCut) {
       fMultPVCutLow = std::make_unique<TF1>("fMultPVCutLow", cfgMultCorrCuts.cfgMultCorrLowCutFunction->c_str(), 0, 100);
-      fMultPVCutLow->SetParameters(&(o2::analysis::gfw::multPVCorrCutPars[0]));
+      fMultPVCutLow->SetParameters(gfwMemberCache.multPVCorrCutPars.data());
       fMultPVCutHigh = std::make_unique<TF1>("fMultPVCutHigh", cfgMultCorrCuts.cfgMultCorrHighCutFunction->c_str(), 0, 100);
-      fMultPVCutHigh->SetParameters(&(o2::analysis::gfw::multPVCorrCutPars[0]));
+      fMultPVCutHigh->SetParameters(gfwMemberCache.multPVCorrCutPars.data());
       fMultCutLow = std::make_unique<TF1>("fMultCutLow", cfgMultCorrCuts.cfgMultCorrLowCutFunction->c_str(), 0, 100);
-      fMultCutLow->SetParameters(&(o2::analysis::gfw::multGlobalCorrCutPars[0]));
+      fMultCutLow->SetParameters(gfwMemberCache.multGlobalCorrCutPars.data());
       fMultCutHigh = std::make_unique<TF1>("fMultCutHigh", cfgMultCorrCuts.cfgMultCorrHighCutFunction->c_str(), 0, 100);
-      fMultCutHigh->SetParameters(&(o2::analysis::gfw::multGlobalCorrCutPars[0]));
+      fMultCutHigh->SetParameters(gfwMemberCache.multGlobalCorrCutPars.data());
       fMultPVGlobalCutHigh = std::make_unique<TF1>("fMultPVGlobalCutHigh", cfgMultCorrCuts.cfgMultGlobalPVCorrCutFunction->c_str(), 0, nchbinning.back());
-      fMultPVGlobalCutHigh->SetParameters(&(o2::analysis::gfw::multGlobalPVCorrCutPars[0]));
+      fMultPVGlobalCutHigh->SetParameters(gfwMemberCache.multGlobalPVCorrCutPars.data());
     }
     // Set DCAxy cut
     fPtDepDCAxy = std::make_unique<TF1>("ptDepDCAxy", Form("[0]*%s", cfgTrackCuts.cfgDCAxy->c_str()), 0.001, 100);
@@ -812,7 +811,7 @@ struct FlowGfwV02 {
     }
     auto multNTracksPV = collision.multNTracksPV();
 
-    if (vtxz > o2::analysis::gfw::vtxZup || vtxz < o2::analysis::gfw::vtxZlow)
+    if (vtxz > gfwMemberCache.vtxZup || vtxz < gfwMemberCache.vtxZlow)
       return 0;
 
     if (cfgMultCut) {
@@ -881,11 +880,11 @@ struct FlowGfwV02 {
           ebyeWeight *= pidStates.hPtMid[PidCharged]->Integral();
         }
         double ptFraction = 0;
-        double threshhold = 1.01;
+        double threshold = 1.01;
         int normIndex = (cfgNormalizeByCharged) ? PidCharged : pidInd; // Configured to normalize by charged particles or the selected particle
         if (pidStates.hPtMid[normIndex]->Integral() > 0) {
           ptFraction = pidStates.hPtMid[pidInd]->GetBinContent(i) / pidStates.hPtMid[normIndex]->Integral();
-          if (std::abs(val) < threshhold)
+          if (std::abs(val) < threshold)
             fFC->FillProfile(Form("%s_pt_%i", corrconfigs.at(l_ind).Head.c_str(), i), centmult, val * ptFraction, ebyeWeight, rndm);
         }
       }
@@ -898,7 +897,7 @@ struct FlowGfwV02 {
       double ptMeanBackward = pidStates.hPtBackward[PidCharged]->GetMean();
       double ptFractionForward = 0.;
       double ptFractionBackward = 0.;
-      int bootstrap = fRndm->Integer(o2::analysis::gfw::nBootstrap);
+      int bootstrap = fRndm->Integer(gfwMemberCache.nBootstrap);
       for (int pid = 0; pid < PidTotal; pid++) {
         int normIndex = (cfgNormalizeByCharged) ? PidCharged : pid;
         for (int i = 1; i <= fSecondAxis->GetNbins(); i++) {
@@ -971,8 +970,9 @@ struct FlowGfwV02 {
       double ptFraction = 0;
       if (pidStates.hPtMid[PidCharged]->Integral() > 0) {
         ptFraction = pidStates.hPtMid[PidCharged]->GetBinContent(i) / pidStates.hPtMid[PidCharged]->Integral();
-        if (std::abs(val) < 1)
-          registry.fill(HIST("v02pt"), fSecondAxis->GetBinCenter(i), centmult, val * ptFraction, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0);
+        double threshold = 1.01;
+        if (std::abs(val) < threshold)
+          registry.fill(HIST("v02pt"), fSecondAxis->GetBinCenter(i), centmult, multiplicity, val * ptFraction, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0);
         registry.fill(HIST("nchMid"), fSecondAxis->GetBinCenter(i), centmult, multiplicity, ptFraction);
       }
     }
@@ -998,7 +998,7 @@ struct FlowGfwV02 {
     float vtxz = collision.posZ();
     if (tracks.size() < 1)
       return;
-    if (xaxis.centrality >= 0 && (xaxis.centrality < o2::analysis::gfw::centbinning.front() || xaxis.centrality > o2::analysis::gfw::centbinning.back()))
+    if (xaxis.centrality >= 0 && (xaxis.centrality < gfwMemberCache.centbinning.front() || xaxis.centrality > gfwMemberCache.centbinning.back()))
       return;
     if (xaxis.multiplicity < cfgFixedMultMin || xaxis.multiplicity > cfgFixedMultMax)
       return;
@@ -1068,13 +1068,13 @@ struct FlowGfwV02 {
   template <typename TTrack>
   void fillAcceptedTracks(TTrack track, AcceptedTracks& acceptedTracks)
   {
-    if (posRegionIndex >= 0 && track.eta() > o2::analysis::gfw::regions.GetEtaMin()[posRegionIndex] && track.eta() < o2::analysis::gfw::regions.GetEtaMax()[posRegionIndex])
+    if (posRegionIndex >= 0 && track.eta() > gfwMemberCache.regions.GetEtaMin()[posRegionIndex] && track.eta() < gfwMemberCache.regions.GetEtaMax()[posRegionIndex])
       ++acceptedTracks.nPos;
-    if (negRegionIndex >= 0 && track.eta() > o2::analysis::gfw::regions.GetEtaMin()[negRegionIndex] && track.eta() < o2::analysis::gfw::regions.GetEtaMax()[negRegionIndex])
+    if (negRegionIndex >= 0 && track.eta() > gfwMemberCache.regions.GetEtaMin()[negRegionIndex] && track.eta() < gfwMemberCache.regions.GetEtaMax()[negRegionIndex])
       ++acceptedTracks.nNeg;
-    if (fullRegionIndex >= 0 && track.eta() > o2::analysis::gfw::regions.GetEtaMin()[fullRegionIndex] && track.eta() < o2::analysis::gfw::regions.GetEtaMax()[fullRegionIndex])
+    if (fullRegionIndex >= 0 && track.eta() > gfwMemberCache.regions.GetEtaMin()[fullRegionIndex] && track.eta() < gfwMemberCache.regions.GetEtaMax()[fullRegionIndex])
       ++acceptedTracks.nFull;
-    if (midRegionIndex >= 0 && track.eta() > o2::analysis::gfw::regions.GetEtaMin()[midRegionIndex] && track.eta() < o2::analysis::gfw::regions.GetEtaMax()[midRegionIndex])
+    if (midRegionIndex >= 0 && track.eta() > gfwMemberCache.regions.GetEtaMin()[midRegionIndex] && track.eta() < gfwMemberCache.regions.GetEtaMax()[midRegionIndex])
       ++acceptedTracks.nMid;
   }
 
@@ -1140,8 +1140,8 @@ struct FlowGfwV02 {
   {
     int pidInd = getNsigmaPID(track);
 
-    bool withinPtRef = (track.pt() > o2::analysis::gfw::ptreflow && track.pt() < o2::analysis::gfw::ptrefup);
-    bool withinPtPOI = (track.pt() > o2::analysis::gfw::ptpoilow && track.pt() < o2::analysis::gfw::ptpoiup);
+    bool withinPtRef = (track.pt() > gfwMemberCache.ptreflow && track.pt() < gfwMemberCache.ptrefup);
+    bool withinPtPOI = (track.pt() > gfwMemberCache.ptpoilow && track.pt() < gfwMemberCache.ptpoiup);
 
     if (!withinPtPOI && !withinPtRef)
       return;
