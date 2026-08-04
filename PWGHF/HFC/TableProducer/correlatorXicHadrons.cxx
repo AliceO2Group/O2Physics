@@ -1574,13 +1574,13 @@ struct HfCorrelatorXicHadrons {
       if (IsXicPlus) {
         // Final state: p, pi-, pi-, pi+, pi+
         std::array<int, XicDecayDaughtersCount::XicPlusDaughtersCount> const arrDaughXicPlusPDG = {kProton, kPiMinus, kPiMinus, kPiPlus, kPiPlus};
-        
+
         // Pass -1 to automatically traverse the entire cascade down to the final state
         RecoDecay::getDaughters(particle, &listDaughters, arrDaughXicPlusPDG);
       } else {
         // Final state: p, pi-, pi-, pi+
         std::array<int, XicDecayDaughtersCount::Xic0DaughtersCount> const arrDaughXic0PDG = {kProton, kPiMinus, kPiMinus, kPiPlus};
-        
+
         // Pass -1 to automatically traverse the entire cascade down to the final state
         RecoDecay::getDaughters(particle, &listDaughters, arrDaughXic0PDG);
       }
