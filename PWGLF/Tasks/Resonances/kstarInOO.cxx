@@ -50,10 +50,11 @@
 #include <cstddef>
 #include <cstdlib>
 #include <memory>
-#include <stdlib>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <stdlib.h>
 
 using namespace o2;
 using namespace o2::framework;
