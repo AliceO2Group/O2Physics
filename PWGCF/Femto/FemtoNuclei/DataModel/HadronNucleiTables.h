@@ -83,6 +83,23 @@ DECLARE_SOA_COLUMN(SharedClustersHad, sharedClustersHad, uint8_t);
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
 
+// Reconstructed-MC pair information. The signed generated pT follows the
+// convention used by PtNu/PtHad: particles are positive and antiparticles
+// are negative.
+DECLARE_SOA_COLUMN(PtNuMC, ptNuMC, float);
+DECLARE_SOA_COLUMN(EtaNuMC, etaNuMC, float);
+DECLARE_SOA_COLUMN(PhiNuMC, phiNuMC, float);
+DECLARE_SOA_COLUMN(PtHadMC, ptHadMC, float);
+DECLARE_SOA_COLUMN(EtaHadMC, etaHadMC, float);
+DECLARE_SOA_COLUMN(PhiHadMC, phiHadMC, float);
+DECLARE_SOA_COLUMN(KstarMC, kstarMC, float);
+DECLARE_SOA_COLUMN(PdgCodeNuMC, pdgCodeNuMC, int32_t);
+DECLARE_SOA_COLUMN(PdgCodeHadMC, pdgCodeHadMC, int32_t);
+DECLARE_SOA_COLUMN(IsPhysicalPrimaryNuMC, isPhysicalPrimaryNuMC, bool);
+DECLARE_SOA_COLUMN(IsPhysicalPrimaryHadMC, isPhysicalPrimaryHadMC, bool);
+DECLARE_SOA_COLUMN(SameMCCollision, sameMCCollision, bool);
+DECLARE_SOA_COLUMN(MatchesRecoMCCollision, matchesRecoMCCollision, bool);
+
 DECLARE_SOA_COLUMN(IsBkgUS, isBkgUS, bool);
 DECLARE_SOA_COLUMN(IsBkgEM, isBkgEM, bool);
 
@@ -138,6 +155,20 @@ DECLARE_SOA_TABLE(HadronNucleiTable, "AOD", "HADNUCLEITABLE",
                   hadron_nuclei_tables::NSigmaITSNu,
                   hadron_nuclei_tables::NSigmaTOFHad,
                   hadron_nuclei_tables::NSigmaITSHad)
+DECLARE_SOA_TABLE(HadronNucleiTableMC, "AOD", "HADNUCLEIMC",
+                  hadron_nuclei_tables::PtNuMC,
+                  hadron_nuclei_tables::EtaNuMC,
+                  hadron_nuclei_tables::PhiNuMC,
+                  hadron_nuclei_tables::PtHadMC,
+                  hadron_nuclei_tables::EtaHadMC,
+                  hadron_nuclei_tables::PhiHadMC,
+                  hadron_nuclei_tables::KstarMC,
+                  hadron_nuclei_tables::PdgCodeNuMC,
+                  hadron_nuclei_tables::PdgCodeHadMC,
+                  hadron_nuclei_tables::IsPhysicalPrimaryNuMC,
+                  hadron_nuclei_tables::IsPhysicalPrimaryHadMC,
+                  hadron_nuclei_tables::SameMCCollision,
+                  hadron_nuclei_tables::MatchesRecoMCCollision)
 DECLARE_SOA_TABLE(HadronHyperTable, "AOD", "HADHYPERTABLE",
                   hadron_nuclei_tables::PtHyp,
                   hadron_nuclei_tables::EtaHyp,
