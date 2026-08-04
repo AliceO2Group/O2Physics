@@ -19,32 +19,29 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
 #include <TVector2.h>
 #include <TRandom.h>
+#include <TLorentzVector.h>
 
 #include <cmath>
-#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -67,6 +64,10 @@ struct Cha01710analysis {
   TRandom* rn = new TRandom();
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  Configurable<std::string> cfgUrl{"cfgUrl", "http://alice-ccdb.cern.ch", "CCDB URL"};
 
   struct : ConfigurableGroup {
     Configurable<int> cfgCentEst{"cfgCentEst", 1, "0: FT0C, 1: FT0M"};
@@ -208,6 +209,11 @@ struct Cha01710analysis {
     if (epConfig.cfgQvecHarmonic < minHarm) {
       LOGF(fatal, "cfgQvecHarmonic must be >= 2");
     }
+
+    ccdb->setURL(cfgUrl.value);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
   }
 
   template <typename C>
@@ -345,24 +351,25 @@ struct Cha01710analysis {
 
         float relPhi = TVector2::Phi_0_2pi((mother.Phi() - eventPlaneDet) * harmonic);
         histos.fill(HIST("Pair/hMassVsK0SMass"), mother.M(), v0.mK0Short());
-        if (region == kSignal) {
+        if (region != kSignal)
+          continue;
+        if (track.sign() > 0) {
+          histos.fill(HIST("Pair/hSignalPlus"), mother.M(), mother.Pt(), centrality, relPhi);
+        } else if (track.sign() < 0) {
+          histos.fill(HIST("Pair/hSignalMinus"), mother.M(), mother.Pt(), centrality, relPhi);
+        }
+        for (int i = 0; i < cfgNRotations; ++i) {
+          auto randomPhi = rn->Uniform(o2::constants::math::PI * rotmin, o2::constants::math::PI * rotmax);
+          randomPhi += kaon.Phi();
+          auto kaonRot = ROOT::Math::PxPyPzMVector(kaon.Pt() * std::cos(randomPhi), kaon.Pt() * std::sin(randomPhi), track.pz(), o2::constants::physics::MassKaonCharged);
+          auto motherRot = k0 + kaonRot;
+          if (std::abs(motherRot.Rapidity()) > cfgMotherRapidityMax)
+            continue;
+
           if (track.sign() > 0) {
-            histos.fill(HIST("Pair/hSignalPlus"), mother.M(), mother.Pt(), centrality, relPhi);
+            histos.fill(HIST("Pair/hRotatedPlus"), motherRot.M(), motherRot.Pt(), centrality);
           } else if (track.sign() < 0) {
-            histos.fill(HIST("Pair/hSignalMinus"), mother.M(), mother.Pt(), centrality, relPhi);
-          }
-          for (int i = 0; i < cfgNRotations; ++i) {
-            auto randomPhi = rn->Uniform(o2::constants::math::PI * rotmin, o2::constants::math::PI * rotmax);
-            randomPhi += kaon.Phi();
-            auto kaonRot = ROOT::Math::PxPyPzMVector(kaon.Pt() * std::cos(randomPhi), kaon.Pt() * std::sin(randomPhi), track.pz(), o2::constants::physics::MassKaonCharged);
-            auto motherRot = k0 + kaonRot;
-            if (std::abs(motherRot.Rapidity()) < cfgMotherRapidityMax) {
-              if (track.sign() > 0) {
-                histos.fill(HIST("Pair/hRotatedPlus"), motherRot.M(), motherRot.Pt(), centrality);
-              } else if (track.sign() < 0) {
-                histos.fill(HIST("Pair/hRotatedMinus"), motherRot.M(), motherRot.Pt(), centrality);
-              }
-            }
+            histos.fill(HIST("Pair/hRotatedMinus"), motherRot.M(), motherRot.Pt(), centrality);
           }
         }
       }
