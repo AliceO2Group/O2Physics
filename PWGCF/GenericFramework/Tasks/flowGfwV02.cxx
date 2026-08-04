@@ -78,28 +78,28 @@ using namespace analysis::genericframework;
 static constexpr std::array<std::array<float, 3>, 20> LongArrayFloat = {{{{1.1, 2.1, 3.1}}, {{1.2, 2.2, 3.2}}, {{1.3, 2.3, 3.3}}, {{-1.1, -2.1, -3.1}}, {{-1.2, -2.2, -3.2}}, {{-1.3, -2.3, -3.3}}, {{1.1, 1.1, 1.1}}, {{1.2, 1.2, 1.2}}, {{1.3, 1.3, 1.3}}, {{-1.1, -1.1, -1.1}}, {{-1.2, -1.2, -1.2}}, {{-1.3, -1.3, -1.3}}, {{1.1, 1.1, 1.1}}, {{1.2, 1.2, 1.2}}, {{1.3, 1.3, 1.3}}, {{-1.1, -1.1, -1.1}}, {{-1.2, -1.2, -1.2}}, {{-1.3, -1.3, -1.3}}, {{1.1, 1.1, 1.1}}, {{1.2, 1.2, 1.2}}}};
 
 struct GFWMemberCache {
-  std::vector<double> ptbinning = {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
-  float ptpoilow = 0.2, ptpoiup = 10.0;
-  float ptreflow = 0.2, ptrefup = 3.0;
-  float ptlow = 0.2, ptup = 10.0;
-  int etabins = 16;
-  float etalow = -0.8, etaup = 0.8;
-  int vtxZbins = 40;
-  float vtxZlow = -10.0, vtxZup = 10.0;
-  int phibins = 72;
-  float philow = 0.0;
-  float phiup = o2::constants::math::TwoPI;
-  int nchbins = 300;
-  float nchlow = 0;
-  float nchup = 300;
-  std::vector<double> centbinning{90};
-  int nBootstrap = 10;
-  std::vector<std::pair<double, double>> etagapsPtPt;
-  GFWRegions regions;
-  GFWCorrConfigs configs;
-  std::vector<double> multGlobalCorrCutPars;
-  std::vector<double> multPVCorrCutPars;
-  std::vector<double> multGlobalPVCorrCutPars;
+std::vector<double> ptbinning = {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
+float ptpoilow = 0.2, ptpoiup = 10.0;
+float ptreflow = 0.2, ptrefup = 3.0;
+float ptlow = 0.2, ptup = 10.0;
+int etabins = 16;
+float etalow = -0.8, etaup = 0.8;
+int vtxZbins = 40;
+float vtxZlow = -10.0, vtxZup = 10.0;
+int phibins = 72;
+float philow = 0.0;
+float phiup = o2::constants::math::TwoPI;
+int nchbins = 300;
+float nchlow = 0;
+float nchup = 300;
+std::vector<double> centbinning{90};
+int nBootstrap = 10;
+std::vector<std::pair<double, double>> etagapsPtPt;
+GFWRegions regions;
+GFWCorrConfigs configs;
+std::vector<double> multGlobalCorrCutPars;
+std::vector<double> multPVCorrCutPars;
+std::vector<double> multGlobalPVCorrCutPars;
 } gfwMemberCache;
 
 struct FlowGfwV02 {
@@ -208,7 +208,7 @@ struct FlowGfwV02 {
 
   struct Config {
     std::array<TH1D*, 4> mEfficiency{nullptr, nullptr, nullptr, nullptr};
-    GFWWeights* mAcceptance;
+    GFWWeights* mAcceptance = nullptr;
     bool correctionsLoaded = false;
   } cfg{};
 
