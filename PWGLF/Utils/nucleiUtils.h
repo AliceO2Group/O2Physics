@@ -397,10 +397,10 @@ float getCentrality(Tcollision const& collision, const int centralityEstimator, 
     hFailCentrality->Fill(0.);
   }
   if constexpr (!o2::aod::HasCentrality<Tcollision>) { // requires aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs
-    return -1.f;
     if (hFailCentrality) {
       hFailCentrality->Fill(1.);
     }
+    return -1.f;
   }
   if (centralityEstimator == centDetectors::kFV0A) {
     return collision.centFV0A();
@@ -610,11 +610,11 @@ class PidManager
   }
 
  private:
-  float mTpcBetheBlochParams[6];
+  float mTpcBetheBlochParams[6] = {-999.f, -999.f, -999.f, -999.f, -999.f, -999.f};
   bool mUseTpcCentralCalibration = true; // this just becomes a check for the null pointer in the parameters
   o2::aod::ITSResponse mResponseITS;
   float mMomScaling[2]{1., 0.};
-  int mSpecies;
+  int mSpecies = -1;
 };
 
 } // namespace nuclei
