@@ -94,6 +94,12 @@ enum MatCorrType {
   LUT = 2
 };
 
+enum TrackPropMode {
+  kProper = 0,
+  kFast = 1,
+  kBoth = 2
+};
+
 struct PhotonConversionBuilder {
   Produces<aod::V0PhotonsKF> v0photonskf;
   Produces<aod::V0Legs> v0legs;
@@ -114,6 +120,7 @@ struct PhotonConversionBuilder {
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
+  Configurable<int> modeTrackPropagation{"modeTrackPropagation", 0, "0: use real track propagation, including material, 1: use fast approximation using only geometry, 2: Use real track propagation and make comparison to fast propagation (only for debugging and testing)"};
 
   // single track cuts
   Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
@@ -324,6 +331,14 @@ struct PhotonConversionBuilder {
         registry.add("V0/hBDTScoreBeforeCutVsPt", "BDT score before cut vs pT; pT (GeV/c); BDT score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
         registry.add("V0/hBDTScoreAfterCutVsPt", "BDT score after cut vs pT; pT (GeV/c); BDT score", {HistType::kTH2F, {{1000, 0.0f, 20.0f}, {1000, 0.0f, 1.0f}}});
       }
+    }
+
+    // Compare proper propagation and fast geometrical propagation
+    if (modeTrackPropagation == TrackPropMode::kBoth) {
+      registry.add("V0Leg/hDCAxyPropagationCompare", "Comparison of DCA_{xy} propagation;DCA_{xy} (cm) proper propagation; DCA_{xy} (cm) geom. propagation", {HistType::kTH2F, {{200, -10., 10.}, {200, -10., 10.}}});
+      registry.add("V0Leg/hDCAzPropagationCompare", "Comparison of DCA_{z} propagation;DCA_{z} (cm) proper propagation; DCA_{z} (cm) geom. propagation", {HistType::kTH2F, {{200, -10., 10.}, {200, -10., 10.}}});
+      registry.add("V0/hPhivPropagationCompare", "Comparison of #phi_{v};#phi_{v} proper propagation; #phi_{v} geom. propagation", {HistType::kTH2F, {{100, 0., 1.6}, {100, 0., 1.6}}});
+      registry.add("V0/hPsiPairPropagationCompare", "Comparison of #Psi_{pair};#Psi_{pair} proper propagation; #Psi_{pair} geom. propagation", {HistType::kTH2F, {{100, 0., 1.6}, {100, 0., 1.6}}});
     }
   }
 
@@ -555,8 +570,23 @@ struct PhotonConversionBuilder {
       return;
     }
     auto pTrackC = pTrack;
+    o2::math_utils::Point3D<float> vtxPrim{
+      collision.posX(),
+      collision.posY(),
+      collision.posZ()};
+    if (modeTrackPropagation != TrackPropMode::kProper) {
+      dcaInfo = CalculateDCAFast(pTrackC, vtxPrim, d_bz);
+    }
     pTrackC.setPID(o2::track::PID::Electron);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, pTrackC, 2.f, matCorr, &dcaInfo);
+
+    std::array<float, 2> dcaInfoFast = dcaInfo;
+    if (modeTrackPropagation != TrackPropMode::kFast) {
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, pTrackC, 2.f, matCorr, &dcaInfo);
+      if (modeTrackPropagation == TrackPropMode::kBoth) {
+        registry.fill(HIST("V0Leg/hDCAxyPropagationCompare"), dcaInfo[0], dcaInfoFast[0]);
+        registry.fill(HIST("V0Leg/hDCAzPropagationCompare"), dcaInfo[1], dcaInfoFast[1]);
+      }
+    }
     auto posdcaXY = dcaInfo[0];
     auto posdcaZ = dcaInfo[1];
 
@@ -566,8 +596,19 @@ struct PhotonConversionBuilder {
       return;
     }
     auto nTrackC = nTrack;
+    if (modeTrackPropagation != TrackPropMode::kProper) {
+      dcaInfo = CalculateDCAFast(nTrackC, vtxPrim, d_bz);
+    }
     nTrackC.setPID(o2::track::PID::Electron);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, nTrackC, 2.f, matCorr, &dcaInfo);
+
+    dcaInfoFast = dcaInfo;
+    if (modeTrackPropagation != TrackPropMode::kFast) {
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, nTrackC, 2.f, matCorr, &dcaInfo);
+      if (modeTrackPropagation == TrackPropMode::kBoth) {
+        registry.fill(HIST("V0Leg/hDCAxyPropagationCompare"), dcaInfo[0], dcaInfoFast[0]);
+        registry.fill(HIST("V0Leg/hDCAzPropagationCompare"), dcaInfo[1], dcaInfoFast[1]);
+      }
+    }
     auto eledcaXY = dcaInfo[0];
     auto eledcaZ = dcaInfo[1];
 
@@ -587,30 +628,69 @@ struct PhotonConversionBuilder {
 
     float phiv = 999.f;
     float psipair = 999.f;
+    float phivFast = 999.f;
+    float psipairFast = 999.f;
     float baseR = std::hypot(xyz[0], xyz[1]);
-    std::array<float, 3> offsetsR = {propV0LegsRadius, 30.f, 10.f};
-    bool pPropagatedSuccess = false;
-    bool nPropagatedSuccess = false;
-    auto pTrackProp = pTrack;
-    auto nTrackProp = nTrack;
-    for (const float& offsetR : offsetsR) {
-      pTrackProp = pTrack;
-      pTrackProp.setPID(o2::track::PID::Electron);
-      nTrackProp = nTrack;
-      nTrackProp.setPID(o2::track::PID::Electron);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, pTrackProp, 2.f, matCorr, &dcaInfo);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, nTrackProp, 2.f, matCorr, &dcaInfo);
-      pPropagatedSuccess = o2::base::Propagator::Instance()->propagateToR(pTrackProp, baseR + offsetR);
-      nPropagatedSuccess = o2::base::Propagator::Instance()->propagateToR(nTrackProp, baseR + offsetR);
-      if (pPropagatedSuccess && nPropagatedSuccess) {
-        KFPTrack kfp_track_posProp = createKFPTrackFromTrackParCov(pTrackProp, pos.sign(), pos.tpcNClsFound(), pos.tpcChi2NCl());
-        KFPTrack kfp_track_eleProp = createKFPTrackFromTrackParCov(nTrackProp, ele.sign(), ele.tpcNClsFound(), ele.tpcChi2NCl());
-        phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(kfp_track_posProp.GetPx(), kfp_track_posProp.GetPy(), kfp_track_posProp.GetPz(), kfp_track_eleProp.GetPx(), kfp_track_eleProp.GetPy(), kfp_track_eleProp.GetPz(), pos.sign(), ele.sign(), d_bz);
-        psipair = o2::aod::pwgem::dilepton::utils::pairutil::getPsiPair(kfp_track_posProp.GetPx(), kfp_track_posProp.GetPy(), kfp_track_posProp.GetPz(), kfp_track_eleProp.GetPx(), kfp_track_eleProp.GetPy(), kfp_track_eleProp.GetPz());
-        break;
-      }
-      LOG(debug) << "Propagation to offset" << offsetR << " cm failed for " << (pPropagatedSuccess ? "negative" : "positive") << " track. Trying smaller offset.";
+    // This method uses the track Helix instead of the full propagation.
+    // Hence, it is only an approximation but much faster
+    if (modeTrackPropagation != TrackPropMode::kProper) {
+
+      o2::track::TrackAuxPar helixPosEle(nTrack, d_bz);
+      o2::track::TrackAuxPar helixPosPos(pTrack, d_bz);
+
+      float diffX = helixPosEle.xC - helixPosPos.xC;
+      float diffY = helixPosEle.yC - helixPosPos.yC;
+      auto phiHelix = RecoDecay::constrainAngle<float, float>(std::atan2(diffY, diffX) - o2::constants::math::PI / 2.);
+
+      // Electron
+      float arcLenghtEle = helixPosEle.rC * 0.9 > propV0LegsRadius ? std::asin(propV0LegsRadius / helixPosEle.rC) * helixPosEle.rC : o2::constants::math::PI / 2.2 * helixPosEle.rC; // This assumes that the photon momentum vector is a tangent of the circle
+      auto propTrackEle = getPropMomentumFromTrackHelix(arcLenghtEle, ele, helixPosEle, d_bz / 10., phiHelix - ele.phi());
+      // Positron
+      float arcLenghtPos = helixPosPos.rC * 0.9 > propV0LegsRadius ? std::asin(propV0LegsRadius / helixPosPos.rC) * helixPosPos.rC : o2::constants::math::PI / 2.2 * helixPosPos.rC; // This assumes that the photon momentum vector is a tangent of the circle
+      auto propTrackPos = getPropMomentumFromTrackHelix(arcLenghtPos, pos, helixPosPos, d_bz / 10., phiHelix - pos.phi());
+
+      phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(propTrackPos[0], propTrackPos[1], propTrackPos[2], propTrackEle[0], propTrackEle[1], propTrackEle[2], pos.sign(), ele.sign(), d_bz);
+      psipair = o2::aod::pwgem::dilepton::utils::pairutil::getPsiPair(propTrackPos[0], propTrackPos[1], propTrackPos[2], propTrackEle[0], propTrackEle[1], propTrackEle[2]);
+
+      // Store values for later comparison
+      phivFast = phiv;
+      psipairFast = psipair;
     }
+    // This uses the full propagation including material effects
+    if (modeTrackPropagation != TrackPropMode::kFast) {
+      std::array<float, 3> offsetsR = {propV0LegsRadius, 30.f, 10.f};
+      bool pPropagatedSuccess = false;
+      bool nPropagatedSuccess = false;
+      auto pTrackProp = pTrack;
+      auto nTrackProp = nTrack;
+      for (const auto& offsetR : offsetsR) {
+        pTrackProp = pTrack;
+        pTrackProp.setPID(o2::track::PID::Electron);
+        nTrackProp = nTrack;
+        nTrackProp.setPID(o2::track::PID::Electron);
+
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, pTrackProp, 2.f, matCorr, &dcaInfo);
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, nTrackProp, 2.f, matCorr, &dcaInfo);
+
+        pPropagatedSuccess = o2::base::Propagator::Instance()->propagateToR(pTrackProp, baseR + offsetR);
+        nPropagatedSuccess = o2::base::Propagator::Instance()->propagateToR(nTrackProp, baseR + offsetR);
+
+        if (pPropagatedSuccess && nPropagatedSuccess) {
+          KFPTrack kfp_track_posProp = createKFPTrackFromTrackParCov(pTrackProp, pos.sign(), pos.tpcNClsFound(), pos.tpcChi2NCl());
+          KFPTrack kfp_track_eleProp = createKFPTrackFromTrackParCov(nTrackProp, ele.sign(), ele.tpcNClsFound(), ele.tpcChi2NCl());
+          phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(kfp_track_posProp.GetPx(), kfp_track_posProp.GetPy(), kfp_track_posProp.GetPz(), kfp_track_eleProp.GetPx(), kfp_track_eleProp.GetPy(), kfp_track_eleProp.GetPz(), pos.sign(), ele.sign(), d_bz);
+          psipair = o2::aod::pwgem::dilepton::utils::pairutil::getPsiPair(kfp_track_posProp.GetPx(), kfp_track_posProp.GetPy(), kfp_track_posProp.GetPz(), kfp_track_eleProp.GetPx(), kfp_track_eleProp.GetPy(), kfp_track_eleProp.GetPz());
+          break;
+        } else {
+          LOG(debug) << "Propagation to offset" << offsetR << " cm failed for " << (pPropagatedSuccess ? "negative" : "positive") << " track. Trying smaller offset.";
+        }
+      }
+      if (modeTrackPropagation == TrackPropMode::kBoth) {
+        registry.fill(HIST("V0/hPhivPropagationCompare"), phiv, phivFast);
+        registry.fill(HIST("V0/hPsiPairPropagationCompare"), psipair, psipairFast);
+      }
+    }
+
     if (phiv == 999.f || psipair == 999.f) {
       LOG(debug) << "Propagation failed for all radii (" << propV0LegsRadius << ", 30, 10 cm). Using default values for phiv and psipair (999.f).";
     }
@@ -985,14 +1065,14 @@ struct PhotonConversionBuilder {
       fillV0Table<isMC, TBCs, TCollisions, TTracks>(v0, true);
     } // end of fullv0Id loop
 
-    for (const auto& collision : collisions) {
-      if constexpr (isMC) {
-        if (!collision.has_mcCollision()) {
-          continue;
-        }
-      }
-      // events_ngpcm(nv0_map[collision.globalIndex()]);
-    } // end of collision loop
+    // for (const auto& collision : collisions) {
+    //   if constexpr (isMC) {
+    //     if (!collision.has_mcCollision()) {
+    //       continue;
+    //     }
+    //   }
+    //   // events_ngpcm(nv0_map[collision.globalIndex()]);
+    // } // end of collision loop
 
     pca_map.clear();
     cospa_map.clear();

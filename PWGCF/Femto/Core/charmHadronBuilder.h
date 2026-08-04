@@ -60,6 +60,7 @@ struct ConfD0Filters : o2::framework::ConfigurableGroup {
   // invariant-mass window
   o2::framework::Configurable<float> massMin{"massMin", 1.7f, "Minimum invariant mass for D0"};
   o2::framework::Configurable<float> massMax{"massMax", 2.0f, "Maximum invariant mass for D0"};
+  o2::framework::Configurable<bool> rejectAmbiguousHypothesis{"rejectAmbiguousHypothesis", false, "Reject candidates selected under both D0 and D0bar hypotheses"};
 };
 
 // derived selection bits for D0s
@@ -73,8 +74,9 @@ struct ConfD0Bits : o2::framework::ConfigurableGroup {
 };
 
 // base selection for analysis task for D0s
+template <auto& Prefix>
 struct ConfD0Selection : o2::framework::ConfigurableGroup {
-  std::string prefix = std::string("D0Selection");
+  std::string prefix = Prefix;
   o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", o2::constants::physics::Pdg::kD0, "PDG code (D0)"};
   o2::framework::Configurable<int> sign{"sign", 0, "Particle sign (+1: D0; -1: D0bar; 0: both)"};
   o2::framework::Configurable<float> ptMin{"ptMin", 1.f, "Minimum pT"};
@@ -90,6 +92,11 @@ struct ConfD0Selection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> massMax{"massMax", 1.922f, "Maximum invariant mass for D0"};
   o2::framework::Configurable<datatypes::CharmHadronMaskType> mask{"mask", 0, "Bitmask for D0 selection"};
 };
+
+constexpr const char PrefixD0Selection1[] = "D0Selection1";
+constexpr const char PrefixD0Selection2[] = "D0Selection2";
+using ConfD0Selection1 = ConfD0Selection<PrefixD0Selection1>;
+using ConfD0Selection2 = ConfD0Selection<PrefixD0Selection2>;
 
 /// The different selections for D0s
 enum D0Sels {
@@ -125,6 +132,7 @@ enum D0Filters {
   kYMax,
   kMassMin,
   kMassMax,
+  kRejectAmbiguous,
   kD0FiltersMax
 };
 
@@ -142,7 +150,8 @@ const std::unordered_map<D0Filters, std::string> d0FilterNames = {
   {kYMin, "Minimum rapidity"},
   {kYMax, "Maximum rapidity"},
   {kMassMin, "Minimum invariant mass"},
-  {kMassMax, "Maximum invariant mass"}};
+  {kMassMax, "Maximum invariant mass"},
+  {kRejectAmbiguous, "Reject ambiguous D0/D0bar hypothesis"}};
 
 template <modes::CharmHadron hadronType, auto& SelectionHistName, auto& FilterHistName>
 class D0Selection : public baseselection::BaseSelection<float, o2::analysis::femto::datatypes::CharmHadronMaskType, kD0SelsMax>
@@ -167,6 +176,7 @@ class D0Selection : public baseselection::BaseSelection<float, o2::analysis::fem
     mUseYCut = filter.useYCut.value;
     mYMin = filter.yMin.value;
     mYMax = filter.yMax.value;
+    mRejectAmbiguousHypothesis = filter.rejectAmbiguousHypothesis.value;
 
     this->addSelection(kCpaMin, d0SelectionNames.at(kCpaMin), config.cpaMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kDecayLengthMin, d0SelectionNames.at(kDecayLengthMin), config.decayLengthMin.value, limits::kLowerLimit, true, true, false);
@@ -189,6 +199,7 @@ class D0Selection : public baseselection::BaseSelection<float, o2::analysis::fem
         {d0FilterNames.at(kYMax), mYMax},
         {d0FilterNames.at(kMassMin), mMassMin},
         {d0FilterNames.at(kMassMax), mMassMax},
+        {d0FilterNames.at(kRejectAmbiguous), static_cast<float>(mRejectAmbiguousHypothesis)},
       });
   }
 
@@ -221,6 +232,16 @@ class D0Selection : public baseselection::BaseSelection<float, o2::analysis::fem
     }
 
     this->template fillFilter<FilterHistName>(kHypothesis, p);
+    pass &= p;
+
+    bool competing = false;
+    if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
+      competing = d0candidate.isSelD0bar();
+    } else {
+      competing = d0candidate.isSelD0();
+    }
+    p = !mRejectAmbiguousHypothesis || !competing;
+    this->template fillFilter<FilterHistName>(kRejectAmbiguous, p);
     pass &= p;
 
     p = d0candidate.pt() > mPtMin;
@@ -286,6 +307,7 @@ class D0Selection : public baseselection::BaseSelection<float, o2::analysis::fem
   bool mUseYCut = true;
   float mYMin = -0.8f;
   float mYMax = 0.8f;
+  bool mRejectAmbiguousHypothesis = false;
 };
 
 // tables produced by the D0 builder: kinematics, bitmask and QA
