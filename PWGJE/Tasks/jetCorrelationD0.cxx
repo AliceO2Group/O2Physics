@@ -355,7 +355,7 @@ struct JetCorrelationD0 {
 
       int matchedFrom = 0;
       int selectedAs = 0;
-      int category; // 0 signal, 1 reflection, 2-5 correlated backgrounds
+      int category = -1; // -1 undefined, 0 signal, 1 reflection, 2-5 correlated backgrounds
       constexpr int kD0ToKPi = 1;
       constexpr int kD0ToKPiPi = 2;
       constexpr int kD0ToPiPi = 3;
@@ -372,23 +372,23 @@ struct JetCorrelationD0 {
       } else if (d0Candidate.candidateSelFlag() & BIT(1)) { // CandidateSelFlag == BIT(1) -> selected as D0bar
         selectedAs = -1;
       }
-      if ((d0DecayChannel == kD0ToKPi) && (selectedAs == matchedFrom)) {
-        category = 0; // signal -> D0 or D0bar, π+ K− π+
+      if ((std::abs(d0DecayChannel) == kD0ToKPi) && (matchedFrom != 0) && (selectedAs == matchedFrom)) {
+        category = 0; // signal -> D0 or D0bar, π+ K−
       }
-      if ((d0DecayChannel == kD0ToKPi) && (selectedAs == -1*matchedFrom)) {
+      else if ((d0DecayChannel == kD0ToKPi) && (selectedAs == -1*matchedFrom)) {
         category = 1; // reflection
       }
-      if (d0DecayChannel == kD0ToKPiPi) {
+      else if (d0DecayChannel == kD0ToKPiPi) {
         category = 2; // corr bkg: π+ K− π0
       }
 
-      if (d0DecayChannel == kD0ToPiPi) {
+      else if (d0DecayChannel == kD0ToPiPi) {
         category = 3; // corr bkg: π+ π−
       }
-      if (d0DecayChannel == kD0ToPiPiPi) {
+      else if (d0DecayChannel == kD0ToPiPiPi) {
         category = 4; // corr bkg: π+ π− π0
       }
-      if (d0DecayChannel == kD0ToKK) {
+      else if (d0DecayChannel == kD0ToKK) {
         category = 5; // corr bkg: K+ K−
       }
 
