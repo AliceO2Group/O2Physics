@@ -250,18 +250,13 @@ void HFInvMassFitter::doFit()
   } else { // data
     const double integralSidebands = integrateHistoInvMassOverWorkspaceRanges({"SBL", "SBR"});
     const ParameterRanges rooNBkgParamRanges{0.5 * integralSidebands, 1.5 * integralSidebands, integralSidebands};
-    std::cout << "integralSidebands = " << integralSidebands << "\n";
-    std::cout << "rooNBkgParamRanges:\n";
     mRooNBkg = new RooRealVar("mRooNBkg", "number of background", randomizeInitialParameter(rooNBkgParamRanges), rooNBkgParamRanges.lower, rooNBkgParamRanges.upper); // background yield
     mBkgPdf = new RooAddPdf("mBkgPdf", "background fit function", RooArgList(*bkgPdf), RooArgList(*mRooNBkg));
     std::string sbRanges{"SBL,SBR"};
     if (mTypeOfSgnPdf == GausSec) { // two peak fit
       sbRanges.append(",SEC");
     }
-    std::cout << "Start prefit of BG sidebands\n";
     mBkgPdf->chi2FitTo(sbHistogram, DataError(RooAbsData::SumW2), Save());
-    std::cout << "Finish prefit of BG sidebands\n";
-    std::cout << "mRooNBkg->getVal() = " << mRooNBkg->getVal() << "\n";
 
     // define the frame to evaluate background sidebands chi2 (bg pdf needs to be plotted within sideband ranges)
     RooPlot* frameTemporary = mass->frame(Title(Form("%s_temp", mHistoInvMass->GetTitle())));
@@ -282,7 +277,6 @@ void HFInvMassFitter::doFit()
     checkForSignal(estimatedSignal);              // SIG's absolute integral in "bkg" range
     calculateBackground(mBkgYield, mBkgYieldErr); // BG's absolute integral in "bkg" range
 
-    std::cout << "estimatedSignal = " << estimatedSignal << "\n";
     const ParameterRanges rooNSgnParamRanges{0.1 * estimatedSignal, 10 * estimatedSignal, estimatedSignal};
     mRooNSgn = new RooRealVar("mNSgn", "number of signal", randomizeInitialParameter(rooNSgnParamRanges), rooNSgnParamRanges.lower, rooNSgnParamRanges.upper); // estimated signal yield
     if (mFixedRawYield > 0) {
@@ -315,7 +309,7 @@ void HFInvMassFitter::doFit()
     } else {
       mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal pdf", RooArgList(*bkgPdf, *sgnPdf), RooArgList(*mRooNBkg, *mRooNSgn));
     }
-    std::cout << "Start total fit\n";
+
     RooFitResult* fitResult{nullptr};
     if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
       fitResult = mTotalPdf->chi2FitTo(dataHistogram, Save());
@@ -323,37 +317,12 @@ void HFInvMassFitter::doFit()
       fitResult = mTotalPdf->fitTo(dataHistogram, Save());
     }
 
-    std::cout << "Finish total fit\n";
-
-    std::cout << "History:\t";
-    for (unsigned i = 0; i < fitResult->numStatusHistory(); ++i) {
-      std::cout << fitResult->statusLabelHistory(i) << " : " << fitResult->statusCodeHistory(i) << "\t";
-    }
-    std::cout << "\n";
-
-    std::cout << "Status  = " << fitResult->status() << "\n";
-    std::cout << "CovQual = " << fitResult->covQual() << "\n";
-    std::cout << "EDM     = " << fitResult->edm() << "\n";
-    std::cout << "minNLL  = " << fitResult->minNll() << "\n";
-    std::cout << "Global correlation of mNSgn = " << fitResult->globalCorr("mNSgn") << "\n";
-    fitResult->Print("v");
-    fitResult->covarianceMatrix().Print();
-    fitResult->correlationMatrix().Print();
     mFitStatus = fitResult->status();
     mCovQual = fitResult->covQual();
     mEdm = fitResult->edm();
     mMinNll = fitResult->minNll();
     mSgnGlobalCorrelCoeff = fitResult->globalCorr("mNSgn");
-
     mCovCorrMatrix = fillCovCorrMatrix(fitResult);
-
-    std::cout << "mRooNBkg->getVal() = " << mRooNBkg->getVal() << "\n";
-    std::cout << "mRooNSgn->getVal() = " << mRooNSgn->getVal() << "\n";
-
-    std::cout << "Value       = " << mRooNSgn->getVal() << "\n";
-    std::cout << "HESSE error = " << mRooNSgn->getError() << "\n";
-    std::cout << "MINOS lower = " << mRooNSgn->getAsymErrorLo() << "\n";
-    std::cout << "MINOS upper = " << mRooNSgn->getAsymErrorHi() << "\n";
 
     plotBkg(mTotalPdf);
     mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
@@ -606,7 +575,6 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
 // draw fit output
 void HFInvMassFitter::drawFit(TVirtualPad* pad, const std::vector<std::string>& plotLabels, bool writeParInfo)
 {
-  std::cout << "drawFit() start\n";
   gStyle->SetOptStat(0);
   gStyle->SetCanvasColor(0);
   gStyle->SetFrameFillColor(0);
@@ -667,13 +635,11 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, const std::vector<std::string>& 
   if (mHistoTemplateRefl) {
     mReflFrame->Draw("same");
   }
-  std::cout << "drawFit() finish\n";
 }
 
 // draw residual distribution on canvas
 void HFInvMassFitter::drawResidual(TVirtualPad* pad)
 {
-  std::cout << "drawResidual() start\n";
   if (mResidualFrame == nullptr) {
     printf("Warning HFInvMassFitter::drawResidual(): mResidualFrame == nullptr and will not be drawn\n");
     return;
@@ -697,13 +663,11 @@ void HFInvMassFitter::drawResidual(TVirtualPad* pad)
   mResidualFrame->GetYaxis()->SetTitleOffset(1.8);
   mResidualFrame->Draw();
   highlightPeakRegion(mResidualFrame);
-  std::cout << "drawResidual() finish\n";
 }
 
 // draw ratio on canvas
 void HFInvMassFitter::drawRatio(TVirtualPad* pad)
 {
-  std::cout << "drawRatio() start\n";
   if (mRatioFrame == nullptr) {
     printf("Warning HFInvMassFitter::drawRatio(): mRatioFrame == nullptr and will not be drawn\n");
     return;
@@ -723,7 +687,6 @@ void HFInvMassFitter::drawRatio(TVirtualPad* pad)
   gPad->SetRightMargin(0.02);
   mRatioFrame->Draw();
   highlightPeakRegion(mRatioFrame);
-  std::cout << "drawRatio() finish\n";
 }
 
 // draw peak region with vertical lines
@@ -797,7 +760,6 @@ void HFInvMassFitter::calculateSignal(double& signal, double& errSignal) const
 // calculate background yield
 void HFInvMassFitter::calculateBackground(double& bkg, double& errBkg) const
 {
-  std::cout << "calculateBackground()\n";
   if (mTypeOfBkgPdf == NoBkg) {
     bkg = 0.;
     errBkg = 0.;
@@ -825,10 +787,8 @@ void HFInvMassFitter::calculateSignificance(double& significance, double& errSig
 // estimate Signal
 void HFInvMassFitter::checkForSignal(double& estimatedSignal)
 {
-  std::cout << "checkForSignal()\n";
   const double integralHisto = integrateHistoInvMassOverWorkspaceRanges({"full"});
   const double bkg = mRooNBkg->getVal();
-  std::cout << "integralHisto = " << integralHisto << ", bkg = " << bkg << "\n";
   estimatedSignal = integralHisto - bkg;
 }
 
@@ -1197,15 +1157,11 @@ double HFInvMassFitter::randomizeInitialParameter(const ParameterRanges& paramet
     }
   } while (result < parameterRanges.lower || result > parameterRanges.upper);
 
-  std::cout << "randomizeInitialParameter():\nfrom " << parameterRanges.lower << "\nto " << parameterRanges.upper << "\ninitial " << parameterRanges.initial << "\nsigma " << sigma << "\n";
-  std::cout << "randomized to " << result << "\n";
-
   return result;
 }
 
 double HFInvMassFitter::integrateHistoInvMassOverWorkspaceRanges(const std::vector<std::string>& ranges) const
 {
-  std::cout << "integrateHistoInvMassOverWorkspaceRanges()\n";
   double sumEntries{0.};
   double sumLengths{0.};
   for (const auto& range : ranges) {
@@ -1216,8 +1172,6 @@ double HFInvMassFitter::integrateHistoInvMassOverWorkspaceRanges(const std::vect
     sumEntries += mHistoInvMass->GetBinContent(binLo) * (mHistoInvMass->GetBinLowEdge(binLo + 1) - lo) / mHistoInvMass->GetBinWidth(binLo);
     sumEntries += mHistoInvMass->GetBinContent(binHi) * (hi - mHistoInvMass->GetBinLowEdge(binHi)) / mHistoInvMass->GetBinWidth(binHi);
     sumLengths += (hi - lo);
-    std::cout << "lo = " << lo << ", hi = " << hi << "\n";
-    std::cout << "sumEntries = " << sumEntries << "\n";
   }
   const auto [fullLo, fullHi] = mWorkspace->var("mass")->getRange("full");
   const double fullLength = fullHi - fullLo;
