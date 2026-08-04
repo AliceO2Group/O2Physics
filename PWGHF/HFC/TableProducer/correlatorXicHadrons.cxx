@@ -677,7 +677,6 @@ struct HfCorrelatorXicHadrons {
           // if strange TOF is unavailable
           passTOF = track.tofNSigmaPr() > cfgV0.cfgV0DaughPIDCutsTOFPr;
         }
-
       }
 
       if ((std::abs(track.tpcNSigmaPr()) > cfgV0.cfgV0DaughPIDCutsTPCPr) && !passTOF) {
@@ -707,7 +706,6 @@ struct HfCorrelatorXicHadrons {
           // Fallback to standard track TOF
           passTOF = std::abs(track.tofNSigmaPi()) > cfgV0.cfgV0DaughPIDCutsTOFPi;
         }
-
       }
 
       if ((std::abs(track.tpcNSigmaPi()) > cfgV0.cfgV0DaughPIDCutsTPCPi) && !passTOF) {
@@ -1579,7 +1577,7 @@ struct HfCorrelatorXicHadrons {
       listDaughters.clear();
       const std::size_t nDaughtersExpected = IsXicPlus ? XicDecayDaughtersCount::XicPlusDaughtersCount : XicDecayDaughtersCount::Xic0DaughtersCount;
 
-            if (IsXicPlus) {
+      if (IsXicPlus) {
         // Final state: p, pi-, pi-, pi+, pi+
         std::array<int, XicDecayDaughtersCount::XicPlusDaughtersCount> const arrDaughXicPlusPDG = {kProton, kPiMinus, kPiMinus, kPiPlus, kPiPlus};
 

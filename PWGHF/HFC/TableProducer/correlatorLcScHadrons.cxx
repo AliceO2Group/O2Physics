@@ -1859,8 +1859,8 @@ struct HfCorrelatorLcScHadrons {
         if (cfgCharmCand.pidTrkApplied && (std::abs(particleAssoc.pdgCode()) != kProton)) {
           continue; // proton PID
         }
-        auto const chargeLc = pdg->GetParticle(candidate.pdgCode())->Charge();        // Retrieve charge
-        auto const chargeAssoc = pdg->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
+        auto const chargeLc = pdg->GetParticle(candidate.pdgCode())->Charge();          // Retrieve charge
+        auto const chargeAssoc = pdg->GetParticle(particleAssoc.pdgCode())->Charge();   // Retrieve charge
         float cent = 100.0;                                                             // will be updated later
 
         int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
