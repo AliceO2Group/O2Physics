@@ -78,7 +78,8 @@ struct ConfCascadeFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> posDauTpc{"posDauTpc", {5.f}, "Maximum |nsimga_Pion/Proton| TPC for positive daughter tracks"};                      \
   o2::framework::Configurable<std::vector<float>> negDauTpc{"negDauTpc", {5.f}, "Maximum |nsimga_Pion/Proton| TPC for negative daughter tracks"};                      \
   o2::framework::Configurable<std::vector<float>> posDauTof{"posDauTof", {}, "Maximum |nsimga_Pion/Proton| TOF for positive daughter tracks"};                         \
-  o2::framework::Configurable<std::vector<float>> negDauTof{"negDauTof", {}, "Maximum |nsigma_Pion/Proton| TOF for negative daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> negDauTof{"negDauTof", {}, "Maximum |nsigma_Pion/Proton| TOF for negative daughter tracks"};                         \
+  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, only keep candidates whose daughters have a TOF signal"};
 
 struct ConfXiBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("XiBits");
@@ -242,7 +243,7 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
       mOmegaMassLowerLimit = filter.rejectMassOmegaMin.value;
       mOmegaMassUpperLimit = filter.rejectMassOmegaMax.value;
       this->addSelection(kBachelorTpcPion, cascadeSelectionNames.at(kBachelorTpcPion), config.bachelorTpcPion.value, limits::kAbsUpperLimit, true, true, false);
-      this->addSelection(kBachelorTofPion, cascadeSelectionNames.at(kBachelorTofPion), config.bachelorTofPion.value, limits::kAbsUpperLimit, true, true, false);
+      this->addSelection(kBachelorTofPion, cascadeSelectionNames.at(kBachelorTofPion), config.bachelorTofPion.value, limits::kAbsUpperLimit, true, false, false);
     }
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
       mOmegaMassLowerLimit = filter.massOmegaMin.value;
@@ -251,7 +252,7 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
       mXiMassLowerLimit = filter.rejectMassXiMin.value;
       mXiMassUpperLimit = filter.rejectMassXiMax.value;
       this->addSelection(kBachelorTpcKaon, cascadeSelectionNames.at(kBachelorTpcKaon), config.bachelorTpcKaon.value, limits::kAbsUpperLimit, true, true, false);
-      this->addSelection(kBachelorTofKaon, cascadeSelectionNames.at(kBachelorTofKaon), config.bachelorTofKaon.value, limits::kAbsUpperLimit, true, true, false);
+      this->addSelection(kBachelorTofKaon, cascadeSelectionNames.at(kBachelorTofKaon), config.bachelorTofKaon.value, limits::kAbsUpperLimit, true, false, false);
     }
 
     mPtMin = filter.ptMin.value;
@@ -262,11 +263,12 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
     mPhiMax = filter.phiMax.value;
     mLambdaMassMin = filter.massLambdaMin.value;
     mLambdaMassMax = filter.massLambdaMax.value;
+    mRequireTof = config.requireTof.value;
 
     this->addSelection(kPosDauTpc, cascadeSelectionNames.at(kPosDauTpc), config.posDauTpc.value, limits::kAbsUpperLimit, true, true, false);
     this->addSelection(kNegDauTpc, cascadeSelectionNames.at(kNegDauTpc), config.negDauTpc.value, limits::kAbsUpperLimit, true, true, false);
-    this->addSelection(kPosDauTof, cascadeSelectionNames.at(kPosDauTof), config.posDauTof.value, limits::kAbsUpperLimit, true, true, false);
-    this->addSelection(kNegDauTof, cascadeSelectionNames.at(kNegDauTof), config.negDauTof.value, limits::kAbsUpperLimit, true, true, false);
+    this->addSelection(kPosDauTof, cascadeSelectionNames.at(kPosDauTof), config.posDauTof.value, limits::kAbsUpperLimit, true, false, false);
+    this->addSelection(kNegDauTof, cascadeSelectionNames.at(kNegDauTof), config.negDauTof.value, limits::kAbsUpperLimit, true, false, false);
 
     this->addSelection(kCascadeCpaMin, cascadeSelectionNames.at(kCascadeCpaMin), config.cascadeCpaMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kCascadeTransRadMin, cascadeSelectionNames.at(kCascadeTransRadMin), config.cascadeTransRadMin.value, limits::kLowerLimit, true, true, false);
@@ -336,6 +338,9 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
     if (bachelor.hasTOF()) {
       this->evaluateObservable(kBachelorTofPion, bachelor.tofNSigmaPi());
       this->evaluateObservable(kBachelorTofKaon, bachelor.tofNSigmaKa());
+    } else if (!mRequireTof) {
+      this->setBitmask(kBachelorTofPion, std::numeric_limits<datatypes::CascadeMaskType>::max());
+      this->setBitmask(kBachelorTofKaon, std::numeric_limits<datatypes::CascadeMaskType>::max());
     }
 
     // depending on the charge, we check lambda or antilambda hypothesis
@@ -344,18 +349,26 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
       this->evaluateObservable(kNegDauTpc, negDaughter.tpcNSigmaPi());
       if (posDaughter.hasTOF()) {
         this->evaluateObservable(kPosDauTof, posDaughter.tofNSigmaPr());
+      } else if (!mRequireTof) {
+        this->setBitmask(kPosDauTof, std::numeric_limits<datatypes::CascadeMaskType>::max());
       }
       if (negDaughter.hasTOF()) {
         this->evaluateObservable(kNegDauTof, negDaughter.tofNSigmaPi());
+      } else if (!mRequireTof) {
+        this->setBitmask(kNegDauTof, std::numeric_limits<datatypes::CascadeMaskType>::max());
       }
     } else if (cascade.sign() > 0) {
       this->evaluateObservable(kPosDauTpc, posDaughter.tpcNSigmaPi());
       this->evaluateObservable(kNegDauTpc, negDaughter.tpcNSigmaPr());
       if (posDaughter.hasTOF()) {
         this->evaluateObservable(kPosDauTof, posDaughter.tofNSigmaPi());
+      } else if (!mRequireTof) {
+        this->setBitmask(kPosDauTof, std::numeric_limits<datatypes::CascadeMaskType>::max());
       }
       if (negDaughter.hasTOF()) {
         this->evaluateObservable(kNegDauTof, negDaughter.tofNSigmaPr());
+      } else if (!mRequireTof) {
+        this->setBitmask(kNegDauTof, std::numeric_limits<datatypes::CascadeMaskType>::max());
       }
     } else {
       LOG(warn) << "Encountered Cascade candidate with 0 charge";
@@ -468,6 +481,7 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
   float mPhiMax = o2::constants::math::TwoPI;
   float mLambdaMassMin = 1.f;
   float mLambdaMassMax = 1.2f;
+  bool mRequireTof = false;
 };
 
 struct CascadeBuilderProducts : o2::framework::ProducesGroup {
