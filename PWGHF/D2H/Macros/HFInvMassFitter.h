@@ -56,28 +56,28 @@ class HFInvMassFitter : public TNamed
  public:
   enum TypeOfBkgPdf {
     Expo = 0,
-    Poly1 = 1,
-    Poly2 = 2,
-    Pow = 3,
-    PowExpo = 4,
-    Poly3 = 5,
-    NoBkg = 6,
+    Poly1,   // 1
+    Poly2,   // 2
+    Pow,     // 3
+    PowExpo, // 4
+    Poly3,   // 5
+    NoBkg,   // 6
     NTypesOfBkgPdf
   };
   std::array<std::string, NTypesOfBkgPdf> namesOfBkgPdf{"bkgFuncExpo", "bkgFuncPoly1", "bkgFuncPoly2", "bkgFuncPow", "bkgFuncPowExpo", "bkgFuncPoly3"};
   enum TypeOfSgnPdf {
     SingleGaus = 0,
-    DoubleGaus = 1,
-    DoubleGausSigmaRatioPar = 2,
-    GausSec = 3,
-    DoubleSidedCrystalBall = 4,
+    DoubleGaus,              // 1
+    DoubleGausSigmaRatioPar, // 2
+    GausSec,                 // 3
+    DoubleSidedCrystalBall,  // 4
     NTypesOfSgnPdf
   };
   enum TypeOfReflPdf {
     SingleGausRefl = 0,
-    DoubleGausRefl = 1,
-    Poly3Refl = 2,
-    Poly6Refl = 3,
+    DoubleGausRefl, // 1
+    Poly3Refl,      // 2
+    Poly6Refl,      // 3
     NTypesOfReflPdf
   };
   std::array<std::string, NTypesOfReflPdf> namesOfReflPdf{"reflFuncGaus", "reflFuncDoubleGaus", "reflFuncPoly3", "reflFuncPoly6"};

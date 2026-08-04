@@ -68,7 +68,7 @@ HFInvMassFitter::HFInvMassFitter(TH1* histoToFit,
                                  double maxValue,
                                  int fitTypeBkg,
                                  int fitTypeSgn,
-                                 int randomSeed) : mHistoInvMass(nullptr),
+                                 int randomSeed) : mHistoInvMass(histoToFit),
                                                    mFitOption("L,E"),
                                                    mMinMass(minValue),
                                                    mMaxMass(maxValue),
@@ -164,7 +164,6 @@ HFInvMassFitter::HFInvMassFitter(TH1* histoToFit,
                                                    mCovCorrMatrix(nullptr)
 {
   // standard constructor
-  mHistoInvMass = histoToFit;
   mHistoInvMass->SetDirectory(nullptr);
   if (mRandomSeed >= 0) {
     mRandomGen = new TRandom3();
@@ -914,7 +913,7 @@ void HFInvMassFitter::calculateFitToDataRatio() const
     return;
   }
 
-  RooHist* ratioHist = new RooHist();
+  auto* ratioHist = new RooHist();
 
   for (int i = 0; i < dataHist->GetN(); ++i) {
     double x{}, dataY{}, dataErr{};
@@ -1145,15 +1144,15 @@ double HFInvMassFitter::randomizeInitialParameter(const ParameterRanges& paramet
   }
   const auto sigma = parameterRanges.sigma < 0 ? (parameterRanges.upper - parameterRanges.lower) / DefaultSigmaFraction : parameterRanges.sigma;
 
-  double result;
+  double result{};
   int nIter{0};
   do {
     result = mRandomGen->Gaus(parameterRanges.initial, sigma);
     ++nIter;
     if (nIter > MaximalNumberOfIterations) {
-      char errorMessage[200];
-      std::snprintf(errorMessage, sizeof(errorMessage), "randomizeInitialParameter() - long while loop with lower = %f upper = %f initial = %f sigma = %f\n", parameterRanges.lower, parameterRanges.upper, parameterRanges.initial, sigma);
-      throw std::runtime_error(errorMessage);
+      std::array<char, 200> errorMessage{};
+      std::snprintf(errorMessage.data(), errorMessage.size(), "randomizeInitialParameter() - long while loop with lower = %f upper = %f initial = %f sigma = %f\n", parameterRanges.lower, parameterRanges.upper, parameterRanges.initial, sigma);
+      throw std::runtime_error(errorMessage.data());
     }
   } while (result < parameterRanges.lower || result > parameterRanges.upper);
 
@@ -1207,7 +1206,7 @@ void HFInvMassFitter::cutRangesFromHisto(TH1* histo, const std::vector<std::stri
 TH2* HFInvMassFitter::fillCovCorrMatrix(const RooFitResult* fitResult)
 {
   const RooArgList& pars = fitResult->floatParsFinal();
-  const int nPars = pars.size();
+  const int nPars = static_cast<int>(pars.size());
 
   TH2* hMatrix = new TH2D("covCorrMatrix", "covariance (upper left + diagonal) and correlation (lower right) matrix", nPars, 0, nPars, nPars, 0, nPars);
   for (int iPar = 0; iPar < nPars; ++iPar) {
