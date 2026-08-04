@@ -329,9 +329,23 @@ constexpr int EvSelDefault[evSel::kNevSels][1]{
   {0},
   {0}};
 
-template <typename Tcollision> // move to nucleiUtils
-bool eventSelection(const Tcollision& collision, o2::framework::HistogramRegistry& registry, o2::framework::LabeledArray<int> eventSelections, const float cutVertex)
+template <typename Tcollision>
+bool eventSelection(const Tcollision& collision, o2::framework::HistogramRegistry& registry, o2::framework::LabeledArray<int> eventSelections, const float cutVertex, uint32_t& selectionFlag)
 {
+  selectionFlag = 0;
+  bool isSelected = true;
+  auto checkCut = [&](int selIndex, bool pass) {
+    if (pass) {
+      selectionFlag |= (1u << selIndex);
+    }
+    if (eventSelections.get(selIndex) && !pass) {
+      isSelected = false;
+    }
+    if (isSelected) {
+      registry.fill(HIST("hEventSelections"), selIndex + 1);
+    }
+  };
+
   if (!registry.contains(HIST("hVtxZBefore"))) {
     registry.add("hVtxZBefore", "Vertex distribution in Z before selections;Z (cm)", {o2::framework::HistType::kTH1F, {{400, -20.0, 20.0}}});
   }
@@ -344,69 +358,33 @@ bool eventSelection(const Tcollision& collision, o2::framework::HistogramRegistr
   registry.fill(HIST("hEventSelections"), 0);
   registry.fill(HIST("hVtxZBefore"), collision.posZ());
 
-  if (eventSelections.get(evSel::kTVX) && !collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-    return false;
-  }
-  registry.fill(HIST("hEventSelections"), evSel::kTVX + 1);
+  checkCut(evSel::kTVX, collision.selection_bit(o2::aod::evsel::kIsTriggerTVX));
+  checkCut(evSel::kZvtx, std::abs(collision.posZ()) <= cutVertex);
+  checkCut(evSel::kTFborder, collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder));
+  checkCut(evSel::kITSROFborder, collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder));
+  checkCut(evSel::kNoSameBunchPileup, collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup));
+  checkCut(evSel::kIsGoodZvtxFT0vsPV, collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV));
+  checkCut(evSel::kIsGoodITSLayersAll, collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll));
 
-  if (eventSelections.get(evSel::kZvtx) && std::abs(collision.posZ()) > cutVertex) {
-    return false;
-  }
-  registry.fill(HIST("hEventSelections"), evSel::kZvtx + 1);
-
-  if (eventSelections.get(evSel::kTFborder) && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-    return false;
-  }
-  registry.fill(HIST("hEventSelections"), evSel::kTFborder + 1);
-
-  if (eventSelections.get(evSel::kITSROFborder) && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-    return false;
-  }
-  registry.fill(HIST("hEventSelections"), evSel::kITSROFborder + 1);
-
-  if (eventSelections.get(evSel::kNoSameBunchPileup) && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-    return false;
-  }
-  registry.fill(HIST("hEventSelections"), evSel::kNoSameBunchPileup + 1);
-
-  if (eventSelections.get(evSel::kIsGoodZvtxFT0vsPV) && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-    return false;
-  }
-  registry.fill(HIST("hEventSelections"), evSel::kIsGoodZvtxFT0vsPV + 1);
-
-  if (eventSelections.get(evSel::kIsGoodITSLayersAll) && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
-    return false;
-  }
-  registry.fill(HIST("hEventSelections"), evSel::kIsGoodITSLayersAll + 1);
-
-  if constexpr (
-    requires {
-      collision.triggereventep();
-    }) {
-    if (eventSelections.get(evSel::kIsEPtriggered) && !collision.triggereventep()) {
-      return false;
-    }
-    registry.fill(HIST("hEventSelections"), evSel::kIsEPtriggered + 1);
+  if constexpr (requires { collision.triggereventep(); }) {
+    checkCut(evSel::kIsEPtriggered, collision.triggereventep());
   }
 
-  if (eventSelections.get(evSel::kNoCollInRofStandard) && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
-    return false;
-  }
-  registry.fill(HIST("hEventSelections"), evSel::kNoCollInRofStandard + 1);
+  checkCut(evSel::kNoCollInRofStandard, collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard));
+  checkCut(evSel::kNoHighMultCollInPrevRof, collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof));
+  checkCut(evSel::kNoCollInTimeRangeStandard, collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard));
 
-  if (eventSelections.get(evSel::kNoHighMultCollInPrevRof) && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
-    return false;
-  }
-  registry.fill(HIST("hEventSelections"), evSel::kNoHighMultCollInPrevRof + 1);
-
-  if (eventSelections.get(evSel::kNoCollInTimeRangeStandard) && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-    return false;
-  }
-  registry.fill(HIST("hEventSelections"), evSel::kNoCollInTimeRangeStandard + 1);
-
+  
   registry.fill(HIST("hVtxZ"), collision.posZ());
 
-  return true;
+  return isSelected;
+}
+
+template <typename Tcollision>
+bool eventSelection(const Tcollision& collision, o2::framework::HistogramRegistry& registry, o2::framework::LabeledArray<int> eventSelections, const float cutVertex)
+{
+  uint32_t dummyFlag = 0;
+  return eventSelection(collision, registry, eventSelections, cutVertex, dummyFlag);
 }
 
 /**
