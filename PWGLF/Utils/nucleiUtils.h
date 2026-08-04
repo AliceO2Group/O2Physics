@@ -374,6 +374,7 @@ bool eventSelection(const Tcollision& collision, o2::framework::HistogramRegistr
   checkCut(evSel::kNoHighMultCollInPrevRof, collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof));
   checkCut(evSel::kNoCollInTimeRangeStandard, collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard));
 
+  
   registry.fill(HIST("hVtxZ"), collision.posZ());
 
   return isSelected;
