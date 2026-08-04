@@ -86,7 +86,8 @@ struct ConfLambdaBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> posDauTofProton{"posDauTofProton", {}, "Maximum |nsigma_Proton| TOF for positive daughter tracks"};
   o2::framework::Configurable<std::vector<float>> negDauTofPion{"negDauTofPion", {}, "Maximum |nsigma_Pion| TOF for negative daughter tracks"};
   o2::framework::Configurable<std::vector<float>> negDauTofProton{"negDauTofProton", {}, "Maximum |nsigma_Proton| TOF for negative daughter tracks"};
-  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, only keep candidates whose daughters have a TOF signal"};
+  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, TOF PID is a mandatory selection"};
+  o2::framework::Configurable<bool> keepTracksWithoutTof{"keepTracksWithoutTof", true, "If true, candidates whose daughters have no TOF signal are kept"};
 };
 
 // derived selection bits for K0Short
@@ -97,7 +98,8 @@ struct ConfK0shortBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> negDauTpcPion{"negDauTpcPion", {5.f}, "Maximum |nsimga_Pion| TPC for negative daughter tracks"};
   o2::framework::Configurable<std::vector<float>> posDauTofPion{"posDauTofPion", {}, "Maximum |nsigma_Pion| TOF for positive daughter tracks"};
   o2::framework::Configurable<std::vector<float>> negDauTofPion{"negDauTofPion", {}, "Maximum |nsigma_Pion| TOF for negative daughter tracks"};
-  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, only keep candidates whose daughters have a TOF signal"};
+  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, TOF PID is a mandatory selection"};
+  o2::framework::Configurable<bool> keepTracksWithoutTof{"keepTracksWithoutTof", true, "If true, candidates whose daughters have no TOF signal are kept"};
 };
 
 #undef V0_DEFAULT_BITS
@@ -250,6 +252,7 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
     mPhiMin = filter.phiMin.value;
     mPhiMax = filter.phiMax.value;
     mRequireTof = config.requireTof.value;
+    mKeepTracksWithoutTof = config.keepTracksWithoutTof.value;
 
     if constexpr (modes::isEqual(v0Type, modes::V0::kLambda) || modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
       mMassLambdaLowerLimit = filter.massMinLambda.value;
@@ -261,15 +264,15 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
       if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
         this->addSelection(kPosDaughTpcProton, v0SelectionNames.at(kPosDaughTpcProton), config.posDauTpcProton.value, limits::kAbsUpperLimit, true, true, false);
         this->addSelection(kNegDaughTpcPion, v0SelectionNames.at(kNegDaughTpcPion), config.negDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
-        this->addSelection(kPosDaughTofProton, v0SelectionNames.at(kPosDaughTofProton), config.posDauTofProton.value, limits::kAbsUpperLimit, true, false, false);
-        this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, true, false, false);
+        this->addSelection(kPosDaughTofProton, v0SelectionNames.at(kPosDaughTofProton), config.posDauTofProton.value, limits::kAbsUpperLimit, true, mRequireTof, false);
+        this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, true, mRequireTof, false);
       }
 
       if constexpr (modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
         this->addSelection(kPosDaughTpcPion, v0SelectionNames.at(kPosDaughTpcPion), config.posDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
         this->addSelection(kNegDaughTpcProton, v0SelectionNames.at(kNegDaughTpcProton), config.negDauTpcProton.value, limits::kAbsUpperLimit, true, true, false);
-        this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, true, false, false);
-        this->addSelection(kNegDaughTofProton, v0SelectionNames.at(kNegDaughTofProton), config.negDauTofProton.value, limits::kAbsUpperLimit, true, false, false);
+        this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, true, mRequireTof, false);
+        this->addSelection(kNegDaughTofProton, v0SelectionNames.at(kNegDaughTofProton), config.negDauTofProton.value, limits::kAbsUpperLimit, true, mRequireTof, false);
       }
     }
     if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
@@ -281,8 +284,8 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
 
       this->addSelection(kPosDaughTpcPion, v0SelectionNames.at(kPosDaughTpcPion), config.posDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
       this->addSelection(kNegDaughTpcPion, v0SelectionNames.at(kNegDaughTpcPion), config.negDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
-      this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, true, false, false);
-      this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, true, false, false);
+      this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, true, mRequireTof, false);
+      this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, true, mRequireTof, false);
     }
 
     this->addSelection(kDcaDaughMax, v0SelectionNames.at(kDcaDaughMax), config.dcaDauMax.value, limits::kAbsUpperLimit, true, true, false);
@@ -349,16 +352,16 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
     if (posDaughter.hasTOF()) {
       this->evaluateObservable(kPosDaughTofPion, posDaughter.tofNSigmaPi());
       this->evaluateObservable(kPosDaughTofProton, posDaughter.tofNSigmaPr());
-    } else if (!mRequireTof) {
-      this->setBitmask(kPosDaughTofPion, std::numeric_limits<datatypes::V0MaskType>::max());
-      this->setBitmask(kPosDaughTofProton, std::numeric_limits<datatypes::V0MaskType>::max());
+    } else if (mKeepTracksWithoutTof) {
+      this->setBitmask(kPosDaughTofPion, 0);
+      this->setBitmask(kPosDaughTofProton, 0);
     }
     if (negDaughter.hasTOF()) {
       this->evaluateObservable(kNegDaughTofPion, negDaughter.tofNSigmaPi());
       this->evaluateObservable(kNegDaughTofProton, negDaughter.tofNSigmaPr());
-    } else if (!mRequireTof) {
-      this->setBitmask(kNegDaughTofPion, std::numeric_limits<datatypes::V0MaskType>::max());
-      this->setBitmask(kNegDaughTofProton, std::numeric_limits<datatypes::V0MaskType>::max());
+    } else if (mKeepTracksWithoutTof) {
+      this->setBitmask(kNegDaughTofPion, 0);
+      this->setBitmask(kNegDaughTofProton, 0);
     }
 
     this->assembleBitmask<SelectionHistName>();
@@ -464,6 +467,7 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
   float mPhiMax = o2::constants::math::TwoPI;
 
   bool mRequireTof = false;
+  bool mKeepTracksWithoutTof = false;
 };
 
 struct V0BuilderProducts : o2::framework::ProducesGroup {
