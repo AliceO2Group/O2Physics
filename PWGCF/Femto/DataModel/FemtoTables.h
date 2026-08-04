@@ -550,6 +550,11 @@ namespace femtov0s
 {
 // columns for bit masks
 DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::V0MaskType); //! Bitmask for v0 selections
+//
+namespace legacy001
+{
+DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::V0MaskType001); //! Bitmask for v0 selections
+}
 
 // columns for debug information
 DECLARE_SOA_COLUMN(MassAnti, massAnti, float);             //! mass of particle using antiparticle hypothesis (for Lambda/AntiLambda extra table)
@@ -649,10 +654,14 @@ using FLiteLambdas = FLiteLambdas_001;
 using FLiteLambda = FLiteLambdas::iterator;
 using StoredFLiteLambdas = StoredFLiteLambdas_001;
 
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaMasks_001, "FLAMBDAMASK", 1, //! lambda masks
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaMasks_001, "FLAMBDAMASK", 1, //! legacy lambda mask
+                                   femtov0s::legacy001::Mask);
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaMasks_002, "FLAMBDAMASK", 2, //! lambda mask
                                    femtov0s::Mask);
-using FLambdaMasks = FLambdaMasks_001;
-using StoredFLambdaMasks = StoredFLambdaMasks_001;
+
+using FLambdaMasks = FLambdaMasks_002;
+using StoredFLambdaMasks = StoredFLambdaMasks_002;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaExtras_001, "FLAMBDAEXTRA", 1, //! lambda extra information
                                    femtov0s::MassAnti,                   // put mass of antiparticle, i.e. antilambda mass for lambdas and vice versa
@@ -703,10 +712,13 @@ using FLiteK0shorts = FLiteK0shorts_001;
 using FLiteK0short = FLiteK0shorts::iterator;
 using StoredFLiteK0shorts = StoredFLiteK0shorts_001;
 
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortMasks_001, "FK0SHORTMASK", 1, //! k0short masks
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortMasks_001, "FK0SHORTMASK", 1, //! legacy k0short masks
+                                   femtov0s::legacy001::Mask);
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortMasks_002, "FK0SHORTMASK", 2, //! k0short masks
                                    femtov0s::Mask);
-using FK0shortMasks = FK0shortMasks_001;
-using StoredFK0shortMasks = StoredFK0shortMasks_001;
+using FK0shortMasks = FK0shortMasks_002;
+using StoredFK0shortMasks = StoredFK0shortMasks_002;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortExtras_001, "FK0SHORTEXTRA", 1, //! k0short extra information
                                    femtov0s::MassLambda,
@@ -893,6 +905,11 @@ namespace femtocascades
 // columns for cascade bit masks
 DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::CascadeMaskType); //! Bitmask for cascade selections
 
+namespace legacy001
+{
+DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::CascadeMaskType001); //! Bitmask for cascade selections
+}
+
 // columns for cascad debug information
 DECLARE_SOA_COLUMN(MassXi, massXi, float);                         //! Mass of xi
 DECLARE_SOA_COLUMN(MassOmega, massOmega, float);                   //! Mass of omega
@@ -987,10 +1004,13 @@ using FLiteXis = FLiteXis_001;
 using FLiteXi = FLiteXis::iterator;
 using StoredFLiteXis = StoredFLiteXis_001;
 
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiMasks_001, "FXIMASK", 1, //! xi masks
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiMasks_001, "FXIMASK", 1, //! legacy xi masks
+                                   femtocascades::legacy001::Mask);
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiMasks_002, "FXIMASK", 2, //! xi masks
                                    femtocascades::Mask);
-using FXiMasks = FXiMasks_001;
-using StoredFXiMasks = StoredFXiMasks_001;
+using FXiMasks = FXiMasks_002;
+using StoredFXiMasks = StoredFXiMasks_002;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiExtras_001, "FXIEXTRA", 1, //! xi extra information
                                    femtocascades::MassOmega,
@@ -1046,10 +1066,13 @@ using FLiteOmegas = FLiteOmegas_001;
 using FLiteOmega = FLiteOmegas::iterator;
 using StoredFLiteOmegas = StoredFLiteOmegas_001;
 
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaMasks_001, "FOMEGAMASK", 1, //! omega masks
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaMasks_001, "FOMEGAMASK", 1, //! legacy omega masks
+                                   femtocascades::legacy001::Mask);
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaMasks_002, "FOMEGAMASK", 2, //! omega masks
                                    femtocascades::Mask);
-using FOmegaMasks = FOmegaMasks_001;
-using StoredFOmegaMasks = StoredFOmegaMasks_001;
+using FOmegaMasks = FOmegaMasks_002;
+using StoredFOmegaMasks = StoredFOmegaMasks_002;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaExtras_001, "FOMEGAEXTRA", 1, //! omega extra information
                                    femtocascades::MassXi,
