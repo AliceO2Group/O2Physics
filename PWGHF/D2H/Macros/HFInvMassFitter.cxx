@@ -175,7 +175,6 @@ HFInvMassFitter::~HFInvMassFitter()
 {
 
   /// destructor
-  delete mHistoInvMass;
   delete mHistoTemplateRefl;
   delete mRooMeanSgn;
   delete mRooSigmaSgn;
