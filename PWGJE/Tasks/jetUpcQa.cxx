@@ -13,7 +13,40 @@
 /// \brief Standalone QA task for UPC event tagging and charged-jet information.
 /// \author Jaehyeok Ryu
 
+#include "PWGUD/Core/SGCutParHolder.h"
+#include "PWGUD/Core/SGSelector.h"
+
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TPDGCode.h>
+
+#include <fastjet/AreaDefinition.hh>
+#include <fastjet/ClusterSequenceArea.hh>
+#include <fastjet/GhostedAreaSpec.hh>
+#include <fastjet/JetDefinition.hh>
+#include <fastjet/PseudoJet.hh>
+
+#include <cmath>
+#include <cstdint>
+#include <string>
+#include <vector>
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
@@ -240,36 +273,6 @@ DECLARE_SOA_TABLE(UpcJetTracksMCP, "AOD", "UPCJETTRACKMCP",
 using UpcJetTrackMCP = UpcJetTracksMCP::iterator;
 
 } // namespace o2::aod
-
-#include "PWGUD/Core/SGCutParHolder.h"
-#include "PWGUD/Core/SGSelector.h"
-
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include <CommonConstants/PhysicsConstants.h>
-#include <Framework/ASoAHelpers.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/runDataProcessing.h>
-
-#include <TPDGCode.h>
-
-#include <fastjet/AreaDefinition.hh>
-#include <fastjet/ClusterSequenceArea.hh>
-#include <fastjet/GhostedAreaSpec.hh>
-#include <fastjet/JetDefinition.hh>
-#include <fastjet/PseudoJet.hh>
-
-#include <cmath>
-#include <string>
-#include <vector>
-
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
 
 /// Stand-alone QA task for validating UPC event tagging for charged-jet studies.
 /// The tagging and QA developed here are intended to guide a future integration

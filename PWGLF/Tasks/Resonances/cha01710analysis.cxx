@@ -28,6 +28,7 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -37,10 +38,12 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TLorentzVector.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 #include <TRandom.h>
 #include <TVector2.h>
 
+#include <chrono>
 #include <cmath>
 #include <string>
 #include <vector>
