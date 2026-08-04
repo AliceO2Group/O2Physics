@@ -1630,7 +1630,7 @@ struct HfCorrelatorLcScHadrons {
       registry.fill(HIST("hPhiMcGen"), RecoDecay::constrainAngle(particle.phi(), -PIHalf));
       registry.fill(HIST("hYMcGen"), yCand);
 
-      int8_t chargeCand = pdg->GetParticle(particle.pdgCode())->Charge() / PDGChargeScale; // Retrieve charge
+      auto chargeCand = pdg->GetParticle(particle.pdgCode())->Charge() / PDGChargeScale; // Retrieve charge
       if (chargeCand == ChargeZero) {
         chargeCand = (particle.pdgCode() > ChargeZero) ? AssignedChargeSc0 : -AssignedChargeSc0; // to distingush sc0 from anti-sc0, charge set to +1 and -1
       }
@@ -1859,8 +1859,8 @@ struct HfCorrelatorLcScHadrons {
         if (cfgCharmCand.pidTrkApplied && (std::abs(particleAssoc.pdgCode()) != kProton)) {
           continue; // proton PID
         }
-        int8_t const chargeLc = static_cast<int8_t>(pdg->GetParticle(candidate.pdgCode())->Charge());        // Retrieve charge
-        int8_t const chargeAssoc = static_cast<int8_t>(pdg->GetParticle(particleAssoc.pdgCode())->Charge()); // Retrieve charge
+        auto const chargeLc = pdg->GetParticle(candidate.pdgCode())->Charge();        // Retrieve charge
+        auto const chargeAssoc = pdg->GetParticle(particleAssoc.pdgCode())->Charge(); // Retrieve charge
         float cent = 100.0;                                                             // will be updated later
 
         int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
@@ -1911,8 +1911,8 @@ struct HfCorrelatorLcScHadrons {
   PROCESS_SWITCH(HfCorrelatorLcScHadrons, processLambda0EffCal, "Mc process for lambda0", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfCorrelatorLcScHadronsSelection>(cfgc),
-                      adaptAnalysisTask<HfCorrelatorLcScHadrons>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCorrelatorLcScHadronsSelection>(context),
+                      adaptAnalysisTask<HfCorrelatorLcScHadrons>(context)};
 }
