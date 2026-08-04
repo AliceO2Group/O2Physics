@@ -640,9 +640,7 @@ struct HfTaskCorrelationLcHadrons {
       if (useCentrality) {
         cent = pairEntry.cent();
       }
-
-      LOGF(info, "haha big boss lets see Centrality = %.2f", cent);
-
+      
       // reject entries outside pT ranges of interest
       if (ptLc < binsPtEfficiencyLc->front() || ptLc > binsPtEfficiencyLc->back()) {
         continue;
