@@ -80,7 +80,7 @@ struct ConfCascadeFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> negDauTpc{"negDauTpc", {5.f}, "Maximum |nsimga_Pion/Proton| TPC for negative daughter tracks"};                      \
   o2::framework::Configurable<std::vector<float>> posDauTof{"posDauTof", {}, "Maximum |nsimga_Pion/Proton| TOF for positive daughter tracks"};                         \
   o2::framework::Configurable<std::vector<float>> negDauTof{"negDauTof", {}, "Maximum |nsigma_Pion/Proton| TOF for negative daughter tracks"};                         \
-  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, TOF PID is a mandatory selection"};                                                        \
+  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, TOF PID is a mandatory selection"};                                                      \
   o2::framework::Configurable<bool> keepTracksWithoutTof{"keepTracksWithoutTof", true, "If true, candidates whose daughters have no TOF signal are kept"};
 
 struct ConfXiBits : o2::framework::ConfigurableGroup {
