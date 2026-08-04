@@ -18,7 +18,6 @@
 #define HomogeneousField // o2-linter: disable=name/macro (name coming from KFParticle, not us, needed for KFParticle::SetField)
 #endif
 
-// PWGEM
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/Core/EmMlResponsePCM.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCandidate.h"
@@ -27,7 +26,6 @@
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
 
-// Other O2Physics
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TPCVDriftManager.h"
 #include "Common/Core/trackUtilities.h"
@@ -36,7 +34,6 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
-// O2
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
@@ -58,19 +55,16 @@
 #include <ReconstructionDataFormats/HelixHelper.h>
 #include <ReconstructionDataFormats/PID.h>
 
-#include <GPUROOTCartesianFwd.h>
-
-// ROOT
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TPDGCode.h>
 
-// KFParticle
 #include <KFPTrack.h>
 #include <KFPVertex.h>
 #include <KFParticle.h>
 
-// C++
+#include <GPUROOTCartesianFwd.h>
+
 #include <algorithm>
 #include <array>
 #include <cmath>
