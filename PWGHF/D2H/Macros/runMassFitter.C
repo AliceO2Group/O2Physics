@@ -574,8 +574,8 @@ void runMassFitter(const std::string& configFileName)
 
     try {
       massFitter->doFit();
-    } catch (...) {
-      std::cout << "exception caught while doing fit\n";
+    } catch (const std::exception& e) {
+      printf("Warinig! Exception \"%s\" caught while doing fit of the histogram no. %d. The fitting process will be continued without it.\n", e.what(), iSliceVar);
     }
 
     auto drawOnCanvas = [&](std::vector<TCanvas*>& canvas, std::function<void()> drawer) {
@@ -703,7 +703,9 @@ void runMassFitter(const std::string& configFileName)
     outputFile.cd("MassHistograms");
     hMass[iSliceVar]->Write();
     outputFile.cd("CovCorrMatrices");
-    hCovCorr[iSliceVar]->Write(Form("hCovCorrMatrix%d", iSliceVar + 1));
+    if (hCovCorr[iSliceVar] != nullptr) {
+      hCovCorr[iSliceVar]->Write(Form("hCovCorrMatrix%d", iSliceVar + 1));
+    }
   }
   outputFile.cd();
   hRawYieldsSignal->Write();
