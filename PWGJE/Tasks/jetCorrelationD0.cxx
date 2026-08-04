@@ -374,26 +374,19 @@ struct JetCorrelationD0 {
       }
       if ((std::abs(d0DecayChannel) == kD0ToKPi) && (matchedFrom != 0) && (selectedAs == matchedFrom)) {
         category = 0; // signal -> D0 or D0bar, π+ K−
-      }
-      else if ((d0DecayChannel == kD0ToKPi) && (selectedAs == -1*matchedFrom)) {
+      } else if ((d0DecayChannel == kD0ToKPi) && (selectedAs == -1 * matchedFrom)) {
         category = 1; // reflection
-      }
-      else if (d0DecayChannel == kD0ToKPiPi) {
+      } else if (d0DecayChannel == kD0ToKPiPi) {
         category = 2; // corr bkg: π+ K− π0
       }
 
       else if (d0DecayChannel == kD0ToPiPi) {
         category = 3; // corr bkg: π+ π−
-      }
-      else if (d0DecayChannel == kD0ToPiPiPi) {
+      } else if (d0DecayChannel == kD0ToPiPiPi) {
         category = 4; // corr bkg: π+ π− π0
-      }
-      else if (d0DecayChannel == kD0ToKK) {
+      } else if (d0DecayChannel == kD0ToKK) {
         category = 5; // corr bkg: K+ K−
       }
-
-
-
 
       tableD0McDetector(tableCollision.lastIndex(), // might want to add some more detector level D0 quantities like prompt or non prompt info
                         scores[2],
