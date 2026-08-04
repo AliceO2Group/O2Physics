@@ -106,7 +106,6 @@ struct FlowGfwV02 {
     float nchup = 300;
     std::vector<double> centbinning{90};
     int nBootstrap = 10;
-    std::vector<std::pair<double, double>> etagapsPtPt;
     GFWRegions regions;
     GFWCorrConfigs configs;
     std::vector<double> multGlobalCorrCutPars;
