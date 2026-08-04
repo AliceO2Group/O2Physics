@@ -33,13 +33,13 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/OutputObjHeader.h>
 #include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TVector2.h>
-#include <TRandom.h>
 #include <TLorentzVector.h>
+#include <TRandom.h>
+#include <TVector2.h>
 
 #include <cmath>
 #include <string>
@@ -132,8 +132,8 @@ struct Cha01710analysis {
 
   using Collisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::Qvectors>>;
   using Tracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
-                                                aod::pidTPCFullPi, aod::pidTOFFullPi,
-                                                aod::pidTPCFullKa, aod::pidTOFFullKa>>;
+                                         aod::pidTPCFullPi, aod::pidTOFFullPi,
+                                         aod::pidTPCFullKa, aod::pidTOFFullKa>>;
   using V0s = soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
 
   int detId = 0;
@@ -383,7 +383,7 @@ struct Cha01710analysis {
     }
     if (eventCuts.cfgCentEst == kFT0M) {
       centrality = collision.centFT0M();
-    } else if(eventCuts.cfgCentEst == kFT0C) {
+    } else if (eventCuts.cfgCentEst == kFT0C) {
       centrality = collision.centFT0C();
     } else {
       centrality = collision.centFT0M();
