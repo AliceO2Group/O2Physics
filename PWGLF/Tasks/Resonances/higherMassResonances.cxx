@@ -212,10 +212,10 @@ struct HigherMassResonances {
     int refAId = 0;
     int refBId = 0;
     float minQvecAmp = 1e-5;
-    Service<o2::framework::O2DatabasePDG> pdgDB{};
   } config;
 
   // Service<o2::framework::O2DatabasePDG> PDGdatabase;
+  Service<o2::framework::O2DatabasePDG> pdgDB{};
   TRandom* rn = new TRandom();
 
   // variables declaration
@@ -1519,7 +1519,7 @@ struct HigherMassResonances {
 
     bool isINELgt0true = false;
 
-    if (pwglf::isINELgtNmc(mcParticles, 0, config.pdgDB)) {
+    if (pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
       isINELgt0true = true;
     }
     if (config.isINELgt0 && !isINELgt0true) {
@@ -1679,7 +1679,7 @@ struct HigherMassResonances {
 
     bool isINELgt0true = false;
 
-    if (pwglf::isINELgtNmc(mcParticles, 0, config.pdgDB)) {
+    if (pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
       isINELgt0true = true;
     }
     if (config.isINELgt0 && !isINELgt0true) {
