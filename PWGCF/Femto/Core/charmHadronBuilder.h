@@ -369,8 +369,6 @@ class CharmHadronBuilder
     }
     if (mProduceD0Extras) {
       d0Products.producedD0Extras(
-        mHfHelper.invMassD0ToPiK(candidate),
-        mHfHelper.invMassD0barToKPi(candidate),
         candidate.cpa(),
         candidate.cpaXY(),
         candidate.decayLength(),

@@ -1172,8 +1172,6 @@ DECLARE_SOA_INDEX_COLUMN_FULL(PosDau, posDau, int32_t, FTracks, "_PosDau"); //! 
 DECLARE_SOA_INDEX_COLUMN_FULL(NegDau, negDau, int32_t, FTracks, "_NegDau"); //! - prong (kaon in D0)
 
 // QA/debug columns
-DECLARE_SOA_COLUMN(MassD0, massD0, float);       //! Kpi-hypothesis mass
-DECLARE_SOA_COLUMN(MassD0bar, massD0bar, float); //! piK-hypothesis mass
 DECLARE_SOA_COLUMN(Cpa, cpa, float);
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
@@ -1216,8 +1214,6 @@ using FD0Masks = FD0Masks_001;
 using StoredFD0Masks = StoredFD0Masks_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FD0Extras_001, "FD0EXTRA", 1, //! femto D0 QA / debug
-                                   femtocharmhadrons::MassD0,    // both hypotheses; the main
-                                   femtocharmhadrons::MassD0bar, // table only stores the accepted one
                                    femtocharmhadrons::Cpa,
                                    femtocharmhadrons::CpaXY,
                                    femtocharmhadrons::DecayLength,
