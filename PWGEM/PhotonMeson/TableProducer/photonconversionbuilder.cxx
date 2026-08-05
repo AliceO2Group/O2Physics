@@ -52,6 +52,7 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/HelixHelper.h>
 #include <ReconstructionDataFormats/PID.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
@@ -61,6 +62,8 @@
 #include <KFPTrack.h>
 #include <KFPVertex.h>
 #include <KFParticle.h>
+
+#include <GPUROOTCartesianFwd.h>
 
 #include <algorithm>
 #include <array>
@@ -681,9 +684,8 @@ struct PhotonConversionBuilder {
           phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(kfp_track_posProp.GetPx(), kfp_track_posProp.GetPy(), kfp_track_posProp.GetPz(), kfp_track_eleProp.GetPx(), kfp_track_eleProp.GetPy(), kfp_track_eleProp.GetPz(), pos.sign(), ele.sign(), d_bz);
           psipair = o2::aod::pwgem::dilepton::utils::pairutil::getPsiPair(kfp_track_posProp.GetPx(), kfp_track_posProp.GetPy(), kfp_track_posProp.GetPz(), kfp_track_eleProp.GetPx(), kfp_track_eleProp.GetPy(), kfp_track_eleProp.GetPz());
           break;
-        } else {
-          LOG(debug) << "Propagation to offset" << offsetR << " cm failed for " << (pPropagatedSuccess ? "negative" : "positive") << " track. Trying smaller offset.";
         }
+        LOG(debug) << "Propagation to offset" << offsetR << " cm failed for " << (pPropagatedSuccess ? "negative" : "positive") << " track. Trying smaller offset.";
       }
       if (modeTrackPropagation == TrackPropMode::kBoth) {
         registry.fill(HIST("V0/hPhivPropagationCompare"), phiv, phivFast);
