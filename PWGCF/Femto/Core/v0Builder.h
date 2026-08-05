@@ -81,6 +81,10 @@ struct ConfLambdaBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> posDauTpcProton{"posDauTpcProton", {5.f}, "Maximum |nsimga_Proton| TPC for positive daughter tracks"};
   o2::framework::Configurable<std::vector<float>> negDauTpcPion{"negDauTpcPion", {5.f}, "Maximum |nsimga_Pion| TPC for negative daughter tracks"};
   o2::framework::Configurable<std::vector<float>> negDauTpcProton{"negDauTpcProton", {5.f}, "Maximum |nsimga_Proton| TPC negative for daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> posDauTofPion{"posDauTofPion", {}, "Maximum |nsigma_Pion| TOF for positive daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> posDauTofProton{"posDauTofProton", {}, "Maximum |nsigma_Proton| TOF for positive daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> negDauTofPion{"negDauTofPion", {}, "Maximum |nsigma_Pion| TOF for negative daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> negDauTofProton{"negDauTofProton", {}, "Maximum |nsigma_Proton| TOF for negative daughter tracks"};
 };
 
 // derived selection bits for K0Short
@@ -89,6 +93,8 @@ struct ConfK0shortBits : o2::framework::ConfigurableGroup {
   V0_DEFAULT_BITS
   o2::framework::Configurable<std::vector<float>> posDauTpcPion{"posDauTpcPion", {5.f}, "Maximum |nsimga_Pion| TPC for positive daughter tracks"};
   o2::framework::Configurable<std::vector<float>> negDauTpcPion{"negDauTpcPion", {5.f}, "Maximum |nsimga_Pion| TPC for negative daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> posDauTofPion{"posDauTofPion", {}, "Maximum |nsigma_Pion| TOF for positive daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> negDauTofPion{"negDauTofPion", {}, "Maximum |nsigma_Pion| TOF for negative daughter tracks"};
 };
 
 #undef V0_DEFAULT_BITS
@@ -154,6 +160,11 @@ enum V0Sels {
   kNegDaughTpcPion,   ///< TPC Pion PID for negative daughter
   kNegDaughTpcProton, ///< TPC Proton PID for negative daughter
 
+  kPosDaughTofPion,   ///< TOF Pion PID for positive daughter
+  kPosDaughTofProton, ///< TOF Proton PID for positive daughter
+  kNegDaughTofPion,   ///< TOF Pion PID for negative daughter
+  kNegDaughTofProton, ///< TOF Proton PID for negative daughter
+
   kV0SelsMax
 };
 
@@ -175,7 +186,11 @@ const std::unordered_map<V0Sels, std::string> v0SelectionNames = {
   {kPosDaughTpcPion, "TPC Pion PID for positive daughter"},
   {kPosDaughTpcProton, "TPC Proton PID for positive daughter"},
   {kNegDaughTpcPion, "TPC Pion PID for negative daughter"},
-  {kNegDaughTpcProton, "TPC Proton PID for negative daughter"}};
+  {kNegDaughTpcProton, "TPC Proton PID for negative daughter"},
+  {kPosDaughTofPion, "TOF Pion PID for positive daughter"},
+  {kPosDaughTofProton, "TOF Proton PID for positive daughter"},
+  {kNegDaughTofPion, "TOF Pion PID for negative daughter"},
+  {kNegDaughTofProton, "TOF Proton PID for negative daughter"}};
 
 // enum for all track filters (loose pre-selection, applied before quality/PID cuts)
 enum V0Filters {
@@ -242,11 +257,15 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
       if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
         this->addSelection(kPosDaughTpcProton, v0SelectionNames.at(kPosDaughTpcProton), config.posDauTpcProton.value, limits::kAbsUpperLimit, true, true, false);
         this->addSelection(kNegDaughTpcPion, v0SelectionNames.at(kNegDaughTpcPion), config.negDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
+        this->addSelection(kPosDaughTofProton, v0SelectionNames.at(kPosDaughTofProton), config.posDauTofProton.value, limits::kAbsUpperLimit, true, true, false);
+        this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, true, true, false);
       }
 
       if constexpr (modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
         this->addSelection(kPosDaughTpcPion, v0SelectionNames.at(kPosDaughTpcPion), config.posDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
         this->addSelection(kNegDaughTpcProton, v0SelectionNames.at(kNegDaughTpcProton), config.negDauTpcProton.value, limits::kAbsUpperLimit, true, true, false);
+        this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, true, true, false);
+        this->addSelection(kNegDaughTofProton, v0SelectionNames.at(kNegDaughTofProton), config.negDauTofProton.value, limits::kAbsUpperLimit, true, true, false);
       }
     }
     if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
@@ -258,6 +277,8 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
 
       this->addSelection(kPosDaughTpcPion, v0SelectionNames.at(kPosDaughTpcPion), config.posDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
       this->addSelection(kNegDaughTpcPion, v0SelectionNames.at(kNegDaughTpcPion), config.negDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
+      this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, true, true, false);
+      this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, true, true, false);
     }
 
     this->addSelection(kDcaDaughMax, v0SelectionNames.at(kDcaDaughMax), config.dcaDauMax.value, limits::kAbsUpperLimit, true, true, false);
@@ -321,6 +342,14 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
     this->evaluateObservable(kPosDaughTpcProton, posDaughter.tpcNSigmaPr());
     this->evaluateObservable(kNegDaughTpcPion, negDaughter.tpcNSigmaPi());
     this->evaluateObservable(kNegDaughTpcProton, negDaughter.tpcNSigmaPr());
+    if (posDaughter.hasTOF()) {
+      this->evaluateObservable(kPosDaughTofPion, posDaughter.tofNSigmaPi());
+      this->evaluateObservable(kPosDaughTofProton, posDaughter.tofNSigmaPr());
+    }
+    if (negDaughter.hasTOF()) {
+      this->evaluateObservable(kNegDaughTofPion, negDaughter.tofNSigmaPi());
+      this->evaluateObservable(kNegDaughTofProton, negDaughter.tofNSigmaPr());
+    }
 
     this->assembleBitmask<SelectionHistName>();
   }

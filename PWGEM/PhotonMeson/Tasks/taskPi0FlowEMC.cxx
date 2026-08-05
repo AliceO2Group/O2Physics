@@ -264,8 +264,8 @@ struct TaskPi0FlowEMC {
   using CollsWithQvecs = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMEventsQvec_001>;
   using Colls = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>;
 
-  Partition<EMCalPhotons> emcalPhotons = aod::mincluster::storedPhi < std::lround(MaxPhiEMCal * emcdownscaling::downscalingFactors[emcdownscaling::kPhi]);
-  Partition<EMCalPhotons> dcalPhotons = aod::mincluster::storedPhi >= std::lround(MaxPhiEMCal * emcdownscaling::downscalingFactors[emcdownscaling::kPhi]);
+  Partition<EMCalPhotons> emcalPhotons = aod::mincluster::storedPhi < static_cast<uint16_t>(std::lround(MaxPhiEMCal * emcdownscaling::downscalingFactors[emcdownscaling::kPhi]));
+  Partition<EMCalPhotons> dcalPhotons = aod::mincluster::storedPhi >= static_cast<uint16_t>(std::lround(MaxPhiEMCal * emcdownscaling::downscalingFactors[emcdownscaling::kPhi]));
 
   static constexpr std::size_t NQVecEntries = 6;
 

@@ -160,6 +160,8 @@ constexpr const char PrefixV02PosDauBinning[] = "V02PosDauBinning";
 constexpr const char PrefixV02NegDauBinning[] = "V02NegDauBinning";
 constexpr const char PrefixD01PosDauBinning[] = "D01PosDauBinning";
 constexpr const char PrefixD01NegDauBinning[] = "D01NegDauBinning";
+constexpr const char PrefixD02PosDauBinning[] = "D02PosDauBinning";
+constexpr const char PrefixD02NegDauBinning[] = "D02NegDauBinning";
 constexpr const char PrefixCascadePosDauBinning[] = "CascadePosDauBinning";
 constexpr const char PrefixCascadeNegDauBinning[] = "CascadeNegDauBinning";
 constexpr const char PrefixCascadeBachelorBinning[] = "CascadeBachelorBinning";
@@ -180,6 +182,8 @@ using ConfV02PosDauBinning = ConfTrackBinning<PrefixV02PosDauBinning>;
 using ConfV02NegDauBinning = ConfTrackBinning<PrefixV02NegDauBinning>;
 using ConfD01PosDauBinning = ConfTrackBinning<PrefixD01PosDauBinning>;
 using ConfD01NegDauBinning = ConfTrackBinning<PrefixD01NegDauBinning>;
+using ConfD02PosDauBinning = ConfTrackBinning<PrefixD02PosDauBinning>;
+using ConfD02NegDauBinning = ConfTrackBinning<PrefixD02NegDauBinning>;
 using ConfCascadePosDauBinning = ConfTrackBinning<PrefixCascadePosDauBinning>;
 using ConfCascadeNegDauBinning = ConfTrackBinning<PrefixCascadeNegDauBinning>;
 using ConfCascadeBachelorBinning = ConfTrackBinning<PrefixCascadeBachelorBinning>;
@@ -527,6 +531,8 @@ constexpr char PrefixResonanceNegDaughterQa[] = "ResonanceNegDauQa/";
 
 constexpr char PrefixD01PosDaughter[] = "D01PosDau/";
 constexpr char PrefixD01NegDaughter[] = "D01NegDau/";
+constexpr char PrefixD02PosDaughter[] = "D02PosDau/";
+constexpr char PrefixD02NegDaughter[] = "D02NegDau/";
 constexpr char PrefixD01PosDaughterQa[] = "D01PosDauQa/";
 constexpr char PrefixD01NegDaughterQa[] = "D01NegDauQa/";
 

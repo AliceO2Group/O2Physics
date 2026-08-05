@@ -21,6 +21,7 @@
 
 #include <CommonConstants/MathConstants.h>
 #include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
 #include <Framework/Concepts.h>
 #include <ReconstructionDataFormats/HelixHelper.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
@@ -28,6 +29,8 @@
 #include <Math/GenVector/DisplacementVector2D.h> // IWYU pragma: keep (for rotate)
 #include <Math/Vector2D.h>                       // IWYU pragma: keep (do not replace with Math/Vector2Dfwd.h)
 #include <Math/Vector2Dfwd.h>
+
+#include <GPUROOTCartesianFwd.h>
 
 #include <array>
 #include <cmath>
@@ -101,10 +104,92 @@ inline void Vtx_recalculationParCov(o2::base::Propagator* prop, const o2::track:
 
   xyz[2] = (trackPosInformationCopy.getZ() * helixNeg.rC + trackNegInformationCopy.getZ() * helixPos.rC) / (helixPos.rC + helixNeg.rC);
 }
+
+//_______________________________________________________________________
+/// \brief Calculate DCA for tracks using the track helix and the inclination angl tan(lambda)
+/// \param trk track parameterization to obtain helix parameters
+/// \param vtx primary vertex position
+/// \param magField magnetic field strenght of L3
+/// \return DCAxy, DCAz
+template <typename TrackPrecision = float>
+std::array<float, 2> CalculateDCAFast(const o2::track::TrackParametrizationWithError<TrackPrecision>& trk, const o2::math_utils::Point3D<float>& vtx, const float magField)
+{
+
+  std::array<float, 2> dca{};
+
+  // obtain circle from track in x-y plane
+  const o2::track::TrackAuxPar helixPos(trk, magField);
+
+  // obtain position in global coordinates and tan(lambda)
+  const auto posTrack = trk.getXYZGlo();
+  const float trX = posTrack.X();
+  const float trY = posTrack.Y();
+  const float trZ = posTrack.Z();
+  const float tangentLambda = trk.getTgl();
+
+  // Calculate DCAxy
+  // Use distance in x and y between circle center and vtx, afterwards subtract radius of circle
+  const float distX = helixPos.xC - vtx.X();
+  const float distY = helixPos.yC - vtx.Y();
+  const float trackCircCenter = std::sqrt(distX * distX + distY * distY);
+  dca[0] = helixPos.rC - trackCircCenter;
+
+  // Calculate DCAz
+  // First step: Calculate arc lenght of circle between current position and primary vertex in x-y
+  const float theta0 = std::atan2(trY - helixPos.yC, trX - helixPos.xC);
+  const float thetav = std::atan2(vtx.Y() - helixPos.yC, vtx.X() - helixPos.xC);
+
+  // Make sure angle is between -pi and pi
+  const auto dtheta = RecoDecay::constrainAngle<float>(thetav - theta0, -o2::constants::math::PI);
+
+  // arc-lenght along helix
+  const float arcLenght = std::fabs(helixPos.rC * dtheta);
+
+  // get global z-position at DCA
+  const float ZPosGlo = trZ - arcLenght * tangentLambda;
+
+  // DCA calculated from
+  dca[1] = ZPosGlo - vtx.Z();
+
+  return dca;
+}
+
+//_______________________________________________________________________
+/// \brief Calculate the track momentum at a different place of the track Helix.
+/// \param s arc-lenght where track should be propagated to
+/// \param track particle track
+/// \param trHelix track helix param. for circle approximation
+/// \param bz magnetic field strenght of L3
+/// \param addPhi optional additional rotation of the track in phi-direction
+/// \return track momentum vector at new position
+template <o2::soa::is_iterator TTrack>
+inline std::array<float, 3> getPropMomentumFromTrackHelix(const float s, const TTrack& track, const o2::track::TrackAuxPar& trHelix, const float bz, float addPhi = 0.f)
+{
+
+  // Calculate the change in phi considering the track radius and the track arc lenght s
+  const float dphi = -track.sign() * 0.3f * bz * s / 100. / track.pt(); // s in cm
+  const float dotProd = std::cos(track.phi() + addPhi) * track.pt() * trHelix.xC + std::sin(track.phi() + addPhi) * track.pt() * trHelix.yC;
+  if (dotProd < 0) {
+    addPhi -= o2::constants::math::PI;
+  }
+
+  // Calculate the phi at the secondary vertex
+  const auto phi = RecoDecay::constrainAngle<float>(track.phi() + dphi + addPhi);
+
+  // Calculate px,y,z at the new propagated vertex
+  std::array<float, 3> trackP{};
+  trackP[0] = std::cos(phi) * track.pt();
+  trackP[1] = std::sin(phi) * track.pt();
+  trackP[2] = track.tgl() * track.pt();
+
+  return trackP;
+}
+
 //_______________________________________________________________________
 template <typename TrackPrecision = float, o2::soa::is_iterator T1, o2::soa::is_iterator T2>
 inline void Vtx_recalculation(o2::base::Propagator* prop, T1 lTrackPos, T2 lTrackNeg, std::array<float, 3>& xyz, o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE)
 {
+
   // o2::track::TrackParametrizationWithError<TrackPrecision> = TrackParCov, I use the full version to have control over the data type
   o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformation = getTrackParCov(lTrackPos); // first get an object that stores Track information (positive)
   o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformation = getTrackParCov(lTrackNeg); // first get an object that stores Track information (negative)

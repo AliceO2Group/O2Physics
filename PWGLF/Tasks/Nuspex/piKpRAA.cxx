@@ -501,7 +501,8 @@ struct PiKpRAA {
 
     if (doprocessSim) {
       registry.add("EventCounterMC", ";;Events", kTH1F, {{5, 0, 5}});
-      registry.add("zPosMC", "Generated Events With at least One Rec. Collision + Sel. criteria;;Entries;", kTH1F, {axisZpos});
+      registry.add("zPosMC", "From the association between the MC event & the Rec. Coll with largest number of PV contributors & NO Evy. Sel.;;Entries;", kTH1F, {axisZpos});
+      registry.add("zPosMCAll", "All MC Events;;Entries;", kTH1F, {axisZpos});
       registry.add("EtaMCParAllMCColl", "#eta from all MC particles in all MC collisions;#eta;Entries;", kTH1F, {{50, -10.0, 10.0}});
       registry.add("EtaMCParAllMCColl_Pion", "#eta from all MC particles in all MC collisions;#eta;Entries;", kTH1F, {{50, -10.0, 10.0}});
       registry.add("EtaMCParAllMCColl_Kaon", "#eta from all MC particles in all MC collisions;#eta;Entries;", kTH1F, {{50, -10.0, 10.0}});
@@ -517,7 +518,8 @@ struct PiKpRAA {
 
       registry.add("CentralityVsBCVsFT0VsTVXVsEvSel", "All=1 | BC=2 | FT0=3 | TVX=4 | EvSel=5;;Status;", kTH2F, {{axisCent}, {5, 0.5, 5.5}});
       registry.add("NumOfRecColl", "Num. of times a MC evt. is reconstructed;N;Entries", kTH1F, {{5, -0.5, 4.5}});
-      registry.add("NumOfRecCollVsNContributors", "Num. of times a MC evt. is reconstructed VS Num. of PV contributors;Number of times a MC event is reconstructed;Number of tracks used for the PV", kTH2F, {{5, -0.5, 4.5}, axisNch});
+      registry.add("NumOfRecCollVsNContri", "Num. of times a MC evt. is reconstructed VS Num. of PV contributors;Number of times a MC event is reconstructed;Number of tracks used for the PV", kTH2F, {{5, -0.5, 4.5}, axisNch});
+      registry.add("NumOfRecCollVsNContriWithEvtSel", "Num. of times a MC evt. is reconstructed VS Num. of PV contributors WITH EVT SEL;Number of times a MC event is reconstructed;Number of tracks used for the PV", kTH2F, {{5, -0.5, 4.5}, axisNch});
 
       // Pt resolution
       registry.add("PtResolution", "p_{T} resolution;;(pt_{rec} - pt_{gen})/pt_{gen};", kTH2F, {axisPt, {100, -1.0, 1.0}});
@@ -546,9 +548,9 @@ struct PiKpRAA {
       registry.add("NchMC_WithOnlyRecColl", "Gen Nch from MC event associated with a ONLY ONE Rec. Coll from last Num. of Contributors;Gen. Nch;Entries", kTH1F, {axisNch});
 
       // Needed to measure Event Splitting
-      registry.add("Centrality_WRecoEvt", "Generated Events With at least One Rec. Collision And NO Sel. criteria;;Entries", kTH1F, {axisCent});
-      registry.add("Centrality_WRecoEvtWSelCri", "Generated Events With at least One Rec. Collision + Sel. criteria;;Entries", kTH1F, {axisCent});
-      registry.add("Centrality_AllRecoEvt", "Generated Events Irrespective of the number of times it was reconstructed + Evt. Selections;;Entries", kTH1F, {axisCent});
+      registry.add("Centrality_WRecoEvt", "From the association between the MC event & the Rec. Coll with largest number of PV contributors & NO Evt. Sel.;;Entries", kTH1F, {axisCent});
+      registry.add("Centrality_WRecoEvtWSelCri", "From the association between the MC event & the Rec. Coll with largest number of PV contributors + Evt. Sel.;;Entries", kTH1F, {axisCent});
+      registry.add("Centrality_AllRecoEvt", "All Rec. Coll. Irrespective of the times it was reconstructed + Evt. Sel.;;Entries", kTH1F, {axisCent});
 
       // Needed to calculate the numerator of the Signal Loss correction
       registry.add("PtPiVsNchMC_WithRecoEvt", "Generated Events With at least One Rec. Collision;;Gen. Nch;", kTH2F, {axisPt, axisNch});
@@ -1420,6 +1422,7 @@ struct PiKpRAA {
     //  Only charge particles within tpcNchAcceptance and without pT selection
     //---------------------------
     registry.fill(HIST("NchMC_AllGen"), nChMCTPCAcc);
+    registry.fill(HIST("zPosMCAll"), mccollision.posZ());
 
     //---------------------------
     // How many times was the MC event reconstrued?
@@ -1433,84 +1436,27 @@ struct PiKpRAA {
     if (nRecColls > KzeroInt) {
 
       //---------------------------
-      // Looks for the collision with the largest number of tracks contributing to the primary vertex reconstruction
+      // Looks for the collision with the largest number of tracks contributing to the PV reconstruction
       // The selected collision is identified by its global index (bestCollisionIndex)
       //---------------------------
       int biggestNContribs{-1};
       int bestCollisionIndex{-1};
+
       for (const auto& collision : collisions) {
 
-        float centrality{-999.0};
-        if (centralitySelector.value == "FT0C") {
-          centrality = collision.centFT0C();
-        } else if (centralitySelector.value == "FT0M") {
-          centrality = collision.centFT0M();
-        } else if (centralitySelector.value == "FV0A") {
-          centrality = collision.centFV0A();
-        } else {
-          centrality = -999.0;
-        }
+        registry.fill(HIST("NumOfRecCollVsNContri"), nRecColls, collision.numContrib());
 
-        registry.fill(HIST("NumOfRecCollVsNContributors"), nRecColls, collision.numContrib());
-
-        if (selHasFT0 && !collision.has_foundFT0()) {
-          continue;
-        }
-
-        if (selHasBC && !collision.has_foundBC()) {
-          continue;
-        }
-
-        if (useSel8 && !collision.sel8()) {
-          continue;
-        }
-
-        // kIsTriggerTVX
-        if (selTriggerTVX && !collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-          continue;
-        }
-
-        // kNoITSROFrameBorder
-        if (selNoITSROFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-          continue;
-        }
-
-        // kNoTimeFrameBorder
-        if (selNoTimeFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-          continue;
-        }
-
-        // Zvtx
-        if (isZvtxPosSel && std::fabs(collision.posZ()) > posZcut) {
-          continue;
-        }
-
-        if (selIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-          continue;
-        }
-
-        if (selNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-          continue;
-        }
-
+        //---------------------------
         // Gets the index of the collision with the largest number of contributors
+        //---------------------------
         if (biggestNContribs < collision.numContrib()) {
           biggestNContribs = collision.numContrib();
           bestCollisionIndex = collision.globalIndex();
         }
 
         //---------------------------
-        // Needed to calculate denominator of the EVENT SPLITTING correction
-        // MC Collisions that are reconstructed more than one will be stored here
+        // This is only for QA
         //---------------------------
-        registry.fill(HIST("Centrality_AllRecoEvt"), centrality);
-      }
-
-      //---------------------------
-      // This is only for QA purposes
-      //---------------------------
-      for (const auto& collision : collisions) {
-
         int mcNchInTPCAcc{0};
         for (const auto& particle : mcParticles) {
 
@@ -1577,6 +1523,110 @@ struct PiKpRAA {
       }
 
       //---------------------------
+      // Needed to calculate denominator of the EVENT SPLITTING correction
+      // MC Collisions that are reconstructed more than one will be stored here
+      //---------------------------
+      for (const auto& collision : collisions) {
+
+        float centrality{-999.0};
+        if (centralitySelector.value == "FT0C") {
+          centrality = collision.centFT0C();
+        } else if (centralitySelector.value == "FT0M") {
+          centrality = collision.centFT0M();
+        } else if (centralitySelector.value == "FV0A") {
+          centrality = collision.centFV0A();
+        } else {
+          centrality = -999.0;
+        }
+
+        //---------------------------
+        // Event Selection
+        // Applied manually to avoid double filling the EventCounter
+        //---------------------------
+
+        // Has BC?
+        if (selHasBC) {
+          if (!collision.has_foundBC()) {
+            continue;
+          }
+        }
+
+        // Has FT0 information?
+        if (selHasFT0) {
+          if (!collision.has_foundFT0()) {
+            continue;
+          }
+        }
+
+        // Use sel8?
+        if (useSel8) {
+          if (!collision.sel8()) {
+            continue;
+          }
+        }
+
+        // kIsTriggerTVX
+        if (selTriggerTVX) {
+          if (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+            continue;
+          }
+        }
+
+        // kNoITSROFrameBorder
+        if (selNoITSROFrameBorder) {
+          if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+            continue;
+          }
+        }
+
+        // kNoTimeFrameBorder
+        if (selNoTimeFrameBorder) {
+          if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+            continue;
+          }
+        }
+
+        // Zvtx
+        if (isZvtxPosSel) {
+          if (std::fabs(collision.posZ()) > posZcut) {
+            continue;
+          }
+        }
+
+        // Short distance between FT0 & PV vertices
+        if (selIsGoodZvtxFT0vsPV) {
+          if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+            continue;
+          }
+        }
+
+        if (selNoSameBunchPileup) {
+          if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+            continue;
+          }
+        }
+
+        if (isCentSel) {
+          if (centrality < minCentCut || centrality > maxCentCut) {
+            continue;
+          }
+        }
+
+        if (selINELgt0) {
+          if (!collision.isInelGt0()) {
+            continue;
+          }
+        }
+
+        //---------------------------
+        // Needed to calculate denominator of the EVENT SPLITTING correction
+        // MC Collisions that are reconstructed more than one will be stored here
+        //---------------------------
+        registry.fill(HIST("Centrality_AllRecoEvt"), centrality);
+        registry.fill(HIST("NumOfRecCollVsNContriWithEvtSel"), nRecColls, collision.numContrib());
+      }
+
+      //---------------------------
       // Loop over the reconstructed collisions
       // Only that one with the largest number of contributors is considered
       //---------------------------
@@ -1619,9 +1669,6 @@ struct PiKpRAA {
           }
         }
 
-        //---------------------------
-        // Needed to construct the correlation between MC Nch v.s. centrality
-        //---------------------------
         registry.fill(HIST("Centrality_WRecoEvt"), centrality);
         registry.fill(HIST("zPosMC"), mccollision.posZ());
 
@@ -1698,6 +1745,9 @@ struct PiKpRAA {
           return;
         }
 
+        //---------------------------
+        // Needed to construct the correlation between MC Nch v.s. centrality
+        //---------------------------
         registry.fill(HIST("Centrality_WRecoEvtWSelCri"), centrality); // To calculate numerator of EVENT SPLITTING
         registry.fill(HIST("NchMCVsCent"), centrality, nChMCTPCAcc);   // Needed for the mapping betwee MC Nch and centrality
         registry.fill(HIST("NchMC_WithRecoEvt"), nChMCTPCAcc);         // Numerator of EVENT LOSS correction
@@ -2534,7 +2584,19 @@ struct PiKpRAA {
     }
 
     if (isCentSel) {
-      if (col.centFT0C() < minCentCut || col.centFT0C() > maxCentCut) {
+
+      float cenT{-999.0};
+      if (centralitySelector.value == "FT0C") {
+        cenT = col.centFT0C();
+      } else if (centralitySelector.value == "FT0M") {
+        cenT = col.centFT0M();
+      } else if (centralitySelector.value == "FV0A") {
+        cenT = col.centFV0A();
+      } else {
+        cenT = -999.0;
+      }
+
+      if (cenT < minCentCut || cenT > maxCentCut) {
         return false;
       }
       registry.fill(HIST("EventCounter"), EvCutLabel::Centrality);
