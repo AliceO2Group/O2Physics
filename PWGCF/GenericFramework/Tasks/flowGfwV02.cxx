@@ -358,6 +358,7 @@ struct FlowGfwV02 {
     gfwMemberCache.nchlow = cfgGFWBinning->GetNchMin();
     gfwMemberCache.nchup = cfgGFWBinning->GetNchMax();
     gfwMemberCache.centbinning = cfgGFWBinning->GetCentBinning();
+    gfwMemberCache.nBootstrap = cfgNbootstrap;
     cfgGFWBinning->Print();
     gfwMemberCache.multGlobalCorrCutPars = cfgMultCorrCuts.cfgMultGlobalCutPars;
     gfwMemberCache.multPVCorrCutPars = cfgMultCorrCuts.cfgMultPVCutPars;
