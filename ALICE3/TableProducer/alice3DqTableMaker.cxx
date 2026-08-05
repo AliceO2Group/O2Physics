@@ -466,9 +466,9 @@ struct Alice3DqTableMaker {
     //         so in case of multiple associations, the variables depending on the collision association (e.g. DCA, secondary vertexing, etc)
     //         have to be recomputed at analysis time for each association.
 
-    auto trackFilteringTag = static_cast<uint64_t>(0);
-    auto trackTempFilterMap = static_cast<uint32_t>(0);
-    auto mcflags = static_cast<uint16_t>(0);
+    uint64_t trackFilteringTag{0};
+    uint32_t trackTempFilterMap{0};
+    uint16_t mcflags{0};
     int trackCounter = fLabelsMap.size();
 
     for (const auto& assoc : assocs) {
@@ -478,9 +478,6 @@ struct Alice3DqTableMaker {
       if (!fCollIndexMap.contains(track.collisionId())) {
         continue;
       }
-
-      trackFilteringTag = static_cast<uint64_t>(0);
-      trackTempFilterMap = static_cast<uint32_t>(0);
 
       // Compute track quantities and fill histograms
       VarManager::FillTrackAlice3<GkTrackFillMapWithCov>(track);
