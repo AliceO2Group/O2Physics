@@ -128,6 +128,8 @@ using CompactMFTTrack = CompactMFTTracks;
 
 struct muonGlobalAlignment {
 
+  static constexpr int GlobalTrackTypeMax = 2;
+
   Produces<aod::CompactMFTTracks> mftTable;
   Configurable<bool> cfgProduceMFTTable{"cfgProduceMFTTable", false, "flag to produce MFTsa table"};
 
@@ -289,7 +291,7 @@ struct muonGlobalAlignment {
       collisionInfo.bc = bc.globalBC();
       collisionInfo.zVertex = collision.posZ();
 
-      if (static_cast<int>(muonTrack.trackType()) > 2) {
+      if (static_cast<int>(muonTrack.trackType()) > GlobalTrackTypeMax) {
         // standalone MCH or MCH-MID tracks
         uint64_t mchTrackIndex = muonTrack.globalIndex();
         collisionInfo.mchTracks.push_back(mchTrackIndex);
@@ -320,8 +322,8 @@ struct muonGlobalAlignment {
       return (track1.chi2MatchMCHMFT() < track2.chi2MatchMCHMFT());
     };
 
-    for (auto& [collisionIndex, collisionInfo] : collisionInfos) {
-      for (auto& [mchIndex, globalTracksVector] : collisionInfo.globalMuonTracks) {
+    for (auto& [collisionIndex, collisionInfo] : collisionInfos) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
+      for (auto& [mchIndex, globalTracksVector] : collisionInfo.globalMuonTracks) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
         std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareChi2);
       }
     }
@@ -336,7 +338,7 @@ struct muonGlobalAlignment {
     InitCollisions(collisions, bcs, muonTracks, collisionInfos);
 
     // fill collision information for MFT standalone tracks
-    for (auto mftTrack : mftTracks) {
+    for (const auto& mftTrack : mftTracks) {
       if (!mftTrack.has_collision())
         continue;
 
@@ -950,7 +952,7 @@ struct muonGlobalAlignment {
     }
 
     if (!removeTrack) {
-      for (auto& param : track) {
+      for (auto& param : track) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
         param.setParameters(param.getSmoothParameters());
         param.setCovariances(param.getSmoothCovariances());
       }
@@ -1093,12 +1095,6 @@ struct muonGlobalAlignment {
                          ((y > 0) ? configMFTAlignmentCorrections.cfgMFTAlignmentCorrYOffsetTop : configMFTAlignmentCorrections.cfgMFTAlignmentCorrYOffsetBottom);
     track.setBendingCoor(y + yCorrection);
     track.setBendingSlope(ySlope + ySlopeCorrection);
-    /*
-    std::cout << std::format("[TOTO] MFT position:    pos={:0.3f},{:0.3f}", x, y) << std::endl;
-    std::cout << std::format("[TOTO] MFT corrections: pos={:0.3f},{:0.3f}  slope={:0.12f},{:0.12f}  angle={:0.12f},{:0.12f}",
-        xCorrection, yCorrection, xSlopeCorrection, ySlopeCorrection,
-        std::atan2(xSlopeCorrection, 1), std::atan2(ySlopeCorrection, 1)) << std::endl;
-    */
   }
 
   void TransformMFT(o2::dataformats::GlobalFwdTrack& track)
@@ -1133,8 +1129,8 @@ struct muonGlobalAlignment {
   template <typename T>
   T UpdateTrackMomentum(const T& track, const double p, int sign)
   {
-    double px = p * sin(M_PI / 2 - atan(track.tgl())) * cos(track.phi());
-    double py = p * sin(M_PI / 2 - atan(track.tgl())) * sin(track.phi());
+    double px = p * std::sin(M_PI / 2 - std::atan(track.tgl())) * std::cos(track.phi());
+    double py = p * std::sin(M_PI / 2 - std::atan(track.tgl())) * std::sin(track.phi());
     double pt = std::sqrt(std::pow(px, 2) + std::pow(py, 2));
 
     SMatrix5 tpars = {track.x(), track.y(), track.phi(), track.tgl(), sign / pt};
@@ -1154,8 +1150,8 @@ struct muonGlobalAlignment {
   template <typename T>
   T UpdateTrackMomentum(const T& track, const o2::mch::TrackParam& track4mom)
   {
-    double px = track4mom.p() * sin(M_PI / 2 - atan(track.tgl())) * cos(track.phi());
-    double py = track4mom.p() * sin(M_PI / 2 - atan(track.tgl())) * sin(track.phi());
+    double px = track4mom.p() * std::sin(M_PI / 2 - std::atan(track.tgl())) * std::cos(track.phi());
+    double py = track4mom.p() * std::sin(M_PI / 2 - std::atan(track.tgl())) * std::sin(track.phi());
     double pt = std::sqrt(std::pow(px, 2) + std::pow(py, 2));
     double sign = track4mom.getCharge();
 
@@ -1427,7 +1423,7 @@ struct muonGlobalAlignment {
                     const std::map<uint64_t, CollisionInfo>& collisionInfos)
   {
     // outer loop over collisions
-    for (auto& [collisionIndex, collisionInfo] : collisionInfos) {
+    for (const auto& [collisionIndex, collisionInfo] : collisionInfos) {
       auto const& collision = collisions.rawIteratorAt(collisionIndex);
       const auto& bc = bcs.rawIteratorAt(collision.bcId());
 
@@ -1452,7 +1448,7 @@ struct muonGlobalAlignment {
           mftTrackIds.resize(cfgMftTracksMultiplicityMax);
         }
 
-        for (auto mftIndex : mftTrackIds) {
+        for (const auto& mftIndex : mftTrackIds) {
           auto const& mftTrack = mftTracks.rawIteratorAt(mftIndex);
 
           if (mftTrack.isCA()) {
@@ -1549,7 +1545,7 @@ struct muonGlobalAlignment {
 
       if (cfgEnableGlobalFwdDcaAnalysis) {
         // loop over global muon tracks
-        for (auto& [muonIndex, globalTracksVector] : collisionInfo.globalMuonTracks) {
+        for (const auto& [muonIndex, globalTracksVector] : collisionInfo.globalMuonTracks) {
           auto const& muonTrack = muonTracks.rawIteratorAt(globalTracksVector[0]);
           const auto& mchTrack = muonTrack.template matchMCHTrack_as<MyMuonsWithCov>();
           const auto& mftTrack = muonTrack.template matchMFTTrack_as<MyMFTs>();
@@ -1678,7 +1674,7 @@ struct muonGlobalAlignment {
     }
 
     // loop over collisions
-    for (auto& [collisionIndex, collisionInfo] : collisionInfos) {
+    for (const auto& [collisionIndex, collisionInfo] : collisionInfos) {
       auto const& collision = collisions.rawIteratorAt(collisionIndex);
       const auto& bc = bcs.rawIteratorAt(collision.bcId());
 
@@ -1688,7 +1684,7 @@ struct muonGlobalAlignment {
         continue;
 
       // loop over global muon tracks
-      for (auto& [muonIndex, globalTracksVector] : collisionInfo.globalMuonTracks) {
+      for (const auto& [muonIndex, globalTracksVector] : collisionInfo.globalMuonTracks) {
         auto const& muonTrack = muonTracks.rawIteratorAt(globalTracksVector[0]);
         const auto& mchTrack = muonTrack.template matchMCHTrack_as<MyMuonsWithCov>();
         const auto& mftTrack = muonTrack.template matchMFTTrack_as<MyMFTs>();
@@ -1823,7 +1819,7 @@ struct muonGlobalAlignment {
         }
 
         // MFT-MCH track residuals analysis
-        if (cfgEnableMftMchMatchingAnalysis && convertedTrackWithCorrOk)) {
+        if (cfgEnableMftMchMatchingAnalysis && convertedTrackWithCorrOk) {
           double refPlaneZ[2] = {cfgRefPlaneZMFT, cfgRefPlaneZMCH};
 
           std::shared_ptr<THnSparse> dxPlots[2]{registry.get<THnSparse>(HIST("matching/dxAtMFT")), registry.get<THnSparse>(HIST("matching/dxAtMCH"))};
