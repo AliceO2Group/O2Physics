@@ -718,7 +718,7 @@ void HFInvMassFitter::drawReflection(TVirtualPad* pad)
 }
 
 // calculate signal yield via bin counting
-void HFInvMassFitter::countSignal(double& signal, double& signalErr) const
+void HFInvMassFitter::countSignal(double& signal, double& errSignal) const
 {
   const auto& histoForCounting = mTypeOfBkgPdf == NoBkg ? mInvMassFrame->getHist("data_c") : mResidualHist;
 
@@ -745,7 +745,7 @@ void HFInvMassFitter::countSignal(double& signal, double& signalErr) const
   sumErrorsSquare += square(histoForCounting->GetErrorY(binForMaxSgn - 1) * binForMaxSgnFraction);
 
   signal = sumValues;
-  signalErr = std::sqrt(sumErrorsSquare);
+  errSignal = std::sqrt(sumErrorsSquare);
 }
 
 // calculate signal yield
@@ -796,11 +796,10 @@ std::pair<double, double> HFInvMassFitter::getRangesOfSignal() const
 {
   if (mTypeOfSgnPdf == DoubleSidedCrystalBall) {
     return std::make_pair(mMinMass, mMaxMass);
-  } else {
-    const double mean = mRooMeanSgn->getVal();
-    const double sigma = mRooSecSigmaSgn->getVal();
-    return std::make_pair(mean - mNSigmaForSgn * sigma, mean + mNSigmaForSgn * sigma);
   }
+  const double mean = mRooMeanSgn->getVal();
+  const double sigma = mRooSecSigmaSgn->getVal();
+  return std::make_pair(mean - mNSigmaForSgn * sigma, mean + mNSigmaForSgn * sigma);
 }
 
 // Create Background Fit Function

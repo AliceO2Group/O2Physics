@@ -88,9 +88,9 @@ class HFInvMassFitter : public TNamed
   void setUseLikelihoodFit() { mFitOption = "L,E"; }
   void setUseChi2Fit() { mFitOption = "Chi2"; }
   void setFitOption(const std::string& opt) { mFitOption = opt; }
-  RooAbsPdf* createBackgroundFitFunction(RooWorkspace* w1) const;
-  RooAbsPdf* createSignalFitFunction(RooWorkspace* w1);
-  RooAbsPdf* createReflectionFitFunction(RooWorkspace* w1) const;
+  RooAbsPdf* createBackgroundFitFunction(RooWorkspace* workspace) const;
+  RooAbsPdf* createSignalFitFunction(RooWorkspace* workspace);
+  RooAbsPdf* createReflectionFitFunction(RooWorkspace* workspace) const;
 
   void setFitRange(double minValue, double maxValue);
   void setFitFunctions(int fitTypeBkg, int fitTypeSgn);
@@ -129,8 +129,8 @@ class HFInvMassFitter : public TNamed
   void setDscbNRInitialValue(double value) { mDscbNRInitialValue = value; }
   void setDscbNRLowLimit(double value) { mDscbNRLowLimit = value; }
   void setDscbNRUpLimit(double value) { mDscbNRUpLimit = value; }
-  void plotBkg(RooAbsPdf* mFunc, Color_t color = kRed);
-  void plotRefl(RooAbsPdf* mFunc);
+  void plotBkg(RooAbsPdf* pdf, Color_t color = kRed);
+  void plotRefl(RooAbsPdf* pdf);
   void setReflFuncFixed();
   void doFit();
   void setInitialReflOverSgn(double reflOverSgn) { mReflOverSgn = reflOverSgn; }
@@ -171,16 +171,16 @@ class HFInvMassFitter : public TNamed
   [[nodiscard]] double getMinNll() const { return mMinNll; }
   [[nodiscard]] double getSgnGlobalCorrelCoeff() const { return mSgnGlobalCorrelCoeff; }
   [[nodiscard]] TH2* getCovCorrMatrix() const { return mCovCorrMatrix; }
-  void calculateSignal(double& signal, double& signalErr) const;
-  void countSignal(double& signal, double& signalErr) const;
-  void calculateBackground(double& bkg, double& bkgErr) const;
-  void calculateSignificance(double& significance, double& significanceErr) const;
+  void calculateSignal(double& signal, double& errSignal) const;
+  void countSignal(double& signal, double& errSignal) const;
+  void calculateBackground(double& bkg, double& errBkg) const;
+  void calculateSignificance(double& significance, double& errSignificance) const;
   void checkForSignal(double& estimatedSignal);
   void calculateFitToDataRatio() const;
-  void drawFit(TVirtualPad* c, const std::vector<std::string>& plotLabels, bool writeParInfo = true);
-  void drawResidual(TVirtualPad* c);
-  void drawRatio(TVirtualPad* c);
-  void drawReflection(TVirtualPad* c);
+  void drawFit(TVirtualPad* pad, const std::vector<std::string>& plotLabels, bool writeParInfo = true);
+  void drawResidual(TVirtualPad* pad);
+  void drawRatio(TVirtualPad* pad);
+  void drawReflection(TVirtualPad* pad);
 
  private:
   HFInvMassFitter(const HFInvMassFitter& source);

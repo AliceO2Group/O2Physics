@@ -52,8 +52,6 @@
 
 using namespace rapidjson;
 
-constexpr int UndefValueInt{-999};
-
 void runMassFitter(const std::string& configFileName = "config_massfitter.json");
 
 TFile* openFileWithNullptrCheck(const std::string& fileName, const std::string& option = "read");
@@ -88,8 +86,8 @@ void runMassFitter(const std::string& configFileName)
   }
 
   Document config;
-  char readBuffer[65536];
-  FileReadStream is(configFile, readBuffer, sizeof(readBuffer));
+  std::array<char, 65536> readBuffer{};
+  FileReadStream is(configFile, readBuffer.data(), readBuffer.size());
   config.ParseStream(is);
   fclose(configFile);
 
@@ -97,12 +95,12 @@ void runMassFitter(const std::string& configFileName)
     throw std::runtime_error("ERROR: Parsing the configuration json file failed. Check the config for correct formatting");
   }
 
-  bool const isMc = readJsonField<bool>(config, "IsMC");
-  bool const writeSignalPar = readJsonField<bool>(config, "WriteSignalPar", true);
-  std::string const particleName = readJsonField<std::string>(config, "Particle");
-  std::string const collisionSystem = readJsonField<std::string>(config, "CollisionSystem", "");
-  std::string const inputFileName = readJsonField<std::string>(config, "InFileName");
-  std::string const reflFileName = readJsonField<std::string>(config, "ReflFileName", "");
+  auto const isMc = readJsonField<bool>(config, "IsMC");
+  auto const writeSignalPar = readJsonField<bool>(config, "WriteSignalPar", true);
+  auto const particleName = readJsonField<std::string>(config, "Particle");
+  auto const collisionSystem = readJsonField<std::string>(config, "CollisionSystem", "");
+  auto const inputFileName = readJsonField<std::string>(config, "InFileName");
+  auto const reflFileName = readJsonField<std::string>(config, "ReflFileName", "");
   TString outputFileName = readJsonField<std::string>(config, "OutFileName", "mInvFit.root");
 
   std::vector<std::string> inputHistoName;
@@ -149,23 +147,23 @@ void runMassFitter(const std::string& configFileName)
   readJsonVector(fdSecPeakHistoName, config, "FDSecPeakHistoName");
   readJsonVector(signalSecPeakHistoName, config, "SignalSecPeakHistoName");
 
-  const bool fixMean = readJsonField<bool>(config, "FixMean", false);
-  const std::string meanFile = readJsonField<std::string>(config, "MeanFile", "");
+  const auto fixMean = readJsonField<bool>(config, "FixMean", false);
+  const auto meanFile = readJsonField<std::string>(config, "MeanFile", "");
   readJsonVectorFlexible(fixMeanManual, config, nHistograms, "FixMeanManual");
 
-  const bool fixSigma = readJsonField<bool>(config, "FixSigma", false);
-  const std::string sigmaFile = readJsonField<std::string>(config, "SigmaFile", "");
+  const auto fixSigma = readJsonField<bool>(config, "FixSigma", false);
+  const auto sigmaFile = readJsonField<std::string>(config, "SigmaFile", "");
   readJsonVectorFlexible(fixSigmaManual, config, nHistograms, "FixSigmaManual");
 
-  const bool fixSecondSigma = readJsonField<bool>(config, "FixSecondSigma", false);
-  const std::string secondSigmaFile = readJsonField<std::string>(config, "SecondSigmaFile", "");
+  const auto fixSecondSigma = readJsonField<bool>(config, "FixSecondSigma", false);
+  const auto secondSigmaFile = readJsonField<std::string>(config, "SecondSigmaFile", "");
   readJsonVectorFlexible(fixSecondSigmaManual, config, nHistograms, "FixSecondSigmaManual");
 
-  const bool fixFracDoubleGaus = readJsonField<bool>(config, "FixFracDoubleGaus", false);
-  const std::string fracDoubleGausFile = readJsonField<std::string>(config, "FracDoubleGausFile", "");
+  const auto fixFracDoubleGaus = readJsonField<bool>(config, "FixFracDoubleGaus", false);
+  const auto fracDoubleGausFile = readJsonField<std::string>(config, "FracDoubleGausFile", "");
   readJsonVectorFlexible(fixFracDoubleGausManual, config, nHistograms, "FixFracDoubleGausManual");
 
-  const bool fixDscbTailParams = readJsonField<bool>(config, "FixDscbTailParams", false);
+  const auto fixDscbTailParams = readJsonField<bool>(config, "FixDscbTailParams", false);
 
   const TString sliceVarName = readJsonField<std::string>(config, "SliceVarName");
   const TString sliceVarUnit = readJsonField<std::string>(config, "SliceVarUnit");
@@ -178,18 +176,18 @@ void runMassFitter(const std::string& configFileName)
 
   readJsonVectorFlexible(nRebin, config, nHistograms, "Rebin", true);
 
-  bool const includeSecPeak = readJsonField<bool>(config, "InclSecPeak", false);
-  bool const useLikelihood = readJsonField<bool>(config, "UseLikelihood");
+  auto const includeSecPeak = readJsonField<bool>(config, "InclSecPeak", false);
+  auto const useLikelihood = readJsonField<bool>(config, "UseLikelihood");
 
   readJsonVectorFlexible(bkgFunc, config, nHistograms, "BkgFunc", true);
   readJsonVectorFlexible(sgnFunc, config, nHistograms, "SgnFunc", true);
 
-  const bool enableRefl = readJsonField<bool>(config, "EnableRefl", false);
-  const bool drawBgPrefit = readJsonField<bool>(config, "DrawBgPrefit", true);
-  const bool highlightPeakRegion = readJsonField<bool>(config, "HighlightPeakRegion", true);
-  const int randomSeed = readJsonField<int>(config, "RandomSeed", -1);
-  const double nSigmaForSideband = readJsonField<double>(config, "NSigmaForSideband", 3.);
-  const double nSigmaForSignal = readJsonField<double>(config, "NSigmaForSignal", 3.);
+  const auto enableRefl = readJsonField<bool>(config, "EnableRefl", false);
+  const auto drawBgPrefit = readJsonField<bool>(config, "DrawBgPrefit", true);
+  const auto highlightPeakRegion = readJsonField<bool>(config, "HighlightPeakRegion", true);
+  const auto randomSeed = readJsonField<int>(config, "RandomSeed", -1);
+  const auto nSigmaForSideband = readJsonField<double>(config, "NSigmaForSideband", 3.);
+  const auto nSigmaForSignal = readJsonField<double>(config, "NSigmaForSignal", 3.);
 
   readJsonVector(dscbAlphaLInitial, config, "DscbAlphaLInitial");
   readJsonVector(dscbAlphaLLower, config, "DscbAlphaLLower");
@@ -305,13 +303,13 @@ void runMassFitter(const std::string& configFileName)
     {"LcToPK0s", {"pK^{0}_{s}", "Lambda_c+", "#Lambda_{c}^{+}", "pK^{0}_{s}"}},
     {"Dstar", {"D^{0}pi^{+}", "D*+", "D^{*+}", "D^{0}#pi^{+}"}},
     {"XicToXiPiPi", {"#Xi#pi#pi", "Xi_c+", "#Xi_{c}^{+}", "#Xi^{-}#pi^{+}#pi^{+}"}}};
-  if (particles.find(particleName.c_str()) == particles.end()) {
+  if (particles.find(particleName) == particles.end()) {
     throw std::runtime_error("ERROR: only Dplus, D0, Ds, LcToPKPi, LcToPK0s, Dstar and XicToXiPiPi particles supported! Exit");
   }
   const auto& particle = particles[particleName.c_str()];
   const std::string massAxisTitle = "#it{M}(" + particle.decayProducts + ") (GeV/#it{c}^{2})";
   const double massPDG = TDatabasePDG::Instance()->GetParticle(particle.pdgName.c_str())->Mass();
-  const std::vector<std::string> plotLabels = {(particle.decayFormulaLhs + " #rightarrow " + particle.decayFormulaRhs + " + c.c.").c_str(), collisionSystem};
+  const std::vector<std::string> plotLabels = {particle.decayFormulaLhs + " #rightarrow " + particle.decayFormulaRhs + " + c.c.", collisionSystem};
 
   // load inv-mass histograms
   auto* inputFile = openFileWithNullptrCheck(inputFileName);
@@ -395,14 +393,14 @@ void runMassFitter(const std::string& configFileName)
     NFitResultsToSave
   };
   auto* hFitConfig = new TH2F("hFitConfig", "Fit Configurations", NConfigsToSave - 1, 0, NConfigsToSave - 1, nHistograms, sliceVarLimits.data());
-  const char* hFitConfigXLabel[NConfigsToSave - 1] = {"mass min", "mass max", "rebin num", "fix sigma", "bkg func", "sgn func", "rnd seed"};
+  constexpr std::array<const char*, NConfigsToSave - 1> HFitConfigXLabel = {"mass min", "mass max", "rebin num", "fix sigma", "bkg func", "sgn func", "rnd seed"};
   auto* hFitResult = new TH2F("hFitResult", "Fit Result", NFitResultsToSave - 1, 0, NFitResultsToSave - 1, nHistograms, sliceVarLimits.data());
-  const char* hFitResultXLabel[NFitResultsToSave - 1] = {"status", "cov qual", "edm", "minNLL", "N Sig GCC"};
+  constexpr std::array<const char*, NFitResultsToSave - 1> HFitResultXLabel = {"status", "cov qual", "edm", "minNLL", "N Sig GCC"};
   for (int i = 0; i < NConfigsToSave - 1; i++) {
-    hFitConfig->GetXaxis()->SetBinLabel(i + 1, hFitConfigXLabel[i]);
+    hFitConfig->GetXaxis()->SetBinLabel(i + 1, HFitConfigXLabel[i]);
   }
   for (int i = 0; i < NFitResultsToSave - 1; i++) {
-    hFitResult->GetXaxis()->SetBinLabel(i + 1, hFitResultXLabel[i]);
+    hFitResult->GetXaxis()->SetBinLabel(i + 1, HFitResultXLabel[i]);
   }
   for (const auto& h : {hFitConfig, hFitResult}) {
     h->SetStats(false);
@@ -451,7 +449,7 @@ void runMassFitter(const std::string& configFileName)
   TH1* hSecondSigmaToFix = getHistToFix(fixSecondSigma, fixSecondSigmaManual, secondSigmaFile, "SecSigma");
   TH1* hFracDoubleGausToFix = getHistToFix(fixFracDoubleGaus, fixFracDoubleGausManual, fracDoubleGausFile, "FracDoubleGaus");
 
-  int canvasSize[2] = {1920, 1080};
+  std::array<int, 2> canvasSize = {1920, 1080};
   if (nHistograms == 1) {
     canvasSize[0] = 500;
     canvasSize[1] = 500;
@@ -511,7 +509,7 @@ void runMassFitter(const std::string& configFileName)
 
     double reflOverSgn = 0;
 
-    HFInvMassFitter* massFitter = new HFInvMassFitter(hMass[iSliceVar], massMin[iSliceVar], massMax[iSliceVar], bkgFunc[iSliceVar], sgnFunc[iSliceVar], randomSeed);
+    auto* massFitter = new HFInvMassFitter(hMass[iSliceVar], massMin[iSliceVar], massMax[iSliceVar], bkgFunc[iSliceVar], sgnFunc[iSliceVar], randomSeed);
     massFitter->setDrawBgPrefit(drawBgPrefit);
     massFitter->setNumberOfSigmaForSidebands(nSigmaForSideband);
     massFitter->setNumberOfSigmaForSignal(nSigmaForSignal);
@@ -525,27 +523,27 @@ void runMassFitter(const std::string& configFileName)
       massFitter->setUseChi2Fit();
     }
 
-    auto setFixedValue = [&iSliceVar](bool const& isFix, std::vector<double> const& fixManual, const TH1* histToFix, std::function<void(double)> setFunc, std::string const& var) -> void {
+    auto setFixedValue = [&iSliceVar, massFitter](bool const& isFix, std::vector<double> const& fixManual, const TH1* histToFix, void (HFInvMassFitter::*setter)(double), std::string const& var) -> void {
       if (isFix) {
         if (fixManual.empty() && histToFix == nullptr) {
           throw std::runtime_error("Histogram to fix " + var + " is null while isFix==true and fixManual is empty");
         }
         const auto valueToFix = fixManual.empty() ? histToFix->GetBinContent(iSliceVar + 1) : fixManual[iSliceVar];
-        setFunc(valueToFix);
+        (massFitter->*setter)(valueToFix);
         printf("*****************************\n");
         printf("FIXED %s: %f\n", var.data(), valueToFix);
         printf("*****************************\n");
       }
     };
 
-    setFixedValue(fixMean, fixMeanManual, hMeanToFix, std::bind(&HFInvMassFitter::setFixGaussianMean, massFitter, std::placeholders::_1), "MEAN");
-    setFixedValue(fixSigma, fixSigmaManual, hSigmaToFix, std::bind(&HFInvMassFitter::setFixGaussianSigma, massFitter, std::placeholders::_1), "SIGMA");
-    setFixedValue(fixSecondSigma, fixSecondSigmaManual, hSecondSigmaToFix, std::bind(&HFInvMassFitter::setFixSecondGaussianSigma, massFitter, std::placeholders::_1), "SECOND SIGMA");
-    setFixedValue(fixFracDoubleGaus, fixFracDoubleGausManual, hFracDoubleGausToFix, std::bind(&HFInvMassFitter::setFixFrac2Gaus, massFitter, std::placeholders::_1), "FRAC DOUBLE GAUS");
-    setFixedValue(fixDscbTailParams, dscbAlphaLInitial, nullptr, std::bind(&HFInvMassFitter::setFixDscbAlphaL, massFitter, std::placeholders::_1), "DSCB ALPHA LEFT");
-    setFixedValue(fixDscbTailParams, dscbAlphaRInitial, nullptr, std::bind(&HFInvMassFitter::setFixDscbAlphaR, massFitter, std::placeholders::_1), "DSCB ALPHA RIGHT");
-    setFixedValue(fixDscbTailParams, dscbNLInitial, nullptr, std::bind(&HFInvMassFitter::setFixDscbNL, massFitter, std::placeholders::_1), "DSCB N LEFT");
-    setFixedValue(fixDscbTailParams, dscbNRInitial, nullptr, std::bind(&HFInvMassFitter::setFixDscbNR, massFitter, std::placeholders::_1), "DSCB N RIGHT");
+    setFixedValue(fixMean, fixMeanManual, hMeanToFix, &HFInvMassFitter::setFixGaussianMean, "MEAN");
+    setFixedValue(fixSigma, fixSigmaManual, hSigmaToFix, &HFInvMassFitter::setFixGaussianSigma, "SIGMA");
+    setFixedValue(fixSecondSigma, fixSecondSigmaManual, hSecondSigmaToFix, &HFInvMassFitter::setFixSecondGaussianSigma, "SECOND SIGMA");
+    setFixedValue(fixFracDoubleGaus, fixFracDoubleGausManual, hFracDoubleGausToFix, &HFInvMassFitter::setFixFrac2Gaus, "FRAC DOUBLE GAUS");
+    setFixedValue(fixDscbTailParams, dscbAlphaLInitial, nullptr, &HFInvMassFitter::setFixDscbAlphaL, "DSCB ALPHA LEFT");
+    setFixedValue(fixDscbTailParams, dscbAlphaRInitial, nullptr, &HFInvMassFitter::setFixDscbAlphaR, "DSCB ALPHA RIGHT");
+    setFixedValue(fixDscbTailParams, dscbNLInitial, nullptr, &HFInvMassFitter::setFixDscbNL, "DSCB N LEFT");
+    setFixedValue(fixDscbTailParams, dscbNRInitial, nullptr, &HFInvMassFitter::setFixDscbNR, "DSCB N RIGHT");
 
     if (!isMc && enableRefl) {
       reflOverSgn = hMassSgn[iSliceVar]->Integral(hMassSgn[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassSgn[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999));
@@ -578,7 +576,7 @@ void runMassFitter(const std::string& configFileName)
       printf("Warinig! Exception \"%s\" caught while doing fit of the histogram no. %d. The fitting process will be continued without it.\n", e.what(), iSliceVar);
     }
 
-    auto drawOnCanvas = [&](std::vector<TCanvas*>& canvas, std::function<void()> drawer) {
+    auto drawOnCanvas = [&](std::vector<TCanvas*>& canvas, const std::function<void()>& drawer) {
       if (nHistograms > 1) {
         canvas[iCanvas]->cd(iSliceVar - NCanvasesMax * iCanvas + 1);
       } else {
@@ -853,9 +851,8 @@ void readJsonVectorFlexible(std::vector<T>& vec, const Document& config, int nHi
   if (!config.HasMember(fieldName.c_str())) {
     if (isRequired) {
       throw std::runtime_error("readJsonVectorFlexible(): missing required field " + fieldName);
-    } else {
-      return;
     }
+    return;
   }
   if (config[fieldName.c_str()].IsArray()) {
     readJsonVector(vec, config, fieldName);
