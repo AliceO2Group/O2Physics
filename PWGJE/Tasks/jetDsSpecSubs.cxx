@@ -35,9 +35,9 @@
 #include <TVector3.h>
 
 #include <cmath>
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <stdexcept>
 
 using namespace o2;
 using namespace o2::framework;
