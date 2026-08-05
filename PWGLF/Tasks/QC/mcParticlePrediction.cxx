@@ -59,7 +59,6 @@ static const std::vector<std::string> parameterNames{"Enable"};
 static constexpr int nParameters = 1;
 static const int defaultParticles[PIDExtended::NIDsTot][nParameters]{{0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {1}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}};
 bool enabledParticlesArray[PIDExtended::NIDsTot];
-
 static constexpr bool isResonance(PIDExtended::ID id)
 {
   return id == PIDExtended::Phi ||
@@ -81,18 +80,18 @@ struct Estimators {
   static constexpr estID FDDAC = 6;
   static constexpr estID ZNA = 7;
   static constexpr estID ZNC = 8;
-  // static constexpr estID ZEM1 = 9;
-  // static constexpr estID ZEM2 = 10;
-  // static constexpr estID ZPA = 11;
-  // static constexpr estID ZPC = 12;
-  static constexpr estID ITSIB = 9;
-  static constexpr estID ETA05 = 10;
-  static constexpr estID ETA08 = 11;
-  static constexpr estID V0A = 12;             // (Run2)
-  static constexpr estID V0C = 13;             // (Run2)
-  static constexpr estID V0AC = 14;            // (Run2 V0M)
-  static constexpr estID ImpactParameter = 15; // (Run2 V0M)
-  static constexpr estID nEstimators = 16;
+  static constexpr estID ZEM1 = 9;
+  static constexpr estID ZEM2 = 10;
+  static constexpr estID ZPA = 11;
+  static constexpr estID ZPC = 12;
+  static constexpr estID ITSIB = 13;
+  static constexpr estID ETA05 = 14;
+  static constexpr estID ETA08 = 15;
+  static constexpr estID V0A = 16;             // (Run2)
+  static constexpr estID V0C = 17;             // (Run2)
+  static constexpr estID V0AC = 18;            // (Run2 V0M)
+  static constexpr estID ImpactParameter = 19; // (Run2 V0M)
+  static constexpr estID nEstimators = 20;
 
   static constexpr const char* estimatorNames[nEstimators] = {"FT0A",
                                                               "FT0C",
@@ -103,6 +102,10 @@ struct Estimators {
                                                               "FDDAC",
                                                               "ZNA",
                                                               "ZNC",
+                                                              "ZEM1",
+                                                              "ZEM2",
+                                                              "ZPA",
+                                                              "ZPC",
                                                               "ITSIB",
                                                               "ETA05",
                                                               "ETA08",
@@ -132,6 +135,10 @@ static const int defaultEstimators[Estimators::nEstimators][nParameters]{{0},  /
                                                                          {0},  // FDDAC
                                                                          {0},  // ZNA
                                                                          {0},  // ZNC
+                                                                         {0},  // ZEM1
+                                                                         {0},  // ZEM2
+                                                                         {0},  // ZPA
+                                                                         {0},  // ZPC
                                                                          {0},  // ITSIB
                                                                          {0},  // ETA05
                                                                          {0},  // ETA08
@@ -477,6 +484,18 @@ struct McParticlePrediction {
     if (enabledEstimatorsArray[Estimators::ZNC]) {
       nMult[Estimators::ZNC] = mCounter.countZNC(mcParticles);
     }
+    if (enabledEstimatorsArray[Estimators::ZEM1]) {
+      nMult[Estimators::ZEM1] = 0; // Not implemented yet
+    }
+    if (enabledEstimatorsArray[Estimators::ZEM2]) {
+      nMult[Estimators::ZEM2] = 0; // Not implemented yet
+    }
+    if (enabledEstimatorsArray[Estimators::ZPA]) {
+      nMult[Estimators::ZPA] = 0; // Not implemented yet
+    }
+    if (enabledEstimatorsArray[Estimators::ZPC]) {
+      nMult[Estimators::ZPC] = 0; // Not implemented yet
+    }
     if (enabledEstimatorsArray[Estimators::ITSIB] || enableVsITSHistograms) {
       nMult[Estimators::ITSIB] = mCounter.countITSIB(mcParticles);
     }
@@ -580,7 +599,7 @@ struct McParticlePrediction {
         histos.fill(HIST("particles/y/undefined"), particle.y());
       }
 
-      if (std::abs(particle.pt()) < ptCut.value) { // Fill the eta and rapidity histograms only for particles above the pt cut
+      if (std::abs(particle.pt()) > ptCut.value) { // Fill the eta and rapidity histograms only for particles above the pt cut
         for (int i = 0; i < Estimators::nEstimators; i++) {
           if (!enabledEstimatorsArray[i]) {
             continue;
