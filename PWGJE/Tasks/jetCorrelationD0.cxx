@@ -36,6 +36,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <math.h>
@@ -86,8 +87,7 @@ DECLARE_SOA_COLUMN(D0MD, d0MD, float);
 DECLARE_SOA_COLUMN(D0PtD, d0PtD, float);
 DECLARE_SOA_COLUMN(D0EtaD, d0EtaD, float);
 DECLARE_SOA_COLUMN(D0PhiD, d0PhiD, float);
-DECLARE_SOA_COLUMN(D0MatchedFrom, d0MatchedFrom, int);
-DECLARE_SOA_COLUMN(D0SelectedAs, d0SelectedAs, int);
+DECLARE_SOA_COLUMN(D0Category, d0Category, int);
 DECLARE_SOA_COLUMN(D0DecayChannel, d0DecayChannel, int8_t);
 } // namespace d0Info
 
@@ -114,9 +114,7 @@ DECLARE_SOA_TABLE(D0McDTables, "AOD", "D0MCDTABLE",
                   d0Info::D0Eta,
                   d0Info::D0Phi,
                   d0Info::D0Y,
-                  d0Info::D0MatchedFrom,
-                  d0Info::D0SelectedAs,
-                  d0Info::D0DecayChannel);
+                  d0Info::D0Category);
 
 DECLARE_SOA_TABLE(D0McPTables, "AOD", "D0MCPTABLE",
                   o2::soa::Index<>,
@@ -357,6 +355,12 @@ struct JetCorrelationD0 {
 
       int matchedFrom = 0;
       int selectedAs = 0;
+      int category = -1; // -1 undefined, 0 signal, 1 reflection, 2-5 correlated backgrounds
+      constexpr int kD0ToKPi = 1;
+      constexpr int kD0ToKPiPi = 2;
+      constexpr int kD0ToPiPi = 3;
+      constexpr int kD0ToPiPiPi = 4;
+      constexpr int kD0ToKK = 5;
 
       if (d0DecayChannel > 0) { // matched to a D0 on truth level (any channel)
         matchedFrom = 1;
@@ -368,6 +372,19 @@ struct JetCorrelationD0 {
       } else if (d0Candidate.candidateSelFlag() & BIT(1)) { // CandidateSelFlag == BIT(1) -> selected as D0bar
         selectedAs = -1;
       }
+      if ((std::abs(d0DecayChannel) == kD0ToKPi) && (matchedFrom != 0) && (selectedAs == matchedFrom)) {
+        category = 0; // signal -> D0 or D0bar, π+ K−
+      } else if ((d0DecayChannel == kD0ToKPi) && (selectedAs == -1 * matchedFrom)) {
+        category = 1; // reflection
+      } else if (d0DecayChannel == kD0ToKPiPi) {
+        category = 2; // corr bkg: π+ K− π0
+      } else if (d0DecayChannel == kD0ToPiPi) {
+        category = 3; // corr bkg: π+ π−
+      } else if (d0DecayChannel == kD0ToPiPiPi) {
+        category = 4; // corr bkg: π+ π− π0
+      } else if (d0DecayChannel == kD0ToKK) {
+        category = 5; // corr bkg: K+ K−
+      }
 
       tableD0McDetector(tableCollision.lastIndex(), // might want to add some more detector level D0 quantities like prompt or non prompt info
                         scores[2],
@@ -378,9 +395,7 @@ struct JetCorrelationD0 {
                         d0Candidate.eta(),
                         d0Candidate.phi(),
                         d0Candidate.y(),
-                        matchedFrom,
-                        selectedAs,
-                        d0DecayChannel);
+                        category);
       for (const auto& jet : jets) {
         if (jet.pt() < jetPtCutMin) {
           continue;
