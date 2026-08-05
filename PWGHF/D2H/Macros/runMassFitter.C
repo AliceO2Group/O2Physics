@@ -889,7 +889,11 @@ int main(int argc, const char* argv[])
 
   const std::string configFileName = argv[1];
 
-  runMassFitter(configFileName);
-
-  return 0;
+  try {
+    runMassFitter(configFileName);
+    return 0;
+  } catch (const std::exception& e) {
+    printf("Error: Exception \"%s\" caught during runMassFitter() call. Exit.\n", e.what());
+    return 1;
+  }
 }
