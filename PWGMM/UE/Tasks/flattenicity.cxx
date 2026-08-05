@@ -9,24 +9,24 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include <Framework/ASoAHelpers.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/InitContext.h>
-#include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/Track.h>
-
 #include <cmath>
 #include <vector>
+
+#include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/Configurable.h"
+#include "Framework/InitContext.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+
+#include "ReconstructionDataFormats/Track.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -72,10 +72,10 @@ struct flattenicityTask {
     // Define histograms
     AxisSpec flatBins = {40, 0.0, 1.0, "#rho"};
     AxisSpec nchBins = {100, -0.5, 99.5, "N_{ch}"};
-
-    registry.add("hFlattenicityTruth", "Truth flattenicity; 1-#rho; Events",
+    
+    registry.add("hFlattenicityTruth", "Truth flattenicity; 1-#rho; Events", 
                  HistType::kTH1D, {flatBins});
-    registry.add("hFlattenicityReco", "Reco flattenicity; 1-#rho; Events",
+    registry.add("hFlattenicityReco", "Reco flattenicity; 1-#rho; Events", 
                  HistType::kTH1D, {flatBins});
     registry.add("hFlattenicityCorrelation", "Truth vs Reco; 1-#rho_{truth}; 1-#rho_{reco}",
                  HistType::kTH2D, {flatBins, flatBins});
@@ -104,54 +104,47 @@ struct flattenicityTask {
   // --- Flattenicity calculation ---
   float calculateFlattenicity(const std::vector<float>& counts)
   {
-    if (counts.size() != N_CELL)
-      return -1;
-
+    if (counts.size() != N_CELL) return -1;
+    
     float total = 0;
-    for (auto c : counts)
-      total += c;
-    if (total <= 0)
-      return -1;
-
+    for (auto c : counts) total += c;
+    if (total <= 0) return -1;
+    
     float mean = total / N_CELL;
-    if (mean <= 0)
-      return -1;
-
+    if (mean <= 0) return -1;
+    
     float sumSq = 0;
     for (auto c : counts) {
       sumSq += (c - mean) * (c - mean);
     }
-
+    
     float rho = std::sqrt(sumSq / (N_CELL * N_CELL)) / mean;
     return 1.0f - rho;
   }
 
   // --- Process Data ---
-  void processData(aod::Collision const& collision,
+  void processData(aod::Collision const& collision, 
                    soa::Filtered<aod::Tracks> const& tracks,
                    aod::FT0s const& ft0s)
   {
     // Event selection (Paola/Jesus)
-    if (!collision.sel8())
-      return;
-    if (std::abs(collision.posZ()) >= 10.0f)
-      return;
-
+    if (!collision.sel8()) return;
+    if (std::abs(collision.posZ()) >= 10.0f) return;
+    
     // Track loop for Nch
     int nch = 0;
     for (auto& track : tracks) {
-      if (!mySelectionPrim.IsSelected(track))
-        continue;
+      if (!mySelectionPrim.IsSelected(track)) continue;
       nch++;
     }
     registry.fill(HIST("hNch"), nch);
-
+    
     // FT0 flattenicity
     auto ft0 = collision.ft0();
     if (ft0.hasAmplitudeA() && ft0.hasAmplitudeC()) {
       auto ampA = ft0.amplitudeA();
       auto ampC = ft0.amplitudeC();
-
+      
       std::vector<float> counts(N_CELL, 0.0f);
       for (int i = 0; i < ampA.size() && i < N_CH_A; ++i) {
         counts[i] = ampA[i];
@@ -159,7 +152,7 @@ struct flattenicityTask {
       for (int i = 0; i < ampC.size() && i < N_CH_C; ++i) {
         counts[N_CH_A + i] = ampC[i];
       }
-
+      
       float flat = calculateFlattenicity(counts);
       if (flat >= 0) {
         registry.fill(HIST("hFlattenicityReco"), flat);
