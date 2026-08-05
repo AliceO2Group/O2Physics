@@ -228,14 +228,15 @@ void HFInvMassFitter::doFit()
 
   const double integralHisto = integrateHistoInvMassOverWorkspaceRanges({"full"});
   // fit MC or Data
+  RooFitResult* fitResult{nullptr};
   if (mTypeOfBkgPdf == NoBkg) { // MC
     const ParameterRanges rooNSgnParamRanges{0.5 * integralHisto, 1.5 * integralHisto, integralHisto};
     mRooNSgn = new RooRealVar("mRooNSig", "number of signal", randomizeInitialParameter(rooNSgnParamRanges), rooNSgnParamRanges.lower, rooNSgnParamRanges.upper); // signal yield
     mTotalPdf = new RooAddPdf("mMCFunc", "MC fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));                                                          // create total pdf
     if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
-      mTotalPdf->chi2FitTo(dataHistogram, Range("full"));
+      fitResult = mTotalPdf->chi2FitTo(dataHistogram, Range("full"), Save());
     } else {
-      mTotalPdf->fitTo(dataHistogram, Range("full"));
+      fitResult = mTotalPdf->fitTo(dataHistogram, Range("full"), Save());
     }
     RooAbsReal* signalIntegralMc = mTotalPdf->createIntegral(*mass, NormSet(*mass), Range("signal")); // sig yield from fit
     mIntegralSgn = signalIntegralMc->getValV();
@@ -276,7 +277,7 @@ void HFInvMassFitter::doFit()
     calculateBackground(mBkgYield, mBkgYieldErr); // BG's absolute integral in "bkg" range
 
     const ParameterRanges rooNSgnParamRanges{0.1 * estimatedSignal, 10 * estimatedSignal, estimatedSignal};
-    mRooNSgn = new RooRealVar("mNSgn", "number of signal", randomizeInitialParameter(rooNSgnParamRanges), rooNSgnParamRanges.lower, rooNSgnParamRanges.upper); // estimated signal yield
+    mRooNSgn = new RooRealVar("mRooNSig", "number of signal", randomizeInitialParameter(rooNSgnParamRanges), rooNSgnParamRanges.lower, rooNSgnParamRanges.upper); // estimated signal yield
     if (mFixedRawYield > 0) {
       mRooNSgn->setVal(mFixedRawYield); // fixed signal yield
       mRooNSgn->setConstant(true);
@@ -308,19 +309,11 @@ void HFInvMassFitter::doFit()
       mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal pdf", RooArgList(*bkgPdf, *sgnPdf), RooArgList(*mRooNBkg, *mRooNSgn));
     }
 
-    RooFitResult* fitResult{nullptr};
     if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
       fitResult = mTotalPdf->chi2FitTo(dataHistogram, Save());
     } else {
       fitResult = mTotalPdf->fitTo(dataHistogram, Save());
     }
-
-    mFitStatus = fitResult->status();
-    mCovQual = fitResult->covQual();
-    mEdm = fitResult->edm();
-    mMinNll = fitResult->minNll();
-    mSgnGlobalCorrelCoeff = fitResult->globalCorr("mNSgn");
-    mCovCorrMatrix = fillCovCorrMatrix(fitResult);
 
     plotBkg(mTotalPdf);
     mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
@@ -353,6 +346,12 @@ void HFInvMassFitter::doFit()
     mRatioFrame = mass->frame(Title(Form("%s", mHistoInvMass->GetTitle())));
     calculateFitToDataRatio();
   }
+  mFitStatus = fitResult->status();
+  mCovQual = fitResult->covQual();
+  mEdm = fitResult->edm();
+  mMinNll = fitResult->minNll();
+  mSgnGlobalCorrelCoeff = fitResult->globalCorr("mRooNSig");
+  mCovCorrMatrix = fillCovCorrMatrix(fitResult);
 }
 
 void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
