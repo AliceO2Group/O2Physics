@@ -471,11 +471,7 @@ struct JetCorrelationD0 {
       if (d0Candidate.pt() < d0PtCutMin) { // once settled on a mlcut, then add the lower bound of the systematics as a cut here
         continue;
       }
-      bool isMatched = false;
-      const auto& d0Particle = jethfutilities::matchedHFParticle(d0Candidate, tracks, particles, isMatched);
-      if (!isMatched) {
-        continue;
-      }
+      const auto& d0Particle = jethfutilities::matchedHFParticle(d0Candidate, tracks, particles);
       for (const auto& McDJet : McDJets) {
         if (McDJet.pt() < jetPtCutMin) {
           continue;
