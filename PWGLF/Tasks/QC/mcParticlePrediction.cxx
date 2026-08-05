@@ -559,7 +559,7 @@ struct McParticlePrediction {
         histos.fill(HIST("particles/y/undefined"), particle.y());
       }
 
-      if (std::abs(particle.pt()) < ptCut.value) { // Fill the eta and rapidity histograms only for particles above the pt cut
+      if (std::abs(particle.pt()) > ptCut.value) { // Fill the eta and rapidity histograms only for particles above the pt cut
         for (int i = 0; i < Estimators::nEstimators; i++) {
           if (!enabledEstimatorsArray[i]) {
             continue;
