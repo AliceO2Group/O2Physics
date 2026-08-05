@@ -165,12 +165,12 @@ class BaseSelection
                     std::string const& selectionName,
                     int mode)
   {
-    if (mPassThrough) {
-      mSelectionContainers.at(observableIndex) = selectioncontainer::SelectionContainer<T, BitmaskType>(selectionName, std::vector<T>{1}, limits::LimitType::kEqual, false, false, false);
-      return;
-    }
+    int selectionMode = mode;
 
-    switch (mode) {
+    if (mPassThrough) {
+      selectionMode = 2;
+    }
+    switch (selectionMode) {
       case -1: // cut is optional and we store a bit for it
         mSelectionContainers.at(observableIndex) = selectioncontainer::SelectionContainer<T, BitmaskType>(selectionName, std::vector<T>{1}, limits::LimitType::kEqual, false, false, true);
         break;

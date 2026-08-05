@@ -624,22 +624,22 @@ class V0Builder
       collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
 
       auto posDaughter = v0.template posTrack_as<T8>();
-      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionBuilder, mcCols, posDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(posDaughter, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
 
       auto negDaughter = v0.template negTrack_as<T8>();
-      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionBuilder, mcCols, negDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(negDaughter, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
 
       if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
         fillLambda(collisionBuilder, v0Products, v0, 1.f, posDaughterIndex, negDaughterIndex);
-        mcBuilder.template fillMcLambdaWithLabel<system>(col, mcCols, v0, mcParticles, mcProducts);
+        mcBuilder.template fillMcLambdaWithLabel<system>(v0, mcParticles, mcCols, mcProducts);
       }
       if constexpr (modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
         fillLambda(collisionBuilder, v0Products, v0, -1.f, posDaughterIndex, negDaughterIndex);
-        mcBuilder.template fillMcLambdaWithLabel<system>(col, mcCols, v0, mcParticles, mcProducts);
+        mcBuilder.template fillMcLambdaWithLabel<system>(v0, mcParticles, mcCols, mcProducts);
       }
       if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
         fillK0short(collisionBuilder, v0Products, v0, posDaughterIndex, negDaughterIndex);
-        mcBuilder.template fillMcK0shortWithLabel<system>(col, mcCols, v0, mcParticles, mcProducts);
+        mcBuilder.template fillMcK0shortWithLabel<system>(v0, mcParticles, mcCols, mcProducts);
       }
     }
   }
@@ -728,6 +728,7 @@ class V0Builder
   }
 
   [[nodiscard]] bool fillAnyTable() const { return mFillAnyTable; }
+  [[nodiscard]] bool isPassThrough() const { return mV0Selection.isPassThrough(); }
 
  private:
   V0Selection<v0Type, SelectionHistName, FilterHistName> mV0Selection;
