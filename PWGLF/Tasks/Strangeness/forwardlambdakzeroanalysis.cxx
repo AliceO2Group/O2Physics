@@ -970,7 +970,7 @@ struct forwardlambdakzeroanalysis {
     // ...but can be changed easily since fitter is public
     fitter.setPropagateToPCA(fitterConfigurations.propagateToPCA);
     fitter.setMaxR(200.);
-    fitter.setMinParamChange(fitterConfigurations.minParamChange); // 1e-3 for DCAfitter ; 4.0 for FwdDCAfitter
+    fitter.setMinParamChange(fitterConfigurations.minParamChange);     // 1e-3 for DCAfitter ; 4.0 for FwdDCAfitter
     fitter.setMinRelChi2Change(fitterConfigurations.minRelChi2Change); // 0.9 for DCAfitter ; 1e-3 for FwdDCAfitter
     // fitter.setMaxDZIni(1e9);
     // fitter.setMaxDXYIni(4.0f);
