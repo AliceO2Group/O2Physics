@@ -37,6 +37,7 @@
 #include <cmath>
 #include <string>
 #include <vector>
+#include <stdexcept>
 
 using namespace o2;
 using namespace o2::framework;
