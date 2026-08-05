@@ -563,7 +563,7 @@ struct McParticlePrediction {
       //   continue;
       // }
 
-      // Count id before applying the primary selection
+      // Count ids before applying the primary selection
       histos.fill(HIST("particles/idBeforePrimarySelection"), id);
 
       // Keep supported resonances even if they are not marked as physical primaries
@@ -571,7 +571,7 @@ struct McParticlePrediction {
         continue;
       }
 
-      // Count id surviving the selection
+      // Count ids surviving the selection
       histos.fill(HIST("particles/idAfterPrimarySelection"), id);
 
       const TParticlePDG* p = pdgDB->GetParticle(particle.pdgCode());
