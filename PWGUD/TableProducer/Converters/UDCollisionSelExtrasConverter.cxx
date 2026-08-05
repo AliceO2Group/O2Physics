@@ -36,6 +36,7 @@ struct UDCollisionSelExtrasConverter {
 
   void process(o2::aod::UDCollisionSelExtras_000 const& collisions)
   {
+    udCollisionSelExtras_001.reserve(collisions.size());
 
     for (const auto& collision : collisions) {
 

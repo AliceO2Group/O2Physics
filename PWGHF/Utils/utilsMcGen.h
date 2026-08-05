@@ -202,7 +202,7 @@ void fillMcMatchGen3Prong(TMcParticles const& mcParticles,
             if (std::abs(pdgMother) == Pdg::kDStar) {
               std::vector<int> arrResoDaughIndexDStar = {};
               RecoDecay::getDaughters(particle, &arrResoDaughIndexDStar, std::array{0}, DepthResoMax);
-              for (const int iDaug : arrResoDaughIndexDStar) {
+              for (const int iDaug : arrResoDaughIndexDStar) { // o2-linter: disable=const-ref-in-for-loop (not necessary for int type)
                 auto daughDstar = mcParticles.rawIteratorAt(iDaug);
                 if (std::abs(daughDstar.pdgCode()) == Pdg::kD0 || std::abs(daughDstar.pdgCode()) == Pdg::kDPlus) {
                   RecoDecay::getDaughters(daughDstar, &arrResoDaughIndex, std::array{0}, DepthResoMax);
@@ -299,6 +299,14 @@ void fillMcMatchGen3Prong(TMcParticles const& mcParticles,
       if (flagChannelMain == 0) {
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flagChannelMain = sign * DecayChannelMain::XicToPKPi;
+        }
+      }
+
+      // cd± → de± K∓ π±
+      if (flagChannelMain == 0) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kCDeuteron, std::array{+Pdg::kDeuteron, -kKPlus, +kPiPlus}, true, &sign, 1)) {
+          flagChannelMain = sign * DecayChannelMain::CDeuteronToDeKPi;
+          flagChannelResonant = o2::hf_decay::getResonantDecayCDeuteron(particle);
         }
       }
     }

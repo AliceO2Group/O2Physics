@@ -22,8 +22,6 @@
 #include <map>
 #include <vector>
 
-ClassImp(MCProng);
-
 std::map<TString, int> MCProng::fgSourceNames = {
   {"kNothing", MCProng::kNothing},
   {"kPhysicalPrimary", MCProng::kPhysicalPrimary},

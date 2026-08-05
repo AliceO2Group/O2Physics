@@ -16,21 +16,22 @@
 #ifndef PWGEM_PHOTONMESON_CORE_PAIRCUT_H_
 #define PWGEM_PHOTONMESON_CORE_PAIRCUT_H_
 
-#include <TNamed.h>
+#include <string>
 
-#include <Rtypes.h>
-
-class PairCut : public TNamed
+class PairCut
 {
  public:
   PairCut() = default;
-  PairCut(const char* name, const char* title) : TNamed(name, title) {}
+  PairCut(const char* name, const char* title) : name(name), title(title) {}
 
   enum class PairCuts : int {
     // v0 cut
     kAsym = 0,
     kNCuts
   };
+
+  const std::string getName() const { return name; }
+  const std::string getTitle() const { return title; }
 
   static const char* mCutNames[static_cast<int>(PairCuts::kNCuts)];
 
@@ -66,9 +67,9 @@ class PairCut : public TNamed
   void print() const;
 
  private:
+  std::string name;
+  std::string title;
   float mMinAsym{-1e+10}, mMaxAsym{1e+10};
-
-  ClassDef(PairCut, 1);
 };
 
 #endif // PWGEM_PHOTONMESON_CORE_PAIRCUT_H_

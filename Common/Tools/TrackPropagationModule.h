@@ -234,18 +234,24 @@ class TrackPropagationModule
       return; // suppress everything
     }
 
+    // Reserve every cursor filled in the loop below: reserve() switches the
+    // cursor to the unsafe (no bounds check) append, so a cursor filled
+    // without it pays the safe per-row append. The Par/ParExtension/DCA
+    // tables are filled in the covariance branch as well.
+    cursors.tracksParPropagated.reserve(tracks.size());
+    cursors.tracksParExtensionPropagated.reserve(tracks.size());
+    if (fillTracksDCA) {
+      cursors.tracksDCA.reserve(tracks.size());
+    }
     if (fillTracksCov) {
       cursors.tracksParCovPropagated.reserve(tracks.size());
       cursors.tracksParCovExtensionPropagated.reserve(tracks.size());
       if (fillTracksDCACov) {
         cursors.tracksDCACov.reserve(tracks.size());
       }
-    } else {
-      cursors.tracksParPropagated.reserve(tracks.size());
-      cursors.tracksParExtensionPropagated.reserve(tracks.size());
-      if (fillTracksDCA) {
-        cursors.tracksDCA.reserve(tracks.size());
-      }
+    }
+    if (cGroup.useTrackTuner.value && cGroup.fillTrackTunerTable.value) {
+      cursors.tunertable.reserve(tracks.size());
     }
 
     for (const auto& track : tracks) {

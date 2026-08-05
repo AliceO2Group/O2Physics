@@ -19,15 +19,13 @@
 
 #include <Framework/Logger.h>
 
-#include <Rtypes.h>
-
+#include <array>
+#include <cstddef>
 #include <string>
 
-ClassImp(EMCPhotonCut);
+std::array<std::string, static_cast<std::size_t>(EMCPhotonCut::EMCPhotonCuts::kNCuts)> EMCPhotonCut::mCutNames = {"Definition", "Energy", "NCell", "M02", "Timing", "TrackMatching", "SecTrackMatching", "Exotic"};
 
-const char* EMCPhotonCut::mCutNames[static_cast<int>(EMCPhotonCut::EMCPhotonCuts::kNCuts)] = {"Definition", "Energy", "NCell", "M02", "Timing", "TrackMatching", "SecTrackMatching", "Exotic"};
-
-void EMCPhotonCut::SetClusterizer(std::string clusterDefinitionString)
+void EMCPhotonCut::SetClusterizer(const std::string& clusterDefinitionString)
 {
   mDefinition = static_cast<int>(o2::aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionString));
   LOG(info) << "EMCal Photon Cut, set cluster definition to: " << mDefinition << " (" << clusterDefinitionString << ")";

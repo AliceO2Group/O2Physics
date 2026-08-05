@@ -34,6 +34,11 @@ o2physics_add_dpl_workflow(femto-cascade-qa
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femto-mc-particle-qa
+          SOURCES femtoMcParticleQa.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femto-pair-track-track
 	  SOURCES femtoPairTrackTrack.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
@@ -44,8 +49,28 @@ o2physics_add_dpl_workflow(femto-pair-track-v0
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femto-pair-track-d0
+	  SOURCES femtoPairTrackD0.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-pair-d0-d0
+	  SOURCES femtoPairD0D0.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-d0-qa
+	  SOURCES femtoD0Qa.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femto-pair-track-two-track-resonance
 	  SOURCES femtoPairTrackTwoTrackResonance.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-pair-v0-two-track-resonance
+	  SOURCES femtoPairV0TwoTrackResonance.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
@@ -64,6 +89,11 @@ o2physics_add_dpl_workflow(femto-pair-v0-v0
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femto-pair-mc-particle-mc-particle
+          SOURCES femtoPairMcParticleMcParticle.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femto-pair-efficiency
 	  SOURCES femtoPairEfficiency.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
@@ -76,5 +106,10 @@ o2physics_add_dpl_workflow(femto-triplet-track-track-track
 
 o2physics_add_dpl_workflow(femto-triplet-track-track-v0
 	  SOURCES femtoTripletTrackTrackV0.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-triplet-track-track-cascade
+      SOURCES femtoTripletTrackTrackCascade.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)

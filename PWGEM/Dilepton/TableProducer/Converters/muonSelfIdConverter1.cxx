@@ -33,6 +33,7 @@ struct muonSelfIdConverter1 {
 
   void process(aod::EMGlobalMuonSelfIds_000 const& muons)
   {
+    muon_001.reserve(muons.size());
     for (const auto& muon : muons) {
       muon_001(std::vector<int>{}, muon.globalMuonsWithSameMFTIds());
     } // end of muon loop

@@ -62,6 +62,7 @@
 #include <string>
 #include <tuple>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -115,6 +116,7 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyAssociated, std::string, "", "CCDB path to efficiency object for associated particles")
 
   O2_DEFINE_CONFIGURABLE(cfgNoMixedEvents, int, 5, "Number of mixed events per event")
+  O2_DEFINE_CONFIGURABLE(cfgRejectMixedPhiProngEvents, bool, true, "Reject associated hadrons from either mixed-phi prong event")
 
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 1, "Verbosity level (0 = major, 1 = per collision)")
 
@@ -126,6 +128,8 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgPtDepMLbkg, std::vector<float>, {}, "pT interval for ML training")
   O2_DEFINE_CONFIGURABLE(cfgPtCentDepMLbkgSel, std::vector<float>, {}, "Bkg ML selection")
   O2_DEFINE_CONFIGURABLE(cfgPtCentDepMLpromptSel, std::vector<float>, {}, "Prompt ML selection")
+
+  std::unordered_map<int64_t, int64_t> cfTrackToCFCollision;
 
   ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
@@ -511,6 +515,8 @@ struct CorrelationTask {
   using HasPartDaugh0Id = decltype(std::declval<T&>().cfParticleDaugh0Id());
   template <class T>
   using HasPartDaugh1Id = decltype(std::declval<T&>().cfParticleDaugh1Id());
+  template <class T>
+  using HasCFCollisionId = decltype(std::declval<T&>().cfCollisionId());
 
   template <class CollType>
   bool passOutlier(CollType const& collision)
@@ -654,6 +660,29 @@ struct CorrelationTask {
             continue;
           }
         }
+
+        if ((&target == &mixed) && doprocessMixed2ProngDerivedMixedPhi && cfgRejectMixedPhiProngEvents) {
+          if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value &&
+                        std::experimental::is_detected<HasProng0Id, typename TTracks1::iterator>::value &&
+                        std::experimental::is_detected<HasProng1Id, typename TTracks1::iterator>::value &&
+                        std::experimental::is_detected<HasCFCollisionId, typename TTracks2::iterator>::value) {
+
+            if (track1.decay() == aod::cf2prongtrack::PhiToKKPID3Mixed) {
+              auto pr0 = cfTrackToCFCollision.find(track1.cfTrackProng0Id());
+              auto pr1 = cfTrackToCFCollision.find(track1.cfTrackProng1Id());
+
+              if (pr0 != cfTrackToCFCollision.end() &&
+                  pr1 != cfTrackToCFCollision.end()) {
+                const auto assocColl = track2.cfCollisionId();
+
+                if (assocColl == pr0->second || assocColl == pr1->second) {
+                  continue;
+                }
+              }
+            }
+          }
+        }
+
         if constexpr (std::experimental::is_detected<HasPDGCode, typename TTracks2::iterator>::value) { // skip those that are specifically chosen to be triggers
           if (!cfgMcTriggerPDGs->empty() && std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), track2.pdgCode()) != cfgMcTriggerPDGs->end())
             continue; // TODO: fix cases like MC D0-D0
@@ -783,16 +812,15 @@ struct CorrelationTask {
         } // ML selection
 
         // last param is the weight
-        if (cfgMassAxis && (doprocessSame2Prong2Prong || doprocessMixed2Prong2Prong || doprocessSame2Prong2ProngML || doprocessMixed2Prong2ProngML) && !(doprocessSame2ProngDerived || doprocessSame2ProngDerivedML || doprocessMixed2ProngDerived || doprocessMixed2ProngDerivedML)) {
+        if (cfgMassAxis && (doprocessSame2Prong2Prong || doprocessMixed2Prong2Prong || doprocessSame2Prong2ProngML || doprocessMixed2Prong2ProngML) && !(doprocessSame2ProngDerived || doprocessSame2ProngDerivedML || doprocessMixed2ProngDerived || doprocessMixed2ProngDerivedML || doprocessMixed2ProngDerivedMixedPhi)) {
           if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value && std::experimental::is_detected<HasInvMass, typename TTracks2::iterator>::value)
             target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track2.invMass(), track1.invMass(), associatedWeight);
           else
             LOGF(fatal, "Can not fill mass axis without invMass column. \n no mass for two particles");
         } else if (cfgMassAxis) {
-          if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value)
+          if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value) {
             target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track1.invMass(), associatedWeight);
-          else if constexpr (std::experimental::is_detected<HasPDGCode, typename TTracks1::iterator>::value) {
-            // TParticlePDG *p = pdg->GetParticle(track1.pdgCode()); //TODO: get the mass for the PDG properly
+          } else if constexpr (std::experimental::is_detected<HasPDGCode, typename TTracks1::iterator>::value) {
             target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, 1.8, associatedWeight); // p->Mass()
           } else {
             LOGF(fatal, "Can not fill mass axis without invMass column. Disable cfgMassAxis.");
@@ -1071,6 +1099,21 @@ struct CorrelationTask {
     processMixedDerivedT(collisions, p2tracks, tracks);
   }
   PROCESS_SWITCH(CorrelationTask, processMixed2ProngDerived, "Process mixed events on derived data", false);
+  void processMixed2ProngDerivedMixedPhi(DerivedCollisions const& collisions,
+                                         DerivedTracks const& tracks,
+                                         soa::Filtered<aod::CF2ProngTracks> const& p2tracks)
+  {
+    cfTrackToCFCollision.clear();
+    cfTrackToCFCollision.reserve(tracks.size());
+
+    for (const auto& trk : tracks) {
+      cfTrackToCFCollision.emplace(trk.globalIndex(), trk.cfCollisionId());
+    }
+
+    processMixedDerivedT(collisions, p2tracks, tracks);
+  }
+
+  PROCESS_SWITCH(CorrelationTask, processMixed2ProngDerivedMixedPhi, "Process mixed events for mixed-phi triggers", false);
 
   void processMixed2ProngDerivedML(DerivedCollisions const& collisions, DerivedTracks const& tracks, soa::Filtered<soa::Join<aod::CF2ProngTracks, aod::CF2ProngTrackmls>> const& p2tracks)
   {

@@ -31,6 +31,7 @@
 #include <TH1.h>
 
 #include <cstdint>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -49,12 +50,14 @@ struct filterEoI {
   Configurable<bool> inheritFromOtherTask{"inheritFromOtherTask", true, "Flag to iherit all common configurables from skimmerPrimaryElectron or skimmerPrimaryMuon"};
   Configurable<int> minNelectron{"minNelectron", -1, "min number of electron candidates per collision"};
   Configurable<int> minNmuon{"minNmuon", -1, "min number of muon candidates per collision"};
+  Configurable<std::string> taskNameForNelectron{"taskNameForNelectron", "skimmer-primary-electron", "task name where minNelectron is defined."};
+  Configurable<std::string> varNameForNelectron{"varNameForNelectron", "minNelectron", "variable name for minNelectron"};
 
   HistogramRegistry fRegistry{"output"};
   void init(o2::framework::InitContext& initContext)
   {
     if (inheritFromOtherTask.value) { // Inheriting from other task
-      getTaskOptionValue(initContext, "skimmer-primary-electron", "minNelectron", minNelectron.value, true);
+      getTaskOptionValue(initContext, taskNameForNelectron.value, varNameForNelectron.value, minNelectron.value, true);
       getTaskOptionValue(initContext, "skimmer-primary-muon", "minNmuon", minNmuon.value, true);
     }
 

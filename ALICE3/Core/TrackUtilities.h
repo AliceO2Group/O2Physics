@@ -18,70 +18,17 @@
 #ifndef ALICE3_CORE_TRACKUTILITIES_H_
 #define ALICE3_CORE_TRACKUTILITIES_H_
 
+#include "ALICE3/Core/OTFParticle.h"
+
 #include <ReconstructionDataFormats/Track.h>
 
 #include <TLorentzVector.h>
 
+#include <cmath>
 #include <vector>
 
 namespace o2::upgrade
 {
-
-/// Struct to store mc info for the otf decayer
-struct OTFParticle {
-  OTFParticle() = default;
-
-  template <typename TParticle>
-  explicit OTFParticle(const TParticle& particle)
-  {
-    mPdgCode = particle.pdgCode();
-    mPx = particle.px();
-    mPy = particle.py();
-    mPz = particle.pz();
-    mE = particle.e();
-    mVx = particle.vx();
-    mVy = particle.vy();
-    mVz = particle.vz();
-  }
-
-  // Setters
-  void setIsAlive(bool isAlive) { mIsAlive = isAlive; }
-  void setPDG(int pdg) { mPdgCode = pdg; }
-  void setVxVyVz(float vx, float vy, float vz)
-  {
-    mVx = vx;
-    mVy = vy;
-    mVz = vz;
-  }
-  void setPxPyPzE(float px, float py, float pz, float e)
-  {
-    mPx = px;
-    mPy = py;
-    mPz = pz;
-    mE = e;
-  }
-
-  // Getters
-  int pdgCode() const { return mPdgCode; }
-  bool isAlive() const { return mIsAlive; }
-  float vx() const { return mVx; }
-  float vy() const { return mVy; }
-  float vz() const { return mVz; }
-  float px() const { return mPx; }
-  float py() const { return mPy; }
-  float pz() const { return mPz; }
-  float e() const { return mE; }
-  float radius() const { return std::hypot(mVx, mVy); }
-  float pt() const { return std::hypot(mPx, mPy); }
-  float p() const { return std::hypot(mPx, mPy, mPz); }
-
- private:
-  int mPdgCode{};
-  float mE{};
-  float mVx{}, mVy{}, mVz{};
-  float mPx{}, mPy{}, mPz{};
-  bool mIsAlive{};
-};
 
 /// Function to convert a TLorentzVector into a perfect Track
 /// \param charge particle charge (integer)
@@ -89,8 +36,8 @@ struct OTFParticle {
 /// \param productionVertex where the particle was produced
 /// \param o2track the address of the resulting TrackParCov
 void convertTLorentzVectorToO2Track(const int charge,
-                                    const TLorentzVector particle,
-                                    const std::vector<double> productionVertex,
+                                    const TLorentzVector& particle,
+                                    const std::vector<double>& productionVertex,
                                     o2::track::TrackParCov& o2track);
 
 /// Function to convert a TLorentzVector into a perfect Track
@@ -100,9 +47,9 @@ void convertTLorentzVectorToO2Track(const int charge,
 /// \param o2track the address of the resulting TrackParCov
 /// \param pdg the pdg service
 template <typename PdgService>
-void convertTLorentzVectorToO2Track(int pdgCode,
-                                    TLorentzVector particle,
-                                    std::vector<double> productionVertex,
+void convertTLorentzVectorToO2Track(const int pdgCode,
+                                    const TLorentzVector& particle,
+                                    const std::vector<double>& productionVertex,
                                     o2::track::TrackParCov& o2track,
                                     const PdgService& pdg)
 {
@@ -133,7 +80,7 @@ void convertOTFParticleToO2Track(const OTFParticle& particle,
 /// \param o2track the address of the resulting TrackParCov
 /// \param pdg the pdg service
 template <typename McParticleType, typename PdgService>
-void convertMCParticleToO2Track(McParticleType& particle,
+void convertMCParticleToO2Track(const McParticleType& particle,
                                 o2::track::TrackParCov& o2track,
                                 const PdgService& pdg)
 {
@@ -147,13 +94,24 @@ void convertMCParticleToO2Track(McParticleType& particle,
 /// \param o2track the address of the resulting TrackParCov
 /// \param pdg the pdg service
 template <typename McParticleType, typename PdgService>
-o2::track::TrackParCov convertMCParticleToO2Track(McParticleType& particle,
+o2::track::TrackParCov convertMCParticleToO2Track(const McParticleType& particle,
                                                   const PdgService& pdg)
 {
   o2::track::TrackParCov o2track;
   convertMCParticleToO2Track(particle, o2track, pdg);
   return o2track;
 }
+
+/// returns velocity in centimeters per picoseconds
+/// \param momentum the momentum of the track
+/// \param mass the mass of the particle
+float computeParticleVelocity(const float momentum, const float mass);
+
+/// function to calculate track length of this track up to a certain radius
+/// \param track the input track (TrackParCov)
+/// \param radius the radius of the layer you're calculating the length to
+/// \param magneticField the magnetic field to use when propagating
+float computeTrackLength(const o2::track::TrackParCov& track, const float radius, const float magneticField);
 
 } // namespace o2::upgrade
 

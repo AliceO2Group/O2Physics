@@ -506,6 +506,10 @@ struct HfProducerCharmHadronsV0FemtoDream {
       constexpr int GenFromTransport = -1; // -1 if a particle produced during transport
       // get list of mothers, but it could be empty (for example in case of injected light nuclei)
       auto motherparticlesMc = particleMc.template mothers_as<aod::McParticles>();
+      float ptPos{-1.f}, ptNeg{-1.f};
+      float etaPos{-1.f}, etaNeg{-1.f};
+      float phiPos{-1.f}, phiNeg{-1.f};
+      int pdgCodePos{0}, pdgCodeNeg{0};
       // check pdg code
       // if this fails, the particle is a fake
       if (std::abs(pdgCode) == std::abs(v0PDGCode.value)) {
@@ -524,7 +528,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
           // get direct mother
           auto motherparticleMc = motherparticlesMc.front();
           pdgCodeMother = motherparticleMc.pdgCode();
-          particleOrigin = checkDaughterType(fdparttype, motherparticleMc.pdgCode());
+          particleOrigin = checkDaughterType(fdparttype, motherparticleMc.pdgCode(), pdgCode);
           // check if particle is material
           // particle is from inelastic hadronic interaction -> getProcess() == 23
           // particle is generated during transport -> getGenStatusCode() == -1
@@ -534,11 +538,39 @@ struct HfProducerCharmHadronsV0FemtoDream {
         } else {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kElse;
         }
+        for (auto const& dauMc : particleMc.template daughters_as<aod::McParticles>()) {
+          if (dauMc.pdgCode() > 0) {
+            ptPos = dauMc.pt();
+            etaPos = dauMc.eta();
+            phiPos = dauMc.phi();
+            pdgCodePos = dauMc.pdgCode();
+          } else {
+            ptNeg = dauMc.pt();
+            etaNeg = dauMc.eta();
+            phiNeg = dauMc.phi();
+            pdgCodeNeg = dauMc.pdgCode();
+          }
+        }
         // if pdg code is wrong, particle is fake
       } else {
         particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake;
       }
 
+      // positive daughter
+      outputPartsMc(particleOrigin, pdgCodePos, ptPos, etaPos, phiPos);
+      outputPartsMcLabels(outputPartsMc.lastIndex());
+      if (isDebug) {
+        outputPartsExtMcLabels(outputPartsMc.lastIndex());
+        outputDebugPartsMc(pdgCode);
+      }
+      // negative daughter
+      outputPartsMc(particleOrigin, pdgCodeNeg, ptNeg, etaNeg, phiNeg);
+      outputPartsMcLabels(outputPartsMc.lastIndex());
+      if (isDebug) {
+        outputPartsExtMcLabels(outputPartsMc.lastIndex());
+        outputDebugPartsMc(pdgCode);
+      }
+      // V0
       outputPartsMc(particleOrigin, pdgCode, particleMc.pt(), particleMc.eta(), particleMc.phi());
       outputPartsMcLabels(outputPartsMc.lastIndex());
       if (isDebug) {
@@ -546,9 +578,26 @@ struct HfProducerCharmHadronsV0FemtoDream {
         outputDebugPartsMc(pdgCodeMother);
       }
     } else {
+      // positive daughter
+      outputPartsMc(aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake, 0, -1.f, -1.f, -1.f);
       outputPartsMcLabels(-1);
       if (isDebug) {
         outputPartsExtMcLabels(-1);
+        outputDebugPartsMc(0);
+      }
+      // negative daughter
+      outputPartsMc(aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake, 0, -1.f, -1.f, -1.f);
+      outputPartsMcLabels(-1);
+      if (isDebug) {
+        outputPartsExtMcLabels(-1);
+        outputDebugPartsMc(0);
+      }
+      // V0
+      outputPartsMc(aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake, 0, -1.f, -1.f, -1.f);
+      outputPartsMcLabels(-1);
+      if (isDebug) {
+        outputPartsExtMcLabels(-1);
+        outputDebugPartsMc(0);
       }
     }
   }
@@ -722,19 +771,19 @@ struct HfProducerCharmHadronsV0FemtoDream {
       return;
     }
 
+    if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
+      rowCandCharm3Prong.reserve(rowCandCharm3Prong.lastIndex() + sizeCand * 2 + 1);
+    } else if constexpr (Channel == DecayChannel::D0ToPiK) {
+      rowCandCharm2Prong.reserve(rowCandCharm2Prong.lastIndex() + sizeCand * 2 + 1);
+    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
+      rowCandCharmDstar.reserve(rowCandCharmDstar.lastIndex() + sizeCand + 1);
+    }
+
     outputCollision(vtxZ, mult, multNtr, spher, magField);
     if constexpr (IsMc) {
       fillMcCollision(col);
     }
 
-    // Filling candidate properties
-    if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
-      rowCandCharm3Prong.reserve(sizeCand);
-    } else if constexpr (Channel == DecayChannel::D0ToPiK) {
-      rowCandCharm2Prong.reserve(sizeCand);
-    } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
-      rowCandCharmDstar.reserve(sizeCand);
-    }
     bool isV0Filled = false;
     bool isSelectedMlLcToPKPi = true;
     bool isSelectedMlLcToPiKP = true;
@@ -1132,7 +1181,7 @@ struct HfProducerCharmHadronsV0FemtoDream {
   void fillCharmHadMcGen(ParticleType particles)
   {
     // Filling particle properties
-    rowCandCharmHadGen.reserve(particles.size());
+    rowCandCharmHadGen.reserve(particles.size() + 1);
     if constexpr (Channel == DecayChannel::DplusToPiKPi) {
       for (const auto& particle : particles) {
         if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {

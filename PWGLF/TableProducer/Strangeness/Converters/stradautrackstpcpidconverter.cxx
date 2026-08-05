@@ -24,6 +24,7 @@ struct stradautrackstpcpidconverter {
 
   void process(aod::DauTrackTPCPIDs_000 const& v000s)
   {
+    dautrackpcpids.reserve(v000s.size());
     for (int ii = 0; ii < v000s.size(); ii++) {
       auto dauTrackTPCPID = v000s.rawIteratorAt(ii);
       dautrackpcpids(dauTrackTPCPID.tpcSignal(),

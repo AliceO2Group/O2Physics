@@ -39,7 +39,7 @@ enum class EM_HFeeType : int {
 
 //_______________________________________________________________________
 template <typename TTrack>
-int hasFakeMatchITSTPC(TTrack const& track)
+bool hasFakeMatchITSTPC(TTrack const& track)
 {
   // track and mctracklabel have to be joined.
   // bit 13 -- ITS/TPC labels are not equal
@@ -52,7 +52,7 @@ int hasFakeMatchITSTPC(TTrack const& track)
 }
 //_______________________________________________________________________
 template <typename TTrack>
-int hasFakeMatchITSTPCTOF(TTrack const&)
+bool hasFakeMatchITSTPCTOF(TTrack const&)
 {
   // track and mctracklabel have to be joined.
   return false;
@@ -64,7 +64,7 @@ int hasFakeMatchITSTPCTOF(TTrack const&)
 }
 //_______________________________________________________________________
 template <typename TTrack>
-int hasFakeMatchMFTMCH(TTrack const& track)
+bool hasFakeMatchMFTMCH(TTrack const& track)
 {
   // fwdtrack and mcfwdtracklabel have to be joined.
   if ((track.mcMask() & 1 << 7)) {
@@ -74,10 +74,48 @@ int hasFakeMatchMFTMCH(TTrack const& track)
   }
 }
 //_______________________________________________________________________
+template <typename T, typename TMCParticles>
+int isFromGammaZ(T const& track, TMCParticles const& mcParticles)
+{
+  if (!track.has_mothers()) {
+    return -999;
+  }
+
+  int motherId = track.mothersIds()[0];
+  while (motherId > -1) {
+    auto mp = mcParticles.rawIteratorAt(motherId);
+    if (std::abs(mp.pdgCode()) == 23) {
+      return mp.globalIndex();
+    }
+
+    if (mp.has_mothers()) {
+      motherId = mp.mothersIds()[0];
+    } else {
+      motherId = -999;
+    }
+  }
+  return -999;
+}
+//_______________________________________________________________________
+template <typename T, typename TMCParticles>
+int isPairFromGammaZ(T const& t1, T const& t2, TMCParticles const& mcParticles)
+{
+  int id1 = isFromGammaZ(t1, mcParticles);
+  int id2 = isFromGammaZ(t2, mcParticles);
+  if ((id1 > -1 && id2 > -1) && (id1 == id2)) {
+    return id1;
+  } else {
+    return -999;
+  }
+}
+//_______________________________________________________________________
 template <typename T>
 bool isCharmonia(T const& track)
 {
   if (std::abs(track.pdgCode()) < 100) {
+    return false;
+  }
+  if (std::abs(track.pdgCode()) > 1e+9) {
     return false;
   }
 
@@ -95,11 +133,22 @@ bool isCharmonia(T const& track)
 template <typename T>
 bool isCharmMeson(T const& track)
 {
+  if (std::abs(track.pdgCode()) < 100) {
+    return false;
+  }
+  if (std::abs(track.pdgCode()) > 1e+9) {
+    return false;
+  }
+
   if (isCharmonia(track)) {
     return false;
   }
 
-  if (400 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 500) {
+  std::string pdgStr = std::to_string(std::abs(track.pdgCode()));
+  int n = pdgStr.length();
+  int pdg3 = std::stoi(pdgStr.substr(n - 3, 3)); // excited states are included too.
+
+  if (400 < pdg3 && pdg3 < 500) {
     return true;
   } else {
     return false;
@@ -109,6 +158,18 @@ bool isCharmMeson(T const& track)
 template <typename T>
 bool isCharmBaryon(T const& track)
 {
+  if (std::abs(track.pdgCode()) < 100) {
+    return false;
+  }
+  if (std::abs(track.pdgCode()) > 1e+9) {
+    return false;
+  }
+
+  // reject diquarks
+  if (std::abs(track.pdgCode()) == 4101 || std::abs(track.pdgCode()) == 4103 || std::abs(track.pdgCode()) == 4201 || std::abs(track.pdgCode()) == 4203 || std::abs(track.pdgCode()) == 4301 || std::abs(track.pdgCode()) == 4303 || std::abs(track.pdgCode()) == 4403) {
+    return false;
+  }
+
   if (4000 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 5000) {
     return true;
   } else {
@@ -120,6 +181,9 @@ template <typename T>
 bool isBottomonia(T const& track)
 {
   if (std::abs(track.pdgCode()) < 100) {
+    return false;
+  }
+  if (std::abs(track.pdgCode()) > 1e+9) {
     return false;
   }
 
@@ -137,11 +201,22 @@ bool isBottomonia(T const& track)
 template <typename T>
 bool isBeautyMeson(T const& track)
 {
+  if (std::abs(track.pdgCode()) < 100) {
+    return false;
+  }
+  if (std::abs(track.pdgCode()) > 1e+9) {
+    return false;
+  }
+
   if (isBottomonia(track)) {
     return false;
   }
 
-  if (500 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 600) {
+  std::string pdgStr = std::to_string(std::abs(track.pdgCode()));
+  int n = pdgStr.length();
+  int pdg3 = std::stoi(pdgStr.substr(n - 3, 3)); // excited states are included too.
+
+  if (500 < pdg3 && pdg3 < 600) {
     return true;
   } else {
     return false;
@@ -151,6 +226,18 @@ bool isBeautyMeson(T const& track)
 template <typename T>
 bool isBeautyBaryon(T const& track)
 {
+  if (std::abs(track.pdgCode()) < 100) {
+    return false;
+  }
+  if (std::abs(track.pdgCode()) > 1e+9) {
+    return false;
+  }
+
+  // reject diquarks
+  if (std::abs(track.pdgCode()) == 5101 || std::abs(track.pdgCode()) == 5103 || std::abs(track.pdgCode()) == 5201 || std::abs(track.pdgCode()) == 5203 || std::abs(track.pdgCode()) == 5301 || std::abs(track.pdgCode()) == 5303 || std::abs(track.pdgCode()) == 5401 || std::abs(track.pdgCode()) == 5403 || std::abs(track.pdgCode()) == 5503) {
+    return false;
+  }
+
   if (5000 < std::abs(track.pdgCode()) && std::abs(track.pdgCode()) < 6000) {
     return true;
   } else {
@@ -409,14 +496,14 @@ int IsFromBeauty(TMCParticle const& p, TMCParticles const& mcparticles)
 
   int motherid = p.mothersIds()[0]; // first mother index
   auto mp_tmp = mcparticles.iteratorAt(motherid);
-  if (std::abs(mp_tmp.pdgCode()) < 1e+9 && (std::to_string(std::abs(mp_tmp.pdgCode()))[std::to_string(std::abs(mp_tmp.pdgCode())).length() - 2] == '5' && std::to_string(std::abs(mp_tmp.pdgCode()))[std::to_string(std::abs(mp_tmp.pdgCode())).length() - 3] == '5') && std::abs(mp_tmp.pdgCode()) % 2 == 1) {
+  if (isBottomonia(mp_tmp)) {
     return -999; // reject bottomonia
   }
 
   while (motherid > -1) {
     if (motherid < mcparticles.size()) { // protect against bad mother indices. why is this needed?
       auto mp = mcparticles.iteratorAt(motherid);
-      if (std::abs(mp.pdgCode()) < 1e+9 && (std::to_string(std::abs(mp.pdgCode()))[std::to_string(std::abs(mp.pdgCode())).length() - 3] == '5' || std::to_string(std::abs(mp.pdgCode()))[std::to_string(std::abs(mp.pdgCode())).length() - 4] == '5')) {
+      if (isBeautyMeson(mp) || isBeautyBaryon(mp)) {
         return motherid;
       }
       if (mp.has_mothers()) {
@@ -431,7 +518,6 @@ int IsFromBeauty(TMCParticle const& p, TMCParticles const& mcparticles)
 
   return -999;
 }
-
 //_______________________________________________________________________
 template <typename TMCParticle, typename TMCParticles>
 int IsFromCharm(TMCParticle const& p, TMCParticles const& mcparticles)
@@ -442,13 +528,13 @@ int IsFromCharm(TMCParticle const& p, TMCParticles const& mcparticles)
 
   int motherid = p.mothersIds()[0]; // first mother index
   auto mp_tmp = mcparticles.iteratorAt(motherid);
-  if (std::abs(mp_tmp.pdgCode()) < 1e+9 && (std::to_string(std::abs(mp_tmp.pdgCode()))[std::to_string(std::abs(mp_tmp.pdgCode())).length() - 2] == '4' && std::to_string(std::abs(mp_tmp.pdgCode()))[std::to_string(std::abs(mp_tmp.pdgCode())).length() - 3] == '4') && std::abs(mp_tmp.pdgCode()) % 2 == 1) {
-    return -999; // reject bottomonia
+  if (isCharmonia(mp_tmp)) {
+    return -999; // reject charmonia
   }
   while (motherid > -1) {
     if (motherid < mcparticles.size()) { // protect against bad mother indices. why is this needed?
       auto mp = mcparticles.iteratorAt(motherid);
-      if (std::abs(mp.pdgCode()) < 1e+9 && (std::to_string(std::abs(mp.pdgCode()))[std::to_string(std::abs(mp.pdgCode())).length() - 3] == '4' || std::to_string(std::abs(mp.pdgCode()))[std::to_string(std::abs(mp.pdgCode())).length() - 4] == '4')) {
+      if (isCharmMeson(mp) || isCharmBaryon(mp)) {
         return motherid;
       }
       if (mp.has_mothers()) {

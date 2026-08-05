@@ -10,7 +10,7 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_dpl_workflow(multiparticle-correlations-ab
-                    SOURCES multiparticle-correlations-ab.cxx
+                    SOURCES multiparticleCorrelationsAb.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB
                     COMPONENT_NAME Analysis)
 
@@ -26,5 +26,10 @@ o2physics_add_dpl_workflow(three-particle-correlations
 
 o2physics_add_dpl_workflow(multiharmonic-correlations
                     SOURCES multiharmonicCorrelations.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(multiparticle-cumulants
+                    SOURCES multiparticleCumulants.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)

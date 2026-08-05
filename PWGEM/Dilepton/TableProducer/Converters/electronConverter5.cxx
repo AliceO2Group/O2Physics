@@ -34,6 +34,7 @@ struct electronConverter5 {
   using MyElectrons002 = soa::Join<aod::EMPrimaryElectrons_002, aod::EMPrimaryElectronsCov_000>;
   void process002to005(MyElectrons002 const& tracks)
   {
+    track_005.reserve(tracks.size());
     for (const auto& track : tracks) {
       track_005(track.collisionId(),
                 track.trackId(),
@@ -79,6 +80,7 @@ struct electronConverter5 {
   using MyElectrons003 = soa::Join<aod::EMPrimaryElectrons_003, aod::EMPrimaryElectronsCov_000>;
   void process003to005(MyElectrons003 const& tracks)
   {
+    track_005.reserve(tracks.size());
     for (const auto& track : tracks) {
       track_005(track.collisionId(),
                 track.trackId(),
@@ -123,6 +125,7 @@ struct electronConverter5 {
 
   void process004to005(aod::EMPrimaryElectrons_004 const& tracks)
   {
+    track_005.reserve(tracks.size());
     for (const auto& track : tracks) {
       track_005(track.collisionId(),
                 track.trackId(),

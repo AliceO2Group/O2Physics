@@ -24,6 +24,7 @@ struct stradautracksextraconverter {
 
   void process(aod::DauTrackExtras_000 const& dauTrackExtras_000)
   {
+    dauTrackExtras_001.reserve(dauTrackExtras_000.size());
     for (auto& values : dauTrackExtras_000) {
       dauTrackExtras_001(0,
                          values.detectorMap(),

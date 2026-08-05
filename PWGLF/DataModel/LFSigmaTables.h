@@ -195,6 +195,9 @@ DECLARE_SOA_TABLE(Sigma0Cores, "AOD", "SIGMA0CORES",
 // KSTAR core info
 namespace kstarCore
 {
+DECLARE_SOA_COLUMN(PhotonV0ID, photonV0ID, int);
+DECLARE_SOA_COLUMN(KShortV0ID, kshortV0ID, int);
+
 DECLARE_SOA_COLUMN(X, x, float);
 DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_COLUMN(Z, z, float);
@@ -261,6 +264,20 @@ DECLARE_SOA_DYNAMIC_COLUMN(OPAngle, opAngle,
                              return v1.Angle(v2);
                            });
 
+DECLARE_SOA_DYNAMIC_COLUMN(OPAngleKShortKStar, opAngleKShortKStar,
+                           [](float photonPx, float photonPy, float photonPz, float kshortPx, float kshortPy, float kshortPz) {
+                             TVector3 v1(photonPx + kshortPx, photonPy + kshortPy, photonPz + kshortPz);
+                             TVector3 v2(kshortPx, kshortPy, kshortPz);
+                             return v1.Angle(v2);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(OPAnglePhotonKStar, opAnglePhotonKStar,
+                           [](float photonPx, float photonPy, float photonPz, float kshortPx, float kshortPy, float kshortPz) {
+                             TVector3 v1(photonPx, photonPy, photonPz);
+                             TVector3 v2(kshortPx + photonPx, kshortPy + photonPy, kshortPz + photonPz);
+                             return v1.Angle(v2);
+                           });
+
 // Photon
 DECLARE_SOA_DYNAMIC_COLUMN(PhotonPt, photonPt, //! Transverse momentum in GeV/c
                            [](float photonPx, float photonPy) -> float {
@@ -312,6 +329,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(KShortPhi, kshortPhi, //! Phi in the range [0, 2pi)
 } // namespace kstarCore
 
 DECLARE_SOA_TABLE(KStarCores, "AOD", "KSTARCORES",
+                  kstarCore::PhotonV0ID, kstarCore::KShortV0ID,
                   kstarCore::X, kstarCore::Y, kstarCore::Z, kstarCore::DCADaughters,
                   kstarCore::PhotonPx, kstarCore::PhotonPy, kstarCore::PhotonPz, kstarCore::PhotonMass,
                   kstarCore::KShortPx, kstarCore::KShortPy, kstarCore::KShortPz, kstarCore::KShortMass,
@@ -328,6 +346,8 @@ DECLARE_SOA_TABLE(KStarCores, "AOD", "KSTARCORES",
                   kstarCore::Eta<kstarCore::PhotonPx, kstarCore::PhotonPy, kstarCore::PhotonPz, kstarCore::KShortPx, kstarCore::KShortPy, kstarCore::KShortPz>,
                   kstarCore::Radius<kstarCore::X, kstarCore::Y>,
                   kstarCore::OPAngle<kstarCore::PhotonPx, kstarCore::PhotonPy, kstarCore::PhotonPz, kstarCore::KShortPx, kstarCore::KShortPy, kstarCore::KShortPz>,
+                  kstarCore::OPAngleKShortKStar<kstarCore::PhotonPx, kstarCore::PhotonPy, kstarCore::PhotonPz, kstarCore::KShortPx, kstarCore::KShortPy, kstarCore::KShortPz>,
+                  kstarCore::OPAnglePhotonKStar<kstarCore::PhotonPx, kstarCore::PhotonPy, kstarCore::PhotonPz, kstarCore::KShortPx, kstarCore::KShortPy, kstarCore::KShortPz>,
 
                   kstarCore::PhotonPt<kstarCore::PhotonPx, kstarCore::PhotonPy>,
                   kstarCore::PhotonP<kstarCore::PhotonPx, kstarCore::PhotonPy, kstarCore::PhotonPz>,
@@ -786,6 +806,8 @@ DECLARE_SOA_COLUMN(PhotonMCPz, photonmcpz, float);
 DECLARE_SOA_COLUMN(IsPhotonPrimary, isPhotonPrimary, bool);
 DECLARE_SOA_COLUMN(PhotonPDGCode, photonPDGCode, int);
 DECLARE_SOA_COLUMN(PhotonPDGCodeMother, photonPDGCodeMother, int);
+DECLARE_SOA_COLUMN(PhotonPDGCodeGrandMother, photonPDGCodeGrandMother, int);
+DECLARE_SOA_COLUMN(PhotonGlobalIndexGrandMother, photonGlobalIndexGrandMother, int);
 DECLARE_SOA_COLUMN(PhotonIsCorrectlyAssoc, photonIsCorrectlyAssoc, bool);
 
 DECLARE_SOA_COLUMN(KShortMCPx, kshortmcpx, float);
@@ -794,10 +816,12 @@ DECLARE_SOA_COLUMN(KShortMCPz, kshortmcpz, float);
 DECLARE_SOA_COLUMN(IsKShortPrimary, isKShortPrimary, bool);
 DECLARE_SOA_COLUMN(KShortPDGCode, kshortPDGCode, int);
 DECLARE_SOA_COLUMN(KShortPDGCodeMother, kshortPDGCodeMother, int);
+DECLARE_SOA_COLUMN(KShortPDGCodeGrandMother, kshortPDGCodeGrandMother, int);
+DECLARE_SOA_COLUMN(KShortGlobalIndexGrandMother, kshortGlobalIndexGrandMother, int);
 DECLARE_SOA_COLUMN(KShortIsCorrectlyAssoc, kshortIsCorrectlyAssoc, bool);
 
-DECLARE_SOA_DYNAMIC_COLUMN(IsKStar, isKStar,                                                                        //! IsSigma0
-                           [](int pdgCode) -> bool { return pdgCode == o2::constants::physics::Pdg::kK0Star892; }); // 313
+DECLARE_SOA_DYNAMIC_COLUMN(IsKStar, isKStar,                                                                                  //! IsSigma0
+                           [](int pdgCode) -> bool { return std::abs(pdgCode) == o2::constants::physics::Pdg::kK0Star892; }); // 313
 
 DECLARE_SOA_DYNAMIC_COLUMN(MCPx, mcpx, //! Sigma0 px
                            [](float photonMCPx, float kshortMCPx) -> float { return photonMCPx + kshortMCPx; });
@@ -899,10 +923,10 @@ DECLARE_SOA_TABLE(KStarMCCores, "AOD", "KSTARMCCORES",
                   kstarMCCore::MCradius, kstarMCCore::PDGCode, kstarMCCore::PDGCodeMother, kstarMCCore::MCprocess, kstarMCCore::IsProducedByGenerator,
 
                   kstarMCCore::PhotonMCPx, kstarMCCore::PhotonMCPy, kstarMCCore::PhotonMCPz,
-                  kstarMCCore::IsPhotonPrimary, kstarMCCore::PhotonPDGCode, kstarMCCore::PhotonPDGCodeMother, kstarMCCore::PhotonIsCorrectlyAssoc,
+                  kstarMCCore::IsPhotonPrimary, kstarMCCore::PhotonPDGCode, kstarMCCore::PhotonPDGCodeMother, kstarMCCore::PhotonPDGCodeGrandMother, kstarMCCore::PhotonGlobalIndexGrandMother, kstarMCCore::PhotonIsCorrectlyAssoc,
 
                   kstarMCCore::KShortMCPx, kstarMCCore::KShortMCPy, kstarMCCore::KShortMCPz,
-                  kstarMCCore::IsKShortPrimary, kstarMCCore::KShortPDGCode, kstarMCCore::KShortPDGCodeMother, kstarMCCore::KShortIsCorrectlyAssoc,
+                  kstarMCCore::IsKShortPrimary, kstarMCCore::KShortPDGCode, kstarMCCore::KShortPDGCodeMother, kstarMCCore::KShortPDGCodeGrandMother, kstarMCCore::KShortGlobalIndexGrandMother, kstarMCCore::KShortIsCorrectlyAssoc,
 
                   // Dynamic columns
                   kstarMCCore::IsKStar<kstarMCCore::PDGCode>,

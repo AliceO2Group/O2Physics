@@ -18,7 +18,9 @@
 
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
+#include <Framework/Concepts.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 
@@ -35,6 +37,7 @@ inline void addNMHistograms(o2::framework::HistogramRegistry* fRegistry, bool is
 {
   // !!Don't change pt,eta,y binning. These binnings have to be consistent with binned data at skimming.!!
   std::vector<double> ptbins;
+  ptbins.reserve(72);
   for (int i = 0; i < 2; i++) {                // o2-linter: disable=magic-number (just numbers for binning)
     ptbins.emplace_back(0.05 * (i - 0) + 0.0); // from 0 to 0.05 GeV/c, every 0.05 GeV/c
   }
@@ -84,12 +87,12 @@ void fillTruePairInfo(o2::framework::HistogramRegistry* fRegistry, TDiphoton con
   float weight = eventWeight;
   int motherid_strhad = o2::aod::pwgem::photonmeson::utils::mcutil::IsFromWD(mcparticle.template emmcevent_as<TMCCollisions>(), mcparticle, mcparticles);
   switch (pdg) {
-    case kPi0: {
+    case PDG_t::kPi0: {
       if (mcparticle.isPhysicalPrimary() || mcparticle.producedByGenerator()) {
         fRegistry->fill(HIST("Pair/Pi0/hs_Primary"), v12.M(), v12.Pt(), weight);
       } else if (motherid_strhad > 0) {
         auto str_had = mcparticles.iteratorAt(motherid_strhad);
-        if (std::abs(str_had.pdgCode()) == kK0Short && f1fd_k0s_to_pi0 != nullptr) {
+        if (std::abs(str_had.pdgCode()) == PDG_t::kK0Short && f1fd_k0s_to_pi0 != nullptr) {
           weight *= f1fd_k0s_to_pi0->Eval(str_had.pt());
         }
         fRegistry->fill(HIST("Pair/Pi0/hs_FromWD"), v12.M(), v12.Pt(), weight);
@@ -98,7 +101,7 @@ void fillTruePairInfo(o2::framework::HistogramRegistry* fRegistry, TDiphoton con
       }
       break;
     }
-    case 221: {
+    case constants::physics::kEta: {
       if (mcparticle.isPhysicalPrimary() || mcparticle.producedByGenerator()) {
         fRegistry->fill(HIST("Pair/Eta/hs_Primary"), v12.M(), v12.Pt(), weight);
       } else if (motherid_strhad > 0) {

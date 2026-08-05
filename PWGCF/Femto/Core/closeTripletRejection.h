@@ -21,15 +21,11 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 
-#include <cmath>
 #include <map>
 #include <vector>
 
-namespace o2::analysis::femto
+namespace o2::analysis::femto::closetripletrejection
 {
-namespace closetripletrejection
-{
-
 constexpr const char PrefixCtrTrackTrackTrack[] = "CtrTrackTrackTrack";
 using ConfCtrTrackTrackTrack = closepairrejection::ConfCpr<PrefixCtrTrackTrackTrack>;
 
@@ -46,9 +42,24 @@ constexpr char PrefixTrack2V0Se[] = "CPR_Track2V0/SE/";
 constexpr char PrefixTrack1V0Me[] = "CPR_Track1V0/ME/";
 constexpr char PrefixTrack2V0Me[] = "CPR_Track2V0/ME/";
 
-template <const char* prefixTrack1Track2,
-          const char* prefixTrack2Track3,
-          const char* prefixTrack1Track3>
+constexpr char PrefixTrack1CascadeSe[] = "CPR_Track1Cascade/SE/";
+constexpr char PrefixTrack2CascadeSe[] = "CPR_Track2Cascade/SE/";
+constexpr char PrefixTrack1CascadeMe[] = "CPR_Track1Cascade/ME/";
+constexpr char PrefixTrack2CascadeMe[] = "CPR_Track2Cascade/ME/";
+
+constexpr char PrefixTrack1V0DaughterSe[] = "CPR_Track1V0Dau/SE/";
+constexpr char PrefixTrack2V0DaughterSe[] = "CPR_Track2V0Dau/SE/";
+constexpr char PrefixTrack1V0DaughterMe[] = "CPR_Track1V0Dau/ME/";
+constexpr char PrefixTrack2V0DaughterMe[] = "CPR_Track2V0Dau/ME/";
+
+constexpr char PrefixTrack1CascadeBachelorSe[] = "CPR_Track1CascadeBachelor/SE/";
+constexpr char PrefixTrack2CascadeBachelorSe[] = "CPR_Track2CascadeBachelor/SE/";
+constexpr char PrefixTrack1CascadeBachelorMe[] = "CPR_Track1CascadeBachelor/ME/";
+constexpr char PrefixTrack2CascadeBachelorMe[] = "CPR_Track2CascadeBachelor/ME/";
+
+template <auto& prefixTrack1Track2,
+          auto& prefixTrack2Track3,
+          auto& prefixTrack1Track3>
 class CloseTripletRejectionTrackTrackTrack
 {
  public:
@@ -81,7 +92,7 @@ class CloseTripletRejectionTrackTrackTrack
     mCtrTrack23.setPair(track2, track3, trackTable);
     mCtrTrack13.setPair(track1, track3, trackTable);
   }
-  bool isCloseTriplet() const
+  [[nodiscard]] bool isCloseTriplet() const
   {
     return mCtrTrack12.isClosePair() || mCtrTrack23.isClosePair() || mCtrTrack13.isClosePair();
   }
@@ -99,9 +110,9 @@ class CloseTripletRejectionTrackTrackTrack
   closepairrejection::ClosePairRejectionTrackTrack<prefixTrack1Track3> mCtrTrack13;
 };
 
-template <const char* prefixTrack1Track2,
-          const char* prefixTrack1V0,
-          const char* prefixTrack2V0>
+template <auto& prefixTrack1Track2,
+          auto& prefixTrack1V0,
+          auto& prefixTrack2V0>
 class CloseTripletRejectionTrackTrackV0
 {
  public:
@@ -133,7 +144,7 @@ class CloseTripletRejectionTrackTrackV0
     mCtrTrack1V0.setPair(track1, v0, trackTable);
     mCtrTrack2V0.setPair(track2, v0, trackTable);
   }
-  bool isCloseTriplet() const
+  [[nodiscard]] bool isCloseTriplet() const
   {
     return mCtrTrack12.isClosePair() || mCtrTrack1V0.isClosePair() || mCtrTrack2V0.isClosePair();
   }
@@ -151,6 +162,63 @@ class CloseTripletRejectionTrackTrackV0
   closepairrejection::ClosePairRejectionTrackV0<prefixTrack2V0> mCtrTrack2V0;
 };
 
-}; // namespace closetripletrejection
-}; // namespace o2::analysis::femto
+template <auto& prefixTrack1Track2,
+          auto& prefixTrack1Bachelor,
+          auto& prefixTrack1V0Daughter,
+          auto& prefixTrack2Bachelor,
+          auto& prefixTrack2V0Daughter>
+class CloseTripletRejectionTrackTrackCascade
+{
+ public:
+  CloseTripletRejectionTrackTrackCascade() = default;
+  ~CloseTripletRejectionTrackTrackCascade() = default;
+
+  template <typename T1, typename T2, typename T3>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> const& specs,
+            std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> const& specsBachelor,
+            std::map<closepairrejection::CprHist, std::vector<o2::framework::AxisSpec>> const& specsV0Daughter,
+            T1 const& confCpr,
+            T2 const& confCprBachelor,
+            T3 const& confCprV0Daughter,
+            int absChargeTrack1,
+            int absChargeTrack2)
+  {
+    mCtrTrack12.init(registry, specs, confCpr, absChargeTrack1, absChargeTrack2);
+    mCtrTrack1Cascade.init(registry, specsBachelor, specsV0Daughter, confCprBachelor, confCprV0Daughter, absChargeTrack1);
+    mCtrTrack2Cascade.init(registry, specsBachelor, specsV0Daughter, confCprBachelor, confCprV0Daughter, absChargeTrack2);
+  }
+
+  void setMagField(float magField)
+  {
+    mCtrTrack12.setMagField(magField);
+    mCtrTrack1Cascade.setMagField(magField);
+    mCtrTrack2Cascade.setMagField(magField);
+  }
+  template <typename T1, typename T2, typename T3, typename T4>
+  void setTriplet(T1 const& track1, T2 const& track2, T3 const& cascade, T4 const& trackTable)
+  {
+    mCtrTrack12.setPair(track1, track2, trackTable);
+    mCtrTrack1Cascade.setPair(track1, cascade, trackTable);
+    mCtrTrack2Cascade.setPair(track2, cascade, trackTable);
+  }
+  [[nodiscard]] bool isCloseTriplet() const
+  {
+    return mCtrTrack12.isClosePair() || mCtrTrack1Cascade.isClosePair() || mCtrTrack2Cascade.isClosePair();
+  }
+
+  void fill(float q3)
+  {
+    mCtrTrack12.fill(q3);
+    mCtrTrack1Cascade.fill(q3);
+    mCtrTrack2Cascade.fill(q3);
+  }
+
+ private:
+  closepairrejection::ClosePairRejectionTrackTrack<prefixTrack1Track2> mCtrTrack12;
+  closepairrejection::ClosePairRejectionTrackCascade<prefixTrack1Bachelor, prefixTrack1V0Daughter> mCtrTrack1Cascade;
+  closepairrejection::ClosePairRejectionTrackCascade<prefixTrack2Bachelor, prefixTrack2V0Daughter> mCtrTrack2Cascade;
+};
+
+} // namespace o2::analysis::femto::closetripletrejection
 #endif // PWGCF_FEMTO_CORE_CLOSETRIPLETREJECTION_H_

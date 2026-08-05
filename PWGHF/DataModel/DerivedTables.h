@@ -314,10 +314,14 @@ DECLARE_TABLES_3P(Dstar, "DST", dstar, 6);
 DECLARE_TABLES_3P(Ds, "DS", ds, 9);
 DECLARE_TABLES_3P(LcToK0sP, "LCC", lc_to_k0s_p, 10);
 // Workaround for the existing B0 macro in termios.h
+#ifdef B0
 #pragma push_macro("B0")
 #undef B0
 DECLARE_TABLES_4P(B0, "B0", b0, 7);
 #pragma pop_macro("B0")
+#else
+DECLARE_TABLES_4P(B0, "B0", b0, 7);
+#endif
 DECLARE_TABLES_5P(XicToXiPiPi, "XICXPP", xic_to_xi_pi_pi, 8);
 
 // ================

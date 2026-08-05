@@ -29,6 +29,7 @@ struct QvecConverter {
 
   void process(aod::EMEventsQvec_000 const& emEventsQVec)
   {
+    qvec001.reserve(emEventsQVec.size());
     for (const auto& qvec : emEventsQVec) {
       constexpr float EmptyV0 = -999.f;
       qvec001(qvec.q2xft0m(), qvec.q2yft0m(), qvec.q2xft0a(), qvec.q2yft0a(), qvec.q2xft0c(), qvec.q2yft0c(), EmptyV0, EmptyV0, qvec.q2xbpos(), qvec.q2ybpos(), qvec.q2xbneg(), qvec.q2ybneg(), qvec.q2xbtot(), qvec.q2ybtot(), qvec.q3xft0m(), qvec.q3yft0m(), qvec.q3xft0a(), qvec.q3yft0a(), qvec.q3xft0c(), qvec.q3yft0c(), EmptyV0, EmptyV0, qvec.q3xbpos(), qvec.q3ybpos(), qvec.q3xbneg(), qvec.q3ybneg(), qvec.q3xbtot(), qvec.q3ybtot());

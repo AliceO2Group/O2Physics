@@ -137,6 +137,7 @@ DECLARE_SOA_TABLE(ResoCollisionDFs, "AOD", "RESOCOLLISIONDF",
                   resocollision::EvtPlResAC,
                   resocollision::EvtPlResBC,
                   resocollision::BMagField,
+                  resocollision::IsRecINELgt0,
                   timestamp::Timestamp,
                   evsel::NumTracksInTimeRange);
 using ResoCollisionDF = ResoCollisionDFs::iterator;

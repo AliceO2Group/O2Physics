@@ -257,7 +257,7 @@ struct NchStudypp {
       histos.add("hgendndetaVsMultEta05BeforeEvtSel", "hgendndetaBeforeEvtSel vs multiplicity in eta<0.5", kTH2F, {axisEta, multAxis});
       histos.add("hgendndetaVsMultEta05AfterEvtSel", "hgendndetaAfterEvtSel vs multiplicity in eta<0.5", kTH2F, {axisEta, multAxis});
       histos.add("hGenCent", "Centrality of generated MC events", kTH1F, {axisCent});
-      histos.add("hGenAssoRecCent", "Centrality of selected MC events", kTH1F, {axisCent});
+      histos.add("hGenAssocRecCent", "Centrality of selected MC events", kTH1F, {axisCent});
       histos.add("hgendndetaBeforeEvtSel", "Eta of all generated particles", kTH1F, {axisEta});
       histos.add("hgendndetaAfterEvtSel", "Eta of generated particles after EvtSel", kTH1F, {axisEta});
       histos.add("hgendndetaVscentBeforeEvtSel", "hgendndetaBeforeEvtSel vs centrality", kTH2F, {axisEta, centAxis});

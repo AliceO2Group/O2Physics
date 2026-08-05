@@ -71,10 +71,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace constants::math;
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, (DEFAULT), (HELP)};
 
 static constexpr float PairCutOff = -1.f;
-static constexpr float CfgPairCutDefaults[1][5] = {{PairCutOff, PairCutOff, PairCutOff, PairCutOff, PairCutOff}};
+static constexpr std::array<std::array<float, 5>, 1> CfgPairCutDefaults{{{PairCutOff, PairCutOff, PairCutOff, PairCutOff, PairCutOff}}};
 
 struct Nucleibalance {
   SliceCache cache;
@@ -86,13 +86,14 @@ struct Nucleibalance {
   O2_DEFINE_CONFIGURABLE(cfgCutMCPt, float, 0.5f, "Minimal pT for MC particles (AO2D-MC mode)")
   O2_DEFINE_CONFIGURABLE(cfgCutMCEta, float, 0.8f, "Eta range for MC particles (AO2D-MC mode)")
   O2_DEFINE_CONFIGURABLE(cfgUseFT0M, int, 1, "Use FT0M centrality (0-100) as multiplicity axis (1=ON, 0=use Ntracks/multiplicity())")
-  // Track-quality options (AO2D mode). Default selection corresponds to global tracks.
-  O2_DEFINE_CONFIGURABLE(cfgTPCNClsMin, int, 70, "Minimum number of TPC clusters (tpcNClsFound) in AO2D mode")
-  O2_DEFINE_CONFIGURABLE(cfgDcaXYMax, float, 0.1f, "Max |DCA_{xy}| to PV (cm) in AO2D mode")
-  O2_DEFINE_CONFIGURABLE(cfgDcaZMax, float, 0.2f, "Max |DCA_{z}| to PV (cm) in AO2D mode")
-  O2_DEFINE_CONFIGURABLE(chi2pertpccluster, float, 2.5f, "Maximum Chi2/cluster for the TPC track segment in AO2D mode")
-  O2_DEFINE_CONFIGURABLE(chi2peritscluster, float, 36.f, "Maximum Chi2/cluster for the ITS track segment in AO2D mode")
-  O2_DEFINE_CONFIGURABLE(itsnclusters, int, 5, "Minimum number of ITS clusters in AO2D mode")
+  // Track-quality options. Default selection corresponds to global tracks.
+  O2_DEFINE_CONFIGURABLE(cfgTPCNClsMin, int, 70, "Minimum number of TPC clusters (tpcNClsFound)")
+  O2_DEFINE_CONFIGURABLE(cfgDcaXYMax, float, 0.1f, "Max |DCA_{xy}| to PV (cm)")
+  O2_DEFINE_CONFIGURABLE(cfgDcaZMax, float, 0.2f, "Max |DCA_{z}| to PV (cm)")
+  O2_DEFINE_CONFIGURABLE(cfgRequirePrimaryTrack, int, 1, "Require isPrimaryTrack()= true (1=ON, 0=OFF)")
+  O2_DEFINE_CONFIGURABLE(chi2pertpccluster, float, 2.5f, "Maximum Chi2/cluster for the TPC track segment")
+  O2_DEFINE_CONFIGURABLE(chi2peritscluster, float, 36.f, "Maximum Chi2/cluster for the ITS track segment")
+  O2_DEFINE_CONFIGURABLE(itsnclusters, int, 1, "Minimum number of ITS clusters")
 
   O2_DEFINE_CONFIGURABLE(cfgPtOrder, int, 1, "Only consider pairs for which pT,1 < pT,2 (0 = OFF, 1 = ON)");
   O2_DEFINE_CONFIGURABLE(cfgTriggerCharge, int, 0, "Select on charge of trigger particle: 0 = all; 1 = positive; -1 = negative");
@@ -124,7 +125,7 @@ struct Nucleibalance {
   O2_DEFINE_CONFIGURABLE(cfgAssociatedSpecies, int, 2, "Associated species for BF: 0 = #pi, 1 = K, 2 = p, 3 = d, -1 = all charged tracks");
 
   // Suggested values: Photon: 0.004; K0 and Lambda: 0.005
-  Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {CfgPairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
+  Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {CfgPairCutDefaults[0].data(), 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
 
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyTrigger, std::string, "", "CCDB path to efficiency object for trigger particles")
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyAssociated, std::string, "", "CCDB path to efficiency object for associated particles")
@@ -133,7 +134,7 @@ struct Nucleibalance {
 
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 1, "Verbosity level (0 = major, 1 = per collision)")
 
-  O2_DEFINE_CONFIGURABLE(cfgMcTriggerPDGs, std::vector<int>, {}, "MC PDG codes to use exclusively as trigger particles and exclude from associated particles. Empty = no selection.")
+  O2_DEFINE_CONFIGURABLE(cfgMcTriggerPDGs, std::vector<int>, std::vector<int>{}, "MC PDG codes to use exclusively as trigger particles and exclude from associated particles. Empty = no selection.")
 
   ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
@@ -171,14 +172,17 @@ struct Nucleibalance {
   {
     if (cfgTrigger.value == TriggerNone) {
       return true;
-    } else if (cfgTrigger.value == TriggerSel8) {
+    }
+    if (cfgTrigger.value == TriggerSel8) {
       return collision.sel8();
-    } else if (cfgTrigger.value == TriggerSel8Quality) {
+    }
+    if (cfgTrigger.value == TriggerSel8Quality) {
       return collision.sel8() &&
              collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
              collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
              collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
-    } else if (cfgTrigger.value == TriggerSel8OccQuality) {
+    }
+    if (cfgTrigger.value == TriggerSel8OccQuality) {
       const int occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy < cfgMinOcc.value || occupancy >= cfgMaxOcc.value) {
         return false;
@@ -188,7 +192,8 @@ struct Nucleibalance {
              collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
              collision.selection_bit(aod::evsel::kNoCollInTimeRangeStandard) &&
              collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
-    } else if (cfgTrigger.value == TriggerSel8NoSbpZvtx) {
+    }
+    if (cfgTrigger.value == TriggerSel8NoSbpZvtx) {
       return collision.sel8() &&
              collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
              collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV);
@@ -269,7 +274,7 @@ struct Nucleibalance {
   std::vector<float> efficiencyAssociatedCache;
 
   std::unique_ptr<TFormula> multCutFormula;
-  std::array<uint, 4> multCutFormulaParamIndex;
+  std::array<uint, 4> multCutFormulaParamIndex{};
 
   struct Config {
     bool mPairCuts = false;
@@ -281,7 +286,7 @@ struct Nucleibalance {
   HistogramRegistry registry{"registry"};
   PairCuts mPairCuts;
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   // AO2D-based tracks with PID for pi / K / p / d
   using TracksPID = soa::Join<aod::Tracks,
@@ -343,6 +348,15 @@ struct Nucleibalance {
         return false;
       }
     }
+    // Match the standard Lambda(1520) task option `cfgPrimaryTrack`:
+    // require primary tracks when the corresponding selection column is available.
+    if (cfgRequirePrimaryTrack.value != 0) {
+      if constexpr (requires { trk.isPrimaryTrack(); }) {
+        if (!trk.isPrimaryTrack()) {
+          return false;
+        }
+      }
+    }
 
     if constexpr (requires { trk.itsNCls(); }) {
       if (itsnclusters.value > 0 && trk.itsNCls() < itsnclusters.value) {
@@ -384,15 +398,20 @@ struct Nucleibalance {
   }
 
   struct SimpleTrack {
-    float eta;
-    float phi;
-    float pt;
-    int charge;
+    float eta{};
+    float phi{};
+    float pt{};
+    int charge{};
   };
 
+  static SimpleTrack makeSimpleTrack(float eta, float phi, float pt, int charge)
+  {
+    return SimpleTrack{.eta = eta, .phi = phi, .pt = pt, .charge = charge};
+  }
+
   struct MixEventEntry {
-    float multiplicity;
-    float zvtx;
+    float multiplicity = 0.f;
+    float zvtx = 0.f;
     std::vector<SimpleTrack> triggerTracks;
     std::vector<SimpleTrack> associatedTracks;
   };
@@ -414,17 +433,22 @@ struct Nucleibalance {
     registry.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, o2::constants::math::TwoPI, "#varphi"}}});
 
     if (doprocessSameDerivedMultSet) {
-      if (cfgMultCorrelationsMask == 0)
+      if (cfgMultCorrelationsMask.value == 0u) {
         LOGF(fatal, "cfgMultCorrelationsMask can not be 0 when MultSet process functions are in use.");
+      }
       std::vector<AxisSpec> multAxes;
-      if (cfgMultCorrelationsMask & aod::cfmultset::CentFT0C)
+      if ((cfgMultCorrelationsMask.value & aod::cfmultset::CentFT0C) != 0u) {
         multAxes.emplace_back(100, 0, 100, "FT0C centrality");
-      if (cfgMultCorrelationsMask & aod::cfmultset::MultFV0A)
+      }
+      if ((cfgMultCorrelationsMask.value & aod::cfmultset::MultFV0A) != 0u) {
         multAxes.emplace_back(1000, 0, 100000, "V0A multiplicity");
-      if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksPV)
+      }
+      if ((cfgMultCorrelationsMask.value & aod::cfmultset::MultNTracksPV) != 0u) {
         multAxes.emplace_back(100, 0, 1000, "Nch PV");
-      if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksGlobal)
+      }
+      if ((cfgMultCorrelationsMask.value & aod::cfmultset::MultNTracksGlobal) != 0u) {
         multAxes.emplace_back(100, 0, 1000, "Nch Global");
+      }
       registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     }
     registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
@@ -492,8 +516,9 @@ struct Nucleibalance {
     same->setTrackEtaCut(cfgCutEta);
     mixed->setTrackEtaCut(cfgCutEta);
 
-    if (!cfgEfficiencyAssociated.value.empty())
+    if (!cfgEfficiencyAssociated.value.empty()) {
       efficiencyAssociatedCache.reserve(512);
+    }
 
     // o2-ccdb-upload -p Users/jgrosseo/correlations/LHC15o -f /tmp/correction_2011_global.root -k correction
 
@@ -688,41 +713,41 @@ struct Nucleibalance {
     if (cfg.efficiencyLoaded) {
       return;
     }
-    if (cfgEfficiencyTrigger.value.empty() == false) {
+    if (!cfgEfficiencyTrigger.value.empty()) {
       if (cfgLocalEfficiency > 0) {
         TFile* fEfficiencyTrigger = TFile::Open(cfgEfficiencyTrigger.value.c_str(), "READ");
-        cfg.mEfficiencyTrigger = reinterpret_cast<THn*>(fEfficiencyTrigger->Get("ccdb_object"));
+        cfg.mEfficiencyTrigger = dynamic_cast<THn*>(fEfficiencyTrigger->Get("ccdb_object"));
       } else {
         cfg.mEfficiencyTrigger = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyTrigger, timestamp);
       }
       if (cfg.mEfficiencyTrigger == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiencyTrigger.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram for trigger particles from %s (%p)", cfgEfficiencyTrigger.value.c_str(), (void*)cfg.mEfficiencyTrigger);
+      LOGF(info, "Loaded efficiency histogram for trigger particles from %s (%p)", cfgEfficiencyTrigger.value.c_str(), static_cast<void*>(cfg.mEfficiencyTrigger));
     }
-    if (cfgEfficiencyAssociated.value.empty() == false) {
+    if (!cfgEfficiencyAssociated.value.empty()) {
       if (cfgLocalEfficiency > 0) {
         TFile* fEfficiencyAssociated = TFile::Open(cfgEfficiencyAssociated.value.c_str(), "READ");
-        cfg.mEfficiencyAssociated = reinterpret_cast<THn*>(fEfficiencyAssociated->Get("ccdb_object"));
+        cfg.mEfficiencyAssociated = dynamic_cast<THn*>(fEfficiencyAssociated->Get("ccdb_object"));
       } else {
         cfg.mEfficiencyAssociated = ccdb->getForTimeStamp<THnT<float>>(cfgEfficiencyAssociated, timestamp);
       }
       if (cfg.mEfficiencyAssociated == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for associated particles from %s", cfgEfficiencyAssociated.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram for associated particles from %s (%p)", cfgEfficiencyAssociated.value.c_str(), (void*)cfg.mEfficiencyAssociated);
+      LOGF(info, "Loaded efficiency histogram for associated particles from %s (%p)", cfgEfficiencyAssociated.value.c_str(), static_cast<void*>(cfg.mEfficiencyAssociated));
     }
     cfg.efficiencyLoaded = true;
   }
 
   double getEfficiencyCorrection(THn* eff, float eta, float pt, float multiplicity, float posZ)
   {
-    int effVars[4];
+    std::array<int, 4> effVars{};
     effVars[0] = eff->GetAxis(0)->FindBin(eta);
     effVars[1] = eff->GetAxis(1)->FindBin(pt);
     effVars[2] = eff->GetAxis(2)->FindBin(multiplicity);
     effVars[3] = eff->GetAxis(3)->FindBin(posZ);
-    return eff->GetBinContent(effVars);
+    return eff->GetBinContent(effVars.data());
   }
 
   template <typename TTrack>
@@ -853,13 +878,13 @@ struct Nucleibalance {
 
       if (passPIDForSpecies(trk, cfgTriggerSpecies.value)) {
         if (cfgTriggerCharge.value == 0 || trk.sign() == cfgTriggerCharge.value) {
-          triggerTracks.push_back(SimpleTrack{cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()});
+          triggerTracks.push_back(makeSimpleTrack(cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()));
         }
       }
 
       if (passPIDForSpecies(trk, cfgAssociatedSpecies.value)) {
         if (cfgAssociatedCharge.value == 0 || trk.sign() == cfgAssociatedCharge.value) {
-          associatedTracks.push_back(SimpleTrack{cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()});
+          associatedTracks.push_back(makeSimpleTrack(cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()));
         }
       }
     }
@@ -942,7 +967,7 @@ struct Nucleibalance {
       }
 
       // Save for multiplicity / QA (keep charge even if neutral)
-      eventTracks.push_back(SimpleTrack{trk.eta(), trk.phi(), trk.pt(), static_cast<int>(trk.sign())});
+      eventTracks.push_back(makeSimpleTrack(trk.eta(), trk.phi(), trk.pt(), static_cast<int>(trk.sign())));
 
       if (trk.sign() == 0) {
         continue;
@@ -951,14 +976,14 @@ struct Nucleibalance {
       // Trigger selection: PID + charge
       if (passPIDForSpecies(trk, cfgTriggerSpecies.value)) {
         if (cfgTriggerCharge.value == 0 || trk.sign() == cfgTriggerCharge.value) {
-          triggerTracks.push_back(SimpleTrack{trk.eta(), trk.phi(), trk.pt(), trk.sign()});
+          triggerTracks.push_back(makeSimpleTrack(trk.eta(), trk.phi(), trk.pt(), trk.sign()));
         }
       }
 
       // Associated selection: PID + charge
       if (passPIDForSpecies(trk, cfgAssociatedSpecies.value)) {
         if (cfgAssociatedCharge.value == 0 || trk.sign() == cfgAssociatedCharge.value) {
-          associatedTracks.push_back(SimpleTrack{trk.eta(), trk.phi(), trk.pt(), trk.sign()});
+          associatedTracks.push_back(makeSimpleTrack(trk.eta(), trk.phi(), trk.pt(), trk.sign()));
         }
       }
     }
@@ -1098,7 +1123,7 @@ struct Nucleibalance {
         continue;
       }
 
-      eventTracks.push_back(SimpleTrack{trk.eta(), trk.phi(), trk.pt(), static_cast<int>(trk.sign())});
+      eventTracks.push_back(makeSimpleTrack(trk.eta(), trk.phi(), trk.pt(), static_cast<int>(trk.sign())));
 
       if (trk.sign() == 0) {
         continue;
@@ -1106,12 +1131,12 @@ struct Nucleibalance {
 
       if (passPIDForSpecies(trk, cfgTriggerSpecies.value) &&
           (cfgTriggerCharge.value == 0 || trk.sign() == cfgTriggerCharge.value)) {
-        triggerTracks.push_back(SimpleTrack{trk.eta(), trk.phi(), trk.pt(), trk.sign()});
+        triggerTracks.push_back(makeSimpleTrack(trk.eta(), trk.phi(), trk.pt(), trk.sign()));
       }
 
       if (passPIDForSpecies(trk, cfgAssociatedSpecies.value) &&
           (cfgAssociatedCharge.value == 0 || trk.sign() == cfgAssociatedCharge.value)) {
-        associatedTracks.push_back(SimpleTrack{trk.eta(), trk.phi(), trk.pt(), trk.sign()});
+        associatedTracks.push_back(makeSimpleTrack(trk.eta(), trk.phi(), trk.pt(), trk.sign()));
       }
     }
 
@@ -1385,7 +1410,7 @@ struct Nucleibalance {
         }
         if (passPIDForSpecies(trk, cfgTriggerSpecies.value)) {
           if (cfgTriggerCharge.value == 0 || trk.sign() == cfgTriggerCharge.value) {
-            triggerTracks.push_back(SimpleTrack{cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()});
+            triggerTracks.push_back(makeSimpleTrack(cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()));
           }
         }
       }
@@ -1398,7 +1423,7 @@ struct Nucleibalance {
         }
         if (passPIDForSpecies(trk, cfgAssociatedSpecies.value)) {
           if (cfgAssociatedCharge.value == 0 || trk.sign() == cfgAssociatedCharge.value) {
-            associatedTracks.push_back(SimpleTrack{cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()});
+            associatedTracks.push_back(makeSimpleTrack(cftrk.eta(), cftrk.phi(), cftrk.pt(), trk.sign()));
           }
         }
       }
@@ -1458,11 +1483,13 @@ struct Nucleibalance {
       case PdgProton: // proton
       case -PdgProton:
         return 2;
+      default:
+        break;
     }
-    if (std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), pdgCode) != cfgMcTriggerPDGs->end())
+    if (std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), pdgCode) != cfgMcTriggerPDGs->end()) {
       return 4;
-    else
-      return 3;
+    }
+    return 3;
   }
 
   // NOTE SmallGroups includes soa::Filtered always
@@ -1563,11 +1590,13 @@ struct Nucleibalance {
     bool useMCMultiplicity = (cfgCentBinsForMC == 0);
     auto getMultiplicity =
       [&collisions, &useMCMultiplicity, this](auto& col) {
-        if (useMCMultiplicity)
+        if (useMCMultiplicity) {
           return col.multiplicity();
+        }
         auto groupedCollisions = collisions.sliceBy(collisionPerMCCollision, col.globalIndex());
-        if (groupedCollisions.size() == 0)
+        if (groupedCollisions.size() == 0) {
           return -1.0f;
+        }
         return groupedCollisions.begin().multiplicity();
       };
 
@@ -1676,7 +1705,10 @@ struct Lambdastarproxy {
   static constexpr float ProxyMomentumScale = 0.5f;
   static constexpr float TofBetaMin = 0.01f;
   static constexpr float TofBetaMax = 1.2f;
-  static constexpr double Half = 0.5;
+  // PID strategy values
+  static constexpr int PidStrategyRectangular = 0;
+  static constexpr int PidStrategyCircularTPCAndTOF = 1;
+  static constexpr int PidStrategyNucleiDeuteronTPC = 2;
   // Basic configuration for event and track selection
   Configurable<float> lstarCutVertex{"lstarCutVertex", float{CutVertexDefault}, "Accepted z-vertex range (cm)"};
   Configurable<float> lstarCutPtMin{"lstarCutPtMin", float{CutPtMinDefault}, "Minimal pT for tracks (GeV/c)"};
@@ -1696,10 +1728,44 @@ struct Lambdastarproxy {
   Configurable<float> lstarCutNsigmaTOFKaon{"lstarCutNsigmaTOFKaon", float{NsigmaTOFDefault}, "|nSigma^{TOF}_{K}| cut"};
   Configurable<float> lstarCutNsigmaTPCDe{"lstarCutNsigmaTPCDe", float{NsigmaTPCDefault}, "|nSigma^{TPC}_{d}| cut"};
   Configurable<float> lstarCutNsigmaTOFDe{"lstarCutNsigmaTOFDe", float{NsigmaTOFDefault}, "|nSigma^{TOF}_{d}| cut"};
+  Configurable<int> lstarEnableTOFNsigmaCutDe{"lstarEnableTOFNsigmaCutDe", 0, "Enable deuteron-only TOF nSigma cut in PID strategy 2"};
+  Configurable<int> lstarProxyUseProtonPIDAsDeuteron{"lstarProxyUseProtonPIDAsDeuteron", 0, "Closure/control test: keep proxy candidates that pass the normal deuteron selection and are also proton-like, then build p_proxy = p_track/2"};
+  // Optional deuteron-only TOF auxiliary selections.
+  // Defaults are OFF, so strategy 2 remains TPC nSigma only for deuterons.
+  Configurable<int> lstarEnableBetaCutDe{"lstarEnableBetaCutDe", 0, "Enable deuteron-only TOF beta cut using beta() > lstarBetaCutDe"};
+  Configurable<float> lstarBetaCutDe{"lstarBetaCutDe", 0.4f, "Minimum TOF beta for deuteron-only beta cut"};
+  Configurable<int> lstarEnableExpSignalTOFDe{"lstarEnableExpSignalTOFDe", 0, "Enable deuteron-only TOF expected-signal-difference cut when lstarTOFExpSignalDiffDeMax > 0"};
+  Configurable<float> lstarTOFExpSignalDiffDeMax{"lstarTOFExpSignalDiffDeMax", -1.f, "Maximum |tofExpSignalDiffDe| for deuterons; <=0 disables the numeric cut"};
+
+  // PID strategy for final K/p/d candidate selection.
+  // 0 = pT-ref dependent rectangular cuts:
+  //     pT < pTref: require |TPC| < TPC cut only
+  //     pT >= pTref and TOF exists: require |TPC| < TPC cut and |TOF| < TOF cut
+  //     pT >= pTref and TOF missing: reject
+  // 1 = pT-ref dependent circular cut:
+  //     pT < pTref: require |TPC| < TPC cut only
+  //     pT >= pTref and TOF exists: require sqrt(TPC^2 + TOF^2) < circular cut
+  //     pT >= pTref and TOF missing: reject
+  // 2 = hybrid official-like PID:
+  //     deuterons: require |TPC_d| < TPC cut only
+  //     kaons/protons: use the Lambda(1520)-like pT-ref circular TPC+TOF logic
+  Configurable<int> lstarPidStrategy{"lstarPidStrategy", int{PidStrategyRectangular}, "PID strategy: 0=pTref rectangular TPC/TOF, 1=pTref circular TPC+TOF, 2=hybrid: K/p circular, d TPC-only"};
+
+  Configurable<float> lstarPidCircularCutKaon{"lstarPidCircularCutKaon", 2.0f, "Circular PID cut sqrt(nSigmaTPC_K^2+nSigmaTOF_K^2) for kaons"};
+  Configurable<float> lstarPidCircularCutPr{"lstarPidCircularCutPr", 2.0f, "Circular PID cut sqrt(nSigmaTPC_p^2+nSigmaTOF_p^2) for protons"};
+  Configurable<float> lstarPidCircularCutDe{"lstarPidCircularCutDe", 2.0f, "Circular PID cut sqrt(nSigmaTPC_d^2+nSigmaTOF_d^2) for deuterons"};
+
+  Configurable<float> lstarPidPtRefKaon{"lstarPidPtRefKaon", 0.5f, "pT reference for kaon PID strategy"};
+  Configurable<float> lstarPidPtRefPr{"lstarPidPtRefPr", 0.8f, "pT reference for proton PID strategy"};
+  Configurable<float> lstarPidPtRefDe{"lstarPidPtRefDe", 0.8f, "pT reference for deuteron PID strategy"};
 
   // Track quality
+  Configurable<int> lstarRequireINELgt0{"lstarRequireINELgt0", 1, "Require INEL>0 event selection using isInelGt0() when available; fallback to multNTracksPVeta1()/numContrib()"};
   Configurable<bool> lstarRequireGlobalTrack{"lstarRequireGlobalTrack", bool{RequireGlobalTrackDefault}, "Require global tracks (default)"};
-  Configurable<int> lstarTPCNClsMin{"lstarTPCNClsMin", int{TPCNClsMinDefault}, "Minimum number of TPC clusters (tpcNClsFound)"};
+  Configurable<int> lstarRequirePrimaryTrack{"lstarRequirePrimaryTrack", 1, "Require isPrimaryTrack() for Lambda* proxy candidates when the column is available"};
+  Configurable<int> lstarOnlyGlobalTrackCuts{"lstarOnlyGlobalTrackCuts", 0, "If enabled, apply only the global-track plus primary-track requirements and skip additional ITS/TPC/DCA/chi2 track-quality cuts"};
+  Configurable<int> lstarTPCNClsMin{"lstarTPCNClsMin", int{TPCNClsMinDefault}, "Minimum number of TPC crossed rows (tpcNClsCrossedRows)"};
+  Configurable<float> lstarTPCCrossedRowsOverFindableMin{"lstarTPCCrossedRowsOverFindableMin", 0.8f, "Minimum TPC crossed rows over findable clusters"};
   Configurable<float> lstarDcaXYMax{"lstarDcaXYMax", float{DcaXYMaxDefault}, "Max |DCA_{xy}| to PV (cm)"};
   Configurable<float> lstarDcaZMax{"lstarDcaZMax", float{DcaZMaxDefault}, "Max |DCA_{z}| to PV (cm)"};
   Configurable<float> lstarChi2PerTPCCluster{"lstarChi2PerTPCCluster", float{Chi2PerTPCClusterDefault}, "Maximum Chi2/cluster for the TPC track segment"};
@@ -1716,6 +1782,9 @@ struct Lambdastarproxy {
   Configurable<int> lstarNoMixedEvents{"lstarNoMixedEvents", int{NoMixedEventsDefault}, "Number of previous events kept for mixed-event background"};
   Configurable<float> lstarMixZvtxMax{"lstarMixZvtxMax", float{MixZvtxMaxDefault}, "Max |Δzvtx| (cm) for event mixing"};
   Configurable<float> lstarMixMultMax{"lstarMixMultMax", float{MixMultMaxDefault}, "Max |Δmult| for event mixing"};
+  // Master switch for PID QA histogram filling.
+  // Inclusive PID-QA histograms are filled before final PID cuts, after event/track-quality cuts.
+  // Candidate-level nSigma/TOF/DCA histograms are filled after final PID cuts.
   Configurable<int> lstarEnablePidQA{"lstarEnablePidQA", 0, "Enable PID QA histograms (dE/dx, TOF #beta, proxy invariant-mass QA, etc.): 1 = ON, 0 = OFF"};
   Configurable<int> lstarEnableSparse{"lstarEnableSparse", 1, "Enable THnSparse invariant-mass histograms (#Lambda^{*} pK and proxy); 1 = ON, 0 = OFF"};
   Configurable<float> lstarLambdaAbsYMax{"lstarLambdaAbsYMax", 0.5f, "Max |y_{pK}| (or y_{proxy K}) for #Lambda^{*} candidates"};
@@ -1739,17 +1808,18 @@ struct Lambdastarproxy {
   // Helpers for invariant-mass kinematics
   static float phiFromPxPy(float px, float py)
   {
-    return std::atan2(py, px);
+    return RecoDecay::constrainAngle(std::atan2(py, px), -o2::constants::math::PI);
   }
 
-  static float rapidityFromEPz(double e, double pz)
+  static float ptFromPxPy(float px, float py)
   {
-    const double num = e + pz;
-    const double den = e - pz;
-    if (num <= 0.0 || den <= 0.0) {
-      return 0.f;
-    }
-    return static_cast<float>(Half * std::log(num / den));
+    return RecoDecay::pt(std::array{px, py});
+  }
+
+  static float rapidityFromMomentumAndMass(float px, float py, float pz, double mass)
+
+  {
+    return RecoDecay::y(std::array{px, py, pz}, mass);
   }
 
   // Mixed-event pool entry for pK / proxy background (AO2D only)
@@ -1757,6 +1827,7 @@ struct Lambdastarproxy {
     float mult = 0.f;
     float zvtx = 0.f;
     std::vector<KaonCand> kaons;
+    std::vector<ProtonCand> protons;
     std::vector<ProxyCand> proxies;
   };
 
@@ -1766,16 +1837,35 @@ struct Lambdastarproxy {
   template <typename TCollision>
   bool keepCollisionAO2D(TCollision const& collision) const
   {
+    // Prefer the official event-selection flag when available.
+    if (lstarRequireINELgt0.value != 0) {
+      bool isINELgt0 = true;
+
+      if constexpr (requires { collision.isInelGt0(); }) {
+        isINELgt0 = collision.isInelGt0();
+      } else if constexpr (requires { collision.multNTracksPVeta1(); }) {
+        isINELgt0 = collision.multNTracksPVeta1() > 0;
+      } else if constexpr (requires { collision.numContrib(); }) {
+        isINELgt0 = collision.numContrib() > 0;
+      }
+
+      if (!isINELgt0) {
+        return false;
+      }
+    }
     if (lstarCfgTrigger.value == TriggerNone) {
       return true;
-    } else if (lstarCfgTrigger.value == TriggerSel8) {
+    }
+    if (lstarCfgTrigger.value == TriggerSel8) {
       return collision.sel8();
-    } else if (lstarCfgTrigger.value == TriggerSel8Quality) {
+    }
+    if (lstarCfgTrigger.value == TriggerSel8Quality) {
       return collision.sel8() &&
              collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
              collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
              collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
-    } else if (lstarCfgTrigger.value == TriggerSel8OccQuality) {
+    }
+    if (lstarCfgTrigger.value == TriggerSel8OccQuality) {
       const int occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy < lstarMinOcc.value || occupancy >= lstarMaxOcc.value) {
         return false;
@@ -1785,7 +1875,8 @@ struct Lambdastarproxy {
              collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
              collision.selection_bit(aod::evsel::kNoCollInTimeRangeStandard) &&
              collision.selection_bit(aod::evsel::kIsGoodITSLayersAll);
-    } else if (lstarCfgTrigger.value == TriggerSel8NoSbpZvtx) {
+    }
+    if (lstarCfgTrigger.value == TriggerSel8NoSbpZvtx) {
       return collision.sel8() &&
              collision.selection_bit(aod::evsel::kNoSameBunchPileup) &&
              collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV);
@@ -1879,14 +1970,40 @@ struct Lambdastarproxy {
       }
     }
 
+    // Always require primary tracks
+    if (lstarRequirePrimaryTrack.value != 0) {
+      if constexpr (requires { trk.isPrimaryTrack(); }) {
+        if (!trk.isPrimaryTrack()) {
+          return false;
+        }
+      }
+    }
+
+    // Optional official-baseline mode: use only the O2 global-track and primary-track definitions.
+    // This bypasses the extra explicit ITS/TPC/DCA/chi2 cuts below.
+    if (lstarOnlyGlobalTrackCuts.value != 0) {
+      return true;
+    }
+
     if constexpr (requires { trk.itsNCls(); }) {
       if (lstarITSNClusters.value > 0 && trk.itsNCls() < lstarITSNClusters.value) {
         return false;
       }
     }
 
-    if constexpr (requires { trk.tpcNClsFound(); }) {
-      if (lstarTPCNClsMin.value > 0 && trk.tpcNClsFound() < lstarTPCNClsMin.value) {
+    if constexpr (requires { trk.tpcNClsCrossedRows(); }) {
+      if (lstarTPCNClsMin.value > 0 && trk.tpcNClsCrossedRows() < lstarTPCNClsMin.value) {
+        return false;
+      }
+    } else if constexpr (requires { trk.tpcNClsFindable(); trk.tpcCrossedRowsOverFindableCls(); }) {
+      if (lstarTPCNClsMin.value > 0 && trk.tpcNClsFindable() * trk.tpcCrossedRowsOverFindableCls() < lstarTPCNClsMin.value) {
+        return false;
+      }
+    }
+
+    if constexpr (requires { trk.tpcCrossedRowsOverFindableCls(); }) {
+      if (lstarTPCCrossedRowsOverFindableMin.value > 0.f &&
+          trk.tpcCrossedRowsOverFindableCls() < lstarTPCCrossedRowsOverFindableMin.value) {
         return false;
       }
     }
@@ -1947,7 +2064,8 @@ struct Lambdastarproxy {
   {
     AxisSpec massAxis{200, 1.4, 1.9, "M_{pK} (GeV/c^{2})"};
     AxisSpec ptAxis{100, 0., 10., "p_{T} (GeV/c)"};
-    AxisSpec nsAxis{100, -10., 10., "n#sigma"};
+    AxisSpec nsAxis{500, -50., 50., "n#sigma"};
+    AxisSpec tofMatchAxis{2, -0.5, 1.5, "has TOF match"};
     AxisSpec pAxis{100, 0., 10., "p (GeV/c)"};
     AxisSpec etaAxis{80, -2., 2., "#eta"};
     AxisSpec phiAxis{64, 0., o2::constants::math::TwoPI, "#varphi"};
@@ -1957,6 +2075,8 @@ struct Lambdastarproxy {
 
     AxisSpec dEdxAxis{400, 0., 200., "TPC dE/dx (arb. units)"};
     AxisSpec betaAxis{160, 0., 1.6, "#beta_{TOF}"};
+    AxisSpec dcaXYAxis{200, -0.2, 0.2, "DCA_{xy} (cm)"};
+    AxisSpec dcaZAxis{200, -0.2, 0.2, "DCA_{z} (cm)"};
 
     // Invariant-mass spectra
     histos.add("hInvMassPKUnlike",
@@ -1966,56 +2086,44 @@ struct Lambdastarproxy {
                "pK invariant mass (like-sign);M_{pK} (GeV/c^{2});Counts",
                HistType::kTH1F, {massAxis});
 
-    // Invariant-mass vs pair pT (use p_{T} of pK system)
-    histos.add("hInvMassPKUnlikeVsPt",
-               "pK invariant mass vs p_{T} (unlike-sign);M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);Counts",
-               HistType::kTH2F, {massAxis, ptAxis});
-    histos.add("hInvMassPKLikeVsPt",
-               "pK invariant mass vs p_{T} (like-sign);M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);Counts",
-               HistType::kTH2F, {massAxis, ptAxis});
-
-    // THnSparse for invariant-mass analysis (mass, pT, y, phi)
+    // THnSparse for invariant-mass analysis (mass, pT, multiplicity/centrality)
     if (lstarEnableSparse.value != 0) {
       histos.add("hLambdaStarPKUnlikeSparse",
-                 "#Lambda^{*}(1520) pK unlike-sign candidates;M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);y_{pK};#varphi_{pK}",
+                 "#Lambda^{*}(1520) pK unlike-sign candidates;M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);multiplicity/centrality",
                  HistType::kTHnSparseF,
-                 {AxisSpec{400, 1.3, 1.9, "M_{pK} (GeV/c^{2})"},
-                  AxisSpec{100, 0., 10., "p_{T}^{pK} (GeV/c)"},
-                  AxisSpec{60, -1.5, 1.5, "y_{pK}"},
-                  AxisSpec{64, -3.2, 3.2, "#varphi_{pK}"}, centAxis});
+                 {AxisSpec{400, 1.4, 1.8, "M_{pK} (GeV/c^{2})"},
+                  AxisSpec{100, 0., 10., "p_{T}^{pK} (GeV/c)"}, centAxis});
 
       histos.add("hLambdaStarPKLikeSparse",
-                 "#Lambda^{*}(1520) pK like-sign candidates;M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);y_{pK};#varphi_{pK}",
+                 "#Lambda^{*}(1520) pK like-sign candidates;M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);multiplicity/centrality",
                  HistType::kTHnSparseF,
-                 {AxisSpec{400, 1.3, 1.9, "M_{pK} (GeV/c^{2})"},
-                  AxisSpec{100, 0., 10., "p_{T}^{pK} (GeV/c)"},
-                  AxisSpec{60, -1.5, 1.5, "y_{pK}"},
-                  AxisSpec{64, -3.2, 3.2, "#varphi_{pK}"}, centAxis});
+                 {AxisSpec{400, 1.4, 1.8, "M_{pK} (GeV/c^{2})"},
+                  AxisSpec{100, 0., 10., "p_{T}^{pK} (GeV/c)"}, centAxis});
 
       histos.add("hLambdaStarPKMixedSparse",
-                 "#Lambda^{*}(1520) pK mixed-event candidates;M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);y_{pK};#varphi_{pK}",
+                 "#Lambda^{*}(1520) pK mixed-event candidates;M_{pK} (GeV/c^{2});p_{T}^{pK} (GeV/c);multiplicity/centrality",
                  HistType::kTHnSparseF,
-                 {AxisSpec{400, 1.3, 1.9, "M_{pK} (GeV/c^{2})"},
-                  AxisSpec{100, 0., 10., "p_{T}^{pK} (GeV/c)"},
-                  AxisSpec{60, -1.5, 1.5, "y_{pK}"},
-                  AxisSpec{64, -3.2, 3.2, "#varphi_{pK}"}, centAxis});
+                 {AxisSpec{400, 1.4, 1.8, "M_{pK} (GeV/c^{2})"},
+                  AxisSpec{100, 0., 10., "p_{T}^{pK} (GeV/c)"}, centAxis});
 
-      // THnSparse for deuteron-proxy invariant-mass analysis (mass, pT, y, phi)
+      // THnSparse for deuteron-proxy invariant-mass analysis (mass, pT, multiplicity/centrality)
       histos.add("hLambdaStarProxySparse",
-                 "#Lambda^{*}(1520) deuteron-proxy candidates;M_{p_{proxy}K} (GeV/c^{2});p_{T}^{p_{proxy}K} (GeV/c);y_{p_{proxy}K};#varphi_{p_{proxy}K}",
+                 "#Lambda^{*}(1520) deuteron-proxy candidates;M_{p_{proxy}K} (GeV/c^{2});p_{T}^{p_{proxy}K} (GeV/c);multiplicity/centrality",
                  HistType::kTHnSparseF,
-                 {AxisSpec{400, 1.3, 1.9, "M_{p_{proxy}K} (GeV/c^{2})"},
-                  AxisSpec{100, 0., 10., "p_{T}^{p_{proxy}K} (GeV/c)"},
-                  AxisSpec{60, -1.5, 1.5, "y_{p_{proxy}K}"},
-                  AxisSpec{64, -3.2, 3.2, "#varphi_{p_{proxy}K}"}, centAxis});
+                 {AxisSpec{400, 1.4, 1.8, "M_{p_{proxy}K} (GeV/c^{2})"},
+                  AxisSpec{100, 0., 10., "p_{T}^{p_{proxy}K} (GeV/c)"}, centAxis});
+
+      histos.add("hLambdaStarProxyLikeSparse",
+                 "#Lambda^{*}(1520) deuteron-proxy like-sign candidates;M_{p_{proxy}K} (GeV/c^{2});p_{T}^{p_{proxy}K} (GeV/c);multiplicity/centrality",
+                 HistType::kTHnSparseF,
+                 {AxisSpec{400, 1.4, 1.8, "M_{p_{proxy}K} (GeV/c^{2})"},
+                  AxisSpec{100, 0., 10., "p_{T}^{p_{proxy}K} (GeV/c)"}, centAxis});
 
       histos.add("hLambdaStarProxyMixedSparse",
-                 "#Lambda^{*}(1520) deuteron-proxy mixed-event candidates;M_{p_{proxy}K} (GeV/c^{2});p_{T}^{p_{proxy}K} (GeV/c);y_{p_{proxy}K};#varphi_{p_{proxy}K}",
+                 "#Lambda^{*}(1520) deuteron-proxy mixed-event candidates;M_{p_{proxy}K} (GeV/c^{2});p_{T}^{p_{proxy}K} (GeV/c);multiplicity/centrality",
                  HistType::kTHnSparseF,
-                 {AxisSpec{400, 1.3, 1.9, "M_{p_{proxy}K} (GeV/c^{2})"},
-                  AxisSpec{100, 0., 10., "p_{T}^{p_{proxy}K} (GeV/c)"},
-                  AxisSpec{60, -1.5, 1.5, "y_{p_{proxy}K}"},
-                  AxisSpec{64, -3.2, 3.2, "#varphi_{p_{proxy}K}"}, centAxis});
+                 {AxisSpec{400, 1.4, 1.8, "M_{p_{proxy}K} (GeV/c^{2})"},
+                  AxisSpec{100, 0., 10., "p_{T}^{p_{proxy}K} (GeV/c)"}, centAxis});
     }
 
     // Deuteron-proxy invariant mass (p_{proxy} from d/2 combined with K)
@@ -2023,6 +2131,7 @@ struct Lambdastarproxy {
                "#Lambda^{*} proxy invariant mass from (d/2 + K);M_{p_{proxy}K} (GeV/c^{2});Counts",
                HistType::kTH1F, {massAxis});
 
+    // Inclusive PID QA before final candidate PID cuts: after track-quality cuts only
     // TPC dE/dx vs total momentum
     histos.add("hTPCdEdxVsP",
                "TPC dE/dx vs p;p (GeV/c);dE/dx (arb. units);Counts",
@@ -2033,7 +2142,16 @@ struct Lambdastarproxy {
                "TOF #beta vs p;p (GeV/c);#beta_{TOF};Counts",
                HistType::kTH2F, {pAxis, betaAxis});
 
-    // --- Per-species PID QA (tagged) ---
+    histos.add("hHasTOFVsP",
+               "TOF matching flag vs p;p (GeV/c);has TOF match;Counts",
+               HistType::kTH2F, {pAxis, tofMatchAxis});
+
+    histos.add("hHasTOFVsPt",
+               "TOF matching flag vs p_{T};p_{T} (GeV/c);has TOF match;Counts",
+               HistType::kTH2F, {ptAxis, tofMatchAxis});
+
+    // --- Per-species inclusive PID QA before final candidate PID cuts ---
+    // Species tagging here uses classifyPidSpecies() and is meant only for QA.
     histos.add("hTPCdEdxVsP_Pi",
                "TPC dE/dx vs p (tagged #pi);p (GeV/c);dE/dx (arb. units);Counts",
                HistType::kTH2F, {pAxis, dEdxAxis});
@@ -2059,6 +2177,36 @@ struct Lambdastarproxy {
     histos.add("hTOFBetaVsP_D",
                "TOF #beta vs p (tagged d);p (GeV/c);#beta_{TOF};Counts",
                HistType::kTH2F, {pAxis, betaAxis});
+
+    // Inclusive tagged nSigma QA before final candidate PID cuts: after track-quality cuts only.
+    // These are separate from the final-candidate PID QA histograms.
+    histos.add("hNsigmaTPCPionTaggedVsP",
+               "TPC n#sigma_{#pi} vs p for tagged #pi;p (GeV/c);n#sigma^{TPC}_{#pi};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+    histos.add("hNsigmaTOFPionTaggedVsP",
+               "TOF n#sigma_{#pi} vs p for tagged #pi;p (GeV/c);n#sigma^{TOF}_{#pi};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+
+    histos.add("hNsigmaTPCKaonTaggedVsP",
+               "TPC n#sigma_{K} vs p for tagged K;p (GeV/c);n#sigma^{TPC}_{K};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+    histos.add("hNsigmaTOFKaonTaggedVsP",
+               "TOF n#sigma_{K} vs p for tagged K;p (GeV/c);n#sigma^{TOF}_{K};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+
+    histos.add("hNsigmaTPCProtonTaggedVsP",
+               "TPC n#sigma_{p} vs p for tagged p;p (GeV/c);n#sigma^{TPC}_{p};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+    histos.add("hNsigmaTOFProtonTaggedVsP",
+               "TOF n#sigma_{p} vs p for tagged p;p (GeV/c);n#sigma^{TOF}_{p};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+
+    histos.add("hNsigmaTPCDeuteronTaggedVsP",
+               "TPC n#sigma_{d} vs p for tagged d;p (GeV/c);n#sigma^{TPC}_{d};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+    histos.add("hNsigmaTOFDeuteronTaggedVsP",
+               "TOF n#sigma_{d} vs p for tagged d;p (GeV/c);n#sigma^{TOF}_{d};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
 
     // --- MC QA (AO2D-MC mode) ---
     histos.add("hMcPrimariesPtEta",
@@ -2122,6 +2270,78 @@ struct Lambdastarproxy {
     histos.add("hNsigmaTOFKaonVsP",
                "TOF n#sigma_{K} vs p; p (GeV/c); n#sigma^{TOF}_{K};Counts",
                HistType::kTH2F, {pAxis, nsAxis});
+
+    // --- Candidate PID QA after final selected K/p/d PID cuts ---
+    // These histograms are needed for PID studies in the same pT intervals used by the analysis.
+    histos.add("hTOFBetaVsPt_K",
+               "TOF #beta vs p_{T} for selected K;p_{T} (GeV/c);#beta_{TOF};Counts",
+               HistType::kTH2F, {ptAxis, betaAxis});
+    histos.add("hTOFBetaVsPt_P",
+               "TOF #beta vs p_{T} for selected p;p_{T} (GeV/c);#beta_{TOF};Counts",
+               HistType::kTH2F, {ptAxis, betaAxis});
+    histos.add("hTOFBetaVsPt_D",
+               "TOF #beta vs p_{T} for selected d;p_{T} (GeV/c);#beta_{TOF};Counts",
+               HistType::kTH2F, {ptAxis, betaAxis});
+
+    histos.add("hNsigmaTPCKaonVsPt",
+               "TPC n#sigma_{K} vs p_{T};p_{T} (GeV/c);n#sigma^{TPC}_{K};Counts",
+               HistType::kTH2F, {ptAxis, nsAxis});
+    histos.add("hNsigmaTOFKaonVsPt",
+               "TOF n#sigma_{K} vs p_{T};p_{T} (GeV/c);n#sigma^{TOF}_{K};Counts",
+               HistType::kTH2F, {ptAxis, nsAxis});
+
+    histos.add("hNsigmaTPCProtonVsP",
+               "TPC n#sigma_{p} vs p;p (GeV/c);n#sigma^{TPC}_{p};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+    histos.add("hNsigmaTOFProtonVsP",
+               "TOF n#sigma_{p} vs p;p (GeV/c);n#sigma^{TOF}_{p};Counts",
+               HistType::kTH2F, {pAxis, nsAxis});
+    histos.add("hNsigmaTPCProtonVsPt",
+               "TPC n#sigma_{p} vs p_{T};p_{T} (GeV/c);n#sigma^{TPC}_{p};Counts",
+               HistType::kTH2F, {ptAxis, nsAxis});
+    histos.add("hNsigmaTOFProtonVsPt",
+               "TOF n#sigma_{p} vs p_{T};p_{T} (GeV/c);n#sigma^{TOF}_{p};Counts",
+               HistType::kTH2F, {ptAxis, nsAxis});
+
+    histos.add("hNsigmaTPCDeuteronVsPt",
+               "TPC n#sigma_{d} vs p_{T};p_{T} (GeV/c);n#sigma^{TPC}_{d};Counts",
+               HistType::kTH2F, {ptAxis, nsAxis});
+    histos.add("hNsigmaTOFDeuteronVsPt",
+               "TOF n#sigma_{d} vs p_{T};p_{T} (GeV/c);n#sigma^{TOF}_{d};Counts",
+               HistType::kTH2F, {ptAxis, nsAxis});
+
+    histos.add("hTPCvsTOFNsigma_K",
+               "TPC vs TOF n#sigma for selected K;n#sigma^{TPC}_{K};n#sigma^{TOF}_{K};Counts",
+               HistType::kTH2F, {nsAxis, nsAxis});
+    histos.add("hTPCvsTOFNsigma_P",
+               "TPC vs TOF n#sigma for selected p;n#sigma^{TPC}_{p};n#sigma^{TOF}_{p};Counts",
+               HistType::kTH2F, {nsAxis, nsAxis});
+    histos.add("hTPCvsTOFNsigma_D",
+               "TPC vs TOF n#sigma for selected d;n#sigma^{TPC}_{d};n#sigma^{TOF}_{d};Counts",
+               HistType::kTH2F, {nsAxis, nsAxis});
+
+    // --- DCA QA for final selected K/p/d candidates ---
+    // Filled only when lstarEnablePidQA = 1.
+    histos.add("hDCAxyVsPt_K",
+               "DCA_{xy} vs p_{T} distribution for selected K;p_{T} (GeV/c);DCA_{xy} (cm);Counts",
+               HistType::kTH2F, {ptAxis, dcaXYAxis});
+    histos.add("hDCAzVsPt_K",
+               "DCA_{z} vs p_{T} distribution for selected K;p_{T} (GeV/c);DCA_{z} (cm);Counts",
+               HistType::kTH2F, {ptAxis, dcaZAxis});
+
+    histos.add("hDCAxyVsPt_P",
+               "DCA_{xy} vs p_{T} distribution for selected p;p_{T} (GeV/c);DCA_{xy} (cm);Counts",
+               HistType::kTH2F, {ptAxis, dcaXYAxis});
+    histos.add("hDCAzVsPt_P",
+               "DCA_{z} vs p_{T} distribution for selected p;p_{T} (GeV/c);DCA_{z} (cm);Counts",
+               HistType::kTH2F, {ptAxis, dcaZAxis});
+
+    histos.add("hDCAxyVsPt_D",
+               "DCA_{xy} vs p_{T} distribution for selected d;p_{T} (GeV/c);DCA_{xy} (cm);Counts",
+               HistType::kTH2F, {ptAxis, dcaXYAxis});
+    histos.add("hDCAzVsPt_D",
+               "DCA_{z} vs p_{T} distribution for selected d;p_{T} (GeV/c);DCA_{z} (cm);Counts",
+               HistType::kTH2F, {ptAxis, dcaZAxis});
   }
 
   // AO2D-MC QA: truth primaries + reco-to-MC matching sanity plots
@@ -2241,6 +2461,100 @@ struct Lambdastarproxy {
     return true; // fallback: if column not present, assume available
   }
 
+  template <typename TTrack>
+  bool passOptionalDeuteronTOFExtras(const TTrack& trk) const
+  {
+    const bool needTOF =
+      (lstarEnableBetaCutDe.value != 0) ||
+      (lstarEnableExpSignalTOFDe.value != 0 && lstarTOFExpSignalDiffDeMax.value > 0.f);
+
+    if (needTOF) {
+      if constexpr (requires { trk.hasTOF(); }) {
+        if (!trk.hasTOF()) {
+          return false;
+        }
+      }
+    }
+
+    if (lstarEnableBetaCutDe.value != 0) {
+      if constexpr (requires { trk.beta(); }) {
+        if (trk.beta() <= lstarBetaCutDe.value) {
+          return false;
+        }
+      } else {
+        return false;
+      }
+    }
+
+    if (lstarEnableExpSignalTOFDe.value != 0 &&
+        lstarTOFExpSignalDiffDeMax.value > 0.f) {
+      if constexpr (requires { trk.tofExpSignalDiffDe(); }) {
+        if (std::abs(trk.tofExpSignalDiffDe()) > lstarTOFExpSignalDiffDeMax.value) {
+          return false;
+        }
+      } else {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  bool passFinalCandidatePID(float pt, float nsTPC, float nsTOF, bool hasTof,
+                             float tpcCut, float tofCut, float circularCut,
+                             float ptRef, bool isDeuteron = false) const
+  {
+    // Strategy 1: analysis-note style circular TPC+TOF cut
+    if (lstarPidStrategy.value == PidStrategyCircularTPCAndTOF) {
+      if (pt < ptRef) {
+        return std::abs(nsTPC) < tpcCut;
+      }
+
+      if (!hasTof) {
+        return false;
+      }
+
+      return std::sqrt(nsTPC * nsTPC + nsTOF * nsTOF) < circularCut;
+    }
+
+    if (lstarPidStrategy.value == PidStrategyNucleiDeuteronTPC) {
+      // For deuterons, use TPC nσ as the main hard PID selection.
+      // If the optional deuteron TOF nσ cut is enabled, apply it only when
+      // the track has a valid TOF match. Tracks without TOF are kept with
+      // the TPC-only decision, avoiding an additional TOF-matching efficiency loss.
+      if (isDeuteron) {
+        if (std::abs(nsTPC) >= tpcCut) {
+          return false;
+        }
+        if (lstarEnableTOFNsigmaCutDe.value != 0 && hasTof) {
+          return std::abs(nsTOF) < tofCut;
+        }
+        return true;
+      }
+
+      // For kaons/protons, use the Lambda(1520)-like pT-ref circular TPC+TOF logic.
+      if (pt < ptRef) {
+        return std::abs(nsTPC) < tpcCut;
+      }
+
+      if (!hasTof) {
+        return false;
+      }
+
+      return std::sqrt(nsTPC * nsTPC + nsTOF * nsTOF) < circularCut;
+    }
+
+    // Strategy 0: pT-ref dependent rectangular TPC+TOF cut.
+    // Below pTref use TPC only; above pTref require TOF and apply both TPC and TOF cuts.
+    if (pt < ptRef) {
+      return std::abs(nsTPC) < tpcCut;
+    }
+    if (!hasTof) {
+      return false;
+    }
+    return (std::abs(nsTPC) < tpcCut) && (std::abs(nsTOF) < tofCut);
+  }
+
   // Return: 0=#pi, 1=K, 2=p, 3=d, -1=unclassified
   template <typename TTrack>
   int classifyPidSpecies(const TTrack& trk)
@@ -2317,15 +2631,9 @@ struct Lambdastarproxy {
   static double invariantMass(float px1, float py1, float pz1, double m1,
                               float px2, float py2, float pz2, double m2)
   {
-    const double e1 = std::sqrt(m1 * m1 + px1 * px1 + py1 * py1 + pz1 * pz1);
-    const double e2 = std::sqrt(m2 * m2 + px2 * px2 + py2 * py2 + pz2 * pz2);
-    const double ex = px1 + px2;
-    const double ey = py1 + py2;
-    const double ez = pz1 + pz2;
-    const double eTot = e1 + e2;
-    const double p2Tot = ex * ex + ey * ey + ez * ez;
-    const double m2Tot = eTot * eTot - p2Tot;
-    return m2Tot > 0. ? std::sqrt(m2Tot) : 0.;
+    return RecoDecay::m(std::array{std::array{px1, py1, pz1},
+                                   std::array{px2, py2, pz2}},
+                        std::array{m1, m2});
   }
 
   void process(FilteredCollisions::iterator const& collision, FilteredTracks const& tracks)
@@ -2338,87 +2646,6 @@ struct Lambdastarproxy {
     constexpr double MassProton = o2::constants::physics::MassProton;
     constexpr double MassKaonCharged = o2::constants::physics::MassKaonCharged;
 
-    // --- Inclusive PID QA: keep #pi/K/p/d bands in TPC dE/dx and TOF beta plots ---
-    if (lstarEnablePidQA.value != 0) {
-      for (auto const& trk : tracks) {
-        if (trk.pt() < lstarCutPtMin.value || std::abs(trk.eta()) > lstarCutEtaMax.value) {
-          continue;
-        }
-        if (!passTrackQuality(trk)) {
-          continue;
-        }
-        if (trk.sign() == 0) {
-          continue;
-        }
-        // Inclusive PID QA
-        fillTPCdEdxVsPIfAvailable(trk);
-        fillTOFBetaVsPIfAvailable(trk);
-
-        // Per-species PID-QA (tagged) histograms
-        const int sp = classifyPidSpecies(trk);
-        switch (sp) {
-          case 0: { // pion
-            if constexpr (requires { trk.tpcSignal(); }) {
-              histos.fill(HIST("hTPCdEdxVsP_Pi"), trk.p(), trk.tpcSignal());
-            }
-            if constexpr (requires { trk.beta(); }) {
-              const bool hasTof = hasTOFMatch(trk);
-              const float beta = trk.beta();
-              if (hasTof && beta > TofBetaMin && beta < TofBetaMax) {
-                histos.fill(HIST("hTOFBetaVsP_Pi"), trk.p(), beta);
-              }
-            }
-            break;
-          }
-
-          case 1: { // kaon
-            if constexpr (requires { trk.tpcSignal(); }) {
-              histos.fill(HIST("hTPCdEdxVsP_K"), trk.p(), trk.tpcSignal());
-            }
-            if constexpr (requires { trk.beta(); }) {
-              const bool hasTof = hasTOFMatch(trk);
-              const float beta = trk.beta();
-              if (hasTof && beta > TofBetaMin && beta < TofBetaMax) {
-                histos.fill(HIST("hTOFBetaVsP_K"), trk.p(), beta);
-              }
-            }
-            break;
-          }
-
-          case 2: { // proton
-            if constexpr (requires { trk.tpcSignal(); }) {
-              histos.fill(HIST("hTPCdEdxVsP_P"), trk.p(), trk.tpcSignal());
-            }
-            if constexpr (requires { trk.beta(); }) {
-              const bool hasTof = hasTOFMatch(trk);
-              const float beta = trk.beta();
-              if (hasTof && beta > TofBetaMin && beta < TofBetaMax) {
-                histos.fill(HIST("hTOFBetaVsP_P"), trk.p(), beta);
-              }
-            }
-            break;
-          }
-
-          case 3: { // deuteron
-            if constexpr (requires { trk.tpcSignal(); }) {
-              histos.fill(HIST("hTPCdEdxVsP_D"), trk.p(), trk.tpcSignal());
-            }
-            if constexpr (requires { trk.beta(); }) {
-              const bool hasTof = hasTOFMatch(trk);
-              const float beta = trk.beta();
-              if (hasTof && beta > TofBetaMin && beta < TofBetaMax) {
-                histos.fill(HIST("hTOFBetaVsP_D"), trk.p(), beta);
-              }
-            }
-            break;
-          }
-
-          default:
-            break;
-        }
-      }
-    }
-
     std::vector<KaonCand> kaonCands;
     std::vector<ProxyCand> proxyCands;
     std::vector<ProtonCand> protonCands;
@@ -2428,7 +2655,9 @@ struct Lambdastarproxy {
 
     float eventMultFallback = 0.f; // fallback mixing variable: number of selected charged tracks (after quality cuts)
 
-    // Inclusive PID QA loop: count all selected charged tracks for fallback multiplicity
+    // Inclusive track loop before final candidate PID cuts.
+    // It counts selected charged tracks for fallback multiplicity and when enabled,
+    // fills inclusive PID QA after track-quality cuts but before final K/p/d PID cuts.
     for (auto const& trk : tracks) {
       if (trk.pt() < lstarCutPtMin.value || std::abs(trk.eta()) > lstarCutEtaMax.value) {
         continue;
@@ -2447,10 +2676,18 @@ struct Lambdastarproxy {
       fillTPCdEdxVsPIfAvailable(trk);
       fillTOFBetaVsPIfAvailable(trk);
 
+      const double pForPidQA = static_cast<double>(trk.pt()) * std::cosh(static_cast<double>(trk.eta()));
+      const bool hasTofForPidQA = hasTOFMatch(trk);
+
+      histos.fill(HIST("hHasTOFVsP"), pForPidQA, hasTofForPidQA ? 1.0 : 0.0);
+      histos.fill(HIST("hHasTOFVsPt"), trk.pt(), hasTofForPidQA ? 1.0 : 0.0);
+
       // Per-species PID-QA (tagged) histograms
       const int sp = classifyPidSpecies(trk);
       switch (sp) {
         case 0: { // pion
+          histos.fill(HIST("hNsigmaTPCPionTaggedVsP"), pForPidQA, trk.tpcNSigmaPi());
+          histos.fill(HIST("hNsigmaTOFPionTaggedVsP"), pForPidQA, trk.tofNSigmaPi());
           if constexpr (requires { trk.tpcSignal(); }) {
             histos.fill(HIST("hTPCdEdxVsP_Pi"), trk.p(), trk.tpcSignal());
           }
@@ -2464,6 +2701,8 @@ struct Lambdastarproxy {
           break;
         }
         case 1: { // kaon
+          histos.fill(HIST("hNsigmaTPCKaonTaggedVsP"), pForPidQA, trk.tpcNSigmaKa());
+          histos.fill(HIST("hNsigmaTOFKaonTaggedVsP"), pForPidQA, trk.tofNSigmaKa());
           if constexpr (requires { trk.tpcSignal(); }) {
             histos.fill(HIST("hTPCdEdxVsP_K"), trk.p(), trk.tpcSignal());
           }
@@ -2477,6 +2716,8 @@ struct Lambdastarproxy {
           break;
         }
         case 2: { // proton
+          histos.fill(HIST("hNsigmaTPCProtonTaggedVsP"), pForPidQA, trk.tpcNSigmaPr());
+          histos.fill(HIST("hNsigmaTOFProtonTaggedVsP"), pForPidQA, trk.tofNSigmaPr());
           if constexpr (requires { trk.tpcSignal(); }) {
             histos.fill(HIST("hTPCdEdxVsP_P"), trk.p(), trk.tpcSignal());
           }
@@ -2490,6 +2731,8 @@ struct Lambdastarproxy {
           break;
         }
         case 3: { // deuteron
+          histos.fill(HIST("hNsigmaTPCDeuteronTaggedVsP"), pForPidQA, trk.tpcNSigmaDe());
+          histos.fill(HIST("hNsigmaTOFDeuteronTaggedVsP"), pForPidQA, trk.tofNSigmaDe());
           if constexpr (requires { trk.tpcSignal(); }) {
             histos.fill(HIST("hTPCdEdxVsP_D"), trk.p(), trk.tpcSignal());
           }
@@ -2522,23 +2765,49 @@ struct Lambdastarproxy {
         continue;
       }
 
-      // PID for deuteron candidates
-      const float nsTPCDe = trkD.tpcNSigmaDe();
-      const float nsTOFDe = trkD.tofNSigmaDe();
-      const bool hasTofDe = hasTOFMatch(trkD);
-      const bool isDeuteron = (std::abs(nsTPCDe) < lstarCutNsigmaTPCDe.value) &&
-                              (!hasTofDe || (std::abs(nsTOFDe) < lstarCutNsigmaTOFDe.value));
-      if (!isDeuteron) {
-        continue;
-      }
-
-      // Deuteron kinematics
+      // Deuteron kinematics needed before PID because the PID strategy can depend on pT
       const float ptD = trkD.pt();
       const float etaD = trkD.eta();
       const float phiD = trkD.phi();
+
+      // PID for proxy candidates.
+      // Normal mode: use the standard deuteron PID and build p_proxy = p_d / 2.
+      // Closure/control mode: select the subset of standard deuteron-proxy candidates
+      // that are also proton-like. This tests proton contamination inside the deuteron
+      // selection, not all proton candidates.
+      const bool useProtonAsProxy = (lstarProxyUseProtonPIDAsDeuteron.value != 0);
+
+      const float nsTPCDe = trkD.tpcNSigmaDe();
+      const float nsTOFDe = trkD.tofNSigmaDe();
+      const bool hasTofDe = hasTOFMatch(trkD);
+
+      if (!passOptionalDeuteronTOFExtras(trkD)) {
+        continue;
+      }
+
+      const bool passesDeuteronSelection = passFinalCandidatePID(ptD, nsTPCDe, nsTOFDe, hasTofDe,
+                                                                 lstarCutNsigmaTPCDe.value, lstarCutNsigmaTOFDe.value,
+                                                                 lstarPidCircularCutDe.value, lstarPidPtRefDe.value,
+                                                                 true);
+      if (!passesDeuteronSelection) {
+        continue;
+      }
+
+      if (useProtonAsProxy) {
+        const float nsTPCPrAsProxy = trkD.tpcNSigmaPr();
+        const float nsTOFPrAsProxy = trkD.tofNSigmaPr();
+        const bool passesProtonSelection = passFinalCandidatePID(ptD, nsTPCPrAsProxy, nsTOFPrAsProxy, hasTofDe,
+                                                                 lstarCutNsigmaTPCPr.value, lstarCutNsigmaTOFPr.value,
+                                                                 lstarPidCircularCutPr.value, lstarPidPtRefPr.value,
+                                                                 false);
+        if (!passesProtonSelection) {
+          continue;
+        }
+      }
+
       const double pD = static_cast<double>(ptD) * std::cosh(static_cast<double>(etaD));
 
-      // QA histos for deuteron PID and kinematics
+      // Candidate QA after final deuteron PID cut
       if (lstarEnablePidQA.value != 0) {
         histos.fill(HIST("hDeuteronProxyPt"), ptD);
         histos.fill(HIST("hDeuteronProxyEta"), etaD);
@@ -2547,6 +2816,21 @@ struct Lambdastarproxy {
         histos.fill(HIST("hNsigmaTOFDeuteron"), nsTOFDe);
         histos.fill(HIST("hNsigmaTPCDeuteronVsP"), pD, nsTPCDe);
         histos.fill(HIST("hNsigmaTOFDeuteronVsP"), pD, nsTOFDe);
+        histos.fill(HIST("hNsigmaTPCDeuteronVsPt"), ptD, nsTPCDe);
+        histos.fill(HIST("hNsigmaTOFDeuteronVsPt"), ptD, nsTOFDe);
+        if (hasTofDe) {
+          histos.fill(HIST("hTPCvsTOFNsigma_D"), nsTPCDe, nsTOFDe);
+        }
+        if constexpr (requires { trkD.beta(); }) {
+          const float beta = trkD.beta();
+          if (hasTofDe && beta > TofBetaMin && beta < TofBetaMax) {
+            histos.fill(HIST("hTOFBetaVsPt_D"), ptD, beta);
+          }
+        }
+        if constexpr (requires { trkD.dcaXY(); trkD.dcaZ(); }) {
+          histos.fill(HIST("hDCAxyVsPt_D"), ptD, trkD.dcaXY());
+          histos.fill(HIST("hDCAzVsPt_D"), ptD, trkD.dcaZ());
+        }
       }
 
       // build proton-proxy momentum from deuteron: p_p ≈ p_d / 2
@@ -2554,7 +2838,7 @@ struct Lambdastarproxy {
       const float pyProxy = ProxyMomentumScale * ptD * std::sin(phiD);
       const float pzProxy = ProxyMomentumScale * ptD * std::sinh(etaD);
 
-      proxyCands.push_back(ProxyCand{pxProxy, pyProxy, pzProxy, static_cast<int>(trkD.sign()), static_cast<int>(trkD.globalIndex())});
+      proxyCands.push_back(ProxyCand{.px = pxProxy, .py = pyProxy, .pz = pzProxy, .charge = static_cast<int>(trkD.sign()), .tid = static_cast<int>(trkD.globalIndex())});
     }
 
     // Proton candidates (for genuine pK #Lambda^{*} reconstruction)
@@ -2569,24 +2853,52 @@ struct Lambdastarproxy {
         continue;
       }
 
+      const float ptP = trkP.pt();
+      const float etaP = trkP.eta();
+      const float phiP = trkP.phi();
+
       const float nsTPCPr = trkP.tpcNSigmaPr();
       const float nsTOFPr = trkP.tofNSigmaPr();
       const bool hasTofPr = hasTOFMatch(trkP);
-      const bool isProton = (std::abs(nsTPCPr) < lstarCutNsigmaTPCPr.value) &&
-                            (!hasTofPr || (std::abs(nsTOFPr) < lstarCutNsigmaTOFPr.value));
+      const bool isProton = passFinalCandidatePID(ptP,
+                                                  nsTPCPr,
+                                                  nsTOFPr,
+                                                  hasTofPr,
+                                                  lstarCutNsigmaTPCPr.value,
+                                                  lstarCutNsigmaTOFPr.value,
+                                                  lstarPidCircularCutPr.value,
+                                                  lstarPidPtRefPr.value, false);
       if (!isProton) {
         continue;
       }
 
-      const float ptP = trkP.pt();
-      const float etaP = trkP.eta();
-      const float phiP = trkP.phi();
+      const double pP = static_cast<double>(ptP) * std::cosh(static_cast<double>(etaP));
+
+      if (lstarEnablePidQA.value != 0) {
+        histos.fill(HIST("hNsigmaTPCProtonVsP"), pP, nsTPCPr);
+        histos.fill(HIST("hNsigmaTOFProtonVsP"), pP, nsTOFPr);
+        histos.fill(HIST("hNsigmaTPCProtonVsPt"), ptP, nsTPCPr);
+        histos.fill(HIST("hNsigmaTOFProtonVsPt"), ptP, nsTOFPr);
+        if (hasTofPr) {
+          histos.fill(HIST("hTPCvsTOFNsigma_P"), nsTPCPr, nsTOFPr);
+        }
+        if constexpr (requires { trkP.beta(); }) {
+          const float beta = trkP.beta();
+          if (hasTofPr && beta > TofBetaMin && beta < TofBetaMax) {
+            histos.fill(HIST("hTOFBetaVsPt_P"), ptP, beta);
+          }
+        }
+        if constexpr (requires { trkP.dcaXY(); trkP.dcaZ(); }) {
+          histos.fill(HIST("hDCAxyVsPt_P"), ptP, trkP.dcaXY());
+          histos.fill(HIST("hDCAzVsPt_P"), ptP, trkP.dcaZ());
+        }
+      }
 
       const float pxP = ptP * std::cos(phiP);
       const float pyP = ptP * std::sin(phiP);
       const float pzP = ptP * std::sinh(etaP);
 
-      protonCands.push_back(ProtonCand{pxP, pyP, pzP, static_cast<int>(trkP.sign()), static_cast<int>(trkP.globalIndex())});
+      protonCands.push_back(ProtonCand{.px = pxP, .py = pyP, .pz = pzP, .charge = static_cast<int>(trkP.sign()), .tid = static_cast<int>(trkP.globalIndex())});
     }
 
     // Kaon candidates
@@ -2601,20 +2913,27 @@ struct Lambdastarproxy {
         continue;
       }
 
+      // Kaon kinematics needed before PID because the PID strategy can depend on pT
+      const float ptK = trkK.pt();
+      const float etaK = trkK.eta();
+      const float phiK = trkK.phi();
+
       // PID for kaon candidates
       const float nsTPCK = trkK.tpcNSigmaKa();
       const float nsTOFK = trkK.tofNSigmaKa();
       const bool hasTofK = hasTOFMatch(trkK);
-      const bool isKaon = (std::abs(nsTPCK) < lstarCutNsigmaTPCKaon.value) &&
-                          (!hasTofK || (std::abs(nsTOFK) < lstarCutNsigmaTOFKaon.value));
+      const bool isKaon = passFinalCandidatePID(ptK,
+                                                nsTPCK,
+                                                nsTOFK,
+                                                hasTofK,
+                                                lstarCutNsigmaTPCKaon.value,
+                                                lstarCutNsigmaTOFKaon.value,
+                                                lstarPidCircularCutKaon.value,
+                                                lstarPidPtRefKaon.value, false);
       if (!isKaon) {
         continue;
       }
 
-      // Kaon kinematics
-      const float ptK = trkK.pt();
-      const float etaK = trkK.eta();
-      const float phiK = trkK.phi();
       const double pK = static_cast<double>(ptK) * std::cosh(static_cast<double>(etaK));
 
       // Kaon QA
@@ -2626,21 +2945,39 @@ struct Lambdastarproxy {
         histos.fill(HIST("hNsigmaTOFKaon"), nsTOFK);
         histos.fill(HIST("hNsigmaTPCKaonVsP"), pK, nsTPCK);
         histos.fill(HIST("hNsigmaTOFKaonVsP"), pK, nsTOFK);
+        histos.fill(HIST("hNsigmaTPCKaonVsPt"), ptK, nsTPCK);
+        histos.fill(HIST("hNsigmaTOFKaonVsPt"), ptK, nsTOFK);
+        if (hasTofK) {
+          histos.fill(HIST("hTPCvsTOFNsigma_K"), nsTPCK, nsTOFK);
+        }
+        if constexpr (requires { trkK.beta(); }) {
+          const float beta = trkK.beta();
+          if (hasTofK && beta > TofBetaMin && beta < TofBetaMax) {
+            histos.fill(HIST("hTOFBetaVsPt_K"), ptK, beta);
+          }
+        }
+        if constexpr (requires { trkK.dcaXY(); trkK.dcaZ(); }) {
+          histos.fill(HIST("hDCAxyVsPt_K"), ptK, trkK.dcaXY());
+          histos.fill(HIST("hDCAzVsPt_K"), ptK, trkK.dcaZ());
+        }
       }
 
       const float pxK = ptK * std::cos(phiK);
       const float pyK = ptK * std::sin(phiK);
       const float pzK = ptK * std::sinh(etaK);
 
-      kaonCands.push_back(KaonCand{pxK, pyK, pzK, static_cast<int>(trkK.sign()), static_cast<int>(trkK.globalIndex())});
+      kaonCands.push_back(KaonCand{.px = pxK, .py = pyK, .pz = pzK, .charge = static_cast<int>(trkK.sign()), .tid = static_cast<int>(trkK.globalIndex())});
     }
 
-    if (proxyCands.empty() || kaonCands.empty()) {
-      // still update mixing buffer so that later events can mix with this one
+    if (kaonCands.empty()) {
+      // Still update mixing buffer so that later events can mix with this one.
+      // The pK mixed-event background needs stored protons, while the proxy background
+      // needs stored proxy candidates. Therefore, do not require proxy candidates here.
       LStarMixEventEntry entry;
       entry.mult = eventMult;
       entry.zvtx = collision.posZ();
       entry.kaons = std::move(kaonCands);
+      entry.protons = std::move(protonCands);
       entry.proxies = std::move(proxyCands);
       mLStarMixEvents.push_front(std::move(entry));
       if (mLStarMixEvents.size() > static_cast<size_t>(lstarNoMixedEvents.value)) {
@@ -2649,103 +2986,149 @@ struct Lambdastarproxy {
       return;
     }
 
+    const bool hasProtonCandidates = !protonCands.empty();
+    const bool hasProxyCandidates = !proxyCands.empty();
+
     // --- SAME-EVENT: genuine pK #Lambda^{*} candidates ---
-    for (auto const& pr : protonCands) {
-      for (auto const& k : kaonCands) {
-        if (pr.tid == k.tid) {
-          continue;
-        }
-        const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton,
-                                          k.px, k.py, k.pz, MassKaonCharged);
-
-        const float pxTot = pr.px + k.px;
-        const float pyTot = pr.py + k.py;
-        const float pzTot = pr.pz + k.pz;
-        const float ptPair = std::sqrt(pxTot * pxTot + pyTot * pyTot);
-        const float phiPair = phiFromPxPy(pxTot, pyTot);
-
-        const double eTot = std::sqrt(mass * mass + static_cast<double>(pxTot) * pxTot +
-                                      static_cast<double>(pyTot) * pyTot + static_cast<double>(pzTot) * pzTot);
-        const float yPair = rapidityFromEPz(eTot, pzTot);
-
-        if (std::abs(yPair) > lstarLambdaAbsYMax.value) {
-          continue;
-        }
-
-        const bool unlikeSignPK = (pr.charge * k.charge) < 0;
-        if (unlikeSignPK) {
-          histos.fill(HIST("hInvMassPKUnlike"), mass);
-          histos.fill(HIST("hInvMassPKUnlikeVsPt"), mass, ptPair);
-          if (lstarEnableSparse.value != 0) {
-            histos.fill(HIST("hLambdaStarPKUnlikeSparse"), mass, ptPair, yPair, phiPair, eventMult);
+    if (hasProtonCandidates) {
+      for (auto const& pr : protonCands) {
+        for (auto const& k : kaonCands) {
+          if (pr.tid == k.tid) {
+            continue;
           }
-        } else {
-          histos.fill(HIST("hInvMassPKLike"), mass);
-          histos.fill(HIST("hInvMassPKLikeVsPt"), mass, ptPair);
-          if (lstarEnableSparse.value != 0) {
-            histos.fill(HIST("hLambdaStarPKLikeSparse"), mass, ptPair, yPair, phiPair, eventMult);
+          const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton,
+                                            k.px, k.py, k.pz, MassKaonCharged);
+
+          const float pxTot = pr.px + k.px;
+          const float pyTot = pr.py + k.py;
+          const float pzTot = pr.pz + k.pz;
+          const float ptPair = ptFromPxPy(pxTot, pyTot);
+
+          const float yPair = rapidityFromMomentumAndMass(pxTot, pyTot, pzTot, mass);
+
+          if (std::abs(yPair) > lstarLambdaAbsYMax.value) {
+            continue;
+          }
+
+          const bool unlikeSignPK = (pr.charge * k.charge) < 0;
+          if (unlikeSignPK) {
+            histos.fill(HIST("hInvMassPKUnlike"), mass);
+            if (lstarEnableSparse.value != 0) {
+              histos.fill(HIST("hLambdaStarPKUnlikeSparse"), mass, ptPair, eventMult);
+            }
+          } else {
+            histos.fill(HIST("hInvMassPKLike"), mass);
+            if (lstarEnableSparse.value != 0) {
+              histos.fill(HIST("hLambdaStarPKLikeSparse"), mass, ptPair, eventMult);
+            }
           }
         }
       }
     }
 
     // --- SAME-EVENT: proxy (d/2) + K ---
-    for (auto const& pr : proxyCands) {
-      for (auto const& k : kaonCands) {
-        if (pr.tid == k.tid)
-          continue; // sanity check: should never match, but just in case of bug in candidate-building logic
-        const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton, k.px, k.py, k.pz, MassKaonCharged);
+    if (hasProxyCandidates) {
+      for (auto const& pr : proxyCands) {
+        for (auto const& k : kaonCands) {
+          if (pr.tid == k.tid) {
+            continue; // sanity check: should never match, but just in case of bug in candidate-building logic
+          }
+          const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton, k.px, k.py, k.pz, MassKaonCharged);
 
-        const float pxTot = pr.px + k.px;
-        const float pyTot = pr.py + k.py;
-        const float pzTot = pr.pz + k.pz;
-        const float ptPair = std::sqrt(pxTot * pxTot + pyTot * pyTot);
-        const float phiPair = phiFromPxPy(pxTot, pyTot);
+          const float pxTot = pr.px + k.px;
+          const float pyTot = pr.py + k.py;
+          const float ptPair = ptFromPxPy(pxTot, pyTot);
 
-        const double eTot = std::sqrt(mass * mass + static_cast<double>(pxTot) * pxTot + static_cast<double>(pyTot) * pyTot + static_cast<double>(pzTot) * pzTot);
-        const float yPair = rapidityFromEPz(eTot, pzTot);
+          // Inclusive invariant-mass spectrum for the #Lambda^{*} proxy (d/2 + K)
+          histos.fill(HIST("hDeuteronProxyMass"), mass);
+          if (lstarEnableSparse.value != 0) {
+            histos.fill(HIST("hLambdaStarProxySparse"), mass, ptPair, eventMult);
 
-        // Inclusive invariant-mass spectrum for the #Lambda^{*} proxy (d/2 + K)
-        histos.fill(HIST("hDeuteronProxyMass"), mass);
-        if (lstarEnableSparse.value != 0) {
-          histos.fill(HIST("hLambdaStarProxySparse"), mass, ptPair, yPair, phiPair, eventMult);
+            // Like-sign proxy background: proxy and kaon have the same charge sign.
+            // Here the proxy charge follows the original deuteron-candidate charge.
+            if ((pr.charge * k.charge) > 0) {
+              histos.fill(HIST("hLambdaStarProxyLikeSparse"), mass, ptPair, eventMult);
+            }
+          }
+        }
+      }
+    }
+
+    // --- MIXED-EVENT: current kaons + previous-event real protons ---
+    // This fills the standard pK mixed-event background.
+    for (auto const& prev : mLStarMixEvents) {
+      if (std::abs(prev.zvtx - collision.posZ()) > lstarMixZvtxMax.value) {
+        continue;
+      }
+      if (std::abs(prev.mult - eventMult) > lstarMixMultMax.value) {
+        continue;
+      }
+      if (prev.protons.empty()) {
+        continue;
+      }
+
+      for (auto const& pr : prev.protons) {
+        for (auto const& k : kaonCands) {
+          // Unlike-sign pK mixed-event background.
+          if ((pr.charge * k.charge) >= 0) {
+            continue;
+          }
+
+          const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton,
+                                            k.px, k.py, k.pz, MassKaonCharged);
+          const float pxTot = pr.px + k.px;
+          const float pyTot = pr.py + k.py;
+          const float pzTot = pr.pz + k.pz;
+          const float ptPair = ptFromPxPy(pxTot, pyTot);
+
+          const float yPair = rapidityFromMomentumAndMass(pxTot, pyTot, pzTot, mass);
+          if (std::abs(yPair) > lstarLambdaAbsYMax.value) {
+            continue;
+          }
+
+          if (lstarEnableSparse.value != 0) {
+            histos.fill(HIST("hLambdaStarPKMixedSparse"), mass, ptPair, eventMult);
+          }
         }
       }
     }
 
     // --- MIXED-EVENT: current proxies + previous-event kaons ---
-    for (auto const& prev : mLStarMixEvents) {
-      if (std::abs(prev.zvtx - collision.posZ()) > lstarMixZvtxMax.value)
-        continue;
-      if (std::abs(prev.mult - eventMult) > lstarMixMultMax.value)
-        continue;
-      if (prev.kaons.empty()) {
-        continue;
-      }
+    // This fills the deuteron-proxy mixed-event background.
+    if (hasProxyCandidates) {
+      for (auto const& prev : mLStarMixEvents) {
+        if (std::abs(prev.zvtx - collision.posZ()) > lstarMixZvtxMax.value) {
+          continue;
+        }
+        if (std::abs(prev.mult - eventMult) > lstarMixMultMax.value) {
+          continue;
+        }
+        if (prev.kaons.empty()) {
+          continue;
+        }
 
-      for (auto const& pr : proxyCands) {
-        for (auto const& k : prev.kaons) {
-          // convention: mix for unlike-sign only (resonance background)
-          if ((pr.charge * k.charge) >= 0) {
-            continue;
-          }
-          if (pr.tid == k.tid)
-            continue; // sanity check: should never match, but just in case of bug in candidate-building logic
+        for (auto const& pr : proxyCands) {
+          for (auto const& k : prev.kaons) {
+            // Unlike-sign proxy-K mixed-event background.
+            if ((pr.charge * k.charge) >= 0) {
+              continue;
+            }
 
-          const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton, k.px, k.py, k.pz, MassKaonCharged);
+            const double mass = invariantMass(pr.px, pr.py, pr.pz, MassProton,
+                                              k.px, k.py, k.pz, MassKaonCharged);
+            const float pxTot = pr.px + k.px;
+            const float pyTot = pr.py + k.py;
+            const float pzTot = pr.pz + k.pz;
+            const float ptPair = ptFromPxPy(pxTot, pyTot);
 
-          const float pxTot = pr.px + k.px;
-          const float pyTot = pr.py + k.py;
-          const float pzTot = pr.pz + k.pz;
-          const float ptPair = std::sqrt(pxTot * pxTot + pyTot * pyTot);
-          const float phiPair = phiFromPxPy(pxTot, pyTot);
+            const float yPair = rapidityFromMomentumAndMass(pxTot, pyTot, pzTot, mass);
+            if (std::abs(yPair) > lstarLambdaAbsYMax.value) {
+              continue;
+            }
 
-          const double eTot = std::sqrt(mass * mass + static_cast<double>(pxTot) * pxTot + static_cast<double>(pyTot) * pyTot + static_cast<double>(pzTot) * pzTot);
-          const float yPair = rapidityFromEPz(eTot, pzTot);
-
-          // Fill mixed-event THnSparse (proxy only)
-          if (lstarEnableSparse.value != 0) {
-            histos.fill(HIST("hLambdaStarProxyMixedSparse"), mass, ptPair, yPair, phiPair, eventMult);
+            if (lstarEnableSparse.value != 0) {
+              histos.fill(HIST("hLambdaStarProxyMixedSparse"), mass, ptPair, eventMult);
+            }
           }
         }
       }
@@ -2756,6 +3139,7 @@ struct Lambdastarproxy {
     entry.mult = eventMult;
     entry.zvtx = collision.posZ();
     entry.kaons = std::move(kaonCands);
+    entry.protons = std::move(protonCands);
     entry.proxies = std::move(proxyCands);
 
     mLStarMixEvents.push_front(std::move(entry));

@@ -126,7 +126,7 @@ struct HfTaskDplus {
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {110, 0., 110.}, "axis for centrality"};
   ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {14, 0, 14000}, "axis for occupancy"};
   ConfigurableAxis thnConfigAxisIR{"thnConfigAxisIR", {5000, 0, 500}, "Interaction rate (kHz)"};
-  ConfigurableAxis thnConfigAxisPvContributors{"thnConfigAxisPvContributors", {100, 0., 100.}, "axis for PV contributors"};
+  ConfigurableAxis thnConfigAxisPvContributors{"thnConfigAxisPvContributors", {200, 0., 200.}, "axis for PV contributors"};
   ConfigurableAxis thnConfigAxisPtBHad{"thnConfigAxisPtBHad", {25, 0., 50}, "axis for pt of B hadron decayed into D candidate"};
   ConfigurableAxis thnConfigAxisFlagBHad{"thnConfigAxisFlagBHad", {5, 0., 5}, "axis for PDG of B hadron"};
   ConfigurableAxis thnConfigAxisMlScore0{"thnConfigAxisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
@@ -232,6 +232,9 @@ struct HfTaskDplus {
       }
       if (storeIR) {
         axes.push_back(thnAxisIR);
+      }
+      if (storePvContributors) {
+        axes.push_back(thnAxisPvContributors);
       }
       if (doprocessDataWithMlWithUpc || doprocessDataWithUpc) {
         axes.push_back(thnAxisGapType);
@@ -410,10 +413,16 @@ struct HfTaskDplus {
         }
       }
     } else { // Data
-      if (storeCentrality && storeOccupancy) {
+      if (storeCentrality && storeOccupancy && storePvContributors) {
+        registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, occupancy, numPvContributors);
+      } else if (storeCentrality && storeOccupancy && !storePvContributors) {
         registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, occupancy);
+      } else if (storeCentrality && !storeOccupancy && storePvContributors) {
+        registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, numPvContributors);
       } else if (storeCentrality && !storeOccupancy) {
         registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality);
+      } else if (!storeCentrality && storeOccupancy && storePvContributors) {
+        registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy, numPvContributors);
       } else if (!storeCentrality && storeOccupancy) {
         registry.fill(HIST("hSparseMass"), HfHelper::invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy);
       } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
@@ -559,7 +568,7 @@ struct HfTaskDplus {
           continue;
         }
 
-        if (storeCentrality || storeOccupancy) {
+        if (storeCentrality || storeOccupancy || storePvContributors) {
           auto collision = candidate.template collision_as<CollisionsCent>();
           if (storeCentrality && centEstimator != CentralityEstimator::None) {
             cent = getCentralityColl(collision, centEstimator);
@@ -771,7 +780,8 @@ struct HfTaskDplus {
         int const nAxesCent = storeCentrality ? 1 : 0; // centrality if storeCentrality
         int const nAxesOcc = storeOccupancy ? 1 : 0;   // occupancy if storeOccupancy
         int const nAxesIR = storeIR ? 1 : 0;           // IR if storeIR
-        int const nAxesTotal = NAxesBase + NAxesMl + nAxesCent + nAxesOcc + nAxesIR;
+        int const nAxesPv = storePvContributors ? 1 : 0;
+        int const nAxesTotal = NAxesBase + NAxesMl + nAxesCent + nAxesOcc + nAxesIR + nAxesPv;
 
         std::vector<double> valuesToFill;
         valuesToFill.reserve(nAxesTotal);
@@ -796,6 +806,9 @@ struct HfTaskDplus {
         }
         if (storeIR) {
           valuesToFill.push_back(ir);
+        }
+        if (storePvContributors) {
+          valuesToFill.push_back(static_cast<double>(collision.numContrib()));
         }
         valuesToFill.push_back(static_cast<double>(gap));
         valuesToFill.push_back(static_cast<double>(fitInfo.ampFT0A));

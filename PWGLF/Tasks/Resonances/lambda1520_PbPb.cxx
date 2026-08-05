@@ -139,7 +139,7 @@ struct lambdaAnalysis_pb {
   Configurable<bool> cEvtMCSel8{"cEvtMCSel8", false, "MC event sel: isInSel8"};
   Configurable<bool> cEvtMCVtxIn10{"cEvtMCVtxIn10", false, "MC event sel: isVtxIn10"};
   Configurable<bool> cEvtMCTriggerTVX{"cEvtMCTriggerTVX", false, "MC event sel: isTriggerTVX"};
-  Configurable<bool> cEvtMCRecINELgt0{"cEvtMCRecINELgt0", false, "MC event sel: isRecINELgt0"};
+  Configurable<bool> cEvtRecINELgt0{"cEvtMCRecINELgt0", false, "MC event sel: isRecINELgt0"};
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -712,6 +712,10 @@ struct lambdaAnalysis_pb {
 
   void processData(resoCols::iterator const& collision, resoTracks const& tracks)
   {
+
+    if (cEvtRecINELgt0 && !collision.isRecINELgt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+      return;
+
     // LOGF(info, " collisions: Index = %d %d", collision.globalIndex(),tracks.size());
     histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent(), 100);
     histos.fill(HIST("Event/h_ft0_vz"), collision.posZ());
@@ -742,7 +746,7 @@ struct lambdaAnalysis_pb {
       return;
     histos.fill(HIST("Event/hMCEventCutflow"), 4); // After Sel8
 
-    if (cEvtMCRecINELgt0 && !collision.isRecINELgt0())
+    if (cEvtRecINELgt0 && !collision.isRecINELgt0())
       return;
     histos.fill(HIST("Event/hMCEventCutflow"), 5); // After RecINELgt0
 
@@ -840,7 +844,7 @@ struct lambdaAnalysis_pb {
       return;
     histos.fill(HIST("SignalLoss/hMCEventCutflow"), 4); // After Sel8
 
-    if (cEvtMCRecINELgt0 && !collision.isRecINELgt0())
+    if (cEvtRecINELgt0 && !collision.isRecINELgt0())
       return;
     histos.fill(HIST("SignalLoss/hMCEventCutflow"), 5); // After RecINELgt0
 
@@ -919,6 +923,10 @@ struct lambdaAnalysis_pb {
 
     SameKindPair<resoCols, resoTracks, BinningType2> pairs{binningPositions2, cNumMixEv, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
     for (auto& [c1, t1, c2, t2] : pairs) {
+
+      if (cEvtRecINELgt0 && !c1.isRecINELgt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+        return;
+
       // LOGF(info, "processMCMixedDerived: Mixed collisions : %d (%.3f, %.3f,%d), %d (%.3f, %.3f,%d)",c1.globalIndex(), c1.posZ(), c1.cent(),c1.mult(), c2.globalIndex(), c2.posZ(), c2.cent(),c2.mult());
       histos.fill(HIST("Event/mixing_vzVsmultpercentile"), c1.cent(), c1.posZ(), c1.evtPl());
       fillDataHistos<true, false>(t1, t2, c1.cent());
@@ -937,6 +945,9 @@ struct lambdaAnalysis_pb {
 
     if (doprocessData)
       LOG(error) << "Disable processData() first!";
+    if (cEvtRecINELgt0 && !collision.isRecINELgt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+      return;
+
     auto _occup = 100;
     if (ConfEvtOccupancyInTimeRange)
       _occup = collision.trackOccupancyInTimeRange();
@@ -960,6 +971,9 @@ struct lambdaAnalysis_pb {
 
     SameKindPair<resoColDFs, resoTrackDFs, BinningTypeDF> pairs{binningPositions2, cNumMixEv, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
     for (auto& [c1, t1, c2, t2] : pairs) {
+      if (cEvtRecINELgt0 && !c1.isRecINELgt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+        return;
+
       auto _occup = 100;
       if (ConfEvtOccupancyInTimeRange)
         _occup = c1.trackOccupancyInTimeRange();

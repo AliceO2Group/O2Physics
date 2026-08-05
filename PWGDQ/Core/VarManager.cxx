@@ -11,9 +11,11 @@
 
 #include "PWGDQ/Core/VarManager.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
 #include <CommonConstants/LHCConstants.h>
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <DCAFitter/FwdDCAFitterN.h>
@@ -26,6 +28,7 @@
 #include <TH3.h>
 #include <THn.h>
 #include <TObject.h>
+#include <TRandom.h>
 #include <TString.h>
 
 #include <KFParticle.h>
@@ -33,6 +36,8 @@
 #include <Rtypes.h>
 #include <RtypesCore.h>
 
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -43,8 +48,6 @@
 
 using namespace o2::constants::physics;
 
-ClassImp(VarManager);
-
 TString VarManager::fgVariableNames[VarManager::kNVars] = {""};
 TString VarManager::fgVariableUnits[VarManager::kNVars] = {""};
 std::map<TString, int> VarManager::fgVarNamesMap;
@@ -53,6 +56,8 @@ bool VarManager::fgUsedKF = false;
 bool VarManager::fgPVrecalKF = true;
 float VarManager::fgMagField = 0.5;
 float VarManager::fgzMatching = -77.5;
+float VarManager::fgxShiftFwd = 0.0;
+float VarManager::fgyShiftFwd = 0.0;
 float VarManager::fgzShiftFwd = 0.0;
 float VarManager::fgValues[VarManager::kNVars] = {0.0f};
 float VarManager::fgTPCInterSectorBoundary = 1.0; // cm
@@ -71,10 +76,14 @@ o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
 o2::vertexing::FwdDCAFitterN<3> VarManager::fgFitterThreeProngFwd;
 o2::globaltracking::MatchGlobalFwd VarManager::mMatching;
 std::map<VarManager::CalibObjects, TObject*> VarManager::fgCalibs;
-bool VarManager::fgRunTPCPostCalibration[4] = {false, false, false, false};
+std::array<bool, 4> VarManager::fgRunTPCPostCalibration = {false, false, false, false};
 int VarManager::fgCalibrationType = 0;                // 0 - no calibration, 1 - calibration vs (TPCncls,pIN,eta) typically for pp, 2 - calibration vs (eta,nPV,nLong,tLong) typically for PbPb
 bool VarManager::fgUseInterpolatedCalibration = true; // use interpolated calibration histograms (default: true)
-
+int VarManager::fgEfficiencyType = 0;                 // type of efficiency to be applied, default is no efficiency
+TObject* VarManager::fgEfficiencyHist = nullptr;      // histogram for efficiency
+TObject* VarManager::fgPosiPhiMap = nullptr;
+TObject* VarManager::fgNegaPhiMap = nullptr;
+bool VarManager::fgUsePhiCorrection = false;
 //__________________________________________________________________
 VarManager::VarManager() : TObject()
 {
@@ -377,6 +386,146 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
     // unknown calibration type, return the original nSigma value
     LOG(fatal) << "Unknown calibration type: " << fgCalibrationType;
     return nSigmaValue; // Return the original nSigma value
+  }
+}
+
+//__________________________________________________________________
+void VarManager::SetEfficiencyObject(int efficiencyType, TObject* obj)
+{
+  // check the type of the efficiency object and set it accordingly
+  if (efficiencyType >= kNEfficiencyTypes || efficiencyType < 0) {
+    LOG(warning) << "SetEfficiencyObject: unknown efficiency type " << efficiencyType;
+    return;
+  }
+
+  // set the efficiency type
+  fgEfficiencyType = efficiencyType;
+  // set the efficiency object
+  fgEfficiencyHist = obj;
+}
+
+void VarManager::FillEfficiency(float* values)
+{
+  // depending on the efficiency type, we use different types of efficiency histograms and different variables to get the efficiency value
+  if (!values) {
+    values = fgValues;
+  }
+
+  if (fgEfficiencyType == kNone) {
+    values[kPairEfficiency] = 1.0; // if no efficiency is to be applied, set the efficiency value to 1
+    values[kPairWeight] = 1.0;     // set the weight to 1
+  } else if (fgEfficiencyType == kPairPtCentFT0cCosThetaStarFT0c) {
+    if (!fgEfficiencyHist) {
+      LOG(fatal) << "efficiency histogram not set";
+      return;
+    }
+    TH3F* efficiencyHist = reinterpret_cast<TH3F*>(fgEfficiencyHist);
+    // Get the bin indices for the efficiency histogram
+    int binPt = efficiencyHist->GetXaxis()->FindBin(values[kPt]);
+    binPt = (binPt == 0 ? 1 : binPt);
+    binPt = (binPt > efficiencyHist->GetXaxis()->GetNbins() ? efficiencyHist->GetXaxis()->GetNbins() : binPt);
+    int binCent = efficiencyHist->GetYaxis()->FindBin(values[kCentFT0C]);
+    binCent = (binCent == 0 ? 1 : binCent);
+    binCent = (binCent > efficiencyHist->GetYaxis()->GetNbins() ? efficiencyHist->GetYaxis()->GetNbins() : binCent);
+    int binCosThetaStarFT0c = efficiencyHist->GetZaxis()->FindBin(values[kCosThetaStarFT0C]);
+    binCosThetaStarFT0c = (binCosThetaStarFT0c == 0 ? 1 : binCosThetaStarFT0c);
+    binCosThetaStarFT0c = (binCosThetaStarFT0c > efficiencyHist->GetZaxis()->GetNbins() ? efficiencyHist->GetZaxis()->GetNbins() : binCosThetaStarFT0c);
+
+    // get the efficiency value from the histogram
+    values[kPairEfficiency] = efficiencyHist->GetBinContent(binPt, binCent, binCosThetaStarFT0c);
+    values[kPairWeight] = 1.0 / (values[kPairEfficiency] > 0 ? values[kPairEfficiency] : 1.0); // set the weight as the inverse of the efficiency, but avoid division by zero
+  } else if (fgEfficiencyType == kPairPtCentFT0cCosThetaStarRandom) {
+    if (!fgEfficiencyHist) {
+      LOG(fatal) << "efficiency histogram not set";
+      return;
+    }
+    TH3F* efficiencyHist = reinterpret_cast<TH3F*>(fgEfficiencyHist);
+    // Get the bin indices for the efficiency histogram
+    int binPt = efficiencyHist->GetXaxis()->FindBin(values[kPt]);
+    binPt = (binPt == 0 ? 1 : binPt);
+    binPt = (binPt > efficiencyHist->GetXaxis()->GetNbins() ? efficiencyHist->GetXaxis()->GetNbins() : binPt);
+    int binCent = efficiencyHist->GetYaxis()->FindBin(values[kCentFT0C]);
+    binCent = (binCent == 0 ? 1 : binCent);
+    binCent = (binCent > efficiencyHist->GetYaxis()->GetNbins() ? efficiencyHist->GetYaxis()->GetNbins() : binCent);
+    int binCosThetaStarRandom = efficiencyHist->GetZaxis()->FindBin(values[kCosThetaStarRandom]);
+    binCosThetaStarRandom = (binCosThetaStarRandom == 0 ? 1 : binCosThetaStarRandom);
+    binCosThetaStarRandom = (binCosThetaStarRandom > efficiencyHist->GetZaxis()->GetNbins() ? efficiencyHist->GetZaxis()->GetNbins() : binCosThetaStarRandom);
+
+    // get the efficiency value from the histogram
+    values[kPairEfficiency] = efficiencyHist->GetBinContent(binPt, binCent, binCosThetaStarRandom);
+    values[kPairWeight] = 1.0 / (values[kPairEfficiency] > 0 ? values[kPairEfficiency] : 1.0); // set the weight as the inverse of the efficiency, but avoid division by zero
+  } else {
+    LOG(warning) << "FillEfficiency: unknown efficiency type " << fgEfficiencyType << ", using default efficiency = 1";
+    values[kPairEfficiency] = 1;
+    values[kPairWeight] = 1;
+  }
+}
+
+void VarManager::SetPhiMap(TObject* hposi, TObject* hnega, bool option)
+{
+  fgPosiPhiMap = hposi;
+  fgNegaPhiMap = hnega;
+  fgUsePhiCorrection = option;
+}
+
+double VarManager::SampleRotationPhi(double pt, double eta, int charge)
+{
+  // each type only alarm once
+  static bool warnedEmptyPhi = false;
+
+  if (!fgUsePhiCorrection) {
+    return gRandom->Uniform(0., o2::constants::math::TwoPI);
+  } else {
+
+    TH3D* hMap = nullptr;
+    if (charge > 0) {
+      hMap = dynamic_cast<TH3D*>(fgPosiPhiMap);
+    } else {
+      hMap = dynamic_cast<TH3D*>(fgNegaPhiMap);
+    }
+
+    if (!hMap) {
+      LOGF(fatal, "Phi map is not a TH3D");
+    }
+    // TH3 axes: X=pT, Y=phi, Z=eta
+    int ptBin = hMap->GetXaxis()->FindBin(pt);
+    int etaBin = hMap->GetZaxis()->FindBin(eta);
+
+    ptBin = std::clamp(ptBin, 1, hMap->GetNbinsX());
+    etaBin = std::clamp(etaBin, 1, hMap->GetNbinsZ());
+
+    TH1D* hPhi = hMap->ProjectionY(
+      Form("hTRPhi_tmp_charge%d_ptbin%d_etabin%d",
+           charge, ptBin, etaBin),
+      ptBin,
+      ptBin,
+      etaBin,
+      etaBin);
+
+    if (!hPhi || hPhi->Integral(1, hPhi->GetNbinsX()) <= 0.) {
+      if (!warnedEmptyPhi) {
+        LOGF(warn,
+             "Empty phi distribution for "
+             "pt=%f, eta=%f, charge=%d, ptBin=%d, etaBin=%d. "
+             "Falling back to uniform phi sampling.",
+             pt,
+             eta,
+             charge,
+             ptBin,
+             etaBin);
+
+        warnedEmptyPhi = true;
+      }
+
+      delete hPhi;
+
+      return gRandom->Uniform(0., o2::constants::math::TwoPI);
+    }
+
+    const double phi = RecoDecay::constrainAngle(hPhi->GetRandom());
+
+    delete hPhi;
+    return phi;
   }
 }
 
@@ -842,6 +991,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDCAzNPeaksTrimmed2] = "";
   fgVariableNames[kDCAzNPeaksTrimmed3] = "Number of peaks in binned DCAz distribution (trimmed 3)";
   fgVariableUnits[kDCAzNPeaksTrimmed3] = "";
+  fgVariableNames[kInteractionRate] = "Interaction rate";
+  fgVariableUnits[kInteractionRate] = "kHz";
   fgVariableNames[kPt] = "p_{T}";
   fgVariableUnits[kPt] = "GeV/c";
   fgVariableNames[kPt1] = "p_{T1}";
@@ -931,6 +1082,14 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTrackDCAxy] = "cm";
   fgVariableNames[kTrackDCAz] = "DCA_{z}";
   fgVariableUnits[kTrackDCAz] = "cm";
+  fgVariableNames[kDCAxy1] = "DCA_{xy}";
+  fgVariableUnits[kDCAxy1] = "cm";
+  fgVariableNames[kDCAz1] = "DCA_{z}";
+  fgVariableUnits[kDCAz1] = "cm";
+  fgVariableNames[kDCAxy2] = "DCA_{xy}";
+  fgVariableUnits[kDCAxy2] = "cm";
+  fgVariableNames[kDCAz2] = "DCA_{z}";
+  fgVariableUnits[kDCAz2] = "cm";
   fgVariableNames[kTPCnSigmaEl] = "n #sigma_{e}^{TPC}";
   fgVariableUnits[kTPCnSigmaEl] = "";
   fgVariableNames[kTPCnSigmaEl_Corr] = "n #sigma_{e}^{TPC} Corr.";
@@ -943,6 +1102,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTPCnSigmaPi_Corr] = "";
   fgVariableNames[kTPCnSigmaKa] = "n #sigma_{K}^{TPC}";
   fgVariableUnits[kTPCnSigmaKa] = "";
+  fgVariableNames[kTPCnSigmaEl1] = "n #sigma_{el}^{TPC}";
+  fgVariableUnits[kTPCnSigmaEl1] = "";
+  fgVariableNames[kTPCnSigmaEl2] = "n #sigma_{el}^{TPC}";
+  fgVariableUnits[kTPCnSigmaEl2] = "";
   fgVariableNames[kTPCnSigmaKa_leg1] = "n #sigma_{K}^{TPC}";
   fgVariableUnits[kTPCnSigmaKa_leg1] = "";
   fgVariableNames[kTPCnSigmaKa_Corr] = "n #sigma_{K}^{TPC} Corr.";
@@ -1535,6 +1698,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCos2ThetaStarRandom] = "";
   fgVariableNames[kMCCosThetaStar] = "cos#it{#theta}^{*}_{MC}";
   fgVariableUnits[kMCCosThetaStar] = "";
+  fgVariableNames[kPairWeight] = "weight";
+  fgVariableUnits[kPairWeight] = "";
   fgVariableNames[kCosPhiVP] = "cos#it{#varphi}_{VP}";
   fgVariableUnits[kCosPhiVP] = "";
   fgVariableNames[kPhiVP] = "#varphi_{VP} - #Psi_{2}";
@@ -1651,6 +1816,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kAmplitudeFT0A] = "a.u.";
   fgVariableNames[kAmplitudeFT0C] = "FT0C amplitude";
   fgVariableUnits[kAmplitudeFT0C] = "a.u.";
+  fgVariableNames[kAmplitudeFT0M] = "FT0M amplitude";
+  fgVariableUnits[kAmplitudeFT0M] = "a.u.";
   fgVariableNames[kTimeFT0A] = "FT0A time";
   fgVariableUnits[kTimeFT0A] = "ns";
   fgVariableNames[kTimeFT0C] = "FT0C time";
@@ -1953,6 +2120,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCEventWeight"] = kMCEventWeight;
   fgVarNamesMap["kMCEventImpParam"] = kMCEventImpParam;
   fgVarNamesMap["kMCEventPlaneAngle"] = kMCEventPlaneAngle;
+  fgVarNamesMap["kMCEventCentrFT0C"] = kMCEventCentrFT0C;
   fgVarNamesMap["kQ1ZNAX"] = kQ1ZNAX;
   fgVarNamesMap["kQ1ZNAY"] = kQ1ZNAY;
   fgVarNamesMap["kQ1ZNCX"] = kQ1ZNCX;
@@ -2105,6 +2273,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kTwoR2EP1"] = kTwoR2EP1;
   fgVarNamesMap["kTwoR2EP2"] = kTwoR2EP2;
   fgVarNamesMap["kNPairsPerEvent"] = kNPairsPerEvent;
+  fgVarNamesMap["kInteractionRate"] = kInteractionRate;
   fgVarNamesMap["kNEventWiseVariables"] = kNEventWiseVariables;
   fgVarNamesMap["kX"] = kX;
   fgVarNamesMap["kY"] = kY;
@@ -2130,12 +2299,20 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kEta1"] = kEta1;
   fgVarNamesMap["kPhi1"] = kPhi1;
   fgVarNamesMap["kCharge1"] = kCharge1;
+  fgVarNamesMap["kDCAxy1"] = kDCAxy1;
+  fgVarNamesMap["kDCAz1"] = kDCAz1;
+  fgVarNamesMap["kITSclusterMap1"] = kITSclusterMap1;
+  fgVarNamesMap["kTPCnSigmaEl1"] = kTPCnSigmaEl1;
   fgVarNamesMap["kPin_leg1"] = kPin_leg1;
   fgVarNamesMap["kTPCnSigmaKa_leg1"] = kTPCnSigmaKa_leg1;
   fgVarNamesMap["kPt2"] = kPt2;
   fgVarNamesMap["kEta2"] = kEta2;
   fgVarNamesMap["kPhi2"] = kPhi2;
   fgVarNamesMap["kCharge2"] = kCharge2;
+  fgVarNamesMap["kDCAxy2"] = kDCAxy2;
+  fgVarNamesMap["kDCAz2"] = kDCAz2;
+  fgVarNamesMap["kITSclusterMap2"] = kITSclusterMap2;
+  fgVarNamesMap["kTPCnSigmaEl2"] = kTPCnSigmaEl2;
   fgVarNamesMap["kPin"] = kPin;
   fgVarNamesMap["kSignedPin"] = kSignedPin;
   fgVarNamesMap["kTOFExpMom"] = kTOFExpMom;
@@ -2299,6 +2476,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kMCPhi"] = kMCPhi;
   fgVarNamesMap["kMCEta"] = kMCEta;
   fgVarNamesMap["kMCY"] = kMCY;
+  fgVarNamesMap["kMCMass"] = kMCMass;
   fgVarNamesMap["kMCCosThetaHE"] = kMCCosThetaHE;
   fgVarNamesMap["kMCPhiHE"] = kMCPhiHE;
   fgVarNamesMap["kMCPhiTildeHE"] = kMCPhiTildeHE;
@@ -2363,6 +2541,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kCosThetaStarRandom"] = kCosThetaStarRandom;
   fgVarNamesMap["kCos2ThetaStarRandom"] = kCos2ThetaStarRandom;
   fgVarNamesMap["kMCCosThetaStar"] = kMCCosThetaStar;
+  fgVarNamesMap["kPairWeight"] = kPairWeight;
   fgVarNamesMap["kCosPhiVP"] = kCosPhiVP;
   fgVarNamesMap["kPhiVP"] = kPhiVP;
   fgVarNamesMap["kDeltaPhiPair2"] = kDeltaPhiPair2;
@@ -2384,6 +2563,13 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kDCATrackVtxProd"] = kDCATrackVtxProd;
   fgVarNamesMap["kV2SP"] = kV2SP;
   fgVarNamesMap["kV2EP"] = kV2EP;
+  fgVarNamesMap["kV2EP_FT0C"] = kV2EP_FT0C;
+  fgVarNamesMap["kA2EP_TPC"] = kA2EP_TPC;
+  fgVarNamesMap["kA2EP_FT0A"] = kA2EP_FT0A;
+  fgVarNamesMap["kA2EP_FT0C"] = kA2EP_FT0C;
+  fgVarNamesMap["kA2EPME_TPC"] = kA2EPME_TPC;
+  fgVarNamesMap["kA2EPME_FT0A"] = kA2EPME_FT0A;
+  fgVarNamesMap["kA2EPME_FT0C"] = kA2EPME_FT0C;
   fgVarNamesMap["kWV2SP"] = kWV2SP;
   fgVarNamesMap["kWV2EP"] = kWV2EP;
   fgVarNamesMap["kU2Q2"] = kU2Q2;
@@ -2466,6 +2652,18 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kCos2DeltaPhiMu1"] = kCos2DeltaPhiMu1;
   fgVarNamesMap["kCos2DeltaPhiMu2"] = kCos2DeltaPhiMu2;
   fgVarNamesMap["kCos3DeltaPhi"] = kCos3DeltaPhi;
+  fgVarNamesMap["kDeltaPhi_TPC"] = kDeltaPhi_TPC;
+  fgVarNamesMap["kDeltaPhi_FT0A"] = kDeltaPhi_FT0A;
+  fgVarNamesMap["kDeltaPhi_FT0C"] = kDeltaPhi_FT0C;
+  fgVarNamesMap["kCos2DeltaPhi_TPC"] = kCos2DeltaPhi_TPC;
+  fgVarNamesMap["kCos2DeltaPhi_FT0A"] = kCos2DeltaPhi_FT0A;
+  fgVarNamesMap["kCos2DeltaPhi_FT0C"] = kCos2DeltaPhi_FT0C;
+  fgVarNamesMap["kDeltaPhiME_TPC"] = kDeltaPhiME_TPC;
+  fgVarNamesMap["kDeltaPhiME_FT0A"] = kDeltaPhiME_FT0A;
+  fgVarNamesMap["kDeltaPhiME_FT0C"] = kDeltaPhiME_FT0C;
+  fgVarNamesMap["kCos2DeltaPhiME_TPC"] = kCos2DeltaPhiME_TPC;
+  fgVarNamesMap["kCos2DeltaPhiME_FT0A"] = kCos2DeltaPhiME_FT0A;
+  fgVarNamesMap["kCos2DeltaPhiME_FT0C"] = kCos2DeltaPhiME_FT0C;
   fgVarNamesMap["kDeltaPtotTracks"] = kDeltaPtotTracks;
   fgVarNamesMap["kVertexingLxyOverErr"] = kVertexingLxyOverErr;
   fgVarNamesMap["kVertexingLzOverErr"] = kVertexingLzOverErr;
@@ -2560,6 +2758,9 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kBdtNonprompt"] = kBdtNonprompt;
   fgVarNamesMap["kAmplitudeFT0A"] = kAmplitudeFT0A;
   fgVarNamesMap["kAmplitudeFT0C"] = kAmplitudeFT0C;
+  fgVarNamesMap["kAmplitudeFT0M"] = kAmplitudeFT0M;
+  fgVarNamesMap["kFT0OrA"] = kFT0OrA;
+  fgVarNamesMap["kFT0OrC"] = kFT0OrC;
   fgVarNamesMap["kTimeFT0A"] = kTimeFT0A;
   fgVarNamesMap["kTimeFT0C"] = kTimeFT0C;
   fgVarNamesMap["kTriggerMaskFT0"] = kTriggerMaskFT0;

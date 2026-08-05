@@ -26,6 +26,7 @@
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <GlobalTracking/MatchGlobalFwd.h>
 #include <MCHBase/TrackerParam.h>
 #include <MCHGeometryTransformer/Transformations.h>
@@ -38,7 +39,6 @@
 
 #include <TMath.h>
 
-#include <GPUROOTCartesianFwd.h>
 #include <RtypesCore.h>
 
 #include <chrono>
@@ -104,7 +104,7 @@ struct MuonRealignment {
   TGeoManager* geoNew = nullptr;
   TGeoManager* geoRef = nullptr;
 
-  Preslice<aod::FwdTrkCl> perMuon = aod::fwdtrkcl::fwdtrackId;
+  Preslice<aod::FwdTrkCls> perMuon = aod::fwdtrkcl::fwdtrackId;
 
   int GetDetElemId(int iDetElemNumber)
   {

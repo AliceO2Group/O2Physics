@@ -19,6 +19,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/collisionCuts.h"
+#include "PWGLF/Utils/inelGt.h"
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/RecoDecay.h"
@@ -79,9 +80,21 @@ struct Chargedkstaranalysis {
     FT0C = 1,
     FT0M = 2
   };
+  enum EvtStep {
+    kAll = 0,
+    kZvtx,
+    kINELgt0,
+    kAssocReco,
+    kNSteps
+  };
+
+  const int nSteps = static_cast<int>(EvtStep::kNSteps);
+
   SliceCache cache;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
+  Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
   bool currentIsGen = false;
+  bool mcClosure = false;
   struct : ConfigurableGroup {
     ConfigurableAxis cfgvtxbins{"cfgvtxbins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
     ConfigurableAxis cfgmultbins{"cfgmultbins", {VARIABLE_WIDTH, 0., 1., 5., 10., 30., 50., 70., 100., 110.}, "Mixing bins - multiplicity"};
@@ -104,10 +117,10 @@ struct Chargedkstaranalysis {
     Configurable<bool> activateProductionFrame{"activateProductionFrame", false, "Activate the THnSparse with cosThStar w.r.t. production axis"};
     Configurable<bool> activateBeamAxisFrame{"activateBeamAxisFrame", false, "Activate the THnSparse with cosThStar w.r.t. beam axis (Gottified jackson frame)"};
     Configurable<bool> activateRandomFrame{"activateRandomFrame", false, "Activate the THnSparse with cosThStar w.r.t. random axis"};
-    Configurable<int> cRotations{"cRotations", 5, "Number of random rotations in the rotational background"};
-    Configurable<bool> cBoostKShot{"cBoostKShot", true, "Boost the Kshot in Charged Kstar frame of reference"};
+    Configurable<int> cRotations{"cRotations", 4, "Number of random rotations in the rotational background"};
+    Configurable<bool> cCosWithKShot{"cCosWithKShot", true, "Measure the angle with Kshort in Charged Kstar frame of reference"};
     // Other cuts on Ks
-    Configurable<int> rotationalCut{"rotationalCut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
+    Configurable<int> rotationalCut{"rotationalCut", 6, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
 
     // fixed variables
     float rapidityMotherData = 0.5;
@@ -115,6 +128,9 @@ struct Chargedkstaranalysis {
     double beamMomentum = std::sqrt(beamEnergy * beamEnergy / 4 - o2::constants::physics::MassProton * o2::constants::physics::MassProton); // GeV
     int noOfDaughters = 2;
   } helicityCfgs;
+
+  Configurable<bool> cfgTruthUseInelGt0{"cfgTruthUseInelGt0", true, "Truth denominator: require INEL>0"};
+  Configurable<bool> cfgTruthIncludeZvtx{"cfgTruthIncludeZvtx", true, "Truth denominator: also require |vtxz|<cfgEvtZvtx"};
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
   //  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::Mults>;
@@ -140,8 +156,8 @@ struct Chargedkstaranalysis {
   // Event Mixing
   Configurable<int> nEvtMixing{"nEvtMixing", 5, "Number of events to mix"};
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  Service<o2::framework::O2DatabasePDG> pdg{};
   o2::ccdb::CcdbApi ccdbApi;
 
   Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
@@ -211,6 +227,7 @@ struct Chargedkstaranalysis {
   // MC configurables
   struct : ConfigurableGroup {
     Configurable<bool> doBkgMc{"doBkgMc", false, "Apply rotation in MC"};
+    Configurable<bool> doMcClosure{"doMcClosure", true, "Do MC Closure Study in MC"};
   } mcCfgs;
 
   /// Track selections
@@ -285,7 +302,7 @@ struct Chargedkstaranalysis {
   } kstarCutCfgs;
 
   Configurable<bool> isQaRequired{"isQaRequired", false, "Fill QA plots"};
-  float centrality;
+  float centrality = 0.f;
 
   // PDG code
   int kPDGK0s = kK0Short;
@@ -295,7 +312,7 @@ struct Chargedkstaranalysis {
   // Variable declaration
   ROOT::Math::PxPyPzEVector beam1{0., 0., -helicityCfgs.beamMomentum, 13600. / 2.};
   ROOT::Math::PxPyPzEVector beam2{0., 0., helicityCfgs.beamMomentum, 13600. / 2.};
-
+  double fMaxPosPV = 1e-2;
   void init(o2::framework::InitContext&)
   {
     centrality = -999;
@@ -344,7 +361,6 @@ struct Chargedkstaranalysis {
     AxisSpec thnAxisPhi = {axisCfgs.configThnAxisPhi, "Configurabel phi axis"}; // 0 to 2pi
     // THnSparse
     AxisSpec mcLabelAxis = {5, -0.5, 4.5, "MC Label"};
-
     if (!doprocessMC) {
       histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{5, 0, 5.0}});
       auto hCutFlow = histos.get<TH1>(HIST("hEvtSelInfo"));
@@ -403,7 +419,6 @@ struct Chargedkstaranalysis {
 
         histos.add("QA/before/CentDist", "Centrality distribution", {HistType::kTH1D, {centAxis}});
         histos.add("QA/before/CentDist1", "Centrality distribution", HistType::kTH1F, {{110, 0, 110}});
-
         histos.add("QA/trkbpionTPCPIDME", "TPC PID of bachelor pion candidates", HistType::kTH2D, {ptAxisQA, pidQAAxis});
 
         // Bachelor pion
@@ -549,9 +564,12 @@ struct Chargedkstaranalysis {
       if (!helicityCfgs.qAOptimisation) {
         histosMc.add("h3ChaKstarInvMassDSMcGen", "h3ChaKstarInvMassDSMcGen", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
         histosMc.add("h3ChaKstarInvMassDSMcRec", "h3ChaKstarInvMassDSMcRec", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
+        histosMc.add("h3ChaKstarInvMassDSMcRecClosure", "h3ChaKstarInvMassDSMcRecClosure", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
+
         if (mcCfgs.doBkgMc) {
           histosMc.add("h3ChaKstarInvMassRotMcGen", "h3ChaKstarInvMassRotMcGen", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
           histosMc.add("h3ChaKstarInvMassRotMcRec", "h3ChaKstarInvMassRotMcRec", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
+          histosMc.add("h3ChaKstarInvMassRotMcRecClosure", "h3ChaKstarInvMassRotMcRecClosure", kTHnSparseF, {centAxis, ptAxis, invMassAxisReso, thnAxisPOL}, true);
         }
       }
 
@@ -560,6 +578,18 @@ struct Chargedkstaranalysis {
 
       histos.add("EffKstar/recoKstar", "Kstar Reco matched (final all)", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("MCReco/hInvmass_Kstar_true", "MC-reco truth-tagged chK(892)", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisReso});
+      histos.add("Correction/sigLoss_den", "Gen Kstar (|y|<0.5) in truth class", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("Correction/sigLoss_den_pri", "Gen primary Kstar (|y|<0.5) in truth class", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("Correction/sigLoss_num", "Gen Kstar (|y|<0.5, selected events) in reco class", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("Correction/sigLoss_num_pri", "Gen primary Kstar (|y|<0.5, selected events) in reco class", HistType::kTH2F, {ptAxis, centAxis});
+      histos.add("Correction/EF_den", "Gen events (truth class)", HistType::kTH1F, {centAxis});
+      histos.add("Correction/EF_num", "Reco events (selected events)", HistType::kTH1F, {centAxis});
+      histos.add("Correction/hNEventsMCTruth", "hNEventsMCTruth", HistType::kTH1F, {AxisSpec{nSteps, 0.5, nSteps + 0.5, ""}});
+      auto hstep = histos.get<TH1>(HIST("Correction/hNEventsMCTruth"));
+      hstep->GetXaxis()->SetBinLabel(1, "All");
+      hstep->GetXaxis()->SetBinLabel(2, "zvtx");
+      hstep->GetXaxis()->SetBinLabel(3, "INEL>0");
+      hstep->GetXaxis()->SetBinLabel(4, "Assoc with reco coll");
     }
 
     ccdb->setURL(cfgURL);
@@ -575,8 +605,9 @@ struct Chargedkstaranalysis {
 
   std::unordered_set<int64_t> allowedMcIds;
   std::unordered_map<int64_t, float> centTruthByAllowed;
-
-  float lMultiplicity;
+  std::unordered_set<int64_t> refClassIds;
+  std::unordered_map<int64_t, float> refCentByMcId;
+  float lMultiplicity = 0.f;
   template <typename CollisionType>
   float getCentrality(CollisionType const& collision)
   {
@@ -598,76 +629,100 @@ struct Chargedkstaranalysis {
     int ibin = 1;
 
     auto applyCut = [&](bool condition) -> bool {
-      if (!condition)
+      if (!condition) {
         return false;
-      if (!doprocessMC && isQaRequired)
+      }
+      if (!doprocessMC && isQaRequired) {
         histos.fill(HIST("QA/hTrackCutFlow"), ibin);
+      }
       ibin++;
       return true;
     };
 
     // First bin (before any cuts)
-    if (!doprocessMC && isQaRequired)
+    if (!doprocessMC && isQaRequired) {
       histos.fill(HIST("QA/hTrackCutFlow"), ibin++);
+    }
 
     // Cuts
-    if (!applyCut(std::abs(track.pt()) >= trackCutCfgs.cMinPtcut))
+    if (!applyCut(std::abs(track.pt()) >= trackCutCfgs.cMinPtcut)) {
       return false;
-    if (!applyCut(std::abs(track.eta()) <= trackCutCfgs.cMaxEtacut))
+    }
+    if (!applyCut(std::abs(track.eta()) <= trackCutCfgs.cMaxEtacut)) {
       return false;
-    if (!applyCut(track.itsNCls() >= trackCutCfgs.cfgITScluster))
+    }
+    if (!applyCut(track.itsNCls() >= trackCutCfgs.cfgITScluster)) {
       return false;
-    if (!applyCut(track.tpcNClsFound() >= trackCutCfgs.cfgTPCcluster))
+    }
+    if (!applyCut(track.tpcNClsFound() >= trackCutCfgs.cfgTPCcluster)) {
       return false;
-    if (!applyCut(track.tpcCrossedRowsOverFindableCls() >= trackCutCfgs.cfgRatioTPCRowsOverFindableCls))
+    }
+    if (!applyCut(track.tpcCrossedRowsOverFindableCls() >= trackCutCfgs.cfgRatioTPCRowsOverFindableCls)) {
       return false;
-    if (!applyCut(track.itsChi2NCl() < trackCutCfgs.cfgITSChi2NCl))
+    }
+    if (!applyCut(track.itsChi2NCl() < trackCutCfgs.cfgITSChi2NCl)) {
       return false;
-    if (!applyCut(track.tpcChi2NCl() < trackCutCfgs.cfgTPCChi2NCl))
+    }
+    if (!applyCut(track.tpcChi2NCl() < trackCutCfgs.cfgTPCChi2NCl)) {
       return false;
+    }
+    if (!applyCut(!trackCutCfgs.cfgHasITS || track.hasITS())) {
+      return false;
+    }
+    if (!applyCut(!trackCutCfgs.cfgHasTPC || track.hasTPC())) {
+      return false;
+    }
+    if (!applyCut(!trackCutCfgs.cfgHasTOF || track.hasTOF())) {
+      return false;
+    }
 
-    if (!applyCut(!trackCutCfgs.cfgHasITS || track.hasITS()))
+    if (!applyCut(!trackCutCfgs.cfgUseITSRefit || track.passedITSRefit())) {
       return false;
-    if (!applyCut(!trackCutCfgs.cfgHasTPC || track.hasTPC()))
+    }
+    if (!applyCut(!trackCutCfgs.cfgUseTPCRefit || track.passedTPCRefit())) {
       return false;
-    if (!applyCut(!trackCutCfgs.cfgHasTOF || track.hasTOF()))
-      return false;
+    }
 
-    if (!applyCut(!trackCutCfgs.cfgUseITSRefit || track.passedITSRefit()))
+    if (!applyCut(!trackCutCfgs.cfgPVContributor || track.isPVContributor())) {
       return false;
-    if (!applyCut(!trackCutCfgs.cfgUseTPCRefit || track.passedTPCRefit()))
+    }
+    if (!applyCut(!trackCutCfgs.cfgGlobalWoDCATrack || track.isGlobalTrackWoDCA())) {
       return false;
+    }
+    if (!applyCut(!trackCutCfgs.cfgGlobalTrack || track.isGlobalTrack())) {
+      return false;
+    }
+    if (!applyCut(!trackCutCfgs.cfgPrimaryTrack || track.isPrimaryTrack())) {
+      return false;
+    }
 
-    if (!applyCut(!trackCutCfgs.cfgPVContributor || track.isPVContributor()))
+    if (!applyCut(std::abs(track.dcaXY()) <= trackCutCfgs.cMaxbDCArToPVcut)) {
       return false;
-    if (!applyCut(!trackCutCfgs.cfgGlobalWoDCATrack || track.isGlobalTrackWoDCA()))
+    }
+    if (!applyCut(std::abs(track.dcaZ()) <= trackCutCfgs.cMaxbDCAzToPVcut)) {
       return false;
-    if (!applyCut(!trackCutCfgs.cfgGlobalTrack || track.isGlobalTrack()))
-      return false;
-    if (!applyCut(!trackCutCfgs.cfgPrimaryTrack || track.isPrimaryTrack()))
-      return false;
-
-    if (!applyCut(std::abs(track.dcaXY()) <= trackCutCfgs.cMaxbDCArToPVcut))
-      return false;
-    if (!applyCut(std::abs(track.dcaZ()) <= trackCutCfgs.cMaxbDCAzToPVcut))
-      return false;
+    }
 
     // pT dependent DCA XY
     if (trackCutCfgs.cfgpTdepDCAxyCut) {
-      if (!applyCut(std::abs(track.dcaXY()) <= (0.004 + (0.013 / track.pt()))))
+      if (!applyCut(std::abs(track.dcaXY()) <= (0.004 + (0.013 / track.pt())))) {
         return false;
+      }
     } else {
-      if (!applyCut(std::abs(track.dcaXY()) <= trackCutCfgs.cfgMaxbDCArToPVcut))
+      if (!applyCut(std::abs(track.dcaXY()) <= trackCutCfgs.cfgMaxbDCArToPVcut)) {
         return false;
+      }
     }
 
     // pT dependent DCA Z
     if (trackCutCfgs.cfgpTdepDCAzCut) {
-      if (!applyCut(std::abs(track.dcaZ()) <= (0.004 + (0.013 / track.pt()))))
+      if (!applyCut(std::abs(track.dcaZ()) <= (0.004 + (0.013 / track.pt())))) {
         return false;
+      }
     } else {
-      if (!applyCut(std::abs(track.dcaZ()) <= trackCutCfgs.cfgMaxbDCAzToPVcut))
+      if (!applyCut(std::abs(track.dcaZ()) <= trackCutCfgs.cfgMaxbDCAzToPVcut)) {
         return false;
+      }
     }
 
     return true;
@@ -676,13 +731,15 @@ struct Chargedkstaranalysis {
   template <typename TrackType>
   bool selectionPIDPion(TrackType const& candidate)
   {
-    if (std::abs(candidate.tpcNSigmaPi()) >= pidCutCfgs.cfgMaxTPCnSigmaPion)
+    if (std::abs(candidate.tpcNSigmaPi()) >= pidCutCfgs.cfgMaxTPCnSigmaPion) {
       return false;
-    if (pidCutCfgs.cfgTPConly)
+    }
+    if (pidCutCfgs.cfgTPConly) {
       return true;
-    if (candidate.pt() <= pidCutCfgs.cfgTOFMinPt)
+    }
+    if (candidate.pt() <= pidCutCfgs.cfgTOFMinPt) {
       return true;
-
+    }
     if (candidate.hasTOF()) {
       const bool tofPIDPassed = std::abs(candidate.tofNSigmaPi()) < pidCutCfgs.cfgMaxTOFnSigmaPion;
       const bool combo = (pidCutCfgs.cfgNsigmaCutCombinedPion > 0) &&
@@ -690,9 +747,8 @@ struct Chargedkstaranalysis {
                             candidate.tofNSigmaPi() * candidate.tofNSigmaPi() <
                           pidCutCfgs.cfgNsigmaCutCombinedPion * pidCutCfgs.cfgNsigmaCutCombinedPion);
       return tofPIDPassed || combo;
-    } else {
-      return pidCutCfgs.cfgTOFVeto;
     }
+    return pidCutCfgs.cfgTOFVeto;
   }
 
   template <typename CollisionType, typename K0sType>
@@ -725,8 +781,9 @@ struct Chargedkstaranalysis {
     auto mLambda = candidate.mLambda();
     auto mALambda = candidate.mAntiLambda();
 
-    if (!doprocessMC && isQaRequired)
+    if (!doprocessMC && isQaRequired) {
       histos.fill(HIST("QA/K0sCutCheck"), ibin);
+    }
 
     applyCut(dauDCA <= secondaryCutsCfgs.cSecondaryDauDCAMax);
     applyCut(dauPosDCAtoPV >= secondaryCutsCfgs.cSecondaryDauPosDCAtoPVMin);
@@ -744,111 +801,42 @@ struct Chargedkstaranalysis {
 
     return returnFlag;
   }
-  template <typename TrackTemplate, typename V0Template>
-  bool isTrueKstar(const TrackTemplate& bTrack, const V0Template& K0scand)
-  {
-    if (std::abs(bTrack.PDGCode()) != kPiPlus) // Are you pion?
-      return false;
-    if (std::abs(K0scand.PDGCode()) != kPDGK0s) // Are you K0s?
-      return false;
-
-    auto motherbTrack = bTrack.template mothers_as<aod::McParticles>();
-    auto motherkV0 = K0scand.template mothers_as<aod::McParticles>();
-
-    // Check bTrack first
-    if (std::abs(motherbTrack.pdgCode()) != kKstarPlus) // Are you charged Kstar's daughter?
-      return false;                                     // Apply first since it's more restrictive
-
-    if (std::abs(motherkV0.pdgCode()) != kPDGK0) // Is it K0s?
-      return false;
-    // Check if K0s's mother is K0 (311)
-    auto motherK0 = motherkV0.template mothers_as<aod::McParticles>();
-    if (std::abs(motherK0.pdgCode()) != kPDGK0)
-      return false;
-
-    // Check if K0's mother is Kstar (323)
-    auto motherKstar = motherK0.template mothers_as<aod::McParticles>();
-    if (std::abs(motherKstar.pdgCode()) != kKstarPlus)
-      return false;
-
-    // Check if bTrack and K0 have the same mother (global index)
-    if (motherbTrack.globalIndex() != motherK0.globalIndex())
-      return false;
-
-    return true;
-  }
-
   int count = 0;
-  template <typename V0T, typename TrkT>
-  bool matchRecoToTruthKstar(V0T const& v0, TrkT const& trk)
-  {
-    if (!v0.has_mcParticle() || !trk.has_mcParticle())
-      return false;
-
-    auto mcK0s = v0.template mcParticle_as<MCTrueTrackCandidates>();
-    auto mcPi = trk.template mcParticle_as<MCTrueTrackCandidates>();
-
-    if (std::abs(mcK0s.pdgCode()) != kPDGK0s)
-      return false;
-    if (std::abs(mcPi.pdgCode()) != kPiPlus)
-      return false;
-
-    MCTrueTrackCandidates::iterator kstarFromPi;
-    bool havePiKstar = false;
-    for (const auto& m1 : mcPi.template mothers_as<MCTrueTrackCandidates>()) {
-      if (std::abs(m1.pdgCode()) == kKstarPlus) {
-        kstarFromPi = m1;
-        havePiKstar = true;
-        break;
-      }
-    }
-    if (!havePiKstar) {
-      return false;
-    }
-
-    bool shareSameKstar = false;
-    for (const auto& m1 : mcK0s.template mothers_as<MCTrueTrackCandidates>()) {
-      if (std::abs(m1.pdgCode()) == kPDGK0) {
-        for (const auto& m2 : m1.template mothers_as<MCTrueTrackCandidates>()) {
-          if (m2.globalIndex() == kstarFromPi.globalIndex()) {
-            shareSameKstar = true;
-            break;
-          }
-        }
-        if (shareSameKstar)
-          break;
-      }
-    }
-    if (!shareSameKstar) {
-      return false;
-    }
-
-    return true;
-  } // matchRecoToTruthKstar
-
   template <typename T>
   void fillKstarHist(bool isRot, float multiplicity, const T& mother, double cosTheta)
   {
+    // 1. Data Path
     if (!doprocessMC) {
-
       if (isRot) {
         hChaKstar.fill(HIST("h3ChaKstarInvMassRot"), multiplicity, mother.Pt(), mother.M(), cosTheta);
       } else {
         hChaKstar.fill(HIST("h3ChaKstarInvMassDS"), multiplicity, mother.Pt(), mother.M(), cosTheta);
       }
-    } else {
-      if (currentIsGen) {
-        if (isRot) {
-          histosMc.fill(HIST("h3ChaKstarInvMassRotMcGen"), multiplicity, mother.Pt(), mother.M(), cosTheta);
-        } else {
-          histosMc.fill(HIST("h3ChaKstarInvMassDSMcGen"), multiplicity, mother.Pt(), mother.M(), cosTheta);
-        }
+      return;
+    }
+
+    // 2. MC Generated Path
+    if (currentIsGen) {
+      if (isRot) {
+        histosMc.fill(HIST("h3ChaKstarInvMassRotMcGen"), multiplicity, mother.Pt(), mother.M(), cosTheta);
       } else {
-        if (isRot) {
-          histosMc.fill(HIST("h3ChaKstarInvMassRotMcRec"), multiplicity, mother.Pt(), mother.M(), cosTheta);
-        } else {
-          histosMc.fill(HIST("h3ChaKstarInvMassDSMcRec"), multiplicity, mother.Pt(), mother.M(), cosTheta);
-        }
+        histosMc.fill(HIST("h3ChaKstarInvMassDSMcGen"), multiplicity, mother.Pt(), mother.M(), cosTheta);
+      }
+      return;
+    }
+
+    // 3. MC Reconstructed Path
+    if (isRot) {
+      if (!mcClosure) {
+        histosMc.fill(HIST("h3ChaKstarInvMassRotMcRec"), multiplicity, mother.Pt(), mother.M(), cosTheta);
+      } else {
+        histosMc.fill(HIST("h3ChaKstarInvMassRotMcRecClosure"), multiplicity, mother.Pt(), mother.M(), cosTheta);
+      }
+    } else {
+      if (!mcClosure) {
+        histosMc.fill(HIST("h3ChaKstarInvMassDSMcRec"), multiplicity, mother.Pt(), mother.M(), cosTheta);
+      } else {
+        histosMc.fill(HIST("h3ChaKstarInvMassDSMcRecClosure"), multiplicity, mother.Pt(), mother.M(), cosTheta);
       }
     }
   }
@@ -856,14 +844,14 @@ struct Chargedkstaranalysis {
   template <typename T>
   void fillInvMass(const T& mother, float multiplicity, const T& daughter1, const T& daughter2, bool isMix)
   {
-    TRandom* rn = new TRandom();
+    auto* rn = new TRandom();
     rn->SetSeed(0);
     // Variable declarations
     ROOT::Math::PxPyPzMVector fourVecDauCM, daughterRot, motherRot, daughterRotCM;
     ROOT::Math::XYZVectorF beam1CM, beam2CM, zAxisCS, yAxisCS, xAxisCS;
     ROOT::Math::XYZVectorF v1CM, zaxisHE, yaxisHE, xaxisHE;
-    ROOT::Math::XYZVector randomVec, beamVec, normalVec;
-    float theta2;
+    ROOT::Math::XYZVector randomVec, beamVec, normalVec, normalVecRot, randomVecRot;
+    float theta2 = 0.0f;
     // //polarization calculations
     // zBeam = ROOT::Math::XYZVector(0.f, 0.f, 1.f); // ẑ: beam direction in lab frame
 
@@ -899,7 +887,7 @@ struct Chargedkstaranalysis {
     auto phiCS = std::atan2(yAxisCS.Dot(v1CM), xAxisCS.Dot(v1CM));
     phiCS = RecoDecay::constrainAngle(phiCS, 0.0);
 
-    bool doRotation = (!doprocessMC) || (doprocessMC && mcCfgs.doBkgMc);
+    bool doRotation = !doprocessMC || mcCfgs.doBkgMc;
     // if (std::abs(mother.Rapidity()) < config.rapidityMotherData) {
     if (helicityCfgs.activateHelicityFrame) {
       // helicityVec = mother.Vect(); // 3 vector of mother in COM frame
@@ -912,13 +900,21 @@ struct Chargedkstaranalysis {
         if (doRotation) {
           for (int i = 0; i < helicityCfgs.cRotations; i++) {
             theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / helicityCfgs.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / helicityCfgs.rotationalCut);
+            if (helicityCfgs.cCosWithKShot) {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter2.Px() * std::cos(theta2) - daughter2.Py() * std::sin(theta2), daughter2.Px() * std::sin(theta2) + daughter2.Py() * std::cos(theta2), daughter2.Pz(), daughter2.M());
 
-            daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
+              motherRot = daughterRot + daughter1;
+            } else {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
 
-            motherRot = daughterRot + daughter2;
-
+              motherRot = daughterRot + daughter2;
+            }
             ROOT::Math::Boost boost2{motherRot.BoostToCM()};
-            daughterRotCM = boost2(daughterRot);
+            if (helicityCfgs.cCosWithKShot) {
+              daughterRotCM = boost2(daughter1);
+            } else {
+              daughterRotCM = boost2(daughterRot);
+            }
 
             auto cosThetaStarHelicityRot = motherRot.Vect().Dot(daughterRotCM.Vect()) / (std::sqrt(daughterRotCM.Vect().Mag2()) * std::sqrt(motherRot.Vect().Mag2()));
             auto phiHelicityRot = std::atan2(yaxisHE.Dot(daughterRotCM.Vect().Unit()), xaxisHE.Dot(daughterRotCM.Vect().Unit()));
@@ -938,9 +934,15 @@ struct Chargedkstaranalysis {
           for (int i = 0; i < helicityCfgs.cRotations; i++) {
             theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / helicityCfgs.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / helicityCfgs.rotationalCut);
 
-            daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
+            if (helicityCfgs.cCosWithKShot) {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter2.Px() * std::cos(theta2) - daughter2.Py() * std::sin(theta2), daughter2.Px() * std::sin(theta2) + daughter2.Py() * std::cos(theta2), daughter2.Pz(), daughter2.M());
 
-            motherRot = daughterRot + daughter2;
+              motherRot = daughterRot + daughter1;
+            } else {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
+
+              motherRot = daughterRot + daughter2;
+            }
 
             ROOT::Math::Boost boost2{motherRot.BoostToCM()};
             daughterRotCM = boost2(daughterRot);
@@ -965,11 +967,27 @@ struct Chargedkstaranalysis {
         if (doRotation) {
           for (int i = 0; i < helicityCfgs.cRotations; i++) {
             theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / helicityCfgs.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / helicityCfgs.rotationalCut);
-            daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
 
-            motherRot = daughterRot + daughter2;
+            if (helicityCfgs.cCosWithKShot) {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter2.Px() * std::cos(theta2) - daughter2.Py() * std::sin(theta2), daughter2.Px() * std::sin(theta2) + daughter2.Py() * std::cos(theta2), daughter2.Pz(), daughter2.M());
+
+              motherRot = daughterRot + daughter1;
+            } else {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
+
+              motherRot = daughterRot + daughter2;
+            }
+            ROOT::Math::Boost boost2{motherRot.BoostToCM()};
+            if (helicityCfgs.cCosWithKShot) {
+              daughterRotCM = boost2(daughter1);
+            } else {
+              daughterRotCM = boost2(daughterRot);
+            }
+
+            normalVecRot = ROOT::Math::XYZVector(motherRot.Py(), -motherRot.Px(), 0.f);
+            auto cosThetaProductionRot = normalVecRot.Dot(daughterRotCM.Vect()) / (std::sqrt(daughterRotCM.Vect().Mag2()) * std::sqrt(normalVecRot.Mag2()));
             if (std::abs(motherRot.Rapidity()) < helicityCfgs.rapidityMotherData) {
-              fillKstarHist(true, multiplicity, motherRot, cosThetaProduction);
+              fillKstarHist(true, multiplicity, motherRot, cosThetaProductionRot);
             }
           }
         }
@@ -984,9 +1002,17 @@ struct Chargedkstaranalysis {
         if (doRotation) {
           for (int i = 0; i < helicityCfgs.cRotations; i++) {
             theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / helicityCfgs.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / helicityCfgs.rotationalCut);
-            daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
 
-            motherRot = daughterRot + daughter2;
+            if (helicityCfgs.cCosWithKShot) {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter2.Px() * std::cos(theta2) - daughter2.Py() * std::sin(theta2), daughter2.Px() * std::sin(theta2) + daughter2.Py() * std::cos(theta2), daughter2.Pz(), daughter2.M());
+
+              motherRot = daughterRot + daughter1;
+            } else {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
+
+              motherRot = daughterRot + daughter2;
+            }
+
             if (std::abs(motherRot.Rapidity()) < helicityCfgs.rapidityMotherData) {
               fillKstarHist(true, multiplicity, motherRot, cosThetaStarBeam);
             }
@@ -1005,12 +1031,31 @@ struct Chargedkstaranalysis {
         }
         if (doRotation) {
           for (int i = 0; i < helicityCfgs.cRotations; i++) {
+            auto phiRandomRot = gRandom->Uniform(0.f, constants::math::TwoPI);
+            auto thetaRandomRot = gRandom->Uniform(0.f, constants::math::PI);
+            randomVecRot = ROOT::Math::XYZVector(std::sin(thetaRandomRot) * std::cos(phiRandomRot), std::sin(thetaRandomRot) * std::sin(phiRandomRot), std::cos(thetaRandomRot));
             theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / helicityCfgs.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / helicityCfgs.rotationalCut);
-            daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
 
-            motherRot = daughterRot + daughter2;
+            if (helicityCfgs.cCosWithKShot) {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter2.Px() * std::cos(theta2) - daughter2.Py() * std::sin(theta2), daughter2.Px() * std::sin(theta2) + daughter2.Py() * std::cos(theta2), daughter2.Pz(), daughter2.M());
+
+              motherRot = daughterRot + daughter1;
+            } else {
+              daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
+
+              motherRot = daughterRot + daughter2;
+            }
+
+            ROOT::Math::Boost boost2{motherRot.BoostToCM()};
+            if (helicityCfgs.cCosWithKShot) {
+              daughterRotCM = boost2(daughter1);
+            } else {
+              daughterRotCM = boost2(daughterRot);
+            }
+            auto cosThetaStarRandomRot = randomVecRot.Dot(daughterRotCM.Vect()) / std::sqrt(daughterRotCM.Vect().Mag2());
+
             if (std::abs(motherRot.Rapidity()) < helicityCfgs.rapidityMotherData) {
-              fillKstarHist(true, multiplicity, motherRot, cosThetaStarRandom);
+              fillKstarHist(true, multiplicity, motherRot, cosThetaStarRandomRot);
             }
           }
         }
@@ -1058,8 +1103,9 @@ struct Chargedkstaranalysis {
         }
       }
 
-      if (!trackCut(bTrack) || !selectionPIDPion(bTrack))
+      if (!trackCut(bTrack) || !selectionPIDPion(bTrack)) {
         continue;
+      }
 
       if constexpr (!IsMix) {
         if (!doprocessMC && isQaRequired) {
@@ -1141,8 +1187,9 @@ struct Chargedkstaranalysis {
 
       if ((!secondaryCutsCfgs.cfgByPassDauPIDSelection &&
            (!selectionPIDPion(pos) || !selectionPIDPion(neg))) ||
-          !selectionK0s(collision, K0scand))
+          !selectionK0s(collision, K0scand)) {
         continue;
+      }
 
       if constexpr (!IsMix) {
         if (!doprocessMC && isQaRequired) {
@@ -1176,7 +1223,6 @@ struct Chargedkstaranalysis {
 
       k0sIndicies.push_back(K0scand.index());
     }
-
     // =========================
     // Pairing
     // =========================
@@ -1198,8 +1244,9 @@ struct Chargedkstaranalysis {
         }
 
         if (lResoKstar.Rapidity() > kstarCutCfgs.cKstarMaxRap ||
-            lResoKstar.Rapidity() < kstarCutCfgs.cKstarMinRap)
+            lResoKstar.Rapidity() < kstarCutCfgs.cKstarMinRap) {
           continue;
+        }
 
         if constexpr (!IsMix) {
           if (!doprocessMC && isQaRequired) {
@@ -1207,7 +1254,7 @@ struct Chargedkstaranalysis {
             histos.fill(HIST("QA/after/kstarinvmass"), lResoKstar.M());
           }
 
-          if (helicityCfgs.cBoostKShot) {
+          if (helicityCfgs.cCosWithKShot) {
             fillInvMass(lResoKstar, collision.centFT0M(), lResoSecondary, lDecayDaughter_bach, IsMix);
           } else {
             fillInvMass(lResoKstar, collision.centFT0M(), lDecayDaughter_bach, lResoSecondary, IsMix);
@@ -1228,8 +1275,9 @@ struct Chargedkstaranalysis {
                      aod::BCsWithTimestamps const&)
   {
     histos.fill(HIST("hEvtSelInfo"), 0.5);
-    if (!colCuts.isSelected(collision)) // Default event selection
+    if (!colCuts.isSelected(collision)) { // Default event selection
       return;
+    }
     histos.fill(HIST("hEvtSelInfo"), 1.5);
     if (rctCut.requireRCTFlagChecker && !rctCut.rctChecker(collision)) {
       return;
@@ -1237,11 +1285,13 @@ struct Chargedkstaranalysis {
     histos.fill(HIST("hEvtSelInfo"), 2.5);
 
     lMultiplicity = getCentrality(collision);
-    if (lMultiplicity < eventCutCfgs.cfgEventCentralityMin || lMultiplicity > eventCutCfgs.cfgEventCentralityMax)
+    if (lMultiplicity < eventCutCfgs.cfgEventCentralityMin || lMultiplicity > eventCutCfgs.cfgEventCentralityMax) {
       return;
+    }
     histos.fill(HIST("hEvtSelInfo"), 3.5);
-    if (!collision.isInelGt0())
+    if (!collision.isInelGt0()) {
       return;
+    }
     histos.fill(HIST("hEvtSelInfo"), 4.5);
     colCuts.fillQA(collision);
     fillHistograms<false, false>(collision, tracks, v0s);
@@ -1266,43 +1316,51 @@ struct Chargedkstaranalysis {
       for (const auto& [t1, t2] : o2::soa::combinations(
              o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         // Here t1 corressponds to bachelor track and t2 corressponds to v0s.
-        if (!trackCut(t1))
+        if (!trackCut(t1)) {
           continue;
-        if (!selectionPIDPion(t1))
+        }
+        if (!selectionPIDPion(t1)) {
           continue;
+        }
 
         auto posDauTrack = t2.template posTrack_as<TrackCandidates>();
         auto negDauTrack = t2.template negTrack_as<TrackCandidates>();
-        if (!secondaryCutsCfgs.cfgByPassDauPIDSelection && !selectionPIDPion(posDauTrack)) // Perhaps it's already applied in trackCut (need to check QA plots)
+        if (!secondaryCutsCfgs.cfgByPassDauPIDSelection && !selectionPIDPion(posDauTrack)) { // Perhaps it's already applied in trackCut (need to check QA plots)
           continue;
-        if (!secondaryCutsCfgs.cfgByPassDauPIDSelection && !selectionPIDPion(negDauTrack))
+        }
+        if (!secondaryCutsCfgs.cfgByPassDauPIDSelection && !selectionPIDPion(negDauTrack)) {
           continue;
-        if (!selectionK0s(c2, t2))
+        }
+        if (!selectionK0s(c2, t2)) {
           continue;
+        }
 
         ROOT::Math::PxPyPzMVector lResoSecondary, lDecayDaughter_bach, lResoKstar;
         lDecayDaughter_bach = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), MassPionCharged);
         lResoSecondary = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), MassK0Short);
         lResoKstar = lResoSecondary + lDecayDaughter_bach;
 
-        if (lResoKstar.Rapidity() > kstarCutCfgs.cKstarMaxRap || lResoKstar.Rapidity() < kstarCutCfgs.cKstarMinRap)
+        if (lResoKstar.Rapidity() > kstarCutCfgs.cKstarMaxRap || lResoKstar.Rapidity() < kstarCutCfgs.cKstarMinRap) {
           continue;
+        }
         histos.fill(HIST("hInvmass_KstarME"), c1.centFT0M(), lResoKstar.Pt(), lResoKstar.M());
       }
     }
   }
   PROCESS_SWITCH(Chargedkstaranalysis, processDataME, "Process Event for data without Partitioning", true);
 
-  void processMC(soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&, aod::McParticles const& mcParticles, soa::Join<EventCandidates, aod::McCollisionLabels> const& events, MCV0Candidates const& v0s, MCTrackCandidates const& tracks)
+  void processMC(soa::Join<aod::McCollisions, aod::McCentFT0Ms> const& mccolls, aod::McParticles const& mcParticles, soa::Join<EventCandidates, aod::McCollisionLabels> const& events, MCV0Candidates const& v0s, MCTrackCandidates const& tracks)
   {
     allowedMcIds.clear();
     centTruthByAllowed.clear();
-
-    // To apply event selection and store the collision IDs of reconstructed tracks that pass the selection criteria
+    refClassIds.clear();
+    refCentByMcId.clear();
+    // To apply event selection and store the collision IDs of reconstructed events that pass the selection criteria
     for (const auto& coll : events) {
 
-      if (!coll.has_mcCollision())
+      if (!coll.has_mcCollision()) {
         continue;
+      }
 
       const auto mcid = coll.mcCollisionId();
 
@@ -1313,13 +1371,15 @@ struct Chargedkstaranalysis {
         histos.fill(HIST("QA/MC/QACent_woCut"), lCentrality);
         histos.fill(HIST("QA/MC/QAvtxz_woCut"), coll.posZ());
       }
-
-      if (!colCuts.isSelected(coll))
+      if (!colCuts.isSelected(coll)) {
         continue;
-      if (rctCut.requireRCTFlagChecker && !rctCut.rctChecker(coll))
+      }
+      if (rctCut.requireRCTFlagChecker && !rctCut.rctChecker(coll)) {
         continue;
-      if (!coll.isInelGt0())
+      }
+      if (!coll.isInelGt0()) {
         continue;
+      }
       colCuts.fillQA(coll);
 
       if (doprocessMC && isQaRequired) {
@@ -1327,8 +1387,9 @@ struct Chargedkstaranalysis {
         histos.fill(HIST("QA/MC/QAvtxz_wVtxzCut"), coll.posZ());
       }
 
-      if (lCentrality < eventCutCfgs.cfgEventCentralityMin || lCentrality > eventCutCfgs.cfgEventCentralityMax)
+      if (lCentrality < eventCutCfgs.cfgEventCentralityMin || lCentrality > eventCutCfgs.cfgEventCentralityMax) {
         continue;
+      }
 
       if (doprocessMC && isQaRequired) {
         histos.fill(HIST("QA/MC/QACent_wCentCut"), lCentrality);
@@ -1336,15 +1397,45 @@ struct Chargedkstaranalysis {
       allowedMcIds.insert(mcid);
       centTruthByAllowed.emplace(mcid, lCentrality);
     }
+
+    // To builds a list of accepted MC collisions ID's for the truth candidates: i.e. the total number of generated events
+    for (const auto& coll : mccolls) {
+      bool pass = true;
+
+      if (cfgTruthIncludeZvtx && std::abs(coll.posZ()) >= eventCutCfgs.confEvtZvtx) {
+        pass = false;
+      }
+
+      if (pass && cfgTruthUseInelGt0) {
+        auto partsThisMc = mcParticles.sliceBy(perMCCollision, coll.globalIndex()); // This is to slice all MC particles belonging to the current MC collision.
+        // To check the INEL > 0
+        if (!pwglf::isINELgtNmc(partsThisMc, 0, pdg)) {
+          pass = false;
+        }
+      }
+
+      if (!pass) {
+        continue;
+      }
+
+      const auto mcid = coll.globalIndex();
+      refClassIds.insert(mcid);
+      const float lCentrality = coll.centFT0M();
+      refCentByMcId.emplace(mcid, lCentrality);
+    }
+
     // Calculating the generated Kstar
     for (const auto& part : mcParticles) {
       currentIsGen = true;
-      if (!part.has_mcCollision())
+      if (!part.has_mcCollision()) {
         continue;
-      if (std::abs(part.pdgCode()) != kKstarPlus)
+      }
+      if (std::abs(part.pdgCode()) != kKstarPlus) {
         continue;
-      if (std::abs(part.y()) > kstarCutCfgs.cKstarMaxRap)
+      }
+      if (std::abs(part.y()) > kstarCutCfgs.cKstarMaxRap) {
         continue;
+      }
       LorentzVectorSetXYZM lResoSecondary, lDecayDaughter_bach, lResoKstar, lDaughterRot;
       lResoKstar = LorentzVectorSetXYZM(part.px(), part.py(), part.pz(), MassKPlusStar892);
 
@@ -1361,10 +1452,11 @@ struct Chargedkstaranalysis {
             if (std::abs(d2.pdgCode()) == kPDGK0s) {
               bool seenPip = false, seenPim = false;
               for (const auto& d3 : d2.template daughters_as<aod::McParticles>()) {
-                if (d3.pdgCode() == +kPiPlus)
+                if (d3.pdgCode() == +kPiPlus) {
                   seenPip = true;
-                else if (d3.pdgCode() == -kPiPlus)
+                } else if (d3.pdgCode() == -kPiPlus) {
                   seenPim = true;
+                }
               }
               if (seenPip && seenPim) {
                 lResoSecondary = LorentzVectorSetXYZM(d2.px(), d2.py(), d2.pz(), MassK0Short);
@@ -1374,25 +1466,29 @@ struct Chargedkstaranalysis {
             }
           }
         }
-        if (hasRightPion && hasK0sToPipi)
+        if (hasRightPion && hasK0sToPipi) {
           break;
+        }
       }
 
-      if (!(hasRightPion && hasK0sToPipi))
+      if (!(hasRightPion && hasK0sToPipi)) {
         continue;
+      }
 
       const auto mcid = part.mcCollisionId();
-      if (allowedMcIds.count(mcid) == 0)
+      if (!allowedMcIds.contains(mcid)) {
         continue;
+      }
 
       auto iter = centTruthByAllowed.find(mcid);
-      if (iter == centTruthByAllowed.end())
+      if (iter == centTruthByAllowed.end()) {
         continue;
+      }
 
       const float lCentrality = iter->second;
 
       histos.fill(HIST("EffKstar/genKstar"), part.pt(), lCentrality);
-      if (helicityCfgs.cBoostKShot) {
+      if (helicityCfgs.cCosWithKShot) {
         fillInvMass(lResoKstar, lCentrality, lResoSecondary, lDecayDaughter_bach, eventCutCfgs.confIsMix);
       } else {
         fillInvMass(lResoKstar, lCentrality, lDecayDaughter_bach, lResoSecondary, eventCutCfgs.confIsMix);
@@ -1406,13 +1502,13 @@ struct Chargedkstaranalysis {
       currentIsGen = false;
       auto coll = v0.template collision_as<MCEventCandidates>();
 
-      if (!coll.has_mcCollision())
+      if (!coll.has_mcCollision()) {
         continue;
-
+      }
       const auto mcid = coll.mcCollisionId();
-
-      if (allowedMcIds.count(mcid) == 0)
+      if (!allowedMcIds.contains(mcid)) {
         continue; // To check the event is allowed or not
+      }
 
       const auto mccoll = coll.template mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
       const float lCentrality = mccoll.centFT0M();
@@ -1420,23 +1516,27 @@ struct Chargedkstaranalysis {
       if (!secondaryCutsCfgs.cfgByPassDauPIDSelection) {
         auto posDauTrack = v0.template posTrack_as<MCTrackCandidates>();
         auto negDauTrack = v0.template negTrack_as<MCTrackCandidates>();
-        if (!selectionPIDPion(posDauTrack))
+        if (!selectionPIDPion(posDauTrack)) {
           continue;
-        if (!selectionPIDPion(negDauTrack))
+        }
+        if (!selectionPIDPion(negDauTrack)) {
           continue;
+        }
       }
-      if (!selectionK0s(coll, v0))
+      if (!selectionK0s(coll, v0)) {
         continue;
-
+      }
       auto trks = tracks.sliceBy(perCollision, v0.collisionId()); // Grouping the tracks with the v0s, means only those tracks that belong to the same collision as v0
       for (const auto& bTrack : trks) {
-        if (bTrack.collisionId() != v0.collisionId())
+        if (bTrack.collisionId() != v0.collisionId()) {
           continue;
-        if (!trackCut(bTrack))
+        }
+        if (!trackCut(bTrack)) {
           continue;
-        if (!selectionPIDPion(bTrack))
+        }
+        if (!selectionPIDPion(bTrack)) {
           continue;
-
+        }
         LorentzVectorSetXYZM lResoSecondary, lDecayDaughter_bach, lResoKstar, lDaughterRot;
 
         lResoSecondary = LorentzVectorSetXYZM(v0.px(), v0.py(), v0.pz(), MassK0Short);
@@ -1445,18 +1545,32 @@ struct Chargedkstaranalysis {
 
         const double ptreco = lResoKstar.Pt();
         const double yreco = lResoKstar.Rapidity();
-        if (std::abs(yreco) > kstarCutCfgs.cKstarMaxRap)
+        if (std::abs(yreco) > kstarCutCfgs.cKstarMaxRap) {
           continue;
+        }
 
+        if (mcCfgs.doMcClosure) {
+          // For MC clousre test
+          mcClosure = true;
+          if (helicityCfgs.cCosWithKShot) {
+            fillInvMass(lResoKstar, lCentrality, lResoSecondary, lDecayDaughter_bach, eventCutCfgs.confIsMix);
+          } else {
+            fillInvMass(lResoKstar, lCentrality, lDecayDaughter_bach, lResoSecondary, eventCutCfgs.confIsMix);
+          }
+        }
+        mcClosure = false;
         // Since we are doing the MC study and we know about the PDG code of each particle let's try to check the things which we have
-        if (!v0.has_mcParticle() || !bTrack.has_mcParticle())
+        if (!v0.has_mcParticle() || !bTrack.has_mcParticle()) {
           continue;
+        }
         auto mcK0s = v0.template mcParticle_as<MCTrueTrackCandidates>(); // To get the MC truth particle corressponds to the V0 candidate
         auto mcPi = bTrack.template mcParticle_as<MCTrueTrackCandidates>();
-        if (std::abs(mcK0s.pdgCode()) != kPDGK0s)
+        if (std::abs(mcK0s.pdgCode()) != kPDGK0s) {
           continue;
-        if (std::abs(mcPi.pdgCode()) != kPiPlus)
+        }
+        if (std::abs(mcPi.pdgCode()) != kPiPlus) {
           continue;
+        }
         MCTrueTrackCandidates::iterator kstarFromPi;
         bool havePiKstar = false;
         // Loops over all the mother's of pions and check if this pion comming from a kstar
@@ -1470,8 +1584,27 @@ struct Chargedkstaranalysis {
         if (!havePiKstar) {
           continue;
         }
+        // Loops over all the mother's of K0s and check if this K0s comming from a kstar and also share the smae mother as of the pion
+        bool shareSameKstar = false;
+        for (const auto& m1 : mcK0s.template mothers_as<MCTrueTrackCandidates>()) {
+          if (std::abs(m1.pdgCode()) == kPDGK0) {
+            for (const auto& m2 : m1.template mothers_as<MCTrueTrackCandidates>()) {
+              if (m2.globalIndex() == kstarFromPi.globalIndex()) {
+                shareSameKstar = true;
+                break;
+              }
+            }
+            if (shareSameKstar) {
+              break;
+            }
+          }
+        }
+        if (!shareSameKstar) {
+          continue;
+        }
+
         histos.fill(HIST("EffKstar/recoKstar"), ptreco, lCentrality);
-        if (helicityCfgs.cBoostKShot) {
+        if (helicityCfgs.cCosWithKShot) {
           fillInvMass(lResoKstar, lCentrality, lResoSecondary, lDecayDaughter_bach, eventCutCfgs.confIsMix);
         } else {
           fillInvMass(lResoKstar, lCentrality, lDecayDaughter_bach, lResoSecondary, eventCutCfgs.confIsMix);
@@ -1479,9 +1612,103 @@ struct Chargedkstaranalysis {
         histos.fill(HIST("MCReco/hInvmass_Kstar_true"), lCentrality, ptreco, lResoKstar.M());
       }
     }
+    // To calculate the event losses to store the generated KstartPlus --> To check the number of events remains after passing all the event selection criteria for chk892
+    for (auto const& part : mcParticles) {
+      if (!part.has_mcCollision()) {
+        continue;
+      }
+      if (std::abs(part.pdgCode()) != kKstarPlus) {
+        continue;
+      }
+      if (std::abs(part.y()) > kstarCutCfgs.cKstarMaxRap) {
+        continue;
+      }
+
+      const auto mcid = part.mcCollisionId();
+      if (!allowedMcIds.contains(mcid)) {
+        continue;
+      }
+
+      auto iter = centTruthByAllowed.find(mcid);
+      if (iter == centTruthByAllowed.end()) {
+        continue;
+      }
+
+      const float lCentrality = iter->second;
+
+      histos.fill(HIST("Correction/sigLoss_num"), part.pt(), lCentrality);
+      if (part.vt() == 0) {
+        histos.fill(HIST("Correction/sigLoss_num_pri"), part.pt(), lCentrality);
+      }
+    }
+    // To calculate the denominator -> To check the all the events have chk892
+    for (auto const& part : mcParticles) {
+      if (!part.has_mcCollision()) {
+        continue;
+      }
+      if (std::abs(part.pdgCode()) != kKstarPlus) {
+        continue;
+      }
+      if (std::abs(part.y()) > kstarCutCfgs.cKstarMaxRap) {
+        continue;
+      }
+
+      const auto mcid = part.mcCollisionId();
+      if (!refClassIds.contains(mcid)) {
+        continue;
+      }
+
+      auto iter = refCentByMcId.find(mcid);
+      if (iter == refCentByMcId.end()) {
+        continue;
+      }
+
+      const float lCentrality = iter->second;
+
+      histos.fill(HIST("Correction/sigLoss_den"), part.pt(), lCentrality);
+      if (part.vt() == 0) {
+        histos.fill(HIST("Correction/sigLoss_den_pri"), part.pt(), lCentrality);
+      }
+    }
+    // To calculate the event fraction correction
+    for (const auto& mcid : refClassIds) {
+      histos.fill(HIST("Correction/EF_den"), refCentByMcId[mcid]);
+    }
+    for (const auto& mcid : allowedMcIds) {
+      auto iter = centTruthByAllowed.find(mcid);
+      if (iter == centTruthByAllowed.end()) {
+        continue;
+      }
+
+      const float lCentrality = iter->second;
+      histos.fill(HIST("Correction/EF_num"), lCentrality);
+    }
+
+    for (auto const& mcc : mccolls) {
+      const auto mcid = mcc.globalIndex();
+
+      histos.fill(HIST("Correction/hNEventsMCTruth"), 1.0);
+
+      bool passZvtx = true;
+      if (cfgTruthIncludeZvtx && std::abs(mcc.posZ()) > eventCutCfgs.confEvtZvtx) {
+        passZvtx = false;
+      }
+      if (passZvtx) {
+        histos.fill(HIST("Correction/hNEventsMCTruth"), 2.0);
+
+        auto partsThisMc = mcParticles.sliceBy(perMCCollision, mcid);
+        if (pwglf::isINELgtNmc(partsThisMc, 0, pdg)) {
+          histos.fill(HIST("Correction/hNEventsMCTruth"), 3.0);
+        }
+      }
+      if (allowedMcIds.contains(mcid)) {
+        histos.fill(HIST("Correction/hNEventsMCTruth"), 4.0);
+      }
+    }
   }
   PROCESS_SWITCH(Chargedkstaranalysis, processMC, "Process Event for MC", false);
 };
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<Chargedkstaranalysis>(cfgc)};

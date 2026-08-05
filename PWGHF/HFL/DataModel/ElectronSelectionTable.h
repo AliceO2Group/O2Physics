@@ -93,8 +93,9 @@ DECLARE_SOA_COLUMN(TpcChi2NClTrack, tpcChi2NClTrack, float);         //! Chi2 / 
 DECLARE_SOA_COLUMN(DcaXYTrack, dcaXYTrack, float);                   //! dca of the electron in xy direction
 DECLARE_SOA_COLUMN(DcaZTrack, dcaZTrack, float);                     //! dca of the electron in z direction
 
-DECLARE_SOA_COLUMN(M02El, m02El, float);                      //! M02 of the electron cluster
-DECLARE_SOA_COLUMN(EopEl, eopEl, float);                      //! energy momentum ratio of the electron
+DECLARE_SOA_COLUMN(EopEl, eopEl, float); //! energy momentum ratio of the electron
+DECLARE_SOA_COLUMN(M02El, m02El, float); //! M02 of the electron cluster
+
 DECLARE_SOA_COLUMN(LSMassEE, lSMassEE, std::vector<float>);   //!  mass of the Like sign electron pair
 DECLARE_SOA_COLUMN(ULSMassEE, uLSMassEE, std::vector<float>); //! mass of UnLike sign electron pair
 DECLARE_SOA_COLUMN(NElPairLS, nElPairLS, int);                //! Number of Like sign electron pair

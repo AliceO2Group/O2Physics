@@ -122,6 +122,8 @@ struct SlimCandidate {
   uint64_t mcProcess = TMCProcess::kPNoProcess;
   float nsigmaTpc = -999.f;
   float nsigmaTof = -999.f;
+  float vx = -999.f; // production vertex x coordinate
+  float vy = -999.f;
 };
 
 enum Species {
@@ -305,15 +307,21 @@ enum evSel {
   kIsGoodZvtxFT0vsPV,
   kIsGoodITSLayersAll,
   kIsEPtriggered,
+  kNoCollInRofStandard,
+  kNoHighMultCollInPrevRof,
+  kNoCollInTimeRangeStandard,
   kNevSels
 };
 
 static const std::vector<std::string> eventSelectionTitle{"Event selections"};
-static const std::vector<std::string> eventSelectionLabels{"TVX", "Z vtx", "TF border", "ITS ROF border", "No same-bunch pile-up", "kIsGoodZvtxFT0vsPV", "isGoodITSLayersAll", "isEPtriggered"};
+static const std::vector<std::string> eventSelectionLabels{"TVX", "Z vtx", "TF border", "ITS ROF border", "No same-bunch pile-up", "kIsGoodZvtxFT0vsPV", "isGoodITSLayersAll", "isEPtriggered", "No collision in ROF standard", "No high-multiplicity collision in previous ROF", "No collision in time range standard"};
 
-constexpr int EvSelDefault[8][1]{
+constexpr int EvSelDefault[evSel::kNevSels][1]{
   {1},
   {1},
+  {0},
+  {0},
+  {0},
   {0},
   {0},
   {0},
@@ -380,6 +388,22 @@ bool eventSelection(const Tcollision& collision, o2::framework::HistogramRegistr
     }
     registry.fill(HIST("hEventSelections"), evSel::kIsEPtriggered + 1);
   }
+
+  if (eventSelections.get(evSel::kNoCollInRofStandard) && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+    return false;
+  }
+  registry.fill(HIST("hEventSelections"), evSel::kNoCollInRofStandard + 1);
+
+  if (eventSelections.get(evSel::kNoHighMultCollInPrevRof) && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
+    return false;
+  }
+  registry.fill(HIST("hEventSelections"), evSel::kNoHighMultCollInPrevRof + 1);
+
+  if (eventSelections.get(evSel::kNoCollInTimeRangeStandard) && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    return false;
+  }
+  registry.fill(HIST("hEventSelections"), evSel::kNoCollInTimeRangeStandard + 1);
+
   registry.fill(HIST("hVtxZ"), collision.posZ());
 
   return true;
@@ -441,8 +465,8 @@ void createHistogramRegistryNucleus(o2::framework::HistogramRegistry& registry)
   registry.add(fmt::format("{}/hPtReconstructed", cNames[index]).c_str(), (fmt::format("{} - reconstructed variables;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); Counts")).c_str(), o2::framework::HistType::kTH1F, {{400, -10.0f, 10.0f}});
   registry.add(fmt::format("{}/h2PtVsCentralityReconstructed", cNames[index]).c_str(), (fmt::format("{} - reconstructed variables;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); CentralityFT0C (%)")).c_str(), o2::framework::HistType::kTH2F, {{400, -10.0f, 10.0f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3PhiVsEtaVsCentralityReconstructed", cNames[index]).c_str(), (fmt::format("{} - reconstructed variables;", cNames[index]) + std::string("#phi (radians); #eta; CentralityFT0C (%)")).c_str(), o2::framework::HistType::kTH3F, {{40, 0, o2::constants::math::TwoPI}, {40, -1.0f, 1.f}, {20, 0.0f, 100.0f}});
-  registry.add(fmt::format("{}/h3DCAxyVsPtVsCentrality", cNames[index]).c_str(), (fmt::format(";", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{xy} (cm); CentralityFT0C (%)")).c_str(), o2::framework::HistType::kTH3F, {{400, -10.0f, 10.0f}, {200, -0.5f, 0.5f}, {20, 0.0f, 100.0f}});
-  registry.add(fmt::format("{}/h3DCAzVsPtVsCentrality", cNames[index]).c_str(), (fmt::format("{};", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{z} (cm); CentralityFT0C (%)")).c_str(), o2::framework::HistType::kTH3F, {{400, -10.0f, 10.0f}, {200, -0.5f, 0.5f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3DCAxyVsPtVsCentrality", cNames[index]).c_str(), (fmt::format(";", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{xy} (cm); CentralityFT0C (%)")).c_str(), o2::framework::HistType::kTH3F, {{400, -10.0f, 10.0f}, {400, -0.1f, 0.1f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3DCAzVsPtVsCentrality", cNames[index]).c_str(), (fmt::format("{};", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{z} (cm); CentralityFT0C (%)")).c_str(), o2::framework::HistType::kTH3F, {{400, -10.0f, 10.0f}, {400, -0.1f, 0.1f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3NsigmaTPC_preselectionVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} TPC distribution;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{TPC}}({}); CentralityFT0C (%)", cNames[index])).c_str(), o2::framework::HistType::kTH3F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3NsigmaTPCVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} TPC distribution;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{TPC}}({}); Centrality FT0C (%)", cNames[index])).c_str(), o2::framework::HistType::kTH3F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3NsigmaITS_preselectionVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} ITS distribution;", cNames[index]) + std::string("signed #it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{ITS}}({}); Centrality FT0C (%)", cNames[index])).c_str(), o2::framework::HistType::kTH3F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}, {20, 0.0f, 100.0f}});

@@ -187,7 +187,7 @@ void FastTracker::AddGenericDetector(o2::fastsim::GeometryEntry configMap, o2::c
           LOG(fatal) << "CCDB manager is null, cannot retrieve file " << ccdbPath;
           return;
         }
-        TGraph* g = ccdbManager->getForTimeStamp<TGraph>(ccdbPath, -1);
+        TGraph* g = ccdbManager->getForTimeStamp<TGraph>(ccdbPath, 1);
         addedLayer->setDeadPhiRegions(g);
       } else {
         // Taking it as local file
