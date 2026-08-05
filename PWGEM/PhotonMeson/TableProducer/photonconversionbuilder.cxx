@@ -72,7 +72,9 @@
 #include <map>
 #include <set>
 #include <string>
+#include <tuple>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -103,6 +105,44 @@ enum TrackPropMode {
   kBoth = 2
 };
 
+enum V0DeduplicationMode {
+  Pairwise = 0,      // old algorithm
+  GreedyMatching = 1 // new algorithm
+};
+
+// Struct needed for deduplication mode 1. Used to keep track  of v0 properties and a score based on pca and cosPA
+struct V0CandidateHelper {
+  int v0ID = -1;
+  int colID = -1;
+  int posID = -1;
+  int eleID = -1;
+  float cosPA = -1.f;
+  float pca = -1.f;
+  float score = -1.f;
+
+  V0CandidateHelper() = default;
+
+  V0CandidateHelper(int v0, int col, int pos, int ele, float cpa, float p, float s)
+    : v0ID(v0), colID(col), posID(pos), eleID(ele), cosPA(cpa), pca(p), score(s)
+  {
+  }
+
+  bool operator==(const V0CandidateHelper& other) const
+  {
+    return score == other.score;
+  }
+
+  bool operator<(const V0CandidateHelper& other) const
+  {
+    return score < other.score;
+  }
+
+  bool operator>(const V0CandidateHelper& other) const
+  {
+    return score > other.score;
+  }
+};
+
 struct PhotonConversionBuilder {
   Produces<aod::V0PhotonsKF> v0photonskf;
   Produces<aod::V0Legs> v0legs;
@@ -124,6 +164,8 @@ struct PhotonConversionBuilder {
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> modeTrackPropagation{"modeTrackPropagation", 0, "0: use real track propagation, including material, 1: use fast approximation using only geometry, 2: Use real track propagation and make comparison to fast propagation (only for debugging and testing)"};
+  Configurable<int> deduplicationMode{"deduplicationMode", 0, "0: Pairwise deduplication, 1: Based on Greedy matching (best score wins)"};
+  Configurable<float> deduplicationScoreWeight{"deduplicationScoreWeight", 0.5f, "0.:only pca goes into the score, 1: only cosPA goes itno score, any number in between is a mix of pca and cosPA"};
 
   // single track cuts
   Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
@@ -342,6 +384,14 @@ struct PhotonConversionBuilder {
       registry.add("V0Leg/hDCAzPropagationCompare", "Comparison of DCA_{z} propagation;DCA_{z} (cm) proper propagation; DCA_{z} (cm) geom. propagation", {HistType::kTH2F, {{200, -10., 10.}, {200, -10., 10.}}});
       registry.add("V0/hPhivPropagationCompare", "Comparison of #phi_{v};#phi_{v} proper propagation; #phi_{v} geom. propagation", {HistType::kTH2F, {{100, 0., 1.6}, {100, 0., 1.6}}});
       registry.add("V0/hPsiPairPropagationCompare", "Comparison of #Psi_{pair};#Psi_{pair} proper propagation; #Psi_{pair} geom. propagation", {HistType::kTH2F, {{100, 0., 1.6}, {100, 0., 1.6}}});
+    }
+
+    // Make sure the deduplicationScoreWeight is between 0 and 1
+    if (deduplicationScoreWeight > 1.f) { // o2-linter: disable=magic-number (score has to be below unity)
+      LOG(warning) << "deduplicationScoreWeight is larger than unity which is not allowed";
+    }
+    if (deduplicationScoreWeight < 0.f) { // o2-linter: disable=magic-number (score has to be above zero)
+      LOG(warning) << "deduplicationScoreWeight is smaller than zero which is not allowed";
     }
   }
 
@@ -585,7 +635,7 @@ struct PhotonConversionBuilder {
     std::array<float, 2> dcaInfoFast = dcaInfo;
     if (modeTrackPropagation != TrackPropMode::kFast) {
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, pTrackC, 2.f, matCorr, &dcaInfo);
-      if (modeTrackPropagation == TrackPropMode::kBoth) {
+      if (filltable && modeTrackPropagation == TrackPropMode::kBoth) {
         registry.fill(HIST("V0Leg/hDCAxyPropagationCompare"), dcaInfo[0], dcaInfoFast[0]);
         registry.fill(HIST("V0Leg/hDCAzPropagationCompare"), dcaInfo[1], dcaInfoFast[1]);
       }
@@ -607,7 +657,7 @@ struct PhotonConversionBuilder {
     dcaInfoFast = dcaInfo;
     if (modeTrackPropagation != TrackPropMode::kFast) {
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, nTrackC, 2.f, matCorr, &dcaInfo);
-      if (modeTrackPropagation == TrackPropMode::kBoth) {
+      if (filltable && modeTrackPropagation == TrackPropMode::kBoth) {
         registry.fill(HIST("V0Leg/hDCAxyPropagationCompare"), dcaInfo[0], dcaInfoFast[0]);
         registry.fill(HIST("V0Leg/hDCAzPropagationCompare"), dcaInfo[1], dcaInfoFast[1]);
       }
@@ -687,7 +737,7 @@ struct PhotonConversionBuilder {
         }
         LOG(debug) << "Propagation to offset" << offsetR << " cm failed for " << (pPropagatedSuccess ? "negative" : "positive") << " track. Trying smaller offset.";
       }
-      if (modeTrackPropagation == TrackPropMode::kBoth) {
+      if (filltable && modeTrackPropagation == TrackPropMode::kBoth) {
         registry.fill(HIST("V0/hPhivPropagationCompare"), phiv, phivFast);
         registry.fill(HIST("V0/hPsiPairPropagationCompare"), psipair, psipairFast);
       }
@@ -856,6 +906,10 @@ struct PhotonConversionBuilder {
     pca_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = v0photoncandidate.getPCA();
     cospa_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = v0photoncandidate.getCosPA();
 
+    const auto score = getScoreV0(v0photoncandidate.getCosPA(), v0photoncandidate.getPCA(), deduplicationScoreWeight);
+    V0CandidateHelper v0Helper(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex(), v0photoncandidate.getCosPA(), v0photoncandidate.getPCA(), score);
+    vecV0Dedup.emplace_back(v0Helper);
+
     if (applyPCMMl) {
       bool isSelectedML = false;
       std::vector<float> mlInputFeatures = emMlResponse.getInputFeatures(v0photoncandidate, pos, ele);
@@ -953,12 +1007,13 @@ struct PhotonConversionBuilder {
   Preslice<aod::V0s> perCollision = o2::aod::v0::collisionId;
   std::map<std::tuple<int64_t, int64_t, int64_t, int64_t>, float> pca_map;      // (v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex()) -> pca
   std::map<std::tuple<int64_t, int64_t, int64_t, int64_t>, float> cospa_map;    // (v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex()) -> cospa
+  std::vector<V0CandidateHelper> vecV0Dedup;                                    // vector with all V0Candidates that is used to sort them by score (see struct V0CandidateHelper for more details of content)
   std::vector<std::pair<int64_t, int64_t>> stored_v0Ids;                        // (pos.globalIndex(), ele.globalIndex())
   std::vector<std::tuple<int64_t, int64_t, int64_t, int64_t>> stored_fullv0Ids; // (v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())
   std::unordered_map<int64_t, int> nv0_map;                                     // map collisionId -> nv0
 
   template <bool isMC, bool isTriggerAnalysis, bool enableFilter, typename TCollisions, typename TV0s, typename TTracks, typename TBCs>
-  void build(TCollisions const& collisions, TV0s const& v0s, TTracks const&, TBCs const&)
+  void build(TCollisions const& collisions, TV0s const& v0s, TTracks const& tracks, TBCs const&)
   {
     for (const auto& collision : collisions) {
       if constexpr (isMC) {
@@ -985,6 +1040,7 @@ struct PhotonConversionBuilder {
 
       updateCCDB(bc); // delay update until is needed
 
+      vecV0Dedup.reserve(30000); // rough estimate for number of V0s per DF
       const auto& v0s_per_coll = v0s.sliceBy(perCollision, collision.globalIndex());
       // LOGF(info, "n v0 = %d", v0s_per_coll.size());
       for (const auto& v0 : v0s_per_coll) {
@@ -997,56 +1053,99 @@ struct PhotonConversionBuilder {
     stored_fullv0Ids.reserve(pca_map.size()); // number of photon candidates per DF
 
     // find minimal pca
-    for (const auto& [key, value] : pca_map) {
-      auto v0Id = std::get<0>(key);
-      auto collisionId = std::get<1>(key);
-      auto posId = std::get<2>(key);
-      auto eleId = std::get<3>(key);
-      float v0pca = value;
-      float cospa = cospa_map[key];
-      bool is_closest_v0 = true;
-      bool is_most_aligned_v0 = true;
+    if (deduplicationMode == V0DeduplicationMode::Pairwise) {
+      for (const auto& [key, value] : pca_map) {
+        auto v0Id = std::get<0>(key);
+        auto collisionId = std::get<1>(key);
+        auto posId = std::get<2>(key);
+        auto eleId = std::get<3>(key);
+        float v0pca = value;
+        float cospa = cospa_map[key];
+        bool is_closest_v0 = true;
+        bool is_most_aligned_v0 = true;
 
-      for (const auto& [key_tmp, value_tmp] : pca_map) {
-        auto v0Id_tmp = std::get<0>(key_tmp);
-        auto collisionId_tmp = std::get<1>(key_tmp);
-        auto posId_tmp = std::get<2>(key_tmp);
-        auto eleId_tmp = std::get<3>(key_tmp);
-        float v0pca_tmp = value_tmp;
-        float cospa_tmp = cospa_map[key_tmp];
+        for (const auto& [key_tmp, value_tmp] : pca_map) {
+          auto v0Id_tmp = std::get<0>(key_tmp);
+          auto collisionId_tmp = std::get<1>(key_tmp);
+          auto posId_tmp = std::get<2>(key_tmp);
+          auto eleId_tmp = std::get<3>(key_tmp);
+          float v0pca_tmp = value_tmp;
+          float cospa_tmp = cospa_map[key_tmp];
 
-        if (v0Id == v0Id_tmp) { // skip exactly the same v0
+          if (v0Id == v0Id_tmp) { // skip exactly the same v0
+            continue;
+          }
+
+          if (collisionId != collisionId_tmp && eleId == eleId_tmp && posId == posId_tmp && cospa < cospa_tmp) { // same ele and pos, but attached to different collision
+            // LOGF(info, "!reject! | collision id = %d | posid1 = %d , eleid1 = %d , posid2 = %d , eleid2 = %d , cospa1 = %f , cospa2 = %f", collisionId, posId, eleId, posId_tmp, eleId_tmp, cospa, cospa_tmp);
+            is_most_aligned_v0 = false;
+            break;
+          }
+
+          if ((eleId == eleId_tmp || posId == posId_tmp) && v0pca > v0pca_tmp) {
+            // LOGF(info, "!reject! | collision id = %d | posid1 = %d , eleid1 = %d , posid2 = %d , eleid2 = %d , pca1 = %f , pca2 = %f", collisionId, posId, eleId, posId_tmp, eleId_tmp, v0pca, v0pca_tmp);
+            is_closest_v0 = false;
+            break;
+          }
+        } // end of pca_map tmp loop
+
+        bool is_stored = std::find(stored_v0Ids.begin(), stored_v0Ids.end(), std::make_pair(posId, eleId)) != stored_v0Ids.end();
+        if (is_closest_v0 && is_most_aligned_v0 && !is_stored) {
+          // auto v0 = v0s.rawIteratorAt(v0Id);
+          // auto collision = collisions.rawIteratorAt(collisionId);
+          // auto pos = tracks.rawIteratorAt(posId);
+          // auto ele = tracks.rawIteratorAt(eleId);
+          // LOGF(info, "!accept! | collision id = %d | v0id1 = %d , posid1 = %d , eleid1 = %d , pca1 = %f , cospa = %f", collisionId, v0Id, posId, eleId, v0pca, cospa);
+
+          // fillV0Table<isMC, TCollisions, TTracks>(v0, true);
+          stored_v0Ids.emplace_back(std::make_pair(posId, eleId));
+          stored_fullv0Ids.emplace_back(std::make_tuple(v0Id, collisionId, posId, eleId));
+          nv0_map[collisionId]++;
+        }
+      } // end of pca_map loop
+      // LOGF(info, "pca_map.size() = %d", pca_map.size());
+    } else {
+      // Sort best candidates first, depending on score
+      std::sort(vecV0Dedup.begin(), vecV0Dedup.end());
+      // container to keep track of which electron and positron tracks have already been used
+      std::vector<bool> usedLegs(tracks.size(), false);
+
+      // clear output containers
+      stored_v0Ids.clear();
+      stored_fullv0Ids.clear();
+      nv0_map.clear();
+
+      // Loop over all v0s, starting with the one with the best score
+      // If a v0 contains a track that is already in another (better) V0 candidate, skip V0
+      for (const auto& v0Cand : vecV0Dedup) {
+        // Skip if one of the tracks is already used
+        if (usedLegs[v0Cand.posID] || usedLegs[v0Cand.eleID]) {
           continue;
         }
 
-        if (collisionId != collisionId_tmp && eleId == eleId_tmp && posId == posId_tmp && cospa < cospa_tmp) { // same ele and pos, but attached to different collision
-          // LOGF(info, "!reject! | collision id = %d | posid1 = %d , eleid1 = %d , posid2 = %d , eleid2 = %d , cospa1 = %f , cospa2 = %f", collisionId, posId, eleId, posId_tmp, eleId_tmp, cospa, cospa_tmp);
-          is_most_aligned_v0 = false;
-          break;
-        }
+        // Accept candidate
+        usedLegs[v0Cand.posID] = true;
+        usedLegs[v0Cand.eleID] = true;
 
-        if ((eleId == eleId_tmp || posId == posId_tmp) && v0pca > v0pca_tmp) {
-          // LOGF(info, "!reject! | collision id = %d | posid1 = %d , eleid1 = %d , posid2 = %d , eleid2 = %d , pca1 = %f , pca2 = %f", collisionId, posId, eleId, posId_tmp, eleId_tmp, v0pca, v0pca_tmp);
-          is_closest_v0 = false;
-          break;
-        }
-      } // end of pca_map tmp loop
+        stored_v0Ids.emplace_back(v0Cand.posID, v0Cand.eleID);
 
-      bool is_stored = std::find(stored_v0Ids.begin(), stored_v0Ids.end(), std::make_pair(posId, eleId)) != stored_v0Ids.end();
-      if (is_closest_v0 && is_most_aligned_v0 && !is_stored) {
-        // auto v0 = v0s.rawIteratorAt(v0Id);
-        // auto collision = collisions.rawIteratorAt(collisionId);
-        // auto pos = tracks.rawIteratorAt(posId);
-        // auto ele = tracks.rawIteratorAt(eleId);
-        // LOGF(info, "!accept! | collision id = %d | v0id1 = %d , posid1 = %d , eleid1 = %d , pca1 = %f , cospa = %f", collisionId, v0Id, posId, eleId, v0pca, cospa);
+        stored_fullv0Ids.emplace_back(
+          v0Cand.v0ID,
+          v0Cand.colID,
+          v0Cand.posID,
+          v0Cand.eleID);
 
-        // fillV0Table<isMC, TCollisions, TTracks>(v0, true);
-        stored_v0Ids.emplace_back(std::make_pair(posId, eleId));
-        stored_fullv0Ids.emplace_back(std::make_tuple(v0Id, collisionId, posId, eleId));
-        nv0_map[collisionId]++;
+        nv0_map[v0Cand.colID]++;
       }
-    } // end of pca_map loop
-    // LOGF(info, "pca_map.size() = %d", pca_map.size());
+
+      // sort accepted candidates by collision ID to be compatible with table
+      std::sort(stored_fullv0Ids.begin(), stored_fullv0Ids.end(),
+                [](const auto& a, const auto& b) {
+                  return std::get<1>(a) < std::get<1>(b);
+                });
+
+      // End of deduplication
+    }
 
     for (const auto& fullv0Id : stored_fullv0Ids) {
       auto v0Id = std::get<0>(fullv0Id);
@@ -1083,6 +1182,7 @@ struct PhotonConversionBuilder {
     stored_v0Ids.shrink_to_fit();
     stored_fullv0Ids.clear();
     stored_fullv0Ids.shrink_to_fit();
+    vecV0Dedup.clear();
   } // end of build
 
   //! type of V0. 0: built solely for cascades (does not pass standard V0 cuts), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1 or 3.

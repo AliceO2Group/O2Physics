@@ -196,4 +196,21 @@ inline void Vtx_recalculation(o2::base::Propagator* prop, T1 lTrackPos, T2 lTrac
 
   Vtx_recalculationParCov<TrackPrecision>(prop, trackPosInformation, trackNegInformation, xyz, matCorr);
 }
+
+//_______________________________________________________________________
+/// \brief Function to calculate a score based on cosPA and PCA. The smaller the score the better the V0 Candidate
+/// \param cosPA cosine of pointing angle
+/// \param pca point of closest approach in cm
+/// \param weight how much is cosPA weighted (for pca its 1-weight). Weight has to be between 0 and 1
+/// \return final score
+inline float getScoreV0(float cosPA, float pca, float weight)
+{
+  float cosScore = 60 * std::acos(cosPA); // pointing angle in degrees, the smaller the better
+  float pcaScore = pca / 3.f;             // assume pca is between 0 and 3
+  float wCos = weight;
+  float wPca = 1.f - wCos; // random values for now
+  float score = wCos * cosScore + wPca * pcaScore;
+  return score;
+}
+
 #endif // PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_
