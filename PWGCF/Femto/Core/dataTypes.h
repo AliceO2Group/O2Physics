@@ -32,7 +32,7 @@ using TrackType = uint16_t;
 
 // datatypes for v0s
 using V0MaskType = uint32_t;
-using V0MaskType001 = uint16_t;
+using V0MaskType001 = uint16_t; // old data type, was too narrow
 using V0Type = uint16_t;
 
 // datatypes for kinks
@@ -46,7 +46,7 @@ using TwoTrackResonanceType = uint16_t;
 
 // datatypes for cascades
 using CascadeMaskType = uint32_t;
-using CascadeMaskType001 = uint16_t;
+using CascadeMaskType001 = uint16_t; // old data type, was too narrow
 using CascadeType = uint16_t;
 
 // datatype for origin of mc particle
