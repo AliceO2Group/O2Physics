@@ -41,6 +41,7 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/PID.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
@@ -96,7 +97,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   Produces<aod::EMPrimaryElectronsFromDalitz> emprimaryelectrons;
   Produces<aod::EMPrimaryElectronsDeDxMC> emprimaryelectronsDeDxMC;
-  Service<o2::pid::tof::TOFResponse> mTOFResponse;
+  Service<o2::pid::tof::TOFResponse> mTOFResponse{};
 
   Produces<aod::EMTOFNSigmas> emtofs;
 
@@ -290,7 +291,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
             if (track.hasTOF() && track.has_collision()) { // TTCA may use orphan tracks.
               auto bcTrack = track.template collision_as<TCollisions>().template bc_as<TBCs>();
               float tofNSigmaEl = mTOFResponse->nSigma<o2::track::PID::Electron>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
-              float beta = track.length() / (track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()) - mapCollisionTime[collision.globalIndex()]) / (TMath::C() * 1e+2 * 1e-12);
+              float beta = track.length() / (track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()) - mapCollisionTime[collision.globalIndex()]) / (o2::constants::physics::LightSpeedCm2S * 1e-12);
               mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = tofNSigmaEl;
               mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = beta;
               emtofs(collision.globalIndex(), track.globalIndex(), mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())], mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
