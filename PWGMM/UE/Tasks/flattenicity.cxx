@@ -64,7 +64,7 @@ struct flattenicityTask {
   HistogramRegistry registry;
 
   // --- Init ---
-  void init(InitContext const&)
+  void init(InitContext const&) override
   {
     // Initialize track selection
     mySelectionPrim = myTrackSelectionPrim();
@@ -169,10 +169,11 @@ struct flattenicityTask {
   PROCESS_SWITCH(flattenicityTask, processData, "Process data", true);
 
   // --- Process MC ---
-  void processMC(aod::McCollision const& mcCollision,
-                 aod::McParticles const& particles,
-                 soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions,
-                 aod::FT0s const& ft0s)
+    // --- Process MC ---
+  void processMC(aod::McCollision const& /*mcCollision*/,
+                 aod::McParticles const& /*particles*/,
+                 soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& /*collisions*/,
+                 aod::FT0s const& /*ft0s*/)
   {
     // MC processing - to be implemented
   }
