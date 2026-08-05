@@ -129,6 +129,10 @@ using CompactMFTTrack = CompactMFTTracks;
 struct muonGlobalAlignment {
 
   static constexpr int GlobalTrackTypeMax = 2;
+  static constexpr int NMchChambers = 10;
+  static constexpr int NMchDetElems = 156;
+  static constexpr int ThetaAbsBoundaryDeg = 3;
+  static constexpr double SlopeResolutionZ = 535.;
 
   Produces<aod::CompactMFTTracks> mftTable;
   Configurable<bool> cfgProduceMFTTable{"cfgProduceMFTTable", false, "flag to produce MFTsa table"};
@@ -390,7 +394,7 @@ struct muonGlobalAlignment {
       } else {
         LOGF(fatal, "Reference aligned geometry object is not available in CCDB at timestamp=%llu", bc.timestamp());
       }
-      for (int i = 0; i < 156; i++) {
+      for (int i = 0; i < NMchDetElems; i++) {
         int iDEN = GetDetElemId(i);
         transformRef[iDEN] = transformation(iDEN);
       }
@@ -404,7 +408,7 @@ struct muonGlobalAlignment {
       } else {
         LOGF(fatal, "New aligned geometry object is not available in CCDB at timestamp=%llu", bc.timestamp());
       }
-      for (int i = 0; i < 156; i++) {
+      for (int i = 0; i < NMchDetElems; i++) {
         int iDEN = GetDetElemId(i);
         transformNew[iDEN] = transformation(iDEN);
       }
@@ -630,7 +634,7 @@ struct muonGlobalAlignment {
     // get chamber and element number in chamber
     int iCh = 0;
     int iDet = 0;
-    for (int i = 1; i <= 10; i++) {
+    for (int i = 1; i <= NMchChambers; i++) {
       if (iDetElemNumber < fgSNDetElemCh[i]) {
         iCh = i;
         iDet = iDetElemNumber - fgSNDetElemCh[i - 1];
@@ -639,7 +643,7 @@ struct muonGlobalAlignment {
     }
 
     // make sure detector index is valid
-    if (!(iCh > 0 && iCh <= 10 && iDet < fgNDetElemCh[iCh - 1])) {
+    if (!(iCh > 0 && iCh <= NMchChambers && iDet < fgNDetElemCh[iCh - 1])) {
       LOGF(fatal, "Invalid detector element id: %d", 100 * iCh + iDet);
     }
 
@@ -682,7 +686,7 @@ struct muonGlobalAlignment {
   {
     static int nDE = 0;
     if (nDE <= 0) {
-      for (int c = 0; c < 10; c++) {
+      for (int c = 0; c < NMchChambers; c++) {
         nDE += getNumDEinChamber(c);
       }
     }
@@ -937,7 +941,7 @@ struct muonGlobalAlignment {
       auto itNextToNextParam = (itNextParam == track.end()) ? itNextParam : std::next(itNextParam);
       itStartingParam = track.rbegin();
 
-      if (track.getNClusters() < 10) {
+      if (track.getNClusters() < NMchChambers) {
         removeTrack = true;
         break;
       } else {
@@ -1000,10 +1004,10 @@ struct muonGlobalAlignment {
     double p = mchTrackAtVertex.getP();
 
     double pDCA = mchTrack.pDca();
-    double sigmaPDCA = (thetaAbs < 3) ? sigmaPDCA23 : sigmaPDCA310;
+    double sigmaPDCA = (thetaAbs < ThetaAbsBoundaryDeg) ? sigmaPDCA23 : sigmaPDCA310;
     double nrp = nSigmaPDCA * relPRes * p;
     double pResEffect = sigmaPDCA / (1. - nrp / (1. + nrp));
-    double slopeResEffect = 535. * slopeRes * p;
+    double slopeResEffect = SlopeResolutionZ * slopeRes * p;
     double sigmaPDCAWithRes = TMath::Sqrt(pResEffect * pResEffect + slopeResEffect * slopeResEffect);
     if (pDCA > nSigmaPDCA * sigmaPDCAWithRes) {
       return false;
@@ -1021,7 +1025,7 @@ struct muonGlobalAlignment {
                   std::array<double, 2> rAbsCut,
                   double nSigmaPdcaCut)
   {
-    auto const& mchTrack = (static_cast<int>(muonTrack.trackType()) <= 2) ? muonTrack.template matchMCHTrack_as<MyMuonsWithCov>() : muonTrack;
+    auto const& mchTrack = (static_cast<int>(muonTrack.trackType()) <= GlobalTrackTypeMax) ? muonTrack.template matchMCHTrack_as<MyMuonsWithCov>() : muonTrack;
 
     // chi2 cut
     if (mchTrack.chi2() > chi2Cut)
@@ -1252,7 +1256,7 @@ struct muonGlobalAlignment {
   template <class TMFT>
   o2::dataformats::GlobalFwdTrack PropagateMFT(const TMFT& mftTrack, float z)
   {
-    static double Bz = -10001;
+    //static double Bz = -10001;
     double chi2 = mftTrack.chi2();
     SMatrix5 tpars = {mftTrack.x(), mftTrack.y(), mftTrack.phi(), mftTrack.tgl(), mftTrack.signed1Pt()};
     std::vector<double> v1{0, 0, 0, 0, 0,
@@ -1270,12 +1274,12 @@ struct muonGlobalAlignment {
     // double centerZ[3] = {mftTrack.x() + propVec[0] / 2.,
     //                      mftTrack.y() + propVec[1] / 2.,
     //                      mftTrack.z() + propVec[2] / 2.};
-    if (Bz < -10000) {
-      double centerZ[3] = {0, 0, (-45.f - 77.5f) / 2.f};
-      o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
-      Bz = field->getBz(centerZ);
-    }
-    fwdtrack.propagateToZ(z, Bz);
+    //if (Bz < -10000) {
+    //  double centerZ[3] = {0, 0, (-45.f - 77.5f) / 2.f};
+    //  o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    //  Bz = field->getBz(centerZ);
+    //}
+    fwdtrack.propagateToZ(z, mBzAtMftCenter);
 
     propmuon.setParameters(fwdtrack.getParameters());
     propmuon.setZ(fwdtrack.getZ());
