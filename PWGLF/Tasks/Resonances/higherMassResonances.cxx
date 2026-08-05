@@ -396,7 +396,7 @@ struct HigherMassResonances {
       // rKzeroShort.add("dE_by_dx_TPC", "dE/dx signal in the TPC as a function of pT", kTH2F, {config.axisPtfordEbydx, config.axisdEdx});
     }
 
-    // For MC
+    // For Monte Carlo
     if (doprocessGen || doprocessRec) {
       hMChists.add("MCcorrections/hGenNo", "Generated collisions before and after event selection", kTH1F, {{5, 0.0f, 5.0f}});
       hMChists.add("Genf1710", "Gen f_{0}(1710)", kTHnSparseF, {multiplicityAxis, ptAxis, thnAxisPOL});
