@@ -524,7 +524,7 @@ class CascadeBuilder
       LOG(info) << "Initialize femto Xi builder...";
       mProduceLiteXis = utils::enableTable("FLiteXis_001", table.produceLiteXis.value, initContext);
       mProduceXis = utils::enableTable("FXis_001", table.produceXis.value, initContext);
-      mProduceXiMasks = utils::enableTable("FXiMasks_001", table.produceXiMasks.value, initContext);
+      mProduceXiMasks = utils::enableTable("FXiMasks_002", table.produceXiMasks.value, initContext);
       mProduceXiExtras = utils::enableTable("FXiExtras_001", table.produceXiExtras.value, initContext);
 
       if (mProduceXis && mProduceLiteXis) {
@@ -547,7 +547,7 @@ class CascadeBuilder
       LOG(info) << "Initialize femto Omega builder...";
       mProduceOmegas = utils::enableTable("FOmegas_001", table.produceOmegas.value, initContext);
       mProduceLiteOmegas = utils::enableTable("FLiteOmegas_001", table.produceLiteOmegas.value, initContext);
-      mProduceOmegaMasks = utils::enableTable("FOmegaMasks_001", table.produceOmegaMasks.value, initContext);
+      mProduceOmegaMasks = utils::enableTable("FOmegaMasks_002", table.produceOmegaMasks.value, initContext);
       mProduceOmegaExtras = utils::enableTable("FOmegaExtras_001", table.produceOmegaExtras.value, initContext);
 
       if (mProduceOmegas && mProduceLiteOmegas) {

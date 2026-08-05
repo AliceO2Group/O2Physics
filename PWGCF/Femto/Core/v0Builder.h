@@ -511,7 +511,7 @@ class V0Builder
       }
       mProduceLambdas = utils::enableTable("FLambdas_001", table.produceLambdas.value, initContext);
       mProduceLiteLambdas = utils::enableTable("FLiteLambdas_001", table.produceLiteLambdas.value, initContext);
-      mProduceLambdaMasks = utils::enableTable("FLambdaMasks_001", table.produceLambdaMasks.value, initContext);
+      mProduceLambdaMasks = utils::enableTable("FLambdaMasks_002", table.produceLambdaMasks.value, initContext);
       mProduceLambdaExtras = utils::enableTable("FLambdaExtras_001", table.produceLambdaExtras.value, initContext);
 
       if (mProduceLambdas && mProduceLiteLambdas) {
@@ -534,7 +534,7 @@ class V0Builder
       LOG(info) << "Initialize femto K0short builder...";
       mProduceK0shorts = utils::enableTable("FK0shorts_001", table.produceK0shorts.value, initContext);
       mProduceLiteK0shorts = utils::enableTable("FLiteK0shorts_001", table.produceLiteK0shorts.value, initContext);
-      mProduceK0shortMasks = utils::enableTable("FK0shortMasks_001", table.produceK0shortMasks.value, initContext);
+      mProduceK0shortMasks = utils::enableTable("FK0shortMasks_002", table.produceK0shortMasks.value, initContext);
       mProduceK0shortExtras = utils::enableTable("FK0shortExtras_001", table.produceK0shortExtras.value, initContext);
 
       if (mProduceK0shorts && mProduceLiteK0shorts) {
