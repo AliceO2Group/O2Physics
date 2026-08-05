@@ -1974,7 +1974,7 @@ struct forwardlambdakzeroanalysis {
     // propagate track to vertex including MCS effects if material budget included, simple propagation to Z otherwise
     float x2x0 = 0;
     auto mb = lut->getMatBudget(t.getX(), t.getY(), t.getZ(), PV[0], PV[1], PV[2]);
-    x2x0 = (float)mb.meanX2X0;
+    x2x0 = static_cast<float>(mb.meanX2X0);
     return t.propagateToVtxhelixWithMCS(PV[2], {PV[0], PV[1]}, PVcov, magField, x2x0);
   }
 
@@ -1982,7 +1982,7 @@ struct forwardlambdakzeroanalysis {
   std::vector<PairTopoInfo> buildV0s(TCollision const& collision, TMFTTracks const& /*mftTracks*/, TTracks const& besttracks, TMCParticles const& mcParticles)
   {
     std::vector<PairTopoInfo> v0;
-    for (auto& [amft1, amft2] : combinations(besttracks, besttracks)) {
+    for (const auto& [amft1, amft2] : combinations(besttracks, besttracks)) {
       auto mftPositive = amft1.template mfttrack_as<TMFTTracks>();
       auto mftNegative = amft2.template mfttrack_as<TMFTTracks>();
 
@@ -2239,7 +2239,7 @@ struct forwardlambdakzeroanalysis {
     int nD0s = 0;
     int nAntiD0s = 0;
     std::vector<PairTopoInfo> V0s = buildV0s(collision, mftTracks, besttracks, static_cast<TObject*>(nullptr));
-    for (auto& v0 : V0s) {
+    for (const auto& v0 : V0s) {
       // fill AP plot for all V0s
       histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.AlphaArm, v0.QtArm);
 
@@ -2310,7 +2310,7 @@ struct forwardlambdakzeroanalysis {
     int nD0s = 0;
     int nAntiD0s = 0;
     std::vector<PairTopoInfo> V0s = buildV0s(collision, mftTracks, besttracks, mcParticles);
-    for (auto& v0 : V0s) {
+    for (const auto& v0 : V0s) {
       if (v0.label < 0) {
         continue;
       }
