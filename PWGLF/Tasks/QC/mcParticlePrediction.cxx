@@ -529,7 +529,6 @@ struct McParticlePrediction {
       // Count id surviving the selection
       histos.fill(HIST("particles/idAfterPrimarySelection"), id);
 
-
       TParticlePDG* p = pdgDB->GetParticle(particle.pdgCode());
       if (p) {
         if (std::abs(p->Charge()) > chargetolerance) {
