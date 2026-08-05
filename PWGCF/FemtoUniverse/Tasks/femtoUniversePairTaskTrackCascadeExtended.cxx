@@ -13,6 +13,7 @@
 /// \brief Task for track and cascade correlations and QA
 /// \author Barbara Chytla, WUT Warsaw, barbara.chytla@cern.ch
 /// \author Shirajum Monira, WUT Warsaw, shirajum.monira@cern.ch
+/// \author Tomasz Pawlaczyk, WUT Warsaw, tpawlacz@cern.ch
 
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseDetaDphiStar.h"
@@ -459,11 +460,15 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
         if (!isParticleTOF(posChild, CascChildTable[cascparticleconfigs.confCascType1][0], &posChildTOF) || !isParticleTOF(negChild, CascChildTable[cascparticleconfigs.confCascType1][1], &negChildTOF) || !isParticleTOF(bachelor, CascChildTable[cascparticleconfigs.confCascType1][2], &bachelorTOF))
           continue;
 
+        CascQAExtra.fill(HIST("hMassXiSelected"), part.mLambda());
+        CascQAExtra.fill(HIST("hInvMpT"), part.pt(), part.mLambda());
+
+        if (!invMCascade(part.mLambda(), part.mAntiLambda(), cascparticleconfigs.confCascType1))
+          continue;
+
         CascQAExtra.fill(HIST("hPtXi"), part.pt());
         CascQAExtra.fill(HIST("hEtaXi"), part.eta());
         CascQAExtra.fill(HIST("hPhiXi"), part.phi());
-        CascQAExtra.fill(HIST("hMassXiSelected"), part.mLambda());
-        CascQAExtra.fill(HIST("hInvMpT"), part.pt(), part.mLambda());
       }
     }
 
@@ -481,6 +486,9 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
           continue;
 
         if (!isParticleTOF(posChildExt, CascChildTable[cascparticleconfigs.confCascType1][0], &posChildTOFExt) || !isParticleTOF(negChildExt, CascChildTable[cascparticleconfigs.confCascType1][1], &negChildTOFExt) || !isParticleTOF(bachelorExt, CascChildTable[cascparticleconfigs.confCascType1][2], &bachelorTOFExt))
+          continue;
+
+        if (!invMCascade(part.mLambda(), part.mAntiLambda(), cascparticleconfigs.confCascType1))
           continue;
 
         CascQAExtra.fill(HIST("hDCAV0Daughters"), casc.dcaV0daughters());
@@ -527,11 +535,15 @@ struct femtoUniversePairTaskTrackCascadeExtended { // NOLINT(cppcoreguidelines-p
         if (!isParticleTOF(posChild, CascChildTable[cascparticleconfigs.confCascType1][0], &posChildTOF) || !isParticleTOF(negChild, CascChildTable[cascparticleconfigs.confCascType1][1], &negChildTOF) || !isParticleTOF(bachelor, CascChildTable[cascparticleconfigs.confCascType1][2], &bachelorTOF))
           continue;
 
+        CascQAExtra.fill(HIST("hMassXiSelected"), part.mLambda());
+        CascQAExtra.fill(HIST("hInvMpT"), part.pt(), part.mLambda());
+
+        if (!invMCascade(part.mLambda(), part.mAntiLambda(), cascparticleconfigs.confCascType1))
+          continue;
+
         CascQAExtra.fill(HIST("hPtXi"), part.pt());
         CascQAExtra.fill(HIST("hEtaXi"), part.eta());
         CascQAExtra.fill(HIST("hPhiXi"), part.phi());
-        CascQAExtra.fill(HIST("hMassXiSelected"), part.mLambda());
-        CascQAExtra.fill(HIST("hInvMpT"), part.pt(), part.mLambda());
       }
     }
   }
