@@ -55,10 +55,73 @@ using namespace o2::framework;
 using namespace o2::pwglf;
 
 // Particles
-static const std::vector<std::string> parameterNames{"Enable"};
-static constexpr int nParameters = 1;
-static const int defaultParticles[PIDExtended::NIDsTot][nParameters]{{0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {1}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}};
+static const std::vector<std::string> parameterNames{"Enable", "SelectPrimaries"};
+static constexpr int nParameters = 2;
+static const int defaultParticles[PIDExtended::NIDsTot][nParameters]{{0, 1},  //  Electron
+                                                                     {0, 1},  //  Muon
+                                                                     {0, 1},  //  Pion
+                                                                     {0, 1},  //  Kaon
+                                                                     {0, 1},  //  Proton
+                                                                     {0, 1},  //  Deuteron
+                                                                     {0, 1},  //  Triton
+                                                                     {0, 1},  //  Helium3
+                                                                     {0, 1},  //  Alpha
+                                                                     {0, 1},  //  PI0
+                                                                     {0, 1},  //  Photon
+                                                                     {1, 1},  //  K0
+                                                                     {0, 1},  //  Lambda
+                                                                     {0, 1},  //  HyperTriton
+                                                                     {0, 1},  //  Hyperhydrog4
+                                                                     {0, 1},  //  XiMinus
+                                                                     {0, 1},  //  OmegaMinus
+                                                                     {0, 1},  //  HyperHelium4
+                                                                     {0, 1},  //  HyperHelium5
+                                                                     {0, 1},  //  Positron
+                                                                     {0, 1},  //  MuonPlus
+                                                                     {0, 1},  //  PionMinus
+                                                                     {0, 1},  //  KaonMinus
+                                                                     {0, 1},  //  AntiProton
+                                                                     {0, 1},  //  AntiDeuteron
+                                                                     {0, 1},  //  AntiTriton
+                                                                     {0, 1},  //  AntiHelium3
+                                                                     {0, 1},  //  AntiAlpha
+                                                                     {0, 1},  //  AntiLambda
+                                                                     {0, 1},  //  AntiHyperTriton
+                                                                     {0, 1},  //  AntiHyperhydrog4
+                                                                     {0, 1},  //  XiPlus
+                                                                     {0, 1},  //  OmegaPlus
+                                                                     {0, 1},  //  AntiHyperHelium4
+                                                                     {0, 1},  //  AntiHyperHelium5
+                                                                     {0, 1},  //  Neutron
+                                                                     {0, 1},  //  AntiNeutron
+                                                                     {0, 0},  //  Phi
+                                                                     {0, 1},  //  BZero
+                                                                     {0, 1},  //  BPlus
+                                                                     {0, 1},  //  BS
+                                                                     {0, 1},  //  D0
+                                                                     {0, 1},  //  DPlus
+                                                                     {0, 1},  //  DS
+                                                                     {0, 1},  //  DStar
+                                                                     {0, 1},  //  ChiC1
+                                                                     {0, 1},  //  JPsi
+                                                                     {0, 1},  //  LambdaB0
+                                                                     {0, 1},  //  LambdaCPlus
+                                                                     {0, 1},  //  OmegaC0
+                                                                     {0, 1},  //  SigmaC0
+                                                                     {0, 1},  //  SigmaCPlusPlus
+                                                                     {0, 1},  //  X3872
+                                                                     {0, 1},  //  Xi0
+                                                                     {0, 1},  //  XiB0
+                                                                     {0, 1},  //  XiCCPlusPlus
+                                                                     {0, 1},  //  XiCPlus
+                                                                     {0, 1},  //  XiC0
+                                                                     {0, 0},  //  Kstar
+                                                                     {0, 0},  //  KstarPM
+                                                                     {0, 1},  //  Kshort
+                                                                     {0, 0},  //  Xi1530
+                                                                     {0, 0}}; //  Lambda1520
 bool enabledParticlesArray[PIDExtended::NIDsTot];
+bool selectPrimariesArray[PIDExtended::NIDsTot];
 
 // Estimators
 struct Estimators {
@@ -196,7 +259,7 @@ struct McParticlePrediction {
                                                     {defaultEstimators[0], Estimators::nEstimators, nParameters, Estimators::arrayNames(), parameterNames},
                                                     "Estimators enabled"};
   Configurable<bool> selectInelGt0{"selectInelGt0", true, "Select only inelastic events"};
-  Configurable<bool> selectPrimaries{"selectPrimaries", true, "Select only primary particles"};
+  Configurable<bool> selectPrimariesForMultiplicity{"selectPrimariesForMultiplicity", true, "Select only primary particles for multiplicity computation"};
   Configurable<float> rapidityCut{"rapidityCut", 0.5, "Select only particles within |y| < cut for the pT and yield plots"};
   Configurable<float> ptCut{"ptCut", 0.01, "Select only particles within |pt| > cut for the eta and y plots"};
   Configurable<bool> requireCoincidenceEstimators{"requireCoincidenceEstimators", false, "Asks for a coincidence when two estimators are used"};
@@ -221,7 +284,7 @@ struct McParticlePrediction {
   void init(o2::framework::InitContext&)
   {
     mCounter.mPdgDatabase = pdgDB.service;
-    mCounter.mSelectPrimaries = selectPrimaries.value;
+    mCounter.mSelectPrimaries = selectPrimariesForMultiplicity.value;
     const AxisSpec axisEta{cfgBinning.binsEta, "#eta"};
     const AxisSpec axisRapidity{cfgBinning.binsY, "#it{y}"};
     const AxisSpec axisVx{cfgBinning.binsVxy, "Vx"};
@@ -315,6 +378,8 @@ struct McParticlePrediction {
     for (int i = 0; i < PIDExtended::NIDsTot; i++) {
       h->GetXaxis()->SetBinLabel(i + 1, PIDExtended::getName(i));
     }
+    histos.addClone("particles/yields", "particles/idBeforePrimarySelection");
+    histos.addClone("particles/yields", "particles/idAfterPrimarySelection");
 
     for (int i = 0; i < Estimators::nEstimators; i++) {
       if (!enabledEstimatorsArray[i]) {
@@ -395,6 +460,7 @@ struct McParticlePrediction {
         enabledParticlesArray[i] = false;
         continue;
       }
+      selectPrimariesArray[i] = (enabledSpecies->get(PIDExtended::getName(i), "SelectPrimaries") == 1);
       LOG(info) << "Enabling particle " << i << " " << PIDExtended::getName(i);
       enabledParticlesArray[i] = true;
       for (int j = 0; j < Estimators::nEstimators; j++) {
@@ -468,16 +534,20 @@ struct McParticlePrediction {
       nMult[Estimators::ZNC] = mCounter.countZNC(mcParticles);
     }
     if (enabledEstimatorsArray[Estimators::ZEM1]) {
-      nMult[Estimators::ZEM1] = 0; // Not implemented yet
+      LOG(warn) << "Estimator ZEM1 is not implemented yet";
+      nMult[Estimators::ZEM1] = 0;
     }
     if (enabledEstimatorsArray[Estimators::ZEM2]) {
-      nMult[Estimators::ZEM2] = 0; // Not implemented yet
+      LOG(warn) << "Estimator ZEM2 is not implemented yet";
+      nMult[Estimators::ZEM2] = 0;
     }
     if (enabledEstimatorsArray[Estimators::ZPA]) {
-      nMult[Estimators::ZPA] = 0; // Not implemented yet
+      LOG(warn) << "Estimator ZPA is not implemented yet";
+      nMult[Estimators::ZPA] = 0;
     }
     if (enabledEstimatorsArray[Estimators::ZPC]) {
-      nMult[Estimators::ZPC] = 0; // Not implemented yet
+      LOG(warn) << "Estimator ZPC is not implemented yet";
+      nMult[Estimators::ZPC] = 0;
     }
     if (enabledEstimatorsArray[Estimators::ITSIB] || enableVsITSHistograms) {
       nMult[Estimators::ITSIB] = mCounter.countITSIB(mcParticles);
@@ -553,9 +623,13 @@ struct McParticlePrediction {
         continue;
       }
 
-      if (!particle.isPhysicalPrimary()) {
+      // Count ids before applying the primary selection
+      histos.fill(HIST("particles/idBeforePrimarySelection"), id);
+      if (selectPrimariesArray[id] && !particle.isPhysicalPrimary()) {
         continue;
       }
+      // Count ids surviving the primary selection
+      histos.fill(HIST("particles/idAfterPrimarySelection"), id);
 
       const TParticlePDG* p = pdgDB->GetParticle(particle.pdgCode());
       if (p) {
