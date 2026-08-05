@@ -467,6 +467,18 @@ struct McParticlePrediction {
     if (enabledEstimatorsArray[Estimators::ZNC]) {
       nMult[Estimators::ZNC] = mCounter.countZNC(mcParticles);
     }
+    if (enabledEstimatorsArray[Estimators::ZEM1]) {
+      nMult[Estimators::ZEM1] = 0;
+    }
+    if (enabledEstimatorsArray[Estimators::ZEM2]) {
+      nMult[Estimators::ZEM2] = 0;
+    }
+    if (enabledEstimatorsArray[Estimators::ZPA]) {
+      nMult[Estimators::ZPA] = 0;
+    }
+    if (enabledEstimatorsArray[Estimators::ZPC]) {
+      nMult[Estimators::ZPC] = 0;
+    }
     if (enabledEstimatorsArray[Estimators::ITSIB] || enableVsITSHistograms) {
       nMult[Estimators::ITSIB] = mCounter.countITSIB(mcParticles);
     }
