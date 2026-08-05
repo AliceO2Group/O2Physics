@@ -33,7 +33,6 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
-#include <limits>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -353,15 +352,15 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
       this->evaluateObservable(kPosDaughTofPion, posDaughter.tofNSigmaPi());
       this->evaluateObservable(kPosDaughTofProton, posDaughter.tofNSigmaPr());
     } else if (mKeepTracksWithoutTof) {
-      this->setBitmask(kPosDaughTofPion, 0);
-      this->setBitmask(kPosDaughTofProton, 0);
+      this->evaluateObservable(kBachelorTofPion, 0);
+      this->evaluateObservable(kPosDaughTofProton, 0);
     }
     if (negDaughter.hasTOF()) {
       this->evaluateObservable(kNegDaughTofPion, negDaughter.tofNSigmaPi());
       this->evaluateObservable(kNegDaughTofProton, negDaughter.tofNSigmaPr());
     } else if (mKeepTracksWithoutTof) {
-      this->setBitmask(kNegDaughTofPion, 0);
-      this->setBitmask(kNegDaughTofProton, 0);
+      this->evaluateObservable(kNegDaughTofPion, 0);
+      this->evaluateObservable(kNegDaughTofProton, 0);
     }
 
     this->assembleBitmask<SelectionHistName>();

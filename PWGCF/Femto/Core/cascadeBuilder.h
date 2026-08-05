@@ -33,7 +33,6 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
-#include <limits>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -342,8 +341,8 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
       this->evaluateObservable(kBachelorTofPion, bachelor.tofNSigmaPi());
       this->evaluateObservable(kBachelorTofKaon, bachelor.tofNSigmaKa());
     } else if (mKeepTracksWithoutTof) {
-      this->setBitmask(kBachelorTofPion, 0);
-      this->setBitmask(kBachelorTofKaon, 0);
+      this->evaluateObservable(kBachelorTofPion, 0);
+      this->evaluateObservable(kBachelorTofKaon, 0);
     }
 
     // depending on the charge, we check lambda or antilambda hypothesis
@@ -353,12 +352,12 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
       if (posDaughter.hasTOF()) {
         this->evaluateObservable(kPosDauTof, posDaughter.tofNSigmaPr());
       } else if (mKeepTracksWithoutTof) {
-        this->setBitmask(kPosDauTof, 0);
+        this->evaluateObservable(kPosDauTof, 0);
       }
       if (negDaughter.hasTOF()) {
         this->evaluateObservable(kNegDauTof, negDaughter.tofNSigmaPi());
       } else if (mKeepTracksWithoutTof) {
-        this->setBitmask(kNegDauTof, 0);
+        this->evaluateObservable(kNegDauTof, 0);
       }
     } else if (cascade.sign() > 0) {
       this->evaluateObservable(kPosDauTpc, posDaughter.tpcNSigmaPi());
@@ -366,12 +365,12 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
       if (posDaughter.hasTOF()) {
         this->evaluateObservable(kPosDauTof, posDaughter.tofNSigmaPi());
       } else if (mKeepTracksWithoutTof) {
-        this->setBitmask(kPosDauTof, 0);
+        this->evaluateObservable(kPosDauTof, 0);
       }
       if (negDaughter.hasTOF()) {
         this->evaluateObservable(kNegDauTof, negDaughter.tofNSigmaPr());
       } else if (mKeepTracksWithoutTof) {
-        this->setBitmask(kNegDauTof, 0);
+        this->evaluateObservable(kNegDauTof, 0);
       }
     } else {
       LOG(warn) << "Encountered Cascade candidate with 0 charge";
