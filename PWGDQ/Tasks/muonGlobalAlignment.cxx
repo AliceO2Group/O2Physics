@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file muonDCA.cxx
+/// \file muonGlobalAlignment.cxx // o2-linter: disable=name/file-cpp,name/workflow-file (legacy workflow executable name)
 /// \brief Task to compute and evaluate DCA quantities
 /// \author Nicolas Bizé <nicolas.bize@cern.ch>, SUBATECH
 //
@@ -151,6 +151,8 @@ struct muonGlobalAlignment {
   Configurable<int> cfgTrackNClustMftLow{"cfgTrackNClustMftLow", 7, ""};
   Configurable<float> cfgTrackChi2MftUp{"cfgTrackChi2MftUp", 999.f, ""};
 
+  Configurable<float> cfgMftDcaMatchChi2Up{"cfgMftDcaMatchChi2Up", 10.f, ""};
+
   Configurable<float> cfgMftMchResidualsPLow{"cfgMftMchResidualsPLow", 30.f, ""};
   Configurable<float> cfgMftMchResidualsPtLow{"cfgMftMchResidualsPtLow", 4.f, ""};
 
@@ -280,7 +282,7 @@ struct muonGlobalAlignment {
                       std::map<uint64_t, CollisionInfo>& collisionInfos)
   {
     // fill collision information for global muon tracks (MFT-MCH-MID matches)
-    for (auto muonTrack : muonTracks) {
+    for (const auto& muonTrack : muonTracks) {
       if (!muonTrack.has_collision())
         continue;
 
@@ -1526,11 +1528,13 @@ struct muonGlobalAlignment {
           }
 
           if (cfgEnableVertexShiftAnalysis) {
-            if (mftTrack.chi2() <= cfgTrackChi2MftUp && std::fabs(collision.posZ()) < 1.f && mftNclusters >= 6) {
-              float zshift[21] = {// in millimeters
+            static constexpr int nMftClustersMin = 6;
+            if (mftTrack.chi2() <= cfgTrackChi2MftUp && std::fabs(collision.posZ()) < 1.f && mftNclusters >= nMftClustersMin) {
+              static constexpr int nPoints = 21;
+              float zshift[nPoints] = {// in millimeters
                                   -5.0, -4.5, -4.0, -3.5, -3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0.0,
                                   0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0};
-              for (int zi = 0; zi < 21; zi++) {
+              for (int zi = 0; zi < nPoints; zi++) {
                 auto mftTrackAtDCAshifted = PropagateMFTToDCA(mftTrack, collision, zshift[zi] / 10.f);
                 double dcaxShifted = mftTrackAtDCAshifted.getX() - collision.posX();
                 double dcayShifted = mftTrackAtDCAshifted.getY() - collision.posY();
@@ -1557,7 +1561,7 @@ struct muonGlobalAlignment {
           const auto& mchTrack = muonTrack.template matchMCHTrack_as<MyMuonsWithCov>();
           const auto& mftTrack = muonTrack.template matchMFTTrack_as<MyMFTs>();
 
-          if (muonTrack.chi2MatchMCHMFT() < 50) {
+          if (muonTrack.chi2MatchMCHMFT() < cfgMftDcaMatchChi2Up.value) {
             continue;
           }
 
@@ -1565,7 +1569,7 @@ struct muonGlobalAlignment {
             auto const& muonTrack2 = muonTracks.rawIteratorAt(globalTracksVector[1]);
             double dchi2 = muonTrack2.chi2MatchMCHMFT() - muonTrack.chi2MatchMCHMFT();
 
-            if (dchi2 < 50) {
+            if (dchi2 < cfgMftDcaMatchChi2Up.value) {
               continue;
             }
           }
@@ -1608,7 +1612,7 @@ struct muonGlobalAlignment {
 
       int deId = cluster.deId();
       int chamber = deId / 100 - 1;
-      if (chamber < 0 || chamber > 9) {
+      if (chamber < 0 || chamber >= NMchChambers) {
         continue;
       }
 
@@ -1707,8 +1711,8 @@ struct muonGlobalAlignment {
         if (!isGoodMFT)
           continue;
 
-        double matchChi2 = muonTrack.chi2MatchMCHMFT() / 5.f;
-        if (matchChi2 > 10.f)
+        double matchChi2 = muonTrack.chi2MatchMCHMFT();
+        if (matchChi2 > cfgMftDcaMatchChi2Up.value)
           continue;
 
         // refit MCH track if enabled
@@ -1731,7 +1735,7 @@ struct muonGlobalAlignment {
           for (auto const& cluster : clustersSliced) {
             int deId = cluster.deId();
             int chamber = deId / 100 - 1;
-            if (chamber < 0 || chamber > 9)
+            if (chamber < 0 || chamber >= NMchChambers)
               continue;
             int deIndex = getDEindex(deId);
 
@@ -1827,7 +1831,8 @@ struct muonGlobalAlignment {
 
         // MFT-MCH track residuals analysis
         if (cfgEnableMftMchMatchingAnalysis && convertedTrackWithCorrOk) {
-          double refPlaneZ[2] = {cfgRefPlaneZMFT, cfgRefPlaneZMCH};
+          static constexpr int nRefPlanes = 2;
+          double refPlaneZ[nRefPlanes] = {cfgRefPlaneZMFT, cfgRefPlaneZMCH};
 
           std::shared_ptr<THnSparse> dxPlots[2]{registry.get<THnSparse>(HIST("matching/dxAtMFT")), registry.get<THnSparse>(HIST("matching/dxAtMCH"))};
           std::shared_ptr<THnSparse> dyPlots[2]{registry.get<THnSparse>(HIST("matching/dyAtMFT")), registry.get<THnSparse>(HIST("matching/dyAtMCH"))};
@@ -1835,7 +1840,7 @@ struct muonGlobalAlignment {
           std::shared_ptr<THnSparse> dsyPlots[2]{registry.get<THnSparse>(HIST("matching/dsyAtMFT")), registry.get<THnSparse>(HIST("matching/dsyAtMCH"))};
           std::shared_ptr<THnSparse> dphiPlots[2]{registry.get<THnSparse>(HIST("matching/dphiAtMFT")), registry.get<THnSparse>(HIST("matching/dphiAtMCH"))};
 
-          for (int iRefPlane = 0; iRefPlane < 2; iRefPlane++) {
+          for (int iRefPlane = 0; iRefPlane < nRefPlanes; iRefPlane++) {
             const auto mftTrackAtRefPlane = configRealign.cfgEnableMCHRealign ? PropagateMFTtoMCH(mftTrack, mch::TrackParam(convertedTrackWithCorr.first()), refPlaneZ[iRefPlane]) : PropagateMFTtoMCH(mftTrack, FwdtoMCH(FwdToTrackPar(mchTrack)), refPlaneZ[iRefPlane]);
             const auto mchTrackAtRefPlane = configRealign.cfgEnableMCHRealign ? PropagateMCHRealigned(convertedTrackWithCorr, refPlaneZ[iRefPlane]) : PropagateMCH(mchTrack, refPlaneZ[iRefPlane]);
             const auto& refTrackAtRefPlane = (iRefPlane == 0) ? mftTrackAtRefPlane : mchTrackAtRefPlane;
