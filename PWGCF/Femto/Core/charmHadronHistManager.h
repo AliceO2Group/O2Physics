@@ -102,8 +102,8 @@ template <auto& Prefix>
 struct ConfD0QaBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   o2::framework::Configurable<bool> plotTopology{"plotTopology", true, "Generate topological QA plots (cpa, decayLength, impactParameterProduct, cosThetaStar)"};
-  o2::framework::ConfigurableAxis massD0{"massD0", {{200, 1.7, 2.0}}, "Mass for D0 (Kpi) hypothesis"};
-  o2::framework::ConfigurableAxis massD0bar{"massD0bar", {{200, 1.7, 2.0}}, "Mass for D0bar (piK) hypothesis"};
+  o2::framework::ConfigurableAxis massD0{"massD0", {{200, 1.7, 2.0}}, "Mass of candidates selected as D0"};
+  o2::framework::ConfigurableAxis massD0bar{"massD0bar", {{200, 1.7, 2.0}}, "Mass of candidates selected as D0bar"};
   o2::framework::ConfigurableAxis mlScore{"mlScore", {{100, 0.f, 1.f}}, "BDT ML score (bkg/prompt/non-prompt)"};
   o2::framework::ConfigurableAxis cpa{"cpa", {{100, 0.9f, 1.f}}, "Cosine of pointing angle"};
   o2::framework::ConfigurableAxis decayLength{"decayLength", {{200, 0.f, 0.2f}}, "Decay length (cm)"};
@@ -126,8 +126,8 @@ constexpr std::array<histmanager::HistInfo<CharmHadronHist>, kCharmHadronHistLas
    {kPtVsEta, o2::framework::HistType::kTH2F, "hPtVsEta", "p_{T} vs #eta; p_{T} (GeV/#it{c}); #eta"},
    {kPtVsPhi, o2::framework::HistType::kTH2F, "hPtVsPhi", "p_{T} vs #varphi; p_{T} (GeV/#it{c}); #varphi"},
    {kPhiVsEta, o2::framework::HistType::kTH2F, "hPhiVsEta", "#varphi vs #eta; #varphi; #eta"},
-   {kMassD0, o2::framework::HistType::kTH1F, "hMassD0", "D0 (K#pi) mass; m_{K#pi} (GeV/#it{c}^{2}); Entries"},
-   {kMassD0bar, o2::framework::HistType::kTH1F, "hMassD0bar", "#bar{D0} (#piK) mass; m_{#piK} (GeV/#it{c}^{2}); Entries"},
+   {kMassD0, o2::framework::HistType::kTH1F, "hMassD0", "Invariant mass of D^{0} candidates; m_{Inv} (GeV/#it{c}^{2}); Entries"},
+   {kMassD0bar, o2::framework::HistType::kTH1F, "hMassD0bar", "Invariant mass of #bar{D}^{0} candidates; m_{Inv} (GeV/#it{c}^{2}); Entries"},
    {kMlBkg, o2::framework::HistType::kTH1F, "hMlBkg", "BDT background score; ML score (bkg); Entries"},
    {kMlPrompt, o2::framework::HistType::kTH1F, "hMlPrompt", "BDT prompt score; ML score (prompt); Entries"},
    {kMlNonPrompt, o2::framework::HistType::kTH1F, "hMlNonPrompt", "BDT non-prompt score; ML score (non-prompt); Entries"},
@@ -424,8 +424,12 @@ class CharmHadronHistManager
   template <typename T>
   void fillQa(T const& charmHadronCandidate)
   {
-    mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kMassD0, HistTable)), charmHadronCandidate.massD0());
-    mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kMassD0bar, HistTable)), charmHadronCandidate.massD0bar());
+    // invariant mass split by hypothesis: D0 (sign > 0) or D0bar (sign < 0)
+    if (charmHadronCandidate.sign() > 0) {
+      mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kMassD0, HistTable)), charmHadronCandidate.mass());
+    } else {
+      mHistogramRegistry->fill(HIST(charmHadronPrefix) + HIST(QaDir) + HIST(getHistName(kMassD0bar, HistTable)), charmHadronCandidate.mass());
+    }
 
     // BDT scores of the accepted hypothesis: D0 (sign > 0) or D0bar (sign < 0)
     float mlBkg = 0.f;
