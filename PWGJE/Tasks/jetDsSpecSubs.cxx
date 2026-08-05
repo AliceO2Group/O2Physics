@@ -28,7 +28,6 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
@@ -289,11 +288,11 @@ struct JetDsSpecSubs {
 
     // Prevent simultaneous execution of processes using alternative jet collections
     if (doprocessCollisions && doprocessCollisionsEWS) {
-      LOGP(fatal, "Enable either processCollisions or processCollisionsEWS, not both simultaneously");
+      throw std::runtime_error("Enable either processCollisions or processCollisionsEWS, not both simultaneously");
     }
 
     if (doprocessDataChargedSubstructure && doprocessDataChargedSubstructureEWS) {
-      LOGP(fatal, "Enable either processDataChargedSubstructure or processDataChargedSubstructureEWS, not both simultaneously");
+      throw std::runtime_error("Enable either processDataChargedSubstructure or processDataChargedSubstructureEWS, not both simultaneously");
     }
     // Determine which histogram groups are required
     const bool doInclusiveQA = doprocessCollisions || doprocessCollisionsEWS;
