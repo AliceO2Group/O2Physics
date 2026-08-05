@@ -38,6 +38,7 @@
 #include <fastjet/PseudoJet.hh>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -222,7 +223,7 @@ std::vector<SplitMatchPair> buildUniqueSplittingMatches(const std::vector<Splitt
 }
 
 template <typename ConstituentRangeT>
-std::vector<fastjet::PseudoJet> buildFastJetInputs(ConstituentRangeT&& constituents, float trackPtMin)
+std::vector<fastjet::PseudoJet> buildFastJetInputs(ConstituentRangeT const& constituents, float trackPtMin)
 {
   std::vector<fastjet::PseudoJet> fjInputs;
   fjInputs.reserve(64);
@@ -636,7 +637,7 @@ struct JetLundPlaneUnfolding {
     for (auto const& mcCollision : mcCollisions) {
       const int64_t mcCollisionId = mcCollision.globalIndex();
       mcEventInfoById.emplace(mcCollisionId,
-                              McEventInfo{mcCollisionId, mcCollision.weight(), mcCollision.ptHard()});
+                              McEventInfo{.mcCollisionId = mcCollisionId, .weight = mcCollision.weight(), .ptHard = mcCollision.ptHard()});
     }
 
     std::unordered_map<int64_t, McEventInfo> mcEventInfoByDetCollisionId;
@@ -790,7 +791,7 @@ struct JetLundPlaneUnfolding {
 
       for (auto const& candPartJet : detJet.template matchedJetGeo_as<soa::Filtered<PartJetsMatched>>()) {
         const uint64_t candTruthKey = candPartJet.globalIndex();
-        if (acceptedTruthJetKeys.find(candTruthKey) == acceptedTruthJetKeys.end()) {
+        if (!acceptedTruthJetKeys.contains(candTruthKey)) {
           continue;
         }
 
@@ -885,9 +886,9 @@ struct JetLundPlaneUnfolding {
       for (const auto& m : splitMatches) {
         const auto& detS = detSpl[m.recoIdx];
         const auto& partS = bestPartSpl[m.truthIdx];
-        double x[6] = {detS.lnRoverDR, detS.lnkt, detJet.pt(),
-                       partS.lnRoverDR, partS.lnkt, bestPartPt};
-        h6->Fill(x);
+        const std::array<double, 6> x{detS.lnRoverDR, detS.lnkt, detJet.pt(),
+                                      partS.lnRoverDR, partS.lnkt, bestPartPt};
+        h6->Fill(x.data());
         registry.fill(HIST("hLnRoverDRResidual"), detS.lnRoverDR - partS.lnRoverDR);
         registry.fill(HIST("hLnKtResidual"), detS.lnkt - partS.lnkt);
       }
@@ -904,7 +905,7 @@ struct JetLundPlaneUnfolding {
         continue;
       }
 
-      if (mcEventInfoById.find(partJet.mcCollisionId()) == mcEventInfoById.end()) {
+      if (!mcEventInfoById.contains(partJet.mcCollisionId())) {
         continue;
       }
 
