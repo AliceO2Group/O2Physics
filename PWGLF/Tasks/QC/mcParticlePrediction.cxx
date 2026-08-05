@@ -81,18 +81,18 @@ struct Estimators {
   static constexpr estID FDDAC = 6;
   static constexpr estID ZNA = 7;
   static constexpr estID ZNC = 8;
-  static constexpr estID ZEM1 = 9;
-  static constexpr estID ZEM2 = 10;
-  static constexpr estID ZPA = 11;
-  static constexpr estID ZPC = 12;
-  static constexpr estID ITSIB = 13;
-  static constexpr estID ETA05 = 14;
-  static constexpr estID ETA08 = 15;
-  static constexpr estID V0A = 16;             // (Run2)
-  static constexpr estID V0C = 17;             // (Run2)
-  static constexpr estID V0AC = 18;            // (Run2 V0M)
-  static constexpr estID ImpactParameter = 19; // (Run2 V0M)
-  static constexpr estID nEstimators = 20;
+  // static constexpr estID ZEM1 = 9;
+  // static constexpr estID ZEM2 = 10;
+  // static constexpr estID ZPA = 11;
+  // static constexpr estID ZPC = 12;
+  static constexpr estID ITSIB = 9;
+  static constexpr estID ETA05 = 10;
+  static constexpr estID ETA08 = 11;
+  static constexpr estID V0A = 12;             // (Run2)
+  static constexpr estID V0C = 13;             // (Run2)
+  static constexpr estID V0AC = 14;            // (Run2 V0M)
+  static constexpr estID ImpactParameter = 15; // (Run2 V0M)
+  static constexpr estID nEstimators = 16;
 
   static constexpr const char* estimatorNames[nEstimators] = {"FT0A",
                                                               "FT0C",
@@ -103,10 +103,6 @@ struct Estimators {
                                                               "FDDAC",
                                                               "ZNA",
                                                               "ZNC",
-                                                              "ZEM1",
-                                                              "ZEM2",
-                                                              "ZPA",
-                                                              "ZPC",
                                                               "ITSIB",
                                                               "ETA05",
                                                               "ETA08",
@@ -136,10 +132,6 @@ static const int defaultEstimators[Estimators::nEstimators][nParameters]{{0},  /
                                                                          {0},  // FDDAC
                                                                          {0},  // ZNA
                                                                          {0},  // ZNC
-                                                                         {0},  // ZEM1
-                                                                         {0},  // ZEM2
-                                                                         {0},  // ZPA
-                                                                         {0},  // ZPC
                                                                          {0},  // ITSIB
                                                                          {0},  // ETA05
                                                                          {0},  // ETA08
