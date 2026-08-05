@@ -121,7 +121,6 @@ struct JetDsSpecSubs {
     aod::jcollision::centFT0M >= centralityMin &&
     aod::jcollision::centFT0M < centralityMax;
 
-
   // Filtered jet tables
   using FilteredDsDataJets = soa::Filtered<DsDataJets>;
   using FilteredDsMCDJets = soa::Filtered<DsMCDJets>;
@@ -137,7 +136,6 @@ struct JetDsSpecSubs {
 
   using FilteredDsMCPJetsOnTheFly = soa::Filtered<DsMCPJetsOnTheFly>;
 
-  
   //=====================================================================================
   // Histogram definitions
   //=====================================================================================
@@ -775,7 +773,7 @@ struct JetDsSpecSubs {
     }
   }
   PROCESS_SWITCH(JetDsSpecSubs, processMCPOnTheFly, "Process on-the-fly MC particle-level Ds-tagged jets", false);
-  };
+};
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<JetDsSpecSubs>(cfgc)};
