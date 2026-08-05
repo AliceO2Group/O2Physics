@@ -287,6 +287,17 @@ struct forwardlambdakzeroanalysis {
     // Configurable<float> gapSel{"gapSel", 2, "Gap selection"};
   } upcCuts;
 
+  // DCA fitter configurations
+  struct : ConfigurableGroup {
+    std::string prefix = "fitterConfigurations"; // JSON group name
+    Configurable<bool> propagateToPCA{"propagateToPCA", true, "Propagate to PCA?"};
+    Configurable<float> minParamChange{"minParamChange", 4., "Stop minimization iterations if largest change of any X is smaller than this."};
+    Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9, "Stop iterations is chi2/chi2old > this"};
+    Configurable<bool> useAbsDCA{"useAbsDCA", true, "Use abs. distance minimization rather than chi2"};
+    Configurable<bool> useLUTMatCorr{"useLUTMatCorr", true, "Use material LUT correction, instead of TGeo material correction or no material correction."};
+    Configurable<bool> useTGeoMatCorr{"useTGeoMatCorr", false, "Use material TGeo correction, instead of LUT material correction or no material correction."};
+  } fitterConfigurations;
+
   o2::base::MatLayerCylSet* lut; // material LUT for DCA fitter
   o2::vertexing::FwdDCAFitterN<2> fitter;
 
@@ -951,20 +962,22 @@ struct forwardlambdakzeroanalysis {
       histos.add("h2dGenAntiD0VsMultMC", "h2dGenAntiD0VsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
     }
 
+    if (fitterConfigurations.useLUTMatCorr || fitterConfigurations.useTGeoMatCorr) {
+      LOG(fatal) << "Cannot run with both useLUTMatCorr = on and useTGeoMatCorr = on. Please check your configuration!";
+    }
+
     // standards hardcoded in builder ...
     // ...but can be changed easily since fitter is public
-    // standards hardcoded in builder ...
-    // ...but can be changed easily since fitter is public
-    fitter.setPropagateToPCA(true);
+    fitter.setPropagateToPCA(fitterConfigurations.propagateToPCA);
     fitter.setMaxR(200.);
-    fitter.setMinParamChange(4.0);   // 1e-3 for DCAfitter ; 4.0 for FwdDCAfitter
-    fitter.setMinRelChi2Change(0.9); // 0.9 for DCAfitter ; 1e-3 for FwdDCAfitter
+    fitter.setMinParamChange(fitterConfigurations.minParamChange); // 1e-3 for DCAfitter ; 4.0 for FwdDCAfitter
+    fitter.setMinRelChi2Change(fitterConfigurations.minRelChi2Change); // 0.9 for DCAfitter ; 1e-3 for FwdDCAfitter
     // fitter.setMaxDZIni(1e9);
     // fitter.setMaxDXYIni(4.0f);
     // fitter.setMaxChi2(1e9);
-    fitter.setUseAbsDCA(true);
+    fitter.setUseAbsDCA(fitterConfigurations.useAbsDCA);
     // fitter.setWeightedFinalPCA(false);
-    fitter.setTGeoMat(false);
+    fitter.setTGeoMat(fitterConfigurations.useTGeoMatCorr);
     // LUT has to be loaded later
     lut = nullptr;
     // fitter.setMatCorrType(o2::base::Propagator::MatCorrType::USEMatCorrLUT);
@@ -1050,6 +1063,9 @@ struct forwardlambdakzeroanalysis {
     LOG(info) << "Setting global propagator material propagation LUT";
     o2::base::Propagator::Instance()->setMatLUT(lut);
 
+    if (fitterConfigurations.useLUTMatCorr) {
+      fitter.setMatLUT(lut);
+    }
     fitter.setBz(magField);
   }
 
