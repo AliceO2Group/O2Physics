@@ -41,6 +41,7 @@
 #include <array>
 #include <cmath>
 #include <cstdio>
+#include <exception>
 #include <functional>
 #include <map>
 #include <stdexcept>

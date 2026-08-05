@@ -42,6 +42,7 @@
 #include <TDatabasePDG.h>
 #include <TH2.h>
 #include <TLine.h>
+#include <TMatrixDSym.h>
 #include <TPaveText.h>
 #include <TRandom3.h>
 #include <TString.h>
@@ -264,7 +265,7 @@ void HFInvMassFitter::doFit()
     mChiSquareOverNdfBkg = frameTemporary->chiSquare("Bkg_sidebands", "data_for_bkgchi2"); // calculate reduced chi2 / NDF of background sidebands (pre-fit)
     delete frameTemporary;
     if (mDrawBgPrefit) {
-      RooAbsPdf* bkgPdfPrefit = dynamic_cast<RooAbsPdf*>(mBkgPdf->Clone());
+      auto* bkgPdfPrefit = dynamic_cast<RooAbsPdf*>(mBkgPdf->Clone());
       bkgPdfPrefit->plotOn(mInvMassFrame, Range("full"), Normalization(mRooNBkg->getVal(), RooAbsReal::NumEvent), Name("Bkg_c_prefit"), LineColor(kGray));
       delete bkgPdfPrefit;
     }
