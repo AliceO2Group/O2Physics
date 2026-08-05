@@ -352,7 +352,7 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
       this->evaluateObservable(kPosDaughTofPion, posDaughter.tofNSigmaPi());
       this->evaluateObservable(kPosDaughTofProton, posDaughter.tofNSigmaPr());
     } else if (mKeepTracksWithoutTof) {
-      this->evaluateObservable(kBachelorTofPion, 0);
+      this->evaluateObservable(kPosDaughTofPion, 0);
       this->evaluateObservable(kPosDaughTofProton, 0);
     }
     if (negDaughter.hasTOF()) {
