@@ -133,6 +133,8 @@ struct muonGlobalAlignment {
   static constexpr int NMchDetElems = 156;
   static constexpr int ThetaAbsBoundaryDeg = 3;
   static constexpr double SlopeResolutionZ = 535.;
+  static constexpr double AbsorberBackZ = -505.f;
+  static constexpr double BransonPlaneZ = -466.f;
 
   Produces<aod::CompactMFTTracks> mftTable;
   Configurable<bool> cfgProduceMFTTable{"cfgProduceMFTTable", false, "flag to produce MFTsa table"};
@@ -1291,7 +1293,7 @@ struct muonGlobalAlignment {
   template <class TMFT, class C>
   o2::dataformats::GlobalFwdTrack PropagateMFTToDCA(const TMFT& mftTrack, const C& collision, float zshift)
   {
-    static double Bz = -10001;
+    //static double Bz = -10001;
     double chi2 = mftTrack.chi2();
     double phiCorrDeg = 0;
     double phiCorr = phiCorrDeg * TMath::Pi() / 180.f;
@@ -1318,12 +1320,12 @@ struct muonGlobalAlignment {
     // double centerZ[3] = {mftTrack.x() + propVec[0] / 2.,
     //                      mftTrack.y() + propVec[1] / 2.,
     //                      mftTrack.z() + propVec[2] / 2.};
-    if (Bz < -10000) {
-      double centerZ[3] = {0, 0, -45.f / 2.f};
-      o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
-      Bz = field->getBz(centerZ);
-    }
-    fwdtrack.propagateToZ(collision.posZ() - zshift, Bz);
+    //if (Bz < -10000) {
+    //  double centerZ[3] = {0, 0, -45.f / 2.f};
+    //  o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    //  Bz = field->getBz(centerZ);
+    //}
+    fwdtrack.propagateToZ(collision.posZ() - zshift, mBzAtMftCenter);
 
     propmuon.setParameters(fwdtrack.getParameters());
     propmuon.setZ(fwdtrack.getZ());
@@ -1335,7 +1337,7 @@ struct muonGlobalAlignment {
   template <class TMFT, class TMUON, class C>
   o2::dataformats::GlobalFwdTrack PropagateMFTToDCA(const TMFT& mftTrack, const TMUON& mchTrack, const C& collision, float zshift)
   {
-    static double Bz = -10001;
+    //static double Bz = -10001;
     double chi2 = mftTrack.chi2();
     double phiCorrDeg = 0;
     double phiCorr = phiCorrDeg * TMath::Pi() / 180.f;
@@ -1366,12 +1368,12 @@ struct muonGlobalAlignment {
     // double centerZ[3] = {mftTrack.x() + propVec[0] / 2.,
     //                      mftTrack.y() + propVec[1] / 2.,
     //                      mftTrack.z() + propVec[2] / 2.};
-    if (Bz < -10000) {
-      double centerZ[3] = {0, 0, -45.f / 2.f};
-      o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
-      Bz = field->getBz(centerZ);
-    }
-    fwdtrack.propagateToZ(collision.posZ() - zshift, Bz);
+    //if (Bz < -10000) {
+    //  double centerZ[3] = {0, 0, -45.f / 2.f};
+    //  o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    //  Bz = field->getBz(centerZ);
+    //}
+    fwdtrack.propagateToZ(collision.posZ() - zshift, mBzAtMftCenter);
 
     o2::dataformats::GlobalFwdTrack propmuon;
     propmuon.setParameters(fwdtrack.getParameters());
@@ -1394,8 +1396,8 @@ struct muonGlobalAlignment {
     }
     auto mftTrackProp = FwdtoMCH(mftTrackPar);
     UpdateTrackMomentum(mftTrackProp, mchTrackAtMFT);
-    if (z < -505.f) {
-      o2::mch::TrackExtrap::extrapToZ(mftTrackProp, -466.f);
+    if (z < AbsorberBackZ) {
+      o2::mch::TrackExtrap::extrapToZ(mftTrackProp, BransonPlaneZ);
       UpdateTrackMomentum(mftTrackProp, mchTrackPar);
     }
 
@@ -1403,9 +1405,9 @@ struct muonGlobalAlignment {
       // extrapolate to the back of the absorber, taking into account the dipole shift,
       // to avoid that the correction bring the track starting point back into the absorber
       if (cfgDipoleZshift.value < 0) {
-        o2::mch::TrackExtrap::extrapToZ(mftTrackProp, -505.f);
+        o2::mch::TrackExtrap::extrapToZ(mftTrackProp, AbsorberBackZ);
       } else if (cfgDipoleZshift.value > 0) {
-        o2::mch::TrackExtrap::extrapToZ(mftTrackProp, -505.f - cfgDipoleZshift.value);
+        o2::mch::TrackExtrap::extrapToZ(mftTrackProp, AbsorberBackZ - cfgDipoleZshift.value);
       }
       // shift the track starting point
       mftTrackProp.setZ(mftTrackProp.getZ() + cfgDipoleZshift.value);
@@ -1503,7 +1505,8 @@ struct muonGlobalAlignment {
               }
 
               if (cfgEnableMftDcaExtraPlots) {
-                if (mftNclusters >= 6) {
+                static constexpr int nMftClustersMin = 6;
+                if (mftNclusters >= nMftClustersMin) {
                   for (int i = 0; i < nMftLayers; i++) {
                     auto mftTrackAtLayer = PropagateMFT(mftTrack, o2::mft::constants::mft::LayerZCoordinate()[i]);
                     std::get<std::shared_ptr<TH2>>(mMftTrackEffDen[i])->Fill(mftTrackAtLayer.getX(), mftTrackAtLayer.getY());
