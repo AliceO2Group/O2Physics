@@ -159,8 +159,10 @@ struct ChargeBalanceFunction {
   TList* ccdbObjRecoEff = nullptr;
   TList* ccdbObjNuaCorr = nullptr;
   struct CorrHist {
-    THnSparseF *hRecEffP, *hRecEffM;
-    TH3F *hNuaP, *hNuaM;
+    THnSparseF* hRecEffP = nullptr;
+    THnSparseF* hRecEffM = nullptr;
+    TH3F* hNuaP = nullptr;
+    TH3F* hNuaM = nullptr;
   } corrHist;
   int nHistDim = 0;
 
