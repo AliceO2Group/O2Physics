@@ -40,6 +40,8 @@
 #include <string>
 #include <vector>
 
+#include <cmath>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
