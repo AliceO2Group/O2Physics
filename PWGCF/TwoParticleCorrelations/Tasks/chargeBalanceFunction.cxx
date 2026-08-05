@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file lambdaR2Correlation.cxx
+/// \file chargeBalanceFunction.cxx
 /// \brief R2 P2 and BF of charged hadrons.
 /// \author Yash Patley <yash.patley@cern.ch>
 
@@ -289,12 +289,12 @@ struct ChargeBalanceFunction {
       ccdbObjNuaCorr = ccdb->getForTimeStamp<TList>(cPathCCDBNuaCorr.value, nolaterthan.value);
 
       // Load reco eff corrections
-      LoadRecoEfficiencyHistograms();
+      loadRecoEfficiencyHistograms();
     }
   }
 
   // Load reco efficiency histograms
-  void LoadRecoEfficiencyHistograms()
+  void loadRecoEfficiencyHistograms()
   {
     // Efficiency correction histograms
     corrHist.hRecEffP = dynamic_cast<THnSparseF*>(ccdbObjRecoEff->FindObject("h_RecEff_P"));
@@ -395,7 +395,7 @@ struct ChargeBalanceFunction {
   }
 
   template <RecGenType rec_gen, typename T, typename S>
-  float GetCorrectionFactor(T const& track, S const& sign)
+  float getCorrectionFactor(T const& track, S const& sign)
   {
     if (!cGetCorrectionFlag) {
       return 1.;
@@ -527,7 +527,7 @@ struct ChargeBalanceFunction {
     const auto phibin1 = static_cast<int>(trk_1.phi() / phibinwidth);
     const auto phibin2 = static_cast<int>(trk_2.phi() / phibinwidth);
 
-    float corfac = GetCorrectionFactor<rec_gen>(trk_1, sign_1) * GetCorrectionFactor<rec_gen>(trk_2, sign_2);
+    float corfac = getCorrectionFactor<rec_gen>(trk_1, sign_1) * getCorrectionFactor<rec_gen>(trk_2, sign_2);
 
     if (rapbin1 >= 0 && rapbin2 >= 0 && phibin1 >= 0 && phibin2 >= 0 && rapbin1 < nrapbins && rapbin2 < nrapbins && phibin1 < nphibins && phibin2 < nphibins) {
 
@@ -570,7 +570,7 @@ struct ChargeBalanceFunction {
     static constexpr auto SubDirRecGen = std::array{"Reco/", "McGen/"};
 
     // Correction factor
-    float corrFact = GetCorrectionFactor<rec_gen>(track, sign);
+    float corrFact = getCorrectionFactor<rec_gen>(track, sign);
     float nuaCorr = GetNuaCorrectionFactor<rec_gen>(track, sign);
 
     // Histograms
