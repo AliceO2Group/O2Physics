@@ -30,6 +30,8 @@
 #include <Math/Vector2D.h>                       // IWYU pragma: keep (do not replace with Math/Vector2Dfwd.h)
 #include <Math/Vector2Dfwd.h>
 
+#include <GPUROOTCartesianFwd.h>
+
 #include <array>
 #include <cmath>
 
@@ -113,7 +115,7 @@ template <typename TrackPrecision = float>
 std::array<float, 2> CalculateDCAFast(const o2::track::TrackParametrizationWithError<TrackPrecision>& trk, const o2::math_utils::Point3D<float>& vtx, const float magField)
 {
 
-  std::array<float, 2> dca;
+  std::array<float, 2> dca{};
 
   // obtain circle from track in x-y plane
   const o2::track::TrackAuxPar helixPos(trk, magField);
@@ -175,7 +177,7 @@ inline std::array<float, 3> getPropMomentumFromTrackHelix(const float s, const T
   const auto phi = RecoDecay::constrainAngle<float>(track.phi() + dphi + addPhi);
 
   // Calculate px,y,z at the new propagated vertex
-  std::array<float, 3> trackP;
+  std::array<float, 3> trackP{};
   trackP[0] = std::cos(phi) * track.pt();
   trackP[1] = std::sin(phi) * track.pt();
   trackP[2] = track.tgl() * track.pt();
