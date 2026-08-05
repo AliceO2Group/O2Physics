@@ -169,7 +169,7 @@ struct flattenicityTask {
   PROCESS_SWITCH(flattenicityTask, processData, "Process data", true);
 
   // --- Process MC ---
-    // --- Process MC ---
+  // --- Process MC ---
   void processMC(aod::McCollision const& /*mcCollision*/,
                  aod::McParticles const& /*particles*/,
                  soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& /*collisions*/,
