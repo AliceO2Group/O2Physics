@@ -17,6 +17,14 @@ o2physics_add_dpl_workflow(lumi
                         O2::DetectorsCommonDataFormats
                         O2::DetectorsVertexing
                         COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(lumivertex
+                        SOURCES lumiVertex.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCCDB O2Physics::AnalysisCore
+                        O2::ReconstructionDataFormats
+                        O2::DetectorsBase
+                        O2::DetectorsCommonDataFormats
+                        O2::DetectorsVertexing
+                        COMPONENT_NAME Analysis)
 o2physics_add_dpl_workflow(lumifddft0
                         SOURCES LumiFDDFT0.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
