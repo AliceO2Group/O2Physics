@@ -9,10 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file muonGlobalAlignment.cxx // o2-linter: disable=name/file-cpp,name/workflow-file (legacy workflow executable name)
-/// \brief Task to compute and evaluate DCA quantities
-/// \author Nicolas Bizé <nicolas.bize@cern.ch>, SUBATECH
-//
+/// \file muonGlobalAlignment.cxx
+/// \brief Analysis of global alignment between MFT and MCH-MID
+/// \author Andrea Ferrero <andrea.ferrero@cern.ch>, CEA-Saclay
 
 #include "PWGDQ/Core/VarManager.h"
 
@@ -720,18 +719,18 @@ struct muonGlobalAlignment {
     return idx + offset;
   }
 
-  int GetQuadrant(double phi)
+  int GetQuadrant(float phi)
   {
-    if (phi >= 0 && phi < 90) {
+    if (phi >= 0 && phi < o2::constants::math::PIHalf) {
       return 0;
     }
-    if (phi >= 90 && phi <= 180) {
+    if (phi >= o2::constants::math::PIHalf && phi <= o2::constants::math::PI) {
       return 1;
     }
-    if (phi >= -180 && phi < -90) {
+    if (phi >= -o2::constants::math::PI && phi < -o2::constants::math::PIHalf) {
       return 2;
     }
-    if (phi >= -90 && phi < 0) {
+    if (phi >= -o2::constants::math::PIHalf && phi < 0) {
       return 3;
     }
     return -1;
@@ -740,8 +739,8 @@ struct muonGlobalAlignment {
   template <class T>
   int GetQuadrant(const T& track)
   {
-    double phi = track.phi() * 180 / TMath::Pi();
-    return GetQuadrant(phi);
+    //double phi = track.phi() * 180 / TMath::Pi();
+    return GetQuadrant(track.phi());
   }
 
   template <class T>
