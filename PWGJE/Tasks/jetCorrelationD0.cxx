@@ -19,8 +19,6 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 
-#include "PWGHF/Core/DecayChannels.h"
-
 #include "Common/Core/RecoDecay.h"
 
 #include <CommonConstants/MathConstants.h>
@@ -294,13 +292,13 @@ struct JetCorrelationD0 {
     registry.add("hEtaResolution", "#eta resolution;#p_{T,part};Resolution", {HistType::kTH2F, {{400, 0, 400}, {1000, -1.0, 1.0}}});
   }
   enum D0McCategory : int {
-  Undefined = -1,          // no truth match / unclassified
-  Signal = 0,              // correctly identified D0(bar), π+ K−
-  Reflection = 1,          // true D0(bar) reconstructed with swapped mass hypothesis
-  CorrBkgPiKPi0 = 2,       // correlated background: π+ K− π0
-  CorrBkgPiPi = 3,         // correlated background: π+ π−
-  CorrBkgPiPiPi0 = 4,      // correlated background: π+ π− π0
-  CorrBkgKK = 5            // correlated background: K+ K−
+    Undefined = -1,     // no truth match / unclassified
+    Signal = 0,         // correctly identified D0(bar), π+ K−
+    Reflection = 1,     // true D0(bar) reconstructed with swapped mass hypothesis
+    CorrBkgPiKPi0 = 2,  // correlated background: π+ K− π0
+    CorrBkgPiPi = 3,    // correlated background: π+ π−
+    CorrBkgPiPiPi0 = 4, // correlated background: π+ π− π0
+    CorrBkgKK = 5       // correlated background: K+ K−
   };
   void processData(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                    aod::CandidatesD0Data const& d0Candidates,
