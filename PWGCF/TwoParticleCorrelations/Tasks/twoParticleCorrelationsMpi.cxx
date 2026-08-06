@@ -44,10 +44,11 @@
 #include <TDirectory.h>
 #include <TFile.h>
 #include <TFormula.h>
-#include <TGraph.h>
 #include <THn.h>
 #include <TList.h>
+#include <TNamed.h>
 #include <TString.h>
+#include <TTree.h>
 
 #include <sys/types.h>
 
@@ -86,7 +87,6 @@ struct TwoParticleCorrelationsMpi {
   Configurable<int> cfgAssociatedCharge{"cfgAssociatedCharge", 0, "Select on charge of associated particle: 0 = all charged; 1 = positive; -1 = negative"};
   Configurable<int> cfgPairCharge{"cfgPairCharge", 0, "Select on charge of particle pair: 0 = all; 1 = like sign; -1 = unlike sign"};
   Configurable<int> cfgCorrelationMethod{"cfgCorrelationMethod", 0, "Correlation method, 0 = all, 1 = dd, 2 = ddbar"};
-  Configurable<int> cfgNuncSeedEstimator{"cfgNuncSeedEstimator", 0, "Estimator for number of uncorrelated seeds, 0 = bin look up, 1 = interpolation"};
 
   Configurable<float> cfgTwoTrackCut{"cfgTwoTrackCut", -1, "Two track cut: -1 = off; >0 otherwise distance value (suggested: 0.02)"};
   Configurable<float> cfgTwoTrackCutMinRadius{"cfgTwoTrackCutMinRadius", 0.8f, "Two track cut: radius in m from which two track cuts are applied"};
@@ -103,7 +103,8 @@ struct TwoParticleCorrelationsMpi {
 
   Configurable<std::string> cfgEfficiencyTrigger{"cfgEfficiencyTrigger", "", "CCDB path to efficiency object for trigger particles"};
   Configurable<std::string> cfgEfficiencyAssociated{"cfgEfficiencyAssociated", "", "CCDB path to efficiency object for associated particles"};
-  Configurable<std::string> cfgNuncSeedsCalibration{"cfgNuncSeedsCalibration", "", "CCDB path to calibration object for number of uncorrelated seeds classification"};
+  Configurable<std::string> cfgNuncSeedsTemplateFile{"cfgNuncSeedsTemplateFile", "", "Local ROOT file containing ensembleYieldTemplates"};
+  Configurable<std::string> cfgNuncSeedsTemplate{"cfgNuncSeedsTemplate", "", "CCDB path to the ensemble-yield template ccdb_object"};
 
   Configurable<int> cfgNumMixedEvents{"cfgNumMixedEvents", 5, "Number of mixed events per event"};
 
@@ -120,7 +121,6 @@ struct TwoParticleCorrelationsMpi {
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pt associated axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity / centrality axis for histograms"};
-  ConfigurableAxis axisUncSeeds{"axisUncSeeds", {VARIABLE_WIDTH, 0, 0.2, 0.4, 0.6, 0.8, 1}, "uncorrelated seeds axes in quantiles"};
 
   ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
@@ -162,26 +162,46 @@ struct TwoParticleCorrelationsMpi {
     bool efficiencyLoaded = false;
   } cfg;
 
-  struct EventClassifier {
-    std::vector<double> nuncSeedsByMultBin;
-    std::vector<double> quantileBoundaries;
-    std::unique_ptr<TGraph> interpolation;
-    bool isLoaded = false;
-    int nClasses = 0;
+  struct YieldTemplate {
+    int trigBin = -1;
+    int assocBin = -1;
+    int multBin = -1;
+    double nchLow = 0.0;
+    double nchHigh = 0.0;
+    double trigPtLow = 0.0;
+    double trigPtHigh = 0.0;
+    double assocPtLow = 0.0;
+    double assocPtHigh = 0.0;
+    std::array<double, 10> parameters{};
   };
 
-  EventClassifier ec;
+  struct EventSeedEstimate {
+    int nTriggers = 0;
+    int nCandidatePairs = 0;
+    int nPairs = 0;
+    int nPairsWithoutTemplate = 0;
+    double nearPairs = 0.0;
+    double awayPairs = 0.0;
+    double baselinePairs = 0.0;
+
+    bool isValid() const { return nTriggers > 0; }
+    double nearYield() const { return isValid() ? nearPairs / nTriggers : 0.0; }
+    double awayYield() const { return isValid() ? awayPairs / nTriggers : 0.0; }
+    double nuncSeeds() const
+    {
+      const double denominator = 1.0 + nearYield() + awayYield();
+      return isValid() && denominator > 0.0 ? nTriggers / denominator : -1.0;
+    }
+  };
+
+  std::vector<YieldTemplate> yieldTemplates;
+  const TList* loadedCcdbYieldTemplateObject = nullptr;
 
   enum CorrelationMethod {
     All = 0,
     Dd,
     Ddbar
   };
-  enum EventClassEstimatorMethod {
-    BinLookup = 0,
-    Interpolation
-  };
-
   HistogramRegistry registry{"registry"};
   PairCuts mPairCuts;
 
@@ -220,10 +240,28 @@ struct TwoParticleCorrelationsMpi {
       registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     }
     registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
+    registry.add("eventSeedEstimator", "event-level template estimator", {HistType::kTHnSparseF, {{100, 0, 100, "multiplicity"}, {100, -0.5, 99.5, "N_{trig}"}, {200, 0, 20, "Y_{near}"}, {200, 0, 20, "Y_{away}"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
+    registry.add("eventSeedPairProbabilities", "summed pair probabilities", {HistType::kTH3F, {{200, 0, 200, "#Sigma P_{baseline}"}, {200, 0, 200, "#Sigma P_{near}"}, {200, 0, 200, "#Sigma P_{away}"}}});
+    registry.add("eventSeedEstimatorStatus", "event-estimator status", {HistType::kTH1F, {{4, -0.5, 3.5, "status"}}});
+    registry.add("eventSeedTemplateCoverage", "template coverage vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {102, -0.01, 1.01, "matched/candidate pairs"}}});
+    registry.add("eventSeedEstimateVsMultiplicity", "event-level seed estimate vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
+    registry.add("eventNearYieldVsMultiplicity", "event-level near yield vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 20, "Y_{near}"}}});
+    registry.add("eventAwayYieldVsMultiplicity", "event-level away yield vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 20, "Y_{away}"}}});
+    registry.add("profileEventNTriggers", "mean event trigger count", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("profileEventNearPairs", "mean summed near-pair probability", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("profileEventAwayPairs", "mean summed away-pair probability", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("profileEventBaselinePairs", "mean summed baseline-pair probability", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("profileEventNearYield", "mean event near yield", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("profileEventAwayYield", "mean event away yield", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("profileEventNuncSeeds", "mean event uncorrelated-seed estimate", {HistType::kTProfile, {axisMultiplicity}});
+    registry.add("profileEventEstimatorValidity", "fraction of events with a valid seed estimate", {HistType::kTProfile, {axisMultiplicity}});
+    auto* estimatorStatus = registry.get<TH1>(HIST("eventSeedEstimatorStatus")).get();
+    estimatorStatus->GetXaxis()->SetBinLabel(1, "unused");
+    estimatorStatus->GetXaxis()->SetBinLabel(2, "no template-covered triggers");
+    estimatorStatus->GetXaxis()->SetBinLabel(3, "no template-covered pairs");
+    estimatorStatus->GetXaxis()->SetBinLabel(4, "valid estimate");
     registry.add("yvspt", "y vs pT", {HistType::kTH2F, {{100, -1, 1, "y"}, {100, 0, 20, "p_{T}"}}}); // y vs pT for all tracks (control histogram)
 
-    const bool useEventClassifier = !cfgNuncSeedsCalibration.value.empty();
-    AxisSpec eventClassAxis = useEventClassifier ? AxisSpec(axisUncSeeds) : AxisSpec(axisMultiplicity);
     const int maxMixBin = AxisSpec(axisMultiplicity).getNbins() * AxisSpec(axisVertex).getNbins();
     // The bin numbers for the control histograms (eventcount_*) come from getBin(...) and are the following: #mult_bin * #number_of_z_bins + #zbin
     registry.add("eventcount_same", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
@@ -268,13 +306,12 @@ struct TwoParticleCorrelationsMpi {
       }
     }
 
-    std::string eventClassString = useEventClassifier ? "uncorrelated seed quantile" : "multiplicity / centrality";
     std::vector<AxisSpec> corrAxis;
     corrAxis.reserve(6);
     corrAxis.emplace_back(axisDeltaEta, "#Delta#eta");
     corrAxis.emplace_back(axisPtAssoc, "p_{T} (GeV/c)");
     corrAxis.emplace_back(axisPtTrigger, "p_{T} (GeV/c)");
-    corrAxis.emplace_back(eventClassAxis.binEdges, eventClassString);
+    corrAxis.emplace_back(axisMultiplicity, "multiplicity / centrality");
     corrAxis.emplace_back(axisDeltaPhi, "#Delta#varphi (rad)");
     corrAxis.emplace_back(axisVertex, "z-vtx (cm)");
     std::vector<AxisSpec> effAxis = {{axisEtaEfficiency, "#eta"},
@@ -304,7 +341,10 @@ struct TwoParticleCorrelationsMpi {
     auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
 
-    loadEventClassifier(now);
+    if (!cfgNuncSeedsTemplateFile.value.empty() && !cfgNuncSeedsTemplate.value.empty()) {
+      LOGF(fatal, "Configure only one template source: cfgNuncSeedsTemplateFile or cfgNuncSeedsTemplate");
+    }
+    loadLocalYieldTemplates();
   }
 
   int getMagneticField(uint64_t timestamp)
@@ -481,8 +521,205 @@ struct TwoParticleCorrelationsMpi {
     return {true, 0.5f * std::log((E + pz) / (E - pz))};
   }
 
+  void loadYieldTemplatesFromTree(TTree* tree, const TNamed* schemaVersion, const TNamed* correlationStep, const std::string& source)
+  {
+    if (!tree) {
+      LOGF(fatal, "Missing ensembleYieldTemplates in %s", source.c_str());
+      return;
+    }
+    if (!schemaVersion || TString(schemaVersion->GetTitle()) != "1") {
+      LOGF(fatal, "Unsupported or missing ensemble-yield template schema version in %s", source.c_str());
+      return;
+    }
+    if (!correlationStep || TString(correlationStep->GetTitle()) != "kCFStepReconstructed") {
+      LOGF(fatal, "Ensemble-yield templates must be derived at kCFStepReconstructed");
+      return;
+    }
+
+    YieldTemplate value;
+    int fitStatus = -1;
+    double parameters[10] = {};
+    tree->SetBranchAddress("trigBin", &value.trigBin);
+    tree->SetBranchAddress("assocBin", &value.assocBin);
+    tree->SetBranchAddress("multBin", &value.multBin);
+    tree->SetBranchAddress("nchLow", &value.nchLow);
+    tree->SetBranchAddress("nchHigh", &value.nchHigh);
+    tree->SetBranchAddress("trigPtLow", &value.trigPtLow);
+    tree->SetBranchAddress("trigPtHigh", &value.trigPtHigh);
+    tree->SetBranchAddress("assocPtLow", &value.assocPtLow);
+    tree->SetBranchAddress("assocPtHigh", &value.assocPtHigh);
+    tree->SetBranchAddress("parameters", parameters);
+    tree->SetBranchAddress("fitStatus", &fitStatus);
+
+    yieldTemplates.clear();
+    yieldTemplates.reserve(tree->GetEntries());
+    for (Long64_t iEntry = 0; iEntry < tree->GetEntries(); ++iEntry) {
+      tree->GetEntry(iEntry);
+      if (fitStatus != 0) {
+        LOGF(warning, "Skipping failed yield template (%d, %d, %d), fit status %d", value.trigBin, value.assocBin, value.multBin, fitStatus);
+        continue;
+      }
+      std::copy_n(parameters, value.parameters.size(), value.parameters.begin());
+      if (value.parameters[2] <= 0.0 || value.parameters[5] <= 0.0 || value.parameters[8] <= 0.0) {
+        LOGF(warning, "Skipping yield template (%d, %d, %d) with non-positive Gaussian width", value.trigBin, value.assocBin, value.multBin);
+        continue;
+      }
+      const auto intervalMatchesAxis = [](const AxisSpec& axis, double low, double high) {
+        constexpr double tolerance = 1e-6;
+        const auto& edges = axis.binEdges;
+        return std::any_of(edges.begin(), edges.end() - 1, [&](const auto& edge) {
+          const auto index = static_cast<std::size_t>(&edge - edges.data());
+          return std::abs(edge - low) < tolerance && std::abs(edges[index + 1] - high) < tolerance;
+        });
+      };
+      if (!intervalMatchesAxis(AxisSpec(axisMultiplicity), value.nchLow, value.nchHigh) ||
+          !intervalMatchesAxis(AxisSpec(axisPtTrigger), value.trigPtLow, value.trigPtHigh) ||
+          !intervalMatchesAxis(AxisSpec(axisPtAssoc), value.assocPtLow, value.assocPtHigh)) {
+        LOGF(fatal, "Template binning does not match the configured axes for template (%d, %d, %d)", value.trigBin, value.assocBin, value.multBin);
+        tree->ResetBranchAddresses();
+        return;
+      }
+      yieldTemplates.push_back(value);
+    }
+    tree->ResetBranchAddresses();
+
+    if (yieldTemplates.empty()) {
+      LOGF(fatal, "No valid ensemble-yield templates were loaded from %s", source.c_str());
+      return;
+    }
+    LOGF(info, "Loaded %zu ensemble-yield templates from %s", yieldTemplates.size(), source.c_str());
+  }
+
+  void loadLocalYieldTemplates()
+  {
+    if (cfgNuncSeedsTemplateFile.value.empty()) {
+      return;
+    }
+
+    std::unique_ptr<TFile> input(TFile::Open(cfgNuncSeedsTemplateFile.value.c_str(), "READ"));
+    if (!input || input->IsZombie()) {
+      LOGF(fatal, "Could not open ensemble-yield template file: %s", cfgNuncSeedsTemplateFile.value.c_str());
+      return;
+    }
+
+    TList* calibration = dynamic_cast<TList*>(input->Get("ccdb_object"));
+    auto findObject = [&](const char* name) -> TObject* {
+      if (auto* object = input->Get(name)) {
+        return object;
+      }
+      return calibration ? calibration->FindObject(name) : nullptr;
+    };
+    loadYieldTemplatesFromTree(
+      dynamic_cast<TTree*>(findObject("ensembleYieldTemplates")),
+      dynamic_cast<TNamed*>(findObject("ensembleYieldTemplateSchemaVersion")),
+      dynamic_cast<TNamed*>(findObject("ensembleYieldTemplateCorrelationStep")),
+      cfgNuncSeedsTemplateFile.value);
+  }
+
+  void loadCcdbYieldTemplates(uint64_t timestamp)
+  {
+    if (cfgNuncSeedsTemplate.value.empty()) {
+      return;
+    }
+
+    auto* calibration = ccdb->getForTimeStamp<TList>(cfgNuncSeedsTemplate.value, timestamp);
+    if (!calibration) {
+      LOGF(fatal, "Could not load ensemble-yield templates from CCDB path %s at timestamp %llu", cfgNuncSeedsTemplate.value.c_str(), timestamp);
+      return;
+    }
+    if (calibration == loadedCcdbYieldTemplateObject) {
+      return;
+    }
+
+    loadYieldTemplatesFromTree(
+      dynamic_cast<TTree*>(calibration->FindObject("ensembleYieldTemplates")),
+      dynamic_cast<TNamed*>(calibration->FindObject("ensembleYieldTemplateSchemaVersion")),
+      dynamic_cast<TNamed*>(calibration->FindObject("ensembleYieldTemplateCorrelationStep")),
+      cfgNuncSeedsTemplate.value);
+    loadedCcdbYieldTemplateObject = calibration;
+  }
+
+  const YieldTemplate* findYieldTemplate(double multiplicity, double trigPt, double assocPt) const
+  {
+    for (const auto& yieldTemplate : yieldTemplates) {
+      if (multiplicity >= yieldTemplate.nchLow && multiplicity < yieldTemplate.nchHigh &&
+          trigPt >= yieldTemplate.trigPtLow && trigPt < yieldTemplate.trigPtHigh &&
+          assocPt >= yieldTemplate.assocPtLow && assocPt < yieldTemplate.assocPtHigh) {
+        return &yieldTemplate;
+      }
+    }
+    return nullptr;
+  }
+
+  bool hasTriggerTemplate(double multiplicity, double trigPt) const
+  {
+    return std::any_of(yieldTemplates.begin(), yieldTemplates.end(), [multiplicity, trigPt](const auto& yieldTemplate) {
+      return multiplicity >= yieldTemplate.nchLow && multiplicity < yieldTemplate.nchHigh &&
+             trigPt >= yieldTemplate.trigPtLow && trigPt < yieldTemplate.trigPtHigh;
+    });
+  }
+
+  bool hasMultiplicityTemplate(double multiplicity) const
+  {
+    return std::any_of(yieldTemplates.begin(), yieldTemplates.end(), [multiplicity](const auto& yieldTemplate) {
+      return multiplicity >= yieldTemplate.nchLow && multiplicity < yieldTemplate.nchHigh;
+    });
+  }
+
+  static double evaluateGaussian(double x, const double* parameters)
+  {
+    const double pull = (x - parameters[1]) / parameters[2];
+    return parameters[0] * std::exp(-0.5 * pull * pull);
+  }
+
+  void addPairProbabilities(EventSeedEstimate& estimate, const YieldTemplate& yieldTemplate, double deltaPhi) const
+  {
+    const auto& parameters = yieldTemplate.parameters;
+    const double near = std::max(0.0, evaluateGaussian(deltaPhi, &parameters[0]) + evaluateGaussian(deltaPhi, &parameters[3]));
+    const double away = std::max(0.0, evaluateGaussian(deltaPhi, &parameters[6]));
+    const double baseline = std::max(0.0, parameters[9]);
+    const double total = baseline + near + away;
+    if (total <= 0.0) {
+      return;
+    }
+    estimate.nearPairs += near / total;
+    estimate.awayPairs += away / total;
+    estimate.baselinePairs += baseline / total;
+    ++estimate.nPairs;
+  }
+
+  void fillEventSeedEstimatorQA(double multiplicity, const EventSeedEstimate& estimate)
+  {
+    if (yieldTemplates.empty()) {
+      return;
+    }
+    if (!hasMultiplicityTemplate(multiplicity)) {
+      return;
+    }
+    registry.fill(HIST("profileEventNTriggers"), multiplicity, estimate.nTriggers);
+    registry.fill(HIST("profileEventNearPairs"), multiplicity, estimate.nearPairs);
+    registry.fill(HIST("profileEventAwayPairs"), multiplicity, estimate.awayPairs);
+    registry.fill(HIST("profileEventBaselinePairs"), multiplicity, estimate.baselinePairs);
+    registry.fill(HIST("profileEventEstimatorValidity"), multiplicity, estimate.isValid() ? 1.0 : 0.0);
+    if (!estimate.isValid()) {
+      registry.fill(HIST("eventSeedEstimatorStatus"), 1.0);
+      return;
+    }
+    registry.fill(HIST("eventSeedEstimatorStatus"), estimate.nPairs > 0 ? 3.0 : 2.0);
+    const double coverage = estimate.nCandidatePairs > 0 ? static_cast<double>(estimate.nPairs) / estimate.nCandidatePairs : 0.0;
+    registry.fill(HIST("eventSeedTemplateCoverage"), multiplicity, coverage);
+    registry.fill(HIST("eventSeedEstimator"), multiplicity, estimate.nTriggers, estimate.nearYield(), estimate.awayYield(), estimate.nuncSeeds());
+    registry.fill(HIST("eventSeedPairProbabilities"), estimate.baselinePairs, estimate.nearPairs, estimate.awayPairs);
+    registry.fill(HIST("eventSeedEstimateVsMultiplicity"), multiplicity, estimate.nuncSeeds());
+    registry.fill(HIST("eventNearYieldVsMultiplicity"), multiplicity, estimate.nearYield());
+    registry.fill(HIST("eventAwayYieldVsMultiplicity"), multiplicity, estimate.awayYield());
+    registry.fill(HIST("profileEventNearYield"), multiplicity, estimate.nearYield());
+    registry.fill(HIST("profileEventAwayYield"), multiplicity, estimate.awayYield());
+    registry.fill(HIST("profileEventNuncSeeds"), multiplicity, estimate.nuncSeeds());
+  }
+
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks1, typename TTracks2>
-  void fillCorrelations(TTarget target, TTracks1& tracks1, TTracks2& tracks2, float multiplicity, float posZ, int magField, float eventWeight)
+  void fillCorrelations(TTarget target, TTracks1& tracks1, TTracks2& tracks2, float multiplicity, float posZ, int magField, float eventWeight, EventSeedEstimate* seedEstimate = nullptr)
   {
     const float containerMultiplicity = getCorrelationContainerMultiplicity(multiplicity);
     if (containerMultiplicity < 0.f) {
@@ -570,6 +807,11 @@ struct TwoParticleCorrelationsMpi {
         }
       } else {
         target->getTriggerHist()->Fill(step, track1.pt(), containerMultiplicity, posZ, triggerWeight);
+      }
+
+      const bool triggerHasTemplate = seedEstimate && hasTriggerTemplate(multiplicity, track1.pt());
+      if (triggerHasTemplate) {
+        ++seedEstimate->nTriggers;
       }
 
       for (const auto& track2 : tracks2) {
@@ -661,6 +903,15 @@ struct TwoParticleCorrelationsMpi {
 
         float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi(), -o2::constants::math::PIHalf);
 
+        if (triggerHasTemplate) {
+          ++seedEstimate->nCandidatePairs;
+          if (const auto* yieldTemplate = findYieldTemplate(multiplicity, track1.pt(), track2.pt())) {
+            addPairProbabilities(*seedEstimate, *yieldTemplate, deltaPhi);
+          } else {
+            ++seedEstimate->nPairsWithoutTemplate;
+          }
+        }
+
         // last param is the weight
         if (cfgMassAxis) {
           if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value) {
@@ -719,149 +970,9 @@ struct TwoParticleCorrelationsMpi {
     return eff->GetBinContent(effVars.data());
   }
 
-  void loadEventClassifier(int64_t timestamp)
-  {
-    if (cfgNuncSeedsCalibration.value.empty()) {
-      return;
-    }
-
-    constexpr int TrigBin = 0;
-    constexpr int AssocBin = 0;
-    auto* list = ccdb->getForTimeStamp<TList>(cfgNuncSeedsCalibration.value, timestamp);
-
-    if (!list) {
-      LOGF(fatal, "Could not load event-classifier calibration from CCDB path: %s", cfgNuncSeedsCalibration.value.c_str());
-      return;
-    }
-
-    auto* hNunc = dynamic_cast<TH1D*>(list->FindObject(Form("calibNuncSeedsVsNch_%d_%d", TrigBin, AssocBin)));
-    auto* hQuantiles = dynamic_cast<TH1D*>(list->FindObject(Form("calibNuncSeedsQuantileBoundaries_%d_%d", TrigBin, AssocBin)));
-
-    if (!hNunc) {
-      LOGF(fatal, "Missing CCDB object calibNuncSeedsVsNch_%d_%d", TrigBin, AssocBin);
-      return;
-    }
-
-    if (!hQuantiles) {
-      LOGF(fatal, "Missing CCDB object calibNuncSeedsQuantileBoundaries_%d_%d", TrigBin, AssocBin);
-      return;
-    }
-
-    const AxisSpec multAxis(axisMultiplicity);
-    if (hNunc->GetNbinsX() != multAxis.getNbins()) {
-      LOGF(fatal,
-           "Multiplicity axis mismatch for event classifier: calibration has %d bins, axisMultiplicity has %d bins",
-           hNunc->GetNbinsX(),
-           multAxis.getNbins());
-      return;
-    }
-
-    ec.nuncSeedsByMultBin.clear();
-    ec.quantileBoundaries.clear();
-    ec.nuncSeedsByMultBin.reserve(hNunc->GetNbinsX());
-    ec.quantileBoundaries.reserve(hQuantiles->GetNbinsX());
-
-    ec.interpolation = std::make_unique<TGraph>(hNunc->GetNbinsX());
-    for (int i = 1; i <= hNunc->GetNbinsX(); ++i) {
-      ec.nuncSeedsByMultBin.push_back(hNunc->GetBinContent(i));
-      ec.interpolation->SetPoint(i - 1, hNunc->GetXaxis()->GetBinCenter(i), hNunc->GetBinContent(i));
-    }
-
-    for (int i = 1; i <= hQuantiles->GetNbinsX(); ++i) {
-      ec.quantileBoundaries.push_back(hQuantiles->GetBinContent(i));
-    }
-
-    ec.nClasses = static_cast<int>(ec.quantileBoundaries.size()) - 1;
-    ec.isLoaded = ec.nClasses > 0;
-
-    if (!ec.isLoaded) {
-      LOGF(fatal, "Event-classifier calibration has fewer than two quantile boundaries");
-      return;
-    }
-
-    LOGF(info,
-         "Loaded multiplicity-only event classifier from %s using calibNuncSeedsVsNch_%d_%d and calibNuncSeedsQuantileBoundaries_%d_%d",
-         cfgNuncSeedsCalibration.value.c_str(),
-         TrigBin,
-         AssocBin,
-         TrigBin,
-         AssocBin);
-  }
-
-  int findMultiplicityBin(double multiplicity) const
-  {
-    const AxisSpec multAxis(axisMultiplicity);
-    const auto& edges = multAxis.binEdges;
-    const int minEdges = 2;
-    if (edges.size() < minEdges || multiplicity < edges.front() || multiplicity >= edges.back()) {
-      return -1;
-    }
-
-    const auto upper = std::upper_bound(edges.begin(), edges.end(), multiplicity);
-    return static_cast<int>(std::distance(edges.begin(), upper)) - 1;
-  }
-
-  int classify(double s) const
-  {
-    const int minEdges = 2;
-    if (ec.quantileBoundaries.size() < minEdges) {
-      return -1;
-    }
-
-    for (int i = 0; i < static_cast<int>(ec.quantileBoundaries.size()) - 1; ++i) {
-      if (s >= ec.quantileBoundaries[i] && s < ec.quantileBoundaries[i + 1]) {
-        return i;
-      }
-    }
-
-    return s < ec.quantileBoundaries.front() ? 0 : static_cast<int>(ec.quantileBoundaries.size()) - 2;
-  }
-
-  int getEventClass(double multiplicity) const
-  {
-    if (!ec.isLoaded) {
-      return -1;
-    }
-
-    double s = -1.0;
-
-    if (cfgNuncSeedEstimator.value == EventClassEstimatorMethod::BinLookup) {
-      const int multBin = findMultiplicityBin(multiplicity);
-
-      if (multBin < 0 || multBin >= static_cast<int>(ec.nuncSeedsByMultBin.size())) {
-        return -1;
-      }
-
-      s = ec.nuncSeedsByMultBin[multBin];
-    }
-
-    if (cfgNuncSeedEstimator.value == EventClassEstimatorMethod::Interpolation) {
-      if (!ec.interpolation) {
-        return -1;
-      }
-
-      s = ec.interpolation->Eval(multiplicity);
-    }
-
-    if (cfgNuncSeedEstimator.value != EventClassEstimatorMethod::BinLookup && cfgNuncSeedEstimator.value != EventClassEstimatorMethod::Interpolation) {
-      return -1;
-    }
-
-    return classify(s);
-  }
-
   float getCorrelationContainerMultiplicity(float multiplicity) const
   {
-    if (!ec.isLoaded) {
-      return multiplicity;
-    }
-
-    const int eventClass = getEventClass(multiplicity);
-    if (eventClass < 0 || ec.nClasses <= 0) {
-      return -1.f;
-    }
-
-    return (static_cast<float>(eventClass) + 0.5f) / static_cast<float>(ec.nClasses);
+    return multiplicity;
   }
 
   // Version with explicit nested loop
@@ -876,6 +987,7 @@ struct TwoParticleCorrelationsMpi {
     // TODO will go to CCDBConfigurable
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     loadEfficiency(bc.timestamp());
+    loadCcdbYieldTemplates(bc.timestamp());
 
     const auto multiplicity = collision.centRun2V0M();
 
@@ -884,7 +996,9 @@ struct TwoParticleCorrelationsMpi {
     }
     registry.fill(HIST("eventcount_same"), -2);
     fillQA(collision, multiplicity, tracks);
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, tracks, tracks, multiplicity, collision.posZ(), getMagneticField(bc.timestamp()), 1.0f);
+    EventSeedEstimate seedEstimate;
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, tracks, tracks, multiplicity, collision.posZ(), getMagneticField(bc.timestamp()), 1.0f, &seedEstimate);
+    fillEventSeedEstimatorQA(multiplicity, seedEstimate);
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameAOD, "Process same event on AOD", true);
 
@@ -897,6 +1011,7 @@ struct TwoParticleCorrelationsMpi {
       LOGF(info, "processSameDerivedT: Tracks for collision: %d/%d | Vertex: %.1f | Multiplicity/Centrality: %.1f", tracks1.size(), tracks2.size(), collision.posZ(), collision.multiplicity());
     }
     loadEfficiency(collision.timestamp());
+    loadCcdbYieldTemplates(collision.timestamp());
 
     const auto multiplicity = collision.multiplicity();
 
@@ -916,15 +1031,17 @@ struct TwoParticleCorrelationsMpi {
 
     const bool hasEfficiency = (cfg.mEfficiencyAssociated != nullptr || cfg.mEfficiencyTrigger != nullptr);
     const bool fillReco = !(cfgDropStepRECO && hasEfficiency);
+    EventSeedEstimate seedEstimate;
 
     if (fillReco) {
       fillContainerEvent(same, multiplicity, CorrelationContainer::kCFStepReconstructed);
-      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f);
+      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, &seedEstimate);
     }
     if (hasEfficiency) {
       fillContainerEvent(same, multiplicity, CorrelationContainer::kCFStepCorrected);
-      fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f);
+      fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, fillReco ? nullptr : &seedEstimate);
     }
+    fillEventSeedEstimatorQA(multiplicity, seedEstimate);
   }
 
   void processSameDerived(DerivedCollisions::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
