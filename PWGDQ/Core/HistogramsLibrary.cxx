@@ -1594,6 +1594,12 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_cos2DeltaPhi", "cos 2(#varphi-#Psi_{2}^{A}) vs m", true, 125, 0.0, 5.0, VarManager::kMass, 100, -1.0, 1.0, VarManager::kCos2DeltaPhi);
         hm->AddHistogram(histClass, "Mass_cos3DeltaPhi", "cos 3(#varphi-#Psi_{3}^{A}) vs m", true, 125, 0.0, 5.0, VarManager::kMass, 100, -1.0, 1.0, VarManager::kCos3DeltaPhi);
       }
+
+      if (subGroupStr.Contains("prpairpid")) {
+        hm->AddHistogram(histClass, "nSigmaPr1_nSigmaPr2", "", false, 100, -8.0, 8.0, VarManager::kTPCorTOFnSigmaPr1, 100, -8.0, 8.0, VarManager::kTPCorTOFnSigmaPr2);
+        hm->AddHistogram(histClass, "t1Pt", "", false, 2000, 0.0, 20.0, VarManager::kPt1);
+        hm->AddHistogram(histClass, "t2Pt", "", false, 2000, 0.0, 20.0, VarManager::kPt2);
+      }
     } else if (subGroupStr.Contains("dimuon")) {
       hm->AddHistogram(histClass, "Mass_Pt", "", false, 750, 0.0, 15.0, VarManager::kMass, 120, 0.0, 30.0, VarManager::kPt);
       hm->AddHistogram(histClass, "Mass_Rapidity", "", false, 750, 0.0, 15.0, VarManager::kMass, 150, 2.5, 4.0, VarManager::kRap);
