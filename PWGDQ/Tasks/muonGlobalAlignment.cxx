@@ -156,11 +156,11 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
   Configurable<float> cfgMftMchResidualsPtLow{"cfgMftMchResidualsPtLow", 4.f, ""};
 
   Configurable<uint32_t> cfgMftTracksMultiplicityMax{"cfgMftTracksMultiplicityMax", 0, "Maximum number of MFT tracks to be processed per event (zero means no limit)"};
-  
+
   // Magnetic field position bias
   Configurable<float> cfgFieldOriginBiasZ{"cfgFieldOriginBiasZ", 0.0f, "Bias applied to the magnetic field z position"};
-  Configurable<float> fVertexZshift{"cfgVertexZshift", 0.0f, "Correction to the vertex z position"};
-  Configurable<float> fDipoleZshift{"cfgDipoleZshift", 0.0f, "Correction to the dipole z position"};
+  Configurable<float> cfgVertexZshift{"cfgVertexZshift", 0.0f, "Correction to the vertex z position"};
+  Configurable<float> cfgDipoleZshift{"cfgDipoleZshift", 0.0f, "Correction to the dipole z position"};
 
   ////   Variables for MFT alignment corrections
   struct : ConfigurableGroup {
