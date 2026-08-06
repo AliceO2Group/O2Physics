@@ -594,7 +594,7 @@ struct HadNucleiFemto {
   // ==================================================================================================================
 
   template <bool isMC, typename Tcollision>
-  bool passesCollisionSelection(const Tcollision& collision)
+  bool passesEventSelection(const Tcollision& collision)
   {
     // CPR uses phi* and therefore needs the magnetic field for MC as well.
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
@@ -608,13 +608,30 @@ struct HadNucleiFemto {
       if (!collision.sel8() || std::abs(collision.posZ()) > eventMixing.settingCutVertex) {
         return false;
       }
-      if (zorro.settingSkimmedProcessing) {
-        if (!mZorro.isSelected(bc.globalBC())) {
-          return false;
-        }
-      }
     }
 
+    return true;
+  }
+
+  template <typename Tcollision>
+  bool passesZorroSelection(const Tcollision& collision)
+  {
+    if (!zorro.settingSkimmedProcessing) {
+      return true;
+    }
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    return mZorro.isSelected(bc.globalBC());
+  }
+
+  template <bool isMC, typename Tcollision>
+  bool passesCollisionSelection(const Tcollision& collision)
+  {
+    if (!passesEventSelection<isMC>(collision)) {
+      return false;
+    }
+    if constexpr (!isMC) {
+      return passesZorroSelection(collision);
+    }
     return true;
   }
 
@@ -623,17 +640,21 @@ struct HadNucleiFemto {
   {
     mQaRegistry.fill(HIST("hEvents"), 0);
 
-    if (!passesCollisionSelection<isMC>(collision)) {
+    if (!passesEventSelection<isMC>(collision)) {
       return false;
     }
 
+    mQaRegistry.fill(HIST("hEvents"), 1);
+
     if constexpr (!isMC) {
       if (zorro.settingSkimmedProcessing) {
+        if (!passesZorroSelection(collision)) {
+          return false;
+        }
         mQaRegistry.fill(HIST("hEvents"), 2);
       }
     }
 
-    mQaRegistry.fill(HIST("hEvents"), 1);
     mQaRegistry.fill(HIST("hNcontributor"), collision.numContrib());
     mQaRegistry.fill(HIST("hVtxZ"), collision.posZ());
     return true;
