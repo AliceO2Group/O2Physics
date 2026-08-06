@@ -20,6 +20,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
@@ -47,7 +48,7 @@
 using namespace o2;
 using namespace o2::framework;
 
-using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
+using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA,
                              aod::pidTPCFullEl, aod::pidTPCFullPr, aod::pidTOFFullPr>;
 using TracksFullMC = soa::Join<TracksFull, aod::McTrackLabels>;
 using CollisionsFull = aod::Collisions;
@@ -56,7 +57,7 @@ using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels>;
 struct Sigmaplusbuilder {
 
   // photon (PCM) selection
-  Configurable<float> photonMaxMass{"photonMaxMass", 0.10, "Max photon mass (GeV/c^2)"};
+  Configurable<float> photonMaxMass{"photonMaxMass", 0.20, "Max photon mass (GeV/c^2)"};
   Configurable<float> photonMinRapidity{"photonMinRapidity", -0.8, "Min photon rapidity"};
   Configurable<float> photonMaxRapidity{"photonMaxRapidity", 0.8, "Max photon rapidity"};
   Configurable<float> photonDauEtaMin{"photonDauEtaMin", -0.8, "Min eta of photon daughter tracks"};
@@ -65,9 +66,9 @@ struct Sigmaplusbuilder {
   Configurable<float> photonMaxRadius{"photonMaxRadius", 115., "Max photon conversion radius (cm)"};
   Configurable<float> photonMinV0cospa{"photonMinV0cospa", 0.80, "Min V0 CosPA"};
   Configurable<float> photonMaxDCAV0Dau{"photonMaxDCAV0Dau", 3.5, "Max DCA between photon daughters (cm)"};
-  Configurable<float> photonMaxQt{"photonMaxQt", 0.08, "Max Armenteros qT for photons (GeV/c)"};
+  Configurable<float> photonMaxQt{"photonMaxQt", 0.15, "Max Armenteros qT for photons (GeV/c)"};
   Configurable<float> photonMaxAlpha{"photonMaxAlpha", 1.0, "Max |Armenteros alpha| for photons"};
-  Configurable<float> photonMaxTPCNSigmaEl{"photonMaxTPCNSigmaEl", 7, "Max |TPC nSigma_el| for photon daughters"};
+  Configurable<float> photonMaxTPCNSigmaEl{"photonMaxTPCNSigmaEl", 15, "Max |TPC nSigma_el| for photon daughters"};
 
   // proton selection
   Configurable<float> protonMinPt{"protonMinPt", 0.3, "Minimum proton pT (GeV/c)"};
@@ -279,10 +280,6 @@ struct Sigmaplusbuilder {
     auto posTrack = v0.template posTrack_as<TTracks>();
     auto negTrack = v0.template negTrack_as<TTracks>();
 
-    // true if this V0's legs genuinely share a gamma mother whose mother is a
-    // pi0 whose mother is a Sigma+ -- regardless of whether it passes the
-    // selection below. Lets us see exactly which cut, if any, throws away
-    // genuine Sigma+ photons, instead of only knowing the final accept/reject.
     bool isSignal = false;
     if constexpr (IsMC) {
       if (posTrack.has_mcParticle() && negTrack.has_mcParticle()) {
@@ -557,7 +554,8 @@ struct Sigmaplusbuilder {
     }
     fillCandStep(1); // Vertex fit
 
-    float dcaProtonGamma = std::sqrt(fitter.getChi2AtPCACandidate());
+    float fitChi2 = fitter.getChi2AtPCACandidate();
+    float dcaProtonGamma = std::sqrt(fitChi2);
     histos.fill(HIST("Candidate/hDcaProtonGamma"), dcaProtonGamma);
     if constexpr (IsMC) {
       if (isSignal) {
@@ -587,6 +585,7 @@ struct Sigmaplusbuilder {
     // flight direction n and the decay-plane basis n, eIn, eOut
     std::array<float, 3> flightVec{secVtx[0] - pv[0], secVtx[1] - pv[1], secVtx[2] - pv[2]};
     std::array<float, 3> nHat = normalize3(flightVec);
+    float flightDistance = std::sqrt(dot3(flightVec, flightVec));
 
     std::array<float, 3> pProton;
     std::array<float, 3> pGamma1;
@@ -725,14 +724,34 @@ struct Sigmaplusbuilder {
     }
     fillCandStep(6); // filled
 
+    // photon (V0) opening angle: angle between the e+/e- daughter momenta at their own reference point
+    std::array<float, 3> pPosDau{posTrack.px(), posTrack.py(), posTrack.pz()};
+    std::array<float, 3> pNegDau{negTrack.px(), negTrack.py(), negTrack.pz()};
+    float photonOpeningAngle = std::acos(std::clamp(dot3(pPosDau, pNegDau) / std::sqrt(dot3(pPosDau, pPosDau) * dot3(pNegDau, pNegDau)), -1.f, 1.f));
+
+    // photon pointing angle: angle between the fitted photon momentum and the line from its conversion point to the p-gamma decay vertex
+    std::array<float, 3> convToDecVtx{secVtx[0] - photon.x(), secVtx[1] - photon.y(), secVtx[2] - photon.z()};
+    float photonPointingAngle = std::acos(std::clamp(dot3(pGamma1, convToDecVtx) / std::sqrt(dot3(pGamma1, pGamma1) * dot3(convToDecVtx, convToDecVtx)), -1.f, 1.f));
+
+    // photon DCA to PV: distance from the PV to the line through the conversion point along the photon momentum direction
+    std::array<float, 3> convPoint{photon.x(), photon.y(), photon.z()};
+    std::array<float, 3> photonDir = normalize3({photon.px(), photon.py(), photon.pz()});
+    std::array<float, 3> pvToConv{pv[0] - convPoint[0], pv[1] - convPoint[1], pv[2] - convPoint[2]};
+    std::array<float, 3> pvToConvCrossDir = cross3(pvToConv, photonDir);
+    float photonDcaToPV = std::sqrt(dot3(pvToConvCrossDir, pvToConvCrossDir));
+
     if constexpr (IsMC) {
       sigmaPlusCandsMC(secVtx[0], secVtx[1], secVtx[2],
-                       radius, dcaProtonGamma,
+                       radius, flightDistance, dcaProtonGamma, fitChi2,
                        pProton[0], pProton[1], pProton[2],
                        pGamma1[0], pGamma1[1], pGamma1[2],
                        bestMomGamma2[0], bestMomGamma2[1], bestMomGamma2[2],
                        protonTrack.tpcNSigmaPr(), protonTrack.tofNSigmaPr(),
                        posTrack.tpcNSigmaEl(), negTrack.tpcNSigmaEl(),
+                       photon.mGamma(), photon.alpha(), photon.qtarm(), photon.v0radius(),
+                       photonOpeningAngle, photonPointingAngle, photonDcaToPV,
+                       protonTrack.itsNCls(), protonTrack.tpcNClsFound(), protonTrack.dcaXY(), protonTrack.dcaZ(),
+                       posTrack.itsNCls(), posTrack.tpcNClsFound(), negTrack.itsNCls(), negTrack.tpcNClsFound(),
                        isSignal,
                        protonPdgCode, protonMotherPdgCode,
                        gammaPdgCode, gammaMotherPdgCode, gammaGMotherPdgCode,
@@ -741,12 +760,16 @@ struct Sigmaplusbuilder {
                        mcTrueMomGamma[0], mcTrueMomGamma[1], mcTrueMomGamma[2]);
     } else {
       sigmaPlusCands(secVtx[0], secVtx[1], secVtx[2],
-                     radius, dcaProtonGamma,
+                     radius, flightDistance, dcaProtonGamma, fitChi2,
                      pProton[0], pProton[1], pProton[2],
                      pGamma1[0], pGamma1[1], pGamma1[2],
                      bestMomGamma2[0], bestMomGamma2[1], bestMomGamma2[2],
                      protonTrack.tpcNSigmaPr(), protonTrack.tofNSigmaPr(),
-                     posTrack.tpcNSigmaEl(), negTrack.tpcNSigmaEl());
+                     posTrack.tpcNSigmaEl(), negTrack.tpcNSigmaEl(),
+                     photon.mGamma(), photon.alpha(), photon.qtarm(), photon.v0radius(),
+                     photonOpeningAngle, photonPointingAngle, photonDcaToPV,
+                     protonTrack.itsNCls(), protonTrack.tpcNClsFound(), protonTrack.dcaXY(), protonTrack.dcaZ(),
+                     posTrack.itsNCls(), posTrack.tpcNClsFound(), negTrack.itsNCls(), negTrack.tpcNClsFound());
     }
   }
 
