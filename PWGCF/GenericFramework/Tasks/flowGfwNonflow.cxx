@@ -243,11 +243,11 @@ struct FlowGfwNonflow {
 
   // Generic Framework
   GFW* fGFW = new GFW();
-  std::vector<GFW::CorrConfig> corrconfigs{};
+  std::vector<GFW::CorrConfig> corrconfigs;
   TRandom3* fRndm = new TRandom3(0);
   TAxis* fPtAxis = nullptr;
   int lastRun = -1;
-  std::vector<std::string> multipletKeys{};
+  std::vector<std::string> multipletKeys;
 
   // Track selection - DCA functions
   TF1* fPtDepDCAxy = nullptr;
@@ -420,7 +420,7 @@ struct FlowGfwNonflow {
     delete oba;
 
     // Identify unique multiplet setups and populate with identifying keys
-    identifyUniqueMultipletKeys(multipletKeys, corrconfigs, centAxis); // For now keep centrality axis hardcoded
+    identifyUniqueMultipletKeys(multipletKeys, corrconfigs, multAxis);
     LOGF(info, "Unique multiplet keys for current configuration setup");
     for (const auto& key : multipletKeys) {
       LOGF(info, key);
@@ -524,7 +524,7 @@ struct FlowGfwNonflow {
     }
   }
 
-  void identifyUniqueMultipletKeys(std::vector<std::string>& keys, const std::vector<GFW::CorrConfig>& configs, AxisSpec xAxis)
+  void identifyUniqueMultipletKeys(std::vector<std::string>& keys, const std::vector<GFW::CorrConfig>& configs, const AxisSpec& xAxis)
   {
     std::set<std::string> uniqueKeys(keys.begin(), keys.end());
     const auto& regionNames = gfwMemberCache.regions.GetNames();
@@ -584,7 +584,7 @@ struct FlowGfwNonflow {
 
       if (uniqueKeys.insert(key).second) {
         keys.push_back(std::move(key));
-        MultipletConfig currentMultipletConfig{configIndex, totalOrder, registry.add<TProfile>(Form("%s", keys.back().c_str()), Form("; centrality ; N_{%d}", totalOrder), {HistType::kTProfile, {xAxis}})};
+        MultipletConfig currentMultipletConfig{.representativeConfigIndex = configIndex, .order = totalOrder, .profile = registry.add<TProfile>(Form("%s", keys.back().c_str()), Form("; centrality ; N_{%d}", totalOrder), {HistType::kTProfile, {xAxis}})};
         effectiveMultiplets[keys.back()] = currentMultipletConfig;
       }
     }

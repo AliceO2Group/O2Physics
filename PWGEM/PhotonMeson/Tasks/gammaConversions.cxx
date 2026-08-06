@@ -12,6 +12,7 @@
 /// \file gammaConversions.cxx
 /// \brief perform photon conversion analysis on V0 candidates from aod::StoredV0Datas
 /// \author stephan.friedrich.stiefelmaier@cern.ch
+/// \note legacy code, please use the Pi0EtaToGammaGamma tasks for the standard neutral meson analysis.
 /// dependencies: o2-analysis-lf-lambdakzerobuilder
 
 #include "PWGEM/PhotonMeson/Tasks/gammaConversions.h"
@@ -36,10 +37,12 @@
 #include <TPDGCode.h>
 #include <TVector3.h>
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <map>
 #include <memory>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -133,6 +136,7 @@ struct GammaConversions {
 
   void init(InitContext const&)
   {
+    o2::framework::AxisSpec gAxis_pT_log{800, 0.01f, 25.f};
     // make axis logarithmic
     gAxis_pT_log.makeLogarithmic();
 
@@ -337,9 +341,9 @@ struct GammaConversions {
                                           TMCGAMMA const& theMcPhoton,
                                           TV0 const& theV0,
                                           float const& theV0CosinePA,
-                                          int PDGCode[],
+                                          std::span<const int, 2> PDGCode,
                                           bool const& sameMother,
-                                          float McTrackmomentum[])
+                                          std::span<const float, 6> McTrackmomentum)
   {
     fillV0Histograms<V0LegsWithMC>(
       fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kRec].mContainer,
@@ -365,7 +369,7 @@ struct GammaConversions {
   }
 
   template <typename TV0, typename TMCGAMMA>
-  bool v0IsGoodValidatedMcPhoton(TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA, bool theV0PassesRecCuts, int PDGCode[], bool const& sameMother, float McTrackmomentum[])
+  bool v0IsGoodValidatedMcPhoton(TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA, bool theV0PassesRecCuts, std::span<const int, 2> PDGCode, bool const& sameMother, std::span<const float, 6> McTrackmomentum)
   {
     auto fillRejectedV0HistosI = [&](eMcRejectedSaved theRejReason) {
       fillAllV0HistogramsForRejectedByMc(static_cast<int>(theRejReason),
@@ -417,9 +421,9 @@ struct GammaConversions {
                        TV0 const& theV0,
                        float const& theV0CosinePA,
                        bool theV0PassesRecCuts,
-                       int PDGCode[],
+                       std::span<const int, 2> PDGCode,
                        bool const& sameMother,
-                       float McTrackmomentum[])
+                       std::span<const float, 6> McTrackmomentum)
   {
     fillV0McValidationHisto(eV0McValidation::kV0in);
 
@@ -456,10 +460,10 @@ struct GammaConversions {
     }
   }
 
-  void processPDGHistos(int const PDGCode[],
-                        bool const& sameMother,
-                        float const McTrackmomentum[],
-                        int const& theV0PassesRecCuts)
+  void processPDGHistos(std::span<const int, 2> PDGCode,
+                        bool const sameMother,
+                        std::span<const float, 6> McTrackmomentum,
+                        bool const theV0PassesRecCuts)
   {
     lfillPDGHist(fMyRegistry.mV0.mBeforeAfterRecCuts[kBeforeRecCuts].mV0Kind[kRec].mContainer,
                  PDGCode);
@@ -478,17 +482,17 @@ struct GammaConversions {
     }
   }
 
-  void lfillPDGHist(mapStringHistPtr& theContainer,
-                    int const PDGCode[])
+  void lfillPDGHist(mapStringHistPtr const& theContainer,
+                    std::span<const int, 2> const PDGCode)
   {
     fillTH1(theContainer, "hPDGCode", PDGCode[0]);
     fillTH1(theContainer, "hPDGCode", PDGCode[1]);
   }
 
-  void lfillDecaysHist(mapStringHistPtr& theContainer,
-                       int const PDGCode[],
-                       int const& sameMother,
-                       float const McTrackmomentum[])
+  void lfillDecaysHist(mapStringHistPtr const& theContainer,
+                       std::span<const int, 2> PDGCode,
+                       const bool sameMother,
+                       std::span<const float, 6> McTrackmomentum)
   {
     float MCV0p = RecoDecay::sqrtSumOfSquares(McTrackmomentum[0] + McTrackmomentum[3], McTrackmomentum[1] + McTrackmomentum[4]);
 
@@ -539,7 +543,7 @@ struct GammaConversions {
   }
 
   template <typename TV0, typename TMCGAMMA>
-  void fillTruePhotonHistograms(int theBefAftRec, TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA, float McTrackmomentum[])
+  void fillTruePhotonHistograms(int theBefAftRec, TMCGAMMA const& theMcPhoton, TV0 const& theV0, float const& theV0CosinePA, std::span<const float, 6> McTrackmomentum)
   {
     fillV0HistogramsMcGamma(
       fMyRegistry.mV0.mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCTrue].mContainer,
@@ -567,7 +571,7 @@ struct GammaConversions {
                                                TMCGAMMA const& theMcPhoton,
                                                TV0 const& theV0,
                                                float const& theV0CosinePA,
-                                               float McTrackmomentum[])
+                                               std::span<const float, 6> McTrackmomentum)
   {
     fillV0HistogramsMcGamma(
       fMyRegistry.mV0.mRejectedByMc[theRejReason].mBeforeAfterRecCuts[theBefAftRec].mV0Kind[kMCTrue].mContainer,
@@ -590,9 +594,9 @@ struct GammaConversions {
   }
 
   template <typename TTRACKS>
-  void fillV0MCDaughterParticlesArrays(TTRACKS ele, TTRACKS pos,
-                                       int PDGCode[],
-                                       float McParticleMomentum[],
+  void fillV0MCDaughterParticlesArrays(TTRACKS const& ele, TTRACKS const& pos,
+                                       std::span<int, 2> PDGCode,
+                                       std::span<float, 6> McParticleMomentum,
                                        bool& sameMother)
   {
     if ((ele.has_v0DaughterMcParticle()) && (pos.has_v0DaughterMcParticle())) {
@@ -666,9 +670,9 @@ struct GammaConversions {
       // check if V0 passes rec cuts and fill beforeRecCuts,afterRecCuts [kRec]
       bool lV0PassesRecCuts = processV0(lV0, lV0CosinePA, ele, pos);
 
-      int PDGCode[2];              // Pos, then Neg
-      float McParticleMomentum[6]; // Mc momentum of the two daughter tracks, 0-2 = one 3-5 = two, no need to check the charges
-      bool sameMother;
+      std::array<int, 2> PDGCode{};
+      std::array<float, 6> McParticleMomentum{};
+      bool sameMother{};
       fillV0MCDaughterParticlesArrays(ele, pos, PDGCode, McParticleMomentum, sameMother); // pointers are passed so they can be later on used here
 
       // this process function has to exist seperatly because it is only for MC Rec
@@ -772,7 +776,7 @@ struct GammaConversions {
 
   // SFS todo: combine fillV0Histograms and fillV0HistogramsMcGamma
   template <typename TMCGAMMA>
-  void fillV0HistogramsMcGamma(mapStringHistPtr& theContainer, TMCGAMMA const& theMcGamma, float McTrackmomentum[])
+  void fillV0HistogramsMcGamma(mapStringHistPtr& theContainer, TMCGAMMA const& theMcGamma, std::span<const float, 6> McTrackmomentum)
   {
     fillTH1(theContainer, "hEta", theMcGamma.eta());
     fillTH1(theContainer, "hPhi", theMcGamma.phi());
@@ -821,10 +825,7 @@ struct GammaConversions {
     bool pass_ele = trackPassesCuts(ele);
     bool pass_pos = trackPassesCuts(pos);
 
-    if (pass_ele && pass_pos)
-      return true;
-    else
-      return false;
+    return (pass_ele && pass_pos);
   }
 
   template <typename TV0>
@@ -923,7 +924,7 @@ struct GammaConversions {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<GammaConversions>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<GammaConversions>(context)};
 }

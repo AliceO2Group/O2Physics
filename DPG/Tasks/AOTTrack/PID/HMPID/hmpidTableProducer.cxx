@@ -29,11 +29,13 @@
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
+#include <Framework/ServiceSpec.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TGeoManager.h>
+#include <TMath.h>
+#include <TPDGCode.h>
 
 #include <HMPIDBase/Param.h>
 
@@ -42,6 +44,7 @@
 #include <cstdint>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -55,9 +58,9 @@ struct HmpidTableProducer {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  const AxisSpec axisEvtCounter{1, 0, +1, ""};
+  AxisSpec axisEvtCounter{1, 0, +1, ""};
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   struct : ConfigurableGroup {
     Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
     Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the material LUT"};
@@ -71,6 +74,12 @@ struct HmpidTableProducer {
   Configurable<bool> requireITS{"requireITS", true, "Require ITS track"};
   Configurable<bool> requireTPC{"requireTPC", true, "Require TPC track"};
   Configurable<bool> requireTOF{"requireTOF", true, "Require TOF track"};
+
+  Configurable<bool> useInAbsorberGeomMethod{"useInAbsorberGeomMethod", false, "Use geometrical method to check if daughters are born in absorber"};
+
+  // (reference) 473 cm - was the legacy value in run2 simulation
+  Configurable<float> survivalThresholdRich2{"survivalThresholdRich2", 437.5f, "survivalThresholdRich2"};
+  Configurable<float> survivalThresholdRich4{"survivalThresholdRich4", 439.0f, "survivalThresholdRich4"};
 
   using CollisionCandidates = o2::soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As>;
 
@@ -91,8 +100,28 @@ struct HmpidTableProducer {
 
   std::unordered_set<uint32_t> mCollisionsWithHmpid;
 
+  static constexpr int Rich2 = 2, Rich4 = 4;
+
+  // (reference) HMPID Detector class in O2
+  static constexpr double AbsThetaDeg = 33.5;
+  double mAbsCosT = 0., mAbsSinT = 0.;
+
+  // Rich2 absorber: trans2 = {435.5, 0., -155.}, thickness 40mm -> halfX = 2cm
+  static constexpr double AbsRich2CenterX = 435.5, AbsRich2CenterZ = -155.;
+  static constexpr double AbsRich2HalfX = 2.0;
+
+  // Rich4 absorber: trans4 = {435., 0., 155.}, thickness 80mm -> halfX = 4cm
+  static constexpr double AbsRich4CenterX = 435.0, AbsRich4CenterZ = 155.;
+  static constexpr double AbsRich4HalfX = 4.0;
+
+  // common to both absorbers: box is 1300x1300mm -> halfY = halfZ = 65cm
+  static constexpr double AbsHalfY = 65.0, AbsHalfZ = 65.0;
+
   void init(o2::framework::InitContext&)
   {
+    mAbsCosT = std::cos(AbsThetaDeg * TMath::DegToRad());
+    mAbsSinT = std::sin(AbsThetaDeg * TMath::DegToRad());
+
     ccdb->setURL(ccdbConfig.ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -118,6 +147,12 @@ struct HmpidTableProducer {
     histos.add("hChamberAssignment",
                "Chamber assignment outcome; category; counts",
                kTH1F, {{4, -0.5, 3.5, ""}});
+
+    histos.add("hProdVertex", ";X (cm);Y (cm);Z (cm)", HistType::kTH3F, {{500, -500., 500.}, {500, -500., 500.}, {500, -500., 500.}});
+    histos.add("hDaughterRCyl_Rich2", "hDaughterRCyl_Rich2", kTH1F, {{600, 0., 600.}});
+    histos.add("hDaughterRCyl_Rich4", "hDaughterRCyl_Rich4", kTH1F, {{600, 0., 600.}});
+    histos.add("hDaughterRSph_Rich2", "hDaughterRSph_Rich2", kTH1F, {{600, 0., 600.}});
+    histos.add("hDaughterRSph_Rich4", "hDaughterRSph_Rich4", kTH1F, {{600, 0., 600.}});
   }
 
   // -----------------------------------------------------------------------
@@ -219,7 +254,8 @@ struct HmpidTableProducer {
     const double kConvThr = 0.00001;
     const int kMaxIter = 100;
 
-    std::array<double, 3> x, p;
+    std::array<double, 3> x{};
+    std::array<double, 3> p{};
 
     for (int iter = 0; iter < kMaxIter; ++iter) {
 
@@ -232,8 +268,9 @@ struct HmpidTableProducer {
         (x[1] - planePoint[1]) * planeNormal[1] +
         (x[2] - planePoint[2]) * planeNormal[2];
 
-      if (std::abs(dist) >= std::abs(distPrev))
+      if (std::abs(dist) >= std::abs(distPrev)) {
         return false;
+      }
 
       distPrev = dist;
       s -= dist;
@@ -249,11 +286,17 @@ struct HmpidTableProducer {
   }
 
   int getHmpidChamber(
-    std::array<double, 3> x,
-    std::array<double, 3> p,
+    const std::array<double, 3>& xIn,
+    const std::array<double, 3>& pIn,
     double bz,
     int charge)
   {
+    std::array<double, 3> x{};
+    std::array<double, 3> p{};
+
+    x = xIn;
+    p = pIn;
+
     auto* param = o2::hmpid::Param::instance();
 
     for (int ch = o2::hmpid::Param::kMinCh; ch <= o2::hmpid::Param::kMaxCh; ++ch) {
@@ -268,30 +311,80 @@ struct HmpidTableProducer {
       param->norm(ch, nPc.data());
 
       // Intersection track - radiator plane
-      std::array<double, 3> xRad, pAtRad;
+      std::array<double, 3> xRad{}, pAtRad{};
 
-      if (!intersectHelixPlane(bz, charge, x, p, pRad, nRad, xRad, pAtRad))
+      if (!intersectHelixPlane(bz, charge, x, p, pRad, nRad, xRad, pAtRad)) {
         continue;
+      }
 
       // Intersection track - PC plane
-      std::array<double, 3> xPc, pAtPc;
+      std::array<double, 3> xPc{}, pAtPc{};
 
-      if (!intersectHelixPlane(bz, charge, xRad, pAtRad, pPc, nPc, xPc, pAtPc))
+      if (!intersectHelixPlane(bz, charge, xRad, pAtRad, pPc, nPc, xPc, pAtPc)) {
         continue;
+      }
 
-      double theta, phi;
+      double theta = 0., phi = 0.;
       param->mars2LorsVec(ch, pAtRad.data(), theta, phi);
 
-      double xL, yL;
+      double xL = 0., yL = 0.;
       param->mars2Lors(ch, xPc.data(), xL, yL);
 
       // Use isInside to check Chamber intersected
-      if (param->isInside(xL, yL, param->distCut()))
+      if (param->isInside(xL, yL, param->distCut())) {
         return ch;
+      }
     }
 
     // No chamber intersected
     return -1;
+  }
+
+  // Checks whether a point in global (MARS/ALICE) coordinates lies inside the
+  // absorber box in front of the given chamber (Rich2 or Rich4). See the
+  // geometry block above for the derivation of the transform used here.
+  bool isInAbsorber(double vx, double vy, double vz, int chamber) const
+  {
+    double centerX = 0., centerZ = 0., halfX = 0.;
+
+    if (chamber == Rich2) {
+      centerX = AbsRich2CenterX;
+      centerZ = AbsRich2CenterZ;
+      halfX = AbsRich2HalfX;
+    } else if (chamber == Rich4) {
+      centerX = AbsRich4CenterX;
+      centerZ = AbsRich4CenterZ;
+      halfX = AbsRich4HalfX;
+    } else {
+      return false;
+    }
+
+    // translate to box center
+    const double lx = vx - centerX;
+    const double ly = vy; // centerY = 0
+    const double lz = vz - centerZ;
+
+    // rotate by -theta into the box local frame
+    const double rx = lx * mAbsCosT + ly * mAbsSinT;
+    const double ry = -lx * mAbsSinT + ly * mAbsCosT;
+    const double rz = lz;
+
+    return std::abs(rx) <= halfX && std::abs(ry) <= AbsHalfY && std::abs(rz) <= AbsHalfZ;
+  }
+
+  bool survivedAbsorber(double vx, double vy, int chamber)
+  {
+    float thresholdR = 0.;
+    if (chamber == Rich2) {
+      thresholdR = survivalThresholdRich2;
+    } else if (chamber == Rich4) {
+      thresholdR = survivalThresholdRich4;
+    } else {
+      return false;
+    }
+
+    const float r = std::hypot(vx, vy);
+    return r > thresholdR;
   }
 
   void processEvent(CollisionCandidates::iterator const& col,
@@ -305,19 +398,21 @@ struct HmpidTableProducer {
   }
   PROCESS_SWITCH(HmpidTableProducer, processEvent, "Process event level", true);
 
-  template <bool isMC, typename TTrackTable>
+  template <bool isMC, typename TTrackTable, typename TMcParticles = int>
   void runHmpidAnalysis(
     aod::HMPIDs const& hmpids,
     TTrackTable const&,
     CollisionCandidates const&,
-    aod::BCsWithTimestamps const&)
+    aod::BCsWithTimestamps const&,
+    TMcParticles const& mcParticles = 0)
   {
-    for (auto const& t : hmpids) {
+    for (auto const& t : hmpids) { // begin loop over hmpids
 
       const auto& globalTrack = t.template track_as<TTrackTable>();
 
-      if (!globalTrack.has_collision())
+      if (!globalTrack.has_collision()) {
         continue;
+      }
 
       const auto& col = globalTrack.template collision_as<CollisionCandidates>();
       initCCDB(col.template bc_as<aod::BCsWithTimestamps>());
@@ -325,17 +420,20 @@ struct HmpidTableProducer {
 
       if ((requireITS && !globalTrack.hasITS()) ||
           (requireTPC && !globalTrack.hasTPC()) ||
-          (requireTOF && !globalTrack.hasTOF()))
+          (requireTOF && !globalTrack.hasTOF())) {
         continue;
+      }
 
-      if (mCollisionsWithHmpid.insert(collId).second)
+      if (mCollisionsWithHmpid.insert(collId).second) {
         histos.fill(HIST("eventsHmpid"), 0.5);
+      }
 
       // clusSize diagnostics
       histos.fill(HIST("hClusSize"), t.hmpidClusSize());
       bool isCorrupt = (t.hmpidClusSize() <= 0);
-      if (isCorrupt)
+      if (isCorrupt) {
         histos.fill(HIST("hClusSizeCorrupt"), t.hmpidClusSize());
+      }
 
       // --- M2: clusSize encoding ---
       int chamberM2 = t.hmpidClusSize() / 1000000;
@@ -356,27 +454,26 @@ struct HmpidTableProducer {
         static_cast<double>(globalTrack.py()),
         static_cast<double>(globalTrack.pz())};
 
-      // int charge = (globalTrack.signed1Pt() > 0) ? +1 : -1;
       int16_t charge = globalTrack.sign();
 
       auto prop = o2::base::Propagator::Instance();
-      double bz = static_cast<double>(prop->getNominalBz());
+      auto bz = static_cast<double>(prop->getNominalBz());
 
       int chamberM1 = getHmpidChamber(x, p, bz, charge);
 
       histos.fill(HIST("hChamberM1"), chamberM1);
 
-      if (!isCorrupt) {
+      if (!isCorrupt) { // begin if(!isCorrupt) - fill M1vsM2
         histos.fill(HIST("hChamberM1vsM2"), chamberM2, chamberM1);
-      }
+      } // end if(!isCorrupt) - fill M1vsM2
 
       // --- M3: hybrid ---
       int chamberM3 = -1;
-      if (!isCorrupt) {
+      if (!isCorrupt) { // begin if/else - M3 assignment
         chamberM3 = chamberM2;
       } else {
         chamberM3 = chamberM1;
-      }
+      } // end if/else - M3 assignment
 
       // Legend:
       // bin 0 = clusSize > 0,  chamber found   (M2 ok)
@@ -384,24 +481,28 @@ struct HmpidTableProducer {
       // bin 2 = clusSize <= 0, M1 recovery      (corrupt, M1 ok)
       // bin 3 = clusSize <= 0, M1 fails        (corrupt, skipped)
 
-      if (!isCorrupt && chamberM3 >= 0)
+      if (!isCorrupt && chamberM3 >= 0) {
         histos.fill(HIST("hChamberAssignment"), 0.);
-      else if (!isCorrupt && chamberM3 < 0)
+      } else if (!isCorrupt && chamberM3 < 0) {
         histos.fill(HIST("hChamberAssignment"), 1.);
-      else if (isCorrupt && chamberM3 >= 0)
+      } else if (isCorrupt && chamberM3 >= 0) {
         histos.fill(HIST("hChamberAssignment"), 2.);
-      else
+      } else {
         histos.fill(HIST("hChamberAssignment"), 3.);
+      }
 
       histos.fill(HIST("hChamberM3"), chamberM3);
       histos.fill(HIST("hChamberM3vsM2"), chamberM2, chamberM3);
 
-      if (chamberM3 < 0)
+      if (chamberM3 < 0) {
         continue;
+      }
 
-      float hmpidPhotsCharge2[o2::aod::kDimPhotonsCharge];
-      for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++)
+      std::vector<float> hmpidPhotsCharge2(o2::aod::kDimPhotonsCharge, 0.f);
+
+      for (int i = 0; i < o2::aod::kDimPhotonsCharge; i++) {
         hmpidPhotsCharge2[i] = t.hmpidPhotsCharge()[i];
+      }
 
       // fill hmpid table
       hmpidAnalysis(
@@ -427,14 +528,88 @@ struct HmpidTableProducer {
       if constexpr (isMC) {
         if (globalTrack.has_mcParticle()) {
           const auto& mc = globalTrack.mcParticle();
-          hmpidAnalysisMC(mc.pdgCode(), mc.vx(), mc.vy(), mc.vz(), mc.isPhysicalPrimary(), mc.getProcess());
-        } else {
-          hmpidAnalysisMC(-1, 0.f, 0.f, 0.f, false, -100);
-        }
-      }
 
-    } // end HMPID loop
-  }
+          bool interactionInAbsorber = false;
+
+          if ((chamberM3 == Rich2 || chamberM3 == Rich4) && mc.has_daughters()) {
+            auto dIds = mc.daughtersIds();
+            bool foundRelevantDaughter = false; // true if at least one non-delta/photon daughter was examined
+
+            if (useInAbsorberGeomMethod) {
+              for (int32_t idx = dIds.front(); idx <= dIds.back(); ++idx) {
+                auto daughter = mcParticles.rawIteratorAt(idx);
+
+                int absPdg = std::abs(daughter.pdgCode());
+                if (absPdg == kElectron || absPdg == kGamma) {
+                  continue;
+                }
+
+                foundRelevantDaughter = true;
+
+                // diagnostics on daughters distribution
+                histos.fill(HIST("hProdVertex"), daughter.vx(), daughter.vy(), daughter.vz());
+
+                double rCyl = std::hypot(daughter.vx(), daughter.vy());
+                double rSph = std::hypot(daughter.vx(), daughter.vy(), daughter.vz());
+                if (chamberM3 == Rich2) {
+                  histos.fill(HIST("hDaughterRCyl_Rich2"), rCyl);
+                  histos.fill(HIST("hDaughterRSph_Rich2"), rSph);
+                } else {
+                  histos.fill(HIST("hDaughterRCyl_Rich4"), rCyl);
+                  histos.fill(HIST("hDaughterRSph_Rich4"), rSph);
+                }
+
+                if (isInAbsorber(daughter.vx(), daughter.vy(), daughter.vz(), chamberM3)) {
+                  interactionInAbsorber = true;
+                }
+              } // end loop daughters
+            } else {
+              bool survived = false;
+              for (int32_t idx = dIds.front(); idx <= dIds.back(); ++idx) {
+                auto daughter = mcParticles.rawIteratorAt(idx);
+
+                // skip delta rays (e-/e+), photons, and HMPID Cherenkov/feedback
+                int absPdg = std::abs(daughter.pdgCode());
+                if (absPdg == kElectron || absPdg == kGamma) {
+                  continue;
+                }
+
+                foundRelevantDaughter = true;
+
+                histos.fill(HIST("hProdVertex"), daughter.vx(), daughter.vy(), daughter.vz());
+
+                double rCyl = std::hypot(daughter.vx(), daughter.vy());
+                double rSph = std::hypot(daughter.vx(), daughter.vy(), daughter.vz());
+                if (chamberM3 == Rich2) {
+                  histos.fill(HIST("hDaughterRCyl_Rich2"), rCyl);
+                  histos.fill(HIST("hDaughterRSph_Rich2"), rSph);
+                } else {
+                  histos.fill(HIST("hDaughterRCyl_Rich4"), rCyl);
+                  histos.fill(HIST("hDaughterRSph_Rich4"), rSph);
+                }
+
+                if (survivedAbsorber(daughter.vx(), daughter.vy(), chamberM3)) {
+                  survived = true;
+                }
+              } // end loop daughters
+
+              // No relevant daughter found (only delta rays/photons, or no
+              // daughters at all): no evidence of a genuine interaction -> treat
+              // as primary/survived, consistent with the "no daughters" case.
+              interactionInAbsorber = foundRelevantDaughter ? !survived : false;
+            }
+          } // end if has_daughters
+
+          hmpidAnalysisMC(mc.pdgCode(), mc.vx(), mc.vy(), mc.vz(),
+                          mc.isPhysicalPrimary(), mc.getProcess(), interactionInAbsorber);
+        } else {
+          // No MC truth associated to this track
+          hmpidAnalysisMC(-999, -999.f, -999.f, -999.f, false, -100, false);
+        }
+      } // end if constexpr (isMC)
+
+    } // end for - loop over hmpids
+  } // end runHmpidAnalysis
 
   // process real data
   void processHmpid(aod::HMPIDs const& hmpids,
@@ -452,9 +627,9 @@ struct HmpidTableProducer {
                       TrackCandidatesMC const& tracks,
                       CollisionCandidates const& cols,
                       aod::BCsWithTimestamps const& bcs,
-                      aod::McParticles const&)
+                      aod::McParticles const& mcParticles)
   {
-    runHmpidAnalysis<true>(hmpids, tracks, cols, bcs);
+    runHmpidAnalysis<true>(hmpids, tracks, cols, bcs, mcParticles);
   }
   PROCESS_SWITCH(HmpidTableProducer, processHmpidMC, "Process HMPID MC entries", true);
 };

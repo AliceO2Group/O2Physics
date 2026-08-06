@@ -102,23 +102,31 @@ using V0LegMCLabel = V0LegMCLabels::iterator;
 // 3. EMEMCClusterMCLabels: Vector of EM MC particle ID of largest contributor to cluster
 namespace emcclustermclabel
 {
-DECLARE_SOA_ARRAY_INDEX_COLUMN(McParticle, emmcparticle) //!
+DECLARE_SOA_ARRAY_INDEX_COLUMN(McParticle, mcParticle)        //! Array of indice of McParticles
+DECLARE_SOA_COLUMN(Amplitude, amplitude, std::vector<float>); //! vector of aplitudes stored in cluster. Ordering is identical to the ordering of EMMCParticleId
 } // namespace emcclustermclabel
 
 // NOTE: MC labels. This table has one vector of global mc particle ids for each reconstructed emc cluster (joinable with emccluster table)
 DECLARE_SOA_TABLE(EMCClusterMCLabels, "AOD", "EMCClsMCLABEL", //!
                   emcclustermclabel::McParticleIds);
-using EMCClusterMCLabel = EMCClusterMCLabels::iterator;
+
+DECLARE_SOA_TABLE_VERSIONED(EMCClusterMCLabels_001, "AOD", "EMCClsMCLABEL", 1, //!
+                            emcclustermclabel::McParticleIds, emcclustermclabel::Amplitude);
+using EMCClusterMCLabel = EMCClusterMCLabels_001::iterator;
 
 namespace ememcclustermclabel
 {
-DECLARE_SOA_ARRAY_INDEX_COLUMN(EMMCParticle, emmcparticle); //!
+DECLARE_SOA_ARRAY_INDEX_COLUMN(EMMCParticle, emmcparticle);   //! Array of indice of EmMcParticles
+DECLARE_SOA_COLUMN(Amplitude, amplitude, std::vector<float>); //! vector of aplitudes stored in cluster. Ordering is identical to the ordering of EMMCParticleId
 } // namespace ememcclustermclabel
 
 // NOTE: MC labels. This table has a vector of entries for each reconstructed emc cluster (joinable with emccluster table)
 DECLARE_SOA_TABLE(EMEMCClusterMCLabels, "AOD", "EMEMCClsMCLABEL", //!
                   ememcclustermclabel::EMMCParticleIds);
-using EMEMCClusterMCLabel = EMEMCClusterMCLabels::iterator;
+
+DECLARE_SOA_TABLE_VERSIONED(EMEMCClusterMCLabels_001, "AOD", "EMEMCClsMCLABEL", 1, //!
+                            ememcclustermclabel::EMMCParticleIds, ememcclustermclabel::Amplitude);
+using EMEMCClusterMCLabel = EMEMCClusterMCLabels_001::iterator;
 
 namespace v0leg
 {
@@ -146,9 +154,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITS, meanClusterSizeITS, [](uint32_t i
   }
   if (nl > 0) {
     return static_cast<float>(total_cluster_size) / static_cast<float>(nl);
-  } else {
-    return 0;
   }
+  return 0;
 });
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSib, meanClusterSizeITSib, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
@@ -161,9 +168,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSib, meanClusterSizeITSib, [](uint32
   }
   if (nl > 0) {
     return static_cast<float>(total_cluster_size) / static_cast<float>(nl);
-  } else {
-    return 0;
   }
+  return 0;
 });
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
@@ -176,9 +182,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32
   }
   if (nl > 0) {
     return static_cast<float>(total_cluster_size) / static_cast<float>(nl);
-  } else {
-    return 0;
   }
+  return 0;
 });
 } // namespace v0leg
 DECLARE_SOA_TABLE(V0Legs_000, "AOD", "V0LEG", //!

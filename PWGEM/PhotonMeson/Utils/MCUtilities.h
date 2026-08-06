@@ -17,6 +17,7 @@
 #define PWGEM_PHOTONMESON_UTILS_MCUTILITIES_H_
 
 #include <Framework/ASoA.h>
+#include <Framework/Concepts.h>
 
 #include <TPDGCode.h>
 
@@ -24,6 +25,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <ranges>
 #include <vector>
 
 //_______________________________________________________________________
@@ -33,11 +35,7 @@ template <o2::soa::is_iterator TTrack>
 bool IsPhysicalPrimary(TTrack const& mctrack)
 {
   // This is to check mctrack is ALICE physical primary.
-  if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) {
-    return true;
-  } else {
-    return false;
-  }
+  return (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator());
 }
 //_______________________________________________________________________
 template <o2::soa::is_iterator TCollision, o2::soa::is_iterator T, o2::soa::is_table TMCs>
@@ -94,7 +92,7 @@ int IsXFromY(T const& mctrack, TMCs const& mcTracks, const int pdgX, const int p
 //_______________________________________________________________________
 // Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return this mothers daughter
 // E.g. Find the gamma that was created in a pi0 or eta decay
-template <o2::soa::is_iterator T, o2::soa::is_table TMCs, typename TTargetPDGs>
+template <o2::soa::is_iterator T, o2::soa::is_table TMCs, std::ranges::input_range TTargetPDGs>
 int FindMotherInChain(T const& mcparticle, TMCs const& mcparticles, TTargetPDGs const& motherpdgs, const int Depth = 50) // o2-linter: disable=pdg/explicit-code (false positive)
 {
   if (!mcparticle.has_mothers() || Depth < 1) {
@@ -105,9 +103,8 @@ int FindMotherInChain(T const& mcparticle, TMCs const& mcparticles, TTargetPDGs 
   auto mother = mcparticles.iteratorAt(motherid);
   if (std::find(motherpdgs.begin(), motherpdgs.end(), mother.pdgCode()) != motherpdgs.end()) {
     return mcparticle.globalIndex(); // The mother has the required pdg code, so return its daughters global mc particle code.
-  } else {
-    return FindMotherInChain(mother, mcparticles, motherpdgs, Depth - 1);
   }
+  return FindMotherInChain(mother, mcparticles, motherpdgs, Depth - 1);
 }
 //_______________________________________________________________________
 template <o2::soa::is_iterator T, o2::soa::is_table TMCs>
@@ -133,7 +130,7 @@ int IsEleFromPC(T const& mctrack, TMCs const& mcTracks)
   return -1;
 }
 //_______________________________________________________________________
-template <o2::soa::is_iterator TMCParticle, o2::soa::is_table TMCParticles, typename TTargetPDGs>
+template <o2::soa::is_iterator TMCParticle, o2::soa::is_table TMCParticles, std::ranges::input_range TTargetPDGs>
 bool IsInAcceptanceNonDerived(TMCParticle const& mcparticle, TMCParticles const& mcparticles, TTargetPDGs target_pdgs, const float ymin, const float ymax, const float phimin, const float phimax)
 {
   // contents in vector of daughter ID is different.
@@ -178,13 +175,10 @@ bool IsInAcceptanceNonDerived(TMCParticle const& mcparticle, TMCParticles const&
   bool is_equal = std::equal(pdgs.cbegin(), pdgs.cend(), target_pdgs.cbegin());
   pdgs.clear();
   pdgs.shrink_to_fit();
-  if (!is_equal) {
-    return false; // garantee daughter is in acceptance.
-  }
-  return true;
+  return is_equal;
 }
 //_______________________________________________________________________
-template <o2::soa::is_iterator TMCParticle, o2::soa::is_table TMCParticles, typename TTargetPDGs>
+template <o2::soa::is_iterator TMCParticle, o2::soa::is_table TMCParticles, std::ranges::input_range TTargetPDGs>
 bool IsInAcceptance(TMCParticle const& mcparticle, TMCParticles const& mcparticles, TTargetPDGs target_pdgs, const float ymin, const float ymax, const float phimin, const float phimax)
 {
   if (mcparticle.y() < ymin || ymax < mcparticle.y()) {
@@ -226,10 +220,7 @@ bool IsInAcceptance(TMCParticle const& mcparticle, TMCParticles const& mcparticl
   bool is_equal = std::equal(pdgs.cbegin(), pdgs.cend(), target_pdgs.cbegin());
   pdgs.clear();
   pdgs.shrink_to_fit();
-  if (!is_equal) {
-    return false; // garantee daughter is in acceptance.
-  }
-  return true;
+  return is_equal;
 }
 //_______________________________________________________________________
 template <o2::soa::is_iterator TMCPhoton, o2::soa::is_table TMCParticles>
@@ -299,9 +290,48 @@ bool isMotherPDG(T& mcparticle, const int motherPDG, const int depth = 10) // o2
   mcparticle.setCursor(motherid);
   if (mcparticle.pdgCode() == motherPDG) {
     return true; // The mother has the required pdg code, so return its daughters global mc particle code.
-  } else {
-    return isMotherPDG(mcparticle, motherPDG, depth - 1);
   }
+  return isMotherPDG(mcparticle, motherPDG, depth - 1);
+}
+
+//_______________________________________________________________________
+/// \brief Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return true else false
+/// E.g. if electron cluster is coming from a photon return true, if primary electron return false
+/// \param mcparticle iterator of mcparticle, NOT modified by this function
+/// \param mcparticleWorking a second iterator of the SAME table, used as scratch space to walk up the chain -- caller must supply this so the function doesn't construct its own
+/// \param motherPDG target mother PDG value
+/// \param depth how many steps in the chain this check should go maximum before failing
+template <o2::soa::is_iterator T>
+bool isMotherPDG(const T& mcparticle, T& mcparticleWorking, const int motherPDG, const int depth = 10) // o2-linter: disable=pdg/explicit-code (false positive)
+{
+  if (!mcparticle.has_mothers() || depth < 1) {
+    return false;
+  }
+
+  int motherid = mcparticle.mothersIds()[0];
+  mcparticleWorking.setCursor(motherid);
+  if (mcparticleWorking.pdgCode() == motherPDG) {
+    return true; // The mother has the required pdg code.
+  }
+  return isMotherPDG(mcparticleWorking, mcparticleWorking, motherPDG, depth - 1);
+}
+
+//_______________________________________________________________________
+/// \brief Check if given particle is from Bremsstrahlung
+/// \param mcCursor iterator of mcparticle
+/// \param iter shared iterator used to walk to the mother
+template <o2::soa::is_iterator TIter>
+bool isFromBremsstrahlung(TIter const& mcCursor, TIter& iter)
+{
+  if (!mcCursor.has_mothers()) {
+    return false;
+  }
+  if (mcCursor.pdgCode() != PDG_t::kGamma) {
+    return false; // only a photon can itself be a bremsstrahlung emission
+  }
+  const int motherId = mcCursor.mothersIds()[0];
+  iter.setCursor(motherId);
+  return std::abs(iter.pdgCode()) == PDG_t::kElectron;
 }
 
 //_______________________________________________________________________
@@ -321,9 +351,30 @@ int32_t getMotherIndexFromChain(T& mcparticle, const int motherPDG, const int de
   mcparticle.setCursor(motherid);
   if (mcparticle.pdgCode() == motherPDG) {
     return motherid; // The mother has the required pdg code, so return its daughters global mc particle code.
-  } else {
-    return getMotherIndexFromChain(mcparticle, motherPDG, depth - 1);
   }
+  return getMotherIndexFromChain(mcparticle, motherPDG, depth - 1);
+}
+
+//_______________________________________________________________________
+/// \brief Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return id else -1
+/// E.g. if electron cluster is coming from a photon return the photon's id, if primary electron return -1
+/// \param mcparticle iterator of mcparticle, NOT modified by this function
+/// \param mcparticleWorking a second iterator of the SAME table, used as scratch space to walk up the chain -- caller must supply this so the function doesn't construct its own
+/// \param motherPDG target mother PDG value
+/// \param depth how many steps in the chain this check should go maximum before failing
+template <o2::soa::is_iterator T>
+int32_t getMotherIndexFromChain(const T& mcparticle, T& mcparticleWorking, const int motherPDG, const int depth = 10) // o2-linter: disable=pdg/explicit-code (false positive)
+{
+  if (!mcparticle.has_mothers() || depth < 1) {
+    return -1;
+  }
+
+  int32_t motherid = mcparticle.mothersIds()[0];
+  mcparticleWorking.setCursor(motherid);
+  if (mcparticleWorking.pdgCode() == motherPDG) {
+    return motherid;
+  }
+  return getMotherIndexFromChain(mcparticleWorking, mcparticleWorking, motherPDG, depth - 1);
 }
 
 //_______________________________________________________________________

@@ -69,6 +69,8 @@ enum PairHist {
   kKstarVsMt,
   kKstarVsMult,
   kKstarVsCent,
+  // 3D: k* vs kT vs centrality
+  kKstarVsKtVsCent,
   // 2D with mass
   kKstarVsMass1,
   kKstarVsMass2,
@@ -184,6 +186,7 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> usePdgMass{"usePdgMass", true, "(Reco) Use PDF masses for 4-vectors. If false, use reconstructed mass (if available). Not consulted for pure mc-truth pairs, which always use PDG mass"};
   o2::framework::Configurable<bool> plot1D{"plot1D", true, "(Reco/Mc) Enable 1D histograms"};
   o2::framework::Configurable<bool> plot2D{"plot2D", true, "(Reco/Mc) Enable 2D histograms"};
+  o2::framework::Configurable<bool> plotKstarVsKtVsCent{"plotKstarVsKtVsCent", false, "(Reco/Mc) Enable 3D histogram (Kstar Vs Kt Vs Cent)"};
   o2::framework::Configurable<bool> plotKstarVsMtVsMult{"plotKstarVsMtVsMult", false, "(Reco/Mc) Enable 3D histogram (Kstar Vs Mt Vs Mult)"};
   o2::framework::Configurable<bool> plotKstarVsMtVsMultVsCent{"plotKstarVsMtVsMultVsCent", false, "(Reco/Mc) Enable 4D histogram (Kstar Vs Mt Vs Mult Vs Cent)"};
   o2::framework::Configurable<bool> plotKstarVsMtVsPt1VsPt2{"plotKstarVsMtVsPt1VsPt2", false, "(Reco/Mc) Enable 4D histogram (Kstar Vs Mt Vs Pt1 Vs Pt2)"};
@@ -213,7 +216,7 @@ struct ConfPairBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis pt2{"pt2", {{100, 0, 6}}, "Pt binning for particle 2"};
   o2::framework::ConfigurableAxis mass1{"mass1", {{100, 0, 2}}, "Mass binning for particle 1 (if particle has mass getter, otherwise PDG mass)"};
   o2::framework::ConfigurableAxis mass2{"mass2", {{100, 0, 2}}, "Mass binning for particle 2 (if particle has mass getter, otherwise PDG mass)"};
-  o2::framework::ConfigurableAxis massInv{"massInv", {{100, 0, 2}}, "Invariant Mass binning"};
+  o2::framework::ConfigurableAxis massInv{"massInv", {{100, 0, 5}}, "Invariant Mass binning"};
   o2::framework::ConfigurableAxis dalitzMtot{"dalitzMtot", {{100, 0, 10}}, "Total invariant mass squared binning in darlitz plot"};
   o2::framework::ConfigurableAxis dalitzM12{"dalitzM12", {{100, 0, 10}}, "Mass12 binning of darlitz plot"};
   o2::framework::ConfigurableAxis dalitzM13{"dalitzM13", {{100, 0, 10}}, "Mass13 binning of darlitz plot"};
@@ -277,6 +280,7 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
       {kPt1VsMinv, o2::framework::HistType::kTH2F, "hPt1VsMinv", "p_{T,1} vs m_{Inv}; p_{T,1} (GeV/#it{c}); m_{Inv} (GeV/#it{c}^{2})"},
       {kPt2VsMinv, o2::framework::HistType::kTH2F, "hPt2VsMinv", "p_{T,2} vs m_{Inv}; p_{T,2} (GeV/#it{c}); m_{Inv} (GeV/#it{c}^{2})"},
       // n-D
+      {kKstarVsKtVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsKtVsCent", "k* vs k_{T} vs centrality; k* (GeV/#it{c}); k_{T} (GeV/#it{c}); Centrality (%);"},
       {kKstarVsMtVsMult, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMult", "k* vs m_{T} vs multiplicity; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity;"},
       {kKstarVsMtVsMultVsCent, o2::framework::HistType::kTHnSparseF, "hKstarVsMtVsMultVsCent", "k* vs m_{T} vs multiplicity vs centrality; k* (GeV/#it{c}); m_{T} (GeV/#it{c}^{2}); Multiplicity; Centrality (%);"},
       // n-D with pt
@@ -367,6 +371,7 @@ constexpr std::array<histmanager::HistInfo<PairHist>, kPairHistogramLast>
     {kKstarVsMt, {(confAnalysis).kstar, (confAnalysis).mt}},                                                                                                                                                                                 \
     {kKstarVsMult, {(confAnalysis).kstar, (confAnalysis).multiplicity}},                                                                                                                                                                     \
     {kKstarVsCent, {(confAnalysis).kstar, (confAnalysis).centrality}},                                                                                                                                                                       \
+    {kKstarVsKtVsCent, {(confAnalysis).kstar, (confAnalysis).kt, (confAnalysis).centrality}},                                                                                                                                                \
     {kKstarVsMass1, {(confAnalysis).kstar, (confAnalysis).mass1}},                                                                                                                                                                           \
     {kKstarVsMass2, {(confAnalysis).kstar, (confAnalysis).mass2}},                                                                                                                                                                           \
     {kMass1VsMass2, {(confAnalysis).mass1, (confAnalysis).mass2}},                                                                                                                                                                           \
@@ -491,6 +496,11 @@ constexpr char PrefixTrackTrackMe[] = "TrackTrack/ME/";
 constexpr char PrefixTrackV0Se[] = "TrackV0/SE/";
 constexpr char PrefixTrackV0Me[] = "TrackV0/ME/";
 
+constexpr char PrefixTrackD0Se[] = "TrackD0/SE/";
+constexpr char PrefixTrackD0Me[] = "TrackD0/ME/";
+constexpr char PrefixD0D0Se[] = "D0D0/SE/";
+constexpr char PrefixD0D0Me[] = "D0D0/ME/";
+
 constexpr char PrefixV0V0Se[] = "V0V0/SE/";
 constexpr char PrefixV0V0Me[] = "V0V0/ME/";
 
@@ -536,6 +546,7 @@ class PairHistManager
     // flags for histograms
     mPlot1d = ConfPairBinning.plot1D.value;
     mPlot2d = ConfPairBinning.plot2D.value;
+    mPlotKstarVsKtVsCent = ConfPairBinning.plotKstarVsKtVsCent.value;
     mPlotKstarVsMtVsMult = ConfPairBinning.plotKstarVsMtVsMult.value;
     mPlotKstarVsMtVsMultVsCent = ConfPairBinning.plotKstarVsMtVsMultVsCent.value;
 
@@ -696,7 +707,9 @@ class PairHistManager
     }
 
     if (mPlotDalitz) {
-      if constexpr (modes::isEqual(particleType1, modes::Particle::kTrack) && modes::isEqual(particleType2, modes::Particle::kV0)) {
+      if constexpr (modes::isEqual(particleType1, modes::Particle::kTrack) && (modes::isEqual(particleType2, modes::Particle::kV0) ||
+                                                                               modes::isEqual(particleType2, modes::Particle::kTwoTrackResonance) ||
+                                                                               modes::isEqual(particleType2, modes::Particle::kCharmHadron))) {
         auto posDaughter = trackTable.rawIteratorAt(particle2.posDauId() - trackTable.offset());
         auto negDaughter = trackTable.rawIteratorAt(particle2.negDauId() - trackTable.offset());
         ROOT::Math::PtEtaPhiMVector posDau4v = ROOT::Math::PtEtaPhiMVector(posDaughter.pt(), posDaughter.eta(), posDaughter.phi(), mPdgMassPosDau2);
@@ -936,6 +949,9 @@ class PairHistManager
     }
 
     // higher dimensional histograms
+    if (mPlotKstarVsKtVsCent) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsKtVsCent, HistTable), getHistDesc(kKstarVsKtVsCent, HistTable), getHistType(kKstarVsKtVsCent, HistTable), {Specs.at(kKstarVsKtVsCent)});
+    }
     if (mPlotKstarVsMtVsMult) {
       mHistogramRegistry->add(analysisDir + getHistNameV2(kKstarVsMtVsMult, HistTable), getHistDesc(kKstarVsMtVsMult, HistTable), getHistType(kKstarVsMtVsMult, HistTable), {Specs.at(kKstarVsMtVsMult)});
     }
@@ -1218,6 +1234,9 @@ class PairHistManager
     // n-D histograms are only filled if enabled
     // if "mass" getter does not exist for particle, it will be just set to 0
     // the user has to make sure that in this case the bin number of this dimension is set to 1
+    if (mPlotKstarVsKtVsCent) {
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsKtVsCent, HistTable)), mKstar, mKt, mCent);
+    }
     if (mPlotKstarVsMtVsMult) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(getHistName(kKstarVsMtVsMult, HistTable)), mKstar, mMt, mMult);
     }
@@ -1627,6 +1646,7 @@ class PairHistManager
   bool mPlot1d = true;
   bool mPlot2d = true;
 
+  bool mPlotKstarVsKtVsCent = false;
   bool mPlotKstarVsMtVsMult = false;
   bool mPlotKstarVsMtVsMultVsCent = false;
 

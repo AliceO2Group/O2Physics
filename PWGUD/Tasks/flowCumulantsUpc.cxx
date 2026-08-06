@@ -304,9 +304,20 @@ struct FlowCumulantsUpc {
       oba->Add(new TNamed(Form("Ch10Gap24_pt_%i", i + 1), "Ch10Gap24_pTDiff"));
     std::vector<std::string> userDefineGFWCorr = cfgUserDefineGFWCorr;
     std::vector<std::string> userDefineGFWName = cfgUserDefineGFWName;
+    if (userDefineGFWName.size() != userDefineGFWCorr.size()) {
+      LOGF(fatal, "The GFWConfig names you provided are NOT matching with configurations. userDefineGFWName.size(): %d, userDefineGFWCorr.size(): %d", userDefineGFWName.size(), userDefineGFWCorr.size());
+    }
+    LOGF(info, "User adding FlowContainer Array:");
     if (!userDefineGFWCorr.empty() && !userDefineGFWName.empty()) {
       for (uint i = 0; i < userDefineGFWName.size(); i++) {
-        oba->Add(new TNamed(userDefineGFWName.at(i).c_str(), userDefineGFWName.at(i).c_str()));
+        if (userDefineGFWCorr.at(i).find("poi") != std::string::npos) {
+          LOGF(info, "%d: pT-diff array %s", i, userDefineGFWName.at(i).c_str());
+          for (auto iPt = 0; iPt < fPtAxis->GetNbins(); iPt++)
+            oba->Add(new TNamed(Form("%s_pt_%i", userDefineGFWName.at(i).c_str(), iPt + 1), Form("%s_pTDiff", userDefineGFWName.at(i).c_str())));
+        } else {
+          LOGF(info, "%d: %s", i, userDefineGFWName.at(i).c_str());
+          oba->Add(new TNamed(userDefineGFWName.at(i).c_str(), userDefineGFWName.at(i).c_str()));
+        }
       }
     }
     fFC->SetName("FlowContainer");
@@ -341,10 +352,24 @@ struct FlowCumulantsUpc {
     fGFW->AddRegion("refP", 0.4, maxEta, 1, 1);
     fGFW->AddRegion("refM", -0.4, 0.4, 1, 1);
     fGFW->AddRegion("poiN", minEta, -0.4, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN00", minEta, 0., 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN02", minEta, -0.1, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN04", minEta, -0.2, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN06", minEta, -0.3, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN08", minEta, -0.4, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("poiN10", minEta, -0.5, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN12", minEta, -0.6, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN14", minEta, -0.7, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("poifull", minEta, maxEta, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("olN", minEta, -0.4, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN00", minEta, 0., 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN02", minEta, -0.1, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN04", minEta, -0.2, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN06", minEta, -0.3, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN08", minEta, -0.4, 1 + fPtAxis->GetNbins(), 4);
     fGFW->AddRegion("olN10", minEta, -0.5, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN12", minEta, -0.6, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN14", minEta, -0.7, 1 + fPtAxis->GetNbins(), 4);
     fGFW->AddRegion("olfull", minEta, maxEta, 1 + fPtAxis->GetNbins(), 4);
 
     // eta region for MC, can be different from data to study the effect of acceptance
@@ -369,10 +394,24 @@ struct FlowCumulantsUpc {
     fGFWMC->AddRegion("refP", 0.4, maxEta, 1, 1);
     fGFWMC->AddRegion("refM", -0.4, 0.4, 1, 1);
     fGFWMC->AddRegion("poiN", minEta, -0.4, 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN00", minEta, 0., 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN02", minEta, -0.1, 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN04", minEta, -0.2, 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN06", minEta, -0.3, 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN08", minEta, -0.4, 1 + fPtAxis->GetNbins(), 2);
     fGFWMC->AddRegion("poiN10", minEta, -0.5, 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN12", minEta, -0.6, 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN14", minEta, -0.7, 1 + fPtAxis->GetNbins(), 2);
     fGFWMC->AddRegion("poifull", minEta, maxEta, 1 + fPtAxis->GetNbins(), 2);
     fGFWMC->AddRegion("olN", minEta, -0.4, 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN00", minEta, 0., 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN02", minEta, -0.1, 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN04", minEta, -0.2, 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN06", minEta, -0.3, 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN08", minEta, -0.4, 1 + fPtAxis->GetNbins(), 4);
     fGFWMC->AddRegion("olN10", minEta, -0.5, 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN12", minEta, -0.6, 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN14", minEta, -0.7, 1 + fPtAxis->GetNbins(), 4);
     fGFWMC->AddRegion("olfull", minEta, maxEta, 1 + fPtAxis->GetNbins(), 4);
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));

@@ -117,8 +117,12 @@ struct ConfK0shortBinning : o2::framework::ConfigurableGroup {
 
 constexpr const char PrefixLambdaBinning1[] = "LambdaBinning1";
 using ConfLambdaBinning1 = ConfLambdaBinning<PrefixLambdaBinning1>;
+constexpr const char PrefixLambdaBinning2[] = "LambdaBinning2";
+using ConfLambdaBinning2 = ConfLambdaBinning<PrefixLambdaBinning2>;
 constexpr const char PrefixK0shortBinning1[] = "K0shortBinning1";
 using ConfK0shortBinning1 = ConfK0shortBinning<PrefixK0shortBinning1>;
+constexpr const char PrefixK0shortBinning2[] = "K0shortBinning2";
+using ConfK0shortBinning2 = ConfK0shortBinning<PrefixK0shortBinning2>;
 
 template <auto& Prefix>
 struct ConfV0QaBinning : o2::framework::ConfigurableGroup {
@@ -416,13 +420,13 @@ class V0HistManager
     }
   }
 
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fill(T1 const& v0candidate, T2 const& tracks, T3 const& mcParticles, T4 const& mcMothers, T5 const& mcPartonicMothers)
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void fill(T1 const& v0candidate, T2 const& tracks, T3 const& col, T4 const& mcParticles, T5 const& mcMothers, T6 const& mcPartonicMothers)
   {
     auto posDaughter = tracks.rawIteratorAt(v0candidate.posDauId() - tracks.offset());
-    mPosDauManager.template fill<mode>(posDaughter, tracks, mcParticles, mcMothers, mcPartonicMothers);
+    mPosDauManager.template fill<mode>(posDaughter, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     auto negDaughter = tracks.rawIteratorAt(v0candidate.negDauId() - tracks.offset());
-    mNegDauManager.template fill<mode>(negDaughter, tracks, mcParticles, mcMothers, mcPartonicMothers);
+    mNegDauManager.template fill<mode>(negDaughter, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(v0candidate);
     }
@@ -430,7 +434,7 @@ class V0HistManager
       this->fillQa(v0candidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
-      this->template fillMc<mode>(v0candidate, mcParticles, mcMothers, mcPartonicMothers);
+      this->template fillMc<mode>(v0candidate, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
 
@@ -560,49 +564,47 @@ class V0HistManager
     mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kDecayVtx, HistTable)), v0candidate.decayVtx());
     mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kTransRadius, HistTable)), v0candidate.transRadius());
 
+    float massLambda = 0;
+    float massAntiLambda = 0;
+    float massK0short = 0;
+
+    if constexpr (modes::isEqual(v0, modes::V0::kLambda) || modes::isEqual(v0, modes::V0::kAntiLambda)) {
+      massK0short = v0candidate.massK0short();
+      if (v0candidate.sign() > 0) {
+        massLambda = v0candidate.mass();
+        massAntiLambda = v0candidate.massAnti();
+      } else {
+        massLambda = v0candidate.massAnti();
+        massAntiLambda = v0candidate.mass();
+      }
+    }
+    if constexpr (modes::isEqual(v0, modes::V0::kK0short)) {
+      massK0short = v0candidate.mass();
+      massLambda = v0candidate.massLambda();
+      massAntiLambda = v0candidate.massAntiLambda();
+    }
+
+    mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassLambda, HistTable)), massLambda);
+    mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassAntiLambda, HistTable)), massAntiLambda);
+    mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassK0short, HistTable)), massK0short);
+
     if (mPlot2d) {
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsEta, HistTable)), v0candidate.pt(), v0candidate.eta());
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsPhi, HistTable)), v0candidate.pt(), v0candidate.phi());
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPhiVsEta, HistTable)), v0candidate.phi(), v0candidate.eta());
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsCosPa, HistTable)), v0candidate.pt(), v0candidate.cosPa());
 
-      if constexpr (modes::isEqual(v0, modes::V0::kLambda) || modes::isEqual(v0, modes::V0::kAntiLambda)) {
-        float massLambda = 0;
-        float massAntiLambda = 0;
-        if (v0candidate.sign() > 0) {
-          massLambda = v0candidate.mass();
-          massAntiLambda = v0candidate.massAnti();
-        } else {
-          massLambda = v0candidate.massAnti();
-          massAntiLambda = v0candidate.mass();
-        }
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassLambda, HistTable)), massLambda);
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassAntiLambda, HistTable)), massAntiLambda);
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassK0short, HistTable)), v0candidate.massK0short());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsLambdaMass, HistTable)), v0candidate.pt(), massLambda);
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsAntiLambdaMass, HistTable)), v0candidate.pt(), massAntiLambda);
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsK0shortMass, HistTable)), v0candidate.pt(), v0candidate.massK0short());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kLambdaMassVsAntiLambdaMass, HistTable)), massLambda, massAntiLambda);
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kK0shortMassVsLambdaMass, HistTable)), v0candidate.massK0short(), massLambda);
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kK0shortMassVsAntiLambdaMass, HistTable)), v0candidate.massK0short(), massAntiLambda);
-      }
-
-      if constexpr (modes::isEqual(v0, modes::V0::kK0short)) {
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassLambda, HistTable)), v0candidate.massLambda());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassAntiLambda, HistTable)), v0candidate.massAntiLambda());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassK0short, HistTable)), v0candidate.mass());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsLambdaMass, HistTable)), v0candidate.pt(), v0candidate.massLambda());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsAntiLambdaMass, HistTable)), v0candidate.pt(), v0candidate.massAntiLambda());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsK0shortMass, HistTable)), v0candidate.pt(), v0candidate.mass());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kLambdaMassVsAntiLambdaMass, HistTable)), v0candidate.massLambda(), v0candidate.massAntiLambda());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kK0shortMassVsLambdaMass, HistTable)), v0candidate.mass(), v0candidate.massLambda());
-        mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kK0shortMassVsAntiLambdaMass, HistTable)), v0candidate.mass(), v0candidate.massAntiLambda());
-      }
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsLambdaMass, HistTable)), v0candidate.pt(), massLambda);
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsAntiLambdaMass, HistTable)), v0candidate.pt(), massAntiLambda);
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kPtVsK0shortMass, HistTable)), v0candidate.pt(), massK0short);
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kLambdaMassVsAntiLambdaMass, HistTable)), massLambda, massAntiLambda);
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kK0shortMassVsLambdaMass, HistTable)), massK0short, massLambda);
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kK0shortMassVsAntiLambdaMass, HistTable)), massK0short, massAntiLambda);
     }
   }
 
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4>
-  void fillMc(T1 const& v0Candidate, T2 const& /*mcParticles*/, T3 const& /*mcMothers*/, T4 const& /*mcPartonicMothers*/)
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillMc(T1 const& v0Candidate, T2 const& col, T3 const& /*mcParticles*/, T4 const& /*mcMothers*/, T5 const& /*mcPartonicMothers*/)
   {
     // No MC Particle
     if (!v0Candidate.has_fMcParticle()) {
@@ -617,16 +619,20 @@ class V0HistManager
     }
 
     // Retrieve MC particle
-    auto mcParticle = v0Candidate.template fMcParticle_as<T2>();
+    auto mcParticle = v0Candidate.template fMcParticle_as<T3>();
 
-    // missidentifed particles are special case
+    // whether a particle is associated to a wrong collision or not cannot be known by the producer so we check it here
+    bool fromWrongCollision = mcParticle.fMcColId() != col.fMcColId();
+
     // whether a particle is missidentfied or not cannot be known by the producer so we check it here
     bool isMissidentified = mcParticle.pdgCode() != mPdgCode;
 
     mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kTruePtVsPt, HistTable)), mcParticle.pt(), v0Candidate.pt());
     mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kTrueEtaVsEta, HistTable)), mcParticle.eta(), v0Candidate.eta());
     mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kTruePhiVsPhi, HistTable)), mcParticle.phi(), v0Candidate.phi());
-    if (isMissidentified) {
+    if (fromWrongCollision) {
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kFromWrongCollision));
+    } else if (isMissidentified) {
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<int>(modes::McOrigin::kMissidentified));
     } else {
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), mcParticle.origin());
@@ -635,7 +641,7 @@ class V0HistManager
 
     // get mother
     if (mcParticle.has_fMcMother()) {
-      auto mother = mcParticle.template fMcMother_as<T3>();
+      auto mother = mcParticle.template fMcMother_as<T4>();
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), mother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), 0);
@@ -643,7 +649,7 @@ class V0HistManager
 
     // get partonic mother
     if (mcParticle.has_fMcPartMoth()) {
-      auto partonicMother = mcParticle.template fMcPartMoth_as<T4>();
+      auto partonicMother = mcParticle.template fMcPartMoth_as<T5>();
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), partonicMother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), 0);
@@ -652,7 +658,9 @@ class V0HistManager
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
       if (mPlotOrigins) {
         // check first if particle is missidentified
-        if (isMissidentified) {
+        if (fromWrongCollision) {
+          mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
+        } else if (isMissidentified) {
           // if it is, we fill it as such
           mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kMissidentified, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
         } else {
@@ -669,7 +677,7 @@ class V0HistManager
               break;
             case modes::McOrigin::kFromSecondaryDecay:
               if (mcParticle.has_fMcMother()) {
-                auto mother = mcParticle.template fMcMother_as<T3>();
+                auto mother = mcParticle.template fMcMother_as<T4>();
                 int motherPdgCode = std::abs(mother.pdgCode());
                 // Switch on PDG of the mother
                 if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {

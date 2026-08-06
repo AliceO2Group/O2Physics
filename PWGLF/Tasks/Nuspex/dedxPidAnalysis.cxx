@@ -140,6 +140,7 @@ struct DedxPidAnalysis {
     ZVtxCut,
     NoSameBunchPileup,
     GoodZvtxFT0vsPV,
+    GoodITS,
     INELgt
   };
 
@@ -204,7 +205,7 @@ struct DedxPidAnalysis {
                                        "max z distance to IP"};
   Configurable<float> etaMin{"etaMin", -0.8f, "etaMin"};
   Configurable<float> etaMax{"etaMax", +0.8f, "etaMax"};
-  Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
+  // Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
   Configurable<float> nSigmaDCAxy{"nSigmaDCAxy", 3.0, "nSigma DCAxy selection"};
   Configurable<float> dcaXYp0{"dcaXYp0", 0.0105f, "DCAxy formula: p0 + p1/pt^p2"};
   Configurable<float> dcaXYp1{"dcaXYp1", 0.0350f, "DCAxy p1 parameter"};
@@ -250,6 +251,7 @@ struct DedxPidAnalysis {
   Configurable<bool> nGoodZvtx{"nGoodZvtx", true, "Rejects events with no vertex match between FT0 and PV"}; //
   Configurable<bool> nPileUp{"nPileUp", true, "Rejects events with pileup in the same bunch crossing"};
   Configurable<int> nINELSelectionMode{"nINELSelectionMode", 2, "INEL event selection: 1 no sel, 2 INEL>0, 3 INEL>1"};
+  Configurable<bool> nGoodITS{"nGoodITS", true, "Numbers of inactive chips on all ITS layers are below maximum allowed values"};
   Configurable<int> v0SelectionMode{"v0SelectionMode", 3, "V0 Selection base on TPC: 1, TOF:2 ,Both:3"};
   Configurable<int> momentumMode{"momentumMode", 2, "1: TPC inner param, 2: Total momentum p"};
   Configurable<uint8_t> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
@@ -281,10 +283,10 @@ struct DedxPidAnalysis {
     TrackSelection selectedTracks;
     selectedTracks.SetPtRange(0.1f, 1e10f);
     selectedTracks.SetEtaRange(etaMin, etaMax);
-    selectedTracks.SetRequireITSRefit(true);
-    selectedTracks.SetRequireTPCRefit(true);
+    // selectedTracks.SetRequireITSRefit(true);
+    // selectedTracks.SetRequireTPCRefit(true);
     selectedTracks.SetMinNCrossedRowsTPC(static_cast<int>(minNCrossedRowsTPC.value));
-    selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC);
+    // selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC);
     selectedTracks.SetMaxChi2PerClusterTPC(maxChi2TPC);
     selectedTracks.SetRequireHitsInITSLayers(1, {0, 1, 2});
     selectedTracks.SetMaxChi2PerClusterITS(maxChi2ITS);
@@ -309,6 +311,11 @@ struct DedxPidAnalysis {
       LOGF(info, "Applying GoodZvtxFT0vsPV cut");
     } else {
       LOGF(info, "GoodZvtxFT0vsPV cut disabled");
+    }
+    if (nGoodITS) {
+      LOGF(info, "Applying GoodITSLayersAll cut");
+    } else {
+      LOGF(info, "GoodITSLayersAll cut disabled");
     }
     if (nINELSelectionMode == NoSelINEL) {
       LOGF(info, "Applying just INEL");
@@ -760,7 +767,7 @@ struct DedxPidAnalysis {
                      HistType::kTH2F, {{ptAxis}, {dcaAxis}});
 
     // Event Counter
-    registryDeDx.add("evsel", "events selected", HistType::kTH1F, {{6, 0.5, 6.5, ""}});
+    registryDeDx.add("evsel", "events selected", HistType::kTH1F, {{7, 0.5, 7.5, ""}});
     auto hstat = registryDeDx.get<TH1>(HIST("evsel"));
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(AllEv, "AllEv");
@@ -769,6 +776,7 @@ struct DedxPidAnalysis {
     x->SetBinLabel(NoSameBunchPileup, "NoSameBunchPileup");
     x->SetBinLabel(GoodZvtxFT0vsPV, "GoodZvtxFT0vsPV");
     x->SetBinLabel(INELgt, label);
+    x->SetBinLabel(GoodITS, "GoodITSLayersAll");
 
     // Track Prim Counter
     registryDeDx.add("trackselAll", "track selected all particles", HistType::kTH1F, {{5, 0.5, 5.5, ""}});
@@ -1436,6 +1444,12 @@ struct DedxPidAnalysis {
       if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
         return;
       registryDeDx.fill(HIST("evsel"), EvCutLabel::GoodZvtxFT0vsPV);
+    }
+
+    if (nGoodITS) {
+      if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+        return;
+      registryDeDx.fill(HIST("evsel"), EvCutLabel::GoodITS);
     }
 
     if (nINELSelectionMode == NoSelINEL) {

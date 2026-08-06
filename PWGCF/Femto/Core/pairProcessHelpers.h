@@ -119,7 +119,7 @@ void processSameEvent(T1 const& SliceParticle,
     if (!ParticleCleaner.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
     }
-    ParticleHistManager.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
+    ParticleHistManager.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
   }
   for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle))) {
     // check if particles are clean
@@ -246,13 +246,13 @@ void processSameEvent(T1 const& SliceParticle1,
     if (!ParticleCleaner1.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
     }
-    ParticleHistManager1.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
+    ParticleHistManager1.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
   }
   for (auto const& part : SliceParticle2) {
     if (!ParticleCleaner2.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
     }
-    ParticleHistManager2.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
+    ParticleHistManager2.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
   }
   for (auto const& [p1, p2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2))) {
     // check if particles are clean

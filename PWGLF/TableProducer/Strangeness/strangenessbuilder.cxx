@@ -52,6 +52,7 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Array2D.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/DataSpecUtils.h>
 #include <Framework/DeviceSpec.h>

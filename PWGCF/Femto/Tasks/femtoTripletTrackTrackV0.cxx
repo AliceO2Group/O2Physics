@@ -94,8 +94,8 @@ struct FemtoTripletTrackTrackV0 {
   o2::framework::Preslice<FemtoTracksWithLabel> perColtracksWithLabel = o2::aod::femtobase::stored::fColId;
 
   // setup for daughters
-  trackhistmanager::ConfV0PosDauBinning confPosDauBinning;
-  trackhistmanager::ConfV0NegDauBinning confNegDauBinning;
+  trackhistmanager::ConfV01PosDauBinning confPosDauBinning;
+  trackhistmanager::ConfV01NegDauBinning confNegDauBinning;
 
   // setup lambdas
   v0builder::ConfLambdaSelection1 confLambdaSelection;

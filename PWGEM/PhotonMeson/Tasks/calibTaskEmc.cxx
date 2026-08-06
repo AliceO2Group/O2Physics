@@ -38,6 +38,7 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/Expressions.h>
 #include <Framework/GroupedCombinations.h>
