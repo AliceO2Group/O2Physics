@@ -1057,47 +1057,69 @@ struct Kstarqa {
   bool isMix = false;
 
   template <typename T1, typename T2>
-  void fillInvMass(const T1& daughter1, const T1& daughter2, const T1& mother, float multiplicity, bool isMix, const T2& track1, const T2& track2)
+  void fillInvMass(const T1& dau1, const T1& dau2, const T1& motherVec, float multiplicity, bool isMix, const T2& track1, const T2& track2)
   {
-    daughterSelected = (boostDaugter1) ? daughter1 : daughter2; // polarization calculations
-    ROOT::Math::Boost boost{mother.BoostToCM()};                // boost mother to center of mass frame
-    fourVecDauCM = boost(daughterSelected);                     // boost the frame of daughter same as mother
+    daughterSelected = (boostDaugter1) ? dau1 : dau2; // polarization calculations
 
-    // if (std::abs(mother.Rapidity()) < configGp.rapidityMotherData) {
+    // Boost mother to the center-of-mass frame
+    ROOT::Math::Boost boost{motherVec.BoostToCM()};
+
+    // Boost selected daughter to the mother rest frame
+    fourVecDauCM = boost(daughterSelected);
+
     if (activateTHnSparseCosThStarHelicity) {
-      auto cosThetaStarHelicity = mother.Vect().Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(mother.Vect().Mag2()));
 
+      auto cosThetaStarHelicity = motherVec.Vect().Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(motherVec.Vect().Mag2()));
+
+      // Unlike-sign pairs
       if (track1.sign() * track2.sign() < 0) {
+
+        // Same-event
         if (!isMix) {
-          if (std::abs(mother.Rapidity()) < configGp.rapidityMotherData) {
-            hInvMass.fill(HIST("h3KstarInvMassUnlikeSign"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity);
+
+          if (std::abs(motherVec.Rapidity()) < configGp.rapidityMotherData) {
+            hInvMass.fill(HIST("h3KstarInvMassUnlikeSign"), multiplicity, motherVec.Pt(), motherVec.M(), cosThetaStarHelicity);
           }
 
+          // Rotational background
           for (int i = 0; i < cRotations; i++) {
+
             theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / configGp.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / configGp.rotationalCut);
 
-            daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
+            daughterRot = ROOT::Math::PxPyPzMVector(dau1.Px() * std::cos(theta2) - dau1.Py() * std::sin(theta2), dau1.Px() * std::sin(theta2) + dau1.Py() * std::cos(theta2), dau1.Pz(), dau1.M());
 
-            motherRot = daughterRot + daughter2;
+            motherRot = daughterRot + dau2;
 
             ROOT::Math::Boost boost2{motherRot.BoostToCM()};
             daughterRotCM = boost2(daughterRot);
 
             auto cosThetaStarHelicityRot = motherRot.Vect().Dot(daughterRotCM.Vect()) / (std::sqrt(daughterRotCM.Vect().Mag2()) * std::sqrt(motherRot.Vect().Mag2()));
 
-            if (calcRotational && std::abs(motherRot.Rapidity()) < configGp.rapidityMotherData)
+            if (calcRotational && std::abs(motherRot.Rapidity()) < configGp.rapidityMotherData) {
               hInvMass.fill(HIST("h3KstarInvMassRotated"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarHelicityRot);
+            }
           }
-        } else if (isMix && std::abs(mother.Rapidity()) < configGp.rapidityMotherData) {
-          hInvMass.fill(HIST("h3KstarInvMassMixed"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity);
+
+          // Mixed-event
+        } else if (std::abs(motherVec.Rapidity()) < configGp.rapidityMotherData) {
+
+          hInvMass.fill(HIST("h3KstarInvMassMixed"), multiplicity, motherVec.Pt(), motherVec.M(), cosThetaStarHelicity);
         }
+
+        // Like-sign pairs
       } else {
+
         if (!isMix) {
-          if (calcLikeSign && std::abs(mother.Rapidity()) < configGp.rapidityMotherData) {
+
+          if (calcLikeSign && std::abs(motherVec.Rapidity()) < configGp.rapidityMotherData) {
+
             if (track1.sign() > 0 && track2.sign() > 0) {
-              hInvMass.fill(HIST("h3KstarInvMasslikeSignPP"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity);
+
+              hInvMass.fill(HIST("h3KstarInvMasslikeSignPP"), multiplicity, motherVec.Pt(), motherVec.M(), cosThetaStarHelicity);
+
             } else if (track1.sign() < 0 && track2.sign() < 0) {
-              hInvMass.fill(HIST("h3KstarInvMasslikeSignMM"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity);
+
+              hInvMass.fill(HIST("h3KstarInvMasslikeSignMM"), multiplicity, motherVec.Pt(), motherVec.M(), cosThetaStarHelicity);
             }
           }
         }

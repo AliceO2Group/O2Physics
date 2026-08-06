@@ -895,7 +895,7 @@ struct HigherMassResonances {
       // Normal to production plane
       auto yAxisGJ = ROOT::Math::XYZVectorF(zAxisGJ.Cross(motherLab));
 
-      if (yAxisGJ.Mag2() > tolerance)
+      if (yAxisGJ.Mag2() > config.tolerance)
         yAxisGJ = yAxisGJ.Unit();
       else
         yAxisGJ = ROOT::Math::XYZVectorF(0.f, 1.f, 0.f);
