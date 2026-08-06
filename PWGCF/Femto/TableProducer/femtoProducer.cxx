@@ -132,9 +132,9 @@ struct FemtoProducer {
 
   // charm hadron builder
   charmhadronbuilder::CharmHadronBuilderProducts charmHadronBuilderProducts;
-  charmhadronbuilder::ConfD0Filters confD0Filters;
+  charmhadronbuilder::ConfCharmHadronFilters confCharmHadronFilters;
   charmhadronbuilder::ConfD0Bits confD0Bits;
-  charmhadronbuilder::ConfD0Tables confD0Tables;
+  charmhadronbuilder::ConfCharmHadronTables confCharmHadronTables;
   charmhadronbuilder::CharmHadronBuilder<modes::CharmHadron::kD0, charmhadronbuilder::D0SelHistName, charmhadronbuilder::D0FilterHistName> d0Builder;
   charmhadronbuilder::CharmHadronBuilder<modes::CharmHadron::kD0Bar, charmhadronbuilder::D0barSelHistName, charmhadronbuilder::D0barFilterHistName> d0barBuilder;
 
@@ -191,8 +191,8 @@ struct FemtoProducer {
     lambdaBuilder.init(&hRegistry, confLambdaBits, confV0Filters, confV0Tables, context, trackBuilder);
     antilambdaBuilder.init(&hRegistry, confLambdaBits, confV0Filters, confV0Tables, context, trackBuilder);
 
-    d0Builder.init(&hRegistry, confD0Bits, confD0Filters, confD0Tables, context);
-    d0barBuilder.init(&hRegistry, confD0Bits, confD0Filters, confD0Tables, context);
+    d0Builder.init(&hRegistry, confD0Bits, confCharmHadronFilters, confCharmHadronTables, context);
+    d0barBuilder.init(&hRegistry, confD0Bits, confCharmHadronFilters, confCharmHadronTables, context);
 
     sigmaBuilder.init(&hRegistry, confSigmaBits, confKinkFilters, confKinkTables, context, trackBuilder);
     sigmaPlusBuilder.init(&hRegistry, confSigmaPlusBits, confKinkFilters, confKinkTables, context, trackBuilder);
@@ -418,14 +418,14 @@ struct FemtoProducer {
   template <modes::System system, typename T1, typename T2, typename T3>
   void processD0s(T1 const& col, T2 const& tracks, T3 const& candidates)
   {
-    d0Builder.fillD0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, trackBuilder);
-    d0barBuilder.fillD0s<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, trackBuilder);
+    d0Builder.fillCharmHadrons<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, trackBuilder);
+    d0barBuilder.fillCharmHadrons<system>(col, collisionBuilder, collisionBuilderProducts, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, trackBuilder);
   }
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
   void processMcD0s(T1 const& col, T2 const& mcCols, T3 const& tracks, T4 const& candidates, T5 const& mcParticles)
   {
-    d0Builder.fillMcD0s<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
-    d0barBuilder.fillMcD0s<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
+    d0Builder.fillMcCharmHadrons<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
+    d0barBuilder.fillMcCharmHadrons<system>(col, collisionBuilder, collisionBuilderProducts, mcCols, trackBuilderProducts, charmHadronBuilderProducts, candidates, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts);
   }
 
   // ==========================================================================

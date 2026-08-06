@@ -86,7 +86,7 @@ enum CharmHadronHist {
   o2::framework::ConfigurableAxis phi2d{"phi2d", {{200, 0, 1.f * o2::constants::math::TwoPI}}, "Phi for 2D QA"};
 
 template <auto& Prefix>
-struct ConfD0Binning : o2::framework::ConfigurableGroup {
+struct ConfCharmHadronBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   CHARMHADRON_DEFAULT_BINNING(1.7, 2.0)
 };
@@ -95,11 +95,11 @@ struct ConfD0Binning : o2::framework::ConfigurableGroup {
 
 constexpr const char PrefixD0Binning1[] = "D0Binning1";
 constexpr const char PrefixD0Binning2[] = "D0Binning2";
-using ConfD0Binning1 = ConfD0Binning<PrefixD0Binning1>;
-using ConfD0Binning2 = ConfD0Binning<PrefixD0Binning2>;
+using ConfD0Binning1 = ConfCharmHadronBinning<PrefixD0Binning1>;
+using ConfD0Binning2 = ConfCharmHadronBinning<PrefixD0Binning2>;
 
 template <auto& Prefix>
-struct ConfD0QaBinning : o2::framework::ConfigurableGroup {
+struct ConfCharmHadronQaBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
   o2::framework::Configurable<bool> plotTopology{"plotTopology", true, "Generate topological QA plots (cpa, decayLength, impactParameterProduct, cosThetaStar)"};
   o2::framework::ConfigurableAxis massD0{"massD0", {{200, 1.7, 2.0}}, "Mass of candidates selected as D0"};
@@ -112,7 +112,7 @@ struct ConfD0QaBinning : o2::framework::ConfigurableGroup {
 };
 
 constexpr const char PrefixD0QaBinning1[] = "D0QaBinning1";
-using ConfD0QaBinning1 = ConfD0QaBinning<PrefixD0QaBinning1>;
+using ConfD0QaBinning1 = ConfCharmHadronQaBinning<PrefixD0QaBinning1>;
 
 // must be in sync with enum CharmHadronHist
 // the enum gives the correct index in the array
