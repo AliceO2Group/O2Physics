@@ -331,7 +331,7 @@ struct LongrangecorrDerived {
       if (hTrkEff == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgSel.cfgEffccdbPath.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgSel.cfgEffccdbPath.value.c_str(), (void*)hTrkEff);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgSel.cfgEffccdbPath.value.c_str(), static_cast(hTrkEff));
     }
 
     if (cfgSel.cfgAccccdbPath.value.empty() == false) {
@@ -339,7 +339,7 @@ struct LongrangecorrDerived {
       if (hTrkAcc == nullptr) {
         LOGF(fatal, "Could not load NUA histogram for trigger particles from %s", cfgSel.cfgAccccdbPath.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgSel.cfgAccccdbPath.value.c_str(), (void*)hTrkAcc);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgSel.cfgAccccdbPath.value.c_str(), static_cast(hTrkAcc));
     }
 
     fLoadTrkEffCorr = true;
