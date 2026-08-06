@@ -78,7 +78,9 @@ struct ConfCascadeFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> posDauTpc{"posDauTpc", {5.f}, "Maximum |nsimga_Pion/Proton| TPC for positive daughter tracks"};                      \
   o2::framework::Configurable<std::vector<float>> negDauTpc{"negDauTpc", {5.f}, "Maximum |nsimga_Pion/Proton| TPC for negative daughter tracks"};                      \
   o2::framework::Configurable<std::vector<float>> posDauTof{"posDauTof", {}, "Maximum |nsimga_Pion/Proton| TOF for positive daughter tracks"};                         \
-  o2::framework::Configurable<std::vector<float>> negDauTof{"negDauTof", {}, "Maximum |nsigma_Pion/Proton| TOF for negative daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> negDauTof{"negDauTof", {}, "Maximum |nsigma_Pion/Proton| TOF for negative daughter tracks"};                         \
+  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, TOF PID is a mandatory selection"};                                                      \
+  o2::framework::Configurable<bool> keepTracksWithoutTof{"keepTracksWithoutTof", true, "If true, candidates whose daughters have no TOF signal are kept"};
 
 struct ConfXiBits : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("XiBits");
@@ -242,7 +244,7 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
       mOmegaMassLowerLimit = filter.rejectMassOmegaMin.value;
       mOmegaMassUpperLimit = filter.rejectMassOmegaMax.value;
       this->addSelection(kBachelorTpcPion, cascadeSelectionNames.at(kBachelorTpcPion), config.bachelorTpcPion.value, limits::kAbsUpperLimit, true, true, false);
-      this->addSelection(kBachelorTofPion, cascadeSelectionNames.at(kBachelorTofPion), config.bachelorTofPion.value, limits::kAbsUpperLimit, true, true, false);
+      this->addSelection(kBachelorTofPion, cascadeSelectionNames.at(kBachelorTofPion), config.bachelorTofPion.value, limits::kAbsUpperLimit, true, mRequireTof, false);
     }
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
       mOmegaMassLowerLimit = filter.massOmegaMin.value;
@@ -251,7 +253,7 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
       mXiMassLowerLimit = filter.rejectMassXiMin.value;
       mXiMassUpperLimit = filter.rejectMassXiMax.value;
       this->addSelection(kBachelorTpcKaon, cascadeSelectionNames.at(kBachelorTpcKaon), config.bachelorTpcKaon.value, limits::kAbsUpperLimit, true, true, false);
-      this->addSelection(kBachelorTofKaon, cascadeSelectionNames.at(kBachelorTofKaon), config.bachelorTofKaon.value, limits::kAbsUpperLimit, true, true, false);
+      this->addSelection(kBachelorTofKaon, cascadeSelectionNames.at(kBachelorTofKaon), config.bachelorTofKaon.value, limits::kAbsUpperLimit, true, mRequireTof, false);
     }
 
     mPtMin = filter.ptMin.value;
@@ -262,11 +264,13 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
     mPhiMax = filter.phiMax.value;
     mLambdaMassMin = filter.massLambdaMin.value;
     mLambdaMassMax = filter.massLambdaMax.value;
+    mRequireTof = config.requireTof.value;
+    mKeepTracksWithoutTof = config.keepTracksWithoutTof.value;
 
     this->addSelection(kPosDauTpc, cascadeSelectionNames.at(kPosDauTpc), config.posDauTpc.value, limits::kAbsUpperLimit, true, true, false);
     this->addSelection(kNegDauTpc, cascadeSelectionNames.at(kNegDauTpc), config.negDauTpc.value, limits::kAbsUpperLimit, true, true, false);
-    this->addSelection(kPosDauTof, cascadeSelectionNames.at(kPosDauTof), config.posDauTof.value, limits::kAbsUpperLimit, true, true, false);
-    this->addSelection(kNegDauTof, cascadeSelectionNames.at(kNegDauTof), config.negDauTof.value, limits::kAbsUpperLimit, true, true, false);
+    this->addSelection(kPosDauTof, cascadeSelectionNames.at(kPosDauTof), config.posDauTof.value, limits::kAbsUpperLimit, true, mRequireTof, false);
+    this->addSelection(kNegDauTof, cascadeSelectionNames.at(kNegDauTof), config.negDauTof.value, limits::kAbsUpperLimit, true, mRequireTof, false);
 
     this->addSelection(kCascadeCpaMin, cascadeSelectionNames.at(kCascadeCpaMin), config.cascadeCpaMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kCascadeTransRadMin, cascadeSelectionNames.at(kCascadeTransRadMin), config.cascadeTransRadMin.value, limits::kLowerLimit, true, true, false);
@@ -336,6 +340,9 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
     if (bachelor.hasTOF()) {
       this->evaluateObservable(kBachelorTofPion, bachelor.tofNSigmaPi());
       this->evaluateObservable(kBachelorTofKaon, bachelor.tofNSigmaKa());
+    } else if (mKeepTracksWithoutTof) {
+      this->evaluateObservable(kBachelorTofPion, 0);
+      this->evaluateObservable(kBachelorTofKaon, 0);
     }
 
     // depending on the charge, we check lambda or antilambda hypothesis
@@ -344,18 +351,26 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
       this->evaluateObservable(kNegDauTpc, negDaughter.tpcNSigmaPi());
       if (posDaughter.hasTOF()) {
         this->evaluateObservable(kPosDauTof, posDaughter.tofNSigmaPr());
+      } else if (mKeepTracksWithoutTof) {
+        this->evaluateObservable(kPosDauTof, 0);
       }
       if (negDaughter.hasTOF()) {
         this->evaluateObservable(kNegDauTof, negDaughter.tofNSigmaPi());
+      } else if (mKeepTracksWithoutTof) {
+        this->evaluateObservable(kNegDauTof, 0);
       }
     } else if (cascade.sign() > 0) {
       this->evaluateObservable(kPosDauTpc, posDaughter.tpcNSigmaPi());
       this->evaluateObservable(kNegDauTpc, negDaughter.tpcNSigmaPr());
       if (posDaughter.hasTOF()) {
         this->evaluateObservable(kPosDauTof, posDaughter.tofNSigmaPi());
+      } else if (mKeepTracksWithoutTof) {
+        this->evaluateObservable(kPosDauTof, 0);
       }
       if (negDaughter.hasTOF()) {
         this->evaluateObservable(kNegDauTof, negDaughter.tofNSigmaPr());
+      } else if (mKeepTracksWithoutTof) {
+        this->evaluateObservable(kNegDauTof, 0);
       }
     } else {
       LOG(warn) << "Encountered Cascade candidate with 0 charge";
@@ -468,6 +483,8 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
   float mPhiMax = o2::constants::math::TwoPI;
   float mLambdaMassMin = 1.f;
   float mLambdaMassMax = 1.2f;
+  bool mRequireTof = false;
+  bool mKeepTracksWithoutTof = false;
 };
 
 struct CascadeBuilderProducts : o2::framework::ProducesGroup {
@@ -507,7 +524,7 @@ class CascadeBuilder
       LOG(info) << "Initialize femto Xi builder...";
       mProduceLiteXis = utils::enableTable("FLiteXis_001", table.produceLiteXis.value, initContext);
       mProduceXis = utils::enableTable("FXis_001", table.produceXis.value, initContext);
-      mProduceXiMasks = utils::enableTable("FXiMasks_001", table.produceXiMasks.value, initContext);
+      mProduceXiMasks = utils::enableTable("FXiMasks_002", table.produceXiMasks.value, initContext);
       mProduceXiExtras = utils::enableTable("FXiExtras_001", table.produceXiExtras.value, initContext);
 
       if (mProduceXis && mProduceLiteXis) {
@@ -530,7 +547,7 @@ class CascadeBuilder
       LOG(info) << "Initialize femto Omega builder...";
       mProduceOmegas = utils::enableTable("FOmegas_001", table.produceOmegas.value, initContext);
       mProduceLiteOmegas = utils::enableTable("FLiteOmegas_001", table.produceLiteOmegas.value, initContext);
-      mProduceOmegaMasks = utils::enableTable("FOmegaMasks_001", table.produceOmegaMasks.value, initContext);
+      mProduceOmegaMasks = utils::enableTable("FOmegaMasks_002", table.produceOmegaMasks.value, initContext);
       mProduceOmegaExtras = utils::enableTable("FOmegaExtras_001", table.produceOmegaExtras.value, initContext);
 
       if (mProduceOmegas && mProduceLiteOmegas) {
@@ -619,20 +636,20 @@ class CascadeBuilder
       collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
 
       auto bachelor = cascade.template bachelor_as<T8>();
-      bachelorIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCascadeBachelor>(col, collisionBuilder, mcCols, bachelor, trackProducts, mcParticles, mcBuilder, mcProducts);
+      bachelorIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCascadeBachelor>(bachelor, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
 
       auto posDaughter = cascade.template posTrack_as<T8>();
-      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionBuilder, mcCols, posDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(posDaughter, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
 
       auto negDaughter = cascade.template negTrack_as<T8>();
-      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionBuilder, mcCols, negDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(negDaughter, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
 
       fillCascade(collisionBuilder, cascadeProducts, cascade, col, bachelorIndex, posDaughterIndex, negDaughterIndex);
       if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
-        mcBuilder.template fillMcXiWithLabel<system>(col, mcCols, cascade, mcParticles, mcProducts);
+        mcBuilder.template fillMcXiWithLabel<system>(cascade, mcParticles, mcCols, mcProducts);
       }
       if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
-        mcBuilder.template fillMcOmegaWithLabel<system>(col, mcCols, cascade, mcParticles, mcProducts);
+        mcBuilder.template fillMcOmegaWithLabel<system>(cascade, mcParticles, mcCols, mcProducts);
       }
     }
   }
@@ -716,7 +733,8 @@ class CascadeBuilder
     }
   }
 
-  bool fillAnyTable() { return mFillAnyTable; }
+  [[nodiscard]] bool fillAnyTable() const { return mFillAnyTable; }
+  [[nodiscard]] bool isPassThrough() const { return mCascadeSelection.isPassThrough(); }
 
  private:
   CascadeSelection<cascadeType, SelectionHistName, FilterHistName> mCascadeSelection;

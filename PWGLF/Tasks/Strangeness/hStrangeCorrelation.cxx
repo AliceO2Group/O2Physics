@@ -76,6 +76,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -130,6 +131,7 @@ struct HStrangeCorrelation {
     Configurable<int> mixingParameter{"mixingParameter", 10, "how many events are mixed"};
     Configurable<bool> doMCassociation{"doMCassociation", false, "fill everything only for MC associated"};
     Configurable<bool> doTriggPhysicalPrimary{"doTriggPhysicalPrimary", false, "require physical primary for trigger particles"};
+    Configurable<bool> doClosureTestTriggerWithRecoTrackMatch{"doClosureTestTriggerWithRecoTrackMatch", false, "add closure-test correlations requiring the truth trigger to have at least one reconstructed track with a matching MC label"};
     Configurable<bool> applyNewMCSelection{"applyNewMCSelection", false, "apply new MC Generated selection"};
     Configurable<bool> doSeparateFT0Prediction{"doSeparateFT0Prediction", false, "separate FT0M to FT0A and FT0C in prediction process"};
     Configurable<bool> useCentralityinPrediction{"useCentralityinPrediction", false, "if true, use centrality instead of multiplisity"};
@@ -2236,6 +2238,7 @@ struct HStrangeCorrelation {
       histos.add("PairLossK0/Stage/hCounts", "pair-loss diagnostic stage counts", kTH1F, {axisPairLossStage});
       histos.add("PairLossK0/Stage/hCountsFindable", "pair-loss diagnostic stage counts for findable K0", kTH1F, {axisPairLossStage});
       histos.add("PairLossK0/Stage/hPhysics", "stages in h-K0 physics variables", kTHnF, {axisPairLossStage, axisPairLossTruthDeltaPhi, axisPairLossTruthDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt, axisPairLossFieldSign});
+      histos.add("PairLossK0/Stage/hPhysicsFindable", "stages in h-K0 physics variables for findable K0", kTHnF, {axisPairLossStage, axisPairLossTruthDeltaPhi, axisPairLossTruthDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt, axisPairLossFieldSign});
       histos.add("PairLossK0/Stage/hClose", "stages in trigger-daughter close-pair variables", kTHnF, {axisPairLossStage, axisPairLossMinDeltaPhiStar, axisPairLossDaughterDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt, axisPairLossFieldSign, axisPairLossChargeProduct});
       histos.add("PairLossK0/Stage/hTriggerTracksFailureReason", "first-failing TriggerTracks condition for best-collision triggers, in h-K0 physics variables", kTHnF, {axisPairLossTriggerTracksFailureReason, axisPairLossTruthDeltaPhi, axisPairLossTruthDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt});
 
@@ -2550,9 +2553,16 @@ struct HStrangeCorrelation {
       for (int i = 0; i < AssocParticleTypes; i++) {
         if (TESTBIT(doCorrelation, i)) {
           histos.add(fmt::format("ClosureTest/sameEvent/{}", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+          if (masterConfigurations.doClosureTestTriggerWithRecoTrackMatch) {
+            histos.add(fmt::format("ClosureTest/TriggerWithRecoTrackMatch/sameEvent/{}", Particlenames[i]).c_str(), "truth pairs whose trigger has at least one reconstructed track with a matching MC label", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+          }
           if (masterConfigurations.doCorrelationsHadronV0daughter) {
             histos.add(fmt::format("ClosureTest/sameEvent/{}_SameSignDaughter", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
             histos.add(fmt::format("ClosureTest/sameEvent/{}_OppSignDaughter", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+            if (masterConfigurations.doClosureTestTriggerWithRecoTrackMatch) {
+              histos.add(fmt::format("ClosureTest/TriggerWithRecoTrackMatch/sameEvent/{}_SameSignDaughter", Particlenames[i]).c_str(), "truth trigger-daughter pairs whose trigger has a reconstructed-track match; same-sign daughter", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+              histos.add(fmt::format("ClosureTest/TriggerWithRecoTrackMatch/sameEvent/{}_OppSignDaughter", Particlenames[i]).c_str(), "truth trigger-daughter pairs whose trigger has a reconstructed-track match; opposite-sign daughter", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+            }
           }
         }
         if (TESTBIT(doCorrelation, i)) {
@@ -2560,6 +2570,9 @@ struct HStrangeCorrelation {
         }
       }
       histos.add("ClosureTest/hTrigger", "Trigger Tracks", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
+      if (masterConfigurations.doClosureTestTriggerWithRecoTrackMatch) {
+        histos.add("ClosureTest/TriggerWithRecoTrackMatch/hTrigger", "Truth triggers with at least one reconstructed track with a matching MC label;#it{p}_{T}^{truth} (GeV/c);#eta^{truth};centrality (%)", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisMult});
+      }
     }
     if (doprocessFeedDown) {
       histos.add("hLambdaXiMinusFeeddownMatrix", "hLambdaXiMinusFeeddownMatrix", kTH2F, {axisPtLambda, axisPtCascade});
@@ -4153,6 +4166,7 @@ struct HStrangeCorrelation {
             histos.fill(HIST("PairLossK0/Stage/hPhysics"), stage, truthDeltaPhi, truthDeltaEta, truthK0.pt, truthTrigger.pt, magneticFieldSign);
             if (truthK0.findable) {
               histos.fill(HIST("PairLossK0/Stage/hCountsFindable"), stage);
+              histos.fill(HIST("PairLossK0/Stage/hPhysicsFindable"), stage, truthDeltaPhi, truthDeltaEta, truthK0.pt, truthTrigger.pt, magneticFieldSign);
               if (closestDeltaPhiStar.valid) {
                 histos.fill(HIST("PairLossK0/Stage/hClose"), stage, closestDeltaPhiStar.minAbs, closestDeltaEta, truthK0.pt, truthTrigger.pt, magneticFieldSign, closestChargeProduct);
               }
@@ -4234,7 +4248,10 @@ struct HStrangeCorrelation {
     }
   }
 
-  void processClosureTest(aod::McCollision const& /*mcCollision*/, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>> const& recCollisions, aod::McParticles const& mcParticles)
+  void processClosureTest(aod::McCollision const& /*mcCollision*/,
+                          soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>> const& recCollisions,
+                          aod::McParticles const& mcParticles,
+                          TracksCompleteMC const& tracks)
   {
 
     std::vector<uint32_t> triggerIndices;
@@ -4248,6 +4265,22 @@ struct HStrangeCorrelation {
     std::vector<uint32_t> xiPlusIndices;
     std::vector<uint32_t> omegaMinusIndices;
     std::vector<uint32_t> omegaPlusIndices;
+
+    // A truth trigger belongs to this set when at least one reconstructed track
+    // in any reconstructed collision associated with the current MC collision
+    // points back to it through its MC label. No best-collision, track-quality,
+    // or final-trigger selection is imposed here: this is the "any track" stage.
+    std::unordered_set<int64_t> mcParticleIdsWithRecoTrackMatch;
+    if (masterConfigurations.doClosureTestTriggerWithRecoTrackMatch) {
+      for (auto const& recCollision : recCollisions) {
+        const auto trackSlice = tracks.sliceBy(pairLossTracksPerCollision, recCollision.globalIndex());
+        for (auto const& track : trackSlice) {
+          if (track.has_mcParticle()) {
+            mcParticleIdsWithRecoTrackMatch.insert(track.mcParticleId());
+          }
+        }
+      }
+    }
 
     for (auto const& mcParticle : mcParticles) {
       double geta = mcParticle.eta();
@@ -4354,6 +4387,9 @@ struct HStrangeCorrelation {
         if (!masterConfigurations.doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
           triggerIndices.emplace_back(iteratorNum);
           histos.fill(HIST("ClosureTest/hTrigger"), gpt, geta, bestCollisionCentpercentile);
+          if (masterConfigurations.doClosureTestTriggerWithRecoTrackMatch && mcParticleIdsWithRecoTrackMatch.find(mcParticle.globalIndex()) != mcParticleIdsWithRecoTrackMatch.end()) {
+            histos.fill(HIST("ClosureTest/TriggerWithRecoTrackMatch/hTrigger"), gpt, geta, bestCollisionCentpercentile);
+          }
         }
         if (masterConfigurations.doCorrelationHadron) {
           if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
@@ -4417,6 +4453,7 @@ struct HStrangeCorrelation {
       double getatrigger = triggerParticle.eta();
       double gphitrigger = triggerParticle.phi();
       double pttrigger = triggerParticle.pt();
+      const bool triggerHasRecoTrackMatch = masterConfigurations.doClosureTestTriggerWithRecoTrackMatch && mcParticleIdsWithRecoTrackMatch.find(triggerParticle.globalIndex()) != mcParticleIdsWithRecoTrackMatch.end();
       auto const* triggerPdg = pdgDB->GetParticle(triggerParticle.pdgCode());
       const double triggerCharge = triggerPdg ? triggerPdg->Charge() : 0.;
       auto const& mother = triggerParticle.mothers_first_as<aod::McParticles>();
@@ -4444,6 +4481,9 @@ struct HStrangeCorrelation {
             }
             if (TESTBIT(doCorrelation, i)) {
               histos.fill(HIST("ClosureTest/sameEvent/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, bestCollisionVtxZ, bestCollisionCentpercentile);
+              if (triggerHasRecoTrackMatch) {
+                histos.fill(HIST("ClosureTest/TriggerWithRecoTrackMatch/sameEvent/") + HIST(Particlenames[Index]), computeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, bestCollisionVtxZ, bestCollisionCentpercentile);
+              }
             }
             if (i < 3 && TESTBIT(doCorrelation, i) && masterConfigurations.doCorrelationsHadronV0daughter) {
               auto const assocParticleDaughters = assocParticle.daughters_as<aod::McParticles>();
@@ -4456,8 +4496,14 @@ struct HStrangeCorrelation {
                 }
                 if (triggerCharge * daughterCharge > 0.) {
                   histos.fill(HIST("ClosureTest/sameEvent/") + HIST(Particlenames[Index]) + HIST("_SameSignDaughter"), computeDeltaPhi(gphitrigger, assocParticleDaughter.phi()), getatrigger - assocParticleDaughter.eta(), assocParticleDaughter.pt(), pttrigger, bestCollisionVtxZ, bestCollisionCentpercentile);
+                  if (triggerHasRecoTrackMatch) {
+                    histos.fill(HIST("ClosureTest/TriggerWithRecoTrackMatch/sameEvent/") + HIST(Particlenames[Index]) + HIST("_SameSignDaughter"), computeDeltaPhi(gphitrigger, assocParticleDaughter.phi()), getatrigger - assocParticleDaughter.eta(), assocParticleDaughter.pt(), pttrigger, bestCollisionVtxZ, bestCollisionCentpercentile);
+                  }
                 } else {
                   histos.fill(HIST("ClosureTest/sameEvent/") + HIST(Particlenames[Index]) + HIST("_OppSignDaughter"), computeDeltaPhi(gphitrigger, assocParticleDaughter.phi()), getatrigger - assocParticleDaughter.eta(), assocParticleDaughter.pt(), pttrigger, bestCollisionVtxZ, bestCollisionCentpercentile);
+                  if (triggerHasRecoTrackMatch) {
+                    histos.fill(HIST("ClosureTest/TriggerWithRecoTrackMatch/sameEvent/") + HIST(Particlenames[Index]) + HIST("_OppSignDaughter"), computeDeltaPhi(gphitrigger, assocParticleDaughter.phi()), getatrigger - assocParticleDaughter.eta(), assocParticleDaughter.pt(), pttrigger, bestCollisionVtxZ, bestCollisionCentpercentile);
+                  }
                 }
               }
             }

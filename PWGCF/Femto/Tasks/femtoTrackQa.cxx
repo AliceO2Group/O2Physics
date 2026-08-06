@@ -130,7 +130,7 @@ struct FemtoTrackQa {
       if (!trackCleaner.isClean(track, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      trackHistManager.fill<modes::Mode::kReco_Qa_Mc>(track, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      trackHistManager.fill<modes::Mode::kReco_Qa_Mc>(track, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoTrackQa, processMc, "Track QA in Monte Carlo", false);

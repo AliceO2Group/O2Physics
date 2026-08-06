@@ -190,7 +190,7 @@ struct FemtoV0Qa {
       if (!k0shortCleaner.isClean(k0short, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      k0shortHistManager.fill<modes::Mode::kReco_Qa_Mc>(k0short, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      k0shortHistManager.fill<modes::Mode::kReco_Qa_Mc>(k0short, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoV0Qa, processK0shortMc, "Process k0shorts with MC information", false);
@@ -219,7 +219,7 @@ struct FemtoV0Qa {
       if (!lambdaCleaner.isClean(lambda, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      lambdaHistManager.fill<modes::Mode::kReco_Qa_Mc>(lambda, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      lambdaHistManager.fill<modes::Mode::kReco_Qa_Mc>(lambda, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoV0Qa, processLambdaMc, "Process lambdas with MC informaton", false);

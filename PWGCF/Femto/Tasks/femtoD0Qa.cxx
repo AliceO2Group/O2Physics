@@ -146,7 +146,7 @@ struct FemtoD0Qa {
     }
     colHistManager.fill<modes::Mode::kReco_Qa_Mc>(col, mcCols);
     for (auto const& d0 : d0Slice) {
-      d0HistManager.fill<modes::Mode::kReco_Qa_Mc>(d0, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      d0HistManager.fill<modes::Mode::kReco_Qa_Mc>(d0, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoD0Qa, processD0Mc, "Process D0s with MC information", false);

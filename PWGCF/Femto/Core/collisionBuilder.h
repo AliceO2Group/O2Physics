@@ -694,7 +694,7 @@ class CollisionBuilder
       return;
     }
     this->template fillCollision<system>(collisionProducts, col);
-    mcBuilder.template fillMcCollisionWithLabel<system>(mcProducts, col, mcCols);
+    mcBuilder.template fillMcCollisionWithLabel<system>(col, mcCols, mcProducts);
   }
 
   [[nodiscard]] int64_t collisionIndex() const { return mCurrentCollisionIndex; }
@@ -704,6 +704,8 @@ class CollisionBuilder
     mCurrentCollisionIndex = -1;
   }
 
+  [[nodiscard]] bool fillAnyTable() const { return mFillAnyTable; }
+  [[nodiscard]] bool isPassThrough() const { return mCollisionSelection.isPassThrough(); }
   [[nodiscard]] bool producingCollisions() const { return mProducedCollisions; }
   [[nodiscard]] bool producingLiteCollisions() const { return mProducedLiteCollisions; }
 
