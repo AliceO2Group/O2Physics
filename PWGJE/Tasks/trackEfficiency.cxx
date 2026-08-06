@@ -106,6 +106,7 @@ struct TrackEfficiency {
 
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
+  float pTHatSettingSentinelValue = 999.0;
 
   enum AcceptSplitCollisionsOptions {
     NonSplitOnly = 0,
@@ -518,7 +519,7 @@ struct TrackEfficiency {
     }
     registry.fill(HIST("hMcCollCutsCounts"), 5.5); // at least one of the reconstructed collisions associated with this mcCollision is selected with regard to centrality
 
-    float pTHat = mcCollision.ptHard() < 999.0f ? mcCollision.ptHard() : simPtRef / (std::pow(mcCollision.weight(), 1.0 / pTHatExponent));
+    float pTHat = mcCollision.ptHard() < pTHatSettingSentinelValue ? mcCollision.ptHard() : simPtRef / (std::pow(mcCollision.weight(), 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
     }
@@ -861,7 +862,7 @@ struct TrackEfficiency {
       return;
     }
 
-    float pTHat = collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(collision.mcCollision().weight(), 1.0 / pTHatExponent));
+    float pTHat = collision.mcCollision().ptHard() < pTHatSettingSentinelValue ? collision.mcCollision().ptHard() : simPtRef / (std::pow(collision.mcCollision().weight(), 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
     }
@@ -890,7 +891,7 @@ struct TrackEfficiency {
       return;
     }
 
-    float pTHat = collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = collision.mcCollision().ptHard() < pTHatSettingSentinelValue ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
     }
@@ -915,7 +916,7 @@ struct TrackEfficiency {
       return;
     }
 
-    float pTHat = mcCollision.ptHard() < 999.0f ? mcCollision.ptHard() : simPtRef / (std::pow(mcCollision.weight(), 1.0 / pTHatExponent));
+    float pTHat = mcCollision.ptHard() < pTHatSettingSentinelValue ? mcCollision.ptHard() : simPtRef / (std::pow(mcCollision.weight(), 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
     }
@@ -978,7 +979,7 @@ struct TrackEfficiency {
       return;
     }
 
-    float pTHat = mcCollision.ptHard() < 999.0f ? mcCollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = mcCollision.ptHard() < pTHatSettingSentinelValue ? mcCollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
     }
@@ -1072,7 +1073,7 @@ struct TrackEfficiency {
     registry.fill(HIST("h_collisions"), 3.5);
     registry.fill(HIST("h2_centrality_collisions"), centrality, 3.5);
 
-    float pTHat = collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(collision.mcCollision().weight(), 1.0 / pTHatExponent));
+    float pTHat = collision.mcCollision().ptHard() < pTHatSettingSentinelValue ? collision.mcCollision().ptHard() : simPtRef / (std::pow(collision.mcCollision().weight(), 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
     }
@@ -1109,7 +1110,7 @@ struct TrackEfficiency {
     registry.fill(HIST("h_collisions"), 3.5);
     registry.fill(HIST("h_collisions_weighted"), 3.5, eventWeight);
 
-    float pTHat = collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = collision.mcCollision().ptHard() < pTHatSettingSentinelValue ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
     }
@@ -1124,7 +1125,7 @@ struct TrackEfficiency {
     // float centrality = checkCentFT0M ? mcCollision.centFT0M() : mcCollision.centFT0C(); mcCollision.centFT0C() isn't filled at the moment; can be added back when it is
 
     float eventWeight = mcCollision.weight();
-    float pTHat = mcCollision.ptHard() < 999.0f ? mcCollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = mcCollision.ptHard() < pTHatSettingSentinelValue ? mcCollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     registry.fill(HIST("h2_mccollision_pthardfromweight_pthardfromhepmcxsection"), simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent)), mcCollision.ptHard());
 
     float centrality = -1;
@@ -1196,7 +1197,7 @@ struct TrackEfficiency {
     // float centrality = checkCentFT0M ? mcCollision.centFT0M() : mcCollision.centFT0C();  mcCollision.centFT0C() isn't filled at the moment; can be added back when it is
 
     float eventWeight = mcCollision.weight();
-    float pTHat = mcCollision.ptHard() < 999.0f ? mcCollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = mcCollision.ptHard() < pTHatSettingSentinelValue ? mcCollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     registry.fill(HIST("h2_mccollision_pthardfromweight_pthardfromhepmcxsection"), simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent)), mcCollision.ptHard());
     registry.fill(HIST("h2_mccollision_pthardfromweight_pthardfromhepmcxsection_weighted"), simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent)), mcCollision.ptHard(), eventWeight);
 
