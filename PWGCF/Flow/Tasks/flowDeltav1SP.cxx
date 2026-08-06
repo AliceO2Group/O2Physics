@@ -53,6 +53,7 @@
 #include <TProfile2D.h>
 #include <TProfile3D.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -899,7 +900,7 @@ struct FlowDeltav1SP {
       if (p < pBoundary) {
         // Only require TPC
         return std::abs(nSigmaTPC) < NSigmaTPC_Species;
-      } else if (p >= pBoundary) {
+      } else {
         // Require TPC and TOF
         return hasTOF && std::abs(nSigmaTPC) < NSigmaTPC_Species && std::abs(nSigmaTOF) < NSigmaTOF_Species;
       }
