@@ -326,6 +326,7 @@ struct LumiVertex {
       LOGF(fatal,
            "GRPLHCIFData is not available for run=%d at timestamp=%llu",
            bc.runNumber(), bc.timestamp());
+      return;
     }
 
     const auto beamPatternA =
