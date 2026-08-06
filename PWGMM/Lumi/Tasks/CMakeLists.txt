@@ -34,7 +34,7 @@ o2physics_add_dpl_workflow(lumifddft0 # o2-linter: disable=name/o2-workflow (leg
                         O2::DetectorsVertexing
                         COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(fit-lumi
+o2physics_add_dpl_workflow(fitvdm # o2-linter: disable=name/o2-workflow (legacy workflow keeps its existing name)
         SOURCES fitLumi.cxx
         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
         O2::ReconstructionDataFormats
@@ -43,7 +43,7 @@ o2physics_add_dpl_workflow(fit-lumi
         O2::DetectorsVertexing
         COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lumi-stability
+o2physics_add_dpl_workflow(lumistab # o2-linter: disable=name/o2-workflow (legacy workflow keeps its existing name)
         SOURCES lumiStability.cxx
         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
         O2::ReconstructionDataFormats
