@@ -607,11 +607,11 @@ struct Alice3strangenessFinder {
           }
 
           histos.fill(HIST("hCascadeBuilding"), 1.0);
-          if (inLambdaMassWindow && bachTrack.sign() > 0) {
+          if (!inLambdaMassWindow && bachTrack.sign() < 0) {
             continue; // only consider lambda and neg bach track
           }
 
-          if (inAntiLambdaMassWindow && bachTrack.sign() < 0) {
+          if (!inAntiLambdaMassWindow && bachTrack.sign() > 0) {
             continue; // only consider anti-lambda and pos bach track
           }
 
