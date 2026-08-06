@@ -33,13 +33,12 @@
 
 #include <Rtypes.h>
 
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <string>
 #include <type_traits>
 #include <vector>
-
-#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -367,9 +366,9 @@ struct JetCorrelationD0 {
       } else if (d0DecayChannel < 0) { // matched to a D0bar on truth level (any channel)
         matchedFrom = -1;
       }
-      if (d0Candidate.candidateSelFlag() & BIT(0)) { // CandidateSelFlag == BIT(0) -> selected as D0
+      if ((d0Candidate.candidateSelFlag() & BIT(0)) != 0) { // CandidateSelFlag == BIT(0) -> selected as D0
         selectedAs = 1;
-      } else if (d0Candidate.candidateSelFlag() & BIT(1)) { // CandidateSelFlag == BIT(1) -> selected as D0bar
+      } else if ((d0Candidate.candidateSelFlag() & BIT(1)) != 0) { // CandidateSelFlag == BIT(1) -> selected as D0bar
         selectedAs = -1;
       }
       if ((std::abs(d0DecayChannel) == kD0ToKPi) && (matchedFrom != 0) && (selectedAs == matchedFrom)) {
@@ -471,11 +470,7 @@ struct JetCorrelationD0 {
       if (d0Candidate.pt() < d0PtCutMin) { // once settled on a mlcut, then add the lower bound of the systematics as a cut here
         continue;
       }
-      bool isMatched = false;
-      const auto& d0Particle = jethfutilities::matchedHFParticle(d0Candidate, tracks, particles, isMatched);
-      if (!isMatched) {
-        continue;
-      }
+      const auto& d0Particle = jethfutilities::matchedHFParticle(d0Candidate, tracks, particles);
       for (const auto& McDJet : McDJets) {
         if (McDJet.pt() < jetPtCutMin) {
           continue;

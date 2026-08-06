@@ -78,6 +78,7 @@ using CollBracket = o2::math_utils::Bracket<int>;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
 using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::TOFSignal, aod::TOFEvTime>;
+using TrackCandidatesMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
 
 namespace
 {
@@ -179,6 +180,7 @@ struct HadNucandidate {
 struct HadNucleiFemto {
 
   Produces<aod::HadronNucleiTable> mOutputDataTable;
+  Produces<aod::HadronNucleiTableMC> mOutputMCTable;
   Produces<aod::HadronHyperTable> mOutputHyperDataTable;
   Produces<aod::HadronNucleiMult> mOutputMultiplicityTable;
 
@@ -242,7 +244,6 @@ struct HadNucleiFemto {
     std::string prefix{"deuteronPid"};
     // Deuteron purity and PID cuts
     Configurable<float> settingCutPinMinDe{"settingCutPinMinDe", 0.0f, "Minimum Pin for De"};
-    Configurable<float> settingCutClSizeItsDe{"settingCutClSizeItsDe", 4.0f, "Minimum ITS cluster size for De"};
     Configurable<float> settingCutDeptMin{"settingCutDeptMin", 0.6f, "Minimum PT cut on De"};
     Configurable<float> settingCutDeptMax{"settingCutDeptMax", 1.6f, "Maximum PT cut on De"};
     Configurable<float> settingCutPinMinTOFITSDe{"settingCutPinMinTOFITSDe", 1.2f, "Minimum p to apply the TOF ITS cut on De"};
@@ -288,6 +289,16 @@ struct HadNucleiFemto {
     Configurable<int> settingClosePairRadiusMode{"settingClosePairRadiusMode", 1, "Close pair rejection mode: 0 = PV, 1 = average phi star, 2 = specific TPC radius"};
     Configurable<float> settingClosePairSpecificRadius{"settingClosePairSpecificRadius", 85.f, "TPC radius in cm used when close pair rejection mode is 2"};
   } CPR;
+
+  struct : o2::framework::ConfigurableGroup {
+    // cppcheck-suppress unusedStructMember
+    std::string prefix{"mc"};
+    Configurable<bool> settingRequireSel8{"settingRequireSel8", true, "Apply the same sel8 event selection to reconstructed MC as to data"};
+    Configurable<bool> settingRequireTruthSpecies{"settingRequireTruthSpecies", true, "Store only truth-matched pion-nucleus pairs"};
+    Configurable<bool> settingRequireSameMCCollision{"settingRequireSameMCCollision", true, "Require the two truth particles to come from the same MC collision"};
+    Configurable<bool> settingRequireRecoMCCollisionMatch{"settingRequireRecoMCCollisionMatch", true, "Require both truth particles to match the reconstructed collision MC label"};
+    Configurable<bool> settingRequirePhysicalPrimaries{"settingRequirePhysicalPrimaries", false, "Store only pairs in which both truth particles are physical primaries"};
+  } mc;
 
   struct : o2::framework::ConfigurableGroup {
     // cppcheck-suppress unusedStructMember
@@ -339,6 +350,7 @@ struct HadNucleiFemto {
   } pidCalibration;
 
   Preslice<TrackCandidates> mPerCol = aod::track::collisionId;
+  Preslice<TrackCandidatesMC> mPerColMC = aod::track::collisionId;
   PresliceUnsorted<o2::aod::DataHypCandsWColl> hypPerCol = o2::aod::hyperrec::collisionId;
 
   // binning for EM background
@@ -397,6 +409,12 @@ struct HadNucleiFemto {
      {"hHadPhi", "phi distribution; phi(had)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
      {"h2CPRBefore", "Close pair rejection before cut; #Delta#eta; #Delta#phi^{*}", {HistType::kTH2F, {{300, -0.15f, 0.15f}, {400, -0.2f, 0.2f}}}},
      {"h2CPRAfter", "Close pair rejection after cut; #Delta#eta; #Delta#phi^{*}", {HistType::kTH2F, {{300, -0.15f, 0.15f}, {400, -0.2f, 0.2f}}}},
+
+     // Reconstructed MC pair QA
+     {"MC/hPairFlow", "MC pair flow;step;counts", {HistType::kTH1F, {{7, -0.5f, 6.5f}}}},
+     {"MC/hKstarRecVsGen", "Reconstructed versus generated k*;generated k* (GeV/c);reconstructed k* (GeV/c)", {HistType::kTH2F, {{300, 0.f, 3.f}, {300, 0.f, 3.f}}}},
+     {"MC/hPtNuRecVsGen", "Reconstructed versus generated signed nucleus pT;generated pT (GeV/c);reconstructed pT (GeV/c)", {HistType::kTH2F, {{280, -7.f, 7.f}, {280, -7.f, 7.f}}}},
+     {"MC/hPtHadRecVsGen", "Reconstructed versus generated signed pion pT;generated pT (GeV/c);reconstructed pT (GeV/c)", {HistType::kTH2F, {{280, -7.f, 7.f}, {280, -7.f, 7.f}}}},
 
      // dE/dx
      {"h2dEdxNucandidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
@@ -466,6 +484,20 @@ struct HadNucleiFemto {
 
   void init(o2::framework::InitContext&)
   {
+    constexpr int closePairRadiusModePv = 0;
+    constexpr int closePairRadiusModeSpecificTpc = 2;
+    if (CPR.settingEnableClosePairRejection.value) {
+      if (CPR.settingClosePairDeltaEtaMax.value <= 0.f || CPR.settingClosePairDeltaPhiMax.value <= 0.f) {
+        LOG(fatal) << "Close-pair rejection requires positive delta-eta and delta-phi-star limits";
+      }
+      if (CPR.settingClosePairRadiusMode.value < closePairRadiusModePv || CPR.settingClosePairRadiusMode.value > closePairRadiusModeSpecificTpc) {
+        LOG(fatal) << "Invalid close-pair radius mode " << CPR.settingClosePairRadiusMode.value << "; expected 0, 1, or 2";
+      }
+      if (CPR.settingClosePairRadiusMode.value == closePairRadiusModeSpecificTpc && CPR.settingClosePairSpecificRadius.value <= 0.f) {
+        LOG(fatal) << "Close-pair rejection at a specific TPC radius requires a positive radius";
+      }
+    }
+
     mZorroSummary.setObject(mZorro.getZorroSummary());
     mRunNumber = 0;
 
@@ -505,17 +537,31 @@ struct HadNucleiFemto {
     }
   }
 
+  template <bool isMC>
   void initCCDB(const aod::BCsWithTimestamps::iterator& bc)
   {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-    if (zorro.settingSkimmedProcessing) {
-      mZorro.initCCDB(mCcdb.service, bc.runNumber(), bc.timestamp(), zorroTriggerMask());
-      mZorro.populateHistRegistry(mQaRegistry, bc.runNumber());
+    if constexpr (!isMC) {
+      if (zorro.settingSkimmedProcessing) {
+        mZorro.initCCDB(mCcdb.service, bc.runNumber(), bc.timestamp(), zorroTriggerMask());
+        mZorro.populateHistRegistry(mQaRegistry, bc.runNumber());
+      }
     }
     mRunNumber = bc.runNumber();
     const float defaultBzValue = -999.0f;
+
+    // A fixed field is sufficient for CPR and DCAFitter when material
+    // corrections are disabled. This also makes local MC tests independent
+    // of an AliEn token when the CCDB payload is stored on Grid.
+    if (ccdb.settingDbz > defaultBzValue && pidCalibration.settingMaterialCorrection == 0) {
+      mDbz = ccdb.settingDbz;
+      mFitter.setBz(mDbz);
+      LOG(info) << "Using configured magnetic field of " << mDbz << " kZG";
+      return;
+    }
+
     auto run3GrpTimestamp = bc.timestamp();
     auto* grpo = mCcdb->getForTimeStamp<o2::parameters::GRPObject>(ccdb.settingGrpPath, run3GrpTimestamp);
     o2::parameters::GRPMagField* grpmag = nullptr;
@@ -542,31 +588,47 @@ struct HadNucleiFemto {
         mDbz = ccdb.settingDbz;
       }
     }
+    mFitter.setBz(mDbz);
   }
 
   // ==================================================================================================================
+
+  template <bool isMC, typename Tcollision>
+  bool passesCollisionSelection(const Tcollision& collision)
+  {
+    // CPR uses phi* and therefore needs the magnetic field for MC as well.
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    initCCDB<isMC>(bc);
+
+    if constexpr (isMC) {
+      if ((mc.settingRequireSel8.value && !collision.sel8()) || std::abs(collision.posZ()) > eventMixing.settingCutVertex) {
+        return false;
+      }
+    } else {
+      if (!collision.sel8() || std::abs(collision.posZ()) > eventMixing.settingCutVertex) {
+        return false;
+      }
+      if (zorro.settingSkimmedProcessing) {
+        if (!mZorro.isSelected(bc.globalBC())) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
 
   template <bool isMC, typename Tcollision>
   bool selectCollision(const Tcollision& collision, const aod::BCsWithTimestamps&)
   {
     mQaRegistry.fill(HIST("hEvents"), 0);
 
-    if constexpr (isMC) {
-      if (/*!collision.sel8() ||*/ std::abs(collision.posZ()) > eventMixing.settingCutVertex) {
-        return false;
-      }
-    } else {
-      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
+    if (!passesCollisionSelection<isMC>(collision)) {
+      return false;
+    }
 
-      if (!collision.sel8() || std::abs(collision.posZ()) > eventMixing.settingCutVertex) {
-        return false;
-      }
+    if constexpr (!isMC) {
       if (zorro.settingSkimmedProcessing) {
-        const bool zorroSelected = mZorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
-        if (!zorroSelected) {
-          return false;
-        }
         mQaRegistry.fill(HIST("hEvents"), 2);
       }
     }
@@ -894,7 +956,7 @@ struct HadNucleiFemto {
   }
 
   template <typename Ttrack1, typename Ttrack2>
-  bool isClosePair(const Ttrack1& firstTrack, const Ttrack2& secondTrack)
+  bool isClosePair(const Ttrack1& firstTrack, const Ttrack2& secondTrack, bool fillQA)
   {
     if (!CPR.settingEnableClosePairRejection.value) {
       return false;
@@ -909,11 +971,13 @@ struct HadNucleiFemto {
       return false;
     }
 
-    mQaRegistry.fill(HIST("h2CPRBefore"), deltaEta, deltaPhi);
+    if (fillQA) {
+      mQaRegistry.fill(HIST("h2CPRBefore"), deltaEta, deltaPhi);
+    }
     const bool isRejected = std::pow(deltaPhi, 2.f) / std::pow(CPR.settingClosePairDeltaPhiMax.value, 2.f) +
                               std::pow(deltaEta, 2.f) / std::pow(CPR.settingClosePairDeltaEtaMax.value, 2.f) <
                             1.f;
-    if (!isRejected) {
+    if (fillQA && !isRejected) {
       mQaRegistry.fill(HIST("h2CPRAfter"), deltaEta, deltaPhi);
     }
     return isRejected;
@@ -1673,7 +1737,7 @@ struct HadNucleiFemto {
           continue;
         }
         hasHadronSelected = true;
-        if (isClosePair(track0, track1)) {
+        if (isClosePair(track0, track1, /*fillQA*/ true)) {
           continue;
         }
 
@@ -1739,7 +1803,7 @@ struct HadNucleiFemto {
         if (!selectTrackHadron(hadCand) || !selectionPIDHadron(hadCand)) {
           continue;
         }
-        if (isClosePair(DeCand, hadCand)) {
+        if (isClosePair(DeCand, hadCand, /*fillQA*/ true)) {
           continue;
         }
 
@@ -1809,6 +1873,35 @@ struct HadNucleiFemto {
         collision.centFT0C(),
         collision.multFT0C());
     }
+  }
+
+  template <typename TparticleNu, typename TparticleHad>
+  void fillMCTable(const HadNucandidate& hadNucand, const TparticleNu& particleNu, const TparticleHad& particleHad, bool sameMCCollision, bool matchesRecoMCCollision)
+  {
+    const float signedPtNuMC = particleNu.pdgCode() >= 0 ? particleNu.pt() : -particleNu.pt();
+    const float signedPtHadMC = particleHad.pdgCode() >= 0 ? particleHad.pt() : -particleHad.pt();
+    const std::array<float, 3> momentumNuMC{particleNu.px(), particleNu.py(), particleNu.pz()};
+    const std::array<float, 3> momentumHadMC{particleHad.px(), particleHad.py(), particleHad.pz()};
+    const float kstarMC = computePairKstar(momentumHadMC, mMassHad, momentumNuMC, nucleusMass());
+
+    mOutputMCTable(
+      signedPtNuMC,
+      particleNu.eta(),
+      particleNu.phi(),
+      signedPtHadMC,
+      particleHad.eta(),
+      particleHad.phi(),
+      kstarMC,
+      particleNu.pdgCode(),
+      particleHad.pdgCode(),
+      particleNu.isPhysicalPrimary(),
+      particleHad.isPhysicalPrimary(),
+      sameMCCollision,
+      matchesRecoMCCollision);
+
+    mQaRegistry.fill(HIST("MC/hKstarRecVsGen"), kstarMC, hadNucand.kstar);
+    mQaRegistry.fill(HIST("MC/hPtNuRecVsGen"), signedPtNuMC, hadNucand.recoPtNu());
+    mQaRegistry.fill(HIST("MC/hPtHadRecVsGen"), signedPtHadMC, hadNucand.recoPtHad());
   }
 
   template <typename Tcoll>
@@ -1954,6 +2047,89 @@ struct HadNucleiFemto {
 
   // ==================================================================================================================
 
+  void processMC(const CollisionsFullMC& collisions, const TrackCandidatesMC& tracks, const aod::McParticles&, const aod::BCsWithTimestamps& bcs)
+  {
+    mGoodCollisions.clear();
+    mGoodCollisions.resize(collisions.size(), false);
+
+    for (const auto& collision : collisions) {
+      mTrackPairs.clear();
+
+      if (!selectCollision</*isMC*/ true>(collision, bcs)) {
+        continue;
+      }
+      if (mc.settingRequireRecoMCCollisionMatch.value && !collision.has_mcCollision()) {
+        continue;
+      }
+
+      const uint64_t collIdx = collision.globalIndex();
+      mGoodCollisions[collIdx] = true;
+      auto tracksThisCollision = tracks.sliceBy(mPerColMC, collIdx);
+      tracksThisCollision.bindExternalIndices(&tracks);
+
+      // This is deliberately the same pair builder as for data. It applies
+      // nucleus/pion selections and CPR before truth matching.
+      pairTracksSameEvent(tracksThisCollision, collision.centFT0C());
+
+      for (const auto& trackPair : mTrackPairs) {
+        mQaRegistry.fill(HIST("MC/hPairFlow"), 0);
+        auto trackNu = tracks.rawIteratorAt(trackPair.tr0Idx);
+        auto trackHad = tracks.rawIteratorAt(trackPair.tr1Idx);
+
+        if (!trackNu.has_mcParticle() || !trackHad.has_mcParticle()) {
+          continue;
+        }
+        mQaRegistry.fill(HIST("MC/hPairFlow"), 1);
+
+        const auto particleNu = trackNu.template mcParticle_as<aod::McParticles>();
+        const auto particleHad = trackHad.template mcParticle_as<aod::McParticles>();
+        const bool truthSpeciesMatch = std::abs(particleNu.pdgCode()) == std::abs(species.settingNuPDGCode.value) &&
+                                       std::abs(particleHad.pdgCode()) == std::abs(species.settingHadPDGCode.value);
+        if (mc.settingRequireTruthSpecies.value && !truthSpeciesMatch) {
+          continue;
+        }
+        mQaRegistry.fill(HIST("MC/hPairFlow"), 2);
+
+        const bool sameMCCollision = particleNu.mcCollisionId() == particleHad.mcCollisionId();
+        if (mc.settingRequireSameMCCollision.value && !sameMCCollision) {
+          continue;
+        }
+        mQaRegistry.fill(HIST("MC/hPairFlow"), 3);
+
+        const bool matchesRecoMCCollision = collision.has_mcCollision() &&
+                                            particleNu.mcCollisionId() == collision.mcCollisionId() &&
+                                            particleHad.mcCollisionId() == collision.mcCollisionId();
+        if (mc.settingRequireRecoMCCollisionMatch.value && !matchesRecoMCCollision) {
+          continue;
+        }
+        mQaRegistry.fill(HIST("MC/hPairFlow"), 4);
+
+        if (mc.settingRequirePhysicalPrimaries.value &&
+            (!particleNu.isPhysicalPrimary() || !particleHad.isPhysicalPrimary())) {
+          continue;
+        }
+        mQaRegistry.fill(HIST("MC/hPairFlow"), 5);
+
+        HadNucandidate hadNucand;
+        if (!fillCandidateInfo(trackNu, trackHad, trackPair.collBracket, collisions, hadNucand, tracks, /*isMixedEvent*/ false)) {
+          continue;
+        }
+        mQaRegistry.fill(HIST("MC/hPairFlow"), 6);
+        auto selectedCollision = collisions.rawIteratorAt(hadNucand.collisionID);
+        fillKstar(hadNucand, selectedCollision);
+        fillHistograms(hadNucand);
+
+        if (output.settingFillTable && shouldFillOutputTable(hadNucand)) {
+          fillTable(hadNucand, selectedCollision);
+          fillMCTable(hadNucand, particleNu, particleHad, sameMCCollision, matchesRecoMCCollision);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(HadNucleiFemto, processMC, "Process reconstructed MC same-event pairs", false);
+
+  // ==================================================================================================================
+
   void processSameEvent(const CollisionsFull& collisions, const TrackCandidates& tracks, const aod::BCsWithTimestamps& bcs)
   {
     mGoodCollisions.clear();
@@ -2015,24 +2191,31 @@ struct HadNucleiFemto {
   }
   PROCESS_SWITCH(HadNucleiFemto, processSameEventHyper, "Process Same event", false);
 
-  void processMixedEvent(const CollisionsFull& collisions, const TrackCandidates& tracks)
+  void processMixedEvent(const CollisionsFull& collisions, const TrackCandidates& tracks, const aod::BCsWithTimestamps&)
   {
     LOG(debug) << "Processing mixed event";
-    mTrackPairs.clear();
 
     for (const auto& [c1, tracks1, c2, tracks2] : mPair) {
-      if (!c1.sel8() || !c2.sel8()) {
+      if (!passesCollisionSelection</*isMC*/ false>(c1) || !passesCollisionSelection</*isMC*/ false>(c2)) {
         continue;
       }
 
       mQaRegistry.fill(HIST("hNcontributor"), c1.numContrib());
       mQaRegistry.fill(HIST("hVtxZ"), c1.posZ());
 
+      auto bc1 = c1.template bc_as<aod::BCsWithTimestamps>();
+      auto bc2 = c2.template bc_as<aod::BCsWithTimestamps>();
+      initCCDB</*isMC*/ false>(bc1);
+      mTrackPairs.clear();
       pairTracksEventMixing(tracks1, tracks2);
-      pairTracksEventMixing(tracks2, tracks1);
-    }
+      fillPairs(collisions, tracks, /*isMixedEvent*/ true);
 
-    fillPairs(collisions, tracks, /*isMixedEvent*/ true);
+      initCCDB</*isMC*/ false>(bc2);
+      mTrackPairs.clear();
+      pairTracksEventMixing(tracks2, tracks1);
+      fillPairs(collisions, tracks, /*isMixedEvent*/ true);
+    }
+    mTrackPairs.clear();
   }
   PROCESS_SWITCH(HadNucleiFemto, processMixedEvent, "Process Mixed event", false);
 

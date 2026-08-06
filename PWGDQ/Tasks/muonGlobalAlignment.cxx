@@ -156,9 +156,11 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
   Configurable<float> cfgMftMchResidualsPtLow{"cfgMftMchResidualsPtLow", 4.f, ""};
 
   Configurable<uint32_t> cfgMftTracksMultiplicityMax{"cfgMftTracksMultiplicityMax", 0, "Maximum number of MFT tracks to be processed per event (zero means no limit)"};
-
-  Configurable<float> cfgDipoleZshift{"cfgDipoleZshift", 0.0f, "Correction to the dipole z position"};
-  Configurable<float> cfgVertexZshift{"cfgVertexZshift", 0.0f, "Correction to the vertex z position"};
+  
+  // Magnetic field position bias
+  Configurable<float> cfgFieldOriginBiasZ{"cfgFieldOriginBiasZ", 0.0f, "Bias applied to the magnetic field z position"};
+  Configurable<float> fVertexZshift{"cfgVertexZshift", 0.0f, "Correction to the vertex z position"};
+  Configurable<float> fDipoleZshift{"cfgDipoleZshift", 0.0f, "Correction to the dipole z position"};
 
   ////   Variables for MFT alignment corrections
   struct : ConfigurableGroup {
@@ -427,10 +429,8 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
     ccdbApi.init(configCCDB.ccdbUrl);
     mRunNumber = 0;
 
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      LOGF(info, "Load geometry from CCDB");
-      ccdbManager->get<TGeoManager>(configCCDB.geoPath);
-    }
+    // configure magnetic field position bias
+    o2::conf::ConfigurableParam::setValue("FieldOriginBias.z", std::to_string(cfgFieldOriginBiasZ.value));
 
     // Configuration for track fitter
     const auto& trackerParam = TrackerParam::Instance();
@@ -439,6 +439,9 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
     trackFitter.smoothTracks(true);
     trackFitter.useChamberResolution();
     mImproveCutChi2 = 2. * configRealign.cfgSigmaCutImprove * configRealign.cfgSigmaCutImprove;
+
+    // use the Runge-Kutta extrapolation v2
+    TrackExtrap::useExtrapV2();
 
     // Fill table of MCH alignment corrections
     rapidjson::Document document;

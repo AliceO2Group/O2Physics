@@ -32,13 +32,16 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
-#include <Framework/DataTypes.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <PID/PIDTOFParamService.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/PID.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
@@ -94,7 +97,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   Produces<aod::EMPrimaryElectronsFromDalitz> emprimaryelectrons;
   Produces<aod::EMPrimaryElectronsDeDxMC> emprimaryelectronsDeDxMC;
-  Service<o2::pid::tof::TOFResponse> mTOFResponse;
+  Service<o2::pid::tof::TOFResponse> mTOFResponse{};
 
   Produces<aod::EMTOFNSigmas> emtofs;
 
@@ -216,11 +219,11 @@ struct skimmerPrimaryElectronFromDalitzEE {
     fRegistry.add("Pair/uls/hMCutMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {{100, 0, 0.1}, {200, 0, 2}}, false);
     fRegistry.add("Pair/uls/hMPhiCutMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {{100, 0, 0.1}, {200, 0, 2}}, false);
 
-    fRegistry.add("Pair/uls/hTrackMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{180, 0, M_PI}, {100, 0, 0.1}}, false);
-    fRegistry.add("Pair/uls/hCheckEMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{180, 0, M_PI}, {100, 0, 0.1}}, false);
-    fRegistry.add("Pair/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{180, 0, M_PI}, {100, 0, 0.1}}, false);
-    fRegistry.add("Pair/uls/hMCutMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{180, 0, M_PI}, {100, 0, 0.1}}, false);
-    fRegistry.add("Pair/uls/hMPhiCutMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{180, 0, M_PI}, {100, 0, 0.1}}, false);
+    fRegistry.add("Pair/uls/hTrackMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{180, 0, o2::constants::math::PI}, {100, 0, 0.1}}, false);
+    fRegistry.add("Pair/uls/hCheckEMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{180, 0, o2::constants::math::PI}, {100, 0, 0.1}}, false);
+    fRegistry.add("Pair/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{180, 0, o2::constants::math::PI}, {100, 0, 0.1}}, false);
+    fRegistry.add("Pair/uls/hMCutMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{180, 0, o2::constants::math::PI}, {100, 0, 0.1}}, false);
+    fRegistry.add("Pair/uls/hMPhiCutMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{180, 0, o2::constants::math::PI}, {100, 0, 0.1}}, false);
 
     fRegistry.addClone("Pair/uls/", "Pair/lspp/");
     fRegistry.addClone("Pair/uls/", "Pair/lsmm/");
@@ -288,7 +291,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
             if (track.hasTOF() && track.has_collision()) { // TTCA may use orphan tracks.
               auto bcTrack = track.template collision_as<TCollisions>().template bc_as<TBCs>();
               float tofNSigmaEl = mTOFResponse->nSigma<o2::track::PID::Electron>(track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()), track.tofExpMom(), track.length(), track.p(), track.eta(), mapCollisionTime[collision.globalIndex()], mapCollisionTimeError[collision.globalIndex()]);
-              float beta = track.length() / (track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()) - mapCollisionTime[collision.globalIndex()]) / (TMath::C() * 1e+2 * 1e-12);
+              float beta = track.length() / (track.tofSignalInAnotherBC(bcTrack.globalBC(), bcCollision.globalBC()) - mapCollisionTime[collision.globalIndex()]) / (o2::constants::physics::LightSpeedCm2S * 1e-12);
               mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = tofNSigmaEl;
               mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())] = beta;
               emtofs(collision.globalIndex(), track.globalIndex(), mapTOFBetaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())], mapTOFNsigmaReassociated[std::make_pair(collision.globalIndex(), track.globalIndex())]);
@@ -377,7 +380,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
       return false;
     }
 
-    if (!includeITSsa && (!track.hasITS() || !track.hasTPC())) {
+    if (!includeITSsa && !track.hasTPC()) {
       return false;
     }
 
@@ -698,7 +701,6 @@ struct skimmerPrimaryElectronFromDalitzEE {
   std::vector<int> acceptedPosTrackIds_per_collision;
   std::vector<int> acceptedNegTrackIds_per_collision;
   std::vector<int> acceptedTrackIds_per_collision;
-  std::vector<std::pair<int, int>> stored_trackIds;
   // Filter trackFilter = minpt < o2::aod::track::pt && nabs(o2::aod::track::eta) < maxeta && o2::aod::track::itsChi2NCl < maxchi2its && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && nabs(o2::aod::track::dcaXY) < dca_xy_max && nabs(o2::aod::track::dcaZ) < dca_z_max;
   // Filter trackFilter
   // using MyFilteredTracks = soa::Filtered<MyTracks>;
@@ -718,11 +720,8 @@ struct skimmerPrimaryElectronFromDalitzEE {
     mTOFResponse->processSetup(bcs.iteratorAt(0));
 
     for (const auto& track : tracks) {
-      if (mapCollisionTime.find(track.collisionId()) == mapCollisionTime.end()) {
-        // LOGF(info, "track.collisionId() = %d, track.tofEvTime() = %f, track.tofEvTimeErr() = %f", track.collisionId(), track.tofEvTime(), track.tofEvTimeErr());
-        mapCollisionTime[track.collisionId()] = track.tofEvTime();
-        mapCollisionTimeError[track.collisionId()] = track.tofEvTimeErr();
-      }
+      mapCollisionTime.try_emplace(track.collisionId(), track.tofEvTime());
+      mapCollisionTimeError.try_emplace(track.collisionId(), track.tofEvTimeErr());
     }
     calculateTOFNSigmaWithReassociation<true>(collisions, bcs, tracks, trackIndices);
 
@@ -772,11 +771,8 @@ struct skimmerPrimaryElectronFromDalitzEE {
 
   //   mTOFResponse->processSetup(bcs.iteratorAt(0));
   //   for (const auto& track : tracks) {
-  //     if (mapCollisionTime.find(track.collisionId()) == mapCollisionTime.end()) {
-  //       // LOGF(info, "track.collisionId() = %d, track.tofEvTime() = %f, track.tofEvTimeErr() = %f", track.collisionId(), track.tofEvTime(), track.tofEvTimeErr());
-  //       mapCollisionTime[track.collisionId()] = track.tofEvTime();
-  //       mapCollisionTimeError[track.collisionId()] = track.tofEvTimeErr();
-  //     }
+  //     mapCollisionTime.try_emplace(track.collisionId(), track.tofEvTime());
+  //     mapCollisionTimeError.try_emplace(track.collisionId(), track.tofEvTimeErr());
   //   }
   //   calculateTOFNSigmaWithReassociation<true>(collisions, bcs, tracks, trackIndices);
 
@@ -840,11 +836,8 @@ struct skimmerPrimaryElectronFromDalitzEE {
 
     mTOFResponse->processSetup(bcs.iteratorAt(0));
     for (const auto& track : tracks) {
-      if (mapCollisionTime.find(track.collisionId()) == mapCollisionTime.end()) {
-        // LOGF(info, "track.collisionId() = %d, track.tofEvTime() = %f, track.tofEvTimeErr() = %f", track.collisionId(), track.tofEvTime(), track.tofEvTimeErr());
-        mapCollisionTime[track.collisionId()] = track.tofEvTime();
-        mapCollisionTimeError[track.collisionId()] = track.tofEvTimeErr();
-      }
+      mapCollisionTime.try_emplace(track.collisionId(), track.tofEvTime());
+      mapCollisionTimeError.try_emplace(track.collisionId(), track.tofEvTimeErr());
     }
     calculateTOFNSigmaWithReassociation<true>(collisions, bcs, tracks, trackIndices);
 

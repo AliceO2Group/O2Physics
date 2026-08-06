@@ -435,15 +435,15 @@ class CascadeHistManager
     }
   }
 
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fill(T1 const& cascadeCandidate, T2 const& tracks, T3 const& mcParticles, T4 const& mcMothers, T5 const& mcPartonicMothers)
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void fill(T1 const& cascadeCandidate, T2 const& tracks, T3 const& col, T4 const& mcParticles, T5 const& mcMothers, T6 const& mcPartonicMothers)
   {
     auto posDaughter = tracks.rawIteratorAt(cascadeCandidate.posDauId() - tracks.offset());
-    mPosDauManager.template fill<mode>(posDaughter, tracks, mcParticles, mcMothers, mcPartonicMothers);
+    mPosDauManager.template fill<mode>(posDaughter, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     auto negDaughter = tracks.rawIteratorAt(cascadeCandidate.negDauId() - tracks.offset());
-    mNegDauManager.template fill<mode>(negDaughter, tracks, mcParticles, mcMothers, mcPartonicMothers);
+    mNegDauManager.template fill<mode>(negDaughter, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     auto bachelor = tracks.rawIteratorAt(cascadeCandidate.bachelorId() - tracks.offset());
-    mBachelorManager.template fill<mode>(bachelor, tracks, mcParticles, mcMothers, mcPartonicMothers);
+    mBachelorManager.template fill<mode>(bachelor, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(cascadeCandidate);
@@ -452,7 +452,7 @@ class CascadeHistManager
       this->fillQa(cascadeCandidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
-      this->template fillMc<mode>(cascadeCandidate, mcParticles, mcMothers, mcPartonicMothers);
+      this->template fillMc<mode>(cascadeCandidate, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
 
@@ -598,8 +598,8 @@ class CascadeHistManager
     }
   }
 
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4>
-  void fillMc(T1 const& cascadeCandidate, T2 const& /*mcParticles*/, T3 const& /*mcMothers*/, T4 const& /*mcPartonicMothers*/)
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillMc(T1 const& cascadeCandidate, T2 const& col, T3 const& /*mcParticles*/, T4 const& /*mcMothers*/, T5 const& /*mcPartonicMothers*/)
   {
     // No MC Particle
     if (!cascadeCandidate.has_fMcParticle()) {
@@ -614,17 +614,21 @@ class CascadeHistManager
     }
 
     // Retrieve MC particle
-    auto mcParticle = cascadeCandidate.template fMcParticle_as<T2>();
+    auto mcParticle = cascadeCandidate.template fMcParticle_as<T3>();
 
-    // missidentifed particles are special case
+    // whether a particle is associated to a wrong collision or not cannot be known by the producer so we check it here
+    bool fromWrongCollision = mcParticle.fMcColId() != col.fMcColId();
+
     // whether a particle is missidentfied or not cannot be known by the producer so we check it here
     bool isMissidentified = mcParticle.pdgCode() != mPdgCode;
 
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kTruePtVsPt, HistTable)), mcParticle.pt(), cascadeCandidate.pt());
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kTrueEtaVsEta, HistTable)), mcParticle.eta(), cascadeCandidate.eta());
     mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kTruePhiVsPhi, HistTable)), mcParticle.phi(), cascadeCandidate.phi());
-    if (isMissidentified) {
-      mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<int>(modes::McOrigin::kMissidentified));
+    if (fromWrongCollision) {
+      mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kFromWrongCollision));
+    } else if (isMissidentified) {
+      mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kMissidentified));
     } else {
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), mcParticle.origin());
     }
@@ -632,7 +636,7 @@ class CascadeHistManager
 
     // get mother
     if (mcParticle.has_fMcMother()) {
-      auto mother = mcParticle.template fMcMother_as<T3>();
+      auto mother = mcParticle.template fMcMother_as<T4>();
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), mother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), 0);
@@ -640,7 +644,7 @@ class CascadeHistManager
 
     // get partonic mother
     if (mcParticle.has_fMcPartMoth()) {
-      auto partonicMother = mcParticle.template fMcPartMoth_as<T4>();
+      auto partonicMother = mcParticle.template fMcPartMoth_as<T5>();
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), partonicMother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), 0);
@@ -648,8 +652,9 @@ class CascadeHistManager
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
       if (mPlotOrigins) {
-        // check first if particle is missidentified
-        if (isMissidentified) {
+        if (fromWrongCollision) {
+          mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
+        } else if (isMissidentified) {
           // if it is, we fill it as such
           mHistogramRegistry->fill(HIST(cascadePrefix) + HIST(McDir) + HIST(getHistName(kMissidentified, HistTable)), cascadeCandidate.pt(), cascadeCandidate.cascadeCosPa());
         } else {
@@ -666,7 +671,7 @@ class CascadeHistManager
               break;
             case modes::McOrigin::kFromSecondaryDecay:
               if (mcParticle.has_fMcMother()) {
-                auto mother = mcParticle.template fMcMother_as<T3>();
+                auto mother = mcParticle.template fMcMother_as<T4>();
                 int motherPdgCode = std::abs(mother.pdgCode());
                 // Switch on PDG of the mother
                 if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {

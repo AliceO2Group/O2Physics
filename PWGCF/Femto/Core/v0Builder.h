@@ -85,6 +85,8 @@ struct ConfLambdaBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> posDauTofProton{"posDauTofProton", {}, "Maximum |nsigma_Proton| TOF for positive daughter tracks"};
   o2::framework::Configurable<std::vector<float>> negDauTofPion{"negDauTofPion", {}, "Maximum |nsigma_Pion| TOF for negative daughter tracks"};
   o2::framework::Configurable<std::vector<float>> negDauTofProton{"negDauTofProton", {}, "Maximum |nsigma_Proton| TOF for negative daughter tracks"};
+  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, TOF PID is a mandatory selection"};
+  o2::framework::Configurable<bool> keepTracksWithoutTof{"keepTracksWithoutTof", true, "If true, candidates whose daughters have no TOF signal are kept"};
 };
 
 // derived selection bits for K0Short
@@ -95,6 +97,8 @@ struct ConfK0shortBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> negDauTpcPion{"negDauTpcPion", {5.f}, "Maximum |nsimga_Pion| TPC for negative daughter tracks"};
   o2::framework::Configurable<std::vector<float>> posDauTofPion{"posDauTofPion", {}, "Maximum |nsigma_Pion| TOF for positive daughter tracks"};
   o2::framework::Configurable<std::vector<float>> negDauTofPion{"negDauTofPion", {}, "Maximum |nsigma_Pion| TOF for negative daughter tracks"};
+  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, TOF PID is a mandatory selection"};
+  o2::framework::Configurable<bool> keepTracksWithoutTof{"keepTracksWithoutTof", true, "If true, candidates whose daughters have no TOF signal are kept"};
 };
 
 #undef V0_DEFAULT_BITS
@@ -246,6 +250,8 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
     mEtaMax = filter.etaMax.value;
     mPhiMin = filter.phiMin.value;
     mPhiMax = filter.phiMax.value;
+    mRequireTof = config.requireTof.value;
+    mKeepTracksWithoutTof = config.keepTracksWithoutTof.value;
 
     if constexpr (modes::isEqual(v0Type, modes::V0::kLambda) || modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
       mMassLambdaLowerLimit = filter.massMinLambda.value;
@@ -257,15 +263,15 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
       if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
         this->addSelection(kPosDaughTpcProton, v0SelectionNames.at(kPosDaughTpcProton), config.posDauTpcProton.value, limits::kAbsUpperLimit, true, true, false);
         this->addSelection(kNegDaughTpcPion, v0SelectionNames.at(kNegDaughTpcPion), config.negDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
-        this->addSelection(kPosDaughTofProton, v0SelectionNames.at(kPosDaughTofProton), config.posDauTofProton.value, limits::kAbsUpperLimit, true, true, false);
-        this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, true, true, false);
+        this->addSelection(kPosDaughTofProton, v0SelectionNames.at(kPosDaughTofProton), config.posDauTofProton.value, limits::kAbsUpperLimit, true, mRequireTof, false);
+        this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, true, mRequireTof, false);
       }
 
       if constexpr (modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
         this->addSelection(kPosDaughTpcPion, v0SelectionNames.at(kPosDaughTpcPion), config.posDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
         this->addSelection(kNegDaughTpcProton, v0SelectionNames.at(kNegDaughTpcProton), config.negDauTpcProton.value, limits::kAbsUpperLimit, true, true, false);
-        this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, true, true, false);
-        this->addSelection(kNegDaughTofProton, v0SelectionNames.at(kNegDaughTofProton), config.negDauTofProton.value, limits::kAbsUpperLimit, true, true, false);
+        this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, true, mRequireTof, false);
+        this->addSelection(kNegDaughTofProton, v0SelectionNames.at(kNegDaughTofProton), config.negDauTofProton.value, limits::kAbsUpperLimit, true, mRequireTof, false);
       }
     }
     if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
@@ -277,8 +283,8 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
 
       this->addSelection(kPosDaughTpcPion, v0SelectionNames.at(kPosDaughTpcPion), config.posDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
       this->addSelection(kNegDaughTpcPion, v0SelectionNames.at(kNegDaughTpcPion), config.negDauTpcPion.value, limits::kAbsUpperLimit, true, true, false);
-      this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, true, true, false);
-      this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, true, true, false);
+      this->addSelection(kPosDaughTofPion, v0SelectionNames.at(kPosDaughTofPion), config.posDauTofPion.value, limits::kAbsUpperLimit, true, mRequireTof, false);
+      this->addSelection(kNegDaughTofPion, v0SelectionNames.at(kNegDaughTofPion), config.negDauTofPion.value, limits::kAbsUpperLimit, true, mRequireTof, false);
     }
 
     this->addSelection(kDcaDaughMax, v0SelectionNames.at(kDcaDaughMax), config.dcaDauMax.value, limits::kAbsUpperLimit, true, true, false);
@@ -345,10 +351,16 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
     if (posDaughter.hasTOF()) {
       this->evaluateObservable(kPosDaughTofPion, posDaughter.tofNSigmaPi());
       this->evaluateObservable(kPosDaughTofProton, posDaughter.tofNSigmaPr());
+    } else if (mKeepTracksWithoutTof) {
+      this->evaluateObservable(kPosDaughTofPion, 0);
+      this->evaluateObservable(kPosDaughTofProton, 0);
     }
     if (negDaughter.hasTOF()) {
       this->evaluateObservable(kNegDaughTofPion, negDaughter.tofNSigmaPi());
       this->evaluateObservable(kNegDaughTofProton, negDaughter.tofNSigmaPr());
+    } else if (mKeepTracksWithoutTof) {
+      this->evaluateObservable(kNegDaughTofPion, 0);
+      this->evaluateObservable(kNegDaughTofProton, 0);
     }
 
     this->assembleBitmask<SelectionHistName>();
@@ -452,6 +464,9 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
   float mEtaMax = 1.f;
   float mPhiMin = 0.f;
   float mPhiMax = o2::constants::math::TwoPI;
+
+  bool mRequireTof = false;
+  bool mKeepTracksWithoutTof = false;
 };
 
 struct V0BuilderProducts : o2::framework::ProducesGroup {
@@ -496,7 +511,7 @@ class V0Builder
       }
       mProduceLambdas = utils::enableTable("FLambdas_001", table.produceLambdas.value, initContext);
       mProduceLiteLambdas = utils::enableTable("FLiteLambdas_001", table.produceLiteLambdas.value, initContext);
-      mProduceLambdaMasks = utils::enableTable("FLambdaMasks_001", table.produceLambdaMasks.value, initContext);
+      mProduceLambdaMasks = utils::enableTable("FLambdaMasks_002", table.produceLambdaMasks.value, initContext);
       mProduceLambdaExtras = utils::enableTable("FLambdaExtras_001", table.produceLambdaExtras.value, initContext);
 
       if (mProduceLambdas && mProduceLiteLambdas) {
@@ -519,7 +534,7 @@ class V0Builder
       LOG(info) << "Initialize femto K0short builder...";
       mProduceK0shorts = utils::enableTable("FK0shorts_001", table.produceK0shorts.value, initContext);
       mProduceLiteK0shorts = utils::enableTable("FLiteK0shorts_001", table.produceLiteK0shorts.value, initContext);
-      mProduceK0shortMasks = utils::enableTable("FK0shortMasks_001", table.produceK0shortMasks.value, initContext);
+      mProduceK0shortMasks = utils::enableTable("FK0shortMasks_002", table.produceK0shortMasks.value, initContext);
       mProduceK0shortExtras = utils::enableTable("FK0shortExtras_001", table.produceK0shortExtras.value, initContext);
 
       if (mProduceK0shorts && mProduceLiteK0shorts) {
@@ -609,22 +624,22 @@ class V0Builder
       collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
 
       auto posDaughter = v0.template posTrack_as<T8>();
-      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionBuilder, mcCols, posDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+      posDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(posDaughter, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
 
       auto negDaughter = v0.template negTrack_as<T8>();
-      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(col, collisionBuilder, mcCols, negDaughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+      negDaughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kV0Daughter>(negDaughter, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
 
       if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
         fillLambda(collisionBuilder, v0Products, v0, 1.f, posDaughterIndex, negDaughterIndex);
-        mcBuilder.template fillMcLambdaWithLabel<system>(col, mcCols, v0, mcParticles, mcProducts);
+        mcBuilder.template fillMcLambdaWithLabel<system>(v0, mcParticles, mcCols, mcProducts);
       }
       if constexpr (modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
         fillLambda(collisionBuilder, v0Products, v0, -1.f, posDaughterIndex, negDaughterIndex);
-        mcBuilder.template fillMcLambdaWithLabel<system>(col, mcCols, v0, mcParticles, mcProducts);
+        mcBuilder.template fillMcLambdaWithLabel<system>(v0, mcParticles, mcCols, mcProducts);
       }
       if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
         fillK0short(collisionBuilder, v0Products, v0, posDaughterIndex, negDaughterIndex);
-        mcBuilder.template fillMcK0shortWithLabel<system>(col, mcCols, v0, mcParticles, mcProducts);
+        mcBuilder.template fillMcK0shortWithLabel<system>(v0, mcParticles, mcCols, mcProducts);
       }
     }
   }
@@ -713,6 +728,7 @@ class V0Builder
   }
 
   [[nodiscard]] bool fillAnyTable() const { return mFillAnyTable; }
+  [[nodiscard]] bool isPassThrough() const { return mV0Selection.isPassThrough(); }
 
  private:
   V0Selection<v0Type, SelectionHistName, FilterHistName> mV0Selection;
