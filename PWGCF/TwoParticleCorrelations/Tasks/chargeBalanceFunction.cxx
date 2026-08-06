@@ -407,18 +407,20 @@ struct ChargeBalanceFunction {
       return 1.;
     }
 
-    int binarray[4];
+    std::array<int, 4> binarray;
     std::array<float, 4> v = {cent, posz, track.pt(), track.eta()};
     if (sign > 0) {
       for (int i = 0; i < nHistDim; ++i) {
         binarray[i] = corrHist.hRecEffP->GetAxis(i)->FindBin(v[i]);
       }
-      return corrHist.hRecEffP->GetBinContent(corrHist.hRecEffP->GetBin(binarray));
-    } else if (sign < 0) {
+      return corrHist.hRecEffP->GetBinContent(corrHist.hRecEffP->GetBin(binarray.data()));
+    }
+
+    if (sign < 0) {
       for (int i = 0; i < nHistDim; ++i) {
         binarray[i] = corrHist.hRecEffM->GetAxis(i)->FindBin(v[i]);
       }
-      return corrHist.hRecEffM->GetBinContent(corrHist.hRecEffM->GetBin(binarray));
+      return corrHist.hRecEffM->GetBinContent(corrHist.hRecEffM->GetBin(binarray.data()));
     }
 
     return 1.;
@@ -437,7 +439,9 @@ struct ChargeBalanceFunction {
 
     if (sign > 0) {
       return corrHist.hNuaP->GetBinContent(corrHist.hNuaP->FindBin(posz, track.eta(), track.phi()));
-    } else if (sign < 0) {
+    }
+
+    if (sign < 0) {
       return corrHist.hNuaM->GetBinContent(corrHist.hNuaM->FindBin(posz, track.eta(), track.phi()));
     }
 
@@ -638,8 +642,9 @@ struct ChargeBalanceFunction {
       }
 
       // Select track
-      if (!selectTrack(track_1))
+      if (!selectTrack(track_1)) {
         continue;
+      }
 
       // Fill QA
       fillTrackQA(track_1);
@@ -657,8 +662,9 @@ struct ChargeBalanceFunction {
         }
 
         // Select track
-        if (!selectTrack(track_2))
+        if (!selectTrack(track_2)) {
           continue;
+        }
 
         // Fill pair histograms
         fillPairHist<kRec>(track_1, track_2, track_1.sign(), track_2.sign());
