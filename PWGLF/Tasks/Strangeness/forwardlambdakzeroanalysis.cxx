@@ -962,7 +962,7 @@ struct forwardlambdakzeroanalysis {
       histos.add("h2dGenAntiD0VsMultMC", "h2dGenAntiD0VsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
     }
 
-    if (fitterConfigurations.useLUTMatCorr || fitterConfigurations.useTGeoMatCorr) {
+    if (fitterConfigurations.useLUTMatCorr && fitterConfigurations.useTGeoMatCorr) {
       LOG(fatal) << "Cannot run with both useLUTMatCorr = on and useTGeoMatCorr = on. Please check your configuration!";
     }
 
