@@ -313,6 +313,19 @@ struct HStrangeCorrelation {
     ConfigurableAxis axisDaughterDeltaEta{"axisDaughterDeltaEta", {100, -0.2f, 0.2f}, "trigger-daughter delta eta"};
     ConfigurableAxis axisDaughterDeltaPhi{"axisDaughterDeltaPhi", {120, -0.3f, 0.3f}, "trigger-daughter delta phi"};
     ConfigurableAxis axisDecayRadius{"axisDecayRadius", {100, 0.0f, 200.0f}, "generated K0 decay radius (cm)"};
+    // The following mirror the isValidTrigger() cuts applied by hStrangeCorrelationFilter.cxx
+    // when building the TriggerTracks table. They must be kept in sync by hand with whatever
+    // values are configured for that (separate) filter task, since this diagnostic cannot read
+    // them directly: it only sees the already-filtered TriggerTracks table, not why a given
+    // best-collision track failed to enter it.
+    Configurable<float> triggerTracksEtaMin{"triggerTracksEtaMin", -0.8f, "must match triggerEtaMin in hStrangeCorrelationFilter.cxx"};
+    Configurable<float> triggerTracksEtaMax{"triggerTracksEtaMax", 0.8f, "must match triggerEtaMax in hStrangeCorrelationFilter.cxx"};
+    Configurable<float> triggerTracksPtMin{"triggerTracksPtMin", 3.0f, "must match triggerPtCutMin in hStrangeCorrelationFilter.cxx"};
+    Configurable<float> triggerTracksPtMax{"triggerTracksPtMax", 20.0f, "must match triggerPtCutMax in hStrangeCorrelationFilter.cxx"};
+    Configurable<int> triggerTracksMinCrossedRows{"triggerTracksMinCrossedRows", 70, "must match minTPCNCrossedRows in hStrangeCorrelationFilter.cxx"};
+    Configurable<bool> triggerTracksRequireITS{"triggerTracksRequireITS", true, "must match triggerRequireITS in hStrangeCorrelationFilter.cxx"};
+    Configurable<int> triggerTracksMaxSharedClusters{"triggerTracksMaxSharedClusters", 200, "must match triggerMaxTPCSharedClusters in hStrangeCorrelationFilter.cxx"};
+    Configurable<bool> triggerTracksRequireLayer0{"triggerTracksRequireLayer0", false, "must match triggerRequireL0 in hStrangeCorrelationFilter.cxx"};
   } pairLossK0Configurations;
 
   struct ValidCollision {
@@ -490,6 +503,29 @@ struct HStrangeCorrelation {
     bool hasLayer0 = false;
   };
 
+  // First-failing-condition breakdown for the stage3->4 gate ("Trigger track, best collision"
+  // -> "Trigger in TriggerTracks"). Order mirrors the early-return order of isValidTrigger()
+  // in hStrangeCorrelationFilter.cxx exactly, so "first reason to fail" means the same thing here.
+  enum PairLossTriggerTracksFailureReason : int {
+    PairLossTriggerTracksPassed = 0,
+    PairLossTriggerTracksFailEta,
+    PairLossTriggerTracksFailPt,
+    PairLossTriggerTracksFailCrossedRows,
+    PairLossTriggerTracksFailITS,
+    PairLossTriggerTracksFailSharedClusters,
+    PairLossTriggerTracksFailLayer0,
+    PairLossTriggerTracksNReasons
+  };
+
+  static constexpr std::array<std::string_view, PairLossTriggerTracksNReasons> PairLossTriggerTracksFailureNames = {
+    "Passed all cuts (in TriggerTracks)",
+    "Failed eta window",
+    "Failed pT window",
+    "Failed min TPC crossed rows",
+    "Failed hasITS requirement",
+    "Failed max TPC shared clusters",
+    "Failed ITS layer-0 requirement"};
+
   struct PairLossV0Info {
     int64_t globalIndex = -1;
     int64_t positiveTrackId = -1;
@@ -564,6 +600,33 @@ struct HStrangeCorrelation {
       .tpcSharedClusters = track.tpcNClsShared(),
       .itsClusters = track.itsNCls(),
       .hasLayer0 = static_cast<bool>(TESTBIT(track.itsClusterMap(), 0))};
+  }
+
+  // Replicates isValidTrigger() from hStrangeCorrelationFilter.cxx condition-by-condition
+  // (same early-return order) so that, for a trigger already known to exist in the best
+  // collision (stage 3), we can tell which single cut is responsible for it not making it
+  // into the TriggerTracks table (stage 4), instead of only knowing that it failed overall.
+  int classifyTriggerTracksFailure(PairLossTrackInfo const& info)
+  {
+    if (info.eta > pairLossK0Configurations.triggerTracksEtaMax || info.eta < pairLossK0Configurations.triggerTracksEtaMin) {
+      return PairLossTriggerTracksFailEta;
+    }
+    if (info.pt > pairLossK0Configurations.triggerTracksPtMax || info.pt < pairLossK0Configurations.triggerTracksPtMin) {
+      return PairLossTriggerTracksFailPt;
+    }
+    if (info.tpcCrossedRows < pairLossK0Configurations.triggerTracksMinCrossedRows) {
+      return PairLossTriggerTracksFailCrossedRows;
+    }
+    if (info.itsClusters <= 0 && pairLossK0Configurations.triggerTracksRequireITS) {
+      return PairLossTriggerTracksFailITS;
+    }
+    if (info.tpcSharedClusters > pairLossK0Configurations.triggerTracksMaxSharedClusters) {
+      return PairLossTriggerTracksFailSharedClusters;
+    }
+    if (!info.hasLayer0 && pairLossK0Configurations.triggerTracksRequireLayer0) {
+      return PairLossTriggerTracksFailLayer0;
+    }
+    return PairLossTriggerTracksPassed;
   }
 
   PairLossDeltaPhiStarInfo calculateMinimumDeltaPhiStar(PairLossTruthTrackInfo const& trigger, PairLossTruthTrackInfo const& daughter, double magneticField, float decayRadiusCm)
@@ -2168,6 +2231,7 @@ struct HStrangeCorrelation {
       const double pairLossRadiusStep = std::max(static_cast<double>(pairLossK0Configurations.radiusStep), 0.001);
       const int pairLossRadiusBins = std::max(1, static_cast<int>(std::ceil((pairLossRadiusMaximum - pairLossRadiusMinimum) / pairLossRadiusStep)));
       const AxisSpec axisPairLossRadiusAtMinimum{pairLossRadiusBins, pairLossRadiusMinimum, pairLossRadiusMaximum, "#it{r}_{min} (m)"};
+      const AxisSpec axisPairLossTriggerTracksFailureReason{PairLossTriggerTracksNReasons, -0.5, static_cast<double>(PairLossTriggerTracksNReasons) - 0.5, "TriggerTracks first-failing condition"};
 
       histos.add("PairLossK0/Event/hCounter", "K0 pair-loss event counter", kTH1F, {axisPairLossEventStage});
       histos.add("PairLossK0/Event/hNRecoCollisions", "reconstructed collisions per MC collision", kTH1F, {axisPairLossNRecoCollisions});
@@ -2176,6 +2240,7 @@ struct HStrangeCorrelation {
       histos.add("PairLossK0/Stage/hPhysics", "stages in h-K0 physics variables", kTHnF, {axisPairLossStage, axisPairLossTruthDeltaPhi, axisPairLossTruthDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt, axisPairLossFieldSign});
       histos.add("PairLossK0/Stage/hPhysicsFindable", "stages in h-K0 physics variables for findable K0", kTHnF, {axisPairLossStage, axisPairLossTruthDeltaPhi, axisPairLossTruthDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt, axisPairLossFieldSign});
       histos.add("PairLossK0/Stage/hClose", "stages in trigger-daughter close-pair variables", kTHnF, {axisPairLossStage, axisPairLossMinDeltaPhiStar, axisPairLossDaughterDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt, axisPairLossFieldSign, axisPairLossChargeProduct});
+      histos.add("PairLossK0/Stage/hTriggerTracksFailureReason", "first-failing TriggerTracks condition for best-collision triggers, in h-K0 physics variables", kTHnF, {axisPairLossTriggerTracksFailureReason, axisPairLossTruthDeltaPhi, axisPairLossTruthDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt});
 
       histos.add("PairLossK0/State/hFinalObjectStatePhysics", "00/01/10/11 final trigger-K0 object state", kTHnF, {axisPairLossFinalObjectState, axisPairLossTruthDeltaPhi, axisPairLossTruthDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt, axisPairLossFieldSign});
       histos.add("PairLossK0/State/hFinalObjectStateClose", "00/01/10/11 final trigger-K0 object state in close-pair variables", kTHnF, {axisPairLossFinalObjectState, axisPairLossMinDeltaPhiStar, axisPairLossDaughterDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt, axisPairLossFieldSign, axisPairLossChargeProduct});
@@ -2228,6 +2293,11 @@ struct HStrangeCorrelation {
       setStageLabels(stageCountsFindable);
       stageCounts->GetYaxis()->SetTitle("Truth-pair entries");
       stageCountsFindable->GetYaxis()->SetTitle("Findable truth-pair entries");
+
+      auto triggerTracksFailureHistogram = histos.get<THn>(HIST("PairLossK0/Stage/hTriggerTracksFailureReason"));
+      for (int i = 0; i < PairLossTriggerTracksNReasons; ++i) {
+        triggerTracksFailureHistogram->GetAxis(0)->SetBinLabel(i + 1, PairLossTriggerTracksFailureNames[i].data());
+      }
 
       const std::array<std::string_view, 4> objectStateLabels = {"00 neither", "01 K0 only", "10 trigger only", "11 both"};
       for (auto const& histogram : {histos.get<THn>(HIST("PairLossK0/State/hFinalObjectStatePhysics")), histos.get<THn>(HIST("PairLossK0/State/hFinalObjectStateClose"))}) {
@@ -4100,6 +4170,16 @@ struct HStrangeCorrelation {
               if (closestDeltaPhiStar.valid) {
                 histos.fill(HIST("PairLossK0/Stage/hClose"), stage, closestDeltaPhiStar.minAbs, closestDeltaEta, truthK0.pt, truthTrigger.pt, magneticFieldSign, closestChargeProduct);
               }
+            }
+          }
+
+          // Only meaningful conditional on the trigger already existing in the best collision
+          // (stage 3): this asks *why* that already-found, already-correctly-labelled track
+          // does or does not make it into the TriggerTracks table (stage 4).
+          if (triggerBestCollision) {
+            if (auto const* bestCollisionTrigger = bestTrack(tracksBestCollision, truthTrigger.globalIndex)) {
+              const int failureReason = classifyTriggerTracksFailure(*bestCollisionTrigger);
+              histos.fill(HIST("PairLossK0/Stage/hTriggerTracksFailureReason"), failureReason, truthDeltaPhi, truthDeltaEta, truthK0.pt, truthTrigger.pt);
             }
           }
 
