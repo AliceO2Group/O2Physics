@@ -35,7 +35,6 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
-#include <GPU/GPUROOTCartesianFwd.h>
 #include <GlobalTracking/MatchGlobalFwd.h>
 #include <MCHBase/TrackerParam.h>
 #include <MCHGeometryTransformer/Transformations.h>
@@ -59,6 +58,7 @@
 #include <THnSparse.h>
 #include <TMath.h>
 
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <rapidjson/document.h>
 #include <rapidjson/error/error.h>
 
@@ -125,7 +125,7 @@ DECLARE_SOA_TABLE(CompactMFTTracks, "AOD", "COMPACTMFT", //! standalone table fo
 using CompactMFTTrack = CompactMFTTracks;
 } // namespace o2::aod
 
-struct muonGlobalAlignment {
+struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struct (exception)
 
   static constexpr int GlobalTrackTypeMax = 2;
   static constexpr int NMchChambers = 10;
@@ -236,8 +236,8 @@ struct muonGlobalAlignment {
   std::map<int, math_utils::Transform3D> transformNew; // new geometry
   TGeoManager* geoNew = nullptr;
   TGeoManager* geoRef = nullptr;
-  TrackFitter trackFitter; // Track fitter from MCH tracking library
-  double mImproveCutChi2{0};  // Chi2 cut for track improvement.
+  TrackFitter trackFitter;   // Track fitter from MCH tracking library
+  double mImproveCutChi2{0}; // Chi2 cut for track improvement.
 
   struct AlignmentCorrections {
     double x{0};
@@ -329,7 +329,7 @@ struct muonGlobalAlignment {
       return (track1.chi2MatchMCHMFT() < track2.chi2MatchMCHMFT());
     };
 
-    for (auto& [collisionIndex, collisionInfo] : collisionInfos) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
+    for (auto& [collisionIndex, collisionInfo] : collisionInfos) {                  // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
       for (auto& [mchIndex, globalTracksVector] : collisionInfo.globalMuonTracks) { // o2-linter: disable=const-ref-in-for-loop (object is modified in loop)
         std::sort(globalTracksVector.begin(), globalTracksVector.end(), compareChi2);
       }
@@ -739,7 +739,7 @@ struct muonGlobalAlignment {
   template <class T>
   int GetQuadrant(const T& track)
   {
-    //double phi = track.phi() * 180 / TMath::Pi();
+    // double phi = track.phi() * 180 / TMath::Pi();
     return GetQuadrant(track.phi());
   }
 
@@ -1259,7 +1259,7 @@ struct muonGlobalAlignment {
   template <class TMFT>
   o2::dataformats::GlobalFwdTrack PropagateMFT(const TMFT& mftTrack, float z)
   {
-    //static double Bz = -10001;
+    // static double Bz = -10001;
     double chi2 = mftTrack.chi2();
     SMatrix5 tpars = {mftTrack.x(), mftTrack.y(), mftTrack.phi(), mftTrack.tgl(), mftTrack.signed1Pt()};
     std::vector<double> v1{0, 0, 0, 0, 0,
@@ -1277,7 +1277,7 @@ struct muonGlobalAlignment {
     // double centerZ[3] = {mftTrack.x() + propVec[0] / 2.,
     //                      mftTrack.y() + propVec[1] / 2.,
     //                      mftTrack.z() + propVec[2] / 2.};
-    //if (Bz < -10000) {
+    // if (Bz < -10000) {
     //  double centerZ[3] = {0, 0, (-45.f - 77.5f) / 2.f};
     //  o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     //  Bz = field->getBz(centerZ);
@@ -1294,7 +1294,7 @@ struct muonGlobalAlignment {
   template <class TMFT, class C>
   o2::dataformats::GlobalFwdTrack PropagateMFTToDCA(const TMFT& mftTrack, const C& collision, float zshift)
   {
-    //static double Bz = -10001;
+    // static double Bz = -10001;
     double chi2 = mftTrack.chi2();
     double phiCorrDeg = 0;
     double phiCorr = phiCorrDeg * TMath::Pi() / 180.f;
@@ -1321,7 +1321,7 @@ struct muonGlobalAlignment {
     // double centerZ[3] = {mftTrack.x() + propVec[0] / 2.,
     //                      mftTrack.y() + propVec[1] / 2.,
     //                      mftTrack.z() + propVec[2] / 2.};
-    //if (Bz < -10000) {
+    // if (Bz < -10000) {
     //  double centerZ[3] = {0, 0, -45.f / 2.f};
     //  o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     //  Bz = field->getBz(centerZ);
@@ -1338,7 +1338,7 @@ struct muonGlobalAlignment {
   template <class TMFT, class TMUON, class C>
   o2::dataformats::GlobalFwdTrack PropagateMFTToDCA(const TMFT& mftTrack, const TMUON& mchTrack, const C& collision, float zshift)
   {
-    //static double Bz = -10001;
+    // static double Bz = -10001;
     double chi2 = mftTrack.chi2();
     double phiCorrDeg = 0;
     double phiCorr = phiCorrDeg * TMath::Pi() / 180.f;
@@ -1369,7 +1369,7 @@ struct muonGlobalAlignment {
     // double centerZ[3] = {mftTrack.x() + propVec[0] / 2.,
     //                      mftTrack.y() + propVec[1] / 2.,
     //                      mftTrack.z() + propVec[2] / 2.};
-    //if (Bz < -10000) {
+    // if (Bz < -10000) {
     //  double centerZ[3] = {0, 0, -45.f / 2.f};
     //  o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     //  Bz = field->getBz(centerZ);
@@ -1531,8 +1531,8 @@ struct muonGlobalAlignment {
             if (mftTrack.chi2() <= cfgTrackChi2MftUp && std::fabs(collision.posZ()) < 1.f && mftNclusters >= nMftClustersMin) {
               static constexpr int nPoints = 21;
               float zshift[nPoints] = {// in millimeters
-                                  -5.0, -4.5, -4.0, -3.5, -3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0.0,
-                                  0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0};
+                                       -5.0, -4.5, -4.0, -3.5, -3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0.0,
+                                       0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0};
               for (int zi = 0; zi < nPoints; zi++) {
                 auto mftTrackAtDCAshifted = PropagateMFTToDCA(mftTrack, collision, zshift[zi] / 10.f);
                 double dcaxShifted = mftTrackAtDCAshifted.getX() - collision.posX();
@@ -1831,7 +1831,7 @@ struct muonGlobalAlignment {
         // MFT-MCH track residuals analysis
         if (cfgEnableMftMchMatchingAnalysis && convertedTrackWithCorrOk) {
           static constexpr int nRefPlanes = 2;
-          double refPlaneZ[nRefPlanes] = {cfgRefPlaneZMFT, cfgRefPlaneZMCH};
+          const double refPlaneZ[nRefPlanes] = {cfgRefPlaneZMFT, cfgRefPlaneZMCH};
 
           std::shared_ptr<THnSparse> dxPlots[2]{registry.get<THnSparse>(HIST("matching/dxAtMFT")), registry.get<THnSparse>(HIST("matching/dxAtMCH"))};
           std::shared_ptr<THnSparse> dyPlots[2]{registry.get<THnSparse>(HIST("matching/dyAtMFT")), registry.get<THnSparse>(HIST("matching/dyAtMCH"))};
