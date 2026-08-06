@@ -1857,12 +1857,7 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
             auto dsy = mchParamAtRefPlane.getBendingSlope() - mftParamAtRefPlane.getBendingSlope();
             dsyPlots[iRefPlane]->Fill(dsy, refTrackAtRefPlane.getX(), refTrackAtRefPlane.getY(), quadrant, posNeg, mchTrack.p());
 
-            auto dphi = mchTrackAtRefPlane.getPhi() - mftTrackAtRefPlane.getPhi();
-            if (dphi < -o2::constants::math::PI) {
-              dphi += o2::constants::math::TwoPI;
-            } else if (dphi > o2::constants::math::PI) {
-              dphi -= o2::constants::math::TwoPI;
-            }
+            auto dphi = RecoDecay::constrainAngle(mchTrackAtRefPlane.getPhi() - mftTrackAtRefPlane.getPhi(), -o2::constants::math::PI);
             dphiPlots[iRefPlane]->Fill(dphi, refTrackAtRefPlane.getX(), refTrackAtRefPlane.getY(), quadrant, posNeg, mchTrack.p());
           }
         }
