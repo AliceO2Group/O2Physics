@@ -40,6 +40,8 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -83,7 +85,7 @@ struct DeltaAnalysis {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   // PDG service used only for truth-level charged-particle identification
   // (see isChargedPrimaryMC() below).
-  Service<o2::framework::O2DatabasePDG> pdgDB;
+  Service<o2::framework::O2DatabasePDG> pdgDB{};
 
   struct : ConfigurableGroup {
     Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted |z-vertex| range [cm]"};
@@ -126,8 +128,6 @@ struct DeltaAnalysis {
 
   struct : ConfigurableGroup {
     Configurable<bool> useTPCOnlyPID{"useTPCOnlyPID", false, "Use TPC-only PID (ignore TOF even if present)"};
-    Configurable<bool> applyTOFCutWhenAvailableBelowThreshold{"applyTOFCutWhenAvailableBelowThreshold", false, "Apply TOF PID only when TOF information exists below momentum threshold"};
-    Configurable<float> cfgLowPtTofNsigmaCut{"cfgLowPtTofNsigmaCut", 3.0f, "Low pt nSigma TOF cut for selecting pions and protons"};
     Configurable<float> tpcNSigmaVetoThreshold{"tpcNSigmaVetoThreshold", 3.0f, "Reject track if TPC nSigma of a competing species is below this value"};
     Configurable<float> tofNSigmaVetoThreshold{"tofNSigmaVetoThreshold", 3.0f, "Reject track if TOF nSigma of a competing species is below this value"};
   } pidShared;
@@ -229,6 +229,7 @@ struct DeltaAnalysis {
     const AxisSpec ptAxis{200, 0., 10., "p_{T} (GeV/c)"};
     const AxisSpec massAxis{trackCuts.numberOfInvMassBins, 1.0, 8.0, "M_{inv} (GeV/#it{c}^{2})"};
     const AxisSpec centAxis{axes.cfgCentAxis, "Centrality (%)"};
+    const AxisSpec centDistAxis{150, 0., 105., "Centrality (%)"};
     const AxisSpec vtxAxis{axes.cfgVtxAxis, "Vertex z [cm]"};
     const AxisSpec rapAxis{axes.cfgRapAxis, "Rapidity y"};
     const AxisSpec nSigmaTPCaxis{100, -10., 10., "n#sigma^{TPC}"};
@@ -247,6 +248,7 @@ struct DeltaAnalysis {
     histos.add("Event/hNcontributor", "PV contributors; N", kTH1F, {{2001, -0.5f, 2000.5f}});
     histos.add("Event/hCentrality", "Centrality", kTH1F, {centAxis});
     histos.add("Event/hOccupancy", "Occupancy in time range", kTH1F, {occupancyAxis});
+    histos.add("Event/centralitydistribution", "Centrality distribution (Data);vCentFT0M;Entries", kTH1F, {centDistAxis});
 
     histos.add("CentQA/hCentralityVsVtxZ", "Centrality vs vertex z", kTH2F, {vtxAxis, centAxis});
     histos.add("CentQA/hCentralityVsOccupancy", "Centrality vs occupancy", kTH2F, {occupancyAxis, centAxis});
@@ -404,6 +406,7 @@ struct DeltaAnalysis {
       histos.add("QAMC/Pion/dcaZdist", "Pion DCA_{z} distribution (MC reco, fine bins)", kTH1F, {dcaZaxis});
 
       histos.add("MCRecoEvent/hRecoEvents", "Reconstructed INEL>0 events (Nrec, MC reco)", kTH1F, {centAxis});
+      histos.add("MCRecoEvent/centralitydistribution", "Centrality distribution (MC);vCentFT0M;Entries", kTH1F, {centDistAxis});
     }
 
     // ── processMCGen(): generated-level Delta spectra + QA ─────────────────────────────────
@@ -603,11 +606,11 @@ struct DeltaAnalysis {
     }
     fillEventCutFlowBin<Tag>(4.f); // Occupancy cut
 
-    const float cent = getCentrality(collision);
-    if (cent < evSel.cfgCentMin || cent > evSel.cfgCentMax) {
-      return false;
-    }
-    fillEventCutFlowBin<Tag>(5.f); // Centrality range
+    // Centrality cut removed: events are no longer rejected based on centrality
+    // (cfgCentMin / cfgCentMax are intentionally no longer applied here). The
+    // centrality calculation itself, getCentrality(), cfgCentralityEstimator, and
+    // all centrality-dependent histograms/infrastructure are left untouched.
+    fillEventCutFlowBin<Tag>(5.f); // Centrality range (bin retained for cut-flow numbering; no longer a cut)
 
     if (evSel.cfgUseNoSameBunchPileupCut &&
         !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
@@ -700,27 +703,26 @@ struct DeltaAnalysis {
     return passed && (std::abs(track.dcaZ()) < dcaCuts.cfgCutDCAz);
   }
 
+  // ── PID decision flow ────────────────────────────────────────────────────────────────────────────
   template <typename TrackType>
   bool passesProtonPID(TrackType const& track, float totalMomentum)
   {
-    bool tpcPassed{false}, tofPassed{false};
-    const int nTPCBins = static_cast<int>(mProtonTPCMomBins.size());
-    const int nTOFBins = static_cast<int>(mProtonTOFMomBins.size());
     const float tpcNSigPi = std::abs(track.tpcNSigmaPi());
     const float tpcNSigPr = std::abs(track.tpcNSigmaPr());
     const float tofNSigPi = std::abs(track.tofNSigmaPi());
     const float tofNSigPr = std::abs(track.tofNSigmaPr());
-    const float combinedNSigPr = tpcNSigPr * tpcNSigPr + tofNSigPr * tofNSigPr;
-    const float combinedNSigPi = tpcNSigPi * tpcNSigPi + tofNSigPi * tofNSigPi;
-    const auto circularCutSq = static_cast<float>(protonPID.combinedNSigmaCutProton * protonPID.combinedNSigmaCutProton);
 
-    const float circularVetoCutSq = pidShared.tpcNSigmaVetoThreshold * pidShared.tpcNSigmaVetoThreshold + pidShared.tofNSigmaVetoThreshold * pidShared.tofNSigmaVetoThreshold;
+    const bool useTOF = !pidShared.useTPCOnlyPID && track.hasTOF();
 
-    if (!pidShared.useTPCOnlyPID && track.hasTOF()) {
-      if (protonPID.combinedNSigmaCutProton < 0 && totalMomentum >= protonPID.minProtonMomentum) {
+    if (useTOF) {
+      // Combined TPC+TOF PID - used whenever TOF is available, regardless of momentum.
+      if (protonPID.combinedNSigmaCutProton < 0) {
+        // Asymmetric mode: independent TPC and TOF nSigma windows.
         if (track.tofNSigmaPr() < protonPID.minTOFNSigmaProton) {
           return false;
         }
+        bool tofPassed = false;
+        const int nTOFBins = static_cast<int>(mProtonTOFMomBins.size());
         for (int i = 0; i < nTOFBins - 1; ++i) {
           if (totalMomentum >= mProtonTOFMomBins[i] && totalMomentum < mProtonTOFMomBins[i + 1] &&
               tofNSigPr < mProtonTOFNSigCuts[i] && tofNSigPi > pidShared.tofNSigmaVetoThreshold) {
@@ -731,64 +733,53 @@ struct DeltaAnalysis {
         if (track.tpcNSigmaPr() < protonPID.minCombinedNSigmaProton) {
           return false;
         }
-        if (tpcNSigPr < static_cast<float>(protonPID.maxTPCNSigmaProton) && tpcNSigPi > pidShared.tpcNSigmaVetoThreshold) {
-          tpcPassed = true;
-        }
-      } else if (protonPID.combinedNSigmaCutProton > 0 && totalMomentum >= protonPID.minProtonMomentum) {
-        if (combinedNSigPr < circularCutSq && combinedNSigPi > circularVetoCutSq) {
-          tpcPassed = true;
-          tofPassed = true;
-        }
+        const bool tpcPassed = tpcNSigPr < static_cast<float>(protonPID.maxTPCNSigmaProton) && tpcNSigPi > pidShared.tpcNSigmaVetoThreshold;
+        return tofPassed && tpcPassed;
       }
-      if (totalMomentum < protonPID.minProtonMomentum && tpcNSigPr < static_cast<float>(protonPID.maxTPCNSigmaProton)) {
-        tpcPassed = true;
-        if (pidShared.applyTOFCutWhenAvailableBelowThreshold) {
-          tofPassed = (tofNSigPr < pidShared.cfgLowPtTofNsigmaCut);
-        } else {
-          tofPassed = true;
-        }
-      }
-    } else {
-      if (totalMomentum < protonPID.minProtonMomentum && tpcNSigPr < static_cast<float>(protonPID.maxTPCNSigmaProton)) {
-        tpcPassed = true;
-        tofPassed = true;
-      } else {
-        tofPassed = true;
-        if (track.tpcNSigmaPr() < protonPID.minTPCNSigmaProton) {
-          return false;
-        }
-        for (int i = 0; i < nTPCBins - 1; ++i) {
-          if (totalMomentum >= mProtonTPCMomBins[i] && totalMomentum < mProtonTPCMomBins[i + 1] &&
-              tpcNSigPr < mProtonTPCNSigCuts[i] && tpcNSigPi > pidShared.tpcNSigmaVetoThreshold) {
-            tpcPassed = true;
-            break;
-          }
-        }
+
+      // Circular mode: joint TPC+TOF nSigma radius.
+      const float combinedNSigPr = tpcNSigPr * tpcNSigPr + tofNSigPr * tofNSigPr;
+      const float combinedNSigPi = tpcNSigPi * tpcNSigPi + tofNSigPi * tofNSigPi;
+      const auto circularCutSq = static_cast<float>(protonPID.combinedNSigmaCutProton * protonPID.combinedNSigmaCutProton);
+      const float circularVetoCutSq = pidShared.tpcNSigmaVetoThreshold * pidShared.tpcNSigmaVetoThreshold +
+                                      pidShared.tofNSigmaVetoThreshold * pidShared.tofNSigmaVetoThreshold;
+      return combinedNSigPr < circularCutSq && combinedNSigPi > circularVetoCutSq;
+    }
+
+    // No usable TOF: above the momentum threshold, TOF is mandatory -> reject.
+    if (totalMomentum >= protonPID.minProtonMomentum) {
+      return false;
+    }
+
+    // TPC-only PID below the momentum threshold, using the momentum-binned TPC cuts.
+    const int nTPCBins = static_cast<int>(mProtonTPCMomBins.size());
+    for (int i = 0; i < nTPCBins - 1; ++i) {
+      if (totalMomentum >= mProtonTPCMomBins[i] && totalMomentum < mProtonTPCMomBins[i + 1]) {
+        return tpcNSigPr < mProtonTPCNSigCuts[i] && tpcNSigPi > pidShared.tpcNSigmaVetoThreshold;
       }
     }
-    return tpcPassed && tofPassed;
+    return false;
   }
 
   template <typename TrackType>
   bool passesPionPID(TrackType const& track, float totalMomentum)
   {
-    bool tpcPassed{false}, tofPassed{false};
-    const int nTPCBins = static_cast<int>(mPionTPCMomBins.size());
-    const int nTOFBins = static_cast<int>(mPionTOFMomBins.size());
     const float tpcNSigPi = std::abs(track.tpcNSigmaPi());
     const float tpcNSigPr = std::abs(track.tpcNSigmaPr());
     const float tofNSigPi = std::abs(track.tofNSigmaPi());
     const float tofNSigPr = std::abs(track.tofNSigmaPr());
-    const float combinedNSigPi = tpcNSigPi * tpcNSigPi + tofNSigPi * tofNSigPi;
-    const float combinedNSigPr = tpcNSigPr * tpcNSigPr + tofNSigPr * tofNSigPr;
-    const auto circularCutSq = static_cast<float>(pionPID.combinedNSigmaCutPion * pionPID.combinedNSigmaCutPion);
-    const float circularVetoCutSq = pidShared.tpcNSigmaVetoThreshold * pidShared.tpcNSigmaVetoThreshold + pidShared.tofNSigmaVetoThreshold * pidShared.tofNSigmaVetoThreshold;
 
-    if (!pidShared.useTPCOnlyPID && track.hasTOF()) {
-      if (pionPID.combinedNSigmaCutPion < 0 && totalMomentum >= pionPID.minPionMomentum) {
+    const bool useTOF = !pidShared.useTPCOnlyPID && track.hasTOF();
+
+    if (useTOF) {
+      // Combined TPC+TOF PID - used whenever TOF is available, regardless of momentum.
+      if (pionPID.combinedNSigmaCutPion < 0) {
+        // Asymmetric mode: independent TPC and TOF nSigma windows.
         if (track.tofNSigmaPi() < pionPID.minTOFNSigmaPion) {
           return false;
         }
+        bool tofPassed = false;
+        const int nTOFBins = static_cast<int>(mPionTOFMomBins.size());
         for (int i = 0; i < nTOFBins - 1; ++i) {
           if (totalMomentum >= mPionTOFMomBins[i] && totalMomentum < mPionTOFMomBins[i + 1] &&
               tofNSigPi < mPionTOFNSigCuts[i] && tofNSigPr > pidShared.tofNSigmaVetoThreshold) {
@@ -799,42 +790,32 @@ struct DeltaAnalysis {
         if (track.tpcNSigmaPi() < pionPID.minCombinedNSigmaPion) {
           return false;
         }
-        if (tpcNSigPi < static_cast<float>(pionPID.maxTPCNSigmaPion) && tpcNSigPr > pidShared.tpcNSigmaVetoThreshold) {
-          tpcPassed = true;
-        }
-      } else if (pionPID.combinedNSigmaCutPion > 0 && totalMomentum >= pionPID.minPionMomentum) {
-        if (combinedNSigPi < circularCutSq && combinedNSigPr > circularVetoCutSq) {
-          tpcPassed = true;
-          tofPassed = true;
-        }
+        const bool tpcPassed = tpcNSigPi < static_cast<float>(pionPID.maxTPCNSigmaPion) && tpcNSigPr > pidShared.tpcNSigmaVetoThreshold;
+        return tofPassed && tpcPassed;
       }
-      if (totalMomentum < pionPID.minPionMomentum && tpcNSigPi < static_cast<float>(pionPID.maxTPCNSigmaPion)) {
-        tpcPassed = true;
-        if (pidShared.applyTOFCutWhenAvailableBelowThreshold) {
-          tofPassed = (tofNSigPi < pidShared.cfgLowPtTofNsigmaCut);
-        } else {
-          tofPassed = true;
-        }
-      }
-    } else {
-      if (totalMomentum < pionPID.minPionMomentum && tpcNSigPi < static_cast<float>(pionPID.maxTPCNSigmaPion)) {
-        tpcPassed = true;
-        tofPassed = true;
-      } else {
-        tofPassed = true;
-        if (track.tpcNSigmaPi() < pionPID.minTPCNSigmaPion) {
-          return false;
-        }
-        for (int i = 0; i < nTPCBins - 1; ++i) {
-          if (totalMomentum >= mPionTPCMomBins[i] && totalMomentum < mPionTPCMomBins[i + 1] &&
-              tpcNSigPi < mPionTPCNSigCuts[i] && tpcNSigPr > pidShared.tpcNSigmaVetoThreshold) {
-            tpcPassed = true;
-            break;
-          }
-        }
+
+      // Circular mode: joint TPC+TOF nSigma radius.
+      const float combinedNSigPi = tpcNSigPi * tpcNSigPi + tofNSigPi * tofNSigPi;
+      const float combinedNSigPr = tpcNSigPr * tpcNSigPr + tofNSigPr * tofNSigPr;
+      const auto circularCutSq = static_cast<float>(pionPID.combinedNSigmaCutPion * pionPID.combinedNSigmaCutPion);
+      const float circularVetoCutSq = pidShared.tpcNSigmaVetoThreshold * pidShared.tpcNSigmaVetoThreshold +
+                                      pidShared.tofNSigmaVetoThreshold * pidShared.tofNSigmaVetoThreshold;
+      return combinedNSigPi < circularCutSq && combinedNSigPr > circularVetoCutSq;
+    }
+
+    // No usable TOF: above the momentum threshold, TOF is mandatory -> reject.
+    if (totalMomentum >= pionPID.minPionMomentum) {
+      return false;
+    }
+
+    // TPC-only PID below the momentum threshold, using the momentum-binned TPC cuts.
+    const int nTPCBins = static_cast<int>(mPionTPCMomBins.size());
+    for (int i = 0; i < nTPCBins - 1; ++i) {
+      if (totalMomentum >= mPionTPCMomBins[i] && totalMomentum < mPionTPCMomBins[i + 1]) {
+        return tpcNSigPi < mPionTPCNSigCuts[i] && tpcNSigPr > pidShared.tpcNSigmaVetoThreshold;
       }
     }
-    return tpcPassed && tofPassed;
+    return false;
   }
 
   template <typename TrackType>
@@ -1252,6 +1233,7 @@ struct DeltaAnalysis {
       histos.fill(HIST("Event/hVtxZ"), collision.posZ());
       histos.fill(HIST("Event/hCentrality"), centrality);
       histos.fill(HIST("Event/hOccupancy"), occupancy);
+      histos.fill(HIST("Event/centralitydistribution"), collision.centFT0M());
       histos.fill(HIST("CentQA/hCentralityVsVtxZ"), collision.posZ(), centrality);
       histos.fill(HIST("CentQA/hCentralityVsOccupancy"), occupancy, centrality);
       histos.fill(HIST("CentQA/hEventCountVsCentrality"), centrality);
@@ -1347,6 +1329,7 @@ struct DeltaAnalysis {
 
       // Nrec - "the total number of selected reconstructed INEL>0 events".
       histos.fill(HIST("MCRecoEvent/hRecoEvents"), centrality);
+      histos.fill(HIST("MCRecoEvent/centralitydistribution"), collision.centFT0M());
 
       histos.fill(HIST("Event/hNcontributor"), collision.numContrib());
       histos.fill(HIST("Event/hVtxZ"), collision.posZ());
@@ -1652,7 +1635,7 @@ struct DeltaAnalysis {
         histos.fill(HIST("CutFlow/EventFactor/hEventAcceptedCutFlow"), 3.f); // Has associated reconstructed collision
       }
 
-      const bool hasAcceptedReco = acceptedMcCollisionIds.find(mcCollision.globalIndex()) != acceptedMcCollisionIds.end();
+      const bool hasAcceptedReco = acceptedMcCollisionIds.contains(mcCollision.globalIndex());
       if (hasAcceptedReco) {
         histos.fill(HIST("CutFlow/EventFactor/hEventAcceptedCutFlow"), 4.f); // Associated reco collision passes event selection
         histos.fill(HIST("CutFlow/EventFactor/hEventAcceptedCutFlow"), 5.f); // Final EventAccepted
