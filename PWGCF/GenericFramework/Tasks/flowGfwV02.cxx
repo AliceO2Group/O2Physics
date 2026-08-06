@@ -67,7 +67,6 @@
 #include <memory>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -886,6 +885,9 @@ struct FlowGfwV02 {
       int bootstrap = fRndm->Integer(gfwMemberCache.nBootstrap);
       for (int pid = 0; pid < PidTotal; pid++) {
         int normIndex = (cfgNormalizeByCharged) ? PidCharged : pid;
+        if (!(pidStates.hPtForward[normIndex]->Integral() > 0) || !(pidStates.hPtBackward[normIndex]->Integral() > 0)) {
+          continue; // Forward or backward pT distribution is not defined
+        }
         for (int i = 1; i <= fSecondAxis->GetNbins(); i++) {
           ptFractionForward = pidStates.hPtForward[pid]->GetBinContent(i) / pidStates.hPtForward[normIndex]->Integral();
           ptFractionBackward = pidStates.hPtBackward[pid]->GetBinContent(i) / pidStates.hPtBackward[normIndex]->Integral();
@@ -1268,7 +1270,7 @@ struct FlowGfwV02 {
     registry.fill(HIST("eventQA/eventSel"), kSel8);
     registry.fill(HIST("eventQA/eventSel"), kOccupancy); // Add occupancy selection later
 
-    const XAxis xaxis{.centrality = getCentrality(collision), .multiplicity = static_cast<int64_t>(tracks.size())};
+    const XAxis xaxis{.centrality = getCentrality(collision), .multiplicity = tracks.size()};
     if (cfgFillQA) {
       fillEventQA<kBefore>(collision, xaxis);
       registry.fill(HIST("eventQA/before/centrality"), xaxis.centrality);
@@ -1293,7 +1295,7 @@ struct FlowGfwV02 {
       LOGF(info, "run = %d", run);
     }
     loadCorrections(run);
-    const XAxis xaxis{.centrality = collision.multiplicity(), .multiplicity = static_cast<int64_t>(tracks.size())};
+    const XAxis xaxis{.centrality = collision.multiplicity(), .multiplicity = tracks.size()};
 
     registry.fill(HIST("eventQA/after/centrality"), xaxis.centrality);
     registry.fill(HIST("eventQA/after/multiplicity"), xaxis.multiplicity);
@@ -1308,7 +1310,7 @@ struct FlowGfwV02 {
       lastRun = run;
       LOGF(info, "run = %d", run);
     }
-    const XAxis xaxis{.centrality = collision.multiplicity(), .multiplicity = static_cast<int64_t>(tracks.size())};
+    const XAxis xaxis{.centrality = collision.multiplicity(), .multiplicity = tracks.size()};
     registry.fill(HIST("eventQA/after/centrality"), xaxis.centrality);
     registry.fill(HIST("eventQA/after/multiplicity"), xaxis.multiplicity);
     // processCollision<kReco>(collision, tracks, xaxis, run);
