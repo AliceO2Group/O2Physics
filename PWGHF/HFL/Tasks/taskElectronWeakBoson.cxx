@@ -307,9 +307,10 @@ struct HfTaskElectronWeakBoson {
     registry.add("hEventCounterInit", "hEventCounterInit", kTH1D, {axisCounter});
     registry.add("hEventCounter", "hEventCounter", kTH1D, {axisCounter});
     registry.add("hCentrality", "Centrality distribution", kTH1D, {axisCentrality});
-    registry.add("hCentMultCorr", "Centrality distribution", kTH2D, {{axisCentrality}, {axisMultFT0}});
-    registry.add("hMultPV", "multiplicity  distribution for PV", kTH1D, {axisMultPV});
-    registry.add("hMultFT0", "multiplicity distribution for FT0", kTH1D, {axisMultFT0});
+    registry.add("hCentMultFT0Corr", "Centrality distribution vs. FT0 Mult", kTH2D, {{axisCentrality}, {axisMultFT0}});
+    registry.add("hCentMultPVCorr", "Centrality distribution vs. PV Mult", kTH2D, {{axisCentrality}, {axisMultPV}});
+    registry.add("hMultPV", "multiplicity  distribution for PV", kTH2D, {{axisZvtx}, {axisMultPV}});
+    registry.add("hMultFT0", "multiplicity distribution for FT0", kTH2D, {{axisZvtx}, {axisMultFT0}});
     registry.add("hMultFT0PV", "multiplicity distribution", kTH2D, {{axisMultFT0}, {axisMultPV}});
     registry.add("hITSchi2", "ITS #chi^{2}", kTH1F, {axisChi2});
     registry.add("hTPCchi2", "TPC #chi^{2}", kTH1F, {axisChi2});
@@ -320,6 +321,7 @@ struct HfTaskElectronWeakBoson {
     registry.add("hPt", "track pt", kTH1F, {axisPt});
     registry.add("hTPCNsigma", "TPC electron Nsigma", kTH2F, {{axisPt}, {axisNsigma}});
     registry.add("hEnergy", "EMC cluster energy", kTH1F, {axisE});
+    registry.add("hEnergyMult", "EMC cluster energy vs Multiplicity", kTH2F, {{axisCentrality}, {axisE}});
     registry.add("hEnergyNcell", "EMC cluster energy and cell", kTH2F, {{axisE}, {axisNcell}});
     registry.add("hTrMatchR", "Track EMC Match in radius", kTH2F, {{axisPt}, {axisdR}});
     registry.add("hTrMatch_mim", "Track EMC Match minimu minimumm", kTH2F, {{axisdPhi}, {axisdEta}});
@@ -610,7 +612,8 @@ struct HfTaskElectronWeakBoson {
       if (centrality < centralityMin || centrality > centralityMax) {
         return;
       }
-      registry.fill(HIST("hCentMultCorr"), centrality, collision.multFT0M());
+      registry.fill(HIST("hCentMultFT0Corr"), centrality, collision.multFT0M());
+      registry.fill(HIST("hCentMultPVCorr"), centrality, collision.multNTracksPV());
     }
 
     if (enableMultiplicityFT0MAnalysis || enableMultiplicityPVAnalysis) {
@@ -620,8 +623,8 @@ struct HfTaskElectronWeakBoson {
         centrality = collision.multNTracksPV();
       // LOG(info) << "raw mult PV = " << collision.multNTracksPV();
       // LOG(info) << "raw mult FT0M = " << collision.multFT0M();
-      registry.fill(HIST("hMultPV"), collision.multNTracksPV());
-      registry.fill(HIST("hMultFT0"), collision.multFT0M());
+      registry.fill(HIST("hMultPV"), collision.posZ(), collision.multNTracksPV());
+      registry.fill(HIST("hMultFT0"), collision.posZ(), collision.multFT0M());
       registry.fill(HIST("hMultFT0PV"), collision.multFT0M(), collision.multNTracksPV());
     }
 
@@ -752,6 +755,7 @@ struct HfTaskElectronWeakBoson {
             registry.fill(HIST("hTHnTrMatch"), match.track_as<TrackEle>().pt(), dPhi, dEta);
             registry.fill(HIST("hEMCtime"), timeEmc);
             registry.fill(HIST("hEnergy"), energyEmc);
+            registry.fill(HIST("hEnergyMult"), centrality, energyEmc);
 
             if (std::abs(dPhi) > rMatchMax || std::abs(dEta) > rMatchMax) {
               continue;
