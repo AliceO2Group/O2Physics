@@ -35,6 +35,7 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <GlobalTracking/MatchGlobalFwd.h>
 #include <MCHBase/TrackerParam.h>
 #include <MCHGeometryTransformer/Transformations.h>
@@ -58,7 +59,6 @@
 #include <THnSparse.h>
 #include <TMath.h>
 
-#include <GPU/GPUROOTCartesianFwd.h>
 #include <rapidjson/document.h>
 #include <rapidjson/error/error.h>
 
@@ -1136,8 +1136,8 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
   template <typename T>
   T UpdateTrackMomentum(const T& track, const double p, int sign)
   {
-    double px = p * std::sin(M_PI / 2 - std::atan(track.tgl())) * std::cos(track.phi());
-    double py = p * std::sin(M_PI / 2 - std::atan(track.tgl())) * std::sin(track.phi());
+    double px = p * std::sin(o2::constants::math::PIHalf - std::atan(track.tgl())) * std::cos(track.phi());
+    double py = p * std::sin(o2::constants::math::PIHalf - std::atan(track.tgl())) * std::sin(track.phi());
     double pt = std::sqrt(std::pow(px, 2) + std::pow(py, 2));
 
     SMatrix5 tpars = {track.x(), track.y(), track.phi(), track.tgl(), sign / pt};
@@ -1157,8 +1157,8 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
   template <typename T>
   T UpdateTrackMomentum(const T& track, const o2::mch::TrackParam& track4mom)
   {
-    double px = track4mom.p() * std::sin(M_PI / 2 - std::atan(track.tgl())) * std::cos(track.phi());
-    double py = track4mom.p() * std::sin(M_PI / 2 - std::atan(track.tgl())) * std::sin(track.phi());
+    double px = track4mom.p() * std::sin(o2::constants::math::PIHalf - std::atan(track.tgl())) * std::cos(track.phi());
+    double py = track4mom.p() * std::sin(o2::constants::math::PIHalf - std::atan(track.tgl())) * std::sin(track.phi());
     double pt = std::sqrt(std::pow(px, 2) + std::pow(py, 2));
     double sign = track4mom.getCharge();
 
@@ -1297,7 +1297,7 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
     // static double Bz = -10001;
     double chi2 = mftTrack.chi2();
     double phiCorrDeg = 0;
-    double phiCorr = phiCorrDeg * TMath::Pi() / 180.f;
+    double phiCorr = phiCorrDeg * o2::constants::math::Deg2Rad;
     double tR = std::hypot(mftTrack.x(), mftTrack.y());
     double tphi = std::atan2(mftTrack.y(), mftTrack.x());
     double tx = std::cos(tphi + phiCorr) * tR;
@@ -1325,7 +1325,7 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
     //  double centerZ[3] = {0, 0, -45.f / 2.f};
     //  o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     //  Bz = field->getBz(centerZ);
-    //}
+    // }
     fwdtrack.propagateToZ(collision.posZ() - zshift, mBzAtMftCenter);
 
     propmuon.setParameters(fwdtrack.getParameters());
@@ -1341,7 +1341,7 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
     // static double Bz = -10001;
     double chi2 = mftTrack.chi2();
     double phiCorrDeg = 0;
-    double phiCorr = phiCorrDeg * TMath::Pi() / 180.f;
+    double phiCorr = phiCorrDeg * o2::constants::math::Deg2Rad;
     double tR = std::hypot(mftTrack.x(), mftTrack.y());
     double tphi = std::atan2(mftTrack.y(), mftTrack.x());
     double tx = std::cos(tphi + phiCorr) * tR;
@@ -1373,7 +1373,7 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
     //  double centerZ[3] = {0, 0, -45.f / 2.f};
     //  o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     //  Bz = field->getBz(centerZ);
-    //}
+    // }
     fwdtrack.propagateToZ(collision.posZ() - zshift, mBzAtMftCenter);
 
     o2::dataformats::GlobalFwdTrack propmuon;
@@ -1469,7 +1469,7 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
           auto mftTrackAtDCA = PropagateMFTToDCA(mftTrack, collision, cfgVertexZshift);
           double dcax = mftTrackAtDCA.getX() - collision.posX();
           double dcay = mftTrackAtDCA.getY() - collision.posY();
-          double phi = mftTrack.phi() * 180 / TMath::Pi();
+          double phi = mftTrack.phi() * o2::constants::math::Rad2Deg;
           int mftNclusters = mftTrack.nClusters();
           double chi2NDF = static_cast<double>(mftNclusters) * 2 - 5;
 
@@ -1858,10 +1858,10 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
             dsyPlots[iRefPlane]->Fill(dsy, refTrackAtRefPlane.getX(), refTrackAtRefPlane.getY(), quadrant, posNeg, mchTrack.p());
 
             auto dphi = mchTrackAtRefPlane.getPhi() - mftTrackAtRefPlane.getPhi();
-            if (dphi < -TMath::Pi()) {
-              dphi += TMath::Pi() * 2.0;
-            } else if (dphi > TMath::Pi()) {
-              dphi -= TMath::Pi() * 2.0;
+            if (dphi < -o2::constants::math::PI) {
+              dphi += o2::constants::math::TwoPI;
+            } else if (dphi > o2::constants::math::PI) {
+              dphi -= o2::constants::math::TwoPI;
             }
             dphiPlots[iRefPlane]->Fill(dphi, refTrackAtRefPlane.getX(), refTrackAtRefPlane.getY(), quadrant, posNeg, mchTrack.p());
           }
