@@ -179,7 +179,7 @@ struct Kstarqa {
 
   } configGp;
 
-  Service<o2::framework::O2DatabasePDG> pdgDB;
+  Service<o2::framework::O2DatabasePDG> pdgDB{};
 
   enum MultEstimator {
     kFT0M,
@@ -663,7 +663,7 @@ struct Kstarqa {
     const double p2 = candidate2.p();
     const double angle = std::acos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
 
-    return !(configGp.isApplyDeepAngle && angle < configGp.cfgDeepAngle);
+    return !configGp.isApplyDeepAngle || angle >= configGp.cfgDeepAngle;
   }
 
   template <typename T>
@@ -2178,7 +2178,8 @@ struct Kstarqa {
         }
         rEventSelection.fill(HIST("recMCparticles"), 6.5);
 
-        if (!(track1PDG == PDG_t::kPiPlus && track2PDG == PDG_t::kKPlus) && !(track1PDG == PDG_t::kKPlus && track2PDG == PDG_t::kPiPlus)) {
+        if ((track1PDG != PDG_t::kPiPlus || track2PDG != PDG_t::kKPlus) &&
+            (track1PDG != PDG_t::kKPlus || track2PDG != PDG_t::kPiPlus)) {
           continue;
         }
         rEventSelection.fill(HIST("recMCparticles"), 7.5);
@@ -3096,7 +3097,7 @@ struct Kstarqa {
         }
         rEventSelection.fill(HIST("recMCparticles"), 5.5);
 
-        if (!(track1PDG == PDG_t::kKPlus && track2PDG == PDG_t::kKPlus)) {
+        if (track1PDG != PDG_t::kKPlus || track2PDG != PDG_t::kKPlus) {
           continue;
         }
         rEventSelection.fill(HIST("recMCparticles"), 6.5);
