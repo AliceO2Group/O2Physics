@@ -407,7 +407,7 @@ struct ChargeBalanceFunction {
       return 1.;
     }
 
-    std::array<int, 4> binarray;
+    std::array<int, 4> binarray{};
     std::array<float, 4> v = {cent, posz, track.pt(), track.eta()};
     if (sign > 0) {
       for (int i = 0; i < nHistDim; ++i) {
