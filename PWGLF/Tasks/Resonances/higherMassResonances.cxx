@@ -157,6 +157,7 @@ struct HigherMassResonances {
     Configurable<float> cfgETAcut{"cfgETAcut", 0.8f, "Track ETA cut"};
     Configurable<float> deltaRDaugherCut{"deltaRDaugherCut", 0.001f, "DeltaR cut on V0 daughters"};
     Configurable<float> deltaRK0sCut{"deltaRK0sCut", 0.1f, "Apply deltaR cut between two K0s"};
+    Configurable<float> cfgArmenterosCut{"cfgArmenterosCut", 0.2f, "Armenteros-Podolanski cut"};
 
     // Configurable for track selection and multiplicity
     Configurable<float> cfgPTcut{"cfgPTcut", 0.2f, "Track PT cut"};
@@ -174,7 +175,7 @@ struct HigherMassResonances {
     Configurable<bool> activateHelicityFrame{"activateHelicityFrame", false, "Activate the THnSparse with cosThStar w.r.t. helicity axis"};
     Configurable<bool> activateCollinsSoperFrame{"activateCollinsSoperFrame", false, "Activate the THnSparse with cosThStar w.r.t. Collins soper axis"};
     Configurable<bool> activateProductionFrame{"activateProductionFrame", false, "Activate the THnSparse with cosThStar w.r.t. production axis"};
-    Configurable<bool> activateBeamAxisFrame{"activateBeamAxisFrame", true, "Activate the THnSparse with cosThStar w.r.t. beam axis (Gottified jackson frame)"};
+    Configurable<bool> activateGJFrame{"activateGJFrame", true, "Activate the THnSparse with cosThStar w.r.t. beam axis (Gottified jackson frame)"};
     Configurable<bool> activateRandomFrame{"activateRandomFrame", false, "Activate the THnSparse with cosThStar w.r.t. random axis"};
     Configurable<int> cRotations{"cRotations", 3, "Number of random rotations in the rotational background"};
 
@@ -212,6 +213,7 @@ struct HigherMassResonances {
     int refAId = 0;
     int refBId = 0;
     float minQvecAmp = 1e-5;
+    double tolerance = 1e-12;
   } config;
 
   // Service<o2::framework::O2DatabasePDG> PDGdatabase;
@@ -255,7 +257,7 @@ struct HigherMassResonances {
     AxisSpec axisEvtResPlQA = {102, -1.02, 1.02, ""};
 
     //  THnSparses
-    std::array<bool, 5> sparses = {config.activateHelicityFrame, config.activateCollinsSoperFrame, config.activateProductionFrame, config.activateBeamAxisFrame, config.activateRandomFrame};
+    std::array<bool, 5> sparses = {config.activateHelicityFrame, config.activateCollinsSoperFrame, config.activateProductionFrame, config.activateGJFrame, config.activateRandomFrame};
 
     if (std::accumulate(sparses.begin(), sparses.end(), 0) == 0) {
       LOGP(fatal, "No output THnSparses enabled");
@@ -269,7 +271,7 @@ struct HigherMassResonances {
       if (config.activateProductionFrame) {
         LOGP(info, "THnSparse with cosThStar w.r.t. production axis active.");
       }
-      if (config.activateBeamAxisFrame) {
+      if (config.activateGJFrame) {
         LOGP(info, "THnSparse with cosThStar w.r.t. beam axis active. (Gottified jackson frame)");
       }
       if (config.activateRandomFrame) {
@@ -311,10 +313,11 @@ struct HigherMassResonances {
       hv0label->GetXaxis()->SetBinLabel(5, "Daughter DCA");
       hv0label->GetXaxis()->SetBinLabel(6, "CosPA");
       hv0label->GetXaxis()->SetBinLabel(7, "Decay Radius");
-      hv0label->GetXaxis()->SetBinLabel(8, "Lifetime");
-      hv0label->GetXaxis()->SetBinLabel(9, "CompetingCascade");
-      hv0label->GetXaxis()->SetBinLabel(10, "Standard V0");
-      hv0label->GetXaxis()->SetBinLabel(11, "Mass Tolerance");
+      hv0label->GetXaxis()->SetBinLabel(8, "Armenteros-Podolanski");
+      hv0label->GetXaxis()->SetBinLabel(9, "Lifetime");
+      hv0label->GetXaxis()->SetBinLabel(10, "CompetingCascade");
+      hv0label->GetXaxis()->SetBinLabel(11, "Standard V0");
+      hv0label->GetXaxis()->SetBinLabel(12, "Mass Tolerance");
 
       std::shared_ptr<TH1> hv0DauLabel = rEventSelection.get<TH1>(HIST("htrackscheck_v0_daughters"));
       hv0DauLabel->GetXaxis()->SetBinLabel(1, "AllDau Tracks");
@@ -385,6 +388,7 @@ struct HigherMassResonances {
       rKzeroShort.add("hLT", "hLT", {HistType::kTH1F, {{100, 0.0f, 50.0f}}});
       rKzeroShort.add("angularSeparation", "Angular distribution between two K0s vs pT", {HistType::kTH1F, {{200, 0.0f, 4.0f}}});
       rKzeroShort.add("hDauDeltaR", "Delta R of positive and negative daughers", {HistType::kTHnSparseF, {angleSepAxis, angleSepAxis}});
+      rKzeroShort.add("hArmenterosPodolanski", "Armenteros-Podolanski plot", HistType::kTH2D, {AxisSpec{100, -1, 1, "#alpha"}, {200, 0, 0.5, "qtArm"}});
     }
     rKzeroShort.add("NksProduced", "Number of K0s produced", kTH1I, {{15, -0.5, 14.5}});
 
@@ -405,6 +409,8 @@ struct HigherMassResonances {
       hMChists.add("Genf17102", "Gen f_{0}(1710)", kTHnSparseF, {multiplicityAxis, ptAxis, thnAxisPOL});
       hMChists.add("Genf1710Calib2", "Calibrated Gen f_{0}(1710)", kTHnSparseF, {multiplicityAxis, ptAxis, thnAxisPOL});
       hMChists.add("Gen1710PWA2", "Gen f_{0}(1710) PWA", kTHnSparseF, {glueballMassAxis, thnAxisPOL, thnAxisPhi});
+      hMChists.add("GenThetavsPhi1", "GenThetavsPhi1", kTH2F, {{thnAxisPOL}, {thnAxisPhi}});
+      hMChists.add("GenThetavsPhi2", "GenThetavsPhi2", kTH2F, {{thnAxisPOL}, {thnAxisPhi}});
 
       hMChists.add("Recf1710_pt1", "Rec f_{0}(1710) p_{T}", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL});
       hMChists.add("Recf1710Calib_pt1", "Calibrated Rec f_{0}(1710) p_{T}", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL});
@@ -412,6 +418,8 @@ struct HigherMassResonances {
       hMChists.add("Recf1710_pt2", "Rec f_{0}(1710) p_{T}", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL});
       hMChists.add("Recf1710Calib_pt2", "Calibrated Rec f_{0}(1710) p_{T}", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL});
       hMChists.add("Recf1710PWA_pt2", "Rec f_{0}(1710) PWA", kTHnSparseF, {glueballMassAxis, thnAxisPOL, thnAxisPhi});
+      hMChists.add("RecThetavsPhi1", "RecTheta vs Phi1", kTH2F, {{thnAxisPOL}, {thnAxisPhi}});
+      hMChists.add("RecThetavsPhi2", "RecTheta vs Phi2", kTH2F, {{thnAxisPOL}, {thnAxisPhi}});
 
       hMChists.add("h1Recsplit", "Rec p_{T}2", kTH1F, {ptAxis});
       hMChists.add("Genf1710_mass", "Gen f_{0}(1710) mass", kTH1F, {glueballMassAxis});
@@ -630,9 +638,6 @@ struct HigherMassResonances {
   template <typename Collision, typename V0>
   bool selectionV0(Collision const& collision, V0 const& candidate, float /*multiplicity*/)
   {
-    // const float qtarm = candidate.qtarm();
-    // const float alph = candidate.alpha();
-    // float arm = qtarm / alph;
     const float pT = candidate.pt();
     const float tranRad = candidate.v0radius();
     const float dcaDaughv0 = candidate.dcaV0daughters();
@@ -647,6 +652,7 @@ struct HigherMassResonances {
       rKzeroShort.fill(HIST("hLT"), ctauK0s);
       rKzeroShort.fill(HIST("hDCAV0Daughters"), candidate.dcaV0daughters());
       rKzeroShort.fill(HIST("hV0CosPA"), candidate.v0cosPA());
+      rKzeroShort.fill(HIST("hArmenterosPodolanski"), candidate.alpha(), candidate.qtarm());
     }
     if (config.qAcorrelation2Dhist)
       rKzeroShort.fill(HIST("mass_lambda_kshort_before"), candidate.mK0Short(), candidate.mLambda());
@@ -683,9 +689,9 @@ struct HigherMassResonances {
     }
     rEventSelection.fill(HIST("htrackscheck_v0"), 6.5);
 
-    // if (tranRad > config.confV0TranRadV0Max) {
-    //   return false;
-    // }
+    if (candidate.qtarm() < config.cfgArmenterosCut * std::fabs(candidate.alpha())) {
+      return false;
+    }
     rEventSelection.fill(HIST("htrackscheck_v0"), 7.5);
 
     if (std::fabs(ctauK0s) > config.cMaxV0LifeTime) {
@@ -799,22 +805,39 @@ struct HigherMassResonances {
   enum FrameType { kHelicity = 0,
                    kCollinsSoper = 1,
                    kProduction = 2,
-                   kBeamAxis = 3,
+                   kGottfriedJackson = 3,
                    kRandom = 4 };
 
   std::pair<double, double> getCosThetaPhi(const ROOT::Math::PxPyPzMVector& motherVec, const ROOT::Math::PxPyPzMVector& daughterVec, int frame)
   {
+    //----------------------------------------------------------------
+    // Boost daughter into mother rest frame
+    //----------------------------------------------------------------
     ROOT::Math::Boost boost{motherVec.BoostToCM()};
-    auto dauCM = boost(daughterVec);
-    ROOT::Math::XYZVectorF v1cm = ROOT::Math::XYZVectorF(dauCM.Vect()).Unit();
 
-    ROOT::Math::XYZVectorF beam1cm = ROOT::Math::XYZVectorF((boost(beam1).Vect()).Unit());
-    ROOT::Math::XYZVectorF beam2cm = ROOT::Math::XYZVectorF((boost(beam2).Vect()).Unit());
+    auto dauCM = boost(daughterVec);
+
+    // Unit vector of daughter momentum in mother rest frame
+    auto v1cm = ROOT::Math::XYZVectorF(dauCM.Vect()).Unit();
+
+    //----------------------------------------------------------------
+    // Beam directions boosted into mother rest frame
+    //----------------------------------------------------------------
+    auto beam1cm = ROOT::Math::XYZVectorF((boost(beam1).Vect()).Unit());
+
+    auto beam2cm = ROOT::Math::XYZVectorF((boost(beam2).Vect()).Unit());
 
     double cosTheta = 0.;
     double phi = 0.;
 
     if (frame == kHelicity) {
+      //==============================================================
+      // HELICITY FRAME
+      // z-axis : Mother momentum direction in laboratory frame
+      // y-axis : Normal to beam plane
+      // x-axis : Completes right-handed coordinate system
+      //==============================================================
+
       auto zaxisHELocal = ROOT::Math::XYZVectorF(motherVec.Vect()).Unit();
       auto yaxisHELocal = ROOT::Math::XYZVectorF(beam1cm.Cross(beam2cm)).Unit();
       auto xaxisHELocal = ROOT::Math::XYZVectorF(yaxisHELocal.Cross(zaxisHELocal)).Unit();
@@ -822,6 +845,13 @@ struct HigherMassResonances {
       phi = std::atan2(yaxisHELocal.Dot(v1cm), xaxisHELocal.Dot(v1cm));
       phi = RecoDecay::constrainAngle(phi, 0.0);
     } else if (frame == kCollinsSoper) {
+      //==============================================================
+      // COLLINS-SOPER FRAME
+      // z-axis : Bisector of the two beam directions
+      // y-axis : Normal to beam plane
+      // x-axis : Completes right-handed system
+      //==============================================================
+
       auto zAxisCSLocal = ROOT::Math::XYZVectorF((beam1cm.Unit() - beam2cm.Unit())).Unit();
       auto yAxisCSLocal = ROOT::Math::XYZVectorF(beam1cm.Cross(beam2cm)).Unit();
       auto xAxisCSLocal = ROOT::Math::XYZVectorF(yAxisCSLocal.Cross(zAxisCSLocal)).Unit();
@@ -829,6 +859,16 @@ struct HigherMassResonances {
       phi = std::atan2(yAxisCSLocal.Dot(v1cm), xAxisCSLocal.Dot(v1cm));
       phi = RecoDecay::constrainAngle(phi, 0.0);
     } else if (frame == kProduction) {
+      //==============================================================
+      // PRODUCTION FRAME
+      // z-axis : Normal to production plane
+      //
+      // Production plane is defined by:
+      //   beam direction
+      //   mother momentum
+      // Used occasionally in spin-alignment analyses.
+      //==============================================================
+
       ROOT::Math::XYZVector normalVecLocal = ROOT::Math::XYZVector(motherVec.Py(), -motherVec.Px(), 0.f);
       cosTheta = normalVecLocal.Dot(dauCM.Vect()) / (std::sqrt(dauCM.Vect().Mag2()) * std::sqrt(normalVecLocal.Mag2()));
       // for production frame reuse helicity-style azimuthal angle
@@ -837,13 +877,37 @@ struct HigherMassResonances {
       auto xaxisHELocal = ROOT::Math::XYZVectorF(yaxisHELocal.Cross(zaxisHELocal)).Unit();
       phi = std::atan2(yaxisHELocal.Dot(v1cm), xaxisHELocal.Dot(v1cm));
       phi = RecoDecay::constrainAngle(phi, 0.0);
-    } else if (frame == kBeamAxis) {
-      ROOT::Math::XYZVector beamVecLocal = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
-      cosTheta = beamVecLocal.Dot(dauCM.Vect()) / std::sqrt(dauCM.Vect().Mag2());
-      auto zaxisHELocal = ROOT::Math::XYZVectorF(motherVec.Vect()).Unit();
-      auto yaxisHELocal = ROOT::Math::XYZVectorF(beam1cm.Cross(beam2cm)).Unit();
-      auto xaxisHELocal = ROOT::Math::XYZVectorF(yaxisHELocal.Cross(zaxisHELocal)).Unit();
-      phi = std::atan2(yaxisHELocal.Dot(v1cm), xaxisHELocal.Dot(v1cm));
+    } else if (frame == kGottfriedJackson) {
+      // ------------------------------------------------------------------
+      // Gottfried-Jackson (GJ') frame
+      //
+      // z-axis : beam direction in the mother rest frame
+      // y-axis : normal to the production plane
+      // x-axis : right-handed coordinate system
+      // ------------------------------------------------------------------
+
+      // z-axis: beam direction boosted into mother rest frame
+      auto zAxisGJ = beam1cm.Unit();
+
+      // Mother momentum in LAB (defines production plane)
+      auto motherLab = ROOT::Math::XYZVectorF(motherVec.Vect()).Unit();
+
+      // Normal to production plane
+      auto yAxisGJ = ROOT::Math::XYZVectorF(zAxisGJ.Cross(motherLab));
+
+      if (yAxisGJ.Mag2() > config.tolerance)
+        yAxisGJ = yAxisGJ.Unit();
+      else
+        yAxisGJ = ROOT::Math::XYZVectorF(0.f, 1.f, 0.f);
+
+      // Complete right-handed system
+      ROOT::Math::XYZVectorF xAxisGJ = ROOT::Math::XYZVectorF(yAxisGJ.Cross(zAxisGJ)).Unit();
+
+      // Daughter direction in mother rest frame
+      cosTheta = zAxisGJ.Dot(v1cm);
+
+      phi = std::atan2(yAxisGJ.Dot(v1cm), xAxisGJ.Dot(v1cm));
+
       phi = RecoDecay::constrainAngle(phi, 0.0);
     } else { // kRandom or fallback
       auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
@@ -1008,8 +1072,8 @@ struct HigherMassResonances {
           hglue.fill(HIST("h3glueInvMassME"), eventMultiplicity, motherVec.Pt(), motherVec.M(), pr.first, pr.second);
         }
       }
-    } else if (config.activateBeamAxisFrame) {
-      auto pr = getCosThetaPhi(motherVec, daughterVec1, kBeamAxis);
+    } else if (config.activateGJFrame) {
+      auto pr = getCosThetaPhi(motherVec, daughterVec1, kGottfriedJackson);
       if (!isMixed) {
         if (std::abs(motherVec.Rapidity()) < config.rapidityMotherData) {
           hglue.fill(HIST("h3glueInvMassDS"), eventMultiplicity, motherVec.Pt(), motherVec.M(), pr.first, pr.second);
@@ -1017,7 +1081,7 @@ struct HigherMassResonances {
         for (int i = 0; i < config.cRotations; i++) {
           config.theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / config.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / config.rotationalCut);
           motherRot = ROOT::Math::PxPyPzMVector(motherVec.Px() * std::cos(config.theta2) - motherVec.Py() * std::sin(config.theta2), motherVec.Px() * std::sin(config.theta2) + motherVec.Py() * std::cos(config.theta2), motherVec.Pz(), motherVec.M());
-          auto prrot = getCosThetaPhi(motherRot, daughterVec1, kBeamAxis);
+          auto prrot = getCosThetaPhi(motherRot, daughterVec1, kGottfriedJackson);
           if (std::abs(motherRot.Rapidity()) < config.rapidityMotherData) {
             hglue.fill(HIST("h3glueInvMassRot"), eventMultiplicity, motherRot.Pt(), motherRot.M(), prrot.first, prrot.second);
           }
@@ -1612,8 +1676,8 @@ struct HigherMassResonances {
           frame = kCollinsSoper;
         } else if (config.activateProductionFrame) {
           frame = kProduction;
-        } else if (config.activateBeamAxisFrame) {
-          frame = kBeamAxis;
+        } else if (config.activateGJFrame) {
+          frame = kGottfriedJackson;
         } else if (config.activateRandomFrame) {
           frame = kRandom;
         } else {
@@ -1630,6 +1694,7 @@ struct HigherMassResonances {
         hMChists.fill(HIST("GenEta"), mcParticle.eta());
         hMChists.fill(HIST("GenPhi"), mcParticle.phi());
         hMChists.fill(HIST("Gen1710PWA"), lResonanceGen.M(), angularVar.first, angularVar.second);
+        hMChists.fill(HIST("GenThetavsPhi1"), angularVar.first, angularVar.second);
 
         if (config.isapplyPairRapidityMC && std::abs(lResonanceGen1.Rapidity()) >= config.rapidityMotherData) {
           continue;
@@ -1642,6 +1707,7 @@ struct HigherMassResonances {
         hMChists.fill(HIST("GenEta2"), lResonanceGen1.Eta());
         hMChists.fill(HIST("GenPhi2"), lResonanceGen1.Phi());
         hMChists.fill(HIST("Gen1710PWA2"), lResonanceGen1.M(), angularVar1.first, angularVar1.second);
+        hMChists.fill(HIST("GenThetavsPhi2"), angularVar1.first, angularVar1.second);
       }
       passKs.clear(); // clear the vector for the next iteration
     }
@@ -1903,8 +1969,8 @@ struct HigherMassResonances {
               frame = kCollinsSoper;
             } else if (config.activateProductionFrame) {
               frame = kProduction;
-            } else if (config.activateBeamAxisFrame) {
-              frame = kBeamAxis;
+            } else if (config.activateGJFrame) {
+              frame = kGottfriedJackson;
             } else if (config.activateRandomFrame) {
               frame = kRandom;
             }
@@ -1918,6 +1984,7 @@ struct HigherMassResonances {
             hMChists.fill(HIST("RecPhi"), mothertrack1.phi());
             hMChists.fill(HIST("RecEta"), mothertrack1.eta());
             hMChists.fill(HIST("Recf1710PWA_pt1"), mother1.M(), angularVar1.first, angularVar1.second);
+            hMChists.fill(HIST("RecThetavsPhi1"), angularVar1.first, angularVar1.second);
 
             if (config.isapplyPairRapidityMC && std::abs(mother.Rapidity()) >= config.rapidityMotherData) {
               continue;
@@ -1929,6 +1996,7 @@ struct HigherMassResonances {
             hMChists.fill(HIST("RecPhi2"), mother.Phi());
             hMChists.fill(HIST("RecEta2"), mother.Eta());
             hMChists.fill(HIST("Recf1710PWA_pt2"), mother.M(), angularVar.first, angularVar.second);
+            hMChists.fill(HIST("RecThetavsPhi2"), angularVar.first, angularVar.second);
           }
           gindex2.clear();
         }
