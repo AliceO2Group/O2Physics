@@ -106,6 +106,7 @@ struct TrackEfficiency {
 
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
+  float pTHatSettingSentinelValue = 999.0;
 
   enum AcceptSplitCollisionsOptions {
     NonSplitOnly = 0,
@@ -425,12 +426,17 @@ struct TrackEfficiency {
 
       registry.add("h_track_pt_track_dcaxy_mcprimary", "#it{p}_{T, track} (GeV/#it{c}); primaries dca_{xy}", {HistType::kTH2F, {ptAxisEff, dcaxyAxis}});
       registry.add("h_track_pt_track_dcaz_mcprimary", "#it{p}_{T, track} (GeV/#it{c}); primaries dca_{z}", {HistType::kTH2F, {ptAxisEff, dcazAxis}});
-      registry.add("h_track_pt_track_dcaxy_mcsecondary", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{xy}", {HistType::kTH2F, {ptAxisEff, dcaxyAxis}});
-      registry.add("h_track_pt_track_dcaz_mcsecondary", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{z}", {HistType::kTH2F, {ptAxisEff, dcazAxis}});
+      registry.add("h_track_pt_track_dcaxy_mcsecondarydecay", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{xy}", {HistType::kTH2F, {ptAxisEff, dcaxyAxis}});
+      registry.add("h_track_pt_track_dcaz_mcsecondarydecay", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{z}", {HistType::kTH2F, {ptAxisEff, dcazAxis}});
+      registry.add("h_track_pt_track_dcaxy_mcsecondarymat", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{xy}", {HistType::kTH2F, {ptAxisEff, dcaxyAxis}});
+      registry.add("h_track_pt_track_dcaz_mcsecondarymat", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{z}", {HistType::kTH2F, {ptAxisEff, dcazAxis}});
+
       registry.add("h_track_pt_high_track_dcaxy_mcprimary", "#it{p}_{T, track} (GeV/#it{c}); primaries dca_{xy}", {HistType::kTH2F, {ptAxisHighEff, dcaxyAxis}});
       registry.add("h_track_pt_high_track_dcaz_mcprimary", "#it{p}_{T, track} (GeV/#it{c}); primaries dca_{z}", {HistType::kTH2F, {ptAxisHighEff, dcazAxis}});
-      registry.add("h_track_pt_high_track_dcaxy_mcsecondary", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{xy}", {HistType::kTH2F, {ptAxisHighEff, dcaxyAxis}});
-      registry.add("h_track_pt_high_track_dcaz_mcsecondary", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{z}", {HistType::kTH2F, {ptAxisHighEff, dcazAxis}});
+      registry.add("h_track_pt_high_track_dcaxy_mcsecondarydecay", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{xy}", {HistType::kTH2F, {ptAxisHighEff, dcaxyAxis}});
+      registry.add("h_track_pt_high_track_dcaz_mcsecondarydecay", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{z}", {HistType::kTH2F, {ptAxisHighEff, dcazAxis}});
+      registry.add("h_track_pt_high_track_dcaxy_mcsecondarymat", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{xy}", {HistType::kTH2F, {ptAxisHighEff, dcaxyAxis}});
+      registry.add("h_track_pt_high_track_dcaz_mcsecondarymat", "#it{p}_{T, track} (GeV/#it{c}); secondaries dca_{z}", {HistType::kTH2F, {ptAxisHighEff, dcazAxis}});
     }
   }
 
@@ -513,7 +519,7 @@ struct TrackEfficiency {
     }
     registry.fill(HIST("hMcCollCutsCounts"), 5.5); // at least one of the reconstructed collisions associated with this mcCollision is selected with regard to centrality
 
-    float pTHat = mcCollision.ptHard() < 999.0f ? mcCollision.ptHard() : simPtRef / (std::pow(mcCollision.weight(), 1.0 / pTHatExponent));
+    float pTHat = mcCollision.ptHard() < pTHatSettingSentinelValue ? mcCollision.ptHard() : simPtRef / (std::pow(mcCollision.weight(), 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
     }
@@ -856,7 +862,7 @@ struct TrackEfficiency {
       return;
     }
 
-    float pTHat = collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(collision.mcCollision().weight(), 1.0 / pTHatExponent));
+    float pTHat = collision.mcCollision().ptHard() < pTHatSettingSentinelValue ? collision.mcCollision().ptHard() : simPtRef / (std::pow(collision.mcCollision().weight(), 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
     }
@@ -885,7 +891,7 @@ struct TrackEfficiency {
       return;
     }
 
-    float pTHat = collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = collision.mcCollision().ptHard() < pTHatSettingSentinelValue ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
     }
@@ -910,7 +916,7 @@ struct TrackEfficiency {
       return;
     }
 
-    float pTHat = mcCollision.ptHard() < 999.0f ? mcCollision.ptHard() : simPtRef / (std::pow(mcCollision.weight(), 1.0 / pTHatExponent));
+    float pTHat = mcCollision.ptHard() < pTHatSettingSentinelValue ? mcCollision.ptHard() : simPtRef / (std::pow(mcCollision.weight(), 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
     }
@@ -973,7 +979,7 @@ struct TrackEfficiency {
       return;
     }
 
-    float pTHat = mcCollision.ptHard() < 999.0f ? mcCollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = mcCollision.ptHard() < pTHatSettingSentinelValue ? mcCollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
     }
@@ -1067,7 +1073,7 @@ struct TrackEfficiency {
     registry.fill(HIST("h_collisions"), 3.5);
     registry.fill(HIST("h2_centrality_collisions"), centrality, 3.5);
 
-    float pTHat = collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(collision.mcCollision().weight(), 1.0 / pTHatExponent));
+    float pTHat = collision.mcCollision().ptHard() < pTHatSettingSentinelValue ? collision.mcCollision().ptHard() : simPtRef / (std::pow(collision.mcCollision().weight(), 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
     }
@@ -1104,7 +1110,7 @@ struct TrackEfficiency {
     registry.fill(HIST("h_collisions"), 3.5);
     registry.fill(HIST("h_collisions_weighted"), 3.5, eventWeight);
 
-    float pTHat = collision.mcCollision().ptHard() < 999.0f ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = collision.mcCollision().ptHard() < pTHatSettingSentinelValue ? collision.mcCollision().ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     if (pTHat < ptHatMin || pTHat > ptHatMax) { // only allows mcCollisions with weight in between min and max
       return;
     }
@@ -1119,7 +1125,7 @@ struct TrackEfficiency {
     // float centrality = checkCentFT0M ? mcCollision.centFT0M() : mcCollision.centFT0C(); mcCollision.centFT0C() isn't filled at the moment; can be added back when it is
 
     float eventWeight = mcCollision.weight();
-    float pTHat = mcCollision.ptHard() < 999.0f ? mcCollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = mcCollision.ptHard() < pTHatSettingSentinelValue ? mcCollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     registry.fill(HIST("h2_mccollision_pthardfromweight_pthardfromhepmcxsection"), simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent)), mcCollision.ptHard());
 
     float centrality = -1;
@@ -1191,7 +1197,7 @@ struct TrackEfficiency {
     // float centrality = checkCentFT0M ? mcCollision.centFT0M() : mcCollision.centFT0C();  mcCollision.centFT0C() isn't filled at the moment; can be added back when it is
 
     float eventWeight = mcCollision.weight();
-    float pTHat = mcCollision.ptHard() < 999.0f ? mcCollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
+    float pTHat = mcCollision.ptHard() < pTHatSettingSentinelValue ? mcCollision.ptHard() : simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent));
     registry.fill(HIST("h2_mccollision_pthardfromweight_pthardfromhepmcxsection"), simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent)), mcCollision.ptHard());
     registry.fill(HIST("h2_mccollision_pthardfromweight_pthardfromhepmcxsection_weighted"), simPtRef / (std::pow(eventWeight, 1.0 / pTHatExponent)), mcCollision.ptHard(), eventWeight);
 
@@ -1388,6 +1394,7 @@ struct TrackEfficiency {
 
   void processItsTpcMatchingMC(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::JetTracks, aod::JTrackPIs> const& jetTracks, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels, aod::TrackSelectionExtension> const&, aod::McParticles const&)
   {
+    // could be added in future: pions+kaons vs protons distinction; easy in MC but what is the procedure for data?
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, applyRCTSelections)) {
       return;
     }
@@ -1474,11 +1481,18 @@ struct TrackEfficiency {
         registry.fill(HIST("h_track_pt_high_track_dcaz_mcprimary"), aodTrack.pt(), aodTrack.dcaZ());
       }
 
-      if (!aodMcParticleFromTrack.isPhysicalPrimary()) {
-        registry.fill(HIST("h_track_pt_track_dcaxy_mcsecondary"), aodTrack.pt(), aodTrack.dcaXY());
-        registry.fill(HIST("h_track_pt_track_dcaz_mcsecondary"), aodTrack.pt(), aodTrack.dcaZ());
-        registry.fill(HIST("h_track_pt_high_track_dcaxy_mcsecondary"), aodTrack.pt(), aodTrack.dcaXY());
-        registry.fill(HIST("h_track_pt_high_track_dcaz_mcsecondary"), aodTrack.pt(), aodTrack.dcaZ());
+      if (!aodMcParticleFromTrack.isPhysicalPrimary()) {      // Secondaries (weak decays and material)
+        if (aodMcParticleFromTrack.getProcess() == kPDecay) { // Particles from decay
+          registry.fill(HIST("h_track_pt_track_dcaxy_mcsecondarydecay"), aodTrack.pt(), aodTrack.dcaXY());
+          registry.fill(HIST("h_track_pt_track_dcaz_mcsecondarydecay"), aodTrack.pt(), aodTrack.dcaZ());
+          registry.fill(HIST("h_track_pt_high_track_dcaxy_mcsecondarydecay"), aodTrack.pt(), aodTrack.dcaXY());
+          registry.fill(HIST("h_track_pt_high_track_dcaz_mcsecondarydecay"), aodTrack.pt(), aodTrack.dcaZ());
+        } else { // Particles from the material
+          registry.fill(HIST("h_track_pt_track_dcaxy_mcsecondarymat"), aodTrack.pt(), aodTrack.dcaXY());
+          registry.fill(HIST("h_track_pt_track_dcaz_mcsecondarymat"), aodTrack.pt(), aodTrack.dcaZ());
+          registry.fill(HIST("h_track_pt_high_track_dcaxy_mcsecondarymat"), aodTrack.pt(), aodTrack.dcaXY());
+          registry.fill(HIST("h_track_pt_high_track_dcaz_mcsecondarymat"), aodTrack.pt(), aodTrack.dcaZ());
+        }
       }
     }
   }
