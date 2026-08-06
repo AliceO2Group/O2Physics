@@ -886,6 +886,9 @@ struct FlowGfwV02 {
       int bootstrap = fRndm->Integer(gfwMemberCache.nBootstrap);
       for (int pid = 0; pid < PidTotal; pid++) {
         int normIndex = (cfgNormalizeByCharged) ? PidCharged : pid;
+        if (!pidStates.hPtForward[normIndex]->Integral() > 0 || !pidStates.hPtBackward[normIndex]->Integral() > 0) {
+          continue; // Forward or backward pT distribution is not defined
+        }
         for (int i = 1; i <= fSecondAxis->GetNbins(); i++) {
           ptFractionForward = pidStates.hPtForward[pid]->GetBinContent(i) / pidStates.hPtForward[normIndex]->Integral();
           ptFractionBackward = pidStates.hPtBackward[pid]->GetBinContent(i) / pidStates.hPtBackward[normIndex]->Integral();
