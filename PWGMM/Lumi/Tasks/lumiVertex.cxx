@@ -8,8 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+/// \file lumiVertex.cxx
+/// \brief Codes for the vdM scan analysis based on the Primary Vertex reconstruction. The code is based on the lumiTask in O2Physics/PWGMM/Lumi/Tasks/lumi.cxx.
+///
 /// \author Minjae Kim <minjae.kim@cern.ch>
-/// \brief Codes for the vdM scan analysis based on the Primary Vertex reconstruction. The code is based on the lumiTask in O2Physics/PWGMM/Lumi/Tasks/lumi.cxx
 /// \since Aug.06. 2026
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -60,7 +63,7 @@ DECLARE_SOA_COLUMN(VertexXY, vertexXY, double);
 
 DECLARE_SOA_COLUMN(VertexChi2, vertexChi2, double);
 DECLARE_SOA_COLUMN(NContrib, nContrib, int);
-DECLARE_SOA_COLUMN(BCID, bcid, int32_t);
+DECLARE_SOA_COLUMN(Bcid, bcid, int32_t);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
 DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
 DECLARE_SOA_COLUMN(LocalBC, localBC, int32_t);
@@ -71,35 +74,35 @@ DECLARE_SOA_COLUMN(HasFT0TVX, hasFT0TVX, bool);
 DECLARE_SOA_COLUMN(IsCollisionTVX, isCollisionTVX, bool);
 DECLARE_SOA_COLUMN(HasAnyFT0Trigger, hasAnyFT0Trigger, bool);
 DECLARE_SOA_COLUMN(HasFT0AC, hasFT0AC, bool);
-DECLARE_SOA_COLUMN(FT0TriggerMask, ft0TriggerMask, uint8_t);
-DECLARE_SOA_COLUMN(FT0Rate, ft0Rate, float);
+DECLARE_SOA_COLUMN(Ft0TriggerMask, ft0TriggerMask, uint8_t);
+DECLARE_SOA_COLUMN(Ft0Rate, ft0Rate, float);
 DECLARE_SOA_COLUMN(NCollisions, nCollisions, int32_t);
 DECLARE_SOA_COLUMN(NSelectedCollisions, nSelectedCollisions, int32_t);
 DECLARE_SOA_COLUMN(IsCollidingBC, isCollidingBC, bool);
 DECLARE_SOA_COLUMN(IsFT0SuperLeading, isFT0SuperLeading, bool);
 DECLARE_SOA_COLUMN(HasPreviousFT0Activity, hasPreviousFT0Activity, bool);      //! Whether a preceding FT0 CTP activity was observed
-DECLARE_SOA_COLUMN(BCsSinceLastFT0Activity, bcsSinceLastFT0Activity, int64_t); //! -1 when the preceding activity is unknown
-DECLARE_SOA_COLUMN(PVRefitValid, pvRefitValid, bool);
+DECLARE_SOA_COLUMN(BcsSinceLastFT0Activity, bcsSinceLastFT0Activity, int64_t); //! -1 when the preceding activity is unknown
+DECLARE_SOA_COLUMN(PvRefitValid, pvRefitValid, bool);
 } // namespace full
 DECLARE_SOA_TABLE(EventInfo, "AOD", "EventInfo", full::TimeStamp, full::VertexX,
                   full::VertexY, full::VertexZ,
 
                   full::VertexXX, full::VertexYY, full::VertexXY,
 
-                  full::VertexChi2, full::NContrib, full::BCID, full::RunNumber,
+                  full::VertexChi2, full::NContrib, full::Bcid, full::RunNumber,
                   full::GlobalBC, full::HasFT0TVX, full::IsCollisionTVX,
                   full::HasAnyFT0Trigger,
                   full::IsCollidingBC, full::IsFT0SuperLeading,
-                  full::HasPreviousFT0Activity, full::BCsSinceLastFT0Activity,
-                  full::PVRefitValid);
+                  full::HasPreviousFT0Activity, full::BcsSinceLastFT0Activity,
+                  full::PvRefitValid);
 DECLARE_SOA_TABLE(EventInfoBC, "AOD", "EventInfoBC", full::RunNumber,
                   full::TimeStamp, full::GlobalBC, full::LocalBC,
                   full::InputMask, full::HasFT0, full::HasFoundFT0,
                   full::HasFT0TVX, full::HasAnyFT0Trigger, full::HasFT0AC,
-                  full::FT0TriggerMask, full::FT0Rate, full::NCollisions,
+                  full::Ft0TriggerMask, full::Ft0Rate, full::NCollisions,
                   full::NSelectedCollisions, full::IsCollidingBC,
                   full::IsFT0SuperLeading, full::HasPreviousFT0Activity,
-                  full::BCsSinceLastFT0Activity);
+                  full::BcsSinceLastFT0Activity);
 } // namespace o2::aod
 
 using namespace o2;
@@ -110,12 +113,12 @@ using MyBCs = soa::Join<aod::BCs, aod::BcSels, aod::Timestamps, aod::Run3Matched
 using CollisionsWithEvSels = soa::Join<aod::Collisions, aod::EvSels>;
 using UnfilteredTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra>;
 
-struct lumiTask {
+struct LumiVertex {
   Produces<o2::aod::EventInfo> rowEventInfo;
   Produces<o2::aod::EventInfoBC> rowEventInfoBC;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  const char* ccdbpath_grp = "GLO/Config/GRPMagField";
-  const char* ccdbpath_lut = "GLO/Param/MatLUT";
+  const char* ccdbPathGrp = "GLO/Config/GRPMagField";
+  const char* ccdbPathLut = "GLO/Param/MatLUT";
   const char* ccdburl = "http://alice-ccdb.cern.ch";
   int mFieldRunNumber = -1;
   o2::base::MatLayerCylSet* mMatLUT = nullptr;
@@ -273,7 +276,7 @@ struct lumiTask {
       "Mean refitted vertex y in TVX non-super-leading BCs;BC ID in orbit;#LT y_{refit} #GT (cm)",
       {HistType::kTProfile, {{o2::constants::lhc::LHCMaxBunches, -0.5, o2::constants::lhc::LHCMaxBunches - 0.5, "BC ID in orbit"}}}}}};
   // CTP input 3 is MTVX; std::bitset uses a zero-based bit index.
-  static constexpr uint8_t kFT0TVXInputBit = 2;
+  static constexpr uint8_t FT0TVXInputBit = 2;
 
   static bool hasFT0ACCoincidence(uint8_t triggerMask)
   {
@@ -284,7 +287,7 @@ struct lumiTask {
   static bool hasAnyFT0Trigger(const std::bitset<64>& ctpInputMask)
   {
     return ctpInputMask.test(0) || ctpInputMask.test(1) ||
-           ctpInputMask.test(kFT0TVXInputBit) || ctpInputMask.test(3) ||
+           ctpInputMask.test(FT0TVXInputBit) || ctpInputMask.test(3) ||
            ctpInputMask.test(4);
   }
 
@@ -365,7 +368,7 @@ struct lumiTask {
     FT0SuperLeadingInfo result;
     result.isCollidingBC = mCollidingBCPattern.test(localBC);
     result.hasFT0Activity = hasAnyFT0Trigger(ctpInputMask);
-    result.hasFT0TVX = ctpInputMask.test(kFT0TVXInputBit);
+    result.hasFT0TVX = ctpInputMask.test(FT0TVXInputBit);
     result.hasPreviousFT0Activity =
       mHasPreviousFT0Activity && globalBC > mGlobalBCOfLastFT0Activity;
 
@@ -399,7 +402,7 @@ struct lumiTask {
     }
 
     auto* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(
-      ccdbpath_grp, bc.timestamp());
+      ccdbPathGrp, bc.timestamp());
     if (grpo == nullptr) {
       LOGF(fatal,
            "GRP object is not available in CCDB for run=%d at timestamp=%llu",
@@ -409,7 +412,7 @@ struct lumiTask {
 
     if (basicConfig.useMatCorrLUT) {
       auto* rawLUT = ccdb->getForTimeStamp<o2::base::MatLayerCylSet>(
-        ccdbpath_lut, bc.timestamp());
+        ccdbPathLut, bc.timestamp());
       if (rawLUT == nullptr) {
         LOGF(fatal,
              "Material LUT is not available in CCDB for run=%d at timestamp=%llu",
@@ -752,6 +755,6 @@ struct lumiTask {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec w{adaptAnalysisTask<lumiTask>(cfgc, TaskName{"lumiVertex"})};
+  WorkflowSpec w{adaptAnalysisTask<LumiVertex>(cfgc)};
   return w;
 }
