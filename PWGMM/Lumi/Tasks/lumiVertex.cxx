@@ -134,7 +134,7 @@ struct lumiTask {
   PresliceUnsorted<CollisionsWithEvSels> collisionsPerFoundBC =
     aod::evsel::foundBCId;
   Preslice<UnfilteredTracks> tracksPerCollision =
-  aod::track::collisionId;
+    aod::track::collisionId;
 
   struct : ConfigurableGroup {
     Configurable<uint64_t> ftts{"ftts", 0,
@@ -727,9 +727,9 @@ struct lumiTask {
       int32_t nSelectedCollisions = 0;
       for (const auto& collision : collisionsInBC) {
         auto tracksInCollision =
-        unfilteredTracks.sliceBy(
-          tracksPerCollision,
-          collision.globalIndex());
+          unfilteredTracks.sliceBy(
+            tracksPerCollision,
+            collision.globalIndex());
 
         if (processCollision(collision, bc, tracksInCollision,
                              relativeTimestamp, globalBC, localBC,
