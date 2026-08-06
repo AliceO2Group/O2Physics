@@ -619,15 +619,15 @@ class KinkBuilder
       collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
 
       auto daughter = kink.template trackDaug_as<T8>();
-      daughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kKinkDaughter>(col, collisionBuilder, mcCols, daughter, trackProducts, mcParticles, mcBuilder, mcProducts);
+      daughterIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kKinkDaughter>(daughter, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
 
       if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
         fillSigma(collisionBuilder, kinkProducts, kink, daughterIndex);
-        mcBuilder.template fillMcSigmaWithLabel<system>(col, mcCols, daughter, mcParticles, mcProducts);
+        mcBuilder.template fillMcSigmaWithLabel<system>(daughter, mcParticles, mcCols, mcProducts);
       }
       if constexpr (modes::isEqual(kinkType, modes::Kink::kSigmaPlus)) {
         fillSigmaPlus(collisionBuilder, kinkProducts, kink, daughterIndex);
-        mcBuilder.template fillMcSigmaPlusWithLabel<system>(col, mcCols, daughter, mcParticles, mcProducts);
+        mcBuilder.template fillMcSigmaPlusWithLabel<system>(daughter, mcParticles, mcCols, mcProducts);
       }
     }
   }
@@ -707,7 +707,8 @@ class KinkBuilder
     }
   }
 
-  bool fillAnyTable() { return mFillAnyTable; }
+  [[nodiscard]] bool fillAnyTable() const { return mFillAnyTable; }
+  [[nodiscard]] bool isPassThrough() const { return mKinkSelection.isPassThrough(); }
 
  private:
   KinkSelection<kinkType, SelectionHistName, FilterHistName> mKinkSelection;

@@ -17,32 +17,31 @@
 #include "PWGLF/DataModel/LFLambda1405Table.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
-#include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/Track.h>
-#include <ReconstructionDataFormats/Vertex.h>
 
 #include <TF1.h>
 #include <TH2.h>
@@ -61,11 +60,14 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullPr>;
-using CollisionsFull = soa::Join<aod::Collisions, aod::EvSel, aod::FT0Mults>;
-using CollisionsFullWCentQVecs = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::QvectorFT0Cs>;
-using CollisionsFullMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults>;
-using CollisionsFullMcWCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>;
+using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA, aod::TracksCovIU, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullPr>;
+using CollisionsFull = soa::Join<aod::Collisions, aod::EvSel, aod::FT0Mults, aod::CentFT0Cs>;
+using CollisionsFullWQVecs = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs, aod::QvectorFT0Cs>;
+using CollisionsFullMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs>;
+// using CollisionsFullMcWCent = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>;
+
+using BinningCentPosZ = ColumnBinningPolicy<aod::cent::CentFT0C, aod::collision::PosZ>;
+using BinningMultPosZ = ColumnBinningPolicy<aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>, aod::collision::PosZ>;
 
 enum L1405DecayType { kSigmaMinusPiToPiPiNeutron = 0,
                       kSigmaPlusPiToPiPiNeutron,
@@ -113,13 +115,15 @@ struct lambda1405candidate {
   float occupancy = -1; // Occupancy of the collision
 
   float scalarProd = -1; // Scalar product for flow analysis
+
+  int poolBin = -1; // Pool bin for event mixing
 };
 
 struct lambda1405analysis {
-  int lambda1405PdgCode = 102132;                     // PDG code for Lambda(1405)
-  Produces<aod::Lambda1405Cands> outputDataTable;     // Output table for Lambda(1405) candidates
-  Produces<aod::Lambda1405Flow> outputDataFlowTable;  // Output table for Lambda(1405) flow analysis
-  Produces<aod::Lambda1405CandsMC> outputDataTableMC; // Output table for Lambda(1405) candidates in MC
+  int lambda1405PdgCode = 102132;                       // o2-linter: disable=pdg/explicit-code
+  Produces<aod::Lambda1405Cands> outputDataTable;       // Output table for Lambda(1405) candidates
+  Produces<aod::Lambda1405CandsMC> outputDataTableMC;   // Output table for Lambda(1405) candidates in MC
+  Produces<aod::Lambda1405SigmaEffMC> outputSigmaEffMC; // Output table for Lambda(1405) sigma efficiency in MC
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -130,44 +134,51 @@ struct lambda1405analysis {
   HistogramRegistry rSigmaPlus{"sigmaPlus", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rSelections{"selections", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   // Configurable for event selection
-  Configurable<float> cutZVertex{"cutZVertex", 10.0f, "Accepted z-vertex range (cm)"};
-  Configurable<float> cutEtaDaughter{"cutEtaDaughter", 0.8f, "Eta cut for daughter tracks"};
-  Configurable<float> cutDcaToPvSigma{"cutDcaToPvSigma", 0.1f, "Max DCA to primary vertex for Sigma candidates (cm)"};
-  Configurable<float> cutDcaToPvPiFromSigma{"cutDcaToPvPiFromSigma", 2., "Min DCA to primary vertex for pion from Sigma candidates (cm)"};
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<float> cutZVertex{"cutZVertex", 10.0f, "Accepted z-vertex range (cm)"};
+    Configurable<float> centMultMin{"centMultMin", 0., "Minimum collision centrality/multiplicity accepted"};
+    Configurable<float> centMultMax{"centMultMax", 100., "Maximum collision centrality/multiplicity accepted"};
+    Configurable<float> occupancyMax{"occupancyMax", 3000000., "Maximum collision occupancy accepted"};
+  } eventSelection;
 
-  Configurable<float> cutMinPtL1405{"cutMinPtL1405", 2.0f, "Minimum pT cut for Lambda(1405) candidates (GeV/c)"};
-  Configurable<float> cutUpperMass{"cutUpperMass", 1.6f, "Upper mass cut for Lambda(1405) candidates (GeV/c^2)"};
-  Configurable<float> cutSigmaRadius{"cutSigmaRadius", 20.f, "Minimum radius for Sigma candidates (cm)"};
-  Configurable<float> cutSigmaMass{"cutSigmaMass", 0.1, "Sigma mass window (MeV/c^2)"};
-  Configurable<float> cutItsNClusKinkMin{"cutItsNClusKinkMin", 1, "Minimum number of ITS clusters for kink daughter"};
-  Configurable<float> cutItsNClusKinkMax{"cutItsNClusKinkMax", 3, "Maximum number of ITS clusters for kink daughter"};
-  Configurable<float> cutNTpcClus{"cutNTpcClus", 90, "Minimum number of Tpc clusters for pion candidate"};
-  Configurable<float> cutNSigTpc{"cutNSigTpc", 3, "NSigTpcPion"};
-  Configurable<float> cutNSigTof{"cutNSigTof", 3, "NSigTofPion"};
-  Configurable<float> cutMaxDcaZBach{"cutMaxDcaZBach", 0.1, "Maximum DcaZ for bachelor pion (cm)"};
-  Configurable<float> dcaXYBachNSigmaMax{"dcaXYBachNSigmaMax", 7, "Cut on number of sigma deviations from expected DCA in the transverse direction"};
-  Configurable<std::string> dcaXYPtBachFunc{"dcaXYPtBachFunc", "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut"};
-  Configurable<std::string> cutSigmaQtAPMin{"cutSigmaQtAPMin", "0.17", "Functional form of minimum qT(alpha) selection"};
-  Configurable<std::string> cutSigmaQtAPMax{"cutSigmaQtAPMax", "0.2", "Functional form of minimum qT(alpha) selection"};
-  Configurable<std::string> cutMinBachPiPtVsL1405Pt{"cutMinBachPiPtVsL1405Pt", "0", "Functional form of minimum qT(alpha) selection"};
-  Configurable<std::string> cutMaxBachPiPtVsL1405Pt{"cutMaxBachPiPtVsL1405Pt", "10", "Functional form of minimum qT(alpha) selection"};
-  Configurable<std::string> cutMinSigmaPtVsL1405Pt{"cutMinSigmaPtVsL1405Pt", "0", "Functional form of minimum qT(alpha) selection"};
-  Configurable<std::string> cutMaxSigmaPtVsL1405Pt{"cutMaxSigmaPtVsL1405Pt", "10", "Functional form of minimum qT(alpha) selection"};
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<float> cutEtaDaughter{"cutEtaDaughter", 0.8f, "Eta cut for daughter tracks"};
+    Configurable<float> cutDcaToPvSigma{"cutDcaToPvSigma", 0.1f, "Max DCA to primary vertex for Sigma candidates (cm)"};
+    Configurable<float> cutDcaToPvPiFromSigma{"cutDcaToPvPiFromSigma", 2., "Min DCA to primary vertex for pion from Sigma candidates (cm)"};
+    Configurable<float> cutMinPtL1405{"cutMinPtL1405", 2.0f, "Minimum pT cut for Lambda(1405) candidates (GeV/c)"};
+    Configurable<float> cutUpperMass{"cutUpperMass", 1.6f, "Upper mass cut for Lambda(1405) candidates (GeV/c^2)"};
+    Configurable<float> cutSigmaRadius{"cutSigmaRadius", 20.f, "Minimum radius for Sigma candidates (cm)"};
+    Configurable<float> cutSigmaMass{"cutSigmaMass", 0.1, "Sigma mass window (MeV/c^2)"};
+    Configurable<float> cutItsNClusKinkMin{"cutItsNClusKinkMin", 1, "Minimum number of ITS clusters for kink daughter"};
+    Configurable<float> cutItsNClusKinkMax{"cutItsNClusKinkMax", 3, "Maximum number of ITS clusters for kink daughter"};
+    Configurable<float> cutNTpcClus{"cutNTpcClus", 90, "Minimum number of Tpc clusters for pion candidate"};
+    Configurable<float> cutNSigTpc{"cutNSigTpc", 3, "NSigTpcPion"};
+    Configurable<float> cutNSigTof{"cutNSigTof", 3, "NSigTofPion"};
+    Configurable<float> cutMaxDcaZBach{"cutMaxDcaZBach", 0.1, "Maximum DcaZ for bachelor pion (cm)"};
+    Configurable<float> dcaXYBachNSigmaMax{"dcaXYBachNSigmaMax", 7, "Cut on number of sigma deviations from expected DCA in the transverse direction"};
+    Configurable<std::string> dcaXYPtBachFunc{"dcaXYPtBachFunc", "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut"};
+    Configurable<std::string> cutSigmaQtAPMin{"cutSigmaQtAPMin", "0.17", "Functional form of minimum qT(alpha) selection"};
+    Configurable<std::string> cutSigmaQtAPMax{"cutSigmaQtAPMax", "0.2", "Functional form of minimum qT(alpha) selection"};
+    Configurable<std::string> cutMinBachPiPtVsL1405Pt{"cutMinBachPiPtVsL1405Pt", "0", "Functional form of minimum qT(alpha) selection"};
+    Configurable<std::string> cutMaxBachPiPtVsL1405Pt{"cutMaxBachPiPtVsL1405Pt", "10", "Functional form of minimum qT(alpha) selection"};
+    Configurable<std::string> cutMinSigmaPtVsL1405Pt{"cutMinSigmaPtVsL1405Pt", "0", "Functional form of minimum qT(alpha) selection"};
+    Configurable<std::string> cutMaxSigmaPtVsL1405Pt{"cutMaxSigmaPtVsL1405Pt", "10", "Functional form of minimum qT(alpha) selection"};
+  } selections;
 
   // Configurables for flow analysis
-  Configurable<float> centMultMin{"centMultMin", 0., "Minimum collision centrality/multiplicity accepted"};
-  Configurable<float> centMultMax{"centMultMax", 100., "Maximum collision centrality/multiplicity accepted"};
-  Configurable<float> occupancyMax{"occupancyMax", 3000000., "Maximum collision occupancy accepted"};
   Configurable<float> minDEta{"minDEta", -1., "Minimum delta eta between L1405-track pairs"};
   Configurable<float> assTrkMinPt{"assTrkMinPt", 0., "Minimum pT of associated track for 2PC"};
   Configurable<float> assTrkMaxPt{"assTrkMaxPt", 10., "Maximum pT of associated track for 2PC"};
   Configurable<bool> saveDEtaDPhi{"saveDEtaDPhi", false, "If true, save the dEta and dPhi distributions for Lambda(1405) candidates"};
   Configurable<bool> fillFlowTree{"fillFlowTree", false, "If true, fill the output tree with Lambda(1405) candidates"};
+  Configurable<bool> useCentrality{"useCentrality", true, "If true, use centrality for binning"};
+  Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
 
   // Downsample for table filling
   Configurable<float> downSampleFactor{"downSampleFactor", 1., "Fraction of candidates to keep in TTree"};
   Configurable<float> ptDownSampleMax{"ptDownSampleMax", 10., "Maximum pt for the application of the downsampling factor"};
 
+  Configurable<bool> skipBkgSigmas{"skipBkgSigmas", true, "If true, skip un-matched sigmas in efficiency process function"};
   Configurable<bool> fillOutputTree{"fillOutputTree", true, "If true, fill the output tree with Lambda(1405) candidates"};
   Configurable<bool> doLikeSignBkg{"doLikeSignBkg", false, "Use like-sign background"};
   Configurable<bool> useTof{"useTof", false, "Use Tof for PID for pion candidates"};
@@ -182,19 +193,24 @@ struct lambda1405analysis {
 
   TF1 funcMinQtAlphaAP, funcMaxQtAlphaAP, funcMinBachPiPtVsL1405Pt, funcMaxBachPiPtVsL1405Pt, funcMinSigmaPtVsL1405Pt, funcMaxSigmaPtVsL1405Pt, funcDcaXYPtCutBachPi;
 
-  using CollisionsCentSel = soa::Filtered<CollisionsFullWCentQVecs>;
-  using McRecoCollisionsCentSel = soa::Filtered<CollisionsFullMcWCent>;
+  using CollisionsSel = soa::Filtered<CollisionsFull>;
+  using CollisionsSelWQVecs = soa::Filtered<CollisionsFullWQVecs>;
+  using McRecoCollisionsSel = soa::Filtered<CollisionsFullMc>;
 
-  Filter filterOccupancy = aod::evsel::ft0cOccupancyInTimeRange <= occupancyMax;
+  Filter filterOccupancy = aod::evsel::ft0cOccupancyInTimeRange <= eventSelection.occupancyMax;
 
   PresliceUnsorted<aod::McCollisionLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
+  SliceCache cache;
+
+  int poolBins{0};
+
   // Needed for DCA propagation of bachelor tracks
-  int mRunNumber;
-  float mBz;
   o2::base::MatLayerCylSet* lut = nullptr;
 
   // Configurable axes
+  ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0}, "Z vertex position pools"};
+  ConfigurableAxis centMultPoolBins{"centMultPoolBins", {VARIABLE_WIDTH, 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100}, "Event cent/mult pools"};
   ConfigurableAxis axisPvContrib{"axisPvContrib", {5000, 0., 5000.}, ""};
   ConfigurableAxis axisCent{"axisCent", {100, 0., 100.}, ""};
   ConfigurableAxis axisOccupancy{"axisOccupancy", {100, 0., 140000.}, ""};
@@ -224,6 +240,10 @@ struct lambda1405analysis {
 
   void init(InitContext const&)
   {
+    // Define pool bins
+    poolBins = (centMultPoolBins->size() - 2) * (zPoolBins->size() - 2);
+    const AxisSpec axisPoolBin = {poolBins, -0.5, static_cast<float>(poolBins) - 0.5, "PoolBin"};
+
     // Axes
     const AxisSpec ptAxis{axisPtL1405, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec pCompAxisL1405{axisPCompsL1405, "#it{p}_{comp} (GeV/#it{c})"};
@@ -253,6 +273,10 @@ struct lambda1405analysis {
     rEventSelection.add("hCentMultVsPvContrib", "hCentMultVsPvContrib", {HistType::kTH2F, {centMultAxis, pvContribAxis}});
     rEventSelection.add("hOccVsPvContrib", "hOccVsPvContrib", {HistType::kTH2F, {occAxis, pvContribAxis}});
     rEventSelection.add("hCentVsOcc", "hCentVsOcc", {HistType::kTH2F, {centMultAxis, occAxis}});
+    rEventSelection.add("hCentPoolBin", "Centrality pool bin", {HistType::kTH2F, {{axisCent}, {axisPoolBin}}});
+    rEventSelection.add("hZVtxPoolBin", "Z vtx pool bin", {HistType::kTH2F, {{vertexZAxis}, {axisPoolBin}}});
+    rEventSelection.add("hMultPoolBin", "Multiplicity pool bin", {HistType::kTH2F, {{axisCent}, {axisPoolBin}}});
+    rEventSelection.add("hPoolBins", "Pool bins", {HistType::kTH1F, {{102, -1.5, 100.5}}});
 
     // Sigma- candidate properties
     rSigmaMinus.add("hMassXiMinusSigmaMinus", "hMassXiMinusSigmaMinus", {HistType::kTH2F, {xiMassAxis, sigmaMassAxis}});
@@ -319,18 +343,18 @@ struct lambda1405analysis {
     rLambda1405.add("h3BachPiDcaXYVsPt", "h3BachPiDcaXYVsPt", {HistType::kTH3F, {ptKinkDaugAxis, dcaBachPiAxis, centMultAxis}});
     rLambda1405.add("h3BachPiDcaZVsPt", "h3BachPiDcaZVsPt", {HistType::kTH3F, {ptKinkDaugAxis, dcaBachPiAxis, centMultAxis}});
     // Sparse histograms
-    std::vector<AxisSpec> axesMass = {lambda1405MassAxis, ptAxis, sigmaMassAxis, dcaSigmaToPvAxis, dcaKinkToPvAxis};
-    if (doprocessMc || doprocessMcWCentSel) {
+    std::vector<AxisSpec> axesMass = {axisPoolBin, lambda1405MassAxis, ptAxis, sigmaMassAxis, dcaSigmaToPvAxis, dcaKinkToPvAxis};
+    if (doprocessMc) {
       axesMass.push_back(pvContribAxis);
     } else {
       axesMass.push_back(centMultAxis);
     }
     rLambda1405.add("hSparseL1405", "THn for mass peak", HistType::kTHnSparseF, axesMass);
-    std::vector<AxisSpec> axesScalarProd = {lambda1405MassAxis, ptAxis, sigmaMassAxis, dcaSigmaToPvAxis, dcaKinkToPvAxis, centMultAxis, scalarProdAxis};
-    if (doprocessDataWCentQVecs) {
+    std::vector<AxisSpec> axesScalarProd = {axisPoolBin, lambda1405MassAxis, ptAxis, sigmaMassAxis, dcaSigmaToPvAxis, dcaKinkToPvAxis, centMultAxis, scalarProdAxis};
+    if (doprocessDataWQVecsSameEvent || doprocessDataWQVecsMixedEvent) {
       rLambda1405.add("hSparseL1405ScalProd", "THn for SP", HistType::kTHnSparseF, axesScalarProd);
     }
-    std::vector<AxisSpec> axesCorrel = {lambda1405MassAxis, ptAxis, deltaEtaAxis, deltaPhiAxis};
+    std::vector<AxisSpec> axesCorrel = {axisPoolBin, lambda1405MassAxis, ptAxis, deltaEtaAxis, deltaPhiAxis};
     if (saveDEtaDPhi) {
       rLambda1405.add("hSparseL1405Correl", "THn for 2PC", HistType::kTHnSparseF, axesCorrel);
     }
@@ -397,14 +421,14 @@ struct lambda1405analysis {
     rSelections.get<TH1>(HIST("hSelectionsKinkPr"))->GetXaxis()->SetBinLabel(6, "has TOF");
     rSelections.get<TH1>(HIST("hSelectionsKinkPr"))->GetXaxis()->SetBinLabel(7, "N#sigma TOF");
 
-    if (doprocessDataWCentQVecs) {
+    if (doprocessDataWQVecsSameEvent || doprocessDataWQVecsMixedEvent) {
       rLambda1405.add("hScalarProd", "hScalarProd", {HistType::kTH2F, {scalarProdAxis, ptAxis}});
       std::vector<AxisSpec> axesFlow = {lambda1405MassAxis, ptAxis, centMultAxis, scalarProdAxis};
       rLambda1405.add("hSparseFlowL1405", "THn for SP", HistType::kTHnSparseF, axesFlow);
     }
 
     // Add MC histograms
-    if (doprocessMc || doprocessMcWCentSel) {
+    if (doprocessMc) {
 
       rSelections.add("hRecoNotMatchedCounter", "hRecoNotMatchedCounter", {HistType::kTH1D, {{4, -0.5, 3.5f}}});
       rSelections.get<TH1>(HIST("hRecoNotMatchedCounter"))->GetXaxis()->SetBinLabel(1, "#Lambda(1405)");
@@ -446,22 +470,29 @@ struct lambda1405analysis {
       rLambda1405.add("h2PtMassMC", "h2PtMassMC", {HistType::kTH2F, {ptAxis, lambda1405MassAxis}});
     }
 
+    if (doprocessMcSigmasCentSel) {
+      rSigmaPlus.add("hSparseGenFromRecoSigmaPlus", "THn for generated Sigma plus", {HistType::kTHnSparseF, {sigmaMassAxis, ptAxis, alphaAxis, qtAxis, sigmaRadiusAxis, centMultAxis, occAxis, pvContribAxis}});
+      rSigmaPlus.add("hSparseGenSigmaPlus", "THn for generated Sigma plus", {HistType::kTHnSparseF, {sigmaMassAxis, ptAxis, alphaAxis, qtAxis, sigmaRadiusAxis, centMultAxis, occAxis, pvContribAxis}});
+      rSigmaMinus.add("hSparseGenFromRecoSigmaMinus", "THn for generated Sigma minus", {HistType::kTHnSparseF, {sigmaMassAxis, ptAxis, alphaAxis, qtAxis, sigmaRadiusAxis, centMultAxis, occAxis, pvContribAxis}});
+      rSigmaMinus.add("hSparseGenSigmaMinus", "THn for generated Sigma minus", {HistType::kTHnSparseF, {sigmaMassAxis, ptAxis, alphaAxis, qtAxis, sigmaRadiusAxis, centMultAxis, occAxis, pvContribAxis}});
+    }
+
     // Functional selections
-    funcMinQtAlphaAP = TF1("funcMinQtAlphaAP", Form("%s", cutSigmaQtAPMin.value.data()), -1, 1);
-    LOGF(info, "funcMinQtAlphaAP: %s", Form("%s", cutSigmaQtAPMin.value.data()));
-    funcMaxQtAlphaAP = TF1("funcMaxQtAlphaAP", Form("%s", cutSigmaQtAPMax.value.data()), -1, 1);
-    LOGF(info, "funcMaxQtAlphaAP: %s", Form("%s", cutSigmaQtAPMax.value.data()));
-    funcMinBachPiPtVsL1405Pt = TF1("funcMinBachPiPtVsL1405Pt", Form("%s", cutMinBachPiPtVsL1405Pt.value.data()), 0., 100);
-    LOGF(info, "funcMinBachPiPtVsL1405Pt: %s", Form("%s", cutMinBachPiPtVsL1405Pt.value.data()));
-    funcMaxBachPiPtVsL1405Pt = TF1("funcMaxBachPiPtVsL1405Pt", Form("%s", cutMaxBachPiPtVsL1405Pt.value.data()), 0., 100);
-    LOGF(info, "funcMaxBachPiPtVsL1405Pt: %s", Form("%s", cutMaxBachPiPtVsL1405Pt.value.data()));
-    funcMinSigmaPtVsL1405Pt = TF1("funcMinSigmaPtVsL1405Pt", Form("%s", cutMinSigmaPtVsL1405Pt.value.data()), 0., 100);
-    LOGF(info, "funcMinSigmaPtVsL1405Pt: %s", Form("%s", cutMinSigmaPtVsL1405Pt.value.data()));
-    funcMaxSigmaPtVsL1405Pt = TF1("funcMaxSigmaPtVsL1405Pt", Form("%s", cutMaxSigmaPtVsL1405Pt.value.data()), 0., 100);
-    LOGF(info, "funcMaxSigmaPtVsL1405Pt: %s", Form("%s", cutMaxSigmaPtVsL1405Pt.value.data()));
-    funcDcaXYPtCutBachPi = TF1("funcDcaXYPtCutBachPi", Form("[0]*%s", dcaXYPtBachFunc.value.data()), 0.001, 100);
-    funcDcaXYPtCutBachPi.SetParameter(0, dcaXYBachNSigmaMax);
-    LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", dcaXYPtBachFunc.value.data()));
+    funcMinQtAlphaAP = TF1("funcMinQtAlphaAP", Form("%s", selections.cutSigmaQtAPMin.value.data()), -1, 1);
+    LOGF(info, "funcMinQtAlphaAP: %s", Form("%s", selections.cutSigmaQtAPMin.value.data()));
+    funcMaxQtAlphaAP = TF1("funcMaxQtAlphaAP", Form("%s", selections.cutSigmaQtAPMax.value.data()), -1, 1);
+    LOGF(info, "funcMaxQtAlphaAP: %s", Form("%s", selections.cutSigmaQtAPMax.value.data()));
+    funcMinBachPiPtVsL1405Pt = TF1("funcMinBachPiPtVsL1405Pt", Form("%s", selections.cutMinBachPiPtVsL1405Pt.value.data()), 0., 100);
+    LOGF(info, "funcMinBachPiPtVsL1405Pt: %s", Form("%s", selections.cutMinBachPiPtVsL1405Pt.value.data()));
+    funcMaxBachPiPtVsL1405Pt = TF1("funcMaxBachPiPtVsL1405Pt", Form("%s", selections.cutMaxBachPiPtVsL1405Pt.value.data()), 0., 100);
+    LOGF(info, "funcMaxBachPiPtVsL1405Pt: %s", Form("%s", selections.cutMaxBachPiPtVsL1405Pt.value.data()));
+    funcMinSigmaPtVsL1405Pt = TF1("funcMinSigmaPtVsL1405Pt", Form("%s", selections.cutMinSigmaPtVsL1405Pt.value.data()), 0., 100);
+    LOGF(info, "funcMinSigmaPtVsL1405Pt: %s", Form("%s", selections.cutMinSigmaPtVsL1405Pt.value.data()));
+    funcMaxSigmaPtVsL1405Pt = TF1("funcMaxSigmaPtVsL1405Pt", Form("%s", selections.cutMaxSigmaPtVsL1405Pt.value.data()), 0., 100);
+    LOGF(info, "funcMaxSigmaPtVsL1405Pt: %s", Form("%s", selections.cutMaxSigmaPtVsL1405Pt.value.data()));
+    funcDcaXYPtCutBachPi = TF1("funcDcaXYPtCutBachPi", Form("[0]*%s", selections.dcaXYPtBachFunc.value.data()), 0.001, 100);
+    funcDcaXYPtCutBachPi.SetParameter(0, selections.dcaXYBachNSigmaMax);
+    LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", selections.dcaXYPtBachFunc.value.data()));
 
     rSelections.print();
     rSigmaMinus.print();
@@ -469,20 +500,37 @@ struct lambda1405analysis {
     rLambda1405.print();
 
     // Info for DCA propagation of bachelor tracks
-    mRunNumber = 0;
-    mBz = 0;
     ccdb->setURL(ccdbPath);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
   }
 
+  /// Get the binning pool associated to the collision
+  /// \param collision is the collision
+  /// \param binPolicy is the binning policy for the correlation
+  template <typename TColl, typename TBinningType>
+  int getPoolBin(const TColl& collision, const TBinningType& binPolicy)
+  {
+    int poolBin{0};
+    float centMult = getCentMult(collision);
+    poolBin = binPolicy.getBin(std::make_tuple(centMult, collision.posZ()));
+    if constexpr (std::is_same_v<TBinningType, BinningCentPosZ>) {
+      rEventSelection.fill(HIST("hCentPoolBin"), centMult, poolBin);
+    } else if constexpr (std::is_same_v<TBinningType, BinningMultPosZ>) {
+      rEventSelection.fill(HIST("hMultPoolBin"), centMult, poolBin);
+    }
+    rEventSelection.fill(HIST("hZVtxPoolBin"), collision.posZ(), poolBin);
+    rEventSelection.fill(HIST("hPoolBins"), poolBin);
+    return poolBin;
+  }
+
   template <typename TCollision>
   float getCentMult(const TCollision& collision)
   {
-    if constexpr (requires { collision.centFT0C(); }) {
+    if (useCentrality) {
       return collision.centFT0C();
     } else {
-      return collision.multFT0C();
+      return collision.multFT0M();
     }
   }
 
@@ -517,8 +565,9 @@ struct lambda1405analysis {
     double massSigma = isSigmaMinus ? o2::constants::physics::MassSigmaMinus : o2::constants::physics::MassSigmaPlus;
 
     double pMother = std::sqrt(sigmaPx * sigmaPx + sigmaPy * sigmaPy + sigmaPz * sigmaPz);
-    if (pMother < 1e-12f) {
-      LOG(info) << "Recalculation of Sigma momentum failed: mother momentum is zero " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz;
+    float zeroValTolerance{1e-12f};
+    if (pMother < zeroValTolerance) {
+      LOG(debug) << "Recalculation of Sigma momentum failed: mother momentum is zero " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz;
       return -999.f;
     }
     if (isSigmaMinus) {
@@ -537,8 +586,8 @@ struct lambda1405analysis {
     double B = -4.0 * a * K;
     double C = 4.0 * eChDau * eChDau * massSigma * massSigma - K * K;
 
-    if (std::abs(A) < 1e-6f) {
-      LOG(info) << "Recalculation of Sigma momentum failed: A is zero " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz << ", A = " << A << ", B = " << B << ", C = " << C;
+    if (std::abs(A) < zeroValTolerance) {
+      LOG(debug) << "Recalculation of Sigma momentum failed: A is zero " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz << ", A = " << A << ", B = " << B << ", C = " << C;
       return -999.f;
     }
     if (isSigmaMinus) {
@@ -547,22 +596,22 @@ struct lambda1405analysis {
       rSelections.fill(HIST("hRecalcSigmaPlusMom"), 2); // Non-zero A
     }
 
-    double D = B * B - 4.0 * A * C;
-    if (D < 0.0) {
-      LOG(info) << "Recalculation of Sigma momentum failed: D is negative " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz << ", A = " << A << ", B = " << B << ", C = " << C << ", D = " << D;
+    double det = B * B - 4.0 * A * C;
+    if (det < 0.0) {
+      LOG(debug) << "Recalculation of Sigma momentum failed: determinant is negative " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz << ", A = " << A << ", B = " << B << ", C = " << C << ", determinant = " << det;
       return -999.f;
     }
     if (isSigmaMinus) {
-      rSelections.fill(HIST("hRecalcSigmaMinusMom"), 3); // Positive D
+      rSelections.fill(HIST("hRecalcSigmaMinusMom"), 3); // Positive determinant
     } else {
-      rSelections.fill(HIST("hRecalcSigmaPlusMom"), 3); // Positive D
+      rSelections.fill(HIST("hRecalcSigmaPlusMom"), 3); // Positive determinant
     }
 
-    double sqrtD = std::sqrt(D);
-    double P1 = (-B + sqrtD) / (2.0 * A);
-    double P2 = (-B - sqrtD) / (2.0 * A);
-    if (P2 < 0.0 && P1 < 0.0) {
-      LOG(info) << "Recalculation of Sigma momentum failed: both solutions are negative " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz << ", P1: " << P1 << ", P2: " << P2;
+    double sqrtDet = std::sqrt(det);
+    double p1 = (-B + sqrtDet) / (2.0 * A);
+    double p2 = (-B - sqrtDet) / (2.0 * A);
+    if (p2 < 0.0 && p1 < 0.0) {
+      LOG(debug) << "Recalculation of Sigma momentum failed: both solutions are negative " << sigmaPx << ", " << sigmaPy << ", " << sigmaPz << ", p1: " << p1 << ", p2: " << p2;
       return -999.f;
     }
     if (isSigmaMinus) {
@@ -572,43 +621,40 @@ struct lambda1405analysis {
     }
 
     success = true;
-    if (P2 < 0.0) {
-      return static_cast<float>(P1);
+    if (p2 < 0.0) {
+      return static_cast<float>(p1);
     }
-    if (P1 < 0.0) {
-      return static_cast<float>(P2);
+    if (p1 < 0.0) {
+      return static_cast<float>(p2);
     }
-    double p1Diff = std::abs(P1 - pMother);
-    double p2Diff = std::abs(P2 - pMother);
-    return static_cast<float>((p1Diff < p2Diff) ? P1 : P2);
+    double p1Diff = std::abs(p1 - pMother);
+    double p2Diff = std::abs(p2 - pMother);
+    return static_cast<float>((p1Diff < p2Diff) ? p1 : p2);
   }
 
   template <typename TTrack>
-  bool selectPiBach(const TTrack& candidate, const o2::dataformats::VertexBase& vtx, float centMult)
+  bool selectPiBach(const TTrack& candidate, float centMult)
   {
-    if (std::abs(candidate.tpcNSigmaPi()) > cutNSigTpc) {
+    if (std::abs(candidate.tpcNSigmaPi()) > selections.cutNSigTpc) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsBachPi"), 2); // Nsigma Tpc
 
-    if (candidate.tpcNClsFound() < cutNTpcClus) {
+    if (candidate.tpcNClsFound() < selections.cutNTpcClus) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsBachPi"), 3); // Tpc clusters
 
-    if (std::abs(candidate.eta()) > cutEtaDaughter) {
+    if (std::abs(candidate.eta()) > selections.cutEtaDaughter) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsBachPi"), 4); // Eta selection
 
-    o2::track::TrackParCov trackParCovTrack = getTrackParCov(candidate);
-    std::array<float, 2> dcaInfoMoth;
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({vtx.getX(), vtx.getY(), vtx.getZ()},
-                                                           trackParCovTrack, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value),
-                                                           &dcaInfoMoth);
-    rLambda1405.fill(HIST("h3BachPiDcaXYVsPt"), candidate.pt(), dcaInfoMoth[0], centMult);
-    rLambda1405.fill(HIST("h3BachPiDcaZVsPt"), candidate.pt(), dcaInfoMoth[1], centMult);
-    if (std::abs(dcaInfoMoth[0]) > funcDcaXYPtCutBachPi.Eval(candidate.pt()) || std::abs(dcaInfoMoth[1]) > cutMaxDcaZBach) {
+    std::array<float, 2> dcaInfoBachPi{candidate.dcaXY(), candidate.dcaZ()};
+    rLambda1405.fill(HIST("h3BachPiDcaXYVsPt"), candidate.pt(), dcaInfoBachPi[0], centMult);
+    rLambda1405.fill(HIST("h3BachPiDcaZVsPt"), candidate.pt(), dcaInfoBachPi[1], centMult);
+    if (std::abs(dcaInfoBachPi[0]) > funcDcaXYPtCutBachPi.Eval(candidate.pt()) ||
+        std::abs(dcaInfoBachPi[1]) > selections.cutMaxDcaZBach) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsBachPi"), 5); // DCA selection
@@ -621,22 +667,22 @@ struct lambda1405analysis {
   {
     rSelections.fill(HIST("hSelectionsKinkPi"), 0); // All pion kink candidates
 
-    if (std::abs(candidate.tpcNSigmaPi()) > cutNSigTpc) {
+    if (std::abs(candidate.tpcNSigmaPi()) > selections.cutNSigTpc) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPi"), 1); // Nsigma Tpc
 
-    if (candidate.tpcNClsFound() < cutNTpcClus) {
+    if (candidate.tpcNClsFound() < selections.cutNTpcClus) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPi"), 2); // Tpc clusters
 
-    if (std::abs(candidate.eta()) > cutEtaDaughter) {
+    if (std::abs(candidate.eta()) > selections.cutEtaDaughter) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPi"), 3); // Eta selection
 
-    if (candidate.itsNCls() < cutItsNClusKinkMin || candidate.itsNCls() > cutItsNClusKinkMax) {
+    if (candidate.itsNCls() < selections.cutItsNClusKinkMin || candidate.itsNCls() > selections.cutItsNClusKinkMax) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPi"), 4); // ITS clusters
@@ -646,7 +692,7 @@ struct lambda1405analysis {
     }
     rSelections.fill(HIST("hSelectionsKinkPi"), 5); // has Tof
 
-    if (useTof && std::abs(candidate.tofNSigmaPi()) > cutNSigTof) {
+    if (useTof && std::abs(candidate.tofNSigmaPi()) > selections.cutNSigTof) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPi"), 6); // Nsigma Tof
@@ -659,22 +705,22 @@ struct lambda1405analysis {
   {
     rSelections.fill(HIST("hSelectionsKinkPr"), 0); // All proton kink candidates
 
-    if (std::abs(candidate.tpcNSigmaPr()) > cutNSigTpc) {
+    if (std::abs(candidate.tpcNSigmaPr()) > selections.cutNSigTpc) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPr"), 1); // Nsigma Tpc
 
-    if (candidate.tpcNClsFound() < cutNTpcClus) {
+    if (candidate.tpcNClsFound() < selections.cutNTpcClus) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPr"), 2); // Tpc clusters
 
-    if (std::abs(candidate.eta()) > cutEtaDaughter) {
+    if (std::abs(candidate.eta()) > selections.cutEtaDaughter) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPr"), 3); // eta selection
 
-    if (candidate.itsNCls() < cutItsNClusKinkMin || candidate.itsNCls() > cutItsNClusKinkMax) {
+    if (candidate.itsNCls() < selections.cutItsNClusKinkMin || candidate.itsNCls() > selections.cutItsNClusKinkMax) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPr"), 4); // ITS clusters
@@ -684,7 +730,7 @@ struct lambda1405analysis {
     }
     rSelections.fill(HIST("hSelectionsKinkPr"), 5); // has Tof
 
-    if (useTof && std::abs(candidate.tofNSigmaPr()) > cutNSigTof) {
+    if (useTof && std::abs(candidate.tofNSigmaPr()) > selections.cutNSigTof) {
       return false;
     }
     rSelections.fill(HIST("hSelectionsKinkPr"), 6); // Nsigma Tof
@@ -744,24 +790,8 @@ struct lambda1405analysis {
     rLambda1405.fill(HIST("h2BachPiPtNSigTpc"), cand.bachPiPt, cand.bachPiNSigTpc);
     rLambda1405.fill(HIST("h2BachPiPtNSigTof"), cand.bachPiPt, cand.bachPiNSigTof);
 
-    // std::vector<AxisSpec> axesMass = {lambda1405MassAxis, ptAxis, sigmaMassAxis, dcaSigmaToPvAxis, dcaKinkToPvAxis};
-    // if (doprocessMc || doprocessMcWCentSel) {
-    //   axesMass.push_back(pvContribAxis);
-    // } else {
-    //   axesMass.push_back(centMultAxis);
-    // }
-    // rLambda1405.add("hSparseL1405", "THn for mass peak", HistType::kTHnSparseF, axes);
-    // std::vector<AxisSpec> axesScalarProd = {lambda1405MassAxis, ptAxis, sigmaMassAxis, dcaSigmaToPvAxis, dcaKinkToPvAxis, centMultAxis, scalarProdAxis};
-    // if (doprocessDataWCentQVecs) {
-    //   rLambda1405.add("hSparseL1405ScalProd", "THn for SP", HistType::kTHnSparseF, axesScalarProd);
-    // }
-    // std::vector<AxisSpec> axesCorrel = {lambda1405MassAxis, ptAxis, deltaEtaAxis, deltaPhiAxis};
-    // if (saveDEtaDPhi) {
-    //   rLambda1405.add("hSparseL1405Correl", "THn for 2PC", HistType::kTHnSparseF, axesCorrel);
-    // }
-
     auto hSparseMass = rLambda1405.get<THnSparse>(HIST("hSparseL1405"));
-    std::vector<double> sparseMassEntry = {cand.massL1405, cand.pt(), cand.sigmaMinusMass, cand.dcaSigmaToPv, cand.kinkDcaDauToPv};
+    std::vector<double> sparseMassEntry = {static_cast<double>(cand.poolBin), cand.massL1405, cand.pt(), cand.sigmaMinusMass, cand.dcaSigmaToPv, cand.kinkDcaDauToPv};
     if constexpr (IsMC) {
       sparseMassEntry.push_back(cand.pvContrib);
     } else {
@@ -769,14 +799,14 @@ struct lambda1405analysis {
     }
     hSparseMass->Fill(sparseMassEntry.data());
     if constexpr (FillQVectors) {
-      std::vector<double> sparseScalProdEntry = {cand.massL1405, cand.pt(), cand.sigmaMinusMass, cand.dcaSigmaToPv, cand.kinkDcaDauToPv};
+      std::vector<double> sparseScalProdEntry = {static_cast<double>(cand.poolBin), cand.massL1405, cand.pt(), cand.sigmaMinusMass, cand.dcaSigmaToPv, cand.kinkDcaDauToPv};
       sparseScalProdEntry.push_back(cand.centMult);
       sparseScalProdEntry.push_back(cand.scalarProd);
       auto hSparseScalProd = rLambda1405.get<THnSparse>(HIST("hSparseL1405ScalProd"));
       hSparseScalProd->Fill(sparseScalProdEntry.data());
     }
     if constexpr (FillCorrelations) {
-      std::vector<double> sparseCorrelEntry = {cand.massL1405, cand.pt(), cand.sigmaMinusMass, cand.dcaSigmaToPv, cand.kinkDcaDauToPv};
+      std::vector<double> sparseCorrelEntry = {static_cast<double>(cand.poolBin), cand.massL1405, cand.pt()};
       auto hSparseCorrel = rLambda1405.get<THnSparse>(HIST("hSparseL1405Correl"));
       sparseCorrelEntry.push_back(0.0); // Δη
       sparseCorrelEntry.push_back(0.0); // Δφ
@@ -804,36 +834,21 @@ struct lambda1405analysis {
     }
   }
 
-  void initCCDB(aod::BCs::iterator const& bc)
+  template <bool IsMc, typename TColl, typename TBinningType>
+  void constructCollCandidates(const TColl& collision,
+                               aod::KinkCands::iterator const& sigmaCand,
+                               TracksFull const& tracks,
+                               std::vector<lambda1405candidate>& selectedCandidates,
+                               TBinningType binPolicy)
   {
-    if (mRunNumber == bc.runNumber()) {
-      return;
-    }
-    mRunNumber = bc.runNumber();
-    LOG(info) << "Initializing CCDB for run " << mRunNumber;
-    o2::parameters::GRPMagField* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(grpmagPath, mRunNumber);
-    o2::base::Propagator::initFieldFromGRP(grpmag);
-    mBz = grpmag->getNominalL3Field();
-
-    if (!lut) {
-      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
-    }
-    o2::base::Propagator::Instance()->setMatLUT(lut);
-    LOG(info) << "Task initialized for run " << mRunNumber << " with magnetic field " << mBz << " kZG";
-  }
-
-  template <typename TColl>
-  void constructCollCandidates(const TColl& collision, aod::KinkCands::iterator const& sigmaCand, TracksFull const& tracks, std::vector<lambda1405candidate>& selectedCandidates)
-  {
-
-    // Retrieve primary vertex, once for all candidates in the collision
-    auto const& bc = collision.template bc_as<aod::BCs>();
-    initCCDB(bc);
-    o2::dataformats::VertexBase primaryVertex;
-    primaryVertex.setPos({collision.posX(), collision.posY(), collision.posZ()});
-    primaryVertex.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
 
     lambda1405candidate lambda1405Cand{};
+
+    if constexpr (!IsMc) {
+      // Set pool bin
+      int const poolBin = getPoolBin(collision, binPolicy);
+      lambda1405Cand.poolBin = poolBin;
+    }
 
     rSelections.fill(HIST("hSelectionsL1405"), 0);      // All candidates
     rSelections.fill(HIST("hSelectionsSigmaMinus"), 0); // All Sigma- candidates
@@ -907,12 +922,12 @@ struct lambda1405analysis {
       rSigmaPlus.fill(HIST("h2PtPrKinkNSigBeforeCuts"), kinkDauTrack.pt(), kinkDauTrack.tpcNSigmaPr());
     }
 
-    if (lambda1405Cand.isSigmaMinus && (sigmaCand.mSigmaMinus() < o2::constants::physics::MassSigmaMinus - cutSigmaMass ||
-                                        sigmaCand.mSigmaMinus() > o2::constants::physics::MassSigmaMinus + cutSigmaMass)) {
+    if (lambda1405Cand.isSigmaMinus && (sigmaCand.mSigmaMinus() < o2::constants::physics::MassSigmaMinus - selections.cutSigmaMass ||
+                                        sigmaCand.mSigmaMinus() > o2::constants::physics::MassSigmaMinus + selections.cutSigmaMass)) {
       return;
     }
-    if (lambda1405Cand.isSigmaPlus && (sigmaCand.mSigmaPlus() < o2::constants::physics::MassSigmaPlus - cutSigmaMass ||
-                                       sigmaCand.mSigmaPlus() > o2::constants::physics::MassSigmaPlus + cutSigmaMass)) {
+    if (lambda1405Cand.isSigmaPlus && (sigmaCand.mSigmaPlus() < o2::constants::physics::MassSigmaPlus - selections.cutSigmaMass ||
+                                       sigmaCand.mSigmaPlus() > o2::constants::physics::MassSigmaPlus + selections.cutSigmaMass)) {
       return;
     }
     if (lambda1405Cand.isSigmaMinus) {
@@ -921,7 +936,7 @@ struct lambda1405analysis {
       rSelections.fill(HIST("hSelectionsSigmaPlus"), 3); // Passed mass sel
     }
 
-    if (std::abs(sigmaCand.dcaMothPv()) > cutDcaToPvSigma) {
+    if (std::abs(sigmaCand.dcaMothPv()) > selections.cutDcaToPvSigma) {
       return;
     }
     if (lambda1405Cand.isSigmaMinus) {
@@ -930,7 +945,7 @@ struct lambda1405analysis {
       rSelections.fill(HIST("hSelectionsSigmaPlus"), 4); // Passed cutDcaToPvSigma
     }
 
-    if (std::abs(sigmaCand.dcaDaugPv()) < cutDcaToPvPiFromSigma) {
+    if (std::abs(sigmaCand.dcaDaugPv()) < selections.cutDcaToPvPiFromSigma) {
       return;
     }
     if (lambda1405Cand.isSigmaMinus) {
@@ -940,7 +955,7 @@ struct lambda1405analysis {
     }
 
     float sigmaRad = std::hypot(sigmaCand.xDecVtx(), sigmaCand.yDecVtx());
-    if (sigmaRad < cutSigmaRadius) {
+    if (sigmaRad < selections.cutSigmaRadius) {
       return;
     }
     if (lambda1405Cand.isSigmaMinus) {
@@ -1010,7 +1025,7 @@ struct lambda1405analysis {
       }
       rSelections.fill(HIST("hSelectionsBachPi"), 1);
 
-      if (!selectPiBach(piTrack, primaryVertex, lambda1405Cand.centMult)) {
+      if (!selectPiBach(piTrack, lambda1405Cand.centMult)) {
         continue;
       }
       rSelections.fill(HIST("hSelectionsL1405"), 2); // Bach Pi selection
@@ -1022,7 +1037,7 @@ struct lambda1405analysis {
       } else if (lambda1405Cand.isSigmaPlus) {
         invMass = RecoDecay::m(std::array{sigmaMom, piMom}, std::array{o2::constants::physics::MassSigmaPlus, o2::constants::physics::MassPiMinus});
       }
-      if (invMass > cutUpperMass) {
+      if (invMass > selections.cutUpperMass) {
         continue;
       }
       rSelections.fill(HIST("hSelectionsL1405"), 3); // Upper mass selection
@@ -1065,7 +1080,7 @@ struct lambda1405analysis {
       }
       rSelections.fill(HIST("hSelectionsL1405"), 4); // Pt correlations
 
-      if (lambda1405Cand.pt() < cutMinPtL1405) {
+      if (lambda1405Cand.pt() < selections.cutMinPtL1405) {
         continue;
       }
       rSelections.fill(HIST("hSelectionsL1405"), 5); // Accepted
@@ -1079,20 +1094,16 @@ struct lambda1405analysis {
   template <typename mcTrack>
   bool checkSigmaKinkMC(const mcTrack& mcTrackSigma, const mcTrack& mcTrackKinkDau, float sigmaAbsPDG, float kinkAbsPDG, aod::McParticles const&)
   {
-    LOG(info) << "Checking Sigma kink decay for MC tracks: Sigma PDG = " << mcTrackSigma.pdgCode() << ", Kink daughter PDG = " << mcTrackKinkDau.pdgCode();
     if (std::abs(mcTrackSigma.pdgCode()) != sigmaAbsPDG || std::abs(mcTrackKinkDau.pdgCode()) != kinkAbsPDG) {
-      LOG(info) << "PDG codes do not match expected values: Sigma PDG = " << sigmaAbsPDG << ", Kink daughter PDG = " << kinkAbsPDG;
       return false; // Not a valid Sigma kink decay
     }
     if (!mcTrackKinkDau.has_mothers()) {
-      LOG(info) << "Kink daughter has no mothers";
       return false; // No mothers found
     }
     // Check if the kink comes from the Sigma
     bool isKinkFromSigma = false;
     for (const auto& mcMother : mcTrackKinkDau.template mothers_as<aod::McParticles>()) {
       if (mcMother.globalIndex() == mcTrackSigma.globalIndex()) {
-        LOG(info) << "Kink daughter comes from the Sigma";
         isKinkFromSigma = true;
         break;
       }
@@ -1100,15 +1111,15 @@ struct lambda1405analysis {
     return isKinkFromSigma; // Return true if the kink comes from the Sigma
   }
 
-  template <typename TCollision, typename TCand, typename TTrack>
-  void fillOutputData(const TCollision& collision, const TCand& sigmaCands, const TTrack& tracks)
+  template <typename TCollision, typename TCand, typename TTrack, typename TBinningType>
+  void fillOutputData(const TCollision& collision, const TCand& sigmaCands, const TTrack& tracks, TBinningType binPolicy)
   {
-    if (std::abs(collision.posZ()) > cutZVertex || !collision.sel8()) {
+    if (std::abs(collision.posZ()) > eventSelection.cutZVertex || !collision.sel8()) {
       return;
     }
     rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
     float centMult = getCentMult(collision);
-    if (centMult < centMultMin || centMult > centMultMax) {
+    if (centMult < eventSelection.centMultMin || centMult > eventSelection.centMultMax) {
       return;
     }
     rEventSelection.fill(HIST("hCentMultVsPvContrib"), centMult, collision.numContrib());
@@ -1117,7 +1128,7 @@ struct lambda1405analysis {
 
     for (const auto& sigmaCand : sigmaCands) {
       std::vector<lambda1405candidate> selectedCandidates;
-      constructCollCandidates(collision, sigmaCand, tracks, selectedCandidates);
+      constructCollCandidates<false>(collision, sigmaCand, tracks, selectedCandidates, binPolicy);
       for (const auto& lambda1405Cand : selectedCandidates) {
         if (lambda1405Cand.isSigmaMinus) {
           rLambda1405.fill(HIST("h2SigmaMinusMassVsLambdaMass"), lambda1405Cand.massL1405, lambda1405Cand.sigmaMinusMass);
@@ -1142,17 +1153,8 @@ struct lambda1405analysis {
                             lambda1405Cand.kinkPrNSigTpc, lambda1405Cand.kinkPrNSigTof,
                             lambda1405Cand.kinkDcaDauToPv,
                             lambda1405Cand.bachPiNSigTpc, lambda1405Cand.bachPiNSigTof,
-                            lambda1405Cand.centMult, lambda1405Cand.occupancy);
-          } else {
-            outputDataFlowTable(ptCand, lambda1405Cand.massL1405,
-                                lambda1405Cand.sigmaPt,
-                                lambda1405Cand.sigmaMinusMass, lambda1405Cand.sigmaPlusMass,
-                                lambda1405Cand.sigmaAlphaAP, lambda1405Cand.sigmaQtAP,
-                                lambda1405Cand.kinkPiNSigTpc, lambda1405Cand.kinkPiNSigTof,
-                                lambda1405Cand.kinkPrNSigTpc, lambda1405Cand.kinkPrNSigTof,
-                                lambda1405Cand.kinkDcaDauToPv,
-                                lambda1405Cand.bachPiNSigTpc, lambda1405Cand.bachPiNSigTof,
-                                lambda1405Cand.scalarProd, lambda1405Cand.centMult);
+                            lambda1405Cand.scalarProd,
+                            lambda1405Cand.centMult, lambda1405Cand.occupancy, lambda1405Cand.poolBin); // 24
           }
         }
 
@@ -1174,23 +1176,93 @@ struct lambda1405analysis {
     }
   }
 
-  void processData(CollisionsFull::iterator const& collision,
-                   aod::KinkCands const& kinkCands,
-                   TracksFull const& tracks,
-                   const aod::BCs&)
+  void processDataSameEvent(CollisionsSel::iterator const& collision,
+                            aod::KinkCands const& kinkCands,
+                            TracksFull const& tracks,
+                            const aod::BCs&)
   {
-    fillOutputData(collision, kinkCands, tracks);
+    if (useCentrality) {
+      BinningCentPosZ binPolicy{{centMultPoolBins, zPoolBins}, true};
+      fillOutputData(collision, kinkCands, tracks, binPolicy);
+    } else {
+      BinningMultPosZ binPolicy{{centMultPoolBins, zPoolBins}, true};
+      fillOutputData(collision, kinkCands, tracks, binPolicy);
+    }
   }
-  PROCESS_SWITCH(lambda1405analysis, processData, "Data processing", true);
+  PROCESS_SWITCH(lambda1405analysis, processDataSameEvent, "Data processing", true);
 
-  void processDataWCentQVecs(CollisionsCentSel::iterator const& collision,
+  void processDataWQVecsSameEvent(CollisionsSelWQVecs::iterator const& collision,
+                                  aod::KinkCands const& kinkCands,
+                                  TracksFull const& tracks,
+                                  const aod::BCs&)
+  {
+    BinningCentPosZ binPolicy{{centMultPoolBins, zPoolBins}, true};
+    fillOutputData(collision, kinkCands, tracks, binPolicy);
+  }
+  PROCESS_SWITCH(lambda1405analysis, processDataWQVecsSameEvent, "Data processing with centrality and Q vectors info", false);
+
+  void processDataMixedEvent(CollisionsFull const& collisions,
                              aod::KinkCands const& kinkCands,
                              TracksFull const& tracks,
                              const aod::BCs&)
   {
-    fillOutputData(collision, kinkCands, tracks);
+    auto pairsTuple = std::make_tuple(kinkCands, tracks);
+    if (useCentrality) {
+      BinningCentPosZ binPolicy{{centMultPoolBins, zPoolBins}, true};
+      Pair<CollisionsFull, aod::KinkCands, TracksFull, BinningCentPosZ> const pairs{binPolicy, numberEventsMixed, -1, collisions, pairsTuple, &cache};
+      for (const auto& [sigmasColl, sigmas, bachPisColl, bachPis] : pairs) {
+        if (sigmas.size() == 0 || bachPis.size() == 0) {
+          continue;
+        }
+        int const poolBinSigma = getPoolBin(sigmasColl, binPolicy);
+        int const poolBinBachPi = getPoolBin(bachPisColl, binPolicy);
+        if (poolBinBachPi != poolBinSigma) {
+          LOG(debug) << "Different poolBins for sigma and bachelor pi: " << poolBinSigma << " vs " << poolBinBachPi;
+          continue;
+        }
+        fillOutputData(sigmasColl, sigmas, bachPis, binPolicy);
+      }
+    } else {
+      BinningMultPosZ binPolicy{{centMultPoolBins, zPoolBins}, true};
+      Pair<CollisionsFull, aod::KinkCands, TracksFull, BinningMultPosZ> const pairs{binPolicy, numberEventsMixed, -1, collisions, pairsTuple, &cache};
+      for (const auto& [sigmasColl, sigmas, bachPisColl, bachPis] : pairs) {
+        if (sigmas.size() == 0 || bachPis.size() == 0) {
+          continue;
+        }
+        int const poolBinSigma = getPoolBin(sigmasColl, binPolicy);
+        int const poolBinBachPi = getPoolBin(bachPisColl, binPolicy);
+        if (poolBinBachPi != poolBinSigma) {
+          LOG(debug) << "Different poolBins for sigma and bachelor pi: " << poolBinSigma << " vs " << poolBinBachPi;
+          continue;
+        }
+        fillOutputData(sigmasColl, sigmas, bachPis, binPolicy);
+      }
+    }
   }
-  PROCESS_SWITCH(lambda1405analysis, processDataWCentQVecs, "Data processing with centrality and Q vectors info", false);
+  PROCESS_SWITCH(lambda1405analysis, processDataMixedEvent, "Data event mixing processing", false);
+
+  void processDataWQVecsMixedEvent(CollisionsSelWQVecs const& collisions,
+                                   aod::KinkCands const& kinkCands,
+                                   TracksFull const& tracks,
+                                   const aod::BCs&)
+  {
+    auto pairsTuple = std::make_tuple(kinkCands, tracks);
+    BinningCentPosZ binPolicy{{centMultPoolBins, zPoolBins}, true};
+    Pair<CollisionsSelWQVecs, aod::KinkCands, TracksFull, BinningCentPosZ> const pairs{binPolicy, numberEventsMixed, -1, collisions, pairsTuple, &cache};
+    for (const auto& [sigmasColl, sigmas, bachPisColl, bachPis] : pairs) {
+      if (sigmas.size() == 0 || bachPis.size() == 0) {
+        continue;
+      }
+      int const poolBinSigma = getPoolBin(sigmasColl, binPolicy);
+      int const poolBinBachPi = getPoolBin(bachPisColl, binPolicy);
+      if (poolBinBachPi != poolBinSigma) {
+        LOG(debug) << "Different poolBins for sigma and bachelor pi: " << poolBinSigma << " vs " << poolBinBachPi;
+        continue;
+      }
+      fillOutputData(sigmasColl, sigmas, bachPis, binPolicy);
+    }
+  }
+  PROCESS_SWITCH(lambda1405analysis, processDataWQVecsMixedEvent, "Data event mixing with centrality and Q vectors info", false);
 
   template <typename TMother>
   int matchGenDecay(const TMother& motherPart, const aod::McParticles& mcParticles, std::array<int, 3>& daugsIdxs)
@@ -1271,42 +1343,31 @@ struct lambda1405analysis {
                     const TTrack& tracks,
                     const aod::McParticles& particlesMC)
   {
-    LOG(info) << "Filling output MC for " << recoCollisions.size() << " collisions, " << sigmaCands.size() << " Sigma candidates, and " << tracks.size() << " tracks";
     for (const auto& collision : recoCollisions) {
-      LOG(info) << "\n\nProcessing collision with global index: " << collision.globalIndex() << " and " << sigmaCands.size() << " Sigma candidates, and " << tracks.size() << " tracks";
-      if (std::abs(collision.posZ()) > cutZVertex) { // || !collision.sel8()) {
-        LOG(info) << "Collision failed Z vertex cut: " << collision.posZ();
+      if (std::abs(collision.posZ()) > eventSelection.cutZVertex) { // || !collision.sel8()) {
         continue;
       }
-      LOG(info) << "Collision passed Z vertex cut: " << collision.posZ();
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
       float centMult = getCentMult(collision);
-      LOG(info) << "Collision centrality: " << centMult;
-      if (centMult < centMultMin || centMult > centMultMax) {
-        LOG(info) << "Collision failed centrality cut: " << centMult;
+      if (centMult < eventSelection.centMultMin || centMult > eventSelection.centMultMax) {
         continue;
       }
-      LOG(info) << "Collision passed centrality cut: " << centMult;
       rEventSelection.fill(HIST("hCentMultVsPvContrib"), centMult, collision.numContrib());
       rEventSelection.fill(HIST("hOccVsPvContrib"), collision.ft0cOccupancyInTimeRange(), collision.numContrib());
       rEventSelection.fill(HIST("hCentVsOcc"), centMult, collision.ft0cOccupancyInTimeRange());
 
       auto sigmaCandsPerCol = sigmaCands.sliceBy(mKinkPerCol, collision.globalIndex());
       auto tracksPerCol = tracks.sliceBy(mPerColTracks, collision.globalIndex());
-      LOG(info) << "Start loop on " << sigmaCandsPerCol.size() << " Sigma candidates ... ";
       for (const auto& sigmaCand : sigmaCandsPerCol) {
-        LOG(info) << "Processing Sigma candidate with global index: " << sigmaCand.globalIndex();
 
         // Perform the sigma matching here, so sigma histograms
         // can be used for efficiency studies on the sigma
         auto labelSigma = trackLabelsMC.rawIteratorAt(sigmaCand.trackMothId());
         auto labelKinkDaug = trackLabelsMC.rawIteratorAt(sigmaCand.trackDaugId());
         if (!labelSigma.has_mcParticle()) {
-          LOG(info) << "Sigma candidate with global index: " << sigmaCand.globalIndex() << " is not matched to MC particle";
           rSelections.fill(HIST("hRecoNotMatchedCounter"), 1); // Sigma not matched
         }
         if (!labelKinkDaug.has_mcParticle()) {
-          LOG(info) << "Kink daughter candidate with global index: " << sigmaCand.globalIndex() << " is not matched to MC particle";
           rSelections.fill(HIST("hRecoNotMatchedCounter"), 2); // Kink daughter not matched
         }
         auto genSigma = labelSigma.template mcParticle_as<aod::McParticles>();
@@ -1317,21 +1378,17 @@ struct lambda1405analysis {
         bool isSigmaPlusToPrKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaPlus, PDG_t::kProton, particlesMC);
 
         if (!isSigmaMinusKink && !isSigmaPlusToPiKink && !isSigmaPlusToPrKink) {
-          LOG(info) << "Candidate is not a valid Sigma kink decay, skipping ...";
           continue; // Skip if not a valid Sigma kink decay
         }
         if (isSigmaMinusKink) {
-          LOG(info) << "Filling h2DeltaGenRecoPtSigmaMinus with: " << sigmaCand.ptMoth() - genSigma.pt() << ", " << sigmaCand.ptMoth();
           rSigmaMinus.fill(HIST("h2DeltaGenRecoPtSigmaMinus"), sigmaCand.ptMoth() - genSigma.pt(), sigmaCand.ptMoth());
         }
         if (isSigmaPlusToPiKink || isSigmaPlusToPrKink) {
-          LOG(info) << "Filling h2DeltaGenRecoPtSigmaPlus with: " << sigmaCand.ptMoth() - genSigma.pt() << ", " << sigmaCand.ptMoth();
           rSigmaPlus.fill(HIST("h2DeltaGenRecoPtSigmaPlus"), sigmaCand.ptMoth() - genSigma.pt(), sigmaCand.ptMoth());
         }
-
         std::vector<lambda1405candidate> selectedCandidates;
-        LOG(info) << "Constructing Lambda(1405) candidates from Sigma candidate with global index: " << sigmaCand.globalIndex();
-        constructCollCandidates(collision, sigmaCand, tracksPerCol, selectedCandidates);
+        const int dummyPoolBin{-1}; // Not used in MC, but required by the function signature
+        constructCollCandidates<true>(collision, sigmaCand, tracksPerCol, selectedCandidates, dummyPoolBin);
         for (const auto& lambda1405Cand : selectedCandidates) {
           rLambda1405.fill(HIST("hRecoL1405"), 0., lambda1405Cand.pt()); // All reconstructed
 
@@ -1476,16 +1533,197 @@ struct lambda1405analysis {
   }
   PROCESS_SWITCH(lambda1405analysis, processMc, "MC processing", false);
 
-  void processMcWCentSel(McRecoCollisionsCentSel const& recoCollisions,
-                         aod::KinkCands const& kinkCands,
-                         aod::McTrackLabels const& trackLabelsMC,
-                         aod::McParticles const& particlesMC,
-                         TracksFull const& tracks,
-                         const aod::BCs&)
+  void processMcSigmasCentSel(McRecoCollisionsSel const& recoCollisions,
+                              aod::KinkCands const& sigmaCands,
+                              aod::McTrackLabels const& trackLabelsMC,
+                              aod::McParticles const& particlesMC,
+                              aod::McCollisions const&,
+                              const aod::BCs&)
   {
-    fillOutputMc(recoCollisions, kinkCands, trackLabelsMC, tracks, particlesMC);
+    // Loop over kink candidates to fill Sigma efficiency histograms
+    for (const auto& collision : recoCollisions) {
+      if (std::abs(collision.posZ()) > eventSelection.cutZVertex) { // || !collision.sel8()) {
+        continue;
+      }
+      rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
+      float centMult = getCentMult(collision);
+      if (centMult < eventSelection.centMultMin || centMult > eventSelection.centMultMax) {
+        continue;
+      }
+
+      rEventSelection.fill(HIST("hCentMultVsPvContrib"), centMult, collision.numContrib());
+      rEventSelection.fill(HIST("hOccVsPvContrib"), collision.ft0cOccupancyInTimeRange(), collision.numContrib());
+      rEventSelection.fill(HIST("hCentVsOcc"), centMult, collision.ft0cOccupancyInTimeRange());
+
+      // Compute occupancy and pv contrib of the generated collision
+      const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollision, collision.mcCollisionId());
+      if (recoCollsPerMcColl.size() == 0) {
+        continue; // Skip if no reconstructed collisions associated with this MC collision
+      }
+      unsigned genNumContrib = 0;
+      float genOcc{0.f};
+      float genCentMult{0.f};
+      for (const auto& recCol : recoCollsPerMcColl) {
+        genNumContrib = recCol.numContrib() > genNumContrib ? recCol.numContrib() : genNumContrib;
+        genOcc = recCol.ft0cOccupancyInTimeRange() > genOcc ? recCol.ft0cOccupancyInTimeRange() : genOcc;
+        genCentMult = getCentMult(collision) > genCentMult ? getCentMult(collision) : genCentMult;
+      }
+
+      auto sigmaCandsPerCol = sigmaCands.sliceBy(mKinkPerCol, collision.globalIndex());
+      for (const auto& sigmaCand : sigmaCandsPerCol) {
+
+        auto labelSigma = trackLabelsMC.rawIteratorAt(sigmaCand.trackMothId());
+        auto labelKinkDaug = trackLabelsMC.rawIteratorAt(sigmaCand.trackDaugId());
+        if (!labelSigma.has_mcParticle() || !labelKinkDaug.has_mcParticle()) {
+          continue; // No generated particles
+        }
+        auto genSigma = labelSigma.template mcParticle_as<aod::McParticles>();
+        auto genKinkDaug = labelKinkDaug.template mcParticle_as<aod::McParticles>();
+
+        bool isSigmaMinusKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaMinus, PDG_t::kPiPlus, particlesMC);
+        bool isSigmaPlusToPiKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaPlus, PDG_t::kPiPlus, particlesMC);
+        bool isSigmaPlusToPrKink = checkSigmaKinkMC(genSigma, genKinkDaug, PDG_t::kSigmaPlus, PDG_t::kProton, particlesMC);
+
+        if (skipBkgSigmas && (!isSigmaMinusKink && !isSigmaPlusToPiKink && !isSigmaPlusToPrKink)) {
+          continue; // Skip if not a valid Sigma kink decay
+        }
+
+        float sigmaPt = sigmaCand.ptMoth();
+        if (downSampleFactor < 1.) {
+          float const pseudoRndm = sigmaPt * 1000. - static_cast<int64_t>(sigmaPt * 1000);
+          if (sigmaPt < ptDownSampleMax && pseudoRndm >= downSampleFactor) {
+            continue;
+          }
+        }
+
+        std::array<float, 3> sigmaMomReco{sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth()};
+        std::array<float, 3> kinkMomReco{sigmaCand.pxDaug(), sigmaCand.pyDaug(), sigmaCand.pzDaug()};
+        float recoSigmaAlphaAP = alphaAP(sigmaMomReco, kinkMomReco);
+        float recoSigmaQtAP = qtAP(sigmaMomReco, kinkMomReco);
+
+        // Recompute the sigma momentum
+        bool success{false};
+        float sigmaPRecalc = recalcSigmaMom(success, isSigmaMinusKink,
+                                            sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth(),
+                                            sigmaCand.pxDaug(), sigmaCand.pyDaug(), sigmaCand.pzDaug());
+        if (!success && skipSigmasFailedRecompMom) {
+          return;
+        }
+        if (success) {
+          float sigmaPOriginal = std::sqrt(sigmaCand.pxMoth() * sigmaCand.pxMoth() +
+                                           sigmaCand.pyMoth() * sigmaCand.pyMoth() +
+                                           sigmaCand.pzMoth() * sigmaCand.pzMoth());
+          if (sigmaPRecalc > 0.f && sigmaPOriginal > 0.f) {
+            float scale = sigmaPRecalc / sigmaPOriginal;
+            sigmaMomReco[0] *= scale;
+            sigmaMomReco[1] *= scale;
+            sigmaMomReco[2] *= scale;
+
+            sigmaPt = std::sqrt(sigmaMomReco[0] * sigmaMomReco[0] + sigmaMomReco[1] * sigmaMomReco[1]);
+            if (isSigmaMinusKink) {
+              rSigmaMinus.fill(HIST("hDeltaPxRecalcSigmaMinus"), sigmaMomReco[0] - sigmaCand.pxMoth(), sigmaCand.pxMoth());
+              rSigmaMinus.fill(HIST("hDeltaPyRecalcSigmaMinus"), sigmaMomReco[1] - sigmaCand.pyMoth(), sigmaCand.pyMoth());
+              rSigmaMinus.fill(HIST("hDeltaPzRecalcSigmaMinus"), sigmaMomReco[2] - sigmaCand.pzMoth(), sigmaCand.pzMoth());
+              rSigmaMinus.fill(HIST("hRecalcPtFactorSigmaMinus"), scale, sigmaPOriginal);
+            } else {
+              rSigmaPlus.fill(HIST("hDeltaPxRecalcSigmaPlus"), sigmaMomReco[0] - sigmaCand.pxMoth(), sigmaCand.pxMoth());
+              rSigmaPlus.fill(HIST("hDeltaPyRecalcSigmaPlus"), sigmaMomReco[1] - sigmaCand.pyMoth(), sigmaCand.pyMoth());
+              rSigmaPlus.fill(HIST("hDeltaPzRecalcSigmaPlus"), sigmaMomReco[2] - sigmaCand.pzMoth(), sigmaCand.pzMoth());
+              rSigmaPlus.fill(HIST("hRecalcPtFactorSigmaPlus"), scale, sigmaPOriginal);
+            }
+          }
+        }
+
+        float recoRecalcPtSigmaAlphaAP = alphaAP(sigmaMomReco, kinkMomReco);
+        float recoRecalcPtSigmaQtAP = qtAP(sigmaMomReco, kinkMomReco);
+        float massSigma = isSigmaMinusKink ? sigmaCand.mSigmaMinus() : sigmaCand.mSigmaPlus();
+
+        // Generated properties
+        float genMassSigma{-1.f};
+        if (isSigmaMinusKink || isSigmaPlusToPiKink || isSigmaPlusToPrKink) {
+          genMassSigma = std::sqrt(genSigma.e() * genSigma.e() - genSigma.p() * genSigma.p());
+          std::array<float, 3> sigmaMomGen{sigmaCand.pxMoth(), sigmaCand.pyMoth(), sigmaCand.pzMoth()};
+          std::array<float, 3> kinkMomGen{sigmaCand.pxDaug(), sigmaCand.pyDaug(), sigmaCand.pzDaug()};
+          float genSigmaAlphaAP = alphaAP(sigmaMomGen, kinkMomGen);
+          float genSigmaQtAP = qtAP(sigmaMomGen, kinkMomGen);
+          float sigmaRadius = std::hypot(genKinkDaug.vx(), genKinkDaug.vy());
+          if (isSigmaMinusKink) {
+            rSigmaMinus.fill(HIST("hSparseGenFromRecoSigmaMinus"), genMassSigma, genSigma.pt(), genSigmaAlphaAP, genSigmaQtAP, sigmaRadius, genCentMult, genNumContrib, genOcc);
+          } else if (isSigmaPlusToPiKink || isSigmaPlusToPrKink) {
+            rSigmaPlus.fill(HIST("hSparseGenFromRecoSigmaPlus"), genMassSigma, genSigma.pt(), genSigmaAlphaAP, genSigmaQtAP, sigmaRadius, genCentMult, genNumContrib, genOcc);
+          }
+        }
+
+        // Fill table with sigma properties for efficiency studies
+        outputSigmaEffMC(
+          sigmaCand.pxMoth(), sigmaCand.pxMoth() - genSigma.px(),
+          sigmaCand.pyMoth(), sigmaCand.pyMoth() - genSigma.py(),
+          sigmaCand.pzMoth(), sigmaCand.pzMoth() - genSigma.pz(),
+          massSigma, massSigma - genMassSigma,
+          sigmaCand.pxMoth() - sigmaMomReco[0],
+          sigmaCand.pyMoth() - sigmaMomReco[1],
+          sigmaCand.pzMoth() - sigmaMomReco[2],
+          genSigma.phi(),
+          genSigma.eta(),
+          sigmaCand.pxDaug(), sigmaCand.pxDaug() - genKinkDaug.px(),
+          sigmaCand.pyDaug(), sigmaCand.pyDaug() - genKinkDaug.py(),
+          sigmaCand.pzDaug(), sigmaCand.pzDaug() - genKinkDaug.pz(),
+          genKinkDaug.phi(),
+          genKinkDaug.eta(),
+          sigmaCand.xDecVtx(), sigmaCand.xDecVtx() - genKinkDaug.vx(),
+          sigmaCand.yDecVtx(), sigmaCand.yDecVtx() - genKinkDaug.vy(),
+          sigmaCand.zDecVtx(), sigmaCand.zDecVtx() - genKinkDaug.vz(),
+          recoSigmaAlphaAP, recoSigmaQtAP,
+          recoRecalcPtSigmaAlphaAP, recoRecalcPtSigmaQtAP,
+          sigmaCand.dcaDaugPv(), sigmaCand.dcaMothPv(),
+          genSigma.pdgCode(), genKinkDaug.pdgCode(),
+          centMult, collision.ft0cOccupancyInTimeRange(), collision.numContrib());
+      }
+    }
+
+    // generated sigmas
+    for (const auto& genSigma : particlesMC) {
+      if (std::abs(genSigma.pdgCode()) != PDG_t::kSigmaMinus && std::abs(genSigma.pdgCode()) != PDG_t::kSigmaPlus) {
+        continue; // Only consider Sigma candidates
+      }
+
+      const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollision, genSigma.mcCollision().globalIndex());
+      if (recoCollsPerMcColl.size() == 0) {
+        continue; // Skip if no reconstructed collisions associated with this MC collision
+      }
+
+      unsigned genNumContrib = 0;
+      float genOcc{0.f};
+      float genCentMult{0.f};
+      for (const auto& recCol : recoCollsPerMcColl) {
+        genNumContrib = recCol.numContrib() > genNumContrib ? recCol.numContrib() : genNumContrib;
+        genOcc = recCol.ft0cOccupancyInTimeRange() > genOcc ? recCol.ft0cOccupancyInTimeRange() : genOcc;
+        genCentMult = getCentMult(recCol) > genCentMult ? getCentMult(recCol) : genCentMult;
+      }
+
+      // Check the sigma daughter of the kink decay
+      std::vector<int> arrSigmaDaugs = {};
+      RecoDecay::getDaughters<true>(genSigma, &arrSigmaDaugs, std::array{0}, 1);
+      for (auto iProng = 0u; iProng < arrSigmaDaugs.size(); ++iProng) {
+        auto daughSigma = particlesMC.rawIteratorAt(arrSigmaDaugs[iProng]);
+        float genMassSigma = std::sqrt(genSigma.e() * genSigma.e() - genSigma.p() * genSigma.p());
+        std::array<float, 3> sigmaMomGen{genSigma.px(), genSigma.py(), genSigma.pz()};
+        std::array<float, 3> kinkMomGen{daughSigma.px(), daughSigma.py(), daughSigma.pz()};
+        float genSigmaAlphaAP = alphaAP(sigmaMomGen, kinkMomGen);
+        float genSigmaQtAP = qtAP(sigmaMomGen, kinkMomGen);
+        float sigmaRadius = std::hypot(daughSigma.vx(), daughSigma.vy());
+
+        if (std::abs(daughSigma.pdgCode()) == PDG_t::kPiPlus && std::abs(genSigma.pdgCode()) == PDG_t::kSigmaMinus) {
+          rSigmaMinus.fill(HIST("hSparseGenSigmaMinus"), genMassSigma, genSigma.pt(), genSigmaAlphaAP, genSigmaQtAP, sigmaRadius, genCentMult, genNumContrib, genOcc);
+        } else if (std::abs(daughSigma.pdgCode()) == PDG_t::kPiPlus && std::abs(genSigma.pdgCode()) == PDG_t::kSigmaPlus) {
+          rSigmaPlus.fill(HIST("hSparseGenSigmaPlus"), genMassSigma, genSigma.pt(), genSigmaAlphaAP, genSigmaQtAP, sigmaRadius, genCentMult, genNumContrib, genOcc);
+        } else if (std::abs(daughSigma.pdgCode()) == PDG_t::kProton && std::abs(genSigma.pdgCode()) == PDG_t::kSigmaPlus) {
+          rSigmaPlus.fill(HIST("hSparseGenSigmaPlus"), genMassSigma, genSigma.pt(), genSigmaAlphaAP, genSigmaQtAP, sigmaRadius, genCentMult, genNumContrib, genOcc);
+        }
+      }
+    }
   }
-  PROCESS_SWITCH(lambda1405analysis, processMcWCentSel, "MC processing with centrality selection", false);
+  PROCESS_SWITCH(lambda1405analysis, processMcSigmasCentSel, "MC processing for sigma efficiency studies", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

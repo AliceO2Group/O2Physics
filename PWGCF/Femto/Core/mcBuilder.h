@@ -21,13 +21,18 @@
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
+#include "Common/Core/RecoDecay.h"
+
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/Logger.h>
 
+#include <TMCProcess.h>
 #include <TPDGCode.h>
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <string>
@@ -37,13 +42,13 @@
 namespace o2::analysis::femto::mcbuilder
 {
 
-constexpr int ProducedByDecay = 4;
-
 struct ConfMc : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("MonteCarlo");
   o2::framework::Configurable<bool> passThrough{"passThrough", false, "Passthrough all MC collisions and particles"};
   o2::framework::Configurable<bool> findLastPartonicMother{"findLastPartonicMother", true, "If true, the partonic mother will be the first parton directly after the initial collision. If false, the partonic mother will be the last parton before hadronization"};
   o2::framework::Configurable<float> etaAcceptanceMcOnly{"etaAcceptanceMcOnly", 0.8, "For MC ONLY processing. |eta| acceptance for estimating primary track multiplicity"};
+  o2::framework::Configurable<float> etaAcceptanceMcReco{"etaAcceptanceMcReco", 1, "For MC/RECO processing. |eta| acceptance for generated particles"};
+  o2::framework::Configurable<float> charmYGenMax{"charmYGenMax", 0.8f, "Max |y| (rapidity) for generated charm hadrons (mc-only truth acceptance)"};
 };
 
 struct McBuilderProducts : o2::framework::ProducesGroup {
@@ -57,6 +62,7 @@ struct McBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FTrackLabels> producedTrackLabels;
   o2::framework::Produces<o2::aod::FLambdaLabels> producedLambdaLabels;
   o2::framework::Produces<o2::aod::FK0shortLabels> producedK0shortLabels;
+  o2::framework::Produces<o2::aod::FD0Labels> producedD0Labels;
   o2::framework::Produces<o2::aod::FSigmaLabels> producedSigmaLabels;
   o2::framework::Produces<o2::aod::FSigmaPlusLabels> producedSigmaPlusLabels;
   o2::framework::Produces<o2::aod::FXiLabels> producedXiLabels;
@@ -75,6 +81,7 @@ struct ConfMcTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> producedTrackLabels{"producedTrackLabels", -1, "Produce track labels (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> producedLambdaLabels{"producedLambdaLabels", -1, "Produce lambda labels (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> producedK0shortLabels{"producedK0shortLabels", -1, "Produce k0short labels (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> producedD0Labels{"producedD0Labels", -1, "Produce D0 labels (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> producedSigmaLabels{"producedSigmaLabels", -1, "Produce k0short labels (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> producedSigmaPlusLabels{"producedSigmaPlusLabels", -1, "Produce k0short labels (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> producedXiLabels{"producedXiLabels", -1, "Produce xi labels (-1: auto; 0 off; 1 on)"};
@@ -124,6 +131,12 @@ class McBuilder
   {
     LOG(info) << "Initialize monte carlo builder...";
 
+    mPassThrough = config.passThrough.value;
+    mEtaAcceptanceMcOnly = config.etaAcceptanceMcOnly.value;
+    mEtaAcceptanceMcReco = config.etaAcceptanceMcReco.value;
+    mFindLastPartonicMother = config.findLastPartonicMother.value;
+    mCharmYGenMax = config.charmYGenMax.value;
+
     mProduceMcCollisions = utils::enableTable("FMcCols_001", table.produceMcCollisions.value, initContext);
     mProduceMcParticles = utils::enableTable("FMcParticles_001", table.produceMcParticles.value, initContext);
     mProduceMcMothers = utils::enableTable("FMcMothers_001", table.produceMcMothers.value, initContext);
@@ -134,32 +147,31 @@ class McBuilder
     mProduceTrackLabels = utils::enableTable("FTrackLabels", table.producedTrackLabels.value, initContext);
     mProduceLambdaLabels = utils::enableTable("FLambdaLabels", table.producedLambdaLabels.value, initContext);
     mProduceK0shortLabels = utils::enableTable("FK0shortLabels", table.producedK0shortLabels.value, initContext);
+    mProduceD0Labels = utils::enableTable("FD0Labels", table.producedD0Labels.value, initContext);
     mProduceSigmaLabels = utils::enableTable("FSigmaLabels", table.producedSigmaLabels.value, initContext);
     mProduceSigmaPlusLabels = utils::enableTable("FSigmaPlusLabels", table.producedSigmaPlusLabels.value, initContext);
     mProduceXiLabels = utils::enableTable("FXiLabels", table.producedXiLabels.value, initContext);
     mProduceOmegaLabels = utils::enableTable("FOmegaLabels", table.producedOmegaLabels.value, initContext);
 
     if (mProduceMcCollisions || mProduceCollisionLabels ||
-        mProduceMcParticles || mProduceMcMothers || mProduceMcPartonicMothers ||
-        mProduceMcMotherLabels ||
+        mProduceMcParticles || mProduceMcMotherLabels ||
+        mProduceMcMothers || mProduceMcPartonicMothers ||
         mProduceTrackLabels ||
         mProduceLambdaLabels || mProduceK0shortLabels ||
         mProduceSigmaLabels || mProduceSigmaPlusLabels ||
-        mProduceXiLabels || mProduceOmegaLabels) {
+        mProduceXiLabels || mProduceOmegaLabels ||
+        mProduceD0Labels) {
       mFillAnyTable = true;
     } else {
       LOG(info) << "No tables configured...";
       LOG(info) << "Initialization done...";
       return;
     }
-    mPassThrough = config.passThrough.value;
-    mEtaAcceptanceMcOnly = config.etaAcceptanceMcOnly.value;
-    mFindLastPartonicMother = config.findLastPartonicMother.value;
     LOG(info) << "Initialization done...";
   }
 
   template <modes::System system, typename T1, typename T2, typename T3>
-  void fillMcCollisionWithLabel(T1& mcProducts, T2 const& col, T3 const& /*mcCols*/)
+  void fillMcCollisionWithLabel(T1 const& col, T2 const& /*mcCols*/, T3& mcProducts)
   {
     if (!mProduceCollisionLabels) {
       mcProducts.producedCollisionLabels(-1);
@@ -172,7 +184,7 @@ class McBuilder
       auto it = mCollisionMap.find(originalIndex);
       if (it == mCollisionMap.end()) {
         // Not yet created → create it
-        auto mcCol = col.template mcCollision_as<T3>();
+        auto mcCol = col.template mcCollision_as<T2>();
         this->fillMcCollision<system>(mcCol, mcProducts);
       }
       // Add label
@@ -186,6 +198,10 @@ class McBuilder
   template <modes::System system, typename T1, typename T2>
   void fillMcCollision(T1 const& mcCol, T2& mcProducts)
   {
+    // check if collision already exists
+    if (mCollisionMap.find(mcCol.globalIndex()) != mCollisionMap.end()) {
+      return;
+    }
     float centrality = -1;
     float multiplicity = -1;
     if constexpr (modes::isFlagSet(system, modes::System::kPP)) {
@@ -205,18 +221,28 @@ class McBuilder
   }
 
   // for mc only
-  template <typename T1, typename T2, typename T3>
-  void fillMcCollision(T1 const& mcCol, T2 const& mcParticles, T3& mcProducts)
+  template <typename T1, typename T2, typename T3, typename T4>
+  void fillMcCollision(T1 const& mcCol, T2 const& mcParticles, T3& mcProducts, T4& pdgDb)
   {
+    // check if collision already exists
+    if (mCollisionMap.find(mcCol.globalIndex()) != mCollisionMap.end()) {
+      return;
+    }
+
     float centrality = 0;   // no centrality estimator for mc only, so set to 0
     float multiplicity = 0; // no multiplicity estimator for mc only
 
-    // define multiplicity ourselves by counting primary particles for |eta|,0.8
+    // define multiplicity ourselves by counting primary particles for |eta|< some config threshold
     // this is similar to how define it in data
     for (auto const& mcParticle : mcParticles) {
-      if (mcParticle.isPhysicalPrimary() && (std::fabs(mcParticle.eta()) < mEtaAcceptanceMcOnly)) {
-        multiplicity += 1;
+      if (!mcParticle.isPhysicalPrimary() || std::fabs(mcParticle.eta()) > mEtaAcceptanceMcOnly) {
+        continue;
       }
+      const auto* pdgParticle = pdgDb->GetParticle(mcParticle.pdgCode());
+      if (pdgParticle == nullptr || std::fabs(pdgParticle->Charge()) < o2::constants::math::Almost0) {
+        continue;
+      }
+      multiplicity += 1;
     }
 
     mcProducts.producedMcCollisions(
@@ -229,80 +255,150 @@ class McBuilder
   template <modes::System system, typename T1, typename T2, typename T3, typename T4>
   void fillMcParticle(T1 const& mcParticle, T2 const& mcParticles, T3 const& mcCol, T4& mcProducts)
   {
+    // charm hadrons get a prompt/non-prompt origin, consistent with the reco-matched path;
+    // all other particles use the generic getOrigin inside getOrCreateMcParticleRow
+    if (std::abs(mcParticle.pdgCode()) == o2::constants::physics::Pdg::kD0) {
+      // truth-level acceptance for the efficiency denominator: keep only
+      // generated D0 -> K pi decays inside the rapidity acceptance
+      int8_t sign = 0;
+      if (!RecoDecay::isMatchedMCGen(mcParticles, mcParticle, o2::constants::physics::Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
+        return;
+      }
+      if (std::abs(mcParticle.y()) > mCharmYGenMax) {
+        return;
+      }
+    }
     this->getOrCreateMcParticleRow<system>(mcParticle, mcParticles, mcCol, mcProducts);
   }
 
+  /// Write the generated primary charged particles needed for the dNch/deta calculation
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fillMcTrackWithLabel(T1 const& col, T2 const& mcCols, T3 const& track, T4 const& mcParticles, T5& mcProducts)
+  void fillMcPassThrough(T1 const& mcCols, T2 const& mcParticles, T3& perMcCollision, T4& mcProducts, T5& pdgDb)
+  {
+    if (!mPassThrough) {
+      return;
+    }
+    for (const auto& mcCol : mcCols) {
+      // every MC collision unconditionally: E_all is counted over all of them
+      this->fillMcCollision<system>(mcCol, mcProducts);
+
+      auto particlesThisCollision = mcParticles.sliceBy(perMcCollision, mcCol.globalIndex());
+      for (const auto& mcParticle : particlesThisCollision) {
+        if (!mcParticle.isPhysicalPrimary() || std::fabs(mcParticle.eta()) > mEtaAcceptanceMcReco) {
+          continue;
+        }
+        const auto* pdgParticle = pdgDb->GetParticle(mcParticle.pdgCode());
+        if (pdgParticle == nullptr || std::fabs(pdgParticle->Charge()) < o2::constants::math::Almost0) {
+          continue;
+        }
+        // NOTE: full mcParticles table, never the slice - the ancestry walk resolves global indices
+        this->fillMcParticle<system>(mcParticle, mcParticles, mcCol, mcProducts);
+      }
+    }
+  }
+
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
+  void fillMcTrackWithLabel(T1 const& track, T2 const& mcParticles, T3 const& mcCols, T4& mcProducts)
   {
     if (!mProduceTrackLabels) {
       mcProducts.producedTrackLabels(-1);
       return;
     }
-    fillMcLabelGeneric<system>(col, mcCols, track, mcParticles, mcProducts, [](auto& prod, int64_t p) { prod.producedTrackLabels(p); });
+    fillMcLabelGeneric<system>(track, mcParticles, mcCols, mcProducts, [](auto& prod, int64_t p) { prod.producedTrackLabels(p); });
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fillMcLambdaWithLabel(T1 const& col, T2 const& mcCols, T3 const& lambda, T4 const& mcParticles, T5& mcProducts)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
+  void fillMcLambdaWithLabel(T1 const& lambda, T2 const& mcParticles, T3 const& mcCols, T4& mcProducts)
   {
     if (!mProduceLambdaLabels) {
       mcProducts.producedLambdaLabels(-1);
       return;
     }
-    fillMcLabelGeneric<system>(col, mcCols, lambda, mcParticles, mcProducts, [](auto& prod, int64_t p) { prod.producedLambdaLabels(p); });
+    fillMcLabelGeneric<system>(lambda, mcParticles, mcCols, mcProducts, [](auto& prod, int64_t p) { prod.producedLambdaLabels(p); });
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fillMcK0shortWithLabel(T1 const& col, T2 const& mcCols, T3 const& k0short, T4 const& mcParticles, T5& mcProducts)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
+  void fillMcK0shortWithLabel(T1 const& k0short, T2 const& mcParticles, T3 const& mcCols, T4& mcProducts)
   {
     if (!mProduceK0shortLabels) {
       mcProducts.producedK0shortLabels(-1);
       return;
     }
-    fillMcLabelGeneric<system>(col, mcCols, k0short, mcParticles, mcProducts, [](auto& prod, int64_t p) { prod.producedK0shortLabels(p); });
+    fillMcLabelGeneric<system>(k0short, mcParticles, mcCols, mcProducts, [](auto& prod, int64_t p) { prod.producedK0shortLabels(p); });
   }
 
+  // D0 has no direct MC label (2-prong hypothesis built by PWGHF), so fillMcLabelGeneric
+  // cannot be reused. Both prongs are matched to a generated D0 -> K pi decay with
+  // RecoDecay::getMatchedMCRec, which returns the index of the generated mother;
+  // unmatched candidates get -1.
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fillMcSigmaWithLabel(T1 const& col, T2 const& mcCols, T3 const& sigmaDaughter, T4 const& mcParticles, T5& mcProducts)
+  void fillMcD0WithLabel(T1 const& d0candidate, T2 const& /*tracks*/, T3 const& mcParticles, T4 const& /*mcCols*/, T5& mcProducts)
+  {
+    if (!mProduceD0Labels) {
+      mcProducts.producedD0Labels(-1);
+      return;
+    }
+
+    auto prong0 = d0candidate.template prong0_as<T2>();
+    auto prong1 = d0candidate.template prong1_as<T2>();
+    auto arrayDaughters = std::array{prong0, prong1};
+    int8_t sign = 0;
+    const int indexMcRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, o2::constants::physics::Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
+
+    if (indexMcRec < 0) {
+      mcProducts.producedD0Labels(-1);
+      return;
+    }
+
+    auto mcParticle = mcParticles.rawIteratorAt(indexMcRec);
+    auto mcCol = mcParticle.template mcCollision_as<T4>();
+    int64_t mcParticleRow = this->getOrCreateMcParticleRow<system>(mcParticle, mcParticles, mcCol, mcProducts);
+
+    mcProducts.producedD0Labels(mcParticleRow);
+  }
+
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
+  void fillMcSigmaWithLabel(T1 const& sigmaDaughter, T2 const& mcParticles, T3 const& mcCols, T4& mcProducts)
   {
     if (!mProduceSigmaLabels) {
       mcProducts.producedSigmaLabels(-1);
       return;
     }
-    fillMcLabelGeneric<system>(col, mcCols, sigmaDaughter, mcParticles, mcProducts, [](auto& prod, int64_t p) { prod.producedSigmaLabels(p); }, true);
+    fillMcLabelGeneric<system>(sigmaDaughter, mcParticles, mcCols, mcProducts, [](auto& prod, int64_t p) { prod.producedSigmaLabels(p); }, true);
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fillMcSigmaPlusWithLabel(T1 const& col, T2 const& mcCols, T3 const& sigmaPlusDaughter, T4 const& mcParticles, T5& mcProducts)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
+  void fillMcSigmaPlusWithLabel(T1 const& sigmaPlusDaughter, T2 const& mcParticles, T3 const& mcCols, T4& mcProducts)
   {
     if (!mProduceSigmaPlusLabels) {
       mcProducts.producedSigmaPlusLabels(-1);
       return;
     }
-    fillMcLabelGeneric<system>(col, mcCols, sigmaPlusDaughter, mcParticles, mcProducts, [](auto& prod, int64_t p) { prod.producedSigmaPlusLabels(p); }, true);
+    fillMcLabelGeneric<system>(sigmaPlusDaughter, mcParticles, mcCols, mcProducts, [](auto& prod, int64_t p) { prod.producedSigmaPlusLabels(p); }, true);
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fillMcXiWithLabel(T1 const& col, T2 const& mcCols, T3 const& xi, T4 const& mcParticles, T5& mcProducts)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
+  void fillMcXiWithLabel(T1 const& xi, T2 const& mcParticles, T3 const& mcCols, T4& mcProducts)
   {
     if (!mProduceXiLabels) {
       mcProducts.producedXiLabels(-1);
       return;
     }
-    fillMcLabelGeneric<system>(col, mcCols, xi, mcParticles, mcProducts, [](auto& prod, int64_t p) { prod.producedXiLabels(p); });
+    fillMcLabelGeneric<system>(xi, mcParticles, mcCols, mcProducts, [](auto& prod, int64_t p) { prod.producedXiLabels(p); });
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fillMcOmegaWithLabel(T1 const& col, T2 const& mcCols, T3 const& omega, T4 const& mcParticles, T5& mcProducts)
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4>
+  void fillMcOmegaWithLabel(T1 const& omega, T2 const& mcParticles, T3 const& mcCols, T4& mcProducts)
   {
     if (!mProduceOmegaLabels) {
       mcProducts.producedOmegaLabels(-1);
       return;
     }
-    fillMcLabelGeneric<system>(col, mcCols, omega, mcParticles, mcProducts, [](auto& prod, int64_t p) { prod.producedOmegaLabels(p); });
+    fillMcLabelGeneric<system>(omega, mcParticles, mcCols, mcProducts, [](auto& prod, int64_t p) { prod.producedOmegaLabels(p); });
   }
 
   bool fillAnyTable() const { return mFillAnyTable; }
+  bool isPassThrough() const { return mPassThrough; }
 
   template <typename T1, typename T2>
   void reset(T1 const& mcCollisions, T2 const& mcParticles)
@@ -317,56 +413,40 @@ class McBuilder
     mMcPartonicMotherMap.reserve(mcParticles.size());
   }
 
-  // mc only, then there is only 1 mc collision
-  template <typename T>
-  void reset(T const& mcParticles)
-  {
-    mCollisionMap.clear();
-    mMcParticleMap.clear();
-    mMcParticleMap.reserve(mcParticles.size());
-    mMcMotherMap.clear();
-    mMcMotherMap.reserve(mcParticles.size());
-    mMcPartonicMotherMap.clear();
-    mMcPartonicMotherMap.reserve(mcParticles.size());
-  }
-
  private:
-  template <typename T1, typename T2, typename T3>
-  modes::McOrigin getOrigin(T1 const& col, T2 const& /*mcCols*/, T3 const& mcParticle)
+  // classify a charm hadron as prompt (charm from a c quark) or non-prompt (charm from a
+  // beauty decay) from the mc decay tree; shared by the reco-matched and generator-level paths
+  template <typename T1, typename T2>
+  modes::McOrigin getHeavyFlavourOrigin(T1 const& mcParticle, T2 const& mcParticles)
   {
-    // whether a particle is misidentified or not can only be checked by qa/pair task later so it is not set here
-
-    // check if reconstructed collision has a generated collision
-    if (!col.has_mcCollision()) {
-      return modes::McOrigin::kFromWrongCollision;
-    }
-
-    // now check collision ids, if they do not match, then the track belongs to another collision
-    if (col.mcCollisionId() != mcParticle.mcCollisionId()) {
-      return modes::McOrigin::kFromWrongCollision;
-    }
-
-    if (mcParticle.isPhysicalPrimary()) {
-      return modes::McOrigin::kPhysicalPrimary;
-    }
-
-    if (mcParticle.has_mothers() && mcParticle.getProcess() == ProducedByDecay) {
-      return modes::McOrigin::kFromSecondaryDecay;
-    }
-
-    // not a primary and not from a decay and not from a wrong collision, we label as material
-    return modes::McOrigin::kFromMaterial;
+    const int charmOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle);
+    return (charmOrigin == RecoDecay::OriginType::NonPrompt) ? modes::McOrigin::kNonPrompt : modes::McOrigin::kPrompt;
   }
 
   template <typename T1>
   modes::McOrigin getOrigin(T1 const& mcParticle)
   {
+    // whether a particle is misidentified or not can only be checked by qa/pair task later so it is not set here
+    // whether a particle is associated to the wrong collision or not can only be checked by qa/pair task later so it is not set here
     if (mcParticle.isPhysicalPrimary()) {
       return modes::McOrigin::kPhysicalPrimary;
     }
-    if (mcParticle.has_mothers() && mcParticle.getProcess() == ProducedByDecay) {
+
+    // A non-primary the generator itself produced can only come from a decay the generator
+    // performed, and strong/EM decay products are primaries by definition - so this is a
+    // weak decay. NOTE: getProcess() returns kPrimary (0) for every generator particle,
+    // so the kPDecay check below never fires for them.
+    if (mcParticle.producedByGenerator()) {
       return modes::McOrigin::kFromSecondaryDecay;
     }
+    // produced by transport: kPDecay means GEANT decayed it, the usual path for
+    // Lambda / K0s / Xi / Omega since ALICE hands them to transport undecayed
+    const int process = mcParticle.getProcess();
+    if (process == TMCProcess::kPDecay || process == TMCProcess::kPRadDecay) {
+      return modes::McOrigin::kFromSecondaryDecay;
+    }
+
+    // not a primary and not from a decay we label as material
     return modes::McOrigin::kFromMaterial;
   }
 
@@ -384,21 +464,12 @@ class McBuilder
     return it->second;
   }
 
-  /// Mc-only entry point: no reconstructed collision to match against, so origin
-  /// is derived purely from the mc particle itself.
   template <modes::System system, typename T1, typename T2, typename T3, typename T4>
   int64_t getOrCreateMcParticleRow(T1 const& mcParticle, T2 const& mcParticles, T3 const& mcCol, T4& mcProducts)
   {
-    auto origin = this->getOrigin(mcParticle);
-    return this->buildMcParticleRow<system>(mcParticle, mcParticles, mcCol, origin, mcProducts);
-  }
-
-  /// Reco-matched entry point: origin is derived by comparing the reconstructed
-  /// collision against the mc collision.
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  int64_t getOrCreateMcParticleRow(T1 const& col, T2 const& mcCols, T3 const& mcParticle, T4 const& mcParticles, T5 const& mcCol, T6& mcProducts)
-  {
-    auto origin = this->getOrigin(col, mcCols, mcParticle);
+    auto origin = std::abs(mcParticle.pdgCode()) == o2::constants::physics::Pdg::kD0
+                    ? this->getHeavyFlavourOrigin(mcParticle, mcParticles)
+                    : this->getOrigin(mcParticle);
     return this->buildMcParticleRow<system>(mcParticle, mcParticles, mcCol, origin, mcProducts);
   }
 
@@ -431,7 +502,7 @@ class McBuilder
 
     // --- mother ---
     int64_t mcMotherRow = -1;
-    if (mcParticle.has_mothers()) {
+    if (mProduceMcMothers && mcParticle.has_mothers()) {
       auto mothers = mcParticle.template mothers_as<T2>();
       auto motherParticle = mothers.front();
       auto mcMotherIndex = motherParticle.globalIndex();
@@ -454,9 +525,12 @@ class McBuilder
 
     // --- partonic mother ---
     int64_t mcPartonicMotherRow = -1;
-    int64_t mcPartonicMotherIndex = mFindLastPartonicMother
-                                      ? this->findLastPartonicMother(mcParticle, mcParticles)
-                                      : this->findFirstPartonicMother(mcParticle, mcParticles);
+    int64_t mcPartonicMotherIndex = -1;
+    if (mProduceMcPartonicMothers) {
+      mcPartonicMotherIndex = mFindLastPartonicMother
+                                ? this->findLastPartonicMother(mcParticle, mcParticles)
+                                : this->findFirstPartonicMother(mcParticle, mcParticles);
+    }
     if (mcPartonicMotherIndex >= 0) {
       auto itPM = mMcPartonicMotherMap.find(mcPartonicMotherIndex);
       if (itPM != mMcPartonicMotherMap.end()) {
@@ -477,13 +551,12 @@ class McBuilder
     return mcParticleRow;
   }
 
-  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-  void fillMcLabelGeneric(T1 const& col,
-                          T2 const& mcCols,
-                          T3 const& particle,
-                          T4 const& mcParticles,
-                          T5& mcProducts,
-                          T6 writeLabels,
+  template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillMcLabelGeneric(T1 const& particle,
+                          T2 const& mcParticles,
+                          T3 const& /*mcCols*/,
+                          T4& mcProducts,
+                          T5 writeLabels,
                           bool startFromMotherParticle = false)
   {
     if (!particle.has_mcParticle()) {
@@ -491,21 +564,21 @@ class McBuilder
       return;
     }
 
-    auto mcParticle = particle.template mcParticle_as<T4>();
-    auto mcCol = mcParticle.template mcCollision_as<T2>();
+    auto mcParticle = particle.template mcParticle_as<T2>();
+    auto mcCol = mcParticle.template mcCollision_as<T3>();
 
     if (startFromMotherParticle) {
       // in case of e.g. sigmas we do not reconstruct the mother but the daughter, so here we want to start from the mother particle
-      auto mcDaughterParticle = particle.template mcParticle_as<T4>();
+      auto mcDaughterParticle = particle.template mcParticle_as<T2>();
       if (!mcDaughterParticle.has_mothers()) {
         writeLabels(mcProducts, -1);
         return;
       }
-      auto mothersOfDaughter = mcDaughterParticle.template mothers_as<T4>();
+      auto mothersOfDaughter = mcDaughterParticle.template mothers_as<T2>();
       mcParticle = mothersOfDaughter.front();
     }
 
-    int64_t mcParticleRow = this->getOrCreateMcParticleRow<system>(col, mcCols, mcParticle, mcParticles, mcCol, mcProducts);
+    int64_t mcParticleRow = this->getOrCreateMcParticleRow<system>(mcParticle, mcParticles, mcCol, mcProducts);
 
     writeLabels(mcProducts, mcParticleRow);
   }
@@ -597,7 +670,7 @@ class McBuilder
       }
       currentIndex = nextIndex;
     }
-    return -1;
+    return lastPartonIndex;
   }
 
   bool mPassThrough = false;
@@ -612,13 +685,16 @@ class McBuilder
   bool mProduceTrackLabels = false;
   bool mProduceLambdaLabels = false;
   bool mProduceK0shortLabels = false;
+  bool mProduceD0Labels = false;
   bool mProduceSigmaLabels = false;
   bool mProduceSigmaPlusLabels = false;
   bool mProduceXiLabels = false;
   bool mProduceOmegaLabels = false;
   bool mProduceMcMotherLabels = false;
+  float mCharmYGenMax = 0.8f;
 
-  float mEtaAcceptanceMcOnly = 0.8;
+  float mEtaAcceptanceMcOnly = 0.8f;
+  float mEtaAcceptanceMcReco = 1.f;
 
   std::unordered_map<int64_t, int64_t> mCollisionMap;
 

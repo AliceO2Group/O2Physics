@@ -17,6 +17,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
@@ -85,6 +86,15 @@ struct Derivedcascadeanalysis {
   Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
+  o2::aod::rctsel::RCTFlagsChecker rctFlagsChecker{rctConfigurations.cfgRCTLabel.value};
+
+  struct : ConfigurableGroup {
+    std::string prefix = "rctConfigurations"; // JSON group name
+    Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "", "Which detector condition requirements? (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)"};
+    Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "Include ZDC flags in the bit selection (for Pb-Pb only)"};
+    Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+  } rctConfigurations;
+
   struct : ConfigurableGroup {
     std::string prefix = "qa";
     Configurable<bool> doFillNsigmaTPCHistPionBach{"doFillNsigmaTPCHistPionBach", false, ""};
@@ -114,6 +124,7 @@ struct Derivedcascadeanalysis {
     Configurable<bool> doNoCollInRofStandardCut{"doNoCollInRofStandardCut", true, "Enable an evevnt selection which rejects a collision if there are other events within the same ITS ROF with mult above threshold"};
     Configurable<bool> doMultiplicityCorrCut{"doMultiplicityCorrCut", false, "Enable multiplicity vs centrality correlation cut"};
     Configurable<bool> doITSallLayersCut{"doITSallLayersCut", false, "Enable event selection which rejects collisions when ITS was rebooting."};
+    Configurable<bool> doCBTselection{"doCBTselection", true, "Require only events with good PID (CBT_hadronPID)"};
     Configurable<int> minOccupancy{"minOccupancy", -1, "Minimal occupancy"};
     Configurable<int> maxOccupancy{"maxOccupancy", -1, "Maximal occupancy"};
     Configurable<float> minOccupancyFT0{"minOccupancyFT0", -1, "Minimal occupancy"};
@@ -311,13 +322,15 @@ struct Derivedcascadeanalysis {
       SETBIT(selectionCheckMask, 11);
     }
 
+    rctFlagsChecker.init(rctConfigurations.cfgRCTLabel.value, rctConfigurations.cfgCheckZDC, rctConfigurations.cfgTreatLimitedAcceptanceAsBad);
+
     histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {vertexZ});
     histos.add("hEventMultFt0C", "", kTH1F, {{500, 0, 5000}});
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
 
     histos.add("hEventSelection", "hEventSelection", kTH1F, {{22, 0, 22}});
     // TODO adjust labels
-    std::array<TString, 22> eventSelLabelRun3 = {"all", "sel8", "TVX", "PV_{z}", "cent", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "kIsVertexITSTPC", "kIsVertexTOFmatched", "kIsVertexTRDmatched", "kNoITSROFrameBorder", "kNoTimeFrameBorder", "MultCorrCut", "kNoCollInTimeRangeStrict", "kNoCollInTimeRangeStandard", "min Occup", "mxOccup", "kNoCollInRofStrict", "kNoCollInRofStandard", "kIsGoodITSLayersAll", "occupFt0", "-"};
+    std::array<TString, 22> eventSelLabelRun3 = {"all", "sel8", "TVX", "PV_{z}", "cent", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "kIsVertexITSTPC", "kIsVertexTOFmatched", "kIsVertexTRDmatched", "kNoITSROFrameBorder", "kNoTimeFrameBorder", "MultCorrCut", "kNoCollInTimeRangeStrict", "kNoCollInTimeRangeStandard", "min Occup", "mxOccup", "kNoCollInRofStrict", "kNoCollInRofStandard", "kIsGoodITSLayersAll", "occupFt0", "CBT sel"};
     std::array<TString, 22> eventSelLabelRun2 = {"all", "sel8", "TVX", "PV_{z}", "cent", "sel7", "kINT7", "kNoIncompleteDAQ", "kNoInconsistentVtx", "kNoPileupFromSPD", "kNoV0PFPileup", "kNoPileupInMultBins", "kNoPileupMV", "kNoPileupTPC", "kNoV0MOnVsOfPileup", "kNoSPDOnVsOfPileup", "kNoSPDClsVsTklBG", "INEL0", "-", "-", "-", "-"};
     for (int i = 1; i <= histos.get<TH1>(HIST("hEventSelection"))->GetNbinsX(); i++) {
       if (doprocessCascades || doprocessCascadesMCrec || doprocessCascadesMCforEff) {
@@ -798,6 +811,13 @@ struct Derivedcascadeanalysis {
       }
 
       interactionRate = rateFetcher.fetch(ccdb.service, coll.timestamp(), coll.runNumber(), irSource) * 1.e-3;
+
+      if (eventSelectionRun3Flags.doCBTselection && !rctConfigurations.cfgRCTLabel.value.empty() && !rctFlagsChecker(coll)) {
+        return false;
+      }
+      if (fillHists) {
+        histos.fill(HIST("hEventSelection"), 21.5 /* Pass CBT condition */);
+      }
     } else {
       centrality = eventSelectionRun2Flags.useSPDTrackletsCent ? coll.centRun2SPDTracklets() : coll.centRun2V0M();
 

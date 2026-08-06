@@ -26,7 +26,6 @@
 #include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/Expressions.h>
 
 #include <cmath>
 #include <cstdint>
@@ -234,10 +233,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(SignedPt, signedPt,
                            [](uint16_t signedBinnedPt) -> float {
                              return unBinSignedPt(signedBinnedPt);
                            });
-DECLARE_SOA_DYNAMIC_COLUMN(UnsignedPt, unsignedPt,
-                           [](uint16_t unsignedBinnedPt) -> float {
-                             return unBinUnsignedPt(unsignedBinnedPt);
-                           });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta,
                            [](uint16_t binnedEta) -> float {
                              return unBinEta(binnedEta);
@@ -246,6 +241,23 @@ DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi,
                            [](uint16_t binnedPhi) -> float {
                              return unBinPhi(binnedPhi);
                            });
+
+namespace signedpt
+{
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,
+                           [](uint16_t signedBinnedPt) -> float {
+                             return std::fabs(unBinSignedPt(signedBinnedPt));
+                           });
+} // namespace signedpt
+
+namespace unsignedpt
+{
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,
+                           [](uint16_t unsignedBinnedPt) -> float {
+                             return unBinUnsignedPt(unsignedBinnedPt);
+                           });
+} // namespace unsignedpt
+
 } // namespace lite
 } // namespace femtobase
 
@@ -355,6 +367,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteTracks_001, "FLITETRACK", 1, //! femto t
                                    femtobase::lite::BinnedPhi,
                                    femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::signedpt::Pt<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::Eta<femtobase::lite::BinnedEta>,
                                    femtobase::lite::Phi<femtobase::lite::BinnedPhi>);
 using FLiteTracks = FLiteTracks_001;
@@ -537,6 +550,11 @@ namespace femtov0s
 {
 // columns for bit masks
 DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::V0MaskType); //! Bitmask for v0 selections
+//
+namespace legacy001
+{
+DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::V0MaskType001); //! Bitmask for v0 selections
+}
 
 // columns for debug information
 DECLARE_SOA_COLUMN(MassAnti, massAnti, float);             //! mass of particle using antiparticle hypothesis (for Lambda/AntiLambda extra table)
@@ -628,6 +646,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteLambdas_001, "FLITELAMBDA", 1,
                                    femtov0s::lite::NegDauId,
                                    femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::signedpt::Pt<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::Eta<femtobase::lite::BinnedEta>,
                                    femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
                                    femtov0s::lite::LambdaMass<femtov0s::lite::BinnedLambdaMass>);
@@ -635,10 +654,14 @@ using FLiteLambdas = FLiteLambdas_001;
 using FLiteLambda = FLiteLambdas::iterator;
 using StoredFLiteLambdas = StoredFLiteLambdas_001;
 
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaMasks_001, "FLAMBDAMASK", 1, //! lambda masks
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaMasks_001, "FLAMBDAMASK", 1, //! legacy lambda mask
+                                   femtov0s::legacy001::Mask);
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaMasks_002, "FLAMBDAMASK", 2, //! lambda mask
                                    femtov0s::Mask);
-using FLambdaMasks = FLambdaMasks_001;
-using StoredFLambdaMasks = StoredFLambdaMasks_001;
+
+using FLambdaMasks = FLambdaMasks_002;
+using StoredFLambdaMasks = StoredFLambdaMasks_002;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaExtras_001, "FLAMBDAEXTRA", 1, //! lambda extra information
                                    femtov0s::MassAnti,                   // put mass of antiparticle, i.e. antilambda mass for lambdas and vice versa
@@ -681,7 +704,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteK0shorts_001, "FLITEK0SHORT", 1,
                                    femtov0s::lite::BinnedK0shortMass,
                                    femtov0s::lite::PosDauId,
                                    femtov0s::lite::NegDauId,
-                                   femtobase::lite::UnsignedPt<femtobase::lite::UnsignedBinnedPt>,
+                                   femtobase::lite::unsignedpt::Pt<femtobase::lite::UnsignedBinnedPt>,
                                    femtobase::lite::Eta<femtobase::lite::BinnedEta>,
                                    femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
                                    femtov0s::lite::K0shortMass<femtov0s::lite::BinnedK0shortMass>);
@@ -689,10 +712,13 @@ using FLiteK0shorts = FLiteK0shorts_001;
 using FLiteK0short = FLiteK0shorts::iterator;
 using StoredFLiteK0shorts = StoredFLiteK0shorts_001;
 
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortMasks_001, "FK0SHORTMASK", 1, //! k0short masks
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortMasks_001, "FK0SHORTMASK", 1, //! legacy k0short masks
+                                   femtov0s::legacy001::Mask);
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortMasks_002, "FK0SHORTMASK", 2, //! k0short masks
                                    femtov0s::Mask);
-using FK0shortMasks = FK0shortMasks_001;
-using StoredFK0shortMasks = StoredFK0shortMasks_001;
+using FK0shortMasks = FK0shortMasks_002;
+using StoredFK0shortMasks = StoredFK0shortMasks_002;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortExtras_001, "FK0SHORTEXTRA", 1, //! k0short extra information
                                    femtov0s::MassLambda,
@@ -795,6 +821,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteSigmas_001, "FLITESIGMA", 1,
                                    femtokinks::lite::ChaDauId,
                                    femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::signedpt::Pt<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::Eta<femtobase::lite::BinnedEta>,
                                    femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
                                    femtokinks::lite::SigmaMass<femtokinks::lite::BinnedSigmaMass>);
@@ -850,6 +877,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteSigmaPlus_001, "FLITESIGMAPLUS", 1,
                                    femtokinks::lite::ChaDauId,
                                    femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::signedpt::Pt<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::Eta<femtobase::lite::BinnedEta>,
                                    femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
                                    femtokinks::lite::SigmaMass<femtokinks::lite::BinnedSigmaMass>);
@@ -876,6 +904,11 @@ namespace femtocascades
 {
 // columns for cascade bit masks
 DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::CascadeMaskType); //! Bitmask for cascade selections
+
+namespace legacy001
+{
+DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::CascadeMaskType001); //! Bitmask for cascade selections
+}
 
 // columns for cascad debug information
 DECLARE_SOA_COLUMN(MassXi, massXi, float);                         //! Mass of xi
@@ -963,6 +996,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteXis_001, "FLITEXI", 1,
                                    femtov0s::lite::NegDauId,
                                    femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::signedpt::Pt<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::Eta<femtobase::lite::BinnedEta>,
                                    femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
                                    femtocascades::lite::XiMass<femtocascades::lite::BinnedXiMass>);
@@ -970,10 +1004,13 @@ using FLiteXis = FLiteXis_001;
 using FLiteXi = FLiteXis::iterator;
 using StoredFLiteXis = StoredFLiteXis_001;
 
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiMasks_001, "FXIMASK", 1, //! xi masks
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiMasks_001, "FXIMASK", 1, //! legacy xi masks
+                                   femtocascades::legacy001::Mask);
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiMasks_002, "FXIMASK", 2, //! xi masks
                                    femtocascades::Mask);
-using FXiMasks = FXiMasks_001;
-using StoredFXiMasks = StoredFXiMasks_001;
+using FXiMasks = FXiMasks_002;
+using StoredFXiMasks = StoredFXiMasks_002;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiExtras_001, "FXIEXTRA", 1, //! xi extra information
                                    femtocascades::MassOmega,
@@ -1021,6 +1058,7 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteOmegas_001, "FLITEOMEGA", 1,
                                    femtov0s::lite::NegDauId,
                                    femtobase::lite::Sign<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::SignedPt<femtobase::lite::SignedBinnedPt>,
+                                   femtobase::lite::signedpt::Pt<femtobase::lite::SignedBinnedPt>,
                                    femtobase::lite::Eta<femtobase::lite::BinnedEta>,
                                    femtobase::lite::Phi<femtobase::lite::BinnedPhi>,
                                    femtocascades::lite::OmegaMass<femtocascades::lite::BinnedOmegaMass>);
@@ -1028,10 +1066,13 @@ using FLiteOmegas = FLiteOmegas_001;
 using FLiteOmega = FLiteOmegas::iterator;
 using StoredFLiteOmegas = StoredFLiteOmegas_001;
 
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaMasks_001, "FOMEGAMASK", 1, //! omega masks
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaMasks_001, "FOMEGAMASK", 1, //! legacy omega masks
+                                   femtocascades::legacy001::Mask);
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaMasks_002, "FOMEGAMASK", 2, //! omega masks
                                    femtocascades::Mask);
-using FOmegaMasks = FOmegaMasks_001;
-using StoredFOmegaMasks = StoredFOmegaMasks_001;
+using FOmegaMasks = FOmegaMasks_002;
+using StoredFOmegaMasks = StoredFOmegaMasks_002;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaExtras_001, "FOMEGAEXTRA", 1, //! omega extra information
                                    femtocascades::MassXi,
@@ -1045,8 +1086,75 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaExtras_001, "FOMEGAEXTRA", 1, //! omega
                                    femtocascades::LambdaDcaToPv);
 using FOmegaExtras = FOmegaExtras_001;
 
-// tables for monte carlo
+namespace femtocharmhadrons
+{
+// bitmask column
+DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::CharmHadronMaskType); //! selection bitmask
 
+// daughter links: row indices into the femto track table
+DECLARE_SOA_INDEX_COLUMN_FULL(PosDau, posDau, int32_t, FTracks, "_PosDau"); //! + prong (pion in D0)
+DECLARE_SOA_INDEX_COLUMN_FULL(NegDau, negDau, int32_t, FTracks, "_NegDau"); //! - prong (kaon in D0)
+
+// QA/debug columns
+DECLARE_SOA_COLUMN(Cpa, cpa, float);
+DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);
+DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
+DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
+DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float); //! d0*d0 of the two prongs
+DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float);
+// ML BDT scores: [0] background, [1] prompt (D0 from c), [2] non-prompt (D0 from b decay)
+DECLARE_SOA_COLUMN(MlProbD0Bkg, mlProbD0Bkg, float);                   //! D0 hypothesis: background score
+DECLARE_SOA_COLUMN(MlProbD0Prompt, mlProbD0Prompt, float);             //! D0 hypothesis: prompt score
+DECLARE_SOA_COLUMN(MlProbD0NonPrompt, mlProbD0NonPrompt, float);       //! D0 hypothesis: non-prompt score
+DECLARE_SOA_COLUMN(MlProbD0barBkg, mlProbD0barBkg, float);             //! D0bar hypothesis: background
+DECLARE_SOA_COLUMN(MlProbD0barPrompt, mlProbD0barPrompt, float);       //! D0bar hypothesis: prompt
+DECLARE_SOA_COLUMN(MlProbD0barNonPrompt, mlProbD0barNonPrompt, float); //! D0bar hypothesis: non-prompt
+DECLARE_SOA_COLUMN(IsSelD0, isSelD0, int8_t);                          //! PWGHF selection flag
+DECLARE_SOA_COLUMN(IsSelD0bar, isSelD0bar, int8_t);                    //! PWGHF selection flag
+} // namespace femtocharmhadrons
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FD0s_001, "FD0", 1, //! femto D0/D0bar (kinematics only)
+                                   o2::soa::Index<>,
+                                   femtobase::stored::FColId,
+                                   femtobase::stored::SignedPt, //! sign encodes D0(+)/D0bar(-)
+                                   femtobase::stored::Eta,
+                                   femtobase::stored::Phi,
+                                   femtobase::stored::Mass, //! mass of the accepted hypothesis
+                                   femtocharmhadrons::PosDauId,
+                                   femtocharmhadrons::NegDauId,
+                                   femtobase::dynamic::Sign<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::Pt<femtobase::stored::SignedPt>,
+                                   femtobase::dynamic::P<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Px<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Py<femtobase::stored::SignedPt, femtobase::stored::Phi>,
+                                   femtobase::dynamic::Pz<femtobase::stored::SignedPt, femtobase::stored::Eta>,
+                                   femtobase::dynamic::Theta<femtobase::stored::Eta>);
+using FD0s = FD0s_001;
+using StoredFD0s = StoredFD0s_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FD0Masks_001, "FD0MASK", 1, //! femto D0 selection bitmask
+                                   femtocharmhadrons::Mask);
+using FD0Masks = FD0Masks_001;
+using StoredFD0Masks = StoredFD0Masks_001;
+
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FD0Extras_001, "FD0EXTRA", 1, //! femto D0 QA / debug
+                                   femtocharmhadrons::Cpa,
+                                   femtocharmhadrons::CpaXY,
+                                   femtocharmhadrons::DecayLength,
+                                   femtocharmhadrons::DecayLengthXY,
+                                   femtocharmhadrons::ImpactParameterProduct,
+                                   femtocharmhadrons::CosThetaStar,
+                                   femtocharmhadrons::MlProbD0Bkg,
+                                   femtocharmhadrons::MlProbD0Prompt,
+                                   femtocharmhadrons::MlProbD0NonPrompt,
+                                   femtocharmhadrons::MlProbD0barBkg,
+                                   femtocharmhadrons::MlProbD0barPrompt,
+                                   femtocharmhadrons::MlProbD0barNonPrompt,
+                                   femtocharmhadrons::IsSelD0, // raw PWGHF selection flags
+                                   femtocharmhadrons::IsSelD0bar);
+using FD0Extras = FD0Extras_001;
+
+// tables for monte carlo
 namespace femtomccollisions
 {
 // DECLARE_SOA_COLUMN(Mult, mult, int);   //! Multiplicity of the event as given by the generator in |eta|<0.8
@@ -1128,6 +1236,8 @@ DECLARE_SOA_TABLE(FTrackLabels, "AOD", "FTRACKLABEL", femtolabels::FMcParticleId
 DECLARE_SOA_TABLE(FLambdaLabels, "AOD", "FLAMBDALABEL", femtolabels::FMcParticleId);
 
 DECLARE_SOA_TABLE(FK0shortLabels, "AOD", "FK0SHORTLABEL", femtolabels::FMcParticleId);
+
+DECLARE_SOA_TABLE(FD0Labels, "AOD", "FD0LABEL", femtolabels::FMcParticleId);
 
 DECLARE_SOA_TABLE(FSigmaLabels, "AOD", "FSIGMALABEL", femtolabels::FMcParticleId);
 

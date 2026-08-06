@@ -7351,11 +7351,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (nameStr == "alice3oTOFPIDEl") {
-    cut->AddCut(VarManager::kOuterTOFnSigmaEl, -3.0, 3.0);
-    return cut;
-  }
-
   if (nameStr == "alice3oTOFPIDPi") {
     cut->AddCut(VarManager::kOuterTOFnSigmaPi, -3.0, 3.0);
     return cut;

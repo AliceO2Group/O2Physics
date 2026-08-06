@@ -24,8 +24,6 @@
 
 #include <TPDGCode.h>
 
-#include <sys/types.h>
-
 #include <algorithm>
 #include <cmath>
 #include <concepts>
@@ -100,6 +98,9 @@ inline double getPdgMass(int pdgCode)
       break;
     case o2::constants::physics::Pdg::kLambdaCPlus:
       mass = o2::constants::physics::MassLambdaCPlus;
+      break;
+    case o2::constants::physics::Pdg::kD0:
+      mass = o2::constants::physics::MassD0;
       break;
     case o2::constants::physics::Pdg::kDeuteron:
       mass = o2::constants::physics::MassDeuteron;

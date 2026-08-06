@@ -32,21 +32,26 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 #include <MathUtils/BetheBlochAleph.h>
 #include <ReconstructionDataFormats/PID.h>
 
 #include <TH1.h>
+#include <TPDGCode.h>
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
-#include <limits>
 #include <string>
 #include <vector>
 
@@ -195,8 +200,6 @@ struct NucleiThreeBodyBuilder {
   std::vector<bool> preselectedTracks;
 
   struct RecoCandidate {
-    std::array<int, 3> trackIds{InvalidLabel, InvalidLabel, InvalidLabel};
-    int collisionId = InvalidLabel;
     std::array<int8_t, 3> signs{};
     float pt = 0.f;
     float eta = 0.f;
@@ -218,10 +221,8 @@ struct NucleiThreeBodyBuilder {
   };
 
   struct MCInfo {
-    std::array<int, 3> labels{InvalidLabel, InvalidLabel, InvalidLabel};
     std::array<int, 3> pdgs{};
     uint8_t matchStatus = MissingDaughterLabel;
-    int motherLabel = InvalidLabel;
     int motherPdg = 0;
     float motherPt = InvalidFloat;
     float motherEta = InvalidFloat;
@@ -472,10 +473,6 @@ struct NucleiThreeBodyBuilder {
     }
     registry.fill(HIST("triplets"), 1.);
 
-    out.trackIds = {static_cast<int>(he3Track.globalIndex()),
-                    static_cast<int>(daughter1Track.globalIndex()),
-                    static_cast<int>(daughter2Track.globalIndex())};
-    out.collisionId = collision.globalIndex();
     out.signs = {static_cast<int8_t>(he3Track.sign() > 0 ? 1 : -1),
                  static_cast<int8_t>(daughter1Track.sign() > 0 ? 1 : -1),
                  static_cast<int8_t>(daughter2Track.sign() > 0 ? 1 : -1)};
@@ -546,8 +543,7 @@ struct NucleiThreeBodyBuilder {
 
   void fillDataTable(RecoCandidate const& c)
   {
-    outputData(c.trackIds[0], c.trackIds[1], c.trackIds[2], c.collisionId,
-               c.signs[0], c.signs[1], c.signs[2],
+    outputData(c.signs[0], c.signs[1], c.signs[2],
                c.pt, c.eta, c.phi,
                c.daughterMomentum[0], c.daughterMomentum[1], c.daughterMomentum[2],
                c.chi2, c.dcaDaughters, c.cosPA, c.decayLength,
@@ -575,9 +571,6 @@ struct NucleiThreeBodyBuilder {
     const auto he3Particle = he3Track.template mcParticle_as<aod::McParticles>();
     const auto daughter1Particle = daughter1Track.template mcParticle_as<aod::McParticles>();
     const auto daughter2Particle = daughter2Track.template mcParticle_as<aod::McParticles>();
-    info.labels = {static_cast<int>(he3Particle.globalIndex()),
-                   static_cast<int>(daughter1Particle.globalIndex()),
-                   static_cast<int>(daughter2Particle.globalIndex())};
     info.pdgs = {he3Particle.pdgCode(), daughter1Particle.pdgCode(), daughter2Particle.pdgCode()};
     info.matchStatus = NoCommonImmediateMother;
 
@@ -601,7 +594,6 @@ struct NucleiThreeBodyBuilder {
 
     const auto selectedMother = mcParticles.rawIteratorAt(commonMotherLabel);
     info.matchStatus = CommonImmediateMother;
-    info.motherLabel = commonMotherLabel;
     info.motherPdg = selectedMother.pdgCode();
     const int he3Sign = he3Track.sign() > 0 ? 1 : -1;
     const bool expectedDaughters = info.pdgs[0] == he3Sign * He3Pdg &&
@@ -627,8 +619,7 @@ struct NucleiThreeBodyBuilder {
 
   void fillMCTable(RecoCandidate const& c, MCInfo const& m)
   {
-    outputMC(c.trackIds[0], c.trackIds[1], c.trackIds[2], c.collisionId,
-             c.signs[0], c.signs[1], c.signs[2],
+    outputMC(c.signs[0], c.signs[1], c.signs[2],
              c.pt, c.eta, c.phi,
              c.daughterMomentum[0], c.daughterMomentum[1], c.daughterMomentum[2],
              c.chi2, c.dcaDaughters, c.cosPA, c.decayLength,
@@ -643,9 +634,8 @@ struct NucleiThreeBodyBuilder {
              c.tpcNCls[0], c.tpcNCls[1], c.tpcNCls[2],
              c.tpcCrossedRows[0], c.tpcCrossedRows[1], c.tpcCrossedRows[2],
              c.itsNCls[0], c.itsNCls[1], c.itsNCls[2],
-             m.labels[0], m.labels[1], m.labels[2],
              m.pdgs[0], m.pdgs[1], m.pdgs[2],
-             m.matchStatus, m.motherLabel, m.motherPdg,
+             m.matchStatus, m.motherPdg,
              m.motherPt, m.motherEta, m.motherPhi, m.decayLength);
   }
 

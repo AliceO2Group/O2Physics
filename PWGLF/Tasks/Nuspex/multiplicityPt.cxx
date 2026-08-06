@@ -121,6 +121,7 @@ struct MultiplicityPt {
   Configurable<bool> requireIsGoodZvtxFT0vsPV{"requireIsGoodZvtxFT0vsPV", false, "Require good Z vertex FT0 vs PV"};
   Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "Require vertex ITSTPC"};
   Configurable<bool> removeNoTimeFrameBorder{"removeNoTimeFrameBorder", false, "Remove no time frame border"};
+  Configurable<bool> nGoodITS{"nGoodITS", true, "Numbers of inactive chips on all ITS layers are below maximum allowed values"};
 
   // Gen-level event selection
   Configurable<bool> selTVXMC{"selTVXMC", true, "Require TVX-equivalent at gen level"};
@@ -229,7 +230,8 @@ struct MultiplicityPt {
     kVtxZ,
     kINELgt0,
     kRecoColl,
-    kRecoSelected
+    kGoodITS,
+    kRecoSelected,
   };
 
   // Particle species enum
@@ -252,14 +254,14 @@ struct MultiplicityPt {
     // Setup custom track cuts
     if (useCustomTrackCuts.value) {
       customTrackCuts = getGlobalTrackSelectionRun3ITSMatch(itsPattern.value);
-      customTrackCuts.SetRequireITSRefit(requireITS.value);
-      customTrackCuts.SetRequireTPCRefit(requireTPC.value);
+      // customTrackCuts.SetRequireITSRefit(requireITS.value);
+      // customTrackCuts.SetRequireTPCRefit(requireTPC.value);
       customTrackCuts.SetMinNClustersITS(minITSnClusters.value);
       customTrackCuts.SetRequireGoldenChi2(requireGoldenChi2.value);
       customTrackCuts.SetMaxChi2PerClusterTPC(maxChi2PerClusterTPC.value);
       customTrackCuts.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
       customTrackCuts.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
-      customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
+      // customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
       customTrackCuts.SetMaxDcaXYPtDep([](float /*pt*/) { return 10000.f; });
       // customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
     }
@@ -305,7 +307,7 @@ struct MultiplicityPt {
     // ========================================================================
     // EVENT COUNTER AND BASIC HISTOGRAMS
     // ========================================================================
-    registry.add("EventCounter", ";;Events", kTH1F, {{8, 0.5, 8.5}});
+    registry.add("EventCounter", ";;Events", kTH1F, {{9, 0.5, 9.5}});
     {
       auto h = registry.get<TH1>(HIST("EventCounter"));
       h->GetXaxis()->SetBinLabel(kAllGen, "All gen.");
@@ -313,6 +315,7 @@ struct MultiplicityPt {
       h->GetXaxis()->SetBinLabel(kVtxZ, "|Zvtx|<cut");
       h->GetXaxis()->SetBinLabel(kINELgt0, "INEL>0");
       h->GetXaxis()->SetBinLabel(kRecoColl, ">=1 reco coll.");
+      h->GetXaxis()->SetBinLabel(kGoodITS, "GoodITSLayersAll");
       h->GetXaxis()->SetBinLabel(kRecoSelected, ">=1 reco+sel.");
     }
 
@@ -1063,6 +1066,10 @@ struct MultiplicityPt {
         continue;
       if (!isEventSelectedMC(collision))
         continue;
+
+      if (nGoodITS.value && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+        continue;
+      registry.fill(HIST("EventCounter"), kGoodITS);
 
       registry.fill(HIST("EventCounter"), kRecoSelected);
 

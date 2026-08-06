@@ -328,6 +328,10 @@ struct FlowCorrelationsUpc {
       return false;
     }
 
+    if (!zdcTimeCut(collision)) {
+      return false;
+    }
+
     return true;
   }
 

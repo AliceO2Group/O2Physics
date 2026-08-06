@@ -337,11 +337,6 @@ using Vtx3BodyDatasCovsIndexed = soa::Join<Vtx3BodyDatas, Vtx3BodyCovs, Decay3Bo
 
 namespace nuclei3body
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(Helium3Track, helium3Track, int, Tracks, "_He3");    //!
-DECLARE_SOA_INDEX_COLUMN_FULL(Daughter1Track, daughter1Track, int, Tracks, "_D1"); //!
-DECLARE_SOA_INDEX_COLUMN_FULL(Daughter2Track, daughter2Track, int, Tracks, "_D2"); //!
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                    //!
-
 DECLARE_SOA_COLUMN(SignHe3, signHe3, int8_t);             //! He3 charge sign
 DECLARE_SOA_COLUMN(SignDaughter1, signDaughter1, int8_t); //! daughter 1 charge sign
 DECLARE_SOA_COLUMN(SignDaughter2, signDaughter2, int8_t); //! daughter 2 charge sign
@@ -388,14 +383,10 @@ DECLARE_SOA_COLUMN(ItsNClsHe3, itsNClsHe3, uint8_t);
 DECLARE_SOA_COLUMN(ItsNClsDaughter1, itsNClsDaughter1, uint8_t);
 DECLARE_SOA_COLUMN(ItsNClsDaughter2, itsNClsDaughter2, uint8_t);
 
-DECLARE_SOA_COLUMN(McLabelHe3, mcLabelHe3, int);
-DECLARE_SOA_COLUMN(McLabelDaughter1, mcLabelDaughter1, int);
-DECLARE_SOA_COLUMN(McLabelDaughter2, mcLabelDaughter2, int);
 DECLARE_SOA_COLUMN(McPdgHe3, mcPdgHe3, int);
 DECLARE_SOA_COLUMN(McPdgDaughter1, mcPdgDaughter1, int);
 DECLARE_SOA_COLUMN(McPdgDaughter2, mcPdgDaughter2, int);
 DECLARE_SOA_COLUMN(McMatchStatus, mcMatchStatus, uint8_t); //! 0 missing label, 1 no common mother, 2 common mother, 3 configured decay
-DECLARE_SOA_COLUMN(McMotherLabel, mcMotherLabel, int);
 DECLARE_SOA_COLUMN(McMotherPdg, mcMotherPdg, int);
 DECLARE_SOA_COLUMN(GenMotherPt, genMotherPt, float);
 DECLARE_SOA_COLUMN(GenMotherEta, genMotherEta, float);
@@ -404,9 +395,7 @@ DECLARE_SOA_COLUMN(GenDecayLength, genDecayLength, float);
 } // namespace nuclei3body
 
 #define NUCLEI_THREE_BODY_RECO_COLUMNS                                                     \
-  nuclei3body::Helium3TrackId, nuclei3body::Daughter1TrackId,                              \
-    nuclei3body::Daughter2TrackId, nuclei3body::CollisionId,                               \
-    nuclei3body::SignHe3, nuclei3body::SignDaughter1, nuclei3body::SignDaughter2,          \
+  nuclei3body::SignHe3, nuclei3body::SignDaughter1, nuclei3body::SignDaughter2,            \
     nuclei3body::Pt, nuclei3body::Eta, nuclei3body::Phi,                                   \
     nuclei3body::PHe3, nuclei3body::PDaughter1, nuclei3body::PDaughter2,                   \
     nuclei3body::Chi2, nuclei3body::DcaDaughters, nuclei3body::CosPA,                      \
@@ -433,9 +422,8 @@ DECLARE_SOA_TABLE(NucleiThreeBodyDatas, "AOD", "NUC3BODYDATA",
 DECLARE_SOA_TABLE(McNucleiThreeBodyDatas, "AOD", "MCNUC3BODY",
                   o2::soa::Index<>,
                   NUCLEI_THREE_BODY_RECO_COLUMNS,
-                  nuclei3body::McLabelHe3, nuclei3body::McLabelDaughter1, nuclei3body::McLabelDaughter2,
                   nuclei3body::McPdgHe3, nuclei3body::McPdgDaughter1, nuclei3body::McPdgDaughter2,
-                  nuclei3body::McMatchStatus, nuclei3body::McMotherLabel, nuclei3body::McMotherPdg,
+                  nuclei3body::McMatchStatus, nuclei3body::McMotherPdg,
                   nuclei3body::GenMotherPt, nuclei3body::GenMotherEta,
                   nuclei3body::GenMotherPhi, nuclei3body::GenDecayLength);
 

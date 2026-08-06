@@ -186,7 +186,7 @@ struct FemtoKinkQa {
       if (!sigmaCleaner.isClean(sigma, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      sigmaHistManager.fill<modes::Mode::kReco_Qa_Mc>(sigma, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      sigmaHistManager.fill<modes::Mode::kReco_Qa_Mc>(sigma, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoKinkQa, processSigmaMc, "Process sigmas", false);
@@ -215,7 +215,7 @@ struct FemtoKinkQa {
       if (!sigmaPlusCleaner.isClean(sigmaPlus, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      sigmaPlusHistManager.fill<modes::Mode::kReco_Qa_Mc>(sigmaPlus, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      sigmaPlusHistManager.fill<modes::Mode::kReco_Qa_Mc>(sigmaPlus, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoKinkQa, processSigmaPlusMc, "Process sigmas", false);

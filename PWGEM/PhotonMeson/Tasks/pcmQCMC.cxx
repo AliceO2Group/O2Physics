@@ -45,6 +45,7 @@
 #include <TH2.h>
 #include <TPDGCode.h>
 
+#include <array>
 #include <cmath>
 #include <cstdlib>
 #include <span>

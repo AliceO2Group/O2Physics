@@ -35,7 +35,6 @@ enum TripletOrder : uint8_t {
 };
 
 // process same event for identical 3 particles
-// (no cleaner here — ParticleCleaner only operates on MC info, see the mc overload below)
 template <modes::Mode mode,
           typename T1,
           typename T2,
@@ -105,7 +104,6 @@ void processSameEvent(T1 const& SliceParticle,
 }
 
 // process same event for identical 2 particles and 1 other particle
-// (no cleaner here — ParticleCleaner only operates on MC info, see the mc overload below)
 template <modes::Mode mode,
           typename T1, typename T2, typename T3, typename T4,
           typename T5, typename T6, typename T7, typename T8, typename T9>
@@ -170,7 +168,6 @@ void processSameEvent(T1 const& SliceParticle1, // 1&2 have same species
 }
 
 // process same event for 3 different particles
-// (no cleaner here — ParticleCleaner only operates on MC info, see the mc overload below)
 template <modes::Mode mode,
           typename T1,
           typename T2,
@@ -236,7 +233,6 @@ void processSameEvent(T1 const& SliceParticle1,
 }
 
 // process same event for 3 identical particles with mc information
-// NOTE: added `Cleaner` (single cleaner, uses the isClean(part, mcParticles, mcMothers, mcPartonicMothers) overload)
 template <modes::Mode mode,
           typename T1,
           typename T2,
@@ -270,7 +266,7 @@ void processSameEvent(T1 const& SliceParticle,
     if (!Cleaner.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
     }
-    ParticleHistManager.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
+    ParticleHistManager.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
   }
 
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(SliceParticle, SliceParticle, SliceParticle))) {
@@ -320,7 +316,6 @@ void processSameEvent(T1 const& SliceParticle,
 }
 
 // process same event for 2 identical particles and one other with mc information
-// NOTE: added `Cleaner1` (for particle 1&2) and `Cleaner3` (for particle 3, a different species)
 template <modes::Mode mode,
           typename T1, typename T2, typename T3, typename T4, typename T5, typename T6,
           typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13, typename T14, typename T15>
@@ -347,13 +342,13 @@ void processSameEvent(T1 const& SliceParticle1,
     if (!Cleaner1.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
     }
-    ParticleHistManager1.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
+    ParticleHistManager1.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
   }
   for (auto const& part : SliceParticle3) {
     if (!Cleaner3.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
     }
-    ParticleHistManager3.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
+    ParticleHistManager3.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
   }
 
   for (auto const& p3 : SliceParticle3) {
@@ -443,19 +438,19 @@ void processSameEvent(T1 const& SliceParticle1,
     if (!Cleaner1.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
     }
-    ParticleHistManager1.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
+    ParticleHistManager1.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
   }
   for (auto const& part : SliceParticle2) {
     if (!Cleaner2.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
     }
-    ParticleHistManager2.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
+    ParticleHistManager2.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
   }
   for (auto const& part : SliceParticle3) {
     if (!Cleaner3.isClean(part, mcParticles, mcMothers, mcPartonicMothers)) {
       continue;
     }
-    ParticleHistManager3.template fill<mode>(part, TrackTable, mcParticles, mcMothers, mcPartonicMothers);
+    ParticleHistManager3.template fill<mode>(part, TrackTable, Collision, mcParticles, mcMothers, mcPartonicMothers);
   }
 
   for (auto const& [p1, p2, p3] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(SliceParticle1, SliceParticle2, SliceParticle3))) {

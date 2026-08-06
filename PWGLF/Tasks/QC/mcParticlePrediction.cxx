@@ -156,6 +156,8 @@ std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoV
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvVsBCId;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hvertexPosZ;
 std::array<std::array<std::shared_ptr<TH2>, PIDExtended::NIDsTot>, Estimators::nEstimators> hpt;
+std::array<std::array<std::shared_ptr<TH2>, PIDExtended::NIDsTot>, Estimators::nEstimators> hy;
+std::array<std::array<std::shared_ptr<TH2>, PIDExtended::NIDsTot>, Estimators::nEstimators> heta;
 std::array<std::array<std::shared_ptr<TH1>, PIDExtended::NIDsTot>, Estimators::nEstimators> hyield;
 
 struct McParticlePrediction {
@@ -165,13 +167,28 @@ struct McParticlePrediction {
   HistogramRegistry histosRecoEvs{"HistosRecoEvs", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry histosYield{"HistosYield", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry histosPt{"HistosPt", {}, OutputObjHandlingPolicy::AnalysisObject};
-  ConfigurableAxis binsEta{"binsEta", {100, -20, 20}, "Binning of the Eta axis"};
-  ConfigurableAxis binsVxy{"binsVxy", {100, -10, 10}, "Binning of the production vertex (x and y) axis"};
-  ConfigurableAxis binsVz{"binsVz", {100, -10, 10}, "Binning of the production vertex (z) axis"};
-  ConfigurableAxis binsPt{"binsPt", {100, 0, 10}, "Binning of the Pt axis"};
-  ConfigurableAxis binsImpactParameter{"binsImpactParameter", {400, 0.0, 20.0}, "Binning of the impact parameter axis"};
-  ConfigurableAxis binsMultiplicity{"binsMultiplicity", {300, -0.5, 299.5}, "Binning of the Multiplicity axis"};
-  ConfigurableAxis binsMultiplicityReco{"binsMultiplicityReco", {1000, -0.5, -0.5 + 10000}, "Binning of the Multiplicity axis"};
+  HistogramRegistry histosEta{"HistosEta", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry histosY{"HistosY", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  struct : ConfigurableGroup {
+    std::string prefix = "Binning"; // JSON group name
+    ConfigurableAxis binsEta{"binsEta", {100, -20, 20}, "Binning of the Eta axis"};
+    ConfigurableAxis binsY{"binsY", {100, -20, 20}, "Binning of the Y axis"};
+    ConfigurableAxis binsVxy{"binsVxy", {100, -10, 10}, "Binning of the production vertex (x and y) axis"};
+    ConfigurableAxis binsVz{"binsVz", {100, -10, 10}, "Binning of the production vertex (z) axis"};
+    ConfigurableAxis binsPt{"binsPt", {200, 0, 20}, "Binning of the Pt axis"};
+    ConfigurableAxis binsImpactParameter{"binsImpactParameter", {400, 0.0, 20.0}, "Binning of the impact parameter axis"};
+    ConfigurableAxis binsMultiplicity{"binsMultiplicity", {300, -0.5, 299.5}, "Binning of the Multiplicity axis"};
+    ConfigurableAxis binsMultiplicityReco{"binsMultiplicityReco", {1000, -0.5, -0.5 + 10000}, "Binning of the Multiplicity axis"};
+  } cfgBinning;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "Predictions type"; // JSON group name
+    Configurable<bool> enablePt{"enablePt", true, "Produce prediction for pT"};
+    Configurable<bool> enableY{"enableY", true, "Produce prediction for rapidity"};
+    Configurable<bool> enableEta{"enableEta", true, "Produce prediction for eta"};
+  } cfgPrediction;
+
   Configurable<LabeledArray<int>> enabledSpecies{"enabledSpecies",
                                                  {defaultParticles[0], PIDExtended::NIDsTot, nParameters, PIDExtended::arrayNames(), parameterNames},
                                                  "Particles enabled"};
@@ -180,7 +197,8 @@ struct McParticlePrediction {
                                                     "Estimators enabled"};
   Configurable<bool> selectInelGt0{"selectInelGt0", true, "Select only inelastic events"};
   Configurable<bool> selectPrimaries{"selectPrimaries", true, "Select only primary particles"};
-  Configurable<float> rapidityCut{"rapidityCut", 0.5, "Select only particles within |y| < cut"};
+  Configurable<float> rapidityCut{"rapidityCut", 0.5, "Select only particles within |y| < cut for the pT and yield plots"};
+  Configurable<float> ptCut{"ptCut", 0.01, "Select only particles within |pt| > cut for the eta and y plots"};
   Configurable<bool> requireCoincidenceEstimators{"requireCoincidenceEstimators", false, "Asks for a coincidence when two estimators are used"};
   Configurable<bool> discardkIsGoodZvtxFT0vsPV{"discardkIsGoodZvtxFT0vsPV", false, "Select only collisions with matching BC and MC BC"};
   Configurable<bool> discardMismatchedBCs{"discardMismatchedBCs", false, "Select only collisions with matching BC and MC BC"};
@@ -195,7 +213,6 @@ struct McParticlePrediction {
   Configurable<bool> enableVsEta05Histograms{"enableVsEta05Histograms", true, "Enables the correlation between ETA05 and other estimators"};
   Configurable<bool> enableVsEta08Histograms{"enableVsEta08Histograms", true, "Enables the correlation between ETA08 and other estimators"};
   Configurable<bool> enableVsImpactParameterHistograms{"enableVsImpactParameterHistograms", true, "Enables the correlation between impact parameter and other estimators"};
-  Configurable<float> cfgEvtZvtxCut{"cfgEvtZvtxCut", 10.0f, "Evt sel: Max. z-Vertex (cm)"};
   Configurable<float> chargetolerance{"chargetolerance", 1e-3, "Tolerance to consider a particle as charged based on its charge"};
 
   Service<o2::framework::O2DatabasePDG> pdgDB;
@@ -205,15 +222,16 @@ struct McParticlePrediction {
   {
     mCounter.mPdgDatabase = pdgDB.service;
     mCounter.mSelectPrimaries = selectPrimaries.value;
-    const AxisSpec axisEta{binsEta, "#eta"};
-    const AxisSpec axisVx{binsVxy, "Vx"};
-    const AxisSpec axisVy{binsVxy, "Vy"};
-    const AxisSpec axisVz{binsVz, "Vz"};
-    const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec axisImpactParameter{binsImpactParameter, "Impact parameter (fm)"};
-    const AxisSpec axisMultiplicity{binsMultiplicity, "Multiplicity (undefined)"};
-    const AxisSpec axisMultiplicityReco{binsMultiplicityReco, "Multiplicity Reco. (undefined)"};
-    const AxisSpec axisMultiplicityRecoITS{binsMultiplicityReco, "Multiplicity Reco. ITSIB"};
+    const AxisSpec axisEta{cfgBinning.binsEta, "#eta"};
+    const AxisSpec axisRapidity{cfgBinning.binsY, "#it{y}"};
+    const AxisSpec axisVx{cfgBinning.binsVxy, "Vx"};
+    const AxisSpec axisVy{cfgBinning.binsVxy, "Vy"};
+    const AxisSpec axisVz{cfgBinning.binsVz, "Vz"};
+    const AxisSpec axisPt{cfgBinning.binsPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisImpactParameter{cfgBinning.binsImpactParameter, "Impact parameter (fm)"};
+    const AxisSpec axisMultiplicity{cfgBinning.binsMultiplicity, "Multiplicity (undefined)"};
+    const AxisSpec axisMultiplicityReco{cfgBinning.binsMultiplicityReco, "Multiplicity Reco. (undefined)"};
+    const AxisSpec axisMultiplicityRecoITS{cfgBinning.binsMultiplicityReco, "Multiplicity Reco. ITSIB"};
     const AxisSpec axisMultiplicityGenV0s{100, 0, 100, "K0s gen"};
     const AxisSpec axisMultiplicityRecoV0s{20, 0, 20, "K0s reco"};
     const AxisSpec axisBCID{o2::constants::lhc::LHCMaxBunches, -0.5, -0.5 + o2::constants::lhc::LHCMaxBunches, "BC ID in orbit"};
@@ -224,50 +242,65 @@ struct McParticlePrediction {
     h->GetXaxis()->SetBinLabel(1, "Read");
     h->GetXaxis()->SetBinLabel(2, "INELgt0");
     h->GetXaxis()->SetBinLabel(3, "|Z|<10");
-    h = histos.add<TH1>("collisions/reconstructed", "collisions", kTH1D, {{20, -0.5, 19.5}});
-    h->GetXaxis()->SetBinLabel(1, "Read");
-    h->GetXaxis()->SetBinLabel(2, "has_mcCollision");
-    h->GetXaxis()->SetBinLabel(3, "sel8");
-    h->GetXaxis()->SetBinLabel(4, "kIsBBT0A");
-    h->GetXaxis()->SetBinLabel(5, "kIsBBT0C");
-    h->GetXaxis()->SetBinLabel(6, "collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))");
-    h->GetXaxis()->SetBinLabel(7, "globalBC == MC globalBC");
-    h->GetXaxis()->SetBinLabel(8, "found globalBC == MC globalBC");
-    h->GetXaxis()->SetBinLabel(9, "isINELgt0mc");
-    h->GetXaxis()->SetBinLabel(10, "VTXz");
-    h->GetXaxis()->SetBinLabel(11, "collisionTimeRes");
-    h->GetXaxis()->SetBinLabel(11, "collisionTimeRes");
-    h->GetXaxis()->SetBinLabel(12, "kIsGoodZvtxFT0vsPV");
-    h->GetXaxis()->SetBinLabel(13, "kIsVertexITSTPC");
-    h->GetXaxis()->SetBinLabel(14, "kIsVertexTOFmatched");
-    h->GetXaxis()->SetBinLabel(15, "kIsVertexTRDmatched");
+    if (doprocessReco) {
+      h = histos.add<TH1>("collisions/reconstructed", "collisions", kTH1D, {{20, -0.5, 19.5}});
+      h->GetXaxis()->SetBinLabel(1, "Read");
+      h->GetXaxis()->SetBinLabel(2, "has_mcCollision");
+      h->GetXaxis()->SetBinLabel(3, "sel8");
+      h->GetXaxis()->SetBinLabel(4, "kIsBBT0A");
+      h->GetXaxis()->SetBinLabel(5, "kIsBBT0C");
+      h->GetXaxis()->SetBinLabel(6, "collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))");
+      h->GetXaxis()->SetBinLabel(7, "globalBC == MC globalBC");
+      h->GetXaxis()->SetBinLabel(8, "found globalBC == MC globalBC");
+      h->GetXaxis()->SetBinLabel(9, "isINELgt0mc");
+      h->GetXaxis()->SetBinLabel(10, "VTXz");
+      h->GetXaxis()->SetBinLabel(11, "collisionTimeRes");
+      h->GetXaxis()->SetBinLabel(11, "collisionTimeRes");
+      h->GetXaxis()->SetBinLabel(12, "kIsGoodZvtxFT0vsPV");
+      h->GetXaxis()->SetBinLabel(13, "kIsVertexITSTPC");
+      h->GetXaxis()->SetBinLabel(14, "kIsVertexTOFmatched");
+      h->GetXaxis()->SetBinLabel(15, "kIsVertexTRDmatched");
 
-    histos.add("collisions/Reco/BCvsMCBC", "BC vs MC BC", kTH2D, {axisBCID, axisBCIDMC});
-    histos.add<TH2>("collisions/Reco/FoundBCvsMCBC", "Found BC vs MC BC", kTH2D, {axisBCID, axisBCIDMC})->GetXaxis()->SetTitle("Found BC ID in orbit");
-    histos.add<TH2>("collisions/Reco/FoundBCvsBC", "Found BC vs MC BC", kTH2D, {axisBCID, axisBCID})->GetXaxis()->SetTitle("Found BC ID in orbit");
-    histos.add("collisions/Reco/collisionTime", "Collision Time", kTH1D, {{1000, -20, 20, "collisionTime"}});
-    histos.add("collisions/Reco/collisionTimeRes", "Collision Time Res", kTH1D, {{1600, 0, 1600, "collisionTimeRes (ns)"}});
-    histos.add("collisions/Reco/bcMinusfoundBc", "bcMinusfoundBc", kTH1D, {{1600, -1000, 1000, "bc - foundBc (ns)"}});
-    histos.add("collisions/Reco/bcMinusfoundBcRatio", "bcMinusfoundBcRatio", kTH1D, {{1600, -40, 40, "(bc - foundBc)/collisionTimeRes"}});
-    histos.add("collisions/Reco/bcMinusMcBcRatio", "bcMinusMcBcRatio", kTH1D, {{1600, -40, 40, "(bc - mcBc)/collisionTimeRes"}});
-    histos.add("collisions/Reco/foundbcMinusMcBcRatio", "foundbcMinusMcBcRatio", kTH1D, {{1600, -40, 40, "(foundBc-mcBc)/collisionTimeRes"}});
-    histos.add<TH1>("collisions/Reco/FT0A", "FT0A", kTH1D, {axisFT0})->GetXaxis()->SetTitle("Coll time FT0A (ps)");
-    histos.add<TH1>("collisions/Reco/FT0C", "FT0C", kTH1D, {axisFT0})->GetXaxis()->SetTitle("Coll time FT0C (ps)");
-    histos.add<TH1>("collisions/Reco/FT0AC", "FT0AC", kTH1D, {axisFT0})->GetXaxis()->SetTitle("Coll time FT0AC (ps)");
+      histos.add("collisions/Reco/BCvsMCBC", "BC vs MC BC", kTH2D, {axisBCID, axisBCIDMC});
+      histos.add<TH2>("collisions/Reco/FoundBCvsMCBC", "Found BC vs MC BC", kTH2D, {axisBCID, axisBCIDMC})->GetXaxis()->SetTitle("Found BC ID in orbit");
+      histos.add<TH2>("collisions/Reco/FoundBCvsBC", "Found BC vs MC BC", kTH2D, {axisBCID, axisBCID})->GetXaxis()->SetTitle("Found BC ID in orbit");
+      histos.add("collisions/Reco/collisionTime", "Collision Time", kTH1D, {{1000, -20, 20, "collisionTime"}});
+      histos.add("collisions/Reco/collisionTimeRes", "Collision Time Res", kTH1D, {{1600, 0, 1600, "collisionTimeRes (ns)"}});
+      histos.add("collisions/Reco/bcMinusfoundBc", "bcMinusfoundBc", kTH1D, {{1600, -1000, 1000, "bc - foundBc (ns)"}});
+      histos.add("collisions/Reco/bcMinusfoundBcRatio", "bcMinusfoundBcRatio", kTH1D, {{1600, -40, 40, "(bc - foundBc)/collisionTimeRes"}});
+      histos.add("collisions/Reco/bcMinusMcBcRatio", "bcMinusMcBcRatio", kTH1D, {{1600, -40, 40, "(bc - mcBc)/collisionTimeRes"}});
+      histos.add("collisions/Reco/foundbcMinusMcBcRatio", "foundbcMinusMcBcRatio", kTH1D, {{1600, -40, 40, "(foundBc-mcBc)/collisionTimeRes"}});
+      histos.add<TH1>("collisions/Reco/FT0A", "FT0A", kTH1D, {axisFT0})->GetXaxis()->SetTitle("Coll time FT0A (ps)");
+      histos.add<TH1>("collisions/Reco/FT0C", "FT0C", kTH1D, {axisFT0})->GetXaxis()->SetTitle("Coll time FT0C (ps)");
+      histos.add<TH1>("collisions/Reco/FT0AC", "FT0AC", kTH1D, {axisFT0})->GetXaxis()->SetTitle("Coll time FT0AC (ps)");
+    }
+
     histos.add("particles/eta/charged", "eta", kTH1D, {axisEta});
     histos.add("particles/eta/neutral", "eta", kTH1D, {axisEta});
-    histos.add("particles/vtx/x", "Vx", kTH1D, {axisVx});
-    histos.add("particles/vtx/y", "Vy", kTH1D, {axisVy});
-    histos.add("particles/vtx/z", "Vz", kTH1D, {axisVz});
-    histos.add("particles/FromCollVsFromMCColl", "FromCollVsFromMCColl", kTH2D, {{binsMultiplicity, "PV contributor particles (good bc)"}, {binsMultiplicityReco, "Particles in MC collision"}});
-    histos.add("particles/FromCollVsFromMCCollBad", "FromCollVsFromMCCollBad", kTH2D, {{binsMultiplicity, "PV contributor particles (bad bc)"}, {binsMultiplicityReco, "Particles in MC collision"}});
-    histos.add("particles/FromCollVsFromCollBad", "FromCollVsFromCollBad", kTH2D, {{binsMultiplicity, "PV contributor particles (good bc)"}, {binsMultiplicity, "PV contributor particles (bad bc)"}});
-    histos.add("particles/FromCollBadOverFromCollVsVsFromMCColl", "FromCollBadOverFromCollVsVsFromMCColl", kTH2D, {{100, 0, 2, "bad/good"}, {binsMultiplicityReco, "Particles in MC collision"}});
-    histos.add("V0s/V0RecovsPV", "V0s Reco + Ass vs PV", kTH2D, {axisMultiplicityRecoITS, axisMultiplicityRecoV0s});
-    histos.add("V0s/V0RecoAssvsPV", "V0s Reco + Ass vs PV", kTH2D, {axisMultiplicityRecoITS, axisMultiplicityRecoV0s});
-    histos.add("V0s/V0AssvsPV", "V0s Ass vs PV", kTH2D, {axisMultiplicityRecoITS, axisMultiplicityGenV0s});
-    histos.add("V0s/V0RecoAssvsPV_TOFOneLeg", "V0s Reco + Ass + TOF 1 Leg vs PV", kTH2D, {axisMultiplicityRecoITS, axisMultiplicityRecoV0s});
-    histos.add("V0s/V0RecoAssvsPV_TOFTwoLegs", "V0s Reco + Ass + TOF 2 Legs vs PV", kTH2D, {axisMultiplicityRecoITS, axisMultiplicityRecoV0s});
+    histos.add("particles/eta/undefined", "eta", kTH1D, {axisEta});
+
+    histos.add("particles/y/charged", "y", kTH1D, {axisRapidity});
+    histos.add("particles/y/neutral", "y", kTH1D, {axisRapidity});
+    histos.add("particles/y/undefined", "y", kTH1D, {axisRapidity});
+
+    histos.add("particles/vtx/x", "V_{x}", kTH1D, {axisVx});
+    histos.add("particles/vtx/y", "V_{y}", kTH1D, {axisVy});
+    histos.add("particles/vtx/z", "V_{z}", kTH1D, {axisVz});
+    histos.add("particles/vtx/deltax", "V_{x} - VTX_{x}", kTH1D, {axisVx});
+    histos.add("particles/vtx/deltay", "V_{y} - VTX_{y}", kTH1D, {axisVy});
+    histos.add("particles/vtx/deltaz", "V_{z} - VTX_{z}", kTH1D, {axisVz});
+    histos.add("particles/FromCollVsFromMCColl", "FromCollVsFromMCColl", kTH2D, {{cfgBinning.binsMultiplicity, "PV contributor particles (good bc)"}, {cfgBinning.binsMultiplicityReco, "Particles in MC collision"}});
+    histos.add("particles/FromCollVsFromMCCollBad", "FromCollVsFromMCCollBad", kTH2D, {{cfgBinning.binsMultiplicity, "PV contributor particles (bad bc)"}, {cfgBinning.binsMultiplicityReco, "Particles in MC collision"}});
+    histos.add("particles/FromCollVsFromCollBad", "FromCollVsFromCollBad", kTH2D, {{cfgBinning.binsMultiplicity, "PV contributor particles (good bc)"}, {cfgBinning.binsMultiplicity, "PV contributor particles (bad bc)"}});
+    histos.add("particles/FromCollBadOverFromCollVsVsFromMCColl", "FromCollBadOverFromCollVsVsFromMCColl", kTH2D, {{100, 0, 2, "bad/good"}, {cfgBinning.binsMultiplicityReco, "Particles in MC collision"}});
+
+    if (doprocessReco) {
+      histos.add("V0s/V0RecovsPV", "V0s Reco + Ass vs PV", kTH2D, {axisMultiplicityRecoITS, axisMultiplicityRecoV0s});
+      histos.add("V0s/V0RecoAssvsPV", "V0s Reco + Ass vs PV", kTH2D, {axisMultiplicityRecoITS, axisMultiplicityRecoV0s});
+      histos.add("V0s/V0AssvsPV", "V0s Ass vs PV", kTH2D, {axisMultiplicityRecoITS, axisMultiplicityGenV0s});
+      histos.add("V0s/V0RecoAssvsPV_TOFOneLeg", "V0s Reco + Ass + TOF 1 Leg vs PV", kTH2D, {axisMultiplicityRecoITS, axisMultiplicityRecoV0s});
+      histos.add("V0s/V0RecoAssvsPV_TOFTwoLegs", "V0s Reco + Ass + TOF 2 Legs vs PV", kTH2D, {axisMultiplicityRecoITS, axisMultiplicityRecoV0s});
+    }
 
     for (int i = 0; i < Estimators::nEstimators; i++) {
       if (enabledEstimators->get(Estimators::estimatorNames[i], "Enable") != 1) {
@@ -373,16 +406,28 @@ struct McParticlePrediction {
           axisThisEstimator = axisImpactParameter;
         }
         const char* name = Estimators::estimatorNames[j];
-        hpt[j][i] = histosPt.add<TH2>(Form("prediction/pt/%s/%s", name, PIDExtended::getName(i)), PIDExtended::getName(i), kTH2D, {axisPt, axisThisEstimator});
-        hpt[j][i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
-
+        if (cfgPrediction.enablePt) {
+          hpt[j][i] = histosPt.add<TH2>(Form("prediction/pt/%s/%s", name, PIDExtended::getName(i)), PIDExtended::getName(i), kTH2D, {axisPt, axisThisEstimator});
+          hpt[j][i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
+        }
+        if (cfgPrediction.enableEta) {
+          heta[j][i] = histosEta.add<TH2>(Form("prediction/eta/%s/%s", name, PIDExtended::getName(i)), PIDExtended::getName(i), kTH2D, {axisEta, axisThisEstimator});
+          heta[j][i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
+        }
+        if (cfgPrediction.enableY) {
+          hy[j][i] = histosY.add<TH2>(Form("prediction/y/%s/%s", name, PIDExtended::getName(i)), PIDExtended::getName(i), kTH2D, {axisRapidity, axisThisEstimator});
+          hy[j][i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
+        }
         hyield[j][i] = histosYield.add<TH1>(Form("prediction/yield/%s/%s", name, PIDExtended::getName(i)), PIDExtended::getName(i), kTH1D, {axisThisEstimator});
         hyield[j][i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
+        hyield[j][i]->GetYaxis()->SetTitle(Form("Multiplicity %s in |y| < %.2f", PIDExtended::getName(i), rapidityCut.value));
       }
     }
     histos.print();
     histosRecoEvs.print();
     histosPt.print();
+    histosEta.print();
+    histosY.print();
     histosYield.print();
   }
 
@@ -458,7 +503,7 @@ struct McParticlePrediction {
     }
 
     histos.fill(HIST("collisions/generated"), 1);
-    if (std::abs(mcCollision.posZ()) > cfgEvtZvtxCut) {
+    if (std::abs(mcCollision.posZ()) > posZCut.value) {
       return;
     }
     histos.fill(HIST("collisions/generated"), 2);
@@ -500,29 +545,52 @@ struct McParticlePrediction {
         continue;
       }
 
-      TParticlePDG* p = pdgDB->GetParticle(particle.pdgCode());
+      const TParticlePDG* p = pdgDB->GetParticle(particle.pdgCode());
       if (p) {
         if (std::abs(p->Charge()) > chargetolerance) {
           histos.fill(HIST("particles/eta/charged"), particle.eta());
+          histos.fill(HIST("particles/y/charged"), particle.y());
         } else {
           histos.fill(HIST("particles/eta/neutral"), particle.eta());
+          histos.fill(HIST("particles/y/neutral"), particle.y());
         }
+      } else {
+        histos.fill(HIST("particles/eta/undefined"), particle.eta());
+        histos.fill(HIST("particles/y/undefined"), particle.y());
       }
 
+      if (std::abs(particle.pt()) < ptCut.value) { // Fill the eta and rapidity histograms only for particles above the pt cut
+        for (int i = 0; i < Estimators::nEstimators; i++) {
+          if (!enabledEstimatorsArray[i]) {
+            continue;
+          }
+          if (heta[i][id]) {
+            heta[i][id]->Fill(particle.eta(), nMult[i]);
+          }
+          if (hy[i][id]) {
+            hy[i][id]->Fill(particle.y(), nMult[i]);
+          }
+        }
+      }
       if (std::abs(particle.y()) >= rapidityCut) {
         continue;
       }
 
       histos.fill(HIST("particles/vtx/x"), particle.vx());
       histos.fill(HIST("particles/vtx/y"), particle.vy());
-      histos.fill(HIST("particles/vtx/z"), particle.vz() - mcCollision.posZ());
+      histos.fill(HIST("particles/vtx/z"), particle.vz());
+      histos.fill(HIST("particles/vtx/deltax"), particle.vx() - mcCollision.posX());
+      histos.fill(HIST("particles/vtx/deltay"), particle.vy() - mcCollision.posY());
+      histos.fill(HIST("particles/vtx/deltaz"), particle.vz() - mcCollision.posZ());
 
       histos.fill(HIST("particles/yields"), id);
       for (int i = 0; i < Estimators::nEstimators; i++) {
         if (!enabledEstimatorsArray[i]) {
           continue;
         }
-        hpt[i][id]->Fill(particle.pt(), nMult[i]);
+        if (hpt[i][id]) {
+          hpt[i][id]->Fill(particle.pt(), nMult[i]);
+        }
         hyield[i][id]->Fill(nMult[i]);
       }
     }

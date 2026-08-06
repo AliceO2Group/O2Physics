@@ -14,6 +14,11 @@ o2physics_add_dpl_workflow(nuclei-batask
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(antitriton-analysis
+    SOURCES antitritonAnalysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(hypertritonanalysis
     SOURCES hypertritonAnalysis.cxx
     PUBLIC_LINK_LIBRARIES O2::DetectorsBase O2Physics::AnalysisCore

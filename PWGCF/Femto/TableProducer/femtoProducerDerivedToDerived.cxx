@@ -115,7 +115,7 @@ struct FemtoProducerDerivedToDerived {
     kinkBuilder.init(confKinkBuilder);
 
     if ((static_cast<int>(doprocessTracks) + static_cast<int>(doprocessTracksWithMass) + static_cast<int>(doprocessTracksLambdas) + static_cast<int>(doprocessLambdas) + static_cast<int>(doprocessTracksXis) + static_cast<int>(doprocessTracksOmegas) + static_cast<int>(doprocessTracksK0shorts) + static_cast<int>(doprocessTracksSigma) + static_cast<int>(doprocessTracksSigmaPlus)) > 1) {
-      LOG(fatal) << "Only one proccess function can be activated";
+      LOG(fatal) << "Only one proccess function can be activated!";
     }
   }
 
@@ -125,6 +125,7 @@ struct FemtoProducerDerivedToDerived {
     if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache)) {
       return;
     }
+    trackBuilder.reset(tracks);
     collisionBuilder.processCollision(col, collisionBuilderProducts);
     trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
   }
@@ -135,6 +136,7 @@ struct FemtoProducerDerivedToDerived {
     if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache)) {
       return;
     }
+    trackBuilder.reset(tracks);
     collisionBuilder.processCollision(col, collisionBuilderProducts);
     trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
   }
@@ -145,6 +147,7 @@ struct FemtoProducerDerivedToDerived {
     if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache)) {
       return;
     }
+    trackBuilder.reset(tracks);
     collisionBuilder.processCollision(col, collisionBuilderProducts);
     trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
     v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
@@ -156,6 +159,7 @@ struct FemtoProducerDerivedToDerived {
     if (v0Builder.collisionHasTooFewLambdas(col, lambdas, lambdaPartition, cache)) {
       return;
     }
+    trackBuilder.reset(tracks);
     collisionBuilder.processCollision(col, collisionBuilderProducts);
     v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
   }
@@ -166,6 +170,7 @@ struct FemtoProducerDerivedToDerived {
     if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || cascadeBuilder.collisionHasTooFewXis(col, xis, xiPartition, cache)) {
       return;
     }
+    trackBuilder.reset(tracks);
     collisionBuilder.processCollision(col, collisionBuilderProducts);
     trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
     cascadeBuilder.processXis(col, xis, tracks, xiPartition, trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
@@ -177,6 +182,7 @@ struct FemtoProducerDerivedToDerived {
     if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || cascadeBuilder.collisionHasTooFewOmegas(col, omegas, omegaPartition, cache)) {
       return;
     }
+    trackBuilder.reset(tracks);
     collisionBuilder.processCollision(col, collisionBuilderProducts);
     trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
     cascadeBuilder.processOmegas(col, omegas, tracks, omegaPartition, trackBuilder, cache, cascadeBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
@@ -188,6 +194,7 @@ struct FemtoProducerDerivedToDerived {
     if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || v0Builder.collisionHasTooFewK0shorts(col, k0shorts, k0shortPartition, cache)) {
       return;
     }
+    trackBuilder.reset(tracks);
     collisionBuilder.processCollision(col, collisionBuilderProducts);
     trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
     v0Builder.processK0shorts(col, k0shorts, tracks, k0shortPartition, trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
@@ -199,6 +206,7 @@ struct FemtoProducerDerivedToDerived {
     if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || kinkBuilder.collisionHasTooFewSigma(col, sigma, sigmaPartition, cache)) {
       return;
     }
+    trackBuilder.reset(tracks);
     collisionBuilder.processCollision(col, collisionBuilderProducts);
     trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
     kinkBuilder.processSigma(col, sigma, tracks, sigmaPartition, trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);
@@ -210,6 +218,7 @@ struct FemtoProducerDerivedToDerived {
     if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache) || kinkBuilder.collisionHasTooFewSigmaPlus(col, sigmaplus, sigmaPlusPartition, cache)) {
       return;
     }
+    trackBuilder.reset(tracks);
     collisionBuilder.processCollision(col, collisionBuilderProducts);
     trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
     kinkBuilder.processSigmaPlus(col, sigmaplus, tracks, sigmaPlusPartition, trackBuilder, cache, kinkBuilderProducts, trackBuilderProducts, collisionBuilderProducts);

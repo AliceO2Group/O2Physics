@@ -12,6 +12,7 @@
 /// \file createPCM.cxx
 /// \brief This code produces photon data tables.
 /// \author Daiki Sekihata <daiki.sekihata@cern.ch>, Tokyo
+/// \note legacy code, please use the photonconversionbuilder tasks.
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
@@ -35,6 +36,7 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -113,9 +115,9 @@ struct createPCM {
   Configurable<float> max_r_req_its{"max_r_req_its", 16.0, "min Rxy for V0 with ITS hits"};
   Configurable<float> min_r_tpconly{"min_r_tpconly", 32.0, "min Rxy for V0 with TPConly tracks"};
 
-  int mRunNumber;
-  float d_bz;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  int mRunNumber = 0;
+  float d_bz = 0;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::vertexing::DCAFitterN<2> fitter;
   // Material correction in the DCA fitter
@@ -213,7 +215,7 @@ struct createPCM {
     }
   }
 
-  template <typename TTrack>
+  template <o2::soa::is_iterator TTrack>
   bool reconstructV0(TTrack const& ele, TTrack const& pos)
   {
     bool isITSonly_pos = pos.hasITS() && !pos.hasTPC();
@@ -257,7 +259,7 @@ struct createPCM {
       return false;
     }
 
-    float xyz[3] = {0.f, 0.f, 0.f};
+    std::array<float, 3> xyz = {0.f, 0.f, 0.f};
     Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz, matCorr);
     float recalculatedVtxR = std::sqrt(std::pow(xyz[0], 2) + std::pow(xyz[1], 2));
     // LOGF(info, "recalculated vtx : x = %f , y = %f , z = %f", xyz[0], xyz[1], xyz[2]);
@@ -275,7 +277,7 @@ struct createPCM {
     return true;
   }
 
-  template <typename TCollision, typename TTrack>
+  template <o2::soa::is_iterator TCollision, o2::soa::is_iterator TTrack>
   void fillV0Table(TCollision const& collision, TTrack const& ele, TTrack const& pos, const bool filltable)
   {
     std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
@@ -323,7 +325,7 @@ struct createPCM {
       }
 
       registry.fill(HIST("hV0xy"), svpos[0], svpos[1]); // this should have worst resolution
-      float xyz_tmp[3] = {0.f, 0.f, 0.f};
+      std::array<float, 3> xyz_tmp = {0.f, 0.f, 0.f};
       Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz_tmp, matCorr);
       registry.fill(HIST("hV0xy_recalculated"), xyz_tmp[0], xyz_tmp[1]); // this should have good resolution
 
@@ -343,7 +345,7 @@ struct createPCM {
   }
 
   std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement = {0, {0, 1, 2}}; // no hit on 3 ITS ib layers.
-  template <typename TTrack>
+  template <o2::soa::is_iterator TTrack>
   bool isSelected(TTrack const& track)
   {
     if (track.pt() < minpt || std::abs(track.eta()) > maxeta) {
@@ -420,7 +422,7 @@ struct createPCM {
       // registry.fill(HIST("hEventCounter"), 1);
 
       int32_t min_sw = std::max(static_cast<int64_t>(0), collision.globalIndex());
-      int32_t max_sw = std::min(static_cast<int64_t>(min_sw + nsw), static_cast<int64_t>(collisions.size()));
+      int32_t max_sw = std::min(static_cast<int64_t>(min_sw + nsw), collisions.size());
 
       // LOGF(info, "orphan_posTracks.size() = %d, orphan_negTracks.size() = %d", orphan_posTracks.size(), orphan_negTracks.size());
       negTracks_sw.reserve(max_sw - min_sw);
@@ -477,7 +479,7 @@ struct createPCM {
         vec_cospa.reserve(max_sw - min_sw);
         for (int32_t isw = min_sw; isw < max_sw; isw++) {
           auto collision_in_sw = collisions.rawIteratorAt(isw);
-          if (cospa_map.find(std::make_tuple(pos.globalIndex(), ele.globalIndex(), collision_in_sw.globalIndex())) != cospa_map.end()) {
+          if (cospa_map.contains(std::make_tuple(pos.globalIndex(), ele.globalIndex(), collision_in_sw.globalIndex()))) {
             vec_cospa.emplace_back(cospa_map[std::make_tuple(pos.globalIndex(), ele.globalIndex(), collision_in_sw.globalIndex())]);
           } else {
             vec_cospa.emplace_back(-999.f);
@@ -516,7 +518,7 @@ struct createPCM {
           }
         } // end of pca_map loop
 
-        if (is_closest_v0 && used_pair_map.find(std::make_pair(pos.globalIndex(), ele.globalIndex())) == used_pair_map.end()) {
+        if (is_closest_v0 && !used_pair_map.contains(std::make_pair(pos.globalIndex(), ele.globalIndex()))) {
           // LOGF(info, "store : pos.globalIndex() = %d , ele.globalIndex() = %d , collision.globalIndex() = %d , cospa = %f , pca = %f", std::get<0>(key), std::get<1>(key), std::get<2>(key), value, pca_map[key]);
           fillV0Table(collision_most_prob, ele, pos, true);
           used_pair_map[std::make_pair(pos.globalIndex(), ele.globalIndex())] = true;
@@ -563,7 +565,7 @@ struct createPCM {
         if (ele.sign() < 0) {
           fillV0Table(collision, ele, pos, true);
         } else {
-          fillV0Table(collision, pos, ele, true);
+          fillV0Table(collision, pos, ele, true); // NOLINT(readability-suspicious-call-argument) in case the ele is actually positivley charged
         }
       }
     } // end of collision loop
@@ -571,8 +573,8 @@ struct createPCM {
   PROCESS_SWITCH(createPCM, processTrkCollAsso, "create V0s with track-to-collision associator", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<createPCM>(cfgc, TaskName{"v0-finder"})};
+    adaptAnalysisTask<createPCM>(context, TaskName{"v0-finder"})};
 }
