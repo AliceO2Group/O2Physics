@@ -178,7 +178,7 @@ struct HfTaskElectronWeakBoson {
   // pp
   // using TrackEle = o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::FullTracks, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCEl, o2::aod::pidTOFEl>>;
 
-  Filter eventFilter = (applySel8 ? (o2::aod::evsel::sel8 == true) : (o2::aod::evsel::sel8 == o2::aod::evsel::sel8)); // FIXME: both sides of overloaded operator are equivalent
+  Filter eventFilter = ifnode(as<bool>(applySel8), o2::aod::evsel::sel8 == true, true);
   Filter posZFilter = (nabs(o2::aod::collision::posZ) < vtxZ);
 
   Filter etafilter = (aod::track::eta < etaTrMax) && (aod::track::eta > etaTrMin);
@@ -508,10 +508,10 @@ struct HfTaskElectronWeakBoson {
       registry.fill(HIST("hInvMassZee"), centrality, track.sign() * charge, kfpIsoEle.GetPt(), invMassEE);
 
       // reco by KFparticle
-      const KFParticle* electronPairs[2] = {&kfpIsoEle, &kfpAssEle};
+      std::array<const KFParticle*, 2> electronPairs = {&kfpIsoEle, &kfpAssEle};
       KFParticle zeeKF;
       zeeKF.SetConstructMethod(kfConstructMethod);
-      zeeKF.Construct(electronPairs, 2);
+      zeeKF.Construct(electronPairs.data(), 2);
       // LOG(info) << "Invarimass cal by KF particle Chi2/NDF = " << zeeKF.GetChi2()/zeeKF.GetNDF();
       float const chiSqNdf = zeeKF.GetChi2() / zeeKF.GetNDF();
       if (zeeKF.GetNDF() < 1) {
@@ -617,10 +617,12 @@ struct HfTaskElectronWeakBoson {
     }
 
     if (enableMultiplicityFT0MAnalysis || enableMultiplicityPVAnalysis) {
-      if (enableMultiplicityFT0MAnalysis)
+      if (enableMultiplicityFT0MAnalysis) {
         centrality = collision.multFT0M();
-      if (enableMultiplicityPVAnalysis)
+      }
+      if (enableMultiplicityPVAnalysis) {
         centrality = collision.multNTracksPV();
+      }
       // LOG(info) << "raw mult PV = " << collision.multNTracksPV();
       // LOG(info) << "raw mult FT0M = " << collision.multFT0M();
       registry.fill(HIST("hMultPV"), collision.posZ(), collision.multNTracksPV());
