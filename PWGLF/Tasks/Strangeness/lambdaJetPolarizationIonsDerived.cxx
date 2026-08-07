@@ -149,7 +149,9 @@ enum CentEstimator {
   /* 3D Profiles: Angle vs Mass vs Centrality */                                                                           \
   X(FOLDER "/p3dRingObservableDeltaPhiVsMassVsCent", deltaPhiJet, v0LambdaLikeMass, centrality, ringObservable)            \
   X(FOLDER "/p3dRingObservableDeltaThetaVsMassVsCent", deltaThetaJet, v0LambdaLikeMass, centrality, ringObservable)        \
-  X(FOLDER "/pRingVsCentrality", centrality, ringObservable)
+  X(FOLDER "/pRingVsCentrality", centrality, ringObservable)                                                               \
+  X(FOLDER "/p2dRingObservableVsPxPy", v0px, v0py, ringObservable)                                                         \
+  X(FOLDER "/p2dRingObservableVsPzPx", v0pz, v0px, ringObservable)
 // (TODO: add counters for regular TH2Ds about centrality)
 
 // For leading particle
@@ -246,7 +248,14 @@ enum CentEstimator {
   /* =============================== */                                    \
   X(FOLDER "/QA/p2dPxStarDeltaPhiVsLambdaPt", deltaPhiJet, v0pt, PolStarX) \
   X(FOLDER "/QA/p2dPyStarDeltaPhiVsLambdaPt", deltaPhiJet, v0pt, PolStarY) \
-  X(FOLDER "/QA/p2dPzStarDeltaPhiVsLambdaPt", deltaPhiJet, v0pt, PolStarZ)
+  X(FOLDER "/QA/p2dPzStarDeltaPhiVsLambdaPt", deltaPhiJet, v0pt, PolStarZ) \
+  /* 2D vector-field profiles vs Lambda momentum plane */                  \
+  X(FOLDER "/QA/p2dPxStar_vsPxPy", v0px, v0py, PolStarX)                   \
+  X(FOLDER "/QA/p2dPyStar_vsPxPy", v0px, v0py, PolStarY)                   \
+  X(FOLDER "/QA/p2dPzStar_vsPxPy", v0px, v0py, PolStarZ)                   \
+  X(FOLDER "/QA/p2dPxStar_vsPzPx", v0pz, v0px, PolStarX)                   \
+  X(FOLDER "/QA/p2dPyStar_vsPzPx", v0pz, v0px, PolStarY)                   \
+  X(FOLDER "/QA/p2dPzStar_vsPzPx", v0pz, v0px, PolStarZ)
 
 // Apply the macros (notice I had to include the semicolon (";") after the function, so you don't need to
 // write that when calling this APPLY_HISTO_FILL. The code will look weird, but without this the compiler
@@ -295,24 +304,39 @@ struct lambdajetpolarizationionsderived {
   // Define histogram registries:
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // Master analysis switches
+  // Master analysis switches:
   Configurable<bool> analyseLambda{"analyseLambda", true, "process Lambda-like candidates"};
   Configurable<bool> analyseAntiLambda{"analyseAntiLambda", false, "process AntiLambda-like candidates"};
   Configurable<bool> analyseMagField{"analyseMagField", true, "analyse efficiency effects wrt magnetic field"}; // Older DerivedData lacks magField. "if constexpr (requires { collision.magField(); })" would only see the current header definition, so need a flag for retro-comp.
   // Configurable<bool> doPPAnalysis{"doPPAnalysis", false, "if in pp, set to true. Default is HI"};
 
+  // Per-family histogram switches:
+  // (Each family books >100 histograms, so it is necessary to keep some of these switches off to avoid the HistogramRegistry limit)
+  struct : ConfigurableGroup {
+    std::string prefix = "familySwitches"; // JSON group name
+    Configurable<bool> doFamilyRing{"doFamilyRing", true, "Book and fill the 'Ring' family (no additional cuts). Keep this on for most passes."};
+    Configurable<bool> doFamilyRingKinematicCuts{"doFamilyRingKinematicCuts", false, "Book and fill the 'RingKinematicCuts' family (Lambda kinematic cuts applied)."};
+    Configurable<bool> doFamilyJetKinematicCuts{"doFamilyJetKinematicCuts", false, "Book and fill the 'JetKinematicCuts' family (jet kinematic cuts applied)."};
+    Configurable<bool> doFamilyJetAndLambdaKinematicCuts{"doFamilyJetAndLambdaKinematicCuts", false, "Book and fill the 'JetAndLambdaKinematicCuts' family (both cuts applied)."};
+  } familySwitches;
+
   // Centrality:
   Configurable<int> centralityEstimator{"centralityEstimator", kCentFT0M, "Run 3 centrality estimator (0:CentFT0C, 1:CentFT0M, 2:CentFV0A)"}; // Default is FT0M
+  Configurable<float> maxZVtxPosition{"maxZVtxPosition", 10., "max Z vtx position [cm]"}; // An additional post-processing cut after derived data was written. Same default as lambdaJetPolarizationIons.cxx producer
 
-  // QAs that purposefully break the analysis
+  // QAs that purposefully "break" the analysis
   // -- All of these tests should give us zero signal if the source is truly Lambda Polarization from vortices
-  Configurable<bool> forcePolSignQA{"forcePolSignQA", false, "force antiLambda decay constant to be positive: should kill all the signal, if any. For QA"};
-  Configurable<bool> forcePerpToJet{"forcePerpToJet", false, "force jet direction to be perpendicular to jet estimator. For QA"};
-  Configurable<bool> forceJetDirectionSmudge{"forceJetDirectionSmudge", false, "fluctuate jet direction by 10% of R around original axis. For QA (tests sensibility)"};
-  Configurable<bool> forceRandJet{"forceRandJet", false, "makes jet direction random. A QA for AEE fake signal and its removal"};
-  Configurable<bool> forcePreviousJet{"forcePreviousJet", false, "uses previous event's jet direction instead of a random sample. A baseline for fake signal removal"};
-  Configurable<bool> forceDatalikeJet{"forceDatalikeJet", false, "A compromise between forceRandJet and forcePreviousJet. Parameterized distribution from data"};
-  Configurable<int>  nProxyResamples{"nProxyResamples", 1, "The amount of resamplings of jet direction per event. Use ONLY for forceRandJet and forceDatalikeJet"};
+  struct : ConfigurableGroup {
+    std::string prefix = "fakePolSwitches"; // JSON group name
+    Configurable<bool> forcePolSignQA{"forcePolSignQA", false, "force antiLambda decay constant to be positive: should kill all the signal, if any. For QA"};
+    Configurable<bool> forcePerpToJet{"forcePerpToJet", false, "force jet direction to be perpendicular to jet estimator. For QA"};
+    Configurable<bool> forceJetDirectionSmudge{"forceJetDirectionSmudge", false, "fluctuate jet direction by 10% of R around original axis. For QA (tests sensibility)"};
+    Configurable<bool> forceRandJet{"forceRandJet", false, "makes jet direction random. A QA for AEE fake signal and its removal"};
+    Configurable<bool> forcePreviousJet{"forcePreviousJet", false, "uses previous event's jet direction instead of a random sample. A baseline for fake signal removal"};
+    Configurable<bool> forceDatalikeJet{"forceDatalikeJet", false, "A compromise between forceRandJet and forcePreviousJet. Parameterized distribution from data"};
+    Configurable<int>  nProxyResamples{"nProxyResamples", 1, "The amount of resamplings of jet direction per event. Use ONLY for forceRandJet and forceDatalikeJet"};
+  } fakePolSwitches;
+
   // Configurable<float> jetRForSmudging{"jetRForSmudging", 0.4, "QA quantity: the chosen R scale for the jet direction smudge"}; // Superseeded by jetR: kept the same scale in analysis and QA
   Configurable<float> jetR{"jetR", 0.4f, "Radius of the jet"}; // Provide manually, please.
   Configurable<float> minLeadParticlePt{"minLeadParticlePt", 2.0f, "Minimum Pt for a lead track to be considered a valid proxy for a jet (may be more restrictive than TableProducer)"};
@@ -326,7 +350,12 @@ struct lambdajetpolarizationionsderived {
     std::string prefix = "axisConfigurations"; // JSON group name
     ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for analysis"};
     ConfigurableAxis axisPtCoarseQA{"axisPtCoarseQA", {VARIABLE_WIDTH, 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 7.0f, 10.0f, 15.0f}, "pt axis for QA"};
-    ConfigurableAxis axisLambdaMass{"axisLambdaMass", {450, 1.08f, 1.15f}, "Lambda mass in GeV/c"}; // Default is {200, 1.101f, 1.131f}
+    ConfigurableAxis axisLambdaMass{"axisLambdaMass", {450, 1.08f, 1.15f}, "#Lambda mass in GeV/c"}; // Default is {200, 1.101f, 1.131f}
+
+    // Symmetric momentum-plane axes for the vector-field / ring 2D profiles:
+    ConfigurableAxis axisLambdaPx{"axisLambdaPx", {40, -3.0f, 3.0f}, "#Lambda p_{x} (GeV/c)"};
+    ConfigurableAxis axisLambdaPy{"axisLambdaPy", {40, -3.0f, 3.0f}, "#Lambda p_{y} (GeV/c)"};
+    ConfigurableAxis axisLambdaPz{"axisLambdaPz", {40, -4.0f, 4.0f}, "#Lambda p_{z} (GeV/c)"};
 
     // Jet axes:
     // ConfigurableAxis axisLeadingParticlePt{"axisLeadingParticlePt", {100, 0.f, 200.f}, "Leading particle p_{T} (GeV/c)"}; // Simpler version!
@@ -463,6 +492,24 @@ struct lambdajetpolarizationionsderived {
       histos.add((folder + "/QA/p2dPxStarDeltaPhiVsLambdaPt").c_str(), "<P_{#Lambda}^{*}>_{x} vs #Delta#varphi_{jet} vs #it{p}_{T}^{#Lambda};#Delta#varphi_{jet};#it{p}_{T}^{#Lambda} (GeV/c);<P_{#Lambda}^{*}>_{x}", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisPtSigExtract});
       histos.add((folder + "/QA/p2dPyStarDeltaPhiVsLambdaPt").c_str(), "<P_{#Lambda}^{*}>_{y} vs #Delta#varphi_{jet} vs #it{p}_{T}^{#Lambda};#Delta#varphi_{jet};#it{p}_{T}^{#Lambda} (GeV/c);<P_{#Lambda}^{*}>_{y}", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisPtSigExtract});
       histos.add((folder + "/QA/p2dPzStarDeltaPhiVsLambdaPt").c_str(), "<P_{#Lambda}^{*}>_{z} vs #Delta#varphi_{jet} vs #it{p}_{T}^{#Lambda};#Delta#varphi_{jet};#it{p}_{T}^{#Lambda} (GeV/c);<P_{#Lambda}^{*}>_{z}", kTProfile2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisPtSigExtract});
+
+      // ===============================
+      // Vector-field profiles: <P*_x,y,z> vs Lambda momentum plane:
+      // (a companion code plots these as a vector field)
+      // ===============================
+      histos.add((folder + "/QA/p2dPxStar_vsPxPy").c_str(), "<P_{#Lambda}^{*}>_{x} vs (p_{x}^{#Lambda},p_{y}^{#Lambda});p_{x}^{#Lambda} (GeV/c);p_{y}^{#Lambda} (GeV/c);<P_{#Lambda}^{*}>_{x}", kTProfile2D, {axisConfigurations.axisLambdaPx, axisConfigurations.axisLambdaPy});
+      histos.add((folder + "/QA/p2dPyStar_vsPxPy").c_str(), "<P_{#Lambda}^{*}>_{y} vs (p_{x}^{#Lambda},p_{y}^{#Lambda});p_{x}^{#Lambda} (GeV/c);p_{y}^{#Lambda} (GeV/c);<P_{#Lambda}^{*}>_{y}", kTProfile2D, {axisConfigurations.axisLambdaPx, axisConfigurations.axisLambdaPy});
+      histos.add((folder + "/QA/p2dPzStar_vsPxPy").c_str(), "<P_{#Lambda}^{*}>_{z} vs (p_{x}^{#Lambda},p_{y}^{#Lambda}) [colormap];p_{x}^{#Lambda} (GeV/c);p_{y}^{#Lambda} (GeV/c);<P_{#Lambda}^{*}>_{z}", kTProfile2D, {axisConfigurations.axisLambdaPx, axisConfigurations.axisLambdaPy});
+
+      histos.add((folder + "/QA/p2dPxStar_vsPzPx").c_str(), "<P_{#Lambda}^{*}>_{x} vs (p_{z}^{#Lambda},p_{x}^{#Lambda});p_{z}^{#Lambda} (GeV/c);p_{x}^{#Lambda} (GeV/c);<P_{#Lambda}^{*}>_{x}", kTProfile2D, {axisConfigurations.axisLambdaPz, axisConfigurations.axisLambdaPx});
+      histos.add((folder + "/QA/p2dPyStar_vsPzPx").c_str(), "<P_{#Lambda}^{*}>_{y} vs (p_{z}^{#Lambda},p_{x}^{#Lambda}) [colormap];p_{z}^{#Lambda} (GeV/c);p_{x}^{#Lambda} (GeV/c);<P_{#Lambda}^{*}>_{y}", kTProfile2D, {axisConfigurations.axisLambdaPz, axisConfigurations.axisLambdaPx});
+      histos.add((folder + "/QA/p2dPzStar_vsPzPx").c_str(), "<P_{#Lambda}^{*}>_{z} vs (p_{z}^{#Lambda},p_{x}^{#Lambda});p_{z}^{#Lambda} (GeV/c);p_{x}^{#Lambda} (GeV/c);<P_{#Lambda}^{*}>_{z}", kTProfile2D, {axisConfigurations.axisLambdaPz, axisConfigurations.axisLambdaPx});
+
+      // ===============================
+      // Ring observable, single scalar 2D profile:
+      // ===============================
+      histos.add((folder + "/p2dRingObservableVsPxPy").c_str(), "<#it{R}> vs (p_{x}^{#Lambda},p_{y}^{#Lambda});p_{x}^{#Lambda} (GeV/c);p_{y}^{#Lambda} (GeV/c);<#it{R}>", kTProfile2D, {axisConfigurations.axisLambdaPx, axisConfigurations.axisLambdaPy});
+      histos.add((folder + "/p2dRingObservableVsPzPx").c_str(), "<#it{R}> vs (p_{z}^{#Lambda},p_{x}^{#Lambda});p_{z}^{#Lambda} (GeV/c);p_{x}^{#Lambda} (GeV/c);<#it{R}>", kTProfile2D, {axisConfigurations.axisLambdaPz, axisConfigurations.axisLambdaPx});
 
       // TProfiles with correct error bars::
       // -- TProfiles will handle the error estimate of the Ring Observable via the variance, even though
@@ -634,10 +681,10 @@ struct lambdajetpolarizationionsderived {
       histos.add((folder + "/DeltaMethod/h2dMassVsDeltaComp").c_str(), "Delta Method vs Mass;m_{p#pi} (GeV/c^{2});Component", kTH2D, {axisConfigurations.axisLambdaMassSigExtract, axisConfigurations.axisDeltaComponents});
     };
     // Execute local lambda to register histogram families:
-    addRingObservableFamily("Ring");
-    addRingObservableFamily("RingKinematicCuts");
-    addRingObservableFamily("JetKinematicCuts");
-    addRingObservableFamily("JetAndLambdaKinematicCuts");
+    if (familySwitches.doFamilyRing) addRingObservableFamily("Ring");
+    if (familySwitches.doFamilyRingKinematicCuts) addRingObservableFamily("RingKinematicCuts");
+    if (familySwitches.doFamilyJetKinematicCuts) addRingObservableFamily("JetKinematicCuts");
+    if (familySwitches.doFamilyJetAndLambdaKinematicCuts) addRingObservableFamily("JetAndLambdaKinematicCuts");
 
     histos.add("IntegratedCuts/pRingCuts", "pRingCuts; ;<#it{R}>", kTProfile, {{4, 0, 4}});
     histos.get<TProfile>(HIST("IntegratedCuts/pRingCuts"))->GetXaxis()->SetBinLabel(1, "All #Lambda");
@@ -916,7 +963,8 @@ struct lambdajetpolarizationionsderived {
     // Integrated observable for events with NLambda+NAntiLambda V0s per event
     // (an interesting measurement of correlation between <R> and Lambda-like V0s multiplicity. A proxy of covariance)
     // (calculated for leading jets only)
-    histos.add("IntegratedCuts/pRingVsNV0s", "pRingVsNV0s; N_{#Lambda}+N_{#bar{#Lambda}};<#it{R}>", kTProfile, {{20, 0, 20}});
+    histos.add("IntegratedCuts/pRingVsNV0s", "pRingVsNV0s; N_{#Lambda}+N_{#bar{#Lambda}};<#it{R}>", kTProfile, {{20, 0, 20}}); // See hNV0sVsCentrality below for the correlation between number of V0s and centrality
+    histos.add("hNV0sVsCentrality", "hNV0sVsCentrality; N_{#Lambda}+N_{#bar{#Lambda}};Centrality (%)", kTH2D, {{20, 0, 20}, axisConfigurations.axisCentrality});
 
     // Proxy Eta QA:
     histos.add("JetKinematicsQA/hLeadJetEta", "hLeadJetEta", kTH1D, {axisConfigurations.axisEta});
@@ -969,12 +1017,12 @@ struct lambdajetpolarizationionsderived {
   inline void applyProxyDistortion(bool& hasValidProxy, float& pt, float& eta, float& phi, XYZVector& unitVec, 
                             float minPtThreshold, bool& cacheHadProxy, float& cacheEta, float& cachePhi,
                             std::discrete_distribution<int>& etaDist, std::discrete_distribution<int>& phiDist, std::mt19937& rng){
-    if (!forcePerpToJet && !forceJetDirectionSmudge && !forceRandJet && !forcePreviousJet && !forceDatalikeJet)[[likely]] {
+    if (!fakePolSwitches.forcePerpToJet && !fakePolSwitches.forceJetDirectionSmudge && !fakePolSwitches.forceRandJet && !fakePolSwitches.forcePreviousJet && !fakePolSwitches.forceDatalikeJet)[[likely]] {
       return; // Skip this function if none of the modifications are actually being executed!
     }
 
     // QA block -- Purposefully changing the jet direction (should kill signal, if any):
-    if (forcePerpToJet) {
+    if (fakePolSwitches.forcePerpToJet) {
       // First, we build a vector perpendicular to the jet by picking an arbitrary vector not parallel to the jet
       XYZVector perpVec;
       if (std::abs(unitVec.X()) > 0.99) {
@@ -987,7 +1035,7 @@ struct lambdajetpolarizationionsderived {
       // We will use Rodrigues' rotation formula (v_rot = v*cos(randomAngle) + (Jet \cross v)*sin(randomAngle))
       const double randomAngle = randomGen.Uniform(0., o2::constants::math::TwoPI);
       unitVec = perpVec * std::cos(randomAngle) + unitVec.Cross(perpVec) * std::sin(randomAngle);
-    } else if (forceJetDirectionSmudge) {
+    } else if (fakePolSwitches.forceJetDirectionSmudge) {
       // Smear the jet direction by a small random angle to estimate sensitivity to
       // jet axis uncertainty. We rotate the jet axis by angle theta around a uniformly
       // random perpendicular axis -- this is isotropic and coordinate-independent,
@@ -1022,7 +1070,7 @@ struct lambdajetpolarizationionsderived {
       // But the last term vanishes because smearAxis is perpendicular to unitVec:
       unitVec = unitVec * std::cos(smearAngle) + smearAxis.Cross(unitVec) * std::sin(smearAngle);
       // Also, rotation preserves the norm, so no re-normalisation is needed for this to be a unit vector.
-    } else if (forceRandJet) {
+    } else if (fakePolSwitches.forceRandJet) {
       // This randomization was made different for each proxy (LeadP, LeadJet, SubLeadJet): bear that in mind!
       // 1) Uniformly sample cos(theta) and phi to ensure an isotropic distribution (could also use TRandom::Sphere as well, but may be slower)
         // Notice that uniformly sampling theta would make the distribution non-isotropic, thus we use cos(theta)!
@@ -1032,7 +1080,7 @@ struct lambdajetpolarizationionsderived {
 
       // 2) Construct the new random unit vector (there is no need to use the magnitude at all! We only need direction here):
       unitVec = XYZVector(sinTheta * std::cos(randPhi), sinTheta * std::sin(randPhi), cosTheta);
-    } else if (forcePreviousJet) { // Use the jet direction from the immediately preceding collision. The simplest event mixing
+    } else if (fakePolSwitches.forcePreviousJet) { // Use the jet direction from the immediately preceding collision. The simplest event mixing
       const bool usableProxy = cacheHadProxy;
       if (usableProxy) {
         const double inverseCoshEta = 1.0 / std::cosh(cacheEta);
@@ -1049,7 +1097,7 @@ struct lambdajetpolarizationionsderived {
       // Current event cannot use previous-jet mixing if previous event lacked a proxy
       if (!usableProxy)
         hasValidProxy = false;
-    } else if (forceDatalikeJet){ // A compromise between forceRandJet and forcePreviousJet, using data-like weights for sampling jets
+    } else if (fakePolSwitches.forceDatalikeJet){ // A compromise between forceRandJet and forcePreviousJet, using data-like weights for sampling jets
       const float etaMin = -0.92f;
       const float etaBinWidth = 0.04f;
       constexpr float phiBinWidth = constants::math::TwoPI / 50.f;
@@ -1071,7 +1119,7 @@ struct lambdajetpolarizationionsderived {
     // Recalculating pT, phi and eta after distortions:
     // (without this, later kinematic selections make no sense at all! In the forceRandJet case, the ring observable would always sum zero)
     if (hasValidProxy) { // If you don't check this flag here, the "if (!usableProxy)" change would be silently overwritten
-      if (!forcePreviousJet && !forceDatalikeJet){ // In these two cases, we already know the eta and phi variables. No need to recompute
+      if (!fakePolSwitches.forcePreviousJet && !fakePolSwitches.forceDatalikeJet){ // In these two cases, we already know the eta and phi variables. No need to recompute
         // Calculating total jet momentum, which should be preserved, just to recalculate the new jet Pt:
         const double mag = pt * std::cosh(eta);
         
@@ -1112,11 +1160,15 @@ struct lambdajetpolarizationionsderived {
                                o2::aod::RingLeadPs const& leadPs)
   {
     PrevJetCache prevJetCache{}; // Initializing struct before the collisions loop. This zero-initializes, so bools start as false
+                                 // This should not be used along nProxyResamples > 1, as it does not apply to that case.
 
-    for (int idxResampling = 0; idxResampling < nProxyResamples; idxResampling++){ // resampling loop for forceRandJet and forceDatalikeJet
+    for (int idxResampling = 0; idxResampling < fakePolSwitches.nProxyResamples; idxResampling++){ // resampling loop for forceRandJet and forceDatalikeJet
     for (auto const& collision : collisions) {
+      if (std::abs(collision.zvtx()) > maxZVtxPosition) // Additional Zvtx filtering
+        continue;
+
       const auto collId = collision.globalIndex(); // The self-index accessor
-      const double centrality = getCentrality(collision);
+      const float centrality = getCentrality(collision);
       
       // Fetch magnetic field only if DataModel is in the latest version:
       float magField = 1.f; // Used this dummy for backwards compatibility, under the reasonable assumption that the field points always in the same *direction* in the used runs
@@ -1134,7 +1186,11 @@ struct lambdajetpolarizationionsderived {
       //  that collision, and a collision may not be filled when the jets
       //  table is. Be mindful of that!)
       // 1) Require at least one V0:
-      if (!v0sInColl.size())
+      const int nLambdaLikeV0s = v0sInColl.size(); // Caching this variable, as it will be reused in the loop
+                                                   // In the latest datamodel format, only unambiguous V0s (Lambda XOR antiLambda) are saved,
+                                                   // so the number of V0s in the collision table is the number of Lambdas/antiLambda identified
+                                                   // by the table producer.
+      if (!nLambdaLikeV0s)
         continue;
 
       // 2) We require at least one leading particle:
@@ -1181,7 +1237,7 @@ struct lambdajetpolarizationionsderived {
 
         // Fill distorted-proxy QA histograms:
         // Do not gate on the post-distortion hasValidLeadingP (a pT cut) value here!
-        if (!forcePreviousJet || hadPreviousProxy){
+        if (!fakePolSwitches.forcePreviousJet || hadPreviousProxy){
           histos.fill(HIST("JetKinematicsQA/hLeadPEta"), leadPEta);
           histos.fill(HIST("JetKinematicsQA/hLeadPPhi"), leadPPhi);
           histos.fill(HIST("JetKinematicsQA/hJetCounterPtLeadP"), leadPPt);
@@ -1235,7 +1291,7 @@ struct lambdajetpolarizationionsderived {
 
         // Fill distorted-proxy QA histograms:
         // Do not gate on the post-distortion hasValidLeadingJet (a pT cut) value here!
-        if (!forcePreviousJet || hadPreviousProxy) {
+        if (!fakePolSwitches.forcePreviousJet || hadPreviousProxy) {
           histos.fill(HIST("JetKinematicsQA/hLeadJetEta"), leadingJetEta);
           histos.fill(HIST("JetKinematicsQA/hLeadJetPhi"), leadingJetPhi);
           histos.fill(HIST("JetKinematicsQA/hJetCounterPtJet"), leadingJetPt);
@@ -1259,7 +1315,7 @@ struct lambdajetpolarizationionsderived {
        
         // Fill distorted-proxy QA histograms:
         // Do not gate on the post-distortion hasValidSubJet (a pT cut) value here!
-        if (!forcePreviousJet || hadPreviousProxy) {
+        if (!fakePolSwitches.forcePreviousJet || hadPreviousProxy) {
           histos.fill(HIST("JetKinematicsQA/hSubLeadJetEta"), subleadingJetEta);
           histos.fill(HIST("JetKinematicsQA/hSubLeadJetPhi"), subleadingJetPhi);
           histos.fill(HIST("JetKinematicsQA/hJetCounterPt2ndJet"), subleadingJetPt);
@@ -1287,30 +1343,31 @@ struct lambdajetpolarizationionsderived {
       // const bool subJetEtaStrictNeg = !subJetEtaPos && subJetEtaStrict;
 
       // Fetching number of Lambda-like V0s in collision (must be known before full loop, to fill "pRingVsNV0s"):
-      int NLambdaLikeV0s = 0;
-      for (auto const& v0 : v0sInColl) {
-        if (v0.isLambda() ^ v0.isAntiLambda()){ // XOR (only the non-ambiguous candidates)
-          NLambdaLikeV0s++;
-        }
-      }
+      // int nLambdaLikeV0s = 0;
+      // for (auto const& v0 : v0sInColl) {
+      //   if (v0.isLambda() ^ v0.isAntiLambda()){ // XOR (only the non-ambiguous candidates)
+      //     nLambdaLikeV0s++;
+      //   }
+      // }
+      // Code above was superseeded: new datamodel does not store ambiguous candidates!
+      // The new getter comes at the very start of processPolarizationData() now.
 
       // Initialize delta method accumulators:
       EventDeltaTracker trackRing, trackRingKinCuts, trackJetKinCuts, trackJetLambdaKinCuts;
       for (auto const& v0 : v0sInColl) {
-        const bool isLambda = v0.isLambda();
-        const bool isAntiLambda = v0.isAntiLambda();
-        // For now, removing the ambiguous candidates from the analysis. Derived data permits handling both.
-        // (From Podolanski-Armenteros plots, the population of ambiguous is ~2% without TOF, and without
+        const bool isLambda = v0.isLambda(); // true: is a Lambda. false: is an antiLambda.
+        // For now, removing the ambiguous candidates from the analysis. New datamodel does NOT save ambiguous candidates.
+        // (From Podolanski-Armenteros plots, the population of ambiguous is ~3.8% without TOF, and without
         //  competing mass rejection. From those, ~99% seem to be K0s, so no real gain in considering the
         //  ambiguous candidates in the analysis)
-        if (isLambda && isAntiLambda)
-          continue;
+        // const bool isAntiLambda = v0.isAntiLambda(); // No longer used!
+        // if (isLambda && isAntiLambda) continue;
         const float v0pt = v0.v0Pt();
         const float v0eta = v0.v0Eta();
         const float v0phi = v0.v0Phi();
         const float dcaDau = v0.dcaV0Daughters();
 
-        float v0LambdaLikeMass = 0; // Initialized just to catch any stray behavior
+        float v0LambdaLikeMass = v0.massV0();
         float protonLikePt = 0;
         float protonLikeEta = 0;
         float protonLikePhi = 0;
@@ -1319,16 +1376,14 @@ struct lambdajetpolarizationionsderived {
         if (isLambda) {
           if (!analyseLambda)
             continue;
-          v0LambdaLikeMass = v0.massLambda();
           protonLikePt = v0.posPt();
           protonLikeEta = v0.posEta();
           protonLikePhi = v0.posPhi();
           protonLikeDCADauToPV = v0.dcaPosToPV();
           pionLikeDCADauToPV = v0.dcaNegToPV();
-        } else if (isAntiLambda) { // (TODO: add a split histogram where you consider Lambda and AntiLambda polarization separately?)
+        } else { // Guaranteed to be an antiLambda candidate, not an ambiguous candidate
           if (!analyseAntiLambda)
             continue;
-          v0LambdaLikeMass = v0.massAntiLambda();
           protonLikePt = v0.negPt();
           protonLikeEta = v0.negEta();
           protonLikePhi = v0.negPhi();
@@ -1349,6 +1404,12 @@ struct lambdajetpolarizationionsderived {
         XYZVector lambdaLike3Vec = lambdaLike4Vec.Vect();
         auto lambdaLikeUnit3Vec = lambdaLike3Vec.Unit();
         XYZVector protonLikeStarUnit3Vec = protonLike4VecStar.Vect().Unit();
+
+        // Lab-frame Lambda momentum components -- Not for polarization, but for actual momenta plotting in XY and ZX planes:
+        // (Used for the (px,py) and (pz,px) polarization vector-field / ring 2D profiles)
+        const float v0px = lambdaLike3Vec.X();
+        const float v0py = lambdaLike3Vec.Y();
+        const float v0pz = lambdaLike3Vec.Z();
 
         // Calculating fake polarization ("negative helicity problem") estimator:
         // (this estimator is calculated outside of any gate, as it does not depend on jet proxy used)
@@ -1382,7 +1443,7 @@ struct lambdajetpolarizationionsderived {
             histos.fill(HIST("HelicityEfficiencyQA/hLambdaMassDecayGeomRight"), v0LambdaLikeMass);
           else if (isLambda && !positiveGeom)
             histos.fill(HIST("HelicityEfficiencyQA/hLambdaMassDecayGeomLeft"), v0LambdaLikeMass);
-          else if (isAntiLambda && positiveGeom)
+          else if (!isLambda && positiveGeom)
             histos.fill(HIST("HelicityEfficiencyQA/hAntiLambdaMassDecayGeomRight"), v0LambdaLikeMass);
           else
             histos.fill(HIST("HelicityEfficiencyQA/hAntiLambdaMassDecayGeomLeft"), v0LambdaLikeMass);
@@ -1415,7 +1476,7 @@ struct lambdajetpolarizationionsderived {
           XYZVector crossLeadP = leadPUnitVec.Cross(lambdaLike3Vec);
           ringObservableLeadP = protonLikeStarUnit3Vec.Dot(crossLeadP) / crossLeadP.R();
           // Adding the prefactor related to the CP-violating decay (decay constants have different signs)
-          if (!forcePolSignQA)
+          if (!fakePolSwitches.forcePolSignQA)
             ringObservableLeadP *= (isLambda) ? polPrefactorLambda : polPrefactorAntiLambda;
           else
             ringObservableLeadP *= (isLambda) ? polPrefactorLambda : -1.0 * polPrefactorAntiLambda;
@@ -1442,7 +1503,7 @@ struct lambdajetpolarizationionsderived {
           XYZVector cross = leadingJetUnitVec.Cross(lambdaLike3Vec);
           ringObservable = protonLikeStarUnit3Vec.Dot(cross) / cross.R();
           // Adding prefactor
-          if (!forcePolSignQA)
+          if (!fakePolSwitches.forcePolSignQA)
             ringObservable *= (isLambda) ? polPrefactorLambda : polPrefactorAntiLambda;
           else
             ringObservable *= (isLambda) ? polPrefactorLambda : -1.0 * polPrefactorAntiLambda;
@@ -1485,7 +1546,7 @@ struct lambdajetpolarizationionsderived {
           XYZVector cross2ndJet = subJetUnitVec.Cross(lambdaLike3Vec);
           ringObservable2ndJet = protonLikeStarUnit3Vec.Dot(cross2ndJet) / cross2ndJet.R();
           // Adding prefactor
-          if (!forcePolSignQA)
+          if (!fakePolSwitches.forcePolSignQA)
             ringObservable2ndJet *= (isLambda) ? polPrefactorLambda : polPrefactorAntiLambda;
           else
             ringObservable2ndJet *= (isLambda) ? polPrefactorLambda : -1.0 * polPrefactorAntiLambda;
@@ -1502,7 +1563,7 @@ struct lambdajetpolarizationionsderived {
           PolStarX = polPrefactorLambda * protonLikeStarUnit3Vec.X();
           PolStarY = polPrefactorLambda * protonLikeStarUnit3Vec.Y();
           PolStarZ = polPrefactorLambda * protonLikeStarUnit3Vec.Z();
-        } else if (isAntiLambda) {
+        } else {
           PolStarX = polPrefactorAntiLambda * protonLikeStarUnit3Vec.X();
           PolStarY = polPrefactorAntiLambda * protonLikeStarUnit3Vec.Y();
           PolStarZ = polPrefactorAntiLambda * protonLikeStarUnit3Vec.Z();
@@ -1512,31 +1573,42 @@ struct lambdajetpolarizationionsderived {
 
         // Fill ring histograms: (1D, lambda 2D correlations and jet 2D correlations):
         if (hasValidLeadingP) {
-          RING_OBSERVABLE_LEADP_FILL_LIST(APPLY_HISTO_FILL, "Ring")       // Notice the usage of macros! If you change the variable names, this WILL break the code!
-                                                                          // No, there should NOT be any ";" here! Read the macro definition for an explanation
+          if (familySwitches.doFamilyRing) {
+            RING_OBSERVABLE_LEADP_FILL_LIST(APPLY_HISTO_FILL, "Ring")       // Notice the usage of macros! If you change the variable names, this WILL break the code!
+                                                                            // No, there should NOT be any ";" here! Read the macro definition for an explanation
+          }
           histos.fill(HIST("IntegratedCuts/pRingCutsLeadingP"), 0, ringObservableLeadP); // First bin of comparison
           histos.fill(HIST("IntegratedCuts/hCountCutsLeadingP"), 0);
 
           // Filling checks that rely on Eta>0 or Eta<0 checks for V0 and LeadingP eta:
-          RING_OBSERVABLE_LEADP_ETA_SPLIT_FILL_LIST("Ring", leadPEtaPos, lambdaEtaPos);
+          if (familySwitches.doFamilyRing) {
+            RING_OBSERVABLE_LEADP_ETA_SPLIT_FILL_LIST("Ring", leadPEtaPos, lambdaEtaPos);
+          }
         }
-        POLARIZATION_PROFILE_FILL_LIST(APPLY_HISTO_FILL, "Ring")
+        if (familySwitches.doFamilyRing) {
+          POLARIZATION_PROFILE_FILL_LIST(APPLY_HISTO_FILL, "Ring")
+        }
 
         // Binary search using the pre-fetched axes for delta method of error bar estimation:
         int binPt = 0; // Dummy declarations
         int binMass = 0;
         int binDTheta = 0;
         if (hasValidLeadingJet) {
-          RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "Ring")
+          if (familySwitches.doFamilyRing) {
+            RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "Ring")
+          }
           histos.fill(HIST("IntegratedCuts/pRingCuts"), 0, ringObservable);
           histos.fill(HIST("IntegratedCuts/hCountCuts"), 0);
-          histos.fill(HIST("IntegratedCuts/pRingVsNV0s"), NLambdaLikeV0s, ringObservable);
+          histos.fill(HIST("IntegratedCuts/pRingVsNV0s"), nLambdaLikeV0s, ringObservable);
+          histos.fill(HIST("hNV0sVsCentrality"), nLambdaLikeV0s, centrality);
 
           // Properly fetching values as they are needed:
           binPt = mAxisPt->FindBin(v0pt);
           binMass = mAxisMass->FindBin(v0LambdaLikeMass);
           binDTheta = mAxisDTheta->FindBin(deltaThetaJet);
-          trackRing.addV0(ringObservable, binPt, binMass, binDTheta);
+          if (familySwitches.doFamilyRing) {
+            trackRing.addV0(ringObservable, binPt, binMass, binDTheta);
+          }
 
           // Measuring the AEE differentially (azimuthal efficiency effect, which causes different V0 topologies to be enhanced/suppressed):
           if (isLambda)
@@ -1573,7 +1645,9 @@ struct lambdajetpolarizationionsderived {
           histos.fill(HIST("HelicityEfficiencyQA/pRingOverJetZcomponent_VsJetEtaVsPhiStar"), leadingJetEta, phiStar, ringObservableOverJetZ);
         }
         if (hasValidSubJet) {
-          RING_OBSERVABLE_2NDJET_FILL_LIST(APPLY_HISTO_FILL, "Ring")
+          if (familySwitches.doFamilyRing) {
+            RING_OBSERVABLE_2NDJET_FILL_LIST(APPLY_HISTO_FILL, "Ring")
+          }
           histos.fill(HIST("IntegratedCuts/pRingCutsSubLeadingJet"), 0, ringObservable2ndJet);
           histos.fill(HIST("IntegratedCuts/hCountCutsSubLeadingJet"), 0);
         }
@@ -1735,22 +1809,34 @@ struct lambdajetpolarizationionsderived {
         // Extra kinematic criteria for Lambda candidates (removes polarization background):
         if (kinematicLambdaCheck) {
           if (hasValidLeadingP) {
-            RING_OBSERVABLE_LEADP_FILL_LIST(APPLY_HISTO_FILL, "RingKinematicCuts")
+            if (familySwitches.doFamilyRingKinematicCuts) {
+              RING_OBSERVABLE_LEADP_FILL_LIST(APPLY_HISTO_FILL, "RingKinematicCuts")
+            }
             histos.fill(HIST("IntegratedCuts/pRingCutsLeadingP"), 1, ringObservableLeadP);
             histos.fill(HIST("IntegratedCuts/hCountCutsLeadingP"), 1);
 
             // Filling checks that rely on Eta>0 or Eta<0 checks for V0 and LeadingP eta:
-            RING_OBSERVABLE_LEADP_ETA_SPLIT_FILL_LIST("RingKinematicCuts", leadPEtaPos, lambdaEtaPos);
+            if (familySwitches.doFamilyRingKinematicCuts) {
+              RING_OBSERVABLE_LEADP_ETA_SPLIT_FILL_LIST("RingKinematicCuts", leadPEtaPos, lambdaEtaPos);
+            }
           }
-          POLARIZATION_PROFILE_FILL_LIST(APPLY_HISTO_FILL, "RingKinematicCuts")
+          if (familySwitches.doFamilyRingKinematicCuts) {
+            POLARIZATION_PROFILE_FILL_LIST(APPLY_HISTO_FILL, "RingKinematicCuts")
+          }
           if (hasValidLeadingJet) {
-            RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "RingKinematicCuts")
+            if (familySwitches.doFamilyRingKinematicCuts) {
+              RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "RingKinematicCuts")
+            }
             histos.fill(HIST("IntegratedCuts/pRingCuts"), 1, ringObservable);
             histos.fill(HIST("IntegratedCuts/hCountCuts"), 1);
-            trackRingKinCuts.addV0(ringObservable, binPt, binMass, binDTheta);
+            if (familySwitches.doFamilyRingKinematicCuts) {
+              trackRingKinCuts.addV0(ringObservable, binPt, binMass, binDTheta);
+            }
           }
           if (hasValidSubJet) {
-            RING_OBSERVABLE_2NDJET_FILL_LIST(APPLY_HISTO_FILL, "RingKinematicCuts")
+            if (familySwitches.doFamilyRingKinematicCuts) {
+              RING_OBSERVABLE_2NDJET_FILL_LIST(APPLY_HISTO_FILL, "RingKinematicCuts")
+            }
             histos.fill(HIST("IntegratedCuts/pRingCutsSubLeadingJet"), 1, ringObservable2ndJet);
             histos.fill(HIST("IntegratedCuts/hCountCutsSubLeadingJet"), 1);
           }
@@ -1759,57 +1845,85 @@ struct lambdajetpolarizationionsderived {
         // Extra selection criteria on jet candidates:
         // (redundant for jets with R=0.4, but for jets with R<0.4 the leading jet may be farther in eta)
         if (kinematicJetCheck) { // Already includes hasValidLeadingJet in the bool! (no need to check again)
-          RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "JetKinematicCuts")
+          if (familySwitches.doFamilyJetKinematicCuts) {
+            RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "JetKinematicCuts")
+          }
           histos.fill(HIST("IntegratedCuts/pRingCuts"), 2, ringObservable);
           histos.fill(HIST("IntegratedCuts/hCountCuts"), 2);
-          POLARIZATION_PROFILE_FILL_LIST(APPLY_HISTO_FILL, "JetKinematicCuts")
-          trackJetKinCuts.addV0(ringObservable, binPt, binMass, binDTheta);
+          if (familySwitches.doFamilyJetKinematicCuts) {
+            POLARIZATION_PROFILE_FILL_LIST(APPLY_HISTO_FILL, "JetKinematicCuts")
+            trackJetKinCuts.addV0(ringObservable, binPt, binMass, binDTheta);
+          }
         }
 
         // Extra selection criteria on both Lambda and jet candidates:
         if (kinematicLambdaCheck && kinematicJetCheck) {
-          RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "JetAndLambdaKinematicCuts")
+          if (familySwitches.doFamilyJetAndLambdaKinematicCuts) {
+            RING_OBSERVABLE_FILL_LIST(APPLY_HISTO_FILL, "JetAndLambdaKinematicCuts")
+          }
           histos.fill(HIST("IntegratedCuts/pRingCuts"), 3, ringObservable);
           histos.fill(HIST("IntegratedCuts/hCountCuts"), 3);
-          POLARIZATION_PROFILE_FILL_LIST(APPLY_HISTO_FILL, "JetAndLambdaKinematicCuts")
-          trackJetLambdaKinCuts.addV0(ringObservable, binPt, binMass, binDTheta);
+          if (familySwitches.doFamilyJetAndLambdaKinematicCuts) {
+            POLARIZATION_PROFILE_FILL_LIST(APPLY_HISTO_FILL, "JetAndLambdaKinematicCuts")
+            trackJetLambdaKinCuts.addV0(ringObservable, binPt, binMass, binDTheta);
+          }
         }
 
         // Same variations for the leading particle and for the subleading jet:
         // (kinematicLeadPCheck already encodes hasValidLeadingP, so no extra gate needed here)
         if (kinematicLeadPCheck) {
-          RING_OBSERVABLE_LEADP_FILL_LIST(APPLY_HISTO_FILL, "JetKinematicCuts")
+          if (familySwitches.doFamilyJetKinematicCuts) {
+            RING_OBSERVABLE_LEADP_FILL_LIST(APPLY_HISTO_FILL, "JetKinematicCuts")
+          }
           histos.fill(HIST("IntegratedCuts/pRingCutsLeadingP"), 2, ringObservableLeadP);
           histos.fill(HIST("IntegratedCuts/hCountCutsLeadingP"), 2);
 
           // Filling checks that rely on Eta>0 or Eta<0 checks for V0 and LeadingP eta:
-          RING_OBSERVABLE_LEADP_ETA_SPLIT_FILL_LIST("JetKinematicCuts", leadPEtaPos, lambdaEtaPos);
+          if (familySwitches.doFamilyJetKinematicCuts) {
+            RING_OBSERVABLE_LEADP_ETA_SPLIT_FILL_LIST("JetKinematicCuts", leadPEtaPos, lambdaEtaPos);
+          }
         }
         if (kinematic2ndJetCheck) {
-          RING_OBSERVABLE_2NDJET_FILL_LIST(APPLY_HISTO_FILL, "JetKinematicCuts")
+          if (familySwitches.doFamilyJetKinematicCuts) {
+            RING_OBSERVABLE_2NDJET_FILL_LIST(APPLY_HISTO_FILL, "JetKinematicCuts")
+          }
           histos.fill(HIST("IntegratedCuts/pRingCutsSubLeadingJet"), 2, ringObservable2ndJet);
           histos.fill(HIST("IntegratedCuts/hCountCutsSubLeadingJet"), 2);
         }
         if (kinematicLambdaCheck && kinematicLeadPCheck) {
-          RING_OBSERVABLE_LEADP_FILL_LIST(APPLY_HISTO_FILL, "JetAndLambdaKinematicCuts")
+          if (familySwitches.doFamilyJetAndLambdaKinematicCuts) {
+            RING_OBSERVABLE_LEADP_FILL_LIST(APPLY_HISTO_FILL, "JetAndLambdaKinematicCuts")
+          }
           histos.fill(HIST("IntegratedCuts/pRingCutsLeadingP"), 3, ringObservableLeadP);
           histos.fill(HIST("IntegratedCuts/hCountCutsLeadingP"), 3);
 
           // Filling checks that rely on Eta>0 or Eta<0 checks for V0 and LeadingP eta:
-          RING_OBSERVABLE_LEADP_ETA_SPLIT_FILL_LIST("JetAndLambdaKinematicCuts", leadPEtaPos, lambdaEtaPos);
+          if (familySwitches.doFamilyJetAndLambdaKinematicCuts) {
+            RING_OBSERVABLE_LEADP_ETA_SPLIT_FILL_LIST("JetAndLambdaKinematicCuts", leadPEtaPos, lambdaEtaPos);
+          }
         }
         if (kinematicLambdaCheck && kinematic2ndJetCheck) {
-          RING_OBSERVABLE_2NDJET_FILL_LIST(APPLY_HISTO_FILL, "JetAndLambdaKinematicCuts")
+          if (familySwitches.doFamilyJetAndLambdaKinematicCuts) {
+            RING_OBSERVABLE_2NDJET_FILL_LIST(APPLY_HISTO_FILL, "JetAndLambdaKinematicCuts")
+          }
           histos.fill(HIST("IntegratedCuts/pRingCutsSubLeadingJet"), 3, ringObservable2ndJet);
           histos.fill(HIST("IntegratedCuts/hCountCutsSubLeadingJet"), 3);
         }
       } // end v0s loop
 
       // Flush trackers to the actual O2 histograms (via macros, so that O2 compiles properly):
-      FLUSH_DELTA_TRACKER("Ring", trackRing, mAxisPt, mAxisMass, mAxisDTheta)
-      FLUSH_DELTA_TRACKER("RingKinematicCuts", trackRingKinCuts, mAxisPt, mAxisMass, mAxisDTheta)
-      FLUSH_DELTA_TRACKER("JetKinematicCuts", trackJetKinCuts, mAxisPt, mAxisMass, mAxisDTheta)
-      FLUSH_DELTA_TRACKER("JetAndLambdaKinematicCuts", trackJetLambdaKinCuts, mAxisPt, mAxisMass, mAxisDTheta)
+      if (familySwitches.doFamilyRing) {
+        FLUSH_DELTA_TRACKER("Ring", trackRing, mAxisPt, mAxisMass, mAxisDTheta)
+      }
+      if (familySwitches.doFamilyRingKinematicCuts) {
+        FLUSH_DELTA_TRACKER("RingKinematicCuts", trackRingKinCuts, mAxisPt, mAxisMass, mAxisDTheta)
+      }
+      if (familySwitches.doFamilyJetKinematicCuts) {
+        FLUSH_DELTA_TRACKER("JetKinematicCuts", trackJetKinCuts, mAxisPt, mAxisMass, mAxisDTheta)
+      }
+      if (familySwitches.doFamilyJetAndLambdaKinematicCuts) {
+        FLUSH_DELTA_TRACKER("JetAndLambdaKinematicCuts", trackJetLambdaKinCuts, mAxisPt, mAxisMass, mAxisDTheta)
+      }
     } // end collisions
     } // end of resampling loop for forceRandJet and forceDatalikeJet
   }

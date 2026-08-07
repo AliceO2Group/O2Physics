@@ -178,30 +178,34 @@ struct lambdajetpolarizationions {
     std::string prefix = "eventSelections"; // JSON group name
     Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
     Configurable<bool> requireTriggerTVX{"requireTriggerTVX", true, "require FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level"}; // part of sel8, actually
+    // Detector status:
     Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border (Run 3 only)"};                             // part of sel8, actually
     Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border (Run 3 only)"};                                          // part of sel8, actually
+    Configurable<bool> requireGoodITSLayersAll{"requireGoodITSLayersAll", false, "require number of inactive chips on all ITS layers to be below maximum allowed values"}; // Based off ITS holes DPG AOT selection
+    // Vertex quality:
     Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "require events with at least one ITS-TPC track (Run 3 only)"};
     Configurable<bool> requireIsGoodZvtxFT0VsPV{"requireIsGoodZvtxFT0VsPV", true, "require events with PV position along z consistent (within 1 cm) between PV reconstructed using tracks and PV using FT0 A-C time difference (Run 3 only)"}; // o2::aod::evsel::kIsGoodZvtxFT0vsPV. Recommended for OO
     Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", false, "require events with at least one of vertex contributors matched to TOF (Run 3 only)"};
     Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", false, "require events with at least one of vertex contributors matched to TRD (Run 3 only)"};
+    Configurable<float> maxZVtxPosition{"maxZVtxPosition", 10., "max Z vtx position [cm]"};
+    // Pileup and cannibalism rejection:
     Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC (Run 3 only)"}; // o2::aod::evsel::kNoSameBunchPileup. Recommended for OO
     Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds (Run 3 only)"};
     Configurable<bool> requireNoCollInTimeRangeStrict{"requireNoCollInTimeRangeStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds (Run 3 only)"};
     Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds (Run 3 only)"};
     Configurable<bool> requireNoCollInROFStd{"requireNoCollInROFStd", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF with mult. above a certain threshold (Run 3 only)"};
     Configurable<bool> requireNoCollInROFStrict{"requireNoCollInROFStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF (Run 3 only)"};
+    // Physics selections:
     Configurable<bool> requireINEL0{"requireINEL0", true, "require INEL>0 event selection"}; // Only truly useful in pp
     Configurable<bool> requireINEL1{"requireINEL1", false, "require INEL>1 event selection"};
-
-    Configurable<float> maxZVtxPosition{"maxZVtxPosition", 10., "max Z vtx position [cm]"};
-
+    // MC:
     Configurable<bool> useEvtSelInDenomEff{"useEvtSelInDenomEff", false, "Consider event selections in the recoed <-> gen collision association for the denominator (or numerator) of the acc. x eff. (or signal loss)?"};
     Configurable<bool> applyZVtxSelOnMCPV{"applyZVtxSelOnMCPV", true, "Apply Z-vtx cut on the PV of the generated collision?"}; // I see no reason as to not do this by default
+    // Occupancy:
     Configurable<bool> useFT0CbasedOccupancy{"useFT0CbasedOccupancy", false, "Use sum of FT0-C amplitudes for estimating occupancy? (if not, use track-based definition)"};
-    // fast check on occupancy
     Configurable<float> minOccupancy{"minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
     Configurable<float> maxOccupancy{"maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};
-    // fast check on interaction rate
+    // Interaction rate:
     Configurable<float> minIR{"minIR", -1, "minimum IR collisions"};
     Configurable<float> maxIR{"maxIR", -1, "maximum IR collisions"};
   } eventSelections;
@@ -212,19 +216,19 @@ struct lambdajetpolarizationions {
 
     Configurable<float> rapidityCut{"rapidityCut", 1.0f, "rapidity"}; // This is actually a physics cut, not a proper acceptance cut
     // Selection criteria: acceptance
-    Configurable<float> daughterEtaCut{"daughterEtaCut", 0.9f, "max eta for daughters"}; // Default is 0.8. Changed to 0.9 to agree with jet selection. TODO: test the impact/biasing of this!
+    // Configurable<float> daughterEtaCut{"daughterEtaCut", 0.9f, "max eta for daughters"}; // Default is 0.8. Changed to 0.9 to agree with jet selection. TODO: test the impact/biasing of this!
 
     // Standard 5 topological criteria -- Closed a bit more for the Lambda analysis
     Configurable<float> v0cospa{"v0cospa", 0.995, "min V0 CosPA"};              // Default is 0.97
-    Configurable<float> dcav0dau{"dcav0dau", 1.2, "max DCA V0 Daughters (cm)"}; // Default is 1.0
+    Configurable<float> dcav0dau{"dcav0dau", 1.2, "max DCA V0 Daughters (cm)"}; // Default is 1.0 in v0builder
     // Configurable<float> dcanegtopv{"dcanegtopv", .2, "min DCA Neg To PV (cm)"}; // Default is .05
     // Configurable<float> dcapostopv{"dcapostopv", .05, "min DCA Pos To PV (cm)"}; // Default is .05
     // Renamed for better consistency of candidate selection (the cut is not determined by charge, but by mass and how deflected the daughter is):
     Configurable<float> dcaPionToPV{"dcaPionToPV", .05, "min DCA pion-like daughter To PV (cm)"}; // .2 would suppress primary pion background, but we need to reduce fake-polarization signals enhanced by DCA-to-PV cuts
     Configurable<float> dcaProtonToPV{"dcaProtonToPV", .05, "min DCA proton-like daughter To PV (cm)"}; // Default is .05
-    Configurable<float> v0radius{"v0radius", 1.0, "minimum V0 radius (cm)"};                            // Default is  1.2
+    Configurable<float> v0radius{"v0radius", 1.0, "minimum V0 radius (cm)"};                            // Default is 1.2
     Configurable<float> v0radiusMax{"v0radiusMax", 1E5, "maximum V0 radius (cm)"};
-    Configurable<float> lambdaLifetimeCut{"lambdaLifetimeCut", 30., "lifetime cut (c*tau) for Lambda (cm)"};
+    Configurable<float> lambdaLifetimeCut{"lambdaLifetimeCut", 30., "lifetime cut (c*tau) for Lambda (cm)"}; // For soft Lambdas, expect V0Radius < 30 cm. For hard ones, it can be > 30 cm.
 
     // invariant mass selection
     Configurable<float> compMassRejection{"compMassRejection", -1, "Competing mass rejection (GeV/#it{c}^{2})"}; // This was creating bumps in the pp analysis code's invariant mass. Turned off for now.
@@ -249,7 +253,7 @@ struct lambdajetpolarizationions {
     Configurable<std::string> phiHighCut{"phiHighCut", "0.1/x+pi/18.0+0.06", "High azimuth cut parametrisation"};
 
     // PID (TPC/TOF)
-    Configurable<float> tpcPidNsigmaCut{"tpcPidNsigmaCut", 4, "tpcPidNsigmaCut"}; // Default is 5
+    Configurable<float> tpcPidNsigmaCut{"tpcPidNsigmaCut", 5, "tpcPidNsigmaCut"}; // Default is 5
     Configurable<float> tofPidNsigmaCutLaPr{"tofPidNsigmaCutLaPr", 1e+6, "tofPidNsigmaCutLaPr"};
     Configurable<float> tofPidNsigmaCutLaPi{"tofPidNsigmaCutLaPi", 1e+6, "tofPidNsigmaCutLaPi"};
 
@@ -265,7 +269,7 @@ struct lambdajetpolarizationions {
   // Run Condition Table (RCT) configurables
   struct : ConfigurableGroup {
     std::string prefix = "rctConfigurations"; // JSON group name
-    Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "", "Which detector condition requirements? (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)"};
+    Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT", "Which detector condition requirements? (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)"};
     Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "Include ZDC flags in the bit selection (for Pb-Pb only)"};
     Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
   } rctConfigurations;
@@ -307,22 +311,21 @@ struct lambdajetpolarizationions {
     ConfigurableAxis axisPtCoarse{"axisPtCoarse", {VARIABLE_WIDTH, 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 7.0f, 10.0f, 15.0f}, "pt axis for QA"};
     ConfigurableAxis axisLambdaMass{"axisLambdaMass", {450, 1.08f, 1.15f}, ""}; // Default is {200, 1.101f, 1.131f}
     ConfigurableAxis axisLambdaMassCoarse{"axisLambdaMassCoarse", {200, 1.101f, 1.131f}, ""};
+    // Centrality/IR/Occupancy:
     ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f}, "Centrality"};
     ConfigurableAxis axisNch{"axisNch", {500, 0.0f, +5000.0f}, "Number of charged particles"};
     ConfigurableAxis axisIRBinning{"axisIRBinning", {500, 0, 50}, "Binning for the interaction rate (kHz)"};
     ConfigurableAxis axisMultFT0M{"axisMultFT0M", {500, 0.0f, +100000.0f}, "Multiplicity FT0M"};
     ConfigurableAxis axisMultFT0C{"axisMultFT0C", {500, 0.0f, +10000.0f}, "Multiplicity FT0C"};
     ConfigurableAxis axisMultFV0A{"axisMultFV0A", {500, 0.0f, +100000.0f}, "Multiplicity FV0A"};
-
     ConfigurableAxis axisRawCentrality{"axisRawCentrality", {VARIABLE_WIDTH, 0.000f, 52.320f, 75.400f, 95.719f, 115.364f, 135.211f, 155.791f, 177.504f, 200.686f, 225.641f, 252.645f, 281.906f, 313.850f, 348.302f, 385.732f, 426.307f, 470.146f, 517.555f, 568.899f, 624.177f, 684.021f, 748.734f, 818.078f, 892.577f, 973.087f, 1058.789f, 1150.915f, 1249.319f, 1354.279f, 1465.979f, 1584.790f, 1710.778f, 1844.863f, 1985.746f, 2134.643f, 2291.610f, 2456.943f, 2630.653f, 2813.959f, 3006.631f, 3207.229f, 3417.641f, 3637.318f, 3865.785f, 4104.997f, 4354.938f, 4615.786f, 4885.335f, 5166.555f, 5458.021f, 5762.584f, 6077.881f, 6406.834f, 6746.435f, 7097.958f, 7462.579f, 7839.165f, 8231.629f, 8635.640f, 9052.000f, 9484.268f, 9929.111f, 10389.350f, 10862.059f, 11352.185f, 11856.823f, 12380.371f, 12920.401f, 13476.971f, 14053.087f, 14646.190f, 15258.426f, 15890.617f, 16544.433f, 17218.024f, 17913.465f, 18631.374f, 19374.983f, 20136.700f, 20927.783f, 21746.796f, 22590.880f, 23465.734f, 24372.274f, 25314.351f, 26290.488f, 27300.899f, 28347.512f, 29436.133f, 30567.840f, 31746.818f, 32982.664f, 34276.329f, 35624.859f, 37042.588f, 38546.609f, 40139.742f, 41837.980f, 43679.429f, 45892.130f, 400000.000f}, "raw centrality signal"}; // for QA
-
     ConfigurableAxis axisOccupancy{"axisOccupancy", {VARIABLE_WIDTH, 0.0f, 250.0f, 500.0f, 750.0f, 1000.0f, 1500.0f, 2000.0f, 3000.0f, 4500.0f, 6000.0f, 8000.0f, 10000.0f, 50000.0f}, "Occupancy"};
-
-    // topological variable QA axes
-    ConfigurableAxis axisDCAtoPV{"axisDCAtoPV", {20, 0.0f, 1.0f}, "DCA (cm)"};
+    // Topological variable QA axes:
+    ConfigurableAxis axisDCAtoPV{"axisDCAtoPV", {30, 0.0f, 2.0f}, "DCA (cm)"};
     ConfigurableAxis axisDCAdau{"axisDCAdau", {20, 0.0f, 1.2f}, "DCA (cm)"}; // This should follow v0Selections.dcav0dau's default
-    ConfigurableAxis axisPointingAngle{"axisPointingAngle", {20, 0.0f, 2.0f}, "pointing angle (rad)"};
-    ConfigurableAxis axisV0Radius{"axisV0Radius", {20, 0.0f, 60.0f}, "V0 2D radius (cm)"};
+    ConfigurableAxis axisPointingAngle{"axisPointingAngle", {20, 0.0f, 0.4f}, "pointing angle (rad)"}; // cos(0.4 rad) is ~0.92 for cosPA
+    ConfigurableAxis axisV0Radius{"axisV0Radius", {30, 0.0f, 60.0f}, "V0 2D radius (cm)"};
+    // PID:
     ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {200, -10.0f, 10.0f}, "N sigma TPC"};
     ConfigurableAxis axisTPCsignal{"axisTPCsignal", {200, 0.0f, 200.0f}, "TPC signal"};
     ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {200, -10.0f, 10.0f}, "N sigma TOF"};
@@ -331,30 +334,28 @@ struct lambdajetpolarizationions {
     ConfigurableAxis axisPhiMod{"axisPhiMod", {100, 0.0f, constants::math::TwoPI / 18}, "Azimuth angle wrt TPC sector (rad.)"};
     ConfigurableAxis axisEta{"axisEta", {50, -1.0f, 1.0f}, "#eta"};
     ConfigurableAxis axisRapidity{"axisRapidity", {50, -1.0f, 1.0f}, "y"};
-    ConfigurableAxis axisITSchi2{"axisITSchi2", {100, 0.0f, 100.0f}, "#chi^{2} per ITS clusters"};
-    ConfigurableAxis axisTPCchi2{"axisTPCchi2", {100, 0.0f, 100.0f}, "#chi^{2} per TPC clusters"};
-    ConfigurableAxis axisTPCrowsOverFindable{"axisTPCrowsOverFindable", {120, 0.0f, 1.2f}, "Fraction of TPC crossed rows over findable clusters"};
-    ConfigurableAxis axisTPCfoundOverFindable{"axisTPCfoundOverFindable", {120, 0.0f, 1.2f}, "Fraction of TPC found over findable clusters"};
-    ConfigurableAxis axisTPCsharedClusters{"axisTPCsharedClusters", {101, -0.005f, 1.005f}, "Fraction of TPC shared clusters"};
-
-    // AP plot axes
+      // AP plot axes
     ConfigurableAxis axisAPAlpha{"axisAPAlpha", {220, -1.1f, 1.1f}, "V0 AP alpha"};
     ConfigurableAxis axisAPQt{"axisAPQt", {220, 0.0f, 0.5f}, "V0 AP alpha"};
-
     // Track quality axes
     ConfigurableAxis axisTPCrows{"axisTPCrows", {160, 0.0f, 160.0f}, "N TPC rows"};
     ConfigurableAxis axisITSclus{"axisITSclus", {7, 0.0f, 7.0f}, "N ITS Clusters"};
-    ConfigurableAxis axisITScluMap{"axisITScluMap", {128, -0.5f, 127.5f}, "ITS Cluster map"};
-    ConfigurableAxis axisDetMap{"axisDetMap", {16, -0.5f, 15.5f}, "Detector use map"};
-    ConfigurableAxis axisITScluMapCoarse{"axisITScluMapCoarse", {16, -3.5f, 12.5f}, "ITS Coarse cluster map"};
-    ConfigurableAxis axisDetMapCoarse{"axisDetMapCoarse", {5, -0.5f, 4.5f}, "Detector Coarse user map"};
+    // ConfigurableAxis axisITScluMap{"axisITScluMap", {128, -0.5f, 127.5f}, "ITS Cluster map"};
+    // ConfigurableAxis axisDetMap{"axisDetMap", {16, -0.5f, 15.5f}, "Detector use map"};
+    // ConfigurableAxis axisITScluMapCoarse{"axisITScluMapCoarse", {16, -3.5f, 12.5f}, "ITS Coarse cluster map"};
+    // ConfigurableAxis axisDetMapCoarse{"axisDetMapCoarse", {5, -0.5f, 4.5f}, "Detector Coarse user map"};
+    ConfigurableAxis axisITSchi2{"axisITSchi2", {100, 0.0f, 100.0f}, "#chi^{2} per ITS clusters"};
+    ConfigurableAxis axisTPCchi2{"axisTPCchi2", {100, 0.0f, 100.0f}, "#chi^{2} per TPC clusters"};
+    // ConfigurableAxis axisTPCrowsOverFindable{"axisTPCrowsOverFindable", {120, 0.0f, 1.2f}, "Fraction of TPC crossed rows over findable clusters"};
+    // ConfigurableAxis axisTPCfoundOverFindable{"axisTPCfoundOverFindable", {120, 0.0f, 1.2f}, "Fraction of TPC found over findable clusters"};
+    // ConfigurableAxis axisTPCsharedClusters{"axisTPCsharedClusters", {101, -0.005f, 1.005f}, "Fraction of TPC shared clusters"};
 
     // MC coll assoc QA axis
     ConfigurableAxis axisMonteCarloNch{"axisMonteCarloNch", {300, 0.0f, 3000.0f}, "N_{ch} MC"};
 
     // Jet QA axes:
-    ConfigurableAxis JetsPerEvent{"JetsPerEvent", {20, 0, 20}, "Jets per event"};
-
+    ConfigurableAxis axisJetsPerEvent{"axisJetsPerEvent", {20, 0, 20}, "Jets per event"};
+    ConfigurableAxis axisJetConstituents{"axisJetConstituents", {200, 0, 200}, "Number of jet constituents"};
     ConfigurableAxis axisLeadingParticlePt{"axisLeadingParticlePt", {200, 0.f, 200.f}, "Leading particle p_{T} (GeV/c)"}; // Simpler version!
     ConfigurableAxis axisJetPt{"axisJetPt", {200, 0.f, 200.f}, "Jet p_{t} (GeV)"};
     ConfigurableAxis axisCosTheta{"axisCosTheta", {50, -1.f, 1.f}, "cos(#Delta #theta_{jet})"};
@@ -368,7 +369,7 @@ struct lambdajetpolarizationions {
   // (TODO: create a reasonable track selection for full, photon, and Z-tagged jet tracks, including detector angular acceptance parameters for EMCal)
   struct : ConfigurableGroup {
     std::string prefix = "jetConfigurations";                                                        // JSON group name
-    Configurable<double> minJetPt{"minJetPt", 30.0f, "Minimum reconstructed pt of the jet (GeV/c)"}; // Something in between pp and PbPb minima. Change for bkgSubtraction true or false!
+    Configurable<double> minJetPt{"minJetPt", 20.0f, "Minimum reconstructed pt of the jet (GeV/c)"}; // Something in between pp and PbPb minima. Change for bkgSubtraction true or false!
     Configurable<double> radiusJet{"radiusJet", 0.4f, "Jet resolution parameter (R)"};               // (TODO: check if the JE people don't define this as a rescaled int to not lose precision for stricter selections)
     // Notice that the maximum Eta of the jet will then be 0.9 - R to keep the jet contained within the ITS+TPC barrel.
 
@@ -478,70 +479,72 @@ struct lambdajetpolarizationions {
     rctFlagsChecker.init(rctConfigurations.cfgRCTLabel.value, rctConfigurations.cfgCheckZDC, rctConfigurations.cfgTreatLimitedAcceptanceAsBad);
 
     // Event Counters
-    histos.add("hEventSelection", "hEventSelection", kTH1D, {{23, -0.5f, +20.5f}});
+    histos.add("hEventSelection", "hEventSelection", kTH1D, {{24, -0.5f, +23.5f}});
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(4, "kNoITSROFrameBorder");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(5, "kNoTimeFrameBorder");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(6, "posZ cut");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(7, "kIsVertexITSTPC");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(8, "kIsGoodZvtxFT0vsPV");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTOFmatched");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(10, "kIsVertexTRDmatched");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(11, "kNoSameBunchPileup");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "kNoCollInTimeRangeStd");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "kNoCollInTimeRangeStrict");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "kNoCollInTimeRangeNarrow");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "kNoCollInRofStd");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(16, "kNoCollInRofStrict");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(6, "kIsGoodITSLayersAll");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(7, "posZ cut");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(8, "kIsVertexITSTPC");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(9, "kIsGoodZvtxFT0vsPV");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(10, "kIsVertexTOFmatched");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(11, "kIsVertexTRDmatched");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "kNoSameBunchPileup");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "kNoCollInTimeRangeStd");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "kNoCollInTimeRangeStrict");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "kNoCollInTimeRangeNarrow");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(16, "kNoCollInRofStd");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "kNoCollInRofStrict");
     if (doPPAnalysis) {
-      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "INEL>0");
-      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "INEL>1");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "INEL>0");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(19, "INEL>1");
     } else {
-      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "Below min occup.");
-      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "Above max occup.");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "Below min occup.");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(19, "Above max occup.");
     }
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(19, "Below min IR");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(20, "Above max IR");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(21, "RCT flags");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(22, "hasRingJet");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(23, "hasRingV0");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(20, "Below min IR");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(21, "Above max IR");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(22, "RCT flags");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(23, "hasRingJet");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(24, "hasRingV0");
     // (notice we lack a hasRingJet AND hasRingV0 bin because the tasks run separately on all events!)
     // (this QA number can be obtained at derived data level with ease)
 
     histos.add("Centrality/hEventCentrality", "hEventCentrality", kTH1D, {{101, 0.0f, 101.0f}});
     histos.add("Centrality/hCentralityVsNch", "hCentralityVsNch", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
     if (doEventQA) {
-      histos.add("hEventSelectionVsCentrality", "hEventSelectionVsCentrality", kTH2D, {{23, -0.5f, +20.5f}, {101, 0.0f, 101.0f}});
+      histos.add("hEventSelectionVsCentrality", "hEventSelectionVsCentrality", kTH2D, {{24, -0.5f, +23.5f}, {101, 0.0f, 101.0f}});
       histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(1, "All collisions");
       histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
       histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
       histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(4, "kNoITSROFrameBorder");
       histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(5, "kNoTimeFrameBorder");
-      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(6, "posZ cut");
-      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(7, "kIsVertexITSTPC");
-      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(8, "kIsGoodZvtxFT0vsPV");
-      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(9, "kIsVertexTOFmatched");
-      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(10, "kIsVertexTRDmatched");
-      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(11, "kNoSameBunchPileup");
-      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(12, "kNoCollInTimeRangeStd");
-      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(13, "kNoCollInTimeRangeStrict");
-      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(14, "kNoCollInTimeRangeNarrow");
-      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(15, "kNoCollInRofStd");
-      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(16, "kNoCollInRofStrict");
+      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(6, "kIsGoodITSLayersAll");
+      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(7, "posZ cut");
+      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(8, "kIsVertexITSTPC");
+      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(9, "kIsGoodZvtxFT0vsPV");
+      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(10, "kIsVertexTOFmatched");
+      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(11, "kIsVertexTRDmatched");
+      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(12, "kNoSameBunchPileup");
+      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(13, "kNoCollInTimeRangeStd");
+      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(14, "kNoCollInTimeRangeStrict");
+      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(15, "kNoCollInTimeRangeNarrow");
+      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(16, "kNoCollInRofStd");
+      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(17, "kNoCollInRofStrict");
       if (doPPAnalysis) {
-        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(17, "INEL>0");
-        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(18, "INEL>1");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(18, "INEL>0");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(19, "INEL>1");
       } else {
-        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(17, "Below min occup.");
-        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(18, "Above max occup.");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(18, "Below min occup.");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(19, "Above max occup.");
       }
-      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(19, "Below min IR");
-      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(20, "Above max IR");
-      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(21, "RCT flags");
-      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(22, "hasRingJet");
-      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(23, "hasRingV0");
+      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(20, "Below min IR");
+      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(21, "Above max IR");
+      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(22, "RCT flags");
+      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(23, "hasRingJet");
+      histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(24, "hasRingV0");
 
       // Centrality:
       histos.add("Centrality/hEventCentVsMultFT0M", "hEventCentVsMultFT0M", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0M});
@@ -622,7 +625,10 @@ struct lambdajetpolarizationions {
                                                                      {p + "TOF #Delta t #pi", v0Selections.maxDeltaTimePion < 1e+9},
                                                                      {p + "TOF PID p", v0Selections.tofPidNsigmaCutLaPr < 1e+6},
                                                                      {p + "TOF PID #pi", v0Selections.tofPidNsigmaCutLaPi < 1e+6},
-                                                                     {p + "c#tau", v0Selections.lambdaLifetimeCut > 0}});
+                                                                     {p + "c#tau", v0Selections.lambdaLifetimeCut > 0},
+                                                                     {p + "Ambiguous rejection", true},
+                                                                     {p + "Final accepted", true}}
+                                                                    );
     };
     constexpr bool Lambda = true;      // Some constexpr to make it more readable (works at compile level)
     constexpr bool AntiLambda = false; // "false" is just a flag for this addHypothesis function! It just means fill "AntiLambda" labels
@@ -689,8 +695,8 @@ struct lambdajetpolarizationions {
     if (analyseLambda) {
       histos.add("Lambda/h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
       histos.add("Lambda/h3dMassLambda", "h3dMassLambda", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
-      // Non-UPC info
-      histos.add("Lambda/h3dMassLambdaHadronic", "h3dMassLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+      // // Non-UPC info
+      // histos.add("Lambda/h3dMassLambdaHadronic", "h3dMassLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
       if (doTPCQA) {
         histos.add("Lambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
         histos.add("Lambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
@@ -724,8 +730,8 @@ struct lambdajetpolarizationions {
     if (analyseAntiLambda) {
       histos.add("AntiLambda/h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
       histos.add("AntiLambda/h3dMassAntiLambda", "h3dMassAntiLambda", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
-      // Non-UPC info
-      histos.add("AntiLambda/h3dMassAntiLambdaHadronic", "h3dMassAntiLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+      // // Non-UPC info
+      // histos.add("AntiLambda/h3dMassAntiLambdaHadronic", "h3dMassAntiLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
       if (doTPCQA) {
         histos.add("AntiLambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
         histos.add("AntiLambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
@@ -846,12 +852,14 @@ struct lambdajetpolarizationions {
     histos.add("GeneralQA/h2dArmenterosFullSelectedAmbiguous", "h2dArmenterosFullSelectedAmbiguous", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
 
     // Jets histograms:
-    // Histogram that needs to be present even out of QA:
-    histos.add("hEventsWithJet", "hEventsWithJet", kTH1D, {{1, 0, 1}});
-    histos.add("hJetsPerEvent", "hJetsPerEvent", kTH1D, {axisConfigurations.JetsPerEvent});
-    // counter of events with jet (could be interesting to compare with the minimum pT cut or between the background subtraction vs no background subtraction cases)
-    // number of jets per event
+      // Histograms that need to be present even out of extensive QA-mode:
+    histos.add("hEventsWithJet", "hEventsWithJet", kTH1D, {{1, 0, 1}}); // counter of events with jet (could be interesting to compare with the minimum pT cut or between the background subtraction vs no background subtraction cases)
+    histos.add("hJetsPerEvent", "hJetsPerEvent", kTH1D, {axisConfigurations.axisJetsPerEvent}); // number of jets per event
     if (doJetKinematicsQA) {
+        // For probing the correlation between number of jet constituents and centrality:
+      histos.add("JetKinematicsQA/h2dConstituentsPerJetVsCentrality", "Constituents per Jet Vs Centrality", kTH2D, {axisConfigurations.axisJetConstituents, axisConfigurations.axisCentrality}); // Not quite kinematics, but kept it under this QAing switch for now
+      histos.add("JetKinematicsQA/h2dConstituentsPerJetVsJetPt", "Constituents per Jet Vs Jet Pt", kTH2D, {axisConfigurations.axisJetConstituents, axisConfigurations.axisJetPt});
+
       histos.add("JetKinematicsQA/hJetPt", "hJetPt", kTH1D, {axisConfigurations.axisJetPt});
       histos.add("JetKinematicsQA/hJetEta", "hJetEta", kTH1D, {axisConfigurations.axisEta});
       histos.add("JetKinematicsQA/hJetPhi", "hJetPhi", kTH1D, {axisConfigurations.axisPhi});
@@ -866,8 +874,8 @@ struct lambdajetpolarizationions {
       histos.add("JetKinematicsQA/hLeadingJetPhi", "hLeadingJetPhi", kTH1D, {axisConfigurations.axisPhi});
 
       // 2D correlations:
-      histos.add("JetKinematicsQA/h2dJetsPerEventvsLeadJetPt", "h2dJetsPerEventvsLeadJetPt", kTH2D, {axisConfigurations.JetsPerEvent, axisConfigurations.axisJetPt});
-      histos.add("JetKinematicsQA/h2dJetsPerEventvsJetPt", "h2dJetsPerEventvsJetPt", kTH2D, {axisConfigurations.JetsPerEvent, axisConfigurations.axisJetPt});
+      histos.add("JetKinematicsQA/h2dJetsPerEventvsLeadJetPt", "h2dJetsPerEventvsLeadJetPt", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisJetPt});
+      histos.add("JetKinematicsQA/h2dJetsPerEventvsJetPt", "h2dJetsPerEventvsJetPt", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisJetPt});
       histos.add("JetKinematicsQA/h2dCosThetaToLeadvsDeltaPhiToLead", "h2dCosThetaToLeadvsDeltaPhiToLead", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisDeltaPhi});
       histos.add("JetKinematicsQA/h2dCosThetaToLeadvsDeltaEtaToLead", "h2dCosThetaToLeadvsDeltaEtaToLead", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisDeltaEta});
       histos.add("JetKinematicsQA/h2dCosThetaToLeadvsDeltaRToLead", "h2dCosThetaToLeadvsDeltaRToLead", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisDeltaR});
@@ -879,9 +887,9 @@ struct lambdajetpolarizationions {
       histos.add("JetKinematicsQA/h2dJetEnergyvsCosThetaToLead", "h2dJetEnergyvsCosThetaToLead", kTH2D, {axisConfigurations.axisEnergy, axisConfigurations.axisCosTheta});
 
       // Jets per event vs correlation to lead jet
-      histos.add("JetKinematicsQA/h2dJetsPerEventvsDeltaPhiToLead", "h2dJetsPerEventvsDeltaPhiToLead", kTH2D, {axisConfigurations.JetsPerEvent, axisConfigurations.axisDeltaPhi});
-      histos.add("JetKinematicsQA/h2dJetsPerEventvsDeltaEtaToLead", "h2dJetsPerEventvsDeltaEtaToLead", kTH2D, {axisConfigurations.JetsPerEvent, axisConfigurations.axisDeltaEta});
-      histos.add("JetKinematicsQA/h2dJetsPerEventvsCosThetaToLead", "h2dJetsPerEventvsCosThetaToLead", kTH2D, {axisConfigurations.JetsPerEvent, axisConfigurations.axisCosTheta});
+      histos.add("JetKinematicsQA/h2dJetsPerEventvsDeltaPhiToLead", "h2dJetsPerEventvsDeltaPhiToLead", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisDeltaPhi});
+      histos.add("JetKinematicsQA/h2dJetsPerEventvsDeltaEtaToLead", "h2dJetsPerEventvsDeltaEtaToLead", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisDeltaEta});
+      histos.add("JetKinematicsQA/h2dJetsPerEventvsCosThetaToLead", "h2dJetsPerEventvsCosThetaToLead", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisCosTheta});
 
       ////////////////////////////
       // Leading particle 1D QA:
@@ -898,12 +906,12 @@ struct lambdajetpolarizationions {
       histos.add("JetVsLeadingParticleQA/h2dDeltaPhiParticleToLeadvsDeltaEtaParticleToLead", "h2dDeltaPhiParticleToLeadvsDeltaEtaParticleToLead", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisDeltaEta});
 
       // Jets-per-event vs particle-to-lead correlations:
-      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaPhiParticleToLead", "h2dJetsPerEventvsDeltaPhiParticleToLead", kTH2D, {axisConfigurations.JetsPerEvent, axisConfigurations.axisDeltaPhi});
-      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaEtaParticleToLead", "h2dJetsPerEventvsDeltaEtaParticleToLead", kTH2D, {axisConfigurations.JetsPerEvent, axisConfigurations.axisDeltaEta});
-      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsCosThetaParticleToLead", "h2dJetsPerEventvsCosThetaParticleToLead", kTH2D, {axisConfigurations.JetsPerEvent, axisConfigurations.axisCosTheta});
+      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaPhiParticleToLead", "h2dJetsPerEventvsDeltaPhiParticleToLead", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisDeltaPhi});
+      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaEtaParticleToLead", "h2dJetsPerEventvsDeltaEtaParticleToLead", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisDeltaEta});
+      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsCosThetaParticleToLead", "h2dJetsPerEventvsCosThetaParticleToLead", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisCosTheta});
 
       // Main "Leading jet vs leading particle" correlations:
-      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsLeadParticlePt", "h2dJetsPerEventvsLeadParticlePt", kTH2D, {axisConfigurations.JetsPerEvent, axisConfigurations.axisLeadingParticlePt});
+      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsLeadParticlePt", "h2dJetsPerEventvsLeadParticlePt", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisLeadingParticlePt});
       histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsLeadParticlePt", "h2dLeadJetPtvsLeadParticlePt", kTH2D, {axisConfigurations.axisJetPt, axisConfigurations.axisLeadingParticlePt});
       histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsCosThetaParticleToLead", "h2dLeadJetPtvsCosThetaParticleToLead", kTH2D, {axisConfigurations.axisJetPt, axisConfigurations.axisCosTheta});
       histos.add("JetVsLeadingParticleQA/h2dLeadParticlePtvsCosThetaParticleToLead", "h2dLeadParticlePtvsCosThetaParticleToLead", kTH2D, {axisConfigurations.axisLeadingParticlePt, axisConfigurations.axisCosTheta});
@@ -975,9 +983,10 @@ struct lambdajetpolarizationions {
   };
   V0SelectionFlowCounter V0SelCounter{-1, &histos}; // Could initialize with any index (resetForNewV0 is always called for a new V0 anyways)
                                                     // Calculating some bins, for convenience:
-  int nGenericCuts = 31;                            // x=0 to x=30
-  int nHypoCuts = 9;                                // per hypothesis (x=31..39 for Lambda)
-  int lambdaHypoEnd = nGenericCuts + nHypoCuts - 1; // x=39
+  const int nGenericCuts = 31;                            // x=0 to x=30 (bins 1 and 31, as the lower-edge is inclusive)
+  const int nHypoCuts = 11;                               // per hypothesis (x=31..41 for Lambda)
+  const int lambdaHypoEnd = nGenericCuts + nHypoCuts - 1; // x=41 (bin 42)
+  const int antiLambdaHypoEnd = nGenericCuts + 2*nHypoCuts - 1; // x = 52 (bin 53)
 
   // Minimal helper to fill hSelectionJetTracks, mirroring V0SelectionFlowCounter.
   // Reset once per track candidate, fill once per passed cut stage.
@@ -1053,10 +1062,16 @@ struct lambdajetpolarizationions {
     return dot / (magA * magB);
   }
 
+  const float NSigmaScale = 100.f; // The factor for packing the float as an int16_t
+  inline int16_t packNSigma(float x)
+  {
+    return static_cast<int16_t>(std::lround(x * NSigmaScale));
+  }
+
   /////////////////////////////////////////////
   // Helper functions for event and candidate selection:
   template <typename TCollision, typename TBC>
-  bool isEventAccepted(TCollision const& collision, TBC const& bc, float centrality, bool fillHists)
+  bool isEventAccepted(TCollision const& collision, TBC const& bc, float centrality, double& interactionRate, bool fillHists)
   {                       // check whether the collision passes our collision selections
     int selectionIdx = 0; // To loop over QA histograms. First bin is already filled: first call will already increment this index (not actually the bin index, but a value in the X axis).
     if (eventSelections.requireSel8 && !collision.sel8())
@@ -1072,6 +1087,10 @@ struct lambdajetpolarizationions {
     if (fillHists)
       fillEventSelectionQA(++selectionIdx, centrality);
     if (eventSelections.rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
+      return false;
+    if (fillHists)
+      fillEventSelectionQA(++selectionIdx, centrality);
+    if (eventSelections.requireGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
       return false;
     if (fillHists)
       fillEventSelectionQA(++selectionIdx, centrality);
@@ -1151,8 +1170,11 @@ struct lambdajetpolarizationions {
       if (fillHists)
         fillEventSelectionQA(++selectionIdx, centrality);
 
-      // Fetch interaction rate only if required (in order to limit ccdb calls)
-      const double interactionRate = (eventSelections.minIR >= 0 || eventSelections.maxIR >= 0) ? rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3 : -1;
+      // Fetch interaction rate after all inexpensive cuts were performed:
+      interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3;
+      // Optionally, do this only when required by the minIR/maxIR cuts, to further limit ccdb calls:
+      // const double interactionRate = (eventSelections.minIR >= 0 || eventSelections.maxIR >= 0) ? rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3 : -1;
+
       if (eventSelections.minIR >= 0 && interactionRate < eventSelections.minIR)
         return false;
       if (fillHists)
@@ -1540,8 +1562,8 @@ struct lambdajetpolarizationions {
         tableJets(ringCollIdx,
                   jetMinusBkg.pt(),
                   jetMinusBkg.eta(), // Using eta instead of rapidity
-                  jetMinusBkg.phi(),
-                  jetMinusBkg.constituents().size());
+                  jetMinusBkg.phi());
+                  // jetMinusBkg.constituents().size());
 
         // Finding the leading jet after subtraction (leading jet is NOT known a priori!):
         if (jetMinusBkg.pt() > leadingJetPt) {
@@ -1555,9 +1577,11 @@ struct lambdajetpolarizationions {
       histos.fill(HIST("hEventsWithJet"), 0.5);
       // Another version of this counter, which is already integrated in the Event Selection flow:
       if (doEventQA)
-        fillEventSelectionQA(lastBinEvSel - 1, centrality); // hasRingJet passes
+        fillEventSelectionQA(lastBinEvSel - 2, centrality); // hasRingJet passes
 
       if (doJetKinematicsQA) {
+        histos.fill(HIST("JetKinematicsQA/h2dConstituentsPerJetVsCentrality"), leadingJetSub.constituents().size(), centrality);
+        histos.fill(HIST("JetKinematicsQA/h2dConstituentsPerJetVsJetPt"), leadingJetSub.constituents().size(), leadingJetSub.pt());
         histos.fill(HIST("JetKinematicsQA/hLeadingJetPt"), leadingJetSub.pt());
         histos.fill(HIST("JetKinematicsQA/hLeadingJetEta"), leadingJetSub.eta());
         histos.fill(HIST("JetKinematicsQA/hLeadingJetPhi"), leadingJetSub.phi());
@@ -1638,7 +1662,7 @@ struct lambdajetpolarizationions {
       histos.fill(HIST("hEventsWithJet"), 0.5);
       // Another version of this counter, which is already integrated in the Event Selection flow:
       if (doEventQA)
-        fillEventSelectionQA(lastBinEvSel - 1, centrality); // hasRingJet passes
+        fillEventSelectionQA(lastBinEvSel - 2, centrality); // hasRingJet passes
 
       const auto& leadingJet = jets[0]; // A leading jet before eta cuts. Different type of QA from what we will be able to do down the consumer pipeline
       for (const auto& jet : jets) {
@@ -1650,10 +1674,13 @@ struct lambdajetpolarizationions {
         tableJets(ringCollIdx,
                   jet.pt(),
                   jet_eta, // Using eta instead of rapidity
-                  jet.phi(),
-                  jet.constituents().size());
+                  jet.phi());
+                  // jet.constituents().size()); // Currently removed from datamodel.
+                                                 // Other variables can better reveal jet quenching and help identify good selection criteria for quenched jets proxies
 
         if (doJetKinematicsQA) {
+          histos.fill(HIST("JetKinematicsQA/h2dConstituentsPerJetVsCentrality"), jet.constituents().size(), centrality);
+          histos.fill(HIST("JetKinematicsQA/h2dConstituentsPerJetVsJetPt"), jet.constituents().size(), jet.pt());
           histos.fill(HIST("JetKinematicsQA/hJetPt"), jet.pt());
           histos.fill(HIST("JetKinematicsQA/hJetEta"), jet_eta);
           histos.fill(HIST("JetKinematicsQA/hJetPhi"), jet.phi());
@@ -1688,7 +1715,9 @@ struct lambdajetpolarizationions {
           histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsCosThetaToLead"), jetsInEvent, cosTheta);
         }
       }
-      if (doJetKinematicsQA) { // Fills even when the jet is outside of the (0.9f - jetConfigurations.radiusJet) eta window.
+      if (doJetKinematicsQA) { // Fills even when the jet is outside of the (0.9f - jetConfigurations.radiusJet) eta window. Fills at least for the leading jet.
+        histos.fill(HIST("JetKinematicsQA/h2dConstituentsPerJetVsCentrality"), leadingJet.constituents().size(), centrality);
+        histos.fill(HIST("JetKinematicsQA/h2dConstituentsPerJetVsJetPt"), leadingJet.constituents().size(), leadingJet.pt());
         histos.fill(HIST("JetKinematicsQA/hLeadingJetPt"), leadingJet.pt());
         histos.fill(HIST("JetKinematicsQA/hLeadingJetEta"), leadingJet.eta());
         histos.fill(HIST("JetKinematicsQA/hLeadingJetPhi"), leadingJet.phi());
@@ -1739,7 +1768,11 @@ struct lambdajetpolarizationions {
     histos.fill(HIST("hEventSelectionVsCentrality"), 0. /* all collisions */, centrality);
 
     auto bc = bcs.iteratorAt(collision.bcId());
-    if (!isEventAccepted(collision, bc, centrality, doEventQA))
+
+    // Initialize interactionRate with a sentinel value. It will be stored in the derived data afterwards:
+    // (We pass this by reference and update it inside isEventAccepted after all less expensive checks were already done)
+    double interactionRate = -1.0;
+    if (!isEventAccepted(collision, bc, centrality, interactionRate, doEventQA))
       return; // Uses return instead of continue, as there is no explicit loop here
 
     if (doEventQA)
@@ -1747,10 +1780,16 @@ struct lambdajetpolarizationions {
     if (v0Selections.rejectTPCsectorBoundary)
       initCCDB(bc); // Substituted call from collision to bc for raw data
 
+    // If the event passed but skipped the Pb-Pb block (e.g. it was a pp event), fetch the rate before saving in the datamodel:
+    if (interactionRate < 0)
+      interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3;
+
     // Fill event table:
     tableCollisions(collision.centFT0M(),
                     collision.centFT0C(),
-                    collision.centFV0A()); // (TODO: add InteractionRate info and other useful cuts for later on in the analysis)
+                    collision.centFV0A(),
+                    collision.posZ(),
+                    interactionRate);
 
     // Get the derived collision row index for this event:
     const int ringCollIdx = tableCollisions.lastIndex();
@@ -1781,12 +1820,12 @@ struct lambdajetpolarizationions {
         isLambda = passesLambdaLambdaBarHypothesis(v0, collision, true);
       if (analyseAntiLambda) {
         if (analyseLambda)                           // We only need to advance when the Lambda hypothesis had an early exit on the counters
-          V0SelCounter.advanceTo(lambdaHypoEnd + 1); // sync to bin 41 (x=40 means bin 41, the first #bar{#Lambda} bin)
+          V0SelCounter.advanceTo(lambdaHypoEnd + 1); // sync to bin 43 (x=42 means bin 43, the first #bar{#Lambda} bin)
         isAntiLambda = passesLambdaLambdaBarHypothesis(v0, collision, false);
       }
 
       if (!isLambda && !isAntiLambda)
-        continue; // Candidate is not considered to be a Lambda-like
+        continue; // Candidate is not considered to be Lambda-like
 
       if (isLambda)
         NLambdas++;
@@ -1821,11 +1860,31 @@ struct lambdajetpolarizationions {
       }
       // if (lambdaIdx == kIsArmenterosK0) continue; // Should just skip this step then!
 
-      if (doEventQA)
-        fillEventSelectionQA(lastBinEvSel, centrality); // hasRingV0 passes
-
-      // // Extra competing mass rejection of Lambdas // (TODO: test competing mass cuts)
+      // // Extra competing mass rejection of Lambdas // (TODO: test competing mass cuts and implement it here)
       // v0.mLambda()
+
+      // Bookkeeping for the candidates that passed eveything until the ambiguity check:
+      if (isLambda) { // Go back to Lambda bin to fill it as well:
+        V0SelCounter.advanceTo(lambdaHypoEnd-1); // Bin 41: Ambiguous Lambda rejection
+        V0SelCounter.fill();
+      }
+      if (isAntiLambda) {
+        V0SelCounter.advanceTo(antiLambdaHypoEnd-1); // Bin 52: Ambiguous antiLambda rejection
+        V0SelCounter.fill();
+      }
+
+      // Removing ambiguous Lambda candidates for final storage, AFTER some QAing:
+      if (isLambda && isAntiLambda)
+        continue;
+
+      // Updating selection counters after ambiguous candidate rejection:
+      if (isLambda) {
+        V0SelCounter.advanceTo(lambdaHypoEnd); // Bin 42: Final accepted Lambda V0s
+        V0SelCounter.fill();
+      } else { // i.e., isAntiLambda
+        V0SelCounter.advanceTo(antiLambdaHypoEnd); // Bin 53: Final accepted anti-Lambda V0s
+        V0SelCounter.fill();
+      }
 
       // Saving the Lambdas into a derived data column:
       auto const v0pt = v0.pt();
@@ -1833,15 +1892,17 @@ struct lambdajetpolarizationions {
       const auto negTrackExtra = v0.template negTrack_as<DauTracks>();
       tableV0s(ringCollIdx,
                v0pt, v0.eta(), v0.phi(), // Using eta instead of rapidity
-               isLambda, isAntiLambda,
-               v0.mLambda(), v0.mAntiLambda(),
+               isLambda, // 0: antiLambda, 1: Lambda. No ambiguous candidates (isLambda && isAntiLambda) are stored
+               isLambda ? v0.mLambda() : v0.mAntiLambda(),
                v0.positivept(), v0.positiveeta(), v0.positivephi(),
                v0.negativept(), v0.negativeeta(), v0.negativephi(),
-               posTrackExtra.tpcNSigmaPr(), posTrackExtra.tpcNSigmaPi(),
-               negTrackExtra.tpcNSigmaPr(), negTrackExtra.tpcNSigmaPi(),
+               packNSigma(isLambda ? posTrackExtra.tpcNSigmaPr() : negTrackExtra.tpcNSigmaPr()), // Proton-like track, packed into int16_t
+               packNSigma(isLambda ? negTrackExtra.tpcNSigmaPi() : posTrackExtra.tpcNSigmaPi()), // Pion-like track
                v0.v0cosPA(), v0.v0radius(), v0.dcaV0daughters(), v0.dcapostopv(), v0.dcanegtopv());
+      
+      // Perform extensive QAs for non-ambiguous Lambda/antiLambda candidates only:
       if (doEventQA && !validV0AlreadyFound)
-        fillEventSelectionQA(lastBinEvSel, centrality); // hasRingV0 passes
+        fillEventSelectionQA(lastBinEvSel - 1, centrality); // hasRingV0 passes (lastBinEvSel would be bin 24, but x=23 for a correct fill in our convention)
       validV0AlreadyFound = true;
 
       if (doV0KinematicQA) {
