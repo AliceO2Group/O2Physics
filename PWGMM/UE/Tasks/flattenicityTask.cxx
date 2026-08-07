@@ -9,9 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <cmath>
-#include <vector>
-
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/EventSelection.h"
@@ -27,6 +24,9 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
+
+#include <cmath>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -124,7 +124,7 @@ struct FlattenicityTask {
       return NCH_A + etaBin * NPHISECTORS + phiBin;
     }
 
-    return -1;  // Not in FT0 acceptance
+    return -1; // Not in FT0 acceptance
   }
 
   // --- Flattenicity calculation ---
