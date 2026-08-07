@@ -200,7 +200,7 @@ struct PidFeatureExtractor {
 
   void init(InitContext const&)
   {
-    if (!exportCsv) {
+    if (!exportCsv.value) {
       return;
     }
     // Only one of processData/processMc is expected to be active; open the
@@ -237,7 +237,7 @@ struct PidFeatureExtractor {
   /// outputs if TPC is absent or computeBayesianPid is false.
   void computeBayesianProbs(bool hasTpc, float nsTPC[4], bool hasTof, float nsTOF[4], float out[4]) const
   {
-    if (!computeBayesianPid || !hasTpc) {
+    if (!computeBayesianPid.value || !hasTpc) {
       out[0] = out[1] = out[2] = out[3] = kNaN;
       return;
     }
@@ -381,7 +381,7 @@ struct PidFeatureExtractor {
         r.hasHmpid, r.hmpidSignal, r.hmpidQMip, r.hmpidNPhotons, r.hmpidClusSize, r.hmpidMom,
         r.bayesProbPi, r.bayesProbKa, r.bayesProbPr, r.bayesProbEl);
 
-      if (exportCsv) {
+      if (exportCsv.value) {
         writeCsvRow(*csvFile, r);
       }
     }
@@ -414,7 +414,7 @@ struct PidFeatureExtractor {
         r.bayesProbPi, r.bayesProbKa, r.bayesProbPr, r.bayesProbEl,
         mcParticle.pdgCode(), static_cast<uint8_t>(mcParticle.isPhysicalPrimary()));
 
-      if (exportCsv) {
+      if (exportCsv.value) {
         writeCsvRow(*csvFile, r);
       }
     }
