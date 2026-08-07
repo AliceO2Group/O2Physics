@@ -784,15 +784,34 @@ void FlowPtContainer::fillVnDeltaPtProfiles(const int configIndex, const double&
   if (!mask) {
     return;
   }
-  int startIndex = fCovFirstIndex[configIndex];
+
+  if (configIndex < 0 || static_cast<size_t>(configIndex) >= fCovFirstIndex.size()) {
+    LOGF(error, "Invalid configuration index %d", configIndex);
+    return;
+  }
+  int profileIndex = fCovFirstIndex[configIndex];
   for (auto m(1); m <= mpar; ++m) {
     if (!(mask & (1 << (m - 1))))
       continue;
-    for (auto i = 0; i <= m; ++i) {
-      if (cmDen[m] != 0) {
-        dynamic_cast<BootstrapProfile*>(fCovList->At(startIndex))->FillProfile(centmult, flowval * ((i == m) ? cmVal[0] : cmVal[m * (m - 1) / 2 + i + 1]), (fEventWeight == UnityWeight) ? 1.0 : flowtuples * cmDen[m], rn);
+    for (auto i = 0; i <= m; ++i, ++profileIndex) {
+      const size_t cmIndex = (i == m) ? 0u : static_cast<size_t>(m * (m - 1) / 2 + i + 1);
+
+      if (static_cast<size_t>(m) >= cmDen.size() || cmIndex >= cmVal.size() || cmDen[m] == 0.) {
+        continue;
       }
-      ++startIndex;
+
+      if (!fCovList || profileIndex >= fCovList->GetEntries()) {
+        LOGF(error, "Profile index %d out of range (entries=%d, config=%d, m=%d)", profileIndex, fCovList ? fCovList->GetEntries() : 0, configIndex, m);
+        continue;
+      }
+
+      auto* profile = dynamic_cast<BootstrapProfile*>(fCovList->At(profileIndex));
+
+      if (!profile) {
+        LOGF(error, "Missing BootstrapProfile at index %d for config %d", profileIndex, configIndex);
+        continue;
+      }
+      profile->FillProfile(centmult, flowval * cmVal[cmIndex], (fEventWeight == UnityWeight) ? 1.0 : flowtuples * cmDen[m], rn);
     }
   }
   return;
