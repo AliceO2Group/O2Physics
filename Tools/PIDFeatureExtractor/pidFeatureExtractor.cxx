@@ -35,6 +35,7 @@
 #include <cstdint>
 #include <fstream>
 #include <limits>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -181,7 +182,7 @@ struct PidFeatureExtractor {
   Configurable<bool> exportCsv{"exportCsv", false, "Also write reconstructed features to CSV alongside the table"};
   Configurable<std::string> csvOutputPath{"csvOutputPath", "pid_features", "CSV output file base name (no extension), if exportCsv"};
 
-  std::ofstream csvFile;
+  std::unique_ptr<std::ofstream> csvFile;
 
   using PidTracks = soa::Filtered<soa::Join<
     aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
@@ -207,8 +208,8 @@ struct PidFeatureExtractor {
     // PROCESS_SWITCH). If both or neither are on, nothing here enforces
     // that - see the README note on this.
     std::string suffix = doprocessMc ? "_mc.csv" : "_data.csv";
-    csvFile.open(csvOutputPath.value + suffix);
-    csvFile << kCsvHeader << '\n';
+    csvFile = std::make_unique<std::ofstream>(csvOutputPath.value + suffix);
+    *csvFile << kCsvHeader << '\n';
   }
 
   /// DPG-style track quality cuts. Wide-open defaults mean this is a no-op
@@ -216,9 +217,9 @@ struct PidFeatureExtractor {
   template <typename TTrack>
   bool passesDpgCuts(TTrack const& track) const
   {
-    if (track.pt() < ptMin || track.pt() > ptMax)
+    if (track.pt() < ptMin.value || track.pt() > ptMax.value)
       return false;
-    if (track.eta() < etaMin || track.eta() > etaMax)
+    if (track.eta() < etaMin.value || track.eta() > etaMax.value)
       return false;
     if (std::abs(track.dcaXY()) > dcaXYMax.value)
       return false;
@@ -381,7 +382,7 @@ struct PidFeatureExtractor {
         r.bayesProbPi, r.bayesProbKa, r.bayesProbPr, r.bayesProbEl);
 
       if (exportCsv) {
-        writeCsvRow(csvFile, r);
+        writeCsvRow(*csvFile, r);
       }
     }
   }
@@ -414,7 +415,7 @@ struct PidFeatureExtractor {
         mcParticle.pdgCode(), static_cast<uint8_t>(mcParticle.isPhysicalPrimary()));
 
       if (exportCsv) {
-        writeCsvRow(csvFile, r);
+        writeCsvRow(*csvFile, r);
       }
     }
   }
