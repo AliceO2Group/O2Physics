@@ -16,6 +16,7 @@
 #include "PWGEM/PhotonMeson/Core/EMBitFlags.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
+#include "PWGEM/PhotonMeson/DataModel/ConversionMl.h"
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/GammaTablesRedux.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
@@ -26,12 +27,14 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>
 #include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -40,14 +43,23 @@
 #include <Framework/SliceCache.h>
 #include <Framework/runDataProcessing.h>
 
+#include <Math/Vector3D.h> // IWYU pragma: keep (do not replace with Math/Vector3Dfwd.h)
+#include <Math/Vector3Dfwd.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TF1.h>
+#include <TH1.h>
 #include <TH2.h>
 #include <TPDGCode.h>
 #include <TTree.h>
 
+#include <sys/types.h>
+
+#include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <random>
 #include <string>
 #include <utility>
 #include <vector>
@@ -59,6 +71,10 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
 using namespace o2::constants::physics;
+using namespace o2::aod::pwgem::photonmeson::utils::mcutil;
+
+constexpr float MinAmpThreshold = 0.2f; // Minimum cluster amplitude threshold to count as significant
+constexpr float MaxAmpDiff = 0.1f;      // Maximum cluster amplitude difference to leading cluster contribution to count as significant
 
 enum CentralityEstimator {
   None = 0,
@@ -68,19 +84,39 @@ enum CentralityEstimator {
   NCentralityEstimators
 };
 
-enum class MapLevel {
-  kGood = 1,
-  kNoBad = 2,
-  kInEMC = 3,
-  kAll = 4
+enum class TruthClass {
+  Conversion = 0, // 0: true e+/e- pair from the same conversion
+
+  PhotonPairSamePi0, // 1: two photon clusters, same Pi0
+  PhotonPairDiffPi0, // 2: two photon clusters, different Pi0s
+  PhotonPairOnePi0,  // 3: two photon clusters, only one from a Pi0
+
+  PhotonElectronSamePi0, // 4: photon + electron cluster, same Pi0
+  PhotonElectronDiffPi0, // 5: photon + electron cluster, different Pi0s
+  PhotonElectronOnePi0,  // 6: photon + electron cluster, only one from a Pi0
+  BSPhotonElectron,      // 7: photon + electron cluster, from Bremsstrahlung
+
+  ElectronPairSamePi0, // 8: e+e cluster pair, same Pi0 (conversion and/or Dalitz)
+  ElectronPairDiffPi0, // 9: e+e cluster pair, different Pi0s
+  ElectronPairOnePi0,  // 10: e+e cluster pair, only one from a Pi0
+
+  SplitPhotonCluster,   // 11: one photon producing two clusters
+  SplitLeptonCluster,   // 12: one lepton producing two clusters
+  PhotonBSPhotonPair,   // 13: photon + photon from Bremsstrahlung
+  ElectronBSPhotonPair, // 14: one cluster from Bremsstrahlung and one electron cluster except case BSPhotonElectron
+  BSPhotonPair,         // 15: both photons from Bremsstrahlung
+
+  Background, // 16: else / uncorrelated
+
+  NClasses
 };
 
-enum class TruthClass {
-  Conversion = 0,
-  Pi0,
-  Pi0Conversion,
-  Background,
-  Photon,
+enum class ClusterTruthClass {
+  Photon = 0,    // cluster is a true, unconverted photon
+  Conversion,    // cluster is a leg of a true conversion
+  Pi0Conversion, // ...and that conversion's photon itself came from pi0/eta (excludes same-gamma-pair case)
+  Pi0,           // cluster comes from the pi0/eta decay chain (not via the conversion-leg path above)
+  Background,    // cluster is flagged as both meson-chain AND conversion -- ambiguous/contradictory
   NClasses
 };
 
@@ -90,35 +126,93 @@ enum class TagDecision {
   NTags
 };
 
+struct ClusterMcInfo {
+  bool isLepton = false;
+  bool isPhoton = false;
+  bool isFromConv = false;
+  bool isMergedConv = false;
+  bool isFromPi0 = false;
+  bool isFromBremsstrahlung = false;
+  int convMotherId = -1;
+  int photonId = -1;
+  float purity = 0;
+};
+
+template <o2::soa::is_iterator TGroup, o2::soa::is_iterator TIter, o2::soa::is_table McParticles>
+ClusterMcInfo classifyCluster(const TGroup& g, TIter& mcCluster, TIter& mcClusterLooper, TIter& mcClusterLooper2, McParticles const& mcParticles)
+{
+  ClusterMcInfo info;
+  mcCluster.setCursor(g.emmcparticleIds()[0]);
+  info.isFromBremsstrahlung = isFromBremsstrahlung(mcCluster, mcClusterLooper); // particle has to be a photon and it has to have a e+ or e- as mother!
+  float leadingAmplitude = g.amplitude()[0];
+  info.purity = leadingAmplitude;
+  if (std::abs(mcCluster.pdgCode()) == PDG_t::kElectron) {
+    info.isLepton = true;
+    info.convMotherId = getMotherIndexFromChain(mcCluster, mcClusterLooper, PDG_t::kGamma);
+    info.isFromConv = info.convMotherId >= 0;
+
+    if (mcCluster.mothersIds().size() > 0 && info.isFromConv) {
+      for (size_t i = 1; i < g.emmcparticleIds().size(); ++i) {
+        mcClusterLooper.setCursor(g.emmcparticleIds()[i]);
+        if (std::abs(mcClusterLooper.pdgCode()) == PDG_t::kElectron && mcClusterLooper.pdgCode() == -1 * mcCluster.pdgCode()) {
+          int32_t otherConvMotherId = getMotherIndexFromChain(mcClusterLooper, mcClusterLooper2, PDG_t::kGamma);
+          if (otherConvMotherId == info.convMotherId) {
+            if (g.amplitude()[i] >= leadingAmplitude - MaxAmpDiff && g.amplitude()[i] > MinAmpThreshold) {
+              info.isMergedConv = true;
+            }
+            break;
+          }
+        }
+      }
+    }
+  }
+  if (std::abs(mcCluster.pdgCode()) == PDG_t::kGamma) {
+    info.isPhoton = true;
+  }
+
+  info.photonId = o2::aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(mcCluster, mcParticles, std::vector<int>{PDG_t::kPi0, Pdg::kEta, Pdg::kOmega, Pdg::kEtaPrime});
+  info.isFromPi0 = info.photonId >= 0;
+
+  return info;
+}
+
 struct EmcalPhotonMcTask {
   static constexpr float EMCALRadius = 440.f;
+  static constexpr float PhiVUndefined = -999.f;
+  static constexpr float Epsilon = 1.e-6f;
 
-  o2::framework::Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  o2::framework::Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  o2::framework::Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
-  o2::framework::Configurable<bool> writeTree{"writeTree", true, "write tree for ML."};
+  static constexpr std::array<const char*, static_cast<size_t>(TruthClass::NClasses)> kTruthClassNames = {
+    "Conversion", "PhotonPairSamePi0", "PhotonPairDiffPi0", "PhotonPairOnePi0",
+    "PhotonElectronSamePi0", "PhotonElectronDiffPi0", "PhotonElectronOnePi0", "BSPhotonElectron",
+    "ElectronPairSamePi0", "ElectronPairDiffPi0", "ElectronPairOnePi0",
+    "SplitPhotonCluster", "SplitLeptonCluster", "Background"};
+
+  Produces<aod::ConvTagCandidates_001> convTagCandidates;
+
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
+  Configurable<bool> writeTable{"writeTable", true, "write table for ML."};
+  Configurable<std::vector<int>> classPrescale{"classPrescale", {1, 1, 700, 25, 1, 350, 15, 1, 1, 35, 2, 1, 1, 1, 1, 1, 1000}, "prescale factor per TruthClass, indexed 0..10 matching the enum order"};
+  Configurable<uint32_t> bkgPrescaleSeed{"bkgPrescaleSeed", 42, "seed for the background-prescale RNG"};
 
   // configurable axis
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {400, 0.0, 0.8}, "invariant mass axis for the neutral meson"};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {400, 0., 20.}, "pT axis for the neutral meson"};
-  ConfigurableAxis thnConfigAxisERelative{"thnConfigAxisERelative", {600, -1., 5.}, "(E rec - E true) / E true axis"};
-  ConfigurableAxis thnConfigAxisPRelative{"thnConfigAxisPRelative", {300, -1., 2.}, "(P rec - P true) / P true axis"};
-  ConfigurableAxis thnConfigAxisEtaRelative{"thnConfigAxisEtaRelative", {300, -1., 2.}, "(eta rec - eta true) / eta true axis"};
-  ConfigurableAxis thnConfigAxisPhiRelative{"thnConfigAxisPhiRelative", {300, -1., 2.}, "(phi rec - phi true) / phi true axis"};
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {20, 0., 100.}, "centrality axis for the current event"};
   ConfigurableAxis thnConfigAxisMult{"thnConfigAxisMult", {60, 0., 60000.}, "multiplicity axis for the current event"};
   ConfigurableAxis thnConfigAxisDeltaEta{"thnConfigAxisDeltaEta", {100, -1, 1}, "delta eta axis"};
   ConfigurableAxis thnConfigAxisDeltaPhi{"thnConfigAxisDeltaPhi", {100, -1, 1}, "delta phi axis"};
-  Configurable<bool> useCent{"useCent", 0, "flag to enable usage of centrality instead of multiplicity as axis."};
+  Configurable<bool> useCent{"useCent", false, "flag to enable usage of centrality instead of multiplicity as axis."};
 
   struct : ConfigurableGroup {
     std::string prefix = "conversiontagging";
     Configurable<float> maxMinv{"maxMinv", 0.1f, "maximum invariant mass for tagging conversions."};
     Configurable<float> maxDeltaEta{"maxDeltaEta", 0.05f, "maximum delta eta between two clusters for tagging them as conversions."};
     Configurable<float> maxDeltaPhi{"maxDeltaPhi", 0.1f, "maximum delta phi between two clusters for tagging them as conversions."};
-    Configurable<float> minRConv{"minRConv", 370.f, "minimum conversion Radius of two clusters for tagging them as conversions."};
-    Configurable<float> maxRConv{"maxRConv", 430.f, "maximum conversion Radius of two clusters for tagging them as conversions."};
+    Configurable<float> minrConv{"minrConv", 370.f, "minimum conversion Radius of two clusters for tagging them as conversions."};
+    Configurable<float> maxrConv{"maxrConv", 430.f, "maximum conversion Radius of two clusters for tagging them as conversions."};
   } conversiontaggingcuts;
 
   EMPhotonEventCut fEMEventCut;
@@ -170,27 +264,27 @@ struct EmcalPhotonMcTask {
 
   SliceCache cache;
 
-  using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters, aod::EMEMCClusterMCLabels>;
+  using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters, aod::EMEMCClusterMCLabels_001>;
 
   using Colls = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMMCEventLabels>;
 
   using McColls = o2::soa::Join<o2::aod::EMMCEvents, o2::aod::BinnedGenPts>;
   using McParticles = EMMCParticles;
 
-  PresliceOptional<EMCalPhotons> perCollisionEMC = o2::aod::emccluster::pmeventId;
+  PresliceOptional<aod::EMCEMEventIds> perCollisionEMC = o2::aod::emccluster::pmeventId;
   PresliceOptional<MinMTracks> perEMCClusterMT = o2::aod::mintm::minClusterId;
   PresliceOptional<MinMSTracks> perEMCClusterMS = o2::aod::mintm::minClusterId;
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  OutputObj<TTree> fConvTagTree{"convTagTree", OutputObjHandlingPolicy::AnalysisObject};
+  int8_t bTruthLabel{};
 
-  float bMinv{}, bRConv{}, bDeltaEta{}, bDeltaPhi{}, bE1{}, bE2{}, bAsymmetry{}, bCentOrMult{}, bM021{}, bM022{}, bTime1{}, bTime2{}, bNCell1{}, bNCell2{}, bOpeningAngle{};
-  int bTruthLabel{}, bCollisionIndex{};
-
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   int mRunNumber{0};
   float dBz{0.f};
+
+  std::mt19937 mRandGen;
+  std::uniform_int_distribution<int> mPrescaleDist;
 
   void defineEMEventCut()
   {
@@ -244,24 +338,12 @@ struct EmcalPhotonMcTask {
     fEMCCut.addQAHistograms(&registry);
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&registry);
 
-    const AxisSpec thnAxisPtGen{thnConfigAxisPt, "#it{p}_{T,Gen} (GeV/#it{c})"};
-    const AxisSpec thnAxisPtRec{thnConfigAxisPt, "#it{p}_{T,Rec} (GeV/#it{c})"};
-    const AxisSpec thnAxisPGen{thnConfigAxisPt, "#it{p}_{Gen} (GeV/#it{c})"};
-    const AxisSpec thnAxisPRec{thnConfigAxisPt, "#it{p}_{Rec} (GeV/#it{c})"};
-    const AxisSpec thnAxisPRelative{thnConfigAxisPRelative, "#it{p}_{Rec} - #it{p}_{Gen} / #it{p}_{Gen}"};
-    const AxisSpec thnAxisEGen{thnConfigAxisPt, "#it{E}_{Gen} (GeV)"};
     const AxisSpec thnAxisERec{thnConfigAxisPt, "#it{E}_{Rec} (GeV)"};
-    const AxisSpec thnAxisERelative{thnConfigAxisERelative, "#it{E}_{Rec} - #it{E}_{Gen} / #it{E}_{Gen}"};
+    const AxisSpec thnAxisPtRec{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisInvMass{thnConfigAxisInvMass, "#it{M}_{#gamma#gamma} (GeV/#it{c}^{2})"};
 
-    const AxisSpec thnAxisEtaRelative{thnConfigAxisEtaRelative, "#it{#eta}_{Rec} - #it{#eta}_{Gen} / #it{#eta}_{Gen}"};
-    const AxisSpec thnAxisPhiRelative{thnConfigAxisPhiRelative, "#it{#varphi}_{Rec} - #it{#varphi}_{Gen} / #it{#varphi}_{Gen}"};
-
-    const AxisSpec thnAxisEtaGen{280, -0.7, 0.7, "#it{#eta}_{Gen}"};
-    const AxisSpec thnAxisPhiGen{360, 0., o2::constants::math::TwoPI, "#it{#varphi}_{Gen} (rad)"};
-
-    const AxisSpec thnAxisRConvRec{100, 0, 500, "#it{R}_{rec}"};
-    const AxisSpec thnAxisRConvGen{100, 0, 500, "#it{R}_{gen}"};
+    const AxisSpec thnAxisrConvRec{100, 0, 500, "#it{R}_{rec}"};
+    const AxisSpec thnAxisrConvGen{100, 0, 500, "#it{R}_{gen}"};
 
     const AxisSpec thnAxisDeltaEta{thnConfigAxisDeltaEta, "#Delta#it{eta}"};
     const AxisSpec thnAxisDeltaPhi{thnConfigAxisDeltaPhi, "#Delta#it{#varphi} (rad)"};
@@ -278,14 +360,26 @@ struct EmcalPhotonMcTask {
       thnAxisCentOrMult = {thnConfigAxisMult, "FT0C Multiplicity"};
     }
 
-    registry.add("EMCal/TrueConversion/hMassReco", "minv vs Rconv vs E1 vs E2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisRConvRec, thnAxisERec, thnAxisERec, thnAxisCentOrMult});
-    registry.add("EMCal/TrueConversion/hRconvReco", "Rconv vs true RConv vs E1 vs E2", HistType::kTHnSparseF, {thnAxisRConvRec, thnAxisRConvGen, thnAxisERec, thnAxisERec, thnAxisCentOrMult});
-    registry.add("EMCal/TrueConversion/hDeltaEtaDeltaPhi", "EMCal Delta Eta vs Delta vs E1 vs E2", HistType::kTHnSparseF, {thnAxisDeltaEta, thnAxisDeltaPhi, thnAxisERec, thnAxisERec, thnAxisCentOrMult});
-    registry.add("EMCal/TrueConversion/hEnergyReco", "energy vs cent", HistType::kTH2D, {thnAxisERec, thnAxisCentOrMult});
+    auto hTruthLabel = registry.add<TH2>("hTruthLabel", "Truth label distribution;;Counts", HistType::kTH2D, {{static_cast<int>(TruthClass::NClasses), -0.5, static_cast<double>(TruthClass::NClasses) - 0.5}, thnAxisPtRec});
 
-    registry.addClone("EMCal/TrueConversion/", "EMCal/TrueConversionFromPi0/");
-    registry.addClone("EMCal/TrueConversion/", "EMCal/TrueClusterFromPi0/");
-    registry.addClone("EMCal/TrueConversion/", "EMCal/Background/");
+    // set bin labels once at init, so histogram is human-readable without decoding the enum
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::Conversion) + 1, "Conversion");
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::PhotonPairSamePi0) + 1, "PhotonPairSamePi0");
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::PhotonPairDiffPi0) + 1, "PhotonPairDiffPi0");
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::PhotonPairOnePi0) + 1, "PhotonPairOnePi0");
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::PhotonElectronSamePi0) + 1, "PhotonElectronSamePi0");
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::PhotonElectronDiffPi0) + 1, "PhotonElectronDiffPi0");
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::PhotonElectronOnePi0) + 1, "PhotonElectronOnePi0");
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::BSPhotonElectron) + 1, "BSPhotonElectron");
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::ElectronPairSamePi0) + 1, "ElectronPairSamePi0");
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::ElectronPairDiffPi0) + 1, "ElectronPairDiffPi0");
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::ElectronPairOnePi0) + 1, "ElectronPairOnePi0");
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::SplitPhotonCluster) + 1, "SplitPhotonCluster");
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::SplitLeptonCluster) + 1, "SplitLeptonCluster");
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::PhotonBSPhotonPair) + 1, "PhotonBSPhotonPair");
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::ElectronBSPhotonPair) + 1, "ElectronBSPhotonPair");
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::BSPhotonPair) + 1, "BSPhotonPair");
+    hTruthLabel->GetXaxis()->SetBinLabel(static_cast<int>(TruthClass::Background) + 1, "Background");
 
     auto hPi0BothResolvedLost = registry.add<TH1>("EMCal/hPi0BothResolvedLost", "Confusion matrix for conversion tagging", HistType::kTH1D, {{2, -0.5, 1.5}});
     hPi0BothResolvedLost->GetXaxis()->SetBinLabel(1, "both resolved (denominator)");
@@ -301,25 +395,16 @@ struct EmcalPhotonMcTask {
     hConfusionMatrixConversionTagging->GetYaxis()->SetBinLabel(4, "background");
     hConfusionMatrixConversionTagging->GetYaxis()->SetBinLabel(5, "#gamma");
 
-    if (writeTree.value) {
-      fConvTagTree.setObject(new TTree("convTagTree", "flattened conversion tagging features"));
-      fConvTagTree->Branch("collisionIndex", &bCollisionIndex);
-      fConvTagTree->Branch("minv", &bMinv);
-      fConvTagTree->Branch("rConv", &bRConv);
-      fConvTagTree->Branch("deltaEta", &bDeltaEta);
-      fConvTagTree->Branch("deltaPhi", &bDeltaPhi);
-      fConvTagTree->Branch("e1", &bE1);
-      fConvTagTree->Branch("e2", &bE2);
-      fConvTagTree->Branch("asymmetry", &bAsymmetry);
-      fConvTagTree->Branch("centOrMult", &bCentOrMult);
-      fConvTagTree->Branch("m021", &bM021);
-      fConvTagTree->Branch("m022", &bM022);
-      fConvTagTree->Branch("time1", &bTime1);
-      fConvTagTree->Branch("time2", &bTime2);
-      fConvTagTree->Branch("ncell1", &bNCell1);
-      fConvTagTree->Branch("ncell2", &bNCell2);
-      fConvTagTree->Branch("openingAngle", &bOpeningAngle);
-      fConvTagTree->Branch("truthLabel", &bTruthLabel);
+    mRandGen.seed(bkgPrescaleSeed.value);
+
+    if (classPrescale.value.size() != kTruthClassNames.size()) {
+      LOG(fatal) << "classPrescale has " << classPrescale.value.size() << " entries, "
+                 << "but TruthClass has " << kTruthClassNames.size() << " members -- update classPrescale!";
+    }
+
+    LOG(info) << "=== classPrescale configuration ===";
+    for (size_t i = 0; i < kTruthClassNames.size(); ++i) {
+      LOG(info) << "  [" << i << "] " << kTruthClassNames[i] << " -> prescale = " << classPrescale.value[i];
     }
   }; // end init
 
@@ -424,6 +509,9 @@ struct EmcalPhotonMcTask {
       LOG(info) << "Skipping DF because there are not photons!";
       return;
     }
+    if (collisions.size() <= 0) {
+      return;
+    }
     std::vector<bool> wasMeassured(mcParticles.size(), false);
     EMBitFlags emcFlagsFromTrueMeson(clusters.size());
     EMBitFlags emcFlagsFromTrueMesonSameGamma(clusters.size());
@@ -433,14 +521,15 @@ struct EmcalPhotonMcTask {
     if (clusters.size() > 0) {
       fEMCCut.AreSelectedRunning(emcFlags, clusters, matchedPrims, matchedSeconds, &registry);
     }
-    auto mcCluster1 = mcParticles.begin();
-    auto mcCluster2 = mcParticles.begin();
-    auto mcPhoton1 = mcParticles.begin();
-    auto mcPhoton2 = mcParticles.begin();
-    auto mcMother = mcParticles.begin();
+    auto mcCluster1 = mcParticles.begin();       // iterator of MC particle of highest contributor for first cluster
+    auto mcCluster2 = mcParticles.begin();       // iterator of MC particle of highest contributor for second cluster
+    auto mcClusterLooper = mcParticles.begin();  // iterator of MC particle of other contributor for both clusters
+    auto mcClusterLooper2 = mcParticles.begin(); // iterator of MC particle of other contributor for both clusters
+    auto mcPhoton1 = mcParticles.begin();        // iterator of MC particle of highest contributor for first cluster that is photon
+    auto mcPhoton2 = mcParticles.begin();        // iterator of MC particle of highest contributor for second cluster that is photon
+    auto mcMother = mcParticles.begin();         // iterator of MC particle of combined mother of both clusters
 
     for (const auto& collision : collisions) {
-      bCollisionIndex = collision.globalIndex(); // or emmceventId() if you want to split by MC event specifically
       initCCDB(collision);
       isFullEventSelected(collision, true);
 
@@ -462,35 +551,34 @@ struct EmcalPhotonMcTask {
         ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
-        const float deltaPhi = RecoDecay::constrainAngle(v1.Phi() - v2.Phi(), -o2::constants::math::PIHalf);
+        // z-axis unit vector (beam/field direction)
+        ROOT::Math::XYZVector p1 = v1.Vect();
+        ROOT::Math::XYZVector p2 = v2.Vect();
+        ROOT::Math::XYZVector pSum = p1 + p2;
+        ROOT::Math::XYZVector zAxis(0, 0, 1);
+
+        ROOT::Math::XYZVector u = pSum.Unit();
+        ROOT::Math::XYZVector nDecay = p1.Cross(p2); // normal to the plane containing p1, p2
+        ROOT::Math::XYZVector nRef = u.Cross(zAxis); // normal to the plane containing u and z
+
+        float phiV = PhiVUndefined; // sentinel for degenerate geometry
+        if (nDecay.R() > Epsilon && nRef.R() > Epsilon) {
+          float cosPhiV = static_cast<float>(nDecay.Unit().Dot(nRef.Unit()));
+          cosPhiV = std::clamp(cosPhiV, -1.f, 1.f);
+          phiV = std::acos(cosPhiV);
+        }
+
+        const float deltaPhi = RecoDecay::constrainAngle(v1.Phi() - v2.Phi(), -o2::constants::math::PI);
         const float deltaEta = v1.Eta() - v2.Eta();
         const float eT1 = v1.Et();
         const float eT2 = v2.Et();
-
-        const float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
+        const float harmonicET = (eT1 * eT2) / (eT1 + eT2);
 
         // calculate the conversion radius in cm. The formula expects radii in m, B field in T and energies in GeV
-        const float RConv = 100.f * (EMCALRadius / 100.f - std::fabs(deltaPhi) / (0.15f * (std::fabs(dBz) / 10.f)) * (eT1 * eT2) / (eT1 + eT2));
-
-        // tree values
-        bMinv = vMeson.M();
-        bRConv = RConv;
-        bDeltaEta = deltaEta;
-        bDeltaPhi = deltaPhi;
-        bE1 = g1.e();
-        bE2 = g2.e();
-        bAsymmetry = std::fabs(g1.e() - g2.e()) / (g1.e() + g2.e());
-        bCentOrMult = centOrMult;
-        bM021 = g1.m02();
-        bM022 = g2.m02();
-        bTime1 = g1.time();
-        bTime2 = g2.time();
-        bNCell1 = g1.nCells();
-        bNCell2 = g2.nCells();
-        bOpeningAngle = openingAngle;
+        const float rConv = 100.f * (EMCALRadius / 100.f - std::fabs(deltaPhi) / (0.15f * (std::fabs(dBz) / 10.f)) * harmonicET);
 
         // tag conversion pairs
-        if (conversiontaggingcuts.maxMinv >= vMeson.M() && conversiontaggingcuts.maxDeltaEta >= std::fabs(deltaEta) && conversiontaggingcuts.minRConv <= RConv && RConv <= conversiontaggingcuts.maxRConv && conversiontaggingcuts.maxDeltaPhi >= std::fabs(deltaPhi)) {
+        if (conversiontaggingcuts.maxMinv >= vMeson.M() && conversiontaggingcuts.maxDeltaEta >= std::fabs(deltaEta) && conversiontaggingcuts.minrConv <= rConv && rConv <= conversiontaggingcuts.maxrConv && conversiontaggingcuts.maxDeltaPhi >= std::fabs(deltaPhi)) {
           emcFlagsTagging.set(g1.globalIndex());
           emcFlagsTagging.set(g2.globalIndex());
         }
@@ -499,86 +587,113 @@ struct EmcalPhotonMcTask {
         mcCluster1.setCursor(g1.emmcparticleIds()[0]);
         mcCluster2.setCursor(g2.emmcparticleIds()[0]);
 
-        bool areLeptons = false;        // both clusters are e+/e-
-        bool areConversionLegs = false; // both clusters are e+ + e- from one photon
-        bool arePhotonFromPi0 = false;  // both cluster come from the same gamma which is from pi0 or eta
-        bool areClusterFromPi0 = false; // both cluster come from the decay chain of a pi0 or eta excluding the same gamma case above
+        bool areFromSamePi0 = false;
+        bool areConversionLegs = false;
+        bool areSplitPhotonCluster = false;
+        bool areSplitLeptonCluster = false;
+        bool areBSPhotonElectron = false;
 
-        if (std::abs(mcCluster1.pdgCode()) == kElectron && std::abs(mcCluster2.pdgCode()) == kElectron) {
-          areLeptons = true;
-        }
-        if (o2::aod::pwgem::photonmeson::utils::mcutil::isMotherPDG(mcCluster1, kGamma) && o2::aod::pwgem::photonmeson::utils::mcutil::isMotherPDG(mcCluster2, kGamma)) {
-          // both cluster come from a photon
-          // reset the cursors to the legs!
-          mcCluster1.setCursor(g1.emmcparticleIds()[0]);
-          mcCluster2.setCursor(g2.emmcparticleIds()[0]);
-          if (mcCluster1.mothersIds().size() > 0 && mcCluster2.mothersIds().size() > 0 && mcCluster1.mothersIds()[0] == mcCluster2.mothersIds()[0]) {
-            // both cluster come from the same photon
-            emcFlagsFromTrueConversion.set(g1.globalIndex());
-            emcFlagsFromTrueConversion.set(g2.globalIndex());
-            areConversionLegs = true;
+        auto c1 = classifyCluster(g1, mcCluster1, mcClusterLooper, mcClusterLooper2, mcParticles);
+        auto c2 = classifyCluster(g2, mcCluster2, mcClusterLooper, mcClusterLooper2, mcParticles);
+
+        // split-cluster check MUST run first and take priority over everything else --
+        // if both clusters share the same dominant MC particle, this is one physical
+        // shower reconstructed as two clusters, not a genuine pair of anything.
+        const bool isSameDominantParticle = (g1.emmcparticleIds()[0] == g2.emmcparticleIds()[0]);
+        if (isSameDominantParticle) {
+          if (c1.isPhoton) {
+            areSplitPhotonCluster = true;
+          } else if (c1.isLepton) {
+            areSplitLeptonCluster = true;
           }
         }
-        // reset the cursors to the legs!
-        mcCluster1.setCursor(g1.emmcparticleIds()[0]);
-        mcCluster2.setCursor(g2.emmcparticleIds()[0]);
 
-        // check if the clusters are coming from a chain product of a pi0 or eta decay and then get the first level daughter of the pi0 or eta meson
-        int photonid1 = o2::aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(mcCluster1, mcParticles, std::vector<int>{PDG_t::kPi0, Pdg::kEta});
-        int photonid2 = o2::aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(mcCluster2, mcParticles, std::vector<int>{PDG_t::kPi0, Pdg::kEta});
+        const bool isAnyBSPhoton = c1.isFromBremsstrahlung || c2.isFromBremsstrahlung;
+        const bool areBSPhotons = c1.isFromBremsstrahlung && c2.isFromBremsstrahlung;
 
-        if (photonid1 >= 0 && photonid2 >= 0) {
-          // set the cursors to the photonId
-          mcPhoton1.setCursor(photonid1);
-          mcPhoton2.setCursor(photonid2);
+        // if they are not a split cluster check for proper conversion pair
+        if (!isSameDominantParticle && c1.isFromConv && c2.isFromConv && c1.convMotherId == c2.convMotherId) {
+          emcFlagsFromTrueConversion.set(g1.globalIndex());
+          emcFlagsFromTrueConversion.set(g2.globalIndex());
+          areConversionLegs = true;
+        }
+
+        // if they are not a split cluster check for neutral meson connection
+        if (!isSameDominantParticle && c1.isFromPi0 && c2.isFromPi0) {
+          mcPhoton1.setCursor(c1.photonId);
+          mcPhoton2.setCursor(c2.photonId);
           mcMother.setCursor(mcPhoton1.mothersIds()[0]);
           if (mcMother.producedByGenerator()) {
-            if (photonid1 == photonid2) {
-              // the two clusters came from the same photon which came from a pi0 or eta. Most likely: pi0/eta -> γ + X -> e+e- + X
-              emcFlagsFromTrueMesonSameGamma.set(g1.globalIndex());
-              emcFlagsFromTrueMesonSameGamma.set(g2.globalIndex());
-              arePhotonFromPi0 = true;
+            if (c1.photonId == c2.photonId) {
+              // bremsstrahlung: one side is a photon born from the other side's lepton lineage
+              const bool photonIsBS = (c1.isPhoton && c1.isFromBremsstrahlung) || (c2.isPhoton && c2.isFromBremsstrahlung);
+              if (photonIsBS && ((c1.isLepton && c2.isPhoton) || (c2.isLepton && c1.isPhoton))) {
+                areBSPhotonElectron = true;
+              } else {
+                areFromSamePi0 = true;
+                emcFlagsFromTrueMesonSameGamma.set(g1.globalIndex());
+                emcFlagsFromTrueMesonSameGamma.set(g2.globalIndex());
+              }
             } else if (mcPhoton1.mothersIds()[0] == mcPhoton2.mothersIds()[0]) {
+              areFromSamePi0 = true;
               emcFlagsFromTrueMeson.set(g1.globalIndex());
               emcFlagsFromTrueMeson.set(g2.globalIndex());
-              areClusterFromPi0 = true;
             }
           }
         }
 
-        // do we have two conversions
-        if (areLeptons && areConversionLegs) {
-          registry.fill(HIST("EMCal/TrueConversion/hMassReco"), vMeson.M(), RConv, g1.e(), g2.e(), centOrMult);
-          registry.fill(HIST("EMCal/TrueConversion/hRconvReco"), RConv, std::hypot(mcCluster1.vx(), mcCluster1.vy()), g1.e(), g2.e(), centOrMult);
-          registry.fill(HIST("EMCal/TrueConversion/hDeltaEtaDeltaPhi"), deltaEta, deltaPhi, g1.e(), g2.e(), centOrMult);
-          if (arePhotonFromPi0) {
-            registry.fill(HIST("EMCal/TrueConversionFromPi0/hMassReco"), vMeson.M(), RConv, g1.e(), g2.e(), centOrMult);
-            registry.fill(HIST("EMCal/TrueConversionFromPi0/hRconvReco"), RConv, std::hypot(mcCluster1.vx(), mcCluster1.vy()), g1.e(), g2.e(), centOrMult);
-            registry.fill(HIST("EMCal/TrueConversionFromPi0/hDeltaEtaDeltaPhi"), deltaEta, deltaPhi, g1.e(), g2.e(), centOrMult);
+        bTruthLabel = static_cast<int8_t>(TruthClass::Background);
+        if (areSplitPhotonCluster) {
+          bTruthLabel = static_cast<int8_t>(TruthClass::SplitPhotonCluster);
+        } else if (areSplitLeptonCluster) {
+          bTruthLabel = static_cast<int8_t>(TruthClass::SplitLeptonCluster);
+        } else if (areConversionLegs) {
+          bTruthLabel = static_cast<int8_t>(TruthClass::Conversion);
+        } else if (areBSPhotonElectron) {
+          bTruthLabel = static_cast<int8_t>(TruthClass::BSPhotonElectron);
+        } else if (areBSPhotons && (c1.isFromPi0 || c2.isFromPi0)) {
+          bTruthLabel = static_cast<int8_t>(TruthClass::BSPhotonPair);
+        } else if (isAnyBSPhoton && (c1.isFromPi0 || c2.isFromPi0) && ((c1.isPhoton && c2.isLepton) || (c2.isPhoton && c1.isLepton))) {
+          bTruthLabel = static_cast<int8_t>(TruthClass::ElectronBSPhotonPair);
+        } else if (isAnyBSPhoton && (c1.isFromPi0 || c2.isFromPi0) && (c1.isPhoton && c2.isPhoton)) {
+          bTruthLabel = static_cast<int8_t>(TruthClass::PhotonBSPhotonPair);
+        } else if (areFromSamePi0) {
+          if ((c1.isLepton && c2.isPhoton) || (c2.isLepton && c1.isPhoton)) {
+            bTruthLabel = static_cast<int8_t>(TruthClass::PhotonElectronSamePi0);
+          } else if (c1.isPhoton && c2.isPhoton) {
+            bTruthLabel = static_cast<int8_t>(TruthClass::PhotonPairSamePi0);
+          } else if (c1.isLepton && c2.isLepton) {
+            bTruthLabel = static_cast<int8_t>(TruthClass::ElectronPairSamePi0);
+          }
+        } else if (c1.isFromPi0 && c2.isFromPi0) {
+          if ((c1.isLepton && c2.isPhoton) || (c2.isLepton && c1.isPhoton)) {
+            bTruthLabel = static_cast<int8_t>(TruthClass::PhotonElectronDiffPi0);
+          } else if (c1.isPhoton && c2.isPhoton) {
+            bTruthLabel = static_cast<int8_t>(TruthClass::PhotonPairDiffPi0);
+          } else if (c1.isLepton && c2.isLepton) {
+            bTruthLabel = static_cast<int8_t>(TruthClass::ElectronPairDiffPi0);
+          }
+        } else if ((c1.isFromPi0 && !c2.isFromPi0) || (!c1.isFromPi0 && c2.isFromPi0)) {
+          if ((c1.isLepton && c2.isPhoton) || (c2.isLepton && c1.isPhoton)) {
+            bTruthLabel = static_cast<int8_t>(TruthClass::PhotonElectronOnePi0);
+          } else if (c1.isPhoton && c2.isPhoton) {
+            bTruthLabel = static_cast<int8_t>(TruthClass::PhotonPairOnePi0);
+          } else if (c1.isLepton && c2.isLepton) {
+            bTruthLabel = static_cast<int8_t>(TruthClass::ElectronPairOnePi0);
           }
         }
-        if (areClusterFromPi0) {
-          registry.fill(HIST("EMCal/TrueClusterFromPi0/hMassReco"), vMeson.M(), RConv, g1.e(), g2.e(), centOrMult);
-          registry.fill(HIST("EMCal/TrueClusterFromPi0/hRconvReco"), RConv, std::hypot(mcCluster1.vx(), mcCluster1.vy()), g1.e(), g2.e(), centOrMult);
-          registry.fill(HIST("EMCal/TrueClusterFromPi0/hDeltaEtaDeltaPhi"), deltaEta, deltaPhi, g1.e(), g2.e(), centOrMult);
-        }
-        if (!areClusterFromPi0 && !areConversionLegs) {
-          registry.fill(HIST("EMCal/Background/hMassReco"), vMeson.M(), RConv, g1.e(), g2.e(), centOrMult);
-          registry.fill(HIST("EMCal/Background/hRconvReco"), RConv, std::hypot(mcCluster1.vx(), mcCluster1.vy()), g1.e(), g2.e(), centOrMult);
-          registry.fill(HIST("EMCal/Background/hDeltaEtaDeltaPhi"), deltaEta, deltaPhi, g1.e(), g2.e(), centOrMult);
-        }
+
+        registry.fill(HIST("hTruthLabel"), bTruthLabel, vMeson.Pt());
 
         // final tree values plus filling
-        bTruthLabel = (areLeptons && areConversionLegs) ? 0 : (areClusterFromPi0 ? 1 : 2);
-        if (writeTree.value) {
-          fConvTagTree->Fill();
+        const int prescale = classPrescale.value[static_cast<uint>(bTruthLabel)];
+        const bool keepThisRow = (prescale <= 1) || (std::uniform_int_distribution<int>(0, prescale - 1)(mRandGen) == 0);
+        if (writeTable.value && keepThisRow) {
+          convTagCandidates(collision.globalIndex(), vMeson.M(), harmonicET, deltaEta, deltaPhi, phiV, g1.e(), g2.e(), g1.m02(), g2.m02(), g1.time(), g2.time(), g1.nCells(), g2.nCells(), c1.purity, c2.purity, bTruthLabel, centOrMult);
         }
       } // pair loop
     } // collision loop
 
-    if (collisions.size() <= 0) {
-      return;
-    }
     std::vector<bool> photonSeen(mcParticles.size(), false);   // this decay photon has >=1 resolved cluster
     std::vector<bool> photonTagged(mcParticles.size(), false); // >=1 of those clusters got conversion-tagged
     auto collision = collisions.begin();
@@ -593,10 +708,9 @@ struct EmcalPhotonMcTask {
       if (cluster.pmeventId() > collision.globalIndex()) {
         collision.setCursor(cluster.pmeventId());
       }
-      float centOrMult = getCentralityOrMultiplicity(collision);
 
       mcCluster1.setCursor(cluster.emmcparticleIds()[0]);
-      int photonid1 = o2::aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(mcCluster1, mcParticles, std::vector<int>{PDG_t::kPi0, Pdg::kEta});
+      int photonid1 = o2::aod::pwgem::photonmeson::utils::mcutil::FindMotherInChain(mcCluster1, mcParticles, std::vector<int>{PDG_t::kPi0, Pdg::kEta, Pdg::kOmega, Pdg::kEtaPrime});
       int motherId = -1;
       if (photonid1 >= 0) {
         mcPhoton1.setCursor(photonid1);
@@ -612,23 +726,19 @@ struct EmcalPhotonMcTask {
       const bool alreadyCountedForMeson = (motherId > -1 && wasMeassured[static_cast<size_t>(motherId)]);
 
       if (mcCluster1.pdgCode() == PDG_t::kGamma) {
-        registry.fill(HIST("EMCal/ConfusionMatrixConversionTagging"), emcFlagsTagging.test(cluster.globalIndex()) ? 0 : 1, static_cast<float>(TruthClass::Photon));
+        registry.fill(HIST("EMCal/ConfusionMatrixConversionTagging"), emcFlagsTagging.test(cluster.globalIndex()) ? 0 : 1, static_cast<float>(ClusterTruthClass::Photon));
       }
       if (!emcFlagsFromTrueConversion.test(cluster.globalIndex())) {
-        registry.fill(HIST("EMCal/ConfusionMatrixConversionTagging"), emcFlagsTagging.test(cluster.globalIndex()) ? 0 : 1, static_cast<float>(TruthClass::Conversion));
-        registry.fill(HIST("EMCal/TrueConversion/hEnergyReco"), cluster.e(), centOrMult);
+        registry.fill(HIST("EMCal/ConfusionMatrixConversionTagging"), emcFlagsTagging.test(cluster.globalIndex()) ? 0 : 1, static_cast<float>(ClusterTruthClass::Conversion));
         if (!emcFlagsFromTrueMesonSameGamma.test(cluster.globalIndex()) && !alreadyCountedForMeson) {
-          registry.fill(HIST("EMCal/ConfusionMatrixConversionTagging"), emcFlagsTagging.test(cluster.globalIndex()) ? 0 : 1, static_cast<float>(TruthClass::Pi0Conversion));
-          registry.fill(HIST("EMCal/TrueConversionFromPi0/hEnergyReco"), cluster.e(), centOrMult);
+          registry.fill(HIST("EMCal/ConfusionMatrixConversionTagging"), emcFlagsTagging.test(cluster.globalIndex()) ? 0 : 1, static_cast<float>(ClusterTruthClass::Pi0Conversion));
         }
       }
       if (!emcFlagsFromTrueMeson.test(cluster.globalIndex()) && !alreadyCountedForMeson) {
-        registry.fill(HIST("EMCal/ConfusionMatrixConversionTagging"), emcFlagsTagging.test(cluster.globalIndex()) ? 0 : 1, static_cast<float>(TruthClass::Pi0));
-        registry.fill(HIST("EMCal/TrueClusterFromPi0/hEnergyReco"), cluster.e(), centOrMult);
+        registry.fill(HIST("EMCal/ConfusionMatrixConversionTagging"), emcFlagsTagging.test(cluster.globalIndex()) ? 0 : 1, static_cast<float>(ClusterTruthClass::Pi0));
       }
       if (emcFlagsFromTrueMeson.test(cluster.globalIndex()) && emcFlagsFromTrueConversion.test(cluster.globalIndex())) {
-        registry.fill(HIST("EMCal/ConfusionMatrixConversionTagging"), emcFlagsTagging.test(cluster.globalIndex()) ? 0 : 1, static_cast<float>(TruthClass::Background));
-        registry.fill(HIST("EMCal/Background/hEnergyReco"), cluster.e(), centOrMult);
+        registry.fill(HIST("EMCal/ConfusionMatrixConversionTagging"), emcFlagsTagging.test(cluster.globalIndex()) ? 0 : 1, static_cast<float>(ClusterTruthClass::Background));
       }
       if (motherId > -1 && !wasMeassured[static_cast<size_t>(motherId)]) {
         wasMeassured[static_cast<size_t>(motherId)] = true;
@@ -642,7 +752,7 @@ struct EmcalPhotonMcTask {
       if (!mcPart.producedByGenerator()) {
         continue;
       }
-      if (mcPart.daughtersIds().size() != 2) {
+      if (mcPart.daughtersIds().size() != 2) { // o2-linter: disable=magic-number (self explanatory and does not need extra named variable)
         continue;
       }
 

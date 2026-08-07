@@ -1419,7 +1419,7 @@ struct FemtoUniverseProducerTask {
                   aod::femtouniverseparticle::ParticleType::kV0Child,
                   cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kPosCuts),
                   confIsUseCutculator ? cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kPosPID) : pidBitmask(postrack),
-                  0.,
+                  postrack.dcaXY(),
                   childIDs,
                   0,
                   postrack.sign());
@@ -1439,7 +1439,7 @@ struct FemtoUniverseProducerTask {
                   aod::femtouniverseparticle::ParticleType::kV0Child,
                   cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegCuts),
                   confIsUseCutculator ? cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegPID) : pidBitmask(negtrack),
-                  0.,
+                  negtrack.dcaXY(),
                   childIDs,
                   0,
                   negtrack.sign());

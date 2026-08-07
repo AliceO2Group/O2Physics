@@ -19,8 +19,11 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/runDataProcessing.h>
+
+#include <cstdint>
 
 using namespace o2;
 using namespace o2::framework;

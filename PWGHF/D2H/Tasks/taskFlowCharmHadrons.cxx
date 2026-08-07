@@ -608,8 +608,8 @@ struct HfTaskFlowCharmHadrons {
     if constexpr (StoreInfo == RunMode::kEsE || StoreInfo == RunMode::kSPEsE) {
       qVecRedComps = getEseQvec(collision, qVecRedDetector.value);
     }
-    float xRedQVec = qVecRedComps[0];
-    float yRedQVec = qVecRedComps[1];
+    float const xRedQVec = qVecRedComps[0];
+    float const yRedQVec = qVecRedComps[1];
     float const amplRedQVec = qVecRedComps[2];
 
     for (const auto& candidate : candidates) {
@@ -811,12 +811,10 @@ struct HfTaskFlowCharmHadrons {
         // subtract daughters' contribution from the (normalized) Q-vector
         const float redQVecXDaugSubtr = xRedQVec - std::accumulate(tracksRedQx.begin(), tracksRedQx.end(), 0.0);
         const float redQVecYDaugSubtr = yRedQVec - std::accumulate(tracksRedQy.begin(), tracksRedQy.end(), 0.0);
-        if (qVecRedDetector.value == QvecEstimator::TPCTot || qVecRedDetector.value == QvecEstimator::TPCPos || qVecRedDetector.value == QvecEstimator::TPCNeg) {
-          // Correct for track multiplicity
-          redQVec = std::hypot(redQVecXDaugSubtr, redQVecYDaugSubtr) * std::sqrt(amplRedQVec) / std::sqrt(amplRedQVec - tracksRedQx.size());
-        } else {
-          redQVec = std::hypot(xRedQVec, yRedQVec);
-        }
+        // Correct for track multiplicity
+        redQVec = std::hypot(redQVecXDaugSubtr, redQVecYDaugSubtr) * std::sqrt(amplRedQVec) / std::sqrt(amplRedQVec - tracksRedQx.size());
+      } else {
+        redQVec = std::hypot(xRedQVec, yRedQVec);
       }
       if (storeRedQVec) {
         rowCandFlowEsE(massCand, ptCand, outputMl[0], outputMl[1], scalprodCand, cent, redQVec);

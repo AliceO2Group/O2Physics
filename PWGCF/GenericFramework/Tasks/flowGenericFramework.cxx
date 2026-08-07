@@ -399,6 +399,17 @@ struct FlowGenericFramework {
     V0EfficiencyFilled,
     V0EfficiencyStageCount
   };
+  enum V0EfficiencyDaughterPdgCategory {
+    V0EfficiencyDaughterOther = 0,
+    V0EfficiencyDaughterPiPlus,
+    V0EfficiencyDaughterPiMinus,
+    V0EfficiencyDaughterProton,
+    V0EfficiencyDaughterAntiProton,
+    V0EfficiencyDaughterElectron,
+    V0EfficiencyDaughterPositron,
+    V0EfficiencyDaughterKaon,
+    V0EfficiencyDaughterPdgCategoryCount
+  };
   enum ResoIDs {
     K0Sideband1 = 0,
     K0Signal,
@@ -619,6 +630,8 @@ struct FlowGenericFramework {
     AxisSpec efficiencyParticleAxis = {EfficiencySpeciesCount, -0.5, static_cast<float>(EfficiencySpeciesCount) - 0.5, "particle"};
     AxisSpec efficiencyStepAxis = {EfficiencyStepCount, -0.5, static_cast<float>(EfficiencyStepCount) - 0.5, "generated/reconstructed"};
     AxisSpec v0EfficiencyStageAxis = {V0EfficiencyStageCount, -0.5, static_cast<float>(V0EfficiencyStageCount) - 0.5, "stage"};
+    AxisSpec v0EfficiencyDebugEtaAxis = {160, -4.f, 4.f, "#eta"};
+    AxisSpec v0EfficiencyDaughterPdgAxis = {V0EfficiencyDaughterPdgCategoryCount, -0.5, static_cast<float>(V0EfficiencyDaughterPdgCategoryCount) - 0.5, "daughter PDG category"};
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -642,6 +655,8 @@ struct FlowGenericFramework {
     if (doprocessEfficiency) {
       registry.add("Efficiency/efficiencyHist", "; #it{p}_{T}^{MC}; Centrality (%)", {HistType::kTHnSparseF, {{ptAxis, centAxis, efficiencyParticleAxis, efficiencyStepAxis}}});
       registry.add("Efficiency/v0RecoDebug", "; #it{p}_{T}; Centrality (%)", {HistType::kTHnSparseF, {{ptAxis, centAxis, efficiencyParticleAxis, v0EfficiencyStageAxis}}});
+      registry.add("Efficiency/v0RecoDaughterEtaDebug", "; Centrality (%); particle; #eta^{MC}_{pos}; #eta^{MC}_{neg}; #eta^{reco}_{pos}; #eta^{reco}_{neg}", {HistType::kTHnSparseF, {{centAxis, efficiencyParticleAxis, v0EfficiencyDebugEtaAxis, v0EfficiencyDebugEtaAxis, v0EfficiencyDebugEtaAxis, v0EfficiencyDebugEtaAxis}}});
+      registry.add("Efficiency/v0RecoDaughterPdgDebug", "; Centrality (%); particle; PDG^{MC}_{pos}; PDG^{MC}_{neg}", {HistType::kTHnSparseF, {{centAxis, efficiencyParticleAxis, v0EfficiencyDaughterPdgAxis, v0EfficiencyDaughterPdgAxis}}});
     }
     if (doprocessMCReco || doprocessData || doprocessRun2 || doprocessEfficiency) {
       if (cfgFill.cfgFillQA) {
@@ -2916,6 +2931,41 @@ struct FlowGenericFramework {
     return track.eta() > cfgKinematics.cfgEta->first && track.eta() < cfgKinematics.cfgEta->second;
   }
 
+  template <typename TParticle>
+  int getV0EfficiencyDaughterPdgCategory(const TParticle& particle)
+  {
+    const int pdgCode = particle.pdgCode();
+    if (pdgCode == kPiPlus) {
+      return V0EfficiencyDaughterPiPlus;
+    }
+    if (pdgCode == -kPiPlus) {
+      return V0EfficiencyDaughterPiMinus;
+    }
+    if (pdgCode == kProton) {
+      return V0EfficiencyDaughterProton;
+    }
+    if (pdgCode == -kProton) {
+      return V0EfficiencyDaughterAntiProton;
+    }
+    if (pdgCode == kElectron) {
+      return V0EfficiencyDaughterElectron;
+    }
+    if (pdgCode == -kElectron) {
+      return V0EfficiencyDaughterPositron;
+    }
+    if (std::abs(pdgCode) == kKPlus) {
+      return V0EfficiencyDaughterKaon;
+    }
+    return V0EfficiencyDaughterOther;
+  }
+
+  template <typename TParticle, typename TTrack>
+  void fillV0EfficiencyDaughterDebug(int particleIndex, float centrality, const TParticle& posMcParticle, const TParticle& negMcParticle, const TTrack& postrack, const TTrack& negtrack)
+  {
+    registry.fill(HIST("Efficiency/v0RecoDaughterEtaDebug"), centrality, particleIndex, posMcParticle.eta(), negMcParticle.eta(), postrack.eta(), negtrack.eta());
+    registry.fill(HIST("Efficiency/v0RecoDaughterPdgDebug"), centrality, particleIndex, getV0EfficiencyDaughterPdgCategory(posMcParticle), getV0EfficiencyDaughterPdgCategory(negMcParticle));
+  }
+
   void fillV0EfficiencyRecoDebug(float pt, float centrality, int particleIndex, int stage)
   {
     registry.fill(HIST("Efficiency/v0RecoDebug"), pt, centrality, particleIndex, stage);
@@ -2960,7 +3010,9 @@ struct FlowGenericFramework {
   void fillEfficiencyRecoV0(const TV0& v0, const TCollision& collision, const TTracks& tracks, float centrality)
   {
     using V0TrackTable = std::decay_t<TTracks>;
-    fillEnabledV0EfficiencyRecoDebug(v0, centrality, V0EfficiencyCandidate);
+    if (cfgFill.cfgFillV0QA) {
+      fillEnabledV0EfficiencyRecoDebug(v0, centrality, V0EfficiencyCandidate);
+    }
 
     auto postrack = v0.template posTrack_as<V0TrackTable>();
     auto negtrack = v0.template negTrack_as<V0TrackTable>();
@@ -2968,14 +3020,18 @@ struct FlowGenericFramework {
     if (!postrack.has_mcParticle() || !negtrack.has_mcParticle()) {
       return;
     }
-    fillEnabledV0EfficiencyRecoDebug(v0, centrality, V0EfficiencyDaughterMCLabels);
+    if (cfgFill.cfgFillV0QA) {
+      fillEnabledV0EfficiencyRecoDebug(v0, centrality, V0EfficiencyDaughterMCLabels);
+    }
 
     auto posMcParticle = postrack.template mcParticle_as<aod::McParticles>();
     auto negMcParticle = negtrack.template mcParticle_as<aod::McParticles>();
     if (!posMcParticle.has_mothers() || !negMcParticle.has_mothers()) {
       return;
     }
-    fillEnabledV0EfficiencyRecoDebug(v0, centrality, V0EfficiencyDaughterMothers);
+    if (cfgFill.cfgFillV0QA) {
+      fillEnabledV0EfficiencyRecoDebug(v0, centrality, V0EfficiencyDaughterMothers);
+    }
 
     for (const auto& posMother : posMcParticle.template mothers_as<aod::McParticles>()) {
       for (const auto& negMother : negMcParticle.template mothers_as<aod::McParticles>()) {
@@ -2985,52 +3041,78 @@ struct FlowGenericFramework {
 
         int pdgCode = std::abs(posMother.pdgCode());
         if (pdgCode == PDG_t::kK0Short && resoSwitchVals[UseParticle][K0] != 0) {
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyCommonPrimaryMother);
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyMotherSpecies);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyCommonPrimaryMother);
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyMotherSpecies);
+          }
           if (std::abs(posMother.y()) >= resoCutVals[Rapidity][K0]) {
             return;
           }
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyMotherRapidity);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyMotherRapidity);
+          }
           auto selection = selectK0(collision, v0, tracks);
           if (!selection.selected) {
             return;
           }
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencySelection);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencySelection);
+            fillV0EfficiencyDaughterDebug(EfficiencyK0, centrality, posMcParticle, negMcParticle, postrack, negtrack);
+          }
           if (!isWithinEfficiencyEtaAcceptance(posMcParticle) || !isWithinEfficiencyEtaAcceptance(negMcParticle)) {
             return;
           }
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyGeneratedDaughterEta);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyGeneratedDaughterEta);
+          }
           if (!isWithinEfficiencyEtaAcceptance(postrack) || !isWithinEfficiencyEtaAcceptance(negtrack)) {
             return;
           }
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyRecoDaughterEta);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyRecoDaughterEta);
+          }
           registry.fill(HIST("Efficiency/efficiencyHist"), posMother.pt(), centrality, EfficiencyK0, EfficiencyReconstructed);
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyFilled);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyK0, V0EfficiencyFilled);
+          }
           return;
         }
 
         if (pdgCode == PDG_t::kLambda0 && resoSwitchVals[UseParticle][Lambda] != 0) {
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyCommonPrimaryMother);
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyMotherSpecies);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyCommonPrimaryMother);
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyMotherSpecies);
+          }
           if (std::abs(posMother.y()) >= resoCutVals[Rapidity][Lambda]) {
             return;
           }
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyMotherRapidity);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyMotherRapidity);
+          }
           auto selection = selectLambda(collision, v0, tracks);
           if (!selection.selected) {
             return;
           }
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencySelection);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencySelection);
+            fillV0EfficiencyDaughterDebug(EfficiencyLambda, centrality, posMcParticle, negMcParticle, postrack, negtrack);
+          }
           if (!isWithinEfficiencyEtaAcceptance(posMcParticle) || !isWithinEfficiencyEtaAcceptance(negMcParticle)) {
             return;
           }
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyGeneratedDaughterEta);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyGeneratedDaughterEta);
+          }
           if (!isWithinEfficiencyEtaAcceptance(postrack) || !isWithinEfficiencyEtaAcceptance(negtrack)) {
             return;
           }
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyRecoDaughterEta);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyRecoDaughterEta);
+          }
           registry.fill(HIST("Efficiency/efficiencyHist"), posMother.pt(), centrality, EfficiencyLambda, EfficiencyReconstructed);
-          fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyFilled);
+          if (cfgFill.cfgFillV0QA) {
+            fillV0EfficiencyRecoDebug(posMother.pt(), centrality, EfficiencyLambda, V0EfficiencyFilled);
+          }
           return;
         }
       }

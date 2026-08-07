@@ -281,8 +281,8 @@ struct TableMaker {
     Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
     Configurable<std::string> fConfigGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
     Configurable<std::string> fConfigGrpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-    Configurable<std::string> fZShiftPath{"zShiftPath", "Users/m/mcoquet/ZShift", "CCDB path for z shift to apply to forward tracks"};
-    Configurable<bool> fUseRemoteZShift{"cfgUseRemoteZShift", false, "Enable getting Zshift from ccdb"};
+    Configurable<std::string> fFwdShiftPath{"fwdShiftPath", "Users/m/mcoquet/ZShift", "CCDB path for the shift to apply to forward tracks, either 1 value (z) or 3 values (x, y, z)"};
+    Configurable<bool> fUseRemoteFwdShift{"cfgUseRemoteFwdShift", false, "Enable getting the forward track shift from ccdb"};
     Configurable<float> fManualZShift{"cfgManualZShift", 0.f, "Manual value for the Zshift for muons."};
     Configurable<std::string> fConfigGrpMagPathRun2{"grpmagPathRun2", "GLO/GRP/GRP", "CCDB path of the GRPObject (Usage for Run 2)"};
   } fConfigCCDB;
@@ -1726,12 +1726,16 @@ struct TableMaker {
           o2::base::Propagator::initFieldFromGRP(fGrpMag);
           VarManager::SetMagneticField(fGrpMag->getNominalL3Field());
         }
-        if (fConfigCCDB.fUseRemoteZShift) {
-          auto* fZShift = fCCDB->getForTimeStamp<std::vector<float>>(fConfigCCDB.fZShiftPath, bcs.begin().timestamp());
-          if (fZShift != nullptr && !fZShift->empty()) {
-            VarManager::SetZShift((*fZShift)[0]);
+        if (fConfigCCDB.fUseRemoteFwdShift) {
+          auto* fFwdShift = fCCDB->getForTimeStamp<std::vector<float>>(fConfigCCDB.fFwdShiftPath, bcs.begin().timestamp());
+          if (fFwdShift == nullptr || fFwdShift->empty()) {
+            LOG(fatal) << "Could not retrieve forward track shift values from CCDB";
+          } else if (fFwdShift->size() == 1) {
+            VarManager::SetZShift((*fFwdShift)[0]);
+          } else if (fFwdShift->size() == 3) {
+            VarManager::Set3DShift((*fFwdShift)[0], (*fFwdShift)[1], (*fFwdShift)[2]);
           } else {
-            LOG(fatal) << "Could not retrieve Z-shift value from CCDB";
+            LOG(fatal) << "Unexpected number of shift values from CCDB: " << fFwdShift->size() << ", expected 1 (z) or 3 (x, y, z)";
           }
         } else {
           VarManager::SetZShift(fConfigCCDB.fManualZShift.value);

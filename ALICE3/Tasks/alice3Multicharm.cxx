@@ -23,10 +23,8 @@
 #include "ALICE3/DataModel/OTFMulticharm.h"
 #include "Tools/ML/model.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>

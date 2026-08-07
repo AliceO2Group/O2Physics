@@ -15,8 +15,8 @@
 ///
 /// \author Alexander Tiekoetter (atiekoet@cern.ch) University of Muenster
 
-#ifndef PWGDQ_DATAMODEL_REDUCEDTABLESALICE3_H_
-#define PWGDQ_DATAMODEL_REDUCEDTABLESALICE3_H_
+#ifndef ALICE3_DATAMODEL_REDUCEDTABLESALICE3_H_
+#define ALICE3_DATAMODEL_REDUCEDTABLESALICE3_H_
 
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
@@ -50,7 +50,7 @@ DECLARE_SOA_COLUMN(MultMCNParticlesEta20, multMCNParticlesEta20, float);
 DECLARE_SOA_COLUMN(MultMCNParticlesEta40, multMCNParticlesEta40, float);
 } // namespace reducedeventmcalice3
 
-DECLARE_SOA_TABLE_STAGED(ReducedA3Events, "REA3EVENTS", //!   Main event information table
+DECLARE_SOA_TABLE_STAGED(ReA3Events, "REA3EVENT", //!   Main event information table
                          o2::soa::Index<>,
                          collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
                          collision::CollisionTime, collision::CollisionTimeRes, reducedeventalice3::MultDensity);
@@ -62,19 +62,19 @@ DECLARE_SOA_TABLE(ReducedA3EventsVtxCov, "AOD", "REA3VTXCOV", //!    Event verte
 DECLARE_SOA_TABLE(ReducedA3EventsInfo, "AOD", "REA3EVENTINFO", //!   Main event index table
                   reducedevent::CollisionId);
 
-DECLARE_SOA_TABLE(ReducedA3MCEvents, "AOD", "REA3MCEVTS", //!   Event level MC truth information
+DECLARE_SOA_TABLE(ReA3MCEvents, "AOD", "REA3MCEVENT", //!   Event level MC truth information
                   o2::soa::Index<>,
                   mccollision::GeneratorsID, reducedeventalice3::MCPosX, reducedeventalice3::MCPosY, reducedeventalice3::MCPosZ,
                   mccollision::T, mccollision::Weight, mccollision::ImpactParameter);
 
-using ReducedA3MCEvent = ReducedA3MCEvents::iterator;
-using ReducedA3Event = ReducedA3Events::iterator;
+using ReducedA3MCEvent = ReA3MCEvents::iterator;
+using ReA3Event = ReA3Events::iterator;
 
 namespace reducedtrackalice3
 {
 // basic track information
-DECLARE_SOA_INDEX_COLUMN(ReducedA3Event, reduceda3event); //!
-DECLARE_SOA_INDEX_COLUMN(Track, track);                   //!
+DECLARE_SOA_INDEX_COLUMN(ReA3Event, rea3event); //!
+DECLARE_SOA_INDEX_COLUMN(Track, track);         //!
 // ----  flags reserved for storing various information during filtering
 DECLARE_SOA_BITMAP_COLUMN(FilteringFlags, filteringFlags, 64); //!
 // -----------------------------------------------------
@@ -111,8 +111,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //!
 } // namespace reducedtrackalice3
 
 // basic track information
-DECLARE_SOA_TABLE(ReducedA3Tracks, "AOD", "REA3TRACK", //!
-                  o2::soa::Index<>, reducedtrackalice3::ReducedA3EventId, reducedtrackalice3::FilteringFlags,
+DECLARE_SOA_TABLE(ReA3Tracks, "AOD", "REA3TRACK", //!
+                  o2::soa::Index<>, reducedtrackalice3::ReA3EventId, reducedtrackalice3::FilteringFlags,
                   reducedtrackalice3::Pt, reducedtrackalice3::Eta, reducedtrackalice3::Phi, reducedtrackalice3::Sign, reducedtrackalice3::IsAmbiguous,
                   reducedtrackalice3::Px<reducedtrackalice3::Pt, reducedtrackalice3::Phi>,
                   reducedtrackalice3::Py<reducedtrackalice3::Pt, reducedtrackalice3::Phi>,
@@ -126,19 +126,19 @@ DECLARE_SOA_TABLE(ReducedA3TracksBarrelCov, "AOD", "REA3BARRELCOV", //!
 
 namespace reducedA3trackMC
 {
-DECLARE_SOA_INDEX_COLUMN(ReducedA3MCEvent, reducedA3MCEvent);                                 //!
-DECLARE_SOA_COLUMN(McReducedFlags, mcReducedFlags, uint16_t);                                 //! Flags to hold compressed MC selection information
-DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother0, mother0, int, "ReducedA3MCTracks_Mother0");       //! Track index of the first mother
-DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother1, mother1, int, "ReducedA3MCTracks_Mother1");       //! Track index of the last mother
-DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter0, daughter0, int, "ReducedA3MCTracks_Daughter0"); //! Track index of the first daughter
-DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter1, daughter1, int, "ReducedA3MCTracks_Daughter1"); //! Track index of the last daughter
-DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);                                        //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
-DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters);                                    //! Daughter tracks (possibly empty) slice. Check for non-zero with mcParticle.has_daughters(). Iterate over mcParticle.daughters_as<aod::McParticles>())
-DECLARE_SOA_COLUMN(Pt, pt, float);                                                            //!
-DECLARE_SOA_COLUMN(Eta, eta, float);                                                          //!
-DECLARE_SOA_COLUMN(Phi, phi, float);                                                          //!
-DECLARE_SOA_COLUMN(E, e, float);                                                              //!
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px,                                                            //!
+DECLARE_SOA_INDEX_COLUMN(ReA3MCEvent, reA3MCEvent);                                      //!
+DECLARE_SOA_COLUMN(McReducedFlags, mcReducedFlags, uint16_t);                            //! Flags to hold compressed MC selection information
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother0, mother0, int, "ReA3MCTracks_Mother0");       //! Track index of the first mother
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother1, mother1, int, "ReA3MCTracks_Mother1");       //! Track index of the last mother
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter0, daughter0, int, "ReA3MCTracks_Daughter0"); //! Track index of the first daughter
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter1, daughter1, int, "ReA3MCTracks_Daughter1"); //! Track index of the last daughter
+DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);                                   //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
+DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters);                               //! Daughter tracks (possibly empty) slice. Check for non-zero with mcParticle.has_daughters(). Iterate over mcParticle.daughters_as<aod::McParticles>())
+DECLARE_SOA_COLUMN(Pt, pt, float);                                                       //!
+DECLARE_SOA_COLUMN(Eta, eta, float);                                                     //!
+DECLARE_SOA_COLUMN(Phi, phi, float);                                                     //!
+DECLARE_SOA_COLUMN(E, e, float);                                                         //!
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px,                                                       //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
                            [](float pt, float phi) -> float { return pt * std::sin(phi); });
@@ -159,8 +159,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
 
 // NOTE: This table is nearly identical to the one from Framework (except that it points to the event ID, not the BC id)
 //       This table contains all MC truth tracks (both barrel and muon)
-DECLARE_SOA_TABLE(ReducedA3MCTracks, "AOD", "REA3MCTRACK", //!  MC track information (on disk)
-                  o2::soa::Index<>, reducedA3trackMC::ReducedA3MCEventId,
+DECLARE_SOA_TABLE(ReA3MCTracks, "AOD", "REA3MCTRACK", //!  MC track information (on disk)
+                  o2::soa::Index<>, reducedA3trackMC::ReA3MCEventId,
                   mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
                   reducedA3trackMC::MothersIds, reducedA3trackMC::DaughtersIdSlice,
                   mcparticle::Weight,
@@ -179,18 +179,18 @@ DECLARE_SOA_TABLE(ReducedA3MCTracks, "AOD", "REA3MCTRACK", //!  MC track informa
                   mcparticle::GetHepMCStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
                   mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 
-using ReducedA3MCTrack = ReducedA3MCTracks::iterator;
+using ReA3MCTrack = ReA3MCTracks::iterator;
 
 namespace reduceda3barreltracklabel
 {
-DECLARE_SOA_INDEX_COLUMN(ReducedA3MCTrack, reducedA3MCTrack); //!
+DECLARE_SOA_INDEX_COLUMN(ReA3MCTrack, reA3MCTrack); //!
 DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);
 } // namespace reduceda3barreltracklabel
 
 // NOTE: MC labels. This table has one entry for each reconstructed track (joinable with the track tables)
 //          The McParticleId points to the position of the MC truth track from the ReducedTracksMC table
 DECLARE_SOA_TABLE(ReducedA3TracksBarrelLabels, "AOD", "REA3BARLA", //!
-                  reduceda3barreltracklabel::ReducedA3MCTrackId, reduceda3barreltracklabel::McMask, reducedA3trackMC::McReducedFlags);
+                  reduceda3barreltracklabel::ReA3MCTrackId, reduceda3barreltracklabel::McMask, reducedA3trackMC::McReducedFlags);
 
 using ReducedA3TrackBarrelLabel = ReducedA3TracksBarrelLabels::iterator;
 
@@ -206,31 +206,31 @@ DECLARE_SOA_TABLE(ReducedA3TracksBarrel, "AOD", "REA3BARREL",
 DECLARE_SOA_TABLE(ReducedA3TracksBarrelInfo, "AOD", "REA3BARRELINFO",
                   reducedtrackalice3::CollisionId, collision::PosX, collision::PosY, collision::PosZ, reducedtrackalice3::TrackId);
 
-using ReducedA3Track = ReducedA3Tracks::iterator;
+using ReducedA3Track = ReA3Tracks::iterator;
 using ReducedA3TrackBarrel = ReducedA3TracksBarrel::iterator;
 using ReducedA3TrackBarrelCov = ReducedA3TracksBarrelCov::iterator;
 using ReducedA3TrackBarrelInfo = ReducedA3TracksBarrelInfo::iterator;
 
 namespace reducedeventlabela3
 {
-DECLARE_SOA_INDEX_COLUMN(ReducedA3MCEvent, reducedA3MCEvent); //! MC collision
-DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);                 //! Bit mask to indicate collision mismatches (bit ON means mismatch). Bit 15: indicates negative label
+DECLARE_SOA_INDEX_COLUMN(ReA3MCEvent, reA3MCEvent); //! MC collision
+DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);       //! Bit mask to indicate collision mismatches (bit ON means mismatch). Bit 15: indicates negative label
 } // namespace reducedeventlabela3
 
 DECLARE_SOA_TABLE(ReducedA3MCEventLabels, "AOD", "REA3MCCOLLBL", //! Table joined to the ReducedEvents table containing the MC index
-                  reducedeventlabela3::ReducedA3MCEventId, reducedeventlabela3::McMask);
+                  reducedeventlabela3::ReA3MCEventId, reducedeventlabela3::McMask);
 
 using ReducedA3MCEventLabel = ReducedA3MCEventLabels::iterator;
 
 namespace reducedA3track_association
 {
-DECLARE_SOA_INDEX_COLUMN(ReducedA3Event, reducedA3event); //! ReducedEvent index
-DECLARE_SOA_INDEX_COLUMN(ReducedA3Track, reducedA3track); //! ReducedTrack index
+DECLARE_SOA_INDEX_COLUMN(ReA3Event, reA3event); //! ReducedEvent index
+DECLARE_SOA_INDEX_COLUMN(ReA3Track, reA3track); //! ReducedTrack index
 } // namespace reducedA3track_association
 
 DECLARE_SOA_TABLE(ReducedA3TracksAssoc, "AOD", "REA3ASSOC", //! Table for reducedtrack-to-reducedcollision association
-                  reducedA3track_association::ReducedA3EventId,
-                  reducedA3track_association::ReducedA3TrackId);
+                  reducedA3track_association::ReA3EventId,
+                  reducedA3track_association::ReA3TrackId);
 
 DECLARE_SOA_TABLE(ReducedA3PIDTOF, "AOD", "REA3PIDTOF",
                   upgrade_tof::TOFEventTime,
@@ -332,4 +332,4 @@ DECLARE_SOA_TABLE(ReducedA3PIDOT, "AOD", "REA3PIDOT",
 
 } // namespace o2::aod
 
-#endif // PWGDQ_DATAMODEL_REDUCEDTABLESALICE3_H_
+#endif // ALICE3_DATAMODEL_REDUCEDTABLESALICE3_H_
