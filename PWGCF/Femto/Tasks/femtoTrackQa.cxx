@@ -41,9 +41,13 @@ using namespace o2::analysis::femto;
 struct FemtoTrackQa {
 
   // setup tables
-  using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks, o2::aod::FColPos, o2::aod::FColSphericities, o2::aod::FColMults>;
+  using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks, o2::aod::FColPos, o2::aod::FColSphericities, o2::aod::FColMults, o2::aod::FColCents>;
   using FilteredFemtoCollisions = o2::soa::Filtered<FemtoCollisions>;
   using FilteredFemtoCollision = FilteredFemtoCollisions::iterator;
+
+  using FemtoCollisionsWithEventShape = o2::soa::Join<FemtoCollisions, o2::aod::FColShapes>;
+  using FilteredFemtoCollisionsWithEventShape = o2::soa::Filtered<FemtoCollisionsWithEventShape>;
+  using FilteredFemtoCollisionWithEventShape = FilteredFemtoCollisionsWithEventShape::iterator;
 
   using FemtoCollisionsWithLabel = o2::soa::Join<FemtoCollisions, o2::aod::FColLabels>;
   using FilteredFemtoCollisionsWithLabel = o2::soa::Filtered<FemtoCollisionsWithLabel>;
@@ -83,10 +87,10 @@ struct FemtoTrackQa {
 
   void init(o2::framework::InitContext&)
   {
-    if ((static_cast<int>(doprocessData) + static_cast<int>(doprocessMc)) > 1) {
+    if ((static_cast<int>(doprocessData) + static_cast<int>(doprocessMc) + static_cast<int>(doprocessDataWithEventShape)) > 1) {
       LOG(fatal) << "More than 1 process function is activated. Breaking...";
     }
-    bool processDataFlag = doprocessData;
+    bool processDataFlag = doprocessData || doprocessDataWithEventShape;
     trackCleaner.init(confTrackCleaner);
 
     std::map<colhistmanager::ColHist, std::vector<o2::framework::AxisSpec>> colHistSpec;
@@ -134,6 +138,19 @@ struct FemtoTrackQa {
     }
   }
   PROCESS_SWITCH(FemtoTrackQa, processMc, "Track QA in Monte Carlo", false);
+
+  void processDataWithEventShape(FilteredFemtoCollisionWithEventShape const& col, FemtoTracks const& tracks)
+  {
+    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+    if (trackSlice.size() == 0) {
+      return;
+    }
+    colHistManager.fill<modes::Mode::kReco_Qa>(col);
+    for (auto const& track : trackSlice) {
+      trackHistManager.fill<modes::Mode::kReco_Qa>(track, tracks);
+    }
+  };
+  PROCESS_SWITCH(FemtoTrackQa, processDataWithEventShape, "Track QA in Data with event shape information", false);
 };
 
 o2::framework::WorkflowSpec

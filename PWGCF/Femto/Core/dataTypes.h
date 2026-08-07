@@ -63,6 +63,10 @@ using TransverseMassType = uint16_t;
 using CharmHadronMaskType = uint32_t;
 using CharmHadronType = uint16_t;
 
+// datatypes for event shape enums
+using QvecDetectorType= uint8_t;
+using QvecHarmonicType= uint8_t;
+
 } // namespace o2::analysis::femto::datatypes
 
 #endif // PWGCF_FEMTO_CORE_DATATYPES_H_

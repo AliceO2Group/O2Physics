@@ -130,11 +130,20 @@ inline double getPdgMass(int pdgCode)
 }
 
 template <typename T>
-float qn(T const& col)
-{
-  float qn = std::sqrt(col.qvecFT0CReVec()[0] * col.qvecFT0CReVec()[0] + col.qvecFT0CImVec()[0] * col.qvecFT0CImVec()[0]) * std::sqrt(col.sumAmplFT0C());
-  return qn;
-}
+concept HasQvectors = requires(T col) {
+  col.qvecFT0CReVec();
+  col.qvecFT0CImVec();
+  col.sumAmplFT0C();
+  col.qvecFT0AReVec();
+  col.qvecFT0AImVec();
+  col.sumAmplFT0A();
+};
+
+template <typename T>
+concept HasEventShape = requires(T col) {
+  col.qvec();
+  col.eventPlaneAngle();
+};
 
 /// Recalculate pT for Kinks (Sigmas) using kinematic constraints
 inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxDaughter, float pyDaughter, float pzDaughter)
