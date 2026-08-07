@@ -37,6 +37,7 @@
 #include <TProfile.h>
 #include <TRandom3.h>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
