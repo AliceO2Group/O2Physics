@@ -45,6 +45,7 @@
 
 #include <cstdint>
 #include <fstream>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -56,6 +57,7 @@ using namespace o2::framework;
 namespace
 {
 constexpr int kNumClasses = 4; // pi, ka, pr, el - fixed order throughout, matches the paper's model
+constexpr float kNaN = std::numeric_limits<float>::quiet_NaN();
 
 /// itsClusterSizes packs 7 ITS layers into 4 bits each; a derived cluster
 /// count is a far more sensible model input than the raw packed value.
@@ -81,6 +83,23 @@ int argmax4(std::vector<float> const& v)
   return best;
 }
 
+/// Per-group enable/disable, independent of what the input tree's hasXXX
+/// flags say. Default is everything enabled (true) - the normal case,
+/// using each track's real detector coverage as-is. Turning a group off
+/// forces its features to the same "absent" sentinel used when the
+/// detector genuinely didn't fire, and clears its mask bit - useful for
+/// testing how the model behaves with a detector deliberately excluded,
+/// independent of the data itself.
+struct GroupToggles {
+  bool useTPC = true;
+  bool useTOF = true;
+  bool useTRD = true;
+  bool useITS = true;
+  bool useEMCal = true;
+  bool useHMPID = true;
+  bool useCentrality = true;
+};
+
 /// All the real work: load the model, read the whole input tree, run
 /// inference row by row, write predictions. Called once from init().
 ///
@@ -88,11 +107,14 @@ int argmax4(std::vector<float> const& v)
 /// COLUMN ORDER EXACTLY. Reasonable default (every reconstructed feature
 /// except vz/centFT0C/sign/trackType and the Bayesian columns, which are a
 /// comparison baseline, not a model input), followed by a 7-length group
-/// mask (TPC/TOF/TRD/ITS/EMCal/HMPID/centrality; ITS and centrality are
-/// assumed always-present). NOT verified against your actual training code.
+/// mask (TPC/TOF/TRD/ITS/EMCal/HMPID/centrality). Each group can be
+/// disabled via GroupToggles regardless of what the data says - see there
+/// for details. ITS and centrality have no hasXXX flag in the input tree
+/// (assumed always-present in the data itself), so their toggle is the
+/// only way to exclude them.
 void runInference(std::string const& inputRootFile, std::string const& inputTreeName,
                    std::string const& outputPath, bool exportCsv,
-                   o2::analysis::MlResponse<float>& mlResponse)
+                   o2::analysis::MlResponse<float>& mlResponse, GroupToggles const& groups)
 {
   std::unique_ptr<TFile> inFile(TFile::Open(inputRootFile.c_str(), "READ"));
   if (!inFile || inFile->IsZombie()) {
@@ -189,8 +211,17 @@ void runInference(std::string const& inputRootFile, std::string const& inputTree
   for (Long64_t i = 0; i < nEntries; i++) {
     tree->GetEntry(i);
 
+    // Effective presence = what the data says AND the group is enabled.
+    // Disabling a group here forces the same "absent" state as a real
+    // detector miss, regardless of what hasXXX says in the input tree.
+    bool effTPC = hasTPC && groups.useTPC;
+    bool effTOF = hasTOF && groups.useTOF;
+    bool effTRD = hasTRD && groups.useTRD;
+    bool effEMCal = hasEMCal && groups.useEMCal;
+    bool effHMPID = hasHMPID && groups.useHMPID;
+
     x.clear();
-    x.reserve(38 + 7);
+    x.reserve(39 + 7);
     x.push_back(p);
     x.push_back(pt);
     x.push_back(px);
@@ -200,44 +231,44 @@ void runInference(std::string const& inputRootFile, std::string const& inputTree
     x.push_back(phi);
     x.push_back(dcaXY);
     x.push_back(dcaZ);
-    x.push_back(static_cast<float>(hasTPC));
-    x.push_back(tpcSignal);
-    x.push_back(tpcNSigmaPi);
-    x.push_back(tpcNSigmaKa);
-    x.push_back(tpcNSigmaPr);
-    x.push_back(tpcNSigmaEl);
-    x.push_back(static_cast<float>(tpcNClsFound));
-    x.push_back(tpcChi2NCl);
-    x.push_back(static_cast<float>(hasTOF));
-    x.push_back(tofMass);
-    x.push_back(beta);
-    x.push_back(tofNSigmaPi);
-    x.push_back(tofNSigmaKa);
-    x.push_back(tofNSigmaPr);
-    x.push_back(tofNSigmaEl);
-    x.push_back(static_cast<float>(hasTRD));
-    x.push_back(trdSignal);
-    x.push_back(trdChi2);
-    x.push_back(static_cast<float>(trdPattern));
-    x.push_back(static_cast<float>(getItsNClusters(static_cast<uint32_t>(itsClusterSizes))));
-    x.push_back(itsChi2NCl);
-    x.push_back(static_cast<float>(hasEMCal));
-    x.push_back(trackEtaEmcal);
-    x.push_back(trackPhiEmcal);
-    x.push_back(static_cast<float>(hasHMPID));
-    x.push_back(hmpidSignal);
-    x.push_back(hmpidQMip);
-    x.push_back(static_cast<float>(hmpidNPhotons));
-    x.push_back(static_cast<float>(hmpidClusSize));
-    x.push_back(hmpidMom);
+    x.push_back(static_cast<float>(effTPC));
+    x.push_back(effTPC ? tpcSignal : kNaN);
+    x.push_back(effTPC ? tpcNSigmaPi : kNaN);
+    x.push_back(effTPC ? tpcNSigmaKa : kNaN);
+    x.push_back(effTPC ? tpcNSigmaPr : kNaN);
+    x.push_back(effTPC ? tpcNSigmaEl : kNaN);
+    x.push_back(effTPC ? static_cast<float>(tpcNClsFound) : 0.f);
+    x.push_back(effTPC ? tpcChi2NCl : kNaN);
+    x.push_back(static_cast<float>(effTOF));
+    x.push_back(effTOF ? tofMass : kNaN);
+    x.push_back(effTOF ? beta : kNaN);
+    x.push_back(effTOF ? tofNSigmaPi : kNaN);
+    x.push_back(effTOF ? tofNSigmaKa : kNaN);
+    x.push_back(effTOF ? tofNSigmaPr : kNaN);
+    x.push_back(effTOF ? tofNSigmaEl : kNaN);
+    x.push_back(static_cast<float>(effTRD));
+    x.push_back(effTRD ? trdSignal : kNaN);
+    x.push_back(effTRD ? trdChi2 : kNaN);
+    x.push_back(effTRD ? static_cast<float>(trdPattern) : 0.f);
+    x.push_back(groups.useITS ? static_cast<float>(getItsNClusters(static_cast<uint32_t>(itsClusterSizes))) : 0.f);
+    x.push_back(groups.useITS ? itsChi2NCl : kNaN);
+    x.push_back(static_cast<float>(effEMCal));
+    x.push_back(effEMCal ? trackEtaEmcal : kNaN);
+    x.push_back(effEMCal ? trackPhiEmcal : kNaN);
+    x.push_back(static_cast<float>(effHMPID));
+    x.push_back(effHMPID ? hmpidSignal : kNaN);
+    x.push_back(effHMPID ? hmpidQMip : kNaN);
+    x.push_back(effHMPID ? static_cast<float>(hmpidNPhotons) : 0.f);
+    x.push_back(effHMPID ? static_cast<float>(hmpidClusSize) : 0.f);
+    x.push_back(effHMPID ? hmpidMom : kNaN);
     // 7-length group mask
-    x.push_back(static_cast<float>(hasTPC));
-    x.push_back(static_cast<float>(hasTOF));
-    x.push_back(static_cast<float>(hasTRD));
-    x.push_back(1.f); // ITS
-    x.push_back(static_cast<float>(hasEMCal));
-    x.push_back(static_cast<float>(hasHMPID));
-    x.push_back(1.f); // centrality
+    x.push_back(static_cast<float>(effTPC));
+    x.push_back(static_cast<float>(effTOF));
+    x.push_back(static_cast<float>(effTRD));
+    x.push_back(static_cast<float>(groups.useITS));
+    x.push_back(static_cast<float>(effEMCal));
+    x.push_back(static_cast<float>(effHMPID));
+    x.push_back(static_cast<float>(groups.useCentrality));
 
     mlResponse.isSelectedMl(x, pt, mlOutput); // return value (selection) unused; mlOutput carries the 4 raw scores
     mlProbPi = mlOutput[0];
@@ -282,6 +313,15 @@ WorkflowSpec defineDataProcessing(ConfigContext const&)
       auto binsPtMl = ic.options().get<std::vector<double>>("binsPtMl");
       auto nClassesMl = static_cast<int8_t>(ic.options().get<int>("nClassesMl"));
 
+      GroupToggles groups;
+      groups.useTPC = ic.options().get<bool>("useTPC");
+      groups.useTOF = ic.options().get<bool>("useTOF");
+      groups.useTRD = ic.options().get<bool>("useTRD");
+      groups.useITS = ic.options().get<bool>("useITS");
+      groups.useEMCal = ic.options().get<bool>("useEMCal");
+      groups.useHMPID = ic.options().get<bool>("useHMPID");
+      groups.useCentrality = ic.options().get<bool>("useCentrality");
+
       // Unused thresholds (CutNot everywhere) - this task always reports
       // all four probabilities rather than applying a selection cut, so
       // cutsMl/cutDirMl don't need to be user-configurable; hardcoded here
@@ -301,7 +341,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const&)
       }
       mlResponse->init();
 
-      runInference(inputRootFile, inputTreeName, outputPath, exportCsv, *mlResponse);
+      runInference(inputRootFile, inputTreeName, outputPath, exportCsv, *mlResponse, groups);
 
       return [](ProcessingContext& pc) {
         // One-shot batch job: all work already happened in init(). Signal
@@ -323,6 +363,13 @@ WorkflowSpec defineDataProcessing(ConfigContext const&)
       {"onnxFileNames", VariantType::ArrayString, std::vector<std::string>{"pid_feature_model.onnx"}, {"Local ONNX file path(s), used when loadModelFromCcdb is false"}},
       {"binsPtMl", VariantType::ArrayDouble, std::vector<double>{-1., 9999.}, {"pT bin edges for MlResponse (single bin = model isn't pT-binned)"}},
       {"nClassesMl", VariantType::Int, kNumClasses, {"Number of model output classes"}},
+      {"useTPC", VariantType::Bool, true, {"Include TPC in inference. Default true (all detectors present); set false to force TPC excluded regardless of the data"}},
+      {"useTOF", VariantType::Bool, true, {"Include TOF in inference"}},
+      {"useTRD", VariantType::Bool, true, {"Include TRD in inference"}},
+      {"useITS", VariantType::Bool, true, {"Include ITS in inference"}},
+      {"useEMCal", VariantType::Bool, true, {"Include EMCal in inference"}},
+      {"useHMPID", VariantType::Bool, true, {"Include HMPID in inference"}},
+      {"useCentrality", VariantType::Bool, true, {"Include centrality in inference"}},
     }};
 
   return WorkflowSpec{spec};
