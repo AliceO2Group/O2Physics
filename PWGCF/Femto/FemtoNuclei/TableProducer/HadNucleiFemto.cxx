@@ -357,9 +357,9 @@ struct HadNucleiFemto {
   ConfigurableAxis axisVertex{"axisVertex", {30, -10, 10}, "Binning for vtxz"};
   ConfigurableAxis axisCentrality{"axisCentrality", {40, 0, 100}, "Binning for centrality"};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  using SelectedCollisions = soa::Filtered<CollisionsFull>;
   BinningType binningPolicy{{axisVertex, axisCentrality}, true};
   SliceCache cache;
-  SameKindPair<CollisionsFull, TrackCandidates, BinningType> mPair{binningPolicy, eventMixing.settingNoMixedEvents, -1, &cache};
   // Pair<CollisionsFull, TrackCandidates, o2::aod::DataHypCandsWColl, BinningType> hyperPair{binningPolicy, eventMixing.settingNoMixedEvents, -1, &cache};
 
   std::array<float, 6> mBBparamsNucleus{};
@@ -383,6 +383,7 @@ struct HadNucleiFemto {
      {"hCentrality", "Centrality", {HistType::kTH1F, {{100, 0.0f, 100.0f}}}},
      {"hSkipReasons", "Why storedEvent skipped;Reason;Counts", {HistType::kTH1F, {{5, -0.5, 4.5}}}},
      {"hEvents", "; Events;", {HistType::kTH1F, {{3, -0.5, 2.5}}}},
+     {"hMixedEventSelections", "Mixed-event collision selection;Step;Counts", {HistType::kTH1F, {{4, -0.5, 3.5}}}},
 
      // Candidate topology and kinematics
      {"hTrackSel", "Accepted hadron tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
@@ -535,6 +536,11 @@ struct HadNucleiFemto {
     for (int i = 0; i < Selections::kAll; i++) {
       mQaRegistry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(i + 1, eventsLabels[i].c_str());
     }
+
+    const std::array<std::string, 4> mixedEventLabels = {"All collisions", "Event selection", "Mixing pool", "Mixed combinations"};
+    for (size_t i = 0; i < mixedEventLabels.size(); i++) {
+      mQaRegistry.get<TH1>(HIST("hMixedEventSelections"))->GetXaxis()->SetBinLabel(i + 1, mixedEventLabels[i].c_str());
+    }
   }
 
   template <bool isMC>
@@ -621,18 +627,6 @@ struct HadNucleiFemto {
     }
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     return mZorro.isSelected(bc.globalBC());
-  }
-
-  template <bool isMC, typename Tcollision>
-  bool passesCollisionSelection(const Tcollision& collision)
-  {
-    if (!passesEventSelection<isMC>(collision)) {
-      return false;
-    }
-    if constexpr (!isMC) {
-      return passesZorroSelection(collision);
-    }
-    return true;
   }
 
   template <bool isMC, typename Tcollision>
@@ -2216,10 +2210,31 @@ struct HadNucleiFemto {
   {
     LOG(debug) << "Processing mixed event";
 
-    for (const auto& [c1, tracks1, c2, tracks2] : mPair) {
-      if (!passesCollisionSelection</*isMC*/ false>(c1) || !passesCollisionSelection</*isMC*/ false>(c2)) {
+    // Zorro is a runtime selection, so build its filtered collision table before applying the mixing depth.
+    soa::SelectionVector selectedCollisionRows;
+    int64_t rowIndex = 0;
+    for (const auto& collision : collisions) {
+      mQaRegistry.fill(HIST("hMixedEventSelections"), 0);
+      if (!passesEventSelection</*isMC*/ false>(collision)) {
+        ++rowIndex;
         continue;
       }
+      mQaRegistry.fill(HIST("hMixedEventSelections"), 1);
+      if (!passesZorroSelection(collision)) {
+        ++rowIndex;
+        continue;
+      }
+      selectedCollisionRows.push_back(rowIndex++);
+      mQaRegistry.fill(HIST("hMixedEventSelections"), 2);
+    }
+
+    SelectedCollisions selectedCollisions{{collisions.asArrowTableRef()}, std::move(selectedCollisionRows)};
+    collisions.copyIndexBindings(selectedCollisions);
+    auto tracksTuple = std::make_tuple(tracks);
+    SameKindPair<SelectedCollisions, TrackCandidates, BinningType> selectedPairs{binningPolicy, eventMixing.settingNoMixedEvents, -1, selectedCollisions, tracksTuple, &cache};
+
+    for (const auto& [c1, tracks1, c2, tracks2] : selectedPairs) {
+      mQaRegistry.fill(HIST("hMixedEventSelections"), 3);
 
       mQaRegistry.fill(HIST("hNcontributor"), c1.numContrib());
       mQaRegistry.fill(HIST("hVtxZ"), c1.posZ());
