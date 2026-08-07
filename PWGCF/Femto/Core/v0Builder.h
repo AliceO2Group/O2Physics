@@ -51,8 +51,8 @@ struct ConfV0Filters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> massMinLambda{"massMinLambda", 1.f, "Minimum mass for Lambda hypothesis"};
   o2::framework::Configurable<float> massMaxLambda{"massMaxLambda", 1.2f, "Maximum mass for Lambda hypothesis"};
   o2::framework::Configurable<bool> rejectHypothesisK0short{"rejectHypothesisK0short", true, "Rejection of K0short hypothesis for Lambda candidates"};
-  o2::framework::Configurable<float> rejectMassMinK0short{"rejectMassMinK0short", 0.48f, "Minimum mass to rejection K0short hypothesis for Lambda candidates"};
-  o2::framework::Configurable<float> rejectMassMaxK0short{"rejectMassMaxK0short", 0.5f, "Maximum mass to rejection K0short hypothesis for Lambda candidates"};
+  o2::framework::Configurable<float> rejectMassMinK0short{"rejectMassMinK0short", 0.475f, "Minimum mass to rejection K0short hypothesis for Lambda candidates"};
+  o2::framework::Configurable<float> rejectMassMaxK0short{"rejectMassMaxK0short", 0.515f, "Maximum mass to rejection K0short hypothesis for Lambda candidates"};
   o2::framework::Configurable<float> massMinK0short{"massMinK0short", 0.45f, "Minimum mass for K0Short hypothesis"};
   o2::framework::Configurable<float> massMaxK0short{"massMaxK0short", 0.53f, "Maximum mass for K0Short hypothesis"};
   o2::framework::Configurable<bool> rejectHypothesisLambda{"rejectHypothesisLambda", true, "Rejection of Lambda hypothesis for K0short candidates"};
@@ -71,7 +71,9 @@ struct ConfV0Filters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> decayVtxMax{"decayVtxMax", {100.f}, "Maximum distance in x,y,z of the decay vertex from primary vertex (cm)"}; \
   o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.8f}, "Maximum |eta| for daughter tracks"};                                     \
   o2::framework::Configurable<std::vector<float>> dauAbsDcaxyMin{"dauAbsDcaxyMin", {0.05f}, "Minimum DCAxy of the daughters from primary vertex (cm)"};          \
-  o2::framework::Configurable<std::vector<float>> dauTpcClustersMin{"dauTpcClustersMin", {80.f}, "Minimum number of TPC clusters for daughter tracks"};
+  o2::framework::Configurable<std::vector<float>> dauTpcClustersMin{"dauTpcClustersMin", {80.f}, "Minimum number of TPC clusters for daughter tracks"};          \
+  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, TOF PID is a minimal selection. If false, TOF PID is an optional"};                \
+  o2::framework::Configurable<bool> keepTracksWithoutTof{"keepTracksWithoutTof", true, "If true, the bit mask for the TOF selection will be ture for all limits if the daugher track has no TOF"};
 
 // derived selection bits for lambda
 struct ConfLambdaBits : o2::framework::ConfigurableGroup {
@@ -85,8 +87,6 @@ struct ConfLambdaBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> posDauTofProton{"posDauTofProton", {}, "Maximum |nsigma_Proton| TOF for positive daughter tracks"};
   o2::framework::Configurable<std::vector<float>> negDauTofPion{"negDauTofPion", {}, "Maximum |nsigma_Pion| TOF for negative daughter tracks"};
   o2::framework::Configurable<std::vector<float>> negDauTofProton{"negDauTofProton", {}, "Maximum |nsigma_Proton| TOF for negative daughter tracks"};
-  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, TOF PID is a mandatory selection"};
-  o2::framework::Configurable<bool> keepTracksWithoutTof{"keepTracksWithoutTof", true, "If true, candidates whose daughters have no TOF signal are kept"};
 };
 
 // derived selection bits for K0Short
@@ -97,8 +97,6 @@ struct ConfK0shortBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> negDauTpcPion{"negDauTpcPion", {5.f}, "Maximum |nsimga_Pion| TPC for negative daughter tracks"};
   o2::framework::Configurable<std::vector<float>> posDauTofPion{"posDauTofPion", {}, "Maximum |nsigma_Pion| TOF for positive daughter tracks"};
   o2::framework::Configurable<std::vector<float>> negDauTofPion{"negDauTofPion", {}, "Maximum |nsigma_Pion| TOF for negative daughter tracks"};
-  o2::framework::Configurable<bool> requireTof{"requireTof", false, "If true, TOF PID is a mandatory selection"};
-  o2::framework::Configurable<bool> keepTracksWithoutTof{"keepTracksWithoutTof", true, "If true, candidates whose daughters have no TOF signal are kept"};
 };
 
 #undef V0_DEFAULT_BITS
@@ -335,32 +333,49 @@ class V0Selection : public baseselection::BaseSelection<float, datatypes::V0Mask
     auto posDaughter = v0candidate.template posTrack_as<T2>();
     auto negDaughter = v0candidate.template negTrack_as<T2>();
 
-    std::array<float, 2> etaAbsDaughters = {std::fabs(posDaughter.eta()), std::fabs(negDaughter.eta())};
+    std::array<float, 2> etaAbsDaughters = {std::fabs(v0candidate.positiveeta()), std::fabs(v0candidate.negativeeta())};
     this->evaluateObservable(kDauAbsEtaMax, *std::max_element(etaAbsDaughters.begin(), etaAbsDaughters.end()));
 
-    std::array<float, 2> dcaxyAbsDaughters = {std::fabs(posDaughter.dcaXY()), std::fabs(negDaughter.dcaXY())};
+    std::array<float, 2> dcaxyAbsDaughters = {std::fabs(v0candidate.dcapostopv()), std::fabs(v0candidate.dcanegtopv())};
     this->evaluateObservable(kDauAbsDcaxyMin, *std::min_element(dcaxyAbsDaughters.begin(), dcaxyAbsDaughters.end()));
 
     std::array<float, 2> clustersDaughters = {1.f * posDaughter.tpcNClsFound(), 1.f * negDaughter.tpcNClsFound()};
     this->evaluateObservable(kDauTpcClsMin, *std::min_element(clustersDaughters.begin(), clustersDaughters.end()));
 
-    this->evaluateObservable(kPosDaughTpcPion, posDaughter.tpcNSigmaPi());
-    this->evaluateObservable(kPosDaughTpcProton, posDaughter.tpcNSigmaPr());
-    this->evaluateObservable(kNegDaughTpcPion, negDaughter.tpcNSigmaPi());
-    this->evaluateObservable(kNegDaughTpcProton, negDaughter.tpcNSigmaPr());
-    if (posDaughter.hasTOF()) {
-      this->evaluateObservable(kPosDaughTofPion, posDaughter.tofNSigmaPi());
-      this->evaluateObservable(kPosDaughTofProton, posDaughter.tofNSigmaPr());
-    } else if (mKeepTracksWithoutTof) {
-      this->evaluateObservable(kPosDaughTofPion, 0);
-      this->evaluateObservable(kPosDaughTofProton, 0);
-    }
-    if (negDaughter.hasTOF()) {
-      this->evaluateObservable(kNegDaughTofPion, negDaughter.tofNSigmaPi());
-      this->evaluateObservable(kNegDaughTofProton, negDaughter.tofNSigmaPr());
-    } else if (mKeepTracksWithoutTof) {
-      this->evaluateObservable(kNegDaughTofPion, 0);
-      this->evaluateObservable(kNegDaughTofProton, 0);
+    // PID of the daughters under the mass hypothesis of this v0 type
+    // TPC nSigma comes from the daughter track, TOF nSigma from the strangeness-tagged v0 candidate
+    // if the daughter has no TOF signal, feed 0 so the bit passes any limit (opt-in via keepTracksWithoutTof)
+    auto evaluateDaughterPid = [this](V0Sels tpcBit, float tpcNSigma,
+                                      V0Sels tofBit, float tofNSigma, bool hasTof) {
+      this->evaluateObservable(tpcBit, tpcNSigma);
+      if (hasTof) {
+        this->evaluateObservable(tofBit, tofNSigma);
+      } else if (mKeepTracksWithoutTof) {
+        this->evaluateObservable(tofBit, 0.f);
+      }
+    };
+
+    const bool posHasTof = v0candidate.positiveHasTOF();
+    const bool negHasTof = v0candidate.negativeHasTOF();
+
+    if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
+      // Lambda -> p pi-
+      evaluateDaughterPid(kPosDaughTpcProton, posDaughter.tpcNSigmaPr(),
+                          kPosDaughTofProton, v0candidate.tofNSigmaLaPr(), posHasTof);
+      evaluateDaughterPid(kNegDaughTpcPion, negDaughter.tpcNSigmaPi(),
+                          kNegDaughTofPion, v0candidate.tofNSigmaLaPi(), negHasTof);
+    } else if constexpr (modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
+      // AntiLambda -> pbar pi+
+      evaluateDaughterPid(kPosDaughTpcPion, posDaughter.tpcNSigmaPi(),
+                          kPosDaughTofPion, v0candidate.tofNSigmaALaPi(), posHasTof);
+      evaluateDaughterPid(kNegDaughTpcProton, negDaughter.tpcNSigmaPr(),
+                          kNegDaughTofProton, v0candidate.tofNSigmaALaPr(), negHasTof);
+    } else if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
+      // K0short -> pi+ pi-
+      evaluateDaughterPid(kPosDaughTpcPion, posDaughter.tpcNSigmaPi(),
+                          kPosDaughTofPion, v0candidate.tofNSigmaK0PiPlus(), posHasTof);
+      evaluateDaughterPid(kNegDaughTpcPion, negDaughter.tpcNSigmaPi(),
+                          kNegDaughTofPion, v0candidate.tofNSigmaK0PiMinus(), negHasTof);
     }
 
     this->assembleBitmask<SelectionHistName>();
@@ -649,12 +664,18 @@ class V0Builder
   {
     float mass = 0;
     float massAnti = 0;
+    float strangeTofPosDau = 0;
+    float strangeTofNegDau = 0;
     if (sign > 0.f) {
       mass = v0.mLambda();
       massAnti = v0.mAntiLambda();
+      strangeTofPosDau = v0.tofNSigmaLaPr();
+      strangeTofNegDau = v0.tofNSigmaLaPi();
     } else {
       mass = v0.mAntiLambda();
       massAnti = v0.mLambda();
+      strangeTofPosDau = v0.tofNSigmaALaPi();
+      strangeTofNegDau = v0.tofNSigmaALaPr();
     }
     if (mProduceLambdas) {
       v0Products.producedLambdas(collisionBuilder.collisionIndex(),
@@ -683,6 +704,8 @@ class V0Builder
         v0.mK0Short(),
         v0.v0cosPA(),
         v0.dcaV0daughters(),
+        strangeTofPosDau,
+        strangeTofNegDau,
         v0.v0radius(),
         v0.x(),
         v0.y(),
@@ -720,6 +743,8 @@ class V0Builder
         v0.mAntiLambda(),
         v0.v0cosPA(),
         v0.dcaV0daughters(),
+        v0.tofNSigmaK0PiPlus(),
+        v0.tofNSigmaK0PiMinus(),
         v0.v0radius(),
         v0.x(),
         v0.y(),
