@@ -14,303 +14,407 @@
 /// \author Eisha Rani
 /// \since August 2026
 
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CommonConstants/MathConstants.h>
-#include <Framework/ASoAHelpers.h>
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/InitContext.h>
-#include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/Track.h>
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
 
-#include <cmath>
+#include <TFile.h>
+#include <TH1F.h>
+#include <TH2F.h>
+#include <TMath.h>
+#include <TProfile.h>
+#include <TRandom3.h>
+
+#include <string>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::soa;
+using namespace o2::constants::physics;
+
+using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 
 struct FlattenicityTask {
 
-  // --- Flattenicity constants ---
-  static constexpr int NCH_A = 96;
-  static constexpr int NCH_C = 112;
-  static constexpr int NCELL = NCH_A + NCH_C;
-  static constexpr int NPHISECTORS = 8;
-  static constexpr int NETA_A = NCH_A / NPHISECTORS;
-  static constexpr int NETA_C = NCH_C / NPHISECTORS;
+  // ============================================
+  // FT0 Constants
+  // ============================================
+  static constexpr int N_PHI_SECTORS = 8;
+  static constexpr int N_ETA_A = 12;
+  static constexpr int N_ETA_C = 14;
+  static constexpr int N_CH_A = 96;
+  static constexpr int N_CH_C = 112;
+  static constexpr int N_CELL = N_CH_A + N_CH_C; // 208
 
-  // FT0 acceptance
-  static constexpr float FT0A_ETA_MIN = 3.5f;
-  static constexpr float FT0A_ETA_MAX = 4.9f;
-  static constexpr float FT0C_ETA_MIN = -3.3f;
-  static constexpr float FT0C_ETA_MAX = -2.1f;
+  static constexpr float FT0A_ETA_MIN = 3.5;
+  static constexpr float FT0A_ETA_MAX = 4.9;
+  static constexpr float FT0C_ETA_MIN = -3.3;
+  static constexpr float FT0C_ETA_MAX = -2.1;
 
-  // --- Event selection constants ---
-  static constexpr float VERTEX_CUT = 10.0f;
-  static constexpr float FLAT_MIN = 0.0f;
-  static constexpr float INEL_ETA_CUT = 1.0f;
-  static constexpr float MIDRAP_ETA_CUT = 0.8f;
+  static constexpr int PHYSICAL_PRIMARY_BIT = 0x4;
 
-  // --- Configurables ---
-  Configurable<float> cfgTrkEtaCut{"cfgTrkEtaCut", 0.8f, "Eta range for tracks"};
-  Configurable<float> cfgTrkLowPtCut{"cfgTrkLowPtCut", 0.15f, "Minimum pT"};
+  // ============================================
+  // Histogram Definitions
+  // ============================================
+  HistogramRegistry histos{
+    "histos",
+    {
+      // Event-level
+      {"hEvents", "Event selection;;Counts", {HistType::kTH1F, {{5, 0, 5}}}},
 
-  Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
-  Configurable<bool> timeEvsel{"timeEvsel", true, "TPC Time frame boundary cut"};
-  Configurable<bool> piluprejection{"piluprejection", true, "Pileup rejection"};
-  Configurable<bool> goodzvertex{"goodzvertex", true, "Good Z vertex"};
+      // dNch/deta
+      {"hNch_INEL", "Nch distribution (INEL>0);N_{ch};Entries", {HistType::kTH1F, {{100, -0.5, 99.5}}}},
+      {"hNch_FT0", "Nch distribution (INEL>0 & FT0);N_{ch};Entries", {HistType::kTH1F, {{100, -0.5, 99.5}}}},
 
-  // --- Track selection ---
-  TrackSelection mySelectionPrim;
+      // Flattenicity
+      {"hFlattenicity", "Flattenicity distribution;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
+      {"hFlattenicity_vs_Nch", "Flattenicity vs Nch;N_{ch};1-#rho", {HistType::kTH2F, {{50, -0.5, 99.5}, {50, 0.0, 1.0}}}},
 
-  // --- Histograms ---
-  HistogramRegistry registry;
+      // FT0 cell occupancy
+      {"hCellOccupancy", "FT0 cell occupancy;Cell ID;Entries", {HistType::kTH1F, {{N_CELL, 0, N_CELL}}}},
+      {"hCellOccupancyFT0A", "FT0-A cell occupancy;Cell ID;Entries", {HistType::kTH1F, {{N_CH_A, 0, N_CH_A}}}},
+      {"hCellOccupancyFT0C", "FT0-C cell occupancy;Cell ID;Entries", {HistType::kTH1F, {{N_CH_C, 0, N_CH_C}}}},
 
-  // --- Init ---
-  void init(InitContext const&) override
+      // Multiplicity classes
+      {"hFlattenicity_0_10", "Flattenicity 0-10%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
+      {"hFlattenicity_10_20", "Flattenicity 10-20%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
+      {"hFlattenicity_20_30", "Flattenicity 20-30%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
+      {"hFlattenicity_30_40", "Flattenicity 30-40%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
+      {"hFlattenicity_40_50", "Flattenicity 40-50%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
+      {"hFlattenicity_50_60", "Flattenicity 50-60%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
+      {"hFlattenicity_60_70", "Flattenicity 60-70%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
+      {"hFlattenicity_70_80", "Flattenicity 70-80%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
+      {"hFlattenicity_80_90", "Flattenicity 80-90%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
+      {"hFlattenicity_90_100", "Flattenicity 90-100%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
+    }};
+
+  // ============================================
+  // Configurables
+  // ============================================
+  Configurable<float> cfgPtMin{"cfgPtMin", 0.1, "Minimum pT for tracks"};
+  Configurable<float> cfgEtaMax{"cfgEtaMax", 0.8, "Maximum |eta| for tracks"};
+  Configurable<float> cfgVzMax{"cfgVzMax", 10.0, "Maximum |vz| for collisions"};
+  Configurable<int> cfgNCrossedRowsTPC{"cfgNCrossedRowsTPC", 70, "Minimum TPC crossed rows"};
+  Configurable<float> cfgChi2PerClusterTPC{"cfgChi2PerClusterTPC", 4.0, "Maximum TPC chi2 per cluster"};
+  Configurable<float> cfgChi2PerClusterITS{"cfgChi2PerClusterITS", 36.0, "Maximum ITS chi2 per cluster"};
+  Configurable<float> cfgDCAZ{"cfgDCAZ", 0.1, "Maximum DCA z"};
+  Configurable<bool> cfgRequireGoldenChi2{"cfgRequireGoldenChi2", true, "Require golden chi2"};
+
+  // ============================================
+  // Particle charge function
+  // ============================================
+  int getCharge(int pdgCode)
   {
-    // Initialize track selection
-    mySelectionPrim = myTrackSelectionPrim();
-
-    // Define histograms
-    AxisSpec flatBins = {40, 0.0, 1.0, "#rho"};
-    AxisSpec nchBins = {100, -0.5, 99.5, "N_{ch}"};
-
-    registry.add("hFlattenicityTruth", "Truth flattenicity; 1-#rho; Events",
-                 HistType::kTH1D, {flatBins});
-    registry.add("hFlattenicityReco", "Reco flattenicity; 1-#rho; Events",
-                 HistType::kTH1D, {flatBins});
-    registry.add("hFlattenicityCorrelation", "Truth vs Reco; 1-#rho_{truth}; 1-#rho_{reco}",
-                 HistType::kTH2D, {flatBins, flatBins});
-    registry.add("hNch", "Reco Nch distribution; N_{ch}; Events",
-                 HistType::kTH1D, {nchBins});
-    registry.add("hNchTruth", "Truth Nch distribution; N_{ch}; Events",
-                 HistType::kTH1D, {nchBins});
+    switch (std::abs(pdgCode)) {
+      case 211:  // pion
+      case 321:  // kaon
+      case 2212: // proton
+        return 1;
+      case 11: // electron
+      case 13: // muon
+        return -1;
+      default:
+        return 0;
+    }
   }
 
-  // --- Track selection function ---
-  TrackSelection myTrackSelectionPrim()
+  // ============================================
+  // Flattenicity calculation
+  // ============================================
+  float computeFlattenicity(const std::array<float, N_CELL>& counts)
   {
-    TrackSelection selectedTracks;
-    selectedTracks.SetPtRange(0.1f, 1e10f);
-    selectedTracks.SetEtaRange(-0.8f, 0.8f);
-    selectedTracks.SetRequireITSRefit(true);
-    selectedTracks.SetRequireTPCRefit(true);
-    selectedTracks.SetMinNCrossedRowsTPC(70);
-    selectedTracks.SetMinNCrossedRowsOverFindableClustersTPC(0.4f);
-    selectedTracks.SetMaxChi2PerClusterTPC(4.0f);
-    selectedTracks.SetRequireHitsInITSLayers(1, {0, 1});
-    selectedTracks.SetMaxChi2PerClusterITS(36.0f);
-    selectedTracks.SetMaxDcaXYPtDep([](float pt) { return 0.0105f + 0.0350f / std::pow(pt, 1.1f); });
-    selectedTracks.SetMaxDcaZ(2.0f);
-    return selectedTracks;
+    float total = 0.0;
+    for (int i = 0; i < N_CELL; i++) {
+      total += counts[i];
+    }
+
+    if (total <= 0)
+      return -1.0;
+
+    float mean = total / N_CELL;
+    if (mean <= 0)
+      return -1.0;
+
+    float sumSq = 0.0;
+    for (int i = 0; i < N_CELL; i++) {
+      sumSq += (counts[i] - mean) * (counts[i] - mean);
+    }
+
+    float rho = std::sqrt(sumSq) / (N_CELL * mean);
+    return rho;
   }
 
-  // --- Helper: Get cell ID for a particle in FT0 acceptance ---
-  int getCellId(float eta, float phi)
+  // ============================================
+  // Assign particle to FT0 cell
+  // ============================================
+  int assignToFT0Cell(float eta, float phi, bool& isFT0A)
   {
-    // Check if in FT0-A acceptance
-    if (eta > FT0A_ETA_MIN && eta < FT0A_ETA_MAX) {
-      int phiBin = static_cast<int>(std::floor(phi / (2.0f * o2::constants::math::PI / static_cast<float>(NPHISECTORS))));
-      phiBin = std::clamp(phiBin, 0, NPHISECTORS - 1);
-      int etaBin = static_cast<int>(std::floor((eta - FT0A_ETA_MIN) / ((FT0A_ETA_MAX - FT0A_ETA_MIN) / static_cast<float>(NETA_A))));
-      etaBin = std::clamp(etaBin, 0, NETA_A - 1);
-      return etaBin * NPHISECTORS + phiBin;
+    // Check if in FT0 acceptance
+    bool inFT0A = (eta > FT0A_ETA_MIN && eta < FT0A_ETA_MAX);
+    bool inFT0C = (eta > FT0C_ETA_MIN && eta < FT0C_ETA_MAX);
+
+    if (!inFT0A && !inFT0C)
+      return -1;
+
+    isFT0A = inFT0A;
+
+    // Phi bin
+    int phiBin = static_cast<int>(std::floor(phi / (2 * TMath::Pi() / N_PHI_SECTORS)));
+    phiBin = std::max(0, std::min(phiBin, N_PHI_SECTORS - 1));
+
+    int cellId = -1;
+
+    if (inFT0A) {
+      // FT0-A: cells 0-95
+      float etaWidth = (FT0A_ETA_MAX - FT0A_ETA_MIN) / N_ETA_A;
+      int etaBin = static_cast<int>(std::floor((eta - FT0A_ETA_MIN) / etaWidth));
+      etaBin = std::max(0, std::min(etaBin, N_ETA_A - 1));
+      cellId = etaBin * N_PHI_SECTORS + phiBin;
+    } else if (inFT0C) {
+      // FT0-C: cells 96-207
+      float etaWidth = (FT0C_ETA_MAX - FT0C_ETA_MIN) / N_ETA_C;
+      int etaBin = static_cast<int>(std::floor((eta - FT0C_ETA_MIN) / etaWidth));
+      etaBin = std::max(0, std::min(etaBin, N_ETA_C - 1));
+      cellId = N_CH_A + etaBin * N_PHI_SECTORS + phiBin;
     }
 
-    // Check if in FT0-C acceptance
-    if (eta > FT0C_ETA_MIN && eta < FT0C_ETA_MAX) {
-      int phiBin = static_cast<int>(std::floor(phi / (2.0f * o2::constants::math::PI / static_cast<float>(NPHISECTORS))));
-      phiBin = std::clamp(phiBin, 0, NPHISECTORS - 1);
-      int etaBin = static_cast<int>(std::floor((eta - FT0C_ETA_MIN) / ((FT0C_ETA_MAX - FT0C_ETA_MIN) / static_cast<float>(NETA_C))));
-      etaBin = std::clamp(etaBin, 0, NETA_C - 1);
-      return NCH_A + etaBin * NPHISECTORS + phiBin;
-    }
-
-    return -1; // Not in FT0 acceptance
+    return cellId;
   }
 
-  // --- Flattenicity calculation ---
-  float calculateFlattenicity(const std::vector<float>& counts)
+  // ============================================
+  // Track selection (Paola/Jesus criteria)
+  // ============================================
+  template <typename T>
+  bool isSelectedTrack(const T& track)
   {
-    if (counts.size() != static_cast<size_t>(NCELL)) {
-      return -1.0f;
-    }
+    // pT selection
+    if (track.pt() < cfgPtMin)
+      return false;
 
-    float total = 0.0f;
-    for (const auto& c : counts) {
-      total += c;
-    }
-    if (total <= 0.0f) {
-      return -1.0f;
-    }
+    // Eta selection
+    if (std::abs(track.eta()) > cfgEtaMax)
+      return false;
 
-    float mean = total / static_cast<float>(NCELL);
-    if (mean <= 0.0f) {
-      return -1.0f;
-    }
+    // TPC crossed rows
+    if (track.tpcNClsCrossedRows() < cfgNCrossedRowsTPC)
+      return false;
 
-    float sumSq = 0.0f;
-    for (const auto& c : counts) {
-      sumSq += (c - mean) * (c - mean);
-    }
+    // TPC chi2 per cluster
+    if (track.tpcChi2NCl() > cfgChi2PerClusterTPC)
+      return false;
 
-    float rho = std::sqrt(sumSq / (static_cast<float>(NCELL) * static_cast<float>(NCELL))) / mean;
-    return 1.0f - rho;
+    // ITS chi2 per cluster
+    if (track.itsChi2NCl() > cfgChi2PerClusterITS)
+      return false;
+
+    // DCA z
+    if (std::abs(track.dcaZ()) > cfgDCAZ)
+      return false;
+
+    // Golden chi2 (global track)
+    if (cfgRequireGoldenChi2 && !track.isGlobalTrack())
+      return false;
+
+    return true;
   }
 
-  // --- Process Data ---
-  void processData(aod::Collision const& collision,
-                   soa::Filtered<aod::Tracks> const& tracks,
-                   aod::FT0s const& ft0s)
+  // ============================================
+  // Process MC collisions
+  // ============================================
+  void processMC(
+    aod::McCollision const& /* mcCollision */,
+    aod::McParticles const& mcParticles)
   {
-    // Event selection (Paola/Jesus)
-    if (!collision.sel8()) {
-      return;
-    }
-    if (std::abs(collision.posZ()) >= VERTEX_CUT) {
-      return;
-    }
+    // Initialize counters
+    std::array<float, N_CELL> truthCounts;
+    truthCounts.fill(0.0);
 
-    // Track loop for Nch
-    int nch = 0;
-    for (const auto& track : tracks) {
-      if (!mySelectionPrim.IsSelected(track)) {
+    int nch_INEL = 0;
+    int nch_FT0 = 0;
+    bool hasFT0A = false;
+    bool hasFT0C = false;
+
+    // Loop over MC particles
+    for (const auto& particle : mcParticles) {
+      // Check if primary
+      if (!(particle.flags() & PHYSICAL_PRIMARY_BIT))
         continue;
-      }
-      nch++;
-    }
-    registry.fill(HIST("hNch"), nch);
-
-    // FT0 flattenicity
-    auto ft0 = collision.ft0();
-    if (ft0.hasAmplitudeA() && ft0.hasAmplitudeC()) {
-      auto ampA = ft0.amplitudeA();
-      auto ampC = ft0.amplitudeC();
-
-      std::vector<float> counts(NCELL, 0.0f);
-      for (int i = 0; i < static_cast<int>(ampA.size()) && i < NCH_A; ++i) {
-        counts[i] = ampA[i];
-      }
-      for (int i = 0; i < static_cast<int>(ampC.size()) && i < NCH_C; ++i) {
-        counts[NCH_A + i] = ampC[i];
-      }
-
-      float flat = calculateFlattenicity(counts);
-      if (flat >= FLAT_MIN) {
-        registry.fill(HIST("hFlattenicityReco"), flat);
-      }
-    }
-  }
-  PROCESS_SWITCH(FlattenicityTask, processData, "Process data", true);
-
-  // --- Process MC ---
-  void processMC(aod::McCollision const& mcCollision,
-                 aod::McParticles const& particles,
-                 soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions,
-                 aod::FT0s const& ft0s,
-                 aod::BCs const& /*bcs*/)
-  {
-    // ---- Truth-level processing ----
-    bool inel = false;
-    int nchTruth = 0;
-    std::vector<float> truthCounts(NCELL, 0.0f);
-
-    for (const auto& particle : particles) {
-      // Check if physical primary
-      if (!particle.isPhysicalPrimary()) {
-        continue;
-      }
 
       // Check if charged
-      if (std::abs(particle.pdgCode()) == 0) {
+      int charge = getCharge(particle.pdgCode());
+      if (charge == 0)
         continue;
-      }
 
-      // Check pT > 0
-      if (particle.pt() <= 0.0f) {
+      // pT > 0.1
+      if (particle.pt() < cfgPtMin)
         continue;
+
+      // INEL>0: |eta| < 1
+      if (std::abs(particle.eta()) < 1.0) {
+        nch_INEL++;
       }
 
-      // INEL>0 check: primary charged with |eta| < INEL_ETA_CUT
-      if (std::abs(particle.eta()) < INEL_ETA_CUT) {
-        inel = true;
+      // dNch/deta: |eta| < 0.8
+      if (std::abs(particle.eta()) < cfgEtaMax) {
+        nch_FT0++;
       }
 
-      // Nch at midrapidity: |eta| < MIDRAP_ETA_CUT, pT > cfgTrkLowPtCut
-      if (std::abs(particle.eta()) < MIDRAP_ETA_CUT && particle.pt() > cfgTrkLowPtCut) {
-        nchTruth++;
-      }
+      // FT0 acceptance
+      bool inFT0A = (particle.eta() > FT0A_ETA_MIN && particle.eta() < FT0A_ETA_MAX);
+      bool inFT0C = (particle.eta() > FT0C_ETA_MIN && particle.eta() < FT0C_ETA_MAX);
 
-      // Flattenicity: particles in FT0 acceptance
-      int cellId = getCellId(particle.eta(), particle.phi());
-      if (cellId >= 0 && cellId < NCELL) {
-        truthCounts[cellId] += 1.0f;
+      if (inFT0A)
+        hasFT0A = true;
+      if (inFT0C)
+        hasFT0C = true;
+
+      // Assign to FT0 cell
+      bool isFT0A = false;
+      int cellId = assignToFT0Cell(particle.eta(), particle.phi(), isFT0A);
+
+      if (cellId >= 0 && cellId < N_CELL) {
+        truthCounts[cellId] += 1.0;
+        histos.fill(HIST("hCellOccupancy"), cellId);
+        if (isFT0A) {
+          histos.fill(HIST("hCellOccupancyFT0A"), cellId);
+        } else {
+          histos.fill(HIST("hCellOccupancyFT0C"), cellId - N_CH_A);
+        }
       }
     }
 
-    // Apply truth-level event selection (Paola/Jesus)
-    if (!inel) {
-      return;
-    }
-    if (std::abs(mcCollision.posZ()) >= VERTEX_CUT) {
-      return;
-    }
+    // Event selection
+    bool isINEL = (nch_INEL > 0);
+    bool isFT0 = (hasFT0A && hasFT0C);
 
-    // Fill truth multiplicity
-    registry.fill(HIST("hNchTruth"), nchTruth);
-    registry.fill(HIST("hNch"), nchTruth);
+    histos.fill(HIST("hEvents"), 0); // All events
 
-    // Calculate truth flattenicity
-    float truthFlat = calculateFlattenicity(truthCounts);
-    if (truthFlat >= FLAT_MIN) {
-      registry.fill(HIST("hFlattenicityTruth"), truthFlat);
+    if (isINEL) {
+      histos.fill(HIST("hEvents"), 1); // INEL>0
+      histos.fill(HIST("hNch_INEL"), nch_FT0);
     }
 
-    // ---- Reconstructed-level processing for matched collisions ----
-    for (const auto& collision : collisions) {
-      // Apply reconstruction-level event selection
-      if (!collision.sel8()) {
-        continue;
-      }
-      if (std::abs(collision.posZ()) >= VERTEX_CUT) {
-        continue;
-      }
+    if (isINEL && isFT0) {
+      histos.fill(HIST("hEvents"), 2); // INEL>0 & FT0
+      histos.fill(HIST("hNch_FT0"), nch_FT0);
 
-      // Get FT0 flattenicity for this collision
-      auto ft0 = collision.ft0();
-      if (!ft0.hasAmplitudeA() || !ft0.hasAmplitudeC()) {
-        continue;
-      }
+      // Compute flattenicity
+      float rho = computeFlattenicity(truthCounts);
+      if (rho > 0) {
+        float flattenicity = 1.0 - rho;
+        histos.fill(HIST("hFlattenicity"), flattenicity);
+        histos.fill(HIST("hFlattenicity_vs_Nch"), nch_FT0, flattenicity);
 
-      auto ampA = ft0.amplitudeA();
-      auto ampC = ft0.amplitudeC();
-
-      std::vector<float> recoCounts(NCELL, 0.0f);
-      for (int i = 0; i < static_cast<int>(ampA.size()) && i < NCH_A; ++i) {
-        recoCounts[i] = ampA[i];
-      }
-      for (int i = 0; i < static_cast<int>(ampC.size()) && i < NCH_C; ++i) {
-        recoCounts[NCH_A + i] = ampC[i];
-      }
-
-      float recoFlat = calculateFlattenicity(recoCounts);
-      if (recoFlat >= FLAT_MIN && truthFlat >= FLAT_MIN) {
-        registry.fill(HIST("hFlattenicityReco"), recoFlat);
-        registry.fill(HIST("hFlattenicityCorrelation"), truthFlat, recoFlat);
+        // Multiplicity classes (based on Nch)
+        if (nch_FT0 < 5) {
+          histos.fill(HIST("hFlattenicity_0_10"), flattenicity);
+        } else if (nch_FT0 < 8) {
+          histos.fill(HIST("hFlattenicity_10_20"), flattenicity);
+        } else if (nch_FT0 < 11) {
+          histos.fill(HIST("hFlattenicity_20_30"), flattenicity);
+        } else if (nch_FT0 < 14) {
+          histos.fill(HIST("hFlattenicity_30_40"), flattenicity);
+        } else if (nch_FT0 < 17) {
+          histos.fill(HIST("hFlattenicity_40_50"), flattenicity);
+        } else if (nch_FT0 < 20) {
+          histos.fill(HIST("hFlattenicity_50_60"), flattenicity);
+        } else if (nch_FT0 < 24) {
+          histos.fill(HIST("hFlattenicity_60_70"), flattenicity);
+        } else if (nch_FT0 < 28) {
+          histos.fill(HIST("hFlattenicity_70_80"), flattenicity);
+        } else if (nch_FT0 < 33) {
+          histos.fill(HIST("hFlattenicity_80_90"), flattenicity);
+        } else {
+          histos.fill(HIST("hFlattenicity_90_100"), flattenicity);
+        }
       }
     }
   }
-  PROCESS_SWITCH(FlattenicityTask, processMC, "Process MC", true);
+
+  PROCESS_SWITCH(FlattenicityTask, processMC, "Process MC events", true);
+
+  // ============================================
+  // Process data collisions
+  // ============================================
+  void processData(
+    aod::Collision const& collision,
+    aod::FT0s const& ft0s,
+    FullTracks const& tracks)
+  {
+    // Event selection: |vz| < 10 cm
+    if (std::abs(collision.posZ()) > cfgVzMax)
+      return;
+
+    // Find FT0 matching this collision's BC
+    auto ft0 = ft0s.begin();
+    bool foundFT0 = false;
+    for (const auto& f : ft0s) {
+      if (f.bcId() == collision.bcId()) {
+        ft0 = f;
+        foundFT0 = true;
+        break;
+      }
+    }
+    if (!foundFT0)
+      return;
+
+    // Track selection and counting
+    // int nTracks = 0;
+    std::array<float, N_CELL> recoCounts;
+    recoCounts.fill(0.0);
+
+    for (const auto& track : tracks) {
+      if (!isSelectedTrack(track))
+        continue;
+      // nTracks++;
+
+      // Assign to FT0 cell using track extrapolation
+      bool isFT0A = false;
+      int cellId = assignToFT0Cell(track.eta(), track.phi(), isFT0A);
+      if (cellId >= 0 && cellId < N_CELL) {
+        recoCounts[cellId] += 1.0;
+      }
+    }
+
+    histos.fill(HIST("hEvents"), 3); // Data events
+
+    // Compute flattenicity from FT0 amplitudes
+    // The FT0 channels are stored as arrays of (channel, amplitude) pairs
+    // The channelA() and channelC() return vectors of pairs
+    std::array<float, N_CELL> ft0Counts;
+    ft0Counts.fill(0.0);
+
+    // FT0-A channels (0-95)
+    for (int i = 0; i < N_CH_A; i++) {
+      ft0Counts[i] = ft0.channelA()[i];
+    }
+
+    // FT0-C channels (96-207)
+    for (int i = 0; i < N_CH_C; i++) {
+      ft0Counts[N_CH_A + i] = ft0.channelC()[i];
+    }
+
+    float rho = computeFlattenicity(ft0Counts);
+    if (rho > 0) {
+      histos.fill(HIST("hFlattenicity"), 1.0 - rho);
+    }
+  }
+
+  PROCESS_SWITCH(FlattenicityTask, processData, "Process data events", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
