@@ -351,7 +351,7 @@ struct cksspinalignment {
   }
 
   void processData(EventCandidates::iterator const& collision,
-                   FullTrackCandidates const& tracks,
+                   FullTrackCandidates const& /*tracks*/,
                    ResoV0s const& v0s)
   {
     o2::aod::ITSResponse itsResponse;
