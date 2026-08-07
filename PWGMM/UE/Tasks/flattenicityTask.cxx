@@ -22,13 +22,13 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
 
 #include <TFile.h>
 #include <TH1F.h>
@@ -53,19 +53,32 @@ struct FlattenicityTask {
   // ============================================
   // FT0 Constants
   // ============================================
-  static constexpr int N_PHI_SECTORS = 8;
-  static constexpr int N_ETA_A = 12;
-  static constexpr int N_ETA_C = 14;
-  static constexpr int N_CH_A = 96;
-  static constexpr int N_CH_C = 112;
-  static constexpr int N_CELL = N_CH_A + N_CH_C; // 208
+  static constexpr int NPhiSectors = 8;
+  static constexpr int NEtaA = 12;
+  static constexpr int NEtaC = 14;
+  static constexpr int NchA = 96;
+  static constexpr int NchC = 112;
+  static constexpr int NCell = NchA + NchC; // 208
 
-  static constexpr float FT0A_ETA_MIN = 3.5;
-  static constexpr float FT0A_ETA_MAX = 4.9;
-  static constexpr float FT0C_ETA_MIN = -3.3;
-  static constexpr float FT0C_ETA_MAX = -2.1;
+  static constexpr float FT0AEtaMin = 3.5;
+  static constexpr float FT0AEtaMax = 4.9;
+  static constexpr float FT0CEtaMin = -3.3;
+  static constexpr float FT0CEtaMax = -2.1;
 
-  static constexpr int PHYSICAL_PRIMARY_BIT = 0x4;
+  static constexpr int NPhysicalPrimaryBit = 0x4;
+
+  // ============================================
+  // Multiplicity class boundaries (Nch cuts defining the 0-10% ... 90-100% classes)
+  // ============================================
+  static constexpr int NchBound10 = 5;
+  static constexpr int NchBound20 = 8;
+  static constexpr int NchBound30 = 11;
+  static constexpr int NchBound40 = 14;
+  static constexpr int NchBound50 = 17;
+  static constexpr int NchBound60 = 20;
+  static constexpr int NchBound70 = 24;
+  static constexpr int NchBound80 = 28;
+  static constexpr int NchBound90 = 33;
 
   // ============================================
   // Histogram Definitions
@@ -85,9 +98,9 @@ struct FlattenicityTask {
       {"hFlattenicity_vs_Nch", "Flattenicity vs Nch;N_{ch};1-#rho", {HistType::kTH2F, {{50, -0.5, 99.5}, {50, 0.0, 1.0}}}},
 
       // FT0 cell occupancy
-      {"hCellOccupancy", "FT0 cell occupancy;Cell ID;Entries", {HistType::kTH1F, {{N_CELL, 0, N_CELL}}}},
-      {"hCellOccupancyFT0A", "FT0-A cell occupancy;Cell ID;Entries", {HistType::kTH1F, {{N_CH_A, 0, N_CH_A}}}},
-      {"hCellOccupancyFT0C", "FT0-C cell occupancy;Cell ID;Entries", {HistType::kTH1F, {{N_CH_C, 0, N_CH_C}}}},
+      {"hCellOccupancy", "FT0 cell occupancy;Cell ID;Entries", {HistType::kTH1F, {{NCell, 0, NCell}}}},
+      {"hCellOccupancyFT0A", "FT0-A cell occupancy;Cell ID;Entries", {HistType::kTH1F, {{NchA, 0, NchA}}}},
+      {"hCellOccupancyFT0C", "FT0-C cell occupancy;Cell ID;Entries", {HistType::kTH1F, {{NchC, 0, NchC}}}},
 
       // Multiplicity classes
       {"hFlattenicity_0_10", "Flattenicity 0-10%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
@@ -135,26 +148,26 @@ struct FlattenicityTask {
   // ============================================
   // Flattenicity calculation
   // ============================================
-  float computeFlattenicity(const std::array<float, N_CELL>& counts)
+  float computeFlattenicity(const std::array<float, NCell>& counts)
   {
     float total = 0.0;
-    for (int i = 0; i < N_CELL; i++) {
+    for (int i = 0; i < NCell; i++) {
       total += counts[i];
     }
 
     if (total <= 0)
       return -1.0;
 
-    float mean = total / N_CELL;
+    float mean = total / NCell;
     if (mean <= 0)
       return -1.0;
 
     float sumSq = 0.0;
-    for (int i = 0; i < N_CELL; i++) {
+    for (int i = 0; i < NCell; i++) {
       sumSq += (counts[i] - mean) * (counts[i] - mean);
     }
 
-    float rho = std::sqrt(sumSq) / (N_CELL * mean);
+    float rho = std::sqrt(sumSq) / (NCell * mean);
     return rho;
   }
 
@@ -164,8 +177,8 @@ struct FlattenicityTask {
   int assignToFT0Cell(float eta, float phi, bool& isFT0A)
   {
     // Check if in FT0 acceptance
-    bool inFT0A = (eta > FT0A_ETA_MIN && eta < FT0A_ETA_MAX);
-    bool inFT0C = (eta > FT0C_ETA_MIN && eta < FT0C_ETA_MAX);
+    bool inFT0A = (eta > FT0AEtaMin && eta < FT0AEtaMax);
+    bool inFT0C = (eta > FT0CEtaMin && eta < FT0CEtaMax);
 
     if (!inFT0A && !inFT0C)
       return -1;
@@ -173,23 +186,23 @@ struct FlattenicityTask {
     isFT0A = inFT0A;
 
     // Phi bin
-    int phiBin = static_cast<int>(std::floor(phi / (2 * TMath::Pi() / N_PHI_SECTORS)));
-    phiBin = std::max(0, std::min(phiBin, N_PHI_SECTORS - 1));
+    int phiBin = static_cast<int>(std::floor(phi / (o2::constants::math::TwoPI / NPhiSectors)));
+    phiBin = std::max(0, std::min(phiBin, NPhiSectors - 1));
 
     int cellId = -1;
 
     if (inFT0A) {
       // FT0-A: cells 0-95
-      float etaWidth = (FT0A_ETA_MAX - FT0A_ETA_MIN) / N_ETA_A;
-      int etaBin = static_cast<int>(std::floor((eta - FT0A_ETA_MIN) / etaWidth));
-      etaBin = std::max(0, std::min(etaBin, N_ETA_A - 1));
-      cellId = etaBin * N_PHI_SECTORS + phiBin;
+      float etaWidth = (FT0AEtaMax - FT0AEtaMin) / NEtaA;
+      int etaBin = static_cast<int>(std::floor((eta - FT0AEtaMin) / etaWidth));
+      etaBin = std::max(0, std::min(etaBin, NEtaA - 1));
+      cellId = etaBin * NPhiSectors + phiBin;
     } else if (inFT0C) {
       // FT0-C: cells 96-207
-      float etaWidth = (FT0C_ETA_MAX - FT0C_ETA_MIN) / N_ETA_C;
-      int etaBin = static_cast<int>(std::floor((eta - FT0C_ETA_MIN) / etaWidth));
-      etaBin = std::max(0, std::min(etaBin, N_ETA_C - 1));
-      cellId = N_CH_A + etaBin * N_PHI_SECTORS + phiBin;
+      float etaWidth = (FT0CEtaMax - FT0CEtaMin) / NEtaC;
+      int etaBin = static_cast<int>(std::floor((eta - FT0CEtaMin) / etaWidth));
+      etaBin = std::max(0, std::min(etaBin, NEtaC - 1));
+      cellId = NchA + etaBin * NPhiSectors + phiBin;
     }
 
     return cellId;
@@ -240,18 +253,18 @@ struct FlattenicityTask {
     aod::McParticles const& mcParticles)
   {
     // Initialize counters
-    std::array<float, N_CELL> truthCounts;
+    std::array<float, NCell> truthCounts;
     truthCounts.fill(0.0);
 
-    int nch_INEL = 0;
-    int nch_FT0 = 0;
+    int nchINEL = 0;
+    int nchFT0 = 0;
     bool hasFT0A = false;
     bool hasFT0C = false;
 
     // Loop over MC particles
     for (const auto& particle : mcParticles) {
       // Check if primary
-      if (!(particle.flags() & PHYSICAL_PRIMARY_BIT))
+      if (!(particle.flags() & NPhysicalPrimaryBit))
         continue;
 
       // Check if charged
@@ -265,17 +278,17 @@ struct FlattenicityTask {
 
       // INEL>0: |eta| < 1
       if (std::abs(particle.eta()) < 1.0) {
-        nch_INEL++;
+        nchINEL++;
       }
 
       // dNch/deta: |eta| < 0.8
       if (std::abs(particle.eta()) < cfgEtaMax) {
-        nch_FT0++;
+        nchFT0++;
       }
 
       // FT0 acceptance
-      bool inFT0A = (particle.eta() > FT0A_ETA_MIN && particle.eta() < FT0A_ETA_MAX);
-      bool inFT0C = (particle.eta() > FT0C_ETA_MIN && particle.eta() < FT0C_ETA_MAX);
+      bool inFT0A = (particle.eta() > FT0AEtaMin && particle.eta() < FT0AEtaMax);
+      bool inFT0C = (particle.eta() > FT0CEtaMin && particle.eta() < FT0CEtaMax);
 
       if (inFT0A)
         hasFT0A = true;
@@ -286,57 +299,57 @@ struct FlattenicityTask {
       bool isFT0A = false;
       int cellId = assignToFT0Cell(particle.eta(), particle.phi(), isFT0A);
 
-      if (cellId >= 0 && cellId < N_CELL) {
+      if (cellId >= 0 && cellId < NCell) {
         truthCounts[cellId] += 1.0;
         histos.fill(HIST("hCellOccupancy"), cellId);
         if (isFT0A) {
           histos.fill(HIST("hCellOccupancyFT0A"), cellId);
         } else {
-          histos.fill(HIST("hCellOccupancyFT0C"), cellId - N_CH_A);
+          histos.fill(HIST("hCellOccupancyFT0C"), cellId - NchA);
         }
       }
     }
 
     // Event selection
-    bool isINEL = (nch_INEL > 0);
+    bool isINEL = (nchINEL > 0);
     bool isFT0 = (hasFT0A && hasFT0C);
 
     histos.fill(HIST("hEvents"), 0); // All events
 
     if (isINEL) {
       histos.fill(HIST("hEvents"), 1); // INEL>0
-      histos.fill(HIST("hNch_INEL"), nch_FT0);
+      histos.fill(HIST("hNch_INEL"), nchFT0);
     }
 
     if (isINEL && isFT0) {
       histos.fill(HIST("hEvents"), 2); // INEL>0 & FT0
-      histos.fill(HIST("hNch_FT0"), nch_FT0);
+      histos.fill(HIST("hNch_FT0"), nchFT0);
 
       // Compute flattenicity
       float rho = computeFlattenicity(truthCounts);
       if (rho > 0) {
         float flattenicity = 1.0 - rho;
         histos.fill(HIST("hFlattenicity"), flattenicity);
-        histos.fill(HIST("hFlattenicity_vs_Nch"), nch_FT0, flattenicity);
+        histos.fill(HIST("hFlattenicity_vs_Nch"), nchFT0, flattenicity);
 
         // Multiplicity classes (based on Nch)
-        if (nch_FT0 < 5) {
+        if (nchFT0 < NchBound10) {
           histos.fill(HIST("hFlattenicity_0_10"), flattenicity);
-        } else if (nch_FT0 < 8) {
+        } else if (nchFT0 < NchBound20) {
           histos.fill(HIST("hFlattenicity_10_20"), flattenicity);
-        } else if (nch_FT0 < 11) {
+        } else if (nchFT0 < NchBound30) {
           histos.fill(HIST("hFlattenicity_20_30"), flattenicity);
-        } else if (nch_FT0 < 14) {
+        } else if (nchFT0 < NchBound40) {
           histos.fill(HIST("hFlattenicity_30_40"), flattenicity);
-        } else if (nch_FT0 < 17) {
+        } else if (nchFT0 < NchBound50) {
           histos.fill(HIST("hFlattenicity_40_50"), flattenicity);
-        } else if (nch_FT0 < 20) {
+        } else if (nchFT0 < NchBound60) {
           histos.fill(HIST("hFlattenicity_50_60"), flattenicity);
-        } else if (nch_FT0 < 24) {
+        } else if (nchFT0 < NchBound70) {
           histos.fill(HIST("hFlattenicity_60_70"), flattenicity);
-        } else if (nch_FT0 < 28) {
+        } else if (nchFT0 < NchBound80) {
           histos.fill(HIST("hFlattenicity_70_80"), flattenicity);
-        } else if (nch_FT0 < 33) {
+        } else if (nchFT0 < NchBound90) {
           histos.fill(HIST("hFlattenicity_80_90"), flattenicity);
         } else {
           histos.fill(HIST("hFlattenicity_90_100"), flattenicity);
@@ -374,7 +387,7 @@ struct FlattenicityTask {
 
     // Track selection and counting
     // int nTracks = 0;
-    std::array<float, N_CELL> recoCounts;
+    std::array<float, NCell> recoCounts;
     recoCounts.fill(0.0);
 
     for (const auto& track : tracks) {
@@ -385,7 +398,7 @@ struct FlattenicityTask {
       // Assign to FT0 cell using track extrapolation
       bool isFT0A = false;
       int cellId = assignToFT0Cell(track.eta(), track.phi(), isFT0A);
-      if (cellId >= 0 && cellId < N_CELL) {
+      if (cellId >= 0 && cellId < NCell) {
         recoCounts[cellId] += 1.0;
       }
     }
@@ -395,17 +408,17 @@ struct FlattenicityTask {
     // Compute flattenicity from FT0 amplitudes
     // The FT0 channels are stored as arrays of (channel, amplitude) pairs
     // The channelA() and channelC() return vectors of pairs
-    std::array<float, N_CELL> ft0Counts;
+    std::array<float, NCell> ft0Counts;
     ft0Counts.fill(0.0);
 
     // FT0-A channels (0-95)
-    for (int i = 0; i < N_CH_A; i++) {
+    for (int i = 0; i < NchA; i++) {
       ft0Counts[i] = ft0.channelA()[i];
     }
 
     // FT0-C channels (96-207)
-    for (int i = 0; i < N_CH_C; i++) {
-      ft0Counts[N_CH_A + i] = ft0.channelC()[i];
+    for (int i = 0; i < NchC; i++) {
+      ft0Counts[NchA + i] = ft0.channelC()[i];
     }
 
     float rho = computeFlattenicity(ft0Counts);
