@@ -178,5 +178,16 @@ enum class CharmHadron : o2::analysis::femto::datatypes::CharmHadronType {
   kLc
 };
 
+enum class QvecDetector : o2::analysis::femto::datatypes::QvecDetectorType {
+  kFT0C = 0,
+  kFT0A = 1
+};
+
+enum class QvecHarmonic : o2::analysis::femto::datatypes::QvecHarmonicType {
+  kN1 = 1,
+  kN2 = 2,
+  kN3 = 3
+};
+
 }; // namespace o2::analysis::femto::modes
 #endif // PWGCF_FEMTO_CORE_MODES_H_

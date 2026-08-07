@@ -24,6 +24,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGLF/DataModel/LFKinkDecayTables.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
@@ -59,11 +60,13 @@ using namespace o2::analysis::femto;
 
 namespace o2::analysis::femto::rawinputs
 {
-using Run3PpCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::Mults, o2::aod::CentFT0Ms>;
+using Run3PpCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::Mults, o2::aod::CentFT0Ms, o2::aod::CentFT0Cs, o2::aod::CentFT0As>;
 using Run3PpMcRecoCollisions = o2::soa::Join<Run3PpCollisions, o2::aod::McCollisionLabels>;
 using Run3PpMcGenCollisions = o2::soa::Join<o2::aod::McCollisions, o2::aod::MultsExtraMC, o2::aod::McCentFT0Ms>;
 
-using Run3PbPbCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::Mults, o2::aod::CentFT0Cs>;
+using Run3PbPbCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::Mults, o2::aod::CentFT0Ms, o2::aod::CentFT0Cs, o2::aod::CentFT0As>;
+using Run3PbPbCollisionsWithEventShape = o2::soa::Join<Run3PbPbCollisions, o2::aod::QvectorFT0CVecs, o2::aod::QvectorFT0AVecs>;
+
 using Run3PbPbMcRecoCollisions = o2::soa::Join<Run3PbPbCollisions, o2::aod::McCollisionLabels>;
 using Run3PbPbMcGenCollisions = o2::soa::Join<o2::aod::McCollisions, o2::aod::MultsExtraMC, o2::aod::McCentFT0Cs>;
 
@@ -74,13 +77,13 @@ using Run3FullPidTracks =
             o2::aod::pidTOFbeta, o2::aod::pidTOFmass>;
 using Run3McRecoTracks = soa::Join<Run3FullPidTracks, o2::aod::McTrackLabels>;
 
-using Run3Vzeros = o2::aod::V0Datas;
-using Run3RecoVzeros = o2::soa::Join<o2::aod::V0Datas, o2::aod::McV0Labels>;
+using Run3Vzeros = o2::soa::Join<o2::aod::V0Datas, o2::aod::V0TOFPIDs, o2::aod::V0TOFNSigmas>;
+using Run3RecoVzeros = o2::soa::Join<Run3Vzeros, o2::aod::McV0Labels>;
 
 using Run3D0s = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>;
 using Run3RecoD0s = soa::Join<Run3D0s, aod::HfCand2ProngMcRec>;
 
-using Run3Cascades = o2::aod::CascDatas;
+using Run3Cascades = o2::soa::Join<o2::aod::CascDatas, o2::aod::CascTOFPIDs, o2::aod::CascTOFNSigmas>;
 using Run3RecoCascades = o2::soa::Join<Run3Cascades, o2::aod::McCascLabels>;
 
 using Run3Kinks = o2::aod::KinkCands;
@@ -273,6 +276,35 @@ struct FemtoProducer {
       }
     }
 
+    // ---- guard: exactly one process function ---------------------------------
+    const int nProcesses =
+      static_cast<int>(doprocessTracksRun3pp) +
+      static_cast<int>(doprocessTracksRun3PbPb) +
+      static_cast<int>(doprocessTracksRun3PbPbWithEventShape) +
+      static_cast<int>(doprocessTracksV0sRun3pp) +
+      static_cast<int>(doprocessTracksV0sRun3PbPb) +
+      static_cast<int>(doprocessTracksV0sCascadesRun3pp) +
+      static_cast<int>(doprocessTracksV0sCascadesRun3PbPb) +
+      static_cast<int>(doprocessTracksKinksRun3pp) +
+      static_cast<int>(doprocessTracksV0sCascadesKinksRun3pp) +
+      static_cast<int>(doprocessTracksD0sRun3pp) +
+      static_cast<int>(doprocessTracksD0sRun3PbPb) +
+      static_cast<int>(doprocessTracksRun3ppMc) +
+      static_cast<int>(doprocessTracksRun3PbPbMc) +
+      static_cast<int>(doprocessTracksV0sRun3ppMc) +
+      static_cast<int>(doprocessTracksV0sRun3PbPbMc) +
+      static_cast<int>(doprocessTracksV0sCascadesRun3ppMc) +
+      static_cast<int>(doprocessTracksV0sCascadesRun3PbPbMc) +
+      static_cast<int>(doprocessTracksKinksRun3ppMc) +
+      static_cast<int>(doprocessTracksV0sKinksRun3ppMc) +
+      static_cast<int>(doprocessTracksD0sRun3ppMc) +
+      static_cast<int>(doprocessTracksD0sRun3PbPbMc) +
+      static_cast<int>(doprocessMcOnly);
+
+    if (nProcesses != 1) {
+      LOG(fatal) << "Exactly one process function must be enabled, found " << nProcesses << ". Breaking...";
+    }
+
     hRegistry.print();
   }
 
@@ -421,6 +453,19 @@ struct FemtoProducer {
     processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
   }
   PROCESS_SWITCH(FemtoProducer, processTracksRun3PbPb, "Provide tracks in PbPb collisions", false);
+
+  void processTracksRun3PbPbWithEventShape(rawinputs::Run3PbPbCollisionsWithEventShape::iterator const& col,
+                                           o2::aod::BCsWithTimestamps const& bcs,
+                                           rawinputs::Run3FullPidTracks const& tracks)
+  {
+    if (!processCollisions<modes::System::kPbPb_Run3>(col, bcs, tracks)) {
+      return;
+    }
+    auto tracksWithItsPid = o2::soa::Attach<rawinputs::Run3FullPidTracks, o2::aod::pidits::ITSNSigmaEl, o2::aod::pidits::ITSNSigmaPi, o2::aod::pidits::ITSNSigmaKa,
+                                            o2::aod::pidits::ITSNSigmaPr, o2::aod::pidits::ITSNSigmaDe, o2::aod::pidits::ITSNSigmaTr, o2::aod::pidits::ITSNSigmaHe>(tracks);
+    processTracks<modes::System::kPbPb_Run3>(col, tracksWithItsPid);
+  }
+  PROCESS_SWITCH(FemtoProducer, processTracksRun3PbPbWithEventShape, "Provide tracks in PbPb collisions with event shape information", false);
 
   void processTracksV0sRun3pp(rawinputs::Run3PpCollisions::iterator const& col,
                               o2::aod::BCsWithTimestamps const& bcs,
