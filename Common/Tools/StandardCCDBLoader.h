@@ -105,12 +105,8 @@ class StandardCCDBLoader
     }
 
     // load matLUT for this timestamp
-    if (!lut) {
-      LOG(info) << "Loading material look-up table for timestamp: " << currentRunNumber;
-      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->template getForRun<o2::base::MatLayerCylSet>(cGroup.lutPath.value, currentRunNumber));
-    } else {
-      LOG(info) << "Material look-up table already in place. Not reloading.";
-    }
+    LOG(info) << "Loading material look-up table for timestamp: " << currentRunNumber;
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->template getForRun<o2::base::MatLayerCylSet>(cGroup.lutPath.value, currentRunNumber));
     LOG(info) << "Setting global propagator material propagation LUT";
     o2::base::Propagator::Instance()->setMatLUT(lut);
 
