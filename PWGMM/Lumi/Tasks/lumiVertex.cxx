@@ -19,7 +19,6 @@
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/LHCConstants.h>
@@ -116,7 +115,7 @@ using UnfilteredTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra
 struct LumiVertex {
   Produces<o2::aod::EventInfo> rowEventInfo;
   Produces<o2::aod::EventInfoBC> rowEventInfoBC;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   const char* ccdbPathGrp = "GLO/Config/GRPMagField";
   const char* ccdbPathLut = "GLO/Param/MatLUT";
   const char* ccdburl = "http://alice-ccdb.cern.ch";
@@ -280,8 +279,8 @@ struct LumiVertex {
 
   static bool hasFT0ACCoincidence(uint8_t triggerMask)
   {
-    return (triggerMask & (1 << o2::ft0::Triggers::bitA)) &&
-           (triggerMask & (1 << o2::ft0::Triggers::bitC));
+    return (triggerMask & (1U << o2::ft0::Triggers::bitA)) != 0U &&
+           (triggerMask & (1U << o2::ft0::Triggers::bitC)) != 0U;
   }
 
   static bool hasAnyFT0Trigger(const std::bitset<64>& ctpInputMask)
@@ -687,7 +686,7 @@ struct LumiVertex {
 
       const uint64_t relativeTimestamp = getRelativeTimestamp(bc);
       const uint64_t globalBC = bc.globalBC();
-      const int32_t localBC = static_cast<int32_t>(globalBC % o2::constants::lhc::LHCMaxBunches);
+      const auto localBC = static_cast<int32_t>(globalBC % o2::constants::lhc::LHCMaxBunches);
       const std::bitset<64> ctpInputMask(bc.inputMask());
       const bool hasFT0 = bc.has_ft0();
       const uint8_t ft0TriggerMask =
