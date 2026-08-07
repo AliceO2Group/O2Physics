@@ -23,6 +23,7 @@
 #include "PWGCF/Femto/Core/selectionContainer.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 
 #include <CommonConstants/MathConstants.h>
@@ -73,6 +74,16 @@ struct ConfD0Bits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> cosThetaStarMax{"cosThetaStarMax", {1.f}, "Maximum |cos(theta*)| of the decay"};
 };
 
+// derived selection bits for Lc
+struct ConfLcBits : o2::framework::ConfigurableGroup {
+  std::string prefix = std::string("LcBits");
+  o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all Lcs are passed through. Bits for all selections are stored."};
+  o2::framework::Configurable<std::vector<float>> cpaMin{"cpaMin", {0.9f}, "Minimum cosine of pointing angle"};
+  o2::framework::Configurable<std::vector<float>> decayLengthMin{"decayLengthMin", {0.02f}, "Minimum decay length (cm)"};
+  o2::framework::Configurable<std::vector<float>> chi2PcaMax{"chi2PcaMax", {1.f}, "Maximum sum of distances of the secondary vertex to its prongs (cm)"};
+  o2::framework::Configurable<std::vector<float>> impactParameterProngSqSumMin{"impactParameterProngSqSumMin", {0.f}, "Minimum sum of squared prong impact parameters (cm^2)"};
+};
+
 // base selection for analysis task for D0s
 template <auto& Prefix>
 struct ConfD0Selection : o2::framework::ConfigurableGroup {
@@ -93,10 +104,35 @@ struct ConfD0Selection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<datatypes::CharmHadronMaskType> mask{"mask", 0, "Bitmask for D0 selection"};
 };
 
+// base selection for analysis task for Lcs
+template <auto& Prefix>
+struct ConfLcSelection : o2::framework::ConfigurableGroup {
+  std::string prefix = Prefix;
+  o2::framework::Configurable<int> pdgCodeAbs{"pdgCodeAbs", o2::constants::physics::Pdg::kLambdaCPlus, "PDG code (Lc)"};
+  o2::framework::Configurable<int> sign{"sign", 0, "Particle sign (+1: Lc; -1: Lcbar; 0: both)"};
+  o2::framework::Configurable<float> ptMin{"ptMin", 1.f, "Minimum pT"};
+  o2::framework::Configurable<float> ptMax{"ptMax", 3.f, "Maximum pT"};
+  // acceptance is applied as a rapidity cut in the builder; the eta/phi windows
+  // are kept open and exist only to satisfy the partition macro
+  o2::framework::Configurable<float> etaMin{"etaMin", -0.8f, "Minimum eta"};
+  o2::framework::Configurable<float> etaMax{"etaMax", 0.8f, "Maximum eta"};
+  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};
+  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};
+  // signal region; side-bands remain available in the derived data
+  o2::framework::Configurable<float> massMin{"massMin", 2.24f, "Minimum invariant mass for Lc"};
+  o2::framework::Configurable<float> massMax{"massMax", 2.33f, "Maximum invariant mass for Lc"};
+  o2::framework::Configurable<datatypes::CharmHadronMaskType> mask{"mask", 0, "Bitmask for Lc selection"};
+};
+
 constexpr const char PrefixD0Selection1[] = "D0Selection1";
 constexpr const char PrefixD0Selection2[] = "D0Selection2";
 using ConfD0Selection1 = ConfD0Selection<PrefixD0Selection1>;
 using ConfD0Selection2 = ConfD0Selection<PrefixD0Selection2>;
+
+constexpr const char PrefixLcSelection1[] = "LcSelection1";
+constexpr const char PrefixLcSelection2[] = "LcSelection2";
+using ConfLcSelection1 = ConfLcSelection<PrefixLcSelection1>;
+using ConfLcSelection2 = ConfLcSelection<PrefixLcSelection2>;
 
 /// The different selections for charm hadrons.
 /// The enum is shared by all species in the family; which bits are actually
@@ -110,18 +146,27 @@ enum CharmHadronSels {
   kImpactParameterProductMax, ///< Max. product of prong impact parameters (d0*d0)
   kCosThetaStarMax,           ///< Max. |cos(theta*)| of the decay
 
+  // topological selections, 3-prong only (Lc)
+  kChi2PcaMax,                   ///< Max. sum of distances of the secondary vertex to its prongs
+  kImpactParameterProngSqSumMin, ///< Min. sum of squared prong impact parameters
+
   kCharmHadronSelsMax
 };
 
 constexpr char D0SelHistName[] = "hD0Selection";
 constexpr char D0barSelHistName[] = "hD0barSelection";
 constexpr char CharmHadronSelsName[] = "Charm hadron selection object";
+constexpr char LcSelHistName[] = "hLcSelection";
+constexpr char LcBarSelHistName[] = "hLcBarSelection";
 const std::unordered_map<CharmHadronSels, std::string> charmHadronSelectionNames = {
   {kCpaMin, "Min. CPA (cosine pointing angle)"},
   {kDecayLengthMin, "Min. decay length"},
 
   {kImpactParameterProductMax, "Max. product of prong impact parameters (d0*d0)"},
-  {kCosThetaStarMax, "Max. |cos(theta*)| of the decay"}};
+  {kCosThetaStarMax, "Max. |cos(theta*)| of the decay"},
+
+  {kChi2PcaMax, "Max. sum of distances of the secondary vertex to its prongs (cm)"},
+  {kImpactParameterProngSqSumMin, "Min. sum of squared prong impact parameters (cm^2)"}};
 
 /// enum for all charm hadron filters (loose kinematic pre-selection, applied before the bit selections).
 enum CharmHadronFilters {
@@ -143,6 +188,8 @@ enum CharmHadronFilters {
 
 constexpr char D0FilterHistName[] = "hD0Filters";
 constexpr char D0barFilterHistName[] = "hD0barFilters";
+constexpr char LcFilterHistName[] = "hLcFilters";
+constexpr char LcBarFilterHistName[] = "hLcBarFilters";
 const std::unordered_map<CharmHadronFilters, std::string> charmHadronFilterNames = {
   {kDecayChannel, "Decay channel"},
   {kHypothesis, "Mass hypothesis"},
@@ -157,6 +204,20 @@ const std::unordered_map<CharmHadronFilters, std::string> charmHadronFilterNames
   {kMassMin, "Minimum invariant mass"},
   {kMassMax, "Maximum invariant mass"},
   {kRejectAmbiguous, "Reject ambiguous mass hypothesis"}};
+
+template <modes::CharmHadron hadronType>
+constexpr bool isThreeProng()
+{
+  return modes::isEqual(hadronType, modes::CharmHadron::kLc) ||
+         modes::isEqual(hadronType, modes::CharmHadron::kLcBar);
+}
+
+template <modes::CharmHadron hadronType>
+constexpr bool isParticle()
+{
+  return modes::isEqual(hadronType, modes::CharmHadron::kD0) ||
+         modes::isEqual(hadronType, modes::CharmHadron::kLc);
+}
 
 template <modes::CharmHadron hadronType, auto& SelectionHistName, auto& FilterHistName>
 class CharmHadronSelection : public baseselection::BaseSelection<float, o2::analysis::femto::datatypes::CharmHadronMaskType, kCharmHadronSelsMax>
@@ -185,8 +246,14 @@ class CharmHadronSelection : public baseselection::BaseSelection<float, o2::anal
 
     this->addSelection(kCpaMin, charmHadronSelectionNames.at(kCpaMin), config.cpaMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kDecayLengthMin, charmHadronSelectionNames.at(kDecayLengthMin), config.decayLengthMin.value, limits::kLowerLimit, true, true, false);
-    this->addSelection(kImpactParameterProductMax, charmHadronSelectionNames.at(kImpactParameterProductMax), config.impactParameterProductMax.value, limits::kUpperLimit, true, true, false);
-    this->addSelection(kCosThetaStarMax, charmHadronSelectionNames.at(kCosThetaStarMax), config.cosThetaStarMax.value, limits::kAbsUpperLimit, true, true, false);
+
+    if constexpr (isThreeProng<hadronType>()) {
+      this->addSelection(kChi2PcaMax, charmHadronSelectionNames.at(kChi2PcaMax), config.chi2PcaMax.value, limits::kUpperLimit, true, true, false);
+      this->addSelection(kImpactParameterProngSqSumMin, charmHadronSelectionNames.at(kImpactParameterProngSqSumMin), config.impactParameterProngSqSumMin.value, limits::kLowerLimit, true, true, false);
+    } else {
+      this->addSelection(kImpactParameterProductMax, charmHadronSelectionNames.at(kImpactParameterProductMax), config.impactParameterProductMax.value, limits::kUpperLimit, true, true, false);
+      this->addSelection(kCosThetaStarMax, charmHadronSelectionNames.at(kCosThetaStarMax), config.cosThetaStarMax.value, limits::kAbsUpperLimit, true, true, false);
+    }
 
     this->template setupSelectionHistogram<SelectionHistName>(registry);
     this->template setupFilterHistogram<FilterHistName>(
@@ -214,8 +281,14 @@ class CharmHadronSelection : public baseselection::BaseSelection<float, o2::anal
     this->reset();
     this->evaluateObservable(kCpaMin, candidate.cpa());
     this->evaluateObservable(kDecayLengthMin, candidate.decayLength());
-    this->evaluateObservable(kImpactParameterProductMax, candidate.impactParameter0() * candidate.impactParameter1());
-    this->evaluateObservable(kCosThetaStarMax, mHfHelper.cosThetaStarD0(candidate));
+
+    if constexpr (isThreeProng<hadronType>()) {
+      this->evaluateObservable(kChi2PcaMax, candidate.chi2PCA());
+      this->evaluateObservable(kImpactParameterProngSqSumMin, candidate.impactParameterProngSqSum());
+    } else {
+      this->evaluateObservable(kImpactParameterProductMax, candidate.impactParameter0() * candidate.impactParameter1());
+      this->evaluateObservable(kCosThetaStarMax, mHfHelper.cosThetaStarD0(candidate));
+    }
     this->template assembleBitmask<SelectionHistName>();
   }
 
@@ -226,24 +299,31 @@ class CharmHadronSelection : public baseselection::BaseSelection<float, o2::anal
     bool p = false;
 
     // decay channel
-    p = (candidate.hfflag() & (1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK)) != 0;
+    if constexpr (isThreeProng<hadronType>()) {
+      p = (candidate.hfflag() & (1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi)) != 0;
+    } else {
+      p = (candidate.hfflag() & (1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK)) != 0;
+    }
     this->template fillFilter<FilterHistName>(kDecayChannel, p);
     pass &= p;
 
     if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
       p = candidate.isSelD0();
-    } else {
+    } else if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0Bar)) {
       p = candidate.isSelD0bar();
+    } else { // kLc / kLcBar
+      p = candidate.isSelLcToPKPi() || candidate.isSelLcToPiKP();
     }
-
     this->template fillFilter<FilterHistName>(kHypothesis, p);
     pass &= p;
 
     bool competing = false;
     if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
       competing = candidate.isSelD0bar();
-    } else {
+    } else if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0Bar)) {
       competing = candidate.isSelD0();
+    } else { // Lc / Lcbar: ambiguous means both mass hypotheses passed
+      competing = candidate.isSelLcToPKPi() && candidate.isSelLcToPiKP();
     }
     p = !mRejectAmbiguousHypothesis || !competing;
     this->template fillFilter<FilterHistName>(kRejectAmbiguous, p);
@@ -275,7 +355,12 @@ class CharmHadronSelection : public baseselection::BaseSelection<float, o2::anal
 
     // rapidity
     if (mUseYCut) {
-      const float y = mHfHelper.yD0(candidate);
+      float y = 0.f;
+      if constexpr (isThreeProng<hadronType>()) {
+        y = mHfHelper.yLc(candidate);
+      } else {
+        y = mHfHelper.yD0(candidate);
+      }
       p = y > mYMin;
       this->template fillFilter<FilterHistName>(kYMin, p);
       pass &= p;
@@ -286,7 +371,7 @@ class CharmHadronSelection : public baseselection::BaseSelection<float, o2::anal
     }
 
     this->template fillFilterSummary<FilterHistName>(pass);
-    return this->isPassThrough() || pass;
+    return this->isPassThrough() || pass;ż
   }
 
   [[nodiscard]] float getMassMin() const
