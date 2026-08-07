@@ -36,6 +36,7 @@
 #include <ReconstructionDataFormats/Track.h>
 
 #include <TF1.h>
+#include <TMCProcess.h>
 #include <TPDGCode.h>
 #include <TVector3.h>
 
@@ -184,6 +185,7 @@ struct Sigmaplusbuilder {
     const AxisSpec axisDiscriminant{200, -1., 1., "discriminant (GeV^{4}/#it{c}^{4})"};
     const AxisSpec axisMassSigma{200, 1.0, 1.4, "m_{p#gamma#gamma} (GeV/#it{c}^{2})"};
     const AxisSpec axisSigmaPt{100, 0., 6., "#it{p}_{T,#Sigma^{+}} (GeV/#it{c})"};
+    const AxisSpec axisMomentum{100, 0., 10., "#it{p} (GeV/#it{c})"};
 
     histos.add("Candidate/hSelectionCounter", "Candidate/hSelectionCounter", kTH1F, {axisCandSel});
     auto hCandSel = histos.get<TH1>(HIST("Candidate/hSelectionCounter"));
@@ -270,6 +272,44 @@ struct Sigmaplusbuilder {
       hPhotonTruthQA->GetXaxis()->SetBinLabel(3, "Shared real gamma mother");
       hPhotonTruthQA->GetXaxis()->SetBinLabel(4, "Gamma's mother is pi0");
       hPhotonTruthQA->GetXaxis()->SetBinLabel(5, "Pi0's mother is Sigma+");
+    }
+
+    if (doprocessFindable) {
+      const AxisSpec axisDetectorPresence{3, -0.5, 2.5, "detector"};
+      const AxisSpec axisDuplicateTrack{2, -0.5, 1.5, "track"};
+      const AxisSpec axisV0Presence{2, -0.5, 1.5, "V0 match"};
+      const AxisSpec axisTPCClusters{160, -0.5, 159.5, "TPC clusters"};
+      const AxisSpec axisPhotonMomResolution{200, -1., 1., "(#it{p}_{reco,#gamma} - #it{p}_{MC,#gamma})/#it{p}_{MC,#gamma}"};
+      const AxisSpec axisPhotonCosPA{200, -1., 1., "cosPA_{#gamma}"};
+      const AxisSpec axisPairMass{200, 0., 0.1, "m_{e^{+}e^{-}} (GeV/#it{c}^{2})"};
+      histos.add("Findable/hSigmaPlusPt", "Findable/hSigmaPlusPt", kTH1F, {axisSigmaPt});
+      histos.add("Findable/h2ProtonPtVsSigmaPlusPt", "Findable/h2ProtonPtVsSigmaPlusPt", kTH2F, {axisSigmaPt, axisMomentum});
+      histos.add("Findable/hElectronPt", "Findable/hElectronPt", kTH1F, {axisMomentum});
+      histos.add("Findable/hPositronPt", "Findable/hPositronPt", kTH1F, {axisMomentum});
+      histos.add("Findable/hElectronPositronMass", "Findable/hElectronPositronMass", kTH1F, {axisPairMass});
+      histos.add("Findable/hPhotonConversionRadius", "Findable/hPhotonConversionRadius", kTH1F, {axisPhotonRadius});
+      histos.add("Findable/hPhotonMomentumResolution", "Findable/hPhotonMomentumResolution", kTH1F, {axisPhotonMomResolution});
+      histos.add("Findable/hPhotonCosPA", "Findable/hPhotonCosPA", kTH1F, {axisPhotonCosPA});
+      histos.add("Findable/hConversionPairV0Presence", "Findable/hConversionPairV0Presence", kTH1F, {axisV0Presence});
+      histos.add("Findable/hDuplicateConversionTrackCounter", "Findable/hDuplicateConversionTrackCounter", kTH1F, {axisDuplicateTrack});
+      histos.add("Findable/hDuplicateElectronTPCNClsFound", "Findable/hDuplicateElectronTPCNClsFound", kTH1F, {axisTPCClusters});
+      histos.add("Findable/hDuplicatePositronTPCNClsFound", "Findable/hDuplicatePositronTPCNClsFound", kTH1F, {axisTPCClusters});
+      histos.add("Findable/hElectronDetectorPresence", "Findable/hElectronDetectorPresence", kTH1F, {axisDetectorPresence});
+      histos.add("Findable/hPositronDetectorPresence", "Findable/hPositronDetectorPresence", kTH1F, {axisDetectorPresence});
+      auto hConversionPairV0Presence = histos.get<TH1>(HIST("Findable/hConversionPairV0Presence"));
+      hConversionPairV0Presence->GetXaxis()->SetBinLabel(1, "valid pair");
+      hConversionPairV0Presence->GetXaxis()->SetBinLabel(2, "in V0");
+      auto hDuplicateConversionTrackCounter = histos.get<TH1>(HIST("Findable/hDuplicateConversionTrackCounter"));
+      hDuplicateConversionTrackCounter->GetXaxis()->SetBinLabel(1, "e^{-}");
+      hDuplicateConversionTrackCounter->GetXaxis()->SetBinLabel(2, "e^{+}");
+      auto hElectronDetectorPresence = histos.get<TH1>(HIST("Findable/hElectronDetectorPresence"));
+      auto hPositronDetectorPresence = histos.get<TH1>(HIST("Findable/hPositronDetectorPresence"));
+      hElectronDetectorPresence->GetXaxis()->SetBinLabel(1, "ITS");
+      hElectronDetectorPresence->GetXaxis()->SetBinLabel(2, "TPC");
+      hElectronDetectorPresence->GetXaxis()->SetBinLabel(3, "TOF");
+      hPositronDetectorPresence->GetXaxis()->SetBinLabel(1, "ITS");
+      hPositronDetectorPresence->GetXaxis()->SetBinLabel(2, "TPC");
+      hPositronDetectorPresence->GetXaxis()->SetBinLabel(3, "TOF");
     }
   }
 
@@ -464,6 +504,61 @@ struct Sigmaplusbuilder {
       hasPi0 |= (std::abs(daughter.pdgCode()) == PDG_t::kPi0);
     }
     return hasProton && hasPi0;
+  }
+
+  template <bool IsElectron, typename TTrack>
+  void fillFindableTrackDetectors(const TTrack& track)
+  {
+    auto fillDetector = [&](int detector) {
+      if constexpr (IsElectron) {
+        histos.fill(HIST("Findable/hElectronDetectorPresence"), detector);
+      } else {
+        histos.fill(HIST("Findable/hPositronDetectorPresence"), detector);
+      }
+    };
+
+    if (track.hasITS()) {
+      fillDetector(0);
+    }
+    if (track.hasTPC()) {
+      fillDetector(1);
+    }
+    if (track.hasTOF()) {
+      fillDetector(2);
+    }
+  }
+
+  template <typename TMcPart>
+  int findSigmaPlusMotherOfConversionElectron(const TMcPart& mcElectron, int& gammaIndex, std::array<float, 3>& conversionVertex)
+  {
+    if (std::abs(mcElectron.pdgCode()) != PDG_t::kElectron || mcElectron.getProcess() != TMCProcess::kPPair) {
+      return -1;
+    }
+
+    auto const& gammaMothers = mcElectron.template mothers_as<aod::McParticles>();
+    if (gammaMothers.empty() || gammaMothers.front().pdgCode() != PDG_t::kGamma) {
+      return -1;
+    }
+
+    auto mcGamma = gammaMothers.front();
+    if (mcGamma.getProcess() != TMCProcess::kPDecay) {
+      return -1;
+    }
+
+    auto const& pi0Mothers = mcGamma.template mothers_as<aod::McParticles>();
+    if (pi0Mothers.empty() || std::abs(pi0Mothers.front().pdgCode()) != PDG_t::kPi0) {
+      return -1;
+    }
+
+    auto mcPi0 = pi0Mothers.front();
+    auto const& sigmaMothers = mcPi0.template mothers_as<aod::McParticles>();
+    if (sigmaMothers.empty() || std::abs(sigmaMothers.front().pdgCode()) != PDG_t::kSigmaPlus) {
+      return -1;
+    }
+
+    gammaIndex = mcGamma.globalIndex();
+    conversionVertex = {mcElectron.vx(), mcElectron.vy(), mcElectron.vz()};
+    return sigmaMothers.front().globalIndex();
   }
 
   // Build a Sigma+ -> p pi0 candidate from a proton track and a PCM photon
@@ -903,6 +998,174 @@ struct Sigmaplusbuilder {
     }
   }
   PROCESS_SWITCH(Sigmaplusbuilder, processMc, "Process MC", false);
+
+  void processFindable(CollisionsFullMC const& collisions, aod::V0Datas const& v0s, TracksFullMC const& tracks, aod::McParticles const&)
+  {
+    for (const auto& collision : collisions) {
+      auto tracksThisCollision = tracks.sliceBy(tracksPerCollisionMC, collision.globalIndex());
+      auto v0sThisCollision = v0s.sliceBy(v0PerCollision, collision.globalIndex());
+
+      for (const auto& protonTrack : tracksThisCollision) {
+        if (!protonTrack.has_mcParticle()) {
+          continue;
+        }
+
+        auto mcProton = protonTrack.template mcParticle_as<aod::McParticles>();
+        int sigmaIndex = findSigmaPlusMotherOfProton(mcProton);
+        if (sigmaIndex < 0) {
+          continue;
+        }
+
+        auto const& protonMothers = mcProton.template mothers_as<aod::McParticles>();
+        if (protonMothers.empty()) {
+          continue;
+        }
+        auto mcSigmaPlus = protonMothers.front();
+        if (std::abs(mcSigmaPlus.y()) > 1) {
+          continue;
+        }
+        histos.fill(HIST("Findable/h2ProtonPtVsSigmaPlusPt"), mcSigmaPlus.pt(), protonTrack.pt());
+        std::vector<int> seenElectronMcIds;
+        std::vector<int> seenElectronTrackIds;
+        std::vector<int> seenPositronMcIds;
+        std::vector<int> seenPositronTrackIds;
+
+        for (const auto& electronTrack : tracksThisCollision) {
+          if (!electronTrack.has_mcParticle()) {
+            continue;
+          }
+
+          if (electronTrack.tpcNClsFound() < 90 || electronTrack.sign() > 0) {
+            continue;
+          }
+
+          auto mcElectron = electronTrack.template mcParticle_as<aod::McParticles>();
+          if (mcElectron.pdgCode() != PDG_t::kElectron) {
+            continue;
+          }
+
+          int electronGammaIndex = -1;
+          std::array<float, 3> electronVertex{};
+          if (findSigmaPlusMotherOfConversionElectron(mcElectron, electronGammaIndex, electronVertex) != sigmaIndex) {
+            continue;
+          }
+
+          for (const auto& positronTrack : tracksThisCollision) {
+            if (!positronTrack.has_mcParticle()) {
+              continue;
+            }
+
+            if (positronTrack.tpcNClsFound() < 90 || positronTrack.sign() < 0) {
+              continue;
+            }
+
+            auto mcPositron = positronTrack.template mcParticle_as<aod::McParticles>();
+            if (mcPositron.pdgCode() != PDG_t::kPositron) {
+              continue;
+            }
+
+            int positronGammaIndex = -1;
+            std::array<float, 3> positronVertex{};
+            if (findSigmaPlusMotherOfConversionElectron(mcPositron, positronGammaIndex, positronVertex) != sigmaIndex || positronGammaIndex != electronGammaIndex) {
+              continue;
+            }
+
+            bool sameConversionPoint = electronVertex[0] == positronVertex[0] &&
+                                       electronVertex[1] == positronVertex[1] &&
+                                       electronVertex[2] == positronVertex[2];
+            if (!sameConversionPoint) {
+              continue;
+            }
+
+            int electronMcId = mcElectron.globalIndex();
+            int electronTrackId = electronTrack.globalIndex();
+            int positronMcId = mcPositron.globalIndex();
+            int positronTrackId = positronTrack.globalIndex();
+
+            bool seenElectronMc = false;
+            bool duplicateElectronTrack = false;
+            for (int iSeen = 0; iSeen < static_cast<int>(seenElectronMcIds.size()); ++iSeen) {
+              if (seenElectronMcIds[iSeen] == electronMcId) {
+                seenElectronMc = true;
+                duplicateElectronTrack |= (seenElectronTrackIds[iSeen] != electronTrackId);
+              }
+            }
+            if (duplicateElectronTrack) {
+              histos.fill(HIST("Findable/hDuplicateConversionTrackCounter"), 0);
+              histos.fill(HIST("Findable/hDuplicateElectronTPCNClsFound"), electronTrack.tpcNClsFound());
+            }
+            if (!seenElectronMc) {
+              seenElectronMcIds.push_back(electronMcId);
+              seenElectronTrackIds.push_back(electronTrackId);
+            }
+
+            bool seenPositronMc = false;
+            bool duplicatePositronTrack = false;
+            for (int iSeen = 0; iSeen < static_cast<int>(seenPositronMcIds.size()); ++iSeen) {
+              if (seenPositronMcIds[iSeen] == positronMcId) {
+                seenPositronMc = true;
+                duplicatePositronTrack |= (seenPositronTrackIds[iSeen] != positronTrackId);
+              }
+            }
+            if (duplicatePositronTrack) {
+              histos.fill(HIST("Findable/hDuplicateConversionTrackCounter"), 1);
+              histos.fill(HIST("Findable/hDuplicatePositronTPCNClsFound"), positronTrack.tpcNClsFound());
+            }
+            if (!seenPositronMc) {
+              seenPositronMcIds.push_back(positronMcId);
+              seenPositronTrackIds.push_back(positronTrackId);
+            }
+            if (duplicateElectronTrack || duplicatePositronTrack) {
+              continue;
+            }
+
+            std::array<float, 3> recoGammaMom{electronTrack.px() + positronTrack.px(), electronTrack.py() + positronTrack.py(), electronTrack.pz() + positronTrack.pz()};
+            float recoGammaP = std::sqrt(dot3(recoGammaMom, recoGammaMom));
+            constexpr float electronMass = o2::constants::physics::MassElectron;
+            float electronP2 = electronTrack.px() * electronTrack.px() + electronTrack.py() * electronTrack.py() + electronTrack.pz() * electronTrack.pz();
+            float positronP2 = positronTrack.px() * positronTrack.px() + positronTrack.py() * positronTrack.py() + positronTrack.pz() * positronTrack.pz();
+            float pairEnergy = std::sqrt(electronP2 + electronMass * electronMass) + std::sqrt(positronP2 + electronMass * electronMass);
+            float pairMass2 = pairEnergy * pairEnergy - recoGammaP * recoGammaP;
+            histos.fill(HIST("Findable/hElectronPositronMass"), std::sqrt(std::max(pairMass2, 0.f)));
+
+            auto const& gammaMothers = mcElectron.template mothers_as<aod::McParticles>();
+            if (!gammaMothers.empty()) {
+              auto mcGamma = gammaMothers.front();
+              std::array<float, 3> trueGammaMom{mcGamma.px(), mcGamma.py(), mcGamma.pz()};
+              float trueGammaP = std::sqrt(dot3(trueGammaMom, trueGammaMom));
+              if (trueGammaP > 0.f) {
+                histos.fill(HIST("Findable/hPhotonMomentumResolution"), (recoGammaP - trueGammaP) / trueGammaP);
+              }
+            }
+
+            std::array<float, 3> photonFlightVec{electronVertex[0] - collision.posX(), electronVertex[1] - collision.posY(), electronVertex[2] - collision.posZ()};
+            float flightNorm = std::sqrt(dot3(photonFlightVec, photonFlightVec));
+            if (flightNorm > 0.f && recoGammaP > 0.f) {
+              histos.fill(HIST("Findable/hPhotonCosPA"), dot3(photonFlightVec, recoGammaMom) / (flightNorm * recoGammaP));
+            }
+
+            histos.fill(HIST("Findable/hSigmaPlusPt"), mcSigmaPlus.pt());
+            histos.fill(HIST("Findable/hConversionPairV0Presence"), 0);
+            for (const auto& v0 : v0sThisCollision) {
+              auto posTrack = v0.template posTrack_as<TracksFullMC>();
+              auto negTrack = v0.template negTrack_as<TracksFullMC>();
+              bool sameChargeMatched = posTrack.globalIndex() == positronTrack.globalIndex() && negTrack.globalIndex() == electronTrack.globalIndex();
+              if (sameChargeMatched) {
+                histos.fill(HIST("Findable/hConversionPairV0Presence"), 1);
+                break;
+              }
+            }
+            histos.fill(HIST("Findable/hElectronPt"), electronTrack.pt());
+            histos.fill(HIST("Findable/hPositronPt"), positronTrack.pt());
+            histos.fill(HIST("Findable/hPhotonConversionRadius"), std::hypot(electronVertex[0], electronVertex[1]));
+            fillFindableTrackDetectors<true>(electronTrack);
+            fillFindableTrackDetectors<false>(positronTrack);
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(Sigmaplusbuilder, processFindable, "Process findable MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
