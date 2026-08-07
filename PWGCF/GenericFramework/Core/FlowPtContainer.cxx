@@ -132,12 +132,12 @@ FlowPtContainer::FlowPtContainer(const char* name, const char* title) : TNamed(n
                                                                         arr(),
                                                                         warr(),
                                                                         subevents() {}
-void FlowPtContainer::initialise(const o2::framework::AxisSpec axis, const int& m, const GFWCorrConfigs& configs, const int& nsub)
+void FlowPtContainer::initialise(const o2::framework::AxisSpec axis, const int& maxOrder, const GFWCorrConfigs& configs, const int& nsub)
 {
   arr.resize(3 * 3 * 3 * 3);
   warr.resize(3 * 3 * 3 * 3);
   if (!mpar)
-    mpar = m;
+    mpar = maxOrder;
   std::vector<double> multiBins = axis.binEdges;
   int nMultiBins = axis.nBins.value_or(0);
   if (nMultiBins <= 0)
@@ -230,12 +230,12 @@ void FlowPtContainer::initialise(const o2::framework::AxisSpec axis, const int& 
   LOGF(info, "Container %s initialized with m = %i\n and %i subsamples", this->GetName(), mpar, nsub);
   return;
 };
-void FlowPtContainer::initialise(int nbinsx, double* xbins, const int& m, const GFWCorrConfigs& configs, const int& nsub)
+void FlowPtContainer::initialise(int nbinsx, double* xbins, const int& maxOrder, const GFWCorrConfigs& configs, const int& nsub)
 {
   arr.resize(3 * 3 * 5 * 5);
   warr.resize(3 * 3 * 5 * 5);
   if (!mpar)
-    mpar = m;
+    mpar = maxOrder;
   if (fCMTermList)
     delete fCMTermList;
   fCMTermList = new TList();
@@ -318,12 +318,12 @@ void FlowPtContainer::initialise(int nbinsx, double* xbins, const int& m, const 
   }
   LOGF(info, "Container %s initialized with m = %i\n", this->GetName(), mpar);
 };
-void FlowPtContainer::initialise(int nbinsx, double xlow, double xhigh, const int& m, const GFWCorrConfigs& configs, const int& nsub)
+void FlowPtContainer::initialise(int nbinsx, double xlow, double xhigh, const int& maxOrder, const GFWCorrConfigs& configs, const int& nsub)
 {
   arr.resize(3 * 3 * 5 * 5);
   warr.resize(3 * 3 * 5 * 5);
   if (!mpar)
-    mpar = m;
+    mpar = maxOrder;
   if (fCMTermList)
     delete fCMTermList;
   fCMTermList = new TList();
@@ -406,7 +406,7 @@ void FlowPtContainer::initialise(int nbinsx, double xlow, double xhigh, const in
   }
   LOGF(info, "Container %s initialized with m = %i\n", this->GetName(), mpar);
 };
-void FlowPtContainer::initialiseSubevent(const o2::framework::AxisSpec axis, const int& m, const int& nsubev, const int& nsub)
+void FlowPtContainer::initialiseSubevent(const o2::framework::AxisSpec axis, const int& maxOrder, const int& nsubev, const int& nsub)
 {
   if (nsubev < 1) {
     LOGF(fatal, "Need at least one subevent");
@@ -414,7 +414,7 @@ void FlowPtContainer::initialiseSubevent(const o2::framework::AxisSpec axis, con
   }
   nSubevents = nsubev;
   if (!mpar)
-    mpar = m;
+    mpar = maxOrder;
   std::vector<double> multiBins = axis.binEdges;
   int nMultiBins = axis.nBins.value_or(0);
   if (nMultiBins <= 0)
@@ -431,7 +431,7 @@ void FlowPtContainer::initialiseSubevent(const o2::framework::AxisSpec axis, con
 
   // Get all possible subevent combinations given m particles and nsubev subevents - also considering not using all m particles, e.g. all lower orders
   std::vector<int> current;
-  getSubevents(m, nsubev + 1, current, subevents);
+  getSubevents(mpar, nsubev + 1, current, subevents);
   // remove unused "extra" subevent
   for (auto& subevent : subevents) // o2-linter: disable=const-ref-in-for-loop (modified through pop_back())
     subevent.pop_back();
@@ -486,7 +486,7 @@ void FlowPtContainer::initialiseSubevent(const o2::framework::AxisSpec axis, con
   }
   LOGF(info, "Container %s initialized Subevents and %i subsamples", this->GetName(), nsub);
 }
-void FlowPtContainer::initialiseSubevent(int nbinsx, double* xbins, const int& m, const int& nsubev, const int& nsub)
+void FlowPtContainer::initialiseSubevent(int nbinsx, double* xbins, const int& maxOrder, const int& nsubev, const int& nsub)
 {
   if (nsubev < 1) {
     LOGF(fatal, "Need at least one subevent");
@@ -494,7 +494,7 @@ void FlowPtContainer::initialiseSubevent(int nbinsx, double* xbins, const int& m
   }
   nSubevents = nsubev;
   if (!mpar)
-    mpar = m;
+    mpar = maxOrder;
 
   if (fSubList)
     delete fSubList;
@@ -503,7 +503,7 @@ void FlowPtContainer::initialiseSubevent(int nbinsx, double* xbins, const int& m
 
   // Get all possible subevent combinations given m particles and nsubev subevents - also considering not using all m particles, e.g. all lower orders
   std::vector<int> current;
-  getSubevents(m, nsubev + 1, current, subevents);
+  getSubevents(mpar, nsubev + 1, current, subevents);
   // remove unused "extra" subevent
   for (auto& subevent : subevents) // o2-linter: disable=const-ref-in-for-loop (modified through pop_back())
     subevent.pop_back();
@@ -558,7 +558,7 @@ void FlowPtContainer::initialiseSubevent(int nbinsx, double* xbins, const int& m
   }
   LOGF(info, "Container %s initialized Subevents and %i subsamples", this->GetName(), nsub);
 }
-void FlowPtContainer::initialiseSubevent(int nbinsx, double xlow, double xhigh, const int& m, const int& nsubev, const int& nsub)
+void FlowPtContainer::initialiseSubevent(int nbinsx, double xlow, double xhigh, const int& maxOrder, const int& nsubev, const int& nsub)
 {
   if (nsubev < 1) {
     LOGF(fatal, "Need at least one subevent");
@@ -566,7 +566,7 @@ void FlowPtContainer::initialiseSubevent(int nbinsx, double xlow, double xhigh, 
   }
   nSubevents = nsubev;
   if (!mpar)
-    mpar = m;
+    mpar = maxOrder;
   if (fSubList)
     delete fSubList;
   fSubList = new TList();
@@ -1929,19 +1929,19 @@ TH1* FlowPtContainer::raiseHistToPower(TH1* inh, double p)
   }
   return reth;
 }
-void FlowPtContainer::getSubevents(int k, int n, std::vector<int>& current, std::vector<std::vector<int>>& subevents)
+void FlowPtContainer::getSubevents(int k, int n, std::vector<int>& current, std::vector<std::vector<int>>& outputSubevents)
 {
   if (n == 1) {
     // Last box gets all remaining objects
     current.push_back(k);
-    subevents.push_back(current);
+    outputSubevents.push_back(current);
     current.pop_back();
     return;
   }
 
   for (int i = 0; i <= k; ++i) {
     current.push_back(i);
-    getSubevents(k - i, n - 1, current, subevents);
+    getSubevents(k - i, n - 1, current, outputSubevents);
     current.pop_back();
   }
 }
