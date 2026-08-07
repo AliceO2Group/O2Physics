@@ -930,6 +930,7 @@ DECLARE_SOA_COLUMN(LambdaCosPa, lambdaCosPa, float);               //! cosine of
 DECLARE_SOA_COLUMN(LambdaDauDca, lambdaDauDca, float);             //! Lambda daughter DCA at decay vertex
 DECLARE_SOA_COLUMN(LambdaTransRadius, lambdaTransRadius, float);   //! Lambda transvers radius
 DECLARE_SOA_COLUMN(LambdaDcaToPv, lambdaDcaToPv, float);           //! Lambda transvers radius
+DECLARE_SOA_COLUMN(StrangeTofBachelor, strangeTofBachelor, float); //! Lambda transvers radius
 
 // id columns for bachelor
 // following same style as strangeness tables were we do not store the id of the lambda, but its daughters
@@ -1030,7 +1031,10 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiExtras_001, "FXIEXTRA", 1, //! xi extra in
                                    femtocascades::LambdaCosPa,
                                    femtocascades::LambdaDauDca,
                                    femtocascades::LambdaTransRadius,
-                                   femtocascades::LambdaDcaToPv);
+                                   femtocascades::LambdaDcaToPv,
+                                   femtocascades::StrangeTofBachelor,
+                                   femtov0s::StrangeTofPosDau,
+                                   femtov0s::StrangeTofNegDau);
 using FXiExtras = FXiExtras_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegas_001, "FOMEGA", 1, //! femto omegas
@@ -1092,7 +1096,10 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaExtras_001, "FOMEGAEXTRA", 1, //! omega
                                    femtocascades::LambdaCosPa,
                                    femtocascades::LambdaDauDca,
                                    femtocascades::LambdaTransRadius,
-                                   femtocascades::LambdaDcaToPv);
+                                   femtocascades::LambdaDcaToPv,
+                                   femtocascades::StrangeTofBachelor,
+                                   femtov0s::StrangeTofPosDau,
+                                   femtov0s::StrangeTofNegDau);
 using FOmegaExtras = FOmegaExtras_001;
 
 namespace femtocharmhadrons

@@ -86,7 +86,7 @@ struct ConfCollisionBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> sphericityMax{"sphericityMax", {}, "Maximum sphericity"};
   o2::framework::Configurable<std::vector<std::string>> triggers{"triggers", {}, "List of all triggers to be used"};
   o2::framework::Configurable<datatypes::QvecDetectorType> qvecDetector{"qvecDetector", 0, "Detector used to estimate the Q-vector: 0 -> FT0C, 1 -> FT0A"};
-  o2::framework::Configurable<datatypes::QvecHarmonicType> qvecHarmonic{"qvecHarmonic", 2, "Harmonic n of the Q-vector and event plane angle Psi_n: 2 -> elliptic, 3 -> triangular"};
+  o2::framework::Configurable<datatypes::QvecHarmonicType> qvecHarmonic{"qvecHarmonic", 2, "Harmonic n of the Q-vector and event plane angle Psi_n: 1 -> direct, 2 -> elliptic, 3 -> triangular"};
 };
 
 struct ConfCcdb : o2::framework::ConfigurableGroup {
@@ -376,10 +376,10 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
     float harmonic = static_cast<float>(mQvecHarmonic);
     switch (mQvecDetector) {
       case modes::QvecDetector::kFT0C:
-        mEventPlane = RecoDecay::constrainAngle((std::atan2(col.qvecFT0CImVec()[0], col.qvecFT0CReVec()[0])) / harmonic, 0, 2); // constrain between 0 and pi
+        mEventPlane = RecoDecay::constrainAngle((std::atan2(col.qvecFT0CImVec()[0], col.qvecFT0CReVec()[0])) / harmonic, 0, harmonic); // constrain between 0 and 2pi/harmonic
         break;
       case modes::QvecDetector::kFT0A:
-        mEventPlane = RecoDecay::constrainAngle((std::atan2(col.qvecFT0AImVec()[0], col.qvecFT0AReVec()[0])) / harmonic, 0, 2); // constrain between 0 and pi
+        mEventPlane = RecoDecay::constrainAngle((std::atan2(col.qvecFT0AImVec()[0], col.qvecFT0AReVec()[0])) / harmonic, 0, harmonic); // constrain between 0 and 2pi/harmonic
         break;
     }
   }

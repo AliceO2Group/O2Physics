@@ -180,7 +180,7 @@ struct ConfCollisionBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis magField{"magField", {11, -5.5, 5.5}, "Magnetic field binning"};
   o2::framework::Configurable<bool> plotEventShape{"plotEventShape", false, "Activate histograms for event shape (qvector, event plane angle)"};
   o2::framework::ConfigurableAxis qvector{"qvector", {100, 0.0f, 100.0f}, "Q-vector binning"};
-  o2::framework::ConfigurableAxis eventPlaneAngle{"eventPlaneAngle", {720, 0, 1.f * o2::constants::math::TwoPI}, "Event plane angle binning"};
+  o2::framework::ConfigurableAxis eventPlaneAngle{"eventPlaneAngle", {720, 0, 1.f * o2::constants::math::PI}, "Event plane angle binning"};
 };
 
 struct ConfCollisionQaBinning : o2::framework::ConfigurableGroup {

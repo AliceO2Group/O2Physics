@@ -663,6 +663,22 @@ class CascadeBuilder
   template <typename T1, typename T2, typename T3, typename T4>
   void fillCascade(T1& collisionBuilder, T2& cascadeProducts, T3 const& cascade, T4 const& col, int bachelorIndex, int posDaughterIndex, int negDaughterIndex)
   {
+    float strangeTofBachelor = 0.f;
+    float strangeTofPosDau = 0.f;
+    float strangeTofNegDau = 0.f;
+    const bool isMatter = cascade.sign() < 0; // Xi-/Omega- -> Lambda -> p pi- (pos=proton, neg=pion)
+
+    if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
+      strangeTofBachelor = cascade.tofNSigmaXiPi();
+      strangeTofPosDau = isMatter ? cascade.tofNSigmaXiLaPr() : cascade.tofNSigmaXiLaPi();
+      strangeTofNegDau = isMatter ? cascade.tofNSigmaXiLaPi() : cascade.tofNSigmaXiLaPr();
+    }
+    if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
+      strangeTofBachelor = cascade.tofNSigmaOmKa();
+      strangeTofPosDau = isMatter ? cascade.tofNSigmaOmLaPr() : cascade.tofNSigmaOmLaPi();
+      strangeTofNegDau = isMatter ? cascade.tofNSigmaOmLaPi() : cascade.tofNSigmaOmLaPr();
+    }
+
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
       if (mProduceXis) {
         cascadeProducts.producedXis(collisionBuilder.collisionIndex(),
@@ -697,7 +713,10 @@ class CascadeBuilder
           cascade.v0cosPA(col.posX(), col.posY(), col.posZ()),
           cascade.dcaV0daughters(),
           cascade.v0radius(),
-          cascade.dcav0topv(col.posX(), col.posY(), col.posZ()));
+          cascade.dcav0topv(col.posX(), col.posY(), col.posZ()),
+          strangeTofBachelor,
+          strangeTofPosDau,
+          strangeTofNegDau);
       }
     }
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
@@ -734,7 +753,10 @@ class CascadeBuilder
           cascade.v0cosPA(col.posX(), col.posY(), col.posZ()),
           cascade.dcaV0daughters(),
           cascade.v0radius(),
-          cascade.dcav0topv(col.posX(), col.posY(), col.posZ()));
+          cascade.dcav0topv(col.posX(), col.posY(), col.posZ()),
+          strangeTofBachelor,
+          strangeTofPosDau,
+          strangeTofNegDau);
       }
     }
   }

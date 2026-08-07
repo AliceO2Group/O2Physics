@@ -77,13 +77,13 @@ using Run3FullPidTracks =
             o2::aod::pidTOFbeta, o2::aod::pidTOFmass>;
 using Run3McRecoTracks = soa::Join<Run3FullPidTracks, o2::aod::McTrackLabels>;
 
-using Run3Vzeros = o2::soa::Join<o2::aod::V0Datas, o2::aod::V0TOFNSigmas>;
+using Run3Vzeros = o2::soa::Join<o2::aod::V0Datas, o2::aod::V0TOFPIDs, o2::aod::V0TOFNSigmas>;
 using Run3RecoVzeros = o2::soa::Join<Run3Vzeros, o2::aod::McV0Labels>;
 
 using Run3D0s = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>;
 using Run3RecoD0s = soa::Join<Run3D0s, aod::HfCand2ProngMcRec>;
 
-using Run3Cascades = o2::soa::Join<o2::aod::CascDatas, o2::aod::CascTOFNSigmas>;
+using Run3Cascades = o2::soa::Join<o2::aod::CascDatas, o2::aod::CascTOFPIDs, o2::aod::CascTOFNSigmas>;
 using Run3RecoCascades = o2::soa::Join<Run3Cascades, o2::aod::McCascLabels>;
 
 using Run3Kinks = o2::aod::KinkCands;

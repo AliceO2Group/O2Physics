@@ -184,7 +184,6 @@ enum class QvecDetector : o2::analysis::femto::datatypes::QvecDetectorType {
 };
 
 enum class QvecHarmonic : o2::analysis::femto::datatypes::QvecHarmonicType {
-  kN0 = 0,
   kN1 = 1,
   kN2 = 2,
   kN3 = 3
