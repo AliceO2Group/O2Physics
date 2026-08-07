@@ -221,6 +221,7 @@ class FlowPtContainer : public TNamed
   double getStdABDDD(T& inarr);
 
  private:
+  static const int centralMomentMaxOrder = 4;
   std::vector<std::vector<int>> subevents;
   void getSubevents(int k, int n, std::vector<int>& current, std::vector<std::vector<int>>& subevents);
   static constexpr float FactorialArray[9] = {1., 1., 2., 6., 24., 120., 720., 5040., 40320.};

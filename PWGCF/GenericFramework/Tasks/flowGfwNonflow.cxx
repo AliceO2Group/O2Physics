@@ -663,31 +663,31 @@ struct FlowGfwNonflow {
     int bin = 0;
 
     if (cfgCorrections.cfgUse2DEfficiency) {
-      auto* eff_hist = dynamic_cast<TH2D*>(correctionsConfig.mEfficiency);
-      if (!eff_hist) {
+      auto* effHist = dynamic_cast<TH2D*>(correctionsConfig.mEfficiency);
+      if (!effHist) {
         LOGF(error, "Efficiency object at %s is not a TH2D", cfgCorrections.cfgEfficiencyPath.value.c_str());
         return -1.;
       }
-      bin = eff_hist->FindBin(track.pt(), centrality);
+      bin = effHist->FindBin(track.pt(), centrality);
       if (!bin) {
         return -1.;
       }
-      const double eff = eff_hist->GetBinContent(bin);
+      const double eff = effHist->GetBinContent(bin);
       if (!std::isfinite(eff) || eff <= 0.) {
         return -1.;
       }
       return 1. / eff;
     } else {
-      auto* eff_hist = dynamic_cast<TH1D*>(correctionsConfig.mEfficiency);
-      if (!eff_hist) {
+      auto* effHist = dynamic_cast<TH1D*>(correctionsConfig.mEfficiency);
+      if (!effHist) {
         LOGF(error, "Efficiency object at %s is not a TH1D", cfgCorrections.cfgEfficiencyPath.value.c_str());
         return -1.;
       }
-      bin = eff_hist->FindBin(track.pt());
+      bin = effHist->FindBin(track.pt());
       if (!bin) {
         return -1.;
       }
-      const double eff = eff_hist->GetBinContent(bin);
+      const double eff = effHist->GetBinContent(bin);
       if (!std::isfinite(eff) || eff <= 0.) {
         return -1.;
       }
