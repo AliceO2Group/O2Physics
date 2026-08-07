@@ -362,9 +362,6 @@ struct ChargeBalanceFunction {
       return false;
     }
 
-    // // Set Multiplicity
-    // mult = col.multTPC();
-
     return true;
   }
 
@@ -427,7 +424,7 @@ struct ChargeBalanceFunction {
   }
 
   template <RecGenType rec_gen, typename T, typename S>
-  float GetNuaCorrectionFactor(T const& track, S const& sign)
+  float getNuaCorrectionFactor(T const& track, S const& sign)
   {
     if (!cGetNuaCorrectionFlag) {
       return 1.;
@@ -527,7 +524,7 @@ struct ChargeBalanceFunction {
     // Reco/Gen Dir
     static constexpr auto SubDirRecGen = std::array{"Reco/", "McGen/"};
 
-    // Rap-phi bins
+    // RapPhi bins
     const auto rapbin1 = static_cast<int>((trk_1.eta() - kminrap) / rapbinwidth);
     const auto rapbin2 = static_cast<int>((trk_2.eta() - kminrap) / rapbinwidth);
     const auto phibin1 = static_cast<int>(trk_1.phi() / phibinwidth);
@@ -577,7 +574,7 @@ struct ChargeBalanceFunction {
 
     // Correction factor
     float corrFact = getCorrectionFactor<rec_gen>(track, sign);
-    float nuaCorr = GetNuaCorrectionFactor<rec_gen>(track, sign);
+    float nuaCorr = getNuaCorrectionFactor<rec_gen>(track, sign);
 
     // Histograms
     if (sign > 0) {
@@ -713,8 +710,7 @@ struct ChargeBalanceFunction {
       }
 
       // Fill single particle densities
-      int sign_1 = pdg->GetParticle(mcpart_1.pdgCode())->Charge() / 3;
-      fillSingleHist<kGen>(mcpart_1, sign_1);
+      fillSingleHist<kGen>(mcpart_1, pdg->GetParticle(mcpart_1.pdgCode())->Charge() / 3);
 
       // Loop 2
       for (auto const& mcpart_2 : mcParticles) {
@@ -724,8 +720,7 @@ struct ChargeBalanceFunction {
         }
 
         // Fill pair densities
-        int sign_2 = pdg->GetParticle(mcpart_2.pdgCode())->Charge() / 3;
-        fillPairHist<kGen>(mcpart_1, mcpart_2, sign_1, sign_2);
+        fillPairHist<kGen>(mcpart_1, mcpart_2, pdg->GetParticle(mcpart_1.pdgCode())->Charge() / 3, pdg->GetParticle(mcpart_2.pdgCode())->Charge() / 3);
       }
     }
   }
