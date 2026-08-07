@@ -84,7 +84,7 @@ DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, uint8_t); //!
 } // namespace pidfeat
 
 // Real/raw data: reconstructed features only.
-DECLARE_SOA_TABLE(PidFeaturesData, "AOD", "PIDFEATDATA", //!
+DECLARE_SOA_TABLE(PidFeaturesData, "AOD", "PIDFEATD", //!
                   o2::soa::Index<>,
                   pidfeat::P, aod::track::Pt, pidfeat::Px, pidfeat::Py, pidfeat::Pz,
                   pidfeat::Eta, pidfeat::Phi, pidfeat::Sign, aod::track::TrackType,
@@ -106,7 +106,7 @@ DECLARE_SOA_TABLE(PidFeaturesData, "AOD", "PIDFEATDATA", //!
 // PidFeaturesData plus PdgCode/IsPhysicalPrimary - kept as a distinct table
 // (rather than optional columns on one table) because O2 tables have a
 // fixed schema.
-DECLARE_SOA_TABLE(PidFeaturesMc, "AOD", "PIDFEATMC", //!
+DECLARE_SOA_TABLE(PidFeaturesMc, "AOD", "MCPIDFEA", //!
                   o2::soa::Index<>,
                   pidfeat::P, aod::track::Pt, pidfeat::Px, pidfeat::Py, pidfeat::Pz,
                   pidfeat::Eta, pidfeat::Phi, pidfeat::Sign, aod::track::TrackType,
