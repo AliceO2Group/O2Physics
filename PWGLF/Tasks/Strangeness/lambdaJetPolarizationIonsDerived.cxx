@@ -1013,6 +1013,12 @@ struct lambdajetpolarizationionsderived {
   std::discrete_distribution<int> etaLeadPDist{etaLeadPWeights.begin(),etaLeadPWeights.end()}; // Will be passed as the etaDist variable
   std::discrete_distribution<int> phiLeadPDist{phiLeadPWeights.begin(), phiLeadPWeights.end()};
   
+  /// \brief Applies whichever fakePolSwitches distortion is active to a jet-proxy direction, in place. No-op if none are on.
+  /// \param hasValidProxy in/out (edited in-place): whether the proxy being distorted is usable. Re-evaluated against minPtThreshold after distortion.
+  /// \param pt,eta,phi in/out (edited in-place): the proxy's kinematics, overwritten by whichever distortion is active.
+  /// \param unitVec in/out (edited in-place): the proxy direction as a unit vector.
+  /// \param cacheHadProxy,cacheEta,cachePhi the previous collision's proxy, used (and updated) by forcePreviousJet.
+  /// \param etaDist,phiDist,rng sampling distributions/generator for forceRandJet and forceDatalikeJet.
   // Helper to modify the jet direction for QA and for spurious signal baseline removal tests:
   inline void applyProxyDistortion(bool& hasValidProxy, float& pt, float& eta, float& phi, XYZVector& unitVec, 
                             float minPtThreshold, bool& cacheHadProxy, float& cacheEta, float& cachePhi,
@@ -1156,6 +1162,7 @@ struct lambdajetpolarizationionsderived {
   Preslice<aod::RingJets> perColJets = o2::aod::lambdajetpol::ringCollisionId;
   Preslice<aod::RingLaV0s> perColV0s = o2::aod::lambdajetpol::ringCollisionId;
   Preslice<aod::RingLeadPs> perColLeadPs = o2::aod::lambdajetpol::ringCollisionId;
+  /// \brief Main analysis loop: for each collision, rebuilds the leading jet/particle proxies (with optional fakePolSwitches distortions), then loops over V0s computing the ring observable and polarization-vector profiles for every enabled kinematic-cut family.
   void processPolarizationData(o2::aod::RingCollisions const& collisions, o2::aod::RingJets const& jets, o2::aod::RingLaV0s const& v0s,
                                o2::aod::RingLeadPs const& leadPs)
   {

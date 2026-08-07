@@ -468,6 +468,7 @@ struct lambdajetpolarizationions {
 
   JetBkgSubUtils backgroundSub;
 
+  /// \brief Books every histogram used by the producer and sets up the CCDB/RCT services.
   void init(InitContext const&)
   {
     // setting CCDB service
@@ -923,6 +924,7 @@ struct lambdajetpolarizationions {
     histos.print();
   }
 
+  /// \brief Returns the collision centrality for the configured estimator (FT0M/FT0C/FV0A). Returns -1 if none matched.
   template <typename TCollision>
   auto getCentrality(TCollision const& collision)
   {
@@ -935,6 +937,7 @@ struct lambdajetpolarizationions {
     return -1.f;
   }
 
+  /// \brief Fetches the magnetic field for the current run from CCDB (or uses customMagField, if set). No-op if already initialized for this run.
   template <typename TBC>
   void initCCDB(TBC const& bc)
   {
@@ -1027,6 +1030,8 @@ struct lambdajetpolarizationions {
 
   /////////////////////////////////////////////
   // Computation helper functions:
+  /// \brief Folds phi into the repeating ~20-degree TPC sector pattern used by the sector-boundary cut functions below.
+  /// \param sign track charge sign (+1 or -1) -- the fold direction depends on charge and field polarity.
   double computePhiMod(double phi, int sign)
   // Compute phi wrt to a TPC sector
   // Calculation taken from CF: https://github.com/AliceO2Group/O2Physics/blob/376392cb87349886a300c75fa2492b50b7f46725/PWGCF/Flow/Tasks/flowAnalysisGF.cxx#L470
@@ -1042,6 +1047,8 @@ struct lambdajetpolarizationions {
     return fmod(phi, o2::constants::math::PI / 9.0);
   }
 
+  /// \brief Checks the track against the TPC sector-boundary cut (see computePhiMod()).
+  /// \return true if the track is far enough from the boundary to be kept; false rejects it.
   bool isTrackFarFromTPCBoundary(double trackPt, double trackPhi, int sign)
   // check whether the track passes close to a TPC sector boundary
   {
@@ -1070,6 +1077,9 @@ struct lambdajetpolarizationions {
 
   /////////////////////////////////////////////
   // Helper functions for event and candidate selection:
+  /// \brief Runs the full event-selection cutflow. returns false at the first failed cut (in configured order).
+  /// \param interactionRate output-only: filled with the fetched IR.
+  /// \param fillHists if true, also fills the per-stage QA histograms and the occupancy/IR/vertex histograms.
   template <typename TCollision, typename TBC>
   bool isEventAccepted(TCollision const& collision, TBC const& bc, float centrality, double& interactionRate, bool fillHists)
   {                       // check whether the collision passes our collision selections
@@ -1205,6 +1215,8 @@ struct lambdajetpolarizationions {
     return true;
   }
 
+  /// \brief Track-level cutflow gate for FastJet pseudojet candidates (quality + kinematics + optional DCA cuts).
+  /// \note  Mirrors isEventAccepted()'s early-exit pattern, but for tracks.
   template <typename JetCandidate>
   bool isCandidateForChargedPseudojetAccepted(JetCandidate const& track)
   { // (TODO: add an equivalent for photon jets and Z jets, which don't consider charged particles)
@@ -1262,6 +1274,8 @@ struct lambdajetpolarizationions {
   }
 
   // Lambda selections:
+  /// \brief Charge-independent V0 cuts (topology, ITS/TPC track quality) shared by both the Lambda and AntiLambda hypotheses.
+  /// \note  See passesLambdaLambdaBarHypothesis() for the hypothesis-specific cuts.
   template <typename TV0>
   bool passesGenericV0Cuts(TV0 const& v0)
   {
@@ -1381,7 +1395,8 @@ struct lambdajetpolarizationions {
     return true;
   }
 
-  // Tests the hypothesis of the V0 being a Lambda or of it being an antiLambda.
+  /// \brief Tests the hypothesis of the V0 being a Lambda or of it being an antiLambda.
+  /// \param Lambda_hypothesis "true" tests the Lambda (proton+/pion-) hypothesis. "false" tests AntiLambda.
   template <typename TV0, typename TCollision>
   bool passesLambdaLambdaBarHypothesis(TV0 const& v0, TCollision const& collision, bool Lambda_hypothesis)
   {
@@ -1486,6 +1501,7 @@ struct lambdajetpolarizationions {
   //     else return -1;   // AntiLambda
   // }
 
+  /// \brief Clusters charged tracks into jets (FastJet, with optional background subtraction), fills the RingJets/RingLeadPs tables for this collision, and fills the jet-kinematics QA.
   template <typename TJetTracks>
   void jetsProcess(TJetTracks const& tracks, const int ringCollIdx, const float centrality)
   {
@@ -1753,7 +1769,8 @@ struct lambdajetpolarizationions {
     }
   }
 
-  // No longer use a separate JetTracks joined table -- it was mostly a subset of DauTracks + TracksIU (which was not used)
+  /// \brief Main process function: applies event selection, fills the RingCollisions table, calls jetsProcess(), then tests every V0 against the Lambda/AntiLambda hypotheses and fills RingLaV0s.
+  /// \note  No longer use a separate JetTracks joined table -- it was mostly a subset of DauTracks + TracksIU (which was not used)
   template <typename TCollision, typename TV0Candidates, typename TDaughterTracks>
   void dataProcess(TCollision const& collision, TV0Candidates const& V0s, TDaughterTracks const& V0DauTracks, aod::BCsWithTimestamps const& bcs)
   {
