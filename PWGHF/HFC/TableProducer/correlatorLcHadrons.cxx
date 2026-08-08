@@ -696,7 +696,11 @@ struct HfCorrelatorLcHadrons {
         }
         //}
       }
-      float cent = 100.0; // will be updated later
+
+      float cent = 0.;
+      if (useCentrality) {
+        cent = collision.centFT0M();
+      }
 
       // Lc-Hadron correlation dedicated section
       // if the candidate is selected as Lc, search for Hadron ad evaluate correlations
