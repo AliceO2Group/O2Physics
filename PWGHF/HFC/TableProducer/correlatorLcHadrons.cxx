@@ -696,7 +696,7 @@ struct HfCorrelatorLcHadrons {
         }
         //}
       }
-      
+
       float cent = 0.;
       if (useCentrality) {
         cent = collision.centFT0M();
