@@ -97,8 +97,6 @@ struct cksspinalignment {
   enum PionPidBits : uint8_t {
     kPID1 = 1u << 0,
     kPID2 = 1u << 1,
-    kPID3 = 1u << 2,
-    kPID4 = 1u << 3
   };
 
   Configurable<float> confV0PtMin{"confV0PtMin", 0.0f, "Minimum K0s pT"};
@@ -143,52 +141,16 @@ struct cksspinalignment {
   {
     return candidate.isGlobalTrack() &&
            candidate.isPVContributor() &&
-           candidate.itsNCls() >= grpPion.itsclusterPiMeson &&
-           candidate.tpcNClsCrossedRows() >= grpPion.tpcCrossedRowsPiMeson &&
-           std::abs(candidate.dcaXY()) <= grpPion.cutDCAxyPiMeson &&
-           std::abs(candidate.dcaZ()) <= grpPion.cutDCAzPiMeson &&
-           std::abs(candidate.eta()) <= grpPion.cutEtaPiMeson &&
-           candidate.pt() >= grpPion.cutPTPiMeson;
+           candidate.itsNCls() > grpPion.itsclusterPiMeson &&
+           candidate.tpcNClsCrossedRows() > grpPion.tpcCrossedRowsPiMeson &&
+           std::abs(candidate.dcaXY()) < grpPion.cutDCAxyPiMeson &&
+           std::abs(candidate.dcaZ()) < grpPion.cutDCAzPiMeson &&
+           std::abs(candidate.eta()) < grpPion.cutEtaPiMeson &&
+           candidate.pt() > grpPion.cutPTPiMeson;
   }
 
   template <typename T>
   bool selectionPID(const T& candidate)
-  {
-    const float nTPC = candidate.tpcNSigmaPi();
-
-    if (!candidate.hasTOF()) {
-      return std::abs(nTPC) < grpPion.nsigmaCutTPCPiMeson;
-    }
-
-    if (candidate.beta() <= grpPion.cutTOFBetaPiMeson) {
-      return false;
-    }
-
-    return std::abs(nTPC) < grpPion.nsigmaCutTPCPiMeson &&
-           std::abs(candidate.tofNSigmaPi()) < grpPion.nsigmaCutTOFPiMeson;
-  }
-
-  template <typename T>
-  bool selectionPID2(const T& candidate)
-  {
-    const float nTPC = candidate.tpcNSigmaPi();
-
-    if (!candidate.hasTOF()) {
-      return std::abs(nTPC) < grpPion.nsigmaCutTPCPiMeson;
-    }
-
-    if (candidate.beta() <= grpPion.cutTOFBetaPiMeson) {
-      return false;
-    }
-
-    const float nTOF = candidate.tofNSigmaPi();
-    const float nCombined = std::sqrt(nTPC * nTPC + nTOF * nTOF);
-
-    return nCombined < grpPion.nsigmaCutTOFPiMeson;
-  }
-
-  template <typename T>
-  bool selectionPID3(const T& candidate)
   {
     const float pt = candidate.pt();
     const float nTPC = candidate.tpcNSigmaPi();
@@ -212,7 +174,7 @@ struct cksspinalignment {
   }
 
   template <typename T>
-  bool selectionPID4(const T& candidate)
+  bool selectionPID2(const T& candidate)
   {
     const float pt = candidate.pt();
     const float nTPC = candidate.tpcNSigmaPi();
@@ -248,14 +210,6 @@ struct cksspinalignment {
       mask |= kPID2;
     }
 
-    if (selectionPID3(trk)) {
-      mask |= kPID3;
-    }
-
-    if (selectionPID4(trk)) {
-      mask |= kPID4;
-    }
-
     return mask;
   }
 
@@ -285,11 +239,11 @@ struct cksspinalignment {
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter centralityFilter = (aod::cent::centFT0C < cfgCutCentralityMax && aod::cent::centFT0C >= cfgCutCentralityMin);
-  Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && aod::track::pt > cfgCutPt);
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::EPCalibrationTables, aod::FT0Mults, aod::TPCMults, aod::CentFT0Ms, aod::CentFT0As>>;
-  using AllTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTOFbeta>>;
+  using FullTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTOFbeta>;
   using ResoV0s = aod::V0Datas;
+  Partition<FullTrackCandidates> bachelorPionCandidates = nabs(aod::track::eta) < cfgCutEta && aod::track::pt > cfgCutPt;
 
   template <typename Collision, typename V0>
   bool selectionV0(Collision const& collision, V0 const& candidate)
@@ -300,35 +254,35 @@ struct cksspinalignment {
     const float cpav0 = candidate.v0cosPA();
     const float ctauKShort = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0;
 
-    if (std::abs(candidate.dcav0topv()) > cMaxV0DCA) {
+    if (std::abs(candidate.dcav0topv()) >= cMaxV0DCA) {
       return false;
     }
 
-    if (pT < confV0PtMin || pT > confV0PtMax) {
+    if (pT <= confV0PtMin || pT >= confV0PtMax) {
       return false;
     }
 
-    if (dcaDaughv0 > confV0DCADaughMax) {
+    if (dcaDaughv0 >= confV0DCADaughMax) {
       return false;
     }
 
-    if (cpav0 < confV0CPAMin) {
+    if (cpav0 <= confV0CPAMin) {
       return false;
     }
 
-    if (tranRad < confV0TranRadV0Min || tranRad > confV0TranRadV0Max) {
+    if (tranRad <= confV0TranRadV0Min || tranRad >= confV0TranRadV0Max) {
       return false;
     }
 
-    if (std::abs(ctauKShort) > cMaxV0LifeTime) {
+    if (std::abs(ctauKShort) >= cMaxV0LifeTime) {
       return false;
     }
 
-    if ((candidate.qtarm() / std::abs(candidate.alpha())) < qtArmenterosMin) {
+    if ((candidate.qtarm() / std::abs(candidate.alpha())) <= qtArmenterosMin) {
       return false;
     }
 
-    if (std::abs(candidate.yK0Short()) > confV0Rap) {
+    if (std::abs(candidate.yK0Short()) >= confV0Rap) {
       return false;
     }
 
@@ -338,47 +292,40 @@ struct cksspinalignment {
   template <typename V0>
   bool isSelectedV0Daughter(V0 const& candidate)
   {
-    auto postrack = candidate.template posTrack_as<AllTrackCandidates>();
-    auto negtrack = candidate.template negTrack_as<AllTrackCandidates>();
-
-    constexpr float minCrossedRowsOverFindable = 0.8f;
+    auto postrack = candidate.template posTrack_as<FullTrackCandidates>();
+    auto negtrack = candidate.template negTrack_as<FullTrackCandidates>();
 
     if (postrack.sign() < 0 || negtrack.sign() > 0) {
       return false;
     }
 
-    if (postrack.tpcNClsCrossedRows() < confDaughTPCncrwsMin ||
-        negtrack.tpcNClsCrossedRows() < confDaughTPCncrwsMin) {
+    if (postrack.tpcNClsCrossedRows() <= confDaughTPCncrwsMin ||
+        negtrack.tpcNClsCrossedRows() <= confDaughTPCncrwsMin) {
       return false;
     }
 
-    if (postrack.tpcNClsFound() < confDaughTPCnclsMin ||
-        negtrack.tpcNClsFound() < confDaughTPCnclsMin) {
+    if (postrack.tpcNClsFound() <= confDaughTPCnclsMin ||
+        negtrack.tpcNClsFound() <= confDaughTPCnclsMin) {
       return false;
     }
 
-    if (postrack.tpcCrossedRowsOverFindableCls() < minCrossedRowsOverFindable ||
-        negtrack.tpcCrossedRowsOverFindableCls() < minCrossedRowsOverFindable) {
+    if (std::abs(postrack.tpcNSigmaPi()) >= confDaughPIDCuts ||
+        std::abs(negtrack.tpcNSigmaPi()) >= confDaughPIDCuts) {
       return false;
     }
 
-    if (std::abs(postrack.tpcNSigmaPi()) > confDaughPIDCuts ||
-        std::abs(negtrack.tpcNSigmaPi()) > confDaughPIDCuts) {
+    if (candidate.positivept() <= cfgDaughPiPt ||
+        candidate.negativept() <= cfgDaughPiPt) {
       return false;
     }
 
-    if (candidate.positivept() < cfgDaughPiPt ||
-        candidate.negativept() < cfgDaughPiPt) {
+    if (std::abs(candidate.positiveeta()) >= confDaughEta ||
+        std::abs(candidate.negativeeta()) >= confDaughEta) {
       return false;
     }
 
-    if (std::abs(candidate.positiveeta()) > confDaughEta ||
-        std::abs(candidate.negativeeta()) > confDaughEta) {
-      return false;
-    }
-
-    if (std::abs(candidate.dcapostopv()) < cMinV0DCAPi ||
-        std::abs(candidate.dcanegtopv()) < cMinV0DCAPi) {
+    if (std::abs(candidate.dcapostopv()) <= cMinV0DCAPi ||
+        std::abs(candidate.dcanegtopv()) <= cMinV0DCAPi) {
       return false;
     }
 
@@ -404,7 +351,7 @@ struct cksspinalignment {
   }
 
   void processData(EventCandidates::iterator const& collision,
-                   AllTrackCandidates const& tracks,
+                   FullTrackCandidates const& /*tracks*/,
                    ResoV0s const& v0s)
   {
     o2::aod::ITSResponse itsResponse;
@@ -445,7 +392,7 @@ struct cksspinalignment {
     std::vector<StoredK0s> selectedK0s;
     std::vector<StoredPion> selectedPions;
 
-    for (const auto& track : tracks) {
+    for (const auto& track : bachelorPionCandidates) {
       histos.fill(HIST("hTrkSelInfo"), 0.5);
 
       if (!selectionTrack(track)) {
@@ -494,9 +441,8 @@ struct cksspinalignment {
         continue;
       }
 
-      auto postrack = v0.template posTrack_as<AllTrackCandidates>();
-      auto negtrack = v0.template negTrack_as<AllTrackCandidates>();
-
+      auto postrack = v0.template posTrack_as<FullTrackCandidates>();
+      auto negtrack = v0.template negTrack_as<FullTrackCandidates>();
       const auto posId = static_cast<int64_t>(postrack.globalIndex());
       const auto negId = static_cast<int64_t>(negtrack.globalIndex());
 

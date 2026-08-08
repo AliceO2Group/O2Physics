@@ -170,6 +170,11 @@ o2physics_add_dpl_workflow(study-dcafitter
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsVertexing O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(test-pv
+                    SOURCES testPV.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(evaluate-acceptance
                     SOURCES evaluateAcceptance.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore

@@ -348,30 +348,36 @@ struct FlowGfwNonflow {
     AxisSpec dcaXYAXis = {200, -1, 1, "DCA_{xy} (cm)"};
 
     if (cfgFillQA) {
-      registry.add("trackQA/before/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
-      registry.add("trackQA/before/pt_dcaXY_dcaZ", "", {HistType::kTH3D, {ptAxis, dcaXYAXis, dcaZAXis}});
-      registry.add("trackQA/before/pt_phi", "", {HistType::kTH2D, {ptAxis, phiModAxis}});
-      registry.add("trackQA/before/chi2prTPCcls", "#chi^{2}/cluster for the TPC track segment", {HistType::kTH1D, {{100, 0., 5.}}});
-      registry.add("trackQA/before/chi2prITScls", "#chi^{2}/cluster for the ITS track", {HistType::kTH1D, {{100, 0., 50.}}});
-      registry.add("trackQA/before/nTPCClusters", "Number of found TPC clusters", {HistType::kTH1D, {{100, 40, 180}}});
-      registry.add("trackQA/before/nITSClusters", "Number of found ITS clusters", {HistType::kTH1D, {{100, 0, 20}}});
-      registry.add("trackQA/before/nTPCCrossedRows", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
-      registry.addClone("trackQA/before/", "trackQA/after/");
-      registry.add("trackQA/after/pt_ref", "; #it{p}_{T}; Counts", {HistType::kTH1D, {{100, gfwMemberCache.ptreflow, gfwMemberCache.ptrefup}}});
-      registry.add("trackQA/after/pt_poi", "; #it{p}_{T}; Counts", {HistType::kTH1D, {{100, gfwMemberCache.ptpoilow, gfwMemberCache.ptpoiup}}});
-      registry.add("trackQA/after/Nch_corrected", "; N_{ch}; Counts", {HistType::kTH1D, {nchAxis}});
-      registry.add("trackQA/after/Nch_uncorrected", "; N_{ch}; Counts", {HistType::kTH1D, {nchAxis}});
-      registry.add("trackQA/after/etaNch", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
-      registry.add("trackQA/after/etaPtPt", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
+      if (doprocessMCGen) {
+        registry.add("MCGen/before/phi_eta_vtxZ_gen", "; #varphi; #eta; V_{z}", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+        registry.add("MCGen/before/pt_gen", "; #it{p}_{T}", {HistType::kTH1D, {ptAxis}});
+        registry.addClone("MCGen/before/", "MCGen/after/");
+      } else {
+        registry.add("trackQA/before/phi_eta_vtxZ", "; #varphi; #eta; V_{z}", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
+        registry.add("trackQA/before/pt_dcaXY_dcaZ", "; #it{p}_{T}; DCA_#it{xy}; DCA_#it{z}", {HistType::kTH3D, {ptAxis, dcaXYAXis, dcaZAXis}});
+        registry.add("trackQA/before/pt_phi", "; #it{p}_{T}; fmod(#varphi,#pi/9)", {HistType::kTH2D, {ptAxis, phiModAxis}});
+        registry.add("trackQA/before/chi2prTPCcls", "#chi^{2}/cluster for the TPC track segment", {HistType::kTH1D, {{100, 0., 5.}}});
+        registry.add("trackQA/before/chi2prITScls", "#chi^{2}/cluster for the ITS track", {HistType::kTH1D, {{100, 0., 50.}}});
+        registry.add("trackQA/before/nTPCClusters", "Number of found TPC clusters", {HistType::kTH1D, {{100, 40, 180}}});
+        registry.add("trackQA/before/nITSClusters", "Number of found ITS clusters", {HistType::kTH1D, {{100, 0, 20}}});
+        registry.add("trackQA/before/nTPCCrossedRows", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
+        registry.addClone("trackQA/before/", "trackQA/after/");
+        registry.add("trackQA/after/pt_ref", "; #it{p}_{T}; Counts", {HistType::kTH1D, {{100, gfwMemberCache.ptreflow, gfwMemberCache.ptrefup}}});
+        registry.add("trackQA/after/pt_poi", "; #it{p}_{T}; Counts", {HistType::kTH1D, {{100, gfwMemberCache.ptpoilow, gfwMemberCache.ptpoiup}}});
+        registry.add("trackQA/after/Nch_corrected", "; N_{ch}; Counts", {HistType::kTH1D, {nchAxis}});
+        registry.add("trackQA/after/Nch_uncorrected", "; N_{ch}; Counts", {HistType::kTH1D, {nchAxis}});
+        registry.add("trackQA/after/etaNch", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
+        registry.add("trackQA/after/etaPtPt", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
 
-      registry.add("eventQA/before/globalTracks_centT0C", "; FT0C centrality (%); N_{global}", {HistType::kTH2D, {centAxis, nchAxis}});
-      registry.add("eventQA/before/PVTracks_centT0C", "; FT0C centrality (%); N_{PV}", {HistType::kTH2D, {centAxis, multpvAxis}});
-      registry.add("eventQA/before/globalTracks_PVTracks", "; N_{PV}; N_{global}", {HistType::kTH2D, {multpvAxis, nchAxis}});
-      registry.add("eventQA/before/globalTracks_multT0A", "; multT0A; N_{global}", {HistType::kTH2D, {t0aAxis, nchAxis}});
-      registry.add("eventQA/before/globalTracks_multV0A", "; multV0A; N_{global}", {HistType::kTH2D, {v0aAxis, nchAxis}});
-      registry.add("eventQA/before/multV0A_multT0A", "; multV0A; multT0A", {HistType::kTH2D, {t0aAxis, v0aAxis}});
-      registry.add("eventQA/before/multT0C_centT0C", "; multT0C; FT0C centrality (%)", {HistType::kTH2D, {centAxis, t0cAxis}});
-      registry.add("eventQA/before/occ_mult_cent", "; occupancy; N_{ch}; centrality (%)", {HistType::kTH3D, {occAxis, nchAxis, centAxis}});
+        registry.add("eventQA/before/globalTracks_centT0C", "; FT0C centrality (%); N_{global}", {HistType::kTH2D, {centAxis, nchAxis}});
+        registry.add("eventQA/before/PVTracks_centT0C", "; FT0C centrality (%); N_{PV}", {HistType::kTH2D, {centAxis, multpvAxis}});
+        registry.add("eventQA/before/globalTracks_PVTracks", "; N_{PV}; N_{global}", {HistType::kTH2D, {multpvAxis, nchAxis}});
+        registry.add("eventQA/before/globalTracks_multT0A", "; multT0A; N_{global}", {HistType::kTH2D, {t0aAxis, nchAxis}});
+        registry.add("eventQA/before/globalTracks_multV0A", "; multV0A; N_{global}", {HistType::kTH2D, {v0aAxis, nchAxis}});
+        registry.add("eventQA/before/multV0A_multT0A", "; multT0A; multV0A", {HistType::kTH2D, {t0aAxis, v0aAxis}});
+        registry.add("eventQA/before/multT0C_centT0C", "; FT0C centrality (%); multT0C", {HistType::kTH2D, {centAxis, t0cAxis}});
+        registry.add("eventQA/before/occ_mult_cent", "; occupancy; N_{ch}; centrality (%)", {HistType::kTH3D, {occAxis, nchAxis, centAxis}});
+      }
     }
     registry.add("eventQA/before/centrality", "; centrality (%); Counts", {HistType::kTH1D, {centAxis}});
     registry.add("eventQA/before/multiplicity", "; N_{ch}; Counts", {HistType::kTH1D, {nchAxis}});
@@ -649,19 +655,44 @@ struct FlowGfwNonflow {
   template <typename TTrack>
   double getEfficiency(const TTrack& track, const float& centrality)
   { //-1 ref, 0 ch, 1 pi, 2 ka, 3 pr, 4 k0, 5 lambda
-    double eff = 1.;
+
     if (!correctionsConfig.mEfficiency) {
-      return eff;
+      return 1;
     }
+
+    int bin = 0;
+
     if (cfgCorrections.cfgUse2DEfficiency) {
-      eff = dynamic_cast<TH2D*>(correctionsConfig.mEfficiency)->GetBinContent(dynamic_cast<TH2D*>(correctionsConfig.mEfficiency)->FindBin(track.pt(), centrality));
+      auto* effHist = dynamic_cast<TH2D*>(correctionsConfig.mEfficiency);
+      if (!effHist) {
+        LOGF(error, "Efficiency object at %s is not a TH2D", cfgCorrections.cfgEfficiencyPath.value.c_str());
+        return -1.;
+      }
+      bin = effHist->FindBin(track.pt(), centrality);
+      if (!bin) {
+        return -1.;
+      }
+      const double eff = effHist->GetBinContent(bin);
+      if (!std::isfinite(eff) || eff <= 0.) {
+        return -1.;
+      }
+      return 1. / eff;
     } else {
-      eff = dynamic_cast<TH1D*>(correctionsConfig.mEfficiency)->GetBinContent(dynamic_cast<TH1D*>(correctionsConfig.mEfficiency)->FindBin(track.pt()));
+      auto* effHist = dynamic_cast<TH1D*>(correctionsConfig.mEfficiency);
+      if (!effHist) {
+        LOGF(error, "Efficiency object at %s is not a TH1D", cfgCorrections.cfgEfficiencyPath.value.c_str());
+        return -1.;
+      }
+      bin = effHist->FindBin(track.pt());
+      if (!bin) {
+        return -1.;
+      }
+      const double eff = effHist->GetBinContent(bin);
+      if (!std::isfinite(eff) || eff <= 0.) {
+        return -1.;
+      }
+      return 1. / eff;
     }
-    if (eff == 0) {
-      return -1.;
-    }
-    return 1. / eff;
   }
 
   template <typename TCollision>
@@ -844,7 +875,7 @@ struct FlowGfwNonflow {
         auto val = fGFW->Calculate(corrconfigs.at(l_ind), 0, false).real() / dnx;
         if (std::abs(val) < 1) {
           fFC->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, cfgUseMultiplicityFlowWeights ? dnx : 1.0, rndm);
-          fFCpt->fillVnPtProfiles(centmult, val, dnx, rndm, gfwMemberCache.configs.GetpTCorrMasks()[l_ind]);
+          fFCpt->fillVnPtProfiles(static_cast<int>(l_ind), centmult, val, dnx, rndm, gfwMemberCache.configs.GetpTCorrMasks()[l_ind]);
         }
         continue;
       }

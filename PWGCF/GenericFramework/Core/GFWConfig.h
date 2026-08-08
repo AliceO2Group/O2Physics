@@ -53,6 +53,7 @@ int CheckSameSize(const std::vector<T>& first, const std::vector<Args>&... rest)
 class GFWBinningCuts
 {
  public:
+  // cppcheck-suppress noExplicitConstructor
   GFWBinningCuts(int vtxzbins_ = 40, int etabins_ = 16, int phibins_ = 72, int nchbins_ = 300, float nchmin_ = 0, float nchmax_ = 3000,
                  float ptpoimin_ = 0.2, float ptpoimax_ = 10., float ptrefmin_ = 0.2, float ptrefmax_ = 3.,
                  std::vector<double> ptbinning_ = {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55,
@@ -144,6 +145,7 @@ class GFWBinningCuts
 class GFWRegions
 {
  public:
+  // cppcheck-suppress noExplicitConstructor
   GFWRegions(std::vector<std::string> names_ = {"refN", "refP", "refFull"}, std::vector<float> etaminvals_ = {-0.8, 0.4, -0.8},
              std::vector<float> etamaxvals_ = {-0.4, 0.8, 0.8},
              std::vector<int> pTDifs_ = {0, 0, 0},
@@ -189,6 +191,7 @@ class GFWRegions
 class GFWCorrConfigs
 {
  public:
+  // cppcheck-suppress noExplicitConstructor
   GFWCorrConfigs(std::vector<std::string> corrs_ = {"refP {2} refN {-2}", "refP {3} refN {-3}", "refP {4} refN {-4}", "refFull {2 -2}",
                                                     "refFull {2 2 -2 -2}"},
                  std::vector<std::string> heads_ = {"ChGap22", "ChGap32", "ChGap42", "ChFull22", "ChFull24"},
