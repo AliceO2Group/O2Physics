@@ -134,7 +134,7 @@ struct CentralityStudy {
     Configurable<bool> rejectIsFlangeEvent{"rejectIsFlangeEvent", false, "At least one channel with -350 TDC < time < -450 TDC"};
     Configurable<bool> rejectITSinROFpileupStandard{"rejectITSinROFpileupStandard", false, "reject collisions in case of in-ROF ITS pileup (standard)"};
     Configurable<bool> rejectITSinROFpileupStrict{"rejectITSinROFpileupStrict", false, "reject collisions in case of in-ROF ITS pileup (strict)"};
-    Configurable<bool> rejectUpc{"rejectUpc", false, "Reject upc events based on forward signals. Configurable group: upcRejection"};
+    Configurable<bool> rejectUpc{"rejectUpc", false, "Reject upc events based on forward signals. Configurable group: cfgFwd"};
     Configurable<bool> rejectCollInTimeRangeNarrow{"rejectCollInTimeRangeNarrow", false, "reject if extra colls in time range (narrow)"};
     Configurable<float> maxVtxZ{"maxVtxZ", 10.0f, "max vertex z distance from ip"};
     Configurable<bool> applyBcSel{"applyBcSel", false, "For each collision; de-reference the bc and apply the bc selections"};
@@ -147,27 +147,31 @@ struct CentralityStudy {
   struct : ConfigurableGroup {
     std::string prefix = "bcsel";
     Configurable<bool> rejectZNAC{"rejectZNAC", false, "reject if !(kIsBBZNA && kIsBBZNC)"};
+    Configurable<bool> rejectZPAC{"rejectZPAC", false, "reject if !(kIsBBZPA && kIsBBZPC)"};
     Configurable<bool> selectCollidingBCs{"selectCollidingBCs", true, "BC analysis: select colliding BCs"};
     Configurable<bool> selectTVX{"selectTVX", true, "BC analysis: select TVX"};
     Configurable<bool> selectFV0OrA{"selectFV0OrA", true, "BC analysis: select FV0OrA"};
-    Configurable<bool> rejectUpc{"rejectUpc", false, "Reject upc events based on forward signals. Configurable group: upcRejection"};
+    Configurable<bool> rejectUpc{"rejectUpc", false, "Reject upc events based on forward signals. Configurable group: cfgFwd"};
     Configurable<float> vertexZwithT0{"vertexZwithT0", 1000.0f, "require a certain vertex-Z in BC analysis"};
     Configurable<bool> rejectIsFlangeEvent{"rejectIsFlangeEvent", false, "At least one channel with -350 TDC < time < -450 TDC"};
     Configurable<float> minFT0CforVertexZ{"minFT0CforVertexZ", -1.0f, "minimum FT0C for vertex-Z profile calculation"};
   } bcsel;
 
   // _______________________________________
-  // upc rejection criteria
-  // reject low zna/c
+  // Limits for selections using forward detectors
   struct : ConfigurableGroup {
-    std::string prefix = "upcRejection";
+    std::string prefix = "cfgFwd";
     Configurable<float> minZNACsignal{"minZNACsignal", -999999.0f, "min zna/c signal"};
-    Configurable<float> maxFT0CforZNACselection{"maxFT0CforZNACselection", -99999.0f, "max ft0c signal for minZNACsignal to work"};
     Configurable<float> minFV0Asignal{"minFV0Asignal", -999999.0f, "min fv0a signal"};
-    Configurable<float> maxFT0CforFV0Aselection{"maxFT0CforFV0Aselection", -99999.0f, "max ft0c signal for minFV0Asignal to work"};
     Configurable<float> minFDDAsignal{"minFDDAsignal", -999999.0f, "min fdda signal"};
+    Configurable<float> maxFT0CforZNACselection{"maxFT0CforZNACselection", -99999.0f, "max ft0c signal for minZNACsignal to work"};
+    Configurable<float> maxFT0CforFV0Aselection{"maxFT0CforFV0Aselection", -99999.0f, "max ft0c signal for minFV0Asignal to work"};
     Configurable<float> maxFT0CforFDDAselection{"maxFT0CforFDDAselection", -99999.0f, "max ft0c signal for minFDDAsignal to work"};
-  } upcRejection;
+    Configurable<float> fZPABBlower{"fZPABBlower", -2.f, "lower time limit ZPA (ns)"};
+    Configurable<float> fZPCBBlower{"fZPCBBlower", -2.f, "lower time limit ZPC (ns)"};
+    Configurable<float> fZPABBupper{"fZPABBupper", 2.f, "upper time limit ZPA (ns)"};
+    Configurable<float> fZPCBBupper{"fZPCBBupper", 2.f, "upper time limit ZPC (ns)"};
+  } cfgFwd;
 
   // _______________________________________
   // Scaling
@@ -353,7 +357,7 @@ struct CentralityStudy {
       }
     }
 
-    if (doprocessBCs) {
+    if (doprocessBCs || doprocessBCsWithTime) {
       histos.add("hBCSelection", "hBCSelection", kTH1D, {{20, -0.5, 19.5f}});
       histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(1, "All BCs");
       histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(2, "Colliding BCs");
@@ -361,8 +365,9 @@ struct CentralityStudy {
       histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(4, "FV0OrA");
       histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(5, "FT0PosZ");
       histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(6, "upc rej");
-      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(7, "zdc rej");
-      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(8, "isFlangeEvent");
+      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(7, "znac time");
+      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(8, "zpac time");
+      histos.get<TH1>(HIST("hBCSelection"))->GetXaxis()->SetBinLabel(9, "isFlangeEvent");
 
       histos.add("hFT0C_BCs", "hFT0C_BCs", kTH1D, {axisMultUltraFineFT0C});
       histos.add("hFT0A_BCs", "hFT0A_BCs", kTH1D, {axisMultUltraFineFT0A});
@@ -370,7 +375,6 @@ struct CentralityStudy {
       histos.add("hFT0M_BCs", "hFT0M_BCs", kTH1D, {axisMultUltraFineFT0M});
       histos.add("hFT0MOuterA_BCs", "hFT0MOuterA_BCs", kTH1D, {axisMultUltraFineFT0M});
       histos.add("hFV0A_BCs", "hFV0A_BCs", kTH1D, {axisMultUltraFineFV0A});
-      histos.add("hInteractionRate_BCs", "hInteractionRate_BCs", kTH1D, {axisInteractionRate});
 
       histos.add("hFV0AT0C_BCs", "hFV0AT0C_BCs", kTH1D, {axisMultUltraFineFV0AT0C});
       histos.add("hScaledFT0M_BCs", "hScaledFT0M_BCs", kTH1D, {axisMultUltraFineScaledFT0M});
@@ -813,17 +817,17 @@ struct CentralityStudy {
     }
 
     if (evsel.rejectUpc) {
-      if (collision.multFT0C() < upcRejection.maxFT0CforZNACselection &&
-          collision.multZNA() < upcRejection.minZNACsignal &&
-          collision.multZNC() < upcRejection.minZNACsignal) {
+      if (collision.multFT0C() < cfgFwd.maxFT0CforZNACselection &&
+          collision.multZNA() < cfgFwd.minZNACsignal &&
+          collision.multZNC() < cfgFwd.minZNACsignal) {
         return;
       }
-      if (collision.multFT0C() < upcRejection.maxFT0CforFV0Aselection &&
-          collision.multFV0A() < upcRejection.minFV0Asignal) {
+      if (collision.multFT0C() < cfgFwd.maxFT0CforFV0Aselection &&
+          collision.multFV0A() < cfgFwd.minFV0Asignal) {
         return;
       }
-      if (collision.multFT0C() < upcRejection.maxFT0CforFDDAselection &&
-          collision.multFDDA() < upcRejection.minFDDAsignal) {
+      if (collision.multFT0C() < cfgFwd.maxFT0CforFDDAselection &&
+          collision.multFDDA() < cfgFwd.minFDDAsignal) {
         return;
       }
     }
@@ -1124,17 +1128,17 @@ struct CentralityStudy {
     }
 
     if (bcsel.rejectUpc) {
-      if (bc.multFT0C() < upcRejection.maxFT0CforZNACselection &&
-          bc.multZNA() < upcRejection.minZNACsignal &&
-          bc.multZNC() < upcRejection.minZNACsignal) {
+      if (bc.multFT0C() < cfgFwd.maxFT0CforZNACselection &&
+          bc.multZNA() < cfgFwd.minZNACsignal &&
+          bc.multZNC() < cfgFwd.minZNACsignal) {
         return false;
       }
-      if (bc.multFT0C() < upcRejection.maxFT0CforFV0Aselection &&
-          bc.multFV0A() < upcRejection.minFV0Asignal) {
+      if (bc.multFT0C() < cfgFwd.maxFT0CforFV0Aselection &&
+          bc.multFV0A() < cfgFwd.minFV0Asignal) {
         return false;
       }
-      if (bc.multFT0C() < upcRejection.maxFT0CforFDDAselection &&
-          bc.multFDDA() < upcRejection.minFDDAsignal) {
+      if (bc.multFT0C() < cfgFwd.maxFT0CforFDDAselection &&
+          bc.multFDDA() < cfgFwd.minFDDAsignal) {
         return false;
       }
     }
@@ -1151,6 +1155,18 @@ struct CentralityStudy {
       histos.fill(HIST("hBCSelection"), 6); // znac time
     }
 
+    if constexpr (requires { bc.timeZPA(); }) {
+      const bool kIsBBZPA = bc.timeZPA() > cfgFwd.fZPABBlower && bc.timeZPA() < cfgFwd.fZPABBupper;
+      const bool kIsBBZPC = bc.timeZPC() > cfgFwd.fZPCBBlower && bc.timeZPC() < cfgFwd.fZPCBBupper;
+      if (bcsel.rejectZPAC && !(kIsBBZPA && kIsBBZPC)) {
+        return false;
+      }
+    }
+
+    if (fillHistograms) {
+      histos.fill(HIST("hBCSelection"), 7); // zpac time
+    }
+
     if (bcsel.rejectIsFlangeEvent) {
       constexpr int IsFlangeEventId = 7;
       std::bitset<8> ft0TriggerMask = bc.multT0triggerBits();
@@ -1160,13 +1176,14 @@ struct CentralityStudy {
     }
 
     if (fillHistograms) {
-      histos.fill(HIST("hBCSelection"), 7); // isFlangeEvent
+      histos.fill(HIST("hBCSelection"), 8); // isFlangeEvent
     }
 
     return true;
   }
 
-  void processBCs(soa::Join<aod::BC2Mults, aod::MultBCs, aod::MultBcSel> const& multbcs, soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::MultsGlobal> const&)
+  template <typename TBunchCrossing>
+  void genericProcessBCs(const TBunchCrossing& multbcs)
   {
     // process BCs, calculate FT0C distribution
     for (const auto& multbc : multbcs) {
@@ -1182,10 +1199,6 @@ struct CentralityStudy {
       histos.fill(HIST("hFT0MOuterA_BCs"), (multbc.multFT0AOuter() + multbc.multFT0C()) * scale.factorFT0M);
       histos.fill(HIST("hFV0A_BCs"), multbc.multFV0A() * scale.factorFV0A);
       histos.fill(HIST("hFV0AT0C_BCs"), (multbc.multFV0A() + multbc.multFT0C()) * scale.factorFV0AT0C);
-
-      const uint64_t bcTimestamp = multbc.timestamp();
-      const float interactionRate = mRateFetcher.fetch(ccdb.service, bcTimestamp, mRunNumber, ccdbSettings.irSource.value, ccdbSettings.irCrashOnNull) / 1000.; // kHz
-      histos.fill(HIST("hInteractionRate_BCs"), interactionRate);
 
       if (studies.do2DPlots) {
         histos.fill(HIST("hFT0AVsFT0C_BCs"), multbc.multFT0C() * scale.factorFT0C, multbc.multFT0A() * scale.factorFT0A);
@@ -1204,7 +1217,7 @@ struct CentralityStudy {
       }
 
       if (multbc.has_ft0Mult()) {
-        auto multco = multbc.ft0Mult_as<soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::MultsGlobal>>();
+        auto multco = multbc.template ft0Mult_as<soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::MultsGlobal>>();
         if (multbc.multFT0PosZValid()) {
           histos.fill(HIST("hVertexZ_BCvsCO"), multco.multPVz(), multbc.multFT0PosZ());
         }
@@ -1224,11 +1237,22 @@ struct CentralityStudy {
     }
   }
 
+  void processBCs(soa::Join<aod::BC2Mults, aod::MultBCs, aod::MultBcSel> const& multbcs, soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::MultsGlobal> const&)
+  {
+    genericProcessBCs(multbcs);
+  }
+
+  void processBCsWithTime(soa::Join<aod::BC2Mults, aod::MultBCs, aod::TimeBCs, aod::MultBcSel> const& multbcs, soa::Join<aod::MultsRun3, aod::MFTMults, aod::MultsExtra, aod::MultSelections, aod::MultsGlobal> const&)
+  {
+    genericProcessBCs(multbcs);
+  }
+
   PROCESS_SWITCH(CentralityStudy, processCollisions, "per-collision analysis", false);
   PROCESS_SWITCH(CentralityStudy, processCollisionsWithResolutionStudy, "per-collision analysis, with reso study", false);
   PROCESS_SWITCH(CentralityStudy, processCollisionsWithCentrality, "per-collision analysis", true);
   PROCESS_SWITCH(CentralityStudy, processCollisionsWithCentralityWithNeighbours, "per-collision analysis", false);
   PROCESS_SWITCH(CentralityStudy, processBCs, "per-BC analysis", true);
+  PROCESS_SWITCH(CentralityStudy, processBCsWithTime, "per-BC analysis with extra detector information", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
