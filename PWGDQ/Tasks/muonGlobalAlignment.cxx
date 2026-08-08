@@ -17,14 +17,14 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include <CommonUtils/ConfigurableParam.h>
-#include <CommonConstants/MathConstants.h>
-#include "Common/Core/RecoDecay.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonUtils/ConfigurableParam.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
@@ -38,7 +38,6 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
-#include <GPU/GPUROOTCartesianFwd.h>
 #include <GlobalTracking/MatchGlobalFwd.h>
 #include <MCHBase/TrackerParam.h>
 #include <MCHGeometryTransformer/Transformations.h>
@@ -62,6 +61,7 @@
 #include <THnSparse.h>
 #include <TMath.h>
 
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <rapidjson/document.h>
 #include <rapidjson/error/error.h>
 
@@ -81,8 +81,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-#include <cmath>
 
 using namespace o2;
 using namespace o2::mch;
@@ -112,7 +110,7 @@ using MyMFTCovariance = MyMFTCovariances::iterator;
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<Double_t, 5>;
 
-//static o2::globaltracking::MatchGlobalFwd sExtrap;
+// static o2::globaltracking::MatchGlobalFwd sExtrap;
 
 using o2::dataformats::GlobalFwdTrack;
 using o2::track::TrackParCovFwd;
@@ -382,7 +380,7 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
       TrackExtrap::setField();
       TrackExtrap::useExtrapV2();
       fieldB = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField()); // for MFT
-      std::array<double, 3> centerMFT{0, 0, -61.4};                                                         // or use middle point between Vtx and MFT?
+      std::array<double, 3> centerMFT{0, 0, -61.4};                                                // or use middle point between Vtx and MFT?
       mBzAtMftCenter = fieldB->getBz(centerMFT.data());
     } else {
       LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", bc.timestamp());
@@ -756,7 +754,7 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
     // MCH track format.
 
     // Parameter conversion
-    //double alpha1, alpha3, alpha4, x2, x3, x4;
+    // double alpha1, alpha3, alpha4, x2, x3, x4;
 
     double x2 = fwdtrack.getPhi();
     double x3 = fwdtrack.getTanl();
@@ -830,7 +828,7 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
     o2::dataformats::GlobalFwdTrack convertedTrack;
 
     // Parameter conversion
-    //double alpha1, alpha3, alpha4, x2, x3, x4;
+    // double alpha1, alpha3, alpha4, x2, x3, x4;
 
     double alpha1 = mchParam.getNonBendingSlope();
     double alpha3 = mchParam.getBendingSlope();
