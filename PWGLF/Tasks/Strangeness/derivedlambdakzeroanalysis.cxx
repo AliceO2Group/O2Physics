@@ -188,7 +188,8 @@ struct derivedlambdakzeroanalysis {
     Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
 
     // Selection criteria: acceptance
-    Configurable<float> rapidityCut{"rapidityCut", 0.5, "rapidity"};
+    Configurable<float> rapidityMinCut{"rapidityMinCut", -0.5, "min rapidity"};
+    Configurable<float> rapidityMaxCut{"rapidityMaxCut", 0.5, "max rapidity"};
     Configurable<float> daughterEtaCut{"daughterEtaCut", 0.8, "max eta for daughters"};
 
     // Standard 5 topological criteria
@@ -1381,9 +1382,11 @@ struct derivedlambdakzeroanalysis {
       BITSET(bitMap, selDCAV0Dau);
 
     // rapidity
-    if (std::abs(rapidityLambda) < v0Selections.rapidityCut)
+    if (rapidityLambda > v0Selections.rapidityMinCut &&
+        rapidityLambda < v0Selections.rapidityMaxCut)
       BITSET(bitMap, selLambdaRapidity);
-    if (std::abs(rapidityK0Short) < v0Selections.rapidityCut)
+    if (rapidityK0Short > v0Selections.rapidityMinCut &&
+        rapidityK0Short < v0Selections.rapidityMaxCut)
       BITSET(bitMap, selK0ShortRapidity);
 
     //
@@ -2242,7 +2245,8 @@ struct derivedlambdakzeroanalysis {
     if (std::abs(v0mother.pdgCode()) == o2::constants::physics::Pdg::kXi0)
       rapidityXi = RecoDecay::y(std::array{v0mother.px(), v0mother.py(), v0mother.pz()}, o2::constants::physics::MassXi0);
 
-    if (std::fabs(rapidityXi) > 0.5f)
+    if (rapidityXi < v0Selections.rapidityMinCut ||
+        rapidityXi > v0Selections.rapidityMaxCut)
       return; // not a valid mother rapidity (PDG selection is later)
 
     // __________________________________________
@@ -2993,7 +2997,8 @@ struct derivedlambdakzeroanalysis {
       else if (std::abs(v0MC.pdgCode()) == PDG_t::kLambda0)
         ymc = v0MC.rapidityMC(1);
 
-      if (std::abs(ymc) > v0Selections.rapidityCut)
+      if (ymc < v0Selections.rapidityMinCut ||
+          ymc > v0Selections.rapidityMaxCut)
         continue;
 
       auto mcCollision = v0MC.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
@@ -3058,7 +3063,8 @@ struct derivedlambdakzeroanalysis {
       else if (std::abs(cascMC.pdgCode()) == PDG_t::kOmegaMinus)
         ymc = cascMC.rapidityMC(2);
 
-      if (std::abs(ymc) > v0Selections.rapidityCut)
+      if (ymc < v0Selections.rapidityMinCut ||
+          ymc > v0Selections.rapidityMaxCut)
         continue;
 
       auto mcCollision = cascMC.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
