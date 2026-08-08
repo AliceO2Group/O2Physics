@@ -14,30 +14,20 @@
 /// \author Eisha Rani
 /// \since August 2026
 
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include <CCDB/BasicCCDBManager.h>
-#include <CommonConstants/PhysicsConstants.h>
-#include <Framework/ASoAHelpers.h>
+#include <CommonConstants/MathConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/Track.h>
 
-#include <TFile.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TMath.h>
-#include <TProfile.h>
-#include <TRandom3.h>
+#include <TPDGCode.h>
 
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -50,7 +40,6 @@ using namespace o2::constants::physics;
 using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 
 struct FlattenicityTask {
-
   // ============================================
   // FT0 Constants
   // ============================================
@@ -69,7 +58,7 @@ struct FlattenicityTask {
   static constexpr int NPhysicalPrimaryBit = 0x4;
 
   // ============================================
-  // Multiplicity class boundaries (Nch cuts defining the 0-10% ... 90-100% classes)
+  // Multiplicity class boundaries
   // ============================================
   static constexpr int NchBound10 = 5;
   static constexpr int NchBound20 = 8;
@@ -134,12 +123,12 @@ struct FlattenicityTask {
   int getCharge(int pdgCode)
   {
     switch (std::abs(pdgCode)) {
-      case 211:  // pion
-      case 321:  // kaon
-      case 2212: // proton
+      case PDG_t::kPiPlus: // 211
+      case PDG_t::kKPlus:  // 321
+      case PDG_t::kProton: // 2212
         return 1;
-      case 11: // electron
-      case 13: // muon
+      case PDG_t::kElectron: // 11
+      case PDG_t::kMuonPlus: // 13
         return -1;
       default:
         return 0;
@@ -156,12 +145,14 @@ struct FlattenicityTask {
       total += counts[i];
     }
 
-    if (total <= 0)
+    if (total <= 0) {
       return -1.0;
+    }
 
     float mean = total / NCell;
-    if (mean <= 0)
+    if (mean <= 0) {
       return -1.0;
+    }
 
     float sumSq = 0.0;
     for (int i = 0; i < NCell; i++) {
@@ -181,8 +172,9 @@ struct FlattenicityTask {
     bool inFT0A = (eta > FT0AEtaMin && eta < FT0AEtaMax);
     bool inFT0C = (eta > FT0CEtaMin && eta < FT0CEtaMax);
 
-    if (!inFT0A && !inFT0C)
+    if (!inFT0A && !inFT0C) {
       return -1;
+    }
 
     isFT0A = inFT0A;
 
@@ -216,32 +208,39 @@ struct FlattenicityTask {
   bool isSelectedTrack(const T& track)
   {
     // pT selection
-    if (track.pt() < cfgPtMin)
+    if (track.pt() < cfgPtMin) {
       return false;
+    }
 
     // Eta selection
-    if (std::abs(track.eta()) > cfgEtaMax)
+    if (std::abs(track.eta()) > cfgEtaMax) {
       return false;
+    }
 
     // TPC crossed rows
-    if (track.tpcNClsCrossedRows() < cfgNCrossedRowsTPC)
+    if (track.tpcNClsCrossedRows() < cfgNCrossedRowsTPC) {
       return false;
+    }
 
     // TPC chi2 per cluster
-    if (track.tpcChi2NCl() > cfgChi2PerClusterTPC)
+    if (track.tpcChi2NCl() > cfgChi2PerClusterTPC) {
       return false;
+    }
 
     // ITS chi2 per cluster
-    if (track.itsChi2NCl() > cfgChi2PerClusterITS)
+    if (track.itsChi2NCl() > cfgChi2PerClusterITS) {
       return false;
+    }
 
     // DCA z
-    if (std::abs(track.dcaZ()) > cfgDCAZ)
+    if (std::abs(track.dcaZ()) > cfgDCAZ) {
       return false;
+    }
 
     // Golden chi2 (global track)
-    if (cfgRequireGoldenChi2 && !track.isGlobalTrack())
+    if (cfgRequireGoldenChi2 && !track.isGlobalTrack()) {
       return false;
+    }
 
     return true;
   }
@@ -254,8 +253,7 @@ struct FlattenicityTask {
     aod::McParticles const& mcParticles)
   {
     // Initialize counters
-    std::array<float, NCell> truthCounts;
-    truthCounts.fill(0.0);
+    std::array<float, NCell> truthCounts{};
 
     int nchINEL = 0;
     int nchFT0 = 0;
@@ -265,17 +263,20 @@ struct FlattenicityTask {
     // Loop over MC particles
     for (const auto& particle : mcParticles) {
       // Check if primary
-      if (!(particle.flags() & NPhysicalPrimaryBit))
+      if (!(particle.flags() & NPhysicalPrimaryBit)) {
         continue;
+      }
 
       // Check if charged
       int charge = getCharge(particle.pdgCode());
-      if (charge == 0)
+      if (charge == 0) {
         continue;
+      }
 
       // pT > 0.1
-      if (particle.pt() < cfgPtMin)
+      if (particle.pt() < cfgPtMin) {
         continue;
+      }
 
       // INEL>0: |eta| < 1
       if (std::abs(particle.eta()) < 1.0) {
@@ -291,10 +292,12 @@ struct FlattenicityTask {
       bool inFT0A = (particle.eta() > FT0AEtaMin && particle.eta() < FT0AEtaMax);
       bool inFT0C = (particle.eta() > FT0CEtaMin && particle.eta() < FT0CEtaMax);
 
-      if (inFT0A)
+      if (inFT0A) {
         hasFT0A = true;
-      if (inFT0C)
+      }
+      if (inFT0C) {
         hasFT0C = true;
+      }
 
       // Assign to FT0 cell
       bool isFT0A = false;
@@ -370,8 +373,9 @@ struct FlattenicityTask {
     FullTracks const& tracks)
   {
     // Event selection: |vz| < 10 cm
-    if (std::abs(collision.posZ()) > cfgVzMax)
+    if (std::abs(collision.posZ()) > cfgVzMax) {
       return;
+    }
 
     // Find FT0 matching this collision's BC
     auto ft0 = ft0s.begin();
@@ -383,18 +387,17 @@ struct FlattenicityTask {
         break;
       }
     }
-    if (!foundFT0)
+    if (!foundFT0) {
       return;
+    }
 
     // Track selection and counting
-    // int nTracks = 0;
-    std::array<float, NCell> recoCounts;
-    recoCounts.fill(0.0);
+    std::array<float, NCell> recoCounts{};
 
     for (const auto& track : tracks) {
-      if (!isSelectedTrack(track))
+      if (!isSelectedTrack(track)) {
         continue;
-      // nTracks++;
+      }
 
       // Assign to FT0 cell using track extrapolation
       bool isFT0A = false;
@@ -407,10 +410,7 @@ struct FlattenicityTask {
     histos.fill(HIST("hEvents"), 3); // Data events
 
     // Compute flattenicity from FT0 amplitudes
-    // The FT0 channels are stored as arrays of (channel, amplitude) pairs
-    // The channelA() and channelC() return vectors of pairs
-    std::array<float, NCell> ft0Counts;
-    ft0Counts.fill(0.0);
+    std::array<float, NCell> ft0Counts{};
 
     // FT0-A channels (0-95)
     for (int i = 0; i < NchA; i++) {
