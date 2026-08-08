@@ -21,6 +21,7 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TPDGCode.h>
@@ -263,7 +264,7 @@ struct FlattenicityTask {
     // Loop over MC particles
     for (const auto& particle : mcParticles) {
       // Check if primary
-      if (!(particle.flags() & NPhysicalPrimaryBit)) {
+      if ((particle.flags() & NPhysicalPrimaryBit) == 0) {
         continue;
       }
 
