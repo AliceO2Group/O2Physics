@@ -71,6 +71,13 @@ constexpr static uint32_t GkEventMcFillMap = VarManager::ObjTypes::CollisionMC;
 
 constexpr static uint32_t GkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
 
+namespace dqefficiency_helpers
+{
+inline float* varValues() { return static_cast<float*>(VarManager::fgValues); }
+inline TString* varNames() { return static_cast<TString*>(VarManager::fgVariableNames); }
+inline TString* varUnits() { return static_cast<TString*>(VarManager::fgVariableUnits); }
+} // namespace dqefficiency_helpers
+
 struct Alice3DqTableMaker {
 
   Produces<ReA3MCEvents> eventMC;
@@ -142,7 +149,7 @@ struct Alice3DqTableMaker {
 
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(true);
-    fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+    fHistMan->SetDefaultVarNames(dqefficiency_helpers::varNames(), dqefficiency_helpers::varUnits());
 
     if (fConfigHistOutput.cfgQA && fConfigHistOutput.cfgDetailedQA) {
       fDoDetailedQA = true;
@@ -246,14 +253,14 @@ struct Alice3DqTableMaker {
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
       for (const auto& t : addTrackCuts) {
-        fTrackCuts.push_back(reinterpret_cast<AnalysisCompositeCut*>(t));
+        fTrackCuts.push_back(dynamic_cast<AnalysisCompositeCut*>(t));
       }
     }
 
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
   }
 
-  void defineHistograms(TString histClasses)
+  void defineHistograms(const TString& histClasses)
   {
     std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
     for (int iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
@@ -308,9 +315,9 @@ struct Alice3DqTableMaker {
       histTracks->GetXaxis()->SetBinLabel(ibX, (*cut)->GetName());
     }
     constexpr int NV0Tags = 5;
-    const char* v0TagNames[NV0Tags] = {"Photon conversion", "K^{0}_{s}", "#Lambda", "#bar{#Lambda}", "#Omega"};
+    const std::array<std::string, NV0Tags> v0TagNames = {"Photon conversion", "K^{0}_{s}", "#Lambda", "#bar{#Lambda}", "#Omega"};
     for (int ibY = 0; ibY < NV0Tags; ibY++) {
-      histTracks->GetXaxis()->SetBinLabel(fTrackCuts.size() + 1 + ibY, v0TagNames[ibY]);
+      histTracks->GetXaxis()->SetBinLabel(fTrackCuts.size() + 1 + ibY, v0TagNames[ibY].c_str());
     }
     fStatsList->Add(histTracks);
 
@@ -335,7 +342,7 @@ struct Alice3DqTableMaker {
     for (const auto& mcCollision : mcCollisions) {
       VarManager::FillEventAlice3<GkEventMcFillMap>(mcCollision);
 
-      fHistMan->FillHistClass("Event_MCTruth", VarManager::fgValues);
+      fHistMan->FillHistClass("Event_MCTruth", dqefficiency_helpers::varValues());
 
       eventMC(mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
               mcCollision.t(), mcCollision.weight(), mcCollision.impactParameter()); // TODO: Determine and fill multiplicity values
@@ -353,7 +360,7 @@ struct Alice3DqTableMaker {
     fLabelsMapReversed.clear();
     fMCFlags.clear();
 
-    uint16_t mcflags = static_cast<uint16_t>(0); // flags which will hold the decisions for each MC signal
+    auto mcflags = static_cast<uint16_t>(0); // flags which will hold the decisions for each MC signal
     int trackCounter = 0;
 
     for (const auto& mctrack : mcTracks) {
@@ -396,8 +403,8 @@ struct Alice3DqTableMaker {
 
           int j = 0;
           for (auto signal = fMCSignals.begin(); signal != fMCSignals.end(); ++signal, ++j) {
-            if (mcflags & (static_cast<uint16_t>(1) << j)) {
-              fHistMan->FillHistClass(Form("MCTruth_%s", (*signal)->GetName()), VarManager::fgValues);
+            if ((mcflags & (static_cast<uint16_t>(1) << j)) != 0u) {
+              fHistMan->FillHistClass(Form("MCTruth_%s", (*signal)->GetName()), dqefficiency_helpers::varValues());
             }
           }
         }
@@ -414,7 +421,7 @@ struct Alice3DqTableMaker {
     // Loop over collisions
     for (const auto& collision : collisions) {
 
-      (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, static_cast<float>(o2::aod::evsel::kNsel));
+      (dynamic_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, static_cast<float>(o2::aod::evsel::kNsel));
 
       VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
       VarManager::FillEventAlice3<GkEventFillMap>(collision); // extract event information and place it in the fValues array
@@ -425,15 +432,15 @@ struct Alice3DqTableMaker {
       }
 
       if (fDoDetailedQA) {
-        fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
+        fHistMan->FillHistClass("Event_BeforeCuts", dqefficiency_helpers::varValues());
       }
 
       // Apply the user specified event selection
-      if (!fEventCut->IsSelected(VarManager::fgValues)) {
+      if (!fEventCut->IsSelected(dqefficiency_helpers::varValues())) {
         continue;
       }
 
-      (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(o2::aod::evsel::kNsel));
+      (dynamic_cast<TH2I*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(o2::aod::evsel::kNsel));
 
       // Fill historams after event cuts
       fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
@@ -459,46 +466,43 @@ struct Alice3DqTableMaker {
     //         so in case of multiple associations, the variables depending on the collision association (e.g. DCA, secondary vertexing, etc)
     //         have to be recomputed at analysis time for each association.
 
-    uint64_t trackFilteringTag = static_cast<uint64_t>(0);
-    uint32_t trackTempFilterMap = static_cast<uint32_t>(0);
-    uint16_t mcflags = static_cast<uint16_t>(0);
+    uint64_t trackFilteringTag{0};
+    uint32_t trackTempFilterMap{0};
+    uint16_t mcflags{0};
     int trackCounter = fLabelsMap.size();
 
     for (const auto& assoc : assocs) {
 
       auto track = assoc.template track_as<MyBarrelTracks>();
 
-      if (fCollIndexMap.find(track.collisionId()) == fCollIndexMap.end()) {
+      if (!fCollIndexMap.contains(track.collisionId())) {
         continue;
       }
-
-      trackFilteringTag = static_cast<uint64_t>(0);
-      trackTempFilterMap = static_cast<uint32_t>(0);
 
       // Compute track quantities and fill histograms
       VarManager::FillTrackAlice3<GkTrackFillMapWithCov>(track);
 
       if (fDoDetailedQA) {
-        fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
+        fHistMan->FillHistClass("TrackBarrel_BeforeCuts", dqefficiency_helpers::varValues());
       }
 
       int n = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, n++) {
-        if ((*cut)->IsSelected(VarManager::fgValues)) {
+        if ((*cut)->IsSelected(dqefficiency_helpers::varValues())) {
           trackTempFilterMap |= (static_cast<uint32_t>(1) << n);
           if (fConfigHistOutput.cfgQA) {
-            fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut)->GetName()), VarManager::fgValues);
+            fHistMan->FillHistClass(Form("TrackBarrel_%s", (*cut)->GetName()), dqefficiency_helpers::varValues());
           }
-          (reinterpret_cast<TH1I*>(fStatsList->At(1)))->Fill(static_cast<float>(n));
+          (dynamic_cast<TH1I*>(fStatsList->At(1)))->Fill(static_cast<float>(n));
         }
       }
-      if (!trackTempFilterMap) {
+      if (trackTempFilterMap == 0u) {
         continue;
       }
 
       // If this track is already present in the index map, it means it was already skimmed,
       // so we just store the association and we skip the track
-      if (fTrackIndexMap.find(track.globalIndex()) != fTrackIndexMap.end()) {
+      if (fTrackIndexMap.contains(track.globalIndex())) {
         trackBarrelAssoc(fCollIndexMap[collision.globalIndex()], fTrackIndexMap[track.globalIndex()]);
         continue;
       }
@@ -567,8 +571,8 @@ struct Alice3DqTableMaker {
             if (fDoDetailedQA) {
               j = 0;
               for (const auto& cut : fTrackCuts) {
-                if (trackTempFilterMap & (uint8_t(1) << j)) {
-                  fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut->GetName(), sig->GetName()), VarManager::fgValues); // fill the reconstructed truth
+                if ((trackTempFilterMap & (uint8_t(1) << j)) != 0u) {
+                  fHistMan->FillHistClass(Form("TrackBarrel_%s_%s", cut->GetName(), sig->GetName()), dqefficiency_helpers::varValues()); // fill the reconstructed truth
                 }
                 j++;
               }
@@ -579,7 +583,7 @@ struct Alice3DqTableMaker {
 
         // if the MC truth particle corresponding to this reconstructed track is not already written,
         //   add it to the skimmed stack
-        if (!(fLabelsMap.find(mctrack.globalIndex()) != fLabelsMap.end())) {
+        if (!(fLabelsMap.contains(mctrack.globalIndex()))) {
           fLabelsMap[mctrack.globalIndex()] = trackCounter;
           fLabelsMapReversed[trackCounter] = mctrack.globalIndex();
           fMCFlags[mctrack.globalIndex()] = mcflags;
@@ -610,7 +614,7 @@ struct Alice3DqTableMaker {
 
     skimCollisions(collisions);
 
-    if (fCollIndexMap.size() == 0)
+    if (fCollIndexMap.empty())
       return;
 
     skimMCParticles(mcParticles, mcCollisions);
@@ -627,7 +631,7 @@ struct Alice3DqTableMaker {
       trackBarrelLabels.reserve(tracksBarrel.size());
     }
 
-    if (fCollIndexMap.size() > 0) {
+    if (!fCollIndexMap.empty()) {
 
       for (auto const& [origIdx, skimIdx] : fCollIndexMap) {
         auto collision = collisions.rawIteratorAt(origIdx);
@@ -649,7 +653,7 @@ struct Alice3DqTableMaker {
       if (mctrack.has_mothers()) {
         for (const auto& m : mctrack.mothersIds()) {
           if (m < mcParticles.size()) { // protect against bad mother indices
-            if (fLabelsMap.find(m) != fLabelsMap.end()) {
+            if (fLabelsMap.contains(m)) {
               mothers.push_back(fLabelsMap.find(m)->second);
             }
           } else {
@@ -666,7 +670,7 @@ struct Alice3DqTableMaker {
         for (int d = mctrack.daughtersIds()[0]; d <= mctrack.daughtersIds()[1]; ++d) {
           // TODO: remove this check as soon as issues with MC production are fixed
           if (d < mcParticles.size()) { // protect against bad daughter indices
-            if (fLabelsMap.find(d) != fLabelsMap.end()) {
+            if (fLabelsMap.contains(d)) {
               daughters.push_back(fLabelsMap.find(d)->second);
             }
           } else {
@@ -675,8 +679,9 @@ struct Alice3DqTableMaker {
           }
         }
       }
-      int daughterRange[2] = {-1, -1};
-      if (daughters.size() > 0) {
+      constexpr int NDaughters = 2;
+      std::array<int, NDaughters> daughterRange = {-1, -1};
+      if (!daughters.empty()) {
         daughterRange[0] = daughters[0];
         daughterRange[1] = daughters[daughters.size() - 1];
       }
@@ -684,17 +689,17 @@ struct Alice3DqTableMaker {
       // NOTE: Here we assume that MC collisions are not filtered, so there is no new vs old index map for translation
       auto mcCollision = mctrack.template mcCollision_as<MyEventsMC>();
       trackMC(mcCollision.globalIndex(), mctrack.pdgCode(), mctrack.statusCode(), mctrack.flags(),
-              mothers, daughterRange,
+              mothers, daughterRange.data(),
               mctrack.weight(), mctrack.pt(), mctrack.eta(), mctrack.phi(), mctrack.e(),
               mctrack.vx(), mctrack.vy(), mctrack.vz(), mctrack.vt(), mcflags);
 
       for (unsigned int isig = 0; isig < fMCSignals.size(); isig++) {
-        if (mcflags & (static_cast<uint16_t>(1) << isig)) {
-          (reinterpret_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(isig));
+        if ((mcflags & (static_cast<uint16_t>(1) << isig)) != 0u) {
+          (dynamic_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(isig));
         }
       }
       if (mcflags == 0) {
-        (reinterpret_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(fMCSignals.size()));
+        (dynamic_cast<TH1I*>(fStatsList->At(2)))->Fill(static_cast<float>(fMCSignals.size()));
       }
     }
   }
