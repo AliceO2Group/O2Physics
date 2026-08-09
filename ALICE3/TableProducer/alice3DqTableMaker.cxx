@@ -360,7 +360,7 @@ struct Alice3DqTableMaker {
     fLabelsMapReversed.clear();
     fMCFlags.clear();
 
-    auto mcflags = static_cast<uint16_t>(0); // flags which will hold the decisions for each MC signal
+    uint16_t mcflags{0}; // flags which will hold the decisions for each MC signal
     int trackCounter = 0;
 
     for (const auto& mctrack : mcTracks) {
@@ -478,6 +478,9 @@ struct Alice3DqTableMaker {
       if (!fCollIndexMap.contains(track.collisionId())) {
         continue;
       }
+
+      trackFilteringTag = static_cast<uint64_t>(0);
+      trackTempFilterMap = static_cast<uint32_t>(0);
 
       // Compute track quantities and fill histograms
       VarManager::FillTrackAlice3<GkTrackFillMapWithCov>(track);
