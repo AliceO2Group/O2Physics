@@ -21,25 +21,25 @@
 
 #include <CommonConstants/MathConstants.h>
 #include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/Concepts.h>
 #include <ReconstructionDataFormats/HelixHelper.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
 
-#include <TVector2.h>
+#include <Math/GenVector/DisplacementVector2D.h> // IWYU pragma: keep (for rotate)
+#include <Math/Vector2D.h>                       // IWYU pragma: keep (do not replace with Math/Vector2Dfwd.h)
+#include <Math/Vector2Dfwd.h>
+
+#include <GPUROOTCartesianFwd.h>
 
 #include <array>
 #include <cmath>
-
-#include <math.h>
 
 //_______________________________________________________________________
 inline bool checkAP(const float alpha, const float qt, const float alpha_max = 0.95, const float qt_max = 0.05)
 {
   float ellipse = std::pow(alpha / alpha_max, 2) + std::pow(qt / qt_max, 2);
-  if (ellipse < 1.0) {
-    return true;
-  } else {
-    return false;
-  }
+  return (ellipse < 1.0);
 }
 //_______________________________________________________________________
 inline float v0_alpha(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
@@ -58,7 +58,7 @@ inline float v0_qt(float pxpos, float pypos, float pzpos, float pxneg, float pyn
 }
 //_______________________________________________________________________
 template <typename TrackPrecision = float>
-inline void Vtx_recalculationParCov(o2::base::Propagator* prop, const o2::track::TrackParametrizationWithError<TrackPrecision>& trackPosInformation, const o2::track::TrackParametrizationWithError<TrackPrecision>& trackNegInformation, float xyz[3], o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE)
+inline void Vtx_recalculationParCov(o2::base::Propagator* prop, const o2::track::TrackParametrizationWithError<TrackPrecision>& trackPosInformation, const o2::track::TrackParametrizationWithError<TrackPrecision>& trackNegInformation, std::array<float, 3>& xyz, o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE)
 {
   float bz = prop->getNominalBz();
 
@@ -82,21 +82,21 @@ inline void Vtx_recalculationParCov(o2::base::Propagator* prop, const o2::track:
   float vertexXNeg = helixNeg.xC + helixNeg.rC * std::cos(alphaNeg);
   float vertexYNeg = helixNeg.yC + helixNeg.rC * std::sin(alphaNeg);
 
-  TVector2 vertexPos(vertexXPos, vertexYPos);
-  TVector2 vertexNeg(vertexXNeg, vertexYNeg);
+  ROOT::Math::XYVector vertexPos(vertexXPos, vertexYPos);
+  ROOT::Math::XYVector vertexNeg(vertexXNeg, vertexYNeg);
 
   // Convert to local coordinate system
-  TVector2 vertexPosRot = vertexPos.Rotate(-trackPosInformationCopy.getAlpha());
-  TVector2 vertexNegRot = vertexNeg.Rotate(-trackNegInformationCopy.getAlpha());
+  vertexPos.Rotate(-trackPosInformationCopy.getAlpha());
+  vertexNeg.Rotate(-trackNegInformationCopy.getAlpha());
 
   prop->propagateToX(trackPosInformationCopy,
-                     vertexPosRot.X(),
+                     vertexPos.X(),
                      bz,
                      o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI,
                      o2::base::PropagatorImpl<TrackPrecision>::MAX_STEP,
                      matCorr);
   prop->propagateToX(trackNegInformationCopy,
-                     vertexNegRot.X(),
+                     vertexNeg.X(),
                      bz,
                      o2::base::PropagatorImpl<TrackPrecision>::MAX_SIN_PHI,
                      o2::base::PropagatorImpl<TrackPrecision>::MAX_STEP,
@@ -104,90 +104,113 @@ inline void Vtx_recalculationParCov(o2::base::Propagator* prop, const o2::track:
 
   xyz[2] = (trackPosInformationCopy.getZ() * helixNeg.rC + trackNegInformationCopy.getZ() * helixPos.rC) / (helixPos.rC + helixNeg.rC);
 }
+
 //_______________________________________________________________________
-template <typename TrackPrecision = float, typename T1, typename T2>
-inline void Vtx_recalculation(o2::base::Propagator* prop, T1 lTrackPos, T2 lTrackNeg, float xyz[3], o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE)
+/// \brief Calculate DCA for tracks using the track helix and the inclination angl tan(lambda)
+/// \param trk track parameterization to obtain helix parameters
+/// \param vtx primary vertex position
+/// \param magField magnetic field strenght of L3
+/// \return DCAxy, DCAz
+template <typename TrackPrecision = float>
+std::array<float, 2> CalculateDCAFast(const o2::track::TrackParametrizationWithError<TrackPrecision>& trk, const o2::math_utils::Point3D<float>& vtx, const float magField)
 {
+
+  std::array<float, 2> dca{};
+
+  // obtain circle from track in x-y plane
+  const o2::track::TrackAuxPar helixPos(trk, magField);
+
+  // obtain position in global coordinates and tan(lambda)
+  const auto posTrack = trk.getXYZGlo();
+  const float trX = posTrack.X();
+  const float trY = posTrack.Y();
+  const float trZ = posTrack.Z();
+  const float tangentLambda = trk.getTgl();
+
+  // Calculate DCAxy
+  // Use distance in x and y between circle center and vtx, afterwards subtract radius of circle
+  const float distX = helixPos.xC - vtx.X();
+  const float distY = helixPos.yC - vtx.Y();
+  const float trackCircCenter = std::sqrt(distX * distX + distY * distY);
+  dca[0] = helixPos.rC - trackCircCenter;
+
+  // Calculate DCAz
+  // First step: Calculate arc lenght of circle between current position and primary vertex in x-y
+  const float theta0 = std::atan2(trY - helixPos.yC, trX - helixPos.xC);
+  const float thetav = std::atan2(vtx.Y() - helixPos.yC, vtx.X() - helixPos.xC);
+
+  // Make sure angle is between -pi and pi
+  const auto dtheta = RecoDecay::constrainAngle<float>(thetav - theta0, -o2::constants::math::PI);
+
+  // arc-lenght along helix
+  const float arcLenght = std::fabs(helixPos.rC * dtheta);
+
+  // get global z-position at DCA
+  const float ZPosGlo = trZ - arcLenght * tangentLambda;
+
+  // DCA calculated from
+  dca[1] = ZPosGlo - vtx.Z();
+
+  return dca;
+}
+
+//_______________________________________________________________________
+/// \brief Calculate the track momentum at a different place of the track Helix.
+/// \param s arc-lenght where track should be propagated to
+/// \param track particle track
+/// \param trHelix track helix param. for circle approximation
+/// \param bz magnetic field strenght of L3
+/// \param addPhi optional additional rotation of the track in phi-direction
+/// \return track momentum vector at new position
+template <o2::soa::is_iterator TTrack>
+inline std::array<float, 3> getPropMomentumFromTrackHelix(const float s, const TTrack& track, const o2::track::TrackAuxPar& trHelix, const float bz, float addPhi = 0.f)
+{
+
+  // Calculate the change in phi considering the track radius and the track arc lenght s
+  const float dphi = -track.sign() * 0.3f * bz * s / 100. / track.pt(); // s in cm
+  const float dotProd = std::cos(track.phi() + addPhi) * track.pt() * trHelix.xC + std::sin(track.phi() + addPhi) * track.pt() * trHelix.yC;
+  if (dotProd < 0) {
+    addPhi -= o2::constants::math::PI;
+  }
+
+  // Calculate the phi at the secondary vertex
+  const auto phi = RecoDecay::constrainAngle<float>(track.phi() + dphi + addPhi);
+
+  // Calculate px,y,z at the new propagated vertex
+  std::array<float, 3> trackP{};
+  trackP[0] = std::cos(phi) * track.pt();
+  trackP[1] = std::sin(phi) * track.pt();
+  trackP[2] = track.tgl() * track.pt();
+
+  return trackP;
+}
+
+//_______________________________________________________________________
+template <typename TrackPrecision = float, o2::soa::is_iterator T1, o2::soa::is_iterator T2>
+inline void Vtx_recalculation(o2::base::Propagator* prop, T1 lTrackPos, T2 lTrackNeg, std::array<float, 3>& xyz, o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE)
+{
+
   // o2::track::TrackParametrizationWithError<TrackPrecision> = TrackParCov, I use the full version to have control over the data type
   o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformation = getTrackParCov(lTrackPos); // first get an object that stores Track information (positive)
   o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformation = getTrackParCov(lTrackNeg); // first get an object that stores Track information (negative)
 
   Vtx_recalculationParCov<TrackPrecision>(prop, trackPosInformation, trackNegInformation, xyz, matCorr);
 }
+
 //_______________________________________________________________________
-// template <typename TV0>
-// float getPtResolution(TV0 const& v0)
-// {
-//   float px = v0.px();
-//   float py = v0.py();
-//   float pt = v0.pt();
-//   float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
-//   float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
-//   float pxy_err = v0.sigmaPxPy();
-//   return std::sqrt(std::pow(px / pt * px_err, 2) + std::pow(py / pt * py_err, 2) + 2.f * px / pt * py / pt * pxy_err);
-// }
-// //_______________________________________________________________________
-// template <typename TV0>
-// float getPhiResolution(TV0 const& v0)
-// {
-//   float px = v0.px();
-//   float py = v0.py();
-//   float pt = v0.pt();
-//   float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
-//   float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
-//   float pxy_err = v0.sigmaPxPy();
-//   return std::sqrt(std::pow(px / pt / pt * py_err, 2) + std::pow(py / pt / pt * px_err, 2) - 2.f * px / pt / pt * py / pt / pt * pxy_err);
-// }
-// //_______________________________________________________________________
-// template <typename TV0>
-// float getThetaResolution(TV0 const& v0)
-// {
-//   float px = v0.px();
-//   float py = v0.py();
-//   float pz = v0.pz();
-//   float pt = v0.pt();
-//   float p = v0.p();
-//   float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
-//   float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
-//   float pz_err = std::sqrt(std::fabs(v0.sigmaPz2()));
-//   float pxy_err = v0.sigmaPxPy();
-//   float pyz_err = v0.sigmaPyPz();
-//   float pzx_err = v0.sigmaPzPx();
-//   return std::sqrt(std::pow(pz * pz / p / p, 2) * (std::pow(px / pz / pt * px_err, 2) + std::pow(py / pz / pt * py_err, 2) + std::pow(pt / pz / pz * pz_err, 2) + 2.f * (px * py / pz / pz / pt / pt * pxy_err - py / pz / pz / pz * pyz_err - px / pz / pz / pz * pzx_err)));
-// }
-// //_______________________________________________________________________
-// template <typename TV0>
-// float getEtaResolution(TV0 const& v0)
-// {
-//   float px = v0.px();
-//   float py = v0.py();
-//   float pz = v0.pz();
-//   float pt = v0.pt();
-//   float p = v0.p();
-//   float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
-//   float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
-//   float pz_err = std::sqrt(std::fabs(v0.sigmaPz2()));
-//   float pxy_err = v0.sigmaPxPy();
-//   float pyz_err = v0.sigmaPyPz();
-//   float pzx_err = v0.sigmaPzPx();
-//   return std::sqrt(std::pow(1.f / p / pt / pt, 2) * (std::pow(pz * px * px_err, 2) + std::pow(pz * py * py_err, 2) + std::pow(pt * pt * pz_err, 2) + 2.f * (pz * pz * px * py * pxy_err - pt * pt * py * pz * pyz_err - pt * pt * pz * px * pzx_err)));
-// }
-// //_______________________________________________________________________
-// template <typename TV0>
-// float getPResolution(TV0 const& v0)
-// {
-//   float px = v0.px();
-//   float py = v0.py();
-//   float pz = v0.pz();
-//   float p = v0.p();
-//   float px_err = std::sqrt(std::fabs(v0.sigmaPx2()));
-//   float py_err = std::sqrt(std::fabs(v0.sigmaPy2()));
-//   float pz_err = std::sqrt(std::fabs(v0.sigmaPz2()));
-//   float pxy_err = v0.sigmaPxPy();
-//   float pyz_err = v0.sigmaPyPz();
-//   float pzx_err = v0.sigmaPzPx();
-//   return std::sqrt(std::pow(1.f / p, 2) * (std::pow(px * px_err, 2) + std::pow(py * py_err, 2) + std::pow(pz * pz_err, 2) + 2.f * (px * py * pxy_err + py * pz * pyz_err + pz * px * pzx_err)));
-// }
-//_______________________________________________________________________
-//_______________________________________________________________________
+/// \brief Function to calculate a score based on cosPA and PCA. The smaller the score the better the V0 Candidate
+/// \param cosPA cosine of pointing angle
+/// \param pca point of closest approach in cm
+/// \param weight how much is cosPA weighted (for pca its 1-weight). Weight has to be between 0 and 1
+/// \return final score
+inline float getScoreV0(float cosPA, float pca, float weight)
+{
+  float cosScore = 60 * std::acos(cosPA); // pointing angle in degrees, the smaller the better
+  float pcaScore = pca / 3.f;             // assume pca is between 0 and 3
+  float wCos = weight;
+  float wPca = 1.f - wCos; // random values for now
+  float score = wCos * cosScore + wPca * pcaScore;
+  return score;
+}
+
 #endif // PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_

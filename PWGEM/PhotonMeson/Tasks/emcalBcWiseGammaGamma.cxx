@@ -8,12 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-///
+
 /// \file emcalBcWiseGammaGamma.cxx
 /// \brief Task that extracts pi0s and eta mesons from BC wise derived data of EMCal clusters
 /// \author Nicolas Strangmann (nicolas.strangmann@cern.ch) Goethe University Frankfurt
-///
 
 #include "PWGEM/PhotonMeson/DataModel/bcWiseTables.h"
 
@@ -35,11 +33,11 @@
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TH2.h>
-#include <TString.h>
 
 #include <cmath>
 #include <cstdint>
 #include <stdexcept>
+#include <string_view>
 
 using namespace o2;
 using namespace o2::framework;
@@ -78,7 +76,7 @@ struct EmcalBcWiseGammaGamma {
   Filter m02Filter = (aod::bcwisecluster::storedNCells == 1 || (aod::bcwisecluster::storedM02 > cfgMinM02 && aod::bcwisecluster::storedM02 < cfgMaxM02));
   Filter timeFilter = (aod::bcwisecluster::storedTime > cfgMinTime && aod::bcwisecluster::storedTime < cfgMaxTime);
 
-  emcal::Geometry* emcalGeom;
+  emcal::Geometry* emcalGeom = nullptr;
 
   void init(InitContext const&)
   {
@@ -86,10 +84,10 @@ struct EmcalBcWiseGammaGamma {
     const int nEventBins = 6;
     mHistManager.add("Event/nBCs", "Number of BCs;;#bf{FT0M centrality (%)};#bf{#it{N}_{BC}}", HistType::kTH2F, {{nEventBins, -0.5, 5.5}, cfgCentralityBinning});
     mHistManager.add("Event/nCollisions", "Number of Collisions (BCs x P(mu));;#bf{FT0M centrality (%)};#bf{#it{N}_{coll}}", HistType::kTH2F, {{nEventBins, -0.5, 5.5}, cfgCentralityBinning});
-    const TString binLabels[nEventBins] = {"All", "FT0", "TVX", "kTVXinEMC", "Cell", "Cluster"};
+    const std::array<std::string_view, nEventBins> binLabels = {"All", "FT0", "TVX", "kTVXinEMC", "Cell", "Cluster"};
     for (int iBin = 0; iBin < nEventBins; iBin++) {
-      mHistManager.get<TH2>(HIST("Event/nBCs"))->GetXaxis()->SetBinLabel(iBin + 1, binLabels[iBin]);
-      mHistManager.get<TH2>(HIST("Event/nCollisions"))->GetXaxis()->SetBinLabel(iBin + 1, binLabels[iBin]);
+      mHistManager.get<TH2>(HIST("Event/nBCs"))->GetXaxis()->SetBinLabel(iBin + 1, binLabels[iBin].data());
+      mHistManager.get<TH2>(HIST("Event/nCollisions"))->GetXaxis()->SetBinLabel(iBin + 1, binLabels[iBin].data());
     }
 
     mHistManager.add("Event/nCollPerBC", "Number of collisions per BC;#bf{#it{N}_{coll}};#bf{FT0M centrality (%)};#bf{#it{N}_{BC}}", HistType::kTH2F, {{5, -0.5, 4.5}, cfgCentralityBinning});
@@ -137,21 +135,24 @@ struct EmcalBcWiseGammaGamma {
 
   float getCentrality(const auto& bc)
   {
-    if (cfgCentralityEstimator == 0)
+    if (cfgCentralityEstimator == 0) {
       return bc.ft0cCentrality();
-    else if (cfgCentralityEstimator == 1)
+    }
+    if (cfgCentralityEstimator == 1) {
       return bc.ft0mCentrality();
-    else
-      throw std::runtime_error("Unknown centrality estimator selected");
+    }
+    throw std::runtime_error("Unknown centrality estimator selected");
   }
 
   /// \brief returns if cluster is too close to edge of EMCal
   bool isTooCloseToEdge(const int cellID, const int DistanceToBorder = 1)
   {
-    if (DistanceToBorder <= 0)
+    if (DistanceToBorder <= 0) {
       return false;
-    if (cellID < 0)
+    }
+    if (cellID < 0) {
       return true;
+    }
 
     // check distance to border in case the cell is okay
     auto [iSupMod, iMod, iPhi, iEta] = emcalGeom->GetCellIndex(cellID);
@@ -218,20 +219,24 @@ struct EmcalBcWiseGammaGamma {
       ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
       ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
       ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-      if (std::fabs(v12.Rapidity()) > cfgRapidityCut)
+      if (std::fabs(v12.Rapidity()) > cfgRapidityCut) {
         continue;
+      }
 
       float openingAngle12 = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
-      if (openingAngle12 < cfgMinOpenAngle)
+      if (openingAngle12 < cfgMinOpenAngle) {
         continue;
+      }
 
       mHistManager.fill(HIST("GG/invMassVsPt"), v12.M(), v12.Pt(), getCentrality(bc));
 
-      if (clusters.size() < 3)
+      if (clusters.size() < 3) {
         continue;
+      }
 
-      if (bc.globalIndex() % cfgBGEventDownsampling != 0)
+      if (bc.globalIndex() % cfgBGEventDownsampling != 0) {
         continue;
+      }
 
       // "else: Calculate background"
 
@@ -243,21 +248,24 @@ struct EmcalBcWiseGammaGamma {
 
         try {
           int iCellID = emcalGeom->GetAbsCellIdFromEtaPhi(vi.Eta(), vi.Phi());
-          if (isTooCloseToEdge(iCellID, cfgDistanceToEdge))
+          if (isTooCloseToEdge(iCellID, cfgDistanceToEdge)) {
             continue;
-        } catch (o2::emcal::InvalidPositionException& e) {
+          }
+        } catch (o2::emcal::InvalidPositionException const& e) {
           continue;
         }
 
         for (const auto& g3 : clusters) {
-          if (g3.globalIndex() == g1.globalIndex() || g3.globalIndex() == g2.globalIndex())
+          if (g3.globalIndex() == g1.globalIndex() || g3.globalIndex() == g2.globalIndex()) {
             continue;
+          }
 
           ROOT::Math::PtEtaPhiMVector v3(g3.pt(), g3.eta(), g3.phi(), 0.);
 
           float openingAnglei3 = std::acos(vi.Vect().Dot(v3.Vect()) / (vi.P() * v3.P()));
-          if (openingAnglei3 < cfgMinOpenAngle)
+          if (openingAnglei3 < cfgMinOpenAngle) {
             continue;
+          }
 
           ROOT::Math::PtEtaPhiMVector vBG = v3 + vi;
 
@@ -269,57 +277,67 @@ struct EmcalBcWiseGammaGamma {
   void reconstructTrueMesons(const auto& clusters, const auto& mcPi0s, const auto& mcEtas, const auto& bc)
   {
     for (const auto& [g1, g2] : soa::combinations(soa::CombinationsStrictlyUpperIndexPolicy(clusters, clusters))) {
-      if (g1.mesonID() != g2.mesonID() || g1.mesonID() == -1)
+      if (g1.mesonID() != g2.mesonID() || g1.mesonID() == -1) {
         continue;
+      }
 
       ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
       ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
       ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-      if (std::fabs(v12.Rapidity()) > cfgRapidityCut)
+      if (std::fabs(v12.Rapidity()) > cfgRapidityCut) {
         continue;
+      }
 
       float openingAngle12 = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
-      if (openingAngle12 < cfgMinOpenAngle)
+      if (openingAngle12 < cfgMinOpenAngle) {
         continue;
+      }
 
       if (!g1.isEta()) {
         const auto& mcPi0 = mcPi0s.iteratorAt(g1.mesonID() - mcPi0s.offset());
 
         mHistManager.fill(HIST("True/pi0_PtRecVsPtTrue"), v12.Pt(), mcPi0.pt(), getCentrality(bc));
 
-        if (mcPi0.isPrimary())
+        if (mcPi0.isPrimary()) {
           mHistManager.fill(HIST("True/pi0_invMassVsPt_Primary"), v12.M(), v12.Pt(), getCentrality(bc));
-        else if (mcPi0.isFromWD())
+        } else if (mcPi0.isFromWD()) {
           mHistManager.fill(HIST("True/pi0_invMassVsPt_Secondary"), v12.M(), v12.Pt(), getCentrality(bc));
-        else
+        } else {
           mHistManager.fill(HIST("True/pi0_invMassVsPt_HadronicShower"), v12.M(), v12.Pt(), getCentrality(bc));
+        }
       } else {
         const auto& mcEta = mcEtas.iteratorAt(g1.mesonID() - mcEtas.offset());
 
         mHistManager.fill(HIST("True/eta_PtRecVsPtTrue"), v12.Pt(), mcEta.pt(), getCentrality(bc));
 
-        if (mcEta.isPrimary())
+        if (mcEta.isPrimary()) {
           mHistManager.fill(HIST("True/eta_invMassVsPt_Primary"), v12.M(), v12.Pt(), getCentrality(bc));
-        else if (mcEta.isFromWD())
+        } else if (mcEta.isFromWD()) {
           mHistManager.fill(HIST("True/eta_invMassVsPt_Secondary"), v12.M(), v12.Pt(), getCentrality(bc));
-        else
+        } else {
           mHistManager.fill(HIST("True/eta_invMassVsPt_HadronicShower"), v12.M(), v12.Pt(), getCentrality(bc));
+        }
       }
     }
   }
 
   bool isBCSelected(const auto& bc, const auto& collisions)
   {
-    if (cfgRequirekTVXinEMC && !bc.haskTVXinEMC())
+    if (cfgRequirekTVXinEMC && !bc.haskTVXinEMC()) {
       return false;
-    if (cfgRequireEMCCell && !bc.hasEMCCell())
+    }
+    if (cfgRequireEMCCell && !bc.hasEMCCell()) {
       return false;
-    if (cfgSelectOnlyUniqueAmbiguous == 1 && collisions.size() != 1)
+    }
+    if (cfgSelectOnlyUniqueAmbiguous == 1 && collisions.size() != 1) {
       return false;
-    if (cfgSelectOnlyUniqueAmbiguous == 2 && collisions.size() == 1)
+    }
+    if (cfgSelectOnlyUniqueAmbiguous == 2 && collisions.size() == 1) {
       return false;
-    if (cfgMinTimeSinceSOF > bc.timeSinceSOF() / 60 || cfgMaxTimeSinceSOF < bc.timeSinceSOF() / 60)
+    }
+    if (cfgMinTimeSinceSOF > bc.timeSinceSOF() / 60 || cfgMaxTimeSinceSOF < bc.timeSinceSOF() / 60) {
       return false;
+    }
     return true;
   }
 
@@ -328,35 +346,44 @@ struct EmcalBcWiseGammaGamma {
     for (const auto& mcPi0 : mcPi0s) {
       if (mcPi0.isPrimary()) {
         mHistManager.fill(HIST("Generated/pi0_AllBCs"), mcPi0.pt(), getCentrality(bc));
-        if (bc.hasFT0())
+        if (bc.hasFT0()) {
           mHistManager.fill(HIST("Generated/pi0_FT0"), mcPi0.pt(), getCentrality(bc));
-        if (bc.hasTVX())
+        }
+        if (bc.hasTVX()) {
           mHistManager.fill(HIST("Generated/pi0_TVX"), mcPi0.pt(), getCentrality(bc));
-        if (bc.haskTVXinEMC())
+        }
+        if (bc.haskTVXinEMC()) {
           mHistManager.fill(HIST("Generated/pi0_kTVXinEMC"), mcPi0.pt(), getCentrality(bc));
-        if (mcPi0.isAccepted() && bc.haskTVXinEMC())
+        }
+        if (mcPi0.isAccepted() && bc.haskTVXinEMC()) {
           mHistManager.fill(HIST("Accepted/pi0_kTVXinEMC"), mcPi0.pt(), getCentrality(bc));
+        }
       }
     }
     for (const auto& mcEta : mcEtas) {
       if (mcEta.isPrimary()) {
         mHistManager.fill(HIST("Generated/eta_AllBCs"), mcEta.pt(), getCentrality(bc));
-        if (bc.hasFT0())
+        if (bc.hasFT0()) {
           mHistManager.fill(HIST("Generated/eta_FT0"), mcEta.pt(), getCentrality(bc));
-        if (bc.hasTVX())
+        }
+        if (bc.hasTVX()) {
           mHistManager.fill(HIST("Generated/eta_TVX"), mcEta.pt(), getCentrality(bc));
-        if (bc.haskTVXinEMC())
+        }
+        if (bc.haskTVXinEMC()) {
           mHistManager.fill(HIST("Generated/eta_kTVXinEMC"), mcEta.pt(), getCentrality(bc));
-        if (mcEta.isAccepted() && bc.haskTVXinEMC())
+        }
+        if (mcEta.isAccepted() && bc.haskTVXinEMC()) {
           mHistManager.fill(HIST("Accepted/eta_kTVXinEMC"), mcEta.pt(), getCentrality(bc));
+        }
       }
     }
   }
 
   void process(aod::BCWiseBCs::iterator const& bc, aod::BCWiseCollisions const& collisions, SelectedClusters const& clusters)
   {
-    if (!isBCSelected(bc, collisions))
+    if (!isBCSelected(bc, collisions)) {
       return;
+    }
 
     fillEventHists(bc, collisions, clusters);
 
@@ -367,20 +394,23 @@ struct EmcalBcWiseGammaGamma {
 
   void processMCInfo(aod::BCWiseBCs::iterator const& bc, aod::BCWiseCollisions const& collisions, SelectedMCClusters const& clusters, aod::BCWiseMCPi0s const& mcPi0s, aod::BCWiseMCEtas const& mcEtas)
   {
-    if (!cfgIsMC)
+    if (!cfgIsMC) {
       LOG(fatal) << "MC processing is not enabled, but the task is running on MC data. Please set cfgIsMC to true.";
+    }
 
     fillGeneratedMesonHists(mcPi0s, mcEtas, bc); // Fill before BC selection to also store pi0s and eta mesons in BCs that were not triggered
 
-    if (!isBCSelected(bc, collisions))
+    if (!isBCSelected(bc, collisions)) {
       return;
+    }
 
-    for (const auto& cluster : clusters)
+    for (const auto& cluster : clusters) {
       mHistManager.fill(HIST("True/clusterERecVsETrue"), cluster.e(), cluster.trueE(), getCentrality(bc));
+    }
 
     reconstructTrueMesons(clusters, mcPi0s, mcEtas, bc);
   }
   PROCESS_SWITCH(EmcalBcWiseGammaGamma, processMCInfo, "Run true and gen", false);
 };
 
-WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<EmcalBcWiseGammaGamma>(cfgc)}; }
+WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context) { return WorkflowSpec{adaptAnalysisTask<EmcalBcWiseGammaGamma>(context)}; }

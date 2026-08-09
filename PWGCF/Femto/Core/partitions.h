@@ -163,6 +163,22 @@
     (o2::aod::femtobase::stored::mass < (selection).massMax) &&                                                                                \
     ncheckbit(o2::aod::femtokinks::mask, (selection).mask)
 
+// partition for D0
+// sign of signedPt encodes the hypothesis: D0 (+) / D0bar (-)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define MAKE_D0_PARTITION(selection)                                                                                                           \
+  ifnode((selection).sign.node() != 0,                                                                                                         \
+         ifnode((selection).sign.node() > 0, o2::aod::femtobase::stored::signedPt > 0.f, o2::aod::femtobase::stored::signedPt < 0.f), true) && \
+    (nabs(o2::aod::femtobase::stored::signedPt) > (selection).ptMin) &&                                                                        \
+    (nabs(o2::aod::femtobase::stored::signedPt) < (selection).ptMax) &&                                                                        \
+    (o2::aod::femtobase::stored::eta > (selection).etaMin) &&                                                                                  \
+    (o2::aod::femtobase::stored::eta < (selection).etaMax) &&                                                                                  \
+    (o2::aod::femtobase::stored::phi > (selection).phiMin) &&                                                                                  \
+    (o2::aod::femtobase::stored::phi < (selection).phiMax) &&                                                                                  \
+    (o2::aod::femtobase::stored::mass > (selection).massMin) &&                                                                                \
+    (o2::aod::femtobase::stored::mass < (selection).massMax) &&                                                                                \
+    ncheckbit(o2::aod::femtocharmhadrons::mask, (selection).mask)
+
 // macros for mc collisions (mc only)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define MAKE_MC_COLLISION_FILTER(selection)                                                                             \

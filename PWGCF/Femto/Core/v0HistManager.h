@@ -53,6 +53,8 @@ enum V0Hist {
   kMassK0short,
   kCosPa,
   kDecayDauDca,
+  kStrangeTofPosDau,
+  kStrangeTofNegDau,
   kDecayVtxX,
   kDecayVtxY,
   kDecayVtxZ,
@@ -69,6 +71,8 @@ enum V0Hist {
   kLambdaMassVsAntiLambdaMass,
   kK0shortMassVsLambdaMass,
   kK0shortMassVsAntiLambdaMass,
+  kStrangeTofVsTofPosDau,
+  kStrangeTofVsTofNegDau,
   // mc
   kOrigin,
   kPdg,
@@ -117,8 +121,12 @@ struct ConfK0shortBinning : o2::framework::ConfigurableGroup {
 
 constexpr const char PrefixLambdaBinning1[] = "LambdaBinning1";
 using ConfLambdaBinning1 = ConfLambdaBinning<PrefixLambdaBinning1>;
+constexpr const char PrefixLambdaBinning2[] = "LambdaBinning2";
+using ConfLambdaBinning2 = ConfLambdaBinning<PrefixLambdaBinning2>;
 constexpr const char PrefixK0shortBinning1[] = "K0shortBinning1";
 using ConfK0shortBinning1 = ConfK0shortBinning<PrefixK0shortBinning1>;
+constexpr const char PrefixK0shortBinning2[] = "K0shortBinning2";
+using ConfK0shortBinning2 = ConfK0shortBinning<PrefixK0shortBinning2>;
 
 template <auto& Prefix>
 struct ConfV0QaBinning : o2::framework::ConfigurableGroup {
@@ -133,6 +141,7 @@ struct ConfV0QaBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis massLambda{"massLambda", {{200, 1, 1.2}}, "mass for antiparticle hypothesis"};
   o2::framework::ConfigurableAxis massAntiLambda{"massAntiLambda", {{100, 1, 1.2}}, "mass for antiparticle hypothesis"};
   o2::framework::ConfigurableAxis massK0short{"massK0short", {{200, 0.45, 0.55}}, "Mass for k0short hypothesis"};
+  o2::framework::ConfigurableAxis strangeTof{"strangeTof", {{500, -5, 5}}, "Strangeness TOF vs TOF Nsigma for daughters"};
 };
 
 constexpr const char PrefixLambdaQaBinning1[] = "LambdaQaBinning1";
@@ -155,6 +164,8 @@ constexpr std::array<histmanager::HistInfo<V0Hist>, kV0HistLast> HistTable = {
    {kMassK0short, o2::framework::HistType::kTH1F, "hMassK0short", "K^{0}_{s} mass; m_{#pi^{+}#pi^{-}} (GeV/#it{c}^{2}); Entries"},
    {kCosPa, o2::framework::HistType::kTH1F, "hCosPa", "Cosine of pointing angle; cos(#alpha); Entries"},
    {kDecayDauDca, o2::framework::HistType::kTH1F, "hDauDca", "Daughter DCA at decay vertex ; DCA_{Decay vertex} (cm); Entries"},
+   {kStrangeTofPosDau, o2::framework::HistType::kTH1F, "hStrangeTofPosDau", "Strange TOF of positive Daughter ; n#sigma_{TOF, strange}; Entries"},
+   {kStrangeTofNegDau, o2::framework::HistType::kTH1F, "hStrangeTofNegDau", "Strange TOF of negative Daughter ; n#sigma+{TOF, strange}; Entries"},
    {kDecayVtxX, o2::framework::HistType::kTH1F, "hDecayVtxX", "X coordinate of decay vertex ; DV_{X} (cm); Entries"},
    {kDecayVtxY, o2::framework::HistType::kTH1F, "hDecayVtxY", "Y coordinate of decay vertex ; DV_{Y} (cm); Entries"},
    {kDecayVtxZ, o2::framework::HistType::kTH1F, "hDecayVtxZ", "Z coordinate of decay vertex ; DV_{Z} (cm); Entries"},
@@ -170,6 +181,8 @@ constexpr std::array<histmanager::HistInfo<V0Hist>, kV0HistLast> HistTable = {
    {kK0shortMassVsLambdaMass, o2::framework::HistType::kTH2F, "hK0shortMassVsLambdaMass", " K^{0}_{S} mass vs #Lambda mass; m_{#pi^{+}#pi^{-}} (GeV/#it{c}^{2}); m_{p#pi^{-}} (GeV/#it{c}^{2})"},
    {kK0shortMassVsAntiLambdaMass, o2::framework::HistType::kTH2F, "hK0shortMassVsAntiLambdaMass", "K^{0}_{S} mass vs #bar{#Lambda} mass; m_{#pi^{+}#pi^{-}} (GeV/#it{c}^{2}); m_{#bar{p}#pi^{+}} (GeV/#it{c}^{2})"},
    {kLambdaMassVsAntiLambdaMass, o2::framework::HistType::kTH2F, "hLambdaMassVsAntiLambdaMass", "#Lambda mass vs #bar{#Lambda}; m_{p#pi^{-}} (GeV/#it{c}^{2}); m_{#bar{p}#pi^{+}} (GeV/#it{c}^{2})"},
+   {kStrangeTofVsTofPosDau, o2::framework::HistType::kTH2F, "hStrangeTofVsTofPosDau", "TOF_{Strange} vs TOF_{Tracking} of positive Daughter; n#sigma_{TOF, strange}; n#sigma_{TOF, tracking}"},
+   {kStrangeTofVsTofNegDau, o2::framework::HistType::kTH2F, "hStrangeTofVsTofNegDau", "TOF_{Strange} vs TOF_{Tracking} of negative Daughter; n#sigma_{TOF, strange}; n#sigma_{TOF, tracking}"},
    {kOrigin, o2::framework::HistType::kTH1F, "hOrigin", "Status Codes (=Origin); Status Code; Entries"},
    {kPdg, o2::framework::HistType::kTH1F, "hPdg", "PDG Codes of reconstructed v0; PDG Code; Entries"},
    {kPdgMother, o2::framework::HistType::kTH1F, "hPdgMother", "PDG Codes of mother of reconstructed v0; PDG Code; Entries"},
@@ -207,27 +220,31 @@ constexpr std::array<histmanager::HistInfo<V0Hist>, kV0HistLast> HistTable = {
     {kPdgPartonicMother, {(conf).pdgCodes}},
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define V0_HIST_QA_MAP(confAnalysis, confQa)                                       \
-  {kCosPa, {(confQa).cosPa}},                                                      \
-    {kDecayDauDca, {(confQa).dauDcaAtDecay}},                                      \
-    {kDecayVtxX, {(confQa).decayVertex}},                                          \
-    {kDecayVtxY, {(confQa).decayVertex}},                                          \
-    {kDecayVtxZ, {(confQa).decayVertex}},                                          \
-    {kDecayVtx, {(confQa).decayVertex}},                                           \
-    {kTransRadius, {(confQa).transRadius}},                                        \
-    {kPtVsEta, {(confAnalysis).pt, (confAnalysis).eta}},                           \
-    {kPtVsPhi, {(confAnalysis).pt, (confAnalysis).phi}},                           \
-    {kPhiVsEta, {(confAnalysis).phi, (confAnalysis).eta}},                         \
-    {kPtVsCosPa, {(confAnalysis).pt, (confQa).cosPa}},                             \
-    {kMassLambda, {(confQa).massLambda}},                                          \
-    {kMassAntiLambda, {(confQa).massAntiLambda}},                                  \
-    {kMassK0short, {(confQa).massK0short}},                                        \
-    {kPtVsLambdaMass, {(confAnalysis).pt, (confQa).massLambda}},                   \
-    {kPtVsAntiLambdaMass, {(confAnalysis).pt, (confQa).massAntiLambda}},           \
-    {kPtVsK0shortMass, {(confAnalysis).pt, (confQa).massK0short}},                 \
-    {kLambdaMassVsAntiLambdaMass, {(confQa).massLambda, (confQa).massAntiLambda}}, \
-    {kK0shortMassVsLambdaMass, {(confQa).massK0short, (confQa).massLambda}},       \
-    {kK0shortMassVsAntiLambdaMass, {(confQa).massK0short, (confQa).massAntiLambda}},
+#define V0_HIST_QA_MAP(confAnalysis, confQa)                                         \
+  {kCosPa, {(confQa).cosPa}},                                                        \
+    {kDecayDauDca, {(confQa).dauDcaAtDecay}},                                        \
+    {kStrangeTofPosDau, {(confQa).strangeTof}},                                      \
+    {kStrangeTofNegDau, {(confQa).strangeTof}},                                      \
+    {kDecayVtxX, {(confQa).decayVertex}},                                            \
+    {kDecayVtxY, {(confQa).decayVertex}},                                            \
+    {kDecayVtxZ, {(confQa).decayVertex}},                                            \
+    {kDecayVtx, {(confQa).decayVertex}},                                             \
+    {kTransRadius, {(confQa).transRadius}},                                          \
+    {kPtVsEta, {(confAnalysis).pt, (confAnalysis).eta}},                             \
+    {kPtVsPhi, {(confAnalysis).pt, (confAnalysis).phi}},                             \
+    {kPhiVsEta, {(confAnalysis).phi, (confAnalysis).eta}},                           \
+    {kPtVsCosPa, {(confAnalysis).pt, (confQa).cosPa}},                               \
+    {kMassLambda, {(confQa).massLambda}},                                            \
+    {kMassAntiLambda, {(confQa).massAntiLambda}},                                    \
+    {kMassK0short, {(confQa).massK0short}},                                          \
+    {kPtVsLambdaMass, {(confAnalysis).pt, (confQa).massLambda}},                     \
+    {kPtVsAntiLambdaMass, {(confAnalysis).pt, (confQa).massAntiLambda}},             \
+    {kPtVsK0shortMass, {(confAnalysis).pt, (confQa).massK0short}},                   \
+    {kLambdaMassVsAntiLambdaMass, {(confQa).massLambda, (confQa).massAntiLambda}},   \
+    {kK0shortMassVsLambdaMass, {(confQa).massK0short, (confQa).massLambda}},         \
+    {kK0shortMassVsAntiLambdaMass, {(confQa).massK0short, (confQa).massAntiLambda}}, \
+    {kStrangeTofVsTofPosDau, {(confQa).strangeTof, (confQa).strangeTof}},            \
+    {kStrangeTofVsTofNegDau, {(confQa).strangeTof, (confQa).strangeTof}},
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define V0_HIST_MC_QA_MAP(confAnalysis, confQa)                 \
@@ -412,25 +429,25 @@ class V0HistManager
       this->fillAnalysis(v0candidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
-      this->fillQa(v0candidate);
+      this->fillQa(v0candidate, posDaughter, negDaughter);
     }
   }
 
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void fill(T1 const& v0candidate, T2 const& tracks, T3 const& mcParticles, T4 const& mcMothers, T5 const& mcPartonicMothers)
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void fill(T1 const& v0candidate, T2 const& tracks, T3 const& col, T4 const& mcParticles, T5 const& mcMothers, T6 const& mcPartonicMothers)
   {
     auto posDaughter = tracks.rawIteratorAt(v0candidate.posDauId() - tracks.offset());
-    mPosDauManager.template fill<mode>(posDaughter, tracks, mcParticles, mcMothers, mcPartonicMothers);
+    mPosDauManager.template fill<mode>(posDaughter, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     auto negDaughter = tracks.rawIteratorAt(v0candidate.negDauId() - tracks.offset());
-    mNegDauManager.template fill<mode>(negDaughter, tracks, mcParticles, mcMothers, mcPartonicMothers);
+    mNegDauManager.template fill<mode>(negDaughter, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->fillAnalysis(v0candidate);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
-      this->fillQa(v0candidate);
+      this->fillQa(v0candidate, posDaughter, negDaughter);
     }
     if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
-      this->template fillMc<mode>(v0candidate, mcParticles, mcMothers, mcPartonicMothers);
+      this->template fillMc<mode>(v0candidate, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
 
@@ -467,6 +484,8 @@ class V0HistManager
 
     mHistogramRegistry->add(qaDir + getHistNameV2(kCosPa, HistTable), getHistDesc(kCosPa, HistTable), getHistType(kCosPa, HistTable), {V0Specs.at(kCosPa)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kDecayDauDca, HistTable), getHistDesc(kDecayDauDca, HistTable), getHistType(kDecayDauDca, HistTable), {V0Specs.at(kDecayDauDca)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kStrangeTofPosDau, HistTable), getHistDesc(kStrangeTofPosDau, HistTable), getHistType(kStrangeTofPosDau, HistTable), {V0Specs.at(kStrangeTofPosDau)});
+    mHistogramRegistry->add(qaDir + getHistNameV2(kStrangeTofNegDau, HistTable), getHistDesc(kStrangeTofNegDau, HistTable), getHistType(kStrangeTofNegDau, HistTable), {V0Specs.at(kStrangeTofNegDau)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kDecayVtxX, HistTable), getHistDesc(kDecayVtxX, HistTable), getHistType(kDecayVtxX, HistTable), {V0Specs.at(kDecayVtxX)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kDecayVtxY, HistTable), getHistDesc(kDecayVtxY, HistTable), getHistType(kDecayVtxY, HistTable), {V0Specs.at(kDecayVtxY)});
     mHistogramRegistry->add(qaDir + getHistNameV2(kDecayVtxZ, HistTable), getHistDesc(kDecayVtxZ, HistTable), getHistType(kDecayVtxZ, HistTable), {V0Specs.at(kDecayVtxZ)});
@@ -488,6 +507,8 @@ class V0HistManager
       mHistogramRegistry->add(qaDir + getHistNameV2(kLambdaMassVsAntiLambdaMass, HistTable), getHistDesc(kLambdaMassVsAntiLambdaMass, HistTable), getHistType(kLambdaMassVsAntiLambdaMass, HistTable), {V0Specs.at(kLambdaMassVsAntiLambdaMass)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kK0shortMassVsLambdaMass, HistTable), getHistDesc(kK0shortMassVsLambdaMass, HistTable), getHistType(kK0shortMassVsLambdaMass, HistTable), {V0Specs.at(kK0shortMassVsLambdaMass)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kK0shortMassVsAntiLambdaMass, HistTable), getHistDesc(kK0shortMassVsAntiLambdaMass, HistTable), getHistType(kK0shortMassVsAntiLambdaMass, HistTable), {V0Specs.at(kK0shortMassVsAntiLambdaMass)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kStrangeTofVsTofPosDau, HistTable), getHistDesc(kStrangeTofVsTofPosDau, HistTable), getHistType(kStrangeTofVsTofPosDau, HistTable), {V0Specs.at(kStrangeTofVsTofPosDau)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kStrangeTofVsTofNegDau, HistTable), getHistDesc(kStrangeTofVsTofNegDau, HistTable), getHistType(kStrangeTofVsTofNegDau, HistTable), {V0Specs.at(kStrangeTofVsTofNegDau)});
     }
   }
 
@@ -549,11 +570,13 @@ class V0HistManager
     }
   }
 
-  template <typename T>
-  void fillQa(T const& v0candidate)
+  template <typename T1, typename T2, typename T3>
+  void fillQa(T1 const& v0candidate, T2 const& posDau, T3 const& negDau)
   {
     mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kCosPa, HistTable)), v0candidate.cosPa());
     mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kDecayDauDca, HistTable)), v0candidate.dauDca());
+    mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kStrangeTofPosDau, HistTable)), v0candidate.strangeTofPosDau());
+    mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kStrangeTofNegDau, HistTable)), v0candidate.strangeTofNegDau());
     mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kDecayVtxX, HistTable)), v0candidate.decayVtxX());
     mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kDecayVtxY, HistTable)), v0candidate.decayVtxY());
     mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kDecayVtxZ, HistTable)), v0candidate.decayVtxZ());
@@ -563,21 +586,29 @@ class V0HistManager
     float massLambda = 0;
     float massAntiLambda = 0;
     float massK0short = 0;
+    float tofPosDau = 0;
+    float tofNegDau = 0;
 
     if constexpr (modes::isEqual(v0, modes::V0::kLambda) || modes::isEqual(v0, modes::V0::kAntiLambda)) {
       massK0short = v0candidate.massK0short();
       if (v0candidate.sign() > 0) {
         massLambda = v0candidate.mass();
         massAntiLambda = v0candidate.massAnti();
+        tofPosDau = posDau.tofNSigmaPr();
+        tofNegDau = negDau.tofNSigmaPi();
       } else {
         massLambda = v0candidate.massAnti();
         massAntiLambda = v0candidate.mass();
+        tofPosDau = posDau.tofNSigmaPi();
+        tofNegDau = negDau.tofNSigmaPr();
       }
     }
     if constexpr (modes::isEqual(v0, modes::V0::kK0short)) {
       massK0short = v0candidate.mass();
       massLambda = v0candidate.massLambda();
       massAntiLambda = v0candidate.massAntiLambda();
+      tofPosDau = posDau.tofNSigmaPi();
+      tofNegDau = posDau.tofNSigmaPi();
     }
 
     mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kMassLambda, HistTable)), massLambda);
@@ -596,11 +627,13 @@ class V0HistManager
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kLambdaMassVsAntiLambdaMass, HistTable)), massLambda, massAntiLambda);
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kK0shortMassVsLambdaMass, HistTable)), massK0short, massLambda);
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kK0shortMassVsAntiLambdaMass, HistTable)), massK0short, massAntiLambda);
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kStrangeTofVsTofPosDau, HistTable)), v0candidate.strangeTofPosDau(), tofPosDau);
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(QaDir) + HIST(getHistName(kStrangeTofVsTofNegDau, HistTable)), v0candidate.strangeTofNegDau(), tofNegDau);
     }
   }
 
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4>
-  void fillMc(T1 const& v0Candidate, T2 const& /*mcParticles*/, T3 const& /*mcMothers*/, T4 const& /*mcPartonicMothers*/)
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void fillMc(T1 const& v0Candidate, T2 const& col, T3 const& /*mcParticles*/, T4 const& /*mcMothers*/, T5 const& /*mcPartonicMothers*/)
   {
     // No MC Particle
     if (!v0Candidate.has_fMcParticle()) {
@@ -615,16 +648,20 @@ class V0HistManager
     }
 
     // Retrieve MC particle
-    auto mcParticle = v0Candidate.template fMcParticle_as<T2>();
+    auto mcParticle = v0Candidate.template fMcParticle_as<T3>();
 
-    // missidentifed particles are special case
+    // whether a particle is associated to a wrong collision or not cannot be known by the producer so we check it here
+    bool fromWrongCollision = mcParticle.fMcColId() != col.fMcColId();
+
     // whether a particle is missidentfied or not cannot be known by the producer so we check it here
     bool isMissidentified = mcParticle.pdgCode() != mPdgCode;
 
     mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kTruePtVsPt, HistTable)), mcParticle.pt(), v0Candidate.pt());
     mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kTrueEtaVsEta, HistTable)), mcParticle.eta(), v0Candidate.eta());
     mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kTruePhiVsPhi, HistTable)), mcParticle.phi(), v0Candidate.phi());
-    if (isMissidentified) {
+    if (fromWrongCollision) {
+      mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<float>(modes::McOrigin::kFromWrongCollision));
+    } else if (isMissidentified) {
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), static_cast<int>(modes::McOrigin::kMissidentified));
     } else {
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kOrigin, HistTable)), mcParticle.origin());
@@ -633,7 +670,7 @@ class V0HistManager
 
     // get mother
     if (mcParticle.has_fMcMother()) {
-      auto mother = mcParticle.template fMcMother_as<T3>();
+      auto mother = mcParticle.template fMcMother_as<T4>();
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), mother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kPdgMother, HistTable)), 0);
@@ -641,7 +678,7 @@ class V0HistManager
 
     // get partonic mother
     if (mcParticle.has_fMcPartMoth()) {
-      auto partonicMother = mcParticle.template fMcPartMoth_as<T4>();
+      auto partonicMother = mcParticle.template fMcPartMoth_as<T5>();
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), partonicMother.pdgCode());
     } else {
       mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kPdgPartonicMother, HistTable)), 0);
@@ -650,7 +687,9 @@ class V0HistManager
     if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
       if (mPlotOrigins) {
         // check first if particle is missidentified
-        if (isMissidentified) {
+        if (fromWrongCollision) {
+          mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kFromWrongCollision, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
+        } else if (isMissidentified) {
           // if it is, we fill it as such
           mHistogramRegistry->fill(HIST(v0Prefix) + HIST(McDir) + HIST(getHistName(kMissidentified, HistTable)), v0Candidate.pt(), v0Candidate.cosPa());
         } else {
@@ -667,7 +706,7 @@ class V0HistManager
               break;
             case modes::McOrigin::kFromSecondaryDecay:
               if (mcParticle.has_fMcMother()) {
-                auto mother = mcParticle.template fMcMother_as<T3>();
+                auto mother = mcParticle.template fMcMother_as<T4>();
                 int motherPdgCode = std::abs(mother.pdgCode());
                 // Switch on PDG of the mother
                 if (mPlotNSecondaries >= histmanager::kSecondaryPlotLevel1 && motherPdgCode == mPdgCodesSecondaryMother[0]) {

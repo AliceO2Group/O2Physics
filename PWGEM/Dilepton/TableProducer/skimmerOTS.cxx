@@ -30,6 +30,8 @@
 
 #include <TH1.h>
 
+#include <Rtypes.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <sstream>

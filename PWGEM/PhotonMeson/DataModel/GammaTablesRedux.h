@@ -47,7 +47,7 @@ enum Observable {
 };
 
 // Values in tables are stored in downscaled format to save disk space
-const std::array<float, nObservables> downscalingFactors{
+constexpr std::array<float, nObservables> downscalingFactors{
   1E0, // Cluster definition
   1E3, // Cluster energy
   1E4, // Cluster eta

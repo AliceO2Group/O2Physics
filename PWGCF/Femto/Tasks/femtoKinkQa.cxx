@@ -43,7 +43,7 @@ using namespace o2::analysis::femto;
 struct FemtoKinkQa {
 
   // setup tables
-  using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks, o2::aod::FColPos, o2::aod::FColSphericities, o2::aod::FColMults>;
+  using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks, o2::aod::FColPos, o2::aod::FColSphericities, o2::aod::FColMults, o2::aod::FColCents>;
   using FilteredFemtoCollisions = o2::soa::Filtered<FemtoCollisions>;
   using FilteredFemtoCollision = FilteredFemtoCollisions::iterator;
 
@@ -186,7 +186,7 @@ struct FemtoKinkQa {
       if (!sigmaCleaner.isClean(sigma, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      sigmaHistManager.fill<modes::Mode::kReco_Qa_Mc>(sigma, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      sigmaHistManager.fill<modes::Mode::kReco_Qa_Mc>(sigma, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoKinkQa, processSigmaMc, "Process sigmas", false);
@@ -215,7 +215,7 @@ struct FemtoKinkQa {
       if (!sigmaPlusCleaner.isClean(sigmaPlus, mcParticles, mcMothers, mcPartonicMothers)) {
         continue;
       }
-      sigmaPlusHistManager.fill<modes::Mode::kReco_Qa_Mc>(sigmaPlus, tracks, mcParticles, mcMothers, mcPartonicMothers);
+      sigmaPlusHistManager.fill<modes::Mode::kReco_Qa_Mc>(sigmaPlus, tracks, col, mcParticles, mcMothers, mcPartonicMothers);
     }
   }
   PROCESS_SWITCH(FemtoKinkQa, processSigmaPlusMc, "Process sigmas", false);

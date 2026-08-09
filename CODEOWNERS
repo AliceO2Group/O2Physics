@@ -31,23 +31,23 @@
 /EventFiltering/PWGJE @alibuild @fkrizek @nzardosh @jaimenorman @mpuccio @lietava @fgrosa @ariedel-cern
 /EventFiltering/PWGEM @alibuild @dsekihat @nstrangm @mpuccio @lietava @fgrosa @ariedel-cern
 
-/PWGCF @alibuild @victor-gonzalez @shouqiye @lauraser
-/PWGCF/Core @alibuild @jgrosseo @lauraser
-/PWGCF/DataModel @alibuild @jgrosseo @jaelpark @victor-gonzalez @shouqiye @lauraser
-/PWGCF/TableProducer @alibuild @jgrosseo @jaelpark @victor-gonzalez @shouqiye @lauraser
-/PWGCF/Tasks @alibuild @jgrosseo @jaelpark @victor-gonzalez @shouqiye @lauraser
-/PWGCF/EbyEFluctuations @alibuild @SwatiSaha-1997 @isputows @victor-gonzalez @shouqiye @lauraser
-/PWGCF/Femto @alibuild @lauraser @ariedel-cern @dimihayl @victor-gonzalez @shouqiye @wrzesaCERN
-/PWGCF/FemtoDream @alibuild @lauraser @ariedel-cern @dimihayl @victor-gonzalez @shouqiye @wrzesaCERN
-/PWGCF/Femto3D @alibuild @glromane @sofiatomassini @lauraser @dimihayl @victor-gonzalez @shouqiye @wrzesaCERN
-/PWGCF/FemtoUniverse @alibuild @prchakra @lgraczykCern @majanik @lauraser @dimihayl @victor-gonzalez @shouqiye @wrzesaCERN
-/PWGCF/FemtoWorld @alibuild @prchakra @lgraczykCern @majanik @lauraser @dimihayl @victor-gonzalez @shouqiye @wrzesaCERN
-/PWGCF/Flow @alibuild @majanik @EmilGorm @jaelpark @wenyaCern @victor-gonzalez @shouqiye @lauraser
-/PWGCF/GenericFramework @alibuild @EmilGorm @jaelpark @wenyaCern @victor-gonzalez @shouqiye @lauraser
-/PWGCF/MultiparticleCorrelations @alibuild @abilandz @jaelpark @wenyaCern @victor-gonzalez @shouqiye @lauraser
-/PWGCF/JCorran @alibuild @jaelpark @wenyaCern @victor-gonzalez @shouqiye @lauraser
-/PWGCF/TwoParticleCorrelations @alibuild @jaelpark @wenyaCern @victor-gonzalez @shouqiye @lauraser
-/PWGCF/Tutorial @alibuild @ariedel-cern @victor-gonzalez @shouqiye @lauraser
+/PWGCF @alibuild @victor-gonzalez @dsarkaralice @lauraser
+/PWGCF/Core @alibuild @jgrosseo @lauraser @dsarkaralice
+/PWGCF/DataModel @alibuild @jgrosseo @jaelpark @victor-gonzalez @dsarkaralice @lauraser
+/PWGCF/TableProducer @alibuild @jgrosseo @jaelpark @victor-gonzalez @dsarkaralice @lauraser
+/PWGCF/Tasks @alibuild @jgrosseo @jaelpark @victor-gonzalez @dsarkaralice @lauraser
+/PWGCF/EbyEFluctuations @alibuild @SwatiSaha-1997 @isputows @victor-gonzalez @dsarkaralice @lauraser
+/PWGCF/Femto @alibuild @lauraser @ariedel-cern @dimihayl @victor-gonzalez @dsarkaralice @wrzesaCERN
+/PWGCF/FemtoDream @alibuild @lauraser @ariedel-cern @dimihayl @victor-gonzalez @dsarkaralice @wrzesaCERN
+/PWGCF/Femto3D @alibuild @glromane @sofiatomassini @lauraser @dimihayl @victor-gonzalez @dsarkaralice @wrzesaCERN
+/PWGCF/FemtoUniverse @alibuild @prchakra @lgraczykCern @majanik @lauraser @dimihayl @victor-gonzalez @dsarkaralice @wrzesaCERN
+/PWGCF/FemtoWorld @alibuild @prchakra @lgraczykCern @majanik @lauraser @dimihayl @victor-gonzalez @dsarkaralice @wrzesaCERN
+/PWGCF/Flow @alibuild @majanik @EmilGorm @jaelpark @wenyaCern @victor-gonzalez @dsarkaralice @lauraser
+/PWGCF/GenericFramework @alibuild @EmilGorm @jaelpark @wenyaCern @victor-gonzalez @dsarkaralice @lauraser
+/PWGCF/MultiparticleCorrelations @alibuild @abilandz @jaelpark @wenyaCern @victor-gonzalez @dsarkaralice @lauraser
+/PWGCF/JCorran @alibuild @jaelpark @wenyaCern @victor-gonzalez @dsarkaralice @lauraser
+/PWGCF/TwoParticleCorrelations @alibuild @jaelpark @wenyaCern @victor-gonzalez @dsarkaralice @lauraser
+/PWGCF/Tutorial @alibuild @ariedel-cern @victor-gonzalez @dsarkaralice @lauraser
 
 /PWGDQ @alibuild @iarsene @mcoquet642 @XiaozhiBai @mguilbau
 /PWGEM @alibuild @feisenhu @dsekihat @jokonig @hscheid
@@ -56,18 +56,18 @@
 /PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano @zhangbiao-phy @gluparel @stefanopolitano @xinyepeng @singhra1994
 # PWG-LF
 /PWGLF @alibuild @omvazque @skundu692 @mpuccio
-/PWGLF/DataModel @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter @prottayCMT @lhusova
+/PWGLF/DataModel @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @mario-krueger @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter @prottayCMT @lhusova
 /PWGLF/Tasks/GlobalEventProperties @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @omvazque
 /PWGLF/TableProducer/GlobalEventProperties @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @omvazque
-/PWGLF/Tasks/Nuspex @alibuild @omvazque @skundu692 @mpuccio @fmazzasc @maciacco @HorstMa
-/PWGLF/TableProducer/Nuspex @alibuild @omvazque @skundu692 @mpuccio @fmazzasc @maciacco @HorstMa
+/PWGLF/Tasks/Nuspex @alibuild @omvazque @skundu692 @mpuccio @mario-krueger @maciacco @HorstMa
+/PWGLF/TableProducer/Nuspex @alibuild @omvazque @skundu692 @mpuccio @mario-krueger @maciacco @HorstMa
 /PWGLF/Tasks/Resonances @alibuild @omvazque @skundu692 @mpuccio @dmallick2 @smaff92 @prottayCMT
 /PWGLF/TableProducer/Resonances @alibuild @omvazque @skundu692 @mpuccio @dmallick2 @smaff92 @prottayCMT
 /PWGLF/Tasks/Strangeness @alibuild @omvazque @skundu692 @mpuccio @ercolessi @romainschotter @lhusova
 /PWGLF/TableProducer/Strangeness @alibuild @omvazque @mpuccio @skundu692 @ercolessi @romainschotter @lhusova
-/PWGLF/TableProducer/QC @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter @prottayCMT @lhusova
-/PWGLF/Tasks/QC @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter @prottayCMT @lhusova
-/PWGLF/Utils @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter @prottayCMT @lhusova
+/PWGLF/TableProducer/QC @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @mario-krueger @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter @prottayCMT @lhusova
+/PWGLF/Tasks/QC @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @mario-krueger @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter @prottayCMT @lhusova
+/PWGLF/Utils @alibuild @omvazque @skundu692 @mpuccio @gbencedi @abmodak @mario-krueger @maciacco @HorstMa @dmallick2 @smaff92 @ercolessi @romainschotter @prottayCMT @lhusova
 
 # PWG-MM (fused with LF, LF conveners included. Directories to be merged in the future)
 /PWGMM      @alibuild @omvazque @mpuccio @skundu692 @aalkin @jgcn

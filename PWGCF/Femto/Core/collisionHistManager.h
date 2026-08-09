@@ -16,14 +16,17 @@
 #ifndef PWGCF_FEMTO_CORE_COLLISIONHISTMANAGER_H_
 #define PWGCF_FEMTO_CORE_COLLISIONHISTMANAGER_H_
 
+#include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/histManager.h"
 #include "PWGCF/Femto/Core/modes.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 
 #include <array>
+#include <cmath>
 #include <map>
 #include <string>
 #include <string_view>
@@ -48,6 +51,10 @@ enum ColHist {
   kCentVsMult,
   kCentVsSphericity,
   kMultVsSphericity,
+  kFT0AvsFT0C,
+  // event shape
+  kQvector,
+  kEventPlaneAngle,
   // mc
   kTruePosZ,       // pure mc-truth, no reco collision (kMc without kReco)
   kTrueCent,       // pure mc-truth, no reco collision (kMc without kReco)
@@ -80,6 +87,10 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
     {kCentVsMult, o2::framework::HistType::kTH2F, "hCentVsMult", "Centrality vs Multiplicity; Centrality (%); Multiplicity"},
     {kMultVsSphericity, o2::framework::HistType::kTH2F, "hMultVsSphericity", "Multiplicity vs Sphericity; Multiplicity; Sphericity"},
     {kCentVsSphericity, o2::framework::HistType::kTH2F, "hCentVsSphericity", "Centrality vs Sphericity; Centrality (%); Sphericity"},
+    {kFT0AvsFT0C, o2::framework::HistType::kTH2F, "hFT0AvsFT0C", "FT0A centrality vs FT0C centrality; Centrality_{FT0A} (%); Centrality_{FT0C}"},
+    // event shape
+    {kQvector, o2::framework::HistType::kTH1F, "hQvector", "Q-vector; Q-vector; Entries"},
+    {kEventPlaneAngle, o2::framework::HistType::kTH1F, "hEventPlaneAngle", "Event Plane angle; #Psi_{n}; Entries"},
     // mc
     {kTruePosZ, o2::framework::HistType::kTH1F, "hTruePosZ", "True vertex Z (mc-truth collision); V_{Z,True} (cm); Entries"},
     {kTrueCent, o2::framework::HistType::kTH1F, "hTrueCent", "True centrality (mc-truth collision); Centrality_{True} (%); Entries"},
@@ -94,7 +105,9 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
   {kPosZ, {(conf).vtxZ}},           \
     {kMult, {(conf).mult}},         \
     {kCent, {(conf).cent}},         \
-    {kMagField, {(conf).magField}},
+    {kMagField, {(conf).magField}}, \
+    {kQvector, {(conf).qvector}},   \
+    {kEventPlaneAngle, {(conf).eventPlaneAngle}},
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define COL_HIST_QA_MAP(confAnalysis, confQa)                        \
@@ -107,7 +120,8 @@ constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
     {kPoszVsCent, {(confAnalysis).vtxZ, (confAnalysis).cent}},       \
     {kCentVsMult, {(confAnalysis).cent, (confAnalysis).mult}},       \
     {kMultVsSphericity, {(confAnalysis).mult, (confQa).sphericity}}, \
-    {kCentVsSphericity, {confBinningAnalysis.cent, (confQa).sphericity}},
+    {kCentVsSphericity, {(confAnalysis).cent, (confQa).sphericity}}, \
+    {kFT0AvsFT0C, {(confAnalysis).cent, (confAnalysis).cent}},
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define COL_HIST_MC_MAP(conf)                      \
@@ -164,6 +178,9 @@ struct ConfCollisionBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis mult{"mult", {200, 0, 200}, "Multiplicity binning"};
   o2::framework::ConfigurableAxis cent{"cent", {100, 0.0f, 100.0f}, "Centrality (multiplicity percentile) binning"};
   o2::framework::ConfigurableAxis magField{"magField", {11, -5.5, 5.5}, "Magnetic field binning"};
+  o2::framework::Configurable<bool> plotEventShape{"plotEventShape", false, "Activate histograms for event shape (qvector, event plane angle)"};
+  o2::framework::ConfigurableAxis qvector{"qvector", {100, 0.0f, 100.0f}, "Q-vector binning"};
+  o2::framework::ConfigurableAxis eventPlaneAngle{"eventPlaneAngle", {720, 0, 1.f * o2::constants::math::PI}, "Event plane angle binning"};
 };
 
 struct ConfCollisionQaBinning : o2::framework::ConfigurableGroup {
@@ -184,9 +201,10 @@ class CollisionHistManager
   template <modes::Mode mode, typename T>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs,
-            T const& /*ConfCollisionBinning*/)
+            T const& ConfCollisionBinning)
   {
     mHistogramRegistry = registry;
+    mPlotEventShape = ConfCollisionBinning.plotEventShape.value;
     if constexpr (isFlagSet(mode, modes::Mode::kReco)) {
       initAnalysis(Specs);
     }
@@ -257,6 +275,11 @@ class CollisionHistManager
     mHistogramRegistry->add(analysisDir + getHistNameV2(kMult, HistTable), getHistDesc(kMult, HistTable), getHistType(kMult, HistTable), {Specs.at(kMult)});
     mHistogramRegistry->add(analysisDir + getHistNameV2(kCent, HistTable), getHistDesc(kCent, HistTable), getHistType(kCent, HistTable), {Specs.at(kCent)});
     mHistogramRegistry->add(analysisDir + getHistNameV2(kMagField, HistTable), getHistDesc(kMagField, HistTable), getHistType(kMagField, HistTable), {Specs.at(kMagField)});
+
+    if (mPlotEventShape) {
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kQvector, HistTable), getHistDesc(kQvector, HistTable), getHistType(kQvector, HistTable), {Specs.at(kQvector)});
+      mHistogramRegistry->add(analysisDir + getHistNameV2(kEventPlaneAngle, HistTable), getHistDesc(kEventPlaneAngle, HistTable), getHistType(kEventPlaneAngle, HistTable), {Specs.at(kEventPlaneAngle)});
+    }
   }
 
   void initQa(std::map<ColHist, std::vector<o2::framework::AxisSpec>> const& Specs)
@@ -273,6 +296,7 @@ class CollisionHistManager
       mHistogramRegistry->add(qaDir + getHistNameV2(kCentVsMult, HistTable), getHistDesc(kCentVsMult, HistTable), getHistType(kCentVsMult, HistTable), {Specs.at(kCentVsMult)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kMultVsSphericity, HistTable), getHistDesc(kMultVsSphericity, HistTable), getHistType(kMultVsSphericity, HistTable), {Specs.at(kMultVsSphericity)});
       mHistogramRegistry->add(qaDir + getHistNameV2(kCentVsSphericity, HistTable), getHistDesc(kCentVsSphericity, HistTable), getHistType(kCentVsSphericity, HistTable), {Specs.at(kCentVsSphericity)});
+      mHistogramRegistry->add(qaDir + getHistNameV2(kFT0AvsFT0C, HistTable), getHistDesc(kFT0AvsFT0C, HistTable), getHistType(kFT0AvsFT0C, HistTable), {Specs.at(kFT0AvsFT0C)});
     }
   }
 
@@ -301,6 +325,13 @@ class CollisionHistManager
     mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kMult, HistTable)), col.mult());
     mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kCent, HistTable)), col.cent());
     mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kMagField, HistTable)), col.magField());
+
+    if (mPlotEventShape) {
+      if constexpr (utils::HasEventShape<T>) {
+        mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kQvector, HistTable)), col.qvec());
+        mHistogramRegistry->fill(HIST(AnalysisDir) + HIST(getHistName(kEventPlaneAngle, HistTable)), col.eventPlaneAngle());
+      }
+    }
   }
 
   template <typename T>
@@ -317,6 +348,7 @@ class CollisionHistManager
       mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kCentVsMult, HistTable)), col.cent(), col.mult());
       mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kMultVsSphericity, HistTable)), col.mult(), col.sphericity());
       mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kCentVsSphericity, HistTable)), col.cent(), col.sphericity());
+      mHistogramRegistry->fill(HIST(QaDir) + HIST(getHistName(kFT0AvsFT0C, HistTable)), col.centFT0A(), col.centFT0C());
     }
   }
 
@@ -343,6 +375,7 @@ class CollisionHistManager
   }
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
+  bool mPlotEventShape = false;
   bool mPlot2d = false;
 };
 } // namespace o2::analysis::femto::colhistmanager

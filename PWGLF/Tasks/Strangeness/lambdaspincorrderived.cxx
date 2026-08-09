@@ -27,6 +27,7 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/EndOfStreamContext.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -168,6 +169,13 @@ static inline int piIdx(const T& t)
 {
   return t.pionIndexmc();
 }
+
+template <typename T>
+static inline float dcaV0ToPVMC(const T& t)
+{
+  return t.dcaV0ToPVmc();
+}
+
 } // namespace mcacc
 
 // Optional fixed-leg correction pointers kept outside the task struct.
@@ -261,21 +269,27 @@ struct lambdaspincorrderived {
   Configurable<bool> fillWeightQAHistos{"fillWeightQAHistos", false, "Fill weighted/final-weighted REP/FIX QA maps"};
   Configurable<bool> fillAnalysisSparses{"fillAnalysisSparses", false, "Fill extra deltaR/deltaRap/deltaPhi Analysis THnSparse objects"};
   Configurable<bool> fillAdditionalSparses{"fillAdditionalSparses", false, "Fill extra rapidity/dphi/pair-mass THnSparse objects"};
-
   Configurable<bool> checkDoubleStatus{"checkDoubleStatus", 0, "Check Double status"};
-  Configurable<float> cosPA{"cosPA", 0.995, "Cosine Pointing Angle"};
-  Configurable<float> radiusMin{"radiusMin", 3, "Minimum V0 radius"};
-  Configurable<float> radiusMax{"radiusMax", 30, "Maximum V0 radius"};
-  Configurable<float> dcaProton{"dcaProton", 0.1, "DCA Proton"};
-  Configurable<float> dcaPion{"dcaPion", 0.2, "DCA Pion"};
-  Configurable<float> dcaDaughters{"dcaDaughters", 1.0, "DCA between daughters"};
+
   Configurable<float> ptMin{"ptMin", 0.5, "V0 Pt minimum"};
   Configurable<float> ptMax{"ptMax", 3.0, "V0 Pt maximum"};
   Configurable<float> MassMin{"MassMin", 1.09, "V0 Mass minimum"};
   Configurable<float> MassMax{"MassMax", 1.14, "V0 Mass maximum"};
-  Configurable<float> rapidity{"rapidity", 0.5, "Rapidity cut on lambda"};
   Configurable<float> v0etaMixBuffer{"v0etaMixBuffer", 0.8, "Eta cut on mix event buffer"};
+  Configurable<float> rapidity{"rapidity", 0.5, "Rapidity cut on lambda"};
   Configurable<float> v0eta{"v0eta", 0.8, "Eta cut on lambda"};
+
+  struct : ConfigurableGroup {
+    std::string prefix = "v0Configuration";
+    Configurable<float> cosPA{"cosPA", 0.995, "Cosine Pointing Angle"};
+    Configurable<float> radiusMin{"radiusMin", 3, "Minimum V0 radius"};
+    Configurable<float> radiusMax{"radiusMax", 30, "Maximum V0 radius"};
+    Configurable<float> dcaProton{"dcaProton", 0.1, "DCA Proton"};
+    Configurable<float> dcaPion{"dcaPion", 0.2, "DCA Pion"};
+    Configurable<float> dcaDaughters{"dcaDaughters", 1.0, "DCA between daughters"};
+    Configurable<float> dcaV0ToPV{"dcaV0ToPV", 1.2, "DCA V0 to PV cut on lambda"};
+
+  } v0Configurations;
 
   // Event Mixing
   Configurable<int> cosDef{"cosDef", 1, "Defination of cos"};
@@ -573,25 +587,30 @@ struct lambdaspincorrderived {
     if (candidate.lambdaMass() < MassMin || candidate.lambdaMass() > MassMax) {
       return false;
     }
-    if (candidate.v0Cospa() < cosPA) {
+    if (candidate.v0Cospa() < v0Configurations.cosPA) {
       return false;
     }
     if (checkDoubleStatus && candidate.doubleStatus()) {
       return false;
     }
-    if (candidate.v0Radius() > radiusMax) {
+    if (candidate.v0Radius() > v0Configurations.radiusMax) {
       return false;
     }
-    if (candidate.v0Radius() < radiusMin) {
+    if (candidate.v0Radius() < v0Configurations.radiusMin) {
       return false;
     }
-    if (candidate.dcaBetweenDaughter() > dcaDaughters) {
+    if (candidate.dcaBetweenDaughter() > v0Configurations.dcaDaughters) {
       return false;
     }
-    if (candidate.v0Status() == 0 && (std::abs(candidate.dcaPositive()) < dcaProton || std::abs(candidate.dcaNegative()) < dcaPion)) {
+
+    if (candidate.dcaV0ToPV() > v0Configurations.dcaV0ToPV) {
       return false;
     }
-    if (candidate.v0Status() == 1 && (std::abs(candidate.dcaPositive()) < dcaPion || std::abs(candidate.dcaNegative()) < dcaProton)) {
+
+    if (candidate.v0Status() == 0 && (std::abs(candidate.dcaPositive()) < v0Configurations.dcaProton || std::abs(candidate.dcaNegative()) < v0Configurations.dcaPion)) {
+      return false;
+    }
+    if (candidate.v0Status() == 1 && (std::abs(candidate.dcaPositive()) < v0Configurations.dcaPion || std::abs(candidate.dcaNegative()) < v0Configurations.dcaProton)) {
       return false;
     }
     if (candidate.lambdaPt() < ptMin) {
@@ -1836,25 +1855,30 @@ struct lambdaspincorrderived {
     if (mcacc::lamMass(candidate) < MassMin || mcacc::lamMass(candidate) > MassMax) {
       return false;
     }
-    if (mcacc::v0CosPA(candidate) < cosPA) {
+    if (mcacc::v0CosPA(candidate) < v0Configurations.cosPA) {
       return false;
     }
     if (checkDoubleStatus && mcacc::doubleStatus(candidate)) {
       return false;
     }
-    if (mcacc::v0Radius(candidate) > radiusMax) {
+    if (mcacc::v0Radius(candidate) > v0Configurations.radiusMax) {
       return false;
     }
-    if (mcacc::v0Radius(candidate) < radiusMin) {
+    if (mcacc::v0Radius(candidate) < v0Configurations.radiusMin) {
       return false;
     }
-    if (mcacc::dcaDau(candidate) > dcaDaughters) {
+    if (mcacc::dcaDau(candidate) > v0Configurations.dcaDaughters) {
       return false;
     }
-    if (mcacc::v0Status(candidate) == 0 && (std::abs(mcacc::dcaPos(candidate)) < dcaProton || std::abs(mcacc::dcaNeg(candidate)) < dcaPion)) {
+
+    if (mcacc::dcaV0ToPVMC(candidate) > v0Configurations.dcaV0ToPV) {
       return false;
     }
-    if (mcacc::v0Status(candidate) == 1 && (std::abs(mcacc::dcaPos(candidate)) < dcaPion || std::abs(mcacc::dcaNeg(candidate)) < dcaProton)) {
+
+    if (mcacc::v0Status(candidate) == 0 && (std::abs(mcacc::dcaPos(candidate)) < v0Configurations.dcaProton || std::abs(mcacc::dcaNeg(candidate)) < v0Configurations.dcaPion)) {
+      return false;
+    }
+    if (mcacc::v0Status(candidate) == 1 && (std::abs(mcacc::dcaPos(candidate)) < v0Configurations.dcaPion || std::abs(mcacc::dcaNeg(candidate)) < v0Configurations.dcaProton)) {
       return false;
     }
     if (mcacc::lamPt(candidate) < ptMin) {

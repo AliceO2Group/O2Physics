@@ -33,6 +33,7 @@
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/DeviceSpec.h>
 #include <Framework/Logger.h>
