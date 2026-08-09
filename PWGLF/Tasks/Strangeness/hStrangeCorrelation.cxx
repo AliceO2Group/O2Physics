@@ -2550,6 +2550,12 @@ struct HStrangeCorrelation {
       }
     }
     if (doprocessClosureTest) {
+      histos.add("ClosureTest/PairLossK0/Truth/sameEvent/K0Short", "truth h-K0 pairs with the processPairLossK0MC selections", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+      histos.add("ClosureTest/PairLossK0/AnyTrack/sameEvent/K0Short", "truth h-K0 pairs whose truth trigger has a reconstructed-track match in any associated collision", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+      histos.add("ClosureTest/PairLossK0/Truth/hTrigger", "truth triggers with the processPairLossK0MC selections;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
+      histos.add("ClosureTest/PairLossK0/Truth/hK0Short", "truth K0s with the processPairLossK0MC selections;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
+      histos.add("ClosureTest/PairLossK0/AnyTrack/hTrigger", "truth triggers with a reconstructed-track match in any associated collision;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
+      histos.add("ClosureTest/PairLossK0/AnyTrack/hK0Short", "truth K0s; unchanged at the any-track trigger stage;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
       for (int i = 0; i < AssocParticleTypes; i++) {
         if (TESTBIT(doCorrelation, i)) {
           histos.add(fmt::format("ClosureTest/sameEvent/{}", Particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
@@ -4253,6 +4259,150 @@ struct HStrangeCorrelation {
                           aod::McParticles const& mcParticles,
                           TracksCompleteMC const& tracks)
   {
+
+    // Reproduce the first two processPairLossK0MC trigger stages without changing
+    // the selections or output of the pre-existing closure-test analysis below.
+    // Both histograms remain anchored to the same truth h-K0 pair. "AnyTrack"
+    // changes only the trigger requirement: at least one reconstructed track in
+    // any reconstructed collision associated with this MC collision must point
+    // back to the truth trigger through its MC label.
+    auto fillPairLossK0TruthAndAnyTrack = [&]() {
+      if (recCollisions.size() == 0) {
+        return;
+      }
+
+      int64_t pairLossBestCollisionId = -1;
+      int pairLossLargestNContributors = -1;
+      for (auto const& collision : recCollisions) {
+        if (collision.numContrib() > pairLossLargestNContributors) {
+          pairLossLargestNContributors = collision.numContrib();
+          pairLossBestCollisionId = collision.globalIndex();
+        }
+      }
+      if (pairLossBestCollisionId < 0) {
+        return;
+      }
+
+      std::unordered_set<int64_t> pairLossAnyTrackMcParticleIds;
+      for (auto const& collision : recCollisions) {
+        const auto trackSlice = tracks.sliceBy(pairLossTracksPerCollision, collision.globalIndex());
+        for (auto const& track : trackSlice) {
+          if (track.has_mcParticle()) {
+            pairLossAnyTrackMcParticleIds.insert(track.mcParticleId());
+          }
+        }
+      }
+
+      for (auto const& collision : recCollisions) {
+        if (static_cast<int64_t>(collision.globalIndex()) != pairLossBestCollisionId) {
+          continue;
+        }
+
+        const bool collisionSelected = !pairLossK0Configurations.applyRecoEventSelection ||
+                                       (masterConfigurations.doPPAnalysis ? isCollisionSelected(collision) : isCollisionSelectedPbPb(collision, false));
+        if (!collisionSelected) {
+          return;
+        }
+
+        const float pairLossBestCollisionVtxZ = collision.posZ();
+        const float pairLossBestCollisionMultiplicity = masterConfigurations.doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+        std::vector<PairLossTruthTrackInfo> pairLossTruthTriggers;
+        std::vector<PairLossTruthK0Info> pairLossTruthK0s;
+
+        for (auto const& mcParticle : mcParticles) {
+          if (isPairLossTriggerPdg(mcParticle.pdgCode()) && std::abs(mcParticle.eta()) <= etaSel &&
+              mcParticle.pt() >= axisRanges[3][0] && mcParticle.pt() <= axisRanges[3][1] &&
+              (!masterConfigurations.doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary())) {
+            auto const* pdgParticle = pdgDB->GetParticle(mcParticle.pdgCode());
+            const double charge = pdgParticle != nullptr ? pdgParticle->Charge() : 0.0;
+            const int sign = charge > 0.0 ? 1 : (charge < 0.0 ? -1 : 0);
+            if (!((triggerParticleCharge > 0 && sign < 0) || (triggerParticleCharge < 0 && sign > 0) || sign == 0)) {
+              pairLossTruthTriggers.push_back(PairLossTruthTrackInfo{
+                .globalIndex = static_cast<int64_t>(mcParticle.globalIndex()),
+                .pt = mcParticle.pt(),
+                .eta = mcParticle.eta(),
+                .phi = mcParticle.phi(),
+                .sign = sign});
+            }
+          }
+
+          if (mcParticle.pdgCode() != PDG_t::kK0Short || std::abs(mcParticle.eta()) > etaSel ||
+              mcParticle.pt() < axisRanges[2][0] || mcParticle.pt() > axisRanges[2][1] ||
+              (doAssocPhysicalPrimary && !mcParticle.isPhysicalPrimary())) {
+            continue;
+          }
+
+          PairLossTruthK0Info truthK0{
+            .globalIndex = static_cast<int64_t>(mcParticle.globalIndex()),
+            .pt = mcParticle.pt(),
+            .eta = mcParticle.eta(),
+            .phi = mcParticle.phi(),
+            .decayRadius = -1.0f,
+            .findable = false,
+            .positiveDaughter = {},
+            .negativeDaughter = {}};
+          for (auto const& daughter : mcParticle.daughters_as<aod::McParticles>()) {
+            PairLossTruthTrackInfo daughterInfo{
+              .globalIndex = static_cast<int64_t>(daughter.globalIndex()),
+              .pt = daughter.pt(),
+              .eta = daughter.eta(),
+              .phi = daughter.phi(),
+              .sign = daughter.pdgCode() > 0 ? 1 : -1};
+            if (daughter.pdgCode() == PDG_t::kPiPlus) {
+              truthK0.positiveDaughter = daughterInfo;
+            } else if (daughter.pdgCode() == -PDG_t::kPiPlus) {
+              truthK0.negativeDaughter = daughterInfo;
+            }
+          }
+          pairLossTruthK0s.push_back(truthK0);
+        }
+
+        if (useTheLeadingParticleAsTrigger && pairLossTruthTriggers.size() > 1) {
+          const auto leadingTrigger = std::max_element(pairLossTruthTriggers.begin(), pairLossTruthTriggers.end(), [](auto const& lhs, auto const& rhs) { return lhs.pt < rhs.pt; });
+          const auto leadingTriggerCopy = *leadingTrigger;
+          pairLossTruthTriggers.clear();
+          pairLossTruthTriggers.push_back(leadingTriggerCopy);
+        }
+
+        for (auto const& truthTrigger : pairLossTruthTriggers) {
+          histos.fill(HIST("ClosureTest/PairLossK0/Truth/hTrigger"), truthTrigger.pt, truthTrigger.eta, truthTrigger.phi);
+          if (pairLossAnyTrackMcParticleIds.find(truthTrigger.globalIndex) != pairLossAnyTrackMcParticleIds.end()) {
+            histos.fill(HIST("ClosureTest/PairLossK0/AnyTrack/hTrigger"), truthTrigger.pt, truthTrigger.eta, truthTrigger.phi);
+          }
+        }
+        for (auto const& truthK0 : pairLossTruthK0s) {
+          // The any-track stage adds no K0 requirement, so its object-level K0
+          // spectrum is intentionally identical to the truth-stage spectrum.
+          histos.fill(HIST("ClosureTest/PairLossK0/Truth/hK0Short"), truthK0.pt, truthK0.eta, truthK0.phi);
+          histos.fill(HIST("ClosureTest/PairLossK0/AnyTrack/hK0Short"), truthK0.pt, truthK0.eta, truthK0.phi);
+        }
+
+        for (auto const& truthTrigger : pairLossTruthTriggers) {
+          const bool triggerHasAnyTrack = pairLossAnyTrackMcParticleIds.find(truthTrigger.globalIndex) != pairLossAnyTrackMcParticleIds.end();
+          for (auto const& truthK0 : pairLossTruthK0s) {
+            if (truthTrigger.globalIndex == truthK0.positiveDaughter.globalIndex || truthTrigger.globalIndex == truthK0.negativeDaughter.globalIndex) {
+              continue;
+            }
+            const float truthDeltaPhi = computeDeltaPhi(truthTrigger.phi, truthK0.phi);
+            float truthDeltaEta = truthTrigger.eta - truthK0.eta;
+            if (masterConfigurations.doMirroringInDelataEta) {
+              truthDeltaEta = std::abs(truthDeltaEta);
+            }
+            if (truthDeltaPhi < axisRanges[0][0] || truthDeltaPhi > axisRanges[0][1] ||
+                truthDeltaEta < axisRanges[1][0] || truthDeltaEta > axisRanges[1][1]) {
+              continue;
+            }
+
+            histos.fill(HIST("ClosureTest/PairLossK0/Truth/sameEvent/K0Short"), truthDeltaPhi, truthDeltaEta, truthK0.pt, truthTrigger.pt, pairLossBestCollisionVtxZ, pairLossBestCollisionMultiplicity);
+            if (triggerHasAnyTrack) {
+              histos.fill(HIST("ClosureTest/PairLossK0/AnyTrack/sameEvent/K0Short"), truthDeltaPhi, truthDeltaEta, truthK0.pt, truthTrigger.pt, pairLossBestCollisionVtxZ, pairLossBestCollisionMultiplicity);
+            }
+          }
+        }
+        return;
+      }
+    };
+    fillPairLossK0TruthAndAnyTrack();
 
     std::vector<uint32_t> triggerIndices;
     std::vector<std::vector<uint32_t>> associatedIndices;
