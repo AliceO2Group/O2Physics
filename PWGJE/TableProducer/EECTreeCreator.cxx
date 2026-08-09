@@ -22,6 +22,7 @@ DECLARE_SOA_COLUMN(ZVTX, zvtx, float);
 DECLARE_SOA_COLUMN(WEIGHT, weight, float);
 DECLARE_SOA_COLUMN(PTHAT, ptHat, float);
 DECLARE_SOA_COLUMN(MULTIPLICITY, multiplicity, float);
+DECLARE_SOA_BITMAP_COLUMN(RCT, rct, 32);
 
 DECLARE_SOA_COLUMN(DETPt, detPt, std::vector<float>);
 DECLARE_SOA_COLUMN(DETEta, detEta, std::vector<float>);
@@ -41,6 +42,7 @@ DECLARE_SOA_TABLE(TREE, "AOD", "TREE",
     tree::WEIGHT,
     tree::PTHAT,
     tree::MULTIPLICITY,
+    tree::RCT,
     tree::DETPt,
     tree::DETEta,
     tree::DETPhi,
@@ -61,6 +63,7 @@ struct EECTreeCreatorTask
 
   Configurable<std::string> eventSelections{"eventSelections", "sel8", ""};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", ""};
+  Configurable<bool> skipMBGapEvents{"skipMBGapEvents", true, "skip MB gap events"};
 
   Produces<aod::TREE> tree;
 
@@ -98,7 +101,8 @@ struct EECTreeCreatorTask
 
   void processMC(aod::JetCollisionsMCD::iterator const& collision, aod::JetTracks const& tracks, aod::JMcParticles const& mcParticles,aod::JetMcCollisions const&)
   {
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) return;
+    // do not do any RCT selections, will be done on analysis level
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents, false, "", false, false)) return;
     if (std::abs(collision.posZ()) > vertexZCut) return;
 
     float w = collision.has_mcCollision() ? collision.mcCollision().weight() : 1.f;
@@ -147,7 +151,7 @@ struct EECTreeCreatorTask
       }
     }
 
-    tree( collision.posZ(), w, pthard, collision.multFT0C(), detPt, detEta, detPhi, detCharge, truthPt, truthEta, truthPhi, truthE, truthCharge, pdg);}
+    tree( collision.posZ(), w, pthard, collision.multFT0C(), collision.rct_raw(), detPt, detEta, detPhi, detCharge, truthPt, truthEta, truthPhi, truthE, truthCharge, pdg);}
 
   PROCESS_SWITCH(EECTreeCreatorTask, processMC, "MC processing", true);
 };
