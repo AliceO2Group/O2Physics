@@ -32,6 +32,7 @@ DECLARE_SOA_COLUMN(TruthPt, truthPt, std::vector<float>);
 DECLARE_SOA_COLUMN(TruthEta, truthEta, std::vector<float>);
 DECLARE_SOA_COLUMN(TruthPhi, truthPhi, std::vector<float>);
 DECLARE_SOA_COLUMN(TruthE, truthE, std::vector<float>);
+DECLARE_SOA_COLUMN(TruthCharge, truthCharge, std::vector<int>);
 DECLARE_SOA_COLUMN(PDG, pdg, std::vector<int>);
 }
 
@@ -48,6 +49,7 @@ DECLARE_SOA_TABLE(TREE, "AOD", "TREE",
     tree::TruthEta,
     tree::TruthPhi,
     tree::TruthE,
+    tree::TruthCharge,
     tree::PDG);
 }
 
@@ -78,6 +80,16 @@ struct EECTreeCreatorTask
     return std::abs(charge) >= chargeUnit;
   }
 
+  int getCharge(int code) {
+    auto p = pdg->GetParticle(code);
+    if (!p) {
+      LOG(fatal) << "Cannot find particle with PDG code " << code;
+      return 0;
+    }
+    auto charge = p->Charge() / 3.0;
+    return std::lround(charge);
+  }
+
   void init(InitContext const&)
   {
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections);
@@ -96,6 +108,7 @@ struct EECTreeCreatorTask
     std::vector<int> detCharge;
 
     std::vector<float> truthPt, truthEta, truthPhi, truthE;
+    std::vector<int> truthCharge;
     std::vector<int> pdg;
 
     for (auto const& track : tracks)
@@ -129,11 +142,12 @@ struct EECTreeCreatorTask
         truthEta.push_back(p.eta());
         truthPhi.push_back(p.phi());
         truthE.push_back(p.e());
+        truthCharge.push_back(getCharge(p.pdgCode()));
         pdg.push_back(p.pdgCode());
       }
     }
 
-    tree( collision.posZ(), w, pthard, collision.multFT0C(), detPt, detEta, detPhi, detCharge, truthPt, truthEta, truthPhi, truthE, pdg);}
+    tree( collision.posZ(), w, pthard, collision.multFT0C(), detPt, detEta, detPhi, detCharge, truthPt, truthEta, truthPhi, truthE, truthCharge, pdg);}
 
   PROCESS_SWITCH(EECTreeCreatorTask, processMC, "MC processing", true);
 };
