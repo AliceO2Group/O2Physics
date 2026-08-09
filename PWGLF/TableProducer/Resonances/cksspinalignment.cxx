@@ -474,7 +474,8 @@ struct cksspinalignment {
     histos.fill(HIST("hNStoredK0s"), selectedK0s.size());
     histos.fill(HIST("hNStoredPions"), selectedPions.size());
 
-    if (selectedK0s.empty() && selectedPions.empty()) {
+    // if (selectedK0s.empty() && selectedPions.empty()) {
+    if (selectedK0s.empty()) {
       return;
     }
 
