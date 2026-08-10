@@ -1,3 +1,19 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+/// \file berkeleyTreeProducer.cxx
+/// \brief Task to save MC events into the BerkeleyTree format
+/// \author Vassu Doomra <vdoomra@berkeley.edu>
+/// \author Tucker Hwang <mhwang@cern.ch>
+
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
@@ -18,48 +34,52 @@ namespace o2::aod
 {
 namespace tree
 {
-DECLARE_SOA_COLUMN(ZVTX, zvtx, float);
-DECLARE_SOA_COLUMN(WEIGHT, weight, float);
-DECLARE_SOA_COLUMN(PTHAT, ptHat, float);
-DECLARE_SOA_COLUMN(MULTIPLICITY, multiplicity, float);
-DECLARE_SOA_BITMAP_COLUMN(RCT, rct, 32);
+DECLARE_SOA_COLUMN(VtxZ, vtxZ, float);
+DECLARE_SOA_COLUMN(Weight, weight, float);
+DECLARE_SOA_COLUMN(PtHat, ptHat, float);
+DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
+DECLARE_SOA_BITMAP_COLUMN(Rct, rct, 32);
 
-DECLARE_SOA_COLUMN(DETPt, detPt, std::vector<float>);
-DECLARE_SOA_COLUMN(DETEta, detEta, std::vector<float>);
-DECLARE_SOA_COLUMN(DETPhi, detPhi, std::vector<float>);
-DECLARE_SOA_COLUMN(DETCharge, detCharge, std::vector<int>);
+DECLARE_SOA_COLUMN(DetPt, detPt, std::vector<float>);
+DECLARE_SOA_COLUMN(DetEta, detEta, std::vector<float>);
+DECLARE_SOA_COLUMN(DetPhi, detPhi, std::vector<float>);
+DECLARE_SOA_COLUMN(DetCharge, detCharge, std::vector<int>);
 
-DECLARE_SOA_COLUMN(TruthPt, truthPt, std::vector<float>);
-DECLARE_SOA_COLUMN(TruthEta, truthEta, std::vector<float>);
-DECLARE_SOA_COLUMN(TruthPhi, truthPhi, std::vector<float>);
-DECLARE_SOA_COLUMN(TruthE, truthE, std::vector<float>);
-DECLARE_SOA_COLUMN(TruthCharge, truthCharge, std::vector<int>);
-DECLARE_SOA_COLUMN(PDG, pdg, std::vector<int>);
+DECLARE_SOA_COLUMN(GenPt, genPt, std::vector<float>);
+DECLARE_SOA_COLUMN(GenEta, genEta, std::vector<float>);
+DECLARE_SOA_COLUMN(GenPhi, genPhi, std::vector<float>);
+DECLARE_SOA_COLUMN(GenE, genE, std::vector<float>);
+DECLARE_SOA_COLUMN(GenCharge, genCharge, std::vector<int>);
+DECLARE_SOA_COLUMN(PdgId, pdgId, std::vector<int>);
 }
 
 DECLARE_SOA_TABLE(TREE, "AOD", "TREE",
-    tree::ZVTX,
-    tree::WEIGHT,
-    tree::PTHAT,
-    tree::MULTIPLICITY,
-    tree::RCT,
-    tree::DETPt,
-    tree::DETEta,
-    tree::DETPhi,
-    tree::DETCharge,
-    tree::TruthPt,
-    tree::TruthEta,
-    tree::TruthPhi,
-    tree::TruthE,
-    tree::TruthCharge,
-    tree::PDG);
+    tree::VtxZ,
+    tree::Weight,
+    tree::PtHat,
+    tree::Multiplicity,
+    tree::Rct,
+    tree::DetPt,
+    tree::DetEta,
+    tree::DetPhi,
+    tree::DetCharge,
+    tree::GenPt,
+    tree::GenEta,
+    tree::GenPhi,
+    tree::GenE,
+    tree::GenCharge,
+    tree::PdgId);
 }
 
-struct EECTreeCreatorTask
+struct BerkeleyTreeProducer
 {
   Service<o2::framework::O2DatabasePDG> pdg;
 
-  Configurable<float> vertexZCut{"vertexZCut", 10.0f, "vertex Z cut"};
+  Configurable<float> vertexZCut{"vertexZCut", 10.0f, "maximum Z vertex"};
+  Configurable<float> etaMaxDet{"etaMaxDet", 0.9f, "maximum eta for det-level tracks"};
+  Configurable<float> etaMaxGen{"etaMaxGen", 0.9f, "maximum eta for gen-level particles"};
+  Configurable<float> ptMinDet{"ptMinDet", 0.15f, "minimum pt (GeV) for det-level tracks"};
+  Configurable<float> ptMinGen{"ptMinGen", 0.15f, "minimum pt (GeV) for gen-level particles"};
 
   Configurable<std::string> eventSelections{"eventSelections", "sel8", ""};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", ""};
@@ -111,52 +131,48 @@ struct EECTreeCreatorTask
     std::vector<float> detPt, detEta, detPhi;
     std::vector<int> detCharge;
 
-    std::vector<float> truthPt, truthEta, truthPhi, truthE;
-    std::vector<int> truthCharge;
-    std::vector<int> pdg;
+    std::vector<float> genPt, genEta, genPhi, genE;
+    std::vector<int> genCharge, pdgId;
 
-    for (auto const& track : tracks)
-    {
+    for (auto const& track : tracks) {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection)) continue;
 
-      if( fabs(track.eta()) > 0.9) continue;
-      if( track.pt() < 0.15 ) continue;
+      if (std::fabs(track.eta()) > etaMaxDet) continue;
+      if (track.pt() < ptMinDet) continue;
 
       detPt.push_back(track.pt());
       detEta.push_back(track.eta());
       detPhi.push_back(track.phi());
       detCharge.push_back(track.sign());
-
     }
 
     int mcId = collision.has_mcCollision() ? collision.mcCollisionId() : -1;
 
-    if (mcId >= 0)
-    {
+    if (mcId >= 0) {
       auto particles = mcParticles.sliceBy(particlesPerMcCollision, mcId);
 
-      for (auto const& p : particles)
-      {
-        if( !p.isPhysicalPrimary()) continue;
-        if( fabs(p.eta()) > 0.9) continue;
-        if( p.pt() < 0.15) continue;
-        if( !isChargedParticle(p.pdgCode())) continue;
-        
-        truthPt.push_back(p.pt());
-        truthEta.push_back(p.eta());
-        truthPhi.push_back(p.phi());
-        truthE.push_back(p.e());
-        truthCharge.push_back(getCharge(p.pdgCode()));
-        pdg.push_back(p.pdgCode());
+      for (auto const& p : particles) {
+        if(!p.isPhysicalPrimary()) continue;
+        if(std::fabs(p.eta()) > etaMaxGen) continue;
+        if(p.pt() < ptMinGen) continue;
+        if(!isChargedParticle(p.pdgCode())) continue;
+
+        genPt.push_back(p.pt());
+        genEta.push_back(p.eta());
+        genPhi.push_back(p.phi());
+        genE.push_back(p.e());
+        genCharge.push_back(getCharge(p.pdgCode()));
+        pdgId.push_back(p.pdgCode());
       }
     }
 
-    tree( collision.posZ(), w, pthard, collision.multFT0C(), collision.rct_raw(), detPt, detEta, detPhi, detCharge, truthPt, truthEta, truthPhi, truthE, truthCharge, pdg);}
+    tree( collision.posZ(), w, pthard, collision.multFT0C(), collision.rct_raw(), detPt, detEta, detPhi, detCharge, genPt, genEta, genPhi, genE, genCharge, pdgId);
+  }
 
-  PROCESS_SWITCH(EECTreeCreatorTask, processMC, "MC processing", true);
+  PROCESS_SWITCH(BerkeleyTreeProducer, processMC, "MC processing", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{ adaptAnalysisTask<EECTreeCreatorTask>(cfgc, TaskName{"eec-tree-creator-mc"})};
+  return WorkflowSpec{ adaptAnalysisTask<BerkeleyTreeProducer>(cfgc)};
 }
