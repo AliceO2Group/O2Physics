@@ -8,12 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
 
-/// \file  MultandPtFluctuations.cxx
+/// \file  multandPtFluctuations.cxx
 /// \brief Calculate multiplicity and transverse momentum fluctuations using strongly intensive observables
-/// \author Omama Rubza <omama.rubza@cern.ch>
-
+/// \author Omama Rubza 
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -114,11 +112,11 @@ struct MultandPtFluctuations {
   Filter etaFilter = nabs(aod::track::eta) < etaCut;
   Filter posZFilter = nabs(aod::collision::posZ) < vtxZcut;
 
-  using myColsData = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
-  using myTracksData = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>;
-  using myFilteredTracksData = soa::Filtered<myTracksData>;
+  using MyColsData = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs>;
+  using MyTracksData = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>;
+  using MyFilteredTracksData = soa::Filtered<MyTracksData>;
 
-  void process(myColsData::iterator const& col, myFilteredTracksData const& tracks)
+  void process(MyColsData::iterator const& col, MyFilteredTracksData const& tracks)
   {
     histos.fill(HIST("QA/BeforeCut/VtxZ"), col.posZ());
     float cent = -1.0f;
@@ -216,6 +214,5 @@ struct MultandPtFluctuations {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<MultandPtFluctuations>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<MultandPtFluctuations>(cfgc)};
 }
