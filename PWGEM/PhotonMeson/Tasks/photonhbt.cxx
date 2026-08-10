@@ -45,7 +45,6 @@
 #include <Framework/Logger.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <MathUtils/CartesianGPU.h>
 #include <MathUtils/Utils.h>
 #include <ReconstructionDataFormats/HelixHelper.h>
 
@@ -58,6 +57,8 @@
 #include <TH2.h>
 #include <TPDGCode.h>
 #include <TString.h>
+
+#include <GPUROOTCartesianFwd.h>
 
 #include <algorithm>
 #include <array>
