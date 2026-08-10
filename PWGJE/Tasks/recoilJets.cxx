@@ -505,6 +505,10 @@ struct RecoilJets {
         spectra.add(Form("h%s_Recoil_JetPt_Corr_TTSig", centAxis.label),
                     Form("Events w. TT_{Sig}: %s & #it{p}_{T} of recoil jets", centAxis.label),
                     kTH2F, {{centAxis.axis, centAxis.axisName}, jetPTcorr}, hist.sumw2);
+
+        spectra.add(Form("h%s_FT0MStar", centAxis.label),
+                    Form("Correlation of %s vs. FT0M^{*}", centAxis.label),
+                    kTH2F, {{centAxis.axis, centAxis.axisName}, scaledFT0M}, hist.sumw2);   
       }
     }
 
@@ -1267,6 +1271,10 @@ struct RecoilJets {
     // Centrality distribution
     spectra.fill(HIST("hCentFT0C"), centFT0C, weight);
     spectra.fill(HIST("hCentFT0M"), centFT0M, weight);
+
+    // Correlation: centrality vs FT0M*
+    spectra.fill(HIST("hCentFT0C_FT0MStar"), centFT0C, scaledFT0M, weight);
+    spectra.fill(HIST("hCentFT0M_FT0MStar"), centFT0M, scaledFT0M, weight);
 
     // Z vertex position vs EA / centrality
     spectra.fill(HIST("hScaledFT0C_vertexZ"), scaledFT0C, vertexZ, weight);
