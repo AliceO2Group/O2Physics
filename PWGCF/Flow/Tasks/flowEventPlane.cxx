@@ -244,7 +244,7 @@ struct SpCalibTableProducer {
 
     auto zdc = bc.zdc();
     std::vector<float> znaEnergy, zncEnergy;
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < kXYAC; ++i) {
       znaEnergy.push_back(zdc.energySectorZNA()[i]);
       zncEnergy.push_back(zdc.energySectorZNC()[i]);
     }
