@@ -368,6 +368,12 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
       case modes::QvecDetector::kFT0A:
         mQvec = std::hypot(col.qvecFT0AReVec()[0], col.qvecFT0AImVec()[0]) * std::sqrt(col.sumAmplFT0A());
         break;
+      case modes::QvecDetector::kQvecDetectorLast:
+        LOG(fatal) << "Invalid Q-vector detector";
+        break;
+      default:
+        LOG(fatal) << "Invalid Q-vector detector";
+        break;
     }
   }
   [[nodiscard]] float getQvector() const { return mQvec; }
@@ -383,6 +389,12 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
         break;
       case modes::QvecDetector::kFT0A:
         mEventPlane = RecoDecay::constrainAngle((std::atan2(col.qvecFT0AImVec()[index], col.qvecFT0AReVec()[index])) / harmonic, 0, harmonic); // constrain between 0 and 2pi/harmonic
+        break;
+      case modes::QvecDetector::kQvecDetectorLast:
+        LOG(fatal) << "Invalid Q-vector detector";
+        break;
+      default:
+        LOG(fatal) << "Invalid Q-vector detector";
         break;
     }
   }
