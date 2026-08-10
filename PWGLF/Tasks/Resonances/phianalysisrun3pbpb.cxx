@@ -86,6 +86,8 @@ struct Phianalysisrun3pbpb {
     Configurable<bool> additionalEvSel4{"additionalEvSel4", true, "Additional evsel4"};
     Configurable<bool> additionalEvSel5{"additionalEvSel5", true, "Additional evsel5"};
     Configurable<bool> additionalEvSel6{"additionalEvSel6", true, "Additional evsel6"};
+    Configurable<bool> selHasBC{"selHasBC", true, "Has BC?"};
+    Configurable<bool> selHasFT0{"selHasFT0", true, "Has FT0?"};
     Configurable<bool> cutvz{"cutvz", true, "Vz cut"};
     Configurable<bool> cutvzgen{"cutvzgen", true, "Vz cut"};
     Configurable<bool> isINELgt0{"isINELgt0", true, "INEL>0 selection"};
@@ -375,6 +377,12 @@ struct Phianalysisrun3pbpb {
     if (!collision.sel8())
       return false;
 
+    if (selectionConfig.selHasBC && !collision.has_foundBC())
+      return false;
+
+    if (selectionConfig.selHasFT0 && !collision.has_foundFT0())
+      return false;
+
     if (selectionConfig.additionalEvSel1 && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
       return false;
 
@@ -517,6 +525,12 @@ struct Phianalysisrun3pbpb {
     }
     histos.fill(HIST("hEvtSelInfo"), 1.5);
     if (cfgDoSel8 && !collision.sel8()) {
+      return;
+    }
+    if (selectionConfig.selHasBC && !collision.has_foundBC()) {
+      return;
+    }
+    if (selectionConfig.selHasFT0 && !collision.has_foundFT0()) {
       return;
     }
     histos.fill(HIST("hEvtSelInfo"), 2.5);
@@ -685,6 +699,12 @@ struct Phianalysisrun3pbpb {
       if (!c2.sel8()) {
         continue;
       }
+      if (selectionConfig.selHasBC && (!c1.has_foundBC() || !c2.has_foundBC())) {
+        continue;
+      }
+      if (selectionConfig.selHasFT0 && (!c1.has_foundFT0() || !c2.has_foundFT0())) {
+        continue;
+      }
       if (selectionConfig.additionalEvSel1 && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
         continue;
       }
@@ -759,6 +779,12 @@ struct Phianalysisrun3pbpb {
         continue;
       }
       if (!c2.sel8()) {
+        continue;
+      }
+      if (selectionConfig.selHasBC && (!c1.has_foundBC() || !c2.has_foundBC())) {
+        continue;
+      }
+      if (selectionConfig.selHasFT0 && (!c1.has_foundFT0() || !c2.has_foundFT0())) {
         continue;
       }
       if (selectionConfig.additionalEvSel1 && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
@@ -838,6 +864,12 @@ struct Phianalysisrun3pbpb {
       if (!c2.sel8()) {
         continue;
       }
+      if (selectionConfig.selHasBC && (!c1.has_foundBC() || !c2.has_foundBC())) {
+        continue;
+      }
+      if (selectionConfig.selHasFT0 && (!c1.has_foundFT0() || !c2.has_foundFT0())) {
+        continue;
+      }
       if (selectionConfig.additionalEvSel1 && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
         continue;
       }
@@ -915,6 +947,12 @@ struct Phianalysisrun3pbpb {
       if (!c2.sel8()) {
         continue;
       }
+      if (selectionConfig.selHasBC && (!c1.has_foundBC() || !c2.has_foundBC())) {
+        continue;
+      }
+      if (selectionConfig.selHasFT0 && (!c1.has_foundFT0() || !c2.has_foundFT0())) {
+        continue;
+      }
       if (selectionConfig.additionalEvSel1 && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
         continue;
       }
@@ -976,6 +1014,12 @@ struct Phianalysisrun3pbpb {
   void processRotEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
     if (!collision.sel8()) {
+      return;
+    }
+    if (selectionConfig.selHasBC && !collision.has_foundBC()) {
+      return;
+    }
+    if (selectionConfig.selHasFT0 && !collision.has_foundFT0()) {
       return;
     }
     if (selectionConfig.additionalEvSel2 && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
@@ -1073,6 +1117,12 @@ struct Phianalysisrun3pbpb {
     for (const auto& RecCollision : RecCollisions) {
       histos.fill(HIST("hMC"), 3);
       if (cfgDoSel8 && !RecCollision.sel8()) {
+        continue;
+      }
+      if (selectionConfig.selHasBC && !RecCollision.has_foundBC()) {
+        continue;
+      }
+      if (selectionConfig.selHasFT0 && !RecCollision.has_foundFT0()) {
         continue;
       }
       if (std::abs(RecCollision.posZ()) > selectionConfig.cfgCutVertex) {
@@ -1288,6 +1338,12 @@ struct Phianalysisrun3pbpb {
       if (cfgDoSel8 && !collision.sel8()) {
         continue;
       }
+      if (selectionConfig.selHasBC && !collision.has_foundBC()) {
+        continue;
+      }
+      if (selectionConfig.selHasFT0 && !collision.has_foundFT0()) {
+        continue;
+      }
       if (std::abs(collision.mcCollision().posZ()) > selectionConfig.cfgCutVertex) {
         continue;
       }
@@ -1366,6 +1422,12 @@ struct Phianalysisrun3pbpb {
       return;
     }
     if (cfgDoSel8 && !collision.sel8()) {
+      return;
+    }
+    if (selectionConfig.selHasBC && !collision.has_foundBC()) {
+      return;
+    }
+    if (selectionConfig.selHasFT0 && !collision.has_foundFT0()) {
       return;
     }
     if (std::abs(collision.mcCollision().posZ()) > selectionConfig.cfgCutVertex) {
@@ -1494,6 +1556,12 @@ struct Phianalysisrun3pbpb {
     if (!collision.sel8()) {
       return;
     }
+    if (selectionConfig.selHasBC && !collision.has_foundBC()) {
+      return;
+    }
+    if (selectionConfig.selHasFT0 && !collision.has_foundFT0()) {
+      return;
+    }
     if (selectionConfig.additionalEvSel1 && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return;
     }
@@ -1615,6 +1683,12 @@ struct Phianalysisrun3pbpb {
       if (!c2.sel8()) {
         continue;
       }
+      if (selectionConfig.selHasBC && (!c1.has_foundBC() || !c2.has_foundBC())) {
+        continue;
+      }
+      if (selectionConfig.selHasFT0 && (!c1.has_foundFT0() || !c2.has_foundFT0())) {
+        continue;
+      }
       if (selectionConfig.additionalEvSel1 && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
         continue;
       }
@@ -1691,11 +1765,10 @@ struct Phianalysisrun3pbpb {
     // all events
     histos.fill(HIST("hMC1"), 0.5);
 
-    // vertex QA (not selection)
-    if (!selectionConfig.cutvzgen ||
-        std::abs(mcCollision.posZ()) < selectionConfig.cfgCutVertex) {
-      histos.fill(HIST("hMC1"), 1.5);
+    if (selectionConfig.cutvzgen && std::abs(mcCollision.posZ()) > selectionConfig.cfgCutVertex) {
+      return;
     }
+    histos.fill(HIST("hMC1"), 1.5);
 
     // INEL>0 selection
     if (isApplyInelgt0 && !mcCollision.isInelGt0())
@@ -1715,6 +1788,12 @@ struct Phianalysisrun3pbpb {
     for (const auto& collision : collisions) {
       histos.fill(HIST("hMC1"), 4.5);
       if (cfgDoSel8 && !collision.sel8()) {
+        continue;
+      }
+      if (selectionConfig.selHasBC && !collision.has_foundBC()) {
+        continue;
+      }
+      if (selectionConfig.selHasFT0 && !collision.has_foundFT0()) {
         continue;
       }
       histos.fill(HIST("hMC1"), 5.5);
@@ -1825,6 +1904,12 @@ struct Phianalysisrun3pbpb {
     if (cfgDoSel8 && !collision.sel8()) {
       return;
     }
+    if (selectionConfig.selHasBC && !collision.has_foundBC()) {
+      return;
+    }
+    if (selectionConfig.selHasFT0 && !collision.has_foundFT0()) {
+      return;
+    }
     if (selectionConfig.cutvz &&
         std::abs(collision.posZ()) > selectionConfig.cfgCutVertex) {
       return;
@@ -1932,29 +2017,36 @@ struct Phianalysisrun3pbpb {
             if (!ispTdepPID && (!selectionPID(track1) || !selectionPID(track2))) {
               continue;
             }
-            if (ispTdepPID &&
-                (selectionPIDpTdependent(track1, 0) || selectionPIDpTdependent(track1, 1)) &&
-                (selectionPIDpTdependent(track2, 0) || selectionPIDpTdependent(track2, 1))) {
-
+            if (ispTdepPID && !(selectionPIDpTdependent(track1, 0) || selectionPIDpTdependent(track1, 1))) {
+              continue;
+            }
+            if (ispTdepPID && !(selectionPIDpTdependent(track2, 0) || selectionPIDpTdependent(track2, 1))) {
               continue;
             }
             histos.fill(HIST("TPC_Nsigma1_MC"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
             histos.fill(HIST("TOF_Nsigma1_MC"), track1.tofNSigmaKa(), multiplicity, track1.pt());
             histos.fill(HIST("trkDCAxy"), track1.dcaXY(), multiplicity, track1.pt());
             histos.fill(HIST("trkDCAz"), track1.dcaZ(), multiplicity, track1.pt());
+            std::array<float, 3> pvec0 = {track1.px(), track1.py(), track1.pz()};
+            std::array<float, 3> pvec1 = {track2.px(), track2.py(), track2.pz()};
+            std::array<std::array<float, 3>, 2> arrMomrec = {pvec0, pvec1};
+            recMass = RecoDecay::m(arrMomrec, std::array{massKa, massKa});
+
+            // reconstructed-pair rapidity, cut with the same rapiditycut1/rapiditycut2 that fillinvMass() applies to data
+            auto recRapidity = RecoDecay::y(std::array<float, 3>{track1.px() + track2.px(), track1.py() + track2.py(), track1.pz() + track2.pz()}, recMass);
+            if (recRapidity < rapiditycut1 || recRapidity > rapiditycut2) {
+              continue;
+            }
+
             if (avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
               histos.fill(HIST("h1PhiRecsplit1"), mothertrack1.pt());
               continue;
             }
             oldindex = mothertrack1.globalIndex();
-            std::array<float, 3> pvec0 = {track1.px(), track1.py(), track1.pz()};
-            std::array<float, 3> pvec1 = {track2.px(), track2.py(), track2.pz()};
-            std::array<std::array<float, 3>, 2> arrMomrec = {pvec0, pvec1};
 
             auto motherP = mothertrack1.p();
             auto motherE = mothertrack1.e();
             genMass = std::sqrt(motherE * motherE - motherP * motherP);
-            recMass = RecoDecay::m(arrMomrec, std::array{massKa, massKa});
 
             histos.fill(HIST("h1PhifinalRec"), mothertrack1.pt());
             histos.fill(HIST("h3PhifinalRec"), mothertrack1.pt(), multiplicity, recMass);
