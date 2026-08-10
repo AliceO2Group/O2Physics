@@ -3424,7 +3424,7 @@ struct Photonhbt {
       pcaOut = 999.f;
       cospaOut = -1.f;
       convROut = -1.f;
-      if (std::fabs(bzkG) < 0.1f || collisionId < 0) {
+      if (std::fabs(bzkG) < 0.1f || collisionId < 0) { // o2-linter: disable=magic-number (check if number is too small)
         return 999.f;
       }
       const auto posTrk = tracks.rawIteratorAt(posId);
@@ -3436,7 +3436,7 @@ struct Photonhbt {
       const float dcx = h2.xC - h1.xC;
       const float dcy = h2.yC - h1.yC;
       const float d = std::hypot(dcx, dcy);
-      if (d < 1e-3f) {
+      if (d < 1e-3f) { // o2-linter: disable=magic-number (check if number is too small)
         return 999.f;
       }
       const float ux = dcx / d;
@@ -3471,7 +3471,7 @@ struct Photonhbt {
       const float gx = pP[0] + pN[0], gy = pP[1] + pN[1], gz = pP[2] + pN[2];
       const float fn = std::sqrt(fx * fx + fy * fy + fz * fz);
       const float gn = std::sqrt(gx * gx + gy * gy + gz * gz);
-      if (fn < 1e-3f || gn < 1e-6f) {
+      if (fn < 1e-3f || gn < 1e-6f) { // o2-linter: disable=magic-number (check if number is too small)
         return 999.f;
       }
       const float cospa = std::clamp((fx * gx + fy * gy + fz * gz) / (fn * gn), -1.f, 1.f);
@@ -3583,7 +3583,7 @@ struct Photonhbt {
             if (itV == v0sByPosTrack.end()) {
               continue;
             }
-            for (const int iv : itV->second) {
+            for (const int& iv : itV->second) {
               const auto& v = allCands[iv];
               bool negOk = false;
               for (const auto& [negGi, negCol] : itNeg->second) {
@@ -3660,7 +3660,7 @@ struct Photonhbt {
         fRegistryTruthMC.fill(HIST("MCAOD/hAnaScore"), cls, std::min(allCands[i].score, 29.9f));
         fRegistryTruthMC.fill(HIST("MCAOD/hAnaPCA"), cls, std::min(allCands[i].pca, 29.9f));
         fRegistryTruthMC.fill(HIST("MCAOD/hAnaCosPA"), cls, allCands[i].cospa);
-        if (allCands[i].convR > 35.f) {
+        if (allCands[i].convR > 35.f) { // o2-linter: disable=magic-number (radius)
           fRegistryTruthMC.fill(HIST("MCAOD/hAnaScore_Rgt35"), cls, std::min(allCands[i].score, 29.9f));
           fRegistryTruthMC.fill(HIST("MCAOD/hAnaPCA_Rgt35"), cls, std::min(allCands[i].pca, 29.9f));
           fRegistryTruthMC.fill(HIST("MCAOD/hAnaCosPA_Rgt35"), cls, allCands[i].cospa);
@@ -3680,7 +3680,7 @@ struct Photonhbt {
           order[i] = i;
         }
         std::sort(order.begin(), order.end(), [&](int a, int b) {
-          if (ordering == 2) { // score-based: lower score picks first
+          if (ordering == 2) { // o2-linter: disable=magic-number (check if number is too small)
             if (allCands[a].score != allCands[b].score) {
               return allCands[a].score < allCands[b].score;
             }
@@ -3695,7 +3695,7 @@ struct Photonhbt {
           return allCands[a].gi < allCands[b].gi;
         });
         std::set<std::pair<int, int>> usedLegs;
-        for (const int i : order) {
+        for (const int& i : order) {
           const int c = perCollision ? allCands[i].collisionId : -1;
           if (usedLegs.contains({c, allCands[i].posTrackId}) > 0 ||
               usedLegs.contains({c, allCands[i].negTrackId}) > 0) {
@@ -3738,11 +3738,11 @@ struct Photonhbt {
             accept = false; // shares a leg with a closer candidate
           }
         };
-        for (const int j : v0sByPosTrack[allCands[i].posTrackId]) {
+        for (const int& j : v0sByPosTrack[allCands[i].posTrackId]) {
           compare(j);
         }
         if (accept) {
-          for (const int j : byNegTrack[allCands[i].negTrackId]) {
+          for (const int& j : byNegTrack[allCands[i].negTrackId]) {
             compare(j);
           }
         }
@@ -3803,8 +3803,8 @@ struct Photonhbt {
             if (itA != motherColls.end() && itB != motherColls.end()) {
               for (int p = 0; p < kNDedup; ++p) {
                 bool together = false;
-                for (const int ca : itA->second[p]) {
-                  for (const int cb : itB->second[p]) {
+                for (const int& ca : itA->second[p]) {
+                  for (const int& cb : itB->second[p]) {
                     if (ca == cb) {
                       together = true;
                     }
@@ -3825,8 +3825,8 @@ struct Photonhbt {
 
           // all 4 legs in ONE collision
           bool commonTracked = false;
-          for (const int ca : a.trackedColls) {
-            for (const int cb : b.trackedColls) {
+          for (const int& ca : a.trackedColls) {
+            for (const int& cb : b.trackedColls) {
               if (ca == cb) {
                 commonTracked = true;
               }
