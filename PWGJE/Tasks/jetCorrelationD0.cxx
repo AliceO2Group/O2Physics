@@ -13,6 +13,7 @@
 /// \brief Task for analysing D0 triggered jet events.
 /// \author Matthew Ockleton matthew.ockleton@cern.ch, University of Liverpool
 
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
@@ -37,13 +38,13 @@
 #include <cstdint>
 #include <cstdlib>
 #include <string>
-#include <type_traits>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+namespace hf2Prong = o2::hf_decay::hf_cand_2prong;
 namespace o2::aod
 {
 
@@ -290,6 +291,15 @@ struct JetCorrelationD0 {
     registry.add("hPhiResolution", "#phi resolution;#p_{T,part};Resolution", {HistType::kTH2F, {{400, 0, 400}, {1000, -7.0, 7.0}}});
     registry.add("hEtaResolution", "#eta resolution;#p_{T,part};Resolution", {HistType::kTH2F, {{400, 0, 400}, {1000, -1.0, 1.0}}});
   }
+  enum D0McCategory : int {
+    Undefined = -1,     // no truth match / unclassified
+    Signal = 0,         // correctly identified D0(bar), π+ K−
+    Reflection = 1,     // true D0(bar) reconstructed with swapped mass hypothesis
+    CorrBkgPiKPi0 = 2,  // correlated background: π+ K− π0
+    CorrBkgPiPi = 3,    // correlated background: π+ π−
+    CorrBkgPiPiPi0 = 4, // correlated background: π+ π− π0
+    CorrBkgKK = 5       // correlated background: K+ K−
+  };
   void processData(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                    aod::CandidatesD0Data const& d0Candidates,
                    soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
@@ -354,12 +364,7 @@ struct JetCorrelationD0 {
 
       int matchedFrom = 0;
       int selectedAs = 0;
-      int category = -1; // -1 undefined, 0 signal, 1 reflection, 2-5 correlated backgrounds
-      constexpr int kD0ToKPi = 1;
-      constexpr int kD0ToKPiPi = 2;
-      constexpr int kD0ToPiPi = 3;
-      constexpr int kD0ToPiPiPi = 4;
-      constexpr int kD0ToKK = 5;
+      int category = D0McCategory::Undefined;
 
       if (d0DecayChannel > 0) { // matched to a D0 on truth level (any channel)
         matchedFrom = 1;
@@ -371,18 +376,18 @@ struct JetCorrelationD0 {
       } else if ((d0Candidate.candidateSelFlag() & BIT(1)) != 0) { // CandidateSelFlag == BIT(1) -> selected as D0bar
         selectedAs = -1;
       }
-      if ((std::abs(d0DecayChannel) == kD0ToKPi) && (matchedFrom != 0) && (selectedAs == matchedFrom)) {
-        category = 0; // signal -> D0 or D0bar, π+ K−
-      } else if ((d0DecayChannel == kD0ToKPi) && (selectedAs == -1 * matchedFrom)) {
-        category = 1; // reflection
-      } else if (d0DecayChannel == kD0ToKPiPi) {
-        category = 2; // corr bkg: π+ K− π0
-      } else if (d0DecayChannel == kD0ToPiPi) {
-        category = 3; // corr bkg: π+ π−
-      } else if (d0DecayChannel == kD0ToPiPiPi) {
-        category = 4; // corr bkg: π+ π− π0
-      } else if (d0DecayChannel == kD0ToKK) {
-        category = 5; // corr bkg: K+ K−
+      if ((std::abs(d0DecayChannel) == hf2Prong::DecayChannelMain::D0ToPiK) && (matchedFrom != 0) && (selectedAs == matchedFrom)) {
+        category = D0McCategory::Signal; // D0 or D0bar, π+ K−
+      } else if ((d0DecayChannel == hf2Prong::DecayChannelMain::D0ToPiK) && (selectedAs == -1 * matchedFrom)) {
+        category = D0McCategory::Reflection;
+      } else if (d0DecayChannel == hf2Prong::DecayChannelMain::D0ToPiKPi0) {
+        category = D0McCategory::CorrBkgPiKPi0;
+      } else if (d0DecayChannel == hf2Prong::DecayChannelMain::D0ToPiPi) {
+        category = D0McCategory::CorrBkgPiPi;
+      } else if (d0DecayChannel == hf2Prong::DecayChannelMain::D0ToPiPiPi0) {
+        category = D0McCategory::CorrBkgPiPiPi0;
+      } else if (d0DecayChannel == hf2Prong::DecayChannelMain::D0ToKK) {
+        category = D0McCategory::CorrBkgKK;
       }
 
       tableD0McDetector(tableCollision.lastIndex(), // might want to add some more detector level D0 quantities like prompt or non prompt info
