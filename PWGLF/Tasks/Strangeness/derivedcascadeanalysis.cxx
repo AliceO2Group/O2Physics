@@ -1246,7 +1246,7 @@ struct Derivedcascadeanalysis {
     float nChEta1 = -1;
     float occupancy = -2;
 
-    if (useInterpolationForCosPACut) {
+    if (candidateSelectionFlags.useInterpolationForCosPACut) {
       initCosPASelectionHistograms(coll.timestamp());
     }
 
