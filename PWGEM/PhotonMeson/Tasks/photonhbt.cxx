@@ -20,9 +20,11 @@
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
+#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 
@@ -44,6 +46,7 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 #include <MathUtils/Utils.h>
+#include <ReconstructionDataFormats/HelixHelper.h>
 
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector3D.h> // IWYU pragma: keep
@@ -54,6 +57,8 @@
 #include <TH2.h>
 #include <TPDGCode.h>
 #include <TString.h>
+
+#include <GPUROOTCartesianFwd.h>
 
 #include <algorithm>
 #include <array>
@@ -66,6 +71,7 @@
 #include <map>
 #include <memory>
 #include <random>
+#include <set>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -82,6 +88,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::dilepton::utils;
 namespace pairutil = o2::aod::pwgem::photonmeson::utils::pairutil;
+using namespace o2::pwgem::photonmeson;
 
 // ─── Event Information Tables ────────────────────────────────────────────
 
@@ -419,6 +426,8 @@ struct Photonhbt {
                                      "min pT for true photons in truth-efficiency loop (GeV/c); "
                                      "0 = fall back to pcmcuts.cfgMinPtV0"};
     Configurable<float> cfgMCMinLegPt{"cfgMCMinLegPt", 0.0f, "min pT for true e^{+}/e^{-} legs in truth-efficiency loop (GeV/c);"};
+    Configurable<float> cfgMCAODBzkG{"cfgMCAODBzkG", -5.f, "B field (kG, signed) for analytic V0 kinematics in processMCAOD"};
+    Configurable<float> cfgMCAODScoreWeight{"cfgMCAODScoreWeight", 0.5f, "score weight w: w*cosPA-term + (1-w)*pca-term, as in the builder"};
   } mctruth;
 
   struct : ConfigurableGroup {
@@ -650,7 +659,9 @@ struct Photonhbt {
   void init(InitContext& context)
   {
     isMC = context.mOptions.get<bool>("processMC");
-
+    if (context.mOptions.get<bool>("processMCAOD")) {
+      addMCAODHistograms();
+    }
     if (pairsep.cfgCloseThrCm.value.size() != 4) { // o2-linter: disable=magic-number (four thresholds)
       LOGF(fatal, "cfgCloseThrCm must contain exactly four thresholds, got %zu",
            pairsep.cfgCloseThrCm.value.size());
@@ -897,6 +908,42 @@ struct Photonhbt {
         addLegPairMCHistograms();
       }
       addTruthMCHistograms();
+    }
+  }
+
+  void addMCAODHistograms()
+  {
+    fRegistryTruthMC.add("MCAOD/hPhotonStage", "conversion photons;0=converted, 1=both legs tracked, 2=both legs in same collision, 3=V0 matched;counts", kTH1F, {{4, -0.5f, 3.5f}}, true);
+    fRegistryTruthMC.add("MCAOD/hV0Type", "matched V0, raw v0Type bitmap;v0Type;counts", kTH1F, {{8, -0.5f, 7.5f}}, true);
+    fRegistryTruthMC.add("MCAOD/hV0MatchMultiplicity", "SVertexer V0 candidates per matched truth photon;N V0;counts", kTH1F, {{10, 0.5f, 10.5f}}, true);
+    fRegistryTruthMC.add("MCAOD/hNTrackedColls", "collisions in which BOTH legs of a photon are tracked;N collisions;counts", kTH1F, {{5, 0.5f, 5.5f}}, true);
+    fRegistryTruthMC.add("MCAOD/hV0CollMatch", "matched V0 vs leg collision;0=V0 in a leg collision, 1=V0 in a DIFFERENT collision;counts", kTH1F, {{2, -0.5f, 1.5f}}, true);
+
+    const AxisSpec axStage{4, -0.5f, 3.5f, "pair stage"};
+    const AxisSpec axSplit{2, -0.5f, 1.5f, "0=track-level split, 1=V0-level split"};
+    const AxisSpec axType{8, -0.5f, 7.5f, "v0Type (raw)"};
+
+    fRegistryTruthMC.add("MCAOD/hPairStage", "pair step histogram;pair stage;counts", kTH1F, {{4, -0.5f, 3.5f}}, true);
+    fRegistryTruthMC.add("MCAOD/hSparsePairStage", "pair step histogram", kTHnSparseF, {axStage, axisDeltaEta, axisDeltaPhi, axisQinv}, true);
+    fRegistryTruthMC.add("MCAOD/hSparseDRStage", "pair step histogram", kTHnSparseF, {axStage, axisDeltaR, axisQinv}, true);
+
+    // both photons reconstructed, but not in one event
+    fRegistryTruthMC.add("MCAOD/hPairSplit", "split pairs;split mode;counts", kTH1F, {{2, -0.5f, 1.5f}}, true);
+    fRegistryTruthMC.add("MCAOD/hSparsePairSplit", "split pairs", kTHnSparseF, {axSplit, axisDeltaEta, axisDeltaPhi, axisQinv}, true);
+
+    fRegistryTruthMC.add("MCAOD/hSparsePairV0Type", "stage-3 pairs, raw V0 types", kTHnSparseF, {axisDeltaEta, axisDeltaPhi, axisQinv, axType, axType}, true);
+
+    const AxisSpec axDedup{8, -0.5f, 7.5f, "0=keep-all, 1=per-coll oracle, 2=per-coll fake-first, 3=global oracle, 4=global fake-first, 5=per-coll score, 6=global score, 7=pairwise"};
+
+    fRegistryTruthMC.add("MCAOD/hSparsePairDedup", "pairs with both photons surviving in one common collision, per dedup scenario", kTHnSparseF, {axDedup, axisDeltaEta, axisDeltaPhi, axisQinv}, true);
+    fRegistryTruthMC.add("MCAOD/hDedupNCand", "surviving V0 candidates;scenario;0=true, 1=cross-leg fake, 2=other fake", kTH2F, {axDedup, {3, -0.5f, 2.5f}}, true);
+
+    const AxisSpec axClass{3, -0.5f, 2.5f, "0=true, 1=cross-leg fake, 2=other fake"};
+
+    for (const auto& reg : {std::string(""), std::string("_Rgt35")}) {
+      fRegistryTruthMC.add(("MCAOD/hAnaScore" + reg).c_str(), "analytic builder score;class;score", kTH2F, {axClass, {200, 0.f, 30.f}}, true);
+      fRegistryTruthMC.add(("MCAOD/hAnaPCA" + reg).c_str(), "analytic PCA;class;PCA (cm)", kTH2F, {axClass, {150, 0.f, 30.f}}, true);
+      fRegistryTruthMC.add(("MCAOD/hAnaCosPA" + reg).c_str(), "analytic cosPA;class;cosPA", kTH2F, {axClass, {200, 0.9f, 1.f}}, true);
     }
   }
 
@@ -3343,6 +3390,488 @@ struct Photonhbt {
     ndf++;
   }
   PROCESS_SWITCH(Photonhbt, processMC, "MC CF + truth efficiency maps for CF correction", false);
+
+  void processMCAOD(aod::Collisions const& collisions,
+                    aod::V0s const& v0s,
+                    soa::Join<aod::TracksIU, aod::TracksCovIU, aod::McTrackLabels> const& tracks,
+                    aod::McParticles const& mcparticles)
+  {
+
+    constexpr float kRMinConv = 1.f;
+    constexpr float kRMaxConv = 90.f;
+
+    std::unordered_map<int, std::vector<std::pair<int64_t, int>>> tracksOfMc;
+    for (const auto& t : tracks) {
+      if (!t.has_mcParticle()) {
+        continue;
+      }
+      tracksOfMc[t.mcParticleId()].emplace_back(t.globalIndex(), t.collisionId());
+    }
+
+    struct V0Lite {
+      int64_t gi = -1;
+      int collisionId = -1;
+      int posTrackId = -1;
+      int negTrackId = -1;
+      uint8_t typeRaw = 0;
+      float pca = 999.f;
+      float cospa = -1.f;
+      float score = 999.f;
+      float convR = -1.f;
+    };
+
+    const float bzkG = mctruth.cfgMCAODBzkG.value;
+    const float wScore = mctruth.cfgMCAODScoreWeight.value;
+    auto anaV0 = [&](int posId, int negId, int collisionId, float& pcaOut, float& cospaOut, float& convROut) -> float {
+      pcaOut = 999.f;
+      cospaOut = -1.f;
+      convROut = -1.f;
+      if (std::fabs(bzkG) < 0.1f || collisionId < 0) { // o2-linter: disable=magic-number (check if number is too small)
+        return 999.f;
+      }
+      const auto posTrk = tracks.rawIteratorAt(posId);
+      const auto negTrk = tracks.rawIteratorAt(negId);
+      auto pTrackC = getTrackParCov(posTrk);
+      auto nTrackC = getTrackParCov(negTrk);
+      const o2::track::TrackAuxPar h1(pTrackC, bzkG);
+      const o2::track::TrackAuxPar h2(nTrackC, bzkG);
+      const float dcx = h2.xC - h1.xC;
+      const float dcy = h2.yC - h1.yC;
+      const float d = std::hypot(dcx, dcy);
+      if (d < 1e-3f) { // o2-linter: disable=magic-number (check if number is too small)
+        return 999.f;
+      }
+      const float ux = dcx / d;
+      const float uy = dcy / d;
+      const float p1x = h1.xC + h1.rC * ux, p1y = h1.yC + h1.rC * uy;
+      const float p2x = h2.xC - h2.rC * ux, p2y = h2.yC - h2.rC * uy;
+      const float pcaXY = std::fabs(d - h1.rC - h2.rC);
+      const float convX = 0.5f * (p1x + p2x);
+      const float convY = 0.5f * (p1y + p2y);
+      const o2::math_utils::Point3D<float> convXY{convX, convY, 0.f};
+      const auto dcaP = CalculateDCAFast(pTrackC, convXY, bzkG);
+      const auto dcaN = CalculateDCAFast(nTrackC, convXY, bzkG);
+      const float z1 = dcaP[1];
+      const float z2 = dcaN[1];
+      const float pca3D = std::hypot(pcaXY, z1 - z2);
+      const float convZ = 0.5f * (z1 + z2);
+      auto arcTo = [](o2::track::TrackAuxPar const& h, float xTrk, float yTrk, float px_, float py_) {
+        const float th0 = std::atan2(yTrk - h.yC, xTrk - h.xC);
+        const float thv = std::atan2(py_ - h.yC, px_ - h.xC);
+        const auto dth = RecoDecay::constrainAngle<float>(thv - th0, -o2::constants::math::PI);
+        return std::fabs(h.rC * dth);
+      };
+      const auto posGlo = pTrackC.getXYZGlo();
+      const auto negGlo = nTrackC.getXYZGlo();
+      const auto pP = getPropMomentumFromTrackHelix(arcTo(h1, posGlo.X(), posGlo.Y(), p1x, p1y), posTrk, h1, bzkG / 10.f);
+      const auto pN = getPropMomentumFromTrackHelix(arcTo(h2, negGlo.X(), negGlo.Y(), p2x, p2y), negTrk, h2, bzkG / 10.f);
+      // pointing angle w.r.t. the V0's collision vertex
+      const auto col = collisions.rawIteratorAt(collisionId);
+      const float fx = convX - col.posX();
+      const float fy = convY - col.posY();
+      const float fz = convZ - col.posZ();
+      const float gx = pP[0] + pN[0], gy = pP[1] + pN[1], gz = pP[2] + pN[2];
+      const float fn = std::sqrt(fx * fx + fy * fy + fz * fz);
+      const float gn = std::sqrt(gx * gx + gy * gy + gz * gz);
+      if (fn < 1e-3f || gn < 1e-6f) { // o2-linter: disable=magic-number (check if number is too small)
+        return 999.f;
+      }
+      const float cospa = std::clamp((fx * gx + fy * gy + fz * gz) / (fn * gn), -1.f, 1.f);
+      pcaOut = pca3D;
+      cospaOut = cospa;
+      convROut = std::hypot(convX, convY);
+      return wScore * 60.f * std::acos(cospa) + (1.f - wScore) * pca3D / 3.f; // getScoreV0
+    };
+    std::vector<V0Lite> allCands;
+    allCands.reserve(v0s.size());
+    std::unordered_map<int, std::vector<int>> v0sByPosTrack;
+    for (const auto& v0 : v0s) {
+      if (v0.v0Type() == 0) {
+        continue;
+      }
+      if (v0.posTrackId() < 0 || v0.negTrackId() < 0 ||
+          v0.posTrackId() >= static_cast<int>(tracks.size()) ||
+          v0.negTrackId() >= static_cast<int>(tracks.size())) {
+        continue;
+      }
+      V0Lite v;
+      v.gi = v0.globalIndex();
+      v.collisionId = v0.collisionId();
+      v.posTrackId = v0.posTrackId();
+      v.negTrackId = v0.negTrackId();
+      v.typeRaw = v0.v0Type();
+      v.score = anaV0(v.posTrackId, v.negTrackId, v.collisionId, v.pca, v.cospa, v.convR);
+      v0sByPosTrack[v.posTrackId].push_back(static_cast<int>(allCands.size()));
+      allCands.push_back(v);
+    }
+
+    struct MatchInfo {
+      int collisionId = -1;
+      int posTrackId = -1, negTrackId = -1;
+      uint8_t typeRaw = 0;
+    };
+    struct GammaLite {
+      int64_t mcId = -1;
+      float eta = 0.f, phi = 0.f;
+      float px = 0.f, py = 0.f, pz = 0.f;
+      float rConv = 0.f;
+      bool tracked = false; // both legs have tracks (anywhere)
+      std::vector<int> trackedColls;
+      std::vector<MatchInfo> matches;
+    };
+
+    std::map<int, std::vector<GammaLite>> gammasByMcColl;
+    for (const auto& mc : mcparticles) {
+      if (mc.pdgCode() != PDG_t::kGamma || !mc.isPhysicalPrimary() || !mc.has_daughters()) {
+        continue;
+      }
+      if (std::fabs(mc.eta()) > pcmcuts.cfgMaxEtaV0.value || mc.pt() < pcmcuts.cfgMinPtV0.value) {
+        continue;
+      }
+      int posId = -1, negId = -1;
+      for (const auto& dId : mc.daughtersIds()) {
+        if (dId < 0) {
+          continue;
+        }
+        const auto d = mcparticles.iteratorAt(dId);
+        if (d.pdgCode() == PDG_t::kPositron) {
+          posId = dId;
+        } else if (d.pdgCode() == PDG_t::kElectron) {
+          negId = dId;
+        }
+      }
+      if (posId < 0 || negId < 0) {
+        continue; // not a conversion
+      }
+      const auto dPos = mcparticles.iteratorAt(posId);
+      const float rConv = std::hypot(dPos.vx(), dPos.vy());
+      if (rConv < kRMinConv || rConv > kRMaxConv) {
+        continue;
+      }
+
+      fRegistryTruthMC.fill(HIST("MCAOD/hPhotonStage"), 0.f);
+      GammaLite g;
+      g.mcId = mc.globalIndex();
+      g.eta = mc.eta();
+      g.phi = mc.phi();
+      g.px = mc.px();
+      g.py = mc.py();
+      g.pz = mc.pz();
+      g.rConv = rConv;
+
+      const auto itPos = tracksOfMc.find(posId);
+      const auto itNeg = tracksOfMc.find(negId);
+      if (itPos != tracksOfMc.end() && itNeg != tracksOfMc.end()) {
+        g.tracked = true;
+        fRegistryTruthMC.fill(HIST("MCAOD/hPhotonStage"), 1.f);
+
+        std::set<int> commonColls;
+        for (const auto& [posGi, posCol] : itPos->second) {
+          for (const auto& [negGi, negCol] : itNeg->second) {
+            if (posCol >= 0 && posCol == negCol) {
+              commonColls.insert(posCol);
+            }
+          }
+        }
+        if (!commonColls.empty()) {
+          fRegistryTruthMC.fill(HIST("MCAOD/hPhotonStage"), 2.f);
+          fRegistryTruthMC.fill(HIST("MCAOD/hNTrackedColls"), static_cast<float>(commonColls.size()));
+          g.trackedColls.assign(commonColls.begin(), commonColls.end());
+
+          const V0Lite* firstMatch = nullptr;
+          int nMatches = 0;
+          for (const auto& [posGi, posCol] : itPos->second) {
+            const auto itV = v0sByPosTrack.find(static_cast<int>(posGi));
+            if (itV == v0sByPosTrack.end()) {
+              continue;
+            }
+            for (const int& iv : itV->second) {
+              const auto& v = allCands[iv];
+              bool negOk = false;
+              for (const auto& [negGi, negCol] : itNeg->second) {
+                if (static_cast<int>(negGi) == v.negTrackId) {
+                  negOk = true;
+                  break;
+                }
+              }
+              if (!negOk) {
+                continue;
+              }
+              ++nMatches;
+              if (firstMatch == nullptr) {
+                firstMatch = &v;
+              }
+              const bool inLegColl = commonColls.contains(v.collisionId);
+              fRegistryTruthMC.fill(HIST("MCAOD/hV0CollMatch"), inLegColl ? 0.f : 1.f);
+
+              bool knownColl = false;
+              for (const auto& m : g.matches) {
+                if (m.collisionId == v.collisionId) {
+                  knownColl = true; // keep only the first V0 per collision
+                  break;
+                }
+              }
+              if (!knownColl) {
+                g.matches.push_back({v.collisionId, v.posTrackId, v.negTrackId, v.typeRaw});
+                fRegistryTruthMC.fill(HIST("MCAOD/hV0Type"), static_cast<float>(v.typeRaw));
+              }
+            }
+          }
+          if (nMatches > 0) {
+            fRegistryTruthMC.fill(HIST("MCAOD/hV0MatchMultiplicity"), static_cast<float>(nMatches));
+          }
+          if (!g.matches.empty()) {
+            fRegistryTruthMC.fill(HIST("MCAOD/hPhotonStage"), 3.f);
+          }
+        }
+      }
+      gammasByMcColl[mc.mcCollisionId()].push_back(g);
+    }
+
+    constexpr int kNDedup = 8;
+    const int nC = static_cast<int>(allCands.size());
+    std::vector<int64_t> candMother(nC, -1);
+    std::vector<uint8_t> candClass(nC, 2);
+    {
+      auto photonMotherOf = [&](int trackId) -> int64_t {
+        const auto t = tracks.rawIteratorAt(trackId);
+        if (!t.has_mcParticle()) {
+          return -1;
+        }
+        const auto p = mcparticles.iteratorAt(t.mcParticleId());
+        if (!p.has_mothers()) {
+          return -1;
+        }
+        const auto& mids = p.mothersIds();
+        if (mids.empty() || mids[0] < 0) {
+          return -1;
+        }
+        return (mcparticles.iteratorAt(mids[0]).pdgCode() == PDG_t::kGamma) ? static_cast<int64_t>(mids[0]) : -1;
+      };
+
+      for (int i = 0; i < nC; ++i) {
+        const int64_t mp = photonMotherOf(allCands[i].posTrackId);
+        const int64_t me = photonMotherOf(allCands[i].negTrackId);
+        if (mp >= 0 && mp == me) {
+          candClass[i] = 0;
+          candMother[i] = mp;
+        } else if (mp >= 0 && me >= 0) {
+          candClass[i] = 1;
+        }
+        const auto cls = static_cast<float>(candClass[i]);
+        fRegistryTruthMC.fill(HIST("MCAOD/hAnaScore"), cls, std::min(allCands[i].score, 29.9f));
+        fRegistryTruthMC.fill(HIST("MCAOD/hAnaPCA"), cls, std::min(allCands[i].pca, 29.9f));
+        fRegistryTruthMC.fill(HIST("MCAOD/hAnaCosPA"), cls, allCands[i].cospa);
+        if (allCands[i].convR > 35.f) { // o2-linter: disable=magic-number (radius)
+          fRegistryTruthMC.fill(HIST("MCAOD/hAnaScore_Rgt35"), cls, std::min(allCands[i].score, 29.9f));
+          fRegistryTruthMC.fill(HIST("MCAOD/hAnaPCA_Rgt35"), cls, std::min(allCands[i].pca, 29.9f));
+          fRegistryTruthMC.fill(HIST("MCAOD/hAnaCosPA_Rgt35"), cls, allCands[i].cospa);
+        }
+      }
+    }
+    std::array<std::vector<char>, kNDedup> dedupAlive;
+    for (auto& a : dedupAlive) { // o2-linter: disable=const-ref-in-for-loop (assign modifies the elements)
+      a.assign(nC, 0);
+    }
+    std::fill(dedupAlive[0].begin(), dedupAlive[0].end(), 1);
+    {
+
+      auto runGreedy = [&](int scenario, int ordering, bool perCollision) {
+        std::vector<int> order(nC);
+        for (int i = 0; i < nC; ++i) {
+          order[i] = i;
+        }
+        std::sort(order.begin(), order.end(), [&](int a, int b) {
+          if (ordering == 2) { // o2-linter: disable=magic-number (check if number is too small)
+            if (allCands[a].score != allCands[b].score) {
+              return allCands[a].score < allCands[b].score;
+            }
+            return allCands[a].gi < allCands[b].gi;
+          }
+          const bool truthFirst = (ordering == 0);
+          const int ka = (candClass[a] == 0) ? (truthFirst ? 0 : 1) : (truthFirst ? 1 : 0);
+          const int kb = (candClass[b] == 0) ? (truthFirst ? 0 : 1) : (truthFirst ? 1 : 0);
+          if (ka != kb) {
+            return ka < kb;
+          }
+          return allCands[a].gi < allCands[b].gi;
+        });
+        std::set<std::pair<int, int>> usedLegs;
+        for (const int& i : order) {
+          const int c = perCollision ? allCands[i].collisionId : -1;
+          if (usedLegs.contains({c, allCands[i].posTrackId}) > 0 ||
+              usedLegs.contains({c, allCands[i].negTrackId}) > 0) {
+            continue; // a leg is already owned by an earlier (preferred) candidate
+          }
+          usedLegs.insert({c, allCands[i].posTrackId});
+          usedLegs.insert({c, allCands[i].negTrackId});
+          dedupAlive[scenario][i] = 1;
+        }
+      };
+      runGreedy(1, 0, true);  // per-collision
+      runGreedy(2, 1, true);  // per-collision fake-first
+      runGreedy(3, 0, false); // global (legs blocked across collisions)
+      runGreedy(4, 1, false); // global fake-first
+      runGreedy(5, 2, true);  // per-collision by analytic score
+      runGreedy(6, 2, false); // builder greedy structure
+    }
+    {
+      std::unordered_map<int, std::vector<int>> byNegTrack;
+      for (int i = 0; i < nC; ++i) {
+        byNegTrack[allCands[i].negTrackId].push_back(i);
+      }
+      std::set<std::pair<int, int>> storedLegPairs;
+      for (int i = 0; i < nC; ++i) {
+        bool accept = true;
+        auto compare = [&](int j) {
+          if (!accept || allCands[i].gi == allCands[j].gi) {
+            return; // skip exactly the same v0
+          }
+          if (allCands[i].collisionId != allCands[j].collisionId &&
+              allCands[i].posTrackId == allCands[j].posTrackId &&
+              allCands[i].negTrackId == allCands[j].negTrackId &&
+              allCands[i].cospa < allCands[j].cospa) {
+            accept = false;
+            return;
+          }
+          if ((allCands[i].posTrackId == allCands[j].posTrackId ||
+               allCands[i].negTrackId == allCands[j].negTrackId) &&
+              allCands[i].pca > allCands[j].pca) {
+            accept = false; // shares a leg with a closer candidate
+          }
+        };
+        for (const int& j : v0sByPosTrack[allCands[i].posTrackId]) {
+          compare(j);
+        }
+        if (accept) {
+          for (const int& j : byNegTrack[allCands[i].negTrackId]) {
+            compare(j);
+          }
+        }
+        if (accept && storedLegPairs.insert({allCands[i].posTrackId, allCands[i].negTrackId}).second) {
+          dedupAlive[7][i] = 1;
+        }
+      }
+    }
+    for (int p = 0; p < kNDedup; ++p) {
+      for (int i = 0; i < nC; ++i) {
+        if (dedupAlive[p][i] != 0) {
+          fRegistryTruthMC.fill(HIST("MCAOD/hDedupNCand"), static_cast<float>(p), static_cast<float>(candClass[i]));
+        }
+      }
+    }
+    std::unordered_map<int64_t, std::array<std::vector<int>, kNDedup>> motherColls;
+    for (int i = 0; i < nC; ++i) {
+      if (candClass[i] != 0) {
+        continue;
+      }
+      auto& arr = motherColls[candMother[i]];
+      for (int p = 0; p < kNDedup; ++p) {
+        if (dedupAlive[p][i] != 0) {
+          arr[p].push_back(allCands[i].collisionId);
+        }
+      }
+    }
+
+    const float maxQ = mctruth.cfgMCMaxQinv.value > 0.f ? mctruth.cfgMCMaxQinv.value : 0.3f;
+    for (const auto& [mcCol, gammas] : gammasByMcColl) {
+      for (size_t i = 0; i < gammas.size(); ++i) {
+        for (size_t j = i + 1; j < gammas.size(); ++j) {
+          const auto& a = gammas[i];
+          const auto& b = gammas[j];
+          const float e1 = std::hypot(a.px, a.py, a.pz);
+          const float e2 = std::hypot(b.px, b.py, b.pz);
+          const float qinv = std::sqrt(std::max(0.f, 2.f * (e1 * e2 - a.px * b.px - a.py * b.py - a.pz * b.pz)));
+          if (qinv > maxQ) {
+            continue; // the cost gate
+          }
+          const float dEta = a.eta - b.eta;
+          const float dPhi = RecoDecay::constrainAngle(a.phi - b.phi, -o2::constants::math::PI);
+          const float dR = std::fabs(a.rConv - b.rConv);
+          auto fillStage = [&](float s) {
+            fRegistryTruthMC.fill(HIST("MCAOD/hPairStage"), s);
+            fRegistryTruthMC.fill(HIST("MCAOD/hSparsePairStage"), s, dEta, dPhi, qinv);
+            fRegistryTruthMC.fill(HIST("MCAOD/hSparseDRStage"), s, dR, qinv);
+          };
+          auto fillSplit = [&](float m) {
+            fRegistryTruthMC.fill(HIST("MCAOD/hPairSplit"), m);
+            fRegistryTruthMC.fill(HIST("MCAOD/hSparsePairSplit"), m, dEta, dPhi, qinv);
+          };
+
+          fillStage(0.f);
+          {
+            const auto itA = motherColls.find(a.mcId);
+            const auto itB = motherColls.find(b.mcId);
+            if (itA != motherColls.end() && itB != motherColls.end()) {
+              for (int p = 0; p < kNDedup; ++p) {
+                bool together = false;
+                for (const int& ca : itA->second[p]) {
+                  for (const int& cb : itB->second[p]) {
+                    if (ca == cb) {
+                      together = true;
+                    }
+                  }
+                }
+                if (together) {
+                  fRegistryTruthMC.fill(HIST("MCAOD/hSparsePairDedup"), static_cast<float>(p), dEta, dPhi, qinv);
+                }
+              }
+            }
+          }
+
+          if (!a.tracked || !b.tracked) {
+            continue;
+          }
+          // all 4 legs tracked (somewhere)
+          fillStage(1.f);
+
+          // all 4 legs in ONE collision
+          bool commonTracked = false;
+          for (const int& ca : a.trackedColls) {
+            for (const int& cb : b.trackedColls) {
+              if (ca == cb) {
+                commonTracked = true;
+              }
+            }
+          }
+          if (!commonTracked) {
+            if (!a.trackedColls.empty() && !b.trackedColls.empty()) {
+              fillSplit(0.f); // each photon complete SOMEWHERE — pair split at track level
+            }
+            continue;
+          }
+          fillStage(2.f);
+
+          // both tracks matched to V0s in ONE collision
+          const MatchInfo* ma = nullptr;
+          const MatchInfo* mb = nullptr;
+          for (const auto& x : a.matches) {
+            for (const auto& y : b.matches) {
+              if (x.collisionId == y.collisionId && ma == nullptr) {
+                ma = &x;
+                mb = &y;
+              }
+            }
+          }
+          if (ma == nullptr) {
+            if (!a.matches.empty() && !b.matches.empty()) {
+              fillSplit(1.f); // both photons became V0s but in diff. events
+            }
+            continue;
+          }
+          if (ma->posTrackId == mb->posTrackId || ma->negTrackId == mb->negTrackId) {
+            continue; // duplicates
+          }
+          fillStage(3.f);
+          const auto t1 = static_cast<float>(std::min(ma->typeRaw, mb->typeRaw));
+          const auto t2 = static_cast<float>(std::max(ma->typeRaw, mb->typeRaw));
+          fRegistryTruthMC.fill(HIST("MCAOD/hSparsePairV0Type"), dEta, dPhi, qinv, t1, t2);
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(Photonhbt, processMCAOD, "truth/SVertexer pair QA directly on AO2Ds", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& context)
