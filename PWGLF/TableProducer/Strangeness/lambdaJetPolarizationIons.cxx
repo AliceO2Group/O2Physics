@@ -356,7 +356,7 @@ struct lambdajetpolarizationions {
     // Jet QA axes:
     ConfigurableAxis axisJetsPerEvent{"axisJetsPerEvent", {20, 0, 20}, "Jets per event"};
     ConfigurableAxis axisJetConstituents{"axisJetConstituents", {200, 0, 200}, "Number of jet constituents"};
-    ConfigurableAxis axisLeadingParticlePt{"axisLeadingParticlePt", {200, 0.f, 200.f}, "Leading particle p_{T} (GeV/c)"}; // Simpler version!
+    ConfigurableAxis axisLeadingParticlePt{"axisLeadingParticlePt", {200, 0.f, 200.f}, "Leading particle p_{T} [GeV/c]"}; // Simpler version!
     ConfigurableAxis axisJetPt{"axisJetPt", {200, 0.f, 200.f}, "Jet p_{t} (GeV)"};
     ConfigurableAxis axisCosTheta{"axisCosTheta", {50, -1.f, 1.f}, "cos(#Delta #theta_{jet})"};
     ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {50, -constants::math::PI, constants::math::PI}, "#Delta #phi"};
@@ -480,7 +480,7 @@ struct lambdajetpolarizationions {
     rctFlagsChecker.init(rctConfigurations.cfgRCTLabel.value, rctConfigurations.cfgCheckZDC, rctConfigurations.cfgTreatLimitedAcceptanceAsBad);
 
     // Event Counters
-    histos.add("hEventSelection", "hEventSelection", kTH1D, {{24, -0.5f, +23.5f}});
+    histos.add("hEventSelection", "hEventSelection;;Counts", kTH1D, {{24, -0.5f, +23.5f}});
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
@@ -513,10 +513,10 @@ struct lambdajetpolarizationions {
     // (notice we lack a hasRingJet AND hasRingV0 bin because the tasks run separately on all events!)
     // (this QA number can be obtained at derived data level with ease)
 
-    histos.add("Centrality/hEventCentrality", "hEventCentrality", kTH1D, {{101, 0.0f, 101.0f}});
-    histos.add("Centrality/hCentralityVsNch", "hCentralityVsNch", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
+    histos.add("Centrality/hEventCentrality", "hEventCentrality;Centrality (%);Counts", kTH1D, {{101, 0.0f, 101.0f}});
+    histos.add("Centrality/hCentralityVsNch", "hCentralityVsNch;Centrality (%);N_{ch}", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
     if (doEventQA) {
-      histos.add("hEventSelectionVsCentrality", "hEventSelectionVsCentrality", kTH2D, {{24, -0.5f, +23.5f}, {101, 0.0f, 101.0f}});
+      histos.add("hEventSelectionVsCentrality", "hEventSelectionVsCentrality;;Centrality (%)", kTH2D, {{24, -0.5f, +23.5f}, {101, 0.0f, 101.0f}});
       histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(1, "All collisions");
       histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
       histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
@@ -548,22 +548,22 @@ struct lambdajetpolarizationions {
       histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(24, "hasRingV0");
 
       // Centrality:
-      histos.add("Centrality/hEventCentVsMultFT0M", "hEventCentVsMultFT0M", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0M});
-      histos.add("Centrality/hEventCentVsMultFT0C", "hEventCentVsMultFT0C", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0C});
-      histos.add("Centrality/hEventCentVsMultFV0A", "hEventCentVsMultFV0A", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFV0A});
-      histos.add("Centrality/hEventMultFT0CvsMultFV0A", "hEventMultFT0CvsMultFV0A", kTH2D, {axisConfigurations.axisMultFT0C, axisConfigurations.axisMultFV0A});
+      histos.add("Centrality/hEventCentVsMultFT0M", "hEventCentVsMultFT0M;Centrality (%);Mult. FT0M", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0M});
+      histos.add("Centrality/hEventCentVsMultFT0C", "hEventCentVsMultFT0C;Centrality (%);Mult. FT0C", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0C});
+      histos.add("Centrality/hEventCentVsMultFV0A", "hEventCentVsMultFV0A;Centrality (%);Mult. FV0A", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFV0A});
+      histos.add("Centrality/hEventMultFT0CvsMultFV0A", "hEventMultFT0CvsMultFV0A;Mult. FT0C;Mult. FV0A", kTH2D, {axisConfigurations.axisMultFT0C, axisConfigurations.axisMultFV0A});
     }
 
-    histos.add("hEventPVz", "hEventPVz", kTH1D, {{100, -20.0f, +20.0f}});
-    histos.add("hCentralityVsPVz", "hCentralityVsPVz", kTH2D, {{101, 0.0f, 101.0f}, {100, -20.0f, +20.0f}});
+    histos.add("hEventPVz", "hEventPVz;PV_{z} [cm];Counts", kTH1D, {{100, -20.0f, +20.0f}});
+    histos.add("hCentralityVsPVz", "hCentralityVsPVz;Centrality (%);PV_{z} [cm]", kTH2D, {{101, 0.0f, 101.0f}, {100, -20.0f, +20.0f}});
 
     // (TODO: add MC centrality vs PVz histos)
 
-    histos.add("hEventOccupancy", "hEventOccupancy", kTH1D, {axisConfigurations.axisOccupancy});
-    histos.add("hCentralityVsOccupancy", "hCentralityVsOccupancy", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisOccupancy});
-    histos.add("hInteractionRate", "hInteractionRate", kTH1D, {axisConfigurations.axisIRBinning});
-    histos.add("hCentralityVsInteractionRate", "hCentralityVsInteractionRate", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisIRBinning});
-    histos.add("hInteractionRateVsOccupancy", "hInteractionRateVsOccupancy", kTH2D, {axisConfigurations.axisIRBinning, axisConfigurations.axisOccupancy});
+    histos.add("hEventOccupancy", "hEventOccupancy;Occupancy;Counts", kTH1D, {axisConfigurations.axisOccupancy});
+    histos.add("hCentralityVsOccupancy", "hCentralityVsOccupancy;Centrality (%);Occupancy", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisOccupancy});
+    histos.add("hInteractionRate", "hInteractionRate;Interaction Rate;Counts", kTH1D, {axisConfigurations.axisIRBinning});
+    histos.add("hCentralityVsInteractionRate", "hCentralityVsInteractionRate;Centrality (%);Interaction Rate", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisIRBinning});
+    histos.add("hInteractionRateVsOccupancy", "hInteractionRateVsOccupancy;Interaction Rate;Occupancy", kTH2D, {axisConfigurations.axisIRBinning, axisConfigurations.axisOccupancy});
 
     // for QA and test purposes
     // auto hRawCentrality = histos.add<TH1>("Centrality/hRawCentrality", "hRawCentrality", kTH1D, {axisConfigurations.axisRawCentrality});
@@ -694,230 +694,231 @@ struct lambdajetpolarizationions {
 
     // Histograms versus mass:
     if (analyseLambda) {
-      histos.add("Lambda/h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
-      histos.add("Lambda/h3dMassLambda", "h3dMassLambda", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+      histos.add("Lambda/h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality;Centrality (%);N_{#Lambda} per event", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
+      histos.add("Lambda/h3dMassLambda", "h3dMassLambda;Centrality (%);p_{T} [GeV/c];M(p#pi) [GeV/c]", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
       // // Non-UPC info
-      // histos.add("Lambda/h3dMassLambdaHadronic", "h3dMassLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+      // histos.add("Lambda/h3dMassLambdaHadronic", "h3dMassLambdaHadronic;Centrality (%);p_{T} [GeV/c];M(p#pi) [GeV/c]", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
       if (doTPCQA) {
-        histos.add("Lambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
-        histos.add("Lambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
-        histos.add("Lambda/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
-        histos.add("Lambda/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
-        histos.add("Lambda/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
-        histos.add("Lambda/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
-        histos.add("Lambda/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
-        histos.add("Lambda/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
-        histos.add("Lambda/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
-        histos.add("Lambda/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
-        histos.add("Lambda/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
-        histos.add("Lambda/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("Lambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC;Centrality (%);p_{T} [GeV/c];N#sigma_{TPC}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("Lambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC;Centrality (%);p_{T} [GeV/c];N#sigma_{TPC}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("Lambda/h3dPosTPCsignal", "h3dPosTPCsignal;Centrality (%);p_{T} [GeV/c];TPC signal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("Lambda/h3dNegTPCsignal", "h3dNegTPCsignal;Centrality (%);p_{T} [GeV/c];TPC signal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("Lambda/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot;Centrality (%);p_{T} [GeV/c];N#sigma_{TPC}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("Lambda/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot;Centrality (%);p_{T} [GeV/c];N#sigma_{TPC}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("Lambda/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot;Centrality (%);p_{T} [GeV/c];TPC signal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("Lambda/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot;Centrality (%);p_{T} [GeV/c];TPC signal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("Lambda/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt;Centrality (%);p_{T} [GeV/c];N#sigma_{TPC}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("Lambda/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt;Centrality (%);p_{T} [GeV/c];N#sigma_{TPC}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("Lambda/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt;Centrality (%);p_{T} [GeV/c];TPC signal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("Lambda/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt;Centrality (%);p_{T} [GeV/c];TPC signal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
       }
       if (doTOFQA) {
-        histos.add("Lambda/h3dPosNsigmaTOF", "h3dPosNsigmaTOF", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
-        histos.add("Lambda/h3dNegNsigmaTOF", "h3dNegNsigmaTOF", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
-        histos.add("Lambda/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
-        histos.add("Lambda/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
-        histos.add("Lambda/h3dPosNsigmaTOFvsTrackPtot", "h3dPosNsigmaTOFvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
-        histos.add("Lambda/h3dNegNsigmaTOFvsTrackPtot", "h3dNegNsigmaTOFvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
-        histos.add("Lambda/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
-        histos.add("Lambda/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
-        histos.add("Lambda/h3dPosNsigmaTOFvsTrackPt", "h3dPosNsigmaTOFvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
-        histos.add("Lambda/h3dNegNsigmaTOFvsTrackPt", "h3dNegNsigmaTOFvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
-        histos.add("Lambda/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
-        histos.add("Lambda/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("Lambda/h3dPosNsigmaTOF", "h3dPosNsigmaTOF;Centrality (%);p_{T} [GeV/c];N#sigma_{TOF}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("Lambda/h3dNegNsigmaTOF", "h3dNegNsigmaTOF;Centrality (%);p_{T} [GeV/c];N#sigma_{TOF}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("Lambda/h3dPosTOFdeltaT", "h3dPosTOFdeltaT;Centrality (%);p_{T} [GeV/c];TOF #Delta t [ps]", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("Lambda/h3dNegTOFdeltaT", "h3dNegTOFdeltaT;Centrality (%);p_{T} [GeV/c];TOF #Delta t [ps]", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("Lambda/h3dPosNsigmaTOFvsTrackPtot", "h3dPosNsigmaTOFvsTrackPtot;Centrality (%);p_{T} [GeV/c];N#sigma_{TOF}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("Lambda/h3dNegNsigmaTOFvsTrackPtot", "h3dNegNsigmaTOFvsTrackPtot;Centrality (%);p_{T} [GeV/c];N#sigma_{TOF}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("Lambda/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot;Centrality (%);p_{T} [GeV/c];TOF #Delta t [ps]", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("Lambda/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot;Centrality (%);p_{T} [GeV/c];TOF #Delta t [ps]", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("Lambda/h3dPosNsigmaTOFvsTrackPt", "h3dPosNsigmaTOFvsTrackPt;Centrality (%);p_{T} [GeV/c];N#sigma_{TOF}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("Lambda/h3dNegNsigmaTOFvsTrackPt", "h3dNegNsigmaTOFvsTrackPt;Centrality (%);p_{T} [GeV/c];N#sigma_{TOF}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("Lambda/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt;Centrality (%);p_{T} [GeV/c];TOF #Delta t [ps]", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("Lambda/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt;Centrality (%);p_{T} [GeV/c];TOF #Delta t [ps]", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
       }
       // (TODO: add collision association capabilities in MC)
     }
     if (analyseAntiLambda) {
-      histos.add("AntiLambda/h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
-      histos.add("AntiLambda/h3dMassAntiLambda", "h3dMassAntiLambda", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+      histos.add("AntiLambda/h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality;Centrality (%);N_{#bar{#Lambda}} per event", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
+      histos.add("AntiLambda/h3dMassAntiLambda", "h3dMassAntiLambda;Centrality (%);p_{T} [GeV/c];M(p#pi) [GeV/c]", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
       // // Non-UPC info
-      // histos.add("AntiLambda/h3dMassAntiLambdaHadronic", "h3dMassAntiLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+      // histos.add("AntiLambda/h3dMassAntiLambdaHadronic", "h3dMassAntiLambdaHadronic;Centrality (%);p_{T} [GeV/c];M(p#pi) [GeV/c]", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
       if (doTPCQA) {
-        histos.add("AntiLambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
-        histos.add("AntiLambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
-        histos.add("AntiLambda/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
-        histos.add("AntiLambda/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
-        histos.add("AntiLambda/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
-        histos.add("AntiLambda/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
-        histos.add("AntiLambda/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
-        histos.add("AntiLambda/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
-        histos.add("AntiLambda/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
-        histos.add("AntiLambda/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
-        histos.add("AntiLambda/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
-        histos.add("AntiLambda/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("AntiLambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC;Centrality (%);p_{T} [GeV/c];N#sigma_{TPC}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("AntiLambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC;Centrality (%);p_{T} [GeV/c];N#sigma_{TPC}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("AntiLambda/h3dPosTPCsignal", "h3dPosTPCsignal;Centrality (%);p_{T} [GeV/c];TPC signal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("AntiLambda/h3dNegTPCsignal", "h3dNegTPCsignal;Centrality (%);p_{T} [GeV/c];TPC signal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("AntiLambda/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot;Centrality (%);p_{T} [GeV/c];N#sigma_{TPC}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("AntiLambda/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot;Centrality (%);p_{T} [GeV/c];N#sigma_{TPC}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("AntiLambda/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot;Centrality (%);p_{T} [GeV/c];TPC signal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("AntiLambda/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot;Centrality (%);p_{T} [GeV/c];TPC signal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("AntiLambda/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt;Centrality (%);p_{T} [GeV/c];N#sigma_{TPC}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("AntiLambda/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt;Centrality (%);p_{T} [GeV/c];N#sigma_{TPC}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("AntiLambda/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt;Centrality (%);p_{T} [GeV/c];TPC signal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("AntiLambda/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt;Centrality (%);p_{T} [GeV/c];TPC signal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
       }
       if (doTOFQA) {
-        histos.add("AntiLambda/h3dPosNsigmaTOF", "h3dPosNsigmaTOF", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
-        histos.add("AntiLambda/h3dNegNsigmaTOF", "h3dNegNsigmaTOF", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
-        histos.add("AntiLambda/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
-        histos.add("AntiLambda/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
-        histos.add("AntiLambda/h3dPosNsigmaTOFvsTrackPtot", "h3dPosNsigmaTOFvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
-        histos.add("AntiLambda/h3dNegNsigmaTOFvsTrackPtot", "h3dNegNsigmaTOFvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
-        histos.add("AntiLambda/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
-        histos.add("AntiLambda/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
-        histos.add("AntiLambda/h3dPosNsigmaTOFvsTrackPt", "h3dPosNsigmaTOFvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
-        histos.add("AntiLambda/h3dNegNsigmaTOFvsTrackPt", "h3dNegNsigmaTOFvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
-        histos.add("AntiLambda/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
-        histos.add("AntiLambda/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("AntiLambda/h3dPosNsigmaTOF", "h3dPosNsigmaTOF;Centrality (%);p_{T} [GeV/c];N#sigma_{TOF}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("AntiLambda/h3dNegNsigmaTOF", "h3dNegNsigmaTOF;Centrality (%);p_{T} [GeV/c];N#sigma_{TOF}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("AntiLambda/h3dPosTOFdeltaT", "h3dPosTOFdeltaT;Centrality (%);p_{T} [GeV/c];TOF #Delta t [ps]", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("AntiLambda/h3dNegTOFdeltaT", "h3dNegTOFdeltaT;Centrality (%);p_{T} [GeV/c];TOF #Delta t [ps]", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("AntiLambda/h3dPosNsigmaTOFvsTrackPtot", "h3dPosNsigmaTOFvsTrackPtot;Centrality (%);p_{T} [GeV/c];N#sigma_{TOF}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("AntiLambda/h3dNegNsigmaTOFvsTrackPtot", "h3dNegNsigmaTOFvsTrackPtot;Centrality (%);p_{T} [GeV/c];N#sigma_{TOF}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("AntiLambda/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot;Centrality (%);p_{T} [GeV/c];TOF #Delta t [ps]", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("AntiLambda/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot;Centrality (%);p_{T} [GeV/c];TOF #Delta t [ps]", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("AntiLambda/h3dPosNsigmaTOFvsTrackPt", "h3dPosNsigmaTOFvsTrackPt;Centrality (%);p_{T} [GeV/c];N#sigma_{TOF}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("AntiLambda/h3dNegNsigmaTOFvsTrackPt", "h3dNegNsigmaTOFvsTrackPt;Centrality (%);p_{T} [GeV/c];N#sigma_{TOF}", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("AntiLambda/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt;Centrality (%);p_{T} [GeV/c];TOF #Delta t [ps]", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("AntiLambda/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt;Centrality (%);p_{T} [GeV/c];TOF #Delta t [ps]", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
       }
     }
 
     if (analyseLambda) {
-      histos.add("hMassLambda", "hMassLambda", kTH1D, {axisConfigurations.axisLambdaMass});
-      histos.add("Lambda/hLambdasPerEvent", "hLambdasPerEvent", kTH1D, {{15, 0, 15}});
+      histos.add("hMassLambda", "hMassLambda;M(p#pi) [GeV/c];Counts", kTH1D, {axisConfigurations.axisLambdaMass});
+      histos.add("Lambda/hLambdasPerEvent", "hLambdasPerEvent;N_{#Lambda} per event;Counts", kTH1D, {{15, 0, 15}});
     }
     if (analyseAntiLambda) {
-      histos.add("hMassAntiLambda", "hMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
-      histos.add("AntiLambda/hAntiLambdasPerEvent", "hAntiLambdasPerEvent", kTH1D, {{15, 0, 15}});
+      histos.add("hMassAntiLambda", "hMassAntiLambda;M(p#pi) [GeV/c];Counts", kTH1D, {axisConfigurations.axisLambdaMass});
+      histos.add("AntiLambda/hAntiLambdasPerEvent", "hAntiLambdasPerEvent;N_{#bar{#Lambda}} per event;Counts", kTH1D, {{15, 0, 15}});
     }
     if (analyseLambda && analyseAntiLambda) {
-      histos.add("hAmbiguousLambdaCandidates", "hAmbiguousLambdaCandidates", kTH1D, {{1, 0, 1}});
-      histos.add("hAmbiguousPerEvent", "hAmbiguousPerEvent", kTH1D, {{15, 0, 15}});
-      histos.add("hNonAmbiguousPerEvent", "hNonAmbiguousPerEvent", kTH1D, {{25, 0, 25}}); // To understand the population of correlated Lambda-likes per event
-      histos.add("hLambdasAndAntiLambdasPerEvent", "hLambdasAndAntiLambdasPerEvent", kTH1D, {{25, 0, 25}}); // Alternative check that shows how bad is the possibly correlated full population (Ambig+NonAmbig)
+      histos.add("hAmbiguousLambdaCandidates", "hAmbiguousLambdaCandidates;Integrated counts;Counts", kTH1D, {{1, 0, 1}});
+      histos.add("hAmbiguousPerEvent", "hAmbiguousPerEvent;N_{ambiguous} per event;Counts", kTH1D, {{15, 0, 15}});
+      histos.add("hNonAmbiguousPerEvent", "hNonAmbiguousPerEvent;N_{non-ambiguous} per event;Counts", kTH1D, {{25, 0, 25}}); // To understand the population of correlated Lambda-likes per event
+      histos.add("hLambdasAndAntiLambdasPerEvent", "hLambdasAndAntiLambdasPerEvent;N_{#Lambda}+N_{#bar{#Lambda}} per event;Counts", kTH1D, {{25, 0, 25}}); // Alternative check that shows how bad is the possibly correlated full population (Ambig+NonAmbig)
     }
 
     // QA histograms if requested
     if (doV0KinematicQA) {
       if (analyseLambda) {
         // --- Basic kinematics ---
-        histos.add("V0KinematicQA/Lambda/hPt", "Lambda p_{T}", kTH1D, {axisConfigurations.axisPt});
-        histos.add("V0KinematicQA/Lambda/hY", "Lambda rapidity", kTH1D, {axisConfigurations.axisRapidity});
-        histos.add("V0KinematicQA/Lambda/hPhi", "Lambda #varphi", kTH1D, {axisConfigurations.axisPhi});
+        histos.add("V0KinematicQA/Lambda/hPt", "Lambda p_{T};p_{T} [GeV/c];Counts", kTH1D, {axisConfigurations.axisPt});
+        histos.add("V0KinematicQA/Lambda/hY", "Lambda rapidity;y;Counts", kTH1D, {axisConfigurations.axisRapidity});
+        histos.add("V0KinematicQA/Lambda/hPhi", "Lambda #varphi;#varphi;Counts", kTH1D, {axisConfigurations.axisPhi});
         // --- Mass correlations ---
-        histos.add("V0KinematicQA/Lambda/hMassVsPt", "Lambda mass vs p_{T}", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
-        histos.add("V0KinematicQA/Lambda/hMassVsY", "Lambda mass vs y", kTH2D, {axisConfigurations.axisRapidity, axisConfigurations.axisLambdaMass});
-        histos.add("V0KinematicQA/Lambda/hMassVsPhi", "Lambda mass vs #varphi", kTH2D, {axisConfigurations.axisPhi, axisConfigurations.axisLambdaMass});
+        histos.add("V0KinematicQA/Lambda/hMassVsPt", "Lambda mass vs p_{T};p_{T} [GeV/c];M(p#pi) [GeV/c]", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+        histos.add("V0KinematicQA/Lambda/hMassVsY", "Lambda mass vs y;y;M(p#pi) [GeV/c]", kTH2D, {axisConfigurations.axisRapidity, axisConfigurations.axisLambdaMass});
+        histos.add("V0KinematicQA/Lambda/hMassVsPhi", "Lambda mass vs #varphi;#varphi;M(p#pi) [GeV/c]", kTH2D, {axisConfigurations.axisPhi, axisConfigurations.axisLambdaMass});
         // --- Kinematic correlations ---
-        histos.add("V0KinematicQA/Lambda/hYVsPt", "Lambda y vs p_{T}", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisRapidity});
-        histos.add("V0KinematicQA/Lambda/hPhiVsPt", "Lambda #varphi vs p_{T}", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPhi});
+        histos.add("V0KinematicQA/Lambda/hYVsPt", "Lambda y vs p_{T};p_{T} [GeV/c];y", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisRapidity});
+        histos.add("V0KinematicQA/Lambda/hPhiVsPt", "Lambda #varphi vs p_{T};p_{T} [GeV/c];#varphi", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPhi});
       }
       if (analyseAntiLambda) {
         // --- Basic kinematics ---
-        histos.add("V0KinematicQA/AntiLambda/hPt", "AntiLambda p_{T}", kTH1D, {axisConfigurations.axisPt});
-        histos.add("V0KinematicQA/AntiLambda/hY", "AntiLambda rapidity", kTH1D, {axisConfigurations.axisRapidity});
-        histos.add("V0KinematicQA/AntiLambda/hPhi", "AntiLambda #varphi", kTH1D, {axisConfigurations.axisPhi});
+        histos.add("V0KinematicQA/AntiLambda/hPt", "AntiLambda p_{T};p_{T} [GeV/c];Counts", kTH1D, {axisConfigurations.axisPt});
+        histos.add("V0KinematicQA/AntiLambda/hY", "AntiLambda rapidity;y;Counts", kTH1D, {axisConfigurations.axisRapidity});
+        histos.add("V0KinematicQA/AntiLambda/hPhi", "AntiLambda #varphi;#varphi;Counts", kTH1D, {axisConfigurations.axisPhi});
         // --- Mass correlations ---
-        histos.add("V0KinematicQA/AntiLambda/hMassVsPt", "AntiLambda mass vs p_{T}", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
-        histos.add("V0KinematicQA/AntiLambda/hMassVsY", "AntiLambda mass vs y", kTH2D, {axisConfigurations.axisRapidity, axisConfigurations.axisLambdaMass});
-        histos.add("V0KinematicQA/AntiLambda/hMassVsPhi", "AntiLambda mass vs #varphi", kTH2D, {axisConfigurations.axisPhi, axisConfigurations.axisLambdaMass});
+        histos.add("V0KinematicQA/AntiLambda/hMassVsPt", "AntiLambda mass vs p_{T};p_{T} [GeV/c];M(p#pi) [GeV/c]", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+        histos.add("V0KinematicQA/AntiLambda/hMassVsY", "AntiLambda mass vs y;y;M(p#pi) [GeV/c]", kTH2D, {axisConfigurations.axisRapidity, axisConfigurations.axisLambdaMass});
+        histos.add("V0KinematicQA/AntiLambda/hMassVsPhi", "AntiLambda mass vs #varphi;#varphi;M(p#pi) [GeV/c]", kTH2D, {axisConfigurations.axisPhi, axisConfigurations.axisLambdaMass});
         // --- Kinematic correlations ---
-        histos.add("V0KinematicQA/AntiLambda/hYVsPt", "AntiLambda y vs p_{T}", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisRapidity});
-        histos.add("V0KinematicQA/AntiLambda/hPhiVsPt", "AntiLambda #varphi vs p_{T}", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPhi});
+        histos.add("V0KinematicQA/AntiLambda/hYVsPt", "AntiLambda y vs p_{T};p_{T} [GeV/c];y", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisRapidity});
+        histos.add("V0KinematicQA/AntiLambda/hPhiVsPt", "AntiLambda #varphi vs p_{T};p_{T} [GeV/c];#varphi", kTH2D, {axisConfigurations.axisPt, axisConfigurations.axisPhi});
       }
     }
 
     if (doTopoQA) {
       // For all received candidates:
-      histos.add("V0KinematicQA/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
-      histos.add("V0KinematicQA/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
-      histos.add("V0KinematicQA/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
-      histos.add("V0KinematicQA/hPointingAngle", "hPointingAngle", kTH1D, {axisConfigurations.axisPointingAngle});
-      histos.add("V0KinematicQA/hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
-      histos.add("V0KinematicQA/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
-      histos.add("V0KinematicQA/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
-      histos.add("V0KinematicQA/h2dPositivePtVsPhi", "h2dPositivePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
-      histos.add("V0KinematicQA/h2dNegativePtVsPhi", "h2dNegativePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
+      histos.add("V0KinematicQA/hPosDCAToPV", "hPosDCAToPV;DCAtoPV [cm];Counts", kTH1D, {axisConfigurations.axisDCAtoPV});
+      histos.add("V0KinematicQA/hNegDCAToPV", "hNegDCAToPV;DCAtoPV [cm];Counts", kTH1D, {axisConfigurations.axisDCAtoPV});
+      histos.add("V0KinematicQA/hDCADaughters", "hDCADaughters;DCAdau [cm];Counts", kTH1D, {axisConfigurations.axisDCAdau});
+      histos.add("V0KinematicQA/hPointingAngle", "hPointingAngle;Pointing angle [rad];Counts", kTH1D, {axisConfigurations.axisPointingAngle});
+      histos.add("V0KinematicQA/hV0Radius", "hV0Radius;V0 radius [cm];Counts", kTH1D, {axisConfigurations.axisV0Radius});
+      histos.add("V0KinematicQA/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts;N TPC crossed rows;N ITS clusters", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
+      histos.add("V0KinematicQA/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts;N TPC crossed rows;N ITS clusters", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
+      histos.add("V0KinematicQA/h2dPositivePtVsPhi", "h2dPositivePtVsPhi;p_{T} [GeV/c];#varphi mod TPC sector", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
+      histos.add("V0KinematicQA/h2dNegativePtVsPhi", "h2dNegativePtVsPhi;p_{T} [GeV/c];#varphi mod TPC sector", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
       if (analyseLambda) {
-        histos.add("Lambda/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
-        histos.add("Lambda/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
-        histos.add("Lambda/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
-        histos.add("Lambda/hPointingAngle", "hPointingAngle", kTH1D, {axisConfigurations.axisPointingAngle});
-        histos.add("Lambda/hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
-        histos.add("Lambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
-        histos.add("Lambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
-        histos.add("Lambda/h2dPositivePtVsPhi", "h2dPositivePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
-        histos.add("Lambda/h2dNegativePtVsPhi", "h2dNegativePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
+        histos.add("Lambda/hPosDCAToPV", "hPosDCAToPV;DCAtoPV [cm];Counts", kTH1D, {axisConfigurations.axisDCAtoPV});
+        histos.add("Lambda/hNegDCAToPV", "hNegDCAToPV;DCAtoPV [cm];Counts", kTH1D, {axisConfigurations.axisDCAtoPV});
+        histos.add("Lambda/hDCADaughters", "hDCADaughters;DCAdau [cm];Counts", kTH1D, {axisConfigurations.axisDCAdau});
+        histos.add("Lambda/hPointingAngle", "hPointingAngle;Pointing angle [rad];Counts", kTH1D, {axisConfigurations.axisPointingAngle});
+        histos.add("Lambda/hV0Radius", "hV0Radius;V0 radius [cm];Counts", kTH1D, {axisConfigurations.axisV0Radius});
+        histos.add("Lambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts;N TPC crossed rows;N ITS clusters", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
+        histos.add("Lambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts;N TPC crossed rows;N ITS clusters", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
+        histos.add("Lambda/h2dPositivePtVsPhi", "h2dPositivePtVsPhi;p_{T} [GeV/c];#varphi mod TPC sector", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
+        histos.add("Lambda/h2dNegativePtVsPhi", "h2dNegativePtVsPhi;p_{T} [GeV/c];#varphi mod TPC sector", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
       }
       if (analyseAntiLambda) {
-        histos.add("AntiLambda/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
-        histos.add("AntiLambda/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
-        histos.add("AntiLambda/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
-        histos.add("AntiLambda/hPointingAngle", "hPointingAngle", kTH1D, {axisConfigurations.axisPointingAngle});
-        histos.add("AntiLambda/hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
-        histos.add("AntiLambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
-        histos.add("AntiLambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
-        histos.add("AntiLambda/h2dPositivePtVsPhi", "h2dPositivePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
-        histos.add("AntiLambda/h2dNegativePtVsPhi", "h2dNegativePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
+        histos.add("AntiLambda/hPosDCAToPV", "hPosDCAToPV;DCAtoPV [cm];Counts", kTH1D, {axisConfigurations.axisDCAtoPV});
+        histos.add("AntiLambda/hNegDCAToPV", "hNegDCAToPV;DCAtoPV [cm];Counts", kTH1D, {axisConfigurations.axisDCAtoPV});
+        histos.add("AntiLambda/hDCADaughters", "hDCADaughters;DCAdau [cm];Counts", kTH1D, {axisConfigurations.axisDCAdau});
+        histos.add("AntiLambda/hPointingAngle", "hPointingAngle;Pointing angle [rad];Counts", kTH1D, {axisConfigurations.axisPointingAngle});
+        histos.add("AntiLambda/hV0Radius", "hV0Radius;V0 radius [cm];Counts", kTH1D, {axisConfigurations.axisV0Radius});
+        histos.add("AntiLambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts;N TPC crossed rows;N ITS clusters", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
+        histos.add("AntiLambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts;N TPC crossed rows;N ITS clusters", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
+        histos.add("AntiLambda/h2dPositivePtVsPhi", "h2dPositivePtVsPhi;p_{T} [GeV/c];#varphi mod TPC sector", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
+        histos.add("AntiLambda/h2dNegativePtVsPhi", "h2dNegativePtVsPhi;p_{T} [GeV/c];#varphi mod TPC sector", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
       }
     }
 
     // Check ambiguous candidates in AP space:
-    histos.add("GeneralQA/h2dArmenterosAll", "h2dArmenterosAll", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
-    histos.add("GeneralQA/h2dArmenterosKinematicSelected", "h2dArmenterosKinematicSelected", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
-    histos.add("GeneralQA/h2dArmenterosFullSelected", "h2dArmenterosFullSelected", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
-    histos.add("GeneralQA/h2dArmenterosFullSelectedLambda", "h2dArmenterosFullSelectedLambda", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
-    histos.add("GeneralQA/h2dArmenterosFullSelectedAntiLambda", "h2dArmenterosFullSelectedAntiLambda", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
-    histos.add("GeneralQA/h2dArmenterosFullSelectedNonAmbiguous", "h2dArmenterosFullSelectedNonAmbiguous", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
-    histos.add("GeneralQA/h2dArmenterosFullSelectedAmbiguous", "h2dArmenterosFullSelectedAmbiguous", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
+    histos.add("GeneralQA/h2dArmenterosAll", "h2dArmenterosAll;Armenteros #alpha;Armenteros q_{T} (GeV/c)", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
+    histos.add("GeneralQA/h2dArmenterosKinematicSelected", "h2dArmenterosKinematicSelected;Armenteros #alpha;Armenteros q_{T} (GeV/c)", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
+    histos.add("GeneralQA/h2dArmenterosFullSelected", "h2dArmenterosFullSelected;Armenteros #alpha;Armenteros q_{T} (GeV/c)", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
+    histos.add("GeneralQA/h2dArmenterosFullSelectedLambda", "h2dArmenterosFullSelectedLambda;Armenteros #alpha;Armenteros q_{T} (GeV/c)", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
+    histos.add("GeneralQA/h2dArmenterosFullSelectedAntiLambda", "h2dArmenterosFullSelectedAntiLambda;Armenteros #alpha;Armenteros q_{T} (GeV/c)", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
+    histos.add("GeneralQA/h2dArmenterosFullSelectedNonAmbiguous", "h2dArmenterosFullSelectedNonAmbiguous;Armenteros #alpha;Armenteros q_{T} (GeV/c)", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
+    histos.add("GeneralQA/h2dArmenterosFullSelectedAmbiguous", "h2dArmenterosFullSelectedAmbiguous;Armenteros #alpha;Armenteros q_{T} (GeV/c)", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
 
     // Jets histograms:
       // Histograms that need to be present even out of extensive QA-mode:
-    histos.add("hEventsWithJet", "hEventsWithJet", kTH1D, {{1, 0, 1}}); // counter of events with jet (could be interesting to compare with the minimum pT cut or between the background subtraction vs no background subtraction cases)
-    histos.add("hJetsPerEvent", "hJetsPerEvent", kTH1D, {axisConfigurations.axisJetsPerEvent}); // number of jets per event
+    histos.add("hEventsWithJet", "hEventsWithJet;Integrated counts;Counts", kTH1D, {{1, 0, 1}}); // counter of events with jet (could be interesting to compare with the minimum pT cut or between the background subtraction vs no background subtraction cases)
+    histos.add("hJetsPerEvent", "hJetsPerEvent;Jets per event;Counts", kTH1D, {axisConfigurations.axisJetsPerEvent}); // number of jets per event
     if (doJetKinematicsQA) {
         // For probing the correlation between number of jet constituents and centrality:
-      histos.add("JetKinematicsQA/h2dConstituentsPerJetVsCentrality", "Constituents per Jet Vs Centrality", kTH2D, {axisConfigurations.axisJetConstituents, axisConfigurations.axisCentrality}); // Not quite kinematics, but kept it under this QAing switch for now
-      histos.add("JetKinematicsQA/h2dConstituentsPerJetVsJetPt", "Constituents per Jet Vs Jet Pt", kTH2D, {axisConfigurations.axisJetConstituents, axisConfigurations.axisJetPt});
+      histos.add("JetKinematicsQA/h2dConstituentsPerJetVsCentrality", "Constituents per Jet Vs Centrality;N constituents;Centrality (%)", kTH2D, {axisConfigurations.axisJetConstituents, axisConfigurations.axisCentrality}); // Not quite kinematics, but kept it under this QAing switch for now
+      histos.add("JetKinematicsQA/h2dConstituentsPerJetVsJetPt", "Constituents per Jet Vs Jet Pt;N constituents;Jet p_{T} [GeV/c]", kTH2D, {axisConfigurations.axisJetConstituents, axisConfigurations.axisJetPt});
 
-      histos.add("JetKinematicsQA/hJetPt", "hJetPt", kTH1D, {axisConfigurations.axisJetPt});
-      histos.add("JetKinematicsQA/hJetEta", "hJetEta", kTH1D, {axisConfigurations.axisEta});
-      histos.add("JetKinematicsQA/hJetPhi", "hJetPhi", kTH1D, {axisConfigurations.axisPhi});
+      histos.add("JetKinematicsQA/hJetPt", "hJetPt;Jet p_{T} [GeV/c];Counts", kTH1D, {axisConfigurations.axisJetPt});
+      histos.add("JetKinematicsQA/hJetEta", "hJetEta;#eta;Counts", kTH1D, {axisConfigurations.axisEta});
+      histos.add("JetKinematicsQA/hJetPhi", "hJetPhi;#varphi;Counts", kTH1D, {axisConfigurations.axisPhi});
+      histos.add("JetKinematicsQA/h2dJetEtaVsJetPhi", "h2dJetEtaVsJetPhi;#eta;#varphi", kTH2D, {axisConfigurations.axisEta, axisConfigurations.axisPhi}); // An occupancy map of sorts. Checks for detector-dependent jet clustering artifacts
 
-      histos.add("JetKinematicsQA/hCosThetaToLeadingJet", "hCosThetaToLeadingJet", kTH1D, {axisConfigurations.axisCosTheta});
-      histos.add("JetKinematicsQA/hDeltaPhiToLeadingJet", "hDeltaPhiToLeadingJet", kTH1D, {axisConfigurations.axisDeltaPhi});
-      histos.add("JetKinematicsQA/hDeltaEtaToLeadingJet", "hDeltaEtaToLeadingJet", kTH1D, {axisConfigurations.axisDeltaEta});
-      histos.add("JetKinematicsQA/hDeltaRToLeadingJet", "hDeltaRToLeadingJet", kTH1D, {axisConfigurations.axisDeltaR});
+      histos.add("JetKinematicsQA/hCosThetaToLeadingJet", "hCosThetaToLeadingJet;cos(#Delta#theta_{jet});Counts", kTH1D, {axisConfigurations.axisCosTheta});
+      histos.add("JetKinematicsQA/hDeltaPhiToLeadingJet", "hDeltaPhiToLeadingJet;#Delta#varphi;Counts", kTH1D, {axisConfigurations.axisDeltaPhi});
+      histos.add("JetKinematicsQA/hDeltaEtaToLeadingJet", "hDeltaEtaToLeadingJet;#Delta#eta;Counts", kTH1D, {axisConfigurations.axisDeltaEta});
+      histos.add("JetKinematicsQA/hDeltaRToLeadingJet", "hDeltaRToLeadingJet;#Delta R;Counts", kTH1D, {axisConfigurations.axisDeltaR});
 
-      histos.add("JetKinematicsQA/hLeadingJetPt", "hLeadingJetPt", kTH1D, {axisConfigurations.axisJetPt});
-      histos.add("JetKinematicsQA/hLeadingJetEta", "hLeadingJetEta", kTH1D, {axisConfigurations.axisEta});
-      histos.add("JetKinematicsQA/hLeadingJetPhi", "hLeadingJetPhi", kTH1D, {axisConfigurations.axisPhi});
+      histos.add("JetKinematicsQA/hLeadingJetPt", "hLeadingJetPt;Jet p_{T} [GeV/c];Counts", kTH1D, {axisConfigurations.axisJetPt});
+      histos.add("JetKinematicsQA/hLeadingJetEta", "hLeadingJetEta;#eta;Counts", kTH1D, {axisConfigurations.axisEta});
+      histos.add("JetKinematicsQA/hLeadingJetPhi", "hLeadingJetPhi;#varphi;Counts", kTH1D, {axisConfigurations.axisPhi});
 
       // 2D correlations:
-      histos.add("JetKinematicsQA/h2dJetsPerEventvsLeadJetPt", "h2dJetsPerEventvsLeadJetPt", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisJetPt});
-      histos.add("JetKinematicsQA/h2dJetsPerEventvsJetPt", "h2dJetsPerEventvsJetPt", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisJetPt});
-      histos.add("JetKinematicsQA/h2dCosThetaToLeadvsDeltaPhiToLead", "h2dCosThetaToLeadvsDeltaPhiToLead", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisDeltaPhi});
-      histos.add("JetKinematicsQA/h2dCosThetaToLeadvsDeltaEtaToLead", "h2dCosThetaToLeadvsDeltaEtaToLead", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisDeltaEta});
-      histos.add("JetKinematicsQA/h2dCosThetaToLeadvsDeltaRToLead", "h2dCosThetaToLeadvsDeltaRToLead", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisDeltaR});
-      histos.add("JetKinematicsQA/h2dDeltaPhiToLeadvsDeltaEtaToLead", "h2dDeltaPhiToLeadvsDeltaEtaToLead", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisDeltaEta}); // to see existence of back-to-back jets, and in which window
+      histos.add("JetKinematicsQA/h2dJetsPerEventvsLeadJetPt", "h2dJetsPerEventvsLeadJetPt;Jets per event;Jet p_{T} [GeV/c]", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisJetPt});
+      histos.add("JetKinematicsQA/h2dJetsPerEventvsJetPt", "h2dJetsPerEventvsJetPt;Jets per event;Jet p_{T} [GeV/c]", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisJetPt});
+      histos.add("JetKinematicsQA/h2dCosThetaToLeadvsDeltaPhiToLead", "h2dCosThetaToLeadvsDeltaPhiToLead;cos(#Delta#theta_{jet});#Delta#varphi", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisDeltaPhi});
+      histos.add("JetKinematicsQA/h2dCosThetaToLeadvsDeltaEtaToLead", "h2dCosThetaToLeadvsDeltaEtaToLead;cos(#Delta#theta_{jet});#Delta#eta", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisDeltaEta});
+      histos.add("JetKinematicsQA/h2dCosThetaToLeadvsDeltaRToLead", "h2dCosThetaToLeadvsDeltaRToLead;cos(#Delta#theta_{jet});#Delta R", kTH2D, {axisConfigurations.axisCosTheta, axisConfigurations.axisDeltaR});
+      histos.add("JetKinematicsQA/h2dDeltaPhiToLeadvsDeltaEtaToLead", "h2dDeltaPhiToLeadvsDeltaEtaToLead;#Delta#varphi;#Delta#eta", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisDeltaEta}); // to see existence of back-to-back jets, and in which window
 
       // Comparisons to jet energy:
-      histos.add("JetKinematicsQA/h2dJetPtvsDeltaPhiToLead", "h2dJetPtvsDeltaPhiToLead", kTH2D, {axisConfigurations.axisJetPt, axisConfigurations.axisDeltaPhi});
-      histos.add("JetKinematicsQA/h2dJetEnergyvsDeltaPhiToLead", "h2dJetEnergyvsDeltaPhiToLead", kTH2D, {axisConfigurations.axisEnergy, axisConfigurations.axisDeltaPhi});
-      histos.add("JetKinematicsQA/h2dJetEnergyvsCosThetaToLead", "h2dJetEnergyvsCosThetaToLead", kTH2D, {axisConfigurations.axisEnergy, axisConfigurations.axisCosTheta});
+      histos.add("JetKinematicsQA/h2dJetPtvsDeltaPhiToLead", "h2dJetPtvsDeltaPhiToLead;Jet p_{T} [GeV/c];#Delta#varphi", kTH2D, {axisConfigurations.axisJetPt, axisConfigurations.axisDeltaPhi});
+      histos.add("JetKinematicsQA/h2dJetEnergyvsDeltaPhiToLead", "h2dJetEnergyvsDeltaPhiToLead;E_{jet} [GeV];#Delta#varphi", kTH2D, {axisConfigurations.axisEnergy, axisConfigurations.axisDeltaPhi});
+      histos.add("JetKinematicsQA/h2dJetEnergyvsCosThetaToLead", "h2dJetEnergyvsCosThetaToLead;E_{jet} [GeV];cos(#Delta#theta_{jet})", kTH2D, {axisConfigurations.axisEnergy, axisConfigurations.axisCosTheta});
 
       // Jets per event vs correlation to lead jet
-      histos.add("JetKinematicsQA/h2dJetsPerEventvsDeltaPhiToLead", "h2dJetsPerEventvsDeltaPhiToLead", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisDeltaPhi});
-      histos.add("JetKinematicsQA/h2dJetsPerEventvsDeltaEtaToLead", "h2dJetsPerEventvsDeltaEtaToLead", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisDeltaEta});
-      histos.add("JetKinematicsQA/h2dJetsPerEventvsCosThetaToLead", "h2dJetsPerEventvsCosThetaToLead", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisCosTheta});
+      histos.add("JetKinematicsQA/h2dJetsPerEventvsDeltaPhiToLead", "h2dJetsPerEventvsDeltaPhiToLead;Jets per event;#Delta#varphi", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisDeltaPhi});
+      histos.add("JetKinematicsQA/h2dJetsPerEventvsDeltaEtaToLead", "h2dJetsPerEventvsDeltaEtaToLead;Jets per event;#Delta#eta", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisDeltaEta});
+      histos.add("JetKinematicsQA/h2dJetsPerEventvsCosThetaToLead", "h2dJetsPerEventvsCosThetaToLead;Jets per event;cos(#Delta#theta_{jet})", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisCosTheta});
 
       ////////////////////////////
       // Leading particle 1D QA:
-      histos.add("JetVsLeadingParticleQA/hLeadingParticlePt", "hLeadingParticlePt", kTH1D, {axisConfigurations.axisLeadingParticlePt});
-      histos.add("JetVsLeadingParticleQA/hLeadingParticleEta", "hLeadingParticleEta", kTH1D, {axisConfigurations.axisEta});
-      histos.add("JetVsLeadingParticleQA/hLeadingParticlePhi", "hLeadingParticlePhi", kTH1D, {axisConfigurations.axisPhi});
+      histos.add("JetVsLeadingParticleQA/hLeadingParticlePt", "hLeadingParticlePt;Leading particle p_{T} [GeV/c];Counts", kTH1D, {axisConfigurations.axisLeadingParticlePt});
+      histos.add("JetVsLeadingParticleQA/hLeadingParticleEta", "hLeadingParticleEta;#eta;Counts", kTH1D, {axisConfigurations.axisEta});
+      histos.add("JetVsLeadingParticleQA/hLeadingParticlePhi", "hLeadingParticlePhi;#varphi;Counts", kTH1D, {axisConfigurations.axisPhi});
 
       // 1D correlations to lead jet:
-      histos.add("JetVsLeadingParticleQA/hCosThetaLeadParticleToJet", "hCosThetaLeadParticleToJet", kTH1D, {axisConfigurations.axisCosTheta});
-      histos.add("JetVsLeadingParticleQA/hDeltaPhiLeadParticleToJet", "hDeltaPhiLeadParticleToJet", kTH1D, {axisConfigurations.axisDeltaPhi});
-      histos.add("JetVsLeadingParticleQA/hDeltaEtaToLeadParticleToJet", "hDeltaEtaToLeadParticleToJet", kTH1D, {axisConfigurations.axisDeltaEta});
+      histos.add("JetVsLeadingParticleQA/hCosThetaLeadParticleToJet", "hCosThetaLeadParticleToJet;cos(#Delta#theta_{jet});Counts", kTH1D, {axisConfigurations.axisCosTheta});
+      histos.add("JetVsLeadingParticleQA/hDeltaPhiLeadParticleToJet", "hDeltaPhiLeadParticleToJet;#Delta#varphi;Counts", kTH1D, {axisConfigurations.axisDeltaPhi});
+      histos.add("JetVsLeadingParticleQA/hDeltaEtaToLeadParticleToJet", "hDeltaEtaToLeadParticleToJet;#Delta#eta;Counts", kTH1D, {axisConfigurations.axisDeltaEta});
 
       // Leading particle correlations:
-      histos.add("JetVsLeadingParticleQA/h2dDeltaPhiParticleToLeadvsDeltaEtaParticleToLead", "h2dDeltaPhiParticleToLeadvsDeltaEtaParticleToLead", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisDeltaEta});
+      histos.add("JetVsLeadingParticleQA/h2dDeltaPhiParticleToLeadvsDeltaEtaParticleToLead", "h2dDeltaPhiParticleToLeadvsDeltaEtaParticleToLead;#Delta#varphi;#Delta#eta", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisDeltaEta});
 
       // Jets-per-event vs particle-to-lead correlations:
-      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaPhiParticleToLead", "h2dJetsPerEventvsDeltaPhiParticleToLead", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisDeltaPhi});
-      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaEtaParticleToLead", "h2dJetsPerEventvsDeltaEtaParticleToLead", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisDeltaEta});
-      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsCosThetaParticleToLead", "h2dJetsPerEventvsCosThetaParticleToLead", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisCosTheta});
+      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaPhiParticleToLead", "h2dJetsPerEventvsDeltaPhiParticleToLead;Jets per event;#Delta#varphi", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisDeltaPhi});
+      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaEtaParticleToLead", "h2dJetsPerEventvsDeltaEtaParticleToLead;Jets per event;#Delta#eta", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisDeltaEta});
+      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsCosThetaParticleToLead", "h2dJetsPerEventvsCosThetaParticleToLead;Jets per event;cos(#Delta#theta_{jet})", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisCosTheta});
 
       // Main "Leading jet vs leading particle" correlations:
-      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsLeadParticlePt", "h2dJetsPerEventvsLeadParticlePt", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisLeadingParticlePt});
-      histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsLeadParticlePt", "h2dLeadJetPtvsLeadParticlePt", kTH2D, {axisConfigurations.axisJetPt, axisConfigurations.axisLeadingParticlePt});
-      histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsCosThetaParticleToLead", "h2dLeadJetPtvsCosThetaParticleToLead", kTH2D, {axisConfigurations.axisJetPt, axisConfigurations.axisCosTheta});
-      histos.add("JetVsLeadingParticleQA/h2dLeadParticlePtvsCosThetaParticleToLead", "h2dLeadParticlePtvsCosThetaParticleToLead", kTH2D, {axisConfigurations.axisLeadingParticlePt, axisConfigurations.axisCosTheta});
-      histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsDeltaPhiParticleToLead", "h2dLeadJetPtvsDeltaPhiParticleToLead", kTH2D, {axisConfigurations.axisJetPt, axisConfigurations.axisDeltaPhi});
-      histos.add("JetVsLeadingParticleQA/h2dLeadParticlePtvsDeltaPhiParticleToLead", "h2dLeadParticlePtvsDeltaPhiParticleToLead", kTH2D, {axisConfigurations.axisLeadingParticlePt, axisConfigurations.axisDeltaPhi});
+      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsLeadParticlePt", "h2dJetsPerEventvsLeadParticlePt;Jets per event;Leading particle p_{T} [GeV/c]", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisLeadingParticlePt});
+      histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsLeadParticlePt", "h2dLeadJetPtvsLeadParticlePt;Jet p_{T} [GeV/c];Leading particle p_{T} [GeV/c]", kTH2D, {axisConfigurations.axisJetPt, axisConfigurations.axisLeadingParticlePt});
+      histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsCosThetaParticleToLead", "h2dLeadJetPtvsCosThetaParticleToLead;Jet p_{T} [GeV/c];cos(#Delta#theta_{jet})", kTH2D, {axisConfigurations.axisJetPt, axisConfigurations.axisCosTheta});
+      histos.add("JetVsLeadingParticleQA/h2dLeadParticlePtvsCosThetaParticleToLead", "h2dLeadParticlePtvsCosThetaParticleToLead;Leading particle p_{T} [GeV/c];cos(#Delta#theta_{jet})", kTH2D, {axisConfigurations.axisLeadingParticlePt, axisConfigurations.axisCosTheta});
+      histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsDeltaPhiParticleToLead", "h2dLeadJetPtvsDeltaPhiParticleToLead;Jet p_{T} [GeV/c];#Delta#varphi", kTH2D, {axisConfigurations.axisJetPt, axisConfigurations.axisDeltaPhi});
+      histos.add("JetVsLeadingParticleQA/h2dLeadParticlePtvsDeltaPhiParticleToLead", "h2dLeadParticlePtvsDeltaPhiParticleToLead;Leading particle p_{T} [GeV/c];#Delta#varphi", kTH2D, {axisConfigurations.axisLeadingParticlePt, axisConfigurations.axisDeltaPhi});
     }
 
     // inspect histogram sizes, please
@@ -1700,6 +1701,7 @@ struct lambdajetpolarizationions {
           histos.fill(HIST("JetKinematicsQA/hJetPt"), jet.pt());
           histos.fill(HIST("JetKinematicsQA/hJetEta"), jet_eta);
           histos.fill(HIST("JetKinematicsQA/hJetPhi"), jet.phi());
+          histos.fill(HIST("JetKinematicsQA/h2dJetEtaVsJetPhi"), jet_eta, jet.phi());
 
           // Calculate angle to leading jet:
           float cosTheta = cosThetaJets(leadingJet, jet);

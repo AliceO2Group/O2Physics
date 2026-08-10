@@ -92,6 +92,7 @@ enum CentEstimator {
   /* Counters */                                                                                                           \
   X(FOLDER "/QA/h2dDeltaPhiVsLambdaPt", deltaPhiJet, v0pt)                                                                 \
   X(FOLDER "/QA/h2dDeltaThetaVsLambdaPt", deltaThetaJet, v0pt)                                                             \
+  X(FOLDER "/QA/hDeltaPhiVsLeadJetPhi", deltaPhiJet, leadingJetPhi)                                                        \
   /* Additional plots for instant gratification - 1D Profiles */                                                           \
   X(FOLDER "/hRingObservableCounts", ringObservable)                                                                       \
   X(FOLDER "/pRingObservableDeltaPhi", deltaPhiJet, ringObservable)                                                        \
@@ -317,7 +318,7 @@ struct lambdajetpolarizationionsderived {
     Configurable<bool> doFamilyRing{"doFamilyRing", true, "Book and fill the 'Ring' family (no additional cuts). Keep this on for most passes."};
     Configurable<bool> doFamilyRingKinematicCuts{"doFamilyRingKinematicCuts", false, "Book and fill the 'RingKinematicCuts' family (Lambda kinematic cuts applied)."};
     Configurable<bool> doFamilyJetKinematicCuts{"doFamilyJetKinematicCuts", false, "Book and fill the 'JetKinematicCuts' family (jet kinematic cuts applied)."};
-    Configurable<bool> doFamilyJetAndLambdaKinematicCuts{"doFamilyJetAndLambdaKinematicCuts", false, "Book and fill the 'JetAndLambdaKinematicCuts' family (both cuts applied)."};
+    Configurable<bool> doFamilyJetAndLambdaKinematicCuts{"doFamilyJetAndLambdaKinematicCuts", true, "Book and fill the 'JetAndLambdaKinematicCuts' family (both cuts applied)."};
   } familySwitches;
 
   // Centrality:
@@ -455,6 +456,7 @@ struct lambdajetpolarizationionsderived {
       // ===============================
       histos.add((folder + "/QA/hDeltaPhi").c_str(), "#Delta#varphi_{jet};#Delta#varphi_{jet};Counts", kTH1D, {axisConfigurations.axisDeltaPhi});
       histos.add((folder + "/QA/hDeltaPhiVsDeltaEta").c_str(), "#Delta#varphi_{jet};#Delta#varphi_{jet}; #eta_{#Lambda}-#eta_{Jet};Counts", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisDeltaEtaCoarse});
+      histos.add((folder + "/QA/hDeltaPhiVsLeadJetPhi").c_str(), "#Delta#varphi_{jet};#varphi_{Jet};#varphi_{Jet};Counts", kTH2D, {axisConfigurations.axisPhi, axisConfigurations.axisDeltaPhi});
       histos.add((folder + "/QA/hDeltaTheta").c_str(), "#Delta#theta_{jet};#Delta#theta_{jet};Counts", kTH1D, {axisConfigurations.axisDeltaTheta});
       histos.add((folder + "/QA/hCosDeltaTheta").c_str(), "cos(#Delta#theta_{jet});cos(#Delta#theta_{jet});Counts", kTH1D, {axisConfigurations.axisCosTheta}); // Should actually be flat due to the geometry
       histos.add((folder + "/QA/hIntegrated").c_str(), "Integrated counts; ;Counts", kTH1D, {{1, -0.5, 0.5}});
@@ -967,14 +969,14 @@ struct lambdajetpolarizationionsderived {
     histos.add("hNV0sVsCentrality", "hNV0sVsCentrality; N_{#Lambda}+N_{#bar{#Lambda}};Centrality (%)", kTH2D, {{20, 0, 20}, axisConfigurations.axisCentrality});
 
     // Proxy Eta QA:
-    histos.add("JetKinematicsQA/hLeadJetEta", "hLeadJetEta", kTH1D, {axisConfigurations.axisEta});
-    histos.add("JetKinematicsQA/hSubLeadJetEta", "hSubLeadJetEta", kTH1D, {axisConfigurations.axisEta});
-    histos.add("JetKinematicsQA/hLeadPEta", "hLeadPEta", kTH1D, {axisConfigurations.axisEta});
+    histos.add("JetKinematicsQA/hLeadJetEta", "hLeadJetEta;#eta;Counts", kTH1D, {axisConfigurations.axisEta});
+    histos.add("JetKinematicsQA/hSubLeadJetEta", "hSubLeadJetEta;#eta;Counts", kTH1D, {axisConfigurations.axisEta});
+    histos.add("JetKinematicsQA/hLeadPEta", "hLeadPEta;#eta;Counts", kTH1D, {axisConfigurations.axisEta});
     
     // Proxy Phi QA:
-    histos.add("JetKinematicsQA/hLeadJetPhi", "hLeadJetPhi", kTH1D, {axisConfigurations.axisPhi});
-    histos.add("JetKinematicsQA/hSubLeadJetPhi", "hSubLeadJetPhi", kTH1D, {axisConfigurations.axisPhi});
-    histos.add("JetKinematicsQA/hLeadPPhi", "hLeadPPhi", kTH1D, {axisConfigurations.axisPhi});
+    histos.add("JetKinematicsQA/hLeadJetPhi", "hLeadJetPhi;#varphi;Counts", kTH1D, {axisConfigurations.axisPhi});
+    histos.add("JetKinematicsQA/hSubLeadJetPhi", "hSubLeadJetPhi;#varphi;Counts", kTH1D, {axisConfigurations.axisPhi});
+    histos.add("JetKinematicsQA/hLeadPPhi", "hLeadPPhi;#varphi;Counts", kTH1D, {axisConfigurations.axisPhi});
 
     // Counting the number of jets/proxies themselves (these count at most once per event) -- Similar to the FOLDER/QA/hPtJet counters:
     histos.add("JetKinematicsQA/hJetCounterPtJet", "hJetCounterPtJet; p_{T}^{Jet} (GeV/c)", kTH1D, {axisConfigurations.axisJetPt});
