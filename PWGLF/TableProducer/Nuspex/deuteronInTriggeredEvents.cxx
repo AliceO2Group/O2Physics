@@ -8,16 +8,16 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
-/// \file deuteronInTriggeredEvents.cxx
-///
-/// \brief (Anti-)nuclei spectra analysis task in MB and triggered events
-/// \author Cristian Moscatelli (cristian.moscatelli@cern.ch)
-///
-/// Based on PWGLF/TableProducer/Nuspex/nucleiSpectra.cxx
-/// \since 05/2026
 //
+/// \file deuteronInTriggeredEvents.cxx
+/// \brief nuclei and antinuclei spectra analysis task in MB and triggered events
+///
+/// \author Cristian Moscatelli <cristian.moscatelli@cern.ch>
+/// \since 05/2026
 // ================
+//
+// Based on PWGLF/TableProducer/Nuspex/nucleiSpectra.cxx
+//
 // Executable + dependencies:
 //
 // data (run3):
@@ -108,12 +108,12 @@ struct NucleusCandidate {
   float beta = 0.f;
   float zVertex = 0.f;
   int nContrib = 0;
-  float DCAxy = 0.f;
-  float DCAz = 0.f;
-  float TPCsignal = 0.f;
-  float ITSchi2 = 0.f;
-  float TPCchi2 = 0.f;
-  float TOFchi2 = 0.f;
+  float dcaXY = 0.f;
+  float dcaZ = 0.f;
+  float tpcSignal = 0.f;
+  float itsChi2 = 0.f;
+  float tpcChi2 = 0.f;
+  float tofChi2 = 0.f;
   std::array<float, 5> nSigmaTPC{};
   std::array<float, 5> tofMasses{};
   bool fillTree = false;
@@ -122,30 +122,30 @@ struct NucleusCandidate {
   bool isSecondary = false;
   bool fromWeakDecay = false;
   uint16_t flags = 0;
-  uint8_t TPCfindableCls = 0;
-  uint8_t TPCcrossedRows = 0;
-  uint8_t ITSclsMap = 0;
-  uint8_t TPCnCls = 0;
-  uint8_t TPCnClsShared = 0;
-  uint8_t ITSnCls = 0;
+  uint8_t tpcFindableCls = 0;
+  uint8_t tpcCrossedRows = 0;
+  uint8_t itsClsMap = 0;
+  uint8_t tpcNCls = 0;
+  uint8_t tpcNClsShared = 0;
+  uint8_t itsNCls = 0;
   uint32_t clusterSizesITS = 0;
 };
 
 namespace nuclei
 {
-constexpr double bbMomScalingDefault[5][2]{
+constexpr double BBMomScalingDefault[5][2]{
   {1., 1.},
   {1., 1.},
   {1., 1.},
   {1., 1.},
   {1., 1.}};
-constexpr double betheBlochDefault[5][6]{
+constexpr double BetheBlochDefault[5][6]{
   {-136.71, 0.441, 0.2269, 1.347, 0.8035, 0.09},
   {-136.71, 0.441, 0.2269, 1.347, 0.8035, 0.09},
   {-239.99, 1.155, 1.099, 1.137, 1.006, 0.09},
   {-321.34, 0.6539, 1.591, 0.8225, 2.363, 0.09},
   {-586.66, 1.859, 4.435, 0.282, 3.201, 0.09}};
-constexpr double nSigmaTPCdefault[5][2]{
+constexpr double NSigmaTPCdefault[5][2]{
   {-5., 5.},
   {-5., 5.},
   {-5., 5.},
@@ -175,21 +175,21 @@ constexpr double DownscalingDefault[5][1]{
   {1.},
   {1.},
   {1.}};
-constexpr int species{5};                                                                    // Number of analysed species
-constexpr int codes[5]{2212, 1000010020, 1000010030, 1000020030, 1000020040};                // PGD code of these particles
-constexpr float charges[5]{1.f, 1.f, 1.f, 2.f, 2.f};                                         // Their charge
-constexpr float masses[5]{MassProton, MassDeuteron, MassTriton, MassHelium3, MassAlpha};     // Their masses
+constexpr int Species{5};                                                                    // Number of analysed species
+constexpr int Codes[5]{2212, 1000010020, 1000010030, 1000020030, 1000020040};                // PGD code of these particles
+constexpr float Charges[5]{1.f, 1.f, 1.f, 2.f, 2.f};                                         // Their charge
+constexpr float Masses[5]{MassProton, MassDeuteron, MassTriton, MassHelium3, MassAlpha};     // Their masses
 static const std::vector<std::string> matter{"M", "A"};                                      // Type of particles (matter or antimatter)
 static const std::vector<std::string> pidName{"TPC", "TOF"};                                 // Type of PID
 static const std::vector<int> hfMothCodes{511, 521, 531, 541, 5122};                         // b-mesons + Lambda_b
 static const std::vector<std::string> names{"proton", "deuteron", "triton", "He3", "alpha"}; // Particles name
 static const std::vector<std::string> treeConfigNames{"Filter trees", "Use TOF selection"};
-static const std::vector<std::string> DCAConfigNames{"Save DCA hist", "Matter/Antimatter"};
+static const std::vector<std::string> dcaConfigNames{"Save DCA hist", "Matter/Antimatter"};
 static const std::vector<std::string> nSigmaConfigName{"nsigma_min", "nsigma_max"};                   // label for nsigmaTPC selection
-static const std::vector<std::string> nDCAConfigName{"max DCAxy", "max DCAz"};                        // label for DCA selection
-static const std::vector<std::string> DownscalingConfigName{"Fraction of kept candidates"};           // Fraction of candidates to be kept
+static const std::vector<std::string> nDCAConfigName{"max dcaXY", "max dcaZ"};                        // label for DCA selection
+static const std::vector<std::string> downscalingConfigName{"Fraction of kept candidates"};           // Fraction of candidates to be kept
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"}; // BB paramteters
-static const std::vector<std::string> binnedVariableNames{"DCAxy", "DCAz", "TPCnsigma", "TOFnsigma", "TOFmass"};
+static const std::vector<std::string> binnedVariableNames{"DCAxy", "dcaZ", "TPCnsigma", "TOFnsigma", "TOFmass"};
 static const std::vector<std::string> chargeLabelNames{"Positive", "Negative"}; // Particles charge (pos or neg)
 
 float pidCuts[2][5][2];
@@ -211,7 +211,7 @@ o2::base::MatLayerCylSet* lut = nullptr; // describe detector material
 
 std::vector<NucleusCandidate> candidates;
 
-enum evSel {
+enum EvSel {
   kTVX = 0,
   kTFBorder, // Here we can substitute with sel8
   kITSROFborder,
@@ -240,7 +240,7 @@ constexpr int EvSelDefault[10][1]{
   {0},  // INEL > 0
   {1}}; // Triggered on jets
 
-enum evGenSel : uint8_t {
+enum EvGenSel : uint8_t {
   kGenIsINELgt0 = 1 << 0,
   kGenIsJetTriggered = 1 << 1,
   kGenHasRecoEv = 1 << 2
@@ -265,7 +265,7 @@ struct DeuteronInTriggeredEvents {
 
   Produces<o2::aod::NucleiTable> nucleiTable;                       // For data
   Produces<o2::aod::NucleiTableMCExtension> nucleiTableMCExtension; // For MC analysis
-  Produces<o2::aod::GenEventMCSel> GenEventMCSel;                   // For MC reco events
+  Produces<o2::aod::GenEventMCSel> genEventMCSel;                   // For MC reco events
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdgDB; // For INELgt0 gen MC selection
   Zorro zorro;                                 // Definition of Zorro: helpful for skimmed data
@@ -274,7 +274,7 @@ struct DeuteronInTriggeredEvents {
   Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", false, "If true, divide tpcInnerParam by the electric charge"};
 
   struct : o2::framework::ConfigurableGroup {
-    Configurable<LabeledArray<double>> dcaMax{"dcaMax", {nuclei::DCAcutDefault[0], 5, 2, nuclei::names, nuclei::nDCAConfigName}, "Max DCAxy and DCAz for light nuclei"};
+    Configurable<LabeledArray<double>> dcaMax{"dcaMax", {nuclei::DCAcutDefault[0], 5, 2, nuclei::names, nuclei::nDCAConfigName}, "Max DCAxy and dcaZ for light nuclei"};
     Configurable<float> etaMax{"etaMax", 0.8f, "Max Eta for tracks"};
     Configurable<int> itsNClusMin{"itsNClusMin", 5, "Minimum number of ITS clusters"};
     Configurable<float> itsChi2ClusMax{"itsChi2ClusMax", 36.f, "Max ITS Chi2 per cluster"};
@@ -286,7 +286,7 @@ struct DeuteronInTriggeredEvents {
     Configurable<float> tpcNCrossedRowsOverFindableMin{"tpcNCrossedRowsOverFindableMin", 0.8f, "Minimum ratio of crossed rows over findable clusters"};
     Configurable<int> tpcNClsMin{"tpcNClsMin", 80, "Minimum number of TPC clusters"};
     Configurable<float> tpcRigidityMin{"tpcRigidityMin", 0.5f, "Minimum TPC rigidity for tracks"};
-    Configurable<LabeledArray<double>> tpcNSigmaMax{"tpcNSigmaMax", {nuclei::nSigmaTPCdefault[0], 5, 2, nuclei::names, nuclei::nSigmaConfigName}, "TPC nsigma selection for light nuclei"};
+    Configurable<LabeledArray<double>> tpcNSigmaMax{"tpcNSigmaMax", {nuclei::NSigmaTPCdefault[0], 5, 2, nuclei::names, nuclei::nSigmaConfigName}, "TPC nsigma selection for light nuclei"};
   } cfgTrackCut;
 
   Configurable<float> cfgCutPtMinTree{"cfgCutPtMinTree", 0.2f, "Minimum track transverse momentum for tree saving"};
@@ -296,12 +296,12 @@ struct DeuteronInTriggeredEvents {
   Configurable<LabeledArray<int>> cfgEventSelections{"cfgEventSelections", {nuclei::EvSelDefault[0], 10, 1, nuclei::eventSelectionLabels, nuclei::eventSelectionTitle}, "Event selections"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
 
-  Configurable<LabeledArray<double>> cfgMomentumScalingBetheBloch{"cfgMomentumScalingBetheBloch", {nuclei::bbMomScalingDefault[0], 5, 2, nuclei::names, nuclei::chargeLabelNames}, "TPC Bethe-Bloch momentum scaling for light nuclei"};
-  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {nuclei::betheBlochDefault[0], 5, 6, nuclei::names, nuclei::betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
-  Configurable<LabeledArray<double>> cfgDownscaling{"cfgDownscaling", {nuclei::DownscalingDefault[0], 5, 1, nuclei::names, nuclei::DownscalingConfigName}, "Fraction of kept candidates for light nuclei"};
+  Configurable<LabeledArray<double>> cfgMomentumScalingBetheBloch{"cfgMomentumScalingBetheBloch", {nuclei::BBMomScalingDefault[0], 5, 2, nuclei::names, nuclei::chargeLabelNames}, "TPC Bethe-Bloch momentum scaling for light nuclei"};
+  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {nuclei::BetheBlochDefault[0], 5, 6, nuclei::names, nuclei::betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
+  Configurable<LabeledArray<double>> cfgDownscaling{"cfgDownscaling", {nuclei::DownscalingDefault[0], 5, 1, nuclei::names, nuclei::downscalingConfigName}, "Fraction of kept candidates for light nuclei"};
   Configurable<LabeledArray<int>> cfgTreeConfig{"cfgTreeConfig", {nuclei::TreeConfigDefault[0], 5, 2, nuclei::names, nuclei::treeConfigNames}, "Filtered trees configuration"};
   Configurable<int> cfgFillGenSecondaries{"cfgFillGenSecondaries", 0, "Fill generated secondaries (0: no, 1: only weak decays, 2: all of them)"};
-  Configurable<LabeledArray<int>> cfgDCAHists{"cfgDCAHists", {nuclei::DCAHistDefault[0], 5, 2, nuclei::names, nuclei::DCAConfigNames}, "DCA hist configuration"};
+  Configurable<LabeledArray<int>> cfgDCAHists{"cfgDCAHists", {nuclei::DCAHistDefault[0], 5, 2, nuclei::names, nuclei::dcaConfigNames}, "DCA hist configuration"};
 
   Configurable<double> cfgNsigmaTPCcutDCAhists{"cfgNsigmaTPCcutDCAhists", 3., "TPC nsigma cut for DCA hists"};
   Configurable<double> cfgDeltaTOFmassCutDCAhists{"cfgDeltaTOFmassCutDCAhists", 0.2, "Delta TOF mass cut for DCA hists"};
@@ -379,55 +379,55 @@ struct DeuteronInTriggeredEvents {
   {
     spectra.fill(HIST("hEventSelections"), 0);
 
-    if (cfgEventSelections->get(nuclei::evSel::kTVX) && !collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+    if (cfgEventSelections->get(nuclei::EvSel::kTVX) && !collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
       return false;
     }
-    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kTVX + 1);
+    spectra.fill(HIST("hEventSelections"), nuclei::EvSel::kTVX + 1);
 
-    if (cfgEventSelections->get(nuclei::evSel::kTFBorder) && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+    if (cfgEventSelections->get(nuclei::EvSel::kTFBorder) && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
-    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kTFBorder + 1);
+    spectra.fill(HIST("hEventSelections"), nuclei::EvSel::kTFBorder + 1);
 
-    if (cfgEventSelections->get(nuclei::evSel::kITSROFborder) && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+    if (cfgEventSelections->get(nuclei::EvSel::kITSROFborder) && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
-    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kITSROFborder + 1);
+    spectra.fill(HIST("hEventSelections"), nuclei::EvSel::kITSROFborder + 1);
 
-    if (cfgEventSelections->get(nuclei::evSel::kZvtx) && std::abs(collision.posZ()) > cfgCutVertex) {
+    if (cfgEventSelections->get(nuclei::EvSel::kZvtx) && std::abs(collision.posZ()) > cfgCutVertex) {
       return false;
     }
-    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kZvtx + 1);
+    spectra.fill(HIST("hEventSelections"), nuclei::EvSel::kZvtx + 1);
 
-    if (cfgEventSelections->get(nuclei::evSel::kNoSameBunchPileup) && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+    if (cfgEventSelections->get(nuclei::EvSel::kNoSameBunchPileup) && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
-    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kNoSameBunchPileup + 1);
+    spectra.fill(HIST("hEventSelections"), nuclei::EvSel::kNoSameBunchPileup + 1);
 
-    if (cfgEventSelections->get(nuclei::evSel::kIsGoodZvtxFT0vsPV) && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (cfgEventSelections->get(nuclei::EvSel::kIsGoodZvtxFT0vsPV) && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
-    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kIsGoodZvtxFT0vsPV + 1);
+    spectra.fill(HIST("hEventSelections"), nuclei::EvSel::kIsGoodZvtxFT0vsPV + 1);
 
-    if (cfgEventSelections->get(nuclei::evSel::kIsGoodITSLayersAll) && !collision.selection_bit(aod::evsel::kIsGoodITSLayersAll)) {
+    if (cfgEventSelections->get(nuclei::EvSel::kIsGoodITSLayersAll) && !collision.selection_bit(aod::evsel::kIsGoodITSLayersAll)) {
       return false;
     }
-    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kIsGoodITSLayersAll + 1);
+    spectra.fill(HIST("hEventSelections"), nuclei::EvSel::kIsGoodITSLayersAll + 1);
 
     if constexpr (
       requires {
         collision.triggereventep();
       }) {
-      if (cfgEventSelections->get(nuclei::evSel::kIsEPtriggered) && !collision.triggereventep()) {
+      if (cfgEventSelections->get(nuclei::EvSel::kIsEPtriggered) && !collision.triggereventep()) {
         return false;
       }
-      spectra.fill(HIST("hEventSelections"), nuclei::evSel::kIsEPtriggered + 1);
+      spectra.fill(HIST("hEventSelections"), nuclei::EvSel::kIsEPtriggered + 1);
     }
 
-    if (cfgEventSelections->get(nuclei::evSel::kINELgt0) && !collision.selection_bit(aod::kINELgtZERO)) {
+    if (cfgEventSelections->get(nuclei::EvSel::kINELgt0) && !collision.selection_bit(aod::kINELgtZERO)) {
       return false;
     }
-    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kINELgt0 + 1);
+    spectra.fill(HIST("hEventSelections"), nuclei::EvSel::kINELgt0 + 1);
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
@@ -440,7 +440,7 @@ struct DeuteronInTriggeredEvents {
         return false;
     }
 
-    spectra.fill(HIST("hEventSelections"), nuclei::evSel::kIsJetTriggered + 1);
+    spectra.fill(HIST("hEventSelections"), nuclei::EvSel::kIsJetTriggered + 1);
 
     return true;
   }
@@ -503,18 +503,18 @@ struct DeuteronInTriggeredEvents {
       {cfgDCAxyBinsAlpha, "DCA_{z} (cm)"}};
     const AxisSpec etaAxis{40, -1., 1., "#eta"};
 
-    spectra.add("hEventSelections", "hEventSelections", {HistType::kTH1D, {{nuclei::evSel::kNevSels + 1, -0.5f, static_cast<float>(nuclei::evSel::kNevSels) + 0.5f}}});
+    spectra.add("hEventSelections", "hEventSelections", {HistType::kTH1D, {{nuclei::EvSel::kNevSels + 1, -0.5f, static_cast<float>(nuclei::EvSel::kNevSels) + 0.5f}}});
     spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(1, "all");
-    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kTVX + 2, "TVX");
-    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kTFBorder + 2, "TFborder");
-    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kITSROFborder + 2, "ITSROFborder");
-    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kZvtx + 2, "Zvtx");
-    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kNoSameBunchPileup + 2, "kNoSameBunchPileup");
-    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kIsGoodZvtxFT0vsPV + 2, "isGoodZvtxFT0vsPV");
-    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kIsGoodITSLayersAll + 2, "IsGoodITSLayersAll");
-    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kIsEPtriggered + 2, "IsEPtriggered");
-    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kINELgt0 + 2, "IsINELgt0");
-    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::evSel::kIsJetTriggered + 2, "IsJetTriggered");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::EvSel::kTVX + 2, "TVX");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::EvSel::kTFBorder + 2, "TFborder");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::EvSel::kITSROFborder + 2, "ITSROFborder");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::EvSel::kZvtx + 2, "Zvtx");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::EvSel::kNoSameBunchPileup + 2, "kNoSameBunchPileup");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::EvSel::kIsGoodZvtxFT0vsPV + 2, "isGoodZvtxFT0vsPV");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::EvSel::kIsGoodITSLayersAll + 2, "IsGoodITSLayersAll");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::EvSel::kIsEPtriggered + 2, "IsEPtriggered");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::EvSel::kINELgt0 + 2, "IsINELgt0");
+    spectra.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(nuclei::EvSel::kIsJetTriggered + 2, "IsJetTriggered");
 
     // Distribution of z-vertex of selected events
     spectra.add("hRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
@@ -529,13 +529,13 @@ struct DeuteronInTriggeredEvents {
     for (unsigned int iC{0}; iC < nuclei::matter.size(); ++iC) {
       nuclei::hGloTOFtracks[iC] = spectra.add<TH2>(fmt::format("hTPCTOFtracks{}", nuclei::matter[iC]).data(), fmt::format("Global vs TOF matched {} tracks in a collision", nuclei::chargeLabelNames[iC]).data(), HistType::kTH2D, {{300, -0.5, 300.5, "Number of global tracks"}, {300, -0.5, 300.5, "Number of TOF matched tracks"}});
 
-      for (int iS{0}; iS < nuclei::species; ++iS) {
+      for (int iS{0}; iS < nuclei::Species; ++iS) {
         nuclei::hNsigma[0][iS][iC] = spectra.add<TH2>(fmt::format("h{}nsigma{}_{}", nuclei::pidName[0], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("n#sigma_{{}} {} {}", nuclei::pidName[0], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH2D, {ptAxes[iS], nSigmaAxes[0]});
         nuclei::hNsigmaEta[0][iS][iC] = spectra.add<TH3>(fmt::format("h{}nsigmaEta{}_{}", nuclei::pidName[0], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("n#sigma_{{}} {} {} vs #eta", nuclei::pidName[0], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {etaAxis, ptAxes[iS], nSigmaAxes[0]});
 
         for (unsigned int iPID{0}; iPID < nuclei::matter.size(); ++iPID) {
           nuclei::hDCAxy[iPID][iS][iC] = spectra.add<TH2>(fmt::format("hDCAxy{}_{}_{}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCAxy {} {} {}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH2D, {ptAxes[iS], dcaxyAxes[iS]});
-          nuclei::hDCAz[iPID][iS][iC] = spectra.add<TH2>(fmt::format("hDCAz{}_{}_{}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCAz {} {} {}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH2D, {ptAxes[iS], dcazAxes[iS]});
+          nuclei::hDCAz[iPID][iS][iC] = spectra.add<TH2>(fmt::format("hDCAz{}_{}_{}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("dcaZ {} {} {}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH2D, {ptAxes[iS], dcazAxes[iS]});
         }
         nuclei::hTOFmass[iS][iC] = spectra.add<TH2>(fmt::format("h{}TOFmass{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("TOF mass - {}  PDG mass", nuclei::names[iS]).data(), HistType::kTH2D, {ptAxes[iS], tofMassAxis});
         nuclei::hTOFmassEta[iS][iC] = spectra.add<TH3>(fmt::format("h{}TOFmassEta{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("TOF mass - {}  PDG mass", nuclei::names[iS]).data(), HistType::kTH3D, {etaAxis, ptAxes[iS], tofMassAxis});
@@ -552,7 +552,7 @@ struct DeuteronInTriggeredEvents {
 
     // Setting the nsigma interval in which the the candidate is kept
     // The first index is set to 0 because it is for TPC
-    for (int iS{0}; iS < nuclei::species; ++iS) {
+    for (int iS{0}; iS < nuclei::Species; ++iS) {
       for (unsigned int iMax{0}; iMax < nuclei::pidName.size(); ++iMax) {
         nuclei::pidCuts[0][iS][iMax] = cfgTrackCut.tpcNSigmaMax->get(iS, iMax);
       }
@@ -653,8 +653,8 @@ struct DeuteronInTriggeredEvents {
         continue;
 
       // Build 4-momentum assuming charged pion mass
-      static constexpr float kMassPionChargedSquared = o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged;
-      const double energy = std::sqrt(particle.p() * particle.p() + kMassPionChargedSquared);
+      static constexpr float KMassPionChargedSquared = o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged;
+      const double energy = std::sqrt(particle.p() * particle.p() + KMassPionChargedSquared);
       fastjet::PseudoJet fourMomentum(particle.px(), particle.py(), particle.pz(), energy);
       fourMomentum.set_user_index(particle.pdgCode());
       fjParticles.emplace_back(fourMomentum);
@@ -696,17 +696,17 @@ struct DeuteronInTriggeredEvents {
       return false;
 
     // Constants for identifying heavy-flavor (charm and bottom) content from PDG codes
-    static constexpr int kCharmQuark = 4;
-    static constexpr int kBottomQuark = 5;
-    static constexpr int hundreds = 100;
-    static constexpr int thousands = 1000;
+    static constexpr int KCharmQuark = 4;
+    static constexpr int KBottomQuark = 5;
+    static constexpr int Hundreds = 100;
+    static constexpr int Thousands = 1000;
 
     // Check if particle is from heavy-flavor decay
     bool fromHF = false;
     if (particle.has_mothers()) {
       auto mother = mcParticles.iteratorAt(particle.mothersIds()[0]);
       int motherPdg = std::abs(mother.pdgCode());
-      fromHF = (motherPdg / hundreds == kCharmQuark || motherPdg / hundreds == kBottomQuark || motherPdg / thousands == kCharmQuark || motherPdg / thousands == kBottomQuark);
+      fromHF = (motherPdg / Hundreds == KCharmQuark || motherPdg / Hundreds == KBottomQuark || motherPdg / Thousands == KCharmQuark || motherPdg / Thousands == KBottomQuark);
     }
 
     // Select only physical primary particles or from heavy-flavor
@@ -761,11 +761,11 @@ struct DeuteronInTriggeredEvents {
     const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
 
     const double bgScalings[5][2]{
-      {nuclei::charges[0] * cfgMomentumScalingBetheBloch->get(0u, 0u) / nuclei::masses[0], nuclei::charges[0] * cfgMomentumScalingBetheBloch->get(0u, 1u) / nuclei::masses[0]},
-      {nuclei::charges[1] * cfgMomentumScalingBetheBloch->get(1u, 0u) / nuclei::masses[1], nuclei::charges[1] * cfgMomentumScalingBetheBloch->get(1u, 1u) / nuclei::masses[1]},
-      {nuclei::charges[2] * cfgMomentumScalingBetheBloch->get(2u, 0u) / nuclei::masses[2], nuclei::charges[2] * cfgMomentumScalingBetheBloch->get(2u, 1u) / nuclei::masses[2]},
-      {nuclei::charges[3] * cfgMomentumScalingBetheBloch->get(3u, 0u) / nuclei::masses[3], nuclei::charges[3] * cfgMomentumScalingBetheBloch->get(3u, 1u) / nuclei::masses[3]},
-      {nuclei::charges[4] * cfgMomentumScalingBetheBloch->get(4u, 0u) / nuclei::masses[4], nuclei::charges[4] * cfgMomentumScalingBetheBloch->get(4u, 1u) / nuclei::masses[4]}};
+      {nuclei::Charges[0] * cfgMomentumScalingBetheBloch->get(0u, 0u) / nuclei::Masses[0], nuclei::Charges[0] * cfgMomentumScalingBetheBloch->get(0u, 1u) / nuclei::Masses[0]},
+      {nuclei::Charges[1] * cfgMomentumScalingBetheBloch->get(1u, 0u) / nuclei::Masses[1], nuclei::Charges[1] * cfgMomentumScalingBetheBloch->get(1u, 1u) / nuclei::Masses[1]},
+      {nuclei::Charges[2] * cfgMomentumScalingBetheBloch->get(2u, 0u) / nuclei::Masses[2], nuclei::Charges[2] * cfgMomentumScalingBetheBloch->get(2u, 1u) / nuclei::Masses[2]},
+      {nuclei::Charges[3] * cfgMomentumScalingBetheBloch->get(3u, 0u) / nuclei::Masses[3], nuclei::Charges[3] * cfgMomentumScalingBetheBloch->get(3u, 1u) / nuclei::Masses[3]},
+      {nuclei::Charges[4] * cfgMomentumScalingBetheBloch->get(4u, 0u) / nuclei::Masses[4], nuclei::Charges[4] * cfgMomentumScalingBetheBloch->get(4u, 1u) / nuclei::Masses[4]}};
 
     int nGloTracks[2]{0, 0}, nTOFTracks[2]{0, 0};
 
@@ -802,7 +802,7 @@ struct DeuteronInTriggeredEvents {
       std::array<float, 5> nSigmaTPC;
       // This part apply a selection on tracks:
       // if the nsigma of the track is less than a certain value, it is accepted
-      for (int iS{0}; iS < nuclei::species; ++iS) { // The first index here is set to 0 because it is TPC analysis
+      for (int iS{0}; iS < nuclei::Species; ++iS) { // The first index here is set to 0 because it is TPC analysis
         double expBethe{common::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScalings[iS][iC]), cfgBetheBlochParams->get(iS, 0u), cfgBetheBlochParams->get(iS, 1u), cfgBetheBlochParams->get(iS, 2u), cfgBetheBlochParams->get(iS, 3u), cfgBetheBlochParams->get(iS, 4u))};
         double expSigma{expBethe * cfgBetheBlochParams->get(iS, 5u)};
         nSigma[0][iS] = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
@@ -845,12 +845,12 @@ struct DeuteronInTriggeredEvents {
         flag |= kITSrof;
       }
 
-      for (int iS{0}; iS < nuclei::species; ++iS) {
+      for (int iS{0}; iS < nuclei::Species; ++iS) {
         bool selectedTOF{false};
         if (std::abs(dcaInfo[1]) > cfgTrackCut.dcaMax->get(iS, 1)) {
           continue;
         }
-        ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<float>> fvector{mTrackParCov.getPt() * nuclei::charges[iS], mTrackParCov.getEta(), mTrackParCov.getPhi(), nuclei::masses[iS]};
+        ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<float>> fvector{mTrackParCov.getPt() * nuclei::Charges[iS], mTrackParCov.getEta(), mTrackParCov.getPhi(), nuclei::Masses[iS]};
         float y{fvector.Rapidity() + cfgCMrapidity};
         for (unsigned int iPID{0}; iPID < nuclei::pidName.size(); ++iPID) { /// 0 TPC, 1 TOF
           if (selectedTPC[iS]) {
@@ -858,8 +858,8 @@ struct DeuteronInTriggeredEvents {
               continue;
             } else if (iPID) {
               selectedTOF = true; /// temporarly skipped
-              float charge{nuclei::charges[iS]};
-              tofMasses[iS] = correctedTpcInnerParam * charge * std::sqrt(1.f / (beta * beta) - 1.f) - nuclei::masses[iS];
+              float charge{nuclei::Charges[iS]};
+              tofMasses[iS] = correctedTpcInnerParam * charge * std::sqrt(1.f / (beta * beta) - 1.f) - nuclei::Masses[iS];
             }
             if (!cfgTrackCut.rapidityToggle || (y > cfgTrackCut.rapidityMin && y < cfgTrackCut.rapidityMax)) {
               if (std::abs(nSigmaTPC[iS]) < cfgNsigmaTPCcutDCAhists && (!iPID || std::abs(tofMasses[iS]) < cfgDeltaTOFmassCutDCAhists)) {
@@ -871,7 +871,7 @@ struct DeuteronInTriggeredEvents {
                   nuclei::hNsigma[iPID][iS][iC]->Fill(fvector.pt(), nSigma[iPID][iS]);
                   nuclei::hNsigmaEta[iPID][iS][iC]->Fill(fvector.eta(), fvector.pt(), nSigma[iPID][iS]);
                 }
-                if (iPID && std::abs(nSigma[iPID][iS]) < cfgNsigmaTPCcutTOFhists) {
+                if (iPID && std::abs(nSigmaTPC[iS]) < cfgNsigmaTPCcutTOFhists) { // Apply nsigmaTPC cut on TOF tracks
                   nuclei::hTOFmass[iS][iC]->Fill(fvector.pt(), tofMasses[iS]);
                   nuclei::hTOFmassEta[iS][iC]->Fill(fvector.eta(), fvector.pt(), tofMasses[iS]);
                 }
@@ -925,12 +925,12 @@ struct DeuteronInTriggeredEvents {
     for (size_t i1{0}; i1 < nuclei::candidates.size(); ++i1) {
       auto& c1 = nuclei::candidates[i1];
       if (c1.fillTree) {
-        nucleiTable(c1.pt, c1.eta, c1.phi, c1.tpcInnerParam, c1.beta, c1.zVertex, c1.nContrib, c1.DCAxy, c1.DCAz, c1.TPCsignal, c1.ITSchi2, c1.TPCchi2, c1.TOFchi2, c1.flags, c1.TPCfindableCls, c1.TPCcrossedRows, c1.ITSclsMap, c1.TPCnCls, c1.TPCnClsShared, c1.clusterSizesITS);
+        nucleiTable(c1.pt, c1.eta, c1.phi, c1.tpcInnerParam, c1.beta, c1.zVertex, c1.nContrib, c1.dcaXY, c1.dcaZ, c1.tpcSignal, c1.itsChi2, c1.tpcChi2, c1.tofChi2, c1.flags, c1.tpcFindableCls, c1.tpcCrossedRows, c1.itsClsMap, c1.tpcNCls, c1.tpcNClsShared, c1.clusterSizesITS);
       }
       if (c1.fillDCAHist) {
-        for (int iS{0}; iS < nuclei::species; ++iS) {
+        for (int iS{0}; iS < nuclei::Species; ++iS) {
           if (c1.flags & BIT(iS)) {
-            nuclei::hDCAHists[c1.pt < 0][iS]->Fill(std::abs(c1.pt), c1.DCAxy, c1.DCAz, c1.nSigmaTPC[iS], c1.tofMasses[iS], c1.ITSnCls, c1.TPCnCls);
+            nuclei::hDCAHists[c1.pt < 0][iS]->Fill(std::abs(c1.pt), c1.dcaXY, c1.dcaZ, c1.nSigmaTPC[iS], c1.tofMasses[iS], c1.itsNCls, c1.tpcNCls);
           }
         }
       }
@@ -989,7 +989,7 @@ struct DeuteronInTriggeredEvents {
     }
 
     for (const auto& c : mcCollisions) {
-      GenEventMCSel(eventMask[c.globalIndex()]);
+      genEventMCSel(eventMask[c.globalIndex()]);
     }
 
     std::vector<bool> isReconstructed(particlesMC.size(), false);
@@ -1000,10 +1000,10 @@ struct DeuteronInTriggeredEvents {
       }
       auto particle = particlesMC.iteratorAt(label.mcParticleId());
       bool storeIt{false};
-      for (int iS{0}; iS < nuclei::species; ++iS) {
-        if (std::abs(particle.pdgCode()) == nuclei::codes[iS]) {
+      for (int iS{0}; iS < nuclei::Species; ++iS) {
+        if (std::abs(particle.pdgCode()) == nuclei::Codes[iS]) {
           if (c.fillTree && !storeIt) {
-            nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt * nuclei::charges[iS]), 1. - std::abs(c.pt * nuclei::charges[iS]) / particle.pt());
+            nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt * nuclei::Charges[iS]), 1. - std::abs(c.pt * nuclei::Charges[iS]) / particle.pt());
             storeIt = cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u); /// store only the particles of interest
           }
           auto coll = collisions.iteratorAt(c.collTrackIndex);
@@ -1015,7 +1015,7 @@ struct DeuteronInTriggeredEvents {
             c.flags |= kIsAmbiguous;
           }
           if (c.fillDCAHist && cfgDCAHists->get(iS, c.pt < 0)) {
-            nuclei::hDCAHists[c.pt < 0][iS]->Fill(std::abs(c.pt), c.DCAxy, c.DCAz, c.nSigmaTPC[iS], c.tofMasses[iS], c.ITSnCls, c.TPCnCls, c.correctPV, c.isSecondary, c.fromWeakDecay);
+            nuclei::hDCAHists[c.pt < 0][iS]->Fill(std::abs(c.pt), c.dcaXY, c.dcaZ, c.nSigmaTPC[iS], c.tofMasses[iS], c.itsNCls, c.tpcNCls, c.correctPV, c.isSecondary, c.fromWeakDecay);
           }
         }
       }
@@ -1053,14 +1053,14 @@ struct DeuteronInTriggeredEvents {
 
       isReconstructed[particle.globalIndex()] = true;
       float absoDecL = computeAbsoDecL(particle);
-      nucleiTableMCExtension(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.nContrib, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.TOFchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.TPCnClsShared, c.clusterSizesITS, goodCollisions[particle.mcCollisionId()], particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), motherPdgCode, motherDecRadius, absoDecL, eventMask[particle.mcCollisionId()]);
+      nucleiTableMCExtension(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.nContrib, c.dcaXY, c.dcaZ, c.tpcSignal, c.itsChi2, c.tpcChi2, c.tofChi2, c.flags, c.tpcFindableCls, c.tpcCrossedRows, c.itsClsMap, c.tpcNCls, c.tpcNClsShared, c.clusterSizesITS, goodCollisions[particle.mcCollisionId()], particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), motherPdgCode, motherDecRadius, absoDecL, eventMask[particle.mcCollisionId()]);
     }
 
     int index{0};
     for (const auto& particle : particlesMC) {
       int pdg{std::abs(particle.pdgCode())};
-      for (int iS{0}; iS < nuclei::species; ++iS) {
-        if (pdg != nuclei::codes[iS]) {
+      for (int iS{0}; iS < nuclei::Species; ++iS) {
+        if (pdg != nuclei::Codes[iS]) {
           continue;
         }
         if (particle.y() < cfgTrackCut.rapidityMin || particle.y() > cfgTrackCut.rapidityMax) {
