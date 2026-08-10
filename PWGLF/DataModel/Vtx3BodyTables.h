@@ -141,8 +141,8 @@ DECLARE_SOA_COLUMN(IsReco, isreco, int);               //! flag if candidate was
 DECLARE_SOA_COLUMN(MotherLabel, motherLabel, int);     //! label of the mother particle (signal: MC index, bkg: negative value)
 
 // strangeness tracking information
-DECLARE_SOA_COLUMN(ITSTrackDCAXYToSVXY, itsTrackDcaXYToSv, float); //! DCAxy of ITS track to SV
-DECLARE_SOA_COLUMN(ITSTrackDCAZToSVXY, itsTrackDcaZToSv, float);   //! DCAz of ITS track to SV
+DECLARE_SOA_COLUMN(ITSTrackDCAXYToSV, itsTrackDcaXYToSv, float); //! DCAxy of ITS track to SV
+DECLARE_SOA_COLUMN(ITSTrackDCAZToSV, itsTrackDcaZToSv, float);   //! DCAz of ITS track to SV
 
 // Derived expressions
 // Momenta
@@ -264,8 +264,8 @@ DECLARE_SOA_TABLE(Vtx3BodyCovs, "AOD", "VTX3BODYCOV", //!
 
 // strangeness tracked extra table
 DECLARE_SOA_TABLE(Vtx3BodyTrackedInfo, "AOD", "VTX3BODYTR", //!
-                  vtx3body::ITSTrackDCAXYToSVXY,
-                  vtx3body::ITSTrackDCAZToSVXY);
+                  vtx3body::ITSTrackDCAXYToSV,
+                  vtx3body::ITSTrackDCAZToSV);
 
 // MC candidate table for analysis
 DECLARE_SOA_TABLE(McVtx3BodyDatas, "AOD", "MC3BODYDATA", //!

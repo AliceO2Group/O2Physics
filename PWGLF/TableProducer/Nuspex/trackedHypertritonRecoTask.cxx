@@ -773,6 +773,16 @@ struct TrackedHypertritonRecoTask {
     return deuteronTOFPIDMC.GetTOFNSigma(tofResponse, track, originalCollision, collision);
   }
 
+  template <class TTracksTo, typename TTracked3body>
+  std::array<float, 2> getItsTrackDCAToSV(TTracked3body tracked3Body)
+  {
+    const auto itsTrack = tracked3Body.template itsTrack_as<TTracksTo>();
+    auto itsTrackParCov = getTrackParCov(itsTrack);
+    std::array<float, 2> dcaInfo{};
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({builder3Body.decay3body.position[0], builder3Body.decay3body.position[1], builder3Body.decay3body.position[2]}, itsTrackParCov, 2.f, fitter2Body.getMatCorrType(), &dcaInfo);
+    return dcaInfo;
+  }
+
   void fillThreeBodyTables()
   {
     const auto& candidate = builder3Body.decay3body;
@@ -831,6 +841,8 @@ struct TrackedHypertritonRecoTask {
                     static_cast<int>(info.isReco), info.motherLabel, info.motherPdgCode,
                     info.protonPdgCode, info.pionPdgCode, info.deuteronPdgCode,
                     info.isDeuteronPrimary, static_cast<int>(info.survivedEventSelection));
+    vtx3BodyCovs(candidate.covProton.data(), candidate.covPion.data(), candidate.covDeuteron.data(), candidate.covariance.data());
+    vtx3BodyTrackedInfo(candidate.itsTrackDCAToSV[0], candidate.itsTrackDCAToSV[1]);
   }
 
   void fillGeneratedThreeBodyMCTable(ThreeBodyMCInfo const& info)
@@ -926,10 +938,7 @@ struct TrackedHypertritonRecoTask {
                                                 threeBody.useSelections, threeBody.useChi2Selection, threeBody.useTPCforPion,
                                                 threeBody.acceptTPCOnly, threeBody.askOnlyITSMatch, threeBody.calculateCovariance)) {
         // get DCA of ITS track to SV
-        const auto itsTrack = tracked3Body.itsTrack_as<Tracks>();
-        auto itsTrackParCov = getTrackParCov(itsTrack);
-        std::array<float, 2> dcaInfoItsTrack{};
-        o2::base::Propagator::Instance()->propagateToDCABxByBz({builder3Body.decay3body.position[0], builder3Body.decay3body.position[1], builder3Body.decay3body.position[2]}, itsTrackParCov, 2.f, fitter2Body.getMatCorrType(), &dcaInfoItsTrack);
+        std::array<float, 2> dcaInfoItsTrack = getItsTrackDCAToSV<Tracks>(tracked3Body);
         builder3Body.decay3body.itsTrackDCAToSV[0] = dcaInfoItsTrack[0];
         builder3Body.decay3body.itsTrackDCAToSV[1] = dcaInfoItsTrack[1];
         if (threeBody.useSelections && (std::abs(builder3Body.decay3body.itsTrackDCAToSV[0]) > threeBody.maxITSDCAxytrackToSV || std::abs(builder3Body.decay3body.itsTrackDCAToSV[1]) > threeBody.maxITSDCAztrackToSV)) {
@@ -1025,6 +1034,15 @@ struct TrackedHypertritonRecoTask {
       if (mcInfo.motherLabel < 0 && !mc.storeBackground) {
         continue;
       }
+
+      // get DCA of ITS track to SV
+      std::array<float, 2> dcaInfoItsTrack = getItsTrackDCAToSV<TracksMC>(tracked3Body);
+      builder3Body.decay3body.itsTrackDCAToSV[0] = dcaInfoItsTrack[0];
+      builder3Body.decay3body.itsTrackDCAToSV[1] = dcaInfoItsTrack[1];
+      if (threeBody.useSelections && (std::abs(builder3Body.decay3body.itsTrackDCAToSV[0]) > threeBody.maxITSDCAxytrackToSV || std::abs(builder3Body.decay3body.itsTrackDCAToSV[1]) > threeBody.maxITSDCAztrackToSV)) {
+        continue;
+      }
+
       fillThreeBodyMCTable(mcInfo);
       if (mcInfo.motherLabel >= 0) {
         reconstructedThreeBody[mcInfo.motherLabel] = true;
