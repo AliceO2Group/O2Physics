@@ -207,6 +207,7 @@ struct FlowGenericFramework {
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgUseLsPhi, bool, true, "Use LikeSign for Phi v2")
     O2_DEFINE_CONFIGURABLE(cfgUseOnlyTPC, bool, true, "Use only TPC PID for daughter selection")
+    O2_DEFINE_CONFIGURABLE(cfgDaughterPIDRejection, bool, true, "Reject daughters if not consistent with expected K0/Lambda decay products")
     O2_DEFINE_CONFIGURABLE(cfgFakeKaonCut, float, 0.1f, "Maximum difference in measured momentum and TPC inner ring momentum of particle")
     O2_DEFINE_CONFIGURABLE(cfgUseAsymmetricPID, bool, false, "Use asymmetric PID cuts")
     O2_DEFINE_CONFIGURABLE(cfgTPCNsigmaCut, float, 3.0f, "TPC N-sigma cut for pions, kaons, protons")
@@ -393,9 +394,9 @@ struct FlowGenericFramework {
     V0EfficiencyCommonPrimaryMother,
     V0EfficiencyMotherSpecies,
     V0EfficiencyMotherRapidity,
+    V0EfficiencySelection,
     V0EfficiencyGeneratedDaughterEta,
     V0EfficiencyRecoDaughterEta,
-    V0EfficiencySelection,
     V0EfficiencyFilled,
     V0EfficiencyStageCount
   };
@@ -465,6 +466,7 @@ struct FlowGenericFramework {
     FillProperLifetime,
     FillArmPodCut,
     FillCompetingMass,
+    FillDaughterTrackSelected,
     FillV02DaughterTrackSelection,
     FillV0DaughterTrackSelection
   };
@@ -735,7 +737,7 @@ struct FlowGenericFramework {
           registryQA.add("K0/hK0s", "", {HistType::kTH1D, {singleCount}});
           registryQA.add("K0/hK0s_corrected", "", {HistType::kTH1D, {singleCount}});
         }
-        registryQA.add("K0/hK0Count", "Number of K0;; Count", {HistType::kTH1D, {{13, 0.5, 13.5}}});
+        registryQA.add("K0/hK0Count", "Number of K0;; Count", {HistType::kTH1D, {{14, 0.5, 14.5}}});
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillCandidate, "K0 candidates");
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillDaughterPt, "Daughter pt");
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillMassCut, "Mass cut");
@@ -747,8 +749,9 @@ struct FlowGenericFramework {
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillProperLifetime, "Proper lifetime");
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillArmPodCut, "Armenteros-Podolanski cut");
         registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillCompetingMass, "Competing mass rejection");
-        registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillV02DaughterTrackSelection, "v02 Daughter track selection");
-        registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillV0DaughterTrackSelection, "v0 Daughter track selection");
+        registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillDaughterTrackSelected, "Daughter track selected");
+        registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillV02DaughterTrackSelection, "v02 Daughter eta selection");
+        registryQA.get<TH1>(HIST("K0/hK0Count"))->GetXaxis()->SetBinLabel(FillV0DaughterTrackSelection, "v0 Daughter eta selection");
       }
 
       if (resoSwitchVals[UseParticle][Lambda] != 0) {
@@ -772,7 +775,7 @@ struct FlowGenericFramework {
           registryQA.add("Lambda/hLambdas", "", {HistType::kTH1D, {singleCount}});
           registryQA.add("Lambda/hLambdas_corrected", "", {HistType::kTH1D, {singleCount}});
         }
-        registryQA.add("Lambda/hLambdaCount", "Number of Lambda;; Count", {HistType::kTH1D, {{13, 0.5, 13.5}}});
+        registryQA.add("Lambda/hLambdaCount", "Number of Lambda;; Count", {HistType::kTH1D, {{14, 0.5, 14.5}}});
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillCandidate, "Lambda candidates");
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillDaughterPt, "Daughter pt");
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillMassCut, "Mass cut");
@@ -784,6 +787,7 @@ struct FlowGenericFramework {
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillProperLifetime, "Proper lifetime");
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillArmPodCut, "Armenteros-Podolanski cut");
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillCompetingMass, "Competing mass rejection");
+        registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillDaughterTrackSelected, "Daughter track selected");
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillV02DaughterTrackSelection, "v02 Daughter track selection");
         registryQA.get<TH1>(HIST("Lambda/hLambdaCount"))->GetXaxis()->SetBinLabel(FillV0DaughterTrackSelection, "v0 Daughter track selection");
       }
@@ -2118,11 +2122,11 @@ struct FlowGenericFramework {
               if (!selectionV0DaughterEta(postrack, fractionSetup) || !selectionV0DaughterEta(negtrack, fractionSetup)) {
                 continue;
               }
+              registryQA.fill(HIST("K0/hK0Count"), (fractionSetup == FractionV02) ? FillV02DaughterTrackSelection : FillV0DaughterTrackSelection);
 
               if (cfgFill.cfgFillV0QA && fractionSetup == FractionV02) {
                 fillV0QA(k0Selection, v0, postrack, negtrack, centrality, weff);
               }
-              registryQA.fill(HIST("K0/hK0Count"), (fractionSetup == FractionV02) ? FillV02DaughterTrackSelection : FillV0DaughterTrackSelection);
 
               if (v0.mK0Short() > cfgPIDCuts.cfgK0SideBand1Min && v0.mK0Short() < cfgPIDCuts.cfgK0SideBand1Max) {
                 histosResoNpt[fractionSetup][K0Sideband1]->Fill(v0.pt(), (cfgUseNchCorrection) ? weff : 1.0);
@@ -2235,34 +2239,28 @@ struct FlowGenericFramework {
   template <typename TTrack>
   bool selectionV0Daughter(const TTrack& track, int pid)
   {
-    if (!(track.itsNCls() > cfgTrackCuts.cfgMinNITSCls)) {
-      return 0;
-    }
-    if (!track.hasTPC()) {
+    if (track.tpcNClsCrossedRows() < cfgTrackCuts.cfgNTPCXrows) {
       return false;
     }
-    if (track.tpcNClsFound() < cfgTrackCuts.cfgNTPCCls) {
-      return false;
-    }
-    if (!(track.tpcNClsCrossedRows() > cfgTrackCuts.cfgNTPCXrows)) {
-      return 0;
-    }
-
-    if (cfgPIDCuts.cfgUseOnlyTPC) {
-      if (pid == Pions && std::abs(track.tpcNSigmaPi()) > cfgPIDCuts.cfgTPCNsigmaCut) {
-        return false;
-      }
-      if (pid == Kaons && std::abs(track.tpcNSigmaKa()) > cfgPIDCuts.cfgTPCNsigmaCut) {
-        return false;
-      }
-      if (pid == Protons && std::abs(track.tpcNSigmaPr()) > cfgPIDCuts.cfgTPCNsigmaCut) {
-        return false;
-      }
-    } else {
-      int partIndex = cfgPIDCuts.cfgUseAsymmetricPID ? getNsigmaPIDAssymmetric(track) : getNsigmaPID(track);
-      int pidIndex = partIndex - 1; // 0 = pion, 1 = kaon, 2 = proton
-      if (pidIndex != pid) {
-        return false;
+    // Only accept daughters consistent with the expected identities of K0 or Lambda decay.
+    if (cfgPIDCuts.cfgDaughterPIDRejection) {
+      if (cfgPIDCuts.cfgUseOnlyTPC) {
+        if (pid == Pions && std::abs(track.tpcNSigmaPi()) > cfgPIDCuts.cfgTPCNsigmaCut) {
+          return false;
+        } else if (pid == Protons && std::abs(track.tpcNSigmaPr()) > cfgPIDCuts.cfgTPCNsigmaCut) {
+          return false;
+        } else if (pid != Pions && pid != Protons) {
+          return false;
+        }
+      } else {
+        int partIndex = cfgPIDCuts.cfgUseAsymmetricPID ? getNsigmaPIDAssymmetric(track) : getNsigmaPID(track);
+        int pidIndex = partIndex - 1; // 0 = pion, 1 = kaon, 2 = proton
+        if (pid != Pions && pid != Protons) {
+          return false;
+        }
+        if (pidIndex != pid) {
+          return false;
+        }
       }
     }
 
@@ -2366,7 +2364,7 @@ struct FlowGenericFramework {
     if (!selectionV0Daughter(postrack, Pions) || !selectionV0Daughter(negtrack, Pions)) {
       return selection;
     }
-
+    registryQA.fill(HIST("K0/hK0Count"), FillDaughterTrackSelected);
     selection.selected = true;
     selection.isK0 = true;
     registryQA.fill(HIST("K0/hK0AP"), v0.alpha(), v0.qtarm());
@@ -2453,16 +2451,17 @@ struct FlowGenericFramework {
     registryQA.fill(HIST("Lambda/hLambdaCount"), FillCompetingMass);
     if (selection.isL) {
       if (!selectionV0Daughter(postrack, Protons) || !selectionV0Daughter(negtrack, Pions)) {
-        registryQA.fill(HIST("Lambda/hLambdaAP"), v0.alpha(), v0.qtarm());
         return selection;
       }
+      registryQA.fill(HIST("Lambda/hLambdaAP"), v0.alpha(), v0.qtarm());
     }
     if (selection.isAL) {
       if (!selectionV0Daughter(postrack, Pions) || !selectionV0Daughter(negtrack, Protons)) {
-        registryQA.fill(HIST("Lambda/hAntiLambdaAP"), v0.alpha(), v0.qtarm());
         return selection;
       }
+      registryQA.fill(HIST("Lambda/hAntiLambdaAP"), v0.alpha(), v0.qtarm());
     }
+    registryQA.fill(HIST("Lambda/hLambdaCount"), FillDaughterTrackSelected);
     selection.selected = true;
 
     return selection;
