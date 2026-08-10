@@ -246,9 +246,9 @@ struct FlowGenericFramework {
     float ptrefup = 3.0;
     float ptlow = 0.2;
     float ptup = 10.0;
-    int etabins = 16;
-    float etalow = -0.8;
-    float etaup = 0.8;
+    int etabins = 100;
+    float etalow = -1;
+    float etaup = 1;
     int vtxZbins = 40;
     float vtxZlow = -10.0;
     float vtxZup = 10.0;
@@ -722,7 +722,7 @@ struct FlowGenericFramework {
 
       AxisSpec axisK0Mass = {resoSwitchVals[MassBins][K0], resoCutVals[MassMin][K0], resoCutVals[MassMax][K0]};
       AxisSpec axisLambdaMass = {resoSwitchVals[MassBins][Lambda], resoCutVals[MassMin][Lambda], resoCutVals[MassMax][Lambda]};
-
+      AxisSpec yAxis = {100, -1, 1};
       // QA histograms for V0s
       if (resoSwitchVals[UseParticle][K0] != 0) {
         if (cfgFill.cfgFillV0QA) {
@@ -731,7 +731,7 @@ struct FlowGenericFramework {
           registryQA.add("K0/PiPlusTOF_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("K0/PiMinusTOF_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("K0/hK0Phi", "", {HistType::kTH1D, {phiAxis}});
-          registryQA.add("K0/hK0Eta", "", {HistType::kTH1D, {etaAxis}});
+          registryQA.add("K0/hK0EtaY", "", {HistType::kTH2D, {etaAxis, yAxis}});
           registryQA.add("K0/hK0AP", "", {HistType::kTH2D, {{100, -1, 1}, {500, 0, 1.}}});
           registryQA.add("K0/hK0Mass_sparse", "", {HistType::kTHnSparseF, {{axisK0Mass, ptAxis, nchAxis}}});
           registryQA.add("K0/hK0s", "", {HistType::kTH1D, {singleCount}});
@@ -761,7 +761,7 @@ struct FlowGenericFramework {
           registryQA.add("Lambda/PrPlusTOF_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("Lambda/PiMinusTOF_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("Lambda/hLambdaPhi", "", {HistType::kTH1D, {phiAxis}});
-          registryQA.add("Lambda/hLambdaEta", "", {HistType::kTH1D, {etaAxis}});
+          registryQA.add("Lambda/hLambdaEtaY", "", {HistType::kTH2D, {etaAxis, yAxis}});
           registryQA.add("Lambda/hLambdaAP", "", {HistType::kTH2D, {{100, -1, 1}, {100, 0, 5.}}});
           registryQA.add("Lambda/hLambdaMass_sparse", "", {HistType::kTHnSparseF, {{axisLambdaMass, ptAxis, nchAxis}}});
           registryQA.add("Lambda/PiPlusTPC_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
@@ -769,7 +769,7 @@ struct FlowGenericFramework {
           registryQA.add("Lambda/PiPlusTOF_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("Lambda/PrMinusTOF_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("Lambda/hAntiLambdaPhi", "", {HistType::kTH1D, {phiAxis}});
-          registryQA.add("Lambda/hAntiLambdaEta", "", {HistType::kTH1D, {etaAxis}});
+          registryQA.add("Lambda/hAntiLambdaEtaY", "", {HistType::kTH2D, {etaAxis, yAxis}});
           registryQA.add("Lambda/hAntiLambdaAP", "", {HistType::kTH2D, {{100, -1, 1}, {100, 0, 5.}}});
           registryQA.add("Lambda/hAntiLambdaMass_sparse", "", {HistType::kTHnSparseF, {{axisLambdaMass, ptAxis, nchAxis}}});
           registryQA.add("Lambda/hLambdas", "", {HistType::kTH1D, {singleCount}});
@@ -2603,7 +2603,7 @@ struct FlowGenericFramework {
     if (selection.isK0) {
       registryQA.fill(HIST("K0/hK0Mass_sparse"), v0.mK0Short(), v0.pt(), centrality);
       registryQA.fill(HIST("K0/hK0Phi"), v0.phi());
-      registryQA.fill(HIST("K0/hK0Eta"), v0.eta());
+      registryQA.fill(HIST("K0/hK0EtaY"), v0.eta(), v0.yK0Short());
       registryQA.fill(HIST("K0/PiPlusTPC_K0"), postrack.pt(), postrack.tpcNSigmaKa());
       registryQA.fill(HIST("K0/PiPlusTOF_K0"), postrack.pt(), postrack.tofNSigmaKa());
       registryQA.fill(HIST("K0/PiMinusTPC_K0"), negtrack.pt(), negtrack.tpcNSigmaKa());
@@ -2617,7 +2617,7 @@ struct FlowGenericFramework {
     if (selection.isL) {
       registryQA.fill(HIST("Lambda/hLambdaMass_sparse"), v0.mLambda(), v0.pt(), centrality);
       registryQA.fill(HIST("Lambda/hLambdaPhi"), v0.phi());
-      registryQA.fill(HIST("Lambda/hLambdaEta"), v0.eta());
+      registryQA.fill(HIST("Lambda/hLambdaEtaY"), v0.eta(), v0.yLambda());
       registryQA.fill(HIST("Lambda/PrPlusTPC_L"), postrack.pt(), postrack.tpcNSigmaKa());
       registryQA.fill(HIST("Lambda/PrPlusTOF_L"), postrack.pt(), postrack.tofNSigmaKa());
       registryQA.fill(HIST("Lambda/PiMinusTPC_L"), negtrack.pt(), negtrack.tpcNSigmaKa());
@@ -2626,7 +2626,7 @@ struct FlowGenericFramework {
     if (selection.isAL) {
       registryQA.fill(HIST("Lambda/hAntiLambdaMass_sparse"), v0.mAntiLambda(), v0.pt(), centrality);
       registryQA.fill(HIST("Lambda/hAntiLambdaPhi"), v0.phi());
-      registryQA.fill(HIST("Lambda/hAntiLambdaEta"), v0.eta());
+      registryQA.fill(HIST("Lambda/hAntiLambdaEtaY"), v0.eta(), v0.yLambda());
       registryQA.fill(HIST("Lambda/PiPlusTPC_AL"), postrack.pt(), postrack.tpcNSigmaKa());
       registryQA.fill(HIST("Lambda/PiPlusTOF_AL"), postrack.pt(), postrack.tofNSigmaKa());
       registryQA.fill(HIST("Lambda/PrMinusTPC_AL"), negtrack.pt(), negtrack.tpcNSigmaKa());
