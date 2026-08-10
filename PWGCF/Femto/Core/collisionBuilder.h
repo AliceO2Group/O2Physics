@@ -34,10 +34,6 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/Logger.h>
 
-#include <sys/stat.h>
-
-#include <Rtypes.h>
-
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -373,7 +369,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
   template <modes::System system, typename T>
   void setEventPlane(T const& col)
   {
-    float harmonic = static_cast<float>(mQvecHarmonic);
+    auto harmonic = static_cast<float>(mQvecHarmonic);
     switch (mQvecDetector) {
       case modes::QvecDetector::kFT0C:
         mEventPlane = RecoDecay::constrainAngle((std::atan2(col.qvecFT0CImVec()[0], col.qvecFT0CReVec()[0])) / harmonic, 0, harmonic); // constrain between 0 and 2pi/harmonic

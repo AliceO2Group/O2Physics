@@ -165,7 +165,7 @@ constexpr std::array<histmanager::HistInfo<V0Hist>, kV0HistLast> HistTable = {
    {kCosPa, o2::framework::HistType::kTH1F, "hCosPa", "Cosine of pointing angle; cos(#alpha); Entries"},
    {kDecayDauDca, o2::framework::HistType::kTH1F, "hDauDca", "Daughter DCA at decay vertex ; DCA_{Decay vertex} (cm); Entries"},
    {kStrangeTofPosDau, o2::framework::HistType::kTH1F, "hStrangeTofPosDau", "Strange TOF of positive Daughter ; n#sigma_{TOF, strange}; Entries"},
-   {kStrangeTofNegDau, o2::framework::HistType::kTH1F, "hStrangeTofNegDau", "Strange TOF of negative Daughter ; n#sigma+{TOF, strange}; Entries"},
+   {kStrangeTofNegDau, o2::framework::HistType::kTH1F, "hStrangeTofNegDau", "Strange TOF of negative Daughter ; n#sigma_{TOF, strange}; Entries"},
    {kDecayVtxX, o2::framework::HistType::kTH1F, "hDecayVtxX", "X coordinate of decay vertex ; DV_{X} (cm); Entries"},
    {kDecayVtxY, o2::framework::HistType::kTH1F, "hDecayVtxY", "Y coordinate of decay vertex ; DV_{Y} (cm); Entries"},
    {kDecayVtxZ, o2::framework::HistType::kTH1F, "hDecayVtxZ", "Z coordinate of decay vertex ; DV_{Z} (cm); Entries"},
