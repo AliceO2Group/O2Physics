@@ -105,11 +105,11 @@ struct RecoilJets {
   // ---------- Event selection ----------
   struct EvCfg : ConfigurableGroup {
     std::string prefix = "event";
-    Configurable<std::string> sel{"sel", "sel8", "Choose event selection"},
+    Configurable<std::string> sel{"sel", "sel8+IsGoodZvtxFT0vsPV+NoSameBunchPileup", "Choose event selection"},
       triggerMasks{"triggerMasks", "", "Relevant trigger masks: fTrackLowPt,fTrackHighPt"};
 
     Configurable<float> vertexZCut{"vertexZCut", 10., "Accepted z-vertex range"};
-    Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false,
+    Configurable<bool> skipMBGapEvents{"skipMBGapEvents", true,
                                        "Flag to choose to reject min. bias gap events; jet-level rejection "
                                        "applied at the jet finder level, here rejection is applied for "
                                        "collision and track process functions"};
@@ -118,10 +118,10 @@ struct RecoilJets {
   // ---------- RCT / flag-based selections ----------
   struct Rct : ConfigurableGroup {
     std::string prefix = "rct";
-    Configurable<std::string> label{"label", "CBT_hadronPID", "Apply rct flag"}; // CBT
+    Configurable<std::string> label{"label", "CBT_hadronPID", "Apply rct flag"};
 
     Configurable<bool> enable{"enable", true, "Apply RCT selections"},
-      requireZDC{"requireZDC", false, "Require ZDC flag"},
+      requireZDC{"requireZDC", true, "Require ZDC flag"},
       rejectLimitedAcceptance{"rejectLimitedAcceptance", false, "Reject LimitedAcceptance flag"};
   } rct;
 
@@ -155,15 +155,15 @@ struct RecoilJets {
   // ---------- Normalization FT0 by means ----------
   struct FT0A : ConfigurableGroup {
     std::string prefix = "ft0a";
-    Configurable<float> mean{"mean", -1., "Mean FT0A signal"},
-      meanPartLevel{"meanPartLevel", -1., "Mean Nch (part level) within FT0A acceptance"},
+    Configurable<float> mean{"mean", 3499., "Mean FT0A signal"},
+      meanPartLevel{"meanPartLevel", 40.7, "Mean Nch (part level) within FT0A acceptance"},
       meanZeq{"meanZeq", -1., "Mean equalized FT0A signal"};
   } ft0a;
 
   struct FT0C : ConfigurableGroup {
     std::string prefix = "ft0c";
-    Configurable<float> mean{"mean", -1., "Mean FT0C signal"},
-      meanPartLevel{"meanPartLevel", -1., "Mean Nch (part level) within FT0C acceptance"},
+    Configurable<float> mean{"mean", 844.6, "Mean FT0C signal"},
+      meanPartLevel{"meanPartLevel", 43.11, "Mean Nch (part level) within FT0C acceptance"},
       meanZeq{"meanZeq", -1., "Mean equalized FT0C signal"};
   } ft0c;
 
@@ -173,8 +173,8 @@ struct RecoilJets {
     Configurable<float> fracSig{"fracSig", 0.9, "Fraction of events used for signal TT"};
     Configurable<float> recoilRegion{"recoilRegion", 0.6, "Width of recoil acceptance"};
 
-    Configurable<std::vector<float>> refPtRange{"refPtRange", {5., 7}, "Reference TT pT range [min,max] (GeV/c)"},
-      sigPtRange{"sigPtRange", {20., 50}, "Signal TT pT range [min,max] (GeV/c)"};
+    Configurable<std::vector<float>> refPtRange{"refPtRange", {5., 7.}, "Reference TT pT range [min,max] (GeV/c)"},
+      sigPtRange{"sigPtRange", {10., 18.}, "Signal TT pT range [min,max] (GeV/c)"};
 
     Configurable<std::vector<float>> phiRestr{"phiRestr", {0., 6.3}, "Phi restriction [min,max] (rad) for TT search"};
   } tt;
@@ -195,11 +195,11 @@ struct RecoilJets {
       multNBins{"multNBins", 600, "Number of bins for scaled FT0M multiplicity"},
       zdcTimeNBins{"zdcTimeNBins", 240, "Number of bins for ZDC timing histograms"};
 
-    ConfigurableAxis multFT0CThresh{"multFT0CThresh", {VARIABLE_WIDTH, 0.0, 0.133, 0.233, 0.367, 0.567, 0.767, 1.067, 1.4, 1.867, 2.5, 3.9, 5.4, 6.9, 20.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0.1%, 0.01%"}; // default values for raw data
-    ConfigurableAxis multFT0CThreshPartLevel{"multFT0CThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.133, 0.233, 0.367, 0.567, 0.767, 1.067, 1.4, 1.867, 2.5, 3.9, 5.4, 6.9, 20.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0.1%, 0.01%"};
+    ConfigurableAxis multFT0CThresh{"multFT0CThresh", {VARIABLE_WIDTH, 0.0, 0.133333, 0.233333, 0.366667, 0.533333, 0.733333, 1, 1.33333, 1.76667, 2.36667, 3.63333, 20.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};      
+    ConfigurableAxis multFT0CThreshPartLevel{"multFT0CThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.06, 0.14, 0.3, 0.46, 0.7, 1, 1.36, 1.82, 2.42, 3.64, 20.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
 
-    ConfigurableAxis multFT0MThresh{"multFT0MThresh", {VARIABLE_WIDTH, 0.0, 0.167, 0.267, 0.4, 0.567, 0.8, 1.067, 1.4, 1.833, 2.433, 3.667, 5.1, 6.433, 20.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0.1%, 0.01%"}; // default values for raw data
-    ConfigurableAxis multFT0MThreshPartLevel{"multFT0MThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.167, 0.267, 0.4, 0.567, 0.8, 1.067, 1.4, 1.833, 2.433, 3.667, 5.1, 6.433, 20.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0.1%, 0.01%"};
+    ConfigurableAxis multFT0MThresh{"multFT0MThresh", {VARIABLE_WIDTH, 0.0, 0.133333, 0.266667, 0.366667, 0.533333, 0.766667, 1, 1.33333, 1.76667, 2.33333, 3.4, 20.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
+    ConfigurableAxis multFT0MThreshPartLevel{"multFT0MThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.08, 0.18, 0.32, 0.5, 0.7, 1, 1.36, 1.82, 2.4, 3.5, 20.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
 
     ConfigurableAxis axisPtTrackEff{"axisPtTrackEff", {VARIABLE_WIDTH, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 70.0, 100.0}, "#it{p}_{T} (GeV/#it{c})"};
 
@@ -279,7 +279,7 @@ struct RecoilJets {
     AxisSpec pseudorap{40, -1., 1., "#it{#eta}"};
     AxisSpec pseudorapJets{20, -0.5, 0.5, "#it{#eta}_{jet}"};
     AxisSpec jetArea{50, 0.0, 5., "Area_{jet}"};
-    AxisSpec rho{50, 0.0, 50., "#it{#rho}"};
+    AxisSpec rho{100, 0.0, 50., "#it{#rho}"};
 
     std::string nameFT0Caxis = "FT0C / #LT FT0C #GT";
     std::string nameFT0Maxis = "FT0M^{*}";
