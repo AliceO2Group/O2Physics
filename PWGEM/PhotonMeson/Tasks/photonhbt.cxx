@@ -3668,7 +3668,7 @@ struct Photonhbt {
       }
     }
     std::array<std::vector<char>, kNDedup> dedupAlive;
-    for (auto& a : dedupAlive) {
+    for (auto& a : dedupAlive) { // o2-linter: disable=const-ref-in-for-loop (assign modifies the elements)
       a.assign(nC, 0);
     }
     std::fill(dedupAlive[0].begin(), dedupAlive[0].end(), 1);
