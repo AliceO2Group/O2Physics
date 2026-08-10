@@ -12,6 +12,7 @@
 /// \file flowEventPlane.cxx
 /// \brief Flow calculation using event plane.
 /// \author Yash Patley <yash.patley@cern.ch>
+///         Samta Arora <Samta.arora@cern.ch>
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
@@ -72,8 +73,8 @@ DECLARE_SOA_COLUMN(Vy, vy, float);
 DECLARE_SOA_COLUMN(Vz, vz, float);
 DECLARE_SOA_COLUMN(ZnaEnergyCommon, znaEnergyCommon, float);
 DECLARE_SOA_COLUMN(ZncEnergyCommon, zncEnergyCommon, float);
-DECLARE_SOA_COLUMN(ZnaEnergy, znaEnergy, float[4]);
-DECLARE_SOA_COLUMN(ZncEnergy, zncEnergy, float[4]);
+DECLARE_SOA_COLUMN(ZnaEnergy, znaEnergy, std::vector<float>);
+DECLARE_SOA_COLUMN(ZncEnergy, zncEnergy, std::vector<float>);
 } // namespace colspcalib
 DECLARE_SOA_TABLE(ColSpCalib, "AOD", "COLSPCALIB", o2::soa::Index<>,
                   colspcalib::RunNumber,
@@ -148,11 +149,6 @@ enum ParticleType {
   kKa,
   kPr,
   kNPart
-};
-
-enum ResoType {
-  kPhi0 = 0,
-  kKStar
 };
 
 enum V0Type {
@@ -247,8 +243,11 @@ struct SpCalibTableProducer {
     posZ = collision.posZ();
 
     auto zdc = bc.zdc();
-    auto znaEnergy = zdc.energySectorZNA();
-    auto zncEnergy = zdc.energySectorZNC();
+    std::vector<float> znaEnergy, zncEnergy;
+    for (int i = 0; i < 4; ++i) {
+      znaEnergy.push_back(zdc.energySectorZNA()[i]);
+      zncEnergy.push_back(zdc.energySectorZNC()[i]);
+    }
     auto znaEnergyCommon = zdc.energyCommonZNA();
     auto zncEnergyCommon = zdc.energyCommonZNC();
 
@@ -260,10 +259,7 @@ struct SpCalibTableProducer {
     // Fill collision table
     histos.fill(HIST("hCent"), cent);
     histos.fill(HIST("hVz"), posZ);
-    colSpCalibTable(runNum, timestamp, cent, posX, posY, posZ, znaEnergyCommon, zncEnergyCommon, znaEnergy.data(), zncEnergy.data());
-
-    // Done
-    return;
+    colSpCalibTable(runNum, timestamp, cent, posX, posY, posZ, znaEnergyCommon, zncEnergyCommon, znaEnergy, zncEnergy);
   }
 
   using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
@@ -349,13 +345,13 @@ struct SpectatorPlaneTableProducer {
   Configurable<float> cProtonPtCut{"cProtonPtCut", 1.1, "Proton TPC pT cutoff"};
 
   // Initialize CCDB Service
-  Service<o2::ccdb::BasicCCDBManager> ccdbService;
+  Service<o2::ccdb::BasicCCDBManager> ccdbService{};
 
   // Histogram registry: an object to hold your histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Global objects
-  const float zdcDenThrs = 1e-4;
+  float zdcDenThrs = 1e-4;
   float cent = 0., mult = 0.;
   float posX = 0., posY = 0., posZ = 0.;
   std::vector<std::vector<std::string>> vCoarseCorrHistNames = {
@@ -372,11 +368,11 @@ struct SpectatorPlaneTableProducer {
 
   // Container for histograms
   struct CorrectionHistContainer {
-    TProfile* hVx;
-    TProfile* hVy;
-    std::array<TH2F*, 2> hGainCalib;
-    std::array<std::array<std::array<THnSparseF*, 1>, 4>, 14> vCoarseCorrHist;
-    std::array<std::array<std::array<TProfile*, 4>, 4>, 14> vFineCorrHist;
+    TProfile* hVx = nullptr;
+    TProfile* hVy = nullptr;
+    std::array<TH2F*, 2> hGainCalib{};
+    std::array<std::array<std::array<THnSparseF*, 1>, 4>, 14> vCoarseCorrHist{};
+    std::array<std::array<std::array<TProfile*, 4>, 4>, 14> vFineCorrHist{};
   } CorrectionHistContainer;
 
   // Run number
@@ -520,16 +516,16 @@ struct SpectatorPlaneTableProducer {
     if (cRecentVxVy) {
       std::string ccdbPath = static_cast<std::string>(cCcdbPath) + "/VxVyRecent" + "/Run" + std::to_string(cRunNum);
       auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, nolaterthan.value);
-      CorrectionHistContainer.hVx = reinterpret_cast<TProfile*>(ccdbObj->FindObject("hVx"));
-      CorrectionHistContainer.hVy = reinterpret_cast<TProfile*>(ccdbObj->FindObject("hVy"));
+      CorrectionHistContainer.hVx = dynamic_cast<TProfile*>(ccdbObj->FindObject("hVx"));
+      CorrectionHistContainer.hVy = dynamic_cast<TProfile*>(ccdbObj->FindObject("hVy"));
     }
 
     // Load ZDC gain calibration
     if (cDoGainCalib) {
       std::string ccdbPath = static_cast<std::string>(cCcdbPath) + "/GainCalib" + "/Run" + std::to_string(cRunNum);
       auto ccdbObj = ccdbService->getForTimeStamp<TList>(ccdbPath, nolaterthan.value);
-      CorrectionHistContainer.hGainCalib[0] = reinterpret_cast<TH2F*>(ccdbObj->FindObject("hZNASignal"));
-      CorrectionHistContainer.hGainCalib[1] = reinterpret_cast<TH2F*>(ccdbObj->FindObject("hZNCSignal"));
+      CorrectionHistContainer.hGainCalib[0] = dynamic_cast<TH2F*>(ccdbObj->FindObject("hZNASignal"));
+      CorrectionHistContainer.hGainCalib[1] = dynamic_cast<TH2F*>(ccdbObj->FindObject("hZNCSignal"));
     }
 
     // Load shift corrections for ZDC Q-Vectors
@@ -570,9 +566,9 @@ struct SpectatorPlaneTableProducer {
           int cntry = 0;
           for (auto const& y : x) {
             if (corrType == kFineCorr) {
-              CorrectionHistContainer.vFineCorrHist[i][cntrx][cntry] = reinterpret_cast<TProfile*>(ccdbObject->FindObject(y.c_str()));
+              CorrectionHistContainer.vFineCorrHist[i][cntrx][cntry] = dynamic_cast<TProfile*>(ccdbObject->FindObject(y.c_str()));
             } else {
-              CorrectionHistContainer.vCoarseCorrHist[i][cntrx][cntry] = reinterpret_cast<THnSparseF*>(ccdbObject->FindObject(y.c_str()));
+              CorrectionHistContainer.vCoarseCorrHist[i][cntrx][cntry] = dynamic_cast<THnSparseF*>(ccdbObject->FindObject(y.c_str()));
             }
             ++cntry;
           }
@@ -597,7 +593,7 @@ struct SpectatorPlaneTableProducer {
   std::vector<float> getAvgCorrFactors(int const& itr, CorrectionType const& corrType, std::array<float, 4> const& vCollParam)
   {
     std::vector<float> vAvgOutput = {0., 0., 0., 0.};
-    int binarray[4];
+    std::array<int, 4> binarray{};
     if (corrType == kCoarseCorr) {
       int cntrx = 0;
       for (auto const& v : CorrectionHistContainer.vCoarseCorrHist[itr]) {
@@ -606,7 +602,7 @@ struct SpectatorPlaneTableProducer {
           binarray[kVx] = h->GetAxis(kVx)->FindBin(vCollParam[kVx]);
           binarray[kVy] = h->GetAxis(kVy)->FindBin(vCollParam[kVy]);
           binarray[kVz] = h->GetAxis(kVz)->FindBin(vCollParam[kVz]);
-          vAvgOutput[cntrx] += h->GetBinContent(h->GetBin(binarray));
+          vAvgOutput[cntrx] += h->GetBinContent(h->GetBin(binarray.data()));
         }
         ++cntrx;
       }
@@ -755,8 +751,8 @@ struct SpectatorPlaneTableProducer {
     histos.fill(HIST("Event/hVz"), vCollParam[kVz]);
 
     auto alphaZDC = 0.395;
-    const double x[4] = {-1.75, 1.75, -1.75, 1.75};
-    const double y[4] = {-1.75, -1.75, 1.75, 1.75};
+    std::array<double, 4> x = {-1.75, 1.75, -1.75, 1.75};
+    std::array<double, 4> y = {-1.75, -1.75, 1.75, 1.75};
 
     // Calculate X and Y
     float znaXNum = 0., znaYNum = 0., zncXNum = 0., zncYNum = 0.;
@@ -847,19 +843,20 @@ struct SpectatorPlaneTableProducer {
     std::vector<float> vPtCut = {cPionPtCut, cKaonPtCut, cProtonPtCut};
     std::vector<float> vTpcNsig = {std::abs(track.tpcNSigmaPi()), std::abs(track.tpcNSigmaKa()), std::abs(track.tpcNSigmaPr())};
     std::vector<float> vTofNsig = {std::abs(track.tofNSigmaPi()), std::abs(track.tofNSigmaKa()), std::abs(track.tofNSigmaPr())};
-    bool retFlag = false;
 
-    if (partType == kPi && checkTrackPid<kPi, kKa, kPr>(vPtCut[kPi], track.pt(), vTpcNsig, vTofNsig, track.hasTOF())) {
-      retFlag = true;
-    } else if (partType == kKa && checkTrackPid<kKa, kPi, kPr>(vPtCut[kKa], track.pt(), vTpcNsig, vTofNsig, track.hasTOF())) {
-      retFlag = true;
-    } else if (partType == kPr && checkTrackPid<kPr, kPi, kKa>(vPtCut[kPr], track.pt(), vTpcNsig, vTofNsig, track.hasTOF())) {
-      retFlag = true;
-    } else {
-      return false;
+    if (partType == kPi) {
+      return checkTrackPid<kPi, kKa, kPr>(vPtCut[kPi], track.pt(), vTpcNsig, vTofNsig, track.hasTOF());
     }
 
-    return retFlag;
+    if (partType == kKa) {
+      return checkTrackPid<kKa, kPi, kPr>(vPtCut[kKa], track.pt(), vTpcNsig, vTofNsig, track.hasTOF());
+    }
+
+    if (partType == kPr) {
+      return checkTrackPid<kPr, kPi, kKa>(vPtCut[kPr], track.pt(), vTpcNsig, vTofNsig, track.hasTOF());
+    }
+
+    return false;
   }
 
   using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
@@ -968,8 +965,6 @@ struct FlowEventPlane {
   // Global objects
   float cent = 0.;
   std::array<float, 4> vSP = {0., 0., 0., 0.};
-  std::map<ResoType, std::array<float, 2>> mResoDauMass = {{kPhi0, {MassKaonCharged, MassKaonCharged}}, {kKStar, {MassPionCharged, MassKaonCharged}}};
-  std::map<ResoType, float> mResoMass = {{kPhi0, MassPhi}, {kKStar, MassKaonCharged}};
 
   void init(InitContext const&)
   {
@@ -1094,7 +1089,7 @@ struct FlowEventPlane {
     float ux = 0., uy = 0., v1a = 0., v1c = 0.;
     float tpcNsigma = 0., tofNsigma = 0.;
     for (auto const& track : tracks) {
-      static constexpr std::string_view SubDir[] = {"Pion/", "Kaon/", "Proton/"};
+      static constexpr auto SubDir = std::array{"Pion/", "Kaon/", "Proton/"};
       if (part == kPi && track.pt() > cMinPtPi) {
         tpcNsigma = track.tpcNSigmaPi();
         tofNsigma = track.tofNSigmaPi();
@@ -1178,17 +1173,13 @@ struct FlowEventPlane {
         break;
     }
 
-    if (std::abs(tpcNSigmaDau1) >= cTpcNsigmaCut || std::abs(tpcNSigmaDau2) >= cTpcNsigmaCut) {
-      return false;
-    }
-
-    return true;
+    return (std::abs(tpcNSigmaDau1) < cTpcNsigmaCut && std::abs(tpcNSigmaDau2) < cTpcNsigmaCut);
   }
 
   template <V0Type part, typename C, typename V, typename T>
   void fillV0QAHist(C const& col, V const& v0, T const&)
   {
-    static constexpr std::string_view SubDir[] = {"V0/K0Short/QA/", "V0/Lambda/QA/", "V0/AntiLambda/QA/"};
+    static constexpr auto SubDir = std::array{"V0/K0Short/QA/", "V0/Lambda/QA/", "V0/AntiLambda/QA/"};
 
     // daugthers
     auto postrack = v0.template posTrack_as<T>();
@@ -1219,21 +1210,11 @@ struct FlowEventPlane {
     histos.fill(HIST(SubDir[part]) + HIST("hNegNsigPiVsP"), negtrack.tpcInnerParam(), negtrack.tpcNSigmaPi());
   }
 
-  template <ResoType rt, typename T>
+  template <typename T>
   void getResoFlow(T const& tracks1, T const& tracks2, std::array<float, 4> const& vSP)
   {
     float ux = 0., uy = 0., v1a = 0., v1c = 0.;
-    std::array<float, 2> vMassDau = mResoDauMass.at(rt);
-    for (auto const& [track1, track2] : soa::combinations(soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-      // Discard same track
-      if (track1.index() == track2.index()) {
-        continue;
-      }
-
-      // Discard same charge track
-      if (track1.sign() == track2.sign()) {
-        continue;
-      }
+    for (auto const& [track1, track2] : soa::combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
 
       // Apply pseudo-rapidity acceptance
       std::array<float, 3> v = {track1.px() + track2.px(), track1.py() + track2.py(), track1.pz() + track2.pz()};
@@ -1243,7 +1224,7 @@ struct FlowEventPlane {
 
       // Reconstruct resonance
       float p = RecoDecay::p((track1.px() + track2.px()), (track1.py() + track2.py()), (track1.pz() + track2.pz()));
-      float e = RecoDecay::e(track1.px(), track1.py(), track1.pz(), vMassDau[0]) + RecoDecay::e(track2.px(), track2.py(), track2.pz(), vMassDau[1]);
+      float e = RecoDecay::e(track1.px(), track1.py(), track1.pz(), MassKaonCharged) + RecoDecay::e(track2.px(), track2.py(), track2.pz(), MassKaonCharged);
       float m = std::sqrt(RecoDecay::m2(p, e));
 
       // Get directed flow
@@ -1252,29 +1233,17 @@ struct FlowEventPlane {
       v1a = ux * vSP[kXa] + uy * vSP[kYa];
       v1c = ux * vSP[kXc] + uy * vSP[kYc];
 
-      // Histograms
-      static constexpr std::string_view SubDir[] = {"Reso/Phi/", "Reso/KStar/"};
-
       // Fill signal histogram
-      histos.fill(HIST(SubDir[rt]) + HIST("hSigCentEtaInvMass"), cent, RecoDecay::eta(v), m);
-      histos.fill(HIST(SubDir[rt]) + HIST("Sig/hQuA"), cent, RecoDecay::eta(v), m, v1a);
-      histos.fill(HIST(SubDir[rt]) + HIST("Sig/hQuC"), cent, RecoDecay::eta(v), m, v1c);
-
-      // Get background
-      p = RecoDecay::p((track1.px() - track2.px()), (track1.py() - track2.py()), (track1.pz() - track2.pz()));
-      m = std::sqrt(RecoDecay::m2(p, e));
-      v[0] = track1.px() - track2.px();
-      v[1] = track1.py() - track2.py();
-      v[2] = track1.pz() - track2.pz();
-      ux = std::cos(RecoDecay::phi(v));
-      uy = std::sin(RecoDecay::phi(v));
-      v1a = ux * vSP[kXa] + uy * vSP[kYa];
-      v1c = ux * vSP[kXc] + uy * vSP[kYc];
-
-      // Fill bkg histogram
-      histos.fill(HIST(SubDir[rt]) + HIST("hBkgCentEtaInvMass"), cent, RecoDecay::eta(v), m);
-      histos.fill(HIST(SubDir[rt]) + HIST("Bkg/hQuA"), cent, RecoDecay::eta(v), m, v1a);
-      histos.fill(HIST(SubDir[rt]) + HIST("Bkg/hQuC"), cent, RecoDecay::eta(v), m, v1c);
+      if (track1.sign() != track2.sign()) {
+        histos.fill(HIST("Reso/Phi/hSigCentEtaInvMass"), cent, RecoDecay::eta(v), m);
+        histos.fill(HIST("Reso/Phi/Sig/hQuA"), cent, RecoDecay::eta(v), m, v1a);
+        histos.fill(HIST("Reso/Phi/Sig/hQuC"), cent, RecoDecay::eta(v), m, v1c);
+      } else {
+        // Fill bkg histogram
+        histos.fill(HIST("Reso/Phi/hBkgCentEtaInvMass"), cent, RecoDecay::eta(v), m);
+        histos.fill(HIST("Reso/Phi/Bkg/hQuA"), cent, RecoDecay::eta(v), m, v1a);
+        histos.fill(HIST("Reso/Phi/Bkg/hQuC"), cent, RecoDecay::eta(v), m, v1c);
+      }
     }
   }
 
@@ -1355,7 +1324,7 @@ struct FlowEventPlane {
     auto kaonTracks = kaonTrackPartition->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
     // Resonance flow
-    getResoFlow<kPhi0>(kaonTracks, kaonTracks, vSP);
+    getResoFlow(kaonTracks, kaonTracks, vSP);
   }
   PROCESS_SWITCH(FlowEventPlane, processResoFlow, "Resonance flow process", false);
 
