@@ -361,8 +361,8 @@ struct cksspinalignment {
     const int occupancy = collision.trackOccupancyInTimeRange();
 
     const float psiFT0C = collision.psiFT0C();
-    const float psiFT0A = collision.psiFT0A();
-    const float psiTPC = collision.psiTPC();
+    // const float psiFT0A = collision.psiFT0A();
+    // const float psiTPC = collision.psiTPC();
 
     histos.fill(HIST("hEvtSelInfo"), 0.5);
 
@@ -462,8 +462,8 @@ struct cksspinalignment {
                              static_cast<float>(v0.v0radius()),
                              static_cast<float>(std::abs(v0.dcapostopv())),
                              static_cast<float>(std::abs(v0.dcanegtopv())),
-                             static_cast<float>(std::abs(v0.dcaV0daughters())),
-                             // lifetime,
+                             // static_cast<float>(std::abs(v0.dcaV0daughters())),
+                             //  lifetime,
                              posId,
                              negId});
 
@@ -483,9 +483,9 @@ struct cksspinalignment {
 
     kshortpionEvent(centrality,
                     vz,
-                    psiFT0C,
-                    psiFT0A,
-                    psiTPC);
+                    psiFT0C);
+    // psiFT0A,
+    // psiTPC);
 
     const int64_t indexEvent = kshortpionEvent.lastIndex();
 
@@ -495,8 +495,8 @@ struct cksspinalignment {
                   k0s.radius,
                   k0s.dcaPositive,
                   k0s.dcaNegative,
-                  k0s.dcaBetweenDaughters,
-                  // k0s.lifetime,
+                  // k0s.dcaBetweenDaughters,
+                  //  k0s.lifetime,
                   k0s.px,
                   k0s.py,
                   k0s.pz,
