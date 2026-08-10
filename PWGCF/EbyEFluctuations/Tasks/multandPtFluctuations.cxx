@@ -11,7 +11,7 @@
 
 /// \file  multandPtFluctuations.cxx
 /// \brief Calculate multiplicity and transverse momentum fluctuations using strongly intensive observables
-/// \author Omama Rubza 
+/// \author Omama Rubza
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
