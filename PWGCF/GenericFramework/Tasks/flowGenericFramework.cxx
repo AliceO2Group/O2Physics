@@ -2254,25 +2254,23 @@ struct FlowGenericFramework {
     // Only accept daughters consistent with the expected identities of K0 or Lambda decay.
     if (cfgPIDCuts.cfgDaughterPIDRejection) {
       if (cfgPIDCuts.cfgUseOnlyTPC) {
-        if (pid == Pions && std::abs(track.tpcNSigmaPi()) > cfgPIDCuts.cfgTPCNsigmaCut) {
-          return false;
-        } else if (pid == Protons && std::abs(track.tpcNSigmaPr()) > cfgPIDCuts.cfgTPCNsigmaCut) {
-          return false;
-        } else if (pid != Pions && pid != Protons) {
-          return false;
+        if (pid == Pions) {
+          return std::abs(track.tpcNSigmaPi()) <= cfgPIDCuts.cfgTPCNsigmaCut;
         }
-      } else {
-        int partIndex = cfgPIDCuts.cfgUseAsymmetricPID ? getNsigmaPIDAssymmetric(track) : getNsigmaPID(track);
-        int pidIndex = partIndex - 1; // 0 = pion, 1 = kaon, 2 = proton
-        if (pid != Pions && pid != Protons) {
-          return false;
+        if (pid == Protons) {
+          return std::abs(track.tpcNSigmaPr()) <= cfgPIDCuts.cfgTPCNsigmaCut;
         }
-        if (pidIndex != pid) {
-          return false;
-        }
+        return false;
+      }
+      int partIndex = cfgPIDCuts.cfgUseAsymmetricPID ? getNsigmaPIDAssymmetric(track) : getNsigmaPID(track);
+      int pidIndex = partIndex - 1; // 0 = pion, 1 = kaon, 2 = proton
+      if (pid != Pions && pid != Protons) {
+        return false;
+      }
+      if (pidIndex != pid) {
+        return false;
       }
     }
-
     return true;
   }
 
