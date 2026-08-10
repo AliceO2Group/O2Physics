@@ -245,7 +245,13 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
 
     // event shape
     mQvecDetector = static_cast<modes::QvecDetector>(config.qvecDetector.value);
+    if (mQvecDetector >= modes::QvecDetector::kQvecDetectorLast) {
+      LOG(fatal) << "Qvector Detector is not supported";
+    }
     mQvecHarmonic = static_cast<modes::QvecHarmonic>(config.qvecHarmonic.value);
+    if (mQvecHarmonic < modes::QvecHarmonic::kN2 || mQvecHarmonic >= modes::QvecHarmonic::kQvecHarmonicLast) {
+      LOG(fatal) << "Qvector Harmonic is not supported";
+    }
 
     this->addSelection(kSel8, collisionSelectionNames.at(kSel8), config.sel8.value);
     this->addSelection(kNoSameBunchPileUp, collisionSelectionNames.at(kNoSameBunchPileUp), config.noSameBunchPileup.value);
@@ -371,9 +377,6 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
   {
     auto harmonic = static_cast<float>(mQvecHarmonic);
     int index = static_cast<int>(mQvecHarmonic) - 2; // get index in the qvector vector
-    if (index >= 2) {
-      LOG(fatal) << "At the moment harmonics up to 3 are supported!";
-    }
     switch (mQvecDetector) {
       case modes::QvecDetector::kFT0C:
         mEventPlane = RecoDecay::constrainAngle((std::atan2(col.qvecFT0CImVec()[index], col.qvecFT0CReVec()[index])) / harmonic, 0, harmonic); // constrain between 0 and 2pi/harmonic
