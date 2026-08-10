@@ -211,7 +211,7 @@ struct JetDsSpecSubs {
     registry.add("h_ds_mass_mcd", ";m_{D_{S}}^{det} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{200, 1.7, 2.15}}});
 
     // Detector-level sparse histograms
-    registry.add("hSparse_ds_mcd1", ";m_{D_{S}}^{rec};#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||,det};Origin(D_{S})", {HistType::kTHnSparseF, {{60, 1.6, 2.3}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {2, -0.5, 1.5}}});
+    registry.add("hSparse_ds_mcd1", ";m_{D_{S}}^{rec};#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||,det};Origin(D_{S});Matching status", {HistType::kTHnSparseF, {{60, 1.6, 2.3}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {2, -0.5, 1.5}, {2, -0.5, 1.5}}});
     registry.add("hSparse_ds_mcd2", ";#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};#DeltaR_{D_{S},jet}^{det}", {HistType::kTHnSparseF, {{60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.}}});
     registry.add("hSparse_ds_mcd3", ";#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||,det};#DeltaR_{D_{S},jet}^{det}", {HistType::kTHnSparseF, {{60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.}}});
 
@@ -243,6 +243,8 @@ struct JetDsSpecSubs {
     auto hSparseMCD = registry.get<THnSparse>(HIST("hSparse_ds_mcd1"));
     hSparseMCD->GetAxis(4)->SetBinLabel(1, "Prompt");
     hSparseMCD->GetAxis(4)->SetBinLabel(2, "Non-prompt");
+    hSparseMCD->GetAxis(5)->SetBinLabel(1, "Unmatched");
+    hSparseMCD->GetAxis(5)->SetBinLabel(2, "Matched");
 
     auto hSparseMCP = registry.get<THnSparse>(HIST("hSparse_ds_mcp"));
     hSparseMCP->GetAxis(4)->SetBinLabel(1, "Prompt");
@@ -597,6 +599,9 @@ struct JetDsSpecSubs {
           // Check if it's prompt
           int origin = (mcdDscand.originMcRec() != RecoDecay::OriginType::Prompt) ? 1 : 0;
 
+          // Matching status: 1 if the detector-level jet has a particle-level partner, 0 otherwise
+          int isMatchedMCD = mcdjet.has_matchedJetCand() ? 1 : 0;
+
           // Check whether a matched particle-level jet exists
           if (mcdjet.has_matchedJetCand()) {
             registry.fill(HIST("McEffJet"), getValFromBin(BinMCJetCntr::DetectorLevelJetWithMatchedCandidate));
@@ -627,7 +632,8 @@ struct JetDsSpecSubs {
                         mcdDscand.pt(),
                         mcdjet.pt(),
                         mcd_zParallel,
-                        origin);
+                        origin,
+                        isMatchedMCD);
           // MCD THnSparse2: invariant p{T,Ds}, pT and DeltaR
           registry.fill(HIST("hSparse_ds_mcd2"),
                         mcdDscand.pt(),
