@@ -737,7 +737,7 @@ struct strangenesstofpid {
               LOG(info) << "Problems finding omega sigma histograms!";
           }
         } else {
-            LOG(warn) << "Problems finding calibration objects for run " << runNumber << " at " << ccdbConfigurations.nSigmaPath << ". Proceed without it";
+          LOG(warn) << "Problems finding calibration objects for run " << runNumber << " at " << ccdbConfigurations.nSigmaPath << ". Proceed without it";
         }
       }
     }
