@@ -132,10 +132,10 @@ enum CascadeSels {
   kCascadeTransRadMin, ///< max. transverse radius
 
   // selection for lambda daughter
-  kLambdaCpaMin,      ///< Min. DCA of the lambda daughers at primary vertex
-  kLambdaDcaDauMax,   ///< TPC PID for daughters (Pion/Proton)
-  kLambdaTransRadMin, ///< Min. number of TPC clusters of daughter
-  kLambdaDcaToPvMin,  ///< Min. DCA to primary vertex of daughter lambda
+  kLambdaCpaMin,      ///< Min. CPA of the lambda
+  kLambdaDcaDauMax,   ///< Max. DCA between the lambda daughters at lambda decay vertex
+  kLambdaTransRadMin, ///< Min. tranverse radius of the lambda
+  kLambdaDcaToPvMin,  ///< Min. DCA of the lambda to the primary vertex
 
   // selection for bachelor/daugthers
   kDauAbsEtaMax,   ///< Max. |eta| of daughter tracks
@@ -181,9 +181,7 @@ const std::unordered_map<CascadeSels, std::string> cascadeSelectionNames = {
   {kPosDauTpc, "Positive Daughter TPC PID"},
   {kNegDauTpc, "Negative Daughter TPC PID"},
   {kPosDauTof, "Positive Daughter TOF PID"},
-  {kNegDauTof, "Negative Daughter TOF PID"},
-
-  {kCascadeSelsMax, "Cascade Selections Max"}};
+  {kNegDauTof, "Negative Daughter TOF PID"}};
 
 /// enum for all cascade pre-filters (evaluated in checkFilters, before the selection bitmask)
 enum CascadeFilters {
@@ -237,6 +235,17 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
   {
     this->init(config.passThrough.value);
 
+    mPtMin = filter.ptMin.value;
+    mPtMax = filter.ptMax.value;
+    mEtaMin = filter.etaMin.value;
+    mEtaMax = filter.etaMax.value;
+    mPhiMin = filter.phiMin.value;
+    mPhiMax = filter.phiMax.value;
+    mLambdaMassMin = filter.massLambdaMin.value;
+    mLambdaMassMax = filter.massLambdaMax.value;
+    mRequireTof = config.requireTof.value;
+    mKeepTracksWithoutTof = config.keepTracksWithoutTof.value;
+
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
       mXiMassLowerLimit = filter.massXiMin.value;
       mXiMassUpperLimit = filter.massXiMax.value;
@@ -255,17 +264,6 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
       this->addSelection(kBachelorTpcKaon, cascadeSelectionNames.at(kBachelorTpcKaon), config.bachelorTpcKaon.value, limits::kAbsUpperLimit, true, true, false);
       this->addSelection(kBachelorTofKaon, cascadeSelectionNames.at(kBachelorTofKaon), config.bachelorTofKaon.value, limits::kAbsUpperLimit, true, mRequireTof, false);
     }
-
-    mPtMin = filter.ptMin.value;
-    mPtMax = filter.ptMax.value;
-    mEtaMin = filter.etaMin.value;
-    mEtaMax = filter.etaMax.value;
-    mPhiMin = filter.phiMin.value;
-    mPhiMax = filter.phiMax.value;
-    mLambdaMassMin = filter.massLambdaMin.value;
-    mLambdaMassMax = filter.massLambdaMax.value;
-    mRequireTof = config.requireTof.value;
-    mKeepTracksWithoutTof = config.keepTracksWithoutTof.value;
 
     this->addSelection(kPosDauTpc, cascadeSelectionNames.at(kPosDauTpc), config.posDauTpc.value, limits::kAbsUpperLimit, true, true, false);
     this->addSelection(kNegDauTpc, cascadeSelectionNames.at(kNegDauTpc), config.negDauTpc.value, limits::kAbsUpperLimit, true, true, false);
@@ -324,56 +322,64 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
     auto negDaughter = cascade.template negTrack_as<T2>();
 
     // daughter selections
-    std::array<float, 3> etaDaughters = {std::fabs(bachelor.eta()), std::fabs(posDaughter.eta()), std::fabs(negDaughter.eta())};
+    std::array<float, 3> etaDaughters = {std::fabs(cascade.bacheloreta()), std::fabs(cascade.positiveeta()), std::fabs(cascade.negativeeta())};
     this->evaluateObservable(kDauAbsEtaMax, *std::max_element(etaDaughters.begin(), etaDaughters.end()));
 
-    std::array<float, 3> dcaDaughters = {std::fabs(bachelor.dcaXY()), std::fabs(posDaughter.dcaXY()), std::fabs(negDaughter.dcaXY())};
+    std::array<float, 3> dcaDaughters = {std::fabs(cascade.dcabachtopv()), std::fabs(cascade.dcapostopv()), std::fabs(cascade.dcanegtopv())};
     this->evaluateObservable(kDauAbsDcaxyMin, *std::min_element(dcaDaughters.begin(), dcaDaughters.end()));
 
     std::array<float, 3> clustersDaughters = {1.f * bachelor.tpcNClsFound(), 1.f * posDaughter.tpcNClsFound(), 1.f * negDaughter.tpcNClsFound()};
     this->evaluateObservable(kDauTpcClsMin, *std::min_element(clustersDaughters.begin(), clustersDaughters.end()));
 
-    // bachelor pid selection
-    // check both pion and kaon PID for xi and omega
-    this->evaluateObservable(kBachelorTpcPion, bachelor.tpcNSigmaPi());
-    this->evaluateObservable(kBachelorTpcKaon, bachelor.tpcNSigmaKa());
-    if (bachelor.hasTOF()) {
-      this->evaluateObservable(kBachelorTofPion, bachelor.tofNSigmaPi());
-      this->evaluateObservable(kBachelorTofKaon, bachelor.tofNSigmaKa());
-    } else if (mKeepTracksWithoutTof) {
-      this->evaluateObservable(kBachelorTofPion, 0);
-      this->evaluateObservable(kBachelorTofKaon, 0);
+    // pid selections
+    // TPC nSigma comes from the daughter track, TOF nSigma and the has-TOF flags from the cascade candidate
+    // if a daughter has no TOF signal, feed 0 so the bit passes any limit (opt-in via keepTracksWithoutTof)
+    auto evaluatePid = [this](CascadeSels tpcBit, float tpcNSigma,
+                              CascadeSels tofBit, float tofNSigma, bool hasTof) {
+      this->evaluateObservable(tpcBit, tpcNSigma);
+      if (hasTof) {
+        this->evaluateObservable(tofBit, tofNSigma);
+      } else if (mKeepTracksWithoutTof) {
+        this->evaluateObservable(tofBit, 0.f);
+      }
+    };
+
+    const bool bachHasTof = cascade.bachelorHasTOF();
+    const bool posHasTof = cascade.positiveHasTOF();
+    const bool negHasTof = cascade.negativeHasTOF();
+
+    // bachelor: pion for Xi, kaon for Omega
+    if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
+      evaluatePid(kBachelorTpcPion, bachelor.tpcNSigmaPi(),
+                  kBachelorTofPion, cascade.tofNSigmaXiPi(), bachHasTof);
+    } else if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
+      evaluatePid(kBachelorTpcKaon, bachelor.tpcNSigmaKa(),
+                  kBachelorTofKaon, cascade.tofNSigmaOmKa(), bachHasTof);
     }
 
-    // depending on the charge, we check lambda or antilambda hypothesis
-    if (cascade.sign() < 0) {
-      this->evaluateObservable(kPosDauTpc, posDaughter.tpcNSigmaPr());
-      this->evaluateObservable(kNegDauTpc, negDaughter.tpcNSigmaPi());
-      if (posDaughter.hasTOF()) {
-        this->evaluateObservable(kPosDauTof, posDaughter.tofNSigmaPr());
-      } else if (mKeepTracksWithoutTof) {
-        this->evaluateObservable(kPosDauTof, 0);
-      }
-      if (negDaughter.hasTOF()) {
-        this->evaluateObservable(kNegDauTof, negDaughter.tofNSigmaPi());
-      } else if (mKeepTracksWithoutTof) {
-        this->evaluateObservable(kNegDauTof, 0);
-      }
-    } else if (cascade.sign() > 0) {
-      this->evaluateObservable(kPosDauTpc, posDaughter.tpcNSigmaPi());
-      this->evaluateObservable(kNegDauTpc, negDaughter.tpcNSigmaPr());
-      if (posDaughter.hasTOF()) {
-        this->evaluateObservable(kPosDauTof, posDaughter.tofNSigmaPi());
-      } else if (mKeepTracksWithoutTof) {
-        this->evaluateObservable(kPosDauTof, 0);
-      }
-      if (negDaughter.hasTOF()) {
-        this->evaluateObservable(kNegDauTof, negDaughter.tofNSigmaPr());
-      } else if (mKeepTracksWithoutTof) {
-        this->evaluateObservable(kNegDauTof, 0);
-      }
-    } else {
+    // v0 daughters: charge of the cascade fixes the Lambda vs. AntiLambda hypothesis
+    if (cascade.sign() == 0) {
       LOG(warn) << "Encountered Cascade candidate with 0 charge";
+    } else {
+      // sign < 0: Xi-/Omega- -> Lambda -> p pi-   (pos = proton, neg = pion)
+      // sign > 0: Xi+/Omega+ -> AntiLambda        (pos = pion,   neg = antiproton)
+      const bool isMatter = cascade.sign() < 0;
+
+      const float tpcPosDau = isMatter ? posDaughter.tpcNSigmaPr() : posDaughter.tpcNSigmaPi();
+      const float tpcNegDau = isMatter ? negDaughter.tpcNSigmaPi() : negDaughter.tpcNSigmaPr();
+
+      float tofPosDau = 0.f;
+      float tofNegDau = 0.f;
+      if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
+        tofPosDau = isMatter ? cascade.tofNSigmaXiLaPr() : cascade.tofNSigmaXiLaPi();
+        tofNegDau = isMatter ? cascade.tofNSigmaXiLaPi() : cascade.tofNSigmaXiLaPr();
+      } else if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
+        tofPosDau = isMatter ? cascade.tofNSigmaOmLaPr() : cascade.tofNSigmaOmLaPi();
+        tofNegDau = isMatter ? cascade.tofNSigmaOmLaPi() : cascade.tofNSigmaOmLaPr();
+      }
+
+      evaluatePid(kPosDauTpc, tpcPosDau, kPosDauTof, tofPosDau, posHasTof);
+      evaluatePid(kNegDauTpc, tpcNegDau, kNegDauTof, tofNegDau, negHasTof);
     }
 
     this->assembleBitmask<SelectionHistName>();
@@ -657,6 +663,22 @@ class CascadeBuilder
   template <typename T1, typename T2, typename T3, typename T4>
   void fillCascade(T1& collisionBuilder, T2& cascadeProducts, T3 const& cascade, T4 const& col, int bachelorIndex, int posDaughterIndex, int negDaughterIndex)
   {
+    float strangeTofBachelor = 0.f;
+    float strangeTofPosDau = 0.f;
+    float strangeTofNegDau = 0.f;
+    const bool isMatter = cascade.sign() < 0; // Xi-/Omega- -> Lambda -> p pi- (pos=proton, neg=pion)
+
+    if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
+      strangeTofBachelor = cascade.tofNSigmaXiPi();
+      strangeTofPosDau = isMatter ? cascade.tofNSigmaXiLaPr() : cascade.tofNSigmaXiLaPi();
+      strangeTofNegDau = isMatter ? cascade.tofNSigmaXiLaPi() : cascade.tofNSigmaXiLaPr();
+    }
+    if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
+      strangeTofBachelor = cascade.tofNSigmaOmKa();
+      strangeTofPosDau = isMatter ? cascade.tofNSigmaOmLaPr() : cascade.tofNSigmaOmLaPi();
+      strangeTofNegDau = isMatter ? cascade.tofNSigmaOmLaPi() : cascade.tofNSigmaOmLaPr();
+    }
+
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
       if (mProduceXis) {
         cascadeProducts.producedXis(collisionBuilder.collisionIndex(),
@@ -691,7 +713,10 @@ class CascadeBuilder
           cascade.v0cosPA(col.posX(), col.posY(), col.posZ()),
           cascade.dcaV0daughters(),
           cascade.v0radius(),
-          cascade.dcav0topv(col.posX(), col.posY(), col.posZ()));
+          cascade.dcav0topv(col.posX(), col.posY(), col.posZ()),
+          strangeTofBachelor,
+          strangeTofPosDau,
+          strangeTofNegDau);
       }
     }
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
@@ -728,7 +753,10 @@ class CascadeBuilder
           cascade.v0cosPA(col.posX(), col.posY(), col.posZ()),
           cascade.dcaV0daughters(),
           cascade.v0radius(),
-          cascade.dcav0topv(col.posX(), col.posY(), col.posZ()));
+          cascade.dcav0topv(col.posX(), col.posY(), col.posZ()),
+          strangeTofBachelor,
+          strangeTofPosDau,
+          strangeTofNegDau);
       }
     }
   }

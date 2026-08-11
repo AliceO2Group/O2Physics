@@ -179,6 +179,8 @@ struct Kstarqa {
 
   } configGp;
 
+  Service<o2::framework::O2DatabasePDG> pdgDB{};
+
   enum MultEstimator {
     kFT0M,
     kFT0A,
@@ -361,6 +363,12 @@ struct Kstarqa {
     hInvMass.add("h1RecMult", "Multiplicity reconstructed", kTH1F, {multiplicityAxis});
     hInvMass.add("h1RecMult2", "Multiplicity reconstructed", kTH1F, {multiplicityAxis});
     hInvMass.add("h1KSRecsplit", "KS meson Rec split", kTH1F, {{100, 0.0f, 10.0f}});
+
+    hInvMass.add("h3KstarMassGen", "Gen pt, multiplicity, mass", kTHnSparseF, {ptAxis, multiplicityAxis, invmassAxis});
+    hInvMass.add("h3KstarMassGenCalib", "Gen pt, multiplicity, mass", kTHnSparseF, {ptAxis, multiplicityAxis, invmassAxis});
+    hInvMass.add("h3KstarMassRec", "Rec pt, multiplicity, mass", kTHnSparseF, {ptAxis, multiplicityAxis, invmassAxis});
+    hInvMass.add("h3KstarMassRecCalib", "Rec pt, multiplicity, mass", kTHnSparseF, {ptAxis, multiplicityAxis, invmassAxis});
+
     // hInvMass.add("hAllGenCollisionsImpact", "All generated collisions vs impact parameter", kTH1F, {multiplicityAxis});
     hInvMass.add("hAllGenCollisions", "All generated events", kTH1F, {multiplicityAxis});
     hInvMass.add("hAllGenCollisions1Rec", "All gen events with at least one rec event", kTH1F, {multiplicityAxis});
@@ -561,52 +569,73 @@ struct Kstarqa {
     if (configGp.isGlobalTracks) {
       if (!candidate.isGlobalTrack())
         return false;
+
       if (std::abs(candidate.pt()) < configGp.cfgCutPT)
         return false;
+
       if (std::abs(candidate.eta()) > configGp.cfgCutEtaMax)
         return false;
+
       if (!configGp.isApplyPtDepDCAxyCut) {
         if (std::abs(candidate.dcaXY()) > configGp.cfgCutDCAxyMax)
           return false;
+
       } else {
         if (std::abs(candidate.dcaXY()) > (0.0105 + 0.035 / std::pow(candidate.pt(), 1.1)))
           return false;
       }
       if (std::abs(candidate.dcaZ()) > configGp.cfgCutDCAz)
         return false;
+
       if (candidate.itsNCls() < configGp.cfgITScluster)
         return false;
+
       if (candidate.tpcNClsFound() < configGp.cfgTPCcluster)
         return false;
+
       if (configGp.hasITS && !candidate.hasITS())
         return false;
-      if (configGp.isITSTPCRefit && (!(o2::aod::track::ITSrefit) || !(o2::aod::track::TPCrefit)))
-        return false;
+
+      if (configGp.isITSTPCRefit) {
+        if (!(candidate.flags() & o2::aod::track::ITSrefit) ||
+            !(candidate.flags() & o2::aod::track::TPCrefit)) {
+          return false;
+        }
+      }
       if (configGp.cfgPVContributor && !candidate.isPVContributor())
         return false;
+
     } else if (!configGp.isGlobalTracks) {
       if (std::abs(candidate.pt()) < configGp.cfgCutPT)
         return false;
-      // if (std::abs(candidate.eta()) > configGp.cfgCutEtaMax || std::abs(candidate.eta()) < configGp.cfgCutEtaMin)
+
       if (std::abs(candidate.eta()) > configGp.cfgCutEtaMax)
         return false;
-      // if (std::abs(candidate.dcaXY()) > configGp.cfgCutDCAxyMax || std::abs(candidate.dcaXY()) < configGp.cfgCutDCAxyMin)
+
       if (std::abs(candidate.dcaXY()) > configGp.cfgCutDCAxyMax)
         return false;
+
       if (std::abs(candidate.dcaZ()) > configGp.cfgCutDCAz)
         return false;
+
       // if (candidate.tpcCrossedRowsOverFindableCls() < configGp.cfgRCRFC)
-      return false;
+      // return false;
+
       if (candidate.itsNCls() < configGp.cfgITScluster)
         return false;
+
       if (candidate.tpcNClsFound() < configGp.cfgTPCcluster)
         return false;
+
       // if (candidate.itsChi2NCl() >= configGp.cfgITSChi2NCl)
       //   return false;
+
       // if (candidate.tpcChi2NCl() >= configGp.cfgTPCChi2NClMax || candidate.tpcChi2NCl() < configGp.cfgTPCChi2NClMin)
       //   return false;
+
       if (configGp.cfgPVContributor && !candidate.isPVContributor())
         return false;
+
       if (!candidate.isPrimaryTrack())
         return false;
     }
@@ -619,32 +648,22 @@ struct Kstarqa {
   {
     const auto pglobal = track.p();
     const auto ptpc = track.tpcInnerParam();
-    if (std::abs(pglobal - ptpc) > configGp.cFakeTrackCutKa) {
-      return true;
-    }
-    return false;
+    return std::abs(pglobal - ptpc) > configGp.cFakeTrackCutKa;
   }
 
   // deep angle cut on pair to remove photon conversion
   template <typename T1, typename T2>
   bool selectionPair(const T1& candidate1, const T2& candidate2)
   {
-    double pt1, pt2, pz1, pz2, p1, p2, angle;
-    pt1 = candidate1.pt();
-    pt2 = candidate2.pt();
-    pz1 = candidate1.pz();
-    pz2 = candidate2.pz();
-    p1 = candidate1.p();
-    p2 = candidate2.p();
-    angle = std::acos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
-    if (configGp.isApplyDeepAngle && angle < configGp.cfgDeepAngle) {
-      return false;
-    }
-    // double deltaRvalue = std::sqrt(TVector2::Phi_mpi_pi(candidate1.phi() - candidate2.phi()) * TVector2::Phi_mpi_pi(candidate1.phi() - candidate2.phi()) + (candidate1.eta() - candidate2.eta()) * (candidate1.eta() - candidate2.eta()));
-    // if (deltaRvalue < configGp.deltaRCut) {
-    //   return false;
-    // }
-    return true;
+    const double pt1 = candidate1.pt();
+    const double pt2 = candidate2.pt();
+    const double pz1 = candidate1.pz();
+    const double pz2 = candidate2.pz();
+    const double p1 = candidate1.p();
+    const double p2 = candidate2.p();
+    const double angle = std::acos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
+
+    return !configGp.isApplyDeepAngle || angle >= configGp.cfgDeepAngle;
   }
 
   template <typename T>
@@ -1021,8 +1040,8 @@ struct Kstarqa {
     return false;
   }
 
-  std::array<float, 3> pvec0;
-  std::array<float, 3> pvec1;
+  std::array<float, 3> pvec0 = {0.0, 0.0, 0.0};
+  std::array<float, 3> pvec1 = {0.0, 0.0, 0.0};
 
   // Defining filters for events (event selection)
   // Processed events will be already fulfilling the event selection
@@ -1049,53 +1068,75 @@ struct Kstarqa {
   using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 
   //*********Varibles declaration***************
-  float multiplicity{-1.0}, theta2;
-  ROOT::Math::PxPyPzMVector daughter1, daughter2, daughterRot, mother, motherRot, daughterSelected, fourVecDauCM, daughterRotCM;
+  float multiplicity{-1.0}, theta2{0.0};
+  ROOT::Math::PxPyPzMVector daughter1, daughter2, daughterRot, mother, motherRot, daughterSelected, fourVecDauCM, daughterRotCM, genDaughter1, genDaughter2, genMother;
   ROOT::Math::XYZVector randomVec, beamVec, normalVec;
   bool isMix = false;
 
   template <typename T1, typename T2>
-  void fillInvMass(const T1& daughter1, const T1& daughter2, const T1& mother, float multiplicity, bool isMix, const T2& track1, const T2& track2)
+  void fillInvMass(const T1& dau1, const T1& dau2, const T1& motherVec, float multiplicityFill, bool isMixInput, const T2& track1, const T2& track2)
   {
-    daughterSelected = (boostDaugter1) ? daughter1 : daughter2; // polarization calculations
-    ROOT::Math::Boost boost{mother.BoostToCM()};                // boost mother to center of mass frame
-    fourVecDauCM = boost(daughterSelected);                     // boost the frame of daughter same as mother
+    daughterSelected = (boostDaugter1) ? dau1 : dau2; // polarization calculations
 
-    // if (std::abs(mother.Rapidity()) < configGp.rapidityMotherData) {
+    // Boost mother to the center-of-mass frame
+    ROOT::Math::Boost boost{motherVec.BoostToCM()};
+
+    // Boost selected daughter to the mother rest frame
+    fourVecDauCM = boost(daughterSelected);
+
     if (activateTHnSparseCosThStarHelicity) {
-      auto cosThetaStarHelicity = mother.Vect().Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(mother.Vect().Mag2()));
 
+      auto cosThetaStarHelicity = motherVec.Vect().Dot(fourVecDauCM.Vect()) / (std::sqrt(fourVecDauCM.Vect().Mag2()) * std::sqrt(motherVec.Vect().Mag2()));
+
+      // Unlike-sign pairs
       if (track1.sign() * track2.sign() < 0) {
-        if (!isMix) {
-          if (std::abs(mother.Rapidity()) < configGp.rapidityMotherData) {
-            hInvMass.fill(HIST("h3KstarInvMassUnlikeSign"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity);
+
+        // Same-event
+        if (!isMixInput) {
+
+          if (std::abs(motherVec.Rapidity()) < configGp.rapidityMotherData) {
+            hInvMass.fill(HIST("h3KstarInvMassUnlikeSign"), multiplicityFill, motherVec.Pt(), motherVec.M(), cosThetaStarHelicity);
           }
 
+          // Rotational background
           for (int i = 0; i < cRotations; i++) {
+
             theta2 = rn->Uniform(o2::constants::math::PI - o2::constants::math::PI / configGp.rotationalCut, o2::constants::math::PI + o2::constants::math::PI / configGp.rotationalCut);
 
-            daughterRot = ROOT::Math::PxPyPzMVector(daughter1.Px() * std::cos(theta2) - daughter1.Py() * std::sin(theta2), daughter1.Px() * std::sin(theta2) + daughter1.Py() * std::cos(theta2), daughter1.Pz(), daughter1.M());
+            daughterRot = ROOT::Math::PxPyPzMVector(dau1.Px() * std::cos(theta2) - dau1.Py() * std::sin(theta2), dau1.Px() * std::sin(theta2) + dau1.Py() * std::cos(theta2), dau1.Pz(), dau1.M());
 
-            motherRot = daughterRot + daughter2;
+            motherRot = daughterRot + dau2;
 
             ROOT::Math::Boost boost2{motherRot.BoostToCM()};
             daughterRotCM = boost2(daughterRot);
 
             auto cosThetaStarHelicityRot = motherRot.Vect().Dot(daughterRotCM.Vect()) / (std::sqrt(daughterRotCM.Vect().Mag2()) * std::sqrt(motherRot.Vect().Mag2()));
 
-            if (calcRotational && std::abs(motherRot.Rapidity()) < configGp.rapidityMotherData)
-              hInvMass.fill(HIST("h3KstarInvMassRotated"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarHelicityRot);
+            if (calcRotational && std::abs(motherRot.Rapidity()) < configGp.rapidityMotherData) {
+              hInvMass.fill(HIST("h3KstarInvMassRotated"), multiplicityFill, motherRot.Pt(), motherRot.M(), cosThetaStarHelicityRot);
+            }
           }
-        } else if (isMix && std::abs(mother.Rapidity()) < configGp.rapidityMotherData) {
-          hInvMass.fill(HIST("h3KstarInvMassMixed"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity);
+
+          // Mixed-event
+        } else if (std::abs(motherVec.Rapidity()) < configGp.rapidityMotherData) {
+
+          hInvMass.fill(HIST("h3KstarInvMassMixed"), multiplicityFill, motherVec.Pt(), motherVec.M(), cosThetaStarHelicity);
         }
+
+        // Like-sign pairs
       } else {
-        if (!isMix) {
-          if (calcLikeSign && std::abs(mother.Rapidity()) < configGp.rapidityMotherData) {
+
+        if (!isMixInput) {
+
+          if (calcLikeSign && std::abs(motherVec.Rapidity()) < configGp.rapidityMotherData) {
+
             if (track1.sign() > 0 && track2.sign() > 0) {
-              hInvMass.fill(HIST("h3KstarInvMasslikeSignPP"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity);
+
+              hInvMass.fill(HIST("h3KstarInvMasslikeSignPP"), multiplicityFill, motherVec.Pt(), motherVec.M(), cosThetaStarHelicity);
+
             } else if (track1.sign() < 0 && track2.sign() < 0) {
-              hInvMass.fill(HIST("h3KstarInvMasslikeSignMM"), multiplicity, mother.Pt(), mother.M(), cosThetaStarHelicity);
+
+              hInvMass.fill(HIST("h3KstarInvMasslikeSignMM"), multiplicityFill, motherVec.Pt(), motherVec.M(), cosThetaStarHelicity);
             }
           }
         }
@@ -1124,8 +1165,6 @@ struct Kstarqa {
       multiplicity = collision.centFT0C();
     } else if (cSelectMultEstimator == kFV0A) {
       multiplicity = collision.centFV0A();
-    } else {
-      multiplicity = collision.centFT0M(); // default
     }
 
     // Fill the event counter
@@ -1317,7 +1356,7 @@ struct Kstarqa {
   void processME(EventCandidatesMix const&, TrackCandidates const&)
   {
     // Map estimator to pair and multiplicity accessor
-    auto runMixing = [&](auto& pair, auto multiplicityGetter) {
+    auto runMixing = [&](const auto& pair, auto multiplicityGetter) {
       for (const auto& [c1, tracks1, c2, tracks2] : pair) {
         // if (!c1.sel8() || !c2.sel8())
         //   continue;
@@ -1419,7 +1458,7 @@ struct Kstarqa {
 
   void processMEMC(EventCandidatesMC const&, TrackCandidatesMC const&, aod::McParticles const&, aod::McCollisions const&)
   {
-    auto runMixing = [&](auto& pair, auto multiplicityGetter) {
+    auto runMixing = [&](const auto& pair, auto multiplicityGetter) {
       for (const auto& [c1, tracks1, c2, tracks2] : pair) {
 
         if (!selectionEvent(c1, false) || !selectionEvent(c2, false)) { // don't fill event cut histogram
@@ -1539,8 +1578,6 @@ struct Kstarqa {
       multiplicity = collision.centFT0C();
     } else if (cSelectMultEstimator == kFV0A) {
       multiplicity = collision.centFV0A();
-    } else {
-      multiplicity = collision.centFT0M(); // default
     }
 
     // Fill the event counter
@@ -1713,8 +1750,6 @@ struct Kstarqa {
   }
   PROCESS_SWITCH(Kstarqa, processSEMC, "Process same event in MC", false);
 
-  Service<o2::framework::O2DatabasePDG> pdgDB;
-
   void processGen(EventMCGenerated::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   // void processGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
@@ -1760,8 +1795,6 @@ struct Kstarqa {
         multiplicity = collision.centFT0C();
       } else if (cSelectMultEstimator == kFV0A) {
         multiplicity = collision.centFV0A();
-      } else {
-        multiplicity = collision.centFT0M(); // default
       }
       hInvMass.fill(HIST("h1GenMult"), multiplicity);
 
@@ -1879,8 +1912,6 @@ struct Kstarqa {
         multiplicity1 = RecCollision.centFT0C();
       } else if (cSelectMultEstimator == kFV0A) {
         multiplicity1 = RecCollision.centFV0A();
-      } else {
-        multiplicity1 = RecCollision.centFT0M(); // default
       }
 
       isSelectedEvent = true;
@@ -1896,7 +1927,7 @@ struct Kstarqa {
     }
 
     auto impactPar = mcCollision.impactParameter();
-    auto multiplicityGen = -1;
+    auto multiplicityGen = -1.0f;
     multiplicityGen = mcCollision.centFT0M();
     hInvMass.fill(HIST("MCcorrections/hImpactParameterGen"), impactPar);
     hInvMass.fill(HIST("MCcorrections/MultiplicityGen"), multiplicityGen);
@@ -1941,7 +1972,7 @@ struct Kstarqa {
     }
     hInvMass.fill(HIST("CorrFactors/hGenEvents"), multiplicityNch, 2.5);
 
-    float multiplicity = -1.0;
+    float multiplicitySigLoss = -1.0;
     bool isSelectedEvent = false;
 
     for (auto const& collision : collisions) {
@@ -1951,15 +1982,13 @@ struct Kstarqa {
         continue;
 
       if (cSelectMultEstimator == kFT0M) {
-        multiplicity = collision.centFT0M();
+        multiplicitySigLoss = collision.centFT0M();
       } else if (cSelectMultEstimator == kFT0A) {
-        multiplicity = collision.centFT0A();
+        multiplicitySigLoss = collision.centFT0A();
       } else if (cSelectMultEstimator == kFT0C) {
-        multiplicity = collision.centFT0C();
+        multiplicitySigLoss = collision.centFT0C();
       } else if (cSelectMultEstimator == kFV0A) {
-        multiplicity = collision.centFV0A();
-      } else {
-        multiplicity = collision.centFT0M(); // default
+        multiplicitySigLoss = collision.centFV0A();
       }
       isSelectedEvent = true;
     }
@@ -1967,7 +1996,7 @@ struct Kstarqa {
     // auto multiplicityGen = -1;
     // multiplicityGen = mcCollision.centFT0M();
 
-    hInvMass.fill(HIST("CorrFactors/hMultiplicityVsMultMC"), multiplicity, multiplicityNch);
+    hInvMass.fill(HIST("CorrFactors/hMultiplicityVsMultMC"), multiplicitySigLoss, multiplicityNch);
     hInvMass.fill(HIST("CorrFactors/hNrecInGen"), collisions.size());
     hInvMass.fill(HIST("CorrFactors/MultiplicityGen"), multiplicityNch);
     if (isSelectedEvent) {
@@ -1996,7 +2025,12 @@ struct Kstarqa {
           //   continue;
 
           int pdgDau = kCurrentDaughter.pdgCode();
-          int sign = (pdgDau > 0) - (pdgDau < 0);
+          int sign = 0;
+          if (pdgDau > 0) {
+            sign = 1;
+          } else if (pdgDau < 0) {
+            sign = -1;
+          }
 
           if (sign > 0)
             hasPos = true;
@@ -2016,8 +2050,8 @@ struct Kstarqa {
         if ((passkaon && passpion) && (hasPos && hasNeg)) {
           mother = daughter1 + daughter2; // Kstar meson
 
-          hInvMass.fill(HIST("CorrFactors/h2dGenKstar"), multiplicity, mother.Pt());
-          hInvMass.fill(HIST("CorrFactors/h3dGenKstarVsMultMCVsMultiplicity"), multiplicityNch, multiplicity, mother.Pt());
+          hInvMass.fill(HIST("CorrFactors/h2dGenKstar"), multiplicitySigLoss, mother.Pt());
+          hInvMass.fill(HIST("CorrFactors/h3dGenKstarVsMultMCVsMultiplicity"), multiplicityNch, multiplicitySigLoss, mother.Pt());
           hInvMass.fill(HIST("CorrFactors/hSignalLoss1"), mother.pt(), multiplicityNch);
           if (isSelectedEvent) {
             hInvMass.fill(HIST("CorrFactors/hSignalLoss2"), mother.pt(), multiplicityNch);
@@ -2032,6 +2066,8 @@ struct Kstarqa {
     hInvMass.fill(HIST("CorrFactors/hGenEvents"), multiplicityNch, 3.5);
   }
   PROCESS_SWITCH(Kstarqa, processEvSigLossFactors, "Process Event and Signal loss", false);
+
+  double genMass = 0.0, recMass = 0.0, recPt = 0.0, genPt = 0.0;
 
   void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&, EventMCGenerated const&)
   {
@@ -2061,8 +2097,6 @@ struct Kstarqa {
       multiplicity = collision.centFT0C();
     } else if (cSelectMultEstimator == kFV0A) {
       multiplicity = collision.centFV0A();
-    } else {
-      multiplicity = collision.centFT0M(); // default
     }
 
     hInvMass.fill(HIST("hAllRecCollisions"), multiplicity);
@@ -2144,7 +2178,8 @@ struct Kstarqa {
         }
         rEventSelection.fill(HIST("recMCparticles"), 6.5);
 
-        if (!(track1PDG == PDG_t::kPiPlus && track2PDG == PDG_t::kKPlus) && !(track1PDG == PDG_t::kKPlus && track2PDG == PDG_t::kPiPlus)) {
+        if ((track1PDG != PDG_t::kPiPlus || track2PDG != PDG_t::kKPlus) &&
+            (track1PDG != PDG_t::kKPlus || track2PDG != PDG_t::kPiPlus)) {
           continue;
         }
         rEventSelection.fill(HIST("recMCparticles"), 7.5);
@@ -2300,13 +2335,35 @@ struct Kstarqa {
 
             oldindex = mothertrack1.globalIndex();
             if (track1PDG == PDG_t::kPiPlus) {
+
               daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massPi);
               daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+
+              genDaughter1 = ROOT::Math::PxPyPzMVector(mctrack1.px(), mctrack1.py(), mctrack1.pz(), massPi);
+              genDaughter2 = ROOT::Math::PxPyPzMVector(mctrack2.px(), mctrack2.py(), mctrack2.pz(), massKa);
+
             } else if (track1PDG == PDG_t::kKPlus) {
+
               daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
               daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
+
+              genDaughter1 = ROOT::Math::PxPyPzMVector(mctrack1.px(), mctrack1.py(), mctrack1.pz(), massKa);
+              genDaughter2 = ROOT::Math::PxPyPzMVector(mctrack2.px(), mctrack2.py(), mctrack2.pz(), massPi);
             }
-            mother = daughter1 + daughter2; // Kstar meson
+            mother = daughter1 + daughter2;          // Kstar meson
+            genMother = genDaughter1 + genDaughter2; // Gen Kstar from MC daughters
+
+            recMass = mother.M();
+            recPt = mother.Pt();
+
+            genMass = genMother.M();
+            genPt = mothertrack1.pt();
+
+            hInvMass.fill(HIST("h3KstarMassGen"), genPt, multiplicity, genMass);
+            hInvMass.fill(HIST("h3KstarMassGenCalib"), genPt, multiplicityRec, genMass);
+
+            hInvMass.fill(HIST("h3KstarMassRec"), recPt, multiplicity, recMass);
+            hInvMass.fill(HIST("h3KstarMassRecCalib"), recPt, multiplicityRec, recMass);
 
             hInvMass.fill(HIST("h2KstarRecpt2"), mothertrack1.pt(), multiplicity, std::sqrt(mothertrack1.e() * mothertrack1.e() - mothertrack1.p() * mothertrack1.p()));
             hInvMass.fill(HIST("h2KstarRecptCalib2"), mothertrack1.pt(), multiplicityRec, std::sqrt(mothertrack1.e() * mothertrack1.e() - mothertrack1.p() * mothertrack1.p()));
@@ -2318,6 +2375,7 @@ struct Kstarqa {
             hInvMass.fill(HIST("h1KstarRecMass"), mother.M());
             hInvMass.fill(HIST("h2KstarRecpt1"), mother.Pt(), multiplicity, mother.M());
             hInvMass.fill(HIST("h2KstarRecptCalib1"), mother.Pt(), multiplicityRec, mother.M());
+            // h3KstarMassGen
           }
         }
       }
@@ -2349,8 +2407,6 @@ struct Kstarqa {
       multiplicity = collision.centFT0C();
     } else if (cSelectMultEstimator == kFV0A) {
       multiplicity = collision.centFV0A();
-    } else {
-      multiplicity = collision.centFT0M(); // default
     }
 
     hInvMass.fill(HIST("hAllRecCollisions"), multiplicity);
@@ -2561,8 +2617,6 @@ struct Kstarqa {
       multiplicity = collision.centFT0C();
     } else if (cSelectMultEstimator == kFV0A) {
       multiplicity = collision.centFV0A();
-    } else {
-      multiplicity = collision.centFT0M(); // default
     }
 
     // Fill the event counter
@@ -2658,7 +2712,7 @@ struct Kstarqa {
   void processMEPhi(EventCandidatesMix const&, TrackCandidates const&)
   {
     // Map estimator to pair and multiplicity accessor
-    auto runMixing = [&](auto& pair, auto multiplicityGetter) {
+    auto runMixing = [&](const auto& pair, auto multiplicityGetter) {
       for (const auto& [c1, tracks1, c2, tracks2] : pair) {
         // if (!c1.sel8() || !c2.sel8())
         //   continue;
@@ -2758,8 +2812,6 @@ struct Kstarqa {
         multiplicity = collision.centFT0C();
       } else if (cSelectMultEstimator == kFV0A) {
         multiplicity = collision.centFV0A();
-      } else {
-        multiplicity = collision.centFT0M(); // default
       }
       hInvMass.fill(HIST("h1GenMult"), multiplicity);
 
@@ -2846,7 +2898,7 @@ struct Kstarqa {
     }
     hInvMass.fill(HIST("CorrFactors/hGenEvents"), multiplicityNch, 2.5);
 
-    float multiplicity = -1.0;
+    float multiplicityPhi = -1.0;
     bool isSelectedEvent = false;
 
     for (auto const& collision : collisions) {
@@ -2856,15 +2908,13 @@ struct Kstarqa {
         continue;
 
       if (cSelectMultEstimator == kFT0M) {
-        multiplicity = collision.centFT0M();
+        multiplicityPhi = collision.centFT0M();
       } else if (cSelectMultEstimator == kFT0A) {
-        multiplicity = collision.centFT0A();
+        multiplicityPhi = collision.centFT0A();
       } else if (cSelectMultEstimator == kFT0C) {
-        multiplicity = collision.centFT0C();
+        multiplicityPhi = collision.centFT0C();
       } else if (cSelectMultEstimator == kFV0A) {
-        multiplicity = collision.centFV0A();
-      } else {
-        multiplicity = collision.centFT0M(); // default
+        multiplicityPhi = collision.centFV0A();
       }
       isSelectedEvent = true;
     }
@@ -2872,7 +2922,7 @@ struct Kstarqa {
     // auto multiplicityGen = -1;
     // multiplicityGen = mcCollision.centFT0M();
 
-    hInvMass.fill(HIST("CorrFactors/hMultiplicityVsMultMC"), multiplicity, multiplicityNch);
+    hInvMass.fill(HIST("CorrFactors/hMultiplicityVsMultMC"), multiplicityPhi, multiplicityNch);
     hInvMass.fill(HIST("CorrFactors/hNrecInGen"), collisions.size());
     hInvMass.fill(HIST("CorrFactors/MultiplicityGen"), multiplicityNch);
     if (isSelectedEvent) {
@@ -2901,7 +2951,12 @@ struct Kstarqa {
           //   continue;
 
           int pdgDau = kCurrentDaughter.pdgCode();
-          int sign = (pdgDau > 0) - (pdgDau < 0);
+          int sign = 0;
+          if (pdgDau > 0) {
+            sign = 1;
+          } else if (pdgDau < 0) {
+            sign = -1;
+          }
 
           if (sign > 0)
             hasPos = true;
@@ -2921,8 +2976,8 @@ struct Kstarqa {
         if ((passkaon && passpion) && (hasPos && hasNeg)) {
           mother = daughter1 + daughter2; // Kstar meson
 
-          hInvMass.fill(HIST("CorrFactors/h2dGenKstar"), multiplicity, mother.Pt());
-          hInvMass.fill(HIST("CorrFactors/h3dGenKstarVsMultMCVsMultiplicity"), multiplicityNch, multiplicity, mother.Pt());
+          hInvMass.fill(HIST("CorrFactors/h2dGenKstar"), multiplicityPhi, mother.Pt());
+          hInvMass.fill(HIST("CorrFactors/h3dGenKstarVsMultMCVsMultiplicity"), multiplicityNch, multiplicityPhi, mother.Pt());
           hInvMass.fill(HIST("CorrFactors/hSignalLoss1"), mother.pt(), multiplicityNch);
           if (isSelectedEvent) {
             hInvMass.fill(HIST("CorrFactors/hSignalLoss2"), mother.pt(), multiplicityNch);
@@ -2963,8 +3018,6 @@ struct Kstarqa {
       multiplicity = collision.centFT0C();
     } else if (cSelectMultEstimator == kFV0A) {
       multiplicity = collision.centFV0A();
-    } else {
-      multiplicity = collision.centFT0M(); // default
     }
 
     hInvMass.fill(HIST("hAllRecCollisions"), multiplicity);
@@ -3044,7 +3097,7 @@ struct Kstarqa {
         }
         rEventSelection.fill(HIST("recMCparticles"), 5.5);
 
-        if ((track1PDG != PDG_t::kKPlus) || (track2PDG != PDG_t::kKPlus)) {
+        if (track1PDG != PDG_t::kKPlus || track2PDG != PDG_t::kKPlus) {
           continue;
         }
         rEventSelection.fill(HIST("recMCparticles"), 6.5);
@@ -3076,9 +3129,10 @@ struct Kstarqa {
             }
             rEventSelection.fill(HIST("recMCparticles"), 11.5);
 
-            if (!configGp.isapplypTdepPID && !(selectionPID(track1, 1) && selectionPID(track2, 1))) { // kaon and kaon
+            if (!configGp.isapplypTdepPID && !(selectionPID(track1, 1) && selectionPID(track2, 1))) {
               continue;
-            } else if (configGp.isapplypTdepPID && !(selectionPIDPtDep(track1, 1) && selectionPIDPtDep(track2, 1))) { // kaon and kaon
+            }
+            if (configGp.isapplypTdepPID && !(selectionPIDPtDep(track1, 1) && selectionPIDPtDep(track2, 1))) {
               continue;
             }
             rEventSelection.fill(HIST("recMCparticles"), 12.5);
@@ -3147,8 +3201,6 @@ struct Kstarqa {
         centrality = RecCollision.centFT0C();
       } else if (cSelectMultEstimator == kFV0A) {
         centrality = RecCollision.centFV0A();
-      } else {
-        centrality = RecCollision.centFT0M(); // default
       }
 
       isSelectedEvent = true;
@@ -3197,7 +3249,7 @@ struct Kstarqa {
 
     auto impactPar = mcCollision.impactParameter();
     // auto multiplicityRec = -1;
-    auto multiplicityGen = -1;
+    auto multiplicityGen = -1.0f;
     multiplicityGen = mcCollision.centFT0M();
     hInvMass.fill(HIST("MCcorrections/hImpactParameterGen"), impactPar);
     hInvMass.fill(HIST("MCcorrections/MultiplicityGen"), multiplicityGen);
@@ -3221,8 +3273,6 @@ struct Kstarqa {
         multiplicity1 = RecCollision.centFT0C();
       } else if (cSelectMultEstimator == kFV0A) {
         multiplicity1 = RecCollision.centFV0A();
-      } else {
-        multiplicity1 = RecCollision.centFT0M(); // default
       }
       isSelectedEvent = true;
     }

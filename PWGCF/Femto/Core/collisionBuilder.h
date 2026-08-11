@@ -25,6 +25,7 @@
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/Zorro.h"
 
 #include <DataFormatsParameters/GRPMagField.h>
@@ -80,6 +81,8 @@ struct ConfCollisionBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> sphericityMin{"sphericityMin", {}, "Minimum sphericity"};
   o2::framework::Configurable<std::vector<float>> sphericityMax{"sphericityMax", {}, "Maximum sphericity"};
   o2::framework::Configurable<std::vector<std::string>> triggers{"triggers", {}, "List of all triggers to be used"};
+  o2::framework::Configurable<datatypes::QvecDetectorType> qvecDetector{"qvecDetector", 0, "Detector used to estimate the Q-vector: 0 -> FT0C, 1 -> FT0A"};
+  o2::framework::Configurable<datatypes::QvecHarmonicType> qvecHarmonic{"qvecHarmonic", 2, "Harmonic n of the Q-vector and event plane angle Psi_n: 2 -> elliptic, 3 -> triangular"};
 };
 
 struct ConfCcdb : o2::framework::ConfigurableGroup {
@@ -240,6 +243,16 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
       mZorro.setBaseCCDBPath(confCcdb.triggerPath.value);
     }
 
+    // event shape
+    mQvecDetector = static_cast<modes::QvecDetector>(config.qvecDetector.value);
+    if (mQvecDetector >= modes::QvecDetector::kQvecDetectorLast) {
+      LOG(fatal) << "Qvector Detector is not supported";
+    }
+    mQvecHarmonic = static_cast<modes::QvecHarmonic>(config.qvecHarmonic.value);
+    if (mQvecHarmonic < modes::QvecHarmonic::kN2 || mQvecHarmonic >= modes::QvecHarmonic::kQvecHarmonicLast) {
+      LOG(fatal) << "Qvector Harmonic is not supported";
+    }
+
     this->addSelection(kSel8, collisionSelectionNames.at(kSel8), config.sel8.value);
     this->addSelection(kNoSameBunchPileUp, collisionSelectionNames.at(kNoSameBunchPileUp), config.noSameBunchPileup.value);
     this->addSelection(kIsVertexItsTpc, collisionSelectionNames.at(kIsVertexItsTpc), config.isVertexItsTpc.value);
@@ -345,6 +358,48 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
   }
   [[nodiscard]] float getMultiplicity() const { return mMultiplicity; }
 
+  template <modes::System system, typename T>
+  void setQvector(T const& col)
+  {
+    switch (mQvecDetector) {
+      case modes::QvecDetector::kFT0C:
+        mQvec = std::hypot(col.qvecFT0CReVec()[0], col.qvecFT0CImVec()[0]) * std::sqrt(col.sumAmplFT0C());
+        break;
+      case modes::QvecDetector::kFT0A:
+        mQvec = std::hypot(col.qvecFT0AReVec()[0], col.qvecFT0AImVec()[0]) * std::sqrt(col.sumAmplFT0A());
+        break;
+      case modes::QvecDetector::kQvecDetectorLast:
+        LOG(fatal) << "Invalid Q-vector detector";
+        break;
+      default:
+        LOG(fatal) << "Invalid Q-vector detector";
+        break;
+    }
+  }
+  [[nodiscard]] float getQvector() const { return mQvec; }
+
+  template <modes::System system, typename T>
+  void setEventPlane(T const& col)
+  {
+    auto harmonic = static_cast<float>(mQvecHarmonic);
+    int index = static_cast<int>(mQvecHarmonic) - 2; // get index in the qvector vector
+    switch (mQvecDetector) {
+      case modes::QvecDetector::kFT0C:
+        mEventPlane = RecoDecay::constrainAngle((std::atan2(col.qvecFT0CImVec()[index], col.qvecFT0CReVec()[index])) / harmonic, 0, harmonic); // constrain between 0 and 2pi/harmonic
+        break;
+      case modes::QvecDetector::kFT0A:
+        mEventPlane = RecoDecay::constrainAngle((std::atan2(col.qvecFT0AImVec()[index], col.qvecFT0AReVec()[index])) / harmonic, 0, harmonic); // constrain between 0 and 2pi/harmonic
+        break;
+      case modes::QvecDetector::kQvecDetectorLast:
+        LOG(fatal) << "Invalid Q-vector detector";
+        break;
+      default:
+        LOG(fatal) << "Invalid Q-vector detector";
+        break;
+    }
+  }
+  [[nodiscard]] float getEventPlane() const { return mEventPlane; }
+
   /// \brief Evaluate all pre-filters (kinematics, quality, RCT flags) for a collision candidate,
   ///        filling one filter-histogram bin per bound plus the "All analyzed"/"All passed" summary bins.
   template <typename T>
@@ -415,6 +470,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
     this->evaluateObservable(kIsGoodZvtxFt0VsPv, static_cast<float>(col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)));
     this->evaluateObservable(kNoCollInTimeRangeNarrow, static_cast<float>(col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)));
     this->evaluateObservable(kNoCollInTimeRangeStrict, static_cast<float>(col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)));
+    this->evaluateObservable(kNoCollInTimeRangeStandard, static_cast<float>(col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)));
     this->evaluateObservable(kNoCollInRofStrict, static_cast<float>(col.selection_bit(o2::aod::evsel::kNoCollInRofStrict)));
     this->evaluateObservable(kNoCollInRofStandard, static_cast<float>(col.selection_bit(o2::aod::evsel::kNoCollInRofStandard)));
     this->evaluateObservable(kNoHighMultCollInPrevRof, static_cast<float>(col.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)));
@@ -487,6 +543,11 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
   float mSphericity = 0.f;
   float mCentrality = 0.f;
   float mMultiplicity = 0.f;
+  float mQvec = 0.f;
+  float mEventPlane = 0.f;
+
+  modes::QvecDetector mQvecDetector = modes::QvecDetector::kFT0C;
+  modes::QvecHarmonic mQvecHarmonic = modes::QvecHarmonic::kN2;
 
   // RCT flags
   mutable aod::rctsel::RCTFlagsChecker mRctFlagsChecker;
@@ -506,7 +567,7 @@ struct CollisionBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FColSphericities> producedSphericities;
   o2::framework::Produces<o2::aod::FColMults> producedMultiplicityEstimators;
   o2::framework::Produces<o2::aod::FColCents> producedCentralityEstimators;
-  o2::framework::Produces<o2::aod::FColQns> producedQns;
+  o2::framework::Produces<o2::aod::FColShapes> producedShapes;
 };
 
 struct ConfCollisionTables : o2::framework::ConfigurableGroup {
@@ -518,7 +579,7 @@ struct ConfCollisionTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceSphericities{"produceSphericities", -1, "Produce Sphericity (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceMults{"produceMults", -1, "Produce Multiplicities (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceCents{"produceCents", -1, "Produce Centralities (-1: auto; 0 off; 1 on)"};
-  o2::framework::Configurable<int> produceQns{"produceQns", -1, "Produce Qn (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceShapes{"produceShapes", -1, "Produce Event shape variables (-1: auto; 0 off; 1 on)"};
 };
 
 template <auto& SelectionHistName, auto& FilterHistName>
@@ -544,7 +605,7 @@ class CollisionBuilder
     mProducedSphericities = utils::enableTable("FColSphericities_001", confTable.produceSphericities.value, initContext);
     mProducedMultiplicities = utils::enableTable("FColMults_001", confTable.produceMults.value, initContext);
     mProducedCentralities = utils::enableTable("FColCents_001", confTable.produceCents.value, initContext);
-    mProduceQns = utils::enableTable("FColQnBins_001", confTable.produceQns.value, initContext);
+    mProducedShapes = utils::enableTable("FColShapes_001", confTable.produceShapes.value, initContext);
 
     if (mProducedCollisions && mProducedLiteCollisions) {
       LOG(fatal) << "FCols and FLiteCols are mutually exclusive -- enable only one. "
@@ -552,7 +613,9 @@ class CollisionBuilder
                  << "use the dedicated converter task to reconstruct FCols from FLiteCols downstream.";
     }
 
-    if (mProducedCollisions || mProducedLiteCollisions || mProducedCollisionMasks || mProducedPositions || mProducedSphericities || mProducedMultiplicities || mProducedCentralities) {
+    if (mProducedCollisions || mProducedLiteCollisions || mProducedCollisionMasks ||
+        mProducedPositions || mProducedSphericities || mProducedMultiplicities ||
+        mProducedCentralities) {
       mFillAnyTable = true;
     } else {
       LOG(info) << "No tables configured, Selection object will not be configured...";
@@ -566,7 +629,7 @@ class CollisionBuilder
   }
 
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5>
-  void initCollision(T1& bc, T2& col, T3& tracks, T4& ccdb, T5& histRegistry)
+  void initCollision(T1 const& bc, T2 const& col, T3 const& tracks, T4& ccdb, T5& histRegistry)
   {
     if (mRunNumber != bc.runNumber()) {
       mRunNumber = bc.runNumber();
@@ -590,6 +653,11 @@ class CollisionBuilder
     mCollisionSelection.setSphericity(tracks);
     mCollisionSelection.template setMultiplicity<system>(col);
     mCollisionSelection.template setCentrality<system>(col);
+
+    if constexpr (utils::HasQvectors<T2>) {
+      mCollisionSelection.template setQvector<system>(col);
+      mCollisionSelection.template setEventPlane<system>(col);
+    }
 
     std::vector<bool> triggerDecisions = mCollisionSelection.getTriggerDecisions(bc.globalBC());
 
@@ -671,18 +739,18 @@ class CollisionBuilder
         col.ft0cOccupancyInTimeRange());
     }
 
-    // TODO: enable later for better QA
-    // if (mProducedCentralities) {
-    //   collisionProducts.producedCentralityEstimators(
-    //     col.centFT0A(),
-    //     col.centFT0C());
-    // }
-    // PbPb specific columns
-    // if constexpr (modes::isFlagSet(system, modes::System::kPbPb)) {
-    //   if (mProduceQns) {
-    //     collisionProducts.producedQns(utils::qn(col));
-    //   }
-    // }
+    if (mProducedCentralities) {
+      collisionProducts.producedCentralityEstimators(
+        col.centFT0A(),
+        col.centFT0C(),
+        col.centFT0M());
+    }
+
+    if (mProducedShapes) {
+      collisionProducts.producedShapes(
+        mCollisionSelection.getQvector(),
+        mCollisionSelection.getEventPlane());
+    }
 
     mCollisionAlreadyFilled = true;
   }
@@ -726,7 +794,7 @@ class CollisionBuilder
   bool mProducedSphericities = false;
   bool mProducedMultiplicities = false;
   bool mProducedCentralities = false;
-  bool mProduceQns = false;
+  bool mProducedShapes = false;
 };
 
 struct CollisionBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
