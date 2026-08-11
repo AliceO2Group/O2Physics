@@ -291,7 +291,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
         {collisionFilterNames.at(kFilterSphericityMax), mSphericityMax},
         {collisionFilterNames.at(kFilterRctFlags), mUseRctFlags ? 1.f : 0.f},
       });
-  };
+  }
 
   /// \brief Initialize the Zorro trigger machinery for a new run. No-op if no triggers configured.
   template <typename T1, typename T2>
@@ -320,7 +320,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
     mMagField = MagField;
   }
 
-  float getMagneticField()
+  [[nodiscard]] int getMagneticField()
   {
     return mMagField;
   }
@@ -491,14 +491,14 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
     }
 
     this->assembleBitmask<SelectionHistName>();
-  };
+  }
 
  protected:
   template <typename T>
   float computeSphericity(T const& tracks)
   {
-    int minNumberTracks = 2;
-    double maxSphericity = 2.f;
+    const int64_t minNumberTracks = 2;
+    const double maxSphericity = 2.f;
     if (tracks.size() <= minNumberTracks) {
       return maxSphericity;
     }
@@ -529,7 +529,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
 
   // filter cuts
   float mVtxZMin = -12.f;
-  float mVtxZMax = -12.f;
+  float mVtxZMax = 12.f;
   float mSphericityMin = 0.f;
   float mSphericityMax = 1.f;
   float mMagFieldMin = -5.f;
@@ -539,7 +539,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
   float mCentMin = 0.f;
   float mCentMax = 100.f;
 
-  int mMagField = 0.f;
+  int mMagField = 0;
   float mSphericity = 0.f;
   float mCentrality = 0.f;
   float mMultiplicity = 0.f;
@@ -568,6 +568,7 @@ struct CollisionBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FColMults> producedMultiplicityEstimators;
   o2::framework::Produces<o2::aod::FColCents> producedCentralityEstimators;
   o2::framework::Produces<o2::aod::FColShapes> producedShapes;
+  o2::framework::Produces<o2::aod::FLiteColShapes> producedLiteShapes;
 };
 
 struct ConfCollisionTables : o2::framework::ConfigurableGroup {
@@ -580,6 +581,7 @@ struct ConfCollisionTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceMults{"produceMults", -1, "Produce Multiplicities (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceCents{"produceCents", -1, "Produce Centralities (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceShapes{"produceShapes", -1, "Produce Event shape variables (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceLiteShapes{"produceLiteShapes", -1, "Produce Lite Event shape variables (-1: auto; 0 off; 1 on)"};
 };
 
 template <auto& SelectionHistName, auto& FilterHistName>
@@ -606,16 +608,22 @@ class CollisionBuilder
     mProducedMultiplicities = utils::enableTable("FColMults_001", confTable.produceMults.value, initContext);
     mProducedCentralities = utils::enableTable("FColCents_001", confTable.produceCents.value, initContext);
     mProducedShapes = utils::enableTable("FColShapes_001", confTable.produceShapes.value, initContext);
+    mProducedLiteShapes = utils::enableTable("FLiteColShapes_001", confTable.produceLiteShapes.value, initContext);
 
     if (mProducedCollisions && mProducedLiteCollisions) {
       LOG(fatal) << "FCols and FLiteCols are mutually exclusive -- enable only one. "
                  << "FLiteCols is meant to only replace FCols at the producer stage (for better compression in derived data); "
                  << "use the dedicated converter task to reconstruct FCols from FLiteCols downstream.";
     }
+    if (mProducedShapes && mProducedLiteShapes) {
+      LOG(fatal) << "FColShapes and FLiteColShapes are mutually exclusive -- enable only one. "
+                 << "FLiteColShapes is meant to only replace FColShapes at the producer stage (for better compression in derived data); "
+                 << "use the dedicated converter task to reconstruct FColShapes from FLiteColShapes downstream.";
+    }
 
     if (mProducedCollisions || mProducedLiteCollisions || mProducedCollisionMasks ||
         mProducedPositions || mProducedSphericities || mProducedMultiplicities ||
-        mProducedCentralities) {
+        mProducedCentralities || mProducedShapes || mProducedLiteShapes) {
       mFillAnyTable = true;
     } else {
       LOG(info) << "No tables configured, Selection object will not be configured...";
@@ -634,15 +642,14 @@ class CollisionBuilder
     if (mRunNumber != bc.runNumber()) {
       mRunNumber = bc.runNumber();
       if (mMagFieldForced == 0) {
-        static o2::parameters::GRPMagField* grpo = nullptr;
-        LOG(info) << "Get magentic field with Path: " << mGrpPath << "; Run number: " << mRunNumber;
-        grpo = ccdb->template getForRun<o2::parameters::GRPMagField>(mGrpPath, mRunNumber);
+        o2::parameters::GRPMagField* grpo = ccdb->template getForRun<o2::parameters::GRPMagField>(mGrpPath, mRunNumber);
+        LOG(info) << "Get magnetic field with Path: " << mGrpPath << "; Run number: " << mRunNumber;
         if (grpo == nullptr) {
           LOG(fatal) << "GRP object not found for Run " << mRunNumber;
         }
         mMagField = static_cast<int>(grpo->getNominalL3Field()); // get magnetic field in kG
       } else {
-        LOG(info) << "Force magentic field to " << mMagFieldForced << "kG";
+        LOG(info) << "Force magnetic field to " << mMagFieldForced << "kG";
         mMagField = mMagFieldForced;
       }
 
@@ -752,6 +759,12 @@ class CollisionBuilder
         mCollisionSelection.getEventPlane());
     }
 
+    if (mProducedLiteShapes) {
+      collisionProducts.producedLiteShapes(
+        o2::aod::femtocollisions::lite::binQvec(mCollisionSelection.getQvector()),
+        o2::aod::femtocollisions::lite::binEventPlaneAngle(mCollisionSelection.getEventPlane()));
+    }
+
     mCollisionAlreadyFilled = true;
   }
 
@@ -795,6 +808,7 @@ class CollisionBuilder
   bool mProducedMultiplicities = false;
   bool mProducedCentralities = false;
   bool mProducedShapes = false;
+  bool mProducedLiteShapes = false;
 };
 
 struct CollisionBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
