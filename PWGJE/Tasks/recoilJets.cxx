@@ -195,13 +195,13 @@ struct RecoilJets {
       multNBins{"multNBins", 600, "Number of bins for scaled FT0M multiplicity"},
       zdcTimeNBins{"zdcTimeNBins", 240, "Number of bins for ZDC timing histograms"};
 
-    ConfigurableAxis multFT0CThresh{"multFT0CThresh", {VARIABLE_WIDTH, 0.0, 0.133333, 0.233333, 0.366667, 0.533333, 0.733333, 1, 1.33333, 1.76667, 2.36667, 3.63333, 20.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};      
-    ConfigurableAxis multFT0CThreshPartLevel{"multFT0CThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.06, 0.14, 0.3, 0.46, 0.7, 1, 1.36, 1.82, 2.42, 3.64, 20.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
+    ConfigurableAxis multFT0CThresh{"multFT0CThresh", {VARIABLE_WIDTH, 0.0, 0.133333, 0.233333, 0.366667, 0.533333, 0.733333, 1.0, 1.33333, 1.76667, 2.36667, 3.63333, 20.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0%"};      
+    ConfigurableAxis multFT0CThreshPartLevel{"multFT0CThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.06, 0.14, 0.3, 0.46, 0.7, 1.0, 1.36, 1.82, 2.42, 3.64, 20.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0%"};
 
-    ConfigurableAxis multFT0MThresh{"multFT0MThresh", {VARIABLE_WIDTH, 0.0, 0.133333, 0.266667, 0.366667, 0.533333, 0.766667, 1, 1.33333, 1.76667, 2.33333, 3.4, 20.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
-    ConfigurableAxis multFT0MThreshPartLevel{"multFT0MThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.08, 0.18, 0.32, 0.5, 0.7, 1, 1.36, 1.82, 2.4, 3.5, 20.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
+    ConfigurableAxis multFT0MThresh{"multFT0MThresh", {VARIABLE_WIDTH, 0.0, 0.133333, 0.266667, 0.366667, 0.533333, 0.766667, 1.0, 1.33333, 1.76667, 2.33333, 3.4, 20.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0%"};
+    ConfigurableAxis multFT0MThreshPartLevel{"multFT0MThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.08, 0.18, 0.32, 0.5, 0.7, 1.0, 1.36, 1.82, 2.4, 3.5, 20.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0%"};
 
-    ConfigurableAxis axisPtTrackEff{"axisPtTrackEff", {VARIABLE_WIDTH, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 70.0, 100.0}, "#it{p}_{T} (GeV/#it{c})"};
+    ConfigurableAxis axisPtTrackEff{"axisPtTrackEff", {VARIABLE_WIDTH, 0.0, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 70.0, 100.0}, "#it{p}_{T} (GeV/#it{c})"};
 
     ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, -5.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0}, "Centrality (%)"};
   } hist;
@@ -251,11 +251,58 @@ struct RecoilJets {
     float scaledFT0M = 0.f;
   };
 
+  // Indices of the FT0 percentile boundaries in the configurable axis
+  enum FT0PercentileEdge {
+    kEA100 = 0,
+    kEA90,
+    kEA80,
+    kEA70,
+    kEA60,
+    kEA50,
+    kEA40,
+    kEA30,
+    kEA20,
+    kEA10,
+    kEA1,
+    kEA0
+  };
+
+  // EA intervals used for the rho-shift correction
+  enum EAInterval {
+    kMB,
+    kEA0_20,
+    kEA0_10,
+    kEA20_40,
+    kEA60_80,
+    kEA50_100,
+    kEA80_100
+  };
+
+
+  // Configuration of an EA interval used for the TTRef rho shift
+  struct EARhoShift {
+    EAInterval interval;
+    const char* label;
+    float rhoShift;
+  };
+
+  // Hard-coded rho-shift values obtained from train 701159
+  const std::array<EARhoShift, 7> eaRhoShifts{{
+    {kMB,       "EA_MB",          0.283998f},
+    {kEA0_20,   "EA_Perc_0_20",   0.199249f},
+    {kEA0_10,   "EA_Perc_0_10",   0.186661f},
+    {kEA20_40,  "EA_Perc_20_40",  0.137945f},
+    {kEA60_80,  "EA_Perc_60_80",  0.0962535f},
+    {kEA50_100, "EA_Perc_50_100", 0.106919f},
+    {kEA80_100, "EA_Perc_80_100", 0.0871301f}
+  }};
+
   void init(InitContext const&)
   {
     // Initialize histogram axes: configurable
     AxisSpec pT{hist.jetPtMax, 0.0, hist.jetPtMax * 1., "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec jetPTcorr{hist.jetPtMax + 20, -20., hist.jetPtMax * 1.0, "#it{p}_{T, jet}^{ch, corr} (GeV/#it{c})"};
+    AxisSpec jetPTcorrFinnerBin{4800, -20., 100., "#it{p}_{T, jet}^{ch, corr} (GeV/#it{c})"};
     AxisSpec scaledFT0A{hist.multNBins, 0.0, 20., "FT0A / #LT FT0A #GT"};
     AxisSpec scaledFT0C{hist.multNBins, 0.0, 20., "FT0C / #LT FT0C #GT"};
     AxisSpec scaledFT0M{hist.multNBins, 0.0, 20., "FT0M^{*}"};
@@ -382,11 +429,11 @@ struct RecoilJets {
 
         spectra.add(Form("hScaled%s_Recoil_JetPt_Corr_TTRef", eaAxis.label),
                     Form("Events w. TT_{Ref}: scaled %s & #it{p}_{T} of recoil jets", eaAxis.label),
-                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, jetPTcorr}, hist.sumw2);
+                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, jetPTcorrFinnerBin}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_Recoil_JetPt_Corr_TTSig", eaAxis.label),
                     Form("Events w. TT_{Sig}: scaled %s & #it{p}_{T} of recoil jets", eaAxis.label),
-                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, jetPTcorr}, hist.sumw2);
+                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, jetPTcorrFinnerBin}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_Recoil_JetPt_TTRef", eaAxis.label),
                     Form("Events w. TT_{Ref}: scaled %s & #it{p}_{T} of recoil jets", eaAxis.label),
@@ -415,11 +462,11 @@ struct RecoilJets {
 
         spectra.add(Form("hScaled%s_Recoil_JetPt_Corr_TTRef_RestrictedPhi", eaAxis.label),
                     Form("Events w. TT_{Ref}: scaled %s & #it{p}_{T} of recoil jets", eaAxis.label),
-                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, jetPTcorr}, hist.sumw2);
+                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, jetPTcorrFinnerBin}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_Recoil_JetPt_Corr_TTSig_RestrictedPhi", eaAxis.label),
                     Form("Events w. TT_{Sig}: scaled %s & #it{p}_{T} of recoil jets", eaAxis.label),
-                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, jetPTcorr}, hist.sumw2);
+                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, jetPTcorrFinnerBin}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_DPhi_JetPt_Corr_TTRef_RestrictedPhi", eaAxis.label),
                     Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled %s & #Delta#varphi & #it{p}_{T, jet}^{ch}", phiMin, phiMax, eaAxis.label),
@@ -500,15 +547,22 @@ struct RecoilJets {
 
         spectra.add(Form("h%s_Recoil_JetPt_Corr_TTRef", centAxis.label),
                     Form("Events w. TT_{Ref}: %s & #it{p}_{T} of recoil jets", centAxis.label),
-                    kTH2F, {{centAxis.axis, centAxis.axisName}, jetPTcorr}, hist.sumw2);
+                    kTH2F, {{centAxis.axis, centAxis.axisName}, jetPTcorrFinnerBin}, hist.sumw2);
 
         spectra.add(Form("h%s_Recoil_JetPt_Corr_TTSig", centAxis.label),
                     Form("Events w. TT_{Sig}: %s & #it{p}_{T} of recoil jets", centAxis.label),
-                    kTH2F, {{centAxis.axis, centAxis.axisName}, jetPTcorr}, hist.sumw2);
+                    kTH2F, {{centAxis.axis, centAxis.axisName}, jetPTcorrFinnerBin}, hist.sumw2);
 
         spectra.add(Form("h%s_FT0MStar", centAxis.label),
                     Form("Correlation of %s vs. FT0M^{*}", centAxis.label),
                     kTH2F, {{centAxis.axis, centAxis.axisName}, scaledFT0M}, hist.sumw2);   
+      }
+
+      // Register TTRef recoil spectra with rho-shift correction.
+      for (const auto& ea : eaRhoShifts) {
+        spectra.add(Form("h%s_Recoil_JetPt_Corr_RhoShifted_TTRef", ea.label),
+                    Form("%s recoil jet p_{T} (rho shifted)", ea.label),
+                    kTH1F, {jetPTcorrFinnerBin}, hist.sumw2);
       }
     }
 
@@ -567,11 +621,11 @@ struct RecoilJets {
 
         spectra.add(Form("hScaled%s_Recoil_JetPt_Corr_TTRef_Part", eaAxis.label),
                     Form("MC events w. TT_{Ref}: scaled %s & #it{p}_{T} of recoil jets", eaAxis.label),
-                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, jetPTcorr}, hist.sumw2);
+                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, jetPTcorrFinnerBin}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_Recoil_JetPt_Corr_TTSig_Part", eaAxis.label),
                     Form("MC events w. TT_{Sig}: scaled %s & #it{p}_{T} of recoil jets", eaAxis.label),
-                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, jetPTcorr}, hist.sumw2);
+                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, jetPTcorrFinnerBin}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_Recoil_JetPt_TTRef_Part", eaAxis.label),
                     Form("MC events w. TT_{Ref}: scaled %s & #it{p}_{T} of recoil jets", eaAxis.label),
@@ -600,11 +654,11 @@ struct RecoilJets {
 
         spectra.add(Form("hScaled%s_Recoil_JetPt_Corr_TTRef_RestrictedPhi_Part", eaAxis.label),
                     Form("Events w. TT_{Ref}: scaled %s & #it{p}_{T} of recoil jets", eaAxis.label),
-                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, jetPTcorr}, hist.sumw2);
+                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, jetPTcorrFinnerBin}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_Recoil_JetPt_Corr_TTSig_RestrictedPhi_Part", eaAxis.label),
                     Form("Events w. TT_{Sig}: scaled %s & #it{p}_{T} of recoil jets", eaAxis.label),
-                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, jetPTcorr}, hist.sumw2);
+                    kTH2F, {{eaAxis.axis, eaAxis.axisName}, jetPTcorrFinnerBin}, hist.sumw2);
 
         spectra.add(Form("hScaled%s_DPhi_JetPt_Corr_TTRef_RestrictedPhi_Part", eaAxis.label),
                     Form("MC events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled %s & #Delta#varphi & #it{p}_{T, jet}^{ch}", phiMin, phiMax, eaAxis.label),
@@ -685,11 +739,11 @@ struct RecoilJets {
 
         spectra.add(Form("h%s_Recoil_JetPt_Corr_TTRef_Part", centAxis.label),
                     Form("MC events w. TT_{Ref}: %s & #it{p}_{T} of recoil jets", centAxis.label),
-                    kTH2F, {{centAxis.axis, centAxis.axisName}, jetPTcorr}, hist.sumw2);
+                    kTH2F, {{centAxis.axis, centAxis.axisName}, jetPTcorrFinnerBin}, hist.sumw2);
 
         spectra.add(Form("h%s_Recoil_JetPt_Corr_TTSig_Part", centAxis.label),
                     Form("MC events w. TT_{Sig}: %s & #it{p}_{T} of recoil jets", centAxis.label),
-                    kTH2F, {{centAxis.axis, centAxis.axisName}, jetPTcorr}, hist.sumw2);
+                    kTH2F, {{centAxis.axis, centAxis.axisName}, jetPTcorrFinnerBin}, hist.sumw2);
       }
     }
 
@@ -1243,6 +1297,9 @@ struct RecoilJets {
                       JTracks const& tracks,
                       float weight = 1.)
   {
+    // Get the configured scaled FT0M percentile boundaries
+    const std::vector<double> ft0mEdges = hist.multFT0MThresh;
+
     bool bSigEv = false;
     std::vector<double> vPhiOfTT;
     double phiTT = 0.;
@@ -1466,6 +1523,46 @@ struct RecoilJets {
 
           if (bRecoilJet) {
 
+            // Fill EA-dependent TTRef recoil spectra using the corresponding rho shift
+            for (const auto& ea : eaRhoShifts) {
+
+              if (!isInEAInterval(scaledFT0M, ft0mEdges, ea.interval))
+                continue;
+
+              const float rhoRefShifted = rho + ea.rhoShift;
+              const float jetPtCorrShifted = jetPt - rhoRefShifted * jetArea;
+
+              switch (ea.interval) {
+                case kMB:
+                  spectra.fill(HIST("hEA_MB_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
+                  break;
+
+                case kEA0_20:
+                  spectra.fill(HIST("hEA_Perc_0_20_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
+                  break;
+
+                case kEA0_10:
+                  spectra.fill(HIST("hEA_Perc_0_10_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
+                  break;
+
+                case kEA20_40:
+                  spectra.fill(HIST("hEA_Perc_20_40_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
+                  break;
+
+                case kEA60_80:
+                  spectra.fill(HIST("hEA_Perc_60_80_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
+                  break;
+
+                case kEA50_100:
+                  spectra.fill(HIST("hEA_Perc_50_100_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
+                  break;
+
+                case kEA80_100:
+                  spectra.fill(HIST("hEA_Perc_80_100_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
+                  break;
+              }
+            }
+            
             // EA dependence
             spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_Corr_TTRef"), scaledFT0C, jetPtCorr, weight);
             spectra.fill(HIST("hScaledFT0M_Recoil_JetPt_Corr_TTRef"), scaledFT0M, jetPtCorr, weight);
@@ -3579,6 +3676,42 @@ struct RecoilJets {
       }
     }
     return bothSet;
+  }
+
+  // Check whether scaled FT0 belongs to the requested EA interval
+  bool isInEAInterval(float scaledFT0,
+                      const std::vector<double>& ft0Edges,
+                      EAInterval eaInterval)
+  {
+    switch (eaInterval) {
+      case kMB:
+        return true;
+
+      case kEA0_20:
+        return scaledFT0 >= ft0Edges[kEA20] &&
+                scaledFT0 <= ft0Edges[kEA0];
+
+      case kEA0_10:
+        return scaledFT0 >= ft0Edges[kEA10] &&
+                scaledFT0 <= ft0Edges[kEA0];
+
+      case kEA20_40:
+        return scaledFT0 >= ft0Edges[kEA40] &&
+                scaledFT0 <= ft0Edges[kEA20];
+
+      case kEA60_80:
+        return scaledFT0 >= ft0Edges[kEA80] &&
+                scaledFT0 <= ft0Edges[kEA60];
+
+      case kEA50_100:
+        return scaledFT0 >= ft0Edges[kEA100] &&
+                scaledFT0 <= ft0Edges[kEA50];
+
+      case kEA80_100:
+        return scaledFT0 >= ft0Edges[kEA100] &&
+                scaledFT0 <= ft0Edges[kEA80];
+    }
+    return false;
   }
 };
 
