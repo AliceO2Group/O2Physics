@@ -12,8 +12,10 @@ HMPID, plus event centrality). Two tasks:
   over it, and writes back a probability for each particle species
   (pion / kaon / proton / electron) per track.
 
-You run the extractor first, then inference on its output - they're two
-separate steps, not one pipeline (see "Running" below for why).
+You run the extractor first, then inference on its output. Both are
+regular AOD-subscribing tasks; `PidOnnxInference` does its real work by
+reading the extractor's output file directly rather than the AOD data it's
+subscribed to (see "Running" below for what that means in practice).
 
 ## PidFeatureExtractor
 
@@ -40,7 +42,7 @@ Mode is a runtime switch - enable `processData` for real data or
 | `exportCsv` | `false` | Also write CSV |
 | `etaMin` / `etaMax` | `-99` / `99` | Eta cut - wide open by default (no cut) |
 | `ptMin` / `ptMax` | `0` / `9999` | pT cut, GeV/c - wide open by default |
-| `dcaxyMax` / `dcazMax` | `9999` / `9999` | DCA cuts, cm - wide open by default |
+| `dcaXYMax` / `dcaZMax` | `9999` / `9999` | DCA cuts, cm - wide open by default |
 | `itsMinClusters` | `0` | Minimum ITS clusters - `0` = no cut |
 | `tpcMinClusters` | `0` | Minimum TPC clusters - `0` = no cut |
 | `computeBayesianPid` | `true` | Compute the comparison Bayesian posterior |
@@ -52,9 +54,15 @@ quality selection applied here rather than downstream.
 ## PidOnnxInference
 
 Takes the file `PidFeatureExtractor` wrote and runs the trained ONNX model
-over it, row by row. The model can be loaded either from CCDB or from a
-local file, which is handled by `o2::analysis::MlResponse`
-(`Tools/ML/MlResponse.h`).
+over it, row by row, in `init()` - not per-collision. The model can be
+loaded either from CCDB or from a local file, which is handled by
+`o2::analysis::MlResponse` (`Tools/ML/MlResponse.h`).
+
+This is still a normal AOD-subscribing task, so it needs a valid AO2D
+file to run at all, the same as any other task in this repository - but
+it doesn't actually use that data; `process()` is intentionally empty.
+Point it at any valid AO2D (the same one you ran the extractor against is
+the obvious choice) purely to satisfy the pipeline.
 
 By default it assumes every detector group is present and usable, exactly
 as the input data says. If you want to see how the model behaves with a
@@ -90,10 +98,10 @@ as an index: `0`=pion, `1`=kaon, `2`=proton, `3`=electron).
 
 ## Running
 
-Both use the usual `--configuration json://your-config.json` mechanism.
-
-`PidFeatureExtractor` needs to run as part of the normal AOD pipeline,
-since it reads track and collision data directly:
+Both use the usual `--configuration json://your-config.json` mechanism,
+and both are AOD-subscribing tasks - `PidOnnxInference` just doesn't use
+the AOD data it's given, it reads `PidFeatureExtractor`'s output file
+instead. Run the extractor first:
 
 ```bash
 #!/bin/bash
@@ -114,13 +122,15 @@ o2-analysis-timestamp --configuration json://$config_file -b |
     o2-analysis-pid-feature-extractor --configuration json://$config_file -b
 ```
 
-`PidOnnxInference` runs on its own, after that has finished - it just
-opens the file the extractor wrote, so there's no AOD pipeline to build:
+Then run inference, once the extractor has finished and its output file
+exists. Any valid AO2D works as input here, since its content is unused -
+reusing the same one is the simplest choice:
 
 ```bash
 #!/bin/bash
 
 config_file="my-config.json"
 
-o2-analysis-pid-onnx-inference --configuration json://$config_file -b
+o2-analysis-timestamp --configuration json://$config_file -b |
+    o2-analysis-pid-onnx-inference --configuration json://$config_file -b
 ```

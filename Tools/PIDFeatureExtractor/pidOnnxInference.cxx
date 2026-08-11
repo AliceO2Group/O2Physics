@@ -15,17 +15,17 @@
 ///        and write per-track class probabilities to a new ROOT file
 ///        (and/or CSV).
 ///
-///        Built as a plain DataProcessorSpec/AlgorithmSpec, NOT
-///        adaptAnalysisTask<> - this is a standalone batch job with no AOD
-///        table subscription, and adaptAnalysisTask's process() reflection
-///        specifically requires an AOD table/iterator argument (confirmed
-///        by a real compiler error: a raw ProcessingContext& process()
-///        signature is rejected outright). Using the lower-level DPL
-///        primitives directly avoids that machinery entirely, rather than
-///        trying to satisfy a reflection mechanism built for a different
-///        kind of task. Configurable<> member auto-binding is an
-///        AnalysisTask-specific convenience, so options here are declared
-///        explicitly and read via ic.options().get<T>(...) instead.
+///        A normal Configurable<>-based adaptAnalysisTask, as required by
+///        this repository's conventions (workflow topology must be
+///        expressed via process function switches / Configurable<>, not
+///        hand-built DataProcessorSpec Options{}). All real work still
+///        happens once, in init() - it reads the extractor's output file
+///        directly via plain TFile/TTree, not an AOD table. process() is
+///        intentionally a no-op with a minimal, always-valid AOD argument
+///        (aod::Collisions), present only so this registers as a normal
+///        analysis task; it does nothing per-collision. Running this task
+///        therefore still requires a valid AO2D input to satisfy the
+///        pipeline, even though its content is unused.
 ///
 ///        Uses o2::analysis::MlResponse (Tools/ML/MlResponse.h) -
 ///        O2Physics's generic ONNX/CCDB inference wrapper - for model
@@ -35,9 +35,8 @@
 
 #include "Tools/ML/MlResponse.h"
 
-#include <Framework/ConfigParamSpec.h>
-#include <Framework/ControlService.h>
-#include <Framework/DataProcessorSpec.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TFile.h>
@@ -58,14 +57,17 @@ namespace
 {
 constexpr int kNumClasses = 4; // pi, ka, pr, el - fixed order throughout, matches the paper's model
 constexpr float kNaN = std::numeric_limits<float>::quiet_NaN();
+constexpr int kNumItsLayers = 7;
+constexpr int kBitsPerItsLayer = 4;
+constexpr uint32_t kItsLayerMask = 0xF;
 
 /// itsClusterSizes packs 7 ITS layers into 4 bits each; a derived cluster
 /// count is a far more sensible model input than the raw packed value.
 int getItsNClusters(uint32_t v)
 {
   int n = 0;
-  for (int layer = 0; layer < 7; layer++) {
-    if ((v >> (layer * 4)) & 0xF) {
+  for (int layer = 0; layer < kNumItsLayers; layer++) {
+    if ((v >> (layer * kBitsPerItsLayer)) & kItsLayerMask) {
       n++;
     }
   }
@@ -212,8 +214,6 @@ void runInference(std::string const& inputRootFile, std::string const& inputTree
     tree->GetEntry(i);
 
     // Effective presence = what the data says AND the group is enabled.
-    // Disabling a group here forces the same "absent" state as a real
-    // detector miss, regardless of what hasXXX says in the input tree.
     bool effTPC = hasTPC && groups.useTPC;
     bool effTOF = hasTOF && groups.useTOF;
     bool effTRD = hasTRD && groups.useTRD;
@@ -294,83 +294,75 @@ void runInference(std::string const& inputRootFile, std::string const& inputTree
 }
 } // namespace
 
-WorkflowSpec defineDataProcessing(ConfigContext const&)
+/// PidOnnxInference: applies the FSE ONNX model to the features written by
+/// pidFeatureExtractor.cxx and writes out per-track class probabilities.
+///
+/// All real work happens once, in init() - see runInference() above.
+/// process() is intentionally empty; it exists only so this task has a
+/// valid AOD-subscribing signature, as required by this repository's
+/// conventions.
+struct PidOnnxInference {
+  Configurable<std::string> inputRootFile{"inputRootFile", "pid_features_data.root", "ROOT file produced by pidFeatureExtractor.cxx"};
+  Configurable<std::string> inputTreeName{"inputTreeName", "pid_features", "Name of the TTree inside inputRootFile"};
+  Configurable<std::string> outputPath{"outputPath", "pid_predictions", "Output file base name (no extension)"};
+  Configurable<bool> exportCsv{"exportCsv", false, "Also write predictions to CSV alongside the ROOT output"};
+
+  Configurable<bool> loadModelFromCcdb{"loadModelFromCcdb", true, "Load the ONNX model from CCDB (else from onnxFileNames as a local path)"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "CCDB URL"};
+  Configurable<std::vector<std::string>> modelPathsCcdb{"modelPathsCcdb", std::vector<std::string>{"Users/YOURNAME/PidFeatureExtractor/model"}, "CCDB path to the model"};
+  Configurable<int64_t> timestampCcdb{"timestampCcdb", -1, "CCDB query timestamp for the model, -1 = latest"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"pid_feature_model.onnx"}, "Local ONNX file path(s), used when loadModelFromCcdb is false"};
+
+  Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{-1., 9999.}, "pT bin edges for MlResponse (single bin = model isn't pT-binned)"};
+  Configurable<int> nClassesMl{"nClassesMl", kNumClasses, "Number of model output classes"};
+
+  Configurable<bool> useTPC{"useTPC", true, "Include TPC in inference. Default true (all detectors present); set false to force TPC excluded regardless of the data"};
+  Configurable<bool> useTOF{"useTOF", true, "Include TOF in inference"};
+  Configurable<bool> useTRD{"useTRD", true, "Include TRD in inference"};
+  Configurable<bool> useITS{"useITS", true, "Include ITS in inference"};
+  Configurable<bool> useEMCal{"useEMCal", true, "Include EMCal in inference"};
+  Configurable<bool> useHMPID{"useHMPID", true, "Include HMPID in inference"};
+  Configurable<bool> useCentrality{"useCentrality", true, "Include centrality in inference"};
+
+  o2::ccdb::CcdbApi ccdbApi;
+  o2::analysis::MlResponse<float> mlResponse;
+
+  void init(InitContext&)
+  {
+    GroupToggles groups;
+    groups.useTPC = useTPC.value;
+    groups.useTOF = useTOF.value;
+    groups.useTRD = useTRD.value;
+    groups.useITS = useITS.value;
+    groups.useEMCal = useEMCal.value;
+    groups.useHMPID = useHMPID.value;
+    groups.useCentrality = useCentrality.value;
+
+    // Unused thresholds (CutNot everywhere) - this task always reports
+    // all four probabilities rather than applying a selection cut, so
+    // cutsMl/cutDirMl don't need to be user-configurable.
+    static constexpr double kDefaultCutsMl[1][kNumClasses] = {{0., 0., 0., 0.}};
+    LabeledArray<double> cutsMl{kDefaultCutsMl[0], 1, kNumClasses, {"pT bin 0"}, {"prob pi", "prob ka", "prob pr", "prob el"}};
+    std::vector<int> cutDirMl{cuts_ml::CutNot, cuts_ml::CutNot, cuts_ml::CutNot, cuts_ml::CutNot};
+
+    mlResponse.configure(binsPtMl.value, cutsMl, cutDirMl, static_cast<int8_t>(nClassesMl.value));
+    if (loadModelFromCcdb.value) {
+      ccdbApi.init(ccdbUrl.value);
+      mlResponse.setModelPathsCCDB(onnxFileNames.value, ccdbApi, modelPathsCcdb.value, timestampCcdb.value);
+    } else {
+      mlResponse.setModelPathsLocal(onnxFileNames.value);
+    }
+    mlResponse.init();
+
+    runInference(inputRootFile.value, inputTreeName.value, outputPath.value, exportCsv.value, mlResponse, groups);
+  }
+
+  /// Intentionally empty - all real work happens once in init(). Present
+  /// only so this task has a valid, AOD-subscribing process() signature.
+  void process(aod::Collisions const&) {}
+};
+
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  DataProcessorSpec spec{
-    "pid-onnx-inference",
-    Inputs{},
-    Outputs{},
-    AlgorithmSpec{[](InitContext& ic) {
-      auto inputRootFile = ic.options().get<std::string>("inputRootFile");
-      auto inputTreeName = ic.options().get<std::string>("inputTreeName");
-      auto outputPath = ic.options().get<std::string>("outputPath");
-      auto exportCsv = ic.options().get<bool>("exportCsv");
-      auto loadModelFromCcdb = ic.options().get<bool>("loadModelFromCcdb");
-      auto ccdbUrl = ic.options().get<std::string>("ccdbUrl");
-      auto modelPathsCcdb = ic.options().get<std::vector<std::string>>("modelPathsCcdb");
-      auto timestampCcdb = ic.options().get<int64_t>("timestampCcdb");
-      auto onnxFileNames = ic.options().get<std::vector<std::string>>("onnxFileNames");
-      auto binsPtMl = ic.options().get<std::vector<double>>("binsPtMl");
-      auto nClassesMl = static_cast<int8_t>(ic.options().get<int>("nClassesMl"));
-
-      GroupToggles groups;
-      groups.useTPC = ic.options().get<bool>("useTPC");
-      groups.useTOF = ic.options().get<bool>("useTOF");
-      groups.useTRD = ic.options().get<bool>("useTRD");
-      groups.useITS = ic.options().get<bool>("useITS");
-      groups.useEMCal = ic.options().get<bool>("useEMCal");
-      groups.useHMPID = ic.options().get<bool>("useHMPID");
-      groups.useCentrality = ic.options().get<bool>("useCentrality");
-
-      // Unused thresholds (CutNot everywhere) - this task always reports
-      // all four probabilities rather than applying a selection cut, so
-      // cutsMl/cutDirMl don't need to be user-configurable; hardcoded here
-      // rather than exposed as options.
-      static constexpr double kDefaultCutsMl[1][kNumClasses] = {{0., 0., 0., 0.}};
-      LabeledArray<double> cutsMl{kDefaultCutsMl[0], 1, kNumClasses, {"pT bin 0"}, {"prob pi", "prob ka", "prob pr", "prob el"}};
-      std::vector<int> cutDirMl{cuts_ml::CutNot, cuts_ml::CutNot, cuts_ml::CutNot, cuts_ml::CutNot};
-
-      auto mlResponse = std::make_shared<o2::analysis::MlResponse<float>>();
-      mlResponse->configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
-      if (loadModelFromCcdb) {
-        auto ccdbApi = std::make_shared<o2::ccdb::CcdbApi>();
-        ccdbApi->init(ccdbUrl);
-        mlResponse->setModelPathsCCDB(onnxFileNames, *ccdbApi, modelPathsCcdb, timestampCcdb);
-      } else {
-        mlResponse->setModelPathsLocal(onnxFileNames);
-      }
-      mlResponse->init();
-
-      runInference(inputRootFile, inputTreeName, outputPath, exportCsv, *mlResponse, groups);
-
-      return [](ProcessingContext& pc) {
-        // One-shot batch job: all work already happened in init(). Signal
-        // completion immediately rather than waiting for input that will
-        // never arrive.
-        pc.services().get<ControlService>().endOfStream();
-        pc.services().get<ControlService>().readyToQuit(QuitRequest::Me);
-      };
-    }},
-    Options{
-      {"inputRootFile", VariantType::String, "pid_features_data.root", {"ROOT file produced by pidFeatureExtractor.cxx"}},
-      {"inputTreeName", VariantType::String, "pid_features", {"Name of the TTree inside inputRootFile"}},
-      {"outputPath", VariantType::String, "pid_predictions", {"Output file base name (no extension)"}},
-      {"exportCsv", VariantType::Bool, false, {"Also write predictions to CSV alongside the ROOT output"}},
-      {"loadModelFromCcdb", VariantType::Bool, true, {"Load the ONNX model from CCDB (else from onnxFileNames as a local path)"}},
-      {"ccdbUrl", VariantType::String, "http://alice-ccdb.cern.ch", {"CCDB URL"}},
-      {"modelPathsCcdb", VariantType::ArrayString, std::vector<std::string>{"Users/YOURNAME/PidFeatureExtractor/model"}, {"CCDB path to the model"}},
-      {"timestampCcdb", VariantType::Int64, static_cast<int64_t>(-1), {"CCDB query timestamp for the model, -1 = latest"}},
-      {"onnxFileNames", VariantType::ArrayString, std::vector<std::string>{"pid_feature_model.onnx"}, {"Local ONNX file path(s), used when loadModelFromCcdb is false"}},
-      {"binsPtMl", VariantType::ArrayDouble, std::vector<double>{-1., 9999.}, {"pT bin edges for MlResponse (single bin = model isn't pT-binned)"}},
-      {"nClassesMl", VariantType::Int, kNumClasses, {"Number of model output classes"}},
-      {"useTPC", VariantType::Bool, true, {"Include TPC in inference. Default true (all detectors present); set false to force TPC excluded regardless of the data"}},
-      {"useTOF", VariantType::Bool, true, {"Include TOF in inference"}},
-      {"useTRD", VariantType::Bool, true, {"Include TRD in inference"}},
-      {"useITS", VariantType::Bool, true, {"Include ITS in inference"}},
-      {"useEMCal", VariantType::Bool, true, {"Include EMCal in inference"}},
-      {"useHMPID", VariantType::Bool, true, {"Include HMPID in inference"}},
-      {"useCentrality", VariantType::Bool, true, {"Include centrality in inference"}},
-    }};
-
-  return WorkflowSpec{spec};
+  return WorkflowSpec{adaptAnalysisTask<PidOnnxInference>(cfgc)};
 }

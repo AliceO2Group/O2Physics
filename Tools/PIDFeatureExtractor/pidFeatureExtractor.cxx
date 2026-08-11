@@ -57,6 +57,11 @@ using namespace o2::framework::expressions;
 namespace
 {
 constexpr float kNaN = std::numeric_limits<float>::quiet_NaN();
+constexpr int kNumItsLayers = 7;
+constexpr int kBitsPerItsLayer = 4;
+constexpr uint32_t kItsLayerMask = 0xF;
+constexpr int kNumSpecies = 4; // pi, ka, pr, el
+constexpr float kEmcalEtaOutOfAcceptance = -900.f;
 
 /// Detector-presence helpers, local to this project.
 template <typename T>
@@ -85,8 +90,8 @@ int getItsNClusters(T const& track)
 {
   auto v = static_cast<uint32_t>(track.itsClusterSizes());
   int n = 0;
-  for (int layer = 0; layer < 7; layer++) {
-    if ((v >> (layer * 4)) & 0xF) {
+  for (int layer = 0; layer < kNumItsLayers; layer++) {
+    if ((v >> (layer * kBitsPerItsLayer)) & kItsLayerMask) {
       n++;
     }
   }
@@ -154,8 +159,8 @@ struct PidFeatureExtractor {
   Configurable<float> etaMax{"etaMax", 99.f, "Maximum track eta (DPG cut; wide-open = disabled)"};
   Configurable<float> ptMin{"ptMin", 0.f, "Minimum track pT, GeV/c (DPG cut; wide-open = disabled)"};
   Configurable<float> ptMax{"ptMax", 9999.f, "Maximum track pT, GeV/c (DPG cut; wide-open = disabled)"};
-  Configurable<float> dcaXYMax{"dcaxyMax", 9999.f, "Maximum |DCAxy|, cm (DPG cut; wide-open = disabled)"};
-  Configurable<float> dcaZMax{"dcazMax", 9999.f, "Maximum |DCAz|, cm (DPG cut; wide-open = disabled)"};
+  Configurable<float> dcaXYMax{"dcaXYMax", 9999.f, "Maximum |DCAxy|, cm (DPG cut; wide-open = disabled)"};
+  Configurable<float> dcaZMax{"dcaZMax", 9999.f, "Maximum |DCAz|, cm (DPG cut; wide-open = disabled)"};
   Configurable<int> itsMinClusters{"itsMinClusters", 0, "Minimum number of ITS clusters (DPG cut; 0 = disabled)"};
   Configurable<int> tpcMinClusters{"tpcMinClusters", 0, "Minimum TPC clusters (DPG cut; 0 = disabled)"};
 
@@ -299,7 +304,7 @@ struct PidFeatureExtractor {
     }
     auto const& priors = bayesianPriors.value;
     float sum = 0.f;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < kNumSpecies; i++) {
       float logL = -0.5f * nsTPC[i] * nsTPC[i];
       if (hasTofIn) {
         logL += -0.5f * nsTOF[i] * nsTOF[i];
@@ -307,7 +312,7 @@ struct PidFeatureExtractor {
       out[i] = std::exp(logL) * priors[i];
       sum += out[i];
     }
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < kNumSpecies; i++) {
       out[i] = sum > 0.f ? out[i] / sum : 0.25f;
     }
   }
@@ -370,7 +375,7 @@ struct PidFeatureExtractor {
     itsClusterSizes = track.itsClusterSizes();
     itsChi2NCl = track.itsChi2NCl();
 
-    hasEmcal = track.trackEtaEmcal() > -900.f;
+    hasEmcal = track.trackEtaEmcal() > kEmcalEtaOutOfAcceptance;
     trackEtaEmcal = track.trackEtaEmcal();
     trackPhiEmcal = track.trackPhiEmcal();
 
