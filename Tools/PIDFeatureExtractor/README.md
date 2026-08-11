@@ -35,18 +35,18 @@ Mode is a runtime switch - enable `processData` for real data or
 
 ### PidFeatureExtractor options
 
-| Option | Default | What it does |
-|---|---|---|
-| `outputPath` | `pid_features` | Output file base name |
-| `exportROOT` | `true` | Write a ROOT file |
-| `exportCsv` | `false` | Also write CSV |
-| `etaMin` / `etaMax` | `-99` / `99` | Eta cut - wide open by default (no cut) |
-| `ptMin` / `ptMax` | `0` / `9999` | pT cut, GeV/c - wide open by default |
-| `dcaXYMax` / `dcaZMax` | `9999` / `9999` | DCA cuts, cm - wide open by default |
-| `itsMinClusters` | `0` | Minimum ITS clusters - `0` = no cut |
-| `tpcMinClusters` | `0` | Minimum TPC clusters - `0` = no cut |
-| `computeBayesianPid` | `true` | Compute the comparison Bayesian posterior |
-| `bayesianPriors` | flat (`1,1,1,1`) | Per-species priors `[pi, ka, pr, el]` for the Bayesian posterior |
+| Option                 | Default          | What it does                                                     |
+|------------------------|------------------|------------------------------------------------------------------|
+| `outputPath`           | `pid_features`   | Output file base name                                            |
+| `exportROOT`           | `true`           | Write a ROOT file                                                |
+| `exportCsv`            | `false`          | Also write CSV                                                   |
+| `etaMin` / `etaMax`    | `-99` / `99`     | Eta cut - wide open by default (no cut)                          |
+| `ptMin` / `ptMax`      | `0` / `9999`     | pT cut, GeV/c - wide open by default                             |
+| `dcaXYMax` / `dcaZMax` | `9999` / `9999`  | DCA cuts, cm - wide open by default                              |
+| `itsMinClusters`       | `0`              | Minimum ITS clusters - `0` = no cut                              |
+| `tpcMinClusters`       | `0`              | Minimum TPC clusters - `0` = no cut                              |
+| `computeBayesianPid`   | `true`           | Compute the comparison Bayesian posterior                        |
+| `bayesianPriors`       | flat (`1,1,1,1`) | Per-species priors `[pi, ka, pr, el]` for the Bayesian posterior |
 
 All the cuts default to "off" - tighten them in your config if you want
 quality selection applied here rather than downstream.
@@ -73,24 +73,24 @@ detector miss would look.
 
 ### PidOnnxInference options
 
-| Option | Default | What it does |
-|---|---|---|
-| `inputRootFile` | `pid_features_data.root` | File written by `PidFeatureExtractor` |
-| `inputTreeName` | `pid_features` | Tree name inside it |
-| `outputPath` | `pid_predictions` | Output file base name |
-| `exportCsv` | `false` | Also write CSV |
-| `loadModelFromCcdb` | `true` | Load the model from CCDB; set `false` to use a local file instead |
-| `ccdbUrl` | `http://alice-ccdb.cern.ch` | |
-| `modelPathsCcdb` | *(placeholder)* | CCDB path to your model - set this to a real path before running |
-| `timestampCcdb` | `-1` | `-1` = latest |
-| `onnxFileNames` | `pid_feature_model.onnx` | Local model file, used when `loadModelFromCcdb` is `false` |
-| `useTPC` | `true` | Include TPC. Set `false` to exclude it from inference regardless of the data |
-| `useTOF` | `true` | Include TOF |
-| `useTRD` | `true` | Include TRD |
-| `useITS` | `true` | Include ITS |
-| `useEMCal` | `true` | Include EMCal |
-| `useHMPID` | `true` | Include HMPID |
-| `useCentrality` | `true` | Include event centrality |
+| Option              | Default                     | What it does                                                                 |
+|---------------------|-----------------------------|------------------------------------------------------------------------------|
+| `inputRootFile`     | `pid_features_data.root`    | File written by `PidFeatureExtractor`                                        |
+| `inputTreeName`     | `pid_features`              | Tree name inside it                                                          |
+| `outputPath`        | `pid_predictions`           | Output file base name                                                        |
+| `exportCsv`         | `false`                     | Also write CSV                                                               |
+| `loadModelFromCcdb` | `true`                      | Load the model from CCDB; set `false` to use a local file instead            |
+| `ccdbUrl`           | `http://alice-ccdb.cern.ch` |                                                                              |
+| `modelPathsCcdb`    | *(placeholder)*             | CCDB path to your model - set this to a real path before running             |
+| `timestampCcdb`     | `-1`                        | `-1` = latest                                                                |
+| `onnxFileNames`     | `pid_feature_model.onnx`    | Local model file, used when `loadModelFromCcdb` is `false`                   |
+| `useTPC`            | `true`                      | Include TPC. Set `false` to exclude it from inference regardless of the data |
+| `useTOF`            | `true`                      | Include TOF                                                                  |
+| `useTRD`            | `true`                      | Include TRD                                                                  |
+| `useITS`            | `true`                      | Include ITS                                                                  |
+| `useEMCal`          | `true`                      | Include EMCal                                                                |
+| `useHMPID`          | `true`                      | Include HMPID                                                                |
+| `useCentrality`     | `true`                      | Include event centrality                                                     |
 
 Output columns are `mlProbPi`, `mlProbKa`, `mlProbPr`, `mlProbEl` (one
 probability per species) and `mlPredictedClass` (the most likely species,
