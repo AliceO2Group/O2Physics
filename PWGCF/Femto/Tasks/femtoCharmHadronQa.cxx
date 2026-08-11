@@ -155,7 +155,7 @@ struct FemtoCharmHadronQa {
       if (doprocessD0) {
         posDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confD01PosDaughterBinning, confD01PosDaughterQaBinning);
         negDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confD01NegDaughterBinning, confD01NegDaughterQaBinning);
-        d0HistSpec = charmhadronhistmanager::makeD0HistSpecMap(confD0Binning);
+        d0HistSpec = charmhadronhistmanager::makeCharmHadronHistSpecMap(confD0Binning);
         d0QaHistSpec = charmhadronhistmanager::makeD0QaHistSpecMap(confD0QaBinning);
         d0HistManager.init<modes::Mode::kReco_Qa>(&hRegistry, d0HistSpec, d0QaHistSpec, confD0Selection, confD0QaBinning, posDaughterHistSpec, confD01PosDaughterQaBinning, negDaughterHistSpec, confD01NegDaughterQaBinning, negDaughterHistSpec, confD01NegDaughterQaBinning);
       }
@@ -163,7 +163,7 @@ struct FemtoCharmHadronQa {
         protonHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confLc1ProtonDaughterBinning, confLc1ProtonDaughterQaBinning);
         kaonHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confLc1KaonDaughterBinning, confLc1KaonDaughterQaBinning);
         pionHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confLc1PionDaughterBinning, confLc1PionDaughterQaBinning);
-        lcHistSpec = charmhadronhistmanager::makeD0HistSpecMap(confLcBinning);
+        lcHistSpec = charmhadronhistmanager::makeCharmHadronHistSpecMap(confLcBinning);
         lcQaHistSpec = charmhadronhistmanager::makeLcQaHistSpecMap(confLcQaBinning);
         lcHistManager.init<modes::Mode::kReco_Qa>(&hRegistry, lcHistSpec, lcQaHistSpec, confLcSelection, confLcQaBinning, protonHistSpec, confLc1ProtonDaughterQaBinning, kaonHistSpec, confLc1KaonDaughterQaBinning, pionHistSpec, confLc1PionDaughterQaBinning);
       }

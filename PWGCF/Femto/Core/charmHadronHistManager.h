@@ -35,7 +35,6 @@
 #include <map>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <vector>
 
 namespace o2::analysis::femto::charmhadronhistmanager
@@ -50,7 +49,7 @@ enum CharmHadronHist {
   kPtVsEta,
   kPtVsPhi,
   kPhiVsEta,
-  
+
   // mass under each hypothesis
   kMassD0,
   kMassD0bar,
@@ -67,7 +66,7 @@ enum CharmHadronHist {
   kCpaXY,
   kDecayLength,
   kDecayLengthXY,
-  
+
   // topology, 2-prong only (D0)
   kImpactParameterProduct,
   kCosThetaStar,
@@ -119,7 +118,7 @@ constexpr const char PrefixD0Binning2[] = "D0Binning2";
 using ConfD0Binning1 = ConfCharmHadronBinning<PrefixD0Binning1>;
 using ConfD0Binning2 = ConfCharmHadronBinning<PrefixD0Binning2>;
 
-constexpr const char PrefixLcBinning1[] = "LcBinning1"; 
+constexpr const char PrefixLcBinning1[] = "LcBinning1";
 using ConfLcBinning1 = ConfLcBinning<PrefixLcBinning1>;
 
 template <auto& Prefix>
@@ -203,7 +202,7 @@ constexpr std::array<histmanager::HistInfo<CharmHadronHist>, kCharmHadronHistLas
     {kPhiVsEta, {(conf).phi2d, (conf).eta2d}},
 
 template <typename T>
-auto makeD0HistSpecMap(const T& confBinningAnalysis)
+auto makeCharmHadronHistSpecMap(const T& confBinningAnalysis)
 {
   return std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>>{
     CHARMHADRON_HIST_ANALYSIS_MAP(confBinningAnalysis)};
@@ -219,7 +218,7 @@ auto makeD0HistSpecMap(const T& confBinningAnalysis)
     {kPtVsOrigin, {(conf).pt2d}},
 
 template <typename T>
-auto makeD0McHistSpecMap(const T& confBinningAnalysis)
+auto makeCharmHadronMcHistSpecMap(const T& confBinningAnalysis)
 {
   return std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>>{
     CHARMHADRON_HIST_ANALYSIS_MAP(confBinningAnalysis)
@@ -321,7 +320,7 @@ class CharmHadronHistManager
             std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>> const& CharmHadronSpecs,
             T const& ConfCharmHadronSelection,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& Prong0Specs,
-            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& Prong1Specs, 
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& Prong1Specs,
             std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& Prong2Specs)
   {
     mHistogramRegistry = registry;

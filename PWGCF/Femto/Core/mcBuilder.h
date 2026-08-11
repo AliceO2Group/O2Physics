@@ -273,7 +273,7 @@ class McBuilder
       }
     }
     if (pdgAbs == o2::constants::physics::Pdg::kLambdaCPlus) {
-      int8_t sign = 0; 
+      int8_t sign = 0;
       if (!RecoDecay::isMatchedMCGen(mcParticles, mcParticle, o2::constants::physics::Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
         return;
       }
@@ -384,7 +384,7 @@ class McBuilder
     auto prong1 = lcCandidate.template prong1_as<T2>();
     auto prong2 = lcCandidate.template prong2_as<T2>();
     auto arrayDaughters = std::array{prong0, prong1, prong2};
-    int8_t sign = 0; 
+    int8_t sign = 0;
     const int indexMcRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, o2::constants::physics::Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
 
     if (indexMcRec < 0) {
