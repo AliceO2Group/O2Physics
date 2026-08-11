@@ -29,17 +29,17 @@ namespace kshortpionevent
 DECLARE_SOA_COLUMN(Cent, cent, float);
 DECLARE_SOA_COLUMN(Posz, posz, float);
 DECLARE_SOA_COLUMN(PsiFT0C, psiFT0C, float);
-DECLARE_SOA_COLUMN(PsiFT0A, psiFT0A, float);
-DECLARE_SOA_COLUMN(PsiTPC, psiTPC, float);
+// DECLARE_SOA_COLUMN(PsiFT0A, psiFT0A, float);
+// DECLARE_SOA_COLUMN(PsiTPC, psiTPC, float);
 } // namespace kshortpionevent
 
 DECLARE_SOA_TABLE(KShortpionEvents, "AOD", "KSHORTPIONEVENT",
                   o2::soa::Index<>,
                   kshortpionevent::Cent,
                   kshortpionevent::Posz,
-                  kshortpionevent::PsiFT0C,
-                  kshortpionevent::PsiFT0A,
-                  kshortpionevent::PsiTPC);
+                  kshortpionevent::PsiFT0C);
+// kshortpionevent::PsiFT0A,
+// kshortpionevent::PsiTPC);
 
 using KShortpionEvent = KShortpionEvents::iterator;
 
@@ -54,7 +54,7 @@ DECLARE_SOA_COLUMN(V0Cospa, v0Cospa, float);
 DECLARE_SOA_COLUMN(V0Radius, v0Radius, float);
 DECLARE_SOA_COLUMN(DcaPositive, dcaPositive, float);
 DECLARE_SOA_COLUMN(DcaNegative, dcaNegative, float);
-DECLARE_SOA_COLUMN(DcaBetweenDaughter, dcaBetweenDaughter, float);
+// DECLARE_SOA_COLUMN(DcaBetweenDaughter, dcaBetweenDaughter, float);
 // DECLARE_SOA_COLUMN(V0Lifetime, v0Lifetime, float);
 
 DECLARE_SOA_COLUMN(KShortPx, kShortPx, float);
@@ -73,8 +73,8 @@ DECLARE_SOA_TABLE(KShortTracks, "AOD", "KSHORTTRACK",
                   kshorttrack::V0Radius,
                   kshorttrack::DcaPositive,
                   kshorttrack::DcaNegative,
-                  kshorttrack::DcaBetweenDaughter,
-                  // kshorttrack::V0Lifetime,
+                  // kshorttrack::DcaBetweenDaughter,
+                  //  kshorttrack::V0Lifetime,
                   kshorttrack::KShortPx,
                   kshorttrack::KShortPy,
                   kshorttrack::KShortPz,
