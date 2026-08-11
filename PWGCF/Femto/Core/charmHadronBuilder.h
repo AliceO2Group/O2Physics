@@ -542,6 +542,73 @@ class CharmHadronBuilder
     }
   }
 
+  /// Write one row for the given mass hypothesis, if PWGHF accepted it.
+  /// A candidate passing both hypotheses is stored twice, once per hypothesis.
+  template <bool isPKPi, modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
+  void fillLcHypothesis(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts,
+                        T5& charmHadronProducts, T6 const& candidate, T7& trackBuilder,
+                        T8 const& prong0, T8 const& prong1, T8 const& prong2)
+  {
+    if constexpr (isPKPi) {
+      if (!candidate.isSelLcToPKPi()) {
+        return;
+      }
+    } else {
+      if (!candidate.isSelLcToPiKP()) {
+        return;
+      }
+    }
+
+    // remap the prongs onto the accepted hypothesis so that the proton is always first
+    auto const& protonProng = isPKPi ? prong0 : prong2;
+    auto const& pionProng = isPKPi ? prong2 : prong0;
+    float const mass = isPKPi ? mHfHelper.invMassLcToPKPi(candidate) : mHfHelper.invMassLcToPiKP(candidate);
+    float const massCompeting = isPKPi ? mHfHelper.invMassLcToPiKP(candidate) : mHfHelper.invMassLcToPKPi(candidate);
+
+    collisionBuilder.template fillCollision<system>(collisionProducts, col);
+    int64_t const protonDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(protonProng, trackProducts, collisionBuilder);
+    int64_t const kaonDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong1, trackProducts, collisionBuilder);
+    int64_t const pionDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(pionProng, trackProducts, collisionBuilder);
+
+    float const signedPt = isParticle<hadronType>() ? candidate.pt() : -candidate.pt();
+    this->fillLcTables(collisionProducts, charmHadronProducts, candidate, signedPt, mass, massCompeting, protonDauIndex, kaonDauIndex, pionDauIndex);
+  }
+
+  /// Monte Carlo counterpart of fillLcHypothesis. The label is written inside this method,
+  /// so FLcs and FLcLabels stay in lockstep also for candidates passing both hypotheses.
+  template <bool isPKPi, modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12, typename T13>
+  void fillMcLcHypothesis(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4 const& mcCols, T5& trackProducts,
+                          T6& charmHadronProducts, T7 const& candidate, T8 const& tracks, T9& trackBuilder,
+                          T10 const& mcParticles, T11& mcBuilder, T12& mcProducts,
+                          T13 const& prong0, T13 const& prong1, T13 const& prong2)
+  {
+    if constexpr (isPKPi) {
+      if (!candidate.isSelLcToPKPi()) {
+        return;
+      }
+    } else {
+      if (!candidate.isSelLcToPiKP()) {
+        return;
+      }
+    }
+
+    // remap the prongs onto the accepted hypothesis so that the proton is always first
+    auto const& protonProng = isPKPi ? prong0 : prong2;
+    auto const& pionProng = isPKPi ? prong2 : prong0;
+    float const mass = isPKPi ? mHfHelper.invMassLcToPKPi(candidate) : mHfHelper.invMassLcToPiKP(candidate);
+    float const massCompeting = isPKPi ? mHfHelper.invMassLcToPiKP(candidate) : mHfHelper.invMassLcToPKPi(candidate);
+
+    collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
+
+    int64_t const protonDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(protonProng, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
+    int64_t const kaonDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(prong1, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
+    int64_t const pionDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(pionProng, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
+
+    float const signedPt = isParticle<hadronType>() ? candidate.pt() : -candidate.pt();
+    this->fillLcTables(collisionProducts, charmHadronProducts, candidate, signedPt, mass, massCompeting, protonDauIndex, kaonDauIndex, pionDauIndex);
+    mcBuilder.template fillMcLcWithLabel<system>(candidate, tracks, mcParticles, mcCols, mcProducts);
+  }
+
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
   void fillCharmHadrons(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts,
                T5& charmHadronProducts, T6 const& candidates, T7 const& /*tracks*/, T8& trackBuilder)
@@ -584,20 +651,8 @@ class CharmHadronBuilder
           continue;
         }
 
-        // remap the prong onto the accepted hypothesis so that the proton is always first
-        bool const isPKPi = candidate.isSelLcToPKPi();
-        auto const& protonProng = isPKPi ? prong0 : prong2;
-        auto const& pionProng = isPKPi ? prong2 : prong0;
-        float const mass = isPKPi ? mHfHelper.invMassLcToPKPi(candidate) : mHfHelper.invMassLcToPiKP(candidate);
-        float const massCompeting = isPKPi ? mHfHelper.invMassLcToPiKP(candidate) : mHfHelper.invMassLcToPKPi(candidate);
-
-        collisionBuilder.template fillCollision<system>(collisionProducts, col);
-        int64_t const protonDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(protonProng, trackProducts, collisionBuilder);
-        int64_t const kaonDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong1, trackProducts, collisionBuilder);
-        int64_t const pionDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(pionProng, trackProducts, collisionBuilder);
-
-        float const signedPt = isParticle<hadronType>() ? candidate.pt() : -candidate.pt();
-        this->fillLcTables(collisionProducts, charmHadronProducts, candidate, signedPt, mass, massCompeting, protonDauIndex, kaonDauIndex, pionDauIndex);
+        this->fillLcHypothesis<true, system>(col, collisionBuilder, collisionProducts, trackProducts, charmHadronProducts, candidate, trackBuilder, prong0, prong1, prong2);
+        this->fillLcHypothesis<false, system>(col, collisionBuilder, collisionProducts, trackProducts, charmHadronProducts, candidate, trackBuilder, prong0, prong1, prong2);
       }
     }
   }
@@ -646,25 +701,9 @@ class CharmHadronBuilder
           continue;
         }
 
-        // remap the prongs onto the accepted hypothesis so that the proton is always first
-        bool const isPKPi = candidate.isSelLcToPKPi();
-        auto const& protonProng = isPKPi ? prong0 : prong2;
-        auto const& pionProng = isPKPi ? prong2 : prong0;
-        float const mass = isPKPi ? mHfHelper.invMassLcToPKPi(candidate) : mHfHelper.invMassLcToPiKP(candidate);
-        float const massCompeting = isPKPi ? mHfHelper.invMassLcToPiKP(candidate) : mHfHelper.invMassLcToPKPi(candidate);
-
-        collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
-
-        int64_t const protonDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(protonProng, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
-        int64_t const kaonDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(prong1, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
-        int64_t const pionDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(pionProng, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
-
-        float const signedPt = isParticle<hadronType>() ? candidate.pt() : -candidate.pt();
-        this->fillLcTables(collisionProducts, charmHadronProducts, candidate, signedPt, mass, massCompeting, protonDauIndex, kaonDauIndex, pionDauIndex);
-        mcBuilder.template fillMcLcWithLabel<system>(candidate, tracks, mcParticles, mcCols, mcProducts);
+        this->fillMcLcHypothesis<true, system>(col, collisionBuilder, collisionProducts, mcCols, trackProducts, charmHadronProducts, candidate, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts, prong0, prong1, prong2);
+        this->fillMcLcHypothesis<false, system>(col, collisionBuilder, collisionProducts, mcCols, trackProducts, charmHadronProducts, candidate, tracks, trackBuilder, mcParticles, mcBuilder, mcProducts, prong0, prong1, prong2);
       }
-
-
     }
   }
 
