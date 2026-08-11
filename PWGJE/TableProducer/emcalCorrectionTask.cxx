@@ -197,7 +197,7 @@ struct EmcalCorrectionTask {
   std::vector<std::pair<int, int>> mExtraTimeShiftRunRanges;
 
   // Current run number
-  int runNumber{0};
+  int mRunNumber{0};
 
   static constexpr float TrackNotOnEMCal = -900.f;
   static constexpr int MaxMatchesPerCluster = 20; // Maximum number of tracks to match per cluster
@@ -441,10 +441,10 @@ struct EmcalCorrectionTask {
       initZorroCCDB(bc);
 
       // get run number
-      runNumber = bc.runNumber();
+      mRunNumber = bc.runNumber();
 
       if (applyTempCalib && !mIsTempCalibInitialized) { // needs to be called once
-        mTempCalibExtractor->InitializeFromCCDB(pathTempCalibCCDB, static_cast<uint64_t>(runNumber));
+        mTempCalibExtractor->InitializeFromCCDB(pathTempCalibCCDB, static_cast<uint64_t>(mRunNumber));
         mIsTempCalibInitialized = true;
       }
 
@@ -493,7 +493,7 @@ struct EmcalCorrectionTask {
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), mRunNumber),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
       }
@@ -602,10 +602,10 @@ struct EmcalCorrectionTask {
       initZorroCCDB(bc);
 
       // get run number
-      runNumber = bc.runNumber();
+      mRunNumber = bc.runNumber();
 
       if (applyTempCalib && !mIsTempCalibInitialized) { // needs to be called once
-        mTempCalibExtractor->InitializeFromCCDB(pathTempCalibCCDB, static_cast<uint64_t>(runNumber));
+        mTempCalibExtractor->InitializeFromCCDB(pathTempCalibCCDB, static_cast<uint64_t>(mRunNumber));
         mIsTempCalibInitialized = true;
       }
 
@@ -654,7 +654,7 @@ struct EmcalCorrectionTask {
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), mRunNumber),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
       }
@@ -772,7 +772,7 @@ struct EmcalCorrectionTask {
       initZorroCCDB(bc);
 
       // get run number
-      runNumber = bc.runNumber();
+      mRunNumber = bc.runNumber();
 
       // Get the collisions matched to the BC using foundBCId of the collision
       auto collisionsInFoundBC = collisions.sliceBy(collisionsPerFoundBC, bc.globalIndex());
@@ -824,7 +824,7 @@ struct EmcalCorrectionTask {
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), mRunNumber),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
         cellLabels.emplace_back(std::vector<int>{cell.mcParticleIds().begin(), cell.mcParticleIds().end()}, std::vector<float>{cell.amplitudeA().begin(), cell.amplitudeA().end()});
@@ -966,7 +966,7 @@ struct EmcalCorrectionTask {
       initZorroCCDB(bc);
 
       // get run number
-      runNumber = bc.runNumber();
+      mRunNumber = bc.runNumber();
 
       // Get the collisions matched to the BC using foundBCId of the collision
       auto collisionsInFoundBC = collisions.sliceBy(collisionsPerFoundBC, bc.globalIndex());
@@ -1017,7 +1017,7 @@ struct EmcalCorrectionTask {
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), mRunNumber),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
         cellLabels.emplace_back(std::vector<int>{cell.mcParticleIds().begin(), cell.mcParticleIds().end()}, std::vector<float>{cell.amplitudeA().begin(), cell.amplitudeA().end()});
@@ -1169,10 +1169,10 @@ struct EmcalCorrectionTask {
       }
 
       // get run number
-      runNumber = bc.runNumber();
+      mRunNumber = bc.runNumber();
 
       if (applyTempCalib && !mIsTempCalibInitialized) { // needs to be called once
-        mTempCalibExtractor->InitializeFromCCDB(pathTempCalibCCDB, static_cast<uint64_t>(runNumber));
+        mTempCalibExtractor->InitializeFromCCDB(pathTempCalibCCDB, static_cast<uint64_t>(mRunNumber));
         mIsTempCalibInitialized = true;
       }
 
@@ -1203,7 +1203,7 @@ struct EmcalCorrectionTask {
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), mRunNumber),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
       }
