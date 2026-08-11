@@ -186,7 +186,8 @@ struct ZdcQVectors {
     kEnergyCal,
     kMeanv,
     kRec,
-    kTimestamp
+    kTimestamp,
+    nCalibModes
   };
 
   //  Define output
@@ -843,7 +844,7 @@ struct ZdcQVectors {
 
     if (!foundBC.has_zdc()) {
       cal.isSelected = false;
-      spTableZDC(runnumber, cents, v, foundBC.timestamp(), 0, 0, 0, 0, cal.isSelected, 0);
+      spTableZDC(runnumber, cents, cal.v, foundBC.timestamp(), 0, 0, 0, 0, cal.isSelected, 0);
       cal.lastRunNumber = runnumber;
       return;
     }
@@ -882,7 +883,7 @@ struct ZdcQVectors {
     // if ZNA or ZNC not hit correctly.. do not use event in q-vector calculation
     if (!isZNAhit || !isZNChit) {
       cal.isSelected = false;
-      spTableZDC(runnumber, cents, v, foundBC.timestamp(), 0, 0, 0, 0, cal.isSelected, 0);
+      spTableZDC(runnumber, cents, cal.v, foundBC.timestamp(), 0, 0, 0, 0, cal.isSelected, 0);
       cal.lastRunNumber = runnumber;
       return;
     }
@@ -898,7 +899,7 @@ struct ZdcQVectors {
     if (cent < EvSel.cfgCentMin || cent > EvSel.cfgCentMax || std::abs(collision.posZ()) > cfgVtxZ || !collision.sel8()) {
       // event not selected
       cal.isSelected = false;
-      spTableZDC(runnumber, cents, v, foundBC.timestamp(), 0, 0, 0, 0, cal.isSelected, eventSelectionFlags);
+      spTableZDC(runnumber, cents, cal.v, foundBC.timestamp(), 0, 0, 0, 0, cal.isSelected, eventSelectionFlags);
       cal.lastRunNumber = runnumber;
       return;
     }
@@ -906,17 +907,17 @@ struct ZdcQVectors {
 
     // load new calibrations for new runs only
     if (runnumber != cal.lastRunNumber) {
-      cal.calibfilesLoaded[0] = false;
-      cal.calibList[0] = nullptr;
+      cal.calibfilesLoaded[kEnergyCal] = false;
+      cal.calibList[kEnergyCal] = nullptr;
 
-      cal.calibfilesLoaded[1] = false;
-      cal.calibList[1] = nullptr;
+      cal.calibfilesLoaded[kMeanv] = false;
+      cal.calibList[kMeanv] = nullptr;
 
-      cal.calibfilesLoaded[2] = false;
-      cal.calibList[2] = nullptr;
+      cal.calibfilesLoaded[kRec] = false;
+      cal.calibList[kRec] = nullptr;
 
-      cal.calibfilesLoaded[3] = false;
-      cal.calibList[3] = nullptr;
+      cal.calibfilesLoaded[kTimestamp] = false;
+      cal.calibList[kTimestamp] = nullptr;
 
       cal.isShiftProfileFound = false;
       cal.shiftprofileC = nullptr;
@@ -1043,8 +1044,8 @@ struct ZdcQVectors {
     }
 
     if (cal.calibfilesLoaded[1]) {
-      v[0] = v[0] - getCorrection<TProfile, kMeanv>(vnames[0].Data());
-      v[1] = v[1] - getCorrection<TProfile, kMeanv>(vnames[1].Data());
+      cal.v[0] = v[0] - getCorrection<TProfile, kMeanv>(vnames[0].Data());
+      cal.v[1] = v[1] - getCorrection<TProfile, kMeanv>(vnames[1].Data());
     } else {
       LOGF(warning, " --> No mean V found.. -> THis wil lead to wrong axis for vx, vy (will be created in vmean/)");
       return;
@@ -1060,14 +1061,14 @@ struct ZdcQVectors {
 
     if (cal.atIteration == 0) {
       if (cal.isSelected && cfgFillHistRegistry && isEventSelected)
-        fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, cent, rsTimestamp);
+        fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], cal.v, cent, rsTimestamp);
 
-      spTableZDC(runnumber, cents, v, foundBC.timestamp(), q[0], q[1], q[2], q[3], cal.isSelected, eventSelectionFlags);
+      spTableZDC(runnumber, cents, cal.v, foundBC.timestamp(), q[0], q[1], q[2], q[3], cal.isSelected, eventSelectionFlags);
       cal.lastRunNumber = runnumber;
       return;
     } else {
       if (cfgFillHistRegistry && isEventSelected)
-        fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, cent, rsTimestamp);
+        fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], cal.v, cent, rsTimestamp);
 
       // vector of 4
       std::vector<double> corrQxA;
@@ -1222,7 +1223,7 @@ struct ZdcQVectors {
       double qYcShift = std::hypot(qRec[2], qRec[3]) * std::sin(psiZDCCshift);
 
       if (cal.isSelected && cfgFillHistRegistry && !cfgFillNothing && isEventSelected) {
-        fillCommonRegistry<kAfter>(qXaShift, qYaShift, qXcShift, qYcShift, v, cent, rsTimestamp);
+        fillCommonRegistry<kAfter>(qXaShift, qYaShift, qXcShift, qYcShift, cal.v, cent, rsTimestamp);
         registry.fill(HIST("QA/centrality_after"), cent);
         registry.get<TProfile>(HIST("QA/after/ZNA_Qx"))->Fill(Form("%d", runnumber), qXaShift);
         registry.get<TProfile>(HIST("QA/after/ZNA_Qy"))->Fill(Form("%d", runnumber), qYaShift);
@@ -1230,7 +1231,7 @@ struct ZdcQVectors {
         registry.get<TProfile>(HIST("QA/after/ZNC_Qy"))->Fill(Form("%d", runnumber), qYcShift);
       }
 
-      spTableZDC(runnumber, cents, v, foundBC.timestamp(), qXaShift, qYaShift, qXcShift, qYcShift, cal.isSelected, eventSelectionFlags);
+      spTableZDC(runnumber, cents, cal.v, foundBC.timestamp(), qXaShift, qYaShift, qXcShift, qYcShift, cal.isSelected, eventSelectionFlags);
       qRec = {0, 0, 0, 0};
 
       cal.lastRunNumber = runnumber;
