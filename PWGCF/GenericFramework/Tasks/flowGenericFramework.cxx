@@ -132,7 +132,8 @@ struct FlowGenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgUsePID, bool, true, "Enable PID information")
   O2_DEFINE_CONFIGURABLE(cfgUseGapMethod, bool, false, "Use gap method in vn-pt calculations")
   struct : ConfigurableGroup {
-    O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFlowWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting");
+    O2_DEFINE_CONFIGURABLE(cfgUsePtCorrWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting for pt-pt correlations");
+    O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFlowWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting for azimuthal correlations");
     O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFractionWeights, bool, false, "Enable or disable the use of multiplicity-based event weighting for the spectral fraction");
   } cfgEventWeight;
   struct : ConfigurableGroup{
@@ -741,7 +742,7 @@ struct FlowGenericFramework {
           registryQA.add("K0/PiMinusTOF_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("K0/hK0Phi", "", {HistType::kTH1D, {phiAxis}});
           registryQA.add("K0/hK0EtaY", "", {HistType::kTH2D, {etaAxis, yAxis}});
-          registryQA.add("K0/hK0AP", "", {HistType::kTH2D, {{100, -1, 1}, {500, 0, 1.}}});
+          registryQA.add("K0/hK0AP", "", {HistType::kTH2D, {{100, -1, 1}, {250, 0, 0.5}}});
           registryQA.add("K0/hK0Mass_sparse", "", {HistType::kTHnSparseF, {{axisK0Mass, ptAxis, nchAxis}}});
           registryQA.add("K0/hK0s", "", {HistType::kTH1D, {singleCount}});
           registryQA.add("K0/hK0s_corrected", "", {HistType::kTH1D, {singleCount}});
@@ -771,7 +772,7 @@ struct FlowGenericFramework {
           registryQA.add("Lambda/PiMinusTOF_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("Lambda/hLambdaPhi", "", {HistType::kTH1D, {phiAxis}});
           registryQA.add("Lambda/hLambdaEtaY", "", {HistType::kTH2D, {etaAxis, yAxis}});
-          registryQA.add("Lambda/hLambdaAP", "", {HistType::kTH2D, {{100, -1, 1}, {100, 0, 5.}}});
+          registryQA.add("Lambda/hLambdaAP", "", {HistType::kTH2D, {{100, -1, 1}, {250, 0, 0.5}}});
           registryQA.add("Lambda/hLambdaMass_sparse", "", {HistType::kTHnSparseF, {{axisLambdaMass, ptAxis, nchAxis}}});
           registryQA.add("Lambda/PiPlusTPC_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
           registryQA.add("Lambda/PrMinusTPC_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
@@ -779,7 +780,7 @@ struct FlowGenericFramework {
           registryQA.add("Lambda/PrMinusTOF_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("Lambda/hAntiLambdaPhi", "", {HistType::kTH1D, {phiAxis}});
           registryQA.add("Lambda/hAntiLambdaEtaY", "", {HistType::kTH2D, {etaAxis, yAxis}});
-          registryQA.add("Lambda/hAntiLambdaAP", "", {HistType::kTH2D, {{100, -1, 1}, {100, 0, 5.}}});
+          registryQA.add("Lambda/hAntiLambdaAP", "", {HistType::kTH2D, {{100, -1, 1}, {250, 0, 0.5}}});
           registryQA.add("Lambda/hAntiLambdaMass_sparse", "", {HistType::kTHnSparseF, {{axisLambdaMass, ptAxis, nchAxis}}});
           registryQA.add("Lambda/hLambdas", "", {HistType::kTH1D, {singleCount}});
           registryQA.add("Lambda/hLambdas_corrected", "", {HistType::kTH1D, {singleCount}});
@@ -884,7 +885,7 @@ struct FlowGenericFramework {
       fFCgen->Initialize(oba, multAxis, cfgNbootstrap);
     }
     delete oba;
-
+    fFCpt->setEventWeight(cfgEventWeight.cfgUsePtCorrWeights ? eventweight::TupleWeight : eventweight::UnityWeight);
     fFCpt->setUseCentralMoments(cfgUseCentralMoments);
     fFCpt->setUseGapMethod(cfgUseGapMethod);
     fFCpt->initialise(multAxis, cfgMpar, gfwMemberCache.configs, cfgNbootstrap);
