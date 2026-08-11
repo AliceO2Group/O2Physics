@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoPairTrackD0.cxx
-/// \brief Tasks that computes correlation between tracks and D0 mesons
+/// \file femtoPairTrackCharmHadron.cxx
+/// \brief Tasks that computes correlation between tracks and charm hadrons
 /// \author Igor Ptak, WUT, igor.tomasz.ptak@cern.ch
 
 #include "PWGCF/Femto/Core/charmHadronBuilder.h"
@@ -44,7 +44,7 @@
 
 using namespace o2::analysis::femto;
 
-struct FemtoPairTrackD0 {
+struct FemtoPairTrackCharmHadron {
 
   // setup tables
   using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks>;
@@ -127,8 +127,8 @@ struct FemtoPairTrackD0 {
 
   void init(o2::framework::InitContext&)
   {
-    bool processData = doprocessSameEvent || doprocessMixedEvent;
-    bool processMc = doprocessSameEventMc || doprocessMixedEventMc;
+    bool processData = doprocessD0SameEvent || doprocessD0MixedEvent;
+    bool processMc = doprocessD0SameEventMc || doprocessD0MixedEventMc;
 
     if (processData && processMc) {
       LOG(fatal) << "Both data and mc processing is enabled. Breaking...";
@@ -169,35 +169,35 @@ struct FemtoPairTrackD0 {
     hRegistry.print();
   };
 
-  void processSameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoD0s const& d0s)
+  void processD0SameEvent(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoD0s const& d0s)
   {
     pairTrackD0Builder.processSameEvent<modes::Mode::kSe_Reco>(col, tracks, trackPartition, d0s, d0Partition, cache);
   }
-  PROCESS_SWITCH(FemtoPairTrackD0, processSameEvent, "Enable processing same event processing for tracks and D0s", true);
+  PROCESS_SWITCH(FemtoPairTrackCharmHadron, processD0SameEvent, "Enable processing same event processing for tracks and D0s", true);
 
-  void processMixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks, FemtoD0s const& /*d0s*/)
+  void processD0MixedEvent(FilteredFemtoCollisions const& cols, FemtoTracks const& tracks, FemtoD0s const& /*d0s*/)
   {
     pairTrackD0Builder.processMixedEvent<modes::Mode::kMe_Reco>(cols, tracks, trackPartition, d0Partition, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
-  PROCESS_SWITCH(FemtoPairTrackD0, processMixedEvent, "Enable processing mixed event processing for tracks and D0s", true);
+  PROCESS_SWITCH(FemtoPairTrackCharmHadron, processD0MixedEvent, "Enable processing mixed event processing for tracks and D0s", true);
 
-  void processSameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoD0sWithLabel const& d0s, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  void processD0SameEventMc(FilteredFemtoCollisionWithLabel const& col, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoD0sWithLabel const& d0s, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
     pairTrackD0Builder.processSameEvent<modes::Mode::kSe_Reco_Mc>(col, mcCols, tracks, trackWithLabelPartition, d0s, d0WithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache);
   }
-  PROCESS_SWITCH(FemtoPairTrackD0, processSameEventMc, "Enable processing same event processing for tracks and D0s with MC information", false);
+  PROCESS_SWITCH(FemtoPairTrackCharmHadron, processD0SameEventMc, "Enable processing same event processing for tracks and D0s with MC information", false);
 
-  void processMixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoD0sWithLabel const& /*d0s*/, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
+  void processD0MixedEventMc(FilteredFemtoCollisionsWithLabel const& cols, o2::aod::FMcCols const& mcCols, FemtoTracksWithLabel const& tracks, FemtoD0sWithLabel const& /*d0s*/, FemtoMcParticlesWithLabel const& mcParticles, o2::aod::FMcMothers const& mcMothers, o2::aod::FMcPartMoths const& mcPartonicMothers)
   {
     pairTrackD0Builder.processMixedEvent<modes::Mode::kMe_Reco_Mc>(cols, mcCols, tracks, trackWithLabelPartition, d0WithLabelPartition, mcParticles, mcMothers, mcPartonicMothers, cache, mixBinsVtxMult, mixBinsVtxCent, mixBinsVtxMultCent);
   }
-  PROCESS_SWITCH(FemtoPairTrackD0, processMixedEventMc, "Enable processing mixed event processing for tracks and D0s with MC information", false);
+  PROCESS_SWITCH(FemtoPairTrackCharmHadron, processD0MixedEventMc, "Enable processing mixed event processing for tracks and D0s with MC information", false);
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& context)
 {
   o2::framework::WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoPairTrackD0>(context),
+    adaptAnalysisTask<FemtoPairTrackCharmHadron>(context),
   };
   return workflow;
 }
