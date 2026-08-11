@@ -296,7 +296,7 @@ struct PidFeatureExtractor {
   /// Bayesian PID: requires TPC (a TPC-only track still gets a real
   /// posterior); folds in TOF too when also present. NaN in all four
   /// outputs if TPC is absent or computeBayesianPid is false.
-  void computeBayesianProbs(bool hasTpcIn, float nsTPC[4], bool hasTofIn, float nsTOF[4], float out[4]) const
+  void computeBayesianProbs(bool hasTpcIn, const float nsTPC[4], bool hasTofIn, const float nsTOF[4], float out[4]) const
   {
     if (!computeBayesianPid.value || !hasTpcIn) {
       out[0] = out[1] = out[2] = out[3] = kNaN;

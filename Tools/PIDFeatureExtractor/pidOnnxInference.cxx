@@ -115,8 +115,8 @@ struct GroupToggles {
 /// (assumed always-present in the data itself), so their toggle is the
 /// only way to exclude them.
 void runInference(std::string const& inputRootFile, std::string const& inputTreeName,
-                   std::string const& outputPath, bool exportCsv,
-                   o2::analysis::MlResponse<float>& mlResponse, GroupToggles const& groups)
+                  std::string const& outputPath, bool exportCsv,
+                  o2::analysis::MlResponse<float>& mlResponse, GroupToggles const& groups)
 {
   std::unique_ptr<TFile> inFile(TFile::Open(inputRootFile.c_str(), "READ"));
   if (!inFile || inFile->IsZombie()) {

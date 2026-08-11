@@ -33,7 +33,7 @@ cuts, writes one row containing:
 Mode is a runtime switch - enable `processData` for real data or
 `processMc` for MC (reconstructed + truth), not both.
 
-### Configurable options
+### PidFeatureExtractor options
 
 | Option | Default | What it does |
 |---|---|---|
@@ -71,7 +71,7 @@ detector configuration - each group can be switched off independently;
 turning one off overrides the data for that group, the same way a genuine
 detector miss would look.
 
-### Configurable options
+### PidOnnxInference options
 
 | Option | Default | What it does |
 |---|---|---|
