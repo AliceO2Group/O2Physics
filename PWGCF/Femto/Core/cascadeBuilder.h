@@ -837,9 +837,9 @@ class CascadeBuilderDerivedToDerived
     auto xiSlice = partitionXi->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
 
     for (auto const& xi : xiSlice) {
-      auto bachelor = oldTrackTable.rawIteratorAt(this->daughterRow(xi.bachelorId(), oldTrackTable));
-      auto posDaughter = oldTrackTable.rawIteratorAt(this->daughterRow(xi.posDauId(), oldTrackTable));
-      auto negDaughter = oldTrackTable.rawIteratorAt(this->daughterRow(xi.negDauId(), oldTrackTable));
+      auto bachelor = oldTrackTable.rawIteratorAt(utils::daughterRow(xi.bachelorId(), oldTrackTable));
+      auto posDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(xi.posDauId(), oldTrackTable));
+      auto negDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(xi.negDauId(), oldTrackTable));
 
       int64_t bachelorIndex = trackBuilder.getDaughterIndex(bachelor, newTrackTable, newCollisionTable);
       int64_t posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
@@ -867,9 +867,9 @@ class CascadeBuilderDerivedToDerived
     auto omegaSlice = partitionOmega->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
 
     for (auto const& omega : omegaSlice) {
-      auto bachelor = oldTrackTable.rawIteratorAt(this->daughterRow(omega.bachelorId(), oldTrackTable));
-      auto posDaughter = oldTrackTable.rawIteratorAt(this->daughterRow(omega.posDauId(), oldTrackTable));
-      auto negDaughter = oldTrackTable.rawIteratorAt(this->daughterRow(omega.negDauId(), oldTrackTable));
+      auto bachelor = oldTrackTable.rawIteratorAt(utils::daughterRow(omega.bachelorId(), oldTrackTable));
+      auto posDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(omega.posDauId(), oldTrackTable));
+      auto negDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(omega.negDauId(), oldTrackTable));
 
       int64_t bachelorIndex = trackBuilder.getDaughterIndex(bachelor, newTrackTable, newCollisionTable);
       int64_t posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
@@ -888,20 +888,6 @@ class CascadeBuilderDerivedToDerived
   }
 
  private:
-  /// Translate a global daughter index into a row of the current track table frame.
-  /// Aborts if the index does not fall inside the frame, which would otherwise
-  /// silently produce an out-of-range iterator.
-  template <typename T>
-  int64_t daughterRow(int64_t daughterId, T const& trackTable) const
-  {
-    const int64_t row = daughterId - trackTable.offset();
-    if (daughterId < 0 || row < 0 || row >= static_cast<int64_t>(trackTable.size())) {
-      LOG(fatal) << "Daughter index " << daughterId << " out of range for track table (offset "
-                 << trackTable.offset() << ", size " << trackTable.size() << "). Breaking...";
-    }
-    return row;
-  }
-
   int mLimitXi = 0;
   int mLimitOmega = 0;
 };

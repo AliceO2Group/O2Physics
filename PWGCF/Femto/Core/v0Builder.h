@@ -828,8 +828,8 @@ class V0BuilderDerivedToDerived
     auto lambdaSlice = partitionLambda->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
 
     for (auto const& lambda : lambdaSlice) {
-      auto posDaughter = oldTrackTable.rawIteratorAt(this->daughterRow(lambda.posDauId(), oldTrackTable));
-      auto negDaughter = oldTrackTable.rawIteratorAt(this->daughterRow(lambda.negDauId(), oldTrackTable));
+      auto posDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(lambda.posDauId(), oldTrackTable));
+      auto negDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(lambda.negDauId(), oldTrackTable));
 
       int64_t posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
       int64_t negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable);
@@ -855,8 +855,8 @@ class V0BuilderDerivedToDerived
     auto k0shortSlice = partitionK0short->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
 
     for (auto const& k0short : k0shortSlice) {
-      auto posDaughter = oldTrackTable.rawIteratorAt(this->daughterRow(k0short.posDauId(), oldTrackTable));
-      auto negDaughter = oldTrackTable.rawIteratorAt(this->daughterRow(k0short.negDauId(), oldTrackTable));
+      auto posDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(k0short.posDauId(), oldTrackTable));
+      auto negDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(k0short.negDauId(), oldTrackTable));
 
       int64_t posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
       int64_t negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable);
@@ -873,20 +873,6 @@ class V0BuilderDerivedToDerived
   }
 
  private:
-  /// Translate a global daughter index into a row of the current track table frame.
-  /// Aborts if the index does not fall inside the frame, which would otherwise
-  /// silently produce an out-of-range iterator.
-  template <typename T>
-  int64_t daughterRow(int64_t daughterId, T const& trackTable) const
-  {
-    const int64_t row = daughterId - trackTable.offset();
-    if (daughterId < 0 || row < 0 || row >= static_cast<int64_t>(trackTable.size())) {
-      LOG(fatal) << "Daughter index " << daughterId << " out of range for track table (offset "
-                 << trackTable.offset() << ", size " << trackTable.size() << "). Breaking...";
-    }
-    return row;
-  }
-
   int mLimitLambda = 0;
   int mLimitK0short = 0;
 };

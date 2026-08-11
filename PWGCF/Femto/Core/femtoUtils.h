@@ -47,6 +47,20 @@ inline std::optional<T2> getIndex(const T1& index, const std::unordered_map<T1, 
   return std::nullopt;
 }
 
+/// Translate a global daughter index into a row of the current track table frame.
+/// Aborts if the index does not fall inside the frame, which would otherwise
+/// silently produce an out-of-range iterator.
+template <typename T>
+int64_t daughterRow(int64_t daughterId, T const& trackTable)
+{
+  const int64_t row = daughterId - trackTable.offset();
+  if (daughterId < 0 || row < 0 || row >= static_cast<int64_t>(trackTable.size())) {
+    LOG(fatal) << "Daughter index " << daughterId << " out of range for track table (offset "
+               << trackTable.offset() << ", size " << trackTable.size() << "). Breaking...";
+  }
+  return row;
+}
+
 template <typename T>
 float itsSignal(T const& track)
 {
