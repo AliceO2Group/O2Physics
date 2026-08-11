@@ -583,7 +583,7 @@ struct CentralityQa {
   {
     if (centrality.useCustomCalibration) {
       return hist ? hist->GetBinContent(hist->FindBin(mult)) : CentralityNotFound;
-    } 
+    }
     return cent;
   }
 
