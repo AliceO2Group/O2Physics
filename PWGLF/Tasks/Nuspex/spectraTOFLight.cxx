@@ -834,7 +834,7 @@ struct tofSpectra {
   void fillTrackHistogramsMC(TrackType const& track,
                              ParticleType::iterator const& mcParticle,
                              RecoMCCollisions::iterator const& collision,
-                             ParticleType const& mcParticles)
+                             ParticleType const& /*mcParticles*/)
   {
     if (!isParticleEnabled<i>()) { // Check if the particle is enabled
       return;
