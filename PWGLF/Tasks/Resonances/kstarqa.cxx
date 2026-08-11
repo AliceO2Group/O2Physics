@@ -597,8 +597,7 @@ struct Kstarqa {
         return false;
 
       if (configGp.isITSTPCRefit) {
-        if (!(candidate.flags() & o2::aod::track::ITSrefit) ||
-            !(candidate.flags() & o2::aod::track::TPCrefit)) {
+        if (!(o2::aod::track::ITSrefit && o2::aod::track::TPCrefit)) {
           return false;
         }
       }
