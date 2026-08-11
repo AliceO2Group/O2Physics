@@ -226,7 +226,7 @@ enum V0TruthClass {
 /// \param track track with an MC label
 /// \param mcparticles the full McParticles table
 /// \return index of the mother if it is a photon, -1 otherwise
-template <typename TTrack, typename TMCParticles>
+template <o2::soa::is_iterator TTrack, o2::soa::is_table TMCParticles>
 inline int64_t getPhotonMotherId(TTrack const& track, TMCParticles const& mcparticles)
 {
   if (!track.has_mcParticle()) {
@@ -248,7 +248,7 @@ inline int64_t getPhotonMotherId(TTrack const& track, TMCParticles const& mcpart
 /// \param motherPos photon mother of the positive leg, -1 if none
 /// \param motherEle photon mother of the negative leg, -1 if none
 /// \return kV0True, kV0CrossLegFake or kV0OtherFake
-template <typename TTrack, typename TMCParticles>
+template <o2::soa::is_iterator TTrack, o2::soa::is_table TMCParticles>
 inline V0TruthClass classifyV0Truth(TTrack const& pos, TTrack const& ele, TMCParticles const& mcparticles,
                                     int64_t& motherPos, int64_t& motherEle)
 {

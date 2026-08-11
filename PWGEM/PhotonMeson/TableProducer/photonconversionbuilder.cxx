@@ -47,6 +47,7 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Array2D.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -68,6 +69,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <set>
@@ -169,7 +171,7 @@ struct PhotonConversionBuilder {
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
   Configurable<int> modeTrackPropagation{"modeTrackPropagation", 0, "0: use real track propagation, including material, 1: use fast approximation using only geometry, 2: Use real track propagation and make comparison to fast propagation (only for debugging and testing)"};
-  Configurable<int> deduplicationMode{"deduplicationMode", 0, "0: Pairwise deduplication, 1: Based on Greedy matching (best score wins), 2: Based on Group matching (crossed pairs are both kept), 3: Keep all V0s"};
+  Configurable<int> deduplicationMode{"deduplicationMode", 0, "0: Pairwise deduplication, 1: Based on Greedy matching (best score wins), 2: Based on Group matching (crossed pairs are both kept), 3: Keep all V0s, our default in the config is mode 0, however if a wrong configuration is used, the default will be mode 1 (Greedy matching) to avoid crashes"};
   Configurable<float> deduplicationScoreWeight{"deduplicationScoreWeight", 0.5f, "0.:only pca goes into the score, 1: only cosPA goes itno score, any number in between is a mix of pca and cosPA"};
   Configurable<bool> cfgDedupTruthMaps{"cfgDedupTruthMaps", true, "fill the fine (dEta, dPhi, q) truth maps in MC"};
   Configurable<int> dedupMaxGroupSize{"dedupMaxGroupSize", 12, "group matching (mode 2): conflict groups up to this size are solved exactly, larger ones greedily (capped at 16)"};
@@ -1530,7 +1532,7 @@ struct PhotonConversionBuilder {
     }
   }
 
-  template <typename TTracks, typename TMCParticles>
+  template <o2::soa::is_table TTracks, o2::soa::is_table TMCParticles>
   void fillDedupTruthDiagnostics(TTracks const& tracks, TMCParticles const& mcparticles, DedupDiag const& diag)
   {
     const int nCand = static_cast<int>(diag.snapshot.size());
