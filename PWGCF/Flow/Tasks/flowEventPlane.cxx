@@ -1211,7 +1211,7 @@ struct FlowEventPlane {
   }
 
   template <typename T>
-  void getResoFlow(T const& tracks1, T const& tracks2, std::array<float, 4> const& vSP)
+  void getResoFlow(T const& tracks1, T const& tracks2)
   {
     float ux = 0., uy = 0., v1a = 0., v1c = 0.;
     for (auto const& [track1, track2] : soa::combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks1, tracks2))) {
@@ -1324,7 +1324,7 @@ struct FlowEventPlane {
     auto kaonTracks = kaonTrackPartition->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
     // Resonance flow
-    getResoFlow(kaonTracks, kaonTracks, vSP);
+    getResoFlow(kaonTracks, kaonTracks);
   }
   PROCESS_SWITCH(FlowEventPlane, processResoFlow, "Resonance flow process", false);
 
