@@ -120,7 +120,7 @@ struct V0CandidateHelper {
   float cosPA = -1.f;
   float pca = -1.f;
   float score = -1.f;
-  float mee = 0.f; // e+e- mass
+  float mee = 0.f; // e+e- mass at the secondary vertex (GeV/c^2)
 
   V0CandidateHelper() = default;
 
@@ -139,9 +139,12 @@ using CandKey = std::tuple<int64_t, int64_t, int64_t, int64_t>;
 
 // Everything the truth diagnosis need,
 struct DedupDiag {
-  std::map<CandKey, std::vector<CandKey>> blockersByKey; // rejected candidate
-  std::vector<V0CandidateHelper> snapshot;               // all candidates, before deduplication
-  std::vector<CandKey> stored;                           // stored candidates after deduplication
+  std::map<CandKey, std::vector<CandKey>> blockersByKey; // rejected candidate -> ALL candidates that took one of its legs
+  std::vector<V0CandidateHelper> snapshot;               // ALL candidates, before deduplication
+  std::vector<CandKey> stored;                           // the survivors
+  // group matching only: rejected candidate -> (how many candidates the best solution CONTAINING
+  // it would have cost, by how much its best solution was worse in total score).
+  // deficit == 0 means an equally large alternative existed and the score alone decided.
   std::map<CandKey, std::pair<int, float>> lossMargin;
 };
 
@@ -290,12 +293,12 @@ struct PhotonConversionBuilder {
     maxSnp = 0.85f;  // could be changed later
     maxStep = 2.00f; // could be changed later
 
-    static constexpr std::array<const char*, 4> kDedupNames = {"pairwise", "greedy matching", "group matching", "keep all"};
-    if (deduplicationMode < 0 || deduplicationMode >= static_cast<int>(kDedupNames.size())) {
+    static constexpr std::array<const char*, 4> DedupNames = {"pairwise", "greedy matching", "group matching", "keep all"};
+    if (deduplicationMode < 0 || deduplicationMode >= static_cast<int>(DedupNames.size())) {
       LOG(fatal) << "unknown deduplicationMode " << deduplicationMode.value;
     }
     LOGF(info, "photon-conversion-builder: deduplicationMode = %d (%s), score weight = %.2f",
-         deduplicationMode.value, kDedupNames[deduplicationMode.value], deduplicationScoreWeight.value);
+         deduplicationMode.value, DedupNames[deduplicationMode.value], deduplicationScoreWeight.value);
 
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
@@ -409,8 +412,12 @@ struct PhotonConversionBuilder {
       const AxisSpec axQ{60, 0.f, 0.3f, "q_{inv}^{true} (GeV/c)"};
       const AxisSpec axDEta{80, -1.6f, 1.6f, "#Delta#eta_{#gamma#gamma}^{true}"};
       const AxisSpec axClass{3, -0.5f, 2.5f, "0 = true, 1 = cross-leg fake, 2 = other fake"};
-
-      for (const auto& nm : {"before", "bothSurvive", "bothSurviveSameColl", "oneLost", "bothLost", "lostByCrossFake", "lostByPartnerFake", "lostByOtherFake", "lostByTrue"}) {
+      // One folder per pair fate, with the SAME histogram names inside. The post-processing then
+      // only varies the folder, and everything belonging to one fate sits together.
+      // NB: the "lost..." folders are diagnostic selections, NOT an exclusive decomposition -
+      // lostByPartnerFake is a subset of lostByCrossFake, and a pair can appear in several of them.
+      for (const auto& nm : {"before", "bothSurvive", "bothSurviveSameColl", "oneLost", "bothLost",
+                             "lostByCrossFake", "lostByPartnerFake", "lostByOtherFake", "lostByTrue"}) {
         const std::string dir = std::string("MCDedup/Pairs/") + nm + "/";
         registry.add((dir + "hQ").c_str(), "truth photon pairs with >=1 true V0 candidate before deduplication;q_{inv}^{true} (GeV/c);pairs", kTH1F, {axQ}, true);
         registry.add((dir + "hDEta").c_str(), "truth photon pairs with >=1 true V0 candidate before deduplication;#Delta#eta^{true};pairs", kTH1F, {axDEta}, true);
@@ -421,13 +428,21 @@ struct PhotonConversionBuilder {
 
       registry.add("MCDedup/Photons/hFate", "fate of the true photons;0 = alive, 1 = lost (blocked), 2 = lost (no blocker);photons", kTH1F, {{3, -0.5f, 2.5f}}, true);
       registry.add("MCDedup/Photons/hBlockerClass", "blockers of a killed true photon (ENTRIES = blockers, not photons);class of the blocker;blocker entries", kTH1F, {axBlocker}, true);
+      // only meaningful for mode 0/1, where the smaller score always wins. Mode 2 compares SETS and
+      // may deliberately keep the worse-scoring candidates, so it is not filled there.
       registry.add("MCDedup/Photons/hKillMargin", "mode 0/1 only;S_{victim} - S_{winner};kills", kTH1F, {{200, 0.f, 1.f}}, true);
       registry.add("MCDedup/Photons/hVictimVsWinnerPCA", "PCA of the two;PCA_{victim} (cm);PCA_{winner} (cm)", kTH2F, {{60, 0.f, 3.f}, {60, 0.f, 3.f}}, true);
-      registry.add("MCDedup/Photons/hLostMargin", "why the true photon lost (mode 2);cardinality deficit;#Sigma S(best set with it) - #Sigma S(winner)", kTH2F, {{5, -0.5f, 4.5f}, {100, 0.f, 2.f}}, true);
+      // mode 2 only: why exactly was this true photon not part of the winning set?
+      // x = 0 -> an equally large solution containing it existed, only the total score decided.
+      //          That is a pure ranking problem and the part that a better discriminant can win back.
+      // x > 0 -> keeping it would have cost x candidates. Structural, no arbitration can repair it.
+      registry.add("MCDedup/Photons/hLostMargin", "why the true photon lost (mode 2);cardinality deficit;#Sigma S(best set with it) - #Sigma S(winner)",
+                   kTH2F, {{5, -0.5f, 4.5f}, {100, 0.f, 2.f}}, true);
       if (cfgDedupTruthMaps) {
         const AxisSpec axDEtaFine{640, -1.6f, 1.6f, "#Delta#eta^{true}"};
         const AxisSpec axDPhi{144, -o2::constants::math::PI, o2::constants::math::PI, "#Delta#varphi^{true} (rad)"};
         for (const auto& nm : {"before", "bothSurvive", "bothLost", "lostByPartnerFake"}) {
+          // the fine map lands in the same folder as hQ and hDEta of that fate
           registry.add((std::string("MCDedup/Pairs/") + nm + "/hMap").c_str(), "truth photon pairs", kTHnSparseF, {axDEtaFine, axDPhi, axQ}, true);
         }
       }
@@ -441,11 +456,11 @@ struct PhotonConversionBuilder {
     }
 
     // In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990) {
+    if (d_bz_input > -990) { // o2-linter: disable=magic-number (override value)
       d_bz = d_bz_input;
       o2::parameters::GRPMagField grpmag;
-      if (std::fabs(d_bz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      if (std::fabs(d_bz) > 1e-5) {                   // o2-linter: disable=magic-number (override value)
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f)); // o2-linter: disable=magic-number (override value)
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
       mRunNumber = bc.runNumber();
@@ -475,7 +490,7 @@ struct PhotonConversionBuilder {
     }
     mRunNumber = bc.runNumber();
 
-    if (useMatCorrType == 2) {
+    if (useMatCorrType == 2) { // o2-linter: disable=magic-number (material budget correction)
       // setMatLUT only after magfield has been initalized (setMatLUT has implicit and problematic init field call if not)
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
@@ -735,10 +750,10 @@ struct PhotonConversionBuilder {
       auto phiHelix = RecoDecay::constrainAngle<float, float>(std::atan2(diffY, diffX) - o2::constants::math::PI / 2.);
 
       // Electron
-      float arcLenghtEle = helixPosEle.rC * 0.9 > propV0LegsRadius ? std::asin(propV0LegsRadius / helixPosEle.rC) * helixPosEle.rC : o2::constants::math::PI / 2.2 * helixPosEle.rC; // This assumes that the photon momentum vector is a tangent of the circle
+      float arcLenghtEle = helixPosEle.rC * 0.9 > propV0LegsRadius ? std::asin(propV0LegsRadius / helixPosEle.rC) * helixPosEle.rC : o2::constants::math::PI / 2.2 * helixPosEle.rC; // This assumes that the photon momentum vector is a tangent of the circle // o2-linter: disable=magic-number (geometrical assumption for propagation)
       auto propTrackEle = getPropMomentumFromTrackHelix(arcLenghtEle, ele, helixPosEle, d_bz / 10., phiHelix - ele.phi());
       // Positron
-      float arcLenghtPos = helixPosPos.rC * 0.9 > propV0LegsRadius ? std::asin(propV0LegsRadius / helixPosPos.rC) * helixPosPos.rC : o2::constants::math::PI / 2.2 * helixPosPos.rC; // This assumes that the photon momentum vector is a tangent of the circle
+      float arcLenghtPos = helixPosPos.rC * 0.9 > propV0LegsRadius ? std::asin(propV0LegsRadius / helixPosPos.rC) * helixPosPos.rC : o2::constants::math::PI / 2.2 * helixPosPos.rC; // This assumes that the photon momentum vector is a tangent of the circle // o2-linter: disable=magic-number (geometrical assumption for propagation)
       auto propTrackPos = getPropMomentumFromTrackHelix(arcLenghtPos, pos, helixPosPos, d_bz / 10., phiHelix - pos.phi());
 
       phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(propTrackPos[0], propTrackPos[1], propTrackPos[2], propTrackEle[0], propTrackEle[1], propTrackEle[2], pos.sign(), ele.sign(), d_bz);
@@ -782,7 +797,7 @@ struct PhotonConversionBuilder {
       }
     }
 
-    if (phiv == 999.f || psipair == 999.f) {
+    if (phiv == 999.f || psipair == 999.f) { // o2-linter: disable=magic-number (nonsensical default value)
       LOG(debug) << "Propagation failed for all radii (" << propV0LegsRadius << ", 30, 10 cm). Using default values for phiv and psipair (999.f).";
     }
 
@@ -795,7 +810,7 @@ struct PhotonConversionBuilder {
     KFParticle gammaKF;
     gammaKF.SetConstructMethod(2);
     gammaKF.Construct(GammaDaughters.data(), 2);
-    if (kfMassConstrain > -0.1) {
+    if (kfMassConstrain > -0.1) { // o2-linter: disable=magic-number (nonsensical default value)
       gammaKF.SetNonlinearMassConstraint(kfMassConstrain);
     }
     KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
@@ -931,7 +946,7 @@ struct PhotonConversionBuilder {
       return;
     }
 
-    if (v0photoncandidate.getChi2NDF() > 6e+3) { // protection for uint16.
+    if (v0photoncandidate.getChi2NDF() > 6e+3) { // protection for uint16. // o2-linter: disable=magic-number (protection for uint16)
       return;
     }
 
@@ -950,7 +965,8 @@ struct PhotonConversionBuilder {
     const auto meeSV = static_cast<float>((vposDedup + veleDedup).M());
 
     const auto score = getScoreV0(v0photoncandidate.getCosPA(), v0photoncandidate.getPCA(), deduplicationScoreWeight);
-    V0CandidateHelper v0Helper(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex(), v0photoncandidate.getCosPA(), v0photoncandidate.getPCA(), score, meeSV);
+    V0CandidateHelper v0Helper(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex(),
+                               v0photoncandidate.getCosPA(), v0photoncandidate.getPCA(), score, meeSV);
     vecV0Dedup.emplace_back(v0Helper);
 
     if (applyPCMMl) {
@@ -1152,7 +1168,8 @@ struct PhotonConversionBuilder {
       // LOGF(info, "pca_map.size() = %d", pca_map.size());
 
     } else if (deduplicationMode == V0DeduplicationMode::KeepAll) {
-      // Every candidate that survived the quality cuts is stored
+      // Keep-all: Every candidate that survived the quality cuts is stored, INCLUDING the
+      // collision duplicates.
       stored_v0Ids.clear();
       stored_fullv0Ids.clear();
       nv0_map.clear();
@@ -1173,38 +1190,39 @@ struct PhotonConversionBuilder {
       nv0_map.clear();
       int nGreedyFallback = 0;
 
-      // Groups are build of V0s which share/are connected through a shared daughter track.
+      // ---- conflict groups: candidates connected through a shared leg -----
       std::vector<int> parent(nCand);
       for (int i = 0; i < nCand; ++i) {
         parent[i] = i;
       }
       auto findRoot = [&parent](int x) {
         while (parent[x] != x) {
-          parent[x] = parent[parent[x]];
+          parent[x] = parent[parent[x]]; // path halving
           x = parent[x];
         }
         return x;
       };
-      // Remember the first candidate using each track. If another candidate uses the same track, merge their groups.
       std::unordered_map<int, int> firstCandOfTrack;
       for (int i = 0; i < nCand; ++i) {
-        for (const int trackId : {vecV0Dedup[i].posID, vecV0Dedup[i].eleID}) {
+        for (const int& trackId : {vecV0Dedup[i].posID, vecV0Dedup[i].eleID}) {
           auto [it, inserted] = firstCandOfTrack.try_emplace(trackId, i);
           if (!inserted) {
             parent[findRoot(i)] = findRoot(it->second);
           }
         }
       }
-      // Collect all candidates belonging to the same group (i.e. sharing a daughter track) and sort them by score. Then select the best subset of candidates that do not share any daughter tracks.
       std::map<int, std::vector<int>> groups;
       for (int i = 0; i < nCand; ++i) {
         groups[findRoot(i)].push_back(i);
       }
 
-      for (auto& [root, members] : groups) {
+      // ---- decide each group on its own ----------------------------------
+      for (auto& [root, members] : groups) { // o2-linter: disable=const-ref-in-for-loop (members is sorted in place below)
         const int nMembers = static_cast<int>(members.size());
         std::vector<char> selected(nMembers, 0);
-        // Process candidates from best to worst score.
+
+        // Fix the order inside the group: best score first, ties by v0ID. This makes the
+        // result independent of the order in which the candidates ended up in vecV0Dedup.
         std::sort(members.begin(), members.end(), [this](int a, int b) {
           if (vecV0Dedup[a].score != vecV0Dedup[b].score) {
             return vecV0Dedup[a].score < vecV0Dedup[b].score;
@@ -1213,14 +1231,14 @@ struct PhotonConversionBuilder {
         });
 
         if (nMembers == 1) {
-          // A single candidate has no conflict and can always be kept.
-          selected[0] = 1;
+          selected[0] = 1; // no conflict -> always kept
         } else if (nMembers <= maxEnum) {
-          // For small groups, enumerate all subsets and find the optimal set of candidates that do not share any daughter tracks.
+          // Exact. Instead of comparing track IDs for every subset, each leg of the group gets
+          // a local bit number; "share a leg" is then a single bitwise AND.
           std::unordered_map<int, int> legBit;
           std::vector<uint64_t> legMask(nMembers, 0);
           for (int k = 0; k < nMembers; ++k) {
-            for (const int trackId : {vecV0Dedup[members[k]].posID, vecV0Dedup[members[k]].eleID}) {
+            for (const int& trackId : {vecV0Dedup[members[k]].posID, vecV0Dedup[members[k]].eleID}) {
               const int bit = legBit.try_emplace(trackId, static_cast<int>(legBit.size())).first->second;
               legMask[k] |= (1ull << bit); // at most 2 * 16 = 32 legs, fits into 64 bit
             }
@@ -1228,6 +1246,9 @@ struct PhotonConversionBuilder {
           uint32_t bestMask = 0;
           int bestCount = 0;
           float bestScore = 0.f;
+          // per candidate: the best solution that CONTAINS it. Comparing that against the overall
+          // best tells afterwards whether a rejected candidate lost on cardinality (structural,
+          // no algorithm can help) or on total score in a tie (a ranking problem, i.e. fixable).
           std::vector<int> bestWithCount(nMembers, -1);
           std::vector<float> bestWithScore(nMembers, 0.f);
           for (uint32_t mask = 1; mask < (1u << nMembers); ++mask) {
@@ -1250,6 +1271,9 @@ struct PhotonConversionBuilder {
             if (!disjoint) {
               continue;
             }
+            // lexicographic: cardinality first, then total score. Strict comparisons mean the
+            // lowest mask wins a true tie, and since members is sorted by score those are the
+            // better candidates.
             if (count > bestCount || (count == bestCount && scoreSum < bestScore)) {
               bestCount = count;
               bestScore = scoreSum;
@@ -1277,7 +1301,8 @@ struct PhotonConversionBuilder {
             }
           }
         } else {
-
+          // Too large to enumerate: greedy by score (members is already sorted that way). This
+          // gives a maximal, not necessarily a maximum matching, so it is counted below.
           ++nGreedyFallback;
           std::vector<int> usedTracks;
           usedTracks.reserve(2 * nMembers);
@@ -1293,6 +1318,7 @@ struct PhotonConversionBuilder {
           }
         }
 
+        // ---- store the winners, book the blockers of the losers ----------
         for (int k = 0; k < nMembers; ++k) {
           const auto& cand = vecV0Dedup[members[k]];
           if (selected[k] != 0) {
@@ -1304,6 +1330,9 @@ struct PhotonConversionBuilder {
           if (diag == nullptr) {
             continue;
           }
+          // Record ALL winners that took a leg of this candidate. A cross-leg fake is typically
+          // blocked by TWO different true photons (one per leg); storing only the first would
+          // make the later MC cause-of-loss attribution depend on the loop order.
           const CandKey victimKey = std::make_tuple(static_cast<int64_t>(cand.v0ID), static_cast<int64_t>(cand.colID),
                                                     static_cast<int64_t>(cand.posID), static_cast<int64_t>(cand.eleID));
           for (int j = 0; j < nMembers; ++j) {
@@ -1323,6 +1352,7 @@ struct PhotonConversionBuilder {
         LOGF(warning, "group matching: %d conflict group(s) larger than dedupMaxGroupSize = %d were solved greedily", nGreedyFallback, maxEnum);
       }
 
+      // the table expects candidates ordered by collision
       std::sort(stored_fullv0Ids.begin(), stored_fullv0Ids.end(),
                 [](const auto& a, const auto& b) {
                   return std::get<1>(a) < std::get<1>(b);
@@ -1334,33 +1364,29 @@ struct PhotonConversionBuilder {
       // container to keep track of which electron and positron tracks have already been used
       std::vector<bool> usedLegs(tracks.size(), false);
       std::unordered_map<int, CandKey> ownerOfLeg; // diagnostics only
-      // clear output containers
       stored_v0Ids.clear();
       stored_fullv0Ids.clear();
       nv0_map.clear();
-      // Loop over all v0s, starting with the one with the best score
-      // If a v0 contains a track that is already in another (better) V0 candidate, skip V0
-      for (const auto& v0Cand : vecV0Dedup)
-      // Skip if one of the tracks is already used
-      {
+      for (const auto& v0Cand : vecV0Dedup) {
         const CandKey candKey = std::make_tuple(static_cast<int64_t>(v0Cand.v0ID), static_cast<int64_t>(v0Cand.colID),
                                                 static_cast<int64_t>(v0Cand.posID), static_cast<int64_t>(v0Cand.eleID));
         if (usedLegs[v0Cand.posID] || usedLegs[v0Cand.eleID]) {
           if (diag != nullptr) {
+            // both legs, not just the first one found: a cross-leg fake is usually blocked by
+            // two different winners, and that is exactly the case being measured here
             auto& blockers = diag->blockersByKey[candKey];
-            for (const int legId : {v0Cand.posID, v0Cand.eleID}) {
+            for (const int& legId : {v0Cand.posID, v0Cand.eleID}) {
               const auto itOwner = ownerOfLeg.find(legId);
               if (itOwner == ownerOfLeg.end()) {
                 continue;
               }
               if (std::find(blockers.begin(), blockers.end(), itOwner->second) == blockers.end()) {
-                blockers.push_back(itOwner->second);
+                blockers.push_back(itOwner->second); // the same winner may hold both legs
               }
             }
           }
           continue;
         }
-        // Accept candidate
         usedLegs[v0Cand.posID] = true;
         usedLegs[v0Cand.eleID] = true;
         if (diag != nullptr) {
@@ -1395,8 +1421,8 @@ struct PhotonConversionBuilder {
 
       auto v0 = v0s.rawIteratorAt(v0Id);
       if constexpr (enableFilter) {
-        auto collision_tmp = v0.template collision_as<TCollisions>(); // collision where this v0 belongs.
-        if (!(collision_tmp.neeuls() >= 1 || collision_tmp.neeuls() + nv0_map[collision_tmp.globalIndex()] >= 2)) {
+        auto collision_tmp = v0.template collision_as<TCollisions>();                                               // collision where this v0 belongs.
+        if (!(collision_tmp.neeuls() >= 1 || collision_tmp.neeuls() + nv0_map[collision_tmp.globalIndex()] >= 2)) { // o2-linter: disable=magic-number (nonsensical default value)
           continue;
         }
         // LOGF(info, "collision_tmp.globalIndex() = %d, collision_tmp.neeuls() = %d, nv0_map = %d", collision_tmp.globalIndex(), collision_tmp.neeuls(), nv0_map[collision_tmp.globalIndex()]);
@@ -1424,16 +1450,17 @@ struct PhotonConversionBuilder {
     vecV0Dedup.clear();
   } // end of build
 
-  //! type of V0. 0: built solely for cascades (does not pass standard V0 cuts), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1 or 3.
   Filter v0Filter = o2::aod::v0::v0Type > (uint8_t)0;
   using FilteredV0s = soa::Filtered<aod::V0s>;
 
-  // Pair-level outcome categories. The outcome (survival or loss) and cause are listed.
   enum PairFate {
     kBefore = 0,
     kBothSurvive,
     kOneLost,
     kBothLost,
+    // NB: the four "lostBy..." entries are diagnostic selections, NOT an exclusive decomposition.
+    // kLostByPartnerFake is a SUBSET of kLostByCrossFake, and cross + other + true do not add up
+    // to oneLost + bothLost (a pair can lose two photons to two different blockers).
     kLostByCrossFake,
     kLostByPartnerFake,
     kLostByOtherFake,
@@ -1529,9 +1556,12 @@ struct PhotonConversionBuilder {
       }
     }
 
+    // ---- per true photon: which photon passed and which one was removed
+    // IMPORTANT: a photon is lost only when ALL of its candidates died, so all of them are asked
+    // for blockers, not just the best one - different candidates have different opponents.
     struct PhotonFate {
       bool alive = false;
-      int best = -1;                // best-score candidate
+      int best = -1;                // best-score candidate, only used for the margin plots
       std::vector<int> cands;       // all true candidates of this photon
       std::set<int64_t> aliveColls; // collisions with a surviving candidate
     };
@@ -1550,6 +1580,9 @@ struct PhotonConversionBuilder {
         f.best = i;
       }
     }
+
+    // motherId -> indices of ALL candidates that took a leg from this photon. Empty means the
+    // photon disappeared without anybody claiming a leg: then the mode cut, it did not dedup.
     std::map<int64_t, std::vector<int>> blockersOfPhoton;
     for (const auto& [mid, f] : fate) {
       if (f.alive) {
@@ -1557,7 +1590,7 @@ struct PhotonConversionBuilder {
         continue;
       }
       auto& blockers = blockersOfPhoton[mid];
-      for (const int ci : f.cands) {
+      for (const int& ci : f.cands) {
         const auto itBlocker = diag.blockersByKey.find(key[ci]);
         if (itBlocker == diag.blockersByKey.end()) {
           continue;
@@ -1572,10 +1605,11 @@ struct PhotonConversionBuilder {
           }
         }
       }
-
+      // Why was it not in the winning set? Take the most favourable of its candidates: the one
+      // that could have been kept at the smallest cost in cardinality.
       int bestDeficit = -1;
       float bestExcess = 0.f;
-      for (const int ci : f.cands) {
+      for (const int& ci : f.cands) {
         const auto itMargin = diag.lossMargin.find(key[ci]);
         if (itMargin == diag.lossMargin.end()) {
           continue;
@@ -1590,16 +1624,19 @@ struct PhotonConversionBuilder {
         registry.fill(HIST("MCDedup/Photons/hLostMargin"), static_cast<float>(bestDeficit), bestExcess);
       }
 
+      // ONE entry per photon, so the photon-level survival rate is comparable between modes.
+      // hVictimBlockerClass below counts one entry per BLOCKER and a victim can have two.
       registry.fill(HIST("MCDedup/Photons/hFate"), blockers.empty() ? 2.f : 1.f);
 
       if (blockers.empty()) {
         registry.fill(HIST("MCDedup/Photons/hBlockerClass"), 3.f); // o2-linter: disable=magic-number (bin 3 = no blocker)
         continue;
       }
-      for (const int w : blockers) {
+      for (const int& w : blockers) {
         registry.fill(HIST("MCDedup/Photons/hBlockerClass"), static_cast<float>(cls[w]));
       }
-
+      // margin and PCA comparison relate the best candidate to its blocker - that is only the
+      // quantity that decided in mode 0/1. Mode 2 compares sets, so it is skipped there.
       if (f.best >= 0 && deduplicationMode.value < static_cast<int>(V0DeduplicationMode::GroupMatching)) {
         const int w = blockers.front();
         registry.fill(HIST("MCDedup/Photons/hKillMargin"), diag.snapshot[f.best].score - diag.snapshot[w].score);
@@ -1607,11 +1644,12 @@ struct PhotonConversionBuilder {
       }
     }
 
+    // ---- truth pairs, grouped by MC collision ----------------------------
     std::map<int, std::vector<int64_t>> mothersByMcColl;
     for (const auto& [mid, f] : fate) {
       mothersByMcColl[mcparticles.iteratorAt(mid).mcCollisionId()].push_back(mid);
     }
-    constexpr float kMaxQTruth = 0.3f;
+    constexpr float MaxQTruth = 0.3f;
     for (const auto& [mcCol, mids] : mothersByMcColl) {
       for (size_t a = 0; a < mids.size(); ++a) {
         for (size_t b = a + 1; b < mids.size(); ++b) {
@@ -1620,7 +1658,7 @@ struct PhotonConversionBuilder {
           const float e1 = std::hypot(g1.px(), g1.py(), g1.pz());
           const float e2 = std::hypot(g2.px(), g2.py(), g2.pz());
           const float qTrue = std::sqrt(std::max(0.f, 2.f * (e1 * e2 - g1.px() * g2.px() - g1.py() * g2.py() - g1.pz() * g2.pz())));
-          if (qTrue > kMaxQTruth) {
+          if (qTrue > MaxQTruth) {
             continue;
           }
           const float dEta = g1.eta() - g2.eta();
@@ -1650,6 +1688,8 @@ struct PhotonConversionBuilder {
             fillTruthPairMap(kBothLost, dEta, dPhi, qTrue);
           }
 
+          // Who killed them? These four flags are DIAGNOSES, not a decomposition: partnerFake is
+          // a subset of crossFake, and one pair can end up in several categories at once.
           bool byCross = false, byPartner = false, byOther = false, byTrue = false;
           auto attribute = [&](int64_t victim, int64_t partner) {
             if (fate.at(victim).alive) {
@@ -1659,16 +1699,18 @@ struct PhotonConversionBuilder {
             if (itB == blockersOfPhoton.end()) {
               return;
             }
-            for (const int w : itB->second) {
+            for (const int& w : itB->second) {
               if (cls[w] == kV0CrossLegFake) {
                 byCross = true;
+                // partner fake = a cross-leg fake using a leg of the OTHER photon of this very
+                // pair -> the double-kill mechanism
                 if (motherPos[w] == partner || motherEle[w] == partner) {
                   byPartner = true;
                 }
               } else if (cls[w] == kV0OtherFake) {
                 byOther = true;
               } else if (cls[w] == kV0True) {
-                byTrue = true;
+                byTrue = true; // real photon against real photon: not repairable by any algorithm
               }
             }
           };
