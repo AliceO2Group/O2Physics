@@ -371,7 +371,7 @@ class CharmHadronSelection : public baseselection::BaseSelection<float, o2::anal
     }
 
     this->template fillFilterSummary<FilterHistName>(pass);
-    return this->isPassThrough() || pass;ż
+    return this->isPassThrough() || pass;
   }
 
   [[nodiscard]] float getMassMin() const
@@ -405,6 +405,9 @@ struct CharmHadronBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FD0s> producedD0s;
   o2::framework::Produces<o2::aod::FD0Masks> producedD0Masks;
   o2::framework::Produces<o2::aod::FD0Extras> producedD0Extras;
+  o2::framework::Produces<o2::aod::FLcs> producedLcs;
+  o2::framework::Produces<o2::aod::FLcMasks> producedLcMasks;
+  o2::framework::Produces<o2::aod::FLcExtras> producedLcExtras;
 };
 
 // per-table produce switches (-1: auto = produce only if a downstream device subscribes; 0 off; 1 on)
@@ -413,6 +416,9 @@ struct ConfCharmHadronTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceD0s{"produceD0s", -1, "Produce D0s (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceD0Masks{"produceD0Masks", -1, "Produce D0Masks (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceD0Extras{"produceD0Extras", -1, "Produce D0Extras (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceLcs{"produceLcs", -1, "Produce Lcs (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceLcMasks{"produceLcMasks", -1, "Produce LcMasks (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceLcExtras{"produceLcExtras", -1, "Produce LcExtras (-1: auto; 0 off; 1 on)"};
 };
 
 template <modes::CharmHadron hadronType, auto& SelectionHistName, auto& FilterHistName>
@@ -425,24 +431,43 @@ class CharmHadronBuilder
   template <typename T1, typename T2, typename T3, typename T4>
   void init(o2::framework::HistogramRegistry* registry, T1& config, T2& filter, T3& table, T4& initContext)
   {
-    LOG(info) << "Initialize femto charm hadron builder...";
-    mProduceD0s = utils::enableTable("FD0s_001", table.produceD0s.value, initContext);
-    mProduceD0Masks = utils::enableTable("FD0Masks_001", table.produceD0Masks.value, initContext);
-    mProduceD0Extras = utils::enableTable("FD0Extras_001", table.produceD0Extras.value, initContext);
-
-    if (mProduceD0s || mProduceD0Masks || mProduceD0Extras) {
+    if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0) || modes::isEqual(hadronType, modes::CharmHadron::kD0Bar)) {
+      if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
+        LOG(info) << "Initialize femto D0 builder...";
+      }
+      if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0Bar)) {
+        LOG(info) << "Initialize femto D0bar builder...";
+      }
+      mProduceD0s = utils::enableTable("FD0s_001", table.produceD0s.value, initContext);
+      mProduceD0Masks = utils::enableTable("FD0Masks_001", table.produceD0Masks.value, initContext);
+      mProduceD0Extras = utils::enableTable("FD0Extras_001", table.produceD0Extras.value, initContext);
+    }
+    if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kLc) || modes::isEqual(hadronType, modes::CharmHadron::kLcBar)) {
+      if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kLc)) {
+        LOG(info) << "Initialize femto Lc builder...";
+      }
+      if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kLcBar)) {
+        LOG(info) << "Initialize femto Lcbar builder...";
+      }
+      mProduceLcs = utils::enableTable("FLcs_001", table.produceLcs.value, initContext);
+      mProduceLcMasks = utils::enableTable("FLcMasks_001", table.produceLcMasks.value, initContext);
+      mProduceLcExtras = utils::enableTable("FLcExtras_001", table.produceLcExtras.value, initContext);
+    }
+    if (mProduceD0s || mProduceD0Masks || mProduceD0Extras ||
+        mProduceLcs || mProduceLcMasks || mProduceLcExtras) {
       mFillAnyTable = true;
     } else {
-      LOG(info) << "No charm hadron tables configured, selection object will not be configured...";
+      LOG(info) << "No tables configured, Selection object will not be configured...";
+      LOG(info) << "Initialization done...";
       return;
     }
-
     mCharmHadronSelection.configure(registry, config, filter);
     mCharmHadronSelection.printSelections(CharmHadronSelsName);
+    LOG(info) << "Initialization done...";
   }
 
   template <typename T1, typename T2, typename T3>
-  void fillTables(T1& collisionProducts, T2& charmHadronProducts, T3 const& candidate,
+  void fillD0Tables(T1& collisionProducts, T2& charmHadronProducts, T3 const& candidate,
                     float signedPt, float mass, int64_t posDauIndex, int64_t negDauIndex)
   {
     if (mProduceD0s) {
@@ -476,6 +501,47 @@ class CharmHadronBuilder
     }
   }
 
+  template <typename T1, typename T2, typename T3>
+  void fillLcTables(T1& collisionProducts, T2& charmHadronProducts, T3 const& candidate,
+                    float signedPt, float mass, float massCompeting,
+                    int64_t protonDauIndex, int64_t kaonDauIndex, int64_t pionDauIndex)
+  {
+    if (mProduceLcs) {
+      charmHadronProducts.producedLcs(collisionProducts.producedCollision.lastIndex(),
+                                      signedPt,
+                                      candidate.eta(),
+                                      candidate.phi(),
+                                      mass,
+                                      protonDauIndex,
+                                      kaonDauIndex,
+                                      pionDauIndex);
+    }
+    if (mProduceLcMasks) {
+      charmHadronProducts.producedLcMasks(mCharmHadronSelection.getBitmask());
+    }
+    if (mProduceLcExtras) {
+      charmHadronProducts.producedLcExtras(
+        candidate.cpa(),
+        candidate.cpaXY(),
+        candidate.decayLength(),
+        candidate.decayLengthXY(),
+        candidate.chi2PCA(),
+        candidate.impactParameterProngSqSum(),
+        candidate.impactParameter0(),
+        candidate.impactParameter1(),
+        candidate.impactParameter2(),
+        massCompeting,
+        candidate.mlProbLcToPKPi().size() < NSizeMLScore ? -1.f : candidate.mlProbLcToPKPi()[0],
+        candidate.mlProbLcToPKPi().size() < NSizeMLScore ? -1.f : candidate.mlProbLcToPKPi()[1],
+        candidate.mlProbLcToPKPi().size() < NSizeMLScore ? -1.f : candidate.mlProbLcToPKPi()[2],
+        candidate.mlProbLcToPiKP().size() < NSizeMLScore ? -1.f : candidate.mlProbLcToPiKP()[0],
+        candidate.mlProbLcToPiKP().size() < NSizeMLScore ? -1.f : candidate.mlProbLcToPiKP()[1],
+        candidate.mlProbLcToPiKP().size() < NSizeMLScore ? -1.f : candidate.mlProbLcToPiKP()[2],
+        static_cast<int8_t>(candidate.isSelLcToPKPi()),
+        static_cast<int8_t>(candidate.isSelLcToPiKP()));
+    }
+  }
+
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
   void fillCharmHadrons(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts,
                T5& charmHadronProducts, T6 const& candidates, T7 const& /*tracks*/, T8& trackBuilder)
@@ -483,8 +549,6 @@ class CharmHadronBuilder
     if (!mFillAnyTable) {
       return;
     }
-    int64_t posDauIndex = 0;
-    int64_t negDauIndex = 0;
     for (const auto& candidate : candidates) {
       if (!mCharmHadronSelection.checkFilters(candidate)) {
         continue;
@@ -494,17 +558,46 @@ class CharmHadronBuilder
         continue;
       }
 
-      collisionBuilder.template fillCollision<system>(collisionProducts, col);
+      if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0) || modes::isEqual(hadronType, modes::CharmHadron::kD0Bar)) {
+        auto prong0 = candidate.template prong0_as<T7>();
+        auto prong1 = candidate.template prong1_as<T7>();
+        
+        collisionBuilder.template fillCollision<system>(collisionProducts, col);
 
-      auto prong0 = candidate.template prong0_as<T7>();
-      auto prong1 = candidate.template prong1_as<T7>();
-      posDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong0, trackProducts, collisionBuilder);
-      negDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong1, trackProducts, collisionBuilder);
+        int64_t posDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong0, trackProducts, collisionBuilder);
+        int64_t negDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong1, trackProducts, collisionBuilder);
+      
+        if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
+          this->fillD0Tables(collisionProducts, charmHadronProducts, candidate, candidate.pt(), mHfHelper.invMassD0ToPiK(candidate), posDauIndex, negDauIndex);
+        } else {
+          this->fillD0Tables(collisionProducts, charmHadronProducts, candidate, -candidate.pt(), mHfHelper.invMassD0barToKPi(candidate), posDauIndex, negDauIndex);
+        }
+      }
 
-      if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
-        this->fillTables(collisionProducts, charmHadronProducts, candidate, candidate.pt(), mHfHelper.invMassD0ToPiK(candidate), posDauIndex, negDauIndex);
-      } else {
-        this->fillTables(collisionProducts, charmHadronProducts, candidate, -candidate.pt(), mHfHelper.invMassD0barToKPi(candidate), posDauIndex, negDauIndex);
+      if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kLc) || modes::isEqual(hadronType, modes::CharmHadron::kLcBar)) {
+        auto prong0 = candidate.template prong0_as<T7>();
+        auto prong1 = candidate.template prong1_as<T7>();
+        auto prong2 = candidate.template prong2_as<T7>();
+
+        // the charge of prong 0 is the charge of the Lc, so the species is decided here
+        if ((prong0.sign() > 0) != isParticle<hadronType>()) {
+          continue;
+        }
+
+        // remap the prong onto the accepted hypothesis so that the proton is always first
+        bool const isPKPi = candidate.isSelLcToPKPi();
+        auto const& protonProng = isPKPi ? prong0 : prong2; 
+        auto const& pionProng = isPKPi ? prong2 : prong0; 
+        float const mass = isPKPi ? mHfHelper.invMassLcToPKPi(candidate) : mHfHelper.invMassLcToPiKP(candidate);
+        float const massCompeting = isPKPi ? mHfHelper.invMassLcToPiKP(candidate) : mHfHelper.invMassLcToPKPi(candidate);
+
+        collisionBuilder.template fillCollision<system>(collisionProducts, col);
+        int64_t const protonDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(protonProng, trackProducts, collisionBuilder);
+        int64_t const kaonDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(prong1, trackProducts, collisionBuilder);
+        int64_t const pionDauIndex = trackBuilder.template getDaughterIndex<modes::Track::kCharmDaughter>(pionProng, trackProducts, collisionBuilder);
+
+        float const signedPt = isParticle<hadronType>() ? candidate.pt() : -candidate.pt();
+        this->fillLcTables(collisionProducts, charmHadronProducts, candidate, signedPt, mass, massCompeting, protonDauIndex, kaonDauIndex, pionDauIndex);
       }
     }
   }
@@ -516,31 +609,62 @@ class CharmHadronBuilder
     if (!mFillAnyTable) {
       return;
     }
-    int64_t posDauIndex = 0;
-    int64_t negDauIndex = 0;
     for (const auto& candidate : candidates) {
       if (!mCharmHadronSelection.checkFilters(candidate)) {
         continue;
       }
-
+      
       mCharmHadronSelection.applySelections(candidate);
       if (!mCharmHadronSelection.passesAllRequiredSelections()) {
         continue;
       }
+      
+      if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0) || modes::isEqual(hadronType, modes::CharmHadron::kD0Bar)) {
+        auto prong0 = candidate.template prong0_as<T8>();
+        auto prong1 = candidate.template prong1_as<T8>();
+        
+        collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
+        
+        int64_t posDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(prong0, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
+        int64_t negDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(prong1, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
 
-      collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
-
-      auto prong0 = candidate.template prong0_as<T8>();
-      auto prong1 = candidate.template prong1_as<T8>();
-      posDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(prong0, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
-      negDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(prong1, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
-
-      if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
-        this->fillTables(collisionProducts, charmHadronProducts, candidate, candidate.pt(), mHfHelper.invMassD0ToPiK(candidate), posDauIndex, negDauIndex);
-      } else {
-        this->fillTables(collisionProducts, charmHadronProducts, candidate, -candidate.pt(), mHfHelper.invMassD0barToKPi(candidate), posDauIndex, negDauIndex);
+        if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kD0)) {
+          this->fillD0Tables(collisionProducts, charmHadronProducts, candidate, candidate.pt(), mHfHelper.invMassD0ToPiK(candidate), posDauIndex, negDauIndex);
+        } else {
+          this->fillD0Tables(collisionProducts, charmHadronProducts, candidate, -candidate.pt(), mHfHelper.invMassD0barToKPi(candidate), posDauIndex, negDauIndex);
+        }
+        mcBuilder.template fillMcD0WithLabel<system>(candidate, tracks, mcParticles, mcCols, mcProducts);
       }
-      mcBuilder.template fillMcD0WithLabel<system>(candidate, tracks, mcParticles, mcCols, mcProducts);
+
+      if constexpr (modes::isEqual(hadronType, modes::CharmHadron::kLc) || modes::isEqual(hadronType, modes::CharmHadron::kLcBar)) {
+        auto prong0 = candidate.template prong0_as<T8>();
+        auto prong1 = candidate.template prong1_as<T8>();
+        auto prong2 = candidate.template prong2_as<T8>();
+
+        // the charge of prong 0 is the charge of the Lc, so the species is decided here
+        if ((prong0.sign() > 0) != isParticle<hadronType>()) {
+          continue;
+        }
+
+        // remap the prongs onto the accepted hypothesis so that the proton is always first
+        bool const isPKPi = candidate.isSelLcToPKPi();
+        auto const& protonProng = isPKPi ? prong0 : prong2; 
+        auto const& pionProng = isPKPi ? prong2 : prong0; 
+        float const mass = isPKPi ? mHfHelper.invMassLcToPKPi(candidate) : mHfHelper.invMassLcToPiKP(candidate);
+        float const massCompeting = isPKPi ? mHfHelper.invMassLcToPiKP(candidate) : mHfHelper.invMassLcToPKPi(candidate);
+
+        collisionBuilder.template fillMcCollision<system>(collisionProducts, col, mcCols, mcProducts, mcBuilder);
+
+        int64_t const protonDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(protonProng, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
+        int64_t const kaonDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(prong1, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
+        int64_t const pionDauIndex = trackBuilder.template getDaughterIndex<system, modes::Track::kCharmDaughter>(pionProng, trackProducts, mcCols, collisionBuilder, mcParticles, mcBuilder, mcProducts);
+
+        float const signedPt = isParticle<hadronType>() ? candidate.pt() : -candidate.pt();
+        this->fillLcTables(collisionProducts, charmHadronProducts, candidate, signedPt, mass, massCompeting, protonDauIndex, kaonDauIndex, pionDauIndex);
+        mcBuilder.template fillMcLcWithLabel<system>(candidate, tracks, mcParticles, mcCols, mcProducts);
+      }
+
+      
     }
   }
 
@@ -554,6 +678,9 @@ class CharmHadronBuilder
   bool mProduceD0s = false;
   bool mProduceD0Masks = false;
   bool mProduceD0Extras = false;
+  bool mProduceLcs = false;
+  bool mProduceLcMasks = false;
+  bool mProduceLcExtras = false;
   bool mFillAnyTable = false;
 };
 } // namespace o2::analysis::femto::charmhadronbuilder
