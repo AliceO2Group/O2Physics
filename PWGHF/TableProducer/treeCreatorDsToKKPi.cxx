@@ -349,7 +349,7 @@ struct HfTreeCreatorDsToKKPi {
     int8_t flagMc{0};
     int8_t originMc{0};
     int8_t channelMc{0};
-    int8_t bMotherFlag{-1};
+    int8_t bMotherPdg{0};
     int8_t isSwapped{MassHypo}; // 0 if KKPi, 1 if PiKK
     float eCand{0.f};
     float ctCand{0.f};
@@ -359,7 +359,7 @@ struct HfTreeCreatorDsToKKPi {
       originMc = candidate.originMcRec();
       channelMc = candidate.flagMcDecayChanRec();
       isSwapped = candidate.isCandidateSwapped();
-      bMotherFlag = o2::analysis::getBHadMotherFlag(candidate.pdgBhadMotherPart());
+      bMotherPdg = candidate.pdgBhadMotherPart();
       if (fillDplusMc && candidate.flagMcDecayChanRec() == channelsResonant[Mother::Dplus][decayChannel]) {
         eCand = HfHelper::eDplus(candidate);
         ctCand = HfHelper::ctDplus(candidate);
@@ -425,7 +425,7 @@ struct HfTreeCreatorDsToKKPi {
         flagMc,
         originMc,
         channelMc,
-        bMotherFlag,
+        bMotherPdg,
         isSwapped,
         prong0.sign() + prong1.sign() + prong2.sign());
     } else {
@@ -499,7 +499,7 @@ struct HfTreeCreatorDsToKKPi {
         flagMc,
         originMc,
         channelMc,
-        bMotherFlag,
+        bMotherPdg,
         isSwapped,
         prong0.sign() + prong1.sign() + prong2.sign());
     }
