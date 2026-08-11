@@ -730,24 +730,24 @@ struct ConfKinkTablesDerivedToDerived : o2::framework::ConfigurableGroup {
 };
 
 struct KinkBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
-  o2::framework::Produces<o2::aod::StoredFSigmas_002> producedSigmas;
-  o2::framework::Produces<o2::aod::StoredFSigmaMasks_001> producedSigmaMasks;
-  o2::framework::Produces<o2::aod::StoredFSigmaPlus_001> producedSigmaPluses;
-  o2::framework::Produces<o2::aod::StoredFSigmaPlusMasks_001> producedSigmaPlusMasks;
+  o2::framework::Produces<o2::aod::StoredFSigmas> producedSigmas;
+  o2::framework::Produces<o2::aod::StoredFSigmaMasks> producedSigmaMasks;
+  o2::framework::Produces<o2::aod::StoredFSigmaPlus> producedSigmaPluses;
+  o2::framework::Produces<o2::aod::StoredFSigmaPlusMasks> producedSigmaPlusMasks;
 };
 
 class KinkBuilderDerivedToDerived
 {
  public:
-  KinkBuilderDerivedToDerived() = default;
-  ~KinkBuilderDerivedToDerived() = default;
-
   template <typename T>
   void init(T& config)
   {
     mLimitSigma = config.limitSigma.value;
     mLimitSigmaPlus = config.limitSigmaPlus.value;
 
+    if (mLimitSigma < 0 || mLimitSigmaPlus < 0) {
+      LOG(fatal) << "Kink limits must be non-negative (got " << mLimitSigma << " and " << mLimitSigmaPlus << "). Breaking...";
+    }
     if (mLimitSigma == 0 && mLimitSigmaPlus == 0) {
       LOG(fatal) << "Both sigma limit and sigmaplus limit are 0. Breaking...";
     }
@@ -756,27 +756,36 @@ class KinkBuilderDerivedToDerived
   template <typename T1, typename T2, typename T3, typename T4>
   bool collisionHasTooFewSigma(T1 const& col, T2 const& /*sigmaTable*/, T3& partitionSigma, T4& cache)
   {
+    if (mLimitSigma == 0) { // sigmas disabled, cannot reject on them
+      return false;
+    }
     auto sigmaSlice = partitionSigma->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    return sigmaSlice.size() < mLimitSigma;
+    return sigmaSlice.size() < static_cast<int64_t>(mLimitSigma);
   }
 
   template <typename T1, typename T2, typename T3, typename T4>
   bool collisionHasTooFewSigmaPlus(T1 const& col, T2 const& /*sigmaPlusTable*/, T3& partitionSigmaPlus, T4& cache)
   {
+    if (mLimitSigmaPlus == 0) { // sigma pluses disabled, cannot reject on them
+      return false;
+    }
     auto sigmaPlusSlice = partitionSigmaPlus->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    return sigmaPlusSlice.size() < mLimitSigmaPlus;
+    return sigmaPlusSlice.size() < static_cast<int64_t>(mLimitSigmaPlus);
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
   void processSigma(T1 const& col, T2 const& /*sigmaTable*/, T3 const& oldTrackTable, T4& partitionSigma, T5& trackBuilder, T6& cache, T7& newSigmaTable, T8& newTrackTable, T9& newCollisionTable)
   {
+    if (mLimitSigma == 0) { // sigmas disabled
+      return;
+    }
+
     auto sigmaSlice = partitionSigma->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
 
     for (auto const& sigma : sigmaSlice) {
+      auto chaDaughter = oldTrackTable.rawIteratorAt(this->daughterRow(sigma.chaDauId(), oldTrackTable));
 
-      auto chaDaughter = oldTrackTable.rawIteratorAt(sigma.chaDauId() - oldTrackTable.offset());
-
-      int chaDaughterIndex = trackBuilder.getDaughterIndex(chaDaughter, newTrackTable, newCollisionTable);
+      int64_t chaDaughterIndex = trackBuilder.getDaughterIndex(chaDaughter, newTrackTable, newCollisionTable);
 
       newSigmaTable.producedSigmas(newCollisionTable.producedCollision.lastIndex(),
                                    sigma.signedPt(),
@@ -791,13 +800,16 @@ class KinkBuilderDerivedToDerived
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
   void processSigmaPlus(T1 const& col, T2 const& /*sigmaPlusTable*/, T3 const& oldTrackTable, T4& partitionSigmaPlus, T5& trackBuilder, T6& cache, T7& newSigmaPlusTable, T8& newTrackTable, T9& newCollisionTable)
   {
+    if (mLimitSigmaPlus == 0) { // sigma pluses disabled
+      return;
+    }
+
     auto sigmaPlusSlice = partitionSigmaPlus->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
 
     for (auto const& sigmaPlus : sigmaPlusSlice) {
+      auto chaDaughter = oldTrackTable.rawIteratorAt(this->daughterRow(sigmaPlus.chaDauId(), oldTrackTable));
 
-      auto chaDaughter = oldTrackTable.rawIteratorAt(sigmaPlus.chaDauId() - oldTrackTable.offset());
-
-      int chaDaughterIndex = trackBuilder.getDaughterIndex(chaDaughter, newTrackTable, newCollisionTable);
+      int64_t chaDaughterIndex = trackBuilder.getDaughterIndex(chaDaughter, newTrackTable, newCollisionTable);
 
       newSigmaPlusTable.producedSigmaPluses(newCollisionTable.producedCollision.lastIndex(),
                                             sigmaPlus.signedPt(),
@@ -810,6 +822,20 @@ class KinkBuilderDerivedToDerived
   }
 
  private:
+  /// Translate a global daughter index into a row of the current track table frame.
+  /// Aborts if the index does not fall inside the frame, which would otherwise
+  /// silently produce an out-of-range iterator.
+  template <typename T>
+  int64_t daughterRow(int64_t daughterId, T const& trackTable) const
+  {
+    const int64_t row = daughterId - trackTable.offset();
+    if (daughterId < 0 || row < 0 || row >= static_cast<int64_t>(trackTable.size())) {
+      LOG(fatal) << "Daughter index " << daughterId << " out of range for track table (offset "
+                 << trackTable.offset() << ", size " << trackTable.size() << "). Breaking...";
+    }
+    return row;
+  }
+
   int mLimitSigma = 0;
   int mLimitSigmaPlus = 0;
 };

@@ -932,6 +932,7 @@ using StoredFLiteSigmaPlus = StoredFLiteSigmaPlus_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusMasks_001, "FSIGMAPLUSMASKS", 1,
                                    femtokinks::Mask);
 using FSigmaPlusMasks = FSigmaPlusMasks_001;
+using StoredFSigmaPlusMasks = StoredFSigmaPlusMasks_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FSigmaPlusExtras_001, "FSIGMAPLUSEXTRAS", 1,
                                    femtokinks::KinkAngle,

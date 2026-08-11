@@ -22,8 +22,8 @@
   (o2::aod::femtocollisions::posZ >= (selection).vtxZMin && o2::aod::femtocollisions::posZ <= (selection).vtxZMax) &&   \
     (o2::aod::femtocollisions::mult >= (selection).multMin && o2::aod::femtocollisions::mult <= (selection).multMax) && \
     (o2::aod::femtocollisions::cent >= (selection).centMin && o2::aod::femtocollisions::cent <= (selection).centMax) && \
-    (o2::aod::femtocollisions::magField >= o2::framework::expressions::as<int8_t>((selection).magFieldMin)) &&          \
-    (o2::aod::femtocollisions::magField <= o2::framework::expressions::as<int8_t>((selection).magFieldMax)) &&          \
+    (o2::aod::femtocollisions::magField >= o2::framework::expressions::as<int8_t>((selection).magFieldMin) &&           \
+     o2::aod::femtocollisions::magField <= o2::framework::expressions::as<int8_t>((selection).magFieldMax)) &&          \
     ncheckbit(o2::aod::femtocollisions::mask, (selection).collisionMask)
 
 // macro for track momentum, i.e. ||q|*pT/q| * cosh(eta)
