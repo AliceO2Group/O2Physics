@@ -293,7 +293,7 @@ struct JetCorrelationD0 {
   }
   enum D0McCategory : int {
     Undefined = -1,     // no truth match / unclassified
-    Signal = 0,         // correctly identified D0(bar), π+ K−
+    Signal = 0,         // correctly identified D0 and (bar), π+ K− + cc
     Reflection = 1,     // true D0(bar) reconstructed with swapped mass hypothesis
     CorrBkgPiKPi0 = 2,  // correlated background: π+ K− π0
     CorrBkgPiPi = 3,    // correlated background: π+ π−
@@ -378,15 +378,15 @@ struct JetCorrelationD0 {
       }
       if ((std::abs(d0DecayChannel) == hf2Prong::DecayChannelMain::D0ToPiK) && (matchedFrom != 0) && (selectedAs == matchedFrom)) {
         category = D0McCategory::Signal; // D0 or D0bar, π+ K−
-      } else if ((d0DecayChannel == hf2Prong::DecayChannelMain::D0ToPiK) && (selectedAs == -1 * matchedFrom)) {
+      } else if ((std::abs(d0DecayChannel) == hf2Prong::DecayChannelMain::D0ToPiK) && (matchedFrom != 0) && (selectedAs == -1 * matchedFrom)) {
         category = D0McCategory::Reflection;
-      } else if (d0DecayChannel == hf2Prong::DecayChannelMain::D0ToPiKPi0) {
+      } else if (std::abs(d0DecayChannel) == hf2Prong::DecayChannelMain::D0ToPiKPi0) {
         category = D0McCategory::CorrBkgPiKPi0;
-      } else if (d0DecayChannel == hf2Prong::DecayChannelMain::D0ToPiPi) {
+      } else if (std::abs(d0DecayChannel) == hf2Prong::DecayChannelMain::D0ToPiPi) {
         category = D0McCategory::CorrBkgPiPi;
-      } else if (d0DecayChannel == hf2Prong::DecayChannelMain::D0ToPiPiPi0) {
+      } else if (std::abs(d0DecayChannel) == hf2Prong::DecayChannelMain::D0ToPiPiPi0) {
         category = D0McCategory::CorrBkgPiPiPi0;
-      } else if (d0DecayChannel == hf2Prong::DecayChannelMain::D0ToKK) {
+      } else if (std::abs(d0DecayChannel) == hf2Prong::DecayChannelMain::D0ToKK) {
         category = D0McCategory::CorrBkgKK;
       }
 
