@@ -52,10 +52,19 @@ namespace lite
 constexpr float PosZMin = -20.f;
 constexpr float PosZMax = 20.f;
 constexpr float PosZStep = 0.5f; // bin vtz in 0.5cm steps
+
 constexpr float CentMin = 0.f;
 constexpr float CentMax = 100.f;
 constexpr float CentStep = 0.5f; // bin centrality in 0.5% steps
+
 constexpr float MultStep = 1.f;  // round multiplicity to nearest integer
+
+constexpr float QvecMin = 1e-3f; // close to 0, but not 0 due to log
+constexpr float QvecMax = 1e3f;  // usual range for qvector
+
+constexpr float EventPlaneAngleMin = 0.f;
+constexpr float EventPlaneAngleMax = o2::constants::math::TwoPI; // angle bound in [0,2pi)
+constexpr float EventPlaneAngleStep = (EventPlaneAngleMax - EventPlaneAngleMin) / 65536.f;
 
 inline uint8_t binPosZ(float posZ) { return o2::analysis::femto::utils::binLinear<uint8_t>(posZ, PosZMin, PosZMax, PosZStep); }
 inline float unBinPosZ(uint8_t binned) { return o2::analysis::femto::utils::unBinLinear<uint8_t>(binned, PosZMin, PosZStep); }
@@ -66,9 +75,17 @@ inline float unBinCent(uint8_t binned) { return o2::analysis::femto::utils::unBi
 inline uint16_t binMult(float mult) { return o2::analysis::femto::utils::binLinear<uint16_t>(mult, 0.f, 65535.f, MultStep); } // use full range of uint16_t
 inline float unBinMult(uint16_t binned) { return o2::analysis::femto::utils::unBinLinear<uint16_t>(binned, 0.f, MultStep); }
 
+inline uint16_t binQvec(float qvec) { return o2::analysis::femto::utils::binLogUnsigned<uint16_t>(qvec, QvecMin, QvecMax); }
+inline float unBinQvec(uint16_t binned) { return o2::analysis::femto::utils::unBinLogUnsigned<uint16_t>(binned, QvecMin, QvecMax); }
+
+inline uint16_t binEventPlaneAngle(float eventPlaneAngle) { return o2::analysis::femto::utils::binLinear<uint16_t>(eventPlaneAngle, EventPlaneAngleMin, EventPlaneAngleMax, EventPlaneAngleStep); }
+inline float unBinEventPlaneAngle(uint16_t binned) { return o2::analysis::femto::utils::unBinLinear<uint16_t>(binned, EventPlaneAngleMin, EventPlaneAngleStep); }
+
 DECLARE_SOA_COLUMN(BinnedPosZ, binnedPosZ, uint8_t);
 DECLARE_SOA_COLUMN(BinnedMult, binnedMult, uint16_t);
 DECLARE_SOA_COLUMN(BinnedCent, binnedCent, uint8_t);
+DECLARE_SOA_COLUMN(BinnedQvec, binnedQvec, uint16_t);
+DECLARE_SOA_COLUMN(BinnedEventPlaneAngle, binnedEventPlaneAngle, uint16_t);
 
 DECLARE_SOA_DYNAMIC_COLUMN(PosZ, posZ,
                            [](uint8_t binnedPosZ) -> float {
@@ -81,6 +98,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(Mult, mult,
 DECLARE_SOA_DYNAMIC_COLUMN(Cent, cent,
                            [](uint8_t binnedCent) -> float {
                              return unBinCent(binnedCent);
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(Qvec, qvec,
+                           [](uint16_t binnedQvec) -> float {
+                             return unBinQvec(binnedQvec);
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(EventPlaneAngle, eventPlaneAngle,
+                           [](uint16_t binnedEventPlaneAngle) -> float {
+                             return unBinEventPlaneAngle(binnedEventPlaneAngle);
                            });
 } // namespace lite
 } // namespace femtocollisions
@@ -120,11 +145,21 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FColSphericities_001, "FCOLSPHERICITY", 1, //
                                    femtocollisions::Sphericity);
 using FColSphericities = FColSphericities_001;
 
-// table for qn values
+// table for event shape analysis
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FColShapes_001, "FCOLSHAPE", 1, //! event shape
                                    femtocollisions::Qvec,
                                    femtocollisions::EventPlaneAngle);
 using FColShapes = FColShapes_001;
+using StoredFColShapes = StoredFColShapes_001;
+
+// lite table for event shape analysis
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FLiteColShapes_001, "FLITECOLSHAPE", 1, //! event shape
+                                   femtocollisions::lite::BinnedQvec,
+                                   femtocollisions::lite::BinnedEventPlaneAngle,
+                                   femtocollisions::lite::Qvec<femtocollisions::lite::BinnedQvec>,
+                                   femtocollisions::lite::EventPlaneAngle<femtocollisions::lite::BinnedEventPlaneAngle>);
+using FLiteColShapes = FLiteColShapes_001;
+using StoredFLiteColShapes = StoredFLiteColShapes_001;
 
 // table for primary vertex location
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FColPos_001, "FCOLPOS", 1, //! full vertex position
