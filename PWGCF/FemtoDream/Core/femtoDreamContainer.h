@@ -46,6 +46,9 @@ enum Observable { kstar ///< kstar
 enum EventType { same, ///< Pair from same event
                  mixed ///< Pair from mixed event
 };
+
+static constexpr int nMinMomComponents{4}; ///< Minimum number of momentum components to compute the femto observable
+
 }; // namespace femtoDreamContainer
 
 /// \class FemtoDreamContainer
@@ -520,7 +523,7 @@ class FemtoDreamContainer
   {
 
     std::vector<double> k3d = FemtoDreamMath::newpairfunc(part1, mMassOne, part2, mMassTwo, IsSameSpecies);
-    if (k3d.size() < 4) {
+    if (k3d.size() < femtoDreamContainer::nMinMomComponents) {
       LOG(error) << "newpairfunc returned size=" << k3d.size();
       return;
     }
@@ -539,7 +542,7 @@ class FemtoDreamContainer
         if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
 
           std::vector<double> k3dMC = FemtoDreamMath::newpairfuncMC(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, IsSameSpecies);
-          if (k3dMC.size() < 4) {
+          if (k3dMC.size() < femtoDreamContainer::nMinMomComponents) {
             LOG(error) << "newpairfunc returned size=" << k3d.size();
             return;
           }
@@ -565,7 +568,7 @@ class FemtoDreamContainer
   {
 
     std::vector<double> k3d = FemtoDreamMath::newpairfunc(part1, mMassOne, part2, mMassTwo, IsSameSpecies);
-    if (k3d.size() < 4) {
+    if (k3d.size() < femtoDreamContainer::nMinMomComponents) {
       LOG(error) << "newpairfunc returned size=" << k3d.size();
       return;
     }
@@ -584,7 +587,7 @@ class FemtoDreamContainer
         if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
 
           std::vector<double> k3dMC = FemtoDreamMath::newpairfuncMC(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, IsSameSpecies);
-          if (k3dMC.size() < 4) {
+          if (k3dMC.size() < femtoDreamContainer::nMinMomComponents) {
             LOG(error) << "newpairfunc returned size=" << k3d.size();
             return;
           }
