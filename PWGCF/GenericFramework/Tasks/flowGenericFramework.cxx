@@ -206,10 +206,8 @@ struct FlowGenericFramework {
   Configurable<LabeledArray<int>> resonanceSwitches{"resonanceSwitches", {LongArrayInt.front().data(), 8, 3, {"UseParticle", "UseCosPA", "NMassBins", "UseDCAxDaughters", "UseProperLifetime", "UseV0Radius", "UseArmPodCut", "UseCompetingMassRejection"}, {"K0", "Lambda", "Phi"}}, "Labeled array (int) for various cuts on resonances"};
 
   struct : ConfigurableGroup {
-    O2_DEFINE_CONFIGURABLE(cfgUseLsPhi, bool, true, "Use LikeSign for Phi v2")
     O2_DEFINE_CONFIGURABLE(cfgUseOnlyTPC, bool, true, "Use only TPC PID for daughter selection")
     O2_DEFINE_CONFIGURABLE(cfgDaughterPIDRejection, bool, true, "Reject daughters if not consistent with expected K0/Lambda decay products")
-    O2_DEFINE_CONFIGURABLE(cfgFakeKaonCut, float, 0.1f, "Maximum difference in measured momentum and TPC inner ring momentum of particle")
     O2_DEFINE_CONFIGURABLE(cfgUseAsymmetricPID, bool, false, "Use asymmetric PID cuts")
     O2_DEFINE_CONFIGURABLE(cfgTPCNsigmaCut, float, 3.0f, "TPC N-sigma cut for pions, kaons, protons")
     O2_DEFINE_CONFIGURABLE(cfgUseStrictPID, bool, true, "Use strict PID cuts for TPC")
