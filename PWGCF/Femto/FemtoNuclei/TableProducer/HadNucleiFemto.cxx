@@ -2146,7 +2146,7 @@ struct HadNucleiFemto {
 
   void fillKstarAtCentrality(const HadNucandidate& hadNucand, float centrality)
   {
-    if (hadNucand.isBkgUS == 0) {
+    if (!hadNucand.isBkgUS) {
       if (hadNucand.recoPtNu() > 0) {
         mQaRegistry.fill(HIST("hkStar_LS_M"), hadNucand.kstar);
         mQaRegistry.fill(HIST("hkStaVsmT_LS_M"), hadNucand.kstar, hadNucand.mT);
