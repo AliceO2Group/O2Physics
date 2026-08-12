@@ -134,14 +134,21 @@ struct KaDaughterProducer {
   void processData(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
     histos.fill(HIST("hEvtSelInfo"), 0.5);
-    if (rctCut.requireRCTFlagChecker && !rctCut.rctChecker(collision)) return;
+    if (rctCut.requireRCTFlagChecker && !rctCut.rctChecker(collision))
+      return;
     histos.fill(HIST("hEvtSelInfo"), 1.5);
-    if (!collision.sel8()) return;
-    if (!collision.triggereventep()) return;
-    if (additionalEvSel1 && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) return;
-    if (additionalEvSel2 && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) return;
-    if (additionalEvSel3 && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) return;
-    if (additionalEvSel4 && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) return;
+    if (!collision.sel8())
+      return;
+    if (!collision.triggereventep())
+      return;
+    if (additionalEvSel1 && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+      return;
+    if (additionalEvSel2 && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+      return;
+    if (additionalEvSel3 && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+      return;
+    if (additionalEvSel4 && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+      return;
     histos.fill(HIST("hEvtSelInfo"), 2.5);
 
     auto centrality = collision.centFT0C();
@@ -149,7 +156,8 @@ struct KaDaughterProducer {
     auto psiFT0C = collision.psiFT0C();
     auto qFT0C = collision.qFT0C();
 
-    if (fillOccupancy && occupancy > cfgOccupancyCut) return;
+    if (fillOccupancy && occupancy > cfgOccupancyCut)
+      return;
     histos.fill(HIST("hEvtSelInfo"), 3.5);
 
     if (additionalQAplots1) {
@@ -185,20 +193,22 @@ struct KaDaughterProducer {
     };
     std::vector<Stored> sel;
     for (const auto& t : tracks) {
-      if (!selectionTrack(t)) continue;
+      if (!selectionTrack(t))
+        continue;
       sel.push_back({t.px(), t.py(), t.pz(), t.dcaXY(), t.dcaZ(),
                      t.tpcNSigmaKa(), t.tofNSigmaKa(), t.tpcNSigmaPi(), t.tofNSigmaPi(),
                      t.hasTOF() ? t.beta() : -999.f, static_cast<int8_t>(t.sign()), t.globalIndex(), t.hasTOF()});
     }
-    if (sel.empty()) return;
+    if (sel.empty())
+      return;
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     kaEvent(centrality, collision.posZ(), occupancy, psiFT0C, qFT0C, /*psiZDCC=*/0.f,
-           collision.bcId(), bc.runNumber(), bc.timestamp());
+            collision.bcId(), bc.runNumber(), bc.timestamp());
     const int64_t idx = kaEvent.lastIndex();
     for (const auto& s : sel) {
       kaTrack(idx, s.px, s.py, s.pz, s.sign, s.id, s.dcaXY, s.dcaZ,
-             s.tpcKa, s.tofKa, s.tpcPi, s.tofPi, s.hasTOF, s.beta);
+              s.tpcKa, s.tofKa, s.tpcPi, s.tofPi, s.hasTOF, s.beta);
     }
   }
   PROCESS_SWITCH(KaDaughterProducer, processData, "Produce shared kaon/pion daughter candidates", true);
