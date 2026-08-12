@@ -81,7 +81,7 @@ static constexpr float DcaMaxTPCSigma = 1.f;
 static constexpr float DcaTrkPtCut = 0.4f;
 
 // Spectra task
-struct tofSpectra {
+struct SpectraTOF {
   struct : ConfigurableGroup {
     Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
     Configurable<int> cfgINELCut{"cfgINELCut", 0, "INEL event selection: 0 sel, 1 INEL>0"};
@@ -427,7 +427,7 @@ struct tofSpectra {
     // Filling DCA info with the TPC+TOF PID
     bool isDCAPureSample = (std::sqrt(nsigmaTOF * nsigmaTOF + nsigmaTPC * nsigmaTPC) < DcaMaxCombinedSigma);
     if (track.pt() <= DcaTrkPtCut) {
-      isDCAPureSample = (fabs(nsigmaTPC) < DcaMaxTPCSigma);
+      isDCAPureSample = (std::fabs(nsigmaTPC) < DcaMaxTPCSigma);
     }
     if (isDCAPureSample) {
       if (enableDCAxyzHistograms) {
@@ -757,7 +757,7 @@ struct tofSpectra {
     }
 
   } // end of the process function
-  PROCESS_SWITCH(tofSpectra, processStandard, "Standard data processor", true);
+  PROCESS_SWITCH(SpectraTOF, processStandard, "Standard data processor", true);
 
   template <typename CollisionType, bool isMC = false>
   float getMultiplicity(const CollisionType& collision)
@@ -1146,13 +1146,8 @@ struct tofSpectra {
       }
       const auto& mcCollision = collision.mcCollision_as<GenMCCollisions>();
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-      if (evselOptions.cfgINELCut.value == 1) {
+      if (evselOptions.cfgINELCut.value == EvSelInelGt0Cut) {
         if (!o2::pwglf::isINELgt0mc(particlesInCollision, pdgDB)) {
-          continue;
-        }
-      }
-      if (evselOptions.cfgINELCut.value == 2) {
-        if (!o2::pwglf::isINELgt1mc(particlesInCollision, pdgDB)) {
           continue;
         }
       }
@@ -1205,8 +1200,8 @@ struct tofSpectra {
       }
     }
   }
-  PROCESS_SWITCH(tofSpectra, processMC, "Process MC", false);
+  PROCESS_SWITCH(SpectraTOF, processMC, "Process MC", false);
 
 }; // end of spectra task
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<tofSpectra>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<SpectraTOF>(cfgc)}; }
