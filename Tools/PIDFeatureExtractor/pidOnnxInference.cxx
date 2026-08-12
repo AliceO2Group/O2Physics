@@ -314,7 +314,7 @@ struct PidOnnxInference {
   Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"pid_feature_model.onnx"}, "Local ONNX file path(s), used when loadModelFromCcdb is false"};
 
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{-1., 9999.}, "pT bin edges for MlResponse (single bin = model isn't pT-binned)"};
-  Configurable<int> nClassesMl{"nClassesMl", kNumClasses, "Number of model output classes"};
+  Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(kNumClasses), "Number of model output classes"};
 
   Configurable<bool> useTPC{"useTPC", true, "Include TPC in inference. Default true (all detectors present); set false to force TPC excluded regardless of the data"};
   Configurable<bool> useTOF{"useTOF", true, "Include TOF in inference"};
