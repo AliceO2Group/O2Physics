@@ -944,6 +944,7 @@ struct FlowEventPlane {
 
   // V0s
   Configurable<int> cV0TypeSelection{"cV0TypeSelection", 1, "V0 Type Selection"};
+  Configurable<int> cMinTpcCrossedRows{"cMinTpcCrossedRows", 70, "TPC Min Crossed Rows"};
   Configurable<float> cMinDcaProtonToPV{"cMinDcaProtonToPV", 0.01, "Minimum Proton DCAr to PV"};
   Configurable<float> cMinDcaPionToPV{"cMinDcaPionToPV", 0.1, "Minimum Pion DCAr to PV"};
   Configurable<float> cDcaV0Dau{"cDcaV0Dau", 1., "DCA between V0 daughters"};
@@ -954,7 +955,7 @@ struct FlowEventPlane {
   Configurable<float> cLambdaCosPA{"cLambdaCosPA", 0.98, "Lambda CosPA"};
   Configurable<float> cK0SMassRej{"cK0SMassRej", 0.01, "Reject K0Short Candidates"};
   Configurable<float> cArmPodSel{"cArmPodSel", 0.2, "Armentros-Podolanski Selection for K0S"};
-  Configurable<float> cK0SMinPt{"cK0SMinPt", 0.4, "K0S Min pT"};
+  Configurable<float> cK0SMinPt{"cK0SMinPt", 0.5, "K0S Min pT"};
   Configurable<float> cK0SMaxPt{"cK0SMaxPt", 6.0, "K0S Max pT"};
   Configurable<float> cLambdaMinPt{"cLambdaMinPt", 0.6, "Lambda Min pT"};
   Configurable<float> cLambdaMaxPt{"cLambdaMaxPt", 6.0, "Lambda Max pT"};
@@ -1129,7 +1130,7 @@ struct FlowEventPlane {
   bool selV0DauTracks(V const& v0, T const& postrack, T const& negtrack)
   {
     // Kinematic selection
-    if (postrack.pt() <= cTrackPtCut || negtrack.pt() <= cTrackPtCut || std::abs(postrack.eta()) >= cTrackEtaCut || std::abs(negtrack.eta()) >= cTrackEtaCut) {
+    if (postrack.pt() <= cTrackPtCut || negtrack.pt() <= cTrackPtCut || std::abs(postrack.eta()) >= cTrackEtaCut || std::abs(negtrack.eta()) >= cTrackEtaCut || postrack.tpcNClsCrossedRows() <= cMinTpcCrossedRows || negtrack.tpcNClsCrossedRows() <= cMinTpcCrossedRows) {
       return false;
     }
 
