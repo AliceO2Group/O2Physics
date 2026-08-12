@@ -2141,9 +2141,9 @@ struct forwardlambdakzeroanalysis {
 
       // get decay vertex coordinates
       Vec3D vtx = fitter.getPCACandidate();
-      pairInfo.X = vtx[0]-collision.posX();
-      pairInfo.Y = vtx[1]-collision.posY();
-      pairInfo.Z = vtx[2]-collision.posZ();
+      pairInfo.X = vtx[0] - collision.posX();
+      pairInfo.Y = vtx[1] - collision.posY();
+      pairInfo.Z = vtx[2] - collision.posZ();
 
       // get daughter DCA to PV
       pairInfo.dcaPosToPVxy = std::sqrt(dcaPosToPVx * dcaPosToPVx + dcaPosToPVy * dcaPosToPVy);
