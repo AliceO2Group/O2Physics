@@ -20,6 +20,7 @@
 
 #include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/MetadataHelper.h"
+#include "Common/Core/PID/PIDTOF.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
@@ -30,7 +31,6 @@
 #include <Framework/ServiceHandle.h>
 #include <Framework/ServiceSpec.h>
 #include <Framework/TypeIdHelpers.h>
-#include <PID/PIDTOF.h>
 
 #include <TGraph.h>
 
@@ -80,7 +80,7 @@ void o2::pid::tof::TOFResponseImpl::initSetup(o2::ccdb::BasicCCDBManager* ccdb,
     LOG(fatal) << "CCDB manager is not set, cannot initialize TOFResponseImpl";
   }
   inheritFromBaseTask(initContext, task); // Gets the configuration parameters from the base task (tof-signal)
-  mCcdb = ccdb;                     // Set the CCDB manager
+  mCcdb = ccdb;                           // Set the CCDB manager
   mCcdb->setURL(mUrl);
   mCcdb->setTimestamp(mTimestamp);
   mCcdb->setCaching(true);
