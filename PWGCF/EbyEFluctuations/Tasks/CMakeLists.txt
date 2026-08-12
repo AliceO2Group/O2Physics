@@ -9,7 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(meanpt-fluctuations
+o2physics_add_dpl_workflow(meanpt-fluctuations # o2-linter: disable=name/o2-workflow (legacy source file naming)
                     SOURCES MeanptFluctuations.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
@@ -19,7 +19,7 @@ o2physics_add_dpl_workflow(mean-pt-fluc-id
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(netproton-cumulants
+o2physics_add_dpl_workflow(netproton-cumulants # o2-linter: disable=name/o2-workflow (legacy source file naming)
                     SOURCES NetProtonCumulants.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
@@ -39,12 +39,12 @@ o2physics_add_dpl_workflow(event-mean-pt-id
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(robust-fluctuation-observables
+o2physics_add_dpl_workflow(robust-fluctuation-observables # o2-linter: disable=name/o2-workflow (legacy source file naming)
                     SOURCES RobustFluctuationObservables.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(factorial-moments
+o2physics_add_dpl_workflow(factorial-moments # o2-linter: disable=name/o2-workflow (legacy source file naming)
                     SOURCES FactorialMomentsTask.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
@@ -79,7 +79,7 @@ o2physics_add_dpl_workflow(radial-flow-decorr
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(net-prot-cumulants
+o2physics_add_dpl_workflow(net-prot-cumulants # o2-linter: disable=name/o2-workflow (legacy source file naming)
                     SOURCES netprotcumulants.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
