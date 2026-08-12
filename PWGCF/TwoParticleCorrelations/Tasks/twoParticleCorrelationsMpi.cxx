@@ -602,7 +602,7 @@ struct TwoParticleCorrelationsMpi {
 
     yieldTemplates.clear();
     yieldTemplates.reserve(tree->GetEntries());
-    for (Long64_t iEntry = 0; iEntry < tree->GetEntries(); ++iEntry) {
+    for (int64_t iEntry = 0; iEntry < tree->GetEntries(); ++iEntry) {
       tree->GetEntry(iEntry);
       if (fitStatus != 0) {
         LOGF(warning, "Skipping failed yield template (%d, %d, %d), fit status %d", value.trigBin, value.assocBin, value.multBin, fitStatus);
@@ -614,11 +614,11 @@ struct TwoParticleCorrelationsMpi {
         continue;
       }
       const auto intervalMatchesAxis = [](const AxisSpec& axis, double low, double high) {
-        constexpr double tolerance = 1e-6;
+        constexpr double Tolerance = 1e-6;
         const auto& edges = axis.binEdges;
         return std::any_of(edges.begin(), edges.end() - 1, [&](const auto& edge) {
           const auto index = static_cast<std::size_t>(&edge - edges.data());
-          return std::abs(edge - low) < tolerance && std::abs(edges[index + 1] - high) < tolerance;
+          return std::abs(edge - low) < Tolerance && std::abs(edges[index + 1] - high) < Tolerance;
         });
       };
       if (!intervalMatchesAxis(AxisSpec(axisMultiplicity), value.nchLow, value.nchHigh) ||
