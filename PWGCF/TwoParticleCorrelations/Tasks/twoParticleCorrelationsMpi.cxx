@@ -48,6 +48,7 @@
 #include <THn.h>
 #include <TList.h>
 #include <TNamed.h>
+#include <TObject.h>
 #include <TString.h>
 #include <TTree.h>
 
@@ -58,6 +59,7 @@
 #include <bit>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <experimental/type_traits>
 #include <iterator>
@@ -186,10 +188,10 @@ struct TwoParticleCorrelationsMpi {
     double awayPairs = 0.0;
     double baselinePairs = 0.0;
 
-    bool isValid() const { return nTriggers > 0; }
-    double nearYield() const { return isValid() ? nearPairs / nTriggers : 0.0; }
-    double awayYield() const { return isValid() ? awayPairs / nTriggers : 0.0; }
-    double nuncSeeds() const
+    [[nodiscard]] bool isValid() const { return nTriggers > 0; }
+    [[nodiscard]] double nearYield() const { return isValid() ? nearPairs / nTriggers : 0.0; }
+    [[nodiscard]] double awayYield() const { return isValid() ? awayPairs / nTriggers : 0.0; }
+    [[nodiscard]] double nuncSeeds() const
     {
       const double denominator = 1.0 + nearYield() + awayYield();
       return isValid() && denominator > 0.0 ? nTriggers / denominator : -1.0;
@@ -576,18 +578,18 @@ struct TwoParticleCorrelationsMpi {
       LOGF(fatal, "Missing ensembleYieldTemplates in %s", source.c_str());
       return;
     }
-    if (!schemaVersion || TString(schemaVersion->GetTitle()) != "1") {
+    if (schemaVersion == nullptr || TString(schemaVersion->GetTitle()) != "1") {
       LOGF(fatal, "Unsupported or missing ensemble-yield template schema version in %s", source.c_str());
       return;
     }
-    if (!correlationStep || TString(correlationStep->GetTitle()) != "kCFStepReconstructed") {
+    if (correlationStep == nullptr || TString(correlationStep->GetTitle()) != "kCFStepReconstructed") {
       LOGF(fatal, "Ensemble-yield templates must be derived at kCFStepReconstructed");
       return;
     }
 
     YieldTemplate value;
     int fitStatus = -1;
-    double parameters[10] = {};
+    std::array<double, 10> parameters{};
     tree->SetBranchAddress("trigBin", &value.trigBin);
     tree->SetBranchAddress("assocBin", &value.assocBin);
     tree->SetBranchAddress("multBin", &value.multBin);
@@ -597,7 +599,7 @@ struct TwoParticleCorrelationsMpi {
     tree->SetBranchAddress("trigPtHigh", &value.trigPtHigh);
     tree->SetBranchAddress("assocPtLow", &value.assocPtLow);
     tree->SetBranchAddress("assocPtHigh", &value.assocPtHigh);
-    tree->SetBranchAddress("parameters", parameters);
+    tree->SetBranchAddress("parameters", parameters.data());
     tree->SetBranchAddress("fitStatus", &fitStatus);
 
     yieldTemplates.clear();
@@ -608,7 +610,7 @@ struct TwoParticleCorrelationsMpi {
         LOGF(warning, "Skipping failed yield template (%d, %d, %d), fit status %d", value.trigBin, value.assocBin, value.multBin, fitStatus);
         continue;
       }
-      std::copy_n(parameters, value.parameters.size(), value.parameters.begin());
+      value.parameters = parameters;
       if (value.parameters[2] <= 0.0 || value.parameters[5] <= 0.0 || value.parameters[8] <= 0.0) {
         LOGF(warning, "Skipping yield template (%d, %d, %d) with non-positive Gaussian width", value.trigBin, value.assocBin, value.multBin);
         continue;
@@ -616,10 +618,12 @@ struct TwoParticleCorrelationsMpi {
       const auto intervalMatchesAxis = [](const AxisSpec& axis, double low, double high) {
         constexpr double Tolerance = 1e-6;
         const auto& edges = axis.binEdges;
-        return std::any_of(edges.begin(), edges.end() - 1, [&](const auto& edge) {
-          const auto index = static_cast<std::size_t>(&edge - edges.data());
-          return std::abs(edge - low) < Tolerance && std::abs(edges[index + 1] - high) < Tolerance;
-        });
+        for (std::size_t index = 0; index + 1 < edges.size(); ++index) {
+          if (std::abs(edges[index] - low) < Tolerance && std::abs(edges[index + 1] - high) < Tolerance) {
+            return true;
+          }
+        }
+        return false;
       };
       if (!intervalMatchesAxis(AxisSpec(axisMultiplicity), value.nchLow, value.nchHigh) ||
           !intervalMatchesAxis(AxisSpec(axisPtTrigger), value.trigPtLow, value.trigPtHigh) ||
@@ -651,7 +655,7 @@ struct TwoParticleCorrelationsMpi {
       return;
     }
 
-    TList* calibration = dynamic_cast<TList*>(input->Get("ccdb_object"));
+    auto* calibration = dynamic_cast<TList*>(input->Get("ccdb_object"));
     auto findObject = [&](const char* name) -> TObject* {
       if (auto* object = input->Get(name)) {
         return object;
@@ -724,8 +728,8 @@ struct TwoParticleCorrelationsMpi {
   void addPairProbabilities(EventSeedEstimate& estimate, const YieldTemplate& yieldTemplate, double deltaPhi) const
   {
     const auto& parameters = yieldTemplate.parameters;
-    const double near = std::max(0.0, evaluateGaussian(deltaPhi, &parameters[0]) + evaluateGaussian(deltaPhi, &parameters[3]));
-    const double away = std::max(0.0, evaluateGaussian(deltaPhi, &parameters[6]));
+    const double near = std::max(0.0, evaluateGaussian(deltaPhi, parameters.data()) + evaluateGaussian(deltaPhi, parameters.data() + 3));
+    const double away = std::max(0.0, evaluateGaussian(deltaPhi, parameters.data() + 6));
     const double baseline = std::max(0.0, parameters[9]);
     const double total = baseline + near + away;
     if (total <= 0.0) {
