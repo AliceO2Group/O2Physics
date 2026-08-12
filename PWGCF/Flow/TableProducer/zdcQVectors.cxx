@@ -54,7 +54,7 @@
 #include <string_view>
 #include <vector>
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
@@ -68,7 +68,7 @@ using namespace o2::constants::math;
 
 namespace o2::analysis::qvectortask
 {
-int counter = 0;
+
 
 // Define histogrm names here to use same names for creating and later uploading and retrieving data from ccdb
 // Energy calibration:
@@ -415,7 +415,7 @@ struct ZdcQVectors {
   }
 
   template <typename TCollision, typename TZdc>
-  inline void fillCutAnalysis(TCollision collision, TZdc zdcBC, int evSel)
+  inline void fillCutAnalysis(const TCollision& collision, const TZdc& zdcBC, int evSel)
   {
     registry.fill(HIST("hEventCount"), evSel);
     // FT0C is the default centrality estimator
@@ -466,10 +466,10 @@ struct ZdcQVectors {
   }
 
   template <typename TCollision, typename TBunchCrossing>
-  uint16_t eventSelected(TCollision collision, TBunchCrossing bunchCrossing, bool& isEventSelected, const int& multTrk)
+  uint16_t eventSelected(const TCollision& collision, const TBunchCrossing& bunchCrossing, bool& isEventSelected, const int& multTrk)
   {
     uint16_t selectionBits = 0;
-    bool selected;
+    bool selected = false;
 
     // Define selection criteria
     // If event is selected (passed the cut), set the corresponding bit in the selectionBits variable
@@ -578,16 +578,21 @@ struct ZdcQVectors {
     auto multNTracksPV = collision.multNTracksPV();
     selected = true;
 
-    if (vtxz > cfgVtxZ || vtxz < -cfgVtxZ)
+    if (vtxz > cfgVtxZ || vtxz < -cfgVtxZ){
       selected = false;
-    if (multNTracksPV < fMultPVCutLow->Eval(collision.centFT0C()))
+    }
+    if (multNTracksPV < fMultPVCutLow->Eval(collision.centFT0C())){
       selected = false;
-    if (multNTracksPV > fMultPVCutHigh->Eval(collision.centFT0C()))
+    }
+    if (multNTracksPV > fMultPVCutHigh->Eval(collision.centFT0C())){
       selected = false;
-    if (multTrk < fMultCutLow->Eval(collision.centFT0C()))
+    }
+    if (multTrk < fMultCutLow->Eval(collision.centFT0C())){
       selected = false;
-    if (multTrk > fMultCutHigh->Eval(collision.centFT0C()))
+    }
+    if (multTrk > fMultCutHigh->Eval(collision.centFT0C())){
       selected = false;
+    }
 
     if (selected) {
       selectionBits |= static_cast<uint16_t>(0x1u << evSel_MultCut);
@@ -606,9 +611,10 @@ struct ZdcQVectors {
   {
     // loop for filling multiple histograms with different naming patterns
     //  Always fill the uncentered "raw" Q-vector histos!
-    if (cfgFillNothing)
+    if (cfgFillNothing){
       return;
-    static constexpr std::string_view Time[] = {"before", "after"};
+    }
+    static constexpr std::array<std::string_view, 2> Time = {"before", "after"}; //todo move to struct like in flowSP
 
     registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hZNA_Qx_vs_Qy"), qxa, qya);
     registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hZNC_Qx_vs_Qy"), qxc, qyc);
@@ -678,7 +684,7 @@ struct ZdcQVectors {
   }
 
   template <CalibModes cm>
-  void loadCalibrations(std::string ccdb_dir, uint64_t timestamp)
+  void loadCalibrations(const std::string &ccdb_dir, uint64_t timestamp)
   {
     // iteration = 0 (Energy calibration) -> step 0 only
     // iteration 1,2,3,4,5 = recentering -> 5 steps per iteration (1x 4D + 4x 1D)
@@ -687,7 +693,7 @@ struct ZdcQVectors {
       return;
     }
 
-    if (ccdb_dir.empty() == false) {
+    if (!ccdb_dir.empty()) {
       cal.calibList[cm] = ccdb->getForTimeStamp<TList>(ccdb_dir, timestamp);
       cal.calibfilesLoaded[cm] = true;
       LOGF(info, "Loaded calibration histos from %s", ccdb_dir.c_str());
@@ -706,16 +712,16 @@ struct ZdcQVectors {
 
     if (cm == kEnergyCal || cm == kMeanv) {
       TList* list = cal.calibList[cm];
-      hist = reinterpret_cast<T*>(list->FindObject(Form("%s", objName)));
+      hist = dynamic_cast<T*>(list->FindObject(Form("%s", objName)));
     } else if (cm == kTimestamp) {
-      auto list = reinterpret_cast<TList*>(cal.calibList[cm]->FindObject(Form("it%i_step%i", iteration, step)));
-      hist = reinterpret_cast<T*>(list->FindObject(Form("%s", objName)));
+      auto list = dynamic_cast<TList*>(cal.calibList[cm]->FindObject(Form("it%i_step%i", iteration, step)));
+      hist = dynamic_cast<T*>(list->FindObject(Form("%s", objName)));
     } else if (cm == kRec) {
-      auto list = reinterpret_cast<TList*>(cal.calibList[cm]->FindObject(Form("it%i_step%i", iteration, step)));
+      auto list = dynamic_cast<TList*>(cal.calibList[cm]->FindObject(Form("it%i_step%i", iteration, step)));
       if (!list) {
         LOGF(fatal, "No calibration list for iteration %i and step %i", iteration, step);
       }
-      hist = reinterpret_cast<T*>(list->FindObject(Form("%s", objName)));
+      hist = dynamic_cast<T*>(list->FindObject(Form("%s", objName)));
       if (!hist) {
         LOGF(fatal, "No calibration histo for iteration %i and step %i -> %s", iteration, step, objName);
       }
@@ -728,13 +734,13 @@ struct ZdcQVectors {
 
     if (hist->InheritsFrom("TProfile2D")) {
       // needed for energy calibration!
-      auto h = reinterpret_cast<TProfile2D*>(hist);
+      auto h = dynamic_cast<TProfile2D*>(hist);
       TString name = h->GetName();
       int binrunnumber = h->GetXaxis()->FindBin(TString::Format("%d", cal.runnumber));
       int bin = h->GetYaxis()->FindBin(cal.centrality);
       calibConstant = h->GetBinContent(binrunnumber, bin);
     } else if (hist->InheritsFrom("TProfile")) {
-      auto h = reinterpret_cast<TProfile*>(hist);
+      auto h = dynamic_cast<TProfile*>(hist);
       TString name = h->GetName();
       int bin{};
       if (name.Contains("mean_vx")) {
@@ -758,7 +764,7 @@ struct ZdcQVectors {
       calibConstant = h->GetBinContent(bin);
     } else if (hist->InheritsFrom("THnSparse")) {
       std::vector<int> sparsePars;
-      auto h = reinterpret_cast<THnSparseD*>(hist);
+      auto h = dynamic_cast<THnSparseD*>(hist);
       sparsePars.push_back(h->GetAxis(0)->FindBin(cal.centrality));
       sparsePars.push_back(h->GetAxis(1)->FindBin(cal.v[0]));
       sparsePars.push_back(h->GetAxis(2)->FindBin(cal.v[1]));
@@ -857,9 +863,9 @@ struct ZdcQVectors {
     int nTowersPerSide = 4;
 
     // for energy calibration
-    std::array<double, 8> eZN;      // uncalibrated energy for the 2x4 towers (a1, a2, a3, a4, c1, c2, c3, c4)
-    std::array<double, 10> meanEZN; // mean energies from calibration histos (common A, t1-4 A,common C, t1-4C)
-    std::array<double, 8> e;        // calibrated energies (a1, a2, a3, a4, c1, c2, c3, c4))
+    std::array<double, 8> eZN{};      // uncalibrated energy for the 2x4 towers (a1, a2, a3, a4, c1, c2, c3, c4)
+    std::array<double, 10> meanEZN{}; // mean energies from calibration histos (common A, t1-4 A,common C, t1-4C)
+    std::array<double, 8> e{};        // calibrated energies (a1, a2, a3, a4, c1, c2, c3, c4))
 
     for (int tower = 0; tower < nTowers; tower++) {
       eZN[tower] = (tower < nTowersPerSide) ? zdcCol.energySectorZNA()[tower] : zdcCol.energySectorZNC()[tower % nTowersPerSide];
@@ -1066,7 +1072,8 @@ struct ZdcQVectors {
       spTableZDC(runnumber, cents, cal.v, foundBC.timestamp(), q[0], q[1], q[2], q[3], cal.isSelected, eventSelectionFlags);
       cal.lastRunNumber = runnumber;
       return;
-    } else {
+    }
+
       if (cfgFillHistRegistry && isEventSelected)
         fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], cal.v, cent, rsTimestamp);
 
@@ -1149,11 +1156,11 @@ struct ZdcQVectors {
       double deltaPsiZDCA = 0;
       double deltaPsiZDCC = 0;
 
-      if (!cfgCCDBdir_Shift.value.empty() && cal.isShiftProfileFound == false) {
+      if (!cfgCCDBdir_Shift.value.empty() && !cal.isShiftProfileFound) {
         LOGF(info, "Getting shift profile from CCDB for runnumber: %d", runnumber);
         TList* hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir_Shift.value, foundBC.timestamp());
-        cal.shiftprofileC = reinterpret_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCC"));
-        cal.shiftprofileA = reinterpret_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCA"));
+        cal.shiftprofileC = dynamic_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCC"));
+        cal.shiftprofileA = dynamic_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCA"));
         if (!cal.shiftprofileC || !cal.shiftprofileA) {
           LOGF(error, "Shift profile not found in CCDB for runnumber: %d", runnumber);
           cal.isShiftProfileFound = false;
@@ -1236,7 +1243,7 @@ struct ZdcQVectors {
 
       cal.lastRunNumber = runnumber;
       return;
-    }
+
     LOGF(warning, "We return without saving table... -> THis is a problem");
     cal.lastRunNumber = runnumber;
   } // end of process
