@@ -1189,7 +1189,7 @@ struct SpectraTOFLight {
       }
     }
   }
-  PROCESS_SWITCH(SpectraTOF, processMC, "Process MC", false);
+  PROCESS_SWITCH(SpectraTOFLight, processMC, "Process MC", false);
 
 }; // end of spectra task
 
