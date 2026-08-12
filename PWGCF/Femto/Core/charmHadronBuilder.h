@@ -542,21 +542,24 @@ class CharmHadronBuilder
     }
   }
 
-  /// Write one row for the given mass hypothesis, if PWGHF accepted it.
-  /// A candidate passing both hypotheses is stored twice, once per hypothesis.
+  /// pass-through accepts every candidate once, under the pKPi prong mapping
+  template <bool isPKPi, typename T>
+  bool acceptsHypothesis(T const& candidate) const
+  {
+    if (mCharmHadronSelection.isPassThrough()) {
+      return isPKPi;
+    }
+    return isPKPi ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
+  }
+
+  /// a candidate passing both hypotheses is stored twice, once per hypothesis
   template <bool isPKPi, modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
   void fillLcHypothesis(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts,
                         T5& charmHadronProducts, T6 const& candidate, T7& trackBuilder,
                         T8 const& prong0, T8 const& prong1, T8 const& prong2)
   {
-    if constexpr (isPKPi) {
-      if (!candidate.isSelLcToPKPi()) {
-        return;
-      }
-    } else {
-      if (!candidate.isSelLcToPiKP()) {
-        return;
-      }
+    if (!this->acceptsHypothesis<isPKPi>(candidate)) {
+      return;
     }
 
     // remap the prongs onto the accepted hypothesis so that the proton is always first
@@ -582,14 +585,8 @@ class CharmHadronBuilder
                           T10 const& mcParticles, T11& mcBuilder, T12& mcProducts,
                           T13 const& prong0, T13 const& prong1, T13 const& prong2)
   {
-    if constexpr (isPKPi) {
-      if (!candidate.isSelLcToPKPi()) {
-        return;
-      }
-    } else {
-      if (!candidate.isSelLcToPiKP()) {
-        return;
-      }
+    if (!this->acceptsHypothesis<isPKPi>(candidate)) {
+      return;
     }
 
     // remap the prongs onto the accepted hypothesis so that the proton is always first

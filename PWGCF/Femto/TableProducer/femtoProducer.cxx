@@ -313,6 +313,10 @@ struct FemtoProducer {
       static_cast<int>(doprocessTracksV0sKinksRun3ppMc) +
       static_cast<int>(doprocessTracksD0sRun3ppMc) +
       static_cast<int>(doprocessTracksD0sRun3PbPbMc) +
+      static_cast<int>(doprocessTracksLcsRun3pp) +
+      static_cast<int>(doprocessTracksLcsRun3PbPb) +
+      static_cast<int>(doprocessTracksLcsRun3ppMc) +
+      static_cast<int>(doprocessTracksLcsRun3PbPbMc) +
       static_cast<int>(doprocessMcOnly);
 
     if (nProcesses != 1) {
