@@ -48,13 +48,12 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <memory>
 #include <numeric>
 #include <string>
 #include <string_view>
 #include <vector>
-
-#include <cstdlib>
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
@@ -68,7 +67,6 @@ using namespace o2::constants::math;
 
 namespace o2::analysis::qvectortask
 {
-
 
 // Define histogrm names here to use same names for creating and later uploading and retrieving data from ccdb
 // Energy calibration:
@@ -578,19 +576,19 @@ struct ZdcQVectors {
     auto multNTracksPV = collision.multNTracksPV();
     selected = true;
 
-    if (vtxz > cfgVtxZ || vtxz < -cfgVtxZ){
+    if (vtxz > cfgVtxZ || vtxz < -cfgVtxZ) {
       selected = false;
     }
-    if (multNTracksPV < fMultPVCutLow->Eval(collision.centFT0C())){
+    if (multNTracksPV < fMultPVCutLow->Eval(collision.centFT0C())) {
       selected = false;
     }
-    if (multNTracksPV > fMultPVCutHigh->Eval(collision.centFT0C())){
+    if (multNTracksPV > fMultPVCutHigh->Eval(collision.centFT0C())) {
       selected = false;
     }
-    if (multTrk < fMultCutLow->Eval(collision.centFT0C())){
+    if (multTrk < fMultCutLow->Eval(collision.centFT0C())) {
       selected = false;
     }
-    if (multTrk > fMultCutHigh->Eval(collision.centFT0C())){
+    if (multTrk > fMultCutHigh->Eval(collision.centFT0C())) {
       selected = false;
     }
 
@@ -611,10 +609,10 @@ struct ZdcQVectors {
   {
     // loop for filling multiple histograms with different naming patterns
     //  Always fill the uncentered "raw" Q-vector histos!
-    if (cfgFillNothing){
+    if (cfgFillNothing) {
       return;
     }
-    static constexpr std::array<std::string_view, 2> Time = {"before", "after"}; //todo move to struct like in flowSP
+    static constexpr std::array<std::string_view, 2> Time = {"before", "after"}; // todo move to struct like in flowSP
 
     registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hZNA_Qx_vs_Qy"), qxa, qya);
     registry.fill(HIST("recentering/") + HIST(Time[ft]) + HIST("/hZNC_Qx_vs_Qy"), qxc, qyc);
@@ -684,7 +682,7 @@ struct ZdcQVectors {
   }
 
   template <CalibModes cm>
-  void loadCalibrations(const std::string &ccdb_dir, uint64_t timestamp)
+  void loadCalibrations(const std::string& ccdb_dir, uint64_t timestamp)
   {
     // iteration = 0 (Energy calibration) -> step 0 only
     // iteration 1,2,3,4,5 = recentering -> 5 steps per iteration (1x 4D + 4x 1D)
