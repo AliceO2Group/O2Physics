@@ -2141,9 +2141,9 @@ struct forwardlambdakzeroanalysis {
 
       // get decay vertex coordinates
       Vec3D vtx = fitter.getPCACandidate();
-      pairInfo.X = vtx[0];
-      pairInfo.Y = vtx[1];
-      pairInfo.Z = vtx[2];
+      pairInfo.X = vtx[0]-collision.posX();
+      pairInfo.Y = vtx[1]-collision.posY();
+      pairInfo.Z = vtx[2]-collision.posZ();
 
       // get daughter DCA to PV
       pairInfo.dcaPosToPVxy = std::sqrt(dcaPosToPVx * dcaPosToPVx + dcaPosToPVy * dcaPosToPVy);
@@ -2173,16 +2173,16 @@ struct forwardlambdakzeroanalysis {
       pairInfo.OpAngle = track1Momentum.Angle(track2Momentum);
 
       // Radius
-      pairInfo.Radius = std::sqrt(vtx[0] * vtx[0] + vtx[1] * vtx[1]);
+      pairInfo.Radius = std::sqrt(pairInfo.X * pairInfo.X + pairInfo.Y * pairInfo.Y);
 
       // Dist over tot mom.
       float px = pairInfo.positiveMomentum[0] + pairInfo.negativeMomentum[0];
       float py = pairInfo.positiveMomentum[1] + pairInfo.negativeMomentum[1];
       float pz = pairInfo.positiveMomentum[2] + pairInfo.negativeMomentum[2];
-      pairInfo.DistOverTotMom = std::sqrt(vtx[0] * vtx[0] + vtx[1] * vtx[1] + vtx[2] * vtx[2]) / std::sqrt(px * px + py * py + pz * pz);
+      pairInfo.DistOverTotMom = std::sqrt(pairInfo.X * pairInfo.X + pairInfo.Y * pairInfo.Y + pairInfo.Z * pairInfo.Z) / std::sqrt(px * px + py * py + pz * pz);
 
       // Z dist over pz
-      pairInfo.ZdistOverPz = vtx[2] / pz;
+      pairInfo.ZdistOverPz = pairInfo.Z / pz;
 
       // V0 Momenta
       pairInfo.pT = std::sqrt(px * px + py * py);
