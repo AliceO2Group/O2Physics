@@ -144,7 +144,9 @@ struct PiDeFemtoSystematics {
     Configurable<float> sharedTPCFractionMax{"sharedTPCFractionMax", 1.f, "Maximum deuteron shared TPC-cluster fraction"};
     Configurable<float> tpcInnerParamMin{"tpcInnerParamMin", 0.f, "Minimum deuteron TPC inner parameter"};
     Configurable<float> tofMomentumMin{"tofMomentumMin", 1.2f, "TPC inner parameter above which combined TPC+TOF PID is required"};
-    Configurable<float> nsigmaMax{"nsigmaMax", 2.5f, "Common deuteron TPC, ITS and combined PID threshold"};
+    Configurable<float> CombnsigmaMax{"CombnsigmaMax", 2.5f, "Maximum deuteron combined TPC+TOF n-sigma"};
+    Configurable<float> TPCnsigmaMax{"TPCnsigmaMax", 2.5f, "Maximum absolute deuteron TPC n-sigma"};
+    Configurable<float> ITSnsigmaMax{"ITSnsigmaMax", 2.5f, "Maximum absolute deuteron ITS n-sigma"};
     Configurable<bool> requireIndividualNsigma{"requireIndividualNsigma", false, "Also apply individual TPC and TOF cuts in the combined PID branch"};
     Configurable<float> dcaXYOffset{"dcaXYOffset", 0.004f, "Deuteron DCAxy cut offset"};
     Configurable<float> dcaXYPtCoefficient{"dcaXYPtCoefficient", 0.013f, "Deuteron DCAxy inverse-pT coefficient"};
@@ -358,7 +360,9 @@ struct PiDeFemtoSystematics {
       {"deuteronSharedTPCFractionMax", deuteronCuts.sharedTPCFractionMax.value},
       {"deuteronTPCInnerParamMin", deuteronCuts.tpcInnerParamMin.value},
       {"deuteronTOFMomentumMin", deuteronCuts.tofMomentumMin.value},
-      {"deuteronNsigmaMax", deuteronCuts.nsigmaMax.value},
+      {"deuteronCombNsigmaMax", deuteronCuts.CombnsigmaMax.value},
+      {"deuteronTPCNsigmaMax", deuteronCuts.TPCnsigmaMax.value},
+      {"deuteronITSNsigmaMax", deuteronCuts.ITSnsigmaMax.value},
       {"requireIndividualNsigma", deuteronCuts.requireIndividualNsigma.value},
       {"deuteronDCAxyOffset", deuteronCuts.dcaXYOffset.value},
       {"deuteronDCAxyPtCoefficient", deuteronCuts.dcaXYPtCoefficient.value},
@@ -536,22 +540,22 @@ struct PiDeFemtoSystematics {
     if (track.hasTOF() &&
         tpcInnerParam > deuteronCuts.tofMomentumMin.value) {
       const float tofNsigma = track.tofNSigmaDe();
-      if (std::hypot(tpcNsigma, tofNsigma) > deuteronCuts.nsigmaMax.value) {
+      if (std::hypot(tpcNsigma, tofNsigma) > deuteronCuts.CombnsigmaMax.value) {
         return false;
       }
       return !deuteronCuts.requireIndividualNsigma.value ||
-             (std::abs(tpcNsigma) <= deuteronCuts.nsigmaMax.value &&
-              std::abs(tofNsigma) <= deuteronCuts.nsigmaMax.value);
+             (std::abs(tpcNsigma) <= deuteronCuts.CombnsigmaMax.value &&
+              std::abs(tofNsigma) <= deuteronCuts.CombnsigmaMax.value);
     }
     if (tpcInnerParam <= deuteronCuts.tofMomentumMin.value) {
-      if (std::abs(tpcNsigma) > deuteronCuts.nsigmaMax.value) {
+      if (std::abs(tpcNsigma) > deuteronCuts.TPCnsigmaMax.value) {
         return false;
       }
       o2::aod::ITSResponse itsResponse;
       const float itsNsigma =
         itsResponse.nSigmaITS<o2::track::PID::Deuteron>(
           track.itsClusterSizes(), track.p(), track.eta());
-      return std::abs(itsNsigma) <= deuteronCuts.nsigmaMax.value;
+      return std::abs(itsNsigma) <= deuteronCuts.ITSnsigmaMax.value;
     }
     return false;
   }
