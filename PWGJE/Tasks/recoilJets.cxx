@@ -195,7 +195,7 @@ struct RecoilJets {
       multNBins{"multNBins", 600, "Number of bins for scaled FT0M multiplicity"},
       zdcTimeNBins{"zdcTimeNBins", 240, "Number of bins for ZDC timing histograms"};
 
-    ConfigurableAxis multFT0CThresh{"multFT0CThresh", {VARIABLE_WIDTH, 0.0, 0.133333, 0.233333, 0.366667, 0.533333, 0.733333, 1.0, 1.33333, 1.76667, 2.36667, 3.63333, 20.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0%"};      
+    ConfigurableAxis multFT0CThresh{"multFT0CThresh", {VARIABLE_WIDTH, 0.0, 0.133333, 0.233333, 0.366667, 0.533333, 0.733333, 1.0, 1.33333, 1.76667, 2.36667, 3.63333, 20.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0%"};
     ConfigurableAxis multFT0CThreshPartLevel{"multFT0CThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.06, 0.14, 0.3, 0.46, 0.7, 1.0, 1.36, 1.82, 2.42, 3.64, 20.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0%"};
 
     ConfigurableAxis multFT0MThresh{"multFT0MThresh", {VARIABLE_WIDTH, 0.0, 0.133333, 0.266667, 0.366667, 0.533333, 0.766667, 1.0, 1.33333, 1.76667, 2.33333, 3.4, 20.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0%"};
@@ -278,7 +278,6 @@ struct RecoilJets {
     kEA80_100
   };
 
-
   // Configuration of an EA interval used for the TTRef rho shift
   struct EARhoShift {
     EAInterval interval;
@@ -287,15 +286,13 @@ struct RecoilJets {
   };
 
   // Hard-coded rho-shift values obtained from train 701159
-  const std::array<EARhoShift, 7> eaRhoShifts{{
-    {kMB,       "EA_MB",          0.283998f},
-    {kEA0_20,   "EA_Perc_0_20",   0.199249f},
-    {kEA0_10,   "EA_Perc_0_10",   0.186661f},
-    {kEA20_40,  "EA_Perc_20_40",  0.137945f},
-    {kEA60_80,  "EA_Perc_60_80",  0.0962535f},
-    {kEA50_100, "EA_Perc_50_100", 0.106919f},
-    {kEA80_100, "EA_Perc_80_100", 0.0871301f}
-  }};
+  const std::array<EARhoShift, 7> eaRhoShifts{{{kMB, "EA_MB", 0.283998f},
+                                               {kEA0_20, "EA_Perc_0_20", 0.199249f},
+                                               {kEA0_10, "EA_Perc_0_10", 0.186661f},
+                                               {kEA20_40, "EA_Perc_20_40", 0.137945f},
+                                               {kEA60_80, "EA_Perc_60_80", 0.0962535f},
+                                               {kEA50_100, "EA_Perc_50_100", 0.106919f},
+                                               {kEA80_100, "EA_Perc_80_100", 0.0871301f}}};
 
   void init(InitContext const&)
   {
@@ -555,7 +552,7 @@ struct RecoilJets {
 
         spectra.add(Form("h%s_FT0MStar", centAxis.label),
                     Form("Correlation of %s vs. FT0M^{*}", centAxis.label),
-                    kTH2F, {{centAxis.axis, centAxis.axisName}, scaledFT0M}, hist.sumw2);   
+                    kTH2F, {{centAxis.axis, centAxis.axisName}, scaledFT0M}, hist.sumw2);
       }
 
       // Register TTRef recoil spectra with rho-shift correction.
@@ -1573,7 +1570,7 @@ struct RecoilJets {
                   break;
               }
             }
-            
+
             // EA dependence
             spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_Corr_TTRef"), scaledFT0C, jetPtCorr, weight);
             spectra.fill(HIST("hScaledFT0M_Recoil_JetPt_Corr_TTRef"), scaledFT0M, jetPtCorr, weight);
@@ -3700,27 +3697,27 @@ struct RecoilJets {
 
       case kEA0_20:
         return scaledFT0 >= ft0Edges[kEA20] &&
-                scaledFT0 <= ft0Edges[kEA0];
+               scaledFT0 <= ft0Edges[kEA0];
 
       case kEA0_10:
         return scaledFT0 >= ft0Edges[kEA10] &&
-                scaledFT0 <= ft0Edges[kEA0];
+               scaledFT0 <= ft0Edges[kEA0];
 
       case kEA20_40:
         return scaledFT0 >= ft0Edges[kEA40] &&
-                scaledFT0 <= ft0Edges[kEA20];
+               scaledFT0 <= ft0Edges[kEA20];
 
       case kEA60_80:
         return scaledFT0 >= ft0Edges[kEA80] &&
-                scaledFT0 <= ft0Edges[kEA60];
+               scaledFT0 <= ft0Edges[kEA60];
 
       case kEA50_100:
         return scaledFT0 >= ft0Edges[kEA100] &&
-                scaledFT0 <= ft0Edges[kEA50];
+               scaledFT0 <= ft0Edges[kEA50];
 
       case kEA80_100:
         return scaledFT0 >= ft0Edges[kEA100] &&
-                scaledFT0 <= ft0Edges[kEA80];
+               scaledFT0 <= ft0Edges[kEA80];
     }
     return false;
   }
