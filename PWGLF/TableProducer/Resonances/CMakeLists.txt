@@ -64,3 +64,8 @@ o2physics_add_dpl_workflow(resonance-tree-creator
     SOURCES resonanceTreeCreator.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(ka-daughter-producer
+    SOURCES kaDaughterProducer.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)

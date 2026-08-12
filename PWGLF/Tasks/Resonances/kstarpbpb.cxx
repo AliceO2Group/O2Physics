@@ -15,6 +15,7 @@
 ///
 
 #include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGLF/DataModel/LFKaonDaughterTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
@@ -422,6 +423,7 @@ struct Kstarpbpb {
   double v2Rot = 0.;
 
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, aod::epcalibrationtable::PsiFT0C>;
+  using BinningTypeVertexContributorDerived = ColumnBinningPolicy<aod::kadaughterevent::Posz, aod::kadaughterevent::Cent, aod::kadaughterevent::PsiFT0C>;
   ROOT::Math::PxPyPzMVector kstarMother, fourVecDauCM, daughter1, daughter2, kaonrot, kstarrot, kaonPlus, pionMinus;
   ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY, eventplaneVec, eventplaneVecNorm;
   ROOT::Math::PxPyPzMVector daughter2rot, fourVecDauCMrot;
@@ -430,77 +432,21 @@ struct Kstarpbpb {
   int currentRunNumber = -999;
   int lastRunNumber = -999;
   TH2D* hweight = nullptr;
-  void processSE(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
+
+  void processSE(aod::KaDaughterEvents::iterator const& collision, aod::KaDaughterTracks const& tracks)
   {
-    histos.fill(HIST("hEvtSelInfo"), 0.5);
-    if (rctCut.requireRCTFlagChecker && !rctCut.rctChecker(collision)) {
-      return;
-    }
-    histos.fill(HIST("hEvtSelInfo"), 1.5);
-    if (!collision.sel8()) {
-      return;
-    }
-    if (!collision.triggereventep()) {
-      return;
-    }
-    if (additionalEvSel1 &&
-        !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
-      return;
-    }
-    if (additionalEvSel2 &&
-        !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
-      return;
-    }
-    if (additionalEvSel3 &&
-        !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
-      return;
-    }
-    if (additionalEvSel4 &&
-        !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-      return;
-    }
-    histos.fill(HIST("hEvtSelInfo"), 2.5);
-    auto centrality = collision.centFT0C();
-    auto multTPC = collision.multNTracksPV();
-    int occupancy = collision.trackOccupancyInTimeRange();
+    auto centrality = collision.cent();
     auto psiFT0C = collision.psiFT0C();
-    auto psiFT0A = collision.psiFT0A();
-    auto psiTPC = collision.psiTPC();
     auto qFT0C = collision.qFT0C();
-    auto qFT0A = collision.qFT0A();
-    auto qTPC = collision.qTPC();
-    if (fillOccupancy && occupancy > cfgOccupancyCut) {
-      return;
-    }
-    histos.fill(HIST("hEvtSelInfo"), 3.5);
-    if (additionalQAplots1) {
-      histos.fill(HIST("hFTOCvsTPCSelected"), centrality, multTPC);
-      histos.fill(HIST("hPsiFT0C"), centrality, psiFT0C);
-      histos.fill(HIST("hPsiFT0A"), centrality, psiFT0A);
-      histos.fill(HIST("hPsiTPC"), centrality, psiTPC);
-      histos.fill(HIST("ResFT0CTPC"), centrality, std::cos(2.0 * (psiFT0C - psiTPC)));
-      histos.fill(HIST("ResFT0CFT0A"), centrality, std::cos(2.0 * (psiFT0C - psiFT0A)));
-      histos.fill(HIST("ResFT0ATPC"), centrality, std::cos(2.0 * (psiTPC - psiFT0A)));
-      histos.fill(HIST("ResFT0CTPCSP"), centrality, qFT0C * qTPC * std::cos(2.0 * (psiFT0C - psiTPC)));
-      histos.fill(HIST("ResFT0CFT0ASP"), centrality, qFT0C * qFT0A * std::cos(2.0 * (psiFT0C - psiFT0A)));
-      histos.fill(HIST("ResFT0ATPCSP"), centrality, qTPC * qFT0A * std::cos(2.0 * (psiTPC - psiFT0A)));
-      histos.fill(HIST("hCentrality"), centrality);
-      histos.fill(HIST("hOccupancy"), occupancy);
-      histos.fill(HIST("hVtxZ"), collision.posZ());
-    }
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
+
+    currentRunNumber = collision.runNumber();
     if (useWeight && (currentRunNumber != lastRunNumber)) {
-      hweight = ccdb->getForTimeStamp<TH2D>(confWeightPath.value, bc.timestamp());
+      hweight = ccdb->getForTimeStamp<TH2D>(confWeightPath.value, collision.timestamp());
     }
     lastRunNumber = currentRunNumber;
     float weight1 = 1.0;
     float weight2 = 1.0;
     for (const auto& track1 : tracks) {
-      if (!selectionTrack(track1)) {
-        continue;
-      }
-
       auto track1ID = track1.globalIndex();
       if (!isTOFOnly && !strategySelectionPID(track1, 0, strategyPID)) {
         continue;
@@ -518,10 +464,6 @@ struct Kstarpbpb {
         }
       }
       for (const auto& track2 : tracks) {
-        if (!selectionTrack(track2)) {
-          continue;
-        }
-
         auto track2ID = track2.globalIndex();
         if (!isTOFOnly && !strategySelectionPID(track2, 1, strategyPID)) {
           continue;
@@ -572,11 +514,6 @@ struct Kstarpbpb {
         static constexpr float MinTotalWeight = 5e-7f;
         if (totalweight <= MinTotalWeight) {
           totalweight = 1.0;
-        }
-        if (additionalQAplots1) {
-          histos.fill(HIST("ResTrackSPFT0CTPC"), centrality, occupancy, qFT0C * qTPC * std::cos(2.0 * (psiFT0C - psiTPC)));
-          histos.fill(HIST("ResTrackSPFT0CFT0A"), centrality, occupancy, qFT0C * qFT0A * std::cos(2.0 * (psiFT0C - psiFT0A)));
-          histos.fill(HIST("ResTrackSPFT0ATPC"), centrality, occupancy, qTPC * qFT0A * std::cos(2.0 * (psiTPC - psiFT0A)));
         }
         if (!fillSA) {
 
@@ -673,53 +610,17 @@ struct Kstarpbpb {
   }
   PROCESS_SWITCH(Kstarpbpb, processSE, "Process Same event latest", true);
 
-  void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
+  void processMixedEvent(aod::KaDaughterEvents const& collisions, aod::KaDaughterTracks const& tracks)
   {
 
     auto tracksTuple = std::make_tuple(tracks);
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
-    SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
+    BinningTypeVertexContributorDerived binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
+    SameKindPair<aod::KaDaughterEvents, aod::KaDaughterTracks, BinningTypeVertexContributorDerived> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
-      if (rctCut.requireRCTFlagChecker && !rctCut.rctChecker(collision1)) {
-        continue;
-      }
-      if (rctCut.requireRCTFlagChecker && !rctCut.rctChecker(collision2)) {
-        continue;
-      }
-
-      if (!collision1.sel8() ||
-          !collision2.sel8() ||
-
-          !collision1.triggereventep() ||
-          !collision2.triggereventep() ||
-
-          (additionalEvSel1 &&
-           (!collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) ||
-            !collision2.selection_bit(aod::evsel::kNoTimeFrameBorder))) ||
-
-          (additionalEvSel2 &&
-           (!collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) ||
-            !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder))) ||
-
-          (additionalEvSel3 &&
-           (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) ||
-            !collision2.selection_bit(aod::evsel::kNoSameBunchPileup))) ||
-
-          (additionalEvSel4 &&
-           (!collision1.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) ||
-            !collision2.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)))) {
-        continue;
-      }
       if (collision1.bcId() == collision2.bcId()) {
         continue;
       }
-      int occupancy1 = collision1.trackOccupancyInTimeRange();
-      int occupancy2 = collision2.trackOccupancyInTimeRange();
-      if (fillOccupancy && occupancy1 >= cfgOccupancyCut && occupancy2 >= cfgOccupancyCut) // occupancy info is available for this collision (*)
-      {
-        continue;
-      }
-      auto centrality = collision1.centFT0C();
+      auto centrality = collision1.cent();
       auto psiFT0C1 = collision1.psiFT0C();
       auto qFT0C1 = collision1.qFT0C();
       auto psiFT0C2 = collision2.psiFT0C();
@@ -727,9 +628,6 @@ struct Kstarpbpb {
 
       for (const auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
-        if (!selectionTrack(track1) || !selectionTrack(track2)) {
-          continue;
-        }
         if (!isTOFOnly && !strategySelectionPID(track1, 0, strategyPID)) {
           continue;
         }
@@ -919,14 +817,12 @@ struct Kstarpbpb {
                 continue;
               }
               oldindex = mothertrack1.globalIndex();
-              if (track1.sign() > 0 && track2.sign() < 0) {
-                kaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
-                pionMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
-              }
-              if (track1.sign() < 0 && track2.sign() > 0) {
-                pionMinus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
-                kaonPlus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
-              }
+              // track1 is guaranteed to be the kaon and track2 the pion by the PDG check above
+              // (track1PDG == kKPlus, track2PDG == kPiPlus), independent of charge sign. Branching on
+              // sign here previously put the pion into kaonPlus for K-pi+ pairs, flipping the sign of
+              // cosThetaStar for anti-K*(892)^0 candidates in the boost(kaonPlus) below.
+              kaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+              pionMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
               kstarMother = kaonPlus + pionMinus;
               if (std::abs(kstarMother.Rapidity()) > confRapidity) {
                 continue;
@@ -960,7 +856,7 @@ struct Kstarpbpb {
         if (std::abs(mcParticle.y()) > confRapidity) {
           continue;
         }
-        if (pdgcheck && mcParticle.pdgCode() != o2::constants::physics::kK0Star892) {
+        if (pdgcheck && std::abs(mcParticle.pdgCode()) != o2::constants::physics::kK0Star892) {
           continue;
         }
         auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
@@ -975,7 +871,9 @@ struct Kstarpbpb {
           if (!kCurrentDaughter.isPhysicalPrimary()) {
             continue;
           }
-          if (kCurrentDaughter.pdgCode() == +PDG_t::kKPlus) {
+          // std::abs() so both K*(892)^0 -> K+pi- and anti-K*(892)^0 -> K-pi+ are picked up;
+          // kaonPlus/pionMinus always hold the kaon/pion by species, regardless of charge.
+          if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kKPlus) {
             if (genacceptancecut && kCurrentDaughter.pt() > cfgCutPT && std::abs(kCurrentDaughter.eta()) < cfgCutEta) {
               daughtp = true;
             }
@@ -983,7 +881,7 @@ struct Kstarpbpb {
               daughtp = true;
             }
             kaonPlus = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massKa);
-          } else if (kCurrentDaughter.pdgCode() == -PDG_t::kPiPlus) {
+          } else if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kPiPlus) {
             if (genacceptancecut && kCurrentDaughter.pt() > cfgCutPT && std::abs(kCurrentDaughter.eta()) < cfgCutEta) {
               daughtm = true;
             }
@@ -1159,7 +1057,7 @@ struct Kstarpbpb {
         if (std::abs(mcParticle.y()) > confRapidity) {
           continue;
         }
-        if (mcParticle.pdgCode() != o2::constants::physics::kK0Star892) {
+        if (std::abs(mcParticle.pdgCode()) != o2::constants::physics::kK0Star892) {
           continue;
         }
         auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
@@ -1174,12 +1072,13 @@ struct Kstarpbpb {
           if (!kCurrentDaughter.isPhysicalPrimary()) {
             continue;
           }
-          if (kCurrentDaughter.pdgCode() == +PDG_t::kKPlus) {
+          // std::abs() so both K*(892)^0 -> K+pi- and anti-K*(892)^0 -> K-pi+ are picked up.
+          if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kKPlus) {
             if (kCurrentDaughter.pt() > cfgCutPT && std::abs(kCurrentDaughter.eta()) < cfgCutEta) {
               daughtp = true;
             }
             kaonPlus = ROOT::Math::PxPyPzMVector(kCurrentDaughter.px(), kCurrentDaughter.py(), kCurrentDaughter.pz(), massKa);
-          } else if (kCurrentDaughter.pdgCode() == -PDG_t::kPiPlus) {
+          } else if (std::abs(kCurrentDaughter.pdgCode()) == PDG_t::kPiPlus) {
             if (kCurrentDaughter.pt() > cfgCutPT && std::abs(kCurrentDaughter.eta()) < cfgCutEta) {
               daughtm = true;
             }
