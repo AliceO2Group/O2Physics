@@ -38,6 +38,7 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/StepTHn.h>
 #include <Framework/runDataProcessing.h>
 
@@ -144,6 +145,7 @@ struct TwoParticleCorrelationsMpi {
   // MC filters
   Filter cfMCCollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
   Filter cfMCParticleFilter = (nabs(aod::cfmcparticle::eta) < cfgCutEta) && (aod::cfmcparticle::pt > cfgCutPt); // && (aod::cfmcparticle::sign != 0); //check the sign manually, some specials may be neutral
+  Filter mcParticleFilter = (nabs(aod::mcparticle::eta) < cfgCutEta) && (aod::mcparticle::pt > cfgCutPt);
 
   // Output definitions
   OutputObj<CorrelationContainer> same{"sameEvent"};
@@ -206,15 +208,21 @@ struct TwoParticleCorrelationsMpi {
   PairCuts mPairCuts;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  Service<o2::framework::O2DatabasePDG> pdg{};
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
+  using FilteredMcParticles = soa::Filtered<aod::McParticles>;
+  using McCollisionsWithHepMC = soa::Join<aod::McCollisions, aod::HepMCXSections>;
 
   using DerivedCollisions = soa::Filtered<aod::CFCollisions>;
   using DerivedTracks = soa::Filtered<aod::CFTracks>;
 
   void init(o2::framework::InitContext&)
   {
+    if (doprocessMCSameDerived && (doprocessSameDerived || doprocessSameDerivedMultSet)) {
+      LOGF(fatal, "processMCSameDerived is mutually exclusive with the reconstructed derived same-event processes because it also fills those outputs");
+    }
     registry.add("yields", "multiplicity/centrality vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     registry.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, o2::constants::math::TwoPI, "#varphi"}}});
     if (doprocessSameDerivedMultSet) {
@@ -260,6 +268,33 @@ struct TwoParticleCorrelationsMpi {
     estimatorStatus->GetXaxis()->SetBinLabel(2, "no template-covered triggers");
     estimatorStatus->GetXaxis()->SetBinLabel(3, "no template-covered pairs");
     estimatorStatus->GetXaxis()->SetBinLabel(4, "valid estimate");
+    registry.add("mcValidation/estimatedSeedsVsTrueNMPI", "template estimator response;N_{MPI}^{true};N_{seed}^{estimated}", {HistType::kTH2F, {{101, -0.5, 100.5}, {202, -0.5, 100.5}}});
+    registry.add("mcValidation/profileEstimatedSeedsVsTrueNMPI", "mean template estimate;N_{MPI}^{true};#LT N_{seed}^{estimated} #GT", {HistType::kTProfile, {{101, -0.5, 100.5}}});
+    registry.add("mcValidation/profileBiasVsTrueNMPI", "mean estimator bias;N_{MPI}^{true};#LT N_{seed}^{estimated} - N_{MPI}^{true} #GT", {HistType::kTProfile, {{101, -0.5, 100.5}}});
+    registry.add("mcValidation/relativeResidualVsTrueNMPI", "relative estimator residual;N_{MPI}^{true};(N_{seed}^{estimated} - N_{MPI}^{true}) / N_{MPI}^{true}", {HistType::kTH2F, {{101, -0.5, 100.5}, {240, -3., 3.}}});
+    registry.add("mcValidation/trueNMPIVsMultiplicity", "true MPI count versus reconstructed multiplicity;multiplicity;N_{MPI}^{true}", {HistType::kTH2F, {{100, 0., 100.}, {101, -0.5, 100.5}}});
+    registry.add("mcValidation/templateCoverageVsTrueNMPI", "template pair coverage versus true MPI count;N_{MPI}^{true};matched / candidate pairs", {HistType::kTH2F, {{101, -0.5, 100.5}, {102, -0.01, 1.01}}});
+    registry.add("mcValidation/status", "MC template-estimator validation status;status;events", {HistType::kTH1F, {{6, -0.5, 5.5}}});
+    auto* mcValidationStatus = registry.get<TH1>(HIST("mcValidation/status")).get();
+    mcValidationStatus->GetXaxis()->SetBinLabel(1, "no selected reconstructed collision");
+    mcValidationStatus->GetXaxis()->SetBinLabel(2, "invalid N MPI");
+    mcValidationStatus->GetXaxis()->SetBinLabel(3, "outside template multiplicity");
+    mcValidationStatus->GetXaxis()->SetBinLabel(4, "no template-covered triggers");
+    mcValidationStatus->GetXaxis()->SetBinLabel(5, "no template-covered pairs");
+    mcValidationStatus->GetXaxis()->SetBinLabel(6, "valid response");
+    registry.add("mcValidation/generated/estimatedSeedsVsTrueNMPI", "generated-level template estimator response;N_{MPI}^{true};N_{seed,gen}^{estimated}", {HistType::kTH2F, {{101, -0.5, 100.5}, {202, -0.5, 100.5}}});
+    registry.add("mcValidation/generated/profileEstimatedSeedsVsTrueNMPI", "mean generated-level template estimate;N_{MPI}^{true};#LT N_{seed,gen}^{estimated} #GT", {HistType::kTProfile, {{101, -0.5, 100.5}}});
+    registry.add("mcValidation/generated/profileBiasVsTrueNMPI", "mean generated-level estimator bias;N_{MPI}^{true};#LT N_{seed,gen}^{estimated} - N_{MPI}^{true} #GT", {HistType::kTProfile, {{101, -0.5, 100.5}}});
+    registry.add("mcValidation/generated/relativeResidualVsTrueNMPI", "generated-level relative estimator residual;N_{MPI}^{true};(N_{seed,gen}^{estimated} - N_{MPI}^{true}) / N_{MPI}^{true}", {HistType::kTH2F, {{101, -0.5, 100.5}, {240, -3., 3.}}});
+    registry.add("mcValidation/generated/trueNMPIVsMultiplicity", "true MPI count versus generated charged multiplicity;N_{ch}^{gen};N_{MPI}^{true}", {HistType::kTH2F, {{101, -0.5, 100.5}, {101, -0.5, 100.5}}});
+    registry.add("mcValidation/generated/templateCoverageVsTrueNMPI", "generated-level template pair coverage versus true MPI count;N_{MPI}^{true};matched / candidate pairs", {HistType::kTH2F, {{101, -0.5, 100.5}, {102, -0.01, 1.01}}});
+    registry.add("mcValidation/generated/status", "generated-level MC template-estimator validation status;status;events", {HistType::kTH1F, {{5, -0.5, 4.5}}});
+    auto* generatedValidationStatus = registry.get<TH1>(HIST("mcValidation/generated/status")).get();
+    generatedValidationStatus->GetXaxis()->SetBinLabel(1, "invalid N MPI");
+    generatedValidationStatus->GetXaxis()->SetBinLabel(2, "outside template multiplicity");
+    generatedValidationStatus->GetXaxis()->SetBinLabel(3, "no template-covered triggers");
+    generatedValidationStatus->GetXaxis()->SetBinLabel(4, "no template-covered pairs");
+    generatedValidationStatus->GetXaxis()->SetBinLabel(5, "valid response");
     registry.add("yvspt", "y vs pT", {HistType::kTH2F, {{100, -1, 1, "y"}, {100, 0, 20, "p_{T}"}}}); // y vs pT for all tracks (control histogram)
 
     const int maxMixBin = AxisSpec(axisMultiplicity).getNbins() * AxisSpec(axisVertex).getNbins();
@@ -471,6 +506,20 @@ struct TwoParticleCorrelationsMpi {
   using HasPartDaugh0Id = decltype(std::declval<T&>().cfParticleDaugh0Id());
   template <class T>
   using HasPartDaugh1Id = decltype(std::declval<T&>().cfParticleDaugh1Id());
+
+  template <typename TParticle>
+  int getParticleSign(const TParticle& particle)
+  {
+    if constexpr (std::experimental::is_detected<HasSign, TParticle>::value) {
+      return particle.sign();
+    } else if constexpr (std::experimental::is_detected<HasPDGCode, TParticle>::value) {
+      const auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+      if (pdgParticle) {
+        return (pdgParticle->Charge() > 0.0) - (pdgParticle->Charge() < 0.0);
+      }
+    }
+    return 0;
+  }
 
   template <class CollType>
   bool passOutlier(CollType const& collision)
@@ -718,6 +767,72 @@ struct TwoParticleCorrelationsMpi {
     registry.fill(HIST("profileEventNuncSeeds"), multiplicity, estimate.nuncSeeds());
   }
 
+  void fillMCValidation(double multiplicity, const EventSeedEstimate& estimate, int trueNMPI)
+  {
+    if (trueNMPI < 0) {
+      registry.fill(HIST("mcValidation/status"), 1.0);
+      return;
+    }
+    registry.fill(HIST("mcValidation/trueNMPIVsMultiplicity"), multiplicity, trueNMPI);
+    if (!hasMultiplicityTemplate(multiplicity)) {
+      registry.fill(HIST("mcValidation/status"), 2.0);
+      return;
+    }
+    if (!estimate.isValid()) {
+      registry.fill(HIST("mcValidation/status"), 3.0);
+      return;
+    }
+    const double coverage = estimate.nCandidatePairs > 0 ? static_cast<double>(estimate.nPairs) / estimate.nCandidatePairs : 0.0;
+    registry.fill(HIST("mcValidation/templateCoverageVsTrueNMPI"), trueNMPI, coverage);
+    if (estimate.nPairs == 0) {
+      registry.fill(HIST("mcValidation/status"), 4.0);
+      return;
+    }
+
+    const double estimatedSeeds = estimate.nuncSeeds();
+    const double bias = estimatedSeeds - trueNMPI;
+    registry.fill(HIST("mcValidation/status"), 5.0);
+    registry.fill(HIST("mcValidation/estimatedSeedsVsTrueNMPI"), trueNMPI, estimatedSeeds);
+    registry.fill(HIST("mcValidation/profileEstimatedSeedsVsTrueNMPI"), trueNMPI, estimatedSeeds);
+    registry.fill(HIST("mcValidation/profileBiasVsTrueNMPI"), trueNMPI, bias);
+    if (trueNMPI > 0) {
+      registry.fill(HIST("mcValidation/relativeResidualVsTrueNMPI"), trueNMPI, bias / trueNMPI);
+    }
+  }
+
+  void fillGeneratedMCValidation(double multiplicity, const EventSeedEstimate& estimate, int trueNMPI)
+  {
+    if (trueNMPI < 0) {
+      registry.fill(HIST("mcValidation/generated/status"), 0.0);
+      return;
+    }
+    registry.fill(HIST("mcValidation/generated/trueNMPIVsMultiplicity"), multiplicity, trueNMPI);
+    if (!hasMultiplicityTemplate(multiplicity)) {
+      registry.fill(HIST("mcValidation/generated/status"), 1.0);
+      return;
+    }
+    if (!estimate.isValid()) {
+      registry.fill(HIST("mcValidation/generated/status"), 2.0);
+      return;
+    }
+    const double coverage = estimate.nCandidatePairs > 0 ? static_cast<double>(estimate.nPairs) / estimate.nCandidatePairs : 0.0;
+    registry.fill(HIST("mcValidation/generated/templateCoverageVsTrueNMPI"), trueNMPI, coverage);
+    if (estimate.nPairs == 0) {
+      registry.fill(HIST("mcValidation/generated/status"), 3.0);
+      return;
+    }
+
+    const double estimatedSeeds = estimate.nuncSeeds();
+    const double bias = estimatedSeeds - trueNMPI;
+    registry.fill(HIST("mcValidation/generated/status"), 4.0);
+    registry.fill(HIST("mcValidation/generated/estimatedSeedsVsTrueNMPI"), trueNMPI, estimatedSeeds);
+    registry.fill(HIST("mcValidation/generated/profileEstimatedSeedsVsTrueNMPI"), trueNMPI, estimatedSeeds);
+    registry.fill(HIST("mcValidation/generated/profileBiasVsTrueNMPI"), trueNMPI, bias);
+    if (trueNMPI > 0) {
+      registry.fill(HIST("mcValidation/generated/relativeResidualVsTrueNMPI"), trueNMPI, bias / trueNMPI);
+    }
+  }
+
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks1, typename TTracks2>
   void fillCorrelations(TTarget target, TTracks1& tracks1, TTracks2& tracks2, float multiplicity, float posZ, int magField, float eventWeight, EventSeedEstimate* seedEstimate = nullptr)
   {
@@ -754,11 +869,12 @@ struct TwoParticleCorrelationsMpi {
             continue;
           }
         } else { // otherwise check the sign against the configuration
+          const int sign = getParticleSign(track1);
           if (cfgTriggerCharge != 0) {
-            if (cfgTriggerCharge * track1.sign() < 0) {
+            if (cfgTriggerCharge * sign < 0) {
               continue;
             }
-          } else if (track1.sign() == 0) {
+          } else if (sign == 0) {
             continue; // reject neutral MC particles
           }
         }
@@ -865,18 +981,20 @@ struct TwoParticleCorrelationsMpi {
           continue;
         }
 
-        if constexpr (std::experimental::is_detected<HasSign, typename TTracks2::iterator>::value) {
+        if constexpr (std::experimental::is_detected<HasSign, typename TTracks2::iterator>::value || std::experimental::is_detected<HasPDGCode, typename TTracks2::iterator>::value) {
+          const int associatedSign = getParticleSign(track2);
           if (cfgAssociatedCharge != 0) {
-            if (cfgAssociatedCharge * track2.sign() < 0) {
+            if (cfgAssociatedCharge * associatedSign < 0) {
               continue;
             }
-          } else if (track2.sign() == 0) { // mc particles come in neutrals, need to check explicitly
+          } else if (associatedSign == 0) { // mc particles come in neutrals, need to check explicitly
             continue;
           }
         }
 
-        if constexpr (std::experimental::is_detected<HasSign, typename TTracks1::iterator>::value && std::experimental::is_detected<HasSign, typename TTracks2::iterator>::value) {
-          if (cfgPairCharge != 0 && cfgPairCharge * track1.sign() * track2.sign() < 0) {
+        if constexpr ((std::experimental::is_detected<HasSign, typename TTracks1::iterator>::value || std::experimental::is_detected<HasPDGCode, typename TTracks1::iterator>::value) &&
+                      (std::experimental::is_detected<HasSign, typename TTracks2::iterator>::value || std::experimental::is_detected<HasPDGCode, typename TTracks2::iterator>::value)) {
+          if (cfgPairCharge != 0 && cfgPairCharge * getParticleSign(track1) * getParticleSign(track2) < 0) {
             continue;
           }
         }
@@ -975,8 +1093,8 @@ struct TwoParticleCorrelationsMpi {
     return multiplicity;
   }
 
-  // Version with explicit nested loop
-  void processSameAOD(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
+  template <typename TCollision, typename TTracks>
+  void processSameAODT(TCollision const& collision, TTracks const& tracks, const int* trueNMPI = nullptr)
   {
     // NOTE legacy function for O2 integration tests. Full version needs derived data
 
@@ -985,7 +1103,7 @@ struct TwoParticleCorrelationsMpi {
     }
 
     // TODO will go to CCDBConfigurable
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     loadEfficiency(bc.timestamp());
     loadCcdbYieldTemplates(bc.timestamp());
 
@@ -999,11 +1117,46 @@ struct TwoParticleCorrelationsMpi {
     EventSeedEstimate seedEstimate;
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, tracks, tracks, multiplicity, collision.posZ(), getMagneticField(bc.timestamp()), 1.0f, &seedEstimate);
     fillEventSeedEstimatorQA(multiplicity, seedEstimate);
+    if (trueNMPI) {
+      fillMCValidation(multiplicity, seedEstimate, *trueNMPI);
+    }
+  }
+
+  // Version with explicit nested loop
+  void processSameAOD(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
+  {
+    processSameAODT(collision, tracks);
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameAOD, "Process same event on AOD", true);
 
+  void processSameGenMC(McCollisionsWithHepMC::iterator const& mcCollision, FilteredMcParticles const& mcParticles, aod::BCsWithTimestamps const&)
+  {
+    if (std::abs(mcCollision.posZ()) >= cfgCutVertex) {
+      return;
+    }
+    const auto bc = mcCollision.bc_as<aod::BCsWithTimestamps>();
+    loadCcdbYieldTemplates(bc.timestamp());
+
+    int generatedMultiplicity = 0;
+    for (const auto& particle : mcParticles) {
+      if (!particle.isPhysicalPrimary()) {
+        continue;
+      }
+      const auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+      if (pdgParticle && pdgParticle->Charge() != 0.0) {
+        ++generatedMultiplicity;
+      }
+    }
+
+    fillContainerEvent(same, generatedMultiplicity, CorrelationContainer::kCFStepAll);
+    EventSeedEstimate seedEstimate;
+    fillCorrelations<CorrelationContainer::kCFStepAll>(same, mcParticles, mcParticles, generatedMultiplicity, mcCollision.posZ(), 0, 1.0f, &seedEstimate);
+    fillGeneratedMCValidation(generatedMultiplicity, seedEstimate, mcCollision.nMPI());
+  }
+  PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameGenMC, "Process generated MC events and validate the template estimator against HepMC N MPI", false);
+
   template <class CollType, class TTracks1, class TTracks2>
-  void processSameDerivedT(CollType const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2)
+  void processSameDerivedT(CollType const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2, const int* trueNMPI = nullptr)
   {
     using BinningTypeDerived = ColumnBinningPolicy<aod::collision::PosZ, aod::cfcollision::Multiplicity>;
     BinningTypeDerived configurableBinningDerived{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
@@ -1042,6 +1195,9 @@ struct TwoParticleCorrelationsMpi {
       fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, tracks1, tracks2, multiplicity, collision.posZ(), field, 1.0f, fillReco ? nullptr : &seedEstimate);
     }
     fillEventSeedEstimatorQA(multiplicity, seedEstimate);
+    if (trueNMPI) {
+      fillMCValidation(multiplicity, seedEstimate, *trueNMPI);
+    }
   }
 
   void processSameDerived(DerivedCollisions::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
@@ -1253,8 +1409,8 @@ struct TwoParticleCorrelationsMpi {
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMCEfficiency, "MC: Extract efficiencies", false);
 
-  template <class Particles1, class Particles2>
-  void processMCSameDerivedT(soa::Filtered<aod::CFMcCollisions>::iterator const& mcCollision, Particles1 const& mcParticles1, Particles2 const& mcParticles2, soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions)
+  template <class McCollision, class Particles1, class Particles2>
+  void processMCSameDerivedT(McCollision const& mcCollision, Particles1 const& mcParticles1, Particles2 const& mcParticles2, soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions)
   {
     if (cfgVerbosity > 0) {
       LOGF(info, "processMCSameDerivedT. MC collision: %d, particles1: %d, particles2: %d, collisions: %d", mcCollision.globalIndex(), mcParticles1.size(), mcParticles2.size(), collisions.size());
@@ -1270,7 +1426,7 @@ struct TwoParticleCorrelationsMpi {
       }
     }
 
-    if (!(doprocessSameDerived || doprocessSameDerivedMultSet)) {
+    if (!(doprocessMCSameDerived || doprocessSameDerived || doprocessSameDerivedMultSet)) {
       if constexpr (std::experimental::is_detected<HasDecay, typename Particles1::iterator>::value) {
         fillQA(mcCollision, multiplicity, mcCollision.posZ(), mcParticles1, mcParticles2);
       } else {
@@ -1294,16 +1450,22 @@ struct TwoParticleCorrelationsMpi {
     fillContainerEvent(same, multiplicity, CorrelationContainer::kCFStepTracked);
     fillCorrelations<CorrelationContainer::kCFStepTracked>(same, mcParticles1, mcParticles2, multiplicity, mcCollision.posZ(), 0, 1.0f);
 
-    // NOTE kCFStepReconstructed and kCFStepCorrected are filled in processSameDerived
-    //      This also means that if a MC collision had several reconstructed vertices (collisions), all of them are filled
+    // kCFStepReconstructed and kCFStepCorrected are filled below for every
+    // reconstructed collision associated with this MC collision.
   }
 
   // NOTE SmallGroups includes soa::Filtered always
-  void processMCSameDerived(soa::Filtered<aod::CFMcCollisions>::iterator const& mcCollision, soa::Filtered<aod::CFMcParticles> const& mcParticles, soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions) // TODO. For mixed no need to check the daughters since the events are different
+  Preslice<aod::CFTracks> derivedTracksPerCollision = aod::cftrack::cfCollisionId;
+  void processMCSameDerived(soa::Filtered<aod::CFMcCollisionsWithExtra>::iterator const& mcCollision, soa::Filtered<aod::CFMcParticles> const& mcParticles, soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions, soa::Filtered<aod::CFTracks> const& tracks) // TODO. For mixed no need to check the daughters since the events are different
   {
     processMCSameDerivedT(mcCollision, mcParticles, mcParticles, collisions);
+    const int trueNMPI = mcCollision.nMPI();
+    for (const auto& collision : collisions) {
+      auto collisionTracks = tracks.sliceBy(derivedTracksPerCollision, collision.globalIndex());
+      processSameDerivedT(collision, collisionTracks, collisionTracks, &trueNMPI);
+    }
   }
-  PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMCSameDerived, "Process MC same event on derived data", false);
+  PROCESS_SWITCH(TwoParticleCorrelationsMpi, processMCSameDerived, "Process generated and reconstructed MC same events on derived data and validate against HepMC N MPI", false);
 
   PresliceUnsorted<aod::CFCollisionsWithLabel> collisionPerMCCollision = aod::cfcollision::cfMcCollisionId;
   template <typename... ParticleTypes>
