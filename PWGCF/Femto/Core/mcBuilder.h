@@ -277,7 +277,7 @@ class McBuilder
       if (!RecoDecay::isMatchedMCGen(mcParticles, mcParticle, o2::constants::physics::Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
         return;
       }
-      if(std::abs(mcParticle.y()) > mCharmYGenMax) {
+      if (std::abs(mcParticle.y()) > mCharmYGenMax) {
         return;
       }
     }

@@ -1085,7 +1085,7 @@ class PairTrackLcBuilder
     mMixingDepth = confMixing.depth.value;
   }
 
-    template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
   void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*lcTable*/, T5& lcPartition, T6& cache)
   {
     auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);

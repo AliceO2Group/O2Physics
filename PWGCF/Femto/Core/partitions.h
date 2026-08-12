@@ -195,7 +195,6 @@
     (o2::aod::femtobase::stored::mass < (selection).massMax) &&                                                                                \
     ncheckbit(o2::aod::femtocharmhadrons::mask, (selection).mask)
 
-
 // macros for mc collisions (mc only)
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define MAKE_MC_COLLISION_FILTER(selection)                                                                             \

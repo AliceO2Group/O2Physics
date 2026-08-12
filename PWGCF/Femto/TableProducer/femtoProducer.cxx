@@ -967,7 +967,7 @@ struct FemtoProducer {
   }
   PROCESS_SWITCH(FemtoProducer, processTracksLcsRun3PbPb, "Provide tracks and Lcs in PbPb collisions", false);
 
-    void processTracksLcsRun3ppMc(rawinputs::Run3PpMcGenCollisions const& mcCols,
+  void processTracksLcsRun3ppMc(rawinputs::Run3PpMcGenCollisions const& mcCols,
                                 rawinputs::Run3PpMcRecoCollisions const& cols,
                                 o2::aod::BCsWithTimestamps const& bcs,
                                 rawinputs::Run3McRecoTracks const& tracks,

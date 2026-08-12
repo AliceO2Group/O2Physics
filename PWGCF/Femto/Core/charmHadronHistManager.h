@@ -256,17 +256,17 @@ auto makeD0McQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQ
 }
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define LC_HIST_QA_MAP(conf)                                                  \
-  {kMassLcToPKPi, {(conf).massLcToPKPi}},                                     \
-    {kMassLcToPiKP, {(conf).massLcToPiKP}},                                   \
-    {kMlBkg, {(conf).mlScore}},                                               \
-    {kMlPrompt, {(conf).mlScore}},                                            \
-    {kMlNonPrompt, {(conf).mlScore}},                                         \
-    {kCpa, {(conf).cpa}},                                                     \
-    {kCpaXY, {(conf).cpa}},                                                   \
-    {kDecayLength, {(conf).decayLength}},                                     \
-    {kDecayLengthXY, {(conf).decayLength}},                                   \
-    {kChi2Pca, {(conf).chi2Pca}},                                             \
+#define LC_HIST_QA_MAP(conf)                \
+  {kMassLcToPKPi, {(conf).massLcToPKPi}},   \
+    {kMassLcToPiKP, {(conf).massLcToPiKP}}, \
+    {kMlBkg, {(conf).mlScore}},             \
+    {kMlPrompt, {(conf).mlScore}},          \
+    {kMlNonPrompt, {(conf).mlScore}},       \
+    {kCpa, {(conf).cpa}},                   \
+    {kCpaXY, {(conf).cpa}},                 \
+    {kDecayLength, {(conf).decayLength}},   \
+    {kDecayLengthXY, {(conf).decayLength}}, \
+    {kChi2Pca, {(conf).chi2Pca}},           \
     {kImpactParameterProngSqSum, {(conf).impactParameterProngSqSum}},
 
 template <typename T>
@@ -284,7 +284,6 @@ auto makeLcMcQaHistSpecMap(const T1& confBinningAnalysis, const T2& confBinningQ
       LC_HIST_QA_MAP(confBinningQa)
         CHARMHADRON_HIST_MC_MAP(confBinningAnalysis)};
 }
-
 
 #undef CHARMHADRON_HIST_ANALYSIS_MAP
 #undef CHARMHADRON_HIST_MC_MAP
@@ -537,7 +536,6 @@ class CharmHadronHistManager
       }
     }
   }
-
 
   void initMc(std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>> const& CharmHadronSpecs)
   {

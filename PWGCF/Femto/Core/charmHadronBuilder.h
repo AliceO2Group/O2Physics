@@ -139,8 +139,8 @@ using ConfLcSelection2 = ConfLcSelection<PrefixLcSelection2>;
 /// registered is decided per species in CharmHadronSelection::configure.
 enum CharmHadronSels {
   // topological selections
-  kCpaMin,                    ///< Min. CPA (cosine pointing angle)
-  kDecayLengthMin,            ///< Min. decay length
+  kCpaMin,         ///< Min. CPA (cosine pointing angle)
+  kDecayLengthMin, ///< Min. decay length
 
   // topological selections, 2-prong only (D0)
   kImpactParameterProductMax, ///< Max. product of prong impact parameters (d0*d0)
@@ -472,12 +472,12 @@ class CharmHadronBuilder
   {
     if (mProduceD0s) {
       charmHadronProducts.producedD0s(collisionProducts.producedCollision.lastIndex(),
-                             signedPt,
-                             candidate.eta(),
-                             candidate.phi(),
-                             mass,
-                             posDauIndex,
-                             negDauIndex);
+                                      signedPt,
+                                      candidate.eta(),
+                                      candidate.phi(),
+                                      mass,
+                                      posDauIndex,
+                                      negDauIndex);
     }
     if (mProduceD0Masks) {
       charmHadronProducts.producedD0Masks(mCharmHadronSelection.getBitmask());
@@ -608,7 +608,7 @@ class CharmHadronBuilder
 
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
   void fillCharmHadrons(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4& trackProducts,
-               T5& charmHadronProducts, T6 const& candidates, T7 const& /*tracks*/, T8& trackBuilder)
+                        T5& charmHadronProducts, T6 const& candidates, T7 const& /*tracks*/, T8& trackBuilder)
   {
     if (!mFillAnyTable) {
       return;
@@ -656,7 +656,7 @@ class CharmHadronBuilder
 
   template <modes::System system, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10, typename T11, typename T12>
   void fillMcCharmHadrons(T1 const& col, T2& collisionBuilder, T3& collisionProducts, T4 const& mcCols, T5& trackProducts,
-                 T6& charmHadronProducts, T7 const& candidates, T8 const& tracks, T9& trackBuilder, T10 const& mcParticles, T11& mcBuilder, T12& mcProducts)
+                          T6& charmHadronProducts, T7 const& candidates, T8 const& tracks, T9& trackBuilder, T10 const& mcParticles, T11& mcBuilder, T12& mcProducts)
   {
     if (!mFillAnyTable) {
       return;

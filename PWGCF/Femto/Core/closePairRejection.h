@@ -588,7 +588,7 @@ class ClosePairRejectionTrackLc
     mCtrPion.compute(track, prong2);
   }
 
-  [[nodiscard]] bool isClosePair() const { return mCtrProton.isClosePair() || mCtrKaon.isClosePair() || mCtrPion.isClosePair();  }
+  [[nodiscard]] bool isClosePair() const { return mCtrProton.isClosePair() || mCtrKaon.isClosePair() || mCtrPion.isClosePair(); }
 
   void fill(float kstar)
   {

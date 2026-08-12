@@ -109,8 +109,6 @@ struct FemtoCharmHadronQa {
     modes::CharmHadron::kLc>
     lcHistManager;
 
-
-
   // setup for daughters
   trackhistmanager::ConfD01PosDauBinning confD01PosDaughterBinning;
   trackhistmanager::ConfD01PosDauQaBinning confD01PosDaughterQaBinning;
@@ -126,7 +124,6 @@ struct FemtoCharmHadronQa {
 
   trackhistmanager::ConfLc1PionDauBinning confLc1PionDaughterBinning;
   trackhistmanager::ConfLc1PionDauQaBinning confLc1PionDaughterQaBinning;
-
 
   o2::framework::HistogramRegistry hRegistry{"FemtoCharmHadronQa", {}, o2::framework::OutputObjHandlingPolicy::AnalysisObject};
 
