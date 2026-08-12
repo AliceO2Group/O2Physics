@@ -412,8 +412,8 @@ struct HfTaskCharmResoToDTrkReduced {
       std::array<float, 2> ptProngs = {particle.ptProng0(), particle.ptProng1()};
       std::array<float, 2> etaProngs = {particle.etaProng0(), particle.etaProng1()};
       bool const prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
-      if (fillOnlySignal) {
-        if (Channel == DecayChannel::D0Kplus &&
+      if constexpr (Channel == DecayChannel::D0Kplus) {
+        if (fillOnlySignal &&
             !hf_decay::hf_cand_reso::particlesToD0Kplus.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flag)))) {
           continue;
         }
