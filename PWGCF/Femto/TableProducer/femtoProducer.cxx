@@ -239,12 +239,18 @@ struct FemtoProducer {
          !doprocessTracksD0sRun3ppMc && !doprocessTracksD0sRun3PbPbMc)) {
       LOG(fatal) << "At least one d0 table is enabled, but wrong process function is enabled. Breaking...";
     }
+    if ((lcBuilder.fillAnyTable() || lcBarBuilder.fillAnyTable()) &&
+        (!doprocessTracksLcsRun3pp && !doprocessTracksLcsRun3PbPb &&
+         !doprocessTracksLcsRun3ppMc && !doprocessTracksLcsRun3PbPbMc)) {
+      LOG(fatal) << "At least one lc table is enabled, but wrong process function is enabled. Breaking...";
+    }
     if (mcBuilder.fillAnyTable() &&
         (!doprocessTracksRun3ppMc && !doprocessTracksRun3PbPbMc &&
          !doprocessTracksV0sRun3ppMc && !doprocessTracksV0sRun3PbPbMc &&
          !doprocessTracksV0sCascadesRun3ppMc && !doprocessTracksV0sCascadesRun3PbPbMc &&
          !doprocessTracksKinksRun3ppMc && !doprocessTracksV0sKinksRun3ppMc &&
          !doprocessTracksD0sRun3ppMc && !doprocessTracksD0sRun3PbPbMc &&
+         !doprocessTracksLcsRun3ppMc && !doprocessTracksLcsRun3PbPbMc &&
          !doprocessMcOnly)) {
       LOG(fatal) << "At least one mc table is enabled, but wrong process function is enabled. Breaking...";
     }
@@ -265,6 +271,8 @@ struct FemtoProducer {
       add("antilambda", antilambdaBuilder.fillAnyTable(), antilambdaBuilder.isPassThrough());
       add("d0", d0Builder.fillAnyTable(), d0Builder.isPassThrough());
       add("d0bar", d0barBuilder.fillAnyTable(), d0barBuilder.isPassThrough());
+      add("lc", lcBuilder.fillAnyTable(), lcBuilder.isPassThrough());
+      add("lcbar", lcBarBuilder.fillAnyTable(), lcBarBuilder.isPassThrough());
       add("sigma", sigmaBuilder.fillAnyTable(), sigmaBuilder.isPassThrough());
       add("sigmaplus", sigmaPlusBuilder.fillAnyTable(), sigmaPlusBuilder.isPassThrough());
       add("xi", xiBuilder.fillAnyTable(), xiBuilder.isPassThrough());
