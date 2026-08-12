@@ -708,7 +708,7 @@ struct forwardlambdakzeroanalysis {
       // All candidates received
       histos.add("hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
       histos.add("hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
-      histos.add("hPosDCAToPVz", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
+      histos.add("hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
       histos.add("hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
       histos.add("hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
       histos.add("hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
@@ -751,7 +751,7 @@ struct forwardlambdakzeroanalysis {
       if (analyseK0Short) {
         histos.add("K0Short/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("K0Short/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-        histos.add("K0Short/hPosDCAToPVz", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("K0Short/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("K0Short/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("K0Short/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
         histos.add("K0Short/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
@@ -791,7 +791,7 @@ struct forwardlambdakzeroanalysis {
       if (analyseLambda) {
         histos.add("Lambda/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("Lambda/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-        histos.add("Lambda/hPosDCAToPVz", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("Lambda/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("Lambda/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("Lambda/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
         histos.add("Lambda/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
@@ -830,7 +830,7 @@ struct forwardlambdakzeroanalysis {
       if (analyseAntiLambda) {
         histos.add("AntiLambda/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("AntiLambda/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-        histos.add("AntiLambda/hPosDCAToPVz", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("AntiLambda/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("AntiLambda/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("AntiLambda/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
         histos.add("AntiLambda/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
@@ -869,7 +869,7 @@ struct forwardlambdakzeroanalysis {
       if (analyseD0) {
         histos.add("D0/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("D0/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-        histos.add("D0/hPosDCAToPVz", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("D0/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("D0/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("D0/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
         histos.add("D0/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
@@ -908,7 +908,7 @@ struct forwardlambdakzeroanalysis {
       if (analyseAntiD0) {
         histos.add("AntiD0/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("AntiD0/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-        histos.add("AntiD0/hPosDCAToPVz", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("AntiD0/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("AntiD0/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("AntiD0/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
         histos.add("AntiD0/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
