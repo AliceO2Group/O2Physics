@@ -73,6 +73,8 @@ struct AssociateMCInfoPhoton {
     kElectron = 0x8,
   };
 
+  static constexpr uint16_t kNoMcParticleMask = (1 << 14); // isNoise bit: no genuine MC particle for this leg/track
+
   Produces<o2::aod::EMMCEvents> mcevents;
   Produces<o2::aod::EMMCEventLabels> mceventlabels;
   Produces<o2::aod::EMMCParticles> emmcparticles;
@@ -90,6 +92,7 @@ struct AssociateMCInfoPhoton {
   Configurable<float> maxPt{"maxPt", 20.f, "max pT for BinnedGenPts table"};
   Configurable<float> maxY{"maxY", 0.9f, "max |rapidity| for BinnedGenPts table"};
   Configurable<bool> doStoreAllDaughters{"doStoreAllDaughters", false, "flag to enable storing of all photon, pi0, eta, eta' and omega daughters. This will increase the dervied data size!"};
+  Configurable<bool> useIsSelected{"useIsSelected", true, "flag to enable the usage of isSelected from our EM event selection. Disabling this will increase the derived data size!"};
 
   HistogramRegistry registry{"EMMCEvent"};
 
@@ -164,15 +167,34 @@ struct AssociateMCInfoPhoton {
     }
   }
 
+  template <soa::is_iterator TCollision>
+  bool passesCollisionGate(TCollision const& collisionIter)
+  {
+    if (!collisionIter.has_mcCollision()) {
+      return false;
+    }
+    if (useIsSelected.value && !collisionIter.isSelected()) {
+      return false;
+    }
+    return true;
+  }
+
   template <o2::soa::is_iterator TMCParticle, o2::soa::is_iterator TMCCollision>
   void selectMothersToStore(int motherId, int64_t mcParticleSize, TMCParticle& motherParticle, TMCParticle& daughterIter, TMCCollision const& mcCollisionIter, std::unordered_map<uint64_t, int>& fNewLabels, std::map<uint64_t, int>& fNewLabelsReversed, std::unordered_map<uint64_t, int>& fEventIdx, std::unordered_map<uint64_t, int>& fEventLabels, Counter& fCounter)
   {
     while (motherId > -1) {
-      if (motherId < mcParticleSize) { // protect against bad mother indices. why is this needed?
+      if (motherId < mcParticleSize) {
         motherParticle.setCursor(motherId);
-        int eventIdx = fEventLabels.find(mcCollisionIter.globalIndex())->second;
 
-        // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+        auto evIt = fEventLabels.find(mcCollisionIter.globalIndex());
+        if (evIt == fEventLabels.end()) {
+          // Can't attribute this ancestor to a known event; stop walking rather than risk UB.
+          LOG(warning) << "selectMothersToStore: mcCollision " << mcCollisionIter.globalIndex()
+                       << " not found in fEventLabels, aborting mother-chain walk.";
+          break;
+        }
+        int eventIdx = evIt->second;
+
         if (!fNewLabels.contains(motherParticle.globalIndex())) {
           fNewLabels[motherParticle.globalIndex()] = fCounter.particles;
           fNewLabelsReversed[fCounter.particles] = motherParticle.globalIndex();
@@ -232,12 +254,7 @@ struct AssociateMCInfoPhoton {
     for (const auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1);
 
-      // TODO: investigate the collisions without corresponding mcCollision
-      if (!collision.has_mcCollision()) {
-        continue;
-      }
-
-      if (!collision.isSelected()) {
+      if (!passesCollisionGate(collision)) {
         continue;
       }
 
@@ -359,122 +376,135 @@ struct AssociateMCInfoPhoton {
       auto o2TrackIter = o2tracks.begin();
       for (const auto& v0 : v0photons) {
         collisionIter.setCursor(v0.collisionId());
-        if (!collisionIter.has_mcCollision()) {
-          continue;
+
+        // check if the collision is valid AND the legs have valid MC particles
+        bool validMc = false;
+        if (passesCollisionGate(collisionIter)) {
+          mcCollisionIter.setCursor(collisionIter.mcCollisionId());
+
+          ele.setCursor(v0.negTrackId());
+          pos.setCursor(v0.posTrackId());
+          o2TrackEle.setCursor(ele.trackId());
+          o2TrackPos.setCursor(pos.trackId());
+
+          validMc = o2TrackEle.has_mcParticle() && o2TrackPos.has_mcParticle();
         }
-        mcCollisionIter.setCursor(collisionIter.mcCollisionId());
 
-        ele.setCursor(v0.negTrackId());
-        pos.setCursor(v0.posTrackId());
+        for (const auto& leg : {pos, ele}) { // careful: order {pos, ele}, must stay fixed either way
+          if (validMc) {
+            o2TrackIter.setCursor(leg.trackId());
+            mcParticleIter.setCursor(o2TrackIter.mcParticleId());
 
-        o2TrackEle.setCursor(ele.trackId());
-        o2TrackPos.setCursor(pos.trackId());
+            auto [iter, isNew] = fNewLabels.try_emplace(mcParticleIter.globalIndex(), fCounter.particles);
+            if (isNew) {
+              fNewLabelsReversed[fCounter.particles] = mcParticleIter.globalIndex();
+              auto evIt = fEventLabels.find(mcCollisionIter.globalIndex());
+              if (evIt != fEventLabels.end()) {
+                fEventIdx[mcParticleIter.globalIndex()] = evIt->second;
+              }
+              fCounter.particles++;
+            }
+            v0legmclabels(iter->second, o2TrackIter.mcMask());
 
-        if (!o2TrackEle.has_mcParticle() || !o2TrackPos.has_mcParticle()) {
-          continue; // If no MC particle is found, skip the v0
-        }
-
-        for (const auto& leg : {pos, ele}) { // be carefull of order {pos, ele}!
-          o2TrackIter.setCursor(leg.trackId());
-          mcParticleIter.setCursor(o2TrackIter.mcParticleId());
-          // LOGF(info, "mcParticleIter.globalIndex() = %d, mcParticleIter.index() = %d", mcParticleIter.globalIndex(), mcParticleIter.index()); // these are exactly the same.
-
-          // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
-          auto [iter, isNew] = fNewLabels.try_emplace(mcParticleIter.globalIndex(), fCounter.particles);
-          if (isNew) {
-            fNewLabelsReversed[fCounter.particles] = mcParticleIter.globalIndex();
-            fEventIdx[mcParticleIter.globalIndex()] = fEventLabels.find(mcCollisionIter.globalIndex())->second;
-            fCounter.particles++;
+            int motherid = -999;
+            if (mcParticleIter.has_mothers()) {
+              motherid = mcParticleIter.mothersIds()[0];
+            }
+            selectMothersToStore(motherid, mcParticles.size(), motherParticle, daughterIter, mcCollisionIter,
+                                 fNewLabels, fNewLabelsReversed, fEventIdx, fEventLabels, fCounter);
+          } else {
+            v0legmclabels(-1, kNoMcParticleMask); // no MC match for this leg, but the row must still exist
           }
-          v0legmclabels(iter->second, o2TrackIter.mcMask());
-
-          // Next, store mother-chain of this reconstructed track.
-          int motherid = -999; // first mother index
-          if (mcParticleIter.has_mothers()) {
-            motherid = mcParticleIter.mothersIds()[0]; // first mother index
-          }
-          selectMothersToStore(motherid, mcParticles.size(), motherParticle, daughterIter, mcCollisionIter, fNewLabels, fNewLabelsReversed, fEventIdx, fEventLabels, fCounter);
-        } // end of leg loop
+        } // end of loop over legs {pos, ele}
       } // end of v0 loop
     }
 
     if constexpr (static_cast<bool>(system & kElectron)) {
       auto o2TrackIter = o2tracks.begin();
-      // auto emprimaryelectrons_coll = emprimaryelectrons.sliceBy(perCollisionEl, collision.globalIndex());
       for (const auto& emprimaryelectron : emprimaryelectrons) {
         collisionIter.setCursor(emprimaryelectron.collisionId());
-        if (!collisionIter.has_mcCollision()) {
-          continue;
-        }
-        mcCollisionIter.setCursor(collisionIter.mcCollisionId());
 
-        o2TrackIter.setCursor(emprimaryelectron.trackId());
-        if (!o2TrackIter.has_mcParticle()) {
-          continue; // If no MC particle is found, skip the dilepton
-        }
-        mcParticleIter.setCursor(o2TrackIter.mcParticleId());
+        int32_t mcLabel = -1;
+        uint16_t mcMask = kNoMcParticleMask;
 
-        // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
-        auto [iter, isNew] = fNewLabels.try_emplace(mcParticleIter.globalIndex(), fCounter.particles);
-        if (isNew) {
-          fNewLabelsReversed[fCounter.particles] = mcParticleIter.globalIndex();
-          fEventIdx[mcParticleIter.globalIndex()] = fEventLabels.find(mcCollisionIter.globalIndex())->second;
-          fCounter.particles++;
-        }
-        emprimaryelectronmclabels(iter->second, o2TrackIter.mcMask());
+        if (passesCollisionGate(collisionIter)) {
+          mcCollisionIter.setCursor(collisionIter.mcCollisionId());
+          o2TrackIter.setCursor(emprimaryelectron.trackId());
 
-        // Next, store mother-chain of this reconstructed track.
-        int motherid = -999; // first mother index
-        if (mcParticleIter.has_mothers()) {
-          motherid = mcParticleIter.mothersIds()[0]; // first mother index
+          if (o2TrackIter.has_mcParticle()) {
+            mcParticleIter.setCursor(o2TrackIter.mcParticleId());
+
+            // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+            auto [iter, isNew] = fNewLabels.try_emplace(mcParticleIter.globalIndex(), fCounter.particles);
+            if (isNew) {
+              fNewLabelsReversed[fCounter.particles] = mcParticleIter.globalIndex();
+              auto evIt = fEventLabels.find(mcCollisionIter.globalIndex());
+              if (evIt != fEventLabels.end()) {
+                fEventIdx[mcParticleIter.globalIndex()] = evIt->second;
+              }
+              fCounter.particles++;
+            }
+            mcLabel = iter->second;
+            mcMask = o2TrackIter.mcMask();
+
+            int motherid = -999;
+            if (mcParticleIter.has_mothers()) {
+              motherid = mcParticleIter.mothersIds()[0];
+            }
+            selectMothersToStore(motherid, mcParticles.size(), motherParticle, daughterIter, mcCollisionIter,
+                                 fNewLabels, fNewLabelsReversed, fEventIdx, fEventLabels, fCounter);
+          } // if (o2TrackIter.has_mcParticle())
         }
-        selectMothersToStore(motherid, mcParticles.size(), motherParticle, daughterIter, mcCollisionIter, fNewLabels, fNewLabelsReversed, fEventIdx, fEventLabels, fCounter);
+        emprimaryelectronmclabels(mcLabel, mcMask); // always exactly one row per emprimaryelectron
       } // end of em primary electron loop
     }
 
     if constexpr (static_cast<bool>(system & kEMC)) { // for emc photons
-      // auto ememcclusters_coll = emcclusters.sliceBy(perCollisionEMC, collision.globalIndex());
       for (const auto& emccluster : emcclusters) {
         collisionIter.setCursor(emccluster.collisionId());
-        if (!collisionIter.has_mcCollision()) {
-          continue;
-        }
-        mcCollisionIter.setCursor(collisionIter.mcCollisionId());
 
-        // TODO: test
-        if (emccluster.mcParticleIds().size() <= 0) {
-          continue;
-        }
         std::vector<int32_t> vEmcMcParticleIds;
         std::vector<float> vAmplitudes;
 
-        vEmcMcParticleIds.reserve(emccluster.mcParticleIds().size());
-        vAmplitudes.reserve(emccluster.mcParticleIds().size());
+        if (passesCollisionGate(collisionIter)) {
+          mcCollisionIter.setCursor(collisionIter.mcCollisionId());
 
-        for (size_t iCont = 0; iCont < emccluster.mcParticleIds().size(); iCont++) {
-          mcPhoton.setCursor(emccluster.mcParticleIds()[iCont]);
-
-          // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
-          auto [iter, isNew] = fNewLabels.try_emplace(mcPhoton.globalIndex(), fCounter.particles);
-          if (isNew) {
-            fNewLabelsReversed[fCounter.particles] = mcPhoton.globalIndex();
-            fEventIdx[mcPhoton.globalIndex()] = fEventLabels.find(mcCollisionIter.globalIndex())->second;
-            fCounter.particles++;
+          if (emccluster.mcParticleIds().size() != emccluster.amplitude().size()) {
+            LOG(warning) << "Cluster " << emccluster.globalIndex()
+                         << ": mcParticleIds/amplitude size mismatch ("
+                         << emccluster.mcParticleIds().size() << " vs " << emccluster.amplitude().size() << ")";
           }
-          vEmcMcParticleIds.emplace_back(iter->second);
-          vAmplitudes.emplace_back(emccluster.amplitude()[iCont]);
-          // ememcclustermclabels(fNewLabels.find(mcPhoton.index())->second);
+          size_t nCont = std::min(emccluster.mcParticleIds().size(), emccluster.amplitude().size());
 
-          // Next, store mother-chain of this reconstructed track.
-          int motherid = -999; // first mother index
-          if (mcPhoton.has_mothers()) {
-            motherid = mcPhoton.mothersIds()[0]; // first mother index
+          vEmcMcParticleIds.reserve(nCont);
+          vAmplitudes.reserve(nCont);
+
+          for (size_t iCont = 0; iCont < nCont; iCont++) {
+            mcPhoton.setCursor(emccluster.mcParticleIds()[iCont]);
+            // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+            auto [iter, isNew] = fNewLabels.try_emplace(mcPhoton.globalIndex(), fCounter.particles);
+            if (isNew) {
+              fNewLabelsReversed[fCounter.particles] = mcPhoton.globalIndex();
+              auto evIt = fEventLabels.find(mcCollisionIter.globalIndex());
+              if (evIt != fEventLabels.end()) { // keep your earlier guard here too
+                fEventIdx[mcPhoton.globalIndex()] = evIt->second;
+              }
+              fCounter.particles++;
+            }
+            vEmcMcParticleIds.emplace_back(iter->second);
+            vAmplitudes.emplace_back(emccluster.amplitude()[iCont]);
+
+            int motherid = -999;
+            if (mcPhoton.has_mothers()) {
+              motherid = mcPhoton.mothersIds()[0];
+            }
+            selectMothersToStore(motherid, mcParticles.size(), motherParticle, daughterIter, mcCollisionIter,
+                                 fNewLabels, fNewLabelsReversed, fEventIdx, fEventLabels, fCounter);
           }
-          selectMothersToStore(motherid, mcParticles.size(), motherParticle, daughterIter, mcCollisionIter, fNewLabels, fNewLabelsReversed, fEventIdx, fEventLabels, fCounter);
         } // end of loop over mc particles of the current emc cluster
+        // whether or not the collision was okay, exactly one row is always written here so later the tables are ensured to have same size!
         ememcclustermclabels(vEmcMcParticleIds, vAmplitudes);
-
-      } // end of em emc cluster loop
+      }
     }
 
     //  Loop over the label map, create the mother/daughter relationships if these exist and write the skimmed MC stack
@@ -517,7 +547,12 @@ struct AssociateMCInfoPhoton {
         }
       }
 
-      emmcparticles(fEventIdx.find(oldLabel)->second, mcParticleIter.pdgCode(), mcParticleIter.flags(), mcParticleIter.statusCode(),
+      auto evIt = fEventIdx.find(oldLabel);
+      if (evIt == fEventIdx.end()) {
+        LOG(warning) << "emmcparticles: no event index for particle label " << oldLabel << ", skipping.";
+        continue;
+      }
+      emmcparticles(evIt->second, mcParticleIter.pdgCode(), mcParticleIter.flags(), mcParticleIter.statusCode(),
                     mothers, daughters,
                     mcParticleIter.px(), mcParticleIter.py(), mcParticleIter.pz(), mcParticleIter.e(),
                     mcParticleIter.vx(), mcParticleIter.vy(), mcParticleIter.vz());

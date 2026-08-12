@@ -34,10 +34,6 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/Logger.h>
 
-#include <sys/stat.h>
-
-#include <Rtypes.h>
-
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -86,7 +82,7 @@ struct ConfCollisionBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> sphericityMax{"sphericityMax", {}, "Maximum sphericity"};
   o2::framework::Configurable<std::vector<std::string>> triggers{"triggers", {}, "List of all triggers to be used"};
   o2::framework::Configurable<datatypes::QvecDetectorType> qvecDetector{"qvecDetector", 0, "Detector used to estimate the Q-vector: 0 -> FT0C, 1 -> FT0A"};
-  o2::framework::Configurable<datatypes::QvecHarmonicType> qvecHarmonic{"qvecHarmonic", 2, "Harmonic n of the Q-vector and event plane angle Psi_n: 1 -> direct, 2 -> elliptic, 3 -> triangular"};
+  o2::framework::Configurable<datatypes::QvecHarmonicType> qvecHarmonic{"qvecHarmonic", 2, "Harmonic n of the Q-vector and event plane angle Psi_n: 2 -> elliptic, 3 -> triangular"};
 };
 
 struct ConfCcdb : o2::framework::ConfigurableGroup {
@@ -249,7 +245,13 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
 
     // event shape
     mQvecDetector = static_cast<modes::QvecDetector>(config.qvecDetector.value);
+    if (mQvecDetector >= modes::QvecDetector::kQvecDetectorLast) {
+      LOG(fatal) << "Qvector Detector is not supported";
+    }
     mQvecHarmonic = static_cast<modes::QvecHarmonic>(config.qvecHarmonic.value);
+    if (mQvecHarmonic < modes::QvecHarmonic::kN2 || mQvecHarmonic >= modes::QvecHarmonic::kQvecHarmonicLast) {
+      LOG(fatal) << "Qvector Harmonic is not supported";
+    }
 
     this->addSelection(kSel8, collisionSelectionNames.at(kSel8), config.sel8.value);
     this->addSelection(kNoSameBunchPileUp, collisionSelectionNames.at(kNoSameBunchPileUp), config.noSameBunchPileup.value);
@@ -289,7 +291,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
         {collisionFilterNames.at(kFilterSphericityMax), mSphericityMax},
         {collisionFilterNames.at(kFilterRctFlags), mUseRctFlags ? 1.f : 0.f},
       });
-  };
+  }
 
   /// \brief Initialize the Zorro trigger machinery for a new run. No-op if no triggers configured.
   template <typename T1, typename T2>
@@ -318,7 +320,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
     mMagField = MagField;
   }
 
-  float getMagneticField()
+  [[nodiscard]] int getMagneticField()
   {
     return mMagField;
   }
@@ -366,6 +368,12 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
       case modes::QvecDetector::kFT0A:
         mQvec = std::hypot(col.qvecFT0AReVec()[0], col.qvecFT0AImVec()[0]) * std::sqrt(col.sumAmplFT0A());
         break;
+      case modes::QvecDetector::kQvecDetectorLast:
+        LOG(fatal) << "Invalid Q-vector detector";
+        break;
+      default:
+        LOG(fatal) << "Invalid Q-vector detector";
+        break;
     }
   }
   [[nodiscard]] float getQvector() const { return mQvec; }
@@ -373,13 +381,20 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
   template <modes::System system, typename T>
   void setEventPlane(T const& col)
   {
-    float harmonic = static_cast<float>(mQvecHarmonic);
+    auto harmonic = static_cast<float>(mQvecHarmonic);
+    int index = static_cast<int>(mQvecHarmonic) - 2; // get index in the qvector vector
     switch (mQvecDetector) {
       case modes::QvecDetector::kFT0C:
-        mEventPlane = RecoDecay::constrainAngle((std::atan2(col.qvecFT0CImVec()[0], col.qvecFT0CReVec()[0])) / harmonic, 0, harmonic); // constrain between 0 and 2pi/harmonic
+        mEventPlane = RecoDecay::constrainAngle((std::atan2(col.qvecFT0CImVec()[index], col.qvecFT0CReVec()[index])) / harmonic, 0, harmonic); // constrain between 0 and 2pi/harmonic
         break;
       case modes::QvecDetector::kFT0A:
-        mEventPlane = RecoDecay::constrainAngle((std::atan2(col.qvecFT0AImVec()[0], col.qvecFT0AReVec()[0])) / harmonic, 0, harmonic); // constrain between 0 and 2pi/harmonic
+        mEventPlane = RecoDecay::constrainAngle((std::atan2(col.qvecFT0AImVec()[index], col.qvecFT0AReVec()[index])) / harmonic, 0, harmonic); // constrain between 0 and 2pi/harmonic
+        break;
+      case modes::QvecDetector::kQvecDetectorLast:
+        LOG(fatal) << "Invalid Q-vector detector";
+        break;
+      default:
+        LOG(fatal) << "Invalid Q-vector detector";
         break;
     }
   }
@@ -476,14 +491,14 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
     }
 
     this->assembleBitmask<SelectionHistName>();
-  };
+  }
 
  protected:
   template <typename T>
   float computeSphericity(T const& tracks)
   {
-    int minNumberTracks = 2;
-    double maxSphericity = 2.f;
+    const int64_t minNumberTracks = 2;
+    const double maxSphericity = 2.f;
     if (tracks.size() <= minNumberTracks) {
       return maxSphericity;
     }
@@ -514,7 +529,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
 
   // filter cuts
   float mVtxZMin = -12.f;
-  float mVtxZMax = -12.f;
+  float mVtxZMax = 12.f;
   float mSphericityMin = 0.f;
   float mSphericityMax = 1.f;
   float mMagFieldMin = -5.f;
@@ -524,7 +539,7 @@ class CollisionSelection : public baseselection::BaseSelection<float, o2::analys
   float mCentMin = 0.f;
   float mCentMax = 100.f;
 
-  int mMagField = 0.f;
+  int mMagField = 0;
   float mSphericity = 0.f;
   float mCentrality = 0.f;
   float mMultiplicity = 0.f;
@@ -553,6 +568,7 @@ struct CollisionBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FColMults> producedMultiplicityEstimators;
   o2::framework::Produces<o2::aod::FColCents> producedCentralityEstimators;
   o2::framework::Produces<o2::aod::FColShapes> producedShapes;
+  o2::framework::Produces<o2::aod::FLiteColShapes> producedLiteShapes;
 };
 
 struct ConfCollisionTables : o2::framework::ConfigurableGroup {
@@ -565,6 +581,7 @@ struct ConfCollisionTables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> produceMults{"produceMults", -1, "Produce Multiplicities (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceCents{"produceCents", -1, "Produce Centralities (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceShapes{"produceShapes", -1, "Produce Event shape variables (-1: auto; 0 off; 1 on)"};
+  o2::framework::Configurable<int> produceLiteShapes{"produceLiteShapes", -1, "Produce Lite Event shape variables (-1: auto; 0 off; 1 on)"};
 };
 
 template <auto& SelectionHistName, auto& FilterHistName>
@@ -591,16 +608,22 @@ class CollisionBuilder
     mProducedMultiplicities = utils::enableTable("FColMults_001", confTable.produceMults.value, initContext);
     mProducedCentralities = utils::enableTable("FColCents_001", confTable.produceCents.value, initContext);
     mProducedShapes = utils::enableTable("FColShapes_001", confTable.produceShapes.value, initContext);
+    mProducedLiteShapes = utils::enableTable("FLiteColShapes_001", confTable.produceLiteShapes.value, initContext);
 
     if (mProducedCollisions && mProducedLiteCollisions) {
       LOG(fatal) << "FCols and FLiteCols are mutually exclusive -- enable only one. "
                  << "FLiteCols is meant to only replace FCols at the producer stage (for better compression in derived data); "
                  << "use the dedicated converter task to reconstruct FCols from FLiteCols downstream.";
     }
+    if (mProducedShapes && mProducedLiteShapes) {
+      LOG(fatal) << "FColShapes and FLiteColShapes are mutually exclusive -- enable only one. "
+                 << "FLiteColShapes is meant to only replace FColShapes at the producer stage (for better compression in derived data); "
+                 << "use the dedicated converter task to reconstruct FColShapes from FLiteColShapes downstream.";
+    }
 
     if (mProducedCollisions || mProducedLiteCollisions || mProducedCollisionMasks ||
         mProducedPositions || mProducedSphericities || mProducedMultiplicities ||
-        mProducedCentralities) {
+        mProducedCentralities || mProducedShapes || mProducedLiteShapes) {
       mFillAnyTable = true;
     } else {
       LOG(info) << "No tables configured, Selection object will not be configured...";
@@ -619,15 +642,14 @@ class CollisionBuilder
     if (mRunNumber != bc.runNumber()) {
       mRunNumber = bc.runNumber();
       if (mMagFieldForced == 0) {
-        static o2::parameters::GRPMagField* grpo = nullptr;
-        LOG(info) << "Get magentic field with Path: " << mGrpPath << "; Run number: " << mRunNumber;
-        grpo = ccdb->template getForRun<o2::parameters::GRPMagField>(mGrpPath, mRunNumber);
+        o2::parameters::GRPMagField* grpo = ccdb->template getForRun<o2::parameters::GRPMagField>(mGrpPath, mRunNumber);
+        LOG(info) << "Get magnetic field with Path: " << mGrpPath << "; Run number: " << mRunNumber;
         if (grpo == nullptr) {
           LOG(fatal) << "GRP object not found for Run " << mRunNumber;
         }
         mMagField = static_cast<int>(grpo->getNominalL3Field()); // get magnetic field in kG
       } else {
-        LOG(info) << "Force magentic field to " << mMagFieldForced << "kG";
+        LOG(info) << "Force magnetic field to " << mMagFieldForced << "kG";
         mMagField = mMagFieldForced;
       }
 
@@ -737,6 +759,12 @@ class CollisionBuilder
         mCollisionSelection.getEventPlane());
     }
 
+    if (mProducedLiteShapes) {
+      collisionProducts.producedLiteShapes(
+        o2::aod::femtocollisions::lite::binQvec(mCollisionSelection.getQvector()),
+        o2::aod::femtocollisions::lite::binEventPlaneAngle(mCollisionSelection.getEventPlane()));
+    }
+
     mCollisionAlreadyFilled = true;
   }
 
@@ -780,6 +808,7 @@ class CollisionBuilder
   bool mProducedMultiplicities = false;
   bool mProducedCentralities = false;
   bool mProducedShapes = false;
+  bool mProducedLiteShapes = false;
 };
 
 struct CollisionBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {

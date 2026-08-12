@@ -793,15 +793,15 @@ struct CascadeBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
 class CascadeBuilderDerivedToDerived
 {
  public:
-  CascadeBuilderDerivedToDerived() = default;
-  ~CascadeBuilderDerivedToDerived() = default;
-
   template <typename T>
   void init(T& config)
   {
     mLimitXi = config.limitXi.value;
     mLimitOmega = config.limitOmega.value;
 
+    if (mLimitXi < 0 || mLimitOmega < 0) {
+      LOG(fatal) << "Cascade limits must be non-negative (got " << mLimitXi << " and " << mLimitOmega << "). Breaking...";
+    }
     if (mLimitXi == 0 && mLimitOmega == 0) {
       LOG(fatal) << "Both xi limit and omega limit are 0. Breaking...";
     }
@@ -810,34 +810,40 @@ class CascadeBuilderDerivedToDerived
   template <typename T1, typename T2, typename T3, typename T4>
   bool collisionHasTooFewXis(T1 const& col, T2 const& /*xiTable*/, T3& partitionXi, T4& cache)
   {
+    if (mLimitXi == 0) { // xis disabled, cannot reject on them
+      return false;
+    }
     auto xiSlice = partitionXi->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    return xiSlice.size() < mLimitXi;
+    return xiSlice.size() < static_cast<int64_t>(mLimitXi);
   }
 
   template <typename T1, typename T2, typename T3, typename T4>
   bool collisionHasTooFewOmegas(T1 const& col, T2 const& /*omegaTable*/, T3& partitionOmega, T4& cache)
   {
+    if (mLimitOmega == 0) { // omegas disabled, cannot reject on them
+      return false;
+    }
     auto omegaSlice = partitionOmega->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    return omegaSlice.size() < mLimitOmega;
+    return omegaSlice.size() < static_cast<int64_t>(mLimitOmega);
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
   void processXis(T1 const& col, T2 const& /*xiTable*/, T3 const& oldTrackTable, T4& partitionXi, T5& trackBuilder, T6& cache, T7& newXiTable, T8& newTrackTable, T9& newCollisionTable)
   {
+    if (mLimitXi == 0) { // xis disabled
+      return;
+    }
+
     auto xiSlice = partitionXi->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
 
     for (auto const& xi : xiSlice) {
+      auto bachelor = oldTrackTable.rawIteratorAt(utils::daughterRow(xi.bachelorId(), oldTrackTable));
+      auto posDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(xi.posDauId(), oldTrackTable));
+      auto negDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(xi.negDauId(), oldTrackTable));
 
-      // auto bachelor = xi.template bachelor_as<T3>();
-      // auto posDaughter = xi.template posDau_as<T3>();
-      // auto negDaughter = xi.template negDau_as<T3>();
-      auto bachelor = oldTrackTable.rawIteratorAt(xi.bachelorId() - oldTrackTable.offset());
-      auto posDaughter = oldTrackTable.rawIteratorAt(xi.posDauId() - oldTrackTable.offset());
-      auto negDaughter = oldTrackTable.rawIteratorAt(xi.negDauId() - oldTrackTable.offset());
-
-      int bachelorIndex = trackBuilder.getDaughterIndex(bachelor, newTrackTable, newCollisionTable);
-      int posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
-      int negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable);
+      int64_t bachelorIndex = trackBuilder.getDaughterIndex(bachelor, newTrackTable, newCollisionTable);
+      int64_t posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
+      int64_t negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable);
 
       newXiTable.producedXis(newCollisionTable.producedCollision.lastIndex(),
                              xi.signedPt(),
@@ -854,20 +860,20 @@ class CascadeBuilderDerivedToDerived
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
   void processOmegas(T1 const& col, T2 const& /*omegaTable*/, T3 const& oldTrackTable, T4& partitionOmega, T5& trackBuilder, T6& cache, T7& newOmegaTable, T8& newTrackTable, T9& newCollisionTable)
   {
+    if (mLimitOmega == 0) { // omegas disabled
+      return;
+    }
+
     auto omegaSlice = partitionOmega->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
 
     for (auto const& omega : omegaSlice) {
+      auto bachelor = oldTrackTable.rawIteratorAt(utils::daughterRow(omega.bachelorId(), oldTrackTable));
+      auto posDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(omega.posDauId(), oldTrackTable));
+      auto negDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(omega.negDauId(), oldTrackTable));
 
-      // auto bachelor = omega.template bachelor_as<T3>();
-      // auto posDaughter = omega.template posDau_as<T3>();
-      // auto negDaughter = omega.template negDau_as<T3>();
-      auto bachelor = oldTrackTable.rawIteratorAt(omega.bachelorId() - oldTrackTable.offset());
-      auto posDaughter = oldTrackTable.rawIteratorAt(omega.posDauId() - oldTrackTable.offset());
-      auto negDaughter = oldTrackTable.rawIteratorAt(omega.negDauId() - oldTrackTable.offset());
-
-      int bachelorIndex = trackBuilder.getDaughterIndex(bachelor, newTrackTable, newCollisionTable);
-      int posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
-      int negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable);
+      int64_t bachelorIndex = trackBuilder.getDaughterIndex(bachelor, newTrackTable, newCollisionTable);
+      int64_t posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
+      int64_t negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable);
 
       newOmegaTable.producedOmegas(newCollisionTable.producedCollision.lastIndex(),
                                    omega.signedPt(),
