@@ -84,7 +84,7 @@ struct PidFlowPtCorr {
     std::string prefix = "trkQualityOpts";
     // track selections
     Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
-    Configurable<float> cfgRangeEta{"cfgRangeEta", 0.4f, "Eta range for mean Pt"};
+    Configurable<float> cfgRangeEta{"cfgRangeEta", 0.4f, "Independent |eta| half-width for mean-pT particles"};
     Configurable<float> cfgCutPtMin{"cfgCutPtMin", 0.2f, "Minimal pT for ref tracks"};
     Configurable<float> cfgCutPtMax{"cfgCutPtMax", 10.0f, "Maximal pT for ref tracks"};
     Configurable<float> cfgCutPtMinPi{"cfgCutPtMinPi", 0.2f, "Minimal pT for pion POI"};
@@ -139,7 +139,7 @@ struct PidFlowPtCorr {
   } correctionPathOpts;
 
   Configurable<std::vector<int>> cfgRunNumbers{"cfgRunNumbers", (std::vector<int>{544095, 544098, 544116, 544121, 544122, 544123, 544124}), "Preconfigured run numbers"};
-  Configurable<float> cfgEtaGap{"cfgEtaGap", 0.4, "eta gap for cumulant calculation, note that gap is -0.4 ~ 0.4 total 0.8, note that eta range for meanpt calculation needs to be within etagap"};
+  Configurable<float> cfgEtaGap{"cfgEtaGap", 0.4, "Eta-gap half-width for flow particles; 0.4 selects (-etaMax,-0.4) and (0.4,etaMax)"};
   Configurable<int> cfgFlowNbootstrap{"cfgFlowNbootstrap", 30, "Number of subsamples for bootstrap"};
 
   // switch
@@ -155,6 +155,9 @@ struct PidFlowPtCorr {
     Configurable<int> cfgClosureTest{"cfgClosureTest", 0, "choose (val) percent particle from charged to pass Pion PID selection"};
     Configurable<bool> cfgOutPutMC1D{"cfgOutPutMC1D", true, "Fill MC graphs, note that if the processMCgen is open,this MUST be open"};
     Configurable<bool> cfgAddPidResponseMatrixHistograms{"cfgAddPidResponseMatrixHistograms", false, "Add PID response matrix histograms; enable together with processPidResponseMatrix"};
+    Configurable<bool> cfgAddC22DeltaPtHistograms{"cfgAddC22DeltaPtHistograms", false, "Add histograms for processDataC22DeltaPt; enable together with processDataC22DeltaPt"};
+    Configurable<bool> cfgC22DeltaPtUsePure{"cfgC22DeltaPtUsePure", false, "true: use PID POI-POI Pure profiles; false: use PID POI-ref and ref-ref profiles"};
+    Configurable<bool> cfgAddMeanPtCentNbsHistograms{"cfgAddMeanPtCentNbsHistograms", false, "Add meanptCentNbs TProfile3D histograms"};
 
     Configurable<bool> cfgProcessQAOutput{"cfgProcessQAOutput", false, "QA plots for processQA"};
     Configurable<bool> cfgUseNUAWithPt{"cfgUseNUAWithPt", false, "false: use original GFWWeights (phi,eta,vz) NUA; true: use THnSparse (phi,eta,vz,pt) NUA loaded from cfgAcceptancePathWithPt"};
@@ -333,6 +336,7 @@ struct PidFlowPtCorr {
     funcProcessSim,
     funcProcessQA,
     funcProcessPidResponseMatrix,
+    funcProcessDataC22DeltaPt,
     funcNumber
   };
 
@@ -564,6 +568,37 @@ struct PidFlowPtCorr {
     // processPidResponseMatrix
     registry.addClone("hEventCount/processData", "hEventCount/processPidResponseMatrix");
 
+    if (switchsOpts.cfgAddC22DeltaPtHistograms.value) {
+      registry.addClone("hEventCount/processData", "hEventCount/processDataC22DeltaPt");
+      registry.add("c22DeltaPt/c22dmeanptCharged", "Charged c_{2}{2} versus charged event [p_{T}];Centrality (%);[p_{T}]_{ch} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+
+      // Store the ensemble mean pT required for the offline delta[pT]/<[pT]>
+      // transformation. The profile weight is the NUE-corrected particle count.
+      registry.add("c22DeltaPt/hMeanPtCharged", "Charged mean p_{T};Centrality (%);Bootstrap subsample;[p_{T}]_{ch} (GeV/#it{c})", {HistType::kTProfile2D, {axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+      registry.add("c22DeltaPt/hMeanPtPion", "Pion mean p_{T};Centrality (%);Bootstrap subsample;[p_{T}]_{#pi} (GeV/#it{c})", {HistType::kTProfile2D, {axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+      registry.add("c22DeltaPt/hMeanPtKaon", "Kaon mean p_{T};Centrality (%);Bootstrap subsample;[p_{T}]_{K} (GeV/#it{c})", {HistType::kTProfile2D, {axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+      registry.add("c22DeltaPt/hMeanPtProton", "Proton mean p_{T};Centrality (%);Bootstrap subsample;[p_{T}]_{p} (GeV/#it{c})", {HistType::kTProfile2D, {axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+
+      // Ref-ref is required in either PID mode: Pure/ref-ref or POI-ref/ref-ref.
+      // Separate copies are binned by the event mean pT of each PID species.
+      registry.add("c22DeltaPt/c22dmeanptPionRefRef", "Ref-ref c_{2}{2} versus pion event [p_{T}];Centrality (%);[p_{T}]_{#pi} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+      registry.add("c22DeltaPt/c22dmeanptKaonRefRef", "Ref-ref c_{2}{2} versus kaon event [p_{T}];Centrality (%);[p_{T}]_{K} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+      registry.add("c22DeltaPt/c22dmeanptProtonRefRef", "Ref-ref c_{2}{2} versus proton event [p_{T}];Centrality (%);[p_{T}]_{p} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+
+      // Select one PID correlation method at initialization so disabled-mode
+      // profiles are neither allocated nor filled.
+      if (switchsOpts.cfgC22DeltaPtUsePure.value) {
+        registry.add("c22DeltaPt/c22dmeanptPionPure", "Pion POI-POI c_{2}{2} versus pion event [p_{T}];Centrality (%);[p_{T}]_{#pi} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("c22DeltaPt/c22dmeanptKaonPure", "Kaon POI-POI c_{2}{2} versus kaon event [p_{T}];Centrality (%);[p_{T}]_{K} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("c22DeltaPt/c22dmeanptProtonPure", "Proton POI-POI c_{2}{2} versus proton event [p_{T}];Centrality (%);[p_{T}]_{p} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+      } else {
+        // For each PID species, compare POI-ref and ref-ref using the same PID mean-pT axis.
+        registry.add("c22DeltaPt/c22dmeanptPionPOIRef", "Pion POI-ref c_{2}{2} versus pion event [p_{T}];Centrality (%);[p_{T}]_{#pi} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("c22DeltaPt/c22dmeanptKaonPOIRef", "Kaon POI-ref c_{2}{2} versus kaon event [p_{T}];Centrality (%);[p_{T}]_{K} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("c22DeltaPt/c22dmeanptProtonPOIRef", "Proton POI-ref c_{2}{2} versus proton event [p_{T}];Centrality (%);[p_{T}]_{p} (GeV/#it{c});Bootstrap subsample;c_{2}{2}", {HistType::kTProfile3D, {axisMultiplicity, cfgaxisMeanPt, meanptC22GraphOpts.cfgaxisBootstrap}});
+      }
+    }
+
     registry.add("hInteractionRate", "", {HistType::kTH1D, {{1000, 0, 1000}}});
     // end set bin label for eventcount
 
@@ -639,40 +674,32 @@ struct PidFlowPtCorr {
     fFCPr->Initialize(oba4PID, axisMultiplicity, cfgFlowNbootstrap);
     // end init fFCPID
 
-    registry.add("c22dmeanpt", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile2D, {axisMultiplicity, cfgaxisMeanPt}});
-    registry.add("pi/c22dmeanpt", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile2D, {axisMultiplicity, cfgaxisMeanPt}});
-    registry.add("ka/c22dmeanpt", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile2D, {axisMultiplicity, cfgaxisMeanPt}});
-    registry.add("pr/c22dmeanpt", ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile2D, {axisMultiplicity, cfgaxisMeanPt}});
+    if (switchsOpts.cfgAddMeanPtCentNbsHistograms.value) {
+      // TProfile3D axes: event mean pT, centrality, and bootstrap subsample.
+      registry.add("meanptCentNbs/hCharged", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+      registry.add("meanptCentNbs/hChargedMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
 
-    // init tprofile3d for <2'> - meanpt
-    // charged
-    registry.add("meanptCentNbs/hCharged", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-    registry.add("meanptCentNbs/hChargedMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-    // end charged
+      registry.add("meanptCentNbs/hChargedPionWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+      registry.add("meanptCentNbs/hChargedPionFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+      registry.add("meanptCentNbs/hPion", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+      registry.add("meanptCentNbs/hPionMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
 
-    // pid
-    registry.add("meanptCentNbs/hChargedPionWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-    registry.add("meanptCentNbs/hChargedPionFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-    registry.add("meanptCentNbs/hPion", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-    registry.add("meanptCentNbs/hPionMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+      if (switchsOpts.cfgClosureTest.value != 0) {
+        registry.add("meanptCentNbs/hPionMeanptWeightC22pure", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hPionMeanptWeightMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+        registry.add("meanptCentNbs/hPionMeanptWeightC22prime", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+      }
 
-    if (switchsOpts.cfgClosureTest.value != 0) {
-      registry.add("meanptCentNbs/hPionMeanptWeightC22pure", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-      registry.add("meanptCentNbs/hPionMeanptWeightMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-      registry.add("meanptCentNbs/hPionMeanptWeightC22prime", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+      registry.add("meanptCentNbs/hChargedKaonWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+      registry.add("meanptCentNbs/hChargedKaonFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+      registry.add("meanptCentNbs/hKaon", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+      registry.add("meanptCentNbs/hKaonMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+
+      registry.add("meanptCentNbs/hChargedProtonWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+      registry.add("meanptCentNbs/hChargedProtonFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+      registry.add("meanptCentNbs/hProton", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
+      registry.add("meanptCentNbs/hProtonMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
     }
-
-    registry.add("meanptCentNbs/hChargedKaonWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-    registry.add("meanptCentNbs/hChargedKaonFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-    registry.add("meanptCentNbs/hKaon", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-    registry.add("meanptCentNbs/hKaonMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-
-    registry.add("meanptCentNbs/hChargedProtonWithNpair", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-    registry.add("meanptCentNbs/hChargedProtonFull", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-    registry.add("meanptCentNbs/hProton", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-    registry.add("meanptCentNbs/hProtonMeanpt", "", {HistType::kTProfile3D, {cfgaxisMeanPt, axisMultiplicity, meanptC22GraphOpts.cfgaxisBootstrap}});
-    // end pid
-    // end init tprofile3d for <2'> - meanpt
 
     /// @note init QA plot for processQA
     if (switchsOpts.cfgProcessQAOutput.value) {
@@ -1211,8 +1238,11 @@ struct PidFlowPtCorr {
       return;
     }
 
-    registry.fill(HIST("meanptCentNbs/hCharged"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, val, nch * dnx);
-    registry.fill(HIST("meanptCentNbs/hChargedMeanpt"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, ptSum / nch, 1.);
+    // These large TProfile3D objects are optional; keep FlowContainer output independent of this switch.
+    if (switchsOpts.cfgAddMeanPtCentNbsHistograms.value) {
+      registry.fill(HIST("meanptCentNbs/hCharged"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, val, nch * dnx);
+      registry.fill(HIST("meanptCentNbs/hChargedMeanpt"), ptSum / nch, cent, rndm * cfgFlowNbootstrap, ptSum / nch, 1.);
+    }
 
     fFCCh->FillProfile("hMeanPtWeightFull", cent, (ptSum / nch), nch * dnx, rndm);
   }
@@ -1256,15 +1286,17 @@ struct PidFlowPtCorr {
           return;
         }
 
-        registry.fill(HIST("meanptCentNbs/hPion"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
-        registry.fill(HIST("meanptCentNbs/hChargedPionFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nPid);
-        registry.fill(HIST("meanptCentNbs/hChargedPionWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
-        registry.fill(HIST("meanptCentNbs/hPionMeanpt"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, 1.);
+        if (switchsOpts.cfgAddMeanPtCentNbsHistograms.value) {
+          registry.fill(HIST("meanptCentNbs/hPion"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
+          registry.fill(HIST("meanptCentNbs/hChargedPionFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nPid);
+          registry.fill(HIST("meanptCentNbs/hChargedPionWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
+          registry.fill(HIST("meanptCentNbs/hPionMeanpt"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, 1.);
+        }
 
         fFCPi->FillProfile("hMeanPtWeightFull", cent, (pidPtSum / nPid), nPid * npairPid, rndm);
         fFCPi->FillProfile("hMeanPtWeightCharged", cent, (pidPtSum / nPid), dnx * nPid, rndm);
 
-        if (switchsOpts.cfgClosureTest.value != 0) {
+        if (switchsOpts.cfgAddMeanPtCentNbsHistograms.value && switchsOpts.cfgClosureTest.value != 0) {
           double npair4c22pure = fGFW->Calculate(corrconfigs.at(29), 0, true).real();
           if (npair4c22pure > minVal4Float) {
             registry.fill(HIST("meanptCentNbs/hPionMeanptWeightC22pure"),
@@ -1297,10 +1329,12 @@ struct PidFlowPtCorr {
           return;
         }
 
-        registry.fill(HIST("meanptCentNbs/hKaon"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
-        registry.fill(HIST("meanptCentNbs/hChargedKaonFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nPid);
-        registry.fill(HIST("meanptCentNbs/hChargedKaonWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
-        registry.fill(HIST("meanptCentNbs/hKaonMeanpt"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, 1.);
+        if (switchsOpts.cfgAddMeanPtCentNbsHistograms.value) {
+          registry.fill(HIST("meanptCentNbs/hKaon"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
+          registry.fill(HIST("meanptCentNbs/hChargedKaonFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nPid);
+          registry.fill(HIST("meanptCentNbs/hChargedKaonWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
+          registry.fill(HIST("meanptCentNbs/hKaonMeanpt"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, 1.);
+        }
 
         fFCKa->FillProfile("hMeanPtWeightFull", cent, (pidPtSum / nPid), nPid * npairPid, rndm);
         fFCKa->FillProfile("hMeanPtWeightCharged", cent, (pidPtSum / nPid), dnx * nPid, rndm);
@@ -1319,10 +1353,12 @@ struct PidFlowPtCorr {
           return;
         }
 
-        registry.fill(HIST("meanptCentNbs/hProton"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
-        registry.fill(HIST("meanptCentNbs/hChargedProtonFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nPid);
-        registry.fill(HIST("meanptCentNbs/hChargedProtonWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
-        registry.fill(HIST("meanptCentNbs/hProtonMeanpt"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, 1.);
+        if (switchsOpts.cfgAddMeanPtCentNbsHistograms.value) {
+          registry.fill(HIST("meanptCentNbs/hProton"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidc22, nPid * npairPid);
+          registry.fill(HIST("meanptCentNbs/hChargedProtonFull"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx * nPid);
+          registry.fill(HIST("meanptCentNbs/hChargedProtonWithNpair"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, val, dnx);
+          registry.fill(HIST("meanptCentNbs/hProtonMeanpt"), pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap, pidPtSum / nPid, 1.);
+        }
 
         fFCPr->FillProfile("hMeanPtWeightFull", cent, (pidPtSum / nPid), nPid * npairPid, rndm);
         fFCPr->FillProfile("hMeanPtWeightCharged", cent, (pidPtSum / nPid), dnx * nPid, rndm);
@@ -1469,7 +1505,7 @@ struct PidFlowPtCorr {
   }
 
   template <char... chars>
-  void fillProfilePOIvnpt(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent, const double& ptSum, const double& nch)
+  void fillProfilePOIvnpt(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent, const double& ptSum, const double& nch, const double& rndm)
   {
     double dnx = 0.0, val = 0.0;
     dnx = fGFW->Calculate(corrconf, 0, true).real();
@@ -1479,7 +1515,30 @@ struct PidFlowPtCorr {
     val = fGFW->Calculate(corrconf, 0, false).real() / dnx;
 
     if (std::fabs(val) < 1) {
-      registry.fill(tarName, cent, ptSum / nch, val, dnx);
+      registry.fill(tarName, cent, ptSum / nch, rndm * cfgFlowNbootstrap, val, dnx);
+    }
+  }
+
+  /**
+   * @brief Fill one event-level POI-ref value formed from the two eta orientations.
+   * @details The two correlators share one profile entry. Their numerators and pair
+   *          counts are added before division. The PID mean pT is only the profile
+   *          coordinate, so the profile is weighted by the combined pair count alone.
+   */
+  template <char... chars>
+  void fillProfilePOIvnpt(const GFW::CorrConfig& corrconfA, const GFW::CorrConfig& corrconfB, const ConstStr<chars...>& tarName, const double& cent, const double& ptSum, const double& nPid, const double& rndm)
+  {
+    const double dnxA = fGFW->Calculate(corrconfA, 0, true).real();
+    const double dnxB = fGFW->Calculate(corrconfB, 0, true).real();
+    const double dnx = dnxA + dnxB;
+    if (dnx == 0.) {
+      return;
+    }
+
+    const double numerator = fGFW->Calculate(corrconfA, 0, false).real() + fGFW->Calculate(corrconfB, 0, false).real();
+    const double val = numerator / dnx;
+    if (std::fabs(val) < 1.) {
+      registry.fill(tarName, cent, ptSum / nPid, rndm * cfgFlowNbootstrap, val, dnx);
     }
   }
 
@@ -1921,6 +1980,9 @@ struct PidFlowPtCorr {
         break;
       case MyFunctionName::funcProcessPidResponseMatrix:
         registry.fill(HIST("hEventCount/processPidResponseMatrix"), position);
+        break;
+      case MyFunctionName::funcProcessDataC22DeltaPt:
+        registry.fill(HIST("hEventCount/processDataC22DeltaPt"), position);
         break;
 
       default:
@@ -2481,14 +2543,6 @@ struct PidFlowPtCorr {
       fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(33), cent, rndm, ptSum, nch, "covV3Pt");
       fillFCvnpt(MyParticleType::kProton, corrconfigs.at(34), cent, rndm, ptSum, nch, "covV3Pt");
 
-      fillProfilePOIvnpt(corrconfigs.at(0), HIST("c22dmeanpt"), cent, ptSum, nch);
-      fillProfilePOIvnpt(corrconfigs.at(5), HIST("pi/c22dmeanpt"), cent, ptSum, nch);
-      fillProfilePOIvnpt(corrconfigs.at(6), HIST("pi/c22dmeanpt"), cent, ptSum, nch);
-      fillProfilePOIvnpt(corrconfigs.at(7), HIST("ka/c22dmeanpt"), cent, ptSum, nch);
-      fillProfilePOIvnpt(corrconfigs.at(8), HIST("ka/c22dmeanpt"), cent, ptSum, nch);
-      fillProfilePOIvnpt(corrconfigs.at(9), HIST("pr/c22dmeanpt"), cent, ptSum, nch);
-      fillProfilePOIvnpt(corrconfigs.at(10), HIST("pr/c22dmeanpt"), cent, ptSum, nch);
-
       fillFC4PtC22(cent, ptSum, nch, rndm);
       if (nPionWeighted > 0) {
         fillFC4PtC22(cent, rndm, MyParticleType::kPion, pionPtSum, nPionWeighted);
@@ -2635,6 +2689,216 @@ struct PidFlowPtCorr {
   PROCESS_SWITCH(PidFlowPtCorr, processData, "", true);
 
   /**
+   * @brief Fill charged and identified-particle c22 versus event mean pT.
+   * @note Each profile uses the mean pT of the same particle sample on its pT axis:
+   *       charged, pion, kaon, or proton. The corresponding FlowContainer hMeanPt
+   *       observable provides the ensemble mean pT needed to convert that axis to
+   *       delta[pT]/<[pT]> offline.
+   */
+  void processDataC22DeltaPt(AodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, AodTracks const& tracks)
+  {
+    if (!switchsOpts.cfgAddC22DeltaPtHistograms.value) {
+      return;
+    }
+    const double rndm = fRndm->Rndm();
+
+    /// @note event selection
+    registry.fill(HIST("hEventCount/processDataC22DeltaPt"), 0.5);
+    if (tracks.size() < 1) {
+      return;
+    }
+
+    fGFW->Clear();
+    const auto cent = getCentrality(collision);
+    if (!collision.sel8()) {
+      return;
+    }
+    registry.fill(HIST("hEventCount/processDataC22DeltaPt"), 1.5);
+
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    const double interactionRate = getInteractionRate(bc.timestamp(), bc.runNumber());
+    if (!eventSelected(collision, cent, interactionRate, MyFunctionName::funcProcessDataC22DeltaPt)) {
+      return;
+    }
+    // event selection
+
+    loadCorrections(bc.timestamp());
+
+    /// @note local density corr
+    const float vtxz = collision.posZ();
+
+    double psi2Est = 0.;
+    double psi3Est = 0.;
+    double psi4Est = 0.;
+    double v2 = 0.;
+    double v3 = 0.;
+    double v4 = 0.;
+    if (switchsOpts.cfgDoLocDenCorr.value) {
+      double q2x = 0.;
+      double q2y = 0.;
+      double q3x = 0.;
+      double q3y = 0.;
+      double q4x = 0.;
+      double q4y = 0.;
+      for (const auto& track : tracks) {
+        if (!isWithinRefPtRange(track.pt())) {
+          continue;
+        }
+        q2x += std::cos(2. * track.phi());
+        q2y += std::sin(2. * track.phi());
+        q3x += std::cos(3. * track.phi());
+        q3y += std::sin(3. * track.phi());
+        q4x += std::cos(4. * track.phi());
+        q4y += std::sin(4. * track.phi());
+      }
+      psi2Est = std::atan2(q2y, q2x) / 2.;
+      psi3Est = std::atan2(q3y, q3x) / 3.;
+      psi4Est = std::atan2(q4y, q4x) / 4.;
+      v2 = funcV2->Eval(cent);
+      v3 = funcV3->Eval(cent);
+      v4 = funcV4->Eval(cent);
+    }
+    // end local density corr
+
+    // Event-wise mean-pT numerators and NUE-corrected particle counts. Charged
+    // particles use the reference pT range; each PID species uses its own POI pT range.
+    double ptSum = 0.;
+    double nch = 0.;
+    double pionPtSum = 0.;
+    double kaonPtSum = 0.;
+    double protonPtSum = 0.;
+    double nPionWeighted = 0.;
+    double nKaonWeighted = 0.;
+    double nProtonWeighted = 0.;
+
+    for (const auto& track : tracks) {
+      // The mean-pT samples use the same track-quality and eta selections. The pT
+      // selection and NUE correction are then applied independently for charged and PID.
+      if (!trackSelectedForFlow(track) || std::fabs(track.eta()) >= trkQualityOpts.cfgRangeEta.value) {
+        continue;
+      }
+
+      if (isWithinRefPtRange(track.pt())) {
+        float weff = 1.f;
+        setParticleNUEWeight(weff, track, cent);
+        nch += weff;
+        ptSum += weff * track.pt();
+      }
+
+      const int pid = getPidConfigurable(track);
+      if (!isWithinPOIPtRange(pid, track.pt())) {
+        continue;
+      }
+
+      float weffPid = 1.f;
+      setParticleNUEWeight(weffPid, track, cent, pid);
+      if (pid == MyParticleType::kPion) {
+        nPionWeighted += weffPid;
+        pionPtSum += weffPid * track.pt();
+      } else if (pid == MyParticleType::kKaon) {
+        nKaonWeighted += weffPid;
+        kaonPtSum += weffPid * track.pt();
+      } else if (pid == MyParticleType::kProton) {
+        nProtonWeighted += weffPid;
+        protonPtSum += weffPid * track.pt();
+      }
+    }
+    if (nch <= 0.) {
+      return;
+    }
+
+    // Fill the GFW regions in a separate pass. Bit 1 is the charged reference
+    // sample; bits 2, 4, and 8 are pion, kaon, and proton POIs, respectively.
+    for (const auto& track : tracks) {
+      if (!trackSelectedForFlow(track)) {
+        continue;
+      }
+
+      float weff = 1.f;
+      float wacc = 1.f;
+      setParticleNUEWeight(weff, track, cent);
+      setParticleNUAWeight(wacc, track, vtxz);
+
+      if (isWithinRefPtRange(track.pt())) {
+        if (switchsOpts.cfgDoLocDenCorr.value) {
+          const double fphi = 1. + 2. * (v2 * std::cos(2. * (track.phi() - psi2Est)) +
+                                         v3 * std::cos(3. * (track.phi() - psi3Est)) +
+                                         v4 * std::cos(4. * (track.phi() - psi4Est)));
+          const int ptBinForEff = hFindPtBin->FindBin(track.pt());
+          if (ptBinForEff >= 1 && ptBinForEff <= hFindPtBin->GetNbinsX()) {
+            const double localDensityEff = funcEff[ptBinForEff - 1]->Eval(fphi * tracks.size());
+            if (localDensityEff > 0.) {
+              weff /= localDensityEff;
+            }
+          }
+        }
+        /// @note passed selection: global cut + pt cut
+        fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, 1);
+      }
+
+      const int pid = getPidConfigurable(track);
+      if (!isWithinPOIPtRange(pid, track.pt())) {
+        continue;
+      }
+
+      float weffPid = 1.f;
+      float waccPid = 1.f;
+      setParticleNUEWeight(weffPid, track, cent, pid);
+      setParticleNUAWeight(waccPid, track, vtxz, pid);
+
+      if (pid == MyParticleType::kPion) {
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, 2);
+      } else if (pid == MyParticleType::kKaon) {
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, 4);
+      } else if (pid == MyParticleType::kProton) {
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, 8);
+      }
+    }
+
+    // All profiles from one event use the same bootstrap subsample. Mean-pT profiles
+    // retain the NUE-corrected particle-count weight used by FlowContainer hMeanPt.
+    registry.fill(HIST("c22DeltaPt/hMeanPtCharged"), cent, rndm * cfgFlowNbootstrap, ptSum / nch, nch);
+    if (nPionWeighted > 0.) {
+      registry.fill(HIST("c22DeltaPt/hMeanPtPion"), cent, rndm * cfgFlowNbootstrap, pionPtSum / nPionWeighted, nPionWeighted);
+      fillProfilePOIvnpt(corrconfigs.at(0), HIST("c22DeltaPt/c22dmeanptPionRefRef"), cent, pionPtSum, nPionWeighted, rndm);
+    }
+    if (nKaonWeighted > 0.) {
+      registry.fill(HIST("c22DeltaPt/hMeanPtKaon"), cent, rndm * cfgFlowNbootstrap, kaonPtSum / nKaonWeighted, nKaonWeighted);
+      fillProfilePOIvnpt(corrconfigs.at(0), HIST("c22DeltaPt/c22dmeanptKaonRefRef"), cent, kaonPtSum, nKaonWeighted, rndm);
+    }
+    if (nProtonWeighted > 0.) {
+      registry.fill(HIST("c22DeltaPt/hMeanPtProton"), cent, rndm * cfgFlowNbootstrap, protonPtSum / nProtonWeighted, nProtonWeighted);
+      fillProfilePOIvnpt(corrconfigs.at(0), HIST("c22DeltaPt/c22dmeanptProtonRefRef"), cent, protonPtSum, nProtonWeighted, rndm);
+    }
+
+    // Charged and PID-binned ref-ref are common to both modes. The numerator is
+    // selected between PID Pure and POI-ref by cfgC22DeltaPtUsePure.
+    fillProfilePOIvnpt(corrconfigs.at(0), HIST("c22DeltaPt/c22dmeanptCharged"), cent, ptSum, nch, rndm);
+    if (switchsOpts.cfgC22DeltaPtUsePure.value) {
+      if (nPionWeighted > 0.) {
+        fillProfilePOIvnpt(corrconfigs.at(29), HIST("c22DeltaPt/c22dmeanptPionPure"), cent, pionPtSum, nPionWeighted, rndm);
+      }
+      if (nKaonWeighted > 0.) {
+        fillProfilePOIvnpt(corrconfigs.at(30), HIST("c22DeltaPt/c22dmeanptKaonPure"), cent, kaonPtSum, nKaonWeighted, rndm);
+      }
+      if (nProtonWeighted > 0.) {
+        fillProfilePOIvnpt(corrconfigs.at(31), HIST("c22DeltaPt/c22dmeanptProtonPure"), cent, protonPtSum, nProtonWeighted, rndm);
+      }
+    } else {
+      if (nPionWeighted > 0.) {
+        fillProfilePOIvnpt(corrconfigs.at(5), corrconfigs.at(6), HIST("c22DeltaPt/c22dmeanptPionPOIRef"), cent, pionPtSum, nPionWeighted, rndm);
+      }
+      if (nKaonWeighted > 0.) {
+        fillProfilePOIvnpt(corrconfigs.at(7), corrconfigs.at(8), HIST("c22DeltaPt/c22dmeanptKaonPOIRef"), cent, kaonPtSum, nKaonWeighted, rndm);
+      }
+      if (nProtonWeighted > 0.) {
+        fillProfilePOIvnpt(corrconfigs.at(9), corrconfigs.at(10), HIST("c22DeltaPt/c22dmeanptProtonPOIRef"), cent, protonPtSum, nProtonWeighted, rndm);
+      }
+    }
+  }
+  PROCESS_SWITCH(PidFlowPtCorr, processDataC22DeltaPt, "Fill c22dmeanpt profiles", false);
+
+  /**
    * @brief Run the flow calculation on generated MC particles for a closure test.
    * @note Reconstructed collisions are only used to obtain the centrality. The selection is
    *       deliberately truth-level: MC vertex filter, physical-primary particles, kinematics,
@@ -2647,7 +2911,9 @@ struct PidFlowPtCorr {
                         FilteredTracksWithMCLabel const&)
   {
     registry.fill(HIST("hEventCount/processData"), 0.5);
-    if (collisions.size() <= 0 || mcParticles.size() <= 0) {
+    // A generated event must be associated with exactly one reconstructed collision.
+    // Otherwise the same truth particles would be filled more than once.
+    if (collisions.size() != 1 || mcParticles.size() <= 0) {
       return;
     }
 
@@ -2854,14 +3120,6 @@ struct PidFlowPtCorr {
       fillFCvnpt(MyParticleType::kPion, corrconfigs.at(32), cent, rndm, ptSum, nch, "covV3Pt");
       fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(33), cent, rndm, ptSum, nch, "covV3Pt");
       fillFCvnpt(MyParticleType::kProton, corrconfigs.at(34), cent, rndm, ptSum, nch, "covV3Pt");
-
-      fillProfilePOIvnpt(corrconfigs.at(0), HIST("c22dmeanpt"), cent, ptSum, nch);
-      fillProfilePOIvnpt(corrconfigs.at(5), HIST("pi/c22dmeanpt"), cent, ptSum, nch);
-      fillProfilePOIvnpt(corrconfigs.at(6), HIST("pi/c22dmeanpt"), cent, ptSum, nch);
-      fillProfilePOIvnpt(corrconfigs.at(7), HIST("ka/c22dmeanpt"), cent, ptSum, nch);
-      fillProfilePOIvnpt(corrconfigs.at(8), HIST("ka/c22dmeanpt"), cent, ptSum, nch);
-      fillProfilePOIvnpt(corrconfigs.at(9), HIST("pr/c22dmeanpt"), cent, ptSum, nch);
-      fillProfilePOIvnpt(corrconfigs.at(10), HIST("pr/c22dmeanpt"), cent, ptSum, nch);
 
       fillFC4PtC22(cent, ptSum, nch, rndm);
       if (nPionWeighted > 0.) {
@@ -3371,7 +3629,9 @@ struct PidFlowPtCorr {
                   FilteredTracksWithMCLabel const& tracks)
   {
     registry.fill(HIST("hEventCount/processSim"), 0.5);
-    if (collisions.size() <= 0) {
+    // Keep the generated denominator aligned with one reconstructed collision.
+    // Multiple associations would otherwise fill the same MC particles repeatedly.
+    if (collisions.size() != 1) {
       return;
     }
 
