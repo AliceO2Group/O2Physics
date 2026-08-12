@@ -81,7 +81,7 @@ static constexpr float DcaMaxTPCSigma = 1.f;
 static constexpr float DcaTrkPtCut = 0.4f;
 
 // Spectra task
-struct SpectraTOF {
+struct SpectraTOFLight {
   struct : ConfigurableGroup {
     Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
     Configurable<int> cfgINELCut{"cfgINELCut", 0, "INEL event selection: 0 sel, 1 INEL>0"};
@@ -405,7 +405,7 @@ struct SpectraTOF {
       }
     }
     // Print output histograms statistics
-    LOG(info) << "Size of the histograms in spectraTOF";
+    LOG(info) << "Size of the histograms in spectraTOFLight";
     histos.print();
   }
 
@@ -757,7 +757,7 @@ struct SpectraTOF {
     }
 
   } // end of the process function
-  PROCESS_SWITCH(SpectraTOF, processStandard, "Standard data processor", true);
+  PROCESS_SWITCH(SpectraTOFLight, processStandard, "Standard data processor", true);
 
   template <typename CollisionType, bool isMC = false>
   float getMultiplicity(const CollisionType& collision)
@@ -1172,8 +1172,6 @@ struct SpectraTOF {
       }
       histos.fill(HIST("MC/Multiplicity"), getMultiplicityMC(mcCollision));
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-      bool hasParticleInFT0C = false;
-      bool hasParticleInFT0A = false;
       if (evselOptions.cfgINELCut.value == EvSelInelGt0Cut) {
         if (!o2::pwglf::isINELgt0mc(particlesInCollision, pdgDB)) {
           continue;
@@ -1188,15 +1186,6 @@ struct SpectraTOF {
         static_for<0, 17>([&](auto i) {
           fillParticleHistogramsMCGenEvs<i>(mcParticle, mcCollision);
         });
-      } /*
-       if (mcCollision.isInelGt0()) {
-         histos.fill(HIST("MC/GenRecoCollisions"), 3.f);
-       }
-       if (mcCollision.isInelGt1()) {
-         histos.fill(HIST("MC/GenRecoCollisions"), 4.f);
-       }*/
-      if (hasParticleInFT0C && hasParticleInFT0A) {
-        histos.fill(HIST("MC/GenRecoCollisions"), 5.f);
       }
     }
   }
@@ -1204,4 +1193,4 @@ struct SpectraTOF {
 
 }; // end of spectra task
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<SpectraTOF>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<SpectraTOFLight>(cfgc)}; }
