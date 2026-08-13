@@ -55,7 +55,7 @@
 #include <string_view>
 #include <vector>
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, (DEFAULT), (HELP)};
 
 using namespace o2;
 using namespace o2::framework;
@@ -200,7 +200,7 @@ struct ZdcQVectors {
   std::unique_ptr<TF1> fMultCutHigh = nullptr;
   std::unique_ptr<TF1> fMultMultPVCut = nullptr;
 
-  Service<ccdb::BasicCCDBManager> ccdb;
+  Service<ccdb::BasicCCDBManager> ccdb{};
 
   // keep track of calibration histos for each given step and iteration
   struct Calib {
@@ -713,7 +713,13 @@ struct ZdcQVectors {
       hist = dynamic_cast<T*>(list->FindObject(Form("%s", objName)));
     } else if (cm == kTimestamp) {
       auto list = dynamic_cast<TList*>(cal.calibList[cm]->FindObject(Form("it%i_step%i", iteration, step)));
+      if (!list) {
+        LOGF(fatal, "No calibration list for iteration %i and step %i", iteration, step);
+      }
       hist = dynamic_cast<T*>(list->FindObject(Form("%s", objName)));
+      if (!hist) {
+        LOGF(fatal, "No calibration histo for iteration %i and step %i -> %s", iteration, step, objName);
+      }
     } else if (cm == kRec) {
       auto list = dynamic_cast<TList*>(cal.calibList[cm]->FindObject(Form("it%i_step%i", iteration, step)));
       if (!list) {
@@ -733,12 +739,15 @@ struct ZdcQVectors {
     if (hist->InheritsFrom("TProfile2D")) {
       // needed for energy calibration!
       auto h = dynamic_cast<TProfile2D*>(hist);
+      if(h){
       TString name = h->GetName();
       int binrunnumber = h->GetXaxis()->FindBin(TString::Format("%d", cal.runnumber));
       int bin = h->GetYaxis()->FindBin(cal.centrality);
       calibConstant = h->GetBinContent(binrunnumber, bin);
+      }
     } else if (hist->InheritsFrom("TProfile")) {
       auto h = dynamic_cast<TProfile*>(hist);
+      if(h){
       TString name = h->GetName();
       int bin{};
       if (name.Contains("mean_vx")) {
@@ -760,9 +769,11 @@ struct ZdcQVectors {
         bin = h->GetXaxis()->FindBin(cal.timestamp);
       }
       calibConstant = h->GetBinContent(bin);
+    }
     } else if (hist->InheritsFrom("THnSparse")) {
       std::vector<int> sparsePars;
       auto h = dynamic_cast<THnSparseD*>(hist);
+      if(h){
       sparsePars.push_back(h->GetAxis(0)->FindBin(cal.centrality));
       sparsePars.push_back(h->GetAxis(1)->FindBin(cal.v[0]));
       sparsePars.push_back(h->GetAxis(2)->FindBin(cal.v[1]));
@@ -782,6 +793,7 @@ struct ZdcQVectors {
       }
 
       delete tempProj;
+    }
     }
 
     return calibConstant;
@@ -1157,8 +1169,14 @@ struct ZdcQVectors {
       if (!cfgCCDBdir_Shift.value.empty() && !cal.isShiftProfileFound) {
         LOGF(info, "Getting shift profile from CCDB for runnumber: %d", runnumber);
         TList* hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir_Shift.value, foundBC.timestamp());
-        cal.shiftprofileC = dynamic_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCC"));
-        cal.shiftprofileA = dynamic_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCA"));
+        auto shiftProfileC = dynamic_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCC"));
+        if(shiftProfileC) {
+          cal.shiftprofileC = shiftProfileC;
+        }
+        auto shiftProfileA = dynamic_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCA"));
+        if(shiftProfileA) {
+          cal.shiftprofileA = shiftProfileA;
+        }
         if (!cal.shiftprofileC || !cal.shiftprofileA) {
           LOGF(error, "Shift profile not found in CCDB for runnumber: %d", runnumber);
           cal.isShiftProfileFound = false;
