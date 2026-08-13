@@ -132,7 +132,8 @@ struct FlowGenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgUsePID, bool, true, "Enable PID information")
   O2_DEFINE_CONFIGURABLE(cfgUseGapMethod, bool, false, "Use gap method in vn-pt calculations")
   struct : ConfigurableGroup {
-    O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFlowWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting");
+    O2_DEFINE_CONFIGURABLE(cfgUsePtCorrWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting for pt-pt correlations");
+    O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFlowWeights, bool, true, "Enable or disable the use of multiplicity-based event weighting for azimuthal correlations");
     O2_DEFINE_CONFIGURABLE(cfgUseMultiplicityFractionWeights, bool, false, "Enable or disable the use of multiplicity-based event weighting for the spectral fraction");
   } cfgEventWeight;
   struct : ConfigurableGroup{
@@ -176,7 +177,7 @@ struct FlowGenericFramework {
     O2_DEFINE_CONFIGURABLE(cfgTVXinTRD, bool, true, "TVXinTRD - Use TVXinTRD (reject TRD triggered events)");
     O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, true, "IsVertexITSTPC - Selects collisions with at least one ITS-TPC track");
   } cfgEventCutFlags;
-  struct ConfigurableGroup {
+  struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgOccupancySelection, int, 2000, "Max occupancy selection, -999 to disable");
     O2_DEFINE_CONFIGURABLE(cfgDoOccupancySel, bool, true, "Bool for event selection on detector occupancy");
     O2_DEFINE_CONFIGURABLE(cfgMagField, float, 99999, "Configurable magnetic field; default CCDB will be queried");
@@ -205,15 +206,13 @@ struct FlowGenericFramework {
   Configurable<LabeledArray<int>> resonanceSwitches{"resonanceSwitches", {LongArrayInt.front().data(), 8, 3, {"UseParticle", "UseCosPA", "NMassBins", "UseDCAxDaughters", "UseProperLifetime", "UseV0Radius", "UseArmPodCut", "UseCompetingMassRejection"}, {"K0", "Lambda", "Phi"}}, "Labeled array (int) for various cuts on resonances"};
 
   struct : ConfigurableGroup {
-    O2_DEFINE_CONFIGURABLE(cfgUseLsPhi, bool, true, "Use LikeSign for Phi v2")
-    O2_DEFINE_CONFIGURABLE(cfgUseOnlyTPC, bool, true, "Use only TPC PID for daughter selection")
-    O2_DEFINE_CONFIGURABLE(cfgDaughterPIDRejection, bool, true, "Reject daughters if not consistent with expected K0/Lambda decay products")
-    O2_DEFINE_CONFIGURABLE(cfgFakeKaonCut, float, 0.1f, "Maximum difference in measured momentum and TPC inner ring momentum of particle")
-    O2_DEFINE_CONFIGURABLE(cfgUseAsymmetricPID, bool, false, "Use asymmetric PID cuts")
-    O2_DEFINE_CONFIGURABLE(cfgTPCNsigmaCut, float, 3.0f, "TPC N-sigma cut for pions, kaons, protons")
-    O2_DEFINE_CONFIGURABLE(cfgUseStrictPID, bool, true, "Use strict PID cuts for TPC")
+    O2_DEFINE_CONFIGURABLE(cfgUseOnlyTPC, bool, true, "Use only TPC PID for daughter selection");
+    O2_DEFINE_CONFIGURABLE(cfgDaughterPIDRejection, bool, true, "Reject daughters if not consistent with expected K0/Lambda decay products");
+    O2_DEFINE_CONFIGURABLE(cfgUseAsymmetricPID, bool, false, "Use asymmetric PID cuts");
+    O2_DEFINE_CONFIGURABLE(cfgTPCNsigmaCut, float, 3.0f, "TPC N-sigma cut for pions, kaons, protons");
+    O2_DEFINE_CONFIGURABLE(cfgUseStrictPID, bool, true, "Use strict PID cuts for TPC");
     O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 0.5, "pt cut on TOF for PID");
-    O2_DEFINE_CONFIGURABLE(cfgUseItsPID, bool, true, "Use ITS PID for particle identification")
+    O2_DEFINE_CONFIGURABLE(cfgUseItsPID, bool, true, "Use ITS PID for particle identification");
     O2_DEFINE_CONFIGURABLE(cfgK0SignalMin, float, 0.48, "Minimum cut on K0 mT signal");
     O2_DEFINE_CONFIGURABLE(cfgK0SignalMax, float, 0.51, "Maximum cut on K0 mT signal");
     O2_DEFINE_CONFIGURABLE(cfgLambdaSignalMin, float, 1.1, "Minimum cut on Lambda mT signal");
@@ -741,7 +740,7 @@ struct FlowGenericFramework {
           registryQA.add("K0/PiMinusTOF_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("K0/hK0Phi", "", {HistType::kTH1D, {phiAxis}});
           registryQA.add("K0/hK0EtaY", "", {HistType::kTH2D, {etaAxis, yAxis}});
-          registryQA.add("K0/hK0AP", "", {HistType::kTH2D, {{100, -1, 1}, {500, 0, 1.}}});
+          registryQA.add("K0/hK0AP", "", {HistType::kTH2D, {{100, -1, 1}, {250, 0, 0.5}}});
           registryQA.add("K0/hK0Mass_sparse", "", {HistType::kTHnSparseF, {{axisK0Mass, ptAxis, nchAxis}}});
           registryQA.add("K0/hK0s", "", {HistType::kTH1D, {singleCount}});
           registryQA.add("K0/hK0s_corrected", "", {HistType::kTH1D, {singleCount}});
@@ -771,7 +770,7 @@ struct FlowGenericFramework {
           registryQA.add("Lambda/PiMinusTOF_L", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("Lambda/hLambdaPhi", "", {HistType::kTH1D, {phiAxis}});
           registryQA.add("Lambda/hLambdaEtaY", "", {HistType::kTH2D, {etaAxis, yAxis}});
-          registryQA.add("Lambda/hLambdaAP", "", {HistType::kTH2D, {{100, -1, 1}, {100, 0, 5.}}});
+          registryQA.add("Lambda/hLambdaAP", "", {HistType::kTH2D, {{100, -1, 1}, {250, 0, 0.5}}});
           registryQA.add("Lambda/hLambdaMass_sparse", "", {HistType::kTHnSparseF, {{axisLambdaMass, ptAxis, nchAxis}}});
           registryQA.add("Lambda/PiPlusTPC_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
           registryQA.add("Lambda/PrMinusTPC_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
@@ -779,7 +778,7 @@ struct FlowGenericFramework {
           registryQA.add("Lambda/PrMinusTOF_AL", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTOF}}});
           registryQA.add("Lambda/hAntiLambdaPhi", "", {HistType::kTH1D, {phiAxis}});
           registryQA.add("Lambda/hAntiLambdaEtaY", "", {HistType::kTH2D, {etaAxis, yAxis}});
-          registryQA.add("Lambda/hAntiLambdaAP", "", {HistType::kTH2D, {{100, -1, 1}, {100, 0, 5.}}});
+          registryQA.add("Lambda/hAntiLambdaAP", "", {HistType::kTH2D, {{100, -1, 1}, {250, 0, 0.5}}});
           registryQA.add("Lambda/hAntiLambdaMass_sparse", "", {HistType::kTHnSparseF, {{axisLambdaMass, ptAxis, nchAxis}}});
           registryQA.add("Lambda/hLambdas", "", {HistType::kTH1D, {singleCount}});
           registryQA.add("Lambda/hLambdas_corrected", "", {HistType::kTH1D, {singleCount}});
@@ -884,7 +883,7 @@ struct FlowGenericFramework {
       fFCgen->Initialize(oba, multAxis, cfgNbootstrap);
     }
     delete oba;
-
+    fFCpt->setEventWeight(cfgEventWeight.cfgUsePtCorrWeights ? eventweight::TupleWeight : eventweight::UnityWeight);
     fFCpt->setUseCentralMoments(cfgUseCentralMoments);
     fFCpt->setUseGapMethod(cfgUseGapMethod);
     fFCpt->initialise(multAxis, cfgMpar, gfwMemberCache.configs, cfgNbootstrap);

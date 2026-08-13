@@ -1263,7 +1263,7 @@ struct FemtoUniverseProducerTask {
     }
   }
 
-  template <bool isMC, typename TrackType>
+  template <bool fillITS, typename TrackType>
   void fillTracksFullNsigma(TrackType const& tracks)
   {
     std::vector<int> childIDs = {0, 0};
@@ -1318,6 +1318,12 @@ struct FemtoUniverseProducerTask {
                             track.tofNSigmaDe(), track.tpcNSigmaEl(), track.tpcNSigmaPi(),
                             track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                             track.tpcNSigmaDe());
+
+      if constexpr (fillITS) {
+        outputDebugITSParts(track.itsNSigmaEl(), track.itsNSigmaPi(),
+                            track.itsNSigmaKa(), track.itsNSigmaPr(),
+                            track.itsNSigmaDe());
+      }
     }
   }
 
@@ -2995,10 +3001,19 @@ struct FemtoUniverseProducerTask {
                                           soa::Filtered<soa::Join<aod::FemtoFullNSigmaTracks, aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
                                                                   aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>> const& tracksNsigma)
   {
+
+    auto tracksWithItsPid = soa::Attach<soa::Filtered<soa::Join<aod::FemtoFullNSigmaTracks, aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
+                                                                aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>>,
+                                        aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracksNsigma);
+
     // fill the tables
     const auto colcheck = fillCollisionsCentRun3<false>(col);
     if (colcheck) {
-      fillTracksFullNsigma<false>(tracksNsigma);
+      if (!confFillITSPid) {
+        fillTracksFullNsigma<false>(tracksNsigma);
+      } else {
+        fillTracksFullNsigma<true>(tracksWithItsPid);
+      }
     }
   }
   PROCESS_SWITCH(FemtoUniverseProducerTask, processTrackCentRun3DataFullNSigma, "Provide experimental data for Run 3 with centrality for track track with full NSigma information", false);

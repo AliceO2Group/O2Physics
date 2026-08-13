@@ -26,16 +26,18 @@ DECLARE_SOA_COLUMN(CentRun2CL1, centRun2CL1, float);                   //! Run 2
 DECLARE_SOA_COLUMN(CentRun2RefMult5, centRun2RefMult5, float);         //! Run 2 cent. from ref. mult. estimator, eta 0.5
 DECLARE_SOA_COLUMN(CentRun2RefMult8, centRun2RefMult8, float);         //! Run 2 cent. from  ref. mult. estimator, eta 0.8
 
-DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float);                 //! Run 3 cent. from FV0A multiplicities
-DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);                 //! Run 3 cent. from FT0A+FT0C multiplicities
-DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);                 //! Run 3 cent. from FT0A multiplicity
-DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);                 //! Run 3 cent. from FT0C multiplicity
-DECLARE_SOA_COLUMN(CentFT0CVariant1, centFT0CVariant1, float); //! Run 3 cent. from FT0C multiplicity
-DECLARE_SOA_COLUMN(CentFT0CVariant2, centFT0CVariant2, float); //! Run 3 cent. from FT0C multiplicity, uses classical truncated Nancestors (NOT recommended, cross-check only!)
-DECLARE_SOA_COLUMN(CentFDDM, centFDDM, float);                 //! Run 3 cent. from FDDA+FDDC multiplicity
-DECLARE_SOA_COLUMN(CentNTPV, centNTPV, float);                 //! Run 3 cent. from the number of tracks contributing to the PV
-DECLARE_SOA_COLUMN(CentNGlobal, centNGlobal, float);           //! Run 3 cent. from the number of global tracks
-DECLARE_SOA_COLUMN(CentMFT, centMFT, float);                   //! Run 3 cent. from the number of tracks in the MFT
+DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float);                                   //! Run 3 cent. from FV0A multiplicities
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);                                   //! Run 3 cent. from FT0A+FT0C multiplicities
+DECLARE_SOA_COLUMN(CentFT0MLightIonAnchorCol, centFT0MLightIonAnchorCol, float); //! Run 3 cent. from FT0A+FT0C multiplicities - light ion only - 90% anchor - collision based (NOT recommended, cross-check only!)
+DECLARE_SOA_COLUMN(CentFT0MLightIonAnchorBC, centFT0MLightIonAnchorBC, float);   //! Run 3 cent. from FT0A+FT0C multiplicities - light ion only - 90% anchor - bunch crossing based (NOT recommended, cross-check only!)
+DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);                                   //! Run 3 cent. from FT0A multiplicity
+DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);                                   //! Run 3 cent. from FT0C multiplicity
+DECLARE_SOA_COLUMN(CentFT0CVariant1, centFT0CVariant1, float);                   //! Run 3 cent. from FT0C multiplicity
+DECLARE_SOA_COLUMN(CentFT0CVariant2, centFT0CVariant2, float);                   //! Run 3 cent. from FT0C multiplicity, uses classical truncated Nancestors (NOT recommended, cross-check only!)
+DECLARE_SOA_COLUMN(CentFDDM, centFDDM, float);                                   //! Run 3 cent. from FDDA+FDDC multiplicity
+DECLARE_SOA_COLUMN(CentNTPV, centNTPV, float);                                   //! Run 3 cent. from the number of tracks contributing to the PV
+DECLARE_SOA_COLUMN(CentNGlobal, centNGlobal, float);                             //! Run 3 cent. from the number of global tracks
+DECLARE_SOA_COLUMN(CentMFT, centMFT, float);                                     //! Run 3 cent. from the number of tracks in the MFT
 } // namespace cent
 
 // Run 2 tables
@@ -59,8 +61,10 @@ DECLARE_SOA_TABLE(CentNGlobals, "AOD", "CENTNGLOBAL", cent::CentNGlobal); //! Ru
 DECLARE_SOA_TABLE(CentMFTs, "AOD", "CENTMFT", cent::CentMFT);             //! Run 3 MFT tracks centrality table
 
 // Run 3 variant tables
-DECLARE_SOA_TABLE(CentFT0CVariant1s, "AOD", "CENTFT0Cvar1", cent::CentFT0CVariant1); //! Run 3 FT0C variant 1
-DECLARE_SOA_TABLE(CentFT0CVariant2s, "AOD", "CENTFT0Cvar2", cent::CentFT0CVariant2); //! Run 3 FT0C variant 1 - uses truncated Nancestors in glauber fit. Not recommended! for cross-checks only
+DECLARE_SOA_TABLE(CentFT0CVariant1s, "AOD", "CENTFT0Cvar1", cent::CentFT0CVariant1);                    //! Run 3 FT0C variant 1
+DECLARE_SOA_TABLE(CentFT0CVariant2s, "AOD", "CENTFT0Cvar2", cent::CentFT0CVariant2);                    //! Run 3 FT0C variant 1 - uses truncated Nancestors in glauber fit. Not recommended! for cross-checks only
+DECLARE_SOA_TABLE(CentFT0MLightIonAnchorCols, "AOD", "CENTFT0MLICOL", cent::CentFT0MLightIonAnchorCol); //! Run 3 Light ions FT0M - Traditional anchor at 90% with Glauber. Colliison based calibration. Not recommended! for cross-checks only
+DECLARE_SOA_TABLE(CentFT0MLightIonAnchorBCs, "AOD", "CENTFT0MLIBC", cent::CentFT0MLightIonAnchorBC);    //! Run 3 Light ions FT0M - Traditional anchor at 90% with Glauber. Bunch crossing based calibration. Not recommended! for cross-checks only
 
 // Run 3 centrality per BC (joinable with BC)
 DECLARE_SOA_TABLE(BCCentFT0Ms, "AOD", "BCCENTFT0M", cent::CentFT0M, o2::soa::Marker<1>); //! Run 3 FT0M BC centrality table

@@ -44,7 +44,6 @@
 #include <Framework/Array2D.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
-#include <Framework/GroupedCombinations.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -66,7 +65,10 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <deque>
 #include <string>
+#include <tuple>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -176,6 +178,51 @@ struct HadNucandidate {
   // collision information
   int32_t collisionID = 0;
   float cent = 1.f;
+};
+
+struct BufferedTrack {
+  [[nodiscard]] float pt() const { return ptValue; }
+  [[nodiscard]] float eta() const { return etaValue; }
+  [[nodiscard]] float phi() const { return phiValue; }
+  [[nodiscard]] int8_t sign() const { return signValue; }
+
+  std::array<float, 3> momentum{};
+  float ptValue{0.f};
+  float etaValue{0.f};
+  float phiValue{0.f};
+  int8_t signValue{0};
+  float dcaXY{-10.f};
+  float dcaZ{-10.f};
+  uint16_t tpcSignal{0u};
+  float tpcInnerParam{-99.f};
+  uint8_t tpcNClsFound{0u};
+  uint8_t tpcNClsCrossedRows{0u};
+  uint8_t tpcNClsShared{0u};
+  uint8_t itsNCls{0u};
+  float tpcChi2NCl{-10.f};
+  float nSigmaTPC{-10.f};
+  float nSigmaTOF{-10.f};
+  float nSigmaITS{-10.f};
+  float nSigmaTPCHadPi{-10.f};
+  float nSigmaTPCHadKa{-10.f};
+  float nSigmaTPCHadPr{-10.f};
+  float nSigmaTOFHadPi{-10.f};
+  float nSigmaTOFHadKa{-10.f};
+  float nSigmaTOFHadPr{-10.f};
+  float massTOF{-10.f};
+  uint32_t pidForTracking{0xFFFFFu};
+  uint32_t itsClusterSizes{0u};
+  int64_t trackId{-1};
+};
+
+struct BufferedCollision {
+  int64_t eventId{-1};
+  float posZ{0.f};
+  uint16_t numContrib{0u};
+  float centFT0C{0.f};
+  float multFT0C{0.f};
+  std::vector<BufferedTrack> nuclei;
+  std::vector<BufferedTrack> hadrons;
 };
 
 struct HadNucleiFemto {
@@ -358,16 +405,15 @@ struct HadNucleiFemto {
   ConfigurableAxis axisVertex{"axisVertex", {30, -10, 10}, "Binning for vtxz"};
   ConfigurableAxis axisCentrality{"axisCentrality", {40, 0, 100}, "Binning for centrality"};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-  using SelectedCollisions = soa::Filtered<CollisionsFull>;
-  BinningType binningPolicy{{axisVertex, axisCentrality}, true};
-  SliceCache cache;
-  // Pair<CollisionsFull, TrackCandidates, o2::aod::DataHypCandsWColl, BinningType> hyperPair{binningPolicy, eventMixing.settingNoMixedEvents, -1, &cache};
 
   std::array<float, 6> mBBparamsNucleus{};
   float mMassHad{0.f};
   std::vector<bool> mGoodCollisions;
   std::vector<SVCand> mTrackPairs;
   std::vector<SVCand> mTrackHypPairs;
+  std::unordered_map<int, std::deque<BufferedCollision>> mMixingPools;
+  int64_t mNextMixedEventId{0};
+  int mMixingRunNumber{-1};
   o2::vertexing::DCAFitterN<2> mFitter;
 
   int mRunNumber{0};
@@ -385,6 +431,9 @@ struct HadNucleiFemto {
      {"hSkipReasons", "Why storedEvent skipped;Reason;Counts", {HistType::kTH1F, {{5, -0.5, 4.5}}}},
      {"hEvents", "; Events;", {HistType::kTH1F, {{3, -0.5, 2.5}}}},
      {"hMixedEventSelections", "Mixed-event collision selection;Step;Counts", {HistType::kTH1F, {{4, -0.5, 3.5}}}},
+     {"hMixingPoolOccupancy", "Events already available in the mixing pool;Events;Counts", {HistType::kTH1F, {{101, -0.5, 100.5}}}},
+     {"hMixedNucleiPerEvent", "Selected nuclei in mixed-event input;Candidates;Events", {HistType::kTH1F, {{201, -0.5, 200.5}}}},
+     {"hMixedHadronsPerEvent", "Selected hadrons in mixed-event input;Candidates;Events", {HistType::kTH1F, {{501, -0.5, 500.5}}}},
 
      // Candidate topology and kinematics
      {"hTrackSel", "Accepted hadron tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
@@ -1808,34 +1857,131 @@ struct HadNucleiFemto {
     }
   }
 
-  template <typename T>
-  void pairTracksEventMixing(T& DeCands, T& hadCands)
+  template <typename Ttrack>
+  BufferedTrack makeBufferedTrack(const Ttrack& track, bool isNucleus)
   {
-    for (const auto& DeCand : DeCands) {
-      if (!selectTrackNu(DeCand) || !selectionPIDNu(DeCand)) {
-        continue;
-      }
-      for (const auto& hadCand : hadCands) {
-        if (!selectTrackHadron(hadCand) || !selectionPIDHadron(hadCand)) {
-          continue;
-        }
-        if (isClosePair(DeCand, hadCand, /*fillQA*/ true)) {
-          continue;
-        }
+    BufferedTrack bufferedTrack;
+    bufferedTrack.momentum = {track.px(), track.py(), track.pz()};
+    bufferedTrack.ptValue = track.pt();
+    bufferedTrack.etaValue = track.eta();
+    bufferedTrack.phiValue = track.phi();
+    bufferedTrack.signValue = track.sign();
+    bufferedTrack.dcaXY = track.dcaXY();
+    bufferedTrack.dcaZ = track.dcaZ();
+    bufferedTrack.tpcSignal = track.tpcSignal();
+    bufferedTrack.tpcInnerParam = isNucleus && useHelium3Nucleus() ? correctedTPCInnerParamHe3(track) : track.tpcInnerParam();
+    bufferedTrack.tpcNClsFound = track.tpcNClsFound();
+    bufferedTrack.tpcNClsCrossedRows = track.tpcNClsCrossedRows();
+    bufferedTrack.tpcNClsShared = track.tpcNClsShared();
+    bufferedTrack.itsNCls = track.itsNCls();
+    bufferedTrack.tpcChi2NCl = track.tpcChi2NCl();
+    bufferedTrack.pidForTracking = track.pidForTracking();
+    bufferedTrack.itsClusterSizes = track.itsClusterSizes();
+    bufferedTrack.trackId = track.globalIndex();
 
-        SVCand trackPair;
-        trackPair.tr0Idx = DeCand.globalIndex();
-        trackPair.tr1Idx = hadCand.globalIndex();
-        const int collIdx = DeCand.collisionId();
-        CollBracket collBracket{collIdx, collIdx};
-        trackPair.collBracket = collBracket;
-        mTrackPairs.push_back(trackPair);
-      }
+    if (isNucleus) {
+      bufferedTrack.nSigmaTPC = getNucleusTPCNSigma(track);
+      bufferedTrack.nSigmaTOF = getNucleusTOFNSigma(track);
+      bufferedTrack.nSigmaITS = getNucleusITSNSigma(track);
+    } else {
+      bufferedTrack.nSigmaTPC = getHadronTPCNSigma(track);
+      bufferedTrack.nSigmaTOF = getHadronTOFNSigma(track);
+      bufferedTrack.nSigmaITS = getHadronITSNSigma(track);
+      bufferedTrack.nSigmaTPCHadPi = track.tpcNSigmaPi();
+      bufferedTrack.nSigmaTPCHadKa = track.tpcNSigmaKa();
+      bufferedTrack.nSigmaTPCHadPr = track.tpcNSigmaPr();
+      bufferedTrack.nSigmaTOFHadPi = track.tofNSigmaPi();
+      bufferedTrack.nSigmaTOFHadKa = track.tofNSigmaKa();
+      bufferedTrack.nSigmaTOFHadPr = track.tofNSigmaPr();
     }
+
+    if (track.hasTOF()) {
+      float beta = o2::pid::tof::Beta::GetBeta(track);
+      beta = std::clamp(beta, 1.e-4f, 1.f - 1.e-6f);
+      const float momentumForMass = isNucleus ? bufferedTrack.tpcInnerParam * nucleusChargeFactor() : bufferedTrack.tpcInnerParam;
+      bufferedTrack.massTOF = momentumForMass * std::sqrt(1.f / (beta * beta) - 1.f);
+    }
+    return bufferedTrack;
   }
 
-  template <typename Tcoll>
-  void fillTable(const HadNucandidate& hadNucand, const Tcoll& collision)
+  float configuredHadronMass() const
+  {
+    if (species.settingHadPDGCode.value == static_cast<int>(PDG_t::kPiPlus)) {
+      return static_cast<float>(o2::constants::physics::MassPiPlus);
+    }
+    if (species.settingHadPDGCode.value == static_cast<int>(PDG_t::kKPlus)) {
+      return static_cast<float>(o2::constants::physics::MassKPlus);
+    }
+    if (species.settingHadPDGCode.value == static_cast<int>(PDG_t::kProton)) {
+      return static_cast<float>(o2::constants::physics::MassProton);
+    }
+    return 0.f;
+  }
+
+  void fillBufferedCandidateInfo(const BufferedTrack& nucleus, const BufferedTrack& hadron, HadNucandidate& hadNucand)
+  {
+    const float nuChargeFactor = nucleusChargeFactor();
+    hadNucand.momNu = nucleus.momentum;
+    for (size_t iComponent = 0; iComponent < hadNucand.momNu.size(); ++iComponent) {
+      hadNucand.momNu[iComponent] *= nuChargeFactor;
+    }
+    hadNucand.momHad = hadron.momentum;
+
+    const float massHadron = configuredHadronMass();
+    hadNucand.invMass = RecoDecay::m(std::array<std::array<float, 3>, 2>{hadNucand.momNu, hadNucand.momHad}, std::array<float, 2>{nucleusMass(), massHadron});
+    hadNucand.signNu = nucleus.sign();
+    hadNucand.signHad = hadron.sign();
+    computeClosePairDeltas(nucleus, hadron, hadNucand.deltaEta, hadNucand.deltaPhi);
+    hadNucand.dcaxyNu = nucleus.dcaXY;
+    hadNucand.dcazNu = nucleus.dcaZ;
+    hadNucand.dcaxyHad = hadron.dcaXY;
+    hadNucand.dcazHad = hadron.dcaZ;
+    hadNucand.tpcSignalNu = nucleus.tpcSignal;
+    hadNucand.tpcSignalHad = hadron.tpcSignal;
+    hadNucand.momNuTPC = nucleus.tpcInnerParam;
+    hadNucand.momHadTPC = hadron.tpcInnerParam;
+    hadNucand.nTPCClustersNu = nucleus.tpcNClsFound;
+    hadNucand.nTPCClustersHad = hadron.tpcNClsFound;
+    hadNucand.nTPCCrossedRowsNu = nucleus.tpcNClsCrossedRows;
+    hadNucand.nTPCCrossedRowsHad = hadron.tpcNClsCrossedRows;
+    hadNucand.sharedClustersNu = nucleus.tpcNClsShared;
+    hadNucand.sharedClustersHad = hadron.tpcNClsShared;
+    hadNucand.nClsItsNu = nucleus.itsNCls;
+    hadNucand.nClsItsHad = hadron.itsNCls;
+    hadNucand.chi2TPCNu = nucleus.tpcChi2NCl;
+    hadNucand.chi2TPCHad = hadron.tpcChi2NCl;
+    hadNucand.nSigmaNu = nucleus.nSigmaTPC;
+    hadNucand.nSigmaHad = hadron.nSigmaTPC;
+    hadNucand.nSigmaTOFNu = nucleus.nSigmaTOF;
+    hadNucand.nSigmaITSNu = nucleus.nSigmaITS;
+    hadNucand.nSigmaTOFHad = hadron.nSigmaTOF;
+    hadNucand.nSigmaITSHad = hadron.nSigmaITS;
+    hadNucand.nSigmaTPCHadPi = hadron.nSigmaTPCHadPi;
+    hadNucand.nSigmaTPCHadKa = hadron.nSigmaTPCHadKa;
+    hadNucand.nSigmaTPCHadPr = hadron.nSigmaTPCHadPr;
+    hadNucand.nSigmaTOFHadPi = hadron.nSigmaTOFHadPi;
+    hadNucand.nSigmaTOFHadKa = hadron.nSigmaTOFHadKa;
+    hadNucand.nSigmaTOFHadPr = hadron.nSigmaTOFHadPr;
+    hadNucand.massTOFNu = nucleus.massTOF;
+    hadNucand.massTOFHad = hadron.massTOF;
+    hadNucand.pidTrkNu = nucleus.pidForTracking;
+    hadNucand.pidTrkHad = hadron.pidForTracking;
+    hadNucand.itsClSizeNu = nucleus.itsClusterSizes;
+    hadNucand.itsClSizeHad = hadron.itsClusterSizes;
+    hadNucand.trackIDNu = static_cast<int>(nucleus.trackId);
+    hadNucand.trackIDHad = static_cast<int>(hadron.trackId);
+    hadNucand.isBkgUS = nucleus.sign() * hadron.sign() < 0;
+    hadNucand.isBkgEM = true;
+
+    float massLightNucleusForKstarMt = nucleusMass();
+    if (useDeuteronNucleus() && deuteronPid.settingUseProtonMassForKstarMt) {
+      massLightNucleusForKstarMt = static_cast<float>(o2::constants::physics::MassProton);
+    }
+    hadNucand.kstar = computePairKstar(hadNucand.momHad, massHadron, hadNucand.momNu, massLightNucleusForKstarMt);
+    hadNucand.mT = computePairMT(hadNucand.momHad, massHadron, hadNucand.momNu, massLightNucleusForKstarMt);
+  }
+
+  void fillDataTable(const HadNucandidate& hadNucand)
   {
     mOutputDataTable(
       hadNucand.recoPtNu(),
@@ -1881,6 +2027,12 @@ struct HadNucleiFemto {
       hadNucand.nSigmaITSNu,
       hadNucand.nSigmaTOFHad,
       hadNucand.nSigmaITSHad);
+  }
+
+  template <typename Tcoll>
+  void fillTable(const HadNucandidate& hadNucand, const Tcoll& collision)
+  {
+    fillDataTable(hadNucand);
     if (output.settingFillMultiplicity) {
       mOutputMultiplicityTable(
         collision.globalIndex(),
@@ -1888,6 +2040,19 @@ struct HadNucleiFemto {
         collision.numContrib(),
         collision.centFT0C(),
         collision.multFT0C());
+    }
+  }
+
+  void fillTable(const HadNucandidate& hadNucand, const BufferedCollision& collision)
+  {
+    fillDataTable(hadNucand);
+    if (output.settingFillMultiplicity) {
+      mOutputMultiplicityTable(
+        collision.eventId,
+        collision.posZ,
+        collision.numContrib,
+        collision.centFT0C,
+        collision.multFT0C);
     }
   }
 
@@ -1979,29 +2144,50 @@ struct HadNucleiFemto {
     mQaRegistry.fill(HIST("hisBkgEM"), hadNucand.isBkgEM);
   }
 
-  template <typename Tcoll>
-  void fillKstar(const HadNucandidate& hadNucand, const Tcoll& collision)
+  void fillKstarAtCentrality(const HadNucandidate& hadNucand, float centrality)
   {
-    if (hadNucand.isBkgUS == 0) {
+    if (!hadNucand.isBkgUS) {
       if (hadNucand.recoPtNu() > 0) {
         mQaRegistry.fill(HIST("hkStar_LS_M"), hadNucand.kstar);
         mQaRegistry.fill(HIST("hkStaVsmT_LS_M"), hadNucand.kstar, hadNucand.mT);
-        mQaRegistry.fill(HIST("hkStaVsCent_LS_M"), hadNucand.kstar, collision.centFT0C());
+        mQaRegistry.fill(HIST("hkStaVsCent_LS_M"), hadNucand.kstar, centrality);
       } else {
         mQaRegistry.fill(HIST("hkStar_LS_A"), hadNucand.kstar);
         mQaRegistry.fill(HIST("hkStaVsmT_LS_A"), hadNucand.kstar, hadNucand.mT);
-        mQaRegistry.fill(HIST("hkStaVsCent_LS_A"), hadNucand.kstar, collision.centFT0C());
+        mQaRegistry.fill(HIST("hkStaVsCent_LS_A"), hadNucand.kstar, centrality);
       }
     } else {
       if (hadNucand.recoPtNu() > 0) {
         mQaRegistry.fill(HIST("hkStar_US_M"), hadNucand.kstar);
         mQaRegistry.fill(HIST("hkStaVsmT_US_M"), hadNucand.kstar, hadNucand.mT);
-        mQaRegistry.fill(HIST("hkStaVsCent_US_M"), hadNucand.kstar, collision.centFT0C());
+        mQaRegistry.fill(HIST("hkStaVsCent_US_M"), hadNucand.kstar, centrality);
       } else {
         mQaRegistry.fill(HIST("hkStar_US_A"), hadNucand.kstar);
         mQaRegistry.fill(HIST("hkStaVsmT_US_A"), hadNucand.kstar, hadNucand.mT);
-        mQaRegistry.fill(HIST("hkStaVsCent_US_A"), hadNucand.kstar, collision.centFT0C());
+        mQaRegistry.fill(HIST("hkStaVsCent_US_A"), hadNucand.kstar, centrality);
       }
+    }
+  }
+
+  template <typename Tcoll>
+  void fillKstar(const HadNucandidate& hadNucand, const Tcoll& collision)
+  {
+    fillKstarAtCentrality(hadNucand, collision.centFT0C());
+  }
+
+  void fillMixedPair(const BufferedTrack& nucleus, const BufferedTrack& hadron, const BufferedCollision& nucleusCollision)
+  {
+    if (isClosePair(nucleus, hadron, /*fillQA*/ true)) {
+      return;
+    }
+
+    HadNucandidate hadNucand;
+    fillBufferedCandidateInfo(nucleus, hadron, hadNucand);
+    fillKstarAtCentrality(hadNucand, nucleusCollision.centFT0C);
+    fillHistograms(hadNucand);
+
+    if (output.settingFillTable && shouldFillOutputTable(hadNucand)) {
+      fillTable(hadNucand, nucleusCollision);
     }
   }
 
@@ -2210,49 +2396,78 @@ struct HadNucleiFemto {
   void processMixedEvent(const CollisionsFull& collisions, const TrackCandidates& tracks, const aod::BCsWithTimestamps&)
   {
     LOG(debug) << "Processing mixed event";
+    const BinningType configuredBinningPolicy{{axisVertex, axisCentrality}, true};
 
-    // Zorro is a runtime selection, so build its filtered collision table before applying the mixing depth.
-    soa::SelectionVector selectedCollisionRows;
-    int64_t rowIndex = 0;
     for (const auto& collision : collisions) {
       mQaRegistry.fill(HIST("hMixedEventSelections"), 0);
       if (!passesEventSelection</*isMC*/ false>(collision)) {
-        ++rowIndex;
         continue;
       }
       mQaRegistry.fill(HIST("hMixedEventSelections"), 1);
       if (!passesZorroSelection(collision)) {
-        ++rowIndex;
         continue;
       }
-      selectedCollisionRows.push_back(rowIndex++);
       mQaRegistry.fill(HIST("hMixedEventSelections"), 2);
+
+      const auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      if (mMixingRunNumber != bc.runNumber()) {
+        mMixingPools.clear();
+        mMixingRunNumber = bc.runNumber();
+      }
+
+      BufferedCollision currentCollision;
+      currentCollision.eventId = mNextMixedEventId++;
+      currentCollision.posZ = collision.posZ();
+      currentCollision.numContrib = collision.numContrib();
+      currentCollision.centFT0C = collision.centFT0C();
+      currentCollision.multFT0C = collision.multFT0C();
+
+      const uint64_t collIdx = collision.globalIndex();
+      auto tracksThisCollision = tracks.sliceBy(mPerCol, collIdx);
+      tracksThisCollision.bindExternalIndices(&tracks);
+      for (const auto& track : tracksThisCollision) {
+        if (selectTrackNu(track) && selectionPIDNu(track)) {
+          currentCollision.nuclei.push_back(makeBufferedTrack(track, /*isNucleus*/ true));
+        }
+        if (selectTrackHadron(track) && selectionPIDHadron(track)) {
+          currentCollision.hadrons.push_back(makeBufferedTrack(track, /*isNucleus*/ false));
+        }
+      }
+
+      mQaRegistry.fill(HIST("hMixedNucleiPerEvent"), currentCollision.nuclei.size());
+      mQaRegistry.fill(HIST("hMixedHadronsPerEvent"), currentCollision.hadrons.size());
+
+      const int poolBin = configuredBinningPolicy.getBin(std::make_tuple(collision.posZ(), collision.centFT0C()));
+      auto& pool = mMixingPools[poolBin];
+      mQaRegistry.fill(HIST("hMixingPoolOccupancy"), pool.size());
+
+      for (const auto& bufferedCollision : pool) {
+        mQaRegistry.fill(HIST("hMixedEventSelections"), 3);
+        mQaRegistry.fill(HIST("hNcontributor"), collision.numContrib());
+        mQaRegistry.fill(HIST("hVtxZ"), collision.posZ());
+
+        for (const auto& nucleus : currentCollision.nuclei) {
+          for (const auto& hadron : bufferedCollision.hadrons) {
+            fillMixedPair(nucleus, hadron, currentCollision);
+          }
+        }
+        for (const auto& nucleus : bufferedCollision.nuclei) {
+          for (const auto& hadron : currentCollision.hadrons) {
+            fillMixedPair(nucleus, hadron, bufferedCollision);
+          }
+        }
+      }
+
+      const int requestedMixingDepth = eventMixing.settingNoMixedEvents.value;
+      if (requestedMixingDepth <= 0) {
+        continue;
+      }
+      const auto mixingDepth = static_cast<size_t>(requestedMixingDepth);
+      if (pool.size() >= mixingDepth) {
+        pool.pop_front();
+      }
+      pool.push_back(std::move(currentCollision));
     }
-
-    SelectedCollisions selectedCollisions{{collisions.asArrowTableRef()}, std::move(selectedCollisionRows)};
-    collisions.copyIndexBindings(selectedCollisions);
-    auto tracksTuple = std::make_tuple(tracks);
-    SameKindPair<SelectedCollisions, TrackCandidates, BinningType> selectedPairs{binningPolicy, eventMixing.settingNoMixedEvents, -1, selectedCollisions, tracksTuple, &cache};
-
-    for (const auto& [c1, tracks1, c2, tracks2] : selectedPairs) {
-      mQaRegistry.fill(HIST("hMixedEventSelections"), 3);
-
-      mQaRegistry.fill(HIST("hNcontributor"), c1.numContrib());
-      mQaRegistry.fill(HIST("hVtxZ"), c1.posZ());
-
-      auto bc1 = c1.template bc_as<aod::BCsWithTimestamps>();
-      auto bc2 = c2.template bc_as<aod::BCsWithTimestamps>();
-      initCCDB</*isMC*/ false>(bc1);
-      mTrackPairs.clear();
-      pairTracksEventMixing(tracks1, tracks2);
-      fillPairs(collisions, tracks, /*isMixedEvent*/ true);
-
-      initCCDB</*isMC*/ false>(bc2);
-      mTrackPairs.clear();
-      pairTracksEventMixing(tracks2, tracks1);
-      fillPairs(collisions, tracks, /*isMixedEvent*/ true);
-    }
-    mTrackPairs.clear();
   }
   PROCESS_SWITCH(HadNucleiFemto, processMixedEvent, "Process Mixed event", false);
 

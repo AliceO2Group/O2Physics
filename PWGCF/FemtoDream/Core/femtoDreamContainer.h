@@ -46,6 +46,9 @@ enum Observable { kstar ///< kstar
 enum EventType { same, ///< Pair from same event
                  mixed ///< Pair from mixed event
 };
+
+static constexpr int nMinMomComponents{4}; ///< Minimum number of momentum components to compute the femto observable
+
 }; // namespace femtoDreamContainer
 
 /// \class FemtoDreamContainer
@@ -367,18 +370,21 @@ class FemtoDreamContainer
       if constexpr (isMC) {
         if constexpr (isHF) {
           // calculate the femto observable and the mT with MC truth information
-          if constexpr (mFemtoObs == femtoDreamContainer::Observable::kstar) {
-            femtoObsMC = FemtoDreamMath::getkstar(part1.fdMCParticle(), mMassOne, part2, mMassTwo);
-          }
-          const float mTMC = FemtoDreamMath::getmT(part1.fdMCParticle(), mMassOne, part2, mMassTwo);
+          if (part1.has_fdMCParticle()) {
+            if constexpr (mFemtoObs == femtoDreamContainer::Observable::kstar) {
+              femtoObsMC = FemtoDreamMath::getkstar(part1.fdMCParticle(), mMassOne, part2, mMassTwo);
+            }
+            const float mTMC = FemtoDreamMath::getmT(part1.fdMCParticle(), mMassOne, part2, mMassTwo);
 
-          if (std::abs(part1.fdMCParticle().pdgMCTruth()) == mPDGOne) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
-            setPair_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(femtoObsMC, mTMC, part1.fdMCParticle(), part2, mult, multPercentile, use4dplots, extendedplots);
-            setPair_MC(femtoObsMC, femtoObs, mT, mult, part1.fdMCParticle().partOriginMCTruth(), part2.flagMc(), smearingByOrigin);
+            if (std::abs(part1.fdMCParticle().pdgMCTruth()) == mPDGOne) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
+              setPair_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(femtoObsMC, mTMC, part1.fdMCParticle(), part2, mult, multPercentile, use4dplots, extendedplots);
+              setPair_MC(femtoObsMC, femtoObs, mT, mult, part1.fdMCParticle().partOriginMCTruth(), part2.flagMc(), smearingByOrigin);
+            } else {
+              mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/hFakePairsCounter"), 0);
+            }
           } else {
-            mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/hFakePairsCounter"), 0);
+            mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/hNoMCtruthPairsCounter"), 0);
           }
-
         } else if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
           // calculate the femto observable and the mT with MC truth information
           if constexpr (mFemtoObs == femtoDreamContainer::Observable::kstar) {
@@ -517,7 +523,7 @@ class FemtoDreamContainer
   {
 
     std::vector<double> k3d = FemtoDreamMath::newpairfunc(part1, mMassOne, part2, mMassTwo, IsSameSpecies);
-    if (k3d.size() < 4) {
+    if (k3d.size() < femtoDreamContainer::nMinMomComponents) {
       LOG(error) << "newpairfunc returned size=" << k3d.size();
       return;
     }
@@ -536,7 +542,7 @@ class FemtoDreamContainer
         if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
 
           std::vector<double> k3dMC = FemtoDreamMath::newpairfuncMC(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, IsSameSpecies);
-          if (k3dMC.size() < 4) {
+          if (k3dMC.size() < femtoDreamContainer::nMinMomComponents) {
             LOG(error) << "newpairfunc returned size=" << k3d.size();
             return;
           }
@@ -562,7 +568,7 @@ class FemtoDreamContainer
   {
 
     std::vector<double> k3d = FemtoDreamMath::newpairfunc(part1, mMassOne, part2, mMassTwo, IsSameSpecies);
-    if (k3d.size() < 4) {
+    if (k3d.size() < femtoDreamContainer::nMinMomComponents) {
       LOG(error) << "newpairfunc returned size=" << k3d.size();
       return;
     }
@@ -581,7 +587,7 @@ class FemtoDreamContainer
         if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
 
           std::vector<double> k3dMC = FemtoDreamMath::newpairfuncMC(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo, IsSameSpecies);
-          if (k3dMC.size() < 4) {
+          if (k3dMC.size() < femtoDreamContainer::nMinMomComponents) {
             LOG(error) << "newpairfunc returned size=" << k3d.size();
             return;
           }
