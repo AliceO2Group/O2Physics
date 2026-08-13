@@ -134,7 +134,6 @@ struct PidFlowPtCorr {
     Configurable<std::vector<std::string>> cfgAcceptancePath{"cfgAcceptancePath", (std::vector<std::string>{"Users/f/fcui/NUA/NUAREFPartical", "Users/f/fcui/NUA/NUAK0s", "Users/f/fcui/NUA/NUALambda", "Users/f/fcui/NUA/NUAXi", "Users/f/fcui/NUA/NUAOmega"}), "CCDB path to acceptance object"};
 
     Configurable<std::vector<std::string>> cfgAcceptancePathWithPt{"cfgAcceptancePathWithPt", (std::vector<std::string>{"Users/f/fcui/NUA/NUAREFParticalWithPt"}), "CCDB path to acceptance THnSparse(phi,eta,vz,pt) object, same content as cfgAcceptancePath but with an extra pt axis"};
-
     Configurable<std::vector<std::string>> cfgEfficiencyPath{"cfgEfficiencyPath", (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency object"};
   } correctionPathOpts;
 
