@@ -2613,8 +2613,8 @@ struct AnalysisSameEventPairing {
 
   template <int TPairType, typename TEvents>
   void runMCGen(TEvents const& events,
-              ReducedMCEvents const& mcEvents,
-              ReducedMCTracks const& mcTracks)
+                ReducedMCEvents const& mcEvents,
+                ReducedMCTracks const& mcTracks)
   {
     uint32_t mcDecision = 0;
     int isig = 0;
