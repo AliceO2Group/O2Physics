@@ -14,8 +14,8 @@
 
 /// For every accepted detector-level charged jet the task writes:
 ///   * one jet row,
-///   * one row per reconstructed jet constituent,
-///   * reconstructed PID information,
+///   * one row per selected reconstructed jet constituent,
+///   * low-level reconstructed PID information,
 ///   * MC-truth constituent information,
 ///   * leading and subleading quark/gluon candidates used for jet labelling.
 
@@ -38,6 +38,8 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TPDGCode.h>
+
 #include <Rtypes.h>
 
 #include <cmath>
@@ -50,9 +52,6 @@ namespace o2::aod
 {
 namespace qgmljet
 {
-DECLARE_SOA_COLUMN(EventId, eventId, uint64_t);
-DECLARE_SOA_COLUMN(JetId, jetId, uint64_t);
-DECLARE_SOA_COLUMN(McCollisionId, mcCollisionId, int32_t);
 DECLARE_SOA_COLUMN(FlavorLabel, flavorLabel, int32_t);
 DECLARE_SOA_COLUMN(LeadingPartonPdg, leadingPartonPdg, int32_t);
 DECLARE_SOA_COLUMN(LeadingPartonPt, leadingPartonPt, float);
@@ -61,7 +60,7 @@ DECLARE_SOA_COLUMN(SubleadingPartonPdg, subleadingPartonPdg, int32_t);
 DECLARE_SOA_COLUMN(SubleadingPartonPt, subleadingPartonPt, float);
 DECLARE_SOA_COLUMN(SubleadingPartonDeltaR, subleadingPartonDeltaR, float);
 DECLARE_SOA_COLUMN(NPartonsInCone, nPartonsInCone, int32_t);
-DECLARE_SOA_COLUMN(LabelAmbiguous, labelAmbiguous, uint8_t);
+DECLARE_SOA_COLUMN(LabelAmbiguous, labelAmbiguous, bool);
 DECLARE_SOA_COLUMN(JetPt, jetPt, float);
 DECLARE_SOA_COLUMN(JetEta, jetEta, float);
 DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);
@@ -69,16 +68,9 @@ DECLARE_SOA_COLUMN(JetArea, jetArea, float);
 DECLARE_SOA_COLUMN(JetRadius, jetRadius, float);
 DECLARE_SOA_COLUMN(ZVertex, zVertex, float);
 DECLARE_SOA_COLUMN(NConstituents, nConstituents, int32_t);
-DECLARE_SOA_COLUMN(NSelectedConstituents, nSelectedConstituents, int32_t);
-DECLARE_SOA_COLUMN(NPions, nPions, int32_t);
-DECLARE_SOA_COLUMN(NKaons, nKaons, int32_t);
-DECLARE_SOA_COLUMN(NProtons, nProtons, int32_t);
-} 
+} // namespace qgmljet
 
 DECLARE_SOA_TABLE(QGMLJets, "AOD", "QGMLJETS",
-                  qgmljet::EventId,
-                  qgmljet::JetId,
-                  qgmljet::McCollisionId,
                   qgmljet::FlavorLabel,
                   qgmljet::LeadingPartonPdg,
                   qgmljet::LeadingPartonPt,
@@ -94,17 +86,13 @@ DECLARE_SOA_TABLE(QGMLJets, "AOD", "QGMLJETS",
                   qgmljet::JetArea,
                   qgmljet::JetRadius,
                   qgmljet::ZVertex,
-                  qgmljet::NConstituents,
-                  qgmljet::NSelectedConstituents,
-                  qgmljet::NPions,
-                  qgmljet::NKaons,
-                  qgmljet::NProtons);
+                  qgmljet::NConstituents);
+
+using QGMLJet = QGMLJets::iterator;
 
 namespace qgmlconst
 {
-DECLARE_SOA_COLUMN(EventId, eventId, uint64_t);
-DECLARE_SOA_COLUMN(JetId, jetId, uint64_t);
-DECLARE_SOA_COLUMN(ConstituentId, constituentId, uint64_t);
+DECLARE_SOA_INDEX_COLUMN(QGMLJet, qGMLJet);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(P, p, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
@@ -117,8 +105,7 @@ DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
 DECLARE_SOA_COLUMN(DeltaR, deltaR, float);
 DECLARE_SOA_COLUMN(PtFraction, ptFraction, float);
 DECLARE_SOA_COLUMN(Charge, charge, int32_t);
-DECLARE_SOA_COLUMN(PassesAnalysisSelection, passesAnalysisSelection, uint8_t);
-DECLARE_SOA_COLUMN(HasTOF, hasTOF, uint8_t);
+DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);
 DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);
 DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);
 DECLARE_SOA_COLUMN(TpcNSigmaPi, tpcNSigmaPi, float);
@@ -128,22 +115,15 @@ DECLARE_SOA_COLUMN(TofNSigmaPi, tofNSigmaPi, float);
 DECLARE_SOA_COLUMN(TofNSigmaKa, tofNSigmaKa, float);
 DECLARE_SOA_COLUMN(TofNSigmaPr, tofNSigmaPr, float);
 DECLARE_SOA_COLUMN(TofBeta, tofBeta, float);
-DECLARE_SOA_COLUMN(IsPion, isPion, uint8_t);
-DECLARE_SOA_COLUMN(IsKaon, isKaon, uint8_t);
-DECLARE_SOA_COLUMN(IsProton, isProton, uint8_t);
-DECLARE_SOA_COLUMN(RecoPid, recoPid, int32_t);
-DECLARE_SOA_COLUMN(TruthParticleId, truthParticleId, int64_t);
 DECLARE_SOA_COLUMN(TruthPdg, truthPdg, int32_t);
 DECLARE_SOA_COLUMN(TruthPt, truthPt, float);
 DECLARE_SOA_COLUMN(TruthEta, truthEta, float);
 DECLARE_SOA_COLUMN(TruthPhi, truthPhi, float);
-DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, uint8_t);
-}
+DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
+} // namespace qgmlconst
 
 DECLARE_SOA_TABLE(QGMLConstituents, "AOD", "QGMLCONSTS",
-                  qgmlconst::EventId,
-                  qgmlconst::JetId,
-                  qgmlconst::ConstituentId,
+                  qgmlconst::QGMLJetId,
                   qgmlconst::Pt,
                   qgmlconst::P,
                   qgmlconst::Eta,
@@ -156,7 +136,6 @@ DECLARE_SOA_TABLE(QGMLConstituents, "AOD", "QGMLCONSTS",
                   qgmlconst::DeltaR,
                   qgmlconst::PtFraction,
                   qgmlconst::Charge,
-                  qgmlconst::PassesAnalysisSelection,
                   qgmlconst::HasTOF,
                   qgmlconst::DcaXY,
                   qgmlconst::DcaZ,
@@ -167,23 +146,18 @@ DECLARE_SOA_TABLE(QGMLConstituents, "AOD", "QGMLCONSTS",
                   qgmlconst::TofNSigmaKa,
                   qgmlconst::TofNSigmaPr,
                   qgmlconst::TofBeta,
-                  qgmlconst::IsPion,
-                  qgmlconst::IsKaon,
-                  qgmlconst::IsProton,
-                  qgmlconst::RecoPid,
-                  qgmlconst::TruthParticleId,
                   qgmlconst::TruthPdg,
                   qgmlconst::TruthPt,
                   qgmlconst::TruthEta,
                   qgmlconst::TruthPhi,
                   qgmlconst::IsPhysicalPrimary);
-}
+} // namespace o2::aod
 
 using namespace o2;
 using namespace o2::constants::math;
 using namespace o2::framework;
 
-using MCDJetEvents = soa::Join<aod::JetCollisions, aod::JCollisionPIs>;
+using MCDJetEvents = aod::JetCollisionsMCD;
 using ChargedMCDJets = soa::Join<aod::ChargedMCDetectorLevelJets,
                                  aod::ChargedMCDetectorLevelJetConstituents>;
 using JetTrackRefs = soa::Join<aod::JetTracks, aod::JTrackPIs>;
@@ -206,6 +180,8 @@ struct QuarkGluonJetsProducer {
   Produces<aod::QGMLJets> qgMLJets;
   Produces<aod::QGMLConstituents> qgMLConstituents;
 
+  static constexpr double JetRadiusTolerance = 1.e-3;
+
   Configurable<std::string> eventSelections{"eventSelections", "selMCFull+NoITSROFrameBorder+IsGoodZvtxFT0vsPV", "JE derived-data event selections"};
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", true, "skip minimum-bias gap subgenerator events"};
   Configurable<bool> applyRCTSelection{"applyRCTSelection", false, "apply RCT selection (normally false for MC training)"};
@@ -225,7 +201,7 @@ struct QuarkGluonJetsProducer {
   Configurable<bool> requirePvContributor{"requirePvContributor", false, "require PV-contributor track"};
   Configurable<int> minItsNclusters{"minItsNclusters", 5, "minimum ITS clusters"};
   Configurable<int> minTpcNcrossedRows{"minTpcNcrossedRows", 70, "minimum TPC crossed rows"};
-  Configurable<double> minChiSquareTpc{"minChiSquareTpc", 0.5, "minimum TPC chi2/Ncl"};
+  Configurable<double> minChiSquareTpc{"minChiSquareTpc", 0.0, "minimum TPC chi2/Ncl"};
   Configurable<double> maxChiSquareTpc{"maxChiSquareTpc", 4.0, "maximum TPC chi2/Ncl"};
   Configurable<double> maxChiSquareIts{"maxChiSquareIts", 36.0, "maximum ITS chi2/Ncl"};
   Configurable<double> minPt{"minPt", 0.15, "minimum selected-track pT"};
@@ -241,30 +217,11 @@ struct QuarkGluonJetsProducer {
   Configurable<bool> dropUnknownLabels{"dropUnknownLabels", false, "drop jets without quark/gluon label"};
   Configurable<bool> dropAmbiguousLabels{"dropAmbiguousLabels", false, "drop ambiguous labels"};
 
-  struct : ConfigurableGroup {
-    Configurable<int> pidMethod{"pidMethod", 2, "PID method: 0 closest, 1 exclusive, 2 rejection-based"};
-    Configurable<float> rejectionSigma{"rejectionSigma", 3.0f, "minimum n-sigma distance required to reject competing PID hypotheses"};
-    Configurable<float> ptThresholdPion{"ptThresholdPion", 0.75f, "pT threshold above which pion PID requires combined TPC and TOF"};
-    Configurable<float> ptThresholdKaon{"ptThresholdKaon", 0.50f, "pT threshold above which kaon PID requires combined TPC and TOF"};
-    Configurable<float> ptThresholdProton{"ptThresholdProton", 0.75f, "pT threshold above which proton PID requires combined TPC and TOF"};
-    Configurable<float> nSigmaCut{"nSigmaCut", 2.0f, "PID acceptance cut for pion, kaon and proton hypotheses"};
-    Configurable<float> minPtPion{"minPtPion", 0.3f, "minimum pion pT"};
-    Configurable<float> maxPtPion{"maxPtPion", 4.0f, "maximum pion pT"};
-    Configurable<float> minPtKaon{"minPtKaon", 0.3f, "minimum kaon pT"};
-    Configurable<float> maxPtKaon{"maxPtKaon", 4.0f, "maximum kaon pT"};
-    Configurable<float> minPtProton{"minPtProton", 0.5f, "minimum proton pT"};
-    Configurable<float> maxPtProton{"maxPtProton", 4.0f, "maximum proton pT"};
-  } cfg;
-
-  Preslice<aod::McParticles> mcParticlesPerCollision = aod::mcparticle::mcCollisionId;
+  Preslice<aod::JetParticles> mcParticlesPerCollision = aod::jmcparticle::mcCollisionId;
 
   enum JetFlavor { UnknownJet = 0,
                    QuarkJet = 1,
                    GluonJet = 2 };
-  enum RecoPidClass { UnidentifiedPid = 0,
-                      PionPid = 1,
-                      KaonPid = 2,
-                      ProtonPid = 3 };
 
   struct JetFlavorInfo {
     int flavor{UnknownJet};
@@ -276,12 +233,6 @@ struct QuarkGluonJetsProducer {
     float subleadingPartonDeltaR{-1.0f};
     int nPartonsInCone{0};
     bool ambiguous{false};
-  };
-
-  struct PidResult {
-    bool isPion{false};
-    bool isKaon{false};
-    bool isProton{false};
   };
 
   void init(InitContext const&)
@@ -325,129 +276,6 @@ struct QuarkGluonJetsProducer {
     return true;
   }
 
-  template <typename TrackT>
-  PidResult getPid(TrackT const& track)
-  {
-    constexpr int ClosestMatch = 0;
-    constexpr int ExclusiveMatch = 1;
-    constexpr int RejectionBased = 2;
-    constexpr double buffer = 999.0;
-
-    const double pt = track.pt();
-
-    double dForPionsPi = 0.0;
-    double dForPionsKa = 0.0;
-    double dForPionsPr = 0.0;
-
-    double dForKaonsPi = 0.0;
-    double dForKaonsKa = 0.0;
-    double dForKaonsPr = 0.0;
-
-    double dForProtonsPi = 0.0;
-    double dForProtonsKa = 0.0;
-    double dForProtonsPr = 0.0;
-
-    if (pt < cfg.ptThresholdPion) {
-      dForPionsPi = std::abs(track.tpcNSigmaPi());
-      dForPionsKa = std::abs(track.tpcNSigmaKa());
-      dForPionsPr = std::abs(track.tpcNSigmaPr());
-    } else if (track.hasTOF()) {
-      dForPionsPi = std::hypot(track.tofNSigmaPi(), track.tpcNSigmaPi());
-      dForPionsKa = std::hypot(track.tofNSigmaKa(), track.tpcNSigmaKa());
-      dForPionsPr = std::hypot(track.tofNSigmaPr(), track.tpcNSigmaPr());
-    } else {
-      dForPionsPi = buffer;
-      dForPionsKa = buffer;
-      dForPionsPr = buffer;
-    }
-
-    if (pt < cfg.ptThresholdKaon) {
-      dForKaonsPi = std::abs(track.tpcNSigmaPi());
-      dForKaonsKa = std::abs(track.tpcNSigmaKa());
-      dForKaonsPr = std::abs(track.tpcNSigmaPr());
-    } else if (track.hasTOF()) {
-      dForKaonsPi = std::hypot(track.tofNSigmaPi(), track.tpcNSigmaPi());
-      dForKaonsKa = std::hypot(track.tofNSigmaKa(), track.tpcNSigmaKa());
-      dForKaonsPr = std::hypot(track.tofNSigmaPr(), track.tpcNSigmaPr());
-    } else {
-      dForKaonsPi = buffer;
-      dForKaonsKa = buffer;
-      dForKaonsPr = buffer;
-    }
-
-    if (pt < cfg.ptThresholdProton) {
-      dForProtonsPi = std::abs(track.tpcNSigmaPi());
-      dForProtonsKa = std::abs(track.tpcNSigmaKa());
-      dForProtonsPr = std::abs(track.tpcNSigmaPr());
-    } else if (track.hasTOF()) {
-      dForProtonsPi = std::hypot(track.tofNSigmaPi(), track.tpcNSigmaPi());
-      dForProtonsKa = std::hypot(track.tofNSigmaKa(), track.tpcNSigmaKa());
-      dForProtonsPr = std::hypot(track.tofNSigmaPr(), track.tpcNSigmaPr());
-    } else {
-      dForProtonsPi = buffer;
-      dForProtonsKa = buffer;
-      dForProtonsPr = buffer;
-    }
-
-    const bool isPiMatch = dForPionsPi <= cfg.nSigmaCut;
-    const bool isKaMatch = dForKaonsKa <= cfg.nSigmaCut;
-    const bool isPrMatch = dForProtonsPr <= cfg.nSigmaCut;
-
-    PidResult result;
-
-    if (cfg.pidMethod == ClosestMatch) {
-      if (isPiMatch && dForPionsPi < dForPionsKa && dForPionsPi < dForPionsPr) {
-        result.isPion = true;
-      } else if (isKaMatch && dForKaonsKa < dForKaonsPi && dForKaonsKa < dForKaonsPr) {
-        result.isKaon = true;
-      } else if (isPrMatch && dForProtonsPr < dForProtonsPi && dForProtonsPr < dForProtonsKa) {
-        result.isProton = true;
-      }
-    } else if (cfg.pidMethod == ExclusiveMatch) {
-      if (isPiMatch && !isKaMatch && !isPrMatch) {
-        result.isPion = true;
-      } else if (isKaMatch && !isPiMatch && !isPrMatch) {
-        result.isKaon = true;
-      } else if (isPrMatch && !isPiMatch && !isKaMatch) {
-        result.isProton = true;
-      }
-    } else if (cfg.pidMethod == RejectionBased) {
-      if (isPiMatch && dForPionsKa > cfg.rejectionSigma && dForPionsPr > cfg.rejectionSigma) {
-        result.isPion = true;
-      } else if (isKaMatch && dForKaonsPi > cfg.rejectionSigma && dForKaonsPr > cfg.rejectionSigma) {
-        result.isKaon = true;
-      } else if (isPrMatch && dForProtonsPi > cfg.rejectionSigma && dForProtonsKa > cfg.rejectionSigma) {
-        result.isProton = true;
-      }
-    }
-
-    if (result.isPion && (pt < cfg.minPtPion || pt > cfg.maxPtPion)) {
-      result.isPion = false;
-    }
-    if (result.isKaon && (pt < cfg.minPtKaon || pt > cfg.maxPtKaon)) {
-      result.isKaon = false;
-    }
-    if (result.isProton && (pt < cfg.minPtProton || pt > cfg.maxPtProton)) {
-      result.isProton = false;
-    }
-
-    return result;
-  }
-
-  int getRecoPidClass(PidResult const& pid) const
-  {
-    if (pid.isPion) {
-      return PionPid;
-    }
-    if (pid.isKaon) {
-      return KaonPid;
-    }
-    if (pid.isProton) {
-      return ProtonPid;
-    }
-    return UnidentifiedPid;
-  }
-
   template <typename JetT, typename ParticleRangeT>
   JetFlavorInfo getJetFlavorTag(JetT const& jet, ParticleRangeT const& particles)
   {
@@ -463,8 +291,8 @@ struct QuarkGluonJetsProducer {
       }
 
       const int absPdg = std::abs(particle.pdgCode());
-      const bool isQuark = absPdg >= 1 && absPdg <= 6;
-      const bool isGluon = absPdg == 21;
+      const bool isQuark = absPdg >= kDown && absPdg <= kTop;
+      const bool isGluon = absPdg == kGluon;
       if (!isQuark && !isGluon) {
         continue;
       }
@@ -493,41 +321,28 @@ struct QuarkGluonJetsProducer {
     }
 
     const int leadingAbs = std::abs(result.leadingPartonPdg);
-    if (leadingAbs >= 1 && leadingAbs <= 6) {
+    if (leadingAbs >= kDown && leadingAbs <= kTop) {
       result.flavor = QuarkJet;
-    } else if (leadingAbs == 21) {
+    } else if (leadingAbs == kGluon) {
       result.flavor = GluonJet;
     }
 
     if (result.leadingPartonPt > 0.f && result.subleadingPartonPt > 0.f) {
       const int subAbs = std::abs(result.subleadingPartonPdg);
-      const bool leadingQuark = leadingAbs >= 1 && leadingAbs <= 6;
-      const bool subQuark = subAbs >= 1 && subAbs <= 6;
+      const bool leadingQuark = leadingAbs >= kDown && leadingAbs <= kTop;
+      const bool subQuark = subAbs >= kDown && subAbs <= kTop;
       result.ambiguous = (leadingQuark != subQuark) &&
                          result.subleadingPartonPt >= labelAmbiguityPtFraction * result.leadingPartonPt;
     }
     return result;
   }
 
-  int getJetMcCollisionId(ChargedMCDJets::iterator const& jet)
-  {
-    for (auto const& jtrack : jet.tracks_as<JetTrackRefs>()) {
-      auto track = jtrack.track_as<HadronTracksMC>();
-      if (!track.has_mcParticle()) {
-        continue;
-      }
-      auto mcParticle = track.mcParticle_as<aod::McParticles>();
-      return mcParticle.mcCollisionId();
-    }
-    return -1;
-  }
-
   void process(MCDJetEvents::iterator const& collision,
-               aod::JetMcCollisions const&,
                ChargedMCDJets const& detectorLevelJets,
                JetTrackRefs const&,
                HadronTracksMC const&,
-               aod::McParticles const& mcParticles)
+               aod::JetParticles const& jetParticles,
+               aod::McParticles const&)
   {
     if (!jetderiveddatautilities::selectCollision(
           collision,
@@ -543,7 +358,7 @@ struct QuarkGluonJetsProducer {
 
     for (auto const& jet : detectorLevelJets) {
       const double jetRadius = static_cast<double>(jet.r()) / 100.0;
-      if (std::abs(jetRadius - static_cast<double>(rJet)) > 1.e-3) {
+      if (std::abs(jetRadius - static_cast<double>(rJet)) > JetRadiusTolerance) {
         continue;
       }
 
@@ -561,10 +376,11 @@ struct QuarkGluonJetsProducer {
         continue;
       }
 
-      const int jetMcCollisionId = getJetMcCollisionId(jet);
+      const int jetMcCollisionId = jet.collision_as<MCDJetEvents>().mcCollisionId();
+
       JetFlavorInfo flavor;
       if (jetMcCollisionId >= 0) {
-        auto collisionParticles = mcParticles.sliceBy(mcParticlesPerCollision, jetMcCollisionId);
+        auto collisionParticles = jetParticles.sliceBy(mcParticlesPerCollision, jetMcCollisionId);
         flavor = getJetFlavorTag(jet, collisionParticles);
       }
       if (dropUnknownLabels && flavor.flavor == UnknownJet) {
@@ -574,46 +390,69 @@ struct QuarkGluonJetsProducer {
         continue;
       }
 
-      const uint64_t eventId = static_cast<uint64_t>(collision.globalIndex());
-      const uint64_t jetId = static_cast<uint64_t>(jet.globalIndex());
-
-      int nSelected = 0;
-      int nPions = 0;
-      int nKaons = 0;
-      int nProtons = 0;
+      int32_t nConstituents = 0;
 
       for (auto const& jtrack : jet.tracks_as<JetTrackRefs>()) {
         auto track = jtrack.track_as<HadronTracksMC>();
 
-        const bool passes = passedTrackSelection(track);
+        if (!passedTrackSelection(track)) {
+          continue;
+        }
+
+        ++nConstituents;
+      }
+      if (nConstituents == 0) {
+        continue;
+      }
+
+      qgMLJets(
+        flavor.flavor,
+        flavor.leadingPartonPdg,
+        flavor.leadingPartonPt,
+        flavor.leadingPartonDeltaR,
+        flavor.subleadingPartonPdg,
+        flavor.subleadingPartonPt,
+        flavor.subleadingPartonDeltaR,
+        flavor.nPartonsInCone,
+        flavor.ambiguous,
+        static_cast<float>(jet.pt()),
+        static_cast<float>(jet.eta()),
+        static_cast<float>(jet.phi()),
+        static_cast<float>(jet.area()),
+        static_cast<float>(jetRadius),
+        static_cast<float>(collision.posZ()),
+        nConstituents);
+
+      const auto qgMLJetId = qgMLJets.lastIndex();
+
+      for (auto const& jtrack : jet.tracks_as<JetTrackRefs>()) {
+        auto track = jtrack.track_as<HadronTracksMC>();
+
+        if (!passedTrackSelection(track)) {
+          continue;
+        }
+
         const double dEta = track.eta() - jet.eta();
         const double dPhi = RecoDecay::constrainAngle(track.phi() - jet.phi(), -PI);
         const double dR = std::hypot(dEta, dPhi);
-        const PidResult pid = getPid(track);
-        const int recoPid = getRecoPidClass(pid);
-
-        int64_t truthParticleId = -1;
         int32_t truthPdg = 0;
         float truthPt = std::numeric_limits<float>::quiet_NaN();
         float truthEta = std::numeric_limits<float>::quiet_NaN();
         float truthPhi = std::numeric_limits<float>::quiet_NaN();
-        uint8_t isPhysicalPrimary = 0;
+        bool isPhysicalPrimary = false;
 
         if (track.has_mcParticle()) {
           auto truth = track.mcParticle_as<aod::McParticles>();
-          truthParticleId = static_cast<int64_t>(truth.globalIndex());
           truthPdg = truth.pdgCode();
           truthPt = truth.pt();
           truthEta = truth.eta();
           truthPhi = truth.phi();
-          isPhysicalPrimary = static_cast<uint8_t>(truth.isPhysicalPrimary());
+          isPhysicalPrimary = truth.isPhysicalPrimary();
         }
 
         const float missingTOF = std::numeric_limits<float>::quiet_NaN();
         qgMLConstituents(
-          eventId,
-          jetId,
-          static_cast<uint64_t>(track.globalIndex()),
+          qgMLJetId,
           static_cast<float>(track.pt()),
           static_cast<float>(track.p()),
           static_cast<float>(track.eta()),
@@ -626,8 +465,7 @@ struct QuarkGluonJetsProducer {
           static_cast<float>(dR),
           jet.pt() > 0.f ? static_cast<float>(track.pt() / jet.pt()) : 0.f,
           track.sign(),
-          static_cast<uint8_t>(passes),
-          static_cast<uint8_t>(track.hasTOF()),
+          track.hasTOF(),
           static_cast<float>(track.dcaXY()),
           static_cast<float>(track.dcaZ()),
           static_cast<float>(track.tpcNSigmaPi()),
@@ -637,54 +475,12 @@ struct QuarkGluonJetsProducer {
           track.hasTOF() ? static_cast<float>(track.tofNSigmaKa()) : missingTOF,
           track.hasTOF() ? static_cast<float>(track.tofNSigmaPr()) : missingTOF,
           track.hasTOF() ? static_cast<float>(track.beta()) : missingTOF,
-          static_cast<uint8_t>(pid.isPion),
-          static_cast<uint8_t>(pid.isKaon),
-          static_cast<uint8_t>(pid.isProton),
-          recoPid,
-          truthParticleId,
           truthPdg,
           truthPt,
           truthEta,
           truthPhi,
           isPhysicalPrimary);
-
-        if (!passes) {
-          continue;
-        }
-        ++nSelected;
-        if (pid.isPion) {
-          ++nPions;
-        } else if (pid.isKaon) {
-          ++nKaons;
-        } else if (pid.isProton) {
-          ++nProtons;
-        }
       }
-
-      qgMLJets(
-        eventId,
-        jetId,
-        jetMcCollisionId,
-        flavor.flavor,
-        flavor.leadingPartonPdg,
-        flavor.leadingPartonPt,
-        flavor.leadingPartonDeltaR,
-        flavor.subleadingPartonPdg,
-        flavor.subleadingPartonPt,
-        flavor.subleadingPartonDeltaR,
-        flavor.nPartonsInCone,
-        static_cast<uint8_t>(flavor.ambiguous),
-        static_cast<float>(jet.pt()),
-        static_cast<float>(jet.eta()),
-        static_cast<float>(jet.phi()),
-        static_cast<float>(jet.area()),
-        static_cast<float>(jetRadius),
-        static_cast<float>(collision.posZ()),
-        static_cast<int32_t>(jet.tracksIds().size()),
-        nSelected,
-        nPions,
-        nKaons,
-        nProtons);
     }
   }
 };
@@ -692,5 +488,5 @@ struct QuarkGluonJetsProducer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<QuarkGluonJetsProducer>(cfgc, TaskName{"quark-gluon-jets-producer"})};
+    adaptAnalysisTask<QuarkGluonJetsProducer>(cfgc)};
 }
