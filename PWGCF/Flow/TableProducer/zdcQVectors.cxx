@@ -352,7 +352,7 @@ struct ZdcQVectors {
         registry.add<TH2>("QA/ZNC_pm4_vs_Centrality", "ZNC_pm4_vs_Centrality", kTH2D, {{100, 0, 100}, {100, 0, 1}});
       }
 
-      // Tower mean energies vs. centrality used for tower gain equalisation
+      // Tower mean energies vs centrality used for tower gain equalisation
       for (int tower = 0; tower < totalTowers; tower++) {
         registry.add<TProfile2D>(Form("Energy/%s", namesEcal[tower].Data()), Form("%s", namesEcal[tower].Data()), kTProfile2D, {{1, 0, 1}, axisCent});
       }
