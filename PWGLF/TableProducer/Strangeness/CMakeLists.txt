@@ -56,8 +56,8 @@ o2physics_add_dpl_workflow(hstrangecorrelationfilter
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(double-casc-tree-creator
-    SOURCES doubleCascTreeCreator.cxx
+o2physics_add_dpl_workflow(double-omega-tree-creator
+    SOURCES doubleOmegaTreeCreator.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
