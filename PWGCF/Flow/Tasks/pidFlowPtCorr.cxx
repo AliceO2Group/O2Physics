@@ -1659,7 +1659,7 @@ struct PidFlowPtCorr {
     if (!hist) {
       return 1;
     }
-    std::array<int, 4> bins;
+    std::array<int, 4> bins{};
     bins[0] = hist->GetAxis(0)->FindBin(phi);
     bins[1] = hist->GetAxis(1)->FindBin(eta);
     bins[2] = hist->GetAxis(2)->FindBin(vz);
