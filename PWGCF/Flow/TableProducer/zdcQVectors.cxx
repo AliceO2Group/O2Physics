@@ -418,8 +418,9 @@ struct ZdcQVectors {
     registry.fill(HIST("hEventCount"), evSel);
     // FT0C is the default centrality estimator
 
-    if (!cfgFillCutAnalysis || cfgFillNothing)
+    if (!cfgFillCutAnalysis || cfgFillNothing){
       return;
+    }
     // Add default with different centrality estimators as well
     // Here we fill the Energy and mean vx, vy vz histograms with an extra dimension for all the event selections used.
     registry.get<TProfile2D>(HIST("CutAnalysis/hvertex_vx"))->Fill(Form("%d", cal.runnumber), evSel, collision.posX());
@@ -569,8 +570,9 @@ struct ZdcQVectors {
       float zRes = std::sqrt(collision.covZZ());
       float minzRes = 0.25;
       int maxNumContrib = 20;
-      if (zRes > minzRes && collision.numContrib() < maxNumContrib)
+      if (zRes > minzRes && collision.numContrib() < maxNumContrib){
         vtxz = -999;
+      }
     }
 
     auto multNTracksPV = collision.multNTracksPV();
@@ -820,23 +822,27 @@ struct ZdcQVectors {
 
     if (cfgFT0Cvariant1) {
       cents.push_back(collision.centFT0CVariant1());
-      if (cfgUseSecondCent)
+      if (cfgUseSecondCent){
         cent = collision.centFT0CVariant1();
+      }
     }
     if (cfgFT0M) {
       cents.push_back(collision.centFT0M());
-      if (cfgUseSecondCent)
+      if (cfgUseSecondCent){
         cent = collision.centFT0M();
+      }
     }
     if (cfgFV0A) {
       cents.push_back(collision.centFV0A());
-      if (cfgUseSecondCent)
+      if (cfgUseSecondCent){
         cent = collision.centFV0A();
+      }
     }
     if (cfgNGlobal) {
       cents.push_back(collision.centNGlobal());
-      if (cfgUseSecondCent)
+      if (cfgUseSecondCent){
         cent = collision.centNGlobal();
+      }
     }
 
     std::vector<float> v = {collision.posX(), collision.posY(), collision.posZ()};
@@ -941,8 +947,9 @@ struct ZdcQVectors {
     }
 
     // load the calibration histos for iteration 0 step 0 (Energy Calibration)
-    if (!cfgNoGain)
+    if (!cfgNoGain){
       loadCalibrations<kEnergyCal>(cfgEnergyCal.value, timestamp);
+    }
 
     // load the calibrations for the mean v
     loadCalibrations<kMeanv>(cfgMeanv.value, timestamp);
@@ -1084,8 +1091,9 @@ struct ZdcQVectors {
       return;
     }
 
-      if (cfgFillHistRegistry && isEventSelected)
+      if (cfgFillHistRegistry && isEventSelected){
         fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], cal.v, cent, rsTimestamp);
+      }
 
       // vector of 4
       std::vector<double> corrQxA;
@@ -1207,14 +1215,18 @@ struct ZdcQVectors {
           int binshiftxZDCA = cal.shiftprofileA->FindBin(cent, 0.5, ishift - 0.5);
           int binshiftyZDCA = cal.shiftprofileA->FindBin(cent, 1.5, ishift - 0.5);
 
-          if (binshiftxZDCC > 0)
+          if (binshiftxZDCC > 0){
             coeffshiftxZDCC = cal.shiftprofileC->GetBinContent(binshiftxZDCC);
-          if (binshiftyZDCC > 0)
+          }
+          if (binshiftyZDCC > 0){
             coeffshiftyZDCC = cal.shiftprofileC->GetBinContent(binshiftyZDCC);
-          if (binshiftxZDCA > 0)
+          }
+          if (binshiftxZDCA > 0){
             coeffshiftxZDCA = cal.shiftprofileA->GetBinContent(binshiftxZDCA);
-          if (binshiftyZDCA > 0)
+          }
+          if (binshiftyZDCA > 0){
             coeffshiftyZDCA = cal.shiftprofileA->GetBinContent(binshiftyZDCA);
+          }
 
           deltaPsiZDCC += ((2 / (1.0 * ishift)) * (-1.0 * coeffshiftxZDCC * std::cos(ishift * 1.0 * psiZDCC) + coeffshiftyZDCC * std::sin(ishift * 1.0 * psiZDCC)));
           deltaPsiZDCA += ((2 / (1.0 * ishift)) * (-1.0 * coeffshiftxZDCA * std::cos(ishift * 1.0 * psiZDCA) + coeffshiftyZDCA * std::sin(ishift * 1.0 * psiZDCA)));
