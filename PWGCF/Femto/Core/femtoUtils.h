@@ -47,6 +47,20 @@ inline std::optional<T2> getIndex(const T1& index, const std::unordered_map<T1, 
   return std::nullopt;
 }
 
+/// Translate a global daughter index into a row of the current track table frame.
+/// Aborts if the index does not fall inside the frame, which would otherwise
+/// silently produce an out-of-range iterator.
+template <typename T>
+int64_t daughterRow(int64_t daughterId, T const& trackTable)
+{
+  const int64_t row = daughterId - trackTable.offset();
+  if (daughterId < 0 || row < 0 || row >= static_cast<int64_t>(trackTable.size())) {
+    LOG(fatal) << "Daughter index " << daughterId << " out of range for track table (offset "
+               << trackTable.offset() << ", size " << trackTable.size() << "). Breaking...";
+  }
+  return row;
+}
+
 template <typename T>
 float itsSignal(T const& track)
 {
@@ -243,7 +257,7 @@ inline int signum(T x)
 }
 
 template <typename T>
-inline T binLinear(float value, float lo, float hi, float step)
+T binLinear(float value, float lo, float hi, float step)
 {
   float v = std::clamp(value, lo, hi);
   auto idx = static_cast<int64_t>(std::round((v - lo) / step));
@@ -253,46 +267,46 @@ inline T binLinear(float value, float lo, float hi, float step)
 }
 
 template <typename T>
-inline float unBinLinear(T binned, float lo, float step)
+float unBinLinear(T binned, float lo, float step)
 {
   auto idx = static_cast<int64_t>(binned) - static_cast<int64_t>(std::numeric_limits<T>::min());
   return lo + static_cast<float>(idx) * step;
 }
 
 template <typename T>
-inline T binLogSigned(float signedValue, float magMin, float magMax)
+T binLogSigned(float signedValue, float magMin, float magMax)
 {
   static_assert(std::is_unsigned_v<T>, "binLogSigned requires an unsigned storage type");
-  constexpr uint32_t TotalBits = sizeof(T) * 8;
-  constexpr uint32_t HalfLevels = 1u << (TotalBits - 1);
-  uint32_t sign = (signedValue < 0.f) ? 1u : 0u;
-  float mag = std::clamp(std::fabs(signedValue), magMin, magMax);
-  float logLo = std::log(magMin);
-  float logHi = std::log(magMax);
-  float step = (logHi - logLo) / static_cast<float>(HalfLevels - 1);
-  auto idx = static_cast<uint32_t>(std::round((std::log(mag) - logLo) / step));
-  idx = std::clamp(idx, 0u, HalfLevels - 1);
-  return static_cast<T>((sign << (TotalBits - 1)) | idx);
+  constexpr uint64_t TotalBits = sizeof(T) * 8;
+  constexpr uint64_t HalfLevels = uint64_t{1} << (TotalBits - 1);
+  const uint64_t sign = (signedValue < 0.f) ? uint64_t{1} : uint64_t{0};
+  const float mag = std::clamp(std::fabs(signedValue), magMin, magMax);
+  const float logLo = std::log(magMin);
+  const float logHi = std::log(magMax);
+  const float step = (logHi - logLo) / static_cast<float>(HalfLevels - 1);
+  auto idx = static_cast<int64_t>(std::round((std::log(mag) - logLo) / step));
+  idx = std::clamp(idx, int64_t{0}, static_cast<int64_t>(HalfLevels - 1));
+  return static_cast<T>((sign << (TotalBits - 1)) | static_cast<uint64_t>(idx));
 }
 
 template <typename T>
-inline float unBinLogSigned(T binned, float magMin, float magMax)
+float unBinLogSigned(T binned, float magMin, float magMax)
 {
-  constexpr uint32_t TotalBits = sizeof(T) * 8;
-  constexpr uint32_t HalfLevels = 1u << (TotalBits - 1);
-  constexpr T SignMask = static_cast<T>(1u << (TotalBits - 1));
+  static_assert(std::is_unsigned_v<T>, "unBinLogSigned requires an unsigned storage type");
+  constexpr uint64_t TotalBits = sizeof(T) * 8;
+  constexpr uint64_t HalfLevels = uint64_t{1} << (TotalBits - 1);
+  constexpr T SignMask = static_cast<T>(uint64_t{1} << (TotalBits - 1));
   constexpr T MagMask = static_cast<T>(SignMask - 1);
-  float sign = (binned & SignMask) ? -1.f : 1.f;
-  uint32_t idx = binned & MagMask;
-  float logLo = std::log(magMin);
-  float logHi = std::log(magMax);
-  float step = (logHi - logLo) / static_cast<float>(HalfLevels - 1);
-  float mag = std::exp(logLo + static_cast<float>(idx) * step);
-  return sign * mag;
+  const float sign = (binned & SignMask) ? -1.f : 1.f;
+  const auto idx = static_cast<uint64_t>(binned & MagMask);
+  const float logLo = std::log(magMin);
+  const float logHi = std::log(magMax);
+  const float step = (logHi - logLo) / static_cast<float>(HalfLevels - 1);
+  return sign * std::exp(logLo + static_cast<float>(idx) * step);
 }
 
 template <typename T>
-inline int unBinSign(T binned)
+int unBinSign(T binned)
 {
   static_assert(std::is_unsigned_v<T>, "unBinSign requires an unsigned storage type");
   constexpr uint64_t TotalBits = sizeof(T) * 8;
@@ -301,7 +315,7 @@ inline int unBinSign(T binned)
 }
 
 template <typename T>
-inline T binLogUnsigned(float value, float magMin, float magMax)
+T binLogUnsigned(float value, float magMin, float magMax)
 {
   static_assert(std::is_unsigned_v<T>, "binLogUnsigned requires an unsigned storage type");
   constexpr uint64_t TotalBits = sizeof(T) * 8;
@@ -316,7 +330,7 @@ inline T binLogUnsigned(float value, float magMin, float magMax)
 }
 
 template <typename T>
-inline float unBinLogUnsigned(T binned, float magMin, float magMax)
+float unBinLogUnsigned(T binned, float magMin, float magMax)
 {
   constexpr uint64_t TotalBits = sizeof(T) * 8;
   constexpr uint64_t Levels = uint64_t{1} << TotalBits;

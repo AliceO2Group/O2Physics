@@ -22,7 +22,6 @@
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
@@ -308,12 +307,12 @@ struct HfTreeCreatorDplusToPiKPi {
     int8_t flagMc = 0;
     int8_t originMc = 0;
     int8_t channelMc = 0;
-    int8_t bMotherFlag = -1;
+    int8_t bMotherPdg = 0;
     if constexpr (DoMc) {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
       channelMc = candidate.flagMcDecayChanRec();
-      bMotherFlag = o2::analysis::getBHadMotherFlag(candidate.pdgBhadMotherPart());
+      bMotherPdg = candidate.pdgBhadMotherPart();
     }
 
     std::vector<float> outputMl = {-999., -999.};
@@ -380,7 +379,7 @@ struct HfTreeCreatorDplusToPiKPi {
         flagMc,
         originMc,
         channelMc,
-        bMotherFlag);
+        bMotherPdg);
     } else {
       rowCandidateFull(
         coll.numContrib(),
@@ -462,7 +461,7 @@ struct HfTreeCreatorDplusToPiKPi {
         flagMc,
         originMc,
         channelMc,
-        bMotherFlag);
+        bMotherPdg);
     }
   }
 

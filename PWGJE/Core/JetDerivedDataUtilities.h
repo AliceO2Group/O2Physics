@@ -716,6 +716,7 @@ uint8_t setSingleTrackSelectionBit(int trackSelection)
   if (trackSelection != -1) {
     SETBIT(bit, trackSelection);
   }
+  SETBIT(bit, JTrackSel::notBadMcTrack);
   return bit;
 }
 

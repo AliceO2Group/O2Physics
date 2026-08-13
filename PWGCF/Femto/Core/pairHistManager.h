@@ -249,6 +249,7 @@ struct ConfPairCuts : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> massInvMax{"massInvMax", -1, "Maximal invariant mass (set to -1 to deactivate)"};
   o2::framework::Configurable<bool> mixOnlyCommonAncestor{"mixOnlyCommonAncestor", false, "Require pair to have common anchestor (in the same event)"};
   o2::framework::Configurable<bool> mixOnlyNonCommonAncestor{"mixOnlyNonCommonAncestor", false, "Require pair to have non-common anchestor (in the same event)"};
+  o2::framework::Configurable<bool> useMotherAsAncestor{"useMotherAsAncestor", false, "Use the first ancestor (i.e. the direct mother) instead of the partonic mother when requiring (non-)common ancestry"};
 };
 
 // the enum gives the correct index in the array
