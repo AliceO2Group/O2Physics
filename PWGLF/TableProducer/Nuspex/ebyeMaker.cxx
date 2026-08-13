@@ -214,6 +214,8 @@ struct EbyeMaker {
   Produces<aod::McNucleiEbyeTable> mcNucleiEbyeTable;
   Produces<aod::McLambdaEbyeTable> mcLambdaEbyeTable;
   Produces<aod::McMiniTrkTable> mcMiniTrkTable;
+  Produces<aod::MiniChTable> miniChTable;
+  Produces<aod::McMiniChTable> mcMiniChTable;
   std::mt19937 gen32;
   std::vector<CandidateV0> candidateV0s;
   std::array<std::vector<CandidateTrack>, 2> candidateTracks;
@@ -498,6 +500,14 @@ struct EbyeMaker {
         candidateTrack.pdgcode > 0 ? candidateTrack.genpt : -candidateTrack.genpt,
         static_cast<int8_t>(candidateTrack.geneta * 100),
         candidateTrack.isreco);
+      mcMiniChTable(
+        miniCollTable.lastIndex(),
+        candidateTrack.pt,
+        static_cast<int8_t>(candidateTrack.eta * 100),
+        selMask,
+        candidateTrack.pdgcode > 0 ? candidateTrack.genpt : -candidateTrack.genpt,
+        static_cast<int8_t>(candidateTrack.geneta * 100),
+        candidateTrack.isreco);
     } else if (!isMc) {
       miniTrkTable(
         miniCollTable.lastIndex(),
@@ -505,6 +515,11 @@ struct EbyeMaker {
         static_cast<int8_t>(candidateTrack.eta * 100),
         selMask,
         candidateTrack.outerPID);
+      miniChTable(
+        miniCollTable.lastIndex(),
+        candidateTrack.pt,
+        static_cast<int8_t>(candidateTrack.eta * 100),
+        selMask);
     }
   }
 
