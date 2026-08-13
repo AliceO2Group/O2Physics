@@ -55,7 +55,7 @@
 #include <string_view>
 #include <vector>
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, (DEFAULT), (HELP)};
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP}; // NOLINT(bugprone-macro-parentheses)
 
 using namespace o2;
 using namespace o2::framework;
@@ -1168,7 +1168,7 @@ struct ZdcQVectors {
 
       if (!cfgCCDBdir_Shift.value.empty() && !cal.isShiftProfileFound) {
         LOGF(info, "Getting shift profile from CCDB for runnumber: %d", runnumber);
-        TList* hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir_Shift.value, foundBC.timestamp());
+        auto hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir_Shift.value, foundBC.timestamp());
         auto shiftProfileC = dynamic_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCC"));
         if (shiftProfileC) {
           cal.shiftprofileC = shiftProfileC;
