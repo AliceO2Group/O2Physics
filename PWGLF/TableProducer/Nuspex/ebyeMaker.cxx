@@ -945,7 +945,7 @@ struct EbyeMaker {
         candV0.genpt = genPt;
         candV0.geneta = mcPart.eta();
         candV0.pdgcode = pdgCode;
-        auto it = find_if(candidateV0s.begin(), candidateV0s.end(), [&](CandidateV0 &v0) { return v0.mcIndex == mcPart.globalIndex(); });
+        auto it = find_if(candidateV0s.begin(), candidateV0s.end(), [&](CandidateV0& v0) { return v0.mcIndex == mcPart.globalIndex(); });
         if (it != candidateV0s.end()) {
           continue;
         } else {
@@ -968,7 +968,7 @@ struct EbyeMaker {
         else if (mcPart.has_mothers() && iP == 0 && kUsePID)
           candTrack.pdgcodemoth = getPartTypeMother(mcPart);
 
-        auto it = find_if(candidateTracks[iP].begin(), candidateTracks[iP].end(), [&](CandidateTrack &trk) { return trk.mcIndex == mcPart.globalIndex(); });
+        auto it = find_if(candidateTracks[iP].begin(), candidateTracks[iP].end(), [&](CandidateTrack& trk) { return trk.mcIndex == mcPart.globalIndex(); });
         if (it != candidateTracks[iP].end()) {
           continue;
         } else {
