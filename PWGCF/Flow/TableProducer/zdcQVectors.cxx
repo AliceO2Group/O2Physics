@@ -739,61 +739,61 @@ struct ZdcQVectors {
     if (hist->InheritsFrom("TProfile2D")) {
       // needed for energy calibration!
       auto h = dynamic_cast<TProfile2D*>(hist);
-      if(h){
-      TString name = h->GetName();
-      int binrunnumber = h->GetXaxis()->FindBin(TString::Format("%d", cal.runnumber));
-      int bin = h->GetYaxis()->FindBin(cal.centrality);
-      calibConstant = h->GetBinContent(binrunnumber, bin);
+      if (h) {
+        TString name = h->GetName();
+        int binrunnumber = h->GetXaxis()->FindBin(TString::Format("%d", cal.runnumber));
+        int bin = h->GetYaxis()->FindBin(cal.centrality);
+        calibConstant = h->GetBinContent(binrunnumber, bin);
       }
     } else if (hist->InheritsFrom("TProfile")) {
       auto h = dynamic_cast<TProfile*>(hist);
-      if(h){
-      TString name = h->GetName();
-      int bin{};
-      if (name.Contains("mean_vx")) {
-        bin = h->GetXaxis()->FindBin(cal.v[0]);
+      if (h) {
+        TString name = h->GetName();
+        int bin{};
+        if (name.Contains("mean_vx")) {
+          bin = h->GetXaxis()->FindBin(cal.v[0]);
+        }
+        if (name.Contains("mean_vy")) {
+          bin = h->GetXaxis()->FindBin(cal.v[1]);
+        }
+        if (name.Contains("mean_vz")) {
+          bin = h->GetXaxis()->FindBin(cal.v[2]);
+        }
+        if (name.Contains("mean_cent")) {
+          bin = h->GetXaxis()->FindBin(cal.centrality);
+        }
+        if (name.Contains("vertex")) {
+          bin = h->GetXaxis()->FindBin(TString::Format("%i", cal.runnumber));
+        }
+        if (name.Contains("timestamp")) {
+          bin = h->GetXaxis()->FindBin(cal.timestamp);
+        }
+        calibConstant = h->GetBinContent(bin);
       }
-      if (name.Contains("mean_vy")) {
-        bin = h->GetXaxis()->FindBin(cal.v[1]);
-      }
-      if (name.Contains("mean_vz")) {
-        bin = h->GetXaxis()->FindBin(cal.v[2]);
-      }
-      if (name.Contains("mean_cent")) {
-        bin = h->GetXaxis()->FindBin(cal.centrality);
-      }
-      if (name.Contains("vertex")) {
-        bin = h->GetXaxis()->FindBin(TString::Format("%i", cal.runnumber));
-      }
-      if (name.Contains("timestamp")) {
-        bin = h->GetXaxis()->FindBin(cal.timestamp);
-      }
-      calibConstant = h->GetBinContent(bin);
-    }
     } else if (hist->InheritsFrom("THnSparse")) {
       std::vector<int> sparsePars;
       auto h = dynamic_cast<THnSparseD*>(hist);
-      if(h){
-      sparsePars.push_back(h->GetAxis(0)->FindBin(cal.centrality));
-      sparsePars.push_back(h->GetAxis(1)->FindBin(cal.v[0]));
-      sparsePars.push_back(h->GetAxis(2)->FindBin(cal.v[1]));
-      sparsePars.push_back(h->GetAxis(3)->FindBin(cal.v[2]));
+      if (h) {
+        sparsePars.push_back(h->GetAxis(0)->FindBin(cal.centrality));
+        sparsePars.push_back(h->GetAxis(1)->FindBin(cal.v[0]));
+        sparsePars.push_back(h->GetAxis(2)->FindBin(cal.v[1]));
+        sparsePars.push_back(h->GetAxis(3)->FindBin(cal.v[2]));
 
-      for (std::size_t i = 0; i < sparsePars.size(); i++) {
-        h->GetAxis(i)->SetRange(sparsePars[i], sparsePars[i]);
+        for (std::size_t i = 0; i < sparsePars.size(); i++) {
+          h->GetAxis(i)->SetRange(sparsePars[i], sparsePars[i]);
+        }
+
+        auto tempProj = h->Projection(4);
+        calibConstant = tempProj->GetMean();
+
+        if (tempProj->GetEntries() < cfgMinEntriesSparseBin) {
+          LOGF(debug, "1 entry in sparse bin! Not used... (increase binsize)");
+          calibConstant = 0;
+          cal.isSelected = false;
+        }
+
+        delete tempProj;
       }
-
-      auto tempProj = h->Projection(4);
-      calibConstant = tempProj->GetMean();
-
-      if (tempProj->GetEntries() < cfgMinEntriesSparseBin) {
-        LOGF(debug, "1 entry in sparse bin! Not used... (increase binsize)");
-        calibConstant = 0;
-        cal.isSelected = false;
-      }
-
-      delete tempProj;
-    }
     }
 
     return calibConstant;
@@ -1170,11 +1170,11 @@ struct ZdcQVectors {
         LOGF(info, "Getting shift profile from CCDB for runnumber: %d", runnumber);
         TList* hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir_Shift.value, foundBC.timestamp());
         auto shiftProfileC = dynamic_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCC"));
-        if(shiftProfileC) {
+        if (shiftProfileC) {
           cal.shiftprofileC = shiftProfileC;
         }
         auto shiftProfileA = dynamic_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCA"));
-        if(shiftProfileA) {
+        if (shiftProfileA) {
           cal.shiftprofileA = shiftProfileA;
         }
         if (!cal.shiftprofileC || !cal.shiftprofileA) {
