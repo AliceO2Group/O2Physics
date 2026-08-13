@@ -223,12 +223,12 @@ struct EbyeMaker {
   o2::vertexing::DCAFitterN<2> fitter;
   std::vector<int> classIds;
 
-  int mRunNumber;
-  float dBz;
-  uint8_t nTrackletsColl;
-  uint8_t nTracksColl;
-  uint8_t nChPartGen;
-  int nTracksCollFull;
+  int mRunNumber{-999};
+  float dBz{-999.f};
+  uint8_t nTrackletsColl{0u};
+  uint8_t nTracksColl{0u};
+  uint8_t nChPartGen{0u};
+  int nTracksCollFull{-999};
 
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {kBetheBlochDefault[0], 2, 6, particleNamesPar, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for deuteron"};
@@ -308,11 +308,11 @@ struct EbyeMaker {
   Configurable<LabeledArray<float>> cfgTrackSels{"cfgTrackSels", {kTrackSels, 1, 12, particleName, trackSelsNames}, "Track selections"};
   Configurable<LabeledArray<float>> cfgDcaSelsParam{"cfgDcaSelsParam", {kDcaSelsParam[0], 3, 3, dcaSelsNames, dcaParNames}, "DCA threshold settings"};
 
-  std::array<float, kNpart> ptMin;
-  std::array<float, kNpart> ptTof;
-  std::array<float, kNpart> ptMax;
-  std::array<float, kNpart> nSigmaTpcCutLow;
-  std::array<float, kNpart> nSigmaTpcCutUp;
+  std::array<float, kNpart> ptMin{0};
+  std::array<float, kNpart> ptTof{0};
+  std::array<float, kNpart> ptMax{0};
+  std::array<float, kNpart> nSigmaTpcCutLow{0};
+  std::array<float, kNpart> nSigmaTpcCutUp{0};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -698,7 +698,6 @@ struct EbyeMaker {
     }
 
     if (lambdaPtMax > lambdaPtMin) {
-      std::vector<int64_t> trkId;
       for (const auto& v0 : V0s) {
         auto posTrack = v0.posTrack_as<T>();
         auto negTrack = v0.negTrack_as<T>();
@@ -946,7 +945,7 @@ struct EbyeMaker {
         candV0.genpt = genPt;
         candV0.geneta = mcPart.eta();
         candV0.pdgcode = pdgCode;
-        auto it = find_if(candidateV0s.begin(), candidateV0s.end(), [&](CandidateV0 v0) { return v0.mcIndex == mcPart.globalIndex(); });
+        auto it = find_if(candidateV0s.begin(), candidateV0s.end(), [&](CandidateV0 &v0) { return v0.mcIndex == mcPart.globalIndex(); });
         if (it != candidateV0s.end()) {
           continue;
         } else {
@@ -960,7 +959,6 @@ struct EbyeMaker {
         }
         if ((!mcPart.isPhysicalPrimary() && !doprocessMiniMcRun2))
           continue;
-        auto genPt = std::hypot(mcPart.px(), mcPart.py());
         CandidateTrack candTrack;
         candTrack.genpt = genPt;
         candTrack.geneta = mcPart.eta();
@@ -970,7 +968,7 @@ struct EbyeMaker {
         else if (mcPart.has_mothers() && iP == 0 && kUsePID)
           candTrack.pdgcodemoth = getPartTypeMother(mcPart);
 
-        auto it = find_if(candidateTracks[iP].begin(), candidateTracks[iP].end(), [&](CandidateTrack trk) { return trk.mcIndex == mcPart.globalIndex(); });
+        auto it = find_if(candidateTracks[iP].begin(), candidateTracks[iP].end(), [&](CandidateTrack &trk) { return trk.mcIndex == mcPart.globalIndex(); });
         if (it != candidateTracks[iP].end()) {
           continue;
         } else {
