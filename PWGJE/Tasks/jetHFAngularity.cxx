@@ -32,10 +32,9 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
-#include <Math/Vector4D.h>
 #include <TH1.h>
-#include <TVector3.h>
 
+#include <array>
 #include <cmath>
 #include <string>
 #include <vector>
@@ -43,6 +42,12 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
+namespace
+{
+constexpr int kOriginMcPrompt = 1;    // MC origin flag: prompt
+constexpr int kOriginMcNonPrompt = 2; // MC origin flag: non-prompt
+} // namespace
 
 namespace o2::aod
 {
@@ -190,25 +195,14 @@ struct JetHFAngularityTask {
 
   // DATA
 
-  using D0CandidatesData = soa::Join<aod::HfD0Bases,
-                                     aod::HfD0Pars,
-                                     aod::HfD0ParEs,
-                                     aod::HfD0Sels,
-                                     aod::HfD0Mls,
-                                     aod::JD0Ids>;
-
+  using D0CandidatesData = aod::CandidatesD0Data;
+  
   using D0DataJets = soa::Join<aod::D0ChargedJets,
                                aod::D0ChargedJetConstituents>;
 
   // MC-DETECTOR LEVEL(MCD)
 
-  using D0CandidatesMCD = soa::Join<aod::HfD0Bases,
-                                    aod::HfD0Pars,
-                                    aod::HfD0ParEs,
-                                    aod::HfD0Sels,
-                                    aod::HfD0Mls,
-                                    aod::HfD0Mcs,
-                                    aod::JD0Ids>;
+  using D0CandidatesMCD = aod::CandidatesD0MCD;
 
   using D0MCDJets = soa::Join<aod::D0ChargedMCDetectorLevelJets,
                               aod::D0ChargedMCDetectorLevelJetConstituents>;
@@ -219,8 +213,7 @@ struct JetHFAngularityTask {
 
   // MC PARTICLE LEVEL (MCP)
 
-  using D0CandidatesMCP = soa::Join<aod::HfD0PBases,
-                                    aod::JD0PIds>;
+  using D0CandidatesMCP = aod::CandidatesD0MCP;
 
   using D0MCPJets = soa::Join<aod::D0ChargedMCParticleLevelJets,
                               aod::D0ChargedMCParticleLevelJetConstituents>;
@@ -393,10 +386,8 @@ struct JetHFAngularityTask {
 
   void init(InitContext const&)
   {
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(
-      static_cast<std::string>(eventSelections));
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(
-      static_cast<std::string>(trackSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections.value);
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(trackSelections.value);
 
     massD0MCP = jetcandidateutilities::getTablePDGMass<D0CandidatesMCP>();
 
@@ -486,57 +477,45 @@ struct JetHFAngularityTask {
   }
 
   // Helper: jet invariant mass
-
+ 
   template <typename TRACKS, typename CANDIDATES>
   float computeJetMass(TRACKS const& tracks,
                        CANDIDATES const& candidates,
                        double candMass = -1.)
   {
-    double sumPx = 0., sumPy = 0., sumPz = 0., sumE = 0.;
+    std::array<double, 3> momTotal{0., 0., 0.};
+    double energyTot = 0.;
 
     for (auto const& trk : tracks) {
-      const double px = trk.pt() * std::cos(trk.phi());
-      const double py = trk.pt() * std::sin(trk.phi());
-      const double pz = trk.pt() * std::sinh(trk.eta());
-      const double p = std::sqrt(px * px + py * py + pz * pz);
-
-      sumPx += px;
-      sumPy += py;
-      sumPz += pz;
-      sumE += p;
+      const std::array<double, 3> mom{trk.px(), trk.py(), trk.pz()};
+      momTotal[0] += mom[0];
+      momTotal[1] += mom[1];
+      momTotal[2] += mom[2];
+      energyTot += RecoDecay::e(mom, 0.); // massless approximation for ordinary tracks
     }
 
     for (auto const& cand : candidates) {
-
-      const double px = cand.px();
-      const double py = cand.py();
-      const double pz = cand.pz();
+      const std::array<double, 3> mom{cand.px(), cand.py(), cand.pz()};
 
       double m;
       if (candMass > 0.) {
         m = candMass;
+      } else if constexpr (requires { cand.m(); }) {
+        m = cand.m(); // DATA / MCD: reconstructed invariant mass
       } else {
-
-        if constexpr (requires { cand.m(); }) {
-          m = cand.m();
-        } else {
-          m = candMass;
-        }
+        m = 0.;
       }
 
-      const double p = std::sqrt(px * px + py * py + pz * pz);
-      const double e = std::sqrt(p * p + m * m);
-
-      sumPx += px;
-      sumPy += py;
-      sumPz += pz;
-      sumE += e;
+      momTotal[0] += mom[0];
+      momTotal[1] += mom[1];
+      momTotal[2] += mom[2];
+      energyTot += RecoDecay::e(mom, m);
     }
 
-    const double m2 = sumE * sumE - (sumPx * sumPx + sumPy * sumPy + sumPz * sumPz);
-
-    return (m2 > 0.) ? static_cast<float>(std::sqrt(m2)) : 0.f;
+    const double mass2 = RecoDecay::m2(momTotal, energyTot);
+    return (mass2 > 0.) ? static_cast<float>(std::sqrt(mass2)) : 0.f;
   }
+
   // Process: collision QA (DATA)
 
   void processCollisions(aod::JetCollision const& collision,
@@ -595,7 +574,7 @@ struct JetHFAngularityTask {
       const float girth = computeLambda(jet, jetTracks, jetCandidates, 2.f, 1.f);      // λ_2^1
       const float mjet = computeJetMass(jetTracks, jetCandidates);
 
-      TVector3 jetVector(jet.px(), jet.py(), jet.pz());
+      const std::array<double, 3> jetMom{jet.px(), jet.py(), jet.pz()};
 
       bool hasD0 = false;
 
@@ -604,10 +583,10 @@ struct JetHFAngularityTask {
 
         hasD0 = true;
 
-        TVector3 d0Vector(d0Candidate.px(), d0Candidate.py(), d0Candidate.pz());
+        const std::array<double, 3> d0Mom{d0Candidate.px(), d0Candidate.py(), d0Candidate.pz()};
 
-        // Longitudinal momentum fraction
-        const float zParallel = jetVector.Dot(d0Vector) / jetVector.Dot(jetVector);
+        // Longitudinal momentum fraction: z_|| = (p_D0 . p_jet) / |p_jet|^2
+        const float zParallel = RecoDecay::dotProd(d0Mom, jetMom) / RecoDecay::mag2(jetMom);
         // Angular separation between D0 and jet axis
         const float axisDistance = jetutilities::deltaR(jet, d0Candidate);
 
@@ -700,7 +679,7 @@ struct JetHFAngularityTask {
       const float girth = computeLambda(jet, jetTracks, jetCandidates, 2.f, 1.f);      // λ_2^1
       const float mjet = computeJetMass(jetTracks, jetCandidates);
 
-      TVector3 jetVector(jet.px(), jet.py(), jet.pz());
+      const std::array<double, 3> jetMom{jet.px(), jet.py(), jet.pz()};
 
       bool hasD0 = false;
 
@@ -709,9 +688,9 @@ struct JetHFAngularityTask {
 
         hasD0 = true;
 
-        TVector3 d0Vector(d0Candidate.px(), d0Candidate.py(), d0Candidate.pz());
+        const std::array<double, 3> d0Mom{d0Candidate.px(), d0Candidate.py(), d0Candidate.pz()};
 
-        const float zParallel = jetVector.Dot(d0Vector) / jetVector.Dot(jetVector);
+        const float zParallel = RecoDecay::dotProd(d0Mom, jetMom) / RecoDecay::mag2(jetMom);
         const float axisDistance = jetutilities::deltaR(jet, d0Candidate);
 
         const int8_t flagMcMatch = d0Candidate.flagMcMatchRec();
@@ -807,7 +786,7 @@ struct JetHFAngularityTask {
       const float girth = computeLambda(jet, jetTracks, jetCandidates, 2.f, 1.f);      // λ_2^1
       const float mjet = computeJetMass(jetTracks, jetCandidates);
 
-      TVector3 jetVector(jet.px(), jet.py(), jet.pz());
+      const std::array<double, 3> jetMom{jet.px(), jet.py(), jet.pz()};
 
       bool isGeoMatched = false;
       float matchedPt = -1.f;
@@ -879,16 +858,16 @@ struct JetHFAngularityTask {
         registry.fill(HIST("h_jet_matching_dr_mcd"), matchedDR, mcWeight);
       }
 
-      const int8_t geoStatus = static_cast<int8_t>(isGeoMatched ? 1 : 0);
-      const int8_t candStatus = static_cast<int8_t>(isCandMatched ? 1 : 0);
-      const int8_t cleanStatus = static_cast<int8_t>(isCleanMatched ? 1 : 0);
+      const int8_t geoStatus = static_cast<int8_t>(isGeoMatched);
+      const int8_t candStatus = static_cast<int8_t>(isCandMatched);
+      const int8_t cleanStatus = static_cast<int8_t>(isCleanMatched);
 
       // ---- D0 candidate loop
       for (const auto& d0Candidate : jetCandidates) {
 
-        TVector3 d0Vector(d0Candidate.px(), d0Candidate.py(), d0Candidate.pz());
+        const std::array<double, 3> d0Mom{d0Candidate.px(), d0Candidate.py(), d0Candidate.pz()};
 
-        const float zParallel = jetVector.Dot(d0Vector) / jetVector.Dot(jetVector);
+        const float zParallel = RecoDecay::dotProd(d0Mom, jetMom) / RecoDecay::mag2(jetMom);
         const float axisDistance = jetutilities::deltaR(jet, d0Candidate);
 
         const int8_t flagMcMatch = d0Candidate.flagMcMatchRec();
@@ -967,7 +946,7 @@ struct JetHFAngularityTask {
       const float girth = computeLambda(jet, jetParticles, jetCandidates, 2.f, 1.f);      // λ_2^1
       const float mjet = computeJetMass(jetParticles, jetCandidates, massD0MCP);
 
-      TVector3 jetVector(jet.px(), jet.py(), jet.pz());
+      const std::array<double, 3> jetMom{jet.px(), jet.py(), jet.pz()};
 
       bool hasD0 = false;
 
@@ -976,9 +955,9 @@ struct JetHFAngularityTask {
 
         hasD0 = true;
 
-        TVector3 d0Vector(d0Particle.px(), d0Particle.py(), d0Particle.pz());
+        const std::array<double, 3> d0Mom{d0Particle.px(), d0Particle.py(), d0Particle.pz()};
 
-        const float zParallel = jetVector.Dot(d0Vector) / jetVector.Dot(jetVector);
+        const float zParallel = RecoDecay::dotProd(d0Mom, jetMom) / RecoDecay::mag2(jetMom);
         const float axisDistance = jetutilities::deltaR(jet, d0Particle);
 
         const int8_t flagMcMatch = d0Particle.flagMcMatchGen();
@@ -1041,5 +1020,5 @@ struct JetHFAngularityTask {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<JetHFAngularityTask>(cfgc, TaskName{"jet-hf-ang-substructure"})}; // o2-linter: disable=name/o2-task (templated struct)
+    adaptAnalysisTask<JetHFAngularityTask>(cfgc)};
 }
