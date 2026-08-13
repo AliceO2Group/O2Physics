@@ -214,5 +214,5 @@ struct MultandptFluctuations {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<MultandPtFluctuations>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<MultandptFluctuations>(cfgc)};
 }
