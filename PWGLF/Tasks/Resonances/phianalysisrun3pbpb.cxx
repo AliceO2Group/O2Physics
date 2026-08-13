@@ -349,8 +349,8 @@ struct Phianalysisrun3pbpb {
         return true;
       }
       return false;
-
-    } else if (pidHypothesis == 1) {
+    }
+    if (pidHypothesis == 1) {
       constexpr double PtThresholdForTOF = 0.5;
       if (candidate.pt() < PtThresholdForTOF && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmacutTPC) {
         return true;
@@ -370,41 +370,48 @@ struct Phianalysisrun3pbpb {
   template <typename CollType>
   bool myEventSelections(const CollType& collision)
   {
-    if (selectionConfig.cutvz && !(std::abs(collision.posZ()) < selectionConfig.cfgCutVertex))
+    if (selectionConfig.cutvz && !(std::abs(collision.posZ()) < selectionConfig.cfgCutVertex)) {
       return false;
+    }
 
-    if (!collision.sel8())
+    if (!collision.sel8()) {
       return false;
+    }
 
-    if (selectionConfig.selHasBC && !collision.has_foundBC())
+    if (selectionConfig.selHasBC && !collision.has_foundBC()) {
       return false;
+    }
 
-    if (selectionConfig.selHasFT0 && !collision.has_foundFT0())
+    if (selectionConfig.selHasFT0 && !collision.has_foundFT0()) {
       return false;
+    }
 
-    if (selectionConfig.additionalEvSel1 && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+    if (selectionConfig.additionalEvSel1 && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return false;
+    }
 
-    if (selectionConfig.additionalEvSel2 && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+    if (selectionConfig.additionalEvSel2 && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return false;
+    }
 
-    if (selectionConfig.additionalEvSel3 && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+    if (selectionConfig.additionalEvSel3 && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
+    }
 
-    if (selectionConfig.additionalEvSel4 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+    if (selectionConfig.additionalEvSel4 && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return false;
-    if (selectionConfig.additionalEvSel5 && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
+    }
+    if (selectionConfig.additionalEvSel5 && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return false;
-    if (selectionConfig.additionalEvSel6 && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+    }
+    if (selectionConfig.additionalEvSel6 && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
+    }
     if (selectionConfig.isINELgt0 && !collision.isInelGt0()) {
       return false;
     }
     int occupancy = collision.trackOccupancyInTimeRange();
-    if (selectionConfig.fillOccupancy && (occupancy < cfgMinOccupancy || occupancy > cfgMaxOccupancy))
-      return false;
-
-    return true;
+    return !(selectionConfig.fillOccupancy && (occupancy < cfgMinOccupancy || occupancy > cfgMaxOccupancy));
   }
   template <typename CheckColCent>
   float selColMultMC(CheckColCent const& col)
@@ -435,18 +442,14 @@ struct Phianalysisrun3pbpb {
   template <typename T1, typename T2>
   bool selectionPair(const T1& candidate1, const T2& candidate2)
   {
-    double pt1, pt2, pz1, pz2, p1, p2, angle;
-    pt1 = candidate1.pt();
-    pt2 = candidate2.pt();
-    pz1 = candidate1.pz();
-    pz2 = candidate2.pz();
-    p1 = candidate1.p();
-    p2 = candidate2.p();
-    angle = std::acos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
-    if (isDeepAngle && angle < cfgDeepAngle) {
-      return false;
-    }
-    return true;
+    double pt1 = candidate1.pt();
+    double pt2 = candidate2.pt();
+    double pz1 = candidate1.pz();
+    double pz2 = candidate2.pz();
+    double p1 = candidate1.p();
+    double p2 = candidate2.p();
+    double angle = std::acos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
+    return !(isDeepAngle && angle < cfgDeepAngle);
   }
   template <typename T1, typename T2>
   void fillinvMass(const T1& candidate1, const T2& candidate2, float multiplicity, bool unlike, bool mix, float massd1, float massd2)
@@ -731,8 +734,7 @@ struct Phianalysisrun3pbpb {
            (occupancy2 < cfgMinOccupancy || occupancy2 > cfgMaxOccupancy))) {
         continue;
       }
-      float multiplicity;
-      multiplicity = c1.centFT0C();
+      float multiplicity = c1.centFT0C();
       for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         bool unlike = false;
         bool mix = true;
@@ -813,8 +815,7 @@ struct Phianalysisrun3pbpb {
            (occupancy2 < cfgMinOccupancy || occupancy2 > cfgMaxOccupancy))) {
         continue;
       }
-      float multiplicity;
-      multiplicity = c1.centFT0A();
+      float multiplicity = c1.centFT0A();
       for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         bool unlike = false;
         bool mix = true;
@@ -896,8 +897,7 @@ struct Phianalysisrun3pbpb {
            (occupancy2 < cfgMinOccupancy || occupancy2 > cfgMaxOccupancy))) {
         continue;
       }
-      float multiplicity;
-      multiplicity = c1.centFT0M();
+      float multiplicity = c1.centFT0M();
       for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         bool unlike = false;
         bool mix = true;
@@ -979,8 +979,7 @@ struct Phianalysisrun3pbpb {
            (occupancy2 < cfgMinOccupancy || occupancy2 > cfgMaxOccupancy))) {
         continue;
       }
-      float multiplicity;
-      multiplicity = c1.centFV0A();
+      float multiplicity = c1.centFV0A();
       for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         bool unlike = false;
         bool mix = true;
@@ -1028,8 +1027,9 @@ struct Phianalysisrun3pbpb {
       return;
     }
     float multiplicity{-1};
-    if (cfgMultFT0)
+    if (cfgMultFT0) {
       multiplicity = collision.centFT0C();
+    }
     histos.fill(HIST("hCentrality"), multiplicity);
     histos.fill(HIST("hVtxZ"), collision.posZ());
     histos.fill(HIST("hOccupancy"), occupancy);
@@ -1230,7 +1230,7 @@ struct Phianalysisrun3pbpb {
           histos.fill(HIST("h3PhiInvMassSameMC1"), centrality, phiMesonMother.pt(), phiMesonMother.M());
           int track1PDG = std::abs(mctrack1.pdgCode());
           int track2PDG = std::abs(mctrack2.pdgCode());
-          if (!(track1PDG == PDG_t::kKPlus && track2PDG == PDG_t::kKPlus)) {
+          if (track1PDG != PDG_t::kKPlus || track2PDG != PDG_t::kKPlus) {
             continue;
           }
           for (const auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
@@ -1328,7 +1328,7 @@ struct Phianalysisrun3pbpb {
     histos.fill(HIST("hImpactParameterGen"), imp);
     std::vector<int64_t> selectedEvents(collisions.size());
     int nevts = 0;
-    auto multiplicity = 0;
+    float multiplicity = 0.f;
     for (const auto& collision : collisions) {
       if (cfgDoSel8 && !collision.sel8()) {
         continue;
@@ -1480,7 +1480,7 @@ struct Phianalysisrun3pbpb {
         if (!mctrack2.isPhysicalPrimary()) {
           continue;
         }
-        if (!(track1PDG == PDG_t::kKPlus && track2PDG == PDG_t::kKPlus)) {
+        if (track1PDG != PDG_t::kKPlus || track2PDG != PDG_t::kKPlus) {
           continue;
         }
         daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
@@ -1766,15 +1766,17 @@ struct Phianalysisrun3pbpb {
     histos.fill(HIST("hMC1"), 1.5);
 
     // INEL>0 selection
-    if (isApplyInelgt0 && !mcCollision.isInelGt0())
+    if (isApplyInelgt0 && !mcCollision.isInelGt0()) {
       return;
+    }
 
     histos.fill(HIST("hMC1"), 2.5);
 
     // TVX selection
     if (isApplyTVX &&
-        !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0))
+        (mcCollision.multMCFT0C() <= 0 || mcCollision.multMCFT0A() <= 0)) {
       return;
+    }
 
     histos.fill(HIST("hMC1"), 3.5);
     std::vector<int64_t> selectedEvents(collisions.size());
@@ -1989,7 +1991,7 @@ struct Phianalysisrun3pbpb {
         if (!mctrack2.isPhysicalPrimary()) {
           continue;
         }
-        if (!(track1PDG == PDG_t::kKPlus && track2PDG == PDG_t::kKPlus)) {
+        if (track1PDG != PDG_t::kKPlus || track2PDG != PDG_t::kKPlus) {
           continue;
         }
         for (const auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
@@ -2064,7 +2066,7 @@ struct Phianalysisrun3pbpb {
       return;
     }
 
-    if (isApplyTVX && !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0)) {
+    if (isApplyTVX && (mcCollision.multMCFT0C() <= 0 || mcCollision.multMCFT0A() <= 0)) {
       return;
     }
     // Event loss estimation
@@ -2075,8 +2077,9 @@ struct Phianalysisrun3pbpb {
     bool isSel = false;
     auto centrality = -999.;
     for (const auto& RecCollision : recCollisions) {
-      if (!myEventSelections(RecCollision))
+      if (!myEventSelections(RecCollision)) {
         continue;
+      }
       const int kCentFT0C = 0;
       const int kCentFT0A = 1;
       const int kCentFT0M = 2;
@@ -2109,12 +2112,14 @@ struct Phianalysisrun3pbpb {
 
     // Generated MC
     for (const auto& mcPart : mcParticles) {
-      if (mcPart.y() < rapiditycut1 || mcPart.y() > rapiditycut2)
+      if (mcPart.y() < rapiditycut1 || mcPart.y() > rapiditycut2) {
         continue;
+      }
 
       // select phi meson
-      if (std::abs(mcPart.pdgCode()) != o2::constants::physics::kPhi)
+      if (std::abs(mcPart.pdgCode()) != o2::constants::physics::kPhi) {
         continue;
+      }
 
       // signal loss estimation
       histos.fill(HIST("QAevent/phigenBeforeEvtSel"), mcPart.pt(), impactPar);
@@ -2139,7 +2144,7 @@ struct Phianalysisrun3pbpb {
       return;
     }
 
-    if (isApplyTVX && !(mcCollision.multMCFT0C() > 0 && mcCollision.multMCFT0A() > 0)) {
+    if (isApplyTVX && (mcCollision.multMCFT0C() <= 0 || mcCollision.multMCFT0A() <= 0)) {
       return;
     }
     // All generated events
@@ -2156,8 +2161,9 @@ struct Phianalysisrun3pbpb {
     bool atLeastOne = false;
     auto centrality = -999.;
     for (auto const& collision : collisions) {
-      if (!myEventSelections(collision))
+      if (!myEventSelections(collision)) {
         continue;
+      }
       centrality = selColCent(collision);
       atLeastOne = true;
     }
@@ -2173,16 +2179,19 @@ struct Phianalysisrun3pbpb {
     }
     for (const auto& particle : GenParticles) {
 
-      if (particle.y() < rapiditycut1 || particle.y() > rapiditycut2)
+      if (particle.y() < rapiditycut1 || particle.y() > rapiditycut2) {
         continue;
+      }
 
-      if (particle.pdgCode() != o2::constants::physics::kPhi)
+      if (particle.pdgCode() != o2::constants::physics::kPhi) {
         continue;
+      }
 
       auto daughters = particle.daughters_as<aod::McParticles>();
       static constexpr int PhiNDaughters = 2;
-      if (daughters.size() != PhiNDaughters)
+      if (daughters.size() != PhiNDaughters) {
         continue;
+      }
 
       bool daup = false, daun = false;
 
@@ -2196,8 +2205,9 @@ struct Phianalysisrun3pbpb {
         }
       }
 
-      if (!daup || !daun)
+      if (!daup || !daun) {
         continue;
+      }
 
       mother = d1 + d2;
 
