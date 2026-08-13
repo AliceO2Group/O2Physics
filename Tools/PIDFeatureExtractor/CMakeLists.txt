@@ -9,7 +9,12 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(PIDML)
-add_subdirectory(ML)
-add_subdirectory(KFparticle)
-add_subdirectory(PIDFeatureExtractor)
+o2physics_add_dpl_workflow(pid-feature-extractor
+                           SOURCES pidFeatureExtractor.cxx
+                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(pid-onnx-inference
+                           SOURCES pidOnnxInference.cxx
+                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
+                           COMPONENT_NAME Analysis)
