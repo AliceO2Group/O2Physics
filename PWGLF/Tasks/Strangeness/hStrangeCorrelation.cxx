@@ -4340,7 +4340,8 @@ struct HStrangeCorrelation {
         } else {
           const float dcaCut = v0Selection.dcaDaugToPVForK0s == 0.0f ? v0Selection.dcaMesonToPV : v0Selection.dcaDaugToPVForK0s;
           const bool passesLifetime = v0.distovertotmom(bestCollisionVtxX, bestCollisionVtxY, bestCollisionVtxZ) *
-                                        o2::constants::physics::MassK0Short < v0Selection.lifetimecutK0S;
+                                        o2::constants::physics::MassK0Short <
+                                      v0Selection.lifetimecutK0S;
           const bool passesDaughterDcaAndArmenteros = std::abs(v0.dcapostopv()) > dcaCut && std::abs(v0.dcanegtopv()) > dcaCut && v0.qtarm() * v0Selection.armPodCut > std::abs(v0.alpha());
           passesFinalSelection = v0SelectedPbPb(v0) && passesLifetime && passesDaughterDcaAndArmenteros;
         }
