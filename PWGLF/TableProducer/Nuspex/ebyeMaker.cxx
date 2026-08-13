@@ -678,7 +678,7 @@ struct EbyeMaker {
           continue;
         }
 
-        if (trackPt <= ptTof[iP] || (trackPt > ptTof[iP] && hasTof)) {
+        if (trackPt <= ptTof[iP] || hasTof) {
           CandidateTrack candTrack;
           candTrack.pt = track.sign() > 0. ? trackPt : -trackPt;
           candTrack.eta = trackEta;
@@ -945,7 +945,7 @@ struct EbyeMaker {
         candV0.genpt = genPt;
         candV0.geneta = mcPart.eta();
         candV0.pdgcode = pdgCode;
-        auto it = find_if(candidateV0s.begin(), candidateV0s.end(), [&](CandidateV0& v0) { return v0.mcIndex == mcPart.globalIndex(); });
+        auto it = find_if(candidateV0s.begin(), candidateV0s.end(), [&](const CandidateV0& v0) { return v0.mcIndex == mcPart.globalIndex(); });
         if (it != candidateV0s.end()) {
           continue;
         } else {
@@ -968,7 +968,7 @@ struct EbyeMaker {
         else if (mcPart.has_mothers() && iP == 0 && kUsePID)
           candTrack.pdgcodemoth = getPartTypeMother(mcPart);
 
-        auto it = find_if(candidateTracks[iP].begin(), candidateTracks[iP].end(), [&](CandidateTrack& trk) { return trk.mcIndex == mcPart.globalIndex(); });
+        auto it = find_if(candidateTracks[iP].begin(), candidateTracks[iP].end(), [&](const CandidateTrack& trk) { return trk.mcIndex == mcPart.globalIndex(); });
         if (it != candidateTracks[iP].end()) {
           continue;
         } else {
@@ -1026,7 +1026,7 @@ struct EbyeMaker {
 
       float centrality = collision.centRun2V0M();
       const float centTriggerEdges[]{10.f, 30.f, 50.f};
-      if (!(collision.sel7() && collision.alias_bit(kINT7)) && (!kINT7Intervals || (kINT7Intervals && ((centrality >= centTriggerEdges[0] && centrality < centTriggerEdges[1]) || centrality > centTriggerEdges[2]))))
+      if (!(collision.sel7() && collision.alias_bit(kINT7)) && (!kINT7Intervals || ((centrality >= centTriggerEdges[0] && centrality < centTriggerEdges[1]) || centrality > centTriggerEdges[2])))
         continue;
 
       float centralityCl0 = collision.centRun2CL0();
