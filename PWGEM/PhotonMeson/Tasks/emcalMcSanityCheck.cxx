@@ -45,7 +45,7 @@ using namespace o2::soa;
 
 constexpr float PointOnePercent = 0.001f;
 constexpr float OnePercent = 0.01f;
-constexpr float TenPercent = 0.01f;
+constexpr float TenPercent = 0.1f;
 constexpr float NinetyPercent = 0.9f;
 constexpr float OneHundredTenPercent = 1.1f;
 
