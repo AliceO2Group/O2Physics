@@ -47,7 +47,7 @@ IncludeCategories:
     Priority: 2
     CaseSensitive: true
   # O2Physics, non-PWG
-  - Regex: ^(<|")(Common|ALICE3|DPG|EventFiltering|Tools|Tutorials)/.*\.h
+  - Regex: ^(<|")(Common|ALICE3|DPG|EventFiltering|PID|Tools|Tutorials)/.*\.h
     Priority: 3
     CaseSensitive: true
   # O2
