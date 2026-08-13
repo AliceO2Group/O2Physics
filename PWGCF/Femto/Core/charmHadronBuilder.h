@@ -23,7 +23,6 @@
 #include "PWGCF/Femto/Core/selectionContainer.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
 
 #include <CommonConstants/MathConstants.h>
