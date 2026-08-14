@@ -520,11 +520,12 @@ struct HStrangeCorrelation {
     PairLossTriggerTracksFailITS,
     PairLossTriggerTracksFailSharedClusters,
     PairLossTriggerTracksFailLayer0,
-    // 真实没进 TriggerTracks 表，但下面的复刻判定认为候选径迹里至少有一条该通过。
-    // 唯一可能的来源是本任务的 triggerTracks* 配置与 hStrangeCorrelationFilter.cxx
-    // 不一致，因此这个 bin 直接充当"配置是否对齐"的监控量：它应当为零。
+    // Really not in the TriggerTracks table, yet the replica below claims that at least one
+    // candidate track should have passed. The only possible source is a mismatch between this
+    // task's triggerTracks* configurables and hStrangeCorrelationFilter.cxx, so this bin acts
+    // directly as a "are the configurations aligned?" monitor: it should be zero.
     PairLossTriggerTracksNotInTableUnexplained,
-    // 反方向的偏差：真实进了表，但复刻判定会拒绝它。
+    // The opposite drift: really in the table, but the replica would reject it.
     PairLossTriggerTracksInTableButCutRejects,
     PairLossTriggerTracksNReasons
   };
@@ -4932,33 +4933,38 @@ struct HStrangeCorrelation {
             }
           }
 
-          // stage3 -> stage4 这一道门的归因，只对已经存在于 best collision 的 trigger 有意义。
+          // Attribution of the stage3 -> stage4 gate. Only meaningful for triggers that already
+          // exist in the best collision.
           //
-          // 关键约定：Passed 这一 bin 用的是真实的 triggerInTable，而不是复刻判定的结果。
-          // 之前的版本对 bestTrack() 跑一遍复刻函数就当作最终答案，于是这张图的
-          // Passed 计数与 stage 4 差了十几个百分点（复刻用的是本任务的 triggerTracks*
-          // 配置，而真表由 hStrangeCorrelationFilter.cxx 用它自己的配置产生，两者靠
-          // 注释人工对齐，一旦 json 只改了 filter 就会分叉）。
+          // Key convention: the Passed bin is decided by the real triggerInTable, not by the
+          // replica. An earlier version ran the replica on bestTrack() and took that as the final
+          // answer, which left the Passed count of this plot more than ten percent away from
+          // stage 4 (the replica uses this task's triggerTracks* configurables, while the real
+          // table is produced by hStrangeCorrelationFilter.cxx from its own configurables; the two
+          // are kept aligned by hand through comments and diverge as soon as the json changes only
+          // the filter).
           //
-          // 现在的定义保证按构造对齐：
-          //   Passed 的计数     == stage 4 的计数
-          //   Passed + 各 Failed == stage 3 的计数
-          // 复刻只在真实失败时用于归因；两个 Unexplained/Rejects bin 捕获配置分叉，
-          // 它们非零就说明本任务的 triggerTracks* 需要跟 filter 重新对齐。
+          // The present definition is aligned by construction:
+          //   count(Passed)            == count(stage 4)
+          //   count(Passed) + count(Failed bins) == count(stage 3)
+          // The replica is used for attribution only once the real table has already said "not in";
+          // the two Unexplained/Rejects bins capture configuration drift, and a non-zero entry in
+          // either means this task's triggerTracks* have to be realigned with the filter.
           if (triggerBestCollision) {
             int failureReason = PairLossTriggerTracksPassed;
             if (triggerInTable) {
-              // 真实通过。顺带检查复刻是否也认可，用于监控配置分叉。
+              // Really passed. Also check whether the replica agrees, to monitor configuration drift.
               auto const* bestCollisionTrigger = bestTrack(tracksBestCollision, truthTrigger.globalIndex);
               if (bestCollisionTrigger != nullptr &&
                   classifyTriggerTracksFailure(*bestCollisionTrigger) != PairLossTriggerTracksPassed) {
                 failureReason = PairLossTriggerTracksInTableButCutRejects;
               }
             } else {
-              // 真实失败。在 best collision 的所有候选径迹里取"走得最远"的那条来归因：
-              // classifyTriggerTracksFailure 按 isValidTrigger 的 early-return 顺序返回，
-              // 返回值越大表示越靠后才被拒，因此最大值对应最接近通过的那条候选。
-              // 语义是"即使是最好的那条候选，也倒在了这个切上"。
+              // Really failed. Attribute using the candidate track in the best collision that got
+              // "furthest": classifyTriggerTracksFailure returns following the early-return order of
+              // isValidTrigger, so a larger return value means the track was rejected later, and the
+              // maximum therefore corresponds to the candidate closest to passing. The semantics are
+              // "even the best candidate fell at this cut".
               failureReason = PairLossTriggerTracksNotInTableUnexplained;
               auto const iterator = tracksBestCollision.find(truthTrigger.globalIndex);
               if (iterator != tracksBestCollision.end()) {
@@ -4966,7 +4972,8 @@ struct HStrangeCorrelation {
                 for (auto const& candidate : iterator->second) {
                   const int reason = classifyTriggerTracksFailure(candidate);
                   if (reason == PairLossTriggerTracksPassed) {
-                    // 复刻认为这条该进表，但它并不在表里：配置分叉。
+                    // The replica says this track should be in the table, but it is not:
+                    // configuration drift.
                     furthest = -1;
                     break;
                   }
