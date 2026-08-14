@@ -2459,7 +2459,6 @@ struct RecoilJets {
   {
     std::vector<double> vPhiOfLeadingTracks;
     std::vector<double> vPtOfLeadingTracks;
-    std::vector<double> vPhiOfAssociatedTracks;
 
     const auto ft0Metrics = getFT0Metrics(collision, ft0a.mean, ft0c.mean);
     const auto scaledFT0C = ft0Metrics.scaledFT0C;
