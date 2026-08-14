@@ -284,7 +284,8 @@ struct Cha01710analysis {
     float ctau = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassK0Short;
     if (v0.pt() < v0Cuts.cfgV0PtMin || v0.pt() > v0Cuts.cfgV0PtMax ||
         v0.dcaV0daughters() > v0Cuts.cfgV0DcaDaughtersMax || v0.v0cosPA() < v0Cuts.cfgV0CosPAMin ||
-        v0.v0radius() < v0Cuts.cfgV0RadiusMin || std::abs(ctau) > v0Cuts.cfgV0CtauMax) {
+        v0.v0radius() < v0Cuts.cfgV0RadiusMin || std::abs(ctau) > v0Cuts.cfgV0CtauMax ||
+        std::abs(v0.dcapostopv()) > cfgV0DaughterDcaPVMin || std::abs(v0.dcanegtopv()) > cfgV0DaughterDcaPVMin) {
       return V0MassRegion::kReject;
     }
     if (v0Cuts.cfgRejectLambda &&
