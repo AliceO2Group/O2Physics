@@ -32,7 +32,6 @@
 #include <EMCALBase/Geometry.h>
 #include <EMCALBase/GeometryBase.h>
 #include <EMCALCalib/BadChannelMap.h>
-#include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -254,18 +253,18 @@ struct TaskPi0FlowEMC {
   int runBefore = -1;
 
   static constexpr float MaxPhiEMCal = 3.5f;
+  static constexpr uint16_t MaxPhiEMCalUint = static_cast<uint16_t>(INT16_MAX); // Maximum value currently useable for partitions for some weird reason, but luckily enough
 
   // Filter clusterFilter = aod::skimmedcluster::time >= emccuts.cfgEMCminTime && aod::skimmedcluster::time <= emccuts.cfgEMCmaxTime && aod::skimmedcluster::m02 >= emccuts.cfgEMCminM02 && aod::skimmedcluster::m02 <= emccuts.cfgEMCmaxM02 && aod::skimmedcluster::e >= emccuts.cfgEMCminE;
   Filter collisionFilter = (nabs(aod::collision::posZ) <= eventcuts.cfgZvtxMax) && (aod::evsel::ft0cOccupancyInTimeRange <= eventcuts.cfgFT0COccupancyMax) && (aod::evsel::ft0cOccupancyInTimeRange >= eventcuts.cfgFT0COccupancyMin);
   // using FilteredEMCalPhotons = soa::Filtered<soa::Join<aod::EMCEMEventIds, aod::MinClusters>>;
   using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters, aod::NonLinEmcClusters>;
   using PCMPhotons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds, aod::NonLinV0s>;
-  using FilteredCollsWithQvecs = soa::Filtered<soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMEventsQvec_001>>;
-  using CollsWithQvecs = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMEventsQvec_001>;
-  using Colls = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000>;
+  using FilteredCollsWithQvecs = soa::Filtered<soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMEventsQvec_001, aod::EmEmcalObjects>>;
+  using Colls = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMEventsQvec_001, aod::EmEmcalObjects>;
 
-  Partition<EMCalPhotons> emcalPhotons = aod::mincluster::storedPhi < static_cast<uint16_t>(std::lround(MaxPhiEMCal * emcdownscaling::downscalingFactors[emcdownscaling::kPhi]));
-  Partition<EMCalPhotons> dcalPhotons = aod::mincluster::storedPhi >= static_cast<uint16_t>(std::lround(MaxPhiEMCal * emcdownscaling::downscalingFactors[emcdownscaling::kPhi]));
+  Partition<EMCalPhotons> emcalPhotons = aod::mincluster::storedPhi < MaxPhiEMCalUint;
+  Partition<EMCalPhotons> dcalPhotons = aod::mincluster::storedPhi >= MaxPhiEMCalUint;
 
   static constexpr std::size_t NQVecEntries = 6;
 
@@ -697,13 +696,12 @@ struct TaskPi0FlowEMC {
     return false;
   }
 
-  bool isCellMasked(int cellID)
+  template <o2::soa::is_iterator TCollision>
+  bool isCellMasked(int cellID, TCollision const& collision)
   {
     bool masked = false;
-    if (mBadChannels) {
-      auto maskStatus = mBadChannels->getChannelStatus(cellID);
-      masked = (maskStatus != o2::emcal::BadChannelMap::MaskType_t::GOOD_CELL);
-    }
+    auto maskStatus = collision.badChannelMap().getChannelStatus(cellID);
+    masked = (maskStatus != o2::emcal::BadChannelMap::MaskType_t::GOOD_CELL);
     return masked;
   }
 
@@ -712,8 +710,6 @@ struct TaskPi0FlowEMC {
   {
     // Load EMCal geometry
     emcalGeom = o2::emcal::Geometry::GetInstanceFromRunNumber(collision.runNumber());
-    // Load Bad Channel map
-    mBadChannels = ccdb->getForTimeStamp<o2::emcal::BadChannelMap>("EMC/Calib/BadChannelMap", collision.timestamp());
     lookupTable1D.fill(-1);
     double binWidthEta = (etaMax - EtaMin) / NBinsEta;
     double binWidthPhi = (phiMax - PhiMin) / NBinsPhi;
@@ -733,7 +729,7 @@ struct TaskPi0FlowEMC {
             // Check conditions for the cell
             if (isTooCloseToEdge(cellID, 1)) {
               lookupTable1D[getIndex(iEta, iPhi)] = 2; // Edge
-            } else if (isCellMasked(cellID)) {
+            } else if (isCellMasked(cellID, collision)) {
               lookupTable1D[getIndex(iEta, iPhi)] = 1; // Bad
             } else {
               lookupTable1D[getIndex(iEta, iPhi)] = 0; // Good
@@ -1086,7 +1082,7 @@ struct TaskPi0FlowEMC {
   }
 
   // Pi0 from EMCal
-  void processEMCal(CollsWithQvecs const& collisions, EMCalPhotons const& clusters, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
+  void processEMCal(Colls const& collisions, EMCalPhotons const& clusters, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
     if (clusters.size() <= 0) {
       LOG(info) << "Skipping DF because there are not photons!";
@@ -1235,7 +1231,7 @@ struct TaskPi0FlowEMC {
   PROCESS_SWITCH(TaskPi0FlowEMC, processEMCalMixed, "Process EMCal Pi0 mixed event candidates", false);
 
   // PCM-EMCal same event
-  void processEMCalPCMC(CollsWithQvecs const& collisions, EMCalPhotons const& clusters, PCMPhotons const& photons, aod::V0Legs const&, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
+  void processEMCalPCMC(Colls const& collisions, EMCalPhotons const& clusters, PCMPhotons const& photons, aod::V0Legs const&, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
     if (clusters.size() <= 0 && photons.size() <= 0) {
       LOG(info) << "Skipping DF because there are not photons!";
@@ -1327,7 +1323,7 @@ struct TaskPi0FlowEMC {
   PROCESS_SWITCH(TaskPi0FlowEMC, processEMCalPCMC, "Process neutral meson flow using PCM-EMC same event", false);
 
   // PCM-EMCal mixed event
-  void processEMCalPCMMixed(CollsWithQvecs const& collisions, EMCalPhotons const& clusters, PCMPhotons const& pcmPhotons, aod::V0Legs const&, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
+  void processEMCalPCMMixed(Colls const& collisions, EMCalPhotons const& clusters, PCMPhotons const& pcmPhotons, aod::V0Legs const&, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
     if (clusters.size() <= 0 && pcmPhotons.size() <= 0) {
       LOG(info) << "Skipping DF because there are not photons!";
@@ -1339,7 +1335,7 @@ struct TaskPi0FlowEMC {
 
     auto associatedTables = std::make_tuple(clusters, pcmPhotons);
 
-    Pair<CollsWithQvecs, EMCalPhotons, PCMPhotons, BinningTypeMixed> pairPCMEMC{binningOnPositions, mixingConfig.cfgMixingDepth, -1, collisions, associatedTables, &cache}; // indicates that mixingConfig.cfgMixingDepth events should be mixed and under/overflow (-1) to be ignored
+    Pair<Colls, EMCalPhotons, PCMPhotons, BinningTypeMixed> pairPCMEMC{binningOnPositions, mixingConfig.cfgMixingDepth, -1, collisions, associatedTables, &cache}; // indicates that mixingConfig.cfgMixingDepth events should be mixed and under/overflow (-1) to be ignored
 
     EMBitFlags emcFlags(clusters.size());
     if (clusters.size() > 0) {
@@ -1422,7 +1418,7 @@ struct TaskPi0FlowEMC {
   PROCESS_SWITCH(TaskPi0FlowEMC, processEMCalPCMMixed, "Process neutral meson flow using PCM-EMC mixed event", false);
 
   // Pi0 from EMCal
-  void processM02(CollsWithQvecs const& collisions, EMCalPhotons const& clusters, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
+  void processM02(Colls const& collisions, EMCalPhotons const& clusters, MinMTracks const& matchedPrims, MinMSTracks const& matchedSeconds)
   {
     if (clusters.size() <= 0) {
       LOG(info) << "Skipping DF because there are not photons!";
@@ -1479,7 +1475,7 @@ struct TaskPi0FlowEMC {
   PROCESS_SWITCH(TaskPi0FlowEMC, processM02, "Process single EMCal clusters as function of M02", false);
 
   // Pi0 from EMCal
-  void processPCM(CollsWithQvecs const& collisions, PCMPhotons const& photons, aod::V0Legs const&)
+  void processPCM(Colls const& collisions, PCMPhotons const& photons, aod::V0Legs const&)
   {
     if (photons.size() <= 0) {
       LOG(info) << "Skipping DF because there are not photons!";

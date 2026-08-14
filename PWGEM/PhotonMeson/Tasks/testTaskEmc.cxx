@@ -19,7 +19,6 @@
 //
 
 #include <CommonConstants/MathConstants.h>
-#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>

@@ -14,6 +14,7 @@
 /// \author daiki.sekihata@cern.ch
 
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
 #include "Common/Core/PID/PIDTOFParamService.h"
@@ -27,7 +28,6 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
@@ -64,6 +64,7 @@ using namespace o2::constants::physics;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>;
 using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
+using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::PcmObjects>;
 
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov,
@@ -229,46 +230,27 @@ struct skimmerPrimaryElectronFromDalitzEE {
     fRegistry.addClone("Pair/uls/", "Pair/lsmm/");
   }
 
-  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  void initCCDB(MyBCs::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-
+    mRunNumber = bc.runNumber();
     // In case override, don't proceed, please - no CCDB access required
     if (dBzInput > -990) { // o2-linter: disable=magic-number (check against some default number)
       dBz = dBzInput;
       o2::parameters::GRPMagField grpmag;
       if (std::fabs(dBz) > 1e-5) {                   // o2-linter: disable=magic-number (check against some default number)
-        grpmag.setL3Current(30000.f / (dBz / 5.0f)); // o2-linter: disable=magic-number (values to calculate the magnetic field)
+        grpmag.setL3Current(30000.f / (dBz / 5.0f)); // o2-linter: disable=magic-number (override value)
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
-      mRunNumber = bc.runNumber();
       return;
     }
 
     auto run3grpTimestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = nullptr;
-    o2::parameters::GRPMagField* grpmag = nullptr;
-    if (!skipGRPOquery) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grpTimestamp);
-    }
-    if (grpo) {
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      // Fetch magnetic field from ccdb for current collision
-      dBz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grpTimestamp << " with magnetic field of " << dBz << " kZG";
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grpTimestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grpTimestamp;
-      }
-      o2::base::Propagator::initFieldFromGRP(grpmag);
-      // Fetch magnetic field from ccdb for current collision
-      dBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3grpTimestamp << " with magnetic field of " << dBz << " kZG";
-    }
-    mRunNumber = bc.runNumber();
+
+    dBz = bc.grpMagField().getNominalL3Field();
+    LOG(info) << "Retrieved GRP for timestamp " << run3grpTimestamp << " with magnetic field of " << dBz << " kZG";
   }
 
   template <bool withTTCA, o2::soa::is_table TCollisions, o2::soa::is_table TBCs, o2::soa::is_table TTracks, o2::soa::is_table TTrackAssoc>
@@ -714,7 +696,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
   std::map<std::pair<int, int>, float> mapTOFBetaReassociated;   // map pair(collisionId, trackId) -> tof beta
 
   // ---------- for data ----------
-  void processRec(MyCollisions const& collisions, aod::BCsWithTimestamps const& bcs, MyTracks const& tracks, aod::V0PhotonsKF const& v0photons, aod::TrackAssoc const& trackIndices)
+  void processRec(MyCollisions const& collisions, MyBCs const& bcs, MyTracks const& tracks, aod::V0PhotonsKF const& v0photons, aod::TrackAssoc const& trackIndices)
   {
     initCCDB(bcs.iteratorAt(0));
     mTOFResponse->processSetup(bcs.iteratorAt(0));
@@ -765,7 +747,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
   }
   PROCESS_SWITCH(skimmerPrimaryElectronFromDalitzEE, processRec, "process reconstructed info only", false); // standalone
 
-  // void processRec_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const& bcs, MyTracks const& tracks, aod::V0PhotonsKF const& v0photons, aod::TrackAssoc const& trackIndices)
+  // void processRec_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs, MyTracks const& tracks, aod::V0PhotonsKF const& v0photons, aod::TrackAssoc const& trackIndices)
   // {
   //   initCCDB(bcs.iteratorAt(0));
 
@@ -825,7 +807,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Partition<MyTracksMC> posTracksMC = o2::aod::track::signed1Pt > 0.f;
   Partition<MyTracksMC> negTracksMC = o2::aod::track::signed1Pt < 0.f;
   // ---------- for MC ----------
-  void processMC(MyCollisionsMC const& collisions, aod::McCollisions const&, aod::BCsWithTimestamps const& bcs, MyTracksMC const& tracks, aod::V0PhotonsKF const& v0photons, aod::TrackAssoc const& trackIndices)
+  void processMC(MyCollisionsMC const& collisions, aod::McCollisions const&, MyBCs const& bcs, MyTracksMC const& tracks, aod::V0PhotonsKF const& v0photons, aod::TrackAssoc const& trackIndices)
   {
     uint64_t nCollisSel = 0;
     uint64_t nNoMcColl = 0;

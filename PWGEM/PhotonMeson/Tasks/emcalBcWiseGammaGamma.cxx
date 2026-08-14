@@ -18,8 +18,8 @@
 #include <CommonConstants/MathConstants.h>
 #include <EMCALBase/Geometry.h>
 #include <EMCALBase/GeometryBase.h>
-#include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/Expressions.h>
@@ -34,6 +34,7 @@
 #include <Math/Vector4Dfwd.h>
 #include <TH2.h>
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <stdexcept>

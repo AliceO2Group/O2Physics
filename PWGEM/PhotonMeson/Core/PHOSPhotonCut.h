@@ -16,9 +16,9 @@
 #ifndef PWGEM_PHOTONMESON_CORE_PHOSPHOTONCUT_H_
 #define PWGEM_PHOTONMESON_CORE_PHOSPHOTONCUT_H_
 
-#include <Framework/ASoA.h>
 #include <Framework/Concepts.h>
 
+#include <array>
 #include <string>
 
 class PHOSPhotonCut
@@ -34,10 +34,10 @@ class PHOSPhotonCut
     kNCuts
   };
 
-  const std::string getName() const { return name; }
-  const std::string getTitle() const { return title; }
+  [[nodiscard]] const std::string& getName() const { return name; }
+  [[nodiscard]] const std::string& getTitle() const { return title; }
 
-  static const char* mCutNames[static_cast<int>(PHOSPhotonCuts::kNCuts)];
+  static const std::array<std::string, static_cast<int>(PHOSPhotonCuts::kNCuts)> mCutNames;
 
   // Temporary function to check if track passes selection criteria. To be replaced by framework filters.
   template <o2::soa::is_iterator Cluster>
@@ -81,8 +81,6 @@ class PHOSPhotonCut
         return cls.e() >= mMinEnergy && cls.e() <= mMaxEnergy;
 
       case PHOSPhotonCuts::kDispersion:
-        return true;
-
       case PHOSPhotonCuts::kCPV:
         return true;
 
