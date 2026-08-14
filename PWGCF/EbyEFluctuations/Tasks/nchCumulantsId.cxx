@@ -405,42 +405,42 @@ struct NchCumulantsId {
   }
 
   template <FCPrefixEnum Prefix, typename Registry>
-  void fillFCBasis(const EffPowerSums& p, float cent, Registry& registry)
+  void fillFCBasis(const EffPowerSums& p, float cent, Registry& hReg)
   {
     auto base = HIST(FCRecoDir[static_cast<int>(Prefix)]);
 
     // Fill Factorial Moments for Reco directly to ensure Reco stores the same type of data as Gen
     // Compute Efficiency Corrected Factorial Moments from power sums
     // These formulas come from elementary symmetric polynomials and their relation to power sums
-    registry.fill(base + HIST("Q1"), cent, p.q1);
-    registry.fill(base + HIST("Q1Sq"), cent, p.q1 * p.q1);
-    registry.fill(base + HIST("Q2"), cent, p.q2);
-    registry.fill(base + HIST("Q1Cube"), cent, p.q1 * p.q1 * p.q1);
-    registry.fill(base + HIST("Q1Q2"), cent, p.q1 * p.q2);
-    registry.fill(base + HIST("Q3"), cent, p.q3);
-    registry.fill(base + HIST("Q1Pow4"), cent, p.q1 * p.q1 * p.q1 * p.q1);
-    registry.fill(base + HIST("Q1SqQ2"), cent, p.q1 * p.q1 * p.q2);
-    registry.fill(base + HIST("Q2Sq"), cent, p.q2 * p.q2);
-    registry.fill(base + HIST("Q1Q3"), cent, p.q1 * p.q3);
-    registry.fill(base + HIST("Q4"), cent, p.q4);
+    hReg.fill(base + HIST("Q1"), cent, p.q1);
+    hReg.fill(base + HIST("Q1Sq"), cent, p.q1 * p.q1);
+    hReg.fill(base + HIST("Q2"), cent, p.q2);
+    hReg.fill(base + HIST("Q1Cube"), cent, p.q1 * p.q1 * p.q1);
+    hReg.fill(base + HIST("Q1Q2"), cent, p.q1 * p.q2);
+    hReg.fill(base + HIST("Q3"), cent, p.q3);
+    hReg.fill(base + HIST("Q1Pow4"), cent, p.q1 * p.q1 * p.q1 * p.q1);
+    hReg.fill(base + HIST("Q1SqQ2"), cent, p.q1 * p.q1 * p.q2);
+    hReg.fill(base + HIST("Q2Sq"), cent, p.q2 * p.q2);
+    hReg.fill(base + HIST("Q1Q3"), cent, p.q1 * p.q3);
+    hReg.fill(base + HIST("Q4"), cent, p.q4);
     if (cfgEventSelection.cfgDoSubsampling) {
-      registry.fill(base + HIST("Q1_subsample"), cent, cfgEventSelection.currentSubsample, p.q1);
-      registry.fill(base + HIST("Q1Sq_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q1);
-      registry.fill(base + HIST("Q2_subsample"), cent, cfgEventSelection.currentSubsample, p.q2);
-      registry.fill(base + HIST("Q1Cube_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q1 * p.q1);
-      registry.fill(base + HIST("Q1Q2_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q2);
-      registry.fill(base + HIST("Q3_subsample"), cent, cfgEventSelection.currentSubsample, p.q3);
-      registry.fill(base + HIST("Q1Pow4_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q1 * p.q1 * p.q1);
-      registry.fill(base + HIST("Q1SqQ2_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q1 * p.q2);
-      registry.fill(base + HIST("Q2Sq_subsample"), cent, cfgEventSelection.currentSubsample, p.q2 * p.q2);
-      registry.fill(base + HIST("Q1Q3_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q3);
-      registry.fill(base + HIST("Q4_subsample"), cent, cfgEventSelection.currentSubsample, p.q4);
+      hReg.fill(base + HIST("Q1_subsample"), cent, cfgEventSelection.currentSubsample, p.q1);
+      hReg.fill(base + HIST("Q1Sq_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q1);
+      hReg.fill(base + HIST("Q2_subsample"), cent, cfgEventSelection.currentSubsample, p.q2);
+      hReg.fill(base + HIST("Q1Cube_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q1 * p.q1);
+      hReg.fill(base + HIST("Q1Q2_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q2);
+      hReg.fill(base + HIST("Q3_subsample"), cent, cfgEventSelection.currentSubsample, p.q3);
+      hReg.fill(base + HIST("Q1Pow4_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q1 * p.q1 * p.q1);
+      hReg.fill(base + HIST("Q1SqQ2_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q1 * p.q2);
+      hReg.fill(base + HIST("Q2Sq_subsample"), cent, cfgEventSelection.currentSubsample, p.q2 * p.q2);
+      hReg.fill(base + HIST("Q1Q3_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q3);
+      hReg.fill(base + HIST("Q4_subsample"), cent, cfgEventSelection.currentSubsample, p.q4);
     }
   }
 
   // fill function for reco net species
   template <FCPrefixEnum Prefix, typename Registry>
-  void fillNetQVectorProfileHistograms(const EffPowerSums& posPow, const EffPowerSums& negPow, float cent, Registry& registry)
+  void fillNetQVectorProfileHistograms(const EffPowerSums& posPow, const EffPowerSums& negPow, float cent, Registry& hReg)
   {
     // Construct base directory path
     auto base = HIST(FCRecoDir[static_cast<int>(Prefix)]);
@@ -456,50 +456,50 @@ struct NchCumulantsId {
 
     // Fill joint pos-neg correction profiles
     // capture inline from pos and neg
-    double jointF11 = posPow.q1 * negPow.q1;          
-    double cf2pos = posPow.q1 * posPow.q1 - posPow.q2; 
-    double cf2neg = negPow.q1 * negPow.q1 - negPow.q2; 
-    double jointF12 = posPow.q1 * cf2neg;              
-    double jointF21 = negPow.q1 * cf2pos;              
+    double jointF11 = posPow.q1 * negPow.q1;
+    double cf2pos = posPow.q1 * posPow.q1 - posPow.q2;
+    double cf2neg = negPow.q1 * negPow.q1 - negPow.q2;
+    double jointF12 = posPow.q1 * cf2neg;
+    double jointF21 = negPow.q1 * cf2pos;
     // ─── Fill raw q-vectors (for cross-verification)
-    registry.fill(base + HIST("Q_net_1"), cent, qNet1);
-    registry.fill(base + HIST("Q_net_1Sq"), cent, qNet1 * qNet1);
-    registry.fill(base + HIST("Q_net_2"), cent, qNet2);
-    registry.fill(base + HIST("Q_net_1Cube"), cent, qNet1 * qNet1 * qNet1);
-    registry.fill(base + HIST("Q_net_1Q_net_2"), cent, qNet1 * qNet2);
-    registry.fill(base + HIST("Q_net_3"), cent, qNet3);
-    registry.fill(base + HIST("Q_net_1Pow4"), cent, qNet1 * qNet1 * qNet1 * qNet1);
-    registry.fill(base + HIST("Q_net_1SqQ_net_2"), cent, qNet1 * qNet1 * qNet2);
-    registry.fill(base + HIST("Q_net_2Sq"), cent, qNet2 * qNet2);
-    registry.fill(base + HIST("Q_net_1Q_net_3"), cent, qNet1 * qNet3);
-    registry.fill(base + HIST("Q_net_4"), cent, qNet4);
+    hReg.fill(base + HIST("Q_net_1"), cent, qNet1);
+    hReg.fill(base + HIST("Q_net_1Sq"), cent, qNet1 * qNet1);
+    hReg.fill(base + HIST("Q_net_2"), cent, qNet2);
+    hReg.fill(base + HIST("Q_net_1Cube"), cent, qNet1 * qNet1 * qNet1);
+    hReg.fill(base + HIST("Q_net_1Q_net_2"), cent, qNet1 * qNet2);
+    hReg.fill(base + HIST("Q_net_3"), cent, qNet3);
+    hReg.fill(base + HIST("Q_net_1Pow4"), cent, qNet1 * qNet1 * qNet1 * qNet1);
+    hReg.fill(base + HIST("Q_net_1SqQ_net_2"), cent, qNet1 * qNet1 * qNet2);
+    hReg.fill(base + HIST("Q_net_2Sq"), cent, qNet2 * qNet2);
+    hReg.fill(base + HIST("Q_net_1Q_net_3"), cent, qNet1 * qNet3);
+    hReg.fill(base + HIST("Q_net_4"), cent, qNet4);
 
     // ─── Fill factorial moments ───
-    registry.fill(base + HIST("JointF11"), cent, jointF11);
-    registry.fill(base + HIST("JointF12"), cent, jointF12);
-    registry.fill(base + HIST("JointF21"), cent, jointF21);
+    hReg.fill(base + HIST("JointF11"), cent, jointF11);
+    hReg.fill(base + HIST("JointF12"), cent, jointF12);
+    hReg.fill(base + HIST("JointF21"), cent, jointF21);
 
     if (cfgEventSelection.cfgDoSubsampling) {
-      registry.fill(base + HIST("Q_net_1_subsample"), cent, cfgEventSelection.currentSubsample, qNet1);
-      registry.fill(base + HIST("Q_net_1Sq_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet1);
-      registry.fill(base + HIST("Q_net_2_subsample"), cent, cfgEventSelection.currentSubsample, qNet2);
-      registry.fill(base + HIST("Q_net_1Cube_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet1 * qNet1);
-      registry.fill(base + HIST("Q_net_1Q_net_2_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet2);
-      registry.fill(base + HIST("Q_net_3_subsample"), cent, cfgEventSelection.currentSubsample, qNet3);
-      registry.fill(base + HIST("Q_net_1Pow4_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet1 * qNet1 * qNet1);
-      registry.fill(base + HIST("Q_net_1SqQ_net_2_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet1 * qNet2);
-      registry.fill(base + HIST("Q_net_2Sq_subsample"), cent, cfgEventSelection.currentSubsample, qNet2 * qNet2);
-      registry.fill(base + HIST("Q_net_1Q_net_3_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet3);
-      registry.fill(base + HIST("Q_net_4_subsample"), cent, cfgEventSelection.currentSubsample, qNet4);
+      hReg.fill(base + HIST("Q_net_1_subsample"), cent, cfgEventSelection.currentSubsample, qNet1);
+      hReg.fill(base + HIST("Q_net_1Sq_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet1);
+      hReg.fill(base + HIST("Q_net_2_subsample"), cent, cfgEventSelection.currentSubsample, qNet2);
+      hReg.fill(base + HIST("Q_net_1Cube_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet1 * qNet1);
+      hReg.fill(base + HIST("Q_net_1Q_net_2_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet2);
+      hReg.fill(base + HIST("Q_net_3_subsample"), cent, cfgEventSelection.currentSubsample, qNet3);
+      hReg.fill(base + HIST("Q_net_1Pow4_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet1 * qNet1 * qNet1);
+      hReg.fill(base + HIST("Q_net_1SqQ_net_2_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet1 * qNet2);
+      hReg.fill(base + HIST("Q_net_2Sq_subsample"), cent, cfgEventSelection.currentSubsample, qNet2 * qNet2);
+      hReg.fill(base + HIST("Q_net_1Q_net_3_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet3);
+      hReg.fill(base + HIST("Q_net_4_subsample"), cent, cfgEventSelection.currentSubsample, qNet4);
 
-      registry.fill(base + HIST("JointF11_subsample"), cent, cfgEventSelection.currentSubsample, jointF11);
-      registry.fill(base + HIST("JointF12_subsample"), cent, cfgEventSelection.currentSubsample, jointF12);
-      registry.fill(base + HIST("JointF21_subsample"), cent, cfgEventSelection.currentSubsample, jointF21);
+      hReg.fill(base + HIST("JointF11_subsample"), cent, cfgEventSelection.currentSubsample, jointF11);
+      hReg.fill(base + HIST("JointF12_subsample"), cent, cfgEventSelection.currentSubsample, jointF12);
+      hReg.fill(base + HIST("JointF21_subsample"), cent, cfgEventSelection.currentSubsample, jointF21);
     }
   }
 
   template <FCPrefixEnum Prefix, typename Registry>
-  void fillGenFactorialMoments(int n, float cent, Registry& registry)
+  void fillGenFactorialMoments(int n, float cent, Registry& hReg)
   {
     auto base = HIST(FCGenDir[static_cast<int>(Prefix)]);
 
@@ -508,21 +508,21 @@ struct NchCumulantsId {
     double f3 = n * (n - 1.) * (n - 2.);
     double f4 = n * (n - 1.) * (n - 2.) * (n - 3.);
 
-    registry.fill(base + HIST("F1"), cent, f1);
-    registry.fill(base + HIST("F2"), cent, f2);
-    registry.fill(base + HIST("F3"), cent, f3);
-    registry.fill(base + HIST("F4"), cent, f4);
+    hReg.fill(base + HIST("F1"), cent, f1);
+    hReg.fill(base + HIST("F2"), cent, f2);
+    hReg.fill(base + HIST("F3"), cent, f3);
+    hReg.fill(base + HIST("F4"), cent, f4);
 
     if (cfgEventSelection.cfgDoSubsampling) {
-      registry.fill(base + HIST("F1_subsample"), cent, cfgEventSelection.currentSubsample, f1);
-      registry.fill(base + HIST("F2_subsample"), cent, cfgEventSelection.currentSubsample, f2);
-      registry.fill(base + HIST("F3_subsample"), cent, cfgEventSelection.currentSubsample, f3);
-      registry.fill(base + HIST("F4_subsample"), cent, cfgEventSelection.currentSubsample, f4);
+      hReg.fill(base + HIST("F1_subsample"), cent, cfgEventSelection.currentSubsample, f1);
+      hReg.fill(base + HIST("F2_subsample"), cent, cfgEventSelection.currentSubsample, f2);
+      hReg.fill(base + HIST("F3_subsample"), cent, cfgEventSelection.currentSubsample, f3);
+      hReg.fill(base + HIST("F4_subsample"), cent, cfgEventSelection.currentSubsample, f4);
     }
   }
   // ─── GEN level (net speciestruth) ───
   template <FCPrefixEnum Prefix, typename Registry>
-  void fillGenNetFactorialMoments(float nPos, float nNeg, float cent, Registry& registry)
+  void fillGenNetFactorialMoments(float nPos, float nNeg, float cent, Registry& hReg)
   {
     auto base = HIST(FCGenDir[static_cast<int>(Prefix)]);
 
@@ -533,16 +533,16 @@ struct NchCumulantsId {
     double f3 = nNet * (nNet - 1.0) * (nNet - 2.0);
     double f4 = nNet * (nNet - 1.0) * (nNet - 2.0) * (nNet - 3.0);
 
-    registry.fill(base + HIST("F1"), cent, f1);
-    registry.fill(base + HIST("F2"), cent, f2);
-    registry.fill(base + HIST("F3"), cent, f3);
-    registry.fill(base + HIST("F4"), cent, f4);
+    hReg.fill(base + HIST("F1"), cent, f1);
+    hReg.fill(base + HIST("F2"), cent, f2);
+    hReg.fill(base + HIST("F3"), cent, f3);
+    hReg.fill(base + HIST("F4"), cent, f4);
 
     if (cfgEventSelection.cfgDoSubsampling) {
-      registry.fill(base + HIST("F1_subsample"), cent, cfgEventSelection.currentSubsample, f1);
-      registry.fill(base + HIST("F2_subsample"), cent, cfgEventSelection.currentSubsample, f2);
-      registry.fill(base + HIST("F3_subsample"), cent, cfgEventSelection.currentSubsample, f3);
-      registry.fill(base + HIST("F4_subsample"), cent, cfgEventSelection.currentSubsample, f4);
+      hReg.fill(base + HIST("F1_subsample"), cent, cfgEventSelection.currentSubsample, f1);
+      hReg.fill(base + HIST("F2_subsample"), cent, cfgEventSelection.currentSubsample, f2);
+      hReg.fill(base + HIST("F3_subsample"), cent, cfgEventSelection.currentSubsample, f3);
+      hReg.fill(base + HIST("F4_subsample"), cent, cfgEventSelection.currentSubsample, f4);
     }
   }
 
@@ -1257,15 +1257,15 @@ struct NchCumulantsId {
   }
 
   template <int mode, typename T>
-  void fillCollQA(const T& col, const int& nCh, const int& nT)
+  void fillCollQA(const T& coll, const int& nCh, const int& nT)
   {
-    hist.fill(HIST(HistRegDire[mode]) + HIST("h_VtxZ"), col.posZ());
+    hist.fill(HIST(HistRegDire[mode]) + HIST("h_VtxZ"), coll.posZ());
     hist.fill(HIST(HistRegDire[mode]) + HIST("h_Counts"), 0.5);
-    hist.fill(HIST(HistRegDire[mode]) + HIST("multFT0"), col.multFT0C());
-    hist.fill(HIST(HistRegDire[mode]) + HIST("centFT0"), col.centFT0M());
+    hist.fill(HIST(HistRegDire[mode]) + HIST("multFT0"), coll.multFT0C());
+    hist.fill(HIST(HistRegDire[mode]) + HIST("centFT0"), coll.centFT0M());
     if (mode == qaEventPostSel) {
       hist.fill(HIST(HistRegDire[mode]) + HIST("net_charge"), nCh);
-      hist.fill(HIST(HistRegDire[mode]) + HIST("Nt_centFT"), col.centFT0M(), nT);
+      hist.fill(HIST(HistRegDire[mode]) + HIST("Nt_centFT"), coll.centFT0M(), nT);
     }
   }
 
