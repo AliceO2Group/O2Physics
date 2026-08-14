@@ -189,8 +189,8 @@ enum tableIndex { kFV0Mults,       // standard
                   kBCCentFT0Ms,        // bc centrality
                   kBCCentFT0As,        // bc centrality
                   kBCCentFT0Cs,        // bc centrality
-                  kCentFT0MAnchorCols, // light ion specific
-                  kCentFT0MAnchorBCs,  // light ion specific
+                  kCentFT0MAnchorCols, // standard Run 3
+                  kCentFT0MAnchorBCs,  // standard Run 3
                   kNTables };
 
 struct products : o2::framework::ProducesGroup {
