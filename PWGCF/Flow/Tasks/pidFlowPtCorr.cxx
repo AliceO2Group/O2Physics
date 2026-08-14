@@ -72,6 +72,142 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+namespace
+{
+// Keep the corrconfigs vector layout in one named index table. Namespace
+// grouping avoids storing compile-time constants as analysis-task members.
+namespace corrConfigIndex
+{
+namespace charged
+{
+enum : std::size_t {
+  kC22Gap = 0,
+  kC24 = 1,
+  kC22Full = 2,
+  kC32Gap = 3,
+  kC34Gap = 4
+};
+} // namespace charged
+
+namespace pion
+{
+enum : std::size_t {
+  kC22GapA = 5,
+  kC22GapB = 6,
+  kC24A = 11,
+  kC24B = 12,
+  kC32GapA = 17,
+  kC32GapB = 18,
+  kC34A = 23,
+  kC34B = 24,
+  kC22Pure = 29,
+  kC32Pure = 32,
+  kC22FullA = 35,
+  kC22FullB = 36
+};
+} // namespace pion
+
+namespace kaon
+{
+enum : std::size_t {
+  kC22GapA = 7,
+  kC22GapB = 8,
+  kC24A = 13,
+  kC24B = 14,
+  kC32GapA = 19,
+  kC32GapB = 20,
+  kC34A = 25,
+  kC34B = 26,
+  kC22Pure = 30,
+  kC32Pure = 33,
+  kC22FullA = 37,
+  kC22FullB = 38
+};
+} // namespace kaon
+
+namespace proton
+{
+enum : std::size_t {
+  kC22GapA = 9,
+  kC22GapB = 10,
+  kC24A = 15,
+  kC24B = 16,
+  kC32GapA = 21,
+  kC32GapB = 22,
+  kC34A = 27,
+  kC34B = 28,
+  kC22Pure = 31,
+  kC32Pure = 34,
+  kC22FullA = 39,
+  kC22FullB = 40
+};
+} // namespace proton
+
+// Unidentified correlations are appended after the original configurations
+// so the charged and identified-particle vector layout remains unchanged.
+namespace unidentified
+{
+enum : std::size_t {
+  kC22GapA = 41,
+  kC22GapB = 42,
+  kC24A = 43,
+  kC24B = 44,
+  kC22Pure = 45,
+  kC22FullA = 46,
+  kC22FullB = 47
+};
+} // namespace unidentified
+
+enum : std::size_t {
+  kCount = 48
+};
+} // namespace corrConfigIndex
+
+// GFW region bitmasks are grouped by particle type and region role. POI and
+// overlap use distinct bits because the overlap weight can differ from POI.
+namespace gfwBitMask
+{
+namespace charged
+{
+enum : int {
+  kReference = 1 << 0
+};
+} // namespace charged
+
+namespace pion
+{
+enum : int {
+  kPOI = 1 << 1,
+  kOverlap = 1 << 4
+};
+} // namespace pion
+
+namespace kaon
+{
+enum : int {
+  kPOI = 1 << 2,
+  kOverlap = 1 << 5
+};
+} // namespace kaon
+
+namespace proton
+{
+enum : int {
+  kPOI = 1 << 3,
+  kOverlap = 1 << 6
+};
+} // namespace proton
+
+namespace unidentified
+{
+enum : int {
+  kPOI = 1 << 7,
+  kOverlap = 1 << 8
+};
+} // namespace unidentified
+} // namespace gfwBitMask
+} // namespace
+
 struct PidFlowPtCorr {
   // configurable
   double minVal4Float = 1e-3;
@@ -312,105 +448,6 @@ struct PidFlowPtCorr {
     kProton,
     kUnidentified,
     kNumberOfParticles
-  };
-
-  // Keep the vector layout in one named index table. The nested particle groups
-  // make each corrconfigs access describe both the particle and correlator type.
-  struct CorrConfigIndex {
-    struct Charged {
-      static constexpr std::size_t kC22Gap = 0;
-      static constexpr std::size_t kC24 = 1;
-      static constexpr std::size_t kC22Full = 2;
-      static constexpr std::size_t kC32Gap = 3;
-      static constexpr std::size_t kC34Gap = 4;
-    };
-
-    struct Pion {
-      static constexpr std::size_t kC22GapA = 5;
-      static constexpr std::size_t kC22GapB = 6;
-      static constexpr std::size_t kC24A = 11;
-      static constexpr std::size_t kC24B = 12;
-      static constexpr std::size_t kC32GapA = 17;
-      static constexpr std::size_t kC32GapB = 18;
-      static constexpr std::size_t kC34A = 23;
-      static constexpr std::size_t kC34B = 24;
-      static constexpr std::size_t kC22Pure = 29;
-      static constexpr std::size_t kC32Pure = 32;
-      static constexpr std::size_t kC22FullA = 35;
-      static constexpr std::size_t kC22FullB = 36;
-    };
-
-    struct Kaon {
-      static constexpr std::size_t kC22GapA = 7;
-      static constexpr std::size_t kC22GapB = 8;
-      static constexpr std::size_t kC24A = 13;
-      static constexpr std::size_t kC24B = 14;
-      static constexpr std::size_t kC32GapA = 19;
-      static constexpr std::size_t kC32GapB = 20;
-      static constexpr std::size_t kC34A = 25;
-      static constexpr std::size_t kC34B = 26;
-      static constexpr std::size_t kC22Pure = 30;
-      static constexpr std::size_t kC32Pure = 33;
-      static constexpr std::size_t kC22FullA = 37;
-      static constexpr std::size_t kC22FullB = 38;
-    };
-
-    struct Proton {
-      static constexpr std::size_t kC22GapA = 9;
-      static constexpr std::size_t kC22GapB = 10;
-      static constexpr std::size_t kC24A = 15;
-      static constexpr std::size_t kC24B = 16;
-      static constexpr std::size_t kC32GapA = 21;
-      static constexpr std::size_t kC32GapB = 22;
-      static constexpr std::size_t kC34A = 27;
-      static constexpr std::size_t kC34B = 28;
-      static constexpr std::size_t kC22Pure = 31;
-      static constexpr std::size_t kC32Pure = 34;
-      static constexpr std::size_t kC22FullA = 39;
-      static constexpr std::size_t kC22FullB = 40;
-    };
-
-    // Unidentified correlations are appended after the original configurations
-    // so the charged and identified-particle vector layout remains unchanged.
-    struct Unidentified {
-      static constexpr std::size_t kC22GapA = 41;
-      static constexpr std::size_t kC22GapB = 42;
-      static constexpr std::size_t kC24A = 43;
-      static constexpr std::size_t kC24B = 44;
-      static constexpr std::size_t kC22Pure = 45;
-      static constexpr std::size_t kC22FullA = 46;
-      static constexpr std::size_t kC22FullB = 47;
-    };
-
-    static constexpr std::size_t kCount = 48;
-  };
-
-  // GFW region bitmasks are grouped by particle type and region role. POI and
-  // overlap use distinct bits because the overlap weight can differ from POI.
-  struct GFWBitMask {
-    struct Charged {
-      static constexpr int kReference = 1 << 0;
-    };
-
-    struct Pion {
-      static constexpr int kPOI = 1 << 1;
-      static constexpr int kOverlap = 1 << 4;
-    };
-
-    struct Kaon {
-      static constexpr int kPOI = 1 << 2;
-      static constexpr int kOverlap = 1 << 5;
-    };
-
-    struct Proton {
-      static constexpr int kPOI = 1 << 3;
-      static constexpr int kOverlap = 1 << 6;
-    };
-
-    struct Unidentified {
-      static constexpr int kPOI = 1 << 7;
-      static constexpr int kOverlap = 1 << 8;
-    };
   };
 
   bool isParticleOutputEnabled(MyParticleType type)
@@ -904,47 +941,47 @@ struct PidFlowPtCorr {
     double etaMax = trkQualityOpts.cfgCutEta.value;
     double etaGap = cfgEtaGap;
     // Charged reference regions.
-    fGFW->AddRegion("reffull", -etaMax, etaMax, 1, GFWBitMask::Charged::kReference); // ("name", etamin, etamax, ptbinnum, bitmask)eta region -0.8 to 0.8
-    fGFW->AddRegion("refN08", -etaMax, -etaGap, 1, GFWBitMask::Charged::kReference);
-    fGFW->AddRegion("refP08", etaGap, etaMax, 1, GFWBitMask::Charged::kReference);
-    fGFW->AddRegion("refN", -etaMax, 0, 1, GFWBitMask::Charged::kReference);
-    fGFW->AddRegion("refP", 0, etaMax, 1, GFWBitMask::Charged::kReference);
+    fGFW->AddRegion("reffull", -etaMax, etaMax, 1, gfwBitMask::charged::kReference); // ("name", etamin, etamax, ptbinnum, bitmask)eta region -0.8 to 0.8
+    fGFW->AddRegion("refN08", -etaMax, -etaGap, 1, gfwBitMask::charged::kReference);
+    fGFW->AddRegion("refP08", etaGap, etaMax, 1, gfwBitMask::charged::kReference);
+    fGFW->AddRegion("refN", -etaMax, 0, 1, gfwBitMask::charged::kReference);
+    fGFW->AddRegion("refP", 0, etaMax, 1, gfwBitMask::charged::kReference);
 
     // Pion POI and overlap regions.
-    fGFW->AddRegion("poiPiN08", -etaMax, -etaGap, 1, GFWBitMask::Pion::kPOI);
-    fGFW->AddRegion("poiPiP08", etaGap, etaMax, 1, GFWBitMask::Pion::kPOI);
-    fGFW->AddRegion("poiPiN", -etaMax, 0, 1, GFWBitMask::Pion::kPOI);
-    fGFW->AddRegion("poiPiP", 0, etaMax, 1, GFWBitMask::Pion::kPOI);
+    fGFW->AddRegion("poiPiN08", -etaMax, -etaGap, 1, gfwBitMask::pion::kPOI);
+    fGFW->AddRegion("poiPiP08", etaGap, etaMax, 1, gfwBitMask::pion::kPOI);
+    fGFW->AddRegion("poiPiN", -etaMax, 0, 1, gfwBitMask::pion::kPOI);
+    fGFW->AddRegion("poiPiP", 0, etaMax, 1, gfwBitMask::pion::kPOI);
 
-    fGFW->AddRegion("olPiN", -etaMax, 0, 1, GFWBitMask::Pion::kOverlap);
-    fGFW->AddRegion("olPiP", 0, etaMax, 1, GFWBitMask::Pion::kOverlap);
+    fGFW->AddRegion("olPiN", -etaMax, 0, 1, gfwBitMask::pion::kOverlap);
+    fGFW->AddRegion("olPiP", 0, etaMax, 1, gfwBitMask::pion::kOverlap);
 
     // Kaon POI and overlap regions.
-    fGFW->AddRegion("poiKaN08", -etaMax, -etaGap, 1, GFWBitMask::Kaon::kPOI);
-    fGFW->AddRegion("poiKaP08", etaGap, etaMax, 1, GFWBitMask::Kaon::kPOI);
-    fGFW->AddRegion("poiKaN", -etaMax, 0, 1, GFWBitMask::Kaon::kPOI);
-    fGFW->AddRegion("poiKaP", 0, etaMax, 1, GFWBitMask::Kaon::kPOI);
+    fGFW->AddRegion("poiKaN08", -etaMax, -etaGap, 1, gfwBitMask::kaon::kPOI);
+    fGFW->AddRegion("poiKaP08", etaGap, etaMax, 1, gfwBitMask::kaon::kPOI);
+    fGFW->AddRegion("poiKaN", -etaMax, 0, 1, gfwBitMask::kaon::kPOI);
+    fGFW->AddRegion("poiKaP", 0, etaMax, 1, gfwBitMask::kaon::kPOI);
 
-    fGFW->AddRegion("olKaN", -etaMax, 0, 1, GFWBitMask::Kaon::kOverlap);
-    fGFW->AddRegion("olKaP", 0, etaMax, 1, GFWBitMask::Kaon::kOverlap);
+    fGFW->AddRegion("olKaN", -etaMax, 0, 1, gfwBitMask::kaon::kOverlap);
+    fGFW->AddRegion("olKaP", 0, etaMax, 1, gfwBitMask::kaon::kOverlap);
 
     // Proton POI and overlap regions.
-    fGFW->AddRegion("poiPrN08", -etaMax, -etaGap, 1, GFWBitMask::Proton::kPOI);
-    fGFW->AddRegion("poiPrP08", etaGap, etaMax, 1, GFWBitMask::Proton::kPOI);
-    fGFW->AddRegion("poiPrN", -etaMax, 0, 1, GFWBitMask::Proton::kPOI);
-    fGFW->AddRegion("poiPrP", 0, etaMax, 1, GFWBitMask::Proton::kPOI);
+    fGFW->AddRegion("poiPrN08", -etaMax, -etaGap, 1, gfwBitMask::proton::kPOI);
+    fGFW->AddRegion("poiPrP08", etaGap, etaMax, 1, gfwBitMask::proton::kPOI);
+    fGFW->AddRegion("poiPrN", -etaMax, 0, 1, gfwBitMask::proton::kPOI);
+    fGFW->AddRegion("poiPrP", 0, etaMax, 1, gfwBitMask::proton::kPOI);
 
-    fGFW->AddRegion("olPrN", -etaMax, 0, 1, GFWBitMask::Proton::kOverlap);
-    fGFW->AddRegion("olPrP", 0, etaMax, 1, GFWBitMask::Proton::kOverlap);
+    fGFW->AddRegion("olPrN", -etaMax, 0, 1, gfwBitMask::proton::kOverlap);
+    fGFW->AddRegion("olPrP", 0, etaMax, 1, gfwBitMask::proton::kOverlap);
 
     // Tracks for which the PID selection returns -1. They use the charged
     // pT range and corrections, but have independent POI and overlap masks.
-    fGFW->AddRegion("poiUnidentifiedN08", -etaMax, -etaGap, 1, GFWBitMask::Unidentified::kPOI);
-    fGFW->AddRegion("poiUnidentifiedP08", etaGap, etaMax, 1, GFWBitMask::Unidentified::kPOI);
-    fGFW->AddRegion("poiUnidentifiedN", -etaMax, 0, 1, GFWBitMask::Unidentified::kPOI);
-    fGFW->AddRegion("poiUnidentifiedP", 0, etaMax, 1, GFWBitMask::Unidentified::kPOI);
-    fGFW->AddRegion("olUnidentifiedN", -etaMax, 0, 1, GFWBitMask::Unidentified::kOverlap);
-    fGFW->AddRegion("olUnidentifiedP", 0, etaMax, 1, GFWBitMask::Unidentified::kOverlap);
+    fGFW->AddRegion("poiUnidentifiedN08", -etaMax, -etaGap, 1, gfwBitMask::unidentified::kPOI);
+    fGFW->AddRegion("poiUnidentifiedP08", etaGap, etaMax, 1, gfwBitMask::unidentified::kPOI);
+    fGFW->AddRegion("poiUnidentifiedN", -etaMax, 0, 1, gfwBitMask::unidentified::kPOI);
+    fGFW->AddRegion("poiUnidentifiedP", 0, etaMax, 1, gfwBitMask::unidentified::kPOI);
+    fGFW->AddRegion("olUnidentifiedN", -etaMax, 0, 1, gfwBitMask::unidentified::kOverlap);
+    fGFW->AddRegion("olUnidentifiedP", 0, etaMax, 1, gfwBitMask::unidentified::kOverlap);
     // end data region add
 
     // pushback
@@ -1002,8 +1039,8 @@ struct PidFlowPtCorr {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedN {2} refP {-2}", "Unidentified0gap22a", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedP {2} refN {-2}", "Unidentified0gap22b", false)); // 47
 
-    if (corrconfigs.size() != CorrConfigIndex::kCount) {
-      LOGF(fatal, "Correlation index table expects %zu configurations, but %zu were created", CorrConfigIndex::kCount, corrconfigs.size());
+    if (corrconfigs.size() != corrConfigIndex::kCount) {
+      LOGF(fatal, "Correlation index table expects %zu configurations, but %zu were created", static_cast<std::size_t>(corrConfigIndex::kCount), corrconfigs.size());
     }
     fGFW->CreateRegions(); // finalize the initialization
 
@@ -1423,13 +1460,13 @@ struct PidFlowPtCorr {
     }
     double dnx = 0.0, val = 0.0;
 
-    dnx = fGFW->Calculate(corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), 0, true).real();
+    dnx = fGFW->Calculate(corrconfigs.at(corrConfigIndex::charged::kC22Gap), 0, true).real();
     if (dnx == 0) {
       return;
     }
 
     // <2>
-    val = fGFW->Calculate(corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), 0, false).real() / dnx;
+    val = fGFW->Calculate(corrconfigs.at(corrConfigIndex::charged::kC22Gap), 0, false).real() / dnx;
     if (std::fabs(val) >= 1) {
       return;
     }
@@ -1460,13 +1497,13 @@ struct PidFlowPtCorr {
     // <2>
     double dnx = 0.0, val = 0.0;
 
-    dnx = fGFW->Calculate(corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), 0, true).real();
+    dnx = fGFW->Calculate(corrconfigs.at(corrConfigIndex::charged::kC22Gap), 0, true).real();
     if (dnx == 0) {
       return;
     }
 
     // <2>
-    val = fGFW->Calculate(corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), 0, false).real() / dnx;
+    val = fGFW->Calculate(corrconfigs.at(corrConfigIndex::charged::kC22Gap), 0, false).real() / dnx;
     if (std::fabs(val) >= 1) {
       return;
     }
@@ -1475,12 +1512,12 @@ struct PidFlowPtCorr {
     double npairPid = 0;
     switch (type) {
       case MyParticleType::kPion:
-        pidc22 = getPidC22InOneEvent(corrconfigs.at(CorrConfigIndex::Pion::kC22GapA), corrconfigs.at(CorrConfigIndex::Pion::kC22GapB));
+        pidc22 = getPidC22InOneEvent(corrconfigs.at(corrConfigIndex::pion::kC22GapA), corrconfigs.at(corrConfigIndex::pion::kC22GapB));
         if (pidc22 == 0) {
           return;
         }
 
-        npairPid = fGFW->Calculate(corrconfigs.at(CorrConfigIndex::Pion::kC22GapA), 0, true).real() + fGFW->Calculate(corrconfigs.at(CorrConfigIndex::Pion::kC22GapB), 0, true).real();
+        npairPid = fGFW->Calculate(corrconfigs.at(corrConfigIndex::pion::kC22GapA), 0, true).real() + fGFW->Calculate(corrconfigs.at(corrConfigIndex::pion::kC22GapB), 0, true).real();
         if (npairPid == 0) {
           return;
         }
@@ -1496,12 +1533,12 @@ struct PidFlowPtCorr {
         fFCPi->FillProfile("hMeanPtWeightCharged", cent, (pidPtSum / nPid), dnx * nPid, rndm);
 
         if (switchsOpts.cfgAddMeanPtCentNbsHistograms.value && switchsOpts.cfgClosureTest.value != 0) {
-          double npair4c22pure = fGFW->Calculate(corrconfigs.at(CorrConfigIndex::Pion::kC22Pure), 0, true).real();
+          double npair4c22pure = fGFW->Calculate(corrconfigs.at(corrConfigIndex::pion::kC22Pure), 0, true).real();
           if (npair4c22pure > minVal4Float) {
             registry.fill(HIST("meanptCentNbs/hPionMeanptWeightC22pure"),
                           pidPtSum / nPid, cent, rndm * cfgFlowNbootstrap,
                           pidPtSum / nPid,
-                          nPid * npairPid * fGFW->Calculate(corrconfigs.at(CorrConfigIndex::Pion::kC22Pure), 0, false).real() / npair4c22pure);
+                          nPid * npairPid * fGFW->Calculate(corrconfigs.at(corrConfigIndex::pion::kC22Pure), 0, false).real() / npair4c22pure);
           }
 
           registry.fill(HIST("meanptCentNbs/hPionMeanptWeightMeanpt"),
@@ -1518,12 +1555,12 @@ struct PidFlowPtCorr {
         // end pion
 
       case MyParticleType::kKaon:
-        pidc22 = getPidC22InOneEvent(corrconfigs.at(CorrConfigIndex::Kaon::kC22GapA), corrconfigs.at(CorrConfigIndex::Kaon::kC22GapB));
+        pidc22 = getPidC22InOneEvent(corrconfigs.at(corrConfigIndex::kaon::kC22GapA), corrconfigs.at(corrConfigIndex::kaon::kC22GapB));
         if (pidc22 == 0) {
           return;
         }
 
-        npairPid = fGFW->Calculate(corrconfigs.at(CorrConfigIndex::Kaon::kC22GapA), 0, true).real() + fGFW->Calculate(corrconfigs.at(CorrConfigIndex::Kaon::kC22GapB), 0, true).real();
+        npairPid = fGFW->Calculate(corrconfigs.at(corrConfigIndex::kaon::kC22GapA), 0, true).real() + fGFW->Calculate(corrconfigs.at(corrConfigIndex::kaon::kC22GapB), 0, true).real();
         if (npairPid == 0) {
           return;
         }
@@ -1542,12 +1579,12 @@ struct PidFlowPtCorr {
         // end kaon
 
       case MyParticleType::kProton:
-        pidc22 = getPidC22InOneEvent(corrconfigs.at(CorrConfigIndex::Proton::kC22GapA), corrconfigs.at(CorrConfigIndex::Proton::kC22GapB));
+        pidc22 = getPidC22InOneEvent(corrconfigs.at(corrConfigIndex::proton::kC22GapA), corrconfigs.at(corrConfigIndex::proton::kC22GapB));
         if (pidc22 == 0) {
           return;
         }
 
-        npairPid = fGFW->Calculate(corrconfigs.at(CorrConfigIndex::Proton::kC22GapA), 0, true).real() + fGFW->Calculate(corrconfigs.at(CorrConfigIndex::Proton::kC22GapB), 0, true).real();
+        npairPid = fGFW->Calculate(corrconfigs.at(corrConfigIndex::proton::kC22GapA), 0, true).real() + fGFW->Calculate(corrconfigs.at(corrConfigIndex::proton::kC22GapB), 0, true).real();
         if (npairPid == 0) {
           return;
         }
@@ -1566,12 +1603,12 @@ struct PidFlowPtCorr {
         // end proton
 
       case MyParticleType::kUnidentified:
-        pidc22 = getPidC22InOneEvent(corrconfigs.at(CorrConfigIndex::Unidentified::kC22GapA), corrconfigs.at(CorrConfigIndex::Unidentified::kC22GapB));
+        pidc22 = getPidC22InOneEvent(corrconfigs.at(corrConfigIndex::unidentified::kC22GapA), corrconfigs.at(corrConfigIndex::unidentified::kC22GapB));
         if (pidc22 == 0) {
           return;
         }
 
-        npairPid = fGFW->Calculate(corrconfigs.at(CorrConfigIndex::Unidentified::kC22GapA), 0, true).real() + fGFW->Calculate(corrconfigs.at(CorrConfigIndex::Unidentified::kC22GapB), 0, true).real();
+        npairPid = fGFW->Calculate(corrconfigs.at(corrConfigIndex::unidentified::kC22GapA), 0, true).real() + fGFW->Calculate(corrconfigs.at(corrConfigIndex::unidentified::kC22GapB), 0, true).real();
         if (npairPid == 0) {
           return;
         }
@@ -2638,7 +2675,7 @@ struct PidFlowPtCorr {
         }
 
         // Fill the charged reference regions.
-        fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, GFWBitMask::Charged::kReference); //(eta, ptbin, phi, wacc*weff, bitmask)
+        fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, gfwBitMask::charged::kReference); //(eta, ptbin, phi, wacc*weff, bitmask)
       }
 
       // ------------------------------
@@ -2648,8 +2685,8 @@ struct PidFlowPtCorr {
       if (pid == -1 && withinPtRefGlobal) {
         // Unidentified tracks have no PID-specific correction. Reuse exactly
         // the charged NUA/NUE (including the optional local-density factor).
-        fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, GFWBitMask::Unidentified::kPOI);
-        fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, GFWBitMask::Unidentified::kOverlap, wacc * weff);
+        fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, gfwBitMask::unidentified::kPOI);
+        fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, gfwBitMask::unidentified::kOverlap, wacc * weff);
       } else if (isWithinPOIPtRange(pid, track.pt())) {
         float waccPid = 1;
         float weffPid = 1;
@@ -2658,8 +2695,8 @@ struct PidFlowPtCorr {
 
         // Fill GFW and counters using the same species-specific POI pT range.
         if (pid == MyParticleType::kPion) {
-          fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, GFWBitMask::Pion::kPOI);
-          fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, GFWBitMask::Pion::kOverlap, wacc * weff);
+          fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, gfwBitMask::pion::kPOI);
+          fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, gfwBitMask::pion::kOverlap, wacc * weff);
           registry.fill(HIST("hPhiPi"), track.phi());
           registry.fill(HIST("hPhicorrPi"), track.phi(), waccPid);
           registry.fill(HIST("hPhiCorrNUANUEPi"), track.phi(), waccPid * weffPid);
@@ -2667,8 +2704,8 @@ struct PidFlowPtCorr {
           registry.fill(HIST("hPtCorrPi"), track.pt(), weffPid);
           numOfPi++;
         } else if (pid == MyParticleType::kKaon) {
-          fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, GFWBitMask::Kaon::kPOI);
-          fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, GFWBitMask::Kaon::kOverlap, wacc * weff);
+          fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, gfwBitMask::kaon::kPOI);
+          fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, gfwBitMask::kaon::kOverlap, wacc * weff);
           registry.fill(HIST("hPhiKa"), track.phi());
           registry.fill(HIST("hPhicorrKa"), track.phi(), waccPid);
           registry.fill(HIST("hPhiCorrNUANUEKa"), track.phi(), waccPid * weffPid);
@@ -2676,8 +2713,8 @@ struct PidFlowPtCorr {
           registry.fill(HIST("hPtCorrKa"), track.pt(), weffPid);
           numOfKa++;
         } else if (pid == MyParticleType::kProton) {
-          fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, GFWBitMask::Proton::kPOI);
-          fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, GFWBitMask::Proton::kOverlap, wacc * weff);
+          fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, gfwBitMask::proton::kPOI);
+          fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, gfwBitMask::proton::kOverlap, wacc * weff);
           registry.fill(HIST("hPhiPr"), track.phi());
           registry.fill(HIST("hPhicorrPr"), track.phi(), waccPid);
           registry.fill(HIST("hPhiCorrNUANUEPr"), track.phi(), waccPid * weffPid);
@@ -2703,98 +2740,98 @@ struct PidFlowPtCorr {
 
     // fill hist using fGFW
     if (nch > 0) {
-      fillFC(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), cent, rndm, "c22");
-      fillFC(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC24), cent, rndm, "c24");
-      fillFC(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC22Full), cent, rndm, "c22Full");
-      fillFC(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC32Gap), cent, rndm, "c32");
-      fillFC(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC34Gap), cent, rndm, "c34");
+      fillFC(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC22Gap), cent, rndm, "c22");
+      fillFC(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC24), cent, rndm, "c24");
+      fillFC(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC22Full), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC32Gap), cent, rndm, "c32");
+      fillFC(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC34Gap), cent, rndm, "c34");
 
-      fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC22FullA), cent, rndm, "c22Full");
-      fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC22FullB), cent, rndm, "c22Full");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC22FullA), cent, rndm, "c22Full");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC22FullB), cent, rndm, "c22Full");
-      fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC22FullA), cent, rndm, "c22Full");
-      fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC22FullB), cent, rndm, "c22Full");
-      fillFC(MyParticleType::kUnidentified, corrconfigs.at(CorrConfigIndex::Unidentified::kC22FullA), cent, rndm, "c22Full");
-      fillFC(MyParticleType::kUnidentified, corrconfigs.at(CorrConfigIndex::Unidentified::kC22FullB), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC22FullA), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC22FullB), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC22FullA), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC22FullB), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC22FullA), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC22FullB), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kUnidentified, corrconfigs.at(corrConfigIndex::unidentified::kC22FullA), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kUnidentified, corrconfigs.at(corrConfigIndex::unidentified::kC22FullB), cent, rndm, "c22Full");
 
-      fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC24A), cent, rndm, "c24");
-      fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC24B), cent, rndm, "c24");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC24A), cent, rndm, "c24");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC24B), cent, rndm, "c24");
-      fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC24A), cent, rndm, "c24");
-      fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC24B), cent, rndm, "c24");
-      fillFC(MyParticleType::kUnidentified, corrconfigs.at(CorrConfigIndex::Unidentified::kC24A), cent, rndm, "c24");
-      fillFC(MyParticleType::kUnidentified, corrconfigs.at(CorrConfigIndex::Unidentified::kC24B), cent, rndm, "c24");
+      fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC24A), cent, rndm, "c24");
+      fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC24B), cent, rndm, "c24");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC24A), cent, rndm, "c24");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC24B), cent, rndm, "c24");
+      fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC24A), cent, rndm, "c24");
+      fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC24B), cent, rndm, "c24");
+      fillFC(MyParticleType::kUnidentified, corrconfigs.at(corrConfigIndex::unidentified::kC24A), cent, rndm, "c24");
+      fillFC(MyParticleType::kUnidentified, corrconfigs.at(corrConfigIndex::unidentified::kC24B), cent, rndm, "c24");
 
-      fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC32GapA), cent, rndm, "c32");
-      fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC32GapB), cent, rndm, "c32");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC32GapA), cent, rndm, "c32");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC32GapB), cent, rndm, "c32");
-      fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC32GapA), cent, rndm, "c32");
-      fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC32GapB), cent, rndm, "c32");
+      fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC32GapA), cent, rndm, "c32");
+      fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC32GapB), cent, rndm, "c32");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC32GapA), cent, rndm, "c32");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC32GapB), cent, rndm, "c32");
+      fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC32GapA), cent, rndm, "c32");
+      fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC32GapB), cent, rndm, "c32");
 
-      fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC34A), cent, rndm, "c34");
-      fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC34B), cent, rndm, "c34");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC34A), cent, rndm, "c34");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC34B), cent, rndm, "c34");
-      fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC34A), cent, rndm, "c34");
-      fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC34B), cent, rndm, "c34");
+      fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC34A), cent, rndm, "c34");
+      fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC34B), cent, rndm, "c34");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC34A), cent, rndm, "c34");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC34B), cent, rndm, "c34");
+      fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC34A), cent, rndm, "c34");
+      fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC34B), cent, rndm, "c34");
 
-      bool filledPi = fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC22Pure), cent, rndm, "c22pure");
-      bool filledKa = fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC22Pure), cent, rndm, "c22pure");
-      bool filledPr = fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC22Pure), cent, rndm, "c22pure");
-      bool filledUnidentified = fillFC(MyParticleType::kUnidentified, corrconfigs.at(CorrConfigIndex::Unidentified::kC22Pure), cent, rndm, "c22pure");
+      bool filledPi = fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC22Pure), cent, rndm, "c22pure");
+      bool filledKa = fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC22Pure), cent, rndm, "c22pure");
+      bool filledPr = fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC22Pure), cent, rndm, "c22pure");
+      bool filledUnidentified = fillFC(MyParticleType::kUnidentified, corrconfigs.at(corrConfigIndex::unidentified::kC22Pure), cent, rndm, "c22pure");
 
-      fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC32Pure), cent, rndm, "c32pure");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC32Pure), cent, rndm, "c32pure");
-      fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC32Pure), cent, rndm, "c32pure");
+      fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC32Pure), cent, rndm, "c32pure");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC32Pure), cent, rndm, "c32pure");
+      fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC32Pure), cent, rndm, "c32pure");
 
       if (filledPi || !switchsOpts.cfgCheck2MethodDiff.value) {
-        fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC22GapA), cent, rndm, "c22");
-        fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC22GapB), cent, rndm, "c22");
+        fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC22GapA), cent, rndm, "c22");
+        fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC22GapB), cent, rndm, "c22");
       }
       if (filledKa || !switchsOpts.cfgCheck2MethodDiff.value) {
-        fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC22GapA), cent, rndm, "c22");
-        fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC22GapB), cent, rndm, "c22");
+        fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC22GapA), cent, rndm, "c22");
+        fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC22GapB), cent, rndm, "c22");
       }
       if (filledPr || !switchsOpts.cfgCheck2MethodDiff.value) {
-        fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC22GapA), cent, rndm, "c22");
-        fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC22GapB), cent, rndm, "c22");
+        fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC22GapA), cent, rndm, "c22");
+        fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC22GapB), cent, rndm, "c22");
       }
       if (filledUnidentified || !switchsOpts.cfgCheck2MethodDiff.value) {
-        fillFC(MyParticleType::kUnidentified, corrconfigs.at(CorrConfigIndex::Unidentified::kC22GapA), cent, rndm, "c22");
-        fillFC(MyParticleType::kUnidentified, corrconfigs.at(CorrConfigIndex::Unidentified::kC22GapB), cent, rndm, "c22");
+        fillFC(MyParticleType::kUnidentified, corrconfigs.at(corrConfigIndex::unidentified::kC22GapA), cent, rndm, "c22");
+        fillFC(MyParticleType::kUnidentified, corrconfigs.at(corrConfigIndex::unidentified::kC22GapB), cent, rndm, "c22");
       }
-      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), cent, rndm, nch, nch, "c22TrackWeight");
-      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), cent, rndm, nch, nch, "c22TrackWeightOne", true);
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC22Gap), cent, rndm, nch, nch, "c22TrackWeight");
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC22Gap), cent, rndm, nch, nch, "c22TrackWeightOne", true);
 
-      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC24), cent, rndm, nch, nch, "c24TrackWeight");
-      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC22Full), cent, rndm, nch, nch, "c22FullTrackWeight");
-      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC32Gap), cent, rndm, nch, nch, "c32TrackWeight");
-      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC34Gap), cent, rndm, nch, nch, "c34TrackWeight");
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC24), cent, rndm, nch, nch, "c24TrackWeight");
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC22Full), cent, rndm, nch, nch, "c22FullTrackWeight");
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC32Gap), cent, rndm, nch, nch, "c32TrackWeight");
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC34Gap), cent, rndm, nch, nch, "c34TrackWeight");
 
-      fillFCvnpt(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC22Pure), cent, rndm, nch, nch, "c22TrackWeight");
-      fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC22Pure), cent, rndm, nch, nch, "c22TrackWeight");
-      fillFCvnpt(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC22Pure), cent, rndm, nch, nch, "c22TrackWeight");
-      fillFCvnpt(MyParticleType::kUnidentified, corrconfigs.at(CorrConfigIndex::Unidentified::kC22Pure), cent, rndm, nch, nch, "c22TrackWeight");
+      fillFCvnpt(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC22Pure), cent, rndm, nch, nch, "c22TrackWeight");
+      fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC22Pure), cent, rndm, nch, nch, "c22TrackWeight");
+      fillFCvnpt(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC22Pure), cent, rndm, nch, nch, "c22TrackWeight");
+      fillFCvnpt(MyParticleType::kUnidentified, corrconfigs.at(corrConfigIndex::unidentified::kC22Pure), cent, rndm, nch, nch, "c22TrackWeight");
 
-      fillFCvnpt(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC32Pure), cent, rndm, nch, nch, "c32TrackWeight");
-      fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC32Pure), cent, rndm, nch, nch, "c32TrackWeight");
-      fillFCvnpt(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC32Pure), cent, rndm, nch, nch, "c32TrackWeight");
+      fillFCvnpt(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC32Pure), cent, rndm, nch, nch, "c32TrackWeight");
+      fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC32Pure), cent, rndm, nch, nch, "c32TrackWeight");
+      fillFCvnpt(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC32Pure), cent, rndm, nch, nch, "c32TrackWeight");
 
-      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), cent, rndm, ptSum, nch, "covV2Pt");
-      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), cent, rndm, ptSum, nch, "covV2PtWeightOne", true);
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC22Gap), cent, rndm, ptSum, nch, "covV2Pt");
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC22Gap), cent, rndm, ptSum, nch, "covV2PtWeightOne", true);
 
-      fillFCvnpt(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC22Pure), cent, rndm, ptSum, nch, "covV2Pt");
-      fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC22Pure), cent, rndm, ptSum, nch, "covV2Pt");
-      fillFCvnpt(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC22Pure), cent, rndm, ptSum, nch, "covV2Pt");
-      fillFCvnpt(MyParticleType::kUnidentified, corrconfigs.at(CorrConfigIndex::Unidentified::kC22Pure), cent, rndm, ptSum, nch, "covV2Pt");
+      fillFCvnpt(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC22Pure), cent, rndm, ptSum, nch, "covV2Pt");
+      fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC22Pure), cent, rndm, ptSum, nch, "covV2Pt");
+      fillFCvnpt(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC22Pure), cent, rndm, ptSum, nch, "covV2Pt");
+      fillFCvnpt(MyParticleType::kUnidentified, corrconfigs.at(corrConfigIndex::unidentified::kC22Pure), cent, rndm, ptSum, nch, "covV2Pt");
 
-      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC32Gap), cent, rndm, ptSum, nch, "covV3Pt");
-      fillFCvnpt(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC32Pure), cent, rndm, ptSum, nch, "covV3Pt");
-      fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC32Pure), cent, rndm, ptSum, nch, "covV3Pt");
-      fillFCvnpt(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC32Pure), cent, rndm, ptSum, nch, "covV3Pt");
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC32Gap), cent, rndm, ptSum, nch, "covV3Pt");
+      fillFCvnpt(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC32Pure), cent, rndm, ptSum, nch, "covV3Pt");
+      fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC32Pure), cent, rndm, ptSum, nch, "covV3Pt");
+      fillFCvnpt(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC32Pure), cent, rndm, ptSum, nch, "covV3Pt");
 
       fillFC4PtC22(cent, ptSum, nch, rndm);
       if (nPionWeighted > 0) {
@@ -2814,26 +2851,26 @@ struct PidFlowPtCorr {
 
       if (switchsOpts.cfgOutPutPtSpectra.value) {
         // charged calculation
-        double NpairCharged = fGFW->Calculate(corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), 0, true).real();
-        double chargedC22 = NpairCharged > 0 ? fGFW->Calculate(corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), 0, false).real() / NpairCharged : 0;
+        double NpairCharged = fGFW->Calculate(corrconfigs.at(corrConfigIndex::charged::kC22Gap), 0, true).real();
+        double chargedC22 = NpairCharged > 0 ? fGFW->Calculate(corrconfigs.at(corrConfigIndex::charged::kC22Gap), 0, false).real() / NpairCharged : 0;
         // end charged calculation
 
         // pi
-        double pidChargedC22Pi = getPidC22InOneEvent(corrconfigs.at(CorrConfigIndex::Pion::kC22GapA), corrconfigs.at(CorrConfigIndex::Pion::kC22GapB));
+        double pidChargedC22Pi = getPidC22InOneEvent(corrconfigs.at(corrConfigIndex::pion::kC22GapA), corrconfigs.at(corrConfigIndex::pion::kC22GapB));
         if (pidChargedC22Pi > 0 && chargedC22 > 0) {
           registry.fill(HIST("c22PrimeVsc22/Pi"), pidChargedC22Pi, chargedC22);
         }
         // end pi
 
         // Ka
-        double pidKaonC22 = getPidC22InOneEvent(corrconfigs.at(CorrConfigIndex::Kaon::kC22GapA), corrconfigs.at(CorrConfigIndex::Kaon::kC22GapB));
+        double pidKaonC22 = getPidC22InOneEvent(corrconfigs.at(corrConfigIndex::kaon::kC22GapA), corrconfigs.at(corrConfigIndex::kaon::kC22GapB));
         if (pidKaonC22 > 0 && chargedC22 > 0) {
           registry.fill(HIST("c22PrimeVsc22/Ka"), pidKaonC22, chargedC22);
         }
         // end Ka
 
         // Pr
-        double pidProtonC22 = getPidC22InOneEvent(corrconfigs.at(CorrConfigIndex::Proton::kC22GapA), corrconfigs.at(CorrConfigIndex::Proton::kC22GapB));
+        double pidProtonC22 = getPidC22InOneEvent(corrconfigs.at(corrConfigIndex::proton::kC22GapA), corrconfigs.at(corrConfigIndex::proton::kC22GapB));
         if (pidProtonC22 > 0 && chargedC22 > 0) {
           registry.fill(HIST("c22PrimeVsc22/Pr"), pidProtonC22, chargedC22);
         }
@@ -2848,29 +2885,29 @@ struct PidFlowPtCorr {
       if (nPionWeighted > 0 && switchsOpts.cfgOutputPion.value) {
         fFCPi->FillProfile("hMeanPt", cent, (pionPtSum / nPionWeighted), nPionWeighted, rndm);
         fFCPi->FillProfile("hMeanPtWeightOne", cent, (pionPtSum / nPionWeighted), 1., rndm);
-        fillFCvnpt(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC22Pure), cent, rndm, pionPtSum, nPionWeighted, "covV2PtPID");
-        fillFCvnpt(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC22Pure), cent, rndm, nPionWeighted, nPionWeighted, "c22TrackWeightPID");
+        fillFCvnpt(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC22Pure), cent, rndm, pionPtSum, nPionWeighted, "covV2PtPID");
+        fillFCvnpt(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC22Pure), cent, rndm, nPionWeighted, nPionWeighted, "c22TrackWeightPID");
       }
 
       if (nKaonWeighted > 0 && switchsOpts.cfgOutputKaon.value) {
         fFCKa->FillProfile("hMeanPt", cent, (kaonPtSum / nKaonWeighted), nKaonWeighted, rndm);
         fFCKa->FillProfile("hMeanPtWeightOne", cent, (kaonPtSum / nKaonWeighted), 1., rndm);
-        fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC22Pure), cent, rndm, kaonPtSum, nKaonWeighted, "covV2PtPID");
-        fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC22Pure), cent, rndm, nKaonWeighted, nKaonWeighted, "c22TrackWeightPID");
+        fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC22Pure), cent, rndm, kaonPtSum, nKaonWeighted, "covV2PtPID");
+        fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC22Pure), cent, rndm, nKaonWeighted, nKaonWeighted, "c22TrackWeightPID");
       }
 
       if (nProtonWeighted > 0 && switchsOpts.cfgOutputProton.value) {
         fFCPr->FillProfile("hMeanPt", cent, (protonPtSum / nProtonWeighted), nProtonWeighted, rndm);
         fFCPr->FillProfile("hMeanPtWeightOne", cent, (protonPtSum / nProtonWeighted), 1., rndm);
-        fillFCvnpt(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC22Pure), cent, rndm, protonPtSum, nProtonWeighted, "covV2PtPID");
-        fillFCvnpt(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC22Pure), cent, rndm, nProtonWeighted, nProtonWeighted, "c22TrackWeightPID");
+        fillFCvnpt(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC22Pure), cent, rndm, protonPtSum, nProtonWeighted, "covV2PtPID");
+        fillFCvnpt(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC22Pure), cent, rndm, nProtonWeighted, nProtonWeighted, "c22TrackWeightPID");
       }
 
       if (nUnidentifiedWeighted > 0 && switchsOpts.cfgOutputUnidentified.value) {
         fFCUnidentified->FillProfile("hMeanPt", cent, unidentifiedPtSum / nUnidentifiedWeighted, nUnidentifiedWeighted, rndm);
         fFCUnidentified->FillProfile("hMeanPtWeightOne", cent, unidentifiedPtSum / nUnidentifiedWeighted, 1., rndm);
-        fillFCvnpt(MyParticleType::kUnidentified, corrconfigs.at(CorrConfigIndex::Unidentified::kC22Pure), cent, rndm, unidentifiedPtSum, nUnidentifiedWeighted, "covV2PtPID");
-        fillFCvnpt(MyParticleType::kUnidentified, corrconfigs.at(CorrConfigIndex::Unidentified::kC22Pure), cent, rndm, nUnidentifiedWeighted, nUnidentifiedWeighted, "c22TrackWeightPID");
+        fillFCvnpt(MyParticleType::kUnidentified, corrconfigs.at(corrConfigIndex::unidentified::kC22Pure), cent, rndm, unidentifiedPtSum, nUnidentifiedWeighted, "covV2PtPID");
+        fillFCvnpt(MyParticleType::kUnidentified, corrconfigs.at(corrConfigIndex::unidentified::kC22Pure), cent, rndm, nUnidentifiedWeighted, nUnidentifiedWeighted, "c22TrackWeightPID");
       }
 
       double nchDiff = nch * nch - nchSquare;
@@ -3123,12 +3160,12 @@ struct PidFlowPtCorr {
           }
         }
         /// @note passed selection: global cut + pt cut
-        fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, GFWBitMask::Charged::kReference);
+        fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, gfwBitMask::charged::kReference);
       }
 
       const int pid = getPidConfigurable(track);
       if (pid == -1 && withinPtRef) {
-        fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, GFWBitMask::Unidentified::kPOI);
+        fGFW->Fill(track.eta(), 0, track.phi(), wacc * weff, gfwBitMask::unidentified::kPOI);
         continue;
       }
       if (!isWithinPOIPtRange(pid, track.pt())) {
@@ -3141,11 +3178,11 @@ struct PidFlowPtCorr {
       setParticleNUAWeight(waccPid, track, vtxz, pid);
 
       if (pid == MyParticleType::kPion) {
-        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, GFWBitMask::Pion::kPOI);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, gfwBitMask::pion::kPOI);
       } else if (pid == MyParticleType::kKaon) {
-        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, GFWBitMask::Kaon::kPOI);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, gfwBitMask::kaon::kPOI);
       } else if (pid == MyParticleType::kProton) {
-        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, GFWBitMask::Proton::kPOI);
+        fGFW->Fill(track.eta(), 0, track.phi(), waccPid * weffPid, gfwBitMask::proton::kPOI);
       }
     }
 
@@ -3156,51 +3193,51 @@ struct PidFlowPtCorr {
     }
     if (nPionWeighted > 0. && switchsOpts.cfgOutputPion.value) {
       registry.fill(HIST("c22DeltaPt/hMeanPtPion"), cent, rndm * cfgFlowNbootstrap, pionPtSum / nPionWeighted, nPionWeighted);
-      fillProfilePOIvnpt(corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), HIST("c22DeltaPt/c22dmeanptPionRefRef"), cent, pionPtSum, nPionWeighted, rndm);
+      fillProfilePOIvnpt(corrconfigs.at(corrConfigIndex::charged::kC22Gap), HIST("c22DeltaPt/c22dmeanptPionRefRef"), cent, pionPtSum, nPionWeighted, rndm);
     }
     if (nKaonWeighted > 0. && switchsOpts.cfgOutputKaon.value) {
       registry.fill(HIST("c22DeltaPt/hMeanPtKaon"), cent, rndm * cfgFlowNbootstrap, kaonPtSum / nKaonWeighted, nKaonWeighted);
-      fillProfilePOIvnpt(corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), HIST("c22DeltaPt/c22dmeanptKaonRefRef"), cent, kaonPtSum, nKaonWeighted, rndm);
+      fillProfilePOIvnpt(corrconfigs.at(corrConfigIndex::charged::kC22Gap), HIST("c22DeltaPt/c22dmeanptKaonRefRef"), cent, kaonPtSum, nKaonWeighted, rndm);
     }
     if (nProtonWeighted > 0. && switchsOpts.cfgOutputProton.value) {
       registry.fill(HIST("c22DeltaPt/hMeanPtProton"), cent, rndm * cfgFlowNbootstrap, protonPtSum / nProtonWeighted, nProtonWeighted);
-      fillProfilePOIvnpt(corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), HIST("c22DeltaPt/c22dmeanptProtonRefRef"), cent, protonPtSum, nProtonWeighted, rndm);
+      fillProfilePOIvnpt(corrconfigs.at(corrConfigIndex::charged::kC22Gap), HIST("c22DeltaPt/c22dmeanptProtonRefRef"), cent, protonPtSum, nProtonWeighted, rndm);
     }
     if (nUnidentifiedWeighted > 0. && switchsOpts.cfgOutputUnidentified.value) {
       registry.fill(HIST("c22DeltaPt/hMeanPtUnidentified"), cent, rndm * cfgFlowNbootstrap, unidentifiedPtSum / nUnidentifiedWeighted, nUnidentifiedWeighted);
-      fillProfilePOIvnpt(corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), HIST("c22DeltaPt/c22dmeanptUnidentifiedRefRef"), cent, unidentifiedPtSum, nUnidentifiedWeighted, rndm);
+      fillProfilePOIvnpt(corrconfigs.at(corrConfigIndex::charged::kC22Gap), HIST("c22DeltaPt/c22dmeanptUnidentifiedRefRef"), cent, unidentifiedPtSum, nUnidentifiedWeighted, rndm);
     }
 
     // Charged and PID-binned ref-ref are common to both modes. The numerator is
     // selected between PID Pure and POI-ref by cfgC22DeltaPtUsePure.
     if (switchsOpts.cfgOutputCharged.value) {
-      fillProfilePOIvnpt(corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), HIST("c22DeltaPt/c22dmeanptCharged"), cent, ptSum, nch, rndm);
+      fillProfilePOIvnpt(corrconfigs.at(corrConfigIndex::charged::kC22Gap), HIST("c22DeltaPt/c22dmeanptCharged"), cent, ptSum, nch, rndm);
     }
     if (switchsOpts.cfgC22DeltaPtUsePure.value) {
       if (nPionWeighted > 0. && switchsOpts.cfgOutputPion.value) {
-        fillProfilePOIvnpt(corrconfigs.at(CorrConfigIndex::Pion::kC22Pure), HIST("c22DeltaPt/c22dmeanptPionPure"), cent, pionPtSum, nPionWeighted, rndm);
+        fillProfilePOIvnpt(corrconfigs.at(corrConfigIndex::pion::kC22Pure), HIST("c22DeltaPt/c22dmeanptPionPure"), cent, pionPtSum, nPionWeighted, rndm);
       }
       if (nKaonWeighted > 0. && switchsOpts.cfgOutputKaon.value) {
-        fillProfilePOIvnpt(corrconfigs.at(CorrConfigIndex::Kaon::kC22Pure), HIST("c22DeltaPt/c22dmeanptKaonPure"), cent, kaonPtSum, nKaonWeighted, rndm);
+        fillProfilePOIvnpt(corrconfigs.at(corrConfigIndex::kaon::kC22Pure), HIST("c22DeltaPt/c22dmeanptKaonPure"), cent, kaonPtSum, nKaonWeighted, rndm);
       }
       if (nProtonWeighted > 0. && switchsOpts.cfgOutputProton.value) {
-        fillProfilePOIvnpt(corrconfigs.at(CorrConfigIndex::Proton::kC22Pure), HIST("c22DeltaPt/c22dmeanptProtonPure"), cent, protonPtSum, nProtonWeighted, rndm);
+        fillProfilePOIvnpt(corrconfigs.at(corrConfigIndex::proton::kC22Pure), HIST("c22DeltaPt/c22dmeanptProtonPure"), cent, protonPtSum, nProtonWeighted, rndm);
       }
       if (nUnidentifiedWeighted > 0. && switchsOpts.cfgOutputUnidentified.value) {
-        fillProfilePOIvnpt(corrconfigs.at(CorrConfigIndex::Unidentified::kC22Pure), HIST("c22DeltaPt/c22dmeanptUnidentifiedPure"), cent, unidentifiedPtSum, nUnidentifiedWeighted, rndm);
+        fillProfilePOIvnpt(corrconfigs.at(corrConfigIndex::unidentified::kC22Pure), HIST("c22DeltaPt/c22dmeanptUnidentifiedPure"), cent, unidentifiedPtSum, nUnidentifiedWeighted, rndm);
       }
     } else {
       if (nPionWeighted > 0. && switchsOpts.cfgOutputPion.value) {
-        fillProfilePOIvnpt(corrconfigs.at(CorrConfigIndex::Pion::kC22GapA), corrconfigs.at(CorrConfigIndex::Pion::kC22GapB), HIST("c22DeltaPt/c22dmeanptPionPOIRef"), cent, pionPtSum, nPionWeighted, rndm);
+        fillProfilePOIvnpt(corrconfigs.at(corrConfigIndex::pion::kC22GapA), corrconfigs.at(corrConfigIndex::pion::kC22GapB), HIST("c22DeltaPt/c22dmeanptPionPOIRef"), cent, pionPtSum, nPionWeighted, rndm);
       }
       if (nKaonWeighted > 0. && switchsOpts.cfgOutputKaon.value) {
-        fillProfilePOIvnpt(corrconfigs.at(CorrConfigIndex::Kaon::kC22GapA), corrconfigs.at(CorrConfigIndex::Kaon::kC22GapB), HIST("c22DeltaPt/c22dmeanptKaonPOIRef"), cent, kaonPtSum, nKaonWeighted, rndm);
+        fillProfilePOIvnpt(corrconfigs.at(corrConfigIndex::kaon::kC22GapA), corrconfigs.at(corrConfigIndex::kaon::kC22GapB), HIST("c22DeltaPt/c22dmeanptKaonPOIRef"), cent, kaonPtSum, nKaonWeighted, rndm);
       }
       if (nProtonWeighted > 0. && switchsOpts.cfgOutputProton.value) {
-        fillProfilePOIvnpt(corrconfigs.at(CorrConfigIndex::Proton::kC22GapA), corrconfigs.at(CorrConfigIndex::Proton::kC22GapB), HIST("c22DeltaPt/c22dmeanptProtonPOIRef"), cent, protonPtSum, nProtonWeighted, rndm);
+        fillProfilePOIvnpt(corrconfigs.at(corrConfigIndex::proton::kC22GapA), corrconfigs.at(corrConfigIndex::proton::kC22GapB), HIST("c22DeltaPt/c22dmeanptProtonPOIRef"), cent, protonPtSum, nProtonWeighted, rndm);
       }
       if (nUnidentifiedWeighted > 0. && switchsOpts.cfgOutputUnidentified.value) {
-        fillProfilePOIvnpt(corrconfigs.at(CorrConfigIndex::Unidentified::kC22GapA), corrconfigs.at(CorrConfigIndex::Unidentified::kC22GapB), HIST("c22DeltaPt/c22dmeanptUnidentifiedPOIRef"), cent, unidentifiedPtSum, nUnidentifiedWeighted, rndm);
+        fillProfilePOIvnpt(corrconfigs.at(corrConfigIndex::unidentified::kC22GapA), corrconfigs.at(corrConfigIndex::unidentified::kC22GapB), HIST("c22DeltaPt/c22dmeanptUnidentifiedPOIRef"), cent, unidentifiedPtSum, nUnidentifiedWeighted, rndm);
       }
     }
   }
@@ -3306,15 +3343,15 @@ struct PidFlowPtCorr {
           if (switchsOpts.cfgOutPutPtSpectra.value) {
             registry.fill(HIST("ptSpectra/hPtCentData"), pt, cent);
           }
-          fGFW->Fill(mcParticle.eta(), 0, mcParticle.phi(), 1., GFWBitMask::Charged::kReference);
+          fGFW->Fill(mcParticle.eta(), 0, mcParticle.phi(), 1., gfwBitMask::charged::kReference);
         }
 
         if (!isWithinPOIPtRange(pid, pt)) {
           continue;
         }
         if (pid == MyParticleType::kPion) {
-          fGFW->Fill(mcParticle.eta(), 0, mcParticle.phi(), 1., GFWBitMask::Pion::kPOI);
-          fGFW->Fill(mcParticle.eta(), 0, mcParticle.phi(), 1., GFWBitMask::Pion::kOverlap, 1.);
+          fGFW->Fill(mcParticle.eta(), 0, mcParticle.phi(), 1., gfwBitMask::pion::kPOI);
+          fGFW->Fill(mcParticle.eta(), 0, mcParticle.phi(), 1., gfwBitMask::pion::kOverlap, 1.);
           registry.fill(HIST("hPhiPi"), mcParticle.phi());
           registry.fill(HIST("hPhicorrPi"), mcParticle.phi());
           registry.fill(HIST("hPhiCorrNUANUEPi"), mcParticle.phi());
@@ -3322,8 +3359,8 @@ struct PidFlowPtCorr {
           registry.fill(HIST("hPtCorrPi"), pt);
           ++numOfPi;
         } else if (pid == MyParticleType::kKaon) {
-          fGFW->Fill(mcParticle.eta(), 0, mcParticle.phi(), 1., GFWBitMask::Kaon::kPOI);
-          fGFW->Fill(mcParticle.eta(), 0, mcParticle.phi(), 1., GFWBitMask::Kaon::kOverlap, 1.);
+          fGFW->Fill(mcParticle.eta(), 0, mcParticle.phi(), 1., gfwBitMask::kaon::kPOI);
+          fGFW->Fill(mcParticle.eta(), 0, mcParticle.phi(), 1., gfwBitMask::kaon::kOverlap, 1.);
           registry.fill(HIST("hPhiKa"), mcParticle.phi());
           registry.fill(HIST("hPhicorrKa"), mcParticle.phi());
           registry.fill(HIST("hPhiCorrNUANUEKa"), mcParticle.phi());
@@ -3331,8 +3368,8 @@ struct PidFlowPtCorr {
           registry.fill(HIST("hPtCorrKa"), pt);
           ++numOfKa;
         } else if (pid == MyParticleType::kProton) {
-          fGFW->Fill(mcParticle.eta(), 0, mcParticle.phi(), 1., GFWBitMask::Proton::kPOI);
-          fGFW->Fill(mcParticle.eta(), 0, mcParticle.phi(), 1., GFWBitMask::Proton::kOverlap, 1.);
+          fGFW->Fill(mcParticle.eta(), 0, mcParticle.phi(), 1., gfwBitMask::proton::kPOI);
+          fGFW->Fill(mcParticle.eta(), 0, mcParticle.phi(), 1., gfwBitMask::proton::kOverlap, 1.);
           registry.fill(HIST("hPhiPr"), mcParticle.phi());
           registry.fill(HIST("hPhicorrPr"), mcParticle.phi());
           registry.fill(HIST("hPhiCorrNUANUEPr"), mcParticle.phi());
@@ -3353,81 +3390,81 @@ struct PidFlowPtCorr {
         continue;
       }
 
-      fillFC(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), cent, rndm, "c22");
-      fillFC(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC24), cent, rndm, "c24");
-      fillFC(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC22Full), cent, rndm, "c22Full");
-      fillFC(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC32Gap), cent, rndm, "c32");
-      fillFC(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC34Gap), cent, rndm, "c34");
+      fillFC(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC22Gap), cent, rndm, "c22");
+      fillFC(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC24), cent, rndm, "c24");
+      fillFC(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC22Full), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC32Gap), cent, rndm, "c32");
+      fillFC(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC34Gap), cent, rndm, "c34");
 
-      fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC22FullA), cent, rndm, "c22Full");
-      fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC22FullB), cent, rndm, "c22Full");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC22FullA), cent, rndm, "c22Full");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC22FullB), cent, rndm, "c22Full");
-      fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC22FullA), cent, rndm, "c22Full");
-      fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC22FullB), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC22FullA), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC22FullB), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC22FullA), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC22FullB), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC22FullA), cent, rndm, "c22Full");
+      fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC22FullB), cent, rndm, "c22Full");
 
-      fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC24A), cent, rndm, "c24");
-      fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC24B), cent, rndm, "c24");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC24A), cent, rndm, "c24");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC24B), cent, rndm, "c24");
-      fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC24A), cent, rndm, "c24");
-      fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC24B), cent, rndm, "c24");
+      fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC24A), cent, rndm, "c24");
+      fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC24B), cent, rndm, "c24");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC24A), cent, rndm, "c24");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC24B), cent, rndm, "c24");
+      fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC24A), cent, rndm, "c24");
+      fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC24B), cent, rndm, "c24");
 
-      fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC32GapA), cent, rndm, "c32");
-      fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC32GapB), cent, rndm, "c32");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC32GapA), cent, rndm, "c32");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC32GapB), cent, rndm, "c32");
-      fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC32GapA), cent, rndm, "c32");
-      fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC32GapB), cent, rndm, "c32");
+      fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC32GapA), cent, rndm, "c32");
+      fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC32GapB), cent, rndm, "c32");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC32GapA), cent, rndm, "c32");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC32GapB), cent, rndm, "c32");
+      fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC32GapA), cent, rndm, "c32");
+      fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC32GapB), cent, rndm, "c32");
 
-      fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC34A), cent, rndm, "c34");
-      fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC34B), cent, rndm, "c34");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC34A), cent, rndm, "c34");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC34B), cent, rndm, "c34");
-      fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC34A), cent, rndm, "c34");
-      fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC34B), cent, rndm, "c34");
+      fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC34A), cent, rndm, "c34");
+      fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC34B), cent, rndm, "c34");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC34A), cent, rndm, "c34");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC34B), cent, rndm, "c34");
+      fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC34A), cent, rndm, "c34");
+      fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC34B), cent, rndm, "c34");
 
-      const bool filledPi = fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC22Pure), cent, rndm, "c22pure");
-      const bool filledKa = fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC22Pure), cent, rndm, "c22pure");
-      const bool filledPr = fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC22Pure), cent, rndm, "c22pure");
-      fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC32Pure), cent, rndm, "c32pure");
-      fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC32Pure), cent, rndm, "c32pure");
-      fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC32Pure), cent, rndm, "c32pure");
+      const bool filledPi = fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC22Pure), cent, rndm, "c22pure");
+      const bool filledKa = fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC22Pure), cent, rndm, "c22pure");
+      const bool filledPr = fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC22Pure), cent, rndm, "c22pure");
+      fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC32Pure), cent, rndm, "c32pure");
+      fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC32Pure), cent, rndm, "c32pure");
+      fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC32Pure), cent, rndm, "c32pure");
 
       if (filledPi || !switchsOpts.cfgCheck2MethodDiff.value) {
-        fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC22GapA), cent, rndm, "c22");
-        fillFC(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC22GapB), cent, rndm, "c22");
+        fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC22GapA), cent, rndm, "c22");
+        fillFC(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC22GapB), cent, rndm, "c22");
       }
       if (filledKa || !switchsOpts.cfgCheck2MethodDiff.value) {
-        fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC22GapA), cent, rndm, "c22");
-        fillFC(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC22GapB), cent, rndm, "c22");
+        fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC22GapA), cent, rndm, "c22");
+        fillFC(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC22GapB), cent, rndm, "c22");
       }
       if (filledPr || !switchsOpts.cfgCheck2MethodDiff.value) {
-        fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC22GapA), cent, rndm, "c22");
-        fillFC(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC22GapB), cent, rndm, "c22");
+        fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC22GapA), cent, rndm, "c22");
+        fillFC(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC22GapB), cent, rndm, "c22");
       }
 
-      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), cent, rndm, nch, nch, "c22TrackWeight");
-      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), cent, rndm, nch, nch, "c22TrackWeightOne", true);
-      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC24), cent, rndm, nch, nch, "c24TrackWeight");
-      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC22Full), cent, rndm, nch, nch, "c22FullTrackWeight");
-      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC32Gap), cent, rndm, nch, nch, "c32TrackWeight");
-      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC34Gap), cent, rndm, nch, nch, "c34TrackWeight");
-      fillFCvnpt(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC22Pure), cent, rndm, nch, nch, "c22TrackWeight");
-      fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC22Pure), cent, rndm, nch, nch, "c22TrackWeight");
-      fillFCvnpt(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC22Pure), cent, rndm, nch, nch, "c22TrackWeight");
-      fillFCvnpt(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC32Pure), cent, rndm, nch, nch, "c32TrackWeight");
-      fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC32Pure), cent, rndm, nch, nch, "c32TrackWeight");
-      fillFCvnpt(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC32Pure), cent, rndm, nch, nch, "c32TrackWeight");
-      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), cent, rndm, ptSum, nch, "covV2Pt");
-      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), cent, rndm, ptSum, nch, "covV2PtWeightOne", true);
-      fillFCvnpt(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC22Pure), cent, rndm, ptSum, nch, "covV2Pt");
-      fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC22Pure), cent, rndm, ptSum, nch, "covV2Pt");
-      fillFCvnpt(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC22Pure), cent, rndm, ptSum, nch, "covV2Pt");
-      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(CorrConfigIndex::Charged::kC32Gap), cent, rndm, ptSum, nch, "covV3Pt");
-      fillFCvnpt(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC32Pure), cent, rndm, ptSum, nch, "covV3Pt");
-      fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC32Pure), cent, rndm, ptSum, nch, "covV3Pt");
-      fillFCvnpt(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC32Pure), cent, rndm, ptSum, nch, "covV3Pt");
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC22Gap), cent, rndm, nch, nch, "c22TrackWeight");
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC22Gap), cent, rndm, nch, nch, "c22TrackWeightOne", true);
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC24), cent, rndm, nch, nch, "c24TrackWeight");
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC22Full), cent, rndm, nch, nch, "c22FullTrackWeight");
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC32Gap), cent, rndm, nch, nch, "c32TrackWeight");
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC34Gap), cent, rndm, nch, nch, "c34TrackWeight");
+      fillFCvnpt(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC22Pure), cent, rndm, nch, nch, "c22TrackWeight");
+      fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC22Pure), cent, rndm, nch, nch, "c22TrackWeight");
+      fillFCvnpt(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC22Pure), cent, rndm, nch, nch, "c22TrackWeight");
+      fillFCvnpt(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC32Pure), cent, rndm, nch, nch, "c32TrackWeight");
+      fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC32Pure), cent, rndm, nch, nch, "c32TrackWeight");
+      fillFCvnpt(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC32Pure), cent, rndm, nch, nch, "c32TrackWeight");
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC22Gap), cent, rndm, ptSum, nch, "covV2Pt");
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC22Gap), cent, rndm, ptSum, nch, "covV2PtWeightOne", true);
+      fillFCvnpt(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC22Pure), cent, rndm, ptSum, nch, "covV2Pt");
+      fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC22Pure), cent, rndm, ptSum, nch, "covV2Pt");
+      fillFCvnpt(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC22Pure), cent, rndm, ptSum, nch, "covV2Pt");
+      fillFCvnpt(MyParticleType::kCharged, corrconfigs.at(corrConfigIndex::charged::kC32Gap), cent, rndm, ptSum, nch, "covV3Pt");
+      fillFCvnpt(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC32Pure), cent, rndm, ptSum, nch, "covV3Pt");
+      fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC32Pure), cent, rndm, ptSum, nch, "covV3Pt");
+      fillFCvnpt(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC32Pure), cent, rndm, ptSum, nch, "covV3Pt");
 
       fillFC4PtC22(cent, ptSum, nch, rndm);
       if (nPionWeighted > 0.) {
@@ -3447,28 +3484,28 @@ struct PidFlowPtCorr {
       if (nPionWeighted > 0. && switchsOpts.cfgOutputPion.value) {
         fFCPi->FillProfile("hMeanPt", cent, pionPtSum / nPionWeighted, nPionWeighted, rndm);
         fFCPi->FillProfile("hMeanPtWeightOne", cent, pionPtSum / nPionWeighted, 1., rndm);
-        fillFCvnpt(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC22Pure), cent, rndm, pionPtSum, nPionWeighted, "covV2PtPID");
-        fillFCvnpt(MyParticleType::kPion, corrconfigs.at(CorrConfigIndex::Pion::kC22Pure), cent, rndm, nPionWeighted, nPionWeighted, "c22TrackWeightPID");
+        fillFCvnpt(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC22Pure), cent, rndm, pionPtSum, nPionWeighted, "covV2PtPID");
+        fillFCvnpt(MyParticleType::kPion, corrconfigs.at(corrConfigIndex::pion::kC22Pure), cent, rndm, nPionWeighted, nPionWeighted, "c22TrackWeightPID");
       }
       if (nKaonWeighted > 0. && switchsOpts.cfgOutputKaon.value) {
         fFCKa->FillProfile("hMeanPt", cent, kaonPtSum / nKaonWeighted, nKaonWeighted, rndm);
         fFCKa->FillProfile("hMeanPtWeightOne", cent, kaonPtSum / nKaonWeighted, 1., rndm);
-        fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC22Pure), cent, rndm, kaonPtSum, nKaonWeighted, "covV2PtPID");
-        fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(CorrConfigIndex::Kaon::kC22Pure), cent, rndm, nKaonWeighted, nKaonWeighted, "c22TrackWeightPID");
+        fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC22Pure), cent, rndm, kaonPtSum, nKaonWeighted, "covV2PtPID");
+        fillFCvnpt(MyParticleType::kKaon, corrconfigs.at(corrConfigIndex::kaon::kC22Pure), cent, rndm, nKaonWeighted, nKaonWeighted, "c22TrackWeightPID");
       }
       if (nProtonWeighted > 0. && switchsOpts.cfgOutputProton.value) {
         fFCPr->FillProfile("hMeanPt", cent, protonPtSum / nProtonWeighted, nProtonWeighted, rndm);
         fFCPr->FillProfile("hMeanPtWeightOne", cent, protonPtSum / nProtonWeighted, 1., rndm);
-        fillFCvnpt(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC22Pure), cent, rndm, protonPtSum, nProtonWeighted, "covV2PtPID");
-        fillFCvnpt(MyParticleType::kProton, corrconfigs.at(CorrConfigIndex::Proton::kC22Pure), cent, rndm, nProtonWeighted, nProtonWeighted, "c22TrackWeightPID");
+        fillFCvnpt(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC22Pure), cent, rndm, protonPtSum, nProtonWeighted, "covV2PtPID");
+        fillFCvnpt(MyParticleType::kProton, corrconfigs.at(corrConfigIndex::proton::kC22Pure), cent, rndm, nProtonWeighted, nProtonWeighted, "c22TrackWeightPID");
       }
 
       if (switchsOpts.cfgOutPutPtSpectra.value) {
-        const double nPairCharged = fGFW->Calculate(corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), 0, true).real();
-        const double chargedC22 = nPairCharged > 0. ? fGFW->Calculate(corrconfigs.at(CorrConfigIndex::Charged::kC22Gap), 0, false).real() / nPairCharged : 0.;
-        const double pidChargedC22Pi = getPidC22InOneEvent(corrconfigs.at(CorrConfigIndex::Pion::kC22GapA), corrconfigs.at(CorrConfigIndex::Pion::kC22GapB));
-        const double pidKaonC22 = getPidC22InOneEvent(corrconfigs.at(CorrConfigIndex::Kaon::kC22GapA), corrconfigs.at(CorrConfigIndex::Kaon::kC22GapB));
-        const double pidProtonC22 = getPidC22InOneEvent(corrconfigs.at(CorrConfigIndex::Proton::kC22GapA), corrconfigs.at(CorrConfigIndex::Proton::kC22GapB));
+        const double nPairCharged = fGFW->Calculate(corrconfigs.at(corrConfigIndex::charged::kC22Gap), 0, true).real();
+        const double chargedC22 = nPairCharged > 0. ? fGFW->Calculate(corrconfigs.at(corrConfigIndex::charged::kC22Gap), 0, false).real() / nPairCharged : 0.;
+        const double pidChargedC22Pi = getPidC22InOneEvent(corrconfigs.at(corrConfigIndex::pion::kC22GapA), corrconfigs.at(corrConfigIndex::pion::kC22GapB));
+        const double pidKaonC22 = getPidC22InOneEvent(corrconfigs.at(corrConfigIndex::kaon::kC22GapA), corrconfigs.at(corrConfigIndex::kaon::kC22GapB));
+        const double pidProtonC22 = getPidC22InOneEvent(corrconfigs.at(corrConfigIndex::proton::kC22GapA), corrconfigs.at(corrConfigIndex::proton::kC22GapB));
         if (pidChargedC22Pi > 0. && chargedC22 > 0.) {
           registry.fill(HIST("c22PrimeVsc22/Pi"), pidChargedC22Pi, chargedC22);
         }
