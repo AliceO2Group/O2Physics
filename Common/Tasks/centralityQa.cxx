@@ -179,8 +179,8 @@ struct CentralityQa {
       histos.add("hCentNTPV", ";NTPV centrality (%)", kTH1D, {{nBins, 0, 105.}});
       histos.add("hCentNGlobal", ";NGlobal centrality (%)", kTH1D, {{nBins, 0, 105.}});
       histos.add("hCentMFT", ";MFT centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentFT0MLightIonAnchorCols", ";FT0MLightIonAnchorCols centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentFT0MLightIonAnchorBCs", ";FT0MLightIonAnchorBCs centrality (%)", kTH1D, {{nBins, 0, 105.}});
+      histos.add("hCentFT0MAnchorCols", ";FT0MAnchorCols centrality (%)", kTH1D, {{nBins, 0, 105.}});
+      histos.add("hCentFT0MAnchorBCs", ";FT0MAnchorBCs centrality (%)", kTH1D, {{nBins, 0, 105.}});
 
       // profiles of midrapidity multiplicity density
       histos.add("hCentProfileFV0A", ";FV0A centrality (%)", kTProfile, {{nBins, 0, 105.}});
@@ -193,8 +193,8 @@ struct CentralityQa {
       histos.add("hCentProfileNTPV", ";NTPV centrality (%)", kTProfile, {{nBins, 0, 105.}});
       histos.add("hCentProfileNGlobal", ";NGlobal centrality (%)", kTProfile, {{nBins, 0, 105.}});
       histos.add("hCentProfileMFT", ";MFT centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileFT0MLightIonAnchorCols", ";FT0MLightIonAnchorCols centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileFT0MLightIonAnchorBCs", ";FT0MLightIonAnchorBCs centrality (%)", kTProfile, {{nBins, 0, 105.}});
+      histos.add("hCentProfileFT0MAnchorCols", ";FT0MAnchorCols centrality (%)", kTProfile, {{nBins, 0, 105.}});
+      histos.add("hCentProfileFT0MAnchorBCs", ";FT0MAnchorBCs centrality (%)", kTProfile, {{nBins, 0, 105.}});
 
       histos.add("hMultEta05VsCentFV0A", ";FV0A centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
       histos.add("hMultEta05VsCentFT0M", ";FT0M centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
@@ -206,8 +206,8 @@ struct CentralityQa {
       histos.add("hMultEta05VsCentNTPV", ";NTPV centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
       histos.add("hMultEta05VsCentNGlobal", ";NGlobal centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
       histos.add("hMultEta05VsCentMFT", ";MFT centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentFT0MLightIonAnchorCols", ";FT0MLightIonAnchorCols centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentFT0MLightIonAnchorBCs", ";FT0MLightIonAnchorBCs centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentFT0MAnchorCols", ";FT0MAnchorCols centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentFT0MAnchorBCs", ";FT0MAnchorBCs centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
 
       if (isMC) {
         histos.add("hMultEta05VsGenMultFV0A", ";Multiplicity FV0A; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
@@ -795,27 +795,27 @@ struct CentralityQa {
   }
   PROCESS_SWITCH(CentralityQa, processRun3_MFT, "Process with Run 3 MFT estimator", false);
 
-  void processRun3_FT0MLightIonAnchorCol(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0MLightIonAnchorCols>::iterator const& col)
+  void processRun3_FT0MAnchorCol(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0MAnchorCols>::iterator const& col)
   {
     if (!isCollisionAccepted(col)) {
       return;
     }
-    histos.fill(HIST("hCentFT0MLightIonAnchorCols"), col.centFT0MLightIonAnchorCol());
-    histos.fill(HIST("hCentProfileFT0MLightIonAnchorCols"), col.centFT0MLightIonAnchorCol(), col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0MLightIonAnchorCols"), col.centFT0MLightIonAnchorCol(), col.multNTracksPVetaHalf());
+    histos.fill(HIST("hCentFT0MAnchorCols"), col.centFT0MAnchorCol());
+    histos.fill(HIST("hCentProfileFT0MAnchorCols"), col.centFT0MAnchorCol(), col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsCentFT0MAnchorCols"), col.centFT0MAnchorCol(), col.multNTracksPVetaHalf());
   }
-  PROCESS_SWITCH(CentralityQa, processRun3_FT0MLightIonAnchorCol, "Process with Run 3 FT0MLightIonAnchorCol estimator", false);
+  PROCESS_SWITCH(CentralityQa, processRun3_FT0MAnchorCol, "Process with Run 3 FT0MAnchorCol estimator", false);
 
-  void processRun3_FT0MLightIonAnchorBC(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0MLightIonAnchorBCs>::iterator const& col)
+  void processRun3_FT0MAnchorBC(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0MAnchorBCs>::iterator const& col)
   {
     if (!isCollisionAccepted(col)) {
       return;
     }
-    histos.fill(HIST("hCentFT0MLightIonAnchorBCs"), col.centFT0MLightIonAnchorBC());
-    histos.fill(HIST("hCentProfileFT0MLightIonAnchorBCs"), col.centFT0MLightIonAnchorBC(), col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0MLightIonAnchorBCs"), col.centFT0MLightIonAnchorBC(), col.multNTracksPVetaHalf());
+    histos.fill(HIST("hCentFT0MAnchorBCs"), col.centFT0MAnchorBC());
+    histos.fill(HIST("hCentProfileFT0MAnchorBCs"), col.centFT0MAnchorBC(), col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsCentFT0MAnchorBCs"), col.centFT0MAnchorBC(), col.multNTracksPVetaHalf());
   }
-  PROCESS_SWITCH(CentralityQa, processRun3_FT0MLightIonAnchorBC, "Process with Run 3 FT0MLightIonAnchorBC estimator", false);
+  PROCESS_SWITCH(CentralityQa, processRun3_FT0MAnchorBC, "Process with Run 3 FT0MAnchorBC estimator", false);
 
   void processMonteCarloRun3_FV0A(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentFV0As>::iterator const& col,
                                   soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
