@@ -912,8 +912,8 @@ struct HfCorrelatorLcHadrons {
           }
         }
 
-        int8_t const chargeLc = static_cast<int8_t>(pdg->GetParticle(particle.pdgCode())->Charge());         // Retrieve charge
-        int8_t const chargeAssoc = static_cast<int8_t>(pdg->GetParticle(particleAssoc.pdgCode())->Charge()); // Retrieve charge
+        auto const chargeLc = static_cast<int8_t>(pdg->GetParticle(particle.pdgCode())->Charge());         // Retrieve charge
+        auto const chargeAssoc = static_cast<int8_t>(pdg->GetParticle(particleAssoc.pdgCode())->Charge()); // Retrieve charge
 
         int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
         registry.fill(HIST("hPtParticleAssocMcGen"), particleAssoc.pt());
@@ -1157,9 +1157,9 @@ struct HfCorrelatorLcHadrons {
         if (pidTrkApplied && (std::abs(particleAssoc.pdgCode()) != kProton)) {
           continue; // proton PID
         }
-        int8_t const chargeLc = static_cast<int8_t>(pdg->GetParticle(candidate.pdgCode())->Charge());        // Retrieve charge
-        int8_t const chargeAssoc = static_cast<int8_t>(pdg->GetParticle(particleAssoc.pdgCode())->Charge()); // Retrieve charge
-        float cent = 100.0;                                                                                  // will be updated later
+        auto const chargeLc = static_cast<int8_t>(pdg->GetParticle(candidate.pdgCode())->Charge());        // Retrieve charge
+        auto const chargeAssoc = static_cast<int8_t>(pdg->GetParticle(particleAssoc.pdgCode())->Charge()); // Retrieve charge
+        float cent = 100.0;                                                                                // will be updated later
 
         int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, particleAssoc, true);
         bool isLcPrompt = candidate.originMcGen() == RecoDecay::OriginType::Prompt;
