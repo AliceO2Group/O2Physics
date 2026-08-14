@@ -35,9 +35,12 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
@@ -57,6 +60,7 @@
 #include <vector>
 #include <random>
 #include <array>
+#include <unordered_map>
 
 using namespace o2;
 using namespace o2::framework;
@@ -103,6 +107,7 @@ enum CentEstimator {
   X(FOLDER "/EtaDependence/pRingObservableEtaJet", leadingJetEta, ringObservable)                                          \
   X(FOLDER "/pRingObservableIntegrated", 0., ringObservable)                                                               \
   X(FOLDER "/pRingObservableLambdaPt", v0pt, ringObservable)                                                               \
+  X(FOLDER "/pRingObservableLeadJetPVz", collisionPVz, ringObservable)                                                     \
   X(FOLDER "/ProxyPtDependence/pRingVsPtJet", leadingJetPt, ringObservable)                                                \
   X(FOLDER "/ProxyPtDependence/pRingVsPtJetVsEtaJet", leadingJetPt, leadingJetEta, ringObservable)                         \
   X(FOLDER "/ProxyPtDependence/pRingVsPtJetVsEtaV0", leadingJetPt, v0eta, ringObservable)                                  \
@@ -165,10 +170,11 @@ enum CentEstimator {
   X(FOLDER "/pRingObservableLeadPDeltaPhi", deltaPhiLeadP, ringObservableLeadP)     \
   X(FOLDER "/pRingObservableLeadPDeltaTheta", deltaThetaLeadP, ringObservableLeadP) \
   X(FOLDER "/EtaDependence/pRingObservableEtaLambdaLeadP", v0eta, ringObservableLeadP)            \
-  X(FOLDER "/EtaDependence/pRingObservableEtaLeadP", leadPEta, ringObservableLeadP)               \
+  X(FOLDER "/EtaDependence/pRingObservableEtaLeadP", leadPEta, ringObservableLeadP) \
   X(FOLDER "/pRingObservableLeadPIntegrated", 0., ringObservableLeadP)              \
   X(FOLDER "/pRingObservableLeadPLambdaPt", v0pt, ringObservableLeadP)              \
-  X(FOLDER "/ProxyPtDependence/pRingVsPtLeadP", leadPPt, ringObservableLeadP)                      \
+  X(FOLDER "/pRingObservableLeadPPVz", collisionPVz, ringObservableLeadP)           \
+  X(FOLDER "/ProxyPtDependence/pRingVsPtLeadP", leadPPt, ringObservableLeadP)       \
   X(FOLDER "/ProxyPtDependence/pRingVsPtLeadPVsEtaLeadP", leadPPt, leadPEta, ringObservableLeadP)  \
   X(FOLDER "/ProxyPtDependence/pRingVsPtLeadPVsEtaV0", leadPPt, v0eta, ringObservableLeadP)        \
   X(FOLDER "/EtaDependence/p2dRingObservableEtaLambdaVsEtaLeadP", v0eta, leadPEta, ringObservableLeadP) \
@@ -221,11 +227,12 @@ enum CentEstimator {
   X(FOLDER "/hRingObservable2ndJetCounter", ringObservable2ndJet)                                     \
   X(FOLDER "/pRingObservable2ndJetDeltaPhi", deltaPhi2ndJet, ringObservable2ndJet)                    \
   X(FOLDER "/pRingObservable2ndJetDeltaTheta", deltaTheta2ndJet, ringObservable2ndJet)                \
-  X(FOLDER "/EtaDependence/pRingObservableEtaLambda2ndJet", v0eta, ringObservable2ndJet)                            \
-  X(FOLDER "/EtaDependence/pRingObservableEta2ndJet", subleadingJetEta, ringObservable2ndJet)                       \
+  X(FOLDER "/EtaDependence/pRingObservableEtaLambda2ndJet", v0eta, ringObservable2ndJet)              \
+  X(FOLDER "/EtaDependence/pRingObservableEta2ndJet", subleadingJetEta, ringObservable2ndJet)         \
   X(FOLDER "/pRingObservable2ndJetIntegrated", 0., ringObservable2ndJet)                              \
   X(FOLDER "/pRingObservable2ndJetLambdaPt", v0pt, ringObservable2ndJet)                              \
-  X(FOLDER "/ProxyPtDependence/pRingVsPt2ndJet", subleadingJetPt, ringObservable2ndJet)                              \
+  X(FOLDER "/pRingObservableSubLeadPVz", collisionPVz, ringObservable2ndJet)                          \
+  X(FOLDER "/ProxyPtDependence/pRingVsPt2ndJet", subleadingJetPt, ringObservable2ndJet)               \
   X(FOLDER "/ProxyPtDependence/pRingVsPt2ndJetVsEta2ndJet", subleadingJetPt, subleadingJetEta, ringObservable2ndJet) \
   X(FOLDER "/ProxyPtDependence/pRingVsPt2ndJetVsEtaV0", subleadingJetPt, v0eta, ringObservable2ndJet)                \
   X(FOLDER "/EtaDependence/p2dRingObservableEtaLambdaVsEta2ndJet", v0eta, subleadingJetEta, ringObservable2ndJet) \
@@ -310,6 +317,12 @@ struct lambdajetpolarizationionsderived {
   Configurable<bool> analyseAntiLambda{"analyseAntiLambda", false, "process AntiLambda-like candidates"};
   Configurable<bool> analyseMagField{"analyseMagField", true, "analyse efficiency effects wrt magnetic field"}; // Older DerivedData lacks magField. "if constexpr (requires { collision.magField(); })" would only see the current header definition, so need a flag for retro-comp.
   // Configurable<bool> doPPAnalysis{"doPPAnalysis", false, "if in pp, set to true. Default is HI"};
+  Configurable<bool> calculateEventMixingHists{"calculateEventMixingHists", false, "generates expensive THn histograms for a-posteriori event-mixing-like computations."};
+
+  // A very inexpensive "signal extraction" imitation based on v0InMassPeak bool:
+  // (Uses a mass interval to remove or include V0s from the final AnalysisResults to take advantage of existing post-processing codes)
+  Configurable<bool> excludeOutOfPeakQA{"excludeOutOfPeakQA", false, "removes all V0s outside an approximate +/- 5*sigma window from the mass peak"}; // A naive estimator of signal
+  Configurable<bool> excludeInPeakQA{"excludeInPeakQA", false, "uses only the V0s outside an approximate +/- 5*sigma window from the mass peak"}; // A naive estimator of background
 
   // Per-family histogram switches:
   // (Each family books >100 histograms, so it is necessary to keep some of these switches off to avoid the HistogramRegistry limit)
@@ -334,7 +347,9 @@ struct lambdajetpolarizationionsderived {
     Configurable<bool> forceJetDirectionSmudge{"forceJetDirectionSmudge", false, "fluctuate jet direction by 10% of R around original axis. For QA (tests sensibility)"};
     Configurable<bool> forceRandJet{"forceRandJet", false, "makes jet direction random. A QA for AEE fake signal and its removal"};
     Configurable<bool> forcePreviousJet{"forcePreviousJet", false, "uses previous event's jet direction instead of a random sample. A baseline for fake signal removal"};
-    Configurable<bool> forceDatalikeJet{"forceDatalikeJet", false, "A compromise between forceRandJet and forcePreviousJet. Parameterized distribution from data"};
+    Configurable<bool> forceDatalikeJet{"forceDatalikeJet", false, "a compromise between forceRandJet and forcePreviousJet. Parameterized distribution from data"};
+    Configurable<bool> doMixedEventLeadP{"doMixedEventLeadP", false, "mix leading particle direction between events using (LeadP pt, Zvtx, centrality) bins"};
+    Configurable<int>  mixedEventLeadPWindowSize{"mixedEventLeadPWindowSize", 10, "number of neighbours for doMixedEventLeadP: how many similar collisions stay eligible as mixing partners at once."};
     Configurable<int>  nProxyResamples{"nProxyResamples", 1, "The amount of resamplings of jet direction per event. Use ONLY for forceRandJet and forceDatalikeJet"};
   } fakePolSwitches;
 
@@ -357,6 +372,9 @@ struct lambdajetpolarizationionsderived {
     ConfigurableAxis axisLambdaPx{"axisLambdaPx", {40, -3.0f, 3.0f}, "#Lambda p_{x} (GeV/c)"};
     ConfigurableAxis axisLambdaPy{"axisLambdaPy", {40, -3.0f, 3.0f}, "#Lambda p_{y} (GeV/c)"};
     ConfigurableAxis axisLambdaPz{"axisLambdaPz", {40, -4.0f, 4.0f}, "#Lambda p_{z} (GeV/c)"};
+
+    // Event properties:
+    ConfigurableAxis axisPVz{"axisPVz", {60, -15.0f, +15.0f}, "Primary Vertex Z [cm]"};
 
     // Jet axes:
     // ConfigurableAxis axisLeadingParticlePt{"axisLeadingParticlePt", {100, 0.f, 200.f}, "Leading particle p_{T} (GeV/c)"}; // Simpler version!
@@ -585,6 +603,11 @@ struct lambdajetpolarizationionsderived {
       histos.add((folder + "/pRingObservable2ndJetDeltaTheta").c_str(), "<#it{R}> vs #Delta#theta_{SubJet};#Delta#theta_{SubJet};<#it{R}>", kTProfile, {axisConfigurations.axisDeltaTheta});
       histos.add((folder + "/pRingObservable2ndJetIntegrated").c_str(), "Integrated <#it{R}> (SubJet); ;<#it{R}>", kTProfile, {{1, -0.5, 0.5}});
       histos.add((folder + "/pRingObservable2ndJetLambdaPt").c_str(), "<#it{R}> vs #it{p}_{T}^{#Lambda} (SubJet);#it{p}_{T}^{#Lambda} (GeV/c);<#it{R}>", kTProfile, {axisConfigurations.axisPt});
+
+      // For the Zvtx dependence:
+      histos.add((folder + "/pRingObservableLeadJetPVz").c_str(), "<#it{R}>_{LeadJet} vs PVz;PVz (cm);<#it{R}>", kTProfile, {axisConfigurations.axisPVz});
+      histos.add((folder + "/pRingObservableSubLeadPVz").c_str(), "<#it{R}>_{SubLead} vs PVz;PVz (cm);<#it{R}>", kTProfile, {axisConfigurations.axisPVz});
+      histos.add((folder + "/pRingObservableLeadPPVz").c_str(), "<#it{R}>_{LeadP} vs PVz;PVz (cm);<#it{R}>", kTProfile, {axisConfigurations.axisPVz});
       // ===============================
       // 2D TProfiles (Lambda correlations)
       // ===============================
@@ -785,8 +808,8 @@ struct lambdajetpolarizationionsderived {
     histos.get<TProfile2D>(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"))->GetXaxis()->SetBinLabel(7, "#eta_{LeadP} #geq 0, #eta_{#Lambda} < 0");
     histos.get<TProfile2D>(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"))->GetXaxis()->SetBinLabel(8, "#eta_{LeadP} < 0, #eta_{#Lambda} #geq 0");
     histos.get<TProfile2D>(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"))->GetXaxis()->SetBinLabel(9, "#eta_{LeadP} < 0, #eta_{#Lambda} < 0");
-    histos.get<TProfile2D>(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"))->GetYaxis()->SetBinLabel(1, "#Lambda in mass peak");
-    histos.get<TProfile2D>(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"))->GetYaxis()->SetBinLabel(2, "#Lambda out of mass peak");
+    histos.get<TProfile2D>(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"))->GetYaxis()->SetBinLabel(1, "#Lambda out of mass peak");
+    histos.get<TProfile2D>(HIST("EtaStudy/pRingEtaCutsLeadingP_MassSignalVsBackground"))->GetYaxis()->SetBinLabel(2, "#Lambda in mass peak");
 
     // Fake polarization signal QA
     // --> The "negative helicity problem", where topologies with a proton decaying opposite to the Lambda momentum are enhanced by
@@ -983,6 +1006,30 @@ struct lambdajetpolarizationionsderived {
     histos.add("JetKinematicsQA/hJetCounterPtLeadP", "hJetCounterPtLeadP; p_{T}^{LeadP} (GeV/c)", kTH1D, {axisConfigurations.axisJetPt});
     histos.add("JetKinematicsQA/hJetCounterPt2ndJet", "hJetCounterPt2ndJet; p_{T}^{SubJet} (GeV/c)", kTH1D, {axisConfigurations.axisJetPt});
 
+    // Proxy Eta vs PVz:
+    histos.add("JetKinematicsQA/h2dLeadJetEtaVsPVz", "Lead Jet #eta Vs PVz;#eta;Primary Vertex Z [cm];Counts", kTH2D, {axisConfigurations.axisEta, axisConfigurations.axisPVz});
+    histos.add("JetKinematicsQA/h2dSubLeadJetEtaVsPVz", "SubLead Jet #eta Vs PVz;#eta;Primary Vertex Z [cm];Counts", kTH2D, {axisConfigurations.axisEta, axisConfigurations.axisPVz});
+    histos.add("JetKinematicsQA/h2dLeadPEtaVsPVz", "Lead Ptc #eta Vs PVz;#eta;Primary Vertex Z [cm];Counts", kTH2D, {axisConfigurations.axisEta, axisConfigurations.axisPVz});
+
+    // For building and event-mixing-like procedure similar to forceDatalikeJet:
+    if (calculateEventMixingHists) {
+      histos.add("JetKinematicsQA/h5dLeadJetEtaPhiPtPVzCent", "h5dLeadJetEtaPhiPtPVzCent;#eta;#phi;p_{t};Primary Vertex Z [cm];Centrality (%);Counts", kTHnSparseF,
+        {axisConfigurations.axisEtaCoarse, axisConfigurations.axisPhi, axisConfigurations.axisJetPt, axisConfigurations.axisPVz, axisConfigurations.axisCentrality});
+      histos.add("JetKinematicsQA/h5dSubLeadJetEtaPhiPtPVzCent", "h5dSubLeadJetEtaPhiPtPVzCent;#eta;#phi;p_{t};Primary Vertex Z [cm];Centrality (%);Counts", kTHnSparseF,
+        {axisConfigurations.axisEtaCoarse, axisConfigurations.axisPhi, axisConfigurations.axisJetPt, axisConfigurations.axisPVz, axisConfigurations.axisCentrality});
+      histos.add("JetKinematicsQA/h5dLeadPEtaPhiPtPVzCent", "h5dLeadPEtaPhiPtPVzCent;#eta;#phi;p_{t};Primary Vertex Z [cm];Centrality (%);Counts", kTHnSparseF,
+        {axisConfigurations.axisEtaCoarse, axisConfigurations.axisPhi, axisConfigurations.axisJetPt, axisConfigurations.axisPVz, axisConfigurations.axisCentrality});
+    }
+
+    // doMixedEventLeadP QA: gauge the size of the "too few collisions per bin" problem (see resonanceMergeDF.cxx)
+    if (fakePolSwitches.doMixedEventLeadP) {
+      histos.add("JetKinematicsQA/hMixedEventLeadPOutcome", "hMixedEventLeadPOutcome;Outcome (0=skipped, 1=found);Counts", kTH1D, {{2, -0.5f, 1.5f}});
+      histos.add("JetKinematicsQA/hMixedEventLeadPWindowNeighbours", "hMixedEventLeadPWindowNeighbours;Neighbours found in bin window;Counts", kTH1D, {{22, -0.5f, 21.5f}});
+
+      histos.add("JetKinematicsQA/h2dMixedLeadPEtaVsLeadPEta", "MixedLeadP #eta vs LeadP #eta;MixedLeadP #eta; LeadP #eta;Counts", kTH2D, {axisConfigurations.axisEtaCoarse, axisConfigurations.axisEtaCoarse});
+      histos.add("JetKinematicsQA/h2dMixedLeadPPhiVsLeadPPhi", "MixedLeadP #phi vs LeadP #phi;MixedLeadP #phi; LeadP #phi;Counts", kTH2D, {axisConfigurations.axisPhi, axisConfigurations.axisPhi});
+    }
+
     // Fetch the X-axes from one of the families (since they all share the same ConfigurableAxis binning)
     mAxisPt = histos.get<TH2>(HIST("Ring/DeltaMethod/h2dLambdaPtVsDeltaComp"))->GetXaxis();
     mAxisMass = histos.get<TH2>(HIST("Ring/DeltaMethod/h2dMassVsDeltaComp"))->GetXaxis();
@@ -1019,13 +1066,16 @@ struct lambdajetpolarizationionsderived {
   /// \param hasValidProxy in/out (edited in-place): whether the proxy being distorted is usable. Re-evaluated against minPtThreshold after distortion.
   /// \param pt,eta,phi in/out (edited in-place): the proxy's kinematics, overwritten by whichever distortion is active.
   /// \param unitVec in/out (edited in-place): the proxy direction as a unit vector.
-  /// \param cacheHadProxy,cacheEta,cachePhi the previous collision's proxy, used (and updated) by forcePreviousJet.
+  /// \param cacheHadProxy,cacheEta,cachePhi caches for either forcePreviousJet or doMixedEventLeadP.
+  //         forcePreviousJet updates these here for the next collision, in a simplistic event event mixing approach. 
+  //         doMixedEventLeadP instead overwrites prevJetCache's fields with this collision's mixed proxy right before the call.
+  ///        Fallback skips this event using hasValidProxy.
   /// \param etaDist,phiDist,rng sampling distributions/generator for forceRandJet and forceDatalikeJet.
   // Helper to modify the jet direction for QA and for spurious signal baseline removal tests:
   inline void applyProxyDistortion(bool& hasValidProxy, float& pt, float& eta, float& phi, XYZVector& unitVec, 
                             float minPtThreshold, bool& cacheHadProxy, float& cacheEta, float& cachePhi,
                             std::discrete_distribution<int>& etaDist, std::discrete_distribution<int>& phiDist, std::mt19937& rng){
-    if (!fakePolSwitches.forcePerpToJet && !fakePolSwitches.forceJetDirectionSmudge && !fakePolSwitches.forceRandJet && !fakePolSwitches.forcePreviousJet && !fakePolSwitches.forceDatalikeJet)[[likely]] {
+    if (!fakePolSwitches.forcePerpToJet && !fakePolSwitches.forceJetDirectionSmudge && !fakePolSwitches.forceRandJet && !fakePolSwitches.forcePreviousJet && !fakePolSwitches.forceDatalikeJet && !fakePolSwitches.doMixedEventLeadP)[[likely]] {
       return; // Skip this function if none of the modifications are actually being executed!
     }
 
@@ -1122,6 +1172,19 @@ struct lambdajetpolarizationionsderived {
       const double sinPhi = std::sin(phi);
       const double cosPhi = std::cos(phi);
       unitVec = XYZVector(cosPhi * inverseCoshEta, sinPhi * inverseCoshEta, std::tanh(eta));
+    } else if (fakePolSwitches.doMixedEventLeadP) {
+      // Mixes the leadP direction from a real, similar other collision, rather than sampling a fitted distribution as datalikeJet.
+      // Only unitVec is rebuilt, eta/phi are left as this collision's own real values -- same convention forcePreviousJet uses above.
+      if (cacheHadProxy) {
+        const double inverseCoshEta = 1.0 / std::cosh(cacheEta);
+        const double sinPhi = std::sin(cachePhi);
+        const double cosPhi = std::cos(cachePhi);
+        unitVec = XYZVector(cosPhi * inverseCoshEta, sinPhi * inverseCoshEta, std::tanh(cacheEta));
+      } else {
+        // No mixing partner found for this collision (sparse bins!).
+        // Same skip that forcePreviousJet does above: an event without a valid mixed proxy cannot be used.
+        hasValidProxy = false;
+      }
     }
 
     // Recalculating pT, phi and eta after distortions:
@@ -1164,16 +1227,70 @@ struct lambdajetpolarizationionsderived {
   Preslice<aod::RingJets> perColJets = o2::aod::lambdajetpol::ringCollisionId;
   Preslice<aod::RingLaV0s> perColV0s = o2::aod::lambdajetpol::ringCollisionId;
   Preslice<aod::RingLeadPs> perColLeadPs = o2::aod::lambdajetpol::ringCollisionId;
+    // For doMixedEventLeadP:
+  SliceCache mixCache;
   /// \brief Main analysis loop: for each collision, rebuilds the leading jet/particle proxies (with optional fakePolSwitches distortions), then loops over V0s computing the ring observable and polarization-vector profiles for every enabled kinematic-cut family.
   void processPolarizationData(o2::aod::RingCollisions const& collisions, o2::aod::RingJets const& jets, o2::aod::RingLaV0s const& v0s,
                                o2::aod::RingLeadPs const& leadPs)
   {
+
+    // Event mixing, built once per dataframe
+      // Simplistic event mixing using previous collision:
     PrevJetCache prevJetCache{}; // Initializing struct before the collisions loop. This zero-initializes, so bools start as false
                                  // This should not be used along nProxyResamples > 1, as it does not apply to that case.
 
+    // doMixedEventLeadP: Binning on (Zvtx, leadP pt, centrality) lets eta/phi vary freely.
+    // Leading/subleading jet mixing are a separate, independent feature NOT implemented yet. Rough sketch of the difference, for later:
+    //   auto getMixJetPt = [&jets, &mixCache](aod::RingCollision const& col) {
+    //     auto rows = jets.sliceByCached(o2::aod::lambdajetpol::ringCollisionId, col.globalIndex(), mixCache);
+    //     float leadPt = -999.f;
+    //     for (auto const& jet : rows) leadPt = std::max(leadPt, jet.jetPt()); // needs the max-pt scan; RingLeadPs needs no such scan
+    //     return leadPt;
+    //   };
+    struct MixedLeadPInfo { float eta; float phi; };
+    std::unordered_map<int64_t, MixedLeadPInfo> mixedLeadPByCollision;
+    // First we build a lookup table based on current dataframe's collisions (connects pairs of jet proxies from similar collisions):
+    // (these leading particles may come from collisions with no valid Lambdas, by construction)
+    if (fakePolSwitches.doMixedEventLeadP) {
+      // Pattern follows MixedEventsLambdaBinning tutorial (captures leadPs table and cache define in task's struct):
+      auto getMixLeadPPt = [&leadPs, this](o2::aod::RingCollision const& col) {
+        auto rows = leadPs.sliceByCached(o2::aod::lambdajetpol::ringCollisionId, col.globalIndex(), this->mixCache); // As it is cached, grouping happens only once
+        return rows.size() > 0 ? rows.begin().leadParticlePt() : -999.f;
+      };
+      auto getMixCentrality = [this](o2::aod::RingCollision const& col) { return this->getCentrality(col); };
+
+      using MixBinningType = FlexibleBinningPolicy<std::tuple<decltype(getMixLeadPPt), decltype(getMixCentrality)>,
+                                                    o2::aod::lambdajetpol::Zvtx, decltype(getMixLeadPPt), decltype(getMixCentrality)>;
+      MixBinningType mixBinning{{getMixLeadPPt, getMixCentrality},
+                                {axisConfigurations.axisPVz, axisConfigurations.axisJetPt, axisConfigurations.axisCentrality},
+                                true}; // Ignore overflows true
+
+      // SameKindPair defaults to CombinationsBlockStrictlyUpperSameIndexPolicy, so no same-event mixing should happen:
+      SameKindPair<o2::aod::RingCollisions, o2::aod::RingLeadPs, MixBinningType> mixPair{
+          mixBinning, fakePolSwitches.mixedEventLeadPWindowSize, -1, collisions, std::make_tuple(leadPs), &mixCache};
+
+      // "Last neighbour wins" if a collision appears in more than one pair within its window -- simple and
+      // deterministic, not a uniform-random pick among the window's members:
+      for (auto it = mixPair.begin(); it != mixPair.end(); ++it) {
+        auto& [c1, leadP1, c2, leadP2] = *it; // Iterates over collision pairs and leading particle pairs (structured binding)
+        if (leadP1.size() > 0 && leadP2.size() > 0) { // There should always be at least one leadP, given the overflow exclusion above
+          float eta1 = 0.f, phi1 = 0.f, eta2 = 0.f, phi2 = 0.f;
+          for (auto const& lp : leadP1) { eta1 = lp.leadParticleEta(); phi1 = lp.leadParticlePhi(); break; } // Retrieves the first entry
+          for (auto const& lp : leadP2) { eta2 = lp.leadParticleEta(); phi2 = lp.leadParticlePhi(); break; }
+          // Saving the mixed leading particles with a key referring to the two collisions being mixed:
+          mixedLeadPByCollision[c1.globalIndex()] = {eta2, phi2};
+          mixedLeadPByCollision[c2.globalIndex()] = {eta1, phi1};
+        }
+        if (it.isNewWindow()) { // count each bin-window once, not once per pair inside it
+          histos.fill(HIST("JetKinematicsQA/hMixedEventLeadPWindowNeighbours"), it.currentWindowNeighbours());
+        }
+      }
+    }
+
     for (int idxResampling = 0; idxResampling < fakePolSwitches.nProxyResamples; idxResampling++){ // resampling loop for forceRandJet and forceDatalikeJet
     for (auto const& collision : collisions) {
-      if (std::abs(collision.zvtx()) > maxZVtxPosition) // Additional Zvtx filtering
+      const float collisionPVz = collision.zvtx();
+      if (std::abs(collisionPVz) > maxZVtxPosition) // Additional Zvtx filtering
         continue;
 
       const auto collId = collision.globalIndex(); // The self-index accessor
@@ -1240,6 +1357,21 @@ struct lambdajetpolarizationionsderived {
         
         // Apply distortion logic:
         const bool hadPreviousProxy = prevJetCache.hadLeadP;
+
+        // doMixedEventLeadP: get this collision's mixing partner (if any) from the LUT built above:
+        // (this check is performed only if hasValidLeadingP is true for performance, as the LeadPPt matching for the event mixing would also demand a minimum jet pT)
+        if (fakePolSwitches.doMixedEventLeadP) {
+          auto itMix = mixedLeadPByCollision.find(collId);
+          prevJetCache.hadLeadP = (itMix != mixedLeadPByCollision.end()); // Check if this event had a valid mixing target. Reusing prevJetCache
+          if (prevJetCache.hadLeadP) {
+            prevJetCache.leadPEta = itMix->second.eta;
+            prevJetCache.leadPPhi = itMix->second.phi;
+          }
+          histos.fill(HIST("JetKinematicsQA/hMixedEventLeadPOutcome"), prevJetCache.hadLeadP ? 1 : 0);
+          histos.fill(HIST("JetKinematicsQA/h2dMixedLeadPEtaVsLeadPEta"), prevJetCache.leadPEta, leadPEta);
+          histos.fill(HIST("JetKinematicsQA/h2dMixedLeadPPhiVsLeadPPhi"), prevJetCache.leadPPhi, leadPPhi);
+        }
+
         applyProxyDistortion(hasValidLeadingP, leadPPt, leadPEta, leadPPhi, leadPUnitVec, 
                              minLeadParticlePt, prevJetCache.hadLeadP, prevJetCache.leadPEta, prevJetCache.leadPPhi,
                              etaLeadPDist, phiLeadPDist, rng);
@@ -1250,6 +1382,10 @@ struct lambdajetpolarizationionsderived {
           histos.fill(HIST("JetKinematicsQA/hLeadPEta"), leadPEta);
           histos.fill(HIST("JetKinematicsQA/hLeadPPhi"), leadPPhi);
           histos.fill(HIST("JetKinematicsQA/hJetCounterPtLeadP"), leadPPt);
+
+          histos.fill(HIST("JetKinematicsQA/h2dLeadPEtaVsPVz"), leadPEta, collisionPVz);
+          if (calculateEventMixingHists)
+            histos.fill(HIST("JetKinematicsQA/h5dLeadPEtaPhiPtPVzCent"), leadPEta, leadPPhi, leadPPt, collisionPVz, centrality);
         }
       }
 
@@ -1294,6 +1430,11 @@ struct lambdajetpolarizationionsderived {
 
         // Apply distortion logic:
         const bool hadPreviousProxy = prevJetCache.hadLeadJet;
+        // TODO: implement event mixing for other proxies. Leading-jet mixing is a separate, independent feature from
+        // doMixedEventLeadP (RingJets has several rows per collision, unlike RingLeadPs, so it can't just reuse
+        // the same SameKindPair setup) -- would need its own switch (or we can just add everything to the same switch and rename it),
+        // its own leading-jet-pt/Zvtx/centrality FlexibleBinningPolicy, and its own SameKindPair<RingCollisions, RingJets, ...> + LUT, mirroring the
+        // leadP one below but sourcing the pt dimension from a per-collision max-pt scan instead of a plain read.
         applyProxyDistortion(hasValidLeadingJet, leadingJetPt, leadingJetEta, leadingJetPhi, leadingJetUnitVec, 
                              minLeadJetPt, prevJetCache.hadLeadJet, prevJetCache.leadJetEta, prevJetCache.leadJetPhi,
                              etaLeadPDist, phiLeadPDist, rng);
@@ -1304,6 +1445,10 @@ struct lambdajetpolarizationionsderived {
           histos.fill(HIST("JetKinematicsQA/hLeadJetEta"), leadingJetEta);
           histos.fill(HIST("JetKinematicsQA/hLeadJetPhi"), leadingJetPhi);
           histos.fill(HIST("JetKinematicsQA/hJetCounterPtJet"), leadingJetPt);
+
+          histos.fill(HIST("JetKinematicsQA/h2dLeadJetEtaVsPVz"), leadingJetEta, collisionPVz);
+          if (calculateEventMixingHists)
+            histos.fill(HIST("JetKinematicsQA/h5dLeadJetEtaPhiPtPVzCent"), leadingJetEta, leadingJetPhi, leadingJetPt, collisionPVz, centrality);
         }
       }
 
@@ -1317,6 +1462,7 @@ struct lambdajetpolarizationionsderived {
 
         // Apply distortion logic:
         const bool hadPreviousProxy = prevJetCache.hadSubJet;
+        // TODO: implement event mixing for other proxies
         applyProxyDistortion(hasValidSubJet, subleadingJetPt, subleadingJetEta, subleadingJetPhi, subJetUnitVec, 
                              minSubLeadJetPt, prevJetCache.hadSubJet, prevJetCache.subJetEta, prevJetCache.subJetPhi,
                              etaLeadPDist, phiLeadPDist, rng);
@@ -1328,6 +1474,10 @@ struct lambdajetpolarizationionsderived {
           histos.fill(HIST("JetKinematicsQA/hSubLeadJetEta"), subleadingJetEta);
           histos.fill(HIST("JetKinematicsQA/hSubLeadJetPhi"), subleadingJetPhi);
           histos.fill(HIST("JetKinematicsQA/hJetCounterPt2ndJet"), subleadingJetPt);
+
+          histos.fill(HIST("JetKinematicsQA/h2dSubLeadJetEtaVsPVz"), subleadingJetEta, collisionPVz);
+          if (calculateEventMixingHists)
+            histos.fill(HIST("JetKinematicsQA/h5dSubLeadJetEtaPhiPtPVzCent"), subleadingJetEta, subleadingJetPhi, subleadingJetPt, collisionPVz, centrality);
         }
       }
 

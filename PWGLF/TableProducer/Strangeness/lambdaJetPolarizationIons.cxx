@@ -311,6 +311,8 @@ struct lambdajetpolarizationions {
     ConfigurableAxis axisPtCoarse{"axisPtCoarse", {VARIABLE_WIDTH, 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 7.0f, 10.0f, 15.0f}, "pt axis for QA"};
     ConfigurableAxis axisLambdaMass{"axisLambdaMass", {450, 1.08f, 1.15f}, ""}; // Default is {200, 1.101f, 1.131f}
     ConfigurableAxis axisLambdaMassCoarse{"axisLambdaMassCoarse", {200, 1.101f, 1.131f}, ""};
+    ConfigurableAxis axisPVz{"axisPVz", {100, -20.0f, +20.0f}, "Primary Vertex Z [cm]"};
+    ConfigurableAxis axisPVzCoarse{"axisPVzCoarse", {20, -20.0f, +20.0f}, "Primary Vertex Z [cm]"};
     // Centrality/IR/Occupancy:
     ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f}, "Centrality"};
     ConfigurableAxis axisNch{"axisNch", {500, 0.0f, +5000.0f}, "Number of charged particles"};
@@ -554,8 +556,8 @@ struct lambdajetpolarizationions {
       histos.add("Centrality/hEventMultFT0CvsMultFV0A", "hEventMultFT0CvsMultFV0A;Mult. FT0C;Mult. FV0A", kTH2D, {axisConfigurations.axisMultFT0C, axisConfigurations.axisMultFV0A});
     }
 
-    histos.add("hEventPVz", "hEventPVz;PV_{z} [cm];Counts", kTH1D, {{100, -20.0f, +20.0f}});
-    histos.add("hCentralityVsPVz", "hCentralityVsPVz;Centrality (%);PV_{z} [cm]", kTH2D, {{101, 0.0f, 101.0f}, {100, -20.0f, +20.0f}});
+    histos.add("hEventPVz", "hEventPVz;PV_{z} [cm];Counts", kTH1D, {axisConfigurations.axisPVz});
+    histos.add("hCentralityVsPVz", "hCentralityVsPVz;Centrality (%);PV_{z} [cm]", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisPVz});
 
     // (TODO: add MC centrality vs PVz histos)
 
@@ -857,10 +859,6 @@ struct lambdajetpolarizationions {
     histos.add("hEventsWithJet", "hEventsWithJet;Integrated counts;Counts", kTH1D, {{1, 0, 1}}); // counter of events with jet (could be interesting to compare with the minimum pT cut or between the background subtraction vs no background subtraction cases)
     histos.add("hJetsPerEvent", "hJetsPerEvent;Jets per event;Counts", kTH1D, {axisConfigurations.axisJetsPerEvent}); // number of jets per event
     if (doJetKinematicsQA) {
-        // For probing the correlation between number of jet constituents and centrality:
-      histos.add("JetKinematicsQA/h2dConstituentsPerJetVsCentrality", "Constituents per Jet Vs Centrality;N constituents;Centrality (%)", kTH2D, {axisConfigurations.axisJetConstituents, axisConfigurations.axisCentrality}); // Not quite kinematics, but kept it under this QAing switch for now
-      histos.add("JetKinematicsQA/h2dConstituentsPerJetVsJetPt", "Constituents per Jet Vs Jet Pt;N constituents;Jet p_{T} [GeV/c]", kTH2D, {axisConfigurations.axisJetConstituents, axisConfigurations.axisJetPt});
-
       histos.add("JetKinematicsQA/hJetPt", "hJetPt;Jet p_{T} [GeV/c];Counts", kTH1D, {axisConfigurations.axisJetPt});
       histos.add("JetKinematicsQA/hJetEta", "hJetEta;#eta;Counts", kTH1D, {axisConfigurations.axisEta});
       histos.add("JetKinematicsQA/hJetPhi", "hJetPhi;#varphi;Counts", kTH1D, {axisConfigurations.axisPhi});
@@ -893,32 +891,44 @@ struct lambdajetpolarizationions {
       histos.add("JetKinematicsQA/h2dJetsPerEventvsDeltaEtaToLead", "h2dJetsPerEventvsDeltaEtaToLead;Jets per event;#Delta#eta", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisDeltaEta});
       histos.add("JetKinematicsQA/h2dJetsPerEventvsCosThetaToLead", "h2dJetsPerEventvsCosThetaToLead;Jets per event;cos(#Delta#theta_{jet})", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisCosTheta});
 
+      // For probing the correlation between number of jet constituents and centrality:
+      histos.add("JetKinematicsQA/h2dConstituentsPerJetVsCentrality", "Constituents per Jet Vs Centrality;N constituents;Centrality (%)", kTH2D, {axisConfigurations.axisJetConstituents, axisConfigurations.axisCentrality}); // Not quite kinematics, but kept it under this QAing switch for now
+      histos.add("JetKinematicsQA/h2dConstituentsPerJetVsJetPt", "Constituents per Jet Vs Jet Pt;N constituents;Jet p_{T} [GeV/c]", kTH2D, {axisConfigurations.axisJetConstituents, axisConfigurations.axisJetPt});
+
+      // Correlation with PVz:
+      histos.add("JetKinematicsQA/h2dJetEtaVsPVz", "Jet #eta Vs Primary Vertex Z;Jet #eta;PVz [cm]", kTH2D, {axisConfigurations.axisEta, axisConfigurations.axisPVzCoarse});
+      histos.add("JetKinematicsQA/h2dJetPhiVsPVz", "Jet #phi Vs Primary Vertex Z;Jet #phi;PVz [cm]", kTH2D, {axisConfigurations.axisPhi, axisConfigurations.axisPVzCoarse});
+
       ////////////////////////////
       // Leading particle 1D QA:
-      histos.add("JetVsLeadingParticleQA/hLeadingParticlePt", "hLeadingParticlePt;Leading particle p_{T} [GeV/c];Counts", kTH1D, {axisConfigurations.axisLeadingParticlePt});
-      histos.add("JetVsLeadingParticleQA/hLeadingParticleEta", "hLeadingParticleEta;#eta;Counts", kTH1D, {axisConfigurations.axisEta});
-      histos.add("JetVsLeadingParticleQA/hLeadingParticlePhi", "hLeadingParticlePhi;#varphi;Counts", kTH1D, {axisConfigurations.axisPhi});
+      histos.add("LeadingParticleQA/hLeadingParticlePt", "hLeadingParticlePt;Leading particle p_{T} [GeV/c];Counts", kTH1D, {axisConfigurations.axisLeadingParticlePt});
+      histos.add("LeadingParticleQA/hLeadingParticleEta", "hLeadingParticleEta;#eta;Counts", kTH1D, {axisConfigurations.axisEta});
+      histos.add("LeadingParticleQA/hLeadingParticlePhi", "hLeadingParticlePhi;#varphi;Counts", kTH1D, {axisConfigurations.axisPhi});
 
       // 1D correlations to lead jet:
-      histos.add("JetVsLeadingParticleQA/hCosThetaLeadParticleToJet", "hCosThetaLeadParticleToJet;cos(#Delta#theta_{jet});Counts", kTH1D, {axisConfigurations.axisCosTheta});
-      histos.add("JetVsLeadingParticleQA/hDeltaPhiLeadParticleToJet", "hDeltaPhiLeadParticleToJet;#Delta#varphi;Counts", kTH1D, {axisConfigurations.axisDeltaPhi});
-      histos.add("JetVsLeadingParticleQA/hDeltaEtaToLeadParticleToJet", "hDeltaEtaToLeadParticleToJet;#Delta#eta;Counts", kTH1D, {axisConfigurations.axisDeltaEta});
+      histos.add("LeadingParticleQA/hCosThetaLeadParticleToJet", "hCosThetaLeadParticleToJet;cos(#Delta#theta_{jet});Counts", kTH1D, {axisConfigurations.axisCosTheta});
+      histos.add("LeadingParticleQA/hDeltaPhiLeadParticleToJet", "hDeltaPhiLeadParticleToJet;#Delta#varphi;Counts", kTH1D, {axisConfigurations.axisDeltaPhi});
+      histos.add("LeadingParticleQA/hDeltaEtaToLeadParticleToJet", "hDeltaEtaToLeadParticleToJet;#Delta#eta;Counts", kTH1D, {axisConfigurations.axisDeltaEta});
 
       // Leading particle correlations:
-      histos.add("JetVsLeadingParticleQA/h2dDeltaPhiParticleToLeadvsDeltaEtaParticleToLead", "h2dDeltaPhiParticleToLeadvsDeltaEtaParticleToLead;#Delta#varphi;#Delta#eta", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisDeltaEta});
+      histos.add("LeadingParticleQA/h2dDeltaPhiParticleToLeadvsDeltaEtaParticleToLead", "h2dDeltaPhiParticleToLeadvsDeltaEtaParticleToLead;#Delta#varphi;#Delta#eta", kTH2D, {axisConfigurations.axisDeltaPhi, axisConfigurations.axisDeltaEta});
 
       // Jets-per-event vs particle-to-lead correlations:
-      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaPhiParticleToLead", "h2dJetsPerEventvsDeltaPhiParticleToLead;Jets per event;#Delta#varphi", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisDeltaPhi});
-      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaEtaParticleToLead", "h2dJetsPerEventvsDeltaEtaParticleToLead;Jets per event;#Delta#eta", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisDeltaEta});
-      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsCosThetaParticleToLead", "h2dJetsPerEventvsCosThetaParticleToLead;Jets per event;cos(#Delta#theta_{jet})", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisCosTheta});
+      histos.add("LeadingParticleQA/h2dJetsPerEventvsDeltaPhiParticleToLead", "h2dJetsPerEventvsDeltaPhiParticleToLead;Jets per event;#Delta#varphi", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisDeltaPhi});
+      histos.add("LeadingParticleQA/h2dJetsPerEventvsDeltaEtaParticleToLead", "h2dJetsPerEventvsDeltaEtaParticleToLead;Jets per event;#Delta#eta", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisDeltaEta});
+      histos.add("LeadingParticleQA/h2dJetsPerEventvsCosThetaParticleToLead", "h2dJetsPerEventvsCosThetaParticleToLead;Jets per event;cos(#Delta#theta_{jet})", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisCosTheta});
 
       // Main "Leading jet vs leading particle" correlations:
-      histos.add("JetVsLeadingParticleQA/h2dJetsPerEventvsLeadParticlePt", "h2dJetsPerEventvsLeadParticlePt;Jets per event;Leading particle p_{T} [GeV/c]", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisLeadingParticlePt});
-      histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsLeadParticlePt", "h2dLeadJetPtvsLeadParticlePt;Jet p_{T} [GeV/c];Leading particle p_{T} [GeV/c]", kTH2D, {axisConfigurations.axisJetPt, axisConfigurations.axisLeadingParticlePt});
-      histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsCosThetaParticleToLead", "h2dLeadJetPtvsCosThetaParticleToLead;Jet p_{T} [GeV/c];cos(#Delta#theta_{jet})", kTH2D, {axisConfigurations.axisJetPt, axisConfigurations.axisCosTheta});
-      histos.add("JetVsLeadingParticleQA/h2dLeadParticlePtvsCosThetaParticleToLead", "h2dLeadParticlePtvsCosThetaParticleToLead;Leading particle p_{T} [GeV/c];cos(#Delta#theta_{jet})", kTH2D, {axisConfigurations.axisLeadingParticlePt, axisConfigurations.axisCosTheta});
-      histos.add("JetVsLeadingParticleQA/h2dLeadJetPtvsDeltaPhiParticleToLead", "h2dLeadJetPtvsDeltaPhiParticleToLead;Jet p_{T} [GeV/c];#Delta#varphi", kTH2D, {axisConfigurations.axisJetPt, axisConfigurations.axisDeltaPhi});
-      histos.add("JetVsLeadingParticleQA/h2dLeadParticlePtvsDeltaPhiParticleToLead", "h2dLeadParticlePtvsDeltaPhiParticleToLead;Leading particle p_{T} [GeV/c];#Delta#varphi", kTH2D, {axisConfigurations.axisLeadingParticlePt, axisConfigurations.axisDeltaPhi});
+      histos.add("LeadingParticleQA/h2dJetsPerEventvsLeadParticlePt", "h2dJetsPerEventvsLeadParticlePt;Jets per event;Leading particle p_{T} [GeV/c]", kTH2D, {axisConfigurations.axisJetsPerEvent, axisConfigurations.axisLeadingParticlePt});
+      histos.add("LeadingParticleQA/h2dLeadJetPtvsLeadParticlePt", "h2dLeadJetPtvsLeadParticlePt;Jet p_{T} [GeV/c];Leading particle p_{T} [GeV/c]", kTH2D, {axisConfigurations.axisJetPt, axisConfigurations.axisLeadingParticlePt});
+      histos.add("LeadingParticleQA/h2dLeadJetPtvsCosThetaParticleToLead", "h2dLeadJetPtvsCosThetaParticleToLead;Jet p_{T} [GeV/c];cos(#Delta#theta_{jet})", kTH2D, {axisConfigurations.axisJetPt, axisConfigurations.axisCosTheta});
+      histos.add("LeadingParticleQA/h2dLeadParticlePtvsCosThetaParticleToLead", "h2dLeadParticlePtvsCosThetaParticleToLead;Leading particle p_{T} [GeV/c];cos(#Delta#theta_{jet})", kTH2D, {axisConfigurations.axisLeadingParticlePt, axisConfigurations.axisCosTheta});
+      histos.add("LeadingParticleQA/h2dLeadJetPtvsDeltaPhiParticleToLead", "h2dLeadJetPtvsDeltaPhiParticleToLead;Jet p_{T} [GeV/c];#Delta#varphi", kTH2D, {axisConfigurations.axisJetPt, axisConfigurations.axisDeltaPhi});
+      histos.add("LeadingParticleQA/h2dLeadParticlePtvsDeltaPhiParticleToLead", "h2dLeadParticlePtvsDeltaPhiParticleToLead;Leading particle p_{T} [GeV/c];#Delta#varphi", kTH2D, {axisConfigurations.axisLeadingParticlePt, axisConfigurations.axisDeltaPhi});
+
+      // Correlation with PVz:
+      histos.add("LeadingParticleQA/h2dLeadPEtaVsPVz", "LeadPtc #eta Vs Primary Vertex Z;LeadPtc #eta;PVz [cm]", kTH2D, {axisConfigurations.axisEta, axisConfigurations.axisPVzCoarse});
+      histos.add("LeadingParticleQA/h2dLeadPPhiVsPVz", "LeadPtc #phi Vs Primary Vertex Z;LeadPtc #phi;PVz [cm]", kTH2D, {axisConfigurations.axisPhi, axisConfigurations.axisPVzCoarse});
     }
 
     // inspect histogram sizes, please
@@ -1504,7 +1514,7 @@ struct lambdajetpolarizationions {
 
   /// \brief Clusters charged tracks into jets (FastJet, with optional background subtraction), fills the RingJets/RingLeadPs tables for this collision, and fills the jet-kinematics QA.
   template <typename TJetTracks>
-  void jetsProcess(TJetTracks const& tracks, const int ringCollIdx, const float centrality)
+  void jetsProcess(TJetTracks const& tracks, const int ringCollIdx, const float centrality, const float collisionPVz)
   {
     // Loop over reconstructed tracks:
     std::vector<fastjet::PseudoJet> fjParticles;
@@ -1637,34 +1647,42 @@ struct lambdajetpolarizationions {
           histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsDeltaPhiToLead"), selectedJets, deltaPhi);
           histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsDeltaEtaToLead"), selectedJets, deltaEta);
           histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsCosThetaToLead"), selectedJets, cosTheta);
+
+          // Collision PVz:
+          histos.fill(HIST("JetKinematicsQA/h2dJetEtaVsPVz"), jetMinusBkg.eta(), collisionPVz);
+          histos.fill(HIST("JetKinematicsQA/h2dJetPhiVsPVz"), jetMinusBkg.phi(), collisionPVz);
         }
         // Leading particle comparisons:
-        histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticlePt"), leadingParticle.pt());
-        histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticleEta"), leadingParticle.eta());
-        histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticlePhi"), leadingParticle.phi());
+        histos.fill(HIST("LeadingParticleQA/hLeadingParticlePt"), leadingParticle.pt());
+        histos.fill(HIST("LeadingParticleQA/hLeadingParticleEta"), leadingParticle.eta());
+        histos.fill(HIST("LeadingParticleQA/hLeadingParticlePhi"), leadingParticle.phi());
 
         float deltaPhiParticleToJet = RecoDecay::constrainAngle(leadingJetSub.phi() - leadingParticle.phi(), -o2::constants::math::PI);
         float deltaEtaParticleToJet = leadingJetSub.eta() - leadingParticle.eta();
         float cosThetaParticleToJet = cosThetaJets(leadingJetSub, leadingParticle); // Takes advantage of the fact that this leading particle is a PseudoJet object
 
-        histos.fill(HIST("JetVsLeadingParticleQA/hCosThetaLeadParticleToJet"), cosThetaParticleToJet);
-        histos.fill(HIST("JetVsLeadingParticleQA/hDeltaPhiLeadParticleToJet"), deltaPhiParticleToJet);
-        histos.fill(HIST("JetVsLeadingParticleQA/hDeltaEtaToLeadParticleToJet"), deltaEtaParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/hCosThetaLeadParticleToJet"), cosThetaParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/hDeltaPhiLeadParticleToJet"), deltaPhiParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/hDeltaEtaToLeadParticleToJet"), deltaEtaParticleToJet);
 
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dDeltaPhiParticleToLeadvsDeltaEtaParticleToLead"), deltaPhiParticleToJet, deltaEtaParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/h2dDeltaPhiParticleToLeadvsDeltaEtaParticleToLead"), deltaPhiParticleToJet, deltaEtaParticleToJet);
 
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaPhiParticleToLead"), selectedJets, deltaPhiParticleToJet);
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaEtaParticleToLead"), selectedJets, deltaEtaParticleToJet);
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dJetsPerEventvsCosThetaParticleToLead"), selectedJets, cosThetaParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/h2dJetsPerEventvsDeltaPhiParticleToLead"), selectedJets, deltaPhiParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/h2dJetsPerEventvsDeltaEtaParticleToLead"), selectedJets, deltaEtaParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/h2dJetsPerEventvsCosThetaParticleToLead"), selectedJets, cosThetaParticleToJet);
 
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dJetsPerEventvsLeadParticlePt"), selectedJets, leadingParticle.pt());
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadJetPtvsLeadParticlePt"), leadingJetSub.pt(), leadingParticle.pt());
+        histos.fill(HIST("LeadingParticleQA/h2dJetsPerEventvsLeadParticlePt"), selectedJets, leadingParticle.pt());
+        histos.fill(HIST("LeadingParticleQA/h2dLeadJetPtvsLeadParticlePt"), leadingJetSub.pt(), leadingParticle.pt());
 
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadJetPtvsCosThetaParticleToLead"), leadingJetSub.pt(), cosThetaParticleToJet);
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadParticlePtvsCosThetaParticleToLead"), leadingParticle.pt(), cosThetaParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/h2dLeadJetPtvsCosThetaParticleToLead"), leadingJetSub.pt(), cosThetaParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/h2dLeadParticlePtvsCosThetaParticleToLead"), leadingParticle.pt(), cosThetaParticleToJet);
 
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadJetPtvsDeltaPhiParticleToLead"), leadingJetSub.pt(), deltaPhiParticleToJet); // To see if there is any backgound in phi due to soft jets (or soft particles below)
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadParticlePtvsDeltaPhiParticleToLead"), leadingParticle.pt(), deltaPhiParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/h2dLeadJetPtvsDeltaPhiParticleToLead"), leadingJetSub.pt(), deltaPhiParticleToJet); // To see if there is any backgound in phi due to soft jets (or soft particles below)
+        histos.fill(HIST("LeadingParticleQA/h2dLeadParticlePtvsDeltaPhiParticleToLead"), leadingParticle.pt(), deltaPhiParticleToJet);
+
+        // Collision PVz -- Leading Particle:
+        histos.fill(HIST("LeadingParticleQA/h2dLeadPEtaVsPVz"), leadingParticle.eta(), collisionPVz);
+        histos.fill(HIST("LeadingParticleQA/h2dLeadPPhiVsPVz"), leadingParticle.phi(), collisionPVz);
       }
     } else { // Otherwise, simple jet clustering (TODO: this is the fall back for kConstituentBased while not implemented)
       fastjet::ClusterSequence clustSeq(fjParticles, jetDef);
@@ -1696,8 +1714,6 @@ struct lambdajetpolarizationions {
                                                  // Other variables can better reveal jet quenching and help identify good selection criteria for quenched jets proxies
 
         if (doJetKinematicsQA) {
-          histos.fill(HIST("JetKinematicsQA/h2dConstituentsPerJetVsCentrality"), jet.constituents().size(), centrality);
-          histos.fill(HIST("JetKinematicsQA/h2dConstituentsPerJetVsJetPt"), jet.constituents().size(), jet.pt());
           histos.fill(HIST("JetKinematicsQA/hJetPt"), jet.pt());
           histos.fill(HIST("JetKinematicsQA/hJetEta"), jet_eta);
           histos.fill(HIST("JetKinematicsQA/hJetPhi"), jet.phi());
@@ -1731,9 +1747,16 @@ struct lambdajetpolarizationions {
           histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsDeltaPhiToLead"), jetsInEvent, deltaPhi);
           histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsDeltaEtaToLead"), jetsInEvent, deltaEta);
           histos.fill(HIST("JetKinematicsQA/h2dJetsPerEventvsCosThetaToLead"), jetsInEvent, cosTheta);
+
+          histos.fill(HIST("JetKinematicsQA/h2dConstituentsPerJetVsCentrality"), jet.constituents().size(), centrality);
+          histos.fill(HIST("JetKinematicsQA/h2dConstituentsPerJetVsJetPt"), jet.constituents().size(), jet.pt());
+
+          // Collision PVz:
+          histos.fill(HIST("JetKinematicsQA/h2dJetEtaVsPVz"), jet.eta(), collisionPVz);
+          histos.fill(HIST("JetKinematicsQA/h2dJetPhiVsPVz"), jet.phi(), collisionPVz);
         }
       }
-      if (doJetKinematicsQA) { // Fills even when the jet is outside of the (0.9f - jetConfigurations.radiusJet) eta window. Fills at least for the leading jet.
+      if (doJetKinematicsQA) { // Fills even when the leading jet is outside of the (0.9f - jetConfigurations.radiusJet) eta window. Fills at least for the leading jet.
         histos.fill(HIST("JetKinematicsQA/h2dConstituentsPerJetVsCentrality"), leadingJet.constituents().size(), centrality);
         histos.fill(HIST("JetKinematicsQA/h2dConstituentsPerJetVsJetPt"), leadingJet.constituents().size(), leadingJet.pt());
         histos.fill(HIST("JetKinematicsQA/hLeadingJetPt"), leadingJet.pt());
@@ -1741,32 +1764,36 @@ struct lambdajetpolarizationions {
         histos.fill(HIST("JetKinematicsQA/hLeadingJetPhi"), leadingJet.phi());
 
         // Leading particle comparisons:
-        histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticlePt"), leadingParticle.pt());
-        histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticleEta"), leadingParticle.eta());
-        histos.fill(HIST("JetVsLeadingParticleQA/hLeadingParticlePhi"), leadingParticle.phi());
+        histos.fill(HIST("LeadingParticleQA/hLeadingParticlePt"), leadingParticle.pt());
+        histos.fill(HIST("LeadingParticleQA/hLeadingParticleEta"), leadingParticle.eta());
+        histos.fill(HIST("LeadingParticleQA/hLeadingParticlePhi"), leadingParticle.phi());
 
         double deltaPhiParticleToJet = RecoDecay::constrainAngle(leadingJet.phi() - leadingParticle.phi(), -o2::constants::math::PI);
         double deltaEtaParticleToJet = leadingJet.eta() - leadingParticle.eta();
         double cosThetaParticleToJet = cosThetaJets(leadingJet, leadingParticle); // Takes advantage of the fact that this leading particle is a PseudoJet object
 
-        histos.fill(HIST("JetVsLeadingParticleQA/hCosThetaLeadParticleToJet"), cosThetaParticleToJet);
-        histos.fill(HIST("JetVsLeadingParticleQA/hDeltaPhiLeadParticleToJet"), deltaPhiParticleToJet);
-        histos.fill(HIST("JetVsLeadingParticleQA/hDeltaEtaToLeadParticleToJet"), deltaEtaParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/hCosThetaLeadParticleToJet"), cosThetaParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/hDeltaPhiLeadParticleToJet"), deltaPhiParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/hDeltaEtaToLeadParticleToJet"), deltaEtaParticleToJet);
 
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dDeltaPhiParticleToLeadvsDeltaEtaParticleToLead"), deltaPhiParticleToJet, deltaEtaParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/h2dDeltaPhiParticleToLeadvsDeltaEtaParticleToLead"), deltaPhiParticleToJet, deltaEtaParticleToJet);
 
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaPhiParticleToLead"), jetsInEvent, deltaPhiParticleToJet);
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dJetsPerEventvsDeltaEtaParticleToLead"), jetsInEvent, deltaEtaParticleToJet);
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dJetsPerEventvsCosThetaParticleToLead"), jetsInEvent, cosThetaParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/h2dJetsPerEventvsDeltaPhiParticleToLead"), jetsInEvent, deltaPhiParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/h2dJetsPerEventvsDeltaEtaParticleToLead"), jetsInEvent, deltaEtaParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/h2dJetsPerEventvsCosThetaParticleToLead"), jetsInEvent, cosThetaParticleToJet);
 
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dJetsPerEventvsLeadParticlePt"), jetsInEvent, leadingParticle.pt());
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadJetPtvsLeadParticlePt"), leadingJet.pt(), leadingParticle.pt());
+        histos.fill(HIST("LeadingParticleQA/h2dJetsPerEventvsLeadParticlePt"), jetsInEvent, leadingParticle.pt());
+        histos.fill(HIST("LeadingParticleQA/h2dLeadJetPtvsLeadParticlePt"), leadingJet.pt(), leadingParticle.pt());
 
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadJetPtvsCosThetaParticleToLead"), leadingJet.pt(), cosThetaParticleToJet);
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadParticlePtvsCosThetaParticleToLead"), leadingParticle.pt(), cosThetaParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/h2dLeadJetPtvsCosThetaParticleToLead"), leadingJet.pt(), cosThetaParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/h2dLeadParticlePtvsCosThetaParticleToLead"), leadingParticle.pt(), cosThetaParticleToJet);
 
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadJetPtvsDeltaPhiParticleToLead"), leadingJet.pt(), deltaPhiParticleToJet); // To see if there is any backgound in phi due to soft jets (or soft particles below)
-        histos.fill(HIST("JetVsLeadingParticleQA/h2dLeadParticlePtvsDeltaPhiParticleToLead"), leadingParticle.pt(), deltaPhiParticleToJet);
+        histos.fill(HIST("LeadingParticleQA/h2dLeadJetPtvsDeltaPhiParticleToLead"), leadingJet.pt(), deltaPhiParticleToJet); // To see if there is any backgound in phi due to soft jets (or soft particles below)
+        histos.fill(HIST("LeadingParticleQA/h2dLeadParticlePtvsDeltaPhiParticleToLead"), leadingParticle.pt(), deltaPhiParticleToJet);
+
+        // Collision PVz -- Leading Particle:
+        histos.fill(HIST("LeadingParticleQA/h2dLeadPEtaVsPVz"), leadingParticle.eta(), collisionPVz);
+        histos.fill(HIST("LeadingParticleQA/h2dLeadPPhiVsPVz"), leadingParticle.phi(), collisionPVz);
       }
     }
   }
@@ -1803,18 +1830,20 @@ struct lambdajetpolarizationions {
     if (interactionRate < 0)
       interactionRate = rateFetcher.fetch(ccdb.service, bc.timestamp(), bc.runNumber(), irSource) * 1.e-3;
 
+    const float collisionPVz = collision.posZ();
+
     // Fill event table:
     tableCollisions(collision.centFT0M(),
                     collision.centFT0C(),
                     collision.centFV0A(),
-                    collision.posZ(),
+                    collisionPVz,
                     interactionRate);
 
     // Get the derived collision row index for this event:
     const int ringCollIdx = tableCollisions.lastIndex();
 
     // Call to jets process:
-    jetsProcess(V0DauTracks, ringCollIdx, centrality); // V0DauTracks takes the place of jetTracks now
+    jetsProcess(V0DauTracks, ringCollIdx, centrality, collisionPVz); // V0DauTracks takes the place of jetTracks now
 
     // Counting particles per event:
     uint NLambdas = 0;
