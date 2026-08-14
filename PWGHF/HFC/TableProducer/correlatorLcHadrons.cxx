@@ -1011,7 +1011,7 @@ struct HfCorrelatorLcHadrons {
                               TracksWithMc const& tracks,
                               aod::McParticles const& mcParticles)
   {
-    BinningType const corrBinning{{binsZVtx, binsMultiplicityMc}, true};
+    BinningType const corrBinningMcRec{{binsZVtx, binsMultiplicityMc}, true};
     for (const auto& candidate : candidates) {
       if (std::abs(HfHelper::yLc(candidate)) > yCandMax || candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
         continue;
@@ -1047,11 +1047,11 @@ struct HfCorrelatorLcHadrons {
       }
     }
     auto tracksTuple = std::make_tuple(candidates, tracks);
-    Pair<SelCollisionsWithLc, CandidatesLcMcRec, TracksWithMc, BinningType> const pairMcRec{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
+    Pair<SelCollisionsWithLc, CandidatesLcMcRec, TracksWithMc, BinningType> const pairMcRec{corrBinningMcRec, numberEventsMixed, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
-      int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFT0M()));
-      int const poolBinLc = corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFT0M()));
+      int poolBin = corrBinningMcRec.getBin(std::make_tuple(c2.posZ(), c2.multFT0M()));
+      int const poolBinLc = corrBinningMcRec.getBin(std::make_tuple(c1.posZ(), c1.multFT0M()));
       registry.fill(HIST("hMultFT0M"), c1.multFT0M());
       registry.fill(HIST("hZvtx"), c1.posZ());
       registry.fill(HIST("hTracksPoolBin"), poolBin);
