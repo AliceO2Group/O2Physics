@@ -23,6 +23,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -36,10 +37,15 @@
 
 #include <TH2.h>
 #include <TPDGCode.h>
+#include <TProfile.h>
+#include <TProfile2D.h>
+#include <TRandom3.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -79,6 +85,49 @@ enum ChargeEnum {
   kNeg = 1
 };
 
+enum class FCPrefixEnum {
+  Pr = 0,
+  APr = 1,
+  PiPos = 2,
+  PiNeg = 3,
+  KaPos = 4,
+  KaNeg = 5,
+  Pos = 6,
+  Neg = 7,
+  NetPi = 8,
+  NetKa = 9,
+  NetPr = 10,
+  NetCh = 11
+};
+
+static constexpr std::string_view FCRecoDir[] = {
+  "Reco/Pr/",
+  "Reco/APr/",
+  "Reco/PiPos/",
+  "Reco/PiNeg/",
+  "Reco/KaPos/",
+  "Reco/KaNeg/",
+  "Reco/Pos/",
+  "Reco/Neg/",
+  "Reco/NetPi/",
+  "Reco/NetKa/",
+  "Reco/NetPr/",
+  "Reco/NetCh/"};
+
+static constexpr std::string_view FCGenDir[] = {
+  "Gen/Pr/",
+  "Gen/APr/",
+  "Gen/PiPos/",
+  "Gen/PiNeg/",
+  "Gen/KaPos/",
+  "Gen/KaNeg/",
+  "Gen/Pos/",
+  "Gen/Neg/",
+  "Gen/NetPi/",
+  "Gen/NetKa/",
+  "Gen/NetPr/",
+  "Gen/NetCh/"};
+
 static constexpr std::string_view PidDire[] = {
   "Ch/",
   "Pi/",
@@ -105,10 +154,10 @@ std::string getModifiedStr(const std::string& myString)
 struct NchCumulantsId {
 
   HistogramRegistry hist{"hist", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry recoTracks{"recoTracks", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry genAnalysis{"genAnalysis", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry recoAnalysis{"recoAnalysis", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry purityAnalysis{"purityAnalysis", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // PDG data base
   Service<o2::framework::O2DatabasePDG> pdgDB;
@@ -130,14 +179,41 @@ struct NchCumulantsId {
   ConfigurableAxis axisAKaCh{"axisAKaCh", {3010, -0.5, 300.5}, "AKa_charge"};
   ConfigurableAxis axisPiCh{"axisPiCh", {3010, -0.5, 300.5}, "Pion_Positive"};
   ConfigurableAxis axisAPiCh{"axisAPiCh", {3010, -0.5, 300.5}, "Pion_Negative"};
+  // QA axes as ConfigurableAxis
+  ConfigurableAxis axisEvents{"axisEvents", {1, 0, 1}, "Counts"};
+  ConfigurableAxis axisEta{"axisEta", {100, -1., +1.}, "#eta"};
+  ConfigurableAxis axisRapidity{"axisRapidity", {200, -5, 5}, "Rapidity (y)"};
+  ConfigurableAxis axisPt{"axisPt", {100, 0., 5.}, "p_{T} (GeV/c)"};
+  ConfigurableAxis axisP{"axisP", {100, 0., 5.}, "p (GeV/c)"};
+  ConfigurableAxis axisTPCInnerParam{"axisTPCInnerParam", {100, 0, 3}, "P_innerParam_Gev"};
+  ConfigurableAxis axisdEdx{"axisdEdx", {100, 20, 500}, "#frac{dE}{dx}"};
+  ConfigurableAxis axisVtxZ{"axisVtxZ", {80, -20., 20.}, "V_{Z} (cm)"};
+  ConfigurableAxis axisDCAz{"axisDCAz", {200, -3., 3.}, "DCA_{Z} (cm)"};
+  ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -3., 3.}, "DCA_{XY} (cm)"};
+  ConfigurableAxis axisMultFT0{"axisMultFT0", {150, 0, 1500}, "MultFT0"};
+  ConfigurableAxis axisCent{"axisCent", {103, -1., 102.}, "FT0C(%)"};
+  ConfigurableAxis axisPhi{"axisPhi", {80, -1, 7}, "phi"};
+  ConfigurableAxis axisTOFBeta{"axisTOFBeta", {40, -2.0, 2.0}, "tofBeta"};
+  ConfigurableAxis axisTPCSignal{"axisTPCSignal", {100, -1, 1000}, "tpcSignal"};
+  ConfigurableAxis axisTPCNSigma{"axisTPCNSigma", {200, -10.0, 10.0}, "n#sigma_{TPC}"};
+  ConfigurableAxis axisTOFNSigma{"axisTOFNSigma", {200, -10.0, 10.0}, "n#sigma_{TOF}"};
+  ConfigurableAxis axisTOFExpMom{"axisTOFExpMom", {200, 0.0f, 10.0f}, "#it{p}_{tofExpMom} (GeV/#it{c})"};
 
-  Configurable<bool> checkCollPosZMc{"checkCollPosZMc", false, "checkCollPosZMc"};
-  Configurable<bool> flagUnusedVariableError{"flagUnusedVariableError", false, "flagUnusedVariableError"};
-  Configurable<bool> cfgDoRejectionForId{"cfgDoRejectionForId", false, "Apply rejection cut before PID selection (selTrackForId)"};
-
-  Configurable<bool> cfgEvSel01doNoSameBunchPileup{"cfgEvSel01doNoSameBunchPileup", true, "apply kNoSameBunchPileup"};
-  Configurable<bool> cfgEvSel02doIsGoodZvtxFT0vsPV{"cfgEvSel02doIsGoodZvtxFT0vsPV", true, "apply kIsGoodZvtxFT0vsPV"};
-  Configurable<bool> cfgEvSel03doIsGoodITSLayersAll{"cfgEvSel03doIsGoodITSLayersAll", true, "apply kIsGoodITSLayersAll"};
+  struct : ConfigurableGroup {
+    Configurable<bool> checkCollPosZMc{"checkCollPosZMc", false, "checkCollPosZMc"};
+    Configurable<bool> flagUnusedVariableError{"flagUnusedVariableError", false, "flagUnusedVariableError"};
+    Configurable<bool> cfgDoRejectionForId{"cfgDoRejectionForId", false, "Apply rejection cut before PID selection (selTrackForId)"};
+    Configurable<bool> fillSparseForReco{"fillSparseForReco", false, "Fill sparse for reconstructed tracks"};
+    Configurable<bool> fillSparseForGen{"fillSparseForGen", false, "Fill sparse for generated tracks"};
+    Configurable<bool> fillSparseForPurity{"fillSparseForPurity", false, "Fill sparse for purity tracks"};
+    Configurable<bool> cfgEvSel01doNoSameBunchPileup{"cfgEvSel01doNoSameBunchPileup", true, "apply kNoSameBunchPileup"};
+    Configurable<bool> cfgEvSel02doIsGoodZvtxFT0vsPV{"cfgEvSel02doIsGoodZvtxFT0vsPV", true, "apply kIsGoodZvtxFT0vsPV"};
+    Configurable<bool> cfgEvSel03doIsGoodITSLayersAll{"cfgEvSel03doIsGoodITSLayersAll", true, "apply kIsGoodITSLayersAll"};
+    Configurable<bool> cfgDoSubsampling{"cfgDoSubsampling", true, "do subsampling for error estimation"};
+    ConfigurableAxis subSampleAxis{"subSampleAxis", {10, 0., 10.}, "Subsample"};
+    TRandom3* fRandom = new TRandom3(0); // Random number generator for subsampling
+    int currentSubsample = 0;
+  } cfgEventSelection;
 
   // Configurables for particle Identification
   Configurable<bool> cfgId01CheckVetoCut{"cfgId01CheckVetoCut", true, "cfgId01CheckVetoCut"};
@@ -213,6 +289,263 @@ struct NchCumulantsId {
   TH2F* hPtEtaForBinSearch = nullptr;
   std::vector<std::array<TH2F*, kNeg + 1>> hPtEtaForEffCorrection{kDe + 1, std::array<TH2F*, kNeg + 1>{}};
 
+  // AxisSpec subSampleAxis = {static_cast<int>(cfgNSubsamples), 0., static_cast<double>(cfgNSubsamples), "Subsample"};
+
+  struct EffPowerSums {
+    double q1 = 0.;
+    double q2 = 0.;
+    double q3 = 0.;
+    double q4 = 0.;
+  };
+
+  inline void fillEffPower(EffPowerSums& p, float weight)
+  {
+    if (weight <= 0.f) {
+      return;
+    }
+
+    p.q1 += weight;
+    p.q2 += weight * weight;
+    p.q3 += weight * weight * weight;
+    p.q4 += weight * weight * weight * weight;
+  }
+
+  // NEW TEMPLATE FUNCTION FOR RECO PROFILES for individual species
+  template <FCPrefixEnum Prefix>
+  void addFCRecoProfiles()
+  {
+    constexpr std::string_view Dir = FCRecoDir[static_cast<int>(Prefix)];
+
+    registry.add(std::string(Dir) + "Q1", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q1Sq", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q2", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q1Cube", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q1Q2", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q3", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q1Pow4", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q1SqQ2", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q2Sq", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q1Q3", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q4", "", kTProfile, {axisCent});
+
+    if (cfgEventSelection.cfgDoSubsampling) {
+      registry.add(std::string(Dir) + "Q1_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q1Sq_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q2_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q1Cube_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q1Q2_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q3_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q1Pow4_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q1SqQ2_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q2Sq_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q1Q3_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q4_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+    }
+  }
+
+  template <FCPrefixEnum Prefix>
+  void addNetQVectorProfileHistograms()
+  {
+    constexpr std::string_view Dir = FCRecoDir[static_cast<int>(Prefix)];
+
+    registry.add(std::string(Dir) + "Q_net_1", "Net Q1", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_1Sq", "Net Q1²", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_2", "Net Q2", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_1Cube", "Net Q1³", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_1Q_net_2", "Net Q1·Q2", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_3", "Net Q3", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_1Pow4", "Net Q1⁴", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_1SqQ_net_2", "Net Q1²·Q2", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_2Sq", "Net Q2²", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_1Q_net_3", "Net Q1·Q3", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_4", "Net Q4", kTProfile, {axisCent});
+
+    // joint pos-neg correction profiles, they should be stored here. F11 needed for F3 and F21 and F12 for F4 correction
+    registry.add(std::string(Dir) + "JointF11", "Joint <N+N->", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "JointF12", "Joint <N+N-(N--1)>", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "JointF21", "Joint <N+(N+-1)N->", kTProfile, {axisCent});
+
+    // Factorial moments
+    if (cfgEventSelection.cfgDoSubsampling) {
+      registry.add(std::string(Dir) + "Q_net_1_subsample", "Net Q1 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_1Sq_subsample", "Net Q1² Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_2_subsample", "Net Q2 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_1Cube_subsample", "Net Q1³ Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_1Q_net_2_subsample", "Net Q1·Q2 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_3_subsample", "Net Q3 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_1Pow4_subsample", "Net Q1⁴ Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_1SqQ_net_2_subsample", "Net Q1²·Q2 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_2Sq_subsample", "Net Q2² Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_1Q_net_3_subsample", "Net Q1·Q3 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_4_subsample", "Net Q4 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+
+      registry.add(std::string(Dir) + "JointF11_subsample", "Joint <N+N-> Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "JointF12_subsample", "Joint <N+N-(N--1)> Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "JointF21_subsample", "Joint <N+(N+-1)N-> Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+    }
+  }
+
+  // NEW TEMPLATE FUNCTION FOR GEN PROFILES
+  template <FCPrefixEnum Prefix>
+  void addFCGenProfiles()
+  {
+    constexpr std::string_view Dir = FCGenDir[static_cast<int>(Prefix)];
+
+    registry.add(std::string(Dir) + "F1", "Gen FactorialMoment1", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "F2", "Gen FactorialMoment2", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "F3", "Gen FactorialMoment3", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "F4", "Gen FactorialMoment4", kTProfile, {axisCent});
+
+    if (cfgEventSelection.cfgDoSubsampling) {
+      registry.add(std::string(Dir) + "F1_subsample", "Gen FactorialMoment1 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "F2_subsample", "Gen FactorialMoment2 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "F3_subsample", "Gen FactorialMoment3 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "F4_subsample", "Gen FactorialMoment4 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+    }
+  }
+
+  template <FCPrefixEnum Prefix, typename Registry>
+  void fillFCBasis(const EffPowerSums& p, float cent, Registry& registry)
+  {
+    auto base = HIST(FCRecoDir[static_cast<int>(Prefix)]);
+
+    // Fill Factorial Moments for Reco directly to ensure Reco stores the same type of data as Gen
+    // Compute Efficiency Corrected Factorial Moments from power sums
+    // These formulas come from elementary symmetric polynomials and their relation to power sums
+    registry.fill(base + HIST("Q1"), cent, p.q1);
+    registry.fill(base + HIST("Q1Sq"), cent, p.q1 * p.q1);
+    registry.fill(base + HIST("Q2"), cent, p.q2);
+    registry.fill(base + HIST("Q1Cube"), cent, p.q1 * p.q1 * p.q1);
+    registry.fill(base + HIST("Q1Q2"), cent, p.q1 * p.q2);
+    registry.fill(base + HIST("Q3"), cent, p.q3);
+    registry.fill(base + HIST("Q1Pow4"), cent, p.q1 * p.q1 * p.q1 * p.q1);
+    registry.fill(base + HIST("Q1SqQ2"), cent, p.q1 * p.q1 * p.q2);
+    registry.fill(base + HIST("Q2Sq"), cent, p.q2 * p.q2);
+    registry.fill(base + HIST("Q1Q3"), cent, p.q1 * p.q3);
+    registry.fill(base + HIST("Q4"), cent, p.q4);
+    if (cfgEventSelection.cfgDoSubsampling) {
+      registry.fill(base + HIST("Q1_subsample"), cent, cfgEventSelection.currentSubsample, p.q1);
+      registry.fill(base + HIST("Q1Sq_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q1);
+      registry.fill(base + HIST("Q2_subsample"), cent, cfgEventSelection.currentSubsample, p.q2);
+      registry.fill(base + HIST("Q1Cube_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q1 * p.q1);
+      registry.fill(base + HIST("Q1Q2_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q2);
+      registry.fill(base + HIST("Q3_subsample"), cent, cfgEventSelection.currentSubsample, p.q3);
+      registry.fill(base + HIST("Q1Pow4_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q1 * p.q1 * p.q1);
+      registry.fill(base + HIST("Q1SqQ2_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q1 * p.q2);
+      registry.fill(base + HIST("Q2Sq_subsample"), cent, cfgEventSelection.currentSubsample, p.q2 * p.q2);
+      registry.fill(base + HIST("Q1Q3_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q3);
+      registry.fill(base + HIST("Q4_subsample"), cent, cfgEventSelection.currentSubsample, p.q4);
+    }
+  }
+
+  // fill function for reco net species
+  template <FCPrefixEnum Prefix, typename Registry>
+  void fillNetQVectorProfileHistograms(const EffPowerSums& posPow, const EffPowerSums& negPow, float cent, Registry& registry)
+  {
+    // Construct base directory path
+    auto base = HIST(FCRecoDir[static_cast<int>(Prefix)]);
+
+    // ─── Compute NET q-vectors (sign alternation by power) ───
+    // Odd powers: alternate sign (Q_pos - Q_neg)
+    // Even powers: same sign (Q_pos + Q_neg)
+
+    double qNet1 = posPow.q1 - negPow.q1; // Odd
+    double qNet2 = posPow.q2 + negPow.q2; // Even
+    double qNet3 = posPow.q3 - negPow.q3; // Odd
+    double qNet4 = posPow.q4 + negPow.q4; // Even
+
+    // Fill joint pos-neg correction profiles
+    // capture inline from pos and neg
+    double jointF11 = posPow.q1 * negPow.q1;          
+    double cf2pos = posPow.q1 * posPow.q1 - posPow.q2; 
+    double cf2neg = negPow.q1 * negPow.q1 - negPow.q2; 
+    double jointF12 = posPow.q1 * cf2neg;              
+    double jointF21 = negPow.q1 * cf2pos;              
+    // ─── Fill raw q-vectors (for cross-verification)
+    registry.fill(base + HIST("Q_net_1"), cent, qNet1);
+    registry.fill(base + HIST("Q_net_1Sq"), cent, qNet1 * qNet1);
+    registry.fill(base + HIST("Q_net_2"), cent, qNet2);
+    registry.fill(base + HIST("Q_net_1Cube"), cent, qNet1 * qNet1 * qNet1);
+    registry.fill(base + HIST("Q_net_1Q_net_2"), cent, qNet1 * qNet2);
+    registry.fill(base + HIST("Q_net_3"), cent, qNet3);
+    registry.fill(base + HIST("Q_net_1Pow4"), cent, qNet1 * qNet1 * qNet1 * qNet1);
+    registry.fill(base + HIST("Q_net_1SqQ_net_2"), cent, qNet1 * qNet1 * qNet2);
+    registry.fill(base + HIST("Q_net_2Sq"), cent, qNet2 * qNet2);
+    registry.fill(base + HIST("Q_net_1Q_net_3"), cent, qNet1 * qNet3);
+    registry.fill(base + HIST("Q_net_4"), cent, qNet4);
+
+    // ─── Fill factorial moments ───
+    registry.fill(base + HIST("JointF11"), cent, jointF11);
+    registry.fill(base + HIST("JointF12"), cent, jointF12);
+    registry.fill(base + HIST("JointF21"), cent, jointF21);
+
+    if (cfgEventSelection.cfgDoSubsampling) {
+      registry.fill(base + HIST("Q_net_1_subsample"), cent, cfgEventSelection.currentSubsample, qNet1);
+      registry.fill(base + HIST("Q_net_1Sq_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet1);
+      registry.fill(base + HIST("Q_net_2_subsample"), cent, cfgEventSelection.currentSubsample, qNet2);
+      registry.fill(base + HIST("Q_net_1Cube_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet1 * qNet1);
+      registry.fill(base + HIST("Q_net_1Q_net_2_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet2);
+      registry.fill(base + HIST("Q_net_3_subsample"), cent, cfgEventSelection.currentSubsample, qNet3);
+      registry.fill(base + HIST("Q_net_1Pow4_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet1 * qNet1 * qNet1);
+      registry.fill(base + HIST("Q_net_1SqQ_net_2_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet1 * qNet2);
+      registry.fill(base + HIST("Q_net_2Sq_subsample"), cent, cfgEventSelection.currentSubsample, qNet2 * qNet2);
+      registry.fill(base + HIST("Q_net_1Q_net_3_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet3);
+      registry.fill(base + HIST("Q_net_4_subsample"), cent, cfgEventSelection.currentSubsample, qNet4);
+
+      registry.fill(base + HIST("JointF11_subsample"), cent, cfgEventSelection.currentSubsample, jointF11);
+      registry.fill(base + HIST("JointF12_subsample"), cent, cfgEventSelection.currentSubsample, jointF12);
+      registry.fill(base + HIST("JointF21_subsample"), cent, cfgEventSelection.currentSubsample, jointF21);
+    }
+  }
+
+  template <FCPrefixEnum Prefix, typename Registry>
+  void fillGenFactorialMoments(int n, float cent, Registry& registry)
+  {
+    auto base = HIST(FCGenDir[static_cast<int>(Prefix)]);
+
+    double f1 = n;
+    double f2 = n * (n - 1.);
+    double f3 = n * (n - 1.) * (n - 2.);
+    double f4 = n * (n - 1.) * (n - 2.) * (n - 3.);
+
+    registry.fill(base + HIST("F1"), cent, f1);
+    registry.fill(base + HIST("F2"), cent, f2);
+    registry.fill(base + HIST("F3"), cent, f3);
+    registry.fill(base + HIST("F4"), cent, f4);
+
+    if (cfgEventSelection.cfgDoSubsampling) {
+      registry.fill(base + HIST("F1_subsample"), cent, cfgEventSelection.currentSubsample, f1);
+      registry.fill(base + HIST("F2_subsample"), cent, cfgEventSelection.currentSubsample, f2);
+      registry.fill(base + HIST("F3_subsample"), cent, cfgEventSelection.currentSubsample, f3);
+      registry.fill(base + HIST("F4_subsample"), cent, cfgEventSelection.currentSubsample, f4);
+    }
+  }
+  // ─── GEN level (net speciestruth) ───
+  template <FCPrefixEnum Prefix, typename Registry>
+  void fillGenNetFactorialMoments(float nPos, float nNeg, float cent, Registry& registry)
+  {
+    auto base = HIST(FCGenDir[static_cast<int>(Prefix)]);
+
+    double nNet = nPos - nNeg;
+
+    double f1 = nNet;
+    double f2 = nNet * (nNet - 1.0);
+    double f3 = nNet * (nNet - 1.0) * (nNet - 2.0);
+    double f4 = nNet * (nNet - 1.0) * (nNet - 2.0) * (nNet - 3.0);
+
+    registry.fill(base + HIST("F1"), cent, f1);
+    registry.fill(base + HIST("F2"), cent, f2);
+    registry.fill(base + HIST("F3"), cent, f3);
+    registry.fill(base + HIST("F4"), cent, f4);
+
+    if (cfgEventSelection.cfgDoSubsampling) {
+      registry.fill(base + HIST("F1_subsample"), cent, cfgEventSelection.currentSubsample, f1);
+      registry.fill(base + HIST("F2_subsample"), cent, cfgEventSelection.currentSubsample, f2);
+      registry.fill(base + HIST("F3_subsample"), cent, cfgEventSelection.currentSubsample, f3);
+      registry.fill(base + HIST("F4_subsample"), cent, cfgEventSelection.currentSubsample, f4);
+    }
+  }
+
   void init(InitContext const&)
   {
     auto& mgr = o2::ccdb::BasicCCDBManager::instance();
@@ -244,27 +577,6 @@ struct NchCumulantsId {
 
     mgr.setURL("http://alice-ccdb.cern.ch"); // RESET the URL otherwise the other process functions which contains ccdb lookups will fail
 
-    // QA check axes
-    const AxisSpec axisEvents{1, 0, 1, "Counts"};
-    const AxisSpec axisEta{100, -1., +1., "#eta"};
-    const AxisSpec axisRapidity{200, -5, 5, "Rapidity (y)"};
-    const AxisSpec axisPt{100, 0., 5., "p_{T} (GeV/c)"};
-    const AxisSpec axisP{100, 0., 5., "p (GeV/c)"};
-    const AxisSpec axisTPCInnerParam{100, 0, 3, "P_innerParam_Gev"};
-    const AxisSpec axisdEdx(100, 20, 500, {"#frac{dE}{dx}"});
-    const AxisSpec axisVtxZ{80, -20., 20., "V_{Z} (cm)"};
-    const AxisSpec axisDCAz{200, -3., 3., "DCA_{Z} (cm)"};
-    const AxisSpec axisDCAxy{200, -3., 3., "DCA_{XY} (cm)"};
-    const AxisSpec axisMultFT0(150, 0, 1500, "MultFT0");
-    const AxisSpec axisCent(103, -1., 102., "FT0C(%)");
-    const AxisSpec axisPhi(80, -1, 7, "phi");
-
-    const AxisSpec axisTOFBeta = {40, -2.0, 2.0, "tofBeta"};
-    const AxisSpec axisTPCSignal = {100, -1, 1000, "tpcSignal"};
-    const AxisSpec axisTPCNSigma = {200, -10.0, 10.0, "n#sigma_{TPC}"};
-    const AxisSpec axisTOFNSigma = {200, -10.0, 10.0, "n#sigma_{TOF}"};
-    const AxisSpec axisTOFExpMom = {200, 0.0f, 10.0f, "#it{p}_{tofExpMom} (GeV/#it{c})"};
-
     const AxisSpec axisIdTag = {32, -0.5f, 31.5f, "idTag"};
     const AxisSpec axisMcTag = {32, -0.5f, 31.5f, "mcTag"};
 
@@ -290,7 +602,6 @@ struct NchCumulantsId {
     HistogramConfigSpec histTpcNSigmaTofNSigma({HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
 
     HistogramConfigSpec histPtMc({HistType::kTH1F, {axisPt}});
-
     // Register histograms for PID validation
     // Register TPC spares per species
     hist.add("PIDValidation/tpcSparse_Pi", "p vs tpcNSigmaPi vs idTag vs mcTag (Pion)", histTPCPIDSparse);
@@ -472,6 +783,36 @@ struct NchCumulantsId {
     purityAnalysis.addClone("purityAnalysis/Pi/", "purityAnalysis/Pr/");
     // purityAnalysis.addClone("purityAnalysis/Pi/", "purityAnalysis/El/");
     // purityAnalysis.addClone("purityAnalysis/Pi/", "purityAnalysis/De/");
+
+    // profiles adding for Reco
+    addFCRecoProfiles<FCPrefixEnum::Pr>();
+    addFCRecoProfiles<FCPrefixEnum::APr>();
+    addFCRecoProfiles<FCPrefixEnum::PiPos>();
+    addFCRecoProfiles<FCPrefixEnum::PiNeg>();
+    addFCRecoProfiles<FCPrefixEnum::KaPos>();
+    addFCRecoProfiles<FCPrefixEnum::KaNeg>();
+    addFCRecoProfiles<FCPrefixEnum::Pos>();
+    addFCRecoProfiles<FCPrefixEnum::Neg>();
+
+    addNetQVectorProfileHistograms<FCPrefixEnum::NetPi>();
+    addNetQVectorProfileHistograms<FCPrefixEnum::NetKa>();
+    addNetQVectorProfileHistograms<FCPrefixEnum::NetPr>();
+    addNetQVectorProfileHistograms<FCPrefixEnum::NetCh>();
+
+    // profiles adding for Gen
+    addFCGenProfiles<FCPrefixEnum::Pr>();
+    addFCGenProfiles<FCPrefixEnum::APr>();
+    addFCGenProfiles<FCPrefixEnum::PiPos>();
+    addFCGenProfiles<FCPrefixEnum::PiNeg>();
+    addFCGenProfiles<FCPrefixEnum::KaPos>();
+    addFCGenProfiles<FCPrefixEnum::KaNeg>();
+    addFCGenProfiles<FCPrefixEnum::Pos>();
+    addFCGenProfiles<FCPrefixEnum::Neg>();
+
+    addFCGenProfiles<FCPrefixEnum::NetPi>();
+    addFCGenProfiles<FCPrefixEnum::NetKa>();
+    addFCGenProfiles<FCPrefixEnum::NetPr>();
+    addFCGenProfiles<FCPrefixEnum::NetCh>();
 
   } // init ends
 
@@ -1028,7 +1369,7 @@ struct NchCumulantsId {
                                 const int& idMethodKa, const bool& trackIsKaon, float& nAKa, float& nKa,
                                 const int& idMethodPr, const bool& trackIsProton, float& nPr, float& nAPr, H& recoAnalysis)
   {
-    if (flagUnusedVariableError)
+    if (cfgEventSelection.flagUnusedVariableError)
       LOG(info) << trackIdTag << idMethodPi << ":" << idMethodKa << ":" << idMethodPr;
     if (track.sign() > 0) {
       // fillRecoTrackQA<kPos>(recoAnalysis, track);
@@ -1105,6 +1446,7 @@ struct NchCumulantsId {
 
     // recoAnalysis.fill(HIST("recoAnalysis/SelectedTrack_IdentificationTag"), trackIdTag);
   }
+  // fill the basis for factorial cumulants
 
   using MyAllTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra,
                                 aod::TracksDCA, aod::pidTOFbeta, aod::pidTOFmass, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl,
@@ -1119,13 +1461,13 @@ struct NchCumulantsId {
   template <typename CollisionType>
   bool isEventSelected(const CollisionType& col)
   {
-    if (cfgEvSel01doNoSameBunchPileup &&
+    if (cfgEventSelection.cfgEvSel01doNoSameBunchPileup &&
         !col.selection_bit(aod::evsel::kNoSameBunchPileup))
       return false;
-    if (cfgEvSel02doIsGoodZvtxFT0vsPV &&
+    if (cfgEventSelection.cfgEvSel02doIsGoodZvtxFT0vsPV &&
         !col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
       return false;
-    if (cfgEvSel03doIsGoodITSLayersAll &&
+    if (cfgEventSelection.cfgEvSel03doIsGoodITSLayersAll &&
         !col.selection_bit(aod::evsel::kIsGoodITSLayersAll))
       return false;
     return true;
@@ -1211,7 +1553,7 @@ struct NchCumulantsId {
           }
 
           // Reject electrons first
-          if (cfgDoRejectionForId && !selTrackForId(track)) {
+          if (cfgEventSelection.cfgDoRejectionForId && !selTrackForId(track)) {
             continue;
           }
 
@@ -1317,7 +1659,7 @@ struct NchCumulantsId {
           int mcTag = getMCTag(track);
 
           // Reject electrons first
-          if (cfgDoRejectionForId && !selTrackForId(track)) {
+          if (cfgEventSelection.cfgDoRejectionForId && !selTrackForId(track)) {
             continue;
           }
 
@@ -1514,7 +1856,8 @@ struct NchCumulantsId {
 
   void processSim(MyFilteredColsWithMcLabels const& collisions, MyFilteredTracksWithMcLabels const& tracks, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
-    if (flagUnusedVariableError)
+
+    if (cfgEventSelection.flagUnusedVariableError)
       LOG(info) << mcCollisions.size();
     bool trackIsPion = false;
     bool trackIsKaon = false;
@@ -1537,7 +1880,7 @@ struct NchCumulantsId {
         continue;
       auto mcCollision = col.mcCollision();
 
-      if (checkCollPosZMc && std::abs(mcCollision.posZ()) > cfgCutPosZ)
+      if (cfgEventSelection.checkCollPosZMc && std::abs(mcCollision.posZ()) > cfgCutPosZ)
         continue;
 
       // slice reco tracks to this collision
@@ -1546,6 +1889,18 @@ struct NchCumulantsId {
 
       // slice mc particles to mc collisions
       const auto mcTracksTablePerMcColl = mcParticles.sliceBy(mcTracksPerMcCollisionPreslice, mcCollision.globalIndex());
+      float cent = col.centFT0M();
+
+      EffPowerSums prPow;
+      EffPowerSums aprPow;
+      EffPowerSums pipPow;
+      EffPowerSums pimPow;
+      EffPowerSums kapPow;
+      EffPowerSums kamPow;
+      EffPowerSums posPow;
+      EffPowerSums negPow;
+
+      cfgEventSelection.currentSubsample = static_cast<int>(cfgEventSelection.fRandom->Uniform(0, cfgEventSelection.subSampleAxis.value[0]));
 
       // Denominator -- Generator level(truth)
 
@@ -1617,12 +1972,28 @@ struct NchCumulantsId {
       nTGen = nPGen + nMGen;
 
       // ── Fill GEN sparse (denominator) ────────────────────────
-      hist.fill(HIST("sim/gen/sparse1"), nChGen, nPGen, nMGen,
-                nPrGen, nAPrGen, nKaGen, nAKaGen, nTGen,
-                col.centFT0M());
-      hist.fill(HIST("sim/gen/sparse2"), nChGen, nPGen, nMGen,
-                nPiGen, nAPiGen, nKaGen, nAKaGen, nTGen,
-                col.centFT0M());
+      if (cfgEventSelection.fillSparseForGen) {
+        hist.fill(HIST("sim/gen/sparse1"), nChGen, nPGen, nMGen,
+                  nPrGen, nAPrGen, nKaGen, nAKaGen, nTGen,
+                  cent);
+        hist.fill(HIST("sim/gen/sparse2"), nChGen, nPGen, nMGen,
+                  nPiGen, nAPiGen, nKaGen, nAKaGen, nTGen,
+                  cent);
+      }
+      fillGenFactorialMoments<FCPrefixEnum::Pr>(nPrGen, cent, registry);
+      fillGenFactorialMoments<FCPrefixEnum::APr>(nAPrGen, cent, registry);
+      fillGenFactorialMoments<FCPrefixEnum::PiPos>(nPiGen, cent, registry);
+      fillGenFactorialMoments<FCPrefixEnum::PiNeg>(nAPiGen, cent, registry);
+      fillGenFactorialMoments<FCPrefixEnum::KaPos>(nKaGen, cent, registry);
+      fillGenFactorialMoments<FCPrefixEnum::KaNeg>(nAKaGen, cent, registry);
+      fillGenFactorialMoments<FCPrefixEnum::Pos>(nPGen, cent, registry);
+      fillGenFactorialMoments<FCPrefixEnum::Neg>(nMGen, cent, registry);
+
+      fillGenNetFactorialMoments<FCPrefixEnum::NetCh>(nPGen, nMGen, cent, registry);
+      fillGenNetFactorialMoments<FCPrefixEnum::NetPr>(nPrGen, nAPrGen, cent, registry);
+      fillGenNetFactorialMoments<FCPrefixEnum::NetPi>(nPiGen, nAPiGen, cent, registry);
+      fillGenNetFactorialMoments<FCPrefixEnum::NetKa>(nKaGen, nAKaGen, cent, registry);
+      // ── End of GEN level filling
       //
       // Numerator - Reconstructed + truth matched
       // reco->selFunc passed, no pdg
@@ -1663,7 +2034,7 @@ struct NchCumulantsId {
         idMethodPr = kUnidentified;
 
         // Reject electrons first
-        if (cfgDoRejectionForId && !selTrackForId(track)) {
+        if (cfgEventSelection.cfgDoRejectionForId && !selTrackForId(track)) {
           continue;
         }
 
@@ -1716,6 +2087,9 @@ struct NchCumulantsId {
           recoAnalysis.fill(HIST("recoAnalysis/Charge/Pos/h15_phi"), track.phi());
           recoAnalysis.fill(HIST("recoAnalysis/Charge/Pos/h16_rapidity"), track.y());
           recoAnalysis.fill(HIST("recoAnalysis/Charge/Pos/h20_pt_eta"), track.pt(), track.eta());
+
+          float weight = hPtEtaForEffCorrection[kCh][kPos]->GetBinContent(ptEtaBin);
+          fillEffPower(posPow, weight);
         } else if (track.sign() < 0) {
           nMRec += hPtEtaForEffCorrection[kCh][kNeg]->GetBinContent(ptEtaBin);
           recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h12_p"), track.p());
@@ -1724,6 +2098,9 @@ struct NchCumulantsId {
           recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h15_phi"), track.phi());
           recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h16_rapidity"), track.y());
           recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h20_pt_eta"), track.pt(), track.eta());
+
+          float weight = hPtEtaForEffCorrection[kCh][kNeg]->GetBinContent(ptEtaBin);
+          fillEffPower(negPow, weight);
         }
 
         // species reco — sel passes, PDG not checked (raw reco)
@@ -1731,9 +2108,15 @@ struct NchCumulantsId {
           if (track.sign() > 0) {
             nPiRec += hPtEtaForEffCorrection[kPi][kPos]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kPi, kPos>(recoAnalysis, track);
+
+            float weight = hPtEtaForEffCorrection[kPi][kPos]->GetBinContent(ptEtaBin);
+            fillEffPower(pipPow, weight);
           } else if (track.sign() < 0) {
             nAPiRec += hPtEtaForEffCorrection[kPi][kNeg]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kPi, kNeg>(recoAnalysis, track);
+
+            float weight = hPtEtaForEffCorrection[kPi][kNeg]->GetBinContent(ptEtaBin);
+            fillEffPower(pimPow, weight);
           }
           // PID band QA for pions
           if (idMethodPi == kTPCidentified)
@@ -1744,9 +2127,13 @@ struct NchCumulantsId {
           if (track.sign() > 0) {
             nKaRec += hPtEtaForEffCorrection[kKa][kPos]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kKa, kPos>(recoAnalysis, track);
+            float weight = hPtEtaForEffCorrection[kKa][kPos]->GetBinContent(ptEtaBin);
+            fillEffPower(kapPow, weight);
           } else if (track.sign() < 0) {
             nAKaRec += hPtEtaForEffCorrection[kKa][kNeg]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kKa, kNeg>(recoAnalysis, track);
+            float weight = hPtEtaForEffCorrection[kKa][kNeg]->GetBinContent(ptEtaBin);
+            fillEffPower(kamPow, weight);
           }
           // PID band QA for kaons
           if (idMethodKa == kTPCidentified)
@@ -1757,9 +2144,13 @@ struct NchCumulantsId {
           if (track.sign() > 0) {
             nPrRec += hPtEtaForEffCorrection[kPr][kPos]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kPr, kPos>(recoAnalysis, track);
+            float weight = hPtEtaForEffCorrection[kPr][kPos]->GetBinContent(ptEtaBin);
+            fillEffPower(prPow, weight);
           } else if (track.sign() < 0) {
             nAPrRec += hPtEtaForEffCorrection[kPr][kNeg]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kPr, kNeg>(recoAnalysis, track);
+            float weight = hPtEtaForEffCorrection[kPr][kNeg]->GetBinContent(ptEtaBin);
+            fillEffPower(aprPow, weight);
           }
           // PID band QA for protons
           if (idMethodPr == kTPCidentified)
@@ -1839,24 +2230,42 @@ struct NchCumulantsId {
             fillPurityTrackQA<purityAnalysisDir, kPr, kNeg>(purityAnalysis, track);
           }
         }
-      }
+      } // reconstructed track loop ends
       nChRec = nPRec - nMRec;
       nTRec = nPRec + nMRec;
       nChPur = nPPur - nMPur;
       nTPur = nPPur + nMPur;
 
       // ── fill reco histos ─────────────────────────────────────
-      hist.fill(HIST("sim/reco/sparse1"), nChRec, nPRec, nMRec,
-                nPrRec, nAPrRec, nKaRec, nAKaRec, nTRec, col.centFT0M());
-      hist.fill(HIST("sim/reco/sparse2"), nChRec, nPRec, nMRec,
-                nPiRec, nAPiRec, nKaRec, nAKaRec, nTRec, col.centFT0M());
+      if (cfgEventSelection.fillSparseForReco) {
+        hist.fill(HIST("sim/reco/sparse1"), nChRec, nPRec, nMRec,
+                  nPrRec, nAPrRec, nKaRec, nAKaRec, nTRec, cent);
+        hist.fill(HIST("sim/reco/sparse2"), nChRec, nPRec, nMRec,
+                  nPiRec, nAPiRec, nKaRec, nAKaRec, nTRec, cent);
+      }
 
       // ── fill purity histos ───────────────────────────────────
-      hist.fill(HIST("sim/purity/sparse1"), nChPur, nPPur, nMPur,
-                nPrPur, nAPrPur, nKaPur, nAKaPur, nTPur, col.centFT0M());
-      hist.fill(HIST("sim/purity/sparse2"), nChPur, nPPur, nMPur,
-                nPiPur, nAPiPur, nKaPur, nAKaPur, nTPur, col.centFT0M());
+      if (cfgEventSelection.fillSparseForPurity) {
+        hist.fill(HIST("sim/purity/sparse1"), nChPur, nPPur, nMPur,
+                  nPrPur, nAPrPur, nKaPur, nAKaPur, nTPur, cent);
+        hist.fill(HIST("sim/purity/sparse2"), nChPur, nPPur, nMPur,
+                  nPiPur, nAPiPur, nKaPur, nAKaPur, nTPur, cent);
+      }
+      fillCollQA<qaEventPostSel>(col, nChRec, nTRec);
 
+      fillFCBasis<FCPrefixEnum::Pr>(prPow, cent, registry);
+      fillFCBasis<FCPrefixEnum::APr>(aprPow, cent, registry);
+      fillFCBasis<FCPrefixEnum::PiPos>(pipPow, cent, registry);
+      fillFCBasis<FCPrefixEnum::PiNeg>(pimPow, cent, registry);
+      fillFCBasis<FCPrefixEnum::KaPos>(kapPow, cent, registry);
+      fillFCBasis<FCPrefixEnum::KaNeg>(kamPow, cent, registry);
+      fillFCBasis<FCPrefixEnum::Pos>(posPow, cent, registry);
+      fillFCBasis<FCPrefixEnum::Neg>(negPow, cent, registry);
+
+      fillNetQVectorProfileHistograms<FCPrefixEnum::NetCh>(posPow, negPow, cent, registry);
+      fillNetQVectorProfileHistograms<FCPrefixEnum::NetPr>(prPow, aprPow, cent, registry);
+      fillNetQVectorProfileHistograms<FCPrefixEnum::NetPi>(pipPow, pimPow, cent, registry);
+      fillNetQVectorProfileHistograms<FCPrefixEnum::NetKa>(kapPow, kamPow, cent, registry);
     } // common collision loop ends
   } // process sim ends
   PROCESS_SWITCH(NchCumulantsId, processSim, "Process Sim: Gen + Reco + Purity", true);
