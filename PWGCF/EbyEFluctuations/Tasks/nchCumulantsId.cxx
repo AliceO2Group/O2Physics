@@ -1367,34 +1367,34 @@ struct NchCumulantsId {
   void executeTrackAnalysisPart(const T& track, const int& trackIdTag, float& nP, float& nM,
                                 const int& idMethodPi, const bool& trackIsPion, float& nAPi, float& nPi,
                                 const int& idMethodKa, const bool& trackIsKaon, float& nAKa, float& nKa,
-                                const int& idMethodPr, const bool& trackIsProton, float& nPr, float& nAPr, H& recoAnalysis)
+                                const int& idMethodPr, const bool& trackIsProton, float& nPr, float& nAPr, H& hReg)
   {
     if (cfgEventSelection.flagUnusedVariableError)
       LOG(info) << trackIdTag << idMethodPi << ":" << idMethodKa << ":" << idMethodPr;
     if (track.sign() > 0) {
-      // fillRecoTrackQA<kPos>(recoAnalysis, track);
+      // fillRecoTrackQA<kPos>(hReg, track);
       nP++;
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Pos/h12_p"), track.p());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Pos/h13_pt"), track.pt());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Pos/h14_eta"), track.eta());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Pos/h15_phi"), track.phi());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Pos/h16_rapidity"), track.y());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Pos/h20_pt_eta"), track.pt(), track.eta());
+      hReg.fill(HIST("recoAnalysis/Charge/Pos/h12_p"), track.p());
+      hReg.fill(HIST("recoAnalysis/Charge/Pos/h13_pt"), track.pt());
+      hReg.fill(HIST("recoAnalysis/Charge/Pos/h14_eta"), track.eta());
+      hReg.fill(HIST("recoAnalysis/Charge/Pos/h15_phi"), track.phi());
+      hReg.fill(HIST("recoAnalysis/Charge/Pos/h16_rapidity"), track.y());
+      hReg.fill(HIST("recoAnalysis/Charge/Pos/h20_pt_eta"), track.pt(), track.eta());
     }
     if (track.sign() < 0) {
-      // fillRecoTrackQA<kNeg>(recoAnalysis, track);
+      // fillRecoTrackQA<kNeg>(hReg, track);
       nM++;
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h12_p"), track.p());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h13_pt"), track.pt());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h14_eta"), track.eta());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h15_phi"), track.phi());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h16_rapidity"), track.y());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h20_pt_eta"), track.pt(), track.eta());
+      hReg.fill(HIST("recoAnalysis/Charge/Neg/h12_p"), track.p());
+      hReg.fill(HIST("recoAnalysis/Charge/Neg/h13_pt"), track.pt());
+      hReg.fill(HIST("recoAnalysis/Charge/Neg/h14_eta"), track.eta());
+      hReg.fill(HIST("recoAnalysis/Charge/Neg/h15_phi"), track.phi());
+      hReg.fill(HIST("recoAnalysis/Charge/Neg/h16_rapidity"), track.y());
+      hReg.fill(HIST("recoAnalysis/Charge/Neg/h20_pt_eta"), track.pt(), track.eta());
     }
 
     if (trackIsPion) {
       // if (idMethodPi == kTPCidentified) {
-      //   fillIdentificationQA<recoAnalysisDir, kPi, tpcId, true>(hist, track); // set hist as recoAnalysis after tpcId etc add true
+      //   fillIdentificationQA<recoAnalysisDir, kPi, tpcId, true>(hist, track); // set hist as hReg after tpcId etc add true
       // } else if (idMethodPi == kTPCTOFidentified) {
       //   fillIdentificationQA<recoAnalysisDir, kPi, tpctofId, true>(hist, track);
       // } else if (idMethodPi == kUnidentified) {
@@ -1402,12 +1402,12 @@ struct NchCumulantsId {
       // }
       if (track.sign() > 0) {
         nPi++;
-        fillRecoTrackQA<recoAnalysisDir, kPi, kPos>(recoAnalysis, track);
+        fillRecoTrackQA<recoAnalysisDir, kPi, kPos>(hReg, track);
       } else if (track.sign() < 0) {
         nAPi++;
-        fillRecoTrackQA<recoAnalysisDir, kPi, kNeg>(recoAnalysis, track);
+        fillRecoTrackQA<recoAnalysisDir, kPi, kNeg>(hReg, track);
       }
-      // fillRecoTrackQA<recoAnalysisDir, kPi>(recoAnalysis, track);
+      // fillRecoTrackQA<recoAnalysisDir, kPi>(hReg, track);
     }
     if (trackIsKaon) {
       // if (idMethodKa == kTPCidentified) {
@@ -1419,12 +1419,12 @@ struct NchCumulantsId {
       // }
       if (track.sign() > 0) {
         nKa++;
-        fillRecoTrackQA<recoAnalysisDir, kKa, kPos>(recoAnalysis, track);
+        fillRecoTrackQA<recoAnalysisDir, kKa, kPos>(hReg, track);
       } else if (track.sign() < 0) {
         nAKa++;
-        fillRecoTrackQA<recoAnalysisDir, kKa, kNeg>(recoAnalysis, track);
+        fillRecoTrackQA<recoAnalysisDir, kKa, kNeg>(hReg, track);
       }
-      // fillRecoTrackQA<recoAnalysisDir, kKa>(recoAnalysis, track);
+      // fillRecoTrackQA<recoAnalysisDir, kKa>(hReg, track);
     }
     if (trackIsProton) {
       // if (idMethodPr == kTPCidentified) {
@@ -1436,15 +1436,15 @@ struct NchCumulantsId {
       // }
       if (track.sign() > 0) {
         nPr++;
-        fillRecoTrackQA<recoAnalysisDir, kPr, kPos>(recoAnalysis, track);
+        fillRecoTrackQA<recoAnalysisDir, kPr, kPos>(hReg, track);
       } else if (track.sign() < 0) {
         nAPr++;
-        fillRecoTrackQA<recoAnalysisDir, kPr, kNeg>(recoAnalysis, track);
+        fillRecoTrackQA<recoAnalysisDir, kPr, kNeg>(hReg, track);
       }
-      // fillRecoTrackQA<recoAnalysisDir, kPr>(recoAnalysis, track);
+      // fillRecoTrackQA<recoAnalysisDir, kPr>(hReg, track);
     }
 
-    // recoAnalysis.fill(HIST("recoAnalysis/SelectedTrack_IdentificationTag"), trackIdTag);
+    // hReg.fill(HIST("recoAnalysis/SelectedTrack_IdentificationTag"), trackIdTag);
   }
   // fill the basis for factorial cumulants
 
@@ -1459,22 +1459,22 @@ struct NchCumulantsId {
   using MyCollisionsWithMcLabels = soa::Join<aod::Collisions, aod::Mults, aod::CentFT0Ms, aod::EvSels, aod::McCollisionLabels>;
 
   template <typename CollisionType>
-  bool isEventSelected(const CollisionType& col)
+  bool isEventSelected(const CollisionType& coll)
   {
     if (cfgEventSelection.cfgEvSel01doNoSameBunchPileup &&
-        !col.selection_bit(aod::evsel::kNoSameBunchPileup))
+        !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
       return false;
     if (cfgEventSelection.cfgEvSel02doIsGoodZvtxFT0vsPV &&
-        !col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+        !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
       return false;
     if (cfgEventSelection.cfgEvSel03doIsGoodITSLayersAll &&
-        !col.selection_bit(aod::evsel::kIsGoodITSLayersAll))
+        !coll.selection_bit(aod::evsel::kIsGoodITSLayersAll))
       return false;
     return true;
   }
 
   // tracks and collision filters
-  Filter col = aod::evsel::sel8 == true;
+  Filter colSel8 = aod::evsel::sel8 == true;
   Filter colFilter = nabs(aod::collision::posZ) < cfgCutPosZ;
   Filter trackFilter = requireGlobalTrackInFilter();
   Filter trackPt = (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax);
@@ -1620,16 +1620,16 @@ struct NchCumulantsId {
         }
         if (!isEventSelected(col))
           continue;
-        float nP = 0;
-        float nM = 0;
-        float nCh = 0;
-        float nT = 0;
-        float nPr = 0;
-        float nAPr = 0;
-        float nKa = 0;
-        float nAKa = 0;
-        float nPi = 0;
-        float nAPi = 0;
+        nP = 0;
+        nM = 0;
+        nCh = 0;
+        nT = 0;
+        nPr = 0;
+        nAPr = 0;
+        nKa = 0;
+        nAKa = 0;
+        nPi = 0;
+        nAPi = 0;
         // group tracks manually with corresponding collision using col id;
         const uint64_t collIdx = col.globalIndex();
         const auto tracksTablePerColl = tracks.sliceBy(mctracksPerCollisionPreslice, collIdx);
