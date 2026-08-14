@@ -960,11 +960,15 @@ struct NonPromptCascadeTask {
     // MC collision has a reconstructed collision in 'colls'.
     // This must be independent of reco-track cuts.
     std::vector<char> mcCollisionHasRecoCollision(mcCollisions.size(), 0);
+    std::vector<float> mcCollisionRecoMultFT0M(mcCollisions.size(), InvalidEta);
+    std::vector<float> mcCollisionRecoCentFT0M(mcCollisions.size(), InvalidEta);
 
     for (auto const& col : colls) {
       const int mcid = col.mcCollisionId();
       if (mcid >= 0 && static_cast<size_t>(mcid) < mcCollisionHasRecoCollision.size()) {
         mcCollisionHasRecoCollision[mcid] = 1;
+        mcCollisionRecoMultFT0M[mcid] = col.multFT0M();
+        mcCollisionRecoCentFT0M[mcid] = col.centFT0M();
       } else {
         LOG(info) << "4 This should never happen ?";
       }
@@ -1016,11 +1020,13 @@ struct NonPromptCascadeTask {
       const float multReco = recoMultDense[dIdx];
       const float ptReco = trk.pt();
       const float etaReco = trk.eta();
+      const float multFT0M = col.multFT0M();
+      const float centFT0M = col.centFT0M();
 
       if (mcCollId < 0 || static_cast<int64_t>(mcCollId) >= mcCollisions.size()) {
         if (writeRecoCollision[dIdx]) {
           // Fake: accepted reco track whose reconstructed collision has no valid MC collision label.
-          NPMCNTable(-1.f, ptReco, InvalidEta, etaReco, multReco, -1.f, -1.f);
+          NPMCNTable(-1.f, ptReco, InvalidEta, etaReco, multReco, -1.f, -1.f, multFT0M, centFT0M);
         }
         continue;
       }
@@ -1029,7 +1035,7 @@ struct NonPromptCascadeTask {
       if (mcPid < 0 || static_cast<int64_t>(mcPid) >= mcParticles.size()) {
         if (writeMcCollision[mcCollId]) {
           // Fake: accepted reco track with invalid or missing MC particle label.
-          NPMCNTable(-2.f, ptReco, InvalidEta, etaReco, multReco, -2.f, mcMultFT0[mcCollId]);
+          NPMCNTable(-2.f, ptReco, InvalidEta, etaReco, multReco, -2.f, mcMultFT0[mcCollId], multFT0M, centFT0M);
         }
         continue;
       }
@@ -1040,7 +1046,7 @@ struct NonPromptCascadeTask {
       if (mcParCollId != mcCollId) {
         if (writeMcCollision[mcCollId]) {
           // Fake: reco collision and particle label point to different MC collisions.
-          NPMCNTable(-3.f, ptReco, InvalidEta, etaReco, multReco, -3.f, mcMultFT0[mcCollId]);
+          NPMCNTable(-3.f, ptReco, InvalidEta, etaReco, multReco, -3.f, mcMultFT0[mcCollId], multFT0M, centFT0M);
         }
         continue;
       }
@@ -1048,7 +1054,7 @@ struct NonPromptCascadeTask {
       if (!isAcceptedMCParticle(mcPar)) {
         if (writeMcCollision[mcCollId]) {
           // Feed-in: accepted reco track matched to truth outside fiducial phase space.
-          NPMCNTable(-4.f, ptReco, mcPar.eta(), etaReco, multReco, -4.f, mcMultFT0[mcCollId]);
+          NPMCNTable(-4.f, ptReco, mcPar.eta(), etaReco, multReco, -4.f, mcMultFT0[mcCollId], multFT0M, centFT0M);
         }
         continue;
       }
@@ -1067,7 +1073,7 @@ struct NonPromptCascadeTask {
 
       if (writeMcCollision[mcCollId]) {
         // Matched: accepted truth particle reconstructed inside the fiducial reco phase space.
-        NPMCNTable(ptMC, ptReco, etaMC, etaReco, multReco, multMC, mcMultFT0[mcCollId]);
+        NPMCNTable(ptMC, ptReco, etaMC, etaReco, multReco, multMC, mcMultFT0[mcCollId], multFT0M, centFT0M);
       }
     }
 
@@ -1097,6 +1103,8 @@ struct NonPromptCascadeTask {
 
       const float multMC = mcMult[mcid];
       const float multMCFT0 = mcMultFT0[mcid];
+      const float multFT0M = mcCollisionRecoMultFT0M[mcid];
+      const float centFT0M = mcCollisionRecoCentFT0M[mcid];
 
       mRegistrydNdeta.fill(HIST("hdNdetaRM/hdNdetaRMNotInRecoTrk"),
                            multMC,
@@ -1104,7 +1112,7 @@ struct NonPromptCascadeTask {
 
       if (writeMcCollision[mcid]) {
         // Missed track: accepted truth particle in a reconstructed MC collision, but no accepted reco track.
-        NPMCNTable(mcp.pt(), -1.f, mcp.eta(), InvalidEta, -1.f, multMC, multMCFT0);
+        NPMCNTable(mcp.pt(), -1.f, mcp.eta(), InvalidEta, -1.f, multMC, multMCFT0, multFT0M, centFT0M);
       }
     }
 
@@ -1134,7 +1142,7 @@ struct NonPromptCascadeTask {
 
         if (writeMcCollision[mcid]) {
           // Missed collision: accepted truth particle from an MC collision with no reconstructed collision.
-          NPMCNTable(mcp.pt(), -2.f, mcp.eta(), InvalidEta, -2.f, multMC, multMCFT0);
+          NPMCNTable(mcp.pt(), -2.f, mcp.eta(), InvalidEta, -2.f, multMC, multMCFT0, InvalidEta, InvalidEta);
         }
       }
     }
