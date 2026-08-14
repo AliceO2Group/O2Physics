@@ -86,13 +86,13 @@ using TrackMCLbsTbl = soa::Filtered<aod::JetTracksMCD>;
 using PartTbl = soa::Filtered<aod::JetParticles>;
 
 // --- Jets (with constituents)
-using JetsDataTbl = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
-using JetsDetTbl = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>>;
-using JetsPartTbl = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>>;
+using ChJetsDataTbl = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
+using ChJetsDetTbl = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>>;
+using ChJetsPartTbl = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>>;
 
 // --- Matched jets (det <-> part)
-using MatchedJetsDetToPartTbl = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>>;
-using MatchedJetsPartToDetTbl = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
+using MatchedChJetsDetToPartTbl = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>>;
+using MatchedChJetsPartToDetTbl = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
 
 // --- O2 collisions event selection (not JCollisions)
 using CollEvSelExtendedIt = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FT0MultZeqs, aod::MultsExtra, aod::PVMults>>::iterator;
@@ -136,11 +136,11 @@ struct RecoilJets {
   } trk;
 
   // ---------- Jet reconstruction ----------
-  struct Jet : ConfigurableGroup {
+  struct Jets : ConfigurableGroup {
     std::string prefix = "jet";
     Configurable<float> constituentPtMax{"constituentPtMax", 100., "Remove jets with constituent above this pT cut"},
       radius{"radius", 0.4, "Jet cone radius"};
-  } jet;
+  } jets;
 
   // ---------- Background tools ----------
   struct Bkgd : ConfigurableGroup {
@@ -219,8 +219,8 @@ struct RecoilJets {
   Filter partFilter = nabs(aod::jmcparticle::eta) < trk.etaCut.node();
 
   // Declare filter on jets
-  Filter jetRadiusFilter = aod::jet::r == nround(jet.radius.node() * 100.);
-  Filter jetEtaFilter = nabs(aod::jet::eta) < trk.etaCut.node() - jet.radius.node(); // 0.5 in our analysis
+  Filter jetRadiusFilter = aod::jet::r == nround(jets.radius.node() * 100.);
+  Filter jetEtaFilter = nabs(aod::jet::eta) < trk.etaCut.node() - jets.radius.node(); // 0.5 in our analysis
 
   HistogramRegistry spectra;
 
@@ -228,8 +228,8 @@ struct RecoilJets {
   int trackSelection = -1;
   std::vector<int> triggerMaskBits;
 
-  Service<o2::framework::O2DatabasePDG> pdg;
-  Preslice<MatchedJetsPartToDetTbl> partJetsByMcCollision = aod::jet::mcCollisionId;
+  Service<o2::framework::O2DatabasePDG> pdg{};
+  Preslice<MatchedChJetsPartToDetTbl> partJetsByMcCollision = aod::jet::mcCollisionId;
   Preslice<aod::JetParticles> particlesByMcCollision = aod::jet::mcCollisionId;
 
   template <typename AxisObject>
@@ -237,9 +237,9 @@ struct RecoilJets {
     AxisDesc(const char* label_, const AxisObject& axis_, const std::string& axisName_ = "")
       : label(label_), axis(axis_), axisName(axisName_) {}
 
-    const char* label;      // "FT0C" / "FT0M"
-    const AxisObject& axis; // AxisSpec or ConfigurableAxis
-    std::string axisName;   // Empty for AxisSpec
+    const char* label;    // "FT0C" / "FT0M"
+    AxisObject axis;      // AxisSpec or ConfigurableAxis
+    std::string axisName; // Empty for AxisSpec
   };
 
   struct FT0Metrics {
@@ -286,13 +286,13 @@ struct RecoilJets {
   };
 
   // Hard-coded rho-shift values obtained from train 701159
-  const std::array<EARhoShift, 7> eaRhoShifts{{{kMB, "EA_MB", 0.283998f},
-                                               {kEA0_20, "EA_Perc_0_20", 0.199249f},
-                                               {kEA0_10, "EA_Perc_0_10", 0.186661f},
-                                               {kEA20_40, "EA_Perc_20_40", 0.137945f},
-                                               {kEA60_80, "EA_Perc_60_80", 0.0962535f},
-                                               {kEA50_100, "EA_Perc_50_100", 0.106919f},
-                                               {kEA80_100, "EA_Perc_80_100", 0.0871301f}}};
+  std::array<EARhoShift, 7> eaRhoShifts{{{.interval = kMB, .label = "EA_MB", .rhoShift = 0.283998f},
+                                         {.interval = kEA0_20, .label = "EA_Perc_0_20", .rhoShift = 0.199249f},
+                                         {.interval = kEA0_10, .label = "EA_Perc_0_10", .rhoShift = 0.186661f},
+                                         {.interval = kEA20_40, .label = "EA_Perc_20_40", .rhoShift = 0.137945f},
+                                         {.interval = kEA60_80, .label = "EA_Perc_60_80", .rhoShift = 0.0962535f},
+                                         {.interval = kEA50_100, .label = "EA_Perc_50_100", .rhoShift = 0.106919f},
+                                         {.interval = kEA80_100, .label = "EA_Perc_80_100", .rhoShift = 0.0871301f}}};
 
   void init(InitContext const&)
   {
@@ -1292,9 +1292,9 @@ struct RecoilJets {
   //=============================================================================
 
   // Fill histograms with raw or MC det. level data
-  template <typename JCollision, typename Jets, typename JTracks>
+  template <typename JCollision, typename ChJets, typename JTracks>
   void fillHistograms(JCollision const& collision,
-                      Jets const& jets,
+                      ChJets const& chJets,
                       JTracks const& tracks,
                       float weight = 1.)
   {
@@ -1319,8 +1319,9 @@ struct RecoilJets {
     const auto centFT0M = collision.centFT0M();
 
     const auto dice = randGen->Rndm();
-    if (dice < tt.fracSig)
+    if (dice < tt.fracSig) {
       bSigEv = true;
+    }
 
     // EA distributions
     spectra.fill(HIST("hScaledFT0C"), scaledFT0C, weight);
@@ -1351,8 +1352,9 @@ struct RecoilJets {
     for (const auto& track : tracks) {
       spectra.fill(HIST("hTrackSelectionCount"), 0.5);
 
-      if (skipTrack(track))
+      if (skipTrack(track)) {
         continue;
+      }
 
       const float trackPt = track.pt();
       const float trackPhi = track.phi();
@@ -1450,22 +1452,23 @@ struct RecoilJets {
       }
     }
 
-    for (const auto& jet : jets) {
+    for (const auto& chJet : chJets) {
       // skip jets which have a constituent with pT above specified cut
-      if (isJetWithHighPtConstituent<JTracks>(jet))
+      if (isJetWithHighPtConstituent<JTracks>(chJet)) {
         continue;
+      }
 
-      const auto jetPt = jet.pt();
-      const auto jetArea = jet.area();
+      const auto jetPt = chJet.pt();
+      const auto jetArea = chJet.area();
       const auto jetPtCorr = jetPt - rho * jetArea;
 
-      spectra.fill(HIST("hJetPtEtaPhiRhoArea"), jetPt, jet.eta(), jet.phi(), rho, jetArea, weight);
+      spectra.fill(HIST("hJetPtEtaPhiRhoArea"), jetPt, chJet.eta(), chJet.phi(), rho, jetArea, weight);
 
       if (nTT > 0) {
         const auto phiMin = tt.phiRestr->at(0);
         const auto phiMax = tt.phiRestr->at(1);
 
-        auto [dphi, bRecoilJet] = isRecoilJet(jet, phiTT);
+        auto [dphi, bRecoilJet] = isRecoilJet(chJet, phiTT);
 
         if (bSigEv) {
 
@@ -1527,8 +1530,9 @@ struct RecoilJets {
             // Fill EA-dependent TTRef recoil spectra using the corresponding rho shift
             for (const auto& ea : eaRhoShifts) {
 
-              if (!isInEAInterval(scaledFT0M, ft0mEdges, ea.interval))
+              if (!isInEAInterval(scaledFT0M, ft0mEdges, ea.interval)) {
                 continue;
+              }
 
               const float rhoRefShifted = rho + ea.rhoShift;
               const float jetPtCorrShifted = jetPt - rhoRefShifted * jetArea;
@@ -1591,9 +1595,9 @@ struct RecoilJets {
     }
   }
 
-  template <typename JCollision, typename Jets, typename JParticles>
+  template <typename JCollision, typename ChJets, typename JParticles>
   void fillHistogramsMCPartLevel(JCollision const& collision,
-                                 Jets const& jets,
+                                 ChJets const& chJets,
                                  JParticles const& particles,
                                  float weight = 1.)
   {
@@ -1615,8 +1619,9 @@ struct RecoilJets {
     const auto centFT0M = collision.centFT0M();
 
     const auto dice = randGen->Rndm();
-    if (dice < tt.fracSig)
+    if (dice < tt.fracSig) {
       bSigEv = true;
+    }
 
     // EA distributions
     spectra.fill(HIST("hScaledFT0C_Part"), scaledFT0C, weight);
@@ -1638,8 +1643,9 @@ struct RecoilJets {
     spectra.fill(HIST("hScaledFT0M_Rho_Part"), scaledFT0M, rho, weight);
 
     for (const auto& particle : particles) {
-      if (skipParticle(particle))
+      if (skipParticle(particle)) {
         continue;
+      }
 
       const auto particlePt = particle.pt();
       const auto particlePhi = particle.phi();
@@ -1736,18 +1742,18 @@ struct RecoilJets {
       }
     }
 
-    for (const auto& jet : jets) {
-      const auto jetPt = jet.pt();
-      const auto jetArea = jet.area();
+    for (const auto& chJet : chJets) {
+      const auto jetPt = chJet.pt();
+      const auto jetArea = chJet.area();
       const auto jetPtCorr = jetPt - rho * jetArea;
 
-      spectra.fill(HIST("hJetPtEtaPhiRhoArea_Part"), jetPt, jet.eta(), jet.phi(), rho, jetArea, weight);
+      spectra.fill(HIST("hJetPtEtaPhiRhoArea_Part"), jetPt, chJet.eta(), chJet.phi(), rho, jetArea, weight);
 
       if (nTT > 0) {
         const auto phiMin = tt.phiRestr->at(0);
         const auto phiMax = tt.phiRestr->at(1);
 
-        auto [dphi, bRecoilJet] = isRecoilJet(jet, phiTT);
+        auto [dphi, bRecoilJet] = isRecoilJet(chJet, phiTT);
 
         if (bSigEv) {
 
@@ -1829,10 +1835,10 @@ struct RecoilJets {
   //=============================================================================
   // Construction of response matrix
   //=============================================================================
-  template <typename JCollision, typename JTracks, typename JetsPart, typename JetsDet>
+  template <typename JCollision, typename JTracks, typename ChJetsPart, typename ChJetsDet>
   void fillMatchedGeoHistograms(JCollision const& collision,
-                                JetsPart const& jetsPart,
-                                JetsDet const& jetsDet,
+                                ChJetsPart const& chJetsPart,
+                                ChJetsDet const& chJetsDet,
                                 JTracks const& tracks,
                                 const float partLevelCollRho,
                                 float weight = 1.)
@@ -1861,10 +1867,10 @@ struct RecoilJets {
 
     //====================================================================================
     // Particle-level jets
-    for (const auto& jetPart : jetsPart) {
-      const auto partJetPt = jetPart.pt();
-      const auto partJetPtCorr = partJetPt - partLevelCollRho * jetPart.area();
-      const bool bIsPartJetRecoil = bIsThereTTSig && get<1>(isRecoilJet(jetPart, phiTTSig));
+    for (const auto& chJetPart : chJetsPart) {
+      const auto partJetPt = chJetPart.pt();
+      const auto partJetPtCorr = partJetPt - partLevelCollRho * chJetPart.area();
+      const bool bIsPartJetRecoil = bIsThereTTSig && get<1>(isRecoilJet(chJetPart, phiTTSig));
 
       //==================================================================================
       // All particle-level inclusive jets
@@ -1888,8 +1894,8 @@ struct RecoilJets {
 
       //==================================================================================
       // Matched detector-level jets
-      if (jetPart.has_matchedJetGeo()) {
-        const auto& jetsDetMatched = jetPart.template matchedJetGeo_as<JetsDet>();
+      if (chJetPart.has_matchedJetGeo()) {
+        const auto& jetsDetMatched = chJetPart.template matchedJetGeo_as<ChJetsDet>();
 
         for (const auto& jetDetMatched : jetsDetMatched) {
           if (isJetWithHighPtConstituent<JTracks>(jetDetMatched)) {
@@ -1900,7 +1906,7 @@ struct RecoilJets {
           const auto detJetPtCorr = detJetPt - detLevelCollRho * jetDetMatched.area();
           const auto relJetSmearPt = (partJetPt - detJetPt) / partJetPt;
           const auto relJetSmearPtCorr = (partJetPtCorr - detJetPtCorr) / partJetPtCorr;
-          const auto deltaPhi = RecoDecay::constrainAngle(jetPart.phi() - jetDetMatched.phi(), -constants::math::PI);
+          const auto deltaPhi = RecoDecay::constrainAngle(chJetPart.phi() - jetDetMatched.phi(), -constants::math::PI);
           hasAcceptedDetMatch = true;
 
           //================================================================================
@@ -1974,15 +1980,15 @@ struct RecoilJets {
 
     //====================================================================================
     // Detector-level jets
-    for (const auto& jetDet : jetsDet) {
-      if (isJetWithHighPtConstituent<JTracks>(jetDet)) {
+    for (const auto& chJetDet : chJetsDet) {
+      if (isJetWithHighPtConstituent<JTracks>(chJetDet)) {
         continue;
       }
 
-      const auto detJetPt = jetDet.pt();
-      const auto detJetPtCorr = detJetPt - detLevelCollRho * jetDet.area();
+      const auto detJetPt = chJetDet.pt();
+      const auto detJetPtCorr = detJetPt - detLevelCollRho * chJetDet.area();
 
-      const bool bIsJetRecoil = bIsThereTTSig && get<1>(isRecoilJet(jetDet, phiTTSig));
+      const bool bIsJetRecoil = bIsThereTTSig && get<1>(isRecoilJet(chJetDet, phiTTSig));
 
       //==================================================================================
       // All detector-level inclusive jets
@@ -2004,7 +2010,7 @@ struct RecoilJets {
 
       //==================================================================================
       // Fake detector-level jets: no matched particle level jet
-      if (!jetDet.has_matchedJetGeo()) {
+      if (!chJetDet.has_matchedJetGeo()) {
         spectra.fill(HIST("hFakeInclusiveJetsPt"), detJetPt, weight);
         spectra.fill(HIST("hScaledFT0C_FakeInclusiveJetsPtCorr"), scaledFT0C, detJetPtCorr, weight);
         spectra.fill(HIST("hScaledFT0M_FakeInclusiveJetsPtCorr"), scaledFT0M, detJetPtCorr, weight);
@@ -2022,10 +2028,10 @@ struct RecoilJets {
     }
   }
 
-  template <typename JCollision, typename JTracks, typename JetsPart, typename JetsDet>
+  template <typename JCollision, typename JTracks, typename ChJetsPart, typename ChJetsDet>
   void fillMatchedGeoPtHistograms(JCollision const& collision,
-                                  JetsPart const& jetsPart,
-                                  JetsDet const& jetsDet,
+                                  ChJetsPart const& chJetsPart,
+                                  ChJetsDet const& chJetsDet,
                                   JTracks const& tracks,
                                   const float partLevelCollRho,
                                   float weight = 1.)
@@ -2053,10 +2059,10 @@ struct RecoilJets {
 
     //====================================================================================
     // Particle-level jets
-    for (const auto& jetPart : jetsPart) {
-      const auto partJetPt = jetPart.pt();
-      const auto partJetPtCorr = partJetPt - partLevelCollRho * jetPart.area();
-      const bool bIsPartJetRecoil = bIsThereTTSig && get<1>(isRecoilJet(jetPart, phiTTSig));
+    for (const auto& chJetPart : chJetsPart) {
+      const auto partJetPt = chJetPart.pt();
+      const auto partJetPtCorr = partJetPt - partLevelCollRho * chJetPart.area();
+      const bool bIsPartJetRecoil = bIsThereTTSig && get<1>(isRecoilJet(chJetPart, phiTTSig));
 
       //==================================================================================
       // All particle-level inclusive jets
@@ -2080,9 +2086,9 @@ struct RecoilJets {
 
       //==================================================================================
       // Matched detector-level jets: geo + pT matching
-      if (jetPart.has_matchedJetGeo() && jetPart.has_matchedJetPt()) {
-        const auto& jetsDetMatched = jetPart.template matchedJetGeo_as<JetsDet>();
-        const auto both = intersectMatchIds(jetPart.matchedJetGeoIds(), jetPart.matchedJetPtIds());
+      if (chJetPart.has_matchedJetGeo() && chJetPart.has_matchedJetPt()) {
+        const auto& jetsDetMatched = chJetPart.template matchedJetGeo_as<ChJetsDet>();
+        const auto both = intersectMatchIds(chJetPart.matchedJetGeoIds(), chJetPart.matchedJetPtIds());
 
         for (const auto& jetDetMatched : jetsDetMatched) {
           if (!both.contains(jetDetMatched.globalIndex())) {
@@ -2097,7 +2103,7 @@ struct RecoilJets {
           const auto detJetPtCorr = detJetPt - detLevelCollRho * jetDetMatched.area();
           const auto relJetSmearPt = (partJetPt - detJetPt) / partJetPt;
           const auto relJetSmearPtCorr = (partJetPtCorr - detJetPtCorr) / partJetPtCorr;
-          const auto deltaPhi = RecoDecay::constrainAngle(jetPart.phi() - jetDetMatched.phi(), -constants::math::PI);
+          const auto deltaPhi = RecoDecay::constrainAngle(chJetPart.phi() - jetDetMatched.phi(), -constants::math::PI);
           hasAcceptedDetMatch = true;
 
           //================================================================================
@@ -2171,15 +2177,15 @@ struct RecoilJets {
 
     //====================================================================================
     // Detector-level jets
-    for (const auto& jetDet : jetsDet) {
-      if (isJetWithHighPtConstituent<JTracks>(jetDet)) {
+    for (const auto& chJetDet : chJetsDet) {
+      if (isJetWithHighPtConstituent<JTracks>(chJetDet)) {
         continue;
       }
 
-      const auto detJetPt = jetDet.pt();
-      const auto detJetPtCorr = detJetPt - detLevelCollRho * jetDet.area();
+      const auto detJetPt = chJetDet.pt();
+      const auto detJetPtCorr = detJetPt - detLevelCollRho * chJetDet.area();
 
-      const bool bIsJetRecoil = bIsThereTTSig && get<1>(isRecoilJet(jetDet, phiTTSig));
+      const bool bIsJetRecoil = bIsThereTTSig && get<1>(isRecoilJet(chJetDet, phiTTSig));
 
       //==================================================================================
       // All detector-level inclusive jets
@@ -2203,8 +2209,8 @@ struct RecoilJets {
       // Fake detector-level jets: no matched particle-level jet accepted by both geo and pT matching
       bool hasAcceptedPartMatch = false;
 
-      if (jetDet.has_matchedJetGeo() && jetDet.has_matchedJetPt()) {
-        const auto both = intersectMatchIds(jetDet.matchedJetGeoIds(), jetDet.matchedJetPtIds());
+      if (chJetDet.has_matchedJetGeo() && chJetDet.has_matchedJetPt()) {
+        const auto both = intersectMatchIds(chJetDet.matchedJetGeoIds(), chJetDet.matchedJetPtIds());
         hasAcceptedPartMatch = !both.empty();
       }
 
@@ -2370,8 +2376,9 @@ struct RecoilJets {
       spectra.fill(HIST("hEventSelectionCountQA"), 3.5);
     }
 
-    if (!(isGoodZvtxFT0vsPV && isNoSameBunchPileup && isNoCollInTimeRangeStandard))
+    if (!(isGoodZvtxFT0vsPV && isNoSameBunchPileup && isNoCollInTimeRangeStandard)) {
       return;
+    }
 
     spectra.fill(HIST("hEventSelectionCountQA"), 4.5); // All accepted events after 4 flags cut
 
@@ -2435,17 +2442,20 @@ struct RecoilJets {
       spectra.fill(HIST("hScaledFT0MsignalWithoutBC"), scaledFT0M, fillNumber, weight);
     }
 
-    if (collision.foundBCId() != -1) // -1 if does not
+    if (collision.foundBCId() != -1) { // -1 if does not
       spectra.fill(HIST("hIsFT0SignalComeFromCollPerRun"), 2.5, fillNumber, weight);
-    else
+    } else {
       spectra.fill(HIST("hIsFT0SignalComeFromCollPerRun"), 3.5, fillNumber, weight);
+    }
   }
 
   //=============================================================================
   // Di-hadron azimuthal correlation in raw and MC det. level (no weight; MB events) data
   //=============================================================================
   template <typename JCollision, typename JTracks>
-  void fillLeadingAndAssociatedTracksTask(JCollision const& collision, JTracks const& tracks, float weight = 1.)
+  void fillLeadingAndAssociatedTracksTask(JCollision const& collision,
+                                          JTracks const& tracks,
+                                          float weight = 1.)
   {
     std::vector<double> vPhiOfLeadingTracks;
     std::vector<double> vPtOfLeadingTracks;
@@ -2457,8 +2467,9 @@ struct RecoilJets {
 
     // Search for leading tracks
     for (const auto& track : tracks) {
-      if (skipTrack(track))
+      if (skipTrack(track)) {
         continue;
+      }
 
       const auto trackPt = track.pt();
 
@@ -2480,8 +2491,9 @@ struct RecoilJets {
       spectra.fill(HIST("hScaledFT0M_NleadTracks"), scaledFT0M, 0.5, weight);
 
       for (const auto& track : tracks) {
-        if (skipTrack(track))
+        if (skipTrack(track)) {
           continue;
+        }
 
         const auto trackPt = track.pt();
         const auto trackPhi = track.phi();
@@ -2501,9 +2513,9 @@ struct RecoilJets {
   //=============================================================================
 
   // Background fluctuations in raw data and MC det. level
-  template <typename JCollision, typename JTracks, typename Jets>
+  template <typename JCollision, typename JTracks, typename ChJets>
   void fillBkgdFluctuations(JCollision const& collision,
-                            Jets const& jets,
+                            ChJets const& chJets,
                             JTracks const& tracks,
                             float weight = 1.)
   {
@@ -2528,8 +2540,9 @@ struct RecoilJets {
     uint64_t index = 0;
     for (const auto& track : tracks) {
       ++index;
-      if (skipTrack(track))
+      if (skipTrack(track)) {
         continue;
+      }
 
       float dEta = std::pow(randomConeEta - track.eta(), 2);
       float dPhi = std::pow(RecoDecay::constrainAngle(randomConePhi - track.phi(), -constants::math::PI), 2);
@@ -2553,15 +2566,15 @@ struct RecoilJets {
     // Avoid leading jet (JE jet reconstruction sorts jets by pT)
 
     // square of distance to accept RC placement in events with leading jet
-    float dMinR2 = std::pow(jet.radius + bkgd.randomConeR + bkgd.minDeltaRToJet, 2);
+    float dMinR2 = std::pow(jets.radius + bkgd.randomConeR + bkgd.minDeltaRToJet, 2);
 
     // max # of attempts to find a place for RC; to avoid possibility with infinite loop in While cycle
     const int maxAttempts = 15000;
 
-    if (jets.size() > 0) // at least 1 jet
+    if (chJets.size() > 0) // at least 1 jet
     {
-      float leadJetEta = jets.iteratorAt(0).eta();
-      float leadJetPhi = jets.iteratorAt(0).phi();
+      float leadJetEta = chJets.iteratorAt(0).eta();
+      float leadJetPhi = chJets.iteratorAt(0).phi();
 
       float dEtaLeadJet = std::pow(leadJetEta - randomConeEta, 2);
       float dPhiLeadJet = std::pow(RecoDecay::constrainAngle(leadJetPhi - randomConePhi, -constants::math::PI), 2);
@@ -2583,8 +2596,9 @@ struct RecoilJets {
       if (isTherePlaceForRC) {
         randomConePt = 0.0;
         for (const auto& track : tracks) {
-          if (skipTrack(track))
+          if (skipTrack(track)) {
             continue;
+          }
 
           float dEta = std::pow(randomConeEta - track.eta(), 2);
           float dPhi = std::pow(RecoDecay::constrainAngle(randomConePhi - track.phi(), -constants::math::PI), 2);
@@ -2605,8 +2619,9 @@ struct RecoilJets {
 
       float perpConePt = 0.0;
       for (const auto& track : tracks) {
-        if (skipTrack(track))
+        if (skipTrack(track)) {
           continue;
+        }
 
         float dEta = std::pow(perpConeEta - track.eta(), 2);
         float dPhi = std::pow(RecoDecay::constrainAngle(perpConePhi - track.phi(), -constants::math::PI), 2);
@@ -2622,18 +2637,18 @@ struct RecoilJets {
 
     //----------------------------------------------------------
     // Avoid leading and subleading jets
-    if (jets.size() > 1) // at least 2 jets in an event
+    if (chJets.size() > 1) // at least 2 jets in an event
     {
 
       // Leading jet
-      float leadJetEta = jets.iteratorAt(0).eta();
-      float leadJetPhi = jets.iteratorAt(0).phi();
+      float leadJetEta = chJets.iteratorAt(0).eta();
+      float leadJetPhi = chJets.iteratorAt(0).phi();
       float dEtaLeadJet = std::pow(leadJetEta - randomConeEta, 2);
       float dPhiLeadJet = std::pow(RecoDecay::constrainAngle(leadJetPhi - randomConePhi, -constants::math::PI), 2);
 
       // Subleading jet
-      float subleadJetEta = jets.iteratorAt(1).eta();
-      float subleadJetPhi = jets.iteratorAt(1).phi();
+      float subleadJetEta = chJets.iteratorAt(1).eta();
+      float subleadJetPhi = chJets.iteratorAt(1).phi();
       float dEtaSubleadJet = std::pow(subleadJetEta - randomConeEta, 2);
       float dPhiSubleadJet = std::pow(RecoDecay::constrainAngle(subleadJetPhi - randomConePhi, -constants::math::PI), 2);
 
@@ -2658,8 +2673,9 @@ struct RecoilJets {
       if (isTherePlaceForRC) {
         randomConePt = 0.0;
         for (const auto& track : tracks) {
-          if (skipTrack(track))
+          if (skipTrack(track)) {
             continue;
+          }
 
           float dEta = std::pow(randomConeEta - track.eta(), 2);
           float dPhi = std::pow(RecoDecay::constrainAngle(randomConePhi - track.phi(), -constants::math::PI), 2);
@@ -2676,7 +2692,7 @@ struct RecoilJets {
 
     //----------------------------------------------------------
     // Place cone perpendicular to TTSig candidate
-    if (vCandForTT.size() > 0) // at least 1 TT
+    if (!vCandForTT.empty()) // at least 1 TT
     {
       auto randIndexTrack = randGen->Integer(vCandForTT.size());
       auto objTT = tracks.iteratorAt(vCandForTT[randIndexTrack]);
@@ -2688,8 +2704,9 @@ struct RecoilJets {
       if (std::abs(perpTTConeEta) < (trk.etaCut - bkgd.randomConeR)) {
         float perpTTConePt = 0.0;
         for (const auto& track : tracks) {
-          if (skipTrack(track))
+          if (skipTrack(track)) {
             continue;
+          }
 
           float dEta = std::pow(perpTTConeEta - track.eta(), 2);
           float dPhi = std::pow(RecoDecay::constrainAngle(perpTTConePhi - track.phi(), -constants::math::PI), 2);
@@ -2706,9 +2723,9 @@ struct RecoilJets {
     }
   }
 
-  template <typename JCollision, typename JParticles, typename Jets>
+  template <typename JCollision, typename JParticles, typename ChJets>
   void fillBkgdFluctuationsMCPartLevel(JCollision const& collision,
-                                       Jets const& jets,
+                                       ChJets const& chJets,
                                        JParticles const& particles,
                                        float weight = 1.)
   {
@@ -2732,8 +2749,9 @@ struct RecoilJets {
 
     uint64_t index = 0;
     for (const auto& particle : particles) {
-      if (skipParticle(particle))
+      if (skipParticle(particle)) {
         continue;
+      }
 
       float dEta = std::pow(randomConeEta - particle.eta(), 2);
       float dPhi = std::pow(RecoDecay::constrainAngle(randomConePhi - particle.phi(), -constants::math::PI), 2);
@@ -2758,15 +2776,15 @@ struct RecoilJets {
     // Avoid leading jet (JE jet reconstruction sorts jets by pT)
 
     // square of distance to accept RC placement in events with leading jet
-    float dMinR2 = std::pow(jet.radius + bkgd.randomConeR + bkgd.minDeltaRToJet, 2);
+    float dMinR2 = std::pow(jets.radius + bkgd.randomConeR + bkgd.minDeltaRToJet, 2);
 
     // max # of attempts to find a place for RC; to avoid possibility with infinite loop in While cycle
     const int maxAttempts = 15000;
 
-    if (jets.size() > 0) // at least 1 jet
+    if (chJets.size() > 0) // at least 1 jet
     {
-      float leadJetEta = jets.iteratorAt(0).eta();
-      float leadJetPhi = jets.iteratorAt(0).phi();
+      float leadJetEta = chJets.iteratorAt(0).eta();
+      float leadJetPhi = chJets.iteratorAt(0).phi();
 
       float dEtaLeadJet = std::pow(leadJetEta - randomConeEta, 2);
       float dPhiLeadJet = std::pow(RecoDecay::constrainAngle(leadJetPhi - randomConePhi, -constants::math::PI), 2);
@@ -2788,14 +2806,14 @@ struct RecoilJets {
       if (isTherePlaceForRC) {
         randomConePt = 0.0;
         for (const auto& particle : particles) {
-          if (skipParticle(particle))
+          if (skipParticle(particle)) {
             continue;
+          }
 
           float dEta = std::pow(randomConeEta - particle.eta(), 2);
           float dPhi = std::pow(RecoDecay::constrainAngle(randomConePhi - particle.phi(), -constants::math::PI), 2);
 
-          if ((dEta + dPhi) < radiusRC2) // inside RC
-          {
+          if ((dEta + dPhi) < radiusRC2) { // inside RC
             randomConePt += particle.pt();
           }
         }
@@ -2810,8 +2828,9 @@ struct RecoilJets {
 
       float perpConePt = 0.0;
       for (const auto& particle : particles) {
-        if (skipParticle(particle))
+        if (skipParticle(particle)) {
           continue;
+        }
 
         float dEta = std::pow(perpConeEta - particle.eta(), 2);
         float dPhi = std::pow(RecoDecay::constrainAngle(perpConePhi - particle.phi(), -constants::math::PI), 2);
@@ -2827,30 +2846,30 @@ struct RecoilJets {
 
     //----------------------------------------------------------
     // Avoid leading and subleading jets
-    if (jets.size() > 1) // at least 2 jets in an event
+    if (chJets.size() > 1) // at least 2 jets in an event
     {
 
       // Leading jet
-      float leadJetEta = jets.iteratorAt(0).eta();
-      float leadJetPhi = jets.iteratorAt(0).phi();
+      float leadJetEta = chJets.iteratorAt(0).eta();
+      float leadJetPhi = chJets.iteratorAt(0).phi();
       float dEtaLeadJet = std::pow(leadJetEta - randomConeEta, 2);
       float dPhiLeadJet = std::pow(RecoDecay::constrainAngle(leadJetPhi - randomConePhi, -constants::math::PI), 2);
 
       // Subleading jet
-      float subleadJetEta = jets.iteratorAt(1).eta();
-      float subleadJetPhi = jets.iteratorAt(1).phi();
+      float subleadJetEta = chJets.iteratorAt(1).eta();
+      float subleadJetPhi = chJets.iteratorAt(1).phi();
       float dEtaSubleadJet = std::pow(subleadJetEta - randomConeEta, 2);
       float dPhiSubleadJet = std::pow(RecoDecay::constrainAngle(subleadJetPhi - randomConePhi, -constants::math::PI), 2);
 
       // Try to add events with TTsig
       bool keepEventWithTT = false;
-      if (vCandForTT.size() > 0) // at least 1 TT
+      if (!vCandForTT.empty()) // at least 1 TT
       {
         auto randIndexParticle = randGen->Integer(vCandForTT.size());
         auto objTT = particles.iteratorAt(vCandForTT[randIndexParticle]);
 
         // Skip events where TT is not a part of leading or subleading jets (mutlijet event, difficult to place RC and avoid hard jets)
-        if (isTrackInJet(jets.iteratorAt(0), objTT) || isTrackInJet(jets.iteratorAt(1), objTT)) {
+        if (isTrackInJet(chJets.iteratorAt(0), objTT) || isTrackInJet(chJets.iteratorAt(1), objTT)) {
           keepEventWithTT = true;
         }
       }
@@ -2876,8 +2895,9 @@ struct RecoilJets {
       if (isTherePlaceForRC) {
         randomConePt = 0.0;
         for (const auto& particle : particles) {
-          if (skipParticle(particle))
+          if (skipParticle(particle)) {
             continue;
+          }
 
           float dEta = std::pow(randomConeEta - particle.eta(), 2);
           float dPhi = std::pow(RecoDecay::constrainAngle(randomConePhi - particle.phi(), -constants::math::PI), 2);
@@ -2912,8 +2932,9 @@ struct RecoilJets {
 
     bool bSigEv = false;
     auto dice = randGen->Rndm();
-    if (dice < tt.fracSig)
+    if (dice < tt.fracSig) {
       bSigEv = true;
+    }
 
     float ptTTMin = 0.0, ptTTMax = 0.0;
     if (bSigEv) {
@@ -2950,12 +2971,14 @@ struct RecoilJets {
     }
 
     // Skip if no TT
-    if (chosenTTPos < 0)
+    if (chosenTTPos < 0) {
       return;
+    }
 
     bool bHasAssocMcPart = tracks.iteratorAt(chosenTTPos).has_mcParticle();
-    if (!bHasAssocMcPart)
+    if (!bHasAssocMcPart) {
       return;
+    }
 
     // No filter on Particles, it can be outside of |eta| acceptance
     auto particle = tracks.iteratorAt(chosenTTPos).template mcParticle_as<JParticles>();
@@ -2986,8 +3009,9 @@ struct RecoilJets {
         spectra.fill(HIST("hScaledFT0M_FractionOfPartTTSigSatisfCond"), scaledFT0M, 1.5, 1.5);
       }
     }
-    if (!bPartWithinEta)
+    if (!bPartWithinEta) {
       return;
+    }
 
     //=============================================================================
     // Fill histograms
@@ -3035,8 +3059,9 @@ struct RecoilJets {
 
     // Numerator candidates: reconstructed tracks in this detector collision
     for (const auto& trackPerColl : tracks) {
-      if (skipTrack(trackPerColl))
+      if (skipTrack(trackPerColl)) {
         continue;
+      }
 
       auto trackPt = trackPerColl.pt();
 
@@ -3081,8 +3106,9 @@ struct RecoilJets {
       float particlePt = particleInMcCollision.pt();
       bool bKeepParticle = std::fabs(particleEta) < trk.etaCut && !skipParticle(particleInMcCollision);
 
-      if (!bKeepParticle)
+      if (!bKeepParticle) {
         continue;
+      }
 
       spectra.fill(HIST("hScaledMultFT0C_AllGeneratedParticlesPt"), scaledFT0C, particlePt, weight);
       spectra.fill(HIST("hScaledMultFT0M_AllGeneratedParticlesPt"), scaledFT0M, particlePt, weight);
@@ -3097,32 +3123,34 @@ struct RecoilJets {
   //=============================================================================
   void processData(CollRhoDataIt const& collision,
                    TrackTbl const& tracksPerColl,
-                   JetsDataTbl const& jetsPerColl)
+                   ChJetsDataTbl const& chJetsPerColl)
   {
     spectra.fill(HIST("hEventSelectionCountReco"), 0.5);
 
-    if (skipEvent(collision))
+    if (skipEvent(collision)) {
       return;
+    }
 
     spectra.fill(HIST("hEventSelectionCountReco"), 1.5); // number of events selected for analysis
 
-    fillHistograms(collision, jetsPerColl, tracksPerColl);
+    fillHistograms(collision, chJetsPerColl, tracksPerColl);
   }
   PROCESS_SWITCH(RecoilJets, processData, "process raw data", true);
 
   //____________________
   void processMCDetLevel(CollRhoDataIt const& collision,
                          TrackTbl const& tracksPerColl,
-                         JetsDetTbl const& jetsPerColl)
+                         ChJetsDetTbl const& chJetsPerColl)
   {
     spectra.fill(HIST("hEventSelectionCountReco"), 0.5);
-    if (skipEvent(collision))
+    if (skipEvent(collision)) {
       return;
+    }
 
     spectra.fill(HIST("hEventSelectionCountReco"), 1.5);
 
     spectra.fill(HIST("hEventSelectionCountReco"), 4.5); // number of events selected for analysis
-    fillHistograms(collision, jetsPerColl, tracksPerColl);
+    fillHistograms(collision, chJetsPerColl, tracksPerColl);
   }
   PROCESS_SWITCH(RecoilJets, processMCDetLevel, "process MC det. level data (no weight; MB events)", false);
 
@@ -3130,11 +3158,12 @@ struct RecoilJets {
   void processMCDetLevelWeighted(CollRhoOutlierDetIt const& collision,
                                  aod::JetMcCollisions const&,
                                  TrackTbl const& tracksPerColl,
-                                 JetsDetTbl const& jetsPerColl)
+                                 ChJetsDetTbl const& chJetsPerColl)
   {
     spectra.fill(HIST("hEventSelectionCountReco"), 0.5);
-    if (skipEvent(collision))
+    if (skipEvent(collision)) {
       return;
+    }
 
     spectra.fill(HIST("hEventSelectionCountReco"), 1.5);
 
@@ -3150,14 +3179,14 @@ struct RecoilJets {
 
     spectra.fill(HIST("hEventSelectionCountReco"), 4.5); // number of events selected for analysis
     auto weight = collision.mcCollision().weight();
-    fillHistograms(collision, jetsPerColl, tracksPerColl, weight);
+    fillHistograms(collision, chJetsPerColl, tracksPerColl, weight);
   }
   PROCESS_SWITCH(RecoilJets, processMCDetLevelWeighted, "process MC det. level data (weighted JJ)", false);
 
   //_____________________
   void processMCPartLevel(CollCentRhoPartIt const& collision,
                           PartTbl const& particlesPerColl,
-                          JetsPartTbl const& jetsPerColl)
+                          ChJetsPartTbl const& chJetsPerColl)
   {
     spectra.fill(HIST("hEventSelectionCountPartLevel"), 0.5);
 
@@ -3167,14 +3196,14 @@ struct RecoilJets {
     }
 
     spectra.fill(HIST("hEventSelectionCountPartLevel"), 3.5); // number of events selected for analysis
-    fillHistogramsMCPartLevel(collision, jetsPerColl, particlesPerColl);
+    fillHistogramsMCPartLevel(collision, chJetsPerColl, particlesPerColl);
   }
   PROCESS_SWITCH(RecoilJets, processMCPartLevel, "process MC part. level data (no weight; MB events)", false);
 
   //_____________________________
   void processMCPartLevelWeighted(CollCentRhoOutlierPartIt const& collision,
                                   PartTbl const& particlesPerColl,
-                                  JetsPartTbl const& jetsPerColl)
+                                  ChJetsPartTbl const& chJetsPerColl)
   {
     spectra.fill(HIST("hEventSelectionCountPartLevel"), 0.5);
 
@@ -3192,7 +3221,7 @@ struct RecoilJets {
 
     auto weight = collision.weight();
     spectra.fill(HIST("ptHat"), collision.ptHard(), weight);
-    fillHistogramsMCPartLevel(collision, jetsPerColl, particlesPerColl, weight);
+    fillHistogramsMCPartLevel(collision, chJetsPerColl, particlesPerColl, weight);
   }
   PROCESS_SWITCH(RecoilJets, processMCPartLevelWeighted, "process MC part. level data (weighted JJ)", false);
 
@@ -3202,24 +3231,26 @@ struct RecoilJets {
   void processJetsGeoMatching(CollRhoDetIt const& collision,
                               CollRhoPartTbl const&,
                               TrackTbl const& tracksPerColl,
-                              MatchedJetsDetToPartTbl const& mcDetJetsPerColl,
-                              MatchedJetsPartToDetTbl const& mcPartJets)
+                              MatchedChJetsDetToPartTbl const& mcChJetsDetPerColl,
+                              MatchedChJetsPartToDetTbl const& mcChJetsPart)
   {
-    if (skipEvent(collision) || !collision.has_mcCollision())
+    if (skipEvent(collision) || !collision.has_mcCollision()) {
       return;
+    }
 
     const auto mcColl = collision.mcCollision_as<CollRhoPartTbl>();
 
-    if (std::fabs(mcColl.posZ()) > ev.vertexZCut)
+    if (std::fabs(mcColl.posZ()) > ev.vertexZCut) {
       return;
+    }
 
     const auto partLevelCollRho = mcColl.rho();
 
     // Slice for mc part level jets associated to a given mcCollisionId
     const auto mcCollisionId = collision.mcCollisionId();
-    const auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsByMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
+    const auto mcChJetsPartPerMcCollision = mcChJetsPart.sliceBy(partJetsByMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
 
-    fillMatchedGeoHistograms(collision, mcPartJetsPerMcCollision, mcDetJetsPerColl, tracksPerColl, partLevelCollRho);
+    fillMatchedGeoHistograms(collision, mcChJetsPartPerMcCollision, mcChJetsDetPerColl, tracksPerColl, partLevelCollRho);
   }
   PROCESS_SWITCH(RecoilJets, processJetsGeoMatching, "process matching of MC jets using Geo criterion (no weight; MB events)", false);
 
@@ -3227,24 +3258,26 @@ struct RecoilJets {
   void processJetsGeoPtMatching(CollRhoDetIt const& collision,
                                 CollRhoPartTbl const&,
                                 TrackTbl const& tracksPerColl,
-                                MatchedJetsDetToPartTbl const& mcDetJetsPerColl,
-                                MatchedJetsPartToDetTbl const& mcPartJets)
+                                MatchedChJetsDetToPartTbl const& mcChJetsDetPerColl,
+                                MatchedChJetsPartToDetTbl const& mcChJetsPart)
   {
     // Skip detector level collisions
-    if (skipEvent(collision) || !collision.has_mcCollision())
+    if (skipEvent(collision) || !collision.has_mcCollision()) {
       return;
+    }
 
     const auto mcColl = collision.mcCollision_as<CollRhoPartTbl>();
-    if (std::fabs(mcColl.posZ()) > ev.vertexZCut)
+    if (std::fabs(mcColl.posZ()) > ev.vertexZCut) {
       return;
+    }
 
     const auto partLevelCollRho = mcColl.rho();
 
     // Slice for mc part level jets associated to a given mcCollisionId
     const auto mcCollisionId = collision.mcCollisionId();
-    const auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsByMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
+    const auto mcChJetsPartPerMcCollision = mcChJetsPart.sliceBy(partJetsByMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
 
-    fillMatchedGeoPtHistograms(collision, mcPartJetsPerMcCollision, mcDetJetsPerColl, tracksPerColl, partLevelCollRho);
+    fillMatchedGeoPtHistograms(collision, mcChJetsPartPerMcCollision, mcChJetsDetPerColl, tracksPerColl, partLevelCollRho);
   }
   PROCESS_SWITCH(RecoilJets, processJetsGeoPtMatching, "process matching of MC jets using Geo+Pt criteria (no weight; MB events)", false);
 
@@ -3252,25 +3285,27 @@ struct RecoilJets {
   void processJetsGeoMatchingWeighted(CollRhoOutlierDetIt const& collision,
                                       CollRhoOutlierPartTbl const&,
                                       TrackTbl const& tracksPerColl,
-                                      MatchedJetsDetToPartTbl const& mcDetJetsPerColl,
-                                      MatchedJetsPartToDetTbl const& mcPartJets)
+                                      MatchedChJetsDetToPartTbl const& mcChJetsDetPerColl,
+                                      MatchedChJetsPartToDetTbl const& mcChJetsPart)
   {
     // Skip detector level collisions
-    if (skipEvent(collision) || collision.isOutlier() || !collision.has_mcCollision())
+    if (skipEvent(collision) || collision.isOutlier() || !collision.has_mcCollision()) {
       return;
+    }
 
     const auto mcColl = collision.mcCollision_as<CollRhoOutlierPartTbl>();
-    if (std::fabs(mcColl.posZ()) > ev.vertexZCut)
+    if (std::fabs(mcColl.posZ()) > ev.vertexZCut) {
       return;
+    }
 
     const auto partLevelCollRho = mcColl.rho();
     const auto weight = mcColl.weight();
 
     // Slice for mc part level jets associated to a given mcCollisionId
     const auto mcCollisionId = collision.mcCollisionId();
-    const auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsByMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
+    const auto mcChJetsPartPerMcCollision = mcChJetsPart.sliceBy(partJetsByMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
 
-    fillMatchedGeoHistograms(collision, mcPartJetsPerMcCollision, mcDetJetsPerColl, tracksPerColl, partLevelCollRho, weight);
+    fillMatchedGeoHistograms(collision, mcChJetsPartPerMcCollision, mcChJetsDetPerColl, tracksPerColl, partLevelCollRho, weight);
   }
   PROCESS_SWITCH(RecoilJets, processJetsGeoMatchingWeighted, "process matching of MC jets using Geo criterion (weighted JJ)", false);
 
@@ -3278,25 +3313,27 @@ struct RecoilJets {
   void processJetsGeoPtMatchingWeighted(CollRhoOutlierDetIt const& collision,
                                         CollRhoOutlierPartTbl const&,
                                         TrackTbl const& tracksPerColl,
-                                        MatchedJetsDetToPartTbl const& mcDetJetsPerColl,
-                                        MatchedJetsPartToDetTbl const& mcPartJets)
+                                        MatchedChJetsDetToPartTbl const& mcChJetsDetPerColl,
+                                        MatchedChJetsPartToDetTbl const& mcChJetsPart)
   {
     // Skip detector level collisions
-    if (skipEvent(collision) || collision.isOutlier() || !collision.has_mcCollision())
+    if (skipEvent(collision) || collision.isOutlier() || !collision.has_mcCollision()) {
       return;
+    }
 
     auto mcColl = collision.mcCollision_as<CollRhoOutlierPartTbl>();
-    if (std::fabs(mcColl.posZ()) > ev.vertexZCut)
+    if (std::fabs(mcColl.posZ()) > ev.vertexZCut) {
       return;
+    }
 
     auto partLevelCollRho = mcColl.rho();
     auto weight = mcColl.weight();
 
     // Slice for mc part level jets associated to a given mcCollisionId
     auto mcCollisionId = collision.mcCollisionId();
-    auto mcPartJetsPerMcCollision = mcPartJets.sliceBy(partJetsByMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
+    auto mcChJetsPartPerMcCollision = mcChJetsPart.sliceBy(partJetsByMcCollision, mcCollisionId); // signature: (__column to slice___, __index__)
 
-    fillMatchedGeoPtHistograms(collision, mcPartJetsPerMcCollision, mcDetJetsPerColl, tracksPerColl, partLevelCollRho, weight);
+    fillMatchedGeoPtHistograms(collision, mcChJetsPartPerMcCollision, mcChJetsDetPerColl, tracksPerColl, partLevelCollRho, weight);
   }
   PROCESS_SWITCH(RecoilJets, processJetsGeoPtMatchingWeighted, "process matching of MC jets using Geo+Pt criteria (weighted JJ)", false);
 
@@ -3305,8 +3342,9 @@ struct RecoilJets {
   //=============================================================================
   void processEventActivity(EvMultZDCDataIt const& collision)
   {
-    if (skipEvent(collision))
+    if (skipEvent(collision)) {
       return;
+    }
 
     fillMultiplicityHistograms(collision);
   }
@@ -3316,8 +3354,9 @@ struct RecoilJets {
   void processEventActivityMCDetLevelWeighted(EvMultOutlierZDCDetIt const& collision,
                                               aod::JetMcCollisions const&)
   {
-    if (skipEvent(collision) || collision.isOutlier() || !collision.has_mcCollision())
+    if (skipEvent(collision) || collision.isOutlier() || !collision.has_mcCollision()) {
       return;
+    }
 
     auto weight = collision.mcCollision().weight();
     fillMultiplicityHistograms(collision, weight);
@@ -3329,8 +3368,9 @@ struct RecoilJets {
   //=============================================================================
   void processEventActivityMCPartLevel(CollPartIt const& collision)
   {
-    if (skipMCEvent(collision))
+    if (skipMCEvent(collision)) {
       return;
+    }
 
     fillMultiplicityHistogramsMCPartLevel(collision);
   }
@@ -3339,8 +3379,9 @@ struct RecoilJets {
   //__________________________________________
   void processEventActivityMCPartLevelWeighted(EvMultOutlierPartIt const& collision)
   {
-    if (skipMCEvent(collision) || collision.isOutlier())
+    if (skipMCEvent(collision) || collision.isOutlier()) {
       return;
+    }
 
     auto weight = collision.weight();
     fillMultiplicityHistogramsMCPartLevel(collision, weight);
@@ -3355,8 +3396,9 @@ struct RecoilJets {
                                        aod::Zdcs const&)
   {
     // Base flag for event selection
-    if (!collision.sel8())
+    if (!collision.sel8()) {
       return;
+    }
 
     fillEventActivitySelectionQAHistograms<BCsRun3Tbl, aod::Zdcs>(collision);
   }
@@ -3368,8 +3410,10 @@ struct RecoilJets {
   void processLeadingAndAssociatedTracksTask(CollDataIt const& collision,
                                              TrackTbl const& tracksPerColl)
   {
-    if (skipEvent(collision))
+    if (skipEvent(collision)) {
       return;
+    }
+
     fillLeadingAndAssociatedTracksTask(collision, tracksPerColl);
   }
   PROCESS_SWITCH(RecoilJets, processLeadingAndAssociatedTracksTask, "process di-hadron azimuthal correlation in raw and MC det. level (no weight; MB events) data", false);
@@ -3379,24 +3423,26 @@ struct RecoilJets {
   //=============================================================================
   void processBkgdFluctuations(CollRhoDataIt const& collision,
                                TrackTbl const& tracksPerColl,
-                               JetsDataTbl const& jetsPerColl)
+                               ChJetsDataTbl const& chJetsPerColl)
   {
-    if (skipEvent(collision))
+    if (skipEvent(collision)) {
       return;
+    }
 
-    fillBkgdFluctuations(collision, jetsPerColl, tracksPerColl);
+    fillBkgdFluctuations(collision, chJetsPerColl, tracksPerColl);
   }
   PROCESS_SWITCH(RecoilJets, processBkgdFluctuations, "process raw data to estimate bkgd fluctuations", false);
 
   //____________________________________
   void processBkgdFluctuationsMCDetLevel(CollRhoDataIt const& collision,
                                          TrackTbl const& tracksPerColl,
-                                         JetsDetTbl const& jetsPerColl)
+                                         ChJetsDetTbl const& chJetsPerColl)
   {
-    if (skipEvent(collision))
+    if (skipEvent(collision)) {
       return;
+    }
 
-    fillBkgdFluctuations(collision, jetsPerColl, tracksPerColl);
+    fillBkgdFluctuations(collision, chJetsPerColl, tracksPerColl);
   }
   PROCESS_SWITCH(RecoilJets, processBkgdFluctuationsMCDetLevel, "process MC det. level (no weight; MB events) data to estimate bkgd fluctuations", false);
 
@@ -3404,38 +3450,41 @@ struct RecoilJets {
   void processBkgdFluctuationsMCDetLevelWeighted(CollRhoOutlierDetIt const& collision,
                                                  aod::JetMcCollisions const&,
                                                  TrackTbl const& tracksPerColl,
-                                                 JetsDetTbl const& jetsPerColl)
+                                                 ChJetsDetTbl const& chJetsPerColl)
   {
-    if (skipEvent(collision) || collision.isOutlier() || !collision.has_mcCollision())
+    if (skipEvent(collision) || collision.isOutlier() || !collision.has_mcCollision()) {
       return;
+    }
 
     auto weight = collision.mcCollision().weight();
-    fillBkgdFluctuations(collision, jetsPerColl, tracksPerColl, weight);
+    fillBkgdFluctuations(collision, chJetsPerColl, tracksPerColl, weight);
   }
   PROCESS_SWITCH(RecoilJets, processBkgdFluctuationsMCDetLevelWeighted, "process MC det. level (weighted JJ) data to estimate bkgd fluctuations", false);
 
   //_____________________________________
   void processBkgdFluctuationsMCPartLevel(CollRhoPartIt const& collision,
                                           PartTbl const& particlesPerColl,
-                                          JetsPartTbl const& jetsPerColl)
+                                          ChJetsPartTbl const& chJetsPerColl)
   {
-    if (skipMCEvent(collision))
+    if (skipMCEvent(collision)) {
       return;
+    }
 
-    fillBkgdFluctuationsMCPartLevel(collision, jetsPerColl, particlesPerColl);
+    fillBkgdFluctuationsMCPartLevel(collision, chJetsPerColl, particlesPerColl);
   }
   PROCESS_SWITCH(RecoilJets, processBkgdFluctuationsMCPartLevel, "process MC part. level (no weight; MB events) data to estimate bkgd fluctuations", false);
 
   //_____________________________________________
   void processBkgdFluctuationsMCPartLevelWeighted(CollRhoOutlierPartIt const& collision,
                                                   PartTbl const& particlesPerColl,
-                                                  JetsPartTbl const& jetsPerColl)
+                                                  ChJetsPartTbl const& chJetsPerColl)
   {
-    if (skipMCEvent(collision) || collision.isOutlier())
+    if (skipMCEvent(collision) || collision.isOutlier()) {
       return;
+    }
 
     auto weight = collision.weight();
-    fillBkgdFluctuationsMCPartLevel(collision, jetsPerColl, particlesPerColl, weight);
+    fillBkgdFluctuationsMCPartLevel(collision, chJetsPerColl, particlesPerColl, weight);
   }
   PROCESS_SWITCH(RecoilJets, processBkgdFluctuationsMCPartLevelWeighted, "process MC part. level (weighted JJ) data to estimate bkgd fluctuations", false);
 
@@ -3448,8 +3497,9 @@ struct RecoilJets {
   {
 
     // Skip detector level collisions
-    if (skipEvent(collision))
+    if (skipEvent(collision)) {
       return;
+    }
 
     fillTTSmearingPtPhi<aod::JetParticles>(collision, tracksPerColl);
   }
@@ -3463,8 +3513,9 @@ struct RecoilJets {
   {
 
     // Skip detector level collisions
-    if (skipEvent(collision) || collision.isOutlier() || !collision.has_mcCollision())
+    if (skipEvent(collision) || collision.isOutlier() || !collision.has_mcCollision()) {
       return;
+    }
 
     auto weight = collision.mcCollision().weight();
     fillTTSmearingPtPhi<aod::JetParticles>(collision, tracksPerColl, weight);
@@ -3478,8 +3529,9 @@ struct RecoilJets {
                                  aod::JetParticles const& particles)
   {
     // Skip detector level collision
-    if (skipEvent(collision) || !collision.has_mcCollision())
+    if (skipEvent(collision) || !collision.has_mcCollision()) {
       return;
+    }
 
     fillTrackRecoEff<aod::JetMcCollisions>(collision, tracksPerColl, particles);
   }
@@ -3492,8 +3544,9 @@ struct RecoilJets {
                                          aod::JetParticles const& particles)
   {
     // Skip detector level collision
-    if (skipEvent(collision) || !collision.has_mcCollision() || collision.isOutlier())
+    if (skipEvent(collision) || !collision.has_mcCollision() || collision.isOutlier()) {
       return;
+    }
 
     const auto weight = collision.mcCollision().weight();
     fillTrackRecoEff<aod::JetMcCollisions>(collision, tracksPerColl, particles, weight);
@@ -3533,9 +3586,9 @@ struct RecoilJets {
   }
 
   template <typename Jet>
-  std::tuple<double, bool> isRecoilJet(const Jet& jet, double phiTT)
+  std::tuple<double, bool> isRecoilJet(const Jet& chJet, double phiTT)
   {
-    double dphi = std::fabs(RecoDecay::constrainAngle(jet.phi() - phiTT, -constants::math::PI));
+    double dphi = std::fabs(RecoDecay::constrainAngle(chJet.phi() - phiTT, -constants::math::PI));
     return {dphi, (constants::math::PI - tt.recoilRegion) < dphi};
   }
 
@@ -3586,7 +3639,7 @@ struct RecoilJets {
   {
     bool bIsJetWithHighPtConstituent = false;
     for (const auto& chJetConstituent : chJet.template tracks_as<Tracks>()) {
-      if (chJetConstituent.pt() > jet.constituentPtMax) {
+      if (chJetConstituent.pt() > jets.constituentPtMax) {
         bIsJetWithHighPtConstituent = true;
         break;
       }
@@ -3595,9 +3648,9 @@ struct RecoilJets {
   }
 
   template <typename Jet, typename Track>
-  bool isTrackInJet(Jet const& jet, Track const& track)
+  bool isTrackInJet(Jet const& chJet, Track const& track)
   {
-    for (auto const& constituentId : jet.tracksIds()) {
+    for (auto const& constituentId : chJet.tracksIds()) {
       if (constituentId == track.globalIndex()) {
         return true;
       }
@@ -3619,8 +3672,9 @@ struct RecoilJets {
       }
     }
 
-    if (binNumber == -1) // No bin found
+    if (binNumber == -1) { // No bin found
       return 0;
+    }
 
     return binNumber;
   }
@@ -3631,8 +3685,9 @@ struct RecoilJets {
     std::vector<double> vPhiOfTT;
 
     for (const auto& track : tracks) {
-      if (skipTrack(track))
+      if (skipTrack(track)) {
         continue;
+      }
 
       // Search for TT_Sig candidate
       const auto ptTTsigMin = tt.sigPtRange->at(0);
@@ -3657,8 +3712,9 @@ struct RecoilJets {
 
     const int dimOf2DHist = 2;
     bool isHist2D = histPointer->GetDimension() == dimOf2DHist;
-    if (isHist2D)
+    if (isHist2D) {
       return;
+    }
 
     for (int iFlag = 0; iFlag < nEvSelFlags; ++iFlag) {
       histPointer->GetZaxis()->SetBinLabel(iFlag + 1, zAxis[iFlag]);
@@ -3697,27 +3753,27 @@ struct RecoilJets {
 
       case kEA0_20:
         return scaledFT0 >= ft0Edges[kEA20] &&
-               scaledFT0 <= ft0Edges[kEA0];
+               scaledFT0 < ft0Edges[kEA0];
 
       case kEA0_10:
         return scaledFT0 >= ft0Edges[kEA10] &&
-               scaledFT0 <= ft0Edges[kEA0];
+               scaledFT0 < ft0Edges[kEA0];
 
       case kEA20_40:
         return scaledFT0 >= ft0Edges[kEA40] &&
-               scaledFT0 <= ft0Edges[kEA20];
+               scaledFT0 < ft0Edges[kEA20];
 
       case kEA60_80:
         return scaledFT0 >= ft0Edges[kEA80] &&
-               scaledFT0 <= ft0Edges[kEA60];
+               scaledFT0 < ft0Edges[kEA60];
 
       case kEA50_100:
         return scaledFT0 >= ft0Edges[kEA100] &&
-               scaledFT0 <= ft0Edges[kEA50];
+               scaledFT0 < ft0Edges[kEA50];
 
       case kEA80_100:
         return scaledFT0 >= ft0Edges[kEA100] &&
-               scaledFT0 <= ft0Edges[kEA80];
+               scaledFT0 < ft0Edges[kEA80];
     }
     return false;
   }
