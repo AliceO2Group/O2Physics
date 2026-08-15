@@ -110,7 +110,6 @@ struct derivedlambdakzeroanalysis {
   Configurable<bool> analyseAntiLambda{"analyseAntiLambda", true, "process AntiLambda-like candidates"};
   Configurable<bool> calculateFeeddownMatrix{"calculateFeeddownMatrix", true, "fill feeddown matrix if MC"};
 
-  Configurable<bool> doPPAnalysis{"doPPAnalysis", false, "if in pp, set to true"};
   Configurable<std::string> irSource{"irSource", "", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
   Configurable<int> centralityEstimator{"centralityEstimator", kCentFT0C, "Run 3 centrality estimator (0:CentFT0C, 1:CentFT0M, 2:CentFT0CVariant1, 3:CentMFT, 4:CentNGlobal, 5:CentFV0A)"};
   Configurable<bool> doUPCanalysis{"doUPCanalysis", true, "Study V0s in hadronic and UPC collisions"};
@@ -188,8 +187,7 @@ struct derivedlambdakzeroanalysis {
     Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
 
     // Selection criteria: acceptance
-    Configurable<float> rapidityMinCut{"rapidityMinCut", -0.5, "min rapidity"};
-    Configurable<float> rapidityMaxCut{"rapidityMaxCut", 0.5, "max rapidity"};
+    Configurable<float> rapidityCut{"rapidityCut", 0.5, "rapidity"};
     Configurable<float> daughterEtaCut{"daughterEtaCut", 0.8, "max eta for daughters"};
 
     // Standard 5 topological criteria
@@ -686,7 +684,7 @@ struct derivedlambdakzeroanalysis {
     }
 
     // Event Counters
-    histos.add("hEventSelection", "hEventSelection", kTH1D, {{21, -0.5f, +20.5f}});
+    histos.add("hEventSelection", "hEventSelection", kTH1D, {{23, -0.5f, +22.5f}});
     if (isRun3) {
       histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
       histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
@@ -704,16 +702,13 @@ struct derivedlambdakzeroanalysis {
       histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "kNoCollInTimeRangeNarrow");
       histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "kNoCollInRofStd");
       histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(16, "kNoCollInRofStrict");
-      if (doPPAnalysis) {
-        histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "INEL>0");
-        histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "INEL>1");
-      } else {
-        histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "Below min occup.");
-        histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "Above max occup.");
-      }
-      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(19, "Below min IR");
-      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(20, "Above max IR");
-      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(21, "RCT flags");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "INEL>0");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "INEL>1");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(19, "Below min occup.");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(20, "Above max occup.");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(21, "Below min IR");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(22, "Above max IR");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(23, "RCT flags");
     } else {
       histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
       histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
@@ -731,17 +726,15 @@ struct derivedlambdakzeroanalysis {
       histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "kNoV0MOnVsOfPileup");
       histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "kNoSPDOnVsOfPileup");
       histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(16, "kNoSPDClsVsTklBG");
-      if (doPPAnalysis) {
-        histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "INEL>0");
-        histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "INEL>1");
-      }
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "INEL>0");
+      histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "INEL>1");
     }
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1D, {axisConfigurations.axisCentralityFine});
     histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisNch});
     if (doEventQA) {
       if (isRun3) {
-        histos.add("hEventSelectionVsCentrality", "hEventSelectionVsCentrality", kTH2D, {{21, -0.5f, +20.5f}, axisConfigurations.axisCentralityFine});
+        histos.add("hEventSelectionVsCentrality", "hEventSelectionVsCentrality", kTH2D, {{23, -0.5f, +22.5f}, axisConfigurations.axisCentralityFine});
         histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(1, "All collisions");
         histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
         histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
@@ -758,16 +751,13 @@ struct derivedlambdakzeroanalysis {
         histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(14, "kNoCollInTimeRangeNarrow");
         histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(15, "kNoCollInRofStd");
         histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(16, "kNoCollInRofStrict");
-        if (doPPAnalysis) {
-          histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(17, "INEL>0");
-          histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(18, "INEL>1");
-        } else {
-          histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(17, "Below min occup.");
-          histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(18, "Above max occup.");
-        }
-        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(19, "Below min IR");
-        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(20, "Above max IR");
-        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(21, "RCT flags");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(17, "INEL>0");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(18, "INEL>1");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(19, "Below min occup.");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(20, "Above max occup.");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(21, "Below min IR");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(22, "Above max IR");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(23, "RCT flags");
 
         histos.add("hCentralityVsNGlobal", "hCentralityVsNGlobal", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisNch});
         histos.add("hEventCentVsMultFT0M", "hEventCentVsMultFT0M", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisMultFT0M});
@@ -1382,11 +1372,9 @@ struct derivedlambdakzeroanalysis {
       BITSET(bitMap, selDCAV0Dau);
 
     // rapidity
-    if (rapidityLambda > v0Selections.rapidityMinCut &&
-        rapidityLambda < v0Selections.rapidityMaxCut)
+    if (std::abs(rapidityLambda) < v0Selections.rapidityCut)
       BITSET(bitMap, selLambdaRapidity);
-    if (rapidityK0Short > v0Selections.rapidityMinCut &&
-        rapidityK0Short < v0Selections.rapidityMaxCut)
+    if (std::abs(rapidityK0Short) < v0Selections.rapidityCut)
       BITSET(bitMap, selK0ShortRapidity);
 
     //
@@ -2245,8 +2233,7 @@ struct derivedlambdakzeroanalysis {
     if (std::abs(v0mother.pdgCode()) == o2::constants::physics::Pdg::kXi0)
       rapidityXi = RecoDecay::y(std::array{v0mother.px(), v0mother.py(), v0mother.pz()}, o2::constants::physics::MassXi0);
 
-    if (rapidityXi < v0Selections.rapidityMinCut ||
-        rapidityXi > v0Selections.rapidityMaxCut)
+    if (std::fabs(rapidityXi) > 0.5f)
       return; // not a valid mother rapidity (PDG selection is later)
 
     // __________________________________________
@@ -2450,47 +2437,44 @@ struct derivedlambdakzeroanalysis {
         }
       }
 
-      if (doPPAnalysis) { // we are in pp
-        if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < 1) {
-          return false;
+      if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < 1) {
+        return false;
+      }
+      if (fillHists) {
+        histos.fill(HIST("hEventSelection"), 16 /* INEL > 0 */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 16 /* INEL > 0 */, centrality);
         }
-        if (fillHists) {
-          histos.fill(HIST("hEventSelection"), 16 /* INEL > 0 */);
-          if (doEventQA) {
-            histos.fill(HIST("hEventSelectionVsCentrality"), 16 /* INEL > 0 */, centrality);
-          }
-        }
+      }
 
-        if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < 2) {
-          return false;
+      if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < 2) {
+        return false;
+      }
+      if (fillHists) {
+        histos.fill(HIST("hEventSelection"), 17 /* INEL > 1 */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 17 /* INEL > 1 */, centrality);
         }
-        if (fillHists) {
-          histos.fill(HIST("hEventSelection"), 17 /* INEL > 1 */);
-          if (doEventQA) {
-            histos.fill(HIST("hEventSelectionVsCentrality"), 17 /* INEL > 1 */, centrality);
-          }
-        }
+      }
 
-      } else { // we are in Pb-Pb
-        float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
-        if (eventSelections.minOccupancy >= 0 && collisionOccupancy < eventSelections.minOccupancy) {
-          return false;
+      float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
+      if (eventSelections.minOccupancy >= 0 && collisionOccupancy < eventSelections.minOccupancy) {
+        return false;
+      }
+      if (fillHists) {
+        histos.fill(HIST("hEventSelection"), 18 /* Below min occupancy */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 18 /* Below min occupancy */, centrality);
         }
-        if (fillHists) {
-          histos.fill(HIST("hEventSelection"), 16 /* Below min occupancy */);
-          if (doEventQA) {
-            histos.fill(HIST("hEventSelectionVsCentrality"), 16 /* Below min occupancy */, centrality);
-          }
-        }
+      }
 
-        if (eventSelections.maxOccupancy >= 0 && collisionOccupancy > eventSelections.maxOccupancy) {
-          return false;
-        }
-        if (fillHists) {
-          histos.fill(HIST("hEventSelection"), 17 /* Above max occupancy */);
-          if (doEventQA) {
-            histos.fill(HIST("hEventSelectionVsCentrality"), 17 /* Above max occupancy */, centrality);
-          }
+      if (eventSelections.maxOccupancy >= 0 && collisionOccupancy > eventSelections.maxOccupancy) {
+        return false;
+      }
+      if (fillHists) {
+        histos.fill(HIST("hEventSelection"), 19 /* Above max occupancy */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 19 /* Above max occupancy */, centrality);
         }
       }
 
@@ -2500,9 +2484,9 @@ struct derivedlambdakzeroanalysis {
         return false;
       }
       if (fillHists) {
-        histos.fill(HIST("hEventSelection"), 18 /* Below min IR */);
+        histos.fill(HIST("hEventSelection"), 20 /* Below min IR */);
         if (doEventQA) {
-          histos.fill(HIST("hEventSelectionVsCentrality"), 18 /* Below min IR */, centrality);
+          histos.fill(HIST("hEventSelectionVsCentrality"), 20 /* Below min IR */, centrality);
         }
       }
 
@@ -2510,9 +2494,9 @@ struct derivedlambdakzeroanalysis {
         return false;
       }
       if (fillHists) {
-        histos.fill(HIST("hEventSelection"), 19 /* Above max IR */);
+        histos.fill(HIST("hEventSelection"), 21 /* Above max IR */);
         if (doEventQA) {
-          histos.fill(HIST("hEventSelectionVsCentrality"), 19 /* Above max IR */, centrality);
+          histos.fill(HIST("hEventSelectionVsCentrality"), 21 /* Above max IR */, centrality);
         }
       }
 
@@ -2520,9 +2504,9 @@ struct derivedlambdakzeroanalysis {
         return false;
       }
       if (fillHists) {
-        histos.fill(HIST("hEventSelection"), 20 /* Pass CBT condition */);
+        histos.fill(HIST("hEventSelection"), 22 /* Pass CBT condition */);
         if (doEventQA) {
-          histos.fill(HIST("hEventSelectionVsCentrality"), 20 /* Pass CBT condition */, centrality);
+          histos.fill(HIST("hEventSelectionVsCentrality"), 22 /* Pass CBT condition */, centrality);
         }
       }
 
@@ -2617,19 +2601,17 @@ struct derivedlambdakzeroanalysis {
       if (fillHists)
         histos.fill(HIST("hEventSelection"), 15 /* No beam-gas according to cluster-vs-tracklet correlation */);
 
-      if (doPPAnalysis) { // we are in pp
-        if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < 1) {
-          return false;
-        }
-        if (fillHists)
-          histos.fill(HIST("hEventSelection"), 16 /* INEL > 0 */);
-
-        if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < 2) {
-          return false;
-        }
-        if (fillHists)
-          histos.fill(HIST("hEventSelection"), 17 /* INEL > 1 */);
+      if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < 1) {
+        return false;
       }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 16 /* INEL > 0 */);
+
+      if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < 2) {
+        return false;
+      }
+      if (fillHists)
+        histos.fill(HIST("hEventSelection"), 17 /* INEL > 1 */);
     }
 
     return true;
@@ -2685,7 +2667,7 @@ struct derivedlambdakzeroanalysis {
 
       if (qaCentrality) {
         auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
-        centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(doPPAnalysis ? collision.multFT0A() + collision.multFT0C() : collision.multFT0C()));
+        centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(centralityEstimator == kCentFT0M ? collision.multFT0A() + collision.multFT0C() : collision.multFT0C()));
       }
 
       if (doUPCanalysis) {
@@ -2752,14 +2734,12 @@ struct derivedlambdakzeroanalysis {
       if (eventSelections.applyZVtxSelOnMCPV && std::abs(mcCollision.posZ()) > eventSelections.maxZVtxPosition) {
         continue;
       }
-      if (doPPAnalysis) { // we are in pp
-        if (eventSelections.requireINEL0 && mcCollision.multMCNParticlesEta10() < 1) {
-          continue;
-        }
+      if (eventSelections.requireINEL0 && mcCollision.multMCNParticlesEta10() < 1) {
+        continue;
+      }
 
-        if (eventSelections.requireINEL1 && mcCollision.multMCNParticlesEta10() < 2) {
-          continue;
-        }
+      if (eventSelections.requireINEL1 && mcCollision.multMCNParticlesEta10() < 2) {
+        continue;
       }
 
       histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 0 /* all gen. events*/);
@@ -2997,22 +2977,19 @@ struct derivedlambdakzeroanalysis {
       else if (std::abs(v0MC.pdgCode()) == PDG_t::kLambda0)
         ymc = v0MC.rapidityMC(1);
 
-      if (ymc < v0Selections.rapidityMinCut ||
-          ymc > v0Selections.rapidityMaxCut)
+      if (std::abs(ymc) > v0Selections.rapidityCut)
         continue;
 
       auto mcCollision = v0MC.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
       if (eventSelections.applyZVtxSelOnMCPV && std::abs(mcCollision.posZ()) > eventSelections.maxZVtxPosition) {
         continue;
       }
-      if (doPPAnalysis) { // we are in pp
-        if (eventSelections.requireINEL0 && mcCollision.multMCNParticlesEta10() < 1) {
-          continue;
-        }
+      if (eventSelections.requireINEL0 && mcCollision.multMCNParticlesEta10() < 1) {
+        continue;
+      }
 
-        if (eventSelections.requireINEL1 && mcCollision.multMCNParticlesEta10() < 2) {
-          continue;
-        }
+      if (eventSelections.requireINEL1 && mcCollision.multMCNParticlesEta10() < 2) {
+        continue;
       }
 
       float centrality = 100.5f;
@@ -3063,22 +3040,19 @@ struct derivedlambdakzeroanalysis {
       else if (std::abs(cascMC.pdgCode()) == PDG_t::kOmegaMinus)
         ymc = cascMC.rapidityMC(2);
 
-      if (ymc < v0Selections.rapidityMinCut ||
-          ymc > v0Selections.rapidityMaxCut)
+      if (std::abs(ymc) > v0Selections.rapidityCut)
         continue;
 
       auto mcCollision = cascMC.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
       if (eventSelections.applyZVtxSelOnMCPV && std::abs(mcCollision.posZ()) > eventSelections.maxZVtxPosition) {
         continue;
       }
-      if (doPPAnalysis) { // we are in pp
-        if (eventSelections.requireINEL0 && mcCollision.multMCNParticlesEta10() < 1) {
-          continue;
-        }
+      if (eventSelections.requireINEL0 && mcCollision.multMCNParticlesEta10() < 1) {
+        continue;
+      }
 
-        if (eventSelections.requireINEL1 && mcCollision.multMCNParticlesEta10() < 2) {
-          continue;
-        }
+      if (eventSelections.requireINEL1 && mcCollision.multMCNParticlesEta10() < 2) {
+        continue;
       }
 
       float centrality = 100.5f;
