@@ -68,7 +68,7 @@ struct Cha01710analysis {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   Configurable<std::string> cfgUrl{"cfgUrl", "http://alice-ccdb.cern.ch", "CCDB URL"};
 
@@ -269,12 +269,7 @@ struct Cha01710analysis {
   template <typename T>
   bool selectPionDaughter(T const& track)
   {
-    if (!track.hasTPC() || track.tpcNClsFound() < v0Cuts.cfgV0DaughterTPCNClsMin ||
-        track.pt() < v0Cuts.cfgV0DaughterPtMin || std::abs(track.eta()) > v0Cuts.cfgV0DaughterEtaMax ||
-        std::abs(track.tpcNSigmaPi()) > v0Cuts.cfgV0DaughterTPCNSigmaPiMax) {
-      return false;
-    }
-    return true;
+    return !(!track.hasTPC() || track.tpcNClsFound() < v0Cuts.cfgV0DaughterTPCNClsMin || track.pt() < v0Cuts.cfgV0DaughterPtMin || std::abs(track.eta()) > v0Cuts.cfgV0DaughterEtaMax || std::abs(track.tpcNSigmaPi()) > v0Cuts.cfgV0DaughterTPCNSigmaPiMax);
   }
 
   template <typename C, typename V>
@@ -306,8 +301,7 @@ struct Cha01710analysis {
     if (dm < v0Cuts.cfgKsMassWindow) {
       histos.fill(HIST("V0/hMassSelected"), v0.mK0Short(), v0.pt());
       return V0MassRegion::kSignal;
-    }
-    if (dm > v0Cuts.cfgKsMassWindow) {
+    } else if (dm > v0Cuts.cfgKsMassWindow) {
       histos.fill(HIST("V0/hMassSelected"), v0.mK0Short(), v0.pt());
       return V0MassRegion::kSideband;
     }
@@ -355,8 +349,9 @@ struct Cha01710analysis {
 
         float relPhi = TVector2::Phi_0_2pi((mother.Phi() - eventPlaneDet) * harmonic);
         histos.fill(HIST("Pair/hMassVsK0SMass"), mother.M(), v0.mK0Short());
-        if (region != kSignal)
+        if (region != kSignal) {
           continue;
+        }
         if (track.sign() > 0) {
           histos.fill(HIST("Pair/hSignalPlus"), mother.M(), mother.Pt(), centrality, relPhi);
         } else if (track.sign() < 0) {
@@ -367,9 +362,9 @@ struct Cha01710analysis {
           randomPhi += kaon.Phi();
           auto kaonRot = ROOT::Math::PxPyPzMVector(kaon.Pt() * std::cos(randomPhi), kaon.Pt() * std::sin(randomPhi), track.pz(), o2::constants::physics::MassKaonCharged);
           auto motherRot = k0 + kaonRot;
-          if (std::abs(motherRot.Rapidity()) > cfgMotherRapidityMax)
+          if (std::abs(motherRot.Rapidity()) > cfgMotherRapidityMax) {
             continue;
-
+          }
           if (track.sign() > 0) {
             histos.fill(HIST("Pair/hRotatedPlus"), motherRot.M(), motherRot.Pt(), centrality);
           } else if (track.sign() < 0) {
