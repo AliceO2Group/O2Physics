@@ -1145,6 +1145,7 @@ struct derivedlambdakzeroanalysis {
       histos.add("h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
       histos.add("h2dPositivePtVsPhi", "h2dPositivePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
       histos.add("h2dNegativePtVsPhi", "h2dNegativePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
+      histos.add("h2dMassK0ShortVsMassLambda", "h2dMassK0ShortVsMassLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
       if (analyseK0Short) {
         histos.add("K0Short/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
         histos.add("K0Short/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
@@ -1155,6 +1156,7 @@ struct derivedlambdakzeroanalysis {
         histos.add("K0Short/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
         histos.add("K0Short/h2dPositivePtVsPhi", "h2dPositivePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
         histos.add("K0Short/h2dNegativePtVsPhi", "h2dNegativePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
+        histos.add("K0Short/h2dMassK0ShortVsMassLambda", "h2dMassK0ShortVsMassLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
       }
       if (analyseLambda) {
         histos.add("Lambda/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
@@ -1166,6 +1168,7 @@ struct derivedlambdakzeroanalysis {
         histos.add("Lambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
         histos.add("Lambda/h2dPositivePtVsPhi", "h2dPositivePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
         histos.add("Lambda/h2dNegativePtVsPhi", "h2dNegativePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
+        histos.add("Lambda/h2dMassK0ShortVsMassLambda", "h2dMassK0ShortVsMassLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
       }
       if (analyseAntiLambda) {
         histos.add("AntiLambda/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
@@ -1177,6 +1180,7 @@ struct derivedlambdakzeroanalysis {
         histos.add("AntiLambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
         histos.add("AntiLambda/h2dPositivePtVsPhi", "h2dPositivePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
         histos.add("AntiLambda/h2dNegativePtVsPhi", "h2dNegativePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
+        histos.add("AntiLambda/h2dMassK0ShortVsMassLambda", "h2dMassK0ShortVsMassLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
       }
     }
 
@@ -1884,6 +1888,7 @@ struct derivedlambdakzeroanalysis {
       histos.fill(HIST("h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
       histos.fill(HIST("h2dPositivePtVsPhi"), v0.positivept(), computePhiMod(v0.positivephi(), 1));
       histos.fill(HIST("h2dNegativePtVsPhi"), v0.negativept(), computePhiMod(v0.negativephi(), -1));
+      histos.fill(HIST("h2dMassK0ShortVsMassLambda"), invMassK0Short, analyseAntiLambda ? invMassAntiLambda : invMassLambda);
     }
 
     // Fill first bin: all candidates
@@ -1922,6 +1927,7 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("K0Short/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
         histos.fill(HIST("K0Short/h2dPositivePtVsPhi"), v0.positivept(), computePhiMod(v0.positivephi(), 1));
         histos.fill(HIST("K0Short/h2dNegativePtVsPhi"), v0.negativept(), computePhiMod(v0.negativephi(), -1));
+        histos.fill(HIST("K0Short/h2dMassK0ShortVsMassLambda"), invMassK0Short, invMassLambda);
       }
       if (doDetectPropQA == 1) {
         histos.fill(HIST("K0Short/h6dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, pt);
@@ -2009,6 +2015,7 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("Lambda/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
         histos.fill(HIST("Lambda/h2dPositivePtVsPhi"), v0.positivept(), computePhiMod(v0.positivephi(), 1));
         histos.fill(HIST("Lambda/h2dNegativePtVsPhi"), v0.negativept(), computePhiMod(v0.negativephi(), -1));
+        histos.fill(HIST("Lambda/h2dMassK0ShortVsMassLambda"), invMassK0Short, invMassLambda);
       }
       if (doDetectPropQA == 1) {
         histos.fill(HIST("Lambda/h6dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, pt);
@@ -2094,6 +2101,7 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("AntiLambda/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
         histos.fill(HIST("AntiLambda/h2dPositivePtVsPhi"), v0.positivept(), computePhiMod(v0.positivephi(), 1));
         histos.fill(HIST("AntiLambda/h2dNegativePtVsPhi"), v0.negativept(), computePhiMod(v0.negativephi(), -1));
+        histos.fill(HIST("AntiLambda/h2dMassK0ShortVsMassLambda"), invMassK0Short, invMassAntiLambda);
       }
       if (doDetectPropQA == 1) {
         histos.fill(HIST("AntiLambda/h6dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, pt);
