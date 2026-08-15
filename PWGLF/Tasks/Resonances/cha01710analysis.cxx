@@ -380,13 +380,12 @@ struct Cha01710analysis {
     if (!selectEvent(collision)) {
       return;
     }
+    centrality = collision.centFT0M();
     if (eventCuts.cfgCentEst == kFT0M) {
       centrality = collision.centFT0M();
     } else if (eventCuts.cfgCentEst == kFT0C) {
       centrality = collision.centFT0C();
-    } else {
-      centrality = collision.centFT0M();
-    }
+    } 
 
     histos.fill(HIST("Event/hCentDist"), centrality);
     histos.fill(HIST("Event/hPVzDist"), collision.posZ());
