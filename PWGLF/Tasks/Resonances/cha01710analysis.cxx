@@ -386,7 +386,7 @@ struct Cha01710analysis {
       centrality = collision.centFT0M();
     } else if (eventCuts.cfgCentEst == kFT0C) {
       centrality = collision.centFT0C();
-    } 
+    }
 
     histos.fill(HIST("Event/hCentDist"), centrality);
     histos.fill(HIST("Event/hPVzDist"), collision.posZ());
