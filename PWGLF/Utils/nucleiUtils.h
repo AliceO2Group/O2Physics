@@ -13,6 +13,7 @@
 #define PWGLF_UTILS_NUCLEIUTILS_H_
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/PID/PIDTOF.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponseITS.h"
 
@@ -24,7 +25,6 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
 #include <MathUtils/BetheBlochAleph.h>
-#include <PID/PIDTOF.h>
 #include <ReconstructionDataFormats/PID.h>
 
 #include <TH1.h>

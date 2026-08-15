@@ -581,8 +581,7 @@ struct TrackedHypertritonRecoTask {
     }
     std::array<float, 21> cv{};
     trackHeliumCov.getCovXYZPxPyPzGlo(cv);
-    KFParticle kfHelium;
-    kfHelium.Create(xyzpxpypz.data(), cv.data(), trackHelium.sign() * 2, constants::physics::MassHelium3);
+    kfpHelium.Create(xyzpxpypz.data(), cv.data(), trackHelium.sign() * 2, constants::physics::MassHelium3);
     // pion
     kfpPion = createKFParticleFromTrackParCov(trackPionCov, trackPion.sign(), constants::physics::MassPionCharged);
 

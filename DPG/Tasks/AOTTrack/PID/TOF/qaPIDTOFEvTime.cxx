@@ -15,6 +15,7 @@
 /// \brief  Tasks of the TOF PID quantities for the event times
 ///
 
+#include "Common/Core/PID/PIDTOF.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/PIDResponseTOF.h"
@@ -33,7 +34,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <PID/PIDTOF.h>
 
 #include <TEfficiency.h>
 #include <THashList.h>
