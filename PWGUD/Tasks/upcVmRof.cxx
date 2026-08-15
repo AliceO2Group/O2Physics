@@ -399,9 +399,9 @@ struct UpcVmRof {
     bcTH2Pointers[Form("bc/%d/ft0Vtx_bcb_H", run)] = bcTH2Registry.add<TH2>(Form("bc/%d/ft0Vtx_bcb_H", run), "ft0Vtx triggers; TF; bc-B idx; Counter",
                                                                             {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {nbcB, -0.5, nbcB - 0.5}}});
     bcTH2Pointers[Form("bc/%d/ft0CnotA_bcb_H", run)] = bcTH2Registry.add<TH2>(Form("bc/%d/ft0CnotA_bcb_H", run), "ft0CnotA triggers; TF; bc-B idx; Counter",
-                                                                            {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {nbcB, -0.5, nbcB - 0.5}}});
+                                                                              {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {nbcB, -0.5, nbcB - 0.5}}});
     bcTH2Pointers[Form("bc/%d/ft0AnotC_bcb_H", run)] = bcTH2Registry.add<TH2>(Form("bc/%d/ft0AnotC_bcb_H", run), "ft0AnotC triggers; TF; bc-B idx; Counter",
-                                                                            {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {nbcB, -0.5, nbcB - 0.5}}});
+                                                                              {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {nbcB, -0.5, nbcB - 0.5}}});
     bcTH2Pointers[Form("bc/%d/ft0VtxCe_bcb_H", run)] = bcTH2Registry.add<TH2>(Form("bc/%d/ft0VtxCe_bcb_H", run), "ft0Vtx triggers; TF; bc-B idx; Counter",
                                                                               {HistType::kTH2F, {{nBinsTF, -0.5, static_cast<double>(lastTFinHisto) - 0.5}, {nbcB, -0.5, nbcB - 0.5}}});
   } // addBcHistos
@@ -765,13 +765,13 @@ struct UpcVmRof {
 
     // fill output table
     const int recoFlag = ((col.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) != 0) ? upcReco : stdReco;
-    int tof[4] = {0,0,0,0};
+    int tof[4] = {0, 0, 0, 0};
     if (isTwoBody) {
       if (selTrks[0].hasTOF()) {
-	  tof[0] = 1;
+        tof[0] = 1;
       }
       if (selTrks[1].hasTOF()) {
-	  tof[1] = 1;
+        tof[1] = 1;
       }
       colTH1Pointers[Form("col/%d/twoTrkTF_H", runNumberCol)]->Fill(thisTF);
       twoTrkTable(runNumberCol, col.posX(), col.posY(), col.posZ(), col.chi2(), thisBC, thisTF, thisROF, recoFlag,
@@ -785,16 +785,16 @@ struct UpcVmRof {
     }
     if (isFourBody) {
       if (selTrks[0].hasTOF()) {
-	  tof[0] = 1;
+        tof[0] = 1;
       }
       if (selTrks[1].hasTOF()) {
-	  tof[1] = 1;
+        tof[1] = 1;
       }
       if (selTrks[2].hasTOF()) {
-	  tof[2] = 1;
+        tof[2] = 1;
       }
       if (selTrks[3].hasTOF()) {
-	  tof[3] = 1;
+        tof[3] = 1;
       }
       colTH1Pointers[Form("col/%d/fourTrkTF_H", runNumberCol)]->Fill(thisTF);
       fourTrkTable(runNumberCol, col.posX(), col.posY(), col.posZ(), col.chi2(), thisBC, thisTF, thisROF, recoFlag,
