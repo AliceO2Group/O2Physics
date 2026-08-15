@@ -565,7 +565,11 @@ struct JetDsSpecSubs {
       // Count all generated MC collisions
       registry.fill(HIST("McEffCol"), getValFromBin(BinMCColCntr::All));
 
-      // Apply MC vertex selection
+      // Apply standard event selection and vertex cut
+      if (!jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits)) {
+        continue;
+      }
+
       if (std::abs(mccollision.posZ()) > vertexZCut) {
         continue;
       }
@@ -580,7 +584,8 @@ struct JetDsSpecSubs {
         registry.fill(HIST("McEffCol"), getValFromBin(BinMCColCntr::Matched));
 
         // Apply standard event selection and vertex cut
-        if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut)) {
+        if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) ||
+            !(std::abs(collision.posZ()) < vertexZCut)) {
           continue;
         }
         // Matched collision passing analysis selections
@@ -646,10 +651,6 @@ struct JetDsSpecSubs {
         }
       }
       // Particle level
-
-      if (!jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits) || !(std::abs(mccollision.posZ()) < vertexZCut)){
-        continue;
-      }
       const auto dsmcpJetsPerMCCollision = mcpjets.sliceBy(jetmcppreslice, mccollision.globalIndex());
       for (const auto& mcpjet : dsmcpJetsPerMCCollision) {
 
