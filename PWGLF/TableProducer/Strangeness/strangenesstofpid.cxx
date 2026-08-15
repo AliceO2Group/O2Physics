@@ -27,6 +27,7 @@
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "Common/Core/PID/PIDTOFParamService.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
@@ -51,7 +52,6 @@
 #include <Framework/runDataProcessing.h>
 #include <GPU/GPUROOTCartesianFwd.h>
 #include <MathUtils/Primitive2D.h>
-#include <PID/PIDTOFParamService.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/TrackLTIntegral.h>

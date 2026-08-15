@@ -15,6 +15,7 @@
 /// \brief  Implementation for QA tasks of the TOF PID quantities
 ///
 
+#include "Common/Core/PID/PIDTOFParamService.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -32,7 +33,6 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/StaticFor.h>
 #include <Framework/runDataProcessing.h>
-#include <PID/PIDTOFParamService.h>
 #include <ReconstructionDataFormats/PID.h>
 
 #include <TH1.h>

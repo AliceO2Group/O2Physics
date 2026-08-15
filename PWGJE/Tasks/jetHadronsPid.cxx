@@ -49,6 +49,8 @@
 #include <Rtypes.h>
 
 #include <cmath>
+#include <cstdint>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -93,8 +95,8 @@ struct JetHadronsPid {
   Configurable<bool> requireIsGoodZvtxFT0VsPV{"requireIsGoodZvtxFT0VsPV", true, "Require consistent FT0 vs PV z-vertex"};
   Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", false, "Require at least one vertex track matched to TOF"};
 
-  Configurable<double> minJetPt{"minJetPt", 10, "Minimum pt of the jet after bkg subtraction"};
-  Configurable<double> maxJetPt{"maxJetPt", 1e+06, "Maximum pt of the jet after bkg subtraction"};
+  Configurable<double> minJetPt{"minJetPt", 10, "Minimum pt of the jet"};
+  Configurable<double> maxJetPt{"maxJetPt", 1e+06, "Maximum pt of the jet"};
   Configurable<double> rJet{"rJet", 0.4, "Jet resolution parameter R"};
   Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
   Configurable<bool> applyAreaCut{"applyAreaCut", false, "apply area cut"};
@@ -102,7 +104,6 @@ struct JetHadronsPid {
   Configurable<double> deltaEtaEdge{"deltaEtaEdge", 0.05, "eta gap from the edge"};
 
   Configurable<bool> requirePvContributor{"requirePvContributor", false, "require that the track is a PV contributor"};
-  Configurable<int> minItsNclusters{"minItsNclusters", 5, "minimum number of ITS clusters"};
   Configurable<int> minTpcNcrossedRows{"minTpcNcrossedRows", 70, "minimum number of TPC crossed pad rows"};
   Configurable<double> minChiSquareTpc{"minChiSquareTpc", 0.0, "minimum TPC chi^2/Ncls"};
   Configurable<double> maxChiSquareTpc{"maxChiSquareTpc", 4.0, "maximum TPC chi^2/Ncls"};
@@ -157,7 +158,7 @@ struct JetHadronsPid {
     ConfigurableAxis axisDeltaEtaCone{"axisDeltaEtaCone", {80, -0.8, 0.8}, "#Delta#eta"};
     ConfigurableAxis axisDeltaPhiCone{"axisDeltaPhiCone", {80, -0.8, 0.8}, "#Delta#varphi"};
     ConfigurableAxis axisPtTrackCone{"axisPtTrackCone", {100, 0.0, 10.0}, "#it{p}_{T}^{track} (GeV/#it{c})"};
-    ConfigurableAxis axisJetPt{"axisJetPt", {200, 0.0, 100.0}, "#it{p}_{T}^{jet} (GeV/#it{c})"};
+    ConfigurableAxis axisJetPt{"axisJetPt", {20, 0.0, 100.0}, "#it{p}_{T}^{jet} (GeV/#it{c})"};
     ConfigurableAxis axisJetSubPt{"axisJetSubPt", {200, 0.0, 10.0}, "#it{p}_{T}^{sub} (GeV/#it{c})"};
     ConfigurableAxis axisJetArea{"axisJetArea", {100, 0.0, 1.5}, "A_{jet}"};
     ConfigurableAxis axisJetNConst{"axisJetNConst", {101, -0.5, 100.5}, "N_{constituents}"};
@@ -173,6 +174,7 @@ struct JetHadronsPid {
     ConfigurableAxis axisMCPdg{"axisMCPdg", {6001, -3000.5, 3000.5}, "PDG Code"};
     ConfigurableAxis axisTrackCategory{"axisTrackCategory", {2, 0.5, 2.5}, "Track category"};
     ConfigurableAxis axisEventCounter{"axisEventCounter", {1, 0.5, 1.5}, "N_{events}"};
+    ConfigurableAxis axisMatchStatus{"axisMatchStatus", {3, 0.5, 3.5}, "Jet match status"};
 
   } axis;
 
@@ -180,6 +182,7 @@ struct JetHadronsPid {
 
   Preslice<HadronTracks> tracksPerCollision = aod::track::collisionId;
   Preslice<aod::McParticles> mcParticlesPerCollision = aod::mcparticle::mcCollisionId;
+  Preslice<ChargedMCPJets> mcpJetsPerMcCollision = aod::jet::mcCollisionId;
 
   void init(InitContext const&)
   {
@@ -752,28 +755,6 @@ struct JetHadronsPid {
     registryMC.add("mc/jets/matched/reconstructed/hadrons/mc_rec_hadron_pt", "True primary reconstructed hadrons in matched jets;#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
     registryMC.add("mc/jets/matched/reconstructed/hadrons/mc_sec_hadron_pt", "Secondary/fake reconstructed hadrons in matched jets;#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
 
-    // Jet Cone
-    registryMC.add("mc/jets/matched/reconstructed/cone/all_tracks_2d", "Selected tracks in MCD matched jet cone;#Delta#eta;#Delta#varphi", HistType::kTH2F, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone});
-    registryMC.add("mc/jets/matched/reconstructed/cone/all_tracks_3d", "Selected tracks in MCD matched jet cone;#Delta#eta;#Delta#varphi;#it{p}_{T}^{track} (GeV/#it{c})", HistType::kTH3F, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone, axis.axisPtTrackCone});
-    registryMC.add("mc/jets/matched/reconstructed/cone/pions_2d", "Reconstructed #pi in MCD matched jet cone;#Delta#eta;#Delta#varphi", HistType::kTH2F, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone});
-    registryMC.add("mc/jets/matched/reconstructed/cone/pions_3d", "Reconstructed #pi in MCD matched jet cone;#Delta#eta;#Delta#varphi;#it{p}_{T}^{track} (GeV/#it{c})", HistType::kTH3F, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone, axis.axisPtTrackCone});
-    registryMC.add("mc/jets/matched/reconstructed/cone/pions/pion_pos_2d", "Reconstructed #pi^{+} in MCD matched jet cone;#Delta#eta;#Delta#varphi", HistType::kTH2D, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone});
-    registryMC.add("mc/jets/matched/reconstructed/cone/pions/pion_pos", "Reconstructed #pi^{+} in MCD matched jet cone;#Delta#eta;#Delta#varphi;#it{p}_{T}^{track} (GeV/#it{c})", HistType::kTH3D, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone, axis.axisPtTrackCone});
-    registryMC.add("mc/jets/matched/reconstructed/cone/pions/pion_neg_2d", "Reconstructed #pi^{-} in MCD matched jet cone;#Delta#eta;#Delta#varphi", HistType::kTH2D, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone});
-    registryMC.add("mc/jets/matched/reconstructed/cone/pions/pion_neg", "Reconstructed #pi^{-} in MCD matched jet cone;#Delta#eta;#Delta#varphi;#it{p}_{T}^{track} (GeV/#it{c})", HistType::kTH3D, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone, axis.axisPtTrackCone});
-    registryMC.add("mc/jets/matched/reconstructed/cone/kaons_2d", "Reconstructed K in MCD matched jet cone;#Delta#eta;#Delta#varphi", HistType::kTH2F, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone});
-    registryMC.add("mc/jets/matched/reconstructed/cone/kaons_3d", "Reconstructed K in MCD matched jet cone;#Delta#eta;#Delta#varphi;#it{p}_{T}^{track} (GeV/#it{c})", HistType::kTH3F, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone, axis.axisPtTrackCone});
-    registryMC.add("mc/jets/matched/reconstructed/cone/kaons/kaon_pos_2d", "Reconstructed K^{+} in MCD matched jet cone;#Delta#eta;#Delta#varphi", HistType::kTH2D, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone});
-    registryMC.add("mc/jets/matched/reconstructed/cone/kaons/kaon_pos", "Reconstructed K^{+} in MCD matched jet cone;#Delta#eta;#Delta#varphi;#it{p}_{T}^{track} (GeV/#it{c})", HistType::kTH3D, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone, axis.axisPtTrackCone});
-    registryMC.add("mc/jets/matched/reconstructed/cone/kaons/kaon_neg_2d", "Reconstructed K^{-} in MCD matched jet cone;#Delta#eta;#Delta#varphi", HistType::kTH2D, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone});
-    registryMC.add("mc/jets/matched/reconstructed/cone/kaons/kaon_neg", "Reconstructed K^{-} in MCD matched jet cone;#Delta#eta;#Delta#varphi;#it{p}_{T}^{track} (GeV/#it{c})", HistType::kTH3D, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone, axis.axisPtTrackCone});
-    registryMC.add("mc/jets/matched/reconstructed/cone/protons_2d", "Reconstructed p/#bar{p} in MCD matched jet cone;#Delta#eta;#Delta#varphi", HistType::kTH2F, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone});
-    registryMC.add("mc/jets/matched/reconstructed/cone/protons_3d", "Reconstructed p/#bar{p} in MCD matched jet cone;#Delta#eta;#Delta#varphi;#it{p}_{T}^{track} (GeV/#it{c})", HistType::kTH3F, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone, axis.axisPtTrackCone});
-    registryMC.add("mc/jets/matched/reconstructed/cone/protons/proton_pos_2d", "Reconstructed p in MCD matched jet cone;#Delta#eta;#Delta#varphi", HistType::kTH2D, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone});
-    registryMC.add("mc/jets/matched/reconstructed/cone/protons/proton_pos", "Reconstructed p in MCD matched jet cone;#Delta#eta;#Delta#varphi;#it{p}_{T}^{track} (GeV/#it{c})", HistType::kTH3D, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone, axis.axisPtTrackCone});
-    registryMC.add("mc/jets/matched/reconstructed/cone/protons/proton_neg_2d", "Reconstructed #bar{p} in MCD matched jet cone;#Delta#eta;#Delta#varphi", HistType::kTH2D, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone});
-    registryMC.add("mc/jets/matched/reconstructed/cone/protons/proton_neg", "Reconstructed #bar{p} in MCD matched jet cone;#Delta#eta;#Delta#varphi;#it{p}_{T}^{track} (GeV/#it{c})", HistType::kTH3D, {axis.axisDeltaEtaCone, axis.axisDeltaPhiCone, axis.axisPtTrackCone});
-
     // Composition
     registryMC.add("mc/jets/matched/reconstructed/composition/n_pions_per_jet", "Multiplicity of PID-selected #pi^{#pm} in matched MC jets;N_{#pi};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
     registryMC.add("mc/jets/matched/reconstructed/composition/n_kaons_per_jet", "Multiplicity of PID-selected K^{#pm} in matched MC jets;N_{K};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
@@ -784,6 +765,187 @@ struct JetHadronsPid {
     registryMC.add("mc/jets/matched/reconstructed/composition/n_pions_matrix", "Truth vs reconstructed pion multiplicity;N_{truth #pi};N_{reconstructed #pi};N_{jets}", HistType::kTH2I, {axis.axisMultiplicity, axis.axisMultiplicity});
     registryMC.add("mc/jets/matched/reconstructed/composition/n_kaons_matrix", "Truth vs reconstructed kaon multiplicity;N_{truth K};N_{reconstructed K};N_{jets}", HistType::kTH2I, {axis.axisMultiplicity, axis.axisMultiplicity});
     registryMC.add("mc/jets/matched/reconstructed/composition/n_protons_matrix", "Truth vs reconstructed proton multiplicity;N_{truth p};N_{reconstructed p};N_{jets}", HistType::kTH2I, {axis.axisMultiplicity, axis.axisMultiplicity});
+
+    registryMC.add("mc/jets/matched/reconstructed/composition/response_pions", "Pion response matrix;#it{p}_{T,jet}^{part} (GeV/#it{c});N_{truth #pi};#it{p}_{T,jet}^{rec} (GeV/#it{c});N_{reconstructed #pi}", HistType::kTHnSparseF, {axis.axisJetPt, axis.axisMultiplicity, axis.axisJetPt, axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/reconstructed/composition/response_kaons", "Kaon response matrix;#it{p}_{T,jet}^{part} (GeV/#it{c});N_{truth K};#it{p}_{T,jet}^{rec} (GeV/#it{c});N_{reconstructed K}", HistType::kTHnSparseF, {axis.axisJetPt, axis.axisMultiplicity, axis.axisJetPt, axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/reconstructed/composition/response_protons", "Proton response matrix;#it{p}_{T,jet}^{part} (GeV/#it{c});N_{truth p};#it{p}_{T,jet}^{rec} (GeV/#it{c});N_{reconstructed p}", HistType::kTHnSparseF, {axis.axisJetPt, axis.axisMultiplicity, axis.axisJetPt, axis.axisMultiplicity});
+
+    registryMC.add("mc/jets/matched/reconstructed/composition/jet_pt_matrix", "Truth vs reconstructed jet #it{p}_{T};#it{p}_{T,jet}^{part} (GeV/#it{c});#it{p}_{T,jet}^{rec} (GeV/#it{c})", HistType::kTH2F, {axis.axisJetPt, axis.axisJetPt});
+
+    // Matching efficiency / fake-rate counter
+    registryMC.add("mc/jets/matched/general/jet_match_counter", "Jet matching outcome;Match status;N_{jets}", HistType::kTH1I, {axis.axisMatchStatus});
+    auto hMatchCounter = registryMC.get<TH1>(HIST("mc/jets/matched/general/jet_match_counter"));
+    hMatchCounter->GetXaxis()->SetBinLabel(1, "matched");
+    hMatchCounter->GetXaxis()->SetBinLabel(2, "missed");
+    hMatchCounter->GetXaxis()->SetBinLabel(3, "fake");
+
+    // --- MC: MATCHED JETS - MISS (truth jets with no reconstructed partner) ---
+    registryMC.add("mc/jets/matched/miss/general/jet_pt", "Transverse-momentum distribution of missed particle-level jets;#it{p}_{T,jet}^{part} (GeV/#it{c});N_{jets}", HistType::kTH1F, {axis.axisJetPt});
+    registryMC.add("mc/jets/matched/miss/general/jet_eta", "Pseudorapidity distribution of missed particle-level jets;#eta_{jet}^{part};N_{jets}", HistType::kTH1F, {axis.axisEta});
+    registryMC.add("mc/jets/matched/miss/general/jet_phi", "Azimuthal-angle distribution of missed particle-level jets;#varphi_{jet}^{part};N_{jets}", HistType::kTH1F, {axis.axisPhi});
+    registryMC.add("mc/jets/matched/miss/general/jet_area", "Area distribution of missed particle-level jets;A_{jet}^{part};N_{jets}", HistType::kTH1F, {axis.axisJetArea});
+    registryMC.add("mc/jets/matched/miss/general/jet_n_constituents", "Constituent multiplicity of missed particle-level jets;N_{constituents}^{part};N_{jets}", HistType::kTH1I, {axis.axisJetNConst});
+    registryMC.add("mc/jets/matched/miss/general/jet_n_selected_constituents", "Selected-particle multiplicity in missed particle-level jets;N_{constituents}^{selected};N_{jets}", HistType::kTH1I, {axis.axisJetNConst});
+
+    registryMC.add("mc/jets/matched/miss/pions/n_pions_per_jet", "Multiplicity of generated #pi^{#pm} in missed jets;N_{#pi};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/miss/pions/n_pions_vs_jet_pt", "Multiplicity of generated #pi^{#pm} vs missed jet #it{p}_{T};#it{p}_{T,jet}^{part} (GeV/#it{c});N_{#pi}", HistType::kTH2I, {axis.axisJetPt, axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/miss/pions/pion_pt_vs_jet_pt", "Generated #pi^{#pm} #it{p}_{T} vs missed jet #it{p}_{T};#it{p}_{T,jet}^{part} (GeV/#it{c});#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {axis.axisJetPt, axis.axisPt});
+    registryMC.add("mc/jets/matched/miss/pions/mc_gen_pion_pt", "Transverse-momentum distribution of generated primary #pi^{#pm} in missed jets;#it{p}_{T} (GeV/#it{c});N_{#pi}", HistType::kTH1F, {axis.axisPt});
+    registryMC.add("mc/jets/matched/miss/pions/pos/n_pions_per_jet", "Multiplicity of generated #pi^{+} in missed jets;N_{#pi^{+}};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/miss/pions/pos/mc_gen_pion_pos_pt", "Transverse-momentum distribution of generated primary #pi^{+} in missed jets;#it{p}_{T} (GeV/#it{c});N_{#pi^{+}}", HistType::kTH1F, {axis.axisPt});
+    registryMC.add("mc/jets/matched/miss/pions/neg/n_pions_per_jet", "Multiplicity of generated #pi^{-} in missed jets;N_{#pi^{-}};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/miss/pions/neg/mc_gen_pion_neg_pt", "Transverse-momentum distribution of generated primary #pi^{-} in missed jets;#it{p}_{T} (GeV/#it{c});N_{#pi^{-}}", HistType::kTH1F, {axis.axisPt});
+
+    registryMC.add("mc/jets/matched/miss/kaons/n_kaons_per_jet", "Multiplicity of generated K^{#pm} in missed jets;N_{K};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/miss/kaons/n_kaons_vs_jet_pt", "Multiplicity of generated K^{#pm} vs missed jet #it{p}_{T};#it{p}_{T,jet}^{part} (GeV/#it{c});N_{K}", HistType::kTH2I, {axis.axisJetPt, axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/miss/kaons/kaon_pt_vs_jet_pt", "Generated K^{#pm} #it{p}_{T} vs missed jet #it{p}_{T};#it{p}_{T,jet}^{part} (GeV/#it{c});#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {axis.axisJetPt, axis.axisPt});
+    registryMC.add("mc/jets/matched/miss/kaons/mc_gen_kaon_pt", "Transverse-momentum distribution of generated primary K^{#pm} in missed jets;#it{p}_{T} (GeV/#it{c});N_{K}", HistType::kTH1F, {axis.axisPt});
+    registryMC.add("mc/jets/matched/miss/kaons/pos/n_kaons_per_jet", "Multiplicity of generated K^{+} in missed jets;N_{K^{+}};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/miss/kaons/pos/mc_gen_kaon_pos_pt", "Transverse-momentum distribution of generated primary K^{+} in missed jets;#it{p}_{T} (GeV/#it{c});N_{K^{+}}", HistType::kTH1F, {axis.axisPt});
+    registryMC.add("mc/jets/matched/miss/kaons/neg/n_kaons_per_jet", "Multiplicity of generated K^{-} in missed jets;N_{K^{-}};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/miss/kaons/neg/mc_gen_kaon_neg_pt", "Transverse-momentum distribution of generated primary K^{-} in missed jets;#it{p}_{T} (GeV/#it{c});N_{K^{-}}", HistType::kTH1F, {axis.axisPt});
+
+    registryMC.add("mc/jets/matched/miss/protons/n_protons_per_jet", "Multiplicity of generated p+#bar{p} in missed jets;N_{p+#bar{p}};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/miss/protons/n_protons_vs_jet_pt", "Multiplicity of generated p+#bar{p} vs missed jet #it{p}_{T};#it{p}_{T,jet}^{part} (GeV/#it{c});N_{p+#bar{p}}", HistType::kTH2I, {axis.axisJetPt, axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/miss/protons/proton_pt_vs_jet_pt", "Generated p+#bar{p} #it{p}_{T} vs missed jet #it{p}_{T};#it{p}_{T,jet}^{part} (GeV/#it{c});#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {axis.axisJetPt, axis.axisPt});
+    registryMC.add("mc/jets/matched/miss/protons/mc_gen_proton_pt", "Transverse-momentum distribution of generated primary p+#bar{p} in missed jets;#it{p}_{T} (GeV/#it{c});N_{p+#bar{p}}", HistType::kTH1F, {axis.axisPt});
+    registryMC.add("mc/jets/matched/miss/protons/pos/n_protons_per_jet", "Multiplicity of generated p in missed jets;N_{p};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/miss/protons/pos/mc_gen_proton_pos_pt", "Transverse-momentum distribution of generated primary p in missed jets;#it{p}_{T} (GeV/#it{c});N_{p}", HistType::kTH1F, {axis.axisPt});
+    registryMC.add("mc/jets/matched/miss/protons/neg/n_protons_per_jet", "Multiplicity of generated #bar{p} in missed jets;N_{#bar{p}};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/miss/protons/neg/mc_gen_proton_neg_pt", "Transverse-momentum distribution of generated primary #bar{p} in missed jets;#it{p}_{T} (GeV/#it{c});N_{#bar{p}}", HistType::kTH1F, {axis.axisPt});
+
+    registryMC.add("mc/jets/matched/miss/hadrons/mc_gen_hadron_pt", "Transverse-momentum distribution of generated primary hadrons in missed jets;#it{p}_{T} (GeV/#it{c});N_{hadrons}", HistType::kTH1F, {axis.axisPt});
+
+    // --- MC: MATCHED JETS - FAKE (reconstructed jets with no truth partner) ---
+    registryMC.add("mc/jets/matched/fake/general/jet_pt", "Transverse-momentum distribution of fake reconstructed jets;#it{p}_{T,jet}^{rec} (GeV/#it{c});N_{jets}", HistType::kTH1F, {axis.axisJetPt});
+    registryMC.add("mc/jets/matched/fake/general/jet_eta", "Pseudorapidity distribution of fake reconstructed jets;#eta_{jet}^{rec};N_{jets}", HistType::kTH1F, {axis.axisEta});
+    registryMC.add("mc/jets/matched/fake/general/jet_phi", "Azimuthal-angle distribution of fake reconstructed jets;#varphi_{jet}^{rec};N_{jets}", HistType::kTH1F, {axis.axisPhi});
+    registryMC.add("mc/jets/matched/fake/general/jet_area", "Area distribution of fake reconstructed jets;A_{jet}^{rec};N_{jets}", HistType::kTH1F, {axis.axisJetArea});
+    registryMC.add("mc/jets/matched/fake/general/jet_n_constituents", "Constituent multiplicity of fake reconstructed jets;N_{constituents}^{rec};N_{jets}", HistType::kTH1I, {axis.axisJetNConst});
+    registryMC.add("mc/jets/matched/fake/general/jet_n_selected_constituents", "Selected-track multiplicity in fake reconstructed jets;N_{constituents}^{selected};N_{jets}", HistType::kTH1I, {axis.axisJetNConst});
+
+    registryMC.add("mc/jets/matched/fake/hadrons/rec_hadron_all", "All reconstructed hadrons in fake jets;#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/hadrons/mc_rec_hadron_pt", "True primary reconstructed hadrons in fake jets;#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/hadrons/mc_sec_hadron_pt", "Secondary/fake reconstructed hadrons in fake jets;#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+
+    registryMC.add("mc/jets/matched/fake/composition/n_pions_per_jet", "Multiplicity of PID-selected #pi^{#pm} in fake jets;N_{#pi};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/fake/composition/n_kaons_per_jet", "Multiplicity of PID-selected K^{#pm} in fake jets;N_{K};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/fake/composition/n_protons_per_jet", "Multiplicity of PID-selected p+#bar{p} in fake jets;N_{p+#bar{p}};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/fake/composition/particle_multiplicity_per_jet", "Identified-particle multiplicity in fake jets;Particle species;N_{particles} per jet", HistType::kTH2I, {axis.axisParticleSpecies, axis.axisMultiplicity});
+
+    // Pions
+    registryMC.add("mc/jets/matched/fake/pions/n_pions_vs_jet_pt", "Multiplicity of PID-selected #pi^{#pm} vs fake jet #it{p}_{T};#it{p}_{T,jet}^{rec} (GeV/#it{c});N_{#pi}", HistType::kTH2I, {axis.axisJetPt, axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/fake/pions/pion_pt_vs_jet_pt", "Reconstructed #pi^{#pm} #it{p}_{T} vs fake jet #it{p}_{T};#it{p}_{T,jet}^{rec} (GeV/#it{c});#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {axis.axisJetPt, axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/pions/pos/n_pions_per_jet", "Multiplicity of PID-selected #pi^{+} in fake jets;N_{#pi^{+}};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/fake/pions/neg/n_pions_per_jet", "Multiplicity of PID-selected #pi^{-} in fake jets;N_{#pi^{-}};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/fake/pions/rec_pion_all", "All reconstructed pions #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/pions/contamination_matrix_pion", "Pion contamination matrix;True PDG Code;#it{p}_{T} (GeV/#it{c})", HistType::kTH2D, {axis.axisMCPdg, axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/pions/mc_rec_pion_pt", "MC true primary pions #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/pions/mc_sec_pion_pt", "MC secondary/fake pions #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/pions/pion_jet_tpc", "TPC n#sigma_{#pi} vs transverse momentum for PID-selected #pi candidates in fake jets;#it{p}_{T} (GeV/#it{c});n#sigma_{TPC}", HistType::kTH2F, {axis.axisPt, axis.axisNSigmaTPC});
+    registryMC.add("mc/jets/matched/fake/pions/pion_jet_tof", "TOF n#sigma_{#pi} vs transverse momentum for PID-selected #pi candidates in fake jets;#it{p}_{T} (GeV/#it{c});n#sigma_{TOF}", HistType::kTH2F, {axis.axisPt, axis.axisNSigmaTOF});
+    registryMC.add("mc/jets/matched/fake/pions/pion_tpc_signal_vs_p", "TPC d#it{E}/d#it{x} signal vs momentum for PID-selected pion candidates in fake jets;#it{p} (GeV/#it{c});TPC d#it{E}/d#it{x} signal (a.u.)", HistType::kTH2F, {axis.axisMomentum, axis.axisTPCSignal});
+    registryMC.add("mc/jets/matched/fake/pions/pion_tof_beta_vs_p", "TOF #beta vs momentum for PID-selected pion candidates in fake jets;#it{p} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {axis.axisMomentum, axis.axisTOFBeta});
+    registryMC.add("mc/jets/matched/fake/pions/pos/rec_pion_pos_all", "All reconstructed #pi^{+} #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/pions/pos/contamination_matrix_pion_pos", "#pi^{+} contamination matrix;True PDG Code;#it{p}_{T} (GeV/#it{c})", HistType::kTH2D, {axis.axisMCPdg, axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/pions/pos/pion_jet_pos_tpc", "#pi^{+} TPC n#sigma vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TPC n#sigma_{#pi}", HistType::kTH2D, {axis.axisPt, axis.axisNSigmaTPC});
+    registryMC.add("mc/jets/matched/fake/pions/pos/rec_pion_pos_tof_matched", "TOF-matched reconstructed #pi^{+} #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/pions/pos/pion_jet_pos_tof", "#pi^{+} TOF n#sigma vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TOF n#sigma_{#pi}", HistType::kTH2D, {axis.axisPt, axis.axisNSigmaTOF});
+    registryMC.add("mc/jets/matched/fake/pions/pos/mc_rec_pion_pos_pt", "MC true primary #pi^{+} #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/pions/pos/mc_sec_pion_pos_pt", "MC secondary/fake #pi^{+} #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/pions/pos/pion_jet_pos_pt", "Transverse-momentum distribution of #pi^{+} candidates in fake jets;#it{p}_{T} (GeV/#it{c});N_{#pi^{+}}", HistType::kTH1F, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/pions/pos/pion_jet_pos_eta", "Pseudorapidity distribution of #pi^{+} candidates in fake jets;#eta;N_{#pi^{+}}", HistType::kTH1F, {axis.axisEta});
+    registryMC.add("mc/jets/matched/fake/pions/pos/pion_jet_pos_dcaxy", "DCA_{xy} vs transverse momentum for #pi^{+} candidates in fake jets;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)", HistType::kTH2F, {axis.axisPt, axis.axisDcaXY});
+    registryMC.add("mc/jets/matched/fake/pions/pos/pion_jet_pos_dcaz", "DCA_{z} vs transverse momentum for #pi^{+} candidates in fake jets;#it{p}_{T} (GeV/#it{c});DCA_{z} (cm)", HistType::kTH2F, {axis.axisPt, axis.axisDcaZ});
+    registryMC.add("mc/jets/matched/fake/pions/pos/pion_jet_pos_phi_vs_pt", "Azimuthal angle vs transverse momentum for #pi^{+} candidates in fake jets;#it{p}_{T} (GeV/#it{c});#varphi", HistType::kTH2F, {axis.axisPt, axis.axisPhi});
+    registryMC.add("mc/jets/matched/fake/pions/neg/rec_pion_neg_all", "All reconstructed #pi^{-} #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/pions/neg/contamination_matrix_pion_neg", "#pi^{-} contamination matrix;True PDG Code;#it{p}_{T} (GeV/#it{c})", HistType::kTH2D, {axis.axisMCPdg, axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/pions/neg/pion_jet_neg_tpc", "#pi^{-} TPC n#sigma vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TPC n#sigma_{#pi}", HistType::kTH2D, {axis.axisPt, axis.axisNSigmaTPC});
+    registryMC.add("mc/jets/matched/fake/pions/neg/rec_pion_neg_tof_matched", "TOF-matched reconstructed #pi^{-} #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/pions/neg/pion_jet_neg_tof", "#pi^{-} TOF n#sigma vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TOF n#sigma_{#pi}", HistType::kTH2D, {axis.axisPt, axis.axisNSigmaTOF});
+    registryMC.add("mc/jets/matched/fake/pions/neg/mc_rec_pion_neg_pt", "MC true primary #pi^{-} #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/pions/neg/mc_sec_pion_neg_pt", "MC secondary/fake #pi^{-} #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/pions/neg/pion_jet_neg_pt", "Transverse-momentum distribution of #pi^{-} candidates in fake jets;#it{p}_{T} (GeV/#it{c});N_{#pi^{-}}", HistType::kTH1F, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/pions/neg/pion_jet_neg_eta", "Pseudorapidity distribution of #pi^{-} candidates in fake jets;#eta;N_{#pi^{-}}", HistType::kTH1F, {axis.axisEta});
+    registryMC.add("mc/jets/matched/fake/pions/neg/pion_jet_neg_dcaxy", "DCA_{xy} vs transverse momentum for #pi^{-} candidates in fake jets;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)", HistType::kTH2F, {axis.axisPt, axis.axisDcaXY});
+    registryMC.add("mc/jets/matched/fake/pions/neg/pion_jet_neg_dcaz", "DCA_{z} vs transverse momentum for #pi^{-} candidates in fake jets;#it{p}_{T} (GeV/#it{c});DCA_{z} (cm)", HistType::kTH2F, {axis.axisPt, axis.axisDcaZ});
+    registryMC.add("mc/jets/matched/fake/pions/neg/pion_jet_neg_phi_vs_pt", "Azimuthal angle vs transverse momentum for #pi^{-} candidates in fake jets;#it{p}_{T} (GeV/#it{c});#varphi", HistType::kTH2F, {axis.axisPt, axis.axisPhi});
+
+    // Kaons
+    registryMC.add("mc/jets/matched/fake/kaons/n_kaons_vs_jet_pt", "Multiplicity of PID-selected K^{#pm} vs fake jet #it{p}_{T};#it{p}_{T,jet}^{rec} (GeV/#it{c});N_{K}", HistType::kTH2I, {axis.axisJetPt, axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/fake/kaons/kaon_pt_vs_jet_pt", "Reconstructed K^{#pm} #it{p}_{T} vs fake jet #it{p}_{T};#it{p}_{T,jet}^{rec} (GeV/#it{c});#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {axis.axisJetPt, axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/kaons/pos/n_kaons_per_jet", "Multiplicity of PID-selected K^{+} in fake jets;N_{K^{+}};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/fake/kaons/neg/n_kaons_per_jet", "Multiplicity of PID-selected K^{-} in fake jets;N_{K^{-}};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/fake/kaons/rec_kaon_all", "All reconstructed kaons #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/kaons/contamination_matrix_kaon", "Kaon contamination matrix;True PDG Code;#it{p}_{T} (GeV/#it{c})", HistType::kTH2D, {axis.axisMCPdg, axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/kaons/mc_rec_kaon_pt", "MC true primary kaons #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/kaons/mc_sec_kaon_pt", "MC secondary/fake kaons #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/kaons/kaon_jet_tpc", "TPC n#sigma_{K} vs transverse momentum for PID-selected K candidates in fake jets;#it{p}_{T} (GeV/#it{c});n#sigma_{TPC}", HistType::kTH2F, {axis.axisPt, axis.axisNSigmaTPC});
+    registryMC.add("mc/jets/matched/fake/kaons/kaon_jet_tof", "TOF n#sigma_{K} vs transverse momentum for PID-selected K candidates in fake jets;#it{p}_{T} (GeV/#it{c});n#sigma_{TOF}", HistType::kTH2F, {axis.axisPt, axis.axisNSigmaTOF});
+    registryMC.add("mc/jets/matched/fake/kaons/kaon_tpc_signal_vs_p", "TPC d#it{E}/d#it{x} signal vs momentum for PID-selected kaon candidates in fake jets;#it{p} (GeV/#it{c});TPC d#it{E}/d#it{x} signal (a.u.)", HistType::kTH2F, {axis.axisMomentum, axis.axisTPCSignal});
+    registryMC.add("mc/jets/matched/fake/kaons/kaon_tof_beta_vs_p", "TOF #beta vs momentum for PID-selected kaon candidates in fake jets;#it{p} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {axis.axisMomentum, axis.axisTOFBeta});
+    registryMC.add("mc/jets/matched/fake/kaons/pos/rec_kaon_pos_all", "All reconstructed K^{+} #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/kaons/pos/contamination_matrix_kaon_pos", "K^{+} contamination matrix;True PDG Code;#it{p}_{T} (GeV/#it{c})", HistType::kTH2D, {axis.axisMCPdg, axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/kaons/pos/kaon_jet_pos_tpc", "K^{+} TPC n#sigma vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TPC n#sigma_{K}", HistType::kTH2D, {axis.axisPt, axis.axisNSigmaTPC});
+    registryMC.add("mc/jets/matched/fake/kaons/pos/rec_kaon_pos_tof_matched", "TOF-matched reconstructed K^{+} #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/kaons/pos/kaon_jet_pos_tof", "K^{+} TOF n#sigma vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TOF n#sigma_{K}", HistType::kTH2D, {axis.axisPt, axis.axisNSigmaTOF});
+    registryMC.add("mc/jets/matched/fake/kaons/pos/mc_rec_kaon_pos_pt", "MC true primary K^{+} #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/kaons/pos/mc_sec_kaon_pos_pt", "MC secondary/fake K^{+} #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/kaons/pos/kaon_jet_pos_pt", "Transverse-momentum distribution of K^{+} candidates in fake jets;#it{p}_{T} (GeV/#it{c});N_{K^{+}}", HistType::kTH1F, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/kaons/pos/kaon_jet_pos_eta", "Pseudorapidity distribution of K^{+} candidates in fake jets;#eta;N_{K^{+}}", HistType::kTH1F, {axis.axisEta});
+    registryMC.add("mc/jets/matched/fake/kaons/pos/kaon_jet_pos_dcaxy", "DCA_{xy} vs transverse momentum for K^{+} candidates in fake jets;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)", HistType::kTH2F, {axis.axisPt, axis.axisDcaXY});
+    registryMC.add("mc/jets/matched/fake/kaons/pos/kaon_jet_pos_dcaz", "DCA_{z} vs transverse momentum for K^{+} candidates in fake jets;#it{p}_{T} (GeV/#it{c});DCA_{z} (cm)", HistType::kTH2F, {axis.axisPt, axis.axisDcaZ});
+    registryMC.add("mc/jets/matched/fake/kaons/pos/kaon_jet_pos_phi_vs_pt", "Azimuthal angle vs transverse momentum for K^{+} candidates in fake jets;#it{p}_{T} (GeV/#it{c});#varphi", HistType::kTH2F, {axis.axisPt, axis.axisPhi});
+    registryMC.add("mc/jets/matched/fake/kaons/neg/rec_kaon_neg_all", "All reconstructed K^{-} #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/kaons/neg/contamination_matrix_kaon_neg", "K^{-} contamination matrix;True PDG Code;#it{p}_{T} (GeV/#it{c})", HistType::kTH2D, {axis.axisMCPdg, axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/kaons/neg/rec_kaon_neg_tpc", "K^{-} TPC n#sigma vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TPC n#sigma_{K}", HistType::kTH2D, {axis.axisPt, axis.axisNSigmaTPC});
+    registryMC.add("mc/jets/matched/fake/kaons/neg/rec_kaon_neg_tof_matched", "TOF-matched reconstructed K^{-} #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/kaons/neg/rec_kaon_neg_tof", "K^{-} TOF n#sigma vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TOF n#sigma_{K}", HistType::kTH2D, {axis.axisPt, axis.axisNSigmaTOF});
+    registryMC.add("mc/jets/matched/fake/kaons/neg/mc_rec_kaon_neg_pt", "MC true primary K^{-} #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/kaons/neg/mc_sec_kaon_neg_pt", "MC secondary/fake K^{-} #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/kaons/neg/kaon_jet_neg_pt", "Transverse-momentum distribution of K^{-} candidates in fake jets;#it{p}_{T} (GeV/#it{c});N_{K^{-}}", HistType::kTH1F, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/kaons/neg/kaon_jet_neg_eta", "Pseudorapidity distribution of K^{-} candidates in fake jets;#eta;N_{K^{-}}", HistType::kTH1F, {axis.axisEta});
+    registryMC.add("mc/jets/matched/fake/kaons/neg/kaon_jet_neg_dcaxy", "DCA_{xy} vs transverse momentum for K^{-} candidates in fake jets;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)", HistType::kTH2F, {axis.axisPt, axis.axisDcaXY});
+    registryMC.add("mc/jets/matched/fake/kaons/neg/kaon_jet_neg_dcaz", "DCA_{z} vs transverse momentum for K^{-} candidates in fake jets;#it{p}_{T} (GeV/#it{c});DCA_{z} (cm)", HistType::kTH2F, {axis.axisPt, axis.axisDcaZ});
+    registryMC.add("mc/jets/matched/fake/kaons/neg/kaon_jet_neg_phi_vs_pt", "Azimuthal angle vs transverse momentum for K^{-} candidates in fake jets;#it{p}_{T} (GeV/#it{c});#varphi", HistType::kTH2F, {axis.axisPt, axis.axisPhi});
+
+    // Protons
+    registryMC.add("mc/jets/matched/fake/protons/n_protons_vs_jet_pt", "Multiplicity of PID-selected p+#bar{p} vs fake jet #it{p}_{T};#it{p}_{T,jet}^{rec} (GeV/#it{c});N_{p+#bar{p}}", HistType::kTH2I, {axis.axisJetPt, axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/fake/protons/proton_pt_vs_jet_pt", "Reconstructed p+#bar{p} #it{p}_{T} vs fake jet #it{p}_{T};#it{p}_{T,jet}^{rec} (GeV/#it{c});#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {axis.axisJetPt, axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/protons/pos/n_protons_per_jet", "Multiplicity of PID-selected p in fake jets;N_{p};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/fake/protons/neg/n_protons_per_jet", "Multiplicity of PID-selected #bar{p} in fake jets;N_{#bar{p}};N_{jets}", HistType::kTH1I, {axis.axisMultiplicity});
+    registryMC.add("mc/jets/matched/fake/protons/rec_proton_all", "All reconstructed protons #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/protons/contamination_matrix_proton", "Proton contamination matrix;True PDG Code;#it{p}_{T} (GeV/#it{c})", HistType::kTH2D, {axis.axisMCPdg, axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/protons/mc_rec_proton_pt", "MC true primary protons #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/protons/mc_sec_proton_pt", "MC secondary/fake protons #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/protons/proton_jet_tpc", "TPC n#sigma_{p} vs transverse momentum for PID-selected p+#bar{p} candidates in fake jets;#it{p}_{T} (GeV/#it{c});n#sigma_{TPC}", HistType::kTH2F, {axis.axisPt, axis.axisNSigmaTPC});
+    registryMC.add("mc/jets/matched/fake/protons/proton_jet_tof", "TOF n#sigma_{p} vs transverse momentum for PID-selected p+#bar{p} candidates in fake jets;#it{p}_{T} (GeV/#it{c});n#sigma_{TOF}", HistType::kTH2F, {axis.axisPt, axis.axisNSigmaTOF});
+    registryMC.add("mc/jets/matched/fake/protons/proton_tpc_signal_vs_p", "TPC d#it{E}/d#it{x} signal vs momentum for PID-selected proton candidates in fake jets;#it{p} (GeV/#it{c});TPC d#it{E}/d#it{x} signal (a.u.)", HistType::kTH2F, {axis.axisMomentum, axis.axisTPCSignal});
+    registryMC.add("mc/jets/matched/fake/protons/proton_tof_beta_vs_p", "TOF #beta vs momentum for PID-selected proton candidates in fake jets;#it{p} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {axis.axisMomentum, axis.axisTOFBeta});
+    registryMC.add("mc/jets/matched/fake/protons/pos/rec_proton_pos_all", "All reconstructed protons (positive) #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/protons/pos/contamination_matrix_proton_pos", "Proton (positive) contamination matrix;True PDG Code;#it{p}_{T} (GeV/#it{c})", HistType::kTH2D, {axis.axisMCPdg, axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/protons/pos/proton_jet_pos_tpc", "Proton TPC n#sigma vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TPC n#sigma_{p}", HistType::kTH2D, {axis.axisPt, axis.axisNSigmaTPC});
+    registryMC.add("mc/jets/matched/fake/protons/pos/rec_proton_pos_tof_matched", "TOF-matched reconstructed protons #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/protons/pos/proton_jet_pos_tof", "Proton TOF n#sigma vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TOF n#sigma_{p}", HistType::kTH2D, {axis.axisPt, axis.axisNSigmaTOF});
+    registryMC.add("mc/jets/matched/fake/protons/pos/mc_rec_proton_pos_pt", "MC true primary protons (positive) #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/protons/pos/mc_sec_proton_pos_pt", "MC secondary/fake protons (positive) #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/protons/pos/proton_jet_pos_pt", "Transverse-momentum distribution of proton candidates in fake jets;#it{p}_{T} (GeV/#it{c});N_{p}", HistType::kTH1F, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/protons/pos/proton_jet_pos_eta", "Pseudorapidity distribution of proton candidates in fake jets;#eta;N_{p}", HistType::kTH1F, {axis.axisEta});
+    registryMC.add("mc/jets/matched/fake/protons/pos/proton_jet_pos_dcaxy", "DCA_{xy} vs transverse momentum for proton candidates in fake jets;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)", HistType::kTH2F, {axis.axisPt, axis.axisDcaXY});
+    registryMC.add("mc/jets/matched/fake/protons/pos/proton_jet_pos_dcaz", "DCA_{z} vs transverse momentum for proton candidates in fake jets;#it{p}_{T} (GeV/#it{c});DCA_{z} (cm)", HistType::kTH2F, {axis.axisPt, axis.axisDcaZ});
+    registryMC.add("mc/jets/matched/fake/protons/pos/proton_jet_pos_phi_vs_pt", "Azimuthal angle vs transverse momentum for proton candidates in fake jets;#it{p}_{T} (GeV/#it{c});#varphi", HistType::kTH2F, {axis.axisPt, axis.axisPhi});
+    registryMC.add("mc/jets/matched/fake/protons/neg/rec_proton_neg_all", "All reconstructed antiprotons #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/protons/neg/contamination_matrix_proton_neg", "Antiproton contamination matrix;True PDG Code;#it{p}_{T} (GeV/#it{c})", HistType::kTH2D, {axis.axisMCPdg, axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/protons/neg/proton_jet_neg_tpc", "Antiproton TPC n#sigma vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TPC n#sigma_{p}", HistType::kTH2D, {axis.axisPt, axis.axisNSigmaTPC});
+    registryMC.add("mc/jets/matched/fake/protons/neg/rec_proton_neg_tof_matched", "TOF-matched reconstructed antiprotons #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/protons/neg/proton_jet_neg_tof", "Antiproton TOF n#sigma vs #it{p}_{T};#it{p}_{T} (GeV/#it{c});TOF n#sigma_{p}", HistType::kTH2D, {axis.axisPt, axis.axisNSigmaTOF});
+    registryMC.add("mc/jets/matched/fake/protons/neg/mc_rec_proton_neg_pt", "MC true primary antiprotons #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/protons/neg/mc_sec_proton_neg_pt", "MC secondary/fake antiprotons #it{p}_{T};#it{p}_{T} (GeV/#it{c});Counts", HistType::kTH1D, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/protons/neg/proton_jet_neg_pt", "Transverse-momentum distribution of antiproton candidates in fake jets;#it{p}_{T} (GeV/#it{c});N_{#bar{p}}", HistType::kTH1F, {axis.axisPt});
+    registryMC.add("mc/jets/matched/fake/protons/neg/proton_jet_neg_eta", "Pseudorapidity distribution of antiproton candidates in fake jets;#eta;N_{#bar{p}}", HistType::kTH1F, {axis.axisEta});
+    registryMC.add("mc/jets/matched/fake/protons/neg/proton_jet_neg_dcaxy", "DCA_{xy} vs transverse momentum for antiproton candidates in fake jets;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)", HistType::kTH2F, {axis.axisPt, axis.axisDcaXY});
+    registryMC.add("mc/jets/matched/fake/protons/neg/proton_jet_neg_dcaz", "DCA_{z} vs transverse momentum for antiproton candidates in fake jets;#it{p}_{T} (GeV/#it{c});DCA_{z} (cm)", HistType::kTH2F, {axis.axisPt, axis.axisDcaZ});
+    registryMC.add("mc/jets/matched/fake/protons/neg/proton_jet_neg_phi_vs_pt", "Azimuthal angle vs transverse momentum for antiproton candidates in fake jets;#it{p}_{T} (GeV/#it{c});#varphi", HistType::kTH2F, {axis.axisPt, axis.axisPhi});
 
     // Pions
     registryMC.add("mc/jets/matched/reconstructed/pions/n_pions_vs_jet_pt", "Multiplicity of PID-selected #pi^{#pm} vs matched reconstructed jet #it{p}_{T};#it{p}_{T,jet}^{rec} (GeV/#it{c});N_{#pi}", HistType::kTH2I, {axis.axisJetPt, axis.axisMultiplicity});
@@ -1104,16 +1266,19 @@ struct JetHadronsPid {
     if ((!hasITSLayerHit(track, 1)) && (!hasITSLayerHit(track, 2)) && (!hasITSLayerHit(track, 3))) {
       return false;
     }
-    if (track.itsNCls() < minItsNclusters) {
+    if (track.tpcNClsCrossedRows() < minTpcNcrossedRows) {
       return false;
     }
-    if (track.tpcNClsCrossedRows() < minTpcNcrossedRows) {
+    if (!track.passedTPCCrossedRowsOverNCls()) {
       return false;
     }
     if (track.tpcChi2NCl() < minChiSquareTpc || track.tpcChi2NCl() > maxChiSquareTpc) {
       return false;
     }
     if (track.itsChi2NCl() > maxChiSquareIts) {
+      return false;
+    }
+    if (!track.passedGoldenChi2()) {
       return false;
     }
     if (track.eta() < minEta || track.eta() > maxEta) {
@@ -2112,10 +2277,10 @@ struct JetHadronsPid {
   }
   PROCESS_SWITCH(JetHadronsPid, processJets, "Jets Analysis", true);
 
-  void processMatchJets(JetEvents::iterator const& collision,
+  void processMatchJets(soa::Join<JetEvents, aod::JMcCollisionLbs>::iterator const& collision,
                         soa::Join<ChargedMCDJets, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets> const& detectorLevelJets,
                         soa::Join<aod::JetTracks, aod::JTrackPIs> const&,
-                        ChargedMCPJets const&,
+                        ChargedMCPJets const& particleLevelJets,
                         aod::JetParticles const&,
                         HadronTracksMC const&, aod::McParticles const&)
   {
@@ -2134,6 +2299,7 @@ struct JetHadronsPid {
 
     double centralRho = collision.rho();
     int jetsInCollision = 0;
+    std::set<int64_t> matchedTruthJetIndices;
 
     for (auto const& djet : detectorLevelJets) {
 
@@ -2164,10 +2330,6 @@ struct JetHadronsPid {
         continue;
       }
 
-      if (!djet.has_matchedJetGeo() || !djet.has_matchedJetPt()) {
-        continue;
-      }
-
       auto geoMatches = djet.matchedJetGeo_as<ChargedMCPJets>();
       auto ptMatches = djet.matchedJetPt_as<ChargedMCPJets>();
       auto matchedIt = geoMatches.end();
@@ -2187,10 +2349,298 @@ struct JetHadronsPid {
       }
 
       if (matchedIt == geoMatches.end()) {
+        registryMC.fill(HIST("mc/jets/matched/fake/general/jet_pt"), djet.pt());
+        registryMC.fill(HIST("mc/jets/matched/fake/general/jet_eta"), djet.eta());
+        registryMC.fill(HIST("mc/jets/matched/fake/general/jet_phi"), djet.phi());
+        registryMC.fill(HIST("mc/jets/matched/fake/general/jet_area"), djet.area());
+        registryMC.fill(HIST("mc/jets/matched/fake/general/jet_n_constituents"), djet.tracksIds().size());
+
+        int nSelectedConstituentsFake = 0;
+
+        int nPionsInJetPosFake = 0;
+        int nKaonsInJetPosFake = 0;
+        int nProtonsInJetPosFake = 0;
+
+        int nPionsInJetNegFake = 0;
+        int nKaonsInJetNegFake = 0;
+        int nProtonsInJetNegFake = 0;
+
+        for (auto const& jtrack : djet.tracks_as<soa::Join<aod::JetTracks, aod::JTrackPIs>>()) {
+
+          auto track = jtrack.track_as<HadronTracksMC>();
+
+          if (!passedTrackSelection(track)) {
+            continue;
+          }
+
+          ++nSelectedConstituentsFake;
+
+          const double pt = track.pt();
+          const double eta = track.eta();
+          const double dcaxy = track.dcaXY();
+          const double dcaz = track.dcaZ();
+          const double phi = track.phi();
+          const int charge = track.sign();
+          const double p = track.p();
+
+          int realpdg = 0;
+          int pdg = 0;
+          bool isPrimary = false;
+
+          if (track.has_mcParticle()) {
+            auto const& trueParticle = track.mcParticle();
+            realpdg = trueParticle.pdgCode();
+            pdg = std::abs(realpdg);
+            isPrimary = trueParticle.isPhysicalPrimary();
+          }
+
+          registryMC.fill(HIST("mc/jets/matched/fake/hadrons/rec_hadron_all"), pt);
+
+          if (isPrimary) {
+            registryMC.fill(HIST("mc/jets/matched/fake/hadrons/mc_rec_hadron_pt"), pt);
+          } else {
+            registryMC.fill(HIST("mc/jets/matched/fake/hadrons/mc_sec_hadron_pt"), pt);
+          }
+
+          const PidResult pid = getPid(track);
+
+          if (pid.isPion) {
+            registryMC.fill(HIST("mc/jets/matched/fake/pions/pion_pt_vs_jet_pt"), djet.pt(), pt);
+
+            registryMC.fill(HIST("mc/jets/matched/fake/pions/rec_pion_all"), pt);
+            registryMC.fill(HIST("mc/jets/matched/fake/pions/contamination_matrix_pion"), realpdg, pt);
+            registryMC.fill(HIST("mc/jets/matched/fake/pions/pion_jet_tpc"), pt, track.tpcNSigmaPi());
+            registryMC.fill(HIST("mc/jets/matched/fake/pions/pion_tpc_signal_vs_p"), p, track.tpcSignal());
+            if (track.hasTOF()) {
+              registryMC.fill(HIST("mc/jets/matched/fake/pions/pion_jet_tof"), pt, track.tofNSigmaPi());
+              registryMC.fill(HIST("mc/jets/matched/fake/pions/pion_tof_beta_vs_p"), p, track.beta());
+            }
+
+            if (charge > 0) {
+              nPionsInJetPosFake++;
+
+              registryMC.fill(HIST("mc/jets/matched/fake/pions/pos/rec_pion_pos_all"), pt);
+              registryMC.fill(HIST("mc/jets/matched/fake/pions/pos/contamination_matrix_pion_pos"), realpdg, pt);
+              registryMC.fill(HIST("mc/jets/matched/fake/pions/pos/pion_jet_pos_tpc"), pt, track.tpcNSigmaPi());
+              registryMC.fill(HIST("mc/jets/matched/fake/pions/pos/pion_jet_pos_phi_vs_pt"), pt, phi);
+
+              registryMC.fill(HIST("mc/jets/matched/fake/pions/pos/pion_jet_pos_pt"), pt);
+              registryMC.fill(HIST("mc/jets/matched/fake/pions/pos/pion_jet_pos_eta"), eta);
+              registryMC.fill(HIST("mc/jets/matched/fake/pions/pos/pion_jet_pos_dcaxy"), pt, dcaxy);
+              registryMC.fill(HIST("mc/jets/matched/fake/pions/pos/pion_jet_pos_dcaz"), pt, dcaz);
+
+              if (track.hasTOF()) {
+                registryMC.fill(HIST("mc/jets/matched/fake/pions/pos/rec_pion_pos_tof_matched"), pt);
+                registryMC.fill(HIST("mc/jets/matched/fake/pions/pos/pion_jet_pos_tof"), pt, track.tofNSigmaPi());
+              }
+            } else {
+              nPionsInJetNegFake++;
+
+              registryMC.fill(HIST("mc/jets/matched/fake/pions/neg/rec_pion_neg_all"), pt);
+              registryMC.fill(HIST("mc/jets/matched/fake/pions/neg/contamination_matrix_pion_neg"), realpdg, pt);
+              registryMC.fill(HIST("mc/jets/matched/fake/pions/neg/pion_jet_neg_tpc"), pt, track.tpcNSigmaPi());
+              registryMC.fill(HIST("mc/jets/matched/fake/pions/neg/pion_jet_neg_phi_vs_pt"), pt, phi);
+
+              registryMC.fill(HIST("mc/jets/matched/fake/pions/neg/pion_jet_neg_pt"), pt);
+              registryMC.fill(HIST("mc/jets/matched/fake/pions/neg/pion_jet_neg_eta"), eta);
+              registryMC.fill(HIST("mc/jets/matched/fake/pions/neg/pion_jet_neg_dcaxy"), pt, dcaxy);
+              registryMC.fill(HIST("mc/jets/matched/fake/pions/neg/pion_jet_neg_dcaz"), pt, dcaz);
+
+              if (track.hasTOF()) {
+                registryMC.fill(HIST("mc/jets/matched/fake/pions/neg/rec_pion_neg_tof_matched"), pt);
+                registryMC.fill(HIST("mc/jets/matched/fake/pions/neg/pion_jet_neg_tof"), pt, track.tofNSigmaPi());
+              }
+            }
+
+            if (isPrimary) {
+              registryMC.fill(HIST("mc/jets/matched/fake/pions/mc_rec_pion_pt"), pt);
+              if (charge > 0) {
+                registryMC.fill(HIST("mc/jets/matched/fake/pions/pos/mc_rec_pion_pos_pt"), pt);
+              } else {
+                registryMC.fill(HIST("mc/jets/matched/fake/pions/neg/mc_rec_pion_neg_pt"), pt);
+              }
+            } else {
+              if (pdg == PDG_t::kPiPlus) {
+                registryMC.fill(HIST("mc/jets/matched/fake/pions/mc_sec_pion_pt"), pt);
+                if (charge > 0) {
+                  registryMC.fill(HIST("mc/jets/matched/fake/pions/pos/mc_sec_pion_pos_pt"), pt);
+                } else {
+                  registryMC.fill(HIST("mc/jets/matched/fake/pions/neg/mc_sec_pion_neg_pt"), pt);
+                }
+              }
+            }
+          }
+
+          if (pid.isKaon) {
+            registryMC.fill(HIST("mc/jets/matched/fake/kaons/kaon_pt_vs_jet_pt"), djet.pt(), pt);
+
+            registryMC.fill(HIST("mc/jets/matched/fake/kaons/rec_kaon_all"), pt);
+            registryMC.fill(HIST("mc/jets/matched/fake/kaons/contamination_matrix_kaon"), realpdg, pt);
+            registryMC.fill(HIST("mc/jets/matched/fake/kaons/kaon_jet_tpc"), pt, track.tpcNSigmaKa());
+            registryMC.fill(HIST("mc/jets/matched/fake/kaons/kaon_tpc_signal_vs_p"), p, track.tpcSignal());
+            if (track.hasTOF()) {
+              registryMC.fill(HIST("mc/jets/matched/fake/kaons/kaon_jet_tof"), pt, track.tofNSigmaKa());
+              registryMC.fill(HIST("mc/jets/matched/fake/kaons/kaon_tof_beta_vs_p"), p, track.beta());
+            }
+
+            if (charge > 0) {
+              nKaonsInJetPosFake++;
+
+              registryMC.fill(HIST("mc/jets/matched/fake/kaons/pos/rec_kaon_pos_all"), pt);
+              registryMC.fill(HIST("mc/jets/matched/fake/kaons/pos/contamination_matrix_kaon_pos"), realpdg, pt);
+              registryMC.fill(HIST("mc/jets/matched/fake/kaons/pos/kaon_jet_pos_tpc"), pt, track.tpcNSigmaKa());
+              registryMC.fill(HIST("mc/jets/matched/fake/kaons/pos/kaon_jet_pos_phi_vs_pt"), pt, phi);
+
+              registryMC.fill(HIST("mc/jets/matched/fake/kaons/pos/kaon_jet_pos_pt"), pt);
+              registryMC.fill(HIST("mc/jets/matched/fake/kaons/pos/kaon_jet_pos_eta"), eta);
+              registryMC.fill(HIST("mc/jets/matched/fake/kaons/pos/kaon_jet_pos_dcaxy"), pt, dcaxy);
+              registryMC.fill(HIST("mc/jets/matched/fake/kaons/pos/kaon_jet_pos_dcaz"), pt, dcaz);
+
+              if (track.hasTOF()) {
+                registryMC.fill(HIST("mc/jets/matched/fake/kaons/pos/rec_kaon_pos_tof_matched"), pt);
+                registryMC.fill(HIST("mc/jets/matched/fake/kaons/pos/kaon_jet_pos_tof"), pt, track.tofNSigmaKa());
+              }
+            } else {
+              nKaonsInJetNegFake++;
+
+              registryMC.fill(HIST("mc/jets/matched/fake/kaons/neg/rec_kaon_neg_all"), pt);
+              registryMC.fill(HIST("mc/jets/matched/fake/kaons/neg/contamination_matrix_kaon_neg"), realpdg, pt);
+              registryMC.fill(HIST("mc/jets/matched/fake/kaons/neg/rec_kaon_neg_tpc"), pt, track.tpcNSigmaKa());
+              registryMC.fill(HIST("mc/jets/matched/fake/kaons/neg/kaon_jet_neg_phi_vs_pt"), pt, phi);
+
+              registryMC.fill(HIST("mc/jets/matched/fake/kaons/neg/kaon_jet_neg_pt"), pt);
+              registryMC.fill(HIST("mc/jets/matched/fake/kaons/neg/kaon_jet_neg_eta"), eta);
+              registryMC.fill(HIST("mc/jets/matched/fake/kaons/neg/kaon_jet_neg_dcaxy"), pt, dcaxy);
+              registryMC.fill(HIST("mc/jets/matched/fake/kaons/neg/kaon_jet_neg_dcaz"), pt, dcaz);
+
+              if (track.hasTOF()) {
+                registryMC.fill(HIST("mc/jets/matched/fake/kaons/neg/rec_kaon_neg_tof_matched"), pt);
+                registryMC.fill(HIST("mc/jets/matched/fake/kaons/neg/rec_kaon_neg_tof"), pt, track.tofNSigmaKa());
+              }
+            }
+
+            if (isPrimary) {
+              registryMC.fill(HIST("mc/jets/matched/fake/kaons/mc_rec_kaon_pt"), pt);
+              if (charge > 0) {
+                registryMC.fill(HIST("mc/jets/matched/fake/kaons/pos/mc_rec_kaon_pos_pt"), pt);
+              } else {
+                registryMC.fill(HIST("mc/jets/matched/fake/kaons/neg/mc_rec_kaon_neg_pt"), pt);
+              }
+            } else {
+              if (pdg == PDG_t::kKPlus) {
+                registryMC.fill(HIST("mc/jets/matched/fake/kaons/mc_sec_kaon_pt"), pt);
+                if (charge > 0) {
+                  registryMC.fill(HIST("mc/jets/matched/fake/kaons/pos/mc_sec_kaon_pos_pt"), pt);
+                } else {
+                  registryMC.fill(HIST("mc/jets/matched/fake/kaons/neg/mc_sec_kaon_neg_pt"), pt);
+                }
+              }
+            }
+          }
+
+          if (pid.isProton) {
+            registryMC.fill(HIST("mc/jets/matched/fake/protons/proton_pt_vs_jet_pt"), djet.pt(), pt);
+
+            registryMC.fill(HIST("mc/jets/matched/fake/protons/rec_proton_all"), pt);
+            registryMC.fill(HIST("mc/jets/matched/fake/protons/contamination_matrix_proton"), realpdg, pt);
+            registryMC.fill(HIST("mc/jets/matched/fake/protons/proton_jet_tpc"), pt, track.tpcNSigmaPr());
+            registryMC.fill(HIST("mc/jets/matched/fake/protons/proton_tpc_signal_vs_p"), p, track.tpcSignal());
+            if (track.hasTOF()) {
+              registryMC.fill(HIST("mc/jets/matched/fake/protons/proton_jet_tof"), pt, track.tofNSigmaPr());
+              registryMC.fill(HIST("mc/jets/matched/fake/protons/proton_tof_beta_vs_p"), p, track.beta());
+            }
+
+            if (charge > 0) {
+              nProtonsInJetPosFake++;
+
+              registryMC.fill(HIST("mc/jets/matched/fake/protons/pos/rec_proton_pos_all"), pt);
+              registryMC.fill(HIST("mc/jets/matched/fake/protons/pos/contamination_matrix_proton_pos"), realpdg, pt);
+              registryMC.fill(HIST("mc/jets/matched/fake/protons/pos/proton_jet_pos_tpc"), pt, track.tpcNSigmaPr());
+              registryMC.fill(HIST("mc/jets/matched/fake/protons/pos/proton_jet_pos_phi_vs_pt"), pt, phi);
+
+              registryMC.fill(HIST("mc/jets/matched/fake/protons/pos/proton_jet_pos_pt"), pt);
+              registryMC.fill(HIST("mc/jets/matched/fake/protons/pos/proton_jet_pos_eta"), eta);
+              registryMC.fill(HIST("mc/jets/matched/fake/protons/pos/proton_jet_pos_dcaxy"), pt, dcaxy);
+              registryMC.fill(HIST("mc/jets/matched/fake/protons/pos/proton_jet_pos_dcaz"), pt, dcaz);
+
+              if (track.hasTOF()) {
+                registryMC.fill(HIST("mc/jets/matched/fake/protons/pos/rec_proton_pos_tof_matched"), pt);
+                registryMC.fill(HIST("mc/jets/matched/fake/protons/pos/proton_jet_pos_tof"), pt, track.tofNSigmaPr());
+              }
+            } else {
+              nProtonsInJetNegFake++;
+
+              registryMC.fill(HIST("mc/jets/matched/fake/protons/neg/rec_proton_neg_all"), pt);
+              registryMC.fill(HIST("mc/jets/matched/fake/protons/neg/contamination_matrix_proton_neg"), realpdg, pt);
+              registryMC.fill(HIST("mc/jets/matched/fake/protons/neg/proton_jet_neg_tpc"), pt, track.tpcNSigmaPr());
+              registryMC.fill(HIST("mc/jets/matched/fake/protons/neg/proton_jet_neg_phi_vs_pt"), pt, phi);
+
+              registryMC.fill(HIST("mc/jets/matched/fake/protons/neg/proton_jet_neg_pt"), pt);
+              registryMC.fill(HIST("mc/jets/matched/fake/protons/neg/proton_jet_neg_eta"), eta);
+              registryMC.fill(HIST("mc/jets/matched/fake/protons/neg/proton_jet_neg_dcaxy"), pt, dcaxy);
+              registryMC.fill(HIST("mc/jets/matched/fake/protons/neg/proton_jet_neg_dcaz"), pt, dcaz);
+
+              if (track.hasTOF()) {
+                registryMC.fill(HIST("mc/jets/matched/fake/protons/neg/rec_proton_neg_tof_matched"), pt);
+                registryMC.fill(HIST("mc/jets/matched/fake/protons/neg/proton_jet_neg_tof"), pt, track.tofNSigmaPr());
+              }
+            }
+
+            if (isPrimary) {
+              registryMC.fill(HIST("mc/jets/matched/fake/protons/mc_rec_proton_pt"), pt);
+              if (charge > 0) {
+                registryMC.fill(HIST("mc/jets/matched/fake/protons/pos/mc_rec_proton_pos_pt"), pt);
+              } else {
+                registryMC.fill(HIST("mc/jets/matched/fake/protons/neg/mc_rec_proton_neg_pt"), pt);
+              }
+            } else {
+              if (pdg == PDG_t::kProton) {
+                registryMC.fill(HIST("mc/jets/matched/fake/protons/mc_sec_proton_pt"), pt);
+                if (charge > 0) {
+                  registryMC.fill(HIST("mc/jets/matched/fake/protons/pos/mc_sec_proton_pos_pt"), pt);
+                } else {
+                  registryMC.fill(HIST("mc/jets/matched/fake/protons/neg/mc_sec_proton_neg_pt"), pt);
+                }
+              }
+            }
+          }
+        }
+
+        registryMC.fill(HIST("mc/jets/matched/fake/general/jet_n_selected_constituents"), nSelectedConstituentsFake);
+
+        const int nPionsInJetFake = nPionsInJetPosFake + nPionsInJetNegFake;
+        const int nKaonsInJetFake = nKaonsInJetPosFake + nKaonsInJetNegFake;
+        const int nProtonsInJetFake = nProtonsInJetPosFake + nProtonsInJetNegFake;
+
+        registryMC.fill(HIST("mc/jets/matched/fake/pions/pos/n_pions_per_jet"), nPionsInJetPosFake);
+        registryMC.fill(HIST("mc/jets/matched/fake/kaons/pos/n_kaons_per_jet"), nKaonsInJetPosFake);
+        registryMC.fill(HIST("mc/jets/matched/fake/protons/pos/n_protons_per_jet"), nProtonsInJetPosFake);
+
+        registryMC.fill(HIST("mc/jets/matched/fake/pions/neg/n_pions_per_jet"), nPionsInJetNegFake);
+        registryMC.fill(HIST("mc/jets/matched/fake/kaons/neg/n_kaons_per_jet"), nKaonsInJetNegFake);
+        registryMC.fill(HIST("mc/jets/matched/fake/protons/neg/n_protons_per_jet"), nProtonsInJetNegFake);
+
+        registryMC.fill(HIST("mc/jets/matched/fake/composition/n_pions_per_jet"), nPionsInJetFake);
+        registryMC.fill(HIST("mc/jets/matched/fake/composition/n_kaons_per_jet"), nKaonsInJetFake);
+        registryMC.fill(HIST("mc/jets/matched/fake/composition/n_protons_per_jet"), nProtonsInJetFake);
+
+        registryMC.fill(HIST("mc/jets/matched/fake/composition/particle_multiplicity_per_jet"), 1.0, nPionsInJetFake);
+        registryMC.fill(HIST("mc/jets/matched/fake/composition/particle_multiplicity_per_jet"), 2.0, nKaonsInJetFake);
+        registryMC.fill(HIST("mc/jets/matched/fake/composition/particle_multiplicity_per_jet"), 3.0, nProtonsInJetFake);
+
+        registryMC.fill(HIST("mc/jets/matched/fake/pions/n_pions_vs_jet_pt"), djet.pt(), nPionsInJetFake);
+        registryMC.fill(HIST("mc/jets/matched/fake/kaons/n_kaons_vs_jet_pt"), djet.pt(), nKaonsInJetFake);
+        registryMC.fill(HIST("mc/jets/matched/fake/protons/n_protons_vs_jet_pt"), djet.pt(), nProtonsInJetFake);
+
+        registryMC.fill(HIST("mc/jets/matched/general/jet_match_counter"), 3.0);
+
         continue;
       }
 
       auto const& pjet = *matchedIt;
+
+      matchedTruthJetIndices.insert(pjet.globalIndex());
+      registryMC.fill(HIST("mc/jets/matched/general/jet_match_counter"), 1.0);
 
       ++jetsInCollision;
 
@@ -2246,8 +2696,6 @@ struct JetHadronsPid {
 
         ++nSelectedConstituents;
 
-        const double deltaEtaJet = track.eta() - djet.eta();
-        const double deltaPhiJet = RecoDecay::constrainAngle(track.phi() - djet.phi(), -PI);
         const double pt = track.pt();
         const double eta = track.eta();
         const double dcaxy = track.dcaXY();
@@ -2275,14 +2723,9 @@ struct JetHadronsPid {
           registryMC.fill(HIST("mc/jets/matched/reconstructed/hadrons/mc_sec_hadron_pt"), pt);
         }
 
-        registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/all_tracks_2d"), deltaEtaJet, deltaPhiJet);
-        registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/all_tracks_3d"), deltaEtaJet, deltaPhiJet, pt);
-
         const PidResult pid = getPid(track);
 
         if (pid.isPion) {
-          registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/pions_2d"), deltaEtaJet, deltaPhiJet);
-          registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/pions_3d"), deltaEtaJet, deltaPhiJet, pt);
           registryMC.fill(HIST("mc/jets/matched/reconstructed/pions/pion_pt_vs_jet_pt"), djet.pt(), pt);
 
           registryMC.fill(HIST("mc/jets/matched/reconstructed/pions/rec_pion_all"), pt);
@@ -2302,8 +2745,6 @@ struct JetHadronsPid {
             registryMC.fill(HIST("mc/jets/matched/reconstructed/pions/pos/pion_jet_pos_tpc"), pt, track.tpcNSigmaPi());
             registryMC.fill(HIST("mc/jets/matched/reconstructed/pions/pos/pion_jet_pos_phi_vs_pt"), pt, phi);
 
-            registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/pions/pion_pos"), deltaEtaJet, deltaPhiJet, pt);
-            registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/pions/pion_pos_2d"), deltaEtaJet, deltaPhiJet);
             registryMC.fill(HIST("mc/jets/matched/reconstructed/pions/pos/pion_jet_pos_pt"), pt);
             registryMC.fill(HIST("mc/jets/matched/reconstructed/pions/pos/pion_jet_pos_eta"), eta);
             registryMC.fill(HIST("mc/jets/matched/reconstructed/pions/pos/pion_jet_pos_dcaxy"), pt, dcaxy);
@@ -2321,8 +2762,6 @@ struct JetHadronsPid {
             registryMC.fill(HIST("mc/jets/matched/reconstructed/pions/neg/pion_jet_neg_tpc"), pt, track.tpcNSigmaPi());
             registryMC.fill(HIST("mc/jets/matched/reconstructed/pions/neg/pion_jet_neg_phi_vs_pt"), pt, phi);
 
-            registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/pions/pion_neg"), deltaEtaJet, deltaPhiJet, pt);
-            registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/pions/pion_neg_2d"), deltaEtaJet, deltaPhiJet);
             registryMC.fill(HIST("mc/jets/matched/reconstructed/pions/neg/pion_jet_neg_pt"), pt);
             registryMC.fill(HIST("mc/jets/matched/reconstructed/pions/neg/pion_jet_neg_eta"), eta);
             registryMC.fill(HIST("mc/jets/matched/reconstructed/pions/neg/pion_jet_neg_dcaxy"), pt, dcaxy);
@@ -2353,10 +2792,7 @@ struct JetHadronsPid {
           }
         }
 
-        // --- KAONS ---
         if (pid.isKaon) {
-          registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/kaons_2d"), deltaEtaJet, deltaPhiJet);
-          registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/kaons_3d"), deltaEtaJet, deltaPhiJet, pt);
           registryMC.fill(HIST("mc/jets/matched/reconstructed/kaons/kaon_pt_vs_jet_pt"), djet.pt(), pt);
 
           registryMC.fill(HIST("mc/jets/matched/reconstructed/kaons/rec_kaon_all"), pt);
@@ -2376,8 +2812,6 @@ struct JetHadronsPid {
             registryMC.fill(HIST("mc/jets/matched/reconstructed/kaons/pos/kaon_jet_pos_tpc"), pt, track.tpcNSigmaKa());
             registryMC.fill(HIST("mc/jets/matched/reconstructed/kaons/pos/kaon_jet_pos_phi_vs_pt"), pt, phi);
 
-            registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/kaons/kaon_pos"), deltaEtaJet, deltaPhiJet, pt);
-            registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/kaons/kaon_pos_2d"), deltaEtaJet, deltaPhiJet);
             registryMC.fill(HIST("mc/jets/matched/reconstructed/kaons/pos/kaon_jet_pos_pt"), pt);
             registryMC.fill(HIST("mc/jets/matched/reconstructed/kaons/pos/kaon_jet_pos_eta"), eta);
             registryMC.fill(HIST("mc/jets/matched/reconstructed/kaons/pos/kaon_jet_pos_dcaxy"), pt, dcaxy);
@@ -2395,8 +2829,6 @@ struct JetHadronsPid {
             registryMC.fill(HIST("mc/jets/matched/reconstructed/kaons/neg/rec_kaon_neg_tpc"), pt, track.tpcNSigmaKa());
             registryMC.fill(HIST("mc/jets/matched/reconstructed/kaons/neg/kaon_jet_neg_phi_vs_pt"), pt, phi);
 
-            registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/kaons/kaon_neg"), deltaEtaJet, deltaPhiJet, pt);
-            registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/kaons/kaon_neg_2d"), deltaEtaJet, deltaPhiJet);
             registryMC.fill(HIST("mc/jets/matched/reconstructed/kaons/neg/kaon_jet_neg_pt"), pt);
             registryMC.fill(HIST("mc/jets/matched/reconstructed/kaons/neg/kaon_jet_neg_eta"), eta);
             registryMC.fill(HIST("mc/jets/matched/reconstructed/kaons/neg/kaon_jet_neg_dcaxy"), pt, dcaxy);
@@ -2427,10 +2859,7 @@ struct JetHadronsPid {
           }
         }
 
-        // --- PROTONS ---
         if (pid.isProton) {
-          registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/protons_2d"), deltaEtaJet, deltaPhiJet);
-          registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/protons_3d"), deltaEtaJet, deltaPhiJet, pt);
           registryMC.fill(HIST("mc/jets/matched/reconstructed/protons/proton_pt_vs_jet_pt"), djet.pt(), pt);
 
           registryMC.fill(HIST("mc/jets/matched/reconstructed/protons/rec_proton_all"), pt);
@@ -2450,8 +2879,6 @@ struct JetHadronsPid {
             registryMC.fill(HIST("mc/jets/matched/reconstructed/protons/pos/proton_jet_pos_tpc"), pt, track.tpcNSigmaPr());
             registryMC.fill(HIST("mc/jets/matched/reconstructed/protons/pos/proton_jet_pos_phi_vs_pt"), pt, phi);
 
-            registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/protons/proton_pos"), deltaEtaJet, deltaPhiJet, pt);
-            registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/protons/proton_pos_2d"), deltaEtaJet, deltaPhiJet);
             registryMC.fill(HIST("mc/jets/matched/reconstructed/protons/pos/proton_jet_pos_pt"), pt);
             registryMC.fill(HIST("mc/jets/matched/reconstructed/protons/pos/proton_jet_pos_eta"), eta);
             registryMC.fill(HIST("mc/jets/matched/reconstructed/protons/pos/proton_jet_pos_dcaxy"), pt, dcaxy);
@@ -2469,8 +2896,6 @@ struct JetHadronsPid {
             registryMC.fill(HIST("mc/jets/matched/reconstructed/protons/neg/proton_jet_neg_tpc"), pt, track.tpcNSigmaPr());
             registryMC.fill(HIST("mc/jets/matched/reconstructed/protons/neg/proton_jet_neg_phi_vs_pt"), pt, phi);
 
-            registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/protons/proton_neg"), deltaEtaJet, deltaPhiJet, pt);
-            registryMC.fill(HIST("mc/jets/matched/reconstructed/cone/protons/proton_neg_2d"), deltaEtaJet, deltaPhiJet);
             registryMC.fill(HIST("mc/jets/matched/reconstructed/protons/neg/proton_jet_neg_pt"), pt);
             registryMC.fill(HIST("mc/jets/matched/reconstructed/protons/neg/proton_jet_neg_eta"), eta);
             registryMC.fill(HIST("mc/jets/matched/reconstructed/protons/neg/proton_jet_neg_dcaxy"), pt, dcaxy);
@@ -2613,11 +3038,146 @@ struct JetHadronsPid {
       registryMC.fill(HIST("mc/jets/matched/reconstructed/composition/n_kaons_matrix"), nKaonsInJetTruth, nKaonsInJet);
       registryMC.fill(HIST("mc/jets/matched/reconstructed/composition/n_protons_matrix"), nProtonsInJetTruth, nProtonsInJet);
 
+      registryMC.fill(HIST("mc/jets/matched/reconstructed/composition/response_pions"), pjet.pt(), nPionsInJetTruth, djet.pt(), nPionsInJet);
+      registryMC.fill(HIST("mc/jets/matched/reconstructed/composition/response_kaons"), pjet.pt(), nKaonsInJetTruth, djet.pt(), nKaonsInJet);
+      registryMC.fill(HIST("mc/jets/matched/reconstructed/composition/response_protons"), pjet.pt(), nProtonsInJetTruth, djet.pt(), nProtonsInJet);
+      registryMC.fill(HIST("mc/jets/matched/reconstructed/composition/jet_pt_matrix"), pjet.pt(), djet.pt());
+
       registryMC.fill(HIST("mc/jets/matched/truth/pions/n_pions_vs_jet_pt"), pjet.pt(), nPionsInJetTruth);
       registryMC.fill(HIST("mc/jets/matched/truth/kaons/n_kaons_vs_jet_pt"), pjet.pt(), nKaonsInJetTruth);
       registryMC.fill(HIST("mc/jets/matched/truth/protons/n_protons_vs_jet_pt"), pjet.pt(), nProtonsInJetTruth);
     }
     registryMC.fill(HIST("mc/jets/matched/reconstructed/general/collision_multiplicity"), jetsInCollision);
+
+    auto const particleLevelJetsInCollision = particleLevelJets.sliceBy(mcpJetsPerMcCollision, collision.mcCollisionId());
+
+    for (auto const& truthJet : particleLevelJetsInCollision) {
+
+      if (!isppRefAnalysis && ((std::abs(truthJet.eta()) + rJet) > (maxEta - deltaEtaEdge))) {
+        continue;
+      }
+
+      if (isppRefAnalysis && std::abs(truthJet.eta()) > cfgEtaJetMax) {
+        continue;
+      }
+
+      if (isppRefAnalysis && (truthJet.pt() < minJetPt || truthJet.pt() > maxJetPt)) {
+        continue;
+      }
+
+      const double normalizedTruthJetArea = truthJet.area() / (PI * rJet * rJet);
+
+      if (applyAreaCut && normalizedTruthJetArea < minNormalizedJetArea) {
+        continue;
+      }
+
+      if (matchedTruthJetIndices.contains(truthJet.globalIndex())) {
+        continue;
+      }
+
+      registryMC.fill(HIST("mc/jets/matched/miss/general/jet_pt"), truthJet.pt());
+      registryMC.fill(HIST("mc/jets/matched/miss/general/jet_eta"), truthJet.eta());
+      registryMC.fill(HIST("mc/jets/matched/miss/general/jet_phi"), truthJet.phi());
+      registryMC.fill(HIST("mc/jets/matched/miss/general/jet_area"), truthJet.area());
+      registryMC.fill(HIST("mc/jets/matched/miss/general/jet_n_constituents"), truthJet.tracksIds().size());
+
+      int nPionsInJetPosMiss = 0;
+      int nKaonsInJetPosMiss = 0;
+      int nProtonsInJetPosMiss = 0;
+
+      int nPionsInJetNegMiss = 0;
+      int nKaonsInJetNegMiss = 0;
+      int nProtonsInJetNegMiss = 0;
+
+      int nSelectedConstituentsMiss = 0;
+
+      for (auto const& particle : truthJet.tracks_as<aod::JetParticles>()) {
+
+        if (!particle.isPhysicalPrimary()) {
+          continue;
+        }
+
+        if (particle.eta() < minEta || particle.eta() > maxEta) {
+          continue;
+        }
+
+        const double pt = particle.pt();
+        if (pt < minPt || pt > maxPt) {
+          continue;
+        }
+
+        ++nSelectedConstituentsMiss;
+
+        const int originalPdg = particle.pdgCode();
+        const int pdg = std::abs(originalPdg);
+
+        registryMC.fill(HIST("mc/jets/matched/miss/hadrons/mc_gen_hadron_pt"), pt);
+
+        if (pdg == PDG_t::kPiPlus) {
+          if (pt >= cfg.minPtPion && pt <= cfg.maxPtPion) {
+            registryMC.fill(HIST("mc/jets/matched/miss/pions/mc_gen_pion_pt"), pt);
+            registryMC.fill(HIST("mc/jets/matched/miss/pions/pion_pt_vs_jet_pt"), truthJet.pt(), pt);
+
+            if (originalPdg > 0) {
+              nPionsInJetPosMiss++;
+              registryMC.fill(HIST("mc/jets/matched/miss/pions/pos/mc_gen_pion_pos_pt"), pt);
+            } else {
+              nPionsInJetNegMiss++;
+              registryMC.fill(HIST("mc/jets/matched/miss/pions/neg/mc_gen_pion_neg_pt"), pt);
+            }
+          }
+        } else if (pdg == PDG_t::kKPlus) {
+          if (pt >= cfg.minPtKaon && pt <= cfg.maxPtKaon) {
+            registryMC.fill(HIST("mc/jets/matched/miss/kaons/mc_gen_kaon_pt"), pt);
+            registryMC.fill(HIST("mc/jets/matched/miss/kaons/kaon_pt_vs_jet_pt"), truthJet.pt(), pt);
+
+            if (originalPdg > 0) {
+              nKaonsInJetPosMiss++;
+              registryMC.fill(HIST("mc/jets/matched/miss/kaons/pos/mc_gen_kaon_pos_pt"), pt);
+            } else {
+              nKaonsInJetNegMiss++;
+              registryMC.fill(HIST("mc/jets/matched/miss/kaons/neg/mc_gen_kaon_neg_pt"), pt);
+            }
+          }
+        } else if (pdg == PDG_t::kProton) {
+          if (pt >= cfg.minPtProton && pt <= cfg.maxPtProton) {
+            registryMC.fill(HIST("mc/jets/matched/miss/protons/mc_gen_proton_pt"), pt);
+            registryMC.fill(HIST("mc/jets/matched/miss/protons/proton_pt_vs_jet_pt"), truthJet.pt(), pt);
+            if (originalPdg > 0) {
+              nProtonsInJetPosMiss++;
+              registryMC.fill(HIST("mc/jets/matched/miss/protons/pos/mc_gen_proton_pos_pt"), pt);
+            } else {
+              nProtonsInJetNegMiss++;
+              registryMC.fill(HIST("mc/jets/matched/miss/protons/neg/mc_gen_proton_neg_pt"), pt);
+            }
+          }
+        }
+      }
+
+      registryMC.fill(HIST("mc/jets/matched/miss/general/jet_n_selected_constituents"), nSelectedConstituentsMiss);
+
+      registryMC.fill(HIST("mc/jets/matched/miss/pions/pos/n_pions_per_jet"), nPionsInJetPosMiss);
+      registryMC.fill(HIST("mc/jets/matched/miss/kaons/pos/n_kaons_per_jet"), nKaonsInJetPosMiss);
+      registryMC.fill(HIST("mc/jets/matched/miss/protons/pos/n_protons_per_jet"), nProtonsInJetPosMiss);
+
+      registryMC.fill(HIST("mc/jets/matched/miss/pions/neg/n_pions_per_jet"), nPionsInJetNegMiss);
+      registryMC.fill(HIST("mc/jets/matched/miss/kaons/neg/n_kaons_per_jet"), nKaonsInJetNegMiss);
+      registryMC.fill(HIST("mc/jets/matched/miss/protons/neg/n_protons_per_jet"), nProtonsInJetNegMiss);
+
+      const int nPionsInJetMiss = nPionsInJetPosMiss + nPionsInJetNegMiss;
+      const int nKaonsInJetMiss = nKaonsInJetPosMiss + nKaonsInJetNegMiss;
+      const int nProtonsInJetMiss = nProtonsInJetPosMiss + nProtonsInJetNegMiss;
+
+      registryMC.fill(HIST("mc/jets/matched/miss/pions/n_pions_per_jet"), nPionsInJetMiss);
+      registryMC.fill(HIST("mc/jets/matched/miss/kaons/n_kaons_per_jet"), nKaonsInJetMiss);
+      registryMC.fill(HIST("mc/jets/matched/miss/protons/n_protons_per_jet"), nProtonsInJetMiss);
+
+      registryMC.fill(HIST("mc/jets/matched/miss/pions/n_pions_vs_jet_pt"), truthJet.pt(), nPionsInJetMiss);
+      registryMC.fill(HIST("mc/jets/matched/miss/kaons/n_kaons_vs_jet_pt"), truthJet.pt(), nKaonsInJetMiss);
+      registryMC.fill(HIST("mc/jets/matched/miss/protons/n_protons_vs_jet_pt"), truthJet.pt(), nProtonsInJetMiss);
+
+      registryMC.fill(HIST("mc/jets/matched/general/jet_match_counter"), 2.0);
+    }
   }
   PROCESS_SWITCH(JetHadronsPid, processMatchJets, "Process dector level jets matched to particle level", false);
 

@@ -579,21 +579,18 @@ struct HfProducerCharmHadronsV0FemtoDream {
       }
     } else {
       // positive daughter
-      outputPartsMc(aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake, 0, -1.f, -1.f, -1.f);
       outputPartsMcLabels(-1);
       if (isDebug) {
         outputPartsExtMcLabels(-1);
         outputDebugPartsMc(0);
       }
       // negative daughter
-      outputPartsMc(aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake, 0, -1.f, -1.f, -1.f);
       outputPartsMcLabels(-1);
       if (isDebug) {
         outputPartsExtMcLabels(-1);
         outputDebugPartsMc(0);
       }
       // V0
-      outputPartsMc(aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake, 0, -1.f, -1.f, -1.f);
       outputPartsMcLabels(-1);
       if (isDebug) {
         outputPartsExtMcLabels(-1);

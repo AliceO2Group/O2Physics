@@ -177,7 +177,7 @@ struct FlowGenericFramework {
     O2_DEFINE_CONFIGURABLE(cfgTVXinTRD, bool, true, "TVXinTRD - Use TVXinTRD (reject TRD triggered events)");
     O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, true, "IsVertexITSTPC - Selects collisions with at least one ITS-TPC track");
   } cfgEventCutFlags;
-  struct ConfigurableGroup {
+  struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgOccupancySelection, int, 2000, "Max occupancy selection, -999 to disable");
     O2_DEFINE_CONFIGURABLE(cfgDoOccupancySel, bool, true, "Bool for event selection on detector occupancy");
     O2_DEFINE_CONFIGURABLE(cfgMagField, float, 99999, "Configurable magnetic field; default CCDB will be queried");
@@ -206,13 +206,13 @@ struct FlowGenericFramework {
   Configurable<LabeledArray<int>> resonanceSwitches{"resonanceSwitches", {LongArrayInt.front().data(), 8, 3, {"UseParticle", "UseCosPA", "NMassBins", "UseDCAxDaughters", "UseProperLifetime", "UseV0Radius", "UseArmPodCut", "UseCompetingMassRejection"}, {"K0", "Lambda", "Phi"}}, "Labeled array (int) for various cuts on resonances"};
 
   struct : ConfigurableGroup {
-    O2_DEFINE_CONFIGURABLE(cfgUseOnlyTPC, bool, true, "Use only TPC PID for daughter selection")
-    O2_DEFINE_CONFIGURABLE(cfgDaughterPIDRejection, bool, true, "Reject daughters if not consistent with expected K0/Lambda decay products")
-    O2_DEFINE_CONFIGURABLE(cfgUseAsymmetricPID, bool, false, "Use asymmetric PID cuts")
-    O2_DEFINE_CONFIGURABLE(cfgTPCNsigmaCut, float, 3.0f, "TPC N-sigma cut for pions, kaons, protons")
-    O2_DEFINE_CONFIGURABLE(cfgUseStrictPID, bool, true, "Use strict PID cuts for TPC")
+    O2_DEFINE_CONFIGURABLE(cfgUseOnlyTPC, bool, true, "Use only TPC PID for daughter selection");
+    O2_DEFINE_CONFIGURABLE(cfgDaughterPIDRejection, bool, true, "Reject daughters if not consistent with expected K0/Lambda decay products");
+    O2_DEFINE_CONFIGURABLE(cfgUseAsymmetricPID, bool, false, "Use asymmetric PID cuts");
+    O2_DEFINE_CONFIGURABLE(cfgTPCNsigmaCut, float, 3.0f, "TPC N-sigma cut for pions, kaons, protons");
+    O2_DEFINE_CONFIGURABLE(cfgUseStrictPID, bool, true, "Use strict PID cuts for TPC");
     O2_DEFINE_CONFIGURABLE(cfgTofPtCut, float, 0.5, "pt cut on TOF for PID");
-    O2_DEFINE_CONFIGURABLE(cfgUseItsPID, bool, true, "Use ITS PID for particle identification")
+    O2_DEFINE_CONFIGURABLE(cfgUseItsPID, bool, true, "Use ITS PID for particle identification");
     O2_DEFINE_CONFIGURABLE(cfgK0SignalMin, float, 0.48, "Minimum cut on K0 mT signal");
     O2_DEFINE_CONFIGURABLE(cfgK0SignalMax, float, 0.51, "Maximum cut on K0 mT signal");
     O2_DEFINE_CONFIGURABLE(cfgLambdaSignalMin, float, 1.1, "Minimum cut on Lambda mT signal");

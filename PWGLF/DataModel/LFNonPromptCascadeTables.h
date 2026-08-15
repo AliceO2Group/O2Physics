@@ -462,7 +462,9 @@ DECLARE_SOA_TABLE(NPMCChargedTable, "AOD", "NPMCChargedTABLE",
                   NPCascadeTable::EtaRec,
                   NPCascadeTable::MultNTracksNP,
                   NPCascadeTable::MultGen,
-                  NPCascadeTable::MultGenFT0);
+                  NPCascadeTable::MultGenFT0,
+                  NPCascadeTable::MultFT0M,
+                  NPCascadeTable::CentFT0M);
 DECLARE_SOA_TABLE(NPCollisionTable, "AOD", "NPCollisionTABLE",
                   NPCascadeTable::RunNumber,
                   NPCascadeTable::GlobalBC,

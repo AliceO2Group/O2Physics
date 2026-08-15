@@ -1077,7 +1077,9 @@ struct JetSpectraEseTask {
           registry.fill(HIST("mcm/hMCDMatchedEventCounter"), secCount++);
 
       registry.fill(HIST("mcm/hCentralityAnalyzed"), centrality);
-      matchedJetLoop<JetMCPTable, aod::JetTracks>(mcdjets.sliceBy(mcdjetsPerJCollision, collision.globalIndex()), centrality, collision.rho(), mcCol.rho());
+      float eventWeight = cfgUseMCEventWeights ? mcCol.weight() : 1.0;
+      float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
+      matchedJetLoop<JetMCPTable, aod::JetTracks>(mcdjets.sliceBy(mcdjetsPerJCollision, collision.globalIndex()), centrality, collision.rho(), mcCol.rho(), eventWeight, pTHat);
 
       registry.fill(HIST("mcm/hMCDMatchedEventCounter"), secCount++);
     }
@@ -1724,9 +1726,8 @@ struct JetSpectraEseTask {
   }
 
   template <typename MCPTab, typename JTracks, typename Jets>
-  void matchedJetLoop(const Jets& jets, const float& centrality, const float& rho, const float& rho2)
+  void matchedJetLoop(const Jets& jets, const float& centrality, const float& rho, const float& rho2, float weight = 1.0, float pTHat = 999.0)
   {
-    float weight = 1.0;
     for (const auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, cfgJetEta->at(0), cfgJetEta->at(1), trackEtaMin, trackEtaMax)) {
         continue;
@@ -1734,24 +1735,20 @@ struct JetSpectraEseTask {
       if (!isAcceptedJet<JTracks>(jet)) {
         continue;
       }
-      float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
       if (jet.pt() > pTHatMaxMCD * pTHat) {
-        return;
+        continue;
       }
 
       auto pt = jet.pt();
       if (cfgbkgSubMC) {
         pt = jet.pt() - (rho * jet.area());
       }
-      if (cfgUseMCEventWeights) {
-        weight = jet.eventWeight();
-      }
       registry.fill(HIST("mcm/hJetSparse"), centrality, pt, jet.eta(), jet.phi(), weight); /* detector level mcm*/
 
       if (jet.has_matchedJetGeo()) {
         registry.fill(HIST("mcm/hDetSparseMatch"), centrality, pt, jet.eta(), jet.phi(), weight);
         for (const auto& matchedJet : jet.template matchedJetGeo_as<MCPTab>()) {
-          if (matchedJet.pt() > pTHatMaxMCD * pTHat)
+          if (matchedJet.pt() > pTHatMaxMCP * pTHat)
             continue;
           auto matchedpt = matchedJet.pt();
           if (cfgbkgSubMC) {
