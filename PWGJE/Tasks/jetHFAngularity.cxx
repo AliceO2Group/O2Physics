@@ -196,7 +196,7 @@ struct JetHFAngularityTask {
   // DATA
 
   using D0CandidatesData = aod::CandidatesD0Data;
-  
+
   using D0DataJets = soa::Join<aod::D0ChargedJets,
                                aod::D0ChargedJetConstituents>;
 
@@ -477,7 +477,7 @@ struct JetHFAngularityTask {
   }
 
   // Helper: jet invariant mass
- 
+
   template <typename TRACKS, typename CANDIDATES>
   float computeJetMass(TRACKS const& tracks,
                        CANDIDATES const& candidates,
@@ -487,16 +487,13 @@ struct JetHFAngularityTask {
     double energyTot = 0.;
 
     for (auto const& trk : tracks) {
-      const std::array<double, 3> mom{trk.px(), trk.py(), trk.pz()};
-      momTotal[0] += mom[0];
-      momTotal[1] += mom[1];
-      momTotal[2] += mom[2];
-      energyTot += RecoDecay::e(mom, 0.); // massless approximation for ordinary tracks
+      momTotal[0] += trk.px();
+      momTotal[1] += trk.py();
+      momTotal[2] += trk.pz();
+      energyTot += RecoDecay::p(trk.px(), trk.py(), trk.pz()); // massless approximation for ordinary tracks
     }
 
     for (auto const& cand : candidates) {
-      const std::array<double, 3> mom{cand.px(), cand.py(), cand.pz()};
-
       double m;
       if (candMass > 0.) {
         m = candMass;
@@ -506,10 +503,10 @@ struct JetHFAngularityTask {
         m = 0.;
       }
 
-      momTotal[0] += mom[0];
-      momTotal[1] += mom[1];
-      momTotal[2] += mom[2];
-      energyTot += RecoDecay::e(mom, m);
+      momTotal[0] += cand.px();
+      momTotal[1] += cand.py();
+      momTotal[2] += cand.pz();
+      energyTot += RecoDecay::e(cand.px(), cand.py(), cand.pz(), m);
     }
 
     const double mass2 = RecoDecay::m2(momTotal, energyTot);
