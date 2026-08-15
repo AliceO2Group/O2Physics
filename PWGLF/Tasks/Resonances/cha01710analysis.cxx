@@ -301,7 +301,8 @@ struct Cha01710analysis {
     if (dm < v0Cuts.cfgKsMassWindow) {
       histos.fill(HIST("V0/hMassSelected"), v0.mK0Short(), v0.pt());
       return V0MassRegion::kSignal;
-    } else if (dm > v0Cuts.cfgKsMassWindow) {
+    }
+    if (dm > v0Cuts.cfgKsMassWindow) {
       histos.fill(HIST("V0/hMassSelected"), v0.mK0Short(), v0.pt());
       return V0MassRegion::kSideband;
     }
