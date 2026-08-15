@@ -42,9 +42,9 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/Track.h>
 
-#include "TMCProcess.h"
-#include "TPDGCode.h"
 #include <TF1.h>
+#include <TMCProcess.h>
+#include <TPDGCode.h>
 
 #include <algorithm>
 #include <array>
