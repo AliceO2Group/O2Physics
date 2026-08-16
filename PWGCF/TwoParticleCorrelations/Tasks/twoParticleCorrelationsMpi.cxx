@@ -45,7 +45,7 @@
 #include <TDirectory.h>
 #include <TFile.h>
 #include <TFormula.h>
-#include <TH3D.h>
+#include <TH3.h>
 #include <THn.h>
 #include <TList.h>
 #include <TNamed.h>
@@ -675,10 +675,10 @@ struct TwoParticleCorrelationsMpi {
 
   void loadPairAcceptanceMaps(const std::function<TObject*(const char*)>& findObject, const std::string& source)
   {
-    auto* schemaVersion = dynamic_cast<TNamed*>(findObject("pairAcceptanceSchemaVersion"));
+    const auto* schemaVersion = dynamic_cast<const TNamed*>(findObject("pairAcceptanceSchemaVersion"));
     const auto* normalization = dynamic_cast<const TNamed*>(findObject("pairAcceptanceNormalization"));
     const auto* axes = dynamic_cast<const TNamed*>(findObject("pairAcceptanceAxes"));
-    if (!schemaVersion || TString(schemaVersion->GetTitle()) != "2" || !normalization || !axes) {
+    if (schemaVersion == nullptr || TString(schemaVersion->GetTitle()) != "2" || normalization == nullptr || axes == nullptr) {
       LOGF(fatal, "Unsupported or missing multiplicity-only pair-acceptance metadata in %s", source.c_str());
       return;
     }
@@ -688,12 +688,17 @@ struct TwoParticleCorrelationsMpi {
     pairAcceptanceMaps.resize(nMultiplicityBins);
     for (int multBin = 0; multBin < nMultiplicityBins; ++multBin) {
       auto* inputMap = dynamic_cast<TH3D*>(findObject(Form("pairAcceptance_mult_%d", multBin)));
-      if (!inputMap) {
+      if (inputMap == nullptr) {
         LOGF(fatal, "Missing pairAcceptance_mult_%d in %s", multBin, source.c_str());
         pairAcceptanceMaps.clear();
         return;
       }
-      auto* clone = static_cast<TH3D*>(inputMap->Clone(Form("loadedPairAcceptance_mult_%d", multBin)));
+      auto* clone = dynamic_cast<TH3D*>(inputMap->Clone(Form("loadedPairAcceptance_mult_%d", multBin)));
+      if (clone == nullptr) {
+        LOGF(fatal, "Could not clone pairAcceptance_mult_%d from %s as TH3D", multBin, source.c_str());
+        pairAcceptanceMaps.clear();
+        return;
+      }
       clone->SetDirectory(nullptr);
       pairAcceptanceMaps[multBin].reset(clone);
     }
