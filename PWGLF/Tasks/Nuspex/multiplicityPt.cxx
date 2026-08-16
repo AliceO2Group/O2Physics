@@ -13,49 +13,52 @@
 /// \file multiplicityPt.cxx
 /// \brief Analysis to do PID with MC - Full correction factors for pions, kaons, protons
 
-#include "Common/CCDB/EventSelectionParams.h"
+#include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/DataModel/spectraTOF.h"
+#include "PWGLF/Utils/inelGt.h"
+
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
+#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
 #include <Framework/Logger.h>
 #include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
 
 #include <TF1.h>
-#include <TH2.h>
-#include <TH3.h>
 #include <TMCProcess.h>
 #include <TPDGCode.h>
-#include <TString.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
-#include <cstdint>
+#include <map>
 #include <memory>
+#include <numeric>
+#include <set>
 #include <string>
-#include <string_view>
 #include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace constants::physics;
 
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels,
                           aod::Run3MatchedToBCSparse>;
@@ -65,6 +68,8 @@ using ColEvSelsMC = soa::Join<aod::Collisions, aod::EvSels,
                               aod::McCollisionLabels,
                               aod::CentFT0Ms,
                               aod::TPCMults, aod::PVMults>;
+
+using McCollisionsCent = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
 // Data collision table (for processData)
 using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels,
@@ -121,7 +126,7 @@ struct MultiplicityPt {
   Configurable<bool> requireIsGoodZvtxFT0vsPV{"requireIsGoodZvtxFT0vsPV", false, "Require good Z vertex FT0 vs PV"};
   Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "Require vertex ITSTPC"};
   Configurable<bool> removeNoTimeFrameBorder{"removeNoTimeFrameBorder", false, "Remove no time frame border"};
-  Configurable<bool> nGoodITS{"nGoodITS", true, "Numbers of inactive chips on all ITS layers are below maximum allowed values"};
+  Configurable<bool> nGoodITS{"nGoodITS", false, "Numbers of inactive chips on all ITS layers are below maximum allowed values"};
 
   // Gen-level event selection
   Configurable<bool> selTVXMC{"selTVXMC", true, "Require TVX-equivalent at gen level"};
@@ -143,10 +148,11 @@ struct MultiplicityPt {
   Configurable<bool> enablePIDHistograms{"enablePIDHistograms", true, "Enable PID histograms"};
   Configurable<bool> useCustomTrackCuts{"useCustomTrackCuts", true, "Flag to use custom track cuts"};
   Configurable<int> itsPattern{"itsPattern", 0, "0 = Run3ITSibAny, 1 = Run3ITSallAny, 2 = Run3ITSall7Layers, 3 = Run3ITSibTwo"};
-  Configurable<bool> requireITS{"requireITS", true, "Additional cut on the ITS requirement"};
-  Configurable<bool> requireTPC{"requireTPC", true, "Additional cut on the TPC requirement"};
+  Configurable<bool> requireITS{"requireITS", false, "Additional cut on the ITS requirement"};
+  Configurable<bool> requireTPC{"requireTPC", false, "Additional cut on the TPC requirement"};
   Configurable<bool> requireGoldenChi2{"requireGoldenChi2", true, "Additional cut on the GoldenChi2"};
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.f, "Additional cut on the minimum number of crossed rows in the TPC"};
+  Configurable<bool> minNCrossedRowsOverFindableClustersTPCBool{"minNCrossedRowsOverFindableClustersTPCBool", false, "Enable/disable cut on findable clusters in the TPC"};
   Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
   Configurable<float> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 4.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
   Configurable<float> minChi2PerClusterTPC{"minChi2PerClusterTPC", 0.5f, "Additional cut on the minimum value of the chi2 per cluster in the TPC"};
@@ -159,7 +165,6 @@ struct MultiplicityPt {
   Configurable<float> dcaZp0{"dcaZp0", 0.0105f, "DCAz formula: p0 + p1/pt^p2"};
   Configurable<float> dcaZp1{"dcaZp1", 0.0350f, "DCAz p1 parameter"};
   Configurable<float> dcaZp2{"dcaZp2", 1.1f, "DCAz p2 parameter"};
-  // Configurable<float> maxDcaZ{"maxDcaZ", 2.0f, "Additional cut on the maximum value of the DCA z"};
   Configurable<float> minTPCNClsFound{"minTPCNClsFound", 70.0f, "min number of found TPC clusters"};
   Configurable<float> minTPCNClsPID{"minTPCNClsPID", 130.0f, "min number of PID TPC clusters"};
   Configurable<bool> nClTPCFoundCut{"nClTPCFoundCut", false, "Apply TPC found clusters cut"};
@@ -195,6 +200,7 @@ struct MultiplicityPt {
   ConfigurableAxis dedxBins{"dedxBins", {100, 0, 100}, "Binning for dedx"};
   std::vector<double> centBinningStd = {0., 1., 5., 10., 15., 20., 30., 40., 50., 70., 100.};
   ConfigurableAxis dcaBins{"dcaBins", {200, -0.5, 0.5}, "Binning for DCA plots"};
+
   // ── Custom track-selection object ────────────────────────
   TrackSelection customTrackCuts;
 
@@ -218,7 +224,10 @@ struct MultiplicityPt {
   static constexpr float MinCharge = 3.0f;
   static constexpr int CentralityClasses = 10;
 
+  // dE/dx histogram names
   static constexpr int ParticleTypes = 4;
+  static constexpr int ParticleMinusOne = 3;
+
   // Response Matrix histogram names
   static constexpr std::string_view EtavspvspTPosPart[ResponseMatrixTypes] = {"heta_vs_pt_vs_p_all_Pos", "heta_vs_pt_vs_p_all_Pos_Pri", "heta_vs_pt_vs_p_all_Pos_Pri_MC", "heta_vs_pt_vs_p_all_Pos_Pri_MC_Part", "heta_vs_pt_vs_p_Pi_Pos", "heta_vs_pt_vs_p_K_Pos", "heta_vs_pt_vs_p_Pr_Pos"};
   static constexpr std::string_view EtavspvspTNegPart[ResponseMatrixTypes] = {"heta_vs_pt_vs_p_all_Neg", "heta_vs_pt_vs_p_all_Neg_Pri", "heta_vs_pt_vs_p_all_Neg_Pri_MC", "heta_vs_pt_vs_p_all_Neg_Pri_MC_Part", "heta_vs_pt_vs_p_Pi_Neg", "heta_vs_pt_vs_p_K_Neg", "heta_vs_pt_vs_p_Pr_Neg"};
@@ -231,7 +240,7 @@ struct MultiplicityPt {
     kINELgt0,
     kRecoColl,
     kGoodITS,
-    kRecoSelected,
+    kRecoSelected
   };
 
   // Particle species enum
@@ -254,15 +263,18 @@ struct MultiplicityPt {
     // Setup custom track cuts
     if (useCustomTrackCuts.value) {
       customTrackCuts = getGlobalTrackSelectionRun3ITSMatch(itsPattern.value);
-      // customTrackCuts.SetRequireITSRefit(requireITS.value);
-      // customTrackCuts.SetRequireTPCRefit(requireTPC.value);
+      customTrackCuts.SetRequireITSRefit(requireITS.value);
+      customTrackCuts.SetRequireTPCRefit(requireTPC.value);
       customTrackCuts.SetMinNClustersITS(minITSnClusters.value);
       customTrackCuts.SetRequireGoldenChi2(requireGoldenChi2.value);
       customTrackCuts.SetMaxChi2PerClusterTPC(maxChi2PerClusterTPC.value);
       customTrackCuts.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
       customTrackCuts.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
-      // customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
-      customTrackCuts.SetMaxDcaXYPtDep([](float /*pt*/) { return 10000.f; });
+      if (minNCrossedRowsOverFindableClustersTPCBool.value) {
+        customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
+      }
+
+      // customTrackCuts.SetMaxDcaXYPtDep([](float /*pt*/) { return 10000.f; });
       // customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
     }
 
@@ -280,13 +292,12 @@ struct MultiplicityPt {
     }
 
     // Define axes
-    AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec dedxAxis = {dedxBins, "dE/dx (a. u.)"};
-    AxisSpec etaAxis{8, -0.8, 0.8, "#eta"};
-    AxisSpec pAxis = {ptBinning, "#it{p} (GeV/#it{c})"};
-    AxisSpec pFineAxis{pFineBins, "#it{p} (GeV/c)"};
-    AxisSpec pTFineAxis{pFineBins, "#it{p}_{T} (GeV/c)"};
-
+    const AxisSpec ptAxis{ptBinning, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec dedxAxis = {dedxBins, "dE/dx (a. u.)"};
+    const AxisSpec pAxis{ptBinning, "#it{p} (GeV/#it{c})"};
+    const AxisSpec etaAxis{8, -0.8, 0.8, "#eta"};
+    const AxisSpec pFineAxis{pFineBins, "#it{p} (GeV/c)"};
+    const AxisSpec pTFineAxis{pFineBins, "#it{p}_{T} (GeV/c)"};
     const AxisSpec centAxis{centBinningStd, "FT0M Centrality (%)"};
 
     // Fine centrality binning (100 bins)
@@ -304,6 +315,7 @@ struct MultiplicityPt {
     const AxisSpec zvtxAxis{60, -30.0, 30.0, "Vtx_{z} (cm)"};
     const AxisSpec nclAxis{161, -0.5, 160.5, "N_{cl} TPC"};
     AxisSpec dcaAxis{dcaBins, ""};
+
     // ========================================================================
     // EVENT COUNTER AND BASIC HISTOGRAMS
     // ========================================================================
@@ -318,6 +330,9 @@ struct MultiplicityPt {
       h->GetXaxis()->SetBinLabel(kGoodITS, "GoodITSLayersAll");
       h->GetXaxis()->SetBinLabel(kRecoSelected, ">=1 reco+sel.");
     }
+
+    registry.add("QA/genCentFT0M_raw", "Sanity check: calibrated gen-level FT0M percentile (unconditional);FT0M class (%);Entries",
+                 kTH1F, {centFineAxis});
 
     registry.add("NumberOfRecoCollisions", "Reco collisions per gen. collision;N_{reco};Entries",
                  kTH1F, {{10, -0.5, 9.5}});
@@ -420,6 +435,14 @@ struct MultiplicityPt {
     // ========================================================================
     registry.add("NchMC_AllGen", "EVENT LOSS denom.;Gen. N_{ch};Entries", kTH1F, {nchAxis});
     registry.add("NchMC_WithRecoEvt", "EVENT LOSS numer.;Gen. N_{ch};Entries", kTH1F, {nchAxis});
+    registry.add("EventLoss/NgenFT0M", "EVENT LOSS denom. vs calibrated FT0M class;FT0M class (%);Entries",
+                 kTH1F, {centFineAxis});
+    registry.add("EventLoss/NgenWithRecoFT0M", "EVENT LOSS numer. vs calibrated FT0M class;FT0M class (%);Entries",
+                 kTH1F, {centFineAxis});
+
+    registry.add("EventLoss/NgenInclusive", "EVENT LOSS denom., inclusive 0-100%;;Entries", kTH1F, {{1, 0, 1}});
+    registry.add("EventLoss/NgenWithRecoInclusive", "EVENT LOSS numer., inclusive 0-100%;;Entries", kTH1F, {{1, 0, 1}});
+
     registry.add("MC/EventLoss/NchGenerated", "Generated charged multiplicity;N_{ch}^{gen};Counts", kTH1D, {nchAxis});
     registry.add("MC/EventLoss/NchGenerated_PhysicsSelected", "Generated charged multiplicity (physics selected);N_{ch}^{gen};Counts", kTH1D, {nchAxis});
     registry.add("MC/EventLoss/NchGenerated_Reconstructed", "Generated charged multiplicity (reconstructed);N_{ch}^{gen};Counts", kTH1D, {nchAxis});
@@ -445,6 +468,26 @@ struct MultiplicityPt {
       registry.add(Form("Pt%sVsNchMC_WithRecoEvt", name.c_str()),
                    Form("SIGNAL LOSS numer. (%s): gen. evts. w/ >=1 reco+sel.;#it{p}_{T};Gen. N_{ch}", name.c_str()),
                    kTH2F, {{ptAxis, nchAxis}});
+    }
+
+    for (int i = 0; i < ParticleTypes; ++i) {
+      const std::string& name = speciesNames[i];
+      registry.add(Form("SignalLoss/Pt%sVsFT0MClass_AllGen", name.c_str()),
+                   Form("SIGNAL LOSS denom. (%s) vs calibrated FT0M class;#it{p}_{T};FT0M class (%%)", name.c_str()),
+                   kTH2F, {{ptAxis, centFineAxis}});
+      registry.add(Form("SignalLoss/Pt%sVsFT0MClass_WithRecoEvt", name.c_str()),
+                   Form("SIGNAL LOSS numer. (%s) vs calibrated FT0M class;#it{p}_{T};FT0M class (%%)", name.c_str()),
+                   kTH2F, {{ptAxis, centFineAxis}});
+    }
+
+    for (int i = 0; i < ParticleTypes; ++i) {
+      const std::string& name = speciesNames[i];
+      registry.add(Form("SignalLoss/Pt%sInclusive_AllGen", name.c_str()),
+                   Form("SIGNAL LOSS denom. (%s), inclusive 0-100%%;#it{p}_{T};Entries", name.c_str()),
+                   kTH1F, {ptAxis});
+      registry.add(Form("SignalLoss/Pt%sInclusive_WithRecoEvt", name.c_str()),
+                   Form("SIGNAL LOSS numer. (%s), inclusive 0-100%%;#it{p}_{T};Entries", name.c_str()),
+                   kTH1F, {ptAxis});
     }
 
     // ========================================================================
@@ -550,7 +593,7 @@ struct MultiplicityPt {
     const std::array<std::string, 3> particleNames = {"Pion", "Kaon", "Proton"};
     const std::array<std::string, 3> particleSymbols = {"#pi^{#pm}", "K^{#pm}", "p+#bar{p}"};
 
-    for (int iSpecies = 0; iSpecies < ParticleTypes - 1; ++iSpecies) {
+    for (int iSpecies = 0; iSpecies < ParticleMinusOne; ++iSpecies) {
       const auto& name = particleNames[iSpecies];
       const auto& symbol = particleSymbols[iSpecies];
 
@@ -638,7 +681,6 @@ struct MultiplicityPt {
                  HistType::kTH2F, {{ptAxis}, {dcaAxis}});
     registry.add("hDCAzVsPt_after", "DCAz vs pT after cut;#it{p}_{T} (GeV/c);DCA_{z} (cm)",
                  HistType::kTH2F, {{ptAxis}, {dcaAxis}});
-
     // ========================================================================
     // CALIBRATION HISTOGRAMS
     // ========================================================================
@@ -732,7 +774,7 @@ struct MultiplicityPt {
     LOG(info) << "cfgINELCut       = " << cfgINELCut.value;
     LOG(info) << "selTVXMC         = " << selTVXMC.value;
     LOG(info) << "applyPhiCut      = " << applyPhiCut.value;
-    // LOG(info) << "maxDcaZ          = " << maxDcaZ.value;
+    LOG(info) << "applyGoodITS         = " << nGoodITS.value;
   }
 
   // Get magnetic field from CCDB
@@ -907,7 +949,7 @@ struct MultiplicityPt {
     return count;
   }
 
-  void processSim(aod::McCollisions::iterator const& mcCollision,
+  void processSim(McCollisionsCent::iterator const& mcCollision,
                   soa::SmallGroups<ColEvSelsMC> const& collisions,
                   aod::McParticles const& mcParticles,
                   TracksMC const& tracksMC,
@@ -915,8 +957,9 @@ struct MultiplicityPt {
   {
     registry.fill(HIST("EventCounter"), kAllGen);
 
+    const float genCentFT0M = mcCollision.centFT0M();
+
     int nChFT0A = 0, nChFT0C = 0;
-    int nChINEL = 0;
     int nChMCEta = 0;
     std::vector<float> particlePtBySpecies[4]; // Pi, Ka, Pr, All
     std::vector<float> particlePtAll;
@@ -938,8 +981,6 @@ struct MultiplicityPt {
         nChFT0A++;
       if (eta > MinFT0C && eta < MaxFT0C)
         nChFT0C++;
-      if (std::abs(eta) < 1.0f)
-        nChINEL++;
 
       if (std::abs(eta) < tpcNchAcceptance.value) {
         nChMCEta++;
@@ -960,28 +1001,49 @@ struct MultiplicityPt {
     }
 
     // Fill NchMCcentVsTVX before TVX selection
+    registry.fill(HIST("QA/genCentFT0M_raw"), genCentFT0M);
     registry.fill(HIST("NchMCcentVsTVX"), nChMCEta, 0.5);
 
-    if (selTVXMC.value && !(nChFT0A > 0 && nChFT0C > 0))
-      return;
-    registry.fill(HIST("NchMCcentVsTVX"), nChMCEta, 1.5);
-    registry.fill(HIST("EventCounter"), kTVXequiv);
+    const bool passGenTVX = !selTVXMC.value || (nChFT0A > 0 || nChFT0C > 0);
+    if (passGenTVX) {
+      registry.fill(HIST("NchMCcentVsTVX"), nChMCEta, 1.5);
+      registry.fill(HIST("EventCounter"), kTVXequiv);
+    }
 
     if (isZvtxPosSelMC.value && std::abs(mcCollision.posZ()) > cfgCutVertex.value)
       return;
     registry.fill(HIST("EventCounter"), kVtxZ);
 
-    if (cfgINELCut.value == 1 && nChINEL == 0)
+    if (cfgINELCut.value == INELgt0 && !o2::pwglf::isINELgt0mc(mcParticles, pdg))
       return;
-    if (cfgINELCut.value == INELgt1 && nChINEL < INELgt1)
+    if (cfgINELCut.value == INELgt1 && !o2::pwglf::isINELgt1mc(mcParticles, pdg))
       return;
     registry.fill(HIST("EventCounter"), kINELgt0);
+
+    registry.fill(HIST("EventLoss/NgenInclusive"), 0.5);
+
+    for (const float& pt : particlePtBySpecies[kPion]) {
+      registry.fill(HIST("SignalLoss/PtPiInclusive_AllGen"), pt);
+    }
+    for (const float& pt : particlePtBySpecies[kKaon]) {
+      registry.fill(HIST("SignalLoss/PtKaInclusive_AllGen"), pt);
+    }
+    for (const float& pt : particlePtBySpecies[kProton]) {
+      registry.fill(HIST("SignalLoss/PtPrInclusive_AllGen"), pt);
+    }
+    for (const float& pt : particlePtAll) {
+      registry.fill(HIST("SignalLoss/PtAllInclusive_AllGen"), pt);
+    }
 
     const float nchF = static_cast<float>(nChMCEta);
 
     // Fill event loss denominator and MC closure
     registry.fill(HIST("NchMC_AllGen"), nchF);
     registry.fill(HIST("MC/EventLoss/NchGenerated"), nchF);
+
+    if (passGenTVX) {
+      registry.fill(HIST("EventLoss/NgenFT0M"), genCentFT0M);
+    }
 
     for (const float& pt : mcPiPt) {
       registry.fill(HIST("MCclosure_PtMCPiVsNchMC"), pt, nchF);
@@ -1020,6 +1082,21 @@ struct MultiplicityPt {
     }
     for (const float& pt : particlePtAll) {
       registry.fill(HIST("PtAllVsNchMC_AllGen"), pt, nchF);
+    }
+
+    if (passGenTVX) {
+      for (const float& pt : particlePtBySpecies[kPion]) {
+        registry.fill(HIST("SignalLoss/PtPiVsFT0MClass_AllGen"), pt, genCentFT0M);
+      }
+      for (const float& pt : particlePtBySpecies[kKaon]) {
+        registry.fill(HIST("SignalLoss/PtKaVsFT0MClass_AllGen"), pt, genCentFT0M);
+      }
+      for (const float& pt : particlePtBySpecies[kProton]) {
+        registry.fill(HIST("SignalLoss/PtPrVsFT0MClass_AllGen"), pt, genCentFT0M);
+      }
+      for (const float& pt : particlePtAll) {
+        registry.fill(HIST("SignalLoss/PtAllVsFT0MClass_AllGen"), pt, genCentFT0M);
+      }
     }
 
     // Fill inclusive histograms - all generated
@@ -1064,7 +1141,8 @@ struct MultiplicityPt {
     for (const auto& collision : collisions) {
       if (collision.globalIndex() != bestCollisionIndex)
         continue;
-      if (!isEventSelectedMC(collision))
+      // if (!isEventSelectedMC(collision)) continue;
+      if (!isEventSelected(collision))
         continue;
 
       if (nGoodITS.value && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
@@ -1096,6 +1174,24 @@ struct MultiplicityPt {
 
       registry.fill(HIST("NchMC_WithRecoEvt"), nchF);
       registry.fill(HIST("MC/EventLoss/NchGenerated_Reconstructed"), nchF);
+      registry.fill(HIST("EventLoss/NgenWithRecoInclusive"), 0.5);
+
+      for (const float& pt : particlePtBySpecies[kPion]) {
+        registry.fill(HIST("SignalLoss/PtPiInclusive_WithRecoEvt"), pt);
+      }
+      for (const float& pt : particlePtBySpecies[kKaon]) {
+        registry.fill(HIST("SignalLoss/PtKaInclusive_WithRecoEvt"), pt);
+      }
+      for (const float& pt : particlePtBySpecies[kProton]) {
+        registry.fill(HIST("SignalLoss/PtPrInclusive_WithRecoEvt"), pt);
+      }
+      for (const float& pt : particlePtAll) {
+        registry.fill(HIST("SignalLoss/PtAllInclusive_WithRecoEvt"), pt);
+      }
+
+      if (passGenTVX) {
+        registry.fill(HIST("EventLoss/NgenWithRecoFT0M"), genCentFT0M);
+      }
       registry.fill(HIST("MC/EventLoss/GenMultVsCent"), centrality, nchF);
       registry.fill(HIST("zPosMC"), mcCollision.posZ());
       registry.fill(HIST("zPosReco"), collision.posZ());
@@ -1140,6 +1236,21 @@ struct MultiplicityPt {
         registry.fill(HIST("PtAllVsNchMC_WithRecoEvt"), pt, nchF);
         registry.fill(HIST("PtAllVsCentMC_WithRecoEvt"), pt, centrality);
         registry.fill(HIST("PtGenAllVsNchMC_WithRecoEvt"), pt, nchF);
+      }
+
+      if (passGenTVX) {
+        for (const float& pt : particlePtBySpecies[kPion]) {
+          registry.fill(HIST("SignalLoss/PtPiVsFT0MClass_WithRecoEvt"), pt, genCentFT0M);
+        }
+        for (const float& pt : particlePtBySpecies[kKaon]) {
+          registry.fill(HIST("SignalLoss/PtKaVsFT0MClass_WithRecoEvt"), pt, genCentFT0M);
+        }
+        for (const float& pt : particlePtBySpecies[kProton]) {
+          registry.fill(HIST("SignalLoss/PtPrVsFT0MClass_WithRecoEvt"), pt, genCentFT0M);
+        }
+        for (const float& pt : particlePtAll) {
+          registry.fill(HIST("SignalLoss/PtAllVsFT0MClass_WithRecoEvt"), pt, genCentFT0M);
+        }
       }
 
       // Fill efficiency denominator histograms
