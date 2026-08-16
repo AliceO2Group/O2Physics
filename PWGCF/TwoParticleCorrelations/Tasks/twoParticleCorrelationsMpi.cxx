@@ -676,8 +676,8 @@ struct TwoParticleCorrelationsMpi {
   void loadPairAcceptanceMaps(const std::function<TObject*(const char*)>& findObject, const std::string& source)
   {
     auto* schemaVersion = dynamic_cast<TNamed*>(findObject("pairAcceptanceSchemaVersion"));
-    auto* normalization = dynamic_cast<TNamed*>(findObject("pairAcceptanceNormalization"));
-    auto* axes = dynamic_cast<TNamed*>(findObject("pairAcceptanceAxes"));
+    const auto* normalization = dynamic_cast<const TNamed*>(findObject("pairAcceptanceNormalization"));
+    const auto* axes = dynamic_cast<const TNamed*>(findObject("pairAcceptanceAxes"));
     if (!schemaVersion || TString(schemaVersion->GetTitle()) != "2" || !normalization || !axes) {
       LOGF(fatal, "Unsupported or missing multiplicity-only pair-acceptance metadata in %s", source.c_str());
       return;
