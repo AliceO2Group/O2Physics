@@ -45,6 +45,7 @@
 #include <TDirectory.h>
 #include <TFile.h>
 #include <TFormula.h>
+#include <TH3.h>
 #include <THn.h>
 #include <TList.h>
 #include <TNamed.h>
@@ -62,6 +63,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <experimental/type_traits>
+#include <functional>
 #include <iterator>
 #include <memory>
 #include <string>
@@ -108,6 +110,8 @@ struct TwoParticleCorrelationsMpi {
   Configurable<std::string> cfgEfficiencyAssociated{"cfgEfficiencyAssociated", "", "CCDB path to efficiency object for associated particles"};
   Configurable<std::string> cfgNuncSeedsTemplateFile{"cfgNuncSeedsTemplateFile", "", "Local ROOT file containing ensembleYieldTemplates"};
   Configurable<std::string> cfgNuncSeedsTemplate{"cfgNuncSeedsTemplate", "", "CCDB path to the ensemble-yield template ccdb_object"};
+  Configurable<float> cfgMinPairAcceptance{"cfgMinPairAcceptance", 0.05f, "Minimum pair acceptance used by the event seed estimator"};
+  Configurable<float> cfgMaxPairAcceptanceWeight{"cfgMaxPairAcceptanceWeight", 20.f, "Maximum allowed inverse pair-acceptance weight"};
 
   Configurable<int> cfgNumMixedEvents{"cfgNumMixedEvents", 5, "Number of mixed events per event"};
 
@@ -187,10 +191,18 @@ struct TwoParticleCorrelationsMpi {
     double nearPairs = 0.0;
     double awayPairs = 0.0;
     double baselinePairs = 0.0;
+    double rawNearPairs = 0.0;
+    double rawAwayPairs = 0.0;
+    double rawBaselinePairs = 0.0;
+    int nAcceptanceCorrectedPairs = 0;
+    int nPairsRejectedByAcceptance = 0;
+    double sumAcceptanceWeights = 0.0;
 
-    [[nodiscard]] bool isValid() const { return nTriggers > 0; }
-    [[nodiscard]] double nearYield() const { return isValid() ? nearPairs / nTriggers : 0.0; }
-    [[nodiscard]] double awayYield() const { return isValid() ? awayPairs / nTriggers : 0.0; }
+    [[nodiscard]] bool hasTriggers() const { return nTriggers > 0; }
+    [[nodiscard]] bool hasAcceptanceCorrectedPairs() const { return nAcceptanceCorrectedPairs > 0; }
+    [[nodiscard]] bool isValid() const { return hasTriggers() && hasAcceptanceCorrectedPairs(); }
+    [[nodiscard]] double nearYield() const { return hasTriggers() ? nearPairs / nTriggers : 0.0; }
+    [[nodiscard]] double awayYield() const { return hasTriggers() ? awayPairs / nTriggers : 0.0; }
     [[nodiscard]] double nuncSeeds() const
     {
       const double denominator = 1.0 + nearYield() + awayYield();
@@ -199,7 +211,9 @@ struct TwoParticleCorrelationsMpi {
   };
 
   std::vector<YieldTemplate> yieldTemplates;
+  std::vector<std::unique_ptr<TH3D>> pairAcceptanceMaps;
   const TList* loadedCcdbYieldTemplateObject = nullptr;
+  bool eventSeedEstimatorEnabled = false;
 
   enum CorrelationMethod {
     All = 0,
@@ -225,6 +239,14 @@ struct TwoParticleCorrelationsMpi {
     if (doprocessMCSameDerived && (doprocessSameDerived || doprocessSameDerivedMultSet)) {
       LOGF(fatal, "processMCSameDerived is mutually exclusive with the reconstructed derived same-event processes because it also fills those outputs");
     }
+    if (!cfgNuncSeedsTemplateFile.value.empty() && !cfgNuncSeedsTemplate.value.empty()) {
+      LOGF(fatal, "Configure only one template source: cfgNuncSeedsTemplateFile or cfgNuncSeedsTemplate");
+    }
+    eventSeedEstimatorEnabled = !cfgNuncSeedsTemplateFile.value.empty() || !cfgNuncSeedsTemplate.value.empty();
+    LOGF(info, "Event seed estimator histogram booking: %s (local template='%s', CCDB template='%s')",
+         eventSeedEstimatorEnabled ? "enabled" : "disabled",
+         cfgNuncSeedsTemplateFile.value.c_str(), cfgNuncSeedsTemplate.value.c_str());
+
     registry.add("yields", "multiplicity/centrality vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     registry.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, o2::constants::math::TwoPI, "#varphi"}}});
     if (doprocessSameDerivedMultSet) {
@@ -250,53 +272,64 @@ struct TwoParticleCorrelationsMpi {
       registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     }
     registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
-    registry.add("eventSeedEstimator", "event-level template estimator", {HistType::kTHnSparseF, {{100, 0, 100, "multiplicity"}, {100, -0.5, 99.5, "N_{trig}"}, {200, 0, 20, "Y_{near}"}, {200, 0, 20, "Y_{away}"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
-    registry.add("eventSeedPairProbabilities", "summed pair probabilities", {HistType::kTH3F, {{200, 0, 200, "#Sigma P_{baseline}"}, {200, 0, 200, "#Sigma P_{near}"}, {200, 0, 200, "#Sigma P_{away}"}}});
-    registry.add("eventSeedEstimatorStatus", "event-estimator status", {HistType::kTH1F, {{4, -0.5, 3.5, "status"}}});
-    registry.add("eventSeedTemplateCoverage", "template coverage vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {102, -0.01, 1.01, "matched/candidate pairs"}}});
-    registry.add("eventSeedEstimateVsMultiplicity", "event-level seed estimate vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
-    registry.add("eventNearYieldVsMultiplicity", "event-level near yield vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 20, "Y_{near}"}}});
-    registry.add("eventAwayYieldVsMultiplicity", "event-level away yield vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 20, "Y_{away}"}}});
-    registry.add("profileEventNTriggers", "mean event trigger count", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("profileEventNearPairs", "mean summed near-pair probability", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("profileEventAwayPairs", "mean summed away-pair probability", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("profileEventBaselinePairs", "mean summed baseline-pair probability", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("profileEventNearYield", "mean event near yield", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("profileEventAwayYield", "mean event away yield", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("profileEventNuncSeeds", "mean event uncorrelated-seed estimate", {HistType::kTProfile, {axisMultiplicity}});
-    registry.add("profileEventEstimatorValidity", "fraction of events with a valid seed estimate", {HistType::kTProfile, {axisMultiplicity}});
-    auto* estimatorStatus = registry.get<TH1>(HIST("eventSeedEstimatorStatus")).get();
-    estimatorStatus->GetXaxis()->SetBinLabel(1, "unused");
-    estimatorStatus->GetXaxis()->SetBinLabel(2, "no template-covered triggers");
-    estimatorStatus->GetXaxis()->SetBinLabel(3, "no template-covered pairs");
-    estimatorStatus->GetXaxis()->SetBinLabel(4, "valid estimate");
-    registry.add("mcValidation/estimatedSeedsVsTrueNMPI", "template estimator response;N_{MPI}^{true};N_{seed}^{estimated}", {HistType::kTH2F, {{101, -0.5, 100.5}, {202, -0.5, 100.5}}});
-    registry.add("mcValidation/profileEstimatedSeedsVsTrueNMPI", "mean template estimate;N_{MPI}^{true};#LT N_{seed}^{estimated} #GT", {HistType::kTProfile, {{101, -0.5, 100.5}}});
-    registry.add("mcValidation/profileBiasVsTrueNMPI", "mean estimator bias;N_{MPI}^{true};#LT N_{seed}^{estimated} - N_{MPI}^{true} #GT", {HistType::kTProfile, {{101, -0.5, 100.5}}});
-    registry.add("mcValidation/relativeResidualVsTrueNMPI", "relative estimator residual;N_{MPI}^{true};(N_{seed}^{estimated} - N_{MPI}^{true}) / N_{MPI}^{true}", {HistType::kTH2F, {{101, -0.5, 100.5}, {240, -3., 3.}}});
-    registry.add("mcValidation/trueNMPIVsMultiplicity", "true MPI count versus reconstructed multiplicity;multiplicity;N_{MPI}^{true}", {HistType::kTH2F, {{100, 0., 100.}, {101, -0.5, 100.5}}});
-    registry.add("mcValidation/templateCoverageVsTrueNMPI", "template pair coverage versus true MPI count;N_{MPI}^{true};matched / candidate pairs", {HistType::kTH2F, {{101, -0.5, 100.5}, {102, -0.01, 1.01}}});
-    registry.add("mcValidation/status", "MC template-estimator validation status;status;events", {HistType::kTH1F, {{6, -0.5, 5.5}}});
-    auto* mcValidationStatus = registry.get<TH1>(HIST("mcValidation/status")).get();
-    mcValidationStatus->GetXaxis()->SetBinLabel(1, "no selected reconstructed collision");
-    mcValidationStatus->GetXaxis()->SetBinLabel(2, "invalid N MPI");
-    mcValidationStatus->GetXaxis()->SetBinLabel(3, "outside template multiplicity");
-    mcValidationStatus->GetXaxis()->SetBinLabel(4, "no template-covered triggers");
-    mcValidationStatus->GetXaxis()->SetBinLabel(5, "no template-covered pairs");
-    mcValidationStatus->GetXaxis()->SetBinLabel(6, "valid response");
-    registry.add("mcValidation/generated/estimatedSeedsVsTrueNMPI", "generated-level template estimator response;N_{MPI}^{true};N_{seed,gen}^{estimated}", {HistType::kTH2F, {{101, -0.5, 100.5}, {202, -0.5, 100.5}}});
-    registry.add("mcValidation/generated/profileEstimatedSeedsVsTrueNMPI", "mean generated-level template estimate;N_{MPI}^{true};#LT N_{seed,gen}^{estimated} #GT", {HistType::kTProfile, {{101, -0.5, 100.5}}});
-    registry.add("mcValidation/generated/profileBiasVsTrueNMPI", "mean generated-level estimator bias;N_{MPI}^{true};#LT N_{seed,gen}^{estimated} - N_{MPI}^{true} #GT", {HistType::kTProfile, {{101, -0.5, 100.5}}});
-    registry.add("mcValidation/generated/relativeResidualVsTrueNMPI", "generated-level relative estimator residual;N_{MPI}^{true};(N_{seed,gen}^{estimated} - N_{MPI}^{true}) / N_{MPI}^{true}", {HistType::kTH2F, {{101, -0.5, 100.5}, {240, -3., 3.}}});
-    registry.add("mcValidation/generated/trueNMPIVsMultiplicity", "true MPI count versus generated charged multiplicity;N_{ch}^{gen};N_{MPI}^{true}", {HistType::kTH2F, {{101, -0.5, 100.5}, {101, -0.5, 100.5}}});
-    registry.add("mcValidation/generated/templateCoverageVsTrueNMPI", "generated-level template pair coverage versus true MPI count;N_{MPI}^{true};matched / candidate pairs", {HistType::kTH2F, {{101, -0.5, 100.5}, {102, -0.01, 1.01}}});
-    registry.add("mcValidation/generated/status", "generated-level MC template-estimator validation status;status;events", {HistType::kTH1F, {{5, -0.5, 4.5}}});
-    auto* generatedValidationStatus = registry.get<TH1>(HIST("mcValidation/generated/status")).get();
-    generatedValidationStatus->GetXaxis()->SetBinLabel(1, "invalid N MPI");
-    generatedValidationStatus->GetXaxis()->SetBinLabel(2, "outside template multiplicity");
-    generatedValidationStatus->GetXaxis()->SetBinLabel(3, "no template-covered triggers");
-    generatedValidationStatus->GetXaxis()->SetBinLabel(4, "no template-covered pairs");
-    generatedValidationStatus->GetXaxis()->SetBinLabel(5, "valid response");
+    if (eventSeedEstimatorEnabled) {
+      registry.add("eventSeedEstimator", "event-level template estimator", {HistType::kTHnSparseF, {{100, 0, 100, "multiplicity"}, {100, -0.5, 99.5, "N_{trig}"}, {200, 0, 20, "Y_{near}"}, {200, 0, 20, "Y_{away}"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
+      registry.add("eventSeedPairProbabilities", "summed pair probabilities", {HistType::kTH3F, {{200, 0, 200, "#Sigma P_{baseline}"}, {200, 0, 200, "#Sigma P_{near}"}, {200, 0, 200, "#Sigma P_{away}"}}});
+      registry.add("eventSeedEstimatorStatus", "event-estimator status", {HistType::kTH1F, {{5, -0.5, 4.5, "status"}}});
+      registry.add("eventSeedTemplateCoverage", "template coverage vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {102, -0.01, 1.01, "matched/candidate pairs"}}});
+      registry.add("eventSeedEstimateVsMultiplicity", "event-level seed estimate vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 100, "N_{uncorrelated seeds}"}}});
+      registry.add("eventNearYieldVsMultiplicity", "event-level near yield vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 20, "Y_{near}"}}});
+      registry.add("eventAwayYieldVsMultiplicity", "event-level away yield vs multiplicity", {HistType::kTH2F, {{100, 0, 100, "multiplicity"}, {200, 0, 20, "Y_{away}"}}});
+      registry.add("profileEventNTriggers", "mean event trigger count", {HistType::kTProfile, {axisMultiplicity}});
+      registry.add("profileEventNearPairs", "mean summed near-pair probability", {HistType::kTProfile, {axisMultiplicity}});
+      registry.add("profileEventAwayPairs", "mean summed away-pair probability", {HistType::kTProfile, {axisMultiplicity}});
+      registry.add("profileEventBaselinePairs", "mean summed baseline-pair probability", {HistType::kTProfile, {axisMultiplicity}});
+      registry.add("profileEventRawNearPairs", "mean raw summed near-pair probability", {HistType::kTProfile, {axisMultiplicity}});
+      registry.add("profileEventRawAwayPairs", "mean raw summed away-pair probability", {HistType::kTProfile, {axisMultiplicity}});
+      registry.add("profileEventRawBaselinePairs", "mean raw summed baseline-pair probability", {HistType::kTProfile, {axisMultiplicity}});
+      registry.add("profileEventAcceptanceCoverage", "fraction of template-matched pairs with valid acceptance", {HistType::kTProfile, {axisMultiplicity}});
+      registry.add("profileEventMeanAcceptanceWeight", "mean inverse acceptance weight for corrected pairs", {HistType::kTProfile, {axisMultiplicity}});
+      registry.add("eventSeedAcceptanceWeight", "inverse pair-acceptance weight", {HistType::kTH1F, {{200, 0, 20, "1/A"}}});
+      registry.add("profileEventNearYield", "mean event near yield", {HistType::kTProfile, {axisMultiplicity}});
+      registry.add("profileEventAwayYield", "mean event away yield", {HistType::kTProfile, {axisMultiplicity}});
+      registry.add("profileEventNuncSeeds", "mean event uncorrelated-seed estimate", {HistType::kTProfile, {axisMultiplicity}});
+      registry.add("profileEventEstimatorValidity", "fraction of events with a valid seed estimate", {HistType::kTProfile, {axisMultiplicity}});
+      auto* estimatorStatus = registry.get<TH1>(HIST("eventSeedEstimatorStatus")).get();
+      estimatorStatus->GetXaxis()->SetBinLabel(1, "unused");
+      estimatorStatus->GetXaxis()->SetBinLabel(2, "no template-covered triggers");
+      estimatorStatus->GetXaxis()->SetBinLabel(3, "no template-covered pairs");
+      estimatorStatus->GetXaxis()->SetBinLabel(4, "no acceptance-corrected pairs");
+      estimatorStatus->GetXaxis()->SetBinLabel(5, "valid estimate");
+      registry.add("mcValidation/estimatedSeedsVsTrueNMPI", "template estimator response;N_{MPI}^{true};N_{seed}^{estimated}", {HistType::kTH2F, {{101, -0.5, 100.5}, {202, -0.5, 100.5}}});
+      registry.add("mcValidation/profileEstimatedSeedsVsTrueNMPI", "mean template estimate;N_{MPI}^{true};#LT N_{seed}^{estimated} #GT", {HistType::kTProfile, {{101, -0.5, 100.5}}});
+      registry.add("mcValidation/profileBiasVsTrueNMPI", "mean estimator bias;N_{MPI}^{true};#LT N_{seed}^{estimated} - N_{MPI}^{true} #GT", {HistType::kTProfile, {{101, -0.5, 100.5}}});
+      registry.add("mcValidation/relativeResidualVsTrueNMPI", "relative estimator residual;N_{MPI}^{true};(N_{seed}^{estimated} - N_{MPI}^{true}) / N_{MPI}^{true}", {HistType::kTH2F, {{101, -0.5, 100.5}, {240, -3., 3.}}});
+      registry.add("mcValidation/trueNMPIVsMultiplicity", "true MPI count versus reconstructed multiplicity;multiplicity;N_{MPI}^{true}", {HistType::kTH2F, {{100, 0., 100.}, {101, -0.5, 100.5}}});
+      registry.add("mcValidation/templateCoverageVsTrueNMPI", "template pair coverage versus true MPI count;N_{MPI}^{true};matched / candidate pairs", {HistType::kTH2F, {{101, -0.5, 100.5}, {102, -0.01, 1.01}}});
+      registry.add("mcValidation/status", "MC template-estimator validation status;status;events", {HistType::kTH1F, {{7, -0.5, 6.5}}});
+      auto* mcValidationStatus = registry.get<TH1>(HIST("mcValidation/status")).get();
+      mcValidationStatus->GetXaxis()->SetBinLabel(1, "no selected reconstructed collision");
+      mcValidationStatus->GetXaxis()->SetBinLabel(2, "invalid N MPI");
+      mcValidationStatus->GetXaxis()->SetBinLabel(3, "outside template multiplicity");
+      mcValidationStatus->GetXaxis()->SetBinLabel(4, "no template-covered triggers");
+      mcValidationStatus->GetXaxis()->SetBinLabel(5, "no template-covered pairs");
+      mcValidationStatus->GetXaxis()->SetBinLabel(6, "no acceptance-corrected pairs");
+      mcValidationStatus->GetXaxis()->SetBinLabel(7, "valid response");
+      registry.add("mcValidation/generated/estimatedSeedsVsTrueNMPI", "generated-level template estimator response;N_{MPI}^{true};N_{seed,gen}^{estimated}", {HistType::kTH2F, {{101, -0.5, 100.5}, {202, -0.5, 100.5}}});
+      registry.add("mcValidation/generated/profileEstimatedSeedsVsTrueNMPI", "mean generated-level template estimate;N_{MPI}^{true};#LT N_{seed,gen}^{estimated} #GT", {HistType::kTProfile, {{101, -0.5, 100.5}}});
+      registry.add("mcValidation/generated/profileBiasVsTrueNMPI", "mean generated-level estimator bias;N_{MPI}^{true};#LT N_{seed,gen}^{estimated} - N_{MPI}^{true} #GT", {HistType::kTProfile, {{101, -0.5, 100.5}}});
+      registry.add("mcValidation/generated/relativeResidualVsTrueNMPI", "generated-level relative estimator residual;N_{MPI}^{true};(N_{seed,gen}^{estimated} - N_{MPI}^{true}) / N_{MPI}^{true}", {HistType::kTH2F, {{101, -0.5, 100.5}, {240, -3., 3.}}});
+      registry.add("mcValidation/generated/trueNMPIVsMultiplicity", "true MPI count versus generated charged multiplicity;N_{ch}^{gen};N_{MPI}^{true}", {HistType::kTH2F, {{101, -0.5, 100.5}, {101, -0.5, 100.5}}});
+      registry.add("mcValidation/generated/templateCoverageVsTrueNMPI", "generated-level template pair coverage versus true MPI count;N_{MPI}^{true};matched / candidate pairs", {HistType::kTH2F, {{101, -0.5, 100.5}, {102, -0.01, 1.01}}});
+      registry.add("mcValidation/generated/status", "generated-level MC template-estimator validation status;status;events", {HistType::kTH1F, {{6, -0.5, 5.5}}});
+      auto* generatedValidationStatus = registry.get<TH1>(HIST("mcValidation/generated/status")).get();
+      generatedValidationStatus->GetXaxis()->SetBinLabel(1, "invalid N MPI");
+      generatedValidationStatus->GetXaxis()->SetBinLabel(2, "outside template multiplicity");
+      generatedValidationStatus->GetXaxis()->SetBinLabel(3, "no template-covered triggers");
+      generatedValidationStatus->GetXaxis()->SetBinLabel(4, "no template-covered pairs");
+      generatedValidationStatus->GetXaxis()->SetBinLabel(5, "no acceptance-corrected pairs");
+      generatedValidationStatus->GetXaxis()->SetBinLabel(6, "valid response");
+    }
     registry.add("yvspt", "y vs pT", {HistType::kTH2F, {{100, -1, 1, "y"}, {100, 0, 20, "p_{T}"}}}); // y vs pT for all tracks (control histogram)
 
     const int maxMixBin = AxisSpec(axisMultiplicity).getNbins() * AxisSpec(axisVertex).getNbins();
@@ -378,9 +411,6 @@ struct TwoParticleCorrelationsMpi {
     auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
 
-    if (!cfgNuncSeedsTemplateFile.value.empty() && !cfgNuncSeedsTemplate.value.empty()) {
-      LOGF(fatal, "Configure only one template source: cfgNuncSeedsTemplateFile or cfgNuncSeedsTemplate");
-    }
     loadLocalYieldTemplates();
   }
 
@@ -643,6 +673,38 @@ struct TwoParticleCorrelationsMpi {
     LOGF(info, "Loaded %zu ensemble-yield templates from %s", yieldTemplates.size(), source.c_str());
   }
 
+  void loadPairAcceptanceMaps(const std::function<TObject*(const char*)>& findObject, const std::string& source)
+  {
+    const auto* schemaVersion = dynamic_cast<const TNamed*>(findObject("pairAcceptanceSchemaVersion"));
+    const auto* normalization = dynamic_cast<const TNamed*>(findObject("pairAcceptanceNormalization"));
+    const auto* axes = dynamic_cast<const TNamed*>(findObject("pairAcceptanceAxes"));
+    if (schemaVersion == nullptr || TString(schemaVersion->GetTitle()) != "2" || normalization == nullptr || axes == nullptr) {
+      LOGF(fatal, "Unsupported or missing multiplicity-only pair-acceptance metadata in %s", source.c_str());
+      return;
+    }
+
+    const int nMultiplicityBins = AxisSpec(axisMultiplicity).getNbins();
+    pairAcceptanceMaps.clear();
+    pairAcceptanceMaps.resize(nMultiplicityBins);
+    for (int multBin = 0; multBin < nMultiplicityBins; ++multBin) {
+      auto* inputMap = dynamic_cast<TH3D*>(findObject(Form("pairAcceptance_mult_%d", multBin)));
+      if (inputMap == nullptr) {
+        LOGF(fatal, "Missing pairAcceptance_mult_%d in %s", multBin, source.c_str());
+        pairAcceptanceMaps.clear();
+        return;
+      }
+      auto* clone = dynamic_cast<TH3D*>(inputMap->Clone(Form("loadedPairAcceptance_mult_%d", multBin)));
+      if (clone == nullptr) {
+        LOGF(fatal, "Could not clone pairAcceptance_mult_%d from %s as TH3D", multBin, source.c_str());
+        pairAcceptanceMaps.clear();
+        return;
+      }
+      clone->SetDirectory(nullptr);
+      pairAcceptanceMaps[multBin].reset(clone);
+    }
+    LOGF(info, "Loaded %zu multiplicity-only pair-acceptance maps from %s", pairAcceptanceMaps.size(), source.c_str());
+  }
+
   void loadLocalYieldTemplates()
   {
     if (cfgNuncSeedsTemplateFile.value.empty()) {
@@ -667,6 +729,7 @@ struct TwoParticleCorrelationsMpi {
       dynamic_cast<TNamed*>(findObject("ensembleYieldTemplateSchemaVersion")),
       dynamic_cast<TNamed*>(findObject("ensembleYieldTemplateCorrelationStep")),
       cfgNuncSeedsTemplateFile.value);
+    loadPairAcceptanceMaps(findObject, cfgNuncSeedsTemplateFile.value);
   }
 
   void loadCcdbYieldTemplates(uint64_t timestamp)
@@ -688,6 +751,9 @@ struct TwoParticleCorrelationsMpi {
       dynamic_cast<TTree*>(calibration->FindObject("ensembleYieldTemplates")),
       dynamic_cast<TNamed*>(calibration->FindObject("ensembleYieldTemplateSchemaVersion")),
       dynamic_cast<TNamed*>(calibration->FindObject("ensembleYieldTemplateCorrelationStep")),
+      cfgNuncSeedsTemplate.value);
+    loadPairAcceptanceMaps(
+      [calibration](const char* name) -> TObject* { return calibration->FindObject(name); },
       cfgNuncSeedsTemplate.value);
     loadedCcdbYieldTemplateObject = calibration;
   }
@@ -725,7 +791,35 @@ struct TwoParticleCorrelationsMpi {
     return parameters[0] * std::exp(-0.5 * pull * pull);
   }
 
-  void addPairProbabilities(EventSeedEstimate& estimate, const YieldTemplate& yieldTemplate, double deltaPhi) const
+  const TH3D* findPairAcceptanceMap(double multiplicity) const
+  {
+    const auto& edges = AxisSpec(axisMultiplicity).binEdges;
+    const auto upper = std::upper_bound(edges.begin(), edges.end(), multiplicity);
+    const int multBin = static_cast<int>(std::distance(edges.begin(), upper)) - 1;
+    if (multBin < 0 || multBin >= static_cast<int>(pairAcceptanceMaps.size())) {
+      return nullptr;
+    }
+    return pairAcceptanceMaps[multBin].get();
+  }
+
+  double getPairAcceptance(double multiplicity, double deltaPhi, double deltaEta, double posZ) const
+  {
+    const auto* map = findPairAcceptanceMap(multiplicity);
+    if (!map) {
+      return 0.0;
+    }
+    const int phiBin = map->GetXaxis()->FindFixBin(deltaPhi);
+    const int etaBin = map->GetYaxis()->FindFixBin(deltaEta);
+    const int vertexBin = map->GetZaxis()->FindFixBin(posZ);
+    if (phiBin < 1 || phiBin > map->GetNbinsX() || etaBin < 1 || etaBin > map->GetNbinsY() ||
+        vertexBin < 1 || vertexBin > map->GetNbinsZ()) {
+      return 0.0;
+    }
+    return map->GetBinContent(phiBin, etaBin, vertexBin);
+  }
+
+  void addPairProbabilities(EventSeedEstimate& estimate, const YieldTemplate& yieldTemplate,
+                            double multiplicity, double deltaPhi, double deltaEta, double posZ)
   {
     const auto& parameters = yieldTemplate.parameters;
     const double near = std::max(0.0, evaluateGaussian(deltaPhi, parameters.data()) + evaluateGaussian(deltaPhi, parameters.data() + 3));
@@ -735,10 +829,30 @@ struct TwoParticleCorrelationsMpi {
     if (total <= 0.0) {
       return;
     }
-    estimate.nearPairs += near / total;
-    estimate.awayPairs += away / total;
-    estimate.baselinePairs += baseline / total;
+    const double nearProbability = near / total;
+    const double awayProbability = away / total;
+    const double baselineProbability = baseline / total;
+    estimate.rawNearPairs += nearProbability;
+    estimate.rawAwayPairs += awayProbability;
+    estimate.rawBaselinePairs += baselineProbability;
     ++estimate.nPairs;
+
+    const double acceptance = getPairAcceptance(multiplicity, deltaPhi, deltaEta, posZ);
+    if (!std::isfinite(acceptance) || acceptance < cfgMinPairAcceptance || acceptance <= 0.0) {
+      ++estimate.nPairsRejectedByAcceptance;
+      return;
+    }
+    const double acceptanceWeight = 1.0 / acceptance;
+    if (!std::isfinite(acceptanceWeight) || acceptanceWeight > cfgMaxPairAcceptanceWeight) {
+      ++estimate.nPairsRejectedByAcceptance;
+      return;
+    }
+    estimate.nearPairs += acceptanceWeight * nearProbability;
+    estimate.awayPairs += acceptanceWeight * awayProbability;
+    estimate.baselinePairs += acceptanceWeight * baselineProbability;
+    estimate.sumAcceptanceWeights += acceptanceWeight;
+    ++estimate.nAcceptanceCorrectedPairs;
+    registry.fill(HIST("eventSeedAcceptanceWeight"), acceptanceWeight);
   }
 
   void fillEventSeedEstimatorQA(double multiplicity, const EventSeedEstimate& estimate)
@@ -753,14 +867,29 @@ struct TwoParticleCorrelationsMpi {
     registry.fill(HIST("profileEventNearPairs"), multiplicity, estimate.nearPairs);
     registry.fill(HIST("profileEventAwayPairs"), multiplicity, estimate.awayPairs);
     registry.fill(HIST("profileEventBaselinePairs"), multiplicity, estimate.baselinePairs);
+    registry.fill(HIST("profileEventRawNearPairs"), multiplicity, estimate.rawNearPairs);
+    registry.fill(HIST("profileEventRawAwayPairs"), multiplicity, estimate.rawAwayPairs);
+    registry.fill(HIST("profileEventRawBaselinePairs"), multiplicity, estimate.rawBaselinePairs);
+    const double acceptanceCoverage = estimate.nPairs > 0 ? static_cast<double>(estimate.nAcceptanceCorrectedPairs) / estimate.nPairs : 0.0;
+    const double meanAcceptanceWeight = estimate.nAcceptanceCorrectedPairs > 0 ? estimate.sumAcceptanceWeights / estimate.nAcceptanceCorrectedPairs : 0.0;
+    registry.fill(HIST("profileEventAcceptanceCoverage"), multiplicity, acceptanceCoverage);
+    registry.fill(HIST("profileEventMeanAcceptanceWeight"), multiplicity, meanAcceptanceWeight);
     registry.fill(HIST("profileEventEstimatorValidity"), multiplicity, estimate.isValid() ? 1.0 : 0.0);
-    if (!estimate.isValid()) {
+    if (!estimate.hasTriggers()) {
       registry.fill(HIST("eventSeedEstimatorStatus"), 1.0);
       return;
     }
-    registry.fill(HIST("eventSeedEstimatorStatus"), estimate.nPairs > 0 ? 3.0 : 2.0);
     const double coverage = estimate.nCandidatePairs > 0 ? static_cast<double>(estimate.nPairs) / estimate.nCandidatePairs : 0.0;
     registry.fill(HIST("eventSeedTemplateCoverage"), multiplicity, coverage);
+    if (estimate.nPairs == 0) {
+      registry.fill(HIST("eventSeedEstimatorStatus"), 2.0);
+      return;
+    }
+    if (!estimate.hasAcceptanceCorrectedPairs()) {
+      registry.fill(HIST("eventSeedEstimatorStatus"), 3.0);
+      return;
+    }
+    registry.fill(HIST("eventSeedEstimatorStatus"), 4.0);
     registry.fill(HIST("eventSeedEstimator"), multiplicity, estimate.nTriggers, estimate.nearYield(), estimate.awayYield(), estimate.nuncSeeds());
     registry.fill(HIST("eventSeedPairProbabilities"), estimate.baselinePairs, estimate.nearPairs, estimate.awayPairs);
     registry.fill(HIST("eventSeedEstimateVsMultiplicity"), multiplicity, estimate.nuncSeeds());
@@ -773,6 +902,9 @@ struct TwoParticleCorrelationsMpi {
 
   void fillMCValidation(double multiplicity, const EventSeedEstimate& estimate, int trueNMPI)
   {
+    if (!eventSeedEstimatorEnabled || yieldTemplates.empty()) {
+      return;
+    }
     if (trueNMPI < 0) {
       registry.fill(HIST("mcValidation/status"), 1.0);
       return;
@@ -782,7 +914,7 @@ struct TwoParticleCorrelationsMpi {
       registry.fill(HIST("mcValidation/status"), 2.0);
       return;
     }
-    if (!estimate.isValid()) {
+    if (!estimate.hasTriggers()) {
       registry.fill(HIST("mcValidation/status"), 3.0);
       return;
     }
@@ -792,10 +924,14 @@ struct TwoParticleCorrelationsMpi {
       registry.fill(HIST("mcValidation/status"), 4.0);
       return;
     }
+    if (!estimate.hasAcceptanceCorrectedPairs()) {
+      registry.fill(HIST("mcValidation/status"), 5.0);
+      return;
+    }
 
     const double estimatedSeeds = estimate.nuncSeeds();
     const double bias = estimatedSeeds - trueNMPI;
-    registry.fill(HIST("mcValidation/status"), 5.0);
+    registry.fill(HIST("mcValidation/status"), 6.0);
     registry.fill(HIST("mcValidation/estimatedSeedsVsTrueNMPI"), trueNMPI, estimatedSeeds);
     registry.fill(HIST("mcValidation/profileEstimatedSeedsVsTrueNMPI"), trueNMPI, estimatedSeeds);
     registry.fill(HIST("mcValidation/profileBiasVsTrueNMPI"), trueNMPI, bias);
@@ -806,6 +942,9 @@ struct TwoParticleCorrelationsMpi {
 
   void fillGeneratedMCValidation(double multiplicity, const EventSeedEstimate& estimate, int trueNMPI)
   {
+    if (!eventSeedEstimatorEnabled || yieldTemplates.empty()) {
+      return;
+    }
     if (trueNMPI < 0) {
       registry.fill(HIST("mcValidation/generated/status"), 0.0);
       return;
@@ -815,7 +954,7 @@ struct TwoParticleCorrelationsMpi {
       registry.fill(HIST("mcValidation/generated/status"), 1.0);
       return;
     }
-    if (!estimate.isValid()) {
+    if (!estimate.hasTriggers()) {
       registry.fill(HIST("mcValidation/generated/status"), 2.0);
       return;
     }
@@ -825,10 +964,14 @@ struct TwoParticleCorrelationsMpi {
       registry.fill(HIST("mcValidation/generated/status"), 3.0);
       return;
     }
+    if (!estimate.hasAcceptanceCorrectedPairs()) {
+      registry.fill(HIST("mcValidation/generated/status"), 4.0);
+      return;
+    }
 
     const double estimatedSeeds = estimate.nuncSeeds();
     const double bias = estimatedSeeds - trueNMPI;
-    registry.fill(HIST("mcValidation/generated/status"), 4.0);
+    registry.fill(HIST("mcValidation/generated/status"), 5.0);
     registry.fill(HIST("mcValidation/generated/estimatedSeedsVsTrueNMPI"), trueNMPI, estimatedSeeds);
     registry.fill(HIST("mcValidation/generated/profileEstimatedSeedsVsTrueNMPI"), trueNMPI, estimatedSeeds);
     registry.fill(HIST("mcValidation/generated/profileBiasVsTrueNMPI"), trueNMPI, bias);
@@ -1024,11 +1167,12 @@ struct TwoParticleCorrelationsMpi {
         }
 
         float deltaPhi = RecoDecay::constrainAngle(track1.phi() - track2.phi(), -o2::constants::math::PIHalf);
+        const float deltaEta = track1.eta() - track2.eta();
 
         if (triggerHasTemplate) {
           ++seedEstimate->nCandidatePairs;
           if (const auto* yieldTemplate = findYieldTemplate(multiplicity, track1.pt(), track2.pt())) {
-            addPairProbabilities(*seedEstimate, *yieldTemplate, deltaPhi);
+            addPairProbabilities(*seedEstimate, *yieldTemplate, multiplicity, deltaPhi, deltaEta, posZ);
           } else {
             ++seedEstimate->nPairsWithoutTemplate;
           }
@@ -1037,14 +1181,14 @@ struct TwoParticleCorrelationsMpi {
         // last param is the weight
         if (cfgMassAxis) {
           if constexpr (std::experimental::is_detected<HasInvMass, typename TTracks1::iterator>::value) {
-            target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), containerMultiplicity, deltaPhi, posZ, track1.invMass(), associatedWeight);
+            target->getPairHist()->Fill(step, deltaEta, track2.pt(), track1.pt(), containerMultiplicity, deltaPhi, posZ, track1.invMass(), associatedWeight);
           } else if constexpr (std::experimental::is_detected<HasPDGCode, typename TTracks1::iterator>::value) {
-            target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), containerMultiplicity, deltaPhi, posZ, 1.8, associatedWeight); // p->Mass()
+            target->getPairHist()->Fill(step, deltaEta, track2.pt(), track1.pt(), containerMultiplicity, deltaPhi, posZ, 1.8, associatedWeight); // p->Mass()
           } else {
             LOGF(fatal, "Can not fill mass axis without invMass column. Disable cfgMassAxis.");
           }
         } else {
-          target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), containerMultiplicity, deltaPhi, posZ, associatedWeight);
+          target->getPairHist()->Fill(step, deltaEta, track2.pt(), track1.pt(), containerMultiplicity, deltaPhi, posZ, associatedWeight);
         }
       }
     }
@@ -1463,6 +1607,9 @@ struct TwoParticleCorrelationsMpi {
   void processMCSameDerived(soa::Filtered<aod::CFMcCollisionsWithExtra>::iterator const& mcCollision, soa::Filtered<aod::CFMcParticles> const& mcParticles, soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions, soa::Filtered<aod::CFTracks> const& tracks) // TODO. For mixed no need to check the daughters since the events are different
   {
     processMCSameDerivedT(mcCollision, mcParticles, mcParticles, collisions);
+    if (eventSeedEstimatorEnabled && collisions.size() == 0) {
+      registry.fill(HIST("mcValidation/status"), 0.0);
+    }
     const int trueNMPI = mcCollision.nMPI();
     for (const auto& collision : collisions) {
       auto collisionTracks = tracks.sliceBy(derivedTracksPerCollision, collision.globalIndex());
