@@ -178,7 +178,9 @@ enum CentEstimator {
   X(FOLDER "/ProxyPtDependence/pRingVsPtLeadPVsEtaLeadP", leadPPt, leadPEta, ringObservableLeadP)  \
   X(FOLDER "/ProxyPtDependence/pRingVsPtLeadPVsEtaV0", leadPPt, v0eta, ringObservableLeadP)        \
   X(FOLDER "/EtaDependence/p2dRingObservableEtaLambdaVsEtaLeadP", v0eta, leadPEta, ringObservableLeadP) \
-  X(FOLDER "/EtaDependence/h2dCounterEtaLambdaVsEtaLeadP", v0eta, leadPEta)
+  X(FOLDER "/EtaDependence/h2dCounterEtaLambdaVsEtaLeadP", v0eta, leadPEta)         \
+  X(FOLDER "/p2dRingObservableLeadPVsPxPy", v0px, v0py, ringObservableLeadP)        \
+  X(FOLDER "/p2dRingObservableLeadPVsPzPx", v0pz, v0px, ringObservableLeadP)
 
 // A macro that encapsulates all eta checks for leading particle and V0s, along with the fills
 // Parameters:
@@ -308,7 +310,6 @@ enum CentEstimator {
   }
 
 struct lambdajetpolarizationionsderived {
-
   // Define histogram registries:
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -317,7 +318,7 @@ struct lambdajetpolarizationionsderived {
   Configurable<bool> analyseAntiLambda{"analyseAntiLambda", false, "process AntiLambda-like candidates"};
   Configurable<bool> analyseMagField{"analyseMagField", true, "analyse efficiency effects wrt magnetic field"}; // Older DerivedData lacks magField. "if constexpr (requires { collision.magField(); })" would only see the current header definition, so need a flag for retro-comp.
   // Configurable<bool> doPPAnalysis{"doPPAnalysis", false, "if in pp, set to true. Default is HI"};
-  Configurable<bool> calculateEventMixingHists{"calculateEventMixingHists", false, "generates expensive THn histograms for a-posteriori event-mixing-like computations."};
+  Configurable<bool> doJetProxy5dQA{"doJetProxy5dQA", false, "generates expensive THnSparse histograms for joint distribution QA of the jet proxies and collisions"};
 
   // A very inexpensive "signal extraction" imitation based on v0InMassPeak bool:
   // (Uses a mass interval to remove or include V0s from the final AnalysisResults to take advantage of existing post-processing codes)
@@ -530,6 +531,9 @@ struct lambdajetpolarizationionsderived {
       // ===============================
       histos.add((folder + "/p2dRingObservableVsPxPy").c_str(), "<#it{R}> vs (p_{x}^{#Lambda},p_{y}^{#Lambda});p_{x}^{#Lambda} (GeV/c);p_{y}^{#Lambda} (GeV/c);<#it{R}>", kTProfile2D, {axisConfigurations.axisLambdaPx, axisConfigurations.axisLambdaPy});
       histos.add((folder + "/p2dRingObservableVsPzPx").c_str(), "<#it{R}> vs (p_{z}^{#Lambda},p_{x}^{#Lambda});p_{z}^{#Lambda} (GeV/c);p_{x}^{#Lambda} (GeV/c);<#it{R}>", kTProfile2D, {axisConfigurations.axisLambdaPz, axisConfigurations.axisLambdaPx});
+        // For LeadP estimators:
+      histos.add((folder + "/p2dRingObservableLeadPVsPxPy").c_str(), "<#it{R}>_{LeadP} vs (p_{x}^{#Lambda},p_{y}^{#Lambda});p_{x}^{#Lambda} (GeV/c);p_{y}^{#Lambda} (GeV/c);<#it{R}>", kTProfile2D, {axisConfigurations.axisLambdaPx, axisConfigurations.axisLambdaPy});
+      histos.add((folder + "/p2dRingObservableLeadPVsPzPx").c_str(), "<#it{R}>_{LeadP} vs (p_{z}^{#Lambda},p_{x}^{#Lambda});p_{z}^{#Lambda} (GeV/c);p_{x}^{#Lambda} (GeV/c);<#it{R}>", kTProfile2D, {axisConfigurations.axisLambdaPz, axisConfigurations.axisLambdaPx});
 
       // TProfiles with correct error bars::
       // -- TProfiles will handle the error estimate of the Ring Observable via the variance, even though
@@ -1012,7 +1016,7 @@ struct lambdajetpolarizationionsderived {
     histos.add("JetKinematicsQA/h2dLeadPEtaVsPVz", "Lead Ptc #eta Vs PVz;#eta;Primary Vertex Z [cm];Counts", kTH2D, {axisConfigurations.axisEta, axisConfigurations.axisPVz});
 
     // For building and event-mixing-like procedure similar to forceDatalikeJet:
-    if (calculateEventMixingHists) {
+    if (doJetProxy5dQA) {
       histos.add("JetKinematicsQA/h5dLeadJetEtaPhiPtPVzCent", "h5dLeadJetEtaPhiPtPVzCent;#eta;#phi;p_{t};Primary Vertex Z [cm];Centrality (%);Counts", kTHnSparseF,
         {axisConfigurations.axisEtaCoarse, axisConfigurations.axisPhi, axisConfigurations.axisJetPt, axisConfigurations.axisPVz, axisConfigurations.axisCentrality});
       histos.add("JetKinematicsQA/h5dSubLeadJetEtaPhiPtPVzCent", "h5dSubLeadJetEtaPhiPtPVzCent;#eta;#phi;p_{t};Primary Vertex Z [cm];Centrality (%);Counts", kTHnSparseF,
@@ -1028,6 +1032,14 @@ struct lambdajetpolarizationionsderived {
 
       histos.add("JetKinematicsQA/h2dMixedLeadPEtaVsLeadPEta", "MixedLeadP #eta vs LeadP #eta;MixedLeadP #eta; LeadP #eta;Counts", kTH2D, {axisConfigurations.axisEtaCoarse, axisConfigurations.axisEtaCoarse});
       histos.add("JetKinematicsQA/h2dMixedLeadPPhiVsLeadPPhi", "MixedLeadP #phi vs LeadP #phi;MixedLeadP #phi; LeadP #phi;Counts", kTH2D, {axisConfigurations.axisPhi, axisConfigurations.axisPhi});
+
+      // Event mixing source QA -- How repeated is each collision in the mix:
+      // For each source collision for mixing, counts how many times it was used. Flat distribution is ideal.
+      histos.add("JetKinematicsQA/hMixedEventLeadPSourceUsageCount", "hMixedEventLeadPSourceUsageCount;Times collision was used;Counts", kTH1D, {{50, -0.5f, 49.5f}});
+        // Useful TProfiles -- the mean number of times a given source was used, as a function of eta or phi
+        // (more convenient than a single TH1, as it gives an average, not the raw counter)
+      histos.add("JetKinematicsQA/pMixedEventLeadPSourceUsageVsEta", "pMixedEventLeadPSourceUsageVsEta;Source #eta;<Times used>", kTProfile, {axisConfigurations.axisEtaCoarse});
+      histos.add("JetKinematicsQA/pMixedEventLeadPSourceUsageVsPhi", "pMixedEventLeadPSourceUsageVsPhi;Source #varphi;<Times used>", kTProfile, {axisConfigurations.axisPhi});
     }
 
     // Fetch the X-axes from one of the families (since they all share the same ConfigurableAxis binning)
@@ -1247,7 +1259,7 @@ struct lambdajetpolarizationionsderived {
     //     for (auto const& jet : rows) leadPt = std::max(leadPt, jet.jetPt()); // needs the max-pt scan; RingLeadPs needs no such scan
     //     return leadPt;
     //   };
-    struct MixedLeadPInfo { float eta; float phi; };
+    struct MixedLeadPInfo { float eta; float phi; int64_t sourceCollisionId; };
     std::unordered_map<int64_t, MixedLeadPInfo> mixedLeadPByCollision;
     // First we build a lookup table based on current dataframe's collisions (connects pairs of jet proxies from similar collisions):
     // (these leading particles may come from collisions with no valid Lambdas, by construction)
@@ -1278,12 +1290,28 @@ struct lambdajetpolarizationionsderived {
           for (auto const& lp : leadP1) { eta1 = lp.leadParticleEta(); phi1 = lp.leadParticlePhi(); break; } // Retrieves the first entry
           for (auto const& lp : leadP2) { eta2 = lp.leadParticleEta(); phi2 = lp.leadParticlePhi(); break; }
           // Saving the mixed leading particles with a key referring to the two collisions being mixed:
-          mixedLeadPByCollision[c1.globalIndex()] = {eta2, phi2};
-          mixedLeadPByCollision[c2.globalIndex()] = {eta1, phi1};
+          mixedLeadPByCollision[c1.globalIndex()] = {eta2, phi2, c2.globalIndex()};
+          mixedLeadPByCollision[c2.globalIndex()] = {eta1, phi1, c1.globalIndex()};
         }
-        if (it.isNewWindow()) { // count each bin-window once, not once per pair inside it
+        if (it.isNewWindow()) { // Count each bin-window once, not once per pair inside it
           histos.fill(HIST("JetKinematicsQA/hMixedEventLeadPWindowNeighbours"), it.currentWindowNeighbours());
         }
+      }
+
+      // Source-usage QA:
+      std::unordered_map<int64_t, int> sourceUsageCount;
+      for (auto const& kv : mixedLeadPByCollision)
+        sourceUsageCount[kv.second.sourceCollisionId]++;
+      for (auto const& kv : sourceUsageCount)
+        histos.fill(HIST("JetKinematicsQA/hMixedEventLeadPSourceUsageCount"), kv.second);
+      // Eta/phi of a mixed LeadP is stored under the collision that receives the mixing -- reuse the first hit found:
+      for (auto const& kv : mixedLeadPByCollision) {
+        auto usageIt = sourceUsageCount.find(kv.second.sourceCollisionId);
+        if (usageIt == sourceUsageCount.end()) // already consumed below
+          continue;
+        histos.fill(HIST("JetKinematicsQA/pMixedEventLeadPSourceUsageVsEta"), kv.second.eta, usageIt->second);
+        histos.fill(HIST("JetKinematicsQA/pMixedEventLeadPSourceUsageVsPhi"), kv.second.phi, usageIt->second);
+        sourceUsageCount.erase(usageIt); // Fill this source exactly once, not once per target it supplied
       }
     }
 
@@ -1368,8 +1396,10 @@ struct lambdajetpolarizationionsderived {
             prevJetCache.leadPPhi = itMix->second.phi;
           }
           histos.fill(HIST("JetKinematicsQA/hMixedEventLeadPOutcome"), prevJetCache.hadLeadP ? 1 : 0);
-          histos.fill(HIST("JetKinematicsQA/h2dMixedLeadPEtaVsLeadPEta"), prevJetCache.leadPEta, leadPEta);
-          histos.fill(HIST("JetKinematicsQA/h2dMixedLeadPPhiVsLeadPPhi"), prevJetCache.leadPPhi, leadPPhi);
+          if (prevJetCache.hadLeadP) { // Only fill the comparison histograms on an actual hit:
+            histos.fill(HIST("JetKinematicsQA/h2dMixedLeadPEtaVsLeadPEta"), prevJetCache.leadPEta, leadPEta);
+            histos.fill(HIST("JetKinematicsQA/h2dMixedLeadPPhiVsLeadPPhi"), prevJetCache.leadPPhi, leadPPhi);
+          }
         }
 
         applyProxyDistortion(hasValidLeadingP, leadPPt, leadPEta, leadPPhi, leadPUnitVec, 
@@ -1384,7 +1414,7 @@ struct lambdajetpolarizationionsderived {
           histos.fill(HIST("JetKinematicsQA/hJetCounterPtLeadP"), leadPPt);
 
           histos.fill(HIST("JetKinematicsQA/h2dLeadPEtaVsPVz"), leadPEta, collisionPVz);
-          if (calculateEventMixingHists)
+          if (doJetProxy5dQA)
             histos.fill(HIST("JetKinematicsQA/h5dLeadPEtaPhiPtPVzCent"), leadPEta, leadPPhi, leadPPt, collisionPVz, centrality);
         }
       }
@@ -1447,7 +1477,7 @@ struct lambdajetpolarizationionsderived {
           histos.fill(HIST("JetKinematicsQA/hJetCounterPtJet"), leadingJetPt);
 
           histos.fill(HIST("JetKinematicsQA/h2dLeadJetEtaVsPVz"), leadingJetEta, collisionPVz);
-          if (calculateEventMixingHists)
+          if (doJetProxy5dQA)
             histos.fill(HIST("JetKinematicsQA/h5dLeadJetEtaPhiPtPVzCent"), leadingJetEta, leadingJetPhi, leadingJetPt, collisionPVz, centrality);
         }
       }
@@ -1476,7 +1506,7 @@ struct lambdajetpolarizationionsderived {
           histos.fill(HIST("JetKinematicsQA/hJetCounterPt2ndJet"), subleadingJetPt);
 
           histos.fill(HIST("JetKinematicsQA/h2dSubLeadJetEtaVsPVz"), subleadingJetEta, collisionPVz);
-          if (calculateEventMixingHists)
+          if (doJetProxy5dQA)
             histos.fill(HIST("JetKinematicsQA/h5dSubLeadJetEtaPhiPtPVzCent"), subleadingJetEta, subleadingJetPhi, subleadingJetPt, collisionPVz, centrality);
         }
       }
