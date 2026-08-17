@@ -52,14 +52,9 @@ using namespace o2::aod::mult;
 using namespace o2::constants::math;
 using namespace o2::aod::evsel;
 
-#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) \
-  Configurable<TYPE>(NAME) { #NAME, (DEFAULT), (HELP) }
-
 struct FlowZdcTask {
   SliceCache cache;
-
-  O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range");
-  Configurable<int> eventSelection{"eventSelection", 1, "event selection"};
+  Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0, "Accepted z-vertex range"};
   Configurable<float> maxZem{"maxZem", 3099.5, "Max ZEM signal"};
   // for ZDC info and analysis
   Configurable<float> maxZn{"maxZn", 125.5, "Max ZN signal"};
