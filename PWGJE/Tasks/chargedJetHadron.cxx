@@ -156,6 +156,9 @@ struct ChargedJetHadron {
     AxisSpec detaAxis = {32, -1.6, 1.6, "#Delta#eta"};
     AxisSpec dphiAxis = {70, -1.7, 5.3, "#Delta#varphi"};
     AxisSpec drAxis = {30, 0.0, 1.5, "#Delta#it{R}"};
+    AxisSpec trackPtThnAxis = {{0.0, 0.15, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.7, 2.0,
+                                3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 22.0, 25.0, 30.0, 35.0, 40.0, 50.0, 60.0, 70.0, 80.0, 100.0, 140.0},
+                               "#it{p}_{T} (GeV/#it{c})"};
 
     if (doprocessCollisionsQCData || doprocessCollisionsQCMCD) {
       if (doprocessCollisionsQCMCD && doEventWeighted) {
@@ -191,7 +194,7 @@ struct ChargedJetHadron {
     //========jet-hadron correlations======================
     if (doprocessJetHadron || doprocessMixJetHadron || doprocessJetHadronMCD || doprocessMixJetHadronMCD) {
       registry.add("h_trigjet_corrpt", "trigger jet pT;#it{p}_{T,jet} (GeV/#it{c}); counts", {HistType::kTH1F, {jetPtAxisRhoAreaSub}});
-      registry.add("thn_jeth_correlations", "jet-h correlations; jetpT; trackpT; jeth#Delta#eta; jeth#Delta#varphi; jeth#Delta#it{R}", HistType::kTHnSparseF, {jetPtAxis, trackPtAxis, detaAxis, dphiAxis, drAxis});
+      registry.add("thn_jeth_correlations", "jet-h correlations; jetpT; trackpT; jeth#Delta#eta; jeth#Delta#varphi; jeth#Delta#it{R}", HistType::kTHnSparseF, {jetPtAxis, trackPtThnAxis, detaAxis, dphiAxis, drAxis});
       registry.add("h_jeth_event_stats", "Same event statistics; Event pair type; counts", {HistType::kTH1F, {{7, 0.5, 7.5}}});
       registry.get<TH1>(HIST("h_jeth_event_stats"))->GetXaxis()->SetBinLabel(1, "Total jets");
       registry.get<TH1>(HIST("h_jeth_event_stats"))->GetXaxis()->SetBinLabel(2, "Total jets with pTHat cut");
@@ -199,7 +202,7 @@ struct ChargedJetHadron {
       registry.get<TH1>(HIST("h_jeth_event_stats"))->GetXaxis()->SetBinLabel(4, "Total j-h pairs");
       registry.get<TH1>(HIST("h_jeth_event_stats"))->GetXaxis()->SetBinLabel(5, "Total j-h pairs with accepted");
       registry.add("h_mixtrigjet_corrpt", "trigger jet pT;#it{p}_{T,jet} (GeV/#it{c}); counts", {HistType::kTH1F, {jetPtAxisRhoAreaSub}});
-      registry.add("thn_mixjeth_correlations", "ME: jet-h correlations; jetpT; trackpT; jeth#Delta#eta; jeth#Delta#varphi; jeth#Delta#it{R}", HistType::kTHnSparseF, {jetPtAxis, trackPtAxis, detaAxis, dphiAxis, drAxis});
+      registry.add("thn_mixjeth_correlations", "ME: jet-h correlations; jetpT; trackpT; jeth#Delta#eta; jeth#Delta#varphi; jeth#Delta#it{R}", HistType::kTHnSparseF, {jetPtAxis, trackPtThnAxis, detaAxis, dphiAxis, drAxis});
       registry.add("h_mixjeth_event_stats", "Mixed event statistics; Event pair type; counts", {HistType::kTH1F, {{7, 0.5, 7.5}}});
       registry.get<TH1>(HIST("h_mixjeth_event_stats"))->GetXaxis()->SetBinLabel(1, "Total mixed events");
       registry.get<TH1>(HIST("h_mixjeth_event_stats"))->GetXaxis()->SetBinLabel(2, "Total jets");
@@ -234,12 +237,12 @@ struct ChargedJetHadron {
         registry.add("h2_dijet_TimeEtaThan0_pt", "dijet #eta_{jet1}#eta_{jet2} > 0", {HistType::kTH2F, {jetPtAxis, jetPtAxis}});
         registry.add("h2_dijet_TimeEtaLess0_pt", "dijet #eta_{jet1}#eta_{jet2} < 0", {HistType::kTH2F, {jetPtAxis, jetPtAxis}});
         registry.add("h2_jeth_heta_dphi", "jeth heta vs dphi; hadron #eta; #Delta#phi", {HistType::kTH2F, {etaAxis, dphiAxis}});
-        registry.add("thn_ljeth_correlations", "leading jet-h correlations; leadingjetpT; subleadingjetpT; trackpT; timedijeteta; track #eta; jeth#Delta#varphi", HistType::kTHnSparseF, {jetPtAxis, jetPtAxis, {8, 0., 8.}, jetmultetaAxis, etaAxis, dphiAxis});
+        registry.add("thn_ljeth_correlations", "leading jet-h correlations; leadingjetpT; subleadingjetpT; trackpT; timedijeteta; track #eta; jeth#Delta#varphi", HistType::kTHnSparseF, {jetPtAxis, jetPtAxis, {16, 0., 8.}, jetmultetaAxis, etaAxis, dphiAxis});
       } else {
         registry.add("h2_jeth_physicalcutsup_deta_dphi", "jeth deta vs dphi with physical cuts |#Delta#eta_{jet1,2}| > 1.0; #Delta#eta; #Delta#phi", {HistType::kTH2F, {detaAxis, dphiAxis}});
         registry.add("h2_jeth_physicalcutsmd_deta_dphi", "jeth deta vs dphi with physical cuts |#Delta#eta_{jet1,2}| #in (0.5, 1.0); #Delta#eta; #Delta#phi", {HistType::kTH2F, {detaAxis, dphiAxis}});
         registry.add("h2_jeth_physicalcutsdw_deta_dphi", "jeth deta vs dphi with physical cuts  |#Delta#eta_{jet1,2}| < 0.5; #Delta#eta; #Delta#phi", {HistType::kTH2F, {detaAxis, dphiAxis}});
-        registry.add("thn_ljeth_correlations", "leading jet-h correlations; leadingjetpT; subleadingjetpT; trackpT; #Delta#eta_{jet1,2}; jeth#Delta#eta; jeth#Delta#varphi", HistType::kTHnSparseF, {jetPtAxis, jetPtAxis, {8, 0., 8.}, {16, 0, 1.6}, detaAxis, dphiAxis});
+        registry.add("thn_ljeth_correlations", "leading jet-h correlations; leadingjetpT; subleadingjetpT; trackpT; #Delta#eta_{jet1,2}; jeth#Delta#eta; jeth#Delta#varphi", HistType::kTHnSparseF, {jetPtAxis, jetPtAxis, {16, 0., 8.}, {16, 0, 1.6}, detaAxis, dphiAxis});
       }
     }
     //=============hjet-hadron correlations======================
@@ -255,7 +258,7 @@ struct ChargedJetHadron {
       registry.add("h2_hjet_TimeEtaThan0_pt", "hjet #eta_{trig1}#eta_{jet2} > 0;#it{p}_{T,trig};#it{p}_{T,recoil jet}^{corr}", {HistType::kTH2F, {trackPtAxis, jetPtAxis}});
       registry.add("h2_hjet_TimeEtaLess0_pt", "hjet #eta_{trig1}#eta_{jet2} < 0;#it{p}_{T,trig};#it{p}_{T,recoil jet}^{corr}", {HistType::kTH2F, {trackPtAxis, jetPtAxis}});
       registry.add("h2_hjet_heta_dphi", "hjet heta vs dphi; hadron #eta; #Delta#phi", {HistType::kTH2F, {etaAxis, dphiAxis}});
-      registry.add("thn_hjeth_correlations", "hjet-h correlations; triggerHadronpT; recoilJetpT; trackpT; timehjeteta; track #eta; hh#Delta#varphi", HistType::kTHnSparseF, {trackPtAxis, jetPtAxis, {8, 0., 8.}, hadronmultetaAxis, etaAxis, dphiAxis});
+      registry.add("thn_hjeth_correlations", "hjet-h correlations; triggerHadronpT; recoilJetpT; trackpT; timehjeteta; track #eta; hh#Delta#varphi", HistType::kTHnSparseF, {trackPtAxis, jetPtAxis, {16, 0., 8.}, hadronmultetaAxis, etaAxis, dphiAxis});
     }
 
     //========dihadron-hadron correlations==========
@@ -270,7 +273,7 @@ struct ChargedJetHadron {
       registry.add("h2_dihadron_TimeEtaThan0_pt", "di-hadron #eta_{trig1}#eta_{trig2} > 0;#it{p}_{T,trig1};#it{p}_{T,trig2}", {HistType::kTH2F, {trackPtAxis, trackPtAxis}});
       registry.add("h2_dihadron_TimeEtaLess0_pt", "di-hadron #eta_{trig1}#eta_{trig2} < 0;#it{p}_{T,trig1};#it{p}_{T,trig2}", {HistType::kTH2F, {trackPtAxis, trackPtAxis}});
       registry.add("h2_dihadron_heta_dphi", "di-hadron associated-hadron #eta vs #Delta#varphi;hadron #eta;#Delta#varphi", {HistType::kTH2F, {etaAxis, dphiAxis}});
-      registry.add("thn_dihadron_correlations", "di-hadron correlations;leadingHadronpT;recoilHadronpT;associatedHadronpT;#eta_{trig1}#eta_{trig2};associated hadron #eta;h-h #Delta#varphi", HistType::kTHnSparseF, {trackPtAxis, trackPtAxis, {8, 0., 8.}, hadronmultetaAxis, etaAxis, dphiAxis});
+      registry.add("thn_dihadron_correlations", "di-hadron correlations;leadingHadronpT;recoilHadronpT;associatedHadronpT;#eta_{trig1}#eta_{trig2};associated hadron #eta;h-h #Delta#varphi", HistType::kTHnSparseF, {trackPtAxis, trackPtAxis, {16, 0., 8.}, hadronmultetaAxis, etaAxis, dphiAxis});
     }
 
     //======MC=====================
@@ -317,8 +320,7 @@ struct ChargedJetHadron {
     if (doprocessJetHadronMCP || doprocessMixJetHadronMCP) {
       //.........MCP: jet-hadron correlations.................
       registry.add("h_trigjet_corrpt_part", "trigger jet pT;#it{p}_{T,jet} (GeV/#it{c}); counts", {HistType::kTH1F, {jetPtAxisRhoAreaSub}});
-      registry.add("thn_jeth_correlations_part", "MCP: jet-h correlations; jetpT; trackpT; jeth#Delta#eta; jeth#Delta#varphi; jeth#Delta#it{R}", HistType::kTHnSparseF, {jetPtAxis, trackPtAxis, detaAxis, dphiAxis, drAxis});
-
+      registry.add("thn_jeth_correlations_part", "MCP: jet-h correlations; jetpT; trackpT; jeth#Delta#eta; jeth#Delta#varphi; jeth#Delta#it{R}", HistType::kTHnSparseF, {jetPtAxis, trackPtThnAxis, detaAxis, dphiAxis, drAxis});
       registry.add("h_jeth_event_stats_part", "MCP: same event statistics; Event pair type; counts", {HistType::kTH1F, {{7, 0.5, 7.5}}});
       registry.get<TH1>(HIST("h_jeth_event_stats_part"))->GetXaxis()->SetBinLabel(1, "Total jets");
       registry.get<TH1>(HIST("h_jeth_event_stats_part"))->GetXaxis()->SetBinLabel(2, "Total jets with pTHat cut");
@@ -327,7 +329,7 @@ struct ChargedJetHadron {
       registry.get<TH1>(HIST("h_jeth_event_stats_part"))->GetXaxis()->SetBinLabel(5, "Total j-h pairs with accepted");
 
       registry.add("h_mixtrigjet_corrpt_part", "trigger jet pT;#it{p}_{T,jet} (GeV/#it{c}); counts", {HistType::kTH1F, {jetPtAxisRhoAreaSub}});
-      registry.add("thn_mixjeth_correlations_part", "mcpME: jet-h correlations; jetpT; trackpT; jeth#Delta#eta; jeth#Delta#varphi; jeth#Delta#it{R}", HistType::kTHnSparseF, {jetPtAxis, trackPtAxis, detaAxis, dphiAxis, drAxis});
+      registry.add("thn_mixjeth_correlations_part", "mcpME: jet-h correlations; jetpT; trackpT; jeth#Delta#eta; jeth#Delta#varphi; jeth#Delta#it{R}", HistType::kTHnSparseF, {jetPtAxis, trackPtThnAxis, detaAxis, dphiAxis, drAxis});
       registry.add("h_mixjeth_event_stats_part", "MCP: mixed event statistics; Event pair type; counts", {HistType::kTH1F, {{7, 0.5, 7.5}}});
       registry.get<TH1>(HIST("h_mixjeth_event_stats_part"))->GetXaxis()->SetBinLabel(1, "Total mixed events");
       registry.get<TH1>(HIST("h_mixjeth_event_stats_part"))->GetXaxis()->SetBinLabel(2, "Total jets");
@@ -357,12 +359,12 @@ struct ChargedJetHadron {
         registry.add("h2_dijet_TimeEtaThan0_pt_part", "dijet #eta_{jet1}#eta_{jet2} > 0", {HistType::kTH2F, {jetPtAxis, jetPtAxis}});
         registry.add("h2_dijet_TimeEtaLess0_pt_part", "dijet #eta_{jet1}#eta_{jet2} < 0", {HistType::kTH2F, {jetPtAxis, jetPtAxis}});
         registry.add("h2_jeth_heta_dphi_part", "MCP: jeth heta vs dphi; hadron #eta; #Delta#phi", {HistType::kTH2F, {etaAxis, dphiAxis}});
-        registry.add("thn_ljeth_correlations_part", "MCP: leading jet-h correlations; leadingjetpT; subleadingjetpT; trackpT; timedijeteta; track #eta; jeth#Delta#varphi", HistType::kTHnSparseF, {jetPtAxis, jetPtAxis, {8, 0., 8.}, jetmultetaAxis, etaAxis, dphiAxis});
+        registry.add("thn_ljeth_correlations_part", "MCP: leading jet-h correlations; leadingjetpT; subleadingjetpT; trackpT; timedijeteta; track #eta; jeth#Delta#varphi", HistType::kTHnSparseF, {jetPtAxis, jetPtAxis, {16, 0., 8.}, jetmultetaAxis, etaAxis, dphiAxis});
       } else {
         registry.add("h2_jeth_physicalcutsup_deta_dphi_part", "MCP: jeth deta vs dphi with physical cuts |#Delta#eta_{jet}| > 1.0; #Delta#eta; #Delta#phi", {HistType::kTH2F, {detaAxis, dphiAxis}});
         registry.add("h2_jeth_physicalcutsmd_deta_dphi_part", "MCP: jeth deta vs dphi with physical cuts |#Delta#eta_{jet1,2}| #in (0.5, 1.0); #Delta#eta; #Delta#phi", {HistType::kTH2F, {detaAxis, dphiAxis}});
         registry.add("h2_jeth_physicalcutsdw_deta_dphi_part", "MCP: jeth deta vs dphi with physical cuts  |#Delta#eta_{jet1,2}| < 0.5; #Delta#eta; #Delta#phi", {HistType::kTH2F, {detaAxis, dphiAxis}});
-        registry.add("thn_ljeth_correlations_part", "MCP: leading jet-h correlations; leadingjetpT; subleadingjetpT; trackpT; #Delta#eta_{jet1,2}; jeth#Delta#eta; jeth#Delta#varphi", HistType::kTHnSparseF, {jetPtAxis, jetPtAxis, {8, 0., 8.}, {16, 0, 1.6}, detaAxis, dphiAxis});
+        registry.add("thn_ljeth_correlations_part", "MCP: leading jet-h correlations; leadingjetpT; subleadingjetpT; trackpT; #Delta#eta_{jet1,2}; jeth#Delta#eta; jeth#Delta#varphi", HistType::kTHnSparseF, {jetPtAxis, jetPtAxis, {16, 0., 8.}, {16, 0, 1.6}, detaAxis, dphiAxis});
       }
     }
 
