@@ -42,7 +42,8 @@
 #include <TDatabasePDG.h>
 #include <TH2.h>
 #include <TLine.h>
-#include <TMatrixDSym.h>
+#include <TMatrixDSym.h> // IWYU pragma: keep (do not replace with TMatrixDSymfwd.h)
+#include <TMatrixDSymfwd.h>
 #include <TPaveText.h>
 #include <TRandom3.h>
 #include <TString.h>
