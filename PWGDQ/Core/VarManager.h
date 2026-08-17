@@ -840,6 +840,7 @@ class VarManager : public TObject
     kAbsCosThetaStarFT0C,
     kCos2ThetaStarFT0C,
     kCosThetaStarRandom,
+    kAbsCosThetaStarRandom,
     kCos2ThetaStarRandom,
     kCosPhiVP,
     kPhiVP,
@@ -3919,6 +3920,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     // Randomize the event plane angle to check the unpolarized contribution
     ROOT::Math::XYZVector zaxisRandom = ROOT::Math::XYZVector(TMath::Cos(values[kRandomPsi2]), TMath::Sin(values[kRandomPsi2]), 0).Unit();
     values[kCosThetaStarRandom] = v_CM.Dot(zaxisRandom);
+    values[kAbsCosThetaStarRandom] = TMath::Abs(values[kCosThetaStarRandom]);
     values[kCos2ThetaStarRandom] = values[kCosThetaStarRandom] * values[kCosThetaStarRandom];
 
     // if the truth event plane angle is available, calculate the cos(theta*) with respect to the true event plane angle for comparison
@@ -4522,6 +4524,7 @@ void VarManager::FillPairMEAcrossTFs(T const& t1, T const& t2, float* values)
       // Randomize the event plane angle to check the unpolarized contribution
       ROOT::Math::XYZVector zaxisRandom = ROOT::Math::XYZVector(TMath::Cos(values[kRandomPsi2]), TMath::Sin(values[kRandomPsi2]), 0).Unit();
       values[kCosThetaStarRandom] = v_CM.Dot(zaxisRandom);
+      values[kAbsCosThetaStarRandom] = std::abs(values[kCosThetaStarRandom]);
       values[kCos2ThetaStarRandom] = values[kCosThetaStarRandom] * values[kCosThetaStarRandom];
     }
 
@@ -4717,6 +4720,7 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
     // Randomize the event plane angle to check the unpolarized contribution
     ROOT::Math::XYZVector zaxisRandom = ROOT::Math::XYZVector(TMath::Cos(values[kRandomPsi2]), TMath::Sin(values[kRandomPsi2]), 0).Unit();
     values[kCosThetaStarRandom] = v_CM.Dot(zaxisRandom);
+    values[kAbsCosThetaStarRandom] = std::abs(values[kCosThetaStarRandom]);
     values[kCos2ThetaStarRandom] = values[kCosThetaStarRandom] * values[kCosThetaStarRandom];
 
     // truth event plane angle

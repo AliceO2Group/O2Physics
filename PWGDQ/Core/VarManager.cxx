@@ -1726,6 +1726,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCos2ThetaStarFT0C] = "";
   fgVariableNames[kCosThetaStarRandom] = "cos#it{#theta}^{*}_{Random}";
   fgVariableUnits[kCosThetaStarRandom] = "";
+  fgVariableNames[kAbsCosThetaStarRandom] = "|cos#it{#theta}^{*}_{Random}|";
+  fgVariableUnits[kAbsCosThetaStarRandom] = "";
   fgVariableNames[kCos2ThetaStarRandom] = "cos^{2}#it{#theta}^{*}_{Random}";
   fgVariableUnits[kCos2ThetaStarRandom] = "";
   fgVariableNames[kMCCosThetaStar] = "cos#it{#theta}^{*}_{MC}";
@@ -2587,6 +2589,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kAbsCosThetaStarFT0C"] = kAbsCosThetaStarFT0C;
   fgVarNamesMap["kCos2ThetaStarFT0C"] = kCos2ThetaStarFT0C;
   fgVarNamesMap["kCosThetaStarRandom"] = kCosThetaStarRandom;
+  fgVarNamesMap["kAbsCosThetaStarRandom"] = kAbsCosThetaStarRandom;
   fgVarNamesMap["kCos2ThetaStarRandom"] = kCos2ThetaStarRandom;
   fgVarNamesMap["kMCCosThetaStar"] = kMCCosThetaStar;
   fgVarNamesMap["kPairWeight"] = kPairWeight;
