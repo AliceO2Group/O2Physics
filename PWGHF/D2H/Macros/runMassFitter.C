@@ -297,6 +297,7 @@ void runMassFitter(const std::string& configFileName)
   };
 
   std::map<std::string, DecayInfo> particles{
+    // NOLINTBEGIN(modernize-use-designated-initializers): c++17 compatibility
     {"Dplus", {"K#pi#pi", "D+", "D^{+}", "K^{-}#pi^{+}#pi^{+}"}},
     {"D0", {"K#pi", "D0", "D^{0}", "K^{-}#pi^{+}"}},
     {"Ds", {"KK#pi", "D_s+", "D_{s}^{+}", "K^{-}K^{+}#pi^{+}"}},
@@ -304,7 +305,8 @@ void runMassFitter(const std::string& configFileName)
     {"LcToPK0s", {"pK^{0}_{s}", "Lambda_c+", "#Lambda_{c}^{+}", "pK^{0}_{s}"}},
     {"Dstar", {"D^{0}pi^{+}", "D*+", "D^{*+}", "D^{0}#pi^{+}"}},
     {"XicToXiPiPi", {"#Xi#pi#pi", "Xi_c+", "#Xi_{c}^{+}", "#Xi^{-}#pi^{+}#pi^{+}"}}};
-  if (particles.find(particleName) == particles.end()) {
+  // NOLINTEND(modernize-use-designated-initializers): c++17 compatibility
+  if (particles.find(particleName) == particles.end()) { // NOLINT(readability-container-contains): c++17 compatibility
     throw std::runtime_error("ERROR: only Dplus, D0, Ds, LcToPKPi, LcToPK0s, Dstar and XicToXiPiPi particles supported! Exit");
   }
   const auto& particle = particles[particleName.c_str()];

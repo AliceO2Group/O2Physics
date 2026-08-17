@@ -230,8 +230,8 @@ void HFInvMassFitter::doFit()
   const double integralHisto = integrateHistoInvMassOverWorkspaceRanges({"full"});
   // fit MC or Data
   RooFitResult* fitResult{nullptr};
-  if (mTypeOfBkgPdf == NoBkg) { // MC
-    const ParameterRanges rooNSgnParamRanges{0.5 * integralHisto, 1.5 * integralHisto, integralHisto};
+  if (mTypeOfBkgPdf == NoBkg) {                                                                                                                                   // MC
+    const ParameterRanges rooNSgnParamRanges{0.5 * integralHisto, 1.5 * integralHisto, integralHisto};                                                            // NOLINT(modernize-use-designated-initializers): c++17 compatibility
     mRooNSgn = new RooRealVar("mRooNSig", "number of signal", randomizeInitialParameter(rooNSgnParamRanges), rooNSgnParamRanges.lower, rooNSgnParamRanges.upper); // signal yield
     mTotalPdf = new RooAddPdf("mMCFunc", "MC fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));                                                          // create total pdf
     if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
@@ -249,7 +249,7 @@ void HFInvMassFitter::doFit()
     calculateFitToDataRatio();
   } else { // data
     const double integralSidebands = integrateHistoInvMassOverWorkspaceRanges({"SBL", "SBR"});
-    const ParameterRanges rooNBkgParamRanges{0.5 * integralSidebands, 1.5 * integralSidebands, integralSidebands};
+    const ParameterRanges rooNBkgParamRanges{0.5 * integralSidebands, 1.5 * integralSidebands, integralSidebands};                                                    // NOLINT(modernize-use-designated-initializers): c++17 compatibility
     mRooNBkg = new RooRealVar("mRooNBkg", "number of background", randomizeInitialParameter(rooNBkgParamRanges), rooNBkgParamRanges.lower, rooNBkgParamRanges.upper); // background yield
     mBkgPdf = new RooAddPdf("mBkgPdf", "background fit function", RooArgList(*bkgPdf), RooArgList(*mRooNBkg));
     std::string sbRanges{"SBL,SBR"};
@@ -277,7 +277,7 @@ void HFInvMassFitter::doFit()
     checkForSignal(estimatedSignal);              // SIG's absolute integral in "bkg" range
     calculateBackground(mBkgYield, mBkgYieldErr); // BG's absolute integral in "bkg" range
 
-    const ParameterRanges rooNSgnParamRanges{0.1 * estimatedSignal, 10 * estimatedSignal, estimatedSignal};
+    const ParameterRanges rooNSgnParamRanges{0.1 * estimatedSignal, 10 * estimatedSignal, estimatedSignal};                                                       // NOLINT(modernize-use-designated-initializers): c++17 compatibility
     mRooNSgn = new RooRealVar("mRooNSig", "number of signal", randomizeInitialParameter(rooNSgnParamRanges), rooNSgnParamRanges.lower, rooNSgnParamRanges.upper); // estimated signal yield
     if (mFixedRawYield > 0) {
       mRooNSgn->setVal(mFixedRawYield); // fixed signal yield
@@ -292,7 +292,7 @@ void HFInvMassFitter::doFit()
       mReflFrame = mass->frame();
       mReflOnlyFrame = mass->frame(Title(Form("%s", mHistoTemplateRefl->GetTitle())));
       reflHistogram.plotOn(mReflOnlyFrame);
-      const ParameterRanges rooNReflParamRanges{0., mHistoTemplateRefl->Integral(), 0.5 * mHistoTemplateRefl->Integral()};
+      const ParameterRanges rooNReflParamRanges{0., mHistoTemplateRefl->Integral(), 0.5 * mHistoTemplateRefl->Integral()}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
       mRooNRefl = new RooRealVar("mNRefl", "number of reflection", randomizeInitialParameter(rooNReflParamRanges), rooNReflParamRanges.lower, rooNReflParamRanges.upper);
       RooAddPdf reflFuncTemp("reflFuncTemp", "template reflection fit function", RooArgList(*reflPdf), RooArgList(*mRooNRefl));
       if (strcmp(mFitOption.c_str(), "Chi2") == 0) {
@@ -360,41 +360,41 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   // Declare observable variable
   RooRealVar mass("mass", "mass", mMinMass, mMaxMass, "GeV/c^{2}");
   // bkg expo
-  const ParameterRanges tauParamRanges{-5., 5., -1., 0.1};
+  const ParameterRanges tauParamRanges{-5., 5., -1., 0.1}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar tau("tau", "tau", randomizeInitialParameter(tauParamRanges), tauParamRanges.lower, tauParamRanges.upper);
   RooAbsPdf* bkgFuncExpo = new RooExponential("bkgFuncExpo", "background fit function", mass, tau);
   workspace.import(*bkgFuncExpo);
   delete bkgFuncExpo;
   // bkg poly1
-  const ParameterRanges polyParam0ParamRanges{-5., 5., 0.5, 0.1};
+  const ParameterRanges polyParam0ParamRanges{-5., 5., 0.5, 0.1}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyParam0("polyParam0", "Parameter of Poly function", randomizeInitialParameter(polyParam0ParamRanges), polyParam0ParamRanges.lower, polyParam0ParamRanges.upper);
-  const ParameterRanges polyParam1ParamRanges{-5., 5., 0.2, 0.05};
+  const ParameterRanges polyParam1ParamRanges{-5., 5., 0.2, 0.05}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyParam1("polyParam1", "Parameter of Poly function", randomizeInitialParameter(polyParam1ParamRanges), polyParam1ParamRanges.lower, polyParam1ParamRanges.upper);
   RooAbsPdf* bkgFuncPoly1 = new RooPolynomial("bkgFuncPoly1", "background fit function", mass, RooArgSet(polyParam0, polyParam1));
   workspace.import(*bkgFuncPoly1);
   delete bkgFuncPoly1;
   // bkg poly2
-  const ParameterRanges polyParam2ParamRanges{-5., 5., 0.2, 0.05};
+  const ParameterRanges polyParam2ParamRanges{-5., 5., 0.2, 0.05}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyParam2("polyParam2", "Parameter of Poly function", randomizeInitialParameter(polyParam2ParamRanges), polyParam2ParamRanges.lower, polyParam2ParamRanges.upper);
   RooAbsPdf* bkgFuncPoly2 = new RooPolynomial("bkgFuncPoly2", "background fit function", mass, RooArgSet(polyParam0, polyParam1, polyParam2));
   workspace.import(*bkgFuncPoly2);
   delete bkgFuncPoly2;
   // bkg poly3
-  const ParameterRanges polyParam3ParamRanges{-1., 1., 0.2, 0.05};
+  const ParameterRanges polyParam3ParamRanges{-1., 1., 0.2, 0.05}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyParam3("polyParam3", "Parameter of Poly function", randomizeInitialParameter(polyParam3ParamRanges), polyParam3ParamRanges.lower, polyParam3ParamRanges.upper);
   RooAbsPdf* bkgFuncPoly3 = new RooPolynomial("bkgFuncPoly3", "background pdf", mass, RooArgSet(polyParam0, polyParam1, polyParam2, polyParam3));
   workspace.import(*bkgFuncPoly3);
   delete bkgFuncPoly3;
   // bkg power law
   RooRealVar const powParam1("powParam1", "Parameter of Pow function", TDatabasePDG::Instance()->GetParticle("pi+")->Mass());
-  const ParameterRanges powParam2ParamRanges{-10., 10., 1., 0.2};
+  const ParameterRanges powParam2ParamRanges{-10., 10., 1., 0.2}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const powParam2("powParam2", "Parameter of Pow function", randomizeInitialParameter(powParam2ParamRanges), powParam2ParamRanges.lower, powParam2ParamRanges.upper);
   RooAbsPdf* bkgFuncPow = new RooGenericPdf("bkgFuncPow", "bkgFuncPow", "(mass-powParam1)^powParam2", RooArgSet(mass, powParam1, powParam2));
   workspace.import(*bkgFuncPow);
   delete bkgFuncPow;
   // pow * exp
   RooRealVar const powExpoParam1("powExpoParam1", "Parameter of PowExpo function", 1. / 2.);
-  const ParameterRanges powExpoParam2ParamRanges{-10., 10., 1., 0.2};
+  const ParameterRanges powExpoParam2ParamRanges{-10., 10., 1., 0.2}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const powExpoParam2("powExpoParam2", "Parameter of PowExpo function", randomizeInitialParameter(powExpoParam2ParamRanges), powExpoParam2ParamRanges.lower, powExpoParam2ParamRanges.upper);
   RooRealVar massPi("massPi", "mass of pion", TDatabasePDG::Instance()->GetParticle("pi+")->Mass());
   RooFormulaVar powExpoParam3("powExpoParam3", "powExpoParam1 + 1", RooArgList(powExpoParam1));
@@ -524,10 +524,10 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   workspace.import(*reflFuncDoubleGaus);
   delete reflFuncDoubleGaus;
   // signal DSCB pdf
-  const ParameterRanges dscbAlphaLParamRanges{mDscbAlphaLLowLimit, mDscbAlphaLUpLimit, mDscbAlphaLInitialValue};
-  const ParameterRanges dscbNLParamRanges{mDscbNLLowLimit, mDscbNLUpLimit, mDscbNLInitialValue};
-  const ParameterRanges dscbAlphaRParamRanges{mDscbAlphaRLowLimit, mDscbAlphaRUpLimit, mDscbAlphaRInitialValue};
-  const ParameterRanges dscbNRParamRanges{mDscbNRLowLimit, mDscbNRUpLimit, mDscbNRInitialValue};
+  const ParameterRanges dscbAlphaLParamRanges{mDscbAlphaLLowLimit, mDscbAlphaLUpLimit, mDscbAlphaLInitialValue}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
+  const ParameterRanges dscbNLParamRanges{mDscbNLLowLimit, mDscbNLUpLimit, mDscbNLInitialValue};                 // NOLINT(modernize-use-designated-initializers): c++17 compatibility
+  const ParameterRanges dscbAlphaRParamRanges{mDscbAlphaRLowLimit, mDscbAlphaRUpLimit, mDscbAlphaRInitialValue}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
+  const ParameterRanges dscbNRParamRanges{mDscbNRLowLimit, mDscbNRUpLimit, mDscbNRInitialValue};                 // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar alphaL("alphaL", "left tail alpha", randomizeInitialParameter(dscbAlphaLParamRanges), dscbAlphaLParamRanges.lower, dscbAlphaLParamRanges.upper);
   RooRealVar nL("nL", "left tail n", randomizeInitialParameter(dscbNLParamRanges), dscbNLParamRanges.lower, dscbNLParamRanges.upper);
   RooRealVar alphaR("alphaR", "right tail alpha", randomizeInitialParameter(dscbAlphaRParamRanges), dscbAlphaRParamRanges.lower, dscbAlphaRParamRanges.upper);
@@ -547,23 +547,23 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   workspace.import(*sgnFuncDSCB);
   delete sgnFuncDSCB;
   // reflection poly3
-  const ParameterRanges polyReflParam0ParamRanges{-1., 1., 0.5, 0.1};
+  const ParameterRanges polyReflParam0ParamRanges{-1., 1., 0.5, 0.1}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyReflParam0("polyReflParam0", "polyReflParam0", randomizeInitialParameter(polyReflParam0ParamRanges), polyReflParam0ParamRanges.lower, polyReflParam0ParamRanges.upper);
-  const ParameterRanges polyReflParam1ParamRanges{-1., 1., 0.2, 0.05};
+  const ParameterRanges polyReflParam1ParamRanges{-1., 1., 0.2, 0.05}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyReflParam1("polyReflParam1", "polyReflParam1", randomizeInitialParameter(polyReflParam1ParamRanges), polyReflParam1ParamRanges.lower, polyReflParam1ParamRanges.upper);
-  const ParameterRanges polyReflParam2ParamRanges{-1., 1., 0.2, 0.05};
+  const ParameterRanges polyReflParam2ParamRanges{-1., 1., 0.2, 0.05}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyReflParam2("polyReflParam2", "polyReflParam2", randomizeInitialParameter(polyReflParam2ParamRanges), polyReflParam2ParamRanges.lower, polyReflParam2ParamRanges.upper);
-  const ParameterRanges polyReflParam3ParamRanges{-1., 1., 0.2, 0.05};
+  const ParameterRanges polyReflParam3ParamRanges{-1., 1., 0.2, 0.05}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyReflParam3("polyReflParam3", "polyReflParam3", randomizeInitialParameter(polyReflParam3ParamRanges), polyReflParam3ParamRanges.lower, polyReflParam3ParamRanges.upper);
   RooAbsPdf* reflFuncPoly3 = new RooPolynomial("reflFuncPoly3", "reflection PDF", mass, RooArgSet(polyReflParam0, polyReflParam1, polyReflParam2, polyReflParam3));
   workspace.import(*reflFuncPoly3);
   delete reflFuncPoly3;
   // reflection poly6
-  const ParameterRanges polyReflParam4ParamRanges{-1., 1., 0.2, 0.05};
+  const ParameterRanges polyReflParam4ParamRanges{-1., 1., 0.2, 0.05}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyReflParam4("polyReflParam4", "polyReflParam4", randomizeInitialParameter(polyReflParam4ParamRanges), polyReflParam4ParamRanges.lower, polyReflParam4ParamRanges.upper);
-  const ParameterRanges polyReflParam5ParamRanges{-1., 1., 0.2, 0.05};
+  const ParameterRanges polyReflParam5ParamRanges{-1., 1., 0.2, 0.05}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyReflParam5("polyReflParam5", "polyReflParam5", randomizeInitialParameter(polyReflParam5ParamRanges), polyReflParam5ParamRanges.lower, polyReflParam5ParamRanges.upper);
-  const ParameterRanges polyReflParam6ParamRanges{-1., 1., 0.2, 0.05};
+  const ParameterRanges polyReflParam6ParamRanges{-1., 1., 0.2, 0.05}; // NOLINT(modernize-use-designated-initializers): c++17 compatibility
   RooRealVar const polyReflParam6("polyReflParam6", "polyReflParam6", randomizeInitialParameter(polyReflParam6ParamRanges), polyReflParam6ParamRanges.lower, polyReflParam6ParamRanges.upper);
   RooAbsPdf* reflFuncPoly6 = new RooPolynomial("reflFuncPoly6", "reflection pdf", mass, RooArgSet(polyReflParam0, polyReflParam1, polyReflParam2, polyReflParam3, polyReflParam4, polyReflParam5, polyReflParam6));
   workspace.import(*reflFuncPoly6);
