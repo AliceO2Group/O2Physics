@@ -23,7 +23,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
-#include <Framework/ASoAHelpers.h>
+// #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -37,11 +37,11 @@
 
 #include <TH2.h>
 #include <TPDGCode.h>
-#include <TProfile.h>
-#include <TProfile2D.h>
+// #include <TProfile.h>
+// #include <TProfile2D.h>
 #include <TRandom3.h>
 
-#include <algorithm>
+// #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -56,17 +56,17 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics; // for constants
 using namespace std;
 
-#define ID_BIT_PI 0 // Identificationi bits for PID checks
-#define ID_BIT_KA 1
-#define ID_BIT_PR 2
-#define ID_BIT_EL 3
-#define ID_BIT_DE 4
+constexpr int IdBitPI = 0; // Identificationi bits for PID checks
+constexpr int IdBitKA = 1;
+constexpr int IdBitPR = 2;
+constexpr int IdBitEL = 3;
+constexpr int IdBitDE = 4;
 
-#define MC_BIT_PI 0 // MC particle identification bits
-#define MC_BIT_KA 1
-#define MC_BIT_PR 2
-#define MC_BIT_EL 3
-#define MC_BIT_DE 4
+constexpr int McBitPI = 0; // MC particle identification bits
+constexpr int McBitKA = 1;
+constexpr int McBitPR = 2;
+constexpr int McBitEL = 3;
+constexpr int McBitDE = 4;
 
 #define BITSET(mask, ithBit) ((mask) |= (1 << (ithBit)))  // avoid name bitset as std::bitset is already there
 #define BITCHECK(mask, ithBit) ((mask) & (1 << (ithBit))) // bit check will return int value, not bool, use BITCHECK != 0 in Analysi
@@ -100,7 +100,7 @@ enum class FCPrefixEnum {
   NetCh = 11
 };
 
-static constexpr std::string_view FCRecoDir[] = {
+static constexpr std::array<std::string_view, 12> FCRecoDir = {
   "Reco/Pr/",
   "Reco/APr/",
   "Reco/PiPos/",
@@ -114,7 +114,7 @@ static constexpr std::string_view FCRecoDir[] = {
   "Reco/NetPr/",
   "Reco/NetCh/"};
 
-static constexpr std::string_view FCGenDir[] = {
+static constexpr std::array<std::string_view, 12> FCGenDir = {
   "Gen/Pr/",
   "Gen/APr/",
   "Gen/PiPos/",
@@ -128,7 +128,7 @@ static constexpr std::string_view FCGenDir[] = {
   "Gen/NetPr/",
   "Gen/NetCh/"};
 
-static constexpr std::string_view PidDire[] = {
+static constexpr std::array<std::string_view, 6> PidDire = {
   "Ch/",
   "Pi/",
   "Ka/",
@@ -136,7 +136,7 @@ static constexpr std::string_view PidDire[] = {
   "El/",
   "De/"};
 
-static constexpr std::string_view ChargeDire[] = {
+static constexpr std::array<std::string_view, 2> ChargeDire = {
   "Pos/",
   "Neg/"};
 
@@ -146,9 +146,8 @@ std::string getModifiedStr(const std::string& myString)
   if (pos != std::string::npos) {
     std::string subString = myString.substr(0, pos); // remove "/" from end of the string
     return subString;
-  } else {
-    return myString;
   }
+  return myString;
 }
 
 struct NchCumulantsId {
@@ -160,7 +159,7 @@ struct NchCumulantsId {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // PDG data base
-  Service<o2::framework::O2DatabasePDG> pdgDB;
+  // Service<o2::framework::O2DatabasePDG> pdgDB;
 
   Configurable<float> cfgCutPosZ{"cfgCutPosZ", 10.0, "cut for vertex Z"};
   Configurable<float> cfgCutDcaXY{"cfgCutDcaXY", 0.12, "cut for dcaXY"};
@@ -499,7 +498,7 @@ struct NchCumulantsId {
   }
 
   template <FCPrefixEnum Prefix, typename Registry>
-  void fillGenFactorialMoments(int n, float cent, Registry& hReg)
+  void fillGenFactorialMoments(float n, float cent, Registry& hReg)
   {
     auto base = HIST(FCGenDir[static_cast<int>(Prefix)]);
 
@@ -553,25 +552,29 @@ struct NchCumulantsId {
     mgr.setCaching(true);
     auto ccdbObj = mgr.getForTimeStamp<TList>(cfgCCDB.cfgCCDB02Path, cfgCCDB.cfgCCDB03SOR);
     if (!ccdbObj) {
-      if (cfgDebug.printDebugMessages)
+      if (cfgDebug.printDebugMessages) {
         LOG(info) << "DEBUG :: CCDB OBJECT NOT FOUND";
+      }
     } else {
-      if (cfgDebug.printDebugMessages)
+      if (cfgDebug.printDebugMessages) {
         LOG(info) << "DEBUG :: CCDB OBJECT FOUND";
+      }
     }
 
     ccdbObj->Print();
 
-    hPtEtaForBinSearch = reinterpret_cast<TH2F*>(ccdbObj->FindObject("hPtEta"));
-    if (cfgDebug.printDebugMessages)
+    hPtEtaForBinSearch = dynamic_cast<TH2F*>(ccdbObj->FindObject("hPtEta"));
+    if (cfgDebug.printDebugMessages) {
       LOG(info) << "DEBUG :: Obj Name = " << hPtEtaForBinSearch->GetName() << " :: entries = " << hPtEtaForBinSearch->GetEntries();
-    std::string name = "";
+    }
+    std::string name;
     for (int i = 0; i <= kDe; i++) {
       for (int j = 0; j < (kNeg + 1); j++) {
         name = "hPtEta" + getModifiedStr(static_cast<std::string>(PidDire[i])) + getModifiedStr(static_cast<std::string>(ChargeDire[j]));
-        hPtEtaForEffCorrection[i][j] = reinterpret_cast<TH2F*>(ccdbObj->FindObject(name.c_str()));
-        if (cfgDebug.printDebugMessages)
+        hPtEtaForEffCorrection[i][j] = dynamic_cast<TH2F*>(ccdbObj->FindObject(name.c_str()));
+        if (cfgDebug.printDebugMessages) {
           LOG(info) << "DEBUG :: Obj Name = " << hPtEtaForEffCorrection[i][j]->GetName() << " :: entries = " << hPtEtaForBinSearch->GetEntries();
+        }
       }
     }
 
@@ -816,7 +819,7 @@ struct NchCumulantsId {
 
   } // init ends
 
-  static constexpr std::string_view HistRegDire2[] = {
+  static constexpr std::array<std::string_view, 11> HistRegDire2 = {
     "v0Table/Full/",
     "v0Table/postK0sCheck/",
     "v0Table/postMassCut/",
@@ -863,7 +866,7 @@ struct NchCumulantsId {
     NoId
   };
 
-  static constexpr std::string_view DetDire[] = {
+  static constexpr std::array<std::string_view, 4> DetDire = {
     "tpcId/",
     "tofId/",
     "tpctofId/",
@@ -877,7 +880,7 @@ struct NchCumulantsId {
     qaTracksIdfd,
   };
 
-  static constexpr std::string_view HistRegDire[] = {
+  static constexpr std::array<std::string_view, 5> HistRegDire = {
     "QA/events/preSel/",
     "QA/events/postSel/",
     "QA/tracks/preSel/",
@@ -899,27 +902,32 @@ struct NchCumulantsId {
   bool vetoIdOthersTPC(const T& track)
   {
     if (pidMode != kPi) {
-      if (std::fabs(track.tpcNSigmaPi()) < cfgVetoIdCut.cfgVetoId01PiTPC)
+      if (std::fabs(track.tpcNSigmaPi()) < cfgVetoIdCut.cfgVetoId01PiTPC) {
         return false;
+      }
     }
     if (pidMode != kKa) {
-      if (std::fabs(track.tpcNSigmaKa()) < cfgVetoIdCut.cfgVetoId03KaTPC)
+      if (std::fabs(track.tpcNSigmaKa()) < cfgVetoIdCut.cfgVetoId03KaTPC) {
         return false;
+      }
     }
     if (pidMode != kPr) {
-      if (std::fabs(track.tpcNSigmaPr()) < cfgVetoIdCut.cfgVetoId05PrTPC)
+      if (std::fabs(track.tpcNSigmaPr()) < cfgVetoIdCut.cfgVetoId05PrTPC) {
         return false;
+      }
     }
     if (cfgId02DoElRejection) {
       if (pidMode != kEl) {
-        if (std::fabs(track.tpcNSigmaEl()) < cfgVetoIdCut.cfgVetoId07ElTPC)
+        if (std::fabs(track.tpcNSigmaEl()) < cfgVetoIdCut.cfgVetoId07ElTPC) {
           return false;
+        }
       }
     }
     if (cfgId03DoDeRejection) {
       if (pidMode != kDe) {
-        if (std::fabs(track.tpcNSigmaDe()) < cfgVetoIdCut.cfgVetoId09DeTPC)
+        if (std::fabs(track.tpcNSigmaDe()) < cfgVetoIdCut.cfgVetoId09DeTPC) {
           return false;
+        }
       }
     }
     return true;
@@ -929,27 +937,32 @@ struct NchCumulantsId {
   bool vetoIdOthersTOF(const T& track)
   {
     if (pidMode != kPi) {
-      if (std::fabs(track.tofNSigmaPi()) < cfgVetoIdCut.cfgVetoId02PiTOF)
+      if (std::fabs(track.tofNSigmaPi()) < cfgVetoIdCut.cfgVetoId02PiTOF) {
         return false;
+      }
     }
     if (pidMode != kKa) {
-      if (std::fabs(track.tofNSigmaKa()) < cfgVetoIdCut.cfgVetoId04KaTOF)
+      if (std::fabs(track.tofNSigmaKa()) < cfgVetoIdCut.cfgVetoId04KaTOF) {
         return false;
+      }
     }
     if (pidMode != kPr) {
-      if (std::fabs(track.tofNSigmaPr()) < cfgVetoIdCut.cfgVetoId06PrTOF)
+      if (std::fabs(track.tofNSigmaPr()) < cfgVetoIdCut.cfgVetoId06PrTOF) {
         return false;
+      }
     }
     if (cfgId02DoElRejection) {
       if (pidMode != kEl) {
-        if (std::fabs(track.tofNSigmaEl()) < cfgVetoIdCut.cfgVetoId08ElTOF)
+        if (std::fabs(track.tofNSigmaEl()) < cfgVetoIdCut.cfgVetoId08ElTOF) {
           return false;
+        }
       }
     }
     if (cfgId03DoDeRejection) {
       if (pidMode != kDe) {
-        if (std::fabs(track.tofNSigmaDe()) < cfgVetoIdCut.cfgVetoId10DeTOF)
+        if (std::fabs(track.tofNSigmaDe()) < cfgVetoIdCut.cfgVetoId10DeTOF) {
           return false;
+        }
       }
     }
     return true;
@@ -959,27 +972,32 @@ struct NchCumulantsId {
   bool vetoIdOthersTPCTOF(const T& track)
   {
     if (pidMode != kPi) {
-      if (std::fabs(track.tpcNSigmaPi()) < cfgVetoIdCut.cfgVetoId01PiTPC && std::fabs(track.tofNSigmaPi()) < cfgVetoIdCut.cfgVetoId02PiTOF)
+      if (std::fabs(track.tpcNSigmaPi()) < cfgVetoIdCut.cfgVetoId01PiTPC && std::fabs(track.tofNSigmaPi()) < cfgVetoIdCut.cfgVetoId02PiTOF) {
         return false;
+      }
     }
     if (pidMode != kKa) {
-      if (std::fabs(track.tpcNSigmaKa()) < cfgVetoIdCut.cfgVetoId03KaTPC && std::fabs(track.tofNSigmaKa()) < cfgVetoIdCut.cfgVetoId04KaTOF)
+      if (std::fabs(track.tpcNSigmaKa()) < cfgVetoIdCut.cfgVetoId03KaTPC && std::fabs(track.tofNSigmaKa()) < cfgVetoIdCut.cfgVetoId04KaTOF) {
         return false;
+      }
     }
     if (pidMode != kPr) {
-      if (std::fabs(track.tpcNSigmaPr()) < cfgVetoIdCut.cfgVetoId05PrTPC && std::fabs(track.tofNSigmaPr()) < cfgVetoIdCut.cfgVetoId06PrTOF)
+      if (std::fabs(track.tpcNSigmaPr()) < cfgVetoIdCut.cfgVetoId05PrTPC && std::fabs(track.tofNSigmaPr()) < cfgVetoIdCut.cfgVetoId06PrTOF) {
         return false;
+      }
     }
     if (cfgId02DoElRejection) {
       if (pidMode != kEl) {
-        if (std::fabs(track.tpcNSigmaEl()) < cfgVetoIdCut.cfgVetoId07ElTPC && std::fabs(track.tofNSigmaEl()) < cfgVetoIdCut.cfgVetoId08ElTOF)
+        if (std::fabs(track.tpcNSigmaEl()) < cfgVetoIdCut.cfgVetoId07ElTPC && std::fabs(track.tofNSigmaEl()) < cfgVetoIdCut.cfgVetoId08ElTOF) {
           return false;
+        }
       }
     }
     if (cfgId03DoDeRejection) {
       if (pidMode != kDe) {
-        if (std::fabs(track.tpcNSigmaDe()) < cfgVetoIdCut.cfgVetoId09DeTPC && std::fabs(track.tofNSigmaDe()) < cfgVetoIdCut.cfgVetoId10DeTOF)
+        if (std::fabs(track.tpcNSigmaDe()) < cfgVetoIdCut.cfgVetoId09DeTPC && std::fabs(track.tofNSigmaDe()) < cfgVetoIdCut.cfgVetoId10DeTOF) {
           return false;
+        }
       }
     }
     return true;
@@ -1019,16 +1037,19 @@ struct NchCumulantsId {
   {
     switch (pidMode) {
       case kPi:
-        if (std::pow(track.tpcNSigmaPi() / nSigmaTPC, 2) + std::pow(track.tofNSigmaPi() / nSigmaTOF, 2) < 1.0)
+        if (std::pow(track.tpcNSigmaPi() / nSigmaTPC, 2) + std::pow(track.tofNSigmaPi() / nSigmaTOF, 2) < 1.0) {
           return true;
+        }
         break;
       case kKa:
-        if (std::pow(track.tpcNSigmaKa() / nSigmaTPC, 2) + std::pow(track.tofNSigmaKa() / nSigmaTOF, 2) < 1.0)
+        if (std::pow(track.tpcNSigmaKa() / nSigmaTPC, 2) + std::pow(track.tofNSigmaKa() / nSigmaTOF, 2) < 1.0) {
           return true;
+        }
         break;
       case kPr:
-        if (std::pow(track.tpcNSigmaPr() / nSigmaTPC, 2) + std::pow(track.tofNSigmaPr() / nSigmaTOF, 2) < 1.0)
+        if (std::pow(track.tpcNSigmaPr() / nSigmaTPC, 2) + std::pow(track.tofNSigmaPr() / nSigmaTOF, 2) < 1.0) {
           return true;
+        }
         break;
       default:
         return false;
@@ -1042,16 +1063,19 @@ struct NchCumulantsId {
   {
     switch (pidMode) {
       case kPi:
-        if (std::pow(track.tpcNSigmaPi(), 2) + std::pow(track.tofNSigmaPi(), 2) < nSigmaSquaredRad)
+        if (std::pow(track.tpcNSigmaPi(), 2) + std::pow(track.tofNSigmaPi(), 2) < nSigmaSquaredRad) {
           return true;
+        }
         break;
       case kKa:
-        if (std::pow(track.tpcNSigmaKa(), 2) + std::pow(track.tofNSigmaKa(), 2) < nSigmaSquaredRad)
+        if (std::pow(track.tpcNSigmaKa(), 2) + std::pow(track.tofNSigmaKa(), 2) < nSigmaSquaredRad) {
           return true;
+        }
         break;
       case kPr:
-        if (std::pow(track.tpcNSigmaPr(), 2) + std::pow(track.tofNSigmaPr(), 2) < nSigmaSquaredRad)
+        if (std::pow(track.tpcNSigmaPr(), 2) + std::pow(track.tofNSigmaPr(), 2) < nSigmaSquaredRad) {
           return true;
+        }
         break;
       default:
         return false;
@@ -1063,29 +1087,30 @@ struct NchCumulantsId {
   template <typename T>
   bool checkReliableTOF(const T& track)
   {
-    if (track.hasTOF())
-      return true; // which check makes the information of TOF relaiable? should track.beta() be checked?
-    else
-      return false;
+    return track.hasTOF(); // which check makes the information of TOF relaiable? should track.beta() be checked?
   }
 
   template <int pidMode, typename T>
   bool idTPC(const T& track, const float& nSigmaTPC)
   {
-    if (cfgId01CheckVetoCut && !vetoIdOthersTPC<pidMode>(track))
+    if (cfgId01CheckVetoCut && !vetoIdOthersTPC<pidMode>(track)) {
       return false;
+    }
     switch (pidMode) {
       case kPi:
-        if (std::fabs(track.tpcNSigmaPi()) < nSigmaTPC)
+        if (std::fabs(track.tpcNSigmaPi()) < nSigmaTPC) {
           return true;
+        }
         break;
       case kKa:
-        if (std::fabs(track.tpcNSigmaKa()) < nSigmaTPC)
+        if (std::fabs(track.tpcNSigmaKa()) < nSigmaTPC) {
           return true;
+        }
         break;
       case kPr:
-        if (std::fabs(track.tpcNSigmaPr()) < nSigmaTPC)
+        if (std::fabs(track.tpcNSigmaPr()) < nSigmaTPC) {
           return true;
+        }
         break;
       default:
         return false;
@@ -1144,21 +1169,23 @@ struct NchCumulantsId {
   int getMCTag(const T& track)
   {
     int mcTag = 0;
-    if (!track.has_mcParticle())
+    if (!track.has_mcParticle()) {
       return mcTag;
+    }
     auto mcPart = track.mcParticle();
     int pdgCode = std::abs(mcPart.pdgCode());
 
-    if (pdgCode == kPiPlus || pdgCode == kPiMinus)
-      BITSET(mcTag, MC_BIT_PI);
-    else if (pdgCode == kKPlus || pdgCode == kKMinus)
-      BITSET(mcTag, MC_BIT_KA);
-    else if (pdgCode == kProton || pdgCode == kProtonBar)
-      BITSET(mcTag, MC_BIT_PR);
-    else if (pdgCode == kElectron || pdgCode == kPositron)
-      BITSET(mcTag, MC_BIT_EL);
-    else if (pdgCode == kDeuteron || pdgCode == -kDeuteron)
-      BITSET(mcTag, MC_BIT_DE);
+    if (pdgCode == kPiPlus || pdgCode == kPiMinus) {
+      BITSET(mcTag, McBitPI);
+    } else if (pdgCode == kKPlus || pdgCode == kKMinus) {
+      BITSET(mcTag, McBitKA);
+    } else if (pdgCode == kProton || pdgCode == kProtonBar) {
+      BITSET(mcTag, McBitPR);
+    } else if (pdgCode == kElectron || pdgCode == kPositron) {
+      BITSET(mcTag, McBitEL);
+    } else if (pdgCode == kDeuteron || pdgCode == -kDeuteron) {
+      BITSET(mcTag, McBitDE);
+    }
 
     return mcTag;
   }
@@ -1173,9 +1200,8 @@ struct NchCumulantsId {
         std::fabs(track.tpcNSigmaKa()) > cfgIdKaRejNSigma &&
         std::fabs(track.tpcNSigmaPr()) > cfgIdPrRejNSigma) {
       return false;
-    } else {
-      return true;
     }
+    return true;
   }
 
   // Pion
@@ -1462,14 +1488,17 @@ struct NchCumulantsId {
   bool isEventSelected(const CollisionType& coll)
   {
     if (cfgEventSelection.cfgEvSel01doNoSameBunchPileup &&
-        !coll.selection_bit(aod::evsel::kNoSameBunchPileup))
+        !coll.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
+    }
     if (cfgEventSelection.cfgEvSel02doIsGoodZvtxFT0vsPV &&
-        !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+        !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
+    }
     if (cfgEventSelection.cfgEvSel03doIsGoodITSLayersAll &&
-        !coll.selection_bit(aod::evsel::kIsGoodITSLayersAll))
+        !coll.selection_bit(aod::evsel::kIsGoodITSLayersAll)) {
       return false;
+    }
     return true;
   }
 
@@ -1521,8 +1550,9 @@ struct NchCumulantsId {
 
     if constexpr (analysisType == doDataProcessing) {
       for (const auto& col : collisions) {
-        if (!isEventSelected(col))
+        if (!isEventSelected(col)) {
           continue;
+        }
         nP = 0;
         nM = 0;
         nCh = 0;
@@ -1557,7 +1587,7 @@ struct NchCumulantsId {
             continue;
           }
 
-          int idMethod;
+          int idMethod = -1;
           // pion
           if (selPion(track, idMethod)) {
             if (track.sign() == 1) {
@@ -1567,10 +1597,12 @@ struct NchCumulantsId {
               nAPi += hPtEtaForEffCorrection[kPi][kNeg]->GetBinContent(ptEtaBin);
             }
 
-            if (idMethod == kTPCidentified)
+            if (idMethod == kTPCidentified) {
               fillIdentificationQA<qaTracksIdfd, kPi, tpcId>(hist, track);
-            if (idMethod == kTPCTOFidentified)
+            }
+            if (idMethod == kTPCTOFidentified) {
               fillIdentificationQA<qaTracksIdfd, kPi, tpctofId>(hist, track);
+            }
           }
           // kaon
           if (selKaon(track, idMethod)) {
@@ -1581,10 +1613,12 @@ struct NchCumulantsId {
               nAKa += hPtEtaForEffCorrection[kKa][kNeg]->GetBinContent(ptEtaBin);
             }
 
-            if (idMethod == kTPCidentified)
+            if (idMethod == kTPCidentified) {
               fillIdentificationQA<qaTracksIdfd, kKa, tpcId>(hist, track);
-            if (idMethod == kTPCTOFidentified)
+            }
+            if (idMethod == kTPCTOFidentified) {
               fillIdentificationQA<qaTracksIdfd, kKa, tpctofId>(hist, track);
+            }
           }
           // proton
           if (selProton(track, idMethod)) {
@@ -1595,10 +1629,12 @@ struct NchCumulantsId {
               nAPr += hPtEtaForEffCorrection[kPr][kNeg]->GetBinContent(ptEtaBin);
             }
 
-            if (idMethod == kTPCidentified)
+            if (idMethod == kTPCidentified) {
               fillIdentificationQA<qaTracksIdfd, kPr, tpcId>(hist, track);
-            if (idMethod == kTPCTOFidentified)
+            }
+            if (idMethod == kTPCTOFidentified) {
               fillIdentificationQA<qaTracksIdfd, kPr, tpctofId>(hist, track);
+            }
           }
         } // track loop ends
         nCh = nP - nM;
@@ -1618,8 +1654,9 @@ struct NchCumulantsId {
           LOG(warning) << "No MC collision for this collision, skip...";
           continue;
         }
-        if (!isEventSelected(col))
+        if (!isEventSelected(col)) {
           continue;
+        }
         nP = 0;
         nM = 0;
         nCh = 0;
@@ -1665,24 +1702,27 @@ struct NchCumulantsId {
 
           if (selPion(track, idMethodPi)) {
             trackIsPion = true;
-            BITSET(trackIdTag, ID_BIT_PI);
+            BITSET(trackIdTag, IdBitPI);
             hist.fill(HIST("PIDValidation/tpcSparse_Pi"), track.p(), track.tpcNSigmaPi(), trackIdTag, mcTag);
-            if (track.hasTOF())
+            if (track.hasTOF()) {
               hist.fill(HIST("PIDValidation/tofSparse_Pi"), track.p(), track.tofNSigmaPi(), trackIdTag, mcTag);
+            }
           }
           if (selKaon(track, idMethodKa)) {
             trackIsKaon = true;
-            BITSET(trackIdTag, ID_BIT_KA);
+            BITSET(trackIdTag, IdBitKA);
             hist.fill(HIST("PIDValidation/tpcSparse_Ka"), track.p(), track.tpcNSigmaKa(), trackIdTag, mcTag);
-            if (track.hasTOF())
+            if (track.hasTOF()) {
               hist.fill(HIST("PIDValidation/tofSparse_Ka"), track.p(), track.tofNSigmaKa(), trackIdTag, mcTag);
+            }
           }
           if (selProton(track, idMethodPr)) {
             trackIsProton = true;
-            BITSET(trackIdTag, ID_BIT_PR);
+            BITSET(trackIdTag, IdBitPR);
             hist.fill(HIST("PIDValidation/tpcSparse_Pr"), track.p(), track.tpcNSigmaPr(), trackIdTag, mcTag);
-            if (track.hasTOF())
+            if (track.hasTOF()) {
               hist.fill(HIST("PIDValidation/tofSparse_Pr"), track.p(), track.tofNSigmaPr(), trackIdTag, mcTag);
+            }
           }
 
           if constexpr (analysisType == doPurityProcessing) {
@@ -1763,8 +1803,9 @@ struct NchCumulantsId {
         LOG(warning) << "No MC collision for this event, skip...";
         continue;
       }
-      if (!isEventSelected(col))
+      if (!isEventSelected(col)) {
         continue;
+      }
       const auto& mcColl = col.mcCollision();
 
       // ---- apply same Vz cut as data/reco ----
@@ -1857,8 +1898,9 @@ struct NchCumulantsId {
   void processSim(MyFilteredColsWithMcLabels const& collisions, MyFilteredTracksWithMcLabels const& tracks, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
 
-    if (cfgEventSelection.flagUnusedVariableError)
+    if (cfgEventSelection.flagUnusedVariableError) {
       LOG(info) << mcCollisions.size();
+    }
     bool trackIsPion = false;
     bool trackIsKaon = false;
     bool trackIsProton = false;
@@ -1876,12 +1918,14 @@ struct NchCumulantsId {
         LOG(warning) << "No MC collision for this collision, skip...";
         continue;
       }
-      if (!isEventSelected(col))
+      if (!isEventSelected(col)) {
         continue;
+      }
       auto mcCollision = col.mcCollision();
 
-      if (cfgEventSelection.checkCollPosZMc && std::abs(mcCollision.posZ()) > cfgCutPosZ)
+      if (cfgEventSelection.checkCollPosZMc && std::abs(mcCollision.posZ()) > cfgCutPosZ) {
         continue;
+      }
 
       // slice reco tracks to this collision
       const uint64_t collIdx = col.globalIndex();
@@ -1910,12 +1954,14 @@ struct NchCumulantsId {
       float nPiGen = 0, nAPiGen = 0;
 
       for (const auto& mcTrack : mcTracksTablePerMcColl) {
-        if (!mcTrack.isPhysicalPrimary())
+        if (!mcTrack.isPhysicalPrimary()) {
           continue;
+        }
         if (mcTrack.pt() <= cfgCutPtMin ||
             mcTrack.pt() >= cfgCutPtMax ||
-            std::abs(mcTrack.eta()) >= cfgCutEta)
+            std::abs(mcTrack.eta()) >= cfgCutEta) {
           continue;
+        }
 
         int pdg = mcTrack.pdgCode();
 
@@ -2041,7 +2087,7 @@ struct NchCumulantsId {
         // Fill separate spares for each species if it passes the cut
         if (selPion(track, idMethodPi)) {
           trackIsPion = true;
-          BITSET(trackIdTag, ID_BIT_PI);
+          BITSET(trackIdTag, IdBitPI);
           // Fill TPC sparse for pion
           hist.fill(HIST("PIDValidation/tpcSparse_Pi"), track.p(), track.tpcNSigmaPi(), trackIdTag, mcTag);
           // Fill TOF sparse for pion if has TOF
@@ -2051,7 +2097,7 @@ struct NchCumulantsId {
         }
         if (selKaon(track, idMethodKa)) {
           trackIsKaon = true;
-          BITSET(trackIdTag, ID_BIT_KA);
+          BITSET(trackIdTag, IdBitKA);
           // Fill TPC sparse for kaon
           hist.fill(HIST("PIDValidation/tpcSparse_Ka"), track.p(), track.tpcNSigmaKa(), trackIdTag, mcTag);
           // Fill TOF sparse for kaon if has TOF
@@ -2061,7 +2107,7 @@ struct NchCumulantsId {
         }
         if (selProton(track, idMethodPr)) {
           trackIsProton = true;
-          BITSET(trackIdTag, ID_BIT_PR);
+          BITSET(trackIdTag, IdBitPR);
           // Fill TPC sparse for proton
           hist.fill(HIST("PIDValidation/tpcSparse_Pr"), track.p(), track.tpcNSigmaPr(), trackIdTag, mcTag);
           // Fill TOF sparse for proton if has TOF
@@ -2119,10 +2165,12 @@ struct NchCumulantsId {
             fillEffPower(pimPow, weight);
           }
           // PID band QA for pions
-          if (idMethodPi == kTPCidentified)
+          if (idMethodPi == kTPCidentified) {
             fillIdentificationQA<qaTracksIdfd, kPi, tpcId>(hist, track);
-          if (idMethodPi == kTPCTOFidentified)
+          }
+          if (idMethodPi == kTPCTOFidentified) {
             fillIdentificationQA<qaTracksIdfd, kPi, tpctofId>(hist, track);
+          }
         } else if (trackIsKaon) {
           if (track.sign() > 0) {
             nKaRec += hPtEtaForEffCorrection[kKa][kPos]->GetBinContent(ptEtaBin);
@@ -2136,10 +2184,12 @@ struct NchCumulantsId {
             fillEffPower(kamPow, weight);
           }
           // PID band QA for kaons
-          if (idMethodKa == kTPCidentified)
+          if (idMethodKa == kTPCidentified) {
             fillIdentificationQA<qaTracksIdfd, kKa, tpcId>(hist, track);
-          if (idMethodKa == kTPCTOFidentified)
+          }
+          if (idMethodKa == kTPCTOFidentified) {
             fillIdentificationQA<qaTracksIdfd, kKa, tpctofId>(hist, track);
+          }
         } else if (trackIsProton) {
           if (track.sign() > 0) {
             nPrRec += hPtEtaForEffCorrection[kPr][kPos]->GetBinContent(ptEtaBin);
@@ -2153,10 +2203,12 @@ struct NchCumulantsId {
             fillEffPower(aprPow, weight);
           }
           // PID band QA for protons
-          if (idMethodPr == kTPCidentified)
+          if (idMethodPr == kTPCidentified) {
             fillIdentificationQA<qaTracksIdfd, kPr, tpcId>(hist, track);
-          if (idMethodPr == kTPCTOFidentified)
+          }
+          if (idMethodPr == kTPCTOFidentified) {
             fillIdentificationQA<qaTracksIdfd, kPr, tpctofId>(hist, track);
+          }
         }
         // purity check - check pdg aginst sign
         bool purityPion = false;
@@ -2164,20 +2216,26 @@ struct NchCumulantsId {
         bool purityProton = false;
 
         if (trackIsPion) {
-          if (track.sign() > 0 && pdg == kPiPlus)
+          if (track.sign() > 0 && pdg == kPiPlus) {
             purityPion = true;
-          if (track.sign() < 0 && pdg == kPiMinus)
+          }
+          if (track.sign() < 0 && pdg == kPiMinus) {
             purityPion = true;
+          }
         } else if (trackIsKaon) {
-          if (track.sign() > 0 && pdg == kKPlus)
+          if (track.sign() > 0 && pdg == kKPlus) {
             purityKaon = true;
-          if (track.sign() < 0 && pdg == kKMinus)
+          }
+          if (track.sign() < 0 && pdg == kKMinus) {
             purityKaon = true;
+          }
         } else if (trackIsProton) {
-          if (track.sign() > 0 && pdg == kProton)
+          if (track.sign() > 0 && pdg == kProton) {
             purityProton = true;
-          if (track.sign() < 0 && pdg == kProtonBar)
+          }
+          if (track.sign() < 0 && pdg == kProtonBar) {
             purityProton = true;
+          }
         }
 
         // charge purity — track.sign() + isKnownCharged + PDG sign consistency
