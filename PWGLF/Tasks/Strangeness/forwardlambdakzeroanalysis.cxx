@@ -707,8 +707,8 @@ struct forwardlambdakzeroanalysis {
     if (doPlainTopoQA) {
       // All candidates received
       histos.add("hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
-      histos.add("hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-      histos.add("hPosDCAToPVz", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+      histos.add("hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+      histos.add("hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
       histos.add("hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
       histos.add("hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
       histos.add("hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
@@ -727,6 +727,16 @@ struct forwardlambdakzeroanalysis {
       histos.add("hV0InvMassAntiLambda", "hV0InvMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
       histos.add("hV0InvMassD0", "hV0InvMassD0", kTH1D, {axisConfigurations.axisD0Mass});
       histos.add("hV0InvMassAntiD0", "hV0InvMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
+      if (doCompleteTopoQA) {
+        histos.add("hV0InvMassK0sVsLambda", "hV0InvMassK0sVsLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
+        histos.add("hV0InvMassK0sVsAntiLambda", "hV0InvMassK0sVsAntiLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
+        histos.add("hV0InvMassK0sVsD0", "hV0InvMassK0sVsD0", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisD0Mass});
+        histos.add("hV0InvMassK0sVsAntiD0", "hV0InvMassK0sVsAntiD0", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisD0Mass});
+        histos.add("hV0InvMassLambdaVsD0", "hV0InvMassLambdaVsD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+        histos.add("hV0InvMassAntiLambdaVsD0", "hV0InvMassAntiLambdaVsD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+        histos.add("hV0InvMassLambdaVsAntiD0", "hV0InvMassLambdaVsAntiD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+        histos.add("hV0InvMassAntiLambdaVsAntiD0", "hV0InvMassAntiLambdaVsAntiD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+      }
 
       histos.add("hPositiveMFTcls", "hPositiveMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
       histos.add("hNegativeMFTcls", "hNegativeMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
@@ -741,7 +751,7 @@ struct forwardlambdakzeroanalysis {
       if (analyseK0Short) {
         histos.add("K0Short/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("K0Short/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-        histos.add("K0Short/hPosDCAToPVz", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("K0Short/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("K0Short/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("K0Short/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
         histos.add("K0Short/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
@@ -760,6 +770,12 @@ struct forwardlambdakzeroanalysis {
         histos.add("K0Short/hV0InvMassAntiLambda", "hV0InvMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
         histos.add("K0Short/hV0InvMassD0", "hV0InvMassD0", kTH1D, {axisConfigurations.axisD0Mass});
         histos.add("K0Short/hV0InvMassAntiD0", "hV0InvMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
+        if (doCompleteTopoQA) {
+          histos.add("K0Short/hV0InvMassK0sVsLambda", "hV0InvMassK0sVsLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
+          histos.add("K0Short/hV0InvMassK0sVsAntiLambda", "hV0InvMassK0sVsAntiLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
+          histos.add("K0Short/hV0InvMassK0sVsD0", "hV0InvMassK0sVsD0", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisD0Mass});
+          histos.add("K0Short/hV0InvMassK0sVsAntiD0", "hV0InvMassK0sVsAntiD0", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisD0Mass});
+        }
 
         histos.add("K0Short/hPositiveMFTcls", "hPositiveMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
         histos.add("K0Short/hNegativeMFTcls", "hNegativeMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
@@ -775,7 +791,7 @@ struct forwardlambdakzeroanalysis {
       if (analyseLambda) {
         histos.add("Lambda/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("Lambda/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-        histos.add("Lambda/hPosDCAToPVz", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("Lambda/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("Lambda/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("Lambda/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
         histos.add("Lambda/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
@@ -794,6 +810,11 @@ struct forwardlambdakzeroanalysis {
         histos.add("Lambda/hV0InvMassAntiLambda", "hV0InvMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
         histos.add("Lambda/hV0InvMassD0", "hV0InvMassD0", kTH1D, {axisConfigurations.axisD0Mass});
         histos.add("Lambda/hV0InvMassAntiD0", "hV0InvMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
+        if (doCompleteTopoQA) {
+          histos.add("Lambda/hV0InvMassK0sVsLambda", "hV0InvMassK0sVsLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
+          histos.add("Lambda/hV0InvMassLambdaVsD0", "hV0InvMassLambdaVsD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+          histos.add("Lambda/hV0InvMassLambdaVsAntiD0", "hV0InvMassLambdaVsAntiD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+        }
 
         histos.add("Lambda/hPositiveMFTcls", "hPositiveMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
         histos.add("Lambda/hNegativeMFTcls", "hNegativeMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
@@ -809,7 +830,7 @@ struct forwardlambdakzeroanalysis {
       if (analyseAntiLambda) {
         histos.add("AntiLambda/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("AntiLambda/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-        histos.add("AntiLambda/hPosDCAToPVz", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("AntiLambda/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("AntiLambda/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("AntiLambda/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
         histos.add("AntiLambda/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
@@ -828,6 +849,11 @@ struct forwardlambdakzeroanalysis {
         histos.add("AntiLambda/hV0InvMassAntiLambda", "hV0InvMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
         histos.add("AntiLambda/hV0InvMassD0", "hV0InvMassD0", kTH1D, {axisConfigurations.axisD0Mass});
         histos.add("AntiLambda/hV0InvMassAntiD0", "hV0InvMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
+        if (doCompleteTopoQA) {
+          histos.add("AntiLambda/hV0InvMassK0sVsAntiLambda", "hV0InvMassK0sVsAntiLambda", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisLambdaMass});
+          histos.add("AntiLambda/hV0InvMassAntiLambdaVsD0", "hV0InvMassAntiLambdaVsD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+          histos.add("AntiLambda/hV0InvMassAntiLambdaVsAntiD0", "hV0InvMassAntiLambdaVsAntiD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+        }
 
         histos.add("AntiLambda/hPositiveMFTcls", "hPositiveMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
         histos.add("AntiLambda/hNegativeMFTcls", "hNegativeMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
@@ -843,7 +869,7 @@ struct forwardlambdakzeroanalysis {
       if (analyseD0) {
         histos.add("D0/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("D0/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-        histos.add("D0/hPosDCAToPVz", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("D0/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("D0/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("D0/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
         histos.add("D0/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
@@ -862,6 +888,11 @@ struct forwardlambdakzeroanalysis {
         histos.add("D0/hV0InvMassAntiLambda", "hV0InvMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
         histos.add("D0/hV0InvMassD0", "hV0InvMassD0", kTH1D, {axisConfigurations.axisD0Mass});
         histos.add("D0/hV0InvMassAntiD0", "hV0InvMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
+        if (doCompleteTopoQA) {
+          histos.add("D0/hV0InvMassK0sVsD0", "hV0InvMassK0sVsD0", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisD0Mass});
+          histos.add("D0/hV0InvMassLambdaVsD0", "hV0InvMassLambdaVsD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+          histos.add("D0/hV0InvMassAntiLambdaVsD0", "hV0InvMassAntiLambdaVsD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+        }
 
         histos.add("D0/hPositiveMFTcls", "hPositiveMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
         histos.add("D0/hNegativeMFTcls", "hNegativeMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
@@ -877,7 +908,7 @@ struct forwardlambdakzeroanalysis {
       if (analyseAntiD0) {
         histos.add("AntiD0/hPosDCAToPVxy", "hPosDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("AntiD0/hNegDCAToPVxy", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVz});
-        histos.add("AntiD0/hPosDCAToPVz", "hNegDCAToPVxy", kTH1D, {axisConfigurations.axisDCAtoPVxy});
+        histos.add("AntiD0/hPosDCAToPVz", "hPosDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVxy});
         histos.add("AntiD0/hNegDCAToPVz", "hNegDCAToPVz", kTH1D, {axisConfigurations.axisDCAtoPVz});
         histos.add("AntiD0/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
         histos.add("AntiD0/hCosPA", "hCosPA", kTH1D, {axisConfigurations.axisCosPA});
@@ -896,6 +927,11 @@ struct forwardlambdakzeroanalysis {
         histos.add("AntiD0/hV0InvMassAntiLambda", "hV0InvMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
         histos.add("AntiD0/hV0InvMassD0", "hV0InvMassD0", kTH1D, {axisConfigurations.axisD0Mass});
         histos.add("AntiD0/hV0InvMassAntiD0", "hV0InvMassAntiD0", kTH1D, {axisConfigurations.axisD0Mass});
+        if (doCompleteTopoQA) {
+          histos.add("AntiD0/hV0InvMassK0sVsAntiD0", "hV0InvMassK0sVsAntiD0", kTH2D, {axisConfigurations.axisK0Mass, axisConfigurations.axisD0Mass});
+          histos.add("AntiD0/hV0InvMassLambdaVsAntiD0", "hV0InvMassLambdaVsAntiD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+          histos.add("AntiD0/hV0InvMassAntiLambdaVsAntiD0", "hV0InvMassAntiLambdaVsAntiD0", kTH2D, {axisConfigurations.axisLambdaMass, axisConfigurations.axisD0Mass});
+        }
 
         histos.add("AntiD0/hPositiveMFTcls", "hPositiveMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
         histos.add("AntiD0/hNegativeMFTcls", "hNegativeMFTcls", kTH1D, {axisConfigurations.axisMFTclus});
@@ -1313,6 +1349,16 @@ struct forwardlambdakzeroanalysis {
       histos.fill(HIST("hV0InvMassAntiLambda"), invMassAntiLambda);
       histos.fill(HIST("hV0InvMassD0"), invMassD0);
       histos.fill(HIST("hV0InvMassAntiD0"), invMassAntiD0);
+      if (doCompleteTopoQA) {
+        histos.fill(HIST("hV0InvMassK0sVsLambda"), invMassK0Short, invMassLambda);
+        histos.fill(HIST("hV0InvMassK0sVsAntiLambda"), invMassK0Short, invMassAntiLambda);
+        histos.fill(HIST("hV0InvMassK0sVsD0"), invMassK0Short, invMassD0);
+        histos.fill(HIST("hV0InvMassK0sVsAntiD0"), invMassK0Short, invMassAntiD0);
+        histos.fill(HIST("hV0InvMassLambdaVsD0"), invMassLambda, invMassD0);
+        histos.fill(HIST("hV0InvMassAntiLambdaVsD0"), invMassAntiLambda, invMassD0);
+        histos.fill(HIST("hV0InvMassLambdaVsAntiD0"), invMassLambda, invMassAntiD0);
+        histos.fill(HIST("hV0InvMassAntiLambdaVsAntiD0"), invMassAntiLambda, invMassAntiD0);
+      }
 
       histos.fill(HIST("hPositiveMFTcls"), v0.posNclusters);
       histos.fill(HIST("hNegativeMFTcls"), v0.negNclusters);
@@ -1374,6 +1420,12 @@ struct forwardlambdakzeroanalysis {
         histos.fill(HIST("K0Short/hV0InvMassAntiLambda"), invMassAntiLambda);
         histos.fill(HIST("K0Short/hV0InvMassD0"), invMassD0);
         histos.fill(HIST("K0Short/hV0InvMassAntiD0"), invMassAntiD0);
+        if (doCompleteTopoQA) {
+          histos.fill(HIST("K0Short/hV0InvMassK0sVsLambda"), invMassK0Short, invMassLambda);
+          histos.fill(HIST("K0Short/hV0InvMassK0sVsAntiLambda"), invMassK0Short, invMassAntiLambda);
+          histos.fill(HIST("K0Short/hV0InvMassK0sVsD0"), invMassK0Short, invMassD0);
+          histos.fill(HIST("K0Short/hV0InvMassK0sVsAntiD0"), invMassK0Short, invMassAntiD0);
+        }
 
         histos.fill(HIST("K0Short/hPositiveMFTcls"), v0.posNclusters);
         histos.fill(HIST("K0Short/hNegativeMFTcls"), v0.negNclusters);
@@ -1425,6 +1477,11 @@ struct forwardlambdakzeroanalysis {
         histos.fill(HIST("Lambda/hV0InvMassAntiLambda"), invMassAntiLambda);
         histos.fill(HIST("Lambda/hV0InvMassD0"), invMassD0);
         histos.fill(HIST("Lambda/hV0InvMassAntiD0"), invMassAntiD0);
+        if (doCompleteTopoQA) {
+          histos.fill(HIST("Lambda/hV0InvMassK0sVsLambda"), invMassK0Short, invMassLambda);
+          histos.fill(HIST("Lambda/hV0InvMassLambdaVsD0"), invMassLambda, invMassD0);
+          histos.fill(HIST("Lambda/hV0InvMassLambdaVsAntiD0"), invMassLambda, invMassAntiD0);
+        }
 
         histos.fill(HIST("Lambda/hPositiveMFTcls"), v0.posNclusters);
         histos.fill(HIST("Lambda/hNegativeMFTcls"), v0.negNclusters);
@@ -1476,6 +1533,11 @@ struct forwardlambdakzeroanalysis {
         histos.fill(HIST("AntiLambda/hV0InvMassAntiLambda"), invMassAntiLambda);
         histos.fill(HIST("AntiLambda/hV0InvMassD0"), invMassD0);
         histos.fill(HIST("AntiLambda/hV0InvMassAntiD0"), invMassAntiD0);
+        if (doCompleteTopoQA) {
+          histos.fill(HIST("AntiLambda/hV0InvMassK0sVsAntiLambda"), invMassK0Short, invMassAntiLambda);
+          histos.fill(HIST("AntiLambda/hV0InvMassAntiLambdaVsD0"), invMassAntiLambda, invMassD0);
+          histos.fill(HIST("AntiLambda/hV0InvMassAntiLambdaVsAntiD0"), invMassAntiLambda, invMassAntiD0);
+        }
 
         histos.fill(HIST("AntiLambda/hPositiveMFTcls"), v0.posNclusters);
         histos.fill(HIST("AntiLambda/hNegativeMFTcls"), v0.negNclusters);
@@ -1527,6 +1589,11 @@ struct forwardlambdakzeroanalysis {
         histos.fill(HIST("D0/hV0InvMassAntiLambda"), invMassAntiLambda);
         histos.fill(HIST("D0/hV0InvMassD0"), invMassD0);
         histos.fill(HIST("D0/hV0InvMassAntiD0"), invMassAntiD0);
+        if (doCompleteTopoQA) {
+          histos.fill(HIST("D0/hV0InvMassK0sVsD0"), invMassK0Short, invMassD0);
+          histos.fill(HIST("D0/hV0InvMassLambdaVsD0"), invMassLambda, invMassD0);
+          histos.fill(HIST("D0/hV0InvMassAntiLambdaVsD0"), invMassAntiLambda, invMassD0);
+        }
 
         histos.fill(HIST("D0/hPositiveMFTcls"), v0.posNclusters);
         histos.fill(HIST("D0/hNegativeMFTcls"), v0.negNclusters);
@@ -1578,6 +1645,11 @@ struct forwardlambdakzeroanalysis {
         histos.fill(HIST("AntiD0/hV0InvMassAntiLambda"), invMassAntiLambda);
         histos.fill(HIST("AntiD0/hV0InvMassD0"), invMassD0);
         histos.fill(HIST("AntiD0/hV0InvMassAntiD0"), invMassAntiD0);
+        if (doCompleteTopoQA) {
+          histos.fill(HIST("AntiD0/hV0InvMassK0sVsAntiD0"), invMassK0Short, invMassAntiD0);
+          histos.fill(HIST("AntiD0/hV0InvMassLambdaVsAntiD0"), invMassLambda, invMassAntiD0);
+          histos.fill(HIST("AntiD0/hV0InvMassAntiLambdaVsAntiD0"), invMassAntiLambda, invMassAntiD0);
+        }
 
         histos.fill(HIST("AntiD0/hPositiveMFTcls"), v0.posNclusters);
         histos.fill(HIST("AntiD0/hNegativeMFTcls"), v0.negNclusters);
@@ -2069,9 +2141,9 @@ struct forwardlambdakzeroanalysis {
 
       // get decay vertex coordinates
       Vec3D vtx = fitter.getPCACandidate();
-      pairInfo.X = vtx[0];
-      pairInfo.Y = vtx[1];
-      pairInfo.Z = vtx[2];
+      pairInfo.X = vtx[0] - collision.posX();
+      pairInfo.Y = vtx[1] - collision.posY();
+      pairInfo.Z = vtx[2] - collision.posZ();
 
       // get daughter DCA to PV
       pairInfo.dcaPosToPVxy = std::sqrt(dcaPosToPVx * dcaPosToPVx + dcaPosToPVy * dcaPosToPVy);
@@ -2101,16 +2173,16 @@ struct forwardlambdakzeroanalysis {
       pairInfo.OpAngle = track1Momentum.Angle(track2Momentum);
 
       // Radius
-      pairInfo.Radius = std::sqrt(vtx[0] * vtx[0] + vtx[1] * vtx[1]);
+      pairInfo.Radius = std::sqrt(pairInfo.X * pairInfo.X + pairInfo.Y * pairInfo.Y);
 
       // Dist over tot mom.
       float px = pairInfo.positiveMomentum[0] + pairInfo.negativeMomentum[0];
       float py = pairInfo.positiveMomentum[1] + pairInfo.negativeMomentum[1];
       float pz = pairInfo.positiveMomentum[2] + pairInfo.negativeMomentum[2];
-      pairInfo.DistOverTotMom = std::sqrt(vtx[0] * vtx[0] + vtx[1] * vtx[1] + vtx[2] * vtx[2]) / std::sqrt(px * px + py * py + pz * pz);
+      pairInfo.DistOverTotMom = std::sqrt(pairInfo.X * pairInfo.X + pairInfo.Y * pairInfo.Y + pairInfo.Z * pairInfo.Z) / std::sqrt(px * px + py * py + pz * pz);
 
       // Z dist over pz
-      pairInfo.ZdistOverPz = vtx[2] / pz;
+      pairInfo.ZdistOverPz = pairInfo.Z / pz;
 
       // V0 Momenta
       pairInfo.pT = std::sqrt(px * px + py * py);
