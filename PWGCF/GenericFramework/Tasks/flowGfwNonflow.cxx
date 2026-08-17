@@ -44,6 +44,7 @@
 
 #include <TF1.h>
 #include <TH1.h>
+#include <TH2.h>
 #include <TH3.h>
 #include <TNamed.h>
 #include <TObjArray.h>
@@ -722,22 +723,22 @@ struct FlowGfwNonflow {
         return -1.;
       }
       return 1. / eff;
-    } else {
-      auto* effHist = dynamic_cast<TH1D*>(correctionsConfig.mEfficiency);
-      if (!effHist) {
-        LOGF(error, "Efficiency object at %s is not a TH1D", cfgCorrections.cfgEfficiencyPath.value.c_str());
-        return -1.;
-      }
-      bin = effHist->FindBin(track.pt());
-      if (!bin) {
-        return -1.;
-      }
-      const double eff = effHist->GetBinContent(bin);
-      if (!std::isfinite(eff) || eff <= 0.) {
-        return -1.;
-      }
-      return 1. / eff;
     }
+
+    auto* effHist = dynamic_cast<TH1D*>(correctionsConfig.mEfficiency);
+    if (!effHist) {
+      LOGF(error, "Efficiency object at %s is not a TH1D", cfgCorrections.cfgEfficiencyPath.value.c_str());
+      return -1.;
+    }
+    bin = effHist->FindBin(track.pt());
+    if (!bin) {
+      return -1.;
+    }
+    const double eff = effHist->GetBinContent(bin);
+    if (!std::isfinite(eff) || eff <= 0.) {
+      return -1.;
+    }
+    return 1. / eff;
   }
 
   template <typename TCollision>
