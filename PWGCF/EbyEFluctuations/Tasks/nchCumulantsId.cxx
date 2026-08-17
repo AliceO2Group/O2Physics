@@ -25,13 +25,13 @@
 #include <CommonConstants/PhysicsConstants.h>
 // #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
+// #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/O2DatabasePDGPlugin.h>
+// #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
@@ -1122,8 +1122,9 @@ struct NchCumulantsId {
   template <int pidMode, typename T>
   bool idTPCTOF(const T& track, const int& pidCutType, const float& nSigmaTPC, const float& nSigmaTOF, const float& nSigmaSquaredRad)
   {
-    if (cfgId01CheckVetoCut && !vetoIdOthersTPCTOF<pidMode>(track))
+    if (cfgId01CheckVetoCut && !vetoIdOthersTPCTOF<pidMode>(track)) {
       return false;
+    }
     if (pidCutType == kRectangularCut) {
       return selIdRectangularCut<pidMode>(track, nSigmaTPC, nSigmaTOF);
     } else if (pidCutType == kCircularCut) {
@@ -1283,7 +1284,7 @@ struct NchCumulantsId {
   }
 
   template <int mode, typename T>
-  void fillCollQA(const T& coll, const int& nCh, const int& nT)
+  void fillCollQA(const T& coll, const float& nCh, const float& nT)
   {
     hist.fill(HIST(HistRegDire[mode]) + HIST("h_VtxZ"), coll.posZ());
     hist.fill(HIST(HistRegDire[mode]) + HIST("h_Counts"), 0.5);
@@ -1395,8 +1396,9 @@ struct NchCumulantsId {
                                 const int& idMethodKa, const bool& trackIsKaon, float& nAKa, float& nKa,
                                 const int& idMethodPr, const bool& trackIsProton, float& nPr, float& nAPr, H& hReg)
   {
-    if (cfgEventSelection.flagUnusedVariableError)
+    if (cfgEventSelection.flagUnusedVariableError) {
       LOG(info) << trackIdTag << idMethodPi << ":" << idMethodKa << ":" << idMethodPr;
+    }
     if (track.sign() > 0) {
       // fillRecoTrackQA<kPos>(hReg, track);
       nP++;
@@ -2063,8 +2065,9 @@ struct NchCumulantsId {
           continue;
         }
         auto mcPart = track.mcParticle();
-        if (!mcPart.isPhysicalPrimary())
+        if (!mcPart.isPhysicalPrimary()) {
           continue;
+        }
         int pdg = mcPart.pdgCode();
 
         int mcTag = getMCTag(track);
