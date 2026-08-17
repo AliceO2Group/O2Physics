@@ -349,8 +349,8 @@ struct lambdajetpolarizationionsderived {
     Configurable<bool> forceRandJet{"forceRandJet", false, "makes jet direction random. A QA for AEE fake signal and its removal"};
     Configurable<bool> forcePreviousJet{"forcePreviousJet", false, "uses previous event's jet direction instead of a random sample. A baseline for fake signal removal"};
     Configurable<bool> forceDatalikeJet{"forceDatalikeJet", false, "a compromise between forceRandJet and forcePreviousJet. Parameterized distribution from data"};
-    Configurable<bool> doMixedEventLeadP{"doMixedEventLeadP", false, "mix leading particle direction between events using (LeadP pt, Zvtx, centrality) bins"};
-    Configurable<int>  mixedEventLeadPWindowSize{"mixedEventLeadPWindowSize", 10, "number of neighbours for doMixedEventLeadP: how many similar collisions stay eligible as mixing partners at once."};
+    Configurable<bool> doMixedEventProxies{"doMixedEventProxies", false, "mix leadP/leadJet/subJet directions between events using (proxy pt, Zvtx, centrality) bins -- three independent mixings, one per proxy"};
+    Configurable<int>  mixedEventWindowSize{"mixedEventWindowSize", 10, "number of neighbours for doMixedEventProxies: how many similar collisions stay eligible as mixing partners at once (shared by all 3 proxies)."};
     Configurable<int>  nProxyResamples{"nProxyResamples", 1, "The amount of resamplings of jet direction per event. Use ONLY for forceRandJet and forceDatalikeJet"};
   } fakePolSwitches;
 
@@ -1025,21 +1025,37 @@ struct lambdajetpolarizationionsderived {
         {axisConfigurations.axisEtaCoarse, axisConfigurations.axisPhi, axisConfigurations.axisJetPt, axisConfigurations.axisPVz, axisConfigurations.axisCentrality});
     }
 
-    // doMixedEventLeadP QA: gauge the size of the "too few collisions per bin" problem (see resonanceMergeDF.cxx)
-    if (fakePolSwitches.doMixedEventLeadP) {
+    // doMixedEventProxies QA: gauge the size of the "too few collisions per bin" problem (see resonanceMergeDF.cxx)
+    // Booked per proxy, since the three mixings are independent and can succeed/fail at different rates.
+    if (fakePolSwitches.doMixedEventProxies) {
       histos.add("JetKinematicsQA/hMixedEventLeadPOutcome", "hMixedEventLeadPOutcome;Outcome (0=skipped, 1=found);Counts", kTH1D, {{2, -0.5f, 1.5f}});
+      histos.add("JetKinematicsQA/hMixedEventLeadJetOutcome", "hMixedEventLeadJetOutcome;Outcome (0=skipped, 1=found);Counts", kTH1D, {{2, -0.5f, 1.5f}});
+      histos.add("JetKinematicsQA/hMixedEventSubJetOutcome", "hMixedEventSubJetOutcome;Outcome (0=skipped, 1=found);Counts", kTH1D, {{2, -0.5f, 1.5f}});
+
       histos.add("JetKinematicsQA/hMixedEventLeadPWindowNeighbours", "hMixedEventLeadPWindowNeighbours;Neighbours found in bin window;Counts", kTH1D, {{22, -0.5f, 21.5f}});
+      histos.add("JetKinematicsQA/hMixedEventLeadJetWindowNeighbours", "hMixedEventLeadJetWindowNeighbours;Neighbours found in bin window;Counts", kTH1D, {{22, -0.5f, 21.5f}});
+      histos.add("JetKinematicsQA/hMixedEventSubJetWindowNeighbours", "hMixedEventSubJetWindowNeighbours;Neighbours found in bin window;Counts", kTH1D, {{22, -0.5f, 21.5f}});
 
       histos.add("JetKinematicsQA/h2dMixedLeadPEtaVsLeadPEta", "MixedLeadP #eta vs LeadP #eta;MixedLeadP #eta; LeadP #eta;Counts", kTH2D, {axisConfigurations.axisEtaCoarse, axisConfigurations.axisEtaCoarse});
       histos.add("JetKinematicsQA/h2dMixedLeadPPhiVsLeadPPhi", "MixedLeadP #phi vs LeadP #phi;MixedLeadP #phi; LeadP #phi;Counts", kTH2D, {axisConfigurations.axisPhi, axisConfigurations.axisPhi});
+      histos.add("JetKinematicsQA/h2dMixedLeadJetEtaVsLeadJetEta", "MixedLeadJet #eta vs LeadJet #eta;MixedLeadJet #eta; LeadJet #eta;Counts", kTH2D, {axisConfigurations.axisEtaCoarse, axisConfigurations.axisEtaCoarse});
+      histos.add("JetKinematicsQA/h2dMixedLeadJetPhiVsLeadJetPhi", "MixedLeadJet #phi vs LeadJet #phi;MixedLeadJet #phi; LeadJet #phi;Counts", kTH2D, {axisConfigurations.axisPhi, axisConfigurations.axisPhi});
+      histos.add("JetKinematicsQA/h2dMixedSubJetEtaVsSubJetEta", "MixedSubJet #eta vs SubJet #eta;MixedSubJet #eta; SubJet #eta;Counts", kTH2D, {axisConfigurations.axisEtaCoarse, axisConfigurations.axisEtaCoarse});
+      histos.add("JetKinematicsQA/h2dMixedSubJetPhiVsSubJetPhi", "MixedSubJet #phi vs SubJet #phi;MixedSubJet #phi; SubJet #phi;Counts", kTH2D, {axisConfigurations.axisPhi, axisConfigurations.axisPhi});
 
       // Event mixing source QA -- How repeated is each collision in the mix:
       // For each source collision for mixing, counts how many times it was used. Flat distribution is ideal.
       histos.add("JetKinematicsQA/hMixedEventLeadPSourceUsageCount", "hMixedEventLeadPSourceUsageCount;Times collision was used;Counts", kTH1D, {{50, -0.5f, 49.5f}});
+      histos.add("JetKinematicsQA/hMixedEventLeadJetSourceUsageCount", "hMixedEventLeadJetSourceUsageCount;Times collision was used;Counts", kTH1D, {{50, -0.5f, 49.5f}});
+      histos.add("JetKinematicsQA/hMixedEventSubJetSourceUsageCount", "hMixedEventSubJetSourceUsageCount;Times collision was used;Counts", kTH1D, {{50, -0.5f, 49.5f}});
         // Useful TProfiles -- the mean number of times a given source was used, as a function of eta or phi
         // (more convenient than a single TH1, as it gives an average, not the raw counter)
       histos.add("JetKinematicsQA/pMixedEventLeadPSourceUsageVsEta", "pMixedEventLeadPSourceUsageVsEta;Source #eta;<Times used>", kTProfile, {axisConfigurations.axisEtaCoarse});
       histos.add("JetKinematicsQA/pMixedEventLeadPSourceUsageVsPhi", "pMixedEventLeadPSourceUsageVsPhi;Source #varphi;<Times used>", kTProfile, {axisConfigurations.axisPhi});
+      histos.add("JetKinematicsQA/pMixedEventLeadJetSourceUsageVsEta", "pMixedEventLeadJetSourceUsageVsEta;Source #eta;<Times used>", kTProfile, {axisConfigurations.axisEtaCoarse});
+      histos.add("JetKinematicsQA/pMixedEventLeadJetSourceUsageVsPhi", "pMixedEventLeadJetSourceUsageVsPhi;Source #varphi;<Times used>", kTProfile, {axisConfigurations.axisPhi});
+      histos.add("JetKinematicsQA/pMixedEventSubJetSourceUsageVsEta", "pMixedEventSubJetSourceUsageVsEta;Source #eta;<Times used>", kTProfile, {axisConfigurations.axisEtaCoarse});
+      histos.add("JetKinematicsQA/pMixedEventSubJetSourceUsageVsPhi", "pMixedEventSubJetSourceUsageVsPhi;Source #varphi;<Times used>", kTProfile, {axisConfigurations.axisPhi});
     }
 
     // Fetch the X-axes from one of the families (since they all share the same ConfigurableAxis binning)
@@ -1078,16 +1094,17 @@ struct lambdajetpolarizationionsderived {
   /// \param hasValidProxy in/out (edited in-place): whether the proxy being distorted is usable. Re-evaluated against minPtThreshold after distortion.
   /// \param pt,eta,phi in/out (edited in-place): the proxy's kinematics, overwritten by whichever distortion is active.
   /// \param unitVec in/out (edited in-place): the proxy direction as a unit vector.
-  /// \param cacheHadProxy,cacheEta,cachePhi caches for either forcePreviousJet or doMixedEventLeadP.
+  /// \param cacheHadProxy,cacheEta,cachePhi caches for either forcePreviousJet or doMixedEventProxies.
   //         forcePreviousJet updates these here for the next collision, in a simplistic event event mixing approach. 
-  //         doMixedEventLeadP instead overwrites prevJetCache's fields with this collision's mixed proxy right before the call.
+  //         doMixedEventProxies instead overwrites the caller's cache fields with this collision's mixed proxy right before the call.
   ///        Fallback skips this event using hasValidProxy.
   /// \param etaDist,phiDist,rng sampling distributions/generator for forceRandJet and forceDatalikeJet.
+  /// \note  Shared across leadP/leadJet/subJet: the caller resolves which proxy-specific procedure (e.g., LUT for evtMixing) applies.
   // Helper to modify the jet direction for QA and for spurious signal baseline removal tests:
   inline void applyProxyDistortion(bool& hasValidProxy, float& pt, float& eta, float& phi, XYZVector& unitVec, 
                             float minPtThreshold, bool& cacheHadProxy, float& cacheEta, float& cachePhi,
                             std::discrete_distribution<int>& etaDist, std::discrete_distribution<int>& phiDist, std::mt19937& rng){
-    if (!fakePolSwitches.forcePerpToJet && !fakePolSwitches.forceJetDirectionSmudge && !fakePolSwitches.forceRandJet && !fakePolSwitches.forcePreviousJet && !fakePolSwitches.forceDatalikeJet && !fakePolSwitches.doMixedEventLeadP)[[likely]] {
+    if (!fakePolSwitches.forcePerpToJet && !fakePolSwitches.forceJetDirectionSmudge && !fakePolSwitches.forceRandJet && !fakePolSwitches.forcePreviousJet && !fakePolSwitches.forceDatalikeJet && !fakePolSwitches.doMixedEventProxies)[[likely]] {
       return; // Skip this function if none of the modifications are actually being executed!
     }
 
@@ -1184,8 +1201,8 @@ struct lambdajetpolarizationionsderived {
       const double sinPhi = std::sin(phi);
       const double cosPhi = std::cos(phi);
       unitVec = XYZVector(cosPhi * inverseCoshEta, sinPhi * inverseCoshEta, std::tanh(eta));
-    } else if (fakePolSwitches.doMixedEventLeadP) {
-      // Mixes the leadP direction from a real, similar other collision, rather than sampling a fitted distribution as datalikeJet.
+    } else if (fakePolSwitches.doMixedEventProxies) {
+      // Mixes this proxy's direction from a real, similar other collision, rather than sampling a fitted distribution as datalikeJet.
       // Only unitVec is rebuilt, eta/phi are left as this collision's own real values -- same convention forcePreviousJet uses above.
       if (cacheHadProxy) {
         const double inverseCoshEta = 1.0 / std::cosh(cacheEta);
@@ -1233,96 +1250,246 @@ struct lambdajetpolarizationionsderived {
     bool hadSubJet; float subJetEta; float subJetPhi; // Subleading jet
     bool hadLeadP; float leadPEta; float leadPPhi; // Leading particle
   };
+
+  // Per-collision leading/subleading jet, computed once per dataframe and shared by both the main loop below
+  // (instead of re-scanning RingJets once per resampling pass) and the leadJet/subJet event mixing functions:
+  struct JetProxyCache {
+    bool hasValidLeadingJet = false; float leadingJetPt = -1.f; float leadingJetEta = 0.f; float leadingJetPhi = 0.f;
+    bool hasValidSubJet = false; float subleadingJetPt = -1.f; float subleadingJetEta = 0.f; float subleadingJetPhi = 0.f;
+  };
+
+  // A simple struct for doMixedEventProxies. Each proxy (leadP/leadJet/subJet) gets its own independent cache.
+  struct MixedProxyInfo { float eta; float phi; int64_t sourceCollisionId; };
+
+  /// \brief Uniform random pick among each target's candidate window, via reservoir sampling
+  ///        (cannibalization of proxies by neighbouring collisions in Continuous Readout is not a worry as ITS hits are being demanded)
+  /// \note  Reuses the task's own rng member rather than a separate generator per proxy.
+  void reservoirInsert(std::unordered_map<int64_t, int>& candidateCount, std::unordered_map<int64_t, MixedProxyInfo>& lut,
+                        int64_t targetId, const MixedProxyInfo& candidate)
+  {
+    int& nSeen = candidateCount[targetId];
+    ++nSeen;
+    std::uniform_int_distribution<int> pick(1, nSeen);
+    if (pick(rng) == 1) {
+      lut[targetId] = candidate;
+    }
+  }
+
+  /// \brief How many different target collisions each source collision ended up supplying, from a finished LUT.
+  static std::unordered_map<int64_t, int> tallySourceUsage(std::unordered_map<int64_t, MixedProxyInfo> const& lut)
+  {
+    std::unordered_map<int64_t, int> usage;
+    for (auto const& kv : lut)
+      usage[kv.second.sourceCollisionId]++;
+    return usage;
+  }
   
   // Preslices for correct collisions association:
   // (TODO: test using custom grouping)
   Preslice<aod::RingJets> perColJets = o2::aod::lambdajetpol::ringCollisionId;
   Preslice<aod::RingLaV0s> perColV0s = o2::aod::lambdajetpol::ringCollisionId;
   Preslice<aod::RingLeadPs> perColLeadPs = o2::aod::lambdajetpol::ringCollisionId;
-    // For doMixedEventLeadP:
+    // For doMixedEventProxies:
   SliceCache mixCache;
   /// \brief Main analysis loop: for each collision, rebuilds the leading jet/particle proxies (with optional fakePolSwitches distortions), then loops over V0s computing the ring observable and polarization-vector profiles for every enabled kinematic-cut family.
   void processPolarizationData(o2::aod::RingCollisions const& collisions, o2::aod::RingJets const& jets, o2::aod::RingLaV0s const& v0s,
                                o2::aod::RingLeadPs const& leadPs)
   {
-
     // Event mixing, built once per dataframe
       // Simplistic event mixing using previous collision:
     PrevJetCache prevJetCache{}; // Initializing struct before the collisions loop. This zero-initializes, so bools start as false
                                  // This should not be used along nProxyResamples > 1, as it does not apply to that case.
 
-    // doMixedEventLeadP: Binning on (Zvtx, leadP pt, centrality) lets eta/phi vary freely.
-    // Leading/subleading jet mixing are a separate, independent feature NOT implemented yet. Rough sketch of the difference, for later:
-    //   auto getMixJetPt = [&jets, &mixCache](aod::RingCollision const& col) {
-    //     auto rows = jets.sliceByCached(o2::aod::lambdajetpol::ringCollisionId, col.globalIndex(), mixCache);
-    //     float leadPt = -999.f;
-    //     for (auto const& jet : rows) leadPt = std::max(leadPt, jet.jetPt()); // needs the max-pt scan; RingLeadPs needs no such scan
-    //     return leadPt;
-    //   };
-    struct MixedLeadPInfo { float eta; float phi; int64_t sourceCollisionId; };
-    std::unordered_map<int64_t, MixedLeadPInfo> mixedLeadPByCollision;
-    // First we build a lookup table based on current dataframe's collisions (connects pairs of jet proxies from similar collisions):
-    // (these leading particles may come from collisions with no valid Lambdas, by construction)
-    if (fakePolSwitches.doMixedEventLeadP) {
+    // Leading/subleading jet per collision, resolved once here instead of inside the (possibly nProxyResamples times resampled) main loop.
+    // Both the main loop and the leadJet/subJet mixing functions read from this, so RingJets is scanned exactly once
+    std::unordered_map<int64_t, JetProxyCache> jetProxyByCollision;
+    for (auto const& collision : collisions) {
+      const float collisionPVz = collision.zvtx();
+      if (std::abs(collisionPVz) > maxZVtxPosition) // Additional Zvtx filtering
+        continue;
+
+      const auto collId = collision.globalIndex();
+      JetProxyCache cache;
+      // std::optional avoids undefined behaviour from a default-constructed iterator:
+      std::optional<o2::aod::RingJets::iterator> leadingJet;
+      std::optional<o2::aod::RingJets::iterator> subleadingJet;
+      for (auto const& jet : jets.sliceBy(perColJets, collId)) {
+        const auto jetpt = jet.jetPt();
+        if (jetpt > cache.leadingJetPt) {
+          // Current leading becomes subleading:
+          cache.subleadingJetPt = cache.leadingJetPt;
+          subleadingJet = leadingJet; // may still be std::nullopt on first pass -- that is fine!
+          // Now update the leading jet:
+          cache.leadingJetPt = jetpt;
+          leadingJet = jet;
+        } else if (jetpt > cache.subleadingJetPt) { // Update subleading only:
+          cache.subleadingJetPt = jetpt;
+          subleadingJet = jet;
+        }
+      }
+      // Finer control on jet momentum, further than TableProducer pre-selection:
+      cache.hasValidLeadingJet = cache.leadingJetPt > minLeadJetPt;
+      cache.hasValidSubJet = cache.subleadingJetPt > minSubLeadJetPt;
+      if (cache.hasValidLeadingJet) {
+        cache.leadingJetEta = leadingJet->jetEta();
+        cache.leadingJetPhi = leadingJet->jetPhi();
+      }
+      if (cache.hasValidSubJet) {
+        cache.subleadingJetEta = subleadingJet->jetEta();
+        cache.subleadingJetPhi = subleadingJet->jetPhi();
+      }
+      jetProxyByCollision[collId] = cache;
+    }
+
+    // doMixedEventProxies caches: three independent mixings, one per proxy (a collision may have a valid LeadP, but no SubLeadJet).
+    // Mixing is binned on (Zvtx, proxy pt, centrality), varying only eta/phi.
+    std::unordered_map<int64_t, MixedProxyInfo> mixedLeadPByCollision;
+    std::unordered_map<int64_t, MixedProxyInfo> mixedLeadJetByCollision;
+    std::unordered_map<int64_t, MixedProxyInfo> mixedSubJetByCollision;
+    // First we build lookup tables based on current dataframe's collisions (connects pairs of jet proxies from similar collisions):
+    // (these proxies may come from collisions with no valid Lambdas, by construction, enabling more mixes)
+    if (fakePolSwitches.doMixedEventProxies) {
+      auto getMixCentrality = [this](o2::aod::RingCollision const& col) { return this->getCentrality(col); };
+
+      // For the leading particle:
       // Pattern follows MixedEventsLambdaBinning tutorial (captures leadPs table and cache define in task's struct):
       auto getMixLeadPPt = [&leadPs, this](o2::aod::RingCollision const& col) {
         auto rows = leadPs.sliceByCached(o2::aod::lambdajetpol::ringCollisionId, col.globalIndex(), this->mixCache); // As it is cached, grouping happens only once
         return rows.size() > 0 ? rows.begin().leadParticlePt() : -999.f;
       };
-      auto getMixCentrality = [this](o2::aod::RingCollision const& col) { return this->getCentrality(col); };
-
-      using MixBinningType = FlexibleBinningPolicy<std::tuple<decltype(getMixLeadPPt), decltype(getMixCentrality)>,
-                                                    o2::aod::lambdajetpol::Zvtx, decltype(getMixLeadPPt), decltype(getMixCentrality)>;
-      MixBinningType mixBinning{{getMixLeadPPt, getMixCentrality},
-                                {axisConfigurations.axisPVz, axisConfigurations.axisJetPt, axisConfigurations.axisCentrality},
-                                true}; // Ignore overflows true
+      using LeadPBinningType = FlexibleBinningPolicy<std::tuple<decltype(getMixLeadPPt), decltype(getMixCentrality)>,
+                                                      o2::aod::lambdajetpol::Zvtx, decltype(getMixLeadPPt), decltype(getMixCentrality)>;
+      LeadPBinningType leadPBinning{{getMixLeadPPt, getMixCentrality},
+                                     {axisConfigurations.axisPVz, axisConfigurations.axisJetPt, axisConfigurations.axisCentrality},
+                                     true}; // Ignore overflows true
 
       // SameKindPair defaults to CombinationsBlockStrictlyUpperSameIndexPolicy, so no same-event mixing should happen:
-      SameKindPair<o2::aod::RingCollisions, o2::aod::RingLeadPs, MixBinningType> mixPair{
-          mixBinning, fakePolSwitches.mixedEventLeadPWindowSize, -1, collisions, std::make_tuple(leadPs), &mixCache};
+      SameKindPair<o2::aod::RingCollisions, o2::aod::RingLeadPs, LeadPBinningType> leadPPair{
+          leadPBinning, fakePolSwitches.mixedEventWindowSize, -1, collisions, std::make_tuple(leadPs), &mixCache};
 
-      // Uniform random pick among each target's candidate window, via reservoir sampling
-      // (cannibalization of leading particles by neighbouring collisions in Continuous Readout is not a worry as ITS hits are being demanded)
-      std::unordered_map<int64_t, int> mixedLeadPCandidateCount; // how many candidates seen so far, per target
-      auto reservoirInsert = [this, &mixedLeadPCandidateCount, &mixedLeadPByCollision](int64_t targetId, const MixedLeadPInfo& candidate) {
-        int& nSeen = mixedLeadPCandidateCount[targetId];
-        ++nSeen;
-        // The n-th candidate seen for a given target replaces the current pick with probability 1/n, so we never need more than one cached candidate:
-        std::uniform_int_distribution<int> pick(1, nSeen);
-        if (pick(rng) == 1) // Reuses the same rng member as forceRandJet/forceDatalikeJet, rather than a second generator.
-          mixedLeadPByCollision[targetId] = candidate;
-      };
-
-      for (auto it = mixPair.begin(); it != mixPair.end(); ++it) {
+      std::unordered_map<int64_t, int> leadPCandidateCount;
+      for (auto it = leadPPair.begin(); it != leadPPair.end(); ++it) {
         auto& [c1, leadP1, c2, leadP2] = *it; // Iterates over collision pairs and leading particle pairs (structured binding)
         if (leadP1.size() > 0 && leadP2.size() > 0) { // There should always be at least one leadP, given the overflow exclusion above
           float eta1 = 0.f, phi1 = 0.f, eta2 = 0.f, phi2 = 0.f;
           for (auto const& lp : leadP1) { eta1 = lp.leadParticleEta(); phi1 = lp.leadParticlePhi(); break; } // Retrieves the first entry
           for (auto const& lp : leadP2) { eta2 = lp.leadParticleEta(); phi2 = lp.leadParticlePhi(); break; }
           // Each side of the pair is one more candidate for the other collision's reservoir:
-          // (after that, saves the mixed leading particles with a key referring to the two collisions being mixed)
-          reservoirInsert(c1.globalIndex(), {eta2, phi2, c2.globalIndex()});
-          reservoirInsert(c2.globalIndex(), {eta1, phi1, c1.globalIndex()});
+          reservoirInsert(leadPCandidateCount, mixedLeadPByCollision, c1.globalIndex(), {eta2, phi2, c2.globalIndex()});
+          reservoirInsert(leadPCandidateCount, mixedLeadPByCollision, c2.globalIndex(), {eta1, phi1, c1.globalIndex()});
         }
         if (it.isNewWindow()) { // Count each bin-window once, not once per pair inside it
           histos.fill(HIST("JetKinematicsQA/hMixedEventLeadPWindowNeighbours"), it.currentWindowNeighbours());
         }
       }
 
+      // Leading jet:
+      // pt comes from the jetProxyByCollision pre-pass above.
+      // (Collisions whose leading jet failed minLeadJetPt get the -999 sentinel, so they never enter this mixing)
+      auto getMixLeadJetPt = [this, &jetProxyByCollision](o2::aod::RingCollision const& col) {
+        auto cacheIt = jetProxyByCollision.find(col.globalIndex());
+        if (cacheIt == jetProxyByCollision.end() || !cacheIt->second.hasValidLeadingJet)
+          return -999.f;
+        return cacheIt->second.leadingJetPt;
+      };
+      using LeadJetBinningType = FlexibleBinningPolicy<std::tuple<decltype(getMixLeadJetPt), decltype(getMixCentrality)>,
+                                                        o2::aod::lambdajetpol::Zvtx, decltype(getMixLeadJetPt), decltype(getMixCentrality)>;
+      LeadJetBinningType leadJetBinning{{getMixLeadJetPt, getMixCentrality},
+                                         {axisConfigurations.axisPVz, axisConfigurations.axisJetPt, axisConfigurations.axisCentrality},
+                                         true};
+
+      // RingJets is still the associated table (SameKindPair requires one), but its sliced content goes unused here:
+      // the borrowed direction comes from jetProxyByCollision, which already knows which jet is the leading one.
+      SameKindPair<o2::aod::RingCollisions, o2::aod::RingJets, LeadJetBinningType> leadJetPair{
+          leadJetBinning, fakePolSwitches.mixedEventWindowSize, -1, collisions, std::make_tuple(jets), &mixCache};
+
+      std::unordered_map<int64_t, int> leadJetCandidateCount;
+      for (auto it = leadJetPair.begin(); it != leadJetPair.end(); ++it) {
+        auto& [c1, jets1, c2, jets2] = *it; // jets1/jets2 intentionally unused: the leading/subleading jet is already resolved in jetProxyByCollision
+        auto cachedLeadJet1 = jetProxyByCollision.find(c1.globalIndex());
+        auto cachedLeadJet2 = jetProxyByCollision.find(c2.globalIndex());
+        if (cachedLeadJet1 != jetProxyByCollision.end() && cachedLeadJet2 != jetProxyByCollision.end() &&
+            cachedLeadJet1->second.hasValidLeadingJet && cachedLeadJet2->second.hasValidLeadingJet) {
+          reservoirInsert(leadJetCandidateCount, mixedLeadJetByCollision, c1.globalIndex(),
+                          {cachedLeadJet2->second.leadingJetEta, cachedLeadJet2->second.leadingJetPhi, c2.globalIndex()});
+          reservoirInsert(leadJetCandidateCount, mixedLeadJetByCollision, c2.globalIndex(),
+                          {cachedLeadJet1->second.leadingJetEta, cachedLeadJet1->second.leadingJetPhi, c1.globalIndex()});
+        }
+        if (it.isNewWindow()) {
+          histos.fill(HIST("JetKinematicsQA/hMixedEventLeadJetWindowNeighbours"), it.currentWindowNeighbours());
+        }
+      }
+
+      // Subleading jet:
+      auto getMixSubJetPt = [this, &jetProxyByCollision](o2::aod::RingCollision const& col) {
+        auto cacheIt = jetProxyByCollision.find(col.globalIndex());
+        if (cacheIt == jetProxyByCollision.end() || !cacheIt->second.hasValidSubJet)
+          return -999.f;
+        return cacheIt->second.subleadingJetPt;
+      };
+      using SubJetBinningType = FlexibleBinningPolicy<std::tuple<decltype(getMixSubJetPt), decltype(getMixCentrality)>,
+                                                       o2::aod::lambdajetpol::Zvtx, decltype(getMixSubJetPt), decltype(getMixCentrality)>;
+      SubJetBinningType subJetBinning{{getMixSubJetPt, getMixCentrality},
+                                       {axisConfigurations.axisPVz, axisConfigurations.axisJetPt, axisConfigurations.axisCentrality},
+                                       true};
+
+      SameKindPair<o2::aod::RingCollisions, o2::aod::RingJets, SubJetBinningType> subJetPair{
+          subJetBinning, fakePolSwitches.mixedEventWindowSize, -1, collisions, std::make_tuple(jets), &mixCache};
+
+      std::unordered_map<int64_t, int> subJetCandidateCount;
+      for (auto it = subJetPair.begin(); it != subJetPair.end(); ++it) {
+        auto& [c1, jets1, c2, jets2] = *it; // jets1/jets2 intentionally unused: the leading/subleading jet is already resolved in jetProxyByCollision
+        auto cachedSubJet1 = jetProxyByCollision.find(c1.globalIndex());
+        auto cachedSubJet2 = jetProxyByCollision.find(c2.globalIndex());
+        if (cachedSubJet1 != jetProxyByCollision.end() && cachedSubJet2 != jetProxyByCollision.end() &&
+            cachedSubJet1->second.hasValidSubJet && cachedSubJet2->second.hasValidSubJet) {
+          reservoirInsert(subJetCandidateCount, mixedSubJetByCollision, c1.globalIndex(),
+                          {cachedSubJet2->second.subleadingJetEta, cachedSubJet2->second.subleadingJetPhi, c2.globalIndex()});
+          reservoirInsert(subJetCandidateCount, mixedSubJetByCollision, c2.globalIndex(),
+                          {cachedSubJet1->second.subleadingJetEta, cachedSubJet1->second.subleadingJetPhi, c1.globalIndex()});
+        }
+        if (it.isNewWindow()) {
+          histos.fill(HIST("JetKinematicsQA/hMixedEventSubJetWindowNeighbours"), it.currentWindowNeighbours());
+        }
+      }
+
       // Source-usage QA:
-      std::unordered_map<int64_t, int> sourceUsageCount;
-      for (auto const& kv : mixedLeadPByCollision)
-        sourceUsageCount[kv.second.sourceCollisionId]++;
-      for (auto const& kv : sourceUsageCount)
+      // (Per-proxy (HIST() needs literal names, so the fills stay unrolled here)
+      auto leadPUsage = tallySourceUsage(mixedLeadPByCollision);
+      for (auto const& kv : leadPUsage)
         histos.fill(HIST("JetKinematicsQA/hMixedEventLeadPSourceUsageCount"), kv.second);
-      // Eta/phi of a mixed LeadP is stored under the collision that receives the mixing -- reuse the first hit found:
+      // Eta/phi of a mixed proxy is stored under the collision that receives the mixing -- reuse the first hit found:
       for (auto const& kv : mixedLeadPByCollision) {
-        auto usageIt = sourceUsageCount.find(kv.second.sourceCollisionId);
-        if (usageIt == sourceUsageCount.end()) // already consumed below
+        auto usageIt = leadPUsage.find(kv.second.sourceCollisionId);
+        if (usageIt == leadPUsage.end()) // already consumed below
           continue;
         histos.fill(HIST("JetKinematicsQA/pMixedEventLeadPSourceUsageVsEta"), kv.second.eta, usageIt->second);
         histos.fill(HIST("JetKinematicsQA/pMixedEventLeadPSourceUsageVsPhi"), kv.second.phi, usageIt->second);
-        sourceUsageCount.erase(usageIt); // Fill this source exactly once, not once per target it supplied
+        leadPUsage.erase(usageIt); // Fill this source exactly once, not once per target it supplied
+      }
+
+      auto leadJetUsage = tallySourceUsage(mixedLeadJetByCollision);
+      for (auto const& kv : leadJetUsage)
+        histos.fill(HIST("JetKinematicsQA/hMixedEventLeadJetSourceUsageCount"), kv.second);
+      for (auto const& kv : mixedLeadJetByCollision) {
+        auto usageIt = leadJetUsage.find(kv.second.sourceCollisionId);
+        if (usageIt == leadJetUsage.end())
+          continue;
+        histos.fill(HIST("JetKinematicsQA/pMixedEventLeadJetSourceUsageVsEta"), kv.second.eta, usageIt->second);
+        histos.fill(HIST("JetKinematicsQA/pMixedEventLeadJetSourceUsageVsPhi"), kv.second.phi, usageIt->second);
+        leadJetUsage.erase(usageIt);
+      }
+
+      auto subJetUsage = tallySourceUsage(mixedSubJetByCollision);
+      for (auto const& kv : subJetUsage)
+        histos.fill(HIST("JetKinematicsQA/hMixedEventSubJetSourceUsageCount"), kv.second);
+      for (auto const& kv : mixedSubJetByCollision) {
+        auto usageIt = subJetUsage.find(kv.second.sourceCollisionId);
+        if (usageIt == subJetUsage.end())
+          continue;
+        histos.fill(HIST("JetKinematicsQA/pMixedEventSubJetSourceUsageVsEta"), kv.second.eta, usageIt->second);
+        histos.fill(HIST("JetKinematicsQA/pMixedEventSubJetSourceUsageVsPhi"), kv.second.phi, usageIt->second);
+        subJetUsage.erase(usageIt);
       }
     }
 
@@ -1370,7 +1537,7 @@ struct lambdajetpolarizationionsderived {
       float leadPEta = 0.;
       float leadPPhi = 0.;
       float leadPPx = 0., leadPPy = 0., leadPPz = 0.;
-      for (auto const& lp : leadPsInColl) { //
+      for (auto const& lp : leadPsInColl) {
         // Table should contain exactly one entry per collision, but we break immediately to be safe:
         leadPPt = lp.leadParticlePt();
         leadPEta = lp.leadParticleEta();
@@ -1396,9 +1563,9 @@ struct lambdajetpolarizationionsderived {
         // Apply distortion logic:
         const bool hadPreviousProxy = prevJetCache.hadLeadP;
 
-        // doMixedEventLeadP: get this collision's mixing partner (if any) from the LUT built above:
+        // doMixedEventProxies: get this collision's mixing partner (if any) from the LUT built above:
         // (this check is performed only if hasValidLeadingP is true for performance, as the LeadPPt matching for the event mixing would also demand a minimum jet pT)
-        if (fakePolSwitches.doMixedEventLeadP) {
+        if (fakePolSwitches.doMixedEventProxies) {
           auto itMix = mixedLeadPByCollision.find(collId);
           prevJetCache.hadLeadP = (itMix != mixedLeadPByCollision.end()); // Check if this event had a valid mixing target. Reusing prevJetCache
           if (prevJetCache.hadLeadP) {
@@ -1429,33 +1596,14 @@ struct lambdajetpolarizationionsderived {
         }
       }
 
-      // 3) Checking if the event has a leading jet:
-      auto jetsInColl = jets.sliceBy(perColJets, collId);
-      float leadingJetPt = -1.;
-      float subleadingJetPt = -1.;
-      // std::optional avoids undefined behaviour from a default-constructed iterator:
-      // (essentially, just protection for when we fetch jetEta() and the such)
-      std::optional<o2::aod::RingJets::iterator> leadingJet;
-      std::optional<o2::aod::RingJets::iterator> subleadingJet;
-      for (auto const& jet : jetsInColl) {
-        const auto jetpt = jet.jetPt();
-        if (jetpt > leadingJetPt) {
-          // Current leading becomes subleading:
-          subleadingJetPt = leadingJetPt;
-          subleadingJet = leadingJet; // may still be std::nullopt on first pass -- that is fine!
-          // Now update the leading jet:
-          leadingJetPt = jetpt;
-          leadingJet = jet;
-        } else if (jetpt > subleadingJetPt) { // Update subleading only:
-          subleadingJetPt = jetpt;
-          subleadingJet = jet;
-        }
-      }
+      // 3) Fetching leading jet and subleading jet -- Resolved once per collision in the jetProxyByCollision pre-pass:
+      const JetProxyCache& jetProxies = jetProxyByCollision[collId];
+      float leadingJetPt = jetProxies.leadingJetPt;
+      float subleadingJetPt = jetProxies.subleadingJetPt;
 
-      // Some useful bools to check if we have a leading jet and a subleading jet:
-      // const bool hasValidLeadingJet = leadingJetPt > 0.;
-      bool hasValidLeadingJet = leadingJetPt > minLeadJetPt; // Finer control on jet momentum
-      bool hasValidSubJet = subleadingJetPt > minSubLeadJetPt;
+      // Defining local bools that may be changed by applyProxyDistortion:
+      bool hasValidLeadingJet = jetProxies.hasValidLeadingJet;
+      bool hasValidSubJet = jetProxies.hasValidSubJet;
 
       // Build jet vectors (only when the corresponding jet exists):
       // Dummy initialisations are safe: all jet-dependent fills are gated on hasValidLeadingJet / hasValidSubJet.
@@ -1463,18 +1611,28 @@ struct lambdajetpolarizationionsderived {
       float leadingJetPhi = 0.;
       XYZVector leadingJetUnitVec(1., 0., 0.); // dummy (overwritten below)
       if (hasValidLeadingJet) {
-        leadingJetEta = leadingJet->jetEta();
-        leadingJetPhi = leadingJet->jetPhi();
-        // Using internal getters to make code cleaner:
-        leadingJetUnitVec = XYZVector(leadingJet->jetPx(), leadingJet->jetPy(), leadingJet->jetPz()).Unit();
+        leadingJetEta = jetProxies.leadingJetEta;
+        leadingJetPhi = jetProxies.leadingJetPhi;
+        // Rebuild the direction from the cached eta/phi (cheaper than calling jetPx() internal getters and then normalizing with .Unit()):
+        const double inverseCoshEta = 1.0 / std::cosh(leadingJetEta);
+        leadingJetUnitVec = XYZVector(std::cos(leadingJetPhi) * inverseCoshEta, std::sin(leadingJetPhi) * inverseCoshEta, std::tanh(leadingJetEta));
 
         // Apply distortion logic:
         const bool hadPreviousProxy = prevJetCache.hadLeadJet;
-        // TODO: implement event mixing for other proxies. Leading-jet mixing is a separate, independent feature from
-        // doMixedEventLeadP (RingJets has several rows per collision, unlike RingLeadPs, so it can't just reuse
-        // the same SameKindPair setup) -- would need its own switch (or we can just add everything to the same switch and rename it),
-        // its own leading-jet-pt/Zvtx/centrality FlexibleBinningPolicy, and its own SameKindPair<RingCollisions, RingJets, ...> + LUT, mirroring the
-        // leadP one below but sourcing the pt dimension from a per-collision max-pt scan instead of a plain read.
+        if (fakePolSwitches.doMixedEventProxies) {
+          // Get this collision's leading-jet mixing partner (if any) from the LUT built above:
+          auto itMix = mixedLeadJetByCollision.find(collId);
+          prevJetCache.hadLeadJet = (itMix != mixedLeadJetByCollision.end());
+          if (prevJetCache.hadLeadJet) {
+            prevJetCache.leadJetEta = itMix->second.eta;
+            prevJetCache.leadJetPhi = itMix->second.phi;
+          }
+          histos.fill(HIST("JetKinematicsQA/hMixedEventLeadJetOutcome"), prevJetCache.hadLeadJet ? 1 : 0);
+          if (prevJetCache.hadLeadJet) {
+            histos.fill(HIST("JetKinematicsQA/h2dMixedLeadJetEtaVsLeadJetEta"), prevJetCache.leadJetEta, leadingJetEta);
+            histos.fill(HIST("JetKinematicsQA/h2dMixedLeadJetPhiVsLeadJetPhi"), prevJetCache.leadJetPhi, leadingJetPhi);
+          }
+        }
         applyProxyDistortion(hasValidLeadingJet, leadingJetPt, leadingJetEta, leadingJetPhi, leadingJetUnitVec, 
                              minLeadJetPt, prevJetCache.hadLeadJet, prevJetCache.leadJetEta, prevJetCache.leadJetPhi,
                              etaLeadPDist, phiLeadPDist, rng);
@@ -1496,13 +1654,27 @@ struct lambdajetpolarizationionsderived {
       float subleadingJetPhi = 0.;
       XYZVector subJetUnitVec(1., 0., 0.);
       if (hasValidSubJet) {
-        subleadingJetEta = subleadingJet->jetEta();
-        subleadingJetPhi = subleadingJet->jetPhi();
-        subJetUnitVec = XYZVector(subleadingJet->jetPx(), subleadingJet->jetPy(), subleadingJet->jetPz()).Unit();
+        subleadingJetEta = jetProxies.subleadingJetEta;
+        subleadingJetPhi = jetProxies.subleadingJetPhi;
+        const double inverseCoshEtaSub = 1.0 / std::cosh(subleadingJetEta);
+        subJetUnitVec = XYZVector(std::cos(subleadingJetPhi) * inverseCoshEtaSub, std::sin(subleadingJetPhi) * inverseCoshEtaSub, std::tanh(subleadingJetEta));
 
         // Apply distortion logic:
         const bool hadPreviousProxy = prevJetCache.hadSubJet;
-        // TODO: implement event mixing for other proxies
+        if (fakePolSwitches.doMixedEventProxies) {
+          // Get this collision's subleading-jet mixing partner (if any) from the LUT built above:
+          auto itMix = mixedSubJetByCollision.find(collId);
+          prevJetCache.hadSubJet = (itMix != mixedSubJetByCollision.end());
+          if (prevJetCache.hadSubJet) {
+            prevJetCache.subJetEta = itMix->second.eta;
+            prevJetCache.subJetPhi = itMix->second.phi;
+          }
+          histos.fill(HIST("JetKinematicsQA/hMixedEventSubJetOutcome"), prevJetCache.hadSubJet ? 1 : 0);
+          if (prevJetCache.hadSubJet) {
+            histos.fill(HIST("JetKinematicsQA/h2dMixedSubJetEtaVsSubJetEta"), prevJetCache.subJetEta, subleadingJetEta);
+            histos.fill(HIST("JetKinematicsQA/h2dMixedSubJetPhiVsSubJetPhi"), prevJetCache.subJetPhi, subleadingJetPhi);
+          }
+        }
         applyProxyDistortion(hasValidSubJet, subleadingJetPt, subleadingJetEta, subleadingJetPhi, subJetUnitVec, 
                              minSubLeadJetPt, prevJetCache.hadSubJet, prevJetCache.subJetEta, prevJetCache.subJetPhi,
                              etaLeadPDist, phiLeadPDist, rng);
