@@ -962,7 +962,7 @@ struct TwoParticleCorrelationsMpi {
     const double priorExposure = cfgEventSeedPriorExposure;
     constexpr double Tiny = 1.e-15;
     bool hasPositivePrior = false;
-    for (const auto value : componentYields) {
+    for (const auto& value : componentYields) {
       hasPositivePrior = hasPositivePrior || value > 0.0;
     }
     if (!hasPositivePrior) {
