@@ -181,7 +181,9 @@ struct Estimators {
   }
 };
 bool enabledEstimatorsArray[Estimators::nEstimators];
-static const int defaultEstimators[Estimators::nEstimators][nParameters]{{0},  // FT0A
+static constexpr int nEstimatorParameters = 1;
+static const std::vector<std::string> parameterEstimatorNames{"Enable"};
+static const int defaultEstimators[Estimators::nEstimators][nEstimatorParameters]{{0},  // FT0A
                                                                          {0},  // FT0C
                                                                          {1},  // FT0AC
                                                                          {0},  // FV0A
@@ -256,7 +258,7 @@ struct McParticlePrediction {
                                                  {defaultParticles[0], PIDExtended::NIDsTot, nParameters, PIDExtended::arrayNames(), parameterNames},
                                                  "Particles enabled"};
   Configurable<LabeledArray<int>> enabledEstimators{"enabledEstimators",
-                                                    {defaultEstimators[0], Estimators::nEstimators, nParameters, Estimators::arrayNames(), parameterNames},
+                                                    {defaultEstimators[0], Estimators::nEstimators, nEstimatorParameters, Estimators::arrayNames(), parameterEstimatorNames},
                                                     "Estimators enabled"};
   Configurable<bool> selectInelGt0{"selectInelGt0", true, "Select only inelastic events"};
   Configurable<bool> selectPrimariesForMultiplicity{"selectPrimariesForMultiplicity", true, "Select only primary particles for multiplicity computation"};
