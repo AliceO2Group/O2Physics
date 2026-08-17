@@ -328,6 +328,10 @@ struct HStrangeCorrelation {
     Configurable<bool> triggerTracksRequireITS{"triggerTracksRequireITS", true, "must match triggerRequireITS in hStrangeCorrelationFilter.cxx"};
     Configurable<int> triggerTracksMaxSharedClusters{"triggerTracksMaxSharedClusters", 200, "must match triggerMaxTPCSharedClusters in hStrangeCorrelationFilter.cxx"};
     Configurable<bool> triggerTracksRequireLayer0{"triggerTracksRequireLayer0", false, "must match triggerRequireL0 in hStrangeCorrelationFilter.cxx"};
+    // Separate from trackSelection.dcaXY*, which is this task's systematic-variation knob: the
+    // replica must follow the value the filter was run with, not the varied analysis-level one.
+    Configurable<float> triggerTracksDcaXYconstant{"triggerTracksDcaXYconstant", 0.004f, "must match dcaXYconstant in hStrangeCorrelationFilter.cxx"};
+    Configurable<float> triggerTracksDcaXYpTdep{"triggerTracksDcaXYpTdep", 0.013f, "must match dcaXYpTdep in hStrangeCorrelationFilter.cxx"};
   } pairLossK0Configurations;
 
   struct ValidCollision {
@@ -503,11 +507,16 @@ struct HStrangeCorrelation {
     int tpcSharedClusters = 0;
     int itsClusters = 0;
     bool hasLayer0 = false;
+    // Needed to replicate the declarative preFilterTracks DCAxy cut of
+    // hStrangeCorrelationFilter.cxx, which uses exactly these two columns.
+    float dcaXY = 0.0f;
+    float signed1Pt = 0.0f;
   };
 
   // First-failing-condition breakdown for the stage3->4 gate ("Trigger track, best collision"
-  // -> "Trigger in TriggerTracks"). Order mirrors the early-return order of isValidTrigger()
-  // in hStrangeCorrelationFilter.cxx exactly, so "first reason to fail" means the same thing here.
+  // -> "Trigger in TriggerTracks"). Order mirrors the order in which hStrangeCorrelationFilter.cxx
+  // applies its conditions -- the declarative preFilterTracks DCAxy cut first, then the early
+  // returns of isValidTrigger() -- so "first reason to fail" means the same thing here.
   //
   // Pass/fail itself is decided by the real TriggerTracks table, not by the replica below;
   // the replica only attributes a reason once the table has already said "not in". That keeps
@@ -515,6 +524,9 @@ struct HStrangeCorrelation {
   // drifted away from the filter's, and routes any such drift into the two dedicated bins.
   enum PairLossTriggerTracksFailureReason : int {
     PairLossTriggerTracksPassed = 0,
+    // First, because preFilterTracks is applied to the track table before isValidTrigger() ever
+    // sees the track, so DCAxy is the earliest condition a trigger candidate can fail.
+    PairLossTriggerTracksFailDcaXY,
     PairLossTriggerTracksFailEta,
     PairLossTriggerTracksFailPt,
     PairLossTriggerTracksFailCrossedRows,
@@ -533,6 +545,7 @@ struct HStrangeCorrelation {
 
   static constexpr std::array<std::string_view, PairLossTriggerTracksNReasons> PairLossTriggerTracksFailureNames = {
     "Passed (really in TriggerTracks)",
+    "Failed DCAxy prefilter",
     "Failed eta window",
     "Failed pT window",
     "Failed min TPC crossed rows",
@@ -675,15 +688,22 @@ struct HStrangeCorrelation {
       .tpcCrossedRows = track.tpcNClsCrossedRows(),
       .tpcSharedClusters = track.tpcNClsShared(),
       .itsClusters = track.itsNCls(),
-      .hasLayer0 = static_cast<bool>(TESTBIT(track.itsClusterMap(), 0))};
+      .hasLayer0 = static_cast<bool>(TESTBIT(track.itsClusterMap(), 0)),
+      .dcaXY = track.dcaXY(),
+      .signed1Pt = track.signed1Pt()};
   }
 
-  // Replicates isValidTrigger() from hStrangeCorrelationFilter.cxx condition-by-condition
-  // (same early-return order) so that, for a trigger already known to exist in the best
+  // Replicates preFilterTracks and isValidTrigger() from hStrangeCorrelationFilter.cxx
+  // condition-by-condition (same order) so that, for a trigger already known to exist in the best
   // collision (stage 3), we can tell which single cut is responsible for it not making it
   // into the TriggerTracks table (stage 4), instead of only knowing that it failed overall.
   int classifyTriggerTracksFailure(PairLossTrackInfo const& info)
   {
+    // Negation of "Filter preFilterTracks = nabs(dcaXY) < dcaXYconstant + dcaXYpTdep * nabs(signed1Pt)":
+    // same columns, same formula, and >= so that the boundary is rejected exactly as the filter does.
+    if (std::abs(info.dcaXY) >= pairLossK0Configurations.triggerTracksDcaXYconstant + pairLossK0Configurations.triggerTracksDcaXYpTdep * std::abs(info.signed1Pt)) {
+      return PairLossTriggerTracksFailDcaXY;
+    }
     if (info.eta > pairLossK0Configurations.triggerTracksEtaMax || info.eta < pairLossK0Configurations.triggerTracksEtaMin) {
       return PairLossTriggerTracksFailEta;
     }
@@ -2879,14 +2899,23 @@ struct HStrangeCorrelation {
     if (doprocessClosureTest) {
       if (pairLossK0Configurations.doClosureTestStages) {
         // Naming inside ClosureTest/PairLossK0: each folder is one reconstruction
-        // requirement imposed on the same truth h-K0 pair.
-        //   Truth        no reconstruction requirement at all
-        //   AnyTrack     trigger must have a reconstructed-track match (any associated collision)
-        //   AnyTrackK0   K0 must have a reconstructed-V0-candidate match (any associated collision)
-        //   AnyTrackBoth both requirements at the same time
-        // The object-level (pT, eta, phi) spectra of the two individual
-        // requirements live in Truth/ and AnyTrack/, since each object is
-        // affected by one requirement only.
+        // requirement imposed on the same truth h-K0 pair. "Any" means the object
+        // must have at least one reconstructed counterpart (a track with a
+        // matching MC label for the trigger, a V0 candidate with a matching MC
+        // core for the K0) in any reconstructed collision associated with this MC
+        // collision, with no quality selection whatsoever.
+        //   folder        trigger  K0      processPairLossK0MC stage
+        //   Truth         truth    truth   PairLossGenPair
+        //   AnyTrack      any      truth   PairLossTriggerAnyCollision
+        //   AnyTrackK0    truth    any     PairLossV0AnyCollision
+        //   AnyTrackBoth  any      any     both stages at once
+        // Every folder has the same three objects -- sameEvent/K0Short, hTrigger,
+        // hK0Short -- and each of them is filled at the level its own folder
+        // prescribes, so a folder can be normalised without looking at any other.
+        // Consequence: the single-particle spectra repeat across folders in pairs
+        // (Truth/hTrigger == AnyTrackK0/hTrigger, AnyTrack/hTrigger ==
+        // AnyTrackBoth/hTrigger, Truth/hK0Short == AnyTrack/hK0Short,
+        // AnyTrackK0/hK0Short == AnyTrackBoth/hK0Short). That is intended.
         histos.add("ClosureTest/PairLossK0/Truth/sameEvent/K0Short", "truth h-K0 pairs with the processPairLossK0MC selections", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
         histos.add("ClosureTest/PairLossK0/AnyTrack/sameEvent/K0Short", "truth h-K0 pairs whose truth trigger has a reconstructed-track match in any associated collision", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
         histos.add("ClosureTest/PairLossK0/AnyTrackK0/sameEvent/K0Short", "truth h-K0 pairs whose truth K0 has a V0-candidate match in any associated collision", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
@@ -2894,7 +2923,11 @@ struct HStrangeCorrelation {
         histos.add("ClosureTest/PairLossK0/Truth/hTrigger", "truth triggers with the processPairLossK0MC selections;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
         histos.add("ClosureTest/PairLossK0/Truth/hK0Short", "truth K0s with the processPairLossK0MC selections;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
         histos.add("ClosureTest/PairLossK0/AnyTrack/hTrigger", "truth triggers with a reconstructed-track match in any associated collision;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
-        histos.add("ClosureTest/PairLossK0/AnyTrack/hK0Short", "truth K0s with a V0-candidate match in any associated collision;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
+        histos.add("ClosureTest/PairLossK0/AnyTrack/hK0Short", "truth K0s; the K0 stays at truth level in this folder;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
+        histos.add("ClosureTest/PairLossK0/AnyTrackK0/hTrigger", "truth triggers; the trigger stays at truth level in this folder;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
+        histos.add("ClosureTest/PairLossK0/AnyTrackK0/hK0Short", "truth K0s with a V0-candidate match in any associated collision;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
+        histos.add("ClosureTest/PairLossK0/AnyTrackBoth/hTrigger", "truth triggers with a reconstructed-track match in any associated collision;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
+        histos.add("ClosureTest/PairLossK0/AnyTrackBoth/hK0Short", "truth K0s with a V0-candidate match in any associated collision;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
       }
       for (int i = 0; i < AssocParticleTypes; i++) {
         if (TESTBIT(doCorrelation, i)) {
@@ -5199,16 +5232,24 @@ struct HStrangeCorrelation {
           pairLossTruthTriggers.push_back(leadingTriggerCopy);
         }
 
+        // One entry per object per folder, at the level that folder prescribes:
+        // the trigger is at truth level in Truth/ and AnyTrackK0/, at any level in
+        // AnyTrack/ and AnyTrackBoth/; the K0 is at truth level in Truth/ and
+        // AnyTrack/, at any level in AnyTrackK0/ and AnyTrackBoth/.
         for (auto const& truthTrigger : pairLossTruthTriggers) {
           histos.fill(HIST("ClosureTest/PairLossK0/Truth/hTrigger"), truthTrigger.pt, truthTrigger.eta, truthTrigger.phi);
+          histos.fill(HIST("ClosureTest/PairLossK0/AnyTrackK0/hTrigger"), truthTrigger.pt, truthTrigger.eta, truthTrigger.phi);
           if (pairLossAnyTrackMcParticleIds.find(truthTrigger.globalIndex) != pairLossAnyTrackMcParticleIds.end()) {
             histos.fill(HIST("ClosureTest/PairLossK0/AnyTrack/hTrigger"), truthTrigger.pt, truthTrigger.eta, truthTrigger.phi);
+            histos.fill(HIST("ClosureTest/PairLossK0/AnyTrackBoth/hTrigger"), truthTrigger.pt, truthTrigger.eta, truthTrigger.phi);
           }
         }
         for (auto const& truthK0 : pairLossTruthK0s) {
           histos.fill(HIST("ClosureTest/PairLossK0/Truth/hK0Short"), truthK0.pt, truthK0.eta, truthK0.phi);
+          histos.fill(HIST("ClosureTest/PairLossK0/AnyTrack/hK0Short"), truthK0.pt, truthK0.eta, truthK0.phi);
           if (pairLossAnyV0McParticleIds.find(truthK0.globalIndex) != pairLossAnyV0McParticleIds.end()) {
-            histos.fill(HIST("ClosureTest/PairLossK0/AnyTrack/hK0Short"), truthK0.pt, truthK0.eta, truthK0.phi);
+            histos.fill(HIST("ClosureTest/PairLossK0/AnyTrackK0/hK0Short"), truthK0.pt, truthK0.eta, truthK0.phi);
+            histos.fill(HIST("ClosureTest/PairLossK0/AnyTrackBoth/hK0Short"), truthK0.pt, truthK0.eta, truthK0.phi);
           }
         }
 
