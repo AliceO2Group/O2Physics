@@ -76,13 +76,10 @@ struct FlowZdcTask {
   Configurable<float> maxNch{"maxNch", 2500, "Max Nch (|eta|<0.8)"};
   Configurable<int> nBinsTDC{"nBinsTDC", 150, "nbinsTDC"};
   Configurable<int> nBinsCent{"nBinsCent", 10, "nBinsCent"};
-  Configurable<float> minTdcZn{"minTdcZn", 4.0, "minimum TDC for ZN"};
+  Configurable<float> minTdcZn{"minTdcZn", -4.0, "minimum TDC for ZN"};
   Configurable<float> maxTdcZn{"maxTdcZn", 4.0, "maximum TDC for ZN"};
   Configurable<float> minTdcZp{"minTdcZp", -4.0, "minimum TDC for ZP"};
-  Configurable<float> maxTdcZp{"maxTdcZp", -4.0, "maximum TDC for ZP"};
-  Configurable<bool> applyZdcCorrection{"applyZdcCorrection", false, "Apply ZP correction?"};
-  Configurable<float> zpaCoeff{"zpaCoeff", 0.021f, "Coefficient a in zpa correction"};
-  Configurable<float> zpcCoeff{"zpcCoeff", 0.021f, "Coefficient b in zpc correction"};
+  Configurable<float> maxTdcZp{"maxTdcZp", 4.0, "maximum TDC for ZP"};
   Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
   Configurable<float> posYcut{"posYcut", +10.0, "y-vertex position cut"};
   Configurable<float> posXcut{"posXcut", +10.0, "x-vertex position cut"};
@@ -94,6 +91,7 @@ struct FlowZdcTask {
   // event selection
   Configurable<bool> isNoCollInTimeRangeStrict{"isNoCollInTimeRangeStrict", true, "isNoCollInTimeRangeStrict?"};
   Configurable<bool> isNoCollInTimeRangeStandard{"isNoCollInTimeRangeStandard", false, "isNoCollInTimeRangeStandard?"};
+  Configurable<bool> isNoSameBunchPileup{"isNoSameBunchPileup", true, "isNoSameBunchPileup?"};
   Configurable<bool> isNoCollInRofStrict{"isNoCollInRofStrict", true, "isNoCollInRofStrict?"};
   Configurable<bool> isNoCollInRofStandard{"isNoCollInRofStandard", false, "isNoCollInRofStandard?"};
   Configurable<bool> isNoHighMultCollInPrevRof{"isNoHighMultCollInPrevRof", true, "isNoHighMultCollInPrevRof?"};
@@ -302,10 +300,12 @@ struct FlowZdcTask {
     }
     histos.fill(HIST("hEventCounter"), EvCutLabel::SelEigth);
 
-    if (!col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-      return false;
+    if (isNoSameBunchPileup) {
+      if (!col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+        return false;
     }
-    histos.fill(HIST("hEventCounter"), EvCutLabel::NoSameBunchPileup);
+      histos.fill(HIST("hEventCounter"), EvCutLabel::NoSameBunchPileup);
+    }
 
     if (!col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
@@ -497,14 +497,6 @@ struct FlowZdcTask {
     float commonSumZna = zdc.energyCommonZNA();
     float commonSumZpc = zdc.energyCommonZPC();
     float commonSumZpa = zdc.energyCommonZPA();
-    if (applyZdcCorrection) {
-      const float a = zpaCoeff;
-      const float b = zpcCoeff;
-      zpA = zpA - a * znA;
-      commonSumZpa = commonSumZpa - a * commonSumZna;
-      zpC = zpC - b * znC;
-      commonSumZpc = commonSumZpc - b * commonSumZnc;
-    }
     float aZEM1{zdc.amplitudeZEM1()};
     float aZEM2{zdc.amplitudeZEM2()};
     float sumZEMs{aZEM1 + aZEM2};
