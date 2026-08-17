@@ -899,7 +899,7 @@ struct k892hadronphoton {
       if (std::abs(kshortPDGCodeGrandMother) == o2::constants::physics::Pdg::kK0Star892 && std::abs(photonPDGCodeGrandMother) == o2::constants::physics::Pdg::kK0Star892 && (photonGlobalIndexGrandMother == kshortGlobalIndexGrandMother)) // K*(892)0
         histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_KStarPionKaon"), kstarpT, kstarMass);
 
-      if (photonGlobalIndexGrandMother == kshortGlobalIndexGrandMother) {
+      if ((photonGlobalIndexGrandMother == kshortGlobalIndexGrandMother) && (photonPDGCodeGrandMother != o2::constants::physics::Pdg::kK0Star892) && (photonPDGCodeGrandMother != PDG_t::kProton)) {
         histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassKStar_PionKaon"), kstarpT, kstarMass);
         histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPionKaonMother"), kshortPDGCodeGrandMother, photonPDGCodeGrandMother);
       }
