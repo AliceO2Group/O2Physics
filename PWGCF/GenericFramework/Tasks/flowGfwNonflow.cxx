@@ -242,6 +242,12 @@ struct FlowGfwNonflow {
     ProtonID,
     SpeciesCount
   };
+  enum NchSelector {
+    TableSize,
+    Corrected,
+    Uncorrected,
+    ResponseMatrixCorrected
+  };
 
   // Generic Framework
   GFW* fGFW = new GFW();
@@ -650,7 +656,7 @@ struct FlowGfwNonflow {
         LOGF(fatal, "Could not load Nch response matrix from %s", cfgCorrections.cfgNchResponsePath.value.c_str());
       }
       LOGF(info, "Loaded Nch response matrix from %s", cfgCorrections.cfgNchResponsePath.value.c_str());
-    } else if (cfgUseNchCorrection == 3) {
+    } else if (cfgUseNchCorrection == NchSelector::ResponseMatrixCorrected) {
       LOGF(fatal, "cfgUseNchCorrection=3 requires cfgNchResponsePath");
     }
     correctionsConfig.correctionsLoaded = true;
@@ -665,7 +671,7 @@ struct FlowGfwNonflow {
     const int recoBin = response->GetXaxis()->FindFixBin(multReconstructed);
     if (recoBin < 1 || recoBin > response->GetNbinsX()) {
       LOGF(warn, "Reconstructed Nch %u is outside the response matrix; using the uncorrected value", multReconstructed);
-      return reconstructedNch;
+      return multReconstructed;
     }
     double sumWeights = 0.;
     double sumGeneratedNch = 0.;
@@ -1088,16 +1094,16 @@ struct FlowGfwNonflow {
 
     float multiplicity = 0.f;
     switch (cfgUseNchCorrection) {
-      case 0:
+      case NchSelector::TableSize:
         multiplicity = tracks.size();
         break;
-      case 1:
+      case NchSelector::Corrected:
         multiplicity = acceptedTracks.total;
         break;
-      case 2:
+      case NchSelector::Uncorrected:
         multiplicity = acceptedTracks.totaluncorr;
         break;
-      case 3:
+      case NchSelector::ResponseMatrixCorrected:
         multiplicity = (dt == Gen) ? acceptedTracks.totaluncorr : getResponseCorrectedNch(acceptedTracks.totaluncorr);
         break;
       default:
