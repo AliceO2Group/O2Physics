@@ -79,7 +79,7 @@ struct FlowGfwNonflow {
   Configurable<int> cfgMpar{"cfgMpar", 4, "Highest order of pt-pt correlations"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A, 4:NTPV, 5:NGlobal, 6:MFT"};
   Configurable<bool> cfgUseNch{"cfgUseNch", false, "Do correlations as function of Nch"};
-  Configurable<int> cfgUseNchCorrection{"cfgUseNchCorrection", 1, "Nch used on the x-axis; 0: tracks table size, 1: efficiency-corrected, 2: accepted reconstructed, 3: response-matrix corrected"};
+  Configurable<int> cfgUseNchCorrection{"cfgUseNchCorrection", 1, "Nch used on the x-axis; 0: tracks table size, 1: efficiency-corrected, 2: accepted reconstructed, 3: Reco.-gen. response-matrix corrected"};
   Configurable<bool> cfgRunByRun{"cfgRunByRun", false, "Use run-by-run NUA"};
   Configurable<bool> cfgFillQA{"cfgFillQA", false, "Fill QA histograms"};
   Configurable<bool> cfgUseCentralMoments{"cfgUseCentralMoments", true, "Use central moments in vn-pt calculations"};
