@@ -774,7 +774,7 @@ struct lambdajetpolarizationions {
       histos.add("AntiLambda/hAntiLambdasPerEvent", "hAntiLambdasPerEvent;N_{#bar{#Lambda}} per event;Counts", kTH1D, {{15, 0, 15}});
     }
     if (analyseLambda && analyseAntiLambda) {
-      histos.add("hAmbiguousLambdaCandidates", "hAmbiguousLambdaCandidates;Integrated counts;Counts", kTH1D, {{1, 0, 1}});
+      // histos.add("hAmbiguousLambdaCandidates", "hAmbiguousLambdaCandidates;Integrated counts;Counts", kTH1D, {{1, 0, 1}}); // No longer required: v0 selection flow already considers this
       histos.add("hAmbiguousPerEvent", "hAmbiguousPerEvent;N_{ambiguous} per event;Counts", kTH1D, {{15, 0, 15}});
       histos.add("hNonAmbiguousPerEvent", "hNonAmbiguousPerEvent;N_{non-ambiguous} per event;Counts", kTH1D, {{25, 0, 25}}); // To understand the population of correlated Lambda-likes per event
       histos.add("hLambdasAndAntiLambdasPerEvent", "hLambdasAndAntiLambdasPerEvent;N_{#Lambda}+N_{#bar{#Lambda}} per event;Counts", kTH1D, {{25, 0, 25}}); // Alternative check that shows how bad is the possibly correlated full population (Ambig+NonAmbig)
@@ -1896,7 +1896,7 @@ struct lambdajetpolarizationions {
       // int lambdaIdx = -1; // No need to pass armenteros
       if (isLambda && isAntiLambda) {
         NAmbiguous++;
-        histos.fill(HIST("hAmbiguousLambdaCandidates"), 0);
+        // histos.fill(HIST("hAmbiguousLambdaCandidates"), 0);
         if (doArmenterosQA)
           histos.fill(HIST("GeneralQA/h2dArmenterosFullSelectedAmbiguous"), v0.alpha(), v0.qtarm()); // To know the discerning power of Armenteros in an Ambiguous Lambda vs AntiLambda case
 

@@ -1281,17 +1281,28 @@ struct lambdajetpolarizationionsderived {
       SameKindPair<o2::aod::RingCollisions, o2::aod::RingLeadPs, MixBinningType> mixPair{
           mixBinning, fakePolSwitches.mixedEventLeadPWindowSize, -1, collisions, std::make_tuple(leadPs), &mixCache};
 
-      // "Last neighbour wins" if a collision appears in more than one pair within its window -- simple and
-      // deterministic, not a uniform-random pick among the window's members:
+      // Uniform random pick among each target's candidate window, via reservoir sampling
+      // (cannibalization of leading particles by neighbouring collisions in Continuous Readout is not a worry as ITS hits are being demanded)
+      std::unordered_map<int64_t, int> mixedLeadPCandidateCount; // how many candidates seen so far, per target
+      auto reservoirInsert = [this, &mixedLeadPCandidateCount, &mixedLeadPByCollision](int64_t targetId, const MixedLeadPInfo& candidate) {
+        int& nSeen = mixedLeadPCandidateCount[targetId];
+        ++nSeen;
+        // The n-th candidate seen for a given target replaces the current pick with probability 1/n, so we never need more than one cached candidate:
+        std::uniform_int_distribution<int> pick(1, nSeen);
+        if (pick(rng) == 1) // Reuses the same rng member as forceRandJet/forceDatalikeJet, rather than a second generator.
+          mixedLeadPByCollision[targetId] = candidate;
+      };
+
       for (auto it = mixPair.begin(); it != mixPair.end(); ++it) {
         auto& [c1, leadP1, c2, leadP2] = *it; // Iterates over collision pairs and leading particle pairs (structured binding)
         if (leadP1.size() > 0 && leadP2.size() > 0) { // There should always be at least one leadP, given the overflow exclusion above
           float eta1 = 0.f, phi1 = 0.f, eta2 = 0.f, phi2 = 0.f;
           for (auto const& lp : leadP1) { eta1 = lp.leadParticleEta(); phi1 = lp.leadParticlePhi(); break; } // Retrieves the first entry
           for (auto const& lp : leadP2) { eta2 = lp.leadParticleEta(); phi2 = lp.leadParticlePhi(); break; }
-          // Saving the mixed leading particles with a key referring to the two collisions being mixed:
-          mixedLeadPByCollision[c1.globalIndex()] = {eta2, phi2, c2.globalIndex()};
-          mixedLeadPByCollision[c2.globalIndex()] = {eta1, phi1, c1.globalIndex()};
+          // Each side of the pair is one more candidate for the other collision's reservoir:
+          // (after that, saves the mixed leading particles with a key referring to the two collisions being mixed)
+          reservoirInsert(c1.globalIndex(), {eta2, phi2, c2.globalIndex()});
+          reservoirInsert(c2.globalIndex(), {eta1, phi1, c1.globalIndex()});
         }
         if (it.isNewWindow()) { // Count each bin-window once, not once per pair inside it
           histos.fill(HIST("JetKinematicsQA/hMixedEventLeadPWindowNeighbours"), it.currentWindowNeighbours());
@@ -1359,9 +1370,8 @@ struct lambdajetpolarizationionsderived {
       float leadPEta = 0.;
       float leadPPhi = 0.;
       float leadPPx = 0., leadPPy = 0., leadPPz = 0.;
-      for (auto const& lp : leadPsInColl) {
-        // Table should contain exactly one entry per collision,
-        // but we break immediately to be safe:
+      for (auto const& lp : leadPsInColl) { //
+        // Table should contain exactly one entry per collision, but we break immediately to be safe:
         leadPPt = lp.leadParticlePt();
         leadPEta = lp.leadParticleEta();
         leadPPhi = lp.leadParticlePhi();
