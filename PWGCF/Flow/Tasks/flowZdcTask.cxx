@@ -303,7 +303,7 @@ struct FlowZdcTask {
     if (isNoSameBunchPileup) {
       if (!col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
         return false;
-    }
+      }
       histos.fill(HIST("hEventCounter"), EvCutLabel::NoSameBunchPileup);
     }
 
