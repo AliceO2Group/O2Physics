@@ -59,8 +59,8 @@ using namespace std;
 constexpr int IdBitPI = 0; // Identificationi bits for PID checks
 constexpr int IdBitKA = 1;
 constexpr int IdBitPR = 2;
-constexpr int IdBitEL = 3;
-constexpr int IdBitDE = 4;
+// constexpr int IdBitEL = 3;
+// constexpr int IdBitDE = 4;
 
 constexpr int McBitPI = 0; // MC particle identification bits
 constexpr int McBitKA = 1;
