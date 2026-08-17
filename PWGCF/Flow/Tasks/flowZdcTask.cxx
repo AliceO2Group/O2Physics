@@ -72,10 +72,10 @@ struct FlowZdcTask {
   Configurable<float> maxNch{"maxNch", 2500, "Max Nch (|eta|<0.8)"};
   Configurable<int> nBinsTDC{"nBinsTDC", 150, "nbinsTDC"};
   Configurable<int> nBinsCent{"nBinsCent", 10, "nBinsCent"};
-  Configurable<float> minTdcZn{"minTdcZn", -4.0, "minimum TDC for ZN"};
-  Configurable<float> maxTdcZn{"maxTdcZn", 4.0, "maximum TDC for ZN"};
-  Configurable<float> minTdcZp{"minTdcZp", -4.0, "minimum TDC for ZP"};
-  Configurable<float> maxTdcZp{"maxTdcZp", 4.0, "maximum TDC for ZP"};
+  Configurable<float> minTdcZn{"minTdcZn", -2.0, "minimum TDC for ZN"};
+  Configurable<float> maxTdcZn{"maxTdcZn", 2.0, "maximum TDC for ZN"};
+  Configurable<float> minTdcZp{"minTdcZp", -2.0, "minimum TDC for ZP"};
+  Configurable<float> maxTdcZp{"maxTdcZp", 2.0, "maximum TDC for ZP"};
   Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
   Configurable<float> posYcut{"posYcut", +10.0, "y-vertex position cut"};
   Configurable<float> posXcut{"posXcut", +10.0, "x-vertex position cut"};
