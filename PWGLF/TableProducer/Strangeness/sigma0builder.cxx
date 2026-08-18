@@ -1622,7 +1622,7 @@ struct sigma0builder {
     GenInfo.IsPrimary = mcParticle.isPhysicalPrimary();
     GenInfo.IsV0Lambda = mcParticle.pdgCode() == PDG_t::kLambda0;                                // 3122
     GenInfo.IsV0AntiLambda = mcParticle.pdgCode() == PDG_t::kLambda0Bar;                         //-3122
-    GenInfo.IsV0KShort = mcParticle.pdgCode() == PDG_t::kK0Short;                                // 310 // also abs ?
+    GenInfo.IsV0KShort = std::abs(mcParticle.pdgCode()) == PDG_t::kK0Short;                      // 310
     GenInfo.IsPi0 = mcParticle.pdgCode() == PDG_t::kPi0;                                         // 111;
     GenInfo.IsSigma0 = mcParticle.pdgCode() == PDG_t::kSigma0;                                   // PDG_t::kSigma0
     GenInfo.IsAntiSigma0 = mcParticle.pdgCode() == PDG_t::kSigma0Bar;                            //-3212
