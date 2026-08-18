@@ -23,6 +23,7 @@
 
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
 #include <Framework/Array2D.h>
 #include <Framework/Concepts.h>
 #include <Framework/HistogramRegistry.h>

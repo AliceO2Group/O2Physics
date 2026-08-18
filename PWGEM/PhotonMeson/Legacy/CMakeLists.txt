@@ -23,3 +23,13 @@ o2physics_add_dpl_workflow(create-pcm
                     SOURCES createPCM.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(gammaconversions
+                    SOURCES gammaConversions.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(gammaconversionstruthonlymc
+                    SOURCES gammaConversionsTruthOnlyMc.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

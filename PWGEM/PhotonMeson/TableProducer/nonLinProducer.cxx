@@ -21,6 +21,7 @@
 #include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>

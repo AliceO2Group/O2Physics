@@ -11,16 +11,6 @@
 
 add_subdirectory(Converters)
 
-o2physics_add_dpl_workflow(gammaconversions
-                    SOURCES gammaConversions.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(gammaconversionstruthonlymc
-                    SOURCES gammaConversionsTruthOnlyMc.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(emcal-pi0-qc
                     SOURCES emcalPi0Qc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore

@@ -29,6 +29,7 @@
 #include <CommonConstants/PhysicsConstants.h>
 #include <EMCALBase/Geometry.h>
 #include <EMCALBase/GeometryBase.h>
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -342,7 +343,7 @@ struct bcWiseClusterSkimmer {
       int iCellID = -1;
       try {
         iCellID = emcal::Geometry::GetInstance()->GetAbsCellIdFromEtaPhi(mcParticles.iteratorAt(daughterId).eta(), mcParticles.iteratorAt(daughterId).phi());
-      } catch (emcal::InvalidPositionException& e) {
+      } catch (const emcal::InvalidPositionException& e) {
         iCellID = -1;
       }
       if (iCellID == -1) {

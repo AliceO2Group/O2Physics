@@ -32,6 +32,7 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonDataFormat/InteractionRecord.h>
 #include <EMCALBase/Geometry.h>
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Concepts.h>
@@ -94,7 +95,7 @@ struct Photon {
   ROOT::Math::PxPyPzEVector photon;
   int id;
   uint8_t sm;
-  bool onDCal; // Checks whether photon is in phi region of the DCal, otherwise: EMCal
+  bool onDCal{phi < 6 && phi > 4}; // Checks whether photon is in phi region of the DCal, otherwise: EMCal
 };
 
 enum SubGeneratorId {
@@ -103,10 +104,8 @@ enum SubGeneratorId {
 };
 
 struct Meson {
-  Meson(Photon const& p1, Photon const& p2) : pgamma1(p1),
-                                              pgamma2(p2)
+  Meson(Photon const& p1, Photon const& p2) : pgamma1(p1), pgamma2(p2), pMeson(p1.photon + p2.photon)
   {
-    pMeson = p1.photon + p2.photon;
   }
   Photon pgamma1;
   Photon pgamma2;
@@ -934,7 +933,6 @@ struct EmcalPi0Qc {
       lvRotationPion = meson.getMathVector();
 
       // calculate rotation axis and matrix
-      lvRotationPion = lvRotationPhoton1 + lvRotationPhoton2;
       ROOT::Math::AxisAngle rotationAxis(lvRotationPion.Vect(), rotationAngle);
       ROOT::Math::Rotation3D rotationMatrix(rotationAxis);
 
@@ -1006,7 +1004,7 @@ struct EmcalPi0Qc {
         result.emplace_back(0.10 * i);
       } else if (i < 140) {
         result.emplace_back(10. + 0.25 * (i - 100));
-      } else if (i < 180) {
+      } else if (i < 179) {
         result.emplace_back(20. + 1.00 * (i - 140));
       } else {
         result.emplace_back(maxPt);

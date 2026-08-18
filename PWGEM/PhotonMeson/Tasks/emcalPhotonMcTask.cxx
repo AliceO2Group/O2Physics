@@ -28,8 +28,7 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
+#include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -267,7 +266,7 @@ struct EmcalPhotonMcTask {
 
   using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::MinClusters, aod::EMEMCClusterMCLabels_001>;
 
-  using Colls = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMMCEventLabels>;
+  using Colls = soa::Join<aod::PMEvents, aod::EMEventsAlias, aod::EMEventsMult_000, aod::EMEventsCent_000, aod::EMMCEventLabels, aod::EmMagFields>;
 
   using McColls = o2::soa::Join<o2::aod::EMMCEvents, o2::aod::BinnedGenPts>;
   using McParticles = EMMCParticles;
@@ -415,27 +414,12 @@ struct EmcalPhotonMcTask {
     if (mRunNumber == collision.runNumber()) {
       return;
     }
-
-    auto run3GrpTimestamp = collision.timestamp();
-    o2::parameters::GRPObject* grpo = nullptr;
-    o2::parameters::GRPMagField* grpmag = nullptr;
-    if (!skipGRPOquery) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3GrpTimestamp);
-    }
-    if (grpo) {
-      // Fetch magnetic field from ccdb for current collision
-      dBz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3GrpTimestamp << " with magnetic field of " << dBz << " kZG";
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3GrpTimestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3GrpTimestamp;
-      }
-      // Fetch magnetic field from ccdb for current collision
-      dBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3GrpTimestamp << " with magnetic field of " << dBz << " kZG";
-    }
     mRunNumber = collision.runNumber();
+
+    auto run3grp_timestamp = collision.timestamp();
+    // Fetch magnetic field from ccdb for current collision
+    dBz = collision.grpMagField().getNominalL3Field();
+    LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << dBz << " kZG";
   }
 
   template <o2::soa::is_iterator TCollision>
