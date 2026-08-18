@@ -144,8 +144,8 @@ DECLARE_SOA_COLUMN(Chi2Topo, chi2Topo, float);                           //! chi
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                     //! decay length, cm
 DECLARE_SOA_COLUMN(DecayLengthError, decayLengthError, float);           //! decay length error
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float); //! decay length over its error
-DECLARE_SOA_COLUMN(T, t, float);                                         //! proper lifetime, ps
-DECLARE_SOA_COLUMN(ErrT, errT, float);                                   //! lifetime error
+DECLARE_SOA_COLUMN(T, t, float);                                         //! proper decay time, ps
+DECLARE_SOA_COLUMN(ErrT, errT, float);                                   //! decay time error
 DECLARE_SOA_COLUMN(MassInv, massInv, float);                             //! invariant mass
 DECLARE_SOA_COLUMN(P, p, float);                                         //! momentum
 DECLARE_SOA_COLUMN(Pt, pt, float);                                       //! transverse momentum
@@ -183,7 +183,7 @@ DECLARE_SOA_COLUMN(XDecay, xDecay, float); //! Secondary (decay) vertex X coordi
 DECLARE_SOA_COLUMN(YDecay, yDecay, float); //! Secondary (decay) vertex Y coordinate, cm
 DECLARE_SOA_COLUMN(ZDecay, zDecay, float); //! Secondary (decay) vertex Z coordinate, cm
 DECLARE_SOA_COLUMN(LDecay, lDecay, float); //! Decay length, cm (distance between PV and SV, curvature is neglected)
-DECLARE_SOA_COLUMN(TDecay, tDecay, float); //! Proper lifetime, ps
+DECLARE_SOA_COLUMN(TDecay, tDecay, float); //! Proper decay time, ps
 DECLARE_SOA_COLUMN(XEvent, xEvent, float); //! Primary (event) vertex X coordinate, cm
 DECLARE_SOA_COLUMN(YEvent, yEvent, float); //! Primary (event) vertex Y coordinate, cm
 DECLARE_SOA_COLUMN(ZEvent, zEvent, float); //! Primary (event) vertex Z coordinate, cm
@@ -911,7 +911,7 @@ struct HfTreeCreatorLcToPKPi {
     const float deltaP = std::sqrt(pt * pt * deltaPt * deltaPt +
                                    candidate.kfPz() * candidate.kfPz() * candidate.kfErrorPz() * candidate.kfErrorPz()) /
                          p;
-    const float lifetime = decayLength * static_cast<float>(MassLambdaCPlus) / LightSpeedCm2PS / p;
+    const float decayTime = decayLength * static_cast<float>(MassLambdaCPlus) / LightSpeedCm2PS / p;
     const float deltaT = dl * static_cast<float>(MassLambdaCPlus) / LightSpeedCm2PS / p;
     rowCandidateKF(
       svX, svY, svZ, svErrX, svErrY, svErrZ,
@@ -919,7 +919,7 @@ struct HfTreeCreatorLcToPKPi {
       chi2primProton, chi2primKaon, chi2primPion,
       dcaProtonKaon, dcaProtonPion, dcaPionKaon,
       chi2GeoProtonKaon, chi2GeoProtonPion, chi2GeoPionKaon,
-      chi2Geo, chi2Topo, decayLength, dl, decayLength / dl, lifetime, deltaT,
+      chi2Geo, chi2Topo, decayLength, dl, decayLength / dl, decayTime, deltaT,
       mass, p, pt, deltaP, deltaPt,
       functionSelection, sigbgstatus,
       collision.multNTracksPV(),
@@ -983,7 +983,7 @@ struct HfTreeCreatorLcToPKPi {
             fillKFTable(candidate, collision, candFlag, functionSelection, sigbgstatus);
           }
           if (fillCandidateMcTable) {
-            float p{}, pt{}, svX{}, svY{}, svZ{}, pvX{}, pvY{}, pvZ{}, decayLength{}, lifetime{};
+            float p{}, pt{}, svX{}, svY{}, svZ{}, pvX{}, pvY{}, pvZ{}, decayLength{}, decayTime{};
             if (!isMcCandidateSignal) {
               p = UndefValueFloat;
               pt = UndefValueFloat;
@@ -994,7 +994,7 @@ struct HfTreeCreatorLcToPKPi {
               pvY = UndefValueFloat;
               pvZ = UndefValueFloat;
               decayLength = UndefValueFloat;
-              lifetime = UndefValueFloat;
+              decayTime = UndefValueFloat;
             } else {
               const auto mcParticleProng0 = candidate.template prong0_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
               const auto indexMother = RecoDecay::getMother(particles, mcParticleProng0, o2::constants::physics::Pdg::kLambdaCPlus, true);
@@ -1011,11 +1011,11 @@ struct HfTreeCreatorLcToPKPi {
               svY = mcParticleProng0.vy();
               svZ = mcParticleProng0.vz();
               decayLength = static_cast<float>(RecoDecay::distance(std::array<float, 3>{svX, svY, svZ}, std::array<float, 3>{pvX, pvY, pvZ}));
-              lifetime = mcParticleProng0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
+              decayTime = mcParticleProng0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
             }
             rowCandidateMC(
               p, pt,
-              svX, svY, svZ, decayLength, lifetime,
+              svX, svY, svZ, decayLength, decayTime,
               pvX, pvY, pvZ);
           }
         }

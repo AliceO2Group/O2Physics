@@ -74,7 +74,7 @@ struct HfTaskLc {
   Configurable<bool> fillTHn{"fillTHn", false, "fill THn"};
   Configurable<bool> storeOccupancy{"storeOccupancy", true, "Flag to store occupancy information"};
   Configurable<int> occEstimator{"occEstimator", 2, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
-  Configurable<bool> storeProperLifetime{"storeProperLifetime", false, "Flag to store proper lifetime"};
+  Configurable<bool> storeProperDecayTime{"storeProperDecayTime", false, "Flag to store proper decay time"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
@@ -117,11 +117,11 @@ struct HfTaskLc {
   ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {1000, 0, 100}, "Gen Pt B"};
   ConfigurableAxis thnConfigAxisNumPvContr{"thnConfigAxisNumPvContr", {200, -0.5, 199.5}, "Number of PV contributors"};
   ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {14, 0, 14000}, "axis for centrality"};
-  ConfigurableAxis thnConfigAxisProperLifetime{"thnConfigAxisProperLifetime", {200, 0, 2}, "Proper lifetime, ps"};
+  ConfigurableAxis thnConfigAxisProperDecayTime{"thnConfigAxisProperDecayTime", {200, 0, 2}, "Proper decay time, ps"};
   HistogramRegistry registry{"registry", {}};
 
   // Factors for conversion between units
-  constexpr static float CtToProperLifetimePs = 1.f / o2::constants::physics::LightSpeedCm2PS;
+  constexpr static float CtToProperDecayTimePs = 1.f / o2::constants::physics::LightSpeedCm2PS;
   constexpr static float NanoToPico = 1000.f;
   // Names of folders and suffixes for MC signal histograms
   constexpr static std::string_view SignalFolders[] = {"signal", "prompt", "nonprompt"};
@@ -186,8 +186,8 @@ struct HfTaskLc {
     addHistogramsRec("hDecLength", "decay length (cm)", "entries", {HistType::kTH1F, {{400, 0., 1.}}});
     /// decay length xy candidate
     addHistogramsRec("hDecLengthxy", "decay length xy (cm)", "entries", {HistType::kTH1F, {{400, 0., 1.}}});
-    /// proper lifetime
-    addHistogramsRec("hCt", "proper lifetime (#Lambda_{c}) * #it{c} (cm)", "entries", {HistType::kTH1F, {{100, 0., 0.2}}});
+    /// proper decay time
+    addHistogramsRec("hCt", "proper decay time (#Lambda_{c}) * #it{c} (cm)", "entries", {HistType::kTH1F, {{100, 0., 0.2}}});
     /// cosine of pointing angle
     addHistogramsRec("hCPA", "cosine of pointing angle", "entries", {HistType::kTH1F, {{110, -1.1, 1.1}}});
     /// cosine of pointing angle xy
@@ -219,8 +219,8 @@ struct HfTaskLc {
     /// decay length xy candidate
     addHistogramsRec("hDecLengthxyVsPt", "decay length xy (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{400, 0., 1.}, {vbins}}});
 
-    /// proper lifetime
-    addHistogramsRec("hCtVsPt", "proper lifetime (#Lambda_{c}) * #it{c} (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, 0., 0.2}, {vbins}}});
+    /// proper decay time
+    addHistogramsRec("hCtVsPt", "proper decay time (#Lambda_{c}) * #it{c} (cm)", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, 0., 0.2}, {vbins}}});
 
     /// cosine of pointing angle
     addHistogramsRec("hCPAVsPt", "cosine of pointing angle", "#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins}}});
@@ -268,7 +268,7 @@ struct HfTaskLc {
       const AxisSpec thnAxisPtB{thnConfigAxisGenPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
       const AxisSpec thnAxisTracklets{thnConfigAxisNumPvContr, "Number of PV contributors"};
       const AxisSpec thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
-      const AxisSpec thnAxisProperLifetime{thnConfigAxisProperLifetime, "T_{proper} (ps)"};
+      const AxisSpec thnAxisProperDecayTime{thnConfigAxisProperDecayTime, "#it{t}_{proper} (ps)"};
 
       bool const isDataWithMl = doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M;
       bool const isMcWithMl = doprocessMcWithMl || doprocessMcWithMlWithFT0C || doprocessMcWithMlWithFT0M;
@@ -300,10 +300,10 @@ struct HfTaskLc {
           }
         }
       }
-      if (storeProperLifetime) {
+      if (storeProperDecayTime) {
         for (const auto& axes : std::array<std::vector<AxisSpec>*, 3>{&axesWithBdt, &axesStd, &axesGen}) {
           if (!axes->empty()) {
-            axes->push_back(thnAxisProperLifetime);
+            axes->push_back(thnAxisProperDecayTime);
           }
         }
       }
@@ -438,7 +438,7 @@ struct HfTaskLc {
             occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
           }
           double outputBkg(-1), outputPrompt(-1), outputFD(-1);
-          const float properLifetime = HfHelper::ctLc(candidate) * CtToProperLifetimePs;
+          const float properDecayTime = HfHelper::ctLc(candidate) * CtToProperDecayTimePs;
 
           auto fillTHnRecSig = [&](bool isPKPi) {
             const auto massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
@@ -461,8 +461,8 @@ struct HfTaskLc {
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
               valuesToFill.push_back(occ);
             }
-            if (storeProperLifetime) {
-              valuesToFill.push_back(properLifetime);
+            if (storeProperDecayTime) {
+              valuesToFill.push_back(properDecayTime);
             }
             if constexpr (FillMl) {
               registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(valuesToFill.data());
@@ -524,8 +524,8 @@ struct HfTaskLc {
 
         const auto& mcDaughter0 = particle.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().begin();
         const float p2m = particle.p() / o2::constants::physics::MassLambdaCPlus;
-        const float gamma = std::sqrt(1 + p2m * p2m);                       // mother's particle Lorentz factor
-        const float properLifetime = mcDaughter0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
+        const float gamma = std::sqrt(1 + p2m * p2m);                        // mother's particle Lorentz factor
+        const float properDecayTime = mcDaughter0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
 
         fillHistogramsGen<Signal>(particle);
 
@@ -537,8 +537,8 @@ struct HfTaskLc {
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
               valuesToFill.push_back(occ);
             }
-            if (storeProperLifetime) {
-              valuesToFill.push_back(properLifetime);
+            if (storeProperDecayTime) {
+              valuesToFill.push_back(properDecayTime);
             }
             registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(valuesToFill.data());
           }
@@ -631,7 +631,7 @@ struct HfTaskLc {
           occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
         }
         double outputBkg(-1), outputPrompt(-1), outputFD(-1);
-        const float properLifetime = HfHelper::ctLc(candidate) * CtToProperLifetimePs;
+        const float properDecayTime = HfHelper::ctLc(candidate) * CtToProperDecayTimePs;
 
         auto fillTHnData = [&](bool isPKPi) {
           const auto massLc = isPKPi ? HfHelper::invMassLcToPKPi(candidate) : HfHelper::invMassLcToPiKP(candidate);
@@ -654,8 +654,8 @@ struct HfTaskLc {
           if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
             valuesToFill.push_back(occ);
           }
-          if (storeProperLifetime) {
-            valuesToFill.push_back(properLifetime);
+          if (storeProperDecayTime) {
+            valuesToFill.push_back(properDecayTime);
           }
           if constexpr (FillMl) {
             registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(valuesToFill.data());
