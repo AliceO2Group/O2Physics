@@ -9,21 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef COMMON_CORE_ANALYSISCORELINKDEF_H_
-#define COMMON_CORE_ANALYSISCORELINKDEF_H_
+/// \file FFitWeightsLinkDef.h
+/// \brief LinkDef for FFitWeights
+///
+/// \author Joachim C. K. B. Hansen
 
-#pragma link off all globals;
-#pragma link off all classes;
-#pragma link off all functions;
+#ifndef COMMON_CORE_FFITWEIGHTSLINKDEF_H_
+#define COMMON_CORE_FFITWEIGHTSLINKDEF_H_
 
-#pragma link C++ class TrackSelection + ;
+#pragma link C++ class FFitWeights + ;
 
-#pragma link C++ class o2::pid::Parameters + ;
-#pragma link C++ class o2::pid::PidParameters < 5> + ;
-#pragma link C++ class o2::pid::Parametrization + ;
-
-#pragma link C++ class o2::pid::tpc::Response + ;
-
-#pragma link C++ class OrbitRange + ;
-
-#endif // COMMON_CORE_ANALYSISCORELINKDEF_H_
+#endif // COMMON_CORE_FFITWEIGHTSLINKDEF_H_
