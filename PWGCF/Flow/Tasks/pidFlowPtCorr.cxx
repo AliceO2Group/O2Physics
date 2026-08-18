@@ -293,6 +293,7 @@ struct PidFlowPtCorr {
     Configurable<bool> cfgOutPutMC1D{"cfgOutPutMC1D", true, "Fill MC graphs, note that if the processMCgen is open,this MUST be open"};
     Configurable<bool> cfgAddPidResponseMatrixHistograms{"cfgAddPidResponseMatrixHistograms", false, "Add PID response matrix histograms; enable together with processPidResponseMatrix"};
     Configurable<bool> cfgAddC22DeltaPtHistograms{"cfgAddC22DeltaPtHistograms", false, "Add histograms for processDataC22DeltaPt; enable together with processDataC22DeltaPt"};
+    Configurable<bool> cfgAddPidPtCorrelationProfiles{"cfgAddPidPtCorrelationProfiles", false, "Add FlowContainer profiles for processPidPtCorrelations; enable together with processPidPtCorrelations"};
     Configurable<bool> cfgC22DeltaPtUsePure{"cfgC22DeltaPtUsePure", false, "true: use PID POI-POI Pure profiles; false: use PID POI-ref and ref-ref profiles"};
     Configurable<bool> cfgAddMeanPtCentNbsHistograms{"cfgAddMeanPtCentNbsHistograms", false, "Add meanptCentNbs TProfile3D histograms"};
     // These switches suppress result allocation and filling only. Charged reference
@@ -428,6 +429,7 @@ struct PidFlowPtCorr {
   OutputObj<FlowContainer> fFCKa{FlowContainer("FlowContainerKa")};
   OutputObj<FlowContainer> fFCPr{FlowContainer("FlowContainerPr")};
   OutputObj<FlowContainer> fFCUnidentified{FlowContainer("FlowContainerUnidentified")};
+  OutputObj<FlowContainer> fFCPidPtCorr{FlowContainer("FlowContainerPidPtCorr")};
   // end val used for bootstrap
 
   // define global variables
@@ -501,6 +503,7 @@ struct PidFlowPtCorr {
     funcProcessQA,
     funcProcessPidResponseMatrix,
     funcProcessDataC22DeltaPt,
+    funcProcessPidPtCorrelations,
     funcNumber
   };
 
@@ -731,6 +734,9 @@ struct PidFlowPtCorr {
     registry.addClone("hEventCount/processData", "hEventCount/processSim");
     // processPidResponseMatrix
     registry.addClone("hEventCount/processData", "hEventCount/processPidResponseMatrix");
+    if (switchsOpts.cfgAddPidPtCorrelationProfiles.value) {
+      registry.addClone("hEventCount/processData", "hEventCount/processPidPtCorrelations");
+    }
 
     if (switchsOpts.cfgAddC22DeltaPtHistograms.value) {
       registry.addClone("hEventCount/processData", "hEventCount/processDataC22DeltaPt");
@@ -877,6 +883,30 @@ struct PidFlowPtCorr {
     }
     // end init fFCPID
 
+    if (switchsOpts.cfgAddPidPtCorrelationProfiles.value) {
+      auto* oba4PidPtCorr = new TObjArray();
+      oba4PidPtCorr->Add(new TNamed("meanPtPi", "meanPtPi"));
+      oba4PidPtCorr->Add(new TNamed("meanPtKa", "meanPtKa"));
+      oba4PidPtCorr->Add(new TNamed("meanPtPr", "meanPtPr"));
+      oba4PidPtCorr->Add(new TNamed("ptProductPiPi", "ptProductPiPi"));
+      oba4PidPtCorr->Add(new TNamed("ptPiInPiPiPairs", "ptPiInPiPiPairs"));
+      oba4PidPtCorr->Add(new TNamed("ptProductKaKa", "ptProductKaKa"));
+      oba4PidPtCorr->Add(new TNamed("ptKaInKaKaPairs", "ptKaInKaKaPairs"));
+      oba4PidPtCorr->Add(new TNamed("ptProductPrPr", "ptProductPrPr"));
+      oba4PidPtCorr->Add(new TNamed("ptPrInPrPrPairs", "ptPrInPrPrPairs"));
+      oba4PidPtCorr->Add(new TNamed("ptProductPiKa", "ptProductPiKa"));
+      oba4PidPtCorr->Add(new TNamed("ptPiInPiKaPairs", "ptPiInPiKaPairs"));
+      oba4PidPtCorr->Add(new TNamed("ptKaInPiKaPairs", "ptKaInPiKaPairs"));
+      oba4PidPtCorr->Add(new TNamed("ptProductPiPr", "ptProductPiPr"));
+      oba4PidPtCorr->Add(new TNamed("ptPiInPiPrPairs", "ptPiInPiPrPairs"));
+      oba4PidPtCorr->Add(new TNamed("ptPrInPiPrPairs", "ptPrInPiPrPairs"));
+      oba4PidPtCorr->Add(new TNamed("ptProductKaPr", "ptProductKaPr"));
+      oba4PidPtCorr->Add(new TNamed("ptKaInKaPrPairs", "ptKaInKaPrPairs"));
+      oba4PidPtCorr->Add(new TNamed("ptPrInKaPrPairs", "ptPrInKaPrPairs"));
+      fFCPidPtCorr->SetName("FlowContainerPidPtCorr");
+      fFCPidPtCorr->Initialize(oba4PidPtCorr, axisMultiplicity, cfgFlowNbootstrap);
+    }
+
     if (switchsOpts.cfgAddMeanPtCentNbsHistograms.value) {
       // TProfile3D axes: event mean pT, centrality, and bootstrap subsample.
       if (switchsOpts.cfgOutputCharged.value) {
@@ -932,6 +962,7 @@ struct PidFlowPtCorr {
       registry.add("hProcessQA/centVsMult", "cent Vs Mult;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisMultiplicity, cfgaxisNch}});
       registry.add("hProcessQA/IR", "", {HistType::kTH1D, {{100, 0, 100}}});
       registry.add("hProcessQA/Occupacy", "", {HistType::kTH1D, {{1000, 0, 10000}}});
+      registry.add("hProcessQA/occupancyVsCent", "Track occupancy versus centrality;Centrality (%);Track occupancy in time range", {HistType::kTH2D, {axisMultiplicity, {1000, 0, 10000}}});
       // end evetn QA
     }
     // end init QA plot for processQA
@@ -2254,6 +2285,9 @@ struct PidFlowPtCorr {
       case MyFunctionName::funcProcessDataC22DeltaPt:
         registry.fill(HIST("hEventCount/processDataC22DeltaPt"), position);
         break;
+      case MyFunctionName::funcProcessPidPtCorrelations:
+        registry.fill(HIST("hEventCount/processPidPtCorrelations"), position);
+        break;
 
       default:
         // LOGF(warning, "could not find event count graph");
@@ -3243,6 +3277,132 @@ struct PidFlowPtCorr {
   }
   PROCESS_SWITCH(PidFlowPtCorr, processDataC22DeltaPt, "Fill c22dmeanpt profiles", false);
 
+  void fillPidPtSelfMoments(const char* productName,
+                            const char* singlePtName,
+                            const double cent,
+                            const double rndm,
+                            const double sumWeight,
+                            const double sumPt,
+                            const double sumWeight2,
+                            const double sumPtWeight2,
+                            const double sumPt2Weight2)
+  {
+    const double pairWeight = sumWeight * sumWeight - sumWeight2;
+    if (pairWeight <= minVal4Float) {
+      return;
+    }
+    fFCPidPtCorr->FillProfile(productName, cent,
+                              (sumPt * sumPt - sumPt2Weight2) / pairWeight,
+                              pairWeight, rndm);
+    fFCPidPtCorr->FillProfile(singlePtName, cent,
+                              (sumWeight * sumPt - sumPtWeight2) / pairWeight,
+                              pairWeight, rndm);
+  }
+
+  void fillPidPtCrossMoments(const char* productName,
+                             const char* alphaPtName,
+                             const char* betaPtName,
+                             const double cent,
+                             const double rndm,
+                             const double alphaWeight,
+                             const double alphaPtSum,
+                             const double betaWeight,
+                             const double betaPtSum)
+  {
+    if (alphaWeight <= 0. || betaWeight <= 0.) {
+      return;
+    }
+    const double pairWeight = alphaWeight * betaWeight;
+    fFCPidPtCorr->FillProfile(productName, cent,
+                              alphaPtSum * betaPtSum / pairWeight,
+                              pairWeight, rndm);
+    fFCPidPtCorr->FillProfile(alphaPtName, cent,
+                              alphaPtSum / alphaWeight,
+                              pairWeight, rndm);
+    fFCPidPtCorr->FillProfile(betaPtName, cent,
+                              betaPtSum / betaWeight,
+                              pairWeight, rndm);
+  }
+
+  void processPidPtCorrelations(AodCollisions::iterator const& collision,
+                                aod::BCsWithTimestamps const&,
+                                AodTracks const& tracks)
+  {
+    if (!switchsOpts.cfgAddPidPtCorrelationProfiles.value) {
+      return;
+    }
+    registry.fill(HIST("hEventCount/processPidPtCorrelations"), 0.5);
+    if (tracks.size() < 1 || !collision.sel8()) {
+      return;
+    }
+    registry.fill(HIST("hEventCount/processPidPtCorrelations"), 1.5);
+
+    const auto cent = getCentrality(collision);
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    const double interactionRate = getInteractionRate(bc.timestamp(), bc.runNumber());
+    if (!eventSelected(collision, cent, interactionRate, MyFunctionName::funcProcessPidPtCorrelations)) {
+      return;
+    }
+
+    loadCorrections(bc.timestamp());
+    const double rndm = fRndm->Rndm();
+    std::array<double, 3> sumWeight{};
+    std::array<double, 3> sumPt{};
+    std::array<double, 3> sumWeight2{};
+    std::array<double, 3> sumPtWeight2{};
+    std::array<double, 3> sumPt2Weight2{};
+
+    for (const auto& track : tracks) {
+      if (!trackSelectedForFlow(track)) {
+        continue;
+      }
+      const int pid = getPidConfigurable(track);
+      if (pid < MyParticleType::kPion || pid > MyParticleType::kProton || !isWithinPOIPtRange(pid, track.pt())) {
+        continue;
+      }
+
+      float weight = 1.f;
+      setParticleNUEWeight(weight, track, cent, pid);
+      const std::size_t index = static_cast<std::size_t>(pid - MyParticleType::kPion);
+      const double particleWeight = weight;
+      const double weight2 = particleWeight * particleWeight;
+      const double pt = track.pt();
+      sumWeight[index] += particleWeight;
+      sumPt[index] += particleWeight * pt;
+      sumWeight2[index] += weight2;
+      sumPtWeight2[index] += weight2 * pt;
+      sumPt2Weight2[index] += weight2 * pt * pt;
+    }
+
+    constexpr std::size_t kPi = 0;
+    constexpr std::size_t kKa = 1;
+    constexpr std::size_t kPr = 2;
+    if (sumWeight[kPi] > 0.) {
+      fFCPidPtCorr->FillProfile("meanPtPi", cent, sumPt[kPi] / sumWeight[kPi], sumWeight[kPi], rndm);
+    }
+    if (sumWeight[kKa] > 0.) {
+      fFCPidPtCorr->FillProfile("meanPtKa", cent, sumPt[kKa] / sumWeight[kKa], sumWeight[kKa], rndm);
+    }
+    if (sumWeight[kPr] > 0.) {
+      fFCPidPtCorr->FillProfile("meanPtPr", cent, sumPt[kPr] / sumWeight[kPr], sumWeight[kPr], rndm);
+    }
+
+    fillPidPtSelfMoments("ptProductPiPi", "ptPiInPiPiPairs", cent, rndm,
+                         sumWeight[kPi], sumPt[kPi], sumWeight2[kPi], sumPtWeight2[kPi], sumPt2Weight2[kPi]);
+    fillPidPtSelfMoments("ptProductKaKa", "ptKaInKaKaPairs", cent, rndm,
+                         sumWeight[kKa], sumPt[kKa], sumWeight2[kKa], sumPtWeight2[kKa], sumPt2Weight2[kKa]);
+    fillPidPtSelfMoments("ptProductPrPr", "ptPrInPrPrPairs", cent, rndm,
+                         sumWeight[kPr], sumPt[kPr], sumWeight2[kPr], sumPtWeight2[kPr], sumPt2Weight2[kPr]);
+
+    fillPidPtCrossMoments("ptProductPiKa", "ptPiInPiKaPairs", "ptKaInPiKaPairs", cent, rndm,
+                          sumWeight[kPi], sumPt[kPi], sumWeight[kKa], sumPt[kKa]);
+    fillPidPtCrossMoments("ptProductPiPr", "ptPiInPiPrPairs", "ptPrInPiPrPairs", cent, rndm,
+                          sumWeight[kPi], sumPt[kPi], sumWeight[kPr], sumPt[kPr]);
+    fillPidPtCrossMoments("ptProductKaPr", "ptKaInKaPrPairs", "ptPrInKaPrPairs", cent, rndm,
+                          sumWeight[kKa], sumPt[kKa], sumWeight[kPr], sumPt[kPr]);
+  }
+  PROCESS_SWITCH(PidFlowPtCorr, processPidPtCorrelations, "Calculate self-contained PID mean-pT correlations", false);
+
   /**
    * @brief Run the flow calculation on generated MC particles for a closure test.
    * @note Reconstructed collisions are only used to obtain the centrality. The selection is
@@ -3675,6 +3835,7 @@ struct PidFlowPtCorr {
     registry.fill(HIST("hProcessQA/centVsMult"), cent, tracks.size());
     registry.fill(HIST("hProcessQA/IR"), interactionRate);
     registry.fill(HIST("hProcessQA/Occupacy"), collision.trackOccupancyInTimeRange());
+    registry.fill(HIST("hProcessQA/occupancyVsCent"), cent, collision.trackOccupancyInTimeRange());
     // end event qa
 
     // i dont want to fill event count again as it's filled in other 5 function
