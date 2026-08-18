@@ -300,14 +300,14 @@ struct HfDataCreatorJpsiHadReduced {
     df2.setMatCorrType(noMatCorr);
 
     if (doprocessJpsiKData || doprocessJpsiKMc) {
-    df3.setPropagateToPCA(propagateToPCA);
-    df3.setMaxR(maxR);
-    df3.setMaxDZIni(maxDZIni);
-    df3.setMinParamChange(minParamChange);
-    df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(useAbsDCA);
-    df3.setWeightedFinalPCA(useWeightedFinalPCA);
-    df3.setMatCorrType(noMatCorr);
+      df3.setPropagateToPCA(propagateToPCA);
+      df3.setMaxR(maxR);
+      df3.setMaxDZIni(maxDZIni);
+      df3.setMinParamChange(minParamChange);
+      df3.setMinRelChi2Change(minRelChi2Change);
+      df3.setUseAbsDCA(useAbsDCA);
+      df3.setWeightedFinalPCA(useWeightedFinalPCA);
+      df3.setMatCorrType(noMatCorr);
     } else {
       df4.setPropagateToPCA(propagateToPCA);
       df4.setMaxR(maxR);
