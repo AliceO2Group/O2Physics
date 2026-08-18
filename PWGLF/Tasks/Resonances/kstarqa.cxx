@@ -391,6 +391,14 @@ struct Kstarqa {
       hInvMass.add("MCcorrections/hImpactParametervsMultiplicity", "Impact parameter vs multiplicity in reconstructed MC", kTH2F, {{impactParAxis}, {multiplicityAxis}});
     }
 
+    ConfigurableAxis etaAxis = {"etaAxis", {100, -1.0f, 1.0f}, "Eta axis"};
+    ConfigurableAxis phiAxis = {"phiAxis", {100, -3.15f, 3.15f}, "Phi axis"};
+    ConfigurableAxis subAxis = {"subAxis", {100, -1.0f, 1.0f}, "Difference axis"};
+
+    if (doprocessRecPhi) {
+      hInvMass.add("PhiMCChecks", "PhiMCChecks", kTHnSparseF, {ptAxis, etaAxis, phiAxis, subAxis, subAxis, subAxis}); // pT, eta, phi, deltaEta, deltaPhi, deltaR
+    }
+
     // Signal Loss & Event Loss in Light Ion Collisions
     if (doprocessEvtLossSigLossLightIonMC) {
       hInvMass.add("MCcorrections/hImpactParameterGen", "Impact parameter of generated MC events", kTH1F, {impactParAxis});
@@ -3001,14 +3009,12 @@ struct Kstarqa {
     }
 
     double multiplicityRec = -1.0;
-    // multiplicityRec = collision.mcCollision_as<EventMCGenerated>().centFT0M();
     const auto& mcCollisionRec = collision.mcCollision_as<EventMCGenerated>();
     multiplicityRec = mcCollisionRec.centFT0M();
 
     if (configGp.isINELgt0 && !collision.isInelGt0()) {
       return;
     }
-    // multiplicity = collision.centFT0M();
 
     if (cSelectMultEstimator == kFT0M) {
       multiplicity = collision.centFT0M();
@@ -3080,7 +3086,6 @@ struct Kstarqa {
         int track2PDG = std::abs(mctrack2.pdgCode());
         if (cQAplots) {
           hPID.fill(HIST("Before/hTPCnsigKa_mult_pt"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
-          // hPID.fill(HIST("Before/hTPCnsigPi_mult_pt"), track2.tpcNSigmaPi(), multiplicity, track2.pt());
           hPID.fill(HIST("Before/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa(), multiplicity, track1.pt());
           hPID.fill(HIST("Before/hTOFnsigPi_mult_pt"), track2.tofNSigmaPi(), multiplicity, track2.pt());
         }
@@ -3160,16 +3165,11 @@ struct Kstarqa {
               daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
               mother = daughter1 + daughter2; // Phi meson
 
-              hInvMass.fill(HIST("h2KstarRecpt2"), mothertrack1.pt(), multiplicity, std::sqrt(mothertrack1.e() * mothertrack1.e() - mothertrack1.p() * mothertrack1.p()));
-              hInvMass.fill(HIST("h2KstarRecptCalib2"), mothertrack1.pt(), multiplicityRec, std::sqrt(mothertrack1.e() * mothertrack1.e() - mothertrack1.p() * mothertrack1.p()));
+              auto genpTPhi = mothertrack1.pt();
+              auto genEtaPhi = mothertrack1.eta();
+              auto genPhiPhi = mothertrack1.phi();
 
-              if (mother.Rapidity() >= configGp.rapidityMotherData) {
-                continue;
-              }
-
-              hInvMass.fill(HIST("h1KstarRecMass"), mother.M());
-              hInvMass.fill(HIST("h2KstarRecpt1"), mother.Pt(), multiplicity, mother.M());
-              hInvMass.fill(HIST("h2KstarRecptCalib1"), mother.Pt(), multiplicityRec, mother.M());
+              hInvMass.fill(HIST("PhiMCChecks"), mother.pt(), mother.eta(), mother.phi(), genpTPhi - mother.pt(), genEtaPhi - mother.eta(), genPhiPhi - mother.phi());
             }
           }
         }
