@@ -331,22 +331,21 @@ struct FemtoUniverseEfficiencyBase {
         return (std::abs(nsigmaTPCK) < ConfKaonSelection.confKaonNsigmaTPCfrom08to15Run2 && std::abs(nsigmaTOFK) < ConfKaonSelection.confKaonNsigmaTOFfrom08to15Run2);
       }
       return false;
-    } else {
-      if (mom < ConfKaonSelection.confMomKaonRun3) { // 0.0-0.3 GeV/c
-        return std::abs(nsigmaTPCK) < ConfKaonSelection.confKaonNsigmaTPCfrom0to03;
-      }
-      if (mom < ConfKaonSelection.confMomKaon045) { // 0.30 - 0.45 GeV/c
-        return std::abs(nsigmaTPCK) < ConfKaonSelection.confKaonNsigmaTPCfrom03to045;
-      }
-      if (mom < ConfKaonSelection.confMomKaon055) { // 0.45-0.55 GeV/c
-        return std::abs(nsigmaTPCK) < ConfKaonSelection.confKaonNsigmaTPCfrom045to055;
-      }
-      if (mom < ConfKaonSelection.confMomKaon15) { // 0.55-1.5 GeV/c (now we use TPC and TOF)
-        return ((std::abs(nsigmaTOFK) < ConfKaonSelection.confKaonNsigmaTOFfrom055to15) && (std::abs(nsigmaTPCK) < ConfKaonSelection.confKaonNsigmaTPCfrom055to15));
-      }
-      // mom > ConfKaonSelection.confMomKaon15) | momentum > 1.5 GeV/c
-      return ((std::abs(nsigmaTOFK) < ConfKaonSelection.confKaonNsigmaTOFfrom15) && (std::abs(nsigmaTPCK) < ConfKaonSelection.confKaonNsigmaTPCfrom15));
     }
+    if (mom < ConfKaonSelection.confMomKaonRun3) { // 0.0-0.3 GeV/c
+      return std::abs(nsigmaTPCK) < ConfKaonSelection.confKaonNsigmaTPCfrom0to03;
+    }
+    if (mom < ConfKaonSelection.confMomKaon045) { // 0.30 - 0.45 GeV/c
+      return std::abs(nsigmaTPCK) < ConfKaonSelection.confKaonNsigmaTPCfrom03to045;
+    }
+    if (mom < ConfKaonSelection.confMomKaon055) { // 0.45-0.55 GeV/c
+      return std::abs(nsigmaTPCK) < ConfKaonSelection.confKaonNsigmaTPCfrom045to055;
+    }
+    if (mom < ConfKaonSelection.confMomKaon15) { // 0.55-1.5 GeV/c (now we use TPC and TOF)
+      return ((std::abs(nsigmaTOFK) < ConfKaonSelection.confKaonNsigmaTOFfrom055to15) && (std::abs(nsigmaTPCK) < ConfKaonSelection.confKaonNsigmaTPCfrom055to15));
+    }
+    // mom > ConfKaonSelection.confMomKaon15) | momentum > 1.5 GeV/c
+    return ((std::abs(nsigmaTOFK) < ConfKaonSelection.confKaonNsigmaTOFfrom15) && (std::abs(nsigmaTPCK) < ConfKaonSelection.confKaonNsigmaTPCfrom15));
   }
 
   bool isKaonNSigmaLF(bool partHasTof, float mom, float nsigmaTPCK, float nsigmaTOFK)
@@ -540,8 +539,8 @@ struct FemtoUniverseEfficiencyBase {
 
   bool invMLambda(float invMassLambda, float invMassAntiLambda)
   {
-    return !((invMassLambda < confV0InvMassLowLimit || invMassLambda > confV0InvMassUpLimit) &&
-             (invMassAntiLambda < confV0InvMassLowLimit || invMassAntiLambda > confV0InvMassUpLimit));
+    return (invMassLambda >= confV0InvMassLowLimit && invMassLambda <= confV0InvMassUpLimit) ||
+           (invMassAntiLambda >= confV0InvMassLowLimit && invMassAntiLambda <= confV0InvMassUpLimit);
   }
 
   template <typename CollisionType>
