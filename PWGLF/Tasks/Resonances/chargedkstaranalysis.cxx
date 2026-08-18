@@ -1488,13 +1488,13 @@ struct Chargedkstaranalysis {
       const float lCentrality = iter->second;
 
       histos.fill(HIST("EffKstar/genKstar"), part.pt(), lCentrality);
-      if (helicityCfgs.cCosWithKShot) {
-        fillInvMass(lResoKstar, lCentrality, lResoSecondary, lDecayDaughter_bach, eventCutCfgs.confIsMix);
-      } else {
-        fillInvMass(lResoKstar, lCentrality, lDecayDaughter_bach, lResoSecondary, eventCutCfgs.confIsMix);
-      }
       if (part.vt() == 0) {
         histos.fill(HIST("EffKstar/genKstar_pri"), part.pt(), lCentrality); // To check the primary particle
+        if (helicityCfgs.cCosWithKShot) {
+          fillInvMass(lResoKstar, lCentrality, lResoSecondary, lDecayDaughter_bach, eventCutCfgs.confIsMix);
+        } else {
+          fillInvMass(lResoKstar, lCentrality, lDecayDaughter_bach, lResoSecondary, eventCutCfgs.confIsMix);
+        }
       }
     }
     // To store the recoKstar
