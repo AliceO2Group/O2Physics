@@ -109,23 +109,25 @@ struct HfCandidateCreatorBToJpsiReduced {
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
     df2.setMatCorrType(noMatCorr);
 
-    df3.setPropagateToPCA(propagateToPCA);
-    df3.setMaxR(maxR);
-    df3.setMaxDZIni(maxDZIni);
-    df3.setMinParamChange(minParamChange);
-    df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(useAbsDCA);
-    df3.setWeightedFinalPCA(useWeightedFinalPCA);
-    df3.setMatCorrType(noMatCorr);
-
-    df4.setPropagateToPCA(propagateToPCA);
-    df4.setMaxR(maxR);
-    df4.setMaxDZIni(maxDZIni);
-    df4.setMinParamChange(minParamChange);
-    df4.setMinRelChi2Change(minRelChi2Change);
-    df4.setUseAbsDCA(useAbsDCA);
-    df4.setWeightedFinalPCA(useWeightedFinalPCA);
-    df4.setMatCorrType(noMatCorr);
+    if (doprocessDataBplus) {
+      df3.setPropagateToPCA(propagateToPCA);
+      df3.setMaxR(maxR);
+      df3.setMaxDZIni(maxDZIni);
+      df3.setMinParamChange(minParamChange);
+      df3.setMinRelChi2Change(minRelChi2Change);
+      df3.setUseAbsDCA(useAbsDCA);
+      df3.setWeightedFinalPCA(useWeightedFinalPCA);
+      df3.setMatCorrType(noMatCorr);
+    } else {
+      df4.setPropagateToPCA(propagateToPCA);
+      df4.setMaxR(maxR);
+      df4.setMaxDZIni(maxDZIni);
+      df4.setMinParamChange(minParamChange);
+      df4.setMinRelChi2Change(minRelChi2Change);
+      df4.setUseAbsDCA(useAbsDCA);
+      df4.setWeightedFinalPCA(useWeightedFinalPCA);
+      df4.setMatCorrType(noMatCorr);
+    }
 
     // histograms
     registry.add("hMassJpsi", "J/Psi mass;#it{M}_{#mu#mu} (GeV/#it{c}^{2});Counts", {HistType::kTH1F, {{600, 2.5, 3.7, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -163,8 +165,11 @@ struct HfCandidateCreatorBToJpsiReduced {
     // Set the magnetic field from ccdb
     bz = collision.bz();
     df2.setBz(bz);
-    df3.setBz(bz);
-    df4.setBz(bz);
+    if constexpr (DecChannel == DecayChannel::BplusToJpsiK) {
+      df3.setBz(bz);
+    } else {
+      df4.setBz(bz);
+    }
 
     for (const auto& candJpsi : candsJpsiThisColl) {
       o2::track::TrackParametrizationWithError<float> trackPosParCov(
@@ -174,7 +179,6 @@ struct HfCandidateCreatorBToJpsiReduced {
 
       // ---------------------------------
       // reconstruct J/Psi candidate
-      o2::track::TrackParCov trackParCovJpsi{};
       std::array<float, 3> pVecJpsi{};
       registry.fill(HIST("hFitCandidatesJpsi"), SVFitting::BeforeFit);
       try {
@@ -195,8 +199,6 @@ struct HfCandidateCreatorBToJpsiReduced {
       df2.getTrack(0).getPxPyPzGlo(pVecDauPos);
       df2.getTrack(1).getPxPyPzGlo(pVecDauNeg);
       pVecJpsi = RecoDecay::pVec(pVecDauPos, pVecDauNeg);
-      trackParCovJpsi = df2.createParentTrackParCov();
-      trackParCovJpsi.setAbsCharge(0); // to be sure
 
       float invMassJpsi{0.f};
       invMassJpsi = RecoDecay::m2(std::array{pVecDauPos, pVecDauNeg}, std::array{o2::constants::physics::MassMuon, o2::constants::physics::MassMuon});
