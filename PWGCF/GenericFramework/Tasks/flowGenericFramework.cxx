@@ -686,8 +686,6 @@ struct FlowGenericFramework {
         registryQA.add("trackQA/after/Nch_uncorrected", "; N_{ch}; Counts", {HistType::kTH1D, {nchAxis}});
         registryQA.add("trackQA/after/etaNch", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
         registryQA.add("trackQA/after/etaPtPt", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
-        registryQA.add("trackQA/after/etaV02", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
-        registryQA.add("trackQA/after/etaV0", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
         if (!cfgFill.cfgFillRunByRunQA) {
           if (cfgUsePID) {
             registryQA.add<TH3>("phi_eta_vtxz_ref", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
@@ -732,6 +730,10 @@ struct FlowGenericFramework {
       AxisSpec axisLambdaMass = {resoSwitchVals[MassBins][Lambda], resoCutVals[MassMin][Lambda], resoCutVals[MassMax][Lambda]};
       AxisSpec yAxis = {100, -1, 1};
       // QA histograms for V0s
+      if (cfgFill.cfgFillV0QA && (resoSwitchVals[UseParticle][K0] != 0 || resoSwitchVals[UseParticle][Lambda] != 0)) {
+        registryQA.add("trackQA/after/etaV02", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
+        registryQA.add("trackQA/after/etaV0", "; #eta; Counts", {HistType::kTH1D, {etaAxis}});
+      }
       if (resoSwitchVals[UseParticle][K0] != 0) {
         if (cfgFill.cfgFillV0QA) {
           registryQA.add("K0/PiPlusTPC_K0", "", {HistType::kTH2D, {{ptAxis, axisNsigmaTPC}}});
@@ -2373,7 +2375,9 @@ struct FlowGenericFramework {
     registryQA.fill(HIST("K0/hK0Count"), FillDaughterTrackSelected);
     selection.selected = true;
     selection.isK0 = true;
-    registryQA.fill(HIST("K0/hK0AP"), v0.alpha(), v0.qtarm());
+    if (cfgFill.cfgFillV0QA) {
+      registryQA.fill(HIST("K0/hK0AP"), v0.alpha(), v0.qtarm());
+    }
     return selection;
   }
 
@@ -2481,7 +2485,7 @@ struct FlowGenericFramework {
       if (!selectionV0Daughter(postrack, Protons) || !selectionV0Daughter(negtrack, Pions)) {
         return selection;
       }
-      if (fillSelectionQA) {
+      if (fillSelectionQA && cfgFill.cfgFillV0QA) {
         registryQA.fill(HIST("Lambda/hLambdaAP"), v0.alpha(), v0.qtarm());
       }
     }
@@ -2489,7 +2493,7 @@ struct FlowGenericFramework {
       if (!selectionV0Daughter(postrack, Pions) || !selectionV0Daughter(negtrack, Protons)) {
         return selection;
       }
-      if (fillSelectionQA) {
+      if (fillSelectionQA && cfgFill.cfgFillV0QA) {
         registryQA.fill(HIST("Lambda/hAntiLambdaAP"), v0.alpha(), v0.qtarm());
       }
     }
@@ -2827,11 +2831,15 @@ struct FlowGenericFramework {
 
     if (cfgEventSelection.cfgDoOccupancySel) {
       int occupancy = collision.trackOccupancyInTimeRange();
-      registryQA.fill(HIST("eventQA/before/occ_mult_cent"), occupancy, tracks.size(), centrality);
+      if (cfgFill.cfgFillQA) {
+        registryQA.fill(HIST("eventQA/before/occ_mult_cent"), occupancy, tracks.size(), centrality);
+      }
       if (occupancy < 0 || occupancy > cfgEventSelection.cfgOccupancySelection) {
         return;
       }
-      registryQA.fill(HIST("eventQA/after/occ_mult_cent"), occupancy, tracks.size(), centrality);
+      if (cfgFill.cfgFillQA) {
+        registryQA.fill(HIST("eventQA/after/occ_mult_cent"), occupancy, tracks.size(), centrality);
+      }
     }
     registryQA.fill(HIST("eventQA/eventSel"), 2.5);
     if (cfgFill.cfgFillRunByRunQA) {
@@ -2874,7 +2882,9 @@ struct FlowGenericFramework {
   void processOnTheFly(soa::Filtered<aod::McCollisions>::iterator const& mcCollision, aod::McParticles const& mcParticles, aod::V0Datas const& v0s)
   {
     int run = 0;
-    registryQA.fill(HIST("MCGen/impactParameter"), mcCollision.impactParameter(), mcParticles.size());
+    if (cfgFill.cfgFillQA) {
+      registryQA.fill(HIST("MCGen/impactParameter"), mcCollision.impactParameter(), mcParticles.size());
+    }
     processCollision<Gen>(mcCollision, mcParticles, v0s, mcCollision.impactParameter(), -999, run);
   }
   PROCESS_SWITCH(FlowGenericFramework, processOnTheFly, "Process analysis for MC on-the-fly generated events", false);
@@ -3269,7 +3279,9 @@ struct FlowGenericFramework {
         continue;
       }
       fillGeneratedEfficiencyTrack(particle, selectedCentrality);
-      fillGeneratedLambdaFeeddownXi(particle, selectedCentrality);
+      if (cfgFill.cfgFillV0QA) {
+        fillGeneratedLambdaFeeddownXi(particle, selectedCentrality);
+      }
       if (isGeneratedEfficiencyV0(particle, PDG_t::kK0Short, K0) && resoSwitchVals[UseParticle][K0] != 0) {
         fillGeneratedEfficiencyV0(particle, EfficiencyK0, selectedCentrality);
       }
@@ -3294,7 +3306,9 @@ struct FlowGenericFramework {
         if (v0.collisionId() != bestCollisionIndex) {
           continue;
         }
-        fillLambdaFeeddownReco(v0, collision, tracks, selectedCentrality);
+        if (cfgFill.cfgFillV0QA) {
+          fillLambdaFeeddownReco(v0, collision, tracks, selectedCentrality);
+        }
         fillEfficiencyRecoV0(v0, collision, tracks, selectedCentrality);
       }
       break;

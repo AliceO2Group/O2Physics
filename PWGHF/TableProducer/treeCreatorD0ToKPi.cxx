@@ -288,7 +288,7 @@ struct HfTreeCreatorD0ToKPi {
 
   template <bool ApplyMl, typename T>
   auto fillTable(const T& candidate, int candFlag, double invMass, double topoChi2,
-                 double ct, double y, double e, int8_t flagMc, int8_t flagMcDecay, int8_t origin, int8_t pdgBmother)
+                 double ct, double y, double e, int8_t flagMc, int8_t flagMcDecay, int8_t origin, int pdgBmother)
   {
     if (fillCandidateLiteTable) {
       rowCandidateLite(
