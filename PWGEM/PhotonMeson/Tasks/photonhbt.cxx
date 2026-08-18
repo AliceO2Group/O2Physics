@@ -32,6 +32,7 @@
 #include <CommonConstants/MathConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsTPC/VDriftCorrFact.h>
+#include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -3698,8 +3699,8 @@ struct Photonhbt {
         std::set<std::pair<int, int>> usedLegs;
         for (const int& i : order) {
           const int c = perCollision ? allCands[i].collisionId : -1;
-          if (usedLegs.contains({c, allCands[i].posTrackId}) > 0 ||
-              usedLegs.contains({c, allCands[i].negTrackId}) > 0) {
+          if (usedLegs.contains({c, allCands[i].posTrackId}) ||
+              usedLegs.contains({c, allCands[i].negTrackId})) {
             continue; // a leg is already owned by an earlier (preferred) candidate
           }
           usedLegs.insert({c, allCands[i].posTrackId});

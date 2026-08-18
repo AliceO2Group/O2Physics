@@ -18,6 +18,7 @@
 #include <CommonConstants/MathConstants.h>
 #include <EMCALBase/Geometry.h>
 #include <EMCALBase/GeometryBase.h>
+#include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>

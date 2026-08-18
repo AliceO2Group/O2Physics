@@ -190,9 +190,6 @@ struct EmcalPhotonMcTask {
   Produces<aod::ConvTagCandidates_001> convTagCandidates;
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<bool> writeTable{"writeTable", true, "write table for ML."};
   Configurable<std::vector<int>> classPrescale{"classPrescale", {1, 1, 700, 25, 1, 350, 15, 1, 1, 35, 2, 1, 1, 1, 1, 1, 1000}, "prescale factor per TruthClass, indexed 0..10 matching the enum order"};
   Configurable<uint32_t> bkgPrescaleSeed{"bkgPrescaleSeed", 42, "seed for the background-prescale RNG"};

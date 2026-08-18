@@ -19,6 +19,7 @@
 #include <Framework/Concepts.h>
 
 #include <array>
+#include <cmath>
 #include <string>
 
 class PHOSPhotonCut
@@ -55,10 +56,10 @@ class PHOSPhotonCut
     }
 
     // only temporary solution to avoid noisy channels.
-    if (-1.20 + 10.2 * sqrt(cluster.e()) < cluster.nCells()) {
+    if (-1.20 + 10.2 * std::sqrt(cluster.e()) < cluster.nCells()) {
       return false;
     }
-    if (cluster.nCells() < -3.04 + 3.14 * sqrt(cluster.e())) {
+    if (cluster.nCells() < -3.04 + 3.14 * std::sqrt(cluster.e())) {
       return false;
     }
 

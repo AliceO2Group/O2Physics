@@ -44,6 +44,7 @@
 #include <DetectorsBase/Propagator.h>
 #include <EMCALBase/Geometry.h>
 #include <EMCALBase/GeometryBase.h>
+#include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
