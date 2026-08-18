@@ -162,7 +162,7 @@ struct TagAndProbe {
 
     // create sub lists first.
 
-    for (auto& pairname : fPairNames) {
+    for (const auto& pairname : fPairNames) {
       LOGF(info, "Enabled pairs = %s", pairname.data());
 
       THashList* list_ev_pair = o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, pairname.data());

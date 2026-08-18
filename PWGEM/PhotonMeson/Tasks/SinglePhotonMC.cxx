@@ -88,8 +88,8 @@ struct SinglePhotonMC {
   THashList* fMainList = new THashList();
 
   std::vector<V0PhotonCut> fPCMCuts;
-  std::vector<PHOSPhotonCut> fPHOSCuts;
-  std::vector<EMCPhotonCut> fEMCCuts;
+  // std::vector<PHOSPhotonCut> fPHOSCuts;
+  // std::vector<EMCPhotonCut> fEMCCuts;
 
   std::vector<std::string> fDetNames;
   void init(InitContext& context)
@@ -138,7 +138,7 @@ struct SinglePhotonMC {
     auto* list_gen = dynamic_cast<THashList*>(fMainList->FindObject("Generated"));
     o2::aod::pwgem::photon::histogram::DefineHistograms(list_gen, "Generated", "Photon");
 
-    for (auto& detname : fDetNames) {
+    for (const auto& detname : fDetNames) {
       LOGF(info, "Enabled detector = %s", detname.data());
 
       o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, detname.data());

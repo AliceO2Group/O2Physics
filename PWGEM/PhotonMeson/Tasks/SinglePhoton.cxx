@@ -152,7 +152,7 @@ struct SinglePhoton {
     o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Photon");
     auto* list_photon = dynamic_cast<THashList*>(fMainList->FindObject("Photon"));
 
-    for (auto& detname : fDetNames) {
+    for (const auto& detname : fDetNames) {
       LOGF(info, "Enabled detector = %s", detname.data());
 
       o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, detname.data());

@@ -33,8 +33,8 @@ class PairCut
     kNCuts
   };
 
-  [[nodiscard]] std::string getName() const { return name; }
-  [[nodiscard]] std::string getTitle() const { return title; }
+  [[nodiscard]] const std::string& getName() const { return name; }
+  [[nodiscard]] const std::string& getTitle() const { return title; }
 
   static const std::array<std::string, static_cast<std::size_t>(PairCuts::kNCuts)> mCutNames;
 

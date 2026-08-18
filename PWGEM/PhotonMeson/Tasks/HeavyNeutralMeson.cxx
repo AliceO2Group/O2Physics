@@ -148,9 +148,9 @@ struct HeavyNeutralMeson {
   HistogramRegistry mHistManager{"HeavyNeutralMesonHistograms", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Prepare vectors for different species
-  std::vector<hnmutilities::GammaGammaPair> vGGs;
-  std::vector<hnmutilities::HeavyNeutralMeson> vHNMs;
-  std::vector<ROOT::Math::PtEtaPhiMVector> etaPrimeEMC, etaPrimePCM, omegaEMC, omegaPCM, proton, antiproton, deuteron, antideuteron, pion, antipion;
+  std::vector<hnmutilities::GammaGammaPair> mvGGs;
+  std::vector<hnmutilities::HeavyNeutralMeson> mvHNMs;
+  std::vector<ROOT::Math::PtEtaPhiMVector> etaPrimeEMC, etaPrimePCM, omegaEMC, omegaPCM, pion, antipion;
   float mMassProton = constants::physics::MassProton;
   float mMassDeuteron = constants::physics::MassDeuteron;
   float mMassOmega = 0.782;
@@ -371,7 +371,7 @@ struct HeavyNeutralMeson {
     // clean vecs
     pion.clear();
     antipion.clear();
-    vHNMs.clear();
+    mvHNMs.clear();
     // vGGs vector is cleared in reconstructGGs.
 
     // ---------------------------------> EMCal event QA <----------------------------------
@@ -408,9 +408,9 @@ struct HeavyNeutralMeson {
 
     std::vector<hnmutilities::Photon> vGammas;
     hnmutilities::storeGammasInVector(clustersInThisCollision, v0sInThisCollision, vGammas, emcEtaShift, emcPhiShift);
-    hnmutilities::reconstructGGs(vGammas, vGGs);
+    hnmutilities::reconstructGGs(vGammas, mvGGs);
     vGammas.clear();
-    processGGs(vGGs);
+    processGGs(mvGGs);
 
     // ------------------------------> Loop over all tracks <-------------------------------
     // - Sort them into vectors based on PID ((anti)protons, (anti)deuterons, (anti)pions)
@@ -502,7 +502,7 @@ struct HeavyNeutralMeson {
     for (const auto& posPion : pion) {
       for (const auto& negPion : antipion) {
         ROOT::Math::PtEtaPhiMVector vecPiPlPiMi = posPion + negPion;
-        hnmutilities::reconstructHeavyNeutralMesons(vecPiPlPiMi, vGGs, vHNMs);
+        hnmutilities::reconstructHeavyNeutralMesons(vecPiPlPiMi, mvGGs, mvHNMs);
 
         mHistManager.fill(HIST("HNM/Before/PiPlPiMi/fInvMassVsPt"), vecPiPlPiMi.M(), vecPiPlPiMi.pt());
         mHistManager.fill(HIST("HNM/Before/PiPlPiMi/fEta"), vecPiPlPiMi.eta());
@@ -523,7 +523,7 @@ struct HeavyNeutralMeson {
     // ---------------------------> Process HNM candidates <--------------------------------
     // - Fill invMassVsPt histograms separated into HNM types (based on GG mass) and gamma reco method
     // -------------------------------------------------------------------------------------
-    processHNMs(vHNMs);
+    processHNMs(mvHNMs);
   }
 
   /// \brief Loop over the GG candidates, fill the mass/pt histograms and set the isPi0/isEta flags based on the reconstructed mass
