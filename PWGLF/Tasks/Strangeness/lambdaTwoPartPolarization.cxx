@@ -370,8 +370,10 @@ struct LfLambdaTwoPartPolarization {
           aLambdaTag = 1;
         }
 
-        if (postrack_v01.globalIndex() == trk.globalIndex() || negtrack_v01.globalIndex() == trk.globalIndex()) {
-          continue;
+        if (doprocessDataSame) {
+          if (postrack_v01.globalIndex() == trk.globalIndex() || negtrack_v01.globalIndex() == trk.globalIndex()) {
+            continue;
+          }
         }
 
         if (LambdaTag == aLambdaTag) {
