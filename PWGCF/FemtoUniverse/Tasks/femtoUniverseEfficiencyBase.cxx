@@ -670,8 +670,6 @@ struct FemtoUniverseEfficiencyBase {
       if (!(mcParticle.partOriginMCTruth() == aod::femtouniverse_mc_particle::ParticleOriginMCTruth::kPrimary)) {
         continue;
       }
-      if (static_cast<int32_t>(part.motherPDG()) != 0)
-        std::cout << "Mother PDG:\t" << static_cast<int32_t>(part.motherPDG()) << std::endl;
       if (ConfBothTracks.confCheckMotherPDG && std::abs(static_cast<int32_t>(part.motherPDG())) == std::abs(ConfBothTracks.confMotherPDGCode)) {
         continue;
       }
