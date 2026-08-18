@@ -71,6 +71,7 @@ DECLARE_SOA_COLUMN(NConstituents, nConstituents, int32_t);
 } // namespace qgmljet
 
 DECLARE_SOA_TABLE(QGMLJets, "AOD", "QGMLJETS",
+                  o2::soa::Index<>,
                   qgmljet::FlavorLabel,
                   qgmljet::LeadingPartonPdg,
                   qgmljet::LeadingPartonPt,
