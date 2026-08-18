@@ -565,7 +565,11 @@ struct JetDsSpecSubs {
       // Count all generated MC collisions
       registry.fill(HIST("McEffCol"), getValFromBin(BinMCColCntr::All));
 
-      // Apply MC vertex selection
+      // Apply standard event selection and vertex cut
+      if (!jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits)) {
+        continue;
+      }
+
       if (std::abs(mccollision.posZ()) > vertexZCut) {
         continue;
       }
