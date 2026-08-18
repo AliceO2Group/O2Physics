@@ -9,6 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file FFitWeightsLinkDef.h
+/// \brief LinkDef for FFitWeights
+///
+/// \author Joachim C. K. B. Hansen
+
+
 #ifndef COMMON_CORE_FFITWEIGHTSLINKDEF_H_
 #define COMMON_CORE_FFITWEIGHTSLINKDEF_H_
 
