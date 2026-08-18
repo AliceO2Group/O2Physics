@@ -412,7 +412,6 @@ struct HfTreeCreatorLcToPKPi {
 
   constexpr static float UndefValueFloat = -999.f;
   constexpr static int UndefValueInt = -999;
-  constexpr static float NanoToPico = 1000.f;
 
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
   using Cents = soa::Join<aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFDDMs>;
@@ -1002,8 +1001,6 @@ struct HfTreeCreatorLcToPKPi {
               const auto mcCollision = particleMother.template mcCollision_as<aod::McCollisions>();
               p = particleMother.p();
               pt = particleMother.pt();
-              const float p2m = p / static_cast<float>(MassLambdaCPlus);
-              const float gamma = std::sqrt(1 + p2m * p2m); // mother's particle Lorentz factor
               pvX = mcCollision.posX();
               pvY = mcCollision.posY();
               pvZ = mcCollision.posZ();
@@ -1011,7 +1008,7 @@ struct HfTreeCreatorLcToPKPi {
               svY = mcParticleProng0.vy();
               svZ = mcParticleProng0.vz();
               decayLength = static_cast<float>(RecoDecay::distance(std::array<float, 3>{svX, svY, svZ}, std::array<float, 3>{pvX, pvY, pvZ}));
-              decayTime = mcParticleProng0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
+              decayTime = decayLength * static_cast<float>(MassLambdaCPlus) / LightSpeedCm2PS / p;
             }
             rowCandidateMC(
               p, pt,
@@ -1032,8 +1029,6 @@ struct HfTreeCreatorLcToPKPi {
         const auto mcDaughter0 = particle.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().begin();
         const auto mcCollision = particle.template mcCollision_as<aod::McCollisions>();
         const auto p = particle.p();
-        const float p2m = p / static_cast<float>(MassLambdaCPlus);
-        const float gamma = std::sqrt(1 + p2m * p2m); // mother's particle Lorentz factor
         const float pvX = mcCollision.posX();
         const float pvY = mcCollision.posY();
         const float pvZ = mcCollision.posZ();
@@ -1041,7 +1036,7 @@ struct HfTreeCreatorLcToPKPi {
         const float svY = mcDaughter0.vy();
         const float svZ = mcDaughter0.vz();
         const float l = static_cast<float>(RecoDecay::distance(std::array<float, 3>{svX, svY, svZ}, std::array<float, 3>{pvX, pvY, pvZ}));
-        const float t = mcDaughter0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
+        const float t = l * static_cast<float>(MassLambdaCPlus) / LightSpeedCm2PS / p;
         rowCandidateFullParticles(
           particle.pt(),
           particle.eta(),

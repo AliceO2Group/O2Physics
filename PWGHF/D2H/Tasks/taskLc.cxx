@@ -63,6 +63,7 @@ using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
 using namespace o2::hf_evsel;
+using namespace o2::constants::physics;
 
 /// Λc± → p± K∓ π± analysis task
 struct HfTaskLc {
@@ -522,10 +523,18 @@ struct HfTaskLc {
           occ = o2::hf_occupancy::getOccupancyGenColl(recoCollsPerMcColl, occEstimator);
         }
 
-        const auto& mcDaughter0 = particle.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().begin();
-        const float p2m = particle.p() / o2::constants::physics::MassLambdaCPlus;
-        const float gamma = std::sqrt(1 + p2m * p2m);                        // mother's particle Lorentz factor
-        const float properDecayTime = mcDaughter0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
+        const auto mcDaughter0 = particle.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().begin();
+        const auto mcCollision = particle.template mcCollision_as<aod::McCollisions>();
+        const auto p = particle.p();
+        const float pvX = mcCollision.posX();
+        const float pvY = mcCollision.posY();
+        const float pvZ = mcCollision.posZ();
+        const float svX = mcDaughter0.vx();
+        const float svY = mcDaughter0.vy();
+        const float svZ = mcDaughter0.vz();
+
+        const float decayLength = static_cast<float>(RecoDecay::distance(std::array<float, 3>{svX, svY, svZ}, std::array<float, 3>{pvX, pvY, pvZ}));
+        const float properDecayTime = decayLength * static_cast<float>(MassLambdaCPlus) / LightSpeedCm2PS / p;
 
         fillHistogramsGen<Signal>(particle);
 
