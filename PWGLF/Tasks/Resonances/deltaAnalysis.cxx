@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file deltaanalysis.cxx
+/// \file deltaAnalysis.cxx
 /// \brief  Delta(1232) resonance analysis via proton-pion invariant mass reconstruction with advance PID and background rejection cuts also add efficiency correction and acceptance correction
 /// \author Durgesh Bhatt <durgesh.bhatt@cern.ch>
 
@@ -60,9 +60,10 @@ using namespace o2::constants::physics;
 
 namespace
 {
-constexpr float massProton = o2::constants::physics::MassProton;
-constexpr float massPion = o2::constants::physics::MassPionCharged;
-constexpr float minAbsCharge = 1e-3f;
+constexpr float MassProton = o2::constants::physics::MassProton;
+constexpr float MassPion = o2::constants::physics::MassPionCharged;
+constexpr float MinAbsCharge = 1e-3f;
+const std::array<float, 2> kProtonPionMasses{MassProton, MassPion};
 } // namespace
 namespace delta_analysis
 {
@@ -449,7 +450,13 @@ struct DeltaAnalysis {
     if (doprocessEventFactor) {
       histos.add("EventFactor/hRecoEvents", "Reconstructed INEL>0 events (Nrec)", kTH1F, {centAxis});
       histos.add("EventFactor/hEventsGenAll", "Generated events passing truth |Zvtx| + truth INEL>0 cuts", kTH1F, {centAxis});
-      histos.add("EventFactor/hEventsGenAccepted", "Generated events with >=1 accepted reconstructed collision", kTH1F, {centAxis});
+      histos.add("EventFactor/hEventsGenAccepted", "Generated events with >=1 accepted reconstructed collision (truth centrality)", kTH1F, {centAxis});
+      // NEW: same "generated with >=1 accepted reconstructed collision" population as
+      // hEventsGenAccepted, but filled with the RECONSTRUCTED centrality of that accepted
+      // collision instead of the truth centrality. This puts it on the same axis as
+      // hRecoEvents so that event_splitting = hEventsGenAcceptedReco / hRecoEvents compares
+      // like with like. hEventsGenAccepted (truth-binned) stays as-is for event_loss.
+      histos.add("EventFactor/hEventsGenAcceptedReco", "Generated events with >=1 accepted reconstructed collision (reconstructed centrality)", kTH1F, {centAxis});
       histos.add("EventFactor/hNRecoCollisionsPerMcCollision", "Number of reconstructed collisions per generated collision", kTH1F, {{21, -0.5f, 20.5f}});
     }
 
@@ -545,7 +552,7 @@ struct DeltaAnalysis {
     if (!pdgParticle) {
       return false;
     }
-    return std::abs(pdgParticle->Charge()) > minAbsCharge;
+    return std::abs(pdgParticle->Charge()) > MinAbsCharge;
   }
 
   // Truth-level analogue of isRecoInelGt0() above - at least one charged primary within
@@ -1029,7 +1036,7 @@ struct DeltaAnalysis {
       const std::array<std::array<float, 3>, 2> rotMomenta = {
         std::array<float, 3>{pxProton, pyProton, pzProton},
         std::array<float, 3>{pxPionRot, pyPionRot, pzPion}};
-      const float rotMass = RecoDecay::m(rotMomenta, std::array{massProton, massPion});
+      const float rotMass = RecoDecay::m(rotMomenta, kProtonPionMasses);
       const float rotPt = RecoDecay::pt(std::array{pxProton + pxPionRot, pyProton + pyPionRot});
       const float rotY = RecoDecay::y(
         std::array{pxProton + pxPionRot, pyProton + pyPionRot, pzProton + pzPion}, rotMass);
@@ -1155,7 +1162,7 @@ struct DeltaAnalysis {
         const std::array<std::array<float, 3>, 2> bothMomenta = {
           std::array<float, 3>{pxPr, pyPr, pzPr},
           std::array<float, 3>{pxPi, pyPi, pzPi}};
-        const float pairMass = RecoDecay::m(bothMomenta, std::array{massProton, massPion});
+        const float pairMass = RecoDecay::m(bothMomenta, kProtonPionMasses);
         const float pairPt = RecoDecay::pt(std::array{pxPr + pxPi, pyPr + pyPi});
         const float pairY = RecoDecay::y(std::array{pxPr + pxPi, pyPr + pyPi, pzPr + pzPi}, pairMass);
 
@@ -1414,7 +1421,7 @@ struct DeltaAnalysis {
           const std::array<std::array<float, 3>, 2> momentaReco = {
             std::array<float, 3>{t0.px(), t0.py(), t0.pz()},
             std::array<float, 3>{t1.px(), t1.py(), t1.pz()}};
-          const float pairMassReco = RecoDecay::m(momentaReco, std::array{massProton, massPion});
+          const float pairMassReco = RecoDecay::m(momentaReco, kProtonPionMasses);
           const float pairPtReco = RecoDecay::pt(std::array{t0.px() + t1.px(), t0.py() + t1.py()});
           const float pairYReco = RecoDecay::y(std::array{t0.px() + t1.px(), t0.py() + t1.py(), t0.pz() + t1.pz()}, pairMassReco);
           if (pairYReco >= trackCuts.cfgMinY && pairYReco <= trackCuts.cfgMaxY) {
@@ -1456,7 +1463,7 @@ struct DeltaAnalysis {
         const std::array<std::array<float, 3>, 2> momenta = {
           std::array<float, 3>{t0.px(), t0.py(), t0.pz()},
           std::array<float, 3>{t1.px(), t1.py(), t1.pz()}};
-        const float pairMass = RecoDecay::m(momenta, std::array{massProton, massPion});
+        const float pairMass = RecoDecay::m(momenta, kProtonPionMasses);
         const float pairPt = RecoDecay::pt(std::array{t0.px() + t1.px(), t0.py() + t1.py()});
         const float pairY = RecoDecay::y(std::array{t0.px() + t1.px(), t0.py() + t1.py(), t0.pz() + t1.pz()}, pairMass);
         if (pairY < trackCuts.cfgMinY || pairY > trackCuts.cfgMaxY) {
@@ -1595,7 +1602,7 @@ struct DeltaAnalysis {
   {
     // ── Loop A: reconstructed collisions ──────────────────────────────────────────────────
     std::unordered_map<int64_t, int> nRecoCollisionsPerMc;
-    std::unordered_set<int64_t> acceptedMcCollisionIds;
+    std::unordered_map<int64_t, float> acceptedMcCollisionRecoCent;
     for (auto const& collision : collisions) {
       if (collision.has_mcCollision()) {
         ++nRecoCollisionsPerMc[collision.mcCollisionId()];
@@ -1606,7 +1613,10 @@ struct DeltaAnalysis {
       const float centrality = getCentrality(collision);
       histos.fill(HIST("EventFactor/hRecoEvents"), centrality);
       if (collision.has_mcCollision()) {
-        acceptedMcCollisionIds.insert(collision.mcCollisionId());
+        // emplace() keeps the FIRST accepted collision's centrality if a generated collision
+        // has more than one accepted reconstructed collision (splitting), matching the
+        // "first accepted" convention already used in processMCGen() above.
+        acceptedMcCollisionRecoCent.emplace(collision.mcCollisionId(), centrality);
       }
     }
 
@@ -1636,11 +1646,16 @@ struct DeltaAnalysis {
         histos.fill(HIST("CutFlow/EventFactor/hEventAcceptedCutFlow"), 3.f); // Has associated reconstructed collision
       }
 
-      const bool hasAcceptedReco = acceptedMcCollisionIds.contains(mcCollision.globalIndex());
+      const auto itCent = acceptedMcCollisionRecoCent.find(mcCollision.globalIndex());
+      const bool hasAcceptedReco = (itCent != acceptedMcCollisionRecoCent.end());
       if (hasAcceptedReco) {
         histos.fill(HIST("CutFlow/EventFactor/hEventAcceptedCutFlow"), 4.f); // Associated reco collision passes event selection
         histos.fill(HIST("CutFlow/EventFactor/hEventAcceptedCutFlow"), 5.f); // Final EventAccepted
+        // Truth-binned: denominator for event_loss = hEventsGenAccepted / hEventsGenAll (unchanged).
         histos.fill(HIST("EventFactor/hEventsGenAccepted"), truthCentrality);
+        // NEW - reco-binned: numerator for event_splitting = hEventsGenAcceptedReco / hRecoEvents,
+        // now on the same (reconstructed) centrality axis as hRecoEvents.
+        histos.fill(HIST("EventFactor/hEventsGenAcceptedReco"), itCent->second);
       }
     }
   }
