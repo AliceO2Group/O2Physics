@@ -278,6 +278,7 @@ struct FlowEseTask {
     const auto histogram = histEse.find(name);
     if (histogram == histEse.end()) {
       LOGF(fatal, "Could not find ESE histogram %s", name.c_str());
+      return nullptr;
     }
     return static_cast<T*>(histogram->second);
   }
@@ -1016,7 +1017,7 @@ struct FlowEseTask {
       if (cfgUSESP)
         qvecMag *= std::sqrt(std::pow(collision.qvecIm()[3 + (nmode - 2) * 28], 2) + std::pow(collision.qvecRe()[3 + (nmode - 2) * 28], 2));
 
-      if (fillRegular && nmode == CorrLevel[0] && cfgFullCheck) { ////////////
+      if (nmode == CorrLevel[0] && cfgFullCheck) { ////////////
         if (lambdaTag) {
           histos.fill(HIST("psi2/h_lambda_cos"), v0.mLambda(), v0.pt(), angle * weight, centrality, relphi);
           histos.fill(HIST("psi2/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
@@ -1117,7 +1118,7 @@ struct FlowEseTask {
             histos.fill(HIST("psi2/QA/sinPhi_al"), v0.mAntiLambda(), v0.pt(), std::sin(v0.phi() * 2.0), centrality);
           }
         }
-      } else if (fillRegular && nmode == CorrLevel[1]) {
+      } else if (nmode == CorrLevel[1]) {
         if (lambdaTag) {
           histos.fill(HIST("psi3/h_lambda_cos"), v0.mLambda(), v0.pt(), angle * weight, centrality, relphi);
           histos.fill(HIST("psi3/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
@@ -1148,7 +1149,7 @@ struct FlowEseTask {
             histos.fill(HIST("psi3/h_alambda_coscos"), v0.mAntiLambda(), v0.pt(), angle * std::cos(relphi), centrality, weight);
           }
         }
-      } else if (fillRegular && nmode == CorrLevel[2]) {
+      } else if (nmode == CorrLevel[2]) {
         if (lambdaTag) {
           histos.fill(HIST("psi4/h_lambda_cos"), v0.mLambda(), v0.pt(), angle * weight, centrality, relphi);
           histos.fill(HIST("psi4/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
