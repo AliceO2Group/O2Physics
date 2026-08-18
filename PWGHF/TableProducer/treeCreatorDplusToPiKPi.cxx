@@ -307,7 +307,7 @@ struct HfTreeCreatorDplusToPiKPi {
     int8_t flagMc = 0;
     int8_t originMc = 0;
     int8_t channelMc = 0;
-    int8_t bMotherPdg = 0;
+    int bMotherPdg = 0;
     if constexpr (DoMc) {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
