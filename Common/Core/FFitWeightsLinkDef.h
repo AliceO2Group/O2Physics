@@ -14,7 +14,6 @@
 ///
 /// \author Joachim C. K. B. Hansen
 
-
 #ifndef COMMON_CORE_FFITWEIGHTSLINKDEF_H_
 #define COMMON_CORE_FFITWEIGHTSLINKDEF_H_
 
