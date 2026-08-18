@@ -30,9 +30,9 @@ using namespace o2::aod::pwgem::photonmeson::photonpair;
 using MyV0Photons = Filtered<Join<o2::aod::V0PhotonsKF, o2::aod::V0KFEMEventIds, o2::aod::V0PhotonsKFPrefilterBitDerived>>;
 using MyEMCClusters = soa::Join<aod::EmEmcClusters, aod::EMCEMEventIds>;
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Pi0EtaToGammaGamma<PairType::kPCMEMC, MyV0Photons, MyEMCClusters, aod::V0Legs, EmEmcMTracks, EmEmcMSTracks>>(cfgc, TaskName{"pi0eta-to-gammagamma-pcmemc"}),
+    adaptAnalysisTask<Pi0EtaToGammaGamma<PairType::kPCMEMC, MyV0Photons, MyEMCClusters, aod::V0Legs, EmEmcMTracks, EmEmcMSTracks>>(context, TaskName{"pi0eta-to-gammagamma-pcmemc"}),
   };
 }

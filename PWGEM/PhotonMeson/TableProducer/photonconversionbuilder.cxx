@@ -22,6 +22,7 @@
 #include "PWGEM/PhotonMeson/Core/EmMlResponsePCM.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCandidate.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
@@ -39,10 +40,10 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
-#include <DataFormatsParameters/GRPObject.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -90,6 +91,7 @@ using std::array;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
 // using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
+using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::PcmObjects>;
 
 using MyTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullEl, aod::pidTPCFullPi>;
 using MyTracksIUMC = soa::Join<MyTracksIU, aod::McTrackLabels, aod::mcTPCTuneOnData>;
@@ -161,11 +163,8 @@ struct PhotonConversionBuilder {
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
 
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
@@ -451,12 +450,11 @@ struct PhotonConversionBuilder {
     }
   }
 
-  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  void initCCDB(MyBCs::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-
     // In case override, don't proceed, please - no CCDB access required
     if (d_bz_input > -990) { // o2-linter: disable=magic-number (override value)
       d_bz = d_bz_input;
@@ -470,26 +468,10 @@ struct PhotonConversionBuilder {
     }
 
     auto run3grp_timestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = nullptr;
-    o2::parameters::GRPMagField* grpmag = nullptr;
-    if (!skipGRPOquery) {
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-    }
-    if (grpo != nullptr) {
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (grpmag == nullptr) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-      o2::base::Propagator::initFieldFromGRP(grpmag);
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    }
+    o2::base::Propagator::initFieldFromGRP(&bc.grpMagField());
+    // Fetch magnetic field from ccdb for current collision
+    d_bz = bc.grpMagField().getNominalL3Field();
+    LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     mRunNumber = bc.runNumber();
 
     if (useMatCorrType == 2) { // o2-linter: disable=magic-number (material budget correction)
@@ -503,7 +485,7 @@ struct PhotonConversionBuilder {
     mVDriftMgr.init(&ccdb->instance());
   }
 
-  void updateCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  void updateCCDB(MyBCs::iterator const& bc)
   {
     auto timestamp = bc.timestamp();
 
@@ -1095,7 +1077,7 @@ struct PhotonConversionBuilder {
 
       nv0_map[collision.globalIndex()] = 0;
 
-      const auto& bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      const auto& bc = collision.template foundBC_as<MyBCs>();
       initCCDB(bc);
       registry.fill(HIST("hCollisionCounter"), 1);
 
@@ -1736,20 +1718,20 @@ struct PhotonConversionBuilder {
     }
   }
 
-  void processRec(MyCollisions const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processRec(MyCollisions const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, MyBCs const& bcs)
   {
     build<false, false, false>(collisions, v0s, tracks, bcs);
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processRec, "process reconstructed info for data", true);
 
-  // void processRec_SWT(MyCollisionsWithSWT const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  // void processRec_SWT(MyCollisionsWithSWT const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, MyBCs const& bcs)
   // {
   //   build<false, true, false>(collisions, v0s, tracks, bcs);
   // }
   // PROCESS_SWITCH(PhotonConversionBuilder, processRec_SWT, "process reconstructed info for data", false);
 
   void processMC(MyCollisionsMC const& collisions, FilteredV0s const& v0s, MyTracksIUMC const& tracks,
-                 aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcparticles)
+                 MyBCs const& bcs, aod::McParticles const& mcparticles)
   {
     DedupDiag diag;
     build<true, false, false>(collisions, v0s, tracks, bcs, &diag);
@@ -1757,13 +1739,13 @@ struct PhotonConversionBuilder {
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processMC, "process reconstructed info for MC", false);
 
-  void processRec_OnlyIfDielectron(soa::Join<MyCollisions, aod::EMEventsNee> const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processRec_OnlyIfDielectron(soa::Join<MyCollisions, aod::EMEventsNee> const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, MyBCs const& bcs)
   {
     build<false, false, true>(collisions, v0s, tracks, bcs);
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processRec_OnlyIfDielectron, "process reconstructed info for data", false);
 
-  // void processRec_SWT_OnlyIfDielectron(soa::Join<MyCollisionsWithSWT, aod::EMEventsNee> const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  // void processRec_SWT_OnlyIfDielectron(soa::Join<MyCollisionsWithSWT, aod::EMEventsNee> const& collisions, FilteredV0s const& v0s, MyTracksIU const& tracks, MyBCs const& bcs)
   // {
   //   build<false, true, true>(collisions, v0s, tracks, bcs);
   // }

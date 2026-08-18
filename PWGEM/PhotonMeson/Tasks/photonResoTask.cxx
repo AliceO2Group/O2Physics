@@ -32,6 +32,7 @@
 #include <DataFormatsParameters/GRPObject.h>
 #include <Framework/ASoA.h>
 #include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Concepts.h>
@@ -65,9 +66,9 @@ using namespace o2::aod::pwgem::photon;
 enum CentralityEstimator {
   None = 0,
   CFT0A = 1,
-  CFT0C,
-  CFT0M,
-  NCentralityEstimators
+  CFT0C = 2,
+  CFT0M = 3,
+  NCentralityEstimators = 4
 };
 
 enum class MapLevel {
@@ -78,8 +79,6 @@ enum class MapLevel {
 };
 
 struct PhotonResoTask {
-  static constexpr float MinEnergy = 0.7f;
-
   o2::framework::Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   o2::framework::Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   o2::framework::Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -94,7 +93,7 @@ struct PhotonResoTask {
   ConfigurableAxis thnConfigAxisPhiRelative{"thnConfigAxisPhiRelative", {300, -1., 2.}, "(phi rec - phi true) / phi true axis"};
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {20, 0., 100.}, "centrality axis for the current event"};
   ConfigurableAxis thnConfigAxisMult{"thnConfigAxisMult", {60, 0., 60000.}, "multiplicity axis for the current event"};
-  Configurable<bool> useCent{"useCent", 0, "flag to enable usage of centrality instead of multiplicity as axis."};
+  Configurable<bool> useCent{"useCent", false, "flag to enable usage of centrality instead of multiplicity as axis."};
 
   EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -199,7 +198,7 @@ struct PhotonResoTask {
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb{};
   int mRunNumber{-1};
   float dBz{0.f};
 
@@ -366,8 +365,9 @@ struct PhotonResoTask {
     auto run3GrpTimestamp = collision.timestamp();
     o2::parameters::GRPObject* grpo = nullptr;
     o2::parameters::GRPMagField* grpmag = nullptr;
-    if (!skipGRPOquery)
+    if (!skipGRPOquery) {
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3GrpTimestamp);
+    }
     if (grpo) {
       // Fetch magnetic field from ccdb for current collision
       dBz = grpo->getNominalL3Field();
@@ -491,7 +491,7 @@ struct PhotonResoTask {
         if (!(emcFlags.test(photonEMC.globalIndex()))) {
           continue;
         }
-        if (photonEMC.emmcparticleIds().size() <= 0) {
+        if (photonEMC.emmcparticleIds().empty()) {
           // this is a cluster with just noise, skip
           continue;
         }
@@ -602,7 +602,7 @@ struct PhotonResoTask {
           registry.fill(HIST("mesonQA/hInvMassPt"), vMeson.M(), vMeson.Pt());
         }
 
-        if (g1.emmcparticleIds().size() <= 0 || g2.emmcparticleIds().size() <= 0) {
+        if (g1.emmcparticleIds().empty() || g2.emmcparticleIds().empty()) {
           // there is a cluster which is just noise, skip
           continue;
         }
@@ -642,7 +642,7 @@ struct PhotonResoTask {
 
 }; // End struct PhotonResoTask
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
-  return WorkflowSpec{adaptAnalysisTask<PhotonResoTask>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<PhotonResoTask>(context)};
 }
