@@ -21,7 +21,6 @@ o2physics_add_library(AnalysisCore
         TableHelper.cxx
         MetadataHelper.cxx
         CollisionTypeHelper.cxx
-        FFitWeights.cxx
         PUBLIC_LINK_LIBRARIES O2::Framework O2::DataFormatsParameters ROOT::EG O2::CCDB ROOT::Physics O2::FT0Base O2::FV0Base O2::DataFormatsParamTOF)
 
 o2physics_target_root_dictionary(AnalysisCore
@@ -37,7 +36,6 @@ o2physics_target_root_dictionary(AnalysisCore
         PID/TPCPIDResponse.h
         PID/PIDTOFParamService.h
         CollisionTypeHelper.h
-        FFitWeights.h
         LINKDEF AnalysisCoreLinkDef.h)
 
 o2physics_add_library(EventFilteringUtils
@@ -52,3 +50,12 @@ o2physics_target_root_dictionary(EventFilteringUtils
 o2physics_add_header_only_library(TPCDriftManager
         HEADERS TPCVDriftManager.h
         INTERFACE_LINK_LIBRARIES)
+
+o2physics_add_library(FFitWeights
+        SOURCES FFitWeights.cxx
+        PUBLIC_LINK_LIBRARIES O2::Framework O2::CCDB ROOT::Physics)
+
+o2physics_target_root_dictionary(FFitWeights
+        HEADERS FFitWeights.h
+        LINKDEF FFitWeightsLinkDef.h)
+
