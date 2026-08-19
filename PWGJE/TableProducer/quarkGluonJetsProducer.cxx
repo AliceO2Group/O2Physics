@@ -33,6 +33,7 @@
 #include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
@@ -242,7 +243,7 @@ struct QuarkGluonJetsProducer {
   }
 
   template <typename TrackT>
-  bool hasITSLayerHit(TrackT const& track, int layer) const
+  [[nodiscard]] bool hasITSLayerHit(TrackT const& track, int layer) const
   {
     return TESTBIT(track.itsClusterMap(), layer - 1);
   }
