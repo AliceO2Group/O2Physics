@@ -339,6 +339,24 @@ struct HfTaskLc {
     return o2::hf_centrality::getCentralityColl<Coll>(collision);
   }
 
+  template <typename McDaughter, typename CandLcMcGen>
+  float evaluateMcGenDecayTime(const McDaughter& mcParticleProng0, const CandLcMcGen& motherParticle)
+  {
+    const auto mcCollision = motherParticle.template mcCollision_as<aod::McCollisions>();
+    const float pMother = motherParticle.p();
+    const float pvX = mcCollision.posX();
+    const float pvY = mcCollision.posY();
+    const float pvZ = mcCollision.posZ();
+    const float svX = mcParticleProng0.vx();
+    const float svY = mcParticleProng0.vy();
+    const float svZ = mcParticleProng0.vz();
+
+    const float decayLength = static_cast<float>(RecoDecay::distance(std::array<float, 3>{svX, svY, svZ}, std::array<float, 3>{pvX, pvY, pvZ}));
+    const float properDecayTime = decayLength * static_cast<float>(MassLambdaCPlus) / LightSpeedCm2PS / pMother;
+
+    return properDecayTime;
+  }
+
   /// Helper function for filling MC reconstructed histograms for prompt, nonpromt and common (signal)
   /// \param candidate is a reconstructed candidate
   /// \tparam SignalType is an enum defining which histogram in which folder (signal, prompt or nonpromt) to fill
@@ -425,17 +443,7 @@ struct HfTaskLc {
         const auto numPvContributors = collision.numContrib();
         const auto ptRecB = candidate.ptBhadMotherPart();
 
-        const auto mcCollision = particleMother.template mcCollision_as<aod::McCollisions>();
-        const auto p = particleMother.p();
-        const float pvX = mcCollision.posX();
-        const float pvY = mcCollision.posY();
-        const float pvZ = mcCollision.posZ();
-        const float svX = mcParticleProng0.vx();
-        const float svY = mcParticleProng0.vy();
-        const float svZ = mcParticleProng0.vz();
-
-        const float decayLengthGen = static_cast<float>(RecoDecay::distance(std::array<float, 3>{svX, svY, svZ}, std::array<float, 3>{pvX, pvY, pvZ}));
-        const float properDecayTimeGen = decayLengthGen * static_cast<float>(MassLambdaCPlus) / LightSpeedCm2PS / p;
+        const float properDecayTimeGen = evaluateMcGenDecayTime(mcParticleProng0, particleMother);
 
         /// MC reconstructed signal
         fillHistogramsRecSig<Signal>(candidate);
@@ -541,17 +549,8 @@ struct HfTaskLc {
         }
 
         const auto mcDaughter0 = particle.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().begin();
-        const auto mcCollision = particle.template mcCollision_as<aod::McCollisions>();
-        const auto p = particle.p();
-        const float pvX = mcCollision.posX();
-        const float pvY = mcCollision.posY();
-        const float pvZ = mcCollision.posZ();
-        const float svX = mcDaughter0.vx();
-        const float svY = mcDaughter0.vy();
-        const float svZ = mcDaughter0.vz();
 
-        const float decayLength = static_cast<float>(RecoDecay::distance(std::array<float, 3>{svX, svY, svZ}, std::array<float, 3>{pvX, pvY, pvZ}));
-        const float properDecayTime = decayLength * static_cast<float>(MassLambdaCPlus) / LightSpeedCm2PS / p;
+        const float properDecayTime = evaluateMcGenDecayTime(mcDaughter0, particle);
 
         fillHistogramsGen<Signal>(particle);
 
