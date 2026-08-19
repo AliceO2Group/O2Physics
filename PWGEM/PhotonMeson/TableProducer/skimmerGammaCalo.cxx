@@ -22,6 +22,7 @@
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/EventSelection.h"
 
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -39,6 +40,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <type_traits>
 #include <vector>
 
 using namespace o2;
@@ -84,6 +86,12 @@ struct SkimmerGammaCalo {
 
   void init(o2::framework::InitContext&)
   {
+    if ((doprocessRec || doprocessRecWithSecondaries) &&
+        (doprocessRecMC || doprocessRecMCWithSecondaries)) {
+      LOG(fatal) << "processRec(WithSecondaries) and processRecMC(WithSecondaries) fill the same "
+                 << "cluster table and must not be enabled together — this doubles MinClusters rows "
+                 << "relative to EMCClusterMCLabels_001.";
+    }
     historeg.add("DefinitionIn", "Cluster definitions before cuts;#bf{Cluster definition};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{51, -0.5, 50.5}});
     historeg.add("DefinitionOut", "Cluster definitions after cuts;#bf{Cluster definition};#bf{#it{N}_{clusters}}", HistType::kTH1F, {{51, -0.5, 50.5}});
     historeg.add("EIn", "Energy of clusters before cuts", gHistoSpecClusterE);
@@ -130,6 +138,9 @@ struct SkimmerGammaCalo {
 
   template <typename TSecondaries>
   static constexpr bool HasSecondaries = !std::is_same_v<TSecondaries, std::nullptr_t>;
+
+  template <typename TCluster>
+  static constexpr bool HasMcLabels = requires(TCluster c) { c.mcParticleIds(); };
 
   template <typename TCollision, typename TClusters, typename TClusterCells, typename TTracks, typename TMatchedTracks, typename TMatchedSecondaries = std::nullptr_t>
   void runAnalysis(TCollision const& collision, TClusters const& emcclusters, TClusterCells const& emcclustercells, TMatchedTracks const& emcmatchedtracks, TTracks const& /*tracks*/, TMatchedSecondaries const& secondaries = nullptr)
@@ -258,6 +269,16 @@ struct SkimmerGammaCalo {
                        convertForStorage<int16_t>(emccluster.m02(), Observable::kM02),
                        convertForStorage<int16_t>(emccluster.time(), Observable::kTime));
 
+      if constexpr (HasMcLabels<std::decay_t<decltype(emccluster)>>) {
+        if (emccluster.mcParticleIds().size() != emccluster.amplitudeA().size()) {
+          LOG(warning) << "Mismatched MC label/amplitude array sizes for cluster " << emccluster.globalIndex()
+                       << ": " << emccluster.mcParticleIds().size() << " vs " << emccluster.amplitudeA().size();
+        }
+        std::vector<int32_t> mcLabels(emccluster.mcParticleIds().begin(), emccluster.mcParticleIds().end());
+        std::vector<float> amplitudes(emccluster.amplitudeA().begin(), emccluster.amplitudeA().end());
+        tableEMCClusterMCLabels(mcLabels, amplitudes);
+      }
+
       if (!vEta.empty()) {
         for (size_t iPart = 0; iPart < vEta.size(); ++iPart) {
           tableEmEmcMTracks(tableEmEmcClusters.lastIndex(), vEta[iPart], vPhi[iPart], vP[iPart], vPt[iPart]);
@@ -302,48 +323,23 @@ struct SkimmerGammaCalo {
   }
   PROCESS_SWITCH(SkimmerGammaCalo, processRecWithSecondaries, "process reconstructed info with secondary track matching.", false);
 
-  void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>::iterator const& collision, soa::Join<aod::EMCALClusters, aod::EMCALMCClusters> const& emcclusters, aod::McParticles const&)
+  void processRecMC(soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>::iterator const& collision,
+                    soa::Join<aod::EMCALClusters, aod::EMCALMCClusters> const& emcclusters,
+                    aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks,
+                    aod::FullTracks const& tracks)
   {
-    if (!collision.isSelected()) {
-      return;
-    }
-
-    if (needEMCTrigger.value && !collision.alias_bit(kTVXinEMC)) {
-      return;
-    }
-
-    for (const auto& emccluster : emcclusters) {
-
-      // Definition cut
-      if (!(std::find(clusterDefinitions.value.begin(), clusterDefinitions.value.end(), emccluster.definition()) != clusterDefinitions.value.end())) {
-        continue;
-      }
-      // Energy cut
-      if (emccluster.energy() < minE) {
-        continue;
-      }
-      // timing cut
-      if (emccluster.time() > maxTime || emccluster.time() < minTime) {
-        continue;
-      }
-      // M02 cut
-      if (emccluster.nCells() > 1 && (emccluster.m02() > maxM02 || emccluster.m02() < minM02)) {
-        continue;
-      }
-      std::vector<int32_t> mcLabels;
-      std::vector<float> amplitudes;
-      mcLabels.reserve(emccluster.amplitudeA().size());
-      amplitudes.reserve(emccluster.amplitudeA().size());
-      for (size_t iCont = 0; iCont < emccluster.amplitudeA().size(); iCont++) {
-        mcLabels.push_back(emccluster.mcParticleIds()[iCont]);
-        amplitudes.push_back(emccluster.amplitudeA()[iCont]);
-      }
-      tableEMCClusterMCLabels(mcLabels, amplitudes);
-      mcLabels.clear();
-      amplitudes.clear();
-    }
+    runAnalysis(collision, emcclusters, emcclustercells, emcmatchedtracks, tracks);
   }
-  PROCESS_SWITCH(SkimmerGammaCalo, processMC, "process MC info", false); // Run this in addition to processRec for MCs to copy the cluster mc labels from the EMCALMCClusters to the skimmed EMCClusterMCLabels table
+  PROCESS_SWITCH(SkimmerGammaCalo, processRecMC, "process reconstructed info + MC labels at once", false);
+
+  void processRecMCWithSecondaries(soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>::iterator const& collision,
+                                   soa::Join<aod::EMCALClusters, aod::EMCALMCClusters> const& emcclusters,
+                                   aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks,
+                                   aod::FullTracks const& tracks, aod::EMCMatchSecs const& emcmatchedsecondaries)
+  {
+    runAnalysis(collision, emcclusters, emcclustercells, emcmatchedtracks, tracks, emcmatchedsecondaries);
+  }
+  PROCESS_SWITCH(SkimmerGammaCalo, processRecMCWithSecondaries, "process reconstructed info + MC labels at once with secondary track matching", false);
 
   void processDummy(aod::Collision const&)
   {

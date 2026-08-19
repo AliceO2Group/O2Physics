@@ -487,7 +487,7 @@ struct HfCorrelatorD0Hadrons {
         registry.fill(HIST("hMLScoresVsMassVsPtVsEtaVsOriginVsCent"), outputMlD0bar[0], outputMlD0bar[1], outputMlD0bar[2], invMassD0bar, candidate.pt(), candidate.eta(), (candidate.isSelD0() != 0) ? o2::aod::hf_correlation_d0_hadron::D0D0barBoth : o2::aod::hf_correlation_d0_hadron::D0barOnly, cent, efficiencyWeight);
         entryD0(candidate.phi(), candidate.eta(), candidate.pt(), invMassD0bar, poolBin, gCollisionId, timeStamp, (candidate.isSelD0() != 0) ? o2::aod::hf_correlation_d0_hadron::D0D0barBoth : o2::aod::hf_correlation_d0_hadron::D0barOnly);
       }
-      entryD0CandRecoInfo(invMassD0, invMassD0bar, candidate.pt(), outputMlD0[0], outputMlD0[2], outputMlD0bar[0], outputMlD0bar[2]);
+      entryD0CandRecoInfo(invMassD0, invMassD0bar, candidate.pt(), outputMlD0[0], outputMlD0[1], outputMlD0[2], outputMlD0bar[0], outputMlD0bar[1], outputMlD0bar[2]);
 
       // ========================== Fill general histos ================================
       registry.fill(HIST("hPtCand"), candidate.pt());
@@ -748,7 +748,7 @@ struct HfCorrelatorD0Hadrons {
         registry.fill(HIST("hMLScoresVsMassVsPtVsEtaVsOriginVsCent"), outputMlD0bar[0], outputMlD0bar[1], outputMlD0bar[2], invMassD0bar, candidate.pt(), candidate.eta(), isD0Prompt, cent, efficiencyWeight);
         entryD0(candidate.phi(), candidate.eta(), candidate.pt(), invMassD0bar, poolBin, gCollisionId, timeStamp, (candidate.isSelD0() != 0) ? o2::aod::hf_correlation_d0_hadron::D0D0barBoth : o2::aod::hf_correlation_d0_hadron::D0barOnly);
       }
-      entryD0CandRecoInfo(invMassD0, invMassD0bar, candidate.pt(), outputMlD0[0], outputMlD0[2], outputMlD0bar[0], outputMlD0bar[2]);
+      entryD0CandRecoInfo(invMassD0, invMassD0bar, candidate.pt(), outputMlD0[0], outputMlD0[1], outputMlD0[2], outputMlD0bar[0], outputMlD0bar[1], outputMlD0bar[2]);
       entryD0CandGenInfo(isD0Prompt);
 
       // ===================== Define parameters for soft pion removal ========================

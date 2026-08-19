@@ -82,12 +82,15 @@ struct HfTaskSingleElectron {
   Configurable<float> ptTrackMin{"ptTrackMin", 0.5, "min pt cut"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "eta cut"};
   Configurable<int> nCrossedRowTpcMin{"nCrossedRowTpcMin", 70, "min # of TPC n cluster crossed rows"};
-  Configurable<float> nClsFoundOverFindableTpcMin{"nClsFoundOverFindableTpcMin", 0.8, "min # of TPC found/findable clusters"};
+  Configurable<float> nCrossedRowsOverFindableClsTpcMin{"nCrossedRowsOverFindableClsTpcMin", 0.8, "min ratio of TPC crossed rows over findable clusters"};
   Configurable<float> chi2PerNClTpcMax{"chi2PerNClTpcMax", 4., "max # of tpc chi2 per clusters"};
   Configurable<int> clsIbItsMin{"clsIbItsMin", 3, "min # of its clusters in IB"};
   Configurable<float> chi2PerNClItsMax{"chi2PerNClItsMax", 6., "min # of its chi2 per clusters"};
   Configurable<float> dcaxyMax{"dcaxyMax", 1., "max of track dca in xy"};
   Configurable<float> dcazMax{"dcazMax", 2., "max of track dca in z"};
+  Configurable<int> nClsTpcMin{"nClsTpcMin", 0, "min # of found TPC clusters"};
+  Configurable<int> nClsItsMin{"nClsItsMin", 0, "min # of total ITS clusters"};
+  Configurable<bool> requireItsTpcRefit{"requireItsTpcRefit", true, "require ITS and TPC refit"};
   Configurable<float> nSigmaTofMax{"nSigmaTofMax", 3., "max of tof nsigma"};
   Configurable<float> nSigmaTpcMin{"nSigmaTpcMin", -1., "min of tpc nsigma"};
   Configurable<float> nSigmaTpcMax{"nSigmaTpcMax", 3., "max of tpc nsigma"};
@@ -104,7 +107,7 @@ struct HfTaskSingleElectron {
   // using declarations
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
   using TracksEl = soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::TracksDCA, aod::pidTOFFullEl, aod::pidTPCFullEl>;
-  using McTracksEl = soa::Join<aod::Tracks, aod::TrackExtra, aod::TracksDCA, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::McTrackLabels>;
+  using McTracksEl = soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TrackExtra, aod::TracksDCA, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::McTrackLabels>;
 
   // Filter
   Filter collZFilter = nabs(aod::collision::posZ) < posZMax;
@@ -137,12 +140,27 @@ struct HfTaskSingleElectron {
 
     // QA plots for trigger track selection
     histos.add("hNClsTpcTrack", "hNClsTpcTrack", kTH1D, {{200, 0, 200}});
-    histos.add("hNClsFoundFindableTpcTrack", "", kTH1D, {{10, 0, 1}});
+    histos.add("hCrossedRowsOverFindableTpcTrack", "", kTH1D, {{200, 0, 2}});
     histos.add("hChi2TpcTrack", "", kTH1D, {{100, 0, 10}});
     histos.add("hIbClsItsTrack", "", kTH1D, {{10, 0, 10}});
     histos.add("hChi2ItsTrack", "", kTH1D, {{50, 0, 50}});
     histos.add("hDcaXYTrack", "", kTH1D, {{600, -3, 3}});
     histos.add("hDcaZTrack", "", kTH1D, {{600, -3, 3}});
+
+    // QA of track-selection variables before any track cut, differential in pT (binning follows DPG qaEventTrack)
+    histos.add("hPtEtaPreCut", "before track selection;#it{p}_{T} (GeV/#it{c});#eta", kTH2D, {{axisPtEl}, {40, -1., 1.}});
+    histos.add("hPtCrossedRowsTpcPreCut", "before track selection;#it{p}_{T} (GeV/#it{c});TPC crossed rows", kTH2D, {{axisPtEl}, {165, -0.5, 164.5}});
+    histos.add("hPtCrossedRowsOverFindableTpcPreCut", "before track selection;#it{p}_{T} (GeV/#it{c});TPC crossed rows / findable clusters", kTH2D, {{axisPtEl}, {200, 0., 2.}});
+    histos.add("hPtNClsFoundTpcPreCut", "before track selection;#it{p}_{T} (GeV/#it{c});TPC found clusters", kTH2D, {{axisPtEl}, {165, -0.5, 164.5}});
+    histos.add("hPtNClsFindableTpcPreCut", "before track selection;#it{p}_{T} (GeV/#it{c});TPC findable clusters", kTH2D, {{axisPtEl}, {165, -0.5, 164.5}});
+    histos.add("hPtFoundOverFindableTpcPreCut", "before track selection;#it{p}_{T} (GeV/#it{c});TPC found / findable clusters", kTH2D, {{axisPtEl}, {200, 0., 2.}});
+    histos.add("hPtFracSharedClsTpcPreCut", "before track selection;#it{p}_{T} (GeV/#it{c});fraction of shared TPC clusters", kTH2D, {{axisPtEl}, {100, 0., 1.}});
+    histos.add("hPtChi2TpcPreCut", "before track selection;#it{p}_{T} (GeV/#it{c});#chi^{2} / cluster TPC", kTH2D, {{axisPtEl}, {100, 0., 10.}});
+    histos.add("hPtNClsItsPreCut", "before track selection;#it{p}_{T} (GeV/#it{c});# clusters ITS", kTH2D, {{axisPtEl}, {8, -0.5, 7.5}});
+    histos.add("hPtIbClsItsPreCut", "before track selection;#it{p}_{T} (GeV/#it{c});# clusters ITS inner barrel", kTH2D, {{axisPtEl}, {4, -0.5, 3.5}});
+    histos.add("hPtChi2ItsPreCut", "before track selection;#it{p}_{T} (GeV/#it{c});#chi^{2} / cluster ITS", kTH2D, {{axisPtEl}, {100, 0., 40.}});
+    histos.add("hPtDcaXYPreCut", "before track selection;#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm)", kTH2D, {{axisPtEl}, {600, -3., 3.}});
+    histos.add("hPtDcaZPreCut", "before track selection;#it{p}_{T} (GeV/#it{c});DCA_{z} (cm)", kTH2D, {{axisPtEl}, {600, -3., 3.}});
 
     // pid
     histos.add("hTofNSigPt", "", kTH2D, {{axisPtEl}, {axisNsig}});
@@ -169,6 +187,25 @@ struct HfTaskSingleElectron {
   }
 
   template <typename TrackType>
+  void fillTrackQaPreCut(const TrackType& track)
+  {
+    double const pt = track.pt();
+    histos.fill(HIST("hPtEtaPreCut"), pt, track.eta());
+    histos.fill(HIST("hPtCrossedRowsTpcPreCut"), pt, track.tpcNClsCrossedRows());
+    histos.fill(HIST("hPtCrossedRowsOverFindableTpcPreCut"), pt, track.tpcCrossedRowsOverFindableCls());
+    histos.fill(HIST("hPtNClsFoundTpcPreCut"), pt, track.tpcNClsFound());
+    histos.fill(HIST("hPtNClsFindableTpcPreCut"), pt, track.tpcNClsFindable());
+    histos.fill(HIST("hPtFoundOverFindableTpcPreCut"), pt, track.tpcFoundOverFindableCls());
+    histos.fill(HIST("hPtFracSharedClsTpcPreCut"), pt, track.tpcFractionSharedCls());
+    histos.fill(HIST("hPtChi2TpcPreCut"), pt, track.tpcChi2NCl());
+    histos.fill(HIST("hPtNClsItsPreCut"), pt, track.itsNCls());
+    histos.fill(HIST("hPtIbClsItsPreCut"), pt, track.itsNClsInnerBarrel());
+    histos.fill(HIST("hPtChi2ItsPreCut"), pt, track.itsChi2NCl());
+    histos.fill(HIST("hPtDcaXYPreCut"), pt, track.dcaXY());
+    histos.fill(HIST("hPtDcaZPreCut"), pt, track.dcaZ());
+  }
+
+  template <typename TrackType>
   bool trackSel(const TrackType& track)
   {
     if ((track.pt() > ptTrackMax) || (track.pt() < ptTrackMin)) {
@@ -182,7 +219,11 @@ struct HfTaskSingleElectron {
       return false;
     }
 
-    if (track.tpcCrossedRowsOverFindableCls() < nClsFoundOverFindableTpcMin) {
+    if (track.tpcCrossedRowsOverFindableCls() < nCrossedRowsOverFindableClsTpcMin) {
+      return false;
+    }
+
+    if (track.tpcNClsFound() < nClsTpcMin) {
       return false;
     }
 
@@ -190,11 +231,19 @@ struct HfTaskSingleElectron {
       return false;
     }
 
-    if (!(track.itsNClsInnerBarrel() == clsIbItsMin)) {
+    if (track.itsNClsInnerBarrel() < clsIbItsMin) { // inner barrel has 3 layers: default 3 is equivalent to the previous == requirement
+      return false;
+    }
+
+    if (track.itsNCls() < nClsItsMin) {
       return false;
     }
 
     if (track.itsChi2NCl() > chi2PerNClItsMax) {
+      return false;
+    }
+
+    if (requireItsTpcRefit && !(track.passedITSRefit() && track.passedTPCRefit())) {
       return false;
     }
 
@@ -436,11 +485,9 @@ struct HfTaskSingleElectron {
 
     for (const auto& track : tracks) {
 
-      if (!trackSel(track)) {
-        continue;
-      }
+      fillTrackQaPreCut(track);
 
-      if (!(track.passedITSRefit() && track.passedTPCRefit())) {
+      if (!trackSel(track)) {
         continue;
       }
 
@@ -448,7 +495,7 @@ struct HfTaskSingleElectron {
       histos.fill(HIST("hPtTrack"), track.pt());
 
       histos.fill(HIST("hNClsTpcTrack"), track.tpcNClsCrossedRows());
-      histos.fill(HIST("hNClsFoundFindableTpcTrack"), track.tpcCrossedRowsOverFindableCls());
+      histos.fill(HIST("hCrossedRowsOverFindableTpcTrack"), track.tpcCrossedRowsOverFindableCls());
       histos.fill(HIST("hChi2TpcTrack"), track.tpcChi2NCl());
       histos.fill(HIST("hIbClsItsTrack"), track.itsNClsInnerBarrel());
       histos.fill(HIST("hChi2ItsTrack"), track.itsChi2NCl());
@@ -501,6 +548,8 @@ struct HfTaskSingleElectron {
 
     for (const auto& track : tracks) {
 
+      fillTrackQaPreCut(track);
+
       if (!trackSel(track)) {
         continue;
       }
@@ -509,7 +558,7 @@ struct HfTaskSingleElectron {
       histos.fill(HIST("hPtTrack"), track.pt());
 
       histos.fill(HIST("hNClsTpcTrack"), track.tpcNClsCrossedRows());
-      histos.fill(HIST("hNClsFoundFindableTpcTrack"), track.tpcCrossedRowsOverFindableCls());
+      histos.fill(HIST("hCrossedRowsOverFindableTpcTrack"), track.tpcCrossedRowsOverFindableCls());
       histos.fill(HIST("hChi2TpcTrack"), track.tpcChi2NCl());
       histos.fill(HIST("hIbClsItsTrack"), track.itsNClsInnerBarrel());
       histos.fill(HIST("hDcaXYTrack"), track.dcaXY());
@@ -559,7 +608,7 @@ struct HfTaskSingleElectron {
       histos.fill(HIST("hDcaTrack"), track.pt(), track.dcaXY());
     }
   }
-  PROCESS_SWITCH(HfTaskSingleElectron, processMc, "For real data", false);
+  PROCESS_SWITCH(HfTaskSingleElectron, processMc, "For MC simulations", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

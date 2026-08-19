@@ -19,13 +19,13 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 
-#include <Framework/ASoA.h>
 #include <Framework/Concepts.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 
 #include <TH1.h>
 
+#include <array>
 #include <string_view>
 
 namespace o2::aod::pwgem::photonmeson::utils::eventhistogram

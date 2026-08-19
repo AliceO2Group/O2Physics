@@ -47,8 +47,24 @@ function(o2physics_add_dpl_workflow baseTargetName)
   set_property(TARGET ${targetExeName} PROPERTY JOB_POOL_COMPILE analysis)
   set_property(TARGET ${targetExeName} PROPERTY JOB_POOL_LINK analysis)
 
-  if(A_REUSE_FROM AND NOT DEFINED ENV{USE_RECC})
-    target_precompile_headers(${targetExeName} REUSE_FROM ${A_REUSE_FROM})
+  # Reuse a precompiled header. Without an explicit REUSE_FROM, fall back to the
+  # shared AnalysisPCH (Common/Core): a workflow translation unit spends most of
+  # its time parsing the framework headers, and there are ~1500 of them, so the
+  # default is worth more than the handful of targets that name their own.
+  #
+  # Set O2PHYSICS_DEFAULT_PCH to an empty string to opt out globally, e.g. when
+  # bisecting a PCH-related build failure.
+  if(NOT DEFINED O2PHYSICS_DEFAULT_PCH)
+    set(O2PHYSICS_DEFAULT_PCH AnalysisPCH)
+  endif()
+  set(_pch "${A_REUSE_FROM}")
+  if(NOT _pch)
+    set(_pch "${O2PHYSICS_DEFAULT_PCH}")
+  endif()
+  # A target cannot reuse its own PCH, and the carrier is not built when recc
+  # is caching compilations remotely instead.
+  if(_pch AND NOT _pch STREQUAL targetExeName AND NOT DEFINED ENV{USE_RECC})
+    target_precompile_headers(${targetExeName} REUSE_FROM ${_pch})
   endif()
 
   set(jsonFile $<TARGET_FILE_BASE_NAME:${targetExeName}>.json)

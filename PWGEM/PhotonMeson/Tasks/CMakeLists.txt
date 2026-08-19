@@ -11,16 +11,6 @@
 
 add_subdirectory(Converters)
 
-o2physics_add_dpl_workflow(gammaconversions
-                    SOURCES gammaConversions.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(gammaconversionstruthonlymc
-                    SOURCES gammaConversionsTruthOnlyMc.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(emcal-pi0-qc
                     SOURCES emcalPi0Qc.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
@@ -204,4 +194,9 @@ o2physics_add_dpl_workflow(photonhbt
 o2physics_add_dpl_workflow(emcal-photon-mc-task
                     SOURCES emcalPhotonMcTask.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(emcal-mc-sanity-check
+                    SOURCES emcalMcSanityCheck.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

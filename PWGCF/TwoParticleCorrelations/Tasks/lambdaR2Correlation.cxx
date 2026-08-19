@@ -67,12 +67,10 @@ namespace o2::aod
 namespace lambdacollision
 {
 DECLARE_SOA_COLUMN(Cent, cent, float);
-DECLARE_SOA_COLUMN(Mult, mult, float);
 DECLARE_SOA_COLUMN(BField, bField, float);
 } // namespace lambdacollision
 DECLARE_SOA_TABLE(LambdaCollisions, "AOD", "LAMBDACOLS", o2::soa::Index<>,
                   lambdacollision::Cent,
-                  lambdacollision::Mult,
                   aod::collision::PosX,
                   aod::collision::PosY,
                   aod::collision::PosZ,
@@ -84,7 +82,6 @@ namespace lambdamcgencollision
 }
 DECLARE_SOA_TABLE(LambdaMcGenCollisions, "AOD", "LMCGENCOLS", o2::soa::Index<>,
                   lambdacollision::Cent,
-                  lambdacollision::Mult,
                   o2::aod::mccollision::PosX,
                   o2::aod::mccollision::PosY,
                   o2::aod::mccollision::PosZ);
@@ -304,10 +301,7 @@ struct LambdaTableProducer {
 
   // Collisions
   Configurable<int> cCentEstimator{"cCentEstimator", 1, "Centrality Estimator : 0-FT0M, 1-FT0C"};
-  Configurable<float> cMinZVtx{"cMinZVtx", -10.0, "Min VtxZ cut"};
-  Configurable<float> cMaxZVtx{"cMaxZVtx", 10.0, "Max VtxZ cut"};
-  Configurable<float> cMinCent{"cMinCent", 0., "Minumum Centrality"};
-  Configurable<float> cMaxCent{"cMaxCent", 100.0, "Maximum Centrality"};
+  Configurable<float> cZVtxCut{"cZVtxCut", 10.0, "Z-Vtx cut"};
   Configurable<bool> cSel8Trig{"cSel8Trig", true, "Sel8 (T0A + T0C) Selection Run3"};
   Configurable<bool> cPileupReject{"cPileupReject", true, "Pileup rejection"};
   Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", true, "z-vtx time diff selection"};
@@ -387,7 +381,7 @@ struct LambdaTableProducer {
   } corrHist;
 
   // Initialize Global Variables
-  float cent = 0., mult = 0.;
+  float cent = 0.;
   TList* ccdbObjRecoEff = nullptr;
   TList* ccdbObjMatchEff = nullptr;
   static constexpr auto SubDir = std::array{"QA/Lambda/", "QA/AntiLambda/", "QA/KaonPlus/", "QA/KaonMinus/"};
@@ -400,7 +394,6 @@ struct LambdaTableProducer {
     const AxisSpec axisEffChecks(3, 0, 3, "");
     const AxisSpec axisCent(100, 0, 100, "Centrality(%)");
     const AxisSpec axisVarCent(cCentBins, "FT0C%");
-    const AxisSpec axisPVMults(1000, 0, 1000, "N_{PV}");
     const AxisSpec axisMult(10, 0, 10, "N_{#Lambda}");
     const AxisSpec axisVz(220, -11, 11, "V_{z} (cm)");
     const AxisSpec axisPID(8000, -4000, 4000, "PdgCode");
@@ -535,12 +528,12 @@ struct LambdaTableProducer {
       ccdbObjRecoEff = ccdb->getForTimeStamp<TList>(cPathCCDBRecoEff.value, nolaterthan.value);
 
       // Load reco eff corrections
-      LoadRecoEfficiencyHistograms();
+      loadRecoEfficiencyHistograms();
     }
   }
 
   template <typename T>
-  void GetCorrFactHists(T& vhists, std::vector<std::string> const& strings)
+  void getCorrFactHists(T& vhists, std::vector<std::string> const& strings)
   {
     using HistPtr = typename T::value_type;
     for (size_t i = 0; i < vhists.size(); ++i) {
@@ -557,12 +550,12 @@ struct LambdaTableProducer {
   }
 
   // Load reco efficiency histograms
-  void LoadRecoEfficiencyHistograms()
+  void loadRecoEfficiencyHistograms()
   {
     if (cCorrFactHist == kEffCorrPtCent) {
-      GetCorrFactHists(corrHist.vPtCentCorrHists, vCorrFactStrings[kEffCorrPtCent]);
+      getCorrFactHists(corrHist.vPtCentCorrHists, vCorrFactStrings[kEffCorrPtCent]);
     } else if (cCorrFactHist == kEffCorrPtRapCent) {
-      GetCorrFactHists(corrHist.vPtRapCentCorrHists, vCorrFactStrings[kEffCorrPtRapCent]);
+      getCorrFactHists(corrHist.vPtRapCentCorrHists, vCorrFactStrings[kEffCorrPtRapCent]);
     }
   }
 
@@ -584,7 +577,7 @@ struct LambdaTableProducer {
   bool selCollision(C const& col)
   {
     // Vz Selection
-    if (col.posZ() <= cMinZVtx || col.posZ() >= cMaxZVtx) {
+    if (std::abs(col.posZ()) >= cZVtxCut) {
       return false;
     }
 
@@ -592,30 +585,28 @@ struct LambdaTableProducer {
     if (cSel8Trig && !col.sel8()) {
       return false;
     }
+
+    // Centrality estimator
     if (cCentEstimator == kCentFT0M) {
       cent = col.centFT0M();
     } else if (cCentEstimator == kCentFT0C) {
       cent = col.centFT0C();
     }
 
-    if (cent <= cMinCent || cent >= cMaxCent) { // select centrality percentile class
-      return false;
-    }
-
+    // Pileup rejection
     if (cPileupReject && !col.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
 
+    // Zvtx from FT0 time difference
     if (cZVtxTimeDiff && !col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
 
+    // Hit all layers in ITS
     if (cIsGoodITSLayers && !col.selection_bit(aod::evsel::kIsGoodITSLayersAll)) {
       return false;
     }
-
-    // Set Multiplicity
-    mult = col.multTPC();
 
     return true;
   }
@@ -914,7 +905,7 @@ struct LambdaTableProducer {
 
     // Fill Collision Table
     float magField = getMagneticField(collision.template foundBC_as<BCsRun3>().timestamp());
-    lambdaCollisionTable(cent, mult, collision.posX(), collision.posY(), collision.posZ(), magField);
+    lambdaCollisionTable(cent, collision.posX(), collision.posY(), collision.posZ(), magField);
 
     // initialize v0track objects
     ParticleType partType = kLambda;
@@ -1044,7 +1035,7 @@ struct LambdaTableProducer {
   void fillLambdaMcGenTables(C const& mcCollision, M const& mcParticles)
   {
     // Fill McGen Collision Table
-    lambdaMCGenCollisionTable(cent, mult, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
+    lambdaMCGenCollisionTable(cent, mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
 
     // initialize track objects
     ParticleType partType = kLambda;
@@ -1384,11 +1375,14 @@ struct LambdaR2Correlation {
   Configurable<float> cMinRap{"cMinRap", -0.5, "Minimum Rapidity"};
   Configurable<float> cMaxRap{"cMaxRap", 0.5, "Maximum Rapidity"};
   Configurable<int> cNPhiBins{"cNPhiBins", 36, "N Phi Bins"};
+
+  // Analysis flags
   Configurable<bool> cAnaPairs{"cAnaPairs", false, "Analyze Pairs Flag"};
+  Configurable<bool> cAnaEff{"cAnaEff", false, "Analyze efficiency flag"};
 
   // Lambda Kaon femtoscopic correction
   Configurable<bool> cApplyFemtoSel{"cApplyFemtoSel", false, "Femto qinv selection"};
-  Configurable<float> cFemtoCut{"cFemtoCut", 0.02, "Kaon--Lambda Femto qinv cut"};
+  Configurable<float> cFemtoCut{"cFemtoCut", 0.1, "Kaon--Lambda Femto qinv cut"};
 
   // Lambda Kaon two-track cuts
   Configurable<bool> cApplyTwoTrackCut{"cApplyTwoTrackCut", false, "Flag for two track cut"};
@@ -1397,6 +1391,7 @@ struct LambdaR2Correlation {
 
   // Centrality Axis
   ConfigurableAxis cCentBins{"cCentBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f}, "Variable Mult-Bins"};
+  ConfigurableAxis cVzBins{"cVzBins", {VARIABLE_WIDTH, -10.f, -8.0f, -6.0f, -4.0f, -2.0f, 0.f, 2.0f, 4.0f, 6.0f, 8.0f, 10.f}, "Variable Vz-Bins"};
 
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -1411,7 +1406,7 @@ struct LambdaR2Correlation {
   float rapbinwidth = 0.;
   float phibinwidth = 0.;
   float q = 0., e = 0., qinv = 0.;
-  float cent = 0.;
+  float cent = 0., posZ = 0.;
   float magField = 0.;
   std::array<float, 9> tpcRadii = {0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4};
 
@@ -1433,7 +1428,7 @@ struct LambdaR2Correlation {
     const AxisSpec axisCheck(1, 0, 1, "");
     const AxisSpec axisPosZ(220, -11, 11, "V_{z} (cm)");
     const AxisSpec axisCent(cCentBins, "FT0C (%)");
-    const AxisSpec axisChMult(200, 0, 200, "N_{ch}");
+    const AxisSpec axisVz(cVzBins, "V_{z} (cm)");
     const AxisSpec axisMult(10, 0, 10, "N_{#Lambda}");
     const AxisSpec axisDEta(320, -1.6, 1.6, "#Delta#eta");
     const AxisSpec axisDPhi(640, -PIHalf, 3. * PIHalf, "#Delta#varphi");
@@ -1459,14 +1454,20 @@ struct LambdaR2Correlation {
 
     // Efficiency Histograms
     // Single Particle Efficiencies
-    histos.add("Reco/Efficiency/h2f_n1_centpt_LaP", "#rho_{1}^{#Lambda}", kTH2F, {axisCent, axisPtLambda});
-    histos.add("Reco/Efficiency/h2f_n1_centpt_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH2F, {axisCent, axisPtLambda});
-    histos.add("Reco/Efficiency/h2f_n1_centpt_KaP", "#rho_{1}^{K^{#plus}}", kTH2F, {axisCent, axisPtKaon});
-    histos.add("Reco/Efficiency/h2f_n1_centpt_KaM", "#rho_{1}^{K^{#minus}}", kTH2F, {axisCent, axisPtKaon});
-    histos.add("Reco/Efficiency/h3f_n1_centptrap_LaP", "#rho_{1}^{#Lambda}", kTH3F, {axisCent, axisPtLambda, axisRap});
-    histos.add("Reco/Efficiency/h3f_n1_centptrap_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH3F, {axisCent, axisPtLambda, axisRap});
-    histos.add("Reco/Efficiency/h3f_n1_centptrap_KaP", "#rho_{1}^{K^{#plus}}", kTH3F, {axisCent, axisPtKaon, axisRap});
-    histos.add("Reco/Efficiency/h3f_n1_centptrap_KaM", "#rho_{1}^{K^{#minus}}", kTH3F, {axisCent, axisPtKaon, axisRap});
+    if (cAnaEff) {
+      histos.add("Reco/Efficiency/h2f_n1_centpt_LaP", "#rho_{1}^{#Lambda}", kTH2F, {axisCent, axisPtLambda});
+      histos.add("Reco/Efficiency/h2f_n1_centpt_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH2F, {axisCent, axisPtLambda});
+      histos.add("Reco/Efficiency/h2f_n1_centpt_KaP", "#rho_{1}^{K^{#plus}}", kTH2F, {axisCent, axisPtKaon});
+      histos.add("Reco/Efficiency/h2f_n1_centpt_KaM", "#rho_{1}^{K^{#minus}}", kTH2F, {axisCent, axisPtKaon});
+      histos.add("Reco/Efficiency/h3f_n1_centptrap_LaP", "#rho_{1}^{#Lambda}", kTH3F, {axisCent, axisPtLambda, axisRap});
+      histos.add("Reco/Efficiency/h3f_n1_centptrap_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH3F, {axisCent, axisPtLambda, axisRap});
+      histos.add("Reco/Efficiency/h3f_n1_centptrap_KaP", "#rho_{1}^{K^{#plus}}", kTH3F, {axisCent, axisPtKaon, axisRap});
+      histos.add("Reco/Efficiency/h3f_n1_centptrap_KaM", "#rho_{1}^{K^{#minus}}", kTH3F, {axisCent, axisPtKaon, axisRap});
+      histos.add("Reco/Efficiency/h4f_n1_centvzptrap_LaP", "#rho_{1}^{#Lambda}", kTHnSparseF, {axisCent, axisVz, axisPtLambda, axisRap});
+      histos.add("Reco/Efficiency/h4f_n1_centvzptrap_LaM", "#rho_{1}^{#bar{#Lambda}}", kTHnSparseF, {axisCent, axisVz, axisPtLambda, axisRap});
+      histos.add("Reco/Efficiency/h4f_n1_centvzptrap_KaP", "#rho_{1}^{K^{#plus}}", kTHnSparseF, {axisCent, axisVz, axisPtKaon, axisRap});
+      histos.add("Reco/Efficiency/h4f_n1_centvzptrap_KaM", "#rho_{1}^{K^{#minus}}", kTHnSparseF, {axisCent, axisVz, axisPtKaon, axisRap});
+    }
 
     // Single and Two Particle Densities
     // 1D Histograms
@@ -1611,8 +1612,11 @@ struct LambdaR2Correlation {
 
     for (auto const& track : tracks) {
       // Efficiency Plots
-      histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("Efficiency/h2f_n1_centpt_") + HIST(SubDirHist[part]), cent, track.pt());
-      histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("Efficiency/h3f_n1_centptrap_") + HIST(SubDirHist[part]), cent, track.pt(), track.rap());
+      if (cAnaEff) {
+        histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("Efficiency/h2f_n1_centpt_") + HIST(SubDirHist[part]), cent, track.pt());
+        histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("Efficiency/h3f_n1_centptrap_") + HIST(SubDirHist[part]), cent, track.pt(), track.rap());
+        histos.fill(HIST(SubDirRecGen[rec_gen]) + HIST("Efficiency/h4f_n1_centvzptrap_") + HIST(SubDirHist[part]), cent, posZ, track.pt(), track.rap());
+      }
 
       // QA Plots
       if (part == kLambda || part == kAntiLambda) {
@@ -1673,8 +1677,8 @@ struct LambdaR2Correlation {
   {
     histos.fill(HIST("Event/Reco/h1f_collision_posz"), collision.posZ());
     histos.fill(HIST("Event/Reco/h1f_ft0m_mult_percentile"), collision.cent());
-    histos.fill(HIST("Event/Reco/h2f_Mult_vs_Centrality"), collision.cent(), collision.mult());
 
+    posZ = collision.posZ();
     cent = collision.cent();
     magField = collision.bField();
 
@@ -1716,8 +1720,8 @@ struct LambdaR2Correlation {
   {
     histos.fill(HIST("Event/McGen/h1f_collision_posz"), mcgencol.posZ());
     histos.fill(HIST("Event/McGen/h1f_ft0m_mult_percentile"), mcgencol.cent());
-    histos.fill(HIST("Event/McGen/h2f_Mult_vs_Centrality"), mcgencol.cent(), mcgencol.mult());
 
+    posZ = mcgencol.posZ();
     cent = mcgencol.cent();
 
     auto lambdaTracks = partMcLambdaTracks->sliceByCached(aod::lambdamcgentrack::lambdaMcGenCollisionId, mcgencol.globalIndex(), cache);

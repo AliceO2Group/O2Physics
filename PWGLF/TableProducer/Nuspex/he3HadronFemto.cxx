@@ -349,6 +349,7 @@ struct he3HadronFemto {
   o2::aod::ITSResponse mResponseITS;
 
   std::vector<bool> mGoodCollisions;
+  std::vector<uint32_t> mCollisionSelectionFlags;
   std::vector<SVCand> mTrackPairs;
   o2::vertexing::DCAFitterN<2> mFitter;
   svPoolCreator mSvPoolCreator{He3PDG, ProtonPDG};
@@ -431,8 +432,8 @@ struct he3HadronFemto {
     }
 
     mQaRegistry.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(1, "All");
-    for (int iSel = 1; iSel < nuclei::evSel::kNevSels + 1; iSel++) {
-      mQaRegistry.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(iSel + 1, nuclei::eventSelectionLabels[iSel].c_str());
+    for (int iSel = 0; iSel < nuclei::evSel::kNevSels + 2; iSel++) {
+      mQaRegistry.get<TH1>(HIST("hEventSelections"))->GetXaxis()->SetBinLabel(iSel + 2, nuclei::eventSelectionLabels[iSel].c_str());
     }
 
     const int nBetheBlochParameters = 5;
@@ -529,14 +530,14 @@ struct he3HadronFemto {
   // ==================================================================================================================
 
   template <bool isMC, typename Tcollision>
-  bool selectCollision(const Tcollision& collision, const aod::BCsWithTimestamps&)
+  bool selectCollision(const Tcollision& collision, const aod::BCsWithTimestamps&, uint32_t& collisionSelectionFlag)
   {
     mQaRegistry.fill(HIST("hEvents"), 0);
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
-    if (!nuclei::eventSelection(collision, mQaRegistry, settingEventSelections, cutSettings.settingCutVertex)) {
+    if (!nuclei::eventSelection(collision, mQaRegistry, settingEventSelections, cutSettings.settingCutVertex, collisionSelectionFlag)) {
       return false;
     }
     if (settingSkimmedProcessing) {
@@ -980,6 +981,7 @@ struct he3HadronFemto {
   template <typename Tcoll>
   void fillTable(const He3HadCandidate& he3Hadcand, const Tcoll& collision, bool isMC = false)
   {
+    const uint32_t collisionSelectionFlag = mCollisionSelectionFlags[he3Hadcand.collisionID];
     outputDataTable(
       he3Hadcand.recoPtHe3(), he3Hadcand.recoEtaHe3(), he3Hadcand.recoPhiHe3(),
       he3Hadcand.recoPtHad(), he3Hadcand.recoEtaHad(), he3Hadcand.recoPhiHad(),
@@ -1000,8 +1002,8 @@ struct he3HadronFemto {
         he3Hadcand.l4PtMC, he3Hadcand.l4MassMC, he3Hadcand.flags);
     }
     outputMultiplicityTable(
-      collision.globalIndex(), collision.posZ(), collision.numContrib(),
-      collision.centFT0C(), collision.multFT0C());
+      collision.globalIndex(), collisionSelectionFlag, collision.posZ(),
+      collision.numContrib(), collision.centFT0C(), collision.multFT0C());
     outputQaTable(
       he3Hadcand.trackIDHe3, he3Hadcand.trackIDHad, he3Hadcand.massTOFHe3,
       he3Hadcand.pidtrkHad, he3Hadcand.sharedClustersHad);
@@ -1158,16 +1160,20 @@ struct he3HadronFemto {
   {
     mGoodCollisions.clear();
     mGoodCollisions.resize(collisions.size(), false);
+    mCollisionSelectionFlags.clear();
+    mCollisionSelectionFlags.resize(collisions.size(), 0);
 
     for (const auto& collision : collisions) {
 
       mTrackPairs.clear();
 
-      if (!selectCollision</*isMC*/ false>(collision, bcs)) {
+      uint32_t collisionSelectionFlag = 0;
+      if (!selectCollision</*isMC*/ false>(collision, bcs, collisionSelectionFlag)) {
         continue;
       }
 
       mGoodCollisions[collision.globalIndex()] = true;
+      mCollisionSelectionFlags[collision.globalIndex()] = collisionSelectionFlag;
       const uint64_t collIdx = collision.globalIndex();
       auto trackTableThisCollision = tracks.sliceBy(mPerCol, collIdx);
       trackTableThisCollision.bindExternalIndices(&tracks);
@@ -1183,15 +1189,21 @@ struct he3HadronFemto {
   }
   PROCESS_SWITCH(he3HadronFemto, processSameEvent, "Process Same event", false);
 
-  void processMixedEvent(const CollisionsFull& collisions, const TrackCandidates& tracks)
+  void processMixedEvent(const CollisionsFull& collisions, const aod::BCsWithTimestamps& bcs, const TrackCandidates& tracks)
   {
     LOG(debug) << "Processing mixed event";
     mTrackPairs.clear();
+    mCollisionSelectionFlags.clear();
+    mCollisionSelectionFlags.resize(collisions.size(), 0);
 
     for (const auto& [c1, tracks1, c2, tracks2] : mPair) {
-      if (!c1.sel8() || !c2.sel8()) {
+      uint32_t collisionSelectionFlag1 = 0;
+      uint32_t collisionSelectionFlag2 = 0;
+      if (!selectCollision</*isMC*/ false>(c1, bcs, collisionSelectionFlag1) || !selectCollision</*isMC*/ false>(c2, bcs, collisionSelectionFlag2)) {
         continue;
       }
+      mCollisionSelectionFlags[c1.globalIndex()] = collisionSelectionFlag1;
+      mCollisionSelectionFlags[c2.globalIndex()] = collisionSelectionFlag2;
 
       mQaRegistry.fill(HIST("hNcontributor"), c1.numContrib());
       mQaRegistry.fill(HIST("hVtxZ"), c1.posZ());
@@ -1210,14 +1222,18 @@ struct he3HadronFemto {
 
     mGoodCollisions.clear();
     mGoodCollisions.resize(collisions.size(), false);
+    mCollisionSelectionFlags.clear();
+    mCollisionSelectionFlags.resize(collisions.size(), 0);
 
     for (const auto& collision : collisions) {
 
       mTrackPairs.clear();
 
-      if (!selectCollision</*isMC*/ true>(collision, bcs)) {
+      uint32_t collisionSelectionFlag = 0;
+      if (!selectCollision</*isMC*/ true>(collision, bcs, collisionSelectionFlag)) {
         continue;
       }
+      mCollisionSelectionFlags[collision.globalIndex()] = collisionSelectionFlag;
 
       const uint64_t collIdx = collision.globalIndex();
       mGoodCollisions[collIdx] = true;
@@ -1308,8 +1324,10 @@ struct he3HadronFemto {
 
   void processPurity(const CollisionsFull::iterator& collision, const TrackCandidates& tracks, const aod::BCsWithTimestamps& bcs)
   {
-    if (!selectCollision</*isMC*/ false>(collision, bcs))
+    uint32_t collisionSelectionFlag = 0; // dummy, purity study does not fill a tree
+    if (!selectCollision</*isMC*/ false>(collision, bcs, collisionSelectionFlag)) {
       return;
+    }
 
     for (const auto& track : tracks) {
 
@@ -1362,7 +1380,8 @@ struct he3HadronFemto {
 
   void processPurityMc(const CollisionsFullMC::iterator& collision, const TrackCandidatesMC& tracks, const aod::BCsWithTimestamps& bcs, const aod::McParticles& /*mcParticles*/, const aod::McTrackLabels& /*mcTrackLabels*/)
   {
-    if (!selectCollision</*isMC*/ false>(collision, bcs)) {
+    uint32_t collisionSelectionFlag = 0; // dummy, purity study does not fill a tree
+    if (!selectCollision</*isMC*/ false>(collision, bcs, collisionSelectionFlag)) {
       return;
     }
 

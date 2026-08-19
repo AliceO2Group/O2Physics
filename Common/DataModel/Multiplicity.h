@@ -104,6 +104,16 @@ DECLARE_SOA_COLUMN(FT0TriggerMask, ft0TriggerMask, uint8_t); //!
 DECLARE_SOA_COLUMN(MultFV0AOuter, multFV0AOuter, float);     //! FV0 without innermost ring
 DECLARE_SOA_COLUMN(MultFT0AOuter, multFT0AOuter, float);     //! FT0A without innermost ring
 
+// Timing information
+DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float); //!
+DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float); //!
+DECLARE_SOA_COLUMN(TimeZPA, timeZPA, float); //!
+DECLARE_SOA_COLUMN(TimeZPC, timeZPC, float); //!
+DECLARE_SOA_COLUMN(TimeT0A, timeT0A, float); //!
+DECLARE_SOA_COLUMN(TimeT0C, timeT0C, float); //!
+DECLARE_SOA_COLUMN(TimeFDA, timeFDA, float); //!
+DECLARE_SOA_COLUMN(TimeFDC, timeFDC, float); //!
+
 } // namespace mult
 DECLARE_SOA_TABLE(FV0Mults, "AOD", "FV0MULT", //! Multiplicity with the FV0 detector
                   mult::MultFV0A, mult::MultFV0C,
@@ -317,6 +327,16 @@ DECLARE_SOA_TABLE_VERSIONED(MultBcSel_001, "AOD", "MULTBCSEL", 1, //! BC selecti
                             mult::MultCollidingBC,
                             mult::MultTVX,
                             mult::MultFV0OrA);
+
+DECLARE_SOA_TABLE(TimeBCs, "AOD", "TIMEBC", //!
+                  mult::TimeT0A,
+                  mult::TimeT0C,
+                  mult::TimeFDA,
+                  mult::TimeFDC,
+                  mult::TimeZNA,
+                  mult::TimeZNC,
+                  mult::TimeZPA,
+                  mult::TimeZPC)
 
 using MultBCs = MultBCs_001;
 using MultBcSel = MultBcSel_001;

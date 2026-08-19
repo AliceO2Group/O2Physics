@@ -15,7 +15,7 @@
 /// \note legacy code, please use the Pi0EtaToGammaGamma tasks for the standard neutral meson analysis.
 /// dependencies: o2-analysis-lf-lambdakzerobuilder
 
-#include "PWGEM/PhotonMeson/Tasks/gammaConversions.h"
+#include "PWGEM/PhotonMeson/Legacy/gammaConversions.h"
 
 #include "PWGEM/PhotonMeson/DataModel/EventTables.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"

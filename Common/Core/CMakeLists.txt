@@ -21,8 +21,37 @@ o2physics_add_library(AnalysisCore
         TableHelper.cxx
         MetadataHelper.cxx
         CollisionTypeHelper.cxx
-        FFitWeights.cxx
         PUBLIC_LINK_LIBRARIES O2::Framework O2::DataFormatsParameters ROOT::EG O2::CCDB ROOT::Physics O2::FT0Base O2::FV0Base O2::DataFormatsParamTOF)
+
+# Precompiled header shared by DPL analysis workflows. Parsing the framework
+# headers dominates the cost of a workflow translation unit, and there are
+# ~1500 of them; o2physics_add_dpl_workflow reuses this by default.
+#
+# Skipped under recc, which caches compilations remotely instead -- the two do
+# not combine, as a PCH is a local artefact of one compiler invocation.
+#
+# The link libraries have to match what the reusing targets compile with, so
+# this carries only what every workflow already links.
+add_library(AnalysisPCH OBJECT analysisPCH.cxx)
+target_link_libraries(AnalysisPCH PUBLIC O2::Framework O2Physics::AnalysisCore)
+if(NOT DEFINED ENV{USE_RECC})
+  target_precompile_headers(AnalysisPCH PRIVATE
+    <Framework/ASoA.h>
+    <Framework/AnalysisTask.h>
+    <Framework/ConfigContext.h>
+    <Framework/DataProcessorSpec.h>
+    # NOT runDataProcessing.h. It states the contract itself: "we need to
+    # declare the customize method before include this file". Precompiling it
+    # makes it the first include in every workflow, so a source's customize() is
+    # never seen, its options are never registered, and the binary aborts at
+    # --dump-workflow with "missing option: ...". The link succeeds, so this
+    # surfaces as a runtime failure with no hint that a PCH caused it.
+
+    <memory>
+    <string>
+    <vector>
+  )
+endif()
 
 o2physics_target_root_dictionary(AnalysisCore
         HEADERS TrackSelection.h
@@ -37,7 +66,6 @@ o2physics_target_root_dictionary(AnalysisCore
         PID/TPCPIDResponse.h
         PID/PIDTOFParamService.h
         CollisionTypeHelper.h
-        FFitWeights.h
         LINKDEF AnalysisCoreLinkDef.h)
 
 o2physics_add_library(EventFilteringUtils
@@ -52,3 +80,12 @@ o2physics_target_root_dictionary(EventFilteringUtils
 o2physics_add_header_only_library(TPCDriftManager
         HEADERS TPCVDriftManager.h
         INTERFACE_LINK_LIBRARIES)
+
+o2physics_add_library(FFitWeights
+        SOURCES FFitWeights.cxx
+        PUBLIC_LINK_LIBRARIES O2::Framework O2::CCDB ROOT::Physics)
+
+o2physics_target_root_dictionary(FFitWeights
+        HEADERS FFitWeights.h
+        LINKDEF FFitWeightsLinkDef.h)
+

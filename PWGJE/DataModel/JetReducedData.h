@@ -100,7 +100,7 @@ DECLARE_SOA_COLUMN(AmplitudesFDDC, amplitudesFDDC, std::vector<float>);
 DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, float);
 DECLARE_SOA_COLUMN(Weight, weight, float);
 DECLARE_SOA_COLUMN(GetSubGeneratorId, getSubGeneratorId, int);
-DECLARE_SOA_COLUMN(EventSel, eventSel, uint16_t);
+DECLARE_SOA_COLUMN(EventSel, eventSel, uint16_t); // if the type is changed it also needs to be changed in derived data utilities and the writer
 DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
 DECLARE_SOA_BITMAP_COLUMN(Rct, rct, 32);
 DECLARE_SOA_COLUMN(TrackOccupancyInTimeRange, trackOccupancyInTimeRange, int);

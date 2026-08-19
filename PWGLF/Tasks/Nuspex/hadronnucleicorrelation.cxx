@@ -316,7 +316,7 @@ struct HadronNucleiCorrelation {
       }
     }
 
-    if (isMC) {
+    if (isMC && doprocessMC) {
       registry.add("hPrimPrDCAxy", "DCAxy p", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
       registry.add("hPrimAntiPrDCAxy", "DCAxy #bar{p}", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
       registry.add("hPrimDeDCAxy", "DCAxy d", {HistType::kTH2D, {{600, -3.f, 3.f, "DCA xy (cm)"}, {100, 0.f, 10.f, "p_{T} GeV/c"}}});
@@ -409,17 +409,17 @@ struct HadronNucleiCorrelation {
       registry.add("hGen_EtaPhiPt_Proton", "Gen (anti)protons in gen collisions", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
       registry.add("hGen_EtaPhiPt_Deuteron", "Gen (anti)deuteron in gen collisions", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
 
-      registry.add("Generated/hQAProtons", "hQAProtons", {HistType::kTH1D, {{5, 0.f, 5.f}}});
-      registry.get<TH1>(HIST("Generated/hQAProtons"))->GetXaxis()->SetBinLabel(1, "All");
-      registry.get<TH1>(HIST("Generated/hQAProtons"))->GetXaxis()->SetBinLabel(2, "PhysicalPrimary");
-      registry.get<TH1>(HIST("Generated/hQAProtons"))->GetXaxis()->SetBinLabel(3, "|#eta|<0.8");
-      registry.get<TH1>(HIST("Generated/hQAProtons"))->GetXaxis()->SetBinLabel(4, "no daughters");
-      registry.get<TH1>(HIST("Generated/hQAProtons"))->GetXaxis()->SetBinLabel(5, "d daughter");
+      auto hp = registry.add<TH1>("Generated/hQAProtons", "hQAProtons", {HistType::kTH1D, {{5, 0.f, 5.f}}});
+      hp->GetXaxis()->SetBinLabel(1, "All");
+      hp->GetXaxis()->SetBinLabel(2, "PhysicalPrimary");
+      hp->GetXaxis()->SetBinLabel(3, "|#eta|<0.8");
+      hp->GetXaxis()->SetBinLabel(4, "no daughters");
+      hp->GetXaxis()->SetBinLabel(5, "d daughter");
 
-      registry.add("Generated/hQADeuterons", "hQADeuterons", {HistType::kTH1D, {{3, 0.f, 3.f}}});
-      registry.get<TH1>(HIST("Generated/hQADeuterons"))->GetXaxis()->SetBinLabel(1, "All");
-      registry.get<TH1>(HIST("Generated/hQADeuterons"))->GetXaxis()->SetBinLabel(2, "PhysicalPrimary");
-      registry.get<TH1>(HIST("Generated/hQADeuterons"))->GetXaxis()->SetBinLabel(3, "|#eta|<0.8");
+      auto hd = registry.add<TH1>("Generated/hQADeuterons", "hQADeuterons", {HistType::kTH1D, {{3, 0.f, 3.f}}});
+      hd->GetXaxis()->SetBinLabel(1, "All");
+      hd->GetXaxis()->SetBinLabel(2, "PhysicalPrimary");
+      hd->GetXaxis()->SetBinLabel(3, "|#eta|<0.8");
 
       registry.add("Generated/hDeuteronsVsPt", "hDeuteronsVsPt;  p_{T} (GeV/c);", {HistType::kTH1D, {{100, 0.f, 10.f}}});
       registry.add("Generated/hAntiDeuteronsVsPt", "hAntiDeuteronsVsPt;  p_{T} (GeV/c);", {HistType::kTH1D, {{100, 0.f, 10.f}}});
