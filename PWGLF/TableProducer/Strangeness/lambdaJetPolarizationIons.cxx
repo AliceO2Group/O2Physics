@@ -179,8 +179,8 @@ struct lambdajetpolarizationions {
     Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
     Configurable<bool> requireTriggerTVX{"requireTriggerTVX", true, "require FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level"}; // part of sel8, actually
     // Detector status:
-    Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border (Run 3 only)"};                             // part of sel8, actually
-    Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border (Run 3 only)"};                                          // part of sel8, actually
+    Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border (Run 3 only)"};                                                     // part of sel8, actually
+    Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border (Run 3 only)"};                                                                  // part of sel8, actually
     Configurable<bool> requireGoodITSLayersAll{"requireGoodITSLayersAll", false, "require number of inactive chips on all ITS layers to be below maximum allowed values"}; // Based off ITS holes DPG AOT selection
     // Vertex quality:
     Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "require events with at least one ITS-TPC track (Run 3 only)"};
@@ -224,7 +224,7 @@ struct lambdajetpolarizationions {
     // Configurable<float> dcanegtopv{"dcanegtopv", .2, "min DCA Neg To PV (cm)"}; // Default is .05
     // Configurable<float> dcapostopv{"dcapostopv", .05, "min DCA Pos To PV (cm)"}; // Default is .05
     // Renamed for better consistency of candidate selection (the cut is not determined by charge, but by mass and how deflected the daughter is):
-    Configurable<float> dcaPionToPV{"dcaPionToPV", .05, "min DCA pion-like daughter To PV (cm)"}; // .2 would suppress primary pion background, but we need to reduce fake-polarization signals enhanced by DCA-to-PV cuts
+    Configurable<float> dcaPionToPV{"dcaPionToPV", .05, "min DCA pion-like daughter To PV (cm)"};       // .2 would suppress primary pion background, but we need to reduce fake-polarization signals enhanced by DCA-to-PV cuts
     Configurable<float> dcaProtonToPV{"dcaProtonToPV", .05, "min DCA proton-like daughter To PV (cm)"}; // Default is .05
     Configurable<float> v0radius{"v0radius", 1.0, "minimum V0 radius (cm)"};                            // Default is 1.2
     Configurable<float> v0radiusMax{"v0radiusMax", 1E5, "maximum V0 radius (cm)"};
@@ -318,15 +318,15 @@ struct lambdajetpolarizationions {
     ConfigurableAxis axisLambdaMassSigExtract{
       "axisLambdaMassSigExtract",
       {VARIABLE_WIDTH,
-        // Left sideband (7 bins, 0.004 width)
-        1.0800, 1.0840, 1.0880, 1.0920,
-        1.0960, 1.1000, 1.1040, 1.1080,
-        // Fine peak region (8 bins, 0.0016 width)
-        1.1096, 1.1112, 1.1128, 1.1144,
-        1.1160, 1.1176, 1.1192, 1.1208,
-        // Right sideband (7 bins, 0.004 width)
-        1.1248, 1.1288, 1.1328, 1.1368,
-        1.1408, 1.1448, 1.1488},
+       // Left sideband (7 bins, 0.004 width)
+       1.0800, 1.0840, 1.0880, 1.0920,
+       1.0960, 1.1000, 1.1040, 1.1080,
+       // Fine peak region (8 bins, 0.0016 width)
+       1.1096, 1.1112, 1.1128, 1.1144,
+       1.1160, 1.1176, 1.1192, 1.1208,
+       // Right sideband (7 bins, 0.004 width)
+       1.1248, 1.1288, 1.1328, 1.1368,
+       1.1408, 1.1448, 1.1488},
       "Lambda mass in GeV/c"};
     ConfigurableAxis axisPVz{"axisPVz", {100, -20.0f, +20.0f}, "Primary Vertex Z [cm]"};
     ConfigurableAxis axisPVzCoarse{"axisPVzCoarse", {20, -20.0f, +20.0f}, "Primary Vertex Z [cm]"};
@@ -341,7 +341,7 @@ struct lambdajetpolarizationions {
     ConfigurableAxis axisOccupancy{"axisOccupancy", {VARIABLE_WIDTH, 0.0f, 250.0f, 500.0f, 750.0f, 1000.0f, 1500.0f, 2000.0f, 3000.0f, 4500.0f, 6000.0f, 8000.0f, 10000.0f, 50000.0f}, "Occupancy"};
     // Topological variable QA axes:
     ConfigurableAxis axisDCAtoPV{"axisDCAtoPV", {30, 0.0f, 2.0f}, "DCA (cm)"};
-    ConfigurableAxis axisDCAdau{"axisDCAdau", {20, 0.0f, 1.2f}, "DCA (cm)"}; // This should follow v0Selections.dcav0dau's default
+    ConfigurableAxis axisDCAdau{"axisDCAdau", {20, 0.0f, 1.2f}, "DCA (cm)"};                           // This should follow v0Selections.dcav0dau's default
     ConfigurableAxis axisPointingAngle{"axisPointingAngle", {20, 0.0f, 0.4f}, "pointing angle (rad)"}; // cos(0.4 rad) is ~0.92 for cosPA
     ConfigurableAxis axisV0Radius{"axisV0Radius", {30, 0.0f, 60.0f}, "V0 2D radius (cm)"};
     // PID:
@@ -353,7 +353,7 @@ struct lambdajetpolarizationions {
     ConfigurableAxis axisPhiMod{"axisPhiMod", {100, 0.0f, constants::math::TwoPI / 18}, "Azimuth angle wrt TPC sector (rad.)"};
     ConfigurableAxis axisEta{"axisEta", {50, -1.0f, 1.0f}, "#eta"};
     ConfigurableAxis axisRapidity{"axisRapidity", {50, -1.0f, 1.0f}, "y"};
-      // AP plot axes
+    // AP plot axes
     ConfigurableAxis axisAPAlpha{"axisAPAlpha", {220, -1.1f, 1.1f}, "V0 AP alpha"};
     ConfigurableAxis axisAPQt{"axisAPQt", {220, 0.0f, 0.5f}, "V0 AP alpha"};
     // Track quality axes
@@ -395,7 +395,7 @@ struct lambdajetpolarizationions {
     Configurable<int> jetAlgorithm{"jetAlgorithm", kAntiKt, "jet clustering algorithm. 0 = kT, 1 = C/A, 2 = Anti-kT"};
     Configurable<int> jetRecombScheme{"jetRecombScheme", kEScheme, "Jet recombination scheme: 0: E_scheme, 1: pT-scheme, 2: pt2-scheme, 7: WTA_pt_scheme"};    // See PWGJE/JetFinders/jetFinder.h for more info.
     Configurable<int> bkgSubtraction{"bkgSubtraction", kNoSubtraction, "Jet background subtraction: No subtraction (false), Area (true), Constituent (TODO)"}; // Selection bool for background subtraction strategy
-    Configurable<float> GhostedAreaSpecRapidity{"GhostedAreaSpecRapidity", 1.1, "Max ghost particle rapidity for jet area estimates"};                         // At least 1.0 for tracks and jets within the |eta| < 0.9 window of ITS+TPC
+    Configurable<float> ghostedAreaSpecRapidity{"ghostedAreaSpecRapidity", 1.1, "Max ghost particle rapidity for jet area estimates"};                         // At least 1.0 for tracks and jets within the |eta| < 0.9 window of ITS+TPC
                                                                                                                                                                // Using an enum for readability:
     Configurable<int> jetType{"jetType", kChargedJet, "Jet type: 0: Charged Jet, 1: Full Jet, 2: Photon-tagged, 3: Z-tagged"};                                 // TODO: implement full, photon and Z jets
     // (TODO: check the maximum pT of jets used in my analyses! If it is way too hard, it might not be the best jet to use!)
@@ -651,8 +651,7 @@ struct lambdajetpolarizationions {
                                                                      {p + "TOF PID #pi", v0Selections.tofPidNsigmaCutLaPi < 1e+6},
                                                                      {p + "c#tau", v0Selections.lambdaLifetimeCut > 0},
                                                                      {p + "Ambiguous rejection", true},
-                                                                     {p + "Final accepted", true}}
-                                                                    );
+                                                                     {p + "Final accepted", true}});
     };
     constexpr bool Lambda = true;      // Some constexpr to make it more readable (works at compile level)
     constexpr bool AntiLambda = false; // "false" is just a flag for this addHypothesis function! It just means fill "AntiLambda" labels
@@ -671,7 +670,7 @@ struct lambdajetpolarizationions {
     // TH2D: "selection flow" vs "Lambda invariant mass" (to investigate whether we are removing background or just signal)
     auto h2dSelectionLambdaMass = histos.add<TH2>("GeneralQA/h2dSelectionLambdaMass", "V0 selection flow vs M_{#Lambda}; ; M_{#Lambda} (GeV/#it{c}^{2})", kTH2D,
                                                   {{static_cast<int>(v0LambdaSelectionLabels.size()), -0.5, static_cast<double>(v0LambdaSelectionLabels.size()) - 0.5},
-                                                    axisConfigurations.axisLambdaMassSigExtract});
+                                                   axisConfigurations.axisLambdaMassSigExtract});
     for (size_t i = 0; i < v0LambdaSelectionLabels.size(); ++i) {
       auto lbl = v0LambdaSelectionLabels[i].label;
       if (!v0LambdaSelectionLabels[i].enabled)
@@ -682,7 +681,7 @@ struct lambdajetpolarizationions {
     // Same for AntiLambda mass hypothesis:
     auto h2dSelectionAntiLambdaMass = histos.add<TH2>("GeneralQA/h2dSelectionAntiLambdaMass", "V0 selection flow vs M_{#bar{#Lambda}}; ; M_{#bar{#Lambda}} (GeV/#it{c}^{2})", kTH2D,
                                                       {{static_cast<int>(v0LambdaSelectionLabels.size()), -0.5, static_cast<double>(v0LambdaSelectionLabels.size()) - 0.5},
-                                                        axisConfigurations.axisLambdaMassSigExtract});
+                                                       axisConfigurations.axisLambdaMassSigExtract});
     for (size_t i = 0; i < v0LambdaSelectionLabels.size(); ++i) {
       auto lbl = v0LambdaSelectionLabels[i].label;
       if (!v0LambdaSelectionLabels[i].enabled)
@@ -797,7 +796,7 @@ struct lambdajetpolarizationions {
     if (analyseLambda && analyseAntiLambda) {
       // histos.add("hAmbiguousLambdaCandidates", "hAmbiguousLambdaCandidates;Integrated counts;Counts", kTH1D, {{1, 0, 1}}); // No longer required: v0 selection flow already considers this
       histos.add("hAmbiguousPerEvent", "hAmbiguousPerEvent;N_{ambiguous} per event;Counts", kTH1D, {{15, 0, 15}});
-      histos.add("hNonAmbiguousPerEvent", "hNonAmbiguousPerEvent;N_{non-ambiguous} per event;Counts", kTH1D, {{25, 0, 25}}); // To understand the population of correlated Lambda-likes per event
+      histos.add("hNonAmbiguousPerEvent", "hNonAmbiguousPerEvent;N_{non-ambiguous} per event;Counts", kTH1D, {{25, 0, 25}});                               // To understand the population of correlated Lambda-likes per event
       histos.add("hLambdasAndAntiLambdasPerEvent", "hLambdasAndAntiLambdasPerEvent;N_{#Lambda}+N_{#bar{#Lambda}} per event;Counts", kTH1D, {{25, 0, 25}}); // Alternative check that shows how bad is the possibly correlated full population (Ambig+NonAmbig)
     }
 
@@ -876,8 +875,8 @@ struct lambdajetpolarizationions {
     histos.add("GeneralQA/h2dArmenterosFullSelectedAmbiguous", "h2dArmenterosFullSelectedAmbiguous;Armenteros #alpha;Armenteros q_{T} (GeV/c)", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
 
     // Jets histograms:
-      // Histograms that need to be present even out of extensive QA-mode:
-    histos.add("hEventsWithJet", "hEventsWithJet;Integrated counts;Counts", kTH1D, {{1, 0, 1}}); // counter of events with jet (could be interesting to compare with the minimum pT cut or between the background subtraction vs no background subtraction cases)
+    // Histograms that need to be present even out of extensive QA-mode:
+    histos.add("hEventsWithJet", "hEventsWithJet;Integrated counts;Counts", kTH1D, {{1, 0, 1}});                      // counter of events with jet (could be interesting to compare with the minimum pT cut or between the background subtraction vs no background subtraction cases)
     histos.add("hJetsPerEvent", "hJetsPerEvent;Jets per event;Counts", kTH1D, {axisConfigurations.axisJetsPerEvent}); // number of jets per event
     if (doJetKinematicsQA) {
       histos.add("JetKinematicsQA/hJetPt", "hJetPt;Jet p_{T} [GeV/c];Counts", kTH1D, {axisConfigurations.axisJetPt});
@@ -1007,12 +1006,18 @@ struct lambdajetpolarizationions {
                                          // Made it like this because we use ++binValue when filling, so the first filled
                                          // bin will always be x=0 due to operator precedence.
     HistogramRegistry* histos = nullptr; // Had to pass the histos group to this struct, as it was not visible to the members of the struct
-    float mL = -1.f;  // mLambda for current V0, -1 at initialization
-    float mAL = -1.f; // mAntiLambda for current V0, -1 at initialization
-    void resetForNewV0(float massLambda, float massAntiLambda) { binValue = -1; mL = massLambda; mAL = massAntiLambda; }
+    float mL = -1.f;                     // mLambda for current V0, -1 at initialization
+    float mAL = -1.f;                    // mAntiLambda for current V0, -1 at initialization
+    void resetForNewV0(float massLambda, float massAntiLambda)
+    {
+      binValue = -1;
+      mL = massLambda;
+      mAL = massAntiLambda;
+    }
     void advanceTo(int targetBinX) { binValue = targetBinX - 1; } // next fill() lands at targetBin. Needed to deal with early exits at isLambda vs isAntiLambda checks
 
-    void fill() {
+    void fill()
+    {
       histos->fill(HIST("GeneralQA/hSelectionV0s"), ++binValue); // Hardcoded hSelectionV0s histogram, as it will not change. Increments before filling, by default
       histos->fill(HIST("GeneralQA/h2dSelectionLambdaMass"), binValue, mL);
       histos->fill(HIST("GeneralQA/h2dSelectionAntiLambdaMass"), binValue, mAL);
@@ -1020,14 +1025,18 @@ struct lambdajetpolarizationions {
     // Use this for DISABLED cuts within a single hypothesis
     // (shows pass-through count as a flat line, making it visually clear that the stage was not active. Replaces N dummy fill() calls)
     // fillUpTo advances through disabled bins, filling all three histograms uniformly.
-    void fillUpTo(int targetBinX) { while (binValue < targetBinX) fill(); }
+    void fillUpTo(int targetBinX)
+    {
+      while (binValue < targetBinX)
+        fill();
+    }
   };
-  V0SelectionFlowCounter v0SelCounter{-1, &histos}; // Could initialize with any index (resetForNewV0 is always called for a new V0 anyways)
-                                                    // Calculating some bins, for convenience:
-  const int nGenericCuts = 31;                            // x=0 to x=30 (bins 1 and 31, as the lower-edge is inclusive)
-  const int nHypoCuts = 11;                               // per hypothesis (x=31..41 for Lambda)
-  const int lambdaHypoEnd = nGenericCuts + nHypoCuts - 1; // x=41 (bin 42)
-  const int antiLambdaHypoEnd = nGenericCuts + 2*nHypoCuts - 1; // x = 52 (bin 53)
+  V0SelectionFlowCounter v0SelCounter{-1, &histos};               // Could initialize with any index (resetForNewV0 is always called for a new V0 anyways)
+                                                                  // Calculating some bins, for convenience:
+  const int nGenericCuts = 31;                                    // x=0 to x=30 (bins 1 and 31, as the lower-edge is inclusive)
+  const int nHypoCuts = 11;                                       // per hypothesis (x=31..41 for Lambda)
+  const int lambdaHypoEnd = nGenericCuts + nHypoCuts - 1;         // x=41 (bin 42)
+  const int antiLambdaHypoEnd = nGenericCuts + 2 * nHypoCuts - 1; // x = 52 (bin 53)
 
   // Minimal helper to fill hSelectionJetTracks, mirroring V0SelectionFlowCounter.
   // Reset once per track candidate, fill once per passed cut stage.
@@ -1106,10 +1115,10 @@ struct lambdajetpolarizationions {
     return dot / (magA * magB);
   }
 
-  const float NSigmaScale = 100.f; // The factor for packing the float as an int16_t
+  const float nSigmaScale = 100.f; // The factor for packing the float as an int16_t
   inline int16_t packNSigma(float x)
   {
-    return static_cast<int16_t>(std::lround(x * NSigmaScale));
+    return static_cast<int16_t>(std::lround(x * nSigmaScale));
   }
 
   /////////////////////////////////////////////
@@ -1574,7 +1583,7 @@ struct lambdajetpolarizationions {
     // Cluster particles with the configured algorithm:
     fastjet::JetDefinition jetDef(mapFJAlgorithm(jetConfigurations.jetAlgorithm), jetConfigurations.radiusJet, mapFJRecombScheme(jetConfigurations.jetRecombScheme));
     if (jetConfigurations.bkgSubtraction == kAreaBased) {
-      fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(jetConfigurations.GhostedAreaSpecRapidity));
+      fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(jetConfigurations.ghostedAreaSpecRapidity));
       fastjet::ClusterSequenceArea clustSeq(fjParticles, jetDef, areaDef);                     // Attributes an area for each pseudojet in the list
       std::vector<fastjet::PseudoJet> jets = fastjet::sorted_by_pt(clustSeq.inclusive_jets()); // No minimum pt before background subtraction
       if (jets.empty())
@@ -1616,7 +1625,7 @@ struct lambdajetpolarizationions {
                   jetMinusBkg.pt(),
                   jetMinusBkg.eta(), // Using eta instead of rapidity
                   jetMinusBkg.phi());
-                  // jetMinusBkg.constituents().size());
+        // jetMinusBkg.constituents().size());
 
         // Finding the leading jet after subtraction (leading jet is NOT known a priori!):
         if (jetMinusBkg.pt() > leadingJetPt) {
@@ -1738,8 +1747,8 @@ struct lambdajetpolarizationions {
                   jet.pt(),
                   jetEta, // Using eta instead of rapidity
                   jet.phi());
-                  // jet.constituents().size()); // Currently removed from datamodel.
-                                                 // Other variables can better reveal jet quenching and help identify good selection criteria for quenched jets proxies
+        // jet.constituents().size()); // Currently removed from datamodel.
+        // Other variables can better reveal jet quenching and help identify good selection criteria for quenched jets proxies
 
         if (doJetKinematicsQA) {
           histos.fill(HIST("JetKinematicsQA/hJetPt"), jet.pt());
@@ -1917,7 +1926,7 @@ struct lambdajetpolarizationions {
         histos.fill(HIST("GeneralQA/h2dArmenterosFullSelectedAntiLambda"), v0.alpha(), v0.qtarm());
 
       // XOR check:
-      if (isLambda ^ isAntiLambda){
+      if (isLambda ^ isAntiLambda) {
         histos.fill(HIST("GeneralQA/h2dArmenterosFullSelectedNonAmbiguous"), v0.alpha(), v0.qtarm());
         nNonAmbiguous++;
       }
@@ -1941,12 +1950,12 @@ struct lambdajetpolarizationions {
       // v0.mLambda()
 
       // Bookkeeping for the candidates that passed eveything until the ambiguity check:
-      if (isLambda) { // Go back to Lambda bin to fill it as well:
-        v0SelCounter.advanceTo(lambdaHypoEnd-1); // Bin 41: Ambiguous Lambda rejection
+      if (isLambda) {                              // Go back to Lambda bin to fill it as well:
+        v0SelCounter.advanceTo(lambdaHypoEnd - 1); // Bin 41: Ambiguous Lambda rejection
         v0SelCounter.fill();
       }
       if (isAntiLambda) {
-        v0SelCounter.advanceTo(antiLambdaHypoEnd-1); // Bin 52: Ambiguous antiLambda rejection
+        v0SelCounter.advanceTo(antiLambdaHypoEnd - 1); // Bin 52: Ambiguous antiLambda rejection
         v0SelCounter.fill();
       }
 
@@ -1958,7 +1967,7 @@ struct lambdajetpolarizationions {
       if (isLambda) {
         v0SelCounter.advanceTo(lambdaHypoEnd); // Bin 42: Final accepted Lambda V0s
         v0SelCounter.fill();
-      } else { // i.e., isAntiLambda
+      } else {                                     // i.e., isAntiLambda
         v0SelCounter.advanceTo(antiLambdaHypoEnd); // Bin 53: Final accepted anti-Lambda V0s
         v0SelCounter.fill();
       }
@@ -1967,14 +1976,14 @@ struct lambdajetpolarizationions {
       auto const v0pt = v0.pt();
       tableV0s(ringCollIdx,
                v0pt, v0.eta(), v0.phi(), // Using eta instead of rapidity
-               isLambda, // 0: antiLambda, 1: Lambda. No ambiguous candidates (isLambda && isAntiLambda) are stored
+               isLambda,                 // 0: antiLambda, 1: Lambda. No ambiguous candidates (isLambda && isAntiLambda) are stored
                isLambda ? v0.mLambda() : v0.mAntiLambda(),
                v0.positivept(), v0.positiveeta(), v0.positivephi(),
                v0.negativept(), v0.negativeeta(), v0.negativephi(),
                packNSigma(isLambda ? posTrackExtra.tpcNSigmaPr() : negTrackExtra.tpcNSigmaPr()), // Proton-like track, packed into int16_t
                packNSigma(isLambda ? negTrackExtra.tpcNSigmaPi() : posTrackExtra.tpcNSigmaPi()), // Pion-like track
                v0.v0cosPA(), v0.v0radius(), v0.dcaV0daughters(), v0.dcapostopv(), v0.dcanegtopv());
-      
+
       // Perform extensive QAs for non-ambiguous Lambda/antiLambda candidates only:
       if (doEventQA && !validV0AlreadyFound)
         fillEventSelectionQA(mBinHasRingV0, centrality); // hasRingV0 passes
