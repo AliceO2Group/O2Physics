@@ -659,10 +659,10 @@ struct ResonanceDaughterInitializer {
 
   // Track selection filter based on configuration
   Filter trackFilter = (TrackCuts.trackSelection.node() == TrackSelectionNone) ||
-                       ((TrackCuts.trackSelection.node() == TrackSelectionGlobal) && requireGlobalTrackInFilter()) ||                                    // kGlobalTrack = kQualityTracks | kPrimaryTracks | kInAcceptanceTracks
-                       ((TrackCuts.trackSelection.node() == TrackSelectionGlobalWoPtEta) && requireGlobalTrackWoPtEtaInFilter()) ||                       // kGlobalTrackWoPtEta = kQualityTracks | kPrimaryTracks
-                       ((TrackCuts.trackSelection.node() == TrackSelectionGlobalWoDCA) && requireGlobalTrackWoDCAInFilter()) ||                           // kGlobalTrackWoDCA = kQualityTracks | kInAcceptanceTracks
-                       ((TrackCuts.trackSelection.node() == TrackSelectionQuality) && requireQualityTracksInFilter()) ||                                  // kQualityTracks = kQualityTracksITS | kQualityTracksTPC
+                       ((TrackCuts.trackSelection.node() == TrackSelectionGlobal) && requireGlobalTrackInFilter()) ||                                          // kGlobalTrack = kQualityTracks | kPrimaryTracks | kInAcceptanceTracks
+                       ((TrackCuts.trackSelection.node() == TrackSelectionGlobalWoPtEta) && requireGlobalTrackWoPtEtaInFilter()) ||                            // kGlobalTrackWoPtEta = kQualityTracks | kPrimaryTracks
+                       ((TrackCuts.trackSelection.node() == TrackSelectionGlobalWoDCA) && requireGlobalTrackWoDCAInFilter()) ||                                // kGlobalTrackWoDCA = kQualityTracks | kInAcceptanceTracks
+                       ((TrackCuts.trackSelection.node() == TrackSelectionQuality) && requireQualityTracksInFilter()) ||                                       // kQualityTracks = kQualityTracksITS | kQualityTracksTPC
                        ((TrackCuts.trackSelection.node() == TrackSelectionInAcceptance) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks)); // kInAcceptanceTracks = kPtRange | kEtaRange
   Filter trackKinematicsFilter = nabs(aod::track::eta) < TrackCuts.cfgCutEta &&
                                  aod::track::pt >= TrackCuts.cfgCutMinPt &&
