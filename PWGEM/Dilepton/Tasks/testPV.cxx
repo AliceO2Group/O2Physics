@@ -17,7 +17,6 @@
 #include "Common/DataModel/EventSelection.h"
 
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -25,13 +24,14 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+
 #include <string>
 
 using namespace o2;
 using namespace o2::soa;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::constants::physics;
 
 struct testPV {
 
@@ -99,12 +99,14 @@ struct testPV {
     fRegistry.add("Vertex/hSigmaY", "vertex #sigma_{Y} vs. N_{contrib};N_{contrib};#sigma_{Y} (#mum)", kTH2F, {{101, -0.5, 100.5}, {1000, 0, 100}}, false);
     fRegistry.add("Vertex/hSigmaZ", "vertex #sigma_{Z} vs. N_{contrib};N_{contrib};#sigma_{Z} (#mum)", kTH2F, {{101, -0.5, 100.5}, {1000, 0, 100}}, false);
 
-    fRegistry.add("Vertex/hDeltaX", "vertex #DeltaX vs. N_{contrib};N_{contrib};#DeltaX = (X_{rec} #minus X_{gen})/#sigma_{X}", kTH2F, {{101, -0.5, 100.5}, {200, -10, 10}}, false);
-    fRegistry.add("Vertex/hDeltaY", "vertex #DeltaY vs. N_{contrib};N_{contrib};#DeltaY = (Y_{rec} #minus Y_{gen})/#sigma_{Y}", kTH2F, {{101, -0.5, 100.5}, {200, -10, 10}}, false);
-    fRegistry.add("Vertex/hDeltaZ", "vertex #DeltaZ vs. N_{contrib};N_{contrib};#DeltaZ = (Z_{rec} #minus Z_{gen})/#sigma_{Z}", kTH2F, {{101, -0.5, 100.5}, {200, -10, 10}}, false);
-
     fRegistry.add("Vertex/hCollisionTime", "vertex time;N_{contrib};collision time (ns)", kTH2F, {{101, -0.5, 100.5}, {500, -25, 25}}, false);
     fRegistry.add("Vertex/hCollisionTimeRes", "vertex time resolution;N_{contrib};collision time resolution (ns)", kTH2F, {{101, -0.5, 100.5}, {250, 0, 25}}, false);
+
+    if (doprocessMC) {
+      fRegistry.add("Vertex/hDeltaX", "vertex #DeltaX vs. N_{contrib};N_{contrib};#DeltaX = (X_{rec} #minus X_{gen})/#sigma_{X}", kTH2F, {{101, -0.5, 100.5}, {200, -10, 10}}, false);
+      fRegistry.add("Vertex/hDeltaY", "vertex #DeltaY vs. N_{contrib};N_{contrib};#DeltaY = (Y_{rec} #minus Y_{gen})/#sigma_{Y}", kTH2F, {{101, -0.5, 100.5}, {200, -10, 10}}, false);
+      fRegistry.add("Vertex/hDeltaZ", "vertex #DeltaZ vs. N_{contrib};N_{contrib};#DeltaZ = (Z_{rec} #minus Z_{gen})/#sigma_{Z}", kTH2F, {{101, -0.5, 100.5}, {200, -10, 10}}, false);
+    }
   }
 
   template <typename TCollision>
@@ -137,8 +139,8 @@ struct testPV {
     return true;
   }
 
-  template <typename TCollision, typename TMCCollision>
-  void fillVertexHistograms(TCollision const& collision, TMCCollision const& mcCollision)
+  template <typename TCollision>
+  void fillVertexHistograms(TCollision const& collision)
   {
     fRegistry.fill(HIST("Vertex/hZvtx"), collision.posZ());
     fRegistry.fill(HIST("Vertex/hNContrib"), collision.numContrib());
@@ -149,27 +151,25 @@ struct testPV {
     fRegistry.fill(HIST("Vertex/hSigmaY"), collision.numContrib(), std::sqrt(collision.covYY()) * 1e+4); // convert cm to um
     fRegistry.fill(HIST("Vertex/hSigmaZ"), collision.numContrib(), std::sqrt(collision.covZZ()) * 1e+4); // convert cm to um
 
-    fRegistry.fill(HIST("Vertex/hDeltaX"), collision.numContrib(), (collision.posX() - mcCollision.posX()) / std::sqrt(collision.covXX()));
-    fRegistry.fill(HIST("Vertex/hDeltaY"), collision.numContrib(), (collision.posY() - mcCollision.posY()) / std::sqrt(collision.covYY()));
-    fRegistry.fill(HIST("Vertex/hDeltaZ"), collision.numContrib(), (collision.posZ() - mcCollision.posZ()) / std::sqrt(collision.covZZ()));
-
     fRegistry.fill(HIST("Vertex/hCollisionTime"), collision.numContrib(), collision.collisionTime());
     fRegistry.fill(HIST("Vertex/hCollisionTimeRes"), collision.numContrib(), collision.collisionTimeRes());
   }
 
-  template <typename TBCs, typename TCollisions, typename TMCCollisions, typename TMCParticles>
+  template <bool isMC, typename TBCs, typename TCollisions, typename TMCCollisions, typename TMCParticles>
   void run(TBCs const&, TCollisions const& collisions, TMCCollisions const&, TMCParticles const&)
   {
     for (const auto& collision : collisions) {
-      if (!collision.has_mcCollision()) {
-        continue;
-      }
       auto bc = collision.template bc_as<TBCs>();
       initCCDB(bc);
 
-      auto mcCollision = collision.template mcCollision_as<aod::McCollisions>();
-      if (eventCut.cfgEventGeneratorId > -1 && mcCollision.getSubGeneratorId() != eventCut.cfgEventGeneratorId) {
-        continue;
+      if constexpr (isMC) {
+        if (!collision.has_mcCollision()) {
+          continue;
+        }
+        auto mcCollision = collision.template mcCollision_as<TMCCollisions>();
+        if (eventCut.cfgEventGeneratorId > -1 && mcCollision.getSubGeneratorId() != eventCut.cfgEventGeneratorId) {
+          continue;
+        }
       }
 
       fRegistry.fill(HIST("hCollisionCounter"), 1);
@@ -177,9 +177,15 @@ struct testPV {
       if (!isSelectedCollision(collision)) {
         continue;
       }
-      fRegistry.fill(HIST("hCollisionCounter"), 2);
 
-      fillVertexHistograms(collision, mcCollision);
+      fRegistry.fill(HIST("hCollisionCounter"), 2);
+      fillVertexHistograms(collision);
+      if constexpr (isMC) {
+        auto mcCollision = collision.template mcCollision_as<TMCCollisions>();
+        fRegistry.fill(HIST("Vertex/hDeltaX"), collision.numContrib(), (collision.posX() - mcCollision.posX()) / std::sqrt(collision.covXX()));
+        fRegistry.fill(HIST("Vertex/hDeltaY"), collision.numContrib(), (collision.posY() - mcCollision.posY()) / std::sqrt(collision.covYY()));
+        fRegistry.fill(HIST("Vertex/hDeltaZ"), collision.numContrib(), (collision.posZ() - mcCollision.posZ()) / std::sqrt(collision.covZZ()));
+      }
 
     } // end of collision loop
   }
@@ -190,11 +196,17 @@ struct testPV {
   Filter collisionFilter_evsel = eventCut.cfgZvtxMin < o2::aod::collision::posZ && o2::aod::collision::posZ < eventCut.cfgZvtxMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
+  void processData(FilteredMyCollisions const& collisions, MyBCs const& bcs)
+  {
+    run<false>(bcs, collisions, nullptr, nullptr);
+  }
+  PROCESS_SWITCH(testPV, processData, "processData", true);
+
   void processMC(FilteredMyCollisions const& collisions, MyBCs const& bcs, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
-    run(bcs, collisions, mcCollisions, mcParticles);
+    run<true>(bcs, collisions, mcCollisions, mcParticles);
   }
-  PROCESS_SWITCH(testPV, processMC, "processMC", true);
+  PROCESS_SWITCH(testPV, processMC, "processMC", false);
 
   void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(testPV, processDummy, "processDummy", false);
