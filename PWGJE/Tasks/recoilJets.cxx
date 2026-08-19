@@ -195,11 +195,11 @@ struct RecoilJets {
       multNBins{"multNBins", 600, "Number of bins for scaled FT0M multiplicity"},
       zdcTimeNBins{"zdcTimeNBins", 240, "Number of bins for ZDC timing histograms"};
 
-    ConfigurableAxis multFT0CThresh{"multFT0CThresh", {VARIABLE_WIDTH, 0.0, 0.133333, 0.233333, 0.366667, 0.533333, 0.733333, 1.0, 1.33333, 1.76667, 2.36667, 3.63333, 20.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0%"};
-    ConfigurableAxis multFT0CThreshPartLevel{"multFT0CThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.06, 0.14, 0.3, 0.46, 0.7, 1.0, 1.36, 1.82, 2.42, 3.64, 20.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0%"};
+    ConfigurableAxis multFT0CThresh{"multFT0CThresh", {VARIABLE_WIDTH, 0.0, 0.109421, 0.215022, 0.343214, 0.50515, 0.712277, 0.978245, 1.3189, 1.75744, 2.36001, 3.59696, 25.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
+    ConfigurableAxis multFT0CThreshPartLevel{"multFT0CThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.0570661, 0.13847, 0.280558, 0.457027, 0.692287, 0.983008, 1.34127, 1.80253, 2.41528, 3.62342, 25.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
 
-    ConfigurableAxis multFT0MThresh{"multFT0MThresh", {VARIABLE_WIDTH, 0.0, 0.133333, 0.266667, 0.366667, 0.533333, 0.766667, 1.0, 1.33333, 1.76667, 2.33333, 3.4, 20.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0%"};
-    ConfigurableAxis multFT0MThreshPartLevel{"multFT0MThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.08, 0.18, 0.32, 0.5, 0.7, 1.0, 1.36, 1.82, 2.4, 3.5, 20.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0%"};
+    ConfigurableAxis multFT0MThresh{"multFT0MThresh", {VARIABLE_WIDTH, 0.0, 0.130987, 0.237916, 0.36664, 0.528441, 0.734705, 0.996611, 1.32785, 1.74896, 2.31024, 3.37852, 25.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
+    ConfigurableAxis multFT0MThreshPartLevel{"multFT0MThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.0682096, 0.160082, 0.302476, 0.480633, 0.699907, 0.986263, 1.34813, 1.80188, 2.39325, 3.49311, 25.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
 
     ConfigurableAxis axisPtTrackEff{"axisPtTrackEff", {VARIABLE_WIDTH, 0.0, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 70.0, 100.0}, "#it{p}_{T} (GeV/#it{c})"};
 
