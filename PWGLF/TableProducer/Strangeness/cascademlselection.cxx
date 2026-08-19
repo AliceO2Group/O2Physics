@@ -18,7 +18,6 @@
 
 #include "PWGLF/DataModel/LFStrangenessMLTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-
 #include "PWGLF/Utils/CascadeMlResponse.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -223,8 +222,8 @@ struct cascademlselection {
         target[iBin].resize(nClasses);
         for (int iClass = 0; iClass < nClasses; iClass++) {
           target[iBin][iClass] = histos.add<TH1>(Form("BDTScore/%s/pTbin%d/class%d", particleName.c_str(), iBin, iClass),
-                                                  Form("%s BDT score, %.2f #leq p_{T} < %.2f GeV/c, class %d;BDT score;entries", particleName.c_str(), binsPt[iBin], binsPt[iBin + 1], iClass),
-                                                  kTH1F, {{100, 0., 1.}});
+                                                 Form("%s BDT score, %.2f #leq p_{T} < %.2f GeV/c, class %d;BDT score;entries", particleName.c_str(), binsPt[iBin], binsPt[iBin + 1], iClass),
+                                                 kTH1F, {{100, 0., 1.}});
         }
       }
     };

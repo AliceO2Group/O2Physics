@@ -95,23 +95,23 @@ class CascadeMlResponse : public MlResponse<TypeOutputScore>
     return inputFeatures;
   }
 
-  protected:
-    void setAvailableInputFeatures() override
-    {
-      MlResponse<TypeOutputScore>::mAvailableInputFeatures = {
-        {"cascradius", static_cast<uint8_t>(InputFeaturesCasc::cascradius)},
-        {"v0radius", static_cast<uint8_t>(InputFeaturesCasc::v0radius)},
-        {"casccosPA", static_cast<uint8_t>(InputFeaturesCasc::casccosPA)},
-        {"v0cosPA", static_cast<uint8_t>(InputFeaturesCasc::v0cosPA)},
-        {"dcapostopv", static_cast<uint8_t>(InputFeaturesCasc::dcapostopv)},
-        {"dcanegtopv", static_cast<uint8_t>(InputFeaturesCasc::dcanegtopv)},
-        {"dcabachtopv", static_cast<uint8_t>(InputFeaturesCasc::dcabachtopv)},
-        {"dcacascdaughters", static_cast<uint8_t>(InputFeaturesCasc::dcacascdaughters)},
-        {"dcaV0daughters", static_cast<uint8_t>(InputFeaturesCasc::dcaV0daughters)},
-        {"dcav0topv", static_cast<uint8_t>(InputFeaturesCasc::dcav0topv)},
-        {"bachBaryonCosPA", static_cast<uint8_t>(InputFeaturesCasc::bachBaryonCosPA)},
-        {"bachBaryonDCAxyToPV", static_cast<uint8_t>(InputFeaturesCasc::bachBaryonDCAxyToPV)}};
-    }
+ protected:
+  void setAvailableInputFeatures() override
+  {
+    MlResponse<TypeOutputScore>::mAvailableInputFeatures = {
+      {"cascradius", static_cast<uint8_t>(InputFeaturesCasc::cascradius)},
+      {"v0radius", static_cast<uint8_t>(InputFeaturesCasc::v0radius)},
+      {"casccosPA", static_cast<uint8_t>(InputFeaturesCasc::casccosPA)},
+      {"v0cosPA", static_cast<uint8_t>(InputFeaturesCasc::v0cosPA)},
+      {"dcapostopv", static_cast<uint8_t>(InputFeaturesCasc::dcapostopv)},
+      {"dcanegtopv", static_cast<uint8_t>(InputFeaturesCasc::dcanegtopv)},
+      {"dcabachtopv", static_cast<uint8_t>(InputFeaturesCasc::dcabachtopv)},
+      {"dcacascdaughters", static_cast<uint8_t>(InputFeaturesCasc::dcacascdaughters)},
+      {"dcaV0daughters", static_cast<uint8_t>(InputFeaturesCasc::dcaV0daughters)},
+      {"dcav0topv", static_cast<uint8_t>(InputFeaturesCasc::dcav0topv)},
+      {"bachBaryonCosPA", static_cast<uint8_t>(InputFeaturesCasc::bachBaryonCosPA)},
+      {"bachBaryonDCAxyToPV", static_cast<uint8_t>(InputFeaturesCasc::bachBaryonDCAxyToPV)}};
+  }
 };
 
 } // namespace o2::analysis
