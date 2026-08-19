@@ -90,7 +90,7 @@ class StandardCCDBLoader
     } else {
       LOGF(info, "GRPMagField object returned nullptr, will attempt alternate method");
 
-      o2::parameters::GRPObject* grpo = 0x0;
+      o2::parameters::GRPObject* grpo = nullptr;
       grpo = ccdb->template getForRun<o2::parameters::GRPObject>(cGroup.grpPath.value, currentRunNumber);
       if (!grpo) {
         LOG(fatal) << "Alternate path failed! Got nullptr from CCDB for path " << cGroup.grpPath << " of object GRPObject for run " << currentRunNumber;
