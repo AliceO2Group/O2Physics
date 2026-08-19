@@ -14,8 +14,10 @@
 /// \author daiki.sekihata@cern.ch
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/Zorro.h"
 #include "Common/DataModel/EventSelection.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
@@ -36,11 +38,12 @@ using namespace o2::framework::expressions;
 struct testPV {
 
   // Configurables
-  // Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   struct : ConfigurableGroup {
     std::string prefix = "eventCut";
     Configurable<int> cfgEventGeneratorId{"cfgEventGeneratorId", -1, "event generator index. e.g. select gap/signal events"};
+    Configurable<float> cfgChi2PerNcontribMax{"cfgChi2PerNcontribMax", 1e+10, "max. chi2/Ncontrib of PV"};
     Configurable<float> cfgZvtxMin{"cfgZvtxMin", -10.f, "min. Zvtx"};
     Configurable<float> cfgZvtxMax{"cfgZvtxMax", 10.f, "max. Zvtx"};
     Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", true, "require FT0AND"};
@@ -50,6 +53,7 @@ struct testPV {
     Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
     Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"};             // ITS-TPC matched track contributes PV.
     Configurable<bool> cfgRequireVertexTOFmatched{"cfgRequireVertexTOFmatched", false, "require Vertex TOFmatched in event cut"}; // ITS-TPC-TOF matched track contributes PV.
+
     // for RCT
     o2::framework::Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", true, "require good detector flag in run condtion table"};
     o2::framework::Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
@@ -57,14 +61,23 @@ struct testPV {
     o2::framework::Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
   } eventCut;
 
+  // for zorro
+  struct : ConfigurableGroup {
+    std::string prefix = "zorroGroup";
+    Configurable<std::string> cfgTriggerName{"cfgTriggerName", "fGlobalDimuon", "desired software trigger name"};
+    Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "EventFiltering/Zorro/", "ccdb path for ZORRO objects"};
+    Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
+  } zorroGroup;
+
   HistogramRegistry fRegistry{"fRegistry"};
+  Zorro zorro;
 
   void init(o2::framework::InitContext&)
   {
-    // ccdb->setURL(ccdburl);
-    // ccdb->setCaching(true);
-    // ccdb->setLocalObjectValidityChecking();
-    // ccdb->setFatalWhenNull(false);
+    ccdb->setURL(ccdburl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
 
     mRunNumber = 0;
 
@@ -72,13 +85,19 @@ struct testPV {
   }
 
   int mRunNumber{0};
-  // Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  template <typename TBC>
+  template <bool isTriggerAnalysis, typename TBC>
   void initCCDB(TBC const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
       return;
+    }
+
+    if constexpr (isTriggerAnalysis) {
+      zorro.setCCDBpath(zorroGroup.ccdbPathSoftwareTrigger);
+      zorro.setBCtolerance(zorroGroup.bcMarginForSoftwareTrigger); // this does nothing.
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), zorroGroup.cfgTriggerName.value);
     }
 
     mRunNumber = bc.runNumber();
@@ -136,6 +155,9 @@ struct testPV {
     if (eventCut.cfgRequireVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
       return false;
     }
+    if (collision.chi2() / collision.numContrib() > eventCut.cfgChi2PerNcontribMax) {
+      return false;
+    }
     return true;
   }
 
@@ -155,12 +177,12 @@ struct testPV {
     fRegistry.fill(HIST("Vertex/hCollisionTimeRes"), collision.numContrib(), collision.collisionTimeRes());
   }
 
-  template <bool isMC, typename TBCs, typename TCollisions, typename TMCCollisions, typename TMCParticles>
+  template <bool isMC, bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TMCCollisions, typename TMCParticles>
   void run(TBCs const&, TCollisions const& collisions, TMCCollisions const&, TMCParticles const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.template bc_as<TBCs>();
-      initCCDB(bc);
+      initCCDB<isTriggerAnalysis>(bc);
 
       if constexpr (isMC) {
         if (!collision.has_mcCollision()) {
@@ -168,6 +190,12 @@ struct testPV {
         }
         auto mcCollision = collision.template mcCollision_as<TMCCollisions>();
         if (eventCut.cfgEventGeneratorId > -1 && mcCollision.getSubGeneratorId() != eventCut.cfgEventGeneratorId) {
+          continue;
+        }
+      }
+
+      if constexpr (isTriggerAnalysis) {
+        if (!zorro.isSelected(bc.globalBC(), zorroGroup.bcMarginForSoftwareTrigger)) { // triggered event
           continue;
         }
       }
@@ -190,21 +218,29 @@ struct testPV {
     } // end of collision loop
   }
 
-  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+  using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
   using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 
   Filter collisionFilter_evsel = eventCut.cfgZvtxMin < o2::aod::collision::posZ && o2::aod::collision::posZ < eventCut.cfgZvtxMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
+  using FilteredMyCollisionsMC = soa::Filtered<MyCollisionsMC>;
 
   void processData(FilteredMyCollisions const& collisions, MyBCs const& bcs)
   {
-    run<false>(bcs, collisions, nullptr, nullptr);
+    run<false, false>(bcs, collisions, nullptr, nullptr);
   }
   PROCESS_SWITCH(testPV, processData, "processData", true);
 
-  void processMC(FilteredMyCollisions const& collisions, MyBCs const& bcs, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  void processTriggeredData(FilteredMyCollisions const& collisions, MyBCs const& bcs)
   {
-    run<true>(bcs, collisions, mcCollisions, mcParticles);
+    run<false, true>(bcs, collisions, nullptr, nullptr);
+  }
+  PROCESS_SWITCH(testPV, processTriggeredData, "processTriggeredData", true);
+
+  void processMC(FilteredMyCollisionsMC const& collisions, MyBCs const& bcs, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  {
+    run<true, false>(bcs, collisions, mcCollisions, mcParticles);
   }
   PROCESS_SWITCH(testPV, processMC, "processMC", false);
 
