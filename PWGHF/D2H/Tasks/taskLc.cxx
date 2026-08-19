@@ -338,6 +338,10 @@ struct HfTaskLc {
     return o2::hf_centrality::getCentralityColl<Coll>(collision);
   }
 
+  /// Evaluate decay time of generated particle
+  /// \param mcParticleProng0 one of generated particle's daughters
+  /// \param motherParticle generated particle
+  /// \return decay time in picoseconds. For nonprompt particles it is evaluated as if it was prompt (as it is calculated for data)
   float evaluateMcGenDecayTime(const McParticles3ProngMatched::iterator& mcParticleProng0, const McParticles3ProngMatched::iterator& motherParticle)
   {
     const auto mcCollision = motherParticle.template mcCollision_as<aod::McCollisions>();
