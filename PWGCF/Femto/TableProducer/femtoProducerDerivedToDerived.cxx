@@ -67,6 +67,10 @@ struct FemtoProducerDerivedToDerived {
   o2::framework::Partition<FemtoTracks> trackPartition2 = MAKE_TRACK_PARTITION(trackSelections2);
   o2::framework::Preslice<FemtoTracks> perColTracks = o2::aod::femtobase::stored::fColId;
 
+  o2::framework::Partition<FemtoTracksWithMass> trackWithMassPartition1 = MAKE_TRACK_PARTITION_WITH_MASS(trackSelections1);
+  o2::framework::Partition<FemtoTracksWithMass> trackWithMassPartition2 = MAKE_TRACK_PARTITION_WITH_MASS(trackSelections2);
+  o2::framework::Preslice<FemtoTracksWithMass> perColTracksWithMass = o2::aod::femtobase::stored::fColId;
+
   // v0 builder
   v0builder::V0BuilderDerivedToDerived v0Builder;
   v0builder::V0BuilderDerivedToDerivedProducts v0BuilderProducts;
@@ -138,12 +142,12 @@ struct FemtoProducerDerivedToDerived {
 
   void processTracksWithMass(FilteredFemtoCollision const& col, FemtoTracksWithMass const& tracks)
   {
-    if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache)) {
+    if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache)) {
       return;
     }
     trackBuilder.reset(tracks);
     collisionBuilder.processCollision(col, collisionBuilderProducts);
-    trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+    trackBuilder.processTracks(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksWithMass, "Process tracks with mass", false);
 
