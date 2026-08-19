@@ -73,10 +73,10 @@ struct ResonanceModuleInitializer {
   static constexpr int MCCentralityImpactParameterEstimator = 2;
   static constexpr float MCVertexZMax = 10.f;
 
-  int mRunNumber;                            ///< Run number for the current data
-  int multEstimator;                         ///< Multiplicity estimator type
-  float dBz;                                 ///< Magnetic field value
-  float centrality;                          ///< Centrality value for the event
+  int mRunNumber = 0;                        ///< Run number for the current data
+  int multEstimator = 0;                     ///< Multiplicity estimator type
+  float dBz = 0.f;                           ///< Magnetic field value
+  float centrality = 0.f;                    ///< Centrality value for the event
   Service<o2::ccdb::BasicCCDBManager> ccdb;  ///< CCDB manager service
   Service<o2::framework::O2DatabasePDG> pdg; ///< PDG database service
 
@@ -968,7 +968,7 @@ struct ResonanceDaughterInitializer {
                             (!SecondaryCuts.cfgSecondaryCrossMassHypothesisCut ||
                              (std::fabs(v0.mLambda() - MassLambda0) >= SecondaryCuts.cfgSecondaryCrossMassCutWindow &&
                               std::fabs(v0.mAntiLambda() - MassLambda0Bar) >= SecondaryCuts.cfgSecondaryCrossMassCutWindow));
-      selected = selected || passesK0;
+      selected = passesK0;
     }
     if (FilterForDerivedTables.cfgFillLambda0) {
       const bool passesLambdaPID = bypassDaughterPID ||
