@@ -16,6 +16,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <vector>
 
 // Creating output TTree for ML analysis
 namespace o2::aod
