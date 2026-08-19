@@ -142,21 +142,21 @@ struct EvtSelStage {
   const char* label;
 };
 constexpr std::array<EvtSelStage, 14> kEvtSelStages{{{EvtSelFlag::INEL, "INEL"},
-                                                      {EvtSelFlag::INELZvtx, "INEL+Zvtx"},
-                                                      {EvtSelFlag::Coll, "Coll"},
-                                                      {EvtSelFlag::CollZvtx, "Coll+Zvtx"},
-                                                      {EvtSelFlag::TVX, "TVX"},
-                                                      {EvtSelFlag::TVXZvtx, "TVX+Zvtx"},
-                                                      {EvtSelFlag::SelMC, "SelMC"},
-                                                      {EvtSelFlag::SelMCZvtx, "SelMC+Zvtx"},
-                                                      {EvtSelFlag::Sel8, "Sel8"},
-                                                      {EvtSelFlag::Sel8Zvtx, "Sel8+Zvtx"},
-                                                      {EvtSelFlag::Sel8Full, "Sel8Full"},
-                                                      {EvtSelFlag::Sel8FullZvtx, "Sel8Full+Zvtx"},
-                                                      {EvtSelFlag::Sel8FullGood, "Sel8FullGood"},
-                                                      {EvtSelFlag::Sel8FullGoodZvtx, "Sel8FullGood+Zvtx"}}};
-constexpr int kEvtSelStageRecoFirst = 2;   // Coll
-constexpr int kEvtSelStageRecoLast = 13;   // Sel8FullGood+Zvtx
+                                                     {EvtSelFlag::INELZvtx, "INEL+Zvtx"},
+                                                     {EvtSelFlag::Coll, "Coll"},
+                                                     {EvtSelFlag::CollZvtx, "Coll+Zvtx"},
+                                                     {EvtSelFlag::TVX, "TVX"},
+                                                     {EvtSelFlag::TVXZvtx, "TVX+Zvtx"},
+                                                     {EvtSelFlag::SelMC, "SelMC"},
+                                                     {EvtSelFlag::SelMCZvtx, "SelMC+Zvtx"},
+                                                     {EvtSelFlag::Sel8, "Sel8"},
+                                                     {EvtSelFlag::Sel8Zvtx, "Sel8+Zvtx"},
+                                                     {EvtSelFlag::Sel8Full, "Sel8Full"},
+                                                     {EvtSelFlag::Sel8FullZvtx, "Sel8Full+Zvtx"},
+                                                     {EvtSelFlag::Sel8FullGood, "Sel8FullGood"},
+                                                     {EvtSelFlag::Sel8FullGoodZvtx, "Sel8FullGood+Zvtx"}}};
+constexpr int kEvtSelStageRecoFirst = 2; // Coll
+constexpr int kEvtSelStageRecoLast = 13; // Sel8FullGood+Zvtx
 
 // Labels a full-range [0, kEvtSelStages.size()-1] evtsel axis. Bins below `first` (unreachable at
 // reco level) get numbered placeholder labels ("_1", "_2", ...) instead of a stage label, matching
@@ -1182,7 +1182,7 @@ struct BjetTaggingGnn {
   template <typename AnalysisBC>
   EvtSelFlag fillMcCollCounterBC(AnalysisBC const& bc, float posZ, float weightEvt = 1.f)
   {
-    EvtSelFlag evtselCode = EvtSelFlag::Coll; // "Coll" == BC here, see above
+    EvtSelFlag evtselCode = EvtSelFlag::Coll;                                           // "Coll" == BC here, see above
     registry.fill(HIST("hMcCollCounterBC"), static_cast<int>(EvtSel::Coll), weightEvt); // BC
 
     bool zvtx = std::fabs(posZ) < vertexZCut;
