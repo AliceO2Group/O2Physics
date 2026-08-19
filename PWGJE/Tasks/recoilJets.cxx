@@ -195,16 +195,29 @@ struct RecoilJets {
       multNBins{"multNBins", 600, "Number of bins for scaled FT0M multiplicity"},
       zdcTimeNBins{"zdcTimeNBins", 240, "Number of bins for ZDC timing histograms"};
 
-    ConfigurableAxis multFT0CThresh{"multFT0CThresh", {VARIABLE_WIDTH, 0.0, 0.133333, 0.233333, 0.366667, 0.533333, 0.733333, 1.0, 1.33333, 1.76667, 2.36667, 3.63333, 20.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0%"};
-    ConfigurableAxis multFT0CThreshPartLevel{"multFT0CThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.06, 0.14, 0.3, 0.46, 0.7, 1.0, 1.36, 1.82, 2.42, 3.64, 20.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0%"};
+    ConfigurableAxis multFT0CThresh{"multFT0CThresh", {VARIABLE_WIDTH, 0.0, 0.109421, 0.215022, 0.343214, 0.50515, 0.712277, 0.978245, 1.3189, 1.75744, 2.36001, 3.59696, 25.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
+    ConfigurableAxis multFT0CThreshPartLevel{"multFT0CThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.0570661, 0.13847, 0.280558, 0.457027, 0.692287, 0.983008, 1.34127, 1.80253, 2.41528, 3.62342, 25.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
 
-    ConfigurableAxis multFT0MThresh{"multFT0MThresh", {VARIABLE_WIDTH, 0.0, 0.133333, 0.266667, 0.366667, 0.533333, 0.766667, 1.0, 1.33333, 1.76667, 2.33333, 3.4, 20.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0%"};
-    ConfigurableAxis multFT0MThreshPartLevel{"multFT0MThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.08, 0.18, 0.32, 0.5, 0.7, 1.0, 1.36, 1.82, 2.4, 3.5, 20.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0%"};
+    ConfigurableAxis multFT0MThresh{"multFT0MThresh", {VARIABLE_WIDTH, 0.0, 0.130987, 0.237916, 0.36664, 0.528441, 0.734705, 0.996611, 1.32785, 1.74896, 2.31024, 3.37852, 25.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
+    ConfigurableAxis multFT0MThreshPartLevel{"multFT0MThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.0682096, 0.160082, 0.302476, 0.480633, 0.699907, 0.986263, 1.34813, 1.80188, 2.39325, 3.49311, 25.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%"};
 
     ConfigurableAxis axisPtTrackEff{"axisPtTrackEff", {VARIABLE_WIDTH, 0.0, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 70.0, 100.0}, "#it{p}_{T} (GeV/#it{c})"};
 
     ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, -5.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0}, "Centrality (%)"};
   } hist;
+
+  // ---------- Rho-shift settings ----------
+  struct RhoShift : ConfigurableGroup {
+    std::string prefix = "rhoShiftTTRef";
+
+    Configurable<float> mb{"mb", 0.283998f, "Rho shift for MB"};
+    Configurable<float> ea0To20{"ea0To20", 0.199249f, "Rho shift for EA 0-20%"};
+    Configurable<float> ea0To10{"ea0To10", 0.186661f, "Rho shift for EA 0-10%"};
+    Configurable<float> ea20To40{"ea20To40", 0.137945f, "Rho shift for EA 20-40%"};
+    Configurable<float> ea60To80{"ea60To80", 0.0962535f, "Rho shift for EA 60-80%"};
+    Configurable<float> ea50To100{"ea50To100", 0.106919f, "Rho shift for EA 50-100%"};
+    Configurable<float> ea80To100{"ea80To100", 0.0871301f, "Rho shift for EA 80-100%"};
+  } cfgRhoShift;
 
   // Auxiliary variables
   std::unique_ptr<TRandom3> randGen = std::make_unique<TRandom3>(0);
@@ -269,7 +282,7 @@ struct RecoilJets {
 
   // EA intervals used for the rho-shift correction
   enum EAInterval {
-    kMB,
+    kMB = 0,
     kEA0_20,
     kEA0_10,
     kEA20_40,
@@ -285,17 +298,25 @@ struct RecoilJets {
     float rhoShift;
   };
 
-  // Hard-coded rho-shift values obtained from train 701159
-  std::array<EARhoShift, 7> eaRhoShifts{{{.interval = kMB, .label = "EA_MB", .rhoShift = 0.283998f},
-                                         {.interval = kEA0_20, .label = "EA_Perc_0_20", .rhoShift = 0.199249f},
-                                         {.interval = kEA0_10, .label = "EA_Perc_0_10", .rhoShift = 0.186661f},
-                                         {.interval = kEA20_40, .label = "EA_Perc_20_40", .rhoShift = 0.137945f},
-                                         {.interval = kEA60_80, .label = "EA_Perc_60_80", .rhoShift = 0.0962535f},
-                                         {.interval = kEA50_100, .label = "EA_Perc_50_100", .rhoShift = 0.106919f},
-                                         {.interval = kEA80_100, .label = "EA_Perc_80_100", .rhoShift = 0.0871301f}}};
+  std::array<EARhoShift, 7> eaRhoShifts{{{.interval = kMB, .label = "EA_MB", .rhoShift = 0.0f},
+                                         {.interval = kEA0_20, .label = "EA_Perc_0_20", .rhoShift = 0.0f},
+                                         {.interval = kEA0_10, .label = "EA_Perc_0_10", .rhoShift = 0.0f},
+                                         {.interval = kEA20_40, .label = "EA_Perc_20_40", .rhoShift = 0.0f},
+                                         {.interval = kEA60_80, .label = "EA_Perc_60_80", .rhoShift = 0.0f},
+                                         {.interval = kEA50_100, .label = "EA_Perc_50_100", .rhoShift = 0.0f},
+                                         {.interval = kEA80_100, .label = "EA_Perc_80_100", .rhoShift = 0.0f}}};
 
   void init(InitContext const&)
   {
+    // Initialize rho-shift values from configurables
+    eaRhoShifts[kMB].rhoShift = cfgRhoShift.mb.value;
+    eaRhoShifts[kEA0_20].rhoShift = cfgRhoShift.ea0To20.value;
+    eaRhoShifts[kEA0_10].rhoShift = cfgRhoShift.ea0To10.value;
+    eaRhoShifts[kEA20_40].rhoShift = cfgRhoShift.ea20To40.value;
+    eaRhoShifts[kEA60_80].rhoShift = cfgRhoShift.ea60To80.value;
+    eaRhoShifts[kEA50_100].rhoShift = cfgRhoShift.ea50To100.value;
+    eaRhoShifts[kEA80_100].rhoShift = cfgRhoShift.ea80To100.value;
+
     // Initialize histogram axes: configurable
     AxisSpec pT{hist.jetPtMax, 0.0, hist.jetPtMax * 1., "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec jetPTcorr{hist.jetPtMax + 20, -20., hist.jetPtMax * 1.0, "#it{p}_{T, jet}^{ch, corr} (GeV/#it{c})"};
@@ -1449,6 +1470,47 @@ struct RecoilJets {
 
         spectra.fill(HIST("hCentFT0C_Rho_TTRef"), centFT0C, rho, weight);
         spectra.fill(HIST("hCentFT0M_Rho_TTRef"), centFT0M, rho, weight);
+
+        //_____________________________________________________
+        // Fill EA-dependent rho spectra in events with TTRef with corresponding rho shift
+        for (const auto& ea : eaRhoShifts) {
+
+          if (!isInEAInterval(scaledFT0M, ft0mEdges, ea.interval)) {
+            continue;
+          }
+
+          const float rhoRefShifted = rho + ea.rhoShift;
+
+          switch (ea.interval) {
+            case kMB:
+              spectra.fill(HIST("hEA_MB_RhoShifted_TTRef"), rhoRefShifted, weight);
+              break;
+
+            case kEA0_20:
+              spectra.fill(HIST("hEA_Perc_0_20_RhoShifted_TTRef"), rhoRefShifted, weight);
+              break;
+
+            case kEA0_10:
+              spectra.fill(HIST("hEA_Perc_0_10_RhoShifted_TTRef"), rhoRefShifted, weight);
+              break;
+
+            case kEA20_40:
+              spectra.fill(HIST("hEA_Perc_20_40_RhoShifted_TTRef"), rhoRefShifted, weight);
+              break;
+
+            case kEA60_80:
+              spectra.fill(HIST("hEA_Perc_60_80_RhoShifted_TTRef"), rhoRefShifted, weight);
+              break;
+
+            case kEA50_100:
+              spectra.fill(HIST("hEA_Perc_50_100_RhoShifted_TTRef"), rhoRefShifted, weight);
+              break;
+
+            case kEA80_100:
+              spectra.fill(HIST("hEA_Perc_80_100_RhoShifted_TTRef"), rhoRefShifted, weight);
+              break;
+          }
+        }
       }
     }
 
@@ -1540,37 +1602,30 @@ struct RecoilJets {
               switch (ea.interval) {
                 case kMB:
                   spectra.fill(HIST("hEA_MB_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
-                  spectra.fill(HIST("hEA_MB_RhoShifted_TTRef"), rhoRefShifted, weight);
                   break;
 
                 case kEA0_20:
                   spectra.fill(HIST("hEA_Perc_0_20_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
-                  spectra.fill(HIST("hEA_Perc_0_20_RhoShifted_TTRef"), rhoRefShifted, weight);
                   break;
 
                 case kEA0_10:
                   spectra.fill(HIST("hEA_Perc_0_10_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
-                  spectra.fill(HIST("hEA_Perc_0_10_RhoShifted_TTRef"), rhoRefShifted, weight);
                   break;
 
                 case kEA20_40:
                   spectra.fill(HIST("hEA_Perc_20_40_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
-                  spectra.fill(HIST("hEA_Perc_20_40_RhoShifted_TTRef"), rhoRefShifted, weight);
                   break;
 
                 case kEA60_80:
                   spectra.fill(HIST("hEA_Perc_60_80_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
-                  spectra.fill(HIST("hEA_Perc_60_80_RhoShifted_TTRef"), rhoRefShifted, weight);
                   break;
 
                 case kEA50_100:
                   spectra.fill(HIST("hEA_Perc_50_100_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
-                  spectra.fill(HIST("hEA_Perc_50_100_RhoShifted_TTRef"), rhoRefShifted, weight);
                   break;
 
                 case kEA80_100:
                   spectra.fill(HIST("hEA_Perc_80_100_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
-                  spectra.fill(HIST("hEA_Perc_80_100_RhoShifted_TTRef"), rhoRefShifted, weight);
                   break;
               }
             }
