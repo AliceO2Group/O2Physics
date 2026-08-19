@@ -177,7 +177,7 @@ class TrackPropagationModule
       /// to understand whether the TrackTuner::getDcaGraphs function can be called here (input path from string/configurables)
       /// or inside the process function, to "auto-detect" the input file based on the run number
       const auto& workflows = initContext.services().template get<o2::framework::RunningWorkflowInfo const>();
-      for (const o2::framework::DeviceSpec& device : workflows.devices) { /// loop over devices
+      for (o2::framework::DeviceSpec const& device : workflows.devices) { /// loop over devices
         if (device.name == "propagation-service") {
           // loop over the options
           // to find the value of TrackTuner::autoDetectDcaCalib
