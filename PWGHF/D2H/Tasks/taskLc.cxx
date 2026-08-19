@@ -270,6 +270,7 @@ struct HfTaskLc {
       const AxisSpec thnAxisTracklets{thnConfigAxisNumPvContr, "Number of PV contributors"};
       const AxisSpec thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
       const AxisSpec thnAxisProperDecayTime{thnConfigAxisProperDecayTime, "#it{t}_{proper} (ps)"};
+      const AxisSpec thnAxisProperDecayTimeGen{thnConfigAxisProperDecayTime, "#it{t}_{proper, gen} (ps)"};
 
       bool const isDataWithMl = doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M;
       bool const isMcWithMl = doprocessMcWithMl || doprocessMcWithMlWithFT0C || doprocessMcWithMlWithFT0M;
@@ -305,6 +306,9 @@ struct HfTaskLc {
         for (const auto& axes : std::array<std::vector<AxisSpec>*, 3>{&axesWithBdt, &axesStd, &axesGen}) {
           if (!axes->empty()) {
             axes->push_back(thnAxisProperDecayTime);
+            if (!isData && axes != &axesGen) {
+              axes->push_back(thnAxisProperDecayTimeGen);
+            }
           }
         }
       }
@@ -421,6 +425,18 @@ struct HfTaskLc {
         const auto numPvContributors = collision.numContrib();
         const auto ptRecB = candidate.ptBhadMotherPart();
 
+        const auto mcCollision = particleMother.template mcCollision_as<aod::McCollisions>();
+        const auto p = particleMother.p();
+        const float pvX = mcCollision.posX();
+        const float pvY = mcCollision.posY();
+        const float pvZ = mcCollision.posZ();
+        const float svX = mcParticleProng0.vx();
+        const float svY = mcParticleProng0.vy();
+        const float svZ = mcParticleProng0.vz();
+
+        const float decayLengthGen = static_cast<float>(RecoDecay::distance(std::array<float, 3>{svX, svY, svZ}, std::array<float, 3>{pvX, pvY, pvZ}));
+        const float properDecayTimeGen = decayLengthGen * static_cast<float>(MassLambdaCPlus) / LightSpeedCm2PS / p;
+
         /// MC reconstructed signal
         fillHistogramsRecSig<Signal>(candidate);
 
@@ -464,6 +480,7 @@ struct HfTaskLc {
             }
             if (storeProperDecayTime) {
               valuesToFill.push_back(properDecayTime);
+              valuesToFill.push_back(properDecayTimeGen);
             }
             if constexpr (FillMl) {
               registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(valuesToFill.data());
