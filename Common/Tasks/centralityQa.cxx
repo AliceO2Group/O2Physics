@@ -158,7 +158,7 @@ struct CentralityQa {
             mcScalePars[ixpar] = mcScale->GetParameter(ixpar);
           }
 
-          auto scaleMC = [](float x, const std::array<float, NSuperCalibPars> pars) {
+          auto scaleMC = [](float x, const std::array<float, NSuperCalibPars>& pars) {
             float core = ((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4];
             if (core < 0.0f) {
               return 0.0f; // this should be marked as low multiplicity and not mapped, core^pars[5] would be NaN
