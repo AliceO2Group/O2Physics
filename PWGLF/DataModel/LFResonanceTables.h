@@ -656,8 +656,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta,
                            [](int16_t px1000, int16_t py1000, int16_t pz1000) {
                              return RecoDecay::eta(std::array{static_cast<float>(px1000) / 1000.f,
-                                                             static_cast<float>(py1000) / 1000.f,
-                                                             static_cast<float>(pz1000) / 1000.f});
+                                                              static_cast<float>(py1000) / 1000.f,
+                                                              static_cast<float>(pz1000) / 1000.f});
                            });
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi,
                            [](int16_t px1000, int16_t py1000) {
