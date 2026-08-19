@@ -71,7 +71,7 @@ DECLARE_SOA_COLUMN(ZVertex, zVertex, float);
 DECLARE_SOA_COLUMN(NConstituents, nConstituents, int32_t);
 } // namespace qgmljet
 
-DECLARE_SOA_TABLE(QGMLJets, "AOD", "QGMLJETS",
+DECLARE_SOA_TABLE(QGMLJets, "AOD", "QGMLJET",
                   o2::soa::Index<>,
                   qgmljet::FlavorLabel,
                   qgmljet::LeadingPartonPdg,
