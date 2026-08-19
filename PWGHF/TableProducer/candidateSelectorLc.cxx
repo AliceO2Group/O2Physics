@@ -24,6 +24,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/TrackIndexSkimmingTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 #include "Common/Core/TrackSelectorPID.h"
 #include "Common/DataModel/PIDResponseCombined.h"
@@ -330,7 +331,7 @@ struct HfCandidateSelectorLc {
         return false;
       }
 
-      if (useTriggerMassCut && !isCandidateInMassRange(massLc, o2::constants::physics::MassLambdaCPlus, ptCand, hfTriggerCuts)) {
+      if (useTriggerMassCut && !isCandidateInMassRange(massLc, o2::constants::physics::MassLambdaCPlus, candpT, hfTriggerCuts)) {
         return false;
       }
 
