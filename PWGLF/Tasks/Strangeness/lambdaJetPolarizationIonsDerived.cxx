@@ -70,7 +70,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using ROOT::Math::PtEtaPhiMVector;
 using ROOT::Math::XYZVector;
-// using namespace o2::aod::lambdajetpol; // Used it explicitly along the code for clarity
 
 // Declaring constants:
 constexpr double ProtonMass = o2::constants::physics::MassProton; // Assumes particle identification for daughter is perfect
@@ -530,6 +529,8 @@ struct lambdajetpolarizationionsderived {
                  << "Previous-jet/Mixed-Event proxies do not change between resamplings, so every extra pass would double-count the same proxy.";
     if (excludeOutOfPeakQA && excludeInPeakQA) // Complementary selections
       LOG(fatal) << "excludeOutOfPeakQA and excludeInPeakQA are complementary: enabling both rejects every V0.";
+    if (!familySwitches.doFamilyRing) // Todo: think of a smarter way of handling the axis getters for the DeltaMethod
+      LOG(fatal) << "doFamilyRing must be on: the Delta Method accumulators take their binning from the Ring/ histograms.";
 
     // Ring observable histograms:
     // Helper to register one full histogram family (kinematic cut variation of ring observable)
@@ -1469,7 +1470,7 @@ struct lambdajetpolarizationionsderived {
     // First we build lookup tables based on current dataframe's collisions (connects pairs of jet proxies from similar collisions):
     // (these proxies may come from collisions with no valid Lambdas, by construction, enabling more mixes)
     if (fakePolSwitches.doMixedEventProxies) { // This is performed out of the resampling loop, so nProxyResamples will not resample event mixing candidates
-      auto getMixCentrality = [this](o2::aod::RingCollision const& col) { return this->getCentrality(col); };
+      auto getMixCentrality = [this](o2::aod::RingCollision const& col) { return this->getCentrality(col); }; // Already filtered even though referencing only RingCollision, not an iterator to Filtered table
 
       // For the leading particle:
       // Pattern follows MixedEventsLambdaBinning tutorial (captures leadPs table and cache define in task's struct):
@@ -1484,7 +1485,7 @@ struct lambdajetpolarizationionsderived {
                                     true}; // Ignore overflows true
 
       // SameKindPair defaults to CombinationsBlockStrictlyUpperSameIndexPolicy, so no same-event mixing should happen:
-      SameKindPair<o2::aod::RingCollisions, o2::aod::RingLeadPs, LeadPBinningType> leadPPair{
+      SameKindPair<o2::aod::RingCollisions, o2::aod::RingLeadPs, LeadPBinningType> leadPPair{ // Already filtered even though referencing only RingCollision, so no need to access the filtered table
         leadPBinning, fakePolSwitches.mixedEventWindowSize, -1, collisions, std::make_tuple(leadPs), &mixCache};
 
       std::unordered_map<int64_t, int> leadPCandidateCount;
@@ -1641,7 +1642,7 @@ struct lambdajetpolarizationionsderived {
 
         // Used this dummy for backwards compatibility, under the reasonable assumption that the field points always in the same *direction* in the used runs
         // (it is not worth it to fetch and store the magnetic field in the datamodel)
-        float magField = 1.f; // Purely geometric.
+        const float magField = 1.f; // Purely geometric.
 
         // Slice jets, V0s and leading particle belonging to this collision:
         // (global collision indices repeat a lot, but they are unique to a same TimeFrame (TF) subfolder in the derived data)
@@ -1857,7 +1858,7 @@ struct lambdajetpolarizationionsderived {
         // Code above was superseeded: new datamodel does not store ambiguous candidates!
         // The new getter comes at the very start of processPolarizationData() now.
 
-        // Initialize delta method accumulators (reset for new dataframe):
+        // Initialize delta method accumulators (reset for new collision):
         for (auto const& tracker : {&trackRing, &trackRingKinCuts, &trackJetKinCuts, &trackJetLambdaKinCuts})
           tracker->reset();
         for (auto const& v0 : v0sInColl) {
@@ -1986,7 +1987,6 @@ struct lambdajetpolarizationionsderived {
           float deltaThetaLeadP = 0.;
           float cosDeltaThetaLeadP = 0.;
           if (hasValidLeadingP) {
-            // Cross product
             XYZVector crossLeadP = leadPUnitVec.Cross(lambdaLike3Vec);
             ringObservableLeadP = protonLikeStarUnit3Vec.Dot(crossLeadP) / crossLeadP.R();
             // Adding the prefactor related to the CP-violating decay (decay constants have different signs)
@@ -2013,7 +2013,6 @@ struct lambdajetpolarizationionsderived {
           float Jz = 0.;
           float ringObservableOverJetZ = 0.;
           if (hasValidLeadingJet) {
-            // Cross product
             XYZVector cross = leadingJetUnitVec.Cross(lambdaLike3Vec);
             ringObservable = protonLikeStarUnit3Vec.Dot(cross) / cross.R();
             // Adding prefactor
