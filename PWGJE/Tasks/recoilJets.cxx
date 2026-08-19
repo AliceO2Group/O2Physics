@@ -206,6 +206,19 @@ struct RecoilJets {
     ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, -5.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 105.0}, "Centrality (%)"};
   } hist;
 
+  // ---------- Rho-shift settings ----------
+  struct RhoShift : ConfigurableGroup {
+    std::string prefix = "rhoShiftTTRef";
+
+    Configurable<float> mb{"mb", 0.283998f, "Rho shift for MB"};
+    Configurable<float> ea0_20{"ea0_20", 0.199249f, "Rho shift for EA 0-20%"};
+    Configurable<float> ea0_10{"ea0_10", 0.186661f, "Rho shift for EA 0-10%"};
+    Configurable<float> ea20_40{"ea20_40", 0.137945f, "Rho shift for EA 20-40%"};
+    Configurable<float> ea60_80{"ea60_80", 0.0962535f, "Rho shift for EA 60-80%"};
+    Configurable<float> ea50_100{"ea50_100", 0.106919f, "Rho shift for EA 50-100%"};
+    Configurable<float> ea80_100{"ea80_100", 0.0871301f, "Rho shift for EA 80-100%"};
+  } cfgRhoShift;
+
   // Auxiliary variables
   std::unique_ptr<TRandom3> randGen = std::make_unique<TRandom3>(0);
 
@@ -269,7 +282,7 @@ struct RecoilJets {
 
   // EA intervals used for the rho-shift correction
   enum EAInterval {
-    kMB,
+    kMB = 0,
     kEA0_20,
     kEA0_10,
     kEA20_40,
@@ -285,17 +298,25 @@ struct RecoilJets {
     float rhoShift;
   };
 
-  // Hard-coded rho-shift values obtained from train 701159
-  std::array<EARhoShift, 7> eaRhoShifts{{{.interval = kMB, .label = "EA_MB", .rhoShift = 0.283998f},
-                                         {.interval = kEA0_20, .label = "EA_Perc_0_20", .rhoShift = 0.199249f},
-                                         {.interval = kEA0_10, .label = "EA_Perc_0_10", .rhoShift = 0.186661f},
-                                         {.interval = kEA20_40, .label = "EA_Perc_20_40", .rhoShift = 0.137945f},
-                                         {.interval = kEA60_80, .label = "EA_Perc_60_80", .rhoShift = 0.0962535f},
-                                         {.interval = kEA50_100, .label = "EA_Perc_50_100", .rhoShift = 0.106919f},
-                                         {.interval = kEA80_100, .label = "EA_Perc_80_100", .rhoShift = 0.0871301f}}};
+  std::array<EARhoShift, 7> eaRhoShifts{{{.interval = kMB,       .label = "EA_MB",          .rhoShift = 0.0f},
+                                         {.interval = kEA0_20,   .label = "EA_Perc_0_20",   .rhoShift = 0.0f},
+                                         {.interval = kEA0_10,   .label = "EA_Perc_0_10",   .rhoShift = 0.0f},
+                                         {.interval = kEA20_40,  .label = "EA_Perc_20_40",  .rhoShift = 0.0f},
+                                         {.interval = kEA60_80,  .label = "EA_Perc_60_80",  .rhoShift = 0.0f},
+                                         {.interval = kEA50_100, .label = "EA_Perc_50_100", .rhoShift = 0.0f},
+                                         {.interval = kEA80_100, .label = "EA_Perc_80_100", .rhoShift = 0.0f}}};
 
   void init(InitContext const&)
   {
+    // Initialize rho-shift values from configurables
+    eaRhoShifts[kMB].rhoShift        = cfgRhoShift.mb.value;
+    eaRhoShifts[kEA0_20].rhoShift    = cfgRhoShift.ea0_20.value;
+    eaRhoShifts[kEA0_10].rhoShift    = cfgRhoShift.ea0_10.value;
+    eaRhoShifts[kEA20_40].rhoShift   = cfgRhoShift.ea20_40.value;
+    eaRhoShifts[kEA60_80].rhoShift   = cfgRhoShift.ea60_80.value;
+    eaRhoShifts[kEA50_100].rhoShift  = cfgRhoShift.ea50_100.value;
+    eaRhoShifts[kEA80_100].rhoShift  = cfgRhoShift.ea80_100.value;
+
     // Initialize histogram axes: configurable
     AxisSpec pT{hist.jetPtMax, 0.0, hist.jetPtMax * 1., "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec jetPTcorr{hist.jetPtMax + 20, -20., hist.jetPtMax * 1.0, "#it{p}_{T, jet}^{ch, corr} (GeV/#it{c})"};
