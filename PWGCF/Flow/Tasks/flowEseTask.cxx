@@ -46,6 +46,8 @@
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
 #include <TF1.h>
+#include <TH2.h>
+#include <THnSparse.h>
 #include <TObject.h>
 #include <TProfile2D.h>
 #include <TProfile3D.h>
@@ -303,7 +305,7 @@ struct FlowEseTask {
   double getEseQ(TCollision const& collision)
   {
     const int harmonicIndex = cfgEseHarmonic.value - SecondHarmonic;
-    if (collision.qvecFT0CReVec().size() <= static_cast<size_t>(harmonicIndex) || collision.qvecFT0CImVec().size() <= static_cast<size_t>(harmonicIndex)) {
+    if (collision.qvecFT0CReVec().size() <= static_cast<std::size_t>(harmonicIndex) || collision.qvecFT0CImVec().size() <= static_cast<std::size_t>(harmonicIndex)) {
       LOGF(fatal, "FT0C Q-vector table does not contain harmonic %d", cfgEseHarmonic.value);
     }
     const double qx = collision.qvecFT0CReVec()[harmonicIndex];
@@ -585,31 +587,42 @@ struct FlowEseTask {
   template <typename TCollision, typename V0>
   bool selectionV0(TCollision const& collision, V0 const& candidate, int lambdaTag)
   {
-    if (candidate.v0radius() < cfgv0radiusMin)
+    if (candidate.v0radius() < cfgv0radiusMin) {
       return false;
-    if (lambdaTag) {
-      if (std::abs(candidate.dcapostopv()) < cfgDCAPrToPVMin)
-        return false;
-      if (std::abs(candidate.dcanegtopv()) < cfgDCAPiToPVMin)
-        return false;
-    } else {
-      if (std::abs(candidate.dcapostopv()) < cfgDCAPiToPVMin)
-        return false;
-      if (std::abs(candidate.dcanegtopv()) < cfgDCAPrToPVMin)
-        return false;
     }
-    if (candidate.v0cosPA() < cfgv0CosPA)
+    if (lambdaTag) {
+      if (std::abs(candidate.dcapostopv()) < cfgDCAPrToPVMin) {
+        return false;
+      }
+      if (std::abs(candidate.dcanegtopv()) < cfgDCAPiToPVMin) {
+        return false;
+      }
+    } else {
+      if (std::abs(candidate.dcapostopv()) < cfgDCAPiToPVMin) {
+        return false;
+      }
+      if (std::abs(candidate.dcanegtopv()) < cfgDCAPrToPVMin) {
+        return false;
+      }
+    }
+    if (candidate.v0cosPA() < cfgv0CosPA) {
       return false;
-    if (std::abs(candidate.dcaV0daughters()) > cfgDCAV0Dau)
+    }
+    if (std::abs(candidate.dcaV0daughters()) > cfgDCAV0Dau) {
       return false;
-    if (candidate.pt() < cfgV0PtMin)
+    }
+    if (candidate.pt() < cfgV0PtMin) {
       return false;
-    if (candidate.yLambda() < cfgV0EtaMin)
+    }
+    if (candidate.yLambda() < cfgV0EtaMin) {
       return false;
-    if (candidate.yLambda() > cfgV0EtaMax)
+    }
+    if (candidate.yLambda() > cfgV0EtaMax) {
       return false;
-    if (candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda > cfgV0LifeTime)
+    }
+    if (candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda > cfgV0LifeTime) {
       return false;
+    }
 
     return true;
   }
@@ -617,20 +630,27 @@ struct FlowEseTask {
   template <typename T>
   bool isSelectedV0Daughter(T const& track, int pid) // pid 0: proton, pid 1: pion
   {
-    if (track.tpcNClsFound() < cfgDaughTPCnclsMin)
+    if (track.tpcNClsFound() < cfgDaughTPCnclsMin) {
       return false;
-    if (pid == 0 && std::abs(track.tpcNSigmaPr()) > cfgDaughPIDCutsTPCPr)
+    }
+    if (pid == 0 && std::abs(track.tpcNSigmaPr()) > cfgDaughPIDCutsTPCPr) {
       return false;
-    if (pid == 1 && std::abs(track.tpcNSigmaPi()) > cfgDaughPIDCutsTPCPi)
+    }
+    if (pid == 1 && std::abs(track.tpcNSigmaPi()) > cfgDaughPIDCutsTPCPi) {
       return false;
-    if (track.eta() > cfgDaughEtaMax)
+    }
+    if (track.eta() > cfgDaughEtaMax) {
       return false;
-    if (track.eta() < cfgDaughEtaMin)
+    }
+    if (track.eta() < cfgDaughEtaMin) {
       return false;
-    if (pid == 0 && track.pt() < cfgDaughPrPt)
+    }
+    if (pid == 0 && track.pt() < cfgDaughPrPt) {
       return false;
-    if (pid == 1 && track.pt() < cfgDaughPiPt)
+    }
+    if (pid == 1 && track.pt() < cfgDaughPiPt) {
       return false;
+    }
 
     return true;
   }
@@ -652,24 +672,33 @@ struct FlowEseTask {
   template <typename TrackType>
   bool selectionTrack(TrackType const& track)
   {
-    if (track.pt() < cfgMinPt)
+    if (track.pt() < cfgMinPt) {
       return false;
-    if (std::abs(track.eta()) > cfgMaxEta)
+    }
+    if (std::abs(track.eta()) > cfgMaxEta) {
       return false;
-    if (!track.passedITSNCls())
+    }
+    if (!track.passedITSNCls()) {
       return false;
-    if (!track.passedITSChi2NDF())
+    }
+    if (!track.passedITSChi2NDF()) {
       return false;
-    if (!track.passedITSHits())
+    }
+    if (!track.passedITSHits()) {
       return false;
-    if (!track.passedTPCCrossedRowsOverNCls())
+    }
+    if (!track.passedTPCCrossedRowsOverNCls()) {
       return false;
-    if (!track.passedTPCChi2NDF())
+    }
+    if (!track.passedTPCChi2NDF()) {
       return false;
-    if (!track.passedDCAxy())
+    }
+    if (!track.passedDCAxy()) {
       return false;
-    if (!track.passedDCAz())
+    }
+    if (!track.passedDCAz()) {
       return false;
+    }
 
     return true;
   }
@@ -720,8 +749,9 @@ struct FlowEseTask {
     qvecRefAInd = refAId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
     qvecRefBInd = refBId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
 
-    if (collision.qvecAmp()[detId] < MinAmplitudeThreshold || collision.qvecAmp()[refAId] < MinAmplitudeThreshold || collision.qvecAmp()[refBId] < MinAmplitudeThreshold)
+    if (collision.qvecAmp()[detId] < MinAmplitudeThreshold || collision.qvecAmp()[refAId] < MinAmplitudeThreshold || collision.qvecAmp()[refBId] < MinAmplitudeThreshold) {
       return;
+    }
 
     if (nmode == CorrLevel[0]) {
       histos.fill(HIST("psi2/QA/EP_Det"), centrality, std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) / static_cast<float>(nmode));
@@ -864,8 +894,8 @@ struct FlowEseTask {
         if (!selectionTrack(trk)) {
           continue;
         }
-        const double values[3] = {centrality, trk.pt(), std::cos(static_cast<float>(nmode) * (trk.phi() - esePlane))};
-        histEseVn->Fill(values);
+        const std::array<double, 3> values = {centrality, trk.pt(), std::cos(static_cast<float>(nmode) * (trk.phi() - esePlane))};
+        histEseVn->Fill(values.data());
       }
     }
 
@@ -920,11 +950,13 @@ struct FlowEseTask {
         aLambdaTag = 1;
       }
 
-      if (lambdaTag == aLambdaTag)
+      if (lambdaTag == aLambdaTag) {
         continue;
+      }
 
-      if (!selectionV0(collision, v0, lambdaTag))
+      if (!selectionV0(collision, v0, lambdaTag)) {
         continue;
+      }
 
       if (lambdaTag) {
         protonVec = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
@@ -996,17 +1028,17 @@ struct FlowEseTask {
 
       if (fillEse && cfgFullCheck) {
         const double mass = lambdaTag ? v0.mLambda() : v0.mAntiLambda();
-        const double cosValues[4] = {mass, v0.pt(), angle * weight, centrality};
-        const double cos2Values[4] = {mass, v0.pt(), angle * angle, centrality};
-        const double cosSinValues[4] = {mass, v0.pt(), angle * std::sin(relphi) * weight, centrality};
+        const std::array<double, 4> cosValues = {mass, v0.pt(), angle * weight, centrality};
+        const std::array<double, 4> cos2Values = {mass, v0.pt(), angle * angle, centrality};
+        const std::array<double, 4> cosSinValues = {mass, v0.pt(), angle * std::sin(relphi) * weight, centrality};
         if (lambdaTag) {
-          histEseLambdaCos->Fill(cosValues);
-          histEseLambdaCos2->Fill(cos2Values);
-          histEseLambdaCosSin->Fill(cosSinValues);
+          histEseLambdaCos->Fill(cosValues.data());
+          histEseLambdaCos2->Fill(cos2Values.data());
+          histEseLambdaCosSin->Fill(cosSinValues.data());
         } else {
-          histEseAntiLambdaCos->Fill(cosValues);
-          histEseAntiLambdaCos2->Fill(cos2Values);
-          histEseAntiLambdaCosSin->Fill(cosSinValues);
+          histEseAntiLambdaCos->Fill(cosValues.data());
+          histEseAntiLambdaCos2->Fill(cos2Values.data());
+          histEseAntiLambdaCosSin->Fill(cosSinValues.data());
         }
       }
       if (!fillRegular) {
@@ -1014,8 +1046,9 @@ struct FlowEseTask {
       }
 
       double qvecMag = 1.0;
-      if (cfgUSESP)
+      if (cfgUSESP) {
         qvecMag *= std::sqrt(std::pow(collision.qvecIm()[3 + (nmode - 2) * 28], 2) + std::pow(collision.qvecRe()[3 + (nmode - 2) * 28], 2));
+      }
 
       if (nmode == CorrLevel[0] && cfgFullCheck) { ////////////
         if (lambdaTag) {
@@ -1291,12 +1324,15 @@ struct FlowEseTask {
         float deltaPhi = mcParticle.phi() - mcCollision.eventPlaneAngle();
         // focus on bulk: e, mu, pi, k, p
         int pdgCode = std::abs(mcParticle.pdgCode());
-        if (pdgCode != LambdaId)
+        if (pdgCode != LambdaId) {
           continue;
-        if (!mcParticle.isPhysicalPrimary())
+        }
+        if (!mcParticle.isPhysicalPrimary()) {
           continue;
-        if (std::abs(mcParticle.eta()) > EtaAcceptance) // main acceptance
+        }
+        if (std::abs(mcParticle.eta()) > EtaAcceptance) { // main acceptance
           continue;
+        }
         histos.fill(HIST("hSparseMCGenWeight"), centclass, RecoDecay::constrainAngle(deltaPhi, 0, 2), std::pow(std::cos(2.0 * RecoDecay::constrainAngle(deltaPhi, 0, 2)), 2.0), mcParticle.pt(), mcParticle.eta());
         nCh++;
         bool validGlobal = false;
