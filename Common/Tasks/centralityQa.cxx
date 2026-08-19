@@ -8,6 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+///
+/// \file centralityQa.cxx
+/// \brief This task does dedicated centrality QA
+/// \author ALICE
+///
+
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/Centrality.h"
@@ -29,26 +36,31 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TFormula.h>
 #include <TH1.h>
+#include <TString.h>
 
+#include <array>
 #include <bitset>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <string>
+#include <utility>
 
 using namespace o2;
 using namespace o2::framework;
 
 struct CentralityQa {
   HistogramRegistry histos{"histos"};
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
   std::bitset<o2::constants::lhc::LHCMaxBunches> collidingBunch;
 
   bool isRun2 = false;
   bool isMC = false;
   int runNumber{};
   uint64_t startOfRunTimestamp{};
-  static constexpr float CentralityNotFound = 105.f;
+  TList* hCentralityObjects = nullptr;
 
   Configurable<int> nBins{"nBins", 1050, "number of bins"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {1000, 0, 1000}, "Multiplicity"};
@@ -119,19 +131,48 @@ struct CentralityQa {
     Configurable<bool> useCustomCalibration{"useCustomCalibration", false, "override the centrality from the central calibration with a different calibration provided in pathCentrality"};
     Configurable<std::string> ccdbURL{"ccdbURL", "http://alice-ccdb.cern.ch", "ccdb url"};
     Configurable<std::string> pathCentrality{"pathCentrality", "Centrality/Estimators", "path to centrality calibration if useCustomCalibration is enabled"};
+    Configurable<std::string> generator{"generator", "", "E.g. PYTHIA"};
   } centrality;
 
-  // calibration histograms
-  TH1* hCentralityFV0A = nullptr;
-  TH1* hCentralityFT0A = nullptr;
-  TH1* hCentralityFT0C = nullptr;
-  TH1* hCentralityFT0CVariant1 = nullptr;
-  TH1* hCentralityFT0CVariant2 = nullptr;
-  TH1* hCentralityFT0M = nullptr;
-  TH1* hCentralityFDDM = nullptr;
-  TH1* hCentralityNTPV = nullptr;
-  TH1* hCentralityNGlo = nullptr;
-  TH1* hCentralityMFT = nullptr;
+  static constexpr int NSuperCalibPars = 6;
+  static constexpr float CentralityNotFound = 105.f;
+
+  struct Estimator {
+    CentralityQa* outer = nullptr;
+    std::string name;
+    std::array<float, NSuperCalibPars> mcScalePars{};
+    TH1* hCentrality = nullptr;
+    TFormula* mcScale = nullptr;
+    explicit Estimator(CentralityQa* o, std::string s) : outer(o), name(std::move(s)) {}
+    float getCentrality(const float mult, const float centTable)
+    {
+      if (outer->centrality.useCustomCalibration) {
+        float lMult = mult;
+        if (outer->isMC && outer->hCentralityObjects != nullptr) {
+          mcScale = dynamic_cast<TFormula*>(outer->hCentralityObjects->FindObject(TString::Format("%s-%s", outer->centrality.generator.value.c_str(), name.c_str()).Data()));
+          if (!mcScale) {
+            return CentralityNotFound;
+          }
+
+          for (int ixpar = 0; ixpar < NSuperCalibPars; ++ixpar) {
+            mcScalePars[ixpar] = mcScale->GetParameter(ixpar);
+          }
+
+          auto scaleMC = [](float x, const std::array<float, NSuperCalibPars> pars) {
+            float core = ((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4];
+            if (core < 0.0f) {
+              return 0.0f; // this should be marked as low multiplicity and not mapped, core^pars[5] would be NaN
+            }
+            return std::pow(core, 1.0f / pars[5]);
+          };
+
+          lMult = scaleMC(mult, mcScalePars);
+        }
+        return hCentrality ? hCentrality->GetBinContent(hCentrality->FindBin(lMult)) : CentralityNotFound;
+      }
+      return centTable;
+    }
+  };
 
   void init(o2::framework::InitContext& /*initContext*/)
   {
@@ -139,27 +180,21 @@ struct CentralityQa {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    if (doprocessRun2PP ||
-        doprocessRun2PPb ||
-        doprocessRun2PbPb) {
-      isRun2 = true;
-    } else {
-      isRun2 = false;
-    }
+    isRun2 = doprocessRun2PP ||
+             doprocessRun2PPb ||
+             doprocessRun2PbPb;
 
-    if (doprocessMonteCarloRun3_FV0A ||
-        doprocessMonteCarloRun3_FT0M ||
-        doprocessMonteCarloRun3_FT0A ||
-        doprocessMonteCarloRun3_FT0C ||
-        doprocessMonteCarloRun3_FT0CVar1 ||
-        doprocessMonteCarloRun3_FT0CVar2 ||
-        doprocessMonteCarloRun3_MFT ||
-        doprocessMonteCarloRun3_NGlobal ||
-        doprocessMonteCarloRun3_NTPV) {
-      isMC = true;
-    } else {
-      isMC = false;
-    }
+    isMC = doprocessMonteCarloRun3_FV0A ||
+           doprocessMonteCarloRun3_FT0M ||
+           doprocessMonteCarloRun3_FT0A ||
+           doprocessMonteCarloRun3_FT0C ||
+           doprocessMonteCarloRun3_FT0CVar1 ||
+           doprocessMonteCarloRun3_FT0CVar2 ||
+           doprocessMonteCarloRun3_MFT ||
+           doprocessMonteCarloRun3_NGlobal ||
+           doprocessMonteCarloRun3_NTPV ||
+           doprocessMonteCarloRun3_FT0MAnchorCol ||
+           doprocessMonteCarloRun3_FT0MAnchorBC;
 
     if (isRun2) {
       histos.add("hCentRun2V0M", ";V0M centrality (%)", kTH1D, {{nBins, 0, 105.}});
@@ -212,6 +247,8 @@ struct CentralityQa {
       if (isMC) {
         histos.add("hMultEta05VsGenMultFV0A", ";Multiplicity FV0A; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
         histos.add("hMultEta05VsGenMultFT0M", ";Multiplicity FT0M; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultFT0MAnchorCols", ";Multiplicity FT0MAnchorCols; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
+        histos.add("hMultEta05VsGenMultFT0MAnchorBCs", ";Multiplicity FT0MAnchorBCs; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
         histos.add("hMultEta05VsGenMultFT0A", ";Multiplicity FT0A; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
         histos.add("hMultEta05VsGenMultFT0C", ";Multiplicity FT0C; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
         histos.add("hMultEta05VsGenMultFT0CVar1", ";Multiplicity FT0CVar1; Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {axisMultiplicity, axisMultiplicityPV});
@@ -241,57 +278,38 @@ struct CentralityQa {
   }
 
   template <typename TCollision>
-  void initRun(const TCollision& col)
+  Estimator initEstimator(const TCollision& col, const std::string& name)
   {
+    Estimator est(this, name);
     if (centrality.useCustomCalibration) {
-      if (!col.has_bc()) {
-        return;
+      if (!col.has_foundBC()) {
+        return est;
       }
 
-      const auto bc = col.template bc_as<aod::BCs>();
-      if (bc.runNumber() == runNumber) {
-        return;
-      }
-
-      runNumber = bc.runNumber();
-      LOGF(info, "Acquiring centrality calibration for run %i", runNumber);
-      auto hCentralityObjects = ccdb->getForRun<TList>(centrality.pathCentrality, runNumber);
-      if (!hCentralityObjects) {
-        LOGF(info, "No centrality calibration list found for run %i", runNumber);
-      }
-
-      auto getCalibration = [&hCentralityObjects](const std::string& estimator, const bool isProcessFunctionEnabled) -> TH1* {
-        if (!isProcessFunctionEnabled) {
-          LOGF(info, "Process function for %s is disabled -> skipping loading calibration", estimator.c_str());
-          return nullptr;
-        }
-
+      const auto bc = col.template foundBC_as<aod::BCs>();
+      if (bc.runNumber() != runNumber) {
+        runNumber = bc.runNumber();
+        LOGF(info, "Acquiring centrality calibration for run %i", runNumber);
+        hCentralityObjects = ccdb->getForRun<TList>(centrality.pathCentrality, runNumber);
         if (!hCentralityObjects) {
-          LOGF(info, "Missing calibration object, failed to load calibration for %s ", estimator.c_str());
-          return nullptr;
+          LOGF(info, "No centrality calibration list found for run %i", runNumber);
         }
+      }
 
-        TH1* hist = dynamic_cast<TH1*>(hCentralityObjects->FindObject(Form("hCalibZeq%s", estimator.c_str())));
-        if (!hist) {
-          LOGF(info, "Calibration missing for %s", estimator.c_str());
-        } else {
-          LOGF(info, "Calibration loaded for %s", estimator.c_str());
-        }
-        return hist;
-      };
+      if (!hCentralityObjects) {
+        est.hCentrality = nullptr;
+        return est;
+      }
 
-      hCentralityFV0A = getCalibration("FV0", doprocessRun3_FV0A);
-      hCentralityFT0A = getCalibration("FT0A", doprocessRun3_FT0A);
-      hCentralityFT0C = getCalibration("FT0C", doprocessRun3_FT0C);
-      hCentralityFT0CVariant1 = getCalibration("FT0CVariant1", doprocessRun3_FT0CVar1);
-      hCentralityFT0CVariant2 = getCalibration("FT0CVariant2", doprocessRun3_FT0CVar2);
-      hCentralityFT0M = getCalibration("FT0M", doprocessRun3_FT0M);
-      hCentralityFDDM = getCalibration("FDDM", doprocessRun3_FDDM);
-      hCentralityNTPV = getCalibration("NTPV", doprocessRun3_NTPV);
-      hCentralityNGlo = getCalibration("NGlo", doprocessRun3_NGlobal);
-      hCentralityMFT = getCalibration("MFT", doprocessRun3_MFT);
-      LOGF(info, "Centrality calibration loading done.");
+      est.hCentrality = dynamic_cast<TH1*>(hCentralityObjects->FindObject(Form("hCalibZeq%s", est.name.c_str())));
+      if (!est.hCentrality) {
+        LOGF(info, "Calibration missing for %s", est.name.c_str());
+      } else {
+        LOGF(info, "Calibration loaded for %s", est.name.c_str());
+      }
     }
+
+    return est;
   }
 
   template <typename TCollision>
@@ -308,7 +326,9 @@ struct CentralityQa {
       requires { collision.centFDDM(); } ||
       requires { collision.centNTPV(); } ||
       requires { collision.centNGlobal(); } ||
-      requires { collision.centMFT(); }) { // check if we are in Run 3
+      requires { collision.centMFT(); } ||
+      requires { collision.centFT0MAnchorCol(); } ||
+      requires { collision.centFT0MAnchorBC(); }) { // check if we are in Run 3
       if (eventSelections.requireSel8 && !collision.sel8()) {
         return false;
       }
@@ -377,11 +397,13 @@ struct CentralityQa {
         return false;
       }
 
-      if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < 1) {
+      static constexpr int OneTrackInEta1 = 1;
+      if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < OneTrackInEta1) {
         return false;
       }
 
-      if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < 2) {
+      static constexpr int TwoTracksInEta1 = 2;
+      if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < TwoTracksInEta1) {
         return false;
       }
 
@@ -473,11 +495,13 @@ struct CentralityQa {
         return false;
       }
 
-      if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < 1) {
+      static constexpr int OneTrackInEta1 = 1;
+      if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < OneTrackInEta1) {
         return false;
       }
 
-      if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < 2) {
+      static constexpr int TwoTracksInEta1 = 2;
+      if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < TwoTracksInEta1) {
         return false;
       }
     }
@@ -494,7 +518,7 @@ struct CentralityQa {
 
     if (bc.runNumber() != runNumber) {
       runNumber = bc.runNumber();
-      o2::parameters::GRPECSObject* grpo = ccdb->getForRun<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", runNumber);
+      auto grpo = ccdb->getForRun<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", runNumber);
       startOfRunTimestamp = grpo->getTimeStart();
       auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", startOfRunTimestamp);
       collidingBunch = grplhcif->getBunchFilling().getBCPattern();
@@ -585,14 +609,6 @@ struct CentralityQa {
     return true;
   }
 
-  float getCentrality(TH1* hist, const float mult, const float cent)
-  {
-    if (centrality.useCustomCalibration) {
-      return hist ? hist->GetBinContent(hist->FindBin(mult)) : CentralityNotFound;
-    }
-    return cent;
-  }
-
   void processRun2PP(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2SPDTrks, aod::CentRun2SPDClss, aod::Mults>::iterator const& col)
   {
     if (!isCollisionAccepted(col)) {
@@ -642,8 +658,8 @@ struct CentralityQa {
       return;
     }
 
-    initRun(col);
-    const float centFV0A = getCentrality(hCentralityFV0A, col.multFV0A(), col.centFV0A());
+    Estimator fv0a = initEstimator(col, "FV0");
+    const float centFV0A = fv0a.getCentrality(col.multFV0A(), col.centFV0A());
 
     LOGF(debug, "centFV0A=%.0f", centFV0A);
     histos.fill(HIST("hCentFV0A"), centFV0A);
@@ -658,8 +674,9 @@ struct CentralityQa {
       return;
     }
 
-    initRun(col);
-    const float centFT0M = getCentrality(hCentralityFT0M, col.multFT0M(), col.centFT0M());
+    Estimator ft0m = initEstimator(col, "FT0");
+    const float centFT0M = ft0m.getCentrality(col.multFT0M(), col.centFT0M());
+
     LOGF(debug, "centFT0M=%.0f", centFT0M);
     histos.fill(HIST("hCentFT0M"), centFT0M);
     histos.fill(HIST("hCentProfileFT0M"), centFT0M, col.multNTracksPVetaHalf());
@@ -673,8 +690,8 @@ struct CentralityQa {
       return;
     }
 
-    initRun(col);
-    const float centFT0A = getCentrality(hCentralityFT0A, col.multFT0A(), col.centFT0A());
+    Estimator ft0a = initEstimator(col, "FT0A");
+    const float centFT0A = ft0a.getCentrality(col.multFT0A(), col.centFT0A());
 
     LOGF(debug, "centFT0A=%.0f", centFT0A);
     histos.fill(HIST("hCentFT0A"), centFT0A);
@@ -689,8 +706,8 @@ struct CentralityQa {
       return;
     }
 
-    initRun(col);
-    const float centFT0C = getCentrality(hCentralityFT0C, col.multFT0C(), col.centFT0C());
+    Estimator ft0c = initEstimator(col, "FT0C");
+    const float centFT0C = ft0c.getCentrality(col.multFT0C(), col.centFT0C());
 
     LOGF(debug, "centFT0C=%.0f", centFT0C);
     histos.fill(HIST("hCentFT0C"), centFT0C);
@@ -705,8 +722,8 @@ struct CentralityQa {
       return;
     }
 
-    initRun(col);
-    const float centFT0Cvar1 = getCentrality(hCentralityFT0CVariant1, col.multFT0C(), col.centFT0CVariant1());
+    Estimator ft0cVar1 = initEstimator(col, "FT0CVariant1");
+    const float centFT0Cvar1 = ft0cVar1.getCentrality(col.multFT0C(), col.centFT0CVariant1());
 
     LOGF(debug, "centFT0Cvar1=%.0f", centFT0Cvar1);
     histos.fill(HIST("hCentFT0CVar1"), centFT0Cvar1);
@@ -721,8 +738,8 @@ struct CentralityQa {
       return;
     }
 
-    initRun(col);
-    const float centFT0Cvar2 = getCentrality(hCentralityFT0CVariant2, col.multFT0C(), col.centFT0CVariant2());
+    Estimator ft0cVar2 = initEstimator(col, "FT0CVariant2");
+    const float centFT0Cvar2 = ft0cVar2.getCentrality(col.multFT0C(), col.centFT0CVariant2());
 
     LOGF(debug, "centFT0Cvar2=%.0f", centFT0Cvar2);
     histos.fill(HIST("hCentFT0CVar2"), centFT0Cvar2);
@@ -737,8 +754,8 @@ struct CentralityQa {
       return;
     }
 
-    initRun(col);
-    const float centFDDM = getCentrality(hCentralityFDDM, col.multFDDM(), col.centFDDM());
+    Estimator fddm = initEstimator(col, "FDDM");
+    const float centFDDM = fddm.getCentrality(col.multFDDM(), col.centFDDM());
 
     LOGF(debug, "centFDDM=%.0f", centFDDM);
     histos.fill(HIST("hCentFDDM"), centFDDM);
@@ -753,8 +770,8 @@ struct CentralityQa {
       return;
     }
 
-    initRun(col);
-    const float centNTPV = getCentrality(hCentralityNTPV, col.multNTracksPV(), col.centNTPV());
+    Estimator ntpv = initEstimator(col, "NTPV");
+    const float centNTPV = ntpv.getCentrality(col.multNTracksPV(), col.centNTPV());
 
     LOGF(debug, "centNTPV=%.0f", centNTPV);
     histos.fill(HIST("hCentNTPV"), centNTPV);
@@ -769,8 +786,8 @@ struct CentralityQa {
       return;
     }
 
-    initRun(col);
-    const float centNGlo = getCentrality(hCentralityNGlo, col.multNTracksGlobal(), col.centNGlobal());
+    Estimator nGlo = initEstimator(col, "nGlo");
+    const float centNGlo = nGlo.getCentrality(col.multNTracksGlobal(), col.centNGlobal());
 
     LOGF(debug, "centNGlo=%.0f", centNGlo);
     histos.fill(HIST("hCentNGlobal"), centNGlo);
@@ -785,8 +802,8 @@ struct CentralityQa {
       return;
     }
 
-    initRun(col);
-    const float centMFT = getCentrality(hCentralityMFT, col.mftNtracks(), col.centMFT());
+    Estimator mft = initEstimator(col, "MFT");
+    const float centMFT = mft.getCentrality(col.mftNtracks(), col.centMFT());
 
     LOGF(debug, "centMFT=%.0f", centMFT);
     histos.fill(HIST("hCentMFT"), centMFT);
@@ -795,189 +812,275 @@ struct CentralityQa {
   }
   PROCESS_SWITCH(CentralityQa, processRun3_MFT, "Process with Run 3 MFT estimator", false);
 
-  void processRun3_FT0MAnchorCol(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0MAnchorCols>::iterator const& col)
+  void processRun3_FT0MAnchorCol(soa::Join<aod::Collisions, aod::EvSels, aod::MultsRun3, aod::CentFT0MAnchorCols>::iterator const& col)
   {
     if (!isCollisionAccepted(col)) {
       return;
     }
-    histos.fill(HIST("hCentFT0MAnchorCols"), col.centFT0MAnchorCol());
-    histos.fill(HIST("hCentProfileFT0MAnchorCols"), col.centFT0MAnchorCol(), col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0MAnchorCols"), col.centFT0MAnchorCol(), col.multNTracksPVetaHalf());
+
+    Estimator ft0mAnchorCol = initEstimator(col, "FT0MAnchorCol");
+    const float centFT0MAnchorCol = ft0mAnchorCol.getCentrality(col.multFT0M(), col.centFT0MAnchorCol());
+
+    LOGF(debug, "centFT0MAnchorCol=%.0f", centFT0MAnchorCol);
+    histos.fill(HIST("hCentFT0MAnchorCols"), centFT0MAnchorCol);
+    histos.fill(HIST("hCentProfileFT0MAnchorCols"), centFT0MAnchorCol, col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsCentFT0MAnchorCols"), centFT0MAnchorCol, col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FT0MAnchorCol, "Process with Run 3 FT0MAnchorCol estimator", false);
 
-  void processRun3_FT0MAnchorBC(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0MAnchorBCs>::iterator const& col)
+  void processRun3_FT0MAnchorBC(soa::Join<aod::Collisions, aod::EvSels, aod::MultsRun3, aod::CentFT0MAnchorBCs>::iterator const& col)
   {
     if (!isCollisionAccepted(col)) {
       return;
     }
-    histos.fill(HIST("hCentFT0MAnchorBCs"), col.centFT0MAnchorBC());
-    histos.fill(HIST("hCentProfileFT0MAnchorBCs"), col.centFT0MAnchorBC(), col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0MAnchorBCs"), col.centFT0MAnchorBC(), col.multNTracksPVetaHalf());
+
+    Estimator ft0mAnchorBc = initEstimator(col, "FT0MAnchorBc");
+    const float centFT0MAnchorBc = ft0mAnchorBc.getCentrality(col.multFT0M(), col.centFT0MAnchorBC());
+
+    LOGF(debug, "centFT0MAnchorBc=%.0f", centFT0MAnchorBc);
+    histos.fill(HIST("hCentFT0MAnchorBCs"), centFT0MAnchorBc);
+    histos.fill(HIST("hCentProfileFT0MAnchorBCs"), centFT0MAnchorBc, col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsCentFT0MAnchorBCs"), centFT0MAnchorBc, col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FT0MAnchorBC, "Process with Run 3 FT0MAnchorBC estimator", false);
 
-  void processMonteCarloRun3_FV0A(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentFV0As>::iterator const& col,
+  void processMonteCarloRun3_FV0A(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::CentFV0As>::iterator const& col,
                                   soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                   soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isCollisionAccepted(col)) {
       return;
     }
-    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
 
-    LOGF(debug, "centFV0A=%.0f", col.centFV0A());
-    histos.fill(HIST("hCentFV0A"), col.centFV0A());
-    histos.fill(HIST("hCentProfileFV0A"), col.centFV0A(), col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFV0A"), col.centFV0A(), col.multNTracksPVetaHalf());
+    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
+    Estimator fv0a = initEstimator(col, "FV0");
+    const float centFV0A = fv0a.getCentrality(col.multFV0A(), col.centFV0A());
+
+    LOGF(debug, "centFV0A=%.0f", centFV0A);
+    histos.fill(HIST("hCentFV0A"), centFV0A);
+    histos.fill(HIST("hCentProfileFV0A"), centFV0A, col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsCentFV0A"), centFV0A, col.multNTracksPVetaHalf());
     histos.fill(HIST("hMultEta05VsGenMultFV0A"), mcCol.multMCFV0A(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FV0A, "Process with Run 3 FV0A estimator", false);
 
-  void processMonteCarloRun3_FT0M(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator const& col,
+  void processMonteCarloRun3_FT0M(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::CentFT0Ms>::iterator const& col,
                                   soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                   soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isCollisionAccepted(col)) {
       return;
     }
-    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
 
-    LOGF(debug, "centFT0M=%.0f", col.centFT0M());
-    histos.fill(HIST("hCentFT0M"), col.centFT0M());
-    histos.fill(HIST("hCentProfileFT0M"), col.centFT0M(), col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0M"), col.centFT0M(), col.multNTracksPVetaHalf());
+    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
+    Estimator ft0m = initEstimator(col, "FT0");
+    const float centFT0M = ft0m.getCentrality(col.multFT0M(), col.centFT0M());
+
+    LOGF(debug, "centFT0M=%.0f", centFT0M);
+    histos.fill(HIST("hCentFT0M"), centFT0M);
+    histos.fill(HIST("hCentProfileFT0M"), centFT0M, col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsCentFT0M"), centFT0M, col.multNTracksPVetaHalf());
     histos.fill(HIST("hMultEta05VsGenMultFT0M"), mcCol.multMCFT0A() + mcCol.multMCFT0C(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FT0M, "Process with Run 3 FT0M estimator", false);
 
-  void processMonteCarloRun3_FT0A(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentFT0As>::iterator const& col,
+  void processMonteCarloRun3_FT0A(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::CentFT0As>::iterator const& col,
                                   soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                   soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isCollisionAccepted(col)) {
       return;
     }
-    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
 
-    histos.fill(HIST("hCentFT0A"), col.centFT0A());
-    histos.fill(HIST("hCentProfileFT0A"), col.centFT0A(), col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0A"), col.centFT0A(), col.multNTracksPVetaHalf());
+    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
+    Estimator ft0a = initEstimator(col, "FT0A");
+    const float centFT0A = ft0a.getCentrality(col.multFT0A(), col.centFT0A());
+
+    LOGF(debug, "centFT0M=%.0f", centFT0A);
+    histos.fill(HIST("hCentFT0A"), centFT0A);
+    histos.fill(HIST("hCentProfileFT0A"), centFT0A, col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsCentFT0A"), centFT0A, col.multNTracksPVetaHalf());
     histos.fill(HIST("hMultEta05VsGenMultFT0A"), mcCol.multMCFT0A(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FT0A, "Process with Run 3 FT0A estimator", false);
 
-  void processMonteCarloRun3_FT0C(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentFT0Cs>::iterator const& col,
+  void processMonteCarloRun3_FT0C(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::CentFT0Cs>::iterator const& col,
                                   soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                   soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isCollisionAccepted(col)) {
       return;
     }
-    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
 
-    histos.fill(HIST("hCentFT0C"), col.centFT0C());
-    histos.fill(HIST("hCentProfileFT0C"), col.centFT0C(), col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0C"), col.centFT0C(), col.multNTracksPVetaHalf());
+    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
+    Estimator ft0c = initEstimator(col, "FT0C");
+    const float centFT0C = ft0c.getCentrality(col.multFT0C(), col.centFT0C());
+
+    LOGF(debug, "centFT0C=%.0f", centFT0C);
+    histos.fill(HIST("hCentFT0C"), centFT0C);
+    histos.fill(HIST("hCentProfileFT0C"), centFT0C, col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsCentFT0C"), centFT0C, col.multNTracksPVetaHalf());
     histos.fill(HIST("hMultEta05VsGenMultFT0C"), mcCol.multMCFT0C(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FT0C, "Process with Run 3 FT0C estimator", false);
 
-  void processMonteCarloRun3_FT0CVar1(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentFT0CVariant1s>::iterator const& col,
+  void processMonteCarloRun3_FT0CVar1(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::CentFT0CVariant1s>::iterator const& col,
                                       soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                       soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isCollisionAccepted(col)) {
       return;
     }
-    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
 
-    histos.fill(HIST("hCentFT0CVar1"), col.centFT0CVariant1());
-    histos.fill(HIST("hCentProfileFT0CVar1"), col.centFT0CVariant1(), col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0CVar1"), col.centFT0CVariant1(), col.multNTracksPVetaHalf());
+    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
+    Estimator ft0cVar1 = initEstimator(col, "FT0CVariant1");
+    const float centFT0Cvar1 = ft0cVar1.getCentrality(col.multFT0C(), col.centFT0CVariant1());
+
+    LOGF(debug, "centFT0Cvar1=%.0f", centFT0Cvar1);
+    histos.fill(HIST("hCentFT0CVar1"), centFT0Cvar1);
+    histos.fill(HIST("hCentProfileFT0CVar1"), centFT0Cvar1, col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsCentFT0CVar1"), centFT0Cvar1, col.multNTracksPVetaHalf());
     histos.fill(HIST("hMultEta05VsGenMultFT0CVar1"), mcCol.multMCFT0C(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FT0CVar1, "Process with Run 3 FT0CVar1 estimator", false);
 
-  void processMonteCarloRun3_FT0CVar2(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentFT0CVariant2s>::iterator const& col,
+  void processMonteCarloRun3_FT0CVar2(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::CentFT0CVariant2s>::iterator const& col,
                                       soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                       soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isCollisionAccepted(col)) {
       return;
     }
-    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
 
-    histos.fill(HIST("hCentFT0CVar2"), col.centFT0CVariant2());
-    histos.fill(HIST("hCentProfileFT0CVar2"), col.centFT0CVariant2(), col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0CVar2"), col.centFT0CVariant2(), col.multNTracksPVetaHalf());
+    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
+    Estimator ft0cVar2 = initEstimator(col, "FT0CVariant2");
+    const float centFT0Cvar2 = ft0cVar2.getCentrality(col.multFT0C(), col.centFT0CVariant2());
+
+    LOGF(debug, "centFT0Cvar2=%.0f", centFT0Cvar2);
+    histos.fill(HIST("hCentFT0CVar2"), centFT0Cvar2);
+    histos.fill(HIST("hCentProfileFT0CVar2"), centFT0Cvar2, col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsCentFT0CVar2"), centFT0Cvar2, col.multNTracksPVetaHalf());
     histos.fill(HIST("hMultEta05VsGenMultFT0CVar2"), mcCol.multMCFT0C(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FT0CVar2, "Process with Run 3 FT0CVar2 estimator", false);
 
-  void processMonteCarloRun3_FDDM(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentFDDMs>::iterator const& col,
+  void processMonteCarloRun3_FDDM(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::CentFDDMs>::iterator const& col,
                                   soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                   soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isCollisionAccepted(col)) {
       return;
     }
-    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
 
-    histos.fill(HIST("hCentFDDM"), col.centFDDM());
-    histos.fill(HIST("hCentProfileFDDM"), col.centFDDM(), col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFDDM"), col.centFDDM(), col.multNTracksPVetaHalf());
+    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
+    Estimator fddm = initEstimator(col, "FDDM");
+    const float centFDDM = fddm.getCentrality(col.multFDDM(), col.centFDDM());
+
+    LOGF(debug, "centFDDM=%.0f", centFDDM);
+    histos.fill(HIST("hCentFDDM"), centFDDM);
+    histos.fill(HIST("hCentProfileFDDM"), centFDDM, col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsCentFDDM"), centFDDM, col.multNTracksPVetaHalf());
     histos.fill(HIST("hMultEta05VsGenMultFDDM"), mcCol.multMCFDDA() + mcCol.multMCFDDC(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FDDM, "Process with Run 3 FDDM estimator", false);
 
-  void processMonteCarloRun3_NTPV(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentNTPVs>::iterator const& col,
+  void processMonteCarloRun3_NTPV(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::CentNTPVs>::iterator const& col,
                                   soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                   soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isCollisionAccepted(col)) {
       return;
     }
-    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
 
-    histos.fill(HIST("hCentFDDM"), col.centNTPV());
-    histos.fill(HIST("hCentProfileNTPV"), col.centNTPV(), col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentNTPV"), col.centNTPV(), col.multNTracksPVetaHalf());
+    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
+    Estimator ntpv = initEstimator(col, "NTPV");
+    const float centNTPV = ntpv.getCentrality(col.multNTracksPV(), col.centNTPV());
+
+    histos.fill(HIST("hCentNTPV"), centNTPV);
+    histos.fill(HIST("hCentProfileNTPV"), centNTPV, col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsCentNTPV"), centNTPV, col.multNTracksPVetaHalf());
     histos.fill(HIST("hMultEta05VsGenMultNTPV"), mcCol.multMCNParticlesEta08(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_NTPV, "Process with Run 3 NTPV estimator", false);
 
-  void processMonteCarloRun3_NGlobal(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentNGlobals>::iterator const& col,
+  void processMonteCarloRun3_NGlobal(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MultsGlobal, aod::CentNGlobals>::iterator const& col,
                                      soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                      soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isCollisionAccepted(col)) {
       return;
     }
-    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
 
-    histos.fill(HIST("hCentNGlobal"), col.centNGlobal());
-    histos.fill(HIST("hCentProfileNGlobal"), col.centNGlobal(), col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentNGlobal"), col.centNGlobal(), col.multNTracksPVetaHalf());
+    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
+    Estimator nGlo = initEstimator(col, "nGlo");
+    const float centNGlo = nGlo.getCentrality(col.multNTracksGlobal(), col.centNGlobal());
+
+    LOGF(debug, "centNGlo=%.0f", centNGlo);
+    histos.fill(HIST("hCentNGlobal"), centNGlo);
+    histos.fill(HIST("hCentProfileNGlobal"), centNGlo, col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsCentNGlobal"), centNGlo, col.multNTracksPVetaHalf());
     histos.fill(HIST("hMultEta05VsGenMultNGlobal"), mcCol.multMCNParticlesEta08(), col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_NGlobal, "Process with Run 3 NGlobal estimator", false);
 
-  void processMonteCarloRun3_MFT(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::CentMFTs>::iterator const& col,
+  void processMonteCarloRun3_MFT(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::MFTMults, aod::CentMFTs>::iterator const& col,
                                  soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
                                  soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
   {
     if (!isCollisionAccepted(col)) {
       return;
     }
-    // const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>(); // FIXME: uncomment when MC MFT mult is added in aod::MultMCExtras
 
-    histos.fill(HIST("hCentMFT"), col.centMFT());
-    histos.fill(HIST("hCentProfileMFT"), col.centMFT(), col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentMFT"), col.centMFT(), col.multNTracksPVetaHalf());
+    // const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>(); // FIXME: uncomment when MC MFT mult is added in aod::MultMCExtras
+    Estimator mft = initEstimator(col, "MFT");
+    const float centMFT = mft.getCentrality(col.mftNtracks(), col.centMFT());
+
+    LOGF(debug, "centMFT=%.0f", centMFT);
+    histos.fill(HIST("hCentMFT"), centMFT);
+    histos.fill(HIST("hCentProfileMFT"), centMFT, col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsCentMFT"), centMFT, col.multNTracksPVetaHalf());
     // histos.fill(HIST("hMultEta05VsGenMultMFT"), mcCol.multMCMFT(), col.multNTracksPVetaHalf()); // FIXME: uncomment when MC MFT mult is added in aod::MultMCExtras
   }
   PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_MFT, "Process with Run 3 MFT estimator", false);
+
+  void processMonteCarloRun3_FT0MAnchorCol(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::CentFT0MAnchorCols>::iterator const& col,
+                                           soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
+                                           soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
+  {
+    if (!isCollisionAccepted(col)) {
+      return;
+    }
+
+    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
+    Estimator ft0mAnchorCol = initEstimator(col, "FT0MAnchorCol");
+    const float centFT0MAnchorCol = ft0mAnchorCol.getCentrality(col.multFT0M(), col.centFT0MAnchorCol());
+
+    LOGF(debug, "centFT0MAnchorCol=%.0f", centFT0MAnchorCol);
+    histos.fill(HIST("hCentFT0MAnchorCols"), centFT0MAnchorCol);
+    histos.fill(HIST("hCentProfileFT0MAnchorCols"), centFT0MAnchorCol, col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsCentFT0MAnchorCols"), centFT0MAnchorCol, col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsGenMultFT0MAnchorCols"), mcCol.multMCFT0A() + mcCol.multMCFT0C(), col.multNTracksPVetaHalf());
+  }
+  PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FT0MAnchorCol, "Process with Run 3 FT0MAnchorCol estimator", false);
+
+  void processMonteCarloRun3_FT0MAnchorBC(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::MultsRun3, aod::CentFT0MAnchorBCs>::iterator const& col,
+                                          soa::Join<aod::McCollisions, aod::MultMCExtras> const& /*mcCollisions*/,
+                                          soa::Join<aod::BCs, aod::Run3MatchedToBCSparse> const& /*bcs*/)
+  {
+    if (!isCollisionAccepted(col)) {
+      return;
+    }
+    const auto& mcCol = col.mcCollision_as<soa::Join<aod::McCollisions, aod::MultMCExtras>>();
+    Estimator ft0mAnchorBc = initEstimator(col, "FT0MAnchorBc");
+    const float centFT0MAnchorBc = ft0mAnchorBc.getCentrality(col.multFT0M(), col.centFT0MAnchorBC());
+
+    LOGF(debug, "centFT0MAnchorBc=%.0f", centFT0MAnchorBc);
+    histos.fill(HIST("hCentFT0MAnchorBCs"), centFT0MAnchorBc);
+    histos.fill(HIST("hCentProfileFT0MAnchorBCs"), centFT0MAnchorBc, col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsCentFT0MAnchorBCs"), centFT0MAnchorBc, col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsGenMultFT0MAnchorBCs"), mcCol.multMCFT0A() + mcCol.multMCFT0C(), col.multNTracksPVetaHalf());
+  }
+  PROCESS_SWITCH(CentralityQa, processMonteCarloRun3_FT0MAnchorBC, "Process with Run 3 FT0MAnchorBC estimator", false);
 
   using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
   void processBunchCrossings(soa::Join<BCsWithRun3Matchings, aod::BCFlags, aod::BcSels>::iterator const& bc, aod::FT0s const&, aod::FV0As const&)
