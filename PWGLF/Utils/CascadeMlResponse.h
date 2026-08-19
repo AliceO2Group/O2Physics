@@ -18,6 +18,8 @@
 #ifndef PWGLF_UTILS_CASCADEMLRESPONSE_H_
 #define PWGLF_UTILS_CASCADEMLRESPONSE_H_
 
+#include <vector>
+
 #include "Tools/ML/MlResponse.h"
 
 namespace o2::analysis
