@@ -424,7 +424,7 @@ struct FlowGfwV02 {
     registry.add("analysis/charged/ptA", "", {HistType::kTProfile3D, {bsAxis, centAxis, nchAxis}});
     registry.add("analysis/charged/ptB", "", {HistType::kTProfile3D, {bsAxis, centAxis, nchAxis}});
     registry.add("analysis/charged/ptAB", "", {HistType::kTProfile3D, {bsAxis, centAxis, nchAxis}});
-    if (cfgUseMultiplicityFracWeights){
+    if (cfgUseMultiplicityFracWeights) {
       registry.add("analysis/charged/nchA2pc", "", {HistType::kTProfile3D, {bsAxis, ptAxis, centAxis}});
       registry.add("analysis/charged/nchB2pc", "", {HistType::kTProfile3D, {bsAxis, ptAxis, centAxis}});
       registry.add("analysis/charged/ptA2pc", "", {HistType::kTProfile3D, {bsAxis, centAxis, nchAxis}});
