@@ -1035,8 +1035,8 @@ struct HfTreeCreatorLcToPKPi {
         const float svX = mcDaughter0.vx();
         const float svY = mcDaughter0.vy();
         const float svZ = mcDaughter0.vz();
-        const float l = static_cast<float>(RecoDecay::distance(std::array<float, 3>{svX, svY, svZ}, std::array<float, 3>{pvX, pvY, pvZ}));
-        const float t = l * static_cast<float>(MassLambdaCPlus) / LightSpeedCm2PS / p;
+        const float decayLength = static_cast<float>(RecoDecay::distance(std::array<float, 3>{svX, svY, svZ}, std::array<float, 3>{pvX, pvY, pvZ}));
+        const float decayTime = decayLength * static_cast<float>(MassLambdaCPlus) / LightSpeedCm2PS / p;
         rowCandidateFullParticles(
           particle.pt(),
           particle.eta(),
@@ -1045,7 +1045,7 @@ struct HfTreeCreatorLcToPKPi {
           particle.flagMcMatchGen(),
           particle.originMcGen(),
           p,
-          svX, svY, svZ, l, t,
+          svX, svY, svZ, decayLength, decayTime,
           pvX, pvY, pvZ);
       }
     }
