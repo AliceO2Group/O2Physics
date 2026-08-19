@@ -313,30 +313,22 @@ class CharmHadronHistManager
   CharmHadronHistManager() = default;
   ~CharmHadronHistManager() = default;
 
-  // init for analysis
+  // init for analysis, two-prong candidates
   template <modes::Mode mode, typename T>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>> const& CharmHadronSpecs,
             T const& ConfCharmHadronSelection,
-            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& Prong0Specs,
-            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& Prong1Specs,
-            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& Prong2Specs)
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& PosDauSpecs,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& NegDauSpecs)
   {
+    static_assert(!charmhadronbuilder::isThreeProng<charmHadron>(), "Use the three-prong init for 3-prong candidates");
     mHistogramRegistry = registry;
     mPdgCode = std::abs(ConfCharmHadronSelection.pdgCodeAbs.value);
 
     auto prongPdgCodes = this->resolveProngPdgCodes(ConfCharmHadronSelection.sign.value);
 
-    if constexpr (charmhadronbuilder::isThreeProng<charmHadron>()) {
-      constexpr int protonSign = charmhadronbuilder::isParticle<charmHadron>() ? SignPlus : SignMinus;
-      constexpr int kaonSign = -protonSign;
-      mProng0Manager.template init<mode>(registry, Prong0Specs, AbsCharge, protonSign, prongPdgCodes[0]);
-      mProng1Manager.template init<mode>(registry, Prong1Specs, AbsCharge, kaonSign, prongPdgCodes[1]);
-      mProng2Manager.template init<mode>(registry, Prong2Specs, AbsCharge, protonSign, prongPdgCodes[2]);
-    } else {
-      mProng0Manager.template init<mode>(registry, Prong0Specs, AbsCharge, SignPlus, prongPdgCodes[0]);
-      mProng1Manager.template init<mode>(registry, Prong1Specs, AbsCharge, SignMinus, prongPdgCodes[1]);
-    }
+    mProng0Manager.template init<mode>(registry, PosDauSpecs, AbsCharge, SignPlus, prongPdgCodes[0]);
+    mProng1Manager.template init<mode>(registry, NegDauSpecs, AbsCharge, SignMinus, prongPdgCodes[1]);
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->initAnalysis(CharmHadronSpecs);
@@ -346,36 +338,94 @@ class CharmHadronHistManager
     }
   }
 
-  // init for analysis and qa
-  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
+  // init for analysis, three-prong candidates
+  template <modes::Mode mode, typename T>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>> const& CharmHadronSpecs,
+            T const& ConfCharmHadronSelection,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& ProtonDauSpecs,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& KaonDauSpecs,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& PionDauSpecs)
+  {
+    static_assert(charmhadronbuilder::isThreeProng<charmHadron>(), "Use the two-prong init for 2-prong candidates");
+    mHistogramRegistry = registry;
+    mPdgCode = std::abs(ConfCharmHadronSelection.pdgCodeAbs.value);
+
+    auto prongPdgCodes = this->resolveProngPdgCodes(ConfCharmHadronSelection.sign.value);
+
+    constexpr int ProtonSign = charmhadronbuilder::isParticle<charmHadron>() ? SignPlus : SignMinus;
+    constexpr int KaonSign = -ProtonSign;
+    mProng0Manager.template init<mode>(registry, ProtonDauSpecs, AbsCharge, ProtonSign, prongPdgCodes[0]);
+    mProng1Manager.template init<mode>(registry, KaonDauSpecs, AbsCharge, KaonSign, prongPdgCodes[1]);
+    mProng2Manager.template init<mode>(registry, PionDauSpecs, AbsCharge, ProtonSign, prongPdgCodes[2]);
+
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
+      this->initAnalysis(CharmHadronSpecs);
+    }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
+      this->initMc(CharmHadronSpecs);
+    }
+  }
+
+  // init for analysis and qa, two-prong candidates
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4>
   void init(o2::framework::HistogramRegistry* registry,
             std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>> const& CharmHadronSpecs,
             std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>> const& CharmHadronQaSpecs,
             T1 const& ConfCharmHadronSelection,
             T2 const& ConfCharmHadronQaBinning,
-            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& Prong0Specs,
-            T3 const& ConfProng0BinningQa,
-            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& Prong1Specs,
-            T4 const& ConfProng1BinningQa,
-            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& Prong2Specs,
-            T5 const& ConfProng2BinningQa)
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& PosDauSpecs,
+            T3 const& ConfPosDauBinningQa,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& NegDauSpecs,
+            T4 const& ConfNegDauBinningQa)
   {
+    static_assert(!charmhadronbuilder::isThreeProng<charmHadron>(), "Use the three-prong init for 3-prong candidates");
     mHistogramRegistry = registry;
     mPdgCode = std::abs(ConfCharmHadronSelection.pdgCodeAbs.value);
     this->enableOptionalHistograms(ConfCharmHadronQaBinning);
 
     auto prongPdgCodes = this->resolveProngPdgCodes(ConfCharmHadronSelection.sign.value);
 
-    if constexpr (charmhadronbuilder::isThreeProng<charmHadron>()) {
-      constexpr int ProtonSign = charmhadronbuilder::isParticle<charmHadron>() ? SignPlus : SignMinus;
-      constexpr int KaonSign = -ProtonSign;
-      mProng0Manager.template init<mode>(registry, Prong0Specs, AbsCharge, ProtonSign, prongPdgCodes[0], ConfProng0BinningQa);
-      mProng1Manager.template init<mode>(registry, Prong1Specs, AbsCharge, KaonSign, prongPdgCodes[1], ConfProng1BinningQa);
-      mProng2Manager.template init<mode>(registry, Prong2Specs, AbsCharge, ProtonSign, prongPdgCodes[2], ConfProng2BinningQa);
-    } else {
-      mProng0Manager.template init<mode>(registry, Prong0Specs, AbsCharge, SignPlus, prongPdgCodes[0], ConfProng0BinningQa);
-      mProng1Manager.template init<mode>(registry, Prong1Specs, AbsCharge, SignMinus, prongPdgCodes[1], ConfProng1BinningQa);
+    mProng0Manager.template init<mode>(registry, PosDauSpecs, AbsCharge, SignPlus, prongPdgCodes[0], ConfPosDauBinningQa);
+    mProng1Manager.template init<mode>(registry, NegDauSpecs, AbsCharge, SignMinus, prongPdgCodes[1], ConfNegDauBinningQa);
+
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
+      this->initAnalysis(CharmHadronSpecs);
     }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kQa)) {
+      this->initQa(CharmHadronQaSpecs);
+    }
+    if constexpr (modes::isFlagSet(mode, modes::Mode::kMc)) {
+      this->initMc(CharmHadronSpecs);
+    }
+  }
+
+  // init for analysis and qa, three-prong candidates
+  template <modes::Mode mode, typename T1, typename T2, typename T3, typename T4, typename T5>
+  void init(o2::framework::HistogramRegistry* registry,
+            std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>> const& CharmHadronSpecs,
+            std::map<CharmHadronHist, std::vector<o2::framework::AxisSpec>> const& CharmHadronQaSpecs,
+            T1 const& ConfCharmHadronSelection,
+            T2 const& ConfCharmHadronQaBinning,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& ProtonDauSpecs,
+            T3 const& ConfProtonDauBinningQa,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& KaonDauSpecs,
+            T4 const& ConfKaonDauBinningQa,
+            std::map<trackhistmanager::TrackHist, std::vector<o2::framework::AxisSpec>> const& PionDauSpecs,
+            T5 const& ConfPionDauBinningQa)
+  {
+    static_assert(charmhadronbuilder::isThreeProng<charmHadron>(), "Use the two-prong init for 2-prong candidates");
+    mHistogramRegistry = registry;
+    mPdgCode = std::abs(ConfCharmHadronSelection.pdgCodeAbs.value);
+    this->enableOptionalHistograms(ConfCharmHadronQaBinning);
+
+    auto prongPdgCodes = this->resolveProngPdgCodes(ConfCharmHadronSelection.sign.value);
+
+    constexpr int ProtonSign = charmhadronbuilder::isParticle<charmHadron>() ? SignPlus : SignMinus;
+    constexpr int KaonSign = -ProtonSign;
+    mProng0Manager.template init<mode>(registry, ProtonDauSpecs, AbsCharge, ProtonSign, prongPdgCodes[0], ConfProtonDauBinningQa);
+    mProng1Manager.template init<mode>(registry, KaonDauSpecs, AbsCharge, KaonSign, prongPdgCodes[1], ConfKaonDauBinningQa);
+    mProng2Manager.template init<mode>(registry, PionDauSpecs, AbsCharge, ProtonSign, prongPdgCodes[2], ConfPionDauBinningQa);
 
     if constexpr (modes::isFlagSet(mode, modes::Mode::kReco)) {
       this->initAnalysis(CharmHadronSpecs);

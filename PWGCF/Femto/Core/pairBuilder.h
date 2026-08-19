@@ -653,7 +653,7 @@ class PairD0D0Builder
     mD0Cleaner1.init(confD0Cleaner1);
     mD0Cleaner2.init(confD0Cleaner2);
 
-    mD0HistManager1.template init<modeSe>(registry, D0HistSpec1, confD0Selection1, PosDauHistSpec1, NegDauHistSpec1, NegDauHistSpec1);
+    mD0HistManager1.template init<modeSe>(registry, D0HistSpec1, confD0Selection1, PosDauHistSpec1, NegDauHistSpec1);
 
     auto prongPdgCodes = [](int sign) -> std::pair<int, int> {
       if (sign > 0) {
@@ -672,7 +672,7 @@ class PairD0D0Builder
       mPairHistManagerMe.setCharge(1, 1);
       mCprMe.init(registry, cprHistSpecPos, cprHistSpecNeg, confCprPos, confCprNeg);
     } else {
-      mD0HistManager2.template init<modeSe>(registry, D0HistSpec2, confD0Selection2, PosDauHistSpec2, NegDauHistSpec2, NegDauHistSpec2);
+      mD0HistManager2.template init<modeSe>(registry, D0HistSpec2, confD0Selection2, PosDauHistSpec2, NegDauHistSpec2);
       auto [posDauPdg2, negDauPdg2] = prongPdgCodes(confD0Selection2.sign.value);
 
       mPairHistManagerSe.setMass(confD0Selection1.pdgCodeAbs.value, posDauPdg1, negDauPdg1, confD0Selection2.pdgCodeAbs.value, posDauPdg2, negDauPdg2);
@@ -826,8 +826,8 @@ class PairD0D0Builder
 
  private:
   colhistmanager::CollisionHistManager mColHistManager;
-  charmhadronhistmanager::CharmHadronHistManager<prefixD01, prefixPosDau1, prefixNegDau1, prefixNegDau1, charmHadronType1> mD0HistManager1;
-  charmhadronhistmanager::CharmHadronHistManager<prefixD02, prefixPosDau2, prefixNegDau2, prefixNegDau2, charmHadronType2> mD0HistManager2;
+  charmhadronhistmanager::CharmHadronHistManager<prefixD01, prefixPosDau1, prefixNegDau1, prefixNegDau1, charmHadronType1> mD0HistManager1; // the third prong prefix is unused for 2-prong candidates
+  charmhadronhistmanager::CharmHadronHistManager<prefixD02, prefixPosDau2, prefixNegDau2, prefixNegDau2, charmHadronType2> mD0HistManager2; // the third prong prefix is unused for 2-prong candidates
   particlecleaner::ParticleCleaner mD0Cleaner1;
   particlecleaner::ParticleCleaner mD0Cleaner2;
   pairhistmanager::PairHistManager<prefixSe, modes::Particle::kCharmHadron, modes::Particle::kCharmHadron> mPairHistManagerSe;
@@ -898,7 +898,7 @@ class PairTrackD0Builder
     mColHistManager.template init<modeSe>(registry, colHistSpec, confCollisionBinning);
 
     mTrackHistManager.template init<modeSe>(registry, trackHistSpec, confTrackSelection);
-    mD0HistManager.template init<modeSe>(registry, d0HistSpec, confD0Selection, posDauHistSpec, negDauHistSpec, negDauHistSpec);
+    mD0HistManager.template init<modeSe>(registry, d0HistSpec, confD0Selection, posDauHistSpec, negDauHistSpec);
 
     mTrackCleaner.init(confTrackCleaner);
     mD0Cleaner.init(confD0Cleaner);
@@ -997,7 +997,7 @@ class PairTrackD0Builder
  private:
   colhistmanager::CollisionHistManager mColHistManager;
   trackhistmanager::TrackHistManager<prefixTrack> mTrackHistManager;
-  charmhadronhistmanager::CharmHadronHistManager<prefixD0, prefixPosDau, prefixNegDau, prefixNegDau, charmHadronType> mD0HistManager;
+  charmhadronhistmanager::CharmHadronHistManager<prefixD0, prefixPosDau, prefixNegDau, prefixNegDau, charmHadronType> mD0HistManager; // the third prong prefix is unused for 2-prong candidates
   particlecleaner::ParticleCleaner mTrackCleaner;
   particlecleaner::ParticleCleaner mD0Cleaner;
   pairhistmanager::PairHistManager<prefixSe, modes::Particle::kTrack, modes::Particle::kCharmHadron> mPairHistManagerSe;

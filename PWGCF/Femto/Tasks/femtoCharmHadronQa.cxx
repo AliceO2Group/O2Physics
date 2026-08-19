@@ -154,7 +154,7 @@ struct FemtoCharmHadronQa {
         negDaughterHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confD01NegDaughterBinning, confD01NegDaughterQaBinning);
         d0HistSpec = charmhadronhistmanager::makeCharmHadronHistSpecMap(confD0Binning);
         d0QaHistSpec = charmhadronhistmanager::makeD0QaHistSpecMap(confD0QaBinning);
-        d0HistManager.init<modes::Mode::kReco_Qa>(&hRegistry, d0HistSpec, d0QaHistSpec, confD0Selection, confD0QaBinning, posDaughterHistSpec, confD01PosDaughterQaBinning, negDaughterHistSpec, confD01NegDaughterQaBinning, negDaughterHistSpec, confD01NegDaughterQaBinning);
+        d0HistManager.init<modes::Mode::kReco_Qa>(&hRegistry, d0HistSpec, d0QaHistSpec, confD0Selection, confD0QaBinning, posDaughterHistSpec, confD01PosDaughterQaBinning, negDaughterHistSpec, confD01NegDaughterQaBinning);
       }
       if (doprocessLc) {
         protonHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confLc1ProtonDaughterBinning, confLc1ProtonDaughterQaBinning);
@@ -173,7 +173,7 @@ struct FemtoCharmHadronQa {
         negDaughterHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confD01NegDaughterBinning, confD01NegDaughterQaBinning);
         d0HistSpec = charmhadronhistmanager::makeD0McQaHistSpecMap(confD0Binning, confD0QaBinning);
         d0QaHistSpec = charmhadronhistmanager::makeD0QaHistSpecMap(confD0QaBinning);
-        d0HistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, d0HistSpec, d0QaHistSpec, confD0Selection, confD0QaBinning, posDaughterHistSpec, confD01PosDaughterQaBinning, negDaughterHistSpec, confD01NegDaughterQaBinning, negDaughterHistSpec, confD01NegDaughterQaBinning);
+        d0HistManager.init<modes::Mode::kReco_Qa_Mc>(&hRegistry, d0HistSpec, d0QaHistSpec, confD0Selection, confD0QaBinning, posDaughterHistSpec, confD01PosDaughterQaBinning, negDaughterHistSpec, confD01NegDaughterQaBinning);
       }
       if (doprocessLcMc) {
         protonHistSpec = trackhistmanager::makeTrackMcQaHistSpecMap(confLc1ProtonDaughterBinning, confLc1ProtonDaughterQaBinning);
