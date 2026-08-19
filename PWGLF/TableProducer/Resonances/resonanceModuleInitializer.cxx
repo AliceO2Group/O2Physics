@@ -43,6 +43,7 @@
 
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -64,6 +65,14 @@ using namespace o2::aod::rctsel;
  * and QA histogram filling.
  */
 struct ResonanceModuleInitializer {
+  static constexpr double BzOverrideThreshold = -990.;
+  static constexpr double MinimumNonzeroBz = 1.e-5;
+  static constexpr double MinimumChargedParticleCharge = 3.; // ROOT particle charge is stored in units of e/3
+  static constexpr int MCCentralityRecoEstimator = 0;
+  static constexpr int MCCentralityGeneratorEstimator = 1;
+  static constexpr int MCCentralityImpactParameterEstimator = 2;
+  static constexpr float MCVertexZMax = 10.f;
+
   int mRunNumber;                            ///< Run number for the current data
   int multEstimator;                         ///< Multiplicity estimator type
   float dBz;                                 ///< Magnetic field value
@@ -207,11 +216,11 @@ struct ResonanceModuleInitializer {
     }
 
     // In case override, don't proceed, please - no CCDB access required
-    if (EventConfig.dBzInput > -990) {
+    if (EventConfig.dBzInput > BzOverrideThreshold) {
       dBz = EventConfig.dBzInput;
       ;
       o2::parameters::GRPMagField grpmag;
-      if (std::fabs(dBz) > 1e-5) {
+      if (std::fabs(dBz) > MinimumNonzeroBz) {
         grpmag.setL3Current(30000.f / (dBz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
@@ -257,7 +266,7 @@ struct ResonanceModuleInitializer {
         continue;
       auto p = pdg->GetParticle(mcparticle.pdgCode());
       if (p != nullptr) {
-        if (std::abs(p->Charge()) >= 3) {
+        if (std::abs(p->Charge()) >= MinimumChargedParticleCharge) {
           if (std::abs(mcparticle.eta()) < 1)
             return true;
         }
@@ -361,21 +370,21 @@ struct ResonanceModuleInitializer {
     const auto& mcColg = mccol.template mcCollision_as<GenMCCollisions>();
     float mcCent = 999.0;
     if constexpr (isRun2) {
-      if (EventConfig.cfgCentralityMC == 0) {
+      if (EventConfig.cfgCentralityMC == MCCentralityRecoEstimator) {
         mcCent = mccol.centRun2V0M();
       } else {
         mcCent = mcColg.impactParameter();
       }
     } else {
-      if (EventConfig.cfgCentralityMC == 0) {
+      if (EventConfig.cfgCentralityMC == MCCentralityRecoEstimator) {
         mcCent = centEst(mccol);
-      } else if (EventConfig.cfgCentralityMC == 1) {
+      } else if (EventConfig.cfgCentralityMC == MCCentralityGeneratorEstimator) {
         mcCent = centEstMC(mcColg);
-      } else if (EventConfig.cfgCentralityMC == 2) {
+      } else if (EventConfig.cfgCentralityMC == MCCentralityImpactParameterEstimator) {
         mcCent = mcColg.impactParameter();
       }
     }
-    bool inVtx10 = (std::abs(mcColg.posZ()) > 10.) ? false : true;
+    const bool inVtx10 = !(std::abs(mcColg.posZ()) > MCVertexZMax);
     bool isTrueINELgt0 = isTrueINEL0(mcparts);
     bool isTriggerTVX = mccol.selection_bit(aod::evsel::kIsTriggerTVX);
     bool isSel8 = mccol.sel8();
@@ -528,6 +537,15 @@ struct ResonanceDaughterInitializer {
     Proton
   };
 
+  static constexpr int TrackSelectionNone = 0;
+  static constexpr int TrackSelectionGlobal = 1;
+  static constexpr int TrackSelectionGlobalWoPtEta = 2;
+  static constexpr int TrackSelectionGlobalWoDCA = 3;
+  static constexpr int TrackSelectionQuality = 4;
+  static constexpr int TrackSelectionInAcceptance = 5;
+  static constexpr float MomentumQuantizationScale = 1000.f;
+  static constexpr std::size_t StoredMCRelationCount = 2;
+
   UltraMicroPidSpecies ultraMicroPidSpecies = UltraMicroPidSpecies::Pion;
   bool warnedUltraMicroMomentumRange = false;
 
@@ -640,12 +658,12 @@ struct ResonanceDaughterInitializer {
   } SecondaryCuts;
 
   // Track selection filter based on configuration
-  Filter trackFilter = (TrackCuts.trackSelection.node() == 0) ||
-                       ((TrackCuts.trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||                                    // kGlobalTrack = kQualityTracks | kPrimaryTracks | kInAcceptanceTracks
-                       ((TrackCuts.trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||                             // kGlobalTrackWoPtEta = kQualityTracks | kPrimaryTracks
-                       ((TrackCuts.trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||                               // kGlobalTrackWoDCA = kQualityTracks | kInAcceptanceTracks
-                       ((TrackCuts.trackSelection.node() == 4) && requireQualityTracksInFilter()) ||                                  // kQualityTracks = kQualityTracksITS | kQualityTracksTPC
-                       ((TrackCuts.trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks)); // kInAcceptanceTracks = kPtRange | kEtaRange
+  Filter trackFilter = (TrackCuts.trackSelection.node() == TrackSelectionNone) ||
+                       ((TrackCuts.trackSelection.node() == TrackSelectionGlobal) && requireGlobalTrackInFilter()) ||                                    // kGlobalTrack = kQualityTracks | kPrimaryTracks | kInAcceptanceTracks
+                       ((TrackCuts.trackSelection.node() == TrackSelectionGlobalWoPtEta) && requireGlobalTrackWoPtEtaInFilter()) ||                       // kGlobalTrackWoPtEta = kQualityTracks | kPrimaryTracks
+                       ((TrackCuts.trackSelection.node() == TrackSelectionGlobalWoDCA) && requireGlobalTrackWoDCAInFilter()) ||                           // kGlobalTrackWoDCA = kQualityTracks | kInAcceptanceTracks
+                       ((TrackCuts.trackSelection.node() == TrackSelectionQuality) && requireQualityTracksInFilter()) ||                                  // kQualityTracks = kQualityTracksITS | kQualityTracksTPC
+                       ((TrackCuts.trackSelection.node() == TrackSelectionInAcceptance) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks)); // kInAcceptanceTracks = kPtRange | kEtaRange
   Filter trackKinematicsFilter = nabs(aod::track::eta) < TrackCuts.cfgCutEta &&
                                  aod::track::pt >= TrackCuts.cfgCutMinPt &&
                                  aod::track::pt <= TrackCuts.cfgCutMaxPt;
@@ -690,7 +708,7 @@ struct ResonanceDaughterInitializer {
     if (!std::isfinite(TrackCuts.cfgCutEta.value) || TrackCuts.cfgCutEta.value <= 0.f) {
       LOGF(fatal, "cfgCutEta must be finite and positive");
     }
-    if (TrackCuts.trackSelection.value < 0 || TrackCuts.trackSelection.value > 5) {
+    if (TrackCuts.trackSelection.value < TrackSelectionNone || TrackCuts.trackSelection.value > TrackSelectionInAcceptance) {
       LOGF(fatal, "trackSelection must be in [0, 5]");
     }
     if (!std::isfinite(TrackCuts.cMaxDCArToPVcut.value) ||
@@ -717,11 +735,11 @@ struct ResonanceDaughterInitializer {
     }
 
     if (FilterForDerivedTables.cfgFillUltraMicroTracks) {
-      constexpr float maxQuantizedMomentum = static_cast<float>(std::numeric_limits<int16_t>::max()) / 1000.f;
+      constexpr float MaxQuantizedMomentum = static_cast<float>(std::numeric_limits<int16_t>::max()) / MomentumQuantizationScale;
       const float maxLongitudinalMomentum = TrackCuts.cfgCutMaxPt.value * std::sinh(TrackCuts.cfgCutEta.value);
-      if (TrackCuts.cfgCutMaxPt.value > maxQuantizedMomentum ||
+      if (TrackCuts.cfgCutMaxPt.value > MaxQuantizedMomentum ||
           !std::isfinite(maxLongitudinalMomentum) ||
-          maxLongitudinalMomentum > maxQuantizedMomentum) {
+          maxLongitudinalMomentum > MaxQuantizedMomentum) {
         LOGF(fatal, "Ultra-micro cfgCutMaxPt/cfgCutEta allow momentum components beyond the int16_t quantization range");
       }
       int enabledUltraMicroSpecies = 0;
@@ -731,7 +749,7 @@ struct ResonanceDaughterInitializer {
       if (enabledUltraMicroSpecies != 1) {
         LOGF(fatal, "Exactly one pion/kaon/proton PID species must be enabled when filling ultra-micro tracks");
       }
-      if (TrackCuts.pidnSigmaPreSelectionCut.value > 5.f) {
+      if (TrackCuts.pidnSigmaPreSelectionCut.value > o2::aod::resoultramicrodaughter::PidNSigma::MaxNSigma) {
         LOGF(fatal, "Ultra-micro PID encoding requires pidnSigmaPreSelectionCut <= 5");
       }
       if (FilterForDerivedTables.cfgFillKaonUltraMicroTracks) {
@@ -747,40 +765,40 @@ struct ResonanceDaughterInitializer {
       AxisSpec idxAxis = {8, 0.0, 8.0, "Index"};
       AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
       // The DCA maps cover the full configured pT range in 0.1 GeV/c steps.
-      constexpr float dcaPtBinWidth = 0.1f;
-      const int maxDcaPtBin = static_cast<int>(std::ceil(TrackCuts.cfgCutMaxPt.value / dcaPtBinWidth));
+      constexpr float DcaPtBinWidth = 0.1f;
+      const int maxDcaPtBin = static_cast<int>(std::ceil(TrackCuts.cfgCutMaxPt.value / DcaPtBinWidth));
       const int nDcaPtBins = maxDcaPtBin + 1;
-      const float dcaPtAxisHalfBin = 0.5f * dcaPtBinWidth;
+      const float dcaPtAxisHalfBin = 0.5f * DcaPtBinWidth;
       AxisSpec dcaPtAxis = {nDcaPtBins,
                             -dcaPtAxisHalfBin,
-                            maxDcaPtBin * dcaPtBinWidth + dcaPtAxisHalfBin,
+                            maxDcaPtBin * DcaPtBinWidth + dcaPtAxisHalfBin,
                             "#it{p}_{T} (GeV/#it{c})"};
       AxisSpec etaAxis = {100, -1.0f, 1.0f, "#eta"};
       AxisSpec phiAxis = {100, 0.0f, TwoPI, "#phi"};
       // Keep the configured signed DCA limits at bin centres so tracks exactly
       // on an accepted selection boundary are not moved to overflow.
-      constexpr int nDcaBins = 201;
-      constexpr float dcaAxisPaddingFraction = 1.f / 200.f;
+      constexpr int NDcaBins = 201;
+      constexpr float DcaAxisPaddingFraction = 1.f / 200.f;
       const float configuredDcaXYMax = static_cast<float>(TrackCuts.cMaxDCArToPVcut.value);
       const float configuredDcaZMax = static_cast<float>(TrackCuts.cMaxDCAzToPVcut.value);
-      const float dcaXYAxisHalfRange = configuredDcaXYMax > 0.f ? configuredDcaXYMax * (1.f + dcaAxisPaddingFraction) : 1.e-4f;
-      const float dcaZAxisHalfRange = configuredDcaZMax > 0.f ? configuredDcaZMax * (1.f + dcaAxisPaddingFraction) : 1.e-4f;
-      AxisSpec dcaXYAxis = {nDcaBins, -dcaXYAxisHalfRange, dcaXYAxisHalfRange, "DCA_{xy} (cm)"};
-      AxisSpec dcaZAxis = {nDcaBins, -dcaZAxisHalfRange, dcaZAxisHalfRange, "DCA_{z} (cm)"};
+      const float dcaXYAxisHalfRange = configuredDcaXYMax > 0.f ? configuredDcaXYMax * (1.f + DcaAxisPaddingFraction) : 1.e-4f;
+      const float dcaZAxisHalfRange = configuredDcaZMax > 0.f ? configuredDcaZMax * (1.f + DcaAxisPaddingFraction) : 1.e-4f;
+      AxisSpec dcaXYAxis = {NDcaBins, -dcaXYAxisHalfRange, dcaXYAxisHalfRange, "DCA_{xy} (cm)"};
+      AxisSpec dcaZAxis = {NDcaBins, -dcaZAxisHalfRange, dcaZAxisHalfRange, "DCA_{z} (cm)"};
       // Tiny PID has 255 discrete values from -6.35 to 6.35 in 0.05 steps.
       // Extend the histogram limits by half a step so every decoded value is
       // located at a bin centre instead of on a floating-point bin boundary.
-      constexpr int nTinyTPCPidBins = aod::pidtpc_tiny::binning::nbins + 1;
-      constexpr float halfTinyTPCPidBinWidth = 0.5f * aod::pidtpc_tiny::binning::bin_width;
-      constexpr int nTinyTOFPidBins = aod::pidtof_tiny::binning::nbins + 1;
-      constexpr float halfTinyTOFPidBinWidth = 0.5f * aod::pidtof_tiny::binning::bin_width;
-      AxisSpec nSigmaTPCAxis = {nTinyTPCPidBins,
-                                aod::pidtpc_tiny::binning::binned_min - halfTinyTPCPidBinWidth,
-                                aod::pidtpc_tiny::binning::binned_max + halfTinyTPCPidBinWidth,
+      constexpr int NTinyTPCPidBins = aod::pidtpc_tiny::binning::nbins + 1;
+      constexpr float HalfTinyTPCPidBinWidth = 0.5f * aod::pidtpc_tiny::binning::bin_width;
+      constexpr int NTinyTOFPidBins = aod::pidtof_tiny::binning::nbins + 1;
+      constexpr float HalfTinyTOFPidBinWidth = 0.5f * aod::pidtof_tiny::binning::bin_width;
+      AxisSpec nSigmaTPCAxis = {NTinyTPCPidBins,
+                                aod::pidtpc_tiny::binning::binned_min - HalfTinyTPCPidBinWidth,
+                                aod::pidtpc_tiny::binning::binned_max + HalfTinyTPCPidBinWidth,
                                 "TPC N#sigma"};
-      AxisSpec nSigmaTOFAxis = {nTinyTOFPidBins,
-                                aod::pidtof_tiny::binning::binned_min - halfTinyTOFPidBinWidth,
-                                aod::pidtof_tiny::binning::binned_max + halfTinyTOFPidBinWidth,
+      AxisSpec nSigmaTOFAxis = {NTinyTOFPidBins,
+                                aod::pidtof_tiny::binning::binned_min - HalfTinyTOFPidBinWidth,
+                                aod::pidtof_tiny::binning::binned_max + HalfTinyTOFPidBinWidth,
                                 "TOF N#sigma"};
 
       if (processTrackDataEnabled || processTrackMCEnabled) {
@@ -1143,11 +1161,10 @@ struct ResonanceDaughterInitializer {
 
   static bool quantizeP(float p, int16_t& quantized)
   {
-    constexpr double scale = 1000.;
     if (!std::isfinite(p)) {
       return false;
     }
-    const double rounded = std::round(static_cast<double>(p) * scale);
+    const double rounded = std::round(static_cast<double>(p) * MomentumQuantizationScale);
     if (rounded < static_cast<double>(std::numeric_limits<int16_t>::min()) ||
         rounded > static_cast<double>(std::numeric_limits<int16_t>::max())) {
       return false;
@@ -1420,8 +1437,8 @@ struct ResonanceDaughterInitializer {
         motherPDGs = getMothersPDGCodes(particle);
         siblingsTemp = getSiblingsIndeces(particle);
       }
-      mothers.resize(2, -1);
-      motherPDGs.resize(2, -1);
+      mothers.resize(StoredMCRelationCount, -1);
+      motherPDGs.resize(StoredMCRelationCount, -1);
       if (siblingsTemp.size() > 0)
         siblings[0] = siblingsTemp[0];
       if (siblingsTemp.size() > 1)
@@ -1581,19 +1598,19 @@ struct ResonanceDaughterInitializer {
         mothersPts = getMothersPt(v0mc);
         mothersRaps = getMothersRap(v0mc);
       }
-      mothers.resize(2, -1);
-      motherPDGs.resize(2, -1);
-      mothersPts.resize(2, -1.0f);
-      mothersRaps.resize(2, -1.0f);
+      mothers.resize(StoredMCRelationCount, -1);
+      motherPDGs.resize(StoredMCRelationCount, -1);
+      mothersPts.resize(StoredMCRelationCount, -1.0f);
+      mothersRaps.resize(StoredMCRelationCount, -1.0f);
       if (v0mc.has_daughters()) {
         daughters = getDaughtersIndeces(v0mc);
         daughterPDGs = getDaughtersPDGCodes(v0mc);
       }
-      if (daughters.size() > 2) {
+      if (daughters.size() > StoredMCRelationCount) {
         LOGF(info, "daughters.size() is larger than 2");
       }
-      daughters.resize(2, -1);
-      daughterPDGs.resize(2, -1);
+      daughters.resize(StoredMCRelationCount, -1);
+      daughterPDGs.resize(StoredMCRelationCount, -1);
       reso2mcv0s(v0mc.pdgCode(),
                  mothers[0],
                  motherPDGs[0],
@@ -1766,19 +1783,19 @@ struct ResonanceDaughterInitializer {
         mothersPts = getMothersPt(cascmc);
         mothersRaps = getMothersRap(cascmc);
       }
-      mothers.resize(2, -1);
-      motherPDGs.resize(2, -1);
-      mothersPts.resize(2, -1.0f);
-      mothersRaps.resize(2, -1.0f);
+      mothers.resize(StoredMCRelationCount, -1);
+      motherPDGs.resize(StoredMCRelationCount, -1);
+      mothersPts.resize(StoredMCRelationCount, -1.0f);
+      mothersRaps.resize(StoredMCRelationCount, -1.0f);
       if (cascmc.has_daughters()) {
         daughters = getDaughtersIndeces(cascmc);
         daughterPDGs = getDaughtersPDGCodes(cascmc);
       }
-      if (daughters.size() > 2) {
+      if (daughters.size() > StoredMCRelationCount) {
         LOGF(info, "daughters.size() is larger than 2");
       }
-      daughters.resize(2, -1);
-      daughterPDGs.resize(2, -1);
+      daughters.resize(StoredMCRelationCount, -1);
+      daughterPDGs.resize(StoredMCRelationCount, -1);
       reso2mccascades(cascmc.pdgCode(),
                       mothers[0],
                       motherPDGs[0],

@@ -80,7 +80,7 @@ DECLARE_SOA_COLUMN(IsTriggerTVX, isTriggerTVX, bool);         //! TriggerTVX
 DECLARE_SOA_COLUMN(IsInSel8, isInSel8, bool);                 //! InSel8
 DECLARE_SOA_COLUMN(IsInAfterAllCuts, isInAfterAllCuts, bool); //! InAfterAllCuts
 DECLARE_SOA_COLUMN(ImpactParameter, impactParameter, float);  //! ImpactParameter
-DECLARE_SOA_COLUMN(MCMultiplicity, mcMultiplicity, float);    //! MC Multiplicity
+DECLARE_SOA_COLUMN(MCMultiplicity, mcMultiplicity, float);    //! MC Multiplicity, o2-linter: disable=name/o2-column (pre-existing public column name kept for schema and API compatibility)
 
 } // namespace resocollision
 DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
@@ -175,8 +175,8 @@ struct ResoTrackFlags {
 #define requireHasTOF() requireTrackFlag(ResoTrackFlags::kHasTOF)
 #define requireSign() requireTrackFlag(ResoTrackFlags::kSign)
 
-#define DECLARE_DYN_TRKSEL_COLUMN(name, getter, mask) \
-  DECLARE_SOA_DYNAMIC_COLUMN(name, getter, [](ResoTrackFlags::flagtype flags) -> bool { return ResoTrackFlags::checkFlag(flags, mask); });
+#define DECLARE_DYN_TRKSEL_COLUMN(_Name_, _Getter_, _Mask_) \
+  DECLARE_SOA_DYNAMIC_COLUMN(_Name_, _Getter_, [](ResoTrackFlags::flagtype flags) -> bool { return ResoTrackFlags::checkFlag(flags, _Mask_); });
 
 DECLARE_SOA_INDEX_COLUMN(ResoCollision, resoCollision);
 DECLARE_SOA_INDEX_COLUMN(ResoCollisionDF, resoCollisionDF);
@@ -216,7 +216,7 @@ DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);                                
 DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);                                  //! Y position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);                                  //! Z position of the decay vertex
 DECLARE_SOA_COLUMN(Alpha, alpha, float);                                          //! Alpha of the decay vertex
-DECLARE_SOA_COLUMN(QtArm, qtarm, float);                                          //! Armenteros Qt of the decay vertex
+DECLARE_SOA_COLUMN(QtArm, qtarm, float);                                          //! Armenteros Qt of the decay vertex, o2-linter: disable=name/o2-column (pre-existing public column name kept for schema and API compatibility)
 DECLARE_SOA_COLUMN(TpcSignal10, tpcSignal10, int16_t);                            //! TPC signal of the track x10
 DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosPi10, daughterTPCNSigmaPosPi10, int8_t);   //! TPC PID x10 of the positive daughter as Pion
 DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosKa10, daughterTPCNSigmaPosKa10, int8_t);   //! TPC PID x10 of the positive daughter as Kaon
@@ -359,6 +359,10 @@ namespace resomicrodaughter
 
 /// @brief Save TPC & TOF nSigma info with 8-bit variable
 struct PidNSigma {
+  static constexpr double MinNSigma = 1.5;
+  static constexpr double NSigmaStep = 0.2;
+  static constexpr uint8_t MaxNSigmaCode = 10;
+
   uint8_t flag;
 
   /// @brief Constructor: Convert TPC & TOF values and save
@@ -373,14 +377,14 @@ struct PidNSigma {
   static uint8_t encodeNSigma(float nSigma)
   {
     const float x = std::abs(nSigma);
-    if (x <= 1.5)
+    if (x <= MinNSigma)
       return 0; // Return 0 when absolute nSigma is smaller than 1.5
-    float t = (x - 1.5) / 0.2;
+    float t = (x - MinNSigma) / NSigmaStep;
     int encoded = static_cast<int>(std::ceil(t)); // (1.5,1.7]->1, ..., (3.3,3.5]->10
     if (encoded < 1)
       encoded = 1;
-    if (encoded > 10)
-      encoded = 10;
+    if (encoded > MaxNSigmaCode)
+      encoded = MaxNSigmaCode;
     return static_cast<uint8_t>(encoded);
   }
 
@@ -388,10 +392,10 @@ struct PidNSigma {
   static float decodeNSigma(uint8_t encoded)
   {
     if (encoded == 0)
-      return 1.5;
-    if (encoded > 10)
-      encoded = 10;
-    return 1.5 + static_cast<float>(encoded) * 0.2;
+      return MinNSigma;
+    if (encoded > MaxNSigmaCode)
+      encoded = MaxNSigmaCode;
+    return MinNSigma + static_cast<float>(encoded) * NSigmaStep;
   }
 
   /// @brief Check if TOF info is available
@@ -431,6 +435,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF,
 
 /// @brief DCAxy & DCAz selection flag
 struct ResoMicroTrackSelFlag {
+  static constexpr double DCAEncodingStep = 0.1;
+  static constexpr uint8_t MaxRegularDCAFlag = 14;
+  static constexpr uint8_t OverflowDCAFlag = 15;
+
   uint8_t flag; // Flag for DCAxy & DCAz selection (8-bit variable)
 
   /// @brief Default constructor
@@ -451,13 +459,13 @@ struct ResoMicroTrackSelFlag {
   static uint8_t encodeDCA(float DCA)
   {
     float x = std::fabs(DCA);
-    if (x < 0.1)
+    if (x < DCAEncodingStep)
       return 0;
-    int encoded = static_cast<int>(std::ceil((x - 0.1) / 0.1)); // (0.1, 0.2] -> 1, ..., (1.4, 1.5] -> 14
+    int encoded = static_cast<int>(std::ceil((x - DCAEncodingStep) / DCAEncodingStep)); // (0.1, 0.2] -> 1, ..., (1.4, 1.5] -> 14
     if (encoded < 1)
       encoded = 1;
-    if (encoded > 14)
-      encoded = 15;
+    if (encoded > MaxRegularDCAFlag)
+      encoded = OverflowDCAFlag;
     return static_cast<uint8_t>(encoded);
   }
 
@@ -656,9 +664,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi,
                              return RecoDecay::phi(static_cast<float>(px1000) / 1000.f,
                                                    static_cast<float>(py1000) / 1000.f);
                            });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigma, tpcNSigma,
+DECLARE_SOA_DYNAMIC_COLUMN(TpcNSigma, tpcNSigma,
                            [](uint8_t pidNSigmaFlag) { return PidNSigma::getTPCNSigma(pidNSigmaFlag); });
-DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigma, tofNSigma,
+DECLARE_SOA_DYNAMIC_COLUMN(TofNSigma, tofNSigma,
                            [](uint8_t pidNSigmaFlag, uint8_t trackFlags) -> float {
                              const bool hasTOF = resodaughter::ResoTrackFlags::checkFlag(trackFlags, resodaughter::ResoTrackFlags::kHasTOF);
                              return PidNSigma::getTOFNSigma(pidNSigmaFlag, hasTOF);
@@ -760,8 +768,8 @@ DECLARE_SOA_TABLE(ResoUltraMicroTracks, "AOD", "RESOULTRAMTRK",
                   resoultramicrodaughter::Pt<resoultramicrodaughter::Px1000, resoultramicrodaughter::Py1000>,
                   resoultramicrodaughter::Eta<resoultramicrodaughter::Px1000, resoultramicrodaughter::Py1000, resoultramicrodaughter::Pz1000>,
                   resoultramicrodaughter::Phi<resoultramicrodaughter::Px1000, resoultramicrodaughter::Py1000>,
-                  resoultramicrodaughter::TPCNSigma<resoultramicrodaughter::PidNSigmaFlag>,
-                  resoultramicrodaughter::TOFNSigma<resoultramicrodaughter::PidNSigmaFlag, resodaughter::TrackFlags>,
+                  resoultramicrodaughter::TpcNSigma<resoultramicrodaughter::PidNSigmaFlag>,
+                  resoultramicrodaughter::TofNSigma<resoultramicrodaughter::PidNSigmaFlag, resodaughter::TrackFlags>,
                   resoultramicrodaughter::DcaXY<resoultramicrodaughter::TrackSelectionFlags>,
                   resoultramicrodaughter::DcaZ<resoultramicrodaughter::TrackSelectionFlags>,
                   resodaughter::PassedITSRefit<resodaughter::TrackFlags>,
