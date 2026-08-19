@@ -1356,7 +1356,7 @@ struct lambdajetpolarizationionsderived {
   }
 
   // Defining filters for events:
-  Filter zvtxFilter = (nabs(o2::aod::RingCollisions::zvtx) < maxZVtxPosition);
+  Filter zvtxFilter = (nabs(o2::aod::lambdajetpol::zvtx) < maxZVtxPosition);
   
   // Preslices for correct collisions association:
   // (tested custom grouping and performs worse here)
