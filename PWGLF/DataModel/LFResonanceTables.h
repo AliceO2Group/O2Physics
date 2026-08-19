@@ -34,6 +34,7 @@
 
 #include <Framework/AnalysisDataModel.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -63,15 +64,15 @@ enum {
   kAllCutsINELg010,
   kECend,
 };
-DECLARE_SOA_INDEX_COLUMN_FULL(Collision, collision, int, Collisions, "_Col"); //!
-DECLARE_SOA_COLUMN(Cent, cent, float);                                        //! Centrality (Multiplicity) percentile (Default: FT0M)
-DECLARE_SOA_COLUMN(Spherocity, spherocity, float);                            //! Spherocity of the event
-DECLARE_SOA_COLUMN(EvtPl, evtPl, float);                                      //! Second harmonic event plane
-DECLARE_SOA_COLUMN(EvtPlResAB, evtPlResAB, float);                            //! Second harmonic event plane resolution of A-B sub events
-DECLARE_SOA_COLUMN(EvtPlResAC, evtPlResAC, float);                            //! Second harmonic event plane resolution of A-C sub events
-DECLARE_SOA_COLUMN(EvtPlResBC, evtPlResBC, float);                            //! Second harmonic event plane resolution of B-C sub events
-DECLARE_SOA_COLUMN(BMagField, bMagField, float);                              //! Magnetic field
-DECLARE_SOA_COLUMN(IsRecINELgt0, isRecINELgt0, bool);                         //! Is reconstructed INEL>0 event
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);    //! Original collision row ID stored as a scalar for standalone derived data
+DECLARE_SOA_COLUMN(Cent, cent, float);                //! Centrality (Multiplicity) percentile (Default: FT0M)
+DECLARE_SOA_COLUMN(Spherocity, spherocity, float);    //! Spherocity of the event
+DECLARE_SOA_COLUMN(EvtPl, evtPl, float);              //! Second harmonic event plane
+DECLARE_SOA_COLUMN(EvtPlResAB, evtPlResAB, float);    //! Second harmonic event plane resolution of A-B sub events
+DECLARE_SOA_COLUMN(EvtPlResAC, evtPlResAC, float);    //! Second harmonic event plane resolution of A-C sub events
+DECLARE_SOA_COLUMN(EvtPlResBC, evtPlResBC, float);    //! Second harmonic event plane resolution of B-C sub events
+DECLARE_SOA_COLUMN(BMagField, bMagField, float);      //! Magnetic field
+DECLARE_SOA_COLUMN(IsRecINELgt0, isRecINELgt0, bool); //! Is reconstructed INEL>0 event
 // MC
 DECLARE_SOA_COLUMN(IsVtxIn10, isVtxIn10, bool);               //! Vtx10
 DECLARE_SOA_COLUMN(IsINELgt0, isINELgt0, bool);               //! INEL>0
@@ -179,9 +180,9 @@ struct ResoTrackFlags {
 
 DECLARE_SOA_INDEX_COLUMN(ResoCollision, resoCollision);
 DECLARE_SOA_INDEX_COLUMN(ResoCollisionDF, resoCollisionDF);
-DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Trk");                 //!
-DECLARE_SOA_INDEX_COLUMN_FULL(V0, v0, int, V0s, "_V0");                           //!
-DECLARE_SOA_INDEX_COLUMN_FULL(Cascade, cascade, int, Cascades, "_Cas");           //!
+DECLARE_SOA_COLUMN(TrackId, trackId, int);                                        //! Original track row ID stored as a scalar for autocorrelation rejection
+DECLARE_SOA_COLUMN(V0Id, v0Id, int);                                              //! Original V0 row ID stored as a scalar
+DECLARE_SOA_COLUMN(CascadeId, cascadeId, int);                                    //! Original cascade row ID stored as a scalar
 DECLARE_SOA_COLUMN(Pt, pt, float);                                                //! p_t (GeV/c)
 DECLARE_SOA_COLUMN(Px, px, float);                                                //! p_x (GeV/c)
 DECLARE_SOA_COLUMN(Py, py, float);                                                //! p_y (GeV/c)
@@ -507,6 +508,167 @@ struct ResoMicroTrackSelFlag {
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
 } // namespace resomicrodaughter
 
+// Ultra-micro track representation.  The momentum components are quantised
+// to 1 MeV/c and only one (pion/kaon/proton) PID flag is retained.
+namespace resoultramicrodaughter
+{
+/// @brief Compact absolute TPC/TOF n-sigma values for one configured species.
+/// Code 0 represents |n-sigma| < 1.5. Codes 1..14 represent lower-inclusive
+/// 0.25-sigma-wide bins [1.5, 1.75), ..., [4.75, 5.0) and decode to their
+/// lower edges. Code 15 represents |n-sigma| >= 5. Missing TOF information
+/// is carried independently by resodaughter::TrackFlags::kHasTOF.
+struct PidNSigma {
+  static constexpr float MinFineNSigma = 1.5f;
+  static constexpr float Step = 0.25f;
+  static constexpr float MaxNSigma = 5.f;
+  static constexpr uint8_t MaxRegularCode = 14;
+  static constexpr uint8_t AboveRangeCode = 15;
+
+  uint8_t flag;
+
+  PidNSigma(float tpcNSigma, float tofNSigma, bool hasTOF)
+  {
+    const uint8_t tpcEncoded = encodeNSigma(tpcNSigma);
+    const uint8_t tofEncoded = hasTOF && std::isfinite(tofNSigma) ? encodeNSigma(tofNSigma) : AboveRangeCode;
+    flag = (tpcEncoded << 4) | tofEncoded;
+  }
+
+  static uint8_t encodeNSigma(float nSigma)
+  {
+    const float value = std::abs(nSigma);
+    if (!std::isfinite(value)) {
+      return AboveRangeCode;
+    }
+    if (value < MinFineNSigma) {
+      return 0;
+    }
+    if (value >= MaxNSigma) {
+      return AboveRangeCode;
+    }
+    const int encoded = 1 + static_cast<int>(std::floor((value - MinFineNSigma) / Step));
+    return static_cast<uint8_t>(std::clamp(encoded, 1, static_cast<int>(MaxRegularCode)));
+  }
+
+  static float decodeNSigma(uint8_t encoded)
+  {
+    const uint8_t code = encoded & 0x0F;
+    if (code == 0) {
+      return 0.f;
+    }
+    return code == AboveRangeCode ? MaxNSigma : MinFineNSigma + static_cast<float>(code - 1) * Step;
+  }
+
+  static float getTPCNSigma(uint8_t encoded)
+  {
+    return decodeNSigma((encoded >> 4) & 0x0F);
+  }
+
+  static float getTOFNSigma(uint8_t encoded, bool hasTOF)
+  {
+    return hasTOF ? decodeNSigma(encoded & 0x0F) : NAN;
+  }
+
+  operator uint8_t() const { return flag; }
+};
+
+/// @brief Compact absolute DCAxy/DCAz values into two four-bit fields.
+/// Codes 0..14 represent lower-inclusive 0.01 cm-wide bins [0.00, 0.01),
+/// ..., [0.14, 0.15) cm and decode to their lower edges. Code 15 directly
+/// represents |DCA| >= 0.15 cm and decodes to the 0.15 cm marker; no additional
+/// tight-DCA or overflow flag is stored.
+struct DCAEncoding {
+  static constexpr float MaxDCA = 0.15f;
+  static constexpr float Step = 0.01f;
+  static constexpr uint8_t MaxRegularCode = 14;
+  static constexpr uint8_t AboveRangeCode = 15;
+
+  uint8_t flag = 0;
+
+  DCAEncoding() = default;
+  DCAEncoding(float dcaXY, float dcaZ)
+    : flag(static_cast<uint8_t>((encodeDCA(dcaXY) << 4) | encodeDCA(dcaZ)))
+  {
+  }
+
+  static bool isValid(float dca)
+  {
+    return std::isfinite(dca);
+  }
+
+  static uint8_t encodeDCA(float dca)
+  {
+    const float value = std::abs(dca);
+    if (!std::isfinite(value)) {
+      return AboveRangeCode;
+    }
+    if (value >= MaxDCA) {
+      return AboveRangeCode;
+    }
+    const int encoded = static_cast<int>(std::floor(value / Step));
+    return static_cast<uint8_t>(std::clamp(encoded, 0, static_cast<int>(MaxRegularCode)));
+  }
+
+  static float decodeDCA(uint8_t encoded)
+  {
+    const uint8_t code = encoded & 0x0F;
+    return code == AboveRangeCode ? MaxDCA : static_cast<float>(code) * Step;
+  }
+
+  static float decodeDCAxy(uint8_t encoded)
+  {
+    return decodeDCA((encoded >> 4) & 0x0F);
+  }
+
+  static float decodeDCAz(uint8_t encoded)
+  {
+    return decodeDCA(encoded & 0x0F);
+  }
+
+  operator uint8_t() const { return flag; }
+};
+
+DECLARE_SOA_COLUMN(PidNSigmaFlag, pidNSigmaFlag, uint8_t);             //! TPC/TOF PID flag for the configured species
+DECLARE_SOA_COLUMN(TrackSelectionFlags, trackSelectionFlags, uint8_t); //! Packed absolute DCAxy/DCAz values
+DECLARE_SOA_COLUMN(Px1000, px1000, int16_t);                           //! p_x x 1000 (GeV/c)
+DECLARE_SOA_COLUMN(Py1000, py1000, int16_t);                           //! p_y x 1000 (GeV/c)
+DECLARE_SOA_COLUMN(Pz1000, pz1000, int16_t);                           //! p_z x 1000 (GeV/c)
+
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px,
+                           [](int16_t px1000) { return static_cast<float>(px1000) / 1000.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(Py, py,
+                           [](int16_t py1000) { return static_cast<float>(py1000) / 1000.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz,
+                           [](int16_t pz1000) { return static_cast<float>(pz1000) / 1000.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,
+                           [](int16_t px1000, int16_t py1000) {
+                             const float px = static_cast<float>(px1000) / 1000.f;
+                             const float py = static_cast<float>(py1000) / 1000.f;
+                             return RecoDecay::sqrtSumOfSquares(px, py);
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta,
+                           [](int16_t px1000, int16_t py1000, int16_t pz1000) {
+                             return RecoDecay::eta(std::array{static_cast<float>(px1000) / 1000.f,
+                                                             static_cast<float>(py1000) / 1000.f,
+                                                             static_cast<float>(pz1000) / 1000.f});
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi,
+                           [](int16_t px1000, int16_t py1000) {
+                             return RecoDecay::phi(static_cast<float>(px1000) / 1000.f,
+                                                   static_cast<float>(py1000) / 1000.f);
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigma, tpcNSigma,
+                           [](uint8_t pidNSigmaFlag) { return PidNSigma::getTPCNSigma(pidNSigmaFlag); });
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigma, tofNSigma,
+                           [](uint8_t pidNSigmaFlag, uint8_t trackFlags) -> float {
+                             const bool hasTOF = resodaughter::ResoTrackFlags::checkFlag(trackFlags, resodaughter::ResoTrackFlags::kHasTOF);
+                             return PidNSigma::getTOFNSigma(pidNSigmaFlag, hasTOF);
+                           });
+DECLARE_SOA_DYNAMIC_COLUMN(DcaXY, dcaXY,
+                           [](uint8_t trackSelectionFlags) { return DCAEncoding::decodeDCAxy(trackSelectionFlags); });
+DECLARE_SOA_DYNAMIC_COLUMN(DcaZ, dcaZ,
+                           [](uint8_t trackSelectionFlags) { return DCAEncoding::decodeDCAz(trackSelectionFlags); });
+} // namespace resoultramicrodaughter
+
 DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACK",
                   o2::soa::Index<>,
                   resodaughter::ResoCollisionId,
@@ -581,6 +743,40 @@ using ResoMicroTrack = ResoMicroTracks::iterator;
 DECLARE_SOA_TABLE(ResoMicroTrackTracks, "AOD", "RESOMICROTRACKTRACK",
                   resodaughter::TrackId);
 using ResoMicroTrackTrack = ResoMicroTrackTracks::iterator;
+
+DECLARE_SOA_TABLE(ResoUltraMicroTracks, "AOD", "RESOULTRAMTRK",
+                  o2::soa::Index<>,
+                  resodaughter::ResoCollisionId,
+                  resoultramicrodaughter::Px1000,
+                  resoultramicrodaughter::Py1000,
+                  resoultramicrodaughter::Pz1000,
+                  resoultramicrodaughter::PidNSigmaFlag,
+                  resoultramicrodaughter::TrackSelectionFlags,
+                  resodaughter::TrackFlags,
+                  // Dynamic columns
+                  resoultramicrodaughter::Px<resoultramicrodaughter::Px1000>,
+                  resoultramicrodaughter::Py<resoultramicrodaughter::Py1000>,
+                  resoultramicrodaughter::Pz<resoultramicrodaughter::Pz1000>,
+                  resoultramicrodaughter::Pt<resoultramicrodaughter::Px1000, resoultramicrodaughter::Py1000>,
+                  resoultramicrodaughter::Eta<resoultramicrodaughter::Px1000, resoultramicrodaughter::Py1000, resoultramicrodaughter::Pz1000>,
+                  resoultramicrodaughter::Phi<resoultramicrodaughter::Px1000, resoultramicrodaughter::Py1000>,
+                  resoultramicrodaughter::TPCNSigma<resoultramicrodaughter::PidNSigmaFlag>,
+                  resoultramicrodaughter::TOFNSigma<resoultramicrodaughter::PidNSigmaFlag, resodaughter::TrackFlags>,
+                  resoultramicrodaughter::DcaXY<resoultramicrodaughter::TrackSelectionFlags>,
+                  resoultramicrodaughter::DcaZ<resoultramicrodaughter::TrackSelectionFlags>,
+                  resodaughter::PassedITSRefit<resodaughter::TrackFlags>,
+                  resodaughter::PassedTPCRefit<resodaughter::TrackFlags>,
+                  resodaughter::IsGlobalTrackWoDCA<resodaughter::TrackFlags>,
+                  resodaughter::IsGlobalTrack<resodaughter::TrackFlags>,
+                  resodaughter::IsPrimaryTrack<resodaughter::TrackFlags>,
+                  resodaughter::IsPVContributor<resodaughter::TrackFlags>,
+                  resodaughter::HasTOF<resodaughter::TrackFlags>,
+                  resodaughter::Sign<resodaughter::TrackFlags>);
+using ResoUltraMicroTrack = ResoUltraMicroTracks::iterator;
+
+DECLARE_SOA_TABLE(ResoUltraMicroTrackTracks, "AOD", "RESOULTRAMTRKID",
+                  resodaughter::TrackId);
+using ResoUltraMicroTrackTrack = ResoUltraMicroTrackTracks::iterator;
 
 // For DF mixing study
 DECLARE_SOA_TABLE(ResoTrackDFs, "AOD", "RESOTRACKDF",
