@@ -2176,10 +2176,10 @@ struct TableMaker {
 
   // produce the muon only DQ skimmed data model typically for Pb-Pb (with centrality and flow), no subscribtion to the DQ event filter
   // no DCA table filled by the FwdTracExtension to optimize the memory consumption
-  void processPbPbStreamMuonOnly(MyEventsWithCentAndMultsQvect const& collisions, MyBCs const& bcs,
+  void processPbPbStreamMuonOnly(MyEventsWithCentAndMultsQvect const& collisions, MyBCs const& bcs, aod::Zdcs const& zdcs,
                                  MyMuonsNoDca const& muons, FwdTrackAssoc const& fwdTrackAssocs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
-    fullSkimming<gkEventFillMapWithCentAndMultsQvect, 0u, gkMuonFillMap, 0u>(collisions, bcs, nullptr, nullptr, muons, nullptr, nullptr, fwdTrackAssocs, nullptr, nullptr, ft0s, fv0as, fdds);
+    fullSkimming<gkEventFillMapWithCentAndMultsQvect, 0u, gkMuonFillMap, 0u>(collisions, bcs, zdcs, nullptr, muons, nullptr, nullptr, fwdTrackAssocs, nullptr, nullptr, ft0s, fv0as, fdds);
   }
 
   // produce the realigned muon only DQ skimmed data model typically for Pb-Pb (with centrality), no subscribtion to the DQ event filter
