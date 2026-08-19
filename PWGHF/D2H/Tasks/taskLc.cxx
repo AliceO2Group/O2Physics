@@ -121,12 +121,6 @@ struct HfTaskLc {
   ConfigurableAxis thnConfigAxisProperDecayTime{"thnConfigAxisProperDecayTime", {200, 0, 2}, "Proper decay time, ps"};
   HistogramRegistry registry{"registry", {}};
 
-  // Factors for conversion between units
-  constexpr static float CtToProperDecayTimePs = 1.f / o2::constants::physics::LightSpeedCm2PS;
-  // Names of folders and suffixes for MC signal histograms
-  constexpr static std::string_view SignalFolders[] = {"signal", "prompt", "nonprompt"};
-  constexpr static std::string_view SignalSuffixes[] = {"", "Prompt", "NonPrompt"};
-
   enum MlClasses : int {
     MlClassBackground = 0,
     MlClassPrompt,
@@ -137,8 +131,15 @@ struct HfTaskLc {
   enum SignalClasses : int {
     Signal = 0,
     Prompt,
-    NonPrompt
+    NonPrompt,
+    NumberOfSignalClasses
   };
+
+  // Factor for conversion between units
+  constexpr static float CtToProperDecayTimePs = 1.f / o2::constants::physics::LightSpeedCm2PS;
+  // Names of folders and suffixes for MC signal histograms
+  constexpr static std::array<std::string_view, NumberOfSignalClasses> SignalFolders = {"signal", "prompt", "nonprompt"};
+  constexpr static std::array<std::string_view, NumberOfSignalClasses> SignalSuffixes = {"", "Prompt", "NonPrompt"};
 
   void init(InitContext&)
   {
