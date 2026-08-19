@@ -123,7 +123,6 @@ struct HfTaskLc {
 
   // Factors for conversion between units
   constexpr static float CtToProperDecayTimePs = 1.f / o2::constants::physics::LightSpeedCm2PS;
-  constexpr static float NanoToPico = 1000.f;
   // Names of folders and suffixes for MC signal histograms
   constexpr static std::string_view SignalFolders[] = {"signal", "prompt", "nonprompt"};
   constexpr static std::string_view SignalSuffixes[] = {"", "Prompt", "NonPrompt"};
@@ -339,8 +338,7 @@ struct HfTaskLc {
     return o2::hf_centrality::getCentralityColl<Coll>(collision);
   }
 
-  template <typename McDaughter, typename CandLcMcGen>
-  float evaluateMcGenDecayTime(const McDaughter& mcParticleProng0, const CandLcMcGen& motherParticle)
+  float evaluateMcGenDecayTime(const McParticles3ProngMatched::iterator& mcParticleProng0, const McParticles3ProngMatched::iterator& motherParticle)
   {
     const auto mcCollision = motherParticle.template mcCollision_as<aod::McCollisions>();
     const float pMother = motherParticle.p();
@@ -363,7 +361,7 @@ struct HfTaskLc {
   template <int SignalType, typename CandidateType>
   void fillHistogramsRecSig(CandidateType const& candidate)
   {
-    const auto& mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
+    const auto& mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<McParticles3ProngMatched>();
     const auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
     if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
       registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[SignalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[SignalType]), HfHelper::invMassLcToPKPi(candidate));
@@ -408,8 +406,8 @@ struct HfTaskLc {
 
   /// Fill MC histograms at reconstruction level
   /// \tparam FillMl switch to fill ML histograms
-  template <bool FillMl, typename CollType, typename CandLcMcRec, typename CandLcMcGen>
-  void fillHistosMcRec(CollType const& collision, CandLcMcRec const& candidates, CandLcMcGen const& mcParticles)
+  template <bool FillMl, typename CollType, typename CandLcMcRec>
+  void fillHistosMcRec(CollType const& collision, CandLcMcRec const& candidates, McParticles3ProngMatched const& mcParticles)
   {
     const auto thisCollId = collision.globalIndex();
     const auto& groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
@@ -426,7 +424,7 @@ struct HfTaskLc {
 
       if (std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
         // Get the corresponding MC particle.
-        const auto& mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
+        const auto& mcParticleProng0 = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<McParticles3ProngMatched>();
         const auto pdgCodeProng0 = std::abs(mcParticleProng0.pdgCode());
         const auto indexMother = RecoDecay::getMother(mcParticles, mcParticleProng0, o2::constants::physics::Pdg::kLambdaCPlus, true);
         const auto particleMother = mcParticles.rawIteratorAt(indexMother);
@@ -511,8 +509,8 @@ struct HfTaskLc {
   /// Helper function for filling MC generated histograms for prompt, nonpromt and common (signal)
   /// \param particle is a generated particle
   /// \tparam SignalType is an enum defining which histogram in which folder (signal, prompt or nonpromt) to fill
-  template <int SignalType, typename ParticleType>
-  void fillHistogramsGen(ParticleType const& particle)
+  template <int SignalType>
+  void fillHistogramsGen(McParticles3ProngMatched::iterator const& particle)
   {
     registry.fill(HIST("MC/generated/") + HIST(SignalFolders[SignalType]) + HIST("/hPtGen") + HIST(SignalSuffixes[SignalType]), particle.pt());
     registry.fill(HIST("MC/generated/") + HIST(SignalFolders[SignalType]) + HIST("/hEtaGen") + HIST(SignalSuffixes[SignalType]), particle.eta());
@@ -524,8 +522,8 @@ struct HfTaskLc {
   }
 
   /// Fill MC histograms at generated level
-  template <typename CandLcMcGen, typename Coll>
-  void fillHistosMcGen(CandLcMcGen const& mcParticles, Coll const& recoCollisions)
+  template <typename Coll>
+  void fillHistosMcGen(McParticles3ProngMatched const& mcParticles, Coll const& recoCollisions)
   {
     // MC gen.
     for (const auto& particle : mcParticles) {
@@ -548,7 +546,7 @@ struct HfTaskLc {
           occ = o2::hf_occupancy::getOccupancyGenColl(recoCollsPerMcColl, occEstimator);
         }
 
-        const auto mcDaughter0 = particle.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().begin();
+        const auto mcDaughter0 = particle.template daughters_as<McParticles3ProngMatched>().begin();
 
         const float properDecayTime = evaluateMcGenDecayTime(mcDaughter0, particle);
 
@@ -712,10 +710,10 @@ struct HfTaskLc {
 
   /// Run the analysis on MC data
   /// \tparam FillMl switch to fill ML histograms
-  template <bool FillMl, typename CollType, typename CandType, typename CandLcMcGen>
+  template <bool FillMl, typename CollType, typename CandType>
   void runAnalysisPerCollisionMc(CollType const& collisions,
                                  CandType const& candidates,
-                                 CandLcMcGen const& mcParticles)
+                                 McParticles3ProngMatched const& mcParticles)
   {
     for (const auto& collision : collisions) {
       // MC Rec.
