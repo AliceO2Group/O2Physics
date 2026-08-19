@@ -424,6 +424,12 @@ struct FlowGfwV02 {
     registry.add("analysis/charged/ptA", "", {HistType::kTProfile3D, {bsAxis, centAxis, nchAxis}});
     registry.add("analysis/charged/ptB", "", {HistType::kTProfile3D, {bsAxis, centAxis, nchAxis}});
     registry.add("analysis/charged/ptAB", "", {HistType::kTProfile3D, {bsAxis, centAxis, nchAxis}});
+    if (cfgUseMultiplicityFracWeights){
+      registry.add("analysis/charged/nchA2pc", "", {HistType::kTProfile3D, {bsAxis, ptAxis, centAxis}});
+      registry.add("analysis/charged/nchB2pc", "", {HistType::kTProfile3D, {bsAxis, ptAxis, centAxis}});
+      registry.add("analysis/charged/ptA2pc", "", {HistType::kTProfile3D, {bsAxis, centAxis, nchAxis}});
+      registry.add("analysis/charged/ptB2pc", "", {HistType::kTProfile3D, {bsAxis, centAxis, nchAxis}});
+    }
 
     registry.addClone("analysis/charged/", "analysis/pion/");
     registry.addClone("analysis/charged/", "analysis/kaon/");
@@ -888,6 +894,12 @@ struct FlowGfwV02 {
         if (!(pidStates.hPtForward[normIndex]->Integral() > 0) || !(pidStates.hPtBackward[normIndex]->Integral() > 0)) {
           continue; // Forward or backward pT distribution is not defined
         }
+        double WeightA = 1.0;
+        double WeightB = 1.0;
+        if (cfgUseMultiplicityFracWeights) {
+          WeightA = pidStates.hPtForward[PidCharged]->Integral();
+          WeightB = pidStates.hPtBackward[PidCharged]->Integral();
+        }
         for (int i = 1; i <= fSecondAxis->GetNbins(); i++) {
           ptFractionForward = pidStates.hPtForward[pid]->GetBinContent(i) / pidStates.hPtForward[normIndex]->Integral();
           ptFractionBackward = pidStates.hPtBackward[pid]->GetBinContent(i) / pidStates.hPtBackward[normIndex]->Integral();
@@ -895,28 +907,44 @@ struct FlowGfwV02 {
           v0corrBA = ptFractionBackward * ptMeanForward;
           switch (pid) {
             case PidCharged:
-              registry.fill(HIST("analysis/charged/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB);
-              registry.fill(HIST("analysis/charged/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA);
-              registry.fill(HIST("analysis/charged/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward);
-              registry.fill(HIST("analysis/charged/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward);
+              registry.fill(HIST("analysis/charged/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB, WeightA * WeightB);
+              registry.fill(HIST("analysis/charged/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA, WeightA * WeightB);
+              registry.fill(HIST("analysis/charged/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward, WeightA);
+              registry.fill(HIST("analysis/charged/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward, WeightB);
+              if (cfgUseMultiplicityFracWeights) {
+                registry.fill(HIST("analysis/charged/nchA2pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward, WeightA * WeightB);
+                registry.fill(HIST("analysis/charged/nchB2pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward, WeightA * WeightB);
+              }
               break;
             case PidPions:
-              registry.fill(HIST("analysis/pion/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB);
-              registry.fill(HIST("analysis/pion/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA);
-              registry.fill(HIST("analysis/pion/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward);
-              registry.fill(HIST("analysis/pion/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward);
+              registry.fill(HIST("analysis/pion/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB, WeightA * WeightB);
+              registry.fill(HIST("analysis/pion/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA, WeightA * WeightB);
+              registry.fill(HIST("analysis/pion/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward, WeightA);
+              registry.fill(HIST("analysis/pion/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward, WeightB);
+              if (cfgUseMultiplicityFracWeights) {
+                registry.fill(HIST("analysis/pion/nchA2pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward, WeightA * WeightB);
+                registry.fill(HIST("analysis/pion/nchB2pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward, WeightA * WeightB);
+              }
               break;
             case PidKaons:
-              registry.fill(HIST("analysis/kaon/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB);
-              registry.fill(HIST("analysis/kaon/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA);
-              registry.fill(HIST("analysis/kaon/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward);
-              registry.fill(HIST("analysis/kaon/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward);
+              registry.fill(HIST("analysis/kaon/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB, WeightA * WeightB);
+              registry.fill(HIST("analysis/kaon/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA, WeightA * WeightB);
+              registry.fill(HIST("analysis/kaon/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward, WeightA);
+              registry.fill(HIST("analysis/kaon/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward, WeightB);
+              if (cfgUseMultiplicityFracWeights) {
+                registry.fill(HIST("analysis/kaon/nchA2pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward, WeightA * WeightB);
+                registry.fill(HIST("analysis/kaon/nchB2pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward, WeightA * WeightB);
+              }
               break;
             case PidProtons:
-              registry.fill(HIST("analysis/proton/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB);
-              registry.fill(HIST("analysis/proton/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA);
-              registry.fill(HIST("analysis/proton/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward);
-              registry.fill(HIST("analysis/proton/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward);
+              registry.fill(HIST("analysis/proton/v0AB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrAB, WeightA * WeightB);
+              registry.fill(HIST("analysis/proton/v0BA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, v0corrBA, WeightA * WeightB);
+              registry.fill(HIST("analysis/proton/nchA"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward, WeightA);
+              registry.fill(HIST("analysis/proton/nchB"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward, WeightB);
+              if (cfgUseMultiplicityFracWeights) {
+                registry.fill(HIST("analysis/proton/nchA2pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionForward, WeightA * WeightB);
+                registry.fill(HIST("analysis/proton/nchB2pc"), bootstrap, fSecondAxis->GetBinCenter(i), centmult, ptFractionBackward, WeightA * WeightB);
+              }
               break;
             default:
               break;
@@ -924,24 +952,40 @@ struct FlowGfwV02 {
         }
         switch (pid) {
           case PidCharged:
-            registry.fill(HIST("analysis/charged/ptA"), bootstrap, centmult, multiplicity, ptMeanForward);
-            registry.fill(HIST("analysis/charged/ptB"), bootstrap, centmult, multiplicity, ptMeanBackward);
-            registry.fill(HIST("analysis/charged/ptAB"), bootstrap, centmult, multiplicity, ptMeanForward * ptMeanBackward);
+            registry.fill(HIST("analysis/charged/ptA"), bootstrap, centmult, multiplicity, ptMeanForward, WeightA);
+            registry.fill(HIST("analysis/charged/ptB"), bootstrap, centmult, multiplicity, ptMeanBackward, WeightB);
+            if (cfgUseMultiplicityFracWeights) {
+              registry.fill(HIST("analysis/charged/ptA2pc"), bootstrap, centmult, multiplicity, ptMeanForward, WeightA * WeightB);
+              registry.fill(HIST("analysis/charged/ptB2pc"), bootstrap, centmult, multiplicity, ptMeanBackward, WeightA * WeightB);
+            }
+            registry.fill(HIST("analysis/charged/ptAB"), bootstrap, centmult, multiplicity, ptMeanForward * ptMeanBackward, WeightA * WeightB);
             break;
           case PidPions:
-            registry.fill(HIST("analysis/pion/ptA"), bootstrap, centmult, multiplicity, ptMeanForward);
-            registry.fill(HIST("analysis/pion/ptB"), bootstrap, centmult, multiplicity, ptMeanBackward);
-            registry.fill(HIST("analysis/pion/ptAB"), bootstrap, centmult, multiplicity, ptMeanForward * ptMeanBackward);
+            registry.fill(HIST("analysis/pion/ptA"), bootstrap, centmult, multiplicity, ptMeanForward, WeightA);
+            registry.fill(HIST("analysis/pion/ptB"), bootstrap, centmult, multiplicity, ptMeanBackward, WeightB);
+            if (cfgUseMultiplicityFracWeights) {
+              registry.fill(HIST("analysis/pion/ptA2pc"), bootstrap, centmult, multiplicity, ptMeanForward, WeightA * WeightB);
+              registry.fill(HIST("analysis/pion/ptB2pc"), bootstrap, centmult, multiplicity, ptMeanBackward, WeightA * WeightB);
+            }
+            registry.fill(HIST("analysis/pion/ptAB"), bootstrap, centmult, multiplicity, ptMeanForward * ptMeanBackward, WeightA * WeightB);
             break;
           case PidKaons:
-            registry.fill(HIST("analysis/kaon/ptA"), bootstrap, centmult, multiplicity, ptMeanForward);
-            registry.fill(HIST("analysis/kaon/ptB"), bootstrap, centmult, multiplicity, ptMeanBackward);
-            registry.fill(HIST("analysis/kaon/ptAB"), bootstrap, centmult, multiplicity, ptMeanForward * ptMeanBackward);
+            registry.fill(HIST("analysis/kaon/ptA"), bootstrap, centmult, multiplicity, ptMeanForward, WeightA);
+            registry.fill(HIST("analysis/kaon/ptB"), bootstrap, centmult, multiplicity, ptMeanBackward, WeightB);
+            if (cfgUseMultiplicityFracWeights) {
+              registry.fill(HIST("analysis/kaon/ptA2pc"), bootstrap, centmult, multiplicity, ptMeanForward, WeightA * WeightB);
+              registry.fill(HIST("analysis/kaon/ptB2pc"), bootstrap, centmult, multiplicity, ptMeanBackward, WeightA * WeightB);
+            }
+            registry.fill(HIST("analysis/kaon/ptAB"), bootstrap, centmult, multiplicity, ptMeanForward * ptMeanBackward, WeightA * WeightB);
             break;
           case PidProtons:
-            registry.fill(HIST("analysis/proton/ptA"), bootstrap, centmult, multiplicity, ptMeanForward);
-            registry.fill(HIST("analysis/proton/ptB"), bootstrap, centmult, multiplicity, ptMeanBackward);
-            registry.fill(HIST("analysis/proton/ptAB"), bootstrap, centmult, multiplicity, ptMeanForward * ptMeanBackward);
+            registry.fill(HIST("analysis/proton/ptA"), bootstrap, centmult, multiplicity, ptMeanForward, WeightA);
+            registry.fill(HIST("analysis/proton/ptB"), bootstrap, centmult, multiplicity, ptMeanBackward, WeightB);
+            if (cfgUseMultiplicityFracWeights) {
+              registry.fill(HIST("analysis/proton/ptA2pc"), bootstrap, centmult, multiplicity, ptMeanForward, WeightA * WeightB);
+              registry.fill(HIST("analysis/proton/ptB2pc"), bootstrap, centmult, multiplicity, ptMeanBackward, WeightA * WeightB);
+            }
+            registry.fill(HIST("analysis/proton/ptAB"), bootstrap, centmult, multiplicity, ptMeanForward * ptMeanBackward, WeightA * WeightB);
             break;
           default:
             break;
