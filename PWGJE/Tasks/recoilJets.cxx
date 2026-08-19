@@ -1470,6 +1470,47 @@ struct RecoilJets {
 
         spectra.fill(HIST("hCentFT0C_Rho_TTRef"), centFT0C, rho, weight);
         spectra.fill(HIST("hCentFT0M_Rho_TTRef"), centFT0M, rho, weight);
+
+        //_____________________________________________________
+        // Fill EA-dependent rho spectra in events with TTRef with corresponding rho shift
+        for (const auto& ea : eaRhoShifts) {
+
+          if (!isInEAInterval(scaledFT0M, ft0mEdges, ea.interval)) {
+            continue;
+          }
+
+          const float rhoRefShifted = rho + ea.rhoShift;
+
+          switch (ea.interval) {
+            case kMB:
+              spectra.fill(HIST("hEA_MB_RhoShifted_TTRef"), rhoRefShifted, weight);
+              break;
+
+            case kEA0_20:
+              spectra.fill(HIST("hEA_Perc_0_20_RhoShifted_TTRef"), rhoRefShifted, weight);
+              break;
+
+            case kEA0_10:
+              spectra.fill(HIST("hEA_Perc_0_10_RhoShifted_TTRef"), rhoRefShifted, weight);
+              break;
+
+            case kEA20_40:
+              spectra.fill(HIST("hEA_Perc_20_40_RhoShifted_TTRef"), rhoRefShifted, weight);
+              break;
+
+            case kEA60_80:
+              spectra.fill(HIST("hEA_Perc_60_80_RhoShifted_TTRef"), rhoRefShifted, weight);
+              break;
+
+            case kEA50_100:
+              spectra.fill(HIST("hEA_Perc_50_100_RhoShifted_TTRef"), rhoRefShifted, weight);
+              break;
+
+            case kEA80_100:
+              spectra.fill(HIST("hEA_Perc_80_100_RhoShifted_TTRef"), rhoRefShifted, weight);
+              break;
+          }
+        }
       }
     }
 
@@ -1561,37 +1602,30 @@ struct RecoilJets {
               switch (ea.interval) {
                 case kMB:
                   spectra.fill(HIST("hEA_MB_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
-                  spectra.fill(HIST("hEA_MB_RhoShifted_TTRef"), rhoRefShifted, weight);
                   break;
 
                 case kEA0_20:
                   spectra.fill(HIST("hEA_Perc_0_20_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
-                  spectra.fill(HIST("hEA_Perc_0_20_RhoShifted_TTRef"), rhoRefShifted, weight);
                   break;
 
                 case kEA0_10:
                   spectra.fill(HIST("hEA_Perc_0_10_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
-                  spectra.fill(HIST("hEA_Perc_0_10_RhoShifted_TTRef"), rhoRefShifted, weight);
                   break;
 
                 case kEA20_40:
                   spectra.fill(HIST("hEA_Perc_20_40_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
-                  spectra.fill(HIST("hEA_Perc_20_40_RhoShifted_TTRef"), rhoRefShifted, weight);
                   break;
 
                 case kEA60_80:
                   spectra.fill(HIST("hEA_Perc_60_80_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
-                  spectra.fill(HIST("hEA_Perc_60_80_RhoShifted_TTRef"), rhoRefShifted, weight);
                   break;
 
                 case kEA50_100:
                   spectra.fill(HIST("hEA_Perc_50_100_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
-                  spectra.fill(HIST("hEA_Perc_50_100_RhoShifted_TTRef"), rhoRefShifted, weight);
                   break;
 
                 case kEA80_100:
                   spectra.fill(HIST("hEA_Perc_80_100_Recoil_JetPt_Corr_RhoShifted_TTRef"), jetPtCorrShifted, weight);
-                  spectra.fill(HIST("hEA_Perc_80_100_RhoShifted_TTRef"), rhoRefShifted, weight);
                   break;
               }
             }
