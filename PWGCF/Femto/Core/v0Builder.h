@@ -770,8 +770,9 @@ class V0Builder
 
 struct ConfV0TablesDerivedToDerived : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("V0Tables");
-  o2::framework::Configurable<int> limitLambda{"limitLambda", 1, "At least this many lambdas need to be in the collision"};
-  o2::framework::Configurable<int> limitK0short{"limitK0short", 0, "At least this many k0short need to be in the collision"};
+  o2::framework::Configurable<int> limitLambda{"limitLambda", 1, "Require at least this many Lambdas in the collision. Set to 0 to skip Lambdas entirely (not written to output)."};
+
+  o2::framework::Configurable<int> limitK0short{"limitK0short", 0, "Require at least this many K0shorts in the collision. Set to 0 to skip K0shorts entirely (not written to output)."};
 };
 
 struct V0BuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {

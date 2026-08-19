@@ -779,8 +779,8 @@ class CascadeBuilder
 
 struct ConfCascadeTablesDerivedToDerived : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CascadeTables");
-  o2::framework::Configurable<int> limitXi{"limitXi", 1, "At least this many xi need to be in the collision"};
-  o2::framework::Configurable<int> limitOmega{"limitOmega", 0, "At least this many omega need to be in the collision"};
+  o2::framework::Configurable<int> limitXi{"limitXi", 1, "Require at least this many Xis in the collision. Set to 0 to skip Xis entirely (not written to output)."};
+  o2::framework::Configurable<int> limitOmega{"limitOmega", 0, "Require at least this many Omegas in the collision. Set to 0 to skip Omegas entirely (not written to output)."};
 };
 
 struct CascadeBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
