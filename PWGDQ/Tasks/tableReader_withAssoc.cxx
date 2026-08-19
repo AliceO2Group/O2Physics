@@ -12,6 +12,10 @@
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //   Configurable workflow for running several DQ or other PWG analyses
 
+// Included verbatim by the *_workflowSpec.cxx variants and precompiled into
+// TableReaderWithAssocPCH; without the guard the two collide.
+#pragma once
+
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/CutsLibrary.h"
