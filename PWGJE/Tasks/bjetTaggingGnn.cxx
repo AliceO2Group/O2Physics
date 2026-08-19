@@ -27,6 +27,7 @@
 #include "Common/DataModel/EventSelection.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -237,7 +238,7 @@ struct BjetTaggingGnn {
   std::vector<int> eventSelectionBitsSel8Full;
   std::vector<int> eventSelectionBitsSel8FullGood;
 
-  int trackSelectionBits;
+  int trackSelectionBits{};
 
   std::vector<double> jetRadiiValues;
 
@@ -393,7 +394,7 @@ struct BjetTaggingGnn {
     // h_jetEta/h_jetPhi/h_jetMass/h_Db/h2_nTracks_Db don't depend on jet pT - one shared copy regardless of
     // `withSub` (see addCoreJetHistograms()'s comment above).
     registry.add("h_jetEta", "", {HistType::kTH1F, {axisJetEta}}, callSumw2);
-    registry.add("h_jetPhi", "", {HistType::kTH1F, {{200, 0., 2. * M_PI, "#it{phi}_{jet}"}}});
+    registry.add("h_jetPhi", "", {HistType::kTH1F, {{200, 0., o2::constants::math::TwoPI, "#it{phi}_{jet}"}}});
     registry.add("h_jetMass", "", {HistType::kTH1F, {axisJetMass}});
     registry.add("h_Db", "", {HistType::kTH1F, {axisDbFine}});
     registry.add("h2_nTracks_Db", "", {HistType::kTH2F, {axisNTracks, axisDb}});
@@ -404,7 +405,7 @@ struct BjetTaggingGnn {
     }
 
     registry.add("h_gnnfeat_trackpT", "", {HistType::kTH1F, {{200, 0., 100., "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("h_gnnfeat_trackPhi", "", {HistType::kTH1F, {{200, 0., 2. * M_PI, "#it{#phi}"}}});
+    registry.add("h_gnnfeat_trackPhi", "", {HistType::kTH1F, {{200, 0., o2::constants::math::TwoPI, "#it{#phi}"}}});
     registry.add("h_gnnfeat_trackEta", "", {HistType::kTH1F, {{200, -0.9, 0.9, "#it{#eta}"}}});
     registry.add("h_gnnfeat_trackCharge", "", {HistType::kTH1F, {{3, -1., 2., "#it{q}"}}});
     registry.add("h_gnnfeat_trackDCAxy", "", {HistType::kTH1F, {{200, -5., 5., "DCA_{#it{xy}} (cm)"}}});
@@ -422,7 +423,7 @@ struct BjetTaggingGnn {
     if (doprocessDataTracks || doprocessMCDTracks) {
       registry.add("h_trackpT", "", {HistType::kTH1F, {axisTrackpT}}, callSumw2);
       registry.add("h_tracketa", "", {HistType::kTH1F, {{100, trackEtaMin, trackEtaMax, "#it{#eta}"}}}, callSumw2);
-      registry.add("h_trackphi", "", {HistType::kTH1F, {{100, 0.0, 2.0 * M_PI, "#it{#phi}"}}}, callSumw2);
+      registry.add("h_trackphi", "", {HistType::kTH1F, {{100, 0.0, o2::constants::math::TwoPI, "#it{#phi}"}}}, callSumw2);
       registry.add("h_dcaXY", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{xy}}| (cm)"}}}, callSumw2);
       registry.add("h_dcaZ", "", {HistType::kTH1F, {{200, 0., 4., "|DCA_{#it{z}}| (cm)"}}}, callSumw2);
       registry.add("hSparse_dca_pt", "", {HistType::kTHnSparseF, {{1000, 0., 100., "#it{p}_{T} (GeV/#it{c})"}, {200, 0., 4., "|DCA_{#it{z}}| (cm)"}, {200, 0., 4., "|DCA_{#it{xy}}| (cm)"}}}, callSumw2);
@@ -703,7 +704,7 @@ struct BjetTaggingGnn {
   bool isAcceptedJet(AnalysisJet const& jet)
   {
     if (jetAreaFractionMin > largeNegativeNumber) {
-      if (jet.area() < jetAreaFractionMin * M_PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
+      if (jet.area() < jetAreaFractionMin * o2::constants::math::PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
         return false;
       }
     }
@@ -888,6 +889,7 @@ struct BjetTaggingGnn {
   // jetFlavor: JetTaggingSpecies of the jet; nTracks: number of GNN-input constituents (reused by fillMCDJetHistogramsSV()).
   struct JetHistFillResult {
     int8_t jetFlavor;
+    // cppcheck-suppress unusedStructMember
     int nTracks;
   };
 
