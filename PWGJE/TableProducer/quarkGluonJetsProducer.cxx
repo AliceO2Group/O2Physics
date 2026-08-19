@@ -33,6 +33,7 @@
 #include <CommonConstants/MathConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
@@ -70,7 +71,7 @@ DECLARE_SOA_COLUMN(ZVertex, zVertex, float);
 DECLARE_SOA_COLUMN(NConstituents, nConstituents, int32_t);
 } // namespace qgmljet
 
-DECLARE_SOA_TABLE(QGMLJets, "AOD", "QGMLJETS",
+DECLARE_SOA_TABLE(QGMLJets, "AOD", "QGMLJET",
                   o2::soa::Index<>,
                   qgmljet::FlavorLabel,
                   qgmljet::LeadingPartonPdg,
@@ -242,7 +243,7 @@ struct QuarkGluonJetsProducer {
   }
 
   template <typename TrackT>
-  bool hasITSLayerHit(TrackT const& track, int layer) const
+  [[nodiscard]] bool hasITSLayerHit(TrackT const& track, int layer) const
   {
     return TESTBIT(track.itsClusterMap(), layer - 1);
   }
