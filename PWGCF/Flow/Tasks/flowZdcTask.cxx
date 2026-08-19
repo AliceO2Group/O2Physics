@@ -60,7 +60,7 @@ struct FlowZdcTask {
   Configurable<float> maxZn{"maxZn", 125.5, "Max ZN signal"};
   Configurable<float> maxZp{"maxZp", 125.5, "Max ZP signal"};
   // configs for process QA
-  Configurable<int> nBinsNch{"nBinsNch", 2501, "N bins Nch (|eta|<0.8)"};
+  Configurable<int> nBinsNch{"nBinsNch", 3501, "N bins Nch (|eta|<0.8)"};
   Configurable<int> nBinsAmpFT0{"nBinsAmpFT0", 100, "N bins FT0 amp"};
   Configurable<float> maxAmpFT0{"maxAmpFT0", 2500, "Max FT0 amp"};
   Configurable<float> maxAmpFT0M{"maxAmpFT0M", 2500, "Max FT0M amp"};
