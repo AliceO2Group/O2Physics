@@ -3363,7 +3363,7 @@ struct PidFlowPtCorr {
 
       float weight = 1.f;
       setParticleNUEWeight(weight, track, cent, pid);
-      const std::size_t index = static_cast<std::size_t>(pid - MyParticleType::kPion);
+      const auto index = static_cast<std::size_t>(pid - MyParticleType::kPion);
       const double particleWeight = weight;
       const double weight2 = particleWeight * particleWeight;
       const double pt = track.pt();
