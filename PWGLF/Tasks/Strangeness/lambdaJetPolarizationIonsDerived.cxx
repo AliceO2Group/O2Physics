@@ -1523,7 +1523,7 @@ struct lambdajetpolarizationionsderived {
       // Leading jet:
       // pt comes from the jetProxyByCollision pre-pass above.
       // (Collisions whose leading jet failed minLeadJetPt get the -999 sentinel, so they never enter this mixing)
-      auto getMixLeadJetPt = [this, &jetProxyByCollision](o2::aod::RingCollision const& col) {
+      auto getMixLeadJetPt = [&jetProxyByCollision](o2::aod::RingCollision const& col) {
         auto cacheIt = jetProxyByCollision.find(col.globalIndex());
         if (cacheIt == jetProxyByCollision.end() || !cacheIt->second.hasValidLeadingJet)
           return -999.f;
@@ -1559,7 +1559,7 @@ struct lambdajetpolarizationionsderived {
       }
 
       // Subleading jet:
-      auto getMixSubJetPt = [this, &jetProxyByCollision](o2::aod::RingCollision const& col) {
+      auto getMixSubJetPt = [&jetProxyByCollision](o2::aod::RingCollision const& col) {
         auto cacheIt = jetProxyByCollision.find(col.globalIndex());
         if (cacheIt == jetProxyByCollision.end() || !cacheIt->second.hasValidSubJet)
           return -999.f;
