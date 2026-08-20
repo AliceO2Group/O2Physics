@@ -72,10 +72,10 @@
 #include <fastjet/GhostedAreaSpec.hh>
 #include <fastjet/JetDefinition.hh>
 #include <fastjet/PseudoJet.hh>
-#include <sys/types.h>
 
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <map>
 #include <stdexcept>
 #include <string>
@@ -303,7 +303,6 @@ struct lambdajetpolarizationions {
   // For some binning variables:
   int mBinHasRingJet;
   int mBinHasRingV0;
-  std::map<std::string, std::string> metadata;
   o2::parameters::GRPMagField* grpmag = nullptr;
 
   // Histogram axes configuration:
@@ -1241,11 +1240,10 @@ struct lambdajetpolarizationions {
         fillEventSelectionQA(++selectionIdx, centrality);
       if (!rctConfigurations.cfgRCTLabel.value.empty() && !rctFlagsChecker(collision))
         return false;
-      if (fillHists)
+      if (fillHists) {
         fillEventSelectionQA(++selectionIdx, centrality);
 
-      // Filling histograms previously filled in fillReconstructedEventProperties here, to avoid re-accessing data:
-      if (fillHists) {
+        // Filling histograms previously filled in fillReconstructedEventProperties here, to avoid re-accessing data:
         histos.fill(HIST("hEventOccupancy"), collisionOccupancy);
         histos.fill(HIST("hCentralityVsOccupancy"), centrality, collisionOccupancy);
         histos.fill(HIST("hInteractionRate"), interactionRate);

@@ -36,7 +36,6 @@
 #include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
@@ -53,12 +52,18 @@
 #include <Math/Vector3Dfwd.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
+#include <TAxis.h>
+#include <TH1.h>
+#include <TH2.h>
 #include <TProfile.h>
+#include <TProfile2D.h>
 #include <TRandom3.h> // For perpendicular jet direction QAs
 
 #include <algorithm> // std::fill, for resetting the Delta Method accumulators
 #include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <random>
 #include <string>
@@ -1203,7 +1208,7 @@ struct lambdajetpolarizationionsderived {
   /// \note  Shared across leadP/leadJet/subJet: the caller resolves which proxy-specific procedure (e.g., LUT for evtMixing) applies.
   // Helper to modify the jet direction for QA and for spurious signal baseline removal tests:
   inline void applyProxyDistortion(ProxyState proxy, float minPtThreshold, ProxyCacheRef cache,
-                                   std::discrete_distribution<int>& etaDist, std::discrete_distribution<int>& phiDist, std::mt19937& rng)
+                                   const std::discrete_distribution<int>& etaDist, const std::discrete_distribution<int>& phiDist, std::mt19937& rng)
   {
     if (!fakePolSwitches.forcePerpToJet && !fakePolSwitches.forceJetDirectionSmudge && !fakePolSwitches.forceRandJet && !fakePolSwitches.forcePreviousJet && !fakePolSwitches.forceDatalikeJet && !fakePolSwitches.doMixedEventProxies) [[likely]] {
       return; // Skip this function if none of the modifications are actually being executed!
