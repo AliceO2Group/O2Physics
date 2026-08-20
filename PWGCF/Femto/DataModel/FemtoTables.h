@@ -57,7 +57,7 @@ constexpr float CentMin = 0.f;
 constexpr float CentMax = 100.f;
 constexpr float CentStep = 0.5f; // bin centrality in 0.5% steps
 
-constexpr float MultStep = 1.f;  // round multiplicity to nearest integer
+constexpr float MultStep = 1.f; // round multiplicity to nearest integer
 
 constexpr float QvecMin = 1e-3f; // close to 0, but not 0 due to log
 constexpr float QvecMax = 1e3f;  // usual range for qvector
@@ -595,11 +595,15 @@ DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::V0MaskType001); /
 }
 
 // columns for debug information
-DECLARE_SOA_COLUMN(MassAnti, massAnti, float);                 //! mass of particle using antiparticle hypothesis (for Lambda/AntiLambda extra table)
-DECLARE_SOA_COLUMN(MassLambda, massLambda, float);             //! Mass of Lambda (for k0short table)
-DECLARE_SOA_COLUMN(MassAntiLambda, massAntiLambda, float);     //! Mass of AntiLambda (for k0short table)
-DECLARE_SOA_COLUMN(MassK0short, massK0short, float);           //! Mass of K0short (for lambda/antitlambda table)
-DECLARE_SOA_COLUMN(CosPa, cosPa, float);                       //! Lambda daughter DCA at decay vertex
+DECLARE_SOA_COLUMN(MassAnti, massAnti, float);             //! mass of particle using antiparticle hypothesis (for Lambda/AntiLambda extra table)
+DECLARE_SOA_COLUMN(MassLambda, massLambda, float);         //! Mass of Lambda (for k0short table)
+DECLARE_SOA_COLUMN(MassAntiLambda, massAntiLambda, float); //! Mass of AntiLambda (for k0short table)
+DECLARE_SOA_COLUMN(MassK0short, massK0short, float);       //! Mass of K0short (for lambda/antitlambda table)
+DECLARE_SOA_COLUMN(CosPa, cosPa, float);                   //! Cosine of poiting angle
+DECLARE_SOA_DYNAMIC_COLUMN(Pa, pa,                         //! pointing angle
+                           [](float cosPa) -> float {
+                             return std::acos(cosPa);
+                           });
 DECLARE_SOA_COLUMN(DauDca, dauDca, float);                     //! Lambda daughter DCA at decay vertex
 DECLARE_SOA_COLUMN(StrangeTofPosDau, strangeTofPosDau, float); //! TOF Strangeness for positive daughter
 DECLARE_SOA_COLUMN(StrangeTofNegDau, strangeTofNegDau, float); //! TOF Strangeness for negative daughter
@@ -714,7 +718,8 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FLambdaExtras_001, "FLAMBDAEXTRA", 1, //! lam
                                    femtov0s::DecayVtxX,
                                    femtov0s::DecayVtxY,
                                    femtov0s::DecayVtxZ,
-                                   femtov0s::DecayVtx<femtov0s::DecayVtxX, femtov0s::DecayVtxY, femtov0s::DecayVtxZ>);
+                                   femtov0s::DecayVtx<femtov0s::DecayVtxX, femtov0s::DecayVtxY, femtov0s::DecayVtxZ>,
+                                   femtov0s::Pa<femtov0s::CosPa>);
 
 using FLambdaExtras = FLambdaExtras_001;
 
@@ -773,7 +778,8 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FK0shortExtras_001, "FK0SHORTEXTRA", 1, //! k
                                    femtov0s::DecayVtxX,
                                    femtov0s::DecayVtxY,
                                    femtov0s::DecayVtxZ,
-                                   femtov0s::DecayVtx<femtov0s::DecayVtxX, femtov0s::DecayVtxY, femtov0s::DecayVtxZ>);
+                                   femtov0s::DecayVtx<femtov0s::DecayVtxX, femtov0s::DecayVtxY, femtov0s::DecayVtxZ>,
+                                   femtov0s::Pa<femtov0s::CosPa>);
 
 using FK0shortExtras = FK0shortExtras_001;
 
@@ -956,9 +962,13 @@ DECLARE_SOA_COLUMN(Mask, mask, o2::analysis::femto::datatypes::CascadeMaskType00
 }
 
 // columns for cascad debug information
-DECLARE_SOA_COLUMN(MassXi, massXi, float);                         //! Mass of xi
-DECLARE_SOA_COLUMN(MassOmega, massOmega, float);                   //! Mass of omega
-DECLARE_SOA_COLUMN(CascadeCosPa, cascadeCosPa, float);             //! cosine of the poiting angle at decay vertex
+DECLARE_SOA_COLUMN(MassXi, massXi, float);             //! Mass of xi
+DECLARE_SOA_COLUMN(MassOmega, massOmega, float);       //! Mass of omega
+DECLARE_SOA_COLUMN(CascadeCosPa, cascadeCosPa, float); //! cosine of the poiting angle at decay vertex
+DECLARE_SOA_DYNAMIC_COLUMN(CascadePa, cascadePa,       //! pointing angle
+                           [](float cosPa) -> float {
+                             return std::acos(cosPa);
+                           });
 DECLARE_SOA_COLUMN(CascadeDauDca, cascadeDauDca, float);           //! Lambda daughter DCA at decay vertex
 DECLARE_SOA_COLUMN(CascadeTransRadius, cascadeTransRadius, float); //! Lambda transvers radius
 DECLARE_SOA_COLUMN(LambdaMass, lambdaMass, float);                 //! Lambda daughter mass
@@ -1070,7 +1080,8 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FXiExtras_001, "FXIEXTRA", 1, //! xi extra in
                                    femtocascades::LambdaDcaToPv,
                                    femtocascades::StrangeTofBachelor,
                                    femtov0s::StrangeTofPosDau,
-                                   femtov0s::StrangeTofNegDau);
+                                   femtov0s::StrangeTofNegDau,
+                                   femtocascades::CascadePa<femtocascades::CascadeCosPa>);
 using FXiExtras = FXiExtras_001;
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegas_001, "FOMEGA", 1, //! femto omegas
@@ -1135,7 +1146,8 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FOmegaExtras_001, "FOMEGAEXTRA", 1, //! omega
                                    femtocascades::LambdaDcaToPv,
                                    femtocascades::StrangeTofBachelor,
                                    femtov0s::StrangeTofPosDau,
-                                   femtov0s::StrangeTofNegDau);
+                                   femtov0s::StrangeTofNegDau,
+                                   femtocascades::CascadePa<femtocascades::CascadeCosPa>);
 using FOmegaExtras = FOmegaExtras_001;
 
 namespace femtocharmhadrons
