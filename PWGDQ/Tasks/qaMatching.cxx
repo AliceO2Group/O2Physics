@@ -17,6 +17,7 @@
 #include "PWGDQ/Core/VarManager.h"
 
 #include "Common/CCDB/RCTSelectionFlags.h"
+#include "Common/Core/fwdtrackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -83,8 +84,6 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
-#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -250,7 +249,7 @@ struct QaMatching {
     kMatchTypeWrongNonLeading = 5,
     kMatchTypeDecayNonLeading = 6,
     kMatchTypeFakeNonLeading = 7,
-    kMatchTypeUndefined
+    kMatchTypeUndefined = 8
   };
 
   static constexpr int GlobalTrackTypeMax = 2;
@@ -476,7 +475,7 @@ struct QaMatching {
 
   int mRunNumber{0}; // needed to detect if the run changed and trigger update of magnetic field
 
-  Service<o2::ccdb::BasicCCDBManager> ccdbManager;
+  Service<o2::ccdb::BasicCCDBManager> ccdbManager{};
   o2::ccdb::CcdbApi fCCDBApi;
 
   o2::aod::rctsel::RCTFlagsChecker rctChecker{"CBT_muon_glo", false, false, true};
@@ -714,7 +713,7 @@ struct QaMatching {
     o2::framework::HistPtr hDeltaEta;
     o2::framework::HistPtr hRabs;
 
-    MatchFeaturesHistos(std::string path, HistogramRegistry* registry, int numCandidates, double scoreMax)
+    MatchFeaturesHistos(const std::string& path, HistogramRegistry* registry, int numCandidates, double scoreMax)
     {
       AxisSpec indexAxis = {numCandidates, 0, static_cast<double>(numCandidates), "ranking index"};
       int matchTypeMax = static_cast<int>(kMatchTypeUndefined) + 1;
@@ -754,13 +753,13 @@ struct QaMatching {
     o2::framework::HistPtr histVsDeltaChi2;
     o2::framework::HistPtr histVsProdRanking;
 
-    MatchRankingHistos(std::string histName, std::string histTitle, HistogramRegistry* registry, int mftMultMax, int numCandidates)
+    MatchRankingHistos(const std::string& histName, const std::string& histTitle, HistogramRegistry* registry, int mftMultMax, int numCandidates)
     {
       AxisSpec pAxis = {100, 0, 100, "p (GeV/c)"};
       AxisSpec ptAxis = {100, 0, 10, "p_{T} (GeV/c)"};
       AxisSpec dzAxis = {100, -1, 4, "#Deltaz (cm)"};
-      AxisSpec trackMultAxis = {static_cast<int>(mftMultMax) / 10, 0, static_cast<double>(mftMultMax), "MFT track mult."};
-      AxisSpec matchAttemptsAxis = {static_cast<int>(mftMultMax) / 10, 0, static_cast<double>(mftMultMax), "match attempts"};
+      AxisSpec trackMultAxis = {mftMultMax / 10, 0, static_cast<double>(mftMultMax), "MFT track mult."};
+      AxisSpec matchAttemptsAxis = {mftMultMax / 10, 0, static_cast<double>(mftMultMax), "match attempts"};
       AxisSpec trackTypeAxis = {2, 0, 2, "MFT track type"};
       int matchTypeMax = static_cast<int>(kMatchTypeUndefined);
       AxisSpec matchTypeAxis = {matchTypeMax, 0, static_cast<double>(matchTypeMax), "match type"};
@@ -833,7 +832,7 @@ struct QaMatching {
     std::unique_ptr<EfficiencyPlotter> fMatchingEfficiencyPlotter;
     std::unique_ptr<EfficiencyPlotter> fFakeMatchingEfficiencyPlotter;
 
-    HistogramRegistry* registry;
+    HistogramRegistry* registry{nullptr};
 
     MatchingPlotter(const std::string& path,
                     HistogramRegistry* reg,
@@ -841,8 +840,8 @@ struct QaMatching {
                     int mftMultMax,
                     int numCandidates,
                     bool isMc)
+      : registry(reg)
     {
-      registry = reg;
       AxisSpec pAxis = {100, 0, 100, "p (GeV/c)"};
       AxisSpec ptAxis = {100, 0, 10, "p_{T} (GeV/c)"};
       AxisSpec dzAxis = {100, 0, 50, "#Deltaz (cm)"};
@@ -973,8 +972,9 @@ struct QaMatching {
   template <typename BC>
   void initCcdb(BC const& bc)
   {
-    if (mRunNumber == bc.runNumber())
+    if (mRunNumber == bc.runNumber()) {
       return;
+    }
 
     mRunNumber = bc.runNumber();
     std::map<std::string, std::string> metadata;
@@ -988,10 +988,10 @@ struct QaMatching {
       ccdbManager->get<TGeoManager>(geoPath);
     }
     o2::mch::TrackExtrap::setField();
-    auto* fieldB = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    auto* fieldB = dynamic_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     if (fieldB) {
-      double centerMft[3] = {0, 0, -61.4}; // Field at center of MFT
-      mBzAtMftCenter = fieldB->getBz(centerMft);
+      const std::array<double, 3> centerMft{0, 0, -61.4}; // Field at center of MFT
+      mBzAtMftCenter = fieldB->getBz(centerMft.data());
       // std::cout << "fieldB: " << (void*)fieldB << std::endl;
     }
   }
@@ -1110,8 +1110,8 @@ struct QaMatching {
       SVector5 mK(mftTrack.getX(), mftTrack.getY(), mftTrack.getPhi(),
                   mftTrack.getTanl(), mftTrack.getInvQPt()),
         rKKminus1;
-      SVector5 globalMuonTrackParameters = mchTrack.getParameters();
-      SMatrix55Sym globalMuonTrackCovariances = mchTrack.getCovariances();
+      const SVector5& globalMuonTrackParameters = mchTrack.getParameters();
+      const SMatrix55Sym& globalMuonTrackCovariances = mchTrack.getCovariances();
       vK(0, 0) = mftTrack.getCovariances()(0, 0);
       vK(1, 1) = mftTrack.getCovariances()(1, 1);
       vK(2, 2) = mftTrack.getCovariances()(2, 2);
@@ -1145,8 +1145,8 @@ struct QaMatching {
       SVector4 mK(mftTrack.getX(), mftTrack.getY(), mftTrack.getPhi(),
                   mftTrack.getTanl()),
         rKKminus1;
-      SVector5 globalMuonTrackParameters = mchTrack.getParameters();
-      SMatrix55Sym globalMuonTrackCovariances = mchTrack.getCovariances();
+      const SVector5& globalMuonTrackParameters = mchTrack.getParameters();
+      const SMatrix55Sym& globalMuonTrackCovariances = mchTrack.getCovariances();
       vK(0, 0) = mftTrack.getCovariances()(0, 0);
       vK(1, 1) = mftTrack.getCovariances()(1, 1);
       vK(2, 2) = mftTrack.getCovariances()(2, 2);
@@ -1176,8 +1176,8 @@ struct QaMatching {
       SMatrix25 hK;
       SMatrix22 vK;
       SVector2 mK(mftTrack.getX(), mftTrack.getY()), rKKminus1;
-      SVector5 globalMuonTrackParameters = mchTrack.getParameters();
-      SMatrix55Sym globalMuonTrackCovariances = mchTrack.getCovariances();
+      const SVector5& globalMuonTrackParameters = mchTrack.getParameters();
+      const SMatrix55Sym& globalMuonTrackCovariances = mchTrack.getCovariances();
       vK(0, 0) = mftTrack.getCovariances()(0, 0);
       vK(1, 1) = mftTrack.getCovariances()(1, 1);
       hK(0, 0) = 1.0;
@@ -1640,8 +1640,8 @@ struct QaMatching {
                                 collision.posX(),
                                 collision.posY(),
                                 collision.posZ(),
-                                collision.covXX(),
-                                collision.covYY());
+                                std::sqrt(collision.covXX()),
+                                std::sqrt(collision.covYY()));
   }
 
   o2::dataformats::GlobalFwdTrack propagateToVertexMft(o2::dataformats::GlobalFwdTrack muon,
@@ -1667,8 +1667,8 @@ struct QaMatching {
                                 collision.posX(),
                                 collision.posY(),
                                 collision.posZ(),
-                                collision.covXX(),
-                                collision.covYY());
+                                std::sqrt(collision.covXX()),
+                                std::sqrt(collision.covYY()));
   }
 
   template <typename TMCH, typename TMFT, class C>
@@ -1678,24 +1678,19 @@ struct QaMatching {
   {
     // extrapolation with MCH tools
     auto mchTrackAtMFT = mExtrap.FwdtoMCH(fwdToTrackPar(mchTrack));
-    o2::mch::TrackExtrap::extrapToVertexWithoutBranson(mchTrackAtMFT, mftTrack.z());
+    o2::mch::TrackExtrap::extrapToVertex(mchTrackAtMFT,
+                                         mftTrack.x(),
+                                         mftTrack.y(),
+                                         mftTrack.z(),
+                                         0, 0);
 
-    auto mftTrackProp = mExtrap.FwdtoMCH(fwdToTrackPar(mftTrack));
+    auto fwdTrackProp = fwdtrackutils::refitGlobalMuonCov(mExtrap.MCHtoFwd(mchTrackAtMFT), fwdToTrackPar(mftTrack));
 
-    // update global track momentum from the MCH track
-    double pRatio = mftTrackProp.p() / mchTrackAtMFT.p();
-    double newInvBendMom = mftTrackProp.getInverseBendingMomentum() * pRatio;
-    mftTrackProp.setInverseBendingMomentum(newInvBendMom);
-    mftTrackProp.setCharge(mchTrackAtMFT.getCharge());
+    auto geoMan = o2::base::GeometryManager::meanMaterialBudget(fwdTrackProp.getX(), fwdTrackProp.getY(), fwdTrackProp.getZ(), collision.posX(), collision.posY(), collision.posZ());
+    auto x2x0 = static_cast<float>(geoMan.meanX2X0);
+    fwdTrackProp.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, mBzAtMftCenter, x2x0);
 
-    o2::mch::TrackExtrap::extrapToVertex(mftTrackProp,
-                                         collision.posX(),
-                                         collision.posY(),
-                                         collision.posZ(),
-                                         collision.covXX(),
-                                         collision.covYY());
-
-    return mExtrap.MCHtoFwd(mftTrackProp);
+    return fwdTrackProp;
   }
 
   template <class MCP>
@@ -2164,8 +2159,8 @@ struct QaMatching {
               mchTrackIndex,
               mftTrackIndex,
               static_cast<int>(muonTrack.trackType()),
-              mftTrackProp,
-              mchTrackProp,
+              static_cast<const o2::track::TrackParCovFwd&>(mftTrackProp),
+              static_cast<const o2::track::TrackParCovFwd&>(mchTrackProp),
               matchScore,
               matchChi2,
               -1,
@@ -2180,8 +2175,8 @@ struct QaMatching {
               mchTrackIndex,
               mftTrackIndex,
               static_cast<int>(muonTrack.trackType()),
-              mftTrackProp,
-              mchTrackProp,
+              static_cast<const o2::track::TrackParCovFwd&>(mftTrackProp),
+              static_cast<const o2::track::TrackParCovFwd&>(mchTrackProp),
               matchScore,
               matchChi2,
               -1,
@@ -2812,8 +2807,8 @@ struct QaMatching {
             mchIndex,
             mftTrack.globalIndex(),
             candidate.trackType,
-            mftTrackProp,
-            mchTrackProp,
+            static_cast<const o2::track::TrackParCovFwd&>(mftTrackProp),
+            static_cast<const o2::track::TrackParCovFwd&>(mchTrackProp),
             matchScore,
             matchChi2,
             -1,
@@ -2827,8 +2822,8 @@ struct QaMatching {
             mchIndex,
             mftTrack.globalIndex(),
             candidate.trackType,
-            mftTrackProp,
-            mchTrackProp,
+            static_cast<const o2::track::TrackParCovFwd&>(mftTrackProp),
+            static_cast<const o2::track::TrackParCovFwd&>(mchTrackProp),
             matchScore,
             matchChi2,
             -1,
@@ -2865,7 +2860,7 @@ struct QaMatching {
                        TMUON const& muonTracks,
                        TMFT const& mftTracks,
                        CMFT const& mftCovs,
-                       std::string label,
+                       const std::string& label,
                        const std::vector<std::pair<int64_t, int64_t>>& matchablePairs,
                        const MatchingCandidates& matchingCandidates,
                        MatchingCandidates& newMatchingCandidates)
@@ -2898,7 +2893,7 @@ struct QaMatching {
                      TMUON const& muonTracks,
                      TMFT const& mftTracks,
                      CMFT const& mftCovs,
-                     std::string label,
+                     const std::string& label,
                      const std::vector<std::pair<int64_t, int64_t>>& matchablePairs,
                      const MatchingCandidates& matchingCandidates,
                      MatchingCandidates& newMatchingCandidates)
@@ -2958,8 +2953,8 @@ struct QaMatching {
             mchIndex,
             mftTrack.globalIndex(),
             candidate.trackType,
-            mftTrackProp,
-            mchTrackProp,
+            static_cast<const o2::track::TrackParCovFwd&>(mftTrackProp),
+            static_cast<const o2::track::TrackParCovFwd&>(mchTrackProp),
             matchScore,
             matchChi2,
             -1,
@@ -2973,8 +2968,8 @@ struct QaMatching {
             mchIndex,
             mftTrack.globalIndex(),
             candidate.trackType,
-            mftTrackProp,
-            mchTrackProp,
+            static_cast<const o2::track::TrackParCovFwd&>(mftTrackProp),
+            static_cast<const o2::track::TrackParCovFwd&>(mchTrackProp),
             matchScore,
             matchChi2,
             -1,
