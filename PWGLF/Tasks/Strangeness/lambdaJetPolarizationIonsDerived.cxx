@@ -1469,7 +1469,8 @@ struct lambdajetpolarizationionsderived {
     std::unordered_map<int64_t, MixedProxyInfo> mixedSubJetByCollision;
     // First we build lookup tables based on current dataframe's collisions (connects pairs of jet proxies from similar collisions):
     // (these proxies may come from collisions with no valid Lambdas, by construction, enabling more mixes)
-    if (fakePolSwitches.doMixedEventProxies) { // This is performed out of the resampling loop, so nProxyResamples will not resample event mixing candidates
+    // (This is performed out of the resampling loop, so nProxyResamples will not resample event mixing candidates)
+    if (fakePolSwitches.doMixedEventProxies) {
       auto getMixCentrality = [this](o2::aod::RingCollision const& col) { return this->getCentrality(col); }; // Already filtered even though referencing only RingCollision, not an iterator to Filtered table
 
       // For the leading particle:
@@ -1485,7 +1486,8 @@ struct lambdajetpolarizationionsderived {
                                     true}; // Ignore overflows true
 
       // SameKindPair defaults to CombinationsBlockStrictlyUpperSameIndexPolicy, so no same-event mixing should happen:
-      SameKindPair<o2::aod::RingCollisions, o2::aod::RingLeadPs, LeadPBinningType> leadPPair{ // Already filtered even though referencing only RingCollision, so no need to access the filtered table
+      //(Already filtered by Zvtx even though we call by aod::RingCollisions, so no need to access the filtered table)
+      SameKindPair<o2::aod::RingCollisions, o2::aod::RingLeadPs, LeadPBinningType> leadPPair{
         leadPBinning, fakePolSwitches.mixedEventWindowSize, -1, collisions, std::make_tuple(leadPs), &mixCache};
 
       std::unordered_map<int64_t, int> leadPCandidateCount;
