@@ -34,6 +34,7 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -62,7 +63,7 @@ struct Alice3Centrality {
 
   void init(InitContext&)
   {
-    const AxisSpec axisMult{maxMult.value > DefaultMult ? (int)DefaultMult : (int)maxMult, 0, maxMult, "Reconstructed tracks"};
+    const AxisSpec axisMult{maxMult.value > DefaultMult ? static_cast<int>(DefaultMult) : static_cast<int>(maxMult), 0, maxMult, "Reconstructed tracks"};
     const AxisSpec axisCent{150, 0, 150, "Percentile"};
     TString tit = Form("%.3f < #it{#eta} < %.3f", minEta.value, maxEta.value);
     histos.add("centrality/numberOfTracks", tit, kTH1D, {axisMult});
