@@ -230,6 +230,9 @@ struct Kstarqa {
   ConfigurableAxis ptAxisKstar{"ptAxisKstar", {200, 0.0f, 20.0f}, "Kstar pT axis"};
   ConfigurableAxis binsImpactPar{"binsImpactPar", {100, 0, 25}, "Binning of the impact parameter axis"};
   ConfigurableAxis axisNch{"axisNch", {100, 0.0f, 100.0f}, "Number of charged particles in |y| < 0.5"};
+  ConfigurableAxis etaAxis = {"etaAxis", {100, -1.0f, 1.0f}, "Eta axis"};
+  ConfigurableAxis phiAxis = {"phiAxis", {100, -3.15f, 3.15f}, "Phi axis"};
+  ConfigurableAxis subAxis = {"subAxis", {100, -1.0f, 1.0f}, "Difference axis"};
 
   // // Event plane configurables
   // Configurable<bool> boostDaugter1{"boostDaugter1", false, "Boost daughter Kaon in the COM frame"};
@@ -390,10 +393,6 @@ struct Kstarqa {
       hInvMass.add("MCcorrections/MultiplicityGen", "Multiplicity in generated MC", kTH1F, {multiplicityAxis});
       hInvMass.add("MCcorrections/hImpactParametervsMultiplicity", "Impact parameter vs multiplicity in reconstructed MC", kTH2F, {{impactParAxis}, {multiplicityAxis}});
     }
-
-    ConfigurableAxis etaAxis = {"etaAxis", {100, -1.0f, 1.0f}, "Eta axis"};
-    ConfigurableAxis phiAxis = {"phiAxis", {100, -3.15f, 3.15f}, "Phi axis"};
-    ConfigurableAxis subAxis = {"subAxis", {100, -1.0f, 1.0f}, "Difference axis"};
 
     if (doprocessRecPhi) {
       hInvMass.add("PhiMCChecks", "PhiMCChecks", kTHnSparseF, {ptAxis, etaAxis, phiAxis, subAxis, subAxis, subAxis}); // pT, eta, phi, deltaEta, deltaPhi, deltaR
