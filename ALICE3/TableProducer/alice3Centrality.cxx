@@ -33,14 +33,13 @@
 #include <TString.h>
 
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <string>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-constexpr float DefaultMult = 10000.0f;
 
 struct Alice3Centrality {
   Produces<aod::CentRun2V0Ms> cent;
@@ -50,11 +49,14 @@ struct Alice3Centrality {
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", 1, "latest acceptable timestamp of creation for the object"};
   Configurable<float> minEta{"minEta", -4.0f, "Minimum eta in range"};
   Configurable<float> maxEta{"maxEta", 4.0f, "Maximum eta in range"};
-  Configurable<float> maxMult{"maxMult", 10000.0f, "Maximum multiplicity in range"};
   Configurable<float> maxDCA{"maxDCA", 0.0025f, "Max DCAxy and DCAz for counted tracks"};
   Configurable<float> vtxZ{"vtxZ", 10.0f, "Max event vertex z position allowed"};
   Configurable<int> minNumContrib{"minNumContrib", 1, "Minimum required number of primary vertex contributors"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/ALICE3/Centrality", "path to the ccdb object"};
+
+  ConfigurableAxis axisMult{"axisMult", {10000, 0, 10000}, "Reconstructed tracks"};
+  ConfigurableAxis axisCent{"axisCent", {150, 0, 150}, "Percentile"};
 
   Filter trackFilter = (aod::track::eta >= minEta) && (aod::track::eta <= maxEta) && (nabs(aod::track::dcaXY) <= maxDCA) && (nabs(aod::track::dcaZ) <= maxDCA);
 
@@ -63,8 +65,6 @@ struct Alice3Centrality {
 
   void init(InitContext&)
   {
-    const AxisSpec axisMult{maxMult.value > DefaultMult ? static_cast<int>(DefaultMult) : static_cast<int>(maxMult), 0, maxMult, "Reconstructed tracks"};
-    const AxisSpec axisCent{150, 0, 150, "Percentile"};
     TString tit = Form("%.3f < #it{#eta} < %.3f", minEta.value, maxEta.value);
     histos.add("centrality/numberOfTracks", tit, kTH1D, {axisMult});
     histos.add("centrality/centralityDistribution", "Centrality test", kTH1D, {axisCent});
@@ -77,7 +77,7 @@ struct Alice3Centrality {
   void process(const o2::aod::Collision& collision, const soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA>>& tracks)
   {
     if (!centralityLoaded) {
-      hCumMultALICE3 = ccdb->getForTimeStamp<TH1D>("Analysis/ALICE3/Centrality", ccdbNoLaterThan.value);
+      hCumMultALICE3 = ccdb->getForTimeStamp<TH1D>(ccdbPath.value, ccdbNoLaterThan.value);
       centralityLoaded = true;
       LOGF(info, "ALICE 3 centrality calibration loaded!");
     }
