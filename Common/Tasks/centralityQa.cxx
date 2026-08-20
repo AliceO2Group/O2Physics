@@ -206,7 +206,7 @@ struct CentralityQa {
     } else {
       histos.add("hCentFV0A", ";FV0A centrality (%)", kTH1D, {{nBins, 0, 105.}});
       histos.add("hCentFT0M", ";FT0M centrality (%)", kTH1D, {{nBins, 0, 105.}});
-      histos.add("hCentFT0MVar3", ";FT0M centrality (%)", kTH1D, {{nBins, 0, 105.}});
+      histos.add("hCentFT0MOuterA", ";FT0M centrality (%)", kTH1D, {{nBins, 0, 105.}});
       histos.add("hCentFT0A", ";FT0A centrality (%)", kTH1D, {{nBins, 0, 105.}});
       histos.add("hCentFT0C", ";FT0C centrality (%)", kTH1D, {{nBins, 0, 105.}});
       histos.add("hCentFT0CVar1", ";FT0CVar1 centrality (%)", kTH1D, {{nBins, 0, 105.}});
@@ -221,7 +221,7 @@ struct CentralityQa {
       // profiles of midrapidity multiplicity density
       histos.add("hCentProfileFV0A", ";FV0A centrality (%)", kTProfile, {{nBins, 0, 105.}});
       histos.add("hCentProfileFT0M", ";FT0M centrality (%)", kTProfile, {{nBins, 0, 105.}});
-      histos.add("hCentProfileFT0MVar3", ";FT0M centrality (%)", kTProfile, {{nBins, 0, 105.}});
+      histos.add("hCentProfileFT0MOuterA", ";FT0M centrality (%)", kTProfile, {{nBins, 0, 105.}});
       histos.add("hCentProfileFT0A", ";FT0A centrality (%)", kTProfile, {{nBins, 0, 105.}});
       histos.add("hCentProfileFT0C", ";FT0C centrality (%)", kTProfile, {{nBins, 0, 105.}});
       histos.add("hCentProfileFT0CVar1", ";FT0CVar1 centrality (%)", kTProfile, {{nBins, 0, 105.}});
@@ -235,7 +235,7 @@ struct CentralityQa {
 
       histos.add("hMultEta05VsCentFV0A", ";FV0A centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
       histos.add("hMultEta05VsCentFT0M", ";FT0M centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
-      histos.add("hMultEta05VsCentFT0MVar3", ";FT0M centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
+      histos.add("hMultEta05VsCentFT0MOuterA", ";FT0M centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
       histos.add("hMultEta05VsCentFT0A", ";FT0A centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
       histos.add("hMultEta05VsCentFT0C", ";FT0C centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
       histos.add("hMultEta05VsCentFT0CVar1", ";FT0CVar1 centrality (%); Multiplicity PV contributors (|#it{#eta}| < 0.5)", kTH2D, {{nBins, 0, 105.}, axisMultiplicityPV});
@@ -688,17 +688,17 @@ struct CentralityQa {
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FT0M, "Process with Run 3 FT0M estimator", false);
 
-  void processRun3_FT0Mvar3(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0MVariant3s>::iterator const& col)
+  void processRun3_FT0MOuterA(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0MOuterAs>::iterator const& col)
   {
     if (!isCollisionAccepted(col)) {
       return;
     }
-    LOGF(debug, "centFT0MVar3=%.0f", col.centFT0MVariant3());
-    histos.fill(HIST("hCentFT0MVar3"), col.centFT0MVariant3());
-    histos.fill(HIST("hCentProfileFT0MVar3"), col.centFT0MVariant3(), col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0MVar3"), col.centFT0MVariant3(), col.multNTracksPVetaHalf());
+    LOGF(debug, "centFT0MOuterA=%.0f", col.centFT0MOuterA());
+    histos.fill(HIST("hCentFT0MOuterA"), col.centFT0MOuterA());
+    histos.fill(HIST("hCentProfileFT0MOuterA"), col.centFT0MOuterA(), col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsCentFT0MOuterA"), col.centFT0MOuterA(), col.multNTracksPVetaHalf());
   }
-  PROCESS_SWITCH(CentralityQa, processRun3_FT0Mvar3, "Process with Run 3 FT0M estimator", false);
+  PROCESS_SWITCH(CentralityQa, processRun3_FT0MOuterA, "Process with Run 3 FT0M estimator", false);
 
   void processRun3_FT0A(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0As>::iterator const& col)
   {

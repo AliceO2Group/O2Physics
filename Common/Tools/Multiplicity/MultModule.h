@@ -100,7 +100,7 @@ static const std::vector<std::string> tableNames{
   "BCCentFT0Cs",
   "CentFT0MAnchorCols",
   "CentFT0MAnchorBCs",
-  "CentFT0MVariant3s"};
+  "CentFT0MOuterAs"};
 
 static constexpr int nTablesConst = 42;
 static const std::vector<std::string> parameterNames{"enable"};
@@ -191,7 +191,7 @@ enum tableIndex { kFV0Mults,       // standard
                   kBCCentFT0Cs,        // bc centrality
                   kCentFT0MAnchorCols, // standard Run 3
                   kCentFT0MAnchorBCs,  // standard Run 3
-                  kCentFT0MVariant3s, // standard Run 3
+                  kCentFT0MOuterAs,    // standard Run 3
                   kNTables };
 
 struct products : o2::framework::ProducesGroup {
@@ -229,7 +229,7 @@ struct products : o2::framework::ProducesGroup {
   o2::framework::Produces<aod::CentRun2CL1s> centRun2CL1;
   o2::framework::Produces<aod::CentFV0As> centFV0A;
   o2::framework::Produces<aod::CentFT0Ms> centFT0M;
-  o2::framework::Produces<aod::CentFT0MVariant3s> centFT0MVariant3;
+  o2::framework::Produces<aod::CentFT0MOuterAs> centFT0MOuterA;
   o2::framework::Produces<aod::CentFT0As> centFT0A;
   o2::framework::Produces<aod::CentFT0Cs> centFT0C;
   o2::framework::Produces<aod::CentFT0CVariant1s> centFT0CVariant1;
@@ -457,7 +457,7 @@ class MultModule
   CalibrationInfo ft0mInfo = CalibrationInfo("FT0");
   CalibrationInfo ft0mColInfo = CalibrationInfo("FT0AnchorCol");
   CalibrationInfo ft0mBcInfo = CalibrationInfo("FT0AnchorBc");
-  CalibrationInfo ft0mVariant3Info = CalibrationInfo("FT0Mvar3");
+  CalibrationInfo FT0MOuterAInfo = CalibrationInfo("FT0MOuterA");
   CalibrationInfo ft0aInfo = CalibrationInfo("FT0A");
   CalibrationInfo ft0cInfo = CalibrationInfo("FT0C");
   CalibrationInfo ft0cVariant1Info = CalibrationInfo("FT0Cvar1");
@@ -1237,7 +1237,7 @@ class MultModule
       ft0mInfo.mCalibrationStored = false;
       ft0mColInfo.mCalibrationStored = false;
       ft0mBcInfo.mCalibrationStored = false;
-      ft0mVariant3Info.mCalibrationStored = false;
+      FT0MOuterAInfo.mCalibrationStored = false;
       ft0aInfo.mCalibrationStored = false;
       ft0cInfo.mCalibrationStored = false;
       ft0cVariant1Info.mCalibrationStored = false;
@@ -1279,8 +1279,8 @@ class MultModule
           getccdb(ft0mColInfo, internalOpts.generatorName);
         if (internalOpts.mEnabledTables[kCentFT0MAnchorBCs])
           getccdb(ft0mBcInfo, internalOpts.generatorName);
-        if (internalOpts.mEnabledTables[kCentFT0MVariant3s])
-          getccdb(ft0mVariant3Info, internalOpts.generatorName);
+        if (internalOpts.mEnabledTables[kCentFT0MOuterAs])
+          getccdb(FT0MOuterAInfo, internalOpts.generatorName);
         if (internalOpts.mEnabledTables[kCentFT0As] || internalOpts.mEnabledTables[kBCCentFT0As])
           getccdb(ft0aInfo, internalOpts.generatorName);
         if (internalOpts.mEnabledTables[kCentFT0Cs] || internalOpts.mEnabledTables[kBCCentFT0Cs])
@@ -1369,8 +1369,8 @@ class MultModule
           populateTable(cursors.centFT0MAnchorCol, ft0mColInfo, mults[iEv].multFT0AZeq + mults[iEv].multFT0CZeq, isInelGt0);
         if (internalOpts.mEnabledTables[kCentFT0Ms])
           populateTable(cursors.centFT0MAnchorBC, ft0mBcInfo, mults[iEv].multFT0AZeq + mults[iEv].multFT0CZeq, isInelGt0);
-        if (internalOpts.mEnabledTables[kCentFT0MVariant3s])
-          populateTable(cursors.centFT0MVariant3, ft0mVariant3Info, mults[iEv].multFT0AOuterZeq + mults[iEv].multFT0CZeq, isInelGt0);
+        if (internalOpts.mEnabledTables[kCentFT0MOuterAs])
+          populateTable(cursors.centFT0MOuterA, FT0MOuterAInfo, mults[iEv].multFT0AOuterZeq + mults[iEv].multFT0CZeq, isInelGt0);
         if (internalOpts.mEnabledTables[kCentFT0As])
           populateTable(cursors.centFT0A, ft0aInfo, mults[iEv].multFT0AZeq, isInelGt0);
         if (internalOpts.mEnabledTables[kCentFT0Cs])
