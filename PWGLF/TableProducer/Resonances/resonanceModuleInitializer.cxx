@@ -16,12 +16,15 @@
 /// \since  Aug.18 2026
 
 #include "PWGLF/DataModel/LFResonanceTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/collisionCuts.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
@@ -41,6 +44,7 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
@@ -64,6 +68,8 @@ using namespace o2::aod::rctsel;
  * for resonance studies. It handles event selection, centrality estimation,
  * and QA histogram filling.
  */
+// Framework Service members are populated by the analysis framework.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct ResonanceModuleInitializer {
   static constexpr double BzOverrideThreshold = -990.;
   static constexpr double MinimumNonzeroBz = 1.e-5;
@@ -209,8 +215,9 @@ struct ResonanceModuleInitializer {
    */
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc) // Simple copy from LambdaKzeroFinder.cxx
   {
-    if (EventConfig.cfgBypassCCDB)
+    if (EventConfig.cfgBypassCCDB) {
       return;
+    }
     if (mRunNumber == bc.runNumber()) {
       return;
     }
@@ -218,7 +225,6 @@ struct ResonanceModuleInitializer {
     // In case override, don't proceed, please - no CCDB access required
     if (EventConfig.dBzInput > BzOverrideThreshold) {
       dBz = EventConfig.dBzInput;
-      ;
       o2::parameters::GRPMagField grpmag;
       if (std::fabs(dBz) > MinimumNonzeroBz) {
         grpmag.setL3Current(30000.f / (dBz / 5.0f));
@@ -229,8 +235,8 @@ struct ResonanceModuleInitializer {
     }
 
     auto run3grpTimestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(CCDB.grpPath, run3grpTimestamp);
-    o2::parameters::GRPMagField* grpmag = 0x0;
+    auto* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(CCDB.grpPath, run3grpTimestamp);
+    o2::parameters::GRPMagField* grpmag = nullptr;
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
       // Fetch magnetic field from ccdb for current collision
@@ -262,13 +268,15 @@ struct ResonanceModuleInitializer {
   bool isTrueINEL0(MCPart const& mcparts)
   {
     for (auto const& mcparticle : mcparts) {
-      if (!mcparticle.isPhysicalPrimary())
+      if (!mcparticle.isPhysicalPrimary()) {
         continue;
+      }
       auto p = pdg->GetParticle(mcparticle.pdgCode());
       if (p != nullptr) {
         if (std::abs(p->Charge()) >= MinimumChargedParticleCharge) {
-          if (std::abs(mcparticle.eta()) < 1)
+          if (std::abs(mcparticle.eta()) < 1) {
             return true;
+          }
         }
       }
     }
@@ -280,23 +288,23 @@ struct ResonanceModuleInitializer {
    *
    * @tparam ResoColl Type of resonance collision
    * @tparam isMC Boolean indicating if it's MC
-   * @param ResoEvents Resonance events
+   * @param resoEvents Resonance events
    * @return Centrality value
    */
   template <typename ResoColl, bool isMC = false>
-  float centEst(ResoColl ResoEvents)
+  float centEst(ResoColl const& resoEvents)
   {
     float returnValue = -999.0;
     switch (multEstimator) {
       case 0:
-        returnValue = ResoEvents.centFT0M();
+        returnValue = resoEvents.centFT0M();
         break;
       case 1:
         if constexpr (isMC) {
           LOG(fatal) << "CentFT0C is not available for MC";
           return returnValue;
         } else {
-          returnValue = ResoEvents.centFT0C();
+          returnValue = resoEvents.centFT0C();
           break;
         }
       case 2:
@@ -304,11 +312,11 @@ struct ResonanceModuleInitializer {
           LOG(fatal) << "CentFT0A is not available for MC";
           return returnValue;
         } else {
-          returnValue = ResoEvents.centFT0A();
+          returnValue = resoEvents.centFT0A();
           break;
         }
       default:
-        returnValue = ResoEvents.centFT0M();
+        returnValue = resoEvents.centFT0M();
         break;
     }
     return returnValue;
@@ -394,42 +402,57 @@ struct ResonanceModuleInitializer {
     if (EventConfig.cfgFillQA) {
       // QA for trigger efficiency
       qaRegistry.fill(HIST("Event/hMCEventIndices"), mcCent, aod::resocollision::kINEL);
-      if (inVtx10)
+      if (inVtx10) {
         qaRegistry.fill(HIST("Event/hMCEventIndices"), mcCent, aod::resocollision::kINEL10);
-      if (isTrueINELgt0)
+      }
+      if (isTrueINELgt0) {
         qaRegistry.fill(HIST("Event/hMCEventIndices"), mcCent, aod::resocollision::kINELg0);
-      if (inVtx10 && isTrueINELgt0)
+      }
+      if (inVtx10 && isTrueINELgt0) {
         qaRegistry.fill(HIST("Event/hMCEventIndices"), mcCent, aod::resocollision::kINELg010);
+      }
 
       // TVX MB trigger
-      if (isTriggerTVX)
+      if (isTriggerTVX) {
         qaRegistry.fill(HIST("Event/hMCEventIndices"), mcCent, aod::resocollision::kTrig);
-      if (isTriggerTVX && inVtx10)
+      }
+      if (isTriggerTVX && inVtx10) {
         qaRegistry.fill(HIST("Event/hMCEventIndices"), mcCent, aod::resocollision::kTrig10);
-      if (isTriggerTVX && isTrueINELgt0)
+      }
+      if (isTriggerTVX && isTrueINELgt0) {
         qaRegistry.fill(HIST("Event/hMCEventIndices"), mcCent, aod::resocollision::kTrigINELg0);
-      if (isTriggerTVX && isTrueINELgt0 && inVtx10)
+      }
+      if (isTriggerTVX && isTrueINELgt0 && inVtx10) {
         qaRegistry.fill(HIST("Event/hMCEventIndices"), mcCent, aod::resocollision::kTrigINELg010);
+      }
 
       // Sel8 event selection
-      if (isSel8)
+      if (isSel8) {
         qaRegistry.fill(HIST("Event/hMCEventIndices"), mcCent, aod::resocollision::kSel8);
-      if (isSel8 && inVtx10)
+      }
+      if (isSel8 && inVtx10) {
         qaRegistry.fill(HIST("Event/hMCEventIndices"), mcCent, aod::resocollision::kSel810);
-      if (isSel8 && isTrueINELgt0)
+      }
+      if (isSel8 && isTrueINELgt0) {
         qaRegistry.fill(HIST("Event/hMCEventIndices"), mcCent, aod::resocollision::kSel8INELg0);
-      if (isSel8 && isTrueINELgt0 && inVtx10)
+      }
+      if (isSel8 && isTrueINELgt0 && inVtx10) {
         qaRegistry.fill(HIST("Event/hMCEventIndices"), mcCent, aod::resocollision::kSel8INELg010);
+      }
 
       // CollisionCuts selection
-      if (isSelected)
+      if (isSelected) {
         qaRegistry.fill(HIST("Event/hMCEventIndices"), mcCent, aod::resocollision::kAllCuts);
-      if (isSelected && inVtx10)
+      }
+      if (isSelected && inVtx10) {
         qaRegistry.fill(HIST("Event/hMCEventIndices"), mcCent, aod::resocollision::kAllCuts10);
-      if (isSelected && isTrueINELgt0)
+      }
+      if (isSelected && isTrueINELgt0) {
         qaRegistry.fill(HIST("Event/hMCEventIndices"), mcCent, aod::resocollision::kAllCutsINELg0);
-      if (isSelected && isTrueINELgt0 && inVtx10)
+      }
+      if (isSelected && isTrueINELgt0 && inVtx10) {
         qaRegistry.fill(HIST("Event/hMCEventIndices"), mcCent, aod::resocollision::kAllCutsINELg010);
+      }
     }
   }
 
@@ -455,15 +478,16 @@ struct ResonanceModuleInitializer {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     // Default event selection
-    if (!colCuts.isSelected(collision, EventConfig.cfgFillQA))
+    if (!colCuts.isSelected(collision, EventConfig.cfgFillQA)) {
       return;
-    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
+    }
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision)) {
       return;
+    }
     if (EventConfig.cfgFillQA) {
       colCuts.fillQA(collision);
     }
-    bool isRecINELgt0 = 0;
-    isRecINELgt0 = collision.isInelGt0();
+    const bool isRecINELgt0 = collision.isInelGt0();
     centrality = centEst(collision);
 
     resoCollisions(collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf(), collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, isRecINELgt0);
@@ -482,8 +506,9 @@ struct ResonanceModuleInitializer {
   {
     // auto bc = collision.bc_as<aod::BCsWithRun2Info>();
     // Default event selection
-    if (!colCuts.isSelected(collision, EventConfig.cfgFillQA))
+    if (!colCuts.isSelected(collision, EventConfig.cfgFillQA)) {
       return;
+    }
     if (EventConfig.cfgFillQA) {
       colCuts.fillQARun2(collision);
     }
@@ -504,8 +529,9 @@ struct ResonanceModuleInitializer {
   void processRun3MC(soa::Filtered<aod::ResoCollisionCandidatesMC>::iterator const& collision,
                      aod::McParticles const& mcParticles, GenMCCollisions const&)
   {
-    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision)) {
       return;
+    }
     fillMCCollision<false>(collision, mcParticles);
   }
   PROCESS_SWITCH(ResonanceModuleInitializer, processRun3MC, "process MC for RUN3", false);
@@ -555,19 +581,19 @@ struct ResonanceDaughterInitializer {
   Preslice<aod::ResoV0CandidatesMC> v0sMCPerCollision = aod::v0data::collisionId;
   Preslice<aod::ResoCascadesCandidates> cascadesPerCollision = aod::cascdata::collisionId;
   Preslice<aod::ResoCascadesCandidatesMC> cascadesMCPerCollision = aod::cascdata::collisionId;
-  Produces<aod::ResoTracks> reso2trks;                      ///< Output table for resonance tracks
-  Produces<aod::ResoTrackTracks> resoTrackTracks;           ///< Output table for original track row IDs
-  Produces<aod::ResoMicroTracks> reso2microtrks;            ///< Output table for resonance microtracks
-  Produces<aod::ResoMicroTrackTracks> resoMicroTrackTracks; ///< Output table for original microtrack row IDs
-  Produces<aod::ResoUltraMicroTracks> reso2ultramicrotrks;  ///< Output table for resonance ultra-microtracks
+  Produces<aod::ResoTracks> reso2trks;                                ///< Output table for resonance tracks
+  Produces<aod::ResoTrackTracks> resoTrackTracks;                     ///< Output table for original track row IDs
+  Produces<aod::ResoMicroTracks> reso2microtrks;                      ///< Output table for resonance microtracks
+  Produces<aod::ResoMicroTrackTracks> resoMicroTrackTracks;           ///< Output table for original microtrack row IDs
+  Produces<aod::ResoUltraMicroTracks> reso2ultramicrotrks;            ///< Output table for resonance ultra-microtracks
   Produces<aod::ResoUltraMicroTrackTracks> resoUltraMicroTrackTracks; ///< Output table for original ultra-microtrack row IDs
-  Produces<aod::ResoMCTracks> reso2mctracks;                ///< Output table for MC resonance tracks
-  Produces<aod::ResoV0s> reso2v0s;                          ///< Output table for resonance V0s
-  Produces<aod::ResoV0V0s> resoV0V0s;                       ///< Output table for original V0 row IDs
-  Produces<aod::ResoMCV0s> reso2mcv0s;                      ///< Output table for MC resonance V0s
-  Produces<aod::ResoCascades> reso2cascades;                ///< Output table for resonance cascades
-  Produces<aod::ResoCascadeCascades> resoCascadeCascades;   ///< Output table for original cascade row IDs
-  Produces<aod::ResoMCCascades> reso2mccascades;            ///< Output table for MC resonance cascades
+  Produces<aod::ResoMCTracks> reso2mctracks;                          ///< Output table for MC resonance tracks
+  Produces<aod::ResoV0s> reso2v0s;                                    ///< Output table for resonance V0s
+  Produces<aod::ResoV0V0s> resoV0V0s;                                 ///< Output table for original V0 row IDs
+  Produces<aod::ResoMCV0s> reso2mcv0s;                                ///< Output table for MC resonance V0s
+  Produces<aod::ResoCascades> reso2cascades;                          ///< Output table for resonance cascades
+  Produces<aod::ResoCascadeCascades> resoCascadeCascades;             ///< Output table for original cascade row IDs
+  Produces<aod::ResoMCCascades> reso2mccascades;                      ///< Output table for MC resonance cascades
 
   // General daughter output options
   Configurable<bool> cfgFillQA{"cfgFillQA", false, "Fill QA histograms"};
@@ -683,7 +709,10 @@ struct ResonanceDaughterInitializer {
   {
     const bool processTrackDataEnabled = doprocessData || doprocessDataWithPairGate;
     const bool processTrackMCEnabled = doprocessMC || doprocessMCWithPairGate;
-    const int enabledTrackProcesses = doprocessData + doprocessDataWithPairGate + doprocessMC + doprocessMCWithPairGate;
+    const int enabledTrackProcesses = static_cast<int>(doprocessData) +
+                                      static_cast<int>(doprocessDataWithPairGate) +
+                                      static_cast<int>(doprocessMC) +
+                                      static_cast<int>(doprocessMCWithPairGate);
 
     if (enabledTrackProcesses > 1) {
       LOGF(fatal, "Only one track process can be enabled in ResonanceDaughterInitializer");
@@ -779,8 +808,8 @@ struct ResonanceDaughterInitializer {
       // on an accepted selection boundary are not moved to overflow.
       constexpr int NDcaBins = 201;
       constexpr float DcaAxisPaddingFraction = 1.f / 200.f;
-      const float configuredDcaXYMax = static_cast<float>(TrackCuts.cMaxDCArToPVcut.value);
-      const float configuredDcaZMax = static_cast<float>(TrackCuts.cMaxDCAzToPVcut.value);
+      const auto configuredDcaXYMax = static_cast<float>(TrackCuts.cMaxDCArToPVcut.value);
+      const auto configuredDcaZMax = static_cast<float>(TrackCuts.cMaxDCAzToPVcut.value);
       const float dcaXYAxisHalfRange = configuredDcaXYMax > 0.f ? configuredDcaXYMax * (1.f + DcaAxisPaddingFraction) : 1.e-4f;
       const float dcaZAxisHalfRange = configuredDcaZMax > 0.f ? configuredDcaZMax * (1.f + DcaAxisPaddingFraction) : 1.e-4f;
       AxisSpec dcaXYAxis = {NDcaBins, -dcaXYAxisHalfRange, dcaXYAxisHalfRange, "DCA_{xy} (cm)"};
@@ -876,19 +905,23 @@ struct ResonanceDaughterInitializer {
   bool filterMicroTrack(T const& track)
   {
     // if no selection is requested, return true
-    if (!FilterForDerivedTables.cfgFillPionMicroTracks && !FilterForDerivedTables.cfgFillKaonMicroTracks && !FilterForDerivedTables.cfgFillProtonMicroTracks)
+    if (!FilterForDerivedTables.cfgFillPionMicroTracks && !FilterForDerivedTables.cfgFillKaonMicroTracks && !FilterForDerivedTables.cfgFillProtonMicroTracks) {
       return true;
+    }
     if (FilterForDerivedTables.cfgFillPionMicroTracks) {
-      if (std::abs(track.tpcNSigmaPi()) < TrackCuts.pidnSigmaPreSelectionCut)
+      if (std::abs(track.tpcNSigmaPi()) < TrackCuts.pidnSigmaPreSelectionCut) {
         return true;
+      }
     }
     if (FilterForDerivedTables.cfgFillKaonMicroTracks) {
-      if (std::abs(track.tpcNSigmaKa()) < TrackCuts.pidnSigmaPreSelectionCut)
+      if (std::abs(track.tpcNSigmaKa()) < TrackCuts.pidnSigmaPreSelectionCut) {
         return true;
+      }
     }
     if (FilterForDerivedTables.cfgFillProtonMicroTracks) {
-      if (std::abs(track.tpcNSigmaPr()) < TrackCuts.pidnSigmaPreSelectionCut)
+      if (std::abs(track.tpcNSigmaPr()) < TrackCuts.pidnSigmaPreSelectionCut) {
         return true;
+      }
     }
     return false;
   }
@@ -911,19 +944,23 @@ struct ResonanceDaughterInitializer {
   bool filterTrack(T const& track)
   {
     // if no selection is requested, return true
-    if (!FilterForDerivedTables.cfgFillPionTracks && !FilterForDerivedTables.cfgFillKaonTracks && !FilterForDerivedTables.cfgFillProtonTracks)
+    if (!FilterForDerivedTables.cfgFillPionTracks && !FilterForDerivedTables.cfgFillKaonTracks && !FilterForDerivedTables.cfgFillProtonTracks) {
       return true;
+    }
     if (FilterForDerivedTables.cfgFillPionTracks) {
-      if (std::abs(track.tpcNSigmaPi()) < TrackCuts.pidnSigmaPreSelectionCut)
+      if (std::abs(track.tpcNSigmaPi()) < TrackCuts.pidnSigmaPreSelectionCut) {
         return true;
+      }
     }
     if (FilterForDerivedTables.cfgFillKaonTracks) {
-      if (std::abs(track.tpcNSigmaKa()) < TrackCuts.pidnSigmaPreSelectionCut)
+      if (std::abs(track.tpcNSigmaKa()) < TrackCuts.pidnSigmaPreSelectionCut) {
         return true;
+      }
     }
     if (FilterForDerivedTables.cfgFillProtonTracks) {
-      if (std::abs(track.tpcNSigmaPr()) < TrackCuts.pidnSigmaPreSelectionCut)
+      if (std::abs(track.tpcNSigmaPr()) < TrackCuts.pidnSigmaPreSelectionCut) {
         return true;
+      }
     }
     return false;
   }
@@ -1195,8 +1232,9 @@ struct ResonanceDaughterInitializer {
       if (!isMicroTrackSelected<isMC>(collision, track)) {
         continue;
       }
-      if (!filterUltraMicroTrack(track))
+      if (!filterUltraMicroTrack(track)) {
         continue;
+      }
       if (!o2::aod::resoultramicrodaughter::DCAEncoding::isValid(track.dcaXY()) ||
           !o2::aod::resoultramicrodaughter::DCAEncoding::isValid(track.dcaZ())) {
         continue;
@@ -1276,8 +1314,9 @@ struct ResonanceDaughterInitializer {
       if (!isMicroTrackSelected<isMC>(collision, track)) {
         continue;
       }
-      if (!filterMicroTrack(track))
+      if (!filterMicroTrack(track)) {
         continue;
+      }
       o2::aod::resomicrodaughter::ResoMicroTrackSelFlag trackSelFlag(track.dcaXY(), track.dcaZ());
       if (TrackCuts.cfgApplyTightDCAPtDepSelection) {
         const float dcaThreshold = tightDCAThreshold(track.pt());
@@ -1340,8 +1379,9 @@ struct ResonanceDaughterInitializer {
       if (!isTrackSelected<isMC>(collision, track)) {
         continue;
       }
-      if (!filterTrack(track))
+      if (!filterTrack(track)) {
         continue;
+      }
       uint8_t trackFlags = (track.passedITSRefit() << 0) |
                            (track.passedTPCRefit() << 1) |
                            (track.isGlobalTrackWoDCA() << 2) |
@@ -1427,7 +1467,7 @@ struct ResonanceDaughterInitializer {
     // ------
     std::vector<int> mothers = {-1, -1};
     std::vector<int> motherPDGs = {-1, -1};
-    int siblings[2] = {-1, -1};
+    std::array<int, StoredMCRelationCount> siblings{-1, -1};
     std::vector<int> siblingsTemp{};
     if (track.has_mcParticle()) {
       // Get the MC particle
@@ -1439,14 +1479,16 @@ struct ResonanceDaughterInitializer {
       }
       mothers.resize(StoredMCRelationCount, -1);
       motherPDGs.resize(StoredMCRelationCount, -1);
-      if (siblingsTemp.size() > 0)
+      if (!siblingsTemp.empty()) {
         siblings[0] = siblingsTemp[0];
-      if (siblingsTemp.size() > 1)
+      }
+      if (siblingsTemp.size() > 1) {
         siblings[1] = siblingsTemp[1];
+      }
       reso2mctracks(particle.pdgCode(),
                     mothers[0],
                     motherPDGs[0],
-                    siblings,
+                    siblings.data(),
                     particle.isPhysicalPrimary(),
                     particle.producedByGenerator());
     } else {
@@ -1454,7 +1496,7 @@ struct ResonanceDaughterInitializer {
       reso2mctracks(0,
                     mothers[0],
                     motherPDGs[0],
-                    siblings,
+                    siblings.data(),
                     0,
                     0);
     }
@@ -1485,13 +1527,13 @@ struct ResonanceDaughterInitializer {
         qaRegistry.fill(HIST("QA/hV0Radius"), v0.v0radius());
         qaRegistry.fill(HIST("QA/hV0CosPA"), v0.v0cosPA());
       }
-      const int childIDs[2] = {v0.posTrackId(), v0.negTrackId()}; // Original track IDs for downstream pair-level shared-daughter rejection
+      const std::array<int, 2> childIDs{v0.posTrackId(), v0.negTrackId()}; // Original track IDs for downstream pair-level shared-daughter rejection
       reso2v0s(collision.globalIndex(),
                v0.pt(),
                v0.px(),
                v0.py(),
                v0.pz(),
-               childIDs,
+               childIDs.data(),
                (int8_t)(v0.template posTrack_as<TrackType>().tpcNSigmaPi() * 10),
                (int8_t)(v0.template posTrack_as<TrackType>().tpcNSigmaKa() * 10),
                (int8_t)(v0.template posTrack_as<TrackType>().tpcNSigmaPr() * 10),
@@ -1517,7 +1559,7 @@ struct ResonanceDaughterInitializer {
                v0.v0radius(), v0.x(), v0.y(), v0.z(),
                v0.alpha(), v0.qtarm());
       if (!FilterForDerivedTables.cfgBypassTrackIndexFill) {
-        resoV0V0s(v0.globalIndex());
+        resoV0V0s(v0.v0Id());
       }
       if constexpr (isMC) {
         fillMCV0(v0);
@@ -1659,13 +1701,13 @@ struct ResonanceDaughterInitializer {
         qaRegistry.fill(HIST("QA/hCascRadius"), casc.cascradius());
         qaRegistry.fill(HIST("QA/hCascCosPA"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
       }
-      const int childIDs[3] = {casc.posTrackId(), casc.negTrackId(), casc.bachelorId()}; // Original track IDs for downstream pair-level shared-daughter rejection
+      const std::array<int, 3> childIDs{casc.posTrackId(), casc.negTrackId(), casc.bachelorId()}; // Original track IDs for downstream pair-level shared-daughter rejection
       reso2cascades(collision.globalIndex(),
                     casc.pt(),
                     casc.px(),
                     casc.py(),
                     casc.pz(),
-                    childIDs,
+                    childIDs.data(),
                     (int8_t)(casc.template posTrack_as<TrackType>().tpcNSigmaPi() * 10),
                     (int8_t)(casc.template posTrack_as<TrackType>().tpcNSigmaKa() * 10),
                     (int8_t)(casc.template posTrack_as<TrackType>().tpcNSigmaPr() * 10),
@@ -1702,7 +1744,7 @@ struct ResonanceDaughterInitializer {
                     casc.mXi(),
                     casc.v0radius(), casc.cascradius(), casc.x(), casc.y(), casc.z());
       if (!FilterForDerivedTables.cfgBypassTrackIndexFill) {
-        resoCascadeCascades(casc.globalIndex());
+        resoCascadeCascades(casc.cascadeId());
       }
       if constexpr (isMC) {
         fillMCCascade(casc);
@@ -1985,9 +2027,9 @@ struct ResonanceDaughterInitializer {
   PROCESS_SWITCH(ResonanceDaughterInitializer, processCascMC, "Process Cascades for MC", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ResonanceModuleInitializer>(cfgc),
-    adaptAnalysisTask<ResonanceDaughterInitializer>(cfgc)};
+    adaptAnalysisTask<ResonanceModuleInitializer>(context),
+    adaptAnalysisTask<ResonanceDaughterInitializer>(context)};
 }

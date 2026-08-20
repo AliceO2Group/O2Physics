@@ -10,38 +10,43 @@
 # or submit itself to any jurisdiction.
 
 # Resonance analysis tutorial
-o2physics_add_dpl_workflow(resonances-step0 # o2-linter: disable=name/o2-workflow (legacy tutorial source keeps underscore filename)
+o2physics_add_dpl_workflow(resonances-step0
                   SOURCES resonances_step0.cxx
                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
-o2physics_add_dpl_workflow(resonances-step1 # o2-linter: disable=name/o2-workflow (legacy tutorial source keeps underscore filename)
+o2physics_add_dpl_workflow(resonances-step1
                   SOURCES resonances_step1.cxx
                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
-o2physics_add_dpl_workflow(resonances-step2 # o2-linter: disable=name/o2-workflow (legacy tutorial source keeps underscore filename)
+o2physics_add_dpl_workflow(resonances-step2
                   SOURCES resonances_step2.cxx
                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
-o2physics_add_dpl_workflow(resonances-step3 # o2-linter: disable=name/o2-workflow (legacy tutorial source keeps underscore filename)
+o2physics_add_dpl_workflow(resonances-step3
                   SOURCES resonances_step3.cxx
                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
-o2physics_add_dpl_workflow(resonances-step4 # o2-linter: disable=name/o2-workflow (legacy tutorial source keeps underscore filename)
+o2physics_add_dpl_workflow(resonances-step4
                   SOURCES resonances_step4.cxx
                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
-o2physics_add_dpl_workflow(resonances-step5 # o2-linter: disable=name/o2-workflow (legacy tutorial source keeps underscore filename)
+o2physics_add_dpl_workflow(resonances-step5
                   SOURCES resonances_step5.cxx
                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
-o2physics_add_dpl_workflow(resonances-step6 # o2-linter: disable=name/o2-workflow (legacy tutorial source keeps underscore filename)
+o2physics_add_dpl_workflow(resonances-step6
                   SOURCES resonances_step6.cxx
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(resonances-combine
+                  SOURCES resonancesCombine.cxx
                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 

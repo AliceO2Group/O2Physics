@@ -46,7 +46,7 @@ namespace resocollision
 {
 enum {
   kECbegin = 0,
-  kINEL = 1,
+  kINEL,
   kINEL10,
   kINELg0,
   kINELg010,
@@ -64,15 +64,15 @@ enum {
   kAllCutsINELg010,
   kECend,
 };
-DECLARE_SOA_COLUMN(CollisionId, collisionId, int);    //! Original collision row ID stored as a scalar for standalone derived data
-DECLARE_SOA_COLUMN(Cent, cent, float);                //! Centrality (Multiplicity) percentile (Default: FT0M)
-DECLARE_SOA_COLUMN(Spherocity, spherocity, float);    //! Spherocity of the event
-DECLARE_SOA_COLUMN(EvtPl, evtPl, float);              //! Second harmonic event plane
-DECLARE_SOA_COLUMN(EvtPlResAB, evtPlResAB, float);    //! Second harmonic event plane resolution of A-B sub events
-DECLARE_SOA_COLUMN(EvtPlResAC, evtPlResAC, float);    //! Second harmonic event plane resolution of A-C sub events
-DECLARE_SOA_COLUMN(EvtPlResBC, evtPlResBC, float);    //! Second harmonic event plane resolution of B-C sub events
-DECLARE_SOA_COLUMN(BMagField, bMagField, float);      //! Magnetic field
-DECLARE_SOA_COLUMN(IsRecINELgt0, isRecINELgt0, bool); //! Is reconstructed INEL>0 event
+DECLARE_SOA_INDEX_COLUMN_FULL(Collision, collision, int, Collisions, "_Col"); //!
+DECLARE_SOA_COLUMN(Cent, cent, float);                                        //! Centrality (Multiplicity) percentile (Default: FT0M)
+DECLARE_SOA_COLUMN(Spherocity, spherocity, float);                            //! Spherocity of the event
+DECLARE_SOA_COLUMN(EvtPl, evtPl, float);                                      //! Second harmonic event plane
+DECLARE_SOA_COLUMN(EvtPlResAB, evtPlResAB, float);                            //! Second harmonic event plane resolution of A-B sub events
+DECLARE_SOA_COLUMN(EvtPlResAC, evtPlResAC, float);                            //! Second harmonic event plane resolution of A-C sub events
+DECLARE_SOA_COLUMN(EvtPlResBC, evtPlResBC, float);                            //! Second harmonic event plane resolution of B-C sub events
+DECLARE_SOA_COLUMN(BMagField, bMagField, float);                              //! Magnetic field
+DECLARE_SOA_COLUMN(IsRecINELgt0, isRecINELgt0, bool);                         //! Is reconstructed INEL>0 event
 // MC
 DECLARE_SOA_COLUMN(IsVtxIn10, isVtxIn10, bool);               //! Vtx10
 DECLARE_SOA_COLUMN(IsINELgt0, isINELgt0, bool);               //! INEL>0
@@ -164,6 +164,9 @@ struct ResoTrackFlags {
     return (flags & mask) == mask;
   }
 };
+// These macros build framework expression nodes and cannot be replaced by
+// ordinary constexpr functions without changing their public DSL API.
+// NOLINTBEGIN(cppcoreguidelines-macro-usage)
 #define requireTrackFlag(mask) ((o2::aod::resodaughter::trackFlags & o2::aod::resodaughter::mask) == o2::aod::resodaughter::mask)
 
 #define requirePassedITSRefit() requireTrackFlag(ResoTrackFlags::kPassedITSRefit)
@@ -177,19 +180,23 @@ struct ResoTrackFlags {
 
 #define DECLARE_DYN_TRKSEL_COLUMN(_Name_, _Getter_, _Mask_) \
   DECLARE_SOA_DYNAMIC_COLUMN(_Name_, _Getter_, [](ResoTrackFlags::flagtype flags) -> bool { return ResoTrackFlags::checkFlag(flags, _Mask_); });
+// NOLINTEND(cppcoreguidelines-macro-usage)
 
 DECLARE_SOA_INDEX_COLUMN(ResoCollision, resoCollision);
 DECLARE_SOA_INDEX_COLUMN(ResoCollisionDF, resoCollisionDF);
-DECLARE_SOA_COLUMN(TrackId, trackId, int);                                        //! Original track row ID stored as a scalar for autocorrelation rejection
-DECLARE_SOA_COLUMN(V0Id, v0Id, int);                                              //! Original V0 row ID stored as a scalar
-DECLARE_SOA_COLUMN(CascadeId, cascadeId, int);                                    //! Original cascade row ID stored as a scalar
-DECLARE_SOA_COLUMN(Pt, pt, float);                                                //! p_t (GeV/c)
-DECLARE_SOA_COLUMN(Px, px, float);                                                //! p_x (GeV/c)
-DECLARE_SOA_COLUMN(Py, py, float);                                                //! p_y (GeV/c)
-DECLARE_SOA_COLUMN(Pz, pz, float);                                                //! p_z (GeV/c)
-DECLARE_SOA_COLUMN(PartType, partType, uint8_t);                                  //! Type of the particle, according to resodaughter::ParticleType
-DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);                                //! Observable for the template fitting (Track: DCA_xy, V0: CPA)
-DECLARE_SOA_COLUMN(Indices, indices, int[2]);                                     //! Field for the track indices to remove auto-correlations
+DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Trk");       //! Soft link to the original track
+DECLARE_SOA_INDEX_COLUMN_FULL(V0, v0, int, V0s, "_V0");                 //! Soft link to the original V0
+DECLARE_SOA_INDEX_COLUMN_FULL(Cascade, cascade, int, Cascades, "_Cas"); //! Soft link to the original cascade
+DECLARE_SOA_COLUMN(Pt, pt, float);                                      //! p_t (GeV/c)
+DECLARE_SOA_COLUMN(Px, px, float);                                      //! p_x (GeV/c)
+DECLARE_SOA_COLUMN(Py, py, float);                                      //! p_y (GeV/c)
+DECLARE_SOA_COLUMN(Pz, pz, float);                                      //! p_z (GeV/c)
+DECLARE_SOA_COLUMN(PartType, partType, uint8_t);                        //! Type of the particle, according to resodaughter::ParticleType
+DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);                      //! Observable for the template fitting (Track: DCA_xy, V0: CPA)
+// Fixed-size C arrays are part of the existing persistent AOD schema.
+// NOLINTNEXTLINE(modernize-avoid-c-arrays)
+DECLARE_SOA_COLUMN(Indices, indices, int[2]); //! Field for the track indices to remove auto-correlations
+// NOLINTNEXTLINE(modernize-avoid-c-arrays)
 DECLARE_SOA_COLUMN(CascadeIndices, cascadeIndices, int[3]);                       //! Field for the track indices to remove auto-correlations (ordered: positive, negative, bachelor)
 DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, uint8_t);              //! Number of TPC crossed rows
 DECLARE_SOA_COLUMN(TpcNClsFound, tpcNClsFound, uint8_t);                          //! Number of TPC clusters found
@@ -251,9 +258,10 @@ DECLARE_SOA_COLUMN(DaughterPDG1, daughterPDG1, int); //! PDG code of the first D
 DECLARE_SOA_COLUMN(DaughterPDG2, daughterPDG2, int); //! PDG code of the second Daughter particle
 DECLARE_SOA_COLUMN(DaughterID1, daughterID1, int);   //! Id of the first Daughter particle
 DECLARE_SOA_COLUMN(DaughterID2, daughterID2, int);   //! Id of the second Daughter particle
-DECLARE_SOA_COLUMN(SiblingIds, siblingIds, int[2]);  //! Index of the particles with the same mother
-DECLARE_SOA_COLUMN(BachTrkID, bachTrkID, int);       //! Id of the bach track from cascade
-DECLARE_SOA_COLUMN(V0ID, v0ID, int);                 //! Id of the V0 from cascade
+// NOLINTNEXTLINE(modernize-avoid-c-arrays) -- persistent fixed-size AOD column
+DECLARE_SOA_COLUMN(SiblingIds, siblingIds, int[2]); //! Index of the particles with the same mother
+DECLARE_SOA_COLUMN(BachTrkID, bachTrkID, int);      //! Id of the bach track from cascade
+DECLARE_SOA_COLUMN(V0ID, v0ID, int);                //! Id of the V0 from cascade
 // Dynamic columns
 // DCA_xy x10,000
 DECLARE_SOA_DYNAMIC_COLUMN(DcaXY, dcaXY,
@@ -377,29 +385,34 @@ struct PidNSigma {
   static uint8_t encodeNSigma(float nSigma)
   {
     const float x = std::abs(nSigma);
-    if (x <= MinNSigma)
+    if (x <= MinNSigma) {
       return 0; // Return 0 when absolute nSigma is smaller than 1.5
+    }
     float t = (x - MinNSigma) / NSigmaStep;
     int encoded = static_cast<int>(std::ceil(t)); // (1.5,1.7]->1, ..., (3.3,3.5]->10
-    if (encoded < 1)
+    if (encoded < 1) {
       encoded = 1;
-    if (encoded > MaxNSigmaCode)
+    }
+    if (encoded > MaxNSigmaCode) {
       encoded = MaxNSigmaCode;
+    }
     return static_cast<uint8_t>(encoded);
   }
 
   /// @brief Decode 0~10 value to original 1.5~3.5 sigma range
   static float decodeNSigma(uint8_t encoded)
   {
-    if (encoded == 0)
+    if (encoded == 0) {
       return MinNSigma;
-    if (encoded > MaxNSigmaCode)
+    }
+    if (encoded > MaxNSigmaCode) {
       encoded = MaxNSigmaCode;
+    }
     return MinNSigma + static_cast<float>(encoded) * NSigmaStep;
   }
 
   /// @brief Check if TOF info is available
-  bool hasTOF() const
+  [[nodiscard]] bool hasTOF() const
   {
     return (flag & 0x0F) != 0x0F; // Check if lower 4 bits are not all 1
   }
@@ -443,8 +456,8 @@ struct ResoMicroTrackSelFlag {
 
   /// @brief Default constructor
   ResoMicroTrackSelFlag()
+    : flag(0x00)
   {
-    flag = 0x00;
   }
 
   /// @brief Constructor: Convert DCAxy/DCAz and save (default 1~15 values)
@@ -459,13 +472,16 @@ struct ResoMicroTrackSelFlag {
   static uint8_t encodeDCA(float DCA)
   {
     float x = std::fabs(DCA);
-    if (x < DCAEncodingStep)
+    if (x < DCAEncodingStep) {
       return 0;
+    }
     int encoded = static_cast<int>(std::ceil((x - DCAEncodingStep) / DCAEncodingStep)); // (0.1, 0.2] -> 1, ..., (1.4, 1.5] -> 14
-    if (encoded < 1)
+    if (encoded < 1) {
       encoded = 1;
-    if (encoded > MaxRegularDCAFlag)
+    }
+    if (encoded > MaxRegularDCAFlag) {
       encoded = OverflowDCAFlag;
+    }
     return static_cast<uint8_t>(encoded);
   }
 
@@ -476,13 +492,13 @@ struct ResoMicroTrackSelFlag {
   }
 
   /// @brief Get DCAxy value
-  uint8_t getDCAxyFlag() const
+  [[nodiscard]] uint8_t getDCAxyFlag() const
   {
     return (flag >> 4) & 0x0F; // Extract upper 4 bits
   }
 
   /// @brief Get DCAz value
-  uint8_t getDCAzFlag() const
+  [[nodiscard]] uint8_t getDCAzFlag() const
   {
     return flag & 0x0F; // Extract lower 4 bits
   }
