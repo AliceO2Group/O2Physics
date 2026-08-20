@@ -30,8 +30,12 @@ o2physics_add_library(AnalysisCore
 # Skipped under recc, which caches compilations remotely instead -- the two do
 # not combine, as a PCH is a local artefact of one compiler invocation.
 #
-# The link libraries have to match what the reusing targets compile with, so
-# this carries only what every workflow already links.
+# The reusing targets must compile with the same preprocessor state as this
+# carrier, which does not follow from the link list: AnalysisCore reaches
+# O2::rANS and its INTERFACE -DRANS_ENABLE_JSON, whereas a bare workflow links
+# only O2::Framework. o2physics_add_dpl_workflow therefore copies this target's
+# compile definitions onto every consumer; keep that in mind when changing what
+# is linked here.
 add_library(AnalysisPCH OBJECT analysisPCH.cxx)
 target_link_libraries(AnalysisPCH PUBLIC O2::Framework O2Physics::AnalysisCore)
 if(NOT DEFINED ENV{USE_RECC})

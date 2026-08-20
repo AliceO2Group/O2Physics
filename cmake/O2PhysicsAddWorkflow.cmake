@@ -64,6 +64,16 @@ function(o2physics_add_dpl_workflow baseTargetName)
   # A target cannot reuse its own PCH, and the carrier is not built when recc
   # is caching compilations remotely instead.
   if(_pch AND NOT _pch STREQUAL targetExeName AND NOT DEFINED ENV{USE_RECC})
+    # GCC refuses a PCH built with a different preprocessor state than the
+    # consumer's, and -Werror turns that refusal into a build failure:
+    #   cmake_pch.hxx.gch: not used because `RANS_ENABLE_JSON' not defined
+    # The carrier links O2Physics::AnalysisCore, which reaches O2::rANS and its
+    # INTERFACE -DRANS_ENABLE_JSON, while a workflow that links only
+    # O2::Framework (the converters, the tutorials) never sees it. Hand every
+    # consumer the carrier's definitions so the two agree. Definitions only --
+    # this must not add link dependencies to targets that do not want them.
+    target_compile_definitions(${targetExeName} PRIVATE
+                               $<TARGET_PROPERTY:${_pch},COMPILE_DEFINITIONS>)
     target_precompile_headers(${targetExeName} REUSE_FROM ${_pch})
   endif()
 
