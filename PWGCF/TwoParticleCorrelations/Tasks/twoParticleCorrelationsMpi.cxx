@@ -254,8 +254,6 @@ struct TwoParticleCorrelationsMpi {
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
-  using FilteredMcParticles = soa::Filtered<aod::McParticles>;
-  using McCollisionsWithHepMC = soa::Join<aod::McCollisions, aod::HepMCXSections>;
 
   using DerivedCollisions = soa::Filtered<aod::CFCollisions>;
   using DerivedTracks = soa::Filtered<aod::CFTracks>;
@@ -264,6 +262,9 @@ struct TwoParticleCorrelationsMpi {
   {
     if (doprocessMCSameDerived && (doprocessSameDerived || doprocessSameDerivedMultSet)) {
       LOGF(fatal, "processMCSameDerived is mutually exclusive with the reconstructed derived same-event processes because it also fills those outputs");
+    }
+    if (doprocessSameGenMC && doprocessMCSameDerived) {
+      LOGF(fatal, "processSameGenMC and processMCSameDerived are mutually exclusive because both fill the generated same-event outputs");
     }
     if (!cfgNuncSeedsTemplateFile.value.empty() && !cfgNuncSeedsTemplate.value.empty()) {
       LOGF(fatal, "Configure only one template source: cfgNuncSeedsTemplateFile or cfgNuncSeedsTemplate");
@@ -1464,32 +1465,25 @@ struct TwoParticleCorrelationsMpi {
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameAOD, "Process same event on AOD", true);
 
-  void processSameGenMC(McCollisionsWithHepMC::iterator const& mcCollision, FilteredMcParticles const& mcParticles, aod::BCsWithTimestamps const&)
+  void processSameGenMC(soa::Filtered<aod::CFMcCollisionsWithExtra>::iterator const& mcCollision,
+                        soa::Filtered<aod::CFMcParticles> const& mcParticles,
+                        soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions)
   {
-    if (std::abs(mcCollision.posZ()) >= cfgCutVertex) {
-      return;
-    }
-    const auto bc = mcCollision.bc_as<aod::BCsWithTimestamps>();
-    loadCcdbYieldTemplates(bc.timestamp());
-
-    int generatedMultiplicity = 0;
-    for (const auto& particle : mcParticles) {
-      if (!particle.isPhysicalPrimary()) {
-        continue;
-      }
-      const auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-      if (pdgParticle && pdgParticle->Charge() != 0.0) {
-        ++generatedMultiplicity;
+    if (!cfgNuncSeedsTemplate.value.empty()) {
+      for (const auto& collision : collisions) {
+        loadCcdbYieldTemplates(collision.timestamp());
+        break;
       }
     }
 
+    const auto generatedMultiplicity = mcCollision.multiplicity();
     fillContainerEvent(same, generatedMultiplicity, CorrelationContainer::kCFStepAll);
     EventSeedEstimate seedEstimate;
     fillCorrelations<CorrelationContainer::kCFStepAll>(same, mcParticles, mcParticles, generatedMultiplicity, mcCollision.posZ(), 0, 1.0f, &seedEstimate);
     finalizeEventSeedEstimate(seedEstimate);
     fillGeneratedMCValidation(generatedMultiplicity, seedEstimate, mcCollision.nMPI());
   }
-  PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameGenMC, "Process generated MC events and validate the template estimator against HepMC N MPI", false);
+  PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameGenMC, "Process generated MC events from derived data and validate against the stored HepMC N MPI", false);
 
   template <class CollType, class TTracks1, class TTracks2>
   void processSameDerivedT(CollType const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2, const int* trueNMPI = nullptr)
