@@ -1467,14 +1467,14 @@ struct Chargedkstaranalysis {
               for (const auto& d3 : d2.template daughters_as<aod::McParticles>()) {
                 if (d3.pdgCode() == +kPiPlus) {
                   if (helicityCfgs.genKinematicsChecks) {
-                    if (!helicityCfgs.genKinematicsChecks || (d3.pt() > trackCutCfgs.cMinPtcut && std::abs(d3.eta()) < trackCutCfgs.cMaxEtacut)) {
+                    if (d3.pt() <= trackCutCfgs.cMinPtcut || std::abs(d3.eta()) >= trackCutCfgs.cMaxEtacut) {
                       continue;
                     }
                   }
                   seenPip = true;
                 } else if (d3.pdgCode() == -kPiPlus) {
                   if (helicityCfgs.genKinematicsChecks) {
-                    if (!helicityCfgs.genKinematicsChecks || (d3.pt() > trackCutCfgs.cMinPtcut && std::abs(d3.eta()) < trackCutCfgs.cMaxEtacut)) {
+                    if (d3.pt() <= trackCutCfgs.cMinPtcut || std::abs(d3.eta()) >= trackCutCfgs.cMaxEtacut) {
                       continue;
                     }
                   }
