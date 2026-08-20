@@ -64,6 +64,30 @@ function(o2physics_add_dpl_workflow baseTargetName)
   # A target cannot reuse its own PCH, and the carrier is not built when recc
   # is caching compilations remotely instead.
   if(_pch AND NOT _pch STREQUAL targetExeName AND NOT DEFINED ENV{USE_RECC})
+    # GCC refuses a PCH built with a different preprocessor state than the
+    # consumer's, and -Werror turns that refusal into a build failure:
+    #   cmake_pch.hxx.gch: not used because `RANS_ENABLE_JSON' not defined
+    # The carrier links O2Physics::AnalysisCore, which reaches O2::rANS and its
+    # INTERFACE -DRANS_ENABLE_JSON, while a workflow that links only
+    # O2::Framework (the converters, the tutorials) never sees it.
+    #
+    # Copying COMPILE_DEFINITIONS fixed that case and revealed another: CI then
+    # failed on `_REENTRANT' not defined, on a compile line that DID carry
+    # -DRANS_ENABLE_JSON -- so the copy was working and simply does not reach
+    # far enough. Whatever supplies _REENTRANT arrives at the carrier as
+    # something other than a compile definition (-pthread, which travels in
+    # INTERFACE_COMPILE_OPTIONS, is the likely route), so adding options alone
+    # would only move the goalposts to whichever kind of usage requirement goes
+    # missing next.
+    #
+    # $<COMPILE_ONLY:> applies a target's *compile* usage requirements --
+    # definitions, options, include directories, features -- without placing it
+    # on the link line or creating a link dependency, which is the constraint
+    # that ruled out simply linking the carrier. It transfers the whole
+    # preprocessor state the carrier compiled with, and that state is exactly
+    # what GCC compares, rather than one property of it at a time.
+    # Requires CMake >= 3.27.
+    target_link_libraries(${targetExeName} PRIVATE $<COMPILE_ONLY:${_pch}>)
     target_precompile_headers(${targetExeName} REUSE_FROM ${_pch})
   endif()
 
