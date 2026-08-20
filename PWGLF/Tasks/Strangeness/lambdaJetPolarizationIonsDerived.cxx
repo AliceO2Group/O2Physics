@@ -1208,7 +1208,7 @@ struct lambdajetpolarizationionsderived {
   /// \note  Shared across leadP/leadJet/subJet: the caller resolves which proxy-specific procedure (e.g., LUT for evtMixing) applies.
   // Helper to modify the jet direction for QA and for spurious signal baseline removal tests:
   inline void applyProxyDistortion(ProxyState proxy, float minPtThreshold, ProxyCacheRef cache,
-                                   const std::discrete_distribution<int>& etaDist, const std::discrete_distribution<int>& phiDist, std::mt19937& rng)
+                                   std::discrete_distribution<int>& etaDist, std::discrete_distribution<int>& phiDist, std::mt19937& rng)
   {
     if (!fakePolSwitches.forcePerpToJet && !fakePolSwitches.forceJetDirectionSmudge && !fakePolSwitches.forceRandJet && !fakePolSwitches.forcePreviousJet && !fakePolSwitches.forceDatalikeJet && !fakePolSwitches.doMixedEventProxies) [[likely]] {
       return; // Skip this function if none of the modifications are actually being executed!
