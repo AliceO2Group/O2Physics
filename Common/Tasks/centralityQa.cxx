@@ -306,9 +306,9 @@ struct CentralityQa {
 
       est.hCentrality = dynamic_cast<TH1*>(hCentralityObjects->FindObject(Form("hCalibZeq%s", est.name.c_str())));
       if (!est.hCentrality) {
-        LOGF(info, "Calibration missing for %s", est.name.c_str());
+        LOGF(debug, "Calibration missing for %s", est.name.c_str());
       } else {
-        LOGF(info, "Calibration loaded for %s", est.name.c_str());
+        LOGF(debug, "Calibration loaded for %s", est.name.c_str());
       }
     }
 
@@ -326,7 +326,7 @@ struct CentralityQa {
       requires { collision.centFT0C(); } ||
       requires { collision.centFT0CVariant1(); } ||
       requires { collision.centFT0CVariant2(); } ||
-      requires { collision.centFT0MVariant3(); } ||
+      requires { collision.centFT0MOuterA(); } ||
       requires { collision.centFDDM(); } ||
       requires { collision.centNTPV(); } ||
       requires { collision.centNGlobal(); } ||
@@ -688,15 +688,19 @@ struct CentralityQa {
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FT0M, "Process with Run 3 FT0M estimator", false);
 
-  void processRun3_FT0MOuterA(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0MOuterAs>::iterator const& col)
+  void processRun3_FT0MOuterA(soa::Join<aod::Collisions, aod::EvSels, aod::MultsRun3, aod::FITExtraMults, aod::CentFT0MOuterAs>::iterator const& col, aod::BCs const&)
   {
     if (!isCollisionAccepted(col)) {
       return;
     }
-    LOGF(debug, "centFT0MOuterA=%.0f", col.centFT0MOuterA());
-    histos.fill(HIST("hCentFT0MOuterA"), col.centFT0MOuterA());
-    histos.fill(HIST("hCentProfileFT0MOuterA"), col.centFT0MOuterA(), col.multNTracksPVetaHalf());
-    histos.fill(HIST("hMultEta05VsCentFT0MOuterA"), col.centFT0MOuterA(), col.multNTracksPVetaHalf());
+
+    Estimator ft0mOuterA = initEstimator(col, "FT0MOuterA");
+    const float centFT0MOuterA = ft0mOuterA.getCentrality(col.multFT0AOuter() + col.multFT0C(), col.centFT0MOuterA());
+
+    LOGF(debug, "centFT0MOuterA=%.0f", centFT0MOuterA);
+    histos.fill(HIST("hCentFT0MOuterA"), centFT0MOuterA);
+    histos.fill(HIST("hCentProfileFT0MOuterA"), centFT0MOuterA, col.multNTracksPVetaHalf());
+    histos.fill(HIST("hMultEta05VsCentFT0MOuterA"), centFT0MOuterA, col.multNTracksPVetaHalf());
   }
   PROCESS_SWITCH(CentralityQa, processRun3_FT0MOuterA, "Process with Run 3 FT0M estimator", false);
 

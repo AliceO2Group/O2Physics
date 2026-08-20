@@ -145,6 +145,7 @@ static const int defaultParameters[nTablesConst][nParameters]{
   {-1},
   {-1},
   {-1},
+  {-1},
   {-1}};
 
 // table index : match order above
@@ -743,6 +744,7 @@ class MultModule
     } else {
       mults.multFT0A = -999.f;
       mults.multFT0C = -999.f;
+      mults.multFT0AOuter = -999.f;
     }
     if (collision.has_foundFDD()) {
       const auto& fdd = collision.foundFDD();
