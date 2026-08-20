@@ -44,7 +44,7 @@ DECLARE_SOA_COLUMN(JetPt, jetPt, float);
 DECLARE_SOA_COLUMN(JetEta, jetEta, float);
 DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);
 // DECLARE_SOA_COLUMN(JetNConstituents, jetNConstituents, uint16_t); // Currently removed from datamodel.
-                                                                     // Other variables can better reveal jet quenching and help identify good selection criteria for quenched jets proxies
+// Other variables can better reveal jet quenching and help identify good selection criteria for quenched jets proxies
 
 DECLARE_SOA_COLUMN(LeadParticlePt, leadParticlePt, float);
 DECLARE_SOA_COLUMN(LeadParticleEta, leadParticleEta, float);
