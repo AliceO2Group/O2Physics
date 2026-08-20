@@ -16,6 +16,7 @@
 /// \author David Dobrigkeit Chinellato <david.dobrigkeit.chinellato@cern.ch>, Austrian Academy of Sciences
 //
 
+#include "Tools/ML/MlResponse.h"
 #include "PWGLF/DataModel/LFStrangenessMLTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/CascadeMlResponse.h"
@@ -42,6 +43,10 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <iterator>
+
+#include "TH1.h"
+#include "TString.h"
 
 using namespace o2;
 using namespace o2::framework;
