@@ -49,8 +49,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include <math.h>
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -811,7 +809,7 @@ struct BJetTreeCreator {
     }
 
     // Uses only collisionId % trainingDatasetRaioParam == 0 for training dataset
-    if (trainingDatasetRatioParam && collision.collisionId() % trainingDatasetRatioParam != 0) {
+    if (trainingDatasetRatioParam != 0 && collision.collisionId() % trainingDatasetRatioParam != 0) {
       return;
     }
 

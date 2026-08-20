@@ -18,6 +18,7 @@
 #include "PWGJE/Core/JetTaggingUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
 #include "PWGJE/DataModel/JetTagging.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -39,6 +40,7 @@
 #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TAxis.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
@@ -47,12 +49,9 @@
 #include <cmath>
 #include <cstdint>
 #include <string>
-#include <type_traits>
 #include <unordered_set>
 #include <utility>
 #include <vector>
-
-#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -142,20 +141,20 @@ struct EvtSelStage {
   EvtSelFlag flag;
   const char* label;
 };
-constexpr std::array<EvtSelStage, 14> kEvtSelStages{{{EvtSelFlag::INEL, "INEL"},
-                                                     {EvtSelFlag::INELZvtx, "INEL+Zvtx"},
-                                                     {EvtSelFlag::Coll, "Coll"},
-                                                     {EvtSelFlag::CollZvtx, "Coll+Zvtx"},
-                                                     {EvtSelFlag::TVX, "TVX"},
-                                                     {EvtSelFlag::TVXZvtx, "TVX+Zvtx"},
-                                                     {EvtSelFlag::SelMC, "SelMC"},
-                                                     {EvtSelFlag::SelMCZvtx, "SelMC+Zvtx"},
-                                                     {EvtSelFlag::Sel8, "Sel8"},
-                                                     {EvtSelFlag::Sel8Zvtx, "Sel8+Zvtx"},
-                                                     {EvtSelFlag::Sel8Full, "Sel8Full"},
-                                                     {EvtSelFlag::Sel8FullZvtx, "Sel8Full+Zvtx"},
-                                                     {EvtSelFlag::Sel8FullGood, "Sel8FullGood"},
-                                                     {EvtSelFlag::Sel8FullGoodZvtx, "Sel8FullGood+Zvtx"}}};
+constexpr std::array<EvtSelStage, 14> kEvtSelStages{{{.flag = EvtSelFlag::INEL, .label = "INEL"},
+                                                     {.flag = EvtSelFlag::INELZvtx, .label = "INEL+Zvtx"},
+                                                     {.flag = EvtSelFlag::Coll, .label = "Coll"},
+                                                     {.flag = EvtSelFlag::CollZvtx, .label = "Coll+Zvtx"},
+                                                     {.flag = EvtSelFlag::TVX, .label = "TVX"},
+                                                     {.flag = EvtSelFlag::TVXZvtx, .label = "TVX+Zvtx"},
+                                                     {.flag = EvtSelFlag::SelMC, .label = "SelMC"},
+                                                     {.flag = EvtSelFlag::SelMCZvtx, .label = "SelMC+Zvtx"},
+                                                     {.flag = EvtSelFlag::Sel8, .label = "Sel8"},
+                                                     {.flag = EvtSelFlag::Sel8Zvtx, .label = "Sel8+Zvtx"},
+                                                     {.flag = EvtSelFlag::Sel8Full, .label = "Sel8Full"},
+                                                     {.flag = EvtSelFlag::Sel8FullZvtx, .label = "Sel8Full+Zvtx"},
+                                                     {.flag = EvtSelFlag::Sel8FullGood, .label = "Sel8FullGood"},
+                                                     {.flag = EvtSelFlag::Sel8FullGoodZvtx, .label = "Sel8FullGood+Zvtx"}}};
 constexpr int kEvtSelStageRecoFirst = 2; // Coll
 constexpr int kEvtSelStageRecoLast = 13; // Sel8FullGood+Zvtx
 
@@ -227,8 +226,8 @@ struct BjetTaggingGnn {
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   // Service
-  Service<o2::framework::O2DatabasePDG> pdg;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdg{};
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
 
   // Event selection bits
   std::vector<int> eventSelectionBits;
@@ -697,8 +696,8 @@ struct BjetTaggingGnn {
     return nTracks;
   }
 
-  const float largeNegativeNumber = -98.0f;
-  const float largePositiveNumber = 9999.0f;
+  static constexpr float largeNegativeNumber = -98.0f;
+  static constexpr float largePositiveNumber = 9999.0f;
 
   template <typename AnyTracks, typename AnalysisJet>
   bool isAcceptedJet(AnalysisJet const& jet)
@@ -1081,18 +1080,20 @@ struct BjetTaggingGnn {
   }
 
   // Check if the collision is INEL>0
-  const int nPartInel0 = 3;
+  static constexpr int nPartInel0 = 3;
   template <typename MCColl, typename MCPart>
   bool isTrueINEL0(MCColl const& /*mccoll*/, MCPart const& mcparts)
   {
     for (const auto& mcparticle : mcparts) {
-      if (!mcparticle.isPhysicalPrimary())
+      if (!mcparticle.isPhysicalPrimary()) {
         continue;
+      }
       const auto p = pdg->GetParticle(mcparticle.pdgCode());
       if (p != nullptr) {
         if (std::abs(p->Charge()) >= nPartInel0) {
-          if (std::abs(mcparticle.eta()) < 1)
+          if (std::abs(mcparticle.eta()) < 1) {
             return true;
+          }
         }
       }
     }
@@ -1453,7 +1454,7 @@ struct BjetTaggingGnn {
         continue;
       }
 
-      int8_t jetFlavor;
+      int8_t jetFlavor = 0;
       if constexpr (withSV) {
         jetFlavor = fillMCDJetHistogramsSV<withSub>(analysisJet, allTracks, *allSVs, rho, weightEvt);
       } else {
@@ -1530,7 +1531,7 @@ struct BjetTaggingGnn {
       if constexpr (withSub) {
         registry.fill(HIST("h_jetpT_particle_sub"), mcpJetpT, weightEvt);
         // Fill hSparse_pthat_jetpT only for unmatched particle jets (reco pT = -1)
-        if (matchedMcpJetIndices.find(mcpjet.globalIndex()) == matchedMcpJetIndices.end()) {
+        if (!matchedMcpJetIndices.contains(mcpjet.globalIndex())) {
           registry.fill(HIST("hSparse_pthat_jetpT_sub"), collision.template mcCollision_as<AnalysisCollisionsMCP>().ptHard(), -1.f, mcpJetpT, weightEvt); // Missing jets, overflow-pTreco jets
           if (jetFlavor == JetTaggingSpecies::beauty) {
             registry.fill(HIST("hSparse_pthat_jetpT_b_sub"), collision.template mcCollision_as<AnalysisCollisionsMCP>().ptHard(), -1.f, mcpJetpT, weightEvt); // Missing b-jets, overflow-pTpart b-jets
@@ -1542,7 +1543,7 @@ struct BjetTaggingGnn {
       } else {
         registry.fill(HIST("h_jetpT_particle"), mcpJetpT, weightEvt);
         // Fill hSparse_pthat_jetpT only for unmatched particle jets (reco pT = -1)
-        if (matchedMcpJetIndices.find(mcpjet.globalIndex()) == matchedMcpJetIndices.end()) {
+        if (!matchedMcpJetIndices.contains(mcpjet.globalIndex())) {
           registry.fill(HIST("hSparse_pthat_jetpT"), collision.template mcCollision_as<AnalysisCollisionsMCP>().ptHard(), -1.f, mcpJetpT, weightEvt); // Missing jets, overflow-pTreco jets
           if (jetFlavor == JetTaggingSpecies::beauty) {
             registry.fill(HIST("hSparse_pthat_jetpT_b"), collision.template mcCollision_as<AnalysisCollisionsMCP>().ptHard(), -1.f, mcpJetpT, weightEvt); // Missing b-jets, overflow-pTpart b-jets
