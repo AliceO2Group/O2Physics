@@ -841,6 +841,7 @@ struct FlowGfwV02 {
   template <DataType dt>
   void fillOutputContainers(const float& centmult, const int& multiplicity, const double& rndm, const int& /*run*/ = 0)
   {
+    double threshold = 1.01;
     for (uint l_ind = 0; l_ind < corrconfigs.size(); ++l_ind) {
       if (!corrconfigs.at(l_ind).pTDif) {
         auto dnx = fGFW->Calculate(corrconfigs.at(l_ind), 0, kTRUE).real();
@@ -848,7 +849,7 @@ struct FlowGfwV02 {
           continue;
         auto val = fGFW->Calculate(corrconfigs.at(l_ind), 0, kFALSE).real() / dnx;
 
-        if (std::abs(val) < 1) {
+        if (std::abs(val) < threshold) {
           fFC->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm);
         }
         continue;
@@ -871,7 +872,6 @@ struct FlowGfwV02 {
           ebyeWeight *= pidStates.hPtMid[PidCharged]->Integral();
         }
         double ptFraction = 0;
-        double threshold = 1.01;
         int normIndex = (cfgNormalizeByCharged) ? PidCharged : pidInd; // Configured to normalize by charged particles or the selected particle
         if (pidStates.hPtMid[normIndex]->Integral() > 0) {
           ptFraction = pidStates.hPtMid[pidInd]->GetBinContent(i) / pidStates.hPtMid[normIndex]->Integral();
@@ -1002,7 +1002,6 @@ struct FlowGfwV02 {
       double ptFraction = 0;
       if (pidStates.hPtMid[PidCharged]->Integral() > 0) {
         ptFraction = pidStates.hPtMid[PidCharged]->GetBinContent(i) / pidStates.hPtMid[PidCharged]->Integral();
-        double threshold = 1.01;
         if (std::abs(val) < threshold)
           registry.fill(HIST("v02pt"), fSecondAxis->GetBinCenter(i), centmult, multiplicity, val * ptFraction, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0);
         registry.fill(HIST("nchMid"), fSecondAxis->GetBinCenter(i), centmult, multiplicity, ptFraction);
