@@ -166,21 +166,29 @@ struct ResoTrackFlags {
 };
 // These macros build framework expression nodes and cannot be replaced by
 // ordinary constexpr functions without changing their public DSL API.
-// NOLINTBEGIN(cppcoreguidelines-macro-usage)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define requireTrackFlag(mask) ((o2::aod::resodaughter::trackFlags & o2::aod::resodaughter::mask) == o2::aod::resodaughter::mask)
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define requirePassedITSRefit() requireTrackFlag(ResoTrackFlags::kPassedITSRefit)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define requirePassedTPCRefit() requireTrackFlag(ResoTrackFlags::kPassedTPCRefit)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define requireGlobalTrack() requireTrackFlag(ResoTrackFlags::kIsGlobalTrack)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define requireGlobalTrackWoDCA() requireTrackFlag(ResoTrackFlags::kIsGlobalTrackWoDCA)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define requirePrimaryTrack() requireTrackFlag(ResoTrackFlags::kIsPrimaryTrack)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define requirePVContributor() requireTrackFlag(ResoTrackFlags::kIsPVContributor)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define requireHasTOF() requireTrackFlag(ResoTrackFlags::kHasTOF)
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define requireSign() requireTrackFlag(ResoTrackFlags::kSign)
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define DECLARE_DYN_TRKSEL_COLUMN(_Name_, _Getter_, _Mask_) \
   DECLARE_SOA_DYNAMIC_COLUMN(_Name_, _Getter_, [](ResoTrackFlags::flagtype flags) -> bool { return ResoTrackFlags::checkFlag(flags, _Mask_); });
-// NOLINTEND(cppcoreguidelines-macro-usage)
 
 DECLARE_SOA_INDEX_COLUMN(ResoCollision, resoCollision);
 DECLARE_SOA_INDEX_COLUMN(ResoCollisionDF, resoCollisionDF);
