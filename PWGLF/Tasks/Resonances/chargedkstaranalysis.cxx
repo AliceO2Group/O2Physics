@@ -1458,7 +1458,7 @@ struct Chargedkstaranalysis {
         } else if (std::abs(pdg1) == kPDGK0) {
           for (const auto& d2 : d1.template daughters_as<aod::McParticles>()) {
             if (std::abs(d2.pdgCode()) == kPDGK0s) {
-	      if (helicityCfgs.genKinematicsChecks) {
+              if (helicityCfgs.genKinematicsChecks) {
                 if (d2.pt() <= secondaryCutsCfgs.cSecondaryPtMin || std::abs(d2.eta()) >= secondaryCutsCfgs.cSecondaryRapidityMax) {
                   continue;
                 }
