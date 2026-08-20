@@ -1018,8 +1018,8 @@ struct PidFlowPtCorr {
     // pushback
     // Data
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {2} refN08 {-2}", "Ref08Gap22", false)); // 0
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN {2 2} refP {-2 -2}", "Ref0Gap24", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN {2} refP {-2}", "Ref0Gap22", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("reffull {2 2 -2 -2}", "RefFull24", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("reffull {2 -2}", "RefFull22", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {3} refN08 {-3}", "Ref08Gap32", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP08 {3 3} refN08 {-3 -3}", "Ref08Gap34", false));
 
@@ -1029,12 +1029,12 @@ struct PidFlowPtCorr {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP08 {2} refN08 {-2}", "Kaon08gap22b", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {2} refP08 {-2}", "Prot08gap22a", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP08 {2} refN08 {-2}", "Prot08gap22b", false)); // 10
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN refN | olPiN {2 2} refP {-2 -2}", "Pion0gap24a", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP refP | olPiP {2 2} refN {-2 -2}", "Pion0gap24b", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN refN | olKaN {2 2} refP {-2 -2}", "Kaon0gap24a", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP refP | olKaP {2 2} refN {-2 -2}", "Kaon0gap24b", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN refN | olPrN {2 2} refP {-2 -2}", "Prot0gap24a", false)); // 15
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP refP | olPrP {2 2} refN {-2 -2}", "Prot0gap24b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN reffull | olPiN {2 2 -2 -2}", "PionFull24a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP reffull | olPiP {2 2 -2 -2}", "PionFull24b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN reffull | olKaN {2 2 -2 -2}", "KaonFull24a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP reffull | olKaP {2 2 -2 -2}", "KaonFull24b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN reffull | olPrN {2 2 -2 -2}", "ProtFull24a", false)); // 15
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP reffull | olPrP {2 2 -2 -2}", "ProtFull24b", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN08 {3} refP08 {-3}", "Pion08gap32a", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP08 {3} refN08 {-3}", "Pion08gap32b", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {3} refP08 {-3}", "Kaon08gap32a", false));
@@ -1055,20 +1055,20 @@ struct PidFlowPtCorr {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN08 {3} poiKaP08 {-3}", "KaKa08gap33", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN08 {3} poiPrP08 {-3}", "PrPr08gap33", false));
 
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN {2} refP {-2}", "Pion0gap22a", false)); // 35
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP {2} refN {-2}", "Pion0gap22b", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN {2} refP {-2}", "Kaon0gap22a", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP {2} refN {-2}", "Kaon0gap22b", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN {2} refP {-2}", "Prot0gap22a", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP {2} refN {-2}", "Prot0gap22b", false)); // 40
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiN reffull | olPiN {2 -2}", "PionFull22a", false)); // 35
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPiP reffull | olPiP {2 -2}", "PionFull22b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaN reffull | olKaN {2 -2}", "KaonFull22a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiKaP reffull | olKaP {2 -2}", "KaonFull22b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrN reffull | olPrN {2 -2}", "ProtFull22a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiPrP reffull | olPrP {2 -2}", "ProtFull22b", false)); // 40
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedN08 {2} refP08 {-2}", "Unidentified08gap22a", false)); // 41
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedP08 {2} refN08 {-2}", "Unidentified08gap22b", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedN refN | olUnidentifiedN {2 2} refP {-2 -2}", "Unidentified0gap24a", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedP refP | olUnidentifiedP {2 2} refN {-2 -2}", "Unidentified0gap24b", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedN reffull | olUnidentifiedN {2 2 -2 -2}", "UnidentifiedFull24a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedP reffull | olUnidentifiedP {2 2 -2 -2}", "UnidentifiedFull24b", false));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedN08 {2} poiUnidentifiedP08 {-2}", "UnidentifiedPure08gap22", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedN {2} refP {-2}", "Unidentified0gap22a", false));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedP {2} refN {-2}", "Unidentified0gap22b", false)); // 47
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedN reffull | olUnidentifiedN {2 -2}", "UnidentifiedFull22a", false));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiUnidentifiedP reffull | olUnidentifiedP {2 -2}", "UnidentifiedFull22b", false)); // 47
 
     if (corrconfigs.size() != corrConfigIndex::kCount) {
       LOGF(fatal, "Correlation index table expects %zu configurations, but %zu were created", static_cast<std::size_t>(corrConfigIndex::kCount), corrconfigs.size());
@@ -3363,7 +3363,7 @@ struct PidFlowPtCorr {
 
       float weight = 1.f;
       setParticleNUEWeight(weight, track, cent, pid);
-      const std::size_t index = static_cast<std::size_t>(pid - MyParticleType::kPion);
+      const auto index = static_cast<std::size_t>(pid - MyParticleType::kPion);
       const double particleWeight = weight;
       const double weight2 = particleWeight * particleWeight;
       const double pt = track.pt();
