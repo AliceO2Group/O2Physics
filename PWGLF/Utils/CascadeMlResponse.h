@@ -37,8 +37,7 @@ enum class InputFeaturesCasc : uint8_t {
   dcaV0daughters,
   dcav0topv,
   bachBaryonCosPA,
-  bachBaryonDCAxyToPV,
-  eta
+  bachBaryonDCAxyToPV
 };
 
 template <typename TypeOutputScore = float>
