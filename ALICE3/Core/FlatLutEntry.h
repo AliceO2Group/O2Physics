@@ -9,6 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file FlatLutEntry.h
+/// \brief Flat LUT data structures and buffer handling for the ALICE3 fast smearing backend.
+
 #ifndef ALICE3_CORE_FLATLUTENTRY_H_
 #define ALICE3_CORE_FLATLUTENTRY_H_
 
@@ -25,9 +28,9 @@ namespace o2::delphes
 {
 
 /**
- * @brief Flat LUT entry structure
+ * @brief Flat LUT entry structure.
  */
-struct lutEntry_t {
+struct LutEntry {
   float nch = 0.f;
   float eta = 0.f;
   float pt = 0.f;
@@ -44,10 +47,12 @@ struct lutEntry_t {
   void print() const;
 };
 
+using lutEntry_t = LutEntry;
+
 /**
- * @brief Binning map
+ * @brief Binning map.
  */
-struct map_t {
+struct Map {
   int nbins = 1;
   float min = 0.f;
   float max = 1.e6f;
@@ -67,10 +72,12 @@ struct map_t {
   void print() const;
 };
 
+using map_t = Map;
+
 /**
- * @brief LUT header
+ * @brief LUT header.
  */
-struct lutHeader_t {
+struct LutHeader {
   int version = LUTCOVM_VERSION;
   int pdg = 0;
   float mass = 0.f;
@@ -80,12 +87,14 @@ struct lutHeader_t {
   map_t etamap;
   map_t ptmap;
 
-  bool check_version() const;
+  bool checkVersion() const;
   void print() const;
 };
 
+using lutHeader_t = LutHeader;
+
 /**
- * @brief Flat LUT data container - single contiguous buffer
+ * @brief Flat LUT data container - single contiguous buffer.
  * Memory layout: [header][entry_0][entry_1]...[entry_N]
  *
  * All entries stored sequentially in a single allocation.
