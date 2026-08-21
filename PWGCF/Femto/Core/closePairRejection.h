@@ -26,6 +26,8 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/Logger.h>
 
+#include <TF1.h>
+
 #include <array>
 #include <chrono>
 #include <cmath>
@@ -69,6 +71,8 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> plotAngularCorrelation{"plotAngularCorrelation", false, "Plot angular correlation of particles (eta1 vs eta2 & phi1 vs phi2"};
   o2::framework::Configurable<float> detaMax{"detaMax", 0.01f, "Maximium deta"};
   o2::framework::Configurable<float> dphistarMax{"dphistarMax", 0.01f, "Maximum dphistar"};
+  o2::framework::Configurable<bool> ktDependent{"ktDependent", false, "If true, use dphistarMaxFormula instead of dphistarMax"};
+  o2::framework::Configurable<std::string> dphistarMaxFormula{"dphistarMaxFormula", "0.01", "Maximum dphistar as TFormula, x=kT"};
   o2::framework::Configurable<float> detaCenter{"detaCenter", 0.f, "Center of deta cut"};
   o2::framework::Configurable<float> dphistarCenter{"dphistarCenter", 0.f, "Center of dphistar cut"};
   o2::framework::Configurable<float> kinematicMin{"kinematicMin", -1.f, "Minimum kstar/Q3 of pair/triplet for plotting (Set to negative value to turn off the cut)"};
@@ -203,9 +207,14 @@ class CloseTrackRejection
   {
     mDetaMax = confCpr.detaMax.value;
     mDphistarMax = confCpr.dphistarMax.value;
+    mKtDependent = confCpr.ktDependent.value;
+
+    if (mKtDependent) {
+      mDphistarMaxFunc = TF1((std::string(prefix) + "DphistarMax").c_str(), confCpr.dphistarMaxFormula.value.c_str(), 0.f, 10.f);
+    }
 
     // check the limits
-    if (mDetaMax <= 0 || mDphistarMax <= 0) {
+    if (mDetaMax <= 0 || (!mKtDependent && mDphistarMax <= 0)) {
       LOG(fatal) << "Limits for Close Pair Rejection are invalid (0 or negative). Breaking...";
     }
 
@@ -302,6 +311,12 @@ class CloseTrackRejection
       mAverageDphistar = std::accumulate(mDphistar.begin(), mDphistar.end(), 0.f) / count; // only average values if phistar could be computed
     } else {
       mAverageDphistar = 0.f; // if computation at all radii fail, set it 0
+    }
+
+    if (mKtDependent) {
+      const float ktx = t1.pt() * std::cos(t1.phi()) + t2.pt() * std::cos(t2.phi());
+      const float kty = t1.pt() * std::sin(t1.phi()) + t2.pt() * std::sin(t2.phi());
+      mDphistarMax = mDphistarMaxFunc.Eval(0.5f * std::hypot(ktx, kty));
     }
 
     if (mPlotAngularCorrelation) {
@@ -426,6 +441,8 @@ class CloseTrackRejection
   float mDphistarMax = 0.f;
   float mDetaCenter = 0.f;
   float mDphistarCenter = 0.f;
+  bool mKtDependent = false;
+  TF1 mDphistarMaxFunc;
 
   float mAverageDphistar = 0.f;
   float mDeta = 0.f;
