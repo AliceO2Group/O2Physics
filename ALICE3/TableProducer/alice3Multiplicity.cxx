@@ -13,6 +13,7 @@
 /// \brief Multiplicity task for ALICE3
 /// \file alice3Multiplicity.cxx
 
+#include "ALICE3/DataModel/collisionAlice3.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -26,6 +27,7 @@
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
@@ -40,12 +42,10 @@ using namespace o2::framework::expressions;
 
 using TracksAlice3 = soa::Join<aod::Tracks, aod::TracksDCA, o2::aod::TracksAlice3, aod::TracksExtraA3>;
 
-constexpr float EtaHalf = 0.5;
-constexpr float Eta1 = 1.0;
-
 struct Alice3Multiplicity {
   Produces<aod::PVMults> multPV;
   Produces<aod::MultsGlobal> multGlobal;
+  Produces<aod::MultsMCAlice3> multMC;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<float> minEta{"minEta", -2.5f, "Minimum eta in range for global track counting"};
@@ -58,6 +58,8 @@ struct Alice3Multiplicity {
 
   ConfigurableAxis axisMult{"axisMult", {10000, 0, 10000}, "Reconstructed tracks"};
 
+  Service<o2::framework::O2DatabasePDG> pdg;
+
   Filter trackFilter = (aod::track::eta >= minEta) && (aod::track::eta <= maxEta) && (nabs(aod::track::dcaXY) <= maxDCAxy) && (nabs(aod::track::dcaZ) <= maxDCAz) && (aod::track_alice3::nSiliconHits >= minSiliconHits) && (!requireReconstructed || aod::track_alice3::isReconstructed);
 
   void init(InitContext&)
@@ -66,8 +68,14 @@ struct Alice3Multiplicity {
       histos.add("multiplicity/nTracksPV", "nTracksPV", kTH1D, {axisMult});
       histos.add("multiplicity/nTracksPVeta1", "nTracksPVeta1", kTH1D, {axisMult});
       histos.add("multiplicity/nTracksPVetaHalf", "nTracksPVetaHalf", kTH1D, {axisMult});
+
       histos.add("multiplicity/nTracksGlobal", "nTracksGlobal", kTH1D, {axisMult});
       histos.add("multiplicity/nTracksGlobalPV", "nTracksGlobalPV", kTH1D, {axisMult});
+
+      histos.add("multiplicity/nTracksMC", "nTracksMC", kTH1D, {axisMult});
+      histos.add("multiplicity/nTracksMCEta25", "nTracksMCEta25", kTH1D, {axisMult});
+      histos.add("multiplicity/nTracksMCEta125", "nTracksMCEta125", kTH1D, {axisMult});
+      histos.add("multiplicity/nTracksMCEta09", "nTracksMCEta09", kTH1D, {axisMult});
     }
   }
 
@@ -99,9 +107,9 @@ struct Alice3Multiplicity {
     for (const auto& track : tracks) {
       if (track.isPVContributor()) {
         ++numTracksPV;
-        if (std::abs(track.eta()) < Eta1)
+        if (std::abs(track.eta()) < 1.0)
           ++numTracksPVeta1;
-        if (std::abs(track.eta()) < EtaHalf)
+        if (std::abs(track.eta()) < 0.5)
           ++numTracksPVetaHalf;
       }
     }
@@ -115,6 +123,46 @@ struct Alice3Multiplicity {
     multPV(numTracksPV, numTracksPVeta1, numTracksPVetaHalf);
   }
 
+  void processMC(aod::McCollision const& /*mcCollision*/, aod::McParticles const& mcParticles)
+  {
+    int numMCParticles = 0;
+    int numMCParticlesEta25 = 0;
+    int numMCParticlesEta125 = 0;
+    int numMCParticlesEta09 = 0;
+
+    for (const auto& mcParticle : mcParticles) {
+      if (!mcParticle.isPhysicalPrimary()) {
+        continue;
+      }
+
+      auto charge = 0.;
+      auto* p = pdg->GetParticle(mcParticle.pdgCode());
+      if (p != nullptr) {
+        charge = p->Charge();
+      }
+      if (std::abs(charge) < 1e-3) {
+        continue;
+      }
+
+      ++numMCParticles;
+      if (std::abs(mcParticle.eta()) < 2.5)
+        ++numMCParticlesEta25;
+      if (std::abs(mcParticle.eta()) < 1.25)
+        ++numMCParticlesEta125;
+      if (std::abs(mcParticle.eta()) < 0.9)
+        ++numMCParticlesEta09;
+    }
+
+    if (doQA) {
+      histos.fill(HIST("multiplicity/nTracksMC"), numMCParticles);
+      histos.fill(HIST("multiplicity/nTracksMCEta25"), numMCParticlesEta25);
+      histos.fill(HIST("multiplicity/nTracksMCEta125"), numMCParticlesEta125);
+      histos.fill(HIST("multiplicity/nTracksMCEta09"), numMCParticlesEta09);
+    }
+
+    multMC(numMCParticles, numMCParticlesEta25, numMCParticlesEta125, numMCParticlesEta09);
+  }
+
   void processDummy(const aod::Collision&)
   {
     // do nothing
@@ -122,6 +170,7 @@ struct Alice3Multiplicity {
 
   PROCESS_SWITCH(Alice3Multiplicity, processGlobalTracks, "Process global track counter", false);
   PROCESS_SWITCH(Alice3Multiplicity, processPV, "Process primary vertex contributor tracks", false);
+  PROCESS_SWITCH(Alice3Multiplicity, processMC, "Process MC truth information", false);
   PROCESS_SWITCH(Alice3Multiplicity, processDummy, "Dummy proccess function", true);
 };
 
