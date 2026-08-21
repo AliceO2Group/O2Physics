@@ -21,7 +21,7 @@
 #include <TRandom.h>
 
 #include <string>
-##include <vector>
+##include<vector>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -30,7 +30,7 @@
 #include <span>
 #include <string>
 
-namespace o2::delphes
+  namespace o2::delphes
 {
 int TrackSmearer::getIndexPDG(int pdg)
 {
