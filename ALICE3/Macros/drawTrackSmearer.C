@@ -19,7 +19,6 @@
 #include <TCanvas.h>
 #include <TColor.h>
 #include <TGraph.h>
-
 #include <TPDGCode.h>
 
 namespace
@@ -31,10 +30,10 @@ constexpr int kProtonPdg = static_cast<int>(PDG_t::kProton);
 constexpr int kKaonPdg = static_cast<int>(PDG_t::kKPlus);
 
 const std::vector<std::pair<int, std::string>> kDefaultLutFiles = {{kElectronPdg, "/tmp/lut/lutCov.acts.11.2T.dNdEta5.dat"},
-                                                                    {kMuonPdg, "/tmp/lut/lutCov.acts.13.2T.dNdEta5.dat"},
-                                                                    {kPionPdg, "/tmp/lut/lutCov.acts.211.2T.dNdEta5.dat"},
-                                                                    {kProtonPdg, "/tmp/lut/lutCov.acts.2212.2T.dNdEta5.dat"},
-                                                                    {kKaonPdg, "/tmp/lut/lutCov.acts.321.2T.dNdEta5.dat"}};
+                                                                   {kMuonPdg, "/tmp/lut/lutCov.acts.13.2T.dNdEta5.dat"},
+                                                                   {kPionPdg, "/tmp/lut/lutCov.acts.211.2T.dNdEta5.dat"},
+                                                                   {kProtonPdg, "/tmp/lut/lutCov.acts.2212.2T.dNdEta5.dat"},
+                                                                   {kKaonPdg, "/tmp/lut/lutCov.acts.321.2T.dNdEta5.dat"}};
 } // namespace
 
 void drawTrackSmearer(const std::vector<std::pair<int, std::string>>& filenames = kDefaultLutFiles)
