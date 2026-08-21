@@ -9,6 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file drawTrackSmearer.C
+/// \brief Draw the ALICE3 track-smearing performance curves for key particle species.
+
 #include "FlatTrackSmearer.h"
 #include "TrackUtilities.h"
 
@@ -17,11 +20,24 @@
 #include <TColor.h>
 #include <TGraph.h>
 
-void drawTrackSmearer(const std::vector<std::pair<int, std::string>>& filenames = {{11, "/tmp/lut/lutCov.acts.11.2T.dNdEta5.dat"},
-                                                                                   {13, "/tmp/lut/lutCov.acts.13.2T.dNdEta5.dat"},
-                                                                                   {211, "/tmp/lut/lutCov.acts.211.2T.dNdEta5.dat"},
-                                                                                   {2212, "/tmp/lut/lutCov.acts.2212.2T.dNdEta5.dat"},
-                                                                                   {321, "/tmp/lut/lutCov.acts.321.2T.dNdEta5.dat"}})
+#include <TPDGCode.h>
+
+namespace
+{
+constexpr int kElectronPdg = static_cast<int>(PDG_t::kElectron);
+constexpr int kMuonPdg = static_cast<int>(PDG_t::kMuonMinus);
+constexpr int kPionPdg = static_cast<int>(PDG_t::kPiPlus);
+constexpr int kProtonPdg = static_cast<int>(PDG_t::kProton);
+constexpr int kKaonPdg = static_cast<int>(PDG_t::kKPlus);
+
+const std::vector<std::pair<int, std::string>> kDefaultLutFiles = {{kElectronPdg, "/tmp/lut/lutCov.acts.11.2T.dNdEta5.dat"},
+                                                                    {kMuonPdg, "/tmp/lut/lutCov.acts.13.2T.dNdEta5.dat"},
+                                                                    {kPionPdg, "/tmp/lut/lutCov.acts.211.2T.dNdEta5.dat"},
+                                                                    {kProtonPdg, "/tmp/lut/lutCov.acts.2212.2T.dNdEta5.dat"},
+                                                                    {kKaonPdg, "/tmp/lut/lutCov.acts.321.2T.dNdEta5.dat"}};
+} // namespace
+
+void drawTrackSmearer(const std::vector<std::pair<int, std::string>>& filenames = kDefaultLutFiles)
 {
 
   o2::delphes::TrackSmearer trackSmearer;
@@ -50,15 +66,15 @@ void drawTrackSmearer(const std::vector<std::pair<int, std::string>>& filenames 
     }
 
     int color = 0;
-    if (pdg == 11) {
+    if (pdg == kElectronPdg) {
       color = TColor::GetColor("#e41a1c");
-    } else if (pdg == 13) {
+    } else if (pdg == kMuonPdg) {
       color = TColor::GetColor("#377eb8");
-    } else if (pdg == 211) {
+    } else if (pdg == kPionPdg) {
       color = TColor::GetColor("#4daf4a");
-    } else if (pdg == 2212) {
+    } else if (pdg == kProtonPdg) {
       color = TColor::GetColor("#984ea3");
-    } else if (pdg == 321) {
+    } else if (pdg == kKaonPdg) {
       color = TColor::GetColor("#ff7f00");
     }
     gPt->SetLineColor(color);
