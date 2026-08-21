@@ -31,7 +31,7 @@ DECLARE_SOA_COLUMN(NSiliconHits, nSiliconHits, int);        //! number of silico
 DECLARE_SOA_COLUMN(NTPCHits, nTPCHits, int);                //! number of tpc hits
 DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);                  //! PDG code of the linked truth MC particle
 DECLARE_SOA_COLUMN(TrackType, trackType, int);              //! Type of the track
-DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);              //! Has track contributed to the PV fit?
+DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //! Has track contributed to the PV fit?
 } // namespace track_alice3
 DECLARE_SOA_TABLE(TracksAlice3, "AOD", "TRACKSALICE3",
                   track_alice3::IsReconstructed);
