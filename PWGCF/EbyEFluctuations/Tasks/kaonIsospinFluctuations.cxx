@@ -174,6 +174,7 @@ inline T getCfg(const auto& cfgLabelledArray, int32_t row, int32_t col)
   if constexpr (std::is_same_v<T, bool>) {
     return val != 0.0; // will return anything nonzero as true
   } else if constexpr (std::is_same_v<T, float>) {
+    // cppcheck-suppress suspiciousFloatingPointCast
     return static_cast<float>(val);
   } else if constexpr (std::is_same_v<T, double>) {
     return val;
@@ -195,12 +196,12 @@ double calculateTime(T Start)
   return timeInSeconds;
 }
 template <typename T>
-void printTime(T Start, const std::string String)
+void printTime(T Start, const std::string& String)
 {
   LOG(info) << String << calculateTime(Start) << " seconds";
 }
 
-void printHistInfo(const std::string String, const auto& hist)
+void printHistInfo(const std::string& String, const auto& hist)
 {
   int64_t iEntries = hist->GetEntries();
   double mean = hist->GetMean();
@@ -2587,7 +2588,7 @@ struct KaonIsospinFluctuations {
   }
 
   template <typename T, typename H>
-  void findRepeatedEntries(const std::vector<H> ParticleList, T hist)
+  void findRepeatedEntries(const std::vector<H>& ParticleList, T hist)
   {
     for (uint ii = 0; ii < ParticleList.size(); ii++) {
       int nCommonCount = 0; // checking the repeat number of track
