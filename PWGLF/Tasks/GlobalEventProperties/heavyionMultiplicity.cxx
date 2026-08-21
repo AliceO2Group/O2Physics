@@ -208,8 +208,8 @@ struct HeavyionMultiplicity {
   Configurable<bool> isApplyCentFT0CVariant2{"isApplyCentFT0CVariant2", false, "Centrality based on FT0C variant2 (Run2 like truncation)"};
   Configurable<bool> isApplyCentFT0M{"isApplyCentFT0M", false, "Centrality based on FT0A + FT0C"};
   Configurable<bool> isApplyCentFT0MAnchorCol{"isApplyCentFT0MAnchorCol", false, "Centrality collision based, with anchor point"};
-  Configurable<bool> isApplyCentFT0MAnchorBC {"isApplyCentFT0MAnchorBC", false, "Centrality bunch crossing based"};
-  
+  Configurable<bool> isApplyCentFT0MAnchorBC{"isApplyCentFT0MAnchorBC", false, "Centrality bunch crossing based"};
+
   Configurable<bool> isApplyCentNGlobal{"isApplyCentNGlobal", false, "Centrality based on global tracks"};
   Configurable<bool> isApplyCentMFT{"isApplyCentMFT", false, "Centrality based on MFT tracks"};
   Configurable<bool> isApplyTVX{"isApplyTVX", false, "Enable TVX trigger sel"};
