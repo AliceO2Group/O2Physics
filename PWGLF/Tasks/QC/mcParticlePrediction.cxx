@@ -119,9 +119,6 @@ static constexpr std::array<std::array<int, 2>, PIDExtended::NIDsTot>
                     {0, 1},   //  Kshort
                     {0, 0},   //  Xi1530
                     {0, 0}}}; //  Lambda1520
-std::array<bool, PIDExtended::NIDsTot> enabledParticlesArray = {false};
-std::array<bool, PIDExtended::NIDsTot> selectPrimariesArray = {false};
-
 // Estimators
 struct Estimators {
   typedef int estID;
@@ -147,26 +144,26 @@ struct Estimators {
   static constexpr estID ImpactParameter = 19; // (Run2 V0M)
   static constexpr estID nEstimators = 20;
 
-  static constexpr const char* estimatorNames[nEstimators] = {"FT0A",
-                                                              "FT0C",
-                                                              "FT0AC",
-                                                              "FV0A",
-                                                              "FDDA",
-                                                              "FDDC",
-                                                              "FDDAC",
-                                                              "ZNA",
-                                                              "ZNC",
-                                                              "ZEM1",
-                                                              "ZEM2",
-                                                              "ZPA",
-                                                              "ZPC",
-                                                              "ITSIB",
-                                                              "ETA05",
-                                                              "ETA08",
-                                                              "V0A",
-                                                              "V0C",
-                                                              "V0AC",
-                                                              "ImpactParameter"};
+  static constexpr std::array<const char*, nEstimators> estimatorNames{"FT0A",
+                                                                        "FT0C",
+                                                                        "FT0AC",
+                                                                        "FV0A",
+                                                                        "FDDA",
+                                                                        "FDDC",
+                                                                        "FDDAC",
+                                                                        "ZNA",
+                                                                        "ZNC",
+                                                                        "ZEM1",
+                                                                        "ZEM2",
+                                                                        "ZPA",
+                                                                        "ZPC",
+                                                                        "ITSIB",
+                                                                        "ETA05",
+                                                                        "ETA08",
+                                                                        "V0A",
+                                                                        "V0C",
+                                                                        "V0AC",
+                                                                        "ImpactParameter"};
   static std::vector<std::string> arrayNames()
   {
     static std::vector<std::string> names;
@@ -179,7 +176,6 @@ struct Estimators {
     return names;
   }
 };
-std::array<bool, Estimators::nEstimators> enabledEstimatorsArray = {false};
 static constexpr std::array<std::array<int, 1>, Estimators::nEstimators>
   defaultEstimators{{{0},   // FT0A
                      {0},   // FT0C
@@ -202,27 +198,6 @@ static constexpr std::array<std::array<int, 1>, Estimators::nEstimators>
                      {0},   // V0AC (Run2 V0M)
                      {0}}}; // ImpactParamter
 
-// Histograms
-std::array<std::shared_ptr<TH1>, Estimators::nEstimators> hestimators;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsITS;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsETA05;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsETA08;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsImpactParameter;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsReco;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsReco_BCMC;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsRecoITS;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsITS;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsRecoITS;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsRecoITS_BCMC;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsFT0A;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsBCId;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvVsBCId;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hvertexPosZ;
-std::array<std::array<std::shared_ptr<TH2>, PIDExtended::NIDsTot>, Estimators::nEstimators> hpt;
-std::array<std::array<std::shared_ptr<TH2>, PIDExtended::NIDsTot>, Estimators::nEstimators> hy;
-std::array<std::array<std::shared_ptr<TH2>, PIDExtended::NIDsTot>, Estimators::nEstimators> heta;
-std::array<std::array<std::shared_ptr<TH1>, PIDExtended::NIDsTot>, Estimators::nEstimators> hyield;
-
 struct McParticlePrediction {
 
   // Histograms
@@ -232,6 +207,29 @@ struct McParticlePrediction {
   HistogramRegistry histosPt{"HistosPt", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry histosEta{"HistosEta", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry histosY{"HistosY", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  std::array<bool, PIDExtended::NIDsTot> enabledParticlesArray{false};
+  std::array<bool, PIDExtended::NIDsTot> selectPrimariesArray{false};
+  std::array<bool, Estimators::nEstimators> enabledEstimatorsArray{false};
+  std::array<std::shared_ptr<TH1>, Estimators::nEstimators> hestimators;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsITS;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsETA05;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsETA08;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsImpactParameter;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsReco;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsReco_BCMC;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsRecoITS;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsITS;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsRecoITS;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsRecoITS_BCMC;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsFT0A;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvRecoVsBCId;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvVsBCId;
+  std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hvertexPosZ;
+  std::array<std::array<std::shared_ptr<TH2>, PIDExtended::NIDsTot>, Estimators::nEstimators> hpt;
+  std::array<std::array<std::shared_ptr<TH2>, PIDExtended::NIDsTot>, Estimators::nEstimators> hy;
+  std::array<std::array<std::shared_ptr<TH2>, PIDExtended::NIDsTot>, Estimators::nEstimators> heta;
+  std::array<std::array<std::shared_ptr<TH1>, PIDExtended::NIDsTot>, Estimators::nEstimators> hyield;
 
   struct : ConfigurableGroup {
     std::string prefix = "Binning"; // JSON group name
@@ -253,10 +251,10 @@ struct McParticlePrediction {
   } cfgPrediction;
 
   Configurable<LabeledArray<int>> enabledSpecies{"enabledSpecies",
-                                                 {&defaultParticles[0][0], PIDExtended::NIDsTot, defaultParticles[0].size(), PIDExtended::arrayNames(), {"Enable", "SelectPrimaries"}},
+                                                 {defaultParticles.front().data(), PIDExtended::NIDsTot, defaultParticles[0].size(), PIDExtended::arrayNames(), {"Enable", "SelectPrimaries"}},
                                                  "Particles enabled"};
   Configurable<LabeledArray<int>> enabledEstimators{"enabledEstimators",
-                                                    {&defaultEstimators[0][0], Estimators::nEstimators, defaultEstimators[0].size(), Estimators::arrayNames(), {"Enable"}},
+                                                    {defaultEstimators.front().data(), Estimators::nEstimators, defaultEstimators[0].size(), Estimators::arrayNames(), {"Enable"}},
                                                     "Estimators enabled"};
   Configurable<bool> selectInelGt0{"selectInelGt0", true, "Select only inelastic events"};
   Configurable<bool> selectPrimariesForMultiplicity{"selectPrimariesForMultiplicity", true, "Select only primary particles for multiplicity computation"};
