@@ -54,6 +54,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -235,7 +236,7 @@ struct HfCorrelatorDMesonPairs {
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 6000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsDcaXY{"binsDcaXY", {128, -0.2, 0.2}, "DCA xy"};
-  BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
+  std::unique_ptr<BinningType> corrBinning;
 
   HistogramRegistry registry{
     "registry",
@@ -413,6 +414,7 @@ struct HfCorrelatorDMesonPairs {
     AxisSpec const axisPosZ = {binsZVtx, "PosZ"};
     AxisSpec const axisPoolBin = {binsPoolBin, "PoolBin"};
     AxisSpec const axisDcaXY = {binsDcaXY, "DCA xy"};
+    corrBinning = std::make_unique<BinningType>(BinningType{{binsZVtx, binsMultiplicity}, true});
 
     if (applyMixedEvent) {
       registry.add("hMultiplicityPreSelection", "multiplicity prior to selection;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}});
@@ -693,7 +695,7 @@ struct HfCorrelatorDMesonPairs {
     int gCollisionId = collision.globalIndex();
     int64_t timeStamp = bc.timestamp();
 
-    int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
+    int poolBin = corrBinning->getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
 
     int nTracks = 0;
     if (collision.numContrib() > 1) {
