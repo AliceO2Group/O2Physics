@@ -550,6 +550,9 @@ struct mftMchMatcher {
   template <class TMCH, class TMFTs>
   bool isDecay(TMCH const& mchTrack, TMFTs const& mftTracks)
   {
+    if (!mchTrack.has_mcParticle()) {
+      return false;
+    }
     const auto& mchMcParticle = mchTrack.mcParticle();
 
     const auto& mchMotherParticles = mchMcParticle.template mothers_as<aod::McParticles>();
@@ -588,12 +591,6 @@ struct mftMchMatcher {
 
     auto const& mchTrack = muonTrack.template matchMCHTrack_as<TMUONS>();
     auto const& mftTrack = muonTrack.template matchMFTTrack_as<TMFTS>();
-
-    if (!mchTrack.has_mcParticle() || !mftTrack.has_mcParticle()) {
-      // if either the MCH or the MFT tracks are fakes (not associated to any MC particles)
-      // we consider the match as fake
-      return (isBestMatch ? kMatchTypeFakeLeading : kMatchTypeFakeNonLeading);
-    }
 
     bool isPaired = isPairedMuon(mchTrack.globalIndex(), matchablePairs);
     std::pair<int64_t, int64_t> matchPair{mchTrack.globalIndex(), mftTrack.globalIndex()};
