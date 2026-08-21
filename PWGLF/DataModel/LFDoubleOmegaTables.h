@@ -21,38 +21,24 @@ namespace o2::aod
 
 namespace DoubleOmegaTables
 {
-DECLARE_SOA_COLUMN(PtCasc1, ptCasc1, float); // signed pt of the cascade
-DECLARE_SOA_COLUMN(EtaCasc1, etaCasc1, float);
-DECLARE_SOA_COLUMN(PhiCasc1, phiCasc1, float);
-DECLARE_SOA_COLUMN(CascDecLength1, cascDecLength1, float);
-DECLARE_SOA_COLUMN(OmegaMassCasc1, omegaMassCasc1, float);
-DECLARE_SOA_COLUMN(XiMassCasc1, xiMassCasc1, float);
-DECLARE_SOA_COLUMN(CosPACasc1, cosPACasc1, float);
-DECLARE_SOA_COLUMN(DcaBachPVCasc1, dcaBachPVCasc1, float);
-DECLARE_SOA_COLUMN(DcaV0BachCasc1, dcaV0BachCasc1, float);
-DECLARE_SOA_COLUMN(NSigmaKBach1, nSigmaKBach1, float);
-
-DECLARE_SOA_COLUMN(PtLambda, ptLambda, float);
-DECLARE_SOA_COLUMN(EtaLambda, etaLambda, float);
-DECLARE_SOA_COLUMN(PhiLambda, phiLambda, float);
-DECLARE_SOA_COLUMN(LambdaDecLength, lambdaDecLength, float);
-DECLARE_SOA_COLUMN(LambdaMass, lambdaMass, float);
-DECLARE_SOA_COLUMN(CosPALambda, cosPALambda, float);
-DECLARE_SOA_COLUMN(DcaPosPVLambda, dcaPosPVLambda, float);
-DECLARE_SOA_COLUMN(DcaNegPVLambda, dcaNegPVLambda, float);
-DECLARE_SOA_COLUMN(DcaLambdaDaughters, dcaLambdaDaughters, float);
-DECLARE_SOA_COLUMN(NSigmaPrLambda, nSigmaPrLambda, float);
-DECLARE_SOA_COLUMN(NSigmaPiLambda, nSigmaPiLambda, float);
-
-DECLARE_SOA_COLUMN(PtKaon, ptKaon, float);
-DECLARE_SOA_COLUMN(EtaKaon, etaKaon, float);
-DECLARE_SOA_COLUMN(PhiKaon, phiKaon, float);
-DECLARE_SOA_COLUMN(ChargeKaon, chargeKaon, int8_t);
-DECLARE_SOA_COLUMN(DcaXYKaon, dcaXYKaon, float);
-DECLARE_SOA_COLUMN(DcaZKaon, dcaZKaon, float);
-DECLARE_SOA_COLUMN(NSigmaKKaon, nSigmaKKaon, float);
-
-DECLARE_SOA_COLUMN(DoubleOmegaMass, doubleOmegaMass, float);
+DECLARE_SOA_COLUMN(PtDoubleOmega, ptDoubleOmega, float);
+DECLARE_SOA_COLUMN(EtaDoubleOmega, etaDoubleOmega, float);
+DECLARE_SOA_COLUMN(PhiDoubleOmega, phiDoubleOmega, float);
+DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);
+DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);
+DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);
+DECLARE_SOA_COLUMN(CosPAOmega, cosPAOmega, float);
+DECLARE_SOA_COLUMN(CosPADirectLambda, cosPADirectLambda, float);
+DECLARE_SOA_COLUMN(CosPADoubleOmega, cosPADoubleOmega, float);
+DECLARE_SOA_COLUMN(DCAxyOmegaToPV, dcaXYOmegaToPV, float);
+DECLARE_SOA_COLUMN(DCAzOmegaToPV, dcaZOmegaToPV, float);
+DECLARE_SOA_COLUMN(DCAxyDirectLambdaToPV, dcaXYDirectLambdaToPV, float);
+DECLARE_SOA_COLUMN(DCAzDirectLambdaToPV, dcaZDirectLambdaToPV, float);
+DECLARE_SOA_COLUMN(DCAxyDirectKaonToPV, dcaXYDirectKaonToPV, float);
+DECLARE_SOA_COLUMN(DCAzDirectKaonToPV, dcaZDirectKaonToPV, float);
+DECLARE_SOA_COLUMN(MassDoubleOmega, massDoubleOmega, float);
+DECLARE_SOA_COLUMN(MassOmega, massOmega, float);
+DECLARE_SOA_COLUMN(MassXi, massXi, float);
 
 DECLARE_SOA_COLUMN(GenPt, genPt, float);
 DECLARE_SOA_COLUMN(GenEta, genEta, float);
@@ -62,36 +48,25 @@ DECLARE_SOA_COLUMN(PdgDoubleOmega, pdgDoubleOmega, int);
 DECLARE_SOA_COLUMN(IsReco, isReco, bool);
 } // namespace DoubleOmegaTables
 
-#define DOUBLE_OMEGA_RECO_COLUMNS          \
-  DoubleOmegaTables::PtCasc1,              \
-    DoubleOmegaTables::EtaCasc1,           \
-    DoubleOmegaTables::PhiCasc1,           \
-    DoubleOmegaTables::CascDecLength1,     \
-    DoubleOmegaTables::OmegaMassCasc1,     \
-    DoubleOmegaTables::XiMassCasc1,        \
-    DoubleOmegaTables::CosPACasc1,         \
-    DoubleOmegaTables::DcaBachPVCasc1,     \
-    DoubleOmegaTables::DcaV0BachCasc1,     \
-    DoubleOmegaTables::NSigmaKBach1,       \
-    DoubleOmegaTables::PtLambda,           \
-    DoubleOmegaTables::EtaLambda,          \
-    DoubleOmegaTables::PhiLambda,          \
-    DoubleOmegaTables::LambdaDecLength,    \
-    DoubleOmegaTables::LambdaMass,         \
-    DoubleOmegaTables::CosPALambda,        \
-    DoubleOmegaTables::DcaPosPVLambda,     \
-    DoubleOmegaTables::DcaNegPVLambda,     \
-    DoubleOmegaTables::DcaLambdaDaughters, \
-    DoubleOmegaTables::NSigmaPrLambda,     \
-    DoubleOmegaTables::NSigmaPiLambda,     \
-    DoubleOmegaTables::PtKaon,             \
-    DoubleOmegaTables::EtaKaon,            \
-    DoubleOmegaTables::PhiKaon,            \
-    DoubleOmegaTables::ChargeKaon,         \
-    DoubleOmegaTables::DcaXYKaon,          \
-    DoubleOmegaTables::DcaZKaon,           \
-    DoubleOmegaTables::NSigmaKKaon,        \
-    DoubleOmegaTables::DoubleOmegaMass
+#define DOUBLE_OMEGA_RECO_COLUMNS             \
+  DoubleOmegaTables::PtDoubleOmega,           \
+    DoubleOmegaTables::EtaDoubleOmega,        \
+    DoubleOmegaTables::PhiDoubleOmega,        \
+    DoubleOmegaTables::DecayVtxX,             \
+    DoubleOmegaTables::DecayVtxY,             \
+    DoubleOmegaTables::DecayVtxZ,             \
+    DoubleOmegaTables::CosPAOmega,            \
+    DoubleOmegaTables::CosPADirectLambda,     \
+    DoubleOmegaTables::CosPADoubleOmega,      \
+    DoubleOmegaTables::DCAxyOmegaToPV,        \
+    DoubleOmegaTables::DCAzOmegaToPV,         \
+    DoubleOmegaTables::DCAxyDirectLambdaToPV, \
+    DoubleOmegaTables::DCAzDirectLambdaToPV,  \
+    DoubleOmegaTables::DCAxyDirectKaonToPV,   \
+    DoubleOmegaTables::DCAzDirectKaonToPV,    \
+    DoubleOmegaTables::MassDoubleOmega,       \
+    DoubleOmegaTables::MassOmega,             \
+    DoubleOmegaTables::MassXi
 
 DECLARE_SOA_TABLE(DoubleOmegaTable, "AOD", "DOUBLEOMEGATABLE",
                   DOUBLE_OMEGA_RECO_COLUMNS);
