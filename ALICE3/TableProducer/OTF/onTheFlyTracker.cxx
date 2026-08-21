@@ -768,26 +768,28 @@ struct OnTheFlyTracker {
   /// \param pdgCode pdg code for a common particle (particle handled by the tracker)
   int pdgCodeToPID(int pdgCode) const
   {
-    if (std::abs(pdgCode) == PDG_t::kElectron) {
-      return o2::track::PID::Electron;
-    } else if (std::abs(pdgCode) == PDG_t::kMuonMinus) {
-      return o2::track::PID::Muon;
-    } else if (std::abs(pdgCode) == PDG_t::kPiPlus) {
-      return o2::track::PID::Pion;
-    } else if (std::abs(pdgCode) == PDG_t::kKPlus) {
-      return o2::track::PID::Kaon;
-    } else if (std::abs(pdgCode) == PDG_t::kProton) {
-      return o2::track::PID::Proton;
-    } else if (std::abs(pdgCode) == PDG_t::kLambda0) {
-      return o2::track::PID::Lambda;
-    } else if (std::abs(pdgCode) == PDG_t::kSigmaPlus || std::abs(pdgCode) == PDG_t::kSigmaMinus) {
-      return o2::track::PID::XiMinus; // Close enough
-    } else if (std::abs(pdgCode) == PDG_t::kXiMinus) {
-      return o2::track::PID::XiMinus;
-    } else if (std::abs(pdgCode) == PDG_t::kOmegaMinus) {
-      return o2::track::PID::OmegaMinus;
-    } else {
-      return o2::track::PID::Pion; // Default trackParCov assumption
+    switch (std::abs(pdgCode)) {
+      case PDG_t::kElectron:
+        return o2::track::PID::Electron;
+      case PDG_t::kMuonMinus:
+        return o2::track::PID::Muon;
+      case PDG_t::kPiPlus:
+        return o2::track::PID::Pion;
+      case PDG_t::kKPlus:
+        return o2::track::PID::Kaon;
+      case PDG_t::kProton:
+        return o2::track::PID::Proton;
+      case PDG_t::kLambda0:
+        return o2::track::PID::Lambda;
+      case PDG_t::kSigmaPlus:
+      case PDG_t::kSigmaMinus:
+        return o2::track::PID::XiMinus; // Close enough
+      case PDG_t::kXiMinus:
+        return o2::track::PID::XiMinus;
+      case PDG_t::kOmegaMinus:
+        return o2::track::PID::OmegaMinus;
+      default:
+        return o2::track::PID::Pion; // Default trackParCov assumption
     }
   }
 
