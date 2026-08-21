@@ -121,9 +121,9 @@ constexpr int IdBitPR = 2;
 constexpr int IdBitEL = 3;
 constexpr int IdBitMU = 4;
 constexpr int IdBitDE = 5;
-constexpr int IdBitTR = 6;
-constexpr int IdBitHE = 7;
-constexpr int IdBitAL = 8;
+// constexpr int IdBitTR = 6;
+// constexpr int IdBitHE = 7;
+// constexpr int IdBitAL = 8;
 
 #define BIT_IS_K0S 0
 #define BIT_IS_LAMBDA 1
@@ -158,13 +158,13 @@ static const double doublePowersOf10[] = {
   1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,
   1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18};
 
-static const int64_t intPowersOf10[] = {
-  1LL, 10LL, 100LL, 1000LL, 10000LL, 100000LL, 1000000LL,
-  10000000LL, 100000000LL, 1000000000LL, 10000000000LL,
-  100000000000LL, 1000000000000LL, 10000000000000LL,
-  100000000000000LL, 1000000000000000LL,
-  10000000000000000LL, 100000000000000000LL,
-  1000000000000000000LL};
+// static const int64_t intPowersOf10[] = {
+//   1LL, 10LL, 100LL, 1000LL, 10000LL, 100000LL, 1000000LL,
+//   10000000LL, 100000000LL, 1000000000LL, 10000000000LL,
+//   100000000000LL, 1000000000000LL, 10000000000000LL,
+//   100000000000000LL, 1000000000000000LL,
+//   10000000000000000LL, 100000000000000000LL,
+//   1000000000000000000LL};
 
 template <typename T>
 inline T getCfg(const auto& cfgLabelledArray, int32_t row, int32_t col)
