@@ -309,6 +309,17 @@ struct Alice3strangenessFinder {
       histos.add("CascadeBuilding/hXiMass", "", kTH1D, {axisXiMass});
       histos.add("CascadeBuilding/hOmegaMass", "", kTH1D, {axisOmegaMass});
     }
+    histos.add("hPx", "", kTH1D, {{200, -10.f, 10.f}});
+    histos.add("hPy", "", kTH1D, {{200, -10.f, 10.f}});
+    histos.add("hPz", "", kTH1D, {{200, -10.f, 10.f}});
+
+    histos.add("hPxPairs", "", kTH1D, {{200, -10.f, 10.f}});
+    histos.add("hPyPairs", "", kTH1D, {{200, -10.f, 10.f}});
+    histos.add("hPzPairs", "", kTH1D, {{200, -10.f, 10.f}});
+
+    histos.add("hPxV0CandDaughter", "", kTH1D, {{200, -10.f, 10.f}});
+    histos.add("hPyV0CandDaughter", "", kTH1D, {{200, -10.f, 10.f}});
+    histos.add("hPzV0CandDaughter", "", kTH1D, {{200, -10.f, 10.f}});
 
     histos.print();
   }
@@ -516,6 +527,14 @@ struct Alice3strangenessFinder {
       }
 
       o2::track::TrackParCov pos = getTrackParCov(posTrack);
+      // if constexpr (requires { posTrack.pdgCode(); }) {
+      // if (posTrack.pdgCode() == kPiPlus) {
+      histos.fill(HIST("hPx"), posTrack.px());
+      histos.fill(HIST("hPy"), posTrack.py());
+      histos.fill(HIST("hPz"), posTrack.pz());
+      // }
+      // }
+
       for (auto const& negTrack : negTracksGrouped) {
         if (!negTrack.isReconstructed()) {
           continue; // no ghost tracks
@@ -571,6 +590,13 @@ struct Alice3strangenessFinder {
         //  } else {
         //    histos.fill(HIST("hV0Counter"), 3.5);
         //  }
+        histos.fill(HIST("hPxPairs"), posTrack.px());
+        histos.fill(HIST("hPyPairs"), posTrack.py());
+        histos.fill(HIST("hPzPairs"), posTrack.pz());
+
+        histos.fill(HIST("hPxV0CandDaughter"), v0Cand.pDau0[0]);
+        histos.fill(HIST("hPyV0CandDaughter"), v0Cand.pDau0[1]);
+        histos.fill(HIST("hPzV0CandDaughter"), v0Cand.pDau0[2]);
 
         v0CandidateIndices(collision.globalIndex(),
                            posTrack.globalIndex(),
