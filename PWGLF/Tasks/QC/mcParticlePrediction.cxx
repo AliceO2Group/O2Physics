@@ -253,10 +253,10 @@ struct McParticlePrediction {
   } cfgPrediction;
 
   Configurable<LabeledArray<int>> enabledSpecies{"enabledSpecies",
-                                                 {defaultParticles[0], PIDExtended::NIDsTot, defaultParticles[0].size(), PIDExtended::arrayNames(), {"Enable", "SelectPrimaries"}},
+                                                 {&defaultParticles[0][0], PIDExtended::NIDsTot, defaultParticles[0].size(), PIDExtended::arrayNames(), {"Enable", "SelectPrimaries"}},
                                                  "Particles enabled"};
   Configurable<LabeledArray<int>> enabledEstimators{"enabledEstimators",
-                                                    {defaultEstimators[0], Estimators::nEstimators, defaultEstimators[0].size(), Estimators::arrayNames(), {"Enable"}},
+                                                    {&defaultEstimators[0][0], Estimators::nEstimators, defaultEstimators[0].size(), Estimators::arrayNames(), {"Enable"}},
                                                     "Estimators enabled"};
   Configurable<bool> selectInelGt0{"selectInelGt0", true, "Select only inelastic events"};
   Configurable<bool> selectPrimariesForMultiplicity{"selectPrimariesForMultiplicity", true, "Select only primary particles for multiplicity computation"};
