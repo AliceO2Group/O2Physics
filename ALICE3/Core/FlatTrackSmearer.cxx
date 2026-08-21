@@ -27,6 +27,7 @@
 #include <fstream>
 #include <span>
 #include <string>
+#include <vector>
 
 namespace o2::delphes
 {
@@ -139,7 +140,7 @@ bool TrackSmearer::adoptTable(int pdg, const uint8_t* buffer, size_t size, bool 
     return false;
   }
   try {
-    auto header = FlatLutData::PreviewHeader(buffer, size);
+    auto header = FlatLutData::previewHeader(buffer, size);
     if (header.pdg != pdg && !checkSpecialCase(pdg, header)) {
       LOGF(error, "LUT header PDG mismatch: expected %d, got %d", pdg, header.pdg);
       return false;
@@ -162,7 +163,7 @@ bool TrackSmearer::viewTable(int pdg, const uint8_t* buffer, size_t size, bool f
     return false;
   }
   try {
-    auto header = FlatLutData::PreviewHeader(buffer, size);
+    auto header = FlatLutData::previewHeader(buffer, size);
     if (header.pdg != pdg && !checkSpecialCase(pdg, header)) {
       LOGF(error, "LUT header PDG mismatch: expected %d, got %d", pdg, header.pdg);
       return false;
