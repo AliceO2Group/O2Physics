@@ -17,6 +17,7 @@
 
 #include "PWGLF/DataModel/mcCentrality.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
