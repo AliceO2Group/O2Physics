@@ -756,6 +756,7 @@ struct QaMatching {
     MatchRankingHistos(const std::string& histName, const std::string& histTitle, HistogramRegistry* registry, int mftMultMax, int numCandidates)
     {
       AxisSpec pAxis = {100, 0, 100, "p (GeV/c)"};
+      AxisSpec logpAxis = {32, -1, 3, "log_{10}(p)"};
       AxisSpec ptAxis = {100, 0, 10, "p_{T} (GeV/c)"};
       AxisSpec dzAxis = {100, -1, 4, "#Deltaz (cm)"};
       AxisSpec trackMultAxis = {mftMultMax / 10, 0, static_cast<double>(mftMultMax), "MFT track mult."};
@@ -778,7 +779,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH2>>(histVsMftTrackType)->GetXaxis()->SetBinLabel(1, "Kalman");
       std::get<std::shared_ptr<TH2>>(histVsMftTrackType)->GetXaxis()->SetBinLabel(2, "CA");
       histVsDeltaChi2 = registry->add((histName + "VsDeltaChi2").c_str(), (histTitle + " vs. #Delta#chi^{2}").c_str(), {HistType::kTH2F, {dchi2Axis, indexAxis}});
-      histVsProdRanking = registry->add((histName + "VsProdRanking").c_str(), (histTitle + " vs. prod ranking").c_str(), {HistType::kTH2F, {indexProdAxis, indexAxis}});
+      histVsProdRanking = registry->add((histName + "VsProdRanking").c_str(), (histTitle + " vs. prod ranking").c_str(), {HistType::kTHnSparseF, {indexProdAxis, indexAxis, logpAxis}});
     }
   };
 
@@ -2334,6 +2335,7 @@ struct QaMatching {
         mftTrackType = pairedMftTrack.isCA() ? MftTrackTypeCA : MftTrackTypeStandard;
         decayRanking = getDecayRanking(mchTrack, mftTracks);
       }
+      double logp = std::log10(mchTrack.p());
 
       // find the index of the matching candidate that corresponds to the true match
       // index=1 corresponds to the leading candidate
@@ -2360,7 +2362,7 @@ struct QaMatching {
       std::get<std::shared_ptr<TH2>>(plotter->fMatchRanking->histVsMftTrackMult)->Fill(mftTrackMult, trueMatchIndex);
       std::get<std::shared_ptr<TH2>>(plotter->fMatchRanking->histVsMatchAttempts)->Fill(matchAttempts, trueMatchIndex);
       std::get<std::shared_ptr<TH2>>(plotter->fMatchRanking->histVsMftTrackType)->Fill(mftTrackType, trueMatchIndex);
-      std::get<std::shared_ptr<TH2>>(plotter->fMatchRanking->histVsProdRanking)->Fill(trueMatchIndexProd, trueMatchIndex);
+      std::get<std::shared_ptr<THnSparse>>(plotter->fMatchRanking->histVsProdRanking)->Fill(trueMatchIndexProd, trueMatchIndex, logp);
       if (dchi2 >= 0)
         std::get<std::shared_ptr<TH2>>(plotter->fMatchRanking->histVsDeltaChi2)->Fill(dchi2, trueMatchIndex);
 
@@ -2372,7 +2374,7 @@ struct QaMatching {
         std::get<std::shared_ptr<TH2>>(plotter->fMatchRankingGoodMCH->histVsMftTrackMult)->Fill(mftTrackMult, trueMatchIndex);
         std::get<std::shared_ptr<TH2>>(plotter->fMatchRankingGoodMCH->histVsMatchAttempts)->Fill(matchAttempts, trueMatchIndex);
         std::get<std::shared_ptr<TH2>>(plotter->fMatchRankingGoodMCH->histVsMftTrackType)->Fill(mftTrackType, trueMatchIndex);
-        std::get<std::shared_ptr<TH2>>(plotter->fMatchRankingGoodMCH->histVsProdRanking)->Fill(trueMatchIndexProd, trueMatchIndex);
+        std::get<std::shared_ptr<THnSparse>>(plotter->fMatchRankingGoodMCH->histVsProdRanking)->Fill(trueMatchIndexProd, trueMatchIndex, logp);
         if (dchi2 >= 0)
           std::get<std::shared_ptr<TH2>>(plotter->fMatchRankingGoodMCH->histVsDeltaChi2)->Fill(dchi2, trueMatchIndex);
       }
@@ -2385,7 +2387,7 @@ struct QaMatching {
         std::get<std::shared_ptr<TH2>>(plotter->fMatchRankingPaired->histVsMftTrackMult)->Fill(mftTrackMult, trueMatchIndex);
         std::get<std::shared_ptr<TH2>>(plotter->fMatchRankingPaired->histVsMatchAttempts)->Fill(matchAttempts, trueMatchIndex);
         std::get<std::shared_ptr<TH2>>(plotter->fMatchRankingPaired->histVsMftTrackType)->Fill(mftTrackType, trueMatchIndex);
-        std::get<std::shared_ptr<TH2>>(plotter->fMatchRankingPaired->histVsProdRanking)->Fill(trueMatchIndexProd, trueMatchIndex);
+        std::get<std::shared_ptr<THnSparse>>(plotter->fMatchRankingPaired->histVsProdRanking)->Fill(trueMatchIndexProd, trueMatchIndex, logp);
         if (dchi2 >= 0)
           std::get<std::shared_ptr<TH2>>(plotter->fMatchRankingPaired->histVsDeltaChi2)->Fill(dchi2, trueMatchIndex);
       }
@@ -2398,14 +2400,12 @@ struct QaMatching {
         std::get<std::shared_ptr<TH2>>(plotter->fMatchRankingPairedGoodMCH->histVsMftTrackMult)->Fill(mftTrackMult, trueMatchIndex);
         std::get<std::shared_ptr<TH2>>(plotter->fMatchRankingPairedGoodMCH->histVsMatchAttempts)->Fill(matchAttempts, trueMatchIndex);
         std::get<std::shared_ptr<TH2>>(plotter->fMatchRankingPairedGoodMCH->histVsMftTrackType)->Fill(mftTrackType, trueMatchIndex);
-        std::get<std::shared_ptr<TH2>>(plotter->fMatchRankingPairedGoodMCH->histVsProdRanking)->Fill(trueMatchIndexProd, trueMatchIndex);
+        std::get<std::shared_ptr<THnSparse>>(plotter->fMatchRankingPairedGoodMCH->histVsProdRanking)->Fill(trueMatchIndexProd, trueMatchIndex, logp);
         if (dchi2 >= 0)
           std::get<std::shared_ptr<TH2>>(plotter->fMatchRankingPairedGoodMCH->histVsDeltaChi2)->Fill(dchi2, trueMatchIndex);
       }
 
       if (isGoodMCH) {
-        double logp = std::log10(mchTrack.p());
-
         int isTagged = 0;
         if (std::find(taggedMuons.begin(), taggedMuons.end(), mchIndex) != taggedMuons.end()) {
           isTagged = 1;
