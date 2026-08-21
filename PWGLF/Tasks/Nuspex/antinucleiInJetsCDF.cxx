@@ -60,14 +60,12 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 using namespace o2::constants::math;
 
-
 // Define convenient aliases for commonly used table joins
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
 using RecCollisionsMc = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::McCollisionLabels>;
 using GenCollisionsMc = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 using AntiNucleiTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTOFFullPr, aod::pidTOFFullDe>;
 using AntiNucleiTracksMc = soa::Join<AntiNucleiTracks, aod::McTrackLabels>;
-
 
 // Lightweight particle container
 struct ReducedParticle {
@@ -138,24 +136,16 @@ struct AntinucleiInJetsCDF {
       registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{20, 0, 20, "counter"}});
 
       // Antiproton histograms
-      registryData.add("antip_toward_tpc", "antip_toward_tpc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"},
-          {400, -20.0, 20.0, "n#sigma_{TPC}"}});
-      registryData.add("antip_toward_tof", "antip_toward_tof", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"},
-          {400, -20.0, 20.0, "n#sigma_{TOF}"}});
-      registryData.add("antip_transv_tpc", "antip_transv_tpc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"},
-          {400, -20.0, 20.0, "n#sigma_{TPC}"}});
-      registryData.add("antip_transv_tof", "antip_transv_tof", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"},
-          {400, -20.0, 20.0, "n#sigma_{TOF}"}});
+      registryData.add("antip_toward_tpc", "antip_toward_tpc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
+      registryData.add("antip_toward_tof", "antip_toward_tof", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
+      registryData.add("antip_transv_tpc", "antip_transv_tpc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
+      registryData.add("antip_transv_tof", "antip_transv_tof", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
 
       // Antideuteron histograms
-      registryData.add("antid_toward_tpc", "antid_toward_tpc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"},
-          {400, -20.0, 20.0, "n#sigma_{TPC}"}});
-      registryData.add("antid_toward_tof", "antid_toward_tof", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"},
-          {400, -20.0, 20.0, "n#sigma_{TOF}"}});
-      registryData.add("antid_transv_tpc", "antid_transv_tpc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"},
-          {400, -20.0, 20.0, "n#sigma_{TPC}"}});
-      registryData.add("antid_transv_tof", "antid_transv_tof", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"},
-          {400, -20.0, 20.0, "n#sigma_{TOF}"}});
+      registryData.add("antid_toward_tpc", "antid_toward_tpc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
+      registryData.add("antid_toward_tof", "antid_toward_tof", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
+      registryData.add("antid_transv_tpc", "antid_transv_tpc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
+      registryData.add("antid_transv_tof", "antid_transv_tof", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
     }
 
     // Process generated MC
@@ -188,22 +178,14 @@ struct AntinucleiInJetsCDF {
       registryMC.add("antid_rec_tof", "antid_rec_tof", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
 
       // Histograms for reconstructed particles in different azimuthal regions
-      registryMC.add("antip_toward_rec_tpc", "antip_toward_rec_tpc", HistType::kTH1F,
-                         {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
-      registryMC.add("antip_toward_rec_tof", "antip_toward_rec_tof", HistType::kTH1F,
-                         {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
-      registryMC.add("antip_transv_rec_tpc", "antip_transv_rec_tpc", HistType::kTH1F,
-                         {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
-      registryMC.add("antip_transv_rec_tof", "antip_transv_rec_tof", HistType::kTH1F,
-                         {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
-      registryMC.add("antid_toward_rec_tpc", "antid_toward_rec_tpc", HistType::kTH1F,
-                         {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
-      registryMC.add("antid_toward_rec_tof", "antid_toward_rec_tof", HistType::kTH1F,
-                         {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
-      registryMC.add("antid_transv_rec_tpc", "antid_transv_rec_tpc", HistType::kTH1F,
-                         {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
-      registryMC.add("antid_transv_rec_tof", "antid_transv_rec_tof", HistType::kTH1F,
-                         {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antip_toward_rec_tpc", "antip_toward_rec_tpc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antip_toward_rec_tof", "antip_toward_rec_tof", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antip_transv_rec_tpc", "antip_transv_rec_tpc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antip_transv_rec_tof", "antip_transv_rec_tof", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antid_toward_rec_tpc", "antid_toward_rec_tpc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antid_toward_rec_tof", "antid_toward_rec_tof", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antid_transv_rec_tpc", "antid_transv_rec_tpc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("antid_transv_rec_tof", "antid_transv_rec_tof", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
 
       // Histograms for secondary antiprotons
       registryMC.add("antip_toward_prim", "antip_toward_prim", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -240,9 +222,9 @@ struct AntinucleiInJetsCDF {
     if ((!hasITSHit(track, 1)) && (!hasITSHit(track, 2)) && (!hasITSHit(track, 3)))
       return false;
     if (!track.hasTPC())
-     return false;
+      return false;
     if (track.tpcNClsCrossedRows() < MinTpcCr)
-     return false;
+      return false;
     if (track.tpcChi2NCl() > MaxChi2Tpc)
       return false;
     if (track.itsChi2NCl() > MaxChi2Its)
@@ -310,8 +292,7 @@ struct AntinucleiInJetsCDF {
   {
     static constexpr double Two = 2.0;
     const double deltaPhi = std::remainder(particle.Phi() - leadingParticle.Phi(), o2::constants::math::TwoPI);
-    return (std::abs(deltaPhi) >= o2::constants::math::PIThird &&
-              std::abs(deltaPhi) < Two * o2::constants::math::PIThird);
+    return (std::abs(deltaPhi) >= o2::constants::math::PIThird && std::abs(deltaPhi) < Two * o2::constants::math::PIThird);
   }
 
   // Check if particle is a physical primary or a decay product of a heavy-flavor hadron
@@ -453,7 +434,6 @@ struct AntinucleiInJetsCDF {
   }
   PROCESS_SWITCH(AntinucleiInJetsCDF, processData, "Process real-data analysis", true);
 
-
   // Define preslice to group MC particles by their associated MC collision
   Preslice<aod::McParticles> mcParticlesPerMcCollision = o2::aod::mcparticle::mcCollisionId;
 
@@ -550,7 +530,6 @@ struct AntinucleiInJetsCDF {
     }
   }
   PROCESS_SWITCH(AntinucleiInJetsCDF, processGenMC, "Process gen MC", false);
-
 
   // Define preslice to group reconstructed MC tracks by collision
   Preslice<AntiNucleiTracksMc> mcTracksPerMcCollision = o2::aod::track::collisionId;
