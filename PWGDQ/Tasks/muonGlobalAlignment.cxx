@@ -41,7 +41,6 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 #include <GPU/GPUROOTCartesianFwd.h>
-#include <GlobalTracking/MatchGlobalFwd.h>
 #include <MCHBase/TrackerParam.h>
 #include <MCHGeometryTransformer/Transformations.h>
 #include <MCHTracking/Track.h>
@@ -348,8 +347,8 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
       base::Propagator::initFieldFromGRP(grpmag);
       TrackExtrap::setField();
       TrackExtrap::useExtrapV2();
-      fieldB = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField()); // for MFT
-      std::array<double, 3> centerMFT{0, 0, -61.4};                                                // or use middle point between Vtx and MFT?
+      fieldB = dynamic_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField()); // for MFT
+      std::array<double, 3> centerMFT{0, 0, -61.4};                                                 // or use middle point between Vtx and MFT?
       mBzAtMftCenter = fieldB->getBz(centerMFT.data());
     } else {
       LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", bc.timestamp());
@@ -1301,8 +1300,8 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
                                 collision.posX(),
                                 collision.posY(),
                                 collision.posZ(),
-                                collision.covXX(),
-                                collision.covYY());
+                                std::sqrt(collision.covXX()),
+                                std::sqrt(collision.covYY()));
   }
 
   template <class TMFT>
@@ -1380,7 +1379,12 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
 
     // extrapolation with MCH tools
     auto mchTrackAtMFT = FwdtoMCH(mchTrackPar);
-    o2::mch::TrackExtrap::extrapToVertexWithoutBranson(mchTrackAtMFT, mftTrackPar.getZ());
+    o2::mch::TrackExtrap::extrapToVertex(mchTrackAtMFT,
+                                         mftTrackPar.getX(),
+                                         mftTrackPar.getY(),
+                                         mftTrackPar.getZ(),
+                                         std::sqrt(mftTrackPar.getSigma2X()),
+                                         std::sqrt(mftTrackPar.getSigma2Y()));
     UpdateTrackMomentum(mftTrackPar, mchTrackAtMFT);
 
     // double propVec[3] = {};
@@ -1406,13 +1410,18 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
     return result;
   }
 
-  o2::dataformats::GlobalFwdTrack PropagateMFTtoMCH(o2::track::TrackParCovFwd mftTrackPar,
+  o2::dataformats::GlobalFwdTrack PropagateMFTtoMCH(const o2::track::TrackParCovFwd& mftTrackPar,
                                                     const o2::mch::TrackParam& mchTrackPar,
                                                     const double z)
   {
     // extrapolation with MCH tools
     auto mchTrackAtMFT = mchTrackPar;
-    o2::mch::TrackExtrap::extrapToVertexWithoutBranson(mchTrackAtMFT, mftTrackPar.getZ());
+    o2::mch::TrackExtrap::extrapToVertex(mchTrackAtMFT,
+                                         mftTrackPar.getX(),
+                                         mftTrackPar.getY(),
+                                         mftTrackPar.getZ(),
+                                         std::sqrt(mftTrackPar.getSigma2X()),
+                                         std::sqrt(mftTrackPar.getSigma2Y()));
 
     auto mftTrackProp = FwdtoMCH(mftTrackPar);
     UpdateTrackMomentum(mftTrackProp, mchTrackAtMFT);
@@ -1449,24 +1458,20 @@ struct muonGlobalAlignment { // o2-linter: disable=name/workflow-file,name/struc
   {
     // extrapolation with MCH tools
     auto mchTrackAtMFT = FwdtoMCH(mchTrackPar);
-    o2::mch::TrackExtrap::extrapToVertexWithoutBranson(mchTrackAtMFT, mftTrackPar.getZ());
+    o2::mch::TrackExtrap::extrapToVertex(mchTrackAtMFT,
+                                         mftTrackPar.getX(),
+                                         mftTrackPar.getY(),
+                                         mftTrackPar.getZ(),
+                                         std::sqrt(mftTrackPar.getSigma2X()),
+                                         std::sqrt(mftTrackPar.getSigma2Y()));
 
-    auto mftTrackProp = FwdtoMCH(mftTrackPar);
+    auto fwdTrackProp = fwdtrackutils::refitGlobalMuonCov(MCHtoFwd(mchTrackAtMFT), mftTrackPar);
 
-    // update global track momentum from the MCH track
-    double pRatio = mftTrackProp.p() / mchTrackAtMFT.p();
-    double newInvBendMom = mftTrackProp.getInverseBendingMomentum() * pRatio;
-    mftTrackProp.setInverseBendingMomentum(newInvBendMom);
-    mftTrackProp.setCharge(mchTrackAtMFT.getCharge());
+    auto geoMan = o2::base::GeometryManager::meanMaterialBudget(fwdTrackProp.getX(), fwdTrackProp.getY(), fwdTrackProp.getZ(), collision.posX(), collision.posY(), collision.posZ());
+    auto x2x0 = static_cast<float>(geoMan.meanX2X0);
+    fwdTrackProp.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, mBzAtMftCenter, x2x0);
 
-    o2::mch::TrackExtrap::extrapToVertex(mftTrackProp,
-                                         collision.posX(),
-                                         collision.posY(),
-                                         collision.posZ(),
-                                         collision.covXX(),
-                                         collision.covYY());
-
-    return MCHtoFwd(mftTrackProp);
+    return fwdTrackProp;
   }
 
   void getMuonPairs(const CollisionInfo& collisionInfo,
