@@ -583,7 +583,8 @@ struct Alice3TrackingTranslator {
 
         tableTracksExtraA3(m_nMeasurements, // nSiliconHits (using m_nMeasurements as proxy)
                            0,               // nTPCHits
-                           0);              // trackType
+                           0,               // trackType
+                           false);          // isPVContributor
 
         // Fill extra track info
         tableStoredTracksExtra(0.f,                                 // TPCInnerParam
