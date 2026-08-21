@@ -1106,7 +1106,7 @@ struct he3HadronFemto {
         he3Hadcand.l4PtMC, he3Hadcand.l4MassMC, he3Hadcand.flags);
     }
     outputMultiplicityTable(
-      collisionInfo.collisionID,  collisionInfo.selectionFlags, collisionInfo.posZ,
+      collisionInfo.collisionID, collisionInfo.selectionFlags, collisionInfo.posZ,
       collisionInfo.numContributors, collisionInfo.centFT0C, collisionInfo.multFT0C,
       collisionInfo.occupancy);
     outputQaTable(
@@ -1255,7 +1255,7 @@ struct he3HadronFemto {
         He3HadCandidate he3Hadcand;
         fillCandidateInfoMC(mcHe3, mcHad, he3Hadcand);
         fillMotherInfoMC(mcHe3, mcHad, mcParticle, he3Hadcand);
-        
+
         const auto mcCollisionId = mcParticle.mcCollisionId();
         const auto collisionId = mMcCollisionIdToRecoCollisionId[mcCollisionId];
         CollisionInfo collisionInfo;
@@ -1663,7 +1663,6 @@ struct he3HadronFemto {
     }
   }
   PROCESS_SWITCH(he3HadronFemto, processEventLossMC, "Event loss analysis", false);
-
 };
 
 WorkflowSpec defineDataProcessing(const ConfigContext& cfgc)
