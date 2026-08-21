@@ -2403,9 +2403,9 @@ struct KaonIsospinFluctuations {
     if (!vetoIdOthersTOF<kEl>(track)) {
       return false;
     }
-    static const float kNSigmaRadHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kEl, kNSigmaRadHighP);
+    static const float nSigmaRadHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kEl, kNSigmaRadHighP);
     const float sumSq = track.tpcNSigmaEl() * track.tpcNSigmaEl() + track.tofNSigmaEl() * track.tofNSigmaEl();
-    return sumSq < kNSigmaRadHighP;
+    return sumSq < nSigmaRadHighP;
   }
 
   //______________________________Identification Functions________________________________________________________________
@@ -3546,44 +3546,44 @@ struct KaonIsospinFluctuations {
     static const bool fillPostSelDau = getCfg<bool>(cfgPrimVtxParticleCuts, row, kPrimFillPostSelDau);
 
     static LorentzVector vecMother;
-    uint16_t flagBit = 0;
+    // uint16_t flagBit = 0;
 
     // Mass window check & vector assignment
     if constexpr (particleMode == Phi1020) {
       if (!(massLow < mother.mPhi1020() && mother.mPhi1020() < massHigh))
         return;
       BITSET(primVtxCndtTag, BIT_IS_PHI_1020);
-      flagBit = 1 << BIT_IS_PHI_1020;
+      // flagBit = 1 << BIT_IS_PHI_1020;
       vecMother = LorentzVector(mother.px(), mother.py(), mother.pz(), mother.mPhi1020());
     } else if constexpr (particleMode == JPsiToEE) {
       if (!(massLow < mother.mJPsiToEE() && mother.mJPsiToEE() < massHigh))
         return;
       BITSET(primVtxCndtTag, BIT_IS_JPSI_TO_EE);
-      flagBit = 1 << BIT_IS_JPSI_TO_EE;
+      // flagBit = 1 << BIT_IS_JPSI_TO_EE;
       vecMother = LorentzVector(mother.px(), mother.py(), mother.pz(), mother.mJPsiToEE());
     } else if constexpr (particleMode == JPsiToMuMu) {
       if (!(massLow < mother.mJPsiToMuMu() && mother.mJPsiToMuMu() < massHigh))
         return;
       BITSET(primVtxCndtTag, BIT_IS_JPSI_TO_MUMU);
-      flagBit = 1 << BIT_IS_JPSI_TO_MUMU;
+      // flagBit = 1 << BIT_IS_JPSI_TO_MUMU;
       vecMother = LorentzVector(mother.px(), mother.py(), mother.pz(), mother.mJPsiToMuMu());
     } else if constexpr (particleMode == KStar892) {
       if (!(massLow < mother.mKStar892() && mother.mKStar892() < massHigh))
         return;
       BITSET(primVtxCndtTag, BIT_IS_KSTAR_892);
-      flagBit = 1 << BIT_IS_KSTAR_892;
+      // flagBit = 1 << BIT_IS_KSTAR_892;
       vecMother = LorentzVector(mother.px(), mother.py(), mother.pz(), mother.mKStar892());
     } else if constexpr (particleMode == KStar892Bar) {
       if (!(massLow < mother.mKStar892Bar() && mother.mKStar892Bar() < massHigh))
         return;
       BITSET(primVtxCndtTag, BIT_IS_KSTAR_892_BAR);
-      flagBit = 1 << BIT_IS_KSTAR_892_BAR;
+      // flagBit = 1 << BIT_IS_KSTAR_892_BAR;
       vecMother = LorentzVector(mother.px(), mother.py(), mother.pz(), mother.mKStar892Bar());
     } else if constexpr (particleMode == Rho770) {
       if (!(massLow < mother.mRho770() && mother.mRho770() < massHigh))
         return;
       BITSET(primVtxCndtTag, BIT_IS_RHO_770);
-      flagBit = 1 << BIT_IS_RHO_770;
+      // flagBit = 1 << BIT_IS_RHO_770;
       vecMother = LorentzVector(mother.px(), mother.py(), mother.pz(), mother.mRho770());
     } else {
       static_assert(particleMode == Phi1020 || particleMode == JPsiToEE || particleMode == JPsiToMuMu ||
