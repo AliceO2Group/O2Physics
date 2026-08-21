@@ -79,7 +79,7 @@ struct ReducedParticle {
   double nsigmaTOF;
   bool hasTOF;
   bool isPhysPrim;
-    
+
   // Transverse Momentum
   double pt() const
   {
@@ -133,7 +133,7 @@ struct AntinucleiInJetsCDF {
 
     // Process real data
     if (doprocessData) {
-          
+
       // Event counter
       registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{20, 0, 20, "counter"}});
 
@@ -160,14 +160,14 @@ struct AntinucleiInJetsCDF {
 
     // Process generated MC
     if (doprocessGenMC) {
-          
+
       // Event counter
       registryMC.add("genEvents", "number of generated events in mc", HistType::kTH1F, {{10, 0, 10, "counter"}});
-          
+
       // Histograms for generated particles in the full event
       registryMC.add("antip_gen", "antip_gen", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antid_gen", "antid_gen", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
-        
+
       // Histograms for generated particles in different azimuthal regions
       registryMC.add("antip_toward_gen", "antip_toward_gen", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antip_transv_gen", "antip_transv_gen", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -177,16 +177,16 @@ struct AntinucleiInJetsCDF {
 
     // Process reconstructed MC
     if (doprocessRecMC) {
-          
+
       // Event counter
       registryMC.add("recEvents", "number of reconstructed events in mc", HistType::kTH1F, {{10, 0, 10, "counter"}});
-          
+
       // Histograms for reconstructed particles in the full event
       registryMC.add("antip_rec_tpc", "antip_rec_tpc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antip_rec_tof", "antip_rec_tof", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antid_rec_tpc", "antid_rec_tpc", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antid_rec_tof", "antid_rec_tof", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
-          
+
       // Histograms for reconstructed particles in different azimuthal regions
       registryMC.add("antip_toward_rec_tpc", "antip_toward_rec_tpc", HistType::kTH1F,
                          {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -204,7 +204,7 @@ struct AntinucleiInJetsCDF {
                          {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antid_transv_rec_tof", "antid_transv_rec_tof", HistType::kTH1F,
                          {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
-          
+
       // Histograms for secondary antiprotons
       registryMC.add("antip_toward_prim", "antip_toward_prim", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antip_toward_all", "antip_toward_all", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -313,7 +313,7 @@ struct AntinucleiInJetsCDF {
     return (std::abs(deltaPhi) >= o2::constants::math::PIThird &&
               std::abs(deltaPhi) < Two * o2::constants::math::PIThird);
   }
-    
+
   // Check if particle is a physical primary or a decay product of a heavy-flavor hadron
   bool isPhysicalPrimaryOrFromHF(aod::McParticle const& particle, aod::McParticles const& mcParticles)
   {
@@ -421,7 +421,7 @@ struct AntinucleiInJetsCDF {
       // Find azimuthal region
       const bool isToward = isParticleInTowardRegion(trackVec, leadingTrackVec);
       const bool isTransv = isParticleInTransverseRegion(trackVec, leadingTrackVec);
-        
+
       // Antiprotons in the toward region
       if (isToward && yp >= minY && yp <= maxY) {
         registryData.fill(HIST("antip_toward_tpc"), track.pt(), nsigmaTPCPr);
