@@ -50,6 +50,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <string>
 #include <string_view>
 #include <typeindex>
 #include <vector>
@@ -194,12 +195,12 @@ double calculateTime(T Start)
   return timeInSeconds;
 }
 template <typename T>
-void printTime(T Start, std::string String)
+void printTime(T Start, const std::string String)
 {
   LOG(info) << String << calculateTime(Start) << " seconds";
 }
 
-void printHistInfo(std::string String, const auto& hist)
+void printHistInfo(const std::string String, const auto& hist)
 {
   int64_t iEntries = hist->GetEntries();
   double mean = hist->GetMean();
@@ -1388,9 +1389,6 @@ struct KaonIsospinFluctuations {
           prefixLabel = "effWeightSum";
         }
         for (int i = 0; i < (kRejectedDe + 1); i++) {
-          if (i == kNonePid) {
-            continue;
-          }
           for (int j = kPos; j <= kNeg; j++) {
             signLabel = SignDire[j].data();
             if (kDe < i && i < kRejectedPi) {
@@ -1560,8 +1558,6 @@ struct KaonIsospinFluctuations {
       addAllV0Histos(recoK0s, "recoK0s/PreSel/", "Pi/", "Pi/", fillMotherQA, fillDauTrackQA);
       if (fillDauTrackQA) {
         recoK0s.addClone("recoK0s/PreSel/Pi/Pos/tpcId/", "recoK0s/PreSel/Pi/Pos/NoId/");
-      } // for unidentified
-      if (fillDauTrackQA) {
         recoK0s.addClone("recoK0s/PreSel/Pi/Pos/NoId/", "recoK0s/PreSel/Pi/Neg/NoId/");
       } // for unidentified
 
@@ -2591,7 +2587,7 @@ struct KaonIsospinFluctuations {
   }
 
   template <typename T, typename H>
-  void findRepeatedEntries(std::vector<H> ParticleList, T hist)
+  void findRepeatedEntries(const std::vector<H> ParticleList, T hist)
   {
     for (uint ii = 0; ii < ParticleList.size(); ii++) {
       int nCommonCount = 0; // checking the repeat number of track
@@ -3067,7 +3063,7 @@ struct KaonIsospinFluctuations {
       negDauMass = MassElectron;
     } else {
       static_assert(Mode == v0TableFull || Mode == v0TablePostK0sCheck || Mode == v0TablePostK0sMassCut ||
-                      Mode == v0TablePostK0sSelectionCut || Mode == v0TablePostLambdaCheck || Mode == v0TablePostLambdaCheck ||
+                      Mode == v0TablePostK0sSelectionCut || Mode == v0TablePostLambdaCheck ||
                       Mode == v0TablePostGammaCheck || Mode == recoK0sPreSel || Mode == recoK0sPostSel ||
                       Mode == recoLambdaPostSel || Mode == recoAntiLambdaPostSel || Mode == recoGammaPostSel,
                     "Unsupported particleMode");
@@ -3178,7 +3174,7 @@ struct KaonIsospinFluctuations {
   void executeV0loop(const T& posDaughterTrack, const T& negDaughterTrack, const U& v0,
                      auto& idMethodPi, auto& idMethodPr, auto& idMethodEl,
                      int& v0Tag, int& trueV0TagValue,
-                     int& v0DauCollisionIndexTag, int& v0DauBCTag, auto& v0CndtDauList,
+                     int& v0DauCollisionIndexTag, int& v0DauBCTag, auto& v0CandtDauList,
                      int& v0PtEtaBin, int& posDauPtEtaBin, int& negDauPtEtaBin,
                      float& v0K0sEffWeight, float& v0LambdaEffWeight, float& v0AntiLambdaEffWeight, float& v0GammaEffWeight,
                      const auto& v0DecayTrueMcTag)
@@ -3226,8 +3222,8 @@ struct KaonIsospinFluctuations {
       // Final K0s Selection.
       if (selK0s(v0)) {
         BITSET(trueV0TagValue, BIT_IS_K0S);
-        v0CndtDauList[kV0TrkK0s][kPos].emplace_back(posDaughterTrack.globalIndex(), std::abs((v0.mK0Short() - MV0DecayCndt[kV0TrkK0s]) / WV0DecayCndt[kV0TrkK0s]));
-        v0CndtDauList[kV0TrkK0s][kNeg].emplace_back(negDaughterTrack.globalIndex(), std::abs((v0.mK0Short() - MV0DecayCndt[kV0TrkK0s]) / WV0DecayCndt[kV0TrkK0s]));
+        v0CandtDauList[kV0TrkK0s][kPos].emplace_back(posDaughterTrack.globalIndex(), std::abs((v0.mK0Short() - MV0DecayCndt[kV0TrkK0s]) / WV0DecayCndt[kV0TrkK0s]));
+        v0CandtDauList[kV0TrkK0s][kNeg].emplace_back(negDaughterTrack.globalIndex(), std::abs((v0.mK0Short() - MV0DecayCndt[kV0TrkK0s]) / WV0DecayCndt[kV0TrkK0s]));
         k0sTagIndexList.push_back(v0.globalIndex());
         if (cfgFill.cfgFill04V0TablePostK0sSelectionCut) {
           fillV0QA<v0TablePostK0sSelectionCut, kFillSimple, kPi, kPi>(recoV0sPostK0sSelectionCut, v0, posDaughterTrack, negDaughterTrack, posDauPtEtaBin, negDauPtEtaBin, v0Tag, v0DauCollisionIndexTag, v0DauBCTag, idMethodPi[kPos], idMethodPi[kNeg], v0K0sEffWeight, fillMotherQA, fillDauTrackQA);
@@ -3241,8 +3237,8 @@ struct KaonIsospinFluctuations {
         BITSET(trueV0TagValue, BIT_IS_LAMBDA);
         v0LambdaEffWeight = hPtEtaForEffCorrection[kV0Lambda][kPos]->GetBinContent(v0PtEtaBin);
 
-        v0CndtDauList[kV0TrkLambda][kPos].emplace_back(posDaughterTrack.globalIndex(), std::abs((v0.mLambda() - MV0DecayCndt[kV0TrkLambda]) / WV0DecayCndt[kV0TrkLambda]));
-        v0CndtDauList[kV0TrkLambda][kNeg].emplace_back(negDaughterTrack.globalIndex(), std::abs((v0.mLambda() - MV0DecayCndt[kV0TrkLambda]) / WV0DecayCndt[kV0TrkLambda]));
+        v0CandtDauList[kV0TrkLambda][kPos].emplace_back(posDaughterTrack.globalIndex(), std::abs((v0.mLambda() - MV0DecayCndt[kV0TrkLambda]) / WV0DecayCndt[kV0TrkLambda]));
+        v0CandtDauList[kV0TrkLambda][kNeg].emplace_back(negDaughterTrack.globalIndex(), std::abs((v0.mLambda() - MV0DecayCndt[kV0TrkLambda]) / WV0DecayCndt[kV0TrkLambda]));
         if (cfgFill.cfgFill05V0TablePostLambdaCheck) {
           fillV0QA<v0TablePostLambdaCheck, kFillSimple, kPr, kPi>(recoV0sPostLambdaCheck, v0, posDaughterTrack, negDaughterTrack, posDauPtEtaBin, negDauPtEtaBin, v0Tag, v0DauCollisionIndexTag, v0DauBCTag, idMethodPr[kPos], idMethodPi[kNeg], v0LambdaEffWeight, fillMotherQA, fillDauTrackQA);
         }
@@ -3255,8 +3251,8 @@ struct KaonIsospinFluctuations {
         BITSET(trueV0TagValue, BIT_IS_ANTILAMBDA);
         v0AntiLambdaEffWeight = hPtEtaForEffCorrection[kV0AntiLambda][kPos]->GetBinContent(v0PtEtaBin);
 
-        v0CndtDauList[kV0TrkAntiLambda][kPos].emplace_back(posDaughterTrack.globalIndex(), std::abs((v0.mAntiLambda() - MV0DecayCndt[kV0TrkAntiLambda]) / WV0DecayCndt[kV0TrkAntiLambda]));
-        v0CndtDauList[kV0TrkAntiLambda][kNeg].emplace_back(negDaughterTrack.globalIndex(), std::abs((v0.mAntiLambda() - MV0DecayCndt[kV0TrkAntiLambda]) / WV0DecayCndt[kV0TrkAntiLambda]));
+        v0CandtDauList[kV0TrkAntiLambda][kPos].emplace_back(posDaughterTrack.globalIndex(), std::abs((v0.mAntiLambda() - MV0DecayCndt[kV0TrkAntiLambda]) / WV0DecayCndt[kV0TrkAntiLambda]));
+        v0CandtDauList[kV0TrkAntiLambda][kNeg].emplace_back(negDaughterTrack.globalIndex(), std::abs((v0.mAntiLambda() - MV0DecayCndt[kV0TrkAntiLambda]) / WV0DecayCndt[kV0TrkAntiLambda]));
         if (cfgFill.cfgFill06V0TablePostAntiLambdaCheck) {
           fillV0QA<v0TablePostAntiLambdaCheck, kFillSimple, kPi, kPr>(recoV0sPostAntiLambdaCheck, v0, posDaughterTrack, negDaughterTrack, posDauPtEtaBin, negDauPtEtaBin, v0Tag, v0DauCollisionIndexTag, v0DauBCTag, idMethodPi[kPos], idMethodPr[kNeg], v0AntiLambdaEffWeight, fillMotherQA, fillDauTrackQA);
         }
@@ -3269,8 +3265,8 @@ struct KaonIsospinFluctuations {
         BITSET(trueV0TagValue, BIT_IS_GAMMA);
         v0GammaEffWeight = hPtEtaForEffCorrection[kV0Gamma][kPos]->GetBinContent(v0PtEtaBin);
 
-        v0CndtDauList[kV0TrkGamma][kPos].emplace_back(posDaughterTrack.globalIndex(), std::abs((v0.mGamma() - MV0DecayCndt[kV0TrkGamma]) / WV0DecayCndt[kV0TrkGamma]));
-        v0CndtDauList[kV0TrkGamma][kNeg].emplace_back(negDaughterTrack.globalIndex(), std::abs((v0.mGamma() - MV0DecayCndt[kV0TrkGamma]) / WV0DecayCndt[kV0TrkGamma]));
+        v0CandtDauList[kV0TrkGamma][kPos].emplace_back(posDaughterTrack.globalIndex(), std::abs((v0.mGamma() - MV0DecayCndt[kV0TrkGamma]) / WV0DecayCndt[kV0TrkGamma]));
+        v0CandtDauList[kV0TrkGamma][kNeg].emplace_back(negDaughterTrack.globalIndex(), std::abs((v0.mGamma() - MV0DecayCndt[kV0TrkGamma]) / WV0DecayCndt[kV0TrkGamma]));
         if (cfgFill.cfgFill07V0TablePostGammaCheck) {
           fillV0QA<v0TablePostGammaCheck, kFillSimple, kEl, kEl>(recoV0sPostGammaCheck, v0, posDaughterTrack, negDaughterTrack, posDauPtEtaBin, negDauPtEtaBin, v0Tag, v0DauCollisionIndexTag, v0DauBCTag, idMethodEl[kPos], idMethodEl[kNeg], v0GammaEffWeight, fillMotherQA, fillDauTrackQA);
         }
@@ -3648,7 +3644,7 @@ struct KaonIsospinFluctuations {
 
   template <int analysisType, int fillMode, typename P, typename T, typename D, typename B, typename C, typename L>
   void executePrimVtxCndtInCollisionloop(const P& mother, const T& posTrack, const T& negTrack,
-                                         const int& ptEtaBinPosTrk, const int& ptEtaBinNegTrk, int& primVtxCndtTag, L& primVtxCndtDauList, D& idMethodSignTrk,
+                                         const int& ptEtaBinPosTrk, const int& ptEtaBinNegTrk, int& primVtxCndtTag, L& primVtxCandtDauList, D& idMethodSignTrk,
                                          C& checkTrackId, B& posDauIs, B& negDauIs,
                                          auto& iNTrkPrim, auto& fNTrkPrim, auto& effWeightSum,
                                          const auto posTrackPrimVtxMotherFlag, const auto negTrackPrimVtxMotherFlag, const auto posTrackV0MotherFlag, const auto negTrackV0MotherFlag, const int requiredBit, const auto mpBit,
@@ -3697,7 +3693,7 @@ struct KaonIsospinFluctuations {
     // phi(1020) -> K+ + K-
     if (doPhi1020 && posDauIs[kKa] && negDauIs[kKa] && isTrueMcMatch<analysisType>(primVtxCndtMcTag, kPrimPhi1020)) {
       checkPrimVtxParticle<Phi1020, kKa, kKa, fillMode, kPrimTrkPhi1020>(recoPhi1020,
-                                                                         mother, posTrack, negTrack, primVtxCndtDauList[kPrimTrkPhi1020][kPos], primVtxCndtDauList[kPrimTrkPhi1020][kNeg], primVtxCndtTag,
+                                                                         mother, posTrack, negTrack, primVtxCandtDauList[kPrimTrkPhi1020][kPos], primVtxCandtDauList[kPrimTrkPhi1020][kNeg], primVtxCndtTag,
                                                                          ptEtaBinPosTrk, ptEtaBinNegTrk,
                                                                          idMethodSignTrk[kKa][kPos], idMethodSignTrk[kKa][kNeg],
                                                                          iNTrkPrim[kPrimPhi1020], fNTrkPrim[kPrimPhi1020], effWeightSum[kPrimPhi1020],
@@ -3708,7 +3704,7 @@ struct KaonIsospinFluctuations {
     // J/ψ       -> e+/e-
     if (doJPsiToEE && posDauIs[kEl] && negDauIs[kEl] && isTrueMcMatch<analysisType>(primVtxCndtMcTag, kPrimJPsiToEE)) {
       checkPrimVtxParticle<JPsiToEE, kEl, kEl, fillMode, kPrimTrkJPsiToEE>(recoJPsiToEE,
-                                                                           mother, posTrack, negTrack, primVtxCndtDauList[kPrimTrkJPsiToEE][kPos], primVtxCndtDauList[kPrimTrkJPsiToEE][kNeg], primVtxCndtTag,
+                                                                           mother, posTrack, negTrack, primVtxCandtDauList[kPrimTrkJPsiToEE][kPos], primVtxCandtDauList[kPrimTrkJPsiToEE][kNeg], primVtxCndtTag,
                                                                            ptEtaBinPosTrk, ptEtaBinNegTrk,
                                                                            idMethodSignTrk[kEl][kPos], idMethodSignTrk[kEl][kNeg],
                                                                            iNTrkPrim[kPrimJPsiToEE], fNTrkPrim[kPrimJPsiToEE], effWeightSum[kPrimJPsiToEE],
@@ -3719,7 +3715,7 @@ struct KaonIsospinFluctuations {
     // J/ψ       -> mu+/mu-
     if (doJPsiToMuMu && posDauIs[kMu] && negDauIs[kMu] && isTrueMcMatch<analysisType>(primVtxCndtMcTag, kPrimJPsiToMuMu)) {
       checkPrimVtxParticle<JPsiToMuMu, kMu, kMu, fillMode, kPrimTrkJPsiToMuMu>(recoJPsiToMuMu,
-                                                                               mother, posTrack, negTrack, primVtxCndtDauList[kPrimTrkJPsiToMuMu][kPos], primVtxCndtDauList[kPrimTrkJPsiToMuMu][kNeg], primVtxCndtTag,
+                                                                               mother, posTrack, negTrack, primVtxCandtDauList[kPrimTrkJPsiToMuMu][kPos], primVtxCandtDauList[kPrimTrkJPsiToMuMu][kNeg], primVtxCndtTag,
                                                                                ptEtaBinPosTrk, ptEtaBinNegTrk,
                                                                                idMethodSignTrk[kMu][kPos], idMethodSignTrk[kMu][kNeg],
                                                                                iNTrkPrim[kPrimJPsiToMuMu], fNTrkPrim[kPrimJPsiToMuMu], effWeightSum[kPrimJPsiToMuMu],
@@ -3730,7 +3726,7 @@ struct KaonIsospinFluctuations {
     // K*(892)^0 → K⁺ + π⁻
     if (doKStar892 && posDauIs[kKa] && negDauIs[kPi] && isTrueMcMatch<analysisType>(primVtxCndtMcTag, kPrimKStar892)) {
       checkPrimVtxParticle<KStar892, kKa, kPi, fillMode, kPrimTrkKStar892>(recoKStar892,
-                                                                           mother, posTrack, negTrack, primVtxCndtDauList[kPrimTrkKStar892][kPos], primVtxCndtDauList[kPrimTrkKStar892][kNeg], primVtxCndtTag,
+                                                                           mother, posTrack, negTrack, primVtxCandtDauList[kPrimTrkKStar892][kPos], primVtxCandtDauList[kPrimTrkKStar892][kNeg], primVtxCndtTag,
                                                                            ptEtaBinPosTrk, ptEtaBinNegTrk,
                                                                            idMethodSignTrk[kKa][kPos], idMethodSignTrk[kPi][kNeg],
                                                                            iNTrkPrim[kPrimKStar892], fNTrkPrim[kPrimKStar892], effWeightSum[kPrimKStar892],
@@ -3741,7 +3737,7 @@ struct KaonIsospinFluctuations {
     // K*(892)^0-bar → K⁻ + π⁺
     if (doKStar892Bar && posDauIs[kPi] && negDauIs[kKa] && isTrueMcMatch<analysisType>(primVtxCndtMcTag, kPrimKStar892Bar)) {
       checkPrimVtxParticle<KStar892Bar, kPi, kKa, fillMode, kPrimTrkKStar892Bar>(recoKStar892Bar,
-                                                                                 mother, posTrack, negTrack, primVtxCndtDauList[kPrimTrkKStar892Bar][kPos], primVtxCndtDauList[kPrimTrkKStar892Bar][kNeg], primVtxCndtTag,
+                                                                                 mother, posTrack, negTrack, primVtxCandtDauList[kPrimTrkKStar892Bar][kPos], primVtxCandtDauList[kPrimTrkKStar892Bar][kNeg], primVtxCndtTag,
                                                                                  ptEtaBinPosTrk, ptEtaBinNegTrk,
                                                                                  idMethodSignTrk[kPi][kPos], idMethodSignTrk[kKa][kNeg],
                                                                                  iNTrkPrim[kPrimKStar892Bar], fNTrkPrim[kPrimKStar892Bar], effWeightSum[kPrimKStar892Bar],
@@ -3752,7 +3748,7 @@ struct KaonIsospinFluctuations {
     // ρ(770)    -> pi+ + pi-
     if (doRho770 && posDauIs[kPi] && negDauIs[kPi] && isTrueMcMatch<analysisType>(primVtxCndtMcTag, kPrimRho770)) {
       checkPrimVtxParticle<Rho770, kPi, kPi, fillMode, kPrimTrkRho770>(recoRho770,
-                                                                       mother, posTrack, negTrack, primVtxCndtDauList[kPrimTrkRho770][kPos], primVtxCndtDauList[kPrimTrkRho770][kNeg], primVtxCndtTag,
+                                                                       mother, posTrack, negTrack, primVtxCandtDauList[kPrimTrkRho770][kPos], primVtxCandtDauList[kPrimTrkRho770][kNeg], primVtxCndtTag,
                                                                        ptEtaBinPosTrk, ptEtaBinNegTrk,
                                                                        idMethodSignTrk[kPi][kPos], idMethodSignTrk[kPi][kNeg],
                                                                        iNTrkPrim[kPrimRho770], fNTrkPrim[kPrimRho770], effWeightSum[kPrimRho770],
@@ -3761,7 +3757,7 @@ struct KaonIsospinFluctuations {
     }
   }
 
-  void getTrackDecayInfoBit(const auto& track, auto& decayDauTagBit, const auto& v0CndtDauList, const auto& primVtxCndtDauList,
+  void getTrackDecayInfoBit(const auto& track, auto& decayDauTagBit, const auto& v0CandtDauList, const auto& primVtxCandtDauList,
                             bool doV0K0s, bool doV0Lambda, bool doV0AntiLambda, bool doV0Gamma,
                             bool doPhi1020, bool doJPsiToEE, bool doJPsiToMuMu, bool doKStar892, bool doKStar892Bar, bool doRho770)
   {
@@ -3773,41 +3769,41 @@ struct KaonIsospinFluctuations {
 
     const auto globalIdx = track.globalIndex();
     // V0 channel checks (kPos/kNeg differ by chargeIndex)
-    if (doV0K0s && binarySearchAnyList(v0CndtDauList[kV0K0s][chargeIndex], globalIdx) != -1)
+    if (doV0K0s && binarySearchAnyList(v0CandtDauList[kV0K0s][chargeIndex], globalIdx) != -1)
       BITSET(decayDauTagBit, IdBitPI);
 
     if (doV0Lambda) {
-      if (binarySearchAnyList(v0CndtDauList[kV0Lambda][chargeIndex], globalIdx) != -1) {
+      if (binarySearchAnyList(v0CandtDauList[kV0Lambda][chargeIndex], globalIdx) != -1) {
         BITSET(decayDauTagBit, (chargeIndex == kPos) ? IdBitPR : IdBitPI);
       }
     }
 
     if (doV0AntiLambda) {
-      if (binarySearchAnyList(v0CndtDauList[kV0AntiLambda][chargeIndex], globalIdx) != -1) {
+      if (binarySearchAnyList(v0CandtDauList[kV0AntiLambda][chargeIndex], globalIdx) != -1) {
         BITSET(decayDauTagBit, (chargeIndex == kPos) ? IdBitPI : IdBitPR);
       }
     }
 
-    if (doV0Gamma && binarySearchAnyList(v0CndtDauList[kV0Gamma][chargeIndex], globalIdx) != -1)
+    if (doV0Gamma && binarySearchAnyList(v0CandtDauList[kV0Gamma][chargeIndex], globalIdx) != -1)
       BITSET(decayDauTagBit, IdBitEL);
 
     // PrimVtx candidate decays
-    if (doPhi1020 && binarySearchAnyList(primVtxCndtDauList[kPrimTrkPhi1020][chargeIndex], globalIdx) != -1)
+    if (doPhi1020 && binarySearchAnyList(primVtxCandtDauList[kPrimTrkPhi1020][chargeIndex], globalIdx) != -1)
       BITSET(decayDauTagBit, IdBitKA);
 
-    if (doJPsiToEE && binarySearchAnyList(primVtxCndtDauList[kPrimTrkJPsiToEE][chargeIndex], globalIdx) != -1)
+    if (doJPsiToEE && binarySearchAnyList(primVtxCandtDauList[kPrimTrkJPsiToEE][chargeIndex], globalIdx) != -1)
       BITSET(decayDauTagBit, IdBitEL);
 
-    if (doJPsiToMuMu && binarySearchAnyList(primVtxCndtDauList[kPrimTrkJPsiToMuMu][chargeIndex], globalIdx) != -1)
+    if (doJPsiToMuMu && binarySearchAnyList(primVtxCandtDauList[kPrimTrkJPsiToMuMu][chargeIndex], globalIdx) != -1)
       BITSET(decayDauTagBit, IdBitMU);
 
-    if (doKStar892 && binarySearchAnyList(primVtxCndtDauList[kPrimTrkKStar892][chargeIndex], globalIdx) != -1)
+    if (doKStar892 && binarySearchAnyList(primVtxCandtDauList[kPrimTrkKStar892][chargeIndex], globalIdx) != -1)
       BITSET(decayDauTagBit, (chargeIndex == kPos) ? IdBitKA : IdBitPI);
 
-    if (doKStar892Bar && binarySearchAnyList(primVtxCndtDauList[kPrimTrkKStar892Bar][chargeIndex], globalIdx) != -1)
+    if (doKStar892Bar && binarySearchAnyList(primVtxCandtDauList[kPrimTrkKStar892Bar][chargeIndex], globalIdx) != -1)
       BITSET(decayDauTagBit, (chargeIndex == kPos) ? IdBitPI : IdBitKA);
 
-    if (doRho770 && binarySearchAnyList(primVtxCndtDauList[kPrimTrkRho770][chargeIndex], globalIdx) != -1)
+    if (doRho770 && binarySearchAnyList(primVtxCandtDauList[kPrimTrkRho770][chargeIndex], globalIdx) != -1)
       BITSET(decayDauTagBit, IdBitPI);
   }
 
@@ -4283,7 +4279,7 @@ struct KaonIsospinFluctuations {
     const int pidVecSize = kNKaPosNKaNegProd + 1; // kPrimRho770 is last enum value of different particles. and kNKaPosNKaNegProd is of last count types
     // Variables for  collision loop and track counting
     float centrality = 0;
-    int nTrack;
+    int nTrack = 0;
     std::array<std::array<int, 2>, pidVecSize> iNTrk;
     std::array<std::array<float, 2>, pidVecSize> fNTrk;
     std::array<std::array<float, 2>, pidVecSize> effWeightSum;
@@ -4383,7 +4379,7 @@ struct KaonIsospinFluctuations {
       // Variables for track loop
       int rejectionTag = 0;
       bool isAcceptedTrack = true;
-      int nTrack = 0;
+      nTrack = 0;
       int trackIdTag = 0;
       int ptEtaBinTrk = -1;
 
