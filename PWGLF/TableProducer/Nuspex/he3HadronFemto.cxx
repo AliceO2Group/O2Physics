@@ -202,6 +202,28 @@ constexpr std::array<double, 3> kHePidTrkPParamsHeDefault = {0., 0., 0.};
 
 } // namespace
 
+struct CollisionInfo {
+  int64_t collisionID = -1;
+  uint32_t selectionFlags = 0;
+  float posZ = -999.f;
+  int numContributors = -1;
+  float centFT0C = -999.f;
+  int multFT0C = -1;
+  float occupancy = -999.f;
+
+  template <typename Collision>
+  void fillFromCollision(const Collision& collision, uint32_t collisionSelectionFlag)
+  {
+    collisionID = collision.globalIndex();
+    selectionFlags = collisionSelectionFlag;
+    posZ = collision.posZ();
+    numContributors = collision.numContrib();
+    centFT0C = collision.centFT0C();
+    multFT0C = collision.multFT0C();
+    occupancy = collision.trackOccupancyInTimeRange();
+  }
+};
+
 struct He3HadCandidate {
 
   [[nodiscard]] float recoPtHe3() const { return signHe3 * std::hypot(momHe3[0], momHe3[1]); }
@@ -378,6 +400,8 @@ struct he3HadronFemto {
   o2::aod::ITSResponse mResponseITS;
 
   std::vector<bool> mGoodCollisions;
+  std::vector<bool> mRecoMcCollisions;
+  std::vector<int> mMcCollisionIdToRecoCollisionId;
   std::vector<uint32_t> mCollisionSelectionFlags;
   std::vector<SVCand> mTrackPairs;
   o2::vertexing::DCAFitterN<2> mFitter;
@@ -603,6 +627,11 @@ struct he3HadronFemto {
   bool selectCollision(const Tcollision& collision, const aod::BCsWithTimestamps&, uint32_t& collisionSelectionFlag)
   {
     mQaRegistry.fill(HIST("hEvents"), 0);
+    if constexpr (isMC) {
+      if (collision.has_mcCollision()) {
+        mMcCollisionIdToRecoCollisionId[collision.mcCollisionId()] = collision.globalIndex();
+      }
+    }
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
@@ -610,10 +639,17 @@ struct he3HadronFemto {
     if (!nuclei::eventSelection(collision, mQaRegistry, settingEventSelections, cutSettings.settingCutVertex, collisionSelectionFlag)) {
       return false;
     }
+
     if (settingSkimmedProcessing) {
       bool zorroSelected = mZorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
       if (zorroSelected) {
         mQaRegistry.fill(HIST("hEvents"), 2);
+      }
+    }
+
+    if constexpr (isMC) {
+      if (collision.has_mcCollision()) {
+        mRecoMcCollisions[collision.mcCollisionId()] = true;
       }
     }
 
@@ -1048,10 +1084,8 @@ struct he3HadronFemto {
     }
   }
 
-  template <typename Tcoll>
-  void fillTable(const He3HadCandidate& he3Hadcand, const Tcoll& collision, bool isMC = false)
+  void fillTable(const He3HadCandidate& he3Hadcand, const CollisionInfo& collisionInfo, bool isMC = false)
   {
-    const uint32_t collisionSelectionFlag = mCollisionSelectionFlags[he3Hadcand.collisionID];
     outputDataTable(
       he3Hadcand.recoPtHe3(), he3Hadcand.recoEtaHe3(), he3Hadcand.recoPhiHe3(),
       he3Hadcand.recoPtHad(), he3Hadcand.recoEtaHad(), he3Hadcand.recoPhiHad(),
@@ -1072,9 +1106,9 @@ struct he3HadronFemto {
         he3Hadcand.l4PtMC, he3Hadcand.l4MassMC, he3Hadcand.flags);
     }
     outputMultiplicityTable(
-      collision.globalIndex(), collisionSelectionFlag, collision.posZ(),
-      collision.numContrib(), collision.centFT0C(), collision.multFT0C(), 
-      collision.trackOccupancyInTimeRange());
+      collisionInfo.collisionID,  collisionInfo.selectionFlags, collisionInfo.posZ,
+      collisionInfo.numContributors, collisionInfo.centFT0C, collisionInfo.multFT0C,
+      collisionInfo.occupancy);
     outputQaTable(
       he3Hadcand.trackIDHe3, he3Hadcand.trackIDHad, he3Hadcand.massTOFHe3,
       he3Hadcand.pidtrkHad, he3Hadcand.sharedClustersHad);
@@ -1125,7 +1159,9 @@ struct he3HadronFemto {
       }
       fillHistograms(he3Hadcand);
       auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
-      fillTable(he3Hadcand, collision, /*isMC*/ false);
+      CollisionInfo collisionInfo;
+      collisionInfo.fillFromCollision(collision, mCollisionSelectionFlags[he3Hadcand.collisionID]);
+      fillTable(he3Hadcand, collisionInfo, /*isMC*/ false);
     }
   }
 
@@ -1219,8 +1255,15 @@ struct he3HadronFemto {
         He3HadCandidate he3Hadcand;
         fillCandidateInfoMC(mcHe3, mcHad, he3Hadcand);
         fillMotherInfoMC(mcHe3, mcHad, mcParticle, he3Hadcand);
-        auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
-        fillTable(he3Hadcand, collision, /*isMC*/ true);
+        
+        const auto mcCollisionId = mcParticle.mcCollisionId();
+        const auto collisionId = mMcCollisionIdToRecoCollisionId[mcCollisionId];
+        CollisionInfo collisionInfo;
+        if (collisionId >= 0) {
+          auto collision = collisions.rawIteratorAt(collisionId);
+          collisionInfo.fillFromCollision(collision, mCollisionSelectionFlags[collisionId]);
+        }
+        fillTable(he3Hadcand, collisionInfo, /*isMC*/ true);
       }
     }
   }
@@ -1287,12 +1330,16 @@ struct he3HadronFemto {
   }
   PROCESS_SWITCH(he3HadronFemto, processMixedEvent, "Process Mixed event", false);
 
-  void processMC(const CollisionsFullMC& collisions, const aod::BCsWithTimestamps& bcs, const TrackCandidatesMC& tracks, const aod::McParticles& mcParticles)
+  void processMC(const CollisionsFullMC& collisions, const aod::McCollisions& mcCollisions, const aod::BCsWithTimestamps& bcs, const TrackCandidatesMC& tracks, const aod::McParticles& mcParticles)
   {
     std::vector<unsigned int> filledMothers;
 
     mGoodCollisions.clear();
     mGoodCollisions.resize(collisions.size(), false);
+    mRecoMcCollisions.clear();
+    mRecoMcCollisions.resize(mcCollisions.size(), false);
+    mMcCollisionIdToRecoCollisionId.clear();
+    mMcCollisionIdToRecoCollisionId.resize(mcCollisions.size(), -1);
     mCollisionSelectionFlags.clear();
     mCollisionSelectionFlags.resize(collisions.size(), 0);
 
@@ -1383,9 +1430,11 @@ struct he3HadronFemto {
           fillMotherInfoMC(mctrackHe3, mctrackHad, motherParticle, he3Hadcand);
           filledMothers.push_back(motherParticle.globalIndex());
         }
-
         fillHistograms(he3Hadcand, /*isMc*/ true);
-        fillTable(he3Hadcand, collision, /*isMC*/ true);
+
+        CollisionInfo collisionInfo;
+        collisionInfo.fillFromCollision(collision, collisionSelectionFlag);
+        fillTable(he3Hadcand, collisionInfo, /*isMC*/ true);
       }
     }
 
@@ -1532,9 +1581,10 @@ struct he3HadronFemto {
     int biggestNContribs = -1;
 
     for (const auto& col : collisions) {
-      
+
       uint32_t collisionSelectionFlag = 0;
-      if (!selectCollision</*isMC*/ true>(col, bcs, collisionSelectionFlag)) {
+      // isMC == true only fills the collision vectors, which are not used in this workflow
+      if (!selectCollision</*isMC*/ false>(col, bcs, collisionSelectionFlag)) {
         continue;
       }
 
