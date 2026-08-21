@@ -403,34 +403,6 @@ struct he3HadronFemto {
       {"hhe3HadInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
       {"hhe3HadKstar", "; #it{k}* (GeV/#it{c})", {HistType::kTH1F, {{300, 0.f, 0.8f}}}},
       {"hKstarRecVsKstarGen", "; #it{k}*_{gen} (GeV/#it{c}); #it{k}*_{rec} (GeV/#it{c})", {HistType::kTH2F, {{400, 0.f, 0.8f}, {400, 0.f, 0.8f}}}},
-      /*
-      {"EventLoss/hEvtMC", ";; ", {HistType::kTH1D, {{3, -0.5f, 2.5f}}}},
-      {"EventLoss/hImpactParamGen", "Impact parameter of generated MC events; Impact Parameter (b); Counts", {HistType::kTH1D, {{200, 0.0f, 20.0f}}}},
-      {"EventLoss/hImpactParamReco", "Impact parameter of generated MC events with at least one rec. evt; Impact Parameter (b); Counts", {HistType::kTH1D, {{200, 0.0f, 20.0f}}}},
-      {"EventLoss/hRecoCentrality", "Centrality distribution of reconstructed MC events passed the event selection; Centrality FT0C (%); Counts", {HistType::kTH1D, {{100, 0.0f, 100.0f}}}},
-      {"EventLoss/hRecoCentralityColvsMultiplicityRecoEta05", "; Centrality FT0C (%); Multiplicity #eta <0.5", {HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 500.0f}}}},
-      {"EventLoss/hRecoCentralityColvsMultiplicityRecoEta08", "; Centrality FT0C (%); Multiplicity #eta <0.8", {HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 500.0f}}}},
-      {"EventLoss/hRecoCentralityColvsMultiplicityFT0C", "; Centrality FT0C (%); FT0C multiplicity", {HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 3000.0f}}}},
-      {"EventLoss/hRecoCentralityColvsImpactParamReco", "; Centrality FT0C (%); Impact Parameter (b)", {HistType::kTH2D, {{100, 0.0f, 100.0f}, {200, 0.0f, 20.0f}}}},
-      {"EventLoss/hGenEventsNchEta05", ";Multiplicity #eta <0.5;", {HistType::kTH2D, {{500, 0.0f, 500.0f}, {2, -0.5f, 1.5f}}}},
-      {"EventLoss/hGenEventsNchEta08", ";Multiplicity #eta <0.8;", {HistType::kTH2D, {{500, 0.0f, 500.0f}, {2, -0.5f, 1.5f}}}},
-      {"EventLoss/hImpactParamGenOneReco", "Impact parameter of generated MC events with at least one rec. evt and passed the event selection; Impact Parameter (b); Counts", {HistType::kTH1D, {{200, 0.0f, 20.0f}}}},
-      {"EventLoss/hGenOneRecoCentrality", "Centrality distribution of generated MC events with at least one rec. evt and passed the event selection; Centrality FT0C (%); Counts", {HistType::kTH1D, {{100, 0.0f, 100.0f}}}},
-      {"EventLoss/hGenCentralityColvsMultiplicityGenEta05", "; Centrality FT0C (%); Multiplicity #eta <0.5", {HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 500.0f}}}},
-      {"EventLoss/hGenCentralityColvsMultiplicityGenEta08", "; Centrality FT0C (%); Multiplicity #eta <0.8", {HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 500.0f}}}},
-      {"EventLoss/hGenCentralityColvsMultiplicityFT0C", "; Centrality FT0C (%); FT0C multiplicity", {HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 3000.0f}}}},
-      {"EventLoss/hGenCentralityColvsImpactParamGen", "; Centrality FT0C (%); Impact Parameter (b)", {HistType::kTH2D, {{100, 0.0f, 100.0f}, {200, 0.0f, 20.0f}}}},
-      {"EventLoss/hGenLi4BeforeEvtSel", "Li4 generated #it{p}_{T} distribution in all gen evt; #it{p}_{T} (GeV/#it{c}); Counts", {HistType::kTH1D, {{240, 0.0f, 12.0f}}}},
-      {"EventLoss/hGenLi4vsImpactParameterBeforeEvtSel", "; #it{p}_{T} (GeV/#it{c}); Impact Parameter (b)", {HistType::kTH2D, {{240, 0.0f, 12.0f}, {200, 0.0f, 20.0f}}}},
-      {"EventLoss/hGenLi4vsMultiplicityGenEta05BeforeEvtSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", {HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 500.0f}}}},
-      {"EventLoss/hGenLi4vsMultiplicityGenEta08BeforeEvtSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", {HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 500.0f}}}},
-      {"EventLoss/hGenLi4vsMultiplicityFT0CBeforeEvtSel", "; #it{p}_{T} (GeV/#it{c}); FT0C multiplicity", {HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 3000.0f}}}},
-      {"EventLoss/hGenLi4AfterSel", "Li4 generated #it{p}_{T} distribution in gen. evts with at least one rec. evt; #it{p}_{T} (GeV/#it{c}); Counts", {HistType::kTH1D, {{240, 0.0f, 12.0f}}}},
-      {"EventLoss/hGenLi4vsImpactParameterAfterSel", "; #it{p}_{T} (GeV/#it{c}); Impact Parameter (b)", {HistType::kTH2D, {{240, 0.0f, 12.0f}, {200, 0.0f, 20.0f}}}},
-      {"EventLoss/hGenLi4vsMultiplicityGenEta05AfterSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", {HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 500.0f}}}},
-      {"EventLoss/hGenLi4vsMultiplicityGenEta08AfterSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", {HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 500.0f}}}},
-      {"EventLoss/hGenLi4vsMultiplicityFT0CAfterSel", "; #it{p}_{T} (GeV/#it{c}); FT0C multiplicity", {HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 3000.0f}}}},
-      */
 
       {"He3/hDCAxyHe3", "^{3}He;DCA_{xy} (cm)", {HistType::kTH1F, {{200, -0.5f, 0.5f}}}},
       {"He3/hDCAzHe3", "^{3}He;DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
@@ -544,17 +516,6 @@ struct he3HadronFemto {
     mQaRegistry.get<TH1>(HIST("hEmptyPool"))->GetXaxis()->SetBinLabel(1, "False");
     mQaRegistry.get<TH1>(HIST("hEmptyPool"))->GetXaxis()->SetBinLabel(2, "True");
 
-    /*
-    mQaRegistry.get<TH1>(HIST("EventLoss/hEvtMC"))->GetXaxis()->SetBinLabel(1, "All gen evts");
-    mQaRegistry.get<TH1>(HIST("EventLoss/hEvtMC"))->GetXaxis()->SetBinLabel(2, "Gen evts with al least one reconstructed");
-    mQaRegistry.get<TH1>(HIST("EventLoss/hEvtMC"))->GetXaxis()->SetBinLabel(3, "Gen evts with no reconstructed collisions");
-
-    mQaRegistry.get<TH2>(HIST("EventLoss/hGenEventsNchEta05"))->GetYaxis()->SetBinLabel(1, "All gen. events");
-    mQaRegistry.get<TH2>(HIST("EventLoss/hGenEventsNchEta05"))->GetYaxis()->SetBinLabel(2, "Gen evts with at least 1 rec. collisions");
-    mQaRegistry.get<TH2>(HIST("EventLoss/hGenEventsNchEta08"))->GetYaxis()->SetBinLabel(1, "All gen. events");
-    mQaRegistry.get<TH2>(HIST("EventLoss/hGenEventsNchEta08"))->GetYaxis()->SetBinLabel(2, "Gen evts with at least 1 rec. collisions");
-    */
-
     if (doprocessEventLossMC) {
       hEvtMC = mQaRegistry.add<TH1>("EventLoss/hEvtMC", ";; ", HistType::kTH1D, {{3, -0.5, 2.5}});
       hEvtMC->GetXaxis()->SetBinLabel(1, "All gen evts");
@@ -568,32 +529,32 @@ struct he3HadronFemto {
       hGenEventsNchEta08->GetYaxis()->SetBinLabel(1, "All gen. events");
       hGenEventsNchEta08->GetYaxis()->SetBinLabel(2, "Gen evts with at least 1 rec. collisions");
 
-      hImpactParamGen = mQaRegistry.add<TH1>("EventLoss/hImpactParamGen", "...", HistType::kTH1D, {{200, 0.0f, 20.0f}});
-      hImpactParamReco = mQaRegistry.add<TH1>("EventLoss/hImpactParamReco", "...", HistType::kTH1D, {{200, 0.0f, 20.0f}});
-      hRecoCentrality = mQaRegistry.add<TH1>("EventLoss/hRecoCentrality", "...", HistType::kTH1D, {{100, 0.0f, 100.0f}});
-      hRecoCentralityColvsMultiplicityRecoEta05 = mQaRegistry.add<TH2>("EventLoss/hRecoCentralityColvsMultiplicityRecoEta05", "...", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 500.0f}});
-      hRecoCentralityColvsMultiplicityRecoEta08 = mQaRegistry.add<TH2>("EventLoss/hRecoCentralityColvsMultiplicityRecoEta08", "...", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 500.0f}});
-      hRecoCentralityColvsMultiplicityFT0C = mQaRegistry.add<TH2>("EventLoss/hRecoCentralityColvsMultiplicityFT0C", "...", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 3000.0f}});
-      hRecoCentralityColvsImpactParamReco = mQaRegistry.add<TH2>("EventLoss/hRecoCentralityColvsImpactParamReco", "...", HistType::kTH2D, {{100, 0.0f, 100.0f}, {200, 0.0f, 20.0f}});
+      hImpactParamGen = mQaRegistry.add<TH1>("EventLoss/hImpactParamGen", "Impact parameter of generated MC events; Impact Parameter (b); Counts", HistType::kTH1D, {{200, 0.0f, 20.0f}});
+      hImpactParamReco = mQaRegistry.add<TH1>("EventLoss/hImpactParamReco", "Impact parameter of generated MC events with at least one rec. evt; Impact Parameter (b); Counts", HistType::kTH1D, {{200, 0.0f, 20.0f}});
+      hRecoCentrality = mQaRegistry.add<TH1>("EventLoss/hRecoCentrality", "Centrality distribution of reconstructed MC events passed the event selection; Centrality FT0C (%); Counts", HistType::kTH1D, {{100, 0.0f, 100.0f}});
+      hRecoCentralityColvsMultiplicityRecoEta05 = mQaRegistry.add<TH2>("EventLoss/hRecoCentralityColvsMultiplicityRecoEta05", "; Centrality FT0C (%); Multiplicity #eta <0.5", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 500.0f}});
+      hRecoCentralityColvsMultiplicityRecoEta08 = mQaRegistry.add<TH2>("EventLoss/hRecoCentralityColvsMultiplicityRecoEta08", "; Centrality FT0C (%); Multiplicity #eta <0.8", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 500.0f}});
+      hRecoCentralityColvsMultiplicityFT0C = mQaRegistry.add<TH2>("EventLoss/hRecoCentralityColvsMultiplicityFT0C", "; Centrality FT0C (%); FT0C multiplicity", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 3000.0f}});
+      hRecoCentralityColvsImpactParamReco = mQaRegistry.add<TH2>("EventLoss/hRecoCentralityColvsImpactParamReco", "; Centrality FT0C (%); Impact Parameter (b)", HistType::kTH2D, {{100, 0.0f, 100.0f}, {200, 0.0f, 20.0f}});
 
-      hImpactParamGenOneReco = mQaRegistry.add<TH1>("EventLoss/hImpactParamGenOneReco", "...", HistType::kTH1D, {{200, 0.0f, 20.0f}});
-      hGenOneRecoCentrality = mQaRegistry.add<TH1>("EventLoss/hGenOneRecoCentrality", "...", HistType::kTH1D, {{100, 0.0f, 100.0f}});
-      hGenCentralityColvsMultiplicityGenEta05 = mQaRegistry.add<TH2>("EventLoss/hGenCentralityColvsMultiplicityGenEta05", "...", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 500.0f}});
-      hGenCentralityColvsMultiplicityGenEta08 = mQaRegistry.add<TH2>("EventLoss/hGenCentralityColvsMultiplicityGenEta08", "...", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 500.0f}});
-      hGenCentralityColvsMultiplicityFT0C = mQaRegistry.add<TH2>("EventLoss/hGenCentralityColvsMultiplicityFT0C", "...", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 3000.0f}});
-      hGenCentralityColvsImpactParamGen = mQaRegistry.add<TH2>("EventLoss/hGenCentralityColvsImpactParamGen", "...", HistType::kTH2D, {{100, 0.0f, 100.0f}, {200, 0.0f, 20.0f}});
+      hImpactParamGenOneReco = mQaRegistry.add<TH1>("EventLoss/hImpactParamGenOneReco", "Impact parameter of generated MC events with at least one rec. evt and passed the event selection; Impact Parameter (b); Counts", HistType::kTH1D, {{200, 0.0f, 20.0f}});
+      hGenOneRecoCentrality = mQaRegistry.add<TH1>("EventLoss/hGenOneRecoCentrality", "Centrality distribution of generated MC events with at least one rec. evt and passed the event selection; Centrality FT0C (%); Counts", HistType::kTH1D, {{100, 0.0f, 100.0f}});
+      hGenCentralityColvsMultiplicityGenEta05 = mQaRegistry.add<TH2>("EventLoss/hGenCentralityColvsMultiplicityGenEta05", "; Centrality FT0C (%); Multiplicity #eta <0.5", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 500.0f}});
+      hGenCentralityColvsMultiplicityGenEta08 = mQaRegistry.add<TH2>("EventLoss/hGenCentralityColvsMultiplicityGenEta08", "; Centrality FT0C (%); Multiplicity #eta <0.8", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 500.0f}});
+      hGenCentralityColvsMultiplicityFT0C = mQaRegistry.add<TH2>("EventLoss/hGenCentralityColvsMultiplicityFT0C", "; Centrality FT0C (%); FT0C multiplicity", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 3000.0f}});
+      hGenCentralityColvsImpactParamGen = mQaRegistry.add<TH2>("EventLoss/hGenCentralityColvsImpactParamGen", "; Centrality FT0C (%); Impact Parameter (b)", HistType::kTH2D, {{100, 0.0f, 100.0f}, {200, 0.0f, 20.0f}});
 
-      hGenLi4BeforeEvtSel = mQaRegistry.add<TH1>("EventLoss/hGenLi4BeforeEvtSel", "...", HistType::kTH1D, {{240, 0.0f, 12.0f}});
-      hGenLi4vsImpactParameterBeforeEvtSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsImpactParameterBeforeEvtSel", "...", HistType::kTH2D, {{240, 0.0f, 12.0f}, {200, 0.0f, 20.0f}});
-      hGenLi4vsMultiplicityGenEta05BeforeEvtSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta05BeforeEvtSel", "...", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 500.0f}});
-      hGenLi4vsMultiplicityGenEta08BeforeEvtSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta08BeforeEvtSel", "...", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 500.0f}});
-      hGenLi4vsMultiplicityFT0CBeforeEvtSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityFT0CBeforeEvtSel", "...", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 3000.0f}});
+      hGenLi4BeforeEvtSel = mQaRegistry.add<TH1>("EventLoss/hGenLi4BeforeEvtSel", "Li4 generated #it{p}_{T} distribution in all gen evt; #it{p}_{T} (GeV/#it{c}); Counts", HistType::kTH1D, {{240, 0.0f, 12.0f}});
+      hGenLi4vsImpactParameterBeforeEvtSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsImpactParameterBeforeEvtSel", "; #it{p}_{T} (GeV/#it{c}); Impact Parameter (b)", HistType::kTH2D, {{240, 0.0f, 12.0f}, {200, 0.0f, 20.0f}});
+      hGenLi4vsMultiplicityGenEta05BeforeEvtSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta05BeforeEvtSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 500.0f}});
+      hGenLi4vsMultiplicityGenEta08BeforeEvtSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta08BeforeEvtSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 500.0f}});
+      hGenLi4vsMultiplicityFT0CBeforeEvtSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityFT0CBeforeEvtSel", "; #it{p}_{T} (GeV/#it{c}); FT0C multiplicity", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 3000.0f}});
 
-      hGenLi4AfterSel = mQaRegistry.add<TH1>("EventLoss/hGenLi4AfterSel", "...", HistType::kTH1D, {{240, 0.0f, 12.0f}});
-      hGenLi4vsImpactParameterAfterSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsImpactParameterAfterSel", "...", HistType::kTH2D, {{240, 0.0f, 12.0f}, {200, 0.0f, 20.0f}});
-      hGenLi4vsMultiplicityGenEta05AfterSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta05AfterSel", "...", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 500.0f}});
-      hGenLi4vsMultiplicityGenEta08AfterSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta08AfterSel", "...", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 500.0f}});
-      hGenLi4vsMultiplicityFT0CAfterSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityFT0CAfterSel", "...", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 3000.0f}});
+      hGenLi4AfterSel = mQaRegistry.add<TH1>("EventLoss/hGenLi4AfterSel", "Li4 generated #it{p}_{T} distribution in gen. evts with at least one rec. evt; #it{p}_{T} (GeV/#it{c}); Counts", HistType::kTH1D, {{240, 0.0f, 12.0f}});
+      hGenLi4vsImpactParameterAfterSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsImpactParameterAfterSel", "; #it{p}_{T} (GeV/#it{c}); Impact Parameter (b)", HistType::kTH2D, {{240, 0.0f, 12.0f}, {200, 0.0f, 20.0f}});
+      hGenLi4vsMultiplicityGenEta05AfterSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta05AfterSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 500.0f}});
+      hGenLi4vsMultiplicityGenEta08AfterSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta08AfterSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 500.0f}});
+      hGenLi4vsMultiplicityFT0CAfterSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityFT0CAfterSel", "; #it{p}_{T} (GeV/#it{c}); FT0C multiplicity", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 3000.0f}});
     }
   }
 
@@ -1557,27 +1518,12 @@ struct he3HadronFemto {
     }
 
     //////////// Event loss estimation via impact parameter and multiplicity by MCFT0C
-
-    LOG(info) << "Processing MC";
-    /*
-    mQaRegistry.fill(HIST("EventLoss/hEvtMC"), 0);
-    mQaRegistry.fill(HIST("EventLoss/hImpactParamGen"), mcCollision.impactParameter());
-    mQaRegistry.fill(HIST("EventLoss/hGenEventsNchEta05"), mcCollision.multMCNParticlesEta05(), 0);
-    mQaRegistry.fill(HIST("EventLoss/hGenEventsNchEta08"), mcCollision.multMCNParticlesEta08(), 0);
-    */
     hEvtMC->Fill(0);
-    LOG(info) << "Filled hEvtMC";
     hImpactParamGen->Fill(mcCollision.impactParameter());
-    LOG(info) << "Filled hImpactParamGen";
-    const auto multEta05 = mcCollision.multMCNParticlesEta05();
-    LOG(info) << "multEta05: " << multEta05;
-    hGenEventsNchEta05->Fill(multEta05, 0);
-    LOG(info) << "Filled hGenEventsNchEta05";
+    hGenEventsNchEta05->Fill(mcCollision.multMCNParticlesEta05(), 0);
     hGenEventsNchEta08->Fill(mcCollision.multMCNParticlesEta08(), 0);
-    LOG(info) << "Filled hGenEventsNchEta08";
 
     if (collisions.size() == 0) {
-      /*mQaRegistry.fill(HIST("EventLoss/hEvtMC"), 1);*/
       hEvtMC->Fill(1);
     }
 
@@ -1599,15 +1545,6 @@ struct he3HadronFemto {
       }
 
       atLeastOneRecoEvt = true;
-      LOG(info) << "First fill";
-      /*
-      mQaRegistry.fill(HIST("EventLoss/hImpactParamReco"), mcCollision.impactParameter());
-      mQaRegistry.fill(HIST("EventLoss/hRecoCentrality"), col.centFT0C());
-      mQaRegistry.fill(HIST("EventLoss/hRecoCentralityColvsMultiplicityRecoEta05"), col.centFT0C(), mcCollision.multMCNParticlesEta05());
-      mQaRegistry.fill(HIST("EventLoss/hRecoCentralityColvsMultiplicityRecoEta08"), col.centFT0C(), mcCollision.multMCNParticlesEta08());
-      mQaRegistry.fill(HIST("EventLoss/hRecoCentralityColvsMultiplicityFT0C"), col.centFT0C(), mcCollision.multMCFT0C());
-      mQaRegistry.fill(HIST("EventLoss/hRecoCentralityColvsImpactParamReco"), col.centFT0C(), mcCollision.impactParameter());
-      */
       hImpactParamReco->Fill(mcCollision.impactParameter());
       hRecoCentrality->Fill(col.centFT0C());
       hRecoCentralityColvsMultiplicityRecoEta05->Fill(col.centFT0C(), mcCollision.multMCNParticlesEta05());
@@ -1617,18 +1554,6 @@ struct he3HadronFemto {
     }
 
     if (atLeastOneRecoEvt) {
-      LOG(info) << "Second fill";
-      /*
-      mQaRegistry.fill(HIST("EventLoss/hEvtMC"), 2);
-      mQaRegistry.fill(HIST("EventLoss/hGenEventsNchEta05"), mcCollision.multMCNParticlesEta05(), 1);
-      mQaRegistry.fill(HIST("EventLoss/hGenEventsNchEta08"), mcCollision.multMCNParticlesEta08(), 1);
-      mQaRegistry.fill(HIST("EventLoss/hImpactParamGenOneReco"), mcCollision.impactParameter());
-      mQaRegistry.fill(HIST("EventLoss/hGenOneRecoCentrality"), centralityFT0C);
-      mQaRegistry.fill(HIST("EventLoss/hGenCentralityColvsMultiplicityGenEta05"), centralityFT0C, mcCollision.multMCNParticlesEta05());
-      mQaRegistry.fill(HIST("EventLoss/hGenCentralityColvsMultiplicityGenEta08"), centralityFT0C, mcCollision.multMCNParticlesEta08());
-      mQaRegistry.fill(HIST("EventLoss/hGenCentralityColvsMultiplicityFT0C"), centralityFT0C, mcCollision.multMCFT0C());
-      mQaRegistry.fill(HIST("EventLoss/hGenCentralityColvsImpactParamGen"), centralityFT0C, mcCollision.impactParameter());
-      */
       hEvtMC->Fill(2);
       hGenEventsNchEta05->Fill(mcCollision.multMCNParticlesEta05(), 1);
       hGenEventsNchEta08->Fill(mcCollision.multMCNParticlesEta08(), 1);
@@ -1672,14 +1597,6 @@ struct he3HadronFemto {
 
       mother = daughHe3 + daughHad;
 
-      LOG(info) << "Third fill";
-      /*
-      mQaRegistry.fill(HIST("EventLoss/hGenLi4BeforeEvtSel"), mother.pt());
-      mQaRegistry.fill(HIST("EventLoss/hGenLi4vsImpactParameterBeforeEvtSel"), mother.pt(), mcCollision.impactParameter());
-      mQaRegistry.fill(HIST("EventLoss/hGenLi4vsMultiplicityGenEta05BeforeEvtSel"), mother.pt(), mcCollision.multMCNParticlesEta05());
-      mQaRegistry.fill(HIST("EventLoss/hGenLi4vsMultiplicityGenEta08BeforeEvtSel"), mother.pt(), mcCollision.multMCNParticlesEta08());
-      mQaRegistry.fill(HIST("EventLoss/hGenLi4vsMultiplicityFT0CBeforeEvtSel"), mother.pt(), mcCollision.multMCFT0C());
-      */
       hGenLi4BeforeEvtSel->Fill(mother.pt());
       hGenLi4vsImpactParameterBeforeEvtSel->Fill(mother.pt(), mcCollision.impactParameter());
       hGenLi4vsMultiplicityGenEta05BeforeEvtSel->Fill(mother.pt(), mcCollision.multMCNParticlesEta05());
@@ -1687,14 +1604,6 @@ struct he3HadronFemto {
       hGenLi4vsMultiplicityFT0CBeforeEvtSel->Fill(mother.pt(), mcCollision.multMCFT0C());
 
       if (atLeastOneRecoEvt) {
-        LOG(info) << "Fourth fill";
-        /*
-        mQaRegistry.fill(HIST("EventLoss/hGenLi4AfterSel"), mother.pt());
-        mQaRegistry.fill(HIST("EventLoss/hGenLi4vsImpactParameterAfterSel"), mother.pt(), mcCollision.impactParameter());
-        mQaRegistry.fill(HIST("EventLoss/hGenLi4vsMultiplicityGenEta05AfterSel"), mother.pt(), mcCollision.multMCNParticlesEta05());
-        mQaRegistry.fill(HIST("EventLoss/hGenLi4vsMultiplicityGenEta08AfterSel"), mother.pt(), mcCollision.multMCNParticlesEta08());
-        mQaRegistry.fill(HIST("EventLoss/hGenLi4vsMultiplicityFT0CAfterSel"), mother.pt(), mcCollision.multMCFT0C());
-        */
         hGenLi4AfterSel->Fill(mother.pt());
         hGenLi4vsImpactParameterAfterSel->Fill(mother.pt(), mcCollision.impactParameter());
         hGenLi4vsMultiplicityGenEta05AfterSel->Fill(mother.pt(), mcCollision.multMCNParticlesEta05());
