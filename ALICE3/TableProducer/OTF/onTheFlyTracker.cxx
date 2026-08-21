@@ -494,33 +494,33 @@ struct OnTheFlyTracker {
         // smear un-reco'ed tracks if asked to do so
         mSmearer[icfg]->skipUnreconstructed(!processUnreconstructedTracks.value);
 
-        insertHist(histPath + "hPtGenerated", "hPtGenerated;#it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
-        insertHist(histPath + "hPhiGenerated", "hPhiGenerated;#phi (rad);Counts", {kTH1D, {{100, 0.0f, 2 * M_PI, "#phi (rad)"}}});
+        insertHist(histPath + "hPtGenerated", "hPtGenerated;#it{p}_{T} (GeV/c);Counts", kTH1D, {{axes.axisMomentum}});
+        insertHist(histPath + "hPhiGenerated", "hPhiGenerated;#phi (rad);Counts", kTH1D, {{100, 0.0f, 2 * M_PI, "#phi (rad)"}});
 
-        insertHist(histPath + "hPtGeneratedEl", "hPtGeneratedEl;Gen #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
-        insertHist(histPath + "hPtGeneratedPi", "hPtGeneratedPi;Gen #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
-        insertHist(histPath + "hPtGeneratedKa", "hPtGeneratedKa;Gen #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
-        insertHist(histPath + "hPtGeneratedPr", "hPtGeneratedPr;Gen #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
-        insertHist(histPath + "hPtReconstructed", "hPtReconstructed;Reco #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
-        insertHist(histPath + "hPtReconstructedEl", "hPtReconstructedEl;Reco #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
-        insertHist(histPath + "hPtReconstructedPi", "hPtReconstructedPi;Reco #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
-        insertHist(histPath + "hPtReconstructedKa", "hPtReconstructedKa;Reco #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
-        insertHist(histPath + "hPtReconstructedPr", "hPtReconstructedPr;Reco #it{p}_{T} (GeV/c);Counts", {kTH1D, {{axes.axisMomentum}}});
+        insertHist(histPath + "hPtGeneratedEl", "hPtGeneratedEl;Gen #it{p}_{T} (GeV/c);Counts", kTH1D, {{axes.axisMomentum}});
+        insertHist(histPath + "hPtGeneratedPi", "hPtGeneratedPi;Gen #it{p}_{T} (GeV/c);Counts", kTH1D, {{axes.axisMomentum}});
+        insertHist(histPath + "hPtGeneratedKa", "hPtGeneratedKa;Gen #it{p}_{T} (GeV/c);Counts", kTH1D, {{axes.axisMomentum}});
+        insertHist(histPath + "hPtGeneratedPr", "hPtGeneratedPr;Gen #it{p}_{T} (GeV/c);Counts", kTH1D, {{axes.axisMomentum}});
+        insertHist(histPath + "hPtReconstructed", "hPtReconstructed;Reco #it{p}_{T} (GeV/c);Counts", kTH1D, {{axes.axisMomentum}});
+        insertHist(histPath + "hPtReconstructedEl", "hPtReconstructedEl;Reco #it{p}_{T} (GeV/c);Counts", kTH1D, {{axes.axisMomentum}});
+        insertHist(histPath + "hPtReconstructedPi", "hPtReconstructedPi;Reco #it{p}_{T} (GeV/c);Counts", kTH1D, {{axes.axisMomentum}});
+        insertHist(histPath + "hPtReconstructedKa", "hPtReconstructedKa;Reco #it{p}_{T} (GeV/c);Counts", kTH1D, {{axes.axisMomentum}});
+        insertHist(histPath + "hPtReconstructedPr", "hPtReconstructedPr;Reco #it{p}_{T} (GeV/c);Counts", kTH1D, {{axes.axisMomentum}});
       }
       // Collision QA
-      insertHist(histPath + "hPVz", "hPVz;Primary Vertex Z (cm);Counts", {kTH1D, {{axes.axisVertexZ}}});
-      insertHist(histPath + "hLUTMultiplicity", "hLUTMultiplicity;dN/d#eta;Counts", {kTH1D, {{axes.axisMultiplicity}}});
-      insertHist(histPath + "hSimMultiplicity", "hSimMultiplicity;Gen. multiplicity;Counts", {kTH1D, {{axes.axisMultiplicity}}});
-      insertHist(histPath + "hRecoMultiplicity", "hRecoMultiplicity;Reco Multiplicity;Counts", {kTH1D, {{axes.axisMultiplicity}}});
+      insertHist(histPath + "hPVz", "hPVz;Primary Vertex Z (cm);Counts", kTH1D, {{axes.axisVertexZ}});
+      insertHist(histPath + "hLUTMultiplicity", "hLUTMultiplicity;dN/d#eta;Counts", kTH1D, {{axes.axisMultiplicity}});
+      insertHist(histPath + "hSimMultiplicity", "hSimMultiplicity;Gen. multiplicity;Counts", kTH1D, {{axes.axisMultiplicity}});
+      insertHist(histPath + "hRecoMultiplicity", "hRecoMultiplicity;Reco Multiplicity;Counts", kTH1D, {{axes.axisMultiplicity}});
 
       if (enablePrimaryVertexing) {
-        insertHist(histPath + "hDeltaXPVRecoGen", "hDeltaXPVRecoGen;Delta X (reco - gen), cm", {kTH2D, {{axes.axisDeltaVtxCoord, axes.axisMultiplicity}}});
-        insertHist(histPath + "hDeltaYPVRecoGen", "hDeltaYPVRecoGen;Delta Y (reco - gen), cm", {kTH2D, {{axes.axisDeltaVtxCoord, axes.axisMultiplicity}}});
-        insertHist(histPath + "hDeltaZPVRecoGen", "hDeltaZPVRecoGen;Delta Z (reco - gen), cm", {kTH2D, {{axes.axisDeltaVtxCoord, axes.axisMultiplicity}}});
-        insertHist(histPath + "hDeltaMultPVRecoGen", "hDeltaMultPVRecoGen;Delta Multiplicity (reco - gen)", {kTH1D, {{axes.axisDeltaMultPVRecoGen}}});
-        insertHist(histPath + "hVtxMultGen", "hVtxMultGen;Generated Vertex Multiplicity", {kTH1D, {{axes.axisVtxMult}}});
-        insertHist(histPath + "hVtxMultReco", "hVtxMultReco;Reconstructed Vertex Multiplicity", {kTH1D, {{axes.axisVtxMult}}});
-        insertHist(histPath + "hVtxTrials", "hVtxTrials;Vertex Reconstruction Trials", {kTH1D, {{2, -0.5, 1.5}}});
+        insertHist(histPath + "hDeltaXPVRecoGen", "hDeltaXPVRecoGen;Delta X (reco - gen), cm", kTH2D, {{axes.axisDeltaVtxCoord, axes.axisMultiplicity}});
+        insertHist(histPath + "hDeltaYPVRecoGen", "hDeltaYPVRecoGen;Delta Y (reco - gen), cm", kTH2D, {{axes.axisDeltaVtxCoord, axes.axisMultiplicity}});
+        insertHist(histPath + "hDeltaZPVRecoGen", "hDeltaZPVRecoGen;Delta Z (reco - gen), cm", kTH2D, {{axes.axisDeltaVtxCoord, axes.axisMultiplicity}});
+        insertHist(histPath + "hDeltaMultPVRecoGen", "hDeltaMultPVRecoGen;Delta Multiplicity (reco - gen)", kTH1D, {{axes.axisDeltaMultPVRecoGen}});
+        insertHist(histPath + "hVtxMultGen", "hVtxMultGen;Generated Vertex Multiplicity", kTH1D, {{axes.axisVtxMult}});
+        insertHist(histPath + "hVtxMultReco", "hVtxMultReco;Reconstructed Vertex Multiplicity", kTH1D, {{axes.axisVtxMult}});
+        insertHist(histPath + "hVtxTrials", "hVtxTrials;Vertex Reconstruction Trials", kTH1D, {{2, -0.5, 1.5}});
         // Set the bin labels
         getHist<TH1>(histPath + "hVtxTrials")->GetXaxis()->SetBinLabel(1, "Tried");
         getHist<TH1>(histPath + "hVtxTrials")->GetXaxis()->SetBinLabel(2, "Succeeded");
@@ -536,7 +536,7 @@ struct OnTheFlyTracker {
         fastTracker[icfg]->Print(); // print fastTracker settings
 
         if (cascadeDecaySettings.doXiQA) {
-          insertHist(histPath + "hXiBuilding", "hXiBuilding", {kTH1F, {{10, -0.5f, 9.5f}}});
+          insertHist(histPath + "hXiBuilding", "hXiBuilding", kTH1F, {{10, -0.5f, 9.5f}});
           getHist<TH1>(histPath + "hXiBuilding")->GetXaxis()->SetBinLabel(1, "Generated");
           getHist<TH1>(histPath + "hXiBuilding")->GetXaxis()->SetBinLabel(2, "Secondary smearing prong 0");
           getHist<TH1>(histPath + "hXiBuilding")->GetXaxis()->SetBinLabel(3, "Secondary smearing prong 1");
@@ -546,41 +546,40 @@ struct OnTheFlyTracker {
           getHist<TH1>(histPath + "hXiBuilding")->GetXaxis()->SetBinLabel(7, "V0 fitter ok");
           getHist<TH1>(histPath + "hXiBuilding")->GetXaxis()->SetBinLabel(8, "Kink fitter ok");
 
-          insertHist(histPath + "hGenXi", "hGenXi;Decay Radius;#it{p}_{T}", {kTH2F, {axes.axisDecayRadius, axes.axisMomentum}});
-          insertHist(histPath + "hRecoXi", "hRecoXi;Decay Radius;#it{p}_{T}", {kTH2F, {axes.axisDecayRadius, axes.axisMomentum}});
+          insertHist(histPath + "hGenXi", "hGenXi;Decay Radius;#it{p}_{T}", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
+          insertHist(histPath + "hRecoXi", "hRecoXi;Decay Radius;#it{p}_{T}", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
 
-          insertHist(histPath + "hGenPiFromXi", "hGenPiFromXi;Decay Radius;#it{p}_{T}", {kTH2F, {axes.axisDecayRadius, axes.axisMomentum}});
-          insertHist(histPath + "hGenPiFromLa", "hGenPiFromLa;Decay Radius;#it{p}_{T}", {kTH2F, {axes.axisDecayRadius, axes.axisMomentum}});
-          insertHist(histPath + "hGenPrFromLa", "hGenPrFromLa;Decay Radius;#it{p}_{T}", {kTH2F, {axes.axisDecayRadius, axes.axisMomentum}});
-          insertHist(histPath + "hRecoPiFromXi", "hRecoPiFromXi;Decay Radius;#it{p}_{T}", {kTH2F, {axes.axisDecayRadius, axes.axisMomentum}});
-          insertHist(histPath + "hRecoPiFromLa", "hRecoPiFromLa;Decay Radius;#it{p}_{T}", {kTH2F, {axes.axisDecayRadius, axes.axisMomentum}});
-          insertHist(histPath + "hRecoPrFromLa", "hRecoPrFromLa;Decay Radius;#it{p}_{T}", {kTH2F, {axes.axisDecayRadius, axes.axisMomentum}});
+          insertHist(histPath + "hGenPiFromXi", "hGenPiFromXi;Decay Radius;#it{p}_{T}", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
+          insertHist(histPath + "hGenPiFromLa", "hGenPiFromLa;Decay Radius;#it{p}_{T}", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
+          insertHist(histPath + "hGenPrFromLa", "hGenPrFromLa;Decay Radius;#it{p}_{T}", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
+          insertHist(histPath + "hRecoPiFromXi", "hRecoPiFromXi;Decay Radius;#it{p}_{T}", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
+          insertHist(histPath + "hRecoPiFromLa", "hRecoPiFromLa;Decay Radius;#it{p}_{T}", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
+          insertHist(histPath + "hRecoPrFromLa", "hRecoPrFromLa;Decay Radius;#it{p}_{T}", kTH2F, {axes.axisDecayRadius, axes.axisMomentum});
 
           // basic mass histograms to see if we're in business
-          insertHist(histPath + "hMassLambda", "hMassLambda;Mass;Counts", {kTH1F, {{axes.axisLambdaMass}}});
-          insertHist(histPath + "hMassXi", "hMassXi;Mass;Counts", {kTH1F, {{axes.axisXiMass}}});
-          insertHist(histPath + "h2dMassXi", "h2dMassXi;Mass;Counts", {kTH2F, {{axes.axisXiMass}, {axes.axisMomentum}}});
+          insertHist(histPath + "hMassLambda", "hMassLambda;Mass;Counts", kTH1F, {{axes.axisLambdaMass}});
+          insertHist(histPath + "hMassXi", "hMassXi;Mass;Counts", kTH1F, {{axes.axisXiMass}});
+          insertHist(histPath + "h2dMassXi", "h2dMassXi;Mass;Counts", kTH2F, {{axes.axisXiMass}, {axes.axisMomentum}});
 
           // OTF strangeness tracking QA
-          insertHist(histPath + "hFoundVsFindable", "hFoundVsFindable;Found;Findable", {kTH2F, {{10, -0.5f, 9.5f}, {10, -0.5f, 9.5f}}});
+          insertHist(histPath + "hFoundVsFindable", "hFoundVsFindable;Found;Findable", kTH2F, {{10, -0.5f, 9.5f}, {10, -0.5f, 9.5f}});
 
-          insertHist(histPath + "h2dDCAxyCascade", "h2dDCAxyCascade;#it{p}_{T};DCA_{xy}", {kTH2F, {axes.axisMomentum, axes.axisDCA}});
-          insertHist(histPath + "h2dDCAxyCascadeBachelor", "h2dDCAxyCascadeBachelor;#it{p}_{T};DCA_{xy}", {kTH2F, {axes.axisMomentum, axes.axisDCA}});
-          insertHist(histPath + "h2dDCAxyCascadeNegative", "h2dDCAxyCascadeNegative;#it{p}_{T};DCA_{xy}", {kTH2F, {axes.axisMomentum, axes.axisDCA}});
-          insertHist(histPath + "h2dDCAxyCascadePositive", "h2dDCAxyCascadePositive;#it{p}_{T};DCA_{xy}", {kTH2F, {axes.axisMomentum, axes.axisDCA}});
+          insertHist(histPath + "h2dDCAxyCascade", "h2dDCAxyCascade;#it{p}_{T};DCA_{xy}", kTH2F, {axes.axisMomentum, axes.axisDCA});
+          insertHist(histPath + "h2dDCAxyCascadeBachelor", "h2dDCAxyCascadeBachelor;#it{p}_{T};DCA_{xy}", kTH2F, {axes.axisMomentum, axes.axisDCA});
+          insertHist(histPath + "h2dDCAxyCascadeNegative", "h2dDCAxyCascadeNegative;#it{p}_{T};DCA_{xy}", kTH2F, {axes.axisMomentum, axes.axisDCA});
+          insertHist(histPath + "h2dDCAxyCascadePositive", "h2dDCAxyCascadePositive;#it{p}_{T};DCA_{xy}", kTH2F, {axes.axisMomentum, axes.axisDCA});
+          insertHist(histPath + "h2dDCAzCascade", "h2dDCAzCascade;#it{p}_{T};DCA_{z}", kTH2F, {axes.axisMomentum, axes.axisDCA});
+          insertHist(histPath + "h2dDCAzCascadeBachelor", "h2dDCAzCascadeBachelor;#it{p}_{T};DCA_{z}", kTH2F, {axes.axisMomentum, axes.axisDCA});
+          insertHist(histPath + "h2dDCAzCascadeNegative", "h2dDCAzCascadeNegative;#it{p}_{T};DCA_{z}", kTH2F, {axes.axisMomentum, axes.axisDCA});
+          insertHist(histPath + "h2dDCAzCascadePositive", "h2dDCAzCascadePositive;#it{p}_{T};DCA_{z}", kTH2F, {axes.axisMomentum, axes.axisDCA});
 
-          insertHist(histPath + "h2dDCAzCascade", "h2dDCAzCascade;#it{p}_{T};DCA_{z}", {kTH2F, {axes.axisMomentum, axes.axisDCA}});
-          insertHist(histPath + "h2dDCAzCascadeBachelor", "h2dDCAzCascadeBachelor;#it{p}_{T};DCA_{z}", {kTH2F, {axes.axisMomentum, axes.axisDCA}});
-          insertHist(histPath + "h2dDCAzCascadeNegative", "h2dDCAzCascadeNegative;#it{p}_{T};DCA_{z}", {kTH2F, {axes.axisMomentum, axes.axisDCA}});
-          insertHist(histPath + "h2dDCAzCascadePositive", "h2dDCAzCascadePositive;#it{p}_{T};DCA_{z}", {kTH2F, {axes.axisMomentum, axes.axisDCA}});
+          insertHist(histPath + "h2dDeltaPtVsPt", "h2dDeltaPtVsPt;Gen p_{T};#Delta p_{T}", kTH2F, {axes.axisMomentum, axes.axisDeltaPt});
+          insertHist(histPath + "h2dDeltaEtaVsPt", "h2dDeltaEtaVsPt;Gen p_{T};#Delta #eta", kTH2F, {axes.axisMomentum, axes.axisDeltaEta});
 
-          insertHist(histPath + "h2dDeltaPtVsPt", "h2dDeltaPtVsPt;Gen p_{T};#Delta p_{T}", {kTH2F, {axes.axisMomentum, axes.axisDeltaPt}});
-          insertHist(histPath + "h2dDeltaEtaVsPt", "h2dDeltaEtaVsPt;Gen p_{T};#Delta #eta", {kTH2F, {axes.axisMomentum, axes.axisDeltaEta}});
-
-          insertHist(histPath + "nSiliconHitsCascadeProngs", "nSiliconHitsCascadeProngs", {kTH1F, {{40, -0.5f, 39.5f}}});
-          insertHist(histPath + "nTPCHitsCascadeProngs", "nTPCHitsCascadeProngs", {kTH1F, {{10, -0.5f, 9.5f}}});
-          insertHist(histPath + "hFastTrackerHits", "hFastTrackerHits", {kTH2F, {axes.axisZ, axes.axisRadius}});
-          insertHist(histPath + "hFastTrackerQA", "hFastTrackerQA", {kTH1F, {{8, -0.5f, 7.5f}}});
+          insertHist(histPath + "nSiliconHitsCascadeProngs", "nSiliconHitsCascadeProngs", kTH1F, {{40, -0.5f, 39.5f}});
+          insertHist(histPath + "nTPCHitsCascadeProngs", "nTPCHitsCascadeProngs", kTH1F, {{10, -0.5f, 9.5f}});
+          insertHist(histPath + "hFastTrackerHits", "hFastTrackerHits", kTH2F, {axes.axisZ, axes.axisRadius});
+          insertHist(histPath + "hFastTrackerQA", "hFastTrackerQA", kTH1F, {{8, -0.5f, 7.5f}});
           getHist<TH1>(histPath + "hFastTrackerQA")->GetXaxis()->SetBinLabel(1, "Negative eigenvalue");
           getHist<TH1>(histPath + "hFastTrackerQA")->GetXaxis()->SetBinLabel(2, "Failed sanity check");
           getHist<TH1>(histPath + "hFastTrackerQA")->GetXaxis()->SetBinLabel(3, "intercept original radius");
@@ -593,31 +592,31 @@ struct OnTheFlyTracker {
       }
 
       if (doExtraQA) {
-        insertHist(histPath + "h2dPtRes", "h2dPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
-        insertHist(histPath + "h2dPtResAbs", "h2dPtResAbs;Gen p_{T};#Delta p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
-        insertHist(histPath + "h2dDCAxy", "h2dDCAxy;p_{T};DCA_{xy}", {kTH2D, {{axes.axisMomentum, axes.axisDCA}}});
-        insertHist(histPath + "h2dDCAz", "h2dDCAz;p_{T};DCA_{z}", {kTH2D, {{axes.axisMomentum, axes.axisDCA}}});
+        insertHist(histPath + "h2dPtRes", "h2dPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
+        insertHist(histPath + "h2dPtResAbs", "h2dPtResAbs;Gen p_{T};#Delta p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
+        insertHist(histPath + "h2dDCAxy", "h2dDCAxy;p_{T};DCA_{xy}", kTH2D, {{axes.axisMomentum, axes.axisDCA}});
+        insertHist(histPath + "h2dDCAz", "h2dDCAz;p_{T};DCA_{z}", kTH2D, {{axes.axisMomentum, axes.axisDCA}});
       }
 
       if (brSettings.doBRQA) {
-        insertHist(histPath + "h1dNBRPhotons", "h1dNBRPhotons;N_{#gamma};Counts", {kTH1D, {{axes.axisNphotons}}});
-        insertHist(histPath + "h1dBREnergyLoss", "h1dBREnergyLoss;#Delta p / p;Counts", {kTH1D, {{axes.axisBRenergyLoss}}});
+        insertHist(histPath + "h1dNBRPhotons", "h1dNBRPhotons;N_{#gamma};Counts", kTH1D, {{axes.axisNphotons}});
+        insertHist(histPath + "h1dBREnergyLoss", "h1dBREnergyLoss;#Delta p / p;Counts", kTH1D, {{axes.axisBRenergyLoss}});
 
-        insertHist(histPath + "h2dBRPtRes", "h2dPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
-        insertHist(histPath + "h2dBRPtResAbs", "h2dPtResAbs;Gen p_{T};#Delta p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
+        insertHist(histPath + "h2dBRPtRes", "h2dPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
+        insertHist(histPath + "h2dBRPtResAbs", "h2dPtResAbs;Gen p_{T};#Delta p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
       }
 
       if (doprocessDecayer) {
-        insertHist(histPath + "h2dPrimaryPtRes", "h2dPrimaryPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
-        insertHist(histPath + "h2dSecondaryPtRes", "h2dSecondaryPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
-        insertHist(histPath + "h2dPrimaryElPtRes", "h2dPrimaryElPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
-        insertHist(histPath + "h2dSecondaryElPtRes", "h2dSecondaryElPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
-        insertHist(histPath + "h2dPrimaryPiPtRes", "h2dPrimaryPiPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
-        insertHist(histPath + "h2dSecondaryPiPtRes", "h2dSecondaryPiPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
-        insertHist(histPath + "h2dPrimaryKaPtRes", "h2dPrimaryKaPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
-        insertHist(histPath + "h2dSecondaryKaPtRes", "h2dSecondaryKaPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
-        insertHist(histPath + "h2dPrimaryPrPtRes", "h2dPrimaryPrPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
-        insertHist(histPath + "h2dSecondaryPrPtRes", "h2dSecondaryPrPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", {kTH2D, {{axes.axisMomentum, axes.axisPtRes}}});
+        insertHist(histPath + "h2dPrimaryPtRes", "h2dPrimaryPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
+        insertHist(histPath + "h2dSecondaryPtRes", "h2dSecondaryPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
+        insertHist(histPath + "h2dPrimaryElPtRes", "h2dPrimaryElPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
+        insertHist(histPath + "h2dSecondaryElPtRes", "h2dSecondaryElPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
+        insertHist(histPath + "h2dPrimaryPiPtRes", "h2dPrimaryPiPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
+        insertHist(histPath + "h2dSecondaryPiPtRes", "h2dSecondaryPiPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
+        insertHist(histPath + "h2dPrimaryKaPtRes", "h2dPrimaryKaPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
+        insertHist(histPath + "h2dSecondaryKaPtRes", "h2dSecondaryKaPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
+        insertHist(histPath + "h2dPrimaryPrPtRes", "h2dPrimaryPrPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
+        insertHist(histPath + "h2dSecondaryPrPtRes", "h2dSecondaryPrPtRes;Gen p_{T};#Delta p_{T} / Reco p_{T}", kTH2D, {{axes.axisMomentum, axes.axisPtRes}});
       }
 
     } // end config loop
