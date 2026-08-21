@@ -9,6 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file FlatLutEntry.cxx
+/// \brief Flat LUT implementation for compact helper tables used by the ALICE3 track smearing workflow.
+
 #include "FlatLutEntry.h"
 
 #include <Framework/Logger.h>
@@ -24,31 +27,37 @@
 
 namespace o2::delphes
 {
+namespace
+{
+constexpr int kNumCovarianceTerms = 15;
+constexpr int kNumEigenModes = 5;
+constexpr float kBinCenterOffset = 0.5f;
+} // namespace
 
 void lutEntry_t::print() const
 {
   LOGF(info, "  nch = %f, eta = %f, pt = %f, valid = %s\n", nch, eta, pt, valid ? "true" : "false");
   LOGF(info, "  eff = %f, eff2 = %f, itof = %f, otof = %f\n", eff, eff2, itof, otof);
   LOGF(info, "  covm: ");
-  for (int i = 0; i < 15; ++i) {
+  for (int i = 0; i < kNumCovarianceTerms; ++i) {
     LOGF(info, "%f ", covm[i]);
   }
   LOGF(info, "\n");
   LOGF(info, "  eigval: ");
-  for (int i = 0; i < 5; ++i) {
+  for (int i = 0; i < kNumEigenModes; ++i) {
     LOGF(info, "%f ", eigval[i]);
   }
   LOGF(info, "\n");
   LOGF(info, "  eigvec:\n");
-  for (int i = 0; i < 5; ++i) {
-    for (int j = 0; j < 5; ++j) {
+  for (int i = 0; i < kNumEigenModes; ++i) {
+    for (int j = 0; j < kNumEigenModes; ++j) {
       LOGF(info, "%f ", eigvec[i][j]);
     }
     LOGF(info, "\n");
   }
   LOGF(info, "  eiginv:\n");
-  for (int i = 0; i < 5; ++i) {
-    for (int j = 0; j < 5; ++j) {
+  for (int i = 0; i < kNumEigenModes; ++i) {
+    for (int j = 0; j < kNumEigenModes; ++j) {
       LOGF(info, "%f ", eiginv[i][j]);
     }
     LOGF(info, "\n");
@@ -59,7 +68,7 @@ float map_t::fracPositionWithinBin(float val) const
 {
   float width = (max - min) / nbins;
   int bin;
-  float returnVal = 0.5f;
+  float returnVal = kBinCenterOffset;
   if (log) {
     bin = static_cast<int>((std::log10(val) - min) / width);
     returnVal = ((std::log10(val) - min) / width) - bin;
@@ -93,7 +102,7 @@ void map_t::print() const
   LOGF(info, "nbins = %d, min = %f, max = %f, log = %s \n", nbins, min, max, log ? "on" : "off");
 }
 
-bool lutHeader_t::check_version() const
+bool lutHeader_t::checkVersion() const
 {
   return (version == LUTCOVM_VERSION);
 }
@@ -120,7 +129,7 @@ void FlatLutData::initialize(const lutHeader_t& header)
   mEtaBins = header.etamap.nbins;
   mPtBins = header.ptmap.nbins;
 
-  const size_t headerSize = sizeof(lutHeader_t);
+  constexpr size_t headerSize = sizeof(lutHeader_t);
   const size_t numEntries = static_cast<size_t>(mNchBins) * mRadBins * mEtaBins * mPtBins;
   const size_t entriesSize = numEntries * sizeof(lutEntry_t);
   const size_t totalSize = headerSize + entriesSize;
@@ -133,10 +142,10 @@ void FlatLutData::initialize(const lutHeader_t& header)
 
 size_t FlatLutData::getEntryOffset(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const
 {
-  static constexpr size_t headerSize = sizeof(lutHeader_t);
+  static constexpr size_t HeaderSize = sizeof(lutHeader_t);
   const size_t linearIdx = getEntryIndex(nch_bin, rad_bin, eta_bin, pt_bin);
-  static constexpr size_t entrySize = sizeof(lutEntry_t);
-  return headerSize + linearIdx * entrySize;
+  static constexpr size_t EntrySize = sizeof(lutEntry_t);
+  return HeaderSize + linearIdx * EntrySize;
 }
 
 const lutEntry_t* FlatLutData::getEntryRef(int nch_bin, int rad_bin, int eta_bin, int pt_bin) const
@@ -200,26 +209,26 @@ void FlatLutData::view(const uint8_t* buffer, size_t size)
 
 void FlatLutData::validateBuffer(const uint8_t* buffer, size_t size)
 {
-  auto header = PreviewHeader(buffer, size);
-  auto mNchBins = header.nchmap.nbins;
-  auto mRadBins = header.radmap.nbins;
-  auto mEtaBins = header.etamap.nbins;
-  auto mPtBins = header.ptmap.nbins;
+  auto header = previewHeader(buffer, size);
+  const auto nchBins = header.nchmap.nbins;
+  const auto radBins = header.radmap.nbins;
+  const auto etaBins = header.etamap.nbins;
+  const auto ptBins = header.ptmap.nbins;
 
-  size_t expectedSize = sizeof(lutHeader_t) + static_cast<size_t>(mNchBins) * mRadBins * mEtaBins * mPtBins * sizeof(lutEntry_t);
+  const size_t expectedSize = sizeof(lutHeader_t) + static_cast<size_t>(nchBins) * radBins * etaBins * ptBins * sizeof(lutEntry_t);
 
   if (size < expectedSize) {
     throw framework::runtime_error_f("Buffer size mismatch: expected %zu, got %zu", expectedSize, size);
   }
 }
 
-lutHeader_t FlatLutData::PreviewHeader(const uint8_t* buffer, size_t size)
+lutHeader_t FlatLutData::previewHeader(const uint8_t* buffer, size_t size)
 {
   if (size < sizeof(lutHeader_t)) {
     throw framework::runtime_error_f("Buffer too small for LUT header: expected at least %zu, got %zu", sizeof(lutHeader_t), size);
   }
   const auto* header = reinterpret_cast<const lutHeader_t*>(buffer);
-  if (!header->check_version()) {
+  if (!header->checkVersion()) {
     throw framework::runtime_error_f("LUT header version mismatch: expected %d, got %d", LUTCOVM_VERSION, header->version);
   }
   return *header;
@@ -256,14 +265,14 @@ bool FlatLutData::isLoaded() const
   return ((!mData.empty()) || (!mDataRef.empty()));
 }
 
-lutHeader_t FlatLutData::PreviewHeader(std::ifstream& file, const char* filename)
+lutHeader_t FlatLutData::previewHeader(std::ifstream& file, const char* filename)
 {
   lutHeader_t tempHeader;
   file.read(reinterpret_cast<char*>(&tempHeader), sizeof(lutHeader_t));
   if (file.gcount() != static_cast<std::streamsize>(sizeof(lutHeader_t))) {
     throw framework::runtime_error_f("Failed to read LUT header from %s", filename);
   }
-  if (!tempHeader.check_version()) {
+  if (!tempHeader.checkVersion()) {
     throw framework::runtime_error_f("LUT header version mismatch: expected %d, got %d", LUTCOVM_VERSION, tempHeader.version);
   }
   return tempHeader;
@@ -272,7 +281,7 @@ lutHeader_t FlatLutData::PreviewHeader(std::ifstream& file, const char* filename
 FlatLutData FlatLutData::loadFromFile(std::ifstream& file, const char* filename)
 {
   // Read header first
-  lutHeader_t tempHeader = PreviewHeader(file, filename);
+  lutHeader_t tempHeader = previewHeader(file, filename);
 
   FlatLutData data;
 
