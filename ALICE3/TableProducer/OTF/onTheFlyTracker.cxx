@@ -268,7 +268,7 @@ struct OnTheFlyTracker {
     using TimeEst = o2::dataformats::TimeStampWithError<float, float>;
 
    public:
-    TrackAlice3() : TrackParCov{}, mcLabel{-1}, timeEst{}, isDecayDau{false}, isWeakDecayDau{false}, isUsedInCascading{0}, nSiliconHits{0}, nTPCHits{0}, trackType{TrackType::kNone} {}
+    TrackAlice3() = default;
     ~TrackAlice3() = default;
     TrackAlice3(const TrackAlice3& src) = default;
     TrackAlice3(const o2::track::TrackParCov& src, const int64_t label,
@@ -289,13 +289,13 @@ struct OnTheFlyTracker {
                                                                       nTPCHits(nTPCHitsInput),
                                                                       trackType(trackTypeInput) {}
     const TimeEst& getTimeMUS() const { return timeEst; }
-    int64_t mcLabel;
-    TimeEst timeEst; ///< time estimate in ns
-    bool isDecayDau;
-    bool isWeakDecayDau;
-    int isUsedInCascading; // 0: not at all, 1: is a cascade, 2: is a bachelor, 3: is a pion, 4: is a proton
-    int nSiliconHits;
-    int nTPCHits;
+    int64_t mcLabel = -1;        ///< MC label of the track
+    TimeEst timeEst{};           ///< time estimate in ns
+    bool isDecayDau = false;     ///< is a decay daughter
+    bool isWeakDecayDau = false; ///< is a weak decay daughter
+    int isUsedInCascading = 0;   ///< 0: not at all, 1: is a cascade, 2: is a bachelor, 3: is a pion, 4: is a proton
+    int nSiliconHits = 0;        ///< number of silicon hits
+    int nTPCHits = 0;            ///< number of TPC hits
     TrackType trackType;
   };
 
