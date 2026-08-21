@@ -1573,7 +1573,7 @@ struct he3HadronFemto {
     hGenEventsNchEta08->Fill(mcCollision.multMCNParticlesEta08(), 0);
 
     if (collisions.size() == 0) {
-      hEvtMC->Fill(1);
+      hEvtMC->Fill(2);
     }
 
     bool atLeastOneRecoEvt = false;
@@ -1604,7 +1604,7 @@ struct he3HadronFemto {
     }
 
     if (atLeastOneRecoEvt) {
-      hEvtMC->Fill(2);
+      hEvtMC->Fill(1);
       hGenEventsNchEta05->Fill(mcCollision.multMCNParticlesEta05(), 1);
       hGenEventsNchEta08->Fill(mcCollision.multMCNParticlesEta08(), 1);
       hImpactParamGenOneReco->Fill(mcCollision.impactParameter());
