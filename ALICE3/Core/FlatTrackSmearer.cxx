@@ -20,6 +20,8 @@
 
 #include <TRandom.h>
 
+#include <string>
+##include <vector>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
