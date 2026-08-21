@@ -297,7 +297,7 @@ struct Alice3TrackingTranslator {
   };
   void addMCParticle(int collIndex, ParticleStruct& fileParticles, int iParticle, uint8_t flags, int firstMother, int firstDaughter, int secondDaughter, int numberOfHits)
   {
-    int mothers[2] = {firstMother, -1};
+    int mothers[2] = {firstMother, firstMother};
     int daughters[2] = {firstDaughter, secondDaughter};
     tableStoredMcParticles(collIndex,                                                                      // mcCollisionId
                            fileParticles.m_particle_type->at(iParticle),                                   // pdgCode
