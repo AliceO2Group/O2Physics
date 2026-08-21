@@ -570,7 +570,7 @@ struct Alice3TrackingTranslator {
           if (mcParticleIdx != -1) {
             int localIdx = GlobalToLocalIdx[mcParticleIdx];
             float p = fileParticlesSim.m_p->at(localIdx);
-            float m = fileParticlesSim.m_m->at(localIdx);
+            // float m = fileParticlesSim.m_m->at(localIdx);
             float pt = std::hypot(fileParticlesSim.m_px->at(localIdx), fileParticlesSim.m_py->at(localIdx));
             phi = std::acos(fileParticlesSim.m_px->at(localIdx) / pt);
             theta = std::acos(fileParticlesSim.m_pz->at(localIdx) / p);
