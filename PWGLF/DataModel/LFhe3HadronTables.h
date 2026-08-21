@@ -85,6 +85,7 @@ DECLARE_SOA_COLUMN(ZVertex, zVertex, float);
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, uint16_t);
 DECLARE_SOA_COLUMN(CentralityFT0C, centFT0C, float);
 DECLARE_SOA_COLUMN(MultiplicityFT0C, multiplicityFT0C, float);
+DECLARE_SOA_COLUMN(TrackOccupancy, trackOccupancy, int);
 
 /* Flags: 0 - both primary,
           1 - both from Li4,
@@ -137,7 +138,8 @@ DECLARE_SOA_TABLE(he3HadronMult, "AOD", "HE3HADMULT",
                   he3HadronTablesNS::ZVertex,
                   he3HadronTablesNS::Multiplicity,
                   he3HadronTablesNS::CentralityFT0C,
-                  he3HadronTablesNS::MultiplicityFT0C)
+                  he3HadronTablesNS::MultiplicityFT0C,
+                  he3HadronTablesNS::TrackOccupancy)
 DECLARE_SOA_TABLE(he3HadronQa, "AOD", "HE3HADQA",
                   he3HadronTablesNS::TrackIDHe3,
                   he3HadronTablesNS::TrackIDHad,
