@@ -420,10 +420,9 @@ struct OnTheFlyTracker {
     std::get<std::shared_ptr<T>>(it->second)->Fill(std::forward<Args>(args)...);
   }
 
-  template <typename... Args>
-  void insertHist(const std::string& name, Args&&... args)
+  void insertHist(const std::string& name, const std::string& title, HistType type, std::vector<AxisSpec> axisSpecs)
   {
-    histPointers[name] = histos.add(name.c_str(), std::forward<Args>(args)...);
+    histPointers[name] = histos.add(name.c_str(), title.c_str(), type, axisSpecs);
   }
 
   void init(o2::framework::InitContext& initContext)
