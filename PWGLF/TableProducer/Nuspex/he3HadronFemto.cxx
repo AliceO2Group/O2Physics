@@ -69,6 +69,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -400,7 +401,6 @@ struct he3HadronFemto {
   o2::aod::ITSResponse mResponseITS;
 
   std::vector<bool> mGoodCollisions;
-  std::vector<bool> mRecoMcCollisions;
   std::vector<int> mMcCollisionIdToRecoCollisionId;
   std::vector<uint32_t> mCollisionSelectionFlags;
   std::vector<SVCand> mTrackPairs;
@@ -421,39 +421,12 @@ struct he3HadronFemto {
       {"hVtxZ", "Vertex distribution in Z;Z (cm)", {HistType::kTH1F, {{400, -20.0, 20.0}}}},
       {"hCentralityFT0A", ";Centrality FT0A (%)", {HistType::kTH1F, {{100, 0, 100.0}}}},
       {"hCentralityFT0C", ";Centrality FT0C (%)", {HistType::kTH1F, {{100, 0, 100.0}}}},
-      {"hNcontributor", "Number of primary vertex contributor", {HistType::kTH1F, {{2000, 0.0f, 2000.0f}}}},
+      {"hNcontributor", "Number of primary vertex contributor", {HistType::kTH1F, {{200, 0.0f, 2000.0f}}}},
       {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
       {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
       {"hhe3HadInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
       {"hhe3HadKstar", "; #it{k}* (GeV/#it{c})", {HistType::kTH1F, {{300, 0.f, 0.8f}}}},
       {"hKstarRecVsKstarGen", "; #it{k}*_{gen} (GeV/#it{c}); #it{k}*_{rec} (GeV/#it{c})", {HistType::kTH2F, {{400, 0.f, 0.8f}, {400, 0.f, 0.8f}}}},
-
-      {"He3/hDCAxyHe3", "^{3}He;DCA_{xy} (cm)", {HistType::kTH1F, {{200, -0.5f, 0.5f}}}},
-      {"He3/hDCAzHe3", "^{3}He;DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
-      {"He3/hNClsHe3ITS", "^{3}He;N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
-      {"He3/hChi2NClHe3ITS", "^{3}He;Chi2_{ITS} Ncluster", {HistType::kTH1F, {{100, 0, 100.0f}}}},
-      {"He3/hHe3Pt", "^{3}He; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-      {"He3/h2dEdxHe3candidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
-      {"He3/h2NsigmaHe3ITS", "NsigmaHe3 ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS}(^{3}He); Centrality FT0C (%)", {HistType::kTH3F, {{100, -5.0f, 5.0f}, {120, -3.0f, 3.0f}, {100, 0.0f, 100.0f}}}},
-      {"He3/h2NsigmaHe3ITS_preselection", "NsigmaHe3 ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS}(^{3}He); Centrality FT0C (%)", {HistType::kTH3F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}, {100, 0.0f, 100.0f}}}},
-      {"He3/h2NsigmaHe3TPC", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He); Centrality FT0C (%)", {HistType::kTH3F, {{100, -5.0f, 5.0f}, {200, -5.0f, 5.0f}, {100, 0.0f, 100.0f}}}},
-      {"He3/h2NsigmaHe3TPC_preselection", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He); Centrality FT0C (%)", {HistType::kTH3F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}}}},
-
-      {"Had/hDCAxyHad", "had;DCA_{xy} (cm)", {HistType::kTH1F, {{200, -0.5f, 0.5f}}}},
-      {"Had/hDCAzHad", "had;DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
-      {"Had/hNClsHadITS", "had;N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
-      {"Had/hChi2NClHadITS", "had;Chi2_{ITS} Ncluster", {HistType::kTH1F, {{100, 0, 100.0f}}}},
-      {"Had/hHadronPt", "had; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
-      {"Had/h2NsigmaHadronITS", "NsigmaHadron ITS distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{ITS}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}, {100, 0.0f, 100.0f}}}},
-      {"Had/h2NsigmaHadronITS_preselection", "NsigmaHadron ITS distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}}}},
-      {"Had/h2NsigmaHadronTPC", "NsigmaHadron TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}, {100, 0.0f, 100.0f}}}},
-      {"Had/h2NsigmaHadronTPC_preselection", "NsigmaHadron TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}}}},
-      {"Had/h2NsigmaHadronTPC_mcBackground", "NsigmaHadron TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}}}},
-      {"Had/h2NsigmaHadronTPC_mcSignal", "NsigmaHadron TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}}}},
-      {"Had/h2NsigmaHadronTOF", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}, {100, 0.0f, 100.0f}}}},
-      {"Had/h2NsigmaHadronTOF_preselection", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}}}},
-      {"Had/h2NsigmaHadronTOF_mcBackground", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}}}},
-      {"Had/h2NsigmaHadronTOF_mcSignal", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had); Centrality FT0C (%)", {HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}}}},
     },
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -540,44 +513,76 @@ struct he3HadronFemto {
     mQaRegistry.get<TH1>(HIST("hEmptyPool"))->GetXaxis()->SetBinLabel(1, "False");
     mQaRegistry.get<TH1>(HIST("hEmptyPool"))->GetXaxis()->SetBinLabel(2, "True");
 
+    if (doprocessSameEvent || doprocessMixedEvent || doprocessMC || doprocessPurity || doprocessPurityMc) {
+      mQaRegistry.add<TH1>("He3/hDCAxyHe3", "^{3}He;DCA_{xy} (cm)", HistType::kTH1F, {{200, -0.5f, 0.5f}});
+      mQaRegistry.add<TH1>("He3/hDCAzHe3", "^{3}He;DCA_{z} (cm)", HistType::kTH1F, {{200, -1.0f, 1.0f}});
+      mQaRegistry.add<TH1>("He3/hNClsHe3ITS", "^{3}He;N_{ITS} Cluster", HistType::kTH1F, {{20, -10.0f, 10.0f}});
+      mQaRegistry.add<TH1>("He3/hChi2NClHe3ITS", "^{3}He;Chi2_{ITS} Ncluster", HistType::kTH1F, {{100, 0, 100.0f}});
+      mQaRegistry.add<TH1>("He3/hHe3Pt", "^{3}He; #it{p}_{T} (GeV/#it{c})", HistType::kTH1F, {{240, -6.0f, 6.0f}});
+      mQaRegistry.add<TH2>("He3/h2dEdxHe3candidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}});
+      mQaRegistry.add<TH3>("He3/h2NsigmaHe3ITS", "NsigmaHe3 ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS}(^{3}He); Centrality FT0C (%)", HistType::kTH3F, {{100, -5.0f, 5.0f}, {120, -3.0f, 3.0f}, {100, 0.0f, 100.0f}});
+      mQaRegistry.add<TH3>("He3/h2NsigmaHe3ITS_preselection", "NsigmaHe3 ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS}(^{3}He); Centrality FT0C (%)", HistType::kTH3F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}, {100, 0.0f, 100.0f}});
+      mQaRegistry.add<TH3>("He3/h2NsigmaHe3TPC", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He); Centrality FT0C (%)", HistType::kTH3F, {{100, -5.0f, 5.0f}, {100, -5.0f, 5.0f}, {100, 0.0f, 100.0f}});
+      mQaRegistry.add<TH3>("He3/h2NsigmaHe3TPC_preselection", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He); Centrality FT0C (%)", HistType::kTH3F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}});
+
+      mQaRegistry.add<TH1>("Had/hDCAxyHad", "had;DCA_{xy} (cm)", HistType::kTH1F, {{200, -0.5f, 0.5f}});
+      mQaRegistry.add<TH1>("Had/hDCAzHad", "had;DCA_{z} (cm)", HistType::kTH1F, {{200, -1.0f, 1.0f}});
+      mQaRegistry.add<TH1>("Had/hNClsHadITS", "had;N_{ITS} Cluster", HistType::kTH1F, {{20, -10.0f, 10.0f}});
+      mQaRegistry.add<TH1>("Had/hChi2NClHadITS", "had;Chi2_{ITS} Ncluster", HistType::kTH1F, {{100, 0, 100.0f}});
+      mQaRegistry.add<TH1>("Had/hHadronPt", "had; #it{p}_{T} (GeV/#it{c})", HistType::kTH1F, {{120, -3.0f, 3.0f}});
+      mQaRegistry.add<TH3>("Had/h2NsigmaHadronITS", "NsigmaHadron ITS distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{ITS}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {100, -5.0f, 5.0f}, {100, 0.0f, 100.0f}});
+      mQaRegistry.add<TH3>("Had/h2NsigmaHadronITS_preselection", "NsigmaHadron ITS distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {120, -3.0f, 3.0f}, {100, 0.0f, 100.0f}});
+      mQaRegistry.add<TH3>("Had/h2NsigmaHadronTPC", "NsigmaHadron TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {100, -5.0f, 5.0f}, {100, 0.0f, 100.0f}});
+      mQaRegistry.add<TH3>("Had/h2NsigmaHadronTPC_preselection", "NsigmaHadron TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}});
+      mQaRegistry.add<TH3>("Had/h2NsigmaHadronTOF", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {100, -5.0f, 5.0f}, {100, 0.0f, 100.0f}});
+      mQaRegistry.add<TH3>("Had/h2NsigmaHadronTOF_preselection", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}});
+
+      if (doprocessPurityMc) {
+        mQaRegistry.add<TH3>("Had/h2NsigmaHadronTPC_mcBackground", "NsigmaHadron TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}});
+        mQaRegistry.add<TH3>("Had/h2NsigmaHadronTPC_mcSignal", "NsigmaHadron TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}});
+        mQaRegistry.add<TH3>("Had/h2NsigmaHadronTOF_mcBackground", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}});
+        mQaRegistry.add<TH3>("Had/h2NsigmaHadronTOF_mcSignal", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had); Centrality FT0C (%)", HistType::kTH3F, {{200, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {100, 0.0f, 100.0f}});
+      }
+    }
+
     if (doprocessEventLossMC) {
       hEvtMC = mQaRegistry.add<TH1>("EventLoss/hEvtMC", ";; ", HistType::kTH1D, {{3, -0.5, 2.5}});
       hEvtMC->GetXaxis()->SetBinLabel(1, "All gen evts");
       hEvtMC->GetXaxis()->SetBinLabel(2, "Gen evts with al least one reconstructed");
       hEvtMC->GetXaxis()->SetBinLabel(3, "Gen evts with no reconstructed collisions");
 
-      hGenEventsNchEta05 = mQaRegistry.add<TH2>("EventLoss/hGenEventsNchEta05", ";;", HistType::kTH2D, {{500, 0.0f, 500.0f}, {2, -0.5f, 1.5f}});
+      hGenEventsNchEta05 = mQaRegistry.add<TH2>("EventLoss/hGenEventsNchEta05", ";;", HistType::kTH2D, {{400, 0.0f, 4000.0f}, {2, -0.5f, 1.5f}});
       hGenEventsNchEta05->GetYaxis()->SetBinLabel(1, "All gen. events");
       hGenEventsNchEta05->GetYaxis()->SetBinLabel(2, "Gen evts with at least 1 rec. collisions");
-      hGenEventsNchEta08 = mQaRegistry.add<TH2>("EventLoss/hGenEventsNchEta08", ";;", HistType::kTH2D, {{500, 0.0f, 500.0f}, {2, -0.5f, 1.5f}});
+      hGenEventsNchEta08 = mQaRegistry.add<TH2>("EventLoss/hGenEventsNchEta08", ";;", HistType::kTH2D, {{400, 0.0f, 4000.0f}, {2, -0.5f, 1.5f}});
       hGenEventsNchEta08->GetYaxis()->SetBinLabel(1, "All gen. events");
       hGenEventsNchEta08->GetYaxis()->SetBinLabel(2, "Gen evts with at least 1 rec. collisions");
 
       hImpactParamGen = mQaRegistry.add<TH1>("EventLoss/hImpactParamGen", "Impact parameter of generated MC events; Impact Parameter (b); Counts", HistType::kTH1D, {{200, 0.0f, 20.0f}});
       hImpactParamReco = mQaRegistry.add<TH1>("EventLoss/hImpactParamReco", "Impact parameter of generated MC events with at least one rec. evt; Impact Parameter (b); Counts", HistType::kTH1D, {{200, 0.0f, 20.0f}});
       hRecoCentrality = mQaRegistry.add<TH1>("EventLoss/hRecoCentrality", "Centrality distribution of reconstructed MC events passed the event selection; Centrality FT0C (%); Counts", HistType::kTH1D, {{100, 0.0f, 100.0f}});
-      hRecoCentralityColvsMultiplicityRecoEta05 = mQaRegistry.add<TH2>("EventLoss/hRecoCentralityColvsMultiplicityRecoEta05", "; Centrality FT0C (%); Multiplicity #eta <0.5", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 500.0f}});
-      hRecoCentralityColvsMultiplicityRecoEta08 = mQaRegistry.add<TH2>("EventLoss/hRecoCentralityColvsMultiplicityRecoEta08", "; Centrality FT0C (%); Multiplicity #eta <0.8", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 500.0f}});
+      hRecoCentralityColvsMultiplicityRecoEta05 = mQaRegistry.add<TH2>("EventLoss/hRecoCentralityColvsMultiplicityRecoEta05", "; Centrality FT0C (%); Multiplicity #eta <0.5", HistType::kTH2D, {{100, 0.0f, 100.0f}, {400, 0.0f, 4000.0f}});
+      hRecoCentralityColvsMultiplicityRecoEta08 = mQaRegistry.add<TH2>("EventLoss/hRecoCentralityColvsMultiplicityRecoEta08", "; Centrality FT0C (%); Multiplicity #eta <0.8", HistType::kTH2D, {{100, 0.0f, 100.0f}, {400, 0.0f, 4000.0f}});
       hRecoCentralityColvsMultiplicityFT0C = mQaRegistry.add<TH2>("EventLoss/hRecoCentralityColvsMultiplicityFT0C", "; Centrality FT0C (%); FT0C multiplicity", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 3000.0f}});
       hRecoCentralityColvsImpactParamReco = mQaRegistry.add<TH2>("EventLoss/hRecoCentralityColvsImpactParamReco", "; Centrality FT0C (%); Impact Parameter (b)", HistType::kTH2D, {{100, 0.0f, 100.0f}, {200, 0.0f, 20.0f}});
 
       hImpactParamGenOneReco = mQaRegistry.add<TH1>("EventLoss/hImpactParamGenOneReco", "Impact parameter of generated MC events with at least one rec. evt and passed the event selection; Impact Parameter (b); Counts", HistType::kTH1D, {{200, 0.0f, 20.0f}});
       hGenOneRecoCentrality = mQaRegistry.add<TH1>("EventLoss/hGenOneRecoCentrality", "Centrality distribution of generated MC events with at least one rec. evt and passed the event selection; Centrality FT0C (%); Counts", HistType::kTH1D, {{100, 0.0f, 100.0f}});
-      hGenCentralityColvsMultiplicityGenEta05 = mQaRegistry.add<TH2>("EventLoss/hGenCentralityColvsMultiplicityGenEta05", "; Centrality FT0C (%); Multiplicity #eta <0.5", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 500.0f}});
-      hGenCentralityColvsMultiplicityGenEta08 = mQaRegistry.add<TH2>("EventLoss/hGenCentralityColvsMultiplicityGenEta08", "; Centrality FT0C (%); Multiplicity #eta <0.8", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 500.0f}});
+      hGenCentralityColvsMultiplicityGenEta05 = mQaRegistry.add<TH2>("EventLoss/hGenCentralityColvsMultiplicityGenEta05", "; Centrality FT0C (%); Multiplicity #eta <0.5", HistType::kTH2D, {{100, 0.0f, 100.0f}, {400, 0.0f, 4000.0f}});
+      hGenCentralityColvsMultiplicityGenEta08 = mQaRegistry.add<TH2>("EventLoss/hGenCentralityColvsMultiplicityGenEta08", "; Centrality FT0C (%); Multiplicity #eta <0.8", HistType::kTH2D, {{100, 0.0f, 100.0f}, {400, 0.0f, 4000.0f}});
       hGenCentralityColvsMultiplicityFT0C = mQaRegistry.add<TH2>("EventLoss/hGenCentralityColvsMultiplicityFT0C", "; Centrality FT0C (%); FT0C multiplicity", HistType::kTH2D, {{100, 0.0f, 100.0f}, {500, 0.0f, 3000.0f}});
       hGenCentralityColvsImpactParamGen = mQaRegistry.add<TH2>("EventLoss/hGenCentralityColvsImpactParamGen", "; Centrality FT0C (%); Impact Parameter (b)", HistType::kTH2D, {{100, 0.0f, 100.0f}, {200, 0.0f, 20.0f}});
 
       hGenLi4BeforeEvtSel = mQaRegistry.add<TH1>("EventLoss/hGenLi4BeforeEvtSel", "Li4 generated #it{p}_{T} distribution in all gen evt; #it{p}_{T} (GeV/#it{c}); Counts", HistType::kTH1D, {{240, 0.0f, 12.0f}});
       hGenLi4vsImpactParameterBeforeEvtSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsImpactParameterBeforeEvtSel", "; #it{p}_{T} (GeV/#it{c}); Impact Parameter (b)", HistType::kTH2D, {{240, 0.0f, 12.0f}, {200, 0.0f, 20.0f}});
-      hGenLi4vsMultiplicityGenEta05BeforeEvtSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta05BeforeEvtSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 500.0f}});
-      hGenLi4vsMultiplicityGenEta08BeforeEvtSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta08BeforeEvtSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 500.0f}});
+      hGenLi4vsMultiplicityGenEta05BeforeEvtSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta05BeforeEvtSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", HistType::kTH2D, {{240, 0.0f, 12.0f}, {400, 0.0f, 4000.0f}});
+      hGenLi4vsMultiplicityGenEta08BeforeEvtSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta08BeforeEvtSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", HistType::kTH2D, {{240, 0.0f, 12.0f}, {400, 0.0f, 4000.0f}});
       hGenLi4vsMultiplicityFT0CBeforeEvtSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityFT0CBeforeEvtSel", "; #it{p}_{T} (GeV/#it{c}); FT0C multiplicity", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 3000.0f}});
 
       hGenLi4AfterSel = mQaRegistry.add<TH1>("EventLoss/hGenLi4AfterSel", "Li4 generated #it{p}_{T} distribution in gen. evts with at least one rec. evt; #it{p}_{T} (GeV/#it{c}); Counts", HistType::kTH1D, {{240, 0.0f, 12.0f}});
       hGenLi4vsImpactParameterAfterSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsImpactParameterAfterSel", "; #it{p}_{T} (GeV/#it{c}); Impact Parameter (b)", HistType::kTH2D, {{240, 0.0f, 12.0f}, {200, 0.0f, 20.0f}});
-      hGenLi4vsMultiplicityGenEta05AfterSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta05AfterSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 500.0f}});
-      hGenLi4vsMultiplicityGenEta08AfterSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta08AfterSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 500.0f}});
+      hGenLi4vsMultiplicityGenEta05AfterSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta05AfterSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.5", HistType::kTH2D, {{240, 0.0f, 12.0f}, {400, 0.0f, 4000.0f}});
+      hGenLi4vsMultiplicityGenEta08AfterSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityGenEta08AfterSel", "; #it{p}_{T} (GeV/#it{c}); Multiplicity #eta <0.8", HistType::kTH2D, {{240, 0.0f, 12.0f}, {400, 0.0f, 4000.0f}});
       hGenLi4vsMultiplicityFT0CAfterSel = mQaRegistry.add<TH2>("EventLoss/hGenLi4vsMultiplicityFT0CAfterSel", "; #it{p}_{T} (GeV/#it{c}); FT0C multiplicity", HistType::kTH2D, {{240, 0.0f, 12.0f}, {500, 0.0f, 3000.0f}});
     }
   }
@@ -644,12 +649,6 @@ struct he3HadronFemto {
       bool zorroSelected = mZorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
       if (zorroSelected) {
         mQaRegistry.fill(HIST("hEvents"), 2);
-      }
-    }
-
-    if constexpr (isMC) {
-      if (collision.has_mcCollision()) {
-        mRecoMcCollisions[collision.mcCollisionId()] = true;
       }
     }
 
@@ -1336,8 +1335,6 @@ struct he3HadronFemto {
 
     mGoodCollisions.clear();
     mGoodCollisions.resize(collisions.size(), false);
-    mRecoMcCollisions.clear();
-    mRecoMcCollisions.resize(mcCollisions.size(), false);
     mMcCollisionIdToRecoCollisionId.clear();
     mMcCollisionIdToRecoCollisionId.resize(mcCollisions.size(), -1);
     mCollisionSelectionFlags.clear();
