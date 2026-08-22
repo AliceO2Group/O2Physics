@@ -54,6 +54,8 @@
 #include <utility>
 #include <vector>
 
+#include <math.h>
+
 struct dimuonV1 {
 
   // // Configurables
