@@ -50,7 +50,7 @@
 #include <cstdlib>
 #include <type_traits>
 #include <unordered_map>
-#include <unordered_set>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -169,6 +169,7 @@ struct DeltaAnalysis {
 
   struct : ConfigurableGroup {
     Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per signal event"};
+    Configurable<bool> enableMCEventMixing{"enableMCEventMixing", false, "Enable event mixing for reconstructed MC (independent of the DATA event-mixing switch)"};
   } mixingCfg;
 
   struct : ConfigurableGroup {
@@ -180,6 +181,7 @@ struct DeltaAnalysis {
   struct : ConfigurableGroup {
     ConfigurableAxis cfgPtAxis{"cfgPtAxis", {VARIABLE_WIDTH, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4.0, 5.0, 7.0, 10.0}, "#it{p}_{T} (GeV/#it{c})"};
     ConfigurableAxis cfgCentAxis{"cfgCentAxis", {VARIABLE_WIDTH, 0.f, 10.f, 20.f, 30.f, 40.f, 50.f, 60.f, 70.f, 80.f, 90.f, 100.f}, "Centrality (%)"};
+    Configurable<int> cfgCentDistBins{"cfgCentDistBins", 1500, "Number of bins for centrality distribution"};
     ConfigurableAxis cfgVtxAxis{"cfgVtxAxis", {VARIABLE_WIDTH, -12.f, -10.f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 12.f}, "Vertex z [cm]"};
     ConfigurableAxis cfgRapAxis{"cfgRapAxis", {20, -1.0, 1.0}, "Rapidity y"};
   } axes;
@@ -231,7 +233,7 @@ struct DeltaAnalysis {
     const AxisSpec ptAxis{200, 0., 10., "p_{T} (GeV/c)"};
     const AxisSpec massAxis{trackCuts.numberOfInvMassBins, 1.0, 8.0, "M_{inv} (GeV/#it{c}^{2})"};
     const AxisSpec centAxis{axes.cfgCentAxis, "Centrality (%)"};
-    const AxisSpec centDistAxis{150, 0., 105., "Centrality (%)"};
+    const AxisSpec centDistAxis{axes.cfgCentDistBins, 0., 105., "Centrality (%)"};
     const AxisSpec vtxAxis{axes.cfgVtxAxis, "Vertex z [cm]"};
     const AxisSpec rapAxis{axes.cfgRapAxis, "Rapidity y"};
     const AxisSpec nSigmaTPCaxis{100, -10., 10., "n#sigma^{TPC}"};
@@ -411,6 +413,26 @@ struct DeltaAnalysis {
       histos.add("MCRecoEvent/centralitydistribution", "Centrality distribution (MC);vCentFT0M;Entries", kTH1F, {centDistAxis});
     }
 
+    // ── MC reconstructed event mixing: histograms (gated by the dedicated MC mixing switch,
+    // independent from doprocessMC / doprocessMixedEvent). Mirrors the DATA EM histograms
+    // one-to-one but lives under its own AnalysisMCReco / THnSparseMCReco keys so downstream
+    // scripts can never confuse DATA-EM with MCReco-EM. ─────────────────────────────────────
+    if (mixingCfg.enableMCEventMixing) {
+      histos.add("AnalysisMCReco/hDeltaPlusPlusInvMassEM", "#Delta^{++} invariant mass - MC reconstructed event mixing", kTH2F, {ptAxis, massAxis});
+      histos.add("AnalysisMCReco/hAntiDeltaPlusPlusInvMassEM", "#bar{#Delta}^{++} invariant mass - MC reconstructed event mixing", kTH2F, {ptAxis, massAxis});
+      histos.add("AnalysisMCReco/hDeltaZeroInvMassEM", "#Delta^{0} invariant mass - MC reconstructed event mixing", kTH2F, {ptAxis, massAxis});
+      histos.add("AnalysisMCReco/hAntiDeltaZeroInvMassEM", "#bar{#Delta}^{0} invariant mass - MC reconstructed event mixing", kTH2F, {ptAxis, massAxis});
+
+      histos.add("THnSparseMCReco/hDeltaPlusPlusEM", "THnSparse #Delta^{++} MC reconstructed event mixing", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+      histos.add("THnSparseMCReco/hAntiDeltaPlusPlusEM", "THnSparse #bar{#Delta}^{++} MC reconstructed event mixing", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+      histos.add("THnSparseMCReco/hDeltaZeroEM", "THnSparse #Delta^{0} MC reconstructed event mixing", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+      histos.add("THnSparseMCReco/hAntiDeltaZeroEM", "THnSparse #bar{#Delta}^{0} MC reconstructed event mixing", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
+
+      // Minimal debug QA: verifies MC mixing actually ran (non-zero when enabled and MC data flows through it).
+      histos.add("QAMC/EventMixing/hMixedEventPairs", "Number of MC mixed-event collision pairs processed", kTH1F, {{1, 0.5f, 1.5f}});
+      histos.add("QAMC/EventMixing/hMixedEventPairsByCentrality", "MC mixed-event collision pairs vs centrality", kTH1F, {centAxis});
+    }
+
     // ── processMCGen(): generated-level Delta spectra + QA ─────────────────────────────────
     if (doprocessMCGen) {
       histos.add("MCGen/hDeltaPlusPlusGenSparse", "THnSparse #Delta^{++} generated", kTHnSparseF, {massAxis, ptAxis, centAxis, rapAxis});
@@ -451,11 +473,6 @@ struct DeltaAnalysis {
       histos.add("EventFactor/hRecoEvents", "Reconstructed INEL>0 events (Nrec)", kTH1F, {centAxis});
       histos.add("EventFactor/hEventsGenAll", "Generated events passing truth |Zvtx| + truth INEL>0 cuts", kTH1F, {centAxis});
       histos.add("EventFactor/hEventsGenAccepted", "Generated events with >=1 accepted reconstructed collision (truth centrality)", kTH1F, {centAxis});
-      // NEW: same "generated with >=1 accepted reconstructed collision" population as
-      // hEventsGenAccepted, but filled with the RECONSTRUCTED centrality of that accepted
-      // collision instead of the truth centrality. This puts it on the same axis as
-      // hRecoEvents so that event_splitting = hEventsGenAcceptedReco / hRecoEvents compares
-      // like with like. hEventsGenAccepted (truth-binned) stays as-is for event_loss.
       histos.add("EventFactor/hEventsGenAcceptedReco", "Generated events with >=1 accepted reconstructed collision (reconstructed centrality)", kTH1F, {centAxis});
       histos.add("EventFactor/hNRecoCollisionsPerMcCollision", "Number of reconstructed collisions per generated collision", kTH1F, {{21, -0.5f, 20.5f}});
     }
@@ -511,6 +528,52 @@ struct DeltaAnalysis {
       hEventFactorCutFlow->GetXaxis()->SetBinLabel(4, "HasRecoColl");
       hEventFactorCutFlow->GetXaxis()->SetBinLabel(5, "RecoCollAccepted");
       hEventFactorCutFlow->GetXaxis()->SetBinLabel(6, "EventAccepted");
+    }
+
+    if (doprocessMCGen) {
+      histos.add("EfficiencyQA/hGeneratedEventCutFlow", "Generated-event cut flow (efficiency QA)", kTH1F, {{5, -0.5f, 4.5f}});
+      auto hGenEventCutFlow = histos.get<TH1>(HIST("EfficiencyQA/hGeneratedEventCutFlow"));
+      hGenEventCutFlow->GetXaxis()->SetBinLabel(1, "All generated events");
+      hGenEventCutFlow->GetXaxis()->SetBinLabel(2, "|Vz| accepted");
+      hGenEventCutFlow->GetXaxis()->SetBinLabel(3, "Truth INEL>0");
+      hGenEventCutFlow->GetXaxis()->SetBinLabel(4, "Final generated event");
+      hGenEventCutFlow->GetXaxis()->SetBinLabel(5, "Associated reconstructed event accepted");
+    }
+
+    if (doprocessMC) {
+      histos.add("EfficiencyQA/hDeltaRecoCutFlow", "Generated-to-reconstructed #Delta cut flow (efficiency QA)", kTH1F, {{21, -0.5f, 20.5f}});
+      auto hDeltaRecoCutFlow = histos.get<TH1>(HIST("EfficiencyQA/hDeltaRecoCutFlow"));
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(1, "Generated Delta (event accepted)");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(2, "Delta -> p + pi");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(3, "Delta rapidity accepted");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(4, "Proton acceptance");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(5, "Pion acceptance");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(6, "Both daughters acceptance");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(7, "Proton reconstructed");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(8, "Pion reconstructed");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(9, "Both daughters reconstructed");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(10, "Proton track quality");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(11, "Pion track quality");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(12, "Both track quality");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(13, "Proton PID");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(14, "Pion PID");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(15, "Both PID");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(16, "Proton DCA");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(17, "Pion DCA");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(18, "Both DCA");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(19, "Common MC mother");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(20, "Common Delta mother");
+      hDeltaRecoCutFlow->GetXaxis()->SetBinLabel(21, "Final reconstructed Delta");
+
+      histos.add("EfficiencyQA/hTruthMatchCutFlow", "MC truth-matching cut flow (efficiency QA)", kTH1F, {{7, -0.5f, 6.5f}});
+      auto hTruthMatchCutFlow = histos.get<TH1>(HIST("EfficiencyQA/hTruthMatchCutFlow"));
+      hTruthMatchCutFlow->GetXaxis()->SetBinLabel(1, "Reco pair");
+      hTruthMatchCutFlow->GetXaxis()->SetBinLabel(2, "Proton has MC label");
+      hTruthMatchCutFlow->GetXaxis()->SetBinLabel(3, "Pion has MC label");
+      hTruthMatchCutFlow->GetXaxis()->SetBinLabel(4, "Proton is proton");
+      hTruthMatchCutFlow->GetXaxis()->SetBinLabel(5, "Pion is pion");
+      hTruthMatchCutFlow->GetXaxis()->SetBinLabel(6, "Common MC mother");
+      hTruthMatchCutFlow->GetXaxis()->SetBinLabel(7, "Mother is Delta");
     }
   } // end init()
 
@@ -1014,6 +1077,30 @@ struct DeltaAnalysis {
     }
   }
 
+  // MCReco EVENT MIXING ONLY - fills the dedicated MCReco-EM histograms. Never called with
+  // truth-matching information: mixed-event daughters come from two different MC collisions,
+  // so a common Delta mother is not physically meaningful (see fillInvariantMassHistogramsMCMixedFromPools()).
+  void fillDeltaHistogramMCRecoMixedEvent(int protonSign, int pionSign, float pairPt, float pairMass, float centrality, float rapidity)
+  {
+    if (protonSign > 0) {
+      if (pionSign > 0) {
+        histos.fill(HIST("AnalysisMCReco/hDeltaPlusPlusInvMassEM"), pairPt, pairMass);
+        histos.fill(HIST("THnSparseMCReco/hDeltaPlusPlusEM"), pairMass, pairPt, centrality, rapidity);
+      } else {
+        histos.fill(HIST("AnalysisMCReco/hDeltaZeroInvMassEM"), pairPt, pairMass);
+        histos.fill(HIST("THnSparseMCReco/hDeltaZeroEM"), pairMass, pairPt, centrality, rapidity);
+      }
+    } else {
+      if (pionSign < 0) {
+        histos.fill(HIST("AnalysisMCReco/hAntiDeltaPlusPlusInvMassEM"), pairPt, pairMass);
+        histos.fill(HIST("THnSparseMCReco/hAntiDeltaPlusPlusEM"), pairMass, pairPt, centrality, rapidity);
+      } else {
+        histos.fill(HIST("AnalysisMCReco/hAntiDeltaZeroInvMassEM"), pairPt, pairMass);
+        histos.fill(HIST("THnSparseMCReco/hAntiDeltaZeroEM"), pairMass, pairPt, centrality, rapidity);
+      }
+    }
+  }
+
   void fillRotationalBackground(int protonSign, int pionSign, float pxProton, float pyProton, float pzProton, float pionPhi, float pionPt, float pzPion, float centrality)
   {
     if (rotBkg.numberOfRotations <= 0) {
@@ -1074,6 +1161,71 @@ struct DeltaAnalysis {
   {
     const float cosAngle = std::clamp((pxPr * pxPi + pyPr * pyPi + pzPr * pzPi) / (momPr * momPi), -1.f, 1.f);
     histos.fill(HIST("QAChecks/Pair/hOpeningAngleAfter"), std::acos(cosAngle));
+  }
+
+  // ── EfficiencyQA-only helpers (used exclusively to fill EfficiencyQA/hDeltaRecoCutFlow) ────
+  // These do not feed into, and are not called by, any existing selection or histogram fill.
+  // They exist solely so the diagnostic cut flow can reuse the existing selection functions
+  // verbatim instead of re-implementing any cut.
+  struct EfficiencyQADaughterMatch {
+    bool found = false;        // a reconstructed track carrying this MC daughter's label was found
+    bool trackQuality = false; // that track passes the existing passesBasicTrackSelection()
+    bool pid = false;          // that track passes the existing passesProtonPID()/passesPionPID()
+    bool dca = false;          // that track passes the existing passesProtonDCASelection()/passesPionDCASelection()
+  };
+
+  // Scans tracksSlice (already index-bound to the McParticles table by the caller, exactly as
+  // done for the existing truth-matching block in processMC()) for the track whose mcParticle()
+  // matches mcDaughter, and evaluates the existing track-quality/PID/DCA decisions for it.
+  template <typename TracksSlice, typename McPart>
+  EfficiencyQADaughterMatch matchDaughterForEfficiencyQA(TracksSlice const& tracksSlice, McPart const& mcDaughter, bool isProton)
+  {
+    EfficiencyQADaughterMatch result;
+    for (auto const& trk : tracksSlice) {
+      if (!trk.has_mcParticle() || trk.mcParticle().globalIndex() != mcDaughter.globalIndex()) {
+        continue;
+      }
+      result.found = true;
+      result.trackQuality = passesBasicTrackSelection(trk);
+      const float mom = RecoDecay::p(trk.px(), trk.py(), trk.pz());
+      if (isProton) {
+        result.pid = passesProtonPID(trk, mom);
+        result.dca = passesProtonDCASelection(trk);
+      } else {
+        result.pid = passesPionPID(trk, mom);
+        result.dca = passesPionDCASelection(trk);
+      }
+      break;
+    }
+    return result;
+  }
+
+  // Mirrors, without altering, the equivalent inline common-mother-search pattern already used
+  // by the existing MC truth-matching selection in processMC(); used only for the new
+  // EfficiencyQA/hDeltaRecoCutFlow bins 18-19 (a context where no such computation exists yet).
+  // The existing selection's own foundMother computation is untouched (see processMC()).
+  template <typename McPart>
+  std::pair<bool, bool> checkCommonMotherForEfficiencyQA(McPart const& mcA, McPart const& mcB)
+  {
+    bool anyCommon = false;
+    bool motherIsDelta = false;
+    for (const auto& motherA : mcA.template mothers_as<aod::McParticles>()) {
+      for (const auto& motherB : mcB.template mothers_as<aod::McParticles>()) {
+        if (motherA != motherB) {
+          continue;
+        }
+        anyCommon = true;
+        if (std::abs(motherA.pdgCode()) == delta_analysis::PdgDeltaPlusPlus ||
+            std::abs(motherA.pdgCode()) == delta_analysis::PdgDeltaZero) {
+          motherIsDelta = true;
+        }
+        break;
+      }
+      if (motherIsDelta) {
+        break;
+      }
+    }
+    return {anyCommon, motherIsDelta};
   }
 
   struct TrackCandidate {
@@ -1185,6 +1337,42 @@ struct DeltaAnalysis {
                                      pxPr, pyPr, pzPr, pionCand.phi, pionCand.pt, pzPi, centrality);
           }
         }
+      }
+    }
+  }
+
+  // MCReco EVENT-MIXING pool-pairing.
+  void fillInvariantMassHistogramsMCMixedFromPools(
+    std::vector<TrackCandidate> const& protonPool,
+    std::vector<TrackCandidate> const& pionPool,
+    float centrality)
+  {
+    for (auto const& protonCand : protonPool) {
+      for (auto const& pionCand : pionPool) {
+        const float pxPr = protonCand.px, pyPr = protonCand.py, pzPr = protonCand.pz;
+        const float pxPi = pionCand.px, pyPi = pionCand.py, pzPi = pionCand.pz;
+
+        if (pairCuts.applyDeepAngleCut) {
+          const float cosAngle = std::clamp(
+            (pxPr * pxPi + pyPr * pyPi + pzPr * pzPi) / (protonCand.mom * pionCand.mom), -1.f, 1.f);
+          if (std::acos(cosAngle) < static_cast<float>(pairCuts.deepAngleCutValue)) {
+            continue;
+          }
+        }
+
+        const std::array<std::array<float, 3>, 2> bothMomenta = {
+          std::array<float, 3>{pxPr, pyPr, pzPr},
+          std::array<float, 3>{pxPi, pyPi, pzPi}};
+        const float pairMass = RecoDecay::m(bothMomenta, kProtonPionMasses);
+        const float pairPt = RecoDecay::pt(std::array{pxPr + pxPi, pyPr + pyPi});
+        const float pairY = RecoDecay::y(std::array{pxPr + pxPi, pyPr + pyPi, pzPr + pzPi}, pairMass);
+
+        if (pairY < trackCuts.cfgMinY || pairY > trackCuts.cfgMaxY) {
+          continue;
+        }
+
+        // NOTE: intentionally no truth-matching call here - see function docstring above.
+        fillDeltaHistogramMCRecoMixedEvent(protonCand.sign, pionCand.sign, pairPt, pairMass, centrality, pairY);
       }
     }
   }
@@ -1321,10 +1509,62 @@ struct DeltaAnalysis {
   }
   PROCESS_SWITCH(DeltaAnalysis, processMixedEvent, "Process mixed event", true);
 
+  // ── MC reconstructed event mixing ────────────────────────────────────────────────────────
+  // Mirrors runMixedEvent()/processMixedEvent() above exactly (same event-selection call, same
+  // "protons1+pions2" / "protons2+pions1" combinatorics, same centrality-estimator dispatch),
+  // but:
+  //   * fills the dedicated MCReco-EM histograms instead of the DATA EM histograms
+  template <typename PairType>
+  void runMixedEventMC(PairType& mixingPair)
+  {
+    for (auto const& [c1, tracks1, c2, tracks2] : mixingPair) {
+      if (!passesEventSelection(c1) || !passesEventSelection(c2)) {
+        continue;
+      }
+      const float centrality = getCentrality(c1);
+
+      histos.fill(HIST("QAMC/EventMixing/hMixedEventPairs"), 1.f);
+      histos.fill(HIST("QAMC/EventMixing/hMixedEventPairsByCentrality"), centrality);
+
+      std::vector<TrackCandidate> protonPool1, pionPool1, protonPool2, pionPool2;
+      buildCandidatePools(tracks1, protonPool1, pionPool1);
+      buildCandidatePools(tracks2, protonPool2, pionPool2);
+      fillInvariantMassHistogramsMCMixedFromPools(protonPool1, pionPool2, centrality);
+      fillInvariantMassHistogramsMCMixedFromPools(protonPool2, pionPool1, centrality);
+    }
+  }
+
+  void processMCEventMixing(EventCandidates const&, TrackCandidates const&)
+  {
+    if (!mixingCfg.enableMCEventMixing) {
+      return;
+    }
+    switch (evSel.cfgCentralityEstimator) {
+      case delta_analysis::kFT0M:
+        runMixedEventMC(pairFT0M);
+        break;
+      case delta_analysis::kFT0A:
+        runMixedEventMC(pairFT0A);
+        break;
+      case delta_analysis::kFT0C:
+        runMixedEventMC(pairFT0C);
+        break;
+      case delta_analysis::kFV0A:
+        runMixedEventMC(pairFV0A);
+        break;
+      case delta_analysis::kNTPV:
+        runMixedEventMC(pairNTPV);
+        break;
+      default:
+        runMixedEventMC(pairFT0M);
+        break;
+    }
+  }
+  PROCESS_SWITCH(DeltaAnalysis, processMCEventMixing, "Process MC reconstructed event mixing (reuses DATA mixing pairs; no truth matching)", false);
+
   // =====================================================================================
   // processMC(): RECONSTRUCTED-ONLY. Reconstructs Delta candidates, performs truth matching,
-  // fills reconstructed QA, fills reconstructed Delta histograms (RecoDelta - the A x eps
-  // numerator). Nothing generated-only is touched here. UNCHANGED from before the refactor.
+  // fills reconstructed QA, fills reconstructed Delta histograms (RecoDelta - the A x eps numerator).
   // =====================================================================================
   void processMC(EventCandidatesMC const& collisions, aod::BCs const&, TrackCandidatesMC const& tracks, aod::McParticles const& mcParticles)
   {
@@ -1346,6 +1586,110 @@ struct DeltaAnalysis {
       auto perColTracks = tracks.sliceBy(perColMC, collIdx);
       perColTracks.bindExternalIndices(&tracks);
       perColTracks.bindExternalIndices(&mcParticles);
+
+      if (collision.has_mcCollision()) {
+        auto qaGenDeltas = mcParticles.sliceBy(perMcCollisionDelta, collision.mcCollisionId());
+        for (auto const& qaGenDelta : qaGenDeltas) {
+          if (!qaGenDelta.producedByGenerator()) {
+            continue;
+          }
+          const int qaGenPdg = qaGenDelta.pdgCode();
+          if (std::abs(qaGenPdg) != delta_analysis::PdgDeltaPlusPlus &&
+              std::abs(qaGenPdg) != delta_analysis::PdgDeltaZero) {
+            continue;
+          }
+
+          const auto qaDaughters = qaGenDelta.daughters_as<aod::McParticles>();
+          bool qaHasPr = false, qaHasPi = false;
+          auto qaMcProton = qaGenDelta; // placeholder, overwritten below when qaHasPr is true
+          auto qaMcPion = qaGenDelta;   // placeholder, overwritten below when qaHasPi is true
+          for (const auto& d : qaDaughters) {
+            if (std::abs(d.pdgCode()) == delta_analysis::PdgProton) {
+              qaHasPr = true;
+              qaMcProton = d;
+            } else if (std::abs(d.pdgCode()) == delta_analysis::PdgPion) {
+              qaHasPi = true;
+              qaMcPion = d;
+            }
+          }
+          if (!qaHasPr || !qaHasPi) {
+            continue;
+          }
+
+          if (qaGenDelta.y() < trackCuts.cfgMinY || qaGenDelta.y() > trackCuts.cfgMaxY) {
+            continue;
+          }
+
+          const bool qaProtonAcc = std::abs(qaMcProton.eta()) < trackCuts.cfgCutEta && qaMcProton.pt() > trackCuts.cfgCutPt;
+          const bool qaPionAcc = std::abs(qaMcPion.eta()) < trackCuts.cfgCutEta && qaMcPion.pt() > trackCuts.cfgCutPt;
+          if (qaProtonAcc) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 3.f); // Proton acceptance
+          }
+          if (qaPionAcc) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 4.f); // Pion acceptance
+          }
+          if (!qaProtonAcc || !qaPionAcc) {
+            continue;
+          }
+          histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 5.f); // Both daughters acceptance
+
+          const auto qaProtonMatch = matchDaughterForEfficiencyQA(perColTracks, qaMcProton, true);
+          const auto qaPionMatch = matchDaughterForEfficiencyQA(perColTracks, qaMcPion, false);
+          if (qaProtonMatch.found) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 6.f); // Proton reconstructed
+          }
+          if (qaPionMatch.found) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 7.f); // Pion reconstructed
+          }
+          if (!qaProtonMatch.found || !qaPionMatch.found) {
+            continue;
+          }
+          histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 8.f); // Both daughters reconstructed
+
+          if (qaProtonMatch.trackQuality) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 9.f); // Proton track quality
+          }
+          if (qaPionMatch.trackQuality) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 10.f); // Pion track quality
+          }
+          if (!qaProtonMatch.trackQuality || !qaPionMatch.trackQuality) {
+            continue;
+          }
+          histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 11.f); // Both track quality
+
+          if (qaProtonMatch.pid) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 12.f); // Proton PID
+          }
+          if (qaPionMatch.pid) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 13.f); // Pion PID
+          }
+          if (!qaProtonMatch.pid || !qaPionMatch.pid) {
+            continue;
+          }
+          histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 14.f); // Both PID
+
+          if (qaProtonMatch.dca) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 15.f); // Proton DCA
+          }
+          if (qaPionMatch.dca) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 16.f); // Pion DCA
+          }
+          if (!qaProtonMatch.dca || !qaPionMatch.dca) {
+            continue;
+          }
+          histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 17.f); // Both DCA
+
+          const auto [qaAnyCommonMother, qaMotherIsDelta] = checkCommonMotherForEfficiencyQA(qaMcProton, qaMcPion);
+          if (qaAnyCommonMother) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 18.f); // Common MC mother
+          }
+          if (qaMotherIsDelta) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 19.f); // Common Delta mother
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 20.f); // Final reconstructed Delta
+          }
+        }
+      }
+
       for (auto const& t0 : perColTracks) {
         if (!passesBasicTrackSelection(t0) || !t0.has_mcParticle()) {
           continue;
@@ -1429,23 +1773,42 @@ struct DeltaAnalysis {
           }
         }
 
-        if (!t0.has_mcParticle() || !t1.has_mcParticle()) {
+        histos.fill(HIST("EfficiencyQA/hTruthMatchCutFlow"), 0.f); // Reco pair
+        const bool qaProtonHasLabel = t0.has_mcParticle();
+        if (qaProtonHasLabel) {
+          histos.fill(HIST("EfficiencyQA/hTruthMatchCutFlow"), 1.f); // Proton has MC label
+        }
+        const bool qaPionHasLabel = t1.has_mcParticle();
+        if (qaProtonHasLabel && qaPionHasLabel) {
+          histos.fill(HIST("EfficiencyQA/hTruthMatchCutFlow"), 2.f); // Pion has MC label
+        }
+        if (!qaProtonHasLabel || !qaPionHasLabel) {
           continue;
         }
         const auto mcProton = t0.mcParticle();
         const auto mcPion = t1.mcParticle();
-        if (std::abs(mcProton.pdgCode()) != delta_analysis::PdgProton) {
+        const bool qaProtonIsProton = std::abs(mcProton.pdgCode()) == delta_analysis::PdgProton;
+        if (qaProtonIsProton) {
+          histos.fill(HIST("EfficiencyQA/hTruthMatchCutFlow"), 3.f); // Proton is proton
+        }
+        if (!qaProtonIsProton) {
           continue;
         }
-        if (std::abs(mcPion.pdgCode()) != delta_analysis::PdgPion) {
+        const bool qaPionIsPion = std::abs(mcPion.pdgCode()) == delta_analysis::PdgPion;
+        if (qaPionIsPion) {
+          histos.fill(HIST("EfficiencyQA/hTruthMatchCutFlow"), 4.f); // Pion is pion
+        }
+        if (!qaPionIsPion) {
           continue;
         }
         bool foundMother = false;
+        bool qaAnyCommonMother = false; // EfficiencyQA-only: any shared mother, regardless of PDG
         for (const auto& motherPr : mcProton.mothers_as<aod::McParticles>()) {
           for (const auto& motherPi : mcPion.mothers_as<aod::McParticles>()) {
             if (motherPr != motherPi) {
               continue;
             }
+            qaAnyCommonMother = true;
             if (std::abs(motherPr.pdgCode()) != delta_analysis::PdgDeltaPlusPlus &&
                 std::abs(motherPr.pdgCode()) != delta_analysis::PdgDeltaZero) {
               continue;
@@ -1456,6 +1819,12 @@ struct DeltaAnalysis {
           if (foundMother) {
             break;
           }
+        }
+        if (qaAnyCommonMother) {
+          histos.fill(HIST("EfficiencyQA/hTruthMatchCutFlow"), 5.f); // Common MC mother
+        }
+        if (foundMother) {
+          histos.fill(HIST("EfficiencyQA/hTruthMatchCutFlow"), 6.f); // Mother is Delta
         }
         if (!foundMother) {
           continue;
@@ -1479,20 +1848,24 @@ struct DeltaAnalysis {
                     aod::McParticles const& mcParticles,
                     soa::SmallGroups<EventCandidatesMC> const& collisions)
   {
-    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 0.f); // All MC collisions
+    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 0.f);         // All MC collisions
+    histos.fill(HIST("EfficiencyQA/hGeneratedEventCutFlow"), 0.f); // All generated events
 
     if (std::abs(mcCollision.posZ()) > evSel.cfgCutVertex) {
       return;
     }
-    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 1.f); // |Vz| < cfgCutVertex
+    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 1.f);         // |Vz| < cfgCutVertex
+    histos.fill(HIST("EfficiencyQA/hGeneratedEventCutFlow"), 1.f); // |Vz| accepted
 
     const bool truthInelGt0 = isTruthInelGt0(mcParticles);
     if (evSel.cfgRequireRecoINELgt0 && !truthInelGt0) {
       return;
     }
-    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 2.f); // Truth INEL>0
-    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 3.f); // Centrality (no cut currently applied)
-    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 4.f); // Final generated event
+    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 2.f);         // Truth INEL>0
+    histos.fill(HIST("EfficiencyQA/hGeneratedEventCutFlow"), 2.f); // Truth INEL>0
+    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 3.f);         // Centrality (no cut currently applied)
+    histos.fill(HIST("CutFlow/MCGen/hEventCutFlow"), 4.f);         // Final generated event
+    histos.fill(HIST("EfficiencyQA/hGeneratedEventCutFlow"), 3.f); // Final generated event
 
     bool hasAcceptedReco = false;
     float genCentrality = mcCollision.centFT0M(); // fallback: MC-truth centrality proxy (see note above)
@@ -1502,6 +1875,9 @@ struct DeltaAnalysis {
         genCentrality = getCentrality(collision); // real reconstructed centrality of an accepted associated collision
         break;
       }
+    }
+    if (hasAcceptedReco) {
+      histos.fill(HIST("EfficiencyQA/hGeneratedEventCutFlow"), 4.f); // Associated reconstructed event accepted
     }
 
     for (auto const& mcParticle : mcParticles) {
@@ -1520,6 +1896,26 @@ struct DeltaAnalysis {
         continue;
       }
       histos.fill(HIST("MCGenQA/hGenDeltaCutFlow"), 4.f); // bin4: PDG
+
+      if (hasAcceptedReco) {
+        histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 0.f); // Generated Delta (event accepted)
+
+        const auto qaDaughtersGD = mcParticle.daughters_as<aod::McParticles>();
+        bool qaHasPrGD = false, qaHasPiGD = false;
+        for (const auto& d : qaDaughtersGD) {
+          if (std::abs(d.pdgCode()) == delta_analysis::PdgProton) {
+            qaHasPrGD = true;
+          } else if (std::abs(d.pdgCode()) == delta_analysis::PdgPion) {
+            qaHasPiGD = true;
+          }
+        }
+        if (qaHasPrGD && qaHasPiGD) {
+          histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 1.f); // Delta -> p + pi
+          if (mcParticle.y() >= trackCuts.cfgMinY && mcParticle.y() <= trackCuts.cfgMaxY) {
+            histos.fill(HIST("EfficiencyQA/hDeltaRecoCutFlow"), 2.f); // Delta rapidity accepted
+          }
+        }
+      }
 
       if (mcParticle.y() < trackCuts.cfgMinY || mcParticle.y() > trackCuts.cfgMaxY) {
         continue;
@@ -1613,9 +2009,6 @@ struct DeltaAnalysis {
       const float centrality = getCentrality(collision);
       histos.fill(HIST("EventFactor/hRecoEvents"), centrality);
       if (collision.has_mcCollision()) {
-        // emplace() keeps the FIRST accepted collision's centrality if a generated collision
-        // has more than one accepted reconstructed collision (splitting), matching the
-        // "first accepted" convention already used in processMCGen() above.
         acceptedMcCollisionRecoCent.emplace(collision.mcCollisionId(), centrality);
       }
     }
