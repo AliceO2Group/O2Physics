@@ -34,6 +34,8 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TGeoManager.h>
+#include <TMath.h>
+#include <TPDGCode.h>
 
 #include <HMPIDBase/Param.h>
 
@@ -73,6 +75,12 @@ struct HmpidTableProducer {
   Configurable<bool> requireTPC{"requireTPC", true, "Require TPC track"};
   Configurable<bool> requireTOF{"requireTOF", true, "Require TOF track"};
 
+  Configurable<bool> useInAbsorberGeomMethod{"useInAbsorberGeomMethod", false, "Use geometrical method to check if daughters are born in absorber"};
+
+  // (reference) 473 cm - was the legacy value in run2 simulation
+  Configurable<float> survivalThresholdRich2{"survivalThresholdRich2", 437.5f, "survivalThresholdRich2"};
+  Configurable<float> survivalThresholdRich4{"survivalThresholdRich4", 439.0f, "survivalThresholdRich4"};
+
   using CollisionCandidates = o2::soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As>;
 
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra,
@@ -94,30 +102,9 @@ struct HmpidTableProducer {
 
   static constexpr int Rich2 = 2, Rich4 = 4;
 
-  // -----------------------------------------------------------------------
-  // HMPID absorber geometry (hardcoded from HMPIDSimulation/Detector.cxx,
-  // Detector::ConstructGeometry / Detector::createAbsorber).
-  // The experiment is finalised and this geometry will not change, so the
-  // values are copied here instead of being re-derived from TGeoManager/CCDB
-  // at runtime. If the detector geometry code is ever revisited, these
-  // constants must be updated accordingly.
-  //
-  // Each absorber is a box (TGeoBBox) whose LOCAL->GLOBAL transform is built as:
-  //   pMatrix->SetTranslation(T);
-  //   pMatrix->RotateZ(theta);
-  // which yields, for a local point p: p_glob = Rz(theta) * p_loc + T.
-  // In particular the box CENTER in global coordinates is exactly T (the
-  // rotation does not affect T, since it is applied to p_loc only, not to
-  // the already-set translation). Only the box AXES are rotated by theta
-  // with respect to the global x,y axes.
-  //
-  // To test whether a global point lies inside the box we invert the
-  // transform: p_loc = Rz(-theta) * (p_glob - T), then compare component-wise
-  // against the box half-widths.
-  // -----------------------------------------------------------------------
+  // (reference) HMPID Detector class in O2
   static constexpr double AbsThetaDeg = 33.5;
-  const double mAbsCosT = std::cos(AbsThetaDeg * TMath::DegToRad());
-  const double mAbsSinT = std::sin(AbsThetaDeg * TMath::DegToRad());
+  double mAbsCosT = 0., mAbsSinT = 0.;
 
   // Rich2 absorber: trans2 = {435.5, 0., -155.}, thickness 40mm -> halfX = 2cm
   static constexpr double AbsRich2CenterX = 435.5, AbsRich2CenterZ = -155.;
@@ -132,6 +119,9 @@ struct HmpidTableProducer {
 
   void init(o2::framework::InitContext&)
   {
+    mAbsCosT = std::cos(AbsThetaDeg * TMath::DegToRad());
+    mAbsSinT = std::sin(AbsThetaDeg * TMath::DegToRad());
+
     ccdb->setURL(ccdbConfig.ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -159,6 +149,10 @@ struct HmpidTableProducer {
                kTH1F, {{4, -0.5, 3.5, ""}});
 
     histos.add("hProdVertex", ";X (cm);Y (cm);Z (cm)", HistType::kTH3F, {{500, -500., 500.}, {500, -500., 500.}, {500, -500., 500.}});
+    histos.add("hDaughterRCyl_Rich2", "hDaughterRCyl_Rich2", kTH1F, {{600, 0., 600.}});
+    histos.add("hDaughterRCyl_Rich4", "hDaughterRCyl_Rich4", kTH1F, {{600, 0., 600.}});
+    histos.add("hDaughterRSph_Rich2", "hDaughterRSph_Rich2", kTH1F, {{600, 0., 600.}});
+    histos.add("hDaughterRSph_Rich4", "hDaughterRSph_Rich4", kTH1F, {{600, 0., 600.}});
   }
 
   // -----------------------------------------------------------------------
@@ -274,8 +268,9 @@ struct HmpidTableProducer {
         (x[1] - planePoint[1]) * planeNormal[1] +
         (x[2] - planePoint[2]) * planeNormal[2];
 
-      if (std::abs(dist) >= std::abs(distPrev))
+      if (std::abs(dist) >= std::abs(distPrev)) {
         return false;
+      }
 
       distPrev = dist;
       s -= dist;
@@ -318,14 +313,16 @@ struct HmpidTableProducer {
       // Intersection track - radiator plane
       std::array<double, 3> xRad{}, pAtRad{};
 
-      if (!intersectHelixPlane(bz, charge, x, p, pRad, nRad, xRad, pAtRad))
+      if (!intersectHelixPlane(bz, charge, x, p, pRad, nRad, xRad, pAtRad)) {
         continue;
+      }
 
       // Intersection track - PC plane
       std::array<double, 3> xPc{}, pAtPc{};
 
-      if (!intersectHelixPlane(bz, charge, xRad, pAtRad, pPc, nPc, xPc, pAtPc))
+      if (!intersectHelixPlane(bz, charge, xRad, pAtRad, pPc, nPc, xPc, pAtPc)) {
         continue;
+      }
 
       double theta = 0., phi = 0.;
       param->mars2LorsVec(ch, pAtRad.data(), theta, phi);
@@ -334,8 +331,9 @@ struct HmpidTableProducer {
       param->mars2Lors(ch, xPc.data(), xL, yL);
 
       // Use isInside to check Chamber intersected
-      if (param->isInside(xL, yL, param->distCut()))
+      if (param->isInside(xL, yL, param->distCut())) {
         return ch;
+      }
     }
 
     // No chamber intersected
@@ -361,17 +359,32 @@ struct HmpidTableProducer {
       return false;
     }
 
-    // subtract the box center (translation is not rotated, see geometry block above)
-    const double rx = vx * mAbsCosT + vy * mAbsSinT;
-    const double ry = -vx * mAbsSinT + vy * mAbsCosT;
-    const double rz = vz;
+    // translate to box center
+    const double lx = vx - centerX;
+    const double ly = vy; // centerY = 0
+    const double lz = vz - centerZ;
 
     // rotate by -theta into the box local frame
-    const double lx = rx - centerX;
-    const double ly = ry; // centerY = 0
-    const double lz = rz - centerZ;
+    const double rx = lx * mAbsCosT + ly * mAbsSinT;
+    const double ry = -lx * mAbsSinT + ly * mAbsCosT;
+    const double rz = lz;
 
-    return std::abs(lx) <= halfX && std::abs(ly) <= AbsHalfY && std::abs(lz) <= AbsHalfZ;
+    return std::abs(rx) <= halfX && std::abs(ry) <= AbsHalfY && std::abs(rz) <= AbsHalfZ;
+  }
+
+  bool survivedAbsorber(double vx, double vy, int chamber)
+  {
+    float thresholdR = 0.;
+    if (chamber == Rich2) {
+      thresholdR = survivalThresholdRich2;
+    } else if (chamber == Rich4) {
+      thresholdR = survivalThresholdRich4;
+    } else {
+      return false;
+    }
+
+    const float r = std::hypot(vx, vy);
+    return r > thresholdR;
   }
 
   void processEvent(CollisionCandidates::iterator const& col,
@@ -397,8 +410,9 @@ struct HmpidTableProducer {
 
       const auto& globalTrack = t.template track_as<TTrackTable>();
 
-      if (!globalTrack.has_collision())
+      if (!globalTrack.has_collision()) {
         continue;
+      }
 
       const auto& col = globalTrack.template collision_as<CollisionCandidates>();
       initCCDB(col.template bc_as<aod::BCsWithTimestamps>());
@@ -406,17 +420,20 @@ struct HmpidTableProducer {
 
       if ((requireITS && !globalTrack.hasITS()) ||
           (requireTPC && !globalTrack.hasTPC()) ||
-          (requireTOF && !globalTrack.hasTOF()))
+          (requireTOF && !globalTrack.hasTOF())) {
         continue;
+      }
 
-      if (mCollisionsWithHmpid.insert(collId).second)
+      if (mCollisionsWithHmpid.insert(collId).second) {
         histos.fill(HIST("eventsHmpid"), 0.5);
+      }
 
       // clusSize diagnostics
       histos.fill(HIST("hClusSize"), t.hmpidClusSize());
       bool isCorrupt = (t.hmpidClusSize() <= 0);
-      if (isCorrupt)
+      if (isCorrupt) {
         histos.fill(HIST("hClusSizeCorrupt"), t.hmpidClusSize());
+      }
 
       // --- M2: clusSize encoding ---
       int chamberM2 = t.hmpidClusSize() / 1000000;
@@ -464,20 +481,22 @@ struct HmpidTableProducer {
       // bin 2 = clusSize <= 0, M1 recovery      (corrupt, M1 ok)
       // bin 3 = clusSize <= 0, M1 fails        (corrupt, skipped)
 
-      if (!isCorrupt && chamberM3 >= 0)
+      if (!isCorrupt && chamberM3 >= 0) {
         histos.fill(HIST("hChamberAssignment"), 0.);
-      else if (!isCorrupt && chamberM3 < 0)
+      } else if (!isCorrupt && chamberM3 < 0) {
         histos.fill(HIST("hChamberAssignment"), 1.);
-      else if (isCorrupt && chamberM3 >= 0)
+      } else if (isCorrupt && chamberM3 >= 0) {
         histos.fill(HIST("hChamberAssignment"), 2.);
-      else
+      } else {
         histos.fill(HIST("hChamberAssignment"), 3.);
+      }
 
       histos.fill(HIST("hChamberM3"), chamberM3);
       histos.fill(HIST("hChamberM3vsM2"), chamberM2, chamberM3);
 
-      if (chamberM3 < 0)
+      if (chamberM3 < 0) {
         continue;
+      }
 
       std::vector<float> hmpidPhotsCharge2(o2::aod::kDimPhotonsCharge, 0.f);
 
@@ -514,23 +533,78 @@ struct HmpidTableProducer {
 
           if ((chamberM3 == Rich2 || chamberM3 == Rich4) && mc.has_daughters()) {
             auto dIds = mc.daughtersIds();
+            bool foundRelevantDaughter = false; // true if at least one non-delta/photon daughter was examined
 
-            for (int32_t idx = dIds.front(); idx <= dIds.back(); ++idx) {
-              auto daughter = mcParticles.rawIteratorAt(idx);
+            if (useInAbsorberGeomMethod) {
+              for (int32_t idx = dIds.front(); idx <= dIds.back(); ++idx) {
+                auto daughter = mcParticles.rawIteratorAt(idx);
 
-              histos.fill(HIST("hProdVertex"), daughter.vx(), daughter.vy(), daughter.vz());
+                int absPdg = std::abs(daughter.pdgCode());
+                if (absPdg == kElectron || absPdg == kGamma) {
+                  continue;
+                }
 
-              if (isInAbsorber(daughter.vx(), daughter.vy(), daughter.vz(), chamberM3)) {
-                interactionInAbsorber = true;
-                break;
-              }
-            } // end loop daughters
+                foundRelevantDaughter = true;
+
+                // diagnostics on daughters distribution
+                histos.fill(HIST("hProdVertex"), daughter.vx(), daughter.vy(), daughter.vz());
+
+                double rCyl = std::hypot(daughter.vx(), daughter.vy());
+                double rSph = std::hypot(daughter.vx(), daughter.vy(), daughter.vz());
+                if (chamberM3 == Rich2) {
+                  histos.fill(HIST("hDaughterRCyl_Rich2"), rCyl);
+                  histos.fill(HIST("hDaughterRSph_Rich2"), rSph);
+                } else {
+                  histos.fill(HIST("hDaughterRCyl_Rich4"), rCyl);
+                  histos.fill(HIST("hDaughterRSph_Rich4"), rSph);
+                }
+
+                if (isInAbsorber(daughter.vx(), daughter.vy(), daughter.vz(), chamberM3)) {
+                  interactionInAbsorber = true;
+                }
+              } // end loop daughters
+            } else {
+              bool survived = false;
+              for (int32_t idx = dIds.front(); idx <= dIds.back(); ++idx) {
+                auto daughter = mcParticles.rawIteratorAt(idx);
+
+                // skip delta rays (e-/e+), photons, and HMPID Cherenkov/feedback
+                int absPdg = std::abs(daughter.pdgCode());
+                if (absPdg == kElectron || absPdg == kGamma) {
+                  continue;
+                }
+
+                foundRelevantDaughter = true;
+
+                histos.fill(HIST("hProdVertex"), daughter.vx(), daughter.vy(), daughter.vz());
+
+                double rCyl = std::hypot(daughter.vx(), daughter.vy());
+                double rSph = std::hypot(daughter.vx(), daughter.vy(), daughter.vz());
+                if (chamberM3 == Rich2) {
+                  histos.fill(HIST("hDaughterRCyl_Rich2"), rCyl);
+                  histos.fill(HIST("hDaughterRSph_Rich2"), rSph);
+                } else {
+                  histos.fill(HIST("hDaughterRCyl_Rich4"), rCyl);
+                  histos.fill(HIST("hDaughterRSph_Rich4"), rSph);
+                }
+
+                if (survivedAbsorber(daughter.vx(), daughter.vy(), chamberM3)) {
+                  survived = true;
+                }
+              } // end loop daughters
+
+              // No relevant daughter found (only delta rays/photons, or no
+              // daughters at all): no evidence of a genuine interaction -> treat
+              // as primary/survived, consistent with the "no daughters" case.
+              interactionInAbsorber = foundRelevantDaughter ? !survived : false;
+            }
           } // end if has_daughters
 
           hmpidAnalysisMC(mc.pdgCode(), mc.vx(), mc.vy(), mc.vz(),
                           mc.isPhysicalPrimary(), mc.getProcess(), interactionInAbsorber);
         } else {
-          hmpidAnalysisMC(-1, 0.f, 0.f, 0.f, false, -100, false);
+          // No MC truth associated to this track
+          hmpidAnalysisMC(-999, -999.f, -999.f, -999.f, false, -100, false);
         }
       } // end if constexpr (isMC)
 

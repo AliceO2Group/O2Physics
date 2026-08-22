@@ -28,6 +28,7 @@
 #include <CommonConstants/MathConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -41,6 +42,7 @@
 
 #include <TH1.h>
 
+#include <array>
 #include <cmath>
 #include <span>
 #include <string>

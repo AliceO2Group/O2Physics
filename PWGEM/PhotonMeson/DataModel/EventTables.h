@@ -10,21 +10,25 @@
 // or submit itself to any jurisdiction.
 
 /// \file EventTables.h
-/// \brief This header provides the table definitions to store photon meson event tables
+/// \brief This header provides the table definitions to store photon meson event tables and ccdb tables
 /// \author Marvin Hemmer (marvin.hemmer@cern.ch) - Goethe University Frankfurt
+
+#ifndef PWGEM_PHOTONMESON_DATAMODEL_EVENTTABLES_H_
+#define PWGEM_PHOTONMESON_DATAMODEL_EVENTTABLES_H_
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
 
+#include <DataFormatsParameters/GRPMagField.h>
+#include <EMCALCalib/BadChannelMap.h>
 #include <Framework/AnalysisDataModel.h>
 
-#include <Rtypes.h>
+#include <TBufferFile.h> // IWYU pragma: keep
+#include <TClass.h>      // IWYU pragma: keep
 
-#include <cmath>
+#include <Rtypes.h> // for BIT
+
 #include <cstdint>
-
-#ifndef PWGEM_PHOTONMESON_DATAMODEL_EVENTTABLES_H_
-#define PWGEM_PHOTONMESON_DATAMODEL_EVENTTABLES_H_
 
 namespace o2::aod
 {
@@ -71,6 +75,36 @@ DECLARE_SOA_TABLE(PMEvents, "AOD", "PMEVENT", //!   Main event information table
                   collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, pmevent::Sel8<evsel::Selection>);
 
 using PMEvent = PMEvents::iterator;
+
+namespace ccdbPcm
+{
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+DECLARE_SOA_CCDB_COLUMN(GRPMagField, grpMagField, o2::parameters::GRPMagField, "GLO/Config/GRPMagField"); //!
+} // namespace ccdbPcm
+
+/// Full table — join with aod::BCsWithTimestamps to obtain all four objects.
+DECLARE_SOA_TIMESTAMPED_TABLE(PcmObjects, aod::Timestamps, o2::aod::timestamp::Timestamp, 0, "PCMOBJECTS", //!
+                              ccdbPcm::GRPMagField);
+
+namespace em::ccdbMagField
+{
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+DECLARE_SOA_CCDB_COLUMN(GRPMagField, grpMagField, o2::parameters::GRPMagField, "GLO/Config/GRPMagField"); //!
+} // namespace em::ccdbMagField
+
+/// Full table — join with aod::BCsWithTimestamps to obtain all four objects.
+DECLARE_SOA_TIMESTAMPED_TABLE(EmMagFields, aod::PMEvents, o2::aod::timestamp::Timestamp, 0, "EMMAGFIELDS", //!
+                              em::ccdbMagField::GRPMagField);
+
+namespace em::ccdbEmcal
+{
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+DECLARE_SOA_CCDB_COLUMN(BadChannelMap, badChannelMap, o2::emcal::BadChannelMap, "EMC/Calib/BadChannelMap"); //! EMCal BadChannelMap for EmEvents
+} // namespace em::ccdbEmcal
+
+/// Full table — join with aod::BCsWithTimestamps to obtain all four objects.
+DECLARE_SOA_TIMESTAMPED_TABLE(EmEmcalObjects, aod::PMEvents, o2::aod::timestamp::Timestamp, 0, "EMEMCALOBJECTS", //!
+                              em::ccdbEmcal::BadChannelMap);
 
 } // namespace o2::aod
 

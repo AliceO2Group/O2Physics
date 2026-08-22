@@ -22,7 +22,7 @@ o2physics_add_dpl_workflow(alice3-trackextension
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(alice3-centrality
-                    SOURCES alice3-centrality.cxx
+                    SOURCES alice3Centrality.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -62,7 +62,7 @@ o2physics_add_dpl_workflow(alice3-tracking-translator
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(alice3-dq-table-maker
-                    SOURCES alice3-dq-table-maker.cxx
+                    SOURCES alice3DqTableMaker.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCCDB O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
 

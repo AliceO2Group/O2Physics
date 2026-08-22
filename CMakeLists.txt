@@ -9,7 +9,10 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-cmake_minimum_required(VERSION 3.23 FATAL_ERROR)
+# 3.27 for $<COMPILE_ONLY:>, which O2PhysicsAddWorkflow.cmake uses to give a
+# workflow the precompiled header carrier's compile usage requirements without
+# also putting it on the link line. Builds use CMake 4.1 (alidist cmake.sh).
+cmake_minimum_required(VERSION 3.27 FATAL_ERROR)
 
 project(O2Physics
         VERSION 0.0.1

@@ -19,7 +19,6 @@
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/BinningPolicy.h>
 #include <Framework/Configurable.h>
@@ -31,8 +30,10 @@
 #include <Framework/runDataProcessing.h>
 
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector3D.h>
-#include <Math/Vector4D.h>
+#include <Math/Vector3D.h> // IWYU pragma: keep (do not replace with Math/Vector3Dfwd.h)
+#include <Math/Vector3Dfwd.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 
 #include <algorithm>
 #include <cmath>
@@ -56,7 +57,7 @@ struct cksspinalignder {
   Configurable<float> radiusMin{"radiusMin", 1.2f, "Minimum V0 radius"};
   Configurable<float> radiusMax{"radiusMax", 100.0f, "Maximum V0 radius"};
   Configurable<float> dcaPion{"dcaPion", 0.1f, "Minimum V0 daughter DCA to PV"};
-  Configurable<float> dcaDaughters{"dcaDaughters", 1.0f, "Maximum DCA between V0 daughters"};
+  // Configurable<float> dcaDaughters{"dcaDaughters", 1.0f, "Maximum DCA between V0 daughters"};
   Configurable<float> k0sPtMin{"k0sPtMin", 0.0f, "Minimum K0s pT"};
   Configurable<float> k0sPtMax{"k0sPtMax", 10.0f, "Maximum K0s pT"};
   Configurable<float> k0sEtaMax{"k0sEtaMax", 0.8f, "Maximum K0s eta"};
@@ -192,11 +193,11 @@ struct cksspinalignder {
         candidate.v0Radius() > radiusMax.value) {
       return false;
     }
-
+    /*
     if (candidate.dcaBetweenDaughter() > dcaDaughters.value) {
       return false;
     }
-
+    */
     if (candidate.dcaPositive() < dcaPion.value ||
         candidate.dcaNegative() < dcaPion.value) {
       return false;
@@ -229,9 +230,9 @@ struct cksspinalignder {
       case 0:
         return collision.psiFT0C();
       case 1:
-        return collision.psiFT0A();
+        return collision.psiFT0C();
       case 2:
-        return collision.psiTPC();
+        return collision.psiFT0C();
       default:
         LOGF(warn, "epChoice=%d is invalid. Using FT0C.", epChoice.value);
         return collision.psiFT0C();

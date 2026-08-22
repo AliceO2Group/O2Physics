@@ -18,8 +18,7 @@
 #include "Common/Core/RecoDecay.h"
 
 #include <CommonConstants/MathConstants.h>
-#include <Framework/ASoA.h>
-#include <Framework/AnalysisHelpers.h>
+#include <Framework/Concepts.h>
 
 #include <cmath>
 

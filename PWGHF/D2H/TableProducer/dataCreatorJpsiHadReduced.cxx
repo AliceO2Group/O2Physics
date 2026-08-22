@@ -65,6 +65,7 @@
 #include <TH2.h>
 #include <TPDGCode.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -298,23 +299,25 @@ struct HfDataCreatorJpsiHadReduced {
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
     df2.setMatCorrType(noMatCorr);
 
-    df3.setPropagateToPCA(propagateToPCA);
-    df3.setMaxR(maxR);
-    df3.setMaxDZIni(maxDZIni);
-    df3.setMinParamChange(minParamChange);
-    df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(useAbsDCA);
-    df3.setWeightedFinalPCA(useWeightedFinalPCA);
-    df3.setMatCorrType(noMatCorr);
-
-    df4.setPropagateToPCA(propagateToPCA);
-    df4.setMaxR(maxR);
-    df4.setMaxDZIni(maxDZIni);
-    df4.setMinParamChange(minParamChange);
-    df4.setMinRelChi2Change(minRelChi2Change);
-    df4.setUseAbsDCA(useAbsDCA);
-    df4.setWeightedFinalPCA(useWeightedFinalPCA);
-    df4.setMatCorrType(noMatCorr);
+    if (doprocessJpsiKData || doprocessJpsiKMc) {
+      df3.setPropagateToPCA(propagateToPCA);
+      df3.setMaxR(maxR);
+      df3.setMaxDZIni(maxDZIni);
+      df3.setMinParamChange(minParamChange);
+      df3.setMinRelChi2Change(minRelChi2Change);
+      df3.setUseAbsDCA(useAbsDCA);
+      df3.setWeightedFinalPCA(useWeightedFinalPCA);
+      df3.setMatCorrType(noMatCorr);
+    } else {
+      df4.setPropagateToPCA(propagateToPCA);
+      df4.setMaxR(maxR);
+      df4.setMaxDZIni(maxDZIni);
+      df4.setMinParamChange(minParamChange);
+      df4.setMinRelChi2Change(minRelChi2Change);
+      df4.setUseAbsDCA(useAbsDCA);
+      df4.setWeightedFinalPCA(useWeightedFinalPCA);
+      df4.setMatCorrType(noMatCorr);
+    }
 
     // Configure CCDB access
     ccdb->setURL(ccdbUrl);
@@ -996,8 +999,11 @@ struct HfDataCreatorJpsiHadReduced {
       runNumber = bc.runNumber();
     }
     df2.setBz(bz);
-    df3.setBz(bz);
-    df4.setBz(bz);
+    if constexpr (DecChannel == DecayChannel::BplusToJpsiK) {
+      df3.setBz(bz);
+    } else {
+      df4.setBz(bz);
+    }
 
     auto thisCollId = collision.globalIndex();
     // looping over 2-prong candidates
@@ -1006,7 +1012,7 @@ struct HfDataCreatorJpsiHadReduced {
       // Apply the selections on the J/Psi candidates
       registry.fill(HIST("hSelectionsJpsi"), 1, candidate.pt());
 
-      if (!(candidate.hfflag() & (1 << aod::hf_cand_2prong::DecayType::JpsiToMuMu))) {
+      if (!TESTBIT(candidate.hfflag(), aod::hf_cand_2prong::DecayType::JpsiToMuMu)) {
         continue;
       }
       registry.fill(HIST("hSelectionsJpsi"), 2 + aod::SelectionStep::RecoSkims, candidate.pt());
@@ -1200,7 +1206,6 @@ struct HfDataCreatorJpsiHadReduced {
             }
             registry.fill(HIST("hFitCandidatesB0"), SVFitting::FitOk);
 
-            o2::track::TrackParCov trackParCovB0{};
             std::array<float, 3> pVecB0{}, pVec0{}, pVec1{}, pVecK0Star{};
 
             auto secondaryVertexB0 = df4.getPCACandidate();
@@ -1211,8 +1216,6 @@ struct HfDataCreatorJpsiHadReduced {
             pVecB0 = RecoDecay::pVec(pVec0, pVec1, pVec2, pVec3);
             pVecJpsi = RecoDecay::pVec(pVec0, pVec1);
             pVecK0Star = RecoDecay::pVec(pVec2, pVec3);
-            trackParCovB0 = df4.createParentTrackParCov();
-            trackParCovB0.setAbsCharge(0); // to be sure
 
             if (!isBSelected(pVecB0, secondaryVertexB0, collision)) {
               continue;
@@ -1332,7 +1335,6 @@ struct HfDataCreatorJpsiHadReduced {
             }
             registry.fill(HIST("hFitCandidatesBS"), SVFitting::FitOk);
 
-            o2::track::TrackParCov trackParCovBS{};
             std::array<float, 3> pVecBS{}, pVec0{}, pVec1{}, pVecPhi{};
 
             auto secondaryVertexBS = df4.getPCACandidate();
@@ -1343,8 +1345,6 @@ struct HfDataCreatorJpsiHadReduced {
             pVecBS = RecoDecay::pVec(pVec0, pVec1, pVec2, pVec3);
             pVecJpsi = RecoDecay::pVec(pVec0, pVec1);
             pVecPhi = RecoDecay::pVec(pVec2, pVec3);
-            trackParCovBS = df4.createParentTrackParCov();
-            trackParCovBS.setAbsCharge(0); // to be sure
 
             if (!isBSelected(pVecBS, secondaryVertexBS, collision)) {
               continue;

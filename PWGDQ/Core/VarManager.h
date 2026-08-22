@@ -150,7 +150,8 @@ class VarManager : public TObject
     MFTCov = BIT(27),
     TrackTOFService = BIT(28),
     ParticleMC = BIT(29),
-    MuonDca = BIT(30)
+    MuonDca = BIT(30),
+    TrackEMCal = BIT(31) // NOTE: last free bit of the uint32 track fill maps; used both for aod::EMCALClusters and ReducedEMCals
   };
 
   enum PairCandidateType {
@@ -189,6 +190,11 @@ class VarManager : public TObject
   enum MuonTrackFilteringBits {
     kMuonUserCutsBits = 0, // first bit for user muon cuts
     kMuonIsPropagated = 7  // whether the muon was propagated already
+  };
+
+  enum EMCalClusterFilteringBits {
+    kEMCalClusterIsMatched = 0,   // cluster has at least one matched track (from EMCALMatchedTracks)
+    kEMCalClusterUserCutsBits = 1 // first bit for the user EMCal cluster selections
   };
 
   // NOLINTNEXTLINE(readability-enum-initial-value)
@@ -648,6 +654,22 @@ class VarManager : public TObject
     kIsDalitzLeg,                             // Up to 8 dalitz selections
     kBarrelNAssocsInBunch = kIsDalitzLeg + 8, // number of in bunch collision associations
     kBarrelNAssocsOutOfBunch,                 // number of out of bunch collision associations
+    kEMCalEnergy,                             // EMCal cluster energy
+    kEMCalCoreEnergy,                         // EMCal cluster core energy
+    kEMCalRawEnergy,                          // EMCal cluster raw energy
+    kEMCalEta,                                // EMCal cluster pseudorapidity
+    kEMCalPhi,                                // EMCal cluster azimuthal angle
+    kEMCalM02,                                // EMCal shower shape long axis
+    kEMCalM20,                                // EMCal shower shape short axis
+    kEMCalNCells,                             // number of cells in the EMCal cluster
+    kEMCalTime,                               // EMCal cluster time
+    kEMCalIsExotic,                           // exotic EMCal cluster flag
+    kEMCalDistanceToBadChannel,               // distance of the EMCal cluster to the closest bad channel
+    kEMCalNLM,                                // number of local maxima of the EMCal cluster
+    kEMCalDefinition,                         // EMCal cluster definition
+    kEMCalEoverP,                             // EMCal cluster energy over matched track momentum
+    kEMCalMatchDeltaEta,                      // eta residual of the matched EMCal cluster w.r.t. the track
+    kEMCalMatchDeltaPhi,                      // phi residual of the matched EMCal cluster w.r.t. the track
     kNBarrelTrackVariables,
 
     // Muon track variables
@@ -1269,6 +1291,14 @@ class VarManager : public TObject
     fgzShiftFwd = z;
   }
 
+  // Set x, y and z shifts for forward tracks
+  static void Set3DShift(float x, float y, float z)
+  {
+    fgxShiftFwd = x;
+    fgyShiftFwd = y;
+    fgzShiftFwd = z;
+  }
+
   // Setup the 2 prong KFParticle
   static void SetupTwoProngKFParticle(float magField)
   {
@@ -1407,6 +1437,8 @@ class VarManager : public TObject
   static void FillTrack(T const& track, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillPhoton(T const& track, float* values = nullptr);
+  template <typename T>
+  static void FillTrackEMCal(T const& cluster, float trackP = -1.0f, float deltaEta = -999.0f, float deltaPhi = -999.0f, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C>
   static void FillTrackCollision(T const& track, C const& collision, float* values = nullptr);
   template <int candidateType, uint32_t fillMap, typename T1, typename T2, typename C>
@@ -1534,6 +1566,8 @@ class VarManager : public TObject
 
   static void SetEfficiencyObject(int type, TObject* obj);
   static void FillEfficiency(float* values = nullptr);
+  static void SetPhiMap(TObject* h1, TObject* h2, bool option);
+  static double SampleRotationPhi(double pT, double eta, int charge);
   static TObject* GetCalibrationObject(CalibObjects calib)
   {
     auto obj = fgCalibs.find(calib);
@@ -1574,6 +1608,8 @@ class VarManager : public TObject
 
   static float fgMagField;
   static float fgzMatching;
+  static float fgxShiftFwd;
+  static float fgyShiftFwd;
   static float fgzShiftFwd;
   static float fgCenterOfMassEnergy;        // collision energy
   static float fgMassofCollidingParticle;   // mass of the colliding particle
@@ -1617,6 +1653,10 @@ class VarManager : public TObject
 
   static int fgEfficiencyType;      // type of efficiency correction to apply
   static TObject* fgEfficiencyHist; // histogram for efficiency correction
+
+  static TObject* fgPosiPhiMap; // phi map to correct track rotation
+  static TObject* fgNegaPhiMap;
+  static bool fgUsePhiCorrection;
 
   VarManager& operator=(const VarManager& c);
   VarManager(const VarManager& c);
@@ -1749,7 +1789,7 @@ o2::dataformats::VertexBase VarManager::RecalculatePrimaryVertex(T const& track0
 template <typename T, typename C>
 o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C& collision, const int endPoint)
 {
-  o2::track::TrackParCovFwd fwdtrack = o2::aod::fwdtrackutils::getTrackParCovFwdShift(muon, fgzShiftFwd, muon);
+  o2::track::TrackParCovFwd fwdtrack = o2::aod::fwdtrackutils::getTrackParCovFwd3DShift(muon, fgxShiftFwd, fgyShiftFwd, fgzShiftFwd, muon);
   o2::dataformats::GlobalFwdTrack propmuon;
   if (static_cast<int>(muon.trackType()) > 2) {
     o2::dataformats::GlobalFwdTrack track;
@@ -1881,7 +1921,7 @@ void VarManager::FillGlobalMuonRefit(T1 const& muontrack, T2 const& mfttrack, co
     double py = propmuon.getP() * std::sin(o2::constants::math::PIHalf - std::atan(mfttrack.tgl())) * std::sin(mfttrack.phi());
     double pz = propmuon.getP() * std::cos(o2::constants::math::PIHalf - std::atan(mfttrack.tgl()));
     double pt = std::sqrt(std::pow(px, 2) + std::pow(py, 2));
-    auto mftprop = o2::aod::fwdtrackutils::getTrackParCovFwdShift(mfttrack, fgzShiftFwd);
+    auto mftprop = o2::aod::fwdtrackutils::getTrackParCovFwd3DShift(mfttrack, fgxShiftFwd, fgyShiftFwd, fgzShiftFwd);
     values[kX] = mftprop.getX();
     values[kY] = mftprop.getY();
     values[kZ] = mftprop.getZ();
@@ -1902,7 +1942,7 @@ void VarManager::FillGlobalMuonRefitCov(T1 const& muontrack, T2 const& mfttrack,
   if constexpr ((MuonfillMap & MuonCov) > 0) {
     if constexpr ((MFTfillMap & MFTCov) > 0) {
       o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muontrack, collision);
-      auto mft = o2::aod::fwdtrackutils::getTrackParCovFwdShift(mfttrack, fgzShiftFwd, mftcov);
+      auto mft = o2::aod::fwdtrackutils::getTrackParCovFwd3DShift(mfttrack, fgxShiftFwd, fgyShiftFwd, fgzShiftFwd, mftcov);
 
       o2::dataformats::GlobalFwdTrack globalRefit = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuon, mft);
       values[kX] = globalRefit.getX();
@@ -3321,7 +3361,7 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kMuonC1Pt21Pt2] = track.c1Pt21Pt2();
   }
   if constexpr ((fillMap & MuonCov) > 0 || (fillMap & MuonCovRealign) > 0) {
-    auto muonTrack = o2::aod::fwdtrackutils::getTrackParCovFwdShift(track, fgzShiftFwd, track);
+    auto muonTrack = o2::aod::fwdtrackutils::getTrackParCovFwd3DShift(track, fgxShiftFwd, fgyShiftFwd, fgzShiftFwd, track);
     auto muonCov = muonTrack.getCovariances();
     values[kX] = muonTrack.getX();
     values[kY] = muonTrack.getY();
@@ -3448,6 +3488,35 @@ void VarManager::FillPhoton(T const& track, float* values)
     values[kRap] = track.eta(); // photon does not know rapidity .y()
     values[kMassDau] = track.mGamma();
   }
+}
+
+template <typename T>
+void VarManager::FillTrackEMCal(T const& cluster, float trackP, float deltaEta, float deltaPhi, float* values)
+{
+  // Fill the EMCal cluster quantities; the cluster can be either an aod::EMCALCluster (skimming)
+  //   or an aod::ReducedEMCal (analysis on skimmed data), the column schemas are identical.
+  // trackP: momentum of the matched track, used to compute E/p when called in a track-cluster matching context;
+  //   the default (negative) value leaves E/p at the -999 sentinel, as for tracks without a matched cluster.
+  if (!values) {
+    values = fgValues;
+  }
+
+  values[kEMCalEnergy] = cluster.energy();
+  values[kEMCalCoreEnergy] = cluster.coreEnergy();
+  values[kEMCalRawEnergy] = cluster.rawEnergy();
+  values[kEMCalEta] = cluster.eta();
+  values[kEMCalPhi] = cluster.phi();
+  values[kEMCalM02] = cluster.m02();
+  values[kEMCalM20] = cluster.m20();
+  values[kEMCalNCells] = cluster.nCells();
+  values[kEMCalTime] = cluster.time();
+  values[kEMCalIsExotic] = cluster.isExotic();
+  values[kEMCalDistanceToBadChannel] = cluster.distanceToBadChannel();
+  values[kEMCalNLM] = cluster.nlm();
+  values[kEMCalDefinition] = cluster.definition();
+  values[kEMCalEoverP] = (trackP > 0.0f ? cluster.energy() / trackP : -999.0f);
+  values[kEMCalMatchDeltaEta] = deltaEta;
+  values[kEMCalMatchDeltaPhi] = deltaPhi;
 }
 
 template <typename U, typename T>
@@ -3923,6 +3992,11 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       values[kQuadDCAabsXY] = std::sqrt((dca1XY * dca1XY + dca2XY * dca2XY) / 2.);
     }
   }
+  if constexpr ((pairType == kElectronMuon) && ((fillMap & ReducedTrackBarrel) > 0)) {
+    // DCA of the barrel (electron) leg; not filled in FillPairME since the mixed-event barrel track type has no DCA columns
+    values[kDCAxy1] = t1.dcaXY();
+    values[kDCAz1] = t1.dcaZ();
+  }
   if (fgUsedVars[kPairPhiv]) {
     values[kPairPhiv] = calculatePhiV<pairType>(t1, t2);
   }
@@ -3960,8 +4034,7 @@ void VarManager::FillPairRotation(T1 const& t1, T2 const& t2, float* values)
     m2 = o2::constants::physics::MassMuon;
   }
 
-  double dphi = gRandom->Uniform(0., o2::constants::math::TwoPI);
-  double rotationphi2 = RecoDecay::constrainAngle(t2.phi() + dphi);
+  double rotationphi2 = SampleRotationPhi(t2.pt(), t2.eta(), t2.sign());
 
   values[kCharge] = t1.sign() + t2.sign();
   values[kCharge1] = t1.sign();
@@ -7331,10 +7404,6 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
     m2 = o2::constants::physics::MassPionCharged;
   }
 
-  if constexpr (pairType == kElectronMuon) {
-    m2 = o2::constants::physics::MassMuon;
-  }
-
   values[kCharge] = t1.sign() + t2.sign();
   values[kCharge1] = t1.sign();
   values[kCharge2] = t2.sign();
@@ -7344,7 +7413,6 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
   values[kMass] = v12.M();
   values[kPt] = v12.Pt();
   values[kEta] = v12.Eta();
-  // values[kPhi] = v12.Phi();
   values[kPhi] = RecoDecay::constrainAngle(v12.Phi());
   values[kRap] = -v12.Rapidity();
   double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
@@ -7518,17 +7586,6 @@ void VarManager::FillPairAlice3(T1 const& t1, T2 const& t2, float* values)
       }
     }
   }
-  if constexpr ((pairType == kDecayToMuMu) && ((fillMap & Muon) > 0 || (fillMap & ReducedMuon) > 0)) {
-    if (fgUsedVars[kQuadDCAabsXY]) {
-      double dca1X = t1.fwdDcaX();
-      double dca1Y = t1.fwdDcaY();
-      double dca1XY = std::sqrt(dca1X * dca1X + dca1Y * dca1Y);
-      double dca2X = t2.fwdDcaX();
-      double dca2Y = t2.fwdDcaY();
-      double dca2XY = std::sqrt(dca2X * dca2X + dca2Y * dca2Y);
-      values[kQuadDCAabsXY] = std::sqrt((dca1XY * dca1XY + dca2XY * dca2XY) / 2.);
-    }
-  }
   if (fgUsedVars[kPairPhiv]) {
     values[kPairPhiv] = calculatePhiV<pairType>(t1, t2);
   }
@@ -7553,7 +7610,6 @@ void VarManager::FillPairVertexingAlice3(C const& collision, T const& t1, T cons
   // check at compile time that the event and cov matrix have the cov matrix
   constexpr bool eventHasVtxCov = ((collFillMap & Collision) > 0 || (collFillMap & ReducedEventVtxCov) > 0);
   constexpr bool trackHasCov = ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0);
-  constexpr bool muonHasCov = ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0);
 
   if (!values) {
     values = fgValues;
@@ -7563,10 +7619,6 @@ void VarManager::FillPairVertexingAlice3(C const& collision, T const& t1, T cons
   if constexpr (pairType == kDecayToKPi) {
     m1 = o2::constants::physics::MassKaonCharged;
     m2 = o2::constants::physics::MassPionCharged;
-  }
-  if constexpr (pairType == kDecayToMuMu && muonHasCov) {
-    m1 = o2::constants::physics::MassMuon;
-    m2 = o2::constants::physics::MassMuon;
   }
   ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
   ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
@@ -7592,11 +7644,6 @@ void VarManager::FillPairVertexingAlice3(C const& collision, T const& t1, T cons
                                       t2.c1PtY(), t2.c1PtZ(), t2.c1PtSnp(), t2.c1PtTgl(), t2.c1Pt21Pt2()};
       o2::track::TrackParCov pars2{t2.x(), t2.alpha(), t2pars, t2covs};
       procCode = fgFitterTwoProngBarrel.process(pars1, pars2);
-    } else if constexpr ((pairType == kDecayToMuMu) && muonHasCov) {
-      // Initialize track parameters for forward
-      o2::track::TrackParCovFwd pars1 = FwdToTrackPar(t1, t1);
-      o2::track::TrackParCovFwd pars2 = FwdToTrackPar(t2, t2);
-      procCode = fgFitterTwoProngFwd.process(pars1, pars2);
     } else {
       return;
     }

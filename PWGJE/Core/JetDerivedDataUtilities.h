@@ -54,6 +54,7 @@ enum JCollisionSel {
   selUPCSingleGapA = 10,
   selUPCSingleGapC = 11,
   selUPCDoubleGap = 12,
+  selTriggerTrackSignal = 13 // special bit for derived data. not used like other selection bits
 };
 
 enum JCollisionSubGeneratorId {
@@ -716,6 +717,7 @@ uint8_t setSingleTrackSelectionBit(int trackSelection)
   if (trackSelection != -1) {
     SETBIT(bit, trackSelection);
   }
+  SETBIT(bit, JTrackSel::notBadMcTrack);
   return bit;
 }
 

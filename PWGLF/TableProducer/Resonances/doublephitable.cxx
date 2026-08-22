@@ -16,7 +16,6 @@
 
 #include "PWGLF/DataModel/ReducedDoublePhiTables.h"
 
-#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/Zorro.h"
 #include "Common/Core/ZorroSummary.h"
 #include "Common/Core/trackUtilities.h"
@@ -29,6 +28,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DCAFitter/DCAFitterN.h>
 #include <DataFormatsParameters/GRPMagField.h>
@@ -39,20 +39,21 @@
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/DCA.h>
 #include <ReconstructionDataFormats/PID.h>
-#include <ReconstructionDataFormats/Track.h>
 
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
 #include <Math/Vector4Dfwd.h>
-#include <TMath.h>
+#include <TH1.h>
 
 #include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <iterator>
 #include <stdexcept>
@@ -720,6 +721,12 @@ struct doublephitable {
         const auto phi2Fit = k3Fit + k4Fit;
         const auto pairFit = phi1Fit + phi2Fit;
 
+        if (pairFit.Pt() < 6.0) {
+          continue;
+        }
+        if (pairFit.M() < 2.5 || pairFit.M() > 3.2) {
+          continue;
+        }
         // No pair-pT or pair-mass cut here.
 
         PhiPhiPairPayload pair;

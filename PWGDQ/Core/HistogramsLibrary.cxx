@@ -1045,6 +1045,21 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         }
       }
     }
+    if (subGroupStr.Contains("emcal")) {
+      hm->AddHistogram(histClass, "EMCalEnergy", "EMCal cluster energy", false, 500, 0.0, 50.0, VarManager::kEMCalEnergy);
+      hm->AddHistogram(histClass, "EMCalCoreEnergy", "EMCal cluster core energy", false, 500, 0.0, 50.0, VarManager::kEMCalCoreEnergy);
+      hm->AddHistogram(histClass, "EMCalEta_Phi", "EMCal cluster #eta vs #varphi", false, 100, -1.0, 1.0, VarManager::kEMCalEta, 180, 0.0, TMath::TwoPi(), VarManager::kEMCalPhi);
+      hm->AddHistogram(histClass, "EMCalM02", "EMCal cluster M02", false, 200, 0.0, 2.0, VarManager::kEMCalM02);
+      hm->AddHistogram(histClass, "EMCalM20", "EMCal cluster M20", false, 200, 0.0, 2.0, VarManager::kEMCalM20);
+      hm->AddHistogram(histClass, "EMCalNCells", "EMCal cluster no. cells", false, 50, -0.5, 49.5, VarManager::kEMCalNCells);
+      hm->AddHistogram(histClass, "EMCalTime", "EMCal cluster time", false, 400, -100.0, 100.0, VarManager::kEMCalTime);
+      hm->AddHistogram(histClass, "EMCalEnergy_Time", "EMCal cluster energy vs time", false, 100, 0.0, 50.0, VarManager::kEMCalEnergy, 200, -100.0, 100.0, VarManager::kEMCalTime);
+      if (subGroupStr.Contains("emcalmatch")) {
+        hm->AddHistogram(histClass, "EMCalEoverP", "EMCal E/p", false, 300, 0.0, 3.0, VarManager::kEMCalEoverP);
+        hm->AddHistogram(histClass, "Pt_EMCalEoverP", "p_{T} vs EMCal E/p", false, 200, 0.0, 20.0, VarManager::kPt, 300, 0.0, 3.0, VarManager::kEMCalEoverP);
+        hm->AddHistogram(histClass, "EMCalMatchDeltaEta_DeltaPhi", "EMCal matching #Delta#eta vs #Delta#varphi", false, 100, -0.1, 0.1, VarManager::kEMCalMatchDeltaEta, 100, -0.1, 0.1, VarManager::kEMCalMatchDeltaPhi);
+      }
+    }
     if (subGroupStr.Contains("muon")) {
       if (!subGroupStr.Contains("ambiguity")) {
         hm->AddHistogram(histClass, "MuonNClusters", "", false, 100, 0.0, 10.0, VarManager::kMuonNClusters);
@@ -1257,16 +1272,40 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "Coschi", "", false, 25, coschiBins.data(), VarManager::kMCCosChi, 0, nullptr, -1, 0, nullptr, -1, "", "", "", -1, VarManager::kMCWeight);
   }
 
-  if (groupStr.CompareTo("polarization-pseudoproper-gen") == 0) {
+  if (groupStr.CompareTo("polarization-pseudoproper-midy-he-gen") == 0) {
     std::array<int, 4> varspTHE = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCCosThetaHE, VarManager::kMCVertexingTauxyProjected};
-    std::array<int, 4> varspTCS = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCCosThetaCS, VarManager::kMCVertexingTauxyProjected};
-    std::array<int, 4> varspTRM = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCCosThetaRM, VarManager::kMCVertexingTauxyProjected};
     std::array<int, 4> bins = {50, 20, 20, 1000};
     std::array<double, 4> xmin = {2., 0., -1., -0.5};
     std::array<double, 4> xmax = {4., 20., 1., 0.5};
     hm->AddHistogram(histClass, "Mass_Pt_cosThetaHE_Tauxy", "", 4, varspTHE.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
+  }
+  if (groupStr.CompareTo("polarization-pseudoproper-midy-cs-gen") == 0) {
+    std::array<int, 4> varspTCS = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCCosThetaCS, VarManager::kMCVertexingTauxyProjected};
+    std::array<int, 4> bins = {50, 20, 20, 1000};
+    std::array<double, 4> xmin = {2., 0., -1., -0.5};
+    std::array<double, 4> xmax = {4., 20., 1., 0.5};
     hm->AddHistogram(histClass, "Mass_Pt_cosThetaCS_Tauxy", "", 4, varspTCS.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
+  }
+  if (groupStr.CompareTo("polarization-pseudoproper-midy-rand-gen") == 0) {
+    std::array<int, 4> varspTRM = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCCosThetaRM, VarManager::kMCVertexingTauxyProjected};
+    std::array<int, 4> bins = {50, 20, 20, 1000};
+    std::array<double, 4> xmin = {2., 0., -1., -0.5};
+    std::array<double, 4> xmax = {4., 20., 1., 0.5};
     hm->AddHistogram(histClass, "Mass_Pt_cosThetaRM_Tauxy", "", 4, varspTRM.data(), bins.data(), xmin.data(), xmax.data(), nullptr, -1, kFALSE);
+  }
+  if (groupStr.CompareTo("polarization-dielectron-pbpb-midy-he-gen") == 0) {
+    std::array<int, 5> varspTHE = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCEventCentrFT0C, VarManager::kMCCosThetaHE, VarManager::kMCPhiHE};
+    std::array<int, 5> bins = {50, 30, 10, 20, 10};
+    std::array<double, 5> xmin = {2., 0., 0, -1., 0.0};
+    std::array<double, 5> xmax = {4., 3., 100, 1., 6.28};
+    hm->AddHistogram(histClass, "MC_Dielectron_Mass_Pt_Cent_cosThetaHE", "", 5, varspTHE.data(), bins.data(), xmin.data(), xmax.data(), 0, -1, kFALSE);
+  }
+  if (groupStr.CompareTo("polarization-dielectron-pbpb-midy-cs-gen") == 0) {
+    std::array<int, 5> varspTCS = {VarManager::kMCMass, VarManager::kMCPt, VarManager::kMCEventCentrFT0C, VarManager::kMCCosThetaCS, VarManager::kMCPhiCS};
+    std::array<int, 5> bins = {50, 30, 10, 20, 10};
+    std::array<double, 5> xmin = {2., 0., 0, -1., 0.0};
+    std::array<double, 5> xmax = {4., 3., 100, 1., 6.28};
+    hm->AddHistogram(histClass, "MC_Dielectron_Mass_Pt_Cent_cosThetaCS", "", 5, varspTCS.data(), bins.data(), xmin.data(), xmax.data(), 0, -1, kFALSE);
   }
   if (groupStr.CompareTo("pair") == 0) {
     if (subGroupStr.Contains("cepf")) {

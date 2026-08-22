@@ -3273,6 +3273,17 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (nameStr == "muonMchAndMchMid") {
+    cut->AddCut(GetAnalysisCut("muonMchAndMchMid"));
+    return cut;
+  }
+
+  if (nameStr == "muonStreamCuts") {
+    cut->AddCut(GetAnalysisCut("muonMchAndMchMid"));
+    cut->AddCut(GetAnalysisCut("muonMinimalCuts10SigmaPDCA"));
+    return cut;
+  }
+
   if (nameStr == "matchedFwd") {
     cut->AddCut(GetAnalysisCut("matchedFwd"));
     return cut;
@@ -6701,6 +6712,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (nameStr == "muonMchAndMchMid") {
+    cut->AddCut(VarManager::kMuonTrackType, 2.5, 4.5); // selecting both MCH and MCH-MID tracks
+    return cut;
+  }
+
   if (nameStr == "matchedFwd") {
     cut->AddCut(VarManager::kMuonTrackType, 1.5, 2.5);
     return cut;
@@ -7343,11 +7359,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (nameStr == "alice3iTOFPIDPr") {
     cut->AddCut(VarManager::kInnerTOFnSigmaPr, -3.0, 3.0);
-    return cut;
-  }
-
-  if (nameStr == "alice3oTOFPIDEl") {
-    cut->AddCut(VarManager::kOuterTOFnSigmaEl, -3.0, 3.0);
     return cut;
   }
 
