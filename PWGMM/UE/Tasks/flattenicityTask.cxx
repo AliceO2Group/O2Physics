@@ -14,10 +14,12 @@
 /// \author Eisha Rani
 /// \since August 2026
 
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "Framework/AnalysisDataModel.h"
 #include <CommonConstants/MathConstants.h>
-#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -29,8 +31,6 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <cstddef>
-#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -41,6 +41,7 @@ using namespace o2::soa;
 using namespace o2::constants::physics;
 
 using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
+using CollisionsWithCent = soa::Join<aod::Collisions, aod::CentFT0Ms>;
 
 struct FlattenicityTask {
   // ============================================
@@ -61,20 +62,7 @@ struct FlattenicityTask {
   static constexpr int NPhysicalPrimaryBit = 0x4;
 
   // ============================================
-  // Multiplicity class boundaries
-  // ============================================
-  static constexpr int NchBound10 = 5;
-  static constexpr int NchBound20 = 8;
-  static constexpr int NchBound30 = 11;
-  static constexpr int NchBound40 = 14;
-  static constexpr int NchBound50 = 17;
-  static constexpr int NchBound60 = 20;
-  static constexpr int NchBound70 = 24;
-  static constexpr int NchBound80 = 28;
-  static constexpr int NchBound90 = 33;
-
-  // ============================================
-  // Histogram Definitions
+  // Histogram Definitions - 100 BINS (bin width = 0.01)
   // ============================================
   HistogramRegistry histos{
     "histos",
@@ -86,26 +74,63 @@ struct FlattenicityTask {
       {"hNch_INEL", "Nch distribution (INEL>0);N_{ch};Entries", {HistType::kTH1F, {{100, -0.5, 99.5}}}},
       {"hNch_FT0", "Nch distribution (INEL>0 & FT0);N_{ch};Entries", {HistType::kTH1F, {{100, -0.5, 99.5}}}},
 
-      // Flattenicity
-      {"hFlattenicity", "Flattenicity distribution;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_vs_Nch", "Flattenicity vs Nch;N_{ch};1-#rho", {HistType::kTH2F, {{50, -0.5, 99.5}, {50, 0.0, 1.0}}}},
+      // ============================================
+      // Flattenicity Histograms - 100 BINS!
+      // Bin width = 0.01, allowing 0-1% and 1-5% classes
+      // ============================================
+      {"hFlattenicityParticles", "Flattenicity from charged particles;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      {"hFlattenicityParticles_vs_Nch", "Flattenicity (particles) vs Nch;N_{ch};1-#rho", {HistType::kTH2F, {{50, -0.5, 99.5}, {100, 0.0, 1.0}}}},
+      {"hFlattenicityFT0", "Flattenicity from FT0 detector amplitudes;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
 
       // FT0 cell occupancy
       {"hCellOccupancy", "FT0 cell occupancy;Cell ID;Entries", {HistType::kTH1F, {{NCell, 0, NCell}}}},
       {"hCellOccupancyFT0A", "FT0-A cell occupancy;Cell ID;Entries", {HistType::kTH1F, {{NchA, 0, NchA}}}},
       {"hCellOccupancyFT0C", "FT0-C cell occupancy;Cell ID;Entries", {HistType::kTH1F, {{NchC, 0, NchC}}}},
 
-      // Multiplicity classes
-      {"hFlattenicity_0_10", "Flattenicity 0-10%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_10_20", "Flattenicity 10-20%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_20_30", "Flattenicity 20-30%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_30_40", "Flattenicity 30-40%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_40_50", "Flattenicity 40-50%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_50_60", "Flattenicity 50-60%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_60_70", "Flattenicity 60-70%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_70_80", "Flattenicity 70-80%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_80_90", "Flattenicity 80-90%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
-      {"hFlattenicity_90_100", "Flattenicity 90-100%;1-#rho;Entries", {HistType::kTH1F, {{50, 0.0, 1.0}}}},
+      // ============================================
+      // MULTIPLICITY CLASSES USING PERCENTILES
+      // All classes have 100 bins (bin width = 0.01)
+      // Following Antonio's publication style
+      // ============================================
+      // 0-1%
+      {"hFlattenicityParticles_0_1", "Flattenicity (particles) class 0-1%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      {"hFlattenicityFT0_0_1", "Flattenicity (FT0) class 0-1%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      // 1-5%
+      {"hFlattenicityParticles_1_5", "Flattenicity (particles) class 1-5%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      {"hFlattenicityFT0_1_5", "Flattenicity (FT0) class 1-5%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      // 5-10%
+      {"hFlattenicityParticles_5_10", "Flattenicity (particles) class 5-10%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      {"hFlattenicityFT0_5_10", "Flattenicity (FT0) class 5-10%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      // 10-20%
+      {"hFlattenicityParticles_10_20", "Flattenicity (particles) class 10-20%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      {"hFlattenicityFT0_10_20", "Flattenicity (FT0) class 10-20%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      // 20-30%
+      {"hFlattenicityParticles_20_30", "Flattenicity (particles) class 20-30%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      {"hFlattenicityFT0_20_30", "Flattenicity (FT0) class 20-30%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      // 30-40%
+      {"hFlattenicityParticles_30_40", "Flattenicity (particles) class 30-40%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      {"hFlattenicityFT0_30_40", "Flattenicity (FT0) class 30-40%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      // 40-50%
+      {"hFlattenicityParticles_40_50", "Flattenicity (particles) class 40-50%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      {"hFlattenicityFT0_40_50", "Flattenicity (FT0) class 40-50%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      // 50-60%
+      {"hFlattenicityParticles_50_60", "Flattenicity (particles) class 50-60%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      {"hFlattenicityFT0_50_60", "Flattenicity (FT0) class 50-60%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      // 60-70%
+      {"hFlattenicityParticles_60_70", "Flattenicity (particles) class 60-70%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      {"hFlattenicityFT0_60_70", "Flattenicity (FT0) class 60-70%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      // 70-80%
+      {"hFlattenicityParticles_70_80", "Flattenicity (particles) class 70-80%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      {"hFlattenicityFT0_70_80", "Flattenicity (FT0) class 70-80%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      // 80-90%
+      {"hFlattenicityParticles_80_90", "Flattenicity (particles) class 80-90%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      {"hFlattenicityFT0_80_90", "Flattenicity (FT0) class 80-90%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      // 90-95%
+      {"hFlattenicityParticles_90_95", "Flattenicity (particles) class 90-95%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      {"hFlattenicityFT0_90_95", "Flattenicity (FT0) class 90-95%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      // 95-100%
+      {"hFlattenicityParticles_95_100", "Flattenicity (particles) class 95-100%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
+      {"hFlattenicityFT0_95_100", "Flattenicity (FT0) class 95-100%;1-#rho;Entries", {HistType::kTH1F, {{100, 0.0, 1.0}}}},
     }};
 
   // ============================================
@@ -249,6 +274,72 @@ struct FlattenicityTask {
   }
 
   // ============================================
+  // Helper function to fill multiplicity class histograms
+  // ============================================
+  void fillMultiplicityClass(float flattenicity, float centrality, bool isParticle)
+  {
+    // Particle histograms
+    if (isParticle) {
+      if (centrality < 1) {
+        histos.fill(HIST("hFlattenicityParticles_0_1"), flattenicity);
+      } else if (centrality < 5) {
+        histos.fill(HIST("hFlattenicityParticles_1_5"), flattenicity);
+      } else if (centrality < 10) {
+        histos.fill(HIST("hFlattenicityParticles_5_10"), flattenicity);
+      } else if (centrality < 20) {
+        histos.fill(HIST("hFlattenicityParticles_10_20"), flattenicity);
+      } else if (centrality < 30) {
+        histos.fill(HIST("hFlattenicityParticles_20_30"), flattenicity);
+      } else if (centrality < 40) {
+        histos.fill(HIST("hFlattenicityParticles_30_40"), flattenicity);
+      } else if (centrality < 50) {
+        histos.fill(HIST("hFlattenicityParticles_40_50"), flattenicity);
+      } else if (centrality < 60) {
+        histos.fill(HIST("hFlattenicityParticles_50_60"), flattenicity);
+      } else if (centrality < 70) {
+        histos.fill(HIST("hFlattenicityParticles_60_70"), flattenicity);
+      } else if (centrality < 80) {
+        histos.fill(HIST("hFlattenicityParticles_70_80"), flattenicity);
+      } else if (centrality < 90) {
+        histos.fill(HIST("hFlattenicityParticles_80_90"), flattenicity);
+      } else if (centrality < 95) {
+        histos.fill(HIST("hFlattenicityParticles_90_95"), flattenicity);
+      } else {
+        histos.fill(HIST("hFlattenicityParticles_95_100"), flattenicity);
+      }
+    } else {
+      // FT0 histograms
+      if (centrality < 1) {
+        histos.fill(HIST("hFlattenicityFT0_0_1"), flattenicity);
+      } else if (centrality < 5) {
+        histos.fill(HIST("hFlattenicityFT0_1_5"), flattenicity);
+      } else if (centrality < 10) {
+        histos.fill(HIST("hFlattenicityFT0_5_10"), flattenicity);
+      } else if (centrality < 20) {
+        histos.fill(HIST("hFlattenicityFT0_10_20"), flattenicity);
+      } else if (centrality < 30) {
+        histos.fill(HIST("hFlattenicityFT0_20_30"), flattenicity);
+      } else if (centrality < 40) {
+        histos.fill(HIST("hFlattenicityFT0_30_40"), flattenicity);
+      } else if (centrality < 50) {
+        histos.fill(HIST("hFlattenicityFT0_40_50"), flattenicity);
+      } else if (centrality < 60) {
+        histos.fill(HIST("hFlattenicityFT0_50_60"), flattenicity);
+      } else if (centrality < 70) {
+        histos.fill(HIST("hFlattenicityFT0_60_70"), flattenicity);
+      } else if (centrality < 80) {
+        histos.fill(HIST("hFlattenicityFT0_70_80"), flattenicity);
+      } else if (centrality < 90) {
+        histos.fill(HIST("hFlattenicityFT0_80_90"), flattenicity);
+      } else if (centrality < 95) {
+        histos.fill(HIST("hFlattenicityFT0_90_95"), flattenicity);
+      } else {
+        histos.fill(HIST("hFlattenicityFT0_95_100"), flattenicity);
+      }
+    }
+  }
+
+  // ============================================
   // Process MC collisions
   // ============================================
   void processMC(
@@ -341,31 +432,14 @@ struct FlattenicityTask {
       float rho = computeFlattenicity(truthCounts);
       if (rho > 0) {
         float flattenicity = 1.0 - rho;
-        histos.fill(HIST("hFlattenicity"), flattenicity);
-        histos.fill(HIST("hFlattenicity_vs_Nch"), nchFT0, flattenicity);
-
-        // Multiplicity classes (based on Nch)
-        if (nchFT0 < NchBound10) {
-          histos.fill(HIST("hFlattenicity_0_10"), flattenicity);
-        } else if (nchFT0 < NchBound20) {
-          histos.fill(HIST("hFlattenicity_10_20"), flattenicity);
-        } else if (nchFT0 < NchBound30) {
-          histos.fill(HIST("hFlattenicity_20_30"), flattenicity);
-        } else if (nchFT0 < NchBound40) {
-          histos.fill(HIST("hFlattenicity_30_40"), flattenicity);
-        } else if (nchFT0 < NchBound50) {
-          histos.fill(HIST("hFlattenicity_40_50"), flattenicity);
-        } else if (nchFT0 < NchBound60) {
-          histos.fill(HIST("hFlattenicity_50_60"), flattenicity);
-        } else if (nchFT0 < NchBound70) {
-          histos.fill(HIST("hFlattenicity_60_70"), flattenicity);
-        } else if (nchFT0 < NchBound80) {
-          histos.fill(HIST("hFlattenicity_70_80"), flattenicity);
-        } else if (nchFT0 < NchBound90) {
-          histos.fill(HIST("hFlattenicity_80_90"), flattenicity);
-        } else {
-          histos.fill(HIST("hFlattenicity_90_100"), flattenicity);
-        }
+        histos.fill(HIST("hFlattenicityParticles"), flattenicity);
+        histos.fill(HIST("hFlattenicityParticles_vs_Nch"), nchFT0, flattenicity);
+        // NOTE: percentile-class histograms (hFlattenicityParticles_0_1, etc.)
+        // are NOT filled here, since generator-level MC has no reconstructed
+        // centrality (CentFT0M) to classify by. If gen-level percentile classes
+        // are needed, confirm with Antonio how those should be defined (e.g.
+        // matched to the reconstructed collision's centrality, or a separate
+        // gen-level percentile derived from truth multiplicity).
       }
     }
   }
@@ -376,7 +450,7 @@ struct FlattenicityTask {
   // Process data collisions
   // ============================================
   void processData(
-    aod::Collision const& collision,
+    CollisionsWithCent::iterator const& collision,
     aod::FT0s const& ft0s,
     FullTracks const& tracks)
   {
@@ -384,6 +458,9 @@ struct FlattenicityTask {
     if (std::abs(collision.posZ()) > cfgVzMax) {
       return;
     }
+
+    // Get centrality percentile (0-100)
+    float centrality = collision.centFT0M();
 
     // Find FT0 matching this collision's BC
     auto ft0 = ft0s.begin();
@@ -417,24 +494,42 @@ struct FlattenicityTask {
 
     histos.fill(HIST("hEvents"), 3); // Data events
 
-    // FT0-A channels (0-95)
+    // Compute particle flattenicity
+    float rhoParticles = computeFlattenicity(recoCounts);
+    if (rhoParticles > 0) {
+      float flattenicity = 1.0 - rhoParticles;
+      histos.fill(HIST("hFlattenicityParticles"), flattenicity);
+      fillMultiplicityClass(flattenicity, centrality, true);
+    }
+
+    // Compute flattenicity from FT0 amplitudes
     std::array<float, NCell> ft0Counts{};
-    for (std::size_t i = 0; i < ft0.amplitudeA().size(); i++) {
-      uint8_t channel = ft0.channelA()[i];
-      if (channel < NchA) {
-        ft0Counts[channel] = ft0.amplitudeA()[i];
+
+    // FT0-A channels (0-95)
+    if (ft0.amplitudeA().size() > 0) {
+      for (std::size_t i = 0; i < ft0.amplitudeA().size(); i++) {
+        uint8_t channel = ft0.channelA()[i];
+        if (channel < NchA) {
+          ft0Counts[channel] = ft0.amplitudeA()[i];
+        }
       }
     }
+
     // FT0-C channels (96-207)
-    for (std::size_t i = 0; i < ft0.amplitudeC().size(); i++) {
-      uint8_t channel = ft0.channelC()[i];
-      if (channel < NchC) {
-        ft0Counts[NchA + channel] = ft0.amplitudeC()[i];
+    if (ft0.amplitudeC().size() > 0) {
+      for (std::size_t i = 0; i < ft0.amplitudeC().size(); i++) {
+        uint8_t channel = ft0.channelC()[i];
+        if (channel < NchC) {
+          ft0Counts[NchA + channel] = ft0.amplitudeC()[i];
+        }
       }
     }
-    float rho = computeFlattenicity(ft0Counts);
-    if (rho > 0) {
-      histos.fill(HIST("hFlattenicity"), 1.0 - rho);
+
+    float rhoFT0 = computeFlattenicity(ft0Counts);
+    if (rhoFT0 > 0) {
+      float flattenicity = 1.0 - rhoFT0;
+      histos.fill(HIST("hFlattenicityFT0"), flattenicity);
+      fillMultiplicityClass(flattenicity, centrality, false);
     }
   }
 
