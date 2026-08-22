@@ -54,8 +54,6 @@
 #include <utility>
 #include <vector>
 
-#include <math.h>
-
 struct dimuonV1 {
 
   // // Configurables
@@ -82,6 +80,7 @@ struct dimuonV1 {
   o2::framework::Configurable<float> cfgRotationMin{"cfgRotationMin", -M_PI / 4, "min. rotation angle for rotation bkg"};
   o2::framework::Configurable<float> cfgRotationMax{"cfgRotationMax", +M_PI / 4, "max. rotation angle for rotation bkg"};
   o2::framework::Configurable<bool> cfgUseRapidity{"cfgUseRapidity", true, "flag to use rapidity. if false, pseudorapidity"};
+  o2::framework::Configurable<bool> cfgUsePDGJPsiMass{"cfgUsePDGJPsiMass", true, "flag to use pdg mass of Jpsi"};
 
   EMEventCut fEMEventCut;
   struct : o2::framework::ConfigurableGroup {
@@ -328,6 +327,7 @@ struct dimuonV1 {
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), RecoDecay::constrainAngle(t1.phi(), 0, 1U), o2::constants::physics::MassMuon);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), RecoDecay::constrainAngle(t2.phi(), 0, 1U), o2::constants::physics::MassMuon);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+    ROOT::Math::PtEtaPhiMVector v12pdg(v12.Pt(), v12.Eta(), v12.Phi(), o2::constants::physics::MassJPsi);
     float phi = RecoDecay::constrainAngle(v12.Phi(), 0, 1U);
 
     float uxQxt = std::cos(1.f * phi) * collision.qxZDCC();
@@ -337,7 +337,11 @@ struct dimuonV1 {
 
     if (t1.sign() * t2.sign() < 0) { // ULS
       if (cfgUseRapidity) {
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), uxQxp - uxQxt, uyQyp - uyQyt, centrality, weight);
+        if (cfgUsePDGJPsiMass) {
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), v12pdg.Rapidity(), uxQxp - uxQxt, uyQyp - uyQyt, centrality, weight);
+        } else {
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), v12.Rapidity(), uxQxp - uxQxt, uyQyp - uyQyt, centrality, weight);
+        }
       } else {
         fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), v12.Eta(), uxQxp - uxQxt, uyQyp - uyQyt, centrality, weight);
       }
@@ -346,8 +350,13 @@ struct dimuonV1 {
         float dphi = distDPhi(engine);
         ROOT::Math::PtEtaPhiMVector v2rot(t2.pt(), t2.eta(), RecoDecay::constrainAngle(t2.phi() + M_PI + dphi, 0, 1U), o2::constants::physics::MassMuon);
         ROOT::Math::PtEtaPhiMVector v12bkg = v1 + v2rot;
+        ROOT::Math::PtEtaPhiMVector v12bkgpdg(v12bkg.Pt(), v12bkg.Eta(), v12bkg.Phi(), o2::constants::physics::MassJPsi);
         if (cfgUseRapidity) {
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hsRotBkg"), v12bkg.M(), v12bkg.Pt(), v12bkg.Rapidity(), weight * 1.f / static_cast<float>(cfgNrotation));
+          if (cfgUsePDGJPsiMass) {
+            fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hsRotBkg"), v12bkgpdg.M(), v12bkg.Pt(), v12bkg.Rapidity(), weight * 1.f / static_cast<float>(cfgNrotation));
+          } else {
+            fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hsRotBkg"), v12bkg.M(), v12bkg.Pt(), v12bkg.Rapidity(), weight * 1.f / static_cast<float>(cfgNrotation));
+          }
         } else {
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hsRotBkg"), v12bkg.M(), v12bkg.Pt(), v12bkg.Eta(), weight * 1.f / static_cast<float>(cfgNrotation));
         }
