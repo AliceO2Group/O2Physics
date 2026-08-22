@@ -739,13 +739,14 @@ struct TwoParticleCorrelationsMpi {
     pairAcceptanceMaps.clear();
     pairAcceptanceEtaVertexMaps.clear();
     pairAcceptanceSchemaVersion = schema.Atoi();
-    if (pairAcceptanceSchemaVersion == 2) {
+    int multiplicityDependentOnly = 2;
+    if (pairAcceptanceSchemaVersion == multiplicityDependentOnly) {
       pairAcceptanceMaps.resize(nMultiplicityBins);
     } else {
       pairAcceptanceEtaVertexMaps.resize(nMultiplicityBins);
     }
     for (int multBin = 0; multBin < nMultiplicityBins; ++multBin) {
-      if (pairAcceptanceSchemaVersion == 2) {
+      if (pairAcceptanceSchemaVersion == multiplicityDependentOnly) {
         auto* inputMap = dynamic_cast<TH3D*>(findObject(Form("pairAcceptance_mult_%d", multBin)));
         auto* clone = inputMap != nullptr ? dynamic_cast<TH3D*>(inputMap->Clone(Form("loadedPairAcceptance_mult_%d", multBin))) : nullptr;
         if (clone == nullptr) {
@@ -898,7 +899,8 @@ struct TwoParticleCorrelationsMpi {
   double getPairAcceptance(double multiplicity, double deltaPhi, double deltaEta, double posZ) const
   {
     const int multBin = findPairAcceptanceMultiplicityBin(multiplicity);
-    if (pairAcceptanceSchemaVersion == 3) {
+    int etaVertexMultiplicityDependentOnly = 3;
+    if (pairAcceptanceSchemaVersion == etaVertexMultiplicityDependentOnly) {
       if (multBin < 0 || multBin >= static_cast<int>(pairAcceptanceEtaVertexMaps.size()) || pairAcceptanceEtaVertexMaps[multBin] == nullptr) {
         return 0.0;
       }
