@@ -841,8 +841,8 @@ struct TrackBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
 
 struct ConfTrackTablesDerivedToDerived : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("TrackTables");
-  o2::framework::Configurable<int> limitTrack1{"limitTrack1", 1, "At least this many tracks of type 1 need to be in the collision. Ignored if set to 0."};
-  o2::framework::Configurable<int> limitTrack2{"limitTrack2", 0, "At least this many tracks of type 2 need to be in the collision. Ignored if set to 0."};
+  o2::framework::Configurable<int> limitTrack1{"limitTrack1", 1, "Require at least this many tracks of type 1 in the collision. Set to 0 to skip this track species entirely (not written to output)."};
+  o2::framework::Configurable<int> limitTrack2{"limitTrack2", 1, "Require at least this many tracks of type 2 in the collision. Set to 0 to skip this track species entirely (not written to output)."};
 };
 
 class TrackBuilderDerivedToDerived
@@ -863,13 +863,18 @@ class TrackBuilderDerivedToDerived
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
-  bool collisionHasTooFewTracks(T1& col, T2& /*trackTable*/, T3& partitionTrack1, T4& partitionTrack2, T5& cache)
+  bool collisionHasTooFewTracks(T1 const& col, T2 const& /*tracks*/, T3& partitionTrack1, T4& partitionTrack2, T5& cache) const
   {
-    auto trackSlice1 = partitionTrack1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    auto trackSlice2 = partitionTrack2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-
-    const bool tooFew1 = (mLimitTrack1 > 0) && (trackSlice1.size() < static_cast<int64_t>(mLimitTrack1));
-    const bool tooFew2 = (mLimitTrack2 > 0) && (trackSlice2.size() < static_cast<int64_t>(mLimitTrack2));
+    bool tooFew1 = false;
+    if (mLimitTrack1 > 0) {
+      auto slice1 = partitionTrack1->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+      tooFew1 = slice1.size() < static_cast<int64_t>(mLimitTrack1);
+    }
+    bool tooFew2 = false;
+    if (mLimitTrack2 > 0) {
+      auto slice2 = partitionTrack2->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
+      tooFew2 = slice2.size() < static_cast<int64_t>(mLimitTrack2);
+    }
     return tooFew1 || tooFew2;
   }
 

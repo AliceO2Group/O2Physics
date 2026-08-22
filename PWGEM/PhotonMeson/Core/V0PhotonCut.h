@@ -36,6 +36,7 @@
 #include <sys/types.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <concepts>
 #include <cstddef>
@@ -837,23 +838,20 @@ class V0PhotonCut : public TNamed
         return std::pow(v0.alpha() / mMaxAlpha, 2) + std::pow(v0.qtarm() / mMaxQt, 2) < 1.0;
 
       // TODO: implement fully
-      case V0PhotonCuts::kPsiPair: {
-        if constexpr (requires { v0.psipair(); }) {
-          // return (std::fabs(v0.psipair() < 0.18f * std::exp( -0.55f * v0.chiSquareNDF())));
-          return true;
-        } else {
-          return true;
-        }
-      }
-
+      case V0PhotonCuts::kPsiPair:
+        // if constexpr (requires { v0.psipair(); }) {
+        //   return (std::fabs(v0.psipair() < 0.18f * std::exp( -0.55f * v0.chiSquareNDF())));
+        // } else {
+        //   return true;
+        // }
       // TODO: implement fully
-      case V0PhotonCuts::kPhiV: {
-        if constexpr (requires { v0.phiv(); }) {
-          return true;
-        } else {
-          return true;
-        }
-      }
+      case V0PhotonCuts::kPhiV:
+        return true;
+        // if constexpr (requires { v0.phiv(); }) {
+        //   return true;
+        // } else {
+        //   return true;
+        // }
 
       case V0PhotonCuts::kRxy: {
         if (v0.v0radius() < mMinRxy || mMaxRxy < v0.v0radius()) {
@@ -922,7 +920,7 @@ class V0PhotonCut : public TNamed
         return !(dxy > margin_xy);
       }
       case V0PhotonCuts::kIsTooClose: {
-        if (mRejectMask.size() == 0) {
+        if (mRejectMask.empty()) {
           return true;
         }
         return (mRejectMask[v0.globalIndex()] == 0);

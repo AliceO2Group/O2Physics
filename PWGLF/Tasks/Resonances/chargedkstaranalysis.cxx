@@ -122,6 +122,9 @@ struct Chargedkstaranalysis {
     // Other cuts on Ks
     Configurable<int> rotationalCut{"rotationalCut", 6, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
 
+    // for Kinematics checks
+    Configurable<bool> genKinematicsChecks{"genKinematicsChecks", false, "Activate the Kinematics cuts on the gen MC"};
+
     // fixed variables
     float rapidityMotherData = 0.5;
     float beamEnergy = 13600.0;
@@ -1446,15 +1449,35 @@ struct Chargedkstaranalysis {
         const int pdg1 = d1.pdgCode();
         if (pdg1 == pionWanted) {
           lDecayDaughter_bach = LorentzVectorSetXYZM(d1.px(), d1.py(), d1.pz(), MassPionCharged);
+          if (helicityCfgs.genKinematicsChecks) {
+            if (lDecayDaughter_bach.pt() <= trackCutCfgs.cMinPtcut || std::abs(lDecayDaughter_bach.eta()) >= trackCutCfgs.cMaxEtacut) {
+              continue;
+            }
+          }
           hasRightPion = true;
         } else if (std::abs(pdg1) == kPDGK0) {
           for (const auto& d2 : d1.template daughters_as<aod::McParticles>()) {
             if (std::abs(d2.pdgCode()) == kPDGK0s) {
+              if (helicityCfgs.genKinematicsChecks) {
+                if (d2.pt() <= secondaryCutsCfgs.cSecondaryPtMin || std::abs(d2.eta()) >= secondaryCutsCfgs.cSecondaryRapidityMax) {
+                  continue;
+                }
+              }
               bool seenPip = false, seenPim = false;
               for (const auto& d3 : d2.template daughters_as<aod::McParticles>()) {
                 if (d3.pdgCode() == +kPiPlus) {
+                  if (helicityCfgs.genKinematicsChecks) {
+                    if (d3.pt() <= trackCutCfgs.cMinPtcut || std::abs(d3.eta()) >= trackCutCfgs.cMaxEtacut) {
+                      continue;
+                    }
+                  }
                   seenPip = true;
                 } else if (d3.pdgCode() == -kPiPlus) {
+                  if (helicityCfgs.genKinematicsChecks) {
+                    if (d3.pt() <= trackCutCfgs.cMinPtcut || std::abs(d3.eta()) >= trackCutCfgs.cMaxEtacut) {
+                      continue;
+                    }
+                  }
                   seenPim = true;
                 }
               }

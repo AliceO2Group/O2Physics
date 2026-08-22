@@ -296,6 +296,37 @@ class TrackCascadePairCleaner : public BasePairCleaner
   }
 };
 
+class TrackLcPairCleaner : public BasePairCleaner
+{
+ public:
+  TrackLcPairCleaner() = default;
+  template <typename T1, typename T2, typename T3>
+  bool isCleanPair(T1 const& track, T2 const& lc, T3 const& trackTable) const
+  {
+    auto prong0 = trackTable.rawIteratorAt(lc.prong0DauId() - trackTable.offset());
+    auto prong1 = trackTable.rawIteratorAt(lc.prong1DauId() - trackTable.offset());
+    auto prong2 = trackTable.rawIteratorAt(lc.prong2DauId() - trackTable.offset());
+    return (this->isCleanParticlePair(prong0, track) && this->isCleanParticlePair(prong1, track) && this->isCleanParticlePair(prong2, track));
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5>
+  bool isCleanPair(T1 const& track1, T2 const& lc, T3 const& trackTable, T4 const& mcParticles, T5 const& partonicMothers) const
+  {
+    if (!this->isCleanPair(track1, lc, trackTable)) {
+      return false;
+    }
+    // pair is clean
+    // now check if we require common or non-common ancestry
+    if (mMixPairsWithCommonAncestor) {
+      return this->pairHasCommonAncestor(track1, lc, mcParticles, partonicMothers);
+    }
+    if (mMixPairsWithNonCommonAncestor) {
+      return this->pairHasNonCommonAncestor(track1, lc, mcParticles, partonicMothers);
+    }
+    return true;
+  }
+};
+
 class McParticleMcParticlePairCleaner : public BasePairCleaner
 {
  public:

@@ -30,6 +30,7 @@
 #include <CommonConstants/MathConstants.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>
+#include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -778,7 +779,7 @@ struct PCMQCMC {
           if (cfgResolDetailPlots) {
             fRegistry.fill(HIST("Generated/hPtEtaPhi"), mctrack.pt(), mctrack.eta(), mctrack.phi()); // fill for all generated photons before any kinematic cut
           }
-          if (mctrack.daughtersIds().size() == 0) {
+          if (mctrack.daughtersIds().empty()) {
             continue;
           }
           auto daughter = mcparticles.iteratorAt(mctrack.daughtersIds()[0]); // choose ele or pos.

@@ -14,10 +14,11 @@
 /// \author daiki.sekihata@cern.ch
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/Zorro.h"
 #include "Common/DataModel/EventSelection.h"
 
+#include <CCDB/BasicCCDBManager.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -25,22 +26,24 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TH1.h>
+
 #include <string>
 
 using namespace o2;
 using namespace o2::soa;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::constants::physics;
 
 struct testPV {
 
   // Configurables
-  // Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   struct : ConfigurableGroup {
     std::string prefix = "eventCut";
     Configurable<int> cfgEventGeneratorId{"cfgEventGeneratorId", -1, "event generator index. e.g. select gap/signal events"};
+    Configurable<float> cfgChi2PerNcontribMax{"cfgChi2PerNcontribMax", 1e+10, "max. chi2/Ncontrib of PV"};
     Configurable<float> cfgZvtxMin{"cfgZvtxMin", -10.f, "min. Zvtx"};
     Configurable<float> cfgZvtxMax{"cfgZvtxMax", 10.f, "max. Zvtx"};
     Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", true, "require FT0AND"};
@@ -50,6 +53,7 @@ struct testPV {
     Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
     Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"};             // ITS-TPC matched track contributes PV.
     Configurable<bool> cfgRequireVertexTOFmatched{"cfgRequireVertexTOFmatched", false, "require Vertex TOFmatched in event cut"}; // ITS-TPC-TOF matched track contributes PV.
+
     // for RCT
     o2::framework::Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", true, "require good detector flag in run condtion table"};
     o2::framework::Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
@@ -57,14 +61,23 @@ struct testPV {
     o2::framework::Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
   } eventCut;
 
+  // for zorro
+  struct : ConfigurableGroup {
+    std::string prefix = "zorroGroup";
+    Configurable<std::string> cfgTriggerName{"cfgTriggerName", "fGlobalDimuon", "desired software trigger name"};
+    Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "EventFiltering/Zorro/", "ccdb path for ZORRO objects"};
+    Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
+  } zorroGroup;
+
   HistogramRegistry fRegistry{"fRegistry"};
+  Zorro zorro;
 
   void init(o2::framework::InitContext&)
   {
-    // ccdb->setURL(ccdburl);
-    // ccdb->setCaching(true);
-    // ccdb->setLocalObjectValidityChecking();
-    // ccdb->setFatalWhenNull(false);
+    ccdb->setURL(ccdburl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
 
     mRunNumber = 0;
 
@@ -72,13 +85,19 @@ struct testPV {
   }
 
   int mRunNumber{0};
-  // Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  template <typename TBC>
+  template <bool isTriggerAnalysis, typename TBC>
   void initCCDB(TBC const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
       return;
+    }
+
+    if constexpr (isTriggerAnalysis) {
+      zorro.setCCDBpath(zorroGroup.ccdbPathSoftwareTrigger);
+      zorro.setBCtolerance(zorroGroup.bcMarginForSoftwareTrigger); // this does nothing.
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), zorroGroup.cfgTriggerName.value);
     }
 
     mRunNumber = bc.runNumber();
@@ -99,12 +118,14 @@ struct testPV {
     fRegistry.add("Vertex/hSigmaY", "vertex #sigma_{Y} vs. N_{contrib};N_{contrib};#sigma_{Y} (#mum)", kTH2F, {{101, -0.5, 100.5}, {1000, 0, 100}}, false);
     fRegistry.add("Vertex/hSigmaZ", "vertex #sigma_{Z} vs. N_{contrib};N_{contrib};#sigma_{Z} (#mum)", kTH2F, {{101, -0.5, 100.5}, {1000, 0, 100}}, false);
 
-    fRegistry.add("Vertex/hDeltaX", "vertex #DeltaX vs. N_{contrib};N_{contrib};#DeltaX = (X_{rec} #minus X_{gen})/#sigma_{X}", kTH2F, {{101, -0.5, 100.5}, {200, -10, 10}}, false);
-    fRegistry.add("Vertex/hDeltaY", "vertex #DeltaY vs. N_{contrib};N_{contrib};#DeltaY = (Y_{rec} #minus Y_{gen})/#sigma_{Y}", kTH2F, {{101, -0.5, 100.5}, {200, -10, 10}}, false);
-    fRegistry.add("Vertex/hDeltaZ", "vertex #DeltaZ vs. N_{contrib};N_{contrib};#DeltaZ = (Z_{rec} #minus Z_{gen})/#sigma_{Z}", kTH2F, {{101, -0.5, 100.5}, {200, -10, 10}}, false);
-
     fRegistry.add("Vertex/hCollisionTime", "vertex time;N_{contrib};collision time (ns)", kTH2F, {{101, -0.5, 100.5}, {500, -25, 25}}, false);
     fRegistry.add("Vertex/hCollisionTimeRes", "vertex time resolution;N_{contrib};collision time resolution (ns)", kTH2F, {{101, -0.5, 100.5}, {250, 0, 25}}, false);
+
+    if (doprocessMC) {
+      fRegistry.add("Vertex/hDeltaX", "vertex #DeltaX vs. N_{contrib};N_{contrib};#DeltaX = (X_{rec} #minus X_{gen})/#sigma_{X}", kTH2F, {{101, -0.5, 100.5}, {200, -10, 10}}, false);
+      fRegistry.add("Vertex/hDeltaY", "vertex #DeltaY vs. N_{contrib};N_{contrib};#DeltaY = (Y_{rec} #minus Y_{gen})/#sigma_{Y}", kTH2F, {{101, -0.5, 100.5}, {200, -10, 10}}, false);
+      fRegistry.add("Vertex/hDeltaZ", "vertex #DeltaZ vs. N_{contrib};N_{contrib};#DeltaZ = (Z_{rec} #minus Z_{gen})/#sigma_{Z}", kTH2F, {{101, -0.5, 100.5}, {200, -10, 10}}, false);
+    }
   }
 
   template <typename TCollision>
@@ -134,11 +155,14 @@ struct testPV {
     if (eventCut.cfgRequireVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
       return false;
     }
+    if (collision.chi2() / collision.numContrib() > eventCut.cfgChi2PerNcontribMax) {
+      return false;
+    }
     return true;
   }
 
-  template <typename TCollision, typename TMCCollision>
-  void fillVertexHistograms(TCollision const& collision, TMCCollision const& mcCollision)
+  template <typename TCollision>
+  void fillVertexHistograms(TCollision const& collision)
   {
     fRegistry.fill(HIST("Vertex/hZvtx"), collision.posZ());
     fRegistry.fill(HIST("Vertex/hNContrib"), collision.numContrib());
@@ -149,27 +173,31 @@ struct testPV {
     fRegistry.fill(HIST("Vertex/hSigmaY"), collision.numContrib(), std::sqrt(collision.covYY()) * 1e+4); // convert cm to um
     fRegistry.fill(HIST("Vertex/hSigmaZ"), collision.numContrib(), std::sqrt(collision.covZZ()) * 1e+4); // convert cm to um
 
-    fRegistry.fill(HIST("Vertex/hDeltaX"), collision.numContrib(), (collision.posX() - mcCollision.posX()) / std::sqrt(collision.covXX()));
-    fRegistry.fill(HIST("Vertex/hDeltaY"), collision.numContrib(), (collision.posY() - mcCollision.posY()) / std::sqrt(collision.covYY()));
-    fRegistry.fill(HIST("Vertex/hDeltaZ"), collision.numContrib(), (collision.posZ() - mcCollision.posZ()) / std::sqrt(collision.covZZ()));
-
     fRegistry.fill(HIST("Vertex/hCollisionTime"), collision.numContrib(), collision.collisionTime());
     fRegistry.fill(HIST("Vertex/hCollisionTimeRes"), collision.numContrib(), collision.collisionTimeRes());
   }
 
-  template <typename TBCs, typename TCollisions, typename TMCCollisions, typename TMCParticles>
+  template <bool isMC, bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TMCCollisions, typename TMCParticles>
   void run(TBCs const&, TCollisions const& collisions, TMCCollisions const&, TMCParticles const&)
   {
     for (const auto& collision : collisions) {
-      if (!collision.has_mcCollision()) {
-        continue;
-      }
       auto bc = collision.template bc_as<TBCs>();
-      initCCDB(bc);
+      initCCDB<isTriggerAnalysis>(bc);
 
-      auto mcCollision = collision.template mcCollision_as<aod::McCollisions>();
-      if (eventCut.cfgEventGeneratorId > -1 && mcCollision.getSubGeneratorId() != eventCut.cfgEventGeneratorId) {
-        continue;
+      if constexpr (isMC) {
+        if (!collision.has_mcCollision()) {
+          continue;
+        }
+        auto mcCollision = collision.template mcCollision_as<TMCCollisions>();
+        if (eventCut.cfgEventGeneratorId > -1 && mcCollision.getSubGeneratorId() != eventCut.cfgEventGeneratorId) {
+          continue;
+        }
+      }
+
+      if constexpr (isTriggerAnalysis) {
+        if (!zorro.isSelected(bc.globalBC(), zorroGroup.bcMarginForSoftwareTrigger)) { // triggered event
+          continue;
+        }
       }
 
       fRegistry.fill(HIST("hCollisionCounter"), 1);
@@ -177,24 +205,44 @@ struct testPV {
       if (!isSelectedCollision(collision)) {
         continue;
       }
-      fRegistry.fill(HIST("hCollisionCounter"), 2);
 
-      fillVertexHistograms(collision, mcCollision);
+      fRegistry.fill(HIST("hCollisionCounter"), 2);
+      fillVertexHistograms(collision);
+      if constexpr (isMC) {
+        auto mcCollision = collision.template mcCollision_as<TMCCollisions>();
+        fRegistry.fill(HIST("Vertex/hDeltaX"), collision.numContrib(), (collision.posX() - mcCollision.posX()) / std::sqrt(collision.covXX()));
+        fRegistry.fill(HIST("Vertex/hDeltaY"), collision.numContrib(), (collision.posY() - mcCollision.posY()) / std::sqrt(collision.covYY()));
+        fRegistry.fill(HIST("Vertex/hDeltaZ"), collision.numContrib(), (collision.posZ() - mcCollision.posZ()) / std::sqrt(collision.covZZ()));
+      }
 
     } // end of collision loop
   }
 
-  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+  using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
   using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 
   Filter collisionFilter_evsel = eventCut.cfgZvtxMin < o2::aod::collision::posZ && o2::aod::collision::posZ < eventCut.cfgZvtxMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
+  using FilteredMyCollisionsMC = soa::Filtered<MyCollisionsMC>;
 
-  void processMC(FilteredMyCollisions const& collisions, MyBCs const& bcs, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  void processData(FilteredMyCollisions const& collisions, MyBCs const& bcs)
   {
-    run(bcs, collisions, mcCollisions, mcParticles);
+    run<false, false>(bcs, collisions, nullptr, nullptr);
   }
-  PROCESS_SWITCH(testPV, processMC, "processMC", true);
+  PROCESS_SWITCH(testPV, processData, "processData", true);
+
+  void processTriggeredData(FilteredMyCollisions const& collisions, MyBCs const& bcs)
+  {
+    run<false, true>(bcs, collisions, nullptr, nullptr);
+  }
+  PROCESS_SWITCH(testPV, processTriggeredData, "processTriggeredData", true);
+
+  void processMC(FilteredMyCollisionsMC const& collisions, MyBCs const& bcs, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  {
+    run<true, false>(bcs, collisions, mcCollisions, mcParticles);
+  }
+  PROCESS_SWITCH(testPV, processMC, "processMC", false);
 
   void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(testPV, processDummy, "processDummy", false);

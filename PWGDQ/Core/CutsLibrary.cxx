@@ -3273,8 +3273,14 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (nameStr == "muonStreamSelection") {
-    cut->AddCut(GetAnalysisCut("muonStreamSelection"));
+  if (nameStr == "muonMchAndMchMid") {
+    cut->AddCut(GetAnalysisCut("muonMchAndMchMid"));
+    return cut;
+  }
+
+  if (nameStr == "muonStreamCuts") {
+    cut->AddCut(GetAnalysisCut("muonMchAndMchMid"));
+    cut->AddCut(GetAnalysisCut("muonMinimalCuts10SigmaPDCA"));
     return cut;
   }
 
@@ -6706,7 +6712,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (nameStr == "muonStreamSelection") {
+  if (nameStr == "muonMchAndMchMid") {
     cut->AddCut(VarManager::kMuonTrackType, 2.5, 4.5); // selecting both MCH and MCH-MID tracks
     return cut;
   }

@@ -65,7 +65,8 @@ struct ConfCascadeFilters : o2::framework::ConfigurableGroup {
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define CASCADE_DEFAULT_BITS                                                                                                                                           \
   o2::framework::Configurable<bool> passThrough{"passThrough", false, "If true, all Cascades are passed through. Bits for all selections are stored."};                \
-  o2::framework::Configurable<std::vector<float>> cascadeCpaMin{"cascadeCpaMin", {0.95f}, "Minimum cosine of pointing angle"};                                         \
+  o2::framework::Configurable<std::vector<std::string>> cascadeCpaMin{"cascadeCpaMin", {"0.95"}, "Minimum CPA as TFormula, x=pt"};                                     \
+  o2::framework::Configurable<std::vector<std::string>> cascadePaMax{"cascadePaMax", {}, "Maximum pointing angle (rad) as TFormula, x=pt. Empty to disable"};          \
   o2::framework::Configurable<std::vector<float>> cascadeTransRadMin{"cascadeTransRadMin", {0.9f}, "Minimum transverse radius (cm)"};                                  \
   o2::framework::Configurable<std::vector<float>> cascadeDcaDauMax{"cascadeDcaDauMax", {0.25f}, "Maximum DCA between the daughters at decay vertex (cm)"};             \
   o2::framework::Configurable<std::vector<float>> lambdaCpaMin{"lambdaCpaMin", {0.78f}, "Minimum cosine of pointing angle"};                                           \
@@ -128,6 +129,7 @@ struct ConfOmegaSelection : o2::framework::ConfigurableGroup {
 enum CascadeSels {
   // selections for cascades
   kCascadeCpaMin,      ///< Min. CPA (cosine pointing angle)
+  kCascadePaMax,       ///< Max. PA (pointing angle in rad); disabled by default
   kCascadeDcaDaughMax, ///< Max. DCA of the daughers at decay vertex
   kCascadeTransRadMin, ///< max. transverse radius
 
@@ -162,6 +164,7 @@ constexpr char OmegaSelHistName[] = "hOmegaSelection";
 constexpr char CascadeSelsName[] = "Cascade Selection Object";
 const std::unordered_map<CascadeSels, std::string> cascadeSelectionNames = {
   {kCascadeCpaMin, "Cascade CPA Min"},
+  {kCascadePaMax, "Cascade PA Max"},
   {kCascadeDcaDaughMax, "Cascade DCA Daughters Max"},
   {kCascadeTransRadMin, "Cascade Transverse Radius Min"},
 
@@ -270,7 +273,8 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
     this->addSelection(kPosDauTof, cascadeSelectionNames.at(kPosDauTof), config.posDauTof.value, limits::kAbsUpperLimit, true, mRequireTof, false);
     this->addSelection(kNegDauTof, cascadeSelectionNames.at(kNegDauTof), config.negDauTof.value, limits::kAbsUpperLimit, true, mRequireTof, false);
 
-    this->addSelection(kCascadeCpaMin, cascadeSelectionNames.at(kCascadeCpaMin), config.cascadeCpaMin.value, limits::kLowerLimit, true, true, false);
+    this->addSelection(kCascadeCpaMin, cascadeSelectionNames.at(kCascadeCpaMin), filter.ptMin.value, filter.ptMax.value, config.cascadeCpaMin.value, limits::kLowerFunctionLimit, true, true, false);
+    this->addSelection(kCascadePaMax, cascadeSelectionNames.at(kCascadePaMax), filter.ptMin.value, filter.ptMax.value, config.cascadePaMax.value, limits::kUpperFunctionLimit, true, true, false);
     this->addSelection(kCascadeTransRadMin, cascadeSelectionNames.at(kCascadeTransRadMin), config.cascadeTransRadMin.value, limits::kLowerLimit, true, true, false);
     this->addSelection(kCascadeDcaDaughMax, cascadeSelectionNames.at(kCascadeDcaDaughMax), config.cascadeDcaDauMax.value, limits::kUpperLimit, true, true, false);
     this->addSelection(kLambdaCpaMin, cascadeSelectionNames.at(kLambdaCpaMin), config.lambdaCpaMin.value, limits::kLowerLimit, true, true, false);
@@ -307,7 +311,11 @@ class CascadeSelection : public baseselection::BaseSelection<float, o2::analysis
   {
     this->reset();
     // cascade selections
-    this->evaluateObservable(kCascadeCpaMin, cascade.casccosPA(col.posX(), col.posY(), col.posZ()));
+    const float cpa = cascade.casccosPA(col.posX(), col.posY(), col.posZ());
+    this->updateLimits(kCascadeCpaMin, cascade.pt());
+    this->evaluateObservable(kCascadeCpaMin, cpa);
+    this->updateLimits(kCascadePaMax, cascade.pt());
+    this->evaluateObservable(kCascadePaMax, std::acos(cpa));
     this->evaluateObservable(kCascadeDcaDaughMax, cascade.dcacascdaughters());
     this->evaluateObservable(kCascadeTransRadMin, cascade.cascradius());
 
@@ -779,8 +787,8 @@ class CascadeBuilder
 
 struct ConfCascadeTablesDerivedToDerived : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CascadeTables");
-  o2::framework::Configurable<int> limitXi{"limitXi", 1, "At least this many xi need to be in the collision"};
-  o2::framework::Configurable<int> limitOmega{"limitOmega", 0, "At least this many omega need to be in the collision"};
+  o2::framework::Configurable<int> limitXi{"limitXi", 1, "Require at least this many Xis in the collision. Set to 0 to skip Xis entirely (not written to output)."};
+  o2::framework::Configurable<int> limitOmega{"limitOmega", 0, "Require at least this many Omegas in the collision. Set to 0 to skip Omegas entirely (not written to output)."};
 };
 
 struct CascadeBuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
