@@ -302,7 +302,25 @@ struct HStrangeCorrelation {
 
   struct : ConfigurableGroup {
     std::string prefix = "pairLossK0Configurations";
-    Configurable<bool> compactComparisonMode{"compactComparisonMode", false, "write only the Rec/Truth/Gen/Final comparison and cumulative Rec control variants; suppress the original PairLoss diagnostic suite"};
+    // processPairLossK0MC is split into three independent parts. Each has its own
+    // switch, they write into disjoint folders, and any combination of them may
+    // run in the same job -- including all three at once.
+    //   doStageDiagnostics  PairLossK0/{Stage,State,Geometry,Matching,Response,
+    //                       TrackQA,V0QA}: the truth-pair reconstruction ladder
+    //                       and its close-pair diagnostics
+    //   doRecComparison     PairLossK0/Comparison: the cumulative
+    //                       Rec/Truth/Gen/Final variant ladder. Runs the exact
+    //                       reconstructed correlation path internally, so
+    //                       processSameEventHV0s must be off when it is on.
+    //   doGenLevelStudy     PairLossK0/GenStudy: generator-level only, see the
+    //                       comment on runGenLevelStudy in processPairLossK0MC
+    Configurable<bool> doStageDiagnostics{"doStageDiagnostics", true, "part 1: fill the PairLossK0 truth-pair reconstruction ladder and its diagnostics"};
+    Configurable<bool> doRecComparison{"doRecComparison", false, "part 2: fill the PairLossK0/Comparison cumulative Rec/Truth/Gen/Final ladder (runs the exact reconstructed path internally)"};
+    Configurable<bool> doGenLevelStudy{"doGenLevelStudy", false, "part 3: fill the PairLossK0/GenStudy generated-vs-reconstructed split, using generator-level event selection only"};
+    // Generated charged multiplicity of the MC collision, counted in |eta| < 0.8
+    // by mCounter. Plain ConfigurableAxis: unlike the correlation axes it is NOT
+    // trimmed by skipUnderOverflowInTHn, so what you configure is what you get.
+    ConfigurableAxis axisGenStudyNch{"axisGenStudyNch", {VARIABLE_WIDTH, 0.0f, 2.0f, 5.0f, 10.0f, 15.0f, 20.0f, 25.0f, 30.0f, 40.0f, 60.0f, 100.0f}, "generated charged multiplicity in |#eta| < 0.8"};
     Configurable<bool> doClosureTestStages{"doClosureTestStages", true, "create and fill the whole ClosureTest/PairLossK0 folder: the truth and any-reconstructed-object stages of the truth h-K0 pair, mirroring the first processPairLossK0MC stages"};
     Configurable<bool> applyRecoEventSelection{"applyRecoEventSelection", true, "apply the standard reconstructed-event selection in the K0 pair-loss diagnostic"};
     Configurable<float> daughterPtMin{"daughterPtMin", 0.05f, "minimum generated daughter pT for the findable K0 category"};
@@ -621,7 +639,7 @@ struct HStrangeCorrelation {
   };
 
   // Per-MC-collision context used only while the ordinary Rec implementation
-  // is running inside compact PairLoss comparison mode. It is thread-local
+  // is running inside the PairLoss Rec comparison part. It is thread-local
   // static because adding another task data member exceeds the number of
   // elements supported by the O2 task-reflection machinery.
   struct PairLossComparisonContext {
@@ -1440,7 +1458,7 @@ struct HStrangeCorrelation {
               }
               fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/Signal/") + HIST(V0names[Index])), binFillThn, etaWeight, efficiency * efficiencyTrigg, totalEffUncert, purityTrigg, purityTriggErr);
 
-              // Compact PairLoss control study. Stage 0 is filled from this
+              // PairLoss Rec control study. Stage 0 is filled from this
               // exact Rec signal branch, so it is not a hand-written
               // approximation of the reconstructed pair selection. Each next
               // stage adds exactly one cumulative condition.
@@ -2477,7 +2495,7 @@ struct HStrangeCorrelation {
     const AxisSpec axisMultNDim{edgesMult, "mult percentile"};
     const AxisSpec axisMultiplicityNDim{edgesMultiplicity, "Multiplicity"};
 
-    if (doprocessPairLossK0MC && !pairLossK0Configurations.compactComparisonMode) {
+    if (doprocessPairLossK0MC && pairLossK0Configurations.doStageDiagnostics) {
       const AxisSpec axisPairLossEventStage{6, -0.5, 5.5, "Event-selection stage"};
       const AxisSpec axisPairLossNRecoCollisions{11, -0.5, 10.5, "#it{N}_{reco collisions} per MC collision"};
       const AxisSpec axisPairLossStage{PairLossK0NStages, -0.5, static_cast<double>(PairLossK0NStages) - 0.5, "Reconstruction stage"};
@@ -2629,9 +2647,9 @@ struct HStrangeCorrelation {
       }
     }
 
-    if (doprocessPairLossK0MC && pairLossK0Configurations.compactComparisonMode) {
+    if (doprocessPairLossK0MC && pairLossK0Configurations.doRecComparison) {
       if (doprocessSameEventHV0s) {
-        LOGF(fatal, "compact PairLoss comparison mode already runs the exact Rec path internally; set processSameEventHV0s=false to avoid double filling");
+        LOGF(fatal, "pairLossK0Configurations.doRecComparison already runs the exact Rec path internally; set processSameEventHV0s=false to avoid double filling");
       }
       constexpr int PairLossComparisonNVariants = 16;
       const AxisSpec axisPairLossComparisonVariant{PairLossComparisonNVariants, -0.5, PairLossComparisonNVariants - 0.5, "cumulative Rec control variant"};
@@ -2697,6 +2715,45 @@ struct HStrangeCorrelation {
       for (size_t i = 0; i < triggerVariantLabels.size(); ++i) {
         triggerVariants->GetAxis(0)->SetBinLabel(i + 1, triggerVariantLabels[i].data());
       }
+    }
+
+    if (doprocessPairLossK0MC && pairLossK0Configurations.doGenLevelStudy) {
+      const AxisSpec axisGenStudyNch{pairLossK0Configurations.axisGenStudyNch, "#it{N}_{ch}^{gen} (|#eta| < 0.8)"};
+      const AxisSpec axisGenStudyEventStage{4, -0.5, 3.5, "Generated-event selection stage"};
+      // Findability of the K0, in exactly the sense the stage ladder uses: it
+      // decayed to pi+ pi- and both charged daughters are inside the tracking
+      // acceptance set by daughterPtMin / daughterEtaMax. Kept as an axis rather
+      // than as a separate folder so that the inclusive and the findable-only
+      // answer come out of one and the same object.
+      const AxisSpec axisGenStudyFindable{2, -0.5, 1.5, "K^{0}_{S} findable"};
+
+      histos.add("PairLossK0/GenStudy/hEventCounter", "generator-level event selection", kTH1F, {axisGenStudyEventStage});
+      histos.add("PairLossK0/GenStudy/hNch", "generated charged multiplicity of selected MC collisions", kTH1F, {axisGenStudyNch});
+      histos.add("PairLossK0/GenStudy/hNRecoCollisions", "reconstructed collisions per selected MC collision", kTH1F, {{11, -0.5, 10.5}});
+
+      // Gen/ holds every generated object that passes the generator-level
+      // selection; Reconstructed/ and NotReconstructed/ split that same set by
+      // whether the object has a reconstructed counterpart. All three are filled
+      // with generated coordinates, so Gen == Reconstructed + NotReconstructed
+      // bin by bin and NotReconstructed/Gen reads directly as the loss.
+      histos.add("PairLossK0/GenStudy/Gen/hTrigger", "generated triggers;#it{p}_{T}^{gen} (GeV/#it{c});#eta^{gen};#varphi^{gen};#it{N}_{ch}^{gen}", kTHnF, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi, axisGenStudyNch});
+      histos.add("PairLossK0/GenStudy/Gen/hK0Short", "generated K0s;#it{p}_{T}^{gen} (GeV/#it{c});#eta^{gen};#varphi^{gen};#it{N}_{ch}^{gen};findable", kTHnF, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi, axisGenStudyNch, axisGenStudyFindable});
+      histos.addClone("PairLossK0/GenStudy/Gen/", "PairLossK0/GenStudy/Reconstructed/");
+      histos.addClone("PairLossK0/GenStudy/Gen/", "PairLossK0/GenStudy/NotReconstructed/");
+
+      for (auto const& histogram : {histos.get<THn>(HIST("PairLossK0/GenStudy/Gen/hK0Short")),
+                                    histos.get<THn>(HIST("PairLossK0/GenStudy/Reconstructed/hK0Short")),
+                                    histos.get<THn>(HIST("PairLossK0/GenStudy/NotReconstructed/hK0Short"))}) {
+        histogram->GetAxis(4)->SetBinLabel(1, "not findable");
+        histogram->GetAxis(4)->SetBinLabel(2, "findable");
+      }
+
+      auto genStudyEventCounter = histos.get<TH1>(HIST("PairLossK0/GenStudy/hEventCounter"));
+      const std::array<std::string_view, 4> genStudyEventLabels = {"MC collisions", "INEL>0 (generated)", "|vtx z| < cut (generated)", "has >= 1 rec collision"};
+      for (size_t i = 0; i < genStudyEventLabels.size(); ++i) {
+        genStudyEventCounter->GetXaxis()->SetBinLabel(i + 1, genStudyEventLabels[i].data());
+      }
+      genStudyEventCounter->GetYaxis()->SetTitle("MC collisions");
     }
 
     if (doprocessMixedEventHV0sInBuffer || doprocessMixedEventHCascadesInBuffer) {
@@ -4185,7 +4242,152 @@ struct HStrangeCorrelation {
                            V0DatasWithoutTrackX const& v0Candidates,
                            TracksComplete const& tracks)
   {
-    if (pairLossK0Configurations.compactComparisonMode) {
+    // Part 3: a self-contained generator-level study. It deliberately touches no
+    // reconstructed quantity in its event selection or in any of its axes: the
+    // event is selected on generated INEL>0 and the generated vertex only, the
+    // multiplicity is counted from generated particles, and every object is
+    // filled with generated coordinates.
+    //
+    // Reconstruction enters in exactly one place -- whether a generated object
+    // has a reconstructed counterpart at all -- and that splits the very same
+    // generated sample into Reconstructed/ and NotReconstructed/. Because all
+    // three folders share generated coordinates, Gen == Reconstructed +
+    // NotReconstructed bin by bin, so NotReconstructed/Gen reads directly as
+    // "in which pT, eta, phi and multiplicity region do generated objects fail
+    // to be reconstructed".
+    //
+    // "Reconstructed" is the loosest possible statement, with no quality
+    // selection of any kind: for a trigger, some track in some reconstructed
+    // collision of this MC collision carries its MC label; for a K0, some V0
+    // candidate carries its MC core. Objects belonging to an MC collision that
+    // produced no reconstructed collision at all therefore land in
+    // NotReconstructed/ too; hEventCounter and hNRecoCollisions are there so
+    // that contribution can be separated out afterwards.
+    auto runGenLevelStudy = [&]() {
+      histos.fill(HIST("PairLossK0/GenStudy/hEventCounter"), 0.0f);
+
+      // Generated-level event selection. No reconstructed variable is used.
+      if (masterConfigurations.selectINELgtZERO && !o2::pwglf::isINELgt0mc(mcParticles, pdgDB)) {
+        return;
+      }
+      histos.fill(HIST("PairLossK0/GenStudy/hEventCounter"), 1.0f);
+      if (std::abs(mcCollision.posZ()) > masterConfigurations.zVertexCut) {
+        return;
+      }
+      histos.fill(HIST("PairLossK0/GenStudy/hEventCounter"), 2.0f);
+      if (recCollisions.size() > 0) {
+        histos.fill(HIST("PairLossK0/GenStudy/hEventCounter"), 3.0f);
+      }
+      histos.fill(HIST("PairLossK0/GenStudy/hNRecoCollisions"), recCollisions.size());
+
+      // Multiplicity of this MC collision: generated charged physical primaries
+      // within |eta| < 0.8. Primaries always, independent of every analysis
+      // configurable, so that the multiplicity axis keeps one fixed meaning.
+      //
+      // Deliberately a local counter rather than a member: the shared mCounter
+      // only gets its PDG database wired up when processPrediction runs, and its
+      // mSelectPrimaries follows doAssocPhysicalPrimary. Adding a second counter
+      // as a task member is not an option either -- the struct is already at the
+      // member limit that Framework/StructToTuple.h can destructure. The object
+      // is a bool and a pointer, so building it per MC collision costs nothing.
+      o2::pwglf::ParticleCounter<o2::framework::O2DatabasePDG> genStudyCounter;
+      genStudyCounter.mPdgDatabase = pdgDB.service;
+      genStudyCounter.mSelectPrimaries = true;
+      const float generatedNch = genStudyCounter.countEta08(mcParticles);
+      histos.fill(HIST("PairLossK0/GenStudy/hNch"), generatedNch);
+
+      // Reconstructed-object bookkeeping. The framework has already grouped
+      // recCollisions by this MC collision, so dereferencing a reconstructed
+      // collision back to its MC collision needs no extra work here, and the
+      // generated event selection above is by construction identical for all of
+      // them.
+      std::unordered_set<int64_t> reconstructedTrackMcIds;
+      std::unordered_set<int64_t> reconstructedV0McIds;
+      for (auto const& collision : recCollisions) {
+        const auto trackSlice = tracks.sliceBy(pairLossTracksPerCollision, collision.globalIndex());
+        for (auto const& track : trackSlice) {
+          const auto trackLabel = trackLabels.iteratorAt(track.globalIndex());
+          if (trackLabel.has_mcParticle()) {
+            reconstructedTrackMcIds.insert(trackLabel.mcParticleId());
+          }
+        }
+        const auto v0Slice = v0Candidates.sliceBy(pairLossV0sPerCollision, collision.globalIndex());
+        for (auto const& v0 : v0Slice) {
+          const auto v0MC = v0MCCores.iteratorAt(v0.globalIndex());
+          if (v0MC.particleIdMC() < 0 || v0MC.pdgCode() != PDG_t::kK0Short) {
+            continue;
+          }
+          reconstructedV0McIds.insert(v0MC.particleIdMC());
+        }
+      }
+
+      for (auto const& mcParticle : mcParticles) {
+        const float genPt = mcParticle.pt();
+        const float genEta = mcParticle.eta();
+        const float genPhi = mcParticle.phi();
+        if (std::abs(genEta) > etaSel) {
+          continue;
+        }
+
+        if (isPairLossTriggerPdg(mcParticle.pdgCode()) &&
+            genPt >= axisRanges[3][0] && genPt <= axisRanges[3][1] &&
+            (!masterConfigurations.doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary())) {
+          // Same charge requirement the other two parts apply, so that the three
+          // trigger definitions stay comparable.
+          auto const* pdgParticle = pdgDB->GetParticle(mcParticle.pdgCode());
+          const double charge = pdgParticle != nullptr ? pdgParticle->Charge() : 0.0;
+          const int sign = charge > 0.0 ? 1 : (charge < 0.0 ? -1 : 0);
+          if (!((triggerParticleCharge > 0 && sign < 0) || (triggerParticleCharge < 0 && sign > 0) || sign == 0)) {
+            histos.fill(HIST("PairLossK0/GenStudy/Gen/hTrigger"), genPt, genEta, genPhi, generatedNch);
+            if (reconstructedTrackMcIds.count(mcParticle.globalIndex()) > 0) {
+              histos.fill(HIST("PairLossK0/GenStudy/Reconstructed/hTrigger"), genPt, genEta, genPhi, generatedNch);
+            } else {
+              histos.fill(HIST("PairLossK0/GenStudy/NotReconstructed/hTrigger"), genPt, genEta, genPhi, generatedNch);
+            }
+          }
+        }
+
+        if (mcParticle.pdgCode() == PDG_t::kK0Short &&
+            genPt >= axisRanges[2][0] && genPt <= axisRanges[2][1] &&
+            (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary())) {
+          // Same findability definition the stage ladder uses: decayed to
+          // pi+ pi- with both charged daughters inside the tracking acceptance.
+          // A K0 that is not findable could never have been reconstructed, so
+          // splitting on it is what makes NotReconstructed/ interpretable --
+          // without it the folder is dominated by decays whose daughters simply
+          // left the acceptance.
+          bool hasPositiveDaughter = false;
+          bool hasNegativeDaughter = false;
+          bool daughtersInAcceptance = true;
+          for (auto const& daughter : mcParticle.daughters_as<aod::McParticles>()) {
+            if (daughter.pdgCode() != PDG_t::kPiPlus && daughter.pdgCode() != -PDG_t::kPiPlus) {
+              continue;
+            }
+            if (daughter.pdgCode() == PDG_t::kPiPlus) {
+              hasPositiveDaughter = true;
+            } else {
+              hasNegativeDaughter = true;
+            }
+            if (daughter.pt() < pairLossK0Configurations.daughterPtMin ||
+                std::abs(daughter.eta()) > pairLossK0Configurations.daughterEtaMax) {
+              daughtersInAcceptance = false;
+            }
+          }
+          const float k0Findable = (hasPositiveDaughter && hasNegativeDaughter && daughtersInAcceptance) ? 1.0f : 0.0f;
+
+          histos.fill(HIST("PairLossK0/GenStudy/Gen/hK0Short"), genPt, genEta, genPhi, generatedNch, k0Findable);
+          if (reconstructedV0McIds.count(mcParticle.globalIndex()) > 0) {
+            histos.fill(HIST("PairLossK0/GenStudy/Reconstructed/hK0Short"), genPt, genEta, genPhi, generatedNch, k0Findable);
+          } else {
+            histos.fill(HIST("PairLossK0/GenStudy/NotReconstructed/hK0Short"), genPt, genEta, genPhi, generatedNch, k0Findable);
+          }
+        }
+      }
+    };
+
+    // Part 2. Wrapped in a lambda so that its own early exits leave the other
+    // two parts free to run: the three parts are independent, not exclusive.
+    auto runRecComparison = [&]() {
       if (recCollisions.size() == 0) {
         return;
       }
@@ -4588,9 +4790,19 @@ struct HStrangeCorrelation {
       }
 
       pairLossComparison.clear();
+    };
+
+    if (pairLossK0Configurations.doGenLevelStudy) {
+      runGenLevelStudy();
+    }
+    if (pairLossK0Configurations.doRecComparison) {
+      runRecComparison();
+    }
+    if (!pairLossK0Configurations.doStageDiagnostics) {
       return;
     }
 
+    // Part 1 follows.
     histos.fill(HIST("PairLossK0/Event/hCounter"), 0.0f);
     histos.fill(HIST("PairLossK0/Event/hNRecoCollisions"), recCollisions.size());
 
