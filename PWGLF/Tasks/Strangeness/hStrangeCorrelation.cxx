@@ -2909,6 +2909,14 @@ struct HStrangeCorrelation {
         //   AnyTrack      any      truth   PairLossTriggerAnyCollision
         //   AnyTrackK0    truth    any     PairLossV0AnyCollision
         //   AnyTrackBoth  any      any     both stages at once
+        //   Final         final    final   fully selected, both in one collision
+        // "final" means the object has a reconstructed counterpart that survives
+        // every selection the reconstructed correlation applies, and for the pair
+        // both counterparts must live in the same reconstructed collision. Final/
+        // is therefore the direct truth-coordinate counterpart of the ordinary
+        // reconstructed correlation: Rec/Final isolates what is left once pair
+        // loss is divided out -- duplicate reconstructed objects, fakes and bin
+        // migration.
         // Every folder has the same three objects -- sameEvent/K0Short, hTrigger,
         // hK0Short -- and each of them is filled at the level its own folder
         // prescribes, so a folder can be normalised without looking at any other.
@@ -2928,6 +2936,9 @@ struct HStrangeCorrelation {
         histos.add("ClosureTest/PairLossK0/AnyTrackK0/hK0Short", "truth K0s with a V0-candidate match in any associated collision;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
         histos.add("ClosureTest/PairLossK0/AnyTrackBoth/hTrigger", "truth triggers with a reconstructed-track match in any associated collision;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
         histos.add("ClosureTest/PairLossK0/AnyTrackBoth/hK0Short", "truth K0s with a V0-candidate match in any associated collision;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
+        histos.add("ClosureTest/PairLossK0/Final/sameEvent/K0Short", "truth h-K0 pairs whose trigger and K0 both have a fully selected reconstructed counterpart in the same reconstructed collision", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
+        histos.add("ClosureTest/PairLossK0/Final/hTrigger", "truth triggers with a fully selected reconstructed counterpart;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
+        histos.add("ClosureTest/PairLossK0/Final/hK0Short", "truth K0s with a fully selected reconstructed counterpart;#it{p}_{T}^{truth} (GeV/#it{c});#eta^{truth};#varphi^{truth}", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
       }
       for (int i = 0; i < AssocParticleTypes; i++) {
         if (TESTBIT(doCorrelation, i)) {
@@ -5104,7 +5115,9 @@ struct HStrangeCorrelation {
                           aod::McParticles const& mcParticles,
                           aod::V0MCCores const& v0MCCores,
                           V0DatasWithoutTrackX const& v0Candidates,
-                          TracksCompleteMC const& tracks)
+                          TracksCompleteMC const& tracks,
+                          aod::TriggerTracks const& triggerTracks,
+                          aod::AssocV0s const& associatedV0s)
   {
 
     // Reproduce the first processPairLossK0MC stages without changing the
@@ -5119,6 +5132,11 @@ struct HStrangeCorrelation {
     //                candidate pointing back to it, in any associated collision
     //                (stage PairLossV0AnyCollision)
     //   AnyTrackBoth both requirements at the same time
+    //   Final        the strictest stage: both the trigger and the K0 must have a
+    //                *fully selected* reconstructed counterpart -- the very
+    //                TriggerTracks and AssocV0s entries, passing the very final
+    //                selections, that the reconstructed correlation is built from --
+    //                and both in one and the same reconstructed collision
     auto fillPairLossK0TruthAndAnyTrack = [&]() {
       if (!pairLossK0Configurations.doClosureTestStages) {
         return;
@@ -5160,6 +5178,125 @@ struct HStrangeCorrelation {
           pairLossAnyV0McParticleIds.insert(v0MC.particleIdMC());
         }
       }
+
+      // Final-stage bookkeeping. A truth object counts here only if it has at least
+      // one fully selected reconstructed counterpart, where "fully selected" means
+      // the exact same conditions the reconstructed correlation imposes in
+      // fillCorrelationsV0(): the object is in the TriggerTracks / AssocV0s table
+      // to begin with, and it then passes isValidTrigger() resp. the whole V0
+      // selection chain including the dE/dx compatibility bit and the peak mass
+      // window. The selections are read from the filter tables instead of being
+      // recomputed from raw tracks so that this stage cannot drift away from the
+      // reconstructed analysis it exists to be compared against.
+      //
+      // The sets are built per reconstructed collision and a pair is required to be
+      // final within one and the same collision: the reconstructed same-event
+      // correlation only ever pairs a trigger with a V0 sitting in the same vertex,
+      // so a pair split across two reconstructed vertices of one MC collision must
+      // not count as final here either.
+      //
+      // N.B.: the reconstructed autocorrelation rejection (trigger track identical
+      // to a V0 daughter track) is deliberately not replicated. It is a no-op as
+      // soon as the trigger is required to be a physical primary, because
+      // mcTrue(IndexK0) forces the daughters to be genuine -- hence secondary --
+      // K0 decay products.
+      std::vector<std::pair<std::unordered_set<int64_t>, std::unordered_set<int64_t>>> pairLossFinalPerCollision;
+      for (auto const& collision : recCollisions) {
+        std::unordered_set<int64_t> finalTriggerMcIds;
+        std::unordered_set<int64_t> finalK0McIds;
+
+        const auto finalTriggerSlice = triggerTracks.sliceBy(collisionSliceTracks, collision.globalIndex());
+        for (auto const& triggerEntry : finalTriggerSlice) {
+          auto track = triggerEntry.track_as<TracksCompleteMC>();
+          if (!track.has_mcParticle()) {
+            continue;
+          }
+          if (!isValidTrigger(track, triggerEntry.isLeading())) {
+            continue;
+          }
+          if (trackSelection.checkForITSTPCMissmatchMC && bitcheck(triggerEntry.mcMask(), 13)) {
+            continue;
+          }
+          if (masterConfigurations.doTriggPhysicalPrimary && !triggerEntry.mcPhysicalPrimary()) {
+            continue;
+          }
+          finalTriggerMcIds.insert(track.mcParticleId());
+        }
+
+        const auto finalV0Slice = associatedV0s.sliceBy(collisionSliceV0s, collision.globalIndex());
+        for (auto const& assocEntry : finalV0Slice) {
+          auto v0 = assocEntry.v0Core_as<V0DatasWithoutTrackX>();
+          const auto v0MC = v0MCCores.iteratorAt(v0.globalIndex());
+          if (v0MC.particleIdMC() < 0 || v0MC.pdgCode() != PDG_t::kK0Short || !assocEntry.mcTrue(IndexK0)) {
+            continue;
+          }
+          auto positiveTrack = v0.posTrack_as<TracksCompleteMC>();
+          auto negativeTrack = v0.negTrack_as<TracksCompleteMC>();
+          bool passesFinalSelection = true;
+          if (masterConfigurations.doPPAnalysis) {
+            passesFinalSelection = v0.v0radius() >= v0Selection.v0RadiusMin && v0.v0radius() <= v0Selection.v0RadiusMax &&
+                                   std::abs(v0.dcapostopv()) >= v0Selection.dcapostopv && std::abs(v0.dcanegtopv()) >= v0Selection.dcanegtopv &&
+                                   v0.v0cosPA() >= v0Selection.v0cospa && v0.dcaV0daughters() <= v0Selection.dcaV0dau;
+          } else {
+            const float dcaCut = v0Selection.dcaDaugToPVForK0s == 0.0f ? v0Selection.dcaMesonToPV : v0Selection.dcaDaugToPVForK0s;
+            const bool passesLifetime = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) *
+                                          o2::constants::physics::MassK0Short <
+                                        v0Selection.lifetimecutK0S;
+            const bool passesDaughterDcaAndArmenteros = std::abs(v0.dcapostopv()) > dcaCut && std::abs(v0.dcanegtopv()) > dcaCut &&
+                                                        v0.qtarm() * v0Selection.armPodCut > std::abs(v0.alpha());
+            passesFinalSelection = v0SelectedPbPb(v0) && passesLifetime && passesDaughterDcaAndArmenteros;
+          }
+          passesFinalSelection = passesFinalSelection && positiveTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated &&
+                                 negativeTrack.tpcNClsCrossedRows() >= trackSelection.minTPCNCrossedRowsAssociated;
+          if (trackSelection.checksRequireTPCChi2) {
+            passesFinalSelection = passesFinalSelection && positiveTrack.tpcChi2NCl() >= trackSelection.minTPCChi2PerClusterAssociated &&
+                                   negativeTrack.tpcChi2NCl() >= trackSelection.minTPCChi2PerClusterAssociated;
+          }
+          if (trackSelection.requireClusterInITS) {
+            passesFinalSelection = passesFinalSelection && positiveTrack.itsNCls() >= trackSelection.minITSClustersForDaughterTracks &&
+                                   negativeTrack.itsNCls() >= trackSelection.minITSClustersForDaughterTracks;
+          }
+          passesFinalSelection = passesFinalSelection && assocEntry.compatible(IndexK0, trackSelection.dEdxCompatibility) &&
+                                 (!doAssocPhysicalPrimary || assocEntry.mcPhysicalPrimary()) &&
+                                 assocEntry.invMassNSigma(IndexK0) > -massWindowConfigurations.maxPeakNSigma &&
+                                 assocEntry.invMassNSigma(IndexK0) < massWindowConfigurations.maxPeakNSigma &&
+                                 v0.pt() >= axisRanges[2][0] && v0.pt() <= axisRanges[2][1];
+          if (!passesFinalSelection) {
+            continue;
+          }
+          finalK0McIds.insert(v0MC.particleIdMC());
+        }
+
+        pairLossFinalPerCollision.emplace_back(std::move(finalTriggerMcIds), std::move(finalK0McIds));
+      }
+
+      // Object-level membership, used only for the single-particle spectra: at
+      // least one collision in which the object is fully selected. The pair
+      // histogram uses pairLossHasFinalPair() instead, which is stricter.
+      auto pairLossHasFinalTrigger = [&](int64_t mcId) {
+        for (auto const& perCollision : pairLossFinalPerCollision) {
+          if (perCollision.first.count(mcId) > 0) {
+            return true;
+          }
+        }
+        return false;
+      };
+      auto pairLossHasFinalK0 = [&](int64_t mcId) {
+        for (auto const& perCollision : pairLossFinalPerCollision) {
+          if (perCollision.second.count(mcId) > 0) {
+            return true;
+          }
+        }
+        return false;
+      };
+      auto pairLossHasFinalPair = [&](int64_t triggerMcId, int64_t k0McId) {
+        for (auto const& perCollision : pairLossFinalPerCollision) {
+          if (perCollision.first.count(triggerMcId) > 0 && perCollision.second.count(k0McId) > 0) {
+            return true;
+          }
+        }
+        return false;
+      };
 
       for (auto const& collision : recCollisions) {
         if (static_cast<int64_t>(collision.globalIndex()) != pairLossBestCollisionId) {
@@ -5234,14 +5371,18 @@ struct HStrangeCorrelation {
 
         // One entry per object per folder, at the level that folder prescribes:
         // the trigger is at truth level in Truth/ and AnyTrackK0/, at any level in
-        // AnyTrack/ and AnyTrackBoth/; the K0 is at truth level in Truth/ and
-        // AnyTrack/, at any level in AnyTrackK0/ and AnyTrackBoth/.
+        // AnyTrack/ and AnyTrackBoth/, at fully-selected level in Final/; the K0 is
+        // at truth level in Truth/ and AnyTrack/, at any level in AnyTrackK0/ and
+        // AnyTrackBoth/, at fully-selected level in Final/.
         for (auto const& truthTrigger : pairLossTruthTriggers) {
           histos.fill(HIST("ClosureTest/PairLossK0/Truth/hTrigger"), truthTrigger.pt, truthTrigger.eta, truthTrigger.phi);
           histos.fill(HIST("ClosureTest/PairLossK0/AnyTrackK0/hTrigger"), truthTrigger.pt, truthTrigger.eta, truthTrigger.phi);
           if (pairLossAnyTrackMcParticleIds.find(truthTrigger.globalIndex) != pairLossAnyTrackMcParticleIds.end()) {
             histos.fill(HIST("ClosureTest/PairLossK0/AnyTrack/hTrigger"), truthTrigger.pt, truthTrigger.eta, truthTrigger.phi);
             histos.fill(HIST("ClosureTest/PairLossK0/AnyTrackBoth/hTrigger"), truthTrigger.pt, truthTrigger.eta, truthTrigger.phi);
+          }
+          if (pairLossHasFinalTrigger(truthTrigger.globalIndex)) {
+            histos.fill(HIST("ClosureTest/PairLossK0/Final/hTrigger"), truthTrigger.pt, truthTrigger.eta, truthTrigger.phi);
           }
         }
         for (auto const& truthK0 : pairLossTruthK0s) {
@@ -5250,6 +5391,9 @@ struct HStrangeCorrelation {
           if (pairLossAnyV0McParticleIds.find(truthK0.globalIndex) != pairLossAnyV0McParticleIds.end()) {
             histos.fill(HIST("ClosureTest/PairLossK0/AnyTrackK0/hK0Short"), truthK0.pt, truthK0.eta, truthK0.phi);
             histos.fill(HIST("ClosureTest/PairLossK0/AnyTrackBoth/hK0Short"), truthK0.pt, truthK0.eta, truthK0.phi);
+          }
+          if (pairLossHasFinalK0(truthK0.globalIndex)) {
+            histos.fill(HIST("ClosureTest/PairLossK0/Final/hK0Short"), truthK0.pt, truthK0.eta, truthK0.phi);
           }
         }
 
@@ -5280,6 +5424,9 @@ struct HStrangeCorrelation {
             }
             if (triggerHasAnyTrack && k0HasAnyV0) {
               histos.fill(HIST("ClosureTest/PairLossK0/AnyTrackBoth/sameEvent/K0Short"), truthDeltaPhi, truthDeltaEta, truthK0.pt, truthTrigger.pt, pairLossBestCollisionVtxZ, pairLossBestCollisionMultiplicity);
+            }
+            if (pairLossHasFinalPair(truthTrigger.globalIndex, truthK0.globalIndex)) {
+              histos.fill(HIST("ClosureTest/PairLossK0/Final/sameEvent/K0Short"), truthDeltaPhi, truthDeltaEta, truthK0.pt, truthTrigger.pt, pairLossBestCollisionVtxZ, pairLossBestCollisionMultiplicity);
             }
           }
         }
