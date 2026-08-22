@@ -15,7 +15,6 @@
 /// \since August 2026
 
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CommonConstants/MathConstants.h>
@@ -31,6 +30,8 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -556,13 +557,6 @@ struct FlattenicityTask {
 
   // ============================================
   // Process GEN vs RECO correlation
-  // Requires: MC_AO2D.root (has both truth and reco info,
-  // linked via McCollisionLabels)
-  //
-  // This directly answers Antonio's original request: for
-  // the SAME collision, compute flattenicity at generator
-  // level (from MC truth particles) and at reconstruction
-  // level (from tracks / FT0 amplitudes), and correlate them.
   // ============================================
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
   SliceCache cache;
@@ -633,7 +627,6 @@ struct FlattenicityTask {
     float rhoRecParticles = computeFlattenicity(recoCounts);
 
     // Fill gen-level histogram restricted to events with a reco match
-    // (useful denominator for efficiency/loss studies)
     histos.fill(HIST("hFlattenicityGen_MatchedToReco"), flatGen);
 
     if (rhoRecParticles > 0) {
