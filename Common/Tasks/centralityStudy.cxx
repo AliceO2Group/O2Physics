@@ -1049,14 +1049,14 @@ struct CentralityStudy {
 
       // per run
       if (studies.doRunByRunHistograms) {
-        getHist(TH2, histPath + "hNTracksPVeta05VsFT0A")->Fill(multFT0A, multNTracksPV05);
-        getHist(TH2, histPath + "hNTracksPVeta05VsFT0C")->Fill(multFT0C, multNTracksPV05);
-        getHist(TH2, histPath + "hNTracksPVeta05VsFT0M")->Fill(multFT0A + multFT0C, multNTracksPV05);
-        getHist(TH2, histPath + "hNTracksPVeta05VsFV0A")->Fill(multFV0A, multNTracksPV05);
-        getHist(TH2, histPath + "hNTracksPVeta05VsFDDA")->Fill(multFDDA, multNTracksPV05);
-        getHist(TH2, histPath + "hNTracksPVeta05VsFDDC")->Fill(multFDDC, multNTracksPV05);
-        getHist(TH2, histPath + "hNTracksPVeta05VsNMFTTracks")->Fill(mftNtracks, multNTracksPV05);
-        getHist(TH2, histPath + "hNTracksPVeta05VsNTPV")->Fill(multNTracksPV, multNTracksPV05);
+        getHist<TH2>(histPath + "hNTracksPVeta05VsFT0A")->Fill(multFT0A, multNTracksPV05);
+        getHist<TH2>(histPath + "hNTracksPVeta05VsFT0C")->Fill(multFT0C, multNTracksPV05);
+        getHist<TH2>(histPath + "hNTracksPVeta05VsFT0M")->Fill(multFT0A + multFT0C, multNTracksPV05);
+        getHist<TH2>(histPath + "hNTracksPVeta05VsFV0A")->Fill(multFV0A, multNTracksPV05);
+        getHist<TH2>(histPath + "hNTracksPVeta05VsFDDA")->Fill(multFDDA, multNTracksPV05);
+        getHist<TH2>(histPath + "hNTracksPVeta05VsFDDC")->Fill(multFDDC, multNTracksPV05);
+        getHist<TH2>(histPath + "hNTracksPVeta05VsNMFTTracks")->Fill(mftNtracks, multNTracksPV05);
+        getHist<TH2>(histPath + "hNTracksPVeta05VsNTPV")->Fill(multNTracksPV, multNTracksPV05);
       }
     }
 
@@ -1072,14 +1072,14 @@ struct CentralityStudy {
 
       // per run
       if (studies.doRunByRunHistograms) {
-        getHist(TH2, histPath + "hNTracksPVeta08VsFT0A")->Fill(multFT0A, multNTracksPV);
-        getHist(TH2, histPath + "hNTracksPVeta08VsFT0C")->Fill(multFT0C, multNTracksPV);
-        getHist(TH2, histPath + "hNTracksPVeta08VsFT0M")->Fill(multFT0A + multFT0C, multNTracksPV);
-        getHist(TH2, histPath + "hNTracksPVeta08VsFV0A")->Fill(multFV0A, multNTracksPV);
-        getHist(TH2, histPath + "hNTracksPVeta08VsFDDA")->Fill(multFDDA, multNTracksPV);
-        getHist(TH2, histPath + "hNTracksPVeta08VsFDDC")->Fill(multFDDC, multNTracksPV);
-        getHist(TH2, histPath + "hNTracksPVeta08VsNMFTTracks")->Fill(mftNtracks, multNTracksPV);
-        getHist(TH2, histPath + "hNTracksPVeta08VsNTPV")->Fill(multNTracksPV, multNTracksPV);
+        getHist<TH2>(histPath + "hNTracksPVeta08VsFT0A")->Fill(multFT0A, multNTracksPV);
+        getHist<TH2>(histPath + "hNTracksPVeta08VsFT0C")->Fill(multFT0C, multNTracksPV);
+        getHist<TH2>(histPath + "hNTracksPVeta08VsFT0M")->Fill(multFT0A + multFT0C, multNTracksPV);
+        getHist<TH2>(histPath + "hNTracksPVeta08VsFV0A")->Fill(multFV0A, multNTracksPV);
+        getHist<TH2>(histPath + "hNTracksPVeta08VsFDDA")->Fill(multFDDA, multNTracksPV);
+        getHist<TH2>(histPath + "hNTracksPVeta08VsFDDC")->Fill(multFDDC, multNTracksPV);
+        getHist<TH2>(histPath + "hNTracksPVeta08VsNMFTTracks")->Fill(mftNtracks, multNTracksPV);
+        getHist<TH2>(histPath + "hNTracksPVeta08VsNTPV")->Fill(multNTracksPV, multNTracksPV);
       }
     }
 
@@ -1095,14 +1095,14 @@ struct CentralityStudy {
 
       // per run
       if (studies.doRunByRunHistograms) {
-        getHist(TH2, histPath + "hNTracksPVeta10VsFT0A")->Fill(multFT0A, multNTracksPV10);
-        getHist(TH2, histPath + "hNTracksPVeta10VsFT0C")->Fill(multFT0C, multNTracksPV10);
-        getHist(TH2, histPath + "hNTracksPVeta10VsFT0M")->Fill(multFT0A + multFT0C, multNTracksPV10);
-        getHist(TH2, histPath + "hNTracksPVeta10VsFV0A")->Fill(multFV0A, multNTracksPV10);
-        getHist(TH2, histPath + "hNTracksPVeta10VsFDDA")->Fill(multFDDA, multNTracksPV10);
-        getHist(TH2, histPath + "hNTracksPVeta10VsFDDC")->Fill(multFDDC, multNTracksPV10);
-        getHist(TH2, histPath + "hNTracksPVeta10VsNMFTTracks")->Fill(mftNtracks, multNTracksPV10);
-        getHist(TH2, histPath + "hNTracksPVeta10VsNTPV")->Fill(multNTracksPV, multNTracksPV10);
+        getHist<TH2>(histPath + "hNTracksPVeta10VsFT0A")->Fill(multFT0A, multNTracksPV10);
+        getHist<TH2>(histPath + "hNTracksPVeta10VsFT0C")->Fill(multFT0C, multNTracksPV10);
+        getHist<TH2>(histPath + "hNTracksPVeta10VsFT0M")->Fill(multFT0A + multFT0C, multNTracksPV10);
+        getHist<TH2>(histPath + "hNTracksPVeta10VsFV0A")->Fill(multFV0A, multNTracksPV10);
+        getHist<TH2>(histPath + "hNTracksPVeta10VsFDDA")->Fill(multFDDA, multNTracksPV10);
+        getHist<TH2>(histPath + "hNTracksPVeta10VsFDDC")->Fill(multFDDC, multNTracksPV10);
+        getHist<TH2>(histPath + "hNTracksPVeta10VsNMFTTracks")->Fill(mftNtracks, multNTracksPV10);
+        getHist<TH2>(histPath + "hNTracksPVeta10VsNTPV")->Fill(multNTracksPV, multNTracksPV10);
       }
     }
 
