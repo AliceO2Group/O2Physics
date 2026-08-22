@@ -199,14 +199,6 @@ struct dimuonV1 {
     mRunNumber = collision.runNumber();
   }
 
-  ~dimuonV1()
-  {
-    // delete emh_pos;
-    // emh_pos = 0x0;
-    // delete emh_neg;
-    // emh_neg = 0x0;
-  }
-
   void addhistograms()
   {
     // event info
