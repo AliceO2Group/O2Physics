@@ -1044,6 +1044,7 @@ DECLARE_SOA_TABLE(DileptonsMiniTreeRec, "AOD", "RTDILMTREEREC", //!
                   dilepton_track_index::Pt2, dilepton_track_index::Eta2, dilepton_track_index::Phi2);
 
 DECLARE_SOA_TABLE(DileptonsPolarization, "AOD", "RTDILPOLAR", //!
+                  reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::Sign,
                   reducedpair::CosThetaHE, reducedpair::PhiHE, reducedpair::PhiTildeHE,
                   reducedpair::CosThetaCS, reducedpair::PhiCS, reducedpair::PhiTildeCS,
                   reducedpair::CosThetaPP, reducedpair::PhiPP, reducedpair::PhiTildePP,
