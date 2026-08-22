@@ -45,6 +45,7 @@
 #include <TDirectory.h>
 #include <TFile.h>
 #include <TFormula.h>
+#include <TH2.h>
 #include <TH3.h>
 #include <THn.h>
 #include <TList.h>
@@ -238,6 +239,8 @@ struct TwoParticleCorrelationsMpi {
 
   std::vector<YieldTemplate> yieldTemplates;
   std::vector<std::unique_ptr<TH3D>> pairAcceptanceMaps;
+  std::vector<std::unique_ptr<TH2D>> pairAcceptanceEtaVertexMaps;
+  int pairAcceptanceSchemaVersion = 0;
   const TList* loadedCcdbYieldTemplateObject = nullptr;
   bool eventSeedEstimatorEnabled = false;
 
@@ -726,31 +729,46 @@ struct TwoParticleCorrelationsMpi {
     const auto* schemaVersion = dynamic_cast<const TNamed*>(findObject("pairAcceptanceSchemaVersion"));
     const auto* normalization = dynamic_cast<const TNamed*>(findObject("pairAcceptanceNormalization"));
     const auto* axes = dynamic_cast<const TNamed*>(findObject("pairAcceptanceAxes"));
-    if (schemaVersion == nullptr || TString(schemaVersion->GetTitle()) != "2" || normalization == nullptr || axes == nullptr) {
-      LOGF(fatal, "Unsupported or missing multiplicity-only pair-acceptance metadata in %s", source.c_str());
+    const TString schema = schemaVersion != nullptr ? schemaVersion->GetTitle() : "";
+    if (schemaVersion == nullptr || (schema != "2" && schema != "3") || normalization == nullptr || axes == nullptr) {
+      LOGF(fatal, "Unsupported or missing pair-acceptance metadata in %s", source.c_str());
       return;
     }
 
     const int nMultiplicityBins = AxisSpec(axisMultiplicity).getNbins();
     pairAcceptanceMaps.clear();
-    pairAcceptanceMaps.resize(nMultiplicityBins);
-    for (int multBin = 0; multBin < nMultiplicityBins; ++multBin) {
-      auto* inputMap = dynamic_cast<TH3D*>(findObject(Form("pairAcceptance_mult_%d", multBin)));
-      if (inputMap == nullptr) {
-        LOGF(fatal, "Missing pairAcceptance_mult_%d in %s", multBin, source.c_str());
-        pairAcceptanceMaps.clear();
-        return;
-      }
-      auto* clone = dynamic_cast<TH3D*>(inputMap->Clone(Form("loadedPairAcceptance_mult_%d", multBin)));
-      if (clone == nullptr) {
-        LOGF(fatal, "Could not clone pairAcceptance_mult_%d from %s as TH3D", multBin, source.c_str());
-        pairAcceptanceMaps.clear();
-        return;
-      }
-      clone->SetDirectory(nullptr);
-      pairAcceptanceMaps[multBin].reset(clone);
+    pairAcceptanceEtaVertexMaps.clear();
+    pairAcceptanceSchemaVersion = schema.Atoi();
+    int multiplicityDependentOnly = 2;
+    if (pairAcceptanceSchemaVersion == multiplicityDependentOnly) {
+      pairAcceptanceMaps.resize(nMultiplicityBins);
+    } else {
+      pairAcceptanceEtaVertexMaps.resize(nMultiplicityBins);
     }
-    LOGF(info, "Loaded %zu multiplicity-only pair-acceptance maps from %s", pairAcceptanceMaps.size(), source.c_str());
+    for (int multBin = 0; multBin < nMultiplicityBins; ++multBin) {
+      if (pairAcceptanceSchemaVersion == multiplicityDependentOnly) {
+        auto* inputMap = dynamic_cast<TH3D*>(findObject(Form("pairAcceptance_mult_%d", multBin)));
+        auto* clone = inputMap != nullptr ? dynamic_cast<TH3D*>(inputMap->Clone(Form("loadedPairAcceptance_mult_%d", multBin))) : nullptr;
+        if (clone == nullptr) {
+          LOGF(fatal, "Missing or invalid pairAcceptance_mult_%d in %s", multBin, source.c_str());
+          pairAcceptanceMaps.clear();
+          return;
+        }
+        clone->SetDirectory(nullptr);
+        pairAcceptanceMaps[multBin].reset(clone);
+      } else {
+        auto* inputMap = dynamic_cast<TH2D*>(findObject(Form("pairAcceptanceEtaVertex_mult_%d", multBin)));
+        auto* clone = inputMap != nullptr ? dynamic_cast<TH2D*>(inputMap->Clone(Form("loadedPairAcceptanceEtaVertex_mult_%d", multBin))) : nullptr;
+        if (clone == nullptr) {
+          LOGF(fatal, "Missing or invalid pairAcceptanceEtaVertex_mult_%d in %s", multBin, source.c_str());
+          pairAcceptanceEtaVertexMaps.clear();
+          return;
+        }
+        clone->SetDirectory(nullptr);
+        pairAcceptanceEtaVertexMaps[multBin].reset(clone);
+      }
+    }
+    LOGF(info, "Loaded %d schema-%d pair-acceptance maps from %s", nMultiplicityBins, pairAcceptanceSchemaVersion, source.c_str());
   }
 
   void loadLocalYieldTemplates()
@@ -871,23 +889,33 @@ struct TwoParticleCorrelationsMpi {
     }
   }
 
-  const TH3D* findPairAcceptanceMap(double multiplicity) const
+  int findPairAcceptanceMultiplicityBin(double multiplicity) const
   {
     const auto& edges = AxisSpec(axisMultiplicity).binEdges;
     const auto upper = std::upper_bound(edges.begin(), edges.end(), multiplicity);
-    const int multBin = static_cast<int>(std::distance(edges.begin(), upper)) - 1;
-    if (multBin < 0 || multBin >= static_cast<int>(pairAcceptanceMaps.size())) {
-      return nullptr;
-    }
-    return pairAcceptanceMaps[multBin].get();
+    return static_cast<int>(std::distance(edges.begin(), upper)) - 1;
   }
 
   double getPairAcceptance(double multiplicity, double deltaPhi, double deltaEta, double posZ) const
   {
-    const auto* map = findPairAcceptanceMap(multiplicity);
-    if (!map) {
+    const int multBin = findPairAcceptanceMultiplicityBin(multiplicity);
+    int etaVertexMultiplicityDependentOnly = 3;
+    if (pairAcceptanceSchemaVersion == etaVertexMultiplicityDependentOnly) {
+      if (multBin < 0 || multBin >= static_cast<int>(pairAcceptanceEtaVertexMaps.size()) || pairAcceptanceEtaVertexMaps[multBin] == nullptr) {
+        return 0.0;
+      }
+      const auto* map = pairAcceptanceEtaVertexMaps[multBin].get();
+      const int etaBin = map->GetXaxis()->FindFixBin(deltaEta);
+      const int vertexBin = map->GetYaxis()->FindFixBin(posZ);
+      if (etaBin < 1 || etaBin > map->GetNbinsX() || vertexBin < 1 || vertexBin > map->GetNbinsY()) {
+        return 0.0;
+      }
+      return map->GetBinContent(etaBin, vertexBin);
+    }
+    if (multBin < 0 || multBin >= static_cast<int>(pairAcceptanceMaps.size()) || pairAcceptanceMaps[multBin] == nullptr) {
       return 0.0;
     }
+    const auto* map = pairAcceptanceMaps[multBin].get();
     const int phiBin = map->GetXaxis()->FindFixBin(deltaPhi);
     const int etaBin = map->GetYaxis()->FindFixBin(deltaEta);
     const int vertexBin = map->GetZaxis()->FindFixBin(posZ);
