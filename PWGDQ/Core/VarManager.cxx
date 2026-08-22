@@ -2345,6 +2345,8 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kDCAz2"] = kDCAz2;
   fgVarNamesMap["kITSclusterMap2"] = kITSclusterMap2;
   fgVarNamesMap["kTPCnSigmaEl2"] = kTPCnSigmaEl2;
+  fgVarNamesMap["kTPCorTOFnSigmaPr1"] = kTPCorTOFnSigmaPr1;
+  fgVarNamesMap["kTPCorTOFnSigmaPr2"] = kTPCorTOFnSigmaPr2;
   fgVarNamesMap["kPin"] = kPin;
   fgVarNamesMap["kSignedPin"] = kSignedPin;
   fgVarNamesMap["kTOFExpMom"] = kTOFExpMom;
@@ -2439,6 +2441,7 @@ void VarManager::SetDefaultVarNames()
   fgVarNamesMap["kIsLegFromOmega"] = kIsLegFromOmega;
   fgVarNamesMap["kIsProtonFromLambdaAndAntiLambda"] = kIsProtonFromLambdaAndAntiLambda;
   fgVarNamesMap["kIsDalitzLeg"] = kIsDalitzLeg;
+  fgVarNamesMap["kIsPrPair"] = kIsPrPair;
   fgVarNamesMap["kBarrelNAssocsInBunch"] = kBarrelNAssocsInBunch;
   fgVarNamesMap["kBarrelNAssocsOutOfBunch"] = kBarrelNAssocsOutOfBunch;
   fgVarNamesMap["kNBarrelTrackVariables"] = kNBarrelTrackVariables;
