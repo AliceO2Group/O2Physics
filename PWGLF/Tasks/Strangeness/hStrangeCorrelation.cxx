@@ -461,21 +461,33 @@ struct HStrangeCorrelation {
   static constexpr int AssocV0Types = 3;               // K0S, Lambda, AntiLambda,
   static constexpr int AssocCascadeTypes = 4;          // Xi-, Xi+, Omega-, Omega+
 
+  // Cumulative reconstruction ladder for one truth h-K0 pair: every stage is a
+  // strictly narrower requirement than the one before it, so the ratio of two
+  // neighbouring stages is the efficiency of exactly the step between them.
+  //
+  // Two "pure reconstruction" levels anchor the chain. Both mean "the object is
+  // present in the reconstruction with no selection applied whatsoever":
+  //   PairLossTriggerPureReco  a track carrying the trigger's MC label exists
+  //   PairLossV0PureReco       both K0 daughters have a reconstructed track
+  // The V0 one sits deliberately at daughter-track level rather than at V0Datas
+  // level: a row in V0Datas has already survived the V0 builder's own cuts
+  // (cos(PA), daughter DCA, radius, crossed rows), so the step
+  // PairLossV0PureReco -> PairLossV0Candidate isolates exactly what the builder
+  // throws away, which no other stage can show.
+  //
+  // Everything is evaluated in the best collision. The "any reconstructed
+  // collision" variants live in the ClosureTest/PairLossK0/AnyTrack* folders
+  // instead, so keeping them here as well would only duplicate them.
   enum PairLossK0Stage : int {
     PairLossGenPair = 0,
     PairLossFindablePair,
-    PairLossTriggerAnyCollision,
-    PairLossTriggerBestCollision,
+    PairLossTriggerPureReco,
     PairLossTriggerInTable,
     PairLossTriggerFinal,
-    PairLossPositiveDaughterBestCollision,
-    PairLossNegativeDaughterBestCollision,
-    PairLossBothDaughtersBestCollision,
-    PairLossV0AnyCollision,
-    PairLossV0BestCollision,
+    PairLossV0PureReco,
+    PairLossV0Candidate,
     PairLossV0InTable,
     PairLossV0Final,
-    PairLossBothFinalBeforeAutocorrelation,
     PairLossFinalPair,
     PairLossK0NStages
   };
@@ -483,18 +495,13 @@ struct HStrangeCorrelation {
   static constexpr std::array<std::string_view, PairLossK0NStages> PairLossK0StageNames = {
     "Gen pair",
     "Findable K0->pi+pi-",
-    "Trigger track, any rec collision",
-    "Trigger track, best collision",
+    "Trigger pure reco (best collision)",
     "Trigger in TriggerTracks",
     "Trigger final selection",
-    "Positive daughter track",
-    "Negative daughter track",
-    "Both daughter tracks",
-    "V0 candidate, any rec collision",
-    "V0 candidate, best collision",
+    "V0 pure reco (both daughters)",
+    "V0 candidate (best collision)",
     "V0 in AssocV0s",
     "V0 final selection",
-    "Both final, before autocorrelation",
     "Final reconstructed pair"};
 
   struct PairLossTrackInfo {
@@ -2514,8 +2521,8 @@ struct HStrangeCorrelation {
       histos.add("PairLossK0/Event/hNRecoCollisions", "reconstructed collisions per MC collision", kTH1F, {axisPairLossNRecoCollisions});
       histos.add("PairLossK0/Stage/hCounts", "pair-loss diagnostic stage counts", kTH1F, {axisPairLossStage});
       histos.add("PairLossK0/Stage/hCountsFindable", "pair-loss diagnostic stage counts for findable K0", kTH1F, {axisPairLossStage});
-      histos.add("PairLossK0/Stage/hPhysics", "stages in h-K0 physics variables", kTHnF, {axisPairLossStage, axisPairLossTruthDeltaPhi, axisPairLossTruthDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt, axisPairLossFieldSign});
-      histos.add("PairLossK0/Stage/hPhysicsFindable", "stages in h-K0 physics variables for findable K0", kTHnF, {axisPairLossStage, axisPairLossTruthDeltaPhi, axisPairLossTruthDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt, axisPairLossFieldSign});
+      histos.add("PairLossK0/Stage/hPhysics", "stages in h-K0 physics variables", kTHnF, {axisPairLossStage, axisPairLossTruthDeltaPhi, axisPairLossTruthDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt, axisMultNDim});
+      histos.add("PairLossK0/Stage/hPhysicsFindable", "stages in h-K0 physics variables for findable K0", kTHnF, {axisPairLossStage, axisPairLossTruthDeltaPhi, axisPairLossTruthDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt, axisMultNDim});
       histos.add("PairLossK0/Stage/hClose", "stages in trigger-daughter close-pair variables", kTHnF, {axisPairLossStage, axisPairLossMinDeltaPhiStar, axisPairLossDaughterDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt, axisPairLossFieldSign, axisPairLossChargeProduct});
       histos.add("PairLossK0/Stage/hTriggerTracksFailureReason", "first-failing TriggerTracks condition for best-collision triggers, in h-K0 physics variables", kTHnF, {axisPairLossTriggerTracksFailureReason, axisPairLossTruthDeltaPhi, axisPairLossTruthDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt});
 
@@ -2904,11 +2911,13 @@ struct HStrangeCorrelation {
         // matching MC label for the trigger, a V0 candidate with a matching MC
         // core for the K0) in any reconstructed collision associated with this MC
         // collision, with no quality selection whatsoever.
-        //   folder        trigger  K0      processPairLossK0MC stage
-        //   Truth         truth    truth   PairLossGenPair
-        //   AnyTrack      any      truth   PairLossTriggerAnyCollision
-        //   AnyTrackK0    truth    any     PairLossV0AnyCollision
-        //   AnyTrackBoth  any      any     both stages at once
+        //   folder        trigger  K0      reconstruction requirement
+        //   Truth         truth    truth   none (PairLossGenPair)
+        //   AnyTrack      any      truth   trigger has a track in any collision
+        //   AnyTrackK0    truth    any     K0 has a V0 candidate in any collision
+        //   AnyTrackBoth  any      any     both requirements at once
+        // The "any reconstructed collision" level exists only here: the
+        // processPairLossK0MC stage ladder is evaluated in the best collision.
         //   Final         final    final   fully selected, both in one collision
         // "final" means the object has a reconstructed counterpart that survives
         // every selection the reconstructed correlation applies, and for the pair
@@ -4649,7 +4658,6 @@ struct HStrangeCorrelation {
       const double magneticField = getPairLossMagneticField(bc.runNumber(), bc.timestamp());
       const int magneticFieldSign = magneticField > 0.0 ? 1 : (magneticField < 0.0 ? -1 : 0);
       const float multiplicity = masterConfigurations.doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
-      static_cast<void>(multiplicity); // retained for straightforward extension of the diagnostic axes
 
       PairLossTrackMap tracksBestCollision;
       const auto bestTrackSlice = tracks.sliceBy(pairLossTracksPerCollision, bestCollisionId);
@@ -4908,14 +4916,12 @@ struct HStrangeCorrelation {
             }
           }
 
-          const bool triggerAnyCollision = contains(tracksAnyCollision, truthTrigger.globalIndex);
           const bool triggerBestCollision = contains(tracksBestCollision, truthTrigger.globalIndex);
           const bool triggerInTable = contains(triggersInTable, truthTrigger.globalIndex);
           const bool triggerFinal = contains(triggersFinal, truthTrigger.globalIndex);
           const bool positiveDaughterBestCollision = contains(tracksBestCollision, truthK0.positiveDaughter.globalIndex);
           const bool negativeDaughterBestCollision = contains(tracksBestCollision, truthK0.negativeDaughter.globalIndex);
           const bool bothDaughtersBestCollision = positiveDaughterBestCollision && negativeDaughterBestCollision;
-          const bool v0AnyCollision = contains(v0sAnyCollision, truthK0.globalIndex);
           const bool v0BestCollision = contains(v0sBestCollision, truthK0.globalIndex);
           const bool v0InTable = contains(v0sInTable, truthK0.globalIndex);
           const bool v0Final = contains(v0sFinal, truthK0.globalIndex);
@@ -4960,31 +4966,31 @@ struct HStrangeCorrelation {
             }
           }
 
+          // Order must match PairLossK0Stage / PairLossK0StageNames one to one.
+          // positiveDaughterBestCollision and negativeDaughterBestCollision are
+          // intentionally absent: the per-daughter breakdown lives in
+          // State/hDaughterTrackStateClose, and pairBeforeAutocorrelation in
+          // Geometry/hAutocorrelationRejected.
           const std::array<bool, PairLossK0NStages> stagePassed = {
             true,
             truthK0.findable,
-            triggerAnyCollision,
             triggerBestCollision,
             triggerInTable,
             triggerFinal,
-            positiveDaughterBestCollision,
-            negativeDaughterBestCollision,
             bothDaughtersBestCollision,
-            v0AnyCollision,
             v0BestCollision,
             v0InTable,
             v0Final,
-            pairBeforeAutocorrelation,
             finalPair};
           for (int stage = 0; stage < PairLossK0NStages; ++stage) {
             if (!stagePassed[stage]) {
               continue;
             }
             histos.fill(HIST("PairLossK0/Stage/hCounts"), stage);
-            histos.fill(HIST("PairLossK0/Stage/hPhysics"), stage, truthDeltaPhi, truthDeltaEta, truthK0.pt, truthTrigger.pt, magneticFieldSign);
+            histos.fill(HIST("PairLossK0/Stage/hPhysics"), stage, truthDeltaPhi, truthDeltaEta, truthK0.pt, truthTrigger.pt, multiplicity);
             if (truthK0.findable) {
               histos.fill(HIST("PairLossK0/Stage/hCountsFindable"), stage);
-              histos.fill(HIST("PairLossK0/Stage/hPhysicsFindable"), stage, truthDeltaPhi, truthDeltaEta, truthK0.pt, truthTrigger.pt, magneticFieldSign);
+              histos.fill(HIST("PairLossK0/Stage/hPhysicsFindable"), stage, truthDeltaPhi, truthDeltaEta, truthK0.pt, truthTrigger.pt, multiplicity);
               if (closestDeltaPhiStar.valid) {
                 histos.fill(HIST("PairLossK0/Stage/hClose"), stage, closestDeltaPhiStar.minAbs, closestDeltaEta, truthK0.pt, truthTrigger.pt, magneticFieldSign, closestChargeProduct);
               }
@@ -5127,10 +5133,8 @@ struct HStrangeCorrelation {
     //   AnyTrack     the truth trigger must have at least one reconstructed track
     //                pointing back to it through its MC label, in any
     //                reconstructed collision associated with this MC collision
-    //                (stage PairLossTriggerAnyCollision)
     //   AnyTrackK0   the truth K0 must have at least one reconstructed V0
     //                candidate pointing back to it, in any associated collision
-    //                (stage PairLossV0AnyCollision)
     //   AnyTrackBoth both requirements at the same time
     //   Final        the strictest stage: both the trigger and the K0 must have a
     //                *fully selected* reconstructed counterpart -- the very
