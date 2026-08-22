@@ -101,6 +101,8 @@ DECLARE_SOA_COLUMN(NSigmaTpcPi, nSigmaTpcPi, float);                //! TPC nσ 
 DECLARE_SOA_COLUMN(NSigmaItsDe, nSigmaItsDe, float);                //! ITS nσ for deuteron hypothesis
 DECLARE_SOA_COLUMN(NSigmaTofDe, nSigmaTofDe, float);                //! TOF nσ for deuteron hypothesis
 DECLARE_SOA_COLUMN(TofBetaDe, tofBetaDe, float);                    //! TOF beta for deuteron candidate
+DECLARE_SOA_COLUMN(TpcInnerParamDe, tpcInnerParamDe, float);        //! TPC inner-wall momentum for deuteron candidate (GeV/c)
+DECLARE_SOA_COLUMN(TofExpMomDe, tofExpMomDe, float);                //! TOF expected momentum for deuteron candidate (GeV/c)
 DECLARE_SOA_COLUMN(NSigmaTofKa, nSigmaTofKa, float);                //! TOF nσ for kaon hypothesis
 DECLARE_SOA_COLUMN(NSigmaTofPi, nSigmaTofPi, float);                //! TOF nσ for pion hypothesis
 DECLARE_SOA_COLUMN(NItsClusters, nItsClusters, float);              //! Number of ITS clusters used in the track fit
@@ -147,6 +149,8 @@ DECLARE_SOA_TABLE(HfCandCdLite, "AOD", "HFCANDCDLITE",
                   full::NSigmaItsDe,
                   full::NSigmaTofDe,
                   full::TofBetaDe,
+                  full::TpcInnerParamDe,
+                  full::TofExpMomDe,
                   full::CtRec,
                   full::CandidateSelFlag,
                   full::CandidateSign,
@@ -178,6 +182,8 @@ DECLARE_SOA_TABLE(HfCandCdFull, "AOD", "HFCANDCDFULL",
                   full::NSigmaItsDe,
                   full::NSigmaTofDe,
                   full::TofBetaDe,
+                  full::TpcInnerParamDe,
+                  full::TofExpMomDe,
                   full::NSigmaTpcPi,
                   full::NSigmaTofPi,
                   full::NSigmaTpcKa,
@@ -522,6 +528,8 @@ struct HfTaskCd {
         float nSigmaItsDe = 0.f;
         float nSigmaTofDe = 0.f, nSigmaTofKa = 0.f, nSigmaTofPi = 0.f;
         float tofBetaDe = -999.f;
+        float tpcInnerParamDe = -999.f;
+        float tofExpMomDe = -999.f;
 
         float dcaDeuteron = 0.f, dcaKaon = 0.f, dcaPion = 0.f;
 
@@ -547,6 +555,8 @@ struct HfTaskCd {
           nSigmaTpcPr = candidate.nSigTpcPr0();
           nSigmaTofDe = candidate.nSigTofDe0();
           tofBetaDe = (prong0.hasTOF() && prong0.beta() > 0.f) ? prong0.beta() : -999.f;
+          tpcInnerParamDe = prong0.tpcInnerParam();
+          tofExpMomDe = prong0.hasTOF() ? prong0.tofExpMom() : -999.f;
           nSigmaTpcPi = candidate.nSigTpcPi2();
           nSigmaTofPi = candidate.nSigTofPi2();
           nSigmaItsDe = prong0Its.itsNSigmaDe();
@@ -561,6 +571,8 @@ struct HfTaskCd {
           nSigmaTpcPr = candidate.nSigTpcPr2();
           nSigmaTofDe = candidate.nSigTofDe2();
           tofBetaDe = (prong2.hasTOF() && prong2.beta() > 0.f) ? prong2.beta() : -999.f;
+          tpcInnerParamDe = prong2.tpcInnerParam();
+          tofExpMomDe = prong2.hasTOF() ? prong2.tofExpMom() : -999.f;
           nSigmaTpcPi = candidate.nSigTpcPi0();
           nSigmaTofPi = candidate.nSigTofPi0();
           nSigmaItsDe = prong2Its.itsNSigmaDe();
@@ -600,6 +612,8 @@ struct HfTaskCd {
             nSigmaItsDe,
             nSigmaTofDe,
             tofBetaDe,
+            tpcInnerParamDe,
+            tofExpMomDe,
             candidate.ct(o2::constants::physics::MassCDeuteron) * cmToMum,
             candFlag,
             candSign,
@@ -632,6 +646,8 @@ struct HfTaskCd {
             nSigmaItsDe,
             nSigmaTofDe,
             tofBetaDe,
+            tpcInnerParamDe,
+            tofExpMomDe,
             nSigmaTpcPi,
             nSigmaTofPi,
             nSigmaTpcKa,
@@ -844,6 +860,8 @@ struct HfTaskCd {
         float nSigmaItsDe = 0.f;
         float nSigmaTofDe = 0.f, nSigmaTofKa = 0.f, nSigmaTofPi = 0.f;
         float tofBetaDe = -999.f;
+        float tpcInnerParamDe = -999.f;
+        float tofExpMomDe = -999.f;
 
         float dcaDeuteron = 0.f, dcaKaon = 0.f, dcaPion = 0.f;
         // int itsNClusterSizeDe = 0;
@@ -882,6 +900,8 @@ struct HfTaskCd {
           nSigmaTpcPr = candidate.nSigTpcPr0();
           nSigmaTofDe = candidate.nSigTofDe0();
           tofBetaDe = (prong0.hasTOF() && prong0.beta() > 0.f) ? prong0.beta() : -999.f;
+          tpcInnerParamDe = prong0.tpcInnerParam();
+          tofExpMomDe = prong0.hasTOF() ? prong0.tofExpMom() : -999.f;
           nSigmaTpcPi = candidate.nSigTpcPi2();
           nSigmaTofPi = candidate.nSigTofPi2();
           nSigmaItsDe = prong0Its.itsNSigmaDe();
@@ -901,6 +921,8 @@ struct HfTaskCd {
           nSigmaTpcPr = candidate.nSigTpcPr2();
           nSigmaTofDe = candidate.nSigTofDe2();
           tofBetaDe = (prong2.hasTOF() && prong2.beta() > 0.f) ? prong2.beta() : -999.f;
+          tpcInnerParamDe = prong2.tpcInnerParam();
+          tofExpMomDe = prong2.hasTOF() ? prong2.tofExpMom() : -999.f;
           nSigmaTpcPi = candidate.nSigTpcPi0();
           nSigmaTofPi = candidate.nSigTofPi0();
           nSigmaItsDe = prong2Its.itsNSigmaDe();
@@ -959,6 +981,8 @@ struct HfTaskCd {
             nSigmaItsDe,
             nSigmaTofDe,
             tofBetaDe,
+            tpcInnerParamDe,
+            tofExpMomDe,
             candidate.ct(o2::constants::physics::MassCDeuteron),
             candFlag,
             candSign,
@@ -992,6 +1016,8 @@ struct HfTaskCd {
             nSigmaItsDe,
             nSigmaTofDe,
             tofBetaDe,
+            tpcInnerParamDe,
+            tofExpMomDe,
             nSigmaTpcPi,
             nSigmaTofPi,
             nSigmaTpcKa,
