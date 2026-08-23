@@ -934,7 +934,9 @@ class CutCulatorApp(tk.Tk):
         counts: Dict[str, int] = {}
         for sel_name, _kind in axes:
             counts[sel_name] = counts.get(sel_name, 0) + 1
-        return {(sel_name, kind): (sel_name if counts[sel_name] == 1 else f"{sel_name} [{kind}]") for sel_name, kind in axes}
+        return {
+            (sel_name, kind): (sel_name if counts[sel_name] == 1 else f"{sel_name} [{kind}]") for sel_name, kind in axes
+        }
 
     def _always_applied_bins(self, axes):
         """The BitPosition==X minimal floors that are in effect for every variation.
@@ -1025,9 +1027,10 @@ class CutCulatorApp(tk.Tk):
             return
 
         n = self._variation_count(axes)
-        if n > VARIATION_WARN_LIMIT:
-            if not messagebox.askyesno("Many variations", f"This will enumerate {n} variations. Continue?"):
-                return
+        if n > VARIATION_WARN_LIMIT and not messagebox.askyesno(
+            "Many variations", f"This will enumerate {n} variations. Continue?"
+        ):
+            return
 
         variations = self._compute_variations()
 
