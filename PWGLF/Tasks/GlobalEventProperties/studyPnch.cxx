@@ -171,8 +171,8 @@ struct StudyPnch {
     }
     if (doprocessEvtLossSigLossMC) {
       histos.add("MCEventHist", "MCEventHist", kTH1F, {axisEvent}, false);
-      auto hstat = histos.get<TH1>(HIST("MCEventHist"));
-      auto* x = hstat->GetXaxis();
+      auto hstatevloss = histos.get<TH1>(HIST("MCEventHist"));
+      auto* x = hstatevloss->GetXaxis();
       x->SetBinLabel(1, "All MC events");
       x->SetBinLabel(2, "MC events with atleast one reco event");
       histos.add("hMultiplicityMCgenAll", "hMultiplicityMCgenAll", kTH1F, {axisMult}, true);
