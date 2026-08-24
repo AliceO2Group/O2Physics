@@ -87,7 +87,7 @@ DECLARE_SOA_COLUMN(MCMultiplicity, mcMultiplicity, float);    //! MC Multiplicit
 // Keep the established ResoCollisionColls schema above unchanged.  Automatic
 // GroupSlicer association to aod::Collisions requires the canonical physical
 // column name fIndexCollisions, so the modular initializer writes this small
-// companion table for the optimized daughter process.
+// companion table for the hybrid daughter process.
 namespace resocollisiongroup
 {
 DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(OriginalCollision, originalCollision, int, Collisions, "Collisions", ""); //!

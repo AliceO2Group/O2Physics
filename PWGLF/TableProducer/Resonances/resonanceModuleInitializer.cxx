@@ -711,12 +711,11 @@ struct ResonanceDaughterInitializer {
    */
   void init(InitContext&)
   {
-    const bool processTrackDataEnabled = doprocessData || doprocessDataOptimized || doprocessDataHybrid || doprocessDataWithPairGate;
+    const bool processTrackDataEnabled = doprocessData || doprocessDataHybrid || doprocessDataWithPairGate;
     const bool processTrackMCEnabled = doprocessMC || doprocessMCWithPairGate;
     const bool processV0DataEnabled = doprocessV0Data || doprocessV0DataHybrid;
     const bool processCascDataEnabled = doprocessCascData || doprocessCascDataHybrid;
     const int enabledTrackProcesses = static_cast<int>(doprocessData) +
-                                      static_cast<int>(doprocessDataOptimized) +
                                       static_cast<int>(doprocessDataHybrid) +
                                       static_cast<int>(doprocessDataWithPairGate) +
                                       static_cast<int>(doprocessMC) +
@@ -731,9 +730,9 @@ struct ResonanceDaughterInitializer {
     if (static_cast<int>(doprocessCascData) + static_cast<int>(doprocessCascDataHybrid) + static_cast<int>(doprocessCascMC) > 1) {
       LOGF(fatal, "Only one cascade process can be enabled in ResonanceDaughterInitializer");
     }
-    if ((doprocessData || doprocessDataOptimized || doprocessDataHybrid || doprocessMC) &&
+    if ((doprocessData || doprocessDataHybrid || doprocessMC) &&
         (FilterForDerivedTables.cfgBypassNoPairV0s || FilterForDerivedTables.cfgBypassNoPairCascades)) {
-      LOGF(warn, "Pair-gate options are ignored by processData/processDataOptimized/processDataHybrid/processMC; enable the matching *WithPairGate process to apply them");
+      LOGF(warn, "Pair-gate options are ignored by processData/processDataHybrid/processMC; enable the matching *WithPairGate process to apply them");
     }
     if (doprocessDataWithPairGate && FilterForDerivedTables.cfgBypassNoPairV0s && !processV0DataEnabled) {
       LOGF(fatal, "cfgBypassNoPairV0s requires processV0Data or processV0DataHybrid so an accepted V0 is written for every retained collision");
@@ -1938,16 +1937,16 @@ struct ResonanceDaughterInitializer {
   PROCESS_SWITCH(ResonanceDaughterInitializer, processData, "Process tracks for data", false);
 
   /**
-   * @brief Processes data tracks grouped automatically by their original collision
+   * @brief Processes data tracks using the two-stage hybrid grouping
    *
    * The canonical fIndexCollisions column in ResoCollisionGroups lets
    * GroupSlicer associate both reduced collisions and tracks to the same
-   * original aod::Collision.  The tracks argument is therefore already the
+   * original aod::Collision. The tracks argument is therefore already the
    * selected slice for this collision and must not be sliced again.
    */
-  void processDataOptimized(aod::Collision const&,
-                            soa::SmallGroups<SelectedResoCollisions> const& reducedCollisions,
-                            soa::Filtered<aod::ResoTrackCandidates> const& tracks)
+  void processDataHybrid(aod::Collision const&,
+                         soa::SmallGroups<SelectedResoCollisions> const& reducedCollisions,
+                         soa::Filtered<aod::ResoTrackCandidates> const& tracks)
   {
     if (reducedCollisions.size() == 0) {
       return;
@@ -1957,20 +1956,6 @@ struct ResonanceDaughterInitializer {
     }
     auto reducedCollision = reducedCollisions.begin();
     fillTrackTables<false>(reducedCollision, tracks);
-  }
-  PROCESS_SWITCH(ResonanceDaughterInitializer, processDataOptimized, "Process data tracks with original-collision grouping", false);
-
-  /**
-   * @brief Production hybrid path using original-collision automatic grouping
-   *
-   * This named path preserves the existing optimized prototype for A/B
-   * compatibility while exposing the two-stage hybrid architecture explicitly.
-   */
-  void processDataHybrid(aod::Collision const& originalCollision,
-                         soa::SmallGroups<SelectedResoCollisions> const& reducedCollisions,
-                         soa::Filtered<aod::ResoTrackCandidates> const& tracks)
-  {
-    processDataOptimized(originalCollision, reducedCollisions, tracks);
   }
   PROCESS_SWITCH(ResonanceDaughterInitializer, processDataHybrid, "Process data tracks with the two-stage hybrid grouping", false);
 
