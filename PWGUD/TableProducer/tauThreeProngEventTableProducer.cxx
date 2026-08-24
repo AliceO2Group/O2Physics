@@ -700,6 +700,9 @@ struct TauThreeProngEventTableProducer {
   // skimming: only 4 tracks selection in data
   void processDoSkim(UDCollisionFull2 const& dgcand, UDTracksFull const& dgtracks, PVTracks const& PVContributors)
   {
+    const int fourTracks = 4;
+    const int sixTracks = 6;
+
     registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(0., 1.);
 
     int gapSide = dgcand.gapSide();
@@ -866,7 +869,7 @@ struct TauThreeProngEventTableProducer {
       counterTmp++;
     }
 
-    if (nPVtrackscut == 4) {
+    if (nPVtrackscut == fourTracks) {
       dataTauFourTracks(dgcand.runNumber(),
                         dgcand.globalBC(), // is it necessary
                         dgtracks.size(),
@@ -890,7 +893,7 @@ struct TauThreeProngEventTableProducer {
                         tmpDedx, nSigmaEl, nSigmaPi, nSigmaKa, nSigmaPr, nSigmaMu,
                         trkTofSignal, tmpTofNsigmaEl, tmpTofNsigmaPi, tmpTofNsigmaKa, tmpTofNsigmaPr, tmpTofNsigmaMu,
                         chi2TOF);
-    } else if (nPVtrackscut == 6) {
+    } else if (nPVtrackscut == sixTracks) {
       dataTauSixTracks(dgcand.runNumber(),
                        dgcand.globalBC(), // is it necessary
                        dgtracks.size(),
