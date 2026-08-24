@@ -79,8 +79,12 @@ enum MyParticle {
 };
 
 struct TauThreeProngEventTableProducer {
+  // derived output for 4 track topology
   Produces<o2::aod::TrueTauFourTracks> trueTauFourTracks;
   Produces<o2::aod::DataTauFourTracks> dataTauFourTracks;
+  // derived output for 6 track topology
+  Produces<o2::aod::TrueTauSixTracks> trueTauSixTracks;
+  Produces<o2::aod::DataTauSixTracks> dataTauSixTracks;
 
   // Global varialbes
   // Service<o2::framework::O2DatabasePDG> pdg;
@@ -238,7 +242,7 @@ struct TauThreeProngEventTableProducer {
     // mySetITShitsRule(cutGlobalTrack.cutITShitsRule);
 
     if (doprocessDoSkim) {
-      registrySkim.add("skim/efficiency", ";efficeincy;events", {HistType::kTH1F, {{10, 0., 10.}}});
+      registrySkim.add("skim/efficiency", ";efficeincy;events", {HistType::kTH1D, {{10, 0., 10.}}});
       registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(1, "1: All");
       registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(2, "2: Gap=012");
       registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(3, "3: Gap=2");
@@ -248,15 +252,15 @@ struct TauThreeProngEventTableProducer {
       registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(7, "7: N_{TOF}^{tr}>1");
       registrySkim.get<TH1>(HIST("skim/efficiency"))->GetXaxis()->SetBinLabel(8, "8: FIT veto");
 
-      registrySkim.add("skim/gapSide", ";Gap;events", {HistType::kTH1F, {{10, -1., 9.}}});
-      registrySkim.add("skim/trueGapSide", ";TrueGap;events", {HistType::kTH1F, {{10, -1., 9.}}});
+      registrySkim.add("skim/gapSide", ";Gap;events", {HistType::kTH1D, {{10, -1., 9.}}});
+      registrySkim.add("skim/trueGapSide", ";TrueGap;events", {HistType::kTH1D, {{10, -1., 9.}}});
       registrySkim.add("skim/etaTrk", ";#eta^{trk};events", {HistType::kTH1F, {{100, -1.5, 1.5}}});
       registrySkim.add("skim/ptTrk", ";p_{T}^{trk};events", {HistType::kTH1F, {{100, 0., 5.}}});
       registrySkim.add("skim/phiTrk", ";#phi^{trk};events", {HistType::kTH1F, {{128, -3.2, 3.2}}});
       registrySkim.add("skim/nTof", ";N_{TOFtrk};events", {HistType::kTH1F, {{10, -1., 9.}}});
     }
     if (doprocessMonteCarlo) {
-      registrySkim.add("skim/efficiencyMC", ";efficeincy;events", {HistType::kTH1F, {{10, 0., 10.}}});
+      registrySkim.add("skim/efficiencyMC", ";efficeincy;events", {HistType::kTH1D, {{10, 0., 10.}}});
       registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(1, "1: All");
       registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(2, "2: N^{#tau}=2");
       registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(3, "3: |y^{#tau}| <= 0.9");
@@ -267,9 +271,9 @@ struct TauThreeProngEventTableProducer {
       registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(8, "8: 7+4 trk");
       registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(9, "9: 7+6 trk");
 
-      registrySkim.add("skim/problemMC", ";problem;events", {HistType::kTH1F, {{10, 0., 10.}}});
+      registrySkim.add("skim/problemMC", ";problem;events", {HistType::kTH1D, {{10, 0., 10.}}});
 
-      registrySkim.add("skim/nTauMC", ";N_{#tau};events", {HistType::kTH1F, {{10, 0., 10.}}});
+      registrySkim.add("skim/nTauMC", ";N_{#tau};events", {HistType::kTH1D, {{10, 0., 10.}}});
       registrySkim.add("skim/tauRapidityMC", ";y_{#tau};events", {HistType::kTH1F, {{100, -2.5, 2.5}}});
       registrySkim.add("skim/tauPhiMC", ";#phi^{#tau};events", {HistType::kTH1F, {{100, 0, 6.4}}});
       registrySkim.add("skim/tauEtaMC", ";#eta^{#tau};events", {HistType::kTH1F, {{100, -2.5, 2.5}}});
@@ -745,15 +749,15 @@ struct TauThreeProngEventTableProducer {
         nTofTrk++;
     } // end of loop over PV tracks
 
-    if (PVContributors.size() != nPVtrackscut) // 4
+    if (PVContributors.size() != nPVtrackscut) // 4 or 6
       return;
     registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(3., 1.);
 
-    if (nEtaIn15 != nPVtrackscut) // 4
+    if (nEtaIn15 != nPVtrackscut) // 4 or 6
       return;
     registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(4., 1.);
 
-    if (npT100 != nPVtrackscut) // 4
+    if (npT100 != nPVtrackscut) // 4 or 6
       return;
     registrySkim.get<TH1>(HIST("skim/efficiency"))->Fill(5., 1.);
 
@@ -862,29 +866,55 @@ struct TauThreeProngEventTableProducer {
       counterTmp++;
     }
 
-    dataTauFourTracks(dgcand.runNumber(),
-                      dgcand.globalBC(), // is it necessary
-                      dgtracks.size(),
-                      dgcand.numContrib(),
-                      rct,
-                      // dgcand.posX(), dgcand.posY(),
-                      dgcand.posZ(),
-                      dgcand.flags(),
-                      dgcand.occupancyInTime(),
-                      dgcand.hadronicRate(),                       // is it necessary
-                      dgcand.trs(), dgcand.trofs(), dgcand.hmpr(), // to test it
-                      dgcand.tfb(), dgcand.itsROFb(), dgcand.sbp(), dgcand.zVtxFT0vPV(), dgcand.vtxITSTPC(),
-                      energyZNA, energyZNC,
-                      timeZNA, timeZNC,
-                      // qtot, <<-------- comment out
-                      dgcand.totalFT0AmplitudeA(), dgcand.totalFT0AmplitudeC(), dgcand.totalFV0AmplitudeA(),
-                      // dgcand.timeFT0A(), dgcand.timeFT0C(), dgcand.timeFV0A(),
-                      px, py, pz, sign,
-                      dcaXY, dcaZ,
-                      nclTPCcrossedRows, nclTPCfind, nclTPCchi2, trkITSchi2, trkITScl,
-                      tmpDedx, nSigmaEl, nSigmaPi, nSigmaKa, nSigmaPr, nSigmaMu,
-                      trkTofSignal, tmpTofNsigmaEl, tmpTofNsigmaPi, tmpTofNsigmaKa, tmpTofNsigmaPr, tmpTofNsigmaMu,
-                      chi2TOF);
+    if (nPVtrackscut == 4) {
+      dataTauFourTracks(dgcand.runNumber(),
+                        dgcand.globalBC(), // is it necessary
+                        dgtracks.size(),
+                        dgcand.numContrib(),
+                        rct,
+                        // dgcand.posX(), dgcand.posY(),
+                        dgcand.posZ(),
+                        dgcand.flags(),
+                        dgcand.occupancyInTime(),
+                        dgcand.hadronicRate(),                       // is it necessary
+                        dgcand.trs(), dgcand.trofs(), dgcand.hmpr(), // to test it
+                        dgcand.tfb(), dgcand.itsROFb(), dgcand.sbp(), dgcand.zVtxFT0vPV(), dgcand.vtxITSTPC(),
+                        energyZNA, energyZNC,
+                        timeZNA, timeZNC,
+                        // qtot, <<-------- comment out
+                        dgcand.totalFT0AmplitudeA(), dgcand.totalFT0AmplitudeC(), dgcand.totalFV0AmplitudeA(),
+                        // dgcand.timeFT0A(), dgcand.timeFT0C(), dgcand.timeFV0A(),
+                        px, py, pz, sign,
+                        dcaXY, dcaZ,
+                        nclTPCcrossedRows, nclTPCfind, nclTPCchi2, trkITSchi2, trkITScl,
+                        tmpDedx, nSigmaEl, nSigmaPi, nSigmaKa, nSigmaPr, nSigmaMu,
+                        trkTofSignal, tmpTofNsigmaEl, tmpTofNsigmaPi, tmpTofNsigmaKa, tmpTofNsigmaPr, tmpTofNsigmaMu,
+                        chi2TOF);
+    } else if (nPVtrackscut == 6) {
+      dataTauSixTracks(dgcand.runNumber(),
+                       dgcand.globalBC(), // is it necessary
+                       dgtracks.size(),
+                       dgcand.numContrib(),
+                       rct,
+                       // dgcand.posX(), dgcand.posY(),
+                       dgcand.posZ(),
+                       dgcand.flags(),
+                       dgcand.occupancyInTime(),
+                       dgcand.hadronicRate(),                       // is it necessary
+                       dgcand.trs(), dgcand.trofs(), dgcand.hmpr(), // to test it
+                       dgcand.tfb(), dgcand.itsROFb(), dgcand.sbp(), dgcand.zVtxFT0vPV(), dgcand.vtxITSTPC(),
+                       energyZNA, energyZNC,
+                       timeZNA, timeZNC,
+                       // qtot, <<-------- comment out
+                       dgcand.totalFT0AmplitudeA(), dgcand.totalFT0AmplitudeC(), dgcand.totalFV0AmplitudeA(),
+                       // dgcand.timeFT0A(), dgcand.timeFT0C(), dgcand.timeFV0A(),
+                       px, py, pz, sign,
+                       dcaXY, dcaZ,
+                       nclTPCcrossedRows, nclTPCfind, nclTPCchi2, trkITSchi2, trkITScl,
+                       tmpDedx, nSigmaEl, nSigmaPi, nSigmaKa, nSigmaPr, nSigmaMu,
+                       trkTofSignal, tmpTofNsigmaEl, tmpTofNsigmaPi, tmpTofNsigmaKa, tmpTofNsigmaPr, tmpTofNsigmaMu,
+                       chi2TOF);
+    }
   } // end of skim process processDoSkim
   PROCESS_SWITCH(TauThreeProngEventTableProducer, processDoSkim, "Run over SG Producer tables to produce skimmed data", false);
 
@@ -1570,36 +1600,71 @@ struct TauThreeProngEventTableProducer {
       trueChannel = trueChannel + countPi0 * 10 + zerothTau * 100;
 
       // LOGF(info, "Should be written!");
-      trueTauFourTracks(runNumber,
-                        bc, // is it necessary
-                        totalTracks,
-                        nPVcontrib,
-                        rct,
-                        // dgcand.posX(), dgcand.posY(),
-                        zVertex,
-                        recoMode,
-                        occupancy,
-                        hadronicRate,                    // is it necessary
-                        bcSels[0], bcSels[1], bcSels[2], // to test it
-                        bcSels[3], bcSels[4], bcSels[5], bcSels[6], bcSels[7],
-                        energyZNA, energyZNC,
-                        timeZNA, timeZNC,
-                        // qtot, <<-------- comment out
-                        amplitudesFIT[0], amplitudesFIT[1], amplitudesFIT[2],
-                        // timesFIT[0], timesFIT[1], timesFIT[2],
-                        px, py, pz, sign,
-                        dcaXY, dcaZ,
-                        nclTPCcrossedRows, nclTPCfind, nclTPCchi2, trkITSchi2, trkITScl,
-                        tpcSignal, tpcEl, tpcPi, tpcKa, tpcPr, tpcMu,
-                        tofSignal, tofEl, tofPi, tofKa, tofPr, tofMu,
-                        chi2TOF,
-                        //
-                        trueChannel,
-                        // trueHasRecoColl,
-                        mccoll.posZ(),
-                        trueTauX, trueTauY, trueTauZ,
-                        trueDaugX, trueDaugY, trueDaugZ,
-                        trueDaugPdgCode, problem);
+
+      if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == fourTracks) { // 4
+        trueTauFourTracks(runNumber,
+                          bc, // is it necessary
+                          totalTracks,
+                          nPVcontrib,
+                          rct,
+                          // dgcand.posX(), dgcand.posY(),
+                          zVertex,
+                          recoMode,
+                          occupancy,
+                          hadronicRate,                    // is it necessary
+                          bcSels[0], bcSels[1], bcSels[2], // to test it
+                          bcSels[3], bcSels[4], bcSels[5], bcSels[6], bcSels[7],
+                          energyZNA, energyZNC,
+                          timeZNA, timeZNC,
+                          // qtot, <<-------- comment out
+                          amplitudesFIT[0], amplitudesFIT[1], amplitudesFIT[2],
+                          // timesFIT[0], timesFIT[1], timesFIT[2],
+                          px, py, pz, sign,
+                          dcaXY, dcaZ,
+                          nclTPCcrossedRows, nclTPCfind, nclTPCchi2, trkITSchi2, trkITScl,
+                          tpcSignal, tpcEl, tpcPi, tpcKa, tpcPr, tpcMu,
+                          tofSignal, tofEl, tofPi, tofKa, tofPr, tofMu,
+                          chi2TOF,
+                          //
+                          trueChannel,
+                          // trueHasRecoColl,
+                          mccoll.posZ(),
+                          trueTauX, trueTauY, trueTauZ,
+                          trueDaugX, trueDaugY, trueDaugZ,
+                          trueDaugPdgCode, problem);
+      } else if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == sixTracks) { // 6
+        trueTauSixTracks(runNumber,
+                         bc, // is it necessary
+                         totalTracks,
+                         nPVcontrib,
+                         rct,
+                         // dgcand.posX(), dgcand.posY(),
+                         zVertex,
+                         recoMode,
+                         occupancy,
+                         hadronicRate,                    // is it necessary
+                         bcSels[0], bcSels[1], bcSels[2], // to test it
+                         bcSels[3], bcSels[4], bcSels[5], bcSels[6], bcSels[7],
+                         energyZNA, energyZNC,
+                         timeZNA, timeZNC,
+                         // qtot, <<-------- comment out
+                         amplitudesFIT[0], amplitudesFIT[1], amplitudesFIT[2],
+                         // timesFIT[0], timesFIT[1], timesFIT[2],
+                         px, py, pz, sign,
+                         dcaXY, dcaZ,
+                         nclTPCcrossedRows, nclTPCfind, nclTPCchi2, trkITSchi2, trkITScl,
+                         tpcSignal, tpcEl, tpcPi, tpcKa, tpcPr, tpcMu,
+                         tofSignal, tofEl, tofPi, tofKa, tofPr, tofMu,
+                         chi2TOF,
+                         //
+                         trueChannel,
+                         // trueHasRecoColl,
+                         mccoll.posZ(),
+                         trueTauX, trueTauY, trueTauZ,
+                         trueDaugX, trueDaugY, trueDaugZ,
+                         trueDaugPdgCode, problem);
+      }
+
     } // mccollisions
   } // end of  processMonteCarlo
   PROCESS_SWITCH(TauThreeProngEventTableProducer, processMonteCarlo, "Iterate UD tables with simulated data created by SG-Candidate-Producer.", false);
