@@ -431,16 +431,17 @@ struct JEPFlowAnalysis {
         q2selLow = q2Map->GetBinContent(q2Map->GetXaxis()->FindBin(i + 2), q2Map->GetYaxis()->FindBin(cent), q2Map->GetZaxis()->FindBin(1. - cfgQ2SelFrac));
       }
 
+      leadingPt = 0.0;
+      leadingPhi = 0.0;
+      leadingEta = 0.0;
+
+      subleadingPt = 0.0;
+      subleadingPhi = 0.0;
+      subleadingEta = 0.0;
+
+      nHighPt = 0;
+
       if (cfgSelEvtTwoHP && i == 0) {
-        leadingPt = 0.0;
-        leadingPhi = 0.0;
-        leadingEta = 0.0;
-
-        subleadingPt = 0.0;
-        subleadingPhi = 0.0;
-        subleadingEta = 0.0;
-
-        nHighPt = 0;
         for (const auto& track : tracks) {
           if (cfgTrkSelFlag && trackSel(track))
             continue;
