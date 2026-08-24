@@ -38,6 +38,7 @@ DECLARE_SOA_COLUMN(CentFDDM, centFDDM, float);                   //! Run 3 cent.
 DECLARE_SOA_COLUMN(CentNTPV, centNTPV, float);                   //! Run 3 cent. from the number of tracks contributing to the PV
 DECLARE_SOA_COLUMN(CentNGlobal, centNGlobal, float);             //! Run 3 cent. from the number of global tracks
 DECLARE_SOA_COLUMN(CentMFT, centMFT, float);                     //! Run 3 cent. from the number of tracks in the MFT
+DECLARE_SOA_COLUMN(CentFT0MOuterA, centFT0MOuterA, float);       //! Run 3 cent. from FT0AOuter+FT0C multiplicity
 } // namespace cent
 
 // Run 2 tables
@@ -65,6 +66,7 @@ DECLARE_SOA_TABLE(CentFT0CVariant1s, "AOD", "CENTFT0Cvar1", cent::CentFT0CVarian
 DECLARE_SOA_TABLE(CentFT0CVariant2s, "AOD", "CENTFT0Cvar2", cent::CentFT0CVariant2);  //! Run 3 FT0C variant 2 - uses truncated Nancestors in glauber fit. Not recommended! for cross-checks only
 DECLARE_SOA_TABLE(CentFT0MAnchorCols, "AOD", "CENTFT0MCOL", cent::CentFT0MAnchorCol); //! Run 3 FT0M with anchored Glauber. Colliison based calibration. Not recommended! for cross-checks only
 DECLARE_SOA_TABLE(CentFT0MAnchorBCs, "AOD", "CENTFT0MBC", cent::CentFT0MAnchorBC);    //! Run 3 FT0M with anchored Glauber. Bunch crossing based calibration. Not recommended! for cross-checks only
+DECLARE_SOA_TABLE(CentFT0MOuterAs, "AOD", "CENTFT0Mvar3", cent::CentFT0MOuterA);      //! Run 3 FT0MOuterA - excludes FT0A channels that saturates in PbPb (channel id < 31)
 
 // Run 3 centrality per BC (joinable with BC)
 DECLARE_SOA_TABLE(BCCentFT0Ms, "AOD", "BCCENTFT0M", cent::CentFT0M, o2::soa::Marker<1>); //! Run 3 FT0M BC centrality table
@@ -87,6 +89,10 @@ using CentFDDM = CentFDDMs::iterator;
 using CentNTPV = CentNTPVs::iterator;
 using CentNGlobal = CentNGlobals::iterator;
 using CentMFT = CentMFTs::iterator;
+
+using CentFT0CVariant1 = CentFT0CVariant1s::iterator;
+using CentFT0CVariant2 = CentFT0CVariant2s::iterator;
+using CentFT0MOuterA = CentFT0MOuterAs::iterator;
 
 using BCCentFT0M = BCCentFT0Ms::iterator;
 using BCCentFT0A = BCCentFT0As::iterator;

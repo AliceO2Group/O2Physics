@@ -54,10 +54,12 @@
 #include <Framework/StaticFor.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TAxis.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
 #include <THn.h>
+#include <THnSparse.h>
 #include <TList.h>
 #include <TPDGCode.h>
 #include <TString.h>
@@ -2543,6 +2545,9 @@ struct HStrangeCorrelation {
       histos.add("PairLossK0/Stage/hPhysicsFindable", "stages in h-K0 physics variables for findable K0", kTHnF, {axisPairLossStage, axisPairLossTruthDeltaPhi, axisPairLossTruthDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt, axisMultNDim});
       histos.add("PairLossK0/Stage/hClose", "stages in trigger-daughter close-pair variables", kTHnF, {axisPairLossStage, axisPairLossMinDeltaPhiStar, axisPairLossDaughterDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt, axisPairLossFieldSign, axisPairLossChargeProduct});
       histos.add("PairLossK0/Stage/hTriggerTracksFailureReason", "first-failing TriggerTracks condition for best-collision triggers, in h-K0 physics variables", kTHnF, {axisPairLossTriggerTracksFailureReason, axisPairLossTruthDeltaPhi, axisPairLossTruthDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt});
+      // 1/N_trigger denominator of the stage ladder: same stage axis as hCounts/hPhysics, generated trigger pT, eta, phi.
+      // Sparse because the eta-phi part would cost tens of MB dense for an occupancy of a few percent.
+      histos.add("PairLossK0/Stage/hTriggers", "triggers per stage: the 1/#it{N}_{trigger} normalisation of the stage ladder", kTHnSparseF, {axisPairLossStage, axisPairLossTruthTriggerPt, axesConfigurations.axisEta, axesConfigurations.axisPhi, axisVtxZNDim, axisMultNDim});
 
       histos.add("PairLossK0/State/hFinalObjectStatePhysics", "00/01/10/11 final trigger-K0 object state", kTHnF, {axisPairLossFinalObjectState, axisPairLossTruthDeltaPhi, axisPairLossTruthDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt, axisPairLossFieldSign});
       histos.add("PairLossK0/State/hFinalObjectStateClose", "00/01/10/11 final trigger-K0 object state in close-pair variables", kTHnF, {axisPairLossFinalObjectState, axisPairLossMinDeltaPhiStar, axisPairLossDaughterDeltaEta, axisPairLossTruthK0Pt, axisPairLossTruthTriggerPt, axisPairLossFieldSign, axisPairLossChargeProduct});
@@ -2584,15 +2589,19 @@ struct HStrangeCorrelation {
       }
       eventCounter->GetYaxis()->SetTitle("Entries");
       histos.get<TH1>(HIST("PairLossK0/Event/hNRecoCollisions"))->GetYaxis()->SetTitle("MC collisions");
-      auto setStageLabels = [&](auto const& stageHistogram) {
+      auto setStageAxisLabels = [&](TAxis* stageAxis) {
         for (int i = 0; i < PairLossK0NStages; ++i) {
-          stageHistogram->GetXaxis()->SetBinLabel(i + 1, PairLossK0StageNames[i].data());
+          stageAxis->SetBinLabel(i + 1, PairLossK0StageNames[i].data());
         }
+      };
+      auto setStageLabels = [&](auto const& stageHistogram) {
+        setStageAxisLabels(stageHistogram->GetXaxis());
       };
       auto stageCounts = histos.get<TH1>(HIST("PairLossK0/Stage/hCounts"));
       auto stageCountsFindable = histos.get<TH1>(HIST("PairLossK0/Stage/hCountsFindable"));
       setStageLabels(stageCounts);
       setStageLabels(stageCountsFindable);
+      setStageAxisLabels(histos.get<THnSparse>(HIST("PairLossK0/Stage/hTriggers"))->GetAxis(0));
       stageCounts->GetYaxis()->SetTitle("Truth-pair entries");
       stageCountsFindable->GetYaxis()->SetTitle("Findable truth-pair entries");
 
@@ -5082,6 +5091,28 @@ struct HStrangeCorrelation {
         }
         return &*std::max_element(iterator->second.begin(), iterator->second.end(), [](auto const& lhs, auto const& rhs) { return lhs.cosPA < rhs.cosPA; });
       };
+
+      // Separate from the pair loop, which would count a trigger once per truth K0 and drop it entirely in events without one.
+      // Each stage holds the trigger-side condition of the same stage of hCounts/hPhysics, so the ratio keeps one trigger population.
+      for (auto const& truthTrigger : truthTriggers) {
+        const std::array<bool, PairLossK0NStages> triggerStagePassed = {
+          true,                                                    // Gen pair
+          true,                                                    // Findable K0->pi+pi-: K0 side only
+          contains(tracksBestCollision, truthTrigger.globalIndex), // Trigger pure reco (best collision)
+          contains(triggersInTable, truthTrigger.globalIndex),     // Trigger in TriggerTracks
+          contains(triggersFinal, truthTrigger.globalIndex),       // Trigger final selection
+          true,                                                    // V0 pure reco: K0 side only
+          true,                                                    // V0 candidate: K0 side only
+          true,                                                    // V0 in AssocV0s: K0 side only
+          true,                                                    // V0 final selection: K0 side only
+          contains(triggersFinal, truthTrigger.globalIndex)};      // Final reconstructed pair
+        for (int stage = 0; stage < PairLossK0NStages; ++stage) {
+          if (!triggerStagePassed[stage]) {
+            continue;
+          }
+          histos.fill(HIST("PairLossK0/Stage/hTriggers"), stage, truthTrigger.pt, truthTrigger.eta, truthTrigger.phi, collision.posZ(), multiplicity);
+        }
+      }
 
       bool hasTruthPair = false;
       for (auto const& truthTrigger : truthTriggers) {
