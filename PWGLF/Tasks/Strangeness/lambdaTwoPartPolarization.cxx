@@ -577,7 +577,7 @@ struct LfLambdaTwoPartPolarization {
       centrality = collision.centFT0C();
     } else if (cfgCentEst == kFT0M) {
       centrality = collision.centFT0M();
-    } 
+    }
     if (!eventSelected(collision) && cfgEvtSel) {
       return;
     }
