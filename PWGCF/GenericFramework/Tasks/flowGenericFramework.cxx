@@ -1670,23 +1670,11 @@ struct FlowGenericFramework {
       return;
     }
 
-    double mpt = 0;
-    double dnx = 0;
-    if (cfgKinematics.cfgEtaPtPt->first * cfgKinematics.cfgEtaPtPt->second >= 0) {
-      if (fFCpt->corrDen[1] == 0.) {
-        return;
-      }
-      dnx = fFCpt->corrDen[1];
-      mpt = fFCpt->corrNum[1] / dnx;
-    } else {
-      if (fFCpt->corrDenSub[0][1] == 0. || fFCpt->corrDenSub[1][1] == 0.) {
-        return;
-      }
-      double mptSub1 = fFCpt->corrNumSub[0][1] / fFCpt->corrDenSub[0][1];
-      double mptSub2 = fFCpt->corrNumSub[1][1] / fFCpt->corrDenSub[1][1];
-      dnx = 0.5 * (fFCpt->corrDenSub[0][1] + fFCpt->corrDenSub[1][1]);
-      mpt = 0.5 * (mptSub1 + mptSub2);
+    if (fFCpt->corrDen[1] == 0.) {
+      return;
     }
+    double dnx = fFCpt->corrDen[1];
+    double mpt = fFCpt->corrNum[1] / dnx;
     if (std::isnan(mpt)) {
       return;
     }
@@ -1698,7 +1686,7 @@ struct FlowGenericFramework {
           if (cfgEventWeight.cfgUseMultiplicityFractionWeights) {
             profileWeight *= dnsV0[l_ind];
           }
-          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * nptV0[l_ind]->GetBinContent(i) / dnsV0[l_ind], cfgEventWeight.cfgUseMultiplicityFlowWeights ? profileWeight : 1.0, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * nptV0[l_ind]->GetBinContent(i) / dnsV0[l_ind], cfgEventWeight.cfgUseMultiplicityFlowWeights ? profileWeight : 1.0, rndm);
+          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * nptV0[l_ind]->GetBinContent(i) / dnsV0[l_ind], cfgEventWeight.cfgUsePtCorrWeights ? profileWeight : 1.0, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * nptV0[l_ind]->GetBinContent(i) / dnsV0[l_ind], cfgEventWeight.cfgUsePtCorrWeights ? profileWeight : 1.0, rndm);
         }
       }
     }
@@ -1838,12 +1826,16 @@ struct FlowGenericFramework {
 
       for (uint l_ind = 4; l_ind < corrconfigsV0.size(); ++l_ind) {
         for (int i = 1; i <= fPtAxis->GetNbins(); i++) {
-          if (dns[l_ind - 4] > 0) {
-            if (cfgEventWeight.cfgUseMultiplicityFractionWeights) {
-              dnx *= dns[l_ind - 4];
-            }
+          if (dns[l_ind - 4] <= 0) {
+            continue;
           }
-          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * histosResoNpt[FractionV0][l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], 1.0, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, mpt * histosResoNpt[FractionV0][l_ind - 4]->GetBinContent(i) / dns[l_ind - 4], 1.0, rndm);
+          double profileWeight = dnx;
+          if (cfgEventWeight.cfgUseMultiplicityFractionWeights) {
+            profileWeight *= dns[l_ind - 4];
+          }
+          const double value = mpt * histosResoNpt[FractionV0][l_ind - 4]->GetBinContent(i) / dns[l_ind - 4];
+          const double weight = cfgEventWeight.cfgUsePtCorrWeights ? profileWeight : 1.0;
+          (dt == Gen) ? fFCgen->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, value, weight, rndm) : fFC->FillProfile(Form("%s_pt_%i", corrconfigsV0.at(l_ind).Head.c_str(), i), centmult, value, weight, rndm);
         }
       }
     }

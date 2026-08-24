@@ -45,6 +45,7 @@
 #include <TDirectory.h>
 #include <TFile.h>
 #include <TFormula.h>
+#include <TH2.h>
 #include <TH3.h>
 #include <THn.h>
 #include <TList.h>
@@ -238,6 +239,8 @@ struct TwoParticleCorrelationsMpi {
 
   std::vector<YieldTemplate> yieldTemplates;
   std::vector<std::unique_ptr<TH3D>> pairAcceptanceMaps;
+  std::vector<std::unique_ptr<TH2D>> pairAcceptanceEtaVertexMaps;
+  int pairAcceptanceSchemaVersion = 0;
   const TList* loadedCcdbYieldTemplateObject = nullptr;
   bool eventSeedEstimatorEnabled = false;
 
@@ -254,8 +257,6 @@ struct TwoParticleCorrelationsMpi {
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection>>;
-  using FilteredMcParticles = soa::Filtered<aod::McParticles>;
-  using McCollisionsWithHepMC = soa::Join<aod::McCollisions, aod::HepMCXSections>;
 
   using DerivedCollisions = soa::Filtered<aod::CFCollisions>;
   using DerivedTracks = soa::Filtered<aod::CFTracks>;
@@ -264,6 +265,9 @@ struct TwoParticleCorrelationsMpi {
   {
     if (doprocessMCSameDerived && (doprocessSameDerived || doprocessSameDerivedMultSet)) {
       LOGF(fatal, "processMCSameDerived is mutually exclusive with the reconstructed derived same-event processes because it also fills those outputs");
+    }
+    if (doprocessSameGenMC && doprocessMCSameDerived) {
+      LOGF(fatal, "processSameGenMC and processMCSameDerived are mutually exclusive because both fill the generated same-event outputs");
     }
     if (!cfgNuncSeedsTemplateFile.value.empty() && !cfgNuncSeedsTemplate.value.empty()) {
       LOGF(fatal, "Configure only one template source: cfgNuncSeedsTemplateFile or cfgNuncSeedsTemplate");
@@ -725,31 +729,46 @@ struct TwoParticleCorrelationsMpi {
     const auto* schemaVersion = dynamic_cast<const TNamed*>(findObject("pairAcceptanceSchemaVersion"));
     const auto* normalization = dynamic_cast<const TNamed*>(findObject("pairAcceptanceNormalization"));
     const auto* axes = dynamic_cast<const TNamed*>(findObject("pairAcceptanceAxes"));
-    if (schemaVersion == nullptr || TString(schemaVersion->GetTitle()) != "2" || normalization == nullptr || axes == nullptr) {
-      LOGF(fatal, "Unsupported or missing multiplicity-only pair-acceptance metadata in %s", source.c_str());
+    const TString schema = schemaVersion != nullptr ? schemaVersion->GetTitle() : "";
+    if (schemaVersion == nullptr || (schema != "2" && schema != "3") || normalization == nullptr || axes == nullptr) {
+      LOGF(fatal, "Unsupported or missing pair-acceptance metadata in %s", source.c_str());
       return;
     }
 
     const int nMultiplicityBins = AxisSpec(axisMultiplicity).getNbins();
     pairAcceptanceMaps.clear();
-    pairAcceptanceMaps.resize(nMultiplicityBins);
-    for (int multBin = 0; multBin < nMultiplicityBins; ++multBin) {
-      auto* inputMap = dynamic_cast<TH3D*>(findObject(Form("pairAcceptance_mult_%d", multBin)));
-      if (inputMap == nullptr) {
-        LOGF(fatal, "Missing pairAcceptance_mult_%d in %s", multBin, source.c_str());
-        pairAcceptanceMaps.clear();
-        return;
-      }
-      auto* clone = dynamic_cast<TH3D*>(inputMap->Clone(Form("loadedPairAcceptance_mult_%d", multBin)));
-      if (clone == nullptr) {
-        LOGF(fatal, "Could not clone pairAcceptance_mult_%d from %s as TH3D", multBin, source.c_str());
-        pairAcceptanceMaps.clear();
-        return;
-      }
-      clone->SetDirectory(nullptr);
-      pairAcceptanceMaps[multBin].reset(clone);
+    pairAcceptanceEtaVertexMaps.clear();
+    pairAcceptanceSchemaVersion = schema.Atoi();
+    int multiplicityDependentOnly = 2;
+    if (pairAcceptanceSchemaVersion == multiplicityDependentOnly) {
+      pairAcceptanceMaps.resize(nMultiplicityBins);
+    } else {
+      pairAcceptanceEtaVertexMaps.resize(nMultiplicityBins);
     }
-    LOGF(info, "Loaded %zu multiplicity-only pair-acceptance maps from %s", pairAcceptanceMaps.size(), source.c_str());
+    for (int multBin = 0; multBin < nMultiplicityBins; ++multBin) {
+      if (pairAcceptanceSchemaVersion == multiplicityDependentOnly) {
+        auto* inputMap = dynamic_cast<TH3D*>(findObject(Form("pairAcceptance_mult_%d", multBin)));
+        auto* clone = inputMap != nullptr ? dynamic_cast<TH3D*>(inputMap->Clone(Form("loadedPairAcceptance_mult_%d", multBin))) : nullptr;
+        if (clone == nullptr) {
+          LOGF(fatal, "Missing or invalid pairAcceptance_mult_%d in %s", multBin, source.c_str());
+          pairAcceptanceMaps.clear();
+          return;
+        }
+        clone->SetDirectory(nullptr);
+        pairAcceptanceMaps[multBin].reset(clone);
+      } else {
+        auto* inputMap = dynamic_cast<TH2D*>(findObject(Form("pairAcceptanceEtaVertex_mult_%d", multBin)));
+        auto* clone = inputMap != nullptr ? dynamic_cast<TH2D*>(inputMap->Clone(Form("loadedPairAcceptanceEtaVertex_mult_%d", multBin))) : nullptr;
+        if (clone == nullptr) {
+          LOGF(fatal, "Missing or invalid pairAcceptanceEtaVertex_mult_%d in %s", multBin, source.c_str());
+          pairAcceptanceEtaVertexMaps.clear();
+          return;
+        }
+        clone->SetDirectory(nullptr);
+        pairAcceptanceEtaVertexMaps[multBin].reset(clone);
+      }
+    }
+    LOGF(info, "Loaded %d schema-%d pair-acceptance maps from %s", nMultiplicityBins, pairAcceptanceSchemaVersion, source.c_str());
   }
 
   void loadLocalYieldTemplates()
@@ -870,23 +889,33 @@ struct TwoParticleCorrelationsMpi {
     }
   }
 
-  const TH3D* findPairAcceptanceMap(double multiplicity) const
+  int findPairAcceptanceMultiplicityBin(double multiplicity) const
   {
     const auto& edges = AxisSpec(axisMultiplicity).binEdges;
     const auto upper = std::upper_bound(edges.begin(), edges.end(), multiplicity);
-    const int multBin = static_cast<int>(std::distance(edges.begin(), upper)) - 1;
-    if (multBin < 0 || multBin >= static_cast<int>(pairAcceptanceMaps.size())) {
-      return nullptr;
-    }
-    return pairAcceptanceMaps[multBin].get();
+    return static_cast<int>(std::distance(edges.begin(), upper)) - 1;
   }
 
   double getPairAcceptance(double multiplicity, double deltaPhi, double deltaEta, double posZ) const
   {
-    const auto* map = findPairAcceptanceMap(multiplicity);
-    if (!map) {
+    const int multBin = findPairAcceptanceMultiplicityBin(multiplicity);
+    int etaVertexMultiplicityDependentOnly = 3;
+    if (pairAcceptanceSchemaVersion == etaVertexMultiplicityDependentOnly) {
+      if (multBin < 0 || multBin >= static_cast<int>(pairAcceptanceEtaVertexMaps.size()) || pairAcceptanceEtaVertexMaps[multBin] == nullptr) {
+        return 0.0;
+      }
+      const auto* map = pairAcceptanceEtaVertexMaps[multBin].get();
+      const int etaBin = map->GetXaxis()->FindFixBin(deltaEta);
+      const int vertexBin = map->GetYaxis()->FindFixBin(posZ);
+      if (etaBin < 1 || etaBin > map->GetNbinsX() || vertexBin < 1 || vertexBin > map->GetNbinsY()) {
+        return 0.0;
+      }
+      return map->GetBinContent(etaBin, vertexBin);
+    }
+    if (multBin < 0 || multBin >= static_cast<int>(pairAcceptanceMaps.size()) || pairAcceptanceMaps[multBin] == nullptr) {
       return 0.0;
     }
+    const auto* map = pairAcceptanceMaps[multBin].get();
     const int phiBin = map->GetXaxis()->FindFixBin(deltaPhi);
     const int etaBin = map->GetYaxis()->FindFixBin(deltaEta);
     const int vertexBin = map->GetZaxis()->FindFixBin(posZ);
@@ -1464,32 +1493,25 @@ struct TwoParticleCorrelationsMpi {
   }
   PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameAOD, "Process same event on AOD", true);
 
-  void processSameGenMC(McCollisionsWithHepMC::iterator const& mcCollision, FilteredMcParticles const& mcParticles, aod::BCsWithTimestamps const&)
+  void processSameGenMC(soa::Filtered<aod::CFMcCollisionsWithExtra>::iterator const& mcCollision,
+                        soa::Filtered<aod::CFMcParticles> const& mcParticles,
+                        soa::SmallGroups<aod::CFCollisionsWithLabel> const& collisions)
   {
-    if (std::abs(mcCollision.posZ()) >= cfgCutVertex) {
-      return;
-    }
-    const auto bc = mcCollision.bc_as<aod::BCsWithTimestamps>();
-    loadCcdbYieldTemplates(bc.timestamp());
-
-    int generatedMultiplicity = 0;
-    for (const auto& particle : mcParticles) {
-      if (!particle.isPhysicalPrimary()) {
-        continue;
-      }
-      const auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
-      if (pdgParticle && pdgParticle->Charge() != 0.0) {
-        ++generatedMultiplicity;
+    if (!cfgNuncSeedsTemplate.value.empty()) {
+      for (const auto& collision : collisions) {
+        loadCcdbYieldTemplates(collision.timestamp());
+        break;
       }
     }
 
+    const auto generatedMultiplicity = mcCollision.multiplicity();
     fillContainerEvent(same, generatedMultiplicity, CorrelationContainer::kCFStepAll);
     EventSeedEstimate seedEstimate;
     fillCorrelations<CorrelationContainer::kCFStepAll>(same, mcParticles, mcParticles, generatedMultiplicity, mcCollision.posZ(), 0, 1.0f, &seedEstimate);
     finalizeEventSeedEstimate(seedEstimate);
     fillGeneratedMCValidation(generatedMultiplicity, seedEstimate, mcCollision.nMPI());
   }
-  PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameGenMC, "Process generated MC events and validate the template estimator against HepMC N MPI", false);
+  PROCESS_SWITCH(TwoParticleCorrelationsMpi, processSameGenMC, "Process generated MC events from derived data and validate against the stored HepMC N MPI", false);
 
   template <class CollType, class TTracks1, class TTracks2>
   void processSameDerivedT(CollType const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2, const int* trueNMPI = nullptr)

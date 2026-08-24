@@ -171,10 +171,10 @@ struct StudyPnch {
     }
     if (doprocessEvtLossSigLossMC) {
       histos.add("MCEventHist", "MCEventHist", kTH1F, {axisEvent}, false);
-      auto hstat = histos.get<TH1>(HIST("MCEventHist"));
-      auto* x = hstat->GetXaxis();
-      x->SetBinLabel(1, "All MC events");
-      x->SetBinLabel(2, "MC events with atleast one reco event");
+      auto hstatevloss = histos.get<TH1>(HIST("MCEventHist"));
+      auto* xevloss = hstatevloss->GetXaxis();
+      xevloss->SetBinLabel(1, "All MC events");
+      xevloss->SetBinLabel(2, "MC events with atleast one reco event");
       histos.add("hMultiplicityMCgenAll", "hMultiplicityMCgenAll", kTH1F, {axisMult}, true);
       histos.add("hMultiplicityMCgenSel", "hMultiplicityMCgenSel", kTH1F, {axisMult}, true);
     }
@@ -401,7 +401,11 @@ struct StudyPnch {
       return;
     }
     auto mult = countNTracks(tracks);
-    if (mult > 0) {
+    if (isApplyInelgt0 && etaRange == 1.0f) {
+      if (mult > 0) {
+        histos.fill(HIST("hMultiplicityData"), mult);
+      }
+    } else {
       histos.fill(HIST("hMultiplicityData"), mult);
     }
   }
@@ -438,14 +442,22 @@ struct StudyPnch {
       }
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
       auto multrec = countNTracksMcCol(recTracksPart, RecCol);
-      histos.fill(HIST("hMultiplicityMCrec"), multrec);
       float multgen = countGenTracks(GenParticles, RecCol);
+      float nTrkPtCut = countTracksPtCut(GenParticles, RecCol);
+      if (isApplyInelgt0 && etaRange == 1.0f) {
+        if (multrec == 0 || multgen == 0) {
+          if (nTrkPtCut == 0) {
+            continue;
+          }
+          continue;
+        }
+      }
+      histos.fill(HIST("hMultiplicityMCrec"), multrec);
       if (cPrint) {
         LOG(info) << "Generated Particles with standard pT:" << multgen;
       }
       histos.fill(HIST("hMultiplicityMCgen"), multgen);
       histos.fill(HIST("hResponseMatrix"), multrec, multgen);
-      float nTrkPtCut = countTracksPtCut(GenParticles, RecCol);
       nTrkPtCut = multgen + nTrkPtCut;
       if (cPrint) {
         LOG(info) << "After Counting low pT: " << nTrkPtCut;
@@ -481,7 +493,11 @@ struct StudyPnch {
       }
       nTrk_multAll++;
     }
-    if (nTrk_multAll > 0) {
+    if (isApplyInelgt0 && etaRange == 1.0f) {
+      if (nTrk_multAll > 0) {
+        histos.fill(HIST("hMultiplicityMCgenAll"), nTrk_multAll);
+      }
+    } else {
       histos.fill(HIST("hMultiplicityMCgenAll"), nTrk_multAll);
     }
 
@@ -508,7 +524,11 @@ struct StudyPnch {
         }
         nTrk_multSel++;
       }
-      if (nTrk_multSel > 0) {
+      if (isApplyInelgt0 && etaRange == 1.0f) {
+        if (nTrk_multSel > 0) {
+          histos.fill(HIST("hMultiplicityMCgenSel"), nTrk_multSel);
+        }
+      } else {
         histos.fill(HIST("hMultiplicityMCgenSel"), nTrk_multSel);
       }
     }
