@@ -115,6 +115,14 @@ struct DeltaAnalysis {
     Configurable<int> cfgMaxTPCSharedClusters{"cfgMaxTPCSharedClusters", 0, "Maximum TPC shared clusters"};
     Configurable<float> cfgMaxTPCChi2NCl{"cfgMaxTPCChi2NCl", 4.0f, "Maximum TPC chi2/NCl"};
     Configurable<float> cfgMaxITSChi2NCl{"cfgMaxITSChi2NCl", 36.0f, "Maximum ITS chi2/NCl"};
+    // ── Per-cut ON/OFF switches for the first 7 basic track-quality cuts (all default true) ──
+    Configurable<bool> applyITSClusterCut{"applyITSClusterCut", true, "Enable/disable minimum ITS clusters cut"};
+    Configurable<bool> applyTPCSharedClusterCut{"applyTPCSharedClusterCut", true, "Enable/disable maximum TPC shared clusters cut"};
+    Configurable<bool> applyTPCFoundClusterCut{"applyTPCFoundClusterCut", true, "Enable/disable minimum TPC clusters found cut"};
+    Configurable<bool> applyTPCCrossedRowsCut{"applyTPCCrossedRowsCut", true, "Enable/disable minimum TPC crossed rows cut"};
+    Configurable<bool> applyTPCCrossedRowsOverFindableCut{"applyTPCCrossedRowsOverFindableCut", true, "Enable/disable minimum TPC crossed rows / findable clusters cut"};
+    Configurable<bool> applyTPCChi2NClCut{"applyTPCChi2NClCut", true, "Enable/disable maximum TPC chi2/NCl cut"};
+    Configurable<bool> applyITSChi2NClCut{"applyITSChi2NClCut", true, "Enable/disable maximum ITS chi2/NCl cut"};
     Configurable<bool> requirePrimaryTrack{"requirePrimaryTrack", true, "Require isPrimaryTrack flag"};
     Configurable<bool> requireGlobalTrackNoDCA{"requireGlobalTrackNoDCA", true, "Require isGlobalTrackWoDCA flag"};
     Configurable<bool> requirePVContributor{"requirePVContributor", true, "Require PV-contributor flag"};
@@ -270,6 +278,12 @@ struct DeltaAnalysis {
     histos.add("QAbefore/Pion/tofNSigmaVsMomentum", "TOF n#sigma pion vs p (before cuts)", kTH2F, {momentumAxis, nSigmaTOFaxis});
     histos.add("QAbefore/Pion/tofNSigmaVsTPCNSigma", "TOF vs TPC n#sigma pion (before cuts)", kTH2F, {nSigmaTPCaxis, nSigmaTOFaxis});
 
+    // ── Reconstructed-track kinematic QA (Data, before track-quality/PID/DCA cuts) ──────────
+    histos.add("QAbefore/hEta_rec", "Reco dN/d#eta; #eta; dN/d#eta", kTH1F, {{50, -1.0, 1.0}});
+    histos.add("QAbefore/hPt_rec", "Reco pT; p_{T} (GeV/c); Tracks", kTH1F, {ptForPIDAxis});
+    histos.add("QAbefore/hPhi_rec", "Reco #varphi; #varphi (rad); Tracks", kTH1F, {{72, 0, 6.2832}});
+    histos.add("QAbefore/hEtaPhi_rec", "Reco #eta vs #varphi; #eta; #varphi", kTH2F, {etaAxis, {72, 0, 6.2832}});
+
     histos.add("QAafter/Proton/dcaXYvsPt", "Proton DCA_{xy} vs p_{T} (after cuts)", kTH2F, {ptForPIDAxis, dcaXYaxis});
     histos.add("QAafter/Proton/dcaZvsPt", "Proton DCA_{z} vs p_{T} (after cuts)", kTH2F, {ptForPIDAxis, dcaZaxis});
     histos.add("QAafter/Proton/tpcNSigmaVsMomentum", "Proton TPC n#sigma vs p (after cuts)", kTH2F, {momentumAxis, nSigmaTPCaxis});
@@ -408,6 +422,12 @@ struct DeltaAnalysis {
       histos.add("QAMC/Pion/tpcClustersFoundVsPt", "Pion TPC clusters found vs p_{T} (MC reco)", kTH2F, {ptForPIDAxis, tpcClusAxis});
       histos.add("QAMC/Pion/dcaXYdist", "Pion DCA_{xy} distribution (MC reco, fine bins)", kTH1F, {dcaXYaxis});
       histos.add("QAMC/Pion/dcaZdist", "Pion DCA_{z} distribution (MC reco, fine bins)", kTH1F, {dcaZaxis});
+
+      // ── Reconstructed-track kinematic QA (MC reco, before track-quality/PID/DCA cuts) ────
+      histos.add("QAMC/hEta_rec", "MC Reco dN/d#eta; #eta; dN/d#eta", kTH1F, {{50, -1.0, 1.0}});
+      histos.add("QAMC/hPt_rec", "MC Reco pT; p_{T} (GeV/c); Tracks", kTH1F, {ptForPIDAxis});
+      histos.add("QAMC/hPhi_rec", "MC Reco #varphi; #varphi (rad); Tracks", kTH1F, {{72, 0, 6.2832}});
+      histos.add("QAMC/hEtaPhi_rec", "MC Reco #eta vs #varphi; #eta; #varphi", kTH2F, {etaAxis, {72, 0, 6.2832}});
 
       histos.add("MCRecoEvent/hRecoEvents", "Reconstructed INEL>0 events (Nrec, MC reco)", kTH1F, {centAxis});
       histos.add("MCRecoEvent/centralitydistribution", "Centrality distribution (MC);vCentFT0M;Entries", kTH1F, {centDistAxis});
@@ -677,10 +697,6 @@ struct DeltaAnalysis {
     }
     fillEventCutFlowBin<Tag>(4.f); // Occupancy cut
 
-    // Centrality cut removed: events are no longer rejected based on centrality
-    // (cfgCentMin / cfgCentMax are intentionally no longer applied here). The
-    // centrality calculation itself, getCentrality(), cfgCentralityEstimator, and
-    // all centrality-dependent histograms/infrastructure are left untouched.
     fillEventCutFlowBin<Tag>(5.f); // Centrality range (bin retained for cut-flow numbering; no longer a cut)
 
     if (evSel.cfgUseNoSameBunchPileupCut &&
@@ -709,25 +725,32 @@ struct DeltaAnalysis {
   template <typename TrackType>
   bool passesBasicTrackSelection(TrackType const& track)
   {
-    if (track.itsNCls() < trackCuts.cfgMinITSClusters) {
+    if (trackCuts.applyITSClusterCut &&
+        track.itsNCls() < trackCuts.cfgMinITSClusters) {
       return false;
     }
-    if (track.tpcNClsShared() > trackCuts.cfgMaxTPCSharedClusters) {
+    if (trackCuts.applyTPCSharedClusterCut &&
+        track.tpcNClsShared() > trackCuts.cfgMaxTPCSharedClusters) {
       return false;
     }
-    if (track.tpcNClsFound() < trackCuts.cfgMinTPCClusters) {
+    if (trackCuts.applyTPCFoundClusterCut &&
+        track.tpcNClsFound() < trackCuts.cfgMinTPCClusters) {
       return false;
     }
-    if (track.tpcNClsCrossedRows() < trackCuts.cfgMinTPCCrossedRows) {
+    if (trackCuts.applyTPCCrossedRowsCut &&
+        track.tpcNClsCrossedRows() < trackCuts.cfgMinTPCCrossedRows) {
       return false;
     }
-    if (track.tpcNClsCrossedRows() < trackCuts.cfgMinCrossedRowsOverFindable * track.tpcNClsFindable()) {
+    if (trackCuts.applyTPCCrossedRowsOverFindableCut &&
+        track.tpcNClsCrossedRows() < trackCuts.cfgMinCrossedRowsOverFindable * track.tpcNClsFindable()) {
       return false;
     }
-    if (track.tpcChi2NCl() > trackCuts.cfgMaxTPCChi2NCl) {
+    if (trackCuts.applyTPCChi2NClCut &&
+        track.tpcChi2NCl() > trackCuts.cfgMaxTPCChi2NCl) {
       return false;
     }
-    if (track.itsChi2NCl() > trackCuts.cfgMaxITSChi2NCl) {
+    if (trackCuts.applyITSChi2NClCut &&
+        track.itsChi2NCl() > trackCuts.cfgMaxITSChi2NCl) {
       return false;
     }
     if (trackCuts.requirePrimaryTrack && !track.isPrimaryTrack()) {
@@ -1174,9 +1197,6 @@ struct DeltaAnalysis {
     bool dca = false;          // that track passes the existing passesProtonDCASelection()/passesPionDCASelection()
   };
 
-  // Scans tracksSlice (already index-bound to the McParticles table by the caller, exactly as
-  // done for the existing truth-matching block in processMC()) for the track whose mcParticle()
-  // matches mcDaughter, and evaluates the existing track-quality/PID/DCA decisions for it.
   template <typename TracksSlice, typename McPart>
   EfficiencyQADaughterMatch matchDaughterForEfficiencyQA(TracksSlice const& tracksSlice, McPart const& mcDaughter, bool isProton)
   {
@@ -1200,10 +1220,6 @@ struct DeltaAnalysis {
     return result;
   }
 
-  // Mirrors, without altering, the equivalent inline common-mother-search pattern already used
-  // by the existing MC truth-matching selection in processMC(); used only for the new
-  // EfficiencyQA/hDeltaRecoCutFlow bins 18-19 (a context where no such computation exists yet).
-  // The existing selection's own foundMother computation is untouched (see processMC()).
   template <typename McPart>
   std::pair<bool, bool> checkCommonMotherForEfficiencyQA(McPart const& mcA, McPart const& mcB)
   {
@@ -1452,6 +1468,14 @@ struct DeltaAnalysis {
           histos.fill(HIST("QAbefore/Pion/tofNSigmaVsMomentum"), mom, track.tofNSigmaPi());
           histos.fill(HIST("QAbefore/Pion/tofNSigmaVsTPCNSigma"), track.tpcNSigmaPi(), track.tofNSigmaPi());
         }
+
+        // ── Reconstructed-track kinematic QA (Data), filled for all reconstructed tracks
+        // before any track-quality/PID/DCA selection is applied. ─────────────────────────
+        histos.fill(HIST("QAbefore/hEta_rec"), track.eta());
+        histos.fill(HIST("QAbefore/hPt_rec"), track.pt());
+        histos.fill(HIST("QAbefore/hPhi_rec"), track.phi());
+        histos.fill(HIST("QAbefore/hEtaPhi_rec"), track.eta(), track.phi());
+
         if (!passesBasicTrackSelection(track)) {
           continue;
         }
@@ -1734,6 +1758,14 @@ struct DeltaAnalysis {
 
       for (auto const& trackForQAMC : perColTracks) {
         const float momQAMC = RecoDecay::p(trackForQAMC.px(), trackForQAMC.py(), trackForQAMC.pz());
+
+        // ── Reconstructed-track kinematic QA (MC reco), filled for all reconstructed tracks
+        // before any track-quality/PID/DCA selection is applied. ─────────────────────────
+        histos.fill(HIST("QAMC/hEta_rec"), trackForQAMC.eta());
+        histos.fill(HIST("QAMC/hPt_rec"), trackForQAMC.pt());
+        histos.fill(HIST("QAMC/hPhi_rec"), trackForQAMC.phi());
+        histos.fill(HIST("QAMC/hEtaPhi_rec"), trackForQAMC.eta(), trackForQAMC.phi());
+
         if (!passesBasicTrackSelection(trackForQAMC)) {
           continue;
         }
