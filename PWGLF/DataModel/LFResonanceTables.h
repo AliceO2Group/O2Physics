@@ -83,6 +83,16 @@ DECLARE_SOA_COLUMN(ImpactParameter, impactParameter, float);  //! ImpactParamete
 DECLARE_SOA_COLUMN(MCMultiplicity, mcMultiplicity, float);    //! MC Multiplicity, o2-linter: disable=name/o2-column (pre-existing public column name kept for schema and API compatibility)
 
 } // namespace resocollision
+
+// Keep the established ResoCollisionColls schema above unchanged.  Automatic
+// GroupSlicer association to aod::Collisions requires the canonical physical
+// column name fIndexCollisions, so the modular initializer writes this small
+// companion table for the optimized daughter process.
+namespace resocollisiongroup
+{
+DECLARE_SOA_INDEX_COLUMN_FULL_CUSTOM(OriginalCollision, originalCollision, int, Collisions, "Collisions", ""); //!
+} // namespace resocollisiongroup
+
 DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
                   o2::soa::Index<>,
                   o2::aod::mult::MultNTracksPV,
@@ -99,6 +109,10 @@ using ResoCollision = ResoCollisions::iterator;
 DECLARE_SOA_TABLE(ResoCollisionColls, "AOD", "RESOCOLLISIONCOL",
                   resocollision::CollisionId);
 using ResoCollisionColl = ResoCollisionColls::iterator;
+
+DECLARE_SOA_TABLE(ResoCollisionGroups, "AOD", "RESOCOLLGROUP",
+                  resocollisiongroup::OriginalCollisionId);
+using ResoCollisionGroup = ResoCollisionGroups::iterator;
 
 DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOLLISION",
                   o2::soa::Index<>,

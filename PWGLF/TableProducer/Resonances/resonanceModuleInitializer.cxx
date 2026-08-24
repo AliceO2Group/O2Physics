@@ -86,9 +86,10 @@ struct ResonanceModuleInitializer {
   Service<o2::ccdb::BasicCCDBManager> ccdb;  ///< CCDB manager service
   Service<o2::framework::O2DatabasePDG> pdg; ///< PDG database service
 
-  Produces<aod::ResoCollisions> resoCollisions;         ///< Output table for resonance collisions
-  Produces<aod::ResoCollisionColls> resoCollisionColls; ///< Output table for collision references
-  Produces<aod::ResoMCCollisions> resoMCCollisions;     ///< Output table for MC resonance collisions
+  Produces<aod::ResoCollisions> resoCollisions;           ///< Output table for resonance collisions
+  Produces<aod::ResoCollisionColls> resoCollisionColls;   ///< Output table for collision references
+  Produces<aod::ResoCollisionGroups> resoCollisionGroups; ///< Canonical original-collision grouping references
+  Produces<aod::ResoMCCollisions> resoMCCollisions;       ///< Output table for MC resonance collisions
 
   // CCDB options
   struct : ConfigurableGroup {
@@ -492,6 +493,7 @@ struct ResonanceModuleInitializer {
 
     resoCollisions(collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf(), collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz, isRecINELgt0);
     resoCollisionColls(collision.globalIndex());
+    resoCollisionGroups(collision.globalIndex());
   }
   PROCESS_SWITCH(ResonanceModuleInitializer, processRun3, "Default process for RUN3", false);
 
@@ -516,6 +518,7 @@ struct ResonanceModuleInitializer {
 
     resoCollisions(0, 0, 0, collision.posX(), collision.posY(), collision.posZ(), centrality, dBz, 0);
     resoCollisionColls(collision.globalIndex());
+    resoCollisionGroups(collision.globalIndex());
   }
   PROCESS_SWITCH(ResonanceModuleInitializer, processRun2, "process for RUN2", false);
 
@@ -699,6 +702,7 @@ struct ResonanceDaughterInitializer {
   // Keep ResonanceModuleInitializer::cfgBypassCollIndexFill disabled and enable
   // the matching Run 2/Run 3 base event process for MC workflows.
   using ResoCollisionWithIndex = soa::Join<aod::ResoCollisions, aod::ResoCollisionColls>;
+  using SelectedResoCollisions = soa::Join<aod::ResoCollisions, aod::ResoCollisionGroups>;
 
   /**
    * @brief Initializes the task
@@ -707,9 +711,13 @@ struct ResonanceDaughterInitializer {
    */
   void init(InitContext&)
   {
-    const bool processTrackDataEnabled = doprocessData || doprocessDataWithPairGate;
+    const bool processTrackDataEnabled = doprocessData || doprocessDataOptimized || doprocessDataHybrid || doprocessDataWithPairGate;
     const bool processTrackMCEnabled = doprocessMC || doprocessMCWithPairGate;
+    const bool processV0DataEnabled = doprocessV0Data || doprocessV0DataHybrid;
+    const bool processCascDataEnabled = doprocessCascData || doprocessCascDataHybrid;
     const int enabledTrackProcesses = static_cast<int>(doprocessData) +
+                                      static_cast<int>(doprocessDataOptimized) +
+                                      static_cast<int>(doprocessDataHybrid) +
                                       static_cast<int>(doprocessDataWithPairGate) +
                                       static_cast<int>(doprocessMC) +
                                       static_cast<int>(doprocessMCWithPairGate);
@@ -717,15 +725,21 @@ struct ResonanceDaughterInitializer {
     if (enabledTrackProcesses > 1) {
       LOGF(fatal, "Only one track process can be enabled in ResonanceDaughterInitializer");
     }
-    if ((doprocessData || doprocessMC) &&
+    if (static_cast<int>(doprocessV0Data) + static_cast<int>(doprocessV0DataHybrid) + static_cast<int>(doprocessV0MC) > 1) {
+      LOGF(fatal, "Only one V0 process can be enabled in ResonanceDaughterInitializer");
+    }
+    if (static_cast<int>(doprocessCascData) + static_cast<int>(doprocessCascDataHybrid) + static_cast<int>(doprocessCascMC) > 1) {
+      LOGF(fatal, "Only one cascade process can be enabled in ResonanceDaughterInitializer");
+    }
+    if ((doprocessData || doprocessDataOptimized || doprocessDataHybrid || doprocessMC) &&
         (FilterForDerivedTables.cfgBypassNoPairV0s || FilterForDerivedTables.cfgBypassNoPairCascades)) {
-      LOGF(warn, "Pair-gate options are ignored by processData/processMC; enable the matching *WithPairGate process to apply them");
+      LOGF(warn, "Pair-gate options are ignored by processData/processDataOptimized/processDataHybrid/processMC; enable the matching *WithPairGate process to apply them");
     }
-    if (doprocessDataWithPairGate && FilterForDerivedTables.cfgBypassNoPairV0s && !doprocessV0Data) {
-      LOGF(fatal, "cfgBypassNoPairV0s requires processV0Data so an accepted V0 is written for every retained collision");
+    if (doprocessDataWithPairGate && FilterForDerivedTables.cfgBypassNoPairV0s && !processV0DataEnabled) {
+      LOGF(fatal, "cfgBypassNoPairV0s requires processV0Data or processV0DataHybrid so an accepted V0 is written for every retained collision");
     }
-    if (doprocessDataWithPairGate && FilterForDerivedTables.cfgBypassNoPairCascades && !doprocessCascData) {
-      LOGF(fatal, "cfgBypassNoPairCascades requires processCascData so an accepted cascade is written for every retained collision");
+    if (doprocessDataWithPairGate && FilterForDerivedTables.cfgBypassNoPairCascades && !processCascDataEnabled) {
+      LOGF(fatal, "cfgBypassNoPairCascades requires processCascData or processCascDataHybrid so an accepted cascade is written for every retained collision");
     }
 
     if (!std::isfinite(TrackCuts.cfgCutMinPt.value) ||
@@ -860,7 +874,7 @@ struct ResonanceDaughterInitializer {
         }
       }
 
-      if (doprocessV0Data || doprocessV0MC) {
+      if (processV0DataEnabled || doprocessV0MC) {
         qaRegistry.add("QA/hGoodV0Indices", "hGoodV0Indices", kTH1D, {idxAxis});
         if (doprocessV0MC) {
           qaRegistry.add("QA/hGoodMCV0Indices", "hGoodMCV0Indices", kTH1D, {idxAxis});
@@ -871,7 +885,7 @@ struct ResonanceDaughterInitializer {
         qaRegistry.add("QA/hV0CosPA", "V0 CosPA", kTH1F, {cosPAAxis});
       }
 
-      if (doprocessCascData || doprocessCascMC) {
+      if (processCascDataEnabled || doprocessCascMC) {
         AxisSpec radiusAxis = {100, 0.0, 200.0, "Cascade Radius"};
         AxisSpec cosPAAxis = {100, 0.97, 1.0, "Cascade CosPA"};
         qaRegistry.add("QA/hGoodCascIndices", "hGoodCascIndices", kTH1D, {idxAxis});
@@ -885,19 +899,19 @@ struct ResonanceDaughterInitializer {
     if (processTrackDataEnabled || processTrackMCEnabled) {
       LOGF(info, "ResonanceDaughterInitializer initialized with tracks");
     }
-    if (doprocessV0Data || doprocessV0MC) {
+    if (processV0DataEnabled || doprocessV0MC) {
       LOGF(info, "ResonanceDaughterInitializer initialized with V0s");
     }
-    if (doprocessCascData || doprocessCascMC) {
+    if (processCascDataEnabled || doprocessCascMC) {
       LOGF(info, "ResonanceDaughterInitializer initialized with cascades");
     }
 
     // Check if the module is initialized with both data and MC
-    if ((processTrackDataEnabled && processTrackMCEnabled) || (doprocessV0Data && doprocessV0MC) || (doprocessCascData && doprocessCascMC)) {
+    if ((processTrackDataEnabled && processTrackMCEnabled) || (processV0DataEnabled && doprocessV0MC) || (processCascDataEnabled && doprocessCascMC)) {
       LOGF(fatal, "ResonanceDaughterInitializer initialized with both data and MC");
     }
     // Check if none of the processes are enabled
-    if (!doprocessDummy && !processTrackDataEnabled && !processTrackMCEnabled && !doprocessV0Data && !doprocessV0MC && !doprocessCascData && !doprocessCascMC) {
+    if (!doprocessDummy && !processTrackDataEnabled && !processTrackMCEnabled && !processV0DataEnabled && !doprocessV0MC && !processCascDataEnabled && !doprocessCascMC) {
       LOGF(fatal, "ResonanceDaughterInitializer not initialized, enable at least one process");
     }
   }
@@ -1875,6 +1889,25 @@ struct ResonanceDaughterInitializer {
   PROCESS_SWITCH(ResonanceDaughterInitializer, processDummy, "Process dummy", true);
 
   /**
+   * @brief Fills all enabled track tables from an already grouped track slice
+   *
+   * @tparam isMC Boolean indicating if it's MC
+   * @param collision Reduced collision used as the output foreign key
+   * @param tracks Tracks belonging to the corresponding original collision
+   */
+  template <bool isMC, typename CollisionType, typename TrackTableType>
+  void fillTrackTables(CollisionType const& collision, TrackTableType const& tracks)
+  {
+    fillTracks<isMC>(collision, tracks);
+    if (FilterForDerivedTables.cfgFillMicroTracks) {
+      fillMicroTracks<isMC>(collision, tracks);
+    }
+    if (FilterForDerivedTables.cfgFillUltraMicroTracks) {
+      fillUltraMicroTracks<isMC>(collision, tracks);
+    }
+  }
+
+  /**
    * @brief Fills track tables for one original collision
    *
    * @tparam isMC Boolean indicating if it's MC
@@ -1888,13 +1921,7 @@ struct ResonanceDaughterInitializer {
   void fillTrackTablesForCollision(CollisionType const& collision, TrackTableType const& tracks, PresliceType const& perCollision)
   {
     auto tracksThisCollision = tracks.sliceBy(perCollision, collision.collisionId());
-    fillTracks<isMC>(collision, tracksThisCollision);
-    if (FilterForDerivedTables.cfgFillMicroTracks) {
-      fillMicroTracks<isMC>(collision, tracksThisCollision);
-    }
-    if (FilterForDerivedTables.cfgFillUltraMicroTracks) {
-      fillUltraMicroTracks<isMC>(collision, tracksThisCollision);
-    }
+    fillTrackTables<isMC>(collision, tracksThisCollision);
   }
 
   /**
@@ -1909,6 +1936,43 @@ struct ResonanceDaughterInitializer {
     fillTrackTablesForCollision<false>(collision, tracks, tracksPerCollision);
   }
   PROCESS_SWITCH(ResonanceDaughterInitializer, processData, "Process tracks for data", false);
+
+  /**
+   * @brief Processes data tracks grouped automatically by their original collision
+   *
+   * The canonical fIndexCollisions column in ResoCollisionGroups lets
+   * GroupSlicer associate both reduced collisions and tracks to the same
+   * original aod::Collision.  The tracks argument is therefore already the
+   * selected slice for this collision and must not be sliced again.
+   */
+  void processDataOptimized(aod::Collision const&,
+                            soa::SmallGroups<SelectedResoCollisions> const& reducedCollisions,
+                            soa::Filtered<aod::ResoTrackCandidates> const& tracks)
+  {
+    if (reducedCollisions.size() == 0) {
+      return;
+    }
+    if (reducedCollisions.size() != 1) {
+      LOGF(fatal, "Expected exactly one reduced collision for an original collision, found %zu", reducedCollisions.size());
+    }
+    auto reducedCollision = reducedCollisions.begin();
+    fillTrackTables<false>(reducedCollision, tracks);
+  }
+  PROCESS_SWITCH(ResonanceDaughterInitializer, processDataOptimized, "Process data tracks with original-collision grouping", false);
+
+  /**
+   * @brief Production hybrid path using original-collision automatic grouping
+   *
+   * This named path preserves the existing optimized prototype for A/B
+   * compatibility while exposing the two-stage hybrid architecture explicitly.
+   */
+  void processDataHybrid(aod::Collision const& originalCollision,
+                         soa::SmallGroups<SelectedResoCollisions> const& reducedCollisions,
+                         soa::Filtered<aod::ResoTrackCandidates> const& tracks)
+  {
+    processDataOptimized(originalCollision, reducedCollisions, tracks);
+  }
+  PROCESS_SWITCH(ResonanceDaughterInitializer, processDataHybrid, "Process data tracks with the two-stage hybrid grouping", false);
 
   /**
    * @brief Processes data tracks with configurable selected-V0 and selected-cascade gates
@@ -1985,6 +2049,29 @@ struct ResonanceDaughterInitializer {
   PROCESS_SWITCH(ResonanceDaughterInitializer, processV0Data, "Process V0s for data", false);
 
   /**
+   * @brief Processes data V0s grouped automatically by their original collision
+   *
+   * Both V0s and tracks are already restricted to the current original
+   * aod::Collision by GroupSlicer. The unfiltered track table is required for
+   * resolving the positive and negative daughter indices.
+   */
+  void processV0DataHybrid(aod::Collision const&,
+                           soa::SmallGroups<SelectedResoCollisions> const& reducedCollisions,
+                           aod::ResoV0Candidates const& v0s,
+                           aod::ResoTrackCandidates const& tracks)
+  {
+    if (reducedCollisions.size() == 0) {
+      return;
+    }
+    if (reducedCollisions.size() != 1) {
+      LOGF(fatal, "Expected exactly one reduced collision for an original collision, found %zu", reducedCollisions.size());
+    }
+    auto reducedCollision = reducedCollisions.begin();
+    fillV0s<false>(reducedCollision, v0s, tracks);
+  }
+  PROCESS_SWITCH(ResonanceDaughterInitializer, processV0DataHybrid, "Process data V0s with the two-stage hybrid grouping", false);
+
+  /**
    * @brief Processes MC V0 data
    *
    * @param collision Collision data
@@ -2011,6 +2098,29 @@ struct ResonanceDaughterInitializer {
     fillCascades<false>(collision, cascadesThisCollision, tracks);
   }
   PROCESS_SWITCH(ResonanceDaughterInitializer, processCascData, "Process Cascades for data", false);
+
+  /**
+   * @brief Processes data cascades grouped automatically by their original collision
+   *
+   * Cascades and tracks arrive as original-collision groups. Keeping this as a
+   * separate callback from V0 processing avoids enabling either upstream input
+   * dependency unless its process switch is selected.
+   */
+  void processCascDataHybrid(aod::Collision const&,
+                             soa::SmallGroups<SelectedResoCollisions> const& reducedCollisions,
+                             aod::ResoCascadesCandidates const& cascades,
+                             aod::ResoTrackCandidates const& tracks)
+  {
+    if (reducedCollisions.size() == 0) {
+      return;
+    }
+    if (reducedCollisions.size() != 1) {
+      LOGF(fatal, "Expected exactly one reduced collision for an original collision, found %zu", reducedCollisions.size());
+    }
+    auto reducedCollision = reducedCollisions.begin();
+    fillCascades<false>(reducedCollision, cascades, tracks);
+  }
+  PROCESS_SWITCH(ResonanceDaughterInitializer, processCascDataHybrid, "Process data cascades with the two-stage hybrid grouping", false);
 
   /**
    * @brief Processes MC cascade data
