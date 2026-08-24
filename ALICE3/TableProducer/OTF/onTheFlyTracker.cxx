@@ -283,6 +283,7 @@ struct OnTheFlyTracker {
                 const float time = 0,
                 const float timeError = 1,
                 bool decayDauInput = false,
+                bool isPVContributorInput = false,
                 bool weakDecayDauInput = false,
                 int isUsedInCascadingInput = 0,
                 int nSiliconHitsInput = 0,
@@ -291,6 +292,7 @@ struct OnTheFlyTracker {
                                                                       mcLabel{label},
                                                                       timeEst{time, timeError},
                                                                       isDecayDau(decayDauInput),
+                                                                      isPVContributor(isPVContributorInput),
                                                                       isWeakDecayDau(weakDecayDauInput),
                                                                       isUsedInCascading(isUsedInCascadingInput),
                                                                       nSiliconHits(nSiliconHitsInput),
@@ -300,6 +302,7 @@ struct OnTheFlyTracker {
     int64_t mcLabel;
     TimeEst timeEst; ///< time estimate in ns
     bool isDecayDau;
+    bool isPVContributor;
     bool isWeakDecayDau;
     int isUsedInCascading; // 0: not at all, 1: is a cascade, 2: is a bachelor, 3: is a pion, 4: is a proton
     int nSiliconHits;
@@ -992,13 +995,13 @@ struct OnTheFlyTracker {
     thisCascade.cascadeTrackId = trackTableOffset + 4;
 
     float trackTime = (eventCollisionTimeNS + gRandom->Gaus(0., timeResolutionNs)) * nsToMus;
-    tracksCascadeProngs.push_back(TrackAlice3{xiDaughterTrackParCovsPerfect[0], mcParticle.globalIndex(), trackTime, timeResolutionUs, true, true, 1, -1, -1, TrackType::kGenCascDaug});
+    tracksCascadeProngs.push_back(TrackAlice3{xiDaughterTrackParCovsPerfect[0], mcParticle.globalIndex(), trackTime, timeResolutionUs, true, false, true, 1, -1, -1, TrackType::kGenCascDaug});
     trackTime = (eventCollisionTimeNS + gRandom->Gaus(0., timeResolutionNs)) * nsToMus;
-    tracksCascadeProngs.push_back(TrackAlice3{xiDaughterTrackParCovsPerfect[1], mcParticle.globalIndex(), trackTime, timeResolutionUs, true, true, 2, -1, -1, TrackType::kGenCascDaug});
+    tracksCascadeProngs.push_back(TrackAlice3{xiDaughterTrackParCovsPerfect[1], mcParticle.globalIndex(), trackTime, timeResolutionUs, true, false, true, 2, -1, -1, TrackType::kGenCascDaug});
     trackTime = (eventCollisionTimeNS + gRandom->Gaus(0., timeResolutionNs)) * nsToMus;
-    tracksCascadeProngs.push_back(TrackAlice3{xiDaughterTrackParCovsPerfect[2], mcParticle.globalIndex(), trackTime, timeResolutionUs, true, true, 3, -1, -1, TrackType::kGenCascDaug});
+    tracksCascadeProngs.push_back(TrackAlice3{xiDaughterTrackParCovsPerfect[2], mcParticle.globalIndex(), trackTime, timeResolutionUs, true, false, true, 3, -1, -1, TrackType::kGenCascDaug});
     trackTime = (eventCollisionTimeNS + gRandom->Gaus(0., timeResolutionNs)) * nsToMus;
-    tracksCascadeProngs.push_back(TrackAlice3{perfectCascadeTrack, mcParticle.globalIndex(), trackTime, timeResolutionUs, true, true, 3, -1, -1, TrackType::kGenCascDaug});
+    tracksCascadeProngs.push_back(TrackAlice3{perfectCascadeTrack, mcParticle.globalIndex(), trackTime, timeResolutionUs, true, false, true, 3, -1, -1, TrackType::kGenCascDaug});
 
     for (int i = 0; i < kCascProngs; i++) {
       isReco[i] = false;
@@ -1049,7 +1052,7 @@ struct OnTheFlyTracker {
       trackTime = (eventCollisionTimeNS + gRandom->Gaus(0., timeResolutionNs)) * nsToMus;
       // TODO: add flag for whether it's a ghost track or not, currently assuming all are reconstructed tracks if they pass the fast tracker requirements
       TrackType trackType = isReco[i] ? TrackType::kRecoCascDaug : TrackType::kGenCascDaug;
-      tracksCascadeProngs[i] = TrackAlice3{xiDaughterTrackParCovsTracked[i], mcParticle.globalIndex(), trackTime, timeResolutionUs, true, true, i + 2, nSiliconHitsCascadeProngs[i], nTPCHitsCascadeProngs[i], trackType};
+      tracksCascadeProngs[i] = TrackAlice3{xiDaughterTrackParCovsTracked[i], mcParticle.globalIndex(), trackTime, timeResolutionUs, true, false, true, i + 2, nSiliconHitsCascadeProngs[i], nTPCHitsCascadeProngs[i], trackType};
     }
 
     bool tryKinkReco = false;
@@ -1260,7 +1263,7 @@ struct OnTheFlyTracker {
               return; // We didn't find enough hits for strangeness tracking
             }
           }
-          tracksCascadeProngs[kCascProngs] = TrackAlice3{cascadeTrack, mcParticle.globalIndex(), trackTime, timeResolutionUs, false, false, 1, thisCascade.foundClusters, TrackType::kGenCascDaug};
+          tracksCascadeProngs[kCascProngs] = TrackAlice3{cascadeTrack, mcParticle.globalIndex(), trackTime, timeResolutionUs, false, false, false, 1, thisCascade.foundClusters, TrackType::kGenCascDaug};
           fillCascadeTable = true;
         }
       }
@@ -1331,7 +1334,7 @@ struct OnTheFlyTracker {
           newCascadeTrack.setPID(pdgCodeToPID(PDG_t::kXiMinus)); // FIXME: not OK for omegas
           float trackTime = (eventCollisionTimeNS + gRandom->Gaus(0., timeResolutionNs)) * nsToMus;
           if (reconstructedCascade) {
-            tracksCascadeProngs[kCascProngs + 1] = TrackAlice3{newCascadeTrack, mcParticle.globalIndex(), trackTime, timeResolutionUs, false, false, 1, thisCascade.foundClusters, TrackType::kRecoCascDaug};
+            tracksCascadeProngs[kCascProngs + 1] = TrackAlice3{newCascadeTrack, mcParticle.globalIndex(), trackTime, timeResolutionUs, false, false, false, 1, thisCascade.foundClusters, TrackType::kRecoCascDaug};
           }
           fillCascadeTable = true;
         } // end fitter OK
@@ -1482,9 +1485,9 @@ struct OnTheFlyTracker {
 
     // Store not reconstructed daughters, will update them in case reconstruction is successful
     float trackTime = (eventCollisionTimeNS + gRandom->Gaus(0., timeResolutionNs)) * nsToMus;
-    tracksV0Daugs.push_back(TrackAlice3{v0DaughterTrackParCovsPerfect[0], mcParticle.globalIndex(), 0.f, timeResolutionUs, true, true, 1, TrackType::kGhostV0Daug});
+    tracksV0Daugs.push_back(TrackAlice3{v0DaughterTrackParCovsPerfect[0], mcParticle.globalIndex(), 0.f, timeResolutionUs, true, false, true, 1, TrackType::kGhostV0Daug});
     trackTime = (eventCollisionTimeNS + gRandom->Gaus(0., timeResolutionNs)) * nsToMus;
-    tracksV0Daugs.push_back(TrackAlice3{v0DaughterTrackParCovsPerfect[1], mcParticle.globalIndex(), 0.f, timeResolutionUs, true, true, 1, TrackType::kGhostV0Daug});
+    tracksV0Daugs.push_back(TrackAlice3{v0DaughterTrackParCovsPerfect[1], mcParticle.globalIndex(), 0.f, timeResolutionUs, true, false, true, 1, TrackType::kGhostV0Daug});
 
     bool fillV0Table{false};
     for (int i = 0; i < kv0Prongs; i++) {
@@ -1521,7 +1524,7 @@ struct OnTheFlyTracker {
       trackTime = (eventCollisionTimeNS + gRandom->Gaus(0., timeResolutionNs)) * nsToMus;
       // TODO: flag to separate ghost and reco tracks
       TrackType trackType = isV0Reco[i] ? TrackType::kRecoV0Daug : TrackType::kGhostV0Daug;
-      tracksV0Daugs[i] = TrackAlice3{v0DaughterTrackParCovsTracked[i], mcParticle.globalIndex(), trackTime, timeResolutionUs, true, true, i + 2, trackType};
+      tracksV0Daugs[i] = TrackAlice3{v0DaughterTrackParCovsTracked[i], mcParticle.globalIndex(), trackTime, timeResolutionUs, true, false, true, i + 2, trackType};
     }
     if (v0DecaySettings.doV0QA) {
       if (isV0Reco[0] && isV0Reco[1]) {
@@ -1672,8 +1675,8 @@ struct OnTheFlyTracker {
   /// \param prmTrks the vector of tracks to be used for vertex reconstruction
   /// \param primaryVertex the output variable where the computed primary vertex will be stored
   /// \param icfg index of the current configuration, used for histogram filling
-  template <typename McCollisionType, typename TrackType>
-  void computeVertex(McCollisionType& mcCollision, const std::vector<TrackType>& prmTrks, o2::vertexing::PVertex& primaryVertex, const int icfg)
+  template <typename McCollisionType, typename TrackT>
+  void computeVertex(McCollisionType& mcCollision, std::vector<TrackT>& prmTrks, o2::vertexing::PVertex& primaryVertex, const int icfg)
   {
 
     if (!enablePrimaryVertexing) {
@@ -1725,7 +1728,18 @@ struct OnTheFlyTracker {
         largestVertex = iv;
       }
     }
+
     primaryVertex = vertices[largestVertex];
+
+    const auto& contributorRef = v2tRefs[largestVertex];
+    const int first = contributorRef.getFirstEntry();
+    const int end = first + contributorRef.getEntries();
+
+    for (int i = first; i < end; ++i) {
+      const auto trackIndex = vertexTrackIDs[i].getIndex();
+      prmTrks[trackIndex].isPVContributor = true;
+    }
+
     if (doExtraQA) {
       histos.fill(HIST("h2dVerticesVsContributors"), primaryVertex.getNContributors(), n_vertices);
     }
@@ -1776,7 +1790,7 @@ struct OnTheFlyTracker {
                               trackParCov.getSigmaTgl2(), trackParCov.getSigma1PtY(), trackParCov.getSigma1PtZ(), trackParCov.getSigma1PtSnp(), trackParCov.getSigma1PtTgl(),
                               trackParCov.getSigma1Pt2());
       tableMcTrackLabels(trackParCov.mcLabel, 0);
-      tableTracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits, trackParCov.trackType, true);
+      tableTracksExtraA3(trackParCov.nSiliconHits, trackParCov.nTPCHits, trackParCov.trackType, trackParCov.isPVContributor);
 
       // populate extra tables if required to do so
       if (populateTracksExtra) {
@@ -1969,10 +1983,11 @@ struct OnTheFlyTracker {
       // Time associated to the mcParticle: collision time + smearing
       float trackTime = (eventCollisionTimeNS + gRandom->Gaus(0., timeResolutionNs)) * nsToMus;
       TrackType trackType = reconstructed ? TrackType::kRecoPrimary : TrackType::kGhostPrimary;
+      bool isPVContributor = trackType == TrackType::kRecoPrimary;
       if (reconstructed) {
-        recoPrimaries.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), trackTime, timeResolutionUs, isDecayDaughter, false, 0, nTrkHits, trackType});
+        recoPrimaries.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), trackTime, timeResolutionUs, isDecayDaughter, isPVContributor, false, 0, nTrkHits, trackType});
       } else {
-        ghostPrimaries.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), trackTime, timeResolutionUs, isDecayDaughter, false, 0, nTrkHits, trackType});
+        ghostPrimaries.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), trackTime, timeResolutionUs, isDecayDaughter, isPVContributor, false, 0, nTrkHits, trackType});
       }
     }
 
@@ -2194,10 +2209,10 @@ struct OnTheFlyTracker {
       }
 
       if (reconstructed) {
-        tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isSecondary, false, 0, nTrkHits, kRecoPrimary});
+        tracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isSecondary, false, true, false, 0, nTrkHits, kRecoPrimary});
         getHist(TH1, histPath + "hPtReconstructedPr")->Fill(trackParCov.getPt());
       } else {
-        ghostTracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isSecondary, false, 0, nTrkHits, kGhostPrimary});
+        ghostTracksAlice3.push_back(TrackAlice3{trackParCov, mcParticle.globalIndex(), time, timeResolutionUs, isSecondary, false, false, false, 0, nTrkHits, kGhostPrimary});
       }
     }
 
