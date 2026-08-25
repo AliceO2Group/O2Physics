@@ -160,6 +160,7 @@ struct FlowGenericFramework {
     O2_DEFINE_CONFIGURABLE(cfgDCAz, float, 2, "Cut on DCA in the longitudinal direction (cm)");
     O2_DEFINE_CONFIGURABLE(cfgNTPCCls, float, 50, "Cut on number of TPC clusters found");
     O2_DEFINE_CONFIGURABLE(cfgNTPCXrows, float, 70, "Cut on number of TPC crossed rows");
+    O2_DEFINE_CONFIGURABLE(cfgNTPCXrowsDaughters, float, 70, "Cut on number of TPC crossed rows of V0 daughters");
     O2_DEFINE_CONFIGURABLE(cfgMinNITSCls, float, 5, "Cut on minimum number of ITS clusters found");
     O2_DEFINE_CONFIGURABLE(cfgChi2PrITSCls, float, 36, "Cut on chi^2 per ITS clusters found");
     O2_DEFINE_CONFIGURABLE(cfgChi2PrTPCCls, float, 2.5, "Cut on chi^2 per TPC clusters found");
@@ -178,8 +179,7 @@ struct FlowGenericFramework {
     O2_DEFINE_CONFIGURABLE(cfgIsVertexITSTPC, bool, true, "IsVertexITSTPC - Selects collisions with at least one ITS-TPC track");
   } cfgEventCutFlags;
   struct : ConfigurableGroup {
-    O2_DEFINE_CONFIGURABLE(cfgOccupancySelection, int, 2000, "Max occupancy selection, -999 to disable");
-    O2_DEFINE_CONFIGURABLE(cfgDoOccupancySel, bool, true, "Bool for event selection on detector occupancy");
+    O2_DEFINE_CONFIGURABLE(cfgOccupancySelection, int, -999, "Max occupancy selection, -999 to disable");
     O2_DEFINE_CONFIGURABLE(cfgMagField, float, 99999, "Configurable magnetic field; default CCDB will be queried");
     O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, false, "Use additional event cut on mult correlations");
   } cfgEventSelection;
@@ -2241,7 +2241,7 @@ struct FlowGenericFramework {
   template <typename TTrack>
   bool selectionV0Daughter(const TTrack& track, int pid)
   {
-    if (track.tpcNClsCrossedRows() < cfgTrackCuts.cfgNTPCXrows) {
+    if (track.tpcNClsCrossedRows() < cfgTrackCuts.cfgNTPCXrowsDaughters) {
       return false;
     }
     // Only accept daughters consistent with the expected identities of K0 or Lambda decay.
@@ -2758,7 +2758,7 @@ struct FlowGenericFramework {
       th1sList[run][EventSel]->Fill(1.5);
     }
     float centrality = getCentrality(collision);
-    if (cfgEventSelection.cfgDoOccupancySel) {
+    if (cfgEventSelection.cfgOccupancySelection >= 0) {
       int occupancy = collision.trackOccupancyInTimeRange();
       if (cfgFill.cfgFillQA) {
         registryQA.fill(HIST("eventQA/before/occ_mult_cent"), occupancy, tracks.size(), centrality);
@@ -2821,7 +2821,7 @@ struct FlowGenericFramework {
 
     const auto centrality = getCentrality(collision);
 
-    if (cfgEventSelection.cfgDoOccupancySel) {
+    if (cfgEventSelection.cfgOccupancySelection >= 0) {
       int occupancy = collision.trackOccupancyInTimeRange();
       if (cfgFill.cfgFillQA) {
         registryQA.fill(HIST("eventQA/before/occ_mult_cent"), occupancy, tracks.size(), centrality);
@@ -2974,7 +2974,7 @@ struct FlowGenericFramework {
     if (centrality < gfwMemberCache.centbinning.front() || centrality > gfwMemberCache.centbinning.back()) {
       return false;
     }
-    if (cfgEventSelection.cfgDoOccupancySel) {
+    if (cfgEventSelection.cfgOccupancySelection >= 0) {
       int occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy < 0 || occupancy > cfgEventSelection.cfgOccupancySelection) {
         return false;
