@@ -248,7 +248,7 @@ struct LongrangeMaker {
   Service<o2::framework::O2DatabasePDG> pdg;
   o2::ccdb::CcdbApi ccdbApi;
   o2::ft0::Geometry ft0Det;
-  std::vector<o2::detectors::AlignParam>* offsetFT0;
+  std::vector<o2::detectors::AlignParam>* offsetFT0{nullptr};
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   TrackSelection myTrackFilter;
 
@@ -847,9 +847,9 @@ struct LongrangeMaker {
         }
       }
       auto recTracksPart = RecTracks.sliceBy(perColMidtrack, RecCol.globalIndex());
-      float multiplicity = countNTracks(recTracksPart, RecCol.posZ());
+      float recMultiplicity = countNTracks(recTracksPart, RecCol.posZ());
       float centrality = selColCent(RecCol);
-      lrcollision(bc.runNumber(), RecCol.posZ(), multiplicity, centrality, bc.timestamp());
+      lrcollision(bc.runNumber(), RecCol.posZ(), recMultiplicity, centrality, bc.timestamp());
       lrcollisionMcLabel(RecCol.mcCollisionId());
 
       // track loop
@@ -1525,7 +1525,7 @@ struct LongrangeMaker {
       if (hTrkEff == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgtrksel.cfgEffccdbPath.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgtrksel.cfgEffccdbPath.value.c_str(), (void*)hTrkEff);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgtrksel.cfgEffccdbPath.value.c_str(), static_cast<void*>(hTrkEff));
     }
     fLoadTrkEffCorr = true;
   }
