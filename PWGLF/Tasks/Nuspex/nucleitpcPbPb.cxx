@@ -427,10 +427,10 @@ struct NucleitpcPbPb {
         continue;
       histos.fill(HIST("histNev"), 6.5);
       if (occupancycutrequire && (occupancy > occupancycut))
-          continue;
+        continue;
       histos.fill(HIST("histNev"), 7.5);
       histos.fill(HIST("histCentFTOC_cut"), collision.centFT0C());
-      
+
       auto tracksInColl = tracks.sliceBy(tracksPerCollision, collision.globalIndex());
       for (const auto& track : tracksInColl) {
         if (!passesBasicRecoTrackCuts(track))
