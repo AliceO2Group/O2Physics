@@ -31,6 +31,7 @@
 #include "PWGLF/DataModel/LFStrangenessMLTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGUD/Core/SGSelector.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
@@ -1195,7 +1196,7 @@ struct derivedlambdakzeroanalysis {
     // Creation of histograms: MC generated
     if ((doprocessGeneratedRun3 || doprocessGeneratedRun2)) {
       if (useMcCentrality) {
-        histos.add("hGenEventsVsMcCentrality", "hGenEventsVsMcCentrality", kTH2D, {axisCentralityFine, {2, -0.5f, +1.5f}});
+        histos.add("hGenEventsVsMcCentrality", "hGenEventsVsMcCentrality", kTH2D, {axisConfigurations.axisCentralityFine, {2, -0.5f, +1.5f}});
         histos.get<TH2>(HIST("hGenEventsVsMcCentrality"))->GetYaxis()->SetBinLabel(1, "All gen. events");
         histos.get<TH2>(HIST("hGenEventsVsMcCentrality"))->GetYaxis()->SetBinLabel(2, "Gen. with at least 1 rec. events");
       } else {
@@ -1203,7 +1204,7 @@ struct derivedlambdakzeroanalysis {
         histos.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(1, "All gen. events");
         histos.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(2, "Gen. with at least 1 rec. events");
       }
-      histos.add("hGenEventCentrality", "hGenEventCentrality", kTH1D, {axisCentralityFine});
+      histos.add("hGenEventCentrality", "hGenEventCentrality", kTH1D, {axisConfigurations.axisCentralityFine});
 
       histos.add("hCentralityVsNcoll_beforeEvSel", "hCentralityVsNcoll_beforeEvSel", kTH2D, {axisConfigurations.axisCentrality, {50, -0.5f, 49.5f}});
       histos.add("hCentralityVsNcoll_afterEvSel", "hCentralityVsNcoll_afterEvSel", kTH2D, {axisConfigurations.axisCentrality, {50, -0.5f, 49.5f}});
@@ -1226,7 +1227,7 @@ struct derivedlambdakzeroanalysis {
         histos.add("h2dGenXiPlusVsMcCentrality_RecoedEvt", "h2dGenXiPlusVsMcCentrality_RecoedEvt", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
         histos.add("h2dGenOmegaMinusVsMcCentrality_RecoedEvt", "h2dGenOmegaMinusVsMcCentrality_RecoedEvt", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
         histos.add("h2dGenOmegaPlusVsMcCentrality_RecoedEvt", "h2dGenOmegaPlusVsMcCentrality_RecoedEvt", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
-
+  
         histos.add("h2dGenK0ShortVsMcCentrality", "h2dGenK0ShortVsMcCentrality", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
         histos.add("h2dGenLambdaVsMcCentrality", "h2dGenLambdaVsMcCentrality", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
         histos.add("h2dGenAntiLambdaVsMcCentrality", "h2dGenAntiLambdaVsMcCentrality", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
@@ -1242,7 +1243,7 @@ struct derivedlambdakzeroanalysis {
         histos.add("h2dGenXiPlusVsMultMC_RecoedEvt", "h2dGenXiPlusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
         histos.add("h2dGenOmegaMinusVsMultMC_RecoedEvt", "h2dGenOmegaMinusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
         histos.add("h2dGenOmegaPlusVsMultMC_RecoedEvt", "h2dGenOmegaPlusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
-
+  
         histos.add("h2dGenK0ShortVsMultMC", "h2dGenK0ShortVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
         histos.add("h2dGenLambdaVsMultMC", "h2dGenLambdaVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
         histos.add("h2dGenAntiLambdaVsMultMC", "h2dGenAntiLambdaVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
@@ -1294,24 +1295,18 @@ struct derivedlambdakzeroanalysis {
   // If takeMcCentrality is enabled, the centrality is taken from the MC collision; otherwise it is taken
   // from the reconstructed collision. Returns -1 if no corresponding centrality estimator is found or if no MC collision is associated to the recoed collision.
   template <typename TCollision>
-  auto getCentralityRun3(TCollision const& collision, bool takeMcCentrality)
+  auto getCentralityRun3(TCollision const& collision, bool takeMcCentrality = false)
   {
     // Helper lambda to extract centrality from any object exposing the cent* columns
     auto extractCentrality = [this](auto const& coll) -> float {
       switch (centralityEstimator) {
-        case kCentFT0C:
-          return coll.centFT0C();
-        case kCentFT0M:
-          return coll.centFT0M();
-        case kCentFT0CVariant1:
-          return coll.centFT0CVariant1();
+        case kCentFT0C:         return coll.centFT0C();
+        case kCentFT0M:         return coll.centFT0M();
+        case kCentFT0CVariant1: return coll.centFT0CVariant1();
         // case kCentMFT:          return coll.centMFT();
-        case kCentNGlobal:
-          return coll.centNGlobal();
-        case kCentFV0A:
-          return coll.centFV0A();
-        default:
-          return -1.f;
+        case kCentNGlobal:      return coll.centNGlobal();
+        case kCentFV0A:         return coll.centFV0A();
+        default:                return -1.f;
       }
     };
 
@@ -2806,8 +2801,12 @@ struct derivedlambdakzeroanalysis {
         continue;
       }
 
-      if (useMcCentrality) {
-        histos.fill(HIST("hGenEventsVsMcCentrality"), getCentralityRun3(mcCollision), 0 /* all gen. events*/);
+      if constexpr (run3) {
+        if (useMcCentrality) {
+          histos.fill(HIST("hGenEventsVsMcCentrality"), getCentralityRun3(mcCollision), 0 /* all gen. events*/);
+        } else {
+          histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 0 /* all gen. events*/);
+        }
       } else {
         histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 0 /* all gen. events*/);
       }
@@ -2846,8 +2845,12 @@ struct derivedlambdakzeroanalysis {
       histos.fill(HIST("hEventPVzMC"), mcCollision.posZ());
 
       if (atLeastOne) {
-        if (useMcCentrality) {
-          histos.fill(HIST("hGenEventsVsMcCentrality"), getCentralityRun3(mcCollision), 1 /* at least 1 rec. event*/);
+        if constexpr (run3) {
+          if (useMcCentrality) {
+            histos.fill(HIST("hGenEventsVsMcCentrality"), getCentralityRun3(mcCollision), 1 /* at least 1 rec. event*/);
+          } else {
+            histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 1 /* at least 1 rec. event*/);
+          }
         } else {
           histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 1 /* at least 1 rec. event*/);
         }
@@ -2929,8 +2932,8 @@ struct derivedlambdakzeroanalysis {
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
-  template <typename TCollision, typename TV0s>
-  void analyzeRecoedV0sInMonteCarlo(TCollision const& collision, TV0s const& fullV0s)
+  template <typename TCollision, typename TV0s, typename TMCCollisions>
+  void analyzeRecoedV0sInMonteCarlo(TCollision const& collision, TV0s const& fullV0s, TMCCollisions const& /*mcCollisions*/)
   {
     // Fire up CCDB
     if ((mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
@@ -3007,7 +3010,7 @@ struct derivedlambdakzeroanalysis {
         bool correctCollision = false;
         int mcNch = -1;
         if (collision.has_straMCCollision()) {
-          auto mcCollision = collision.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
+          auto mcCollision = collision.template straMCCollision_as<TMCCollisions>();
           mcNch = mcCollision.multMCNParticlesEta05();
           correctCollision = (v0MC.straMCCollisionId() == mcCollision.globalIndex());
         }
@@ -3053,7 +3056,7 @@ struct derivedlambdakzeroanalysis {
           ymc > v0Selections.rapidityMaxCut)
         continue;
 
-      auto mcCollision = v0MC.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
+      auto mcCollision = v0MC.template straMCCollision_as<TMCCollisions>();
       if (eventSelections.applyZVtxSelOnMCPV && std::abs(mcCollision.posZ()) > eventSelections.maxZVtxPosition) {
         continue;
       }
@@ -3075,22 +3078,34 @@ struct derivedlambdakzeroanalysis {
         }
 
         if (v0MC.pdgCode() == PDG_t::kK0Short) {
-          if (useMcCentrality) {
-            histos.fill(HIST("h2dGenK0ShortVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+          if constexpr (run3) {
+            if (useMcCentrality) {
+              histos.fill(HIST("h2dGenK0ShortVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+            } else {
+              histos.fill(HIST("h2dGenK0ShortVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+            }
           } else {
             histos.fill(HIST("h2dGenK0ShortVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
           }
         }
         if (v0MC.pdgCode() == PDG_t::kLambda0) {
-          if (useMcCentrality) {
-            histos.fill(HIST("h2dGenLambdaVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+          if constexpr (run3) {
+            if (useMcCentrality) {
+              histos.fill(HIST("h2dGenLambdaVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+            } else {
+              histos.fill(HIST("h2dGenLambdaVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+            }
           } else {
             histos.fill(HIST("h2dGenLambdaVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
           }
         }
         if (v0MC.pdgCode() == PDG_t::kLambda0Bar) {
-          if (useMcCentrality) {
-            histos.fill(HIST("h2dGenAntiLambdaVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+          if constexpr (run3) {
+            if (useMcCentrality) {
+              histos.fill(HIST("h2dGenAntiLambdaVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+            } else {
+              histos.fill(HIST("h2dGenAntiLambdaVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+            }
           } else {
             histos.fill(HIST("h2dGenAntiLambdaVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
           }
@@ -3099,24 +3114,36 @@ struct derivedlambdakzeroanalysis {
 
       if (v0MC.pdgCode() == PDG_t::kK0Short) {
         histos.fill(HIST("h2dGenK0Short"), centrality, ptmc);
-        if (useMcCentrality) {
-          histos.fill(HIST("h2dGenK0ShortVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+        if constexpr (run3) {
+          if (useMcCentrality) {
+            histos.fill(HIST("h2dGenK0ShortVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+          } else {
+            histos.fill(HIST("h2dGenK0ShortVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+          }
         } else {
           histos.fill(HIST("h2dGenK0ShortVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
       }
       if (v0MC.pdgCode() == PDG_t::kLambda0) {
         histos.fill(HIST("h2dGenLambda"), centrality, ptmc);
-        if (useMcCentrality) {
-          histos.fill(HIST("h2dGenLambdaVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+        if constexpr (run3) {
+          if (useMcCentrality) {
+            histos.fill(HIST("h2dGenLambdaVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+          } else {
+            histos.fill(HIST("h2dGenLambdaVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+          }
         } else {
           histos.fill(HIST("h2dGenLambdaVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
       }
       if (v0MC.pdgCode() == PDG_t::kLambda0Bar) {
         histos.fill(HIST("h2dGenAntiLambda"), centrality, ptmc);
-        if (useMcCentrality) {
-          histos.fill(HIST("h2dGenAntiLambdaVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+        if constexpr (run3) {
+          if (useMcCentrality) {
+            histos.fill(HIST("h2dGenAntiLambdaVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+          } else {
+            histos.fill(HIST("h2dGenAntiLambdaVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+          }
         } else {
           histos.fill(HIST("h2dGenAntiLambdaVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
@@ -3141,7 +3168,7 @@ struct derivedlambdakzeroanalysis {
           ymc > v0Selections.rapidityMaxCut)
         continue;
 
-      auto mcCollision = cascMC.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
+      auto mcCollision = cascMC.template straMCCollision_as<TMCCollisions>();
       if (eventSelections.applyZVtxSelOnMCPV && std::abs(mcCollision.posZ()) > eventSelections.maxZVtxPosition) {
         continue;
       }
@@ -3163,29 +3190,45 @@ struct derivedlambdakzeroanalysis {
         }
 
         if (cascMC.pdgCode() == PDG_t::kXiMinus) {
-          if (useMcCentrality) {
-            histos.fill(HIST("h2dGenXiMinusVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+          if constexpr (run3) {
+            if (useMcCentrality) {
+              histos.fill(HIST("h2dGenXiMinusVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+            } else {
+              histos.fill(HIST("h2dGenXiMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+            }
           } else {
             histos.fill(HIST("h2dGenXiMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
           }
         }
         if (cascMC.pdgCode() == PDG_t::kXiPlusBar) {
-          if (useMcCentrality) {
-            histos.fill(HIST("h2dGenXiPlusVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+          if constexpr (run3) {
+            if (useMcCentrality) {
+              histos.fill(HIST("h2dGenXiPlusVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+            } else {
+              histos.fill(HIST("h2dGenXiPlusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+            }
           } else {
             histos.fill(HIST("h2dGenXiPlusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
           }
         }
         if (cascMC.pdgCode() == PDG_t::kOmegaMinus) {
-          if (useMcCentrality) {
-            histos.fill(HIST("h2dGenOmegaMinusVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+          if constexpr (run3) {
+            if (useMcCentrality) {
+              histos.fill(HIST("h2dGenOmegaMinusVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+            } else {
+              histos.fill(HIST("h2dGenOmegaMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+            }
           } else {
             histos.fill(HIST("h2dGenOmegaMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
           }
         }
         if (cascMC.pdgCode() == PDG_t::kOmegaPlusBar) {
-          if (useMcCentrality) {
-            histos.fill(HIST("h2dGenOmegaPlusVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+          if constexpr (run3) {
+            if (useMcCentrality) {
+              histos.fill(HIST("h2dGenOmegaPlusVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+            } else {
+              histos.fill(HIST("h2dGenOmegaPlusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+            }
           } else {
             histos.fill(HIST("h2dGenOmegaPlusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
           }
@@ -3216,32 +3259,48 @@ struct derivedlambdakzeroanalysis {
 
       if (cascMC.pdgCode() == PDG_t::kXiMinus) {
         histos.fill(HIST("h2dGenXiMinus"), centrality, ptmc);
-        if (useMcCentrality) {
-          histos.fill(HIST("h2dGenXiMinusVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+        if constexpr (run3) {
+          if (useMcCentrality) {
+            histos.fill(HIST("h2dGenXiMinusVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+          } else {
+            histos.fill(HIST("h2dGenXiMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+          }
         } else {
           histos.fill(HIST("h2dGenXiMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
       }
       if (cascMC.pdgCode() == PDG_t::kXiPlusBar) {
         histos.fill(HIST("h2dGenXiPlus"), centrality, ptmc);
-        if (useMcCentrality) {
-          histos.fill(HIST("h2dGenXiPlusVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+        if constexpr (run3) {
+          if (useMcCentrality) {
+            histos.fill(HIST("h2dGenXiPlusVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+          } else {
+            histos.fill(HIST("h2dGenXiPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+          }
         } else {
           histos.fill(HIST("h2dGenXiPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
       }
       if (cascMC.pdgCode() == PDG_t::kOmegaMinus) {
         histos.fill(HIST("h2dGenOmegaMinus"), centrality, ptmc);
-        if (useMcCentrality) {
-          histos.fill(HIST("h2dGenOmegaMinusVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+        if constexpr (run3) {
+          if (useMcCentrality) {
+            histos.fill(HIST("h2dGenOmegaMinusVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+          } else {
+            histos.fill(HIST("h2dGenOmegaMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+          }
         } else {
           histos.fill(HIST("h2dGenOmegaMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
       }
       if (cascMC.pdgCode() == PDG_t::kOmegaPlusBar) {
         histos.fill(HIST("h2dGenOmegaPlus"), centrality, ptmc);
-        if (useMcCentrality) {
-          histos.fill(HIST("h2dGenOmegaPlusVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+        if constexpr (run3) {
+          if (useMcCentrality) {
+            histos.fill(HIST("h2dGenOmegaPlusVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+          } else {
+            histos.fill(HIST("h2dGenOmegaPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+          }
         } else {
           histos.fill(HIST("h2dGenOmegaPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
@@ -3310,16 +3369,16 @@ struct derivedlambdakzeroanalysis {
 
   // ______________________________________________________
   // Simulated processing in Run 3 (subscribes to MC information too)
-  void processMonteCarloRun3(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps, aod::StraEvTimes, aod::StraCollLabels>::iterator const& collision, V0McCandidates const& fullV0s, DauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults, aod::McCentFV0As, aod::McCentFT0Ms, aod::McCentFT0Cs, aod::McCentFT0CVariant1s, aod::McCentNGlobals> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
+  void processMonteCarloRun3(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps, aod::StraEvTimes, aod::StraCollLabels>::iterator const& collision, V0McCandidates const& fullV0s, DauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults, aod::McCentFV0As, aod::McCentFT0Ms, aod::McCentFT0Cs, aod::McCentFT0CVariant1s, aod::McCentNGlobals> const& mccollisions, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
-    analyzeRecoedV0sInMonteCarlo(collision, fullV0s);
+    analyzeRecoedV0sInMonteCarlo(collision, fullV0s, mccollisions);
   }
 
   // ______________________________________________________
   // Simulated processing in Run 2 (subscribes to MC information too)
-  void processMonteCarloRun2(soa::Join<aod::StraCollisions, aod::StraCentsRun2, aod::StraEvSelsRun2, aod::StraStamps, aod::StraEvTimes, aod::StraCollLabels>::iterator const& collision, V0McCandidates const& fullV0s, DauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
+  void processMonteCarloRun2(soa::Join<aod::StraCollisions, aod::StraCentsRun2, aod::StraEvSelsRun2, aod::StraStamps, aod::StraEvTimes, aod::StraCollLabels>::iterator const& collision, V0McCandidates const& fullV0s, DauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mccollisions, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
-    analyzeRecoedV0sInMonteCarlo(collision, fullV0s);
+    analyzeRecoedV0sInMonteCarlo(collision, fullV0s, mccollisions);
   }
 
   // ______________________________________________________
