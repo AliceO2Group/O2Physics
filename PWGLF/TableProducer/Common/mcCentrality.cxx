@@ -36,7 +36,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::track;
 
 /// Task to produce the response table
 struct McCentrality {
