@@ -303,6 +303,7 @@ struct NucleiAntineutronCex {
         int antipId = particle.globalIndex();
 
         // Selection conditions MC: Produced in the ITS IB
+
         const double r = std::sqrt(antipVx * antipVx + antipVy * antipVy);
         // Config for ITS
         // if(3.9<=r && r<=43.0 && std::abs(antipVz)<=48.9){

@@ -804,7 +804,7 @@ struct LfTaskLambdaSpinCorr {
   using v0Cand = soa::Filtered<v0Candidates>;
 
   // void processDerivedData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator const& collision, v0Candidates const& V0s, dauTracks const&)
-  void processDerivedData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator const& collision, v0Cand const& V0s, dauTracks const&)
+  void processDerivedData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps>::iterator const& collision, v0Cand const& V0s, dauTracks const&)
   {
     histos.fill(HIST("hEvtSelInfo"), 0.5);
     if (rctCut.requireRCTFlagChecker && !rctChecker(collision)) {
@@ -926,7 +926,7 @@ struct LfTaskLambdaSpinCorr {
   // Preslice<v0Candidates> tracksPerCollisionV0Mixed = o2::aod::v0data::straCollisionId; // for derived data only
   Preslice<v0Cand> tracksPerCollisionV0Mixed = o2::aod::v0data::straCollisionId; // for derived data only
   // void processDerivedDataMixed(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, v0Candidates const& V0s, dauTracks const&)
-  void processDerivedDataMixed(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, v0Cand const& V0s, dauTracks const&)
+  void processDerivedDataMixed(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps> const& collisions, v0Cand const& V0s, dauTracks const&)
 
   {
 

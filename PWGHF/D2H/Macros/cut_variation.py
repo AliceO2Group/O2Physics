@@ -11,9 +11,15 @@ import sys
 
 import numpy as np  # pylint: disable=import-error
 import ROOT  # pylint: disable=import-error
+from enum import IntEnum, auto
 sys.path.insert(0, '..')
 from style_formatter import set_global_style, set_object_style
 
+class MinimisationStatus(IntEnum):
+    Undefined = 0
+    Success = auto()
+    MonotonyViolation = auto()
+    Fail = auto()
 
 # pylint: disable=too-many-instance-attributes
 class CutVarMinimiser:
@@ -171,7 +177,7 @@ class CutVarMinimiser:
             try:
                 self.m_weights = np.linalg.inv(np.linalg.cholesky(self.m_cov_sets))
             except np.linalg.LinAlgError:
-                return False
+                return MinimisationStatus.Fail
             self.m_weights = self.m_weights.T * self.m_weights
             m_eff_tr = self.m_eff.T
 
@@ -179,7 +185,7 @@ class CutVarMinimiser:
             try:
                 self.m_covariance = np.linalg.inv(np.linalg.cholesky(self.m_covariance))
             except np.linalg.LinAlgError:
-                return False
+                return MinimisationStatus.Fail
             self.m_covariance = self.m_covariance.T * self.m_covariance
 
             self.m_corr_yields = self.m_covariance * (m_eff_tr * self.m_weights) * self.m_rawy
@@ -196,9 +202,11 @@ class CutVarMinimiser:
             m_corr_yields_old = np.copy(self.m_corr_yields)
 
         print(f"INFO: number of processed iterations = {iteration+1}\n")
+        minimisation_status = MinimisationStatus.Success
         if correlated:
             m_cov_sets_diag = np.diag(self.m_cov_sets)
             if not (np.all(m_cov_sets_diag[1:] > m_cov_sets_diag[:-1]) or np.all(m_cov_sets_diag[1:] < m_cov_sets_diag[:-1])):
+                minimisation_status = MinimisationStatus.MonotonyViolation
                 print("\033[33mWARNING! minimise_system(): the residual vector uncertainties elements are not monotonous. Check the input for stability.\033[0m")
                 print(f"residual vector uncertainties elements = {np.sqrt(m_cov_sets_diag)}\n")
 
@@ -229,7 +237,7 @@ class CutVarMinimiser:
             self.unc_frac_prompt[i_set] = unc_fp
             self.unc_frac_nonprompt[i_set] = unc_fnp
 
-        return True
+        return minimisation_status
 
     def get_red_chi2(self):
         """

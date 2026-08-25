@@ -49,7 +49,6 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
-#include <iostream>
 #include <memory>
 #include <string>
 #include <utility>
@@ -65,19 +64,17 @@ struct kstarInOO {
   SliceCache cache;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  //==================================
-  //||
-  //||         Selection
-  //||
-  //==================================
 
+  //==================================
+  //|
+  //|         Selection
+  //|
+  //==================================
   // Event Selection
   Configurable<std::string> cfgEventSelections{"cfgEventSelections", "sel8", "Set event selection"};
   Configurable<float> cfgEventVtxCut{"cfgEventVtxCut", 10.0, "V_z cut selection"};
+  Configurable<double> cfgEventMaxEta{"cfgEventMaxEta", 1.0, "set INEL event eta cut"};
   ConfigurableAxis cfgCentAxis{"cfgCentAxis", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0}, "Binning of the centrality axis"};
-  Configurable<bool> cfgOccupancySel{"cfgOccupancySel", false, "Occupancy selection"};
-  Configurable<float> cfgOccupancyMax{"cfgOccupancyMax", 999999., "maximum occupancy of tracks in neighbouring collisions in a given time range"};
-  Configurable<float> cfgOccupancyMin{"cfgOccupancyMin", -100., "minimum occupancy of tracks in neighbouring collisions in a given time range"};
 
   // Track Selection
   // General
@@ -86,9 +83,10 @@ struct kstarInOO {
   Configurable<double> cfgTrackMaxDCArToPVcut{"cfgTrackMaxDCArToPVcut", 0.5, "Track DCAr cut to PV Maximum"};
   Configurable<double> cfgTrackMaxDCAzToPVcut{"cfgTrackMaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
   Configurable<bool> cfgTrackGlobalSel{"cfgTrackGlobalSel", true, "Global track selection"};
-  Configurable<bool> cfgTrackPrimaryTrack{"cfgTrackPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
-  Configurable<bool> cfgTrackConnectedToPV{"cfgTrackConnectedToPV", true, "PV contributor track selection"};           // PV Contriuibutor
-  Configurable<bool> cfgTrackGlobalWoDCATrack{"cfgTrackGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
+  Configurable<bool> cfgTrackPrimaryTrack{"cfgTrackPrimaryTrack", true, "Primary track selection"};          // kGoldenChi2 | kDCAxy | kDCAz
+  Configurable<bool> cfgTrackConnectedToPV{"cfgTrackConnectedToPV", true, "PV contributor track selection"}; // PV Contriuibutor
+  Configurable<bool> cfgTrackGlobalWoDCATrack{"cfgTrackGlobalWoDCATrack", true, "Global track selection without DCA"};
+  // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
   // TPC
   Configurable<double> cfgTrackFindableTPCClusters{"cfgTrackFindableTPCClusters", 50, "nFindable TPC Clusters"};
   Configurable<double> cfgTrackTPCCrossedRows{"cfgTrackTPCCrossedRows", 70, "nCrossed TPC Rows"};
@@ -105,9 +103,12 @@ struct kstarInOO {
   Configurable<bool> cfgTrackCirclePIDCut{"cfgTrackCirclePIDCut", true, "Enables PID cut shape circle switch"};
   Configurable<int> cfgTrackCircleValue{"cfgTrackCircleValue", 2, "Enables TOF TPC PID circle cut value"};
   Configurable<bool> cfgTrackTOFHard{"cfgTrackTOFHard", false, "Enables TOF Hard"};
+  Configurable<bool> isMIDCut{"isMIDCut", false, "Enables Mis-IDentified PID cut"};
 
   Configurable<float> cfgTrackTPCPIDnSig{"cfgTrackTPCPIDnSig", 4.0, "nTPC PID sigma"};
   Configurable<float> cfgTrackTOFPIDnSig{"cfgTrackTOFPIDnSig", 4.0, "nTOF PID sigma"};
+  Configurable<float> cfgMIDnSig{"cfgMIDnSig", 1.5, "nTPC Mis-IDentification Particle sigma"};
+
   Configurable<int> cDebugLevel{"cDebugLevel", 0, "Resolution of Debug"};
 
   // Mixing
@@ -119,6 +120,7 @@ struct kstarInOO {
   // MCGen
   Configurable<bool> cfgForceGenReco{"cfgForceGenReco", false, "Only consider events which are reconstructed (neglect event-loss)"};
   Configurable<bool> cfgReqMcEffPID{"cfgReqMcEffPID", false, "Request McEfficiency PID"};
+  Configurable<bool> cfgReqMcEffTrackQA{"cfgRecMcEffTrackQA", false, "Enable Jet Cut on Trig"};
 
   // Pair
   Configurable<int> cfgMinvNBins{"cfgMinvNBins", 300, "Number of bins for Minv axis"};
@@ -132,35 +134,37 @@ struct kstarInOO {
   Configurable<bool> cfgTrackCutQA{"cfgTrackCutQA", false, "Enable Track QA Hists"};
   Configurable<bool> cfgJetQAHistos{"cfgJetQAHistos", false, "Enable Jet QA Histos"};
 
-  Configurable<bool> cfgMCHistos{"cfgMCHistos", false, "Enable MC Hists"};
+  Configurable<bool> cfgMCHistos{"cfgMCHistos", false, "Enable MC Histos"};
   Configurable<bool> cfgMixedHistos{"cfgMixedHistos", false, "Enable Mixed Histos"};
   Configurable<bool> cfgJetHistos{"cfgJetHistos", false, "Enable Jet Histos"};
   Configurable<bool> cfgJetMCHistos{"cfgJetMCHistos", false, "Enable Jet MC Histos"};
+  Configurable<bool> cfgJetdRHistos{"cfgJetdRHistos", false, "Enable Jet dR QA Histos"};
   Configurable<bool> cfgCutonTrig{"cfgCutonTrig", false, "Enable Jet Cut on Trig"};
 
-  Configurable<bool> cfgManualEvSel{"cfgManualEvSel", false, "Enable Manual EvSel"};
-  Configurable<bool> cfgJetEvSel{"cfgJetEvSel", false, "Enable Manual JetEvSel"};
-
   //======================
-  //||
-  //||        JET
-  //||
+  //|
+  //|        JET
+  //|
   //======================
   Configurable<float> cfgJetpT{"cfgJetpT", 8.0, "Set Jet pT minimum"};
-  Configurable<float> cfgJetR{"cfgJetR", 0.4, "Set Jet radius parameter"};
+  Configurable<float> cfgJetR{"cfgJetR", 0.4, "Anti-kT Radius"};
+  Configurable<float> cfgJetdR{"cfgJetdR", 0.4, "Set Jet radius parameter"};
+  Configurable<float> cfgJetMaxEta{"cfgJetMaxEta", 0.9, "Set Jet Max Eta"};
+
   Configurable<bool> cfgSingleJet{"cfgSingleJet", false, "Enforces strict phi-jet correspondance"};
   Configurable<bool> cfgReqJets{"cfgReqJets", false, "False: MB, True: Inside Jets"};
   Configurable<std::string> cfgRealTriggerMasks{"cfgRealTriggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   Configurable<std::string> cfgTriggerMasksTest1{"cfgTriggerMasksTest1", "", "possible JE Trigger masks Test1"};
   Configurable<std::string> cfgTriggerMasksTest2{"cfgTriggerMasksTest2", "", "possible JE Trigger masks Test2"};
   Configurable<std::string> cfgTriggerMasksTest3{"cfgTriggerMasksTest3", "", "possible JE Trigger masks Test3"};
+  Configurable<bool> cfgForceTrueINELgt{"cfgForceTrueINELgt", true, "Check generated event with True INELgt0"};
 
   std::vector<int> eventSelectionBits;
   std::vector<int> RealTriggerMaskBits;
   std::vector<int> triggerMaskBitsTest1;
   std::vector<int> triggerMaskBitsTest2;
   std::vector<int> triggerMaskBitsTest3;
-  // Main
+
   void init(o2::framework::InitContext&)
   {
     // HISTOGRAMS
@@ -179,6 +183,22 @@ struct kstarInOO {
       histos.add("hPosZ_AC", "hPosZ_AC", kTH1F, {{300, -15.0, 15.0}});
       histos.add("hcentFT0C_BC", "centFT0C_BC", kTH1F, {{110, 0.0, 110.0}});
       histos.add("hcentFT0C_AC", "centFT0C_AC", kTH1F, {{110, 0.0, 110.0}});
+
+      std::shared_ptr<TH1> hCutFlow = histos.get<TH1>(HIST("hEvent_Cut"));
+      std::vector<std::string> eventCutLabels = {
+        "All Events",
+        "sel8",
+        Form("|Vz| < %.1f", cfgEventVtxCut.value),
+        "kIsGoodZvtxFT0vsPV",
+        "kNoSameBunchPileup",
+        "kNoTimeFrameBorder",
+        "kNoITSROFrameBorder",
+        "kNoCollInTimeRangeStandard",
+        "kIsGoodITSLayersAll",
+        "All passed events"};
+      for (size_t i = 0; i < eventCutLabels.size(); ++i) {
+        hCutFlow->GetXaxis()->SetBinLabel(i + 1, eventCutLabels[i].c_str());
+      }
     }
     if (cfgTrackCutQA) {
       histos.add("hDCArToPv_BC", "DCArToPv_BC", kTH1F, {axisDCAxy});
@@ -198,6 +218,9 @@ struct kstarInOO {
       histos.add("QA_nSigma_kaon_TOF_BC", "QA_nSigma_kaon_TOF_BC", {HistType::kTH2F, {ptAxis, pidAxis}});
       histos.add("QA_kaon_TPC_TOF_BC", "QA_kaon_TPC_TOF_BC", {HistType::kTH2F, {pidAxis, pidAxis}});
       histos.add("QA_track_pT_BC", "QA_track_pT_BC", kTH1F, {{13, 0.0, 13.0}});
+
+      histos.add("Possible_MID_Pion_TPC", "Possible_MID_Pion_TPC", {HistType::kTH2F, {pidAxis, pidAxis}});
+      histos.add("Possible_MID_Kaon_TPC", "Possible_MID_Kaon_TPC", {HistType::kTH2F, {pidAxis, pidAxis}});
 
       histos.add("hDCArToPv_AC", "DCArToPv_AC", kTH1F, {axisDCAxy});
       histos.add("hDCAzToPv_AC", "DCAzToPv_AC", kTH1F, {axisDCAz});
@@ -219,27 +242,61 @@ struct kstarInOO {
     }
     if (cfgJetQAHistos) {
       histos.add("nTriggerQA", "nTriggerQA", kTH1F, {{8, 0.0, 8.0}});
-      histos.add("nTriggerQA_GoodEv", "nTriggerQA_GoodEv", kTH1F, {{8, 0.0, 8.0}});
-      histos.add("nTriggerQA_GoodTrig", "nTriggerQA_GoodTrig", kTH1F, {{8, 0.0, 8.0}});
-      histos.add("nTriggerQA_GoodEvTrig", "nTriggerQA_GoodEvTrig", kTH1F, {{8, 0.0, 8.0}});
 
       histos.add("JetpT", "Jet pT (GeV/c)", kTH1F, {{4000, 0., 200.}});
       histos.add("JetEta", "Jet Eta", kTH1F, {{100, -1.0, 1.0}});
       histos.add("JetPhi", "Jet Phi", kTH1F, {{80, -1.0, 7.0}});
 
-      histos.add("rawDimpT", "rawDimpT", kTH2F, {{1000, 0.0, 10.0}, {100, -0.5, 0.5}});
+      histos.add("nGoodJets", "The number of good jets", kTH1F, {{6, -0.5, 5.5}});
+      histos.add("nJetsPerEvent", "The number of jet per event", kTH1F, {{6, -0.5, 5.5}});
+
       histos.add("jetTrackEta", "Jet Track Eta", kTH1F, {{100, -1.0, 1.0}});
       histos.add("jetTrackPhi", "Jet Track Phi", kTH1F, {{80, -1.0, 7.0}});
+    }
+    if (cfgJetdRHistos) {
+      histos.add("mcpjet_pt", "MC particle-level Jet pT (GeV/c)", kTH1F, {{2000, 0., 100.}});
+      histos.add("mcpjet_eta", "MC particle-level Jet Eta", kTH1F, {{100, -1.0, 1.0}});
+      histos.add("mcpjet_phi", "MC particle-level Jet Phi", kTH1F, {{80, -1.0, 7.0}});
 
-      histos.add("nJetsPerEvent", "nJetsPerEvent", kTH1I, {{4, -0.5, 3.5}});
-      histos.add("nGoodJets", "nGoodJets", kTH1I, {{4, -0.5, 3.5}});
+      histos.add("nJet_6_8", "MC particle-level nJet pT 6 < jet pT < 8 (GeV/c)", kTH1F, {{2000, 0., 100.}});
+
+      histos.add("Gen_KstarPt_All_BR", "Generated K*0 All pT (GeV/c)", kTH1F, {{2000, 0., 100.}});
+      histos.add("Gen_Kstar_BR", "Generated K*0 BR", kTH1F, {minvAxis});
+      histos.add("Gen_KstarPt_BR", "Generated K*0 pT (GeV/c)", kTH1F, {{2000, 0., 100.}});
+
+      histos.add("dR_taggedjet_kaon", "dR between tagged jet and kaon wo pT cut", {HistType::kTH2F, {{100, 0., 3.0}, {150, 0., 30.}}});
+      histos.add("dR_taggedjet_pion", "dR between tagged jet and pion wo pT cut", {HistType::kTH2F, {{100, 0., 3.0}, {150, 0., 30.}}});
+      histos.add("dR_taggedjet_all", "dR between tagged jet and kpi", {HistType::kTH2F, {{100, 0., 3.0}, {150, 0., 30.}}});
+      histos.add("dR_taggedjet_all_6_8", "dR between tagged jet and kpi 6 < jet pT < 8", {HistType::kTH2F, {{100, 0., 3.0}, {150, 0., 30.}}});
+
+      histos.add("dR_kstar_pion", "dR between kstar and pion", {HistType::kTH2F, {{100, 0., 3.0}, {150, 0., 30.}}});
+      histos.add("dR_kstar_kaon", "dR between kstar and kaon", {HistType::kTH2F, {{100, 0., 3.0}, {150, 0., 30.}}});
+
+      histos.add("Kstar_pT_INJet_6_8", "K*0 pT Inside 6-8 Jet", kTH1F, {{1000, 0., 50.}});
+      histos.add("Kstar_pT_INJet_8_10", "K*0 pT Inside 8-10 Jet", kTH1F, {{1000, 0., 50.}});
+      histos.add("Kstar_pT_INJet_10_12", "K*0 pT Inside 10-12 Jet", kTH1F, {{1000, 0., 50.}});
+
+      histos.add("JetpT_8to", "Jet pT 8 to", kTH1F, {{2000, 0., 100.}});
+      histos.add("recoveredJetpT_6_8to8", "Recovered Jet pT 6-8 --> 8", kTH1F, {{2000, 0., 100.}});
+      histos.add("Kstar_pT_6_8to8_IN_recoveredJet", "K*0 pT In recovered Jet pT 6-8 --> 8", kTH1F, {{1000, 0., 50.}});
+      histos.add("Kstar_pT_6_8to8_10_IN_recoveredJet", "K*0 pT In recovered Jet pT 6-8 --> 8-10", kTH1F, {{1000, 0., 50.}});
+
+      histos.add("missed_kpi_INJets_6_8", "missed kpi In Jets with 6 < jetPt < 8", {HistType::kTH2F, {{120, 0.0, 1.2}, {100, 0., 20.}}});
+      histos.add("missed_kpi_INJets_8_10", "missed kpi In Jets with 8 < jetPt < 10", {HistType::kTH2F, {{120, 0.0, 1.2}, {100, 0., 20.}}});
+      histos.add("missed_kpi_INJets_10_12", "missed kpi In Jets with 10 < jetPt < 12", {HistType::kTH2F, {{120, 0.0, 1.2}, {100, 0., 20.}}});
+      histos.add("missed_kpi_INJets_12_15", "missed kpi In Jets with 12 < jetPt < 15", {HistType::kTH2F, {{120, 0.0, 1.2}, {100, 0., 20.}}});
+      histos.add("missed_kpi_INJets_15_25", "missed kpi In Jets with 15 < jetPt < 25", {HistType::kTH2F, {{120, 0.0, 1.2}, {100, 0., 20.}}});
+      histos.add("missed_kpi_INJets_25_infinite", "missed kpi In Jets with 25 < jetPt < infinite", {HistType::kTH2F, {{120, 0.0, 1.2}, {100, 0., 20.}}});
+      histos.add("missed_kpi_INJets_8_infinite", "missed kpi In Jets with 8 < jetPt < infinite", {HistType::kTH2F, {{120, 0.0, 1.2}, {100, 0., 20.}}});
+
+      histos.add("JetMigration", "bin to bin migration", {HistType::kTH2F, {{150, 0.0, 15.0, "True jet pT (GeV/c)"}, {150, 0., 15., "Recovered jet pT (GeV/c)"}}});
     }
 
     ////////////////////////////////////
     histos.add("nEvents", "nEvents", kTH1F, {{7, 0.0, 7.0}});
     histos.add("hUSS_KPi", "hUSS_KPi", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
-    histos.add("hUSS_PiK", "hUSS_PiK", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
     histos.add("hLSS_KPi", "hLSS_KPi", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+    histos.add("hUSS_PiK", "hUSS_PiK", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
     histos.add("hLSS_PiK", "hLSS_PiK", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
 
     if (cfgMixedHistos) {
@@ -247,10 +304,10 @@ struct kstarInOO {
       histos.add("hUSS_PiK_Mix", "hUSS_PiK_Mix", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
     }
     if (cfgMCHistos) {
-      histos.add("nEvents_Gen", "nEvents_Gen", kTH1F, {{4, 0.0, 4.0}});
+      histos.add("nEvents_Gen", "nEvents_Gen", kTH1F, {{7, 0.0, 7.0}});
       histos.add("hUSS_TrueRec", "hUSS_TrueRec", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
-      histos.add("hGen_pT_Raw", "Gen_pT_Raw (GeV/c)", kTH1F, {{800, 0., 40.}});
-      histos.add("hGen_pT_GoodEv", "hGen_pT_GoodEv", kTHnSparseF, {cfgCentAxis, ptAxis});
+      histos.add("hGen_pT_Kstar", "Gen_pT_Kstar (GeV/c)", kTH1F, {{800, 0., 40.}});
+      histos.add("hRec_pT_Kstar", "Rec_pT_Kstar", kTHnSparseF, {cfgCentAxis, ptAxis});
     }
     if (cfgJetHistos) {
       histos.add("hUSS_KPi_INSIDE", "hUSS_KPi_INSIDE", kTHnSparseF, {cfgCentAxis, dRAxis, ptAxis, minvAxis});
@@ -259,16 +316,15 @@ struct kstarInOO {
       histos.add("hLSS_PiK_INSIDE", "hLSS_PiK_INSIDE", kTHnSparseF, {cfgCentAxis, dRAxis, ptAxis, minvAxis});
     }
     if (cfgJetMCHistos) {
-      histos.add("nEvents_Gen", "nEvents_Gen", kTH1F, {{7, -.0, 7.0}});
+      histos.add("nEvents_Gen", "nEvents_Gen", kTH1F, {{7, 0.0, 7.0}});
       histos.add("hUSS_TrueRec", "hUSS_TrueRec", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
       histos.add("hUSS_TrueRec_INSIDE", "hUSS_TrueRec_INSIDE", kTHnSparseF, {cfgCentAxis, dRAxis, ptAxis, minvAxis});
 
-      histos.add("hGen_pT_Raw", "Gen_pT_Raw (GeV/c)", kTH1F, {{800, 0., 40.}});
-      histos.add("hGen_pT_GoodEv", "Gen_pT_GoodTrig (GeV/c)", kTH1F, {{800, 0., 40.}});
-      histos.add("hGen_pT_GoodTrig", "Gen_pT_GoodTrig (GeV/c)", kTH1F, {{800, 0., 40.}});
-      histos.add("hGen_pT_GoodEvTrig", "Gen_pT_GoodEvTrig (GeV/c)", kTH1F, {{800, 0., 40.}});
+      histos.add("hGen_pT_Kstar", "Gen_pT_Kstar (GeV/c)", kTH1F, {{800, 0., 40.}});
+      histos.add("hRec_pT_Kstar", "Rec_pT_Kstar (GeV/c)", kTH1F, {{800, 0., 40.}});
 
       histos.add("hEffRec_pT", "EffRec_pT (GeV/c)", kTH1F, {{1600, 0., 80.}});
+      histos.add("hEffRecTest0_pT", "EffRecTest0_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
       histos.add("hEffRecTest1_pT", "EffRecTest1_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
       histos.add("hEffRecTest2_pT", "EffRecTest2_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
       histos.add("hEffRecTest3_pT", "EffRecTest3_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
@@ -277,27 +333,12 @@ struct kstarInOO {
       histos.add("hEffRecTest6_pT", "EffRecTest6_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
       histos.add("hEffRecTest7_pT", "EffRecTest7_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
       histos.add("hEffRecTest8_pT", "EffRecTest8_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
-      histos.add("hEffGen_pT", "EffGen_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
 
+      histos.add("hEffRecLowPtKstarDaughter", "EffRecLow Kstar daughter_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
+
+      histos.add("hEffGen_pT", "EffGen_pT (GeV/c)", kTH1F, {{800, 0., 40.}});
       histos.add("hMotherPdg1", "hMotherPdg1", kTH1F, {{5000, 0., 5000.}});
       histos.add("hMotherPdg2", "hMotherPdg2", kTH1F, {{5000, 0., 5000.}});
-    }
-
-    std::shared_ptr<TH1> hCutFlow = histos.get<TH1>(HIST("hEvent_Cut"));
-    std::vector<std::string> eventCutLabels = {
-      "All Events",
-      "sel8",
-      Form("|Vz| < %.1f", cfgEventVtxCut.value),
-      "kIsGoodZvtxFT0vsPV",
-      "kNoSameBunchPileup",
-      "kNoTimeFrameBorder",
-      "kNoITSROFrameBorder",
-      "kNoCollInTimeRangeStandard",
-      "kIsGoodITSLayersAll",
-      Form("Occupancy < %.0f", cfgOccupancyMax.value),
-      "All passed events"};
-    for (size_t i = 0; i < eventCutLabels.size(); ++i) {
-      hCutFlow->GetXaxis()->SetBinLabel(i + 1, eventCutLabels[i].c_str());
     }
 
     // Jet
@@ -308,9 +349,9 @@ struct kstarInOO {
     triggerMaskBitsTest3 = jetderiveddatautilities::initialiseTriggerMaskBits(cfgTriggerMasksTest3);
   } // end of init
 
-  //======================
-  //|| For LF Analysis
-  //======================
+  //===============
+  //| LF Analysis
+  //===============
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Cs>; //, aod::CentFT0Ms, aod::CentFT0As
   using EventCandidatesTrue = aod::McCollisions;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
@@ -318,17 +359,14 @@ struct kstarInOO {
   using TrackCandidatesMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection,
                                       aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi>;
 
-  //==============
-  //|| For jets
-  //==============
+  //=================
+  //|| Jet Analysis
+  //=================
   Filter JEPosZFilter = nabs(aod::jcollision::posZ) < cfgEventVtxCut;
   Filter JEMCPosZFilter = nabs(aod::jmccollision::posZ) < cfgEventVtxCut;
-  Filter jetCuts = aod::jet::pt > cfgJetpT&& aod::jet::r == nround(cfgJetR.node() * 100.0f);
+  Filter JetCuts = aod::jet::pt > cfgJetpT&& aod::jet::r == nround(cfgJetR.node() * 100.0f);
 
-  using JetTrackCandidates = soa::Join<aod::JTracks, aod::JTrackPIs>;
   using JetTrackCandidatesMC = soa::Join<aod::JTracks, aod::JTrackPIs, aod::JMcTrackLbs>;
-
-  using JetFilteredJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
 
   // For Mixed Event
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
@@ -340,6 +378,10 @@ struct kstarInOO {
 
   double massKa = o2::constants::physics::MassKPlus;
   double massPi = o2::constants::physics::MassPiMinus;
+
+  static constexpr int Kstar0PDG = 313;
+  static constexpr int KaonPDG = 321;
+  static constexpr int PionPDG = 211;
 
   //==================================
   //||
@@ -360,19 +402,8 @@ struct kstarInOO {
         }
       }
     } // eventSelection histogram
-    if (objecttype == 2) {
-      if constexpr (requires { obj.posZ(); }) {
-        if (!pass) {
-          histos.fill(HIST("hPosZ_BC"), obj.posZ());
-          histos.fill(HIST("hcentFT0C_BC"), obj.centFT0C());
-        } else {
-          histos.fill(HIST("hPosZ_AC"), obj.posZ());
-          histos.fill(HIST("hcentFT0C_AC"), obj.centFT0C());
-        }
-      }
-    } // Jet eventSelection histogram
     if constexpr (requires { obj.tpcCrossedRowsOverFindableCls(); }) {
-      if (objecttype == 3) {
+      if (objecttype == 2) {
         if (!pass) {
           histos.fill(HIST("hDCArToPv_BC"), obj.dcaXY());
           histos.fill(HIST("hDCAzToPv_BC"), obj.dcaZ());
@@ -400,7 +431,7 @@ struct kstarInOO {
         }
       }
     } // trackSelection
-    if (objecttype == 4) {
+    if (objecttype == 3) {
       if constexpr (requires { obj.pt(); }) {
         if (!pass) {
           histos.fill(HIST("QA_nSigma_kaon_TPC_BC"), obj.pt(), obj.tpcNSigmaKa());
@@ -413,7 +444,7 @@ struct kstarInOO {
         }
       }
     } // kaon pid Selection
-    if (objecttype == 5) {
+    if (objecttype == 4) {
       if constexpr (requires { obj.pt(); }) {
         if (!pass) {
           histos.fill(HIST("QA_nSigma_pion_TPC_BC"), obj.pt(), obj.tpcNSigmaPi());
@@ -428,57 +459,50 @@ struct kstarInOO {
     } // pion pid Selection
   } // fill QA
 
-  enum class objectType { MB,
+  enum class objectType { Inclusive,
                           Jets,
-                          MBRecParticle,
-                          JetsRecParticle };
+                          RecoParticle,
+                          JetsRecoParticle };
   template <typename TrackType>
-  void fillMinv(objectType type, const TrackType& trk1, const TrackType& trk2, const ROOT::Math::PxPyPzMVector& lReso, double centrality, double jetpt, bool IsMix, bool flip)
+  void fillMinv(objectType type, const TrackType& trk1, const TrackType& trk2, const ROOT::Math::PxPyPzMVector& lReso, double centrality, double jetpt, bool flip)
   {
     double conjugate = trk1.sign() * trk2.sign();
     switch (type) {
-      case objectType::MB:
-        if (IsMix && cfgMixedHistos) {
-          if (conjugate < 0) {
-            if (!flip)
-              histos.fill(HIST("hUSS_KPi_Mix"), centrality, lReso.Pt(), lReso.M());
-            else
-              histos.fill(HIST("hUSS_PiK_Mix"), centrality, lReso.Pt(), lReso.M());
+      case objectType::Inclusive:
+        if (conjugate < 0) {
+          if (!flip) {
+            histos.fill(HIST("hUSS_KPi"), centrality, lReso.Pt(), lReso.M());
+          } else {
+            histos.fill(HIST("hUSS_PiK"), centrality, lReso.Pt(), lReso.M());
           }
-        } else {
-          if (conjugate < 0) {
-            if (!flip)
-              histos.fill(HIST("hUSS_KPi"), centrality, lReso.Pt(), lReso.M());
-            else
-              histos.fill(HIST("hUSS_PiK"), centrality, lReso.Pt(), lReso.M());
-          } else if (conjugate > 0) {
-            if (!flip)
-              histos.fill(HIST("hLSS_KPi"), centrality, lReso.Pt(), lReso.M());
-            else
-              histos.fill(HIST("hLSS_PiK"), centrality, lReso.Pt(), lReso.M());
+        } else if (conjugate > 0) {
+          if (!flip) {
+            histos.fill(HIST("hLSS_KPi"), centrality, lReso.Pt(), lReso.M());
+          } else {
+            histos.fill(HIST("hLSS_PiK"), centrality, lReso.Pt(), lReso.M());
           }
         }
         break;
 
       case objectType::Jets:
-        if (!IsMix && cfgJetHistos) {
+        if (cfgJetHistos) {
           if (conjugate < 0) {
-            if (!flip)
+            if (!flip) {
               histos.fill(HIST("hUSS_KPi_INSIDE"), centrality, jetpt, lReso.Pt(), lReso.M());
-            else
+            } else {
               histos.fill(HIST("hUSS_PiK_INSIDE"), centrality, jetpt, lReso.Pt(), lReso.M());
-          } else {
-            if (conjugate > 0) {
-              if (!flip)
-                histos.fill(HIST("hLSS_KPi_INSIDE"), centrality, jetpt, lReso.Pt(), lReso.M());
-              else
-                histos.fill(HIST("hLSS_PiK_INSIDE"), centrality, jetpt, lReso.Pt(), lReso.M());
+            }
+          } else if (conjugate > 0) {
+            if (!flip) {
+              histos.fill(HIST("hLSS_KPi_INSIDE"), centrality, jetpt, lReso.Pt(), lReso.M());
+            } else {
+              histos.fill(HIST("hLSS_PiK_INSIDE"), centrality, jetpt, lReso.Pt(), lReso.M());
             }
           }
         }
         break;
 
-      case objectType::MBRecParticle:
+      case objectType::RecoParticle:
         if (cfgMCHistos) {
           if (conjugate < 0) {
             histos.fill(HIST("hUSS_TrueRec"), centrality, lReso.Pt(), lReso.M());
@@ -486,7 +510,7 @@ struct kstarInOO {
         }
         break;
 
-      case objectType::JetsRecParticle:
+      case objectType::JetsRecoParticle:
         if (cfgJetMCHistos) {
           if (conjugate < 0) {
             histos.fill(HIST("hUSS_TrueRec_INSIDE"), centrality, jetpt, lReso.Pt(), lReso.M());
@@ -498,124 +522,159 @@ struct kstarInOO {
   //======================================================================
 
   template <typename EventType>
-  std::pair<bool, int> eventSelection(const EventType event, const bool QA)
+  std::pair<bool, int> eventSelection(const EventType& event, const bool QA)
   {
     if (cfgEventCutQA && QA) {
       fillQA(false, event, 1);
       histos.fill(HIST("hEvent_Cut"), 0);
     }
 
-    if (!event.sel8())
+    if (!event.sel8()) {
       return {false, 1};
+    }
     if (cfgEventCutQA && QA) {
       histos.fill(HIST("hEvent_Cut"), 1);
     }
-    if (std::abs(event.posZ()) > cfgEventVtxCut)
+    if (std::abs(event.posZ()) > cfgEventVtxCut) {
       return {false, 2};
+    }
     if (cfgEventCutQA && QA) {
       histos.fill(HIST("hEvent_Cut"), 2);
     }
-    if (!event.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+    if (!event.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return {false, 3};
+    }
     if (cfgEventCutQA && QA) {
       histos.fill(HIST("hEvent_Cut"), 3);
     }
-    if (!event.selection_bit(aod::evsel::kNoSameBunchPileup))
+    if (!event.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return {false, 4};
+    }
     if (cfgEventCutQA && QA) {
       histos.fill(HIST("hEvent_Cut"), 4);
     }
-    if (!event.selection_bit(aod::evsel::kNoTimeFrameBorder))
+    if (!event.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return {false, 5};
+    }
     if (cfgEventCutQA && QA) {
       histos.fill(HIST("hEvent_Cut"), 5);
     }
-    if (!event.selection_bit(aod::evsel::kNoITSROFrameBorder))
+    if (!event.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return {false, 6};
+    }
     if (cfgEventCutQA && QA) {
       histos.fill(HIST("hEvent_Cut"), 6);
     }
-    if (!event.selection_bit(aod::evsel::kNoCollInTimeRangeStandard))
+    if (!event.selection_bit(aod::evsel::kNoCollInTimeRangeStandard)) {
       return {false, 7};
+    }
     if (cfgEventCutQA && QA) {
       histos.fill(HIST("hEvent_Cut"), 7);
     }
-    if (!event.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll))
+    if (!event.selection_bit(aod::evsel::kIsGoodITSLayersAll)) {
       return {false, 8};
+    }
     if (cfgEventCutQA && QA) {
       histos.fill(HIST("hEvent_Cut"), 8);
-    }
-    if (cfgOccupancySel && (event.trackOccupancyInTimeRange() > cfgOccupancyMax || event.trackOccupancyInTimeRange() < cfgOccupancyMin))
-      return {false, 9};
-    if (cfgEventCutQA && QA) {
-      histos.fill(HIST("hEvent_Cut"), 9);
     }
 
     if (cfgEventCutQA && QA) {
       fillQA(true, event, 1);
-      histos.fill(HIST("hEvent_Cut"), 10);
+      histos.fill(HIST("hEvent_Cut"), 9);
     }
-    return {true, 11};
+    return {true, 10};
   };
 
   template <typename EventType>
-  std::pair<bool, int> JeteventSelection(const EventType event, const bool QA)
+  std::pair<bool, int> JetEventSelection(const EventType& event, const bool QA)
   {
     if (cfgEventCutQA && QA) {
-      fillQA(false, event, 2);
+      fillQA(false, event, 1);
     }
 
     if (!jetderiveddatautilities::selectCollision(event, eventSelectionBits)) { // sel8
       return {false, 1};
     }
-    if (std::abs(event.posZ()) > cfgEventVtxCut)
+    if (std::abs(event.posZ()) > cfgEventVtxCut) {
       return {false, 2};
+    }
 
     if (cfgEventCutQA && QA) {
-      fillQA(true, event, 2);
+      fillQA(true, event, 1);
     }
     return {true, 8};
   };
 
   template <typename TracksType>
-  bool trackSelection(const TracksType track, const bool QA)
+  bool trackSelection(const TracksType& track, const bool QA)
   {
     if (cfgTrackCutQA && QA) {
-      fillQA(false, track, 3);
+      fillQA(false, track, 2);
     }
 
-    if (cfgTrackGlobalSel && !track.isGlobalTrack())
+    if (cfgTrackGlobalSel && !track.isGlobalTrack()) {
       return false;
-    if (track.pt() < cfgTrackMinPt)
+    }
+    if (track.pt() < cfgTrackMinPt) {
       return false;
-    if (std::abs(track.eta()) > cfgTrackMaxEta)
+    }
+    if (std::abs(track.eta()) > cfgTrackMaxEta) {
       return false;
-    if (std::abs(track.dcaXY()) > cfgTrackMaxDCArToPVcut)
+    }
+    if (std::abs(track.dcaXY()) > cfgTrackMaxDCArToPVcut) {
       return false;
-    if (std::abs(track.dcaZ()) > cfgTrackMaxDCAzToPVcut)
+    }
+    if (std::abs(track.dcaZ()) > cfgTrackMaxDCAzToPVcut) {
       return false;
-    if (cfgTrackPrimaryTrack && !track.isPrimaryTrack())
+    }
+    if (cfgTrackPrimaryTrack && !track.isPrimaryTrack()) {
       return false;
-    if (cfgTrackGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
+    }
+    if (cfgTrackGlobalWoDCATrack && !track.isGlobalTrackWoDCA()) {
       return false;
-    if (cfgTrackFindableTPCClusters > 0 && track.tpcNClsFindable() < cfgTrackFindableTPCClusters)
+    }
+    if (cfgTrackFindableTPCClusters > 0 && track.tpcNClsFindable() < cfgTrackFindableTPCClusters) {
       return false;
-    if (track.tpcNClsCrossedRows() < cfgTrackTPCCrossedRows)
+    }
+    if (track.tpcNClsCrossedRows() < cfgTrackTPCCrossedRows) {
       return false;
-    if (cfgTrackRowsOverFindable > 0 && track.tpcCrossedRowsOverFindableCls() > cfgTrackRowsOverFindable)
+    }
+    if (cfgTrackRowsOverFindable > 0 && track.tpcCrossedRowsOverFindableCls() > cfgTrackRowsOverFindable) {
       return false;
-    if (track.tpcChi2NCl() > cfgTrackTPCChi2)
+    }
+    if (track.tpcChi2NCl() > cfgTrackTPCChi2) {
       return false;
-    if (track.itsChi2NCl() > cfgTrackITSChi2)
+    }
+    if (track.itsChi2NCl() > cfgTrackITSChi2) {
       return false;
-    if (cfgTrackConnectedToPV && !track.isPVContributor())
+    }
+    if (cfgTrackConnectedToPV && !track.isPVContributor()) {
       return false;
+    }
 
     if (cfgTrackCutQA && QA) {
-      fillQA(true, track, 3);
+      fillQA(true, track, 2);
     }
     return true;
   };
+
+  template <typename TrackPID>
+  bool isMIDPion(const TrackPID& candidate, const bool QA)
+  {
+    if (cfgTrackCutQA && QA) {
+      histos.fill(HIST("Possible_MID_Pion_TPC"), candidate.tpcNSigmaKa(), candidate.tofNSigmaKa());
+    }
+    return std::abs(candidate.tpcNSigmaKa()) < cfgMIDnSig && std::abs(candidate.tpcNSigmaPi()) < cfgMIDnSig;
+  }
+
+  template <typename TrackPID>
+  bool isMIDKaon(const TrackPID& candidate, const bool QA)
+  {
+    if (cfgTrackCutQA && QA) {
+      histos.fill(HIST("Possible_MID_Kaon_TPC"), candidate.tpcNSigmaPi(), candidate.tofNSigmaPi());
+    }
+    return std::abs(candidate.tpcNSigmaPi()) < cfgMIDnSig && std::abs(candidate.tpcNSigmaKa()) < cfgMIDnSig;
+  }
 
   template <typename TrackPID>
   bool trackPIDKaon(const TrackPID& candidate, const bool QA)
@@ -625,28 +684,32 @@ struct kstarInOO {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
 
     if (cfgTrackCutQA && QA) {
-      fillQA(false, candidate, 4);
+      fillQA(false, candidate, 3);
     }
 
     // TPC
     if (cfgTrackSquarePIDCut) {
-      if (std::abs(candidate.tpcNSigmaKa()) < cfgTrackTPCPIDnSig)
+      if (std::abs(candidate.tpcNSigmaKa()) < cfgTrackTPCPIDnSig) {
         tpcPIDPassed = true;
-      if (candidate.hasTOF()) {
-        if (std::abs(candidate.tofNSigmaKa()) < cfgTrackTOFPIDnSig) {
-          tofPIDPassed = true;
-        }
-      } else {
-        if (!cfgTrackTOFHard) {
-          tofPIDPassed = true;
+
+        if (candidate.hasTOF()) {
+          if (std::abs(candidate.tofNSigmaKa()) < cfgTrackTOFPIDnSig) {
+            tofPIDPassed = true;
+          }
         } else {
-          tofPIDPassed = false;
+          if (!cfgTrackTOFHard) {
+            tofPIDPassed = true;
+          } else {
+            tofPIDPassed = false;
+          }
         }
-      }
+      } // TPCPID cut
     } // end of square cut
+
     if (cfgTrackCirclePIDCut) {
-      if (std::abs(candidate.tpcNSigmaKa()) < cfgTrackTPCPIDnSig)
+      if (std::abs(candidate.tpcNSigmaKa()) < cfgTrackTPCPIDnSig) {
         tpcpid = std::abs(candidate.tpcNSigmaKa());
+      }
       tofpid = 0;
 
       if (candidate.hasTOF()) {
@@ -664,9 +727,8 @@ struct kstarInOO {
 
     // TPC & TOF
     if (tpcPIDPassed && tofPIDPassed) {
-      if (cfgTrackCutQA && QA) {
-        fillQA(true, candidate, 4);
-      }
+      // if (cfgTrackCutQA && QA)
+      //   fillQA(true, candidate, 3);
       return true;
     }
     return false;
@@ -680,28 +742,33 @@ struct kstarInOO {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
 
     if (cfgTrackCutQA && QA) {
-      fillQA(false, candidate, 5);
+      fillQA(false, candidate, 4);
     }
 
     // TPC
     if (cfgTrackSquarePIDCut) {
-      if (std::abs(candidate.tpcNSigmaPi()) < cfgTrackTPCPIDnSig)
+      if (std::abs(candidate.tpcNSigmaPi()) < cfgTrackTPCPIDnSig) {
         tpcPIDPassed = true;
-      if (candidate.hasTOF()) {
-        if (std::abs(candidate.tofNSigmaPi()) < cfgTrackTOFPIDnSig) {
-          tofPIDPassed = true;
-        }
-      } else {
-        if (!cfgTrackTOFHard) {
-          tofPIDPassed = true;
+
+        if (candidate.hasTOF()) {
+          if (std::abs(candidate.tofNSigmaPi()) < cfgTrackTOFPIDnSig) {
+            tofPIDPassed = true;
+          }
         } else {
-          tofPIDPassed = false;
+          if (!cfgTrackTOFHard) {
+            tofPIDPassed = true;
+          } else {
+            tofPIDPassed = false;
+          }
         }
-      }
+      } // TPCPID cut
+
     } // end of square cut
+
     if (cfgTrackCirclePIDCut) {
-      if (std::abs(candidate.tpcNSigmaPi()) < cfgTrackTPCPIDnSig)
+      if (std::abs(candidate.tpcNSigmaPi()) < cfgTrackTPCPIDnSig) {
         tpcpid = std::abs(candidate.tpcNSigmaPi());
+      }
       tofpid = 0;
 
       if (candidate.hasTOF()) {
@@ -719,9 +786,8 @@ struct kstarInOO {
 
     // TPC & TOF
     if (tpcPIDPassed && tofPIDPassed) {
-      if (cfgTrackCutQA && QA) {
-        fillQA(true, candidate, 5);
-      }
+      // if (cfgTrackCutQA && QA)
+      //   fillQA(true, candidate, 4);
       return true;
     }
     return false;
@@ -730,14 +796,27 @@ struct kstarInOO {
   template <typename TracksType>
   ROOT::Math::PxPyPzMVector minvReconstruction(const TracksType& trk1, const TracksType& trk2, const bool QA, const bool flip)
   {
-    if (!trackSelection(trk1, false) || !trackSelection(trk2, false))
+    if (!trackSelection(trk1, false) || !trackSelection(trk2, false)) {
       return {};
+    }
+    if (!trackPIDKaon(trk1, QA) || !trackPIDPion(trk2, QA)) {
+      return {};
+    }
+    if (trk1.globalIndex() >= trk2.globalIndex()) {
+      return {};
+    }
 
-    if (!trackPIDKaon(trk1, QA) || !trackPIDPion(trk2, QA))
+    if (isMIDCut && isMIDPion(trk1, QA)) {
       return {};
+    }
+    if (isMIDCut && isMIDKaon(trk2, QA)) {
+      return {};
+    }
 
-    if (trk1.globalIndex() >= trk2.globalIndex())
-      return {};
+    if (cfgTrackCutQA && QA) {
+      fillQA(true, trk1, 3);
+      fillQA(true, trk2, 4);
+    }
 
     ROOT::Math::PxPyPzMVector lDecayDaughter1, lDecayDaughter2, lResonance;
     if (!flip) {
@@ -749,22 +828,28 @@ struct kstarInOO {
     }
     lResonance = lDecayDaughter1 + lDecayDaughter2;
 
-    if (std::abs(lResonance.Eta()) > cfgTrackMaxEta)
+    if (std::abs(lResonance.Eta()) > cfgTrackMaxEta) {
       return {};
+    }
+
     return {lResonance};
-  }
+  } // minvReconstruction
 
   template <typename TracksType>
   ROOT::Math::PxPyPzMVector TrueReconstruction(const TracksType& trk1, const TracksType& trk2)
   {
     double conjugate = trk1.sign() * trk2.sign();
-    if (conjugate > 0)
+    if (conjugate > 0) {
       return {};
+    }
 
     auto particle1 = trk1.mcParticle();
     auto particle2 = trk2.mcParticle();
 
     if (!particle1.has_mothers() || !particle2.has_mothers()) {
+      return {};
+    }
+    if (std::abs(particle1.eta()) > cfgTrackMaxEta || std::abs(particle2.eta()) > cfgTrackMaxEta) {
       return {};
     }
 
@@ -782,27 +867,30 @@ struct kstarInOO {
       mothers2PDG.push_back(particle2_mom.pdgCode());
     }
 
-    if (mothers1PDG[0] != 313)
+    if (mothers1PDG[0] != Kstar0PDG) {
       return {}; // mother not K*0
-    if (mothers2PDG[0] != 313)
+    }
+    if (mothers2PDG[0] != Kstar0PDG) {
       return {}; // mothers not K*0
-
-    if (mothers1[0] != mothers2[0])
+    }
+    if (mothers1[0] != mothers2[0]) {
       return {}; // Kaon and pion not from the same K*0
-
-    if (std::fabs(particle1.pdgCode()) != 211 && std::fabs(particle1.pdgCode()) != 321)
+    }
+    if (std::abs(particle1.pdgCode()) != PionPDG && std::abs(particle1.pdgCode()) != KaonPDG) {
       return {};
-    if (std::fabs(particle2.pdgCode()) != 211 && std::fabs(particle2.pdgCode()) != 321)
+    }
+    if (std::abs(particle2.pdgCode()) != PionPDG && std::abs(particle2.pdgCode()) != KaonPDG) {
       return {};
+    }
 
     double track1_mass, track2_mass;
-    if (std::fabs(particle1.pdgCode()) == 211) {
+    if (std::abs(particle1.pdgCode()) == PionPDG) {
       track1_mass = massPi;
     } else {
       track1_mass = massKa;
     }
 
-    if (std::fabs(particle2.pdgCode()) == 211) {
+    if (std::abs(particle2.pdgCode()) == PionPDG) {
       track2_mass = massPi;
     } else {
       track2_mass = massKa;
@@ -813,18 +901,22 @@ struct kstarInOO {
     }
 
     ROOT::Math::PxPyPzMVector lTrueDaughter1, lTrueDaughter2, lTrueReso;
-    lTrueDaughter1 = ROOT::Math::PxPyPzMVector(trk1.px(), trk1.py(), trk1.pz(), track1_mass);
-    lTrueDaughter2 = ROOT::Math::PxPyPzMVector(trk2.px(), trk2.py(), trk2.pz(), track2_mass);
+    lTrueDaughter1 = ROOT::Math::PxPyPzMVector(particle1.px(), particle1.py(), particle1.pz(), track1_mass);
+    lTrueDaughter2 = ROOT::Math::PxPyPzMVector(particle2.px(), particle2.py(), particle2.pz(), track2_mass);
     lTrueReso = lTrueDaughter1 + lTrueDaughter2;
 
-    if (lTrueReso.M() < 0)
+    if (lTrueReso.M() < 0) {
       return {};
+    }
+    if (std::abs(lTrueReso.Eta()) > cfgTrackMaxEta) {
+      return {};
+    }
 
     return {lTrueReso};
-  }
+  } // TrueReconstruction
 
   template <typename CollisionType, typename TracksType>
-  void TrackSlicing(const CollisionType& collision1, const TracksType&, const CollisionType& collision2, const TracksType&, const bool IsMix, const bool QA)
+  void TrackSlicing(const CollisionType& collision1, const TracksType&, const CollisionType& collision2, const TracksType&, const bool QA)
   {
     auto tracks1 = kaon->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
     auto tracks2 = pion->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
@@ -833,46 +925,49 @@ struct kstarInOO {
     for (const auto& [trk1, trk2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
       for (bool flip : {false, true}) {
         auto lReso = minvReconstruction(trk1, trk2, QA, flip);
-        if (lReso.M() < 0)
+        if (lReso.M() < 0) {
           continue;
+        }
 
-        fillMinv(objectType::MB, trk1, trk2, lReso, centrality, -1.0, IsMix, flip);
+        fillMinv(objectType::Inclusive, trk1, trk2, lReso, centrality, -1.0, flip);
       } // flip
     } // for
   } // TrackSlicing
 
   template <typename CollisionType, typename TracksType>
-  void TrackSlicingMC(const CollisionType& collision1, const TracksType&, const CollisionType& collision2, const TracksType&, const bool IsMix, const bool QA)
+  void TrackSlicingMC(const CollisionType& collision1, const TracksType&, const CollisionType& collision2, const TracksType&, const bool QA)
   {
     auto tracks1 = kaonMC->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
     auto tracks2 = pionMC->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
     auto centrality = collision1.centFT0C();
 
     for (const auto& [trk1, trk2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-      if (!trk1.has_mcParticle() || !trk2.has_mcParticle())
+      if (!trk1.has_mcParticle() || !trk2.has_mcParticle()) {
         continue;
+      }
 
       for (bool flip : {false, true}) {
         auto lReso = minvReconstruction(trk1, trk2, QA, flip);
-        if (lReso.M() < 0)
+        if (lReso.M() < 0) {
           continue;
-
-        fillMinv(objectType::MB, trk1, trk2, lReso, centrality, -1.0, IsMix, flip);
+        }
+        fillMinv(objectType::Inclusive, trk1, trk2, lReso, centrality, -1.0, flip);
       } // flip
 
       //============================
       //|  True Reconstruction
       //============================
       auto lTrueReso = TrueReconstruction(trk1, trk2);
-      fillMinv(objectType::MBRecParticle, trk1, trk2, lTrueReso, centrality, -1.0, IsMix, false);
+      fillMinv(objectType::RecoParticle, trk1, trk2, lTrueReso, centrality, -1.0, false);
     } // tracks
   } // TrackSlicingMC
 
   template <typename JetType>
-  double DistinguishJets(const JetType& jets, ROOT::Math::PxPyPzMVector lResonance)
+  double DistinguishJets(const JetType& jets, ROOT::Math::PxPyPzMVector& lResonance)
   {
-    if (cDebugLevel > 0)
-      std::cout << "Finded multiple jets to the same phi." << std::endl;
+    if (cDebugLevel > 0) {
+      LOG(info) << "Found multiple jets to the same phi.";
+    }
 
     double bestR = 0;
     double bestJetpT = 0;
@@ -892,11 +987,11 @@ struct kstarInOO {
   }
 
   template <typename TracksType, typename JetType>
-  void JetTrackSlicing(aod::JetCollision const& collision, TracksType const& jetTracks, const JetType& chargedjets, const bool IsMix, const bool QA)
+  void JetTrackSlicing(aod::JetCollision const& collision, TracksType const& jetTracks, const JetType& chargedjets, const bool QA)
   {
-    //============================
-    //| MB: Track Reconstruction
-    //============================
+    //=============
+    //| Inclusive
+    //=============
     auto centrality = collision.centFT0C();
     for (const auto& [track1, track2] : combinations(o2::soa::CombinationsUpperIndexPolicy(jetTracks, jetTracks))) {
       auto trk1 = track1.template track_as<TrackCandidates>();
@@ -904,30 +999,34 @@ struct kstarInOO {
 
       for (bool flip : {false, true}) {
         auto lResonance = minvReconstruction(trk1, trk2, QA, flip);
-        if (lResonance.M() < 0)
+        if (lResonance.M() < 0) {
           continue;
+        }
 
-        fillMinv(objectType::MB, trk1, trk2, lResonance, centrality, -1.0, IsMix, flip);
+        fillMinv(objectType::Inclusive, trk1, trk2, lResonance, centrality, -1.0, flip);
 
-        //==============================
-        //| Jets: Track Reconstruction
-        //==============================
+        //========
+        //| Jets
+        //========
         bool jetFlag = false;
         int goodjets = 0;
         double jetpt = 0;
+        double dR = 0;
         for (auto const& jet : chargedjets) {
-          double phidiff = TVector2::Phi_mpi_pi(jet.phi() - lResonance.Phi());
-          double etadiff = jet.eta() - lResonance.Eta();
-          double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
-          if (R < cfgJetR) {
+          double dphi = TVector2::Phi_mpi_pi(jet.phi() - lResonance.Phi());
+          double deta = jet.eta() - lResonance.Eta();
+          dR = TMath::Sqrt((deta * deta) + (dphi * dphi));
+
+          if (dR < cfgJetR) {
             jetFlag = true;
             jetpt = jet.pt();
             goodjets++;
           }
-        }
+        } // The loop of chargedjets
         if (cfgJetQAHistos) {
           histos.fill(HIST("nGoodJets"), goodjets);
         }
+
         if (!cfgSingleJet) {
           if (goodjets > 1) {
             jetpt = DistinguishJets<JetType>(chargedjets, lResonance);
@@ -935,14 +1034,14 @@ struct kstarInOO {
         }
 
         if (jetFlag) {
-          fillMinv(objectType::Jets, trk1, trk2, lResonance, centrality, jetpt, IsMix, flip);
+          fillMinv(objectType::Jets, trk1, trk2, lResonance, centrality, jetpt, flip);
         } // jetFlag
       } // flip
     } // jetTracks
   } // JetTrackSlicing
 
   template <typename TracksType, typename JetType>
-  void JetTrackSlicingMC(aod::JetCollision const& collision, TracksType const& jetTracks, const JetType& chargedjets, const bool IsMix, const bool QA)
+  void JetTrackSlicingMC(aod::JetCollision const& collision, TracksType const& jetTracks, const JetType& mcdjets, const bool QA)
   {
     //============================
     //| MB: Track Reconstruction
@@ -952,23 +1051,24 @@ struct kstarInOO {
       auto trk1 = track1.template track_as<TrackCandidatesMC>();
       auto trk2 = track2.template track_as<TrackCandidatesMC>();
 
-      if (!trk1.has_mcParticle() || !trk2.has_mcParticle())
+      if (!trk1.has_mcParticle() || !trk2.has_mcParticle()) {
         continue;
+      }
 
       for (bool flip : {false, true}) {
         auto lResonance = minvReconstruction(trk1, trk2, QA, flip);
-        if (lResonance.M() < 0)
+        if (lResonance.M() < 0) {
           continue;
+        }
 
-        fillMinv(objectType::MB, trk1, trk2, lResonance, centrality, -1.0, IsMix, flip);
-
+        fillMinv(objectType::Inclusive, trk1, trk2, lResonance, centrality, -1.0, flip);
         //==============================
         //| Jets: Track Reconstruction
         //==============================
         bool jetFlag = false;
         int goodjets = 0;
         double jetpt = 0;
-        for (auto const& jet : chargedjets) {
+        for (auto const& jet : mcdjets) {
           double phidiff = TVector2::Phi_mpi_pi(jet.phi() - lResonance.Phi());
           double etadiff = jet.eta() - lResonance.Eta();
           double R = TMath::Sqrt((etadiff * etadiff) + (phidiff * phidiff));
@@ -983,25 +1083,12 @@ struct kstarInOO {
         }
         if (!cfgSingleJet) {
           if (goodjets > 1) {
-            jetpt = DistinguishJets<JetType>(chargedjets, lResonance);
+            jetpt = DistinguishJets<JetType>(mcdjets, lResonance);
           }
         }
 
         if (jetFlag) {
-          fillMinv(objectType::Jets, trk1, trk2, lResonance, centrality, jetpt, IsMix, flip);
-        } // jetFlag
-
-        //===============================
-        //| MB: Particle Reconstruction
-        //===============================
-        auto lTrueReso = TrueReconstruction(trk1, trk2);
-        fillMinv(objectType::MBRecParticle, trk1, trk2, lTrueReso, centrality, -1.0, IsMix, false);
-
-        //==================================
-        //| Jets: Particle Reconstruction
-        //==================================
-        if (jetFlag) {
-          fillMinv(objectType::JetsRecParticle, trk1, trk2, lTrueReso, centrality, jetpt, IsMix, false);
+          fillMinv(objectType::Jets, trk1, trk2, lResonance, centrality, jetpt, flip);
         } // jetFlag
       } // filp
     } // Tracks loop
@@ -1012,19 +1099,43 @@ struct kstarInOO {
   //|                 JET DATA STUFF
   //|
   //=======================================================
+  using JetTrackCandidates = soa::Join<aod::JTracks, aod::JTrackPIs>;
+  using JetFilteredJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
+
   int nJetEvents = 0;
   void processDataJets(o2::aod::JetCollision const& collision, JetFilteredJets const& chargedjets, JetTrackCandidates const& jetTracks, TrackCandidates const&)
   {
     if (cDebugLevel > 0) {
       nJetEvents++;
       if ((nJetEvents + 1) % 10000 == 0) {
-        std::cout << "Processed Jet Data Events: " << nJetEvents << std::endl;
+        LOG(info) << "Processed Jet Data Events: " << nJetEvents;
       }
     }
-
     histos.fill(HIST("nEvents"), 0.5); // Raw event
 
+    bool INELgt0 = false;
+    for (auto& jetTrack : jetTracks) {
+      if (std::abs(jetTrack.eta()) < cfgEventMaxEta) {
+        INELgt0 = true;
+        break;
+      }
+    }
+    if (!INELgt0) {
+      return;
+    }
+    histos.fill(HIST("nEvents"), 1.5); // INEL>0 event
+
+    auto [goodEv, code] = JetEventSelection(collision, true);
+    // auto [goodEv, code] = eventSelection(collision, true);
+    if (!goodEv) {
+      return;
+    }
+    histos.fill(HIST("nEvents"), 2.5); // After selection
+
     // Trigger before we start jet finding
+    //=====================
+    //|    Trigger
+    //=====================
     if (cfgCutonTrig) {
       bool RT = false;
       bool VTtest1 = false;
@@ -1056,75 +1167,58 @@ struct kstarInOO {
       }
       if (!RT) {
         return;
-      } else if (RT && (VTtest1 || VTtest2 || VTtest3)) {
+      }
+      if (VTtest1 || VTtest2 || VTtest3) {
         return;
       }
     } // Trigger cut
+    histos.fill(HIST("nEvents"), 3.5); // After trigger cut
 
-    histos.fill(HIST("nEvents"), 1.5); // Before passing the condition
-
-    if (cfgManualEvSel) {
-      auto [goodEv, code] = JeteventSelection(collision, true);
-      if (!goodEv)
-        return;
-    }
-
-    if (cfgJetEvSel) {
-      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
-        return;
-      }
-    }
-    histos.fill(HIST("nEvents"), 2.5); // Events after event quality selection for Inclusive
-
-    std::vector<double> jetpT{};
-    std::vector<double> jetEta{};
-    std::vector<double> jetPhi{};
     bool HasJets = false;
     int nJets = 0;
     for (auto chargedjet : chargedjets) {
-      jetpT.push_back(chargedjet.pt());
-      jetEta.push_back(chargedjet.eta());
-      jetPhi.push_back(chargedjet.phi());
+      if (std::abs(chargedjet.eta()) > (cfgJetMaxEta - cfgJetdR)) {
+        continue;
+      }
+
       nJets++;
       if (cfgJetQAHistos) {
         histos.fill(HIST("JetpT"), chargedjet.pt());
         histos.fill(HIST("JetEta"), chargedjet.eta());
         histos.fill(HIST("JetPhi"), chargedjet.phi());
       }
-      if (chargedjet.pt() > cfgJetpT)
+      if (chargedjet.pt() > cfgJetpT) {
         HasJets = true;
+      }
     }
     if (cfgJetQAHistos) {
       histos.fill(HIST("nJetsPerEvent"), nJets);
     }
 
     //====================
-    //||    Has Jets
+    //|    Has Jets
     //====================
     if (cfgReqJets) {
-      if (!HasJets)
+      if (!HasJets) {
         return;
+      }
     }
-    histos.fill(HIST("nEvents"), 3.5); // Has jets
+    histos.fill(HIST("nEvents"), 4.5); // Has jets
 
-    bool INELgt0 = false;
+    // Just for checking track QA plot
     for (auto& jetTrack : jetTracks) {
       auto originTrack = jetTrack.track_as<TrackCandidates>();
-      if (!trackSelection(originTrack, true))
+      if (!trackSelection(originTrack, true)) {
         continue;
-      INELgt0 = true;
+      }
 
       if (cfgJetQAHistos) {
-        histos.fill(HIST("rawDimpT"), jetTrack.pt(), jetTrack.pt() - originTrack.pt());
         histos.fill(HIST("jetTrackEta"), jetTrack.eta());
         histos.fill(HIST("jetTrackPhi"), jetTrack.phi());
       }
     } // jetTrack loop
-    if (!INELgt0)
-      return;
 
-    JetTrackSlicing(collision, jetTracks, chargedjets, false, true);
-
+    JetTrackSlicing(collision, jetTracks, chargedjets, true);
   } // ProcessDataJets
   PROCESS_SWITCH(kstarInOO, processDataJets, "process Data Jets", false);
 
@@ -1134,48 +1228,46 @@ struct kstarInOO {
   //|
   //=======================================================
   int nJetMCEvents = 0;
-  void processMCJets(o2::aod::JetCollision const& collision, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, JetTrackCandidatesMC const& jetTracks, TrackCandidatesMC const&, aod::McParticles const&)
+  void processMCJets(o2::aod::JetCollision const& collision, JetTrackCandidatesMC const& jetTracks, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, TrackCandidatesMC const&, aod::McParticles const&, aod::JetParticles const&)
   {
     if (cDebugLevel > 0) {
       nJetMCEvents++;
       if ((nJetMCEvents + 1) % 10000 == 0) {
-        std::cout << "Processed Jet MC Events: " << nJetMCEvents << std::endl;
+        LOG(info) << "Processed Jet MC Events: " << nJetMCEvents;
       }
     }
-    histos.fill(HIST("nEvents"), 0.5); // Raw event
-
-    if (std::abs(collision.posZ()) > cfgEventVtxCut)
-      return;
-
-    if (!jetderiveddatautilities::selectTrigger(collision, RealTriggerMaskBits))
-      return;
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
-      return;
-    }
-    histos.fill(HIST("nEvents"), 1.5); // Before passing the condition
+    histos.fill(HIST("nEvents"), 0.5); // Gen event
 
     bool INELgt0 = false;
     for (auto& jetTrack : jetTracks) {
-      if (std::fabs(jetTrack.eta()) < cfgTrackMaxEta) {
+      if (std::abs(jetTrack.eta()) < cfgEventMaxEta) {
         INELgt0 = true;
         break;
       }
     } // jetTrack loop
-    if (!INELgt0)
+    if (!INELgt0) {
       return;
+    }
+    histos.fill(HIST("nEvents"), 1.5); // INEL>0 event
 
-    histos.fill(HIST("nEvents"), 2.5); // Events after event quality selection for Inclusive
+    auto [goodEv, code] = JetEventSelection(collision, true);
+    if (!goodEv) {
+      return;
+    }
+    histos.fill(HIST("nEvents"), 2.5); // Inclusive event
 
-    std::vector<double> mcdjetpT{};
-    std::vector<double> mcdjetEta{};
-    std::vector<double> mcdjetPhi{};
+    // The trigger option doesn't work
+    // if (!jetderiveddatautilities::selectTrigger(collision, RealTriggerMaskBits))
+    //   return;
+    // histos.fill(HIST("nEvents"), 3.5); // Events for Inclusive
 
     bool HasJets = false;
     int nJets = 0;
     for (auto mcdjet : mcdjets) {
-      mcdjetpT.push_back(mcdjet.pt());
-      mcdjetEta.push_back(mcdjet.eta());
-      mcdjetPhi.push_back(mcdjet.phi());
+      if (std::abs(mcdjet.eta()) > cfgJetMaxEta - cfgJetdR) {
+        continue;
+      }
+
       nJets++;
       if (cfgJetQAHistos) {
         histos.fill(HIST("JetpT"), mcdjet.pt());
@@ -1185,23 +1277,23 @@ struct kstarInOO {
       if (mcdjet.pt() > cfgJetpT) {
         HasJets = true;
       }
-    }
+    } // mcdjets
     if (cfgJetQAHistos) {
       histos.fill(HIST("nJetsPerEvent"), nJets);
     }
-
     //====================
-    //||    Has Jets
+    //|    Has Jets
     //====================
     if (cfgReqJets) {
       if (!HasJets) {
         return;
       }
     }
-    histos.fill(HIST("nEvents"), 3.5); // Has jets
+    histos.fill(HIST("nEvents"), 3.5); // Jet event
 
-    // JetTrackSlicingMC(collision, jetTracks, chargedjets, false, true);
+    //  JetTrackSlicingMC(collision, jetTracks, mcdjets, true);
 
+    // Instead of using "JetTrackSlicingMC", Once we have to test showing the distribution each condition
     for (auto& [track1, track2] : combinations(o2::soa::CombinationsUpperIndexPolicy(jetTracks, jetTracks))) {
       auto trk1 = track1.track_as<TrackCandidatesMC>();
       auto trk2 = track2.track_as<TrackCandidatesMC>();
@@ -1212,26 +1304,37 @@ struct kstarInOO {
       lDecayDaughterTest2 = ROOT::Math::PxPyPzMVector(trk2.px(), trk2.py(), trk2.pz(), massPi);
       lResonanceTest1 = lDecayDaughterTest1 + lDecayDaughterTest2;
 
-      if (!trk1.has_mcParticle() || !trk2.has_mcParticle())
+      if (cfgJetMCHistos) {
+        histos.fill(HIST("hEffRecTest0_pT"), lResonanceTest1.Pt());
+      }
+
+      if (!trk1.has_mcParticle() || !trk2.has_mcParticle()) {
         continue;
+      }
       if (cfgJetMCHistos) {
         histos.fill(HIST("hEffRecTest1_pT"), lResonanceTest1.Pt());
       }
+      //////////////////////////////
+      //////////////////////////////
+      if (cfgReqMcEffTrackQA) { // false, true
+        if (!trackSelection(trk1, true) || !trackSelection(trk2, false)) {
+          continue;
+        }
+      }
+      //////////////////////////////
+      //////////////////////////////
 
-      if (!trackSelection(trk1, true) || !trackSelection(trk2, false))
-        continue;
       if (cfgJetMCHistos) {
         histos.fill(HIST("hEffRecTest2_pT"), lResonanceTest1.Pt());
       }
-
-      if (cfgReqMcEffPID) {
-        if (!trackPIDKaon(trk1, true) || !trackPIDPion(trk2, true))
+      if (cfgReqMcEffPID) { // false, true
+        if (!trackPIDKaon(trk1, true) || !trackPIDPion(trk2, true)) {
           continue;
+        }
       }
       if (cfgJetMCHistos) {
         histos.fill(HIST("hEffRecTest3_pT"), lResonanceTest1.Pt());
       }
-
       auto particle1 = trk1.mcParticle();
       auto particle2 = trk2.mcParticle();
       ////////////////////////////////////////////////////////////////////////
@@ -1253,8 +1356,9 @@ struct kstarInOO {
       }
 
       if (cfgJetMCHistos) {
-        histos.fill(HIST("hMotherPdg1"), std::fabs(mothers1PDG[0]));
+        histos.fill(HIST("hMotherPdg1"), std::abs(mothers1PDG[0]));
       }
+
       std::vector<int> mothers2{};
       std::vector<int> mothers2PDG{};
       for (auto& particle2_mom : particle2.template mothers_as<aod::McParticles>()) {
@@ -1262,39 +1366,43 @@ struct kstarInOO {
         mothers2PDG.push_back(particle2_mom.pdgCode());
       }
       if (cfgJetMCHistos) {
-        histos.fill(HIST("hMotherPdg2"), std::fabs(mothers2PDG[0]));
+        histos.fill(HIST("hMotherPdg2"), std::abs(mothers2PDG[0]));
       }
-
-      if (mothers1[0] != mothers2[0])
+      if (mothers1[0] != mothers2[0]) {
         continue; // Kaon and pion not from the same K*0
-
+      }
       if (cfgJetMCHistos) {
         histos.fill(HIST("hEffRecTest5_pT"), lResonanceTest1.Pt());
       }
-
-      if (std::fabs(particle1.pdgCode()) != 321) // kaon
+      // kaon
+      if (std::abs(particle1.pdgCode()) != KaonPDG) {
         continue;
+      }
 
       if (cfgJetMCHistos) {
         histos.fill(HIST("hEffRecTest6_pT"), lResonanceTest1.Pt());
       }
-
-      if (std::fabs(particle2.pdgCode()) != 211) // pion
+      // pion
+      if (std::abs(particle2.pdgCode()) != PionPDG) {
         continue;
-
+      }
       if (cfgJetMCHistos) {
         histos.fill(HIST("hEffRecTest7_pT"), lResonanceTest1.Pt());
       }
-
-      if (std::fabs(mothers1PDG[0]) != 313)
+      if (std::abs(mothers1PDG[0]) != Kstar0PDG) {
         continue; // mother not K*0
+      }
       if (cfgJetMCHistos) {
         histos.fill(HIST("hEffRecTest8_pT"), lResonanceTest1.Pt());
+        if (lResonanceTest1.Pt() < 0.4) {
+          histos.fill(HIST("hEffRecLowPtKstarDaughter"), lDecayDaughterTest1.Pt());
+          histos.fill(HIST("hEffRecLowPtKstarDaughter"), lDecayDaughterTest2.Pt());
+        }
       }
 
-      if (std::fabs(mothers2PDG[0]) != 313)
+      if (std::abs(mothers2PDG[0]) != Kstar0PDG) {
         continue; // mothers not K*0
-
+      }
       if (cfgJetMCHistos) {
         histos.fill(HIST("hEffRec_pT"), lResonanceTest1.Pt());
       }
@@ -1313,30 +1421,37 @@ struct kstarInOO {
     if (cDebugLevel > 0) {
       nEvents++;
       if ((nEvents + 1) % 10000 == 0) {
-        std::cout << "Processed Data Events: " << nEvents << std::endl;
+        LOG(info) << "Processed Data Events: " << nEvents;
       }
     }
-
-    auto [goodEv, code] = eventSelection(collision, true);
     histos.fill(HIST("nEvents"), 0.5);
-
-    if (!goodEv)
-      return;
 
     bool INELgt0 = false;
     for (const auto& track : tracks) {
-      if (!trackSelection(track, true))
-        continue;
-      if (std::fabs(track.eta()) < cfgTrackMaxEta) {
+      if (std::abs(track.eta()) < cfgEventMaxEta) {
         INELgt0 = true;
+        break;
       }
     }
-    if (!INELgt0)
+    if (!INELgt0) {
       return;
+    }
     histos.fill(HIST("nEvents"), 1.5);
 
-    TrackSlicing(collision, tracks, collision, tracks, false, true);
+    auto [goodEv, code] = eventSelection(collision, true);
+    if (!goodEv) {
+      return;
+    }
+    histos.fill(HIST("nEvents"), 2.5);
 
+    // for trackQA plot
+    for (const auto& track : tracks) {
+      if (!trackSelection(track, true)) {
+        continue;
+      }
+    }
+
+    TrackSlicing(collision, tracks, collision, tracks, true);
   } // processSameEvents
   PROCESS_SWITCH(kstarInOO, processDataSameEvent, "process Data Same Event", false);
 
@@ -1355,7 +1470,7 @@ struct kstarInOO {
       if (cDebugLevel > 0) {
         nEventsMix++;
         if ((nEventsMix + 1) % 10000 == 0) {
-          std::cout << "Processed DATA Mixed Events : " << nEventsMix << std::endl;
+          LOG(info) << "Processed DATA Mixed Events : " << nEventsMix;
         }
       }
       auto [goodEv1, code1] = eventSelection(collision1, false);
@@ -1363,19 +1478,24 @@ struct kstarInOO {
       bool VtxMixFlag = false;
       bool CentMixFlag = false;
       // bool OccupanacyMixFlag = false;
-      if (std::fabs(collision1.posZ() - collision2.posZ()) <= cfgVtxMixCut) // set default to maybe 10
+      if (std::abs(collision1.posZ() - collision2.posZ()) <= cfgVtxMixCut) { // set default to maybe 10
         VtxMixFlag = true;
-      if (std::fabs(collision1.centFT0C() - collision2.centFT0C()) <= cfgVtxMixCut) // set default to maybe 10
+      }
+      if (std::abs(collision1.centFT0C() - collision2.centFT0C()) <= cfgVtxMixCut) { // set default to maybe 10
         CentMixFlag = true;
+      }
 
-      if (!goodEv1 || !goodEv2)
+      if (!goodEv1 || !goodEv2) {
         continue;
-      if (!CentMixFlag)
+      }
+      if (!CentMixFlag) {
         continue;
-      if (!VtxMixFlag)
+      }
+      if (!VtxMixFlag) {
         continue;
+      }
 
-      TrackSlicing(collision1, tracks1, collision2, tracks2, true, false);
+      TrackSlicing(collision1, tracks1, collision2, tracks2, false);
     }
   }
   PROCESS_SWITCH(kstarInOO, processDataMixedEvent, "process DATA Mixed Event", false);
@@ -1392,31 +1512,38 @@ struct kstarInOO {
       nEventsMC++;
       if ((nEventsMC + 1) % 10000 == 0) {
         double histmem = histos.getSize();
-        std::cout << histmem << std::endl;
-        std::cout << "process_SameEvent_MC: " << nEventsMC << std::endl;
+        LOG(info) << histmem;
+        LOG(info) << "process_SameEvent_MC: " << nEventsMC;
       }
     }
-    auto [goodEv, code] = eventSelection(collision, true);
-
     histos.fill(HIST("nEvents"), 0.5);
-
-    if (!goodEv)
-      return;
 
     bool INELgt0 = false;
     for (const auto& track : tracks) {
-      if (!trackSelection(track, true))
-        continue;
-      if (std::fabs(track.eta()) < cfgTrackMaxEta) {
+      if (std::abs(track.eta()) < cfgEventMaxEta) {
         INELgt0 = true;
+        break;
       }
     }
-    if (!INELgt0)
+    if (!INELgt0) {
       return;
-
+    }
     histos.fill(HIST("nEvents"), 1.5);
 
-    TrackSlicingMC(collision, tracks, collision, tracks, false, true);
+    auto [goodEv, code] = eventSelection(collision, true); // sel8 & vtx
+    if (!goodEv) {
+      return;
+    }
+    histos.fill(HIST("nEvents"), 2.5);
+
+    // for trackQA plot
+    for (const auto& track : tracks) {
+      if (!trackSelection(track, true)) {
+        continue;
+      }
+    }
+
+    TrackSlicingMC(collision, tracks, collision, tracks, true);
   } // processSameEvents_MC
   PROCESS_SWITCH(kstarInOO, processSameEventMC, "process Same Event MC", false);
 
@@ -1435,7 +1562,7 @@ struct kstarInOO {
       if (cDebugLevel > 0) {
         nEventsMCMix++;
         if ((nEventsMCMix + 1) % 10000 == 0) {
-          std::cout << "Processed Mixed Events: " << nEventsMCMix << std::endl;
+          LOG(info) << "Processed Mixed Events: " << nEventsMCMix;
         }
       }
       auto [goodEv1, code1] = eventSelection(collision1, false);
@@ -1444,7 +1571,7 @@ struct kstarInOO {
         continue;
       }
 
-      TrackSlicingMC(collision1, tracks1, collision2, tracks2, true, false);
+      TrackSlicingMC(collision1, tracks1, collision2, tracks2, false);
     } // mixing
   } // processMixedEvent_MC
   PROCESS_SWITCH(kstarInOO, processMixedEventMC, "process Mixed Event MC", false);
@@ -1460,61 +1587,97 @@ struct kstarInOO {
     if (cDebugLevel > 0) {
       ++nEventsGen;
       if (nEventsGen % 10000 == 0) {
-        std::cout << "Processed MC (GEN) Events: " << nEventsGen << std::endl;
+        LOG(info) << "Processed MC (GEN) Events: " << nEventsGen;
       }
     }
-    //=======================
-    //|| Event & Signal loss
-    //=======================
     if (cfgMCHistos) {
-      histos.fill(HIST("nEvents_Gen"), 0.5);
+      histos.fill(HIST("nEvents_Gen"), 0.5); // Gen events
+    }
+    //=======================
+    //| Event & Signal loss
+    //=======================
+    bool INELgt0 = false;
+    for (auto& particle : mcParticles) {
+      if (std::abs(particle.eta()) > cfgEventMaxEta) {
+        continue;
+      }
+      if (particle.pt() <= 0.0) {
+        continue;
+      }
+      INELgt0 = true;
+      break;
+    }
+    if (cfgForceTrueINELgt) {
+      if (!INELgt0) {
+        return;
+      }
+    }
+    if (cfgMCHistos) {
+      histos.fill(HIST("nEvents_Gen"), 1.5); // INEL>0 Gen events & EL: denominator
+    }
+    if (std::abs(collision.posZ()) > cfgEventVtxCut) {
+      return;
     }
 
     for (auto& particle : mcParticles) {
-      if (particle.pdgCode() != 313)
+      if (std::abs(particle.pdgCode()) != Kstar0PDG) {
         continue;
-      if (std::fabs(particle.eta()) > cfgTrackMaxEta)
+      }
+      if (std::abs(particle.eta()) > cfgTrackMaxEta) {
         continue;
-      if (fabs(collision.posZ()) > cfgEventVtxCut)
-        break;
+      }
 
       if (cfgMCHistos) {
-        histos.fill(HIST("hGen_pT_Raw"), particle.pt());
+        histos.fill(HIST("hGen_pT_Kstar"), particle.pt()); // SL: denominator
       }
-    } // Unreconstructed collisions(=Raw coll) for correction
+    } // Gen colls
 
     if (recocolls.size() <= 0) { // not reconstructed
       if (cfgForceGenReco) {
         return;
       }
     }
+
+    //=================
+    //| Efficiency
+    //=================
     double centrality = -1;
-    for (auto& recocoll : recocolls) {
-      centrality = recocoll.centFT0C();
+    bool hasGoodEv = false;
+    for (auto& recocoll : recocolls) { // poorly reconstructed
       auto [goodEv, code] = eventSelection(recocoll, true);
-
-      if (cfgMCHistos) {
-        histos.fill(HIST("nEvents_Gen"), 1.5);
+      if (recocoll.posZ() > cfgEventVtxCut) {
+        goodEv = false;
       }
-      if (!goodEv)
+      if (!goodEv) {
         continue;
-    } // recocolls (=reconstructed collisions)
+      }
 
-    //=================
-    //|| Efficiency
-    //=================
+      hasGoodEv = true;
+      centrality = recocoll.centFT0C();
+      break;
+    } // recocolls
+    if (!hasGoodEv) {
+      return;
+    }
+    if (cfgMCHistos) {
+      histos.fill(HIST("nEvents_Gen"), 2.5); // EL: numerator
+    }
     for (auto& particle : mcParticles) {
-      if (particle.pdgCode() != 313)
+      if (std::abs(particle.pdgCode()) != Kstar0PDG) {
         continue; // Not K*0
-      if (std::fabs(particle.eta()) > cfgTrackMaxEta)
+      }
+      if (std::abs(particle.eta()) > cfgTrackMaxEta) {
         continue;
+      }
+      if (particle.pt() < cfgTrackMinPt) {
+        continue;
+      }
 
       if (cfgMCHistos) {
-        histos.fill(HIST("nEvents_Gen"), 2.5);
-        histos.fill(HIST("hGen_pT_GoodEv"), centrality, particle.pt());
-      } // cfgMCHistos
+        histos.fill(HIST("hRec_pT_Kstar"), centrality, particle.pt()); // SL: numerator // eff: denominator
+      }
     } // loop over particles
-  } // processMCTrue
+  } // processGen
   PROCESS_SWITCH(kstarInOO, processGen, "process Generated Particles", false);
 
   //==============================================
@@ -1523,111 +1686,100 @@ struct kstarInOO {
   //|
   //==============================================
   int nprocessGenEvents = 0;
-  void processJetsGen(o2::aod::JetMcCollision const& collision, soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JetCollisions>> const& recocolls, aod::JetParticles const& mcParticles)
+  void processGenJets(o2::aod::JetMcCollision const& collision, soa::SmallGroups<soa::Join<aod::JMcCollisionLbs, aod::JetCollisions>> const& recocolls, aod::JetParticles const& mcParticles)
   {
     if (cDebugLevel > 0) {
       ++nprocessGenEvents;
       if (nprocessGenEvents % 10000 == 0) {
-        std::cout << "Processed MC (GEN) Events: " << nprocessGenEvents << std::endl;
+        LOG(info) << "Processed MC (GEN) Events: " << nprocessGenEvents;
       }
     }
-    //=======================
-    //|| Event & Signal loss
-    //=======================
     if (cfgJetMCHistos) {
       histos.fill(HIST("nEvents_Gen"), 0.5);
     }
+    //=======================
+    //| Event & Signal loss
+    //=======================
+    bool INELgt0 = false;
+    for (auto& particle : mcParticles) {
+      if (std::abs(particle.eta()) > cfgEventMaxEta) {
+        continue;
+      }
+      if (particle.pt() <= 0.0) {
+        continue;
+      }
+      INELgt0 = true;
+      break;
+    }
+    if (cfgForceTrueINELgt) {
+      if (!INELgt0) {
+        return;
+      }
+    }
+    if (cfgJetMCHistos) {
+      histos.fill(HIST("nEvents_Gen"), 1.5); // EL: denominator
+    }
+    if (std::abs(collision.posZ()) > cfgEventVtxCut) {
+      return;
+    }
 
     for (auto& particle : mcParticles) {
-      if (particle.pdgCode() != 313)
+      if (std::abs(particle.pdgCode()) != Kstar0PDG) {
         continue;
-      if (std::fabs(particle.eta()) > cfgTrackMaxEta)
+      }
+      if (std::abs(particle.eta()) > cfgTrackMaxEta) {
         continue;
-      if (fabs(collision.posZ()) > cfgEventVtxCut)
-        break;
+      }
 
       if (cfgJetMCHistos) {
-        histos.fill(HIST("hGen_pT_Raw"), particle.pt());
+        histos.fill(HIST("hGen_pT_Kstar"), particle.pt()); // SL: denominator
       }
-    } // Unrecon. collision(=Raw coll) for correction
+    } // Unreco.
 
     if (recocolls.size() <= 0) { // not reconstructed
       return;
     }
-
-    for (auto& recocoll : recocolls) { // poorly reconstructed
-      if (recocoll.posZ() > cfgEventVtxCut)
-        continue;
-      auto goodEv = jetderiveddatautilities::selectCollision(recocoll, eventSelectionBits);
-      auto goodTrig = jetderiveddatautilities::selectTrigger(recocoll, RealTriggerMaskBits);
-      for (auto& particle : mcParticles) {
-        if (particle.pdgCode() != 313)
-          continue;
-        if (std::fabs(particle.eta()) > cfgTrackMaxEta)
-          continue;
-        if (cfgJetMCHistos) {
-          // check K* PID
-          if (goodEv) {
-            histos.fill(HIST("hGen_pT_GoodEv"), particle.pt());
-
-          } // goodEv
-
-          if (goodTrig) {
-            histos.fill(HIST("hGen_pT_GoodTrig"), particle.pt());
-
-          } // goodTrig
-
-          if (goodEv && goodTrig) {
-            histos.fill(HIST("hGen_pT_GoodEvTrig"), particle.pt());
-
-            if (cfgJetQAHistos) {
-              histos.fill(HIST("nTriggerQA"), 7.5);
-            }
-
-          } // goodEvTrig
-        } // cfgJetMCHistos
-      } // mcParticles
-    } // recocolls (=reconstructed collisions)
-
     //=================
-    //|| Efficiency
+    //| Efficiency
     //=================
-    // if (fabs(collision.posZ()) > cfgEventVtxCut)
-    //   return;
-
     for (auto& recocoll : recocolls) { // poorly reconstructed
       auto goodEv = jetderiveddatautilities::selectCollision(recocoll, eventSelectionBits);
       if (goodEv) {
         goodEv = jetderiveddatautilities::selectTrigger(recocoll, RealTriggerMaskBits);
       }
-      if (cfgJetMCHistos) {
-        histos.fill(HIST("nEvents_Gen"), 1.5);
+      if (std::abs(recocoll.posZ()) > cfgEventVtxCut) {
+        goodEv = false;
       }
-      if (!goodEv)
+
+      if (!goodEv) {
         return;
-    }
+      }
+    } // reco.coll
     if (cfgJetMCHistos) {
-      histos.fill(HIST("nEvents_Gen"), 2.5);
+      histos.fill(HIST("nEvents_Gen"), 2.5); // EL: numerator
     }
 
     for (auto& particle : mcParticles) {
-      if (particle.pdgCode() != 313)
+      if (std::abs(particle.pdgCode()) != Kstar0PDG) {
         continue;
-      if (std::fabs(particle.eta()) > cfgTrackMaxEta)
+      }
+      if (std::abs(particle.eta()) > cfgTrackMaxEta) {
         continue;
-      if (particle.pt() < cfgTrackMinPt)
+      }
+      if (particle.pt() < cfgTrackMinPt) {
         continue;
+      }
 
       /* // Not Yet
    if (cfg_Force_BR) {
    bool baddecay = false;
    for (auto& phidaughter : particle.daughters_as<aod::McParticles>()) {
-   if (std::fabs(phidaughter.pdgCode()) != 321) {
+   if (std::abs(phidaughter.pdgCode()) != 321) {
    baddecay = true;
    break;
    }
    if (cfg_Force_Kaon_Acceptence) {
-   if (std::fabs(phidaughter.eta()) > cfg_Track_MaxEta) {
+   if (std::abs(phidaughter.eta()) > cfg_Track_MaxEta) {
    baddecay = true;
    break;
    }
@@ -1640,20 +1792,230 @@ struct kstarInOO {
       */
 
       if (cfgJetMCHistos) {
-        histos.fill(HIST("nEvents_Gen"), 3.5);
-        histos.fill(HIST("hEffGen_pT"), particle.pt());
-      } // cfgJetMCHistos
+        histos.fill(HIST("hRec_pT_Kstar"), particle.pt()); // SL: numerator and eff: denominator
+      }
     } // loop over particles
   } // end of process
-  PROCESS_SWITCH(kstarInOO, processJetsGen, "Process Generated Particles Inclusive&Jets", false);
+  PROCESS_SWITCH(kstarInOO, processGenJets, "Process Generated Particles Inclusive&Jets", false);
 
-  void processEventsDummy(EventCandidates::iterator const&, TrackCandidates const&)
+  int ndRtest = 0;
+  void processJetQA(o2::aod::JetMcCollision const& collision, soa::Filtered<aod::ChargedMCParticleLevelJets> const& mcpjets, aod::JetParticles const& mcParticles, aod::McParticles const&)
   {
-    return;
-  }
-  PROCESS_SWITCH(kstarInOO, processEventsDummy, "dummy", false);
-}; // kstarInOO
+    if (cDebugLevel > 0) {
+      ++ndRtest;
+      if (ndRtest % 10000 == 0) {
+        LOG(info) << "Processed dR test: " << ndRtest;
+      }
+    }
+
+    bool INELgt0 = false;
+    for (auto& mcpjet : mcpjets) {
+      if (std::abs(mcpjet.eta()) > cfgEventMaxEta) {
+        continue;
+      }
+      if (mcpjet.pt() <= 0.0) {
+        continue;
+      }
+      INELgt0 = true;
+      break;
+    } // Selection event through mcpjet loop
+    if (!INELgt0) {
+      return;
+    }
+    if (std::abs(collision.posZ()) > cfgEventVtxCut) {
+      return;
+    }
+    histos.fill(HIST("nEvents"), 0.5);
+
+    for (auto& mcParticle : mcParticles) {
+      if (std::abs(mcParticle.eta()) > cfgTrackMaxEta) {
+        continue;
+      }
+      if (!mcParticle.has_daughters()) {
+        continue;
+      }
+      if (std::abs(mcParticle.pdgCode()) != Kstar0PDG) {
+        continue;
+      }
+
+      if (cfgJetdRHistos) {
+        histos.fill(HIST("Gen_KstarPt_All_BR"), mcParticle.pt());
+      }
+      // 4vector: K*0
+      ROOT::Math::PxPyPzEVector lResonance = ROOT::Math::PxPyPzEVector(mcParticle.px(), mcParticle.py(), mcParticle.pz(), mcParticle.e());
+      bool skip = false;
+      int daughter_kaon = 0;
+      int daughter_pion = 0;
+
+      for (auto& daughter : mcParticle.daughters_as<aod::JetParticles>()) {
+        if (std::abs(daughter.pdgCode()) == KaonPDG) {
+          ++daughter_kaon;
+        } else if (std::abs(daughter.pdgCode()) == PionPDG) {
+          ++daughter_pion;
+        }
+      }
+      if (daughter_kaon != 1 || daughter_pion != 1) {
+        skip = true;
+      }
+      if (skip) {
+        continue;
+      }
+
+      if (cfgJetdRHistos) {
+        histos.fill(HIST("Gen_Kstar_BR"), lResonance.M());
+        histos.fill(HIST("Gen_KstarPt_BR"), mcParticle.pt());
+      }
+
+      //==================
+      // Distinguish Jets
+      double bestR = 999;
+      ROOT::Math::PxPyPzEVector bestJet;
+
+      for (auto& mcpjet : mcpjets) {
+        if (mcpjet.pt() < cfgJetpT) {
+          continue;
+        }
+
+        if (cfgJetdRHistos) {
+          histos.fill(HIST("mcpjet_eta"), mcpjet.eta());
+          histos.fill(HIST("mcpjet_phi"), mcpjet.phi());
+          histos.fill(HIST("mcpjet_pt"), mcpjet.pt());
+        }
+
+        double dphi = TVector2::Phi_mpi_pi(mcpjet.phi() - lResonance.Phi());
+        double deta = mcpjet.eta() - lResonance.Eta();
+        double dR = TMath::Sqrt((dphi * dphi) + (deta * deta));
+        if (dR < bestR) {
+          bestR = dR;
+          bestJet = ROOT::Math::PxPyPzEVector(mcpjet.px(), mcpjet.py(), mcpjet.pz(), mcpjet.energy());
+        } // bestR
+      } // mcpJets
+      if (bestR > cfgJetdR) {
+        continue;
+      }
+
+      if (bestJet.Pt() > 6.0 && bestJet.Pt() < 8.0) {
+        if (cfgJetdRHistos) {
+          histos.fill(HIST("nJet_6_8"), bestJet.Pt());
+        }
+      }
+
+      //==================
+      // daughters
+      double dR_kaon = 0;
+      double dR_pion = 0;
+      double dR_k_kstar = 0;
+      double dR_pi_kstar = 0;
+      bool isKaonInJet = false;
+      bool isPionInJet = false;
+      ROOT::Math::PxPyPzEVector Daughter, missing_daughter;
+
+      for (auto& daughter : mcParticle.daughters_as<aod::JetParticles>()) {
+        Daughter = ROOT::Math::PxPyPzEVector(daughter.px(), daughter.py(), daughter.pz(), daughter.energy());
+
+        if (std::abs(daughter.pdgCode()) == KaonPDG) {
+          //===============
+          // K*0 and kaon
+          double dphi_k_kstar = TVector2::Phi_mpi_pi(lResonance.Phi() - Daughter.Phi());
+          double deta_k_kstar = lResonance.Eta() - Daughter.Eta();
+          dR_k_kstar = TMath::Sqrt((dphi_k_kstar * dphi_k_kstar) + (deta_k_kstar * deta_k_kstar));
+
+          // Jet and kaon
+          double dphi_kaon = TVector2::Phi_mpi_pi(bestJet.Phi() - Daughter.Phi());
+          double deta_kaon = bestJet.Eta() - Daughter.Eta();
+          dR_kaon = TMath::Sqrt((dphi_kaon * dphi_kaon) + (deta_kaon * deta_kaon));
+
+          if (dR_kaon <= cfgJetdR) {
+            isKaonInJet = true;
+          } else {
+            missing_daughter += Daughter;
+          }
+        } else if (std::abs(daughter.pdgCode()) == PionPDG) {
+          //===============
+          // K*0 and pion
+          double dphi_pi_kstar = TVector2::Phi_mpi_pi(lResonance.Phi() - Daughter.Phi());
+          double deta_pi_kstar = lResonance.Eta() - Daughter.Eta();
+          dR_pi_kstar = TMath::Sqrt((dphi_pi_kstar * dphi_pi_kstar) + (deta_pi_kstar * deta_pi_kstar));
+
+          // Jet and pion
+          double dphi_pion = TVector2::Phi_mpi_pi(bestJet.Phi() - Daughter.Phi());
+          double deta_pion = bestJet.Eta() - Daughter.Eta();
+          dR_pion = TMath::Sqrt((dphi_pion * dphi_pion) + (deta_pion * deta_pion));
+
+          if (dR_pion <= cfgJetdR) {
+            isPionInJet = true;
+          } else {
+            missing_daughter += Daughter;
+          }
+        }
+      } // daughter
+
+      if (cfgJetdRHistos) {
+        histos.fill(HIST("dR_kstar_kaon"), dR_k_kstar, lResonance.Pt());
+        histos.fill(HIST("dR_kstar_pion"), dR_pi_kstar, lResonance.Pt());
+
+        if (bestR < cfgJetdR) {
+          histos.fill(HIST("dR_taggedjet_all"), dR_kaon, lResonance.Pt());
+          histos.fill(HIST("dR_taggedjet_all"), dR_pion, lResonance.Pt());
+          histos.fill(HIST("dR_taggedjet_kaon"), dR_kaon, lResonance.Pt());
+          histos.fill(HIST("dR_taggedjet_pion"), dR_pion, lResonance.Pt());
+
+          if (bestJet.Pt() > 6.0 && bestJet.Pt() < 8.0) {
+            histos.fill(HIST("dR_taggedjet_all_6_8"), dR_kaon, lResonance.Pt());
+            histos.fill(HIST("dR_taggedjet_all_6_8"), dR_pion, lResonance.Pt());
+            histos.fill(HIST("Kstar_pT_INJet_6_8"), lResonance.Pt());
+          }
+          if (bestJet.Pt() > 8.0) {
+            histos.fill(HIST("JetpT_8to"), bestJet.Pt());
+          }
+          if (bestJet.Pt() > 8.0 && bestJet.Pt() < 10.0) {
+            histos.fill(HIST("Kstar_pT_INJet_8_10"), lResonance.Pt());
+          }
+          if (bestJet.Pt() > 10.0 && bestJet.Pt() < 12.0) {
+            histos.fill(HIST("Kstar_pT_INJet_10_12"), lResonance.Pt());
+          }
+
+          // Daughters out of jets
+          if (!isKaonInJet || !isPionInJet) {
+            ROOT::Math::PxPyPzEVector recoveredJet = bestJet + missing_daughter;
+            if (bestJet.Pt() > 6.0 && bestJet.Pt() < 8.0) {
+              histos.fill(HIST("missed_kpi_INJets_6_8"), (bestJet.Pt() - missing_daughter.Pt()) / bestJet.Pt(), lResonance.Pt());
+
+              if (recoveredJet.Pt() > 8.0) {
+                histos.fill(HIST("recoveredJetpT_6_8to8"), recoveredJet.Pt());
+                histos.fill(HIST("Kstar_pT_6_8to8_IN_recoveredJet"), lResonance.Pt());
+              }
+              if (recoveredJet.Pt() > 8.0 && recoveredJet.Pt() < 10.0) {
+                histos.fill(HIST("Kstar_pT_6_8to8_10_IN_recoveredJet"), lResonance.Pt());
+              }
+            } // 6 < bestJetpT < 8 GeV/c
+            if (bestJet.Pt() > 8.0 && bestJet.Pt() < 10.0) {
+              histos.fill(HIST("missed_kpi_INJets_8_10"), (bestJet.Pt() - missing_daughter.Pt()) / bestJet.Pt(), lResonance.Pt());
+            }
+            if (bestJet.Pt() > 10.0 && bestJet.Pt() < 12.0) {
+              histos.fill(HIST("missed_kpi_INJets_10_12"), (bestJet.Pt() - missing_daughter.Pt()) / bestJet.Pt(), lResonance.Pt());
+            }
+            if (bestJet.Pt() > 12.0 && bestJet.Pt() < 15.0) {
+              histos.fill(HIST("missed_kpi_INJets_12_15"), (bestJet.Pt() - missing_daughter.Pt()) / bestJet.Pt(), lResonance.Pt());
+            }
+            if (bestJet.Pt() > 15.0 && bestJet.Pt() < 25.0) {
+              histos.fill(HIST("missed_kpi_INJets_15_25"), (bestJet.Pt() - missing_daughter.Pt()) / bestJet.Pt(), lResonance.Pt());
+            }
+            if (bestJet.Pt() > 25.0) {
+              histos.fill(HIST("missed_kpi_INJets_25_infinite"), (bestJet.Pt() - missing_daughter.Pt()) / bestJet.Pt(), lResonance.Pt());
+            }
+            if (bestJet.Pt() > 8.0) {
+              histos.fill(HIST("missed_kpi_INJets_8_infinite"), (bestJet.Pt() - missing_daughter.Pt()) / bestJet.Pt(), lResonance.Pt());
+            }
+            histos.fill(HIST("JetMigration"), bestJet.Pt(), recoveredJet.Pt());
+          } // Daughters out of jet
+        } // K*0 InJet
+      } // cfgJetdRHistos
+    } // mcParticles
+  };
+  PROCESS_SWITCH(kstarInOO, processJetQA, "Process dR of K*0 Inclusive and Inside jet", false);
+};
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<kstarInOO>(cfgc)};
-};
+}

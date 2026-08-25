@@ -24,9 +24,11 @@
 
 #include <TPDGCode.h>
 
+#include <algorithm>
 #include <cmath>
 #include <concepts>
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <unordered_map>
 
@@ -43,6 +45,20 @@ inline std::optional<T2> getIndex(const T1& index, const std::unordered_map<T1, 
     return it->second;
   }
   return std::nullopt;
+}
+
+/// Translate a global daughter index into a row of the current track table frame.
+/// Aborts if the index does not fall inside the frame, which would otherwise
+/// silently produce an out-of-range iterator.
+template <typename T>
+int64_t daughterRow(int64_t daughterId, T const& trackTable)
+{
+  const int64_t row = daughterId - trackTable.offset();
+  if (daughterId < 0 || row < 0 || row >= static_cast<int64_t>(trackTable.size())) {
+    LOG(fatal) << "Daughter index " << daughterId << " out of range for track table (offset "
+               << trackTable.offset() << ", size " << trackTable.size() << "). Breaking...";
+  }
+  return row;
 }
 
 template <typename T>
@@ -97,6 +113,9 @@ inline double getPdgMass(int pdgCode)
     case o2::constants::physics::Pdg::kLambdaCPlus:
       mass = o2::constants::physics::MassLambdaCPlus;
       break;
+    case o2::constants::physics::Pdg::kD0:
+      mass = o2::constants::physics::MassD0;
+      break;
     case o2::constants::physics::Pdg::kDeuteron:
       mass = o2::constants::physics::MassDeuteron;
       break;
@@ -125,11 +144,20 @@ inline double getPdgMass(int pdgCode)
 }
 
 template <typename T>
-float qn(T const& col)
-{
-  float qn = std::sqrt(col.qvecFT0CReVec()[0] * col.qvecFT0CReVec()[0] + col.qvecFT0CImVec()[0] * col.qvecFT0CImVec()[0]) * std::sqrt(col.sumAmplFT0C());
-  return qn;
-}
+concept HasQvectors = requires(T col) {
+  col.qvecFT0CReVec();
+  col.qvecFT0CImVec();
+  col.sumAmplFT0C();
+  col.qvecFT0AReVec();
+  col.qvecFT0AImVec();
+  col.sumAmplFT0A();
+};
+
+template <typename T>
+concept HasEventShape = requires(T col) {
+  col.qvec();
+  col.eventPlaneAngle();
+};
 
 /// Recalculate pT for Kinks (Sigmas) using kinematic constraints
 inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxDaughter, float pyDaughter, float pzDaughter)
@@ -142,8 +170,9 @@ inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxD
 
   // Calculate mother momentum and direction versor
   float pMother = std::sqrt(pxMother * pxMother + pyMother * pyMother + pzMother * pzMother);
-  if (pMother < almost0)
+  if (pMother < almost0) {
     return -999.f;
+  }
 
   float versorX = pxMother / pMother;
   float versorY = pyMother / pMother;
@@ -161,22 +190,26 @@ inline float calcPtnew(float pxMother, float pyMother, float pzMother, float pxD
   float b = -4.f * scalarProduct * k;
   float c = 4.f * ePi * ePi * massSigmaMinus * massSigmaMinus - k * k;
 
-  if (std::abs(a) < almost0)
+  if (std::abs(a) < almost0) {
     return -999.f;
+  }
 
   float d = b * b - 4.f * a * c;
-  if (d < 0.f)
+  if (d < 0.f) {
     return -999.f;
+  }
 
   float sqrtD = std::sqrt(d);
   float p1 = (-b + sqrtD) / (2.f * a);
   float p2 = (-b - sqrtD) / (2.f * a);
 
   // Pick physical solution: prefer P2 if positive, otherwise P1
-  if (p2 < 0.f && p1 < 0.f)
+  if (p2 < 0.f && p1 < 0.f) {
     return -999.f;
-  if (p2 < 0.f)
+  }
+  if (p2 < 0.f) {
     return p1;
+  }
 
   // Choose solution closest to original momentum
   float p1Diff = std::abs(p1 - pMother);
@@ -223,6 +256,93 @@ inline int signum(T x)
   return (T(0) < x) - (x < T(0));
 }
 
+template <typename T>
+T binLinear(float value, float lo, float hi, float step)
+{
+  float v = std::clamp(value, lo, hi);
+  auto idx = static_cast<int64_t>(std::round((v - lo) / step));
+  auto maxIdx = static_cast<int64_t>(std::numeric_limits<T>::max()) - static_cast<int64_t>(std::numeric_limits<T>::min());
+  idx = std::clamp(idx, static_cast<int64_t>(0), maxIdx);
+  return static_cast<T>(idx + std::numeric_limits<T>::min());
+}
+
+template <typename T>
+float unBinLinear(T binned, float lo, float step)
+{
+  auto idx = static_cast<int64_t>(binned) - static_cast<int64_t>(std::numeric_limits<T>::min());
+  return lo + static_cast<float>(idx) * step;
+}
+
+template <typename T>
+T binLogSigned(float signedValue, float magMin, float magMax)
+{
+  static_assert(std::is_unsigned_v<T>, "binLogSigned requires an unsigned storage type");
+  constexpr uint64_t TotalBits = sizeof(T) * 8;
+  constexpr uint64_t HalfLevels = uint64_t{1} << (TotalBits - 1);
+  const uint64_t sign = (signedValue < 0.f) ? uint64_t{1} : uint64_t{0};
+  const float mag = std::clamp(std::fabs(signedValue), magMin, magMax);
+  const float logLo = std::log(magMin);
+  const float logHi = std::log(magMax);
+  const float step = (logHi - logLo) / static_cast<float>(HalfLevels - 1);
+  auto idx = static_cast<int64_t>(std::round((std::log(mag) - logLo) / step));
+  idx = std::clamp(idx, int64_t{0}, static_cast<int64_t>(HalfLevels - 1));
+  return static_cast<T>((sign << (TotalBits - 1)) | static_cast<uint64_t>(idx));
+}
+
+template <typename T>
+float unBinLogSigned(T binned, float magMin, float magMax)
+{
+  static_assert(std::is_unsigned_v<T>, "unBinLogSigned requires an unsigned storage type");
+  constexpr uint64_t TotalBits = sizeof(T) * 8;
+  constexpr uint64_t HalfLevels = uint64_t{1} << (TotalBits - 1);
+  constexpr T SignMask = static_cast<T>(uint64_t{1} << (TotalBits - 1));
+  constexpr T MagMask = static_cast<T>(SignMask - 1);
+  const float sign = (binned & SignMask) ? -1.f : 1.f;
+  const auto idx = static_cast<uint64_t>(binned & MagMask);
+  const float logLo = std::log(magMin);
+  const float logHi = std::log(magMax);
+  const float step = (logHi - logLo) / static_cast<float>(HalfLevels - 1);
+  return sign * std::exp(logLo + static_cast<float>(idx) * step);
+}
+
+template <typename T>
+int unBinSign(T binned)
+{
+  static_assert(std::is_unsigned_v<T>, "unBinSign requires an unsigned storage type");
+  constexpr uint64_t TotalBits = sizeof(T) * 8;
+  constexpr T SignMask = static_cast<T>(uint64_t{1} << (TotalBits - 1));
+  return (binned & SignMask) ? -1 : 1;
+}
+
+template <typename T>
+T binLogUnsigned(float value, float magMin, float magMax)
+{
+  static_assert(std::is_unsigned_v<T>, "binLogUnsigned requires an unsigned storage type");
+  constexpr uint64_t TotalBits = sizeof(T) * 8;
+  constexpr uint64_t Levels = uint64_t{1} << TotalBits; // number of representable values, e.g. 65536 for uint16_t
+  float mag = std::clamp(value, magMin, magMax);
+  float logLo = std::log(magMin);
+  float logHi = std::log(magMax);
+  float step = (logHi - logLo) / static_cast<float>(Levels - 1);
+  auto idx = static_cast<uint64_t>(std::round((std::log(mag) - logLo) / step));
+  idx = std::clamp(idx, uint64_t{0}, Levels - 1);
+  return static_cast<T>(idx);
+}
+
+template <typename T>
+float unBinLogUnsigned(T binned, float magMin, float magMax)
+{
+  constexpr uint64_t TotalBits = sizeof(T) * 8;
+  constexpr uint64_t Levels = uint64_t{1} << TotalBits;
+  uint64_t idx = binned;
+  float logLo = std::log(magMin);
+  float logHi = std::log(magMax);
+  float step = (logHi - logLo) / static_cast<float>(Levels - 1);
+  float mag = std::exp(logLo + static_cast<float>(idx) * step);
+  return mag;
+}
+
 }; // namespace utils
 }; // namespace o2::analysis::femto
+//
 #endif // PWGCF_FEMTO_CORE_FEMTOUTILS_H_

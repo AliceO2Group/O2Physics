@@ -25,6 +25,7 @@ struct hmpConverter {
 
   void process(aod::HMPID_000 const& hmpLegacy, aod::Tracks const&)
   {
+    HMPID_001.reserve(hmpLegacy.size());
     for (auto& hmpData : hmpLegacy) {
 
       float phots[] = {0., 0., 0., 0., 0., 0., 0., 0., 0., 0.};

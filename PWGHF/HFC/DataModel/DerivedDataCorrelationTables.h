@@ -32,6 +32,7 @@ DECLARE_SOA_COLUMN(PosZ, posZ, float);                 //! Primary vertex z posi
 DECLARE_SOA_TABLE(HfcRedCollisions, "AOD", "HFCREDCOLLISION", //! Table with collision info
                   soa::Index<>,
                   aod::hf_collisions_reduced::Multiplicity,
+                  aod::hf_collisions_reduced::Centrality,
                   aod::hf_collisions_reduced::NumPvContrib,
                   aod::hf_collisions_reduced::PosZ);
 

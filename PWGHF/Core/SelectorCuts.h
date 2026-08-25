@@ -1146,6 +1146,61 @@ static const std::vector<std::string> labelsPt = {
 // column labels
 static const std::vector<std::string> labelsCutVar = {"m", "CPA", "Chi2PCA", "d0 D", "d0 Pi", "pT D", "pT Pi", "B0 decLen", "B0 decLenXY", "Imp. Par. Product", "DeltaMD", "Cos ThetaStar"};
 } // namespace hf_cuts_b0_to_d_pi
+namespace hf_cuts_b0_to_jpsi_k0star
+{
+static constexpr int NBinsPt = 12;
+static constexpr int NCutVars = 13;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double BinsPt[NBinsPt + 1] = {
+  0,
+  0.5,
+  1.0,
+  2.0,
+  3.0,
+  4.0,
+  5.0,
+  7.0,
+  10.0,
+  13.0,
+  16.0,
+  20.0,
+  24.0};
+
+const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
+
+// default values for the cuts
+// DeltaM CPA CPAXY d0JpsiDau d0K*0Dau pTJpsi pTK*0 BDecayLength BDecayLengthXY BIPProd DeltaMJpsi DeltaMK*0 PseudopropDL
+constexpr double Cuts[NBinsPt][NCutVars] = {{1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.15, 0.},  /* 0 < pt < 0.5 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.15, 0.},  /* 0.5 < pt < 1 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.15, 0.},  /* 1 < pt < 2 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.15, 0.},  /* 2 < pt < 3 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.15, 0.},  /* 3 < pt < 4 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.15, 0.},  /* 4 < pt < 5 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.15, 0.},  /* 5 < pt < 7 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.15, 0.},  /* 7 < pt < 10 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.15, 0.},  /* 10 < pt < 13 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.15, 0.},  /* 13 < pt < 16 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.15, 0.},  /* 16 < pt < 20 */
+                                            {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.15, 0.}}; /* 20 < pt < 24 */
+// row labels
+static const std::vector<std::string> labelsPt = {
+  "pT bin 0",
+  "pT bin 1",
+  "pT bin 2",
+  "pT bin 3",
+  "pT bin 4",
+  "pT bin 5",
+  "pT bin 6",
+  "pT bin 7",
+  "pT bin 8",
+  "pT bin 9",
+  "pT bin 10",
+  "pT bin 11"};
+
+// column labels
+static const std::vector<std::string> labelsCutVar = {"m", "CPA", "CPAXY", "d0 J/Psi daughters", "d0 K*0 daughters", "pT J/Psi", "pT K*0", "B decLen", "B decLenXY", "B Imp. Par. Product", "DeltaM J/Psi", "DeltaM K*0", "B pseudoprop. decLen"};
+} // namespace hf_cuts_b0_to_jpsi_k0star
 
 namespace hf_cuts_bs_to_ds_pi
 {
@@ -1222,7 +1277,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
 const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
-// DeltaM CPA d0Jpsi d0K pTJpsi pTK BDecayLength BDecayLengthXY BIPProd DeltaMJpsi JpsiIPProd
+// DeltaM CPA CPAXY d0Jpsi d0K pTJpsi pTK BDecayLength BDecayLengthXY BIPProd DeltaMJpsi DeltaMPhi PseudopropDL
 constexpr double Cuts[NBinsPt][NCutVars] = {{1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.02, 0.},  /* 0 < pt < 0.5 */
                                             {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.02, 0.},  /* 0.5 < pt < 1 */
                                             {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.02, 0.},  /* 1 < pt < 2 */
@@ -1251,7 +1306,7 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 11"};
 
 // column labels
-static const std::vector<std::string> labelsCutVar = {"m", "CPA", "CPAXY", "d0 J/Psi", "d0 phi", "pT J/Psi", "pT K", "B decLen", "B decLenXY", "B Imp. Par. Product", "DeltaM J/Psi", "DeltaM phi", "B pseudoprop. decLen"};
+static const std::vector<std::string> labelsCutVar = {"m", "CPA", "CPAXY", "d0 J/Psi daughters", "d0 phi daughters", "pT J/Psi", "pT phi", "B decLen", "B decLenXY", "B Imp. Par. Product", "DeltaM J/Psi", "DeltaM phi", "B pseudoprop. decLen"};
 } // namespace hf_cuts_bs_to_jpsi_phi
 
 namespace hf_cuts_bplus_to_d0_pi
@@ -1334,7 +1389,7 @@ constexpr double BinsPt[NBinsPt + 1] = {
 const auto vecBinsPt = std::vector<double>{BinsPt, BinsPt + NBinsPt + 1};
 
 // default values for the cuts
-// DeltaM CPA d0Jpsi d0K pTJpsi pTK BDecayLength BDecayLengthXY BIPProd DeltaMJpsi JpsiIPProd
+// DeltaM CPA d0Jpsi d0K pTJpsi pTK BDecayLength BDecayLengthXY BIPProd DeltaMJpsi PseudopropDL
 constexpr double Cuts[NBinsPt][NCutVars] = {{1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.},  /* 0 < pt < 0.5 */
                                             {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.},  /* 0.5 < pt < 1 */
                                             {1., 0.8, 0.8, 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0., 0.1, 0.},  /* 1 < pt < 2 */
@@ -1363,7 +1418,7 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 11"};
 
 // column labels
-static const std::vector<std::string> labelsCutVar = {"m", "CPA", "CPAXY", "d0 J/Psi", "d0 K", "pT J/Psi", "pT K", "B decLen", "B decLenXY", "B Imp. Par. Product", "DeltaM J/Psi", "B pseudoprop. decLen"};
+static const std::vector<std::string> labelsCutVar = {"m", "CPA", "CPAXY", "d0 J/Psi daughters", "d0 K", "pT J/Psi", "pT K", "B decLen", "B decLenXY", "B Imp. Par. Product", "DeltaM J/Psi", "B pseudoprop. decLen"};
 } // namespace hf_cuts_bplus_to_jpsi_k
 
 namespace hf_cuts_lb_to_lc_pi

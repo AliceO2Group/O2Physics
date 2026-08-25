@@ -15,8 +15,6 @@
 /// \author Abhi Modak (abhi.modak@cern.ch), Lucas José (lucas.jose.franco.da.silva@cern.ch)
 /// \since September 10, 2025
 
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
@@ -37,6 +35,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
+#include <TPDGCode.h>
 
 #include <cmath>
 #include <cstdint>
@@ -113,6 +112,7 @@ struct StudyPnch {
   Configurable<float> maxPhi{"maxPhi", 6.283185f, "Maximum phi value for track selection"};
   Configurable<bool> isPtincrease{"isPtincrease", false, "Varies low pT particles by a conservative amount of +100%"};
   Configurable<bool> isPtdecrease{"isPtdecrease", false, "Varies low pT particles by a conservative amount of -50%"};
+  Configurable<bool> cPrint{"cPrint", false, "Enable printing information for debugging"};
   Configurable<bool> isApplyStrangenessSysUncert{"isApplyStrangenessSysUncert", false, "Enable the evaluation of systematics due to strange particle contribution"};
 
   void init(InitContext const&)
@@ -171,10 +171,10 @@ struct StudyPnch {
     }
     if (doprocessEvtLossSigLossMC) {
       histos.add("MCEventHist", "MCEventHist", kTH1F, {axisEvent}, false);
-      auto hstat = histos.get<TH1>(HIST("MCEventHist"));
-      auto* x = hstat->GetXaxis();
-      x->SetBinLabel(1, "All MC events");
-      x->SetBinLabel(2, "MC events with atleast one reco event");
+      auto hstatevloss = histos.get<TH1>(HIST("MCEventHist"));
+      auto* xevloss = hstatevloss->GetXaxis();
+      xevloss->SetBinLabel(1, "All MC events");
+      xevloss->SetBinLabel(2, "MC events with atleast one reco event");
       histos.add("hMultiplicityMCgenAll", "hMultiplicityMCgenAll", kTH1F, {axisMult}, true);
       histos.add("hMultiplicityMCgenSel", "hMultiplicityMCgenSel", kTH1F, {axisMult}, true);
     }
@@ -359,6 +359,7 @@ struct StudyPnch {
   float countTracksPtCut(countTrk const& tracks, McColType const& McCol)
   {
     float nTrk = 0.0;
+    auto count = 0;
     for (const auto& track : tracks) {
       if (!isGenTrackSelected(track)) {
         continue;
@@ -366,13 +367,23 @@ struct StudyPnch {
       if (track.mcCollisionId() != McCol.mcCollisionId()) {
         continue;
       }
-      if (track.pt() > pTminCut)
+      if (track.pt() > pTminCut) {
+        count++;
         continue;
-      if (isPtincrease) {
-        nTrk += 2 - 10 * track.pt();
-      } else {
-        nTrk += 0.5 + 5 * track.pt();
       }
+      if (isPtincrease) {
+        nTrk += 2 - 10 * track.pt() - 1;
+      } else {
+        nTrk += 0.5 + 5 * track.pt() - 1;
+      }
+      if (cPrint) {
+        LOG(info) << "nTrk: " << nTrk;
+        LOG(info) << "low pT = " << track.pt();
+      }
+    }
+    if (nTrk != 0 && cPrint) {
+      LOG(info) << "counts standard pT: " << count;
+      LOG(info) << "Result of the function: " << nTrk;
     }
     return nTrk;
   }
@@ -390,7 +401,11 @@ struct StudyPnch {
       return;
     }
     auto mult = countNTracks(tracks);
-    if (mult > 0) {
+    if (isApplyInelgt0 && etaRange == 1.0f) {
+      if (mult > 0) {
+        histos.fill(HIST("hMultiplicityData"), mult);
+      }
+    } else {
       histos.fill(HIST("hMultiplicityData"), mult);
     }
   }
@@ -427,12 +442,27 @@ struct StudyPnch {
       }
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
       auto multrec = countNTracksMcCol(recTracksPart, RecCol);
-      histos.fill(HIST("hMultiplicityMCrec"), multrec);
       float multgen = countGenTracks(GenParticles, RecCol);
+      float nTrkPtCut = countTracksPtCut(GenParticles, RecCol);
+      if (isApplyInelgt0 && etaRange == 1.0f) {
+        if (multrec == 0 || multgen == 0) {
+          if (nTrkPtCut == 0) {
+            continue;
+          }
+          continue;
+        }
+      }
+      histos.fill(HIST("hMultiplicityMCrec"), multrec);
+      if (cPrint) {
+        LOG(info) << "Generated Particles with standard pT:" << multgen;
+      }
       histos.fill(HIST("hMultiplicityMCgen"), multgen);
       histos.fill(HIST("hResponseMatrix"), multrec, multgen);
-      float nTrkPtCut = countTracksPtCut(GenParticles, RecCol);
       nTrkPtCut = multgen + nTrkPtCut;
+      if (cPrint) {
+        LOG(info) << "After Counting low pT: " << nTrkPtCut;
+        LOG(info) << "########################";
+      }
       histos.fill(HIST("hMultiplicityMCgenPtCut"), nTrkPtCut);
       histos.fill(HIST("hResponseMatrixPtCut"), multrec, nTrkPtCut);
       if (isApplyStrangenessSysUncert) {
@@ -463,7 +493,11 @@ struct StudyPnch {
       }
       nTrk_multAll++;
     }
-    if (nTrk_multAll > 0) {
+    if (isApplyInelgt0 && etaRange == 1.0f) {
+      if (nTrk_multAll > 0) {
+        histos.fill(HIST("hMultiplicityMCgenAll"), nTrk_multAll);
+      }
+    } else {
       histos.fill(HIST("hMultiplicityMCgenAll"), nTrk_multAll);
     }
 
@@ -490,7 +524,11 @@ struct StudyPnch {
         }
         nTrk_multSel++;
       }
-      if (nTrk_multSel > 0) {
+      if (isApplyInelgt0 && etaRange == 1.0f) {
+        if (nTrk_multSel > 0) {
+          histos.fill(HIST("hMultiplicityMCgenSel"), nTrk_multSel);
+        }
+      } else {
         histos.fill(HIST("hMultiplicityMCgenSel"), nTrk_multSel);
       }
     }

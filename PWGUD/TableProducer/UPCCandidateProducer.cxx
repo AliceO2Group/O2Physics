@@ -19,6 +19,7 @@
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
@@ -50,6 +51,7 @@
 #include <limits>
 #include <map>
 #include <numeric>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -57,6 +59,7 @@
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::rctsel;
 
 struct UpcCandProducer {
   bool fDoMC{false};
@@ -90,6 +93,9 @@ struct UpcCandProducer {
 
   std::vector<bool> fwdSelectors;
   std::vector<bool> barrelSelectors;
+
+  // RCT flag checker
+  RCTFlagsChecker myRCTChecker;
 
   // skimmer flags
   // choose a source of signal MC events
@@ -125,8 +131,15 @@ struct UpcCandProducer {
   Configurable<bool> fRequireNoTimeFrameBorder{"requireNoTimeFrameBorder", true, "Require kNoTimeFrameBorder selection bit"};
   Configurable<bool> fRequireNoITSROFrameBorder{"requireNoITSROFrameBorder", true, "Require kNoITSROFrameBorder selection bit"};
 
+  Configurable<std::string> rctLabel{"rctLabel", "muon", "RCT label to use, options: CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo, muon = FV0 + MID + MCH, muon_glo = muon + MFT, none = do not use RCT flags"};
+  Configurable<bool> checkZDC{"checkZDC", false, "Consider ZDC quality"};
+  Configurable<bool> useLAasBad{"useLAasBad", false, "Consider Lim acc flag as Bad"};
+  bool useRCTflags = true;
+
   // QA histograms
   HistogramRegistry histRegistry{"HistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  using CollisionsSels = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
 
   using BCsWithBcSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels, o2::aod::BCFlags>;
 
@@ -145,6 +158,34 @@ struct UpcCandProducer {
     barrelSelectors.resize(upchelpers::kNBarrelSels - 1, false);
 
     upcCuts = (UPCCutparHolder)inputCuts;
+
+    // initialize RCT flag checker
+    if (rctLabel.value != "none" && rctLabel.value != "muon" && rctLabel.value != "muon_glo") {
+      myRCTChecker.init(rctLabel.value, checkZDC.value, useLAasBad.value);
+    } else if (rctLabel.value == "none") {
+      useRCTflags = false;
+      myRCTChecker.init("CBT_muon");
+    } else if (rctLabel.value == "muon") {
+      if (checkZDC.value && useLAasBad.value) {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kZDCBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr});
+      } else if (checkZDC.value) {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kZDCBad});
+      } else if (useLAasBad.value) {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr});
+      } else {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad});
+      }
+    } else if (rctLabel.value == "muon_glo") {
+      if (checkZDC.value && useLAasBad.value) {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kMFTBad, kZDCBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr, kMFTLimAccMCRepr});
+      } else if (checkZDC.value) {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kMFTBad, kZDCBad});
+      } else if (useLAasBad.value) {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kMFTBad, kMCHLimAccMCRepr, kMIDLimAccMCRepr, kMFTLimAccMCRepr});
+      } else {
+        myRCTChecker.init({kFV0Bad, kMCHBad, kMIDBad, kMFTBad});
+      }
+    }
 
     const AxisSpec axisTrgCounters{10, 0.5, 10.5, ""};
     histRegistry.add("hCountersTrg", "", kTH1F, {axisTrgCounters});
@@ -179,6 +220,11 @@ struct UpcCandProducer {
     histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelTPCChi2 + 1, "TPCChi2");
     histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelDCAXY + 1, "DCAXY");
     histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelDCAZ + 1, "DCAZ");
+
+    histRegistry.add("RCTSelCounter", "RCTSelCounter", kTH1F, {{3, 0.5, 3.5}});
+    histRegistry.get<TH1>(HIST("RCTSelCounter"))->GetXaxis()->SetBinLabel(1, "Before RCT sel");
+    histRegistry.get<TH1>(HIST("RCTSelCounter"))->GetXaxis()->SetBinLabel(2, "After RCT sel");
+    histRegistry.get<TH1>(HIST("RCTSelCounter"))->GetXaxis()->SetBinLabel(3, "RCT rejected");
   }
 
   template <typename T>
@@ -682,6 +728,13 @@ struct UpcCandProducer {
       uint64_t trackBC = 0;
       if (trk.has_collision()) {
         const auto& col = trk.collision();
+        auto bcRCT = col.bc_as<TBCs>();
+        histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(1);
+        if (!myRCTChecker(bcRCT) && useRCTflags) {
+          histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(3);
+          continue;
+        }
+        histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(2);
         nContrib = col.numContrib();
         trackBC = col.bc_as<TBCs>().globalBC();
         hasTrackBC = true;
@@ -725,6 +778,13 @@ struct UpcCandProducer {
         if (!trk.has_collision())
           continue;
         const auto& col = trk.collision();
+        auto bcRCT = col.bc_as<TBCs>();
+        histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(1);
+        if (!myRCTChecker(bcRCT) && useRCTflags) {
+          histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(3);
+          continue;
+        }
+        histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(2);
         nContrib = col.numContrib();
         trackBC = col.bc_as<TBCs>().globalBC();
         hasTrackBC = true;
@@ -765,6 +825,13 @@ struct UpcCandProducer {
         if (!trk.has_collision())
           continue;
         const auto& col = trk.collision();
+        auto bcRCT = col.bc_as<TBCs>();
+        histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(1);
+        if (!myRCTChecker(bcRCT) && useRCTflags) {
+          histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(3);
+          continue;
+        }
+        histRegistry.get<TH1>(HIST("RCTSelCounter"))->Fill(2);
         nContrib = col.numContrib();
         trackBC = col.bc_as<TBCs>().globalBC();
         const auto& bc = col.bc_as<TBCs>();

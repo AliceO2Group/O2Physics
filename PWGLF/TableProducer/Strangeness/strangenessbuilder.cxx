@@ -52,6 +52,7 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Array2D.h>
+#include <Framework/Concepts.h>
 #include <Framework/Configurable.h>
 #include <Framework/DataSpecUtils.h>
 #include <Framework/DeviceSpec.h>
@@ -2535,7 +2536,7 @@ struct StrangenessBuilder {
                     thisCascInfo.xyz[2] = dau.vz();
                     thisCascInfo.mcParticleBachelor = dau.globalIndex();
                   }
-                  if (std::abs(dau.pdgCode()) == 2212) {
+                  if (std::abs(dau.pdgCode()) == 3122) {
                     thisCascInfo.pdgCodeV0 = dau.pdgCode();
 
                     for (const auto& v0Dau : dau.template daughters_as<aod::McParticles>()) {

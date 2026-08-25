@@ -10,13 +10,13 @@
 // or submit itself to any jurisdiction.
 
 /// \file MuPa-Enums.h
-/// \brief ... TBI 20250425
+/// \brief Task to calculate multiparticle correlations and related observables
 /// \author Ante.Bilandzic@cern.ch
 
 #ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_
 #define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_
 
-enum eConfiguration {
+enum EnConfiguration {
   eTaskIsConfiguredFromJson = 1, // here I start from 1 exceptionally, because these enums are used as bin contents, and ROOT starts counting bins from 1
   eTaskName,
   eRunNumber,
@@ -45,19 +45,19 @@ enum eConfiguration {
   eConfiguration_N
 };
 
-enum eProcess {
-  eProcessRec = 0,     // Run 3, only reconstructed
-  eProcessRecSim,      // Run 3, both reconstructed and simulated
-  eProcessSim,         // Run 3, only simulated
-  eProcessRec_Run2,    // Run 2, only reconstructed
-  eProcessRecSim_Run2, // Run 2, both reconstructed and simulated
-  eProcessSim_Run2,    // Run 2, only simulated
-  eProcessRec_Run1,    // Run 1, only reconstructed
-  eProcessRecSim_Run1, // Run 1, both reconstructed and simulated
-  eProcessSim_Run1,    // Run 1, only simulated
-  eProcessTest,        // minimum subscription to the tables, for testing purposes
-  eProcessQA,          // maximum subscription to the tables, for QA purposes. Basically: eProcessRec + otherwise unnecessary tables
-  eProcessHepMChi,     // special subscription when I extract info from the table HepMCHeavyIons TBI 20250429 merge this case eventually with RecSim cases
+enum EnProcess {
+  eProcessRec = 0,    // Run 3, only reconstructed
+  eProcessRecSim,     // Run 3, both reconstructed and simulated
+  eProcessSim,        // Run 3, only simulated
+  eProcessRecRun2,    // Run 2, only reconstructed
+  eProcessRecSimRun2, // Run 2, both reconstructed and simulated
+  eProcessSimRun2,    // Run 2, only simulated
+  eProcessRecRun1,    // Run 1, only reconstructed
+  eProcessRecSimRun1, // Run 1, both reconstructed and simulated
+  eProcessSimRun1,    // Run 1, only simulated
+  eProcessTest,       // minimum subscription to the tables, for testing purposes
+  eProcessQA,         // maximum subscription to the tables, for QA purposes. Basically: eProcessRec + otherwise unnecessary tables
+  eProcessHepMChi,    // special subscription when I extract info from the table HepMCHeavyIons TBI 20250429 merge this case eventually with RecSim cases
   // Generic flags, calculated and set from individual flags above in DefaultConfiguration(), AFTER process switch was taken into account:
   eGenericRec,    // generic "Rec" case, eTest is treated for the time being as "Rec". eQA is also in this category
   eGenericRecSim, // generic "RecSim" case
@@ -65,45 +65,45 @@ enum eProcess {
   eProcess_N
 };
 
-enum eRecSim { eRec = 0,
-               eSim,
-               eRecAndSim,
-               eRec_Run2, // converted Run 2 data
-               eSim_Run2,
-               eRecAndSim_Run2,
-               eRec_Run1, // converted Run 1 data
-               eSim_Run1,
-               eRecAndSim_Run1,
-               eTest, // remember that as of 20250315 I can use "cfWhichSpecificCuts": "Test" in JSON, to configure quickly all cuts for this case
-               eQA };
+enum EnRecSim { eRec = 0,
+                eSim,
+                eRecAndSim,
+                eRec_Run2, // converted Run 2 data
+                eSim_Run2,
+                eRecAndSim_Run2,
+                eRec_Run1, // converted Run 1 data
+                eSim_Run1,
+                eRecAndSim_Run1,
+                eTest, // remember that as of 20250315 I can use "cfWhichSpecificCuts": "Test" in JSON, to configure quickly all cuts for this case
+                eQA };
 
-enum eBeforeAfter { eBefore = 0, // use this one for cuts
-                    eAfter = 1 };
+enum EnBeforeAfter { eBefore = 0, // use this one for cuts
+                     eAfter = 1 };
 
-enum eMinMax { eMin = 0,
-               eMax = 1 };
+enum EnMinMax { eMin = 0,
+                eMax = 1 };
 
-enum eXYZ { eX = 0,
-            eY = 1,
-            eZ = 2 };
+enum EnXYZ { eX = 0,
+             eY = 1,
+             eZ = 2 };
 
-enum eDefaultColors { eColor = kBlack,
-                      eFillColor = kGray };
+enum EnDefaultColors { eColor = kBlack,
+                       eFillColor = kGray };
 
-enum eWeights { wPHI = 0,
-                wPT = 1,
-                wETA = 2,
-                wCHARGE = 3,
-                eWeights_N };
+enum EnWeights { wPHI = 0,
+                 wPT,
+                 wETA,
+                 wCHARGE,
+                 eWeights_N };
 
-enum eDiffWeights { // TBI 20250215 this is now obsolete, superseeded with more general implementation, see enums eDiffWeightCategory, eDiffPhiWeights, etc.
+enum EnDiffWeights { // TBI 20250215 this is now obsolete, superseeded with more general implementation, see enums eDiffWeightCategory, eDiffPhiWeights, etc.
   wPHIPT = 0,
   wPHIETA,
   wPHICHARGE,
   eDiffWeights_N
 };
 
-enum eDiffWeightCategory {
+enum EnDiffWeightCategory {
   eDWPhi = 0, // corresponds to eDiffPhiWeights structure, here the fundamental 0-th axis never to be projected out is "phi"
   eDWPt,      // corresponds to eDiffPtWeights structure, here the fundamental 0-th axis never to be projected out is "pt"
   eDWEta,     // corresponds to eDiffEtaWeights structure, here the fundamental 0-th axis never to be projected out is "eta"
@@ -112,7 +112,7 @@ enum eDiffWeightCategory {
   eDiffWeightCategory_N
 };
 
-enum eDiffPhiWeights {
+enum EnDiffPhiWeights {
   wPhiPhiAxis = 0, // this is the main axis in this category, the only axis which shall never be projected out. If I project out all remaining axes, I shall recover the standard integrated phi weights
   wPhiPtAxis,
   wPhiEtaAxis,
@@ -122,34 +122,39 @@ enum eDiffPhiWeights {
   eDiffPhiWeights_N
 };
 
-enum eDiffPtWeights { // if i add new entry here, or in eDiffPhiWeights and eDiffEtaWeights, I need to update also GetParticleWeights() + FillQvectorFromSparse() + WeightFromSparse()
+enum EnDiffPtWeights { // if i add new entry here, or in eDiffPhiWeights and eDiffEtaWeights, I need to update also GetParticleWeights() + FillQvectorFromSparse() + WeightFromSparse() +
+                       // + double vector[eDiffPtWeights_N] = {pbyp.fPt, pbyp.fEta, pbyp.fCharge, ebye.fCentrality, ebye.fVz}; in InternalValidation() (two times!)
+                       // + same as in the previous line, only in void FillParticleHistograms(...)
   wPtPtAxis = 0,
   wPtEtaAxis,
   wPtChargeAxis,
   wPtCentralityAxis,
+  wPtVertexZAxis,
   eDiffPtWeights_N
 };
 
-enum eDiffEtaWeights {
+enum EnDiffEtaWeights {
   wEtaEtaAxis = 0,
   wEtaPtAxis,
   wEtaChargeAxis,
   wEtaCentralityAxis,
+  wEtaVertexZAxis,
   eDiffEtaWeights_N
 };
 
-enum eDiffChargeWeights {
+enum EnDiffChargeWeights {
   wChargeChargeAxis = 0,
   wChargePtAxis,
   wChargeEtaAxis,
   wChargeCentralityAxis,
+  wChargeVertexZAxis,
   eDiffChargeWeights_N
 };
 
-enum eVnPsin { eVn = 0,
-               ePsin = 1 };
+enum EnVnPsin { eVn = 0,
+                ePsin = 1 };
 
-enum eEventHistograms {
+enum EnEventHistograms {
   eNumberOfEvents = 0,    // Total events = eNumberOfEvents + eBefore, Selected events = eNumberOfEvents + eAfter
   eTotalMultiplicity,     // TBI 20241123 I define it as tracks.size(), but most likely I do not need this
   eMultiplicity,          // see documentation for ebye.fMultiplicity
@@ -168,7 +173,7 @@ enum eEventHistograms {
   eEventHistograms_N
 };
 
-enum eEventCuts {
+enum EnEventCuts {
   // a) For available event selection bits, check https://github.com/AliceO2Group/O2Physics/blob/master/Common/CCDB/EventSelectionParams.cxx (and .h for better documentation)
   // b) Some settings are configurable, check: https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/eventSelection.cxx
   eTrigger = eEventHistograms_N,   // Implemented and validated so far:
@@ -231,13 +236,13 @@ enum eEventCuts {
   eEventCuts_N
 };
 
-enum eEventCutsFormulas { // special treatment for all event cuts defined via mathematical formula, because for them I have to do one additional layer of booking using TFormula
+enum EnEventCutsFormulas { // special treatment for all event cuts defined via mathematical formula, because for them I have to do one additional layer of booking using TFormula
   eRefMultVsNContrUp_Formula = 0,
   eRefMultVsNContrLow_Formula,
   eEventCutsFormulas_N
 };
 
-enum eParticleHistograms {
+enum EnParticleHistograms {
 
   // from o2::aod::Tracks (Track parameters at their point closest to the collision vertex)
   ePhi = 0,
@@ -272,13 +277,13 @@ enum eParticleHistograms {
   eParticleHistograms_N
 };
 
-enum eParticleHistograms2D { // All 2D histograms are first implemented in eQAParticleHistograms2D, the ones which I need regularly, are then promoted to this category.
+enum EnParticleHistograms2D { // All 2D histograms are first implemented in eQAParticleHistograms2D, the ones which I need regularly, are then promoted to this category.
   ePhiPt = 0,
   ePhiEta,
   eParticleHistograms2D_N
 };
 
-enum eParticleCuts {
+enum EnParticleCuts {
 
   // from o2::aod::TrackSelection (https://aliceo2group.github.io/analysis-framework/docs/datamodel/helperTaskTables.html#o2-analysis-trackselection)
   // See also O2Physics/Common/DataModel/TrackSelectionTables.h
@@ -324,7 +329,7 @@ enum eParticleCuts {
   eParticleCuts_N
 };
 
-enum eAsFunctionOf { // this is a specific enum only for 1D dependence
+enum EnAsFunctionOf { // this is a specific enum only for 1D dependence
   // 1D:
   AFO_INTEGRATED = 0,
   AFO_MULTIPLICITY, // vs. default multiplicity, which is (at the moment) fSelectedTracks, i.e. number of tracks in Q-vector
@@ -340,7 +345,7 @@ enum eAsFunctionOf { // this is a specific enum only for 1D dependence
   eAsFunctionOf_N
 }; // prefix is needed, to avoid conflict with enum eKinematics
 
-enum eAsFunctionOf2D { // this is a specific enum only for 2D dependence
+enum EnAsFunctionOf2D { // this is a specific enum only for 2D dependence
   // 2D:
   AFO_CENTRALITY_PT = 0,
   AFO_CENTRALITY_ETA,
@@ -353,7 +358,7 @@ enum eAsFunctionOf2D { // this is a specific enum only for 2D dependence
   eAsFunctionOf2D_N
 };
 
-enum eAsFunctionOf3D { // this is a specific enum only for 3D dependence
+enum EnAsFunctionOf3D { // this is a specific enum only for 3D dependence
   // 3D:
   AFO_CENTRALITY_PT_ETA = 0,
   AFO_CENTRALITY_PT_CHARGE,
@@ -366,7 +371,7 @@ enum eAsFunctionOf3D { // this is a specific enum only for 3D dependence
   eAsFunctionOf3D_N
 };
 
-enum eNUAPDF {
+enum EnNUAPDF {
   ePhiNUAPDF = 0,
   ePtNUAPDF,
   eEtaNUAPDF,
@@ -374,7 +379,7 @@ enum eNUAPDF {
   eNUAPDF_N
 };
 
-enum eqvectorKine { // Here "kine" originally meant "kinematic", i.e. vs. pt or vs. eta, now it's general.
+enum EnqvectorKine { // Here "kine" originally meant "kinematic", i.e. vs. pt or vs. eta, now it's general.
   // 1D:
   PTq = 0,
   ETAq,
@@ -393,31 +398,31 @@ enum eqvectorKine { // Here "kine" originally meant "kinematic", i.e. vs. pt or 
   eqvectorKine_N
 };
 
-enum eTimer {
+enum EnTimer {
   eGlobal = 0,
   eLocal,
   eTimer_N
 };
 
-enum eEventCounterForDryRun {
+enum EnEventCounterForDryRun {
   eFill = 0,
   ePrint
 };
 
-enum eCutModus {
+enum EnCutModus {
   eCut = 0,           // standard, i.e. no cut counters are used
   eCutCounterBinning, // dry call to EventCuts and ParticleCuts, just to establish order of binning in CutCountets, which resembles order of cut implementation
   eCutCounterAbsolute,
   eCutCounterSequential
 };
 
-enum eCutCounter {
+enum EnCutCounter {
   eAbsolute = 0,
   eSequential,
   eCutCounter_N
 };
 
-enum eQAEventHistograms2D {
+enum EnQAEventHistograms2D {
   // General (estimators can be chosen via configurables):
   eMultiplicity_vs_ReferenceMultiplicity = 0, // multiplicity is x, reference multiplicity is y. I can swap offline if needed: histOriginal->GetBinContent(x,y); histSwapped->Fill(y,x);
   eMultiplicity_vs_NContributors,
@@ -461,12 +466,12 @@ enum eQAEventHistograms2D {
   eQAEventHistograms2D_N
 };
 
-enum eQAParticleHistograms2D {
+enum EnQAParticleHistograms2D {
   ePt_vs_dcaXY,
   eQAParticleHistograms2D_N
 };
 
-enum eQAParticleEventHistograms2D {
+enum EnQAParticleEventHistograms2D {
   // In this category I do correlation <some-particle-property> vs. some-event-property.
   // The < ... > goes over all particles in that event.
   // All < ... > over particles are calculated with helper TProfile fQAParticleEventProEbyE
@@ -484,7 +489,7 @@ enum eQAParticleEventHistograms2D {
   eQAParticleEventHistograms2D_N
 };
 
-enum eQAParticleEventProEbyE {
+enum EnQAParticleEventProEbyE {
   eitsNClsEbyE = 1,                   // Labels average <itsNCls> in a given event (therefore "EbyE" is appended). Yes, from one, because it runs over bin content and entries in TProfile for most of the time.
   eitsNClsNegEtaEbyE,                 // <itsNCls> in a given event for eta < 0
   eitsNClsPosEtaEbyE,                 // <itsNCls> in a given event for eta > 0
@@ -515,7 +520,7 @@ enum eQAParticleEventProEbyE {
   eQAParticleEventProEbyE_N
 };
 
-enum eQACorrelationsVsHistograms2D {
+enum EnQACorrelationsVsHistograms2D {
   // In this category I correlate <2> vs. some-event-property.
   // For instance: <2> vs. ref. mult
   //               <2> vs. <pT>, where <pT> is calculated from all particles in that event (so in this sense, it's an event property as well)
@@ -546,7 +551,7 @@ enum eQACorrelationsVsHistograms2D {
   eQACorrelationsVsHistograms2D_N
 };
 
-enum eQACorrelationsVsInteractionRateVsProfiles2D_N {
+enum EnQACorrelationsVsInteractionRateVsProfiles2D {
   // In this category I fill <2> in 2D profile spanned by IR vs. some-other-observable (IR is always x axis)
   // For instance: <2> is filled in TProfile2D spanned by IR vs. CurrentRunDuration (crd)
   //               <2> is filled in TProfile2D spanned by IR vs. <pT>, where <pT> is calculated from all particles in that event
@@ -567,7 +572,7 @@ enum eQACorrelationsVsInteractionRateVsProfiles2D_N {
   eQACorrelationsVsInteractionRateVsProfiles2D_N
 };
 
-enum eReferenceMultiplicityEstimators {
+enum EnReferenceMultiplicityEstimators {
   // Run 3:
   eMultTPC = 0,
   eMultFV0M,          // ref. mult from helper task o2-analysis-multiplicity-table
@@ -580,7 +585,7 @@ enum eReferenceMultiplicityEstimators {
   eReferenceMultiplicityEstimators_N
 };
 
-enum eCentralityEstimators {
+enum EnCentralityEstimators {
   // Run 3:
   eCentFT0C = 0,
   eCentFT0CVariant1,
@@ -594,19 +599,19 @@ enum eCentralityEstimators {
   eCentralityEstimators_N
 };
 
-enum eOccupancyEstimators {
+enum EnOccupancyEstimators {
   eTrackOccupancyInTimeRange, // from helper task o2-analysis-event-selection, see also IA's presentation in https://indico.cern.ch/event/1464946, slide 38
   eFT0COccupancyInTimeRange,  // from helper task o2-analysis-event-selection
   eOccupancyEstimators_N
 };
 
-enum eEventCounter {
+enum EnEventCounter {
   eTotal,     // total number of events, before any cuts are applied
   eProcessed, // number of processed events, i.e. number of events which survived cuts and on which analysis have been performed
   eEventCounter_N
 };
 
-enum eSpecificCuts {
+enum EnSpecificCuts {
   // Run 3:
   eLHC23zzh,
   eLHC24ar,
@@ -620,11 +625,28 @@ enum eSpecificCuts {
   eSpecificCuts_N
 };
 
-enum eRunTime {
+enum EnRunTime {
   eStartOfRun = 0, // in abs. seconds since Unix epoch
   eEndOfRun,       // in abs. seconds since Unix epoch
   eDurationInSec,  // in seconds
   eRunTime_N
+};
+
+enum EnOrder { // TBI 20260602 : I need this enum somewhat artificially to silent o2_linter : Avoid magic numbers in expressions
+  eOrder_1 = 1,
+  eOrder_2,
+  eOrder_3,
+  eOrder_4,
+  eOrder_5,
+  eOrder_6,
+  eOrder_7,
+  eOrder_8,
+  eOrder_9,
+  eOrder_10,
+  eOrder_11,
+  eOrder_12,
+  // ...
+  eOrder_N
 };
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_

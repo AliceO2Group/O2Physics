@@ -98,7 +98,10 @@ namespace o2::aod
 namespace hf_cand_ds_mini
 {
 DECLARE_SOA_COLUMN(Pt, pt, float);                                           //! Transverse momentum of D-meson candidate (GeV/c)
-DECLARE_SOA_COLUMN(M, m, float);                                             //! Invariant mass of D-meson candidates (GeV/c)
+DECLARE_SOA_COLUMN(M, m, float);                                             //! Invariant mass of D-meson candidates (GeV/c2)
+DECLARE_SOA_COLUMN(MassKaKa, massKaKa, float);                               //! Invariant mass of kaon pairs (GeV/c2)
+DECLARE_SOA_COLUMN(MassKaFirstPi, massKaFirstPi, float);                     //! Invariant mass of kaon(first) pion (GeV/c2)
+DECLARE_SOA_COLUMN(MassKaSecondPi, massKaSecondPi, float);                   //! Invariant mass of kaon(second) pion (GeV/c2)
 DECLARE_SOA_COLUMN(Centrality, centrality, float);                           //! Centrality of collision
 DECLARE_SOA_COLUMN(ImpactParameter, impactParameter, float);                 //! Impact parameter of D-meson candidate
 DECLARE_SOA_COLUMN(ImpactParameterMc, impactParameterMc, float);             //! Generated impact parameter of D-meson candidate
@@ -113,6 +116,11 @@ DECLARE_SOA_TABLE(HfCandDsMinis, "AOD", "HFDSMINI", //! Table with few Ds proper
                   hf_cand_ds_mini::M,
                   hf_cand_ds_mini::Pt,
                   hf_cand_ds_mini::Centrality);
+
+DECLARE_SOA_TABLE(HfCandDsMassMinis, "AOD", "HFDSMASSMINI", //! Table with Ds 2-prong masses
+                  hf_cand_ds_mini::MassKaKa,
+                  hf_cand_ds_mini::MassKaFirstPi,
+                  hf_cand_ds_mini::MassKaSecondPi);
 
 DECLARE_SOA_TABLE(HfCandDsDlMinis, "AOD", "HFDSDLMINI", //! Table with decay length Ds properties
                   hf_cand_ds_mini::DecayLength,
@@ -142,6 +150,7 @@ concept HasDsMlInfo = requires(T candidate) {
 /// Ds± analysis task
 struct HfTaskDs {
   Produces<aod::HfCandDsMinis> hfCandDsMinis;
+  Produces<aod::HfCandDsMassMinis> hfCandDsMassMinis;
   Produces<aod::HfCandDsDlMinis> hfCandDsDlMinis;
   Produces<aod::HfCandDsD0Minis> hfCandDsD0Minis;
   Produces<aod::HfCandDsMcMinis> hfCandDsMcMinis;
@@ -592,10 +601,22 @@ struct HfTaskDs {
   template <typename Coll, typename Cand>
   void fillMiniTrees(const Cand& candidate, FinalState finalState)
   {
-    auto mass = finalState == FinalState::KKPi ? HfHelper::invMassDsToKKPi(candidate) : HfHelper::invMassDsToPiKK(candidate);
+    float mass{-1.f}, massKaKa{-1.f}, massKaFirstPi{-1.f}, massKaSecondPi{-1.f};
+    if (finalState == FinalState::KKPi) {
+      mass = HfHelper::invMassDsToKKPi(candidate);
+      massKaKa = HfHelper::massKKPairDsToKKPi(candidate);
+      massKaFirstPi = HfHelper::massKFirstPiPairDsToKKPi(candidate);
+      massKaSecondPi = HfHelper::massKSecondPiPairDsToKKPi(candidate);
+    } else {
+      mass = HfHelper::invMassDsToPiKK(candidate);
+      massKaKa = HfHelper::massKKPairDsToPiKK(candidate);
+      massKaFirstPi = HfHelper::massKFirstPiPairDsToPiKK(candidate);
+      massKaSecondPi = HfHelper::massKSecondPiPairDsToPiKK(candidate);
+    }
     auto pt = candidate.pt();
 
     hfCandDsMinis(mass, pt, evaluateCentralityCand<Coll>(candidate));
+    hfCandDsMassMinis(massKaKa, massKaFirstPi, massKaSecondPi);
     if (miniTrees.extendWithDecayLength) {
       hfCandDsDlMinis(candidate.decayLength(), candidate.decayLengthXY(), candidate.decayLengthNormalised(), candidate.decayLengthXYNormalised());
     }
@@ -607,10 +628,22 @@ struct HfTaskDs {
   template <typename Coll, typename Cand>
   void fillMiniTreesMc(const Cand& candidate, DataType dataType, FinalState finalState, const CandDsMcGen& mcParticles, int indexMother)
   {
-    auto mass = finalState == FinalState::KKPi ? HfHelper::invMassDsToKKPi(candidate) : HfHelper::invMassDsToPiKK(candidate);
+    float mass{-1.f}, massKaKa{-1.f}, massKaFirstPi{-1.f}, massKaSecondPi{-1.f};
+    if (finalState == FinalState::KKPi) {
+      mass = HfHelper::invMassDsToKKPi(candidate);
+      massKaKa = HfHelper::massKKPairDsToKKPi(candidate);
+      massKaFirstPi = HfHelper::massKFirstPiPairDsToKKPi(candidate);
+      massKaSecondPi = HfHelper::massKSecondPiPairDsToKKPi(candidate);
+    } else {
+      mass = HfHelper::invMassDsToPiKK(candidate);
+      massKaKa = HfHelper::massKKPairDsToPiKK(candidate);
+      massKaFirstPi = HfHelper::massKFirstPiPairDsToPiKK(candidate);
+      massKaSecondPi = HfHelper::massKSecondPiPairDsToPiKK(candidate);
+    }
     auto pt = candidate.pt();
 
     hfCandDsMinis(mass, pt, evaluateCentralityCand<Coll>(candidate));
+    hfCandDsMassMinis(massKaKa, massKaFirstPi, massKaSecondPi);
     if (miniTrees.extendWithDecayLength) {
       hfCandDsDlMinis(candidate.decayLength(), candidate.decayLengthXY(), candidate.decayLengthNormalised(), candidate.decayLengthXYNormalised());
     }

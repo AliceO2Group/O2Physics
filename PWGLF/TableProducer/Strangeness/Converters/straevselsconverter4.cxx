@@ -24,6 +24,7 @@ struct straevselsconverter4 {
 
   void process(aod::StraEvSels_003 const& straEvSels_003)
   {
+    straEvSels_004.reserve(straEvSels_003.size());
     for (auto& values : straEvSels_003) {
       straEvSels_004(values.sel8(),
                      values.selection_raw(),

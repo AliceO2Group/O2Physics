@@ -214,7 +214,7 @@ struct femtoDreamProducerReducedTask {
         } else if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
         } else if (motherparticleMC.isPhysicalPrimary() && particleMC.getProcess() == 4) {
-          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
+          particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode(), pdgCode);
         } else if (particleMC.getGenStatusCode() == -1) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
         } else {

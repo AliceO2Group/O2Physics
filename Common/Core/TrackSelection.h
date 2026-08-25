@@ -268,10 +268,10 @@ class TrackSelection
   bool mRequireTPCRefit{false};   // require refit in TPC
   bool mRequireGoldenChi2{false}; // require golden chi2 cut (Run 2 only)
 
-  // vector of ITS requirements (minNRequiredHits in specific requiredLayers)
-  std::vector<std::pair<int8_t, std::set<uint8_t>>> mRequiredITSHits{};
+  // vector of ITS requirements (minNRequiredHits, bitmask of requiredLayers)
+  std::vector<std::pair<int8_t, uint8_t>> mRequiredITSHits{};
 
-  ClassDefNV(TrackSelection, 1);
+  ClassDefNV(TrackSelection, 2);
 };
 
 #endif // COMMON_CORE_TRACKSELECTION_H_

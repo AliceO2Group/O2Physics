@@ -49,14 +49,14 @@ struct TOFResponseImpl {
   /// \note This function should be called in the init function of each task that uses the TOF response
   /// \note The parameters are loaded from the CCDB and stored in the static variable `parameters`
   /// \note The metadata information is also initialized in this function
-  void initSetup(o2::ccdb::BasicCCDBManager* ccdb, o2::framework::InitContext& initContext);
+  void initSetup(o2::ccdb::BasicCCDBManager* ccdb, o2::framework::InitContext& initContext, const std::string task = "tof-signal");
 
   /// Initialize the TOF response parameters in the init function of each task
   /// \param ccdb Service pointer to the CCDB manager
   template <typename T>
-  void initSetup(T ccdb, o2::framework::InitContext& initContext)
+  void initSetup(T ccdb, o2::framework::InitContext& initContext, const std::string task = "tof-signal")
   {
-    initSetup(ccdb.operator->(), initContext);
+    initSetup(ccdb.operator->(), initContext, task);
   }
 
   /// Initialize the TOF response parameters in the process function of each task, should be called only at least once per run

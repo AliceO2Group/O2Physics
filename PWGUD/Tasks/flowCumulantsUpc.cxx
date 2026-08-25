@@ -70,9 +70,11 @@ struct FlowCumulantsUpc {
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgIfVertex, bool, false, "choose vertex or not")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.1f, "Minimal pT for poi tracks")
+  O2_DEFINE_CONFIGURABLE(cfgPtCutMin, float, 0.2f, "minimum accepted track pT")
+  O2_DEFINE_CONFIGURABLE(cfgPtCutMax, float, 10.0f, "maximum accepted track pT")
+  O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMax, float, 10.0f, "Maximal pT for poi tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtRefMin, float, 0.1f, "Minimal pT for ref tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutPtRefMin, float, 0.2f, "Minimal pT for ref tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtRefMax, float, 3.0f, "Maximal pT for ref tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "max Eta range for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCCrossedRows, float, 70.0f, "minimum number of crossed TPC Rows")
@@ -92,10 +94,20 @@ struct FlowCumulantsUpc {
   O2_DEFINE_CONFIGURABLE(cfgGapSideC, bool, false, "only pass gapside C, otherwise pass A+C")
   O2_DEFINE_CONFIGURABLE(cfgGlobalTrack, bool, true, "require TPC+ITS track")
   O2_DEFINE_CONFIGURABLE(cfgUseNchCorrected, bool, true, "use corrected Nch for X axis")
+  O2_DEFINE_CONFIGURABLE(cfgRctFlagEnabled, bool, true, "use run condition table flag")
+  O2_DEFINE_CONFIGURABLE(cfgRctFlagIndex, int, 1, "1: isCBTOk; 2:isCBTZdcOk; 3: isCBTHadronOk; 4:isCBTHadronZdcOk ")
   O2_DEFINE_CONFIGURABLE(cfgDcaxy, bool, true, "choose dcaxy")
   O2_DEFINE_CONFIGURABLE(cfgDcaz, bool, false, "choose dcaz")
   O2_DEFINE_CONFIGURABLE(cfgDcazCut, float, 10.0, "dcaz cut")
   O2_DEFINE_CONFIGURABLE(cfgConsistentEventFlag, int, 0, "Flag to select consistent events - 0: off, 1: v2{2} gap calculable, 2: v2{4} full calculable, 4: v2{4} gap calculable, 8: v2{4} 3sub calculable")
+  O2_DEFINE_CONFIGURABLE(cfgZdcTime, bool, false, "choose zdc time cut")
+  O2_DEFINE_CONFIGURABLE(cfgZdcTimeCut, float, 2.0, "zdc time cut")
+  O2_DEFINE_CONFIGURABLE(cfgIRMaxCut, double, 50, "maximum interaction rate for UPC events")
+  O2_DEFINE_CONFIGURABLE(cfgMaxDebugEvents, int, -1, "Maximum number of events for debug (-1: all events)")
+  O2_DEFINE_CONFIGURABLE(cfgvtxITSTPC, bool, true, "require vertex from ITS+TPC")
+  O2_DEFINE_CONFIGURABLE(cfgsbp, bool, true, "require sbp")
+  O2_DEFINE_CONFIGURABLE(cfgitsROFb, bool, true, "require itsROFb")
+  O2_DEFINE_CONFIGURABLE(cfgtfb, bool, true, "require tfb")
 
   Configurable<std::vector<std::string>> cfgUserDefineGFWCorr{"cfgUserDefineGFWCorr", std::vector<std::string>{"refN02 {2} refP02 {-2}", "refN12 {2} refP12 {-2}"}, "User defined GFW CorrelatorConfig"};
   Configurable<std::vector<std::string>> cfgUserDefineGFWName{"cfgUserDefineGFWName", std::vector<std::string>{"Ch02Gap22", "Ch12Gap22"}, "User defined GFW Name"};
@@ -142,7 +154,7 @@ struct FlowCumulantsUpc {
   GFW* fGFWMC = new GFW();
   std::vector<GFW::CorrConfig> corrconfigs;
   std::vector<GFW::CorrConfig> corrconfigsmc;
-  TAxis* fPtAxis;
+  TAxis* fPtAxis = nullptr;
   TRandom3* fRndm = new TRandom3(0);
   TRandom3* fRndmMc = new TRandom3(0);
   int lastRunNumber = -1;
@@ -166,13 +178,20 @@ struct FlowCumulantsUpc {
 
     // Add some output objects to the histogram registry
     // Event QA
-    registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{6, 0, 6}}});
+    registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{13, 0, 13}}});
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "after gapside selection");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "after vertex selection");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "after occupancy");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(5, "after loadcorrection");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(6, "after consistency check");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "after gapside");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "after ZDC timing");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "after Vz");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(5, "after occupancy");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(6, "after load corr");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(7, "after vtxITSTPC");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(8, "after sbp");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(9, "after itsROFb");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(10, "after tfb");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(11, "after rct flag");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(12, "after consistency check");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(13, "after IR cut");
 
     registry.add("hTrackCount", "Number of tracks;; Count", {HistType::kTH1D, {{9, 0, 9}}});
     registry.get<TH1>(HIST("hTrackCount"))->GetXaxis()->SetBinLabel(1, "default UD tracks");
@@ -188,6 +207,9 @@ struct FlowCumulantsUpc {
     registry.add("hMultWoSel", "Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     registry.add("hMult", "Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     // Reco Track QA
+    registry.add("ZDCEnergy", "ZNA; ZNC; Count", {HistType::kTH2D, {{100, 0, 100}, {100, 0, 100}}});
+    registry.add("ZDCTime", "ZNA; ZNC; Count", {HistType::kTH2D, {{100, -10, 10}, {100, -10, 10}}});
+    registry.add("neutronClass", "ZNA; ZNC; Count", {HistType::kTH2D, {{2, 0, 2}, {2, 0, 2}}});
     registry.add("hPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
     registry.add("hPhiWeighted", "corrected #phi distribution", {HistType::kTH1D, {axisPhi}});
     registry.add("hEta", "#eta distribution", {HistType::kTH1D, {axisEta}});
@@ -201,6 +223,7 @@ struct FlowCumulantsUpc {
     registry.add("hDCAz", "DCAz after cuts; DCAz (cm); Pt", {HistType::kTH2D, {{200, -0.5, 0.5}, {200, 0, 5}}});
     registry.add("hDCAxy", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{200, -0.5, 0.5}, {200, 0, 5}}});
     registry.add("hTrackCorrection2d", "Correlation table for number of tracks table; uncorrected track; corrected track", {HistType::kTH2D, {axisNch, axisNch}});
+    registry.add("interactionRate", "kHz", {HistType::kTH1F, {{50, 0, 50, "kHz"}}});
     // Mc track QA
     registry.add("hPhiMC", "#phi distribution", {HistType::kTH1D, {axisPhi}});
     registry.add("hPhiWeightedMC", "corrected #phi distribution", {HistType::kTH1D, {axisPhi}});
@@ -281,9 +304,20 @@ struct FlowCumulantsUpc {
       oba->Add(new TNamed(Form("Ch10Gap24_pt_%i", i + 1), "Ch10Gap24_pTDiff"));
     std::vector<std::string> userDefineGFWCorr = cfgUserDefineGFWCorr;
     std::vector<std::string> userDefineGFWName = cfgUserDefineGFWName;
+    if (userDefineGFWName.size() != userDefineGFWCorr.size()) {
+      LOGF(fatal, "The GFWConfig names you provided are NOT matching with configurations. userDefineGFWName.size(): %d, userDefineGFWCorr.size(): %d", userDefineGFWName.size(), userDefineGFWCorr.size());
+    }
+    LOGF(info, "User adding FlowContainer Array:");
     if (!userDefineGFWCorr.empty() && !userDefineGFWName.empty()) {
       for (uint i = 0; i < userDefineGFWName.size(); i++) {
-        oba->Add(new TNamed(userDefineGFWName.at(i).c_str(), userDefineGFWName.at(i).c_str()));
+        if (userDefineGFWCorr.at(i).find("poi") != std::string::npos) {
+          LOGF(info, "%d: pT-diff array %s", i, userDefineGFWName.at(i).c_str());
+          for (auto iPt = 0; iPt < fPtAxis->GetNbins(); iPt++)
+            oba->Add(new TNamed(Form("%s_pt_%i", userDefineGFWName.at(i).c_str(), iPt + 1), Form("%s_pTDiff", userDefineGFWName.at(i).c_str())));
+        } else {
+          LOGF(info, "%d: %s", i, userDefineGFWName.at(i).c_str());
+          oba->Add(new TNamed(userDefineGFWName.at(i).c_str(), userDefineGFWName.at(i).c_str()));
+        }
       }
     }
     fFC->SetName("FlowContainer");
@@ -318,10 +352,24 @@ struct FlowCumulantsUpc {
     fGFW->AddRegion("refP", 0.4, maxEta, 1, 1);
     fGFW->AddRegion("refM", -0.4, 0.4, 1, 1);
     fGFW->AddRegion("poiN", minEta, -0.4, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN00", minEta, 0., 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN02", minEta, -0.1, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN04", minEta, -0.2, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN06", minEta, -0.3, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN08", minEta, -0.4, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("poiN10", minEta, -0.5, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN12", minEta, -0.6, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN14", minEta, -0.7, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("poifull", minEta, maxEta, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("olN", minEta, -0.4, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN00", minEta, 0., 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN02", minEta, -0.1, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN04", minEta, -0.2, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN06", minEta, -0.3, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN08", minEta, -0.4, 1 + fPtAxis->GetNbins(), 4);
     fGFW->AddRegion("olN10", minEta, -0.5, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN12", minEta, -0.6, 1 + fPtAxis->GetNbins(), 4);
+    fGFW->AddRegion("olN14", minEta, -0.7, 1 + fPtAxis->GetNbins(), 4);
     fGFW->AddRegion("olfull", minEta, maxEta, 1 + fPtAxis->GetNbins(), 4);
 
     // eta region for MC, can be different from data to study the effect of acceptance
@@ -346,10 +394,24 @@ struct FlowCumulantsUpc {
     fGFWMC->AddRegion("refP", 0.4, maxEta, 1, 1);
     fGFWMC->AddRegion("refM", -0.4, 0.4, 1, 1);
     fGFWMC->AddRegion("poiN", minEta, -0.4, 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN00", minEta, 0., 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN02", minEta, -0.1, 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN04", minEta, -0.2, 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN06", minEta, -0.3, 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN08", minEta, -0.4, 1 + fPtAxis->GetNbins(), 2);
     fGFWMC->AddRegion("poiN10", minEta, -0.5, 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN12", minEta, -0.6, 1 + fPtAxis->GetNbins(), 2);
+    fGFWMC->AddRegion("poiN14", minEta, -0.7, 1 + fPtAxis->GetNbins(), 2);
     fGFWMC->AddRegion("poifull", minEta, maxEta, 1 + fPtAxis->GetNbins(), 2);
     fGFWMC->AddRegion("olN", minEta, -0.4, 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN00", minEta, 0., 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN02", minEta, -0.1, 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN04", minEta, -0.2, 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN06", minEta, -0.3, 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN08", minEta, -0.4, 1 + fPtAxis->GetNbins(), 4);
     fGFWMC->AddRegion("olN10", minEta, -0.5, 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN12", minEta, -0.6, 1 + fPtAxis->GetNbins(), 4);
+    fGFWMC->AddRegion("olN14", minEta, -0.7, 1 + fPtAxis->GetNbins(), 4);
     fGFWMC->AddRegion("olfull", minEta, maxEta, 1 + fPtAxis->GetNbins(), 4);
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
@@ -527,9 +589,9 @@ struct FlowCumulantsUpc {
     if (cfgAcceptance.value.empty() == false) {
       mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance, timestamp);
       if (mAcceptance) {
-        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
+        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), static_cast<void*>(mAcceptance));
       } else {
-        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
+        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), static_cast<void*>(mAcceptance));
       }
     }
     if (cfgEfficiency.value.empty() == false) {
@@ -537,7 +599,7 @@ struct FlowCumulantsUpc {
       if (mEfficiency == nullptr) {
         LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
       }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), static_cast<void*>(mEfficiency));
     }
     correctionsLoaded = true;
   }
@@ -560,10 +622,30 @@ struct FlowCumulantsUpc {
     return true;
   }
 
+  template <typename C>
+  bool isGoodRctFlag(const C& collision)
+  {
+    switch (cfgRctFlagIndex) {
+      case 1:
+        return sgSelector.isCBTOk(collision);
+      case 2:
+        return sgSelector.isCBTZdcOk(collision);
+      case 3:
+        return sgSelector.isCBTHadronOk(collision);
+      case 4:
+        return sgSelector.isCBTHadronZdcOk(collision);
+      default:
+        return true;
+    }
+  }
+
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
     registry.fill(HIST("hTrackCount"), 0.5);
+    if (track.pt() < cfgPtCutMin || track.pt() > cfgPtCutMax) {
+      return false;
+    }
     // UPC selection
     if (!track.isPVContributor()) {
       return false;
@@ -636,6 +718,53 @@ struct FlowCumulantsUpc {
       return;
     }
     registry.fill(HIST("hEventCount"), 1.5);
+
+    // zdc time cut
+    int neutronClass = -1;
+    float energyCommonZNA = collision.energyCommonZNA(), energyCommonZNC = collision.energyCommonZNC();
+    float timeZNA = collision.timeZNA(), timeZNC = collision.timeZNC();
+    if (std::isinf(energyCommonZNA))
+      energyCommonZNA = -999;
+    if (std::isinf(energyCommonZNC))
+      energyCommonZNC = -999;
+    if (std::isinf(timeZNA))
+      timeZNA = -999;
+    if (std::isinf(timeZNC))
+      timeZNC = -999;
+    registry.fill(HIST("ZDCEnergy"), energyCommonZNC, energyCommonZNA);
+    registry.fill(HIST("ZDCTime"), timeZNC, timeZNA);
+    if (std::abs(timeZNA) > cfgZdcTimeCut && std::abs(timeZNC) > cfgZdcTimeCut) {
+      neutronClass = 0;
+      registry.fill(HIST("neutronClass"), 0, 0);
+    }
+    if (std::abs(timeZNA) <= cfgZdcTimeCut && std::abs(timeZNC) > cfgZdcTimeCut) {
+      neutronClass = 1;
+      registry.fill(HIST("neutronClass"), 0, 1);
+    }
+    if (std::abs(timeZNA) > cfgZdcTimeCut && std::abs(timeZNC) <= cfgZdcTimeCut) {
+      neutronClass = 2;
+      registry.fill(HIST("neutronClass"), 1, 0);
+    }
+    if (std::abs(timeZNA) <= cfgZdcTimeCut && std::abs(timeZNC) <= cfgZdcTimeCut) {
+      neutronClass = 3;
+      registry.fill(HIST("neutronClass"), 1, 1);
+    }
+    if (cfgZdcTime) {
+      // reject 0n0n and XnXn
+      if (neutronClass == 0 || neutronClass == 3) { // o2-linter: disable=magic-number (ZDC time cut)
+        return;
+      }
+      // if A or C gap is requested, keep corresponding neutron class
+      if (cfgGapSideA || cfgGapSideC) {
+        if ((cfgGapSideA && neutronClass == 1) || (cfgGapSideC && neutronClass == 2)) { // o2-linter: disable=magic-number (ZDC time cut)
+          // accepted
+        } else {
+          return;
+        }
+      }
+    }
+    registry.fill(HIST("hEventCount"), 2.5);
+
     float lRandom = fRndm->Rndm();
     float vtxz = collision.posZ();
     registry.fill(HIST("hVtxZ"), vtxz);
@@ -644,12 +773,12 @@ struct FlowCumulantsUpc {
     if (cfgIfVertex && std::abs(vtxz) > cfgCutVertex) {
       return;
     }
-    registry.fill(HIST("hEventCount"), 2.5);
+    registry.fill(HIST("hEventCount"), 3.5);
     int occupancy = collision.occupancyInTime();
     if (cfgEvSelOccupancy && (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh)) {
       return;
     }
-    registry.fill(HIST("hEventCount"), 3.5);
+    registry.fill(HIST("hEventCount"), 4.5);
 
     auto currentRunNumber = collision.runNumber();
     auto runDuration = ccdb->getRunDuration(currentRunNumber);
@@ -667,7 +796,29 @@ struct FlowCumulantsUpc {
         return;
       }
     }
-    registry.fill(HIST("hEventCount"), 4.5);
+    registry.fill(HIST("hEventCount"), 5.5);
+    if (cfgvtxITSTPC && !collision.vtxITSTPC()) {
+      return;
+    }
+    registry.fill(HIST("hEventCount"), 6.5);
+    if (cfgsbp && !collision.sbp()) {
+      return;
+    }
+    registry.fill(HIST("hEventCount"), 7.5);
+    if (cfgitsROFb && !collision.itsROFb()) {
+      return;
+    }
+    registry.fill(HIST("hEventCount"), 8.5);
+    if (cfgtfb && !collision.tfb()) {
+      return;
+    }
+    registry.fill(HIST("hEventCount"), 9.5);
+
+    if (cfgRctFlagEnabled) {
+      if (!isGoodRctFlag(collision)) // check RCT flags
+        return;
+      registry.fill(HIST("hEventCount"), 10.5);
+    }
 
     // // track weights
     float weff = 1, wacc = 1;
@@ -728,8 +879,6 @@ struct FlowCumulantsUpc {
         registry.fill(HIST("hDCAxy"), track.dcaXY(), track.pt());
         nTracksRaw += 1.;
         nTracksCorrected += weff;
-      }
-      if (withinPtRef) {
         fGFW->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 1);
       }
       if (withinPtPOI) {
@@ -762,7 +911,12 @@ struct FlowCumulantsUpc {
           return;
       }
     }
-    registry.fill(HIST("hEventCount"), 5.5);
+    registry.fill(HIST("hEventCount"), 11.5);
+    if (collision.hadronicRate() > cfgIRMaxCut) {
+      return;
+    }
+    registry.fill(HIST("interactionRate"), collision.hadronicRate());
+    registry.fill(HIST("hEventCount"), 12.5);
 
     // Filling Flow Container
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
@@ -829,8 +983,6 @@ struct FlowCumulantsUpc {
         registry.fill(HIST("hEtaMC"), eta);
         registry.fill(HIST("hPtRefMC"), pt);
         nTracksCorrected += weff;
-      }
-      if (withinPtRef) {
         fGFWMC->Fill(eta, fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 1);
       }
       if (withinPtPOI) {

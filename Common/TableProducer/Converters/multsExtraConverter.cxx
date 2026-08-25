@@ -23,6 +23,7 @@ struct MultsExtraConverter {
   Produces<aod::MultsExtra_001> multsExtra_001;
   void process(aod::MultsExtra_000 const& multsExtra_000)
   {
+    multsExtra_001.reserve(multsExtra_000.size());
     for (const auto& r : multsExtra_000) {
       multsExtra_001(r.multPVTotalContributors(), r.multPVChi2(),
                      r.multCollisionTimeRes(), r.multRunNumber(), r.multPVz(), r.multSel8(),

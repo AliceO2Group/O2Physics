@@ -76,6 +76,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::genericframework;
+using namespace o2::analysis::genericframework::eventweight;
 using namespace o2::aod::rctsel;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
@@ -158,6 +159,7 @@ struct FlowTask {
     O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
     O2_DEFINE_CONFIGURABLE(cfgEfficiencyForNch, std::string, "", "CCDB path to efficiency object, only for Nch correction")
     O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
+    O2_DEFINE_CONFIGURABLE(cfgUserPtVnEvWeightEnabled, bool, false, "0: use unity weight; 1: use multiplicity weight")
     O2_DEFINE_CONFIGURABLE(cfgUseSmallMemory, bool, false, "Use small memory mode")
     O2_DEFINE_CONFIGURABLE(cfgConsistentEventFlag, int, 0, "Flag to select consistent events - 0: off, 1: v2{2} gap calculable, 2: v2{4} full calculable, 4: v2{4} gap calculable, 8: v2{4} 3sub calculable")
     Configurable<std::vector<float>> cfgConsistentEventVector{"cfgConsistentEventVector", std::vector<float>{-0.8, -0.5, -0.4, 0.4, 0.5, 0.8}, "eta regions: left(min,max), mid(min,max), right(min,max)"};
@@ -659,6 +661,10 @@ struct FlowTask {
     gfwConfigs.Print();
     fFCpt->setUseCentralMoments(cfgUseCentralMoments);
     fFCpt->setUseGapMethod(true);
+    if (!cfgUserIO.cfgUserPtVnEvWeightEnabled)
+      fFCpt->setEventWeight(EventWeight::UnityWeight);
+    else
+      fFCpt->setEventWeight(EventWeight::TupleWeight);
     fFCpt->initialise(axisIndependent, cfgMpar, gfwConfigs, cfgNbootstrap);
     if (cfgEtaGapPtPtEnabled) {
       for (int i = 0; i < 4; ++i) { // o2-linter: disable=magic-number (maximum of 4 subevents)
@@ -677,6 +683,10 @@ struct FlowTask {
     if (doprocessMCGen) {
       fFCptgen->setUseCentralMoments(cfgUseCentralMoments);
       fFCptgen->setUseGapMethod(true);
+      if (!cfgUserIO.cfgUserPtVnEvWeightEnabled)
+        fFCptgen->setEventWeight(EventWeight::UnityWeight);
+      else
+        fFCptgen->setEventWeight(EventWeight::TupleWeight);
       fFCptgen->initialise(axisIndependent, cfgMpar, gfwConfigs, cfgNbootstrap);
       if (cfgEtaGapPtPtEnabled)
         fFCptgen->initialiseSubevent(axisIndependent, cfgMpar, etagapsPtPt.size(), cfgNbootstrap);
@@ -1281,6 +1291,7 @@ struct FlowTask {
     double nTracksCorrected = 0;
     int magnetfield = 0;
     float independent = cent;
+    float nTracksUncorrected = 0;
     if (cfgUseNch)
       independent = static_cast<float>(tracks.size());
     if (cfgFuncParas.cfgShowTPCsectorOverlap) {
@@ -1324,6 +1335,7 @@ struct FlowTask {
     for (const auto& track : tracks) {
       if (trackSelectedForNch(track) && setNchEffWeights(weffForNch, track.pt())) {
         nTracksCorrected += weffForNch;
+        nTracksUncorrected++;
       }
       if (!trackSelected(track))
         continue;
@@ -1414,7 +1426,7 @@ struct FlowTask {
       if (!cfgUsePtRef && withinPtPOI)
         fillPtSums<kReco>(track, weff);
     }
-    registry.fill(HIST("hTrackCorrection2d"), tracks.size(), nTracksCorrected);
+    registry.fill(HIST("hTrackCorrection2d"), nTracksUncorrected, nTracksCorrected);
     if (cfgUseNch && cfgUseNchCorrected) {
       independent = nTracksCorrected;
     }

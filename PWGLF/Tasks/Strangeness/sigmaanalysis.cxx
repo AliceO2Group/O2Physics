@@ -1835,45 +1835,45 @@ struct sigmaanalysis {
     }
   }
 
-  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, Sigma0s const& fullSigma0s)
+  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps> const& collisions, Sigma0s const& fullSigma0s)
   {
     analyzeRecoeSigma0s(collisions, fullSigma0s);
   }
 
-  void processRealDataWithEMCal(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, Sigma0sWithEMCal const& fullSigma0s)
+  void processRealDataWithEMCal(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps> const& collisions, Sigma0sWithEMCal const& fullSigma0s)
   {
     analyzeRecoeSigma0s(collisions, fullSigma0s);
   }
 
-  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, MCSigma0s const& fullSigma0s)
+  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps, aod::StraCollLabels> const& collisions, MCSigma0s const& fullSigma0s)
   {
     analyzeRecoeSigma0s(collisions, fullSigma0s);
   }
 
-  void processMonteCarloWithEMCal(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, MCSigma0sWithEMCal const& fullSigma0s)
+  void processMonteCarloWithEMCal(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps, aod::StraCollLabels> const& collisions, MCSigma0sWithEMCal const& fullSigma0s)
   {
     analyzeRecoeSigma0s(collisions, fullSigma0s);
   }
 
   // Simulated processing in Run 3
-  void processGeneratedRun3(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mcCollisions, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, soa::Join<aod::Sigma0Gens, aod::SigmaGenCollRef> const& Sigma0Gens)
+  void processGeneratedRun3(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mcCollisions, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps, aod::StraCollLabels> const& collisions, soa::Join<aod::Sigma0Gens, aod::SigmaGenCollRef> const& Sigma0Gens)
   {
     analyzeGenerated(mcCollisions, collisions, Sigma0Gens);
   }
 
   // _____________________________________________________
   // Pi0 QA
-  void processPi0RealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps> const& collisions, soa::Join<aod::Pi0Cores, aod::Pi0CollRef> const& fullPi0s)
+  void processPi0RealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps> const& collisions, soa::Join<aod::Pi0Cores, aod::Pi0CollRef> const& fullPi0s)
   {
     analyzeRecoePi0s(collisions, fullPi0s);
   }
 
-  void processPi0MonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, soa::Join<aod::Pi0Cores, aod::Pi0CoresMC, aod::Pi0CollRef> const& fullPi0s)
+  void processPi0MonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps, aod::StraCollLabels> const& collisions, soa::Join<aod::Pi0Cores, aod::Pi0CoresMC, aod::Pi0CollRef> const& fullPi0s)
   {
     analyzeRecoePi0s(collisions, fullPi0s);
   }
 
-  void processPi0GeneratedRun3(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mcCollisions, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels> const& collisions, soa::Join<aod::Pi0Gens, aod::Pi0GenCollRef> const& Pi0Gens)
+  void processPi0GeneratedRun3(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mcCollisions, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps, aod::StraCollLabels> const& collisions, soa::Join<aod::Pi0Gens, aod::Pi0GenCollRef> const& Pi0Gens)
   {
     analyzeGenerated(mcCollisions, collisions, Pi0Gens);
   }

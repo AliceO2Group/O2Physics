@@ -61,7 +61,7 @@ double EventPlaneHelper::GetPhiFV0(int chno, o2::fv0::Geometry* fv0geom)
   return TMath::ATan2(chPos.y + offsetY, chPos.x + offsetX);
 }
 
-double EventPlaneHelper::GetPhiFT0(int chno, o2::ft0::Geometry ft0geom)
+double EventPlaneHelper::GetPhiFT0(int chno, const o2::ft0::Geometry& ft0geom)
 {
   /* Calculate the azimuthal angle in FT0 for the channel number 'chno'. The offset
     of FT0-A is taken into account if chno is between 0 and 95. */
@@ -74,14 +74,12 @@ double EventPlaneHelper::GetPhiFT0(int chno, o2::ft0::Geometry ft0geom)
     offsetY = mOffsetFT0AY;
   }
 
-  ft0geom.calculateChannelCenter();
   auto chPos = ft0geom.getChannelCenter(chno);
-  /// printf("Channel id: %d X: %.3f Y: %.3f\n", chno, chPos.X(), chPos.Y());
 
   return TMath::ATan2(chPos.Y() + offsetY, chPos.X() + offsetX);
 }
 
-void EventPlaneHelper::SumQvectors(int det, int chno, float ampl, int nmod, TComplex& Qvec, float& sum, o2::ft0::Geometry ft0geom, o2::fv0::Geometry* fv0geom)
+void EventPlaneHelper::SumQvectors(int det, int chno, float ampl, int nmod, TComplex& Qvec, float& sum, const o2::ft0::Geometry& ft0geom, o2::fv0::Geometry* fv0geom)
 {
   /* Calculate the complex Q-vector for the provided detector and channel number,
     before adding it to the total Q-vector given as argument. */

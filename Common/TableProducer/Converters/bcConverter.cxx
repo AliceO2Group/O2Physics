@@ -24,6 +24,7 @@ struct bcConverter {
 
   void process(aod::BCs_000 const& bcTable)
   {
+    bc_001.reserve(bcTable.size());
     for (auto& bc : bcTable) {
       constexpr uint64_t lEmptyTriggerInputs = 0;
       bc_001(bc.runNumber(), bc.globalBC(), bc.triggerMask(), lEmptyTriggerInputs);

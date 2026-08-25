@@ -213,6 +213,7 @@ struct hyperRecoTask {
   Configurable<float> nTPCCrossedRowsMinHe{"nTPCCrossedRowsMinHe", 70, "helium minimum crossed rows"};
   Configurable<float> nTPCCrossedRowsMinPi{"nTPCCrossedRowsMinPi", -1., "pion minimum crossed rows"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
+  Configurable<bool> useLikeSignPairs{"useLikeSignPairs", false, "If true, reconstruct like-sign pairs for background estimation. Does not work with processDataTracked"};
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Skimmed dataset processing"};
   Configurable<bool> isEventUsedForEPCalibration{"isEventUsedForEPCalibration", 1, "Event is used for EP calibration"};
 
@@ -768,7 +769,7 @@ struct hyperRecoTask {
 
       svCreator.appendTrackCand(track, collisions, pdgHypo, ambiguousTracks, bcs);
     }
-    auto& svPool = svCreator.getSVCandPool(collisions);
+    auto& svPool = svCreator.getSVCandPool(collisions, useLikeSignPairs);
     LOG(debug) << "SV pool size: " << svPool.size();
 
     for (const auto& svCand : svPool) {
@@ -963,22 +964,25 @@ struct hyperRecoTask {
     // now we fill only the signal candidates that were not reconstructed
     for (const auto& mcPart : particlesMC) {
 
-      if (std::abs(mcPart.pdgCode()) != hyperPdg)
+      if (std::abs(mcPart.pdgCode()) != hyperPdg) {
         continue;
-      std::array<float, 3> secVtx;
+      }
+      std::array<float, 3> secVtx{0.f, 0.f, 0.f};
+      std::array<float, 3> lastDaugVtx{0.f, 0.f, 0.f};
       std::array<float, 3> primVtx = {mcPart.vx(), mcPart.vy(), mcPart.vz()};
       std::array<float, 3> momMother = {mcPart.px(), mcPart.py(), mcPart.pz()};
-      std::array<float, 3> momHe3;
+      std::array<float, 3> momHe3{0.f, 0.f, 0.f};
       bool isHeFound = false;
       int mcProcess = {0};
       for (const auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
+        if (mcDaught.pdgCode() != PDG_t::kElectron) { // we do not care about delta electrons
+          lastDaugVtx = {mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
+          mcProcess = mcDaught.getProcess();
+        }
         if (std::abs(mcDaught.pdgCode()) == heDauPdg) {
-          secVtx = {mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
+          secVtx = lastDaugVtx;
           momHe3 = {mcDaught.px(), mcDaught.py(), mcDaught.pz()};
           isHeFound = true;
-        }
-        if (mcDaught.pdgCode() != PDG_t::kElectron) { // we do not care about delta electrons
-          mcProcess = mcDaught.getProcess();
         }
       }
       if (mcPart.pdgCode() > 0) {
@@ -1004,7 +1008,7 @@ struct hyperRecoTask {
       hypCand.isSurvEvSelection = isSurvEvSelCollision[mcPart.mcCollisionId()];
       int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
       for (int i = 0; i < 3; i++) {
-        hypCand.gDecVtx[i] = secVtx[i] - primVtx[i];
+        hypCand.gDecVtx[i] = (isHeFound ? secVtx[i] : lastDaugVtx[i]) - primVtx[i];
         hypCand.gMom[i] = momMother[i];
         hypCand.gMomHe3[i] = momHe3[i];
       }

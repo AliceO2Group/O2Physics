@@ -33,6 +33,7 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+#include <GPU/GPUROOTCartesianFwd.h>
 #include <MathUtils/BetheBlochAleph.h>
 #include <ReconstructionDataFormats/Track.h>
 
@@ -41,8 +42,6 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <TString.h>
-
-#include <GPUROOTCartesianFwd.h>
 
 #include <array>
 #include <cmath>

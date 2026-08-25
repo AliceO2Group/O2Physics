@@ -43,20 +43,34 @@ DECLARE_SOA_COLUMN(DcaxyNu, dcaxyNu, float);
 DECLARE_SOA_COLUMN(DcazNu, dcazNu, float);
 DECLARE_SOA_COLUMN(DcaxyHad, dcaxyHad, float);
 DECLARE_SOA_COLUMN(DcazHad, dcazHad, float);
+DECLARE_SOA_COLUMN(DcaPair, dcaPair, float);
 
 DECLARE_SOA_COLUMN(SignalTPCNu, signalTPCNu, float);
 DECLARE_SOA_COLUMN(InnerParamTPCNu, innerParamTPCNu, float);
 DECLARE_SOA_COLUMN(SignalTPCHad, signalTPCHad, float);
 DECLARE_SOA_COLUMN(InnerParamTPCHad, innerParamTPCHad, float);
 DECLARE_SOA_COLUMN(NClsTPCNu, nClsTPCNu, uint8_t);
+DECLARE_SOA_COLUMN(NClsTPCHad, nClsTPCHad, uint8_t);
+DECLARE_SOA_COLUMN(NCrossedRowsTPCNu, nCrossedRowsTPCNu, uint8_t);
+DECLARE_SOA_COLUMN(NCrossedRowsTPCHad, nCrossedRowsTPCHad, uint8_t);
 DECLARE_SOA_COLUMN(NSigmaTPCNu, nSigmaTPCNu, float);
 DECLARE_SOA_COLUMN(NSigmaTPCHad, nSigmaTPCHad, float);
+DECLARE_SOA_COLUMN(NSigmaTOFNu, nSigmaTOFNu, float);
+DECLARE_SOA_COLUMN(NSigmaITSNu, nSigmaITSNu, float);
+DECLARE_SOA_COLUMN(NSigmaTOFHad, nSigmaTOFHad, float);
+DECLARE_SOA_COLUMN(NSigmaITSHad, nSigmaITSHad, float);
+DECLARE_SOA_COLUMN(NSigmaTPCHadPi, nSigmaTPCHadPi, float);
+DECLARE_SOA_COLUMN(NSigmaTPCHadKa, nSigmaTPCHadKa, float);
+DECLARE_SOA_COLUMN(NSigmaTPCHadPr, nSigmaTPCHadPr, float);
+DECLARE_SOA_COLUMN(NSigmaTOFHadPi, nSigmaTOFHadPi, float);
+DECLARE_SOA_COLUMN(NSigmaTOFHadKa, nSigmaTOFHadKa, float);
+DECLARE_SOA_COLUMN(NSigmaTOFHadPr, nSigmaTOFHadPr, float);
 DECLARE_SOA_COLUMN(Chi2TPCNu, chi2TPCNu, float);
 DECLARE_SOA_COLUMN(Chi2TPCHad, chi2TPCHad, float);
 DECLARE_SOA_COLUMN(MassTOFNu, massTOFNu, float);
 DECLARE_SOA_COLUMN(MassTOFHad, massTOFHad, float);
-DECLARE_SOA_COLUMN(HaddTrkNu, pidTrkNu, uint32_t);
-DECLARE_SOA_COLUMN(HaddTrkHad, pidTrkHad, uint32_t);
+DECLARE_SOA_COLUMN(PidTrkNu, pidTrkNu, uint32_t);
+DECLARE_SOA_COLUMN(PidTrkHad, pidTrkHad, uint32_t);
 DECLARE_SOA_COLUMN(TrackIDHad, trackIDHad, int);
 DECLARE_SOA_COLUMN(TrackIDNu, trackIDNu, int);
 
@@ -65,6 +79,26 @@ DECLARE_SOA_COLUMN(ItsClusterSizeHad, itsClusterSizeHad, uint32_t);
 
 DECLARE_SOA_COLUMN(SharedClustersNu, sharedClustersNu, uint8_t);
 DECLARE_SOA_COLUMN(SharedClustersHad, sharedClustersHad, uint8_t);
+
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
+
+// Reconstructed-MC pair information. The signed generated pT follows the
+// convention used by PtNu/PtHad: particles are positive and antiparticles
+// are negative.
+DECLARE_SOA_COLUMN(PtNuMC, ptNuMC, float);
+DECLARE_SOA_COLUMN(EtaNuMC, etaNuMC, float);
+DECLARE_SOA_COLUMN(PhiNuMC, phiNuMC, float);
+DECLARE_SOA_COLUMN(PtHadMC, ptHadMC, float);
+DECLARE_SOA_COLUMN(EtaHadMC, etaHadMC, float);
+DECLARE_SOA_COLUMN(PhiHadMC, phiHadMC, float);
+DECLARE_SOA_COLUMN(KstarMC, kstarMC, float);
+DECLARE_SOA_COLUMN(PdgCodeNuMC, pdgCodeNuMC, int32_t);
+DECLARE_SOA_COLUMN(PdgCodeHadMC, pdgCodeHadMC, int32_t);
+DECLARE_SOA_COLUMN(IsPhysicalPrimaryNuMC, isPhysicalPrimaryNuMC, bool);
+DECLARE_SOA_COLUMN(IsPhysicalPrimaryHadMC, isPhysicalPrimaryHadMC, bool);
+DECLARE_SOA_COLUMN(SameMCCollision, sameMCCollision, bool);
+DECLARE_SOA_COLUMN(MatchesRecoMCCollision, matchesRecoMCCollision, bool);
 
 DECLARE_SOA_COLUMN(IsBkgUS, isBkgUS, bool);
 DECLARE_SOA_COLUMN(IsBkgEM, isBkgEM, bool);
@@ -78,12 +112,63 @@ DECLARE_SOA_COLUMN(MultiplicityFT0C, multiplicityFT0C, float);
 } // namespace hadron_nuclei_tables
 
 DECLARE_SOA_TABLE(HadronNucleiTable, "AOD", "HADNUCLEITABLE",
-                  hadron_nuclei_tables::PtHad,
                   hadron_nuclei_tables::PtNu,
-                  hadron_nuclei_tables::InnerParamTPCHad,
+                  hadron_nuclei_tables::EtaNu,
+                  hadron_nuclei_tables::PhiNu,
+                  hadron_nuclei_tables::PtHad,
+                  hadron_nuclei_tables::EtaHad,
+                  hadron_nuclei_tables::PhiHad,
+                  hadron_nuclei_tables::DcaxyNu,
+                  hadron_nuclei_tables::DcazNu,
+                  hadron_nuclei_tables::DcaxyHad,
+                  hadron_nuclei_tables::DcazHad,
+                  hadron_nuclei_tables::DcaPair,
+                  hadron_nuclei_tables::SignalTPCNu,
                   hadron_nuclei_tables::InnerParamTPCNu,
-                  hadron_nuclei_tables::TrackIDHad,
-                  hadron_nuclei_tables::TrackIDNu)
+                  hadron_nuclei_tables::SignalTPCHad,
+                  hadron_nuclei_tables::InnerParamTPCHad,
+                  hadron_nuclei_tables::NClsTPCNu,
+                  hadron_nuclei_tables::NClsTPCHad,
+                  hadron_nuclei_tables::NCrossedRowsTPCNu,
+                  hadron_nuclei_tables::NCrossedRowsTPCHad,
+                  hadron_nuclei_tables::NSigmaTPCNu,
+                  hadron_nuclei_tables::NSigmaTPCHadPi,
+                  hadron_nuclei_tables::NSigmaTPCHadKa,
+                  hadron_nuclei_tables::NSigmaTPCHadPr,
+                  hadron_nuclei_tables::NSigmaTOFHadPi,
+                  hadron_nuclei_tables::NSigmaTOFHadKa,
+                  hadron_nuclei_tables::NSigmaTOFHadPr,
+                  hadron_nuclei_tables::Chi2TPCNu,
+                  hadron_nuclei_tables::Chi2TPCHad,
+                  hadron_nuclei_tables::MassTOFNu,
+                  hadron_nuclei_tables::MassTOFHad,
+                  hadron_nuclei_tables::PidTrkNu,
+                  hadron_nuclei_tables::PidTrkHad,
+                  hadron_nuclei_tables::ItsClusterSizeNu,
+                  hadron_nuclei_tables::ItsClusterSizeHad,
+                  hadron_nuclei_tables::SharedClustersNu,
+                  hadron_nuclei_tables::SharedClustersHad,
+                  hadron_nuclei_tables::DeltaEta,
+                  hadron_nuclei_tables::DeltaPhi,
+                  hadron_nuclei_tables::NSigmaTPCHad,
+                  hadron_nuclei_tables::NSigmaTOFNu,
+                  hadron_nuclei_tables::NSigmaITSNu,
+                  hadron_nuclei_tables::NSigmaTOFHad,
+                  hadron_nuclei_tables::NSigmaITSHad)
+DECLARE_SOA_TABLE(HadronNucleiTableMC, "AOD", "HADNUCLEIMC",
+                  hadron_nuclei_tables::PtNuMC,
+                  hadron_nuclei_tables::EtaNuMC,
+                  hadron_nuclei_tables::PhiNuMC,
+                  hadron_nuclei_tables::PtHadMC,
+                  hadron_nuclei_tables::EtaHadMC,
+                  hadron_nuclei_tables::PhiHadMC,
+                  hadron_nuclei_tables::KstarMC,
+                  hadron_nuclei_tables::PdgCodeNuMC,
+                  hadron_nuclei_tables::PdgCodeHadMC,
+                  hadron_nuclei_tables::IsPhysicalPrimaryNuMC,
+                  hadron_nuclei_tables::IsPhysicalPrimaryHadMC,
+                  hadron_nuclei_tables::SameMCCollision,
+                  hadron_nuclei_tables::MatchesRecoMCCollision)
 DECLARE_SOA_TABLE(HadronHyperTable, "AOD", "HADHYPERTABLE",
                   hadron_nuclei_tables::PtHyp,
                   hadron_nuclei_tables::EtaHyp,
@@ -103,7 +188,7 @@ DECLARE_SOA_TABLE(HadronHyperTable, "AOD", "HADHYPERTABLE",
                   hadron_nuclei_tables::Chi2TPCHad,
                   hadron_nuclei_tables::Chi2TPCNu,
                   hadron_nuclei_tables::MassTOFHad,
-                  hadron_nuclei_tables::HaddTrkHad,
+                  hadron_nuclei_tables::PidTrkHad,
                   hadron_nuclei_tables::ItsClusterSizeHad,
                   hadron_nuclei_tables::ItsClusterSizeNu,
                   hadron_nuclei_tables::SharedClustersHad,

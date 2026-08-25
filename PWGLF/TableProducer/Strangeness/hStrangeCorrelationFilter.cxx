@@ -50,7 +50,10 @@
 #include <TList.h>
 #include <TPDGCode.h>
 
+#include <Rtypes.h>
+
 #include <cmath>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -59,12 +62,9 @@ using namespace o2::constants::math;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-#define BIT_SET(var, nbit) ((var) |= (1 << (nbit)))
-#define BIT_CHECK(var, nbit) ((var) & (1 << (nbit)))
-
 struct HStrangeCorrelationFilter {
-  const float ctauxi = 4.91;     // from PDG
-  const float ctauomega = 2.461; // from PDG
+  static constexpr float Xictau = 4.91;     // from PDG
+  static constexpr float Omegactau = 2.461; // from PDG
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -123,6 +123,8 @@ struct HStrangeCorrelationFilter {
     Configurable<bool> assocRequireITS{"assocRequireITS", true, "require ITS signal in assoc tracks"};
     Configurable<int> triggerMaxTPCSharedClusters{"triggerMaxTPCSharedClusters", 200, "maximum number of shared TPC clusters (inclusive)"};
     Configurable<bool> triggerRequireL0{"triggerRequireL0", false, "require ITS L0 cluster for trigger"};
+    Configurable<bool> requireClusterInITS{"requireClusterInITS", false, "require cluster in ITS for V0 and cascade daughter tracks"};
+    Configurable<int> minITSClustersForDaughterTracks{"minITSClustersForDaughterTracks", 1, "Minimum number of ITS clusters for V0 daughter tracks"};
 
     // Associated pion identification
     Configurable<float> pionMinBayesProb{"pionMinBayesProb", 0.95, "minimal Bayesian probability for pion ID"};
@@ -143,6 +145,7 @@ struct HStrangeCorrelationFilter {
     Configurable<float> dcaPostopv{"dcaPostopv", 0.06, "DCA Pos To PV"};
     Configurable<float> dcaBaryonToPV{"dcaBaryonToPV", 0.2, "DCA of baryon daughter track To PV"};
     Configurable<float> dcaMesonToPV{"dcaMesonToPV", 0.05, "DCA of meson daughter track To PV"};
+    Configurable<float> dcaDaugToPVForK0s{"dcaDaugToPVForK0s", 0, "DCA of K0s daughter tracks To PV"};
     Configurable<float> v0RadiusMin{"v0RadiusMin", 0.5, "v0radius"};
     Configurable<float> v0RadiusMax{"v0RadiusMax", 200, "v0radius"};
 
@@ -246,33 +249,33 @@ struct HStrangeCorrelationFilter {
   TF1* fXiWidth = new TF1("fXiWidth", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
   TF1* fOmegaMean = new TF1("fomegaMean", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
   TF1* fOmegaWidth = new TF1("fomegaWidth", "[0]+[1]*x+[2]*std::exp(-[3]*x)");
-  TH1F* hK0ShortMean;
-  TH1F* hK0ShortWidth;
-  TH1F* hLambdaMean;
-  TH1F* hLambdaWidth;
-  TH1F* hXiMean;
-  TH1F* hXiWidth;
-  TH1F* hOmegaMean;
-  TH1F* hOmegaWidth;
+  TH1F* hK0ShortMean = nullptr;
+  TH1F* hK0ShortWidth = nullptr;
+  TH1F* hLambdaMean = nullptr;
+  TH1F* hLambdaWidth = nullptr;
+  TH1F* hXiMean = nullptr;
+  TH1F* hXiWidth = nullptr;
+  TH1F* hOmegaMean = nullptr;
+  TH1F* hOmegaWidth = nullptr;
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
-  int mRunNumber;
+  int mRunNumberZorro = -1;
+  int mRunNumberParameters = -1;
 
   struct TriggCandidate {
-    float pt;
-    int collisionId;
-    int trackId;
-    bool isPhysicalPrimary;
-    float origPt;
+    float pt = 0.f;
+    int collisionId = -1;
+    int trackId = -1;
+    bool isPhysicalPrimary = false;
+    float origPt = 0.f;
+    uint16_t mcMask = 0;
   };
-  TriggCandidate thisTrigg;
 
   std::vector<TriggCandidate> triggerCandidates;
 
   void init(InitContext const&)
   {
     zorroSummary.setObject(zorro.getZorroSummary());
-    mRunNumber = -1;
     if (useParameterization) {
       fK0Mean->SetParameters(parameters.massParsK0Mean->at(0), parameters.massParsK0Mean->at(1), parameters.massParsK0Mean->at(2), parameters.massParsK0Mean->at(3));
       fK0Width->SetParameters(parameters.massParsK0Width->at(0), parameters.massParsK0Width->at(1), parameters.massParsK0Width->at(2), parameters.massParsK0Width->at(3));
@@ -283,14 +286,14 @@ struct HStrangeCorrelationFilter {
       fOmegaMean->SetParameters(parameters.massParsOmegaMean->at(0), parameters.massParsOmegaMean->at(1), parameters.massParsOmegaMean->at(2), parameters.massParsOmegaMean->at(3));
       fOmegaWidth->SetParameters(parameters.massParsOmegaWidth->at(0), parameters.massParsOmegaWidth->at(1), parameters.massParsOmegaWidth->at(2), parameters.massParsOmegaWidth->at(3));
     } else {
-      hK0ShortMean = 0x0;
-      hK0ShortWidth = 0x0;
-      hLambdaMean = 0x0;
-      hLambdaWidth = 0x0;
-      hXiMean = 0x0;
-      hXiWidth = 0x0;
-      hOmegaMean = 0x0;
-      hOmegaWidth = 0x0;
+      hK0ShortMean = nullptr;
+      hK0ShortWidth = nullptr;
+      hLambdaMean = nullptr;
+      hLambdaWidth = nullptr;
+      hXiMean = nullptr;
+      hXiWidth = nullptr;
+      hOmegaMean = nullptr;
+      hOmegaWidth = nullptr;
     }
     if (doprocessV0s || doprocessV0sMC) {
       histos.add("h3dMassK0Short", "h3dMassK0Short", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisK0ShortMass, axesConfigurations.axisMult});
@@ -307,43 +310,43 @@ struct HStrangeCorrelationFilter {
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
-    if (mRunNumber == bc.runNumber()) {
+    if (mRunNumberZorro == bc.runNumber()) {
       return;
     }
 
     zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), zorroMask.value);
     zorro.populateHistRegistry(histos, bc.runNumber());
 
-    mRunNumber = bc.runNumber();
+    mRunNumberZorro = bc.runNumber();
   }
 
   void initParametersFromCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
-    if (mRunNumber == bc.runNumber()) {
+    if (mRunNumberParameters == bc.runNumber()) {
       return;
     }
-    mRunNumber = bc.runNumber();
-    LOG(info) << "Loading mean and sigma from CCDB for run " << mRunNumber << " now...";
+    mRunNumberParameters = bc.runNumber();
+    LOG(info) << "Loading mean and sigma from CCDB for run " << mRunNumberParameters << " now...";
     auto timeStamp = bc.timestamp();
 
-    TList* listParameters = ccdb->getForTimeStamp<TList>(parameterCCDBPath, timeStamp);
+    auto listParameters = ccdb->getForTimeStamp<TList>(parameterCCDBPath, timeStamp);
 
     if (!listParameters) {
       LOG(fatal) << "Problem getting TList object with parameters!";
     }
     if (doprocessV0s || doprocessV0sMC) {
-      hK0ShortMean = static_cast<TH1F*>(listParameters->FindObject("hK0ShortMean"));
-      hK0ShortWidth = static_cast<TH1F*>(listParameters->FindObject("hK0ShortWidth"));
-      hLambdaMean = static_cast<TH1F*>(listParameters->FindObject("hLambdaMean"));
-      hLambdaWidth = static_cast<TH1F*>(listParameters->FindObject("hLambdaWidth"));
+      hK0ShortMean = dynamic_cast<TH1F*>(listParameters->FindObject("hK0ShortMean"));
+      hK0ShortWidth = dynamic_cast<TH1F*>(listParameters->FindObject("hK0ShortWidth"));
+      hLambdaMean = dynamic_cast<TH1F*>(listParameters->FindObject("hLambdaMean"));
+      hLambdaWidth = dynamic_cast<TH1F*>(listParameters->FindObject("hLambdaWidth"));
     }
     if (doprocessCascades || doprocessCascadesMC) {
-      hXiMean = static_cast<TH1F*>(listParameters->FindObject("hXiMean"));
-      hXiWidth = static_cast<TH1F*>(listParameters->FindObject("hXiWidth"));
-      hOmegaMean = static_cast<TH1F*>(listParameters->FindObject("hOmegaMean"));
-      hOmegaWidth = static_cast<TH1F*>(listParameters->FindObject("hOmegaWidth"));
+      hXiMean = dynamic_cast<TH1F*>(listParameters->FindObject("hXiMean"));
+      hXiWidth = dynamic_cast<TH1F*>(listParameters->FindObject("hXiWidth"));
+      hOmegaMean = dynamic_cast<TH1F*>(listParameters->FindObject("hOmegaMean"));
+      hOmegaWidth = dynamic_cast<TH1F*>(listParameters->FindObject("hOmegaWidth"));
     }
-    LOG(info) << "parameters now loaded for " << mRunNumber;
+    LOG(info) << "parameters now loaded for " << mRunNumberParameters;
   }
 
   // this function allows for all event selections to be done in a modular way
@@ -380,29 +383,36 @@ struct HStrangeCorrelationFilter {
 
   // more event selections in Pb-Pb
   template <typename TCollision>
-  bool isCollisionSelectedPbPb(TCollision collision)
+  bool isCollisionSelectedPbPb(TCollision const& collision)
   {
-    if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && eventSelections.requireGoodTriggerTVX) /* FT0 vertex (acceptable FT0C-FT0A time difference) collisions */
+    if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && eventSelections.requireGoodTriggerTVX) { /* FT0 vertex (acceptable FT0C-FT0A time difference) collisions */
       return false;
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) && eventSelections.requireAllGoodITSLayers) // cut time intervals with dead ITS staves
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) && eventSelections.requireAllGoodITSLayers) { // cut time intervals with dead ITS staves
       return false;
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) && eventSelections.requireGoodZvtxFT0vsPV) // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) && eventSelections.requireGoodZvtxFT0vsPV) { // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
       return false;
+    }
     auto occupancy = collision.trackOccupancyInTimeRange();
-    if (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh) /* Below min occupancy and Above max occupancy*/
+    if (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh) { /* Below min occupancy and Above max occupancy*/
       return false;
-    if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) // reject collisions close to Time Frame borders
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) { // reject collisions close to Time Frame borders
       return false;
-    if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) // reject events affected by the ITS ROF border
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) { // reject events affected by the ITS ROF border
       return false;
-    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) // rejects collisions which are associated with the same "found-by-T0" bunch crossing
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) { // rejects collisions which are associated with the same "found-by-T0" bunch crossing
       return false;
+    }
     return true;
   }
 
   // reco-level trigger quality checks (N.B.: DCA is filtered, not selected)
   template <class TTrack>
-  bool isValidTrigger(TTrack track)
+  bool isValidTrigger(TTrack const& track)
   {
     if (track.eta() > generalSelections.triggerEtaMax || track.eta() < generalSelections.triggerEtaMin) {
       return false;
@@ -420,13 +430,13 @@ struct HStrangeCorrelationFilter {
     if (track.tpcNClsShared() > trackSelections.triggerMaxTPCSharedClusters) {
       return false; // skip, has shared clusters
     }
-    if (!(BIT_CHECK(track.itsClusterMap(), 0)) && trackSelections.triggerRequireL0) {
+    if (!(TESTBIT(track.itsClusterMap(), 0)) && trackSelections.triggerRequireL0) {
       return false; // skip, doesn't have cluster in ITS L0
     }
     return true;
   }
   template <class TTrack>
-  bool isValidAssocTrack(TTrack assoc)
+  bool isValidAssocTrack(TTrack const& assoc)
   {
     if (assoc.eta() > generalSelections.assocEtaMax || assoc.eta() < generalSelections.assocEtaMin) {
       return false;
@@ -442,30 +452,38 @@ struct HStrangeCorrelationFilter {
     }
 
     // do this only if information is available
-    float nSigmaTPCTOF[8] = {-10, -10, -10, -10, -10, -10, -10, -10};
+    std::array<float, 8> nSigmaTPCTOF = {-10, -10, -10, -10, -10, -10, -10, -10};
     if constexpr (requires { assoc.tofSignal(); } && !requires { assoc.mcParticle(); }) {
       if (assoc.tofSignal() > 0) {
-        if (std::sqrt(assoc.tofNSigmaPi() * assoc.tofNSigmaPi() + assoc.tpcNSigmaPi() * assoc.tpcNSigmaPi()) > trackSelections.assocPionNSigmaTPCFOF)
+        if (std::sqrt(assoc.tofNSigmaPi() * assoc.tofNSigmaPi() + assoc.tpcNSigmaPi() * assoc.tpcNSigmaPi()) > trackSelections.assocPionNSigmaTPCFOF) {
           return false;
-        if (assoc.tofNSigmaPr() < trackSelections.rejectSigma)
+        }
+        if (assoc.tofNSigmaPr() < trackSelections.rejectSigma) {
           return false;
-        if (assoc.tpcNSigmaPr() < trackSelections.rejectSigma)
+        }
+        if (assoc.tpcNSigmaPr() < trackSelections.rejectSigma) {
           return false;
-        if (assoc.tofNSigmaKa() < trackSelections.rejectSigma)
+        }
+        if (assoc.tofNSigmaKa() < trackSelections.rejectSigma) {
           return false;
-        if (assoc.tpcNSigmaKa() < trackSelections.rejectSigma)
+        }
+        if (assoc.tpcNSigmaKa() < trackSelections.rejectSigma) {
           return false;
+        }
         nSigmaTPCTOF[4] = assoc.tofNSigmaPi();
         nSigmaTPCTOF[5] = assoc.tofNSigmaKa();
         nSigmaTPCTOF[6] = assoc.tofNSigmaPr();
         nSigmaTPCTOF[7] = assoc.tofNSigmaEl();
       } else {
-        if (assoc.tpcNSigmaPi() > trackSelections.assocPionNSigmaTPCFOF)
+        if (assoc.tpcNSigmaPi() > trackSelections.assocPionNSigmaTPCFOF) {
           return false;
-        if (assoc.tpcNSigmaPr() < trackSelections.rejectSigma)
+        }
+        if (assoc.tpcNSigmaPr() < trackSelections.rejectSigma) {
           return false;
-        if (assoc.tpcNSigmaKa() < trackSelections.rejectSigma)
+        }
+        if (assoc.tpcNSigmaKa() < trackSelections.rejectSigma) {
           return false;
+        }
       }
       nSigmaTPCTOF[0] = assoc.tpcNSigmaPi();
       nSigmaTPCTOF[1] = assoc.tpcNSigmaKa();
@@ -476,12 +494,14 @@ struct HStrangeCorrelationFilter {
     bool physicalPrimary = false;
     float origPt = -1;
     float code = -9999;
+    uint16_t mcMask = 0;
     if constexpr (requires { assoc.mcParticle(); }) {
       if (assoc.has_mcParticle()) {
         auto mcParticle = assoc.mcParticle();
         physicalPrimary = mcParticle.isPhysicalPrimary();
         origPt = mcParticle.pt();
         code = mcParticle.pdgCode();
+        mcMask = assoc.mcMask();
       }
     }
 
@@ -490,7 +510,8 @@ struct HStrangeCorrelationFilter {
       physicalPrimary,
       assoc.globalIndex(),
       origPt,
-      code);
+      code,
+      mcMask);
     assocPID(
       nSigmaTPCTOF[0],
       nSigmaTPCTOF[1],
@@ -505,43 +526,54 @@ struct HStrangeCorrelationFilter {
 
   // cascadeselection in PbPb
   template <typename TCascade>
-  bool cascadeSelectedPbPb(TCascade casc, float pvx, float pvy, float pvz)
+  bool cascadeSelectedPbPb(TCascade const& casc, float pvx, float pvy, float pvz)
   {
     // bachBaryonCosPA
-    if (casc.bachBaryonCosPA() < cascSelection.bachBaryonCosPA)
+    if (casc.bachBaryonCosPA() < cascSelection.bachBaryonCosPA) {
       return false;
+    }
     // bachBaryonDCAxyToPV
-    if (std::abs(casc.bachBaryonDCAxyToPV()) > cascSelection.bachBaryonDCAxyToPV)
+    if (std::abs(casc.bachBaryonDCAxyToPV()) > cascSelection.bachBaryonDCAxyToPV) {
       return false;
+    }
     // casccosPA
-    if (casc.casccosPA(pvx, pvy, pvz) < cascSelection.cascCospa)
+    if (casc.casccosPA(pvx, pvy, pvz) < cascSelection.cascCospa) {
       return false;
+    }
     // dcacascdaughters
     float ptDepCut = cascSelection.dcaCacsDauPar0;
-    if (casc.pt() > cascSelection.lowPtForCascDaugPtDep && casc.pt() < cascSelection.highPtForCascDaugPtDep)
+    if (casc.pt() > cascSelection.lowPtForCascDaugPtDep && casc.pt() < cascSelection.highPtForCascDaugPtDep) {
       ptDepCut = cascSelection.dcaCacsDauPar1;
-    else if (casc.pt() > cascSelection.highPtForCascDaugPtDep)
+    } else if (casc.pt() > cascSelection.highPtForCascDaugPtDep) {
       ptDepCut = cascSelection.dcaCacsDauPar2;
-    if (casc.dcacascdaughters() > ptDepCut)
+    }
+    if (casc.dcacascdaughters() > ptDepCut) {
       return false;
+    }
     // dcaV0daughters
-    if (casc.dcaV0daughters() > cascSelection.cascdcaV0dau)
+    if (casc.dcaV0daughters() > cascSelection.cascdcaV0dau) {
       return false;
+    }
     // dcav0topv
-    if (std::abs(casc.dcav0topv(pvx, pvy, pvz)) < cascSelection.cascMindcav0topv)
+    if (std::abs(casc.dcav0topv(pvx, pvy, pvz)) < cascSelection.cascMindcav0topv) {
       return false;
+    }
     // cascradius
-    if (casc.cascradius() < cascSelection.cascRadius)
+    if (casc.cascradius() < cascSelection.cascRadius) {
       return false;
+    }
     // v0radius
-    if (casc.v0radius() < cascSelection.cascv0RadiusMin)
+    if (casc.v0radius() < cascSelection.cascv0RadiusMin) {
       return false;
+    }
     // v0cosPA
-    if (casc.v0cosPA(casc.x(), casc.y(), casc.z()) < cascSelection.cascv0cospa)
+    if (casc.v0cosPA(casc.x(), casc.y(), casc.z()) < cascSelection.cascv0cospa) {
       return false;
+    }
     // lambdaMassWin
-    if (std::abs(casc.mLambda() - o2::constants::physics::MassLambda0) > cascSelection.lambdaMassWin)
+    if (std::abs(casc.mLambda() - o2::constants::physics::MassLambda0) > cascSelection.lambdaMassWin) {
       return false;
+    }
     return true;
   }
 
@@ -558,8 +590,10 @@ struct HStrangeCorrelationFilter {
     double leadingPt = -1.;
     int leadingId = -1;
     for (auto const& track : tracks) {
-      if (!isValidTrigger(track))
+      if (!isValidTrigger(track)) {
         continue;
+      }
+      TriggCandidate thisTrigg{};
       thisTrigg.pt = track.pt();
       thisTrigg.trackId = track.globalIndex();
       thisTrigg.collisionId = track.collisionId();
@@ -578,7 +612,8 @@ struct HStrangeCorrelationFilter {
         TriggCandidate.isPhysicalPrimary,
         TriggCandidate.trackId,
         TriggCandidate.origPt,
-        isLeading);
+        isLeading,
+        0);
       triggerTrackExtra(1);
     }
   }
@@ -596,8 +631,10 @@ struct HStrangeCorrelationFilter {
     double leadingPt = -1.;
     int leadingId = -1;
     for (auto const& track : tracks) {
-      if (!isValidTrigger(track))
+      if (!isValidTrigger(track)) {
         continue;
+      }
+      TriggCandidate thisTrigg{};
       thisTrigg.pt = track.pt();
       thisTrigg.trackId = track.globalIndex();
       thisTrigg.collisionId = track.collisionId();
@@ -605,6 +642,7 @@ struct HStrangeCorrelationFilter {
         auto mcParticle = track.mcParticle();
         thisTrigg.isPhysicalPrimary = mcParticle.isPhysicalPrimary();
         thisTrigg.origPt = mcParticle.pt();
+        thisTrigg.mcMask = track.mcMask();
       }
       triggerCandidates.push_back(thisTrigg);
       if (track.pt() > leadingPt) {
@@ -620,7 +658,8 @@ struct HStrangeCorrelationFilter {
         TriggCandidate.isPhysicalPrimary,
         TriggCandidate.trackId,
         TriggCandidate.origPt,
-        isLeading);
+        isLeading,
+        TriggCandidate.mcMask);
       triggerTrackExtra(1);
     }
   }
@@ -648,8 +687,9 @@ struct HStrangeCorrelationFilter {
     /// _________________________________________________
     /// Step 1: Populate table with trigger tracks
     for (auto const& track : tracks) {
-      if (!isValidAssocTrack(track))
+      if (!isValidAssocTrack(track)) {
         continue;
+      }
     }
   }
 
@@ -676,8 +716,9 @@ struct HStrangeCorrelationFilter {
     /// _________________________________________________
     /// Step 1: Populate table with trigger tracks
     for (auto const& track : tracks) {
-      if (!isValidAssocTrack(track))
+      if (!isValidAssocTrack(track)) {
         continue;
+      }
     }
   }
 
@@ -704,8 +745,9 @@ struct HStrangeCorrelationFilter {
     /// _________________________________________________
     /// Step 1: Populate table with trigger tracks
     for (auto const& track : tracks) {
-      if (!isValidAssocTrack(track))
+      if (!isValidAssocTrack(track)) {
         continue;
+      }
     }
   }
   void processAssocHadronsMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<FullTracksMC> const& tracks, aod::McParticles const&, aod::BCsWithTimestamps const&)
@@ -731,8 +773,9 @@ struct HStrangeCorrelationFilter {
     /// _________________________________________________
     /// Step 1: Populate table with trigger tracks
     for (auto const& track : tracks) {
-      if (!isValidAssocTrack(track))
+      if (!isValidAssocTrack(track)) {
         continue;
+      }
     }
   }
 
@@ -760,13 +803,19 @@ struct HStrangeCorrelationFilter {
       auto posdau = v0.posTrack_as<DauTracks>();
       auto negdau = v0.negTrack_as<DauTracks>();
 
-      if (negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows)
+      if (negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
-      if (posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows)
+      }
+      if (posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
+      }
+      if (trackSelections.requireClusterInITS && (posdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks || negdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks)) {
+        continue;
+      }
 
+      float dcaDauCutForK0s = v0Selection.dcaDaugToPVForK0s == 0 ? v0Selection.dcaMesonToPV : v0Selection.dcaDaugToPVForK0s;
       bool isGoodK0Short = (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < v0Selection.lifetimecutK0S &&
-                            std::abs(v0.dcapostopv()) > v0Selection.dcaMesonToPV && std::abs(v0.dcanegtopv()) > v0Selection.dcaMesonToPV &&
+                            std::abs(v0.dcapostopv()) > dcaDauCutForK0s && std::abs(v0.dcanegtopv()) > dcaDauCutForK0s &&
                             v0.qtarm() * v0Selection.armPodCut > std::abs(v0.alpha()));
       bool isGoodLambda = (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < v0Selection.lifetimecutLambda &&
                            std::abs(v0.dcapostopv()) > v0Selection.dcaBaryonToPV && std::abs(v0.dcanegtopv()) > v0Selection.dcaMesonToPV);
@@ -774,48 +823,48 @@ struct HStrangeCorrelationFilter {
                                std::abs(v0.dcapostopv()) > v0Selection.dcaMesonToPV && std::abs(v0.dcanegtopv()) > v0Selection.dcaBaryonToPV);
       if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose) {
         if (doPPAnalysis || isGoodK0Short) {
-          BIT_SET(compatibleK0Short, 0);
+          SETBIT(compatibleK0Short, 0);
         }
       }
       if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma) {
         if (doPPAnalysis || isGoodK0Short) {
-          BIT_SET(compatibleK0Short, 1);
+          SETBIT(compatibleK0Short, 1);
         }
       }
       if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaTight) {
         if (doPPAnalysis || isGoodK0Short) {
-          BIT_SET(compatibleK0Short, 2);
+          SETBIT(compatibleK0Short, 2);
         }
       }
       if (v0.v0cosPA() > v0Selection.lambdaCospa) {
         if (std::abs(posdau.tpcNSigmaPr()) < strangedEdxNSigmaLoose && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose) {
           if (doPPAnalysis || isGoodLambda) {
-            BIT_SET(compatibleLambda, 0);
+            SETBIT(compatibleLambda, 0);
           }
         }
         if (std::abs(posdau.tpcNSigmaPr()) < strangedEdxNSigma && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma) {
           if (doPPAnalysis || isGoodLambda) {
-            BIT_SET(compatibleLambda, 1);
+            SETBIT(compatibleLambda, 1);
           }
         }
         if (std::abs(posdau.tpcNSigmaPr()) < strangedEdxNSigmaTight && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaTight) {
           if (doPPAnalysis || isGoodLambda) {
-            BIT_SET(compatibleLambda, 2);
+            SETBIT(compatibleLambda, 2);
           }
         }
         if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(negdau.tpcNSigmaPr()) < strangedEdxNSigmaLoose) {
           if (doPPAnalysis || isGoodAntiLambda) {
-            BIT_SET(compatibleAntiLambda, 0);
+            SETBIT(compatibleAntiLambda, 0);
           }
         }
         if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(negdau.tpcNSigmaPr()) < strangedEdxNSigma) {
           if (doPPAnalysis || isGoodAntiLambda) {
-            BIT_SET(compatibleAntiLambda, 1);
+            SETBIT(compatibleAntiLambda, 1);
           }
         }
         if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(negdau.tpcNSigmaPr()) < strangedEdxNSigmaTight) {
           if (doPPAnalysis || isGoodAntiLambda) {
-            BIT_SET(compatibleAntiLambda, 2);
+            SETBIT(compatibleAntiLambda, 2);
           }
         }
       }
@@ -840,12 +889,15 @@ struct HStrangeCorrelationFilter {
           massNSigmaAntiLambda = (v0.mAntiLambda() - hLambdaMean->Interpolate(v0.pt())) / (hLambdaWidth->Interpolate(v0.pt()) + 1e-6);
         }
       }
-      if (compatibleK0Short)
+      if (compatibleK0Short > 0) {
         histos.fill(HIST("h3dMassK0Short"), v0.pt(), v0.mK0Short(), cent);
-      if (compatibleLambda)
+      }
+      if (compatibleLambda > 0) {
         histos.fill(HIST("h3dMassLambda"), v0.pt(), v0.mLambda(), cent);
-      if (compatibleAntiLambda)
+      }
+      if (compatibleAntiLambda > 0) {
         histos.fill(HIST("h3dMassAntiLambda"), v0.pt(), v0.mAntiLambda(), cent);
+      }
 
       if (!fillTableOnlyWithCompatible ||
           ( // start major condition check
@@ -886,13 +938,19 @@ struct HStrangeCorrelationFilter {
       auto posdau = v0.posTrack_as<DauTracksMC>();
       auto negdau = v0.negTrack_as<DauTracksMC>();
 
-      if (negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows)
+      if (negdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
-      if (posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows)
+      }
+      if (posdau.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
+      }
+      if (trackSelections.requireClusterInITS && (posdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks || negdau.itsNCls() < trackSelections.minITSClustersForDaughterTracks)) {
+        continue;
+      }
 
+      float dcaDauCutForK0s = v0Selection.dcaDaugToPVForK0s == 0 ? v0Selection.dcaMesonToPV : v0Selection.dcaDaugToPVForK0s;
       bool isGoodK0Short = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < v0Selection.lifetimecutK0S &&
-                           std::abs(v0.dcapostopv()) > v0Selection.dcaMesonToPV && std::abs(v0.dcanegtopv()) > v0Selection.dcaMesonToPV &&
+                           std::abs(v0.dcapostopv()) > dcaDauCutForK0s && std::abs(v0.dcanegtopv()) > dcaDauCutForK0s &&
                            v0.qtarm() * v0Selection.armPodCut > std::abs(v0.alpha());
       bool isGoodLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < v0Selection.lifetimecutLambda &&
                           std::abs(v0.dcapostopv()) > v0Selection.dcaBaryonToPV && std::abs(v0.dcanegtopv()) > v0Selection.dcaMesonToPV;
@@ -900,49 +958,49 @@ struct HStrangeCorrelationFilter {
                               std::abs(v0.dcapostopv()) > v0Selection.dcaMesonToPV && std::abs(v0.dcanegtopv()) > v0Selection.dcaBaryonToPV;
       if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose) {
         if (doPPAnalysis || isGoodK0Short) {
-          BIT_SET(compatibleK0Short, 0);
+          SETBIT(compatibleK0Short, 0);
         }
       }
       if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma) {
         if (doPPAnalysis || isGoodK0Short) {
-          BIT_SET(compatibleK0Short, 1);
+          SETBIT(compatibleK0Short, 1);
         }
       }
       if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaTight) {
         if (doPPAnalysis || isGoodK0Short) {
-          BIT_SET(compatibleK0Short, 2);
+          SETBIT(compatibleK0Short, 2);
         }
       }
       if (v0.v0cosPA() > v0Selection.lambdaCospa) {
         if (std::abs(posdau.tpcNSigmaPr()) < strangedEdxNSigmaLoose && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose) {
           if (doPPAnalysis || isGoodLambda) {
-            BIT_SET(compatibleLambda, 0);
+            SETBIT(compatibleLambda, 0);
           }
         }
         if (std::abs(posdau.tpcNSigmaPr()) < strangedEdxNSigma && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma) {
           if (doPPAnalysis || isGoodLambda) {
-            BIT_SET(compatibleLambda, 1);
+            SETBIT(compatibleLambda, 1);
           }
         }
 
         if (std::abs(posdau.tpcNSigmaPr()) < strangedEdxNSigmaTight && std::abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaTight) {
           if (doPPAnalysis || isGoodLambda) {
-            BIT_SET(compatibleLambda, 2);
+            SETBIT(compatibleLambda, 2);
           }
         }
         if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(negdau.tpcNSigmaPr()) < strangedEdxNSigmaLoose) {
           if (doPPAnalysis || isGoodAntiLambda) {
-            BIT_SET(compatibleAntiLambda, 0);
+            SETBIT(compatibleAntiLambda, 0);
           }
         }
         if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(negdau.tpcNSigmaPr()) < strangedEdxNSigma) {
           if (doPPAnalysis || isGoodAntiLambda) {
-            BIT_SET(compatibleAntiLambda, 1);
+            SETBIT(compatibleAntiLambda, 1);
           }
         }
         if (std::abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(negdau.tpcNSigmaPr()) < strangedEdxNSigmaTight) {
           if (doPPAnalysis || isGoodAntiLambda) {
-            BIT_SET(compatibleAntiLambda, 2);
+            SETBIT(compatibleAntiLambda, 2);
           }
         }
       }
@@ -973,18 +1031,24 @@ struct HStrangeCorrelationFilter {
       bool trueLambda = false;
       bool trueAntiLambda = false;
       v0PhysicalPrimary = v0.isPhysicalPrimary();
-      if (v0.pdgCode() == PDG_t::kK0Short)
+      if (v0.pdgCode() == PDG_t::kK0Short) {
         trueK0Short = true;
-      if (v0.pdgCode() == PDG_t::kLambda0)
+      }
+      if (v0.pdgCode() == PDG_t::kLambda0) {
         trueLambda = true;
-      if (v0.pdgCode() == PDG_t::kLambda0Bar)
+      }
+      if (v0.pdgCode() == PDG_t::kLambda0Bar) {
         trueAntiLambda = true;
-      if (compatibleK0Short && (!doTrueSelectionInMass || (trueK0Short && v0PhysicalPrimary)))
+      }
+      if (compatibleK0Short > 0 && (!doTrueSelectionInMass || (trueK0Short && v0PhysicalPrimary))) {
         histos.fill(HIST("h3dMassK0Short"), v0.pt(), v0.mK0Short(), cent);
-      if (compatibleLambda && (!doTrueSelectionInMass || (trueLambda && v0PhysicalPrimary)))
+      }
+      if (compatibleLambda > 0 && (!doTrueSelectionInMass || (trueLambda && v0PhysicalPrimary))) {
         histos.fill(HIST("h3dMassLambda"), v0.pt(), v0.mLambda(), cent);
-      if (compatibleAntiLambda && (!doTrueSelectionInMass || (trueAntiLambda && v0PhysicalPrimary)))
+      }
+      if (compatibleAntiLambda > 0 && (!doTrueSelectionInMass || (trueAntiLambda && v0PhysicalPrimary))) {
         histos.fill(HIST("h3dMassAntiLambda"), v0.pt(), v0.mAntiLambda(), cent);
+      }
 
       if (!fillTableOnlyWithCompatible ||
           ( // start major condition check
@@ -1020,21 +1084,29 @@ struct HStrangeCorrelationFilter {
                            casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < cascSelection.cascCospa ||
                            casc.cascradius() < cascSelection.cascRadius ||
                            std::abs(casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ())) < cascSelection.cascMindcav0topv ||
-                           std::abs(casc.mLambda() - o2::constants::physics::MassLambda0) > cascSelection.cascV0masswindow))
+                           std::abs(casc.mLambda() - o2::constants::physics::MassLambda0) > cascSelection.cascV0masswindow)) {
         continue;
+      }
       auto bachTrackCast = casc.bachelor_as<DauTracks>();
       auto posTrackCast = casc.posTrack_as<DauTracks>();
       auto negTrackCast = casc.negTrack_as<DauTracks>();
 
       // minimum TPC crossed rows
-      if (bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows)
+      if (bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
-      if (posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows)
+      }
+      if (posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
-      if (negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows)
+      }
+      if (negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
-      if (!doPPAnalysis && !cascadeSelectedPbPb(casc, collision.posX(), collision.posY(), collision.posZ()))
+      }
+      if (!doPPAnalysis && !cascadeSelectedPbPb(casc, collision.posX(), collision.posY(), collision.posZ())) {
         continue;
+      }
+      if (trackSelections.requireClusterInITS && (posTrackCast.itsNCls() < trackSelections.minITSClustersForDaughterTracks || negTrackCast.itsNCls() < trackSelections.minITSClustersForDaughterTracks || bachTrackCast.itsNCls() < trackSelections.minITSClustersForDaughterTracks)) {
+        continue;
+      }
 
       bool isGoodNegCascadePbPb = std::abs(casc.dcabachtopv()) > cascSelection.dcaBachToPV && std::abs(casc.dcapostopv()) > cascSelection.cascDcaBaryonToPV &&
                                   std::abs(casc.dcanegtopv()) > cascSelection.cascDcaMesonToPV;
@@ -1047,8 +1119,8 @@ struct HStrangeCorrelationFilter {
       int compatibleOmegaPlus = 0;
       float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
       float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
-      float ctauXi = o2::constants::physics::MassXiMinus * cascpos / ((cascptotmom + 1e-13) * ctauxi);
-      float ctauOmega = o2::constants::physics::MassOmegaMinus * cascpos / ((cascptotmom + 1e-13) * ctauomega);
+      float ctauXi = o2::constants::physics::MassXiMinus * cascpos / ((cascptotmom + 1e-13) * Xictau);
+      float ctauOmega = o2::constants::physics::MassOmegaMinus * cascpos / ((cascptotmom + 1e-13) * Omegactau);
 
       bool isGoodXiPbPb = std::abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) > cascSelection.rejcomp &&
                           ctauXi < cascSelection.proplifetime && std::abs(casc.yXi()) < cascSelection.rapCut;
@@ -1056,65 +1128,65 @@ struct HStrangeCorrelationFilter {
                              ctauOmega < cascSelection.proplifetime && std::abs(casc.yOmega()) < cascSelection.rapCut;
       if (std::abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && std::abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && casc.sign() < 0) {
         if (doPPAnalysis || (isGoodNegCascadePbPb && isGoodXiPbPb)) {
-          BIT_SET(compatibleXiMinus, 0);
+          SETBIT(compatibleXiMinus, 0);
         }
       }
       if (std::abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && std::abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && casc.sign() < 0) {
         if (doPPAnalysis || (isGoodNegCascadePbPb && isGoodXiPbPb)) {
-          BIT_SET(compatibleXiMinus, 1);
+          SETBIT(compatibleXiMinus, 1);
         }
       }
       if (std::abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && std::abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && casc.sign() < 0) {
         if (doPPAnalysis || (isGoodNegCascadePbPb && isGoodXiPbPb)) {
-          BIT_SET(compatibleXiMinus, 2);
+          SETBIT(compatibleXiMinus, 2);
         }
       }
 
       if (std::abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && std::abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && casc.sign() > 0) {
         if (doPPAnalysis || (isGoodPosCascadePbPb && isGoodXiPbPb)) {
-          BIT_SET(compatibleXiPlus, 0);
+          SETBIT(compatibleXiPlus, 0);
         }
       }
       if (std::abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && std::abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && casc.sign() > 0) {
         if (doPPAnalysis || (isGoodPosCascadePbPb && isGoodXiPbPb)) {
-          BIT_SET(compatibleXiPlus, 1);
+          SETBIT(compatibleXiPlus, 1);
         }
       }
       if (std::abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && std::abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && casc.sign() > 0) {
         if (doPPAnalysis || (isGoodPosCascadePbPb && isGoodXiPbPb)) {
-          BIT_SET(compatibleXiPlus, 2);
+          SETBIT(compatibleXiPlus, 2);
         }
       }
 
       if (std::abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && std::abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaLoose && casc.sign() < 0) {
         if (doPPAnalysis || (isGoodNegCascadePbPb && isGoodOmegaPbPb)) {
-          BIT_SET(compatibleOmegaMinus, 0);
+          SETBIT(compatibleOmegaMinus, 0);
         }
       }
       if (std::abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && std::abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigma && casc.sign() < 0) {
         if (doPPAnalysis || (isGoodNegCascadePbPb && isGoodOmegaPbPb)) {
-          BIT_SET(compatibleOmegaMinus, 1);
+          SETBIT(compatibleOmegaMinus, 1);
         }
       }
       if (std::abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && std::abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaTight && casc.sign() < 0) {
         if (doPPAnalysis || (isGoodNegCascadePbPb && isGoodOmegaPbPb)) {
-          BIT_SET(compatibleOmegaMinus, 2);
+          SETBIT(compatibleOmegaMinus, 2);
         }
       }
 
       if (std::abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && std::abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaLoose && casc.sign() > 0) {
         if (doPPAnalysis || (isGoodPosCascadePbPb && isGoodOmegaPbPb)) {
-          BIT_SET(compatibleOmegaPlus, 0);
+          SETBIT(compatibleOmegaPlus, 0);
         }
       }
       if (std::abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && std::abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigma && casc.sign() > 0) {
         if (doPPAnalysis || (isGoodPosCascadePbPb && isGoodOmegaPbPb)) {
-          BIT_SET(compatibleOmegaPlus, 1);
+          SETBIT(compatibleOmegaPlus, 1);
         }
       }
       if (std::abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && std::abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaTight && casc.sign() > 0) {
         if (doPPAnalysis || (isGoodPosCascadePbPb && isGoodOmegaPbPb)) {
-          BIT_SET(compatibleOmegaPlus, 2);
+          SETBIT(compatibleOmegaPlus, 2);
         }
       }
       float massNSigmaXi = -20.0f;
@@ -1133,14 +1205,18 @@ struct HStrangeCorrelationFilter {
           massNSigmaOmega = (casc.mOmega() - hOmegaMean->Interpolate(casc.pt())) / (hOmegaWidth->Interpolate(casc.pt()) + 1e-6);
         }
       }
-      if (compatibleXiMinus)
+      if (compatibleXiMinus > 0) {
         histos.fill(HIST("h3dMassXiMinus"), casc.pt(), casc.mXi(), cent);
-      if (compatibleXiPlus)
+      }
+      if (compatibleXiPlus > 0) {
         histos.fill(HIST("h3dMassXiPlus"), casc.pt(), casc.mXi(), cent);
-      if (compatibleOmegaMinus && std::abs(massNSigmaXi) > nSigmaNearXiMassCenter)
+      }
+      if (compatibleOmegaMinus > 0 && std::abs(massNSigmaXi) > nSigmaNearXiMassCenter) {
         histos.fill(HIST("h3dMassOmegaMinus"), casc.pt(), casc.mOmega(), cent);
-      if (compatibleOmegaPlus && std::abs(massNSigmaXi) > nSigmaNearXiMassCenter)
+      }
+      if (compatibleOmegaPlus > 0 && std::abs(massNSigmaXi) > nSigmaNearXiMassCenter) {
         histos.fill(HIST("h3dMassOmegaPlus"), casc.pt(), casc.mOmega(), cent);
+      }
 
       if (!fillTableOnlyWithCompatible ||
           ( // start major condition check
@@ -1176,22 +1252,30 @@ struct HStrangeCorrelationFilter {
                            casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < cascSelection.cascCospa ||
                            casc.cascradius() < cascSelection.cascRadius ||
                            std::abs(casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ())) < cascSelection.cascMindcav0topv ||
-                           std::abs(casc.mLambda() - o2::constants::physics::MassLambda0) > cascSelection.cascV0masswindow))
+                           std::abs(casc.mLambda() - o2::constants::physics::MassLambda0) > cascSelection.cascV0masswindow)) {
         continue;
+      }
 
       auto bachTrackCast = casc.bachelor_as<DauTracks>();
       auto posTrackCast = casc.posTrack_as<DauTracks>();
       auto negTrackCast = casc.negTrack_as<DauTracks>();
 
       // minimum TPC crossed rows
-      if (bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows)
+      if (bachTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
-      if (posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows)
+      }
+      if (posTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
-      if (negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows)
+      }
+      if (negTrackCast.tpcNClsCrossedRows() < trackSelections.minTPCNCrossedRows) {
         continue;
-      if (!doPPAnalysis && !cascadeSelectedPbPb(casc, collision.posX(), collision.posY(), collision.posZ()))
+      }
+      if (!doPPAnalysis && !cascadeSelectedPbPb(casc, collision.posX(), collision.posY(), collision.posZ())) {
         continue;
+      }
+      if (trackSelections.requireClusterInITS && (posTrackCast.itsNCls() < trackSelections.minITSClustersForDaughterTracks || negTrackCast.itsNCls() < trackSelections.minITSClustersForDaughterTracks || bachTrackCast.itsNCls() < trackSelections.minITSClustersForDaughterTracks)) {
+        continue;
+      }
       bool isGoodNegCascadePbPb = (std::abs(casc.dcabachtopv()) > cascSelection.dcaBachToPV && std::abs(casc.dcapostopv()) > cascSelection.cascDcaBaryonToPV &&
                                    std::abs(casc.dcanegtopv()) > cascSelection.cascDcaMesonToPV);
       bool isGoodPosCascadePbPb = (std::abs(casc.dcabachtopv()) > cascSelection.dcaBachToPV && std::abs(casc.dcapostopv()) > cascSelection.cascDcaMesonToPV &&
@@ -1203,8 +1287,8 @@ struct HStrangeCorrelationFilter {
       int compatibleOmegaPlus = 0;
       float cascpos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
       float cascptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
-      float ctauXi = o2::constants::physics::MassXiMinus * cascpos / ((cascptotmom + 1e-13) * ctauxi);
-      float ctauOmega = o2::constants::physics::MassOmegaMinus * cascpos / ((cascptotmom + 1e-13) * ctauomega);
+      float ctauXi = o2::constants::physics::MassXiMinus * cascpos / ((cascptotmom + 1e-13) * Xictau);
+      float ctauOmega = o2::constants::physics::MassOmegaMinus * cascpos / ((cascptotmom + 1e-13) * Omegactau);
 
       bool iGoodXiPbPb = std::abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) > cascSelection.rejcomp &&
                          ctauXi < cascSelection.proplifetime && std::abs(casc.yXi()) < cascSelection.rapCut;
@@ -1212,65 +1296,65 @@ struct HStrangeCorrelationFilter {
                              ctauOmega < cascSelection.proplifetime && std::abs(casc.yOmega()) < cascSelection.rapCut;
       if (std::abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && std::abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && casc.sign() < 0) {
         if (doPPAnalysis || (isGoodNegCascadePbPb && iGoodXiPbPb)) {
-          BIT_SET(compatibleXiMinus, 0);
+          SETBIT(compatibleXiMinus, 0);
         }
       }
       if (std::abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && std::abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && casc.sign() < 0) {
         if (doPPAnalysis || (isGoodNegCascadePbPb && iGoodXiPbPb)) {
-          BIT_SET(compatibleXiMinus, 1);
+          SETBIT(compatibleXiMinus, 1);
         }
       }
       if (std::abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && std::abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && casc.sign() < 0) {
         if (doPPAnalysis || (isGoodNegCascadePbPb && iGoodXiPbPb)) {
-          BIT_SET(compatibleXiMinus, 2);
+          SETBIT(compatibleXiMinus, 2);
         }
       }
 
       if (std::abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && std::abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && casc.sign() > 0) {
         if (doPPAnalysis || (isGoodPosCascadePbPb && iGoodXiPbPb)) {
-          BIT_SET(compatibleXiPlus, 0);
+          SETBIT(compatibleXiPlus, 0);
         }
       }
       if (std::abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && std::abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && casc.sign() > 0) {
         if (doPPAnalysis || (isGoodPosCascadePbPb && iGoodXiPbPb)) {
-          BIT_SET(compatibleXiPlus, 1);
+          SETBIT(compatibleXiPlus, 1);
         }
       }
       if (std::abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && std::abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && casc.sign() > 0) {
         if (doPPAnalysis || (isGoodPosCascadePbPb && iGoodXiPbPb)) {
-          BIT_SET(compatibleXiPlus, 2);
+          SETBIT(compatibleXiPlus, 2);
         }
       }
 
       if (std::abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && std::abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaLoose && casc.sign() < 0) {
         if (doPPAnalysis || (isGoodNegCascadePbPb && isGoodOmegaPbPb)) {
-          BIT_SET(compatibleOmegaMinus, 0);
+          SETBIT(compatibleOmegaMinus, 0);
         }
       }
       if (std::abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && std::abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigma && casc.sign() < 0) {
         if (doPPAnalysis || (isGoodNegCascadePbPb && isGoodOmegaPbPb)) {
-          BIT_SET(compatibleOmegaMinus, 1);
+          SETBIT(compatibleOmegaMinus, 1);
         }
       }
       if (std::abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && std::abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaTight && casc.sign() < 0) {
         if (doPPAnalysis || (isGoodNegCascadePbPb && isGoodOmegaPbPb)) {
-          BIT_SET(compatibleOmegaMinus, 2);
+          SETBIT(compatibleOmegaMinus, 2);
         }
       }
 
       if (std::abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && std::abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && std::abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaLoose && casc.sign() > 0) {
         if (doPPAnalysis || (isGoodPosCascadePbPb && isGoodOmegaPbPb)) {
-          BIT_SET(compatibleOmegaPlus, 0);
+          SETBIT(compatibleOmegaPlus, 0);
         }
       }
       if (std::abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && std::abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && std::abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigma && casc.sign() > 0) {
         if (doPPAnalysis || (isGoodPosCascadePbPb && isGoodOmegaPbPb)) {
-          BIT_SET(compatibleOmegaPlus, 1);
+          SETBIT(compatibleOmegaPlus, 1);
         }
       }
       if (std::abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && std::abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && std::abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaTight && casc.sign() > 0) {
         if (doPPAnalysis || (isGoodPosCascadePbPb && isGoodOmegaPbPb)) {
-          BIT_SET(compatibleOmegaPlus, 2);
+          SETBIT(compatibleOmegaPlus, 2);
         }
       }
       float massNSigmaXi = 20.0f;
@@ -1296,22 +1380,30 @@ struct HStrangeCorrelationFilter {
       bool trueOmegaMinus = false;
       bool trueOmegaPlus = false;
       cascPhysicalPrimary = casc.isPhysicalPrimary();
-      if (casc.pdgCode() == PDG_t::kXiMinus)
+      if (casc.pdgCode() == PDG_t::kXiMinus) {
         trueXiMinus = true;
-      if (casc.pdgCode() == PDG_t::kXiPlusBar)
+      }
+      if (casc.pdgCode() == PDG_t::kXiPlusBar) {
         trueXiPlus = true;
-      if (casc.pdgCode() == PDG_t::kOmegaMinus)
+      }
+      if (casc.pdgCode() == PDG_t::kOmegaMinus) {
         trueOmegaMinus = true;
-      if (casc.pdgCode() == PDG_t::kOmegaPlusBar)
+      }
+      if (casc.pdgCode() == PDG_t::kOmegaPlusBar) {
         trueOmegaPlus = true;
-      if (compatibleXiMinus && (!doTrueSelectionInMass || (trueXiMinus && cascPhysicalPrimary)))
+      }
+      if (compatibleXiMinus > 0 && (!doTrueSelectionInMass || (trueXiMinus && cascPhysicalPrimary))) {
         histos.fill(HIST("h3dMassXiMinus"), casc.pt(), casc.mXi(), cent);
-      if (compatibleXiPlus && (!doTrueSelectionInMass || (trueXiPlus && cascPhysicalPrimary)))
+      }
+      if (compatibleXiPlus > 0 && (!doTrueSelectionInMass || (trueXiPlus && cascPhysicalPrimary))) {
         histos.fill(HIST("h3dMassXiPlus"), casc.pt(), casc.mXi(), cent);
-      if (compatibleOmegaMinus && (!doTrueSelectionInMass || (trueOmegaMinus && cascPhysicalPrimary)) && std::abs(massNSigmaXi) > nSigmaNearXiMassCenter)
+      }
+      if (compatibleOmegaMinus > 0 && (!doTrueSelectionInMass || (trueOmegaMinus && cascPhysicalPrimary)) && std::abs(massNSigmaXi) > nSigmaNearXiMassCenter) {
         histos.fill(HIST("h3dMassOmegaMinus"), casc.pt(), casc.mOmega(), cent);
-      if (compatibleOmegaPlus && (!doTrueSelectionInMass || (trueOmegaPlus && cascPhysicalPrimary)) && std::abs(massNSigmaXi) > nSigmaNearXiMassCenter)
+      }
+      if (compatibleOmegaPlus > 0 && (!doTrueSelectionInMass || (trueOmegaPlus && cascPhysicalPrimary)) && std::abs(massNSigmaXi) > nSigmaNearXiMassCenter) {
         histos.fill(HIST("h3dMassOmegaPlus"), casc.pt(), casc.mOmega(), cent);
+      }
 
       if (!fillTableOnlyWithCompatible ||
           ( // start major condition check
@@ -1339,8 +1431,8 @@ struct HStrangeCorrelationFilter {
   PROCESS_SWITCH(HStrangeCorrelationFilter, processAssocHadronsMC, "Produce associated Hadron tables for MC", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& context)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HStrangeCorrelationFilter>(cfgc)};
+    adaptAnalysisTask<HStrangeCorrelationFilter>(context)};
 }

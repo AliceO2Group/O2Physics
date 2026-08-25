@@ -19,6 +19,7 @@
 
 #include "Common/Core/TableHelper.h"
 
+#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -28,9 +29,11 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <Math/Vector4D.h>
 #include <TH1.h>
 
 #include <cstdint>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -49,19 +52,25 @@ struct filterEoI {
   Configurable<bool> inheritFromOtherTask{"inheritFromOtherTask", true, "Flag to iherit all common configurables from skimmerPrimaryElectron or skimmerPrimaryMuon"};
   Configurable<int> minNelectron{"minNelectron", -1, "min number of electron candidates per collision"};
   Configurable<int> minNmuon{"minNmuon", -1, "min number of muon candidates per collision"};
+  Configurable<int> minNphotons{"minNphotons", 1, "min number of photon candidates per collision"};
+  Configurable<std::string> taskNameForNelectron{"taskNameForNelectron", "skimmer-primary-electron", "task name where minNelectron is defined."};
+  Configurable<std::string> varNameForNelectron{"varNameForNelectron", "minNelectron", "variable name for minNelectron"};
+  Configurable<float> maxMinvPair{"maxMinvPair", -1.f, "keep events only if at least one photon pair has q_inv below this (GeV/c); negative = disabled"};
 
   HistogramRegistry fRegistry{"output"};
   void init(o2::framework::InitContext& initContext)
   {
     if (inheritFromOtherTask.value) { // Inheriting from other task
-      getTaskOptionValue(initContext, "skimmer-primary-electron", "minNelectron", minNelectron.value, true);
+      getTaskOptionValue(initContext, taskNameForNelectron.value, varNameForNelectron.value, minNelectron.value, true);
       getTaskOptionValue(initContext, "skimmer-primary-muon", "minNmuon", minNmuon.value, true);
     }
 
     LOGF(info, "minNelectron = %d", minNelectron.value);
     LOGF(info, "minNmuon = %d", minNmuon.value);
+    LOGF(info, "minNphotons = %d", minNphotons.value);
+    LOGF(info, "maxMinvPair = %f", static_cast<float>(maxMinvPair.value));
 
-    auto hEventCounter = fRegistry.add<TH1>("hEventCounter", "hEventCounter", kTH1D, {{8, 0.5f, 8.5f}});
+    auto hEventCounter = fRegistry.add<TH1>("hEventCounter", "hEventCounter", kTH1D, {{10, 0.5f, 10.5f}});
     hEventCounter->GetXaxis()->SetBinLabel(1, "all");
     hEventCounter->GetXaxis()->SetBinLabel(2, "event with electron");
     hEventCounter->GetXaxis()->SetBinLabel(3, "event with forward muon");
@@ -70,6 +79,8 @@ struct filterEoI {
     hEventCounter->GetXaxis()->SetBinLabel(6, "event with electron and forward muon");
     hEventCounter->GetXaxis()->SetBinLabel(7, "event with electron or forward muon or v0");
     hEventCounter->GetXaxis()->SetBinLabel(8, "event with v0 or electrons from dalitz");
+    hEventCounter->GetXaxis()->SetBinLabel(9, "event with minNphotons v0s selection");
+    hEventCounter->GetXaxis()->SetBinLabel(10, "event with minNphotons v0s and low-M pair selection");
   }
 
   SliceCache cache;
@@ -105,8 +116,25 @@ struct filterEoI {
       if constexpr (static_cast<bool>(system & kPCM)) {
         auto v0s_coll = v0s.sliceBy(perCollision_v0, collision.globalIndex());
         if (v0s_coll.size() >= 1) {
-          does_pcm_exist = true;
           fRegistry.fill(HIST("hEventCounter"), 4);
+        }
+        if (v0s_coll.size() >= minNphotons) {
+          fRegistry.fill(HIST("hEventCounter"), 9);
+          bool hasLowMPair = (maxMinvPair < 0.f);
+          if (!hasLowMPair) {
+            for (const auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(v0s_coll, v0s_coll))) {
+              ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.f);
+              ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.f);
+              if ((v1 + v2).M() < maxMinvPair) {
+                hasLowMPair = true;
+                break;
+              }
+            }
+          }
+          if (hasLowMPair) {
+            does_pcm_exist = true;
+            fRegistry.fill(HIST("hEventCounter"), 10);
+          }
         }
       }
       if constexpr (static_cast<bool>(system & kElectronFromDalitz)) {
