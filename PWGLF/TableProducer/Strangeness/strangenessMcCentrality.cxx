@@ -15,8 +15,8 @@
 /// \brief  Task to produce the MC centrality table for strangeness derived data
 ///
 
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/mcCentralityModule.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/AnalysisHelpers.h>
@@ -32,7 +32,6 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::track;
 
 /// Task to produce the response table
 struct StrangenessMcCentrality {
