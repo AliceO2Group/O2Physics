@@ -23,8 +23,8 @@
 // O2 includes
 #include "Common/DataModel/Centrality.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 
 namespace o2::aod
 {

@@ -18,11 +18,11 @@
 ///
 
 #include "PWGLF/DataModel/mcCentrality.h"
-#include "PWGLF/Utils/mcCentralityModule.h"
 
 #include "TableHelper.h"
 
 #include "PWGLF/Utils/inelGt.h"
+#include "PWGLF/Utils/mcCentralityModule.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -51,7 +51,7 @@ struct McCentrality {
   // Input parameters
   o2::framework::Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  
+
   o2::pwglf::mccentrality::products products;
   o2::pwglf::mccentrality::coreConfigurables baseOpts;
   o2::pwglf::mccentrality::BuilderModule mcCentralityBuilderModule;
@@ -77,7 +77,8 @@ struct McCentrality {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { 
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{
-    adaptAnalysisTask<McCentrality>(cfgc)}; 
+    adaptAnalysisTask<McCentrality>(cfgc)};
 }

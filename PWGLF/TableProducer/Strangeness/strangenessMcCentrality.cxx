@@ -15,11 +15,11 @@
 /// \brief  Task to produce the MC centrality table for strangeness derived data
 ///
 
+#include "TableHelper.h"
+
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/mcCentralityModule.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-
-#include "TableHelper.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -48,7 +48,7 @@ struct StrangenessMcCentrality {
   // Input parameters
   o2::framework::Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  
+
   o2::pwglf::mccentrality::products products;
   o2::pwglf::mccentrality::coreConfigurables baseOpts;
   o2::pwglf::mccentrality::BuilderModule mcCentralityBuilderModule;
@@ -74,7 +74,8 @@ struct StrangenessMcCentrality {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { 
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{
-    adaptAnalysisTask<StrangenessMcCentrality>(cfgc)}; 
+    adaptAnalysisTask<StrangenessMcCentrality>(cfgc)};
 }
