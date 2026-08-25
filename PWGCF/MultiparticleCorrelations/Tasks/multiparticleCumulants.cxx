@@ -133,8 +133,7 @@ enum EnCorrHistograms {
 static constexpr std::array<const char*, eCorrHistograms_N> CorrHistNames = {
   "Centrality",
   "Multiplicity",
-  "NContributionMultiplicity"
-};
+  "NContributionMultiplicity"};
 
 enum EnCentEstm {
   eCentFT0C,
@@ -378,8 +377,8 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     int h7 = 0;
     int h8 = 0;
     // Book Q-vector components:
-    static constexpr int MaxCorrelator = 6;                                                      // <<m>>, in this case 6
-    static constexpr int MaxHarmonic = ((MaxCorrelator * (MaxCorrelator + 1)) / 2 - 1) * 2 + 1;  // (2 + 3 + ... + n) * 2 + 1, in this case need (2 + 3 + 4) * 2 + 1 = 19 at least for SC(2,3,4)
+    static constexpr int MaxCorrelator = 6;                                                     // <<m>>, in this case 6
+    static constexpr int MaxHarmonic = ((MaxCorrelator * (MaxCorrelator + 1)) / 2 - 1) * 2 + 1; // (2 + 3 + ... + n) * 2 + 1, in this case need (2 + 3 + 4) * 2 + 1 = 19 at least for SC(2,3,4)
     static constexpr int MaxPower = MaxCorrelator + 1;
 
     std::array<std::array<TComplex, MaxPower>, MaxHarmonic> fQvectorBefore;
