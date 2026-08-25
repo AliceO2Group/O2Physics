@@ -15,8 +15,8 @@
 /// \brief  Task to produce the MC centrality table for strangeness derived data
 ///
 
-#include "PWGLF/Utils/mcCentralityModule.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/Utils/mcCentralityModule.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/AnalysisHelpers.h>
