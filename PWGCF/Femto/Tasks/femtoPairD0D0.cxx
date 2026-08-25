@@ -169,8 +169,8 @@ struct FemtoPairD0D0 {
       negDauSpec1 = trackhistmanager::makeTrackHistSpecMap(confD01NegDauBinning);
       posDauSpec2 = trackhistmanager::makeTrackHistSpecMap(confD02PosDauBinning);
       negDauSpec2 = trackhistmanager::makeTrackHistSpecMap(confD02NegDauBinning);
-      d0HistSpec1 = charmhadronhistmanager::makeD0HistSpecMap(confD0Binning1);
-      d0HistSpec2 = charmhadronhistmanager::makeD0HistSpecMap(confD0Binning2);
+      d0HistSpec1 = charmhadronhistmanager::makeCharmHadronHistSpecMap(confD0Binning1);
+      d0HistSpec2 = charmhadronhistmanager::makeCharmHadronHistSpecMap(confD0Binning2);
       pairD0D0HistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confMixing);
       pairD0D0Builder.init<modes::Mode::kSe_Reco, modes::Mode::kMe_Reco>(&hRegistry, confCollisionBinning, confD0Selection1, confD0Selection2, confD0Cleaner1, confD0Cleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, d0HistSpec1, d0HistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairD0D0HistSpec, cprHistSpecPos, cprHistSpecNeg);
     } else {
@@ -179,8 +179,8 @@ struct FemtoPairD0D0 {
       negDauSpec1 = trackhistmanager::makeTrackMcHistSpecMap(confD01NegDauBinning);
       posDauSpec2 = trackhistmanager::makeTrackMcHistSpecMap(confD02PosDauBinning);
       negDauSpec2 = trackhistmanager::makeTrackMcHistSpecMap(confD02NegDauBinning);
-      d0HistSpec1 = charmhadronhistmanager::makeD0McHistSpecMap(confD0Binning1);
-      d0HistSpec2 = charmhadronhistmanager::makeD0McHistSpecMap(confD0Binning2);
+      d0HistSpec1 = charmhadronhistmanager::makeCharmHadronMcHistSpecMap(confD0Binning1);
+      d0HistSpec2 = charmhadronhistmanager::makeCharmHadronMcHistSpecMap(confD0Binning2);
       pairD0D0HistSpec = pairhistmanager::makePairMcHistSpecMap(confPairBinning, confMixing);
       pairD0D0Builder.init<modes::Mode::kSe_Reco_Mc, modes::Mode::kMe_Reco_Mc>(&hRegistry, confCollisionBinning, confD0Selection1, confD0Selection2, confD0Cleaner1, confD0Cleaner2, confCprPos, confCprNeg, confMixing, confPairBinning, confPairCuts, colHistSpec, d0HistSpec1, d0HistSpec2, posDauSpec1, negDauSpec1, posDauSpec2, negDauSpec2, pairD0D0HistSpec, cprHistSpecPos, cprHistSpecNeg);
     }

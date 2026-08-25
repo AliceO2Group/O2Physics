@@ -21,7 +21,6 @@
 
 #include <CommonConstants/MathConstants.h>
 #include <DetectorsBase/Propagator.h>
-#include <Framework/ASoA.h>
 #include <Framework/Concepts.h>
 #include <ReconstructionDataFormats/HelixHelper.h>
 #include <ReconstructionDataFormats/TrackParametrizationWithError.h>
@@ -29,11 +28,13 @@
 #include <Math/GenVector/DisplacementVector2D.h> // IWYU pragma: keep (for rotate)
 #include <Math/Vector2D.h>                       // IWYU pragma: keep (do not replace with Math/Vector2Dfwd.h)
 #include <Math/Vector2Dfwd.h>
+#include <TPDGCode.h>
 
 #include <GPUROOTCartesianFwd.h>
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 
 //_______________________________________________________________________
 inline bool checkAP(const float alpha, const float qt, const float alpha_max = 0.95, const float qt_max = 0.05)
@@ -211,6 +212,54 @@ inline float getScoreV0(float cosPA, float pca, float weight)
   float wPca = 1.f - wCos; // random values for now
   float score = wCos * cosScore + wPca * pcaScore;
   return score;
+}
+//_______________________________________________________________________
+/// \brief truth class of a V0 candidate, from the mothers of its two legs
+enum V0TruthClass {
+  kV0True = 0,         // both legs come from the SAME true photon
+  kV0CrossLegFake = 1, // legs come from TWO different true photons
+  kV0OtherFake = 2     // at least one leg is not a photon conversion leg
+};
+//_______________________________________________________________________
+/// \brief global index of the photon a track descends from
+/// \param track track with an MC label
+/// \param mcparticles the full McParticles table
+/// \return index of the mother if it is a photon, -1 otherwise
+template <o2::soa::is_iterator TTrack, o2::soa::is_table TMCParticles>
+inline int64_t getPhotonMotherId(TTrack const& track, TMCParticles const& mcparticles)
+{
+  if (!track.has_mcParticle()) {
+    return -1;
+  }
+  const auto mcp = mcparticles.iteratorAt(track.mcParticleId());
+  if (!mcp.has_mothers()) {
+    return -1;
+  }
+  const auto& mothers = mcp.mothersIds();
+  if (mothers.empty() || mothers[0] < 0) {
+    return -1;
+  }
+  return (mcparticles.iteratorAt(mothers[0]).pdgCode() == PDG_t::kGamma) ? static_cast<int64_t>(mothers[0]) : -1;
+}
+
+//_______________________________________________________________________
+/// \brief classify a V0 candidate by the photon mothers of its two legs
+/// \param motherPos photon mother of the positive leg, -1 if none
+/// \param motherEle photon mother of the negative leg, -1 if none
+/// \return kV0True, kV0CrossLegFake or kV0OtherFake
+template <o2::soa::is_iterator TTrack, o2::soa::is_table TMCParticles>
+inline V0TruthClass classifyV0Truth(TTrack const& pos, TTrack const& ele, TMCParticles const& mcparticles,
+                                    int64_t& motherPos, int64_t& motherEle)
+{
+  motherPos = getPhotonMotherId(pos, mcparticles);
+  motherEle = getPhotonMotherId(ele, mcparticles);
+  if (motherPos >= 0 && motherPos == motherEle) {
+    return kV0True;
+  }
+  if (motherPos >= 0 && motherEle >= 0) {
+    return kV0CrossLegFake;
+  }
+  return kV0OtherFake;
 }
 
 #endif // PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_

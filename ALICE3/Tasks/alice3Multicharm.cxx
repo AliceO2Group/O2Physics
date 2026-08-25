@@ -56,7 +56,7 @@ struct Alice3Multicharm {
   static constexpr float ToMicrons = 1e+4;
 
   struct : ConfigurableGroup {
-    std::string prefix = "bdt"; // JSON group name
+    std::string prefix = "bdt";
     Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> localPath{"localPath", "MCharm_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
     Configurable<std::string> pathCCDB{"pathCCDB", "Users/j/jekarlss/MLModels", "Path on CCDB"};
@@ -80,34 +80,72 @@ struct Alice3Multicharm {
   ConfigurableAxis axisBDTScoreFine{"axisBDTScoreFine", {1000, 0, 1}, "BDT Score for 1D histogram"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
 
-  Configurable<float> xiMinDCAxy{"xiMinDCAxy", -1, "[0] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> xiMinDCAz{"xiMinDCAz", -1, "[0] in |DCAz| > [0]+[1]/pT"};
-  Configurable<float> xiMinRadius{"xiMinRadius", -1, "Minimum R2D for Xic decay (cm)"};
+  struct : ConfigurableGroup {
+    std::string prefix = "selVals";
+    Configurable<float> xiMinConstDCAxy{"xiMinConstDCAxy", -1, "[0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> xiMinPtDepDCAxy{"xiMinPtDepDCAxy", 0, "[1] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> xiMinConstDCAz{"xiMinConstDCAz", -1, "[0] in |DCAz| > [0]+[1]/pT"};
+    Configurable<float> xiMinPtDepDCAz{"xiMinPtDepDCAz", 0, "[1] in |DCAz| > [0]+[1]/pT"};
+    Configurable<float> xiMinRadius{"xiMinRadius", -1, "Minimum R2D for Xi decay (cm)"};
 
-  Configurable<float> picMinDCAxy{"picMinDCAxy", -1, "[0] in |DCAz| > [0]+[1]/pT"};
-  Configurable<float> picMinDCAz{"picMinDCAz", -1, "[0] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> picMinPt{"picMinPt", -1, "Minimum pT for Xic pions"};
+    Configurable<float> picMinConstDCAxy{"picMinConstDCAxy", -1, "[0] in |DCAz| > [0]+[1]/pT"};
+    Configurable<float> picMinPtDepDCAxy{"picMinPtDepDCAxy", 0, "[1] in |DCAz| > [0]+[1]/pT"};
+    Configurable<float> picMinConstDCAz{"picMinConstDCAz", -1, "[0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> picMinPtDepDCAz{"picMinPtDepDCAz", 0, "[1] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> picMinPt{"picMinPt", -1, "Minimum pT for Xic pions"};
 
-  Configurable<float> piccMinDCAxy{"piccMinDCAxy", -1, "[0] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> piccMinDCAz{"piccMinDCAz", -1, "[0] in |DCAz| > [0]+[1]/pT"};
-  Configurable<float> piccMinPt{"piccMinPt", -1, "Minimum pT for Xicc pions"};
+    Configurable<float> piccMinConstDCAxy{"piccMinConstDCAxy", -1, "[0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> piccMinPtDepDCAxy{"piccMinPtDepDCAxy", 0, "[1] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> piccMinConstDCAz{"piccMinConstDCAz", -1, "[0] in |DCAz| > [0]+[1]/pT"};
+    Configurable<float> piccMinPtDepDCAz{"piccMinPtDepDCAz", 0, "[1] in |DCAz| > [0]+[1]/pT"};
+    Configurable<float> piccMinPt{"piccMinPt", -1, "Minimum pT for Xicc pions"};
 
-  Configurable<float> xicMaxDauDCA{"xicMaxDauDCA", 1e+4, "DCA between Xic daughters (cm)"};
-  Configurable<float> xicMinDCAxy{"xicMinDCAxy", -1, "[0] in |DCAz| > [0]+[1]/pT"};
-  Configurable<float> xicMinDCAz{"xicMinDCAz", -1, "[0] in |DCAxy| > [0]+[1]/pT"};
-  Configurable<float> xiccMaxDCAxy{"xiccMaxDCAxy", 1e+4, "Maximum DCAxy"};
-  Configurable<float> xiccMaxDCAz{"xiccMaxDCAz", 1e+4, "Maximum DCAz"};
-  Configurable<float> xicMinRadius{"xicMinRadius", -1, "Minimum R2D for Xic decay (cm)"};
-  Configurable<float> xicMinDecayDistanceFromPV{"xicMinDecayDistanceFromPV", -1, "Minimum distance for Xic decay from PV (cm)"};
-  Configurable<float> xicMinProperLength{"xicMinProperLength", -1, "Minimum proper length for Xic decay (cm)"};
-  Configurable<float> xicMaxProperLength{"xicMaxProperLength", 1e+4, "Minimum proper length for Xic decay (cm)"};
+    Configurable<float> xicMinConstDCAxy{"xicMinConstDCAxy", -1, "[0] in |DCAz| > [0]+[1]/pT"};
+    Configurable<float> xicMinConstDCAz{"xicMinConstDCAz", -1, "[0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> xicMinPtDepDCAxy{"xicMinPtDepDCAxy", -1, "[0] in |DCAz| > [0]+[1]/pT"};
+    Configurable<float> xicMinPtDepDCAz{"xicMinPtDepDCAz", -1, "[0] in |DCAxy| > [0]+[1]/pT"};
+    Configurable<float> xicMaxDauDCA{"xicMaxDauDCA", 1e+4, "DCA between Xic daughters (cm)"};
+    Configurable<float> xicMinRadius{"xicMinRadius", -1, "Minimum R2D for Xic decay (cm)"};
+    Configurable<float> xicMinDecayDistanceFromPV{"xicMinDecayDistanceFromPV", -1, "Minimum distance for Xic decay from PV (cm)"};
+    Configurable<float> xicMinProperLength{"xicMinProperLength", -1, "Minimum proper length for Xic decay (cm)"};
+    Configurable<float> xicMaxProperLength{"xicMaxProperLength", 1e+4, "Minimum proper length for Xic decay (cm)"};
 
-  Configurable<float> xiccMaxDauDCA{"xiccMaxDauDCA", 1e+4, "DCA between Xicc daughters (cm)"};
-  Configurable<float> xiccMinRadius{"xiccMinRadius", -1, "Minimum R2D for Xicc decay (cm)"};
-  Configurable<float> xiccMinProperLength{"xiccMinProperLength", -1, "Minimum proper length for Xicc decay (cm)"};
-  Configurable<float> xiccMaxProperLength{"xiccMaxProperLength", 1e+4, "Minimum proper length for Xicc decay (cm)"};
+    Configurable<float> xiccMaxDCAxy{"xiccMaxDCAxy", 1e+4, "Maximum DCAxy"};
+    Configurable<float> xiccMaxDCAz{"xiccMaxDCAz", 1e+4, "Maximum DCAz"};
+    Configurable<float> xiccMaxDauDCA{"xiccMaxDauDCA", 1e+4, "DCA between Xicc daughters (cm)"};
+    Configurable<float> xiccMinRadius{"xiccMinRadius", -1, "Minimum R2D for Xicc decay (cm)"};
+    Configurable<float> xiccMinProperLength{"xiccMinProperLength", -1, "Minimum proper length for Xicc decay (cm)"};
+    Configurable<float> xiccMaxProperLength{"xiccMaxProperLength", 1e+4, "Minimum proper length for Xicc decay (cm)"};
+  } selVals;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "selVals";
+    Configurable<bool> applyXiMinDCAxy{"applyXiMinDCAxy", false, "Apply |DCAxy| > [0]+[1]/pT"};
+    Configurable<bool> applyXiMinDCAz{"applyXiMinDCAz", false, "Apply |DCAz| > [0]+[1]/pT"};
+    Configurable<bool> applyXiMinRadius{"applyXiMinRadius", false, "Apply min radius"};
+
+    Configurable<bool> applyPicMinDCAxy{"applyPicMinDCAxy", false, "Apply |DCAxy| > [0]+[1]/pT"};
+    Configurable<bool> applyPicMinDCAz{"applyPicMinDCAz", false, "Apply |DCAz| > [0]+[1]/pT"};
+    Configurable<bool> applyPiccMinDCAxy{"applyPiccMinDCAxy", false, "Apply |DCAxy| > [0]+[1]/pT"};
+    Configurable<bool> applyPiccMinDCAz{"applyPiccMinDCAz", false, "Apply |DCAz| > [0]+[1]/pT"};
+
+    Configurable<bool> applyXicMinDCAxy{"applyXicMinDCAxy", false, "Apply |DCAxy| > [0]+[1]/pT"};
+    Configurable<bool> applyXicMinDCAz{"applyXicMinDCAz", false, "Apply |DCAz| > [0]+[1]/pT"};
+    Configurable<bool> applyXicMinRadius{"applyXicMinRadius", false, "Apply min radius"};
+    Configurable<bool> applyXicMaxDauDCA{"applyXicMaxDauDCA", false, "Apply max dau dca"};
+    Configurable<bool> applyXicMinDistanceFromPV{"applyXicMinDistanceFromPV", false, "Apply min distance from PV (3D)"};
+    Configurable<bool> applyXicMinProperLength{"applyXicMinProperLength", false, "Apply min proper length"};
+    Configurable<bool> applyXicMaxProperLength{"applyXicMaxProperLength", false, "Apply max proper length"};
+
+    Configurable<bool> applyXiccMinDCAxy{"applyXiccMinDCAxy", false, "Apply |DCAxy| > [0]+[1]/pT"};
+    Configurable<bool> applyXiccMinDCAz{"applyXiccMinDCAz", false, "Apply |DCAz| > [0]+[1]/pT"};
+    Configurable<bool> applyXiccMinRadius{"applyXiccMinRadius", false, "Apply min radius"};
+    Configurable<bool> applyXiccMaxDauDCA{"applyXiccMaxDauDCA", false, "Apply max dau dca"};
+    Configurable<bool> applyXiccMinProperLength{"applyXiccMinProperLength", false, "Apply min proper length"};
+    Configurable<bool> applyXiccMaxProperLength{"applyXiccMaxProperLength", false, "Apply max proper length"};
+  } selFlags;
+
   Configurable<int> otfConfig{"otfConfig", 0, "OTF configuration flag"};
-
   Filter configFilter = (aod::otfmulticharm::lutConfigId == otfConfig);
 
   void init(InitContext&)
@@ -162,16 +200,16 @@ struct Alice3Multicharm {
     hMCharmBuilding->GetXaxis()->SetBinLabel(1, "nTotalCandidates");
     hMCharmBuilding->GetXaxis()->SetBinLabel(2, "xicMaxDauDCA");
     hMCharmBuilding->GetXaxis()->SetBinLabel(3, "xiccMaxDauDCA");
-    hMCharmBuilding->GetXaxis()->SetBinLabel(4, "xiMinDCAxy");
-    hMCharmBuilding->GetXaxis()->SetBinLabel(5, "xiMinDCAz");
+    hMCharmBuilding->GetXaxis()->SetBinLabel(4, "xiMinConstDCAxy");
+    hMCharmBuilding->GetXaxis()->SetBinLabel(5, "xiMinConstDCAz");
     hMCharmBuilding->GetXaxis()->SetBinLabel(6, "pi1cMinDCAxy");
     hMCharmBuilding->GetXaxis()->SetBinLabel(7, "pi1cMinDCAz");
     hMCharmBuilding->GetXaxis()->SetBinLabel(8, "pi2cMinDCAxy");
     hMCharmBuilding->GetXaxis()->SetBinLabel(9, "pi2cMinDCAz");
-    hMCharmBuilding->GetXaxis()->SetBinLabel(10, "piccMinDCAxy");
-    hMCharmBuilding->GetXaxis()->SetBinLabel(11, "piccMinDCAz");
-    hMCharmBuilding->GetXaxis()->SetBinLabel(12, "xicMinDCAxy");
-    hMCharmBuilding->GetXaxis()->SetBinLabel(13, "xicMinDCAz");
+    hMCharmBuilding->GetXaxis()->SetBinLabel(10, "piccMinConstDCAxy");
+    hMCharmBuilding->GetXaxis()->SetBinLabel(11, "piccMinConstDCAz");
+    hMCharmBuilding->GetXaxis()->SetBinLabel(12, "xicMinConstDCAxy");
+    hMCharmBuilding->GetXaxis()->SetBinLabel(13, "xicMinConstDCAz");
     hMCharmBuilding->GetXaxis()->SetBinLabel(14, "xiccMaxDCAxy");
     hMCharmBuilding->GetXaxis()->SetBinLabel(15, "xiccMaxDCAz");
     hMCharmBuilding->GetXaxis()->SetBinLabel(16, "xicMinRadius");
@@ -334,107 +372,107 @@ struct Alice3Multicharm {
       }
 
       histos.fill(HIST("hMCharmBuilding"), 0);
-      if (xiccCand.xicDauDCA() > xicMaxDauDCA) {
+      if (selFlags.applyXicMaxDauDCA && xiccCand.xicDauDCA() > selVals.xicMaxDauDCA) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 1);
-      if (xiccCand.xiccDauDCA() > xiccMaxDauDCA) {
+      if (selFlags.applyXiccMaxDauDCA && xiccCand.xiccDauDCA() > selVals.xiccMaxDauDCA) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 2);
-      if (std::fabs(xiccCand.xiDCAxy()) < xiMinDCAxy) {
+      if (selFlags.applyXiMinDCAxy && std::fabs(xiccCand.xiDCAxy()) < selVals.xiMinConstDCAxy + (selVals.xiMinPtDepDCAxy / xiccCand.xiPt())) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 3);
-      if (std::fabs(xiccCand.xiDCAz()) < xiMinDCAz) {
+      if (selFlags.applyXiMinDCAz && std::fabs(xiccCand.xiDCAz()) < selVals.xiMinConstDCAz + (selVals.xiMinPtDepDCAz / xiccCand.xiPt())) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 4);
-      if (std::fabs(xiccCand.pi1cDCAxy()) < picMinDCAxy) {
+      if (selFlags.applyPicMinDCAxy && std::fabs(xiccCand.pi1cDCAxy()) < selVals.picMinConstDCAxy + (selVals.picMinPtDepDCAxy / xiccCand.pi1cPt())) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 5);
-      if (std::fabs(xiccCand.pi1cDCAz()) < picMinDCAz) {
+      if (selFlags.applyPicMinDCAz && std::fabs(xiccCand.pi1cDCAz()) < selVals.picMinConstDCAz + (selVals.picMinPtDepDCAz / xiccCand.pi1cPt())) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 6);
-      if (std::fabs(xiccCand.pi2cDCAxy()) < picMinDCAxy) {
+      if (selFlags.applyPicMinDCAxy && std::fabs(xiccCand.pi2cDCAxy()) < selVals.picMinConstDCAxy + (selVals.picMinPtDepDCAxy / xiccCand.pi2cPt())) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 7);
-      if (std::fabs(xiccCand.pi2cDCAz()) < picMinDCAz) {
+      if (selFlags.applyPicMinDCAz && std::fabs(xiccCand.pi2cDCAz()) < selVals.picMinConstDCAz + (selVals.picMinPtDepDCAz / xiccCand.pi2cPt())) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 8);
-      if (std::fabs(xiccCand.piccDCAxy()) < piccMinDCAxy) {
+      if (selFlags.applyPiccMinDCAxy && std::fabs(xiccCand.piccDCAxy()) < selVals.piccMinConstDCAxy + (selVals.piccMinPtDepDCAxy / xiccCand.piccPt())) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 9);
-      if (std::fabs(xiccCand.piccDCAz()) < piccMinDCAz) {
+      if (selFlags.applyPiccMinDCAz && std::fabs(xiccCand.piccDCAz()) < selVals.piccMinConstDCAz + (selVals.piccMinPtDepDCAz / xiccCand.piccPt())) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 10);
-      if (std::fabs(xiccCand.xicDCAxy()) < xicMinDCAxy) {
+      if (selFlags.applyXicMinDCAxy && std::fabs(xiccCand.xicDCAxy()) < selVals.xicMinConstDCAxy + (selVals.xicMinPtDepDCAxy / xiccCand.xicPt())) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 11);
-      if (std::fabs(xiccCand.xicDCAz()) < xicMinDCAz) {
+      if (selFlags.applyXicMinDCAz && std::fabs(xiccCand.xicDCAz()) < selVals.xicMinConstDCAz + (selVals.xicMinPtDepDCAz / xiccCand.xicPt())) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 12);
-      if (std::fabs(xiccCand.xiccDCAxy()) > xiccMaxDCAxy) {
+      if (selFlags.applyXiccMinDCAxy && std::fabs(xiccCand.xiccDCAxy()) > selVals.xiccMaxDCAxy) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 13);
-      if (std::fabs(xiccCand.xiccDCAz()) > xiccMaxDCAz) {
+      if (selFlags.applyXiccMinDCAz && std::fabs(xiccCand.xiccDCAz()) > selVals.xiccMaxDCAz) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 14);
-      if (xiccCand.xicDecayRadius2D() < xicMinRadius) {
+      if (selFlags.applyXicMinRadius && xiccCand.xicDecayRadius2D() < selVals.xicMinRadius) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 15);
-      if (xiccCand.xiccDecayRadius2D() < xiccMinRadius) {
+      if (selFlags.applyXiccMinRadius && xiccCand.xiccDecayRadius2D() < selVals.xiccMinRadius) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 16);
-      if (xiccCand.xicProperLength() < xicMinProperLength) {
+      if (selFlags.applyXicMinProperLength && xiccCand.xicProperLength() < selVals.xicMinProperLength) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 17);
-      if (xiccCand.xicProperLength() > xicMaxProperLength) {
+      if (selFlags.applyXicMaxProperLength && xiccCand.xicProperLength() > selVals.xicMaxProperLength) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 18);
-      if (xiccCand.xiccProperLength() < xiccMinProperLength) {
+      if (selFlags.applyXiccMinProperLength && xiccCand.xiccProperLength() < selVals.xiccMinProperLength) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 19);
-      if (xiccCand.xiccProperLength() > xiccMaxProperLength) {
+      if (selFlags.applyXiccMaxProperLength && xiccCand.xiccProperLength() > selVals.xiccMaxProperLength) {
         continue;
       }
 
       histos.fill(HIST("hMCharmBuilding"), 20);
-      if (xiccCand.xicDistanceFromPV() < xicMinDecayDistanceFromPV) {
+      if (selFlags.applyXicMinDistanceFromPV && xiccCand.xicDistanceFromPV() < selVals.xicMinDecayDistanceFromPV) {
         continue;
       }
 

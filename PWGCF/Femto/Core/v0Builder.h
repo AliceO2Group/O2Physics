@@ -770,8 +770,9 @@ class V0Builder
 
 struct ConfV0TablesDerivedToDerived : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("V0Tables");
-  o2::framework::Configurable<int> limitLambda{"limitLambda", 1, "At least this many lambdas need to be in the collision"};
-  o2::framework::Configurable<int> limitK0short{"limitK0short", 0, "At least this many k0short need to be in the collision"};
+  o2::framework::Configurable<int> limitLambda{"limitLambda", 1, "Require at least this many Lambdas in the collision. Set to 0 to skip Lambdas entirely (not written to output)."};
+
+  o2::framework::Configurable<int> limitK0short{"limitK0short", 0, "Require at least this many K0shorts in the collision. Set to 0 to skip K0shorts entirely (not written to output)."};
 };
 
 struct V0BuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
@@ -784,15 +785,15 @@ struct V0BuilderDerivedToDerivedProducts : o2::framework::ProducesGroup {
 class V0BuilderDerivedToDerived
 {
  public:
-  V0BuilderDerivedToDerived() = default;
-  ~V0BuilderDerivedToDerived() = default;
-
   template <typename T>
   void init(T& config)
   {
     mLimitLambda = config.limitLambda.value;
     mLimitK0short = config.limitK0short.value;
 
+    if (mLimitLambda < 0 || mLimitK0short < 0) {
+      LOG(fatal) << "V0 limits must be non-negative (got " << mLimitLambda << " and " << mLimitK0short << "). Breaking...";
+    }
     if (mLimitLambda == 0 && mLimitK0short == 0) {
       LOG(fatal) << "Both lambda limit and k0short limit are 0. Breaking...";
     }
@@ -801,31 +802,38 @@ class V0BuilderDerivedToDerived
   template <typename T1, typename T2, typename T3, typename T4>
   bool collisionHasTooFewLambdas(T1 const& col, T2 const& /*lambdaTable*/, T3& partitionLambda, T4& cache)
   {
+    if (mLimitLambda == 0) { // lambdas disabled, cannot reject on them
+      return false;
+    }
     auto lambdaSlice = partitionLambda->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    return lambdaSlice.size() < mLimitLambda;
+    return lambdaSlice.size() < static_cast<int64_t>(mLimitLambda);
   }
 
   template <typename T1, typename T2, typename T3, typename T4>
   bool collisionHasTooFewK0shorts(T1 const& col, T2 const& /*k0shortTable*/, T3& partitionK0short, T4& cache)
   {
+    if (mLimitK0short == 0) { // k0shorts disabled, cannot reject on them
+      return false;
+    }
     auto k0shortSlice = partitionK0short->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
-    return k0shortSlice.size() < mLimitK0short;
+    return k0shortSlice.size() < static_cast<int64_t>(mLimitK0short);
   }
 
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
   void processLambdas(T1 const& col, T2 const& /*lambdaTable*/, T3 const& oldTrackTable, T4& partitionLambda, T5& trackBuilder, T6& cache, T7& newLambdaTable, T8& newTrackTable, T9& newCollisionTable)
   {
+    if (mLimitLambda == 0) { // lambdas disabled
+      return;
+    }
+
     auto lambdaSlice = partitionLambda->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
 
     for (auto const& lambda : lambdaSlice) {
+      auto posDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(lambda.posDauId(), oldTrackTable));
+      auto negDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(lambda.negDauId(), oldTrackTable));
 
-      // auto posDaughter = lambda.template posDau_as<T3>();
-      // auto negDaughter = lambda.template negDau_as<T3>();
-      auto posDaughter = oldTrackTable.rawIteratorAt(lambda.posDauId() - oldTrackTable.offset());
-      auto negDaughter = oldTrackTable.rawIteratorAt(lambda.negDauId() - oldTrackTable.offset());
-
-      int posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
-      int negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable);
+      int64_t posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
+      int64_t negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable);
 
       newLambdaTable.producedLambdas(newCollisionTable.producedCollision.lastIndex(),
                                      lambda.signedPt(),
@@ -841,17 +849,18 @@ class V0BuilderDerivedToDerived
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9>
   void processK0shorts(T1 const& col, T2 const& /*k0shortTable*/, T3 const& oldTrackTable, T4& partitionK0short, T5& trackBuilder, T6& cache, T7& newK0shortTable, T8& newTrackTable, T9& newCollisionTable)
   {
+    if (mLimitK0short == 0) { // k0shorts disabled
+      return;
+    }
+
     auto k0shortSlice = partitionK0short->sliceByCached(o2::aod::femtobase::stored::fColId, col.globalIndex(), cache);
 
     for (auto const& k0short : k0shortSlice) {
+      auto posDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(k0short.posDauId(), oldTrackTable));
+      auto negDaughter = oldTrackTable.rawIteratorAt(utils::daughterRow(k0short.negDauId(), oldTrackTable));
 
-      // auto posDaughter = k0short.template posDau_as<T3>();
-      // auto negDaughter = k0short.template negDau_as<T3>();
-      auto posDaughter = oldTrackTable.rawIteratorAt(k0short.posDauId() - oldTrackTable.offset());
-      auto negDaughter = oldTrackTable.rawIteratorAt(k0short.negDauId() - oldTrackTable.offset());
-
-      int posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
-      int negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable);
+      int64_t posDaughterIndex = trackBuilder.getDaughterIndex(posDaughter, newTrackTable, newCollisionTable);
+      int64_t negDaughterIndex = trackBuilder.getDaughterIndex(negDaughter, newTrackTable, newCollisionTable);
 
       newK0shortTable.producedK0shorts(newCollisionTable.producedCollision.lastIndex(),
                                        k0short.pt(),

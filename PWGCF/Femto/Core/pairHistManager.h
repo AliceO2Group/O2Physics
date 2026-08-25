@@ -249,6 +249,7 @@ struct ConfPairCuts : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> massInvMax{"massInvMax", -1, "Maximal invariant mass (set to -1 to deactivate)"};
   o2::framework::Configurable<bool> mixOnlyCommonAncestor{"mixOnlyCommonAncestor", false, "Require pair to have common anchestor (in the same event)"};
   o2::framework::Configurable<bool> mixOnlyNonCommonAncestor{"mixOnlyNonCommonAncestor", false, "Require pair to have non-common anchestor (in the same event)"};
+  o2::framework::Configurable<bool> useMotherAsAncestor{"useMotherAsAncestor", false, "Use the first ancestor (i.e. the direct mother) instead of the partonic mother when requiring (non-)common ancestry"};
 };
 
 // the enum gives the correct index in the array
@@ -498,6 +499,8 @@ constexpr char PrefixTrackV0Me[] = "TrackV0/ME/";
 
 constexpr char PrefixTrackD0Se[] = "TrackD0/SE/";
 constexpr char PrefixTrackD0Me[] = "TrackD0/ME/";
+constexpr char PrefixTrackLcSe[] = "TrackLc/SE/";
+constexpr char PrefixTrackLcMe[] = "TrackLc/ME/";
 constexpr char PrefixD0D0Se[] = "D0D0/SE/";
 constexpr char PrefixD0D0Me[] = "D0D0/ME/";
 
@@ -709,9 +712,8 @@ class PairHistManager
     }
 
     if (mPlotDalitz) {
-      if constexpr (modes::isEqual(particleType1, modes::Particle::kTrack) && (modes::isEqual(particleType2, modes::Particle::kV0) ||
-                                                                               modes::isEqual(particleType2, modes::Particle::kTwoTrackResonance) ||
-                                                                               modes::isEqual(particleType2, modes::Particle::kCharmHadron))) {
+      if constexpr (modes::isEqual(particleType1, modes::Particle::kTrack) && (modes::isEqual(particleType2, modes::Particle::kV0) || modes::isEqual(particleType2, modes::Particle::kTwoTrackResonance) || modes::isEqual(particleType2, modes::Particle::kCharmHadron)) &&
+                    requires(T2 p) { p.posDauId(); p.negDauId(); }) {
         auto posDaughter = trackTable.rawIteratorAt(particle2.posDauId() - trackTable.offset());
         auto negDaughter = trackTable.rawIteratorAt(particle2.negDauId() - trackTable.offset());
         ROOT::Math::PtEtaPhiMVector posDau4v = ROOT::Math::PtEtaPhiMVector(posDaughter.pt(), posDaughter.eta(), posDaughter.phi(), mPdgMassPosDau2);

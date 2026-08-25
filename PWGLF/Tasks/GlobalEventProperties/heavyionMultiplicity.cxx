@@ -56,12 +56,12 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::track;
 using namespace o2::aod::evsel;
 
-using CollisionDataTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0CVariant2s, aod::CentFT0Ms, aod::CentNGlobals, aod::CentMFTs>;
+using CollisionDataTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0CVariant2s, aod::CentFT0Ms, aod::CentNGlobals, aod::CentMFTs, aod::CentFT0MAnchorCols, aod::CentFT0MAnchorBCs>;
 using TrackDataTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 using FilTrackDataTable = soa::Filtered<TrackDataTable>;
 using CollisionMCTrueTable = aod::McCollisions;
 using TrackMCTrueTable = aod::McParticles;
-using CollisionMCRecTable = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0CVariant2s, aod::CentFT0Ms, aod::CentNGlobals, aod::CentMFTs>>;
+using CollisionMCRecTable = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0CVariant2s, aod::CentFT0Ms, aod::CentNGlobals, aod::CentMFTs, aod::CentFT0MAnchorCols, aod::CentFT0MAnchorBCs>>;
 using TrackMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>;
 using FilTrackMCRecTable = soa::Filtered<TrackMCRecTable>;
 using V0TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
@@ -207,6 +207,9 @@ struct HeavyionMultiplicity {
   Configurable<bool> isApplyCentFT0CVariant1{"isApplyCentFT0CVariant1", false, "Centrality based on FT0C variant1"};
   Configurable<bool> isApplyCentFT0CVariant2{"isApplyCentFT0CVariant2", false, "Centrality based on FT0C variant2 (Run2 like truncation)"};
   Configurable<bool> isApplyCentFT0M{"isApplyCentFT0M", false, "Centrality based on FT0A + FT0C"};
+  Configurable<bool> isApplyCentFT0MAnchorCol{"isApplyCentFT0MAnchorCol", false, "Centrality collision based, with anchor point"};
+  Configurable<bool> isApplyCentFT0MAnchorBC{"isApplyCentFT0MAnchorBC", false, "Centrality bunch crossing based"};
+
   Configurable<bool> isApplyCentNGlobal{"isApplyCentNGlobal", false, "Centrality based on global tracks"};
   Configurable<bool> isApplyCentMFT{"isApplyCentMFT", false, "Centrality based on MFT tracks"};
   Configurable<bool> isApplyTVX{"isApplyTVX", false, "Enable TVX trigger sel"};
@@ -470,6 +473,12 @@ struct HeavyionMultiplicity {
     if (isApplyCentFT0M) {
       cent = col.centFT0M();
     }
+    if (isApplyCentFT0MAnchorCol) {
+      cent = col.centFT0MAnchorCol();
+    }
+    if (isApplyCentFT0MAnchorBC) {
+      cent = col.centFT0MAnchorBC();
+    }
     if (isApplyCentNGlobal) {
       cent = col.centNGlobal();
     }
@@ -485,7 +494,7 @@ struct HeavyionMultiplicity {
     auto cent = -1;
     if (isApplyCentFT0C) {
       cent = col.multMCFT0C();
-    } else if (isApplyCentFT0M) {
+    } else if (isApplyCentFT0M || isApplyCentFT0MAnchorCol || isApplyCentFT0MAnchorBC) {
       cent = col.multMCFT0C() + col.multMCFT0A();
     } else if (isApplyCentFV0A) {
       cent = col.multMCFV0A();

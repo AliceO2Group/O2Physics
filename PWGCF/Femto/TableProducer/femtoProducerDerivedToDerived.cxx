@@ -35,7 +35,6 @@ struct FemtoProducerDerivedToDerived {
 
   // setup tables
   using FemtoCollisions = o2::soa::Join<o2::aod::FCols, o2::aod::FColMasks>;
-  using FemtoCollision = FemtoCollisions::iterator;
 
   using FilteredFemtoCollisions = o2::soa::Filtered<FemtoCollisions>;
   using FilteredFemtoCollision = FilteredFemtoCollisions::iterator;
@@ -67,6 +66,10 @@ struct FemtoProducerDerivedToDerived {
   o2::framework::Partition<FemtoTracks> trackPartition1 = MAKE_TRACK_PARTITION(trackSelections1);
   o2::framework::Partition<FemtoTracks> trackPartition2 = MAKE_TRACK_PARTITION(trackSelections2);
   o2::framework::Preslice<FemtoTracks> perColTracks = o2::aod::femtobase::stored::fColId;
+
+  o2::framework::Partition<FemtoTracksWithMass> trackWithMassPartition1 = MAKE_TRACK_PARTITION_WITH_MASS(trackSelections1);
+  o2::framework::Partition<FemtoTracksWithMass> trackWithMassPartition2 = MAKE_TRACK_PARTITION_WITH_MASS(trackSelections2);
+  o2::framework::Preslice<FemtoTracksWithMass> perColTracksWithMass = o2::aod::femtobase::stored::fColId;
 
   // v0 builder
   v0builder::V0BuilderDerivedToDerived v0Builder;
@@ -109,17 +112,23 @@ struct FemtoProducerDerivedToDerived {
 
   void init(o2::framework::InitContext& /*context*/)
   {
+    const int activeProcesses =
+      static_cast<int>(doprocessTracks) + static_cast<int>(doprocessTracksWithMass) +
+      static_cast<int>(doprocessTracksLambdas) + static_cast<int>(doprocessLambdas) +
+      static_cast<int>(doprocessTracksXis) + static_cast<int>(doprocessTracksOmegas) +
+      static_cast<int>(doprocessTracksK0shorts) + static_cast<int>(doprocessTracksSigma) +
+      static_cast<int>(doprocessTracksSigmaPlus);
+    if (activeProcesses != 1) {
+      LOG(fatal) << "Exactly one process function must be activated (got " << activeProcesses << ").";
+    }
+
     trackBuilder.init(confTrackBuilder);
     v0Builder.init(confV0Builder);
     cascadeBuilder.init(confCascadeBuilder);
     kinkBuilder.init(confKinkBuilder);
-
-    if ((static_cast<int>(doprocessTracks) + static_cast<int>(doprocessTracksWithMass) + static_cast<int>(doprocessTracksLambdas) + static_cast<int>(doprocessLambdas) + static_cast<int>(doprocessTracksXis) + static_cast<int>(doprocessTracksOmegas) + static_cast<int>(doprocessTracksK0shorts) + static_cast<int>(doprocessTracksSigma) + static_cast<int>(doprocessTracksSigmaPlus)) > 1) {
-      LOG(fatal) << "Only one proccess function can be activated!";
-    }
   }
 
-  // proccess functions
+  // process functions
   void processTracks(FilteredFemtoCollision const& col, FemtoTracks const& tracks)
   {
     if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache)) {
@@ -133,12 +142,12 @@ struct FemtoProducerDerivedToDerived {
 
   void processTracksWithMass(FilteredFemtoCollision const& col, FemtoTracksWithMass const& tracks)
   {
-    if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackPartition1, trackPartition2, cache)) {
+    if (trackBuilder.collisionHasTooFewTracks(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache)) {
       return;
     }
     trackBuilder.reset(tracks);
     collisionBuilder.processCollision(col, collisionBuilderProducts);
-    trackBuilder.processTracks(col, tracks, trackPartition1, trackPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
+    trackBuilder.processTracks(col, tracks, trackWithMassPartition1, trackWithMassPartition2, cache, trackBuilderProducts, collisionBuilderProducts);
   }
   PROCESS_SWITCH(FemtoProducerDerivedToDerived, processTracksWithMass, "Process tracks with mass", false);
 
@@ -163,7 +172,7 @@ struct FemtoProducerDerivedToDerived {
     collisionBuilder.processCollision(col, collisionBuilderProducts);
     v0Builder.processLambdas(col, lambdas, tracks, lambdaPartition, trackBuilder, cache, v0BuilderProducts, trackBuilderProducts, collisionBuilderProducts);
   }
-  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processLambdas, "Process lambdas", false);
+  PROCESS_SWITCH(FemtoProducerDerivedToDerived, processLambdas, "Process lambdas only (produced track table contains daughers only)", false);
 
   void processTracksXis(FilteredFemtoCollision const& col, FemtoTracks const& tracks, FemtoXis const& xis)
   {

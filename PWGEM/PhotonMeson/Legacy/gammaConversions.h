@@ -13,8 +13,8 @@
 /// \brief contains type definitions for gammaConversions.cxx
 /// \author stephan.friedrich.stiefelmaier@cern.ch
 
-#ifndef PWGEM_PHOTONMESON_TASKS_GAMMACONVERSIONS_H_
-#define PWGEM_PHOTONMESON_TASKS_GAMMACONVERSIONS_H_
+#ifndef PWGEM_PHOTONMESON_LEGACY_GAMMACONVERSIONS_H_
+#define PWGEM_PHOTONMESON_LEGACY_GAMMACONVERSIONS_H_
 
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
@@ -177,4 +177,4 @@ struct tHistoRegistry {
   tHistoFolderCTV mV0{mPath + "V0/"};
 };
 
-#endif // PWGEM_PHOTONMESON_TASKS_GAMMACONVERSIONS_H_
+#endif // PWGEM_PHOTONMESON_LEGACY_GAMMACONVERSIONS_H_

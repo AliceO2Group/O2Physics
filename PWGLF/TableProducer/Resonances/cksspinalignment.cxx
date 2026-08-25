@@ -120,6 +120,8 @@ struct cksspinalignment {
   Configurable<float> cfgK0sMassMin{"cfgK0sMassMin", 0.45f, "Minimum K0s invariant mass"};
   Configurable<float> cfgK0sMassMax{"cfgK0sMassMax", 0.55f, "Maximum K0s invariant mass"};
 
+  Configurable<float> cfgKeepFraction{"cfgKeepFraction", 0.4f, "Fraction of events to keep"};
+
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   RCTFlagsChecker rctChecker;
 
@@ -134,6 +136,26 @@ struct cksspinalignment {
     histos.add("hKShortMass", "hKShortMass;M_{#pi^{+}#pi^{-}} (GeV/#it{c}^{2});Counts", kTH1F, {{200, 0.4f, 0.6f}});
     histos.add("hNStoredK0s", "hNStoredK0s;N_{K^{0}_{S}};Events", kTH1F, {{100, 0.0f, 100.0f}});
     histos.add("hNStoredPions", "hNStoredPions;N_{#pi};Events", kTH1F, {{500, 0.0f, 500.0f}});
+  }
+
+  bool keepEvent(uint64_t eventIndex) const
+  { /*
+     if (cfgKeepFraction >= 1.0f) {
+       return true;
+     }
+    */
+    // SplitMix64 pseudo-random hash
+    uint64_t x = eventIndex + 0x9e3779b97f4a7c15ULL;
+    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
+    x = x ^ (x >> 31);
+
+    // Convert hash to uniform random number in [0,1)
+    const double u =
+      static_cast<double>(x >> 11) *
+      (1.0 / 9007199254740992.0);
+
+    return u < cfgKeepFraction.value;
   }
 
   template <typename T>
@@ -222,8 +244,8 @@ struct cksspinalignment {
     float radius;
     float dcaPositive;
     float dcaNegative;
-    float dcaBetweenDaughters;
-    // float lifetime;
+    // float dcaBetweenDaughters;
+    //  float lifetime;
     int64_t positiveIndex;
     int64_t negativeIndex;
   };
@@ -361,8 +383,8 @@ struct cksspinalignment {
     const int occupancy = collision.trackOccupancyInTimeRange();
 
     const float psiFT0C = collision.psiFT0C();
-    const float psiFT0A = collision.psiFT0A();
-    const float psiTPC = collision.psiTPC();
+    // const float psiFT0A = collision.psiFT0A();
+    // const float psiTPC = collision.psiTPC();
 
     histos.fill(HIST("hEvtSelInfo"), 0.5);
 
@@ -383,6 +405,10 @@ struct cksspinalignment {
     histos.fill(HIST("hEvtSelInfo"), 1.5);
 
     if (!collision.triggereventep()) {
+      return;
+    }
+
+    if (!keepEvent(static_cast<uint64_t>(collision.globalIndex()))) {
       return;
     }
 
@@ -462,8 +488,8 @@ struct cksspinalignment {
                              static_cast<float>(v0.v0radius()),
                              static_cast<float>(std::abs(v0.dcapostopv())),
                              static_cast<float>(std::abs(v0.dcanegtopv())),
-                             static_cast<float>(std::abs(v0.dcaV0daughters())),
-                             // lifetime,
+                             // static_cast<float>(std::abs(v0.dcaV0daughters())),
+                             //  lifetime,
                              posId,
                              negId});
 
@@ -474,7 +500,8 @@ struct cksspinalignment {
     histos.fill(HIST("hNStoredK0s"), selectedK0s.size());
     histos.fill(HIST("hNStoredPions"), selectedPions.size());
 
-    if (selectedK0s.empty() && selectedPions.empty()) {
+    // if (selectedK0s.empty() && selectedPions.empty()) {
+    if (selectedK0s.empty()) {
       return;
     }
 
@@ -482,9 +509,9 @@ struct cksspinalignment {
 
     kshortpionEvent(centrality,
                     vz,
-                    psiFT0C,
-                    psiFT0A,
-                    psiTPC);
+                    psiFT0C);
+    // psiFT0A,
+    // psiTPC);
 
     const int64_t indexEvent = kshortpionEvent.lastIndex();
 
@@ -494,8 +521,8 @@ struct cksspinalignment {
                   k0s.radius,
                   k0s.dcaPositive,
                   k0s.dcaNegative,
-                  k0s.dcaBetweenDaughters,
-                  // k0s.lifetime,
+                  // k0s.dcaBetweenDaughters,
+                  //  k0s.lifetime,
                   k0s.px,
                   k0s.py,
                   k0s.pz,

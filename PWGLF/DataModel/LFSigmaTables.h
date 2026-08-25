@@ -850,7 +850,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(KStarMCMass, kstarMCMass,
 
 DECLARE_SOA_DYNAMIC_COLUMN(KStarMCY, kstarMCY,
                            [](float photonMCPx, float photonMCPy, float photonMCPz, float kshortMCPx, float kshortMCPy, float kshortMCPz) -> float {
-                             return RecoDecay::y(std::array{photonMCPx + kshortMCPx, photonMCPy + kshortMCPy, photonMCPz + kshortMCPz}, o2::constants::physics::MassKaonNeutral);
+                             return RecoDecay::y(std::array{photonMCPx + kshortMCPx, photonMCPy + kshortMCPy, photonMCPz + kshortMCPz}, o2::constants::physics::MassK0Star892);
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(MCPhi, mcphi, //! Phi in the range [0, 2pi)
