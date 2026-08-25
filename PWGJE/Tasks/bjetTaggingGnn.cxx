@@ -331,9 +331,9 @@ struct BjetTaggingGnn {
 
     const AxisSpec axisTrackpT{200, 0., 200., "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisTrackpTFine{1000, 0., 10., "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec axisJetpT{250, 0., 250., "#it{p}_{T,~ch~jet} (GeV/#it{c})"};
+    const AxisSpec axisJetpT{250, 0., 250., "#it{p}_{T, ch jet} (GeV/#it{c})"};
     // Used in place of axisJetpT for every "_sub"-suffixed histogram (UE-subtracted jet pT can go negative).
-    const AxisSpec axisJetpTSub{300, -50., 250., "#it{p}_{T,~ch~jet}^{sub} (GeV/#it{c})"};
+    const AxisSpec axisJetpTSub{300, -50., 250., "#it{p}_{T, ch jet}^{sub} (GeV/#it{c})"};
     const AxisSpec axisJetEta{200, -0.8, 0.8, "#it{#eta}_{jet}"};
     const AxisSpec axisDb{200, dbMin, dbMax, "#it{D}_{b}"};
     const AxisSpec axisDbFine{dbNbins, dbMin, dbMax, "#it{D}_{b}"};
