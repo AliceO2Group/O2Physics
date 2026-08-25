@@ -199,6 +199,8 @@ struct Alice3MulticharmFinder {
   // Helper structs to pass candidate information
   struct {
     float radius{};
+    float pt{};
+    float eta{};
     o2::track::TrackParCov trackParCov;
   } thisXiCandidate;
 
@@ -812,6 +814,7 @@ struct Alice3MulticharmFinder {
                            thisXiccCandidate.eta, thisXiccCandidate.dca,
                            thisXicCandidate.mass, thisXicCandidate.pt,
                            thisXicCandidate.eta, thisXicCandidate.dca,
+                           thisXiCandidate.pt, thisXiCandidate.eta,
                            xi.dcaXYCascToPV(), xi.dcaZCascToPV(),
                            xicdcaXY, xicdcaZ,
                            xiccdcaXY, xiccdcaZ,
@@ -886,6 +889,8 @@ struct Alice3MulticharmFinder {
       hist<TH1>("hDCAzXi")->Fill(xi.dcaZ() * ToMicrons);
       hist<TH1>("hMinXiDecayRadius")->Fill(xiCand.cascRadius());
       thisXiCandidate.radius = xiCand.cascRadius();
+      thisXiCandidate.pt = xi.pt();
+      thisXiCandidate.eta = xi.eta();
       thisXiCandidate.trackParCov = getTrackParCov(xi);
       processFindXicc(collision, xiCand, picTracksGrouped, piccTracksGrouped);
     }
@@ -971,6 +976,8 @@ struct Alice3MulticharmFinder {
       std::array<float, NCovMatElements> cascCovMat{};
       std::copy(xiCand.covMat(), xiCand.covMat() + NCovMatElements, cascCovMat.begin());
       thisXiCandidate.radius = xiCand.cascradius();
+      thisXiCandidate.pt = xiCand.pt();
+      thisXiCandidate.eta = xiCand.eta();
       thisXiCandidate.trackParCov = o2::track::TrackParCov(cascSV, cascP, cascCovMat, chargeCascade);
       processFindXicc(collision, xiCand, picTracksGrouped, piccTracksGrouped);
     }
