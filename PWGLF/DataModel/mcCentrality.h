@@ -25,7 +25,6 @@
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Framework/Logger.h"
 
 namespace o2::aod
 {
