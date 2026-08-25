@@ -431,15 +431,17 @@ struct JEPFlowAnalysis {
         q2selLow = q2Map->GetBinContent(q2Map->GetXaxis()->FindBin(i + 2), q2Map->GetYaxis()->FindBin(cent), q2Map->GetZaxis()->FindBin(1. - cfgQ2SelFrac));
       }
 
-      leadingPt = 0.0;
-      leadingPhi = 0.0;
-      leadingEta = 0.0;
+      if (i == 0) {
+        leadingPt = 0.0;
+        leadingPhi = 0.0;
+        leadingEta = 0.0;
 
-      subleadingPt = 0.0;
-      subleadingPhi = 0.0;
-      subleadingEta = 0.0;
+        subleadingPt = 0.0;
+        subleadingPhi = 0.0;
+        subleadingEta = 0.0;
 
-      nHighPt = 0;
+        nHighPt = 0;
+      }
 
       if (cfgSelEvtTwoHP && i == 0) {
         for (const auto& track : tracks) {
@@ -468,10 +470,10 @@ struct JEPFlowAnalysis {
       if (cfgSelEvtTwoHP && nHighPt < minnHighPt)
         continue;
 
-      if (std::abs(RecoDecay::constrainAngle(leadingPhi - subleadingPhi, 0) - constants::math::PI) > cfgTwoLPAngle)
+      if (cfgSelEvtTwoHP && std::abs(RecoDecay::constrainAngle(leadingPhi - subleadingPhi, 0) - constants::math::PI) > cfgTwoLPAngle)
         continue;
 
-      if (std::abs(leadingEta + subleadingEta) > cfgEtaBalancing)
+      if (cfgSelEvtTwoHP && std::abs(leadingEta + subleadingEta) > cfgEtaBalancing)
         continue;
 
       epFlowHistograms.fill(HIST("EpDet"), i + 2, cent, eps[0]);
