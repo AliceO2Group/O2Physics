@@ -17,27 +17,19 @@
 /// \brief  Task to produce the table for the equalized multiplicity into centrality bins
 ///
 
-#include "PWGLF/DataModel/mcCentrality.h"
-
-#include "TableHelper.h"
-
-#include "PWGLF/Utils/inelGt.h"
 #include "PWGLF/Utils/mcCentralityModule.h"
 
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
-#include <CCDB/CcdbApi.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/RunningWorkflowInfo.h>
-#include <Framework/StaticFor.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/Track.h>
 
 #include <string>
 
