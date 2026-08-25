@@ -243,6 +243,8 @@ struct JEPFlowAnalysis {
       float sel = cfgMultq2low->at(idx);
       return q2 < sel;
     }
+
+    return false;
   }
 
   template <typename T>
