@@ -53,7 +53,6 @@ struct Alice3Multicharm {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   o2::analysis::MulticharmMlResponse<float> mlResponse;
-  std::map<std::string, std::string> metadata;
   o2::ccdb::CcdbApi ccdbApi;
   static constexpr float ToMicrons = 1e+4;
 
