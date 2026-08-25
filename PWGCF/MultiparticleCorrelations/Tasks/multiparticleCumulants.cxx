@@ -189,7 +189,6 @@ static constexpr int NumFourPCorrBins = (NumHarmonics * (NumHarmonics + 1)) / 2;
 static constexpr int NumSixPCorrBins = (NumHarmonics * (NumHarmonics - 1) * (NumHarmonics - 2)) / 6; // <v2^2 v3^2 v4^2>, without <vn^2 vn^2 vm^2>, in this case 1
 static constexpr std::array<std::array<int, 2>, NumFourPCorrBins> FourPHarmonicIndex{{{2, 2}, {2, 3}, {2, 4}, {3, 3}, {3, 4}, {4, 4}}};
 
-
 // *) Main task:
 struct MultiparticleCumulants { // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
 
