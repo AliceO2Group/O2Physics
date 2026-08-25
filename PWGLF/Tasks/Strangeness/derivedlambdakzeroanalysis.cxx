@@ -1194,10 +1194,16 @@ struct derivedlambdakzeroanalysis {
 
     // Creation of histograms: MC generated
     if ((doprocessGeneratedRun3 || doprocessGeneratedRun2)) {
-      histos.add("hGenEvents", "hGenEvents", kTH2D, {{axisConfigurations.axisNch}, {2, -0.5f, +1.5f}});
-      histos.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(1, "All gen. events");
-      histos.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(2, "Gen. with at least 1 rec. events");
-      histos.add("hGenEventCentrality", "hGenEventCentrality", kTH1D, {{101, 0.0f, 101.0f}});
+      if (useMcCentrality) {
+        histos.add("hGenEventsVsMcCentrality", "hGenEventsVsMcCentrality", kTH2D, {axisCentralityFine, {2, -0.5f, +1.5f}});
+        histos.get<TH2>(HIST("hGenEventsVsMcCentrality"))->GetYaxis()->SetBinLabel(1, "All gen. events");
+        histos.get<TH2>(HIST("hGenEventsVsMcCentrality"))->GetYaxis()->SetBinLabel(2, "Gen. with at least 1 rec. events");
+      } else {
+        histos.add("hGenEvents", "hGenEvents", kTH2D, {{axisConfigurations.axisNch}, {2, -0.5f, +1.5f}});
+        histos.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(1, "All gen. events");
+        histos.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(2, "Gen. with at least 1 rec. events");
+      }
+      histos.add("hGenEventCentrality", "hGenEventCentrality", kTH1D, {axisCentralityFine});
 
       histos.add("hCentralityVsNcoll_beforeEvSel", "hCentralityVsNcoll_beforeEvSel", kTH2D, {axisConfigurations.axisCentrality, {50, -0.5f, 49.5f}});
       histos.add("hCentralityVsNcoll_afterEvSel", "hCentralityVsNcoll_afterEvSel", kTH2D, {axisConfigurations.axisCentrality, {50, -0.5f, 49.5f}});
@@ -1212,21 +1218,39 @@ struct derivedlambdakzeroanalysis {
       histos.add("h2dGenOmegaMinus", "h2dGenOmegaMinus", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
       histos.add("h2dGenOmegaPlus", "h2dGenOmegaPlus", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
 
-      histos.add("h2dGenK0ShortVsMultMC_RecoedEvt", "h2dGenK0ShortVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
-      histos.add("h2dGenLambdaVsMultMC_RecoedEvt", "h2dGenLambdaVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
-      histos.add("h2dGenAntiLambdaVsMultMC_RecoedEvt", "h2dGenAntiLambdaVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
-      histos.add("h2dGenXiMinusVsMultMC_RecoedEvt", "h2dGenXiMinusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
-      histos.add("h2dGenXiPlusVsMultMC_RecoedEvt", "h2dGenXiPlusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
-      histos.add("h2dGenOmegaMinusVsMultMC_RecoedEvt", "h2dGenOmegaMinusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
-      histos.add("h2dGenOmegaPlusVsMultMC_RecoedEvt", "h2dGenOmegaPlusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
-
-      histos.add("h2dGenK0ShortVsMultMC", "h2dGenK0ShortVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
-      histos.add("h2dGenLambdaVsMultMC", "h2dGenLambdaVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
-      histos.add("h2dGenAntiLambdaVsMultMC", "h2dGenAntiLambdaVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
-      histos.add("h2dGenXiMinusVsMultMC", "h2dGenXiMinusVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
-      histos.add("h2dGenXiPlusVsMultMC", "h2dGenXiPlusVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
-      histos.add("h2dGenOmegaMinusVsMultMC", "h2dGenOmegaMinusVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
-      histos.add("h2dGenOmegaPlusVsMultMC", "h2dGenOmegaPlusVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+      if (useMcCentrality) {
+        histos.add("h2dGenK0ShortVsMcCentrality_RecoedEvt", "h2dGenK0ShortVsMcCentrality_RecoedEvt", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
+        histos.add("h2dGenLambdaVsMcCentrality_RecoedEvt", "h2dGenLambdaVsMcCentrality_RecoedEvt", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
+        histos.add("h2dGenAntiLambdaVsMcCentrality_RecoedEvt", "h2dGenAntiLambdaVsMcCentrality_RecoedEvt", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
+        histos.add("h2dGenXiMinusVsMcCentrality_RecoedEvt", "h2dGenXiMinusVsMcCentrality_RecoedEvt", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
+        histos.add("h2dGenXiPlusVsMcCentrality_RecoedEvt", "h2dGenXiPlusVsMcCentrality_RecoedEvt", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
+        histos.add("h2dGenOmegaMinusVsMcCentrality_RecoedEvt", "h2dGenOmegaMinusVsMcCentrality_RecoedEvt", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
+        histos.add("h2dGenOmegaPlusVsMcCentrality_RecoedEvt", "h2dGenOmegaPlusVsMcCentrality_RecoedEvt", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
+  
+        histos.add("h2dGenK0ShortVsMcCentrality", "h2dGenK0ShortVsMcCentrality", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
+        histos.add("h2dGenLambdaVsMcCentrality", "h2dGenLambdaVsMcCentrality", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
+        histos.add("h2dGenAntiLambdaVsMcCentrality", "h2dGenAntiLambdaVsMcCentrality", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
+        histos.add("h2dGenXiMinusVsMcCentrality", "h2dGenXiMinusVsMcCentrality", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
+        histos.add("h2dGenXiPlusVsMcCentrality", "h2dGenXiPlusVsMcCentrality", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
+        histos.add("h2dGenOmegaMinusVsMcCentrality", "h2dGenOmegaMinusVsMcCentrality", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
+        histos.add("h2dGenOmegaPlusVsMcCentrality", "h2dGenOmegaPlusVsMcCentrality", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
+      } else {
+        histos.add("h2dGenK0ShortVsMultMC_RecoedEvt", "h2dGenK0ShortVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenLambdaVsMultMC_RecoedEvt", "h2dGenLambdaVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenAntiLambdaVsMultMC_RecoedEvt", "h2dGenAntiLambdaVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenXiMinusVsMultMC_RecoedEvt", "h2dGenXiMinusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenXiPlusVsMultMC_RecoedEvt", "h2dGenXiPlusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenOmegaMinusVsMultMC_RecoedEvt", "h2dGenOmegaMinusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenOmegaPlusVsMultMC_RecoedEvt", "h2dGenOmegaPlusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+  
+        histos.add("h2dGenK0ShortVsMultMC", "h2dGenK0ShortVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenLambdaVsMultMC", "h2dGenLambdaVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenAntiLambdaVsMultMC", "h2dGenAntiLambdaVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenXiMinusVsMultMC", "h2dGenXiMinusVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenXiPlusVsMultMC", "h2dGenXiPlusVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenOmegaMinusVsMultMC", "h2dGenOmegaMinusVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+        histos.add("h2dGenOmegaPlusVsMultMC", "h2dGenOmegaPlusVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+      }
 
       if (doSecondaryV0s) {
         histos.add("h2dGenSecLambda", "h2dGenSecLambda", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
@@ -2776,7 +2800,11 @@ struct derivedlambdakzeroanalysis {
         continue;
       }
 
-      histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 0 /* all gen. events*/);
+      if (useMcCentrality) {
+        histos.fill(HIST("hGenEventsVsMcCentrality"), getCentralityRun3(mcCollision), 0 /* all gen. events*/);
+      } else {
+        histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 0 /* all gen. events*/);
+      }
 
       auto groupedCollisions = getGroupedCollisions<run3>(collisions, mcCollision.globalIndex());
       // Check if there is at least one of the reconstructed collisions associated to this MC collision
@@ -2812,7 +2840,11 @@ struct derivedlambdakzeroanalysis {
       histos.fill(HIST("hEventPVzMC"), mcCollision.posZ());
 
       if (atLeastOne) {
-        histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 1 /* at least 1 rec. event*/);
+        if (useMcCentrality) {
+          histos.fill(HIST("hGenEventsVsMcCentrality"), getCentralityRun3(mcCollision), 1 /* at least 1 rec. event*/);
+        } else {
+          histos.fill(HIST("hGenEvents"), mcCollision.multMCNParticlesEta05(), 1 /* at least 1 rec. event*/);
+        }
 
         histos.fill(HIST("hGenEventCentrality"), centrality);
       }
@@ -3037,27 +3069,51 @@ struct derivedlambdakzeroanalysis {
         }
 
         if (v0MC.pdgCode() == PDG_t::kK0Short) {
-          histos.fill(HIST("h2dGenK0ShortVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+          if (useMcCentrality) {
+            histos.fill(HIST("h2dGenK0ShortVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+          } else {
+            histos.fill(HIST("h2dGenK0ShortVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+          }
         }
         if (v0MC.pdgCode() == PDG_t::kLambda0) {
-          histos.fill(HIST("h2dGenLambdaVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+          if (useMcCentrality) {
+            histos.fill(HIST("h2dGenLambdaVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+          } else {
+            histos.fill(HIST("h2dGenLambdaVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+          }
         }
         if (v0MC.pdgCode() == PDG_t::kLambda0Bar) {
-          histos.fill(HIST("h2dGenAntiLambdaVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+          if (useMcCentrality) {
+            histos.fill(HIST("h2dGenAntiLambdaVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+          } else {
+            histos.fill(HIST("h2dGenAntiLambdaVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+          }
         }
       }
 
       if (v0MC.pdgCode() == PDG_t::kK0Short) {
         histos.fill(HIST("h2dGenK0Short"), centrality, ptmc);
-        histos.fill(HIST("h2dGenK0ShortVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        if (useMcCentrality) {
+          histos.fill(HIST("h2dGenK0ShortVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+        } else {
+          histos.fill(HIST("h2dGenK0ShortVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        }
       }
       if (v0MC.pdgCode() == PDG_t::kLambda0) {
         histos.fill(HIST("h2dGenLambda"), centrality, ptmc);
-        histos.fill(HIST("h2dGenLambdaVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        if (useMcCentrality) {
+          histos.fill(HIST("h2dGenLambdaVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+        } else {
+          histos.fill(HIST("h2dGenLambdaVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        }
       }
       if (v0MC.pdgCode() == PDG_t::kLambda0Bar) {
         histos.fill(HIST("h2dGenAntiLambda"), centrality, ptmc);
-        histos.fill(HIST("h2dGenAntiLambdaVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        if (useMcCentrality) {
+          histos.fill(HIST("h2dGenAntiLambdaVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+        } else {
+          histos.fill(HIST("h2dGenAntiLambdaVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        }
       }
     }
 
@@ -3101,16 +3157,32 @@ struct derivedlambdakzeroanalysis {
         }
 
         if (cascMC.pdgCode() == PDG_t::kXiMinus) {
-          histos.fill(HIST("h2dGenXiMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+          if (useMcCentrality) {
+            histos.fill(HIST("h2dGenXiMinusVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+          } else {
+            histos.fill(HIST("h2dGenXiMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+          }
         }
         if (cascMC.pdgCode() == PDG_t::kXiPlusBar) {
-          histos.fill(HIST("h2dGenXiPlusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+          if (useMcCentrality) {
+            histos.fill(HIST("h2dGenXiPlusVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+          } else {
+            histos.fill(HIST("h2dGenXiPlusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+          }
         }
         if (cascMC.pdgCode() == PDG_t::kOmegaMinus) {
-          histos.fill(HIST("h2dGenOmegaMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+          if (useMcCentrality) {
+            histos.fill(HIST("h2dGenOmegaMinusVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+          } else {
+            histos.fill(HIST("h2dGenOmegaMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+          }
         }
         if (cascMC.pdgCode() == PDG_t::kOmegaPlusBar) {
-          histos.fill(HIST("h2dGenOmegaPlusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+          if (useMcCentrality) {
+            histos.fill(HIST("h2dGenOmegaPlusVsMcCentrality_RecoedEvt"), getCentralityRun3(mcCollision), ptmc);
+          } else {
+            histos.fill(HIST("h2dGenOmegaPlusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
+          }
         }
 
         if (doSecondaryV0s && std::abs(cascMC.pdgCodeV0()) == kLambda0) {
@@ -3138,19 +3210,35 @@ struct derivedlambdakzeroanalysis {
 
       if (cascMC.pdgCode() == PDG_t::kXiMinus) {
         histos.fill(HIST("h2dGenXiMinus"), centrality, ptmc);
-        histos.fill(HIST("h2dGenXiMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        if (useMcCentrality) {
+          histos.fill(HIST("h2dGenXiMinusVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+        } else {
+          histos.fill(HIST("h2dGenXiMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        }
       }
       if (cascMC.pdgCode() == PDG_t::kXiPlusBar) {
         histos.fill(HIST("h2dGenXiPlus"), centrality, ptmc);
-        histos.fill(HIST("h2dGenXiPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        if (useMcCentrality) {
+          histos.fill(HIST("h2dGenXiPlusVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+        } else {
+          histos.fill(HIST("h2dGenXiPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        }
       }
       if (cascMC.pdgCode() == PDG_t::kOmegaMinus) {
         histos.fill(HIST("h2dGenOmegaMinus"), centrality, ptmc);
-        histos.fill(HIST("h2dGenOmegaMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        if (useMcCentrality) {
+          histos.fill(HIST("h2dGenOmegaMinusVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+        } else {
+          histos.fill(HIST("h2dGenOmegaMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        }
       }
       if (cascMC.pdgCode() == PDG_t::kOmegaPlusBar) {
         histos.fill(HIST("h2dGenOmegaPlus"), centrality, ptmc);
-        histos.fill(HIST("h2dGenOmegaPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        if (useMcCentrality) {
+          histos.fill(HIST("h2dGenOmegaPlusVsMcCentrality"), getCentralityRun3(mcCollision), ptmc);
+        } else {
+          histos.fill(HIST("h2dGenOmegaPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
+        }
       }
 
       if (doSecondaryV0s && std::abs(cascMC.pdgCodeV0()) == kLambda0) {
