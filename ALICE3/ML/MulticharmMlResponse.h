@@ -13,8 +13,8 @@
 /// \brief Class to compute the ML response for multi-charm candidates
 /// \author Jesper Karlsson Gumprecht
 
-#ifndef ALICE3_ML_MULTICHARMRESPONSE_H_
-#define ALICE3_ML_MULTICHARMRESPONSE_H_
+#ifndef ALICE3_ML_MULTICHARMMLRESPONSE_H_
+#define ALICE3_ML_MULTICHARMMLRESPONSE_H_
 
 #include "Tools/ML/MlResponse.h"
 
@@ -203,4 +203,4 @@ class MulticharmMlResponse : public MlResponse<TypeOutputScore>
 
 } // namespace o2::analysis
 
-#endif // ALICE3_ML_MULTICHARMRESPONSE_H_
+#endif // ALICE3_ML_MULTICHARMMLRESPONSE_H_
