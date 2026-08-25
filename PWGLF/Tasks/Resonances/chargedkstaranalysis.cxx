@@ -99,6 +99,7 @@ struct Chargedkstaranalysis {
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
   bool currentIsGen = false;
   bool mcClosure = false;
+  bool sigLossDen = false;
   struct : ConfigurableGroup {
     ConfigurableAxis cfgvtxbins{"cfgvtxbins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
     ConfigurableAxis cfgmultbins{"cfgmultbins", {VARIABLE_WIDTH, 0., 1., 5., 10., 30., 50., 70., 100., 110.}, "Mixing bins - multiplicity"};
@@ -603,6 +604,8 @@ struct Chargedkstaranalysis {
       histos.add("Correction/sigLoss_num_pri", "Gen primary Kstar (|y|<0.5, selected events) in reco class", HistType::kTH2F, {ptAxis, centAxis});
       histos.add("Correction/EF_den", "Gen events (truth class)", HistType::kTH1F, {centAxis});
       histos.add("Correction/EF_num", "Reco events (selected events)", HistType::kTH1F, {centAxis});
+      histos.add("sigLoss_den_pri_threeD", "sigLoss_den_pri_threeD", kTHnSparseF, {centAxis, ptAxis, thnAxisPOL}, true);
+      histos.add("sigLoss_den_pri_threeD_rot", "sigLoss_den_pri_threeD_rot", kTHnSparseF, {centAxis, ptAxis, thnAxisPOL}, true);
       histos.add("Correction/hNEventsMCTruth", "hNEventsMCTruth", HistType::kTH1F, {AxisSpec{nSteps, 0.5, nSteps + 0.5, ""}});
       auto hstep = histos.get<TH1>(HIST("Correction/hNEventsMCTruth"));
       hstep->GetXaxis()->SetBinLabel(1, "All");
@@ -844,10 +847,20 @@ struct Chargedkstaranalysis {
 
     // 2. MC Generated Path
     if (currentIsGen) {
-      if (isRot) {
-        histosMc.fill(HIST("h3ChaKstarInvMassRotMcGen"), multiplicity, mother.Pt(), mother.M(), cosTheta);
+      if (sigLossDen) {
+        // Fill ONLY the Signal Loss Denominator 3D Histograms
+        if (isRot) {
+          histos.fill(HIST("sigLoss_den_pri_threeD_rot"), multiplicity, mother.Pt(), cosTheta);
+        } else {
+          histos.fill(HIST("sigLoss_den_pri_threeD"), multiplicity, mother.Pt(), cosTheta);
+        }
       } else {
-        histosMc.fill(HIST("h3ChaKstarInvMassDSMcGen"), multiplicity, mother.Pt(), mother.M(), cosTheta);
+        // Fill standard 4D MC Gen Histograms
+        if (isRot) {
+          histosMc.fill(HIST("h3ChaKstarInvMassRotMcGen"), multiplicity, mother.Pt(), mother.M(), cosTheta);
+        } else {
+          histosMc.fill(HIST("h3ChaKstarInvMassDSMcGen"), multiplicity, mother.Pt(), mother.M(), cosTheta);
+        }
       }
       return;
     }
@@ -867,7 +880,6 @@ struct Chargedkstaranalysis {
       }
     }
   }
-
   template <typename T>
   void fillInvMass(const T& mother, float multiplicity, const T& daughter1, const T& daughter2, bool isMix)
   {
@@ -1691,6 +1703,7 @@ struct Chargedkstaranalysis {
         histos.fill(HIST("Correction/sigLoss_num_pri"), part.pt(), lCentrality);
       }
     }
+    sigLossDen = true;
     // To calculate the denominator -> To check the all the events have chk892
     for (auto const& part : mcParticles) {
       if (!part.has_mcCollision()) {
@@ -1718,6 +1731,68 @@ struct Chargedkstaranalysis {
       histos.fill(HIST("Correction/sigLoss_den"), part.pt(), lCentrality);
       if (part.vt() == 0) {
         histos.fill(HIST("Correction/sigLoss_den_pri"), part.pt(), lCentrality);
+      }
+      LorentzVectorSetXYZM lResoSecondary, lDecayDaughter_bach, lResoKstar, lDaughterRot;
+      lResoKstar = LorentzVectorSetXYZM(part.px(), part.py(), part.pz(), MassKPlusStar892);
+      const int pionWanted = (part.pdgCode() > 0) ? +kPiPlus : -kPiPlus;
+      bool hasRightPion = false;
+      bool hasK0sToPipi = false;
+      for (const auto& d1 : part.template daughters_as<aod::McParticles>()) {
+        const int pdg1 = d1.pdgCode();
+        if (pdg1 == pionWanted) {
+          lDecayDaughter_bach = LorentzVectorSetXYZM(d1.px(), d1.py(), d1.pz(), MassPionCharged);
+          if (helicityCfgs.genKinematicsChecks) {
+            if (lDecayDaughter_bach.pt() <= trackCutCfgs.cMinPtcut || std::abs(lDecayDaughter_bach.eta()) >= trackCutCfgs.cMaxEtacut) {
+              continue;
+            }
+          }
+          hasRightPion = true;
+        } else if (std::abs(pdg1) == kPDGK0) {
+          for (const auto& d2 : d1.template daughters_as<aod::McParticles>()) {
+            if (std::abs(d2.pdgCode()) == kPDGK0s) {
+              if (helicityCfgs.genKinematicsChecks) {
+                if (d2.pt() <= secondaryCutsCfgs.cSecondaryPtMin || std::abs(d2.eta()) >= secondaryCutsCfgs.cSecondaryRapidityMax) {
+                  continue;
+                }
+              }
+              bool seenPip = false, seenPim = false;
+              for (const auto& d3 : d2.template daughters_as<aod::McParticles>()) {
+                if (d3.pdgCode() == +kPiPlus) {
+                  if (helicityCfgs.genKinematicsChecks) {
+                    if (d3.pt() <= trackCutCfgs.cMinPtcut || std::abs(d3.eta()) >= trackCutCfgs.cMaxEtacut) {
+                      continue;
+                    }
+                  }
+                  seenPip = true;
+                } else if (d3.pdgCode() == -kPiPlus) {
+                  if (helicityCfgs.genKinematicsChecks) {
+                    if (d3.pt() <= trackCutCfgs.cMinPtcut || std::abs(d3.eta()) >= trackCutCfgs.cMaxEtacut) {
+                      continue;
+                    }
+                  }
+                  seenPim = true;
+                }
+              }
+              if (seenPip && seenPim) {
+                lResoSecondary = LorentzVectorSetXYZM(d2.px(), d2.py(), d2.pz(), MassK0Short);
+                hasK0sToPipi = true;
+                break;
+              }
+            }
+          }
+        }
+        if (hasRightPion && hasK0sToPipi) {
+          break;
+        }
+      }
+
+      if (!(hasRightPion && hasK0sToPipi)) {
+        continue;
+      }
+      if (helicityCfgs.cCosWithKShot) {
+        fillInvMass(lResoKstar, lCentrality, lResoSecondary, lDecayDaughter_bach, eventCutCfgs.confIsMix);
+      } else {
+        fillInvMass(lResoKstar, lCentrality, lDecayDaughter_bach, lResoSecondary, eventCutCfgs.confIsMix);
       }
     }
     // To calculate the event fraction correction
