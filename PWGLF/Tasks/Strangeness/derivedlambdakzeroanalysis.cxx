@@ -113,6 +113,7 @@ struct derivedlambdakzeroanalysis {
   Configurable<std::string> irSource{"irSource", "", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
   Configurable<int> centralityEstimator{"centralityEstimator", kCentFT0C, "Run 3 centrality estimator (0:CentFT0C, 1:CentFT0M, 2:CentFT0CVariant1, 3:CentMFT, 4:CentNGlobal, 5:CentFV0A)"};
   Configurable<bool> doUPCanalysis{"doUPCanalysis", true, "Study V0s in hadronic and UPC collisions"};
+  Configurable<bool> useMcCentrality{"useMcCentrality", false, "Use MC centrality?"};
 
   Configurable<bool> doEventQA{"doEventQA", false, "do event QA histograms"};
   Configurable<bool> doCompleteTopoQA{"doCompleteTopoQA", false, "do topological variable QA histograms"};
@@ -733,6 +734,9 @@ struct derivedlambdakzeroanalysis {
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1D, {axisConfigurations.axisCentralityFine});
     histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisNch});
+    if (useMcCentrality) {
+      histos.add("hEventVsGenCentrality", "hEventVsGenCentrality", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisCentralityFine});
+    }
     if (doEventQA) {
       if (isRun3) {
         histos.add("hEventSelectionVsCentrality", "hEventSelectionVsCentrality", kTH2D, {{23, -0.5f, +22.5f}, axisConfigurations.axisCentralityFine});
@@ -1266,22 +1270,36 @@ struct derivedlambdakzeroanalysis {
   // If takeMcCentrality is enabled, the centrality is taken from the MC collision; otherwise it is taken
   // from the reconstructed collision. Returns -1 if no corresponding centrality estimator is found or if no MC collision is associated to the recoed collision.
   template <typename TCollision>
-  auto getCentralityRun3(TCollision const& collision)
+  auto getCentralityRun3(TCollision const& collision, bool takeMcCentrality)
   {
-    if (centralityEstimator == kCentFT0C)
-      return collision.centFT0C();
-    else if (centralityEstimator == kCentFT0M)
-      return collision.centFT0M();
-    else if (centralityEstimator == kCentFT0CVariant1)
-      return collision.centFT0CVariant1();
-    else if (centralityEstimator == kCentMFT)
-      return collision.centMFT();
-    else if (centralityEstimator == kCentNGlobal)
-      return collision.centNGlobal();
-    else if (centralityEstimator == kCentFV0A)
-      return collision.centFV0A();
+    // Helper lambda to extract centrality from any object exposing the cent* columns
+    auto extractCentrality = [this](auto const& coll) -> float {
+      switch (centralityEstimator) {
+        case kCentFT0C:         return coll.centFT0C();
+        case kCentFT0M:         return coll.centFT0M();
+        case kCentFT0CVariant1: return coll.centFT0CVariant1();
+        // case kCentMFT:          return coll.centMFT();
+        case kCentNGlobal:      return coll.centNGlobal();
+        case kCentFV0A:         return coll.centFV0A();
+        default:                return -1.f;
+      }
+    };
 
-    return -1.f;
+    // check if we are in MC
+    if constexpr (requires { collision.straMCCollisionId(); }) {
+      if (takeMcCentrality) { // check if we need to extract centrality from recoed or generated collision
+        // if recoed collision has a MC collision, de-reference it and extract centrality from it
+        // otherwise return -1.f
+        if (collision.has_straMCCollision()) {
+          auto mcCollision = collision.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults, aod::McCentFV0As, aod::McCentFT0Ms, aod::McCentFT0Cs, aod::McCentFT0CVariant1s, aod::McCentNGlobals>>();
+          return extractCentrality(mcCollision);
+        } else {
+          return -1.f;
+        }
+      }
+    }
+
+    return extractCentrality(collision);
   }
 
   // ______________________________________________________
@@ -2292,7 +2310,7 @@ struct derivedlambdakzeroanalysis {
       histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
       if (doEventQA) {
         if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
-          centrality = getCentralityRun3(collision);
+          centrality = getCentralityRun3(collision, useMcCentrality);
         }
         histos.fill(HIST("hEventSelectionVsCentrality"), 0. /* all collisions */, centrality);
       }
@@ -2672,7 +2690,7 @@ struct derivedlambdakzeroanalysis {
   void fillReconstructedEventProperties(TCollision const& collision, float& centrality, float& collisionOccupancy, double& interactionRate, int& gapSide, int& selGapSide)
   {
     if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
-      centrality = getCentralityRun3(collision);
+      centrality = getCentralityRun3(collision, useMcCentrality);
       collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
       // Fetch interaction rate only if required (in order to limit ccdb calls)
       interactionRate = !irSource.value.empty() ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
@@ -2680,6 +2698,10 @@ struct derivedlambdakzeroanalysis {
       if (qaCentrality) {
         auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
         centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(centralityEstimator == kCentFT0M ? collision.multFT0A() + collision.multFT0C() : collision.multFT0C()));
+      }
+
+      if (useMcCentrality) {
+        histos.fill(HIST("hEventVsGenCentrality"), getCentralityRun3(collision, false), getCentralityRun3(collision, true));
       }
 
       if (doUPCanalysis) {
@@ -2772,7 +2794,7 @@ struct derivedlambdakzeroanalysis {
         if constexpr (run3) { // check if we are in Run 3
           if (biggestNContribs < collision.multPVTotalContributors()) {
             biggestNContribs = collision.multPVTotalContributors();
-            centrality = getCentralityRun3(collision);
+            centrality = getCentralityRun3(collision, useMcCentrality);
           }
         } else { // we are in Run 2: there should be only one collision in groupedCollisions
           centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
@@ -3009,7 +3031,7 @@ struct derivedlambdakzeroanalysis {
       if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
         auto collision = collisions.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
         if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
-          centrality = getCentralityRun3(collision);
+          centrality = getCentralityRun3(collision, useMcCentrality);
         } else { // no, we are in Run 2
           centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
         }
@@ -3073,7 +3095,7 @@ struct derivedlambdakzeroanalysis {
       if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
         auto collision = collisions.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
         if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
-          centrality = getCentralityRun3(collision);
+          centrality = getCentralityRun3(collision, useMcCentrality);
         } else { // no, we are in Run 2
           centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
         }
@@ -3194,7 +3216,7 @@ struct derivedlambdakzeroanalysis {
 
   // ______________________________________________________
   // Simulated processing in Run 3 (subscribes to MC information too)
-  void processMonteCarloRun3(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps, aod::StraEvTimes, aod::StraCollLabels>::iterator const& collision, V0McCandidates const& fullV0s, DauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
+  void processMonteCarloRun3(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps, aod::StraEvTimes, aod::StraCollLabels>::iterator const& collision, V0McCandidates const& fullV0s, DauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults, aod::McCentFV0As, aod::McCentFT0Ms, aod::McCentFT0Cs, aod::McCentFT0CVariant1s, aod::McCentNGlobals> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
     analyzeRecoedV0sInMonteCarlo(collision, fullV0s);
   }
@@ -3208,7 +3230,7 @@ struct derivedlambdakzeroanalysis {
 
   // ______________________________________________________
   // Simulated processing in Run 3 (subscribes to MC information too)
-  void processGeneratedRun3(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mcCollisions, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& V0MCCores, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const& CascMCCores, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps, aod::StraEvTimes, aod::StraCollLabels> const& collisions)
+  void processGeneratedRun3(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults, aod::McCentFV0As, aod::McCentFT0Ms, aod::McCentFT0Cs, aod::McCentFT0CVariant1s, aod::McCentNGlobals> const& mcCollisions, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const& V0MCCores, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const& CascMCCores, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraEvSelExtras, aod::StraStamps, aod::StraEvTimes, aod::StraCollLabels> const& collisions)
   {
     analyzeGeneratedV0s<true>(mcCollisions, V0MCCores, CascMCCores, collisions);
   }
