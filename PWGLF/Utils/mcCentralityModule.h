@@ -18,9 +18,9 @@
 #ifndef PWGLF_UTILS_MCCENTRALITYMODULE_H_
 #define PWGLF_UTILS_MCCENTRALITYMODULE_H
 
-#include "PWGLF/DataModel/mcCentrality.h"
-
 #include "TableHelper.h"
+
+#include "PWGLF/DataModel/mcCentrality.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -61,17 +61,16 @@ namespace mccentrality // avoid polluting other namespaces
 // statics necessary for the configurables in this namespace
 static constexpr int nParameters = 1;
 static const std::vector<std::string> tableNames{
-  "McCentFV0As", 
-  "McCentFT0Ms", 
-  "McCentFT0As", 
-  "McCentFT0Cs", 
-  "McCentFT0CVariant1s", 
-  "McCentFT0CVariant2s", 
-  "McCentFDDMs", 
-  "McCentNTPVs", 
-  "McCentNGlobals", 
-  "McCentMFTs"
-};
+  "McCentFV0As",
+  "McCentFT0Ms",
+  "McCentFT0As",
+  "McCentFT0Cs",
+  "McCentFT0CVariant1s",
+  "McCentFT0CVariant2s",
+  "McCentFDDMs",
+  "McCentNTPVs",
+  "McCentNGlobals",
+  "McCentMFTs"};
 
 static constexpr int nTablesConst = 10;
 static const std::vector<std::string> parameterNames{"enable"};
@@ -98,20 +97,19 @@ enum tableIndex { kFV0A = 0,
                   kNTPV,
                   kNGlobal,
                   kMFT,
-                  kNestimators};
+                  kNestimators };
 
 static constexpr const char* DirList[] = {
-  "FV0A", 
-  "FT0M", 
-  "FT0A", 
-  "FT0C", 
-  "FT0CVariant1", 
-  "FT0CVariant2", 
-  "FDDM", 
-  "NTPV", 
-  "NGlobal", 
-  "MFT"
-};
+  "FV0A",
+  "FT0M",
+  "FT0A",
+  "FT0C",
+  "FT0CVariant1",
+  "FT0CVariant2",
+  "FDDM",
+  "NTPV",
+  "NGlobal",
+  "MFT"};
 
 // mcCentralityModule: 1st-order configurables
 struct coreConfigurables : o2::framework::ConfigurableGroup {
@@ -131,7 +129,7 @@ struct coreConfigurables : o2::framework::ConfigurableGroup {
   ConfigurableAxis binsPercentileFine{"binsPercentileFine", {VARIABLE_WIDTH, 0, 0.001, 0.01, 1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0}, "Binning of the percentile axis"};
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {1000, 0, 5000}, "Binning of the multiplicity axis"};
 
-  //ccdb configurables
+  // ccdb configurables
   Configurable<std::string> path{"path", "/tmp/InputCalibMC.root", "path to calib file or ccdb path if begins with ccdb://"};
 
   // debug option
@@ -154,11 +152,11 @@ struct products : o2::framework::ProducesGroup {
 
 template <typename T>
 concept HasMcMults = requires(typename T::iterator a) {
-  { a.multMCFT0A() }            -> std::convertible_to<int>;
-  { a.multMCFT0C() }            -> std::convertible_to<int>;
-  { a.multMCFV0A() }            -> std::convertible_to<int>;
-  { a.multMCFDDA() }            -> std::convertible_to<int>;
-  { a.multMCFDDC() }            -> std::convertible_to<int>;
+  { a.multMCFT0A() } -> std::convertible_to<int>;
+  { a.multMCFT0C() } -> std::convertible_to<int>;
+  { a.multMCFV0A() } -> std::convertible_to<int>;
+  { a.multMCFDDA() } -> std::convertible_to<int>;
+  { a.multMCFDDC() } -> std::convertible_to<int>;
   { a.multMCNParticlesEta08() } -> std::convertible_to<int>;
   { a.multMCNParticlesEta05() } -> std::convertible_to<int>;
 };
@@ -373,7 +371,8 @@ struct BuilderModule {
   }
 
   template <typename THist>
-  THist* getHist(const char* name) {
+  THist* getHist(const char* name)
+  {
     if (!this->MCCentralityCalibObjects) {
       return (THist*)0x0;
     }
@@ -391,17 +390,18 @@ struct BuilderModule {
     return hist;
   }
 
-  TH1D* extractCentralityCalibration(int idx, const char* name, bool reverse = false) {
+  TH1D* extractCentralityCalibration(int idx, const char* name, bool reverse = false)
+  {
 
-    auto CalibMC = [&](TString estimator){
+    auto CalibMC = [&](TString estimator) {
       printf("\e[1;31mCalibration for %s estimator\e[0;00m -> Starting...\n", estimator.Data());
 
       std::vector<double> percentile_center(nCentBins);
       std::vector<double> epercentile_center(nCentBins);
 
-      //Histograms
-      TH2D *h2dMultVsCent_Data = getHist<TH2D>(Form("h2dMultVsCent%s_Data", estimator.Data()));
-      TH2D *h2dMultRecoVsMultGen_MC = getHist<TH2D>(Form("hMultEta05VsGenMult%s", estimator.Data()));
+      // Histograms
+      TH2D* h2dMultVsCent_Data = getHist<TH2D>(Form("h2dMultVsCent%s_Data", estimator.Data()));
+      TH2D* h2dMultRecoVsMultGen_MC = getHist<TH2D>(Form("hMultEta05VsGenMult%s", estimator.Data()));
       if (!h2dMultVsCent_Data || !h2dMultRecoVsMultGen_MC) {
         return (TH1D*)0x0;
       }
@@ -413,12 +413,12 @@ struct BuilderModule {
       TProfile* hPVData = hCalibPVData[idx].get();
       TProfile* hPVMC = hCalibPVMC[idx].get();
 
-      TH1D *h1dCalib = h2dMultRecoVsMultGen_MC->ProjectionX(Form("h1d%s", estimator.Data()), 1, h2dMultRecoVsMultGen_MC->GetNbinsX());
+      TH1D* h1dCalib = h2dMultRecoVsMultGen_MC->ProjectionX(Form("h1d%s", estimator.Data()), 1, h2dMultRecoVsMultGen_MC->GetNbinsX());
       h1dCalib->Reset();
       h1dCalib->SetTitle(Form("%s calibration object", estimator.Data()));
       h1dCalib->GetXaxis()->SetTitle(Form("#it{N}_{%s, gen.}", estimator.Data()));
       h1dCalib->GetYaxis()->SetTitle(Form("%s percentile (%%)", estimator.Data()));
-      
+
       // NOTE: candidate-by-candidate assignment (assignCentralityPerCandidate) does not go through this
       // mean-matching path at all. It samples directly from the "hGenMultEta05VsCentrality<estimator>"
       // joint histogram (x = reco centrality of the matched MC collision, y = generated mult |eta|<0.5)
@@ -427,16 +427,16 @@ struct BuilderModule {
       if (reverse) {
         for (int i = 0; i < nCentBins; i++) {
           int irev = i;
-          percentile_center[i] = (centralityBins[irev] + centralityBins[irev+1]) / 2;
-          epercentile_center[i] = (centralityBins[irev] - centralityBins[irev+1]) / 2;
+          percentile_center[i] = (centralityBins[irev] + centralityBins[irev + 1]) / 2;
+          epercentile_center[i] = (centralityBins[irev] - centralityBins[irev + 1]) / 2;
         }
 
         int startBinMc = h1dCalib->GetNbinsX();
         for (int i = 0; i < nCentBins; i++) { // Loop over centrality bins
           // start from the end (from the high multiplicity collisions)
           int irev = i;
-          TH1D* projData = h2dMultVsCent_Data->ProjectionY(Form("projData_%d", i), h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev]+1e-5), 
-                                                                                    h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev+1]-1e-5));
+          TH1D* projData = h2dMultVsCent_Data->ProjectionY(Form("projData_%d", i), h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev] + 1e-5),
+                                                           h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev + 1] - 1e-5));
 
           double meanMult_Data = projData->GetMean();
 
@@ -462,7 +462,7 @@ struct BuilderModule {
               endBinMc = j;
             }
           }
-          if (i == nCentBins-1) {
+          if (i == nCentBins - 1) {
             endBinMc = 1;
           }
 
@@ -487,14 +487,14 @@ struct BuilderModule {
             }
           }
 
-          printf("\e[1;31mCalibration for %s estimator\e[0;00m -> Data centrality bin \e[1;31m%g-%g%%\e[0;00m\n", estimator.Data(), centralityBins[irev], centralityBins[irev+1]);
+          printf("\e[1;31mCalibration for %s estimator\e[0;00m -> Data centrality bin \e[1;31m%g-%g%%\e[0;00m\n", estimator.Data(), centralityBins[irev], centralityBins[irev + 1]);
           printf("\e[1;31mCalibration for %s estimator\e[0;00m -> MC multiplicity range %g-%g\n", estimator.Data(), projMC->GetBinLowEdge(endBinMc), projMC->GetBinLowEdge(startBinMc));
-          printf("\e[1;31mCalibration for %s estimator\e[0;00m -> <PV> data = %.4f Vs <PV> MC = %.4f (MC/Data = %.4f%%)\n", estimator.Data(), meanMult_Data, meanMult_MC, (meanMult_MC-meanMult_Data) * 100 / meanMult_Data);
+          printf("\e[1;31mCalibration for %s estimator\e[0;00m -> <PV> data = %.4f Vs <PV> MC = %.4f (MC/Data = %.4f%%)\n", estimator.Data(), meanMult_Data, meanMult_MC, (meanMult_MC - meanMult_Data) * 100 / meanMult_Data);
           printf("\e[1;31mCalibration for %s estimator\e[0;00m -> N entries Data = %g Vs N entries MC = %g\n", estimator.Data(), projData->Integral(), projMC->Integral());
           printf("\n");
           for (int ibin = 1; ibin <= h1dCalib->GetNbinsX(); ibin++) {
-            if (ibin <= startBinMc && ibin >= endBinMc){
-              h1dCalib->SetBinContent(ibin,  percentile_center[i]);
+            if (ibin <= startBinMc && ibin >= endBinMc) {
+              h1dCalib->SetBinContent(ibin, percentile_center[i]);
             }
           }
           startBinMc = endBinMc;
@@ -502,15 +502,15 @@ struct BuilderModule {
       } else {
         for (int i = 0; i < nCentBins; i++) {
           int irev = nCentBins - i;
-          percentile_center[i] = (centralityBins[irev-1] + centralityBins[irev]) / 2;
-          epercentile_center[i] = (centralityBins[irev] - centralityBins[irev-1]) / 2;
+          percentile_center[i] = (centralityBins[irev - 1] + centralityBins[irev]) / 2;
+          epercentile_center[i] = (centralityBins[irev] - centralityBins[irev - 1]) / 2;
         }
         int startBinMc = 1;
         for (int i = 0; i < nCentBins; i++) { // Loop over centrality bins
           // start from the end (from the low multiplicity collisions)
           int irev = nCentBins - i;
-          TH1D* projData = h2dMultVsCent_Data->ProjectionY(Form("projData_%d", i), h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev-1]+1e-5),      
-                                                                                    h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev]-1e-5));
+          TH1D* projData = h2dMultVsCent_Data->ProjectionY(Form("projData_%d", i), h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev - 1] + 1e-5),
+                                                           h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev] - 1e-5));
 
           double meanMult_Data = projData->GetMean();
 
@@ -536,8 +536,8 @@ struct BuilderModule {
               endBinMc = j;
             }
           }
-          if (i == nCentBins-1) {
-              endBinMc = h2dMultRecoVsMultGen_MC->GetNbinsX();
+          if (i == nCentBins - 1) {
+            endBinMc = h2dMultRecoVsMultGen_MC->GetNbinsX();
           }
 
           TH1D* projMC = h2dMultRecoVsMultGen_MC->ProjectionY(Form("projMC_%d", i), startBinMc, endBinMc);
@@ -561,17 +561,17 @@ struct BuilderModule {
             }
           }
 
-          printf("\e[1;31mCalibration for %s estimator\e[0;00m -> Data centrality bin \e[1;31m%g-%g%%\e[0;00m\n", estimator.Data(), centralityBins[irev-1], centralityBins[irev]);
-          printf("\e[1;31mCalibration for %s estimator\e[0;00m -> MC multiplicity range %g-%g\n", estimator.Data(), projMC->GetBinLowEdge(startBinMc), projMC->GetBinLowEdge(endBinMc+1));
+          printf("\e[1;31mCalibration for %s estimator\e[0;00m -> Data centrality bin \e[1;31m%g-%g%%\e[0;00m\n", estimator.Data(), centralityBins[irev - 1], centralityBins[irev]);
+          printf("\e[1;31mCalibration for %s estimator\e[0;00m -> MC multiplicity range %g-%g\n", estimator.Data(), projMC->GetBinLowEdge(startBinMc), projMC->GetBinLowEdge(endBinMc + 1));
           printf("\e[1;31mCalibration for %s estimator\e[0;00m -> <PV> data = %.4f Vs <PV> MC = %.4f\n", estimator.Data(), meanMult_Data, meanMult_MC);
           printf("\e[1;31mCalibration for %s estimator\e[0;00m -> N entries Data = %g Vs N entries MC = %g\n", estimator.Data(), projData->Integral(), projMC->Integral());
           for (int ibin = 1; ibin <= h1dCalib->GetNbinsX(); ibin++) {
-            if (ibin <= endBinMc && ibin >= startBinMc){
-              h1dCalib->SetBinContent(ibin,  percentile_center[i]);
+            if (ibin <= endBinMc && ibin >= startBinMc) {
+              h1dCalib->SetBinContent(ibin, percentile_center[i]);
             }
           }
 
-          startBinMc = endBinMc+1;
+          startBinMc = endBinMc + 1;
         } // End loop over centrality bins
       }
 
@@ -657,8 +657,8 @@ struct BuilderModule {
   // which has no systematic effect on the sampled distribution.
   ULong64_t computeSamplingSeed(int64_t collisionIndex, int tableIdx) const
   {
-    static constexpr ULong64_t kCollisionStride = 131ull;   // > kNestimators, so tableIdx can't alias into the collision term
-    static constexpr ULong64_t kRunStride = 1000003ull;     // prime, well above kCollisionStride * (typical collisions per DF)
+    static constexpr ULong64_t kCollisionStride = 131ull; // > kNestimators, so tableIdx can't alias into the collision term
+    static constexpr ULong64_t kRunStride = 1000003ull;   // prime, well above kCollisionStride * (typical collisions per DF)
     return baseOpts.centralitySamplingSeed.value + kRunStride * static_cast<ULong64_t>(mRunNumber) +
            kCollisionStride * static_cast<ULong64_t>(collisionIndex) + static_cast<ULong64_t>(tableIdx);
   }
@@ -712,15 +712,15 @@ struct BuilderModule {
         return percentile;
       };
 
-      populateTable(products.centFV0A,         h1dFV0A,          h2dCentVsGenMult[kFV0A],          nFV0A,   std::integral_constant<int, kFV0A>{});
-      populateTable(products.centFT0M,         h1dFT0M,          h2dCentVsGenMult[kFT0M],          nFT0M,   std::integral_constant<int, kFT0M>{});
-      populateTable(products.centFT0A,         h1dFT0A,          h2dCentVsGenMult[kFT0A],          nFT0A,   std::integral_constant<int, kFT0A>{});
-      populateTable(products.centFT0C,         h1dFT0C,          h2dCentVsGenMult[kFT0C],          nFT0C,   std::integral_constant<int, kFT0C>{});
-      populateTable(products.centFT0CVariant1, h1dFT0CVariant1,  h2dCentVsGenMult[kFT0CVariant1],  nFT0C,   std::integral_constant<int, kFT0CVariant1>{});
-      populateTable(products.centFT0CVariant2, h1dFT0CVariant2,  h2dCentVsGenMult[kFT0CVariant2],  nFT0C,   std::integral_constant<int, kFT0CVariant2>{});
-      populateTable(products.centFDDM,         h1dFDDM,          h2dCentVsGenMult[kFDDM],          nFDDM,   std::integral_constant<int, kFDDM>{});
-      populateTable(products.centNTPV,         h1dNTPV,          h2dCentVsGenMult[kNTPV],          nGlobal, std::integral_constant<int, kNTPV>{});
-      populateTable(products.centNGlobal,      h1dNGlobal,       h2dCentVsGenMult[kNGlobal],       nGlobal, std::integral_constant<int, kNGlobal>{});
+      populateTable(products.centFV0A, h1dFV0A, h2dCentVsGenMult[kFV0A], nFV0A, std::integral_constant<int, kFV0A>{});
+      populateTable(products.centFT0M, h1dFT0M, h2dCentVsGenMult[kFT0M], nFT0M, std::integral_constant<int, kFT0M>{});
+      populateTable(products.centFT0A, h1dFT0A, h2dCentVsGenMult[kFT0A], nFT0A, std::integral_constant<int, kFT0A>{});
+      populateTable(products.centFT0C, h1dFT0C, h2dCentVsGenMult[kFT0C], nFT0C, std::integral_constant<int, kFT0C>{});
+      populateTable(products.centFT0CVariant1, h1dFT0CVariant1, h2dCentVsGenMult[kFT0CVariant1], nFT0C, std::integral_constant<int, kFT0CVariant1>{});
+      populateTable(products.centFT0CVariant2, h1dFT0CVariant2, h2dCentVsGenMult[kFT0CVariant2], nFT0C, std::integral_constant<int, kFT0CVariant2>{});
+      populateTable(products.centFDDM, h1dFDDM, h2dCentVsGenMult[kFDDM], nFDDM, std::integral_constant<int, kFDDM>{});
+      populateTable(products.centNTPV, h1dNTPV, h2dCentVsGenMult[kNTPV], nGlobal, std::integral_constant<int, kNTPV>{});
+      populateTable(products.centNGlobal, h1dNGlobal, h2dCentVsGenMult[kNGlobal], nGlobal, std::integral_constant<int, kNGlobal>{});
       // populateTable(products.centMFT, h1dMFT, h2dCentVsGenMult[kMFT], nMFT, std::integral_constant<int, kMFT>{}); // to be added later
 
       mcCollisionCounter++;

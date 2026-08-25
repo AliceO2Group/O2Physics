@@ -1226,7 +1226,7 @@ struct derivedlambdakzeroanalysis {
         histos.add("h2dGenXiPlusVsMcCentrality_RecoedEvt", "h2dGenXiPlusVsMcCentrality_RecoedEvt", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
         histos.add("h2dGenOmegaMinusVsMcCentrality_RecoedEvt", "h2dGenOmegaMinusVsMcCentrality_RecoedEvt", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
         histos.add("h2dGenOmegaPlusVsMcCentrality_RecoedEvt", "h2dGenOmegaPlusVsMcCentrality_RecoedEvt", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
-  
+
         histos.add("h2dGenK0ShortVsMcCentrality", "h2dGenK0ShortVsMcCentrality", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
         histos.add("h2dGenLambdaVsMcCentrality", "h2dGenLambdaVsMcCentrality", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
         histos.add("h2dGenAntiLambdaVsMcCentrality", "h2dGenAntiLambdaVsMcCentrality", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
@@ -1242,7 +1242,7 @@ struct derivedlambdakzeroanalysis {
         histos.add("h2dGenXiPlusVsMultMC_RecoedEvt", "h2dGenXiPlusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
         histos.add("h2dGenOmegaMinusVsMultMC_RecoedEvt", "h2dGenOmegaMinusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
         histos.add("h2dGenOmegaPlusVsMultMC_RecoedEvt", "h2dGenOmegaPlusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
-  
+
         histos.add("h2dGenK0ShortVsMultMC", "h2dGenK0ShortVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
         histos.add("h2dGenLambdaVsMultMC", "h2dGenLambdaVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
         histos.add("h2dGenAntiLambdaVsMultMC", "h2dGenAntiLambdaVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
@@ -1299,13 +1299,19 @@ struct derivedlambdakzeroanalysis {
     // Helper lambda to extract centrality from any object exposing the cent* columns
     auto extractCentrality = [this](auto const& coll) -> float {
       switch (centralityEstimator) {
-        case kCentFT0C:         return coll.centFT0C();
-        case kCentFT0M:         return coll.centFT0M();
-        case kCentFT0CVariant1: return coll.centFT0CVariant1();
+        case kCentFT0C:
+          return coll.centFT0C();
+        case kCentFT0M:
+          return coll.centFT0M();
+        case kCentFT0CVariant1:
+          return coll.centFT0CVariant1();
         // case kCentMFT:          return coll.centMFT();
-        case kCentNGlobal:      return coll.centNGlobal();
-        case kCentFV0A:         return coll.centFV0A();
-        default:                return -1.f;
+        case kCentNGlobal:
+          return coll.centNGlobal();
+        case kCentFV0A:
+          return coll.centFV0A();
+        default:
+          return -1.f;
       }
     };
 
