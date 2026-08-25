@@ -52,6 +52,7 @@
 #include <RtypesCore.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
@@ -59,7 +60,6 @@
 #include <iterator>
 #include <string>
 #include <vector>
-#include <array>
 
 using namespace o2;
 using namespace o2::framework;
@@ -236,15 +236,11 @@ struct JEPFlowAnalysis {
       return q2 > sel;
     }
 
-    if (!isHigh) {
-      if (idx >= static_cast<int>(cfgMultq2low->size())) {
-        idx = cfgMultq2low->size() - 1;
-      }
-      float sel = cfgMultq2low->at(idx);
-      return q2 < sel;
+    if (idx >= static_cast<int>(cfgMultq2low->size())) {
+      idx = cfgMultq2low->size() - 1;
     }
-
-    return false;
+    float sel = cfgMultq2low->at(idx);
+    return q2 < sel;
   }
 
   template <typename T>
