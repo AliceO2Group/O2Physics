@@ -368,15 +368,15 @@ struct BjetTaggingGnn {
     // merging of TH3 has been observed to dump all content into the flavour-axis overflow bin, while the
     // equivalent TH2 merges correctly (see fillSVHistograms()/fillMCDJetHistograms() fill sites).
     auto addSVFlavorHistograms = [&](const AxisSpec& axisJetpT, const std::string& suffix) {
-      registry.add("h2_SVMass_jetpT_b" + suffix, "", {HistType::kTH2F, {axisJetpT, axisSVMass}}, callSumw2);
-      registry.add("h2_SVMass_jetpT_c" + suffix, "", {HistType::kTH2F, {axisJetpT, axisSVMass}}, callSumw2);
-      registry.add("h2_SVMass_jetpT_lf" + suffix, "", {HistType::kTH2F, {axisJetpT, axisSVMass}}, callSumw2);
-      registry.add("h2_SVLxyS_jetpT_b" + suffix, "", {HistType::kTH2F, {axisJetpT, axisSVLxyS}}, callSumw2);
-      registry.add("h2_SVLxyS_jetpT_c" + suffix, "", {HistType::kTH2F, {axisJetpT, axisSVLxyS}}, callSumw2);
-      registry.add("h2_SVLxyS_jetpT_lf" + suffix, "", {HistType::kTH2F, {axisJetpT, axisSVLxyS}}, callSumw2);
-      registry.add("h2_SVDispersion_jetpT_b" + suffix, "", {HistType::kTH2F, {axisJetpT, axisSVDispersion}}, callSumw2);
-      registry.add("h2_SVDispersion_jetpT_c" + suffix, "", {HistType::kTH2F, {axisJetpT, axisSVDispersion}}, callSumw2);
-      registry.add("h2_SVDispersion_jetpT_lf" + suffix, "", {HistType::kTH2F, {axisJetpT, axisSVDispersion}}, callSumw2);
+      registry.add("h2_SVMass_jetpT_b" + suffix, "", HistType::kTH2F, {axisJetpT, axisSVMass}, callSumw2);
+      registry.add("h2_SVMass_jetpT_c" + suffix, "", HistType::kTH2F, {axisJetpT, axisSVMass}, callSumw2);
+      registry.add("h2_SVMass_jetpT_lf" + suffix, "", HistType::kTH2F, {axisJetpT, axisSVMass}, callSumw2);
+      registry.add("h2_SVLxyS_jetpT_b" + suffix, "", HistType::kTH2F, {axisJetpT, axisSVLxyS}, callSumw2);
+      registry.add("h2_SVLxyS_jetpT_c" + suffix, "", HistType::kTH2F, {axisJetpT, axisSVLxyS}, callSumw2);
+      registry.add("h2_SVLxyS_jetpT_lf" + suffix, "", HistType::kTH2F, {axisJetpT, axisSVLxyS}, callSumw2);
+      registry.add("h2_SVDispersion_jetpT_b" + suffix, "", HistType::kTH2F, {axisJetpT, axisSVDispersion}, callSumw2);
+      registry.add("h2_SVDispersion_jetpT_c" + suffix, "", HistType::kTH2F, {axisJetpT, axisSVDispersion}, callSumw2);
+      registry.add("h2_SVDispersion_jetpT_lf" + suffix, "", HistType::kTH2F, {axisJetpT, axisSVDispersion}, callSumw2);
     };
     auto addCoreJetHistograms = [&](const AxisSpec& axisJetpT, const std::string& suffix) {
       registry.add("h_jetpT" + suffix, "", HistType::kTH1F, {axisJetpT}, callSumw2);
@@ -497,21 +497,21 @@ struct BjetTaggingGnn {
     }
     auto addMCDFlavorAndMatchedHistograms = [&](const AxisSpec& axisJetpT, const std::string& suffix) {
       auto hJetpTFlavor = registry.add<TH2>("h2_jetpT_flavor" + suffix, "", HistType::kTH2F, {axisJetpT, axisJetFlavorCat}, callSumw2);
-      registry.add("h2_jetpT_Db_b" + suffix, "", {HistType::kTH2F, {axisJetpT, axisDb}});
-      registry.add("h2_jetpT_Db_c" + suffix, "", {HistType::kTH2F, {axisJetpT, axisDb}});
-      registry.add("h2_jetpT_Db_lf" + suffix, "", {HistType::kTH2F, {axisJetpT, axisDb}});
+      registry.add("h2_jetpT_Db_b" + suffix, "", HistType::kTH2F, {axisJetpT, axisDb});
+      registry.add("h2_jetpT_Db_c" + suffix, "", HistType::kTH2F, {axisJetpT, axisDb});
+      registry.add("h2_jetpT_Db_lf" + suffix, "", HistType::kTH2F, {axisJetpT, axisDb});
       auto hJetpTLfmatch = registry.add<TH2>("h2_jetpT_lfmatch" + suffix, "lf-jet", HistType::kTH2F, {axisJetpT, axisLfMatchStatus}, callSumw2);
       setLfMatchStatusAxisLabels(hJetpTLfmatch->GetYaxis());
-      registry.add("h2_jetpT_Db_lfmatched" + suffix, "lf-jet", {HistType::kTH2F, {axisJetpT, axisDb}}, callSumw2);
-      registry.add("h2_jetpT_Db_lfnone" + suffix, "lf-jet", {HistType::kTH2F, {axisJetpT, axisDb}}, callSumw2);
+      registry.add("h2_jetpT_Db_lfmatched" + suffix, "lf-jet", HistType::kTH2F, {axisJetpT, axisDb}, callSumw2);
+      registry.add("h2_jetpT_Db_lfnone" + suffix, "lf-jet", HistType::kTH2F, {axisJetpT, axisDb}, callSumw2);
       auto hResponse = registry.add<TH2>("h2_Response_DetjetpT_PartjetpT" + suffix, "", HistType::kTH2F, {axisJetpT, axisJetpT}, callSumw2);
-      registry.add("h2_Response_DetjetpT_PartjetpT_b" + suffix, "", {HistType::kTH2F, {axisJetpT, axisJetpT}}, callSumw2);
-      registry.add("h2_Response_DetjetpT_PartjetpT_c" + suffix, "", {HistType::kTH2F, {axisJetpT, axisJetpT}}, callSumw2);
-      registry.add("h2_Response_DetjetpT_PartjetpT_lf" + suffix, "", {HistType::kTH2F, {axisJetpT, axisJetpT}}, callSumw2);
+      registry.add("h2_Response_DetjetpT_PartjetpT_b" + suffix, "", HistType::kTH2F, {axisJetpT, axisJetpT}, callSumw2);
+      registry.add("h2_Response_DetjetpT_PartjetpT_c" + suffix, "", HistType::kTH2F, {axisJetpT, axisJetpT}, callSumw2);
+      registry.add("h2_Response_DetjetpT_PartjetpT_lf" + suffix, "", HistType::kTH2F, {axisJetpT, axisJetpT}, callSumw2);
       registry.add("h2_jetpT_Db_npp" + suffix, "NotPhysPrim", HistType::kTH2F, {axisJetpT, axisDb});
-      registry.add("h2_jetpT_Db_npp_b" + suffix, "NotPhysPrim", {HistType::kTH2F, {axisJetpT, axisDb}});
-      registry.add("h2_jetpT_Db_npp_c" + suffix, "NotPhysPrim", {HistType::kTH2F, {axisJetpT, axisDb}});
-      registry.add("h2_jetpT_Db_npp_lf" + suffix, "NotPhysPrim", {HistType::kTH2F, {axisJetpT, axisDb}});
+      registry.add("h2_jetpT_Db_npp_b" + suffix, "NotPhysPrim", HistType::kTH2F, {axisJetpT, axisDb});
+      registry.add("h2_jetpT_Db_npp_c" + suffix, "NotPhysPrim", HistType::kTH2F, {axisJetpT, axisDb});
+      registry.add("h2_jetpT_Db_npp_lf" + suffix, "NotPhysPrim", HistType::kTH2F, {axisJetpT, axisDb});
       setJetFlavorCatAxisLabels(hJetpTFlavor->GetYaxis());
       (void)hResponse;
 
