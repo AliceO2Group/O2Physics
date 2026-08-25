@@ -19,6 +19,7 @@
 
 #include "Common/Core/TableHelper.h"
 
+#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
@@ -28,6 +29,7 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <Math/Vector4D.h>
 #include <TH1.h>
 
 #include <cstdint>
@@ -50,7 +52,6 @@ struct filterEoI {
   Configurable<bool> inheritFromOtherTask{"inheritFromOtherTask", true, "Flag to iherit all common configurables from skimmerPrimaryElectron or skimmerPrimaryMuon"};
   Configurable<int> minNelectron{"minNelectron", -1, "min number of electron candidates per collision"};
   Configurable<int> minNmuon{"minNmuon", -1, "min number of muon candidates per collision"};
-  Configurable<int> minNphotons{"minNphotons", 1, "min number of photon candidates per collision"};
   Configurable<std::string> taskNameForNelectron{"taskNameForNelectron", "skimmer-primary-electron", "task name where minNelectron is defined."};
   Configurable<std::string> varNameForNelectron{"varNameForNelectron", "minNelectron", "variable name for minNelectron"};
 
@@ -64,7 +65,6 @@ struct filterEoI {
 
     LOGF(info, "minNelectron = %d", minNelectron.value);
     LOGF(info, "minNmuon = %d", minNmuon.value);
-    LOGF(info, "minNphotons = %d", minNphotons.value);
 
     auto hEventCounter = fRegistry.add<TH1>("hEventCounter", "hEventCounter", kTH1D, {{8, 0.5f, 8.5f}});
     hEventCounter->GetXaxis()->SetBinLabel(1, "all");
@@ -109,8 +109,7 @@ struct filterEoI {
       }
       if constexpr (static_cast<bool>(system & kPCM)) {
         auto v0s_coll = v0s.sliceBy(perCollision_v0, collision.globalIndex());
-        if (v0s_coll.size() >= minNphotons) {
-          does_pcm_exist = true;
+        if (v0s_coll.size() >= 1) {
           fRegistry.fill(HIST("hEventCounter"), 4);
         }
       }
