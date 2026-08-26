@@ -1320,7 +1320,11 @@ struct RecoilJets {
                       float weight = 1.)
   {
     // Get the configured scaled FT0M percentile boundaries
-    const std::vector<double> ft0mEdges = hist.multFT0MThresh;
+    const std::vector<double> rawFT0MEdges = hist.multFT0MThresh;
+
+    const std::vector<double> ft0mEdges{
+      rawFT0MEdges.begin() + 1,
+      rawFT0MEdges.end()};
 
     bool bSigEv = false;
     std::vector<double> vPhiOfTT;
