@@ -264,12 +264,10 @@ struct TauThreeProngEventTableProducer {
       registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(1, "1: All");
       registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(2, "2: N^{#tau}=2");
       registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(3, "3: |y^{#tau}| <= 0.9");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(4, "4: 4 or 6 trk");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(5, "5: 4 trk");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(6, "6: 6 trk");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(7, "7: |#eta^{ch}|<0.9");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(8, "8: 7+4 trk");
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(9, "9: 7+6 trk");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(4, "4: |#eta^{ch}|<0.9");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(5, "5: 4 or 6 trk");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(6, "6: 4 trk");
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->GetXaxis()->SetBinLabel(7, "7: 6 trk");
 
       registrySkim.add("skim/problemMC", ";problem;events", {HistType::kTH1D, {{10, 0., 10.}}});
 
@@ -307,7 +305,7 @@ struct TauThreeProngEventTableProducer {
     return angle;
   }
 
-  float calculateDeltaPhi(ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> p, ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>> p1)
+  float calculateDeltaPhi(const ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>>& p, const ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double>>& p1)
   {
     //    float delta = p.Phi();
     float delta = RecoDecay::constrainAngle(p.Phi());
@@ -457,7 +455,7 @@ struct TauThreeProngEventTableProducer {
   // check ITS clusters, how many -1,0,1,7 + 10 if 0,1,2 layers were fired
   // analysis track quality check
   template <typename T>
-  int numberOfItsClustersCheck(T track)
+  int numberOfItsClustersCheck(const T& track)
   {
     if (!track.hasITS())
       return -1;
@@ -557,7 +555,7 @@ struct TauThreeProngEventTableProducer {
 
   std::vector<std::pair<int8_t, std::set<uint8_t>>> cutMyRequiredITSHits{};
 
-  void mySetRequireHitsInITSLayers(int8_t minNRequiredHits, std::set<uint8_t> requiredLayers)
+  void mySetRequireHitsInITSLayers(int8_t minNRequiredHits, const std::set<uint8_t>& requiredLayers)
   {
     // layer 0 corresponds to the the innermost ITS layer
     cutMyRequiredITSHits.push_back(std::make_pair(minNRequiredHits, requiredLayers));
@@ -589,10 +587,9 @@ struct TauThreeProngEventTableProducer {
     constexpr uint8_t KBit = 1;
     for (const auto& kITSrequirement : cutMyRequiredITSHits) {
       auto hits = std::count_if(kITSrequirement.second.begin(), kITSrequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (KBit << requiredLayer); });
-      if ((kITSrequirement.first == -1) && (hits > 0)) {
-        return false; // no hits were required in specified layers
-      } else if (hits < kITSrequirement.first) {
-        return false; // not enough hits found in specified layers
+      if (((kITSrequirement.first == -1) && (hits > 0)) || // no hits were required in specified layers
+          (hits < kITSrequirement.first)) {                // not enough hits found in specified layers
+        return false;
       }
     }
     return true;
@@ -797,6 +794,25 @@ struct TauThreeProngEventTableProducer {
     int rct = 0;
     rct = isGoodRCTflag(dgcand);
 
+    // different events flags
+    int8_t bcSels[8] = {-99, -99, -99, -99, -99, -99, -99, -99};
+    uint8_t bcSelBits = 0;
+    bcSels[0] = dgcand.trs();
+    bcSels[1] = dgcand.trofs();
+    bcSels[2] = dgcand.hmpr();
+    bcSels[3] = dgcand.tfb();
+    bcSels[4] = dgcand.itsROFb();
+    bcSels[5] = dgcand.sbp();
+    bcSels[6] = dgcand.zVtxFT0vPV();
+    bcSels[7] = dgcand.vtxITSTPC();
+
+    const int offset = 1;
+    bcSelBits = bcSels[0]; // initialization
+    for (int ibit = 1; ibit < 8; ibit++) {
+      bcSelBits = (bcSelBits << offset); // shift by 1 position towards left
+      bcSelBits += bcSels[ibit];         // add next bit to the pool
+    }
+
     //
     // variables per track
     //
@@ -879,9 +895,12 @@ struct TauThreeProngEventTableProducer {
                         dgcand.posZ(),
                         dgcand.flags(),
                         dgcand.occupancyInTime(),
-                        dgcand.hadronicRate(),                       // is it necessary
-                        dgcand.trs(), dgcand.trofs(), dgcand.hmpr(), // to test it
-                        dgcand.tfb(), dgcand.itsROFb(), dgcand.sbp(), dgcand.zVtxFT0vPV(), dgcand.vtxITSTPC(),
+                        dgcand.hadronicRate(), // is it necessary
+                        //
+                        bcSelBits,
+                        // dgcand.trs(), dgcand.trofs(), dgcand.hmpr(), // to test it
+                        // dgcand.tfb(), dgcand.itsROFb(), dgcand.sbp(), dgcand.zVtxFT0vPV(), dgcand.vtxITSTPC(),
+                        //
                         energyZNA, energyZNC,
                         timeZNA, timeZNC,
                         // qtot, <<-------- comment out
@@ -903,9 +922,12 @@ struct TauThreeProngEventTableProducer {
                        dgcand.posZ(),
                        dgcand.flags(),
                        dgcand.occupancyInTime(),
-                       dgcand.hadronicRate(),                       // is it necessary
-                       dgcand.trs(), dgcand.trofs(), dgcand.hmpr(), // to test it
-                       dgcand.tfb(), dgcand.itsROFb(), dgcand.sbp(), dgcand.zVtxFT0vPV(), dgcand.vtxITSTPC(),
+                       dgcand.hadronicRate(), // is it necessary
+                       //
+                       bcSelBits,
+                       // dgcand.trs(), dgcand.trofs(), dgcand.hmpr(), // to test it
+                       // dgcand.tfb(), dgcand.itsROFb(), dgcand.sbp(), dgcand.zVtxFT0vPV(), dgcand.vtxITSTPC(),
+                       //
                        energyZNA, energyZNC,
                        timeZNA, timeZNC,
                        // qtot, <<-------- comment out
@@ -1061,7 +1083,8 @@ struct TauThreeProngEventTableProducer {
       LOGF(info, "<MC> UDMcCollision size %d, Collisions size %d, UDtracks %d, UDMcParticles %d", mcCollisions.size(), collisions.size(), tracks.size(), mcParticles.size());
 
     // temporary variables
-    float tmpRapidity = -999.;
+    //    float tmpRapidity = -999.;
+    float trueTauRapidity[2] = {-999., -999.};
     float trueTauEta[2] = {-999., -999.};
     float trueTauPhi[2] = {-999., -999.};
 
@@ -1102,27 +1125,22 @@ struct TauThreeProngEventTableProducer {
         if (verbose)
           LOGF(info, "-- MC part pdg %d", particle.pdgCode());
         if (std::abs(particle.pdgCode()) != kTauMinus)
-          continue; // 15 = tau_minus
-        // if (std::abs(particle.pdgCode()) != 15) continue; // 15 = tau_minus
+          continue;                           // 15 = tau_minus
         if (countMothers < desiredNMothers) { // < 2
           // fill info for each tau
           trueTauX[countMothers] = particle.px();
           trueTauY[countMothers] = particle.py();
           trueTauZ[countMothers] = particle.pz();
-          tmpRapidity = rapidity(particle.e(), trueTauZ[countMothers]);
+          trueTauRapidity[countMothers] = rapidity(particle.e(), trueTauZ[countMothers]);
           trueTauEta[countMothers] = RecoDecay::eta(std::array<double, 3>{particle.px(), particle.py(), particle.pz()});
           trueTauPhi[countMothers] = RecoDecay::phi(particle.px(), particle.py());
 
           if (verbose)
-            LOGF(info, "-- tau P(%f,%f,%f), e %f, y %f", particle.px(), particle.py(), particle.pz(), particle.e(), tmpRapidity);
-          registrySkim.get<TH1>(HIST("skim/tauRapidityMC"))->Fill(tmpRapidity);
-          registrySkim.get<TH1>(HIST("skim/tauPhiMC"))->Fill(trueTauPhi[countMothers]);
-          registrySkim.get<TH1>(HIST("skim/tauEtaMC"))->Fill(trueTauEta[countMothers]);
-          registrySkim.get<TH1>(HIST("skim/tauPtMC"))->Fill(RecoDecay::pt(particle.px(), particle.py()));
-          if (std::abs(tmpRapidity) > trkEtacut) { // 0.9
+            LOGF(info, "-- tau P(%f,%f,%f), e %f, y %f", particle.px(), particle.py(), particle.pz(), particle.e(), trueTauRapidity[countMothers]);
+          if (std::abs(trueTauRapidity[countMothers]) > trkEtacut) { // 0.9
             tauInRapidity = false;
             if (verbose)
-              LOGF(info, "--- tau y %f", tmpRapidity);
+              LOGF(info, "--- tau y %f", trueTauRapidity[countMothers]);
           } // rapidity check
         } // number of taus
         countMothers++;
@@ -1136,6 +1154,15 @@ struct TauThreeProngEventTableProducer {
       }
 
       registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(1., 1.); // exactly 2 taus
+
+      for (int iNmother = 0; iNmother < desiredNMothers; iNmother++) {
+        registrySkim.get<TH1>(HIST("skim/tauRapidityMC"))->Fill(trueTauRapidity[iNmother]);
+        if (tauInRapidity) {
+          registrySkim.get<TH1>(HIST("skim/tauPhiMC"))->Fill(trueTauPhi[iNmother]);
+          registrySkim.get<TH1>(HIST("skim/tauEtaMC"))->Fill(trueTauEta[iNmother]);
+          registrySkim.get<TH1>(HIST("skim/tauPtMC"))->Fill(RecoDecay::pt(trueTauX[iNmother], trueTauY[iNmother]));
+        }
+      }
 
       if (!tauInRapidity) { // tau NOT in rapidity -> continue
         if (verbose)
@@ -1187,6 +1214,14 @@ struct TauThreeProngEventTableProducer {
           break;
       } // end of loop over MC particles
 
+      if (!partFromTauInEta) {
+        if (verbose)
+          LOGF(info, "-- At least one daughter particle from taus out of pseudo-rapidity (|eta|<0.9). Jump to the next MC event.");
+        continue;
+      }
+
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(3., 1.); // particles from tau in |eta|<0.9
+
       registrySkim.get<TH1>(HIST("skim/nChPartMC"))->Fill(nChargedDaughtersTau[0] + nChargedDaughtersTau[1]); // N charged particles from taus
       // check number of charged particles in MC event
       if ((nChargedDaughtersTau[0] + nChargedDaughtersTau[1] != fourTracks) && (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] != sixTracks)) {
@@ -1195,32 +1230,26 @@ struct TauThreeProngEventTableProducer {
         continue;
       }
 
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(3., 1.);        // 1+3 (3+3) topology
+      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(4., 1.);        // 1+3 (3+3) topology
       if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == fourTracks) { // 4
-        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(4., 1.);
-      } else if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == sixTracks) { // 6
         registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(5., 1.);
-      }
-
-      if (!partFromTauInEta) {
-        if (verbose)
-          LOGF(info, "-- At least one daughter particle from taus out of pseudo-rapidity (|eta|<0.9). Jump to the next MC event.");
-        continue;
-      }
-
-      registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(6., 1.);        // particles from tau in |eta|<0.9
-      if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == fourTracks) { // 4
-        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(7., 1.);
       } else if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == sixTracks) { // 6
-        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(8., 1.);
+        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(6., 1.);
       }
 
-      if (nChargedDaughtersTau[0] == oneProng) // 1
+      //      if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == fourTracks) { // 4
+      //        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(7., 1.);
+      //      } else if (nChargedDaughtersTau[0] + nChargedDaughtersTau[1] == sixTracks) { // 6
+      //        registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(8., 1.);
+      //      }
+
+      if ((nChargedDaughtersTau[0] == oneProng) ||                                          // 1
+          (nChargedDaughtersTau[0] == threeProng && nChargedDaughtersTau[1] == threeProng)) // 3 and 3
         zerothTau = 0;
       else if (nChargedDaughtersTau[1] == oneProng) // 1
         zerothTau = 1;
-      else if (nChargedDaughtersTau[0] == threeProng && nChargedDaughtersTau[1] == threeProng) // 3 and 3
-        zerothTau = 0;
+      // else if (nChargedDaughtersTau[0] == threeProng && nChargedDaughtersTau[1] == threeProng) // 3 and 3
+      // zerothTau = 0;
 
       // prepare local variables for output table
       int32_t runNumber = -999; // when no reconstructed collisions is associated to MCcoll it should remain = -999
@@ -1236,7 +1265,8 @@ struct TauThreeProngEventTableProducer {
       int occupancy = -999;
       double hadronicRate = -999.;
       int8_t bcSels[8] = {-99, -99, -99, -99, -99, -99, -99, -99};
-      // zdc information - there i sno information in MC
+      uint8_t bcSelBits = 0;
+      // zdc information - there is no information in MC
       float energyZNA = -999.;
       float energyZNC = -999.;
       float timeZNA = -999.;
@@ -1376,6 +1406,14 @@ struct TauThreeProngEventTableProducer {
           bcSels[5] = collFromMcColl.sbp();
           bcSels[6] = collFromMcColl.zVtxFT0vPV();
           bcSels[7] = collFromMcColl.vtxITSTPC();
+
+          const int offset = 1;
+          bcSelBits = bcSels[0]; // initialization
+          for (int ibit = 1; ibit < 8; ibit++) {
+            bcSelBits = (bcSelBits << offset); // shift by 1 position towards left
+            bcSelBits += bcSels[ibit];         // add next bit to the pool
+          }
+
           // energyZNA = collFromMcColl.energyCommonZNA();
           // energyZNC = collFromMcColl.energyCommonZNC();
           // if (energyZNA < 0)
@@ -1614,9 +1652,10 @@ struct TauThreeProngEventTableProducer {
                           zVertex,
                           recoMode,
                           occupancy,
-                          hadronicRate,                    // is it necessary
-                          bcSels[0], bcSels[1], bcSels[2], // to test it
-                          bcSels[3], bcSels[4], bcSels[5], bcSels[6], bcSels[7],
+                          hadronicRate, // is it necessary
+                          bcSelBits,
+                          // bcSels[0], bcSels[1], bcSels[2], // to test it
+                          // bcSels[3], bcSels[4], bcSels[5], bcSels[6], bcSels[7],
                           energyZNA, energyZNC,
                           timeZNA, timeZNC,
                           // qtot, <<-------- comment out
@@ -1645,9 +1684,10 @@ struct TauThreeProngEventTableProducer {
                          zVertex,
                          recoMode,
                          occupancy,
-                         hadronicRate,                    // is it necessary
-                         bcSels[0], bcSels[1], bcSels[2], // to test it
-                         bcSels[3], bcSels[4], bcSels[5], bcSels[6], bcSels[7],
+                         hadronicRate, // is it necessary
+                         bcSelBits,
+                         // bcSels[0], bcSels[1], bcSels[2], // to test it
+                         // bcSels[3], bcSels[4], bcSels[5], bcSels[6], bcSels[7],
                          energyZNA, energyZNC,
                          timeZNA, timeZNC,
                          // qtot, <<-------- comment out
@@ -1669,7 +1709,7 @@ struct TauThreeProngEventTableProducer {
       }
 
     } // mccollisions
-  } // end of  processMonteCarlo
+  } // end of processMonteCarlo
   PROCESS_SWITCH(TauThreeProngEventTableProducer, processMonteCarlo, "Iterate UD tables with simulated data created by SG-Candidate-Producer.", false);
 };
 
