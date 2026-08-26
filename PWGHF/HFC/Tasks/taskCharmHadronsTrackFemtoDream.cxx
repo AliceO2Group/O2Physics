@@ -1180,8 +1180,6 @@ struct HfTaskCharmHadronsTrackFemtoDream {
                          FilteredCharmMcCand3Prongs const&)
   {
 
-    rowFemtoResultCharm3Prong.reserve(candidates.size() + 1);
-    rowFemtoResultTrk.reserve(parts.size() + 1);
     for (const auto& col : cols) {
       eventHisto.fillQA(col);
       auto* partitionTrk1Selected = &partitionMcTrk1;
