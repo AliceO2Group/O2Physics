@@ -346,6 +346,7 @@ struct TwoParticleCorrelationsMpi {
       estimatorStatus->GetXaxis()->SetBinLabel(4, "no acceptance-corrected pairs");
       estimatorStatus->GetXaxis()->SetBinLabel(5, "valid estimate");
       registry.add("mcValidation/estimatedSeedsVsTrueNMPI", "template estimator response;N_{MPI}^{true};N_{seed}^{estimated}", {HistType::kTH2F, {{101, -0.5, 100.5}, {202, -0.5, 100.5}}});
+      registry.add("mcValidation/estimatedSeedsVsTrueNMPIVsMultiplicity", "event-level template estimator response;multiplicity;N_{MPI}^{true};N_{seed}^{estimated}", {HistType::kTH3F, {axisMultiplicity, {101, -0.5, 100.5}, {202, -0.5, 100.5}}});
       if (cfgEventSeedEstimatorMethod == 1) {
         registry.add("mcValidation/probabilityEstimatedSeedsVsTrueNMPI", "fixed-probability estimator response;N_{MPI}^{true};N_{seed}^{probability sum}", {HistType::kTH2F, {{101, -0.5, 100.5}, {202, -0.5, 100.5}}});
       }
@@ -364,6 +365,7 @@ struct TwoParticleCorrelationsMpi {
       mcValidationStatus->GetXaxis()->SetBinLabel(6, "no acceptance-corrected pairs");
       mcValidationStatus->GetXaxis()->SetBinLabel(7, "valid response");
       registry.add("mcValidation/generated/estimatedSeedsVsTrueNMPI", "generated-level template estimator response;N_{MPI}^{true};N_{seed,gen}^{estimated}", {HistType::kTH2F, {{101, -0.5, 100.5}, {202, -0.5, 100.5}}});
+      registry.add("mcValidation/generated/estimatedSeedsVsTrueNMPIVsMultiplicity", "generated event-level template estimator response;N_{ch}^{gen};N_{MPI}^{true};N_{seed,gen}^{estimated}", {HistType::kTH3F, {axisMultiplicity, {101, -0.5, 100.5}, {202, -0.5, 100.5}}});
       if (cfgEventSeedEstimatorMethod == 1) {
         registry.add("mcValidation/generated/probabilityEstimatedSeedsVsTrueNMPI", "generated-level fixed-probability estimator response;N_{MPI}^{true};N_{seed,gen}^{probability sum}", {HistType::kTH2F, {{101, -0.5, 100.5}, {202, -0.5, 100.5}}});
       }
@@ -1139,6 +1141,7 @@ struct TwoParticleCorrelationsMpi {
     const double bias = estimatedSeeds - trueNMPI;
     registry.fill(HIST("mcValidation/status"), 6.0);
     registry.fill(HIST("mcValidation/estimatedSeedsVsTrueNMPI"), trueNMPI, estimatedSeeds);
+    registry.fill(HIST("mcValidation/estimatedSeedsVsTrueNMPIVsMultiplicity"), multiplicity, trueNMPI, estimatedSeeds);
     if (estimate.usedMapEM) {
       registry.fill(HIST("mcValidation/probabilityEstimatedSeedsVsTrueNMPI"), trueNMPI, estimate.probabilityNuncSeeds());
     }
@@ -1182,6 +1185,7 @@ struct TwoParticleCorrelationsMpi {
     const double bias = estimatedSeeds - trueNMPI;
     registry.fill(HIST("mcValidation/generated/status"), 5.0);
     registry.fill(HIST("mcValidation/generated/estimatedSeedsVsTrueNMPI"), trueNMPI, estimatedSeeds);
+    registry.fill(HIST("mcValidation/generated/estimatedSeedsVsTrueNMPIVsMultiplicity"), multiplicity, trueNMPI, estimatedSeeds);
     if (estimate.usedMapEM) {
       registry.fill(HIST("mcValidation/generated/probabilityEstimatedSeedsVsTrueNMPI"), trueNMPI, estimate.probabilityNuncSeeds());
     }
