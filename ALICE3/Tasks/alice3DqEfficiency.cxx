@@ -111,10 +111,9 @@ DECLARE_SOA_TABLE(OniaMCTruth, "AOD", "MCTRUTHONIA", dqanalysisflags::OniaPt, dq
 
 // TODO: USE PROPER TABLES
 
-using MyEvents = soa::Join<aod::ReA3Events, aod::ReducedA3MCEventLabels>;
-using MyEventsSelected = soa::Join<aod::ReA3Events, aod::EventCuts, aod::ReducedA3MCEventLabels>;
-using MyEventsVtxCov = soa::Join<aod::ReA3Events, aod::ReducedA3EventsVtxCov, aod::ReducedA3MCEventLabels>;
-using MyEventsVtxCovSelected = soa::Join<aod::ReA3Events, aod::ReducedA3EventsVtxCov, aod::EventCuts, aod::ReducedA3MCEventLabels>;
+using MyEvents = soa::Join<aod::ReA3Events, aod::ReA3EventsExtended, aod::ReducedA3MCEventLabels>;
+using MyEventsVtxCov = soa::Join<aod::ReA3Events, aod::ReA3EventsExtended, aod::ReducedA3EventsVtxCov, aod::ReducedA3MCEventLabels>;
+using MyEventsVtxCovSelected = soa::Join<aod::ReA3Events, aod::ReA3EventsExtended, aod::ReducedA3EventsVtxCov, aod::EventCuts, aod::ReducedA3MCEventLabels>;
 
 using MyBarrelAssocs = soa::Join<aod::ReducedA3TracksAssoc, aod::BarrelTrackCuts>;
 using MyBarrelAssocsPrefilter = soa::Join<aod::ReducedA3TracksAssoc, aod::BarrelTrackCuts, aod::Prefilter>;
@@ -598,10 +597,10 @@ struct Alice3DqEfficiencyAnalysisPrefilterSelection {
       // get the list of cuts that were computed in the barrel track-selection task and create a bit mask
       //  to mark just the ones we want to apply a prefilter on
       string trackCuts;
-      getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", trackCuts, false);
+      getTaskOptionValue<string>(context, "alice3-dq-efficiency-analysis-track-selection", "cfgTrackCuts", trackCuts, false);
       TString allTrackCutsStr = trackCuts;
       // check also the cuts added via JSON and add them to the string of cuts
-      getTaskOptionValue<string>(context, "analysis-track-selection", "cfgBarrelTrackCutsJSON", trackCuts, false);
+      getTaskOptionValue<string>(context, "alice3-dq-efficiency-analysis-track-selection", "cfgBarrelTrackCutsJSON", trackCuts, false);
       TString addTrackCutsStr = trackCuts;
       if (addTrackCutsStr != "") {
         std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
@@ -852,10 +851,10 @@ struct Alice3DqEfficiencyAnalysisSameEventPairing {
 
     // get the barrel track selection cuts
     string tempCuts;
-    getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", tempCuts, false);
+    getTaskOptionValue<string>(context, "alice3-dq-efficiency-analysis-track-selection", "cfgTrackCuts", tempCuts, false);
     TString tempCutsStr = tempCuts;
     // check also the cuts added via JSON and add them to the string of cuts
-    getTaskOptionValue<string>(context, "analysis-track-selection", "cfgBarrelTrackCutsJSON", tempCuts, false);
+    getTaskOptionValue<string>(context, "alice3-dq-efficiency-analysis-track-selection", "cfgBarrelTrackCutsJSON", tempCuts, false);
     TString addTrackCutsStr = tempCuts;
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
@@ -1649,10 +1648,10 @@ struct Alice3DqEfficiencyAnalysisAsymmetricPairing {
 
     // Get the barrel track selection cuts
     string tempCuts;
-    getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", tempCuts, false);
+    getTaskOptionValue<string>(context, "alice3-dq-efficiency-analysis-track-selection", "cfgTrackCuts", tempCuts, false);
     TString tempCutsStr = tempCuts;
     // check also the cuts added via JSON and add them to the string of cuts
-    getTaskOptionValue<string>(context, "analysis-track-selection", "cfgBarrelTrackCutsJSON", tempCuts, false);
+    getTaskOptionValue<string>(context, "alice3-dq-efficiency-analysis-track-selection", "cfgBarrelTrackCutsJSON", tempCuts, false);
     TString addTrackCutsStr = tempCuts;
     if (addTrackCutsStr != "") {
       std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());

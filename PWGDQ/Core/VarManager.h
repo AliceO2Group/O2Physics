@@ -1117,8 +1117,16 @@ class VarManager : public TObject
 
     // ALICE 3 Variables
     kMultDensity,
-    kMultMCNParticlesEta40,
-    kMultMCNParticlesEta20,
+    kCent,
+    kMultPV,
+    kMultPVeta1,
+    kMultPVetaHalf,
+    kMultGlobalTracks,
+    kMultGlobalTracksPV,
+    kMultMCNParticlesAll,
+    kMultMCNParticlesEta25,
+    kMultMCNParticlesEta125,
+    kMultMCNParticlesEta09,
     kIsReconstructed,
     kNSiliconHits,
     kNTPCHits,
@@ -7183,6 +7191,12 @@ void VarManager::FillEventAlice3(T const& event, float* values)
     values[kVtxChi2] = event.chi2();
     values[kCollisionTime] = event.collisionTime();
     values[kCollisionTimeRes] = event.collisionTimeRes();
+    values[kCent] = event.centRun2V0M();
+    values[kMultPV] = event.multNTracksPV();
+    values[kMultPVeta1] = event.multNTracksPVeta1();
+    values[kMultPVetaHalf] = event.multNTracksPVetaHalf();
+    values[kMultGlobalTracks] = event.multNTracksGlobal();
+    values[kMultGlobalTracksPV] = event.multNGlobalTracksPV();
   }
 
   if constexpr ((fillMap & ReducedEvent) > 0) {
@@ -7193,6 +7207,12 @@ void VarManager::FillEventAlice3(T const& event, float* values)
     values[kVtxNcontrib] = event.numContrib();
     values[kCollisionTime] = event.collisionTime();
     values[kCollisionTimeRes] = event.collisionTimeRes();
+    values[kCent] = event.centRun2V0M();
+    values[kMultPV] = event.multNTracksPV();
+    values[kMultPVeta1] = event.multNTracksPVeta1();
+    values[kMultPVetaHalf] = event.multNTracksPVetaHalf();
+    values[kMultGlobalTracks] = event.multNTracksGlobal();
+    values[kMultGlobalTracksPV] = event.multNGlobalTracksPV();
   }
   if constexpr ((fillMap & ReducedEventVtxCov) > 0) {
     values[kVtxCovXX] = event.covXX();
@@ -7213,6 +7233,10 @@ void VarManager::FillEventAlice3(T const& event, float* values)
     values[kMCEventTime] = event.t();
     values[kMCEventWeight] = event.weight();
     values[kMCEventImpParam] = event.impactParameter();
+    values[kMultMCNParticlesAll] = event.multMC();
+    values[kMultMCNParticlesEta25] = event.multMC25();
+    values[kMultMCNParticlesEta125] = event.multMC125();
+    values[kMultMCNParticlesEta09] = event.multMC09();
   }
 
   if constexpr ((fillMap & ReducedEventMC) > 0) {
@@ -7224,6 +7248,10 @@ void VarManager::FillEventAlice3(T const& event, float* values)
     values[kMCEventTime] = event.t();
     values[kMCEventWeight] = event.weight();
     values[kMCEventImpParam] = event.impactParameter();
+    values[kMultMCNParticlesAll] = event.multMC();
+    values[kMultMCNParticlesEta25] = event.multMC25();
+    values[kMultMCNParticlesEta125] = event.multMC125();
+    values[kMultMCNParticlesEta09] = event.multMC09();
   }
 }
 
