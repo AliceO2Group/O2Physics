@@ -3965,9 +3965,9 @@ void VarManager::FillPairRotation(T1 const& t1, T2 const& t2, int rotation, floa
   if (rotation == 1) {
     rotationphi2 = t2.phi() + o2::constants::math::PI;
   } else if (rotation == 2) {
-    rotationphi2 = 2*values[kPsi2A] - t2.phi() ;
+    rotationphi2 = 2 * values[kPsi2A] - t2.phi();
   } else if (rotation == 3) {
-    rotationphi2 = 2*values[kPsi2A] - t2.phi() + o2::constants::math::PI;
+    rotationphi2 = 2 * values[kPsi2A] - t2.phi() + o2::constants::math::PI;
   }
 
   if (rotationphi2 >= o2::constants::math::TwoPI) {

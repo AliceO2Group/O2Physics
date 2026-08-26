@@ -2414,7 +2414,7 @@ struct AnalysisSameEventPairing {
                         fHistMan->FillHistClass(Form("PairsBarrelTRPM_ambiguousextra_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
                       }
                     }
-                  } else if(fConfigNRotations.value == 3) {
+                  } else if (fConfigNRotations.value == 3) {
                     for (int irot = 1; irot <= fConfigNRotations.value; irot++) {
                       VarManager::FillPairRotation<TPairType, TTrackFillMap>(t1, t2, irot);
                       if constexpr (TPairType == VarManager::kDecayToEE) {

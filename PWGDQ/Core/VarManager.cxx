@@ -454,7 +454,6 @@ void VarManager::FillEfficiency(float* values)
   }
 }
 
-
 //__________________________________________________________________
 std::tuple<float, float, float, float, float> VarManager::BimodalityCoefficientUnbinned(const std::vector<float>& data)
 {
