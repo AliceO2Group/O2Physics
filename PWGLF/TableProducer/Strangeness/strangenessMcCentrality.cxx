@@ -11,18 +11,14 @@
 
 ///
 /// \file   mcCentrality.cxx
-/// \author Nicolò Jacazio nicolo.jacazio@cern.ch
-/// \author Francesca Ercolessi francesca.ercolessi@cern.ch
-/// \since  2024-06-05
-/// \brief  Task to produce the table for the equalized multiplicity into centrality bins
+/// \author Romain Schotter romain.schotter@cern.ch
+/// \brief  Task to produce the MC centrality table for strangeness derived data
 ///
 
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/mcCentralityModule.h"
 
-#include "Common/DataModel/Multiplicity.h"
-
 #include <CCDB/BasicCCDBManager.h>
-#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
@@ -38,7 +34,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 /// Task to produce the response table
-struct McCentrality {
+struct StrangenessMcCentrality {
   // Input parameters
   o2::framework::Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -61,8 +57,8 @@ struct McCentrality {
   }
 
   // Full tables (independent on central calibrations)
-  void process(soa::Join<aod::McCollisions, aod::MultMCExtras> const& mcCollisions,
-               aod::BCsWithTimestamps const& bcs)
+  void process(aod::StraMCCollMults const& mcCollisions,
+               aod::StraStamps const& bcs)
   {
     mcCentralityBuilderModule.dataProcess(ccdb, histos, bcs, mcCollisions, products);
   }
@@ -71,5 +67,5 @@ struct McCentrality {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<McCentrality>(cfgc)};
+    adaptAnalysisTask<StrangenessMcCentrality>(cfgc)};
 }
