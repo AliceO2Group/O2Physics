@@ -41,14 +41,17 @@ DECLARE_SOA_COLUMN(PosZ, posZ, float);
 DECLARE_SOA_COLUMN(FlagUPC, flagUPC, int8_t);
 DECLARE_SOA_COLUMN(OccupancyInTime, occupancyInTime, int);
 DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, double);
-DECLARE_SOA_COLUMN(Trs, trs, int8_t);
-DECLARE_SOA_COLUMN(Trofs, trofs, int8_t);
-DECLARE_SOA_COLUMN(Hmpr, hmpr, int8_t);
-DECLARE_SOA_COLUMN(Tfb, tfb, int8_t);
-DECLARE_SOA_COLUMN(ItsRofb, itsRofb, int8_t);
-DECLARE_SOA_COLUMN(Sbp, sbp, int8_t);
-DECLARE_SOA_COLUMN(ZvtxFT0vsPv, zvtxFT0vsPv, int8_t);
-DECLARE_SOA_COLUMN(VtxITSTPC, vtxITSTPC, int8_t);
+
+// DECLARE_SOA_COLUMN(Trs, trs, int8_t);
+// DECLARE_SOA_COLUMN(Trofs, trofs, int8_t);
+// DECLARE_SOA_COLUMN(Hmpr, hmpr, int8_t);
+// DECLARE_SOA_COLUMN(Tfb, tfb, int8_t);
+// DECLARE_SOA_COLUMN(ItsRofb, itsRofb, int8_t);
+// DECLARE_SOA_COLUMN(Sbp, sbp, int8_t);
+// DECLARE_SOA_COLUMN(ZvtxFT0vsPv, zvtxFT0vsPv, int8_t);
+// DECLARE_SOA_COLUMN(VtxITSTPC, vtxITSTPC, int8_t);
+DECLARE_SOA_COLUMN(BcSelBits, bcSelBits, uint8_t);
+
 DECLARE_SOA_COLUMN(ZdcAenergy, zdcAenergy, float);
 DECLARE_SOA_COLUMN(ZdcCenergy, zdcCenergy, float);
 DECLARE_SOA_COLUMN(ZdcAtime, zdcAtime, float);
@@ -146,8 +149,10 @@ DECLARE_SOA_TABLE(DataTauFourTracks, "AOD", "TAUFOURTRACK",
                   tautree::PosZ,
                   tautree::FlagUPC, tautree::OccupancyInTime, tautree::HadronicRate,
                   //
-                  tautree::Trs, tautree::Trofs, tautree::Hmpr,
-                  tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
+                  tautree::BcSelBits,
+                  // tautree::Trs, tautree::Trofs, tautree::Hmpr,
+                  // tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
+                  //
                   tautree::ZdcAenergy, tautree::ZdcCenergy,
                   tautree::ZdcAtime, tautree::ZdcCtime,
                   // tautree::Qtot,
@@ -169,8 +174,11 @@ DECLARE_SOA_TABLE(TrueTauFourTracks, "AOD", "TRUETAU",
                   // tautree::PosX, tautree::PosY,
                   tautree::PosZ,
                   tautree::FlagUPC, tautree::OccupancyInTime, tautree::HadronicRate,
-                  tautree::Trs, tautree::Trofs, tautree::Hmpr,
-                  tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
+                  //
+                  tautree::BcSelBits,
+                  // tautree::Trs, tautree::Trofs, tautree::Hmpr,
+                  // tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
+                  //
                   tautree::ZdcAenergy, tautree::ZdcCenergy,
                   tautree::ZdcAtime, tautree::ZdcCtime,
                   // tautree::Qtot,
@@ -200,8 +208,10 @@ DECLARE_SOA_TABLE(DataTauSixTracks, "AOD", "TAUSIXTRACK",
                   tautree::PosZ,
                   tautree::FlagUPC, tautree::OccupancyInTime, tautree::HadronicRate,
                   //
-                  tautree::Trs, tautree::Trofs, tautree::Hmpr,
-                  tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
+                  tautree::BcSelBits,
+                  // tautree::Trs, tautree::Trofs, tautree::Hmpr,
+                  // tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
+                  //
                   tautree::ZdcAenergy, tautree::ZdcCenergy,
                   tautree::ZdcAtime, tautree::ZdcCtime,
                   // tautree::Qtot,
@@ -223,8 +233,11 @@ DECLARE_SOA_TABLE(TrueTauSixTracks, "AOD", "TRUETAUSIX",
                   // tautree::PosX, tautree::PosY,
                   tautree::PosZ,
                   tautree::FlagUPC, tautree::OccupancyInTime, tautree::HadronicRate,
-                  tautree::Trs, tautree::Trofs, tautree::Hmpr,
-                  tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
+                  //
+                  tautree::BcSelBits,
+                  // tautree::Trs, tautree::Trofs, tautree::Hmpr,
+                  // tautree::Tfb, tautree::ItsRofb, tautree::Sbp, tautree::ZvtxFT0vsPv, tautree::VtxITSTPC,
+                  //
                   tautree::ZdcAenergy, tautree::ZdcCenergy,
                   tautree::ZdcAtime, tautree::ZdcCtime,
                   // tautree::Qtot,
