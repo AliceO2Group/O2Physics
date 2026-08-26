@@ -1707,8 +1707,8 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
     int nBinsYMult = 0;
     float minYMult = 0.;
     float maxYMult = 0.;
-    int nBinsNumContrib = 0;
-    float minNumContrib = 0.;
+    // int nBinsNumContrib = 0;
+    // float minNumContrib = 0.;
     float maxNumContrib = 0.;
 
     if constexpr (histType == eCorrCent) {
