@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file MeanptFluctuations.cxx
+/// \file meanptFluctuations.cxx
 /// \brief Task for analyzing <pT> fluctuation upto fourth order of inclusive hadrons
 /// \author Swati Saha
 
@@ -33,8 +33,8 @@
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include <TDatabasePDG.h>
 #include <TF1.h>
 #include <THn.h>
 #include <TPDGCode.h>
@@ -58,7 +58,7 @@ using namespace o2::framework::expressions;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct MeanptFluctuationsAnalysis {
+struct MeanptFluctuations {
 
   // MC
   Configurable<bool> cfgIsMC{"cfgIsMC", true, "Run MC"};
@@ -561,11 +561,14 @@ struct MeanptFluctuationsAnalysis {
         continue;
 
       // charged check
-      auto pdgEntry = TDatabasePDG::Instance()->GetParticle(mcParticle.pdgCode());
-      if (!pdgEntry)
-        continue;
-      if (pdgEntry->Charge() == 0)
-        continue;
+      auto pdgcode = std::abs(mcParticle.pdgCode());
+      if (!(pdgcode == PDG_t::kPiPlus ||
+            pdgcode == PDG_t::kKPlus ||
+            pdgcode == PDG_t::kProton ||
+            pdgcode == PDG_t::kElectron ||
+            pdgcode == PDG_t::kMuonMinus)) {
+        continue; // skip this track
+      }
 
       if (mcParticle.isPhysicalPrimary()) {
         if ((mcParticle.pt() > cfgCutPtLower) && (mcParticle.pt() < cfgCutPreSelPt) && (std::abs(mcParticle.eta()) < cfgCutPreSelEta)) {
@@ -627,36 +630,57 @@ struct MeanptFluctuationsAnalysis {
     }
     //-------------------------------------------------------------------------------------------
   }
-  PROCESS_SWITCH(MeanptFluctuationsAnalysis, processMCGen, "Process Generated MC data", true);
+  PROCESS_SWITCH(MeanptFluctuations, processMCGen, "Process Generated MC data", true);
 
-  void processMCRec(MyMCRecCollisions::iterator const& collision, MyMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const& mcParticles)
+  void processMCRec(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions, MyMCTracks const& tracks)
   {
     histos.fill(HIST("MCGenerated/hMC"), 5.5);
 
-    if (!collision.has_mcCollision()) {
+    if (collisions.size() == 0) {
+      return; // this generated event was never reconstructed at all
+    }
+
+    auto bestColl = collisions.begin();
+    bool foundValidColl = false;
+    for (auto const& coll : collisions) {
+      if (!foundValidColl || coll.numContrib() > bestColl.numContrib()) {
+        bestColl = coll;
+        foundValidColl = true;
+      }
+    }
+    if (!foundValidColl) {
+      return;
+    }
+
+    if (!bestColl.has_mcCollision()) {
       return;
     }
     histos.fill(HIST("MCGenerated/hMC"), 6.5);
 
-    if (!eventSelectionDefaultCuts(collision)) {
+    if (std::abs(bestColl.posZ()) >= cfgCutVertex) {
+      return;
+    }
+    if (!eventSelectionDefaultCuts(bestColl)) {
       return;
     }
     histos.fill(HIST("MCGenerated/hMC"), 7.5);
 
-    fillMultCorrPlotsBeforeSel(collision, tracks);
+    auto tracksThisCollision = tracks.sliceBy(perCollision, bestColl.globalIndex());
 
-    const auto centralityFT0C = collision.centFT0C();
-    if (cfgUse22sEventCut && !eventSelected(collision, tracks.size(), centralityFT0C))
+    fillMultCorrPlotsBeforeSel(bestColl, tracksThisCollision);
+
+    const auto centralityFT0C = bestColl.centFT0C();
+    if (cfgUse22sEventCut && !eventSelected(bestColl, tracksThisCollision.size(), centralityFT0C))
       return;
-    if (cfgUseSmallIonAdditionalEventCut && !eventSelectedSmallion(collision, tracks.size(), centralityFT0C))
+    if (cfgUseSmallIonAdditionalEventCut && !eventSelectedSmallion(bestColl, tracksThisCollision.size(), centralityFT0C))
       return;
 
     if (cfgUseSmallIonAdditionalEventCut) {
-      fillMultCorrPlotsAfterSel(collision, tracks);
+      fillMultCorrPlotsAfterSel(bestColl, tracksThisCollision);
     }
 
     histos.fill(HIST("MCGenerated/hMC"), 8.5);
-    histos.fill(HIST("hZvtx_after_sel"), collision.posZ());
+    histos.fill(HIST("hZvtx_after_sel"), bestColl.posZ());
 
     double cent = 0.0;
     int centChoiceFT0C = 1;
@@ -664,35 +688,37 @@ struct MeanptFluctuationsAnalysis {
     int centChoiceFT0M = 3;
     int centChoiceFV0A = 4;
     if (cfgCentralityEstimator == centChoiceFT0C)
-      cent = collision.centFT0C();
+      cent = bestColl.centFT0C();
     else if (cfgCentralityEstimator == centChoiceFT0A)
-      cent = collision.centFT0A();
+      cent = bestColl.centFT0A();
     else if (cfgCentralityEstimator == centChoiceFT0M)
-      cent = collision.centFT0M();
+      cent = bestColl.centFT0M();
     else if (cfgCentralityEstimator == centChoiceFV0A)
-      cent = collision.centFV0A();
+      cent = bestColl.centFV0A();
 
     histos.fill(HIST("hCentrality"), cent);
 
-    histos.fill(HIST("Hist2D_globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
-    histos.fill(HIST("Hist2D_cent_nch"), tracks.size(), centralityFT0C);
+    histos.fill(HIST("Hist2D_globalTracks_PVTracks"), bestColl.multNTracksPV(), tracksThisCollision.size());
+    histos.fill(HIST("Hist2D_cent_nch"), tracksThisCollision.size(), centralityFT0C);
 
     // Calculating generated no of particles for the collision event
     double noGen = 0.0;
-    auto mcColl = collision.mcCollision();
     // Slice particles belonging only to this MC collision
-    auto particlesThisEvent = mcParticles.sliceBy(perMcCollision, mcColl.globalIndex());
+    auto particlesThisEvent = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
 
     for (const auto& mcParticle : particlesThisEvent) {
       if (!mcParticle.has_mcCollision())
         continue;
 
       // charged check
-      auto pdgEntry = TDatabasePDG::Instance()->GetParticle(mcParticle.pdgCode());
-      if (!pdgEntry)
-        continue;
-      if (pdgEntry->Charge() == 0)
-        continue;
+      auto pdgcode = std::abs(mcParticle.pdgCode());
+      if (!(pdgcode == PDG_t::kPiPlus ||
+            pdgcode == PDG_t::kKPlus ||
+            pdgcode == PDG_t::kProton ||
+            pdgcode == PDG_t::kElectron ||
+            pdgcode == PDG_t::kMuonMinus)) {
+        continue; // skip this track
+      }
 
       if (mcParticle.isPhysicalPrimary()) {
         if ((mcParticle.pt() > cfgCutPtLower) && (mcParticle.pt() < cfgCutPreSelPt) && (std::abs(mcParticle.eta()) < cfgCutPreSelEta)) {
@@ -713,7 +739,7 @@ struct MeanptFluctuationsAnalysis {
     float q4 = 0.0;
     float nCh = 0.0;
 
-    for (const auto& track : tracks) { // Loop over tracks
+    for (const auto& track : tracksThisCollision) { // Loop over tracks
 
       if (!track.has_collision()) {
         continue;
@@ -815,7 +841,7 @@ struct MeanptFluctuationsAnalysis {
     }
     //-------------------------------------------------------------------------------------------
   }
-  PROCESS_SWITCH(MeanptFluctuationsAnalysis, processMCRec, "Process MC Reconstructed Data", true);
+  PROCESS_SWITCH(MeanptFluctuations, processMCRec, "Process MC Reconstructed Data", true);
 
   // void process(aod::Collision const& coll, aod::Tracks const& inputTracks)
   void processData(AodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, AodTracks const& inputTracks)
@@ -944,12 +970,12 @@ struct MeanptFluctuationsAnalysis {
     }
     //-------------------------------------------------------------------------------------------
   }
-  PROCESS_SWITCH(MeanptFluctuationsAnalysis, processData, "Process Real Data", true);
+  PROCESS_SWITCH(MeanptFluctuations, processData, "Process Real Data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   // Equivalent to the AddTask in AliPhysics
   return WorkflowSpec{
-    adaptAnalysisTask<MeanptFluctuationsAnalysis>(cfgc)};
+    adaptAnalysisTask<MeanptFluctuations>(cfgc)};
 }
