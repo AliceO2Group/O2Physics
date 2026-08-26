@@ -1684,16 +1684,18 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
       cr.fCorrBounds[histType][1]->SetTitle(Form("%s lower bound", CorrHistNames[histType]));
     } else if constexpr (histType == eCorrMult) {
       for (int i = 0; i < eEstmCorr_N; i++) {
-        cr.fCorrBounds[histType + i][0] = new TF1(Form("fCorrUpperBound%s%s", EstmCorrName[i], CorrHistNames[histType]), "[0] * x + [1]");
-        cr.fCorrBounds[histType + i][1] = new TF1(Form("fCorrLowerBound%s%s", EstmCorrName[i], CorrHistNames[histType]), "[0] * x + [1]");
-        cr.fCorrBounds[histType + i][0]->SetTitle(Form("%s %s upper bound", EstmCorrName[i], CorrHistNames[histType]));
-        cr.fCorrBounds[histType + i][1]->SetTitle(Form("%s %s lower bound", EstmCorrName[i], CorrHistNames[histType]));
+        int indexBound = static_cast<int>(histType) + i;
+        cr.fCorrBounds[indexBound][0] = new TF1(Form("fCorrUpperBound%s%s", EstmCorrName[i], CorrHistNames[histType]), "[0] * x + [1]");
+        cr.fCorrBounds[indexBound][1] = new TF1(Form("fCorrLowerBound%s%s", EstmCorrName[i], CorrHistNames[histType]), "[0] * x + [1]");
+        cr.fCorrBounds[indexBound][0]->SetTitle(Form("%s %s upper bound", EstmCorrName[i], CorrHistNames[histType]));
+        cr.fCorrBounds[indexBound][1]->SetTitle(Form("%s %s lower bound", EstmCorrName[i], CorrHistNames[histType]));
       }
     } else if constexpr (histType == eCorrNumContribMult) {
-      cr.fCorrBounds[histType + eEstmCorr_N - 1][0] = new TF1(Form("fCorrUpperBound%s", CorrHistNames[histType]), "[0] * x + [1]");
-      cr.fCorrBounds[histType + eEstmCorr_N - 1][1] = new TF1(Form("fCorrLowerBound%s", CorrHistNames[histType]), "[0] * x + [1]");
-      cr.fCorrBounds[histType + eEstmCorr_N - 1][0]->SetTitle(Form("%s upper bound", CorrHistNames[histType]));
-      cr.fCorrBounds[histType + eEstmCorr_N - 1][1]->SetTitle(Form("%s lower bound", CorrHistNames[histType]));
+      int indexBound = static_cast<int>(histType) + static_cast<int>(eEstmCorr_N) - 1;
+      cr.fCorrBounds[indexBound][0] = new TF1(Form("fCorrUpperBound%s", CorrHistNames[histType]), "[0] * x + [1]");
+      cr.fCorrBounds[indexBound][1] = new TF1(Form("fCorrLowerBound%s", CorrHistNames[histType]), "[0] * x + [1]");
+      cr.fCorrBounds[indexBound][0]->SetTitle(Form("%s upper bound", CorrHistNames[histType]));
+      cr.fCorrBounds[indexBound][1]->SetTitle(Form("%s lower bound", CorrHistNames[histType]));
     }
 
     int nBinsCent = 0;
@@ -1731,29 +1733,32 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
     } else if constexpr (histType == eCorrNumContribMult) {
 
+      int indexBins = static_cast<int>(histType) + static_cast<int>(eMultEstm_N);
+
       // (mult) get bins:
-      const auto& lMultXBins = lCrBins[histType + eMultEstm_N];
+      const auto& lMultXBins = lCrBins[indexBins];
       nBinsXMult = static_cast<int>(lMultXBins[0]);
       minXMult = lMultXBins[1];
       maxXMult = lMultXBins[2];
 
       // (NContribMult) get bins:
-      const auto& lNumContribBins = lCrBins[histType + eMultEstm_N - 1];
+      const auto& lNumContribBins = lCrBins[indexBins - 1];
       nBinsNumContrib = static_cast<int>(lNumContribBins[0]);
       minNumContrib = lNumContribBins[1];
       maxNumContrib = lNumContribBins[2];
 
       // (NContribMult) set functions and add to list:
-      cr.fCorrBounds[histType + eEstmCorr_N - 1][0]->SetRange(minXMult, maxXMult);
-      cr.fCorrBounds[histType + eEstmCorr_N - 1][1]->SetRange(minXMult, maxXMult);
-      cr.fCorrBounds[histType + eEstmCorr_N - 1][0]->SetMinimum(0);
-      cr.fCorrBounds[histType + eEstmCorr_N - 1][1]->SetMinimum(0);
-      cr.fCorrBounds[histType + eEstmCorr_N - 1][0]->SetMaximum(maxNumContrib);
-      cr.fCorrBounds[histType + eEstmCorr_N - 1][1]->SetMaximum(maxNumContrib);
-      cr.fCorrBounds[histType + eEstmCorr_N - 1][0]->SetParameters(tc.fNumContribMultCorrCut[0], tc.fNumContribMultCorrCut[1]);
-      cr.fCorrBounds[histType + eEstmCorr_N - 1][1]->SetParameters(tc.fNumContribMultCorrCut[2], tc.fNumContribMultCorrCut[3]);
-      cr.fCorrHistogramsList->Add(cr.fCorrBounds[histType + eEstmCorr_N - 1][0]);
-      cr.fCorrHistogramsList->Add(cr.fCorrBounds[histType + eEstmCorr_N - 1][1]);
+      int indexBound = static_cast<int>(histType) + static_cast<int>(eEstmCorr_N) - 1;
+      cr.fCorrBounds[indexBound][0]->SetRange(minXMult, maxXMult);
+      cr.fCorrBounds[indexBound][1]->SetRange(minXMult, maxXMult);
+      cr.fCorrBounds[indexBound][0]->SetMinimum(0);
+      cr.fCorrBounds[indexBound][1]->SetMinimum(0);
+      cr.fCorrBounds[indexBound][0]->SetMaximum(maxNumContrib);
+      cr.fCorrBounds[indexBound][1]->SetMaximum(maxNumContrib);
+      cr.fCorrBounds[indexBound][0]->SetParameters(tc.fNumContribMultCorrCut[0], tc.fNumContribMultCorrCut[1]);
+      cr.fCorrBounds[indexBound][1]->SetParameters(tc.fNumContribMultCorrCut[2], tc.fNumContribMultCorrCut[3]);
+      cr.fCorrHistogramsList->Add(cr.fCorrBounds[indexBound][0]);
+      cr.fCorrHistogramsList->Add(cr.fCorrBounds[indexBound][1]);
     }
 
     // Book multiplicities and centralities hisrograms, and set multiplicities functions:
@@ -1807,16 +1812,17 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
               // (mult) set functions and add to list:
               if (static_cast<bool>(ba)) {
-                cr.fCorrBounds[histType + nComb][0]->SetRange(minXMult, maxXMult);
-                cr.fCorrBounds[histType + nComb][1]->SetRange(minXMult, maxXMult);
-                cr.fCorrBounds[histType + nComb][0]->SetParameters(tc.fMultAllCorrCut[i][j][0], tc.fMultAllCorrCut[i][j][1]);
-                cr.fCorrBounds[histType + nComb][1]->SetParameters(tc.fMultAllCorrCut[i][j][2], tc.fMultAllCorrCut[i][j][3]);
-                cr.fCorrBounds[histType + nComb][0]->SetMinimum(0);
-                cr.fCorrBounds[histType + nComb][1]->SetMinimum(0);
-                cr.fCorrBounds[histType + nComb][0]->SetMaximum(maxYMult);
-                cr.fCorrBounds[histType + nComb][1]->SetMaximum(maxYMult);
-                cr.fCorrHistogramsList->Add(cr.fCorrBounds[histType + nComb][0]);
-                cr.fCorrHistogramsList->Add(cr.fCorrBounds[histType + nComb][1]);
+                int indexBound = static_cast<int>(histType) + nComb;
+                cr.fCorrBounds[indexBound][0]->SetRange(minXMult, maxXMult);
+                cr.fCorrBounds[indexBound][1]->SetRange(minXMult, maxXMult);
+                cr.fCorrBounds[indexBound][0]->SetParameters(tc.fMultAllCorrCut[i][j][0], tc.fMultAllCorrCut[i][j][1]);
+                cr.fCorrBounds[indexBound][1]->SetParameters(tc.fMultAllCorrCut[i][j][2], tc.fMultAllCorrCut[i][j][3]);
+                cr.fCorrBounds[indexBound][0]->SetMinimum(0);
+                cr.fCorrBounds[indexBound][1]->SetMinimum(0);
+                cr.fCorrBounds[indexBound][0]->SetMaximum(maxYMult);
+                cr.fCorrBounds[indexBound][1]->SetMaximum(maxYMult);
+                cr.fCorrHistogramsList->Add(cr.fCorrBounds[indexBound][0]);
+                cr.fCorrHistogramsList->Add(cr.fCorrBounds[indexBound][1]);
               }
 
               // (mult) book corr 2D histogram:
