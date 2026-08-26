@@ -1743,8 +1743,8 @@ struct MultiparticleCumulants { // this name is used in lower-case format to nam
 
       // (NContribMult) get bins:
       const auto& lNumContribBins = lCrBins[indexBins - 1];
-      nBinsNumContrib = static_cast<int>(lNumContribBins[0]);
-      minNumContrib = lNumContribBins[1];
+      // nBinsNumContrib = static_cast<int>(lNumContribBins[0]);
+      // minNumContrib = lNumContribBins[1];
       maxNumContrib = lNumContribBins[2];
 
       // (NContribMult) set functions and add to list:
