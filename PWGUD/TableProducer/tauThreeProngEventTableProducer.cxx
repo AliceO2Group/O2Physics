@@ -809,8 +809,8 @@ struct TauThreeProngEventTableProducer {
     const int offset = 1;
     bcSelBits = bcSels[0]; // initialization
     for (int ibit = 1; ibit < 8; ibit++) {
-      bcSelBits << offset;       // shift by 1 position towards left
-      bcSelBits += bcSels[ibit]; // add next bit to the pool
+      bcSelBits = (bcSelBits << offset); // shift by 1 position towards left
+      bcSelBits += bcSels[ibit];         // add next bit to the pool
     }
 
     //
@@ -1410,8 +1410,8 @@ struct TauThreeProngEventTableProducer {
           const int offset = 1;
           bcSelBits = bcSels[0]; // initialization
           for (int ibit = 1; ibit < 8; ibit++) {
-            bcSelBits << offset;       // shift by 1 position towards left
-            bcSelBits += bcSels[ibit]; // add next bit to the pool
+            bcSelBits = (bcSelBits << offset); // shift by 1 position towards left
+            bcSelBits += bcSels[ibit];         // add next bit to the pool
           }
 
           // energyZNA = collFromMcColl.energyCommonZNA();
