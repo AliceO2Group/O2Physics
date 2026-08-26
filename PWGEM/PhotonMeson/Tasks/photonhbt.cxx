@@ -979,11 +979,9 @@ struct Photonhbt {
     fRegistryCF.add("Pair/same/hPhi_lowerPtV0", "azimuthal angle of lower-p_{T} V0 in pair;#phi (rad);counts", kTH1D, {axisPhi}, true);
     addFullRangeHistograms("Pair/same/FullRange/");
 
-    fRegistryCF.addClone("Pair/same/", "Pair/mix/");
-
-    // New CF idea
-
     fRegistryCF.add("Pair/same/CF_QLcms_Qinv", "diphoton CF |q|_{LCMS} vs. q_{inv}", kTHnSparseD, {axisQabsLcms, axisQinv, axisKt}, true);
+
+    fRegistryCF.addClone("Pair/same/", "Pair/mix/");
 
     fRegistryCF.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current}-BC_{mixed}|", kTH1D, {{10001, -0.5, 10000.5}}, true);
   }
