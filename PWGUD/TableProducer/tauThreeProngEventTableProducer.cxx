@@ -806,9 +806,10 @@ struct TauThreeProngEventTableProducer {
     bcSels[6] = dgcand.zVtxFT0vPV();
     bcSels[7] = dgcand.vtxITSTPC();
 
+    const int offset = 1;
     bcSelBits = bcSels[0]; // initialization
     for (int ibit = 1; ibit < 8; ibit++) {
-      bcSelBits << 1;            // shift by 1 position towards left
+      bcSelBits << offset;       // shift by 1 position towards left
       bcSelBits += bcSels[ibit]; // add next bit to the pool
     }
 
@@ -1154,7 +1155,7 @@ struct TauThreeProngEventTableProducer {
 
       registrySkim.get<TH1>(HIST("skim/efficiencyMC"))->Fill(1., 1.); // exactly 2 taus
 
-      for (int iNmother = 0; iNmother++; iNmother < desiredNMothers) {
+      for (int iNmother = 0; iNmother < desiredNMothers; iNmother++) {
         registrySkim.get<TH1>(HIST("skim/tauRapidityMC"))->Fill(trueTauRapidity[iNmother]);
         if (tauInRapidity) {
           registrySkim.get<TH1>(HIST("skim/tauPhiMC"))->Fill(trueTauPhi[iNmother]);
@@ -1406,9 +1407,10 @@ struct TauThreeProngEventTableProducer {
           bcSels[6] = collFromMcColl.zVtxFT0vPV();
           bcSels[7] = collFromMcColl.vtxITSTPC();
 
+          const int offset = 1;
           bcSelBits = bcSels[0]; // initialization
           for (int ibit = 1; ibit < 8; ibit++) {
-            bcSelBits << 1;            // shift by 1 position towards left
+            bcSelBits << offset;       // shift by 1 position towards left
             bcSelBits += bcSels[ibit]; // add next bit to the pool
           }
 
