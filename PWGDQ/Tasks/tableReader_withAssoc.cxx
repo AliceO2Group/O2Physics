@@ -1362,7 +1362,6 @@ struct AnalysisSameEventPairing {
     Configurable<std::string> GrpLhcIfPath{"grplhcif", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
     Configurable<std::string> efficiencyPath{"effHistPath", "Users/z/zhxiong/efficiency", "Path on the CCDB for the efficiency histograms"};
     Configurable<std::string> flowPath{"flowPath", "Users/y/yiping/FlowResolution", "Path to the flow resolution object"};
-    Configurable<std::string> phiPath{"phiPath", "Users/h/hxiaoyu/TrackPhi/LHC23", "Path to load phi distribution for track rotation"};
   } fConfigCCDB;
 
   struct : ConfigurableGroup {
@@ -1382,7 +1381,6 @@ struct AnalysisSameEventPairing {
     Configurable<bool> useEfficiencyWeighting{"cfgUseEfficiencyWeighting", false, "Apply efficiency weighting to the pairs from CCDB"};
     Configurable<int> efficiencyType{"cfgEfficiencyType", 0, "Type of efficiency to apply from CCDB: 0 no efficiency, 1 pt-cent-costhetastar"};
     Configurable<bool> useFlowReso{"cfgUseFlowReso", false, "Use remote flow information from CCDB"};
-    Configurable<bool> usePhiDistribution{"cfgUsePhiDistribution", false, "Use phi distribution to correct track rotation"};
   } fConfigOptions;
   struct : ConfigurableGroup {
     Configurable<bool> applyBDT{"applyBDT", false, "Flag to apply ML selections"};
@@ -1856,18 +1854,6 @@ struct AnalysisSameEventPairing {
       if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
         LOGF(fatal, "Flow resolution histograms not available in CCDB at timestamp=%llu", timestamp);
       }
-    }
-
-    if (fConfigOptions.usePhiDistribution) {
-      TString PathPhi = fConfigCCDB.phiPath.value;
-      TString ccdbPathPhiPosi = Form("%s/hPtPhiPositive", PathPhi.Data());
-      TString ccdbPathPhiNega = Form("%s/hPtPhiNegative", PathPhi.Data());
-      auto phiPosi = fCCDB->getForTimeStamp<TH3D>(ccdbPathPhiPosi.Data(), timestamp);
-      auto phiNega = fCCDB->getForTimeStamp<TH3D>(ccdbPathPhiNega.Data(), timestamp);
-      if (phiPosi == nullptr || phiNega == nullptr) {
-        LOGF(fatal, "Phi distribution histograms not available in CCDB at timestamp=%llu", timestamp);
-      }
-      VarManager::SetPhiMap(phiPosi, phiNega, fConfigOptions.usePhiDistribution.value);
     }
   }
 
@@ -2420,14 +2406,26 @@ struct AnalysisSameEventPairing {
                   }
                 }
                 if (sign1 * sign2 < 0) {
-                  for (int i = 0; i < fConfigNRotations.value; i++) {
-                    VarManager::FillPairRotation<TPairType, TTrackFillMap>(t1, t2);
+                  if (fConfigNRotations.value == 1) {
+                    VarManager::FillPairRotation<TPairType, TTrackFillMap>(t1, t2, fConfigNRotations.value);
                     if constexpr (TPairType == VarManager::kDecayToEE) {
                       fHistMan->FillHistClass(Form("PairsBarrelTRPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
                       if (isAmbiExtra) {
                         fHistMan->FillHistClass(Form("PairsBarrelTRPM_ambiguousextra_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
                       }
                     }
+                  } elif(fConfigNRotations.value == 3) {
+                    for (int irot = 1; irot <= fConfigNRotations.value; irot++) {
+                      VarManager::FillPairRotation<TPairType, TTrackFillMap>(t1, t2, irot);
+                      if constexpr (TPairType == VarManager::kDecayToEE) {
+                        fHistMan->FillHistClass(Form("PairsBarrelTRPM_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                        if (isAmbiExtra) {
+                          fHistMan->FillHistClass(Form("PairsBarrelTRPM_ambiguousextra_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
+                        }
+                      }
+                    }
+                  } else {
+                    LOGF(fatal, "Unsupported number of rotations: %d, only 1 and 3 are supported", fConfigNRotations.value);
                   }
                 }
               }
