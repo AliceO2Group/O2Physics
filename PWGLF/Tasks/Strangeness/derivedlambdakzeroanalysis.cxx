@@ -103,7 +103,7 @@ enum CentEstimator {
 struct derivedlambdakzeroanalysis {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  bool isRun3;
+  bool isRun3 = true;
 
   // master analysis switches
   Configurable<bool> analyseK0Short{"analyseK0Short", true, "process K0Short-like candidates"};
@@ -313,8 +313,8 @@ struct derivedlambdakzeroanalysis {
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   ctpRateFetcher rateFetcher;
-  int mRunNumber;
-  float magField;
+  int mRunNumber = 0.;
+  float magField = 0.;
   std::map<std::string, std::string> metadata;
   o2::parameters::GRPMagField* grpmag = nullptr;
 
@@ -439,24 +439,24 @@ struct derivedlambdakzeroanalysis {
                               selPhysPrimAntiLambda, // for mc tagging
   };
 
-  uint64_t maskTopological;
-  uint64_t maskTopoNoV0Radius;
-  uint64_t maskTopoNoDCANegToPV;
-  uint64_t maskTopoNoDCAPosToPV;
-  uint64_t maskTopoNoCosPA;
-  uint64_t maskTopoNoDCAV0Dau;
-  uint64_t maskTrackProperties;
+  uint64_t maskTopological = 0;
+  uint64_t maskTopoNoV0Radius  = 0;
+  uint64_t maskTopoNoDCANegToPV = 0;
+  uint64_t maskTopoNoDCAPosToPV = 0;
+  uint64_t maskTopoNoCosPA = 0;
+  uint64_t maskTopoNoDCAV0Dau = 0;
+  uint64_t maskTrackProperties = 0;
 
-  uint64_t maskK0ShortSpecific;
-  uint64_t maskLambdaSpecific;
-  uint64_t maskAntiLambdaSpecific;
+  uint64_t maskK0ShortSpecific = 0;
+  uint64_t maskLambdaSpecific = 0;
+  uint64_t maskAntiLambdaSpecific = 0;
 
-  uint64_t maskSelectionK0Short;
-  uint64_t maskSelectionLambda;
-  uint64_t maskSelectionAntiLambda;
+  uint64_t maskSelectionK0Short = 0;
+  uint64_t maskSelectionLambda = 0;
+  uint64_t maskSelectionAntiLambda = 0;
 
-  uint64_t secondaryMaskSelectionLambda;
-  uint64_t secondaryMaskSelectionAntiLambda;
+  uint64_t secondaryMaskSelectionLambda = 0;
+  uint64_t secondaryMaskSelectionAntiLambda = 0;
 
   void init(InitContext const&)
   {
@@ -1227,7 +1227,7 @@ struct derivedlambdakzeroanalysis {
         histos.add("h2dGenXiPlusVsMcCentrality_RecoedEvt", "h2dGenXiPlusVsMcCentrality_RecoedEvt", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
         histos.add("h2dGenOmegaMinusVsMcCentrality_RecoedEvt", "h2dGenOmegaMinusVsMcCentrality_RecoedEvt", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
         histos.add("h2dGenOmegaPlusVsMcCentrality_RecoedEvt", "h2dGenOmegaPlusVsMcCentrality_RecoedEvt", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
-
+  
         histos.add("h2dGenK0ShortVsMcCentrality", "h2dGenK0ShortVsMcCentrality", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
         histos.add("h2dGenLambdaVsMcCentrality", "h2dGenLambdaVsMcCentrality", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
         histos.add("h2dGenAntiLambdaVsMcCentrality", "h2dGenAntiLambdaVsMcCentrality", kTH2D, {axisConfigurations.axisCentralityFine, axisConfigurations.axisPt});
@@ -1243,7 +1243,7 @@ struct derivedlambdakzeroanalysis {
         histos.add("h2dGenXiPlusVsMultMC_RecoedEvt", "h2dGenXiPlusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
         histos.add("h2dGenOmegaMinusVsMultMC_RecoedEvt", "h2dGenOmegaMinusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
         histos.add("h2dGenOmegaPlusVsMultMC_RecoedEvt", "h2dGenOmegaPlusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
-
+  
         histos.add("h2dGenK0ShortVsMultMC", "h2dGenK0ShortVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
         histos.add("h2dGenLambdaVsMultMC", "h2dGenLambdaVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
         histos.add("h2dGenAntiLambdaVsMultMC", "h2dGenAntiLambdaVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
@@ -1300,19 +1300,13 @@ struct derivedlambdakzeroanalysis {
     // Helper lambda to extract centrality from any object exposing the cent* columns
     auto extractCentrality = [this](auto const& coll) -> float {
       switch (centralityEstimator) {
-        case kCentFT0C:
-          return coll.centFT0C();
-        case kCentFT0M:
-          return coll.centFT0M();
-        case kCentFT0CVariant1:
-          return coll.centFT0CVariant1();
+        case kCentFT0C:         return coll.centFT0C();
+        case kCentFT0M:         return coll.centFT0M();
+        case kCentFT0CVariant1: return coll.centFT0CVariant1();
         // case kCentMFT:          return coll.centMFT();
-        case kCentNGlobal:
-          return coll.centNGlobal();
-        case kCentFV0A:
-          return coll.centFV0A();
-        default:
-          return -1.f;
+        case kCentNGlobal:      return coll.centNGlobal();
+        case kCentFV0A:         return coll.centFV0A();
+        default:                return -1.f;
       }
     };
 
@@ -1346,7 +1340,7 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TCollision>
-  void initCCDB(TCollision collision)
+  void initCCDB(TCollision const& collision)
   {
     if (mRunNumber == collision.runNumber()) {
       return;
@@ -1407,7 +1401,7 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TV0, typename TCollision>
-  uint64_t computeReconstructionBitmap(TV0 v0, TCollision collision, float rapidityLambda, float rapidityK0Short, float /*pT*/)
+  uint64_t computeReconstructionBitmap(TV0 const& v0, TCollision const& collision, float rapidityLambda, float rapidityK0Short, float /*pT*/)
   // precalculate this information so that a check is one mask operation, not many
   {
     uint64_t bitMap = 0;
@@ -1670,7 +1664,7 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TV0>
-  uint64_t computeMCAssociation(TV0 v0)
+  uint64_t computeMCAssociation(TV0 const& v0)
   // precalculate this information so that a check is one mask operation, not many
   {
     uint64_t bitMap = 0;
@@ -1853,7 +1847,7 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TV0>
-  void analyseCandidate(TV0 v0, float pt, float centrality, uint64_t selMap, uint8_t gapSide, int& nK0Shorts, int& nLambdas, int& nAntiLambdas)
+  void analyseCandidate(TV0 const& v0, float pt, float centrality, uint64_t selMap, uint8_t gapSide, int& nK0Shorts, int& nLambdas, int& nAntiLambdas)
   // precalculate this information so that a check is one mask operation, not many
   {
     bool passK0ShortSelections = false;
@@ -2256,7 +2250,7 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TV0>
-  void analyseCollisionAssociation(TV0 /*v0*/, float pt, int mcNch, bool correctAssociation, uint64_t selMap)
+  void analyseCollisionAssociation(TV0 const&/*v0*/, float pt, int mcNch, bool correctAssociation, uint64_t selMap)
   // analyse collision association
   {
     // __________________________________________
@@ -2279,7 +2273,7 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TV0>
-  void fillFeeddownMatrix(TV0 v0, float pt, float centrality, uint64_t selMap)
+  void fillFeeddownMatrix(TV0 const& v0, float pt, float centrality, uint64_t selMap)
   // fill feeddown matrix for Lambdas or AntiLambdas
   // fixme: a potential improvement would be to consider mass windows for the l/al
   {
@@ -2333,7 +2327,7 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TCollision>
-  bool isEventAccepted(TCollision collision, bool fillHists)
+  bool isEventAccepted(TCollision const& collision, bool fillHists)
   // check whether the collision passes our collision selections
   {
     float centrality = -1.0f;
