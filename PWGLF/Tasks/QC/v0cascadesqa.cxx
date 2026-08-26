@@ -126,6 +126,8 @@ struct v0cascadesQA {
   RCTFlagsChecker rctFlagsChecker{rctConfigurations.cfgRCTLabel.value};
 
   static constexpr float DefaultLifetimeCuts[1][2] = {{30., 20.}};
+  const float ctauxiPDG = 4.91;     // from PDG
+  const float ctauomegaPDG = 2.461; // from PDG
 
   struct : ConfigurableGroup {
     std::string prefix = "v0Selections"; // JSON group name
@@ -205,7 +207,7 @@ struct v0cascadesQA {
     Configurable<float> dcabachtopv{"dcabachtopv", .05, "min DCA Bachelor To PV (cm)"};
     Configurable<float> cascradius{"cascradius", 0.5, "minimum Cascade radius (cm)"};
     Configurable<float> cascradiusMax{"cascradiusMax", 1E5, "maximum Cascade radius (cm)"};
-    Configurable<float> cascProperLifeTime{"cascProperLifeTime", 3, "maximum lifetime (ctau)"};
+    Configurable<float> cascProperLifeTime{"cascProperLifeTime", 3, "maximum lifetime (meanctau)"};
 
     // invariant mass selection
     Configurable<float> v0MassWindow{"v0MassWindow", 0.008, "#Lambda mass (GeV/#it{c}^{2})"};
@@ -877,9 +879,9 @@ struct v0cascadesQA {
     //
     // proper lifetime
     float distOverTotMom = std::sqrt(std::pow(casc.x() - collision.posX(), 2) + std::pow(casc.y() - collision.posY(), 2) + std::pow(casc.z() - collision.posZ(), 2)) / (casc.p() + 1E-10);
-    if ((cascType == kXiM || cascType == kXiP) && distOverTotMom * o2::constants::physics::MassXiMinus > cascSelections.cascProperLifeTime)
+    if ((cascType == kXiM || cascType == kXiP) && distOverTotMom * o2::constants::physics::MassXiMinus > (cascSelections.cascProperLifeTime * ctauxiPDG))
       return false;
-    if ((cascType == kOmegaM || cascType == kOmegaP) && distOverTotMom * o2::constants::physics::MassOmegaMinus > cascSelections.cascProperLifeTime)
+    if ((cascType == kOmegaM || cascType == kOmegaP) && distOverTotMom * o2::constants::physics::MassOmegaMinus > (cascSelections.cascProperLifeTime * ctauomegaPDG))
       return false;
 
     // rapidity

@@ -60,9 +60,9 @@ concept is_fwd_cov = requires(T t) {
   { t.sigmaX() } -> std::same_as<float>;
 };
 
-/// Produce TrackParCovFwds for MFT and FwdTracks, w/ or w/o cov, with z shift
+/// Produce TrackParCovFwds for MFT and FwdTracks, w/ or w/o cov, with x, y and z shifts
 template <typename TFwdTrack, typename... TCovariance>
-o2::track::TrackParCovFwd getTrackParCovFwdShift(TFwdTrack const& track, float zshift, TCovariance const&... covOpt)
+o2::track::TrackParCovFwd getTrackParCovFwd3DShift(TFwdTrack const& track, float xshift, float yshift, float zshift, TCovariance const&... covOpt)
 {
   double chi2 = track.chi2();
   if constexpr (sizeof...(covOpt) == 0) {
@@ -82,7 +82,7 @@ o2::track::TrackParCovFwd getTrackParCovFwdShift(TFwdTrack const& track, float z
     }
   }
 
-  SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
+  SMatrix5 tpars(track.x() + xshift, track.y() + yshift, track.phi(), track.tgl(), track.signed1Pt());
 
   SMatrix55 tcovs;
   if constexpr (sizeof...(covOpt) == 1) {
@@ -99,6 +99,13 @@ o2::track::TrackParCovFwd getTrackParCovFwdShift(TFwdTrack const& track, float z
   }
 
   return o2::track::TrackParCovFwd(track.z() + zshift, tpars, tcovs, chi2);
+}
+
+/// Produce TrackParCovFwds for MFT and FwdTracks, w/ or w/o cov, with z shift
+template <typename TFwdTrack, typename... TCovariance>
+o2::track::TrackParCovFwd getTrackParCovFwdShift(TFwdTrack const& track, float zshift, TCovariance const&... covOpt)
+{
+  return getTrackParCovFwd3DShift(track, 0.f, 0.f, zshift, covOpt...);
 }
 
 inline o2::track::TrackParCovFwd getTrackParCovFwdShiftManual(

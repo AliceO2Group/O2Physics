@@ -8,6 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+///
+/// \file multiplicityExtraTable.cxx
+/// \brief This tasks produces BC based multiplicity tables
+/// \author David Dobrigkeit Chinellato and Jesper Karlsson Gumprecht
+///
+
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 
@@ -43,6 +50,7 @@ struct MultiplicityExtraTable {
   Produces<aod::MultBCs> multBC;
   Produces<aod::MultBcSel> multBcSel;
   Produces<aod::MultNeighs> multNeigh;
+  Produces<aod::TimeBCs> timeBC;
 
   Produces<aod::Mults2BC> mult2bc;
   Produces<aod::BC2Mults> bc2mult;
@@ -59,8 +67,10 @@ struct MultiplicityExtraTable {
 
   float tru(float value)
   {
-    if (bcTableFloatPrecision < 1e-4)
+    static constexpr float PrecisionThreshold = 1e-4;
+    if (bcTableFloatPrecision < PrecisionThreshold) {
       return value; // make sure nothing bad happens in case zero (best precision)
+    }
     return bcTableFloatPrecision * std::round(value / bcTableFloatPrecision) + 0.5f * bcTableFloatPrecision;
   };
 
@@ -68,8 +78,8 @@ struct MultiplicityExtraTable {
   unsigned int randomSeed = 0;
 
   o2::ccdb::CcdbApi ccdbApi;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-  BCPattern CollidingBunch;
+  Service<o2::ccdb::BasicCCDBManager> ccdb{};
+  BCPattern collidingBunch;
 
   int newRunNumber = -999;
   int oldRunNumber = -999;
@@ -116,7 +126,7 @@ struct MultiplicityExtraTable {
       float multFT0C = 0.f;
       if (bc.has_ft0()) {
         auto ft0 = bc.ft0();
-        for (auto amplitude : ft0.amplitudeC()) {
+        for (const auto amplitude : ft0.amplitudeC()) {
           multFT0C += amplitude;
         }
       } else {
@@ -148,7 +158,7 @@ struct MultiplicityExtraTable {
         continue; // don't keep if low mult or downsampled out
       }
 
-      bool Tvx = false;
+      bool tvx = false;
       bool isFV0OrA = false;
       float multFT0C = 0.f;
       float multFT0A = 0.f;
@@ -165,6 +175,16 @@ struct MultiplicityExtraTable {
       float multZNC = -1.f;
       float multZPA = -1.f;
       float multZPC = -1.f;
+
+      // FT0 and ZDC time
+      float timeFT0A = -1e+3;
+      float timeFT0C = -1e+3;
+      float timeFDDA = -1e+3;
+      float timeFDDC = -1e+3;
+      float timeZNA = -1e+3;
+      float timeZNC = -1e+3;
+      float timeZPA = -1e+3;
+      float timeZPC = -1e+3;
 
       float posZFT0 = -1e+3;
       bool posZFT0valid = false;
@@ -185,32 +205,37 @@ struct MultiplicityExtraTable {
         LOG(info) << " newRunNumber  " << newRunNumber << " time stamp " << ts;
         oldRunNumber = newRunNumber;
         auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
-        CollidingBunch = grplhcif->getBunchFilling().getBCPattern();
+        collidingBunch = grplhcif->getBunchFilling().getBCPattern();
       } // new run number
 
-      bool collidingBC = CollidingBunch.test(localBC);
+      bool collidingBC = collidingBunch.test(localBC);
 
       if (bc.has_ft0()) {
         const auto& ft0 = bc.ft0();
         std::bitset<8> triggers = ft0.triggerMask();
-        Tvx = triggers[o2::fit::Triggers::bitVertex];
+        tvx = triggers[o2::fit::Triggers::bitVertex];
         multFT0TriggerBits = static_cast<uint8_t>(triggers.to_ulong());
 
         // calculate T0 charge
         for (size_t ii = 0; ii < ft0.amplitudeA().size(); ++ii) {
           multFT0A += ft0.amplitudeA()[ii];
-          if (ft0.channelA()[ii] > 31) {
+          static constexpr int MaxChannelIdInnerRingFT0A = 31;
+          if (ft0.channelA()[ii] > MaxChannelIdInnerRingFT0A) {
             multFT0AOuter += ft0.amplitudeA()[ii];
           }
         }
-        for (auto amplitude : ft0.amplitudeC()) {
+        for (const auto amplitude : ft0.amplitudeC()) {
           multFT0C += amplitude;
         }
         posZFT0 = ft0.posZ();
         posZFT0valid = ft0.isValidTime();
+        timeFT0A = ft0.timeC();
+        timeFT0C = ft0.timeA();
       } else {
         multFT0A = -999.0f;
         multFT0C = -999.0f;
+        timeFT0A = -999.0f;
+        timeFT0C = -999.0f;
       }
       if (bc.has_fv0a()) {
         auto fv0 = bc.fv0a();
@@ -221,7 +246,8 @@ struct MultiplicityExtraTable {
           auto amplitude = fv0.amplitude()[ii];
           auto channel = fv0.channel()[ii];
           multFV0A += amplitude;
-          if (channel > 7) {
+          static constexpr int MaxChannelIdInnerRingFV0 = 7;
+          if (channel > MaxChannelIdInnerRingFV0) {
             multFV0AOuter += amplitude;
           }
         }
@@ -235,15 +261,20 @@ struct MultiplicityExtraTable {
         std::bitset<8> fFDDTriggers = fdd.triggerMask();
         multFDDTriggerBits = static_cast<uint8_t>(fFDDTriggers.to_ulong());
 
-        for (auto amplitude : fdd.chargeA()) {
+        for (const auto amplitude : fdd.chargeA()) {
           multFDDA += amplitude;
         }
-        for (auto amplitude : fdd.chargeC()) {
+        for (const auto amplitude : fdd.chargeC()) {
           multFDDC += amplitude;
         }
+
+        timeFDDA = fdd.timeA();
+        timeFDDC = fdd.timeC();
       } else {
         multFDDA = -999.0f;
         multFDDC = -999.0f;
+        timeFDDA = -999.0f;
+        timeFDDC = -999.0f;
       }
 
       if (bc.has_zdc()) {
@@ -253,6 +284,8 @@ struct MultiplicityExtraTable {
         multZEM2 = bc.zdc().amplitudeZEM2();
         multZPA = bc.zdc().amplitudeZPA();
         multZPC = bc.zdc().amplitudeZPC();
+        timeZPA = bc.zdc().timeZPA();
+        timeZPC = bc.zdc().timeZPC();
       } else {
         multZNA = -999.f;
         multZNC = -999.f;
@@ -260,6 +293,10 @@ struct MultiplicityExtraTable {
         multZEM2 = -999.f;
         multZPA = -999.f;
         multZPC = -999.f;
+        timeZNA = -999.f;
+        timeZNC = -999.f;
+        timeZPA = -999.f;
+        timeZPC = -999.f;
       }
 
       bc2mult(bc2multArray[bc.globalIndex()]);
@@ -290,8 +327,18 @@ struct MultiplicityExtraTable {
         multFDDTriggerBits,
         multBCTriggerMask,
         collidingBC,
-        Tvx,
+        tvx,
         isFV0OrA);
+
+      timeBC(
+        timeFT0A,
+        timeFT0C,
+        timeFDDA,
+        timeFDDC,
+        timeZNA,
+        timeZNC,
+        timeZPA,
+        timeZPC);
     }
   }
 
@@ -307,16 +354,24 @@ struct MultiplicityExtraTable {
     float deltaPrevious = 1e+6, deltaPrePrevious = 1e+6;
     float deltaNext = 1e+6, deltaNeNext = 1e+6;
     for (const auto& collision : collisions) {
-      int ii = collision.globalIndex();
+      const int thisCollision = collision.globalIndex();
+      const int prevCollision = thisCollision - 1;
+      const int prevPrevCollision = thisCollision - 2;
+      const int nextCollision = thisCollision + 1;
+      const int nextNextCollision = thisCollision + 2;
 
-      if (ii - 1 >= 0)
-        deltaPrevious = timeArray[ii] - timeArray[ii - 1];
-      if (ii - 2 >= 0)
-        deltaPrePrevious = timeArray[ii] - timeArray[ii - 2];
-      if (ii + 1 < collisions.size())
-        deltaNext = timeArray[ii + 1] - timeArray[ii];
-      if (ii + 2 < collisions.size())
-        deltaNeNext = timeArray[ii + 2] - timeArray[ii];
+      if (prevCollision >= 0) {
+        deltaPrevious = timeArray[thisCollision] - timeArray[prevCollision];
+      }
+      if (prevPrevCollision >= 0) {
+        deltaPrePrevious = timeArray[thisCollision] - timeArray[prevPrevCollision];
+      }
+      if (nextCollision < collisions.size()) {
+        deltaNext = timeArray[nextCollision] - timeArray[thisCollision];
+      }
+      if (nextNextCollision < collisions.size()) {
+        deltaNeNext = timeArray[nextNextCollision] - timeArray[thisCollision];
+      }
 
       multNeigh(deltaPrePrevious, deltaPrevious, deltaNext, deltaNeNext);
     }
@@ -342,5 +397,5 @@ struct MultiplicityExtraTable {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<MultiplicityExtraTable>(cfgc, TaskName{"multiplicity-extra-table"})};
+  return WorkflowSpec{adaptAnalysisTask<MultiplicityExtraTable>(cfgc)};
 }

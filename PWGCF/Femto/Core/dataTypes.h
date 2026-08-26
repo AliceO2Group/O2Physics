@@ -31,7 +31,8 @@ using TrackMaskType = uint64_t;
 using TrackType = uint16_t;
 
 // datatypes for v0s
-using V0MaskType = uint16_t;
+using V0MaskType = uint32_t;
+using V0MaskType001 = uint16_t; // old data type, was too narrow
 using V0Type = uint16_t;
 
 // datatypes for kinks
@@ -44,7 +45,8 @@ using TwoTrackResonanceMaskType = uint32_t;
 using TwoTrackResonanceType = uint16_t;
 
 // datatypes for cascades
-using CascadeMaskType = uint16_t;
+using CascadeMaskType = uint32_t;
+using CascadeMaskType001 = uint16_t; // old data type, was too narrow
 using CascadeType = uint16_t;
 
 // datatype for origin of mc particle
@@ -56,6 +58,14 @@ using ParticleType = uint16_t;
 // datatypes for different observables
 using MomentumType = uint16_t;
 using TransverseMassType = uint16_t;
+
+// datatype for charm hadrons
+using CharmHadronMaskType = uint32_t;
+using CharmHadronType = uint16_t;
+
+// datatypes for event shape enums
+using QvecDetectorType = uint8_t;
+using QvecHarmonicType = uint8_t;
 
 } // namespace o2::analysis::femto::datatypes
 

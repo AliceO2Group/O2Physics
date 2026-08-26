@@ -14,6 +14,11 @@ o2physics_add_dpl_workflow(nuclei-batask
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(antitriton-analysis
+    SOURCES antitritonAnalysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(hypertritonanalysis
     SOURCES hypertritonAnalysis.cxx
     PUBLIC_LINK_LIBRARIES O2::DetectorsBase O2Physics::AnalysisCore
@@ -49,6 +54,12 @@ o2physics_add_dpl_workflow(spectra-tof
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+#New
+o2physics_add_dpl_workflow(spectra-tof-light
+    SOURCES spectraTOFLight.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(spectra-tof-run2
     SOURCES spectraTOFRun2.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -70,7 +81,7 @@ o2physics_add_dpl_workflow(spectra-tpc-tiny
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(nuclei-tpcspectra
-    SOURCES nucleitpcpbpb.cxx
+    SOURCES nucleitpcPbPb.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
@@ -142,6 +153,11 @@ o2physics_add_dpl_workflow(nuclei-toward-transv
 o2physics_add_dpl_workflow(nuclei-from-hypertriton-map
     SOURCES nucleiFromHypertritonMap.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(antinuclei-in-jets-cdf
+    SOURCES antinucleiInJetsCDF.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 if(FastJet_FOUND)

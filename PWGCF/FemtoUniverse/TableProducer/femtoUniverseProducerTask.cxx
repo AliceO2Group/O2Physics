@@ -1263,7 +1263,7 @@ struct FemtoUniverseProducerTask {
     }
   }
 
-  template <bool isMC, typename TrackType>
+  template <bool fillITS, typename TrackType>
   void fillTracksFullNsigma(TrackType const& tracks)
   {
     std::vector<int> childIDs = {0, 0};
@@ -1318,6 +1318,12 @@ struct FemtoUniverseProducerTask {
                             track.tofNSigmaDe(), track.tpcNSigmaEl(), track.tpcNSigmaPi(),
                             track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                             track.tpcNSigmaDe());
+
+      if constexpr (fillITS) {
+        outputDebugITSParts(track.itsNSigmaEl(), track.itsNSigmaPi(),
+                            track.itsNSigmaKa(), track.itsNSigmaPr(),
+                            track.itsNSigmaDe());
+      }
     }
   }
 
@@ -1419,7 +1425,7 @@ struct FemtoUniverseProducerTask {
                   aod::femtouniverseparticle::ParticleType::kV0Child,
                   cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kPosCuts),
                   confIsUseCutculator ? cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kPosPID) : pidBitmask(postrack),
-                  0.,
+                  postrack.dcaXY(),
                   childIDs,
                   0,
                   postrack.sign());
@@ -1439,7 +1445,7 @@ struct FemtoUniverseProducerTask {
                   aod::femtouniverseparticle::ParticleType::kV0Child,
                   cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegCuts),
                   confIsUseCutculator ? cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegPID) : pidBitmask(negtrack),
-                  0.,
+                  negtrack.dcaXY(),
                   childIDs,
                   0,
                   negtrack.sign());
@@ -2886,6 +2892,8 @@ struct FemtoUniverseProducerTask {
                         aod::BCsWithTimestamps const&,
                         aod::McParticles const& mcParts)
   {
+    std::set<int> mcColIds;
+    mcColIds.clear();
     // MC Reco
     for (const auto& col : collisions) {
       auto groupedTracks = tracks.sliceBy(perCollisionTracks, col.globalIndex());
@@ -2895,12 +2903,16 @@ struct FemtoUniverseProducerTask {
       // fill the tables
       const auto colcheck = fillCollisions<true>(col, tracks);
       if (colcheck) {
+        mcColIds.insert(col.mcCollisionId());
         fillTracks<true>(groupedTracks);
         fillD0D0barMcMl<true>(col, groupedTracks, groupedD0s, mcParts);
       }
     }
     // MC Truth
     for (const auto& mccol : mccols) {
+      if (confCollMCTruthOnlyReco && !mcColIds.contains(mccol.globalIndex())) {
+        continue;
+      }
       auto groupedMCParticles = hfMcGenCands.sliceBy(mcPartPerMcColl, mccol.globalIndex());
       auto groupedCollisions = collisions.sliceBy(recoCollsPerMCColl, mccol.globalIndex());
       fillMCTruthCollisions(groupedCollisions, groupedMCParticles);                   // fills the reco collisions for mc collision
@@ -2995,10 +3007,19 @@ struct FemtoUniverseProducerTask {
                                           soa::Filtered<soa::Join<aod::FemtoFullNSigmaTracks, aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
                                                                   aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>> const& tracksNsigma)
   {
+
+    auto tracksWithItsPid = soa::Attach<soa::Filtered<soa::Join<aod::FemtoFullNSigmaTracks, aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
+                                                                aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>>,
+                                        aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracksNsigma);
+
     // fill the tables
     const auto colcheck = fillCollisionsCentRun3<false>(col);
     if (colcheck) {
-      fillTracksFullNsigma<false>(tracksNsigma);
+      if (!confFillITSPid) {
+        fillTracksFullNsigma<false>(tracksNsigma);
+      } else {
+        fillTracksFullNsigma<true>(tracksWithItsPid);
+      }
     }
   }
   PROCESS_SWITCH(FemtoUniverseProducerTask, processTrackCentRun3DataFullNSigma, "Provide experimental data for Run 3 with centrality for track track with full NSigma information", false);

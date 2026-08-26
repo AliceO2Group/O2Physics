@@ -10,7 +10,7 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_dpl_workflow(femto-producer
-          SOURCES femtoProducer.cxx
+          SOURCES ./femtoProducer.cxx
           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
           COMPONENT_NAME Analysis)
 
@@ -19,8 +19,18 @@ o2physics_add_dpl_workflow(femto-producer-derived-to-derived
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femto-producer-lite-converter
+          SOURCES ./femtoProducerLiteConverter.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femto-producer-kink-pt-converter
           SOURCES ./femtoProducerKinkPtConverter.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-producer-mask-converter-001-to-002
+          SOURCES ./femtoProducerMaskConverter001To002.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 

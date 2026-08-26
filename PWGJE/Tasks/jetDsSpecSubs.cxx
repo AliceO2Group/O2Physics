@@ -16,7 +16,6 @@
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetReducedData.h"
 
 #include "Common/Core/RecoDecay.h"
 
@@ -35,6 +34,7 @@
 #include <TVector3.h>
 
 #include <cmath>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -51,16 +51,16 @@ enum BinExpColCntr { AllCollisions = 1,
                      Sel8ZCut = 2 };
 
 enum BinExpJetCntr { ChargedJets = 1 };
-enum BinMCColCntr { All = 1,
-                    ZCut = 2,
-                    Matched = 3,
-                    MatchedSel8ZCut = 4
+enum BinMCColCntr { AllMCCollisions = 1,
+                    SelectedMCCollisions = 2,
+                    AssociatedRecoCollisions = 3,
+                    SelectedAssociatedRecoCollisions = 4
 };
 
-enum BinMCJetCntr { DetectorLevelJetInMCCollision = 1,
-                    ParticleLevelJetInMCCollision = 2,
-                    DetectorLevelJetWithMatchedCandidate = 3,
-                    ParticleLevelJetWithMatchedCandidate = 4
+enum BinMCJetCntr { SelectedMCPJets = 1,
+                    MCPJetsWithMCDMatch = 2,
+                    SelectedMCDJets = 3,
+                    MCDJetsWithMCPMatch = 4
 };
 
 struct JetDsSpecSubs {
@@ -77,133 +77,247 @@ struct JetDsSpecSubs {
   using DsMCDJets = soa::Join<aod::DsChargedMCDetectorLevelJets, aod::DsChargedMCDetectorLevelJetConstituents, aod::DsChargedMCDetectorLevelJetsMatchedToDsChargedMCParticleLevelJets>;
   using DsMCPJets = soa::Join<aod::DsChargedMCParticleLevelJets, aod::DsChargedMCParticleLevelJetConstituents, aod::DsChargedMCParticleLevelJetsMatchedToDsChargedMCDetectorLevelJets>;
 
-  // Slices for access to proper HF MCD jet collision that is associated to MCCollision
-  PresliceUnsorted<aod::JetCollisionsMCD> collisionsPerMCCollisionPreslice = aod::jmccollisionlb::mcCollisionId;
-  Preslice<DsMCDJets> dsMCDJetsPerEXPCollisionPreslice = aod::jet::collisionId;
-  Preslice<DsMCPJets> dsMCPJetsPerMCCollisionPreslice = aod::jet::mcCollisionId;
+  using DsMCPJetsOnTheFly = soa::Join<aod::DsChargedMCParticleLevelJets, aod::DsChargedMCParticleLevelJetConstituents>;
 
-  // Configurables
+  using DsDataJetsEWS = soa::Join<
+    aod::DsChargedEventWiseSubtractedJets,
+    aod::DsChargedEventWiseSubtractedJetConstituents>;
+
+  // Inclusive charged jets
+  using ChargedJets = soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>;
+  using ChargedJetsEWS = soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents>;
+
+  // Slices for access to proper HF MCD jet collision that is associated to MCCollision
+  // PresliceUnsorted<aod::JetCollisionsMCD> collisionsPerMCCollisionPreslice = aod::jmccollisionlb::mcCollisionId;
+  // Preslice<DsMCDJets> dsMCDJetsPerEXPCollisionPreslice = aod::jet::collisionId;
+  // Preslice<DsMCDJetsEWS> dsMCDJetsEWSPerEXPCollisionPreslice = aod::jet::collisionId;
+  Preslice<DsMCPJets> dsMCPJetsPerMCCollisionPreslice = aod::jet::mcCollisionId;
+  // Preslice<DsMCPJetsEWS> dsMCPJetsEWSPerMCCollisionPreslice = aod::jet::mcCollisionId;
+
+  // Event configurables
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> jetPtMin{"jetPtMin", 5.0, "minimum jet pT cut"};
-  Configurable<float> jetR{"jetR", 0.4, "jet resolution parameter"};
+  // Configurable<float> jetR{"jetR", 0.4, "jet resolution parameter"};
 
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
+
+  // Event-wise constituent subtraction jet tables
+  // Configurable<float> centralityMin{"centralityMin", -999.f, "Minimum FT0M centrality"};
+  // Configurable<float> centralityMax{"centralityMax", 999.f, "Maximum FT0M centrality"};
 
   // internals
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
 
   // Filters
-  Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
-  // Filter collisionFilter = nabs(aod::jcollision::posZ) < vertexZCut;
+  // Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
+  Filter jetCuts = aod::jet::pt > jetPtMin;
 
   // Filtered jet tables
   using FilteredDsDataJets = soa::Filtered<DsDataJets>;
   using FilteredDsMCDJets = soa::Filtered<DsMCDJets>;
   using FilteredDsMCPJets = soa::Filtered<DsMCPJets>;
 
-  //=============
-  // Histograms
-  //=============
+  using FilteredDsDataJetsEWS = soa::Filtered<DsDataJetsEWS>;
+  // using FilteredDsMCDJetsEWS = soa::Filtered<DsMCDJetsEWS>;
+  // using FilteredDsMCPJetsEWS = soa::Filtered<DsMCPJetsEWS>;
 
-  HistogramRegistry registry{
-    "registry",
-    {
-      {"h_collisions", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}}},
-      {"h_event_counter_data", ";Selection step;Events", {HistType::kTH1F, {{3, 0.5, 3.5}}}},
+  // Filtered inclusive charged jets
+  using FilteredChargedJets = soa::Filtered<ChargedJets>;
+  using FilteredChargedJetsEWS = soa::Filtered<ChargedJetsEWS>;
 
-      {"h_track_pt", ";#it{p}_{T,track};entries", {HistType::kTH1F, {{200, 0., 200.}}}},
-      {"h_track_eta", ";#eta_{track};entries", {HistType::kTH1F, {{100, -1., 1.}}}},
-      {"h_track_phi", ";#varphi_{track};entries", {HistType::kTH1F, {{80, -1., 7.}}}},
+  using FilteredDsMCPJetsOnTheFly = soa::Filtered<DsMCPJetsOnTheFly>;
 
-      // Data histograms
-      {"h_jet_pt_data", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
-      {"h_jet_eta_data", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
-      {"h_jet_phi_data", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
+  //=====================================================================================
+  // Histogram definitions
+  //=====================================================================================
 
-      {"h_ds_mass_data", ";m_{D_{S}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 1.7, 2.15}}}},
-      {"h_ds_pt_data", ";#it{p}_{T,D_{S}} (GeV/#it{c});entries", {HistType::kTH1F, {{250, 0., 100.}}}},
-      {"h_ds_eta_data", ";#eta_{D_{S}};entries", {HistType::kTH1F, {{100, -1., 1.}}}},
-      {"h_ds_phi_data", ";#phi_{D_{S}};entries", {HistType::kTH1F, {{80, -1., 7.}}}},
+  HistogramRegistry registry;
 
-      {"h_ds_jet_projection_data", ";z^{D_{S},jet}_{||};entries", {HistType::kTH1F, {{200, 0., 1.2}}}},
-      {"h_ds_jet_distance_data", ";#DeltaR_{D_{S},jet};entries", {HistType::kTH1F, {{200, 0., 1.}}}},
-      {"h_ds_jet_mass_data", ";m_{jet}^{ch} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 0., 25.}}}},
-      {"h_ds_jet_lambda11_data", ";#lambda_{1}^{1};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
-      {"h_ds_jet_lambda12_data", ";#lambda_{2}^{1};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
-      {"hSparse_ds_data", ";m_{D_{S}};#it{p}_{T,D_{S}};#it{p}_{T,jet};z^{D_{S},jet}_{||};#DeltaR_{D_{S},jet}", {HistType::kTHnSparseF, {{60, 1.7, 2.15}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.0}}}},
+  void addInclusiveQAHistograms()
+  {
+    registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{10, 0., 10.}}});
 
-      // MC general histograms
-      {"McEffJet", "N_{jet};", {HistType::kTH1F, {{4, 0., 4.0}}}},
-      {"McEffCol", "N_{collisions};", {HistType::kTH1F, {{4, 0., 4.0}}}},
+    // Track QA
+    registry.add("h_track_pt", ";#it{p}_{T,track};entries", {HistType::kTH1F, {{200, 0., 200.}}});
+    registry.add("h_track_eta", ";#eta_{track};entries", {HistType::kTH1F, {{100, -1., 1.}}});
+    registry.add("h_track_phi", ";#varphi_{track};entries", {HistType::kTH1F, {{80, -1., 7.}}});
 
-      // MC detector-level histograms
-      {"h_jet_pt_mcd", "detector-level jet pT;#it{p}_{T,jet}^{det} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
-      {"h_jet_eta_mcd", "detector-level jet #eta;#eta_{jet}^{det};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
-      {"h_jet_phi_mcd", "detector-level jet #phi;#phi_{jet}^{det};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
+    // Inclusive charged-jet QA
+    registry.add("h_njets_inclusive", ";Number of charged jets per event;Events", {HistType::kTH1F, {{100, 0., 100.}}});
+    registry.add("h_jet_pt_inclusive", ";#it{p}_{T,jet} (GeV/#it{c});Entries", {HistType::kTH1F, {{200, 0., 200.}}});
+    registry.add("h_jet_eta_inclusive", ";#eta_{jet};Entries", {HistType::kTH1F, {{100, -1., 1.}}});
+    registry.add("h_jet_phi_inclusive", ";#varphi_{jet} (rad);Entries", {HistType::kTH1F, {{80, -1., 7.}}});
+    registry.add("h_jet_mass_inclusive", ";#it{m}_{jet} (GeV/#it{c}^{2});Entries", {HistType::kTH1F, {{120, 0., 60.}}});
+    registry.add("h_jet_nconst_inclusive", ";Jet constituents;Entries", {HistType::kTH1F, {{100, 0., 100.}}});
+    registry.add("h_lambda11_inclusive", ";#lambda_{1}^{1};Entries", {HistType::kTH1F, {{100, 0., 1.}}});
+    registry.add("h_lambda21_inclusive", ";#lambda_{2}^{1};Entries", {HistType::kTH1F, {{100, 0., 1.}}});
+  }
 
-      {"h_ds_pt_mcd", ";#it{p}_{T,D_{S} jet}^{det} (GeV/#it{c});entries", {HistType::kTH1F, {{250, 0., 100.}}}},
-      {"h_ds_eta_mcd", ";#eta_{D_{S} jet}^{det};entries", {HistType::kTH1F, {{100, -1., 1.}}}},
-      {"h_ds_phi_mcd", ";#phi_{D_{S} jet}^{det};entries", {HistType::kTH1F, {{80, -1., 7.}}}},
-      {"h_ds_mass_mcd", ";m_{D_{S}}^{det} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 1.7, 2.15}}}},
+  void addDataHistograms()
+  {
+    registry.add("h_event_counter_data", ";Selection step;Events", {HistType::kTH1F, {{3, 0.5, 3.5}}});
 
-      {"h_ds_jet_lambda11_mcd", ";#lambda_{1}^{1, det};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
-      {"h_ds_jet_lambda12_mcd", ";#lambda_{2}^{1, det};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
+    // Jet QA
+    registry.add("h_jet_pt_data", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
+    registry.add("h_jet_eta_data", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1., 1.}}});
+    registry.add("h_jet_phi_data", "jet #phi;#varphi_{jet};entries", {HistType::kTH1F, {{80, -1., 7.}}});
 
-      // MCD - Sparse 1: mass, p_{T,Ds}, p_{T,jet}, z|| and prompt/non-prompt
-      {"hSparse_ds_mcd1", ";m_{D_{S}}^{rec};#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||, det};Origin(D_{S})", {HistType::kTHnSparseF, {{60, 1.7, 2.15}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {2, -0.5, 1.5}}}},
-      // MCD - Sparse 2: p_{T,Ds}, p_{T,jet}, and DeltaR
-      {"hSparse_ds_mcd2", ";#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};#DeltaR_{D_{S},jet}^{det}", {HistType::kTHnSparseF, {{60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.0}}}},
-      // MCD - Sparse 3: p_{T,jet}, z|| and DeltaR
-      {"hSparse_ds_mcd3", ";#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||, det};#DeltaR_{D_{S},jet}^{det}", {HistType::kTHnSparseF, {{60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.0}}}},
+    // Ds QA
+    registry.add("h_ds_mass_data", ";m_{D_{S}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 1.7, 2.15}}});
+    registry.add("h_ds_pt_data", ";#it{p}_{T,D_{S}} (GeV/#it{c});entries", {HistType::kTH1F, {{250, 0., 100.}}});
+    registry.add("h_ds_eta_data", ";#eta_{D_{S}};entries", {HistType::kTH1F, {{100, -1., 1.}}});
+    registry.add("h_ds_phi_data", ";#varphi_{D_{S}};entries", {HistType::kTH1F, {{80, -1., 7.}}});
 
-      // MC particle-level histograms
-      {"h_jet_pt_mcp", "particle-level jet pT;#it{p}_{T,jet}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
-      {"h_jet_eta_mcp", "particle-level jet #eta;#eta_{jet}^{part};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
-      {"h_jet_phi_mcp", "particle-level jet #phi;#phi_{jet}^{part};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
+    // Ds-tagged jet observables
+    registry.add("h_ds_jet_projection_data", ";z^{D_{S},jet}_{||};entries", {HistType::kTH1F, {{200, 0., 1.2}}});
+    registry.add("h_ds_jet_distance_data", ";#DeltaR_{D_{S},jet};entries", {HistType::kTH1F, {{200, 0., 1.}}});
+    registry.add("h_ds_jet_mass_data", ";m_{jet}^{ch} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 0., 25.}}});
+    registry.add("h_ds_jet_lambda11_data", ";#lambda_{1}^{1};entries", {HistType::kTH1F, {{100, 0., 1.}}});
+    registry.add("h_ds_jet_lambda21_data", ";#lambda_{2}^{1};entries", {HistType::kTH1F, {{100, 0., 1.}}});
 
-      {"h_ds_pt_mcp", ";#it{p}_{T,D_{S} jet}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{250, 0., 100.}}}},
-      {"h_ds_eta_mcp", ";#eta_{D_{S} jet}^{part};entries", {HistType::kTH1F, {{100, -1., 1.}}}},
-      {"h_ds_phi_mcp", ";#phi_{D_{S} jet}^{part};entries", {HistType::kTH1F, {{80, -1., 7.}}}},
+    // Main data sparse
+    registry.add("hSparse_ds_data", ";m_{D_{S}};#it{p}_{T,D_{S}};#it{p}_{T,jet};z^{D_{S},jet}_{||};#DeltaR_{D_{S},jet}", {HistType::kTHnSparseF, {{60, 1.6, 2.3}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.}}});
 
-      {"h_ds_jet_lambda11_mcp", ";#lambda_{1}^{1, part};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
-      {"h_ds_jet_lambda12_mcp", ";#lambda_{2}^{1, part};entries", {HistType::kTH1F, {{100, 0., 1.0}}}},
+    auto hEventCounter = registry.get<TH1>(HIST("h_event_counter_data"));
+    hEventCounter->GetXaxis()->SetBinLabel(1, "Input collisions");
+    hEventCounter->GetXaxis()->SetBinLabel(2, "Event selection");
+    hEventCounter->GetXaxis()->SetBinLabel(3, "|z| < 10 cm");
+  }
 
-      // MCP - Sparse: p_{T,Ds}, p_{T,jet}, z|| and DeltaR
-      {"hSparse_ds_mcp", ";#it{p}_{T,D_{S}}^{part};#it{p}_{T,jet}^{part};z^{D_{S},jet}_{||, part};#DeltaR_{D_{S},jet}^{part}", {HistType::kTHnSparseF, {{60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.0}}}},
-    }};
+  void addMCEfficiencyHistograms()
+  {
+    // General MC counters
+    registry.add("hMCJetCounter", "N_{jet};", {HistType::kTH1F, {{4, 0., 4.}}});
+    registry.add("hMCColCounter", "N_{collisions};", {HistType::kTH1F, {{4, 0., 4.}}});
+
+    // Detector-level jet QA
+    registry.add("h_jet_pt_mcd", "detector-level jet pT;#it{p}_{T,jet}^{det} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
+    registry.add("h_jet_eta_mcd", "detector-level jet #eta;#eta_{jet}^{det};entries", {HistType::kTH1F, {{100, -1., 1.}}});
+    registry.add("h_jet_phi_mcd", "detector-level jet #varphi;#varphi_{jet}^{det};entries", {HistType::kTH1F, {{80, -1., 7.}}});
+
+    // Detector-level Ds QA
+    registry.add("h_ds_pt_mcd", ";#it{p}_{T,D_{S}}^{det} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 100.}}});
+    registry.add("h_ds_eta_mcd", ";#eta_{D_{S}}^{det};entries", {HistType::kTH1F, {{60, -1., 1.}}});
+    registry.add("h_ds_phi_mcd", ";#varphi_{D_{S}}^{det};entries", {HistType::kTH1F, {{80, -1., 7.}}});
+    registry.add("h_ds_mass_mcd", ";m_{D_{S}}^{det} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{200, 1.7, 2.15}}});
+
+    // Detector-level sparse histograms
+    registry.add("hSparse_ds_mcd1", ";m_{D_{S}}^{rec};#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||,det};Origin(D_{S});Matching status", {HistType::kTHnSparseF, {{60, 1.6, 2.3}, {60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {2, -0.5, 1.5}, {2, -0.5, 1.5}}});
+    registry.add("hSparse_ds_mcd2", ";#it{p}_{T,D_{S}}^{det};#it{p}_{T,jet}^{det};#DeltaR_{D_{S},jet}^{det}", {HistType::kTHnSparseF, {{60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.}}});
+    registry.add("hSparse_ds_mcd3", ";#it{p}_{T,jet}^{det};z^{D_{S},jet}_{||,det};#DeltaR_{D_{S},jet}^{det}", {HistType::kTHnSparseF, {{60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.}}});
+
+    // Particle-level jet QA
+    registry.add("h_jet_pt_mcp", "particle-level jet pT;#it{p}_{T,jet}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
+    registry.add("h_jet_eta_mcp", "particle-level jet #eta;#eta_{jet}^{part};entries", {HistType::kTH1F, {{100, -1., 1.}}});
+    registry.add("h_jet_phi_mcp", "particle-level jet #varphi;#varphi_{jet}^{part};entries", {HistType::kTH1F, {{80, -1., 7.}}});
+
+    // Particle-level Ds QA
+    registry.add("h_ds_pt_mcp", ";#it{p}_{T,D_{S}}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 100.}}});
+    registry.add("h_ds_eta_mcp", ";#eta_{D_{S}}^{part};entries", {HistType::kTH1F, {{60, -1., 1.}}});
+    registry.add("h_ds_phi_mcp", ";#varphi_{D_{S}}^{part};entries", {HistType::kTH1F, {{80, -1., 7.}}});
+
+    // Particle-level sparse with origin and matching status
+    registry.add("hSparse_ds_mcp", ";#it{p}_{T,D_{S}}^{part};#it{p}_{T,jet}^{part};z^{D_{S},jet}_{||,part};#DeltaR_{D_{S},jet}^{part};Origin(D_{S});Matching status", {HistType::kTHnSparseF, {{60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.}, {2, -0.5, 1.5}, {2, -0.5, 1.5}}});
+
+    registry.add("hSparseMatchedJets", ";Matched Ds-tagged jets;#it{p}_{T,jet}^{part};#it{p}_{T,jet}^{det};#it{p}_{T,D_{S}}^{part};#it{p}_{T,D_{S}}^{det};z_{||}^{part};z_{||}^{det};Origin(D_{S})", {HistType::kTHnSparseF, {{60, 0., 100.}, {60, 0., 100.}, {60, 0., 80.}, {60, 0., 80.}, {20, 0., 1.2}, {20, 0., 1.2}, {2, -0.5, 1.5}}});
+
+    auto mcCollisionCounter = registry.get<TH1>(HIST("hMCColCounter"));
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::AllMCCollisions, "All MC coll.");
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::SelectedMCCollisions, "Selected MC coll.");
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::AssociatedRecoCollisions, "MC-associated reco coll.");
+    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::SelectedAssociatedRecoCollisions, "Selected MC-associated reco coll.");
+
+    auto jetCounter = registry.get<TH1>(HIST("hMCJetCounter"));
+    jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::SelectedMCPJets, "Selected MCP Ds-jets");
+    jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::MCPJetsWithMCDMatch, "MCP jets w/ MCD match");
+    jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::SelectedMCDJets, "Selected MCD Ds-jets");
+    jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::MCDJetsWithMCPMatch, "MCD jets w/ MCP match");
+
+    auto hSparseMCD = registry.get<THnSparse>(HIST("hSparse_ds_mcd1"));
+    hSparseMCD->GetAxis(4)->SetBinLabel(1, "Prompt");
+    hSparseMCD->GetAxis(4)->SetBinLabel(2, "Non-prompt");
+    hSparseMCD->GetAxis(5)->SetBinLabel(1, "Unmatched");
+    hSparseMCD->GetAxis(5)->SetBinLabel(2, "Matched");
+
+    auto hSparseMCP = registry.get<THnSparse>(HIST("hSparse_ds_mcp"));
+    hSparseMCP->GetAxis(4)->SetBinLabel(1, "Prompt");
+    hSparseMCP->GetAxis(4)->SetBinLabel(2, "Non-prompt");
+    hSparseMCP->GetAxis(5)->SetBinLabel(1, "Unmatched");
+    hSparseMCP->GetAxis(5)->SetBinLabel(2, "Matched");
+
+    auto hSparseMatchedJets = registry.get<THnSparse>(HIST("hSparseMatchedJets"));
+    hSparseMatchedJets->GetAxis(6)->SetBinLabel(1, "Prompt");
+    hSparseMatchedJets->GetAxis(6)->SetBinLabel(2, "Non-prompt");
+  }
+
+  void addMCPOnTheFlyHistograms()
+  {
+    registry.add("h_event_counter_mcp_on_the_fly", ";Selection step;MC collisions", {HistType::kTH1F, {{2, 0.5, 2.5}}});
+
+    // Particle-level jet QA
+    registry.add("h_jet_pt_mcp_on_the_fly", ";#it{p}_{T,jet}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
+    registry.add("h_jet_eta_mcp_on_the_fly", ";#eta_{jet}^{part};entries", {HistType::kTH1F, {{100, -1., 1.}}});
+    registry.add("h_jet_phi_mcp_on_the_fly", ";#varphi_{jet}^{part};entries", {HistType::kTH1F, {{80, -1., 7.}}});
+
+    // Particle-level Ds QA
+    registry.add("h_ds_pt_mcp_on_the_fly", ";#it{p}_{T,D_{S}}^{part} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 100.}}});
+    registry.add("h_ds_eta_mcp_on_the_fly", ";#eta_{D_{S}}^{part};entries", {HistType::kTH1F, {{60, -1., 1.}}});
+    registry.add("h_ds_phi_mcp_on_the_fly", ";#varphi_{D_{S}}^{part};entries", {HistType::kTH1F, {{80, -1., 7.}}});
+
+    // Theoretical particle-level sparse
+    registry.add("hSparse_ds_mcp_on_the_fly", ";#it{p}_{T,D_{S}}^{part};#it{p}_{T,jet}^{part};z^{D_{S},jet}_{||,part};#DeltaR_{D_{S},jet}^{part};Origin(D_{S})", {HistType::kTHnSparseF, {{60, 0., 80.}, {60, 0., 100.}, {20, 0., 1.2}, {20, 0., 1.}, {2, -0.5, 1.5}}});
+
+    auto hCounter = registry.get<TH1>(HIST("h_event_counter_mcp_on_the_fly"));
+    hCounter->GetXaxis()->SetBinLabel(1, "Generated collisions");
+    hCounter->GetXaxis()->SetBinLabel(2, "|z_{vtx}^{gen}| < cut");
+
+    auto hSparse = registry.get<THnSparse>(HIST("hSparse_ds_mcp_on_the_fly"));
+    hSparse->GetAxis(4)->SetBinLabel(1, "Prompt");
+    hSparse->GetAxis(4)->SetBinLabel(2, "Non-prompt");
+  }
+
   //========
   // INIT
   //========
 
   void init(InitContext const&)
   {
+    // Initialise event and track selection criteria
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
-    auto hEvt = registry.get<TH1>(HIST("h_event_counter_data"));
-    hEvt->GetXaxis()->SetBinLabel(1, "Input collisions");
-    hEvt->GetXaxis()->SetBinLabel(2, "Event selection");
-    hEvt->GetXaxis()->SetBinLabel(3, "|z| < 10 cm");
+    // Prevent simultaneous execution of processes using alternative jet collections
+    if (doprocessCollisions && doprocessCollisionsEWS) {
+      throw std::runtime_error("Enable either processCollisions or processCollisionsEWS, not both simultaneously");
+    }
 
-    // Labels
-    auto mcCollisionCounter = registry.get<TH1>(HIST("McEffCol"));
-    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::All, "mccollisions");
-    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::ZCut, "z_cut");
-    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::Matched, "collisions");
-    mcCollisionCounter->GetXaxis()->SetBinLabel(BinMCColCntr::MatchedSel8ZCut, "sel8");
+    if (doprocessDataChargedSubstructure && doprocessDataChargedSubstructureEWS) {
+      throw std::runtime_error("Enable either processDataChargedSubstructure or processDataChargedSubstructureEWS, not both simultaneously");
+    }
+    // Determine which histogram groups are required
+    const bool doInclusiveQA = doprocessCollisions || doprocessCollisionsEWS;
+    const bool doData = doprocessDataChargedSubstructure || doprocessDataChargedSubstructureEWS;
+    const bool doMCEfficiency = doprocessMonteCarloEfficiencyDs;
+    const bool doMCPOnTheFly = doprocessMCPOnTheFly;
 
-    auto jetCounter = registry.get<TH1>(HIST("McEffJet"));
-    jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::ParticleLevelJetInMCCollision, "particle level");
-    jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::DetectorLevelJetInMCCollision, "detector level");
-    jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::DetectorLevelJetWithMatchedCandidate, "particle matched jets");
-    jetCounter->GetXaxis()->SetBinLabel(BinMCJetCntr::ParticleLevelJetWithMatchedCandidate, "detector matched jets");
+    // Register histograms only if the corresponding process is enabled
+    if (doInclusiveQA) {
+      addInclusiveQAHistograms();
+    }
 
-    auto hSparse_ds_mcd1 = registry.get<THnSparse>(HIST("hSparse_ds_mcd1"));
-    auto* axisOrigin = hSparse_ds_mcd1->GetAxis(4);
-    axisOrigin->SetBinLabel(1, "Prompt");
-    axisOrigin->SetBinLabel(2, "Non-prompt");
+    if (doData) {
+      addDataHistograms();
+    }
+
+    if (doMCEfficiency) {
+      addMCEfficiencyHistograms();
+    }
+
+    if (doMCPOnTheFly) {
+      addMCPOnTheFlyHistograms();
+    }
   }
   //===============
   // Lambda compute
@@ -263,35 +377,76 @@ struct JetDsSpecSubs {
   // Collision QA
   //==============
 
-  void processCollisions(aod::JetCollision const& collision, aod::JetTracks const& tracks)
+  // This function is shared by the pp and Pb–Pb (event-wise subtraction)
+  template <typename JetTable>
+  void fillInclusiveJetQA(aod::JetCollision const& collision,
+                          aod::JetTracks const& tracks,
+                          JetTable const& jets)
   {
-    registry.fill(HIST("h_collisions"), 0.5);
+    // Collision counter
+    registry.fill(HIST("h_collisions"), getValFromBin(AllCollisions));
 
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
+    registry.fill(HIST("h_collisions"), getValFromBin(Sel8ZCut));
 
-    registry.fill(HIST("h_collisions"), 1.5);
-
+    // Track QA
     for (auto const& track : tracks) {
-
       if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
-        return;
+        continue;
       }
 
       registry.fill(HIST("h_track_pt"), track.pt());
       registry.fill(HIST("h_track_eta"), track.eta());
       registry.fill(HIST("h_track_phi"), track.phi());
     }
+
+    // Inclusive charged-jet QA
+    registry.fill(HIST("h_njets_inclusive"), jets.size());
+
+    for (auto const& jet : jets) {
+
+      registry.fill(HIST("h_jet_pt_inclusive"), jet.pt());
+      registry.fill(HIST("h_jet_eta_inclusive"), jet.eta());
+      registry.fill(HIST("h_jet_phi_inclusive"), jet.phi());
+
+      auto constituents = jet.template tracks_as<aod::JetTracks>();
+
+      registry.fill(HIST("h_jet_nconst_inclusive"), constituents.size());
+
+      registry.fill(HIST("h_jet_mass_inclusive"), computeJetMass(constituents));
+      registry.fill(HIST("h_lambda11_inclusive"), computeLambda(jet, constituents, 1.f, 1.f));
+      registry.fill(HIST("h_lambda21_inclusive"), computeLambda(jet, constituents, 2.f, 1.f));
+    }
+  }
+  // Inclusive charged-jet QA for pp collisions
+  void processCollisions(aod::JetCollision const& collision,
+                         aod::JetTracks const& tracks,
+                         FilteredChargedJets const& jets)
+  {
+    fillInclusiveJetQA(collision, tracks, jets);
   }
   PROCESS_SWITCH(JetDsSpecSubs, processCollisions, "collision QA", false);
+  // Inclusive charged-jet QA for Pb–Pb collisions using
+  // event-wise constituent-subtracted jets
+  void processCollisionsEWS(aod::JetCollision const& collision,
+                            aod::JetTracks const& tracks,
+                            FilteredChargedJetsEWS const& jets)
+  {
+    fillInclusiveJetQA(collision, tracks, jets);
+  }
+  PROCESS_SWITCH(JetDsSpecSubs, processCollisionsEWS, "collision QA EWS", false);
 
-  //==============
-  // DATA process
-  //==============
+  //=====================================================================================
+  // DATA function
+  //=====================================================================================
 
-  void processDataChargedSubstructure(aod::JetCollision const& collision, FilteredDsDataJets const& jets,
-                                      aod::CandidatesDsData const&, aod::JetTracks const&)
+  // Common implementation of the Ds-in-jet analysis for data
+  // Shared by the pp and Pb–Pb (event-wise subtraction) workflows
+  template <typename JetTable>
+  void analyseDataDsJet(aod::JetCollision const& collision,
+                        JetTable const& jets)
   {
     registry.fill(HIST("h_event_counter_data"), 1);
 
@@ -311,19 +466,19 @@ struct JetDsSpecSubs {
       registry.fill(HIST("h_jet_eta_data"), jet.eta());
       registry.fill(HIST("h_jet_phi_data"), jet.phi());
 
-      auto jetTracks = jet.tracks_as<aod::JetTracks>();
+      auto jetTracks = jet.template tracks_as<aod::JetTracks>();
 
       const float lambda11 = computeLambda(jet, jetTracks, 1.f, 1.f);
-      const float lambda12 = computeLambda(jet, jetTracks, 2.f, 1.f);
+      const float lambda21 = computeLambda(jet, jetTracks, 2.f, 1.f);
 
       const float mjet = computeJetMass(jetTracks);
 
-      TVector3 jetVector(jet.px(), jet.py(), jet.pz());
+      const TVector3 jetVector(jet.px(), jet.py(), jet.pz());
 
-      // Loop over Ds candidates (particle level)
-      for (const auto& dsCandidate : jet.candidates_as<aod::CandidatesDsData>()) {
+      // Loop over Ds candidates
+      for (const auto& dsCandidate : jet.template candidates_as<aod::CandidatesDsData>()) {
 
-        TVector3 dsVector(dsCandidate.px(), dsCandidate.py(), dsCandidate.pz());
+        const TVector3 dsVector(dsCandidate.px(), dsCandidate.py(), dsCandidate.pz());
 
         // Axis distance Delta_R
         const float deltaR = jetutilities::deltaR(jet, dsCandidate);
@@ -337,7 +492,6 @@ struct JetDsSpecSubs {
         registry.fill(HIST("h_ds_phi_data"), dsCandidate.phi());
 
         registry.fill(HIST("h_ds_jet_projection_data"), zParallel);
-
         registry.fill(HIST("h_ds_jet_distance_data"), deltaR);
 
         // Main THnSparse: invariant mass, pT, z, and DeltaR
@@ -349,197 +503,348 @@ struct JetDsSpecSubs {
                       deltaR);
       }
 
-      if (!jet.candidates_as<aod::CandidatesDsData>().empty()) {
-        // Jet mass
+      if (!jet.template candidates_as<aod::CandidatesDsData>().empty()) {
+        // Jet Mass
         registry.fill(HIST("h_ds_jet_mass_data"), mjet);
 
         // Jet angularity
         if (lambda11 >= 0.f) {
           registry.fill(HIST("h_ds_jet_lambda11_data"), lambda11);
         }
-        if (lambda12 >= 0.f) {
-          registry.fill(HIST("h_ds_jet_lambda12_data"), lambda12);
+        if (lambda21 >= 0.f) {
+          registry.fill(HIST("h_ds_jet_lambda21_data"), lambda21);
         }
       }
     }
   }
+
+  //=====================================================================================
+  // DATA process
+  //=====================================================================================
+
+  // Data analysis using standard charged jets (pp)
+  void processDataChargedSubstructure(aod::JetCollision const& collision,
+                                      FilteredDsDataJets const& jets,
+                                      aod::CandidatesDsData const&,
+                                      aod::JetTracks const&)
+  {
+    analyseDataDsJet(collision, jets);
+  }
   PROCESS_SWITCH(JetDsSpecSubs, processDataChargedSubstructure, "Data charged jets", false);
 
-  //==============
+  // Data analysis using event-wise constituent-subtracted charged jets (Pb–Pb)
+  void processDataChargedSubstructureEWS(aod::JetCollision const& collision,
+                                         FilteredDsDataJetsEWS const& jets,
+                                         aod::CandidatesDsData const&,
+                                         aod::JetTracks const&)
+  {
+    analyseDataDsJet(collision, jets);
+  }
+  PROCESS_SWITCH(JetDsSpecSubs, processDataChargedSubstructureEWS, "Data charged jets EWS", false);
+
+  //=====================================================================================
   //  MC function
-  //==============
-  template <typename MCDJetsPerMCCollissionPreslice,
-            typename MCPJetsPerMCCollissionPreslice,
-            typename DsMCDJets,
-            typename DsMCPJets,
+  //=====================================================================================
+  template <typename MCDJetTable,
+            typename MCPJetTable,
             typename DsCandidatesMCD,
             typename DsCandidatesMCP>
-  void analyseMonteCarloEfficiency(MCDJetsPerMCCollissionPreslice const& jetmcdpreslice,
-                                   MCPJetsPerMCCollissionPreslice const& jetmcppreslice,
-                                   aod::JetMcCollisions const& mccollisions,
+  void analyseMonteCarloEfficiency(aod::JetMcCollisions const& mccollisions,
                                    aod::JetCollisionsMCD const& collisions,
-                                   FilteredDsMCDJets const& mcdjets,
-                                   FilteredDsMCPJets const& mcpjets,
-                                   DsCandidatesMCD const& /*mcdCandidates*/,
-                                   DsCandidatesMCP const& /*mcpCandidates*/,
-                                   aod::JetTracks const& tracks)
+                                   MCDJetTable const& mcdjets,
+                                   MCPJetTable const& mcpjets,
+                                   DsCandidatesMCD const&,
+                                   DsCandidatesMCP const&)
   {
+    // Process particle-level collisions and jets
     for (const auto& mccollision : mccollisions) {
-      // Count all generated MC collisions
-      registry.fill(HIST("McEffCol"), getValFromBin(BinMCColCntr::All));
 
-      // Apply MC vertex selection
-      if (std::abs(mccollision.posZ()) > vertexZCut) {
+      // Count all generated MC collisions before event selection
+      registry.fill(HIST("hMCColCounter"), getValFromBin(BinMCColCntr::AllMCCollisions));
+
+      // Apply MC collision selection
+      if (!jetderiveddatautilities::selectCollision(mccollision, eventSelectionBits)) {
         continue;
       }
-      // MC collisions passing z_cut selection
-      registry.fill(HIST("McEffCol"), getValFromBin(BinMCColCntr::ZCut));
-
-      // Reconstructed collisions associated to this mccollision
-      const auto collisionsPerMCCollision = collisions.sliceBy(collisionsPerMCCollisionPreslice, mccollision.globalIndex());
-      for (const auto& collision : collisionsPerMCCollision) {
-
-        // Successfully matched reconstructed collision
-        registry.fill(HIST("McEffCol"), getValFromBin(BinMCColCntr::Matched));
-
-        // Apply standard event selection and vertex cut
-        if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) ||
-            !(std::abs(collision.posZ()) < vertexZCut)) {
-          continue;
-        }
-        // Matched collision passing analysis selections
-        registry.fill(HIST("McEffCol"), getValFromBin(BinMCColCntr::MatchedSel8ZCut));
-
-        // Detector-level Ds-tagged jets associated with the current reconstructed collision
-        const auto dsmcdJetsPerCollision = mcdjets.sliceBy(jetmcdpreslice, collision.globalIndex());
-        for (const auto& mcdjet : dsmcdJetsPerCollision) {
-          // Detector-level jet found in a matched collision
-          registry.fill(HIST("McEffJet"), getValFromBin(BinMCJetCntr::DetectorLevelJetInMCCollision));
-
-          // Leading Ds candidate associated to the jet
-          auto mcdDscand = mcdjet.template candidates_first_as<DsCandidatesMCD>();
-
-          // Check if it's prompt
-          int origin = (mcdDscand.originMcRec() != RecoDecay::OriginType::Prompt) ? 1 : 0;
-
-          // Check whether a matched particle-level jet exists
-          if (mcdjet.has_matchedJetCand()) {
-            registry.fill(HIST("McEffJet"), getValFromBin(BinMCJetCntr::DetectorLevelJetWithMatchedCandidate));
-          }
-
-          // Compute jet-substructure observables
-          TVector3 mcd_jetvector(mcdjet.px(), mcdjet.py(), mcdjet.pz());
-          TVector3 mcd_candvector(mcdDscand.px(), mcdDscand.py(), mcdDscand.pz());
-
-          float mcd_zParallel = (mcd_jetvector * mcd_candvector) / (mcd_jetvector * mcd_jetvector);
-          // Axis distance Delta_R
-          float mcd_deltaR = jetutilities::deltaR(mcdjet, mcdDscand);
-          float mcd_lambda11 = computeLambda(mcdjet, tracks, 1.f, 1.f);
-          float mcd_lambda12 = computeLambda(mcdjet, tracks, 2.f, 1.f);
-
-          // Detector-level Jet Histograms
-          registry.fill(HIST("h_jet_pt_mcd"), mcdjet.pt());
-          registry.fill(HIST("h_jet_eta_mcd"), mcdjet.eta());
-          registry.fill(HIST("h_jet_phi_mcd"), mcdjet.phi());
-          registry.fill(HIST("h_ds_jet_projection_mcd"), mcd_zParallel);
-          registry.fill(HIST("h_ds_jet_lambda11_mcd"), mcd_lambda11);
-          registry.fill(HIST("h_ds_jet_lambda12_mcd"), mcd_lambda12);
-          // Detector-level Ds Histgrams
-          registry.fill(HIST("h_ds_pt_mcd"), mcdDscand.pt());
-          registry.fill(HIST("h_ds_mass_mcd"), mcdDscand.m());
-          registry.fill(HIST("h_ds_eta_mcd"), mcdDscand.eta());
-          registry.fill(HIST("h_ds_phi_mcd"), mcdDscand.phi());
-
-          // MCD THnSparse1: invariant mass, p{T,Ds}, pT, z, and origin (prompt/non-prompt)
-          registry.fill(HIST("hSparse_ds_mcd1"),
-                        mcdDscand.m(),
-                        mcdDscand.pt(),
-                        mcdjet.pt(),
-                        mcd_zParallel,
-                        origin);
-          // MCD THnSparse2: invariant p{T,Ds}, pT and DeltaR
-          registry.fill(HIST("hSparse_ds_mcd2"),
-                        mcdDscand.pt(),
-                        mcdjet.pt(),
-                        mcd_deltaR);
-          // MCD THnSparse3: invariant pT z and DeltaR
-          registry.fill(HIST("hSparse_ds_mcd3"),
-                        mcdjet.pt(),
-                        mcd_zParallel,
-                        mcd_deltaR);
-        }
+      if (std::abs(mccollision.posZ()) >= vertexZCut) {
+        continue;
       }
-      // Particle level
-      const auto dsmcpJetsPerMCCollision = mcpjets.sliceBy(jetmcppreslice, mccollision.globalIndex());
+      // Count generated MC collisions passing the event and vertex selections
+      registry.fill(HIST("hMCColCounter"), getValFromBin(BinMCColCntr::SelectedMCCollisions));
+
+      // Group particle-level Ds-tagged jets by their associated MC collision
+      const auto dsmcpJetsPerMCCollision = mcpjets.sliceBy(dsMCPJetsPerMCCollisionPreslice, mccollision.globalIndex());
+
+      // Fill inclusive particle-level distributions
       for (const auto& mcpjet : dsmcpJetsPerMCCollision) {
 
-        registry.fill(HIST("McEffJet"), getValFromBin(BinMCJetCntr::ParticleLevelJetInMCCollision));
+        // Retrieve the generated Ds candidate associated with the jet
+        const auto mcpCandidate = mcpjet.template candidates_first_as<DsCandidatesMCP>();
 
-        // obtain leading HF particle in jet
-        auto mcpDscand = mcpjet.template candidates_first_as<DsCandidatesMCP>();
-
-        if (mcpjet.has_matchedJetCand()) {
-          registry.fill(HIST("McEffJet"), getValFromBin(BinMCJetCntr::ParticleLevelJetWithMatchedCandidate));
+        const auto origin = mcpCandidate.originMcGen();
+        // Keep only prompt and non-prompt generated Ds candidates.
+        if (origin != RecoDecay::OriginType::Prompt && origin != RecoDecay::OriginType::NonPrompt) {
+          continue;
         }
+        const int originMCP = origin == RecoDecay::OriginType::Prompt ? 0 : 1;
 
-        TVector3 mcp_jetvector(mcpjet.px(), mcpjet.py(), mcpjet.pz());
-        TVector3 mcp_candvector(mcpDscand.px(), mcpDscand.py(), mcpDscand.pz());
+        // Count particle-level Ds-tagged jets passing the selections
+        registry.fill(HIST("hMCJetCounter"), getValFromBin(BinMCJetCntr::SelectedMCPJets));
 
-        float mcp_zParallel = (mcp_jetvector * mcp_candvector) / (mcp_jetvector * mcp_jetvector);
-        // Axis distance Delta_R
-        float mcp_deltaR = jetutilities::deltaR(mcpjet, mcpDscand);
-        float mcp_lambda11 = computeLambda(mcpjet, tracks, 1.f, 1.f);
-        float mcp_lambda12 = computeLambda(mcpjet, tracks, 2.f, 1.f);
+        // If MCP jet have a detector-level matched jet
+        const bool hasMatchedMCDJet = mcpjet.has_matchedJetCand();
+        const int matchingStatusMCP = hasMatchedMCDJet ? 1 : 0;
 
-        // Particle-level Jet Histograms
+        // MCP observables
+        const TVector3 mcpJetVector(mcpjet.px(), mcpjet.py(), mcpjet.pz());
+        const TVector3 mcpCandidateVector(mcpCandidate.px(), mcpCandidate.py(), mcpCandidate.pz());
+
+        const float zParallelMCP = (mcpJetVector * mcpCandidateVector) / (mcpJetVector * mcpJetVector);
+        const float deltaRMCP = jetutilities::deltaR(mcpjet, mcpCandidate);
+
+        // Fill particle-level jet distributions
         registry.fill(HIST("h_jet_pt_mcp"), mcpjet.pt());
         registry.fill(HIST("h_jet_eta_mcp"), mcpjet.eta());
         registry.fill(HIST("h_jet_phi_mcp"), mcpjet.phi());
 
-        registry.fill(HIST("h_ds_jet_lambda11_mcp"), mcp_lambda11);
-        registry.fill(HIST("h_ds_jet_lambda12_mcp"), mcp_lambda12);
-        // Particle-level Ds Histgrams
-        registry.fill(HIST("h_ds_pt_mcp"), mcpDscand.pt());
-        registry.fill(HIST("h_ds_eta_mcp"), mcpDscand.eta());
-        registry.fill(HIST("h_ds_phi_mcp"), mcpDscand.phi());
+        // Fill particle-level Ds-candidate distributions
+        registry.fill(HIST("h_ds_pt_mcp"), mcpCandidate.pt());
+        registry.fill(HIST("h_ds_eta_mcp"), mcpCandidate.eta());
+        registry.fill(HIST("h_ds_phi_mcp"), mcpCandidate.phi());
 
-        // Main THnSparse: invariant mass, pT, z, and DeltaR
         registry.fill(HIST("hSparse_ds_mcp"),
-                      mcpDscand.pt(),
+                      mcpCandidate.pt(),
                       mcpjet.pt(),
-                      mcp_zParallel,
-                      mcp_deltaR);
+                      zParallelMCP,
+                      deltaRMCP,
+                      originMCP,
+                      matchingStatusMCP);
+
+        // Skip particle-level jets without an MCD matching relation
+        // Continue only with jets having an MCD matching relation
+        if (!hasMatchedMCDJet) {
+          continue;
+        }
+        // Count particle-level jets with an MCD matching relation
+        registry.fill(HIST("hMCJetCounter"), getValFromBin(BinMCJetCntr::MCPJetsWithMCDMatch));
+
+        // Follow the MCP-to-MCD relation and fill matched jet pairs
+        for (const auto& mcdjet : mcpjet.template matchedJetCand_as<MCDJetTable>()) {
+
+          // Reconstructed collision of the matched MCD jet
+          const auto& collision = collisions.iteratorAt(mcdjet.collisionId());
+
+          // Apply reconstructed collision selection
+          if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+            continue;
+          }
+          if (std::abs(collision.posZ()) >= vertexZCut) {
+            continue;
+          }
+
+          const auto mcdCandidate = mcdjet.template candidates_first_as<DsCandidatesMCD>();
+
+          // MCD observables
+          const TVector3 mcdJetVector(mcdjet.px(), mcdjet.py(), mcdjet.pz());
+          const TVector3 mcdCandidateVector(mcdCandidate.px(), mcdCandidate.py(), mcdCandidate.pz());
+
+          const float zParallelMCD = (mcdJetVector * mcdCandidateVector) / (mcdJetVector * mcdJetVector);
+
+          // This histogram contains one entry per matched pair
+          registry.fill(
+            HIST("hSparseMatchedJets"),
+            mcpjet.pt(),
+            mcdjet.pt(),
+            mcpCandidate.pt(),
+            mcdCandidate.pt(),
+            zParallelMCP,
+            zParallelMCD,
+            originMCP);
+        }
       }
+    } // End of the loop over MC collisions
+
+    // Count reconstructed collisions once, independently of jet multiplicity
+    for (const auto& collision : collisions) {
+
+      // Count reconstructed collisions associated with an MC collision
+      registry.fill(HIST("hMCColCounter"), getValFromBin(BinMCColCntr::AssociatedRecoCollisions));
+
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+        continue;
+      }
+
+      if (std::abs(collision.posZ()) >= vertexZCut) {
+        continue;
+      }
+      // Count associated collisions passing the event and vertex selections
+      registry.fill(HIST("hMCColCounter"), getValFromBin(BinMCColCntr::SelectedAssociatedRecoCollisions));
+    }
+
+    // Fill inclusive detector-level distributions
+    // This loop is outside the MC-collision loop, so each jet is processed once
+    for (const auto& mcdjet : mcdjets) {
+
+      const auto& collision = collisions.iteratorAt(mcdjet.collisionId());
+
+      if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+        continue;
+      }
+
+      if (std::abs(collision.posZ()) >= vertexZCut) {
+        continue;
+      }
+
+      const auto mcdCandidate = mcdjet.template candidates_first_as<DsCandidatesMCD>();
+      const auto origin = mcdCandidate.originMcRec();
+
+      // Keep only prompt and non-prompt reconstructed Ds candidates.
+      if (origin != RecoDecay::OriginType::Prompt && origin != RecoDecay::OriginType::NonPrompt) {
+        continue;
+      }
+
+      const int originMCD = origin == RecoDecay::OriginType::Prompt ? 0 : 1;
+
+      // Count detector-level Ds-tagged jets passing the selections.
+      registry.fill(HIST("hMCJetCounter"), getValFromBin(BinMCJetCntr::SelectedMCDJets));
+
+      const bool hasMatchedMCPJet = mcdjet.has_matchedJetCand();
+
+      const int matchingStatusMCD = hasMatchedMCPJet ? 1 : 0;
+
+      if (hasMatchedMCPJet) {
+        // Count detector-level jets with an MCP matching relation
+        registry.fill(HIST("hMCJetCounter"), getValFromBin(BinMCJetCntr::MCDJetsWithMCPMatch));
+      }
+
+      const TVector3 mcdJetVector(mcdjet.px(), mcdjet.py(), mcdjet.pz());
+      const TVector3 mcdCandidateVector(mcdCandidate.px(), mcdCandidate.py(), mcdCandidate.pz());
+
+      const float zParallelMCD = mcdJetVector.Dot(mcdCandidateVector) / mcdJetVector.Mag2();
+      const float deltaRMCD = jetutilities::deltaR(mcdjet, mcdCandidate);
+
+      // Fill detector-level jet distributions
+      registry.fill(HIST("h_jet_pt_mcd"), mcdjet.pt());
+      registry.fill(HIST("h_jet_eta_mcd"), mcdjet.eta());
+      registry.fill(HIST("h_jet_phi_mcd"), mcdjet.phi());
+      // Fill detector-level Ds-candidate distributions
+      registry.fill(HIST("h_ds_pt_mcd"), mcdCandidate.pt());
+      registry.fill(HIST("h_ds_mass_mcd"), mcdCandidate.m());
+      registry.fill(HIST("h_ds_eta_mcd"), mcdCandidate.eta());
+      registry.fill(HIST("h_ds_phi_mcd"), mcdCandidate.phi());
+
+      registry.fill(
+        HIST("hSparse_ds_mcd1"),
+        mcdCandidate.m(),
+        mcdCandidate.pt(),
+        mcdjet.pt(),
+        zParallelMCD,
+        originMCD,
+        matchingStatusMCD);
+
+      registry.fill(
+        HIST("hSparse_ds_mcd2"),
+        mcdCandidate.pt(),
+        mcdjet.pt(),
+        deltaRMCD);
+
+      registry.fill(
+        HIST("hSparse_ds_mcd3"),
+        mcdjet.pt(),
+        zParallelMCD,
+        deltaRMCD);
     }
   }
-  //==============
-  // MC process
-  //==============
 
+  //=====================================================================================
+  // MC process
+  //=====================================================================================
+
+  // MC efficiency analysis using standard Ds-tagged jets (pp)
   void processMonteCarloEfficiencyDs(aod::JetMcCollisions const& mccollisions,
                                      aod::JetCollisionsMCD const& collisions,
                                      FilteredDsMCDJets const& mcdjets,
                                      FilteredDsMCPJets const& mcpjets,
                                      DsCandidatesMCD const& mcdDscand,
-                                     DsCandidatesMCP const& mcpDscand,
-                                     aod::JetTracks const& jettracks)
+                                     DsCandidatesMCP const& mcpDscand)
   {
-    analyseMonteCarloEfficiency<Preslice<DsMCDJets>,
-                                Preslice<DsMCPJets>,
-                                FilteredDsMCDJets,
+    analyseMonteCarloEfficiency<FilteredDsMCDJets,
                                 FilteredDsMCPJets,
                                 DsCandidatesMCD,
-                                DsCandidatesMCP>(dsMCDJetsPerEXPCollisionPreslice,
-                                                 dsMCPJetsPerMCCollisionPreslice,
-                                                 mccollisions,
+                                DsCandidatesMCP>(mccollisions,
                                                  collisions,
                                                  mcdjets,
                                                  mcpjets,
                                                  mcdDscand,
-                                                 mcpDscand,
-                                                 jettracks);
+                                                 mcpDscand);
   }
   PROCESS_SWITCH(JetDsSpecSubs, processMonteCarloEfficiencyDs, "Non-matched and matched MC Ds and jets", false);
+
+  //=====================================================================================
+  // MC particle-level process for on-the-fly simulations
+  //=====================================================================================
+
+  void processMCPOnTheFly(aod::JetMcCollision const& mccollision,
+                          FilteredDsMCPJetsOnTheFly const& mcpjets,
+                          DsCandidatesMCP const&)
+  {
+    // Count all generated MC collisions before the vertex selection
+    registry.fill(HIST("h_event_counter_mcp_on_the_fly"), 1);
+
+    // Apply the generated-vertex selection
+    if (std::abs(mccollision.posZ()) >= vertexZCut) {
+      return;
+    }
+
+    // Count generated MC collisions passing the vertex selection
+    registry.fill(HIST("h_event_counter_mcp_on_the_fly"), 2);
+
+    // Loop over particle-level Ds-tagged charged jets in the current MC collision
+    for (const auto& mcpjet : mcpjets) {
+
+      // Retrieve the leading generated Ds candidate associated with the jet
+      const auto mcpCandidate = mcpjet.template candidates_first_as<DsCandidatesMCP>();
+
+      // Classify the generated Ds origin: 0 = prompt, 1 = non-prompt
+      const auto origin = mcpCandidate.originMcGen();
+
+      // Keep only prompt and non-prompt generated Ds candidates.
+      if (origin != RecoDecay::OriginType::Prompt && origin != RecoDecay::OriginType::NonPrompt) {
+        continue;
+      }
+      // Encode prompt and non-prompt origins as 0 and 1, respectively.
+      const int originMCP = origin == RecoDecay::OriginType::Prompt ? 0 : 1;
+
+      // Build the particle-level jet and Ds momentum vectors
+      const TVector3 jetVector(mcpjet.px(), mcpjet.py(), mcpjet.pz());
+      const TVector3 candidateVector(mcpCandidate.px(), mcpCandidate.py(), mcpCandidate.pz());
+
+      // Compute the longitudinal momentum fraction of the Ds along the jet axis
+      const float zParallel = jetVector.Dot(candidateVector) / jetVector.Mag2();
+
+      // Compute the angular distance between the Ds candidate and the jet axis
+      const float deltaR = jetutilities::deltaR(mcpjet, mcpCandidate);
+
+      // Fill particle-level jet distributions
+      registry.fill(HIST("h_jet_pt_mcp_on_the_fly"), mcpjet.pt());
+      registry.fill(HIST("h_jet_eta_mcp_on_the_fly"), mcpjet.eta());
+      registry.fill(HIST("h_jet_phi_mcp_on_the_fly"), mcpjet.phi());
+
+      // Fill particle-level Ds-candidate distributions
+      registry.fill(HIST("h_ds_pt_mcp_on_the_fly"), mcpCandidate.pt());
+      registry.fill(HIST("h_ds_eta_mcp_on_the_fly"), mcpCandidate.eta());
+      registry.fill(HIST("h_ds_phi_mcp_on_the_fly"), mcpCandidate.phi());
+
+      // Store the particle-level Ds-tagged jet observables and Ds origin
+      registry.fill(HIST("hSparse_ds_mcp_on_the_fly"),
+                    mcpCandidate.pt(),
+                    mcpjet.pt(),
+                    zParallel,
+                    deltaR,
+                    originMCP);
+    }
+  }
+  PROCESS_SWITCH(JetDsSpecSubs, processMCPOnTheFly, "Process on-the-fly MC particle-level Ds-tagged jets", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

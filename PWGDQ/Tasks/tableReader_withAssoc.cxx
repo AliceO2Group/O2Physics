@@ -12,6 +12,10 @@
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //   Configurable workflow for running several DQ or other PWG analyses
 
+// Included verbatim by the *_workflowSpec.cxx variants and precompiled into
+// TableReaderWithAssocPCH; without the guard the two collide.
+#pragma once
+
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/CutsLibrary.h"
@@ -50,6 +54,7 @@
 #include <TF1.h>
 #include <TH1.h>
 #include <TH2.h>
+#include <TH3.h>
 #include <THashList.h>
 #include <TList.h>
 #include <TMath.h>
@@ -232,6 +237,7 @@ using MyEventsVtxCovSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::Reduc
 using MyEventsHashSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes>;
 using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov>;
 using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts>;
+using MyEventsVtxCovSelectedInfo = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsInfo>;
 using MyEventsVtxCovSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra>;
 using MyEventsVtxCovSelectedQvectorWithHash = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::MixingHashes>;
 using MyEventsVtxCovZdcFitSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedZdcs, aod::ReducedFITs, aod::EventCuts>;
@@ -248,6 +254,8 @@ using MyBarrelTracksWithAmbiguities = soa::Join<aod::ReducedTracks, aod::Reduced
 using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID>;
 using MyBarrelTracksWithCovWithAmbiguities = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelAmbiguities>;
 using MyBarrelTracksWithCovWithAmbiguitiesWithColl = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelAmbiguities, aod::ReducedTracksBarrelInfo>;
+using MyBarrelTracksWithEMCal = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelEMCal>;
+using MyBarrelTracksWithCovWithEMCal = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelEMCal>;
 using MyDielectronCandidates = soa::Join<aod::Dielectrons, aod::DielectronsExtra, aod::DielectronsAll>;
 using MyDitrackCandidates = soa::Join<aod::Ditracks, aod::DitracksExtra>;
 using MyDimuonCandidates = soa::Join<aod::Dimuons, aod::DimuonsExtra>;
@@ -275,6 +283,8 @@ constexpr static uint32_t gkEventFillMapWithQvectorCentr = VarManager::ObjTypes:
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID;
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
 constexpr static uint32_t gkTrackFillMapWithCovWithColl = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID | VarManager::ObjTypes::ReducedTrackCollInfo;
+constexpr static uint32_t gkTrackFillMapWithEMCal = gkTrackFillMap | VarManager::ObjTypes::TrackEMCal;
+constexpr static uint32_t gkTrackFillMapWithCovWithEMCal = gkTrackFillMapWithCov | VarManager::ObjTypes::TrackEMCal;
 
 // constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra | VarManager::ObjTypes::ReducedMuonCov;
@@ -804,6 +814,14 @@ struct AnalysisTrackSelection {
       if (fPropTrack) {
         VarManager::FillTrackCollision<TTrackFillMap>(track, event);
       }
+      // fill the quantities of the matched EMCal cluster (e.g. E/p);
+      //   tracks without a matched cluster keep the sentinel values set by ResetValues
+      if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackEMCal)) {
+        if (track.has_matchedEMCalCluster()) {
+          auto cluster = track.template matchedEMCalCluster_as<aod::ReducedEMCals>();
+          VarManager::FillTrackEMCal(cluster, track.p(), track.emcalMatchDeltaEta(), track.emcalMatchDeltaPhi());
+        }
+      }
       if (fConfigQA) {
         fHistMan->FillHistClass("TrackBarrel_BeforeCuts", dqtablereader_helpers::varValues());
       }
@@ -899,6 +917,14 @@ struct AnalysisTrackSelection {
   {
     runTrackSelection<gkEventFillMapWithCov, gkTrackFillMapWithCov>(assocs, events, tracks);
   }
+  void processSkimmedWithEMCal(ReducedTracksAssoc const& assocs, MyEventsSelected const& events, MyBarrelTracksWithEMCal const& tracks, aod::ReducedEMCals const& /*emcals*/)
+  {
+    runTrackSelection<gkEventFillMap, gkTrackFillMapWithEMCal>(assocs, events, tracks);
+  }
+  void processSkimmedWithCovWithEMCal(ReducedTracksAssoc const& assocs, MyEventsVtxCovSelected const& events, MyBarrelTracksWithCovWithEMCal const& tracks, aod::ReducedEMCals const& /*emcals*/)
+  {
+    runTrackSelection<gkEventFillMapWithCov, gkTrackFillMapWithCovWithEMCal>(assocs, events, tracks);
+  }
   void processDummy(MyEventsBasic const&)
   {
     // do nothing
@@ -907,6 +933,8 @@ struct AnalysisTrackSelection {
   PROCESS_SWITCH(AnalysisTrackSelection, processSkimmed, "Run barrel track selection on DQ skimmed track associations", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processSkimmedWithMultExtra, "Run barrel track selection on DQ skimmed track associations, with extra multiplicity tables", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processSkimmedWithCov, "Run barrel track selection on DQ skimmed tracks w/ cov matrix associations", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processSkimmedWithEMCal, "Run barrel track selection on DQ skimmed track associations, with EMCal matching info", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processSkimmedWithCovWithEMCal, "Run barrel track selection on DQ skimmed tracks w/ cov matrix associations, with EMCal matching info", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processDummy, "Dummy function", true);
 };
 
@@ -1362,6 +1390,7 @@ struct AnalysisSameEventPairing {
     Configurable<std::string> GrpLhcIfPath{"grplhcif", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
     Configurable<std::string> efficiencyPath{"effHistPath", "Users/z/zhxiong/efficiency", "Path on the CCDB for the efficiency histograms"};
     Configurable<std::string> flowPath{"flowPath", "Users/y/yiping/FlowResolution", "Path to the flow resolution object"};
+    Configurable<std::string> phiPath{"phiPath", "Users/h/hxiaoyu/TrackPhi/LHC23", "Path to load phi distribution for track rotation"};
   } fConfigCCDB;
 
   struct : ConfigurableGroup {
@@ -1381,6 +1410,7 @@ struct AnalysisSameEventPairing {
     Configurable<bool> useEfficiencyWeighting{"cfgUseEfficiencyWeighting", false, "Apply efficiency weighting to the pairs from CCDB"};
     Configurable<int> efficiencyType{"cfgEfficiencyType", 0, "Type of efficiency to apply from CCDB: 0 no efficiency, 1 pt-cent-costhetastar"};
     Configurable<bool> useFlowReso{"cfgUseFlowReso", false, "Use remote flow information from CCDB"};
+    Configurable<bool> usePhiDistribution{"cfgUsePhiDistribution", false, "Use phi distribution to correct track rotation"};
   } fConfigOptions;
   struct : ConfigurableGroup {
     Configurable<bool> applyBDT{"applyBDT", false, "Flag to apply ML selections"};
@@ -1855,6 +1885,18 @@ struct AnalysisSameEventPairing {
         LOGF(fatal, "Flow resolution histograms not available in CCDB at timestamp=%llu", timestamp);
       }
     }
+
+    if (fConfigOptions.usePhiDistribution) {
+      TString PathPhi = fConfigCCDB.phiPath.value;
+      TString ccdbPathPhiPosi = Form("%s/hPtPhiPositive", PathPhi.Data());
+      TString ccdbPathPhiNega = Form("%s/hPtPhiNegative", PathPhi.Data());
+      auto phiPosi = fCCDB->getForTimeStamp<TH3D>(ccdbPathPhiPosi.Data(), timestamp);
+      auto phiNega = fCCDB->getForTimeStamp<TH3D>(ccdbPathPhiNega.Data(), timestamp);
+      if (phiPosi == nullptr || phiNega == nullptr) {
+        LOGF(fatal, "Phi distribution histograms not available in CCDB at timestamp=%llu", timestamp);
+      }
+      VarManager::SetPhiMap(phiPosi, phiNega, fConfigOptions.usePhiDistribution.value);
+    }
   }
 
   // Template function to run same event pairing (barrel-barrel, muon-muon, barrel-muon)
@@ -2038,15 +2080,16 @@ struct AnalysisSameEventPairing {
                          t1.sign() + t2.sign(), twoTrackFilter, 0);
 
           if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackCollInfo) > 0) {
-            dielectronInfoList(t1.collisionId(), t1.trackId(), t2.trackId());
-            dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
+            dielectronInfoList(event.collisionId(), t1.trackId(), t2.trackId());
+            dileptonInfoList(event.collisionId(), event.posX(), event.posY(), event.posZ());
           }
           if (fConfigOptions.polarTables.value) {
-            dileptonPolarList(VarManager::fgValues[VarManager::kCosThetaHE], VarManager::fgValues[VarManager::kPhiHE], VarManager::fgValues[VarManager::kPhiTildeHE],
+            dileptonPolarList(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], t1.sign() + t2.sign(), twoTrackFilter,
+                              VarManager::fgValues[VarManager::kCosThetaHE], VarManager::fgValues[VarManager::kPhiHE], VarManager::fgValues[VarManager::kPhiTildeHE],
                               VarManager::fgValues[VarManager::kCosThetaCS], VarManager::fgValues[VarManager::kPhiCS], VarManager::fgValues[VarManager::kPhiTildeCS],
                               VarManager::fgValues[VarManager::kCosThetaPP], VarManager::fgValues[VarManager::kPhiPP], VarManager::fgValues[VarManager::kPhiTildePP],
                               VarManager::fgValues[VarManager::kCosThetaRM],
-                              VarManager::fgValues[VarManager::kCosThetaStarTPC], VarManager::fgValues[VarManager::kCosThetaStarFT0A], VarManager::fgValues[VarManager::kCosThetaStarFT0C]);
+                              VarManager::fgValues[VarManager::kCosThetaStarTPC], VarManager::fgValues[VarManager::kCosThetaStarFT0A], VarManager::fgValues[VarManager::kCosThetaStarFT0C], VarManager::fgValues[VarManager::kCosThetaStarRandom]);
             dileptonEventInfoList(VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kVtxZ], VarManager::fgValues[VarManager::kVtxNcontrib], VarManager::fgValues[VarManager::kRandomPsi2], VarManager::fgValues[VarManager::kPsi2A], VarManager::fgValues[VarManager::kPsi2B], VarManager::fgValues[VarManager::kPsi2C]);
           }
           if constexpr (trackHasCov && TTwoProngFitter) {
@@ -2160,7 +2203,7 @@ struct AnalysisSameEventPairing {
                      VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi],
                      t1.sign() + t2.sign(), twoTrackFilter, 0);
           if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedMuonCollInfo) > 0) {
-            dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
+            dileptonInfoList(event.collisionId(), event.posX(), event.posY(), event.posZ());
           }
 
           if constexpr (TTwoProngFitter) {
@@ -2196,7 +2239,7 @@ struct AnalysisSameEventPairing {
             }
             if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedMuonCollInfo) > 0) {
               if constexpr (eventHasQvector || eventHasQvectorCentr) {
-                dileptonFlowList(t1.collisionId(), VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kCentFT0C],
+                dileptonFlowList(event.collisionId(), VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kCentFT0C],
                                  VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), isFirst,
                                  VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kR2SP_AB], VarManager::fgValues[VarManager::kR2SP_AC], VarManager::fgValues[VarManager::kR2SP_BC],
                                  VarManager::fgValues[VarManager::kU3Q3], VarManager::fgValues[VarManager::kR3SP],
@@ -2998,7 +3041,7 @@ struct AnalysisSameEventPairing {
     runSameEventPairing<false, VarManager::kDecayToEE, gkEventFillMapWithMultExtra, gkTrackFillMap>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
-  void processBarrelOnlyWithCollSkimmed(MyEventsVtxCovSelected const& events,
+  void processBarrelOnlyWithCollSkimmed(MyEventsVtxCovSelectedInfo const& events,
                                         soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
                                         MyBarrelTracksWithCovWithAmbiguitiesWithColl const& barrelTracks)
   {
@@ -3470,7 +3513,7 @@ struct AnalysisAsymmetricPairing {
 
   // Template function to run same event pairing with asymmetric pairs (e.g. kaon-pion)
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTrackAssocs, typename TTracks>
-  void runAsymmetricPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& assocs, TTracks const& /*tracks*/)
+  void runAsymmetricPairing(TEvents const& events, Preslice<TTrackAssocs>& preslice, TTrackAssocs const& /*assocs*/, TTracks const& /*tracks*/)
   {
     fPairCount.clear();
 
@@ -3483,8 +3526,23 @@ struct AnalysisAsymmetricPairing {
 
     int sign1 = 0;
     int sign2 = 0;
-    ditrackList.reserve(assocs.size());
-    ditrackExtraList.reserve(assocs.size());
+
+    // Reserve capacity for the output tables
+    int64_t reserveSize = 0;
+    for (auto const& event : events) {
+      if (!event.isEventSelected_bit(0)) {
+        continue;
+      }
+      if (fConfigRemoveCollSplittingCandidates.value && event.isEventSelected_bit(2)) {
+        continue;
+      }
+      auto groupedLegAAssocs = legACandidateAssocs.sliceBy(preslice, event.globalIndex());
+      auto groupedLegBAssocs = legBCandidateAssocs.sliceBy(preslice, event.globalIndex());
+      reserveSize += static_cast<int64_t>(groupedLegAAssocs.size()) *
+                     static_cast<int64_t>(groupedLegBAssocs.size());
+    }
+    ditrackList.reserve(reserveSize);
+    ditrackExtraList.reserve(reserveSize);
 
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
 

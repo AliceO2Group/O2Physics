@@ -90,11 +90,17 @@ DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);        
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);             //! Normalised transverse decay length of candidate
 DECLARE_SOA_COLUMN(DecayLengthD, decayLengthD, float);                                   //! Decay length of D-meson daughter candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthXYD, decayLengthXYD, float);                               //! Transverse decay length of D-meson daughter candidate (cm)
+DECLARE_SOA_COLUMN(DecayLengthDToB, decayLengthDToB, float);                             //! Decay length of D-meson daughter candidate from B decay vertex (cm)
+DECLARE_SOA_COLUMN(DecayLengthXYDToB, decayLengthXYDToB, float);                         //! Transverse decay length of D-meson daughter candidate from B decay vertex (cm)
 DECLARE_SOA_COLUMN(ImpactParameterD, impactParameterD, float);                           //! Impact parameter product of D-meson daughter candidate
 DECLARE_SOA_COLUMN(ImpactParameterBach, impactParameterBach, float);                     //! Impact parameter product of bachelor pion
 DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);               //! Impact parameter product of daughters
 DECLARE_SOA_COLUMN(Cpa, cpa, float);                                                     //! Cosine pointing angle of candidate
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                                 //! Cosine pointing angle of candidate in transverse plane
+DECLARE_SOA_COLUMN(CpaD, cpaD, float);                                                   //! Cosine pointing angle of D candidate to PV
+DECLARE_SOA_COLUMN(CpaDXY, cpaDXY, float);                                               //! Cosine pointing angle of D candidate to PV in transverse plane
+DECLARE_SOA_COLUMN(CpaDToB, cpaDToB, float);                                             //! Cosine pointing angle of D candidate to B decay vertex
+DECLARE_SOA_COLUMN(CpaDToBXY, cpaDToBXY, float);                                         //! Cosine pointing angle of D candidate to B decay vertex in transverse plane
 DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);                   //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
 DECLARE_SOA_COLUMN(MlScoreSig, mlScoreSig, float);                                       //! ML score for signal class
 DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);                      //! Flag for association with wrong collision
@@ -123,6 +129,12 @@ DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with som
                   hf_cand_b0_lite::PtD,
                   hf_cand_b0_lite::DecayLengthD,
                   hf_cand_b0_lite::DecayLengthXYD,
+                  hf_cand_b0_lite::DecayLengthDToB,
+                  hf_cand_b0_lite::DecayLengthXYDToB,
+                  hf_cand_b0_lite::CpaD,
+                  hf_cand_b0_lite::CpaDXY,
+                  hf_cand_b0_lite::CpaDToB,
+                  hf_cand_b0_lite::CpaDToBXY,
                   hf_cand_b0_lite::ImpactParameterD,
                   hf_cand_b0_lite::PtDmesProngMin,
                   hf_cand_b0_lite::AbsEtaDmesProngMin,
@@ -621,8 +633,14 @@ struct HfTaskB0Reduced {
           // D-meson features
           invMassD,
           ptD,
-          decLenD,
-          decLenXyD,
+          candidate.decayLengthDToPv(),
+          candidate.decayLengthDToPvXY(),
+          candidate.decayLengthDToB(),
+          candidate.decayLengthDToBXY(),
+          candidate.cpaDToPv(),
+          candidate.cpaDToPvXY(),
+          candidate.cpaDToB(),
+          candidate.cpaDToBXY(),
           candidate.impactParameter0(),
           candD.ptProngMin(),
           candD.absEtaProngMin(),
@@ -878,8 +896,14 @@ struct HfTaskB0Reduced {
           // D-meson features
           invMassD,
           ptD,
-          decLenD,
-          decLenXyD,
+          candidate.decayLengthDToPv(),
+          candidate.decayLengthDToPvXY(),
+          candidate.decayLengthDToB(),
+          candidate.decayLengthDToBXY(),
+          candidate.cpaDToPv(),
+          candidate.cpaDToPvXY(),
+          candidate.cpaDToB(),
+          candidate.cpaDToBXY(),
           candidate.impactParameter0(),
           candD.ptProngMin(),
           candD.absEtaProngMin(),

@@ -23,23 +23,29 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
+// #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisHelpers.h>
+// #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/O2DatabasePDGPlugin.h>
+// #include <Framework/O2DatabasePDGPlugin.h>
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TH2.h>
 #include <TPDGCode.h>
+// #include <TProfile.h>
+// #include <TProfile2D.h>
+#include <TRandom3.h>
 
+// #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -50,17 +56,17 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics; // for constants
 using namespace std;
 
-#define ID_BIT_PI 0 // Identificationi bits for PID checks
-#define ID_BIT_KA 1
-#define ID_BIT_PR 2
-#define ID_BIT_EL 3
-#define ID_BIT_DE 4
+constexpr int IdBitPI = 0; // Identificationi bits for PID checks
+constexpr int IdBitKA = 1;
+constexpr int IdBitPR = 2;
+// constexpr int IdBitEL = 3;
+// constexpr int IdBitDE = 4;
 
-#define MC_BIT_PI 0 // MC particle identification bits
-#define MC_BIT_KA 1
-#define MC_BIT_PR 2
-#define MC_BIT_EL 3
-#define MC_BIT_DE 4
+constexpr int McBitPI = 0; // MC particle identification bits
+constexpr int McBitKA = 1;
+constexpr int McBitPR = 2;
+constexpr int McBitEL = 3;
+constexpr int McBitDE = 4;
 
 #define BITSET(mask, ithBit) ((mask) |= (1 << (ithBit)))  // avoid name bitset as std::bitset is already there
 #define BITCHECK(mask, ithBit) ((mask) & (1 << (ithBit))) // bit check will return int value, not bool, use BITCHECK != 0 in Analysi
@@ -79,7 +85,50 @@ enum ChargeEnum {
   kNeg = 1
 };
 
-static constexpr std::string_view PidDire[] = {
+enum class FCPrefixEnum {
+  Pr = 0,
+  APr = 1,
+  PiPos = 2,
+  PiNeg = 3,
+  KaPos = 4,
+  KaNeg = 5,
+  Pos = 6,
+  Neg = 7,
+  NetPi = 8,
+  NetKa = 9,
+  NetPr = 10,
+  NetCh = 11
+};
+
+static constexpr std::array<std::string_view, 12> FCRecoDir = {
+  "Reco/Pr/",
+  "Reco/APr/",
+  "Reco/PiPos/",
+  "Reco/PiNeg/",
+  "Reco/KaPos/",
+  "Reco/KaNeg/",
+  "Reco/Pos/",
+  "Reco/Neg/",
+  "Reco/NetPi/",
+  "Reco/NetKa/",
+  "Reco/NetPr/",
+  "Reco/NetCh/"};
+
+static constexpr std::array<std::string_view, 12> FCGenDir = {
+  "Gen/Pr/",
+  "Gen/APr/",
+  "Gen/PiPos/",
+  "Gen/PiNeg/",
+  "Gen/KaPos/",
+  "Gen/KaNeg/",
+  "Gen/Pos/",
+  "Gen/Neg/",
+  "Gen/NetPi/",
+  "Gen/NetKa/",
+  "Gen/NetPr/",
+  "Gen/NetCh/"};
+
+static constexpr std::array<std::string_view, 6> PidDire = {
   "Ch/",
   "Pi/",
   "Ka/",
@@ -87,7 +136,7 @@ static constexpr std::string_view PidDire[] = {
   "El/",
   "De/"};
 
-static constexpr std::string_view ChargeDire[] = {
+static constexpr std::array<std::string_view, 2> ChargeDire = {
   "Pos/",
   "Neg/"};
 
@@ -97,21 +146,20 @@ std::string getModifiedStr(const std::string& myString)
   if (pos != std::string::npos) {
     std::string subString = myString.substr(0, pos); // remove "/" from end of the string
     return subString;
-  } else {
-    return myString;
   }
+  return myString;
 }
 
 struct NchCumulantsId {
 
   HistogramRegistry hist{"hist", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry recoTracks{"recoTracks", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry genAnalysis{"genAnalysis", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry recoAnalysis{"recoAnalysis", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry purityAnalysis{"purityAnalysis", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // PDG data base
-  Service<o2::framework::O2DatabasePDG> pdgDB;
+  // Service<o2::framework::O2DatabasePDG> pdgDB;
 
   Configurable<float> cfgCutPosZ{"cfgCutPosZ", 10.0, "cut for vertex Z"};
   Configurable<float> cfgCutDcaXY{"cfgCutDcaXY", 0.12, "cut for dcaXY"};
@@ -130,14 +178,41 @@ struct NchCumulantsId {
   ConfigurableAxis axisAKaCh{"axisAKaCh", {3010, -0.5, 300.5}, "AKa_charge"};
   ConfigurableAxis axisPiCh{"axisPiCh", {3010, -0.5, 300.5}, "Pion_Positive"};
   ConfigurableAxis axisAPiCh{"axisAPiCh", {3010, -0.5, 300.5}, "Pion_Negative"};
+  // QA axes as ConfigurableAxis
+  ConfigurableAxis axisEvents{"axisEvents", {1, 0, 1}, "Counts"};
+  ConfigurableAxis axisEta{"axisEta", {100, -1., +1.}, "#eta"};
+  ConfigurableAxis axisRapidity{"axisRapidity", {200, -5, 5}, "Rapidity (y)"};
+  ConfigurableAxis axisPt{"axisPt", {100, 0., 5.}, "p_{T} (GeV/c)"};
+  ConfigurableAxis axisP{"axisP", {100, 0., 5.}, "p (GeV/c)"};
+  ConfigurableAxis axisTPCInnerParam{"axisTPCInnerParam", {100, 0, 3}, "P_innerParam_Gev"};
+  ConfigurableAxis axisdEdx{"axisdEdx", {100, 20, 500}, "#frac{dE}{dx}"};
+  ConfigurableAxis axisVtxZ{"axisVtxZ", {80, -20., 20.}, "V_{Z} (cm)"};
+  ConfigurableAxis axisDCAz{"axisDCAz", {200, -3., 3.}, "DCA_{Z} (cm)"};
+  ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -3., 3.}, "DCA_{XY} (cm)"};
+  ConfigurableAxis axisMultFT0{"axisMultFT0", {150, 0, 1500}, "MultFT0"};
+  ConfigurableAxis axisCent{"axisCent", {103, -1., 102.}, "FT0C(%)"};
+  ConfigurableAxis axisPhi{"axisPhi", {80, -1, 7}, "phi"};
+  ConfigurableAxis axisTOFBeta{"axisTOFBeta", {40, -2.0, 2.0}, "tofBeta"};
+  ConfigurableAxis axisTPCSignal{"axisTPCSignal", {100, -1, 1000}, "tpcSignal"};
+  ConfigurableAxis axisTPCNSigma{"axisTPCNSigma", {200, -10.0, 10.0}, "n#sigma_{TPC}"};
+  ConfigurableAxis axisTOFNSigma{"axisTOFNSigma", {200, -10.0, 10.0}, "n#sigma_{TOF}"};
+  ConfigurableAxis axisTOFExpMom{"axisTOFExpMom", {200, 0.0f, 10.0f}, "#it{p}_{tofExpMom} (GeV/#it{c})"};
 
-  Configurable<bool> checkCollPosZMc{"checkCollPosZMc", false, "checkCollPosZMc"};
-  Configurable<bool> flagUnusedVariableError{"flagUnusedVariableError", false, "flagUnusedVariableError"};
-  Configurable<bool> cfgDoRejectionForId{"cfgDoRejectionForId", false, "Apply rejection cut before PID selection (selTrackForId)"};
-
-  Configurable<bool> cfgEvSel01doNoSameBunchPileup{"cfgEvSel01doNoSameBunchPileup", true, "apply kNoSameBunchPileup"};
-  Configurable<bool> cfgEvSel02doIsGoodZvtxFT0vsPV{"cfgEvSel02doIsGoodZvtxFT0vsPV", true, "apply kIsGoodZvtxFT0vsPV"};
-  Configurable<bool> cfgEvSel03doIsGoodITSLayersAll{"cfgEvSel03doIsGoodITSLayersAll", true, "apply kIsGoodITSLayersAll"};
+  struct : ConfigurableGroup {
+    Configurable<bool> checkCollPosZMc{"checkCollPosZMc", false, "checkCollPosZMc"};
+    Configurable<bool> flagUnusedVariableError{"flagUnusedVariableError", false, "flagUnusedVariableError"};
+    Configurable<bool> cfgDoRejectionForId{"cfgDoRejectionForId", false, "Apply rejection cut before PID selection (selTrackForId)"};
+    Configurable<bool> fillSparseForReco{"fillSparseForReco", false, "Fill sparse for reconstructed tracks"};
+    Configurable<bool> fillSparseForGen{"fillSparseForGen", false, "Fill sparse for generated tracks"};
+    Configurable<bool> fillSparseForPurity{"fillSparseForPurity", false, "Fill sparse for purity tracks"};
+    Configurable<bool> cfgEvSel01doNoSameBunchPileup{"cfgEvSel01doNoSameBunchPileup", true, "apply kNoSameBunchPileup"};
+    Configurable<bool> cfgEvSel02doIsGoodZvtxFT0vsPV{"cfgEvSel02doIsGoodZvtxFT0vsPV", true, "apply kIsGoodZvtxFT0vsPV"};
+    Configurable<bool> cfgEvSel03doIsGoodITSLayersAll{"cfgEvSel03doIsGoodITSLayersAll", true, "apply kIsGoodITSLayersAll"};
+    Configurable<bool> cfgDoSubsampling{"cfgDoSubsampling", true, "do subsampling for error estimation"};
+    ConfigurableAxis subSampleAxis{"subSampleAxis", {10, 0., 10.}, "Subsample"};
+    TRandom3* fRandom = new TRandom3(0); // Random number generator for subsampling
+    int currentSubsample = 0;
+  } cfgEventSelection;
 
   // Configurables for particle Identification
   Configurable<bool> cfgId01CheckVetoCut{"cfgId01CheckVetoCut", true, "cfgId01CheckVetoCut"};
@@ -213,6 +288,263 @@ struct NchCumulantsId {
   TH2F* hPtEtaForBinSearch = nullptr;
   std::vector<std::array<TH2F*, kNeg + 1>> hPtEtaForEffCorrection{kDe + 1, std::array<TH2F*, kNeg + 1>{}};
 
+  // AxisSpec subSampleAxis = {static_cast<int>(cfgNSubsamples), 0., static_cast<double>(cfgNSubsamples), "Subsample"};
+
+  struct EffPowerSums {
+    double q1 = 0.;
+    double q2 = 0.;
+    double q3 = 0.;
+    double q4 = 0.;
+  };
+
+  inline void fillEffPower(EffPowerSums& p, float weight)
+  {
+    if (weight <= 0.f) {
+      return;
+    }
+
+    p.q1 += weight;
+    p.q2 += weight * weight;
+    p.q3 += weight * weight * weight;
+    p.q4 += weight * weight * weight * weight;
+  }
+
+  // NEW TEMPLATE FUNCTION FOR RECO PROFILES for individual species
+  template <FCPrefixEnum Prefix>
+  void addFCRecoProfiles()
+  {
+    constexpr std::string_view Dir = FCRecoDir[static_cast<int>(Prefix)];
+
+    registry.add(std::string(Dir) + "Q1", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q1Sq", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q2", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q1Cube", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q1Q2", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q3", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q1Pow4", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q1SqQ2", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q2Sq", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q1Q3", "", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q4", "", kTProfile, {axisCent});
+
+    if (cfgEventSelection.cfgDoSubsampling) {
+      registry.add(std::string(Dir) + "Q1_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q1Sq_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q2_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q1Cube_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q1Q2_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q3_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q1Pow4_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q1SqQ2_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q2Sq_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q1Q3_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q4_subsample", "", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+    }
+  }
+
+  template <FCPrefixEnum Prefix>
+  void addNetQVectorProfileHistograms()
+  {
+    constexpr std::string_view Dir = FCRecoDir[static_cast<int>(Prefix)];
+
+    registry.add(std::string(Dir) + "Q_net_1", "Net Q1", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_1Sq", "Net Q1²", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_2", "Net Q2", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_1Cube", "Net Q1³", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_1Q_net_2", "Net Q1·Q2", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_3", "Net Q3", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_1Pow4", "Net Q1⁴", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_1SqQ_net_2", "Net Q1²·Q2", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_2Sq", "Net Q2²", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_1Q_net_3", "Net Q1·Q3", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "Q_net_4", "Net Q4", kTProfile, {axisCent});
+
+    // joint pos-neg correction profiles, they should be stored here. F11 needed for F3 and F21 and F12 for F4 correction
+    registry.add(std::string(Dir) + "JointF11", "Joint <N+N->", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "JointF12", "Joint <N+N-(N--1)>", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "JointF21", "Joint <N+(N+-1)N->", kTProfile, {axisCent});
+
+    // Factorial moments
+    if (cfgEventSelection.cfgDoSubsampling) {
+      registry.add(std::string(Dir) + "Q_net_1_subsample", "Net Q1 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_1Sq_subsample", "Net Q1² Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_2_subsample", "Net Q2 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_1Cube_subsample", "Net Q1³ Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_1Q_net_2_subsample", "Net Q1·Q2 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_3_subsample", "Net Q3 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_1Pow4_subsample", "Net Q1⁴ Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_1SqQ_net_2_subsample", "Net Q1²·Q2 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_2Sq_subsample", "Net Q2² Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_1Q_net_3_subsample", "Net Q1·Q3 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "Q_net_4_subsample", "Net Q4 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+
+      registry.add(std::string(Dir) + "JointF11_subsample", "Joint <N+N-> Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "JointF12_subsample", "Joint <N+N-(N--1)> Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "JointF21_subsample", "Joint <N+(N+-1)N-> Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+    }
+  }
+
+  // NEW TEMPLATE FUNCTION FOR GEN PROFILES
+  template <FCPrefixEnum Prefix>
+  void addFCGenProfiles()
+  {
+    constexpr std::string_view Dir = FCGenDir[static_cast<int>(Prefix)];
+
+    registry.add(std::string(Dir) + "F1", "Gen FactorialMoment1", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "F2", "Gen FactorialMoment2", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "F3", "Gen FactorialMoment3", kTProfile, {axisCent});
+    registry.add(std::string(Dir) + "F4", "Gen FactorialMoment4", kTProfile, {axisCent});
+
+    if (cfgEventSelection.cfgDoSubsampling) {
+      registry.add(std::string(Dir) + "F1_subsample", "Gen FactorialMoment1 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "F2_subsample", "Gen FactorialMoment2 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "F3_subsample", "Gen FactorialMoment3 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+      registry.add(std::string(Dir) + "F4_subsample", "Gen FactorialMoment4 Subsample", kTProfile2D, {axisCent, cfgEventSelection.subSampleAxis});
+    }
+  }
+
+  template <FCPrefixEnum Prefix, typename Registry>
+  void fillFCBasis(const EffPowerSums& p, float cent, Registry& hReg)
+  {
+    auto base = HIST(FCRecoDir[static_cast<int>(Prefix)]);
+
+    // Fill Factorial Moments for Reco directly to ensure Reco stores the same type of data as Gen
+    // Compute Efficiency Corrected Factorial Moments from power sums
+    // These formulas come from elementary symmetric polynomials and their relation to power sums
+    hReg.fill(base + HIST("Q1"), cent, p.q1);
+    hReg.fill(base + HIST("Q1Sq"), cent, p.q1 * p.q1);
+    hReg.fill(base + HIST("Q2"), cent, p.q2);
+    hReg.fill(base + HIST("Q1Cube"), cent, p.q1 * p.q1 * p.q1);
+    hReg.fill(base + HIST("Q1Q2"), cent, p.q1 * p.q2);
+    hReg.fill(base + HIST("Q3"), cent, p.q3);
+    hReg.fill(base + HIST("Q1Pow4"), cent, p.q1 * p.q1 * p.q1 * p.q1);
+    hReg.fill(base + HIST("Q1SqQ2"), cent, p.q1 * p.q1 * p.q2);
+    hReg.fill(base + HIST("Q2Sq"), cent, p.q2 * p.q2);
+    hReg.fill(base + HIST("Q1Q3"), cent, p.q1 * p.q3);
+    hReg.fill(base + HIST("Q4"), cent, p.q4);
+    if (cfgEventSelection.cfgDoSubsampling) {
+      hReg.fill(base + HIST("Q1_subsample"), cent, cfgEventSelection.currentSubsample, p.q1);
+      hReg.fill(base + HIST("Q1Sq_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q1);
+      hReg.fill(base + HIST("Q2_subsample"), cent, cfgEventSelection.currentSubsample, p.q2);
+      hReg.fill(base + HIST("Q1Cube_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q1 * p.q1);
+      hReg.fill(base + HIST("Q1Q2_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q2);
+      hReg.fill(base + HIST("Q3_subsample"), cent, cfgEventSelection.currentSubsample, p.q3);
+      hReg.fill(base + HIST("Q1Pow4_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q1 * p.q1 * p.q1);
+      hReg.fill(base + HIST("Q1SqQ2_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q1 * p.q2);
+      hReg.fill(base + HIST("Q2Sq_subsample"), cent, cfgEventSelection.currentSubsample, p.q2 * p.q2);
+      hReg.fill(base + HIST("Q1Q3_subsample"), cent, cfgEventSelection.currentSubsample, p.q1 * p.q3);
+      hReg.fill(base + HIST("Q4_subsample"), cent, cfgEventSelection.currentSubsample, p.q4);
+    }
+  }
+
+  // fill function for reco net species
+  template <FCPrefixEnum Prefix, typename Registry>
+  void fillNetQVectorProfileHistograms(const EffPowerSums& posPow, const EffPowerSums& negPow, float cent, Registry& hReg)
+  {
+    // Construct base directory path
+    auto base = HIST(FCRecoDir[static_cast<int>(Prefix)]);
+
+    // ─── Compute NET q-vectors (sign alternation by power) ───
+    // Odd powers: alternate sign (Q_pos - Q_neg)
+    // Even powers: same sign (Q_pos + Q_neg)
+
+    double qNet1 = posPow.q1 - negPow.q1; // Odd
+    double qNet2 = posPow.q2 + negPow.q2; // Even
+    double qNet3 = posPow.q3 - negPow.q3; // Odd
+    double qNet4 = posPow.q4 + negPow.q4; // Even
+
+    // Fill joint pos-neg correction profiles
+    // capture inline from pos and neg
+    double jointF11 = posPow.q1 * negPow.q1;
+    double cf2pos = posPow.q1 * posPow.q1 - posPow.q2;
+    double cf2neg = negPow.q1 * negPow.q1 - negPow.q2;
+    double jointF12 = posPow.q1 * cf2neg;
+    double jointF21 = negPow.q1 * cf2pos;
+    // ─── Fill raw q-vectors (for cross-verification)
+    hReg.fill(base + HIST("Q_net_1"), cent, qNet1);
+    hReg.fill(base + HIST("Q_net_1Sq"), cent, qNet1 * qNet1);
+    hReg.fill(base + HIST("Q_net_2"), cent, qNet2);
+    hReg.fill(base + HIST("Q_net_1Cube"), cent, qNet1 * qNet1 * qNet1);
+    hReg.fill(base + HIST("Q_net_1Q_net_2"), cent, qNet1 * qNet2);
+    hReg.fill(base + HIST("Q_net_3"), cent, qNet3);
+    hReg.fill(base + HIST("Q_net_1Pow4"), cent, qNet1 * qNet1 * qNet1 * qNet1);
+    hReg.fill(base + HIST("Q_net_1SqQ_net_2"), cent, qNet1 * qNet1 * qNet2);
+    hReg.fill(base + HIST("Q_net_2Sq"), cent, qNet2 * qNet2);
+    hReg.fill(base + HIST("Q_net_1Q_net_3"), cent, qNet1 * qNet3);
+    hReg.fill(base + HIST("Q_net_4"), cent, qNet4);
+
+    // ─── Fill factorial moments ───
+    hReg.fill(base + HIST("JointF11"), cent, jointF11);
+    hReg.fill(base + HIST("JointF12"), cent, jointF12);
+    hReg.fill(base + HIST("JointF21"), cent, jointF21);
+
+    if (cfgEventSelection.cfgDoSubsampling) {
+      hReg.fill(base + HIST("Q_net_1_subsample"), cent, cfgEventSelection.currentSubsample, qNet1);
+      hReg.fill(base + HIST("Q_net_1Sq_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet1);
+      hReg.fill(base + HIST("Q_net_2_subsample"), cent, cfgEventSelection.currentSubsample, qNet2);
+      hReg.fill(base + HIST("Q_net_1Cube_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet1 * qNet1);
+      hReg.fill(base + HIST("Q_net_1Q_net_2_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet2);
+      hReg.fill(base + HIST("Q_net_3_subsample"), cent, cfgEventSelection.currentSubsample, qNet3);
+      hReg.fill(base + HIST("Q_net_1Pow4_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet1 * qNet1 * qNet1);
+      hReg.fill(base + HIST("Q_net_1SqQ_net_2_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet1 * qNet2);
+      hReg.fill(base + HIST("Q_net_2Sq_subsample"), cent, cfgEventSelection.currentSubsample, qNet2 * qNet2);
+      hReg.fill(base + HIST("Q_net_1Q_net_3_subsample"), cent, cfgEventSelection.currentSubsample, qNet1 * qNet3);
+      hReg.fill(base + HIST("Q_net_4_subsample"), cent, cfgEventSelection.currentSubsample, qNet4);
+
+      hReg.fill(base + HIST("JointF11_subsample"), cent, cfgEventSelection.currentSubsample, jointF11);
+      hReg.fill(base + HIST("JointF12_subsample"), cent, cfgEventSelection.currentSubsample, jointF12);
+      hReg.fill(base + HIST("JointF21_subsample"), cent, cfgEventSelection.currentSubsample, jointF21);
+    }
+  }
+
+  template <FCPrefixEnum Prefix, typename Registry>
+  void fillGenFactorialMoments(float n, float cent, Registry& hReg)
+  {
+    auto base = HIST(FCGenDir[static_cast<int>(Prefix)]);
+
+    double f1 = n;
+    double f2 = n * (n - 1.);
+    double f3 = n * (n - 1.) * (n - 2.);
+    double f4 = n * (n - 1.) * (n - 2.) * (n - 3.);
+
+    hReg.fill(base + HIST("F1"), cent, f1);
+    hReg.fill(base + HIST("F2"), cent, f2);
+    hReg.fill(base + HIST("F3"), cent, f3);
+    hReg.fill(base + HIST("F4"), cent, f4);
+
+    if (cfgEventSelection.cfgDoSubsampling) {
+      hReg.fill(base + HIST("F1_subsample"), cent, cfgEventSelection.currentSubsample, f1);
+      hReg.fill(base + HIST("F2_subsample"), cent, cfgEventSelection.currentSubsample, f2);
+      hReg.fill(base + HIST("F3_subsample"), cent, cfgEventSelection.currentSubsample, f3);
+      hReg.fill(base + HIST("F4_subsample"), cent, cfgEventSelection.currentSubsample, f4);
+    }
+  }
+  // ─── GEN level (net speciestruth) ───
+  template <FCPrefixEnum Prefix, typename Registry>
+  void fillGenNetFactorialMoments(float nPos, float nNeg, float cent, Registry& hReg)
+  {
+    auto base = HIST(FCGenDir[static_cast<int>(Prefix)]);
+
+    double nNet = nPos - nNeg;
+
+    double f1 = nNet;
+    double f2 = nNet * (nNet - 1.0);
+    double f3 = nNet * (nNet - 1.0) * (nNet - 2.0);
+    double f4 = nNet * (nNet - 1.0) * (nNet - 2.0) * (nNet - 3.0);
+
+    hReg.fill(base + HIST("F1"), cent, f1);
+    hReg.fill(base + HIST("F2"), cent, f2);
+    hReg.fill(base + HIST("F3"), cent, f3);
+    hReg.fill(base + HIST("F4"), cent, f4);
+
+    if (cfgEventSelection.cfgDoSubsampling) {
+      hReg.fill(base + HIST("F1_subsample"), cent, cfgEventSelection.currentSubsample, f1);
+      hReg.fill(base + HIST("F2_subsample"), cent, cfgEventSelection.currentSubsample, f2);
+      hReg.fill(base + HIST("F3_subsample"), cent, cfgEventSelection.currentSubsample, f3);
+      hReg.fill(base + HIST("F4_subsample"), cent, cfgEventSelection.currentSubsample, f4);
+    }
+  }
+
   void init(InitContext const&)
   {
     auto& mgr = o2::ccdb::BasicCCDBManager::instance();
@@ -220,50 +552,33 @@ struct NchCumulantsId {
     mgr.setCaching(true);
     auto ccdbObj = mgr.getForTimeStamp<TList>(cfgCCDB.cfgCCDB02Path, cfgCCDB.cfgCCDB03SOR);
     if (!ccdbObj) {
-      if (cfgDebug.printDebugMessages)
+      if (cfgDebug.printDebugMessages) {
         LOG(info) << "DEBUG :: CCDB OBJECT NOT FOUND";
+      }
     } else {
-      if (cfgDebug.printDebugMessages)
+      if (cfgDebug.printDebugMessages) {
         LOG(info) << "DEBUG :: CCDB OBJECT FOUND";
+      }
     }
 
     ccdbObj->Print();
 
-    hPtEtaForBinSearch = reinterpret_cast<TH2F*>(ccdbObj->FindObject("hPtEta"));
-    if (cfgDebug.printDebugMessages)
+    hPtEtaForBinSearch = dynamic_cast<TH2F*>(ccdbObj->FindObject("hPtEta"));
+    if (cfgDebug.printDebugMessages) {
       LOG(info) << "DEBUG :: Obj Name = " << hPtEtaForBinSearch->GetName() << " :: entries = " << hPtEtaForBinSearch->GetEntries();
-    std::string name = "";
+    }
+    std::string name;
     for (int i = 0; i <= kDe; i++) {
       for (int j = 0; j < (kNeg + 1); j++) {
         name = "hPtEta" + getModifiedStr(static_cast<std::string>(PidDire[i])) + getModifiedStr(static_cast<std::string>(ChargeDire[j]));
-        hPtEtaForEffCorrection[i][j] = reinterpret_cast<TH2F*>(ccdbObj->FindObject(name.c_str()));
-        if (cfgDebug.printDebugMessages)
+        hPtEtaForEffCorrection[i][j] = dynamic_cast<TH2F*>(ccdbObj->FindObject(name.c_str()));
+        if (cfgDebug.printDebugMessages) {
           LOG(info) << "DEBUG :: Obj Name = " << hPtEtaForEffCorrection[i][j]->GetName() << " :: entries = " << hPtEtaForBinSearch->GetEntries();
+        }
       }
     }
 
     mgr.setURL("http://alice-ccdb.cern.ch"); // RESET the URL otherwise the other process functions which contains ccdb lookups will fail
-
-    // QA check axes
-    const AxisSpec axisEvents{1, 0, 1, "Counts"};
-    const AxisSpec axisEta{100, -1., +1., "#eta"};
-    const AxisSpec axisRapidity{200, -5, 5, "Rapidity (y)"};
-    const AxisSpec axisPt{100, 0., 5., "p_{T} (GeV/c)"};
-    const AxisSpec axisP{100, 0., 5., "p (GeV/c)"};
-    const AxisSpec axisTPCInnerParam{100, 0, 3, "P_innerParam_Gev"};
-    const AxisSpec axisdEdx(100, 20, 500, {"#frac{dE}{dx}"});
-    const AxisSpec axisVtxZ{80, -20., 20., "V_{Z} (cm)"};
-    const AxisSpec axisDCAz{200, -3., 3., "DCA_{Z} (cm)"};
-    const AxisSpec axisDCAxy{200, -3., 3., "DCA_{XY} (cm)"};
-    const AxisSpec axisMultFT0(150, 0, 1500, "MultFT0");
-    const AxisSpec axisCent(103, -1., 102., "FT0C(%)");
-    const AxisSpec axisPhi(80, -1, 7, "phi");
-
-    const AxisSpec axisTOFBeta = {40, -2.0, 2.0, "tofBeta"};
-    const AxisSpec axisTPCSignal = {100, -1, 1000, "tpcSignal"};
-    const AxisSpec axisTPCNSigma = {200, -10.0, 10.0, "n#sigma_{TPC}"};
-    const AxisSpec axisTOFNSigma = {200, -10.0, 10.0, "n#sigma_{TOF}"};
-    const AxisSpec axisTOFExpMom = {200, 0.0f, 10.0f, "#it{p}_{tofExpMom} (GeV/#it{c})"};
 
     const AxisSpec axisIdTag = {32, -0.5f, 31.5f, "idTag"};
     const AxisSpec axisMcTag = {32, -0.5f, 31.5f, "mcTag"};
@@ -290,7 +605,6 @@ struct NchCumulantsId {
     HistogramConfigSpec histTpcNSigmaTofNSigma({HistType::kTH2F, {axisTPCNSigma, axisTOFNSigma}});
 
     HistogramConfigSpec histPtMc({HistType::kTH1F, {axisPt}});
-
     // Register histograms for PID validation
     // Register TPC spares per species
     hist.add("PIDValidation/tpcSparse_Pi", "p vs tpcNSigmaPi vs idTag vs mcTag (Pion)", histTPCPIDSparse);
@@ -473,9 +787,39 @@ struct NchCumulantsId {
     // purityAnalysis.addClone("purityAnalysis/Pi/", "purityAnalysis/El/");
     // purityAnalysis.addClone("purityAnalysis/Pi/", "purityAnalysis/De/");
 
+    // profiles adding for Reco
+    addFCRecoProfiles<FCPrefixEnum::Pr>();
+    addFCRecoProfiles<FCPrefixEnum::APr>();
+    addFCRecoProfiles<FCPrefixEnum::PiPos>();
+    addFCRecoProfiles<FCPrefixEnum::PiNeg>();
+    addFCRecoProfiles<FCPrefixEnum::KaPos>();
+    addFCRecoProfiles<FCPrefixEnum::KaNeg>();
+    addFCRecoProfiles<FCPrefixEnum::Pos>();
+    addFCRecoProfiles<FCPrefixEnum::Neg>();
+
+    addNetQVectorProfileHistograms<FCPrefixEnum::NetPi>();
+    addNetQVectorProfileHistograms<FCPrefixEnum::NetKa>();
+    addNetQVectorProfileHistograms<FCPrefixEnum::NetPr>();
+    addNetQVectorProfileHistograms<FCPrefixEnum::NetCh>();
+
+    // profiles adding for Gen
+    addFCGenProfiles<FCPrefixEnum::Pr>();
+    addFCGenProfiles<FCPrefixEnum::APr>();
+    addFCGenProfiles<FCPrefixEnum::PiPos>();
+    addFCGenProfiles<FCPrefixEnum::PiNeg>();
+    addFCGenProfiles<FCPrefixEnum::KaPos>();
+    addFCGenProfiles<FCPrefixEnum::KaNeg>();
+    addFCGenProfiles<FCPrefixEnum::Pos>();
+    addFCGenProfiles<FCPrefixEnum::Neg>();
+
+    addFCGenProfiles<FCPrefixEnum::NetPi>();
+    addFCGenProfiles<FCPrefixEnum::NetKa>();
+    addFCGenProfiles<FCPrefixEnum::NetPr>();
+    addFCGenProfiles<FCPrefixEnum::NetCh>();
+
   } // init ends
 
-  static constexpr std::string_view HistRegDire2[] = {
+  static constexpr std::array<std::string_view, 11> HistRegDire2 = {
     "v0Table/Full/",
     "v0Table/postK0sCheck/",
     "v0Table/postMassCut/",
@@ -522,7 +866,7 @@ struct NchCumulantsId {
     NoId
   };
 
-  static constexpr std::string_view DetDire[] = {
+  static constexpr std::array<std::string_view, 4> DetDire = {
     "tpcId/",
     "tofId/",
     "tpctofId/",
@@ -536,7 +880,7 @@ struct NchCumulantsId {
     qaTracksIdfd,
   };
 
-  static constexpr std::string_view HistRegDire[] = {
+  static constexpr std::array<std::string_view, 5> HistRegDire = {
     "QA/events/preSel/",
     "QA/events/postSel/",
     "QA/tracks/preSel/",
@@ -558,27 +902,32 @@ struct NchCumulantsId {
   bool vetoIdOthersTPC(const T& track)
   {
     if (pidMode != kPi) {
-      if (std::fabs(track.tpcNSigmaPi()) < cfgVetoIdCut.cfgVetoId01PiTPC)
+      if (std::fabs(track.tpcNSigmaPi()) < cfgVetoIdCut.cfgVetoId01PiTPC) {
         return false;
+      }
     }
     if (pidMode != kKa) {
-      if (std::fabs(track.tpcNSigmaKa()) < cfgVetoIdCut.cfgVetoId03KaTPC)
+      if (std::fabs(track.tpcNSigmaKa()) < cfgVetoIdCut.cfgVetoId03KaTPC) {
         return false;
+      }
     }
     if (pidMode != kPr) {
-      if (std::fabs(track.tpcNSigmaPr()) < cfgVetoIdCut.cfgVetoId05PrTPC)
+      if (std::fabs(track.tpcNSigmaPr()) < cfgVetoIdCut.cfgVetoId05PrTPC) {
         return false;
+      }
     }
     if (cfgId02DoElRejection) {
       if (pidMode != kEl) {
-        if (std::fabs(track.tpcNSigmaEl()) < cfgVetoIdCut.cfgVetoId07ElTPC)
+        if (std::fabs(track.tpcNSigmaEl()) < cfgVetoIdCut.cfgVetoId07ElTPC) {
           return false;
+        }
       }
     }
     if (cfgId03DoDeRejection) {
       if (pidMode != kDe) {
-        if (std::fabs(track.tpcNSigmaDe()) < cfgVetoIdCut.cfgVetoId09DeTPC)
+        if (std::fabs(track.tpcNSigmaDe()) < cfgVetoIdCut.cfgVetoId09DeTPC) {
           return false;
+        }
       }
     }
     return true;
@@ -588,27 +937,32 @@ struct NchCumulantsId {
   bool vetoIdOthersTOF(const T& track)
   {
     if (pidMode != kPi) {
-      if (std::fabs(track.tofNSigmaPi()) < cfgVetoIdCut.cfgVetoId02PiTOF)
+      if (std::fabs(track.tofNSigmaPi()) < cfgVetoIdCut.cfgVetoId02PiTOF) {
         return false;
+      }
     }
     if (pidMode != kKa) {
-      if (std::fabs(track.tofNSigmaKa()) < cfgVetoIdCut.cfgVetoId04KaTOF)
+      if (std::fabs(track.tofNSigmaKa()) < cfgVetoIdCut.cfgVetoId04KaTOF) {
         return false;
+      }
     }
     if (pidMode != kPr) {
-      if (std::fabs(track.tofNSigmaPr()) < cfgVetoIdCut.cfgVetoId06PrTOF)
+      if (std::fabs(track.tofNSigmaPr()) < cfgVetoIdCut.cfgVetoId06PrTOF) {
         return false;
+      }
     }
     if (cfgId02DoElRejection) {
       if (pidMode != kEl) {
-        if (std::fabs(track.tofNSigmaEl()) < cfgVetoIdCut.cfgVetoId08ElTOF)
+        if (std::fabs(track.tofNSigmaEl()) < cfgVetoIdCut.cfgVetoId08ElTOF) {
           return false;
+        }
       }
     }
     if (cfgId03DoDeRejection) {
       if (pidMode != kDe) {
-        if (std::fabs(track.tofNSigmaDe()) < cfgVetoIdCut.cfgVetoId10DeTOF)
+        if (std::fabs(track.tofNSigmaDe()) < cfgVetoIdCut.cfgVetoId10DeTOF) {
           return false;
+        }
       }
     }
     return true;
@@ -618,27 +972,32 @@ struct NchCumulantsId {
   bool vetoIdOthersTPCTOF(const T& track)
   {
     if (pidMode != kPi) {
-      if (std::fabs(track.tpcNSigmaPi()) < cfgVetoIdCut.cfgVetoId01PiTPC && std::fabs(track.tofNSigmaPi()) < cfgVetoIdCut.cfgVetoId02PiTOF)
+      if (std::fabs(track.tpcNSigmaPi()) < cfgVetoIdCut.cfgVetoId01PiTPC && std::fabs(track.tofNSigmaPi()) < cfgVetoIdCut.cfgVetoId02PiTOF) {
         return false;
+      }
     }
     if (pidMode != kKa) {
-      if (std::fabs(track.tpcNSigmaKa()) < cfgVetoIdCut.cfgVetoId03KaTPC && std::fabs(track.tofNSigmaKa()) < cfgVetoIdCut.cfgVetoId04KaTOF)
+      if (std::fabs(track.tpcNSigmaKa()) < cfgVetoIdCut.cfgVetoId03KaTPC && std::fabs(track.tofNSigmaKa()) < cfgVetoIdCut.cfgVetoId04KaTOF) {
         return false;
+      }
     }
     if (pidMode != kPr) {
-      if (std::fabs(track.tpcNSigmaPr()) < cfgVetoIdCut.cfgVetoId05PrTPC && std::fabs(track.tofNSigmaPr()) < cfgVetoIdCut.cfgVetoId06PrTOF)
+      if (std::fabs(track.tpcNSigmaPr()) < cfgVetoIdCut.cfgVetoId05PrTPC && std::fabs(track.tofNSigmaPr()) < cfgVetoIdCut.cfgVetoId06PrTOF) {
         return false;
+      }
     }
     if (cfgId02DoElRejection) {
       if (pidMode != kEl) {
-        if (std::fabs(track.tpcNSigmaEl()) < cfgVetoIdCut.cfgVetoId07ElTPC && std::fabs(track.tofNSigmaEl()) < cfgVetoIdCut.cfgVetoId08ElTOF)
+        if (std::fabs(track.tpcNSigmaEl()) < cfgVetoIdCut.cfgVetoId07ElTPC && std::fabs(track.tofNSigmaEl()) < cfgVetoIdCut.cfgVetoId08ElTOF) {
           return false;
+        }
       }
     }
     if (cfgId03DoDeRejection) {
       if (pidMode != kDe) {
-        if (std::fabs(track.tpcNSigmaDe()) < cfgVetoIdCut.cfgVetoId09DeTPC && std::fabs(track.tofNSigmaDe()) < cfgVetoIdCut.cfgVetoId10DeTOF)
+        if (std::fabs(track.tpcNSigmaDe()) < cfgVetoIdCut.cfgVetoId09DeTPC && std::fabs(track.tofNSigmaDe()) < cfgVetoIdCut.cfgVetoId10DeTOF) {
           return false;
+        }
       }
     }
     return true;
@@ -678,16 +1037,19 @@ struct NchCumulantsId {
   {
     switch (pidMode) {
       case kPi:
-        if (std::pow(track.tpcNSigmaPi() / nSigmaTPC, 2) + std::pow(track.tofNSigmaPi() / nSigmaTOF, 2) < 1.0)
+        if (std::pow(track.tpcNSigmaPi() / nSigmaTPC, 2) + std::pow(track.tofNSigmaPi() / nSigmaTOF, 2) < 1.0) {
           return true;
+        }
         break;
       case kKa:
-        if (std::pow(track.tpcNSigmaKa() / nSigmaTPC, 2) + std::pow(track.tofNSigmaKa() / nSigmaTOF, 2) < 1.0)
+        if (std::pow(track.tpcNSigmaKa() / nSigmaTPC, 2) + std::pow(track.tofNSigmaKa() / nSigmaTOF, 2) < 1.0) {
           return true;
+        }
         break;
       case kPr:
-        if (std::pow(track.tpcNSigmaPr() / nSigmaTPC, 2) + std::pow(track.tofNSigmaPr() / nSigmaTOF, 2) < 1.0)
+        if (std::pow(track.tpcNSigmaPr() / nSigmaTPC, 2) + std::pow(track.tofNSigmaPr() / nSigmaTOF, 2) < 1.0) {
           return true;
+        }
         break;
       default:
         return false;
@@ -701,16 +1063,19 @@ struct NchCumulantsId {
   {
     switch (pidMode) {
       case kPi:
-        if (std::pow(track.tpcNSigmaPi(), 2) + std::pow(track.tofNSigmaPi(), 2) < nSigmaSquaredRad)
+        if (std::pow(track.tpcNSigmaPi(), 2) + std::pow(track.tofNSigmaPi(), 2) < nSigmaSquaredRad) {
           return true;
+        }
         break;
       case kKa:
-        if (std::pow(track.tpcNSigmaKa(), 2) + std::pow(track.tofNSigmaKa(), 2) < nSigmaSquaredRad)
+        if (std::pow(track.tpcNSigmaKa(), 2) + std::pow(track.tofNSigmaKa(), 2) < nSigmaSquaredRad) {
           return true;
+        }
         break;
       case kPr:
-        if (std::pow(track.tpcNSigmaPr(), 2) + std::pow(track.tofNSigmaPr(), 2) < nSigmaSquaredRad)
+        if (std::pow(track.tpcNSigmaPr(), 2) + std::pow(track.tofNSigmaPr(), 2) < nSigmaSquaredRad) {
           return true;
+        }
         break;
       default:
         return false;
@@ -722,29 +1087,30 @@ struct NchCumulantsId {
   template <typename T>
   bool checkReliableTOF(const T& track)
   {
-    if (track.hasTOF())
-      return true; // which check makes the information of TOF relaiable? should track.beta() be checked?
-    else
-      return false;
+    return track.hasTOF(); // which check makes the information of TOF relaiable? should track.beta() be checked?
   }
 
   template <int pidMode, typename T>
   bool idTPC(const T& track, const float& nSigmaTPC)
   {
-    if (cfgId01CheckVetoCut && !vetoIdOthersTPC<pidMode>(track))
+    if (cfgId01CheckVetoCut && !vetoIdOthersTPC<pidMode>(track)) {
       return false;
+    }
     switch (pidMode) {
       case kPi:
-        if (std::fabs(track.tpcNSigmaPi()) < nSigmaTPC)
+        if (std::fabs(track.tpcNSigmaPi()) < nSigmaTPC) {
           return true;
+        }
         break;
       case kKa:
-        if (std::fabs(track.tpcNSigmaKa()) < nSigmaTPC)
+        if (std::fabs(track.tpcNSigmaKa()) < nSigmaTPC) {
           return true;
+        }
         break;
       case kPr:
-        if (std::fabs(track.tpcNSigmaPr()) < nSigmaTPC)
+        if (std::fabs(track.tpcNSigmaPr()) < nSigmaTPC) {
           return true;
+        }
         break;
       default:
         return false;
@@ -756,8 +1122,9 @@ struct NchCumulantsId {
   template <int pidMode, typename T>
   bool idTPCTOF(const T& track, const int& pidCutType, const float& nSigmaTPC, const float& nSigmaTOF, const float& nSigmaSquaredRad)
   {
-    if (cfgId01CheckVetoCut && !vetoIdOthersTPCTOF<pidMode>(track))
+    if (cfgId01CheckVetoCut && !vetoIdOthersTPCTOF<pidMode>(track)) {
       return false;
+    }
     if (pidCutType == kRectangularCut) {
       return selIdRectangularCut<pidMode>(track, nSigmaTPC, nSigmaTOF);
     } else if (pidCutType == kCircularCut) {
@@ -803,21 +1170,23 @@ struct NchCumulantsId {
   int getMCTag(const T& track)
   {
     int mcTag = 0;
-    if (!track.has_mcParticle())
+    if (!track.has_mcParticle()) {
       return mcTag;
+    }
     auto mcPart = track.mcParticle();
     int pdgCode = std::abs(mcPart.pdgCode());
 
-    if (pdgCode == kPiPlus || pdgCode == kPiMinus)
-      BITSET(mcTag, MC_BIT_PI);
-    else if (pdgCode == kKPlus || pdgCode == kKMinus)
-      BITSET(mcTag, MC_BIT_KA);
-    else if (pdgCode == kProton || pdgCode == kProtonBar)
-      BITSET(mcTag, MC_BIT_PR);
-    else if (pdgCode == kElectron || pdgCode == kPositron)
-      BITSET(mcTag, MC_BIT_EL);
-    else if (pdgCode == kDeuteron || pdgCode == -kDeuteron)
-      BITSET(mcTag, MC_BIT_DE);
+    if (pdgCode == kPiPlus || pdgCode == kPiMinus) {
+      BITSET(mcTag, McBitPI);
+    } else if (pdgCode == kKPlus || pdgCode == kKMinus) {
+      BITSET(mcTag, McBitKA);
+    } else if (pdgCode == kProton || pdgCode == kProtonBar) {
+      BITSET(mcTag, McBitPR);
+    } else if (pdgCode == kElectron || pdgCode == kPositron) {
+      BITSET(mcTag, McBitEL);
+    } else if (pdgCode == kDeuteron || pdgCode == -kDeuteron) {
+      BITSET(mcTag, McBitDE);
+    }
 
     return mcTag;
   }
@@ -832,9 +1201,8 @@ struct NchCumulantsId {
         std::fabs(track.tpcNSigmaKa()) > cfgIdKaRejNSigma &&
         std::fabs(track.tpcNSigmaPr()) > cfgIdPrRejNSigma) {
       return false;
-    } else {
-      return true;
     }
+    return true;
   }
 
   // Pion
@@ -916,15 +1284,15 @@ struct NchCumulantsId {
   }
 
   template <int mode, typename T>
-  void fillCollQA(const T& col, const int& nCh, const int& nT)
+  void fillCollQA(const T& coll, const float& nCh, const float& nT)
   {
-    hist.fill(HIST(HistRegDire[mode]) + HIST("h_VtxZ"), col.posZ());
+    hist.fill(HIST(HistRegDire[mode]) + HIST("h_VtxZ"), coll.posZ());
     hist.fill(HIST(HistRegDire[mode]) + HIST("h_Counts"), 0.5);
-    hist.fill(HIST(HistRegDire[mode]) + HIST("multFT0"), col.multFT0C());
-    hist.fill(HIST(HistRegDire[mode]) + HIST("centFT0"), col.centFT0M());
+    hist.fill(HIST(HistRegDire[mode]) + HIST("multFT0"), coll.multFT0C());
+    hist.fill(HIST(HistRegDire[mode]) + HIST("centFT0"), coll.centFT0M());
     if (mode == qaEventPostSel) {
       hist.fill(HIST(HistRegDire[mode]) + HIST("net_charge"), nCh);
-      hist.fill(HIST(HistRegDire[mode]) + HIST("Nt_centFT"), col.centFT0M(), nT);
+      hist.fill(HIST(HistRegDire[mode]) + HIST("Nt_centFT"), coll.centFT0M(), nT);
     }
   }
 
@@ -1026,34 +1394,35 @@ struct NchCumulantsId {
   void executeTrackAnalysisPart(const T& track, const int& trackIdTag, float& nP, float& nM,
                                 const int& idMethodPi, const bool& trackIsPion, float& nAPi, float& nPi,
                                 const int& idMethodKa, const bool& trackIsKaon, float& nAKa, float& nKa,
-                                const int& idMethodPr, const bool& trackIsProton, float& nPr, float& nAPr, H& recoAnalysis)
+                                const int& idMethodPr, const bool& trackIsProton, float& nPr, float& nAPr, H& hReg)
   {
-    if (flagUnusedVariableError)
+    if (cfgEventSelection.flagUnusedVariableError) {
       LOG(info) << trackIdTag << idMethodPi << ":" << idMethodKa << ":" << idMethodPr;
+    }
     if (track.sign() > 0) {
-      // fillRecoTrackQA<kPos>(recoAnalysis, track);
+      // fillRecoTrackQA<kPos>(hReg, track);
       nP++;
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Pos/h12_p"), track.p());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Pos/h13_pt"), track.pt());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Pos/h14_eta"), track.eta());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Pos/h15_phi"), track.phi());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Pos/h16_rapidity"), track.y());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Pos/h20_pt_eta"), track.pt(), track.eta());
+      hReg.fill(HIST("recoAnalysis/Charge/Pos/h12_p"), track.p());
+      hReg.fill(HIST("recoAnalysis/Charge/Pos/h13_pt"), track.pt());
+      hReg.fill(HIST("recoAnalysis/Charge/Pos/h14_eta"), track.eta());
+      hReg.fill(HIST("recoAnalysis/Charge/Pos/h15_phi"), track.phi());
+      hReg.fill(HIST("recoAnalysis/Charge/Pos/h16_rapidity"), track.y());
+      hReg.fill(HIST("recoAnalysis/Charge/Pos/h20_pt_eta"), track.pt(), track.eta());
     }
     if (track.sign() < 0) {
-      // fillRecoTrackQA<kNeg>(recoAnalysis, track);
+      // fillRecoTrackQA<kNeg>(hReg, track);
       nM++;
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h12_p"), track.p());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h13_pt"), track.pt());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h14_eta"), track.eta());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h15_phi"), track.phi());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h16_rapidity"), track.y());
-      recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h20_pt_eta"), track.pt(), track.eta());
+      hReg.fill(HIST("recoAnalysis/Charge/Neg/h12_p"), track.p());
+      hReg.fill(HIST("recoAnalysis/Charge/Neg/h13_pt"), track.pt());
+      hReg.fill(HIST("recoAnalysis/Charge/Neg/h14_eta"), track.eta());
+      hReg.fill(HIST("recoAnalysis/Charge/Neg/h15_phi"), track.phi());
+      hReg.fill(HIST("recoAnalysis/Charge/Neg/h16_rapidity"), track.y());
+      hReg.fill(HIST("recoAnalysis/Charge/Neg/h20_pt_eta"), track.pt(), track.eta());
     }
 
     if (trackIsPion) {
       // if (idMethodPi == kTPCidentified) {
-      //   fillIdentificationQA<recoAnalysisDir, kPi, tpcId, true>(hist, track); // set hist as recoAnalysis after tpcId etc add true
+      //   fillIdentificationQA<recoAnalysisDir, kPi, tpcId, true>(hist, track); // set hist as hReg after tpcId etc add true
       // } else if (idMethodPi == kTPCTOFidentified) {
       //   fillIdentificationQA<recoAnalysisDir, kPi, tpctofId, true>(hist, track);
       // } else if (idMethodPi == kUnidentified) {
@@ -1061,12 +1430,12 @@ struct NchCumulantsId {
       // }
       if (track.sign() > 0) {
         nPi++;
-        fillRecoTrackQA<recoAnalysisDir, kPi, kPos>(recoAnalysis, track);
+        fillRecoTrackQA<recoAnalysisDir, kPi, kPos>(hReg, track);
       } else if (track.sign() < 0) {
         nAPi++;
-        fillRecoTrackQA<recoAnalysisDir, kPi, kNeg>(recoAnalysis, track);
+        fillRecoTrackQA<recoAnalysisDir, kPi, kNeg>(hReg, track);
       }
-      // fillRecoTrackQA<recoAnalysisDir, kPi>(recoAnalysis, track);
+      // fillRecoTrackQA<recoAnalysisDir, kPi>(hReg, track);
     }
     if (trackIsKaon) {
       // if (idMethodKa == kTPCidentified) {
@@ -1078,12 +1447,12 @@ struct NchCumulantsId {
       // }
       if (track.sign() > 0) {
         nKa++;
-        fillRecoTrackQA<recoAnalysisDir, kKa, kPos>(recoAnalysis, track);
+        fillRecoTrackQA<recoAnalysisDir, kKa, kPos>(hReg, track);
       } else if (track.sign() < 0) {
         nAKa++;
-        fillRecoTrackQA<recoAnalysisDir, kKa, kNeg>(recoAnalysis, track);
+        fillRecoTrackQA<recoAnalysisDir, kKa, kNeg>(hReg, track);
       }
-      // fillRecoTrackQA<recoAnalysisDir, kKa>(recoAnalysis, track);
+      // fillRecoTrackQA<recoAnalysisDir, kKa>(hReg, track);
     }
     if (trackIsProton) {
       // if (idMethodPr == kTPCidentified) {
@@ -1095,16 +1464,17 @@ struct NchCumulantsId {
       // }
       if (track.sign() > 0) {
         nPr++;
-        fillRecoTrackQA<recoAnalysisDir, kPr, kPos>(recoAnalysis, track);
+        fillRecoTrackQA<recoAnalysisDir, kPr, kPos>(hReg, track);
       } else if (track.sign() < 0) {
         nAPr++;
-        fillRecoTrackQA<recoAnalysisDir, kPr, kNeg>(recoAnalysis, track);
+        fillRecoTrackQA<recoAnalysisDir, kPr, kNeg>(hReg, track);
       }
-      // fillRecoTrackQA<recoAnalysisDir, kPr>(recoAnalysis, track);
+      // fillRecoTrackQA<recoAnalysisDir, kPr>(hReg, track);
     }
 
-    // recoAnalysis.fill(HIST("recoAnalysis/SelectedTrack_IdentificationTag"), trackIdTag);
+    // hReg.fill(HIST("recoAnalysis/SelectedTrack_IdentificationTag"), trackIdTag);
   }
+  // fill the basis for factorial cumulants
 
   using MyAllTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra,
                                 aod::TracksDCA, aod::pidTOFbeta, aod::pidTOFmass, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl,
@@ -1117,22 +1487,25 @@ struct NchCumulantsId {
   using MyCollisionsWithMcLabels = soa::Join<aod::Collisions, aod::Mults, aod::CentFT0Ms, aod::EvSels, aod::McCollisionLabels>;
 
   template <typename CollisionType>
-  bool isEventSelected(const CollisionType& col)
+  bool isEventSelected(const CollisionType& coll)
   {
-    if (cfgEvSel01doNoSameBunchPileup &&
-        !col.selection_bit(aod::evsel::kNoSameBunchPileup))
+    if (cfgEventSelection.cfgEvSel01doNoSameBunchPileup &&
+        !coll.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
-    if (cfgEvSel02doIsGoodZvtxFT0vsPV &&
-        !col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+    }
+    if (cfgEventSelection.cfgEvSel02doIsGoodZvtxFT0vsPV &&
+        !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
-    if (cfgEvSel03doIsGoodITSLayersAll &&
-        !col.selection_bit(aod::evsel::kIsGoodITSLayersAll))
+    }
+    if (cfgEventSelection.cfgEvSel03doIsGoodITSLayersAll &&
+        !coll.selection_bit(aod::evsel::kIsGoodITSLayersAll)) {
       return false;
+    }
     return true;
   }
 
   // tracks and collision filters
-  Filter col = aod::evsel::sel8 == true;
+  Filter colSel8 = aod::evsel::sel8 == true;
   Filter colFilter = nabs(aod::collision::posZ) < cfgCutPosZ;
   Filter trackFilter = requireGlobalTrackInFilter();
   Filter trackPt = (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax);
@@ -1179,8 +1552,9 @@ struct NchCumulantsId {
 
     if constexpr (analysisType == doDataProcessing) {
       for (const auto& col : collisions) {
-        if (!isEventSelected(col))
+        if (!isEventSelected(col)) {
           continue;
+        }
         nP = 0;
         nM = 0;
         nCh = 0;
@@ -1211,11 +1585,11 @@ struct NchCumulantsId {
           }
 
           // Reject electrons first
-          if (cfgDoRejectionForId && !selTrackForId(track)) {
+          if (cfgEventSelection.cfgDoRejectionForId && !selTrackForId(track)) {
             continue;
           }
 
-          int idMethod;
+          int idMethod = -1;
           // pion
           if (selPion(track, idMethod)) {
             if (track.sign() == 1) {
@@ -1225,10 +1599,12 @@ struct NchCumulantsId {
               nAPi += hPtEtaForEffCorrection[kPi][kNeg]->GetBinContent(ptEtaBin);
             }
 
-            if (idMethod == kTPCidentified)
+            if (idMethod == kTPCidentified) {
               fillIdentificationQA<qaTracksIdfd, kPi, tpcId>(hist, track);
-            if (idMethod == kTPCTOFidentified)
+            }
+            if (idMethod == kTPCTOFidentified) {
               fillIdentificationQA<qaTracksIdfd, kPi, tpctofId>(hist, track);
+            }
           }
           // kaon
           if (selKaon(track, idMethod)) {
@@ -1239,10 +1615,12 @@ struct NchCumulantsId {
               nAKa += hPtEtaForEffCorrection[kKa][kNeg]->GetBinContent(ptEtaBin);
             }
 
-            if (idMethod == kTPCidentified)
+            if (idMethod == kTPCidentified) {
               fillIdentificationQA<qaTracksIdfd, kKa, tpcId>(hist, track);
-            if (idMethod == kTPCTOFidentified)
+            }
+            if (idMethod == kTPCTOFidentified) {
               fillIdentificationQA<qaTracksIdfd, kKa, tpctofId>(hist, track);
+            }
           }
           // proton
           if (selProton(track, idMethod)) {
@@ -1253,10 +1631,12 @@ struct NchCumulantsId {
               nAPr += hPtEtaForEffCorrection[kPr][kNeg]->GetBinContent(ptEtaBin);
             }
 
-            if (idMethod == kTPCidentified)
+            if (idMethod == kTPCidentified) {
               fillIdentificationQA<qaTracksIdfd, kPr, tpcId>(hist, track);
-            if (idMethod == kTPCTOFidentified)
+            }
+            if (idMethod == kTPCTOFidentified) {
               fillIdentificationQA<qaTracksIdfd, kPr, tpctofId>(hist, track);
+            }
           }
         } // track loop ends
         nCh = nP - nM;
@@ -1276,18 +1656,19 @@ struct NchCumulantsId {
           LOG(warning) << "No MC collision for this collision, skip...";
           continue;
         }
-        if (!isEventSelected(col))
+        if (!isEventSelected(col)) {
           continue;
-        float nP = 0;
-        float nM = 0;
-        float nCh = 0;
-        float nT = 0;
-        float nPr = 0;
-        float nAPr = 0;
-        float nKa = 0;
-        float nAKa = 0;
-        float nPi = 0;
-        float nAPi = 0;
+        }
+        nP = 0;
+        nM = 0;
+        nCh = 0;
+        nT = 0;
+        nPr = 0;
+        nAPr = 0;
+        nKa = 0;
+        nAKa = 0;
+        nPi = 0;
+        nAPi = 0;
         // group tracks manually with corresponding collision using col id;
         const uint64_t collIdx = col.globalIndex();
         const auto tracksTablePerColl = tracks.sliceBy(mctracksPerCollisionPreslice, collIdx);
@@ -1317,30 +1698,33 @@ struct NchCumulantsId {
           int mcTag = getMCTag(track);
 
           // Reject electrons first
-          if (cfgDoRejectionForId && !selTrackForId(track)) {
+          if (cfgEventSelection.cfgDoRejectionForId && !selTrackForId(track)) {
             continue;
           }
 
           if (selPion(track, idMethodPi)) {
             trackIsPion = true;
-            BITSET(trackIdTag, ID_BIT_PI);
+            BITSET(trackIdTag, IdBitPI);
             hist.fill(HIST("PIDValidation/tpcSparse_Pi"), track.p(), track.tpcNSigmaPi(), trackIdTag, mcTag);
-            if (track.hasTOF())
+            if (track.hasTOF()) {
               hist.fill(HIST("PIDValidation/tofSparse_Pi"), track.p(), track.tofNSigmaPi(), trackIdTag, mcTag);
+            }
           }
           if (selKaon(track, idMethodKa)) {
             trackIsKaon = true;
-            BITSET(trackIdTag, ID_BIT_KA);
+            BITSET(trackIdTag, IdBitKA);
             hist.fill(HIST("PIDValidation/tpcSparse_Ka"), track.p(), track.tpcNSigmaKa(), trackIdTag, mcTag);
-            if (track.hasTOF())
+            if (track.hasTOF()) {
               hist.fill(HIST("PIDValidation/tofSparse_Ka"), track.p(), track.tofNSigmaKa(), trackIdTag, mcTag);
+            }
           }
           if (selProton(track, idMethodPr)) {
             trackIsProton = true;
-            BITSET(trackIdTag, ID_BIT_PR);
+            BITSET(trackIdTag, IdBitPR);
             hist.fill(HIST("PIDValidation/tpcSparse_Pr"), track.p(), track.tpcNSigmaPr(), trackIdTag, mcTag);
-            if (track.hasTOF())
+            if (track.hasTOF()) {
               hist.fill(HIST("PIDValidation/tofSparse_Pr"), track.p(), track.tofNSigmaPr(), trackIdTag, mcTag);
+            }
           }
 
           if constexpr (analysisType == doPurityProcessing) {
@@ -1421,8 +1805,9 @@ struct NchCumulantsId {
         LOG(warning) << "No MC collision for this event, skip...";
         continue;
       }
-      if (!isEventSelected(col))
+      if (!isEventSelected(col)) {
         continue;
+      }
       const auto& mcColl = col.mcCollision();
 
       // ---- apply same Vz cut as data/reco ----
@@ -1514,8 +1899,10 @@ struct NchCumulantsId {
 
   void processSim(MyFilteredColsWithMcLabels const& collisions, MyFilteredTracksWithMcLabels const& tracks, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
-    if (flagUnusedVariableError)
+
+    if (cfgEventSelection.flagUnusedVariableError) {
       LOG(info) << mcCollisions.size();
+    }
     bool trackIsPion = false;
     bool trackIsKaon = false;
     bool trackIsProton = false;
@@ -1533,12 +1920,14 @@ struct NchCumulantsId {
         LOG(warning) << "No MC collision for this collision, skip...";
         continue;
       }
-      if (!isEventSelected(col))
+      if (!isEventSelected(col)) {
         continue;
+      }
       auto mcCollision = col.mcCollision();
 
-      if (checkCollPosZMc && std::abs(mcCollision.posZ()) > cfgCutPosZ)
+      if (cfgEventSelection.checkCollPosZMc && std::abs(mcCollision.posZ()) > cfgCutPosZ) {
         continue;
+      }
 
       // slice reco tracks to this collision
       const uint64_t collIdx = col.globalIndex();
@@ -1546,6 +1935,18 @@ struct NchCumulantsId {
 
       // slice mc particles to mc collisions
       const auto mcTracksTablePerMcColl = mcParticles.sliceBy(mcTracksPerMcCollisionPreslice, mcCollision.globalIndex());
+      float cent = col.centFT0M();
+
+      EffPowerSums prPow;
+      EffPowerSums aprPow;
+      EffPowerSums pipPow;
+      EffPowerSums pimPow;
+      EffPowerSums kapPow;
+      EffPowerSums kamPow;
+      EffPowerSums posPow;
+      EffPowerSums negPow;
+
+      cfgEventSelection.currentSubsample = static_cast<int>(cfgEventSelection.fRandom->Uniform(0, cfgEventSelection.subSampleAxis.value[0]));
 
       // Denominator -- Generator level(truth)
 
@@ -1555,12 +1956,14 @@ struct NchCumulantsId {
       float nPiGen = 0, nAPiGen = 0;
 
       for (const auto& mcTrack : mcTracksTablePerMcColl) {
-        if (!mcTrack.isPhysicalPrimary())
+        if (!mcTrack.isPhysicalPrimary()) {
           continue;
+        }
         if (mcTrack.pt() <= cfgCutPtMin ||
             mcTrack.pt() >= cfgCutPtMax ||
-            std::abs(mcTrack.eta()) >= cfgCutEta)
+            std::abs(mcTrack.eta()) >= cfgCutEta) {
           continue;
+        }
 
         int pdg = mcTrack.pdgCode();
 
@@ -1617,12 +2020,28 @@ struct NchCumulantsId {
       nTGen = nPGen + nMGen;
 
       // ── Fill GEN sparse (denominator) ────────────────────────
-      hist.fill(HIST("sim/gen/sparse1"), nChGen, nPGen, nMGen,
-                nPrGen, nAPrGen, nKaGen, nAKaGen, nTGen,
-                col.centFT0M());
-      hist.fill(HIST("sim/gen/sparse2"), nChGen, nPGen, nMGen,
-                nPiGen, nAPiGen, nKaGen, nAKaGen, nTGen,
-                col.centFT0M());
+      if (cfgEventSelection.fillSparseForGen) {
+        hist.fill(HIST("sim/gen/sparse1"), nChGen, nPGen, nMGen,
+                  nPrGen, nAPrGen, nKaGen, nAKaGen, nTGen,
+                  cent);
+        hist.fill(HIST("sim/gen/sparse2"), nChGen, nPGen, nMGen,
+                  nPiGen, nAPiGen, nKaGen, nAKaGen, nTGen,
+                  cent);
+      }
+      fillGenFactorialMoments<FCPrefixEnum::Pr>(nPrGen, cent, registry);
+      fillGenFactorialMoments<FCPrefixEnum::APr>(nAPrGen, cent, registry);
+      fillGenFactorialMoments<FCPrefixEnum::PiPos>(nPiGen, cent, registry);
+      fillGenFactorialMoments<FCPrefixEnum::PiNeg>(nAPiGen, cent, registry);
+      fillGenFactorialMoments<FCPrefixEnum::KaPos>(nKaGen, cent, registry);
+      fillGenFactorialMoments<FCPrefixEnum::KaNeg>(nAKaGen, cent, registry);
+      fillGenFactorialMoments<FCPrefixEnum::Pos>(nPGen, cent, registry);
+      fillGenFactorialMoments<FCPrefixEnum::Neg>(nMGen, cent, registry);
+
+      fillGenNetFactorialMoments<FCPrefixEnum::NetCh>(nPGen, nMGen, cent, registry);
+      fillGenNetFactorialMoments<FCPrefixEnum::NetPr>(nPrGen, nAPrGen, cent, registry);
+      fillGenNetFactorialMoments<FCPrefixEnum::NetPi>(nPiGen, nAPiGen, cent, registry);
+      fillGenNetFactorialMoments<FCPrefixEnum::NetKa>(nKaGen, nAKaGen, cent, registry);
+      // ── End of GEN level filling
       //
       // Numerator - Reconstructed + truth matched
       // reco->selFunc passed, no pdg
@@ -1646,8 +2065,9 @@ struct NchCumulantsId {
           continue;
         }
         auto mcPart = track.mcParticle();
-        if (!mcPart.isPhysicalPrimary())
+        if (!mcPart.isPhysicalPrimary()) {
           continue;
+        }
         int pdg = mcPart.pdgCode();
 
         int mcTag = getMCTag(track);
@@ -1663,14 +2083,14 @@ struct NchCumulantsId {
         idMethodPr = kUnidentified;
 
         // Reject electrons first
-        if (cfgDoRejectionForId && !selTrackForId(track)) {
+        if (cfgEventSelection.cfgDoRejectionForId && !selTrackForId(track)) {
           continue;
         }
 
         // Fill separate spares for each species if it passes the cut
         if (selPion(track, idMethodPi)) {
           trackIsPion = true;
-          BITSET(trackIdTag, ID_BIT_PI);
+          BITSET(trackIdTag, IdBitPI);
           // Fill TPC sparse for pion
           hist.fill(HIST("PIDValidation/tpcSparse_Pi"), track.p(), track.tpcNSigmaPi(), trackIdTag, mcTag);
           // Fill TOF sparse for pion if has TOF
@@ -1680,7 +2100,7 @@ struct NchCumulantsId {
         }
         if (selKaon(track, idMethodKa)) {
           trackIsKaon = true;
-          BITSET(trackIdTag, ID_BIT_KA);
+          BITSET(trackIdTag, IdBitKA);
           // Fill TPC sparse for kaon
           hist.fill(HIST("PIDValidation/tpcSparse_Ka"), track.p(), track.tpcNSigmaKa(), trackIdTag, mcTag);
           // Fill TOF sparse for kaon if has TOF
@@ -1690,7 +2110,7 @@ struct NchCumulantsId {
         }
         if (selProton(track, idMethodPr)) {
           trackIsProton = true;
-          BITSET(trackIdTag, ID_BIT_PR);
+          BITSET(trackIdTag, IdBitPR);
           // Fill TPC sparse for proton
           hist.fill(HIST("PIDValidation/tpcSparse_Pr"), track.p(), track.tpcNSigmaPr(), trackIdTag, mcTag);
           // Fill TOF sparse for proton if has TOF
@@ -1716,6 +2136,9 @@ struct NchCumulantsId {
           recoAnalysis.fill(HIST("recoAnalysis/Charge/Pos/h15_phi"), track.phi());
           recoAnalysis.fill(HIST("recoAnalysis/Charge/Pos/h16_rapidity"), track.y());
           recoAnalysis.fill(HIST("recoAnalysis/Charge/Pos/h20_pt_eta"), track.pt(), track.eta());
+
+          float weight = hPtEtaForEffCorrection[kCh][kPos]->GetBinContent(ptEtaBin);
+          fillEffPower(posPow, weight);
         } else if (track.sign() < 0) {
           nMRec += hPtEtaForEffCorrection[kCh][kNeg]->GetBinContent(ptEtaBin);
           recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h12_p"), track.p());
@@ -1724,6 +2147,9 @@ struct NchCumulantsId {
           recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h15_phi"), track.phi());
           recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h16_rapidity"), track.y());
           recoAnalysis.fill(HIST("recoAnalysis/Charge/Neg/h20_pt_eta"), track.pt(), track.eta());
+
+          float weight = hPtEtaForEffCorrection[kCh][kNeg]->GetBinContent(ptEtaBin);
+          fillEffPower(negPow, weight);
         }
 
         // species reco — sel passes, PDG not checked (raw reco)
@@ -1731,41 +2157,61 @@ struct NchCumulantsId {
           if (track.sign() > 0) {
             nPiRec += hPtEtaForEffCorrection[kPi][kPos]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kPi, kPos>(recoAnalysis, track);
+
+            float weight = hPtEtaForEffCorrection[kPi][kPos]->GetBinContent(ptEtaBin);
+            fillEffPower(pipPow, weight);
           } else if (track.sign() < 0) {
             nAPiRec += hPtEtaForEffCorrection[kPi][kNeg]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kPi, kNeg>(recoAnalysis, track);
+
+            float weight = hPtEtaForEffCorrection[kPi][kNeg]->GetBinContent(ptEtaBin);
+            fillEffPower(pimPow, weight);
           }
           // PID band QA for pions
-          if (idMethodPi == kTPCidentified)
+          if (idMethodPi == kTPCidentified) {
             fillIdentificationQA<qaTracksIdfd, kPi, tpcId>(hist, track);
-          if (idMethodPi == kTPCTOFidentified)
+          }
+          if (idMethodPi == kTPCTOFidentified) {
             fillIdentificationQA<qaTracksIdfd, kPi, tpctofId>(hist, track);
+          }
         } else if (trackIsKaon) {
           if (track.sign() > 0) {
             nKaRec += hPtEtaForEffCorrection[kKa][kPos]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kKa, kPos>(recoAnalysis, track);
+            float weight = hPtEtaForEffCorrection[kKa][kPos]->GetBinContent(ptEtaBin);
+            fillEffPower(kapPow, weight);
           } else if (track.sign() < 0) {
             nAKaRec += hPtEtaForEffCorrection[kKa][kNeg]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kKa, kNeg>(recoAnalysis, track);
+            float weight = hPtEtaForEffCorrection[kKa][kNeg]->GetBinContent(ptEtaBin);
+            fillEffPower(kamPow, weight);
           }
           // PID band QA for kaons
-          if (idMethodKa == kTPCidentified)
+          if (idMethodKa == kTPCidentified) {
             fillIdentificationQA<qaTracksIdfd, kKa, tpcId>(hist, track);
-          if (idMethodKa == kTPCTOFidentified)
+          }
+          if (idMethodKa == kTPCTOFidentified) {
             fillIdentificationQA<qaTracksIdfd, kKa, tpctofId>(hist, track);
+          }
         } else if (trackIsProton) {
           if (track.sign() > 0) {
             nPrRec += hPtEtaForEffCorrection[kPr][kPos]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kPr, kPos>(recoAnalysis, track);
+            float weight = hPtEtaForEffCorrection[kPr][kPos]->GetBinContent(ptEtaBin);
+            fillEffPower(prPow, weight);
           } else if (track.sign() < 0) {
             nAPrRec += hPtEtaForEffCorrection[kPr][kNeg]->GetBinContent(ptEtaBin);
             fillRecoTrackQA<recoAnalysisDir, kPr, kNeg>(recoAnalysis, track);
+            float weight = hPtEtaForEffCorrection[kPr][kNeg]->GetBinContent(ptEtaBin);
+            fillEffPower(aprPow, weight);
           }
           // PID band QA for protons
-          if (idMethodPr == kTPCidentified)
+          if (idMethodPr == kTPCidentified) {
             fillIdentificationQA<qaTracksIdfd, kPr, tpcId>(hist, track);
-          if (idMethodPr == kTPCTOFidentified)
+          }
+          if (idMethodPr == kTPCTOFidentified) {
             fillIdentificationQA<qaTracksIdfd, kPr, tpctofId>(hist, track);
+          }
         }
         // purity check - check pdg aginst sign
         bool purityPion = false;
@@ -1773,20 +2219,26 @@ struct NchCumulantsId {
         bool purityProton = false;
 
         if (trackIsPion) {
-          if (track.sign() > 0 && pdg == kPiPlus)
+          if (track.sign() > 0 && pdg == kPiPlus) {
             purityPion = true;
-          if (track.sign() < 0 && pdg == kPiMinus)
+          }
+          if (track.sign() < 0 && pdg == kPiMinus) {
             purityPion = true;
+          }
         } else if (trackIsKaon) {
-          if (track.sign() > 0 && pdg == kKPlus)
+          if (track.sign() > 0 && pdg == kKPlus) {
             purityKaon = true;
-          if (track.sign() < 0 && pdg == kKMinus)
+          }
+          if (track.sign() < 0 && pdg == kKMinus) {
             purityKaon = true;
+          }
         } else if (trackIsProton) {
-          if (track.sign() > 0 && pdg == kProton)
+          if (track.sign() > 0 && pdg == kProton) {
             purityProton = true;
-          if (track.sign() < 0 && pdg == kProtonBar)
+          }
+          if (track.sign() < 0 && pdg == kProtonBar) {
             purityProton = true;
+          }
         }
 
         // charge purity — track.sign() + isKnownCharged + PDG sign consistency
@@ -1839,24 +2291,42 @@ struct NchCumulantsId {
             fillPurityTrackQA<purityAnalysisDir, kPr, kNeg>(purityAnalysis, track);
           }
         }
-      }
+      } // reconstructed track loop ends
       nChRec = nPRec - nMRec;
       nTRec = nPRec + nMRec;
       nChPur = nPPur - nMPur;
       nTPur = nPPur + nMPur;
 
       // ── fill reco histos ─────────────────────────────────────
-      hist.fill(HIST("sim/reco/sparse1"), nChRec, nPRec, nMRec,
-                nPrRec, nAPrRec, nKaRec, nAKaRec, nTRec, col.centFT0M());
-      hist.fill(HIST("sim/reco/sparse2"), nChRec, nPRec, nMRec,
-                nPiRec, nAPiRec, nKaRec, nAKaRec, nTRec, col.centFT0M());
+      if (cfgEventSelection.fillSparseForReco) {
+        hist.fill(HIST("sim/reco/sparse1"), nChRec, nPRec, nMRec,
+                  nPrRec, nAPrRec, nKaRec, nAKaRec, nTRec, cent);
+        hist.fill(HIST("sim/reco/sparse2"), nChRec, nPRec, nMRec,
+                  nPiRec, nAPiRec, nKaRec, nAKaRec, nTRec, cent);
+      }
 
       // ── fill purity histos ───────────────────────────────────
-      hist.fill(HIST("sim/purity/sparse1"), nChPur, nPPur, nMPur,
-                nPrPur, nAPrPur, nKaPur, nAKaPur, nTPur, col.centFT0M());
-      hist.fill(HIST("sim/purity/sparse2"), nChPur, nPPur, nMPur,
-                nPiPur, nAPiPur, nKaPur, nAKaPur, nTPur, col.centFT0M());
+      if (cfgEventSelection.fillSparseForPurity) {
+        hist.fill(HIST("sim/purity/sparse1"), nChPur, nPPur, nMPur,
+                  nPrPur, nAPrPur, nKaPur, nAKaPur, nTPur, cent);
+        hist.fill(HIST("sim/purity/sparse2"), nChPur, nPPur, nMPur,
+                  nPiPur, nAPiPur, nKaPur, nAKaPur, nTPur, cent);
+      }
+      fillCollQA<qaEventPostSel>(col, nChRec, nTRec);
 
+      fillFCBasis<FCPrefixEnum::Pr>(prPow, cent, registry);
+      fillFCBasis<FCPrefixEnum::APr>(aprPow, cent, registry);
+      fillFCBasis<FCPrefixEnum::PiPos>(pipPow, cent, registry);
+      fillFCBasis<FCPrefixEnum::PiNeg>(pimPow, cent, registry);
+      fillFCBasis<FCPrefixEnum::KaPos>(kapPow, cent, registry);
+      fillFCBasis<FCPrefixEnum::KaNeg>(kamPow, cent, registry);
+      fillFCBasis<FCPrefixEnum::Pos>(posPow, cent, registry);
+      fillFCBasis<FCPrefixEnum::Neg>(negPow, cent, registry);
+
+      fillNetQVectorProfileHistograms<FCPrefixEnum::NetCh>(posPow, negPow, cent, registry);
+      fillNetQVectorProfileHistograms<FCPrefixEnum::NetPr>(prPow, aprPow, cent, registry);
+      fillNetQVectorProfileHistograms<FCPrefixEnum::NetPi>(pipPow, pimPow, cent, registry);
+      fillNetQVectorProfileHistograms<FCPrefixEnum::NetKa>(kapPow, kamPow, cent, registry);
     } // common collision loop ends
   } // process sim ends
   PROCESS_SWITCH(NchCumulantsId, processSim, "Process Sim: Gen + Reco + Purity", true);

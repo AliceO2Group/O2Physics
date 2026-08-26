@@ -1142,23 +1142,21 @@ struct FlowSP {
     if (!cfg.cFillEventQA)
       return;
 
-    static constexpr std::string_view Time[] = {"before", "after"};
-
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentFT0C"), collision.centFT0C(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentNGlobal"), collision.centNGlobal(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentFT0M"), collision.centFT0M(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentFV0A"), collision.centFV0A(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/globalTracks_centT0C"), collision.centFT0C(), tracks.size(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/globalTracks_multT0A"), collision.multFT0A(), tracks.size(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/globalTracks_multV0A"), collision.multFV0A(), tracks.size(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/multV0A_multT0A"), collision.multFT0A(), collision.multFV0A(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/multT0C_centT0C"), collision.centFT0C(), collision.multFT0C(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFT0Cvariant1"), collision.centFT0C(), collision.centFT0CVariant1(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFT0M"), collision.centFT0C(), collision.centFT0M(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFV0A"), collision.centFT0C(), collision.centFV0A(), spm.centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentNGlobal"), collision.centFT0C(), collision.centNGlobal(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("hCentFT0C"), collision.centFT0C(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("hCentNGlobal"), collision.centNGlobal(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("hCentFT0M"), collision.centFT0M(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("hCentFV0A"), collision.centFV0A(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("globalTracks_centT0C"), collision.centFT0C(), tracks.size(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("globalTracks_multT0A"), collision.multFT0A(), tracks.size(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("globalTracks_multV0A"), collision.multFV0A(), tracks.size(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("multV0A_multT0A"), collision.multFT0A(), collision.multFV0A(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("multT0C_centT0C"), collision.centFT0C(), collision.multFT0C(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("CentFT0C_vs_CentFT0Cvariant1"), collision.centFT0C(), collision.centFT0CVariant1(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("CentFT0C_vs_CentFT0M"), collision.centFT0C(), collision.centFT0M(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("CentFT0C_vs_CentFV0A"), collision.centFT0C(), collision.centFV0A(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("CentFT0C_vs_CentNGlobal"), collision.centFT0C(), collision.centNGlobal(), spm.centWeight);
 
     if (cfg.cFillEventPlaneQA) {
       if constexpr (o2::framework::has_type_v<aod::sptablezdc::Vertex, typename CollisionObject::all_columns>) {
@@ -1166,18 +1164,18 @@ struct FlowSP {
         double psiC = 1.0 * std::atan2(collision.qyC(), collision.qxC());
         double psiFull = 1.0 * std::atan2(collision.qyA() + collision.qyC(), collision.qxA() + collision.qxC());
 
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiA_vs_Cent"), psiA, collision.centFT0C(), spm.centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiC_vs_Cent"), psiC, collision.centFT0C(), spm.centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiFull_vs_Cent"), psiFull, collision.centFT0C(), spm.centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiA_vs_Vx"), psiA, collision.vertex()[0], spm.centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiC_vs_Vx"), psiC, collision.vertex()[0], spm.centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiFull_vs_Vx"), psiFull, collision.vertex()[0], spm.centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiA_vs_Vy"), psiA, collision.vertex()[1], spm.centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiC_vs_Vy"), psiC, collision.vertex()[1], spm.centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiFull_vs_Vy"), psiFull, collision.vertex()[1], spm.centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiA_vs_Vz"), psiA, collision.posZ(), spm.centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiC_vs_Vz"), psiC, collision.posZ(), spm.centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiFull_vs_Vz"), psiFull, collision.posZ(), spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("PsiA_vs_Cent"), psiA, collision.centFT0C(), spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("PsiC_vs_Cent"), psiC, collision.centFT0C(), spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("PsiFull_vs_Cent"), psiFull, collision.centFT0C(), spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("PsiA_vs_Vx"), psiA, collision.vertex()[0], spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("PsiC_vs_Vx"), psiC, collision.vertex()[0], spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("PsiFull_vs_Vx"), psiFull, collision.vertex()[0], spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("PsiA_vs_Vy"), psiA, collision.vertex()[1], spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("PsiC_vs_Vy"), psiC, collision.vertex()[1], spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("PsiFull_vs_Vy"), psiFull, collision.vertex()[1], spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("PsiA_vs_Vz"), psiA, collision.posZ(), spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("PsiC_vs_Vz"), psiC, collision.posZ(), spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("PsiFull_vs_Vz"), psiFull, collision.posZ(), spm.centWeight);
       }
     }
     return;
@@ -1260,7 +1258,6 @@ struct FlowSP {
 
     double weight = spm.wacc[ct][par] * spm.weff[ct][par] * spm.centWeight;
 
-    static constexpr std::string_view Time[] = {"before/", "after/"};
     // NOTE: species[kUnidentified] = "" (when nocfg.cTrackSelDo) {
     if (cfg.cTrackSelDoTrackQAvsCent) {
       histos.fill(HIST(Charge[ct]) + HIST(Species[par]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_Eta"), track.pt(), track.eta(), spm.centrality, weight);
@@ -1302,7 +1299,6 @@ struct FlowSP {
   template <FillType ft, ModeType md, typename TrackObject>
   inline void fillMCPtHistos(TrackObject track, int pdgCode)
   {
-    static constexpr std::string_view Time[] = {"before/", "after/"};
     static constexpr std::string_view Mode[] = {"Gen/", "Reco/"};
 
     registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_hadron"), track.pt(), track.eta(), spm.centrality);
@@ -1339,12 +1335,11 @@ struct FlowSP {
   template <FillType ft, ChargeType ct, typename McParticleObject>
   inline void fillPrimaryHistos(McParticleObject mcparticle)
   {
-    static constexpr std::string_view Time[] = {"/before", "/after"};
 
     if (!mcparticle.isPhysicalPrimary()) {
-      registry.fill(HIST("trackMCReco") + HIST(Time[ft]) + HIST("/") + HIST(Charge[ct]) + HIST("hIsPhysicalPrimary"), 0, spm.centrality, mcparticle.pt());
+      registry.fill(HIST("trackMCReco/") + HIST(Time[ft]) + HIST(Charge[ct]) + HIST("hIsPhysicalPrimary"), 0, spm.centrality, mcparticle.pt());
     } else {
-      registry.fill(HIST("trackMCReco") + HIST(Time[ft]) + HIST("/") + HIST(Charge[ct]) + HIST("hIsPhysicalPrimary"), 1, spm.centrality, mcparticle.pt());
+      registry.fill(HIST("trackMCReco/") + HIST(Time[ft]) + HIST(Charge[ct]) + HIST("hIsPhysicalPrimary"), 1, spm.centrality, mcparticle.pt());
     }
   }
 

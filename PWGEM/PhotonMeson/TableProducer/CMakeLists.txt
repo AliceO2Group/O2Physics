@@ -11,24 +11,9 @@
 
 add_subdirectory(Converters)
 
-o2physics_add_dpl_workflow(skimmer-gamma-conversion
-                    SOURCES skimmerGammaConversion.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(skimmer-gamma-conversion-truthonlymc
-                    SOURCES skimmerGammaConversionTruthOnlyMc.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(photon-conversion-builder
                     SOURCES photonconversionbuilder.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore O2Physics::MLCore KFParticle::KFParticle O2Physics::TPCDriftManager
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(create-pcm
-                    SOURCES createPCM.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(create-emevent-photon
@@ -58,11 +43,6 @@ o2physics_add_dpl_workflow(skimmer-phos
 
 o2physics_add_dpl_workflow(skimmer-primary-electron-from-dalitzee
                     SOURCES skimmerPrimaryElectronFromDalitzEE.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(skimmer-dalitz-ee
-                    SOURCES skimmerDalitzEE.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

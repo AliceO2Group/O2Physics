@@ -382,10 +382,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       if (cand.candidateSelFlag() == 1) {
         invMass = cand.m(std::array{MassPiPlus, MassKPlus});
         return invMass;
-      } else {
-        invMass = cand.m(std::array{MassKPlus, MassPiPlus});
-        return invMass;
       }
+      invMass = cand.m(std::array{MassKPlus, MassPiPlus});
+      return invMass;
     } else if constexpr (Channel == DecayChannel::DstarToD0Pi) { // D* → D0π (PDG: 413)
       float mDstar = 0.f;
       float mD0 = 0.f;
@@ -398,9 +397,8 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       }
       if (ReturnDaughMass) {
         return mD0;
-      } else {
-        return mDstar - mD0;
       }
+      return mDstar - mD0;
     } else if constexpr (Channel == DecayChannel::XicToXiPiPi) {
       invMass = cand.m(std::array{MassXiMinus, MassPiPlus, MassPiPlus});
       return invMass;
@@ -621,7 +619,7 @@ struct HfTaskCharmHadronsTrackFemtoDream {
   }
 
   template <bool IsMc, DecayChannel Channel, typename CollisionType, typename PartitionType1, typename PartitionType2, typename TableTracks, typename BinningType>
-  void doMixedEvent(CollisionType const& cols, PartitionType1& charms, PartitionType2& trks, TableTracks const& parts, BinningType policy)
+  void doMixedEvent(CollisionType const& cols, PartitionType1& charms, PartitionType2& trks, TableTracks const& parts, BinningType const& policy)
   {
     processType = 2; // for mixed event
     // Mixed events that contain the pair of interest
@@ -770,6 +768,13 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
       timeStamp = part.timeStamp();
 
+      int charmHadMc = 0;
+      int originType = 0;
+      if constexpr (IsMc) {
+        charmHadMc = part.flagMc();
+        originType = part.originMcRec();
+      }
+
       if constexpr (Channel == DecayChannel::DplusToPiKPi || Channel == DecayChannel::LcToPKPi) {
 
         rowFemtoResultCharm3Prong(
@@ -785,7 +790,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           part.charge(),
           part.bdtBkg(),
           part.bdtPrompt(),
-          part.bdtFD());
+          part.bdtFD(),
+          charmHadMc,
+          originType);
       } else if constexpr (Channel == DecayChannel::XicToXiPiPi) {
         rowFemtoResultCharm3Prong(
           col.globalIndex(),
@@ -800,7 +807,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           part.charge(),
           part.bdtBkg(),
           part.bdtPrompt(),
-          part.bdtFD());
+          part.bdtFD(),
+          charmHadMc,
+          originType);
       } else if constexpr (Channel == DecayChannel::D0ToPiK) {
         rowFemtoResultCharm2Prong(
           col.globalIndex(),
@@ -814,7 +823,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           part.charge(),
           part.bdtBkg(),
           part.bdtPrompt(),
-          part.bdtFD());
+          part.bdtFD(),
+          charmHadMc,
+          originType);
       } else if constexpr (Channel == DecayChannel::DstarToD0Pi) {
         float invMassD0 = getCharmHadronMass<Channel>(part, true);
         rowFemtoResultCharmDstar(
@@ -831,7 +842,9 @@ struct HfTaskCharmHadronsTrackFemtoDream {
           part.charge(),
           part.bdtBkg(),
           part.bdtPrompt(),
-          part.bdtFD());
+          part.bdtFD(),
+          charmHadMc,
+          originType);
       }
     }
     // ---- Fill Track Table ----
@@ -912,23 +925,26 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       auto sliceCharmHad = partitionCharmHadron3Prong->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       if (fillTableWithCharm.value && sliceCharmHad.size() == 0) {
         continue;
-      } else {
-        fillTables<false, DecayChannel::LcToPKPi>(col, sliceTrk1, sliceCharmHad);
       }
+      fillTables<false, DecayChannel::LcToPKPi>(col, sliceTrk1, sliceCharmHad);
       if (sliceCharmHad.size() > 0 && sliceTrk1.size() > 0) {
         doSameEvent<false, DecayChannel::LcToPKPi, FilteredCharmCand3Prongs>(sliceCharmHad, sliceTrk1, parts, col);
       }
     }
     if (mixSetting.doMixEvent) {
+      auto* partitionTrk1Selected = &partitionTrk1;
+      if (trackSel.pdgCodeTrack1.value == kKPlus) {
+        partitionTrk1Selected = &partitionTrk1Ka;
+      }
       switch (mixSetting.mixingBinPolicy) {
         case femtodreamcollision::kMult:
-          doMixedEvent<false, DecayChannel::LcToPKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, partitionTrk1, parts, colBinningMult);
+          doMixedEvent<false, DecayChannel::LcToPKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, *partitionTrk1Selected, parts, colBinningMult);
           break;
         case femtodreamcollision::kMultPercentile:
-          doMixedEvent<false, DecayChannel::LcToPKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, partitionTrk1, parts, colBinningMultPercentile);
+          doMixedEvent<false, DecayChannel::LcToPKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, *partitionTrk1Selected, parts, colBinningMultPercentile);
           break;
         case femtodreamcollision::kMultMultPercentile:
-          doMixedEvent<false, DecayChannel::LcToPKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, partitionTrk1, parts, colBinningMultMultPercentile);
+          doMixedEvent<false, DecayChannel::LcToPKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, *partitionTrk1Selected, parts, colBinningMultMultPercentile);
           break;
         default:
           LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
@@ -954,23 +970,26 @@ struct HfTaskCharmHadronsTrackFemtoDream {
 
       if (fillTableWithCharm.value && sliceCharmHad.size() == 0) {
         continue;
-      } else {
-        fillTables<false, DecayChannel::DplusToPiKPi>(col, sliceTrk1, sliceCharmHad);
       }
+      fillTables<false, DecayChannel::DplusToPiKPi>(col, sliceTrk1, sliceCharmHad);
       if (sliceCharmHad.size() > 0 && sliceTrk1.size() > 0) {
         doSameEvent<false, DecayChannel::DplusToPiKPi, FilteredCharmCand3Prongs>(sliceCharmHad, sliceTrk1, parts, col);
       }
     }
     if (mixSetting.doMixEvent) {
+      auto* partitionTrk1Selected = &partitionTrk1;
+      if (trackSel.pdgCodeTrack1.value == kKPlus) {
+        partitionTrk1Selected = &partitionTrk1Ka;
+      }
       switch (mixSetting.mixingBinPolicy) {
         case femtodreamcollision::kMult:
-          doMixedEvent<false, DecayChannel::DplusToPiKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, partitionTrk1, parts, colBinningMult);
+          doMixedEvent<false, DecayChannel::DplusToPiKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, *partitionTrk1Selected, parts, colBinningMult);
           break;
         case femtodreamcollision::kMultPercentile:
-          doMixedEvent<false, DecayChannel::DplusToPiKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, partitionTrk1, parts, colBinningMultPercentile);
+          doMixedEvent<false, DecayChannel::DplusToPiKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, *partitionTrk1Selected, parts, colBinningMultPercentile);
           break;
         case femtodreamcollision::kMultMultPercentile:
-          doMixedEvent<false, DecayChannel::DplusToPiKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, partitionTrk1, parts, colBinningMultMultPercentile);
+          doMixedEvent<false, DecayChannel::DplusToPiKPi, FilteredCollisions>(cols, partitionCharmHadron3Prong, *partitionTrk1Selected, parts, colBinningMultMultPercentile);
           break;
         default:
           LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
@@ -995,23 +1014,26 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       auto sliceCharmHad = partitionCharmHadron2Prong->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       if (fillTableWithCharm.value && sliceCharmHad.size() == 0) {
         continue;
-      } else {
-        fillTables<false, DecayChannel::D0ToPiK>(col, sliceTrk1, sliceCharmHad);
       }
+      fillTables<false, DecayChannel::D0ToPiK>(col, sliceTrk1, sliceCharmHad);
       if (sliceCharmHad.size() > 0 && sliceTrk1.size() > 0) {
         doSameEvent<false, DecayChannel::D0ToPiK, FilteredCharmCand2Prongs>(sliceCharmHad, sliceTrk1, parts, col);
       }
     }
     if (mixSetting.doMixEvent) {
+      auto* partitionTrk1Selected = &partitionTrk1;
+      if (trackSel.pdgCodeTrack1.value == kKPlus) {
+        partitionTrk1Selected = &partitionTrk1Ka;
+      }
       switch (mixSetting.mixingBinPolicy) {
         case femtodreamcollision::kMult:
-          doMixedEvent<false, DecayChannel::D0ToPiK, FilteredCollisions>(cols, partitionCharmHadron2Prong, partitionTrk1, parts, colBinningMult);
+          doMixedEvent<false, DecayChannel::D0ToPiK, FilteredCollisions>(cols, partitionCharmHadron2Prong, *partitionTrk1Selected, parts, colBinningMult);
           break;
         case femtodreamcollision::kMultPercentile:
-          doMixedEvent<false, DecayChannel::D0ToPiK, FilteredCollisions>(cols, partitionCharmHadron2Prong, partitionTrk1, parts, colBinningMultPercentile);
+          doMixedEvent<false, DecayChannel::D0ToPiK, FilteredCollisions>(cols, partitionCharmHadron2Prong, *partitionTrk1Selected, parts, colBinningMultPercentile);
           break;
         case femtodreamcollision::kMultMultPercentile:
-          doMixedEvent<false, DecayChannel::D0ToPiK, FilteredCollisions>(cols, partitionCharmHadron2Prong, partitionTrk1, parts, colBinningMultMultPercentile);
+          doMixedEvent<false, DecayChannel::D0ToPiK, FilteredCollisions>(cols, partitionCharmHadron2Prong, *partitionTrk1Selected, parts, colBinningMultMultPercentile);
           break;
         default:
           LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
@@ -1036,23 +1058,26 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       auto sliceCharmHad = partitionCharmHadronDstar->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       if (fillTableWithCharm.value && sliceCharmHad.size() == 0) {
         continue;
-      } else {
-        fillTables<false, DecayChannel::DstarToD0Pi>(col, sliceTrk1, sliceCharmHad);
       }
+      fillTables<false, DecayChannel::DstarToD0Pi>(col, sliceTrk1, sliceCharmHad);
       if (sliceCharmHad.size() > 0 && sliceTrk1.size() > 0) {
         doSameEvent<false, DecayChannel::DstarToD0Pi, FilteredCharmCandDstars>(sliceCharmHad, sliceTrk1, parts, col);
       }
     }
     if (mixSetting.doMixEvent) {
+      auto* partitionTrk1Selected = &partitionTrk1;
+      if (trackSel.pdgCodeTrack1.value == kKPlus) {
+        partitionTrk1Selected = &partitionTrk1Ka;
+      }
       switch (mixSetting.mixingBinPolicy) {
         case femtodreamcollision::kMult:
-          doMixedEvent<false, DecayChannel::DstarToD0Pi, FilteredCollisions>(cols, partitionCharmHadronDstar, partitionTrk1, parts, colBinningMult);
+          doMixedEvent<false, DecayChannel::DstarToD0Pi, FilteredCollisions>(cols, partitionCharmHadronDstar, *partitionTrk1Selected, parts, colBinningMult);
           break;
         case femtodreamcollision::kMultPercentile:
-          doMixedEvent<false, DecayChannel::DstarToD0Pi, FilteredCollisions>(cols, partitionCharmHadronDstar, partitionTrk1, parts, colBinningMultPercentile);
+          doMixedEvent<false, DecayChannel::DstarToD0Pi, FilteredCollisions>(cols, partitionCharmHadronDstar, *partitionTrk1Selected, parts, colBinningMultPercentile);
           break;
         case femtodreamcollision::kMultMultPercentile:
-          doMixedEvent<false, DecayChannel::DstarToD0Pi, FilteredCollisions>(cols, partitionCharmHadronDstar, partitionTrk1, parts, colBinningMultMultPercentile);
+          doMixedEvent<false, DecayChannel::DstarToD0Pi, FilteredCollisions>(cols, partitionCharmHadronDstar, *partitionTrk1Selected, parts, colBinningMultMultPercentile);
           break;
         default:
           LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
@@ -1075,9 +1100,8 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       auto sliceCharmHad = partitionCharmHadron3ProngXic->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
       if (fillTableWithCharm.value && sliceCharmHad.size() == 0) {
         continue;
-      } else {
-        fillTables<false, DecayChannel::XicToXiPiPi>(col, sliceTrk1, sliceCharmHad);
       }
+      fillTables<false, DecayChannel::XicToXiPiPi>(col, sliceTrk1, sliceCharmHad);
       if (sliceCharmHad.size() > 0 && sliceTrk1.size() > 0) {
         doSameEvent<false, DecayChannel::XicToXiPiPi, FilteredCharmCand3ProngsXic>(sliceCharmHad, sliceTrk1, parts, col);
       }
@@ -1123,18 +1147,24 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       }
       doSameEvent<true, DecayChannel::LcToPKPi, FilteredCharmMcCand3Prongs>(sliceMcCharmHad, sliceMcTrk1, parts, col);
     }
-    switch (mixSetting.mixingBinPolicy) {
-      case femtodreamcollision::kMult:
-        doMixedEvent<true, DecayChannel::LcToPKPi, FilteredMcColisions>(cols, partitionMcCharmHadron3Prong, partitionMcTrk1, parts, colBinningMult);
-        break;
-      case femtodreamcollision::kMultPercentile:
-        doMixedEvent<true, DecayChannel::LcToPKPi, FilteredMcColisions>(cols, partitionMcCharmHadron3Prong, partitionMcTrk1, parts, colBinningMultPercentile);
-        break;
-      case femtodreamcollision::kMultMultPercentile:
-        doMixedEvent<true, DecayChannel::LcToPKPi, FilteredMcColisions>(cols, partitionMcCharmHadron3Prong, partitionMcTrk1, parts, colBinningMultMultPercentile);
-        break;
-      default:
-        LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+    if (mixSetting.doMixEvent) {
+      auto* partitionTrk1Selected = &partitionMcTrk1;
+      if (trackSel.pdgCodeTrack1.value == kKPlus) {
+        partitionTrk1Selected = &partitionMcTrk1Ka;
+      }
+      switch (mixSetting.mixingBinPolicy) {
+        case femtodreamcollision::kMult:
+          doMixedEvent<true, DecayChannel::LcToPKPi, FilteredMcColisions>(cols, partitionMcCharmHadron3Prong, *partitionTrk1Selected, parts, colBinningMult);
+          break;
+        case femtodreamcollision::kMultPercentile:
+          doMixedEvent<true, DecayChannel::LcToPKPi, FilteredMcColisions>(cols, partitionMcCharmHadron3Prong, *partitionTrk1Selected, parts, colBinningMultPercentile);
+          break;
+        case femtodreamcollision::kMultMultPercentile:
+          doMixedEvent<true, DecayChannel::LcToPKPi, FilteredMcColisions>(cols, partitionMcCharmHadron3Prong, *partitionTrk1Selected, parts, colBinningMultMultPercentile);
+          break;
+        default:
+          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+      }
     }
   }
   PROCESS_SWITCH(HfTaskCharmHadronsTrackFemtoDream, processMcLcTrk, "Enable processing LcToPKPi and Tracks correlation for Monte Carlo", false);
@@ -1158,18 +1188,24 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       }
       doSameEvent<true, DecayChannel::DplusToPiKPi, FilteredCharmMcCand3Prongs>(sliceMcCharmHad, sliceMcTrk1, parts, col);
     }
-    switch (mixSetting.mixingBinPolicy) {
-      case femtodreamcollision::kMult:
-        doMixedEvent<true, DecayChannel::DplusToPiKPi, FilteredMcColisions>(cols, partitionMcCharmHadron3Prong, partitionMcTrk1, parts, colBinningMult);
-        break;
-      case femtodreamcollision::kMultPercentile:
-        doMixedEvent<true, DecayChannel::DplusToPiKPi, FilteredMcColisions>(cols, partitionMcCharmHadron3Prong, partitionMcTrk1, parts, colBinningMultPercentile);
-        break;
-      case femtodreamcollision::kMultMultPercentile:
-        doMixedEvent<true, DecayChannel::DplusToPiKPi, FilteredMcColisions>(cols, partitionMcCharmHadron3Prong, partitionMcTrk1, parts, colBinningMultMultPercentile);
-        break;
-      default:
-        LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+    if (mixSetting.doMixEvent) {
+      auto* partitionTrk1Selected = &partitionMcTrk1;
+      if (trackSel.pdgCodeTrack1.value == kKPlus) {
+        partitionTrk1Selected = &partitionMcTrk1Ka;
+      }
+      switch (mixSetting.mixingBinPolicy) {
+        case femtodreamcollision::kMult:
+          doMixedEvent<true, DecayChannel::DplusToPiKPi, FilteredMcColisions>(cols, partitionMcCharmHadron3Prong, *partitionTrk1Selected, parts, colBinningMult);
+          break;
+        case femtodreamcollision::kMultPercentile:
+          doMixedEvent<true, DecayChannel::DplusToPiKPi, FilteredMcColisions>(cols, partitionMcCharmHadron3Prong, *partitionTrk1Selected, parts, colBinningMultPercentile);
+          break;
+        case femtodreamcollision::kMultMultPercentile:
+          doMixedEvent<true, DecayChannel::DplusToPiKPi, FilteredMcColisions>(cols, partitionMcCharmHadron3Prong, *partitionTrk1Selected, parts, colBinningMultMultPercentile);
+          break;
+        default:
+          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+      }
     }
   }
   PROCESS_SWITCH(HfTaskCharmHadronsTrackFemtoDream, processMcDplusTrk, "Enable processing DplusToPiKPi and Tracks correlation for Monte Carlo", false);
@@ -1193,18 +1229,24 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       }
       doSameEvent<true, DecayChannel::D0ToPiK, FilteredCharmMcCand2Prongs>(sliceMcCharmHad, sliceMcTrk1, parts, col);
     }
-    switch (mixSetting.mixingBinPolicy) {
-      case femtodreamcollision::kMult:
-        doMixedEvent<true, DecayChannel::D0ToPiK, FilteredMcColisions>(cols, partitionMcCharmHadron2Prong, partitionMcTrk1, parts, colBinningMult);
-        break;
-      case femtodreamcollision::kMultPercentile:
-        doMixedEvent<true, DecayChannel::D0ToPiK, FilteredMcColisions>(cols, partitionMcCharmHadron2Prong, partitionMcTrk1, parts, colBinningMultPercentile);
-        break;
-      case femtodreamcollision::kMultMultPercentile:
-        doMixedEvent<true, DecayChannel::D0ToPiK, FilteredMcColisions>(cols, partitionMcCharmHadron2Prong, partitionMcTrk1, parts, colBinningMultMultPercentile);
-        break;
-      default:
-        LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+    if (mixSetting.doMixEvent) {
+      auto* partitionTrk1Selected = &partitionMcTrk1;
+      if (trackSel.pdgCodeTrack1.value == kKPlus) {
+        partitionTrk1Selected = &partitionMcTrk1Ka;
+      }
+      switch (mixSetting.mixingBinPolicy) {
+        case femtodreamcollision::kMult:
+          doMixedEvent<true, DecayChannel::D0ToPiK, FilteredMcColisions>(cols, partitionMcCharmHadron2Prong, *partitionTrk1Selected, parts, colBinningMult);
+          break;
+        case femtodreamcollision::kMultPercentile:
+          doMixedEvent<true, DecayChannel::D0ToPiK, FilteredMcColisions>(cols, partitionMcCharmHadron2Prong, *partitionTrk1Selected, parts, colBinningMultPercentile);
+          break;
+        case femtodreamcollision::kMultMultPercentile:
+          doMixedEvent<true, DecayChannel::D0ToPiK, FilteredMcColisions>(cols, partitionMcCharmHadron2Prong, *partitionTrk1Selected, parts, colBinningMultMultPercentile);
+          break;
+        default:
+          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+      }
     }
   }
   PROCESS_SWITCH(HfTaskCharmHadronsTrackFemtoDream, processMcD0Trk, "Enable processing D0ToPiK and Tracks correlation for Monte Carlo", false);
@@ -1228,18 +1270,24 @@ struct HfTaskCharmHadronsTrackFemtoDream {
       }
       doSameEvent<true, DecayChannel::DstarToD0Pi, FilteredCharmMcCandDstars>(sliceMcCharmHad, sliceMcTrk1, parts, col);
     }
-    switch (mixSetting.mixingBinPolicy) {
-      case femtodreamcollision::kMult:
-        doMixedEvent<true, DecayChannel::DstarToD0Pi, FilteredMcColisions>(cols, partitionMcCharmHadronDstar, partitionMcTrk1, parts, colBinningMult);
-        break;
-      case femtodreamcollision::kMultPercentile:
-        doMixedEvent<true, DecayChannel::DstarToD0Pi, FilteredMcColisions>(cols, partitionMcCharmHadronDstar, partitionMcTrk1, parts, colBinningMultPercentile);
-        break;
-      case femtodreamcollision::kMultMultPercentile:
-        doMixedEvent<true, DecayChannel::DstarToD0Pi, FilteredMcColisions>(cols, partitionMcCharmHadronDstar, partitionMcTrk1, parts, colBinningMultMultPercentile);
-        break;
-      default:
-        LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+    if (mixSetting.doMixEvent) {
+      auto* partitionTrk1Selected = &partitionMcTrk1;
+      if (trackSel.pdgCodeTrack1.value == kKPlus) {
+        partitionTrk1Selected = &partitionMcTrk1Ka;
+      }
+      switch (mixSetting.mixingBinPolicy) {
+        case femtodreamcollision::kMult:
+          doMixedEvent<true, DecayChannel::DstarToD0Pi, FilteredMcColisions>(cols, partitionMcCharmHadronDstar, *partitionTrk1Selected, parts, colBinningMult);
+          break;
+        case femtodreamcollision::kMultPercentile:
+          doMixedEvent<true, DecayChannel::DstarToD0Pi, FilteredMcColisions>(cols, partitionMcCharmHadronDstar, *partitionTrk1Selected, parts, colBinningMultPercentile);
+          break;
+        case femtodreamcollision::kMultMultPercentile:
+          doMixedEvent<true, DecayChannel::DstarToD0Pi, FilteredMcColisions>(cols, partitionMcCharmHadronDstar, *partitionTrk1Selected, parts, colBinningMultMultPercentile);
+          break;
+        default:
+          LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+      }
     }
   }
   PROCESS_SWITCH(HfTaskCharmHadronsTrackFemtoDream, processMcDstarTrk, "Enable processing DstarToD0Pi and Tracks correlation for Monte Carlo", false);

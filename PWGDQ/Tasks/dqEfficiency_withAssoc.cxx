@@ -236,6 +236,7 @@ using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::
 using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::ReducedMCEventLabels>;
 using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedMCEventLabels>;
 using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedMCEventLabels>;
+using MyEventsVtxCovSelectedInfo = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedMCEventLabels, aod::ReducedEventsInfo>;
 using MyEventsVtxCovSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedMCEventLabels>;
 using MyEventsVtxCovSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvector>;
 using MyEventsQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector>;
@@ -1350,6 +1351,223 @@ struct AnalysisPrefilterSelection {
   PROCESS_SWITCH(AnalysisPrefilterSelection, processDummy, "Do nothing", true);
 };
 
+// Single-track selection on the barrel tracks after the prefilter decisions (which are not visible in the
+//   AnalysisTrackSelection histograms): fills track-level histograms separately for surviving and vetoed tracks,
+//   per track cut and per MC signal.
+// NOTE: Histograms are filled per association, regardless of whether the association is the correct one.
+struct AnalysisPostPrefilterTrackSelection {
+  OutputObj<THashList> fOutputList{"output"};
+
+  Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of track cuts (among those of analysis-track-selection) for which to fill histograms"};
+  Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
+  Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
+  Configurable<std::string> fConfigMCSignals{"cfgTrackMCSignals", "", "Comma separated list of MC signals"};
+  Configurable<std::string> fConfigMCSignalsJSON{"cfgTrackMCsignalsJSON", "", "Additional list of MC signals via JSON"};
+  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+
+  Service<o2::ccdb::BasicCCDBManager> fCCDB{};
+
+  HistogramManager* fHistMan = nullptr;
+  std::vector<MCSignal*> fMCSignals;
+  std::vector<int> fCutBits;                 // bit positions of the requested cuts in the track-selection task cut list
+  std::vector<TString> fHistNamesSurvived;   // [icut]
+  std::vector<TString> fHistNamesVetoed;     // [icut]
+  std::vector<TString> fHistNamesMCSurvived; // [icut * nSignals + isig]
+  std::vector<TString> fHistNamesMCVetoed;   // [icut * nSignals + isig]
+
+  int fCurrentRun = 0; // current run (needed to detect run changes for loading CCDB parameters)
+
+  void init(o2::framework::InitContext& context)
+  {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+    VarManager::SetDefaultVarNames();
+
+    fCurrentRun = 0;
+    TString trackCutsStr = fConfigTrackCuts.value;
+    std::unique_ptr<TObjArray> objArrayCuts(trackCutsStr.Tokenize(","));
+    if (objArrayCuts == nullptr || objArrayCuts->GetEntries() == 0) {
+      LOG(fatal) << " No track cuts specified! Check the cfgTrackCuts configurable";
+    }
+    // get the full list of cuts computed by the track-selection task and resolve the requested cuts to bit positions
+    std::string trackCuts;
+    getTaskOptionValue<std::string>(context, "analysis-track-selection", "cfgTrackCuts", trackCuts, false);
+    TString allTrackCutsStr = trackCuts;
+    // check also the cuts added via JSON and add them to the string of cuts
+    getTaskOptionValue<std::string>(context, "analysis-track-selection", "cfgBarrelTrackCutsJSON", trackCuts, false);
+    TString addTrackCutsStr = trackCuts;
+    if (addTrackCutsStr != "") {
+      std::vector<AnalysisCut*> addTrackCuts = dqcuts::GetCutsFromJSON(addTrackCutsStr.Data());
+      for (auto const& t : addTrackCuts) {
+        allTrackCutsStr += Form(",%s", t->GetName());
+      }
+    }
+    std::unique_ptr<TObjArray> objArrayAllCuts(allTrackCutsStr.Tokenize(","));
+    if (objArrayAllCuts == nullptr) {
+      LOG(fatal) << " Not getting any track cuts from the barrel-track-selection ";
+    }
+    std::vector<TString> cutNames;
+    for (int icut = 0; icut < objArrayCuts->GetEntries(); ++icut) {
+      TString cutName = objArrayCuts->At(icut)->GetName();
+      if (objArrayAllCuts->FindObject(cutName.Data()) == nullptr) {
+        LOG(fatal) << " Track cut " << cutName << " not among the cuts calculated by the track-selection task! ";
+      }
+      for (int jcut = 0; jcut < objArrayAllCuts->GetEntries(); ++jcut) {
+        if (cutName.CompareTo(objArrayAllCuts->At(jcut)->GetName()) == 0) {
+          fCutBits.push_back(jcut);
+        }
+      }
+      cutNames.push_back(cutName);
+    }
+
+    // Setting the MC signals
+    TString configSigNamesStr = fConfigMCSignals.value;
+    std::unique_ptr<TObjArray> sigNamesArray(configSigNamesStr.Tokenize(","));
+    for (int isig = 0; isig < sigNamesArray->GetEntries(); ++isig) {
+      MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(sigNamesArray->At(isig)->GetName());
+      if (sig) {
+        if (sig->GetNProngs() != 1) { // NOTE: only 1 prong signals
+          continue;
+        }
+        fMCSignals.push_back(sig);
+      }
+    }
+    // Add the MCSignals from the JSON config
+    TString addMCSignalsStr = fConfigMCSignalsJSON.value;
+    if (addMCSignalsStr != "") {
+      std::vector<MCSignal*> addMCSignals = dqmcsignals::GetMCSignalsFromJSON(addMCSignalsStr.Data());
+      for (auto const& mcIt : addMCSignals) {
+        if (mcIt->GetNProngs() != 1) { // NOTE: only 1 prong signals
+          continue;
+        }
+        fMCSignals.push_back(mcIt);
+      }
+    }
+
+    fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
+    fHistMan->SetUseDefaultVariableNames(kTRUE);
+    fHistMan->SetDefaultVarNames(dqefficiency_helpers::varNames(), dqefficiency_helpers::varUnits());
+
+    // Configure histogram classes for each track cut, separately for prefilter-surviving and prefilter-vetoed tracks,
+    //   and for each requested MC signal (reconstructed tracks with MC truth)
+    TString histClasses = "";
+    for (auto const& cutName : cutNames) {
+      TString nameStr = Form("TrackBarrelPostPrefilter_%s", cutName.Data());
+      fHistNamesSurvived.push_back(nameStr);
+      histClasses += Form("%s;", nameStr.Data());
+      nameStr = Form("TrackBarrelPrefilterVetoed_%s", cutName.Data());
+      fHistNamesVetoed.push_back(nameStr);
+      histClasses += Form("%s;", nameStr.Data());
+      for (auto const& sig : fMCSignals) {
+        TString nameStr2 = Form("TrackBarrelPostPrefilter_%s_%s", cutName.Data(), sig->GetName());
+        fHistNamesMCSurvived.push_back(nameStr2);
+        histClasses += Form("%s;", nameStr2.Data());
+        nameStr2 = Form("TrackBarrelPrefilterVetoed_%s_%s", cutName.Data(), sig->GetName());
+        fHistNamesMCVetoed.push_back(nameStr2);
+        histClasses += Form("%s;", nameStr2.Data());
+      }
+    }
+
+    DefineHistograms(fHistMan, histClasses.Data(), fConfigAddTrackHistogram.value.data());
+    dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
+    VarManager::SetUseVars(fHistMan->GetUsedVars());                                       // provide the list of required variables so that VarManager knows what to fill
+    fOutputList.setObject(fHistMan->GetMainHistogramList());
+
+    fCCDB->setURL(fConfigCcdbUrl.value);
+    fCCDB->setCaching(true);
+    fCCDB->setLocalObjectValidityChecking();
+  }
+
+  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTracks, typename TTracksMC>
+  void runPostPrefilterTrackSelection(soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& assocs,
+                                      TEvents const& events, TTracks const& /*tracks*/, TTracksMC const& tracksMC)
+  {
+    // load the magnetic field (needed to recompute the DCA with respect to the associated collision)
+    if (events.size() > 0 && fCurrentRun != events.begin().runNumber()) {
+      auto grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, events.begin().timestamp());
+      if (grpmag != nullptr) {
+        VarManager::SetMagneticField(grpmag->getNominalL3Field());
+      } else {
+        LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", events.begin().timestamp());
+      }
+      fCurrentRun = events.begin().runNumber();
+    }
+
+    // Loop over associations
+    for (auto const& assoc : assocs) {
+      auto event = assoc.template reducedevent_as<TEvents>();
+      if (!event.isEventSelected_bit(0)) {
+        continue;
+      }
+
+      // check which of the requested cuts are fulfilled by this association and which of those are prefilter-vetoed
+      uint32_t selectedMap = 0;
+      uint32_t vetoMap = 0;
+      for (std::size_t icut = 0; icut < fCutBits.size(); ++icut) {
+        if (assoc.isBarrelSelected_bit(fCutBits[icut])) {
+          selectedMap |= (static_cast<uint32_t>(1) << icut);
+          if (!assoc.isBarrelSelectedPrefilter_bit(fCutBits[icut])) {
+            vetoMap |= (static_cast<uint32_t>(1) << icut);
+          }
+        }
+      }
+      if (selectedMap == 0) {
+        continue;
+      }
+
+      VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
+      // fill event information which might be needed in histograms that combine track and event properties
+      VarManager::FillEvent<TEventFillMap>(event);
+      if (event.has_reducedMCevent()) {
+        VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent());
+      }
+
+      auto track = assoc.template reducedtrack_as<TTracks>();
+      VarManager::FillTrack<TTrackFillMap>(track);
+      // compute quantities which depend on the associated collision, such as DCA
+      VarManager::FillTrackCollision<TTrackFillMap>(track, event);
+      if (track.has_reducedMCTrack()) {
+        VarManager::FillTrackMC(tracksMC, track.reducedMCTrack());
+      }
+
+      for (std::size_t icut = 0; icut < fCutBits.size(); ++icut) {
+        if (!(selectedMap & (static_cast<uint32_t>(1) << icut))) {
+          continue;
+        }
+        bool isVetoed = (vetoMap & (static_cast<uint32_t>(1) << icut)) > 0;
+        fHistMan->FillHistClass((isVetoed ? fHistNamesVetoed[icut] : fHistNamesSurvived[icut]).Data(), dqefficiency_helpers::varValues());
+        if (track.has_reducedMCTrack()) {
+          int isig = 0;
+          for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
+            if ((*sig)->CheckSignal(true, track.reducedMCTrack())) {
+              fHistMan->FillHistClass((isVetoed ? fHistNamesMCVetoed : fHistNamesMCSurvived)[icut * fMCSignals.size() + isig].Data(), dqefficiency_helpers::varValues());
+            }
+          }
+        }
+      } // end loop over cuts
+    } // end loop over associations
+  }
+
+  void processSkimmed(soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& assocs, MyEventsSelected const& events, MyBarrelTracks const& tracks, ReducedMCEvents const& /*eventsMC*/, ReducedMCTracks const& tracksMC)
+  {
+    runPostPrefilterTrackSelection<gkEventFillMap, gkTrackFillMap>(assocs, events, tracks, tracksMC);
+  }
+  void processSkimmedWithCov(soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& assocs, MyEventsVtxCovSelected const& events, MyBarrelTracksWithCov const& tracks, ReducedMCEvents const& /*eventsMC*/, ReducedMCTracks const& tracksMC)
+  {
+    runPostPrefilterTrackSelection<gkEventFillMapWithCov, gkTrackFillMapWithCov>(assocs, events, tracks, tracksMC);
+  }
+  void processDummy(MyEvents const&)
+  {
+    // do nothing
+  }
+
+  PROCESS_SWITCH(AnalysisPostPrefilterTrackSelection, processSkimmed, "Run barrel track post-prefilter selection on DQ skimmed track associations", false);
+  PROCESS_SWITCH(AnalysisPostPrefilterTrackSelection, processSkimmedWithCov, "Run barrel track post-prefilter selection on DQ skimmed track associations w/ cov matrix", false);
+  PROCESS_SWITCH(AnalysisPostPrefilterTrackSelection, processDummy, "Dummy function", true);
+};
+
 // Run the same-event pairing
 // This task assumes that both legs of the resonance fulfill the same cuts (symmetric decay channel)
 //  Runs combinatorics for barrel-barrel, muon-muon and barrel-muon combinations
@@ -2126,8 +2344,8 @@ struct AnalysisSameEventPairing {
                            t1.sign() + t2.sign(), twoTrackFilter, mcDecision);
 
             if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackCollInfo) > 0) {
-              dielectronInfoList(t1.collisionId(), t1.trackId(), t2.trackId());
-              dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
+              dielectronInfoList(event.collisionId(), t1.trackId(), t2.trackId());
+              dileptonInfoList(event.collisionId(), event.posX(), event.posY(), event.posZ());
             }
             if constexpr (trackHasCov && TTwoProngFitter) {
               dielectronsExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
@@ -2145,11 +2363,12 @@ struct AnalysisSameEventPairing {
                                     VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
                 }
                 if (fConfigOptions.polarTables.value && t1.has_reducedMCTrack() && t2.has_reducedMCTrack()) {
-                  dileptonPolarList(VarManager::fgValues[VarManager::kCosThetaHE], VarManager::fgValues[VarManager::kPhiHE], VarManager::fgValues[VarManager::kPhiTildeHE],
+                  dileptonPolarList(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], t1.sign() + t2.sign(), twoTrackFilter,
+                                    VarManager::fgValues[VarManager::kCosThetaHE], VarManager::fgValues[VarManager::kPhiHE], VarManager::fgValues[VarManager::kPhiTildeHE],
                                     VarManager::fgValues[VarManager::kCosThetaCS], VarManager::fgValues[VarManager::kPhiCS], VarManager::fgValues[VarManager::kPhiTildeCS],
                                     VarManager::fgValues[VarManager::kCosThetaPP], VarManager::fgValues[VarManager::kPhiPP], VarManager::fgValues[VarManager::kPhiTildePP],
                                     VarManager::fgValues[VarManager::kCosThetaRM],
-                                    VarManager::fgValues[VarManager::kCosThetaStarTPC], VarManager::fgValues[VarManager::kCosThetaStarFT0A], VarManager::fgValues[VarManager::kCosThetaStarFT0C]);
+                                    VarManager::fgValues[VarManager::kCosThetaStarTPC], VarManager::fgValues[VarManager::kCosThetaStarFT0A], VarManager::fgValues[VarManager::kCosThetaStarFT0C], VarManager::fgValues[VarManager::kCosThetaStarRandom]);
                 }
               }
             }
@@ -2216,7 +2435,7 @@ struct AnalysisSameEventPairing {
                      VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi],
                      t1.sign() + t2.sign(), twoTrackFilter, mcDecision);
           if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedMuonCollInfo) > 0) {
-            dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
+            dileptonInfoList(event.collisionId(), event.posX(), event.posY(), event.posZ());
           }
 
           if constexpr (TTwoProngFitter) {
@@ -2393,8 +2612,10 @@ struct AnalysisSameEventPairing {
 
   PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
 
-  template <int TPairType>
-  void runMCGen(MyEventsVtxCovSelected const& events, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
+  template <int TPairType, typename TEvents>
+  void runMCGen(TEvents const& events,
+                ReducedMCEvents const& mcEvents,
+                ReducedMCTracks const& mcTracks)
   {
     uint32_t mcDecision = 0;
     int isig = 0;
@@ -2851,7 +3072,7 @@ struct AnalysisSameEventPairing {
     runMCGen<VarManager::kDecayToEE>(events, mcEvents, mcTracks);
   }
 
-  void processBarrelOnlyWithCollSkimmed(MyEventsVtxCovSelected const& events,
+  void processBarrelOnlyWithCollSkimmed(MyEventsVtxCovSelectedInfo const& events,
                                         soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
                                         MyBarrelTracksWithCovWithAmbiguitiesWithColl const& barrelTracks, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
   {
@@ -5183,6 +5404,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<AnalysisTrackSelection>(cfgc),
     adaptAnalysisTask<AnalysisMuonSelection>(cfgc),
     adaptAnalysisTask<AnalysisPrefilterSelection>(cfgc),
+    adaptAnalysisTask<AnalysisPostPrefilterTrackSelection>(cfgc),
     adaptAnalysisTask<AnalysisSameEventPairing>(cfgc),
     adaptAnalysisTask<AnalysisAsymmetricPairing>(cfgc),
     adaptAnalysisTask<AnalysisDileptonTrack>(cfgc)};

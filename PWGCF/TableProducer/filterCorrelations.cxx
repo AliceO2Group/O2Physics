@@ -125,6 +125,7 @@ struct FilterCF {
   Produces<aod::CFTrackLabels> outputTrackLabels;
 
   Produces<aod::CFMcCollisions> outputMcCollisions;
+  Produces<aod::CFMcCollisionExtras> outputMcCollisionExtras;
   Produces<aod::CFMcParticles> outputMcParticles;
 
   Produces<aod::CFCollRefs> outputCollRefs;
@@ -385,8 +386,8 @@ struct FilterCF {
   ///                      event selections
   /// \param tracks The collection of tracks, filtered by selection criteria
   /// \param bcs The collection of bunch crossings with timestamps
-  template <typename C1, typename T1>
-  void processMCT(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
+  template <typename MCs, typename C1, typename T1>
+  void processMCT(MCs const& mcCollisions, aod::McParticles const& allParticles,
                   C1 const& allCollisions,
                   T1 const& tracks,
                   aod::BCsWithTimestamps const&)
@@ -459,6 +460,7 @@ struct FilterCF {
         }
       }
       outputMcCollisions(mcCollision.posZ(), multiplicity);
+      outputMcCollisionExtras(mcCollision.nMPI());
     }
 
     // PASS 2 on collisions: store collisions and tracks
@@ -517,7 +519,8 @@ struct FilterCF {
   // NOTE not filtering collisions here because in that case there can be tracks referring to MC particles which are not part of the selected MC collisions
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
-  void processMC(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
+  using McCollisionsWithHepMC = soa::Join<aod::McCollisions, aod::HepMCXSections>;
+  void processMC(McCollisionsWithHepMC const& mcCollisions, aod::McParticles const& allParticles,
                  soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities> const& allCollisions,
                  soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
                  aod::BCsWithTimestamps const& bcs)
@@ -527,7 +530,7 @@ struct FilterCF {
   PROCESS_SWITCH(FilterCF, processMC, "Process MC", false);
 
   // NOTE not filtering collisions here because in that case there can be tracks referring to MC particles which are not part of the selected MC collisions
-  void processMCPid(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
+  void processMCPid(McCollisionsWithHepMC const& mcCollisions, aod::McParticles const& allParticles,
                     soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities> const& allCollisions,
                     soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection, aod::pidTPCPr, aod::pidTOFPr, aod::TracksDCA>> const& tracks,
                     aod::BCsWithTimestamps const& bcs)
@@ -536,7 +539,7 @@ struct FilterCF {
   }
   PROCESS_SWITCH(FilterCF, processMCPid, "Process MC with PID", false);
 
-  void processMCMults(aod::McCollisions const& mcCollisions, aod::McParticles const& allParticles,
+  void processMCMults(McCollisionsWithHepMC const& mcCollisions, aod::McParticles const& allParticles,
                       soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CFMultiplicities, aod::CentFT0Cs, aod::PVMults, aod::FV0Mults, aod::MultsGlobal> const& allCollisions,
                       soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>> const& tracks,
                       aod::BCsWithTimestamps const& bcs)
@@ -546,7 +549,7 @@ struct FilterCF {
 
   PROCESS_SWITCH(FilterCF, processMCMults, "Process MC with multiplicity sets", false);
 
-  void processMCGen(aod::McCollisions::iterator const& mcCollision, aod::McParticles const& particles)
+  void processMCGen(McCollisionsWithHepMC::iterator const& mcCollision, aod::McParticles const& particles)
   {
     float multiplicity = 0.0f;
     for (auto& particle : particles) {
@@ -562,6 +565,7 @@ struct FilterCF {
                         sign, particle.pdgCode(), particle.flags());
     }
     outputMcCollisions(mcCollision.posZ(), multiplicity);
+    outputMcCollisionExtras(mcCollision.nMPI());
   }
   PROCESS_SWITCH(FilterCF, processMCGen, "Process MCGen", false);
 };
