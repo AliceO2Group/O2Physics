@@ -127,8 +127,8 @@ struct Alice3MulticharmFinder {
   Configurable<float> picMinPt{"picMinPt", 0.15, "Minimum pT for XiC pions"};
 
   Configurable<float> xicMaxDauDCA{"xicMaxDauDCA", 0.005f, "DCA between XiC daughters (cm)"};
-  Configurable<float> xicMinDCAxy{"xicMinDCAxy", 0.0005f, "Minimum DCA"};
-  Configurable<float> xicMinDCAz{"xicMinDCAz", 0.0005f, "Minimum DCA"};
+  Configurable<float> xicMinDCAxy{"xicMinDCAxy", 0.0005f, "Minimum DCA to PV"};
+  Configurable<float> xicMinDCAz{"xicMinDCAz", 0.0005f, "Minimum DCA to PV"};
   Configurable<float> xicMinDecayRadius{"xicMinDecayRadius", -1, "Minimum R2D for XiC decay (cm)"};
   Configurable<float> xicMinDecayDistanceFromPV{"xicMinDecayDistanceFromPV", -1, "Minimum distance for XiC decay from PV (cm)"};
   Configurable<float> xicMinProperLength{"xicMinProperLength", 0.002, "Minimum proper length for XiC decay (cm)"};
