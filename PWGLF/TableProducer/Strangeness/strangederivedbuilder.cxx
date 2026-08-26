@@ -25,6 +25,8 @@
 #include "PWGLF/DataModel/SPCalibrationTables.h"
 #include "PWGUD/DataModel/UDTables.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/McCollisionExtra.h"
@@ -33,8 +35,6 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/CCDB/RCTSelectionFlags.h"
 
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
@@ -467,7 +467,6 @@ struct strangederivedbuilder {
     if (!inheritEvtSelFromTaskCfgGroup.value.empty()) {
       eventSelectOptsPrefix += ".";
     }
-
 
     getCfg(initContext, eventSelectOptsPrefix + "fillOnlySelectedCollisions", fillOnlySelectedCollisions, inheritEvtSelFromTask);
     getCfg(initContext, eventSelectOptsPrefix + "requireTriggerTVX", requireTriggerTVX, inheritEvtSelFromTask);
