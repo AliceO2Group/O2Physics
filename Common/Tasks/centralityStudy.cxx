@@ -768,14 +768,14 @@ struct CentralityStudy {
     bool passRejectITSinROFpileupStrict = !(evsel.rejectITSinROFpileupStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict));
     bool passSelectUPCcollisions = !(evsel.selectUPCcollisions && collision.flags() < 1);
     bool passRejectCollInTimeRangeNarrow = !(evsel.rejectCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow));
-    bool passINELgtZERO = !(requireINELgtZERO && !collision.isInelGt0());
+    bool passINELgtZERO = !(evsel.requireINELgtZERO && !collision.isInelGt0());
 
     // _______________________________________________________
     // sidestep vertex-Z rejection for vertex-Z profile histograms
     if (studies.doRunByRunHistograms) {
       if (passRejectITSROFBorder && passRejectTFBorder && passRequireIsVertexITSTPC && passRequireIsGoodZvtxFT0VsPV &&
           passRequireIsVertexTOFmatched && passRequireIsVertexTRDmatched && passRejectSameBunchPileup && passRejectITSinROFpileupStandard && passRejectITSinROFpileupStrict &&
-          passSelectUPCcollisions && passRejectCollInTimeRangeNarrow && &&passINELgtZERO) {
+          passSelectUPCcollisions && passRejectCollInTimeRangeNarrow && passINELgtZERO) {
         getHist<TProfile>(histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), multFT0C * scale.factorFT0C);
         getHist<TProfile>(histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), multFT0C * scale.factorFT0C);
         getHist<TProfile>(histPath + "hFT0AvsPVz_Collisions")->Fill(collision.multPVz(), multFT0A * scale.factorFT0C);
