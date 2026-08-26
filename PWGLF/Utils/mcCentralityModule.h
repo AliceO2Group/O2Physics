@@ -23,10 +23,10 @@
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
-#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
-#include <Framework/DataSpecUtils.h>
+#include <Framework/Array2D.h>
 #include <Framework/DeviceSpec.h>
+#include <Framework/DataSpecUtils.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/RunningWorkflowInfo.h>
@@ -36,23 +36,18 @@
 #include <TH2.h>
 #include <TProfile.h>
 #include <TRandom3.h>
-#include <TString.h>
-
 #include <RtypesCore.h>
+#include <TString.h>
 
 #include <concepts>
 #include <cstddef>
-#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <type_traits>
 #include <vector>
-
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
 
 //__________________________________________
 // strangeness builder module
@@ -67,16 +62,17 @@ namespace mccentrality // avoid polluting other namespaces
 // statics necessary for the configurables in this namespace
 static constexpr int nParameters = 1;
 static const std::vector<std::string> tableNames{
-  "McCentFV0As",
-  "McCentFT0Ms",
-  "McCentFT0As",
-  "McCentFT0Cs",
-  "McCentFT0CVariant1s",
-  "McCentFT0CVariant2s",
-  "McCentFDDMs",
-  "McCentNTPVs",
-  "McCentNGlobals",
-  "McCentMFTs"};
+  "McCentFV0As", 
+  "McCentFT0Ms", 
+  "McCentFT0As", 
+  "McCentFT0Cs", 
+  "McCentFT0CVariant1s", 
+  "McCentFT0CVariant2s", 
+  "McCentFDDMs", 
+  "McCentNTPVs", 
+  "McCentNGlobals", 
+  "McCentMFTs"
+};
 
 static constexpr int nTablesConst = 10;
 static const std::vector<std::string> parameterNames{"enable"};
@@ -103,19 +99,20 @@ enum tableIndex { kFV0A = 0,
                   kNTPV,
                   kNGlobal,
                   kMFT,
-                  kNestimators };
+                  kNestimators};
 
 static constexpr const char* DirList[] = {
-  "FV0A",
-  "FT0M",
-  "FT0A",
-  "FT0C",
-  "FT0CVariant1",
-  "FT0CVariant2",
-  "FDDM",
-  "NTPV",
-  "NGlobal",
-  "MFT"};
+  "FV0A", 
+  "FT0M", 
+  "FT0A", 
+  "FT0C", 
+  "FT0CVariant1", 
+  "FT0CVariant2", 
+  "FDDM", 
+  "NTPV", 
+  "NGlobal", 
+  "MFT"
+};
 
 // mcCentralityModule: 1st-order configurables
 struct coreConfigurables : o2::framework::ConfigurableGroup {
@@ -124,22 +121,22 @@ struct coreConfigurables : o2::framework::ConfigurableGroup {
                                                                               "Produce this table: -1 for autodetect; otherwise, 0/1 is false/true"};
   std::vector<int> mEnabledTables; // Vector of enabled tables
 
-  Configurable<bool> recalibrateCentrality{"recalibrateCentrality", false, "If true, re-calibrate the MC centrality for the binning in binPercentile."};
-  Configurable<int> recalibrateMode{"recalibrateMode", 1, "Strategy to calibrate MC centrality? 0: from low to high mult.; 1: from high to low mult."};
-  Configurable<float> minEntries{"minEntries", 100.f, "Minimum number of entries for estimating the mean value for the recalibration"};
-  Configurable<bool> doNotCrashOnNull{"doNotCrashOnNull", false, "If ccdb object does not exist, fill with dummy values"};
+  o2::framework::Configurable<bool> recalibrateCentrality{"recalibrateCentrality", false, "If true, re-calibrate the MC centrality for the binning in binPercentile."};
+  o2::framework::Configurable<int> recalibrateMode{"recalibrateMode", 1, "Strategy to calibrate MC centrality? 0: from low to high mult.; 1: from high to low mult."};
+  o2::framework::Configurable<int> minEntries{"minEntries", 100, "Minimum number of entries for estimating the mean value for the recalibration"};
+  o2::framework::Configurable<bool> doNotCrashOnNull{"doNotCrashOnNull", false, "If ccdb object does not exist, fill with dummy values"};
 
-  Configurable<bool> assignCentralityPerCandidate{"assignCentralityPerCandidate", false, "If true, assign centrality by sampling P(centrality|generated multiplicity) per MC collision instead of the class-averaged (statistical) value"};
-  Configurable<ULong64_t> centralitySamplingSeed{"centralitySamplingSeed", 137, "Base seed of the RNG used to sample centrality in candidate-by-candidate mode (assignCentralityPerCandidate)"};
-  ConfigurableAxis binsPercentile{"binsPercentile", {VARIABLE_WIDTH, 0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0}, "Binning of the percentile axis"};
-  ConfigurableAxis binsPercentileFine{"binsPercentileFine", {VARIABLE_WIDTH, 0, 0.001, 0.01, 1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0}, "Binning of the percentile axis"};
-  ConfigurableAxis binsMultiplicity{"binsMultiplicity", {1000, 0, 5000}, "Binning of the multiplicity axis"};
+  o2::framework::Configurable<bool> assignCentralityPerCandidate{"assignCentralityPerCandidate", false, "If true, assign centrality by sampling P(centrality|generated multiplicity) per MC collision instead of the class-averaged (statistical) value"};
+  o2::framework::Configurable<ULong64_t> centralitySamplingSeed{"centralitySamplingSeed", 137, "Base seed of the RNG used to sample centrality in candidate-by-candidate mode (assignCentralityPerCandidate)"};
+  o2::framework::ConfigurableAxis binsPercentile{"binsPercentile", {o2::framework::VARIABLE_WIDTH, 0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0}, "Binning of the percentile axis"};
+  o2::framework::ConfigurableAxis binsPercentileFine{"binsPercentileFine", {o2::framework::VARIABLE_WIDTH, 0, 0.001, 0.01, 1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0}, "Binning of the percentile axis"};
+  o2::framework::ConfigurableAxis binsMultiplicity{"binsMultiplicity", {1000, 0, 5000}, "Binning of the multiplicity axis"};
 
-  // ccdb configurables
-  Configurable<std::string> path{"path", "/tmp/InputCalibMC.root", "path to calib file or ccdb path if begins with ccdb://"};
+  //ccdb configurables
+  o2::framework::Configurable<std::string> path{"path", "/tmp/InputCalibMC.root", "path to calib file or ccdb path if begins with ccdb://"};
 
   // debug option
-  Configurable<bool> verbose{"verbose", false, "If true, display more messages"};
+  o2::framework::Configurable<bool> verbose{"verbose", false, "If true, display more messages"};
 };
 
 struct products : o2::framework::ProducesGroup {
@@ -158,11 +155,11 @@ struct products : o2::framework::ProducesGroup {
 
 template <typename T>
 concept HasMcMults = requires(typename T::iterator a) {
-  { a.multMCFT0A() } -> std::convertible_to<int>;
-  { a.multMCFT0C() } -> std::convertible_to<int>;
-  { a.multMCFV0A() } -> std::convertible_to<int>;
-  { a.multMCFDDA() } -> std::convertible_to<int>;
-  { a.multMCFDDC() } -> std::convertible_to<int>;
+  { a.multMCFT0A() }            -> std::convertible_to<int>;
+  { a.multMCFT0C() }            -> std::convertible_to<int>;
+  { a.multMCFV0A() }            -> std::convertible_to<int>;
+  { a.multMCFDDA() }            -> std::convertible_to<int>;
+  { a.multMCFDDC() }            -> std::convertible_to<int>;
   { a.multMCNParticlesEta08() } -> std::convertible_to<int>;
   { a.multMCNParticlesEta05() } -> std::convertible_to<int>;
 };
@@ -170,7 +167,7 @@ concept HasMcMults = requires(typename T::iterator a) {
 /// Task to produce the response table
 struct BuilderModule {
   // Input parameters
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // declaration of structs here
   // (N.B.: will be invisible to the outside, create your own copies)
@@ -223,9 +220,9 @@ struct BuilderModule {
     if (!baseOpts.recalibrateCentrality) {
       return;
     }
-    AxisSpec axisCentClass{baseOpts.binsPercentile, Form("%s percentile (%%)", name)};
-    hCalibPVData[idx] = std::get<std::shared_ptr<TProfile>>(histos.add(Form("%s/calibPVData", name), Form("#LT #it{N}_{PV}^{Data} #GT vs %s percentile;%s percentile (%%);#LT #it{N}_{PV}^{Data} #GT_{|#it{#eta}|<0.5}", name, name), HistType::kTProfile, {axisCentClass}));
-    hCalibPVMC[idx] = std::get<std::shared_ptr<TProfile>>(histos.add(Form("%s/calibPVMC", name), Form("#LT #it{N}_{PV}^{MC} #GT (reco) vs %s percentile;%s percentile (%%);#LT #it{N}_{PV}^{MC} #GT_{|#it{#eta}|<0.5} (reco)", name, name), HistType::kTProfile, {axisCentClass}));
+    o2::framework::AxisSpec axisCentClass{baseOpts.binsPercentile, Form("%s percentile (%%)", name)};
+    hCalibPVData[idx] = std::get<std::shared_ptr<TProfile>>(histos.add(Form("%s/calibPVData", name), Form("#LT #it{N}_{PV}^{Data} #GT vs %s percentile;%s percentile (%%);#LT #it{N}_{PV}^{Data} #GT_{|#it{#eta}|<0.5}", name, name), o2::framework::HistType::kTProfile, {axisCentClass}));
+    hCalibPVMC[idx] = std::get<std::shared_ptr<TProfile>>(histos.add(Form("%s/calibPVMC", name), Form("#LT #it{N}_{PV}^{MC} #GT (reco) vs %s percentile;%s percentile (%%);#LT #it{N}_{PV}^{MC} #GT_{|#it{#eta}|<0.5} (reco)", name, name), o2::framework::HistType::kTProfile, {axisCentClass}));
   }
 
   // Registers the candidate-by-candidate sampling QA (no-op unless assignCentralityPerCandidate is on):
@@ -240,7 +237,7 @@ struct BuilderModule {
     if (!baseOpts.assignCentralityPerCandidate) {
       return;
     }
-    histos.add(Form("%s/percentileVsGenMultEta05", name), Form("Sampled %s percentile vs generated mult (|#it{#eta}|<0.5);%s percentile (%%);generated mult (|#it{#eta}|<0.5)", name, name), HistType::kTH2D, {{baseOpts.binsPercentileFine, Form("%s percentile", name)}, {baseOpts.binsMultiplicity, "generated mult (|#eta|<0.5)"}});
+    histos.add(Form("%s/percentileVsGenMultEta05", name), Form("Sampled %s percentile vs generated mult (|#it{#eta}|<0.5);%s percentile (%%);generated mult (|#it{#eta}|<0.5)", name, name), o2::framework::HistType::kTH2D, {{baseOpts.binsPercentileFine, Form("%s percentile", name)}, {baseOpts.binsMultiplicity, "generated mult (|#eta|<0.5)"}});
   }
 
   template <typename TBaseConfigurables, typename THistoRegistry, typename TInitContext>
@@ -299,69 +296,69 @@ struct BuilderModule {
     mRunNumber = 0;
 
     // TAxis
-    AxisSpec axisBinsPercentile{baseOpts.binsPercentile, "axisBinsPercentile"};
+    o2::framework::AxisSpec axisBinsPercentile{baseOpts.binsPercentile, "axisBinsPercentile"};
     nCentBins = axisBinsPercentile.binEdges.size() - 1;
     for (std::size_t iCent = 0; iCent < axisBinsPercentile.binEdges.size(); iCent++) {
       centralityBins.push_back(axisBinsPercentile.binEdges[iCent]);
     }
 
     if (baseOpts.mEnabledTables[kFV0A]) {
-      histos.add("FV0A/percentile", "FV0A percentile.", HistType::kTH1D, {{baseOpts.binsPercentileFine, "FV0A percentile"}});
-      histos.add("FV0A/percentilevsMult", "FV0A percentile.", HistType::kTH2D, {{baseOpts.binsPercentileFine, "FV0A percentile"}, {baseOpts.binsMultiplicity, "FV0A mult."}});
+      histos.add("FV0A/percentile", "FV0A percentile.", o2::framework::HistType::kTH1D, {{baseOpts.binsPercentileFine, "FV0A percentile"}});
+      histos.add("FV0A/percentilevsMult", "FV0A percentile.", o2::framework::HistType::kTH2D, {{baseOpts.binsPercentileFine, "FV0A percentile"}, {baseOpts.binsMultiplicity, "FV0A mult."}});
       registerCalibQAHistos(histos, kFV0A, "FV0A");
       registerCandidateQAHistos(histos, "FV0A");
     }
     if (baseOpts.mEnabledTables[kFT0M]) {
-      histos.add("FT0M/percentile", "FT0M percentile.", HistType::kTH1D, {{baseOpts.binsPercentileFine, "FT0M percentile"}});
-      histos.add("FT0M/percentilevsMult", "FT0M percentile.", HistType::kTH2D, {{baseOpts.binsPercentileFine, "FT0M percentile"}, {baseOpts.binsMultiplicity, "FT0M mult."}});
+      histos.add("FT0M/percentile", "FT0M percentile.", o2::framework::HistType::kTH1D, {{baseOpts.binsPercentileFine, "FT0M percentile"}});
+      histos.add("FT0M/percentilevsMult", "FT0M percentile.", o2::framework::HistType::kTH2D, {{baseOpts.binsPercentileFine, "FT0M percentile"}, {baseOpts.binsMultiplicity, "FT0M mult."}});
       registerCalibQAHistos(histos, kFT0M, "FT0M");
       registerCandidateQAHistos(histos, "FT0M");
     }
     if (baseOpts.mEnabledTables[kFT0A]) {
-      histos.add("FT0A/percentile", "FT0A percentile.", HistType::kTH1D, {{baseOpts.binsPercentileFine, "FT0A percentile"}});
-      histos.add("FT0A/percentilevsMult", "FT0A percentile.", HistType::kTH2D, {{baseOpts.binsPercentileFine, "FT0A percentile"}, {baseOpts.binsMultiplicity, "FT0A mult."}});
+      histos.add("FT0A/percentile", "FT0A percentile.", o2::framework::HistType::kTH1D, {{baseOpts.binsPercentileFine, "FT0A percentile"}});
+      histos.add("FT0A/percentilevsMult", "FT0A percentile.", o2::framework::HistType::kTH2D, {{baseOpts.binsPercentileFine, "FT0A percentile"}, {baseOpts.binsMultiplicity, "FT0A mult."}});
       registerCalibQAHistos(histos, kFT0A, "FT0A");
       registerCandidateQAHistos(histos, "FT0A");
     }
     if (baseOpts.mEnabledTables[kFT0C]) {
-      histos.add("FT0C/percentile", "FT0C percentile.", HistType::kTH1D, {{baseOpts.binsPercentileFine, "FT0C percentile"}});
-      histos.add("FT0C/percentilevsMult", "FT0C percentile.", HistType::kTH2D, {{baseOpts.binsPercentileFine, "FT0C percentile"}, {baseOpts.binsMultiplicity, "FT0C mult."}});
+      histos.add("FT0C/percentile", "FT0C percentile.", o2::framework::HistType::kTH1D, {{baseOpts.binsPercentileFine, "FT0C percentile"}});
+      histos.add("FT0C/percentilevsMult", "FT0C percentile.", o2::framework::HistType::kTH2D, {{baseOpts.binsPercentileFine, "FT0C percentile"}, {baseOpts.binsMultiplicity, "FT0C mult."}});
       registerCalibQAHistos(histos, kFT0C, "FT0C");
       registerCandidateQAHistos(histos, "FT0C");
     }
     if (baseOpts.mEnabledTables[kFT0CVariant1]) {
-      histos.add("FT0CVariant1/percentile", "FT0CVariant1 percentile.", HistType::kTH1D, {{baseOpts.binsPercentileFine, "FT0CVariant1 percentile"}});
-      histos.add("FT0CVariant1/percentilevsMult", "FT0CVariant1 percentile.", HistType::kTH2D, {{baseOpts.binsPercentileFine, "FT0CVariant1 percentile"}, {baseOpts.binsMultiplicity, "FT0C mult."}});
+      histos.add("FT0CVariant1/percentile", "FT0CVariant1 percentile.", o2::framework::HistType::kTH1D, {{baseOpts.binsPercentileFine, "FT0CVariant1 percentile"}});
+      histos.add("FT0CVariant1/percentilevsMult", "FT0CVariant1 percentile.", o2::framework::HistType::kTH2D, {{baseOpts.binsPercentileFine, "FT0CVariant1 percentile"}, {baseOpts.binsMultiplicity, "FT0C mult."}});
       registerCalibQAHistos(histos, kFT0CVariant1, "FT0CVariant1");
       registerCandidateQAHistos(histos, "FT0CVariant1");
     }
     if (baseOpts.mEnabledTables[kFT0CVariant2]) {
-      histos.add("FT0CVariant2/percentile", "FT0CVariant2 percentile.", HistType::kTH1D, {{baseOpts.binsPercentileFine, "FT0CVariant2 percentile"}});
-      histos.add("FT0CVariant2/percentilevsMult", "FT0CVariant2 percentile.", HistType::kTH2D, {{baseOpts.binsPercentileFine, "FT0CVariant2 percentile"}, {baseOpts.binsMultiplicity, "FT0C mult."}});
+      histos.add("FT0CVariant2/percentile", "FT0CVariant2 percentile.", o2::framework::HistType::kTH1D, {{baseOpts.binsPercentileFine, "FT0CVariant2 percentile"}});
+      histos.add("FT0CVariant2/percentilevsMult", "FT0CVariant2 percentile.", o2::framework::HistType::kTH2D, {{baseOpts.binsPercentileFine, "FT0CVariant2 percentile"}, {baseOpts.binsMultiplicity, "FT0C mult."}});
       registerCalibQAHistos(histos, kFT0CVariant2, "FT0CVariant2");
       registerCandidateQAHistos(histos, "FT0CVariant2");
     }
     if (baseOpts.mEnabledTables[kFDDM]) {
-      histos.add("FDDM/percentile", "FDDM percentile.", HistType::kTH1D, {{baseOpts.binsPercentileFine, "FDDM percentile"}});
-      histos.add("FDDM/percentilevsMult", "FDDM percentile.", HistType::kTH2D, {{baseOpts.binsPercentileFine, "FDDM percentile"}, {baseOpts.binsMultiplicity, "FDDM mult."}});
+      histos.add("FDDM/percentile", "FDDM percentile.", o2::framework::HistType::kTH1D, {{baseOpts.binsPercentileFine, "FDDM percentile"}});
+      histos.add("FDDM/percentilevsMult", "FDDM percentile.", o2::framework::HistType::kTH2D, {{baseOpts.binsPercentileFine, "FDDM percentile"}, {baseOpts.binsMultiplicity, "FDDM mult."}});
       registerCalibQAHistos(histos, kFDDM, "FDDM");
       registerCandidateQAHistos(histos, "FDDM");
     }
     if (baseOpts.mEnabledTables[kNTPV]) {
-      histos.add("NTPV/percentile", "NTPV percentile.", HistType::kTH1D, {{baseOpts.binsPercentileFine, "NTPV percentile"}});
-      histos.add("NTPV/percentilevsMult", "NTPV percentile.", HistType::kTH2D, {{baseOpts.binsPercentileFine, "NTPV percentile"}, {baseOpts.binsMultiplicity, "NTPV mult."}});
+      histos.add("NTPV/percentile", "NTPV percentile.", o2::framework::HistType::kTH1D, {{baseOpts.binsPercentileFine, "NTPV percentile"}});
+      histos.add("NTPV/percentilevsMult", "NTPV percentile.", o2::framework::HistType::kTH2D, {{baseOpts.binsPercentileFine, "NTPV percentile"}, {baseOpts.binsMultiplicity, "NTPV mult."}});
       registerCalibQAHistos(histos, kNTPV, "NTPV");
       registerCandidateQAHistos(histos, "NTPV");
     }
     if (baseOpts.mEnabledTables[kNGlobal]) {
-      histos.add("NGlobal/percentile", "NGlobal percentile.", HistType::kTH1D, {{baseOpts.binsPercentileFine, "NGlobal percentile"}});
-      histos.add("NGlobal/percentilevsMult", "NGlobal percentile.", HistType::kTH2D, {{baseOpts.binsPercentileFine, "NGlobal percentile"}, {baseOpts.binsMultiplicity, "NGlobal mult."}});
+      histos.add("NGlobal/percentile", "NGlobal percentile.", o2::framework::HistType::kTH1D, {{baseOpts.binsPercentileFine, "NGlobal percentile"}});
+      histos.add("NGlobal/percentilevsMult", "NGlobal percentile.", o2::framework::HistType::kTH2D, {{baseOpts.binsPercentileFine, "NGlobal percentile"}, {baseOpts.binsMultiplicity, "NGlobal mult."}});
       registerCalibQAHistos(histos, kNGlobal, "NGlobal");
       registerCandidateQAHistos(histos, "NGlobal");
     }
     if (baseOpts.mEnabledTables[kMFT]) {
-      histos.add("MFT/percentile", "MFT percentile.", HistType::kTH1D, {{baseOpts.binsPercentileFine, "MFT percentile"}});
-      histos.add("MFT/percentilevsMult", "MFT percentile.", HistType::kTH2D, {{baseOpts.binsPercentileFine, "MFT percentile"}, {baseOpts.binsMultiplicity, "MFT mult."}});
+      histos.add("MFT/percentile", "MFT percentile.", o2::framework::HistType::kTH1D, {{baseOpts.binsPercentileFine, "MFT percentile"}});
+      histos.add("MFT/percentilevsMult", "MFT percentile.", o2::framework::HistType::kTH2D, {{baseOpts.binsPercentileFine, "MFT percentile"}, {baseOpts.binsMultiplicity, "MFT mult."}});
     }
 
     LOGF(info, "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*");
@@ -377,8 +374,7 @@ struct BuilderModule {
   }
 
   template <typename THist>
-  THist* getHist(const char* name)
-  {
+  THist* getHist(const char* name) {
     if (!this->MCCentralityCalibObjects) {
       return (THist*)0x0;
     }
@@ -396,18 +392,17 @@ struct BuilderModule {
     return hist;
   }
 
-  TH1D* extractCentralityCalibration(int idx, const char* name, bool reverse = false)
-  {
+  TH1D* extractCentralityCalibration(int idx, const char* name, bool reverse = false) {
 
-    auto CalibMC = [&](TString estimator) {
+    auto CalibMC = [&](TString const& estimator){
       LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> Starting...\n", estimator.Data());
 
       std::vector<double> percentile_center(nCentBins);
       std::vector<double> epercentile_center(nCentBins);
 
-      // Histograms
-      TH2D* h2dMultVsCent_Data = getHist<TH2D>(Form("h2dMultVsCent%s_Data", estimator.Data()));
-      TH2D* h2dMultRecoVsMultGen_MC = getHist<TH2D>(Form("hMultEta05VsGenMult%s", estimator.Data()));
+      //Histograms
+      TH2D *h2dMultVsCent_Data = getHist<TH2D>(Form("h2dMultVsCent%s_Data", estimator.Data()));
+      TH2D *h2dMultRecoVsMultGen_MC = getHist<TH2D>(Form("hMultEta05VsGenMult%s", estimator.Data()));
       if (!h2dMultVsCent_Data || !h2dMultRecoVsMultGen_MC) {
         return (TH1D*)0x0;
       }
@@ -419,12 +414,12 @@ struct BuilderModule {
       TProfile* hPVData = hCalibPVData[idx].get();
       TProfile* hPVMC = hCalibPVMC[idx].get();
 
-      TH1D* h1dCalib = h2dMultRecoVsMultGen_MC->ProjectionX(Form("h1d%s", estimator.Data()), 1, h2dMultRecoVsMultGen_MC->GetNbinsX());
+      TH1D *h1dCalib = h2dMultRecoVsMultGen_MC->ProjectionX(Form("h1d%s", estimator.Data()), 1, h2dMultRecoVsMultGen_MC->GetNbinsX());
       h1dCalib->Reset();
       h1dCalib->SetTitle(Form("%s calibration object", estimator.Data()));
       h1dCalib->GetXaxis()->SetTitle(Form("#it{N}_{%s, gen.}", estimator.Data()));
       h1dCalib->GetYaxis()->SetTitle(Form("%s percentile (%%)", estimator.Data()));
-
+      
       // NOTE: candidate-by-candidate assignment (assignCentralityPerCandidate) does not go through this
       // mean-matching path at all. It samples directly from the "hGenMultEta05VsCentrality<estimator>"
       // joint histogram (x = reco centrality of the matched MC collision, y = generated mult |eta|<0.5)
@@ -433,16 +428,16 @@ struct BuilderModule {
       if (reverse) {
         for (int i = 0; i < nCentBins; i++) {
           int irev = i;
-          percentile_center[i] = (centralityBins[irev] + centralityBins[irev + 1]) / 2;
-          epercentile_center[i] = (centralityBins[irev] - centralityBins[irev + 1]) / 2;
+          percentile_center[i] = (centralityBins[irev] + centralityBins[irev+1]) / 2;
+          epercentile_center[i] = (centralityBins[irev] - centralityBins[irev+1]) / 2;
         }
 
         int startBinMc = h1dCalib->GetNbinsX();
         for (int i = 0; i < nCentBins; i++) { // Loop over centrality bins
           // start from the end (from the high multiplicity collisions)
           int irev = i;
-          TH1D* projData = h2dMultVsCent_Data->ProjectionY(Form("projData_%d", i), h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev] + 1e-5),
-                                                           h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev + 1] - 1e-5));
+          TH1D* projData = h2dMultVsCent_Data->ProjectionY(Form("projData_%d", i), h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev]+1e-5), 
+                                                                                    h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev+1]-1e-5));
 
           double meanMult_Data = projData->GetMean();
 
@@ -468,7 +463,7 @@ struct BuilderModule {
               endBinMc = j;
             }
           }
-          if (i == nCentBins - 1) {
+          if (i == nCentBins-1) {
             endBinMc = 1;
           }
 
@@ -493,14 +488,14 @@ struct BuilderModule {
             }
           }
 
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> Data centrality bin \e[1;31m%g-%g%%\e[0;00m\n", estimator.Data(), centralityBins[irev], centralityBins[irev + 1]);
+          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> Data centrality bin \e[1;31m%g-%g%%\e[0;00m\n", estimator.Data(), centralityBins[irev], centralityBins[irev+1]);
           LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> MC multiplicity range %g-%g\n", estimator.Data(), projMC->GetBinLowEdge(endBinMc), projMC->GetBinLowEdge(startBinMc));
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> <PV> data = %.4f Vs <PV> MC = %.4f (MC/Data = %.4f%%)\n", estimator.Data(), meanMult_Data, meanMult_MC, (meanMult_MC - meanMult_Data) * 100 / meanMult_Data);
+          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> <PV> data = %.4f Vs <PV> MC = %.4f (MC/Data = %.4f%%)\n", estimator.Data(), meanMult_Data, meanMult_MC, (meanMult_MC-meanMult_Data) * 100 / meanMult_Data);
           LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> N entries Data = %g Vs N entries MC = %g\n", estimator.Data(), projData->Integral(), projMC->Integral());
           LOGF(info, "\n");
           for (int ibin = 1; ibin <= h1dCalib->GetNbinsX(); ibin++) {
-            if (ibin <= startBinMc && ibin >= endBinMc) {
-              h1dCalib->SetBinContent(ibin, percentile_center[i]);
+            if (ibin <= startBinMc && ibin >= endBinMc){
+              h1dCalib->SetBinContent(ibin,  percentile_center[i]);
             }
           }
           startBinMc = endBinMc;
@@ -508,15 +503,15 @@ struct BuilderModule {
       } else {
         for (int i = 0; i < nCentBins; i++) {
           int irev = nCentBins - i;
-          percentile_center[i] = (centralityBins[irev - 1] + centralityBins[irev]) / 2;
-          epercentile_center[i] = (centralityBins[irev] - centralityBins[irev - 1]) / 2;
+          percentile_center[i] = (centralityBins[irev-1] + centralityBins[irev]) / 2;
+          epercentile_center[i] = (centralityBins[irev] - centralityBins[irev-1]) / 2;
         }
         int startBinMc = 1;
         for (int i = 0; i < nCentBins; i++) { // Loop over centrality bins
           // start from the end (from the low multiplicity collisions)
           int irev = nCentBins - i;
-          TH1D* projData = h2dMultVsCent_Data->ProjectionY(Form("projData_%d", i), h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev - 1] + 1e-5),
-                                                           h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev] - 1e-5));
+          TH1D* projData = h2dMultVsCent_Data->ProjectionY(Form("projData_%d", i), h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev-1]+1e-5),      
+                                                                                    h2dMultVsCent_Data->GetXaxis()->FindBin(centralityBins[irev]-1e-5));
 
           double meanMult_Data = projData->GetMean();
 
@@ -542,8 +537,8 @@ struct BuilderModule {
               endBinMc = j;
             }
           }
-          if (i == nCentBins - 1) {
-            endBinMc = h2dMultRecoVsMultGen_MC->GetNbinsX();
+          if (i == nCentBins-1) {
+              endBinMc = h2dMultRecoVsMultGen_MC->GetNbinsX();
           }
 
           TH1D* projMC = h2dMultRecoVsMultGen_MC->ProjectionY(Form("projMC_%d", i), startBinMc, endBinMc);
@@ -567,17 +562,17 @@ struct BuilderModule {
             }
           }
 
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> Data centrality bin \e[1;31m%g-%g%%\e[0;00m\n", estimator.Data(), centralityBins[irev - 1], centralityBins[irev]);
-          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> MC multiplicity range %g-%g\n", estimator.Data(), projMC->GetBinLowEdge(startBinMc), projMC->GetBinLowEdge(endBinMc + 1));
+          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> Data centrality bin \e[1;31m%g-%g%%\e[0;00m\n", estimator.Data(), centralityBins[irev-1], centralityBins[irev]);
+          LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> MC multiplicity range %g-%g\n", estimator.Data(), projMC->GetBinLowEdge(startBinMc), projMC->GetBinLowEdge(endBinMc+1));
           LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> <PV> data = %.4f Vs <PV> MC = %.4f\n", estimator.Data(), meanMult_Data, meanMult_MC);
           LOGF(info, "\e[1;31mCalibration for %s estimator\e[0;00m -> N entries Data = %g Vs N entries MC = %g\n", estimator.Data(), projData->Integral(), projMC->Integral());
           for (int ibin = 1; ibin <= h1dCalib->GetNbinsX(); ibin++) {
-            if (ibin <= endBinMc && ibin >= startBinMc) {
-              h1dCalib->SetBinContent(ibin, percentile_center[i]);
+            if (ibin <= endBinMc && ibin >= startBinMc){
+              h1dCalib->SetBinContent(ibin,  percentile_center[i]);
             }
           }
 
-          startBinMc = endBinMc + 1;
+          startBinMc = endBinMc+1;
         } // End loop over centrality bins
       }
 
@@ -642,7 +637,7 @@ struct BuilderModule {
   }
 
   template <int tableIndex>
-  void fillHistograms(HistogramRegistry& histos, double percentile, double multiplicity, double genMultEta05)
+  void fillHistograms(o2::framework::HistogramRegistry& histos, double percentile, double multiplicity, double genMultEta05)
   {
     histos.fill(HIST(DirList[tableIndex]) + HIST("/percentile"), percentile);
     histos.fill(HIST(DirList[tableIndex]) + HIST("/percentilevsMult"), percentile, multiplicity);
@@ -663,8 +658,8 @@ struct BuilderModule {
   // which has no systematic effect on the sampled distribution.
   ULong64_t computeSamplingSeed(int64_t collisionIndex, int tableIdx) const
   {
-    static constexpr ULong64_t kCollisionStride = 131ull; // > kNestimators, so tableIdx can't alias into the collision term
-    static constexpr ULong64_t kRunStride = 1000003ull;   // prime, well above kCollisionStride * (typical collisions per DF)
+    static constexpr ULong64_t kCollisionStride = 131ull;   // > kNestimators, so tableIdx can't alias into the collision term
+    static constexpr ULong64_t kRunStride = 1000003ull;     // prime, well above kCollisionStride * (typical collisions per DF)
     return baseOpts.centralitySamplingSeed.value + kRunStride * static_cast<ULong64_t>(mRunNumber) +
            kCollisionStride * static_cast<ULong64_t>(collisionIndex) + static_cast<ULong64_t>(tableIdx);
   }
@@ -718,15 +713,15 @@ struct BuilderModule {
         return percentile;
       };
 
-      populateTable(products.centFV0A, h1dFV0A, h2dCentVsGenMult[kFV0A], nFV0A, std::integral_constant<int, kFV0A>{});
-      populateTable(products.centFT0M, h1dFT0M, h2dCentVsGenMult[kFT0M], nFT0M, std::integral_constant<int, kFT0M>{});
-      populateTable(products.centFT0A, h1dFT0A, h2dCentVsGenMult[kFT0A], nFT0A, std::integral_constant<int, kFT0A>{});
-      populateTable(products.centFT0C, h1dFT0C, h2dCentVsGenMult[kFT0C], nFT0C, std::integral_constant<int, kFT0C>{});
-      populateTable(products.centFT0CVariant1, h1dFT0CVariant1, h2dCentVsGenMult[kFT0CVariant1], nFT0C, std::integral_constant<int, kFT0CVariant1>{});
-      populateTable(products.centFT0CVariant2, h1dFT0CVariant2, h2dCentVsGenMult[kFT0CVariant2], nFT0C, std::integral_constant<int, kFT0CVariant2>{});
-      populateTable(products.centFDDM, h1dFDDM, h2dCentVsGenMult[kFDDM], nFDDM, std::integral_constant<int, kFDDM>{});
-      populateTable(products.centNTPV, h1dNTPV, h2dCentVsGenMult[kNTPV], nGlobal, std::integral_constant<int, kNTPV>{});
-      populateTable(products.centNGlobal, h1dNGlobal, h2dCentVsGenMult[kNGlobal], nGlobal, std::integral_constant<int, kNGlobal>{});
+      populateTable(products.centFV0A,         h1dFV0A,          h2dCentVsGenMult[kFV0A],          nFV0A,   std::integral_constant<int, kFV0A>{});
+      populateTable(products.centFT0M,         h1dFT0M,          h2dCentVsGenMult[kFT0M],          nFT0M,   std::integral_constant<int, kFT0M>{});
+      populateTable(products.centFT0A,         h1dFT0A,          h2dCentVsGenMult[kFT0A],          nFT0A,   std::integral_constant<int, kFT0A>{});
+      populateTable(products.centFT0C,         h1dFT0C,          h2dCentVsGenMult[kFT0C],          nFT0C,   std::integral_constant<int, kFT0C>{});
+      populateTable(products.centFT0CVariant1, h1dFT0CVariant1,  h2dCentVsGenMult[kFT0CVariant1],  nFT0C,   std::integral_constant<int, kFT0CVariant1>{});
+      populateTable(products.centFT0CVariant2, h1dFT0CVariant2,  h2dCentVsGenMult[kFT0CVariant2],  nFT0C,   std::integral_constant<int, kFT0CVariant2>{});
+      populateTable(products.centFDDM,         h1dFDDM,          h2dCentVsGenMult[kFDDM],          nFDDM,   std::integral_constant<int, kFDDM>{});
+      populateTable(products.centNTPV,         h1dNTPV,          h2dCentVsGenMult[kNTPV],          nGlobal, std::integral_constant<int, kNTPV>{});
+      populateTable(products.centNGlobal,      h1dNGlobal,       h2dCentVsGenMult[kNGlobal],       nGlobal, std::integral_constant<int, kNGlobal>{});
       // populateTable(products.centMFT, h1dMFT, h2dCentVsGenMult[kMFT], nMFT, std::integral_constant<int, kMFT>{}); // to be added later
 
       mcCollisionCounter++;
