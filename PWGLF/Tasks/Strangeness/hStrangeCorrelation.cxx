@@ -73,6 +73,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <initializer_list>
 #include <limits>
 #include <memory>
 #include <string>
@@ -140,6 +141,8 @@ struct HStrangeCorrelation {
     Configurable<bool> doMirroringInDelataEta{"doMirroringInDelataEta", false, "if true, fill only positive delta eta and mirror the negative side in post processing, Adjust the delta axis!"};
     Configurable<bool> doMassSpectrumCheck{"doMassSpectrumCheck", false, "if true, add and fill invariant-mass spectrum"};
     Configurable<bool> doCorrelationsHadronV0daughter{"doCorrelationsHadronV0daughter", false, "if true, do correlations of hadrons with V0 daughters"};
+    Configurable<bool> doLocalDensityStudy{"doLocalDensityStudy", false, "if true, create and fill the pt vs eta vs local density spectra of triggers and V0s"};
+    Configurable<float> localDensityConeRadius{"localDensityConeRadius", 0.4, "radius of the cone in which the local density is counted"};
   } masterConfigurations;
 
   // master analysis switches
@@ -174,6 +177,7 @@ struct HStrangeCorrelation {
     ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.0, 1.0, 2.0, 3.0, 100}, "pt associated axis for histograms"};
     ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
     ConfigurableAxis axisMassNSigma{"axisMassNSigma", {40, -2, 2}, "Axis for mass Nsigma"};
+    ConfigurableAxis axisLocalDensity{"axisLocalDensity", {21, -0.5, 20.5}, "local density (number of tracks in the cone)"};
     ConfigurableAxis axisK0ShortMass{"axisK0ShortMass", {200, 0.400f, 0.600f}, "Inv. Mass (GeV/c^{2})"};
     ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.01f, 1.21f}, "Inv. Mass (GeV/c^{2})"};
     ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 20, 40, 60, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300}, "Binning of the Multiplicity axis in model prediction process"};
@@ -699,6 +703,45 @@ struct HStrangeCorrelation {
     double deltaPhi = phi1 - phi2;
     double shiftedDeltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf);
     return shiftedDeltaPhi;
+  }
+
+  /// Counts how many associated-quality tracks lie inside a cone of radius localDensityConeRadius around (etaRef, phiRef), skipping the listed track indices
+  template <typename TTracks>
+  int computeLocalDensity(float etaRef, float phiRef, TTracks const& tracks, std::initializer_list<int64_t> skipIds)
+  {
+    int localDensity = 0;
+    for (auto const& track : tracks) {
+      if (std::find(skipIds.begin(), skipIds.end(), track.globalIndex()) != skipIds.end() || !isValidAssocHadron(track)) {
+        continue;
+      }
+      double deltaEta = track.eta() - etaRef;
+      double deltaPhi = RecoDecay::constrainAngle(track.phi() - phiRef, -PI);
+      if (std::hypot(deltaEta, deltaPhi) < masterConfigurations.localDensityConeRadius) {
+        localDensity++;
+      }
+    }
+    return localDensity;
+  }
+
+  /// Generated-level counterpart: counts the primary charged particles in the associated pt range inside the same cone, skipping the reference particle
+  template <typename TMcParticles>
+  int computeLocalDensityGen(float etaRef, float phiRef, TMcParticles const& mcParticles, int64_t skipId)
+  {
+    int localDensity = 0;
+    for (auto const& mcParticle : mcParticles) {
+      if (mcParticle.globalIndex() == skipId || !mcParticle.isPhysicalPrimary() || !isPairLossTriggerPdg(mcParticle.pdgCode())) {
+        continue;
+      }
+      if (mcParticle.pt() < axisRanges[2][0] || mcParticle.pt() > axisRanges[2][1]) {
+        continue;
+      }
+      double deltaEta = mcParticle.eta() - etaRef;
+      double deltaPhi = RecoDecay::constrainAngle(mcParticle.phi() - phiRef, -PI);
+      if (std::hypot(deltaEta, deltaPhi) < masterConfigurations.localDensityConeRadius) {
+        localDensity++;
+      }
+    }
+    return localDensity;
   }
 
   static bool isPairLossTriggerPdg(int pdgCode)
@@ -2809,6 +2852,9 @@ struct HStrangeCorrelation {
       }
       histos.add("hTrackEtaVsPtVsPhi", "hTrackEtaVsPtVsPhi", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
       histos.add("hAssocTrackEtaVsPtVsPhi", "hAssocTrackEtaVsPtVsPhi", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi});
+      if (masterConfigurations.doLocalDensityStudy) {
+        histos.add("hTrackEtaVsPtVsLocalDensity", "hTrackEtaVsPtVsLocalDensity", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisLocalDensity});
+      }
       // histos.add("hTrackAttempt", "Attempt", kTH3F, {axisPtQA, axisEta, axisPhi});
     }
     if (doprocessSameEventHPions || doprocessSameEventHHadrons || doprocessMixedEventHPions || doprocessMixedEventHHadrons) {
@@ -2857,6 +2903,10 @@ struct HStrangeCorrelation {
           } else {
             histos.add(fmt::format("h{}EtaVsPtVsPhiVsCent", Particlenames[i]).c_str(), "", kTHnF, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi, axesConfigurations.axisMult});
             histos.add(fmt::format("h{}EtaVsPtVsPhiVsCentBg", Particlenames[i]).c_str(), "", kTHnF, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisPhi, axesConfigurations.axisMult});
+          }
+          if (masterConfigurations.doLocalDensityStudy && i < AssocV0Types) {
+            histos.add(fmt::format("h{}EtaVsPtVsLocalDensity", Particlenames[i]).c_str(), "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisLocalDensity});
+            histos.add(fmt::format("h{}EtaVsPtVsLocalDensityBg", Particlenames[i]).c_str(), "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisLocalDensity});
           }
           histos.add(fmt::format("h3d{}Spectrum", Particlenames[i]).c_str(), fmt::format("h3d{}Spectrum", Particlenames[i]).c_str(), kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisMult, axesConfigurations.axisMassNSigma});
           histos.add(fmt::format("h3d{}SpectrumY", Particlenames[i]).c_str(), fmt::format("h3d{}SpectrumY", Particlenames[i]).c_str(), kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisMult, axesConfigurations.axisMassNSigma});
@@ -2967,6 +3017,13 @@ struct HStrangeCorrelation {
         }
       }
       histos.addClone("Generated/", "GeneratedWithPV/");
+
+      if (masterConfigurations.doLocalDensityStudy && masterConfigurations.doPPAnalysis) {
+        histos.add("GeneratedWithPV/hTriggerLocalDensity", "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisLocalDensity});
+        for (int i = 0; i < AssocParticleTypesNoHadron; i++) {
+          histos.add(fmt::format("GeneratedWithPV/h{}LocalDensity", Particlenames[i]).c_str(), "", kTH3F, {axesConfigurations.axisPtQA, axesConfigurations.axisEta, axesConfigurations.axisLocalDensity});
+        }
+      }
 
       // histograms within |y|<0.5, vs multiplicity
       for (int i = 0; i < AssocParticleTypesNoHadron; i++) {
@@ -3408,7 +3465,7 @@ struct HStrangeCorrelation {
     }
   }
 
-  void runSameEventHV0sCore(aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks,
+  void runSameEventHV0sCore(aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks, TracksComplete const& tracks,
                             float pvx, float pvy, float pvz, float cent, float multNTracksPVeta1, double bField)
   {
     std::variant<BinningTypePP, BinningTypePbPb> colBinning =
@@ -3465,6 +3522,7 @@ struct HStrangeCorrelation {
         continue;
       }
       uint64_t selMap = v0selectionBitmap(v0Data, pvx, pvy, pvz);
+      const int localDensityV0 = masterConfigurations.doLocalDensityStudy ? computeLocalDensity(v0Data.eta(), v0Data.phi(), tracks, {v0Data.posTrackId(), v0Data.negTrackId()}) : 0;
 
       static_for<0, 2>([&](auto i) {
         constexpr int Index = i.value;
@@ -3507,6 +3565,14 @@ struct HStrangeCorrelation {
                 histos.fill(HIST("h") + HIST(V0names[Index]) + HIST("EtaVsPtVsPhiVsCent"), v0Data.pt(), v0Data.eta(), v0Data.phi(), cent, weight);
               }
             }
+            if (masterConfigurations.doLocalDensityStudy) {
+              if ((-massWindowConfigurations.maxBgNSigma < v0.invMassNSigma(Index) && v0.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma) || (+massWindowConfigurations.minBgNSigma < v0.invMassNSigma(Index) && v0.invMassNSigma(Index) < +massWindowConfigurations.maxBgNSigma)) {
+                histos.fill(HIST("h") + HIST(V0names[Index]) + HIST("EtaVsPtVsLocalDensityBg"), v0Data.pt(), v0Data.eta(), localDensityV0, weight);
+              }
+              if (-massWindowConfigurations.maxPeakNSigma < v0.invMassNSigma(Index) && v0.invMassNSigma(Index) < +massWindowConfigurations.maxPeakNSigma) {
+                histos.fill(HIST("h") + HIST(V0names[Index]) + HIST("EtaVsPtVsLocalDensity"), v0Data.pt(), v0Data.eta(), localDensityV0, weight);
+              }
+            }
           }
         }
       });
@@ -3531,6 +3597,9 @@ struct HStrangeCorrelation {
           histos.fill(HIST("hTriggerPrimaryEtaVsPt"), track.pt(), track.eta(), track.phi(), cent);
         }
         histos.fill(HIST("hTrackEtaVsPtVsPhi"), track.pt(), track.eta(), track.phi());
+        if (masterConfigurations.doLocalDensityStudy) {
+          histos.fill(HIST("hTrackEtaVsPtVsLocalDensity"), track.pt(), track.eta(), computeLocalDensity(track.eta(), track.phi(), tracks, {track.globalIndex()}));
+        }
       }
     }
 
@@ -3542,7 +3611,7 @@ struct HStrangeCorrelation {
   }
 
   template <typename TCollision>
-  void runSameEventHV0s(TCollision const& collision, aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks)
+  void runSameEventHV0s(TCollision const& collision, aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks, TracksComplete const& tracks)
   {
     const float cent = masterConfigurations.doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
 
@@ -3561,15 +3630,15 @@ struct HStrangeCorrelation {
     if (efficiencyFlags.applyEfficiencyCorrection) {
       initEfficiencyFromCCDB(bc);
     }
-    runSameEventHV0sCore(associatedV0s, triggerTracks,
+    runSameEventHV0sCore(associatedV0s, triggerTracks, tracks,
                          collision.posX(), collision.posY(), collision.posZ(), cent, collision.multNTracksPVeta1(), bField);
   }
 
   void processSameEventHV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>::iterator const& collision,
                             aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks,
-                            V0DatasWithoutTrackX const&, TracksComplete const&, aod::BCsWithTimestamps const&)
+                            V0DatasWithoutTrackX const&, TracksComplete const& tracks, aod::BCsWithTimestamps const&)
   {
-    runSameEventHV0s(collision, associatedV0s, triggerTracks);
+    runSameEventHV0s(collision, associatedV0s, triggerTracks, tracks);
   }
 
   void processSameEventHCascades(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::PVMults>::iterator const& collision,
@@ -4176,6 +4245,9 @@ struct HStrangeCorrelation {
         } else {
           histos.fill(HIST("GeneratedWithPV/hTrigger"), gpt, geta, bestCollisionFT0Mpercentile);
         }
+        if (masterConfigurations.doLocalDensityStudy && masterConfigurations.doPPAnalysis) {
+          histos.fill(HIST("GeneratedWithPV/hTriggerLocalDensity"), gpt, geta, computeLocalDensityGen(geta, mcParticle.phi(), mcParticles, mcParticle.globalIndex()));
+        }
         if (mcParticle.pdgCode() > 0) {
           histos.fill(HIST("GeneratedWithPV/hPositiveTrigger"), gpt, geta, bestCollisionFT0Mpercentile);
         } else {
@@ -4240,6 +4312,9 @@ struct HStrangeCorrelation {
           }
           if (std::abs(mcParticle.y()) < ySel) {
             histos.fill(HIST("GeneratedWithPV/h") + HIST(Particlenames[Index]) + HIST("_MidYVsMult"), gpt, bestCollisionFT0Mpercentile);
+          }
+          if (masterConfigurations.doLocalDensityStudy && masterConfigurations.doPPAnalysis) {
+            histos.fill(HIST("GeneratedWithPV/h") + HIST(Particlenames[Index]) + HIST("LocalDensity"), gpt, geta, computeLocalDensityGen(geta, mcParticle.phi(), mcParticles, mcParticle.globalIndex()));
           }
         }
       });
@@ -4791,7 +4866,8 @@ struct HStrangeCorrelation {
       for (auto const& recCollision : recCollisions) {
         const auto recTriggerSlice = triggerTracks.sliceBy(collisionSliceTracks, recCollision.globalIndex());
         const auto recV0Slice = associatedV0s.sliceBy(collisionSliceV0s, recCollision.globalIndex());
-        runSameEventHV0s(recCollision, recV0Slice, recTriggerSlice);
+        const auto recTrackSlice = tracks.sliceBy(pairLossTracksPerCollision, recCollision.globalIndex());
+        runSameEventHV0s(recCollision, recV0Slice, recTriggerSlice, recTrackSlice);
       }
 
       // Final-minus-Rec counterpart of RecNotInFinal. Both set differences use
