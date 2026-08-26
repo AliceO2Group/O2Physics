@@ -88,7 +88,6 @@ auto static constexpr CminCharge = 3.f;
 static constexpr int CnullInt = 0;
 static constexpr float Cnull = 0.0f;
 static constexpr int ConeInt = 1;
-static constexpr int CtwoInt = 2;
 static constexpr float Cone = 1.0f;
 
 // FV0 specific constants
@@ -221,10 +220,20 @@ enum EvtSel {
 
 struct MultE {
   static constexpr int CnoMult = 0;
-  static constexpr int CmultFT0M = 1;
-  static constexpr int CmultTPC = 2;
+  static constexpr int CmultFT0C = 1;
+  static constexpr int CmultFT0M = 2;
+  static constexpr int CmultTPC = 3;
 };
-
+/*
+template <typename C>
+concept hasFT0C = requires(C::iterator const& c) {
+  c.centFT0C();
+};
+template <typename C>
+concept hasFT0M = requires(C::iterator const& c) {
+  c.centFT0M();
+};
+*/
 struct FlattenictyPikp {
 
   HistogramRegistry registryData{"registryData", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -241,7 +250,7 @@ struct FlattenictyPikp {
   o2::parameters::GRPMagField* grpmag = nullptr;
 
   struct : ConfigurableGroup {
-    Configurable<int> multEst{"multEst", 1, "0: without multiplicity; 1: MultFT0M; 2: MultTPC"};
+    Configurable<int> multEst{"multEst", 1, "0: without multiplicity; 1: MultFT0C; 2: MultFT0M; 3: MultTPC"};
     Configurable<bool> applyCalibGainFromCCDB{"applyCalibGainFromCCDB", false, "equalize detector amplitudes"};
     Configurable<bool> applyCalibVtxFromCCDB{"applyCalibVtxFromCCDB", false, "equalize Amp vs vtx"};
     Configurable<bool> applyCalibDeDx{"applyCalibDeDx", false, "calibration of dedx signal"};
@@ -283,13 +292,14 @@ struct FlattenictyPikp {
     Configurable<float> cutVtxZ{"cutVtxZ", 10.0f, "Accepted z-vertex range"};
     Configurable<bool> zVtxCutMC{"zVtxCutMC", true, "use Zvtx cut in MC"};
     Configurable<bool> useINELCutMC{"useINELCutMC", true, "use INEL>0 cut in MC"};
-    Configurable<bool> removeNoSameBunchPileup{"removeNoSameBunchPileup", true, "Reject collisions in case of pileup with another collision in the same foundBC"};
-    Configurable<bool> requireIsGoodZvtxFT0vsPV{"requireIsGoodZvtxFT0vsPV", true, "Small difference between z-vertex from PV and from FT0"};
+    Configurable<bool> removeNoSameBunchPileup{"removeNoSameBunchPileup", false, "Reject collisions in case of pileup with another collision in the same foundBC"};
+    Configurable<bool> requireIsGoodZvtxFT0vsPV{"requireIsGoodZvtxFT0vsPV", false, "Small difference between z-vertex from PV and from FT0"};
     Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "At least one ITS-TPC track (reject vertices built from ITS-only tracks)"};
     Configurable<bool> requirekIsVertexTOFmatched{"requirekIsVertexTOFmatched", false, "Require kIsVertexTOFmatched: at least one of vertex contributors is matched to TOF"};
     Configurable<bool> useMultMCmidrap{"useMultMCmidrap", true, "use generated Nch in ∣eta∣ < 0.8"};
     Configurable<bool> useInelgt0wTVX{"useInelgt0wTVX", true, "Use INEL > 0 condition with TVX trigger, i.e. FT0A and FT0C acceptance"};
     Configurable<bool> removeSplitVertex{"removeSplitVertex", true, "Remove split vertices"};
+    // Configurable<bool> customGenCent{"customGenCent", false, "Use custom generated MC centrality estimation"};
   } evtSelOpt;
 
   struct : ConfigurableGroup {
@@ -484,8 +494,9 @@ struct FlattenictyPikp {
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected, aod::CentFT0As, aod::CentFT0Cs>;
   using Colls = soa::Join<aod::Collisions, aod::EvSels, aod::TPCMults, aod::PVMults, aod::MultZeqs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
   using CollsGen = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::TPCMults, aod::PVMults, aod::MultZeqs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
-  using MCColls = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultsExtraMC>;
-  using CollsMCExtraMult = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::MultMCExtras, aod::McCollsExtra>;
+  using MCColls = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs, aod::MultsExtraMC>;
+  using CollsMCExtraMult = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs, aod::MultMCExtras, aod::McCollsExtra>;
+  // using CollsMCExtraMultPercentile = soa::Join<aod::McCollisions, aod::McCentFT0Ms, aod::McCentFT0Cs, aod::MultMCExtras, aod::McCollsExtra, aod::McPercentiles>;
   using CollsGenSgn = soa::SmallGroups<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::TPCMults, aod::PVMults, aod::MultZeqs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
   using MyPIDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFbeta, aod::TOFSignal, aod::pidTOFFlags>;
   using MyLabeledTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::McTrackLabels>;
@@ -591,8 +602,11 @@ struct FlattenictyPikp {
 
     AxisSpec multAxis{binOpt.axisMultPerc, "multiplicity estimator"};
 
-    switch (defOpt.multEst) {
+    switch (defOpt.multEst.value) {
       case MultE::CnoMult:
+        break;
+      case MultE::CmultFT0C:
+        multAxis.name = "multFT0C";
         break;
       case MultE::CmultFT0M:
         multAxis.name = "multFT0M";
@@ -601,7 +615,7 @@ struct FlattenictyPikp {
         multAxis.name = "multTPC";
         break;
       default:
-        LOG(fatal) << "No valid option for mult estimator " << defOpt.multEst;
+        LOGF(fatal, "No valid option for mult estimator %d", defOpt.multEst.value);
     }
 
     if (trkSelOpt.rejectTrkAtTPCSector || v0SelOpt.rejectV0sAtTPCSector) {
@@ -791,6 +805,8 @@ struct FlattenictyPikp {
       registryMC.get<TH1>(HIST("Events/hEvtMcGen"))->GetXaxis()->SetBinLabel(3, "INELgt0");
       registryMC.get<TH1>(HIST("Events/hEvtMcGen"))->GetXaxis()->SetBinLabel(4, "INELgt0TVX");
       //
+      registryMC.add("Events/hNchGen", "Gen Nch; Gen Nch (|#eta|<0.8)", {kTH1F, {nChAxis}});
+      registryMC.add("Events/hNchGenCent", "Gen cent; mult", {kTH1F, {multAxis}});
       registryMC.add("Events/hNchGenVsCent", "Gen Nch vs Cent; mult; Gen Nch (|#eta|<0.8)", {kTH2F, {nChAxis, multAxis}});
       registryMC.add("Events/hVtxZRec", "MC Rec vertex z position", kTH1F, {vtxzAxis});
       registryMC.add("Events/hVtxZGen", "Generated vertex z position", kTH1F, {vtxzAxis});
@@ -1335,25 +1351,6 @@ struct FlattenictyPikp {
       charge = p->Charge();
     }
     return std::abs(charge) >= CminCharge;
-  }
-
-  template <typename P>
-  int countPart(P const& particles)
-  {
-    auto nCharged = 0;
-    for (auto const& particle : particles) {
-      if (!isChrgParticle(particle.pdgCode())) {
-        continue;
-      }
-      if (!particle.isPhysicalPrimary()) {
-        continue;
-      }
-      if (std::abs(particle.eta()) > trkSelOpt.trkEtaMax) {
-        continue;
-      }
-      nCharged++;
-    }
-    return nCharged;
   }
 
   template <typename P>
@@ -1933,13 +1930,36 @@ struct FlattenictyPikp {
     return iRing;
   }
 
+  template <typename C>
+  float getGenCent(C const& collision)
+  {
+    float val = -999.0;
+    switch (defOpt.multEst.value) {
+      case MultE::CnoMult:
+        return val;
+      case MultE::CmultFT0C:
+        return collision.centFT0C();
+      case MultE::CmultFT0M:
+        return collision.centFT0M();
+      default:
+        LOGF(fatal, "No valid centrality estimator: %s", defOpt.multEst.value);
+        return val;
+    }
+  }
+
   template <typename C, bool isMC = false>
   float getMult(C const& collision)
   {
     float val = -999.0;
-    switch (defOpt.multEst) {
+    switch (defOpt.multEst.value) {
       case MultE::CnoMult:
         return val;
+      case MultE::CmultFT0C:
+        if constexpr (!isMC) {
+          return collision.centFT0C();
+        } else {
+          return collision.multMCFT0C();
+        }
         break;
       case MultE::CmultFT0M:
         if constexpr (!isMC) {
@@ -1952,13 +1972,12 @@ struct FlattenictyPikp {
         if constexpr (!isMC) {
           return collision.multTPC();
         } else {
-          LOG(fatal) << "No valid multiplicity estimator: " << defOpt.multEst;
-          return val;
+          return collision.multMCNParticlesEta08();
         }
         break;
       default:
-        return collision.centFT0M();
-        break;
+        LOGF(fatal, "No valid multiplicity estimator: %s", defOpt.multEst.value);
+        return val;
     }
   }
 
@@ -2400,11 +2419,32 @@ struct FlattenictyPikp {
   {
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
     auto multMC = -1.;
-    if (evtSelOpt.useMultMCmidrap || defOpt.multEst == CtwoInt) { // use generated Nch in ∣eta∣ < 0.8
-      multMC = countPart(particles);
+    if (evtSelOpt.useMultMCmidrap) {
+      multMC = mcCollision.multMCNParticlesEta08();
     } else {
-      multMC = getMultMC(mcCollision); // using McCentFT0Ms
+      multMC = getMultMC(mcCollision);
     }
+    /*
+        cauto centMcGen = -1.;
+        if (evtSelOpt.customGenCent) {
+          if constexpr (hasFT0C<CollsGen>) {
+            centMcGen = mcCollision.mcpercft0c();
+          } else if (hasFT0M<CollsGen>) {
+            centMcGen = mcCollision.mcpercft0m();
+          }
+        } else {
+          if (defOpt.multEst == MultE::CmultFT0C) {
+            centMcGen = mcCollision.centFT0C();
+          } else if (defOpt.multEst == MultE::CmultFT0M) {
+            centMcGen = mcCollision.centFT0M();
+          } else {
+            centMcGen = -1.;
+          }
+        }
+    */
+    registryMC.fill(HIST("Events/hNchGen"), multMC);
+    registryMC.fill(HIST("Events/hNchGenCent"), getGenCent(mcCollision));
+
     const float flatMC = fillFlatMC<true>(particles);
     registryMC.fill(HIST("Events/hFlatMCGen"), flatMC);
 
@@ -2444,7 +2484,7 @@ struct FlattenictyPikp {
           fillMCGenRecEvt<pidSgn, o2::track::PID::Proton>(particle, multMC, flatMC);
         });
       }
-      if (!isGoodEvent<false>(collision)) {
+      if (!isGoodEvent<true>(collision)) {
         continue;
       }
       const float multRecGt1 = getMult(collision);
