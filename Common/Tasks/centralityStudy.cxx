@@ -775,7 +775,7 @@ struct CentralityStudy {
     if (studies.doRunByRunHistograms) {
       if (passRejectITSROFBorder && passRejectTFBorder && passRequireIsVertexITSTPC && passRequireIsGoodZvtxFT0VsPV &&
           passRequireIsVertexTOFmatched && passRequireIsVertexTRDmatched && passRejectSameBunchPileup && passRejectITSinROFpileupStandard && passRejectITSinROFpileupStrict &&
-          passSelectUPCcollisions && passRejectCollInTimeRangeNarrow && && passINELgtZERO) {
+          passSelectUPCcollisions && passRejectCollInTimeRangeNarrow && &&passINELgtZERO) {
         getHist<TProfile>(histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), multFT0C * scale.factorFT0C);
         getHist<TProfile>(histPath + "hFT0CvsPVz_Collisions")->Fill(collision.multPVz(), multFT0C * scale.factorFT0C);
         getHist<TProfile>(histPath + "hFT0AvsPVz_Collisions")->Fill(collision.multPVz(), multFT0A * scale.factorFT0C);
