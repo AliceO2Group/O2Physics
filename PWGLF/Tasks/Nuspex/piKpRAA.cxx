@@ -519,7 +519,7 @@ struct PiKpRAA {
       registry.add("CentralityVsBCVsFT0VsTVXVsEvSel", "All=1 | BC=2 | FT0=3 | TVX=4 | EvSel=5;;Status;", kTH2F, {{axisCent}, {5, 0.5, 5.5}});
       registry.add("NumOfRecColl", "Num. of times a MC evt. is reconstructed;N;Entries", kTH1F, {{5, -0.5, 4.5}});
       registry.add("NumOfRecCollVsNContri", "Num. of times a MC evt. is reconstructed VS Num. of PV contributors;Number of times a MC event is reconstructed;Number of tracks used for the PV", kTH2F, {{5, -0.5, 4.5}, axisNch});
-      registry.add("NumOfRecCollVsNContriWithEvtSel", "Num. of times a MC evt. is reconstructed VS Num. of PV contributors WITH EVT SEL;Number of times a MC event is reconstructed;Number of tracks used for the PV", kTH2F, {{5, -0.5, 4.5}, axisNch});
+      // registry.add("NumOfRecCollVsNContriWithEvtSel", "Num. of times a MC evt. is reconstructed VS Num. of PV contributors WITH EVT SEL;Number of times a MC event is reconstructed;Number of tracks used for the PV", kTH2F, {{5, -0.5, 4.5}, axisNch});
 
       // Pt resolution
       registry.add("PtResolution", "p_{T} resolution;;(pt_{rec} - pt_{gen})/pt_{gen};", kTH2F, {axisPt, {100, -1.0, 1.0}});
@@ -545,10 +545,10 @@ struct PiKpRAA {
       registry.add("NchMC_WithRecoEvt", "MC Nch from the event associated with the Rec. Coll. (with largest Num. of PV contributors) + Evt. Sel.;Gen Nch MC;Entries", kTH1F, {axisNch});
       registry.add("NchMC_AllGen", "MC Nch of ALL events;Gen. Nch;Entries", kTH1F, {axisNch});
       registry.add("NchMC_WithRecColl", "MC Nch from the event associated with at least one Rec. Coll.;Gen. Nch;Entries", kTH1F, {axisNch});
-      registry.add("NchMC_WithOnlyRecColl", "MC Nch from the event associated with ONLY ONE Rec. Coll. with largest Num. of PV contributors;Gen. Nch;Entries", kTH1F, {axisNch});
+      registry.add("NchMC_BestCollIdx", "MC Nch from the event associated with ONLY ONE Rec. Coll. with largest Num. of PV contributors;Gen. Nch;Entries", kTH1F, {axisNch});
 
       // Needed to measure Event Splitting
-      registry.add("Centrality_WRecoEvt", "From the association between the MC event & the Rec. Coll with largest number of PV contributors & NO Evt. Sel.;;Entries", kTH1F, {axisCent});
+      // registry.add("Centrality_WRecoEvt", "From the association between the MC event & the Rec. Coll with largest number of PV contributors & NO Evt. Sel.;;Entries", kTH1F, {axisCent});
       registry.add("Centrality_WRecoEvtWSelCri", "From the association between the MC event & the Rec. Coll with largest number of PV contributors + Evt. Sel.;;Entries", kTH1F, {axisCent});
       registry.add("Centrality_AllRecoEvt", "All Rec. Coll. Irrespective of the times it was reconstructed + Evt. Sel.;;Entries", kTH1F, {axisCent});
 
@@ -561,14 +561,6 @@ struct PiKpRAA {
       registry.add("PtPiVsNchMC_AllGen", "All Generated Events;;Gen. Nch;", kTH2F, {axisPt, axisNch});
       registry.add("PtKaVsNchMC_AllGen", "All Generated Events;;Gen. Nch;", kTH2F, {axisPt, axisNch});
       registry.add("PtPrVsNchMC_AllGen", "All Generated Events;;Gen. Nch;", kTH2F, {axisPt, axisNch});
-
-      registry.add("PtPiVsNchMC_HasFT0", "Generated Events associated with Rec Coll With FT0 Info;;Gen. Nch;", kTH2F, {axisPt, axisNch});
-      registry.add("PtKaVsNchMC_HasFT0", "Generated Events associated with Rec Coll With FT0 Info;;Gen. Nch;", kTH2F, {axisPt, axisNch});
-      registry.add("PtPrVsNchMC_HasFT0", "Generated Events associated with Rec Coll With FT0 Info;;Gen. Nch;", kTH2F, {axisPt, axisNch});
-
-      registry.add("PtPiVsNchMC_HasFT0AndTVX", "Generated Events associated with Rec Coll With FT0 Info & TVX triggered;;Gen. Nch;", kTH2F, {axisPt, axisNch});
-      registry.add("PtKaVsNchMC_HasFT0AndTVX", "Generated Events associated with Rec Coll With FT0 Info & TVX triggered;;Gen. Nch;", kTH2F, {axisPt, axisNch});
-      registry.add("PtPrVsNchMC_HasFT0AndTVX", "Generated Events associated with Rec Coll With FT0 Info & TVX triggered;;Gen. Nch;", kTH2F, {axisPt, axisNch});
 
       registry.add("MCclosure_PtMCPiVsNchMC", "All Generated Events 4 MC closure;;Gen. Nch;", kTH2F, {axisPt, axisNch});
       registry.add("MCclosure_PtMCKaVsNchMC", "All Generated Events 4 MC closure;;Gen. Nch;", kTH2F, {axisPt, axisNch});
@@ -603,59 +595,83 @@ struct PiKpRAA {
       registry.add("DCAxyVsPtWithSelection", ";#it{p}_{T} (GeV/#it{c});DCA_{xy} (cm);", kTH2F, {{axisPtFineFixedWidth}, {axisDCAxy}});
       registry.add("DCAzVsPtWithSelection", ";#it{p}_{T} (GeV/#it{c});DCA_{z} (cm);", kTH2F, {{axisPtFineFixedWidth}, {axisDCAxy}});
 
-      // registry.add("CentralityVsBCVsFT0VsTVXVsEvSel", "All=1 | BC=2 | FT0=3 | TVX=4 | EvSel=5;;Status;", kTH2F, {{axisCent}, {5, 0.5, 5.5}});
       registry.add("NumOfRecColl", "Num. of times a MC evt. is reconstructed;N;Entries", kTH1F, {{5, -0.5, 4.5}});
-      registry.add("NumOfRecCollVsNContri", "Num. of times a MC evt. is reconstructed VS Num. of PV contributors;Number of times a MC event is reconstructed;Number of tracks used for the PV", kTH2F, {{5, -0.5, 4.5}, axisNch});
-      registry.add("NumOfRecCollVsNContriWithEvtSel", "Num. of times a MC evt. is reconstructed VS Num. of PV contributors WITH EVT SEL;Number of times a MC event is reconstructed;Number of tracks used for the PV", kTH2F, {{5, -0.5, 4.5}, axisNch});
+      registry.add("NumOfRecCollVsNContri", "Num. of times a MC evt. is reconstructed VS Num. of PV contributors;Number of times a MC event is reconstructed;Number of tracks used for the PV", kTH2F, {{8, -0.5, 7.5}, axisNch});
+      registry.add("NumOfRecCollVsCentrality", "Num. of times a MC evt. is reconstructed VS Centrality WITH EVT SEL;Number of times a MC event is reconstructed;Number of tracks used for the PV", kTH2F, {{8, -0.5, 7.5}, axisCent});
 
-      // Pt resolution
+      // PT RESOLUTION
       registry.add("PtResolution", "p_{T} resolution;;(pt_{rec} - pt_{gen})/pt_{gen};", kTH2F, {axisPt, {100, -1.0, 1.0}});
 
-      // Needed to calculate the numerator of the Acceptance X Efficiency
+      // NUMERATOR OF THE ACCEPTANCE X EFFICIENCY
       registry.add("PtPiVsCent_WithRecoEvt", "Generated Events With at least One Rec. Collision + Sel. criteria;;;", kTH2F, {axisPt, axisCent});
       registry.add("PtKaVsCent_WithRecoEvt", "Generated Events With at least One Rec. Collision + Sel. criteria;;;", kTH2F, {axisPt, axisCent});
       registry.add("PtPrVsCent_WithRecoEvt", "Generated Events With at least One Rec. Collision + Sel. criteria;;;", kTH2F, {axisPt, axisCent});
 
+      // DENOMINATOR OF THE ACCEPTANCE X EFFICIENCY (TRUE PT)
       registry.add("PtGenPiVsCent_WithRecoEvt", "Generated Events With at least One Rec. Collision + Sel. criteria;;;", kTH2F, {axisPt, axisCent});
       registry.add("PtGenKaVsCent_WithRecoEvt", "Generated Events With at least One Rec. Collision + Sel. criteria;;;", kTH2F, {axisPt, axisCent});
       registry.add("PtGenPrVsCent_WithRecoEvt", "Generated Events With at least One Rec. Collision + Sel. criteria;;;", kTH2F, {axisPt, axisCent});
 
-      // Needed to calculate the denominator of the Acceptance X Efficiency
+      // DENOMINATOR OF THE ACCEPTANCE X EFFICIENCY
       registry.add("PtPiVsCentMC_WithRecoEvt", "Generated Events With at least One Rec. Collision;;;", kTH2F, {axisPt, axisCent});
       registry.add("PtKaVsCentMC_WithRecoEvt", "Generated Events With at least One Rec. Collision;;;", kTH2F, {axisPt, axisCent});
       registry.add("PtPrVsCentMC_WithRecoEvt", "Generated Events With at least One Rec. Collision;;;", kTH2F, {axisPt, axisCent});
 
-      // Needed for the Gen. Nch to Centrality conversion
-      registry.add("NchMCVsCent", "Generated Nch v.s. Centrality (At least Once Rec. Coll. + Sel. criteria);;Gen. Nch MC", kTH2F, {axisCent, axisNch});
+      // FOR MAPPING BETWEN MC NCH AND CENTRALITY. BASED ONLY ON THE COLLISION WITH THE LARGEST NUMBER OF CONTRIBUTORS TO PV
+      registry.add("NchMCVsCent", "Gen Nch vs Cent (Rec. Coll. W/Largest Contributors + Evt. Sel.);;Gen. Nch MC", kTH2F, {axisCent, axisNch});
+      // FOR MAPPING BETWEN MC NCH AND CENTRALITY. ALL THE RECONSTRUCTED COLLISIONS EVENT IF RECONSTRUCTED MULTIPLE TIMES
+      registry.add("NchMCVsCent_AllRecoEvt", "Gen Nch vs Cent (All Rec. Coll. + Evt. Sel.);;Gen. Nch MC", kTH2F, {axisCent, axisNch});
 
-      // Needed to measure Event Loss
-      registry.add("NchMC_WithRecoEvt", "MC Nch from the event associated with the Rec. Coll. (with largest Num. of PV contributors) + Evt. Sel.;Gen Nch MC;Entries", kTH1F, {axisNch});
+      // DENOMINATOR OF THE EVENT LOSS. ALL GEN EVENTS
       registry.add("NchMC_AllGen", "MC Nch of ALL events;Gen. Nch;Entries", kTH1F, {axisNch});
+      // NUMERATOR OF THE EVENT LOOS. BASED ONLY ON THE COLLISION WITH THE LARGEST NUMBER OF CONTRIBUTORS TO PV
+      registry.add("NchMC_WithRecoEvt", "Gen Evts W/best Coll Idx + Evt. Sel.;Gen Nch;Entries", kTH1F, {axisNch});
+      // NUMERATOR OF THE EVENT LOOS. ALL THE RECONSTRUCTED COLLISIONS EVENT IF RECONSTRUCTED MULTIPLE TIMES
+      registry.add("NchMC_AllRecoEvt", "Gen Evts W/at leas One Rec. Coll + Evt. Sel.;Gen. Nch;Entries", kTH1F, {axisNch});
+      // MC NCH DISTRIBUTION. BASED ONLY ON THE COLLISION WITH THE LARGEST NUMBER OF CONTRIBUTORS TO PV & NO EVT SEL. (QA PURPOSES)
+      registry.add("NchMC_BestCollIdx", "MC Nch from the event associated with ONLY ONE Rec. Coll. with largest Num. of PV contributors;Gen. Nch;Entries", kTH1F, {axisNch});
+      // MC NCH DISTRIBUTION ASSOCIATED TO ALL THE RECONSTRUCTED COLLISIONS & NO EVT. SEL. (QA PURPOSES)
       registry.add("NchMC_WithRecColl", "MC Nch from the event associated with at least one Rec. Coll.;Gen. Nch;Entries", kTH1F, {axisNch});
-      registry.add("NchMC_WithOnlyRecColl", "MC Nch from the event associated with ONLY ONE Rec. Coll. with largest Num. of PV contributors;Gen. Nch;Entries", kTH1F, {axisNch});
 
-      // Needed to measure Event Splitting
-      registry.add("Centrality_WRecoEvt", "From the association between the MC event & the Rec. Coll with largest number of PV contributors & NO Evt. Sel.;;Entries", kTH1F, {axisCent});
+      // NUMERATOR OF THE EVENT SPLITTING.
       registry.add("Centrality_WRecoEvtWSelCri", "From the association between the MC event & the Rec. Coll with largest number of PV contributors + Evt. Sel.;;Entries", kTH1F, {axisCent});
+      // DENOMINATOR OF THE EVENT SPLITTING.
       registry.add("Centrality_AllRecoEvt", "All Rec. Coll. Irrespective of the times it was reconstructed + Evt. Sel.;;Entries", kTH1F, {axisCent});
 
-      // Needed to calculate the numerator of the Signal Loss correction
-      registry.add("PtPiVsNchMC_WithRecoEvt", "Generated Events With at least One Rec. Collision;;Gen. Nch;", kTH2F, {axisPt, axisNch});
-      registry.add("PtKaVsNchMC_WithRecoEvt", "Generated Events With at least One Rec. Collision;;Gen. Nch;", kTH2F, {axisPt, axisNch});
-      registry.add("PtPrVsNchMC_WithRecoEvt", "Generated Events With at least One Rec. Collision;;Gen. Nch;", kTH2F, {axisPt, axisNch});
+      // NUMERATOR OF THE SIGNAL LOSS. BASED ONLY ON THE COLLISION WITH THE LARGEST NUMBER OF CONTRIBUTORS TO PV
+      registry.add("PtPiVsNchMC_WithRecoEvt", "Gen Evts W/best Coll Idx + Evt. Sel.;;Gen. Nch;", kTH2F, {axisPt, axisNch});
+      registry.add("PtKaVsNchMC_WithRecoEvt", "Gen Evts W/best Coll Idx + Evt. Sel.;;Gen. Nch;", kTH2F, {axisPt, axisNch});
+      registry.add("PtPrVsNchMC_WithRecoEvt", "Gen Evts W/best Coll Idx + Evt. Sel.;;Gen. Nch;", kTH2F, {axisPt, axisNch});
 
-      // Needed to calculate the denominator of the Signal Loss correction
+      // NUMERATOR OF THE SIGNAL LOSS. USES ALL THE RECONSTRUCTED COLLISIONS EVENT IF RECONSTRUCTED MULTIPLE TIMES
+      registry.add("PtPiVsNchMC_AllRecoEvt", "Gen Evts W/at leas One Rec. Coll + Evt. Sel.;;Gen. Nch;", kTH2F, {axisPt, axisNch});
+      registry.add("PtKaVsNchMC_AllRecoEvt", "Gen Evts W/at leas One Rec. Coll + Evt. Sel.;;Gen. Nch;", kTH2F, {axisPt, axisNch});
+      registry.add("PtPrVsNchMC_AllRecoEvt", "Gen Evts W/at leas One Rec. Coll + Evt. Sel.;;Gen. Nch;", kTH2F, {axisPt, axisNch});
+
+      // DENOMINATOR OF THE SIGNAL LOSS
       registry.add("PtPiVsNchMC_AllGen", "All Generated Events;;Gen. Nch;", kTH2F, {axisPt, axisNch});
       registry.add("PtKaVsNchMC_AllGen", "All Generated Events;;Gen. Nch;", kTH2F, {axisPt, axisNch});
       registry.add("PtPrVsNchMC_AllGen", "All Generated Events;;Gen. Nch;", kTH2F, {axisPt, axisNch});
 
-      registry.add("PtPiVsNchMC_HasFT0", "Generated Events associated with Rec Coll With FT0 Info;;Gen. Nch;", kTH2F, {axisPt, axisNch});
-      registry.add("PtKaVsNchMC_HasFT0", "Generated Events associated with Rec Coll With FT0 Info;;Gen. Nch;", kTH2F, {axisPt, axisNch});
-      registry.add("PtPrVsNchMC_HasFT0", "Generated Events associated with Rec Coll With FT0 Info;;Gen. Nch;", kTH2F, {axisPt, axisNch});
+      // DENOMINATOR OF THE SIGNAL LOSS. USES ALL THE RECONSTRUCTED COLLISIONS EVENT IF RECONSTRUCTED MULTIPLE TIMES (A LA PI0)
+      registry.add("PtPiVsNchMC_HasFT0", "Gen Evts W/at leas One Rec. Coll + FT0 Info;;Gen. Nch;", kTH2F, {axisPt, axisNch});
+      registry.add("PtKaVsNchMC_HasFT0", "Gen Evts W/at leas One Rec. Coll + FT0 Info;;Gen. Nch;", kTH2F, {axisPt, axisNch});
+      registry.add("PtPrVsNchMC_HasFT0", "Gen Evts W/at leas One Rec. Coll + FT0 Info;;Gen. Nch;", kTH2F, {axisPt, axisNch});
 
-      registry.add("PtPiVsNchMC_HasFT0AndTVX", "Generated Events associated with Rec Coll With FT0 Info & TVX triggered;;Gen. Nch;", kTH2F, {axisPt, axisNch});
-      registry.add("PtKaVsNchMC_HasFT0AndTVX", "Generated Events associated with Rec Coll With FT0 Info & TVX triggered;;Gen. Nch;", kTH2F, {axisPt, axisNch});
-      registry.add("PtPrVsNchMC_HasFT0AndTVX", "Generated Events associated with Rec Coll With FT0 Info & TVX triggered;;Gen. Nch;", kTH2F, {axisPt, axisNch});
+      // DENOMINATOR OF THE SIGNAL LOSS. BASED ONLY ON THE COLLISION WITH THE LARGEST NUMBER OF CONTRIBUTORS TO PV (A LA PI0)
+      registry.add("PtPiVsNchMC_HasFT0_BestCollIdx", "Gen Evts W/best Coll Idx + FT0 Info;;Gen. Nch;", kTH2F, {axisPt, axisNch});
+      registry.add("PtKaVsNchMC_HasFT0_BestCollIdx", "Gen Evts W/best Coll Idx + FT0 Info;;Gen. Nch;", kTH2F, {axisPt, axisNch});
+      registry.add("PtPrVsNchMC_HasFT0_BestCollIdx", "Gen Evts W/best Coll Idx + FT0 Info;;Gen. Nch;", kTH2F, {axisPt, axisNch});
+
+      // NUMERATOR OF THE SIGNAL LOSS. USES ALL THE RECONSTRUCTED COLLISIONS EVENT IF RECONSTRUCTED MULTIPLE TIMES (A LA PI0)
+      registry.add("PtPiVsNchMC_HasFT0AndTVX", "Gen Evts W/at leas One Rec. Coll + FT0 Info & TVX triggered;;Gen. Nch;", kTH2F, {axisPt, axisNch});
+      registry.add("PtKaVsNchMC_HasFT0AndTVX", "Gen Evts W/at leas One Rec. Coll + FT0 Info & TVX triggered;;Gen. Nch;", kTH2F, {axisPt, axisNch});
+      registry.add("PtPrVsNchMC_HasFT0AndTVX", "Gen Evts W/at leas One Rec. Coll + FT0 Info & TVX triggered;;Gen. Nch;", kTH2F, {axisPt, axisNch});
+
+      // DENOMITOR OF THE SIGNAL LOSS. USES ALL THE RECONSTRUCTED COLLISIONS EVENT IF RECONSTRUCTED MULTIPLE TIMES (A LA PI0)
+      registry.add("PtPiVsNchMC_HasFT0AndTVX_BestCollIdx", "Gen Evts W/best Coll Idx + FT0 Info & TVX triggered;;Gen. Nch;", kTH2F, {axisPt, axisNch});
+      registry.add("PtKaVsNchMC_HasFT0AndTVX_BestCollIdx", "Gen Evts W/best Coll Idx + FT0 Info & TVX triggered;;Gen. Nch;", kTH2F, {axisPt, axisNch});
+      registry.add("PtPrVsNchMC_HasFT0AndTVX_BestCollIdx", "Gen Evts W/best Coll Idx + FT0 Info & TVX triggered;;Gen. Nch;", kTH2F, {axisPt, axisNch});
 
       // registry.add("MCclosure_PtMCPiVsNchMC", "All Generated Events 4 MC closure;;Gen. Nch;", kTH2F, {axisPt, axisNch});
       // registry.add("MCclosure_PtMCKaVsNchMC", "All Generated Events 4 MC closure;;Gen. Nch;", kTH2F, {axisPt, axisNch});
@@ -1607,7 +1623,7 @@ struct PiKpRAA {
           // To calculate the amount of charged-primary MC particles (|eta|<0.5)
           // that belongs to a MC event that was reconstructed
           // and only from the with the largest number of contributors
-          registry.fill(HIST("NchMC_WithOnlyRecColl"), mcNchInTPCAcc);
+          registry.fill(HIST("NchMC_BestCollIdx"), mcNchInTPCAcc);
         }
 
         //---------------------------
@@ -1719,7 +1735,7 @@ struct PiKpRAA {
         // MC Collisions that are reconstructed more than one will be stored here
         //---------------------------
         registry.fill(HIST("Centrality_AllRecoEvt"), centrality);
-        registry.fill(HIST("NumOfRecCollVsNContriWithEvtSel"), nRecColls, collision.numContrib());
+        // registry.fill(HIST("NumOfRecCollVsNContriWithEvtSel"), nRecColls, collision.numContrib());
       }
 
       //---------------------------
@@ -1765,7 +1781,7 @@ struct PiKpRAA {
           }
         }
 
-        registry.fill(HIST("Centrality_WRecoEvt"), centrality);
+        // registry.fill(HIST("Centrality_WRecoEvt"), centrality);
         registry.fill(HIST("zPosMC"), mccollision.posZ());
 
         registry.fill(HIST("CentralityVsBCVsFT0VsTVXVsEvSel"), centrality, 1.0);
@@ -2229,10 +2245,7 @@ struct PiKpRAA {
     }
 
     //---------------------------
-    // ************* ALL GENERATED MC EVENTS *************
-    // THE CENTRALITY BEING A RECONSTRUCTED QUANTITY, IS NOT ALWAYS BE AVAILABLE
-    // THEREFORE IT IS CONSTRUCTED BASED ON THE GENERATED PT AND THE GENERATED NCH IN THE TPC ACCEPTANCE
-    // USED FOR THE DENOMINATOR OF THE **** SIGNAL LOSS **** CORRECTION
+    // *) DENOMINATOR OF THE SIGNAL LOSS
     //---------------------------
     for (const auto& particle : mcParticles) {
       if (particle.eta() < trackSelections.minEta || particle.eta() > trackSelections.maxEta) {
@@ -2275,21 +2288,20 @@ struct PiKpRAA {
       }
 
       if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
-        registry.fill(HIST("PtPiVsNchMC_AllGen"), particle.pt(), nChMCTPCAcc);
+        registry.fill(HIST("PtPiVsNchMC_AllGen"), particle.pt(), nChMCTPCAcc); // DENOMINATOR OF SIGNAL LOSS
       } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
-        registry.fill(HIST("PtKaVsNchMC_AllGen"), particle.pt(), nChMCTPCAcc);
+        registry.fill(HIST("PtKaVsNchMC_AllGen"), particle.pt(), nChMCTPCAcc); // DENOMINATOR OF SIGNAL LOSS
       } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
-        registry.fill(HIST("PtPrVsNchMC_AllGen"), particle.pt(), nChMCTPCAcc);
+        registry.fill(HIST("PtPrVsNchMC_AllGen"), particle.pt(), nChMCTPCAcc); // DENOMINATOR OF SIGNAL LOSS
       } else {
         continue;
       }
     } // Loop over Generated Particles
 
     //---------------------------
-    //  USED FOR THE DENOMINATOR OF THE *** EVENT LOSS CORRECTION ***
-    //  ONLY CHARGE PARTICLES WITHIN THE TPC ACCEPTANCE AND WITHOUT PT SELECTION
+    //  nChMCTPCAc = CHARGEd PARTICLES WITHIN THE TPC ACCEPTANCE AND WITHOUT PT SELECTION
     //---------------------------
-    registry.fill(HIST("NchMC_AllGen"), nChMCTPCAcc);
+    registry.fill(HIST("NchMC_AllGen"), nChMCTPCAcc); //  DENOMINATOR OF THE EVENT LOSS
     registry.fill(HIST("zPosMCAll"), mccollision.posZ());
 
     //---------------------------
@@ -2312,7 +2324,19 @@ struct PiKpRAA {
       int bestCollisionIndex{-1};
       for (const auto& collision : collisions) {
 
+        float centrality{-999.0};
+        if (centralitySelector.value == "FT0C") {
+          centrality = collision.centFT0C();
+        } else if (centralitySelector.value == "FT0M") {
+          centrality = collision.centFT0M();
+        } else if (centralitySelector.value == "FV0A") {
+          centrality = collision.centFV0A();
+        } else {
+          centrality = -999.0;
+        }
+
         registry.fill(HIST("NumOfRecCollVsNContri"), nRecColls, collision.numContrib());
+        registry.fill(HIST("NumOfRecCollVsCentrality"), nRecColls, centrality); // CENTRALITY FROM THE MULTIPLE TIMES THE MC EVENT WAS RECONSTRUCTED
 
         //---------------------------
         // GETS THE BESTCOLLISIONINDEX
@@ -2331,8 +2355,7 @@ struct PiKpRAA {
         registry.fill(HIST("EventCounterMC"), 1.5);
 
         // NCH IN |ETA| < TPC_ACCEPTANCE
-        // BELONGING TO A MC EVENT THAT
-        // WAS RECONSTRUCTED AT LEAST ONCE
+        // BELONGING TO A MC EVENT,  WHICH POSSIBLY WAS RECONSTRUCTED MULTIPLE TIMES
         registry.fill(HIST("NchMC_WithRecColl"), nChMCTPCAcc);
 
         //---------------------------
@@ -2351,14 +2374,13 @@ struct PiKpRAA {
       }
 
       //---------------------------
-      // ANALYZE ONLY THE COLLISION WITH THE **** LARGEST NUMBER OF CONTRIBUTORS ****
       // NO EVENT SELECTIONS APPLIED: ONLY FT0-INFO AND TVX-TRIGGERED REQUIRED
-      // USED TO CALCULATE THE SIGNAL LOSS BETWEEN FT0 AND TVX-TRIGGERED EVENTS
       //---------------------------
       for (const auto& collision : collisions) {
 
-        if (bestCollisionIndex != collision.globalIndex()) {
-          continue;
+        bool isBestCollIndex{false};
+        if (bestCollisionIndex == collision.globalIndex()) {
+          isBestCollIndex = true;
         }
 
         const bool hasft0{collision.has_foundFT0()};
@@ -2367,14 +2389,16 @@ struct PiKpRAA {
         //---------------------------
         // TVX-triggered collision
         //---------------------------
-        if (hasft0 && hastvx) {
+        if (hasft0 && hastvx && isBestCollIndex) {
           registry.fill(HIST("EventCounterMC"), 4.5);
         }
 
         // TO CALCULATE NCH IN |ETA| < TPC_ACCEPTANCE
         // BELONGING TO A MC EVENT ASSOCIATED WITH
-        // THE COLLISION WITH THE LARGEST NUMBER OF CONTRIBUTORS
-        registry.fill(HIST("NchMC_WithOnlyRecColl"), nChMCTPCAcc);
+        // THE ONLY COLLISION WITH THE LARGEST NUMBER OF CONTRIBUTORS
+        if (isBestCollIndex) {
+          registry.fill(HIST("NchMC_BestCollIdx"), nChMCTPCAcc);
+        }
 
         //---------------------------
         // LOOPING OVER THE MC TRUTH EVENT
@@ -2419,31 +2443,59 @@ struct PiKpRAA {
             continue;
           }
 
+          // TO COMPUTE SIGNAL LOSS AS THE RATIO BETWEEN MC EVENTS WITH FT0 INFO
+          // AND THOSE WITH FT0 INFO AND TVX-TRIGGERED
           if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
-            if (hasft0)
+            if (hasft0) {
               registry.fill(HIST("PtPiVsNchMC_HasFT0"), particle.pt(), nChMCTPCAcc);
-            if (hasft0 && hastvx)
+              if (isBestCollIndex) {
+                registry.fill(HIST("PtPiVsNchMC_HasFT0_BestCollIdx"), particle.pt(), nChMCTPCAcc);
+              }
+            }
+            if (hasft0 && hastvx) {
               registry.fill(HIST("PtPiVsNchMC_HasFT0AndTVX"), particle.pt(), nChMCTPCAcc);
+              if (isBestCollIndex) {
+                registry.fill(HIST("PtPiVsNchMC_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCTPCAcc);
+              }
+            }
           } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
-            if (hasft0)
+            if (hasft0) {
               registry.fill(HIST("PtKaVsNchMC_HasFT0"), particle.pt(), nChMCTPCAcc);
-            if (hasft0 && hastvx)
+              if (isBestCollIndex) {
+                registry.fill(HIST("PtKaVsNchMC_HasFT0_BestCollIdx"), particle.pt(), nChMCTPCAcc);
+              }
+            }
+            if (hasft0 && hastvx) {
               registry.fill(HIST("PtKaVsNchMC_HasFT0AndTVX"), particle.pt(), nChMCTPCAcc);
+              if (isBestCollIndex) {
+                registry.fill(HIST("PtKaVsNchMC_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCTPCAcc);
+              }
+            }
           } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
-            if (hasft0)
+            if (hasft0) {
               registry.fill(HIST("PtPrVsNchMC_HasFT0"), particle.pt(), nChMCTPCAcc);
-            if (hasft0 && hastvx)
+              if (isBestCollIndex) {
+                registry.fill(HIST("PtPrVsNchMC_HasFT0_BestCollIdx"), particle.pt(), nChMCTPCAcc);
+              }
+            }
+            if (hasft0 && hastvx) {
               registry.fill(HIST("PtPrVsNchMC_HasFT0AndTVX"), particle.pt(), nChMCTPCAcc);
+              if (isBestCollIndex) {
+                registry.fill(HIST("PtPrVsNchMC_HasFT0AndTVX_BestCollIdx"), particle.pt(), nChMCTPCAcc);
+              }
+            }
           } else {
             continue;
           }
-        } // Loop over Generated Particles
+        } // LOOP OVER TRUE MC EVENTS
       }
 
       //---------------------------
-      // NEEDED TO CALCULATE **** DENOMINATOR OF THE EVENT SPLITTING CORRECTION ****
-      // EVENT SELECTION APPLIED MANUALLY TO AVOID DOUBLE FILLING IN THE EVENTCOUNTER
       // MC EVENTS RECONSTRUCTED MULTIPLE TIMES ARE STORED HERE
+      // EVENT SELECTION APPLIED MANUALLY TO AVOID DOUBLE FILLING IN THE EVENTCOUNTER
+      // *) DENOMINATOR OF THE EVENT SPLITTING
+      // *) NUMERATOR OF THE EVENT LOSS
+      // *) NUMERATOR OF SIGNAL LOSS
       //---------------------------
       for (const auto& collision : collisions) {
 
@@ -2532,21 +2584,79 @@ struct PiKpRAA {
           }
         }
 
-        //---------------------------
-        // TO CALCULATE *** DENOMINATOR OF THE EVENT SPLITTING CORRECTION ***
-        // MC COLLISIONS RECONSTRUCTED MULTIPLE TIMES ARE SAVED HERE
-        //---------------------------
-        registry.fill(HIST("Centrality_AllRecoEvt"), centrality);
-        registry.fill(HIST("NumOfRecCollVsNContriWithEvtSel"), nRecColls, collision.numContrib());
+        registry.fill(HIST("NchMCVsCent_AllRecoEvt"), centrality, nChMCTPCAcc); // FOR MAPPING BETWEEN MC NCH AND CENTRALITY
+        registry.fill(HIST("Centrality_AllRecoEvt"), centrality);               // DENOMINATOR OF EVENT SPLITTING
+        registry.fill(HIST("NchMC_AllRecoEvt"), nChMCTPCAcc);                   // NUMERATOR OF EVENT LOSS CORRECTION
+
+        for (const auto& particle : mcParticles) {
+          if (particle.eta() < trackSelections.minEta || particle.eta() > trackSelections.maxEta) {
+            continue;
+          }
+
+          auto charge{0.};
+          // Get the MC particle
+          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+          if (pdgParticle != nullptr) {
+            charge = pdgParticle->Charge();
+          } else {
+            continue;
+          }
+
+          // Is it a charged particle?
+          if (std::abs(charge) < KminCharge) {
+            continue;
+          }
+
+          // Select particle based on its charge
+          if (trackSelections.signCharge.value == "Positive" && charge < Kzero) {
+            continue;
+          }
+          if (trackSelections.signCharge.value == "Negative" && charge > Kzero) {
+            continue;
+          }
+
+          // IS IT A PRIMARY PARTICLE?
+          if (!particle.isPhysicalPrimary()) {
+            continue;
+          }
+
+          // SELECTS PARTICLES BASED ON THEIR VERTEX CREATION
+          // THIS IS ADDED TO REJECT LOOPERS
+          const float vX{particle.vx()};
+          const float vY{particle.vy()};
+          if (std::hypot(vX, vY) > trackSelections.particleVtxSel) {
+            continue;
+          }
+
+          if (particle.pdgCode() == PDG_t::kPiPlus || particle.pdgCode() == PDG_t::kPiMinus) {
+            registry.fill(HIST("PtPiVsNchMC_AllRecoEvt"), particle.pt(), nChMCTPCAcc); // NUMERATOR OF SIGNAL LOSS
+          } else if (particle.pdgCode() == PDG_t::kKPlus || particle.pdgCode() == PDG_t::kKMinus) {
+            registry.fill(HIST("PtKaVsNchMC_AllRecoEvt"), particle.pt(), nChMCTPCAcc); // NUMERATOR OF SIGNAL LOSS
+          } else if (particle.pdgCode() == PDG_t::kProton || particle.pdgCode() == PDG_t::kProtonBar) {
+            registry.fill(HIST("PtPrVsNchMC_AllRecoEvt"), particle.pt(), nChMCTPCAcc); // NUMERATOR OF SIGNAL LOSS
+          } else {
+            continue;
+          }
+        } // Loop over generated particles per generated collision
       }
 
       //---------------------------
       // ANALYZE ONLY THE COLLISION WITH THE LARGEST NUMBER OF CONTRIBUTORS
-      // EVENT SELECTIONS APPLIED!!!
-      // HISTOGRAMS FOR THE NUMERATORS OF EVENT SPLITTING AND EVENT LOSS,
-      // NUMERATOR AND DENOMINATOR FOR THE TRACKING EFFICIENCY ARE SAVED HERE
+      // EVENT SELECTIONS APPLIED
+      // *) NUMERATOR OF THE EVENT SPLITTING
+      // *) NUMERATOR OF THE EVENT LOSS
+      // *) NUMERATOR OF SIGNAL LOSS
+      // *) DENOMINATOR OF TRACKING EFFICIENCY
+      // *) NUMERATOR OF TRACKING EFFICIENCY
       //---------------------------
       for (const auto& collision : collisions) {
+
+        //---------------------------
+        // SELECTS THE COLLISIONS WITH THE LARGEST NUMBER OF CONTRIBUTORS
+        //---------------------------
+        if (bestCollisionIndex != collision.globalIndex()) {
+          continue;
+        }
 
         float centrality{-999.0};
         if (centralitySelector.value == "FT0C") {
@@ -2559,17 +2669,8 @@ struct PiKpRAA {
           centrality = -999.0;
         }
 
-        //---------------------------
-        // SELECTS THE COLLISIONS WITH THE LARGEST NUMBER OF CONTRIBUTORS
-        //---------------------------
-        if (bestCollisionIndex != collision.globalIndex()) {
-          continue;
-        }
-
-        // Needed to load the Phi selection from the CCDB
         const auto& foundBC = collision.foundBC_as<BCsRun3>();
 
-        registry.fill(HIST("Centrality_WRecoEvt"), centrality);
         registry.fill(HIST("zPosMC"), mccollision.posZ());
 
         //---------------------------
@@ -2631,15 +2732,15 @@ struct PiKpRAA {
         // NEEDED TO CONSTRUCT THE CORRELATION BETWEEN MC NCH V.S. CENTRALITY
         //---------------------------
         registry.fill(HIST("Centrality_WRecoEvtWSelCri"), centrality); // NUMERATOR OF EVENT SPLITTING
-        registry.fill(HIST("NchMCVsCent"), centrality, nChMCTPCAcc);   // FOR MAPPING BETWEEN MC NCH AND CENTRALITY
         registry.fill(HIST("NchMC_WithRecoEvt"), nChMCTPCAcc);         // NUMERATOR OF EVENT LOSS CORRECTION
+        registry.fill(HIST("NchMCVsCent"), centrality, nChMCTPCAcc);   // FOR MAPPING BETWEEN MC NCH AND CENTRALITY
         registry.fill(HIST("zPos"), collision.posZ());                 // VTX-Z OF RECONSTRUED COLLISIONS + EVENT SELECTION
         registry.fill(HIST("Centrality"), centrality);                 // CENTRALITY OF RECONSTRUED COLLISIONS + EVENT SELECTION
 
         //---------------------------
         // THE GENERATED EVENTS ARE NOT SUBJECTED TO ANY SELECTION CRITERIA
         // HOWEVER, THE ASSOCIATED RECONSTRUCTED COLLISIONS HAD TO PASS THE SELECTION CRITERIA
-        // USED FOR THE DENOMINATOR OF THE TRACKING EFFICIENCY
+        // *) DENOMINATOR OF THE TRACKING EFFICIENCY
         //---------------------------
         for (const auto& particle : mcParticles) {
           if (particle.eta() < trackSelections.minEta || particle.eta() > trackSelections.maxEta) {
@@ -2699,7 +2800,7 @@ struct PiKpRAA {
 
         // ================
         // TRACK SELECTION *** WITHOUT DCAXY AND DCAZ SELECTIONS ***
-        // NEEDED FOR THE *** SECONDARY PARTICLE CORRECTION ***
+        // *) SECONDARY PARTICLE CORRECTION
         // ================
         for (const auto& track : groupedTracks) {
 
@@ -2797,7 +2898,7 @@ struct PiKpRAA {
 
         // ================
         // TRACK SELECTION WITH *** DCAXY AND DCAZ SELECTIONS ***
-        // NEEDED FOR THE *** NUMERATOR OF THE TRACKING EFFICIENCY ***
+        // *) NUMERATOR OF THE TRACKING EFFICIENCY
         // ================
         int nCh{0};
         for (const auto& track : groupedTracks) {
