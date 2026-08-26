@@ -196,15 +196,15 @@ struct strangederivedbuilder {
   Configurable<std::string> inheritEvtSelFromTask{"inheritEvtSelFromTask", "propagation-service", "Inherit event selection parameters from which task?"};
   Configurable<std::string> inheritEvtSelFromTaskCfgGroup{"inheritEvtSelFromTaskCfgGroup", "eventSelectOpts", "What is the configurable group prefix? If none, put nothing"};
   Configurable<bool> inheritEvtSelFromTaskVerbose{"inheritEvtSelFromTaskVerbose", false, "Enable verbose mode on the getTaskOption utility"};
-  bool fillOnlySelectedCollisions = false; // Fill only tables for selected collisions?
-  bool requireTriggerTVX = false; // require FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level  (Run 3 only)
-  bool rejectITSROFBorder = false; // reject events at ITS ROF border (Run 3 only)
-  bool rejectTFBorder = false; // reject events at TF border (Run 3 only)
-  bool rejectSameBunchPileup = false; // reject collisions in case of pileup with another collision in the same foundBC (Run 3 only)
-  float maxZVtxPosition = 10.; // max Z vtx position (cm)
-  bool cfgApplyRCTrequirement = false; // Apply RCT requirement?
-  std::string cfgRCTLabel = ""; // Which detector condition requirements? (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)
-  bool cfgCheckZDC = false; // Include ZDC flags in the bit selection (for Pb-Pb only)
+  bool fillOnlySelectedCollisions = false;     // Fill only tables for selected collisions?
+  bool requireTriggerTVX = false;              // require FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level  (Run 3 only)
+  bool rejectITSROFBorder = false;             // reject events at ITS ROF border (Run 3 only)
+  bool rejectTFBorder = false;                 // reject events at TF border (Run 3 only)
+  bool rejectSameBunchPileup = false;          // reject collisions in case of pileup with another collision in the same foundBC (Run 3 only)
+  float maxZVtxPosition = 10.;                 // max Z vtx position (cm)
+  bool cfgApplyRCTrequirement = false;         // Apply RCT requirement?
+  std::string cfgRCTLabel = "";                // Which detector condition requirements? (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)
+  bool cfgCheckZDC = false;                    // Include ZDC flags in the bit selection (for Pb-Pb only)
   bool cfgTreatLimitedAcceptanceAsBad = false; // reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance
 
   o2::aod::rctsel::RCTFlagsChecker rctFlagsChecker;
@@ -280,7 +280,7 @@ struct strangederivedbuilder {
   }
 
   template <typename VType>
-  void getCfg(o2::framework::InitContext& initContext, const std::string name, VType& v, const std::string task)
+  void getCfg(o2::framework::InitContext& initContext, const std::string& name, VType& v, const std::string task)
   {
     if (!o2::common::core::getTaskOptionValue(initContext, task, name, v, inheritEvtSelFromTaskVerbose)) {
       LOG(fatal) << "Could not get " << name << " from " << task << " task";
@@ -488,8 +488,8 @@ struct strangederivedbuilder {
     LOG(info) << "Reject same bunch pile-up..........: " << (rejectSameBunchPileup ? "yes" : "no");
     LOG(info) << "Apply RCT requirement..............: " << (cfgApplyRCTrequirement ? "yes" : "no");
     LOG(info) << "RCT requirement....................: " << cfgRCTLabel;
-    LOG(info) << "Check ZDC in RCT requirement.......: " << (cfgCheckZDC? "yes" : "no");
-    LOG(info) << "Treat limited acceptance as bad....: " << (cfgCheckZDC? "yes" : "no");
+    LOG(info) << "Check ZDC in RCT requirement.......: " << (cfgCheckZDC ? "yes" : "no");
+    LOG(info) << "Treat limited acceptance as bad....: " << (cfgCheckZDC ? "yes" : "no");
     LOG(info) << "=================================================================";
 
     // setup map for fast checking if enabled
@@ -727,7 +727,7 @@ struct strangederivedbuilder {
                                       totalFDDAmplitudeA, totalFDDAmplitudeC,
                                       timeZNA, timeZNC, // ZDC info
                                       energyCommonZNA, energyCommonZNC);
-        } else {                                                           // We are in Run 2
+        } else { // We are in Run 2
           products.strangeCentsRun2(collision.centRun2V0M(), collision.centRun2V0A(),
                                     collision.centRun2SPDTracklets(), collision.centRun2SPDClusters());
           products.strangeEvSelsRun2(collision.sel8(), collision.sel7(), collision.selection_raw(),
@@ -780,13 +780,13 @@ struct strangederivedbuilder {
     for (const auto& casc : TraCascades) {
       products.tracasccollref(TraCascadeCollIndices[casc.globalIndex()]);
     }
-    products.straSelection(totalNbrCollisions, totalNbrSelectedCollisions, 
-      totalNbrCollisionsPerSelection[o2::aod::straselections::kIsTriggerTVX], 
-      totalNbrCollisionsPerSelection[o2::aod::straselections::kNoITSROFrameBorder], 
-      totalNbrCollisionsPerSelection[o2::aod::straselections::kNoTimeFrameBorder], 
-      totalNbrCollisionsPerSelection[o2::aod::straselections::kIsGoodZvtxAcceptance],
-      totalNbrCollisionsPerSelection[o2::aod::straselections::kNoSameBunchPileup], 
-      totalNbrCollisionsPerSelection[o2::aod::straselections::kIsGoodRCT]);
+    products.straSelection(totalNbrCollisions, totalNbrSelectedCollisions,
+                           totalNbrCollisionsPerSelection[o2::aod::straselections::kIsTriggerTVX],
+                           totalNbrCollisionsPerSelection[o2::aod::straselections::kNoITSROFrameBorder],
+                           totalNbrCollisionsPerSelection[o2::aod::straselections::kNoTimeFrameBorder],
+                           totalNbrCollisionsPerSelection[o2::aod::straselections::kIsGoodZvtxAcceptance],
+                           totalNbrCollisionsPerSelection[o2::aod::straselections::kNoSameBunchPileup],
+                           totalNbrCollisionsPerSelection[o2::aod::straselections::kIsGoodRCT]);
   }
 
   // helper function to estimate collision time
@@ -811,7 +811,7 @@ struct strangederivedbuilder {
         collisionEventTime[collision.globalIndex()] /= static_cast<double>(collisionNtracks[collision.globalIndex()]);
         collisionEventTimeErr[collision.globalIndex()] /= static_cast<double>(collisionNtracks[collision.globalIndex()]);
       } else {
-        collisionEventTime[collision.globalIndex()] = -1e+6; // undefined
+        collisionEventTime[collision.globalIndex()] = -1e+6;    // undefined
         collisionEventTimeErr[collision.globalIndex()] = -1e-6; // undefined
       }
       if (fillOnlySelectedCollisions && !isCollisionAccepted(collision, totalNbrCollisionsPerSelection)) {
