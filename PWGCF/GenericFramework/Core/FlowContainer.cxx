@@ -438,12 +438,14 @@ TH1D* FlowContainer::GetCorrXXVsPt(const char* order, double lminmulti, double l
       printf("fNbinsPt is not matching the num of found histograms");
       return nullptr;
     }
-    TProfile* profY = rhProfSub->ProfileY("profY", minm, maxm);
+    const TString temporaryTag = Form("%s_%s_%.3f_%.3f", fIDName.Data(), order, lminmulti, lmaxmulti);
+    TProfile* profY = rhProfSub->ProfileY(Form("profY_%s", temporaryTag.Data()), minm, maxm);
     TH1D* histY = ProfToHist(profY);
-    TH1D* hist = new TH1D("temphist", "temphist", fNbinsPt, fbinsPt);
+    delete profY;
+    TH1D* hist = new TH1D(Form("temphist_%s", temporaryTag.Data()), "temphist", fNbinsPt, fbinsPt);
     for (int ibin = 1; ibin <= hist->GetNbinsX(); ibin++) {
       TString bLabel = rhProfSub->GetYaxis()->GetBinLabel(ibin + ybn1 - 1);
-      hist->GetXaxis()->SetBinLabel(ibin, bLabel.Data());
+      // hist->GetXaxis()->SetBinLabel(ibin, bLabel.Data());
       hist->SetBinContent(ibin, histY->GetBinContent(ibin + ybn1 - 1));
       hist->SetBinError(ibin, histY->GetBinError(ibin + ybn1 - 1));
     }
