@@ -1352,7 +1352,7 @@ struct AnalysisSameEventPairing {
 
   // option for TR pair fill
   Configurable<bool> fConfigTRPairs{"cfgFillTRPairs", false, "If true, fill Track rotation pairs"};
-  Configurable<int> fConfigNRotations{"cfgNRotations", 20, "Number of rotations for track rotation method"};
+  Configurable<int> fConfigNRotations{"cfgNRotations", 3, "Number of rotations for event plane preserving track rotation method, only 1 or 3 are supported"};
 
   struct : ConfigurableGroup {
     Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -2414,7 +2414,7 @@ struct AnalysisSameEventPairing {
                         fHistMan->FillHistClass(Form("PairsBarrelTRPM_ambiguousextra_%s", fTrackCuts[icut].Data()), dqtablereader_helpers::varValues());
                       }
                     }
-                  } elif(fConfigNRotations.value == 3) {
+                  } else if(fConfigNRotations.value == 3) {
                     for (int irot = 1; irot <= fConfigNRotations.value; irot++) {
                       VarManager::FillPairRotation<TPairType, TTrackFillMap>(t1, t2, irot);
                       if constexpr (TPairType == VarManager::kDecayToEE) {
