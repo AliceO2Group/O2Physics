@@ -142,15 +142,15 @@ struct JetFinderTask {
       jetFinder.phiMin = -1.0 * M_PI;
       jetFinder.phiMax = 2.0 * M_PI;
     }
-    if (phiExclusionMin != 999.0 && phiExclusionMax != 999.0 && phiExclusionMin >= phiExclusionMax) {
-      throw std::runtime_error("Invalid phi exclusion range: require phiExclusionMin < phiExclusionMax when both are set.");
-    }
-    if (phiExclusionMin < 999.0) {
+
+    if (phiExclusionMin < 998.0) {
       jetFinder.phiExclusionMin = phiExclusionMin;
-    }
-    if (phiExclusionMax > -999.0) {
       jetFinder.phiExclusionMax = phiExclusionMax;
+      if (phiExclusionMin >= phiExclusionMax) {
+        throw std::runtime_error("Invalid phi exclusion range: require phiExclusionMin < phiExclusionMax when both are set.");
+      }
     }
+
     jetFinder.jetPhiMin = jetPhiMin;
     jetFinder.jetPhiMax = jetPhiMax;
     if (jetPhiMin < -98.0) {
