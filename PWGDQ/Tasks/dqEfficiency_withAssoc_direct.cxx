@@ -279,6 +279,10 @@ using MyBarrelTracksWithCovNoTOF = soa::Join<aod::Tracks, aod::TracksExtra, aod:
                                              aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                              aod::pidTPCFullKa, aod::pidTPCFullPr,
                                              aod::McTrackLabels>;
+using MyBarrelTracksWithDalitzBits = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
+                                               aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                               aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                               aod::McTrackLabels, aod::DalitzBits>;
 using MyBarrelTracksWithCovWithAmbiguities = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA,
                                                        aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                                        aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -291,6 +295,7 @@ using MyDielectronCandidates = soa::Join<aod::Dielectrons, aod::DielectronsExtra
 constexpr static uint32_t gkEventFillMapWithMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
 constexpr static uint32_t gkEventFillMapWithCentAndMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::ObjTypes::CollisionMult | VarManager::ObjTypes::CollisionMultExtra;
 constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkTrackFillMapWithDalitzBits = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackTPCPID | VarManager::ObjTypes::DalitzBits;
 constexpr static uint32_t gkTrackFillMapWithCovNoTOF = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackTPCPID | VarManager::ObjTypes::TrackTOFService;
 // constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID;
 // constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
@@ -402,7 +407,7 @@ struct AnalysisEventSelection {
       VarManager::SetSORandEOR(sor, eor);
     }
 
-    cout << "Filling TimeFrame statistics histograms" << endl;
+    // cout << "Filling TimeFrame statistics histograms" << endl;
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
     VarManager::FillTimeFrame(bcs);
     VarManager::FillTimeFrame(events);
@@ -415,7 +420,7 @@ struct AnalysisEventSelection {
     fBCCollMap.clear();
     // int iEvent = 0;
 
-    cout << "Starting event loop for event selection" << endl;
+    // cout << "Starting event loop for event selection" << endl;
     for (auto& event : events) {
 
       auto bc = event.template bc_as<BCsWithTimestamps>();
@@ -463,13 +468,13 @@ struct AnalysisEventSelection {
       }
     }
 
-    cout << "AnalysisEventSelection::runEventSelection() completed" << endl;
+    // cout << "AnalysisEventSelection::runEventSelection() completed" << endl;
   }
 
   template <uint32_t TEventFillMap, typename TEvents>
   void publishSelections(TEvents const& events)
   {
-    cout << "AnalysisEventSelection::publishSelections() called" << endl;
+    // cout << "AnalysisEventSelection::publishSelections() called" << endl;
     std::map<int64_t, bool> collisionSplittingMap; // key: event global index, value: whether pileup event is a possible splitting
 
     // Reset the fValues array and fill event observables
@@ -543,23 +548,23 @@ struct AnalysisEventSelection {
       }
       eventSel(evSel);
     }
-    cout << "AnalysisEventSelection::publishSelections() completed" << endl;
+    // cout << "AnalysisEventSelection::publishSelections() completed" << endl;
   }
 
   void processDirect(MyEvents const& events, BCsWithTimestamps const& bcs, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultMCExtras> const& mcEvents)
   {
-    cout << "AnalysisEventSelection::processDirect() called" << endl;
+    // cout << "AnalysisEventSelection::processDirect() called" << endl;
     runEventSelection<gkEventFillMapWithMults>(events, bcs, mcEvents);
     publishSelections<gkEventFillMapWithMults>(events);
-    cout << "AnalysisEventSelection::processDirect() completed" << endl;
+    // cout << "AnalysisEventSelection::processDirect() completed" << endl;
   }
 
   void processPbPbDirect(MyEventsWithCentAndMults const& events, BCsWithTimestamps const& bcs, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultMCExtras> const& mcEvents)
   {
-    cout << "AnalysisEventSelection::processPbPbDirect() called" << endl;
+    // cout << "AnalysisEventSelection::processPbPbDirect() called" << endl;
     runEventSelection<gkEventFillMapWithCentAndMults>(events, bcs, mcEvents);
     publishSelections<gkEventFillMapWithCentAndMults>(events);
-    cout << "AnalysisEventSelection::processPbPbDirect() completed" << endl;
+    // cout << "AnalysisEventSelection::processPbPbDirect() completed" << endl;
   }
 
   void processDummy(aod::Collisions&)
@@ -692,7 +697,10 @@ struct AnalysisTrackSelection {
     fCCDB->setLocalObjectValidityChecking();
     fCCDB->setCreatedNotAfter(fConfigNoLaterThan.value);
 
-    fTofResponse->initSetup(fCCDB, context);
+    if (!context.mOptions.get<bool>("processWithDalitzBits")) {
+      fTofResponse->initSetup(fCCDB, context);
+    }
+
     cout << "AnalysisTrackSelection::init() completed" << endl;
   }
 
@@ -713,8 +721,8 @@ struct AnalysisTrackSelection {
       fHistMan->FillHistClass("TimeFrameStats", VarManager::fgValues);
     }
 
-    cout << "After filling TimeFrame statistics" << endl;
-    // TODO: Check if postcalibration needed for MC
+    // cout << "After filling TimeFrame statistics" << endl;
+    //  TODO: Check if postcalibration needed for MC
     if (bcs.size() > 0 && fCurrentRun != bcs.begin().runNumber()) {
       if (fConfigComputeTPCpostCalib) {
         auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bcs.begin().timestamp());
@@ -736,7 +744,7 @@ struct AnalysisTrackSelection {
       fCurrentRun = bcs.begin().runNumber();
     }
 
-    cout << "Starting loop over track associations" << endl;
+    // cout << "Starting loop over track associations" << endl;
 
     trackSel.reserve(assocs.size());
     trackAmbiguities.reserve(tracks.size());
@@ -898,24 +906,29 @@ struct AnalysisTrackSelection {
         trackAmbiguities(nInBunch, nOutOfBunch);
       }
     }
-    cout << "AnalysisTrackSelection::runTrackSelection() completed" << endl;
+    // cout << "AnalysisTrackSelection::runTrackSelection() completed" << endl;
   } // end runTrackSelection()
 
   void processWithCov(TrackAssoc const& assocs, BCsWithTimestamps const& bcs, MyEventsSelected const& events, MyBarrelTracksWithCov const& tracks,
                       McCollisions const& eventsMC, McParticles const& tracksMC)
   {
-    cout << "AnalysisTrackSelection::processWithCov() called" << endl;
+    // cout << "AnalysisTrackSelection::processWithCov() called" << endl;
     runTrackSelection<gkEventFillMapWithMults, gkTrackFillMapWithCov>(assocs, bcs, events, tracks, eventsMC, tracksMC);
-    cout << "AnalysisTrackSelection::processWithCov() completed" << endl;
+    // cout << "AnalysisTrackSelection::processWithCov() completed" << endl;
   }
   void processWithCovTOFService(TrackAssoc const& assocs, BCsWithTimestamps const& bcs, MyEventsSelected const& events, MyBarrelTracksWithCovNoTOF const& tracks,
                                 McCollisions const& eventsMC, McParticles const& tracksMC)
   {
-    cout << "AnalysisTrackSelection::processWithCov() called" << endl;
+    // cout << "AnalysisTrackSelection::processWithCov() called" << endl;
     fTofResponse->processSetup(bcs.iteratorAt(0));
     auto tracksWithTOFservice = soa::Attach<MyBarrelTracksWithCovNoTOF, o2::aod::TOFNSigmaDynEl, o2::aod::TOFNSigmaDynPi, o2::aod::TOFNSigmaDynKa, o2::aod::TOFNSigmaDynPr>(tracks);
     runTrackSelection<gkEventFillMapWithMults, gkTrackFillMapWithCovNoTOF>(assocs, bcs, events, tracksWithTOFservice, eventsMC, tracksMC);
-    cout << "AnalysisTrackSelection::processWithCov() completed" << endl;
+    // cout << "AnalysisTrackSelection::processWithCov() completed" << endl;
+  }
+  void processWithDalitzBits(TrackAssoc const& assocs, BCsWithTimestamps const& bcs, MyEventsSelected const& events, MyBarrelTracksWithDalitzBits const& tracks,
+                             McCollisions const& eventsMC, McParticles const& tracksMC)
+  {
+    runTrackSelection<gkEventFillMapWithMults, gkTrackFillMapWithDalitzBits>(assocs, bcs, events, tracks, eventsMC, tracksMC);
   }
   void processDummy(MyEvents&)
   {
@@ -924,6 +937,7 @@ struct AnalysisTrackSelection {
 
   PROCESS_SWITCH(AnalysisTrackSelection, processWithCov, "Run barrel track selection on DQ skimmed tracks w/ cov matrix associations", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processWithCovTOFService, "Run barrel track selection on DQ skimmed tracks w/ cov matrix associations, with TOF service", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processWithDalitzBits, "Run barrel track selection on DQ skimmed tracks w/ dalitz bits obtained from DalitzSelection task", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processDummy, "Dummy function", true);
 };
 
@@ -1070,9 +1084,9 @@ struct AnalysisPrefilterSelection {
     // cout << "AnalysisPrefilterSelection::runPrefilter() completed for event " << event.globalIndex() << endl;
   }
 
-  void processBarrel(MyEvents const& events, soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts> const& assocs, MyBarrelTracksWithCov const& tracks)
+  void processBarrel(MyEvents const& events, soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts> const& assocs, MyBarrelTracksWithCovNoTOF const& tracks)
   {
-    cout << "AnalysisPrefilterSelection::processBarrel() called" << endl;
+    // cout << "AnalysisPrefilterSelection::processBarrel() called" << endl;
     fPrefilterMap.clear();
 
     for (auto& event : events) {
@@ -1106,7 +1120,7 @@ struct AnalysisPrefilterSelection {
         }
       }
     }
-    cout << "AnalysisPrefilterSelection::processBarrel() completed" << endl;
+    // cout << "AnalysisPrefilterSelection::processBarrel() completed" << endl;
   }
 
   void processDummy(MyEvents&)
@@ -1675,7 +1689,7 @@ struct AnalysisSameEventPairing {
   template <bool TTwoProngFitter, int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TTracks, typename TEventsMC>
   void runSameEventPairing(TEvents const& events, BCsWithTimestamps const& bcs, Preslice<soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter>>& preslice, soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& assocs, TTracks const& tracks, TEventsMC const& mcEvents, McParticles const& mcTracks)
   {
-    cout << "AnalysisSameEventPairing::runSameEventPairing() called" << endl;
+    // cout << "AnalysisSameEventPairing::runSameEventPairing() called" << endl;
     if (events.size() == 0) {
       LOG(warning) << "No events in this TF, going to the next one ...";
       return;
@@ -2082,7 +2096,7 @@ struct AnalysisSameEventPairing {
       } // end loop over pairs of track associations
     } // end loop over events
 
-    cout << "AnalysisSameEventPairing::runSameEventPairing() completed" << endl;
+    // cout << "AnalysisSameEventPairing::runSameEventPairing() completed" << endl;
   }
 
   PresliceUnsorted<aod::McParticles> perReducedMcEvent = aod::mcparticle::mcCollisionId;
@@ -2091,7 +2105,7 @@ struct AnalysisSameEventPairing {
   template <int TPairType, uint32_t TEventFillMap, typename TEvents, typename TEventsMC>
   void runMCGen(TEvents const& events, TEventsMC const& mcEvents, McParticles const& mcTracks)
   {
-    cout << "AnalysisSameEventPairing::runMCGen() called" << endl;
+    // cout << "AnalysisSameEventPairing::runMCGen() called" << endl;
     uint32_t mcDecision = 0;
     int isig = 0;
 
@@ -2257,27 +2271,27 @@ struct AnalysisSameEventPairing {
 
     } // end loop over reconstructed events
 
-    cout << "AnalysisSameEventPairing::runMCGen() completed" << endl;
+    // cout << "AnalysisSameEventPairing::runMCGen() completed" << endl;
   }
 
   void processBarrelOnly(MyEventsSelected const& events, BCsWithTimestamps const& bcs,
                          soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
                          MyBarrelTracksWithCovWithAmbiguities const& barrelTracks, McCollisions const& mcEvents, McParticles const& mcTracks)
   {
-    cout << "AnalysisSameEventPairing::processBarrelOnly() called" << endl;
+    // cout << "AnalysisSameEventPairing::processBarrelOnly() called" << endl;
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithMults, gkTrackFillMapWithCov>(events, bcs, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
     runMCGen<VarManager::kDecayToEE, gkEventFillMapWithMults>(events, mcEvents, mcTracks);
-    cout << "AnalysisSameEventPairing::processBarrelOnly() completed" << endl;
+    // cout << "AnalysisSameEventPairing::processBarrelOnly() completed" << endl;
   }
 
   void processBarrelPbPbOnly(MyEventsSelectedWithCentAndMults const& events, BCsWithTimestamps const& bcs,
                              soa::Join<aod::TrackAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
                              MyBarrelTracksWithCovWithAmbiguities const& barrelTracks, soa::Join<aod::McCollisions, aod::McCollsExtra, aod::MultMCExtras> const& mcEvents, McParticles const& mcTracks)
   {
-    cout << "AnalysisSameEventPairing::processBarrelPbPbOnly() called" << endl;
+    // cout << "AnalysisSameEventPairing::processBarrelPbPbOnly() called" << endl;
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCentAndMults, gkTrackFillMapWithCov>(events, bcs, trackAssocsPerCollision, barrelAssocs, barrelTracks, mcEvents, mcTracks);
     runMCGen<VarManager::kDecayToEE, gkEventFillMapWithCentAndMults>(events, mcEvents, mcTracks);
-    cout << "AnalysisSameEventPairing::processBarrelPbPbOnly() completed" << endl;
+    // cout << "AnalysisSameEventPairing::processBarrelPbPbOnly() completed" << endl;
   }
 
   void processDummy(MyEvents&)
@@ -2996,8 +3010,8 @@ struct AnalysisDileptonTrack {
                      MyBarrelTracksWithCov const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons,
                      McCollisions const& mcEvents, McParticles const& mcTracks)
   {
-    cout << "AnalysisDileptonTrack::processBarrel() called" << endl;
-    // set up KF or DCAfitter
+    // cout << "AnalysisDileptonTrack::processBarrel() called" << endl;
+    //  set up KF or DCAfitter
     if (events.size() == 0) {
       return;
     }
@@ -3015,7 +3029,7 @@ struct AnalysisDileptonTrack {
       // groupedDielectrons.bindInternalIndicesTo(&dileptons);
       runDileptonHadron<VarManager::kBtoJpsiEEK, gkEventFillMapWithMults, gkTrackFillMapWithCov>(event, bcs, groupedBarrelAssocs, tracks, groupedDielectrons, mcEvents, mcTracks);
     }
-    cout << "AnalysisDileptonTrack::processBarrel() completed" << endl;
+    // cout << "AnalysisDileptonTrack::processBarrel() completed" << endl;
   }
 
   /* void processDstarToD0Pi(soa::Filtered<MyEventsSelected> const& events, BCsWithTimestamps const& bcs,
@@ -3070,8 +3084,8 @@ struct AnalysisDileptonTrack {
   void processMCGen(soa::Filtered<MyEventsSelected> const& events,
                     McCollisions const& /*mcEvents*/, McParticles const& mcTracks)
   {
-    cout << "AnalysisDileptonTrack::processMCGen() called" << endl;
-    // first loop over MC particles to fill generator level histograms for one prong MC signals (e.g. the B meson)
+    // cout << "AnalysisDileptonTrack::processMCGen() called" << endl;
+    //  first loop over MC particles to fill generator level histograms for one prong MC signals (e.g. the B meson)
     for (auto& mctrack : mcTracks) {
       for (auto& sig : fGenMCSignals) {
         if (sig->CheckSignal(true, mctrack)) {
@@ -3153,7 +3167,7 @@ struct AnalysisDileptonTrack {
         }
       }
     } // end loop over reconstructed events
-    cout << "AnalysisDileptonTrack::processMCGen() completed" << endl;
+    // cout << "AnalysisDileptonTrack::processMCGen() completed" << endl;
   }
 
   void processDummy(MyEvents&)

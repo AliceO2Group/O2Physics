@@ -129,6 +129,7 @@ struct DalitzSelection {
     Configurable<bool> fUseRemoteField{"cfgUseRemoteField", true, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
     Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
     Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+    Configurable<int> fConfigBitsToPropagate{"cfgBitsToPropagate", 0, "bits to propagate for further analysis (e.g. MC true analysis): 0 = only probe bits (checking selected signals), 1 = tag and probe bits (checking pairs), 2 = tag and probe bits selected from like-sign (checking LS pairs)"};
   } fConfigOptions;
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB{};
@@ -142,6 +143,7 @@ struct DalitzSelection {
   std::map<int, uint8_t> fTrackmapProbe;  // whether it is selected with probe cut
   std::map<int, uint8_t> fDalitzmap;      // whether it is selected as dalitz decay daughter with symmetric or tag cut
   std::map<int, uint8_t> fDalitzmapProbe; // whether it is selected as dalitz decay daughter with probe cut
+  std::map<int, uint8_t> fDalitzmapLS;    // whether it is selected as decay daughter of a LS pair
 
   // maps to remove ambiguities
   std::map<int, uint8_t> fDalitzmapAmbiguity;
@@ -578,6 +580,10 @@ struct DalitzSelection {
             } else {
               if (fConfigOptions.fQA && !isPairAlreadySelected) {
                 fHistMan->FillHistClass(fIsTagAndProbe ? Form("PairLS_%s_%s_%s", (*trackCut).GetName(), fTrackCutsProbe.at(icut).GetName(), (*pairCut).GetName()) : Form("PairLS_%s_%s", (*trackCut).GetName(), (*pairCut).GetName()), static_cast<float*>(VarManager::fgValues));
+                if (fConfigOptions.fConfigBitsToPropagate == 2) {
+                  fDalitzmapLS[trackIdx1] |= (uint8_t(1) << icut);
+                  fDalitzmapLS[trackIdx2] |= (uint8_t(1) << icut);
+                }
               }
             } // end if like-sign
           } // end if isSelected
@@ -588,8 +594,8 @@ struct DalitzSelection {
     // Fill Hists
     if (fConfigOptions.fQA && !fSkipEvent) {
       for (const auto& track : tracks1) {
-        auto filterMap = uint8_t(0);
-        auto filterMapProbe = uint8_t(0);
+        uint8_t filterMap;
+        uint8_t filterMapProbe;
         if constexpr (isReassoc) {
           auto const& fullTrack = track.template track_as<TFullTracks>();
           filterMap = fDalitzmap[fullTrack.globalIndex()];           // cppcheck-suppress redundantInitialization
@@ -730,6 +736,8 @@ struct DalitzSelection {
               VarManager::fgValues[VarManager::kPt2] = t2.pt;
               VarManager::fgValues[VarManager::kEta2] = t2.eta;
               VarManager::fgValues[VarManager::kPhi2] = t2.phi;
+              VarManager::fgValues[VarManager::kDeltaEtaPair2] = t1.eta - t2.eta;
+              VarManager::fgValues[VarManager::kDeltaPhiPair] = t1.phi - t2.phi;
             }
             bool isLS = (t1.filteringFlags & (static_cast<uint32_t>(1) << 8)) == (t2.filteringFlags & (static_cast<uint32_t>(1) << 8));
             for (uint32_t icut = 0; icut < fPairCuts.size(); icut++) {
@@ -801,6 +809,7 @@ struct DalitzSelection {
     const int pairType = VarManager::kDecayToEE;
     fDalitzmap.clear();
     fDalitzmapProbe.clear();
+    fDalitzmapLS.clear();
 
     bool initDFDone = false; // some quantities might need to be updated for each dataframe
 
@@ -847,8 +856,20 @@ struct DalitzSelection {
     }
 
     if (fIsOutputRequested) {
-      for (const auto& track : tracks) { // Fill dalitz bits
-        dalitzbits(fIsTagAndProbe ? fDalitzmapProbe[track.globalIndex()] : fDalitzmap[track.globalIndex()]);
+      if (fConfigOptions.fConfigBitsToPropagate == 0) {
+        for (const auto& track : tracks) { // Fill dalitz bits
+          dalitzbits(fIsTagAndProbe ? fDalitzmapProbe[track.globalIndex()] : fDalitzmap[track.globalIndex()]);
+        }
+      }
+      if (fConfigOptions.fConfigBitsToPropagate == 1) {
+        for (const auto& track : tracks) { // Fill dalitz bits
+          dalitzbits(fDalitzmapProbe[track.globalIndex()] | fDalitzmap[track.globalIndex()]);
+        }
+      }
+      if (fConfigOptions.fConfigBitsToPropagate == 2) {
+        for (const auto& track : tracks) { // Fill dalitz bits
+          dalitzbits(fDalitzmapLS[track.globalIndex()]);
+        }
       }
     }
   }
@@ -859,6 +880,7 @@ struct DalitzSelection {
     const int pairType = VarManager::kDecayToEE;
     fDalitzmap.clear();
     fDalitzmapProbe.clear();
+    fDalitzmapLS.clear();
     fDalitzmapAmbiguity.clear();
     fDalitzmapProbeAmbiguity.clear();
     fAmbiguousPairs.clear();
@@ -909,8 +931,20 @@ struct DalitzSelection {
     }
 
     if (fIsOutputRequested) {
-      for (const auto& track : tracks) { // Fill dalitz bits
-        dalitzbits(fIsTagAndProbe ? fDalitzmapProbe[track.globalIndex()] : fDalitzmap[track.globalIndex()]);
+      if (fConfigOptions.fConfigBitsToPropagate == 0) {
+        for (const auto& track : tracks) { // Fill dalitz bits
+          dalitzbits(fIsTagAndProbe ? fDalitzmapProbe[track.globalIndex()] : fDalitzmap[track.globalIndex()]);
+        }
+      }
+      if (fConfigOptions.fConfigBitsToPropagate == 1) {
+        for (const auto& track : tracks) { // Fill dalitz bits
+          dalitzbits(fDalitzmapProbe[track.globalIndex()] | fDalitzmap[track.globalIndex()]);
+        }
+      }
+      if (fConfigOptions.fConfigBitsToPropagate == 2) {
+        for (const auto& track : tracks) { // Fill dalitz bits
+          dalitzbits(fDalitzmapLS[track.globalIndex()]);
+        }
       }
     }
   }
@@ -921,6 +955,7 @@ struct DalitzSelection {
     const int pairType = VarManager::kDecayToEE;
     fDalitzmap.clear();
     fDalitzmapProbe.clear();
+    fDalitzmapLS.clear();
     fDalitzmapAmbiguity.clear();
     fDalitzmapProbeAmbiguity.clear();
     fAmbiguousPairs.clear();
@@ -971,8 +1006,20 @@ struct DalitzSelection {
     }
 
     if (fIsOutputRequested) {
-      for (const auto& track : tracks) { // Fill dalitz bits
-        dalitzbits(fIsTagAndProbe ? fDalitzmapProbe[track.globalIndex()] : fDalitzmap[track.globalIndex()]);
+      if (fConfigOptions.fConfigBitsToPropagate == 0) {
+        for (const auto& track : tracks) { // Fill dalitz bits
+          dalitzbits(fIsTagAndProbe ? fDalitzmapProbe[track.globalIndex()] : fDalitzmap[track.globalIndex()]);
+        }
+      }
+      if (fConfigOptions.fConfigBitsToPropagate == 1) {
+        for (const auto& track : tracks) { // Fill dalitz bits
+          dalitzbits(fDalitzmapProbe[track.globalIndex()] | fDalitzmap[track.globalIndex()]);
+        }
+      }
+      if (fConfigOptions.fConfigBitsToPropagate == 2) {
+        for (const auto& track : tracks) { // Fill dalitz bits
+          dalitzbits(fDalitzmapLS[track.globalIndex()]);
+        }
       }
     }
   }

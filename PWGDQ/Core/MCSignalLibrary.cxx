@@ -522,6 +522,18 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Electrons from pi0 decays", {prong}, {-1});
     return signal;
   }
+  if (nameStr == "ePrimaryFromPi0") {
+    MCProng prong(2, {11, 111}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Electrons from primary pi0 decays", {prong}, {-1});
+    return signal;
+  }
+  if (nameStr == "eSecondaryFromPi0") {
+    MCProng prong(2, {11, 111}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary, true);
+    signal = new MCSignal(name, "Electrons from secondary pi0 decays", {prong}, {-1});
+    return signal;
+  }
   if (nameStr == "ePrimaryFromPromptPi0") {
     MCProng prong(2, {11, 111}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
@@ -531,6 +543,18 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (nameStr == "eFromEta") {
     MCProng prong(2, {11, 221}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Electrons from eta decays", {prong}, {-1});
+    return signal;
+  }
+  if (nameStr == "ePrimaryFromEta") {
+    MCProng prong(2, {11, 221}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Electrons from primary eta decays", {prong}, {-1});
+    return signal;
+  }
+  if (nameStr == "eSecondaryFromEta") {
+    MCProng prong(2, {11, 221}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary, true);
+    signal = new MCSignal(name, "Electrons from secondary eta decays", {prong}, {-1});
     return signal;
   }
   if (nameStr == "eFromEtaPrime") {
@@ -885,6 +909,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
 
   //_________________________________________________________________________________________________________________________
   // LMEE pair signals for LF, same mother
+  if (nameStr == "eeDuplicated") { // check whether we have two tracks pointing to the same MC particle
+    MCProng prong(1, {11}, {true}, {false}, {0}, {0}, {false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "duplicated electron", {prong, prong}, {0, 0}); // signal at pair level
+    return signal;
+  }
   if (nameStr == "eeFromAnything") {
     MCProng prong(2, {11, MCProng::kPDGCodeNotAssigned}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
@@ -897,6 +927,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "ee pairs from pi0 decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
+  if (nameStr == "eeSecondaryFromPi0") {
+    MCProng prong(2, {11, 111}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary, true);
+    signal = new MCSignal(name, "ee secondary pairs from pi0 decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
   if (nameStr == "eePrimaryFromPromptPi0") {
     MCProng prong(2, {11, 111}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
@@ -906,6 +942,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (nameStr == "eeFromEta") {
     MCProng prong(2, {11, 221}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs from eta decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
+  if (nameStr == "eeSecondaryFromEta") {
+    MCProng prong(2, {11, 221}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary, true);
     signal = new MCSignal(name, "ee pairs from eta decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
@@ -2038,6 +2080,8 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "anyprimary and electron pair from non-prompt jpsi", {pronge, pronge, prongPrimary}, {1, 1, -1});
     return signal;
   }
+
+  LOGF(warn, "Did not find MC signal %s", nameStr);
   return nullptr;
 }
 

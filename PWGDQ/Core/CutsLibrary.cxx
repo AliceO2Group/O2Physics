@@ -5471,7 +5471,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   for (int i = 1; i <= 8; i++) { // o2-linter: disable=magic-number (number of cuts)
     if (nameStr == Form("dalitzLeg%d", i)) {
-      cut->AddCut(VarManager::kIsDalitzLeg + i - 1, 0.5, 1.5);
+      cut->AddCut(VarManager::kIsDalitzLeg + i - 1, -0.5, 0.5, true);
       return cut;
     }
 
@@ -5482,17 +5482,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (nameStr == "pidcalib_ele") {
-    cut->AddCut(VarManager::kIsLegFromGamma, 0.5, 1.5, false);
+    cut->AddCut(VarManager::kIsLegFromGamma, -0.5, 0.5, true);
     return cut;
   }
 
   if (nameStr == "pidcalib_pion") {
-    cut->AddCut(VarManager::kIsLegFromK0S, 0.5, 1.5, false);
+    cut->AddCut(VarManager::kIsLegFromK0S, -0.5, 0.5, true);
     return cut;
   }
 
   if (nameStr == "pidcalib_proton") {
-    cut->AddCut(VarManager::kIsProtonFromLambdaAndAntiLambda, 0.5, 1.5, false);
+    cut->AddCut(VarManager::kIsProtonFromLambdaAndAntiLambda, -0.5, 0.5, true);
     return cut;
   }
 
